@@ -680,7 +680,9 @@ static bool encoder_lines(const servo_test_t *t, cursor_t *c)
             snprintf(mean_ms, sizeof(mean_ms), "--");
             snprintf(max_ms, sizeof(max_ms), "--");
         }
-        snprintf(b, n, "%5.2f  %-7s  %-7s  %-7s  %-7s  %-6s %-7s %5u %7u %4u",
+        /* Every value starts where its heading's word does: cells 0, 7,
+         * 16, 25, 34, 43, 50, 58, 64 and 72 (SERVO_STR_R_ENC_COLUMNS). */
+        snprintf(b, n, "%-5.2f  %-7s  %-7s  %-7s  %-7s  %-6s %-7s %-5u %-7u %u",
                  (double)s->set_v, lo, elo, hi, ehi, mean_ms, max_ms,
                  (unsigned)s->enc_moves, (unsigned)s->enc_unmoved,
                  (unsigned)s->enc_late);

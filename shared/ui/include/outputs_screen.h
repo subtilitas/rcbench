@@ -358,6 +358,16 @@ outputs_iface_t outputs_iface_at(uint8_t gpio);
 const char *outputs_iface_name(outputs_iface_t which);
 
 /**
+ * @brief The name the lists, the face and LAYOUT give protocol @p proto of
+ *        outbind_protos(): OFF, the overview's entry, in the language in
+ *        force (AUS in German); every other its catalogue name, the same in
+ *        every language.
+ * @param proto the protocol's index
+ * @return its name; "" past the table
+ */
+const char *outputs_proto_name(uint8_t proto);
+
+/**
  * @brief Draw @p text in lines of @p font no wider than @p box.
  *
  * The lines run from the box's top down by @p pitch, broken after the

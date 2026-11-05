@@ -180,11 +180,22 @@ _Static_assert(ARM_Y + ARM_H <= RCARD_Y + RCARD_H,
 /*
  * LIVE's card: the horn's angle in the bench's numerals top left, ARM
  * FIRST under it, the dial in the middle and, along the bottom, the three
- * readings in SV_FONT_NUM, a third of the card each.
+ * readings in SV_FONT_NUM, each in a column of its own across the card's
+ * 596px.  MEASURED's is the widest: -180.0 is 6 cells of 32px, 192px, and
+ * 24px stay clear before CURRENT's numerals.
  */
-#define READ_W     ((LCARD_W - 24) / 3) /**< A reading's column: 198px. */
+#define READ_W0    192 /**< COMMANDED's column, px: SOLL-PULSBREITE and us. */
+#define READ_W1    216 /**< MEASURED's column, px. */
+/** @brief CURRENT's column, px: the rest of the card, 188px. */
+#define READ_W2    (LCARD_W - 24 - READ_W0 - READ_W1)
+/** @brief Reading @p k's column width, px (0 COMMANDED, 1 MEASURED,
+ *         2 CURRENT). */
+#define READ_W(k)  ((k) == 0 ? READ_W0 : (k) == 1 ? READ_W1 : READ_W2)
 /** @brief Reading @p k's column (0 COMMANDED, 1 MEASURED, 2 CURRENT). */
-#define READ_X(k)  (PAD + 12 + (k) * READ_W)
+#define READ_X(k)  (PAD + 12 + ((k) > 0 ? READ_W0 : 0) \
+                    + ((k) > 1 ? READ_W1 : 0))
+_Static_assert(6 * 32 + 24 <= READ_W1,
+               "-180.0 in SV_FONT_NUM ends 24px before CURRENT");
 #define READ_NUM_H 44                    /**< A reading's numerals, px. */
 /** @brief Their top, px: they end 4px above the alert band, which shows over
  *         the card's foot. */

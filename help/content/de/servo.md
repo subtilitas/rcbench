@@ -130,7 +130,7 @@ Erforderlich sind ARMED und ein antwortendes Netzteil. Die Statuszeile nennt Abl
 
 ![TEST mit seinen zwei Laufkarten](view:servo-test)
 
-Die Zusammenfassung nennt Stufen und Dauer, etwa `4.8 6.0V BROWN-OUT, JE 60s`. Unter TEST STARTEN folgen Status, letztes Ergebnis und Dateien, etwa `ZULETZT: BESTANDEN ATEST004.CSV + .TXT`. Bei Abbruch steht dort stattdessen der Grund, etwa `ZULETZT: ABGEBROCHEN - Verbindung verloren`.
+Die Zusammenfassung nennt Stufen und Dauer, etwa `4.8V, 6.0V, BROWN-OUT, JE 60s`. Unter TEST STARTEN folgen Status, letztes Ergebnis und Dateien, etwa `ZULETZT: BESTANDEN ATEST004.CSV + .TXT`. Bei Abbruch steht dort stattdessen der Grund, etwa `ZULETZT: ABGEBROCHEN - Verbindung verloren`.
 
 ![Ein Testlauf](view:servo-run)
 

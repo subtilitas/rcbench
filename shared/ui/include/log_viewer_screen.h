@@ -264,9 +264,12 @@ const log_data_t *log_viewer_data(void);
 void log_viewer_window(int *first, int *count);
 
 /**
- * The browse list's tab into @p out of @p n bytes: the page's place in the
- * card, "FILES 49 TO 96 OF 121", on a card of more than one page, and
- * "FILES" otherwise.  The list draws this text.
+ * @brief The browse list's tab: the page's place in the folder, "FILES 49
+ *        TO 96 OF 121", or "FILES 1 TO 7 OF 7" on a single page, for every
+ *        list with a file in it; "FILES" for an empty list or one not read.
+ *        The list draws this text.
+ * @param out takes the tab
+ * @param n   bytes at @p out
  */
 void log_viewer_browse_title(char *out, size_t n);
 

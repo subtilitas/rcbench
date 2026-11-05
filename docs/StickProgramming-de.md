@@ -694,7 +694,7 @@ ruhte.
 | Handgriff am ESC erforderlich | `automatable` ist `assisted`, und das Profil nennt keinen Handgriff, nach dem der Lauf fragen könnte: ein Mensch liest eine LED oder steckt eine JetiBox an |
 | Handgriff | ein Handgriff während des Menüs, oder einer an einem versorgten ESC mit dem Einstieg auf MID oder MAX |
 | kein nutzbarer Programmierablauf | `automatable` ist `none` |
-| Menüeinstieg erst nach dem Einschalten | `scheme.entry.when` ist `after_power_on` |
+| Menü erst nach Einschalten | `scheme.entry.when` ist `after_power_on` |
 | Melodie-Menü, Ja/Nein-Menü, Stickpositions-Menü, Menü eigener Art | `scheme.type` |
 | Pieptöne nach Tonhöhe getrennt | `scheme.announce.encoding` ist `melody` oder `yes_no` |
 | Punkt und Wert nutzen 1 Bewegung | `item_then_value` ohne `value_select`: welche Gruppe die Bewegung beantwortet, steht nicht fest |

@@ -24,10 +24,15 @@
  * UTF-8 sequence, one byte that starts none (drawn as one '?' cell, as
  * gfx_utf8_next() reads it), or one line end, CR LF included.  Every unit
  * of a line is one cell, except a tab, which reaches to the next multiple
- * of TEXT_BUF_TAB cells.  A line is drawn wrapped at a width in cells: a
- * unit that does not fit the row starts the next one, and a tab that does
- * not fit ends at the row's last cell.  A cell number is row * width +
- * column, so it counts along the wrapped line.
+ * of TEXT_BUF_TAB cells.  A line is drawn wrapped at a width in cells, at
+ * a space: a word, the units between two spaces or tabs, that does not fit
+ * the rest of the row together with the space after it starts the next
+ * row, and so a number and its unit ("600ms") stay on one row.  A word
+ * longer than a row is broken where the row ends: a unit that does not fit
+ * starts the next one.  A tab that does not fit ends at the row's last
+ * cell.  A cell number is row * width + column, so it counts along the
+ * wrapped line; the cells a wrapped word leaves at a row's end hold no
+ * unit (text_buf_breaks_before()).
  *
  * Line ends: the file's kind is that of its first line end, LF for a file
  * without one.  ENTER inserts that kind.  Where it would join a neighbouring
@@ -314,6 +319,23 @@ size_t text_buf_prev(const text_buf_t *tb, size_t pos);
  * @return true at a unit's start and at the end; false past it.
  */
 bool text_buf_is_unit(const text_buf_t *tb, size_t pos);
+
+/**
+ * @brief Whether the unit at @p pos starts a new row when it would be
+ *        drawn at column @p col of a row @p width cells wide: the row is
+ *        full, or the unit starts a word that does not fit the rest of the
+ *        row with the space after it, and that fits a row of its own.
+ *
+ * The viewer's drawing and every cell function below wrap by this rule.
+ *
+ * @param tb    The buffer.
+ * @param pos   Text offset of a unit's start inside a line.
+ * @param col   The column it would take, from 0.
+ * @param width Cells of a row; 0 does not wrap.
+ * @return true when the unit goes to column 0 of the next row.
+ */
+bool text_buf_breaks_before(const text_buf_t *tb, size_t pos, size_t col,
+                            unsigned width);
 
 /**
  * @brief Rows line @p line takes, wrapped at @p width cells.

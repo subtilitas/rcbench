@@ -148,7 +148,7 @@ bool layout_screen_pos(int conn, int pos, layout_pos_t *out)
         (void)snprintf(out->state, sizeof(out->state), "%s", TR(PK_NOT_READ));
     } else {
         (void)snprintf(out->state, sizeof(out->state), "%s",
-                       outbind_protos()[group_of(board, out->gpio)].name);
+                       outputs_proto_name(group_of(board, out->gpio)));
     }
     return true;
 }
@@ -245,7 +245,7 @@ static void draw_pos(gfx_canvas_t *c, int x, int y, int n,
                    p->rail);
     (void)gfx_text(c, x + ROLE_X, y + 46, line, LY_FONT_FINE, UI_TEXT_FAINT,
                    1);
-    const gfx_color_t col = (strcmp(p->state, outbind_protos()[0].name) == 0)
+    const gfx_color_t col = (strcmp(p->state, outputs_proto_name(0u)) == 0)
                                 ? UI_TEXT_FAINT : UI_ACCENT;
     text_right(c, x + COL_W - PAD, y + 12, COL_W - ROLE_X - rw - 2 * PAD,
                p->state, col);

@@ -157,7 +157,7 @@ static int walk_line(row_walk_t *w, size_t line)
     for (size_t off = 0u; off < len;) {
         size_t ub = 1u;
         const uint32_t cp = text_buf_cp(&tv_tb, start + off, &ub);
-        if (col >= width) {
+        if (text_buf_breaks_before(&tv_tb, start + off, col, width)) {
             flush(w);
             ++row;
             col = 0u;

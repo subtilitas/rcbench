@@ -625,7 +625,7 @@ TEST_CASE(every_tile_line_names_content_and_no_count)
     CHECK(strstr(TR(HG_OV_SETUP), "interfaces") == NULL);
     CHECK(strstr(TR(HG_OV_LOGS), "WI-FI") != NULL);
     CHECK(strstr(TR(HG_OV_LOGS), "tabs") == NULL);
-    CHECK(strstr(TR(HG_OV_SETUP), "Wi-Fi") != NULL);
+    CHECK(strstr(TR(HG_OV_SETUP), "WI-FI") != NULL);
     CHECK(strstr(TR(OV_LOGS), "Wi-Fi") == NULL);
     CHECK(strstr(TR(OV_SETUP), "Wi-Fi") != NULL);
 }

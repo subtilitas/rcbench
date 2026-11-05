@@ -279,21 +279,55 @@ TEST_CASE(the_step_table_columns_line_up)
 }
 
 /* The encoder table's heading starts each word where its column starts,
- * as encoder_lines() writes them, in every language. */
+ * and so does every value of a step line under it, as encoder_lines()
+ * writes them, in every language: with the widest values, and with the
+ * short ones of a run on the bench (421ms, 479ms, 55 moves, 0, 0). */
 TEST_CASE(the_encoder_heading_starts_where_its_columns_do)
 {
     static const int k_starts[] = { 0, 7, 16, 25, 34, 43, 50, 58, 64, 72 };
+    const int n_starts = (int)(sizeof(k_starts) / sizeof(k_starts[0]));
     for (int l = 0; l < UI_LANG_COUNT; ++l) {
-        const ui_language_t *t = ui_text_table((ui_lang_t)l);
-        const char *head = servo_str_in(t != NULL ? t->servo : NULL,
+        widest_run(l, -99.999f);
+        servo_test_step_t *s = &g_t.steps[1];
+        s->set_v = 4.8f;
+        s->enc_travels = 1u;
+        s->enc_travel_sum_ms = 421u;
+        s->enc_travel_max_ms = 479u;
+        s->enc_moves   = 55u;
+        s->enc_unmoved = 0u;
+        s->enc_late    = 0u;
+        for (unsigned end = 0; end < 2u; ++end) {
+            s->enc_end_off[end] = mean_of(1.5f, 1u);
+        }
+        const char *head = servo_str_in(g_t.cfg.text,
                                         SERVO_STR_R_ENC_COLUMNS);
-        uint32_t cp[128];
-        const int n = decode(head, cp, 128);
-        for (size_t c = 0; c < sizeof(k_starts) / sizeof(k_starts[0]); ++c) {
-            const int at = k_starts[c];
-            if (at >= n || cp[at] == ' ' || (at > 0 && cp[at - 1] != ' ')) {
-                T_FAIL("language %d: no heading starts at cell %d of \"%s\"",
-                       l, at, head);
+        const int at_head = line_of(head);
+        CHECK(at_head >= 0);
+        for (unsigned k = 0; k < 3u; ++k) {
+            char line[SERVO_TEST_LINE_MAX];
+            CHECK(servo_report_line(&g_t, (unsigned)at_head + k, line,
+                                    sizeof(line)));
+            uint32_t cp[128];
+            const int n = decode(line, cp, 128);
+            int words = 0;
+            for (int c = 0; c < n; ++c) {
+                words += (cp[c] != ' ' && (c == 0 || cp[c - 1] == ' '));
+            }
+            for (int c = 0; c < n_starts; ++c) {
+                const int at = k_starts[c];
+                if (at >= n || cp[at] == ' ' || (at > 0 && cp[at - 1] != ' ')) {
+                    T_FAIL("language %d: nothing starts at cell %d of line %u "
+                           "\"%s\"", l, at, k, line);
+                }
+            }
+            /* A value line holds a word for each column and no more; the
+             * heading's words may be two to a column ("Set V"). */
+            if (k > 0u && words != n_starts) {
+                T_FAIL("language %d: %d words on line %u \"%s\"", l, words, k,
+                       line);
+            }
+            if (cp[n - 1] == ' ') {
+                T_FAIL("language %d: line %u ends in a space", l, k);
             }
         }
     }

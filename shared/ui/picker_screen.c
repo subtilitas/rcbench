@@ -293,7 +293,7 @@ picker_pin_t picker_screen_pin(uint8_t index, char *holder, size_t cap)
     }
     if (held != 0u && held != proto) {
         if (holder != NULL && cap != 0u) {
-            snprintf(holder, cap, "%s", outbind_protos()[held].name);
+            snprintf(holder, cap, "%s", outputs_proto_name(held));
         }
         return PICKER_PIN_HELD;
     }

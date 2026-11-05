@@ -439,6 +439,31 @@ const char *sp_model_warn(const esc_profile_t *p, int model, char *buf,
  */
 const char *sp_model_why(const esc_profile_t *p, int model, char *buf,
                          size_t n);
+
+/** @brief How a model's row shares its width right of the voltage, the
+ *         keyboard closed (sp_model_cols()). */
+typedef struct {
+    char right[80];  /**< what the profile is, or why it does not run, cut */
+    int  rx;         /**< the right text's left edge from the row's, px   */
+    int  rw;         /**< its width, px                                   */
+    bool tag;        /**< the MANUAL tag is drawn left of it              */
+    bool unrated;    /**< it runs, and the right text is a rating warning */
+    int  fam;        /**< cells of the family shown, 0 for none           */
+} sp_model_cols_t;
+
+/**
+ * @brief The columns of model @p model's row in a row @p row_w px wide:
+ *        the right text in 260px, or as wide as it is up to SP_WHY_CELLS;
+ *        the MANUAL tag left of it where both fit; the family in what is
+ *        left, from 3 cells.
+ * @param p     the profile
+ * @param model the model's index in @p p
+ * @param row_w the row's width, px
+ * @param out   filled
+ * @return whether the model runs
+ */
+bool sp_model_cols(const esc_profile_t *p, int model, int row_w,
+                   sp_model_cols_t *out);
 /** @brief VOLTAGE and the SUPPLY cap, mV: what decides from outside a
  *         profile whether it runs.
  * @return the key

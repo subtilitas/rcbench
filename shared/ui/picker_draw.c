@@ -237,7 +237,7 @@ static void draw_head(gfx_canvas_t *c)
     if (s.port >= 0) {
         outputs_port_name((uint8_t)s.port, buf, sizeof(buf));
     } else {
-        snprintf(buf, sizeof(buf), "%s", outbind_protos()[pk_proto_shown()].name);
+        snprintf(buf, sizeof(buf), "%s", outputs_proto_name(pk_proto_shown()));
     }
     ui_choice_face(c, picker_screen_list_face(), buf, s.hit_kind == HIT_FACE,
                    s.open);
@@ -503,7 +503,7 @@ static void draw_theirs(gfx_canvas_t *c)
                 port ? TR(OUT_PROG_PORT)
                 : iface ? outputs_iface_name(
                               (outputs_iface_t)(t[i].proto - 0xF0u))
-                        : outbind_protos()[t[i].proto].name;
+                        : outputs_proto_name(t[i].proto);
             gfx_text(c, r.x, r.y, name,
                      (r.h > 16) ? PK_FONT_LABEL : PK_FONT_FINE,
                      (port || iface) ? UI_DANGER : UI_TEAL, 1);
@@ -535,9 +535,8 @@ static void draw_theirs(gfx_canvas_t *c)
 static void draw_list(gfx_canvas_t *c)
 {
     ui_choice_list(c, pk_pop_rect());
-    const outbind_proto_t *p = outbind_protos();
     for (uint8_t i = 0; i < OUTBIND_PROTOS; ++i) {
-        ui_choice_row(c, picker_screen_list_row(i), p[i].name,
+        ui_choice_row(c, picker_screen_list_row(i), outputs_proto_name(i),
                       s.port < 0 && i == pk_proto_shown(),
                       s.hit_kind == HIT_ROW && s.hit == (int)i);
     }

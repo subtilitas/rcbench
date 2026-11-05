@@ -692,8 +692,9 @@ void drain_commands(bool link_up, bench_state_t *bench)
                           || (pc.kind == PANEL_CMD_SERVO
                               && pc.servo.kind == SERVO_CMD_ARM);
         if (arms && arming_held(&s_arm)) {
-            /* A pressed STOP stands: its reset releases it, not an arm. */
-            control_alert(TR(ALERT_STOP_HELD));
+            /* A pressed STOP stands: its reset releases it, not an arm,
+             * and takes this alert back. */
+            s_stop_alert = control_alert_kept(TR(ALERT_STOP_HELD));
             continue;
         }
         if (arms && s_prog_taken) {

@@ -798,14 +798,18 @@ MIN_SHAPE = 8
 # network and shut by the gate, and the reminder's hold shut.  The same
 # shape as SCREENS, with no committed file.
 FIT_ONLY = {
-    # The menu's guide at pages 2 and 3, and MOTOR & ESC's band with the
+    # The menu's guide at pages 2 to 4, and MOTOR & ESC's band with the
     # widest row of chips: a clock of 10 hours, ARMED MOTOR, FAULT 7F,
     # BENCH and LINK.
     "help-overview-2": (None, "overview", "dark"),
     "help-overview-3": (None, "overview", "dark"),
+    "help-overview-4": (None, "overview", "dark"),
     "help-band-worst": (None, "motor", "dark"),
     # SERVO's RUDDER guide: the output card's page over the task.
     "help-servo-rudder":   (None, "servo", "dark"),
+    # ESC STICK > Great Planes: model rows with the MANUAL tag and the
+    # longest reason beside their family.
+    "motor-stick-greatplanes": (None, "motor", "dark"),
     # A tap on ARM and on OUTPUT ON, released before 2s: the button's hint
     # in the alert band.
     "hold-hint-arm":    (None, "motor", "dark"),

@@ -497,7 +497,7 @@ TEST_CASE(a_card_of_one_page_or_none_shows_no_page_buttons)
     CHECK_EQ(g_list_calls, calls);
 
     runs_card(LOG_VIEWER_MAX_FILES);
-    check_tab(0, 0, 0);
+    check_tab(1, 48, 48);
     calls = g_list_calls;
     next_page();
     prev_page();
@@ -622,8 +622,9 @@ TEST_CASE(deleting_the_last_pages_only_file_shows_the_page_before)
     tap(DELETE_X, FOOT_CY);
     tap(DQ_DELETE_X, DQ_CY);
     CHECK(g_run_gone[1]);
-    /* 48 left, one page: FILES, nothing selected, the newest run on top. */
-    check_tab(0, 0, 0);
+    /* 48 left, one page: FILES 1 TO 48 OF 48, nothing selected, the
+     * newest run on top. */
+    check_tab(1, 48, 48);
     check_nothing_selected();
     CHECK_EQ(top_row_run(), 49);
 

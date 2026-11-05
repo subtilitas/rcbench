@@ -423,7 +423,7 @@ void apply_supply_cmd(const panel_cmd_t *pc)
         control_pump();
         if (arming_held(&s_arm)) {
             /* A pressed STOP stands: no ON until its reset. */
-            control_alert(TR(ALERT_STOP_HELD));
+            s_stop_alert = control_alert_kept(TR(ALERT_STOP_HELD));
         } else if (!supply_link_session_blocks(s_prog_taken, ports_own_supply())
             && pc->stops == arming_stop_count(&s_arm)
             && pc->resets == atomic_load(&s_stop_resets)
@@ -465,7 +465,7 @@ void apply_prog5v_cmd(const panel_cmd_t *pc)
     control_pump();
     if (arming_held(&s_arm)) {
         /* A pressed STOP stands: no ON until its reset. */
-        control_alert(TR(ALERT_STOP_HELD));
+        s_stop_alert = control_alert_kept(TR(ALERT_STOP_HELD));
     } else if (!s_prog_taken
         && pc->stops == arming_stop_count(&s_arm)
         && pc->resets == atomic_load(&s_stop_resets)

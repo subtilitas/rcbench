@@ -40,7 +40,7 @@ STOP works on every screen with a status band. Pressing it immediately switches 
 
 ![A latched STOP and its box](view:band-stop)
 
-- While it is latched, STOP stays red inside a yellow frame and reads `STOPPED` over `HOLD 2s TO RESET`, and the arm chip reads STOP. ARM, OUTPUT ON, PROG 5V ON, CONNECT and the start of a test or a run are refused, with `STOP pressed: hold STOP 2s to reset.`
+- While it is latched, STOP stays red inside a yellow frame and reads `STOPPED` over `HOLD 2s TO RESET`, and the arm chip reads STOP. ARM, OUTPUT ON, PROG 5V ON, CONNECT and the start of a test or a run are refused, with `STOP pressed: hold STOP 2s to reset.` That alert leaves the band in the frame after the reset completes.
 - Hold the latched STOP for 2s to reset it. The fill turns from red to yellow across the 2s. The panel then waits until the IOmcu reports SAFE and every output off, at least 500ms after the last STOP, and sends the heartbeat again. The bench stays SAFE: each output needs its own hold to switch on again.
 - Without the IOmcu's answer within 2s, the stop stays latched and the alert band says `STOP not reset: the IOmcu did not report every output off within 2s.` Hold STOP again.
 - A press on a latched STOP is a STOP too. The hold counts only while one finger stays on STOP for the whole 2s. A release before 2s shows `Hold 2s to reset the STOP.`; a finger that slides off STOP, a second finger on the band, a screen change, lost touch events or a touch controller that stops answering for 100ms resets nothing.

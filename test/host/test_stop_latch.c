@@ -35,6 +35,7 @@
  * - a_restart_comes_up_unlatched
  * - null_is_harmless
  * - the_confirmation_is_read_every_50ms_while_asking
+ * - the_stop_alert_leaves_the_band_when_the_reset_completes
  *
  * SPDX-License-Identifier: MIT
  */
@@ -47,6 +48,9 @@
 #include "heartbeat.h"
 #include "link_pages.h"
 #include "stop_latch.h"
+#include "ui_alert_slot.h"
+#include "ui_screen.h"
+#include "ui_text.h"
 
 /** @brief The settle the panel passes. */
 #define SETTLE_MS HEARTBEAT_SETTLE_MS
@@ -784,6 +788,116 @@ TEST_CASE(the_confirmation_is_read_every_50ms_while_asking)
     CHECK_EQ(w.reads, 2);
 }
 
+/* ---------------------------------------------- the STOP's alert --- */
+
+/** @brief The control task's alert slot, the band's record of it, and the
+ *         STOP alert's number, as panel_stop.c keeps them. */
+static ui_alert_slot_t g_slot;
+static ui_alert_band_t g_band;
+static uint32_t        g_stop_alert;
+
+/** @brief A frame: the band takes the slot's news. */
+static void band_frame(void)
+{
+    char text[UI_ALERT_MAX];
+    const bool have = ui_alert_slot_take(&g_slot, text, sizeof(text));
+    (void)ui_alert_band_update(&g_band, have ? text : NULL, g_slot.taken,
+                               g_slot.withdrawn);
+}
+
+/** @brief An ARM refused while the STOP stands, as panel_arm.c refuses
+ *         it: the alert posted and its number kept. */
+static void refuse_arm(void)
+{
+    CHECK(arming_held(&a));
+    g_stop_alert = ui_alert_slot_post(&g_slot, ui_tr(TX_ALERT_STOP_HELD));
+}
+
+/** @brief One pass at @p t, then the STOP alert taken back once nothing
+ *         holds the bench and the reset is through, as
+ *         stop_reset_service() does; then a frame. */
+static void pass_alert(uint32_t t)
+{
+    (void)pass(t);
+    const bool stands = arming_held(&a)
+                        || stop_latch_state(&l) != STOP_LATCH_UNLATCHED;
+    (void)ui_alert_slot_withdraw_over(&g_slot, &g_stop_alert, stands);
+    band_frame();
+}
+
+/*
+ * The alert an ARM refused by a standing STOP raises shows while the STOP
+ * stands, however long, and goes from the band in the frame after the
+ * reset reaches UNLATCHED, not 30s after it came.  A new STOP and a new
+ * refusal show it again.  An alert that replaced it in the band is left
+ * there, with its own timing.
+ */
+TEST_CASE(the_stop_alert_leaves_the_band_when_the_reset_completes)
+{
+    ui_router_init();
+    memset(&g_slot, 0, sizeof(g_slot));
+    memset(&g_band, 0, sizeof(g_band));
+    g_stop_alert = 0u;
+    const char *held = ui_tr(TX_ALERT_STOP_HELD);
+    for (int round = 0; round < 2; ++round) {
+        start(0u);
+        touch_stop(100u);
+        refuse_arm();
+        band_frame();
+        CHECK_STR_EQ(ui_router_alert(), held);
+        /* Latched: the alert stays, pass after pass. */
+        for (uint32_t t = 105u; t < 2100u; t += 5u) {
+            pass_alert(t);
+        }
+        CHECK_STR_EQ(ui_router_alert(), held);
+        /* The reset: still there while it runs, gone once UNLATCHED. */
+        (void)pass_hold(2100u, 2100u);
+        uint32_t t = 2105u;
+        for (; t < 6000u && stop_latch_state(&l) != STOP_LATCH_UNLATCHED;
+             t += 5u) {
+            CHECK_STR_EQ(ui_router_alert(), held);
+            pass_alert(t);
+        }
+        CHECK_EQ(stop_latch_state(&l), STOP_LATCH_UNLATCHED);
+        CHECK(ui_router_alert() == NULL);
+        CHECK(t < 2100u + 3000u);
+        CHECK_EQ(g_stop_alert, 0u);
+        /* A refused ARM after a new STOP shows it again. */
+        touch_stop(t + 100u);
+        refuse_arm();
+        band_frame();
+        CHECK_STR_EQ(ui_router_alert(), held);
+        ui_router_set_alert(NULL);
+    }
+
+    /* Another alert taken after it stays when the reset completes. */
+    start(0u);
+    touch_stop(100u);
+    refuse_arm();
+    band_frame();
+    (void)ui_alert_slot_post(&g_slot, "IOmcu disarmed");
+    band_frame();
+    (void)pass_hold(2100u, 2100u);
+    uint32_t t = 2105u;
+    for (; t < 6000u && stop_latch_state(&l) != STOP_LATCH_UNLATCHED;
+         t += 5u) {
+        pass_alert(t);
+    }
+    CHECK_EQ(stop_latch_state(&l), STOP_LATCH_UNLATCHED);
+    CHECK_STR_EQ(ui_router_alert(), "IOmcu disarmed");
+    CHECK_EQ(g_stop_alert, 0u);
+    ui_router_set_alert(NULL);
+
+    /* Nothing kept, or NULL: nothing taken back. */
+    uint32_t none = 0u;
+    CHECK(!ui_alert_slot_withdraw_over(&g_slot, &none, false));
+    CHECK(!ui_alert_slot_withdraw_over(&g_slot, NULL, false));
+    uint32_t one = 7u;
+    CHECK(!ui_alert_slot_withdraw_over(NULL, &one, false));
+    CHECK(!ui_alert_slot_withdraw_over(&g_slot, &one, true));
+    CHECK_EQ(one, 7u);
+}
+
 int main(void)
 {
     RUN(a_touch_latches_and_withholds_the_heartbeat);
@@ -812,5 +926,6 @@ int main(void)
     RUN(a_restart_comes_up_unlatched);
     RUN(null_is_harmless);
     RUN(the_confirmation_is_read_every_50ms_while_asking);
+    RUN(the_stop_alert_leaves_the_band_when_the_reset_completes);
     return test_summary("stop_latch");
 }

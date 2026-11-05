@@ -41,6 +41,45 @@ history is in git.
   servo PWM.` (German `VERLASSEN schaltet die Versorgung 1s aus und wieder
   ein. Danach wechselt der Port zu Servo-PWM.`). The line named the PD mini
   on the carrier too, where the port's fixed 5V is the supply switched.
+- SERVO LIVE: the readings along the card's foot take columns of 192, 216
+  and 188px. MEASURED at its widest, `-180.0` in the 32 x 44 numerals
+  (192px), ends at least 24px before CURRENT's first numeral, so `+174.0`
+  and `0.00` no longer read as `+174.00.00`.
+- The German HOME guide's SETUP line names the screens by their titles
+  (`PANEL, SENSORS, OUTPUTS, SD CARD, WI-FI und UPDATES`), and SENSORS and
+  SD CARD are on the list of titles that stay English (`docs/Language.md`).
+- KST PULSE tab: the note names the SERVO tab's button, `Write these values
+  with WRITE VALUES on the SERVO tab.` (German `... mit WERTE SCHREIBEN im
+  Reiter SERVO.`), in place of a CHANGES control that does not exist.
+- OUTPUTS: LAST WRITE before any write reads `NONE YET` (German `NOCH
+  KEINER`) in place of `NOT WRITTEN`. The overview entry OFF reads AUS in
+  German in the protocol lists, on their faces and in the LAYOUT rows.
+- The HOME guide's fourth page title reads `MENU: TAKING A SCREENSHOT`
+  (German `MENÜ: SCREENSHOT AUFNEHMEN`), upper case as pages 1 to 3.
+- ESC STICK > Great Planes: the C-25, C-35 and C-55 rows show their family,
+  `C Series brushed`, beside the MANUAL tag and the reason `menu entry after
+  power-on` (German `Menü erst nach Einschalten`); the row showed `C..`.
+  The MANUAL tag is 4px narrower.
+- SERVO TEST's summary gives every step its unit and a comma between the
+  parts: `4.8V, 6.0V, BROWN-OUT, 60s EACH` (German `..., JE 60s`).
+- SERVO OPTIONS > OUTPUT: the active-rate note names the port's number,
+  `Active: PROG PORT 1 GPIO 13 runs at 50Hz.`, and `Active: 50Hz on PROG
+  PORT 1. No pin is assigned to it.`
+- FILES text viewer: a line wraps at a space; a word that does not fit the
+  rest of the row with its space starts the next row, so a number keeps its
+  unit (`600ms`). A word longer than the row breaks at the row's end. The
+  editor's cursor, taps and the scroll follow the same rows.
+- Servo test report: the ENCODER table's values start at the columns of
+  their headings in English and German; the counts were right-aligned
+  under left-aligned German headings.
+- MOTOR & ESC LIVE: EFF reads WIRK. in German. rpm and rpm/V are units and
+  stay; `docs/Language.md` lists them.
+- The alert `STOP pressed: hold STOP 2s to reset.` leaves the band in the
+  frame after the STOP's reset completes instead of after its 30s; every
+  other alert keeps its timing.
+- LOGS: the list's tab counts the files of every list with a file in it,
+  `FILES 1 TO 7 OF 7` (German `DATEIEN 1 BIS 7 VON 7`); an empty folder
+  reads `FILES`.
 
 ## 0.23.7 - 2026-11-04
 

@@ -55,7 +55,7 @@ WI-FI in der Fußzeile öffnet [WLAN](wifi.md) für Downloads im Browser. Das do
 
 ![Die vierte Seite einer vollen Karte](view:logs-pages)
 
-- Eine Seite fasst 48 Einträge; eine Karte fasst bis zu 999 Läufe. Die Sortierung beginnt beim neuesten Lauf. Berichte folgen ihrer eigenen Nummer und stehen hinter der zugehörigen CSV-Datei; danach folgen prüfstandsfremde Dateien. Innerhalb einer Seite gilt dieselbe Reihenfolge. Bei mehr als 48 Dateien zeigt der Reiter den sichtbaren Bereich, etwa `DATEIEN 145 BIS 192 VON 1000`.
+- Eine Seite fasst 48 Einträge; eine Karte fasst bis zu 999 Läufe. Die Sortierung beginnt beim neuesten Lauf. Berichte folgen ihrer eigenen Nummer und stehen hinter der zugehörigen CSV-Datei; danach folgen prüfstandsfremde Dateien. Innerhalb einer Seite gilt dieselbe Reihenfolge. Bei mehr als 48 Dateien zeigt der Reiter den sichtbaren Bereich, etwa `DATEIEN 145 BIS 192 VON 1000`; auf einer einzigen Seite zählt er die ganze Liste, etwa `DATEIEN 1 BIS 7 VON 7`, und ein leerer Ordner zeigt `DATEIEN`.
 - Seiten werden vom Listenanfang in Gruppen zu 48 Einträgen gebildet. Liegen vor der aktuellen Seite weniger als 48 Einträge, etwa nach einer neuen Aufzeichnung, führt VORIGE zur ersten Seite.
 - Neue Aufzeichnungen erscheinen auf Seite 1, auch wenn gerade eine spätere Seite offen ist. Beim Zurückblättern ab Seite 3 überspringt VORIGE dadurch so viele Einträge, wie hinzugekommen sind. NÄCHSTE von Seite 1 zeigt sie; die Zahlen im Reiter machen die Verschiebung sichtbar.
 - Der Rollbalken am rechten Rand ist 56px (etwa 8,4mm) breit und scrollt innerhalb der Seite. Tippe auf seine Bahn zum Springen oder ziehe den Griff.

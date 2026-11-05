@@ -1218,8 +1218,65 @@ TEST_CASE(user_logs_off_sends_no_file_and_the_box_says_so)
     CHECK_EQ(bench.ends, 0u);
 }
 
+/* The steps of TEST's summary: each voltage with its unit, a comma
+ * between every two parts, BROWN-OUT last; with 1 to 4 steps, the HV
+ * ones among them, with and without the brown-out walk. */
+TEST_CASE(the_summary_names_every_step_with_its_unit)
+{
+    static const float k_v[4] = { 4.8f, 6.0f, 7.4f, 8.4f };
+    static const char *const k_want[5][2] = {
+        { "",                           "BROWN-OUT" },
+        { "4.8V",                       "4.8V, BROWN-OUT" },
+        { "4.8V, 6.0V",                 "4.8V, 6.0V, BROWN-OUT" },
+        { "4.8V, 6.0V, 7.4V",           "4.8V, 6.0V, 7.4V, BROWN-OUT" },
+        { "4.8V, 6.0V, 7.4V, 8.4V",     "4.8V, 6.0V, 7.4V, 8.4V, BROWN-OUT" },
+    };
+    char out[48];
+    for (uint8_t n = 0; n <= 4u; ++n) {
+        for (int bo = 0; bo < 2; ++bo) {
+            servo_screen_plan_text(out, sizeof(out), k_v, n, bo != 0);
+            CHECK_STR_EQ(out, k_want[n][bo]);
+        }
+    }
+    /* The HV steps alone, and a single one. */
+    servo_screen_plan_text(out, sizeof(out), k_v + 2, 2u, false);
+    CHECK_STR_EQ(out, "7.4V, 8.4V");
+    servo_screen_plan_text(out, sizeof(out), k_v + 3, 1u, true);
+    CHECK_STR_EQ(out, "8.4V, BROWN-OUT");
+    /* Cut at the buffer, terminated; no room writes nothing. */
+    servo_screen_plan_text(out, 9u, k_v, 4u, true);
+    CHECK_STR_EQ(out, "4.8V, 6.");
+    out[0] = 'x';
+    servo_screen_plan_text(out, 0u, k_v, 4u, true);
+    CHECK_EQ(out[0], 'x');
+
+    /* The card's line from the settings, in both languages. */
+    fresh();
+    settings_set(SET_SERVO_STEP_48, 1.0f);
+    settings_set(SET_SERVO_STEP_60, 1.0f);
+    settings_set(SET_SERVO_BROWNOUT, 1.0f);
+    settings_set(SET_SERVO_LEN_BY, 0.0f);
+    settings_set(SET_SERVO_LEN_S, 60.0f);
+    char line[96];
+    servo_screen_test_summary(line, sizeof(line));
+    CHECK_STR_EQ(line, "4.8V, 6.0V, BROWN-OUT, 60s EACH");
+    ui_text_set_language(UI_LANG_DE);
+    servo_screen_test_summary(line, sizeof(line));
+    CHECK_STR_EQ(line, "4.8V, 6.0V, BROWN-OUT, JE 60s");
+    settings_set(SET_SERVO_STEP_48, 0.0f);
+    settings_set(SET_SERVO_BROWNOUT, 0.0f);
+    settings_set(SET_SERVO_LEN_BY, 1.0f);
+    settings_set(SET_SERVO_LEN_MOVES, 20.0f);
+    servo_screen_test_summary(line, sizeof(line));
+    CHECK_STR_EQ(line, "6.0V, JE 20 BEWEGUNGEN");
+    ui_text_set_language(UI_LANG_EN);
+    servo_screen_test_summary(line, sizeof(line));
+    CHECK_STR_EQ(line, "6.0V, 20 MOVEMENTS EACH");
+}
+
 int main(void)
 {
+    RUN(the_summary_names_every_step_with_its_unit);
     RUN(start_test_is_a_two_second_hold_on_an_armed_bench);
     RUN(a_run_stops_on_a_release_the_tracker_makes_for_a_jump);
     RUN(stop_test_is_named_to_the_router_while_a_run_is_under_way);

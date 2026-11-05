@@ -891,7 +891,7 @@ outputs_cell_t outputs_screen_cell(uint8_t index, char *label, size_t cap)
     }
     if (held != 0u && held != proto) {
         if (label != NULL) {
-            snprintf(label, cap, "%s", outbind_protos()[held].name);
+            snprintf(label, cap, "%s", outputs_proto_name(held));
         }
         return OUTPUTS_CELL_HELD;
     }
@@ -956,7 +956,9 @@ static void draw_left(gfx_canvas_t *c)
     gfx_text(c, COL_X, COL_Y, TR(OUT_PROTOCOL), OU_FONT_LABEL, UI_TEXT_FAINT,
              1);
 
-    ui_choice_face(c, dd_rect(), p->name, s.hit_kind == HIT_DD, s.open);
+    ui_choice_face(c, dd_rect(),
+                   outputs_proto_name((uint8_t)(p - outbind_protos())),
+                   s.hit_kind == HIT_DD, s.open);
 
     char buf[96];
     /* OFF takes no pin, so a count of its pins says nothing. */
@@ -1083,7 +1085,7 @@ static void draw_popup(gfx_canvas_t *c)
     ui_choice_list(c, pop_rect());
     const outbind_proto_t *p = outbind_protos();
     for (int i = 0; i < (int)OUTBIND_PROTOS; ++i) {
-        ui_choice_row(c, pop_row_rect(i), p[i].name,
+        ui_choice_row(c, pop_row_rect(i), outputs_proto_name((uint8_t)i),
                       outputs_screen_port_shown() < 0
                           && &p[i] == chosen_proto(),
                       s.hit_kind == HIT_POP && s.hit_index == i);

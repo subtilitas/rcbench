@@ -727,6 +727,72 @@ TEST_CASE(a_line_wraps_at_the_width)
     CHECK_EQ(cell, 0u);
 }
 
+/* A line wraps at a space: a word that does not fit the rest of the row
+ * with the space after it starts the next row, a number and its unit
+ * stay together, a word longer than a row is broken where the row ends,
+ * and every position maps to its cell and back. */
+TEST_CASE(a_line_wraps_at_a_space)
+{
+    size_t cell = 0u, line = 0u;
+    /* "nichts" does not fit after "ab ": the next row. */
+    CHECK_EQ(loads("ab nichts"), TEXT_BUF_OK);
+    CHECK_EQ(text_buf_rows(&g_tb, 0u, 8u), 2u);
+    text_buf_cell_of(&g_tb, 3u, 8u, &line, &cell);
+    CHECK_EQ(cell, 8u);
+    /* The cells it leaves at the row's end hold no unit: a tap there is
+     * the word's start. */
+    CHECK_EQ(text_buf_pos_at(&g_tb, 0u, 5u, 8u), 3u);
+    CHECK(text_buf_breaks_before(&g_tb, 3u, 3u, 8u));
+    CHECK(!text_buf_breaks_before(&g_tb, 4u, 4u, 8u));   /* mid-word */
+    CHECK(!text_buf_breaks_before(&g_tb, 2u, 2u, 8u));   /* the space */
+    /* "nicht" fits to the last cell, with no space after it. */
+    CHECK_EQ(loads("ab nicht"), TEXT_BUF_OK);
+    CHECK_EQ(text_buf_rows(&g_tb, 0u, 8u), 1u);
+    /* A number and its unit: "600ms" moves on whole. */
+    CHECK_EQ(loads("gemessen 600ms lang"), TEXT_BUF_OK);
+    CHECK_EQ(text_buf_rows(&g_tb, 0u, 12u), 2u);
+    text_buf_cell_of(&g_tb, 9u, 12u, &line, &cell);
+    CHECK_EQ(cell, 12u);
+    text_buf_cell_of(&g_tb, 15u, 12u, &line, &cell);
+    CHECK_EQ(cell, 18u);
+    /* A word that fits with no room for the space after it moves on, so
+     * no row starts with that space. */
+    CHECK_EQ(loads("abc def ghi"), TEXT_BUF_OK);
+    CHECK_EQ(text_buf_rows(&g_tb, 0u, 6u), 3u);
+    text_buf_cell_of(&g_tb, 4u, 6u, &line, &cell);
+    CHECK_EQ(cell, 6u);
+    text_buf_cell_of(&g_tb, 8u, 6u, &line, &cell);
+    CHECK_EQ(cell, 12u);
+    /* A word longer than the row: broken at the row's end. */
+    CHECK_EQ(loads("a abcdefghijkl"), TEXT_BUF_OK);
+    CHECK_EQ(text_buf_rows(&g_tb, 0u, 5u), 3u);
+    text_buf_cell_of(&g_tb, 5u, 5u, &line, &cell);
+    CHECK_EQ(cell, 5u);
+    /* After a tab, and with German letters, a code point a cell. */
+    CHECK_EQ(loads("ab\tcdefg"), TEXT_BUF_OK);
+    CHECK_EQ(text_buf_rows(&g_tb, 0u, 10u), 2u);
+    CHECK_EQ(loads("L\xc3\xa4nge \xc3\xbc" "ber"), TEXT_BUF_OK);
+    CHECK_EQ(text_buf_rows(&g_tb, 0u, 6u), 2u);
+    text_buf_cell_of(&g_tb, 7u, 6u, &line, &cell);
+    CHECK_EQ(cell, 6u);
+    /* Unwrapped, nothing moves; NULL breaks nothing. */
+    CHECK_EQ(loads("ab nichts"), TEXT_BUF_OK);
+    CHECK_EQ(text_buf_rows(&g_tb, 0u, 0u), 1u);
+    CHECK(!text_buf_breaks_before(&g_tb, 3u, 3u, 0u));
+    CHECK(!text_buf_breaks_before(NULL, 3u, 3u, 8u));
+    /* Every position of a wrapped sentence maps to its cell and back. */
+    static const char k_text[] =
+        "Der Winkel blieb nicht zum Ausgleich, 600ms gemessen.";
+    CHECK_EQ(loads(k_text), TEXT_BUF_OK);
+    for (unsigned w = 4u; w <= 20u; ++w) {
+        for (size_t pos = 0u; pos < sizeof(k_text) - 1u; ++pos) {
+            text_buf_cell_of(&g_tb, pos, w, &line, &cell);
+            CHECK_EQ(text_buf_pos_at(&g_tb, line, cell, w), pos);
+            CHECK(cell / w < text_buf_rows(&g_tb, 0u, w));
+        }
+    }
+}
+
 /* --- the index after edits ---------------------------------------------- */
 
 /* A random edit at a random place, many times: the index, the kinds and
@@ -1027,6 +1093,7 @@ int main(void)
     RUN(the_units_are_the_cells_gfx_draws);
     RUN(a_tab_reaches_the_next_stop);
     RUN(a_line_wraps_at_the_width);
+    RUN(a_line_wraps_at_a_space);
     RUN(the_index_after_random_edits_is_a_fresh_loads);
     RUN(dirty_and_the_revision);
     RUN(serialise_equals_load);

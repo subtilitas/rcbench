@@ -4357,7 +4357,7 @@ const esc_profile_t esc_profiles_builtin[] = {
       3u, p_graupner_brushless_control_t_steps, 18u, p_graupner_brushless_control_t_models, 8u, p_graupner_brushless_control_t_items,
       0u, NULL },
     { "greatplanes-electrifly-c-series", "Great Planes",
-      "C-25, C-35, C-55 brushed ESC",
+      "C Series brushed",
       ESC_SCHEME_COUNT, ESC_ENC_COUNT, ESC_ANNOUNCE_VALUE, ESC_AUTO_ASSISTED,
       "Brake and battery setup start with a press of the ESC on/off button (battery setup: hold 4-5s, red LED out). The button is not a throttle or power action.",
       ESC_THR_MIN, true, 0u,

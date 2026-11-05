@@ -10,6 +10,7 @@
  * - the_steppers_keep_a_finger_between_rows
  * - the_fullest_pages_end_above_their_footers
  * - the_longest_labels_fit_their_controls_in_every_language
+ * - a_model_row_shows_its_family_beside_the_tag
  * - the_spots_the_suites_tap_lie_on_their_controls
  *
  * SPDX-License-Identifier: MIT
@@ -19,6 +20,7 @@
 
 #include "greatest.h"
 
+#include "esc_profile.h"
 #include "esc_stick_panel.h"
 #include "ui_text.h"
 
@@ -247,6 +249,42 @@ TEST_CASE(the_longest_labels_fit_their_controls_in_every_language)
     }
 }
 
+/* Every model row with the MANUAL tag and a reason shows its family: the
+ * Great Planes C Series whole in every language, and no row of any
+ * profile its family cut to a stub of 3 to 5 cells, such as "C..". */
+TEST_CASE(a_model_row_shows_its_family_beside_the_tag)
+{
+    fresh();
+    const int row_w = s.st.rows[0].w;
+    const esc_profile_t *gp = esc_profiles_find("greatplanes-electrifly-c-series");
+    CHECK(gp != NULL);
+    for (int l = 0; l < (int)UI_LANG_COUNT; ++l) {
+        ui_text_set_language((ui_lang_t)l);
+        for (int m = 0; gp != NULL && m < (int)gp->model_count; ++m) {
+            sp_model_cols_t col;
+            CHECK(!sp_model_cols(gp, m, row_w, &col));
+            CHECK(col.tag);
+            if (col.fam < gfx_text_cells(gp->family)) {
+                T_FAIL("language %d, %s: %d cells for \"%s\"", l,
+                       gp->models[m].name, col.fam, gp->family);
+            }
+        }
+        for (size_t i = 0; i < esc_profiles_count(); ++i) {
+            const esc_profile_t *p = esc_profiles_at(i);
+            for (int m = 0; m < (int)p->model_count; ++m) {
+                sp_model_cols_t col;
+                (void)sp_model_cols(p, m, row_w, &col);
+                const int need = gfx_text_cells(p->family);
+                if (col.fam < need && col.fam > 0 && col.fam < 6) {
+                    T_FAIL("language %d, %s %s: the family cut to %d cells",
+                           l, p->id, p->models[m].name, col.fam);
+                }
+            }
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 /* The places the suites and render_ui tap (stick_spots.h) lie on the
  * controls they name. */
 TEST_CASE(the_spots_the_suites_tap_lie_on_their_controls)
@@ -289,6 +327,7 @@ int main(void)
     RUN(the_steppers_keep_a_finger_between_rows);
     RUN(the_fullest_pages_end_above_their_footers);
     RUN(the_longest_labels_fit_their_controls_in_every_language);
+    RUN(a_model_row_shows_its_family_beside_the_tag);
     RUN(the_spots_the_suites_tap_lie_on_their_controls);
     return test_summary("esc_stick_layout");
 }

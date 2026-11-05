@@ -176,6 +176,27 @@ const ui_keypad_t *servo_screen_keypad(void);
 /** The value of the COMMANDED row as it is drawn: the pulse in us, and
  *  "---" while the servo programmer holds the port and no pulse is on it. */
 const char *servo_screen_commanded_text(void);
+/**
+ * @brief The steps of an automatic test as TEST's card names them: each
+ *        voltage with its unit, then BROWN-OUT, comma-separated, as
+ *        "4.8V, 6.0V, BROWN-OUT"; "" with no step and no brown-out.
+ * @param out  takes the text
+ * @param size bytes at @p out
+ * @param v    the steps' set points, V, in order
+ * @param n    how many, 0 to SERVO_TEST_STEPS_MAX
+ * @param brownout whether the brown-out walk follows them
+ */
+void servo_screen_plan_text(char *out, size_t size, const float *v,
+                            uint8_t n, bool brownout);
+
+/**
+ * @brief The AUTOMATIC TEST card's summary over START TEST, as it is drawn:
+ *        the steps a run started now takes and the length of each, as
+ *        "4.8V, 6.0V, BROWN-OUT, 60s EACH", in the language in force.
+ * @param out  takes the line
+ * @param size bytes at @p out
+ */
+void servo_screen_test_summary(char *out, size_t size);
 
 /** The pulse width the solid arm is drawn at: measured, or without
  *  feedback the drawing's estimate of the output.  For tests. */

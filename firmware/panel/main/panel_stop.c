@@ -19,6 +19,7 @@
 #include "ui_text.h"
 
 stop_latch_t s_stop_latch;
+uint32_t     s_stop_alert;
 atomic_bool  s_stop_reset_request;
 atomic_uint  s_stop_reset_ms;
 atomic_uint  s_touch_breaks;
@@ -141,5 +142,16 @@ void stop_reset_service(bool link_up)
     in.hold_ms   = (uint32_t)atomic_load(&s_stop_reset_ms);
     if (stop_latch_run(&s_stop_latch, &in, &k_io) == STOP_LATCH_GIVE_UP) {
         control_alert(TR(ALERT_STOP_NO_CONFIRM));
+    }
+    /* The STOP's alert goes with the STOP: once the reset is through and
+     * nothing holds the bench, the band clears it at the next frame. */
+    const bool stands = arming_held(&s_arm)
+                        || stop_latch_state(&s_stop_latch)
+                               != STOP_LATCH_UNLATCHED;
+    if (s_stop_alert != 0u && !stands) {
+        snap_lock();
+        (void)ui_alert_slot_withdraw_over(&s_snap.alert, &s_stop_alert,
+                                          stands);
+        snap_unlock();
     }
 }

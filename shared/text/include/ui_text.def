@@ -410,8 +410,8 @@ UI_TEXT(HG_OV_LOGS, 0,
     "Lists the logs on the SD card and plots up to 4 columns. FILES is a tab, WI-FI a button.",
     "Zeigt Aufzeichnungen der SD-Karte und bis zu 4 Spalten als Grafik. FILES ist ein Tab, WI-FI eine Taste.")
 UI_TEXT(HG_OV_SETUP, 0,
-    "The bench-wide settings: panel, sensors, outputs, SD card, Wi-Fi and updates.",
-    "Die Einstellungen des ganzen Prüfstands: Panel, Sensoren, Ausgänge, SD-Karte, WLAN und Updates.")
+    "The bench-wide settings: PANEL, SENSORS, OUTPUTS, SD CARD, WI-FI and UPDATES.",
+    "Die Einstellungen des ganzen Prüfstands: PANEL, SENSORS, OUTPUTS, SD CARD, WI-FI und UPDATES.")
 UI_TEXT(HG_OV_STOP, 0,
     "Switches the bench to SAFE and the supply output off, on every screen and with this guide open.",
     "Schaltet den Prüfstand auf SAFE und den Netzteilausgang aus, auf jeder Seite, auch bei offener Hilfe.")
@@ -422,8 +422,8 @@ UI_TEXT(HG_OV_GUIDE, 0,
     "Opens the guide for this screen, if available. PREV and NEXT turn the pages. Tap elsewhere to close it.",
     "Öffnet die Hilfe, falls vorhanden. VORIGE und NÄCHSTE blättern. Tippe daneben zum Schließen.")
 UI_TEXT(HG_OV_TITLE_SHOT, 30,
-    "Taking a screenshot",
-    "Screenshot aufnehmen")
+    "MENU: TAKING A SCREENSHOT",
+    "MENÜ: SCREENSHOT AUFNEHMEN")
 UI_TEXT(HG_OV_SHOT_NAME, 12,
     "SCREENSHOT",
     "SCREENSHOT")
@@ -951,9 +951,11 @@ UI_TEXT(OUT_WRITTEN, 30,
 UI_TEXT(OUT_REFUSED, 30,
     "REFUSED",
     "ABGELEHNT")
+/* Under LAST WRITE: nothing written since the start, or a write not
+ * sent. */
 UI_TEXT(OUT_NOT_WRITTEN, 30,
-    "NOT WRITTEN",
-    "NICHT GESCHRIEBEN")
+    "NONE YET",
+    "NOCH KEINER")
 UI_TEXT(OUT_NO_LINK, 30,
     "NO LINK",
     "KEINE VERBINDUNG")
@@ -1542,6 +1544,11 @@ UI_TEXT(MO_PWR, 0,
 UI_TEXT(MO_RPM, 0,
     "RPM",
     "RPM")
+/* The drivetrain's estimate beside kV and rpm/V on LIVE's title line:
+ * rpm/V over the rated kV, in percent.  kV and rpm/V are units and stay. */
+UI_TEXT(MO_EFF, 0,
+    "EFF",
+    "WIRK.")
 UI_TEXT(MO_TAB_PLOT, 0,
     "PLOT",
     "GRAFIK")
@@ -1953,7 +1960,9 @@ UI_TEXT(LOG_PREV, 0,
 UI_TEXT(LOG_NEXT, 0,
     "NEXT",
     "NÄCHSTE")
-UI_TEXT(LOG_FILES, 0,
+/* The list's tab of an empty folder or one not read; with a file in it
+ * the tab counts them (LOG_N_OF_FILES), as wide as that count. */
+UI_TEXT(LOG_FILES, 28,
     "FILES",
     "DATEIEN")
 UI_TEXT(LOG_DIR, 10,
@@ -4121,8 +4130,8 @@ UI_TEXT(ESC_WHY_NO_PROCEDURE, 51,
     "no usable programming procedure",
     "kein nutzbarer Programmierablauf")
 UI_TEXT(ESC_WHY_AFTER_POWER, 51,
-    "menu entry is after power-on",
-    "Menüeinstieg erst nach dem Einschalten")
+    "menu entry after power-on",
+    "Menü erst nach Einschalten")
 UI_TEXT(ESC_WHY_MELODY, 51,
     "melody menu",
     "Melodie-Menü")
@@ -4469,12 +4478,14 @@ UI_TEXT(SV_RELEASE, 0,
 UI_TEXT(SV_IN_FORCE_OUT, 0,
     "Active: OUTPUTS run at %uHz.",
     "Aktiv: Ausgänge laufen mit %uHz.")
+/* The port's number, 1 to 4, then its pin and the rate. */
 UI_TEXT(SV_IN_FORCE_PORT_PIN, 58,
-    "Active: PROG PORT GPIO %u runs at %uHz.",
-    "Aktiv: PROG-PORT GPIO %u läuft mit %uHz.")
+    "Active: PROG PORT %u GPIO %u runs at %uHz.",
+    "Aktiv: PROG-PORT %u GPIO %u läuft mit %uHz.")
+/* The rate, then the port's number. */
 UI_TEXT(SV_IN_FORCE_PORT, 58,
-    "Active: %uHz on PROG PORT. No pin is assigned to it.",
-    "Aktiv: %uHz am PROG-PORT. Ihm ist kein Pin zugeordnet.")
+    "Active: %uHz on PROG PORT %u. No pin is assigned to it.",
+    "Aktiv: %uHz am PROG-PORT %u. Ihm ist kein Pin zugeordnet.")
 UI_TEXT(SV_IN_FORCE_UNKNOWN, 58,
     "Active rate: %uHz. Target unknown.",
     "Aktive Pulsrate: %uHz. Ziel unbekannt.")
@@ -5564,8 +5575,8 @@ UI_TEXT(KP_EDIT_NOTE_1, 116,
     "* marks a value that differs from the servo's setting.",
     "* markiert einen Wert, der vom Wert im Servo abweicht.")
 UI_TEXT(KP_EDIT_NOTE_2, 116,
-    "Write these values under CHANGES on the SERVO tab.",
-    "Schreibe diese Werte über ÄNDERUNGEN im Reiter SERVO.")
+    "Write these values with WRITE VALUES on the SERVO tab.",
+    "Schreibe diese Werte mit WERTE SCHREIBEN im Reiter SERVO.")
 UI_TEXT(KP_FS_NOTE_1, 116,
     "ON: the servo moves to POSITION when the signal",
     "EIN: Das Servo fährt auf POSITION, wenn das Signal")

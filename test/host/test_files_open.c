@@ -295,7 +295,7 @@ TEST_CASE(logs_own_list_holds_and_opens_the_same_reports)
     const int n = (int)(sizeof(want) / sizeof(want[0]));
     char title[64];
     log_viewer_browse_title(title, sizeof(title));
-    CHECK_STR_EQ(title, "FILES");
+    CHECK_STR_EQ(title, "FILES 1 TO 4 OF 4");
     for (int r = 0; r < n; ++r) {
         lv_tap(LV_ROW_CX, LV_ROW_CY(r));        /* select */
         lv_tap(LV_OPEN_CX, LV_FOOT_CY);         /* OPEN */

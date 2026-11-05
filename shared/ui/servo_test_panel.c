@@ -657,9 +657,28 @@ void draw_test_start(gfx_canvas_t *c)
                    running || test_blocked() == 0, SV_FONT_LABEL);
 }
 
+void servo_screen_plan_text(char *out, size_t size, const float *v,
+                            uint8_t n, bool brownout)
+{
+    if (out == NULL || size == 0u) {
+        return;
+    }
+    out[0] = '\0';
+    size_t k = 0u;
+    for (uint8_t j = 0; v != NULL && j < n && k < size; ++j) {
+        const int w = snprintf(out + k, size - k, "%s%.1fV",
+                               (j > 0u) ? ", " : "", (double)v[j]);
+        k = (w > 0) ? k + (size_t)w : size;
+    }
+    if (brownout && k < size) {
+        (void)snprintf(out + k, size - k, "%sBROWN-OUT",
+                       (n > 0u && v != NULL) ? ", " : "");
+    }
+}
+
 /**
- * @brief The steps a run would take, as the card says them: "4.8 6.0V
- *        BROWN-OUT", the unit joined to the last step, or NO STEP CHOSEN.
+ * @brief The steps a run would take, as the card says them: "4.8V, 6.0V,
+ *        BROWN-OUT", or NO STEP CHOSEN.
  * @param plan  takes the line
  * @param size  bytes at @p plan
  */
@@ -667,21 +686,27 @@ static void test_plan(char *plan, size_t size)
 {
     float v[SERVO_TEST_STEPS_MAX];
     const uint8_t n = test_steps(v);
-    if (n == 0u && !settings_get_bool(SET_SERVO_BROWNOUT)) {
+    const bool bo = settings_get_bool(SET_SERVO_BROWNOUT);
+    if (n == 0u && !bo) {
         snprintf(plan, size, "%s", ui_servo_str(SERVO_STR_START_NO_STEPS));
         return;
     }
-    plan[0] = '\0';
-    int k = 0;
-    for (uint8_t j = 0; j < n && k >= 0 && (size_t)k < size; ++j) {
-        k += snprintf(plan + k, size - (size_t)k, "%s%.1f",
-                      (j > 0u) ? " " : "", (double)v[j]);
+    servo_screen_plan_text(plan, size, v, n, bo);
+}
+
+void servo_screen_test_summary(char *out, size_t size)
+{
+    if (out == NULL || size == 0u) {
+        return;
     }
-    if (k >= 0 && (size_t)k < size) {
-        snprintf(plan + k, size - (size_t)k, "%s%s",
-                 (n > 0u) ? "V" : "",
-                 settings_get_bool(SET_SERVO_BROWNOUT)
-                     ? ((n > 0u) ? " BROWN-OUT" : "BROWN-OUT") : "");
+    char plan[48];
+    test_plan(plan, sizeof(plan));
+    if (settings_get_int(SET_SERVO_LEN_BY) != 0) {
+        snprintf(out, size, TR(SV_SUM_MOVES), plan,
+                 (unsigned)settings_get_int(SET_SERVO_LEN_MOVES));
+    } else {
+        snprintf(out, size, TR(SV_SUM_TIME), plan,
+                 (unsigned)settings_get_int(SET_SERVO_LEN_S));
     }
 }
 
@@ -714,16 +739,8 @@ void draw_test_lines(gfx_canvas_t *c)
 {
     const gfx_rect_t k = run_card_rect(0);
     const int x = k.x + 10;
-    char plan[40];
-    test_plan(plan, sizeof(plan));
     char line[96];
-    if (settings_get_int(SET_SERVO_LEN_BY) != 0) {
-        snprintf(line, sizeof(line), TR(SV_SUM_MOVES), plan,
-                 (unsigned)settings_get_int(SET_SERVO_LEN_MOVES));
-    } else {
-        snprintf(line, sizeof(line), TR(SV_SUM_TIME), plan,
-                 (unsigned)settings_get_int(SET_SERVO_LEN_S));
-    }
+    servo_screen_test_summary(line, sizeof(line));
     gfx_text(c, x, k.y + RUN_SUM_DY, line, SV_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
 

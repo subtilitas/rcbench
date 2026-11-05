@@ -2950,6 +2950,10 @@ static void pose_motor_tools(ui_screen_id_t id, const char *view)
         } else if (strcmp(view, "motor-stick-hand-list") == 0) {
             /* Kontronik's models, those with manual steps tagged. */
             stick_open("Kontronik", NULL);
+        } else if (strcmp(view, "motor-stick-greatplanes") == 0) {
+            /* Great Planes' models: the C Series refused for a menu
+             * entered after power-on, beside the MANUAL tag. */
+            stick_open("Great Planes", NULL);
         } else if (strncmp(view, "motor-stick-hand", 16) == 0) {
             /*
              * kontronik-jazz: a jumper fitted before the power-up and

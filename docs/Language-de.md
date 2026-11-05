@@ -62,7 +62,7 @@ passen.
   der Sweep-Knopf eines angehaltenen Sweeps, ist ein Zustand und nicht die
   Bedienung und heißt PAUSIERT; PAUSE, die Bedienung, bleibt Englisch.
 - Die Seitentitel: MOTOR & ESC, SERVO, SUPPLY, RECEIVER, LOGS, SETUP,
-  BATTERY, BALANCE, OUTPUTS, WI-FI, FILES, UPDATES, UPDATE,
+  BATTERY, BALANCE, OUTPUTS, SENSORS, SD CARD, WI-FI, FILES, UPDATES, UPDATE,
   CAN BUS FAULT, LINK LOST, PANEL UPDATE. Eine Kachel, ein Tab des Streifens von LOGS und das Band des
   Bildschirms, den sie öffnet, tragen dasselbe Wort. Ein Hinweis, der eine
   Seite nennt, nennt sie beim Titel: "der Seite SUPPLY".
@@ -77,7 +77,8 @@ passen.
 - Die Begriffe des Fachs: Failsafe, Brown-out, Timing, Endpoint, Live,
   Online, Touch, Display, Pin, Slot, Slice, Pad, Resync, Bad tail, tx err,
   rx err, bus err, Frame, Upload, Build.
-- Einheiten, die Stickpositionen MIN, MID und MAX und die Tastenbeschriftungen
+- Einheiten, darunter rpm (die Kachel RPM und ihre Einheit auf MOTOR & ESC)
+  und rpm/V, die Stickpositionen MIN, MID und MAX und die Tastenbeschriftungen
   DEL, CLR und OK.
 - Die Namen, die das Werkzeug des Herstellers den Einstellungen eines KST-
   oder Chaservo-Servos gibt, als Zeilen des Servo-Programmierers: DEAD BAND,
@@ -106,6 +107,7 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | step (des Netzteils) | Stufe |
 | report | Bericht |
 | reading | Messwert |
+| EFF (die Schätzung des Antriebsstrangs auf MOTOR & ESC, LIVE) | WIRK. |
 | setting (ein Eintrag in SETUP) | Einstellung |
 | SETTINGS (die eigenen Einstellungen einer Seite) | OPTIONEN |
 | save, reset, apply, close | speichern, zurücksetzen, übernehmen, schließen |
@@ -326,7 +328,7 @@ Konfliktmarkierungen stehen.
 python3 tools/render_ui.py --fit
 ```
 
-baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 534 Ansichten auf
+baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 536 Ansichten auf
 Englisch und auf Deutsch und schlägt fehl, wenn ein Text in einer der beiden
 Sprachen
 
@@ -377,7 +379,7 @@ ein Wort mit einer Beschriftung der Oberfläche teilen.
 
 ## Eine Sprache hinzufügen
 
-Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 3.089
+Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 3.090
 Einträge mit ID und 102 Optionen, 10 davon mit leerem Englisch.
 
 1. Ergänze die Spalte in jedem Eintrag von `shared/text/include/ui_text.def`
