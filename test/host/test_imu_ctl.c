@@ -661,6 +661,38 @@ TEST_CASE(each_hc05_error_reaches_the_view_as_its_imu_error)
     }
 }
 
+/* A scan of 8 devices keeps all 8, the 8th's name too, and a count past
+ * the list is held to 8; BIND and ANY under way read BINDING. */
+TEST_CASE(a_full_scan_keeps_eight_devices_and_any_reads_binding)
+{
+    imu_hc05_t l;
+    imu_hc05_init(&l);
+    l.probed = true;
+    l.op_open = true;
+    l.bt.op = HC05_OP_SCAN;
+    l.bt.state = HC05_ST_DONE;
+    for (unsigned i = 0; i < HC05_FOUND_MAX; ++i) {
+        snprintf(l.bt.found[i].addr, sizeof l.bt.found[i].addr, "1:2:%u", i);
+        snprintf(l.bt.found[i].name, sizeof l.bt.found[i].name, "DEV%u", i);
+        l.bt.found[i].rssi = (int16_t)(-40 - (int)i);
+    }
+    l.bt.found_n = HC05_FOUND_MAX + 1u;
+    imu_bound_t b;
+    CHECK(!imu_hc05_ended(&l, true, 100u, &b));
+    CHECK_EQ(l.found_n, IMU_FOUND_MAX);
+    CHECK_STR_EQ(l.found[HC05_FOUND_MAX - 1u].addr, "1:2:7");
+    CHECK_STR_EQ(l.found[HC05_FOUND_MAX - 1u].name, "DEV7");
+    CHECK_EQ(l.found[HC05_FOUND_MAX - 1u].rssi, -47);
+    static const hc05_op_t ops[] = { HC05_OP_BIND, HC05_OP_ANY };
+    for (size_t i = 0; i < sizeof ops / sizeof ops[0]; ++i) {
+        l.bt.op = ops[i];
+        l.bt.state = HC05_ST_RUNNING;
+        CHECK_EQ(imu_hc05_link(&l), IMU_LINK_BINDING);
+    }
+    l.bt.op = HC05_OP_PROBE;
+    CHECK_EQ(imu_hc05_link(&l), IMU_LINK_READY);
+}
+
 int main(void)
 {
     RUN(imu_on_probes_and_a_silent_hc05_is_no_module_retried_every_10s);
@@ -681,5 +713,6 @@ int main(void)
     RUN(a_frame_after_the_stale_point_counts_a_gap);
     RUN(the_rate_options_are_the_wit_codes_and_null_does_nothing);
     RUN(each_hc05_error_reaches_the_view_as_its_imu_error);
+    RUN(a_full_scan_keeps_eight_devices_and_any_reads_binding);
     return test_summary("imu_ctl");
 }
