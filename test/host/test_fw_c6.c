@@ -397,6 +397,11 @@ TEST_CASE(every_step_ends_at_its_limit_and_not_a_millisecond_before)
     CHECK_EQ(fw_c6_ota_limit_ms(FW_C6_PH_CLOSE), 10000u);
     CHECK_EQ(fw_c6_ota_limit_ms(FW_C6_PH_IDLE), 0u);
     CHECK_EQ(fw_c6_ota_limit_ms(FW_C6_PH_ENDED), 0u);
+    /* A value past the last phase reads no limit, not the next word. */
+    const unsigned past = (unsigned)FW_C6_PH_ENDED + 1u;
+    fw_c6_phase_t odd;
+    memcpy(&odd, &past, sizeof(odd));
+    CHECK_EQ(fw_c6_ota_limit_ms(odd), 0u);
     for (size_t i = 0; i < sizeof(k_steps) / sizeof(k_steps[0]); ++i) {
         limit_holds(k_steps[i], T0);
     }
