@@ -68,7 +68,7 @@ INA3221 von SENSE abgeleitet: `ENABLE` Bit a für das Bauteil an Register 8
 von SENSE, solange Bit 1 von ENABLE in SENSE gesetzt ist, der Shunt von SENSE
 auf jedem Kanal in Register 10 von SENSE, `FAST` CH1 dieses Bauteils,
 solange CH1 gelesen wird, und nichts beobachtet. Bit 9 von `FLAGS` sagt das.
-Ein Prüfstand, dessen Panel SENSE_MAP nie schreibt, arbeitet wie vor 4.25.
+Ein Prüfstand, dessen Panel SENSE_MAP nie schreibt, arbeitet allein mit dem einen INA3221 von SENSE.
 
 Das erste Schreiben aktiviert die Map. Kein weiterer Schreibzugriff
 kann sie in den abgeleiteten Modus zurücksetzen. Danach spiegeln
@@ -207,7 +207,7 @@ Version 8 und startet wie mit einem leeren Speicher.
 | 4.33 oder neuer | 4.32 oder älter, auf dem rbmod-Carrier | SENSE_MAP lehnt die Map des Carriers ab: ihre `WATCH`-Werte 0x30 bis 0x32 stehen nicht in der Liste dieses IOmcu. SETUP > SENSORS markiert 0x40 mit `VOM IOMCU NICHT ÜBERNOMMEN`, bis der IOmcu das Image des Panels fährt |
 | 4.25 oder neuer | 4.25 oder 4.26 | SENSE_MAP und SENSE_WIN wie oben; das Panel sendet nichts an SENSE_LIMIT, und SETUP > SENSORS markiert jede Grenze, die nicht AUS ist, als nicht geprüft |
 | 4.25 oder neuer | 4.24 oder älter | das Panel sendet an keine der vier Pages und richtet den einen INA3221 von SENSE auf einen bestückten Baustein ein ([Screens](Screens-de.md)) |
-| 4.24 oder älter | 4.25 oder neuer, Map abgeleitet | das Panel liest und schreibt die vier Pages nie. SENSE läuft wie zuvor. Gehaltene Grenzen werden geprüft, und `OVER` hält seine Bits, bis etwas es liest |
+| 4.24 oder älter | 4.25 oder neuer, Map abgeleitet | das Panel liest und schreibt die vier Pages nie. SENSE behält seinen einen INA3221. Gehaltene Grenzen werden geprüft, und `OVER` hält seine Bits, bis etwas es liest |
 | 4.24 oder älter | 4.25 oder neuer, Map in Kraft | Bit 1 von ENABLE und die Register 8 bis 10 von SENSE lesen das Spiegelbauteil. Ein Schreiben an SENSE, das sie ändert, wird mit BAD_VALUE abgewiesen, so dass dieses Panel die INA3221-Konfiguration nicht ändern kann. Der INA228, der Encoder und die Pins bleiben seine |
 
 ## Auf der Konsole
