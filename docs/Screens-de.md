@@ -5091,8 +5091,8 @@ Adresse hin. Dann wird keiner von beiden ausgelesen.
 | --- | --- | --- | --- |
 | INA228 | EIN, AUS | AUS | der Monitor im Strompfad des ESC |
 | INA228-Adresse | 0x40 bis 0x4F | 0x45 | der MATEK I2C-INA-BM ab Werk; seine Lötbrücken geben 0x44 oder 0x41 |
-| INA228-Shunt | 50 bis 20000 µΩ, Schritte von 1 µΩ | 200 | der des MATEK |
-| INA228-Höchststrom | 1,0 bis 300,0A, Schritte von 0,1A | 204,8 | der Strom, für den der Messbereich eingestellt wird: er wählt den ADC-Bereich (ADC: Analog-Digital-Wandler) und sonst nichts. 300A ist das Auslegungsmaximum des Prüfstands; mehr lehnt der IOmcu ab. Seine Ablehnung eines Bereichs über 2000A Vollausschlag bleibt, und 300A am kleinsten Shunt, 50 µΩ, erreichen sie nicht. Bis 40,96mV über dem Shunt nimmt er ±40,96mV, 78,125nV je Schritt; bis 163,84mV ±163,84mV, 312,5nV je Schritt; darüber lehnt der IOmcu das Paar ab |
+| INA228-Shunt | 50 bis 20000µΩ, Schritte von 1µΩ | 200 | der des MATEK |
+| INA228-Höchststrom | 1,0 bis 300,0A, Schritte von 0,1A | 204,8 | der Strom, für den der Messbereich eingestellt wird: er wählt den ADC-Bereich (ADC: Analog-Digital-Wandler) und sonst nichts. 300A ist das Auslegungsmaximum des Prüfstands; mehr lehnt der IOmcu ab. Seine Ablehnung eines Bereichs über 2000A Vollausschlag bleibt, und 300A am kleinsten Shunt, 50µΩ, erreichen sie nicht. Bis 40,96mV über dem Shunt nimmt er ±40,96mV, 78,125nV je Schritt; bis 163,84mV ±163,84mV, 312,5nV je Schritt; darüber lehnt der IOmcu das Paar ab |
 | Sensor-SDA | −1, 0, 4, 6, 14, 16, 18, 20, 26 | 16 | GPIO des IOmcu (GPIO: General-Purpose Input/Output). `-` und `+` gehen von einem dieser Werte zum nächsten und halten bei −1 und bei 26. −1: die Pins sind nicht gesetzt, und auf der Page ist kein Bauteil eingeschaltet |
 | Sensor-SCL | SDA + 1 oder −1 | 17 | der GPIO nach Sensor-SDA, und −1 mit ihm. Die Zeile zeigt den Wert und hat keine Tasten |
 
@@ -5100,7 +5100,7 @@ Die Hilfe der beiden Zeilen nennt jeweils den zulässigen Wert zur
 Einstellung der anderen Zeile: `Bis 300.0A an 200uΩ (163.84mV)` bei INA228-Höchststrom, `Bis 800uΩ bei
 204.8A (163.84mV)` bei INA228-Shunt. Shunt in µΩ mal Höchststrom in A ist
 höchstens 163840. Jeder Shunt nimmt einen Höchststrom von mindestens 8,1A, bei
-20000 µΩ; bis 546 µΩ nimmt er die vollen 300,0A. 201 µΩ bei 204,8A sind 41,16mV
+20000µΩ; bis 546µΩ nimmt er die vollen 300,0A. 201µΩ bei 204,8A sind 41,16mV
 und nehmen den weiteren Bereich; 203,7A bringen ihn in den engeren zurück. Ein
 Paar über 163,84mV ist auf beiden Zeilen markiert und steht im Band: `INA228 Shunt x Höchststrom über 163.84mV: an 1000uΩ bis 163.8A. Prüfe SENSORS.`.
 

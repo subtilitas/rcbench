@@ -4696,16 +4696,16 @@ frame, refused pins or an IOmcu without the SENSE page, and `NO BUS PINS`.
 | --- | --- | --- | --- |
 | INA228 | ON, OFF | OFF | the monitor in the ESC's power path |
 | INA228 address | 0x40 to 0x4F | 0x45 | the MATEK I2C-INA-BM as shipped; its solder bridges give 0x44 or 0x41 |
-| INA228 shunt | 50 to 20000 µΩ, 1 µΩ steps | 200 | the MATEK's |
-| INA228 max current | 1.0 to 300.0A, 0.1A steps | 204.8 | the current the range is set for: it chooses the ADC (analog-to-digital converter) range and nothing else. Up to 40.96mV across the shunt it takes ±40.96mV, 78.125nV a step; up to 163.84mV ±163.84mV, 312.5nV a step; past that the IOmcu refuses the pair. 300A is the bench's design maximum; the IOmcu refuses more. Its refusal of a range past 2000A full scale stays, and 300A on the smallest shunt, 50 µΩ, does not reach it |
+| INA228 shunt | 50 to 20000µΩ, 1µΩ steps | 200 | the MATEK's |
+| INA228 max current | 1.0 to 300.0A, 0.1A steps | 204.8 | the current the range is set for: it chooses the ADC (analog-to-digital converter) range and nothing else. Up to 40.96mV across the shunt it takes ±40.96mV, 78.125nV a step; up to 163.84mV ±163.84mV, 312.5nV a step; past that the IOmcu refuses the pair. 300A is the bench's design maximum; the IOmcu refuses more. Its refusal of a range past 2000A full scale stays, and 300A on the smallest shunt, 50µΩ, does not reach it |
 | Sensor SDA | −1, 0, 4, 6, 14, 16, 18, 20, 26 | 16 | IOmcu GPIO (general-purpose input/output). `-` and `+` step from one of these values to the next and stop at −1 and at 26. −1: the pins are not set, and no part is enabled on the page |
 | Sensor SCL | SDA + 1, or −1 | 17 | the GPIO after Sensor SDA, and −1 with it. The row shows the value and has no keys |
 
 Each row's help gives the range compatible with the other row's value:
 `Up to 300.0A on 200uΩ (163.84mV)` on INA228 max current, `Up to 800uΩ at 204.8A
 (163.84mV)` on INA228 shunt. Shunt in µΩ times maximum in A is at most 163840.
-Any shunt takes a maximum of at least 8.1A, at 20000 µΩ; up to 546 µΩ takes the
-whole 300.0A. 201 µΩ at 204.8A is 41.16mV and takes the wider range; lowering
+Any shunt takes a maximum of at least 8.1A, at 20000µΩ; up to 546µΩ takes the
+whole 300.0A. 201µΩ at 204.8A is 41.16mV and takes the wider range; lowering
 the maximum to 203.7A brings it back to the narrower one. A pair past 163.84mV
 is marked on both rows and said on the band: `INA228 shunt x maximum is over
 163.84mV: on 1000uΩ up to 163.8A. Check SENSORS.`.
@@ -5151,7 +5151,7 @@ a run ([Servo procedures](Servo.md)).
 - User logs is read at START TEST and START LIMIT RUN: a test keeps the
   state it started with. With it OFF, the run card and LIVE's box read
   `USER LOGS OFF` where the files would be named.
-- REPORT on SERVO > OPTIONS > DUT decides, with User logs ON, whether
+- REPORT on SERVO > SETTINGS > DUT decides, with User logs ON, whether
   `ATESTnnn.TXT` is written.
 - The fault log, `BENCH/RCBENCH.LOG`, is written whatever the two say.
 - [Logs](#logs) gives the names and the numbering.
