@@ -207,6 +207,12 @@ gfx_rect_t ui_help_live_rect(ui_help_side_t side)
 bool ui_help_add(ui_help_page_t *p, const char *label, ui_text_id_t text,
                  gfx_rect_t r)
 {
+    return ui_help_add_at(p, label, text, r, UI_HELP_AT_LEFT);
+}
+
+bool ui_help_add_at(ui_help_page_t *p, const char *label, ui_text_id_t text,
+                    gfx_rect_t r, ui_help_at_t at)
+{
     if (p == NULL || p->count >= UI_HELP_ITEMS) {
         return false;
     }
@@ -220,7 +226,7 @@ bool ui_help_add(ui_help_page_t *p, const char *label, ui_text_id_t text,
     if (r.w <= 0 || r.h <= 0) {
         return false;
     }
-    p->item[p->count++] = (ui_help_item_t){ label, text, r, UI_HELP_AT_LEFT };
+    p->item[p->count++] = (ui_help_item_t){ label, text, r, at };
     return true;
 }
 

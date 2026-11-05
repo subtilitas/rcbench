@@ -20,6 +20,7 @@
 
 #include "servo_bench_rig.h"
 
+#include "help_check.h"
 #include "prog5v_box.h"
 #include "supply_spots.h"
 #include "ui_help.h"
@@ -40,115 +41,32 @@ enum { P5_OFF = 2 };
 /* ------------------------------------------------------------- helpers */
 
 /**
- * @brief Whether @p a and @p b come closer than @p gap px.
- * @param a A rect.
- * @param b Another.
- * @param gap The distance.
- * @return True when they do.
+ * @brief The band's state as the router hands it to the guide: SAFE, or
+ *        ARMED for SERVO.
+ * @param armed The bench is ARMED.
  */
-static bool near(gfx_rect_t a, gfx_rect_t b, int gap)
+static void band_armed(bool armed)
 {
-    return a.x < b.x + b.w + gap && b.x < a.x + a.w + gap
-           && a.y < b.y + b.h + gap && b.y < a.y + a.h + gap;
+    ui_bench_status_t st = *ui_router_status();
+    st.armed = armed;
+    st.armed_roles = armed ? UI_ARMED_SERVO : 0u;
+    ui_router_set_status(&st);
 }
 
 /**
- * @brief Whether @p in lies inside @p out.
- * @param in A rect.
- * @param out Another.
- * @return True when it does.
- */
-static bool inside(gfx_rect_t in, gfx_rect_t out)
-{
-    return in.x >= out.x && in.y >= out.y && in.x + in.w <= out.x + out.w
-           && in.y + in.h <= out.y + out.h;
-}
-
-/**
- * @brief Every page @p sc offers now, SAFE or @p armed: it fits, marks
- *        controls in the live half, hides none of them under the dock or
- *        under PREV and NEXT, and its dock covers no point where safe_at()
- *        is true; on an ARMED page the must_show rect too.
+ * @brief check_pages() on @p sc as the bench is now, SAFE or @p armed.
  * @param sc    The screen.
  * @param armed The bench is ARMED.
- * @param what  The state, for the failure's line.
+ * @param what  The state, for a failure.
  * @return The pages offered.
  */
-static int check_pages(const ui_screen_t *sc, bool armed, const char *what)
+static int pages_checked(const ui_screen_t *sc, bool armed, const char *what)
 {
-    const int count = ui_help_count(sc, armed);
-    const bool note = ui_help_armed_note(sc, armed);
-    for (int n = 0; n < count; ++n) {
-        ui_help_page_t p;
-        if (!ui_help_page(sc, armed, n, &p)) {
-            T_FAIL("%s: page %d missing", what, n + 1);
-            continue;
-        }
-        const gfx_rect_t dock = ui_help_dock_rect(p.side);
-        const gfx_rect_t live = ui_help_live_rect(p.side);
-        const gfx_rect_t prev = ui_help_button_rect(p.side, UI_HELP_HIT_PREV);
-        const gfx_rect_t next = ui_help_button_rect(p.side, UI_HELP_HIT_NEXT);
-        if (p.count < 1 || p.count > UI_HELP_ITEMS || ui_tr(p.title)[0] == 0) {
-            T_FAIL("%s: page %d has %d items or no title", what, n + 1,
-                   p.count);
-        }
-        if (ui_help_text_bottom(&p, note && n == 0) > ui_help_text_limit()) {
-            T_FAIL("%s: page %d's text runs past the web line", what, n + 1);
-        }
-        for (int i = 0; i < p.count; ++i) {
-            const ui_help_item_t *it = &p.item[i];
-            gfx_rect_t r = it->rect;
-            r.y = (int16_t)(r.y + UI_BAND_H);
-            const int rows = ui_help_item_rows(&p, i);
-            if (it->label == NULL || it->label[0] == '\0'
-                || ui_tr(it->text)[0] == '\0' || rows < 1
-                || rows > UI_HELP_ROWS) {
-                T_FAIL("%s: page %d item %d (%s) takes %d rows", what, n + 1,
-                       i + 1, it->label ? it->label : "", rows);
-            }
-            if (r.w <= 0 || r.h <= 0 || !inside(r, live)
-                || near(r, dock, 0) || near(r, prev, 0)
-                || near(r, next, 0)) {
-                T_FAIL("%s: page %d item %d (%s) at x %d y %d w %d h %d is "
-                       "not in the live half", what, n + 1, i + 1, it->label,
-                       r.x, r.y, r.w, r.h);
-            }
-            const gfx_rect_t b = ui_help_badge_rect(&p, i);
-            if (!inside(b, live)) {
-                T_FAIL("%s: page %d badge %d not in the live half", what,
-                       n + 1, i + 1);
-            }
-            for (int k = 0; k < i; ++k) {
-                if (near(b, ui_help_badge_rect(&p, k), 2)) {
-                    T_FAIL("%s: page %d badges %d and %d closer than 2px",
-                           what, n + 1, k + 1, i + 1);
-                }
-            }
-        }
-        if (armed && !p.armed_ok) {
-            T_FAIL("%s: page %d offered ARMED", what, n + 1);
-        }
-        if (p.armed_ok && p.must_show.w > 0) {
-            gfx_rect_t m = p.must_show;
-            m.y = (int16_t)(m.y + UI_BAND_H);
-            if (near(m, dock, 0)) {
-                T_FAIL("%s: page %d's dock covers its must_show", what,
-                       n + 1);
-            }
-        }
-        /* On every page, SAFE as well: OUTPUT OFF stops an output too. */
-        for (int y = dock.y; y < dock.y + dock.h && sc->safe_at; y += 8) {
-            for (int x = dock.x; x < dock.x + dock.w; x += 8) {
-                if (sc->safe_at(x, y - UI_BAND_H)) {
-                    T_FAIL("%s: page %d's dock covers a stop at x %d y %d",
-                           what, n + 1, x, y);
-                    y = dock.y + dock.h;
-                    break;
-                }
-            }
-        }
-    }
-    return count;
+    band_armed(armed);
+    check_pages(sc, what);
+    const int n = ui_help_count(sc, armed);
+    band_armed(false);
+    return n;
 }
 
 /**
@@ -245,27 +163,70 @@ static const servo_state_t k_servo[] = {
       { 5, 4, 3 } },
 };
 
+/** @brief The state pose_servo() puts SERVO in. */
+static const servo_state_t *s_servo = &k_servo[0];
+
+/** @brief SERVO, fresh, in s_servo's state. */
+static void pose_servo(void)
+{
+    servo_to(s_servo);
+}
+
+/** @brief The tabs pose_supply() taps: 0 LIVE, 1 SETTINGS, 2 PD MINI. */
+static int s_supply_tabs;
+
+/** @brief A tap of contact 1 at (@p x, @p y) of SUPPLY's body.
+ *  @param x The body's x. @param y The body's y. */
+static void supply_tap(int x, int y)
+{
+    const touch_event_t d = { .type = TOUCH_EVENT_DOWN,
+                              .point = { .id = 1, .x = (int16_t)x,
+                                         .y = (int16_t)y, .strength = 40 } };
+    touch_event_t u = d;
+    u.type = TOUCH_EVENT_UP;
+    supply_screen()->event(&d);
+    supply_screen()->event(&u);
+}
+
+/** @brief SUPPLY, fresh, on the task s_supply_tabs names. */
+static void pose_supply(void)
+{
+    fresh();
+    supply_screen()->enter();
+    if (s_supply_tabs > 0) {
+        supply_tap(SU_TAB_X(1), SU_TAB_Y);
+    }
+    if (s_supply_tabs > 1) {
+        supply_tap(SU_OV_PDMINI_X, SU_OV_TAB_Y);
+    }
+}
+
 /* ----------------------------------------------------------------- cases */
 
-/* Each SERVO state SAFE in both languages and themes: its own pages, then
- * the output card's two; ARMED the output card's two alone, with the note,
- * DISARM named. */
+/* Each SERVO state in both languages and themes, SAFE and ARMED, the link
+ * up and down: its own pages, then the output card's two; ARMED the output
+ * card's two alone, with the note, DISARM named. */
 TEST_CASE(every_servo_page_fits_and_hides_no_stop)
 {
     for (size_t k = 0; k < sizeof(k_servo) / sizeof(k_servo[0]); ++k) {
         const servo_state_t *st = &k_servo[k];
+        s_servo = st;
+        char name[32];
+        snprintf(name, sizeof(name), "SERVO %s", st->what);
+        CHECK_EQ(check_every_state(servo_screen(), pose_servo, name),
+                 st->safe);
         for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
             for (int th = 0; th < (int)UI_THEME_COUNT; ++th) {
                 servo_to(st);
+                band_armed(false);
                 ui_text_set_language((ui_lang_t)lang);
                 ui_theme_set((ui_theme_id_t)th);
                 char what[64];
-                snprintf(what, sizeof(what), "SERVO %s lang %d theme %d",
-                         st->what, lang, th);
-                CHECK_EQ(check_pages(scr, false, what), st->safe);
+                snprintf(what, sizeof(what), "%s lang %d theme %d", name,
+                         lang, th);
                 check_marks(scr, st->safe, st->titles, st->items, what);
                 servo_screen_set_armed(true);
-                CHECK_EQ(check_pages(scr, true, what), 2);
+                CHECK_EQ(pages_checked(scr, true, what), 2);
                 CHECK(ui_help_armed_note(scr, true));
                 ui_help_page_t p;
                 CHECK(ui_help_page(scr, true, 1, &p));
@@ -278,7 +239,8 @@ TEST_CASE(every_servo_page_fits_and_hides_no_stop)
 }
 
 /* SUPPLY's LIVE, LIMITS and PD MINI with the output off, both languages and
- * themes, SAFE and ARMED: the task's page or pages, then the rail's two. */
+ * themes, SAFE and ARMED, the link up and down: the task's page or pages,
+ * then the rail's two. */
 TEST_CASE(every_supply_page_fits_and_hides_no_stop)
 {
     const ui_screen_t *sup = supply_screen();
@@ -301,39 +263,22 @@ TEST_CASE(every_supply_page_fits_and_hides_no_stop)
           { 4, 5, 2 } },
     };
     for (size_t k = 0; k < sizeof(k_states) / sizeof(k_states[0]); ++k) {
+        s_supply_tabs = k_states[k].tabs;
+        char name[32];
+        snprintf(name, sizeof(name), "SUPPLY %s", k_states[k].what);
+        CHECK_EQ(check_every_state(sup, pose_supply, name), k_states[k].safe);
         for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
             for (int th = 0; th < (int)UI_THEME_COUNT; ++th) {
-                fresh();
+                pose_supply();
+                band_armed(false);
                 ui_text_set_language((ui_lang_t)lang);
                 ui_theme_set((ui_theme_id_t)th);
-                sup->enter();
-                if (k_states[k].tabs > 0) {
-                    const touch_event_t d = {
-                        .type = TOUCH_EVENT_DOWN,
-                        .point = { .id = 1, .x = SU_TAB_X(1), .y = SU_TAB_Y,
-                                   .strength = 40 } };
-                    touch_event_t u = d;
-                    u.type = TOUCH_EVENT_UP;
-                    sup->event(&d);
-                    sup->event(&u);
-                }
-                if (k_states[k].tabs > 1) {
-                    const touch_event_t d = {
-                        .type = TOUCH_EVENT_DOWN,
-                        .point = { .id = 1, .x = SU_OV_PDMINI_X,
-                                   .y = SU_OV_TAB_Y, .strength = 40 } };
-                    touch_event_t u = d;
-                    u.type = TOUCH_EVENT_UP;
-                    sup->event(&d);
-                    sup->event(&u);
-                }
                 char what[64];
-                snprintf(what, sizeof(what), "SUPPLY %s lang %d theme %d",
-                         k_states[k].what, lang, th);
-                CHECK_EQ(check_pages(sup, false, what), k_states[k].safe);
+                snprintf(what, sizeof(what), "%s lang %d theme %d", name,
+                         lang, th);
                 check_marks(sup, k_states[k].safe, k_states[k].titles,
                             k_states[k].items, what);
-                CHECK_EQ(check_pages(sup, true, what), k_states[k].armed);
+                CHECK_EQ(pages_checked(sup, true, what), k_states[k].armed);
             }
         }
     }
@@ -354,10 +299,10 @@ TEST_CASE(a_live_supply_output_takes_the_pages_that_cover_output_off)
     st.output = true;
     supply_screen_push(&st);
     REQUIRE(supply_screen_output_on());
-    CHECK_EQ(check_pages(scr, false, "SERVO LIVE, output on"), 2);
+    CHECK_EQ(pages_checked(scr, false, "SERVO LIVE, output on"), 2);
     CHECK_EQ(title_of(scr, 0), TX_HG_SV_TITLE_CARD);
     const ui_screen_t *sup = supply_screen();
-    CHECK_EQ(check_pages(sup, false, "SUPPLY LIVE, output on"), 2);
+    CHECK_EQ(pages_checked(sup, false, "SUPPLY LIVE, output on"), 2);
     CHECK_EQ(title_of(sup, 0), TX_HG_SU_TITLE_READ);
     ui_help_page_t p;
     CHECK(ui_help_page(sup, false, 1, &p));
@@ -380,11 +325,9 @@ TEST_CASE(a_run_takes_the_output_cards_pages_and_armed_leaves_none)
     hold_start(2.3f);
     REQUIRE(servo_screen_testing());
     CHECK_EQ(ui_help_count(scr, true), 0);
-    for (int i = 0; i < scr->help_count(); ++i) {
-        CHECK(title_of(scr, i) != TX_HG_SV_TITLE_CARD);
-        CHECK(title_of(scr, i) != TX_HG_SV_TITLE_DRIVE);
-    }
-    check_pages(scr, false, "SERVO TEST, a run");
+    /* Nor a page for SAFE: the supply's output is on for the run, so no
+     * task's page either. */
+    CHECK_EQ(scr->help_count(), 0);
     servo_screen_set_armed(false);
     bench_frames(400u);
     REQUIRE(!servo_screen_testing());
@@ -415,13 +358,7 @@ TEST_CASE(a_panel_or_a_question_takes_every_page)
     fresh();
     sup->enter();
     CHECK_EQ(sup->help_count(), 3);
-    const touch_event_t d = { .type = TOUCH_EVENT_DOWN,
-                              .point = { .id = 1, .x = SU_VAL_X,
-                                         .y = SU_V_ROW_Y, .strength = 40 } };
-    touch_event_t u = d;
-    u.type = TOUCH_EVENT_UP;
-    sup->event(&d);
-    sup->event(&u);
+    supply_tap(SU_VAL_X, SU_V_ROW_Y);
     REQUIRE(supply_screen_keypad() != NULL && supply_screen_keypad()->open);
     CHECK_EQ(sup->help_count(), 0);
     CHECK(!sup->help_page(0, &p));
@@ -444,7 +381,7 @@ TEST_CASE(the_labels_follow_what_the_controls_read)
     REQUIRE(ui_help_page(scr, false, 1, &p));
     CHECK_STR_EQ(p.item[1].label, "PROG 5V");
     CHECK_EQ(p.item[1].text, TX_HG_SV_P5);
-    check_pages(scr, false, "SERVO LIVE, PROG 5V");
+    pages_checked(scr, false, "SERVO LIVE, PROG 5V");
     prog5v_box_reset();
     fresh();
     const ui_screen_t *sup = supply_screen();
@@ -453,18 +390,12 @@ TEST_CASE(the_labels_follow_what_the_controls_read)
     CHECK_STR_EQ(p.item[p.count - 1].label, TR(SUP_OUTPUT_ON));
     /* The PD mini as the supply: RESET PD MINI on LIMITS' page. */
     supply_screen_set_model(false);
-    const touch_event_t d = { .type = TOUCH_EVENT_DOWN,
-                              .point = { .id = 1, .x = SU_TAB_X(1),
-                                         .y = SU_TAB_Y, .strength = 40 } };
-    touch_event_t u = d;
-    u.type = TOUCH_EVENT_UP;
-    sup->event(&d);
-    sup->event(&u);
+    supply_tap(SU_TAB_X(1), SU_TAB_Y);
     REQUIRE(ui_help_page(sup, false, 0, &p));
     CHECK_EQ(p.title, TX_HG_SU_TITLE_LIMITS);
     CHECK_EQ(p.count, 4);
     CHECK_EQ(p.item[3].text, TX_HG_SU_RESET_PD);
-    check_pages(sup, false, "SUPPLY LIMITS, PD mini");
+    pages_checked(sup, false, "SUPPLY LIMITS, PD mini");
 }
 
 /* UI_HELP_AT_RIGHT: 4px inside the top-right corner at any size, and the

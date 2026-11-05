@@ -5,15 +5,15 @@
  *
  * A task's page takes the dock on the right and marks the left card in the
  * live half, x 0 to 528; a control that runs past x 528 is marked up to
- * there, the part the screen shows.  The output card's pages take the dock
- * on the left, over the left card, and keep the TARGET row and ARM or
- * DISARM in view: they are the pages offered while ARMED.  A page whose
- * dock would cover a control that stops an output is not offered while
- * that control shows: a task's page while the supply's output is on
- * (OUTPUT OFF on the SET row), the output card's while a run, a limit run
- * or AUTO runs (its STOP on the left card).  A keypad, a keyboard, a list,
- * a warning, a question, a programmer and a run's settings take the guide
- * away: none of them has pages.
+ * there, the part the screen shows (ui_help_add()).  The output card's
+ * pages take the dock on the left, over the left card, and keep the TARGET
+ * row and ARM or DISARM in view: they are the pages offered while ARMED.  A
+ * page whose dock would cover a control that stops an output is not
+ * offered while that control shows: a task's page while the supply's
+ * output is on (OUTPUT OFF on the SET row), the output card's while a run,
+ * a limit run or AUTO runs (its STOP on the left card).  A keypad, a
+ * keyboard, a list, a warning, a question, a programmer and a run's
+ * settings take the guide away: none of them has pages.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -35,55 +35,6 @@
 
 /** @brief A page's builder: fills @p out, a zeroed page. */
 typedef void (*guide_fn)(ui_help_page_t *out);
-
-/**
- * @brief Append an item to @p p.
- * @param p     The page.
- * @param label The control's name.
- * @param text  What it does.
- * @param r     Where it is.
- * @param at    The badge's corner.
- */
-static void item(ui_help_page_t *p, const char *label, ui_text_id_t text,
-                 gfx_rect_t r, ui_help_at_t at)
-{
-    if (p->count < UI_HELP_ITEMS && r.w > 0 && r.h > 0) {
-        p->item[p->count++] = (ui_help_item_t){ label, text, r, at };
-    }
-}
-
-/**
- * @brief @p r cut at the right edge of the live half a dock on the right
- *        leaves, x 528: the part of a control the screen shows there.
- * @param r The control.
- * @return The part, empty when none shows.
- */
-static gfx_rect_t shown_part(gfx_rect_t r)
-{
-    const gfx_rect_t live = ui_help_live_rect(UI_HELP_DOCK_RIGHT);
-    const int right = live.x + live.w;
-    if (r.x + r.w > right) {
-        r.w = (int16_t)((right > r.x) ? right - r.x : 0);
-    }
-    return r;
-}
-
-/**
- * @brief @p r cut at the left edge of the live half a dock on the left
- *        leaves, x 496.
- * @param r The control.
- * @return The part, empty when none shows.
- */
-static gfx_rect_t shown_right(gfx_rect_t r)
-{
-    const int left = ui_help_live_rect(UI_HELP_DOCK_LEFT).x;
-    if (r.x < left) {
-        const int w = r.x + r.w - left;
-        r.w = (int16_t)((w > 0) ? w : 0);
-        r.x = (int16_t)left;
-    }
-    return r;
-}
 
 /**
  * @brief The smallest rect that holds @p a and @p b.
@@ -148,29 +99,26 @@ static void task_page(ui_help_page_t *p, ui_text_id_t title)
 static void page_live(ui_help_page_t *p)
 {
     task_page(p, TX_HG_SV_TITLE_LIVE);
-    item(p, TR(HG_SV_TASKS_NAME), TX_HG_SV_TASKS, shown_part(strip_area()),
-         UI_HELP_AT_LEFT);
+    (void)ui_help_add(p, TR(HG_SV_TASKS_NAME), TX_HG_SV_TASKS, strip_area());
     /* The angle's box at its widest, -888.8, and a badge's width more,
      * so the badge at its right end clears "deg". */
     const gfx_seg_style_t seg = ui_seg_hero();
     const int aw = gfx_seg_width("-888.8", &seg) + 6
                    + gfx_text_width(SV_FONT_LABEL, "deg", 1) + 4 + 36;
-    item(p, TR(HG_SV_ANGLE_NAME), TX_HG_SV_ANGLE,
-         (gfx_rect_t){ SEG_X - 2, SEG_Y - 2, (int16_t)aw,
-                       (int16_t)(seg.digit_h + 8) },
-         UI_HELP_AT_RIGHT);
-    item(p, TR(HG_SV_DIAL_NAME), TX_HG_SV_DIAL,
-         shown_part((gfx_rect_t){ SHAFT_X, SHAFT_Y - ARC_R - 10, ARC_R + 40,
-                                  2 * ARC_R + 20 }),
-         UI_HELP_AT_LEFT);
+    (void)ui_help_add_at(p, TR(HG_SV_ANGLE_NAME), TX_HG_SV_ANGLE,
+                         (gfx_rect_t){ SEG_X - 2, SEG_Y - 2, (int16_t)aw,
+                                       (int16_t)(seg.digit_h + 8) },
+                         UI_HELP_AT_RIGHT);
+    (void)ui_help_add(p, TR(HG_SV_DIAL_NAME), TX_HG_SV_DIAL,
+                      (gfx_rect_t){ SHAFT_X, SHAFT_Y - ARC_R - 10, ARC_R + 40,
+                                    2 * ARC_R + 20 });
     /* From 34px over the labels, where the card is empty: the badge sits
      * there, clear of COMMANDED. */
-    item(p, TR(HG_SV_READ_NAME), TX_HG_SV_READ,
-         shown_part((gfx_rect_t){ READ_X(0), READ_LBL_Y - 34,
-                                  READ_W0 + READ_W1 + READ_W2,
-                                  READ_NUM_Y + READ_NUM_H - READ_LBL_Y
-                                      + 34 }),
-         UI_HELP_AT_LEFT);
+    (void)ui_help_add(p, TR(HG_SV_READ_NAME), TX_HG_SV_READ,
+                      (gfx_rect_t){ READ_X(0), READ_LBL_Y - 34,
+                                    READ_W0 + READ_W1 + READ_W2,
+                                    READ_NUM_Y + READ_NUM_H - READ_LBL_Y
+                                        + 34 });
 }
 
 /** @brief TEST: the two run cards' STARTs and SETTINGS, and the caps.
@@ -178,14 +126,10 @@ static void page_live(ui_help_page_t *p)
 static void page_test(ui_help_page_t *p)
 {
     task_page(p, TX_HG_SV_TITLE_TEST);
-    item(p, TR(SV_START_TEST), TX_HG_SV_START, test_start_rect(),
-         UI_HELP_AT_LEFT);
-    item(p, TR(SUP_SETTINGS), TX_HG_SV_RUN_SET, shown_part(run_set_rect(0)),
-         UI_HELP_AT_LEFT);
-    item(p, TR(SV_LIM_START), TX_HG_SV_LIM, lim_start_rect(),
-         UI_HELP_AT_LEFT);
-    item(p, TR(HG_SV_CAPS_NAME), TX_HG_SV_CAPS, shown_part(caps_open_rect()),
-         UI_HELP_AT_LEFT);
+    (void)ui_help_add(p, TR(SV_START_TEST), TX_HG_SV_START, test_start_rect());
+    (void)ui_help_add(p, TR(SUP_SETTINGS), TX_HG_SV_RUN_SET, run_set_rect(0));
+    (void)ui_help_add(p, TR(SV_LIM_START), TX_HG_SV_LIM, lim_start_rect());
+    (void)ui_help_add(p, TR(HG_SV_CAPS_NAME), TX_HG_SV_CAPS, caps_open_rect());
 }
 
 /** @brief PROGRAM: the list of programmers, and SEARCH on its bar.
@@ -209,11 +153,11 @@ static void page_prog(ui_help_page_t *p)
     if (rows.w > 0) {
         rows.w = (int16_t)(380 - rows.x);
     }
-    item(p, TR(HG_SV_PROG_NAME), TX_HG_SV_PROG, rows, UI_HELP_AT_RIGHT);
+    (void)ui_help_add_at(p, TR(HG_SV_PROG_NAME), TX_HG_SV_PROG, rows,
+                         UI_HELP_AT_RIGHT);
     if (prog_view_has_bar(&s.prog_view, &l)) {
-        item(p, TR(SP_FIND), TX_HG_SV_FIND,
-             shown_part(prog_view_search_rect(&s.prog_view, &l)),
-             UI_HELP_AT_LEFT);
+        (void)ui_help_add(p, TR(SP_FIND), TX_HG_SV_FIND,
+                          prog_view_search_rect(&s.prog_view, &l));
     }
 }
 
@@ -222,17 +166,16 @@ static void page_prog(ui_help_page_t *p)
 static void page_rudder(ui_help_page_t *p)
 {
     task_page(p, TX_HG_SV_TITLE_RUDDER);
-    item(p, TR(RUD_LENGTH), TX_HG_SV_RUD_LEN, rudder_len_value_rect(),
-         UI_HELP_AT_LEFT);
-    item(p, "1000us", TX_HG_SV_RUD_DRIVE,
-         both(rudder_rect(RUD_C_1000), rudder_rect(RUD_C_2000)),
-         UI_HELP_AT_LEFT);
-    item(p, TR(RUD_ZERO), TX_HG_SV_RUD_ZERO, rudder_rect(RUD_C_ZERO),
-         UI_HELP_AT_LEFT);
-    item(p, TR(RUD_RESET_MAX), TX_HG_SV_RUD_RESET, rudder_rect(RUD_C_RESET),
-         UI_HELP_AT_LEFT);
-    item(p, TR(RA_AUTO), TX_HG_SV_RUD_AUTO, rudder_rect(RUD_C_AUTO),
-         UI_HELP_AT_LEFT);
+    (void)ui_help_add(p, TR(RUD_LENGTH), TX_HG_SV_RUD_LEN,
+                      rudder_len_value_rect());
+    (void)ui_help_add(p, "1000us", TX_HG_SV_RUD_DRIVE,
+                      both(rudder_rect(RUD_C_1000), rudder_rect(RUD_C_2000)));
+    (void)ui_help_add(p, TR(RUD_ZERO), TX_HG_SV_RUD_ZERO,
+                      rudder_rect(RUD_C_ZERO));
+    (void)ui_help_add(p, TR(RUD_RESET_MAX), TX_HG_SV_RUD_RESET,
+                      rudder_rect(RUD_C_RESET));
+    (void)ui_help_add(p, TR(RA_AUTO), TX_HG_SV_RUD_AUTO,
+                      rudder_rect(RUD_C_AUTO));
 }
 
 /** @brief RUDDER's readings: DEFLECTION, TRAILING EDGE and the state
@@ -243,16 +186,17 @@ static void page_rudder_read(ui_help_page_t *p)
     task_page(p, TX_HG_SV_TITLE_RUD_READ);
     const gfx_rect_t ro = rudder_readout_rect();
     const int half = ro.w / 2;
-    item(p, TR(RUD_DEFL), TX_HG_SV_RUD_DEFL,
-         (gfx_rect_t){ ro.x, ro.y, (int16_t)(half - 10), ro.h },
-         UI_HELP_AT_RIGHT);
-    item(p, TR(RUD_EDGE), TX_HG_SV_RUD_EDGE,
-         (gfx_rect_t){ (int16_t)(ro.x + half), ro.y,
-                       (int16_t)(ro.w - half), ro.h },
-         UI_HELP_AT_RIGHT);
+    (void)ui_help_add_at(p, TR(RUD_DEFL), TX_HG_SV_RUD_DEFL,
+                         (gfx_rect_t){ ro.x, ro.y, (int16_t)(half - 10),
+                                       ro.h },
+                         UI_HELP_AT_RIGHT);
+    (void)ui_help_add_at(p, TR(RUD_EDGE), TX_HG_SV_RUD_EDGE,
+                         (gfx_rect_t){ (int16_t)(ro.x + half), ro.y,
+                                       (int16_t)(ro.w - half), ro.h },
+                         UI_HELP_AT_RIGHT);
     if (!s.ra.view) {
-        item(p, TR(HG_SV_ANGLE_NAME), TX_HG_SV_RUD_STATE, rudder_state_rect(),
-             UI_HELP_AT_RIGHT);
+        (void)ui_help_add_at(p, TR(HG_SV_ANGLE_NAME), TX_HG_SV_RUD_STATE,
+                             rudder_state_rect(), UI_HELP_AT_RIGHT);
     }
 }
 
@@ -263,15 +207,13 @@ static void page_auto(ui_help_page_t *p)
 {
     task_page(p, TX_HG_SV_TITLE_AUTO);
     /* 2000us's box: its badge left of it, clear of both boxes' text. */
-    item(p, "2000us", TX_HG_SV_RA_TARGET, rauto_rect(RA_C_HI),
-         UI_HELP_AT_LEFT);
-    item(p, TR(HG_SV_MARGIN_NAME), TX_HG_SV_RA_MARGIN,
-         both(rauto_rect(RA_C_MARGIN), rauto_rect(RA_C_TOL)),
-         UI_HELP_AT_LEFT);
-    item(p, TR(RA_START), TX_HG_SV_RA_START, rauto_rect(RA_C_START),
-         UI_HELP_AT_LEFT);
-    item(p, TR(RA_MANUAL), TX_HG_SV_RA_MANUAL, rudder_rect(RUD_C_AUTO),
-         UI_HELP_AT_LEFT);
+    (void)ui_help_add(p, "2000us", TX_HG_SV_RA_TARGET, rauto_rect(RA_C_HI));
+    (void)ui_help_add(p, TR(HG_SV_MARGIN_NAME), TX_HG_SV_RA_MARGIN,
+                      both(rauto_rect(RA_C_MARGIN), rauto_rect(RA_C_TOL)));
+    (void)ui_help_add(p, TR(RA_START), TX_HG_SV_RA_START,
+                      rauto_rect(RA_C_START));
+    (void)ui_help_add(p, TR(RA_MANUAL), TX_HG_SV_RA_MANUAL,
+                      rudder_rect(RUD_C_AUTO));
 }
 
 /** @brief SETTINGS > OUTPUT: the pages' tabs, TYPE, FRAME RATE and the
@@ -280,19 +222,20 @@ static void page_auto(ui_help_page_t *p)
 static void page_output(ui_help_page_t *p)
 {
     task_page(p, TX_HG_SV_TITLE_OUTPUT);
-    item(p, TR(HG_SV_PAGES_NAME), TX_HG_SV_PAGES,
-         shown_part((gfx_rect_t){ OV_X + 10, OV_TAB_Y, OV_TAB_W, OV_TAB_H }),
-         UI_HELP_AT_LEFT);
-    item(p, TR(SV_ROW_TYPE), TX_HG_SV_ROW_TYPE,
-         shown_part(row_at(PG_OUTPUT, R_TYPE, SETTING_COUNT)),
-         UI_HELP_AT_RIGHT);
-    item(p, TR(SV_ROW_RATE), TX_HG_SV_ROW_RATE,
-         shown_part(row_at(PG_OUTPUT, R_RATE, SETTING_COUNT)),
-         UI_HELP_AT_RIGHT);
-    item(p, TR(SV_ROW_MIN), TX_HG_SV_ROW_MIN,
-         row_at(PG_OUTPUT, R_MIN, SETTING_COUNT), UI_HELP_AT_RIGHT);
-    item(p, TR(SV_ROW_MAX), TX_HG_SV_ROW_MAX,
-         row_at(PG_OUTPUT, R_MAX, SETTING_COUNT), UI_HELP_AT_RIGHT);
+    (void)ui_help_add(p, TR(HG_SV_PAGES_NAME), TX_HG_SV_PAGES,
+                      (gfx_rect_t){ OV_X + 10, OV_TAB_Y, OV_TAB_W, OV_TAB_H });
+    (void)ui_help_add_at(p, TR(SV_ROW_TYPE), TX_HG_SV_ROW_TYPE,
+                         row_at(PG_OUTPUT, R_TYPE, SETTING_COUNT),
+                         UI_HELP_AT_RIGHT);
+    (void)ui_help_add_at(p, TR(SV_ROW_RATE), TX_HG_SV_ROW_RATE,
+                         row_at(PG_OUTPUT, R_RATE, SETTING_COUNT),
+                         UI_HELP_AT_RIGHT);
+    (void)ui_help_add_at(p, TR(SV_ROW_MIN), TX_HG_SV_ROW_MIN,
+                         row_at(PG_OUTPUT, R_MIN, SETTING_COUNT),
+                         UI_HELP_AT_RIGHT);
+    (void)ui_help_add_at(p, TR(SV_ROW_MAX), TX_HG_SV_ROW_MAX,
+                         row_at(PG_OUTPUT, R_MAX, SETTING_COUNT),
+                         UI_HELP_AT_RIGHT);
 }
 
 /** @brief SETTINGS > OUTPUT's other rows: PULSE CENTRE, TRIM, TRAVEL and
@@ -301,17 +244,16 @@ static void page_output(ui_help_page_t *p)
 static void page_output_2(ui_help_page_t *p)
 {
     task_page(p, TX_HG_SV_TITLE_OUTPUT_2);
-    item(p, TR(SV_ROW_CENTRE), TX_HG_SV_ROW_CENTRE,
-         shown_part(row_at(PG_OUTPUT, R_CENTRE, SETTING_COUNT)),
-         UI_HELP_AT_LEFT);
-    item(p, TR(SV_ROW_TRIM), TX_HG_SV_ROW_TRIM,
-         shown_part(row_at(PG_OUTPUT, R_TRIM, SETTING_COUNT)),
-         UI_HELP_AT_LEFT);
-    item(p, TR(SV_ROW_TRAVEL), TX_HG_SV_ROW_TRAVEL,
-         row_at(PG_OUTPUT, R_TRAVEL, SETTING_COUNT), UI_HELP_AT_RIGHT);
-    item(p, TR(SV_ROW_REVERSE), TX_HG_SV_ROW_REVERSE,
-         shown_part(row_at(PG_OUTPUT, R_REVERSE, SETTING_COUNT)),
-         UI_HELP_AT_RIGHT);
+    (void)ui_help_add(p, TR(SV_ROW_CENTRE), TX_HG_SV_ROW_CENTRE,
+                      row_at(PG_OUTPUT, R_CENTRE, SETTING_COUNT));
+    (void)ui_help_add(p, TR(SV_ROW_TRIM), TX_HG_SV_ROW_TRIM,
+                      row_at(PG_OUTPUT, R_TRIM, SETTING_COUNT));
+    (void)ui_help_add_at(p, TR(SV_ROW_TRAVEL), TX_HG_SV_ROW_TRAVEL,
+                         row_at(PG_OUTPUT, R_TRAVEL, SETTING_COUNT),
+                         UI_HELP_AT_RIGHT);
+    (void)ui_help_add_at(p, TR(SV_ROW_REVERSE), TX_HG_SV_ROW_REVERSE,
+                         row_at(PG_OUTPUT, R_REVERSE, SETTING_COUNT),
+                         UI_HELP_AT_RIGHT);
 }
 
 /** @brief SETTINGS > SWEEP: CURVE, SPEED and RANGE.
@@ -319,13 +261,15 @@ static void page_output_2(ui_help_page_t *p)
 static void page_sweep(ui_help_page_t *p)
 {
     task_page(p, TX_HG_SV_TITLE_SWEEP);
-    item(p, TR(SV_ROW_CURVE), TX_HG_SV_ROW_CURVE,
-         row_at(PG_SWEEP, R_SETTING, SET_SERVO_CURVE), UI_HELP_AT_RIGHT);
-    item(p, TR(SV_ROW_SPEED), TX_HG_SV_ROW_SPEED,
-         row_at(PG_SWEEP, R_SETTING, SET_SERVO_TEST_HZ), UI_HELP_AT_RIGHT);
-    item(p, TR(SV_ROW_RANGE), TX_HG_SV_ROW_RANGE,
-         row_at(PG_SWEEP, R_SETTING, SET_SERVO_TEST_RANGE),
-         UI_HELP_AT_RIGHT);
+    (void)ui_help_add_at(p, TR(SV_ROW_CURVE), TX_HG_SV_ROW_CURVE,
+                         row_at(PG_SWEEP, R_SETTING, SET_SERVO_CURVE),
+                         UI_HELP_AT_RIGHT);
+    (void)ui_help_add_at(p, TR(SV_ROW_SPEED), TX_HG_SV_ROW_SPEED,
+                         row_at(PG_SWEEP, R_SETTING, SET_SERVO_TEST_HZ),
+                         UI_HELP_AT_RIGHT);
+    (void)ui_help_add_at(p, TR(SV_ROW_RANGE), TX_HG_SV_ROW_RANGE,
+                         row_at(PG_SWEEP, R_SETTING, SET_SERVO_TEST_RANGE),
+                         UI_HELP_AT_RIGHT);
 }
 
 /** @brief SETTINGS > DUT: NAME, REPORT, ENC CENTRE and the two openers.
@@ -333,16 +277,17 @@ static void page_sweep(ui_help_page_t *p)
 static void page_dut(ui_help_page_t *p)
 {
     task_page(p, TX_HG_SV_TITLE_DUT);
-    item(p, TR(SV_ROW_NAME), TX_HG_SV_ROW_NAME,
-         shown_part(row_at(PG_DUT, R_TEXT, SETTING_COUNT)), UI_HELP_AT_RIGHT);
-    item(p, TR(SV_ROW_REPORT), TX_HG_SV_ROW_REPORT,
-         row_at(PG_DUT, R_SETTING, SET_SERVO_REPORT), UI_HELP_AT_RIGHT);
-    item(p, TR(SV_ROW_ENC_CENTRE), TX_HG_SV_ROW_ENC,
-         row_at(PG_DUT, R_ENC_CENTRE, SETTING_COUNT), UI_HELP_AT_RIGHT);
-    item(p, "AS5600", TX_HG_SV_OPEN_ENC, shown_part(enc_open_rect()),
-         UI_HELP_AT_LEFT);
-    item(p, TR(HG_SV_CAPS_NAME), TX_HG_SV_CAPS, shown_part(caps_open_rect()),
-         UI_HELP_AT_LEFT);
+    (void)ui_help_add_at(p, TR(SV_ROW_NAME), TX_HG_SV_ROW_NAME,
+                         row_at(PG_DUT, R_TEXT, SETTING_COUNT),
+                         UI_HELP_AT_RIGHT);
+    (void)ui_help_add_at(p, TR(SV_ROW_REPORT), TX_HG_SV_ROW_REPORT,
+                         row_at(PG_DUT, R_SETTING, SET_SERVO_REPORT),
+                         UI_HELP_AT_RIGHT);
+    (void)ui_help_add_at(p, TR(SV_ROW_ENC_CENTRE), TX_HG_SV_ROW_ENC,
+                         row_at(PG_DUT, R_ENC_CENTRE, SETTING_COUNT),
+                         UI_HELP_AT_RIGHT);
+    (void)ui_help_add(p, "AS5600", TX_HG_SV_OPEN_ENC, enc_open_rect());
+    (void)ui_help_add(p, TR(HG_SV_CAPS_NAME), TX_HG_SV_CAPS, caps_open_rect());
 }
 
 /* ------------------------------------------------- the output card's pages */
@@ -364,18 +309,18 @@ static void card_page(ui_help_page_t *p, ui_text_id_t title)
 static void page_card(ui_help_page_t *p)
 {
     card_page(p, TX_HG_SV_TITLE_CARD);
-    item(p, TR(SV_ROW_TYPE), TX_HG_SV_TYPE,
-         (gfx_rect_t){ RC_X, TAG_Y, RC_W, TAG_H }, UI_HELP_AT_LEFT);
+    (void)ui_help_add(p, TR(SV_ROW_TYPE), TX_HG_SV_TYPE,
+                      (gfx_rect_t){ RC_X, TAG_Y, RC_W, TAG_H });
     if (prog5v_box_shown()) {
-        item(p, "PROG 5V", TX_HG_SV_P5, s.p5.r, UI_HELP_AT_LEFT);
+        (void)ui_help_add(p, "PROG 5V", TX_HG_SV_P5, s.p5.r);
     } else {
-        item(p, TR(MO_TAB_PLOT), TX_HG_SV_PLOT,
-             (gfx_rect_t){ RC_X, PWR_Y, RC_W, PWR_H }, UI_HELP_AT_LEFT);
+        (void)ui_help_add(p, TR(MO_TAB_PLOT), TX_HG_SV_PLOT,
+                          (gfx_rect_t){ RC_X, PWR_Y, RC_W, PWR_H });
     }
-    item(p, TR(SV_SET), TX_HG_SV_SET, (gfx_rect_t){ RC_X, SUP_Y, RC_W, SUP_H },
-         UI_HELP_AT_LEFT);
-    item(p, TR(SV_SPEED), TX_HG_SV_SPEED,
-         (gfx_rect_t){ RC_X, SLIDER_Y, RC_W, SLIDER_H }, UI_HELP_AT_LEFT);
+    (void)ui_help_add(p, TR(SV_SET), TX_HG_SV_SET,
+                      (gfx_rect_t){ RC_X, SUP_Y, RC_W, SUP_H });
+    (void)ui_help_add(p, TR(SV_SPEED), TX_HG_SV_SPEED,
+                      (gfx_rect_t){ RC_X, SLIDER_Y, RC_W, SLIDER_H });
 }
 
 /** @brief The output card's foot: TARGET, CENTRE, SWEEP and RELEASE, and
@@ -385,14 +330,14 @@ static void page_card(ui_help_page_t *p)
 static void page_drive(ui_help_page_t *p)
 {
     card_page(p, TX_HG_SV_TITLE_DRIVE);
-    item(p, TR(SV_TARGET), TX_HG_SV_TARGET, p->must_show, UI_HELP_AT_LEFT);
-    item(p, TR(SV_CENTRE_BTN), TX_HG_SV_BUTTONS,
-         both(s.centre_btn, s.release_btn), UI_HELP_AT_LEFT);
-    item(p, s.gate.armed ? "DISARM" : "ARM", TX_HG_SV_ARM, s.arm_btn,
-         UI_HELP_AT_LEFT);
+    (void)ui_help_add(p, TR(SV_TARGET), TX_HG_SV_TARGET, p->must_show);
+    (void)ui_help_add(p, TR(SV_CENTRE_BTN), TX_HG_SV_BUTTONS,
+                      both(s.centre_btn, s.release_btn));
+    (void)ui_help_add(p, s.gate.armed ? "DISARM" : "ARM", TX_HG_SV_ARM,
+                      s.arm_btn);
     if (rudder_shown()) {
-        item(p, TR(HG_SV_SIDE_NAME), TX_HG_SV_RUD_SIDE,
-             shown_right(rudder_flap_rect()), UI_HELP_AT_LEFT);
+        (void)ui_help_add(p, TR(HG_SV_SIDE_NAME), TX_HG_SV_RUD_SIDE,
+                          rudder_flap_rect());
     }
 }
 

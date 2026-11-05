@@ -157,6 +157,20 @@ gfx_rect_t ui_help_live_rect(ui_help_side_t side);
 bool ui_help_add(ui_help_page_t *p, const char *label, ui_text_id_t text,
                  gfx_rect_t r);
 
+/**
+ * @brief ui_help_add() with the badge in the corner @p at: for a control
+ *        whose own text starts at its left edge, UI_HELP_AT_RIGHT.  The
+ *        corner is the cut rect's.
+ * @param p     The page, its side set.
+ * @param label The control's name as the screen draws it.
+ * @param text  What it does.
+ * @param r     Where it is, in the screen's coordinates.
+ * @param at    The badge's corner.
+ * @return True when the item was added.
+ */
+bool ui_help_add_at(ui_help_page_t *p, const char *label, ui_text_id_t text,
+                    gfx_rect_t r, ui_help_at_t at);
+
 /** @brief What a point of the guide is. */
 typedef enum {
     UI_HELP_HIT_NONE = 0,   /**< not the guide's                          */
