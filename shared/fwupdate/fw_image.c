@@ -1,6 +1,7 @@
 /**
  * @file fw_image.c
- * @brief The panel's application image. See fw_image.h.
+ * @brief An ESP-IDF application image: the panel's own and the C6's. See
+ *        fw_image.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -114,6 +115,14 @@ int fw_version_cmp(fw_version_t a, fw_version_t b)
 fw_err_t fw_image_head(const uint8_t *head, uint32_t have, uint32_t bytes,
                        uint32_t slot, fw_image_info_t *out)
 {
+    return fw_image_head_as(head, have, bytes, slot, FW_CHIP_ESP32P4,
+                            FW_PROJECT, out);
+}
+
+fw_err_t fw_image_head_as(const uint8_t *head, uint32_t have, uint32_t bytes,
+                          uint32_t slot, uint16_t chip, const char *name,
+                          fw_image_info_t *out)
+{
     if (bytes == 0u) {
         return FW_ERR_EMPTY;
     }
@@ -130,7 +139,7 @@ fw_err_t fw_image_head(const uint8_t *head, uint32_t have, uint32_t bytes,
         || head[OFF_SEGMENTS] > FW_MAX_SEGMENTS) {
         return FW_ERR_NOT_IMAGE;
     }
-    if (le16(head + OFF_CHIP) != FW_CHIP_ESP32P4) {
+    if (le16(head + OFF_CHIP) != chip) {
         return FW_ERR_CHIP;
     }
     if (le32(head + HEADER_BYTES + 4u) < DESC_BYTES
@@ -141,7 +150,7 @@ fw_err_t fw_image_head(const uint8_t *head, uint32_t have, uint32_t bytes,
      * project, and so is a name that fills the field without one. */
     const char *project = (const char *)(head + OFF_PROJECT);
     if (memchr(project, '\0', FW_TEXT_MAX) == NULL
-        || strcmp(project, FW_PROJECT) != 0) {
+        || name == NULL || strcmp(project, name) != 0) {
         return FW_ERR_PROJECT;
     }
     fw_version_t v;
@@ -189,8 +198,17 @@ static uint32_t image_length(const uint8_t *img, uint32_t bytes)
 fw_err_t fw_image_check(const uint8_t *img, uint32_t bytes, uint32_t slot,
                         fw_image_info_t *out)
 {
+    return fw_image_check_as(img, bytes, slot, FW_CHIP_ESP32P4, FW_PROJECT,
+                             out);
+}
+
+fw_err_t fw_image_check_as(const uint8_t *img, uint32_t bytes, uint32_t slot,
+                           uint16_t chip, const char *name,
+                           fw_image_info_t *out)
+{
     fw_image_info_t info;
-    const fw_err_t e = fw_image_head(img, bytes, bytes, slot, &info);
+    const fw_err_t e = fw_image_head_as(img, bytes, bytes, slot, chip, name,
+                                        &info);
     if (e != FW_OK) {
         return e;
     }

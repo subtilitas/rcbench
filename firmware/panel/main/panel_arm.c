@@ -719,6 +719,12 @@ void drain_commands(bool link_up, bench_state_t *bench)
             arming_refuse_ask(&s_arm, ask);
             continue;
         }
+        if (arms && panel_c6_busy()) {
+            /* The C6 radio's update ends in a restart of the panel. */
+            control_alert(TR(ALERT_ARM_C6));
+            arming_refuse_ask(&s_arm, ask);
+            continue;
+        }
         if (arms) {
             control_pump();
             if (!arm_watch_take_ok(pc.loss_gen, atomic_load(&s_loss_gen),

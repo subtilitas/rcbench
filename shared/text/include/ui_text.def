@@ -4907,6 +4907,9 @@ UI_TEXT(ALERT_ARM_REFUSED, 94,
 UI_TEXT(ALERT_ARM_PROG, 94,
     "Cannot switch to ARMED: a port is in use by the servo programmer.",
     "ARMED gesperrt: Die Servoprogrammierung belegt einen Port.")
+UI_TEXT(ALERT_ARM_C6, 94,
+    "Cannot switch to ARMED: the C6 radio update is running.",
+    "ARMED gesperrt: Das C6-Funk-Update läuft.")
 UI_TEXT(ALERT_ARM_NO_PIN, 94,
     "Cannot switch to ARMED: no motor pin. Tap TARGET to choose one.",
     "ARMED gesperrt: kein Motor-Pin. Tippe auf ZIEL und wähle einen.")
@@ -5093,6 +5096,31 @@ UI_TEXT(CU_WHY_RESTARTS, 36,
 UI_TEXT(CU_WHY_NOT_STARTED, 36,
     "new firmware did not start",
     "neue Firmware ist nicht gestartet")
+/* How the C6 radio's update ended (main/panel_c6.c). */
+UI_TEXT(ALERT_C6_DONE, 94,
+    "C6 radio updated to %s. The panel restarts.",
+    "C6-Funk auf %s aktualisiert. Das Panel startet neu.")
+UI_TEXT(ALERT_C6_SAME, 94,
+    "The C6 radio runs %s already. Nothing was sent.",
+    "Der C6-Funk nutzt bereits %s. Nichts gesendet.")
+UI_TEXT(ALERT_C6_NO_OTA, 94,
+    "The C6 radio takes no update over SDIO. Flash it over header H4.",
+    "Der C6-Funk nimmt kein Update über SDIO an. Flashe ihn über Header H4.")
+UI_TEXT(ALERT_C6_NO_LINK, 94,
+    "The C6 radio did not answer. Wi-Fi is off until the panel restarts.",
+    "Der C6-Funk hat nicht geantwortet. WLAN ist bis zum Neustart des Panels aus.")
+UI_TEXT(ALERT_C6_FAILED, 94,
+    "C6 update stopped: %s. Previous firmware is running.",
+    "C6-Update abgebrochen: %s. Vorherige Firmware läuft.")
+UI_TEXT(C6_FAIL_WRITE, 36,
+    "a write failed",
+    "Schreiben fehlgeschlagen")
+UI_TEXT(C6_FAIL_VERIFY, 36,
+    "the C6's image check failed",
+    "Prüfung im C6 fehlgeschlagen")
+UI_TEXT(C6_FAIL_ACTIVATE, 36,
+    "activation failed",
+    "Aktivierung fehlgeschlagen")
 
 /* The hint on the alert band when a 2s hold button lifts before 2s: one per
  * action, ui_hold_begin() names it.  Nothing is sent by the short release. */
@@ -5156,6 +5184,9 @@ UI_TEXT(HOLD_HINT_DOWNLOAD, 94,
 UI_TEXT(HOLD_HINT_IOMCU_UPDATE, 94,
     "Hold 2s to update the IOmcu.",
     "Halte 2s, um den IOmcu zu aktualisieren.")
+UI_TEXT(HOLD_HINT_C6_UPDATE, 94,
+    "Hold 2s to update the C6 radio. Wi-Fi stays off until it ends.",
+    "Halte 2s, um den C6-Funk zu aktualisieren. Das WLAN bleibt bis zum Ende aus.")
 UI_TEXT(HOLD_HINT_UNBIND, 94,
     "Hold 2s to clear all pin assignments.",
     "Halte 2s, um alle Pin-Zuordnungen zu löschen.")
@@ -7108,6 +7139,65 @@ UI_TEXT(UPD_CU_RADIO, 0,
 UI_TEXT(UPD_CU_INSTALL, 0,
     "Waiting: panel firmware installation is running.",
     "Wartet: Die Installation der Panel-Firmware läuft.")
+/* UPDATES' C6 RADIO row (upd_c6.c): the versions' line, a version the C6
+ * did not name or an image not carried, the hold and the update's share
+ * sent.  updates-c6 and updates-c6-* measure each. */
+UI_TEXT(UPD_C6_LINE, 0,
+    "C6 radio: %s. Included: %s.",
+    "C6-Funk: %s. Auf diesem Panel: %s.")
+UI_TEXT(UPD_C6_NOT_REPORTED, 0,
+    "not reported",
+    "nicht gemeldet")
+UI_TEXT(UPD_C6_NONE, 0,
+    "none",
+    "keine")
+UI_TEXT(UPD_C6_HOLD, 0,
+    "HOLD 2s TO UPDATE THE C6 RADIO",
+    "2s HALTEN ZUM C6-FUNK-UPDATE")
+UI_TEXT(UPD_C6_PROGRESS, 0,
+    "C6 UPDATE %u%%",
+    "C6-UPDATE %u%%")
+/* The band's line for a tap on the C6 RADIO row's grey hold: why it is
+ * grey (upd_c6_reason()). */
+UI_TEXT(C6_WHY_NO_IMAGE, 94,
+    "This panel includes no C6 radio firmware.",
+    "Dieses Panel enthält keine C6-Funk-Firmware.")
+UI_TEXT(C6_WHY_BAD_IMAGE, 94,
+    "The included C6 radio firmware failed its check.",
+    "Die enthaltene C6-Funk-Firmware hat die Prüfung nicht bestanden.")
+UI_TEXT(C6_WHY_UPDATING, 94,
+    "The C6 radio update is running.",
+    "Das C6-Funk-Update läuft.")
+UI_TEXT(C6_WHY_LINK, 94,
+    "The C6 radio did not answer. Restart the panel.",
+    "Der C6-Funk hat nicht geantwortet. Starte das Panel neu.")
+UI_TEXT(C6_WHY_SAME, 94,
+    "The C6 radio runs the firmware included on this panel.",
+    "Der C6-Funk nutzt die im Panel enthaltene Firmware.")
+UI_TEXT(C6_WHY_ARMED, 94,
+    "The C6 update requires SAFE.",
+    "Das C6-Update erfordert SAFE.")
+UI_TEXT(C6_WHY_SUPPLY, 94,
+    "The C6 update requires the supply output off.",
+    "Das C6-Update erfordert einen ausgeschalteten Netzteilausgang.")
+UI_TEXT(C6_WHY_RUN, 94,
+    "The C6 update waits: a recording session is open.",
+    "Das C6-Update wartet: Ein Aufzeichnungslauf ist offen.")
+UI_TEXT(C6_WHY_DRAWING, 94,
+    "The C6 update waits: a board drawing is being downloaded or saved.",
+    "Das C6-Update wartet: Eine Platinenzeichnung wird geladen oder gespeichert.")
+UI_TEXT(C6_WHY_IOMCU, 94,
+    "The C6 update waits for the IOmcu update to finish.",
+    "Das C6-Update wartet auf das Ende des IOmcu-Updates.")
+UI_TEXT(C6_WHY_INSTALL, 94,
+    "The C6 update waits: panel firmware installation is running.",
+    "Das C6-Update wartet: Die Installation der Panel-Firmware läuft.")
+UI_TEXT(C6_WHY_RADIO, 94,
+    "The C6 update waits for the panel's Wi-Fi to switch off.",
+    "Das C6-Update wartet, bis das WLAN des Panels aus ist.")
+UI_TEXT(C6_WHY_ENDING, 94,
+    "The C6 update waits for the C6 radio's last answer.",
+    "Das C6-Update wartet auf die letzte Antwort des C6-Funks.")
 UI_TEXT(UPD_ABOUT_1, 0,
     "With reminders on, the panel checks GitHub at startup.",
     "Mit Erinnerung prüft das Panel beim Start GitHub auf Updates.")
