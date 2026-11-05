@@ -139,7 +139,7 @@ is 4.37, and an IOmcu of 0.19.0 or later speaks 4.22 or later: the major,
 1. Power both boards with the link wired. At link-up the panel compares
    the IOmcu's running image with the image it carries by SHA-256, finds
    another build, and the band says `IOmcu runs a different build. Update
-   it under SETUP > UPDATES.`.
+   it on UPDATES.`.
 2. The question opens on the menu while the bench is SAFE, the supply's
    output is off and the panel's Wi-Fi radio is off. It names the version
    on the IOmcu and the version in the panel. Hold START for 2s, or after
