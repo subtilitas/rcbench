@@ -457,7 +457,7 @@ des Hosts vorbei ist.
 | Task des Konsolen-Builds | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
 | `console` | `console_task`, die seriellen Ports zur Konsole des IOmcu, und `ble scan` (`panel_console.c`) | 4 096 | 1 472 | 1 584 |
-| `blestart` | `ble_start_task`, die Verbindung zum C6, seine Controller-Anfragen, der Start des Hosts und das Warten auf seinen Sync, dann weg (`panel_ble.c`) | 4 096 | 1 184 | 1 872 |
+| `blestart` | `ble_start_task`, die Verbindung zum C6, seine Controller-Anfragen, der Start des Hosts und das Warten auf seinen Sync, dann weg (`panel_ble.c`) | 4 096 | 1 200 | 1 856 |
 | `nimble_host` | `ble_host_task`, der Host von NimBLE: HCI (Host Controller Interface) zum C6 und zurück, die Berichte des Scans (`panel_ble.c`) | 4 096 | 1 936 | 1 120 |
 
 Die tiefste Kette von `runlog` bindet die SD-Karte ein: die Liste der
@@ -731,8 +731,10 @@ Sein interner RAM: der Stack von `nimble_host` mit 4 096 Bytes auf Dauer,
 der Stack von `blestart` mit 4 096 Bytes, bis der Start vorbei ist, und die
 Event-Queue mit 32 x 64 = 2 048 Bytes in .bss. esp_hosted belegt je
 HCI-Paket einen Puffer; diese sind nicht gezählt. Die Pools und Puffer von
-NimBLE liegen im PSRAM (`CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL`). Die
-Zahlen auf einem Board sind nicht gemessen.
+NimBLE liegen im PSRAM (`CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL`). Auf
+einem Panel (Station, 2026-11-05, Konsolen-Build) belegte der Start 5 152
+Bytes internen RAM, 264 307 frei davor und 259 155 danach, und 25 176 Bytes
+PSRAM; mit dem Hotspot danach waren 251 103 Bytes interner RAM frei.
 
 Was die Bluetooth-LE-Konfiguration zum Image hinzufügt, aus der Linker-Map
 (`esp_idf_size`), ESP-IDF v6.1, gebaut ohne die IOmcu-Images. Der
@@ -742,7 +744,7 @@ NimBLE:
 | Build | Anwendungs-Image (Bytes) | Davon Bluetooth LE (Bytes) | Interner RAM des Images, DIRAM (Bytes) | Davon Bluetooth LE (Bytes) |
 | --- | ---: | ---: | ---: | ---: |
 | Standard | 3 078 608 | 44 688 | 179 190 | 486 |
-| Konsole (`RCBENCH_PANEL_CONSOLE`) | 3 113 888 | 75 408 | 188 360 | 3 448 |
+| Konsole (`RCBENCH_PANEL_CONSOLE`) | 3 114 560 | 76 080 | 188 360 | 3 448 |
 
 Die .bss im PSRAM ist in beiden Builds 2 587 632 Bytes, mit und ohne
 Bluetooth LE.

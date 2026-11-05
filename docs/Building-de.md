@@ -743,15 +743,30 @@ Zeilen auf der Konsole:
    Start: `ble: no link to the C6: no Bluetooth until the panel restarts`.
 2. Die Controller-Anfragen an den C6, `esp_hosted_bt_controller_init()` und
    `_enable()`. esp_hosted ab 2.5.2 auf dem C6 lässt den Controller aus, bis
-   der Host fragt; ältere Firmware kennt diese Anfragen nicht und startet
-   ihren Controller selbst. esp_hosted beendet eine unbeantwortete Anfrage
-   nach 5s. Eine von drei Zeilen:
-   - `ble: C6 controller init and enable answered in <n>ms and <n>ms`;
-   - `ble: C6 controller init not answered in <n>ms: a C6 firmware without
-     the requests, its controller runs from its own start`; das Enable geht
-     dann nicht hinaus;
-   - `ble: C6 controller init <error> in <n>ms, enable <error> in <n>ms:
-     the host start goes on`.
+   der Host fragt. Ältere Firmware kennt diese Anfragen nicht
+   (FeatureControl, 2.5.2 laut `docs/implemented_rpcs.md` von esp_hosted)
+   und startet ihren Controller selbst. Die Versionsanfrage gibt es seit
+   1.0.0, deshalb entscheidet der Start nach der Version des C6
+   (`c6_link_version()`):
+   - keine Version gemeldet, wie beim C6 des Boards mit 0.0.0, oder eine vor
+     2.5.2: keine Anfragen, und `ble: C6 firmware version not reported:
+     older than 2.5.2, no controller requests; its controller runs from its
+     own start` (oder `ble: C6 firmware <x.y.z>: older than 2.5.2, ...`).
+     Hat der Host dann binnen 3 000ms keinen Sync, schreibt der Start `ble:
+     no sync within 3000ms without the controller requests: sending them`,
+     schickt sie und wartet weitere 3 000ms;
+   - 2.5.2 oder neuer: die Anfragen gehen hinaus. esp_hosted beendet eine
+     unbeantwortete Anfrage nach 5s, und der Start schreibt eine von
+     `ble: C6 controller init and enable answered in <n>ms and <n>ms`,
+     `ble: C6 controller init not answered in <n>ms: a C6 firmware before
+     2.5.2, its controller runs from its own start` (das Enable geht dann
+     nicht hinaus) oder `ble: C6 controller init <error> in <n>ms, enable
+     <error> in <n>ms: the host start goes on`.
+
+   Die Versionsanfrage selbst kostet auf einem C6, der sie nicht
+   beantwortet, einmal 1s (`c6_link_up()`). Auf dem C6 des Boards bleiben
+   die Controller-Anfragen unbeantwortet: gesendet kosten sie 5 003ms
+   (Station, 2026-11-05).
 3. `nimble_port_init()` und der Host-Task `nimble_host`, dann das Warten auf
    den Sync des Hosts, seinen HCI-Reset und die Abfragen danach, die der C6
    beantwortet, höchstens 3 000ms (`PANEL_BLE_SYNC_MS`):
@@ -769,6 +784,30 @@ von selbst neu und schreibt `ble: synced again`. Die Events aus den
 Callbacks des Hosts gehen in eine FreeRTOS-Queue mit 32 Elementen zu 64
 Bytes (`panel_ble.h`); eine volle Queue verwirft das Event und zählt es.
 
+Jeder Start des Hosts schreibt `NimBLE: Failed to persist local IRK
+(rc=8)`. Der Host erzeugt bei seinem Start einen zufälligen IRK (Identity
+Resolving Key) und gibt ihn dem Bond-Speicher (`ble_hs_pvcy.c`). Das Panel
+konfiguriert keinen Speicher: kein Security Manager, kein Bonding. Das
+Schreiben antwortet `BLE_HS_ENOTSUP`, 8. Das Panel scannt und verbindet mit
+seiner öffentlichen Adresse und löst keine privaten Adressen auf; der
+Schlüssel wird nie benutzt.
+
+Auf dem C6 des Boards (Firmware 0.0.0, `capabilities: 0xd`) hat die Station
+am 2026-11-05 gemessen: ein Sync 13ms nach dem Start des Host-Tasks,
+interner RAM 264 307 Bytes frei vor dem Start und 259 155 danach (5 152
+Bytes), PSRAM 25 994 264 und 25 969 088 (25 176 Bytes), zwei Scans mit 2
+und 3 Berichten und keinem verworfenen Event, und der WLAN-Hotspot lief vor
+und nach den Scans, mit 251 103 Bytes freiem internem RAM bei laufendem
+Hotspot nach dem Start des Hosts. Dieser Start schickte noch die
+Controller-Anfragen und wartete 5 003ms auf das unbeantwortete Init. Mit
+eingeschaltetem BWT901CL erschien sein Advertising einmal je Scan von
+10 000ms, mit -82dBm: `ble: adv 00:0C:BF:08:19:29 type 0 rssi -82dBm
+evtype 0 data 02010A0303F018170948432D3036...`, Flags 0x0A, der
+16-Bit-Dienst 0x18F0 und der Name `HC-06`. Der Sensor sendet etwa alle
+256ms (am Handy abgelesen), der Duplikatfilter des Controllers hält die
+Wiederholungen also zurück; für einen Scan, der Geräte auflistet, ist das
+gewollt.
+
 Aktuelle Einschränkungen:
 
 - Der Transport-Start von NimBLE (`ble_transport_ll_init()` in
@@ -777,8 +816,8 @@ Aktuelle Einschränkungen:
   `c6_link_up()` die Verbindung gemeldet hat; eine Verbindung, die zwischen
   dieser Antwort und dem Transport-Start ausfällt, löst den Abort aus.
 - Die Firmware des ausgelieferten C6 meldet Version 0.0.0 und beantwortet
-  keine Versionsanfrage. Ob sie die Controller-Anfragen annimmt und ob ihr
-  Controller überhaupt auf HCI antwortet, ist nicht gemessen.
+  weder die Versionsanfrage noch die Controller-Anfragen; ihr Controller
+  antwortet auf HCI.
 - Wi-Fi und Bluetooth LE teilen sich das eine 2,4-GHz-Funkteil des C6
   (Software-Koexistenz des C6) und den SDMMC-Controller mit der SD-Karte.
   Ihre Wirkung aufeinander ist nicht gemessen.

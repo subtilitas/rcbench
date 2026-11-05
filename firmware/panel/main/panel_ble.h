@@ -12,9 +12,11 @@
  *
  * 1. c6_link_up(); a failed link ends the start (PANEL_BLE_NO_LINK).
  * 2. The C6's controller init and enable requests (esp_hosted 2.5.2 and
- *    later).  A C6 firmware without them runs its controller from its own
- *    start; an unanswered or refused request is logged and the start goes
- *    on.
+ *    later), sent to a C6 that reports 2.5.2 or later.  A C6 that reports
+ *    an older version or none, as the board's 0.0.0 does, has no such
+ *    requests and runs its controller from its own start; it gets them only
+ *    when the host has no sync without them.  An unanswered or refused
+ *    request is logged and the start goes on.
  * 3. nimble_port_init() and the host task `nimble_host`; the host's sync,
  *    its HCI reset answered by the C6, is awaited for PANEL_BLE_SYNC_MS.
  *    Without it the state is PANEL_BLE_NO_SYNC and the host keeps trying;

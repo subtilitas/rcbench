@@ -708,15 +708,28 @@ it. The steps and their console lines:
    `ble: no link to the C6: no Bluetooth until the panel restarts`.
 2. The C6's controller requests, `esp_hosted_bt_controller_init()` and
    `_enable()`. esp_hosted 2.5.2 and later on the C6 leave its controller
-   off until asked; older firmware has no such requests and starts its
-   controller itself. esp_hosted ends an unanswered request after 5s. One of
-   three lines:
-   - `ble: C6 controller init and enable answered in <n>ms and <n>ms`;
-   - `ble: C6 controller init not answered in <n>ms: a C6 firmware without
-     the requests, its controller runs from its own start`; the enable is
-     not sent then;
-   - `ble: C6 controller init <error> in <n>ms, enable <error> in <n>ms:
-     the host start goes on`.
+   off until asked. Older firmware has no such requests (FeatureControl,
+   2.5.2 in esp_hosted's `docs/implemented_rpcs.md`) and starts its
+   controller itself. The version request exists since 1.0.0, so the start
+   decides by the C6's version (`c6_link_version()`):
+   - no version reported, as on the board's C6 with 0.0.0, or one before
+     2.5.2: no requests, and `ble: C6 firmware version not reported: older
+     than 2.5.2, no controller requests; its controller runs from its own
+     start` (or `ble: C6 firmware <x.y.z>: older than 2.5.2, ...`). Should
+     the host have no sync within 3,000ms then, the start logs `ble: no
+     sync within 3000ms without the controller requests: sending them`,
+     sends them and waits another 3,000ms;
+   - 2.5.2 or later: the requests go out. esp_hosted ends an unanswered
+     request after 5s, and the start logs one of
+     `ble: C6 controller init and enable answered in <n>ms and <n>ms`,
+     `ble: C6 controller init not answered in <n>ms: a C6 firmware before
+     2.5.2, its controller runs from its own start` (the enable is not
+     sent then), or `ble: C6 controller init <error> in <n>ms, enable
+     <error> in <n>ms: the host start goes on`.
+
+   The version request itself costs 1s once on a C6 that does not answer
+   it (`c6_link_up()`). On the board's C6 the controller requests go
+   unanswered: sent, they cost 5,003ms (station, 2026-11-05).
 3. `nimble_port_init()` and the host task `nimble_host`, then the wait for
    the host's sync, its HCI reset and the reads after it answered by the
    C6, at most 3,000ms (`PANEL_BLE_SYNC_MS`):
@@ -734,6 +747,28 @@ again`. The events of the host's callbacks go to a FreeRTOS queue of 32
 elements of 64 bytes (`panel_ble.h`); a full queue drops the event and
 counts it.
 
+Each host start logs `NimBLE: Failed to persist local IRK (rc=8)`. The
+host makes a random IRK (identity resolving key) at its start and hands it
+to the bond store (`ble_hs_pvcy.c`). The panel configures no store: no
+security manager, no bonding. The write answers `BLE_HS_ENOTSUP`, 8. The
+panel scans and connects with its public address and resolves no private
+addresses, so the key is never used.
+
+On the board's C6 (firmware 0.0.0, `capabilities: 0xd`) the station
+measured on 2026-11-05: a sync 13ms after the host task's start, internal
+RAM 264,307 bytes free before the start and 259,155 after (5,152 bytes),
+PSRAM 25,994,264 and 25,969,088 (25,176 bytes), two scans with 2 and 3
+reports and no event dropped, and the Wi-Fi access point working before
+and after the scans, with 251,103 bytes of internal RAM free with the
+access point up after the host's start. That start still sent the
+controller requests and waited 5,003ms for the unanswered init. With a
+BWT901CL on, its advertising appeared once in each 10,000ms scan, at
+-82dBm: `ble: adv 00:0C:BF:08:19:29 type 0 rssi -82dBm evtype 0 data
+02010A0303F018170948432D3036...`, flags 0x0A, the 16-bit service 0x18F0
+and the name `HC-06`. The sensor advertises about every 256ms (a phone's
+reading), so the controller's duplicate filter holds back the repeats; for
+a scan that lists devices this is what is wanted.
+
 Current limitations:
 
 - NimBLE's transport start (`ble_transport_ll_init()` in esp_hosted's
@@ -742,8 +777,7 @@ Current limitations:
   up; a link that fails between that answer and the transport start
   triggers the abort.
 - The shipped C6's firmware reports version 0.0.0 and answers no version
-  request. Whether it takes the controller requests, and whether its
-  controller answers HCI at all, is not measured.
+  request and no controller request; its controller answers HCI.
 - Wi-Fi and Bluetooth LE share the C6's one 2.4GHz radio (the C6's software
   coexistence) and the SDMMC controller with the SD card. Their effect on
   each other is not measured.

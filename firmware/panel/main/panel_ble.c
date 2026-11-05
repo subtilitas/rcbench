@@ -40,6 +40,10 @@
  *         esp_hosted ends each one after DEFAULT_RPC_RSP_TIMEOUT, 5s
  *         (rpc_slave_if.h), ms. */
 #define BLE_RPC_SILENT_MS 4500u
+/** @brief The first C6 firmware with the controller requests (FeatureControl,
+ *         esp_hosted 2.5.2, docs/implemented_rpcs.md), as
+ *         ESP_HOSTED_VERSION_VAL() packs it. */
+#define BLE_RPC_FIRST ESP_HOSTED_VERSION_VAL(2, 5, 2)
 
 _Static_assert(PANEL_BLE_DATA_MAX >= BLE_HS_ADV_MAX_SZ,
                "a legacy advertising report fits an event");
@@ -201,6 +205,8 @@ static int gap_event(struct ble_gap_event *ev, void *arg)
  * itself.  A request the C6 does not know is answered with an error or not
  * at all; esp_hosted ends an unanswered one after 5s.  After an unanswered
  * init the enable is not sent: the C6 does not know that request either.
+ * The start sends them to a C6 that reports 2.5.2 or later, and to any C6
+ * whose host has no sync without them (c6_has_requests()).
  */
 static void controller_requests(void)
 {
@@ -209,8 +215,8 @@ static void controller_requests(void)
     const uint32_t t1 = ble_now_ms();
     if (ei != ESP_OK && t1 - t0 >= BLE_RPC_SILENT_MS) {
         ESP_LOGW(TAG, "C6 controller init not answered in %ums: a C6 "
-                      "firmware without the requests, its controller "
-                      "runs from its own start", (unsigned)(t1 - t0));
+                      "firmware before 2.5.2, its controller runs from its "
+                      "own start", (unsigned)(t1 - t0));
         return;
     }
     const esp_err_t ee = esp_hosted_bt_controller_enable();
@@ -224,6 +230,34 @@ static void controller_requests(void)
                  esp_err_to_name(ei), (unsigned)(t1 - t0),
                  esp_err_to_name(ee), (unsigned)(t2 - t1));
     }
+}
+
+/**
+ * @brief Whether the C6's firmware has the controller requests.
+ *
+ * The version request exists since esp_hosted 1.0.0 and the controller
+ * requests since 2.5.2 (docs/implemented_rpcs.md): a C6 that answers no
+ * version request, such as the board's 0.0.0, has neither, and its
+ * controller runs from its own start.
+ *
+ * @return true for a reported version of 2.5.2 or later.
+ */
+static bool c6_has_requests(void)
+{
+    c6_link_version_t v;
+    if (!c6_link_version(&v)) {
+        ESP_LOGI(TAG, "C6 firmware version not reported: older than 2.5.2, "
+                      "no controller requests; its controller runs from its "
+                      "own start");
+        return false;
+    }
+    if (ESP_HOSTED_VERSION_VAL(v.major, v.minor, v.patch) < BLE_RPC_FIRST) {
+        ESP_LOGI(TAG, "C6 firmware %u.%u.%u: older than 2.5.2, no controller "
+                      "requests; its controller runs from its own start",
+                 (unsigned)v.major, (unsigned)v.minor, (unsigned)v.patch);
+        return false;
+    }
+    return true;
 }
 
 /**
@@ -243,7 +277,10 @@ static void ble_start_task(void *arg)
         vTaskDelete(NULL);
         return;
     }
-    controller_requests();
+    const bool requests = c6_has_requests();
+    if (requests) {
+        controller_requests();
+    }
     const esp_err_t e = nimble_port_init();
     if (e != ESP_OK) {
         atomic_store(&s_state, PANEL_BLE_NO_SYNC);
@@ -256,7 +293,18 @@ static void ble_start_task(void *arg)
     ble_hs_cfg.reset_cb = on_reset;
     atomic_store(&s_host_t0, ble_now_ms());
     nimble_port_freertos_init(ble_host_task);
-    if (xSemaphoreTake(s_synced, pdMS_TO_TICKS(PANEL_BLE_SYNC_MS)) != pdTRUE) {
+    bool synced =
+        xSemaphoreTake(s_synced, pdMS_TO_TICKS(PANEL_BLE_SYNC_MS)) == pdTRUE;
+    if (!synced && !requests) {
+        /* A C6 that is newer than its version answer said keeps its
+         * controller off until asked; the host's resets go on meanwhile. */
+        ESP_LOGW(TAG, "no sync within %ums without the controller requests: "
+                      "sending them", (unsigned)PANEL_BLE_SYNC_MS);
+        controller_requests();
+        synced = xSemaphoreTake(s_synced, pdMS_TO_TICKS(PANEL_BLE_SYNC_MS))
+                 == pdTRUE;
+    }
+    if (!synced) {
         /* A sync after this still makes the state READY (on_sync). */
         int expect = PANEL_BLE_STARTING;
         (void)atomic_compare_exchange_strong(&s_state, &expect,

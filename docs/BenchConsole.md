@@ -385,7 +385,8 @@ to the IOmcu. The panel holds each typed line until its end for this.
 `ble scan` starts Bluetooth LE when it has not started ([Building,
 Bluetooth LE through the ESP32-C6](Building.md#bluetooth-le-through-the-esp32-c6)),
 waits for the host's sync, and runs one active scan of 10,000ms with the
-controller's duplicate filter on. Another `ble` line prints the commands.
+controller's duplicate filter on: a device that advertises every 256ms
+appears once in the scan. Another `ble` line prints the commands.
 
 | Line | Means |
 | --- | --- |

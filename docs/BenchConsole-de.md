@@ -404,7 +404,8 @@ zum IOmcu. Dafür hält das Panel jede getippte Zeile bis zu ihrem Ende
 zurück. `ble scan` startet Bluetooth LE, wenn es noch nicht läuft ([Bauen,
 Bluetooth LE über den ESP32-C6](Building-de.md#bluetooth-le-über-den-esp32-c6)),
 wartet auf den Sync des Hosts und macht einen aktiven Scan von 10 000ms mit
-dem Duplikatfilter des Controllers. Eine andere Zeile mit `ble` nennt die
+dem Duplikatfilter des Controllers: ein Gerät, das alle 256ms sendet,
+erscheint einmal im Scan. Eine andere Zeile mit `ble` nennt die
 Befehle.
 
 | Zeile | Bedeutung |
