@@ -351,13 +351,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - uses: ./.github/actions/apt-prepare
+
       - name: Install the analysers
         run: |
-          # Third-party lists this build never installs from; one serving a
-          # stale index fails the whole step.  See the note in the host job.
-          sudo rm -fv /etc/apt/sources.list.d/*google* \
-                      /etc/apt/sources.list.d/*microsoft* || true
-          sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             cmake ninja-build clang-tidy
           python3 -m pip install --quiet ruff==0.16.5
@@ -432,14 +429,12 @@ jobs:
           path: ~/cppcheck-${{ env.CPPCHECK_VERSION }}
           key: cppcheck-${{ env.CPPCHECK_VERSION }}-${{ env.CPPCHECK_SHA256 }}-${{ runner.os }}-${{ runner.arch }}
 
+      - uses: ./.github/actions/apt-prepare
+        if: steps.cppcheck-cache.outputs.cache-hit != 'true'
+
       - name: Install the build tools
         if: steps.cppcheck-cache.outputs.cache-hit != 'true'
         run: |
-          # Third-party lists this build never installs from; one serving a
-          # stale index fails the whole step.  See the note in the host job.
-          sudo rm -fv /etc/apt/sources.list.d/*google* \
-                      /etc/apt/sources.list.d/*microsoft* || true
-          sudo apt-get update
           sudo apt-get install -y --no-install-recommends cmake ninja-build
 
       - name: Build cppcheck

@@ -695,7 +695,10 @@ Every job runs on Ubuntu 26.04 (`runs-on: ubuntu-26.04`), not on
 ctest`, `Host suite under sanitizers`, `Host suite coverage`, `Checks that hold
 prose and generated files to the tree` and `Frame cost of every screen`. Each
 installs its packages through the composite action
-`.github/actions/host-deps`. The job `Host suite, coverage and the checks that
+`.github/actions/host-deps`. Every apt install in CI first runs
+`.github/actions/apt-prepare`: it removes the runner's Google and Microsoft
+package lists, makes a download that receives no data for 30s retry up to 3
+times, and runs `apt-get update`. The job `Host suite, coverage and the checks that
 hold prose to the tree` needs the five, runs also when one of them fails, and
 fails unless all five succeed; it is the name the branch ruleset requires.
 The compilers of that image are gcc 15.2 for the host build and
