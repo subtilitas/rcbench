@@ -203,7 +203,7 @@ static void take_angle(imu_t *m, const wit_angle_t *a, uint32_t now_ms)
         m->still_from_ms = now_ms;
         m->r.still_ms = 0u;
         m->resid   = far;
-        m->settled = far <= IMU_SETTLE_DEG;
+        m->settled = false;     /* judged from the next still frame on */
     }
     m->r.version  = a->version;
     m->r.taken_ms = now_ms;

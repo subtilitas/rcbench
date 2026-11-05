@@ -314,6 +314,20 @@ TEST_CASE(the_still_time_waits_until_the_filtered_angle_settled)
      * 60th frame after it, 6,000ms; the frame before it is no still. */
     imu_t m;
     CHECK_EQ(settle_after_step(10, 30.0f, 100u, &m), 6000u);
+    /* Held still 70s, the still time stops at its field's 65,535ms. */
+    {
+        imu_t h;
+        imu_init(&h);
+        imu_set_filter(&h, 5);
+        uint32_t t = 1000u;
+        for (int n = 0; n <= 700; ++n, t += 100u) {
+            feed3(&h, 12.0f, 0.0f, 0.0f, t);
+            if (n == 655) {
+                CHECK_EQ(h.r.still_ms, 65500u);
+            }
+        }
+        CHECK_EQ(h.r.still_ms, 65535u);
+    }
     /* A move again starts over: 0 until it settled once more. */
     feed3(&m, 10.0f, 0.0f, 0.0f, m.r.taken_ms + 100u);
     CHECK_EQ(m.r.still_ms, 0u);
@@ -387,6 +401,8 @@ TEST_CASE(the_angle_text_has_two_decimals_and_rounds_005_away_from_zero)
     CHECK_STR_EQ(imu_deg_text(nine, sizeof nine, -180.0f, false), "-180.00");
     char five[5];
     CHECK_STR_EQ(imu_deg_text(five, sizeof five, -180.0f, false), "-180");
+    char one[1] = { 'x' };
+    CHECK_STR_EQ(imu_deg_text(one, sizeof one, 1.0f, false), "");
     CHECK(imu_deg_text(NULL, 8u, 1.0f, false) == NULL);
     b[0] = 'x';
     CHECK(imu_deg_text(b, 0u, 1.0f, false) == b);
