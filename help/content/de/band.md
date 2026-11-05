@@ -133,7 +133,7 @@ OUTPUTS, SETUP, LOGS und FILES haben eigene Hilfeseiten für jeden Zustand: Kach
 ![Die Hilfe von LOGS auf Seite 1](view:help-logs)
 ![Die Hilfe von FILES auf Seite 1](view:help-files)
 
-## Das Alert-Band
+## Das Alarmband
 
 ![Ein Alarm am unteren Rand des Menüs](view:overview-alert)
 
