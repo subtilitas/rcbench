@@ -386,3 +386,36 @@ def test_a_scripted_busy_file_is_listed_as_busy_and_refused(api):
     assert rows["HELLO.TXT"]["b"] is True and rows["BENCH"]["b"] is False
     assert api.json("GET", "/api/file?path=HELLO.TXT")[0] == 423
     assert api.json("PUT", "/api/file?path=HELLO.TXT", b"x")[0] == 423
+
+
+def test_a_destination_the_panel_protects_is_refused_for_put_rename_move(api):
+    """KST.NEW and RCBENCH.OLD are LOCKED and FIXED as a destination."""
+    assert api.json("PUT", "/api/file?path=KST.NEW", b"x")[0] == 201
+    s, _, body = api.form("rename", **{
+        "from": "KST.NEW", "to": "BENCH/KST/CONF/KST.NEW", "dir": 0})
+    assert (s, body["error"]) == (403, "LOCKED")
+    assert api.json("PUT", "/api/file?path=BENCH/FREE.TXT", b"x")[0] == 201
+    s, _, body = api.form("rename", **{
+        "from": "BENCH/FREE.TXT", "to": "BENCH/RCBENCH.OLD", "dir": 0})
+    assert (s, body["error"]) == (403, "FIXED")
+    s, _, body = api.json("PUT", "/api/file?path=BENCH/KST/CONF/KST.TXT", b"x")
+    assert (s, body["error"]) == (403, "LOCKED")
+
+
+def test_a_parent_named_in_other_case_is_stored_as_the_card_spells_it(api):
+    """A file or folder made in user/logs lands in USER/LOGS and is listed."""
+    s, _, body = api.json("PUT", "/api/file?path=user/logs/NEW.TXT", b"x")
+    assert (s, body["path"]) == (201, "USER/LOGS/NEW.TXT")
+    s, _, body = api.form("mkdir", path="user/logs/SUB")
+    assert (s, body["path"]) == (201, "USER/LOGS/SUB")
+    first = api.json("GET", "/api/list?path=user/logs")[2]
+    last = api.json("GET", "/api/list?path=USER/LOGS&go=last")[2]
+    assert first["total"] == 51
+    assert "SUB" in [e["n"] for e in first["entries"]]
+    assert "NEW.TXT" in [e["n"] for e in last["entries"]]
+
+
+def test_info_of_a_folder_sums_its_immediate_files(api):
+    """USER/LOGS/OLD holds one file of 8 bytes."""
+    info = api.json("GET", "/api/info?path=USER/LOGS/OLD&dir=1")[2]
+    assert (info["s"], info["entries"]) == (8, 1)

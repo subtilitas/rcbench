@@ -1067,7 +1067,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
         path, is_dir, _ = self.entry(q)
         card = self.st.card
         stamp = int(card.mtime.get(path, 0))
-        size = 0 if is_dir else len(card.files[path])
+        size = (sum(len(card.files[f"{path}/{n}"]) for n, d in
+                    card.children(path) if not d) if is_dir
+                else len(card.files[path]))
         kids = len(card.listing(path)[0]) if is_dir else 0
         body = {"path": path, "d": is_dir, "mount": self.st.mount, "s": size,
                 "t": stamp, "entries": kids,
@@ -1148,6 +1150,48 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if path in self.st.busy and not is_dir:
                 raise Refused("BUSY")
 
+    def canon(self, path: str) -> str:
+        """The path with its folder spelled as the card spells it.
+
+        Args:
+            path: A path from the root.
+
+        Returns:
+            The path with the stored spelling of its folder.
+
+        Raises:
+            Refused: NOT_FOUND when the folder is not there.
+        """
+        folder, _, name = path.rpartition("/")
+        if folder == "":
+            return path
+        found = self.st.card.find(folder)
+        if not found or not found[1]:
+            raise Refused("NOT_FOUND")
+        return f"{found[0]}/{name}"
+
+    def target_rules(self, path: str, is_dir: bool) -> None:
+        """The rules of a destination (fm_target_check, target_path).
+
+        Args:
+            path: Where the entry will stand.
+            is_dir: A folder.
+
+        Raises:
+            Refused: LOCKED for a record the programmers keep, FIXED for
+                the fault log, for the name and for the ".NEW" a write
+                makes first.
+        """
+        if is_dir:
+            return
+        folder, _, name = path.rpartition("/")
+        for n in (name, name + ".NEW"):
+            place = place_of(folder, n, False)
+            if place == "LOCKED":
+                raise Refused("LOCKED")
+            if place == "FAULT":
+                raise Refused("FIXED")
+
     def put_state(self, q: dict[str, str]) -> tuple[str, str, str | None]:
         """What a PUT asks before its body (put_args, the check).
 
@@ -1182,9 +1226,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             raise Refused("NAME")
         self.job_rules(path, False, "save")
         card = self.st.card
-        folder = path.rpartition("/")[0]
-        if folder and (card.find(folder) or ("", False))[1] is False:
-            raise Refused("NOT_FOUND")
+        path = self.canon(path)
+        self.target_rules(path, False)
         found = card.find(path)
         if mode == "absent" and found:
             raise Refused("EXISTS")
@@ -1262,9 +1305,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if not name_ok(path.rpartition("/")[2]):
             raise Refused("NAME")
         card = self.st.card
-        folder = path.rpartition("/")[0]
-        if folder and (card.find(folder) or ("", False))[1] is False:
-            raise Refused("NOT_FOUND")
+        path = self.canon(path)
         if card.find(path):
             raise Refused("EXISTS")
         card.dirs.add(path)
@@ -1297,6 +1338,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if op == "rename":
             if not name_ok(dname):
                 raise Refused("NAME")
+            dst = self.canon(dst)
             clash = card.find(dst)
             if clash and clash[0] != found[0]:
                 raise Refused("EXISTS")
@@ -1306,14 +1348,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
             target = card.find(ddir) if ddir else ("", True)
             if not target or not target[1]:
                 raise Refused("NOT_FOUND")
+            dst = (target[0] + "/" if target[0] else "") + sname
             if is_dir and within(found[0], target[0]):
                 raise Refused("SAME")
             if is_dir and card.children(found[0]):
                 raise Refused("NOT_EMPTY")
             if card.find(dst):
                 raise Refused("EXISTS")
-        card.move(found[0], dst if op == "rename" else
-                  (target[0] + "/" if target[0] else "") + sname)
+        self.target_rules(dst, is_dir)
+        card.move(found[0], dst)
         self.json(200, {"path": dst, "created": False, "note": ""})
 
     def api_delete(self, q: dict[str, str]) -> None:
