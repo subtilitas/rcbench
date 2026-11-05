@@ -77,7 +77,7 @@ SETTINGS on the AUTOMATIC TEST card opens them.
 | SETTLING TIME | 0 to 10000ms | 500ms | waited after a supply step before measuring |
 | STALL AT | 0.1 to 5.0A | 2.00A | above this current the servo counts as stalled |
 | IDLE CURRENT | 0 to 5.00A | 0, not checked | fail above this at rest |
-| HOLD CURRENT | 0 to 5.00A | 0, not checked | fail above this holding an end |
+| HOLDING CURRENT | 0 to 5.00A | 0, not checked | fail above this holding an end |
 | STEP 4.8V, STEP 6.0V | ON, OFF | ON | the supply steps |
 | HV SERVO | ON, OFF | OFF | adds STEP 7.4V and STEP 8.4V; off at every restart |
 | BROWN-OUT | ON 3.0/0.2V, OFF | ON | the brown-out walk: a tap opens its page |

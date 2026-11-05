@@ -186,9 +186,9 @@ TEST_CASE(the_test_rides_through_an_encoder_gap_of_300ms)
     unsigned long sum = 0u;
     CHECK_EQ(gap_cells(&sum), 1u);
     CHECK_EQ(sum, 300u);
-    CHECK(strstr(g.report, "AS5600 gaps: 1, the longest 300ms. A run goes on "
-                           "through one of up to 300ms each 10s; no angle "
-                           "is judged in it.") != NULL);
+    CHECK(strstr(g.report, "AS5600 gaps: 1, longest 300ms. The run tolerates "
+                           "one gap of up to 300ms per 10s; no angle "
+                           "is evaluated during it.") != NULL);
 }
 
 TEST_CASE(an_encoder_gap_of_301ms_ends_the_test_as_an_error)
@@ -217,8 +217,8 @@ TEST_CASE(an_encoder_gap_of_301ms_ends_the_test_as_an_error)
         CHECK_EQ(g.t.enc_gap.longest_ms, by_clock ? 320u : 301u);
         run_out(10000u);
         CHECK(strstr(g.report, "AS5600 not answering") != NULL);
-        CHECK(strstr(g.report, by_clock ? "AS5600 gaps: 1, the longest 320ms."
-                                        : "AS5600 gaps: 1, the longest 301ms.")
+        CHECK(strstr(g.report, by_clock ? "AS5600 gaps: 1, longest 320ms."
+                                        : "AS5600 gaps: 1, longest 301ms.")
               != NULL);
     }
 }
@@ -442,9 +442,9 @@ TEST_CASE(the_gap_texts_read_in_german)
     run_out(10000u);
     CHECK_EQ(g.t.why, SERVO_TEST_AB_ENC_SILENT);
     CHECK(strstr(g.report, "AS5600 antwortet nicht") != NULL);
-    CHECK(strstr(g.report, "AS5600-Lücken: 1, die längste 320ms. Ein Lauf "
-                           "geht durch eine bis 300ms alle 10s weiter; "
-                           "darin wird kein Winkel bewertet.") != NULL);
+    CHECK(strstr(g.report, "AS5600-Aussetzer: 1, längster 320ms. Ein Aussetzer "
+                           "bis 300ms je 10s wird toleriert. Währenddessen "
+                           "wird kein Winkel bewertet.") != NULL);
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
         const char *const *tb = ui_servo_table();

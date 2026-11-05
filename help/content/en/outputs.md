@@ -66,7 +66,7 @@ Picking a protocol writes nothing. It chooses which keys show accented and which
 
 ## Idle pulse and Full pulse
 
-A MOTOR PWM channel sends 0% throttle as Idle pulse and 100% as Full pulse, 1000us and 2000us by default. Both are on [MOTOR & ESC, SETTINGS](motor-settings.md), in steps of 10us: Idle pulse 800 to 1600us, Full pulse 1400 to 2400us. A SERVO PWM channel keeps 1000 to 2000us, or the range SERVO sends. A change reaches the IOmcu 300ms after the last edit while the bench is SAFE. An Idle pulse that is not 100us or more below Full pulse is not sent, and the band says `Idle pulse must be 100us or more below Full pulse. Not sent.`.
+A MOTOR PWM channel sends 0% throttle as Idle pulse and 100% as Full pulse, 1000us and 2000us by default. Both are on [MOTOR & ESC, SETTINGS](motor-settings.md), in steps of 10us: Idle pulse 800 to 1600us, Full pulse 1400 to 2400us. A SERVO PWM channel keeps 1000 to 2000us, or the range SERVO sends. A change reaches the IOmcu 300ms after the last edit while the bench is SAFE. An Idle pulse that is not 100us or more below Full pulse is not sent, and the band says `Idle pulse must be at least 100us below Full pulse. Not sent.`.
 
 An ESC calibrated on a transmitter takes that transmitter's shortest pulse as zero. Set Idle pulse at or below that pulse and Full pulse at or above the longest one: for a transmitter that sends 985 to 2012us, 980us and 2020us.
 
@@ -82,7 +82,7 @@ Under the list, `4 OF 8 SLOTS IN USE` counts the pins over every protocol. Under
 |---|---|
 | `ALL 8 SLOTS IN USE` | 8 pins are bound over all protocols |
 | `NEEDS 8 CHANNELS, 4 FREE` | PPM, with 4 servo pins bound |
-| `SERVO PWM TAKES 8 PINS` | the selected protocol holds as many pins as it takes |
+| `SERVO PWM USES 8 PINS` | the selected protocol holds as many pins as it takes |
 | `CHOOSE A PROTOCOL, THEN TAP PINS` | OFF is selected |
 | `NOT READ` | the binding is not confirmed; every key is grey |
 | `NO VALID ASSIGNMENT IN THE PAGES` | the pages describe no binding; every key is grey |
@@ -127,14 +127,14 @@ The IOmcu keeps each port's pin and function in its flash, with the outputs' bin
 |---|---|
 | `GPIO 5: SHARES PWM SLICE WITH OUTPUT GPIO 4` | a key tapped on the PWM slice of a bound PWM output, on a SERVO PWM port; the key is grey |
 | `GPIO 28: SAME PWM CHANNEL AS GPIO 12` | a key tapped on the compare register of another SERVO PWM port; the key is grey |
-| `LOCKED: THE SERVO PROGRAMMER HOLDS THE PORT` | the [servo programmer](servo-programmer.md) has a port |
-| `WAITS FOR SAFE, NO TEST, SWEEP OR SERVO PROGRAMMER` | an ask for this port waits for a bench at rest |
-| `THE IOMCU REFUSED IT` | the IOmcu refused the last ask, or did not answer it |
+| `LOCKED: SERVO PROGRAMMING USES THE PORT` | the [servo programmer](servo-programmer.md) has a port |
+| `WAITING FOR SAFE, NO TEST, SWEEP OR SERVO PROGRAMMING` | an ask for this port waits for a bench at rest |
+| `REFUSED BY THE IOMCU` | the IOmcu refused the last ask, or did not answer it |
 | `LINK LOST BEFORE THE WRITE` | the link went down before the ask was written |
 | `PORTS NOT READ YET` | the IOmcu's ports not read since the link came up |
 | `LOCKED WHILE ARMED OR A TEST OR SWEEP RUNS` | the bench is ARMED, or a sweep or a test runs; PORT PWM still goes off |
 | `SERVO TESTER DRIVES PROG PORT 3` | the tester drives another port |
-| `THE SERVO TESTER NEEDS FUNCTION SERVO PWM` | the port is NONE or DShot |
+| `THE SERVO TESTER REQUIRES FUNCTION SERVO PWM` | the port is NONE or DShot |
 | `IOMCU OLDER THAN 0.22.0: SERVO PWM ONLY` | the IOmcu has no FUNCTION |
 | `PORT PWM NEEDS PROG PORT AS THE TESTER'S TARGET` | PORT PWM on a port that is not the tester's target |
 
@@ -161,7 +161,7 @@ A board that reports neither a drawing nor a shape cannot be drawn: a guessed pi
 | greyed, `PWM CH OF GPIO 0` | under SERVO PWM and MOTOR PWM: the pin shares a PWM compare register with a pin bound as PWM (GPIO 0 and GPIO 16, GPIO 1 and GPIO 17, GPIO 2 and GPIO 18, GPIO 4 and GPIO 20, GPIO 5 and GPIO 21, GPIO 6 and GPIO 22) | does nothing; `GPIO 16: SAME PWM CHANNEL AS GPIO 0` under the count |
 | free, `PAD 7` | not bound | binds it |
 
-When the selected protocol can take no more pins, the reason stands under the count in amber: `NEEDS 8 CHANNELS, 4 FREE`, `ALL 8 SLOTS IN USE` or `SERVO PWM TAKES 8 PINS`.
+When the selected protocol can take no more pins, the reason stands under the count in amber: `NEEDS 8 CHANNELS, 4 FREE`, `ALL 8 SLOTS IN USE` or `SERVO PWM USES 8 PINS`.
 
 A stored binding that holds GPIO 13 keeps it: the programming port then has no pin, and the [servo programmer](servo-programmer.md) says so on CONNECT.
 
@@ -169,7 +169,7 @@ A stored binding that holds GPIO 13 keeps it: the programming port then has no p
 
 ![PWM01 to PWM04, PWM03 refused for slice 2](view:outputs-rbmod)
 
-The [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) solders every lead to its pin, so no pin is chosen here. The grid shows the four servo outputs, PWM01 to PWM04 on GPIO 2, 4, 5 and 1, each with its GPIO under the name. A tap gives the selected protocol to the output, as a tick does on a pin. Slot n is PWM0(n+1): PWM01 is channel 0. A protocol takes at most the 4 outputs, `SERVO PWM TAKES 4 PINS`.
+The [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) solders every lead to its pin, so no pin is chosen here. The grid shows the four servo outputs, PWM01 to PWM04 on GPIO 2, 4, 5 and 1, each with its GPIO under the name. A tap gives the selected protocol to the output, as a tick does on a pin. Slot n is PWM0(n+1): PWM01 is channel 0. A protocol takes at most the 4 outputs, `SERVO PWM USES 4 PINS`.
 
 PWM02 and PWM03 are one PWM slice and run at one frame rate. A surface protocol (SERVO PWM) and a throttle protocol (MOTOR PWM) are not offered on the two together: the cell reads `SLICE OF PWM02` and a tap on it `PWM03 GPIO 5: SAME PWM SLICE AS PWM02 GPIO 4`. DShot runs on its own state machine and is offered beside either.
 

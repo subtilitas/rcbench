@@ -64,7 +64,7 @@ static const where_t k_where[] = {
     { AT_AUTO,   LROW_X(2), LROW_Y(4) },   /* SETTLE        */
     { AT_AUTO,   LROW_X(1), LROW_Y(0) },   /* STALL AT      */
     { AT_AUTO,   LROW_X(1), LROW_Y(1) },   /* IDLE CURRENT  */
-    { AT_AUTO,   LROW_X(1), LROW_Y(2) },   /* HOLD CURRENT  */
+    { AT_AUTO,   LROW_X(1), LROW_Y(2) },   /* HOLDING CURRENT  */
     { AT_AUTO,   LROW_X(1), LROW_Y(3) },   /* TRAVEL TIME   */
     { AT_BROWNOUT, LROW_X(0), LROW_Y(1) }, /* LOWEST VOLTAGE */
     { AT_BROWNOUT, LROW_X(0), LROW_Y(2) }, /* STEP          */

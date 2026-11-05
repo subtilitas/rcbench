@@ -150,11 +150,11 @@ TEST_CASE(the_rails_are_shown_and_never_stepped_to)
     CHECK_STR_EQ(ui_setting_value(SET_INA_W(2), v, sizeof(v)),
                  "PROG PORTS 5V");
     CHECK_STR_EQ(settings_screen_help(SET_INA_W(0)),
-                 "Soldered on this board. Not a setting here.");
+                 "Soldered on this board. Not editable here.");
     CHECK_STR_EQ(settings_screen_help(SET_INA_FIT(0)),
-                 "Soldered on this board. Not a setting here.");
+                 "Soldered on this board. Not editable here.");
     CHECK(strcmp(settings_screen_help(SET_INA_SH(0)),
-                 "Soldered on this board. Not a setting here.") != 0);
+                 "Soldered on this board. Not editable here.") != 0);
     ui_text_set_language(UI_LANG_DE);
     CHECK_STR_EQ(ui_setting_value(SET_INA_W(0), v, sizeof(v)),
                  "SCHIENE B");

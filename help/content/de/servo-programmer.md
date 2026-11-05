@@ -29,7 +29,7 @@ Registerbelegung und Timing stammen von 1 KST Tool Card #2 und 1 Chaservo-Servo.
 - Einen IOmcu mit 0.17.0 oder neuer (Protokoll 4.15, VERLASSEN eingeschlossen).
 - Das Servo an einem Programmierport des IOmcu, PROG-PORT 1 bis 4, mit FUNKTION SERVO PWM und einem Pin: Port 1 ist GPIO 13, Pad 17, solange kein anderer Pin dafür gespeichert ist; die Ports 2 bis 4 haben den Pin, der auf ihrem Eintrag PROG-PORT von Ausgänge gesetzt ist.
 - SERVO-TESTER auf diesem Eintrag auf diesen Port, PORT 1, PORT 2, PORT 3 oder PORT 4; ein Tipp auf die Zeile ZIEL öffnet ihn ([die Zeile ZIEL](servo-settings.md#die-zeile-ziel)).
-- Den Prüfstand SAFE. VERBINDEN wird bei ARMED abgelehnt mit `Zuerst DISARM tippen. Bei ARMED kann der Port nicht übernommen werden.` Solange der Port gehalten wird, schaltet kein Bildschirm den Prüfstand auf ARMED.
+- Den Prüfstand SAFE. VERBINDEN wird bei ARMED abgelehnt mit `Tippe zuerst auf DISARM. Bei ARMED kann der Port nicht übernommen werden.` Solange der Port gehalten wird, schaltet kein Bildschirm den Prüfstand auf ARMED.
 
 ![Ein IOmcu ohne Programmierport](view:servo-kst-nopage)
 ![Die Standardausgänge sind das Ziel](view:servo-kst-target)
@@ -57,7 +57,7 @@ Solange der Port aus dem PWM-Betrieb genommen ist, gehören die Sollwerte des Ne
 
 ![Die Frage nach dem Verlassen](view:servo-hitec-restore-ask)
 
-Ein Verlassen, das den Ausgang bei den Sollwerten der Sitzung eingeschaltet lässt, während die Sollwerte von vor der Sitzung andere sind, lässt SERVO fragen, sobald der Port in PWM ist: `Deine Versorgungs-Sollwerte 5.50V 2.00A am eingeschalteten Ausgang wiederherstellen?` JA gibt dem eingeschalteten Ausgang beide; eine Spannung, die von 6,0V oder darunter über 6,0V steigt, öffnet zuerst NUR HV-SERVOS. NEIN behält die der Sitzung bis zum nächsten AUS. Die Frage kommt einmal je Verlassen, wartet auf Tastenfelder, Listen, Warnungen und Fragen von SERVO und das Halten von AUSGANG EIN, und kommt nicht, solange ein Port das Netzteil hält, nach einem AUS, einem Fehler oder einem STOP, innerhalb eines Endlagenlaufs oder wenn sich seitdem ein Sollwert änderte. Nur ein Verlassen fragt: PORT FREIGEBEN, ein STOP, ein Fehler, ein verlorener Link, ein Neustart des Panels oder des IOmcu, ein Port, den der IOmcu ohne Verlassen zurückgibt, und Ports, die unter einer Sitzung auf ihre eigene Versorgung wechseln, beenden das Halten ohne die Frage, und die Sollwerte der Sitzung bleiben bis zum nächsten AUS. Der Hitec-Programmierer fragt ebenso.
+Ein Verlassen, das den Ausgang bei den Sollwerten der Sitzung eingeschaltet lässt, während die Sollwerte von vor der Sitzung andere sind, lässt SERVO fragen, sobald der Port in PWM ist: `Netzteil-Sollwerte 5.50V 2.00A am eingeschalteten Ausgang wiederherstellen?` JA gibt dem eingeschalteten Ausgang beide; eine Spannung, die von 6,0V oder darunter über 6,0V steigt, öffnet zuerst NUR HV-SERVOS. NEIN behält die der Sitzung bis zum nächsten AUS. Die Frage kommt einmal je Verlassen, wartet auf Tastenfelder, Listen, Warnungen und Fragen von SERVO und das Halten von AUSGANG EIN, und kommt nicht, solange ein Port das Netzteil hält, nach einem AUS, einem Fehler oder einem STOP, innerhalb eines Endlagenlaufs oder wenn sich seitdem ein Sollwert änderte. Nur ein Verlassen fragt: PORT FREIGEBEN, ein STOP, ein Fehler, ein verlorener Link, ein Neustart des Panels oder des IOmcu, ein Port, den der IOmcu ohne Verlassen zurückgibt, und Ports, die unter einer Sitzung auf ihre eigene Versorgung wechseln, beenden das Halten ohne die Frage, und die Sollwerte der Sitzung bleiben bis zum nächsten AUS. Der Hitec-Programmierer fragt ebenso.
 
 Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) laufen die Programmierports an eigenen 5V, geschaltet über GPIO 21, nicht am PD mini; WEITERES zeigt `PROGRAMMIERSPANNUNG: 5V FEST, GPIO 21`. Die Sitzung schaltet die 5V dort, wo die Tabelle unten den Ausgang des PD mini schaltet. Das Feld PROG 5V unter PD MINI zeigt dann `BELEGT VON PROG-PORT n` und nimmt keinen Druck an. Ohne Sitzung schaltet das Feld die 5V von Hand: PROG 5V EIN ist ein Halten von 2s, PROG 5V AUS ein Tipp.
 
@@ -88,16 +88,16 @@ Mit ausgeschaltetem Ausgang schaltet VERBINDEN ihn ein und steigt ein. ABBRECHEN
 |---|---|---|
 | PORT | VERBINDEN, ABBRECHEN, VERLASSEN | nimmt den Port, beendet den laufenden Vorgang, gibt den Port zurück |
 | SERVO | ALLES AUSLESEN | liest die 32 Register, jedes, bis 3 von höchstens 5 Lesungen übereinstimmen |
-| TYPE | V6?, V8?, V6, V8 | der Servotyp, V6 oder V8, wie der Bediener ihn setzt |
+| TYP | V6?, V8?, V6, V8 | der Servotyp, V6 oder V8, wie der Bediener ihn setzt |
 | DATEIEN | WÄHLEN | speichert die Werte des Servos auf die Karte, lädt eine Datei |
 | WEITERES | WÄHLEN | im Programmiermodus: PRÜFEN, ÄNDERUNGEN VERWERFEN, PAIRING LÖSEN |
 | SCHREIBEN INS SERVO FREIGEBEN | AUS, EIN | der Schreibschalter |
 | ZURÜCKSPIELEN | WÄHLEN | schreibt ein Backup zurück |
 | (keine Beschriftung) | n WERTE SCHREIBEN | schreibt die geänderten Werte |
 
-Kein Register hält die Serie: V8-Flächenservos lesen mit gesetztem 20k_sel, wie V6. Nach einem Lesen zeigt TYPE den Typ, den 20k_sel nahelegt, mit Fragezeichen, `V6?`, und die Zeile unter dem Zustand bittet, das Etikett des Servos zu prüfen. Ein Tippen auf TYPE setzt V6 oder V8. Der Typ gehört der Sitzung, geht in eine gespeicherte Datei und hält ein Laden: eine Datei eines anderen Typs wird nicht geladen, und eine Datei, die ohne gesetzten Typ angetippt wird, fragt zuerst nach dem Typ. Der Typ wird nie ins Servo geschrieben.
+Kein Register hält die Serie: V8-Flächenservos lesen mit gesetztem 20k_sel, wie V6. Nach einem Lesen zeigt TYP den Typ, den 20k_sel nahelegt, mit Fragezeichen, `V6?`, und die Zeile unter dem Zustand bittet, das Etikett des Servos zu prüfen. Ein Tippen auf TYP setzt V6 oder V8. Der Typ gehört der Sitzung, geht in eine gespeicherte Datei und hält ein Laden: eine Datei eines anderen Typs wird nicht geladen, und eine Datei, die ohne gesetzten Typ angetippt wird, fragt zuerst nach dem Typ. Der Typ wird nie ins Servo geschrieben.
 
-![Die Liste TYPE](view:servo-kst-type)
+![Die Liste TYP](view:servo-kst-type)
 ![Ein gesetzter Typ](view:servo-kst-type-set)
 
 ![Ein Servo unbekannter Belegung: nur lesen](view:servo-kst-readonly)
@@ -154,7 +154,7 @@ n WERTE SCHREIBEN öffnet die Seite zum Schreiben mit den Änderungen, `DEAD BAN
 ![Ein laufendes Schreiben: nicht abziehen](view:servo-kst-writing)
 ![Ein fertiges Schreiben](view:servo-kst-written)
 
-Ein Wert, der geschrieben und zurückgelesen ist, steht im Servo und wirkt ab seinem nächsten Einschalten. Mit PD mini sagt die Meldung `Die Werte wirken nach VERLASSEN: es schaltet die Versorgung 1s aus und wieder ein.`; ohne ihn `Die geschriebenen Werte wirken erst nach Aus- und Einschalten der Servoversorgung.`
+Ein Wert, der geschrieben und zurückgelesen ist, steht im Servo und wirkt ab seinem nächsten Einschalten. Mit PD mini sagt die Meldung `Die Werte werden nach VERLASSEN wirksam: Die Versorgung wird 1s aus- und wieder eingeschaltet.`; ohne ihn `Die geschriebenen Werte werden erst nach Aus- und Einschalten der Servoversorgung wirksam.`
 
 ![Ein Schreiben mit PD mini](view:servo-kst-written-supply)
 
@@ -167,7 +167,7 @@ DATEIEN listet die Servodateien im Ordner `BENCH/KST/CONF` der Karte, 5 je Seite
 ![Der Name einer neuen Datei](view:servo-kst-name)
 ![Eine geladene Datei](view:servo-kst-file-loaded)
 
-Ein Tipp auf eine Datei lädt sie in den Entwurf. Vor dem Schreiben erreicht nichts das Servo. Eine Datei eines anderen Typs als des unter TYPE gesetzten, eine beschädigte Datei oder ein Wert außerhalb seiner harten Grenze wird nicht geladen, und die Zeile sagt warum. Ohne gesetzten Typ öffnet der Tipp zuerst `SERVO-TYPE VOR DEM LADEN`.
+Ein Tipp auf eine Datei lädt sie in den Entwurf. Vor dem Schreiben erreicht nichts das Servo. Eine Datei eines anderen Typs als des unter TYP gesetzten, eine beschädigte Datei oder ein Wert außerhalb seiner harten Grenze wird nicht geladen, und die Zeile sagt warum. Ohne gesetzten Typ öffnet der Tipp zuerst `SERVOTYP VOR DEM LADEN WÄHLEN`.
 
 ![Der Typ vor einem Laden](view:servo-kst-type-first)
 
@@ -188,7 +188,7 @@ ZURÜCKSPIELEN schreibt das Backup der Sitzung zurück, das Servo, wie es nach V
 
 ![Ein unterbrochenes Schreiben](view:servo-kst-doubt)
 
-Ein Schreiben gilt als unterbrochen, wenn der Link abreißt, eine Platine neu startet, ABBRECHEN oder ein Stopp es beendet oder kein Ergebnis rechtzeitig ankommt. Der Reiter zeigt dann `Schreiben wurde unterbrochen. Die Einstellungen sind vielleicht unvollständig.`, bis das Servo erneut gelesen ist. ALLES AUSLESEN vergleicht das Servo mit dem Vermerk und bietet ZURÜCKSPIELEN an.
+Ein Schreiben gilt als unterbrochen, wenn der Link abreißt, eine Platine neu startet, ABBRECHEN oder ein Stopp es beendet oder kein Ergebnis rechtzeitig ankommt. Der Reiter zeigt dann `Schreiben wurde unterbrochen. Die Einstellungen können unvollständig sein.`, bis das Servo erneut gelesen ist. ALLES AUSLESEN vergleicht das Servo mit dem Vermerk und bietet ZURÜCKSPIELEN an.
 
 ![Das Servo hält eine Mischung alter und neuer Werte](view:servo-kst-journal)
 

@@ -21,15 +21,15 @@ Jede Steckerposition ist Signal, + und GND, in der Folge, in der der Stecker sie
 | 3 | PROGP02, GPIO 14, VCC_PROGPORT | PWM01, GPIO 2, VCC_SERVOPORT_A |
 | 4 | PROGP03, GPIO 15, VCC_PROGPORT | PWM04, GPIO 1, VCC_SERVOPORT_A |
 
-Rechts in einer Zeile von J1 steht `PROGRAMMIEREN`: ein Programmierport trägt die Programmer von KST und Hitec. Rechts in einer Zeile von J2 steht das auf dem Ausgang gebundene Protokoll, `OFF` für keines, oder `NICHT GELESEN`, bis die Bindung dieses Boards gelesen ist. Ein Protokoll, das unter OUTPUTS gebunden oder gelöst wird, zeigt sich hier im nächsten Frame.
+Rechts in einer Zeile von J1 steht `PROGRAMMIERUNG`: ein Programmierport trägt die Programmer von KST und Hitec. Rechts in einer Zeile von J2 steht das auf dem Ausgang gebundene Protokoll, `OFF` für keines, oder `NICHT AUSGELESEN`, bis die Bindung dieses Boards gelesen ist. Ein Protokoll, das unter OUTPUTS gebunden oder gelöst wird, zeigt sich hier im nächsten Frame.
 
 ## Weitere Stecker
 
-J3 HEARTBEAT auf GPIO 3, J5 SENSOR I2C auf GPIO 16 und 17, J4 I2C 2 auf GPIO 18 und 19 (`NICHT BETRIEBEN`), J6 PD MINI auf GPIO 7 und 6, J9 TAP auf GPIO 22, und PROG 5V EN auf GPIO 21, der an keinem Stecker liegt.
+J3 HEARTBEAT auf GPIO 3, J5 SENSOR I2C auf GPIO 16 und 17, J4 I2C 2 auf GPIO 18 und 19 (`NICHT ANGESTEUERT`), J6 PD MINI auf GPIO 7 und 6, J9 TAP auf GPIO 22, und PROG 5V EN auf GPIO 21, der an keinem Stecker liegt.
 
 ## Boards Rev 1
 
-Die Zeile unter den Spalten lautet `EIN BOARD REV 1 BRAUCHT DREI ÄNDERUNGEN VON HAND. DIE HILFE NENNT SIE.` Die drei Änderungen stehen in [Carrier: Nacharbeit Rev 1](https://github.com/subtilitas/rcbench/wiki/Carrier-de#nacharbeit-rev-1): PROGP03 wandert von GPIO 26 auf GPIO 15; ein Pull-down hält die 5V der Programmierports aus, solange GPIO 21 nicht getrieben ist; und eine Z-Diode 5.6V 1W vom Ausgang von M7 nach GND verhindert die Ausfälle durch ein bremsendes Servo. Die Firmware verlässt sich nicht auf die dritte. Rev 2 trägt die ersten zwei im Kupfer; die dritte ist eine offene Designfrage.
+Die Zeile unter den Spalten lautet `PLATINE REV 1: DREI ÄNDERUNGEN VON HAND. DIE HILFE NENNT SIE.` Die drei Änderungen stehen in [Carrier: Nacharbeit Rev 1](https://github.com/subtilitas/rcbench/wiki/Carrier-de#nacharbeit-rev-1): PROGP03 wandert von GPIO 26 auf GPIO 15; ein Pull-down hält die 5V der Programmierports aus, solange GPIO 21 nicht getrieben ist; und eine Z-Diode 5.6V 1W vom Ausgang von M7 nach GND verhindert die Ausfälle durch ein bremsendes Servo. Die Firmware verlässt sich nicht auf die dritte. Rev 2 trägt die ersten zwei im Kupfer; die dritte ist eine offene Designfrage.
 
 ## Verwandte Seiten
 

@@ -101,14 +101,14 @@ TEST_CASE(the_code_form_asks_for_the_code_and_shows_nothing_else)
     CHECK(strstr(g_p.buf, "action=\"/code\"") != NULL);
     CHECK(strstr(g_p.buf, "name=\"code\"") != NULL);
     CHECK(strstr(g_p.buf, "Access code") != NULL);
-    CHECK(strstr(g_p.buf, "Wrong code.") == NULL);
+    CHECK(strstr(g_p.buf, "Wrong access code.") == NULL);
     CHECK(strstr(g_p.buf, "/card") == NULL);
     CHECK(strstr(g_p.buf, "/update") == NULL);
     begin(-1);
     wa_page_code(&g_o, &k_de, true);
     CHECK(wa_out_flush(&g_o));
     CHECK(strstr(g_p.buf, "Zugangscode") != NULL);
-    CHECK(strstr(g_p.buf, "Falscher Code.") != NULL);
+    CHECK(strstr(g_p.buf, "Falscher Zugangscode.") != NULL);
     CHECK(strstr(g_p.buf, "lang=\"de\"") != NULL);
 }
 
@@ -185,7 +185,7 @@ TEST_CASE(the_card_part_is_the_zip_link_and_the_file_manager)
     CHECK(app < data && data < hl && hl < wr && wr < ed && ed < js);
     CHECK_EQ(count_of(g_p.buf, "<script>"), 5);
     CHECK_EQ(count_of(g_p.buf, "</script>"), 6);
-    CHECK(strstr(g_p.buf, "<noscript><p>The file list needs JavaScript."
+    CHECK(strstr(g_p.buf, "<noscript><p>The file list requires JavaScript."
                           "</p></noscript>") != NULL);
     /* The texts are FILES' own where the panel has one. */
     CHECK(element(g_p.buf, "id=\"fm-data\">"));
@@ -201,8 +201,8 @@ TEST_CASE(the_card_part_is_the_zip_link_and_the_file_manager)
     CHECK(strstr(g_elem, "\"delete\":\"DELETE\"") != NULL);
     CHECK(strstr(g_elem, "\"e.TOO_LARGE\":\"Too large for the panel: "
                          "1MB at most.\"") != NULL);
-    CHECK(strstr(g_elem, "\"e.TOO_BIG\":\"Over 1MB: too large to open. "
-                         "Download it.\"") != NULL);
+    CHECK(strstr(g_elem, "\"e.TOO_BIG\":\"Over 1MB: too large to open here. "
+                         "Download the file.\"") != NULL);
     /* Without the viewer's words: none, and the viewer's cap. */
     CHECK(strstr(g_elem, "\"ok\":[],\"fail\":[],\"warn\":[],\"cap\":128,"
                          "\"label\":24}") != NULL);
@@ -217,7 +217,7 @@ TEST_CASE(the_card_part_is_the_zip_link_and_the_file_manager)
     /* The upload is offered, with the slot as the size limit. */
     CHECK(strstr(g_p.buf, "f.size>4063232") != NULL);
     CHECK(strstr(g_p.buf, "Installed: 0.19.0") != NULL);
-    CHECK(strstr(g_p.buf, "INSTALL is held for 2s on the panel") != NULL);
+    CHECK(strstr(g_p.buf, "Hold INSTALL for 2s on the panel to install it") != NULL);
     CHECK_EQ(fs.dirs_open, 0);
 
     /* In German, the panel's German. */
@@ -228,7 +228,7 @@ TEST_CASE(the_card_part_is_the_zip_link_and_the_file_manager)
     CHECK(strstr(g_elem, "\"rescan\":\"AKTUALISIEREN\"") != NULL);
     CHECK(strstr(g_elem, "\"dl\":\"HERUNTERLADEN\"") != NULL);
     CHECK(strstr(g_elem, "\"next\":\"N\xc3\x84" "CHSTE\"") != NULL);
-    CHECK(strstr(g_p.buf, "Die Dateiliste braucht JavaScript.") != NULL);
+    CHECK(strstr(g_p.buf, "Die Dateiliste ben\xc3\xb6tigt JavaScript.") != NULL);
     fake_free(&fs);
 }
 
@@ -409,8 +409,8 @@ TEST_CASE(texts_in_the_upload_script_are_escaped_in_both_languages)
     CHECK(wa_out_flush(&g_o));
     CHECK(script_of(g_p.buf));
     CHECK(strstr(g_js, "r.textContent='The file is larger than the panel"
-                       "\\'s slot.';return;}") != NULL);
-    CHECK(strstr(g_js, "r.textContent='The upload broke off.';};") != NULL);
+                       "\\'s firmware slot.';return;}") != NULL);
+    CHECK(strstr(g_js, "r.textContent='The upload was interrupted.';};") != NULL);
     CHECK(strstr(g_js, "panel's") == NULL);
     /* No file chosen: the browser says so; the guard stays as well. */
     CHECK(strstr(g_p.buf, "type=\"file\" id=\"i\" accept=\".bin\" required>")
@@ -418,7 +418,7 @@ TEST_CASE(texts_in_the_upload_script_are_escaped_in_both_languages)
     CHECK(strstr(g_js, "if(!f)return;") != NULL);
     /* A refusal without a body (403, 503) says so with its status and
      * ends the progress bar; so does a broken connection. */
-    CHECK(strstr(g_js, "if(t===''&&x.status!==200)t='The panel did not take "
+    CHECK(strstr(g_js, "if(t===''&&x.status!==200)t='The panel rejected "
                        "the upload: HTTP '+x.status+'.';r.textContent=t;};")
           != NULL);
     CHECK(strstr(g_js, "x.onload=function(){var t=x.responseText;"
@@ -431,9 +431,9 @@ TEST_CASE(texts_in_the_upload_script_are_escaped_in_both_languages)
     CHECK(wa_out_flush(&g_o));
     CHECK(script_of(g_p.buf));
     CHECK(strstr(g_js, "r.textContent='Die Datei ist gr\xc3\xb6\xc3\x9f"
-                       "er als der Slot des Panels.';return;}") != NULL);
-    CHECK(strstr(g_js, "r.textContent='Der Upload brach ab.';};") != NULL);
-    CHECK(strstr(g_js, "t='Das Panel hat den Upload nicht angenommen: HTTP "
+                       "er als der Firmware-Slot des Panels.';return;}") != NULL);
+    CHECK(strstr(g_js, "r.textContent='Der Upload wurde unterbrochen.';};") != NULL);
+    CHECK(strstr(g_js, "t='Das Panel hat den Upload abgelehnt: HTTP "
                        "'+x.status+'.';") != NULL);
     CHECK(strstr(g_p.buf, "accept=\".bin\" required>") != NULL);
     fake_free(&fs);
@@ -496,7 +496,7 @@ TEST_CASE(every_upload_answer_has_its_own_text_in_both_languages)
     begin(-1);
     wa_page_upload_result(&g_o, true, FW_OK, &info, true);
     CHECK(wa_out_flush(&g_o));
-    CHECK(strstr(g_p.buf, "0.20.1. Das ist der Build") != NULL);
+    CHECK(strstr(g_p.buf, "0.20.1. Dieser Build") != NULL);
     free(g_p.buf);
     memset(&g_p, 0, sizeof(g_p));
 }

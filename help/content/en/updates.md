@@ -58,7 +58,7 @@ On both settings a release is offered only when it is of the panel's release lin
 | `GitHub rejected the request: HTTP 404.` | an answer other than a redirect, or with TESTING other than 200 |
 | `GitHub's request limit is reached: HTTP 403.` | TESTING: GitHub answered 403 or 429; it takes 60 API requests an hour per address without an account |
 | `The panel's own version is not MAJOR.MINOR.PATCH: no update offered.` | the running build's version does not parse; nothing is offered |
-| `Unexpected answer from GitHub.` | the `Location`, or with TESTING the answer, is missing or out of form; a second line says which |
+| `Unexpected response from GitHub.` | the `Location`, or with TESTING the answer, is missing or out of form; a second line says which |
 | `Wi-Fi switched off: bench ARMED.` and the like | ARMED, the supply output, a log run or STOP ended the check |
 | `Stopped: ...` | WI-FI, the IOmcu's update or CANCEL ended the check; `Stopped: the WI-FI screen is using Wi-Fi.` clears once WI-FI's session has ended and the radio is off |
 
@@ -85,7 +85,7 @@ The ESP32-S3 panel's line, 0.22, offers 0.22.x only, and its card's foot says so
 | `v0.22.1` | offered |
 | `v0.22.0` | up to date; an older release is never offered |
 | `v0.23.0`, `v0.24.0`, `v1.0.0` | `No newer release for the ESP32-S3 panel.` |
-| a tag out of form, such as `v0.22.1-rc1` | `Unexpected answer from GitHub.` |
+| a tag out of form, such as `v0.22.1-rc1` | `Unexpected response from GitHub.` |
 
 With TESTING, when the highest of the 10 newest releases is past the line, the highest release of the line among them is offered in its place once it is newer than the running build. With STABLE, when GitHub's latest release is past the line and newer than the running build, the panel sends the same request once more and offers the newest 0.22.x among those 10 when it is newer. When that request fails, the card reads as without it.
 
@@ -110,13 +110,13 @@ CANCEL ends the download. STOP, ARMED, the supply output, a log run, a board dra
 
 ![Another build on the IOmcu](view:updates-coproc)
 
-Under the buttons, UPDATES names the version the IOmcu runs (`Running: 0.21.2`) and the version of the image this panel carries (`Carried: 0.22.0`). HOLD 2s TO UPDATE THE IOMCU starts the update the link-up's question starts, with the same progress screen. When the update ends, or the START was spent, the screen returns to UPDATES.
+Under the buttons, UPDATES names the version the IOmcu runs (`Running: 0.21.2`) and the version of the image this panel carries (`Included: 0.22.0`). HOLD 2s TO UPDATE THE IOMCU starts the update the link-up's question starts, with the same progress screen. When the update ends, or the START was spent, the screen returns to UPDATES.
 
 The hold takes what the question takes: an IOmcu that runs another build, the bench SAFE, the supply output off, the Wi-Fi radio wholly off and no panel install under way. Otherwise it is grey and the line above it says why, the first of these that holds:
 
 | Line | Condition |
 |---|---|
-| `This panel carries no IOmcu firmware.` | the panel was built without the IOmcu's image |
+| `This panel includes no IOmcu firmware.` | the panel was built without the IOmcu's image |
 | `Waiting for the IOmcu update to finish.` | an update runs, or its START is not taken yet |
 | `No IOmcu is responding.` | no link; `Running: not known` |
 | `Waiting for the IOmcu's build check.` | an IOmcu answers; its build was not compared yet |
@@ -124,7 +124,7 @@ The hold takes what the question takes: an IOmcu that runs another build, the be
 | `Build check failed. It runs again at the next link-up.` | the comparison ended without an answer |
 | `No update over CAN. Install firmware once via USB.` | the IOmcu has no update pages or no partition table |
 | `No IOmcu image for this board in this panel build.` | the IOmcu reports a board this panel build carries no image for; no update is offered |
-| `IOmcu runs the build this panel carries.` | nothing to send |
+| `IOmcu runs the build included on this panel.` | nothing to send |
 | `The update requires SAFE and the supply output off.` | ARMED, an arm waiting, or the supply output on |
 | `Waiting for the panel's Wi-Fi to switch off.` | a check, a download or [Wi-Fi](wifi.md) has the radio on |
 | `Waiting: panel firmware installation is running.` | a panel install is under way |

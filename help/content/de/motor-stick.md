@@ -18,7 +18,7 @@ Kein ESC wurde aufgezeichnet, und kein Profil ist geprüft. Jede Pieptonzeit ist
 4. Die Versorgungsleitungen des ESC an den Netzteilausgang legen. Den PD mini [im Tab PD MINI auf SUPPLY](supply.md#tab-pd-mini) einschalten.
 5. Den Netzteilausgang abschalten.
 
-START öffnet nichts, solange eines davon fehlt, und die Zeile neben START nennt den Grund, zum Beispiel `Kein Gas-Pin zugeordnet. Auf der Seite OUTPUTS zuordnen.` oder `Netzteil ist simuliert. START benötigt einen PD mini.`. START braucht einen Messwert des Netzteils, nicht älter als 1000ms, der den Ausgang aus mit höchstens 20mA für 200ms meldet.
+START öffnet nichts, solange eines davon fehlt, und die Zeile neben START nennt den Grund, zum Beispiel `Kein Gas-Pin zugeordnet. Ordne einen auf der Seite OUTPUTS zu.` oder `Netzteil ist simuliert. START benötigt einen PD mini.`. START braucht einen Messwert des Netzteils, nicht älter als 1000ms, der den Ausgang aus mit höchstens 20mA für 200ms meldet.
 
 ## Hersteller und Modelle
 

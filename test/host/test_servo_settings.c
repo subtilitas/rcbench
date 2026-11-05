@@ -794,11 +794,11 @@ TEST_CASE(the_in_force_note_names_the_target_the_coprocessor_holds)
     /* German, the same states: protocol and setting names as the UI writes
      * them. */
     static const char *const de[NOTE_N][2] = {
-        { "Aktiv: AUSGÄNGE laufen mit 50Hz.",
+        { "Aktiv: Ausgänge laufen mit 50Hz.",
           "PPM-Ausgänge behalten ihre eigene Pulsrate." },
         { "Aktiv: PROG-PORT GPIO 13 läuft mit 50Hz.",
           "PPM-Ausgänge behalten ihre eigene Pulsrate." },
-        { "Aktiv: AUSGÄNGE laufen mit 50Hz.",
+        { "Aktiv: Ausgänge laufen mit 50Hz.",
           "Das gewählte ZIEL ist nicht aktiv." },
         { "Aktiv: PROG-PORT GPIO 13 läuft mit 50Hz.",
           "Das gewählte ZIEL ist nicht aktiv." },

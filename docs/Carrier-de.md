@@ -83,7 +83,7 @@ Stellen:
 | FUNC beim Start des IOmcu | NONE auf jedem Port; das Panel bittet erneut um SERVO PWM |
 | Gesperrt | ARMED oder ARMED angefordert, ein Test, ein Sweep oder ein Endlagenlauf, ein Programmer, der einen Port hält |
 | PROGP04 | nicht angeboten, solange PWM04 einen PWM-Ausgang trägt: `PROGP04 TEILT PWM-SLICE 0 MIT PWM04 (GPIO 1)` |
-| Puls | nur solange das Feld PROG 5V EIN zeigt; PORT-PWM EIN, ein Servotest und ein Endlagenlauf werden mit `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN` abgelehnt |
+| Puls | nur solange das Feld PROG 5V EIN zeigt; PORT-PWM EIN, ein Servotest und ein Endlagenlauf werden mit `PROG 5V AUS: SCHALTE ES IM FELD PROG 5V EIN` abgelehnt |
 | Versorgung | die festen 5V von M7 an GPIO 21; die Spannungsstufen eines Servotests erreichen die Servoschienen, nicht den Port, ein Test dort wird also mit `PROG-PORTS LAUFEN MIT FESTEN 5V: KEINE STUFEN` abgelehnt |
 | Strom | INA3221 0x40 CH3 misst alle vier Ports zusammen |
 
@@ -134,9 +134,9 @@ hält der Pull-down an EN M7 aus.
 | --- | --- |
 | kein lebender Heartbeat (NOT_ARMED) | `PROG-Ports 5V nicht eingeschaltet: der IOmcu hat keinen Heartbeat.` |
 | ein Port hält die 5V (BAD_VALUE) | `PROG-Ports 5V nicht eingeschaltet: ein Programmierport belegt sie.` |
-| keine Antwort; das OFF folgt | `PROG-Ports 5V EIN nicht beantwortet. Verbindung prüfen.` |
+| keine Antwort; das OFF folgt | `PROG-Ports 5V EIN nicht bestätigt. Prüfe die Verbindung.` |
 | über verlorene Touch-Ereignisse hinweg; der Prüfstand geht auf SAFE | `Touch-Signal beim Einschalten verloren. PROG-Ports 5V aus.` |
-| ein Druck, solange ein Port die 5V hält oder die Page UNBEKANNT liest | `PROG-Ports 5V: von einem Programmierport belegt oder nicht gelesen.` |
+| ein Druck, solange ein Port die 5V hält oder die Page UNBEKANNT liest | `PROG-Ports 5V: von einem Programmierport belegt oder nicht ausgelesen.` |
 
 ### Das Feld PROG 5V
 
@@ -185,8 +185,7 @@ gelesen, sind ein Fehler des Prüfstands:
 - SAFE, alle Ausgänge aus und das OFF der Page
   ([Sicherheit, Fehler](Safety-de.md#fehler)). Das nächste PROG 5V EIN
   schaltet EN um und hebt die Abschaltung von M7 auf.
-- Das Band: `PROG 5V ausgefallen: INA3221 0x40 CH3 las 0.12V trotz EIN.
-  Alle Ausgänge aus.`
+- Das Band: `PROG 5V ausgefallen: INA3221 0x40 CH3 misst 0.12V trotz EIN. Alle Ausgänge aus.`
 - Die Konsole, englisch: `PROG 5V lost: INA3221 0x40 CH3 read 0.12V,
   0.08V in 2 windows, 640ms after ON. All outputs off.`
 - Ein Fehler je ON: keiner mehr, bis die 5V aus und wieder ein waren.

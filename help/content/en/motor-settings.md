@@ -40,9 +40,9 @@ When the IOmcu does not take the pair, ARM stays refused until the pair is in fo
 | Band | What to do |
 |---|---|
 | `No pulse range from the IOmcu. Update the IOmcu firmware, then hold ARM again.` | update the IOmcu: the panel offers the image it carries when the IOmcu connects |
-| `Idle pulse is not 100us or more below Full pulse. Change one, then hold ARM again.` | lower Idle pulse or raise Full pulse |
-| `The IOmcu rejected the pulse range. Change Idle pulse, Full pulse or TARGET.` | shorten the pulse, or bind the motor pin at a slower rate on OUTPUTS: a pulse longer than its PWM frame is refused |
-| `The IOmcu holds another pulse range. Change Idle pulse or Full pulse.` | change either value; the panel sends the pair again |
+| `Idle pulse less than 100us below Full pulse. Change one, then hold ARM again.` | lower Idle pulse or raise Full pulse |
+| `IOmcu rejected the pulse range. Change Idle pulse, Full pulse or TARGET.` | shorten the pulse, or bind the motor pin at a slower rate on OUTPUTS: a pulse longer than its PWM frame is refused |
+| `The IOmcu has a different pulse range. Change Idle pulse or Full pulse.` | change either value; the panel sends the pair again |
 
 A binding written on OUTPUTS, and the IOmcu connecting again, also send the pair again.
 

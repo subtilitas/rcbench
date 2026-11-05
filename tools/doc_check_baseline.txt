@@ -3342,7 +3342,6 @@ shared/ui/include/servo_screen.h: warning: parameters of member servo_screen_sup
 shared/ui/include/servo_screen.h: warning: parameters of member servo_screen_sweep_held are not documented
 shared/ui/include/servo_screen.h: warning: parameters of member servo_screen_sweep_started are not documented
 shared/ui/include/servo_screen.h: warning: parameters of member servo_screen_take are not documented
-shared/ui/include/servo_screen.h: warning: parameters of member servo_screen_test_logger_busy are not documented
 shared/ui/include/servo_screen.h: warning: return type of member servo_screen_commanded is not documented
 shared/ui/include/servo_screen.h: warning: return type of member servo_screen_commanded_text is not documented
 shared/ui/include/servo_screen.h: warning: return type of member servo_screen_curve_ms is not documented

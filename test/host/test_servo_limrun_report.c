@@ -51,7 +51,7 @@ TEST_CASE(the_report_holds_the_run)
              g.run.writes, g.run.write_ops);
     CHECK(strstr(g.report, want) != NULL);
     CHECK(strstr(g.report, "KST00001.KST") != NULL);
-    CHECK(strstr(g.report, "AS5600") != NULL || strstr(g.report, "deg") != NULL);
+    CHECK(strstr(g.report, "AS5600") != NULL || strstr(g.report, "°") != NULL);
     CHECK(strstr(g.report, "unit") != NULL);
     CHECK(strstr(g.report, "linear") != NULL);
     CHECK(strstr(g.report, "bisect") == NULL);

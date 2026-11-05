@@ -24,25 +24,25 @@ Eine Zeile zeigt die Einstellung und ihren Wert mit Einheit, 48px hoch, und daru
 | MOTOR | Motorpole | 2 bis 42, Schritte von 2 | 14 | die Drehzahl ist eRPM (elektrische Drehzahl) geteilt durch Pole/2 |
 | MOTOR | Nenn-kV | 0 bis 10000rpm/V, Schritte von 10 | 0 | der kV-Wert auf [LIVE](motor.md#kv-rpm-v-und-eff); 0 lässt ihn leer |
 | GASAUSGANG | Leerlaufpuls | 800 bis 1600us, Schritte von 10 | 1000 | die PWM-Breite (Pulsweitenmodulation) bei 0% Throttle |
-| GASAUSGANG | Vollpuls | 1400 bis 2400us, Schritte von 10 | 2000 | die PWM-Breite bei 100% Throttle |
+| GASAUSGANG | Vollgaspuls | 1400 bis 2400us, Schritte von 10 | 2000 | die PWM-Breite bei 100% Throttle |
 | GASAUSGANG | Rampengrenze | 5 bis 300%/s, Schritte von 5 | 55 | die Throttle-Rampe des Panelmodells, genutzt, solange kein IOmcu antwortet |
 
-Das Tastenfeld des Leerlaufpulses lehnt einen Wert ab, der nicht mindestens 100us unter dem Vollpuls liegt, das des Vollpulses einen, der nicht mindestens 100us über dem Leerlaufpuls liegt. Das Tastenfeld bleibt offen, zeigt `Leerlaufpuls höchstens 1900us (100us unter Vollpuls)` oder `Vollpuls mindestens 1100us (100us über Leerlaufpuls)` in der Warnfarbe, und die Zeile behält ihren Wert. Die Bereiche überlappen sich, 800 bis 1600us und 1400 bis 2400us, daher braucht das Paar diese Prüfung.
+Das Tastenfeld des Leerlaufpulses lehnt einen Wert ab, der nicht mindestens 100us unter dem Vollgaspuls liegt, das des Vollgaspulses einen, der nicht mindestens 100us über dem Leerlaufpuls liegt. Das Tastenfeld bleibt offen, zeigt `Leerlaufpuls höchstens 1900us (100us unter Vollgaspuls)` oder `Vollgaspuls mindestens 1100us (100us über Leerlaufpuls)` in der Warnfarbe, und die Zeile behält ihren Wert. Die Bereiche überlappen sich, 800 bis 1600us und 1400 bis 2400us, daher braucht das Paar diese Prüfung.
 
-Leerlaufpuls und Vollpuls gehen beim Link-Aufbau und bei jeder Änderung an den IOmcu. Der IOmcu fährt keine Throttle-Rampe: Ein gebundener Pin springt auf den Befehl.
+Leerlaufpuls und Vollgaspuls gehen beim Link-Aufbau und bei jeder Änderung an den IOmcu. Der IOmcu fährt keine Throttle-Rampe: Ein gebundener Pin springt auf den Befehl.
 
-Leerlaufpuls und Vollpuls nehmen nur bei einem Prüfstand in SAFE einen Wert an. Solange der Prüfstand ARMED ist, ARM gehalten wird oder ein ARM oder ein DISARM auf seine Antwort wartet, lautet ihre Hilfezeile `Nur bei SAFE einstellbar` in der Warnfarbe, und der Wert nimmt keinen Tipp an. Ein offenes Tastenfeld für einen von beiden schließt, wenn ARM gedrückt wird oder der Prüfstand SAFE verlässt. Die anderen 6 Zeilen nehmen jederzeit einen Wert an.
+Leerlaufpuls und Vollgaspuls nehmen nur bei einem Prüfstand in SAFE einen Wert an. Solange der Prüfstand ARMED ist, ARM gehalten wird oder ein ARM oder ein DISARM auf seine Antwort wartet, lautet ihre Hilfezeile `Nur bei SAFE einstellbar` in der Warnfarbe, und der Wert nimmt keinen Tipp an. Ein offenes Tastenfeld für einen von beiden schließt, wenn ARM gedrückt wird oder der Prüfstand SAFE verlässt. Die anderen 6 Zeilen nehmen jederzeit einen Wert an.
 
-Eine Änderung von Leerlaufpuls oder Vollpuls erreicht den IOmcu beim ersten Poll 300ms oder mehr nach der letzten Eingabe. Bis dahin wird ARM bei angeschlossenem IOmcu mit `Pulsbereich noch nicht an den IOmcu gesendet. ARM erneut halten.` abgelehnt, und der Prüfstand bleibt SAFE. ARM erneut halten: Das Halten über 2s gibt der Änderung die Zeit anzukommen.
+Eine Änderung von Leerlaufpuls oder Vollgaspuls erreicht den IOmcu beim ersten Poll 300ms oder mehr nach der letzten Eingabe. Bis dahin wird ARM bei angeschlossenem IOmcu mit `Pulsbereich noch nicht an den IOmcu gesendet. Halte ARM erneut.` abgelehnt, und der Prüfstand bleibt SAFE. ARM erneut halten: Das Halten über 2s gibt der Änderung die Zeit anzukommen.
 
 Übernimmt der IOmcu das Paar nicht, bleibt ARM abgelehnt, bis das Paar in Kraft ist, und das Band sagt, was zu ändern ist:
 
 | Band | Was tun |
 |---|---|
-| `Kein Pulsbereich vom IOmcu. IOmcu-Firmware aktualisieren, dann ARM erneut halten.` | den IOmcu aktualisieren: Das Panel bietet das mitgebrachte Image an, wenn der IOmcu sich verbindet |
-| `Leerlaufpuls liegt nicht 100us oder mehr unter Vollpuls. Einen ändern, dann ARM erneut halten.` | Leerlaufpuls senken oder Vollpuls erhöhen |
-| `Der IOmcu hat den Pulsbereich abgelehnt. Leerlaufpuls, Vollpuls oder ZIEL ändern.` | den Puls kürzen oder den Motor-Pin auf OUTPUTS mit einer langsameren Rate zuordnen: Ein Puls, der länger als sein PWM-Frame ist, wird abgelehnt |
-| `Der IOmcu hält einen anderen Pulsbereich. Leerlaufpuls oder Vollpuls ändern.` | einen der beiden Werte ändern; das Panel sendet das Paar erneut |
+| `Kein Pulsbereich vom IOmcu. Aktualisiere die IOmcu-Firmware, dann halte ARM erneut.` | den IOmcu aktualisieren: Das Panel bietet das mitgebrachte Image an, wenn der IOmcu sich verbindet |
+| `Leerlaufpuls weniger als 100us unter Vollgaspuls. Ändere einen, dann halte ARM erneut.` | Leerlaufpuls senken oder Vollgaspuls erhöhen |
+| `IOmcu hat den Pulsbereich abgelehnt. Ändere Leerlaufpuls, Vollgaspuls oder ZIEL.` | den Puls kürzen oder den Motor-Pin auf OUTPUTS mit einer langsameren Rate zuordnen: Ein Puls, der länger als sein PWM-Frame ist, wird abgelehnt |
+| `Der IOmcu hat einen anderen Pulsbereich. Ändere Leerlaufpuls oder Vollgaspuls.` | einen der beiden Werte ändern; das Panel sendet das Paar erneut |
 
 Eine auf OUTPUTS geschriebene Zuordnung und ein erneutes Verbinden des IOmcu senden das Paar ebenfalls erneut.
 

@@ -274,7 +274,7 @@ TEST_CASE(the_alert_names_the_pair_and_its_numbers)
     ui_text_set_language(UI_LANG_DE);
     CHECK_STR_EQ(sensors_rows_i228_alert(line, sizeof(line), 1000u, 2048u),
                  "INA228 Shunt x Höchststrom über 163.84mV: an 1000uΩ bis "
-                 "163.8A. SENSORS prüfen.");
+                 "163.8A. Prüfe SENSORS.");
     ui_text_set_language(UI_LANG_EN);
 }
 

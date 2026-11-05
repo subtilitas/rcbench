@@ -6,19 +6,19 @@ order: 50
 
 # Logs
 
-LOGS liest die SD-Karte (Secure Digital) des Panels: Der Bildschirm listet die CSV-Dateien (Comma-Separated Values) eines Ordners und seine Berichte, zeigt, was der Import in einer CSV-Datei gefunden hat, zeichnet bis zu 4 ihrer Spalten und öffnet einen Bericht im Textbetrachter von [Files](files.md#der-textbetrachter). Drei Tabs oben links wählen den Ordner, in dieser Reihenfolge: STAMM (das Stammverzeichnis der Karte), USER (Ordner User-Logs, vorgegeben `USER/LOGS`) und BENCH (Ordner Auto-Logs, vorgegeben `BENCH/LOGS`). Er öffnet über die Kachel LOGS im [Menü](overview.md). WLAN, unten links, öffnet [WLAN](wifi.md), und DATEIEN daneben öffnet [Files](files.md): Kopieren, Verschieben, Umbenennen und Löschen auf der Karte. Das Home-Tag geht eine Ebene zurück, wie ZURÜCK: vom Plot zur Importansicht, von der Importansicht zur Dateiliste, von der Dateiliste zum Menü. Über der Rückfrage zu LÖSCHEN ist es ABBRECHEN.
+LOGS liest die SD-Karte (Secure Digital) des Panels: Der Bildschirm listet die CSV-Dateien (Comma-Separated Values) eines Ordners und seine Berichte, zeigt, was der Import in einer CSV-Datei gefunden hat, zeichnet bis zu 4 ihrer Spalten und öffnet einen Bericht im Textbetrachter von [Files](files.md#der-textbetrachter). Drei Tabs oben links wählen den Ordner, in dieser Reihenfolge: STAMM (das Stammverzeichnis der Karte), USER (Ordner Testaufzeichnungen, vorgegeben `USER/LOGS`) und BENCH (Ordner Auto-Aufzeichnungen, vorgegeben `BENCH/LOGS`). Er öffnet über die Kachel LOGS im [Menü](overview.md). WLAN, unten links, öffnet [WLAN](wifi.md), und DATEIEN daneben öffnet [Files](files.md): Kopieren, Verschieben, Umbenennen und Löschen auf der Karte. Das Home-Tag geht eine Ebene zurück, wie ZURÜCK: vom Plot zur Importansicht, von der Importansicht zur Dateiliste, von der Dateiliste zum Menü. Über der Rückfrage zu LÖSCHEN ist es ABBRECHEN.
 
 ## Keine Karte
 
 ![LOGS ohne Karte im Steckplatz](view:logs-nocard)
 
-Ist keine Karte eingebunden, zeigt der Kasten `KEINE AUFZEICHNUNGEN` und `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` Ein leerer Ordner, oder einer, den das Panel noch nicht angelegt hat, zeigt `Keine .csv-Dateien in BENCH/LOGS.` oder `Keine .csv-Dateien in USER/LOGS.`, das Stammverzeichnis ohne CSV-Datei `Keine .csv-Dateien im Hauptverzeichnis.` Die Zeile darunter sagt, was der Tab enthält: `Läufe heißen SERVOnnn, MOTORnnn oder SUPPLnnn.CSV.`, `Tests werden als ATESTnnn.CSV und LIMITnnn.TXT gespeichert.` oder `Läufe von Firmware 0.21.0 und älter.` Sind AUTO-LOGS oder USER-LOGS unter [SETUP > SD CARD](setup.md) aus, zeigt BENCH bzw. USER stattdessen `AUTO-LOGS AUS unter SD CARD.` oder `USER-LOGS AUS unter SD CARD.` AKTUALISIEREN liest die Karte erneut. Ohne Karte wechseln die Tabs wie mit Karte, und jeder Tipp auf einen Tab sucht erneut nach einer Karte.
+Ist keine Karte eingebunden, zeigt der Kasten `KEINE AUFZEICHNUNGEN` und `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` Ein leerer Ordner, oder einer, den das Panel noch nicht angelegt hat, zeigt `Keine .csv-Dateien in BENCH/LOGS.` oder `Keine .csv-Dateien in USER/LOGS.`, das Stammverzeichnis ohne CSV-Datei `Keine .csv-Dateien im Hauptverzeichnis.` Die Zeile darunter sagt, was der Tab enthält: `Läufe heißen SERVOnnn, MOTORnnn oder SUPPLnnn.CSV.`, `Tests werden als ATESTnnn.CSV und LIMITnnn.TXT gespeichert.` oder `Läufe von Firmware 0.21.0 und älter.` Sind AUTO-AUFZEICHNUNGEN oder TESTAUFZEICHNUNGEN unter [SETUP > SD CARD](setup.md) aus, zeigt BENCH bzw. USER stattdessen `AUTO-AUFZEICHNUNGEN AUS unter SD CARD.` oder `TESTAUFZEICHNUNGEN AUS unter SD CARD.` AKTUALISIEREN liest die Karte erneut. Ohne Karte wechseln die Tabs wie mit Karte, und jeder Tipp auf einen Tab sucht erneut nach einer Karte.
 
 ## Eine Karte, die sich nicht einbinden lässt
 
 ![LOGS mit einer Karte ohne FAT-Volume](view:logs-nofat)
 
-Eine Karte im Steckplatz mit NTFS (New Technology File System), einer GPT (GUID-Partitionstabelle) oder ohne Format zeigt `Karte ist weder FAT32 noch exFAT. Am Computer formatieren.` Eine Karte, die sich aus anderem Grund nicht einbinden lässt, zeigt `Karte nicht lesbar. Am Computer prüfen, dann AKTUALISIEREN.` [Kartenformate](#kartenformate) sagt, was mountet und wie eine Karte formatiert wird. Formatieren löscht die Karte. AKTUALISIEREN bindet die wieder eingesetzte Karte ein.
+Eine Karte im Steckplatz mit NTFS (New Technology File System), einer GPT (GUID-Partitionstabelle) oder ohne Format zeigt `Karte ohne FAT32 oder exFAT. Formatiere sie am Computer.` Eine Karte, die sich aus anderem Grund nicht einbinden lässt, zeigt `Karte nicht lesbar. Prüfe sie am PC, dann tippe AKTUALISIEREN.` [Kartenformate](#kartenformate) sagt, was mountet und wie eine Karte formatiert wird. Formatieren löscht die Karte. AKTUALISIEREN bindet die wieder eingesetzte Karte ein.
 
 ## Die Dateiliste
 
@@ -29,8 +29,8 @@ Der Kopf zeigt rechts der Tabs den gezeigten Ordner, `BENCH/LOGS`, und nennt die
 | Tab | Ordner | Enthält |
 |---|---|---|
 | STAMM | Stammverzeichnis | die Läufe von Firmware 0.21.0 und älter |
-| USER | Ordner User-Logs, vorgegeben `USER/LOGS` | die Dateien des AUTOMATISCHEN TESTS und des ENDLAGENLAUFS |
-| BENCH | Ordner Auto-Logs, vorgegeben `BENCH/LOGS` | das automatische Log jedes ARMED- und Netzteil-Laufs |
+| USER | Ordner Testaufzeichnungen, vorgegeben `USER/LOGS` | die Dateien des AUTOMATISCHEN TESTS und des ENDLAGENLAUFS |
+| BENCH | Ordner Auto-Aufzeichnungen, vorgegeben `BENCH/LOGS` | das automatische Log jedes ARMED- und Netzteil-Laufs |
 
 LOGS öffnet auf dem Tab der Datei, die das Panel zuletzt geschrieben hat, und nach einem Start auf BENCH, bis eine geschrieben ist. Ist seit dem letzten Besuch nichts geschrieben worden, bleibt der Tab, wie er verlassen wurde. Ein Tipp auf einen Tab liest seinen Ordner ab der ersten Seite.
 
@@ -75,9 +75,9 @@ Eine Datei ist ein Lauf, im Ordner seiner Art. Ihr Name sagt, was den Lauf gesta
 
 Der Name folgt dem Bildschirm, dessen ARM den Prüfstand geschaltet hat, auch an einem IOmcu älter als 0.18.0, der mit jedem Schalten auf ARMED die Throttle-Ausgänge mitschaltet.
 
-AUTO-LOGS aus unter [SETUP > SD CARD](setup.md) schreibt keine Datei nach `BENCH/LOGS` und nimmt keine Nummer; USER-LOGS aus schreibt keine nach `USER/LOGS`, und der SERVO-Bildschirm nennt `USER-LOGS AUS` an der Stelle der Datei. Nach dem Start eines neuen Panels oder einem Update sind beide an.
+AUTO-AUFZEICHNUNGEN aus unter [SETUP > SD CARD](setup.md) schreibt keine Datei nach `BENCH/LOGS` und nimmt keine Nummer; TESTAUFZEICHNUNGEN aus schreibt keine nach `USER/LOGS`, und der SERVO-Bildschirm nennt `TESTAUFZEICHNUNGEN AUS` an der Stelle der Datei. Nach dem Start eines neuen Panels oder einem Update sind beide an.
 
-Ordner Auto-Logs und Ordner User-Logs unter [SETUP > SD CARD](setup.md#sd-card) stellen andere Ordner ein. Ein geänderter Ordner gilt ab der nächsten Datei, nummeriert nach dem, was dieser Ordner enthält. Dateien in einem vorher benutzten Ordner werden erst wieder gelistet, wenn der Ordner zurückgestellt ist.
+Ordner Auto-Aufzeichnungen und Ordner Testaufzeichnungen unter [SETUP > SD CARD](setup.md#sd-card) stellen andere Ordner ein. Ein geänderter Ordner gilt ab der nächsten Datei, nummeriert nach dem, was dieser Ordner enthält. Dateien in einem vorher benutzten Ordner werden erst wieder gelistet, wenn der Ordner zurückgestellt ist.
 
 Das Panel legt jeden Ordner an, wenn es zum ersten Mal hineinschreibt, eine Ebene nach der anderen. Eine Datei namens `BENCH` oder `USER` im Stammverzeichnis verhindert das: Das Band zeigt `Ordner BENCH/LOGS nicht anlegbar. Lauf nicht aufgezeichnet.`
 
@@ -107,7 +107,7 @@ Die ersten fünf hinterlassen keine Datei. Die letzten vier hinterlassen eine Da
 
 ![Der Bericht eines ENDLAGENLAUFS im Textbetrachter](view:logs-report)
 
-ÖFFNEN auf einem Bericht öffnet ihn im [Textbetrachter](files.md#der-textbetrachter), nur lesend. Das Band zeigt dann FILES. Das Home-Tag führt zurück zu LOGS, und der Bericht ist in der Liste wieder gewählt. Ein Bericht über 1MiB bleibt in der Liste, und die Fußzeile meldet `Über 1MB: zu groß. Lade die Datei über Wi-Fi herunter.`
+ÖFFNEN auf einem Bericht öffnet ihn im [Textbetrachter](files.md#der-textbetrachter), nur lesend. Das Band zeigt dann FILES. Das Home-Tag führt zurück zu LOGS, und der Bericht ist in der Liste wieder gewählt. Ein Bericht über 1MiB bleibt in der Liste, und die Fußzeile meldet `Über 1MB: zu groß. Lade die Datei über WLAN herunter.`
 
 [WLAN](wifi.md) lädt jeden Bericht ebenfalls herunter.
 

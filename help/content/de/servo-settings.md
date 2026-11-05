@@ -47,7 +47,7 @@ Die Seite AUSGANG sagt, was aus der Rate wurde:
 
 | Hinweis | Bedeutung |
 |---|---|
-| `Aktiv: AUSGÄNGE laufen mit 330Hz.` | der IOmcu fährt die Rate auf dem Ziel, das er hält |
+| `Aktiv: Ausgänge laufen mit 330Hz.` | der IOmcu fährt die Rate auf dem Ziel, das er hält |
 | `Die Pulsrate wird mit der nächsten Position an den IOmcu gesendet.` | noch nicht geschrieben |
 | `ABGELEHNT: ...` | ein Puls ist länger als der Frame, oder ein Pin teilt den PWM-Slice mit anderer Rate; die Pins behalten ihre Rate |
 | `Keine Verbindung. Die aktive Pulsrate ist unbekannt.` | kein IOmcu antwortet |
@@ -59,7 +59,7 @@ Die Seite AUSGANG sagt, was aus der Rate wurde:
 | Option | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
 | KURVE | RECHTECK, SINUS, DREIECK | SINUS | die Kurve von SWEEP und der Bewegungen des Tests |
-| TEMPO | 0,05 bis 5Hz | 0,5Hz | Kurven pro Sekunde |
+| TEMPO | 0,05 bis 5Hz | 0,5Hz | Kurvenzyklen pro Sekunde |
 | BEREICH | 10 bis 100% | 80% | der Anteil des Wegs, der durchfahren wird |
 
 ## Die Optionen des automatischen Tests
@@ -117,7 +117,7 @@ OPTIONEN auf der Karte ENDLAGENLAUF öffnet sie.
 
 Die Spannungs- und Stromgrenzen, in denen die Sollwerte und die Stufen eines Laufs bleiben, stehen unter den Karten auf TEST und auf PRÜFLING auf einer Taste, `GRENZEN 21.00V 5.00A: SUPPLY ÖFFNEN`, die geltenden Werte. Die Taste öffnet [SUPPLY](supply.md) auf OPTIONEN, GRENZEN, wo sie eingestellt werden, und das Home-Tag dort führt zurück. Sie ist grau, solange ZIEL gesperrt ist: Das Verlassen von SERVO schaltete den Prüfstand auf SAFE.
 
-Der erste Hinweis auf AUSGANG nennt den Port, auf dem SERVO-TESTER steht, `SERVO-TESTER: PORT 1. Einstellbar unter OUTPUTS.` Er nimmt keinen Tipp an: Die Einstellung gehört zu [Outputs](outputs.md#der-eintrag-prog-port).
+Der erste Hinweis auf AUSGANG nennt den Port, auf dem SERVO-TESTER steht, `SERVO-TESTER: PORT 1. Wähle ihn auf OUTPUTS.` Er nimmt keinen Tipp an: Die Einstellung gehört zu [Outputs](outputs.md#der-eintrag-prog-port).
 
 ## PRÜFLING
 
@@ -127,7 +127,7 @@ Der erste Hinweis auf AUSGANG nennt den Port, auf dem SERVO-TESTER steht, `SERVO
 | Option | Was sie tut |
 |---|---|
 | NAME | der Prüfling, bis 23 Zeichen; steht über jedem Bericht |
-| BERICHT | ein Textbericht, `ATESTnnn.TXT`, neben dem Log jedes Tests, solange User-Logs unter SETUP > SD CARD EIN ist |
+| BERICHT | ein Textbericht, `ATESTnnn.TXT`, neben dem Log jedes Tests, solange Testaufzeichnungen unter SETUP > SD CARD EIN ist |
 | SENSOR-MITTE | ein Tipp übernimmt den aktuellen Zählwert des AS5600, 0 bis 4095, als Mitte, mit dem Servo in Neutral; mit ANGLE SOURCE IMU übernimmt er nichts |
 
 ANGLE SOURCE auf dem Eintrag IMU von [Sensoren](setup-sensors.md) legt fest, woher die Läufe den Winkel nehmen: vom AS5600 oder von der IMU, deren Winkel in AS5600-Zählern von 0.088° läuft. Die CSV des Tests nennt die Quelle in ihrer letzten Spalte, `angle source`, und beide Berichte in der Zeile `Winkelquelle:`. AS5600, der Winkelsensor an der Hornwelle, wird nur unter [Sensoren](setup-sensors.md) geschaltet; die Taste `AS5600 EIN ODER AUS: SENSORS ÖFFNEN` auf PRÜFLING öffnet diesen Eintrag, und das Home-Tag dort führt zurück. PORT-PWM, der Puls auf dem Programmierport, wird nur auf dem Eintrag PROG-PORT von [Ausgänge](outputs.md#der-eintrag-prog-port) gestellt.

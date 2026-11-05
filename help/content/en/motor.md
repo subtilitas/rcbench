@@ -32,7 +32,7 @@ The home tag at the top left climbs one level at a time:
 
 ![PROGRAM's list](view:motor-program)
 
-PROGRAM lists the ESC programmers. Its one row, `ESCs by throttle stick` in the group STICK MENU, drives the pins bound as throttle and opens [ESC STICK](motor-stick.md). The modelled tables for BLHeli_S, AM32, ESCape32 and VESC firmware have no transport and no row.
+PROGRAM lists the ESC programmers. Its one row, `ESCs via throttle stick` in the group STICK MENU, drives the pins bound as throttle and opens [ESC STICK](motor-stick.md). The modelled tables for BLHeli_S, AM32, ESCape32 and VESC firmware have no transport and no row.
 
 ESC STICK opens full width, over the left column and the right column. In place of the tabs the strip row shows the output strip, one line:
 

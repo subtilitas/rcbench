@@ -373,7 +373,7 @@ TEST_CASE(a_start_is_refused_for_what_cannot_run)
     CHECK_EQ(servo_test_start(NULL, &c, 0u, NULL, 0.0f, 0.0f),
              SERVO_TEST_START_NO_STEPS);
     CHECK_STR_EQ(servo_test_start_name(SERVO_TEST_START_ABOVE_CAP),
-                 "A STEP IS OUTSIDE THE CAPS");
+                 "STEP OUTSIDE VOLTAGE LIMITS");
 }
 
 /* An output already on is not switched on again, and the run watches it

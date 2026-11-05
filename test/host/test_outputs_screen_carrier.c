@@ -107,7 +107,7 @@ TEST_CASE(a_tap_gives_a_servo_output_the_protocol)
     tap_pos(1);
     tap_pos(2);
     CHECK_EQ(s_applied, 4);
-    CHECK_STR_EQ(reason(), "SERVO PWM TAKES 4 PINS");
+    CHECK_STR_EQ(reason(), "SERVO PWM USES 4 PINS");
 }
 
 TEST_CASE(a_throttle_beside_a_surface_on_slice_2_is_refused_by_name)

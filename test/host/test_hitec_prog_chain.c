@@ -392,12 +392,12 @@ TEST_CASE(the_message_has_two_lines_in_both_languages)
     char t[HITEC_PANEL_MSG_LINES][HITEC_PANEL_LINE];
 
     CHECK_EQ(hitec_panel_message_lines(&m, t), 2);
-    CHECK_STR_EQ(t[0], "Other values than the last read: taken as another "
-                       "servo.");
-    CHECK_STR_EQ(t[1], "Its backup is this read.");
+    CHECK_STR_EQ(t[0], "Values differ from the last read. "
+                       "Treated as a different servo.");
+    CHECK_STR_EQ(t[1], "Its backup contains the values from this read.");
     ui_text_set_language(UI_LANG_DE);
     CHECK_EQ(hitec_panel_message_lines(&m, t), 2);
-    CHECK_STR_EQ(t[1], "Sein Backup sind die jetzt ausgelesenen Werte.");
+    CHECK_STR_EQ(t[1], "Sein Backup enthält die Werte dieses Auslesevorgangs.");
     ui_text_set_language(UI_LANG_EN);
 }
 

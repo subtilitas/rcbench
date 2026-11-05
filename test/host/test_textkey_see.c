@@ -106,9 +106,9 @@ TEST_CASE(the_setting_is_off_by_default_and_on_panel)
     CHECK_STR_EQ(d->options[2], "50%");
     CHECK_EQ(settings_get_int(SET_KB_SEE), 0);
     CHECK_EQ(ui_textkey_see_pct(settings_get_int(SET_KB_SEE)), 0);
-    CHECK_STR_EQ(settings_label(SET_KB_SEE), "Keyboard see-through");
+    CHECK_STR_EQ(settings_label(SET_KB_SEE), "Keyboard transparency");
     ui_text_set_language(UI_LANG_DE);
-    CHECK_STR_EQ(ui_setting_label(SET_KB_SEE), "Tastatur durchsichtig");
+    CHECK_STR_EQ(ui_setting_label(SET_KB_SEE), "Tastaturtransparenz");
     ui_text_set_language(UI_LANG_EN);
 }
 

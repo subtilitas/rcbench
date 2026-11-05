@@ -67,6 +67,7 @@ TEST_CASE(the_unit_table_classes_each_unit)
 static const char *const k_not_units[] = {
     "x", "of", "an", "too", "mit", "von", "nicht", "not", "late", "lost",
     "free", "frei", "time", "after", "angle", "bound", "counted", "reading",
+    "vom", "wegen", "bei",
     "readings", "supply", "unseen", "values", "windows", "written",
     "movements", "Bewegungen", "Fenster", "Messwert", "Messwerte", "Werte",
     "Winkelmesswerte", "blockiert", "geschrieben", "nachher",

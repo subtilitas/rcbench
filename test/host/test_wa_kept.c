@@ -1,6 +1,6 @@
 /**
  * @file test_wa_kept.c
- * @brief HOTSPOT PASSWORD and WEB CODE in the Wi-Fi session (wa_session.h): the
+ * @brief HOTSPOT PASSWORD and ACCESS CODE in the Wi-Fi session (wa_session.h): the
  *        rule at 7, 8, 63 and 64 characters, a refused character, RANDOM after
  *        a value, a store with no key, FORGET, the code check with a kept code
  *        of every length, the 16 wrong ones, the cookie's form, and the value

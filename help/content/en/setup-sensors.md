@@ -49,7 +49,7 @@ The shunt and the maximum go together: shunt in uΩ times maximum in A is at mos
 | Sensor SCL | SDA + 1, or -1 | 17 | follows Sensor SDA; the row has no keys |
 
 - The bus runs at 400kHz; that is not a setting.
-- The keypad refuses a Sensor SDA pin the bus cannot have and lists the pins it takes in place of the range: GPIO 5 typed shows `Pins the bus takes: 0 4 6 14 16 18 20 26`.
+- The keypad refuses a Sensor SDA pin the bus cannot have and lists the pins it takes in place of the range: GPIO 5 typed shows `Allowed bus pins: 0 4 6 14 16 18 20 26`.
 - The address stops at the ends of its range: `-` at 0x40 and `+` at 0x4F change nothing.
 - Pins with nothing wired to them read as the monitors not answering, not as a blocked bus.
 - The IOmcu takes a change only while the bench is SAFE.
@@ -91,7 +91,7 @@ A fitted part shows three rows more for each of its three channels. A part not f
 
 ![SENSORS on the carrier, 0x40 soldered](view:setup-sensors-rbmod)
 
-The [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) solders Sensor SDA and SCL at GPIO 16 and GPIO 17, Tap pin at GPIO 22, and an INA3221 at 0x40. These rows are drawn without keys and open no keypad, the values stored for the pins stay and are in force again on a module wired by hand, and they say `Soldered on this board. Not a setting here.`:
+The [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) solders Sensor SDA and SCL at GPIO 16 and GPIO 17, Tap pin at GPIO 22, and an INA3221 at 0x40. These rows are drawn without keys and open no keypad, the values stored for the pins stay and are in force again on a module wired by hand, and they say `Soldered on this board. Not editable here.`:
 
 | Row | Reads | Shunt between |
 |---|---|---|
@@ -114,10 +114,10 @@ While a limit is set, the IOmcu judges each channel window of 50ms, and the pane
 | Band | Meaning |
 |---|---|
 | `INA3221 0x41 CH2 (PORT 1) over its 0.80A limit.` | a window passed the channel's limit; in brackets what the channel watches; the limit the window was judged by |
-| `An INA3221 channel passed its limit; which one was lost on the link.` | the reply that named the channel was lost; said after the next link-up, not after an IOmcu restart |
+| `An INA3221 channel exceeded its limit. Its channel number was lost on the link.` | the reply that named the channel was lost; said after the next link-up, not after an IOmcu restart |
 | `INA3221 limits rejected. Check SENSORS.` | the IOmcu refused the limits and keeps its own, or refused the page |
 
-A limit row the IOmcu does not hold is drawn in the warning colour: while its write waits, after a refusal, and on an IOmcu older than 0.22.0 (protocol 4.27), which judges no limit (`IOmcu before 0.22.0: no limit is judged.`).
+A limit row the IOmcu does not hold is drawn in the warning colour: while its write waits, after a refusal, and on an IOmcu older than 0.22.0 (protocol 4.27), which judges no limit (`IOmcu before 0.22.0: no limit is checked.`).
 
 ![The keypad of 0x40 CH1 shunt, 44.4 typed](view:setup-sensors-keypad)
 
@@ -137,7 +137,7 @@ A part's entry says under its name what the part is doing:
 | `NOT READ YET` | no IOmcu answers yet |
 | `NOT ACCEPTED BY THE IOMCU` | the IOmcu refused the set-up |
 | `EVERY CHANNEL OFF` | all three shunts are OFF; nothing is written |
-| `INA228 ON THIS ADDRESS` | the INA228 is on at this address; neither is read |
+| `INA228 AT THIS ADDRESS` | the INA228 is on at this address; neither is read |
 | `NOT READ, IOMCU < 0.22.0` | an older IOmcu reads one part only |
 | `NO BUS PINS` | SENSOR BUS has no pin for SDA or SCL; nothing is read |
 
@@ -205,7 +205,7 @@ A WitMotion BWT901CL angle sensor through an HC-05 Bluetooth module on the panel
 | IMU algorithm | 6-AXIS, 9-AXIS | 6-AXIS | 9-AXIS takes the magnetometer for Z |
 | Angle source | AS5600, IMU | AS5600 | where the servo runs take their angle from ([Servo settings](servo-settings.md)) |
 
-A RATE or ALGORITHM change goes to the sensor with SAVE (`FF AA 00 00 00`) while it is connected. The band says `RATE SAVED: SWITCH THE SENSOR OFF AND ON`. With the sensor not connected it says `RATE GOES TO THE SENSOR WHEN IT CONNECTS; THEN SWITCH IT OFF AND ON` and sends it when frames come. While the IMU screen's calibration runs it says `RATE GOES TO THE SENSOR AFTER THE CALIBRATION; THEN SWITCH IT OFF AND ON` and sends it after the calibration's CALSW 0 and SAVE.
+A RATE or ALGORITHM change goes to the sensor with SAVE (`FF AA 00 00 00`) while it is connected. The band says `RATE SAVED: SWITCH THE SENSOR OFF AND ON`. With the sensor not connected it says `RATE IS SENT WHEN THE SENSOR CONNECTS; THEN SWITCH IT OFF AND ON` and sends it when frames come. While the IMU screen's calibration runs it says `RATE IS SENT AFTER CALIBRATION; THEN SWITCH THE SENSOR OFF AND ON` and sends it after the calibration's CALSW 0 and SAVE.
 
 | State | When |
 |---|---|

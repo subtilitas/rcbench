@@ -6,7 +6,7 @@ order: 100
 
 # IOmcu-Update
 
-Ein Firmware-Image des Panels trägt das Image des IOmcu und bietet es an, wenn der IOmcu einen anderen Build fährt. Die Prüfung läuft bei jedem Link-Aufbau über den CAN-Bus (Controller Area Network) und vergleicht SHA-256-Prüfsummen (Secure Hash Algorithm, 256 Bit), keine Versionsnummern. Ein anderer Build löst den Alert `IOmcu nutzt einen anderen Build. Update unter UPDATES.` aus.
+Ein Firmware-Image des Panels trägt das Image des IOmcu und bietet es an, wenn der IOmcu einen anderen Build fährt. Die Prüfung läuft bei jedem Link-Aufbau über den CAN-Bus (Controller Area Network) und vergleicht SHA-256-Prüfsummen (Secure Hash Algorithm, 256 Bit), keine Versionsnummern. Ein anderer Build löst den Alert `IOmcu nutzt einen anderen Build. Aktualisiere ihn auf UPDATES.` aus.
 
 ## Die Frage
 
@@ -54,7 +54,7 @@ Der Bildschirm kehrt zum Menü zurück, wenn das Update endet, oder zu [Updates]
 | `IOmcu-Update abgebrochen: Flash-Speicher blieb belegt. Vorherige Firmware läuft.` | der Flash blieb 10s belegt |
 | `IOmcu-Update abgebrochen: IOmcu 3-mal neu gestartet. Vorherige Firmware läuft.` | drei Starts ab Block 0 |
 | `IOmcu-Update abgebrochen: neue Firmware ist nicht gestartet. Vorherige Firmware läuft.` | binnen 12s keine Identität vom neuen Image |
-| `IOmcu kann nicht über CAN aktualisiert werden. Firmware einmal über USB installieren.` | der IOmcu hat keine Update-Seiten oder keine Partitionstabelle; ihn einmal über USB (Universal Serial Bus) flashen |
+| `IOmcu kann nicht über CAN aktualisiert werden. Installiere die Firmware einmal über USB.` | der IOmcu hat keine Update-Seiten oder keine Partitionstabelle; ihn einmal über USB (Universal Serial Bus) flashen |
 | `Neue IOmcu-Firmware dauerhaft übernommen.` | ein Image, das beim Link-Aufbau auf Probe lief, wurde behalten |
 
 Ein Stromausfall während des Updates lässt den IOmcu auf seinem alten Image, und der nächste Link-Aufbau bietet das Update erneut an.

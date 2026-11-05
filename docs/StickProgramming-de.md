@@ -38,7 +38,7 @@ Was sie nicht weiß:
 3. Die Signalleitung des ESCs an einen Pin legen, der auf dem Bildschirm
    OUTPUTS mit der Rolle Throttle gebunden ist. Ein Lauf steuert jeden als
    Throttle gebundenen Kanal, wie der Bildschirm MOTOR. START wird
-   abgelehnt, solange die Bindung keinen Pin als Throttle bindet (`Kein Gas-Pin zugeordnet. Auf der Seite OUTPUTS zuordnen.`) und solange das Panel
+   abgelehnt, solange die Bindung keinen Pin als Throttle bindet (`Kein Gas-Pin zugeordnet. Ordne einen auf der Seite OUTPUTS zu.`) und solange das Panel
    die Bindung nicht vom IOmcu gelesen hat (`Ausgangszuordnung nicht ausgelesen. Gas-Pin unbekannt.`).
 4. Die Versorgungsleitungen des ESCs an den Ausgang des Netzteils legen.
    Das Netzteil ist der PD mini: ist der PD mini auf SETUP abgeschaltet,
@@ -56,7 +56,7 @@ Was sie nicht weiß:
    Netzteil, das nicht antwortet, lehnt START ab mit `Kein aktueller Messwert bestätigt, dass das Netzteil aus ist.`. Ein Lauf setzt den Prüfstand unter
    ARM: solange der [Servo-Programmierer](ServoProgrammer-de.md) einen Port
    hält, wird START abgelehnt mit
-   `Servoprogrammierung belegt einen Port. Zuerst auf SERVO auf VERLASSEN tippen.`
+   `Servoprogrammierung belegt einen Port. Tippe zuerst auf SERVO auf VERLASSEN.`
 
 ## Auf dem Bildschirm
 
@@ -641,7 +641,7 @@ Warnfarbe:
 
 | Sollwert | Die Zeile sagt | Der Hinweis sagt |
 | --- | --- | --- |
-| SPANNUNG von Hand | `Zulässige ESC-Spannung unbekannt.` | `SPANNUNG 7.4V: Zulässige ESC-Spannung unbekannt. Bitte prüfen.` |
+| SPANNUNG von Hand | `Zulässige ESC-Spannung unbekannt.` | `SPANNUNG 7.4V: Prüfe die zulässige ESC-Spannung. Sie ist unbekannt.` |
 | SPANNUNG 0, das Modell nennt keine Zellenzahl: die niedrigste der Familie steht dafür | `Zulässige ESC-Spannung unbekannt.` | `7.6V aus der kleinsten Zellenzahl dieser Baureihe. Grenze dieses ESC unbekannt.` |
 
 SPANNUNG 0 an einem Modell, das seine Zellenzahl, aber kein `v_max_mv`

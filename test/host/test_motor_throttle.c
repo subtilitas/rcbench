@@ -519,7 +519,7 @@ TEST_CASE(no_throttle_pin_and_an_unread_binding_are_warnings)
     CHECK(motor_throttle_target(line, sizeof(line), 0u, 0u, true, 18u));
     CHECK_STR_EQ(line, "KEIN MOTOR-PIN");
     CHECK(motor_throttle_target(line, sizeof(line), 0u, 0u, false, 18u));
-    CHECK_STR_EQ(line, "PINS NICHT GELESEN");
+    CHECK_STR_EQ(line, "NICHT AUSGELESEN");
     ui_text_set_language(UI_LANG_EN);
 }
 

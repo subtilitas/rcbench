@@ -98,7 +98,7 @@ Die Zeile SOLL trägt die beiden Sollwerte der Seite SUPPLY und ihren Ausgangssc
 - Das Verlassen von SERVO schaltet einen Ausgang ab, den SERVO eingeschaltet hat.
 - Nach einem VERLASSEN eines Programmierers, das den Ausgang eingeschaltet lässt, fragt SERVO, ob die Sollwerte von vor der Sitzung darauf zurückgehen ([Servo-Programmierer](servo-programmer.md)). Kein anderes Ende des Haltens eines Ports fragt: PORT FREIGEBEN, ein STOP, ein Fehler, ein verlorener Link oder ein Neustart lässt die Sollwerte der Sitzung bis zum nächsten AUS.
 
-Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) steht das Feld PROG 5V unter PD MINI anstelle der Grafik. Es schaltet die eigenen 5V der Programmierports, GPIO 21: PROG 5V EIN ist ein Halten von 2s, PROG 5V AUS ein Tipp, bei SAFE und bei ARMED. Seine zweite Zeile ist das letzte Fenster des INA3221 an den 5V (0x40 CH3), `5.02V  0.120A`, oder `BELEGT VON PROG-PORT n`, solange ein Programmer einen Port hält; die Taste nimmt dann keinen Druck an. Das Verlassen von SERVO schaltet 5V ab, die das Feld hier eingeschaltet hat, außer ein Port hält sie. SUPPLY zeigt dasselbe Feld. Fallen die 5V unter dem ON des Felds aus, etwa wenn ein bremsendes Servo Energie zurückspeist und M7 bei Überspannung abschaltet, sind zwei Fenster unter 3000mV ein Fehler: der Prüfstand geht auf SAFE, alle Ausgänge gehen aus, und das Band zeigt `PROG 5V ausgefallen: INA3221 0x40 CH3 las 0.12V trotz EIN. Alle Ausgänge aus.` PROG 5V EIN schaltet sie wieder ein. Ohne einen INA3221-Kanal, der PROG 5V beobachtet, und solange ein Programmer einen Port hält, beobachtet sie nichts.
+Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) steht das Feld PROG 5V unter PD MINI anstelle der Grafik. Es schaltet die eigenen 5V der Programmierports, GPIO 21: PROG 5V EIN ist ein Halten von 2s, PROG 5V AUS ein Tipp, bei SAFE und bei ARMED. Seine zweite Zeile ist das letzte Fenster des INA3221 an den 5V (0x40 CH3), `5.02V  0.120A`, oder `BELEGT VON PROG-PORT n`, solange ein Programmer einen Port hält; die Taste nimmt dann keinen Druck an. Das Verlassen von SERVO schaltet 5V ab, die das Feld hier eingeschaltet hat, außer ein Port hält sie. SUPPLY zeigt dasselbe Feld. Fallen die 5V unter dem ON des Felds aus, etwa wenn ein bremsendes Servo Energie zurückspeist und M7 bei Überspannung abschaltet, sind zwei Fenster unter 3000mV ein Fehler: der Prüfstand geht auf SAFE, alle Ausgänge gehen aus, und das Band zeigt `PROG 5V ausgefallen: INA3221 0x40 CH3 misst 0.12V trotz EIN. Alle Ausgänge aus.` PROG 5V EIN schaltet sie wieder ein. Ohne einen INA3221-Kanal, der PROG 5V beobachtet, und solange ein Programmer einen Port hält, beobachtet sie nichts.
 
 ![SERVO auf dem Carrier](view:servo-rbmod)
 
@@ -120,22 +120,22 @@ Ein Finger auf dem Zifferblatt, ZENTRIEREN, FREIGEBEN, STOP, ein Schalten auf SA
 
 ## Der automatische Test
 
-TEST STARTEN auf der Karte AUTOMATISCHER TEST von TEST führt das Servo durch die in den Optionen der Karte gewählten Versorgungsspannungen. Auf jeder Stufe misst er den Strom in Ruhe, in Bewegung und beim Halten, misst die Stellzeit und sucht die Spannung, bei der das Servo stehen bleibt. TEST STARTEN ist ein Halten von 2s. Es braucht den Prüfstand bei ARMED und ein Netzteil, das antwortet; sonst nennt die Zustandszeile der Karte den Grund: `ZUERST ARM`, `KEINE STUFE GEWÄHLT`, `NETZTEIL ANTWORTET NICHT`, `BEREICH ZU KLEIN`, `STUFE ÜBER DEN OBERGRENZEN` oder `LETZTER BERICHT SCHREIBT NOCH`.
+TEST STARTEN auf der Karte AUTOMATISCHER TEST von TEST führt das Servo durch die in den Optionen der Karte gewählten Versorgungsspannungen. Auf jeder Stufe misst er den Strom in Ruhe, in Bewegung und beim Halten, misst die Stellzeit und sucht die Spannung, bei der das Servo stehen bleibt. TEST STARTEN ist ein Halten von 2s. Es braucht den Prüfstand bei ARMED und ein Netzteil, das antwortet; sonst nennt die Zustandszeile der Karte den Grund: `ZUERST ARM`, `KEINE STUFE GEWÄHLT`, `NETZTEIL ANTWORTET NICHT`, `BEREICH ZU KLEIN`, `STUFE AUSSERHALB DER GRENZEN` oder `BERICHT WIRD NOCH GESCHRIEBEN`.
 
 ![TEST mit seinen zwei Laufkarten](view:servo-test)
 
-Die Zusammenfassung der Karte nennt die Stufen und die Länge jeder Stufe, `4.8 6.0V BROWN-OUT, JE 60s`. Unter TEST STARTEN folgen die Zustandszeile, dann das letzte Ergebnis und seine Dateien, `ZULETZT: BESTANDEN ATEST004.CSV + .TXT`. Ein abgebrochener Lauf nennt dort stattdessen seinen Grund, `ZULETZT: ABGEBROCHEN - Link verloren`.
+Die Zusammenfassung der Karte nennt die Stufen und die Länge jeder Stufe, `4.8 6.0V BROWN-OUT, JE 60s`. Unter TEST STARTEN folgen die Zustandszeile, dann das letzte Ergebnis und seine Dateien, `ZULETZT: BESTANDEN ATEST004.CSV + .TXT`. Ein abgebrochener Lauf nennt dort stattdessen seinen Grund, `ZULETZT: ABGEBROCHEN - Verbindung verloren`.
 
 ![Ein Testlauf](view:servo-run)
 
 TEST bleibt beim Start des Laufs zu sehen, und die Zustandszeile der Karte nennt die Stufe. LIVE zeigt Stufe und Phase in einem Kasten links vom Zifferblatt, unter `ZUERST ARM`, das Messgerät neben TEST BEENDEN: `PD mini`, der Kanal, `INA 0x41 CH2`, oder `SIMULATION`. Der Lauf endet vorzeitig, mit abgeschaltetem Ausgang und freigegebenem Servo, bei TEST BEENDEN, STOP, einem Schalten auf SAFE, einem verlorenen Link, dem Verlassen des Bildschirms, einem Finger auf dem Zifferblatt, ZENTRIEREN, SWEEP, FREIGEBEN, einem Tipp auf einen Sollwert oder einer Änderung an den Servo-Optionen. Ein Lauf am INA3221 endet auch, wenn der INA3221 aufhört, das Messgerät zu sein, oder 200ms lang (4 Fenster zu 50ms) kein Fenster mit Strom und Spannung kommt: `0.2s kein INA3221-Fenster`. Seine Fenster speisen den Stopp von BLOCKIERT AB, also beendet eine Lücke in ihnen den Lauf sofort.
 
-Mit dem AS5600 ab dem Start in Gebrauch fährt ein Lauf durch eine Lücke des Encoders: der Baustein antwortet bis 300ms nicht, einmal in 10s. Motor- und ESC-Läufe mit hohem Strom stören den Sensorbus, ein während des Laufs eingesteckter Baustein ebenso. In der Lücke wird kein Winkel bewertet, der Bericht sagt `AS5600-Lücken: 1, die längste 120ms. ...`, und die Spalte `angle gap (ms)` der CSV hält ihre Länge. Eine längere Lücke beendet den Lauf, `AS5600 antwortet nicht`, eine zweite in 10s ebenso, `AS5600 2x in 10s ausgefallen`: beides sind Fehler, Ausgang aus und Prüfstand SAFE. Mit WINKELQUELLE IMU lauten dieselben beiden Enden `IMU antwortet nicht` und `IMU 2x in 10s ausgefallen`.
+Mit dem AS5600 ab dem Start in Gebrauch fährt ein Lauf durch eine Lücke des Encoders: der Baustein antwortet bis 300ms nicht, einmal in 10s. Motor- und ESC-Läufe mit hohem Strom stören den Sensorbus, ein während des Laufs eingesteckter Baustein ebenso. In der Lücke wird kein Winkel bewertet, der Bericht sagt `AS5600-Aussetzer: 1, längster 120ms. ...`, und die Spalte `angle gap (ms)` der CSV hält ihre Länge. Eine längere Lücke beendet den Lauf, `AS5600 antwortet nicht`, eine zweite in 10s ebenso, `AS5600 2x in 10s ausgefallen`: beides sind Fehler, Ausgang aus und Prüfstand SAFE. Mit WINKELQUELLE IMU lauten dieselben beiden Enden `IMU antwortet nicht` und `IMU 2x in 10s ausgefallen`.
 
 ![Ein Ergebnis](view:servo-result)
 ![Ein Ergebnis, vom INA3221 gemessen](view:servo-result-ina)
 
-Das Ergebnis bleibt bis SCHLIESSEN im Kasten auf LIVE und bis zum nächsten Lauf in der Zeile ZULETZT der Karte: BESTANDEN, NICHT BESTANDEN oder ABGEBROCHEN und warum, die längste Stellzeit, der höchste Haltestrom und die Dateien, die die Karte aufgenommen hat, `ATESTnnn.CSV` und `+ .TXT` für den Bericht, in `USER/LOGS`. Mit User-Logs AUS unter [SETUP](setup.md#sd-card) > SD CARD steht dort `USER-LOGS AUS`, und keine Datei wird geschrieben.
+Das Ergebnis bleibt bis SCHLIESSEN im Kasten auf LIVE und bis zum nächsten Lauf in der Zeile ZULETZT der Karte: BESTANDEN, NICHT BESTANDEN oder ABGEBROCHEN und warum, die längste Stellzeit, der höchste Haltestrom und die Dateien, die die Karte aufgenommen hat, `ATESTnnn.CSV` und `+ .TXT` für den Bericht, in `USER/LOGS`. Mit Testaufzeichnungen AUS unter [SETUP](setup.md#sd-card) > SD CARD steht dort `TESTAUFZEICHNUNGEN AUS`, und keine Datei wird geschrieben.
 
 ## Der Endlagenlauf
 
@@ -159,11 +159,11 @@ Der Lauf liest nur den INA3221-Kanal, der das Ziel des Testers überwacht. Mit d
 | `INA3221 NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET` | kein Kanal eines bestückten INA3221 überwacht in SETUP > SENSORS das Ziel des Testers |
 | `INA3221 NICHT ERREICHBAR` | kein Link, oder der INA3221 antwortet nicht |
 | `NOCH KEINE INA3221-MESSFENSTER` | der INA3221 ist noch nicht das Messgerät |
-| `SERVOVERSORGUNG UNTER 3.0V ODER NICHT AUSGELESEN` | das letzte INA3221-Fenster hat keine Schienenspannung oder weniger als 3,0V: ein ausgeschalteter Ausgang liest 0V |
+| `SERVOVERSORGUNG UNTER 3.0V ODER OHNE MESSWERT` | das letzte INA3221-Fenster hat keine Schienenspannung oder weniger als 3,0V: ein ausgeschalteter Ausgang liest 0V |
 | `PORT-PWM AUS. KEINE PULSE AN DIESEM PORT.` | ZIEL ist PROG-PORT und PORT-PWM ist aus |
 | `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | ZIEL sind die Ausgänge des Prüfstands, und kein Ausgang ist als SERVO PWM gebunden, oder die Bindung ist noch nicht gelesen |
 | `MITTE MUSS ZWISCHEN PULS MIN UND PULS MAX LIEGEN` | der Pulsbereich enthält PULS MITTE nicht |
-| `LETZTER BERICHT SCHREIBT NOCH` | ein Test oder ein Lauf ist im Gang, oder sein Bericht geht noch auf die Karte |
+| `BERICHT WIRD NOCH GESCHRIEBEN` | ein Test oder ein Lauf ist im Gang, oder sein Bericht geht noch auf die Karte |
 
 ### Die Suche
 
@@ -176,7 +176,7 @@ Die Suche geht von der Mitte nach außen, zuerst die untere Seite, 10us je Schri
 
 Die Lesesitzung hält das Servo auf PULS MITTE, schaltet den Prüfstand auf SAFE, liest das Servo mit VERBINDEN, gibt den Port mit VERLASSEN zurück und schaltet den Prüfstand auf ARMED. Vorher wird nichts angesteuert. Der Lauf endet vor jeder Suche als NICHT BESTANDEN, wenn:
 
-- kein KST- oder Chaservo-Servo gelesen wird (`kein KST- oder Chaservo-Servo`): ein Servo, das kein KST oder Chaservo ist, an einem SERVO-PWM-Pin suchen;
+- kein KST- oder Chaservo-Servo gelesen wird (`kein KST/Chaservo ausgelesen`): ein Servo, das kein KST oder Chaservo ist, an einem SERVO-PWM-Pin suchen;
 - NEUTRAL nicht zwischen PULSE LOWER und PULSE UPPER liegt (`NEUTRAL außerhalb LOWER/UPPER`);
 - PULSE LOWER bis PULSE UPPER nicht innerhalb von PULS MIN bis PULS MAX liegt (`Servopulse außerhalb MIN/MAX`). Der Prüfstand bleibt SAFE, und der Kasten nennt beide Bereiche.
 
@@ -190,7 +190,7 @@ SERVOPULSE auf 1000-2000 schreibt in der Lesesitzung PULSE LOWER 1000,0us und PU
 
 ### LEFT ANGLE und RIGHT ANGLE programmieren
 
-SUCHEN + PROGRAMMIEREN braucht ein KST- oder Chaservo-Servo am Programmierport: ZIEL auf PROG-PORT, den Port in PWM, einen PD mini mit eingeschaltetem Ausgang und einen Sollwert von 4,8V oder mehr. Das Servo übernimmt einen geschriebenen Wert erst, nachdem seine Versorgung aus- und wieder eingeschaltet wurde, was der Lauf über den PD mini tut. Ohne ihn werden SUCHEN + PROGRAMMIEREN und SERVOPULSE auf 1000-2000 nicht angeboten, die Karte zeigt `PROGRAMMIEREN: KEIN PD MINI ZUM AUS- UND EINSCHALTEN`, und der Lauf sucht nur, mit der Servoschiene im letzten Fenster des INA3221 bei 4,8V oder mehr. An den Ausgängen des Prüfstands zeigt ENDLAGENLAUF NUR SUCHE, und der Hinweis in den Optionen nennt den Grund. Am PROG-PORT beginnt jeder Lauf mit einer Lesesitzung, auch NUR SUCHE, und sie braucht ein KST- oder Chaservo-Servo: bei einem anderen Servo endet der Lauf mit `kein KST- oder Chaservo-Servo`. Ein Port nicht in PWM, ein ausgeschalteter Ausgang des PD mini oder eine Versorgung unter 4,8V hält die Schaltfläche auch für NUR SUCHE grau, und die Zustandszeile der Karte nennt die Bedingung.
+SUCHEN + PROGRAMMIEREN braucht ein KST- oder Chaservo-Servo am Programmierport: ZIEL auf PROG-PORT, den Port in PWM, einen PD mini mit eingeschaltetem Ausgang und einen Sollwert von 4,8V oder mehr. Das Servo übernimmt einen geschriebenen Wert erst, nachdem seine Versorgung aus- und wieder eingeschaltet wurde, was der Lauf über den PD mini tut. Ohne ihn werden SUCHEN + PROGRAMMIEREN und SERVOPULSE auf 1000-2000 nicht angeboten, die Karte zeigt `PROGRAMMIEREN: KEIN PD MINI ZUM AUS- UND EINSCHALTEN`, und der Lauf sucht nur, mit der Servoschiene im letzten Fenster des INA3221 bei 4,8V oder mehr. An den Ausgängen des Prüfstands zeigt ENDLAGENLAUF NUR SUCHE, und der Hinweis in den Optionen nennt den Grund. Am PROG-PORT beginnt jeder Lauf mit einer Lesesitzung, auch NUR SUCHE, und sie braucht ein KST- oder Chaservo-Servo: bei einem anderen Servo endet der Lauf mit `kein KST/Chaservo ausgelesen`. Ein Port nicht in PWM, ein ausgeschalteter Ausgang des PD mini oder eine Versorgung unter 4,8V hält die Schaltfläche auch für NUR SUCHE grau, und die Zustandszeile der Karte nennt die Bedingung.
 
 ![Kein PD mini: der Lauf schreibt nichts](view:servo-limrun-nopd)
 
@@ -225,7 +225,7 @@ Mit SERVO auf HITEC gehen die Sitzungen des Laufs an den [Hitec-Programmierer](s
 - Ein Schreiben der D-Serie speichert und startet das Servo in seiner Sitzung neu: kein PD mini nötig.
 - Ein klassisches Servo braucht für jede Sitzung, auch das Lesen, ein PD mini oder PROG 5V am rbmod-Carrier: `Klassische Servos brauchen ein PD mini: Der Prüfstand schaltet die Versorgung.`
 - Das Halten von 2s beim Start ist die Zustimmung, nach der ÄNDERUNG PRÜFEN fragt; jedes Schreiben schaltet SCHREIBEN INS SERVO FREIGEBEN für sich ein und an seinem Ende aus.
-- Antwortet beim ersten VERBINDEN kein Servo, endet der Lauf mit `kein Hitec-Servo gelesen`.
+- Antwortet beim ersten VERBINDEN kein Servo, endet der Lauf mit `kein Hitec-Servo ausgelesen`.
 - Die Sicherungsdatei HITEC001 bis HITEC999 wird vor dem ersten Schreiben gespeichert. Zum Zurückspielen sie unter DATEIEN des Hitec-Programmierers laden und schreiben: das Feld sagt `HITEC001 IN DATEIEN LADEN`.
 
 ### Was einen Endlagenlauf beendet
@@ -264,7 +264,7 @@ Der Kasten auf LIVE bleibt bis SCHLIESSEN, die Zeile ZULETZT der Karte bis zum n
 ![Ein programmiertes Servo](view:servo-limrun-pass)
 ![Nur Suche](view:servo-limrun-found)
 
-Der Bericht ist eine eigene `LIMITnnn.TXT` in `USER/LOGS`, geschrieben unabhängig von BERICHT und nicht geschrieben mit User-Logs AUS. Er enthält, wo die Suche lief, die Endpunkte beider Suchen, die Pulse des Servos und das Schreiben der Pulse, LEFT ANGLE und RIGHT ANGLE vorher und nachher mit den Anteilen, dem Vorhalt und dem Endwert, die geschriebenen Werte, die gesendeten Schreibvorgänge und die Sitzungen, das Messgerät, mit eingebautem AS5600 den Winkel an jeder letzten freien Stellung, und das Urteil oder den Grund. Bis die Karte ihn geschlossen hat, warten WLAN und ein Update.
+Der Bericht ist eine eigene `LIMITnnn.TXT` in `USER/LOGS`, geschrieben unabhängig von BERICHT und nicht geschrieben mit Testaufzeichnungen AUS. Er enthält, wo die Suche lief, die Endpunkte beider Suchen, die Pulse des Servos und das Schreiben der Pulse, LEFT ANGLE und RIGHT ANGLE vorher und nachher mit den Anteilen, dem Vorhalt und dem Endwert, die geschriebenen Werte, die gesendeten Schreibvorgänge und die Sitzungen, das Messgerät, mit eingebautem AS5600 den Winkel an jeder letzten freien Stellung, und das Urteil oder den Grund. Bis die Karte ihn geschlossen hat, warten WLAN und ein Update.
 
 ## Aktuelle Einschränkungen
 

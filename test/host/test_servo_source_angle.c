@@ -149,14 +149,14 @@ TEST_CASE(the_automatic_test_judges_moves_on_imu_counts)
     CHECK_EQ(bench.disarms, 0u);
     CHECK(strstr(bench.report, "Result:         PASS") != NULL);
     CHECK(strstr(bench.report, "Encoder:        IMU Y-, in AS5600 counts "
-                               "(0.088deg a count),")
+                               "(0.088° per count),")
           != NULL);
     CHECK(strstr(bench.report, "Angle source:   IMU Y-\n") != NULL);
-    CHECK(strstr(bench.report, "Position: the IMU measures the horn;")
+    CHECK(strstr(bench.report, "Position: the IMU measures horn movement.")
           != NULL);
     CHECK(strstr(bench.report, "AS5600 on the horn shaft") == NULL);
     CHECK(strstr(bench.report, "Settled: the angle has stayed within "
-                               "1.05deg for 100ms.")
+                               "1.05° for 100ms.")
           != NULL);
     CHECK(strstr(bench.report, "ENCODER (angles in degrees from the centre")
           != NULL);
@@ -212,7 +212,7 @@ TEST_CASE(the_limit_run_report_names_the_source_and_the_angle)
           == bench.report);
     CHECK(strstr(bench.report, "Angle source:   IMU X+\n") != NULL);
     CHECK(strstr(bench.report, "                IMU X+ ") != NULL);
-    CHECK(strstr(bench.report, "deg at the last free position") != NULL);
+    CHECK(strstr(bench.report, "° at the last free position") != NULL);
     CHECK(strstr(bench.report, "AS5600") == NULL);
 
     lim_bench();
@@ -364,7 +364,7 @@ TEST_CASE(an_imu_silent_300ms_is_a_gap_and_a_second_within_10s_ends_the_run)
     CHECK_EQ(bench.disarms, 1u);
     CHECK(strstr(bench.report, "IMU dropped out twice in 10s") != NULL);
     CHECK(strstr(bench.report, "AS5600 dropped out") == NULL);
-    CHECK(strstr(bench.report, "IMU gaps: 2, the longest 300ms.") != NULL);
+    CHECK(strstr(bench.report, "IMU gaps: 2, longest 300ms.") != NULL);
     CHECK(strstr(bench.report, "AS5600 gaps") == NULL);
 
     /* One gap of 300ms: the run goes on to PASS and names it. */
@@ -379,7 +379,7 @@ TEST_CASE(an_imu_silent_300ms_is_a_gap_and_a_second_within_10s_ends_the_run)
     test_run_out();
     CHECK_EQ(bench.disarms, 0u);
     CHECK(strstr(bench.report, "Result:         PASS") != NULL);
-    CHECK(strstr(bench.report, "IMU gaps: 1, the longest 300ms.") != NULL);
+    CHECK(strstr(bench.report, "IMU gaps: 1, longest 300ms.") != NULL);
 
     /* 301ms: the first gap ends the run. */
     bench_fresh();
@@ -415,7 +415,7 @@ TEST_CASE(an_imu_silent_300ms_is_a_gap_and_a_second_within_10s_ends_the_run)
         if (len > SERVO_GAP_MAX_MS) {
             bench_frames(1000u);
             CHECK(!bench.out);
-            CHECK(strstr(bench.report, "IMU gaps: 1, the longest 301ms.")
+            CHECK(strstr(bench.report, "IMU gaps: 1, longest 301ms.")
                   != NULL);
             CHECK(strstr(bench.report, "AS5600 gaps") == NULL);
             CHECK(strstr(bench.report, "IMU not answering") != NULL);

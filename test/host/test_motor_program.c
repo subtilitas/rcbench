@@ -200,7 +200,7 @@ TEST_CASE(program_lists_the_stick_menu_and_no_modelled_protocol)
     }
     CHECK_EQ(motor, 2);
     CHECK_STR_EQ(TR(PL_GRP_STICK), "STICK MENU");
-    CHECK_STR_EQ(TR(PL_STICK), "ESCs by throttle stick");
+    CHECK_STR_EQ(TR(PL_STICK), "ESCs via throttle stick");
     ui_text_set_language(UI_LANG_DE);
     CHECK_STR_EQ(TR(PL_GRP_STICK), "STICK-MENÜ");
     CHECK_STR_EQ(TR(PL_STICK), "ESCs per Gasknüppel");

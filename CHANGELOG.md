@@ -6,6 +6,18 @@ history is in git.
 
 ## Unreleased
 
+### Changed
+
+- The interface's texts are revised in English and German: 797 of the 3,191
+  entries in `shared/text/include/ui_text.def` change, 385 in English and
+  769 in German. The revision covers screen labels, help lines, alerts,
+  programming instructions, the servo reports, settings and the Wi-Fi page.
+  German instructions use the du-imperative, and an angle the reports print
+  reads `°` instead of `deg`. IDs, widths, format conversions, NULL
+  fallbacks and the CSV columns stay as they are. The manual, the web help,
+  the tests and 394 screenshots (132 in English, 262 in German) quote the
+  new texts.
+
 ## 0.23.7 - 2026-11-04
 
 0.23.7 is a testing release: its minor number, 23, is odd, and GitHub

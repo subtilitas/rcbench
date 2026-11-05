@@ -99,7 +99,7 @@ TEST_CASE(an_encoder_pulled_and_plugged_back_within_300ms_rides)
     test_run_out();
     CHECK_EQ(bench.disarms, 0u);
     CHECK(strstr(bench.report, "Result:         PASS") != NULL);
-    CHECK(strstr(bench.report, "AS5600 gaps: 1, the longest 300ms.") != NULL);
+    CHECK(strstr(bench.report, "AS5600 gaps: 1, longest 300ms.") != NULL);
     CHECK(strstr(bench.csv_head, ";travel angle (ms);angle gap (ms);meter;")
           != NULL);
     servo_screen_test_files(21, true);
@@ -227,7 +227,7 @@ TEST_CASE(the_limit_run_ends_on_an_encoder_gap_of_301ms)
             CHECK(!bench.out);
             CHECK_EQ(bench.disarms, 1u);
             CHECK(strstr(bench.report, "AS5600 not answering") != NULL);
-            CHECK(strstr(bench.report, "AS5600 gaps: 1, the longest 301ms.")
+            CHECK(strstr(bench.report, "AS5600 gaps: 1, longest 301ms.")
                   != NULL);
         }
     }

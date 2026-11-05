@@ -665,8 +665,8 @@ TEST_CASE(the_hub_holds_seven_tiles_and_sd_card_is_the_fourth)
     CHECK_STR_EQ(ui_setting_category(SET_CAT_CARD), "SD CARD");
     ui_text_set_language(UI_LANG_DE);
     CHECK_STR_EQ(ui_setting_category(SET_CAT_CARD), "SD CARD");
-    CHECK_STR_EQ(ui_setting_label(SET_LOG_AUTO), "Auto-Logs");
-    CHECK_STR_EQ(ui_setting_label(SET_LOG_USER), "User-Logs");
+    CHECK_STR_EQ(ui_setting_label(SET_LOG_AUTO), "Auto-Aufzeichnungen");
+    CHECK_STR_EQ(ui_setting_label(SET_LOG_USER), "Testaufzeichnungen");
     CHECK_STR_EQ(ui_setting_label(SET_WEB_WRITES), "Schreiben per Browser");
     ui_text_set_language(UI_LANG_EN);
     CHECK_STR_EQ(ui_setting_label(SET_WEB_WRITES), "Browser writes");

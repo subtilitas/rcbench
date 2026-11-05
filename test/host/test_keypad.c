@@ -636,12 +636,12 @@ TEST_CASE(a_folder_keyboard_refuses_what_the_card_check_refuses)
         { "/LOGS",      CARD_FOLDER_EMPTY,    "A folder name is empty" },
         { "LOGS/",      CARD_FOLDER_EMPTY,    "A folder name is empty" },
         { "A//B",       CARD_FOLDER_EMPTY,    "A folder name is empty" },
-        { "BENCHLOGS",  CARD_FOLDER_LONG,     "8 characters a folder at most" },
-        { "A/B/C",      CARD_FOLDER_DEEP,     "2 folders deep at most" },
+        { "BENCHLOGS",  CARD_FOLDER_LONG,     "At most 8 characters per folder" },
+        { "A/B/C",      CARD_FOLDER_DEEP,     "At most 2 folder levels" },
         { "MY LOGS",    CARD_FOLDER_CHAR,     "A-Z, 0-9, _ and - only" },
         { "LOGS.OLD",   CARD_FOLDER_CHAR,     "A-Z, 0-9, _ and - only" },
         { "AUX/LOGS",   CARD_FOLDER_RESERVED, "Reserved name" },
-        { "BENCH/KST",  CARD_FOLDER_BENCH,    "Folder of the bench's own files" },
+        { "BENCH/KST",  CARD_FOLDER_BENCH,    "Reserved for the bench's files" },
     };
     for (size_t i = 0u; i < sizeof(cases) / sizeof(cases[0]); ++i) {
         char out[CARD_DIR_MAX] = "unset";
@@ -654,10 +654,10 @@ TEST_CASE(a_folder_keyboard_refuses_what_the_card_check_refuses)
         CHECK_STR_EQ(out, "unset");
     }
     /* The texts, in both languages. */
-    CHECK_STR_EQ(TR(TEXTKEY_DIR_LONG), "8 characters a folder at most");
+    CHECK_STR_EQ(TR(TEXTKEY_DIR_LONG), "At most 8 characters per folder");
     ui_text_set_language(UI_LANG_DE);
     CHECK_STR_EQ(TR(TEXTKEY_DIR_LONG), "Höchstens 8 Zeichen je Ordner");
-    CHECK_STR_EQ(TR(TEXTKEY_DIR_BENCH), "Ordner der Prüfstand-Dateien");
+    CHECK_STR_EQ(TR(TEXTKEY_DIR_BENCH), "Für Prüfstand-Dateien reserviert");
     ui_text_set_language(UI_LANG_EN);
     for (size_t i = 0u; i < sizeof(cases) / sizeof(cases[0]); ++i) {
         const char *want = cases[i].line;

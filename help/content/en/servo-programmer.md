@@ -154,7 +154,7 @@ WRITE n VALUES opens the write page with the changes, `DEAD BAND: 2.0 -> 1.6us`.
 ![A write running: do not unplug](view:servo-kst-writing)
 ![A write done](view:servo-kst-written)
 
-A value written and read back is in the servo and acts from its next power-up. With a PD mini the message says `The values act after LEAVE: it switches the supply off for 1s and on.`; without one `The written values act after the servo's supply is switched off and on.`
+A value written and read back is in the servo and acts from its next power-up. With a PD mini the message says `The values take effect after LEAVE switches the supply off for 1s, then on.`; without one `The written values take effect after the servo supply is switched off and on.`
 
 ![A write with a PD mini](view:servo-kst-written-supply)
 
@@ -167,7 +167,7 @@ FILES lists the servo files in the card's folder `BENCH/KST/CONF`, 5 a page, eac
 ![The name of a new file](view:servo-kst-name)
 ![A file loaded](view:servo-kst-file-loaded)
 
-A tap on a file loads it into the draft. Nothing reaches the servo before the write. A file of another type than the one set on TYPE, a damaged file or a value outside its hard limit is not loaded, and the line says why. With no type set the tap opens `SERVO TYPE BEFORE THE LOAD` first.
+A tap on a file loads it into the draft. Nothing reaches the servo before the write. A file of another type than the one set on TYPE, a damaged file or a value outside its hard limit is not loaded, and the line says why. With no type set the tap opens `SELECT SERVO TYPE BEFORE LOADING` first.
 
 ![The type asked before a load](view:servo-kst-type-first)
 

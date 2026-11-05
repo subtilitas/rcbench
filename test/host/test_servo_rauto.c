@@ -278,7 +278,7 @@ TEST_CASE(the_report_lists_every_step_and_the_csv_one_row_a_step)
     CHECK(in_report("Result:         PASS"));
     CHECK(in_report("Device:         AILERON L"));
     CHECK(in_report("Output:         PROG PORT 1 GPIO 13"));
-    CHECK(in_report("Angle:          IMU X+, deflection from the zero"));
+    CHECK(in_report("Angle:          IMU X+, deflection from zero"));
     CHECK(in_report("Current:        INA3221 0x41 CH1, 50ms windows"));
     CHECK(in_report("a sample at 3.0A, above 1.0A for 400ms"));
     CHECK(in_report("Targets:        1000us 25.0°, 2000us 25.0°, margin 10%"));
@@ -292,7 +292,7 @@ TEST_CASE(the_report_lists_every_step_and_the_csv_one_row_a_step)
     CHECK(in_report("1000us  write 0  value -  measured 30.00°  goal 27.50°  outside"));
     CHECK(in_report("1000us  write 1  value 138  measured 27.60°  goal 27.50°  within"));
     CHECK(in_report("2000us  write 0  value 150  measured 30.00°"));
-    CHECK(in_report("Model: the deflection"));
+    CHECK(in_report("Model: deflection"));
     CHECK(!in_report("Restore:"));
     CHECK(!in_report("Angle gaps"));
     CHECK_EQ(g.rows, 1u + 5u);

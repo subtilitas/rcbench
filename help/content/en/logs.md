@@ -18,7 +18,7 @@ With no card mounted, the box reads `NO RECORDINGS` and `No card. Insert one and
 
 ![LOGS with a card that holds no FAT volume](view:logs-nofat)
 
-A card in the slot that holds NTFS (New Technology File System), a GPT (GUID partition table) or no format reads `Card is neither FAT32 nor exFAT. Format it on a computer.` A card that does not mount for another reason reads `Cannot read the card. Check it on a computer, then tap RESCAN.` [Card formats](#card-formats) says what mounts and how to format a card. Formatting erases the card. RESCAN mounts the card put back.
+A card in the slot that holds NTFS (New Technology File System), a GPT (GUID partition table) or no format reads `Card is not FAT32 or exFAT. Format it on a computer.` A card that does not mount for another reason reads `Cannot read the card. Check it on a computer, then tap RESCAN.` [Card formats](#card-formats) says what mounts and how to format a card. Formatting erases the card. RESCAN mounts the card put back.
 
 ## The file list
 

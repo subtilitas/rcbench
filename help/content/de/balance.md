@@ -27,7 +27,7 @@ In diesem Release ist kein Sensor angeschlossen. VIBRATION, WINKEL und HINZUFÜG
 
 ![Ein Impeller mit fünf Blättern](view:balance-edf)
 
-Bei einem Impeller ist die Korrektur ein Winkel auf der Nabe, `Nabe, 265 Grad`, weil eine Blattspitze im Mantel nicht erreichbar ist.
+Bei einem Impeller ist die Korrektur ein Winkel auf der Nabe, `Nabe, 265°`, weil eine Blattspitze im Mantel nicht erreichbar ist.
 
 ![Das Tastenfeld der Blattzahl, 5 getippt](view:balance-keypad)
 

@@ -133,17 +133,17 @@ TEST_CASE(a_rate_change_is_a_command_to_the_sensor_and_a_notice)
     /* In a calibration they wait for its end, and say so. */
     sensors_rows_set_imu_cal(true);
     CHECK_STR_EQ(sensors_rows_imu_notice(SET_IMU_RATE),
-                 "RATE GOES TO THE SENSOR AFTER THE CALIBRATION; THEN SWITCH "
-                 "IT OFF AND ON");
+                 "RATE IS SENT AFTER CALIBRATION; THEN SWITCH THE SENSOR "
+                 "OFF AND ON");
     CHECK_STR_EQ(sensors_rows_imu_notice(SET_IMU_ALGO),
-                 "ALGORITHM GOES TO THE SENSOR AFTER THE CALIBRATION");
+                 "ALGORITHM IS SENT AFTER CALIBRATION");
     sensors_rows_set_imu_cal(false);
     sensors_rows_set_imu(IMU_LINK_NO_FRAMES, 0u);
     CHECK_STR_EQ(sensors_rows_imu_notice(SET_IMU_RATE),
-                 "RATE GOES TO THE SENSOR WHEN IT CONNECTS; THEN SWITCH IT "
+                 "RATE IS SENT WHEN THE SENSOR CONNECTS; THEN SWITCH IT "
                  "OFF AND ON");
     CHECK_STR_EQ(sensors_rows_imu_notice(SET_IMU_ALGO),
-                 "ALGORITHM GOES TO THE SENSOR WHEN IT CONNECTS");
+                 "ALGORITHM IS SENT WHEN THE SENSOR CONNECTS");
     /* Each notice fits the alert band's two rows, in both languages. */
     for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);

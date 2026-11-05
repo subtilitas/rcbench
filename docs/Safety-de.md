@@ -478,7 +478,7 @@ STATUS-Page lesen das Failsafe und den Heartbeat und nicht den Latch: nach
 einem Start meldet STATUS Idle ohne Fault-Bit, und ein ON der Versorgung wird
 vor dem ersten Schalten auf ARMED angenommen. Der Latch steht nicht auf STATUS. Ein
 IOmcu mit gesetztem Latch zeigt sich als abgewiesenes ARM, das das
-Panel als `IOmcu hat auf SAFE geschaltet. ARM erneut halten.` meldet.
+Panel als `IOmcu hat auf SAFE geschaltet. Halte ARM erneut.` meldet.
 
 Das Panel hat für dieselben Ereignisse eine eigene Regel. Antwortet der
 IOmcu nicht, während der Prüfstand ARMED ist oder ein Schalten auf ARMED
@@ -566,7 +566,7 @@ angeschlossenen IOmcu schaltet das Panel seine eigene Bank nach den
 ### Ein Pulsbereich unterwegs
 
 Der Frame, der auf ARMED schaltet, trägt ARM, THROTTLE und die Polzahl,
-aber kein CHAN_CFG. Leerlaufpuls und Vollpuls des Gases erreichen den IOmcu
+aber kein CHAN_CFG. Leerlaufpuls und Vollgaspuls des Gases erreichen den IOmcu
 auf einem eigenen Weg: eine Änderung, eine auf OUTPUTS geschriebene Zuordnung, eine Link-up-Flanke oder der Start des Panels
 schuldet dem IOmcu das Paar. Ein Neustart oder ein Update des IOmcu kommt
 als Link-up-Flanke zurück. Das Panel begleicht die Schuld bei einem Poll im
@@ -580,11 +580,11 @@ bevor er es quittiert, und die Quittung trägt, was er gespeichert hat.
 | --- | --- | --- |
 | die Seite hält das Paar schon | beglichen, nichts geschrieben | geht weiter |
 | das Schreiben wird quittiert, und jeder Gaskanal hat das Paar gespeichert | beglichen | geht weiter |
-| das Lesen oder das Schreiben bleibt unbeantwortet | offen, beim nächsten Poll erneut gesendet | `Pulsbereich noch nicht an den IOmcu gesendet. ARM erneut halten.` |
-| das Lesen wird abgelehnt | beendet, `Der IOmcu hat seinen Pulsbereich nicht gemeldet.` | `Kein Pulsbereich vom IOmcu. IOmcu-Firmware aktualisieren, dann ARM erneut halten.` |
-| der Leerlaufpuls liegt weniger als 100us unter dem Vollpuls | beendet, nichts gesendet, `Leerlaufpuls muss mindestens 100us unter Vollpuls liegen. Nicht gesendet.` | `Leerlaufpuls liegt nicht 100us oder mehr unter Vollpuls. Einen ändern, dann ARM erneut halten.` |
-| das Schreiben wird abgelehnt | beendet, `Der IOmcu hat den Pulsbereich abgelehnt.` | `Der IOmcu hat den Pulsbereich abgelehnt. Leerlaufpuls, Vollpuls oder ZIEL ändern.` |
-| das Schreiben wird quittiert, und ein Gaskanal hat ein anderes Paar gespeichert | beendet | `Der IOmcu hält einen anderen Pulsbereich. Leerlaufpuls oder Vollpuls ändern.` |
+| das Lesen oder das Schreiben bleibt unbeantwortet | offen, beim nächsten Poll erneut gesendet | `Pulsbereich noch nicht an den IOmcu gesendet. Halte ARM erneut.` |
+| das Lesen wird abgelehnt | beendet, `Der IOmcu hat seinen Pulsbereich nicht gemeldet.` | `Kein Pulsbereich vom IOmcu. Aktualisiere die IOmcu-Firmware, dann halte ARM erneut.` |
+| der Leerlaufpuls liegt weniger als 100us unter dem Vollgaspuls | beendet, nichts gesendet, `Leerlaufpuls muss mindestens 100us unter Vollgaspuls liegen. Nicht gesendet.` | `Leerlaufpuls weniger als 100us unter Vollgaspuls. Ändere einen, dann halte ARM erneut.` |
+| das Schreiben wird abgelehnt | beendet, `Der IOmcu hat den Pulsbereich abgelehnt.` | `IOmcu hat den Pulsbereich abgelehnt. Ändere Leerlaufpuls, Vollgaspuls oder ZIEL.` |
+| das Schreiben wird quittiert, und ein Gaskanal hat ein anderes Paar gespeichert | beendet | `Der IOmcu hat einen anderen Pulsbereich. Ändere Leerlaufpuls oder Vollgaspuls.` |
 
 Der Alert eines abgelehnten oder vertauschten Paars verlässt das Band vor
 Ablauf seiner 30s, sobald eine spätere Zahlung die Page mit dem
@@ -621,8 +621,7 @@ abgelehnt wird, sperrt erneut mit seinem Grund.
 
 Wer einen IOmcu angeschlossen hat, der die Seite ablehnt, liest beim
 Link-up `Der IOmcu hat seinen Pulsbereich nicht gemeldet.` und bei jedem
-Halten von ARM `Kein Pulsbereich vom IOmcu. IOmcu-Firmware aktualisieren,
-dann ARM erneut halten.`. Mit diesem IOmcu schaltet der Prüfstand nicht auf
+Halten von ARM `Kein Pulsbereich vom IOmcu. Aktualisiere die IOmcu-Firmware, dann halte ARM erneut.`. Mit diesem IOmcu schaltet der Prüfstand nicht auf
 ARMED. Das Panel bietet beim Link-up das IOmcu-Image an, das es mitbringt,
 nach seinem eigenen Halten von 2s; der IOmcu startet nach dem Update neu,
 und der folgende Link-up schuldet das Paar erneut. Ohne IOmcu schaltet die

@@ -46,7 +46,7 @@ A row shows the setting, a help line and its value with its unit. A number has `
 - **Tap**: a key steps once when the finger lifts within 8px of the press, inside the key.
 - **Hold**: a held key steps first after 0.45s, then 8 times a second, and 30 times a second from 2.25s.
 - **Scroll**: a vertical drag of more than 8px anywhere on the list scrolls it and changes no value.
-- **Keypad**: a tap on a number's value, between its `-` and `+`, opens the keypad over the list. It names the setting, its range and its unit, and takes as many digits after the point as the step has. OK sets the value as a step does, onto the nearer step: 73% brightness is 75%. A value outside the range keeps the keypad open and names the range in the warning colour. A value inside the range that the keys never reach keeps it open and names the reason there instead, in the warning colour: `0 or 5.0 to 1000.0mΩ` for a shunt between 0 and 5.0mΩ, `0 or 10 to 32767mA` for a current limit between 0 and 10mA, `Pins the bus takes: 0 4 6 14 16 18 20 26` for a Sensor SDA pin the bus cannot have, `The other PD mini pin holds this GPIO` for the other PD mini pin's GPIO. The next key brings the range back. CANCEL and the home tag change nothing. -1, a pin not set, is set with `-`: a pin's keypad has no `+/-` key.
+- **Keypad**: a tap on a number's value, between its `-` and `+`, opens the keypad over the list. It names the setting, its range and its unit, and takes as many digits after the point as the step has. OK sets the value as a step does, onto the nearer step: 73% brightness is 75%. A value outside the range keeps the keypad open and names the range in the warning colour. A value inside the range that the keys never reach keeps it open and names the reason there instead, in the warning colour: `0 or 5.0 to 1000.0mΩ` for a shunt between 0 and 5.0mΩ, `0 or 10 to 32767mA` for a current limit between 0 and 10mA, `Allowed bus pins: 0 4 6 14 16 18 20 26` for a Sensor SDA pin the bus cannot have, `GPIO already used by the other PD mini pin` for the other PD mini pin's GPIO. The next key brings the range back. CANCEL and the home tag change nothing. -1, a pin not set, is set with `-`: a pin's keypad has no `+/-` key.
 - One finger at a time: a second finger does nothing while one presses or scrolls.
 
 A changed value is in force at once. RESET CATEGORY sets every value of the open category back to its default; on SENSORS `RESET INA228` does it for the selected entry alone.
@@ -113,8 +113,8 @@ No warning shows when nothing is unsaved, when a save is asked (`WHEN IDLE`), or
 | Dim after | 0 to 60min, steps of 5 | 0 | stored; no screen uses it in this release |
 | One finger pans | ON, OFF | OFF | one finger pans a zoomed plot on [Logs](logs.md#the-plot) |
 | Rotary knob | ON, OFF | OFF | an MT6701 at 0x06 on a bus of its own, IO30 and IO31 of header P3 (I2C: Inter-Integrated Circuit), turns the throttle on MOTOR & ESC or the horn on SERVO |
-| Knob scale | 90 to 720deg, steps of 10 | 270 | the knob angle that moves the slider across its whole span |
-| Keyboard see-through | OFF, 25%, 50% | OFF | how much of the text shows through the text editor's keyboard on [Files](files.md#the-text-editor); other keyboards stay opaque |
+| Knob range | 90 to 720deg, steps of 10 | 270 | the knob angle that moves the slider across its whole span |
+| Keyboard transparency | OFF, 25%, 50% | OFF | how much of the text shows through the text editor's keyboard on [Files](files.md#the-text-editor); other keyboards stay opaque |
 | Demo mode | ON, OFF | OFF | hides the SIMULATION watermark from the next frame; the band still says SIM and the tiles still say SIMULATED. The panel draws the watermark only while no IOmcu answers, so the setting changes nothing on a bench with an IOmcu |
 
 The backlight is on while the panel runs. No setting switches it.
@@ -167,11 +167,11 @@ OK keeps the keyboard open, and the folder as it was, for a folder the card cann
 | Refused | Example | Line |
 |---|---|---|
 | a folder name empty, or `/` at the start, at the end or twice | `/LOGS`, `LOGS/`, `A//B` | `A folder name is empty` |
-| over 8 characters in a folder name | `BENCHLOGS`; `BENCHLOG` is taken | `8 characters a folder at most` |
-| over 2 folders | `A/B/C`; `A/B` is taken | `2 folders deep at most` |
+| over 8 characters in a folder name | `BENCHLOGS`; `BENCHLOG` is taken | `At most 8 characters per folder` |
+| over 2 folders | `A/B/C`; `A/B` is taken | `At most 2 folder levels` |
 | a character other than A-Z, 0-9, `_` and `-` | `MY LOGS` | `A-Z, 0-9, _ and - only` |
 | a Windows device name: CON, PRN, AUX, NUL, COM1 to COM9, LPT1 to LPT9 | `AUX/LOGS` | `Reserved name` |
-| `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC` or `BENCH/ESCW`, the bench's own files | `BENCH/KST`; `BENCH/KSTX` is taken | `Folder of the bench's own files` |
+| `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC` or `BENCH/ESCW`, the bench's own files | `BENCH/KST`; `BENCH/KSTX` is taken | `Reserved for the bench's files` |
 
 ## SENSORS
 

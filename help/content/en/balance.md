@@ -27,13 +27,13 @@ No sensor is fitted in this release. VIBRATION, ANGLE and ADD are fixed values, 
 
 ![A five-blade ducted fan](view:balance-edf)
 
-For a ducted fan the correction is an angle on the hub, `hub, 265deg`, because a blade tip inside a duct cannot be reached.
+For a ducted fan the correction is an angle on the hub, `hub, 265°`, because a blade tip inside a duct cannot be reached.
 
 ![The blade count's keypad, 5 typed](view:balance-keypad)
 
 The keypad covers both cards. OK takes 2 to 6; any other count keeps it open and names the range in the warning colour. CANCEL, the home tag and a tab close it and change nothing.
 
-Without an index pulse, balancing takes four runs: a baseline, then a trial mass at 0, 120 and 240deg. An index pulse halves that.
+Without an index pulse, balancing takes four runs: a baseline, then a trial mass at 0, 120 and 240°. An index pulse halves that.
 
 ## The TEST RIG tab
 

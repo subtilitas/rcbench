@@ -171,32 +171,41 @@ static const char *out_reason(void)
     return why;
 }
 
+/* Every pixel is painted independently of its old colour. A drawn glyph
+ * can equal GUARD_SENTINEL, so comparing against that colour cannot tell
+ * whether a pixel was left untouched. Black and white starting pixels
+ * must produce the same frame, with the bounds guards intact both times. */
+static void render_full(const ui_screen_t *screen, int buffer_index)
+{
+    static gfx_color_t px[2][GUARD_CANVAS_PIXELS(UI_PANEL_W, UI_BODY_H)];
+    guard_canvas_t g[2];
+    gfx_canvas_t c[2];
+    for (int i = 0; i < 2; ++i) {
+        guard_canvas_init(&g[i], &c[i], px[i], UI_PANEL_W, UI_BODY_H);
+        for (int y = 0; y < c[i].height; ++y) {
+            memset(c[i].pixels + (size_t)y * (size_t)c[i].stride,
+                   i == 0 ? 0 : 0xFF,
+                   (size_t)c[i].width * sizeof(gfx_color_t));
+        }
+        /* Keep the first render's cache check; force the second redraw
+         * without advancing time or changing the screen's state. */
+        screen->render(&c[i], i == 0 ? buffer_index : -1);
+        CHECK_EQ(guard_canvas_touched(&g[i]), 0u);
+    }
+    CHECK_EQ(memcmp(px[0], px[1], sizeof(px[0])), 0);
+}
+
 /* OUTPUTS alone, every pixel inside the canvas painted. */
 static void render_out(void)
 {
-    static gfx_color_t px[GUARD_CANVAS_PIXELS(UI_PANEL_W, UI_BODY_H)];
-    guard_canvas_t g;
-    gfx_canvas_t c;
-    guard_canvas_init(&g, &c, px, UI_PANEL_W, UI_BODY_H);
     outputs_screen()->tick(0.016f);
-    outputs_screen()->render(&c, -1);    /* no framebuffer: always drawn */
-    CHECK_EQ(guard_canvas_touched(&g), 0u);
-    CHECK_EQ(guard_canvas_unpainted(&g), 0u);
+    render_full(outputs_screen(), -1);
 }
 
 static void render_both(void)
 {
-    static gfx_color_t px[GUARD_CANVAS_PIXELS(UI_PANEL_W, UI_BODY_H)];
-    guard_canvas_t g;
-    gfx_canvas_t c;
-    guard_canvas_init(&g, &c, px, UI_PANEL_W, UI_BODY_H);
-    outputs_screen()->render(&c, 0);
-    CHECK_EQ(guard_canvas_touched(&g), 0u);
-    CHECK_EQ(guard_canvas_unpainted(&g), 0u);
-    guard_canvas_init(&g, &c, px, UI_PANEL_W, UI_BODY_H);
-    picker_screen()->render(&c, 0);
-    CHECK_EQ(guard_canvas_touched(&g), 0u);
-    CHECK_EQ(guard_canvas_unpainted(&g), 0u);
+    render_full(outputs_screen(), 0);
+    render_full(picker_screen(), 0);
 }
 
 /* ------------------------------------------------------------- the view */
