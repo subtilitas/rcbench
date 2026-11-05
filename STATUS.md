@@ -2356,7 +2356,7 @@ stop, a pulled cable, the input lowered under a live set point in 0.5V steps.
 `stack_check.py --iomcu` measures 1492 bytes for the deepest chain and 528 for one interrupt
 on the 4096-byte stack, 1820 bytes above the 256-byte margin. The figures are those of the
 image CI builds with arm-none-eabi-gcc 14.2.1, and `stack_check.py --iomcu --check-doc`
-holds them. The depth is a lower bound: 250 calls through a register are not followed. The
+holds them. The depth is a lower bound: 251 calls through a register are not followed. The
 stack has no guard (`PICO_USE_STACK_GUARDS` is off). Not measured on hardware. An image
 built with another option set is measured only when CI builds it.
 
