@@ -94,6 +94,9 @@ TEST_CASE(a_program_ends_at_the_store_and_not_past_it)
 {
     CHECK(out_store_range_program_ok(CEILING - 0x1000u, 0x1000u, CEILING));
     CHECK(!out_store_range_program_ok(CEILING, 0x100u, CEILING));
+    /* No bytes at the store's first byte touch none of it. */
+    CHECK(out_store_range_program_ok(CEILING, 0u, CEILING));
+    CHECK(!out_store_range_program_ok(CEILING + 0x1000u, 0u, CEILING));
     CHECK(!out_store_range_program_ok(0xFFFFF000u, 0x1000u, 0xFFFFFFFFu));
 }
 
