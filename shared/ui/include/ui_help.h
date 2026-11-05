@@ -130,6 +130,22 @@ gfx_rect_t ui_help_dock_rect(ui_help_side_t side);
  */
 gfx_rect_t ui_help_live_rect(ui_help_side_t side);
 
+/**
+ * @brief Add an item to @p p, its rect cut to the half the dock leaves.
+ *
+ * A rect in the body, in the screen's coordinates, is cut to the live half
+ * of @p p's side, so a control the dock covers in part is marked where it
+ * shows; a rect in the band (y below 0) is kept whole.  Nothing is added
+ * when the page is full or nothing of the rect shows.
+ * @param p     The page, its side set.
+ * @param label The control's name as the screen draws it.
+ * @param text  What it does.
+ * @param r     Where it is, in the screen's coordinates.
+ * @return True when the item was added.
+ */
+bool ui_help_add(ui_help_page_t *p, const char *label, ui_text_id_t text,
+                 gfx_rect_t r);
+
 /** @brief What a point of the guide is. */
 typedef enum {
     UI_HELP_HIT_NONE = 0,   /**< not the guide's                          */

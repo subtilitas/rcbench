@@ -264,7 +264,7 @@ static void draw_list(gfx_canvas_t *c)
     /* The list is clipped rather than masked, so a part-scrolled row is cut
      * cleanly at the pane edge instead of drawing over the strip. */
     gfx_rect_t saved = gfx_clip_get(c);
-    gfx_clip_set(c, gfx_rect_make(LIST_X, LIST_Y, LIST_W, LIST_H));
+    gfx_clip_intersect(c, gfx_rect_make(LIST_X, LIST_Y, LIST_W, LIST_H));
     /* SENSORS' list changes length with an enable row or a reset: the
      * scroll follows before a row is placed. */
     stg_clamp_scroll();

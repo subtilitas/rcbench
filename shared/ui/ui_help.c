@@ -204,6 +204,26 @@ gfx_rect_t ui_help_live_rect(ui_help_side_t side)
                          UI_BAND_H, w, UI_BODY_H);
 }
 
+bool ui_help_add(ui_help_page_t *p, const char *label, ui_text_id_t text,
+                 gfx_rect_t r)
+{
+    if (p == NULL || p->count >= UI_HELP_ITEMS) {
+        return false;
+    }
+    if (r.y >= 0) {
+        gfx_rect_t live = ui_help_live_rect(p->side);
+        live.y = 0;
+        if (!gfx_rect_intersect(r, live, &r)) {
+            return false;
+        }
+    }
+    if (r.w <= 0 || r.h <= 0) {
+        return false;
+    }
+    p->item[p->count++] = (ui_help_item_t){ label, text, r };
+    return true;
+}
+
 /**
  * @brief The half of the body the dock takes, in panel coordinates.
  * @param side The dock's side.

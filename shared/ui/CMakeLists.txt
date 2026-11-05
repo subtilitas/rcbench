@@ -26,6 +26,8 @@ set(SRCS
     ui_board.c
     ui_router.c
     ui_help.c
+    help_outputs.c
+    help_setup.c
     ui_alert_slot.c
     ui_value_ask.c
     ui_text.c

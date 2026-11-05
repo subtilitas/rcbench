@@ -100,13 +100,18 @@ Das Speicher-Popup wartet, bis der Prüfstand ruht: SAFE, Netzteilausgang und PR
 
 ![Die Hilfe des Menüs auf Seite 1](view:help-overview)
 
-"?", 8px links von STOP, öffnet die Hilfe zur aktuellen Seite. Das Menü hat eine Hilfe; die anderen Seiten haben kein "?". Jede Hilfeseite markiert bis zu 5 Bedienelemente mit Nummern und Eckmarkierungen. Ein Feld von 480 x 488px auf einer Bildschirmhälfte nennt ihre Namen und Funktionen, mit höchstens 3 Zeilen pro Bedienelement. Die andere Hälfte läuft weiter. In der letzten Zeile steht die Adresse dieser Hilfe.
+"?", 8px links von STOP, öffnet die Hilfe zur aktuellen Seite. Das Menü, OUTPUTS und SETUP haben eine Hilfe; die anderen Seiten haben kein "?". Jede Hilfeseite markiert bis zu 5 Bedienelemente mit Nummern und Eckmarkierungen. Ein Feld von 480 x 488px auf einer Bildschirmhälfte nennt ihre Namen und Funktionen, mit höchstens 3 Zeilen pro Bedienelement. Die andere Hälfte läuft weiter. In der letzten Zeile steht die Adresse dieser Hilfe.
 
 - VORIGE und NÄCHSTE blättern durch die Hilfe. Sie ersetzen das Home-Feld im Band und bleiben auf jeder Seite an derselben Stelle. Wiederholtes Tippen auf dieselbe Position blättert weiter. SCHLIESSEN unten im Hilfefeld oder "?" schließt die Hilfe.
 - Ein Tipp an eine andere Stelle schließt die Hilfe, ohne die darunterliegende Bedienung auszulösen.
 - STOP schließt die Hilfe und stoppt sofort. DISARM, AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN und LAUF BEENDEN wirken ebenfalls mit demselben Druck.
 - Der Drehknopf hat bei geöffneter Hilfe keine Wirkung.
 - Bei ARMED zeigt die Hilfe nur Seiten, die weder ein Bedienelement zum Anhalten eines Ausgangs noch eine ZIEL-Zeile verdecken.
+
+OUTPUTS und SETUP haben eigene Hilfeseiten für jeden Zustand: Kacheln, Liste und SENSORS auf SETUP, Platinenansicht, Eintrag PROG PORT und Rasteransicht auf OUTPUTS. Auf Hilfeseite 1 steht das Hilfefeld rechts. Ein Bedienelement, das das Hilfefeld zum Teil verdeckt, wird markiert, wo es sichtbar ist. Keine der beiden Seiten steuert einen Ausgang an, daher bleiben alle ihre Hilfeseiten auch in ARMED sichtbar.
+
+![Die Hilfe von SETUP auf Seite 1](view:help-setup)
+![Die Hilfe von OUTPUTS auf Seite 1](view:help-outputs)
 
 ## Das Alert-Band
 

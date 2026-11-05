@@ -784,6 +784,25 @@ void outputs_port_draw_board(gfx_canvas_t *c, const char *why)
     }
 }
 
+bool outputs_port_rects(outputs_port_rects_t *out)
+{
+    if (out == NULL || p.port < 0) {
+        return false;
+    }
+    out->pin = p.board ? gfx_rect_make(OB_COL_X, OB_PIN_Y, OB_COL_W,
+                                       OB_WATCH_Y - OB_PIN_Y - 4)
+                       : pin_rect();
+    out->fn = fn_face();
+    /* The grid view of a soldered board draws the tester's rows only for a
+     * carrier whose port the tester can take (outputs_port_draw()). */
+    const bool rows = p.board || !soldered() || carrier_tester();
+    out->tester = rows ? seg_row(p.board ? OB_TESTER_Y : TESTER_Y)
+                       : gfx_rect_make(0, 0, 0, 0);
+    out->pwm = rows ? seg_row(p.board ? OB_PWM_Y : PWM_Y)
+                    : gfx_rect_make(0, 0, 0, 0);
+    return true;
+}
+
 bool outputs_port_fn_open(void) { return p.fn_open; }
 
 bool outputs_port_back(void)

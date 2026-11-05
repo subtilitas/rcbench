@@ -1133,6 +1133,8 @@ static const ui_screen_t s_screen = {
     .render = stg_render,
     .back = back,
     .hold = hold,
+    .help_count = stg_help_count,
+    .help_page = stg_help_page,
 };
 
 const ui_screen_t *settings_screen(void)

@@ -19,7 +19,17 @@
 bool render_help_view(const char *view);
 
 /**
- * @brief Pose @p view after the router opened its screen: help-<screen>
+ * @brief The view a guide's view opens over: help-setup-list and
+ *        help-setup-list-2 over setup-application, and so on for each
+ *        screen's states; @p view itself for any other.
+ * @param view  the view's name
+ * @return the view to pose the screen as
+ */
+const char *render_help_base(const char *view);
+
+/**
+ * @brief Pose @p view after the router opened its screen and every other
+ *        pose ran: help-<screen>
  *        and help-<screen>-<n> open the guide at page 1 or n;
  *        help-band-worst puts the widest row of chips on the band.
  * @param view  the view's name

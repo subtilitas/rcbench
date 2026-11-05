@@ -991,6 +991,68 @@ UI_TEXT(OUT_HOLD_UNBIND, 56,
     "HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS",
     "2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN")
 
+/* The screen guide's pages of OUTPUTS (help_outputs.c): the titles, the names of
+ * marks the screen draws no label for, and what each mark does. */
+UI_TEXT(HG_OUT_TITLE_PINS, 0,
+    "OUTPUTS: PROTOCOL AND PINS",
+    "OUTPUTS: PROTOKOLL UND PINS")
+UI_TEXT(HG_OUT_TITLE_BOARD, 0,
+    "OUTPUTS: BOARD AND IN USE",
+    "OUTPUTS: PLATINE UND BELEGT")
+UI_TEXT(HG_OUT_TITLE_PORT, 0,
+    "OUTPUTS: PROG PORT",
+    "OUTPUTS: PROG PORT")
+UI_TEXT(HG_OUT_KEY_NAME, 0,
+    "PIN KEY",
+    "PIN-TASTE")
+UI_TEXT(HG_OUT_CELL_NAME, 0,
+    "PIN CELL",
+    "PIN-FELD")
+UI_TEXT(HG_OUT_UNBIND_NAME, 0,
+    "CLEAR ALL",
+    "ALLE LÖSCHEN")
+UI_TEXT(HG_OUT_PROTO, 0,
+    "A tap opens the list: a protocol, OFF for the overview, or a PROG PORT. Picking writes nothing.",
+    "Tippen öffnet die Liste: ein Protokoll, OFF für die Übersicht oder ein PROG PORT. Die Wahl schreibt nichts.")
+UI_TEXT(HG_OUT_LAST, 0,
+    "The IOmcu's answer to the last pin write: WRITTEN, REFUSED, NO LINK or NONE YET.",
+    "Antwort des IOmcu auf die letzte Pin-Zuordnung, etwa GESCHRIEBEN oder ABGELEHNT.")
+UI_TEXT(HG_OUT_PINS, 0,
+    "The selected protocol's pins by channel, each with the pad number printed on the board.",
+    "Die Pins des gewählten Protokolls nach Kanal, jeder mit der Pad-Nummer auf der Platine.")
+UI_TEXT(HG_OUT_KEY, 0,
+    "One per pin, on a line to its pad. With a protocol picked, a tap binds a free pin or frees a bound one.",
+    "Eine je Pin, mit Linie zum Pad. Mit gewähltem Protokoll ordnet Tippen einen Pin zu oder gibt ihn frei.")
+UI_TEXT(HG_OUT_KEY_PORT, 0,
+    "A tap on a free key gives the port that pin. The panel writes it once the bench is SAFE and at rest.",
+    "Tippe auf eine freie Taste, um dem Port diesen Pin zu geben. Geschrieben wird bei SAFE und Stillstand.")
+UI_TEXT(HG_OUT_INUSE, 0,
+    "The pins other protocols, the programming ports and the sensors hold, each under its holder.",
+    "Die Pins, die andere Protokolle, Programmierports und Sensoren belegen, je unter ihrem Namen.")
+UI_TEXT(HG_OUT_UNBIND, 0,
+    "Shown while the IOmcu's binding reads as none. Hold 2s to clear every pin's binding.",
+    "Erscheint, wenn die Zuordnung im IOmcu ungültig ist. Halte 2s, um alle Pin-Zuordnungen zu löschen.")
+UI_TEXT(HG_OUT_CELL, 0,
+    "One per pin. With a protocol picked, a tap ticks a free pin or gives a ticked one back. Grey: held.",
+    "Eins je Pin. Bei gewähltem Protokoll hakt Tippen einen freien Pin an oder gibt ihn frei. Grau: belegt.")
+UI_TEXT(HG_OUT_PORT, 0,
+    "The programming port shown. A tap opens the list for a protocol or another port.",
+    "Der gezeigte Port. Tippen öffnet die Liste für ein Protokoll oder einen anderen Port.")
+UI_TEXT(HG_OUT_PIN, 0,
+    "The port's pin and its pad. A free key of the board sets it; the write waits for SAFE and rest.",
+    "Pin und Pad des Ports. Eine freie Taste der Platine setzt ihn; geschrieben wird bei SAFE und Stillstand.")
+UI_TEXT(HG_OUT_PIN_GRID, 0,
+    "The port's pin. On a soldered board it is fixed; without a drawing it is not set here.",
+    "Der Pin des Ports. Auf einer verlöteten Platine ist er fest; ohne Zeichnung wird er hier nicht gesetzt.")
+UI_TEXT(HG_OUT_FUNCTION, 0,
+    "What the pin carries outside a programming session: SERVO PWM, NONE or DShot.",
+    "Was der Pin außerhalb einer Programmiersitzung führt: SERVO PWM, KEINE oder DShot.")
+UI_TEXT(HG_OUT_TESTER, 0,
+    "Where the SERVO screen's tester sends its pulse: the OUTPUTS slots or this port.",
+    "Wohin der Servo-Tester der Seite SERVO seinen Puls sendet: die Slots von OUTPUTS oder dieser Port.")
+UI_TEXT(HG_OUT_PWM, 0,
+    "Switches the port's pulse on and off while the port is the tester's target.",
+    "Schaltet den Puls des Ports ein und aus, solange der Port Ziel des Testers ist.")
 /* ---------------------------------------------------------- pin picker */
 UI_TEXT(PK_PINS, 0,
     "PINS",
@@ -1517,6 +1579,80 @@ UI_TEXT(SET_USER_DIR_HELP, 0,
     "Folder for test files",
     "Ordner für Testdateien")
 
+/* The screen guide's pages of SETUP (help_setup.c): the titles, the names of
+ * marks the screen draws no label for, and what each mark does. */
+UI_TEXT(HG_SET_TITLE_HUB_L, 0,
+    "SETUP: LEFT TILES",
+    "SETUP: LINKE KACHELN")
+UI_TEXT(HG_SET_TITLE_HUB_R, 0,
+    "SETUP: RIGHT TILES",
+    "SETUP: RECHTE KACHELN")
+UI_TEXT(HG_SET_TITLE_ROWS, 0,
+    "SETUP: ROWS",
+    "SETUP: ZEILEN")
+UI_TEXT(HG_SET_TITLE_VALUES, 0,
+    "SETUP: VALUES",
+    "SETUP: WERTE")
+UI_TEXT(HG_SET_TITLE_SENSORS, 0,
+    "SETUP: SENSORS",
+    "SETUP: SENSORS")
+UI_TEXT(HG_SET_ROW_NAME, 0,
+    "ROW",
+    "ZEILE")
+UI_TEXT(HG_SET_RESET_NAME, 0,
+    "RESET",
+    "ZURÜCKSETZEN")
+UI_TEXT(HG_SET_VALUE_NAME, 0,
+    "VALUE FIELD",
+    "WERTFELD")
+UI_TEXT(HG_SET_PANEL, 0,
+    "This panel: theme, brightness, rotation, language, units, time zone and the knob.",
+    "Dieses Panel: Design, Helligkeit, Drehung, Sprache, Einheiten, Zeitzone und Drehknopf.")
+UI_TEXT(HG_SET_SENSORS, 0,
+    "What the IOmcu reads: the sensor bus, INA228, INA3221, AS5600, the phase tap and the IMU.",
+    "Was der IOmcu liest: Sensorbus, INA228, INA3221, AS5600, Phasenabgriff und IMU.")
+UI_TEXT(HG_SET_OUTPUTS, 0,
+    "Binds the IOmcu's pins to protocols and sets each programming port's pin and function.",
+    "Ordnet die Pins des IOmcu Protokollen zu und stellt Pin und Funktion jedes Programmierports ein.")
+UI_TEXT(HG_SET_CARD, 0,
+    "Which logs the bench writes to the SD card, their folders, and what a browser may write.",
+    "Welche Aufzeichnungen auf die SD-Karte gehen, ihre Ordner und was ein Browser schreiben darf.")
+UI_TEXT(HG_SET_WIFI, 0,
+    "Joins a network or opens the panel's access point, for files and uploads in a browser.",
+    "Verbindet mit einem Netzwerk oder öffnet den WLAN-Hotspot des Panels für Dateien und Uploads.")
+UI_TEXT(HG_SET_UPDATES, 0,
+    "Looks for a newer panel firmware on GitHub and installs it.",
+    "Sucht auf GitHub eine neuere Firmware für das Panel und installiert sie.")
+UI_TEXT(HG_SET_IMU, 0,
+    "The Bluetooth angle sensor: the HC-05 on the panel, the scan for the sensor and its angles.",
+    "Der Bluetooth-Winkelsensor: das HC-05 am Panel, die Suche nach dem Sensor und seine Winkel.")
+UI_TEXT(HG_SET_LAYOUT, 0,
+    "The carrier's connectors and the soldered pin of each, and what each one drives now.",
+    "Die Stecker des Trägers, der verlötete Pin jedes Steckers und was er gerade ansteuert.")
+UI_TEXT(HG_SET_SAVE, 0,
+    "Keeps the changed values after a restart. While ARMED it waits as WHEN IDLE.",
+    "Behält geänderte Werte über einen Neustart. Bei ARMED wartet es als BEI STILLSTAND.")
+UI_TEXT(HG_SET_ROW, 0,
+    "A setting: its name, a help line and its value. Drag the list to scroll. A change acts at once.",
+    "Eine Einstellung: Name, Hilfezeile und Wert. Ziehe die Liste zum Scrollen. Änderungen wirken sofort.")
+UI_TEXT(HG_SET_HEAD, 0,
+    "The list's name. The home tag goes back to the tiles; the list keeps its place.",
+    "Der Name der Liste. Das Home-Feld führt zurück zu den Kacheln; die Liste behält ihre Position.")
+UI_TEXT(HG_SET_RESET, 0,
+    "Sets this list's values to their defaults, on SENSORS the selected entry's. SAVE keeps them.",
+    "Setzt die Werte der Liste auf die Vorgaben, auf SENSORS die des Eintrags. SPEICHERN behält sie.")
+UI_TEXT(HG_SET_MINUS, 0,
+    "One step back; held 0.45s, it repeats. A switch or a choice shows <, and wraps to its last value.",
+    "Eine Stufe zurück; nach 0.45s gehalten wiederholt. Bei Schalter und Auswahl steht <; sie springen zum letzten Wert.")
+UI_TEXT(HG_SET_PLUS, 0,
+    "One step on; held 0.45s, it repeats. A switch or a choice shows >, and wraps to its first value.",
+    "Eine Stufe weiter; nach 0.45s gehalten wiederholt. Bei Schalter und Auswahl steht >; sie springen zum ersten Wert.")
+UI_TEXT(HG_SET_VALUE, 0,
+    "A tap opens the keypad, which names the range. OK sets the value, CANCEL changes nothing.",
+    "Tippen öffnet das Ziffernfeld mit dem Bereich. OK setzt den Wert, ABBRECHEN ändert nichts.")
+UI_TEXT(HG_SET_ENTRY, 0,
+    "One sensor. Its line says how the IOmcu reads it now. A tap shows its rows on the right.",
+    "Ein Sensor. Seine Zeile sagt, wie der IOmcu ihn gerade liest. Tippen zeigt rechts seine Zeilen.")
 /* ------------------------------------------------ plots and hero cards */
 UI_TEXT(PLOT_NOW, 0,
     "NOW",

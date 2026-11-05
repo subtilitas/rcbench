@@ -453,6 +453,25 @@ static int cell_at(int x, int y)
     return -1;
 }
 
+gfx_rect_t outputs_grid_rect(outputs_grid_part_t part)
+{
+    if (part == OUTPUTS_GRID_FACE) {
+        return dd_rect();
+    }
+    if (part == OUTPUTS_GRID_CELL) {
+        return (outbind_cell_count(s.bind.board) > 0u)
+                   ? cell_rect((int)outbind_cell_index(s.bind.board, 0u))
+                   : gfx_rect_make(0, 0, 0, 0);
+    }
+    /* LAST WRITE and the result under it, as draw_left() lays them out. */
+    const int lines = outputs_wrap(NULL, gfx_rect_make(COL_X, 0, COL_W, 36),
+                                   RESULT_PITCH, outputs_result_text(), 2,
+                                   OU_FONT_HEAD, outputs_result_color(),
+                                   false);
+    const int top = RESULT_Y + (2 - lines) * RESULT_PITCH - LAST_ABOVE;
+    return gfx_rect_make(COL_X, top, COL_W, OU_FOOT - top);
+}
+
 /* ------------------------------------------------------------------- input */
 
 void outputs_screen_set_board_view(bool board)
