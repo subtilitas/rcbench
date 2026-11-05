@@ -1092,7 +1092,7 @@ Die Regel:
   Schreiben gehalten ([Die Versorgung eines Programmierports](#die-versorgung-eines-programmierports)).
   Ein Wert erreicht den nichtflüchtigen Speicher des Servos nur durch einen
   Schreibvorgang mit Backup, Vermerk und Zurücklesen.
-- Die kommandierte Position bewegt sich höchstens 150 Zähler (2.0deg) je
+- Die kommandierte Position bewegt sich höchstens 150 Zähler (2,0deg) je
   Durchlauf und bleibt innerhalb der Reichweite der gespeicherten Endpunkte
   des Servos: der Positionen der Ziele 0 und 6000, 2606 bis 13743 bei einem
   D485HW im Werkszustand (`hitec_live_d_command()`).
@@ -1104,7 +1104,7 @@ Die Regel:
   voreingestellten 1000mA), oder wenn der AS5600-Winkel, sofern verbaut,
   sich um weniger als die Hälfte einer kommandierten Änderung von 3deg oder
   mehr bewegt hat. Eine Blockierung setzt das Kommando auf die letzte freie
-  Position zurück, 75 Zähler (1.0deg) zur Neutralstellung hin.
+  Position zurück, 75 Zähler (1,0deg) zur Neutralstellung hin.
 - Die Abbildung gilt nur für ein auf CW gestelltes Servo
   (`hitec_live_d_ends()`).
 - Bewegungen schaltet SERVO BEWEGEN auf dem Reiter WEG ein

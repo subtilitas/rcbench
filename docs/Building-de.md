@@ -228,8 +228,8 @@ Support Package 3.0.1 und seine Demo-Firmware (Commit 9fcd49a8 vom
 
 | Teil | Was es ist | Nutzung im Panel |
 | --- | --- | --- |
-| Y3 | Quarz 32.768kHz, 2.0 x 1.2mm, 22pF nach GND auf jeder Seite, 10MΩ parallel, an GPIO0 (XTAL_32K_N) und GPIO1 (XTAL_32K_P) | genutzt: Der RTC-Timer zählt ihn (`CONFIG_RTC_CLK_SRC_EXT_CRYS` in `firmware/panel/sdkconfig.defaults`); ein Quarz, der nicht anschwingt, lässt ihn auf dem internen RC-Oszillator |
-| BAT1 | Knopfzellenhalter CR1220, "RTC BAT", an VDD_BAT des ESP32-P4 (Pin 102); 3V3 lädt ihn über D1 (B5819WS) ohne Vorwiderstand; C41 1uF | nicht genutzt. Waveshare: nur wiederaufladbare Zellen mit 3 bis 3.3V. Ob eine Platine mit Zelle kommt, ist nicht bekannt |
+| Y3 | Quarz 32.768kHz, 2,0 x 1,2mm, 22pF nach GND auf jeder Seite, 10MΩ parallel, an GPIO0 (XTAL_32K_N) und GPIO1 (XTAL_32K_P) | genutzt: Der RTC-Timer zählt ihn (`CONFIG_RTC_CLK_SRC_EXT_CRYS` in `firmware/panel/sdkconfig.defaults`); ein Quarz, der nicht anschwingt, lässt ihn auf dem internen RC-Oszillator |
+| BAT1 | Knopfzellenhalter CR1220, "RTC BAT", an VDD_BAT des ESP32-P4 (Pin 102); 3V3 lädt ihn über D1 (B5819WS) ohne Vorwiderstand; C41 1uF | nicht genutzt. Waveshare: nur wiederaufladbare Zellen mit 3 bis 3,3V. Ob eine Platine mit Zelle kommt, ist nicht bekannt |
 
 Der ESP32-P4 kann seinen RTC-Timer an VDD_BAT weiterlaufen lassen, aber nur
 aus dem Deep Sleep: Espressifs Anleitung zur Batteriepufferung des ESP32-P4
@@ -287,7 +287,7 @@ nominal) zurück, wenn er nicht anschwingt:
    (`components/esp_hw_support/port/esp32p4/rtc_clk.c`, Zeilen 44 bis 50).
 2. Der Start der Anwendung zählt 3000 Takte des Quarzes gegen den
    Hauptquarz mit 40MHz (`CONFIG_RTC_CLK_CAL_CYCLES=3000`), etwa 92ms.
-   Eine Zählung, die in die Zeitgrenze läuft oder mehr als 0.05% von
+   Eine Zählung, die in die Zeitgrenze läuft oder mehr als 0,05% von
    32.768kHz abweicht, gibt 0 zurück
    (`components/esp_hw_support/port/esp32p4/rtc_time.c`, Zeilen 177 bis
    195).
@@ -315,7 +315,7 @@ Geschätzte Startzeiten, aus den Taktzahlen im Quelltext berechnet, nicht gemess
 | --- | --- | --- |
 | Interner RC, `CONFIG_RTC_CLK_SRC_INT_RC` | 1024 Takte bei 136kHz | etwa 8ms |
 | Quarz, der den ersten Versuch besteht | 3000 Takte bei 32.768kHz, zweimal | etwa 183ms |
-| Quarz ohne Takt | 4 Versuche bis zur Zeitgrenze, dann 3000 Takte des RC | etwa 1.25s, wenn die Zeitgrenze von 3000 x 4096 Zählschritten in Takten zu 40MHz zählt; die Quellen von ESP-IDF nennen die Einheit nicht |
+| Quarz ohne Takt | 4 Versuche bis zur Zeitgrenze, dann 3000 Takte des RC | etwa 1,25s, wenn die Zeitgrenze von 3000 x 4096 Zählschritten in Takten zu 40MHz zählt; die Quellen von ESP-IDF nennen die Einheit nicht |
 
 Ein Update vom Panel aus schreibt einen Anwendungsplatz und lässt den
 Bootloader, wie er geflasht wurde. Ein Bootloader, der vor dieser
