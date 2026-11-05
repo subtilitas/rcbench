@@ -31,11 +31,11 @@ und `shared/ui/stop_hold.c`, auf dem Host getestet in `test_stop_latch` und
   vor 2s, das `Halte 2s, um den STOP zu lösen.` zeigt; ein Abgleiten von
   STOP; eine zweite Berührung auf dem Band; verlorene Touch-Ereignisse; ein
   Seitenwechsel; ein Touch-Controller, der 100ms
-  (`STOP_LATCH_FRESH_MS`) nicht antwortet, was der Control-Task als
+  (`STOP_LATCH_FRESH_MS`) nicht antwortet, was die Control-Task als
   Kontaktabbruch zählt. Ein STOP oder ein Abbruch weniger als 1900ms
   (`STOP_LATCH_HOLD_SEEN_MS`) vor dem Ende des Haltens, oder danach, lehnt
   die Anforderung ab.
-- **Lösen.** Eine Zustandsmaschine im Control-Task führt das Lösen aus,
+- **Lösen.** Eine Zustandsmaschine in der Control-Task führt das Lösen aus,
   ein Schritt pro Durchlauf:
 
   | Zustand | Verlässt ihn, wenn | Nach |
