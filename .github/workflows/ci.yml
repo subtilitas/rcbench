@@ -6,7 +6,10 @@ on:
     # Tags too: a release builds from the tagged commit, which need not be on
     # main, and the host suite runs against it before firmware is published.
     tags: ['v*']
-  pull_request:
+  # A pull request starts no run.  Its head is run by hand once its reviews
+  # are clean (gh workflow run ci.yml --ref <branch>), so a head that a
+  # review round or a rebase replaces costs no run.  The required checks
+  # attach to the commit whatever started the run.
   workflow_dispatch:
 
 # One run per ref, the newest: a push to a pull request cancels the run of
@@ -622,21 +625,21 @@ jobs:
 
       - name: Every new or changed C file is documented
         env:
-          EVENT: ${{ github.event_name }}
-          BASE_REF: ${{ github.base_ref }}
+          REF: ${{ github.ref }}
         run: |
-          if [ "$EVENT" = pull_request ]; then
-            python3 tools/doc_check.py --check --base "origin/$BASE_REF"
+          # A branch other than main is checked against main.
+          if [ "$REF" != refs/heads/main ] && [ "${REF#refs/tags/}" = "$REF" ]; then
+            python3 tools/doc_check.py --check --base origin/main
           else
             python3 tools/doc_check.py --check
           fi
 
-  # What the suite does not notice in the lines a pull request changes.  It
-  # reports and does not fail on a survivor: the job fails only when the
-  # tool cannot run.  The run is bounded at 2700s by the tool's defaults.
+  # What the suite does not notice in the lines a branch changes against
+  # main, on a run started by hand on that branch.  It reports and does not
+  # fail on a survivor: the job fails only when the tool cannot run.  The run is bounded at 2700s by the tool's defaults.
   mutation:
     name: Mutation check of the changed lines (advisory)
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
     runs-on: ubuntu-26.04
     timeout-minutes: 60
     steps:
@@ -647,7 +650,7 @@ jobs:
 
       - name: Mutate the changed lines of shared/ and protocols/
         env:
-          BASE: origin/${{ github.base_ref }}
+          BASE: origin/main
         run: |
           python3 tools/mutate.py --base "$BASE" --json mutation.json \
             --summary "$GITHUB_STEP_SUMMARY"
