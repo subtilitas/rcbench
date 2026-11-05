@@ -408,6 +408,7 @@ ENGLISH_QUOTES = {
     ("Servo-de.md", "OFF"),
     ("Servo-de.md", "HOLD"),
     ("EscProfiles-de.md", "none"),
+    ("Bringup-de.md", "none"),
     # Protocol state LINK_ESC_OPEN, not the translated OPEN file control.
     ("EscWire-de.md", "OPEN"),
     ("StickProgramming-de.md", "none"),

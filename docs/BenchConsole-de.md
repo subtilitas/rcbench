@@ -455,7 +455,8 @@ Die Befehle erreichen die Pages über `link_dev_apply()`. Eine Anfrage der Konso
 Beim Start des IOmcu wartet seine Ausgabe im 2.048-Byte-Puffer auf einen
 USB-Host oder ein Panel, bis zur Kapazität des Puffers. Die erste Zeile,
 `rcbench-iomcu: reset ...`, nennt die Startursache und wiederholt sich
-alle 3s. Eine Zeile vom Panel wird vollständig verarbeitet, ohne eine
+alle 3s; die Zeile danach, `rcbench-iomcu: boot ...`, nennt den Eintrag des
+Boot-ROM zu diesem Boot ([Bringup](Bringup-de.md#warum-der-iomcu-zuletzt-gestartet-ist)). Eine Zeile vom Panel wird vollständig verarbeitet, ohne eine
 teilweise eingegebene USB-Zeile zu verändern. Sind USB-Host und Panel
 angeschlossen, bestimmt der langsamere Leser das Ausgabetempo. Ein
 USB-Host, der den Port offen lässt, aber das Lesen einstellt, hält die

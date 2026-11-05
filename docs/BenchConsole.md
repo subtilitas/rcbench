@@ -442,7 +442,8 @@ The commands reach the pages through `link_dev_apply()`. A request from the cons
 At IOmcu start-up, output waits in the 2,048-byte buffer for a USB host or
 a panel, up to the buffer's capacity. The first line,
 `rcbench-iomcu: reset ...`, gives the cause of the start and repeats every
-3s. A line from the panel is processed as a whole without changing a
+3s; the line after it, `rcbench-iomcu: boot ...`, gives the boot ROM's
+record of that boot ([Bringup](Bringup.md#why-the-iomcu-last-started)). A line from the panel is processed as a whole without changing a
 partially typed USB line. When both a USB host and a panel are connected,
 output follows the slower reader. A USB host that leaves the port open
 but stops reading also holds back output.

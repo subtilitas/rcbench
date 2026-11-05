@@ -104,6 +104,7 @@ typedef struct {
     uint32_t wd_scratch3;      /**< WATCHDOG SCRATCH3: last reboot() p1 */
     bool     boot_ok;          /**< rom_get_boot_info() returned true */
     uint32_t boot_word;        /**< boot_info_t.boot_word, 0xttppbbdd */
+    uint32_t boot_diagnostic;  /**< boot_info_t.boot_diagnostic (boot_diag.h) */
     uint32_t reboot_params[2]; /**< boot_info_t.reboot_params */
 } reset_regs_t;
 

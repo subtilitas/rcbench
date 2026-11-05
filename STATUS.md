@@ -965,6 +965,13 @@ two (`shared/ui/imu_ctl.c`, `test_imu_ctl` against `hc05_sim.h`), the IMU screen
 SOURCE IMU the servo runs read its angle in AS5600 counts. No HC-05 or BWT901CL has been run
 with this code.
 
+Built and host-tested, not yet in a firmware: the BLE (Bluetooth Low Energy) central for the
+sensor's ISSC Transparent UART service (`protocols/bleuart`): the advertising data parser and
+the scan list (`test_bleuart_adv`), connect, discovery, subscribe, the 6DAA read, the write
+path, the retries and every timeout (`test_bleuart`, `test_bleuart_link` against
+`test/host/ble_sim.h` and the owner's capture of the sensor's notifications). It has not run
+against NimBLE or the sensor.
+
 ### Phase tap (ESC tones)
 
 The detector (`protocols/phase_tap/tone.c`, `test_tone`) turns edge times into beeps and
@@ -1170,7 +1177,7 @@ rcbench/
   protocols/              one module per external interface: a pure C core,
                           its RP2350 pin driver in rp2350/, a README.md
     dshot/ ppm/ sbus/ openyge/ pdmini/ phase_tap/ kst/ hitec/ escwire/
-    hc05/
+    hc05/ bleuart/
 
   firmware/panel/         ESP-IDF: main/, components/, sdkconfig.defaults,
                           partitions.csv
@@ -1189,6 +1196,7 @@ rcbench/
 | `escwire` | yes | yes | yes |
 | `witmotion` | yes | | yes |
 | `hc05` | yes | | yes |
+| `bleuart` | | | yes |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
 `ESP_PLATFORM` and a static library otherwise. The panel sets
@@ -1221,7 +1229,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 454 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 459 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1255,9 +1263,9 @@ The host suite is 454 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_link_loopback`, `test_link_bringup`, `test_link_read_split`, `test_link_can`,
 `test_link_sha256`, `test_link_update`, `test_link_artxfer`, `test_link_drawing`,
 `test_art_store`, `test_art_fetch`, `test_outputs`, `test_outputs_hw`,
-`test_outputs_hw_ports`, `test_outstore`, `test_can_timing`, `test_can_selftest`,
+`test_outputs_hw_ports`, `test_outstore`, `test_outstore_range`, `test_can_timing`, `test_can_selftest`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_stop_latch`, `test_stop_hold`,
-`test_safety_gate`, `test_flash_gate`, `test_reset_cause`, `test_touch_loss`,
+`test_safety_gate`, `test_flash_gate`, `test_reset_cause`, `test_boot_diag`, `test_touch_loss`,
 `test_frame_watch`, `test_error_stop`, `test_error_sites`, `test_servo_limit`,
 `test_servo_limrun`, `test_servo_limrun_gaps`, `test_servo_limrun_abort`,
 `test_servo_limrun_error`, `test_servo_limrun_report`, `test_servo_sync`,
@@ -1324,7 +1332,8 @@ The host suite is 454 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_shot_file`, `test_shot`, `test_shot_popup`, `test_wall_clock`, `test_witmotion`,
 `test_servo_angle`, `test_servo_source_angle`, `test_hitec_prog_run` and
 `test_hitec_panel_run`, `test_servo_rudder`, `test_servo_rudder_panel`,
-`test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`, `test_imu`,
+`test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`, `test_bleuart`,
+`test_bleuart_adv`, `test_bleuart_link`, `test_imu`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_kst`, `test_servo_rauto_panel`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
@@ -1475,7 +1484,18 @@ reaching the next operation, the abort and the cap of 8 devices.
 PIN, a failed pairing, the restart with KEY low and the reset's OK late, lost or aborted,
 the timeouts of AT+PAIR and AT+RESET the same way. `test_hc05_lines` runs its answer lines,
 the two address forms at each part's limits, the `+INQ:` fields and a line longer than the
-buffer. `test_hitec_wire` runs the core of `protocols/hitec/`: the frames of both wire
+buffer. `test_bleuart` runs the core of `protocols/bleuart/` against a scripted host stack
+and sensor (`test/host/ble_sim.h`): the connect sequence with its handles, the owner's
+capture (`test/host/ble_capture.h`) as notifications of 20, 4 and 1 bytes decoded to roll
+-1.126°, pitch -4.081° and yaw -25.400°, and the scan's 10000ms, the connect's 5000ms, the
+retry gap's 1000ms, each GATT (generic attribute profile) step's 5000ms, the write's 1000ms
+and the settle's 2000ms at their limit and 1ms before it, at tick 0 and started 100ms before
+the wrap. `test_bleuart_link` runs the writes with and without response, the tables it
+refuses, a disconnect in every state, scans beside a connect, OFF in every state and late
+answers; `test_bleuart_adv` the AD (advertising data) structures at their limits, 9 matching
+devices and the hidden count.
+
+`test_hitec_wire` runs the core of `protocols/hitec/`: the frames of both wire
 families, the transactions and every refusal of the reply decoders, with frames and reply
 times read off bench captures. `test_hitec_pio` runs the pin driver's arithmetic and its PIO
 program in a model of the state machine, as `test_kst_pio` does; the IOmcu build fails when
@@ -1921,6 +1941,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/safety/safety_gate.c` | 69 | 69 | 100.0% |
 | `shared/safety/flash_gate.c` | 4 | 4 | 100.0% |
 | `shared/safety/reset_cause.c` | 61 | 61 | 100.0% |
+| `shared/safety/boot_diag.c` | 34 | 34 | 100.0% |
 | `shared/safety/touch_loss.c` | 52 | 52 | 100.0% |
 | `shared/safety/frame_watch.c` | 21 | 21 | 100.0% |
 | `shared/safety/error_stop.c` | 14 | 14 | 100.0% |
@@ -1987,6 +2008,8 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `protocols/escwire/ew_file_load.c` | 93 | 93 | 100.0% |
 | `protocols/hc05/hc05.c` | 384 | 383 | 99.7% |
 | `protocols/hc05/hc05_line.c` | 125 | 125 | 100.0% |
+| `protocols/bleuart/bleuart.c` | 388 | 388 | 100.0% |
+| `protocols/bleuart/bleuart_adv.c` | 166 | 166 | 100.0% |
 | `protocols/i2c_txq/i2c_txq.c` | 379 | 379 | 100.0% |
 | `protocols/witmotion/witmotion.c` | 114 | 114 | 100.0% |
 | `shared/logfile/servo_store.c` | 267 | 265 | 99.2% |
@@ -2048,6 +2071,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/outputs/supply_page.c` | 351 | 348 | 99.2% |
 | `shared/outputs/prog_supply.c` | 131 | 131 | 100.0% |
 | `shared/outputs/out_store_map.c` | 74 | 74 | 100.0% |
+| `shared/outputs/out_store_range.c` | 10 | 10 | 100.0% |
 | `shared/outputs/out_store_rec.c` | 72 | 72 | 100.0% |
 | `shared/outputs/out_stage.c` | 66 | 66 | 100.0% |
 | `shared/outputs/bind_link.c` | 72 | 72 | 100.0% |
@@ -2114,7 +2138,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **81856** | **80308** | **98.1%** |
+| **total** | **82362** | **80814** | **98.1%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -2359,7 +2383,7 @@ stop, a pulled cable, the input lowered under a live set point in 0.5V steps.
 `stack_check.py --iomcu` measures 1492 bytes for the deepest chain and 528 for one interrupt
 on the 4096-byte stack, 1820 bytes above the 256-byte margin. The figures are those of the
 image CI builds with arm-none-eabi-gcc 14.2.1, and `stack_check.py --iomcu --check-doc`
-holds them. The depth is a lower bound: 250 calls through a register are not followed. The
+holds them. The depth is a lower bound: 251 calls through a register are not followed. The
 stack has no guard (`PICO_USE_STACK_GUARDS` is off). Not measured on hardware. An image
 built with another option set is measured only when CI builds it.
 
