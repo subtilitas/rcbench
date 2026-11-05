@@ -353,8 +353,11 @@ ui_textkey_t *kst_panel_textkey(void);
  *  4 the keyboard for a file's name. */
 int kst_panel_editor(void);
 
-/** The tab shown: 0 SERVO, 1 TUNE, 2 PULSE, 3 FAILSAFE, 4 LOCKED (with
- *  KST EXPERT MODE ON only). */
+/**
+ * @brief The tab shown.
+ * @return 0 SERVO, 1 TUNE, 2 PULSE, 3 FAILSAFE, 4 LOCKED (with KST EXPERT
+ *         MODE ON only)
+ */
 int kst_panel_page(void);
 
 /** Line @p i of the open warning page, entry @p i of the open list; NULL
