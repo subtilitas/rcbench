@@ -84,7 +84,7 @@ EDIT in the viewer opens the editor and its keyboard. The text changes in the pa
 - SAVE writes only over the file as the editor opened it. A file changed on the card since, by the Wi-Fi page's editor or an upload, is not written: the note says `<name> changed on the card since it was read.`, and the question offers STAY, which keeps the text, READ AGAIN, which drops it and reads the file from the card, and OVERWRITE, held 2s, which saves the text over the file that the refused SAVE found. A further change during that time is refused the same way. A file that is gone cannot be overwritten: OVERWRITE is dimmed.
 - REVERT puts the text back to the file on the card. It asks first, as the home tag does while the text is unsaved: STAY keeps the text, DISCARD drops the changes.
 - The text holds up to 1MiB and 65,536 line ends. The keyboard types ASCII; there is no undo of single keys.
-- SETUP → PANEL → Keyboard transparency at 25% or 50% lets the rest of the text show through the keyboard; the cursor stays on the 8 rows over it.
+- SETUP > PANEL > Keyboard transparency at 25% or 50% lets the rest of the text show through the keyboard; the cursor stays on the 8 rows over it.
 
 ![A KST file saved with a comment](view:files-edit-kst)
 ![The question over unsaved changes](view:files-edit-unsaved)
