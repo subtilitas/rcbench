@@ -91,7 +91,7 @@ nach der Suche weiter.
 
 | Schritt | Zeitgrenze | Scheitert als |
 | --- | ---: | --- |
-| Verbinden mit der gebundenen Adresse, Intervall 15ms, Latenz 0, Supervision Timeout 1 000ms | 5 000ms | KEINE VERBINDUNG, erneut nach 1 000ms |
+| Verbinden mit der gebundenen Adresse, Intervall 30 bis 50ms, Latenz 0, Supervision Timeout 4 000ms, Connect-Scan 30ms je 60ms | 5 000ms | KEINE VERBINDUNG, erneut nach 7 000ms bei einem Fehler, den der Host meldet (darunter HCI 0x3E), nach 1 000ms bei der Zeitgrenze |
 | den ISSC-Dienst 49535343-FE7D-4AE5-8FA9-9FAFD205E455 finden | 5 000ms | KEIN WITMOTION-SENSOR, kein neuer Versuch bis zum nächsten Binden oder IMU AUS und EIN |
 | seine Characteristics: 1E4D mit NOTIFY, 8841 mit WRITE oder WRITE NO RESPONSE | 5 000ms | KEIN WITMOTION-SENSOR |
 | der CCCD von 1E4D (Client Characteristic Configuration Descriptor) | 5 000ms | KEIN WITMOTION-SENSOR |
@@ -107,6 +107,20 @@ Verbindung (Grund in der Konsolenzeile) verbindet sich das Panel nach
 1 000ms neu. Eine Änderung der Verbindungsparameter, die der Sensor
 verlangt, wird angenommen und protokolliert. Die Characteristics ACA3 und
 6DAA werden nie beschrieben.
+
+Die Verbindungswerte sind so gewählt, wie eine Handy-Central sie
+erfragt, nicht gegen andere gemessen; sie stehen zusammen in
+`protocols/bleuart/include/bleuart.h` (`BLEU_ITVL_*`, `BLEU_LATENCY`,
+`BLEU_SUPERVISION`, `BLEU_CONN_SCAN_*`). Nach jedem gescheiterten Verbinden
+nimmt das Panel die nächste von vier Varianten und behält die, die
+verbindet:
+
+| Variante | Parameter | Eigene Adresse |
+| ---: | --- | --- |
+| 0 | die der Tabelle | der Typ, den der Sync ermittelt hat (`ble_hs_id_infer_auto()`) |
+| 1 | NimBLEs Vorgaben: Intervall 30 bis 50ms, Latenz 0, Supervision Timeout 2 560ms, Connect-Scan 10ms je 10ms | der ermittelte Typ |
+| 2 | die der Tabelle | der andere Typ; random ist eine statische Zufallsadresse, die das Panel einmal setzt |
+| 3 | NimBLEs Vorgaben | der andere Typ |
 
 KEINE VERBINDUNG lautet `KEINE VERBINDUNG: SENSOR AN, NAH, KEIN HANDY
 DRAN?`: Ein mit dem Sensor verbundenes Handy sperrt das Panel aus, weil ein
@@ -155,14 +169,25 @@ I (…) imu: IMU ON: starting Bluetooth LE
 I (…) ble: synced in <n>ms, own address type <t>
 I (…) ble: scan for 10000ms
 I (…) ble: connect to 00:0C:BF:08:19:29 type 0 for 5000ms
-I (…) ble: connect: status 0, handle <h>, interval 12 x 1.25ms
+I (…) ble: connect: variant <v>, own address public (type 0), bleuart's parameters
+I (…) ble: connect: interval 24-40 x 1.25ms, latency 0, timeout 400 x 10ms, scan 96/48 x 0.625ms
+I (…) ble: connect: last report <r>dBm, <a>ms ago
+I (…) ble: connect: status 0x0, handle <h>, token <k>
+I (…) ble: connect: record: handle <h>, peer 00:0C:BF:08:19:29 type 0 (over the air type 0), own type 0, role 0, interval <i> x 1.25ms, latency 0, timeout <s> x 10ms, clock accuracy <c>
 I (…) ble: MTU exchange: status 0, MTU <m>
 I (…) ble: 6DAA: 8 bytes 00 0C 00 0C 00 00 00 02
 I (…) imu: link <a> -> <b>, error <e> code 0x<c>
 I (…) imu: <n> frames in 1000ms, rate <r>Hz, roll <x> pitch <y> yaw <z> deg, bad <k>, battery <v>V, <d> events dropped
 I (…) imu: command FF AA 69 88 B5
-I (…) ble: disconnect: reason 0x<r>
+I (…) ble: disconnect: reason 0x<r>, handle <h>, token <k>
+I (…) ble: disconnect: record: handle <h>, peer …
+I (…) ble: connect failed with 0x<r>: the next try is variant <v>
 ```
+
+Grund 0x23E ist HCI 0x3E, Verbindung nicht aufgebaut, wie NimBLE ihn
+meldet (0x200 + HCI-Code). `ble controller` im Konsolen-Build schickt die
+Controller-Init- und Enable-Anfragen des C6 erneut
+([BenchConsole-de.md](BenchConsole-de.md)).
 
 `<n> frames` zählt Frames aller Typen; die Rate zählt Winkel-Frames.
 
@@ -172,11 +197,12 @@ I (…) ble: disconnect: reason 0x<r>
 | --- | --- |
 | Akku | 250mAh, 4h je Ladung (Datenblatt) |
 | Ausgaberate | 0,2 bis 200Hz, ab Werk 10Hz; das Panel bietet 10 bis 200Hz, Vorgabe 50Hz |
-| BLE-Durchsatz | 20 Bytes je Notification; bei 15ms und einer Notification je Verbindungsereignis 1 333B/s, unter den 2 200B/s von 50Hz mit allen Frames; die Notifications je Ereignis und die passenden Raten sind nicht gemessen |
+| BLE-Durchsatz | 20 Bytes je Notification; bei 30 bis 50ms und einer Notification je Verbindungsereignis 400 bis 667B/s, unter den 2 200B/s von 50Hz mit allen Frames; die Notifications je Ereignis und die passenden Raten sind nicht gemessen |
+| Verbinden | an einem Panel nicht bestätigt: mit Intervall 15ms, Supervision Timeout 1 000ms und einem Connect-Scan 10ms/10ms endeten 35 Versuche bei -59dBm mit HCI 0x3E (Station, 2026-11-05); die vier Varianten oben sind ungetestet |
 | Genauigkeit X, Y | 0,05° (Datenblatt), 0,2° (Webseite des Herstellers) |
 | Genauigkeit Z | 1° nach der Kalibrierung des Magnetometers, die der Servomotor stört; die Drift von Z ohne diese Kalibrierung ist nicht angegeben |
 | der Winkel eines Laufs | als AS5600-Zählerstand dargestellt: 360 / 4096 = 0,088° je Zähler |
-| ein Verbindungsabbruch | ob das Funkmodul des Sensors Bytes, die es nicht senden kann, puffert oder verwirft, ist nicht bekannt; das Panel verbindet sich bei IMU EIN jede 1 000ms neu |
+| ein Verbindungsabbruch | ob das Funkmodul des Sensors Bytes, die es nicht senden kann, puffert oder verwirft, ist nicht bekannt; das Panel verbindet sich bei IMU EIN nach 1 000ms neu |
 | WLAN neben BLE | der C6 teilt seinen Funk zeitlich; die Wirkung auf beide ist nicht gemessen |
 | Schreiben | ob ein Schreiben auf 8841 den Sensor erreicht, ist nicht gemessen |
 | das Alter des Messwerts | veraltet nach 300ms |

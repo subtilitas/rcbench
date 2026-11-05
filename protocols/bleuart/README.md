@@ -84,11 +84,13 @@ advertisement loses the response's name.
 
 `bleu_bind()` keeps the address; `bleu_enable()` switches the central on
 and off. While on and bound, the central connects, and after any failure
-or drop it tries again after 1000ms (`BLEU_RETRY_MS`).
+or drop it tries again after 1000ms (`BLEU_RETRY_MS`); a connect the host
+stack ends with a failure, HCI 0x3E (failed to be established) among
+them, is tried again after 7000ms (`BLEU_RETRY_CONNECT_MS`).
 
 | Step | Action | Timeout | Fails as |
 |---|---|---|---|
-| connect | `BLEU_ACT_CONNECT`, interval 15ms (`BLEU_ITVL_MIN`, `BLEU_ITVL_MAX` 12 x 1.25ms), latency 0, supervision timeout 1000ms (`BLEU_SUPERVISION` 100 x 10ms) | 5000ms (`BLEU_CONNECT_MS`), then `BLEU_ACT_CANCEL` | `BLEU_ERR_CONNECT`, retry |
+| connect | `BLEU_ACT_CONNECT`, interval 30 to 50ms (`BLEU_ITVL_MIN` 24, `BLEU_ITVL_MAX` 40 x 1.25ms), latency 0, supervision timeout 4000ms (`BLEU_SUPERVISION` 400 x 10ms), connect scan 30ms in every 60ms (`BLEU_CONN_SCAN_WINDOW` 0x30, `BLEU_CONN_SCAN_ITVL` 0x60 x 0.625ms); chosen as a phone's central asks them, not measured | 5000ms (`BLEU_CONNECT_MS`), then `BLEU_ACT_CANCEL` | `BLEU_ERR_CONNECT`, retry |
 | the service | `BLEU_ACT_DISC_SVC` | 5000ms (`BLEU_GATT_MS`) | none found: `BLEU_ERR_NOT_WIT`, disconnect, no retry |
 | its characteristics | `BLEU_ACT_DISC_CHRS` in the service's range | 5000ms | 1E4D without NOTIFY or 8841 without WRITE or WRITE NO RESPONSE: `BLEU_ERR_NOT_WIT` |
 | 1E4D's CCCD | `BLEU_ACT_DISC_DSCS` from 1E4D's value handle to the next declaration or the service's end | 5000ms | no 0x2902 there: `BLEU_ERR_NOT_WIT` |
@@ -161,7 +163,7 @@ event with status 0, also when the host stack reports it as an end code.
 |---|---|---|
 | `BLEU_ACT_SCAN` | `ble_gap_disc()`, active, duplicates filtered, `ms` long | `BLEU_EV_ADV` per report; `BLEU_EV_SCAN_END` when it ends early or does not start |
 | `BLEU_ACT_SCAN_STOP` | `ble_gap_disc_cancel()` | nothing |
-| `BLEU_ACT_CONNECT` | `ble_gap_connect()` to `addr` with the `BLEU_ITVL_*` set | `BLEU_EV_CONNECT` |
+| `BLEU_ACT_CONNECT` | `ble_gap_connect()` to `addr` with the `BLEU_ITVL_*` set | `BLEU_EV_CONNECT`, or `BLEU_EV_DISCONNECT` with the connect's token for a connection that failed to be established |
 | `BLEU_ACT_CANCEL` | `ble_gap_conn_cancel()` | the connect's `BLEU_EV_CONNECT` |
 | `BLEU_ACT_DISCONNECT` | `ble_gap_terminate()` of `conn` | `BLEU_EV_DISCONNECT` |
 | `BLEU_ACT_DISC_SVC` | `ble_gattc_disc_svc_by_uuid()` | `BLEU_EV_SVC`, `BLEU_EV_SVC_DONE` |

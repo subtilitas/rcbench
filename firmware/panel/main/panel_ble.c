@@ -83,19 +83,19 @@ static SemaphoreHandle_t s_synced;
 /** @brief s_synced's memory. */
 static StaticSemaphore_t s_synced_mem;
 
-/** The connect variants, rotating after each failed connect: bleuart's
+/** @brief The connect variants, rotating after each failed connect: bleuart's
  *  parameters or NimBLE's defaults (NULL), each with the own address type
  *  the sync inferred and then with the other one.  Diagnostics for a
  *  sensor that fails every connect with HCI 0x3E. */
 #define TRY_VARIANTS 4u
-/** The next connect's variant, counted up after each failed connect. */
+/** @brief The next connect's variant, counted up after each failed connect. */
 static atomic_uint s_try;
-/** A connection was reported up and is not down yet. */
+/** @brief A connection was reported up and is not down yet. */
 static atomic_bool s_conn_up;
-/** The static random address is set for the variants that use it. */
+/** @brief The static random address is set for the variants that use it. */
 static atomic_bool s_rnd_set;
 
-/** Advertisers whose last report a connect's log line names. */
+/** @brief Advertisers whose last report a connect's log line names. */
 #define HEARD_MAX 8u
 
 /** @brief One advertiser's last report. */
@@ -106,11 +106,11 @@ typedef struct {
     uint32_t at;       /**< ble_now_ms() of the report */
     bool     used;     /**< the slot holds one */
 } heard_t;
-/** The last report of up to HEARD_MAX advertisers, the oldest replaced. */
+/** @brief The last report of up to HEARD_MAX advertisers, oldest replaced. */
 static heard_t s_heard[HEARD_MAX];
-/** The next slot to replace. */
+/** @brief The next slot of s_heard to replace. */
 static unsigned s_heard_next;
-/** Guards s_heard: written on nimble_host, read on the IMU's task. */
+/** @brief Guards s_heard: written on nimble_host, read on the IMU's task. */
 static portMUX_TYPE s_heard_lock = portMUX_INITIALIZER_UNLOCKED;
 
 /**

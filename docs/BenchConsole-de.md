@@ -418,7 +418,19 @@ Befehle.
 | `ble: no scan: no sync` | der Host hatte binnen 3 000ms keinen Sync; er versucht es weiter, und ein späteres `ble scan` scannt, sobald er synchron ist |
 | `ble: no scan: <error>` | NimBLE hat den Scan abgelehnt; `ESP_ERR_INVALID_STATE`, solange die IMU sucht oder sich verbindet, da NimBLE nur eine solche Prozedur zugleich ausführt |
 | `ble: a scan is under way` | ein `ble scan`, während einer wartet oder läuft |
-| `ble: commands: ble scan` | jede andere Zeile, die mit `ble` beginnt |
+| `ble: commands: ble scan, ble controller` | jede andere Zeile, die mit `ble` beginnt |
+
+`ble controller` schickt die Controller-Init- und Enable-Anfragen des C6
+erneut, auf dem Task der Konsole. esp_hosted beantwortet jede oder beendet
+sie nach 5 000ms, die Konsole wartet also bis zu 10 000ms. Die `ble`-Zeilen
+der Anfragen folgen ([Bauen, Bluetooth LE über den
+ESP32-C6](Building-de.md#bluetooth-le-über-den-esp32-c6)).
+
+| Zeile | Bedeutung |
+| --- | --- |
+| `ble: the C6 controller init and enable requests, up to 10s` | die Anfragen beginnen |
+| `ble: controller requests: sent, see the ble lines` | beide Anfragen sind gegangen |
+| `ble: controller requests: Bluetooth LE is not started or still starting` | vor dem ersten Start oder während sein Start-Task läuft; nichts wird gesendet |
 
 ### Raten
 

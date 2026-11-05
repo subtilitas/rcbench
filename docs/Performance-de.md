@@ -744,10 +744,10 @@ Der Bluetooth-LE-Teil des Images, aus der Linker-Map (`esp_idf_size`),
 ESP-IDF v6.1, gebaut ohne die IOmcu-Images. Beide Builds enthalten den Host,
 weil die IMU ihn startet:
 
-| Build | Anwendungs-Image (Bytes) | Davon NimBLE, `libbt.a` (Bytes) | Davon die Central, `libbleuart.a` (Bytes) | Interner RAM des Images, DIRAM (Bytes) | Davon NimBLE (Bytes) |
+| Build | Anwendungs-Image (Bytes) | Davon NimBLE, `libbt.a`, Flash (Bytes) | Davon die Central, `libbleuart.a`, Flash (Bytes) | Interner RAM des Images, DIRAM (Bytes) | Davon NimBLE (Bytes) |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Standard | 3 092 548 | 62 731 | 8 697 | 179 306 | 693 |
-| Konsole (`RCBENCH_PANEL_CONSOLE`) | 3 116 674 | 62 771 | 8 697 | 189 144 | 693 |
+| Standard | 3 095 526 | 62 532 | 8 821 | 179 346 | 693 |
+| Konsole (`RCBENCH_PANEL_CONSOLE`) | 3 119 852 | 62 572 | 8 821 | 189 184 | 693 |
 
 Die 2 048 Bytes der Ereignis-Warteschlange stecken in der DIRAM-Zahl,
 außerhalb von `libbt.a`. esp_hosted (157 292 Bytes Flash, 1 571 Bytes DIRAM)

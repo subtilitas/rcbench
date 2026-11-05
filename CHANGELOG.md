@@ -48,6 +48,12 @@ history is in git.
   devices that advertise 0x18F0 or the ISSC UART service, with name,
   address and RSSI, and counts the others as hidden; a tap binds a sensor
   without pairing, and the panel connects to it and again 1s after a drop.
+  A connect asks interval 30 to 50ms, latency 0 and supervision timeout
+  4s with a 30ms-in-60ms connect scan; a failed connect, HCI 0x3E among
+  them, is retried after 7s, each try in the next of four variants
+  (these parameters or NimBLE's defaults, either own address type), with
+  every value logged. The console build's `ble controller` sends the C6's
+  controller init and enable requests again.
   SETUP keeps the address with its type under the new key `imu_ble`; an
   address stored for the HC-05 is not read. The IMU screen and SETUP >
   SENSORS > IMU show STARTING BLUETOOTH, NO BLUETOOTH ON C6, C6 FAILED:

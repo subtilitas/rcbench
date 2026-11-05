@@ -697,10 +697,10 @@ The Bluetooth LE part of the image, from the linker map (`esp_idf_size`),
 ESP-IDF v6.1, built without the IOmcu images. Both builds hold the host,
 since the IMU starts it:
 
-| Build | Application image (bytes) | Of it NimBLE, `libbt.a` (bytes) | Of it the central, `libbleuart.a` (bytes) | Internal RAM the image holds, DIRAM (bytes) | Of it NimBLE (bytes) |
+| Build | Application image (bytes) | Of it NimBLE, `libbt.a`, flash (bytes) | Of it the central, `libbleuart.a`, flash (bytes) | Internal RAM the image holds, DIRAM (bytes) | Of it NimBLE (bytes) |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| default | 3,092,548 | 62,731 | 8,697 | 179,306 | 693 |
-| console (`RCBENCH_PANEL_CONSOLE`) | 3,116,674 | 62,771 | 8,697 | 189,144 | 693 |
+| default | 3,095,526 | 62,532 | 8,821 | 179,346 | 693 |
+| console (`RCBENCH_PANEL_CONSOLE`) | 3,119,852 | 62,572 | 8,821 | 189,184 | 693 |
 
 The event queue's 2,048 bytes are in the DIRAM figure, outside `libbt.a`.
 esp_hosted (157,292 bytes of flash, 1,571 of DIRAM) carries Wi-Fi and

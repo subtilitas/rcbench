@@ -39,7 +39,7 @@ bool render_imu_view(const char *view)
  * @param rssi its RSSI, dBm
  */
 static void device(imu_dev_t *d, const char *addr, const char *name,
-                   int16_t rssi)
+                   int8_t rssi)
 {
     snprintf(d->addr, sizeof(d->addr), "%s", addr);
     snprintf(d->name, sizeof(d->name), "%s", name);

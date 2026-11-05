@@ -38,7 +38,7 @@ extern "C" {
 /** @brief The timeouts and waits, in ms. @{ */
 #define BLEU_SCAN_MS     10000u /**< one active scan */
 #define BLEU_CONNECT_MS  5000u  /**< one connect attempt */
-#define BLEU_RETRY_MS    1000u  /**< a timed-out attempt or a drop to the next */
+#define BLEU_RETRY_MS    1000u  /**< a timed-out try or a drop to the next */
 #define BLEU_RETRY_CONNECT_MS 7000u /**< a connect the host stack ends with a
                                          failure, among them HCI 0x3E (failed
                                          to be established), to the next */
