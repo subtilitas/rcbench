@@ -122,7 +122,7 @@ Ein anderes Urteil als `Alle Testframes kamen korrekt zurück.` wird auf dem Pan
 dem Menü gezeigt, denn der Fehler ist von jedem anderen Bildschirm aus
 unsichtbar: ein Bus, der keine Frames trägt, sieht genauso aus wie ein
 IOmcu, der nicht bestückt ist, und beides sieht aus wie ein Prüfstand,
-der einfach keine Zahlen zeigt.
+der keine Zahlen zeigt.
 
 ![Frames kommen verändert an](img/de/busfault.png)
 
