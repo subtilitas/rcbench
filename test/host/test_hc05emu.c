@@ -322,6 +322,26 @@ TEST_CASE(a_stored_record_is_taken_only_when_every_field_is_in_range)
     hc05emu_init(&e, &c, NULL, false, 0);
     CHECK_EQ(e.cfg.baud, 9600u);
     CHECK_EQ(e.baud_now, 9600u);
+    /* Full AT mode is 8N1 at 38400; KEY low takes the stored UART. */
+    radio_t r;
+    radio_init(&r);
+    c.stop = 1u;
+    c.parity = 2u;
+    hc05emu_init(&e, &c, NULL, true, 0);
+    (void)emu_drain(&e, &r, 0, NULL);
+    CHECK_EQ(r.baud, 38400u);
+    CHECK_EQ(r.stop, 0u);
+    CHECK_EQ(r.parity, 0u);
+    hc05emu_key(&e, false, 1);
+    (void)emu_drain(&e, &r, 1, NULL);
+    CHECK_EQ(r.baud, 9600u);
+    CHECK_EQ(r.stop, 1u);
+    CHECK_EQ(r.parity, 2u);
+    /* Raised and dropped again: no second BAUD. */
+    hc05emu_key(&e, true, 2);
+    hc05emu_key(&e, false, 3);
+    (void)emu_drain(&e, &r, 3, NULL);
+    CHECK_EQ(r.bauds, 2u);
 }
 
 TEST_CASE(the_version_text_is_cut_to_23_bytes)
@@ -412,6 +432,13 @@ TEST_CASE(null_arguments_change_nothing)
     CHECK(!hc05emu_connected(NULL));
     hc05emu_init(&e, NULL, NULL, true, 0);
     CHECK(!hc05emu_step(&e, 0, NULL));
+    /* A step with nothing to hand out leaves no length behind. */
+    hc05emu_feed(&e, (const uint8_t *)"AT\n", 3u, 0);
+    CHECK(hc05emu_step(&e, 0, &a) && a.kind == HC05EMU_ACT_BAUD);
+    CHECK(hc05emu_step(&e, 0, &a) && a.len == 4u);
+    CHECK(!hc05emu_step(&e, 0, &a));
+    CHECK_EQ(a.len, 0u);
+    hc05emu_init(&e, NULL, NULL, true, 0);
     hc05emu_feed(&e, NULL, 4u, 0);
     hc05emu_found(&e, NULL, 0, 0, NULL, 0);
     hc05emu_name_done(&e, NULL, "x", 0);

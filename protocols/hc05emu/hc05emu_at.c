@@ -131,14 +131,16 @@ static void put(line_t *l, const char *s)
  */
 static void put_u32(line_t *l, uint32_t v)
 {
-    char buf[11];
-    size_t n = sizeof buf - 1u;
-    buf[n] = '\0';
+    char digits[10];
+    size_t n = 0;
     do {
-        buf[--n] = (char)('0' + v % 10u);
+        digits[n++] = (char)('0' + v % 10u);
         v /= 10u;
     } while (v != 0u);
-    put(l, &buf[n]);
+    while (n > 0u && l->n + 1u < sizeof l->t) {
+        l->t[l->n++] = digits[--n];
+    }
+    l->t[l->n] = '\0';
 }
 
 /**

@@ -83,6 +83,7 @@ typedef struct {
     hc05emu_cfg_t nvs;
     unsigned saves, stops, inqs, names, pairs, connects, bauds;
     uint32_t baud;          /* the emulator's UART */
+    uint8_t stop, parity;   /* its stop bits and parity */
     uint8_t last_max, last_units;
     uint8_t to_sensor[RIG_DATA_MAX];
     size_t to_sensor_n;
@@ -145,6 +146,8 @@ static void radio_act(radio_t *r, const hc05emu_t *e, const hc05emu_act_t *a,
     switch (a->kind) {
     case HC05EMU_ACT_BAUD:
         r->baud = a->baud;
+        r->stop = a->stop;
+        r->parity = a->parity;
         ++r->bauds;
         break;
     case HC05EMU_ACT_INQ: {
