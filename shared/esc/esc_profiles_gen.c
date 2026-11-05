@@ -126,7 +126,7 @@ static const char *const p_dualsky_xcontroller_steps[] = {
     "Wait about 5000ms more: melody 5-6-5, programming mode entered",
 };
 static const esc_model_t p_dualsky_xcontroller_models[] = {
-    { "XController (model not named in the programming sheet)", 0u, 0u, false, 0u, 0u, 0u },
+    { "XController", 0u, 0u, false, 0u, 0u, 0u },
 };
 static const esc_value_t p_dualsky_xcontroller_v0[] = {
     { "off", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -825,7 +825,7 @@ static const char *const p_hacker_x_pro_2006_steps[] = {
     "Other items: keep full throttle; move throttle to stop while the desired pattern is sounding (each shown five times).",
 };
 static const esc_model_t p_hacker_x_pro_2006_models[] = {
-    { "X-Pro series (BEC and Opto versions)", 0u, 5u, false, 0u, 0u, 0u },
+    { "X-Pro Serie (BEC- und Opto-Versionen)", 0u, 5u, false, 0u, 0u, 0u },
 };
 static const esc_value_t p_hacker_x_pro_2006_v0[] = {
     { "toggle brake: on becomes off, off becomes on", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
