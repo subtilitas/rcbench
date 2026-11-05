@@ -598,7 +598,7 @@ when the build moved a pin of the lock file.
 | `rcbench-c6-2.13.0.bin` (sent over SDIO) | 1,283,616 bytes, 65.3% of the C6's slot |
 | `rcbench-c6-merged-2.13.0.bin` (flashed at 0x0 over H4) | 1,349,152 bytes: bootloader, partition table, otadata and the application |
 | Panel image growth with it carried | 1,284,272 bytes of flash; 1,408 bytes of internal RAM (one 1,400-byte chunk buffer) |
-| Panel image with it and one IOmcu image | 4,375,232 of 8,126,464 bytes in the update slot, 46.2% free; the release image with both IOmcu images is not measured |
+| Panel image with it, NimBLE and one IOmcu image | 4,419,968 of 8,126,464 bytes in the update slot, 45.6% free; the release image with both IOmcu images is not measured |
 
 A build carries the image with `-D RCBENCH_C6_BIN=<path>`, as it carries the
 IOmcu images; a build without it carries none, and UPDATES' C6 RADIO row
@@ -628,7 +628,8 @@ an image that passed its check, the C6 does not report the carried
 version, the link to the C6 has not failed, the bench is SAFE with no arm
 waiting, the supply output is off, no log run is open, no board drawing is
 being fetched, neither the IOmcu's update nor the panel's own download or
-install runs, and Wi-Fi is off. A tap on the grey hold shows the reason on
+install runs, Wi-Fi is off and Bluetooth LE's start task `blestart` does
+not run. A tap on the grey hold shows the reason on
 the alert band. The update runs on the task `c6upd` (core 0, priority 2,
 4,096-byte stack, created at the first update), one step at a time:
 

@@ -6166,6 +6166,7 @@ es grau, und ein Tippen darauf zeigt den ersten Grund im Alarmband:
 | `Das C6-Update wartet auf das Ende des IOmcu-Updates.` | Das IOmcu-Update läuft. |
 | `Das C6-Update wartet: Die Installation der Panel-Firmware läuft.` | Download oder Installation des Panels laufen. |
 | `Das C6-Update wartet, bis das WLAN des Panels aus ist.` | Eine Prüfung, ein Download oder WI-FI hat den Funk an. |
+| `Das C6-Update wartet: Bluetooth startet.` | Die Start-Task `blestart` von Bluetooth LE läuft. |
 | `Das C6-Update wartet auf die letzte Antwort des C6-Funks.` | Ein Schritt eines beendeten Updates ist aus seinem Aufruf noch nicht zurück. |
 
 Ein C6, der keine Version meldet, wie der ausgelieferte, bekommt das Update

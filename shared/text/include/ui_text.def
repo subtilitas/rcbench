@@ -7195,6 +7195,9 @@ UI_TEXT(C6_WHY_INSTALL, 94,
 UI_TEXT(C6_WHY_RADIO, 94,
     "The C6 update waits for the panel's Wi-Fi to switch off.",
     "Das C6-Update wartet, bis das WLAN des Panels aus ist.")
+UI_TEXT(C6_WHY_BLE, 94,
+    "The C6 update waits: Bluetooth is starting.",
+    "Das C6-Update wartet: Bluetooth startet.")
 UI_TEXT(C6_WHY_ENDING, 94,
     "The C6 update waits for the C6 radio's last answer.",
     "Das C6-Update wartet auf die letzte Antwort des C6-Funks.")

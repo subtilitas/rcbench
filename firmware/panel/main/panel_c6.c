@@ -39,6 +39,7 @@
 #include "c6_link.h"
 #include "fw_c6.h"
 #include "panel.h"
+#include "panel_ble.h"
 #include "ui_screen.h"
 #include "ui_text.h"
 #include "upd_c6.h"
@@ -322,6 +323,9 @@ static fw_c6_feed_t feed_now(bool armed)
     f.iomcu = panel_cu_busy();
     f.installing = panel_fw_busy();
     f.radio_up = s_wifi_ok && !wifi_access_down();
+    /* blestart brings the link up and resets the C6's controller: not
+     * under an update's steps. */
+    f.ble_starting = panel_ble_state() == PANEL_BLE_STARTING;
     return f;
 }
 

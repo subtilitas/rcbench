@@ -5712,6 +5712,7 @@ grey, and a tap on it shows the first reason on the alert band:
 | `The C6 update waits for the IOmcu update to finish.` | The IOmcu's update runs. |
 | `The C6 update waits: panel firmware installation is running.` | The panel's download or install runs. |
 | `The C6 update waits for the panel's Wi-Fi to switch off.` | A check, a download or the WI-FI screen has the radio on. |
+| `The C6 update waits: Bluetooth is starting.` | Bluetooth LE's start task `blestart` runs. |
 | `The C6 update waits for the C6 radio's last answer.` | A step of an ended update has not returned from its call. |
 
 A C6 that reports no version, as the shipped one does, is offered the

@@ -49,6 +49,9 @@ static fw_c6_why_t bench_why(const fw_c6_feed_t *f)
     if (f->radio_up) {
         return FW_C6_WHY_RADIO;
     }
+    if (f->ble_starting) {
+        return FW_C6_WHY_BLE;
+    }
     return f->ending ? FW_C6_WHY_ENDING : FW_C6_WHY_NONE;
 }
 

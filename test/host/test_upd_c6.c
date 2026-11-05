@@ -154,6 +154,7 @@ TEST_CASE(a_tap_on_the_grey_hold_says_why_on_the_band)
         { FW_C6_ROW_BLOCKED,     FW_C6_WHY_IOMCU,   TX_C6_WHY_IOMCU },
         { FW_C6_ROW_BLOCKED,     FW_C6_WHY_INSTALL, TX_C6_WHY_INSTALL },
         { FW_C6_ROW_BLOCKED,     FW_C6_WHY_RADIO,   TX_C6_WHY_RADIO },
+        { FW_C6_ROW_BLOCKED,     FW_C6_WHY_BLE,     TX_C6_WHY_BLE },
         { FW_C6_ROW_BLOCKED,     FW_C6_WHY_ENDING,  TX_C6_WHY_ENDING },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {

@@ -623,7 +623,7 @@ der Lock-Datei verschoben hat.
 | `rcbench-c6-2.13.0.bin` (über SDIO gesendet) | 1 283 616 Bytes, 65,3% des C6-Slots |
 | `rcbench-c6-merged-2.13.0.bin` (über H4 ab 0x0 geflasht) | 1 349 152 Bytes: Bootloader, Partitionstabelle, otadata und die Anwendung |
 | Wachstum des Panel-Images, wenn es mitgebracht wird | 1 284 272 Bytes Flash; 1 408 Bytes interner RAM (ein Puffer für einen Block von 1 400 Bytes) |
-| Panel-Image damit und mit einem IOmcu-Image | 4 375 232 von 8 126 464 Bytes im Update-Slot, 46,2% frei; das Release-Image mit beiden IOmcu-Images ist nicht gemessen |
+| Panel-Image damit, mit NimBLE und einem IOmcu-Image | 4 419 968 von 8 126 464 Bytes im Update-Slot, 45,6% frei; das Release-Image mit beiden IOmcu-Images ist nicht gemessen |
 
 Ein Build bringt das Image mit `-D RCBENCH_C6_BIN=<Pfad>` mit, wie die
 IOmcu-Images; ein Build ohne bringt keines mit, und die Zeile C6 RADIO auf
@@ -653,8 +653,8 @@ Build ein Image mitbringt, das seine Prüfung bestanden hat, der C6 nicht die
 mitgebrachte Version meldet, die Verbindung zum C6 nicht ausgefallen ist, die
 Bench SAFE ist und kein ARM wartet, der Netzteilausgang aus ist, kein
 Aufzeichnungslauf offen ist, keine Platinenzeichnung geladen wird, weder das
-IOmcu-Update noch Download oder Installation des Panels laufen und das WLAN
-aus ist. Ein Tippen auf das graue Halten zeigt den Grund im Alarmband. Das
+IOmcu-Update noch Download oder Installation des Panels laufen, das WLAN aus
+ist und die Start-Task `blestart` von Bluetooth LE nicht läuft. Ein Tippen auf das graue Halten zeigt den Grund im Alarmband. Das
 Update läuft auf der Task `c6upd` (Kern 0, Priorität 2, Stack 4 096 Bytes,
 beim ersten Update angelegt), ein Schritt nach dem anderen:
 
