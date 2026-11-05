@@ -189,6 +189,8 @@ TEST_CASE(with_the_mode_off_tune_closes_up_and_the_strip_holds_four_tabs)
         five[t] = kst_panel_tab_rect(t);
     }
     mode(false);
+    CHECK_EQ(tabs(), 4);
+    CHECK_EQ(kst_panel_tab_rect(PG_LOCKED).w, 0);
     /* Four tabs over the row five took: no gap where LOCKED was. */
     CHECK_EQ(kst_panel_tab_rect(PG_SERVO).x, five[0].x);
     CHECK(abs((kst_panel_tab_rect(PG_FAILSAFE).x
