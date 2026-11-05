@@ -421,9 +421,9 @@ request and a new one does.
 - `tools/doc_check.py --check` runs Doxygen 1.18.0 with the `Doxyfile`
   and compares its warnings with `tools/doc_check_baseline.txt`. A
   baseline line is a file and a message without the line number; code
-  that moves inside a file changes no line. On a branch other than `main`
-  CI passes `--base origin/main`, and these warnings fail, listed or not:
-  - every warning in a C file the branch adds;
+  that moves inside a file changes no line. In a pull request CI passes
+  `--base origin/<base branch>` (on a branch run by hand, `--base origin/main`), and these warnings fail, listed or not:
+  - every warning in a C file the pull request adds;
   - in a C file it changes, every warning on a line it adds or rewrites
     (`git diff -U0`, new side). A warning stands for the line Doxygen
     reports and the comment block next to it, so a rewritten `@brief`
@@ -498,15 +498,4 @@ open work and settled decisions. `CHANGELOG.md` records version history;
 
 ## Pull requests
 
-One change per pull request, with CI green. A pull request starts no CI run: its head is run by hand (`gh workflow run ci.yml --ref <branch>`) once its reviews are clean. A head that lives only in a fork is pushed unchanged to a branch here first, and only when its `.github/` equals main's: a run uses the workflow files of the commit it runs on, with this repository's token, so a fork's own workflow could ask for write rights.
-
-```sh
-gh pr checkout <n>
-git fetch origin main
-# pushes and runs only when .github/ equals main's
-git diff --quiet origin/main HEAD -- .github/ \
-  && git push origin HEAD:pr/<n> \
-  && gh workflow run ci.yml --ref pr/<n>
-```
-
-The run on `pr/<n>` tests the same commit, so its checks show on the pull request. A fork head that changes `.github/` gets no run here until a maintainer has read those changes. State the change and its effect.
+One change per pull request, with CI green. A push to a pull request starts no CI run. A maintainer adds the label `ci` once the head's reviews are clean, and that starts the run; a later head needs the label taken off and added again. Only such a pull request run counts for the branch rules' required checks: a run started with `gh workflow run ci.yml --ref <branch>` reports its checks on the commit, and the pull request does not take them. A pull request from a fork runs the same way, with GitHub's read-only token and no secrets. State the change and its effect.
