@@ -135,7 +135,8 @@ typedef struct {
 
 /** @brief What one advertising report says. */
 typedef struct {
-    char    name[BLEU_NAME_MAX]; /**< AD 0x09, else 0x08, else "" */
+    char    name[BLEU_NAME_MAX]; /**< AD 0x09, else 0x08, else "";
+                                      up to its first NUL */
     uint8_t name_kind;   /**< 0 none, 0x08 shortened, 0x09 complete */
     uint8_t flags;       /**< AD 0x01's byte, 0 without */
     bool    has_18f0;    /**< 0x18F0 in a 16-bit UUID list */

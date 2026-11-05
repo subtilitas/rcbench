@@ -5,8 +5,10 @@
  *
  * An AD structure is a length byte, a type byte and length - 1 data bytes.
  * The parser holds each structure to the report: a length 0 ends the data
- * (the rest is padding), a length past the end drops the rest.  A name is
- * cut to 23 bytes and every byte outside printable ASCII is shown as `?`.
+ * (the rest is padding), a length past the end drops the rest.  A name
+ * ends at its first NUL (the sensor pads its name field with NULs), is cut
+ * to 23 bytes, and every other byte outside printable ASCII is shown as
+ * `?`.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -55,8 +57,8 @@ const uint8_t bleu_uuid_param[16] = {
 #define RSSI_UNKNOWN 127
 
 /**
- * @brief Copy a name, cut to BLEU_NAME_MAX - 1 bytes, each byte outside
- *        0x20 to 0x7E as `?`.
+ * @brief Copy a name up to its first NUL, cut to BLEU_NAME_MAX - 1 bytes,
+ *        each other byte outside 0x20 to 0x7E as `?`.
  * @param out Receives it and its NUL, BLEU_NAME_MAX bytes.
  * @param src The name's bytes.
  * @param n   Their count.
@@ -66,10 +68,11 @@ static void copy_name(char *out, const uint8_t *src, size_t n)
     if (n > BLEU_NAME_MAX - 1u) {
         n = BLEU_NAME_MAX - 1u;
     }
-    for (size_t i = 0; i < n; ++i) {
+    size_t i = 0;
+    for (; i < n && src[i] != 0u; ++i) {
         out[i] = (src[i] >= 0x20u && src[i] <= 0x7Eu) ? (char)src[i] : '?';
     }
-    out[n] = '\0';
+    out[i] = '\0';
 }
 
 bool bleu_adv_parse(const uint8_t *ad, size_t len, bleu_adv_t *out)

@@ -47,7 +47,20 @@ static const bleu_addr_t k_cap_addr = {
 };
 #define CAP_ADDR_TEXT "00:0C:BF:08:19:29"
 
-/* Its advertising data: flags, the UUID list, the name. */
+/* The report the station heard on the panel (ADV_IND, public address,
+ * -82dBm, no scan response), all 31 bytes: flags 0x0A, the complete 16-bit
+ * UUID list 0x18F0, and the complete local name HC-06 in a field of 22
+ * bytes padded with NULs. */
+static const uint8_t k_station_adv[31] = {
+    0x02, 0x01, 0x0A,
+    0x03, 0x03, 0xF0, 0x18,
+    0x17, 0x09, 0x48, 0x43, 0x2D, 0x30, 0x36, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+#define STATION_RSSI (-82)
+
+/* Its advertising data as the phone showed it: flags, the UUID list, the
+ * name. */
 static const uint8_t k_cap_adv[] = {
     0x02, 0x01, 0x1A,
     0x03, 0x03, 0xF0, 0x18,

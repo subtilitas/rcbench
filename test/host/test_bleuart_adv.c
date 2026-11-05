@@ -236,7 +236,7 @@ TEST_CASE(a_name_of_24_bytes_or_more_is_cut_to_23)
 
 TEST_CASE(non_printable_bytes_show_as_question_marks)
 {
-    const uint8_t ad[] = { 0x08, 0x09, 0x1F, 0x7F, 0x80, 'A', ' ', '~', 0x00 };
+    const uint8_t ad[] = { 0x08, 0x09, 0x1F, 0x7F, 0x80, 'A', ' ', '~', 0x01 };
     bleu_adv_t adv;
     (void)bleu_adv_parse(ad, sizeof ad, &adv);
     CHECK_STR_EQ(adv.name, "???A ~?");
@@ -245,6 +245,50 @@ TEST_CASE(non_printable_bytes_show_as_question_marks)
     (void)bleu_adv_parse(sh, sizeof sh, &adv);
     CHECK_STR_EQ(adv.name, "?x");
     CHECK_EQ(adv.name_kind, 0x08);
+}
+
+TEST_CASE(the_stations_report_lists_hc06_with_its_nul_padding_dropped)
+{
+    bleu_adv_t adv;
+    CHECK(bleu_adv_parse(k_station_adv, sizeof k_station_adv, &adv));
+    CHECK(adv.has_18f0);
+    CHECK(!adv.has_issc);
+    CHECK(!adv.cut);
+    CHECK_EQ(adv.flags, 0x0A);
+    CHECK_EQ(adv.name_kind, 0x09);
+    CHECK_STR_EQ(adv.name, "HC-06");
+
+    bleu_list_t l;
+    bleu_list_clear(&l);
+    bleu_list_report(&l, &k_cap_addr, STATION_RSSI, k_station_adv,
+                     sizeof k_station_adv);
+    CHECK_EQ(l.found_n, 1);
+    CHECK_EQ(l.hidden, 0);
+    CHECK_EQ(l.found[0].rssi, -82);
+    CHECK_STR_EQ(l.found[0].name, "HC-06");
+    CHECK_EQ(l.found[0].flags, BLEU_DEV_18F0 | BLEU_DEV_NAME_FULL);
+}
+
+TEST_CASE(a_name_ends_at_its_first_nul)
+{
+    const uint8_t mid[] = { 0x05, 0x09, 'A', 0x00, 'B', 'C' };
+    bleu_adv_t adv;
+    (void)bleu_adv_parse(mid, sizeof mid, &adv);
+    CHECK_STR_EQ(adv.name, "A");
+    CHECK_EQ(adv.name_kind, 0x09);
+    /* A name of NULs only is empty and still the complete name. */
+    const uint8_t nul[] = { 0x03, 0x09, 0x00, 0x00 };
+    (void)bleu_adv_parse(nul, sizeof nul, &adv);
+    CHECK_STR_EQ(adv.name, "");
+    CHECK_EQ(adv.name_kind, 0x09);
+    /* The NUL past the 23rd byte is not reached: the cut comes first. */
+    uint8_t longer[2 + 25];
+    longer[0] = 26;
+    longer[1] = 0x09;
+    memset(&longer[2], 'N', 24);
+    longer[26] = 0x00;
+    (void)bleu_adv_parse(longer, sizeof longer, &adv);
+    CHECK_EQ(strlen(adv.name), 23);
 }
 
 TEST_CASE(the_complete_name_wins_over_the_shortened_one_in_either_order)
@@ -497,6 +541,8 @@ int main(void)
     RUN(thirty_one_bytes_exactly_are_read_to_the_last);
     RUN(a_name_of_24_bytes_or_more_is_cut_to_23);
     RUN(non_printable_bytes_show_as_question_marks);
+    RUN(the_stations_report_lists_hc06_with_its_nul_padding_dropped);
+    RUN(a_name_ends_at_its_first_nul);
     RUN(the_complete_name_wins_over_the_shortened_one_in_either_order);
     RUN(nine_matching_devices_keep_the_eight_strongest_first);
     RUN(an_equal_rssi_keeps_the_older_row_first_and_a_full_list_its_rows);

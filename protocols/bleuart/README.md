@@ -67,7 +67,7 @@ connect checks the service.
 | Item | Rule |
 |---|---|
 | AD (advertising data) structure | a length byte, a type byte, length - 1 bytes; a length 0 ends the data, a length past the end drops the rest (`cut`) |
-| name | AD 0x09 (complete), else 0x08 (shortened), else ""; cut to 23 bytes, each byte outside 0x20 to 0x7E shown as `?`; a complete name is not replaced by a shortened one |
+| name | AD 0x09 (complete), else 0x08 (shortened), else ""; ends at its first NUL (the BWT901CL sends `HC-06` in a field of 22 bytes padded with NULs); cut to 23 bytes, each other byte outside 0x20 to 0x7E shown as `?`; a complete name is not replaced by a shortened one |
 | row | address and type, RSSI (received signal strength indication) of the last report in dBm, name, flags `BLEU_DEV_18F0`, `BLEU_DEV_ISSC`, `BLEU_DEV_NAME_FULL` |
 | reports of one address | merged into one row: an advertisement and its scan response are one device |
 | order | strongest RSSI first, an equal RSSI keeps the older row first, an RSSI of 127 (none) last |
