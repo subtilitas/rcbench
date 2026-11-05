@@ -100,6 +100,51 @@ every output goes off, the servo's supply with its RAM included
 | A position read fails on 3 tries | `Read failed at address 0x0C. Tap READ ALL.` |
 | ABORT during the end | `The operation was aborted.`, no error |
 
+## FIND STOP
+
+FIND STOP searches for the mechanical stop of one side and sets LEFT END
+or RIGHT END in the draft. It writes nothing to the servo.
+
+While MOVE SERVO's loop runs, the FIND STOP row takes DIRECTION's place on
+TRAVEL: DIRECTION is CW for the whole loop, since MOVE SERVO is refused
+otherwise. The row has two keys of 126 x 48px, LEFT END and RIGHT END.
+
+1. A tap on a key starts the search after the pass under way. The key
+   turns the warning colour. The other key, the `-` and `+` keys and the
+   keypad take no tap until the search ends.
+2. The horn moves to NEUTRAL at 150 counts a pass.
+3. From NEUTRAL the command moves 37 counts (0.5°) outward every 2
+   passes, up to the reach's edge: 2606 or 13743 on a factory D485HW.
+   Each pass is judged as a pass of MOVE SERVO. From NEUTRAL to the left
+   edge of a factory D485HW that is 151 steps, 32s at 106ms a pass.
+4. The note says
+   `FIND STOP toward LEFT END: 37 counts every 2 passes from NEUTRAL, at most 40s. Tap it again to stop.`
+
+![FIND STOP searching on the left](img/servo-hitec-move-find.png)
+
+The search ends in one of these ways. Then the passes of MOVE SERVO go on
+toward the followed row.
+
+| End | Draft | Line |
+| --- | --- | --- |
+| A bind past NEUTRAL | LEFT END or RIGHT END = the last free position, 75 counts (1.0°) toward NEUTRAL, marked `*`; that row is followed | `Stop at 4840. LEFT END set to 4915 in the edits.` |
+| A bind whose end point would not lie outside NEUTRAL | unchanged | `Stop at 8152, too close to NEUTRAL. The edits are unchanged.` |
+| The reach's edge with no bind | unchanged | `No stop found up to 2606.` |
+| 40s after the tap, the way to NEUTRAL included | unchanged | `No stop found in 40s. The search ended at 3100.` |
+| A second tap on the key | unchanged | `FIND STOP ended. The edits are unchanged.` |
+
+![A stop found on the left](img/servo-hitec-move-found.png)
+
+The end point found takes CHECK THIS CHANGE's end-point rule as an edit
+with `-` and `+` does: the hold of MOVE SERVO confirmed it. WRITE n VALUES
+writes it after MOVE OFF.
+
+A bind on the way to NEUTRAL is MOVE SERVO's bind: the horn moves back and
+the loop ends. A tap on ON, a tab change, CLOSE, the home tag, a change of
+screen and an ABORT end the search with the loop's end. STOP, a switch to
+SAFE at the bench, the supply off and the other hard ends stay hard ends.
+A bind of the search is no error: the supply stays on.
+
 ## Current limitations
 
 - The current judge reads the PD mini's current, which lags about 0.3s
@@ -118,3 +163,4 @@ every output goes off, the servo's supply with its RAM included
 | the pulse of a target, and with it the 850us, 2150us and 77% of the end note | `HITEC_LIVE_D_US_ZERO` 750us, `HITEC_LIVE_D_T_PER_US` 4 | L0.7 |
 | the mapping of a CCW servo | refused | L0.8 |
 | the slew per pass | `HITEC_LIVE_SLEW` 150 counts, chosen | S-L3 |
+| FIND STOP's stop within 0.5° of a block, its step and its cap | `HITEC_LIVE_FIND_STEP` 37 counts, `HITEC_LIVE_FIND_PASSES` 2, `HITEC_LIVE_FIND_MS` 40000ms, chosen | S-L6 |

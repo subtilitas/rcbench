@@ -245,6 +245,12 @@ gfx_rect_t hitec_panel_value_rect(int page, int row, int col);
  */
 gfx_rect_t hitec_panel_step_rect(int page, int row, bool plus);
 /**
+ * @brief A key of the FIND STOP row on TRAVEL.
+ * @param right true for RIGHT END's
+ * @return its rectangle; empty while the row is not shown
+ */
+gfx_rect_t hitec_panel_find_rect(bool right);
+/**
  * @brief The band's hint the open hold page gives a release before 2s.
  * @return its ui_text_id_t; -1 with no page open
  */

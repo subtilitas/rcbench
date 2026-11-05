@@ -102,6 +102,9 @@ hitec_prog_level_t hitec_prog_level(unsigned id)
     case HITEC_PROG_MSG_BACKUP_RESTORED:
     case HITEC_PROG_MSG_FACTORY_DONE:
     case HITEC_PROG_MSG_MOVE_DONE:
+    case HITEC_PROG_MSG_FIND_FOUND_L:
+    case HITEC_PROG_MSG_FIND_FOUND_R:
+    case HITEC_PROG_MSG_FIND_HALT:
         return HITEC_PROG_INFO;
     case HITEC_PROG_MSG_NO_C:
     case HITEC_PROG_MSG_NO_D:

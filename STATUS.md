@@ -1143,7 +1143,10 @@ series TRAVEL tab (`shared/bench/hitec_move.c`, `shared/ui/hitec_panel_move.c`: 
 moved to the position edited while SAFE, `-`/`+` keys, the judges, the end with the servo's
 restart and a compare, every hard end an error) is host-tested against the page and a servo
 model whose horn follows its target (`test_hitec_move`, `test_hitec_panel_move`); its
-thresholds are not measured on a bench: [MOVE SERVO](docs/HitecMove.md).
+thresholds are not measured on a bench: [MOVE SERVO](docs/HitecMove.md). FIND STOP inside
+the same loop (the search from the neutral outward to a bind, the end point into the draft,
+nothing written) is host-tested against the same model with a horn held at a block
+(`test_hitec_find`, `test_hitec_panel_find`).
 
 ## The tree
 
@@ -1225,7 +1228,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 454 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 456 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1306,7 +1309,8 @@ The host suite is 454 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_kst_panel_limrun`, `test_kst_panel_ports`, `test_kst_panel_layout`,
 `test_kst_panel_type`, `test_hitec_wire`, `test_hitec_pio`, `test_hitec_pre`,
 `test_hitec_reg`, `test_hitec_reg_plan`, `test_hitec_session`, `test_hitec_session_write`,
-`test_hitec_session_move`, `test_hitec_live`, `test_hitec_move`, `test_hitec_port`,
+`test_hitec_session_move`, `test_hitec_live`, `test_hitec_move`, `test_hitec_find`,
+`test_hitec_port`,
 `test_hitec_port_stop`,
 `test_hitec_port_hold`, `test_hitec_port_cut`, `test_hitec_port_rx`, `test_hitec_link`,
 `test_hitec_link_loss`, `test_hitec_link_run`, `test_hitec_prog`, `test_hitec_prog_safe`,
@@ -1327,7 +1331,7 @@ The host suite is 454 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_i2c_txq_wire`, `test_sense_txq`, `test_sense_txq_svc`, `test_fm_name`, `test_png_enc`,
 `test_shot_file`, `test_shot`, `test_shot_popup`, `test_wall_clock`, `test_witmotion`,
 `test_servo_angle`, `test_servo_source_angle`, `test_hitec_prog_run` and
-`test_hitec_panel_run`, `test_hitec_panel_move`, `test_servo_rudder`,
+`test_hitec_panel_run`, `test_hitec_panel_move`, `test_hitec_panel_find`, `test_servo_rudder`,
 `test_servo_rudder_panel`,
 `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`, `test_imu`,
 `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
@@ -1531,6 +1535,14 @@ register changed during the loop, a start outside the reach at 51 and 50 counts,
 with the hold's consent, and every refusal with nothing sent. `test_hitec_panel_move` runs
 its row, page, hint, `-`/`+` keys with their repeat at 0.40s and 1.0s, the keypad, the live
 lines naming the port and pin the loop drives, and every way off on the overlay.
+`test_hitec_find` runs FIND STOP on each side to a block (the stop within 37 counts of it, the
+end point 75 counts inside, nothing written or saved), the step of 37 counts every 2 passes,
+the reach's edge with no block, the 40s cap counted from the request, a stop too close to the
+neutral, the operator's end before and during the search, the refusals, no edit while it
+runs, a bind on the way to the neutral, MOVE OFF, ABORT and STOP during the search.
+`test_hitec_panel_find` runs its row in DIRECTION's place, its keys of 48px and more, the tap
+that starts and the tap that ends it, the note, each end's line in both languages and a tab
+change during the search.
 
 `hitec_headers_cxx` calls the module through its 6 headers from C++11. `test_i2c_txq`,
 `test_i2c_txq_calls` and `test_i2c_txq_wire` run the core of `protocols/i2c_txq/` over a
@@ -1756,8 +1768,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 854 committed screenshots to the current render,
-427 in English and the same 427 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` holds 858 committed screenshots to the current render,
+429 in English and the same 429 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

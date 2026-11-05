@@ -72,6 +72,9 @@ const hpn_row_t hpn_rows[] = {
       TX_HP_DIRECTION, NULL },
     /* MOVE SERVO: the horn follows the position edited (hitec_move.h). */
     { HITEC_PANEL_TRAVEL, 4, 0, 1, K_ACT, A_MOVE, S_D, TX_HP_MOVE, NULL },
+    /* FIND STOP: LEFT END and RIGHT END keys in DIRECTION's place while
+     * MOVE SERVO's loop runs, which holds DIRECTION at CW. */
+    { HITEC_PANEL_TRAVEL, 3, 0, 1, K_ACT, A_FIND, S_D, TX_HP_FIND, NULL },
     { HITEC_PANEL_TRAVEL, 0, 0, 1, K_SHOW, HITEC_P_C_CENTRE, S_C,
       TX_HP_CENTRE, NULL },
     { HITEC_PANEL_TRAVEL, 1, 0, 1, K_SHOW, HITEC_P_C_LEFT_END, S_C,
@@ -146,6 +149,12 @@ bool hpn_row_shown(const hpn_row_t *r)
     if (r->kind == K_ACT && (r->what == A_SERIES || r->what == A_FILES)) {
         return (r->what == A_FILES) == hp.prog.owned;
     }
+    if ((r->kind == K_ACT && r->what == A_FIND)
+        || (r->kind == K_SHOW && r->what == (uint8_t)HITEC_P_D_DIRECTION)) {
+        /* One of the two: FIND STOP while the loop runs. */
+        return (r->kind == K_ACT)
+               == (hitec_prog_move_phase(&hp.prog) != HITEC_MOVE_OFF);
+    }
     if (r->kind == K_SHOW && r->what < (uint8_t)HITEC_P_COUNT) {
         return hitec_param(hitec_prog_layout(&hp.prog), r->what) != NULL;
     }
@@ -206,7 +215,8 @@ gfx_rect_t hpn_value_rect(const hpn_row_t *r)
 {
     const gfx_rect_t rr = hpn_row_rect(r);
     const int w = r->kind == K_ACT && r->what == A_WRITE ? HP_WRITE_W
-                : r->wide != 0u && r->kind == K_SHOW     ? HP_WIDE_W
+                : (r->wide != 0u && r->kind == K_SHOW)
+                      || (r->kind == K_ACT && r->what == A_FIND) ? HP_WIDE_W
                                                          : HP_VAL_W;
 
     if (hpn_stepped(r)) {
@@ -529,6 +539,7 @@ static uint32_t signature(void)
         p->bk_no_file, p->have_bk, p->files_seq, hitec_prog_card_busy(p),
         p->load_pend, p->mv.phase, p->mv.off, p->mv.follow, p->mv.pos,
         p->mv.has_pos, p->f.has_angle ? p->f.angle : 0xFFFFu,
+        (uint32_t)hitec_prog_find_side(p), p->mv.find_go, p->mv.fs.p,
     };
     uint32_t sig = 2166136261u;
 

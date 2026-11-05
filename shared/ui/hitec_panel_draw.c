@@ -383,6 +383,10 @@ static void draw_row(gfx_canvas_t *c, int i)
                  HP_FONT, ui_theme_color(follows ? UI_C_ACCENT
                                                  : UI_C_TEXT_DIM), 1);
     }
+    if (r->kind == K_ACT && r->what == A_FIND) {
+        hpn_find_draw(c, r, i);
+        return;
+    }
     hpn_value_text(r, v, sizeof(v), &warn);
     if (r->kind == K_ACT) {
         gfx_color_t fill = ui_theme_color(UI_C_PANEL_SUNK);

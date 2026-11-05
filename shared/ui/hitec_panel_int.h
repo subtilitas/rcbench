@@ -81,7 +81,7 @@ enum { K_ACT = 0, K_SHOW };
 
 /** @brief The actions of the SERVO tab's rows. */
 enum { A_PORT = 0, A_SERIES, A_READ, A_MORE, A_CLEAR, A_ENABLE, A_RESTORE,
-       A_WRITE, A_FILES, A_MOVE };
+       A_WRITE, A_FILES, A_MOVE, A_FIND };
 
 /** @brief The series a row is for. */
 enum { S_D = 1, S_C = 2, S_ANY = 3 };
@@ -100,7 +100,7 @@ typedef struct {
 } hpn_row_t;
 
 /** @brief The rows' count. */
-#define HP_ROW_COUNT 45
+#define HP_ROW_COUNT 46
 /** @brief The rows, in hitec_panel.c. */
 extern const hpn_row_t hpn_rows[HP_ROW_COUNT];
 
@@ -148,6 +148,8 @@ typedef struct {
     uint8_t      ed_id;         /**< the hitec_param_t a value editor is
                                      for                                  */
     float        held_s;        /**< how long a -/+ key is held, s        */
+    bool         find_right;    /**< the press on FIND STOP is on its
+                                     right key                            */
 
     struct {
         bool open;              /**< the list shows                       */
@@ -596,6 +598,34 @@ int hpn_move_lines(const hitec_prog_msg_t *m,
  * @param dt_s the frame's time, s
  */
 void hpn_step_tick(float dt_s);
+/**
+ * @brief A key of the FIND STOP row: the two halves of its value.
+ * @param r     the row
+ * @param right true for RIGHT END's
+ * @return the key's rectangle
+ */
+gfx_rect_t hpn_find_rect(const hpn_row_t *r, bool right);
+/**
+ * @brief Whether FIND STOP's key of one side takes a tap: MOVE SERVO's
+ *        passes run, and no search runs on the other side.
+ * @param right true for RIGHT END's
+ * @return true when it does
+ */
+bool hpn_find_live(bool right);
+/**
+ * @brief Draws the FIND STOP row's keys, LEFT END and RIGHT END; the side
+ *        that searches in the warning colour.
+ * @param c the canvas
+ * @param r the row
+ * @param i its index in hpn_rows, for the key pressed
+ */
+void hpn_find_draw(gfx_canvas_t *c, const hpn_row_t *r, int i);
+/**
+ * @brief The tap on a FIND STOP key: the search on that side, or its end
+ *        where it runs.
+ * @param right true for RIGHT END's
+ */
+void hpn_find_act(bool right);
 
 /* hitec_panel_touch.c */
 

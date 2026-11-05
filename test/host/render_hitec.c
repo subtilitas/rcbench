@@ -560,7 +560,8 @@ static bool files_view(const char *v)
  * @brief The views of MOVE SERVO on TRAVEL, from a servo read whose horn
  *        follows its target: the page, the loop on with LEFT END stepped
  *        once, LEFT END beyond the reach, a horn held at 6000 after the
- *        end, and the refusal with no PD mini.
+ *        end, the refusal with no PD mini, and FIND STOP on the left to a
+ *        block at 4840 searching and found.
  * @param v the view's name past "servo-hitec"
  * @return false for a view of another kind
  */
@@ -584,6 +585,19 @@ static bool move_view(const char *v)
     }
     if (strcmp(v, "-move-blocked") == 0) {
         g_drv.d_block_lo = 6000u;
+    }
+    if (strcmp(v, "-move-find") == 0 || strcmp(v, "-move-found") == 0) {
+        g_drv.d_block_lo = 4840u;
+        htap(hitec_panel_find_rect(false));
+        for (unsigned i = 0; i < 60000u && strcmp(v, "-move-found") == 0
+                             && hitec_prog_message(p)->id
+                                    != HITEC_PROG_MSG_FIND_FOUND_L;
+             ++i) {
+            pms();
+        }
+        prun(strcmp(v, "-move-find") == 0 ? 6000u : 3000u);
+        ui_router_tick(0.02f);
+        return true;
     }
     htap(hitec_panel_step_rect(HITEC_PANEL_TRAVEL, 1, false));
     if (strcmp(v, "-move-reach") == 0) {

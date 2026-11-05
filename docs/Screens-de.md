@@ -2074,6 +2074,15 @@ Endlage. Ein Tippen auf EIN, ein Wechsel der Registerkarte, SCHLIESSEN und
 das Home-Tag schalten es aus; die Taste zeigt WARTEN, bis das Servo neu
 gestartet ist.
 
+Solange die Schleife läuft, steht ANSCHLAG SUCHEN in der Zeile von
+DREHRICHTUNG: zwei Tasten mit 126 x 48px, ENDE LINKS und ENDE RECHTS. Ein
+Tippen startet die Suche auf dieser Seite, die Taste wird in der
+Warnfarbe gezeichnet, und ein zweites Tippen beendet sie. Der Hinweis
+zeigt
+`ANSCHLAG SUCHEN Richtung ENDE LINKS: 37 Zählwerte alle 2 Durchläufe ab NEUTRAL, höchstens 40s. Tippe erneut zum Anhalten.`
+Ein gefundener Anschlag setzt diese Endlage im Entwurf:
+`Anschlag bei 4840. ENDE LINKS in den Änderungen auf 4915 gesetzt.`
+
 ![Die Hitec-Programmierung, der Tester hält den Port](img/de/servo-hitec.png)
 ![Ein D485HW gelesen](img/de/servo-hitec-read.png)
 ![Ein Port, den eine andere Sitzung hält](img/de/servo-hitec-other.png)
@@ -2082,6 +2091,8 @@ gestartet ist.
 ![ZURÜCKSPIELEN des Backups der Sitzung](img/de/servo-hitec-restore-page.png)
 ![Die Seite SERVO BEWEGEN](img/de/servo-hitec-move.png)
 ![SERVO BEWEGEN an, ENDE LINKS verfolgt](img/de/servo-hitec-move-on.png)
+![ANSCHLAG SUCHEN links bei der Suche](img/de/servo-hitec-move-find.png)
+![Ein Anschlag links gefunden](img/de/servo-hitec-move-found.png)
 
 ### Einstellungen
 

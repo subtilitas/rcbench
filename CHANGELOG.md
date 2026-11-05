@@ -22,6 +22,12 @@ history is in git.
   to SAFE at the bench, a lost link, the supply off and a failed read end
   it at once with every output off. The thresholds and the target-to-pulse
   model are not measured.
+- FIND STOP, in DIRECTION's row while MOVE SERVO runs, searches for the
+  mechanical stop of one side: the horn goes to NEUTRAL, then 37 counts
+  outward every 2 passes up to the reach's edge, for 40s at most. A bind
+  sets LEFT END or RIGHT END in the draft 75 counts inside the stop;
+  nothing is written. The search's step, cap and the stop found are not
+  measured.
 
 ### Fixed
 

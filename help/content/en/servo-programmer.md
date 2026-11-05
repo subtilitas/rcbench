@@ -237,6 +237,18 @@ MOVE SERVO on the Hitec programmer's TRAVEL tab moves a D series servo's horn to
 - A tap on ON, a tab change, CLOSE or the home tag ends it: target 3000, a restart of the servo, and a read held against the start, about 2.6s in the host model. `MOVE SERVO is OFF. The stored values read back unchanged.`
 - STOP, a switch to SAFE at the bench, a lost link, the supply going off and a failed read end it at once with every output off.
 
+### FIND STOP
+
+While MOVE SERVO is on, FIND STOP takes DIRECTION's row. It searches for the mechanical stop of one side and sets that end in the draft; it writes nothing.
+
+![FIND STOP searching on the left](view:servo-hitec-move-find)
+![A stop found on the left](view:servo-hitec-move-found)
+
+- Tap LEFT END or RIGHT END. The horn goes to NEUTRAL, then 0.5° outward every 2 passes, up to the edge of the reach.
+- A bind sets that end 1.0° inside the stop, marked `*`: `Stop at 4840. LEFT END set to 4915 in the edits.` The horn then follows that end.
+- No bind up to the edge, 40s passed, or a second tap on the key: the edits stay as they were.
+- WRITE n VALUES after MOVE OFF writes the end found.
+
 The thresholds are chosen, not measured with a horn against a block. [MOVE SERVO on the Hitec programmer](https://github.com/subtilitas/rcbench/wiki/HitecMove) holds every message and limit.
 
 ## Related pages
