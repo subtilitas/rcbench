@@ -145,7 +145,8 @@ static void draw_card(gfx_canvas_t *c)
 }
 
 /**
- * @brief A card line's look as one number: its text, face and colour.
+ * @brief A card line's look as one number: its text and colour.  Its box
+ *        and face are the line's own.
  * @param l The line.
  * @return The number.
  */
@@ -155,8 +156,7 @@ static uint32_t line_key(const card_line_t *l)
     for (const char *t = l->text; *t != '\0'; ++t) {
         h = (h ^ (uint8_t)*t) * 16777619u;
     }
-    h = (h ^ (uint32_t)l->ink) * 16777619u;
-    return (h ^ (uint32_t)(l->face == UI_FONT_HEAD)) * 16777619u;
+    return (h ^ (uint32_t)l->ink) * 16777619u;
 }
 
 /**

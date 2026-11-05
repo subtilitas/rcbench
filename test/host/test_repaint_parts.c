@@ -68,7 +68,8 @@ static uint64_t picture_hash(const gfx_color_t *px)
 
 /** @brief The IMU's view of frame @p i: X 0.1° further every frame but
  *         every fifth, which brings the frame's time alone; ZERO taken at
- *         frame 40, the reading gone at frames 60 to 64. */
+ *         frame 40, the battery lower from frame 50, the reading gone at
+ *         frames 60 to 64. */
 static imu_view_t imu_view(int i)
 {
     imu_view_t v;
@@ -84,7 +85,7 @@ static imu_view_t imu_view(int i)
     v.r.angle[2] = 87.2f;
     v.r.zeroed = i >= 40;
     v.r.rate_dhz = (uint16_t)(500u + (unsigned)(i / 25) * 10u);
-    v.r.battery_v = 3.95f;
+    v.r.battery_v = (i < 50) ? 3.95f : 3.91f;
     v.r.temp_c = NAN;
     v.r.frames = 100u + 3u * (uint32_t)i;
     return v;
@@ -134,10 +135,13 @@ static void touch(touch_event_type_t type, int x, int y)
     ui_router_event(&e);
 }
 
+/** @brief The last frame RUN_IMU hands a view in. */
+#define IMU_LAST 80
+
 /** @brief Frame @p i's input of @p run. */
 static void feed(run_t run, int i)
 {
-    if (run == RUN_IMU) {
+    if (run == RUN_IMU && i <= IMU_LAST) {
         const imu_view_t v = imu_view(i);
         imu_screen_set(&v);
     } else if (run == RUN_SUPPLY) {
@@ -247,13 +251,34 @@ static bool same_as_whole(run_t run, int upto, double share, int *parts)
 
 /* ------------------------------------------------------------ the frames */
 
-/* A new angle repaints its line; the frame's time alone repaints nothing;
- * ZERO taken and the reading gone change the rows and repaint whole. */
+/* A new angle repaints its line, and the battery's change its own, two
+ * lines at frame 49; the frame's time alone repaints nothing;
+ * ZERO taken and the reading gone change the rows and repaint whole.  Once
+ * the views stop, nothing repaints and RATE's age stands, as before a
+ * reading came: compared up to the frame after the last view, and nothing
+ * drawn after it.  Every card line is drawn in its box. */
 TEST_CASE(a_new_imu_reading_repaints_its_lines_as_the_whole_frame)
 {
+    static uint64_t hash[FRAMES];
+    static unsigned long work[FRAMES];
     int parts = 0;
-    CHECK(same_as_whole(RUN_IMU, FRAMES, 0.1, &parts));
+    CHECK(same_as_whole(RUN_IMU, IMU_LAST + 1, 0.15, &parts));
     CHECK(parts > FRAMES / 2);
+    draw_run(RUN_IMU, false, hash, work);
+    for (int i = IMU_LAST + 1; i < FRAMES; ++i) {
+        CHECK_EQ(work[i], 0ul);
+    }
+    for (int k = 0; k < 9; ++k) {
+        const gfx_rect_t r = imu_screen_line_rect(k);
+        const gfx_color_t *px = fb[0] + (size_t)(UI_BAND_H + r.y) * W + r.x;
+        int inked = 0;
+        for (int y = 0; y < r.h; ++y) {
+            for (int x = 0; x < r.w; ++x) {
+                inked += px[(size_t)y * W + x] != px[0];
+            }
+        }
+        CHECK(inked > 20);
+    }
 }
 
 /* The hold's fill repaints the button, and the reading's age on RATE as
