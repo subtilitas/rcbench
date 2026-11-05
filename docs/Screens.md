@@ -1467,7 +1467,7 @@ COMMANDED retain the last driven position, or PULSE CENTRE after restart.
 Changing a pulse-width setting while SAFE changes the microseconds shown
 for that angle; TRAVEL does not clamp the angle.
 
-The SAFE-column behavior also applies as soon as the screen requests
+The SAFE-column behaviour also applies as soon as the screen requests
 DISARM, by a tap or by leaving, or STOP is pressed while ARMED, before the
 bench's SAFE report arrives. A sweep, pause, held position or automatic
 test ends when that request is made.
@@ -1492,7 +1492,7 @@ follows, and the horn is drawn moving there at SPEED. Any drag ends.
 Press the dial to command a position again. The next knob turn starts
 from rest: a 1% turn with STANDARD PWM requests 1510us.
 
-The same behavior applies to release at the end of an automatic test or
+The same behaviour applies to release at the end of an automatic test or
 a release sent after changing type or pulse width while resting. Only
 one command waits per frame. If a position and RELEASE occur in the same
 frame, the later command is sent and shown. A knob turn is discarded in
@@ -4748,7 +4748,7 @@ across a third of its travel from -travel to +travel.
   unacknowledged probe to 0x06 every 100ms. In the host tests' model of the
   bus that changes nothing else. On the panel it is not measured: 0x00 to
   0x07 have not been scanned on this board.
-- The knob's direction, noise and behavior without a magnet have not been
+- The knob's direction, noise and behaviour without a magnet have not been
   measured on hardware.
 
 ### SENSORS: the split pane
@@ -6604,9 +6604,9 @@ answers nothing while it is stopped: on the bring-up module a save that
 erased and programmed inside one window measured 19,178us, against a CAN
 frame of about 130us and two frames of buffer in the controller. The figure is one
 measurement: 1 sample, taken on the bring-up module, with the flash part not
-yet identified. The erase and the page program have not been timed apart from
-each other. The window must be checked against the flash part's datasheet maximum
-once the part is identified. The panel sends one request
+identified. The erase and the page program have not been timed apart from
+each other. The window is not checked against the flash part's datasheet maximum
+(part unidentified). The panel sends one request
 frame per exchange and waits for its answer before it sends the next, so at
 most one request frame waits in the controller's two buffers. A window delays
 that request by up to its length, about 19ms against the panel's 1000ms wait,
