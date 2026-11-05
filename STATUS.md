@@ -35,10 +35,10 @@ output signals.
 | UI, touch, screens, settings, SD card | yes | |
 | Stop | drives the heartbeat line; sends the STOP command | honours the line; times out the link |
 | Servo outputs, PPM (pulse-position modulation), DShot, bidirectional DShot | | yes |
-| Receiver buses: S.BUS, iBUS, SUMD, CRSF, EX Bus, SRXL2 | | yes |
+| Receiver buses: S.BUS, iBUS, SUMD, CRSF, EX Bus, SRXL2 (S.BUS decoded; the rest not started) | | yes |
 | One-wire programming | | yes |
 | Current, voltage, cells, rpm (revolutions per minute), temperature | | yes |
-| Accelerometer and index pulse, one timebase | | yes |
+| Accelerometer and index pulse, one timebase (sensors not fitted) | | yes |
 | Balancing arithmetic, plots, verdicts | yes | |
 | Power path, current limiting, protection | | yes |
 | CAN | TWAI, the ESP32-P4's CAN controller | XL2515 over SPI (Serial Peripheral Interface) |
@@ -369,7 +369,8 @@ and every frame over a simulated bench (`ui_band_key()`, `test_frame_work`).
 
 Built and tested on the host (`shared/ui/ui_help.c`, the router's guide in `ui_router.c`;
 `test_help_router`, `test_help_pages`): "?" in the band opens numbered marks and a dock with
-up to 5 controls a page, 3 rows each. The menu has 3 pages; the other screens have none yet.
+up to 5 controls a page, 3 rows each. The menu has 4 pages and SERVO's RUDDER view 1 while
+it is shown; the other screens have none.
 PREV and NEXT stand in the band, in the home tag's place, the same on every page.
 
 ### Screenshot
@@ -712,7 +713,7 @@ boot, saved once the bank is idle and the bus quiet.
 
 A save is one program of two pages; a sector erase falls to one per eight saves and is taken
 ahead of the save that needs it, or at boot. The placement rules are host-tested in
-`test_outstore`; Eight saves of the single-sector store this one replaces printed an
+`test_outstore`. Eight saves of the single-sector store printed an
 erase-and-program window of 19,174 to 19,186us. Every erase and program runs through
 `flash_safe_execute()`, which parks core 1 in RAM for the window; a window core 1 does not
 stop for within 10ms writes nothing, prints `window refused` and is tried again 1000ms on. A
@@ -1307,7 +1308,7 @@ The host suite is 453 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_hitec_link_loss`, `test_hitec_link_run`, `test_hitec_prog`, `test_hitec_prog_safe`,
 `test_hitec_prog_codes`, `test_hitec_prog_write`, `test_hitec_prog_file`,
 `test_hitec_prog_backup`, `test_hitec_prog_chain`, `test_hitec_prog_reread`,
-`test_hitec_prog_reread`, `test_hitec_card`, `test_hitec_card_run`, `test_servo_store`,
+`test_hitec_card`, `test_hitec_card_run`, `test_servo_store`,
 `test_hitec_panel`, `test_hitec_panel_states`, `test_hitec_panel_write`,
 `test_hitec_panel_file`, `test_page_console`, `test_kst_card`, `test_prog_link`,
 `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`,
@@ -2157,7 +2158,7 @@ the panel LINK_HOST_TIMEOUT_MS (1000ms) of waiting, and 1000ms of silence latche
 
 The store reduces erase frequency, as described above. A flash window can still exceed the
 260us held by the two buffers. The recorded 19ms window combined an erase and a page program
-in the earlier store implementation. Neither operation was measured separately. The program
+in the single-sector store. Neither operation was measured separately. The program
 is the window every save still pays, and 256 bytes against the erase's 4,096 puts it one to
 two orders of magnitude below 19ms on serial NOR flash, or roughly 200 to 2,000us against a
 260us budget.
@@ -2437,9 +2438,7 @@ core that does not draw. Nothing exercises it deliberately: its files, `main.c`,
 `panel_link.c`, `panel_poll.c`, `panel_services.c`, `panel_supply.c`, `panel_arm.c`,
 `panel_art.c` and `panel_update.c` (the IOmcu's update), are not in the host suite. The
 `runlog` task beside it (`panel_log.c`), which owns every write to the card, is in the same
-position. A multi-agent review found six defects in it, including a heartbeat that stopped
-for up to 1000ms on an unanswered poll and a splash tap that latched STOP; those are fixed,
-and the rules it drives are in `shared/safety/arming.c` under `test_arming`, the link-loss
+position. The rules it drives are in `shared/safety/arming.c` under `test_arming`, the link-loss
 stop and the wait for the far end's word on the heartbeat included.
 
 **Next evidence or work:** a session with both boards: press ARM, drag the throttle while the screen is busy, press
