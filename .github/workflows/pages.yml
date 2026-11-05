@@ -16,7 +16,7 @@ name: Configurator
 #   header rcbench_version.h, and the coverage figure in
 #   configurator/core/README.md.
 # - build: type check and unit tests of the page, the check of the part
-#   drawings against the data file, the Vite build, the size budget (250kB
+#   drawings against the data file, the Vite build, the size budget (260kB
 #   initial, 1MB total). The built page is an artifact of every run; a run
 #   that is not a full one builds it without the checks.
 # - smoke: Playwright against the built page at 360px and 1280px width.

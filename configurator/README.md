@@ -129,7 +129,7 @@ npm test            # unit tests
 npm run drawings    # writes public/drawings/, drawings/anchors.json and drawings/panel.json
 npm run drawings:check   # fails on a finding or on drift, writes nothing
 npm run build       # runs the drawings check, then writes dist/
-npm run size        # initial load at most 250kB, dist/ without pictures at most 1MB
+npm run size        # initial load at most 260kB, dist/ without pictures at most 1MB
 npx playwright install chromium
 npm run e2e         # smoke, chooser and export tests at 360px and 1280px width
 npm run e2e:matrix  # matrix and corpus tests

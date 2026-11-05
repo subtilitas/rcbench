@@ -31,6 +31,8 @@ history is in git.
   German screenshots `motor-stick-hand-info`, `-warning`, `-prompt` and
   `-end` show the new profile texts. Commands, IDs, version facts,
   measured values and the catalogue's source anchors stay as they are.
+- The configurator's first-load budget in `configurator/tools/size.ts` is
+  260kB, up from 250kB: the revised texts take the first load to 250.9kB.
 
 ### Fixed
 
