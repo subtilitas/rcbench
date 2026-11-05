@@ -519,7 +519,6 @@ firmware/panel/main/main.c: warning: Member s_throttle_hundredths (variable) of 
 firmware/panel/main/main.c: warning: Member s_throttle_ramp (variable) of file main.c is not documented.
 firmware/panel/main/main.c: warning: Member s_tq_published (variable) of file main.c is not documented.
 firmware/panel/main/main.c: warning: Member servo_ctx_alert(void *ctx, servo_link_alert_t a) (function) of file main.c is not documented.
-firmware/panel/main/main.c: warning: Member servo_ctx_arm_surfaces(void *ctx) (function) of file main.c is not documented.
 firmware/panel/main/main.c: warning: Member servo_ctx_armed(void *ctx) (function) of file main.c is not documented.
 firmware/panel/main/main.c: warning: Member servo_ctx_disarm(void *ctx, bool link_up) (function) of file main.c is not documented.
 firmware/panel/main/main.c: warning: Member servo_ctx_stop_count(void *ctx) (function) of file main.c is not documented.
@@ -3563,8 +3562,6 @@ shared/ui/include/ui_theme.h: warning: Member ui_seg_hero(void) (function) of fi
 shared/ui/include/ui_theme.h: warning: Member ui_theme_color(ui_color_id_t id) (function) of file ui_theme.h is not documented.
 shared/ui/include/ui_theme.h: warning: Member ui_theme_id_t (enumeration) of file ui_theme.h is not documented.
 shared/ui/include/ui_theme.h: warning: parameters of member ui_theme_set are not documented
-shared/ui/include/ui_value_gate.h: file has no @file block
-shared/ui/include/ui_value_gate.h: warning: Compound ui_value_gate_t is not documented.
 shared/ui/include/ui_widgets.h: warning: Member UI_HOLD_MAX_CREDIT_S (macro definition) of file ui_widgets.h is not documented.
 shared/ui/include/ui_widgets.h: warning: Member UI_HOLD_S (macro definition) of file ui_widgets.h is not documented.
 shared/ui/include/ui_widgets.h: warning: Member ui_choice_face(gfx_canvas_t *c, gfx_rect_t r, const char *text, bool pressed, bool open) (function) of file ui_widgets.h is not documented.

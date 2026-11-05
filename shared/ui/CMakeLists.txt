@@ -27,6 +27,7 @@ set(SRCS
     ui_router.c
     ui_help.c
     ui_alert_slot.c
+    ui_value_ask.c
     ui_text.c
     splash_screen.c
     overview_screen.c

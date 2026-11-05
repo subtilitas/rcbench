@@ -73,7 +73,7 @@ static const settings_store_t k_store = { mem_load, mem_save, NULL, NULL };
 
 static motor_cmd_t took(void)
 {
-    motor_cmd_t c = { MOTOR_CMD_NONE, 0.0f };
+    motor_cmd_t c = { MOTOR_CMD_NONE, 0.0f, 0u };
     (void)motor_screen_poll_cmd(&c);
     return c;
 }

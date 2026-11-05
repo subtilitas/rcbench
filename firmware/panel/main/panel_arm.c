@@ -597,9 +597,10 @@ static void apply_motor_cmd(const motor_cmd_t *mc, bool link_up,
          */
         /* The throttle's outputs, and no other: a servo bound beside the
          * motor stays without a pulse.  Armed for the surfaces, the bench
-         * disarms first (arming_request_arm_roles()). */
-        arming_request_arm_roles(&s_arm, now_ms(),
-                                 OUT_ROLE_BIT(OUT_ROLE_THROTTLE));
+         * disarms first (arming_request_arm_roles()).  The screen's
+         * stamp goes with it, for a refusal to name. */
+        arming_request_arm_ask(&s_arm, now_ms(),
+                               OUT_ROLE_BIT(OUT_ROLE_THROTTLE), mc->ask);
         break;
     case MOTOR_CMD_DISARM:
         (void)disarm_here(link_up);
@@ -670,10 +671,27 @@ void drain_commands(bool link_up, bench_state_t *bench)
                                     || pc.servo.kind == SERVO_CMD_CENTRE
                                     || pc.servo.kind == SERVO_CMD_SWEEP
                                     || pc.servo.kind == SERVO_CMD_HOLD));
+        /*
+         * And every ARM not taken is refused under its stamp, so the screen
+         * that asked reads SAFE again rather than ARMING (ui_value_refused()).
+         * A screen that has since been stopped, disarmed or left, or asked
+         * again, finds a stamp that is not its waiting one and changes
+         * nothing.
+         */
+        const bool arms = (pc.kind == PANEL_CMD_MOTOR
+                           && pc.motor.kind == MOTOR_CMD_ARM)
+                          || (pc.kind == PANEL_CMD_SERVO
+                              && pc.servo.kind == SERVO_CMD_ARM);
+        const uint32_t ask = !arms ? 0u
+                             : (pc.kind == PANEL_CMD_MOTOR) ? pc.motor.ask
+                                                            : pc.servo.ask;
         if (drives
             && (pc.stops != arming_stop_count(&s_arm)
                 || pc.lets_go != atomic_load(&s_lets_go)
                 || pc.resets != atomic_load(&s_stop_resets))) {
+            if (arms) {
+                arming_refuse_ask(&s_arm, ask);
+            }
             continue;
         }
         /*
@@ -687,26 +705,25 @@ void drain_commands(bool link_up, bench_state_t *bench)
          * it had not yet seen (arm_watch_take_ok()).  The operator repeats
          * the hold.
          */
-        const bool arms = (pc.kind == PANEL_CMD_MOTOR
-                           && pc.motor.kind == MOTOR_CMD_ARM)
-                          || (pc.kind == PANEL_CMD_SERVO
-                              && pc.servo.kind == SERVO_CMD_ARM);
         if (arms && arming_held(&s_arm)) {
             /* A pressed STOP stands: its reset releases it, not an arm,
-             * and takes this alert back. */
+             * and takes this alert back.  The latch stays as it is. */
             s_stop_alert = control_alert_kept(TR(ALERT_STOP_HELD));
+            arming_refuse_ask(&s_arm, ask);
             continue;
         }
         if (arms && s_prog_taken) {
             /* Programming a servo and an armed bench are exclusive,
              * whichever screen asks. */
             control_alert(esc_taken() ? TR(ALERT_ARM_ESC) : TR(ALERT_ARM_PROG));
+            arming_refuse_ask(&s_arm, ask);
             continue;
         }
         if (arms) {
             control_pump();
             if (!arm_watch_take_ok(pc.loss_gen, atomic_load(&s_loss_gen),
                                    s_lost_notice_seq, pc.consumed_seq)) {
+                arming_refuse_ask(&s_arm, ask);
                 continue;
             }
             s_arm_take_gen = pc.loss_gen;

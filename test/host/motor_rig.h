@@ -124,7 +124,7 @@ static inline gfx_color_t arm_px(void)
 /** @brief Takes every queued motor command and returns the last; MOTOR_CMD_NONE when none was queued. */
 static inline motor_cmd_t last_cmd(void)
 {
-    motor_cmd_t c = { MOTOR_CMD_NONE, 0.0f };
+    motor_cmd_t c = { MOTOR_CMD_NONE, 0.0f, 0u };
     while (motor_screen_poll_cmd(&c)) { }
     return c;
 }

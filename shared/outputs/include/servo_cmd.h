@@ -128,6 +128,10 @@ typedef struct {
      *        acknowledgement of a start in servo_screen_sweep_started().
      */
     uint16_t         start_seq;
+    /** @brief SERVO_CMD_ARM: its stamp (ui_value_new_ask()), named back by
+     *        servo_screen_arm_refused() when the bench refuses it; 0 on
+     *        every other command. */
+    uint32_t         ask;
 } servo_cmd_t;
 
 /** @brief What became of a frame rate the panel wrote to the SERVO page. */

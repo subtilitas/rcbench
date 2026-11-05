@@ -92,10 +92,11 @@ static __attribute__((noinline)) uint32_t sl_stop_count(void)
 /**
  * @brief Ask the arming policy to arm the surfaces and the programming ports,
  *        and no motor, through the arm_surfaces callback.
+ * @param ask The ARM's stamp (servo_cmd_t.ask).
  */
-static __attribute__((noinline)) void sl_arm_surfaces(void)
+static __attribute__((noinline)) void sl_arm_surfaces(uint32_t ask)
 {
-    s_ctx->arm_surfaces(s_ctx->ctx);
+    s_ctx->arm_surfaces(s_ctx->ctx, ask);
 }
 
 /**
@@ -1187,7 +1188,7 @@ void servo_link_apply(const servo_cmd_t sv, bool link_up, uint32_t stops)
             return;
         }
         /* The surfaces and the programming ports, and no motor. */
-        sl_arm_surfaces();
+        sl_arm_surfaces(sv.ask);
         return;
     }
     if (sv.kind == SERVO_CMD_DISARM) {

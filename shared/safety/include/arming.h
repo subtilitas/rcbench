@@ -179,6 +179,20 @@ typedef struct {
     uint32_t run_start_ms;    /**< its start; any tick, 0 included; read
                                    only while in_run                      */
     uint32_t run_seconds;     /**< held after the run ends                */
+    /**
+     * @brief The screen's stamp of the arm in force or waiting, as
+     *        arming_request_arm_ask() took it; 0 for an arm asked without one.
+     */
+    uint32_t ask;
+    /**
+     * @brief The stamp of the newest ask refused: given up by
+     *        arming_refused(), at ARMING_HS_ARMED or by ARMING_ACT_GIVE_UP,
+     *        or named by arming_refuse_ask().  0 before the first, and an
+     *        ask without a stamp leaves it as it is.  A screen compares it
+     *        with its own waiting ask (ui_value_refused()); a stop is
+     *        counted in `stops` instead.
+     */
+    uint32_t refused_ask;
 } arming_t;
 
 /**
@@ -368,6 +382,44 @@ void arming_request_arm(arming_t *a, uint32_t now_ms);
 void arming_request_arm_roles(arming_t *a, uint32_t now_ms, uint8_t roles);
 
 /**
+ * @brief arming_request_arm_roles(), and the screen's stamp of the ask when
+ *        it is taken: a request ignored (touch dead, a pressed STOP standing)
+ *        leaves the stamp of the arm before it.  arming_request_arm_roles()
+ *        is this with no stamp, 0.
+ *
+ * A refusal of this arm names @p ask in arming_refused_ask().
+ *
+ * @param a Policy state.
+ * @param now_ms Current time, in milliseconds.
+ * @param roles Non-zero set of the caller's role bits; 0 is ignored.
+ * @param ask The screen's stamp of the ask; 0 for none.
+ */
+void arming_request_arm_ask(arming_t *a, uint32_t now_ms, uint8_t roles,
+                            uint32_t ask);
+
+/**
+ * @brief An ask refused before it reached the policy: a pressed STOP
+ *        standing, a programmer holding a port, an ask out of date or across
+ *        a touch loss.  Nothing else changes: no latch, no arm.  An ask
+ *        without a stamp, 0, changes nothing at all.
+ *
+ * @param a Policy state.
+ * @param ask The screen's stamp of the ask refused.
+ */
+void arming_refuse_ask(arming_t *a, uint32_t ask);
+
+/**
+ * @brief The stamp of the newest ask refused; 0 before the first.
+ *
+ * Published to the screens, which drop the ARM they still wait on under the
+ * same stamp and nothing else.
+ *
+ * @param a Policy state.
+ * @return The stamp, or 0.
+ */
+uint32_t arming_refused_ask(const arming_t *a);
+
+/**
  * @brief The roles of the arm in force or waiting: 0 before any request.
  *
  * @param a Policy state.
@@ -386,7 +438,8 @@ void arming_request_disarm(arming_t *a);
  * @brief The IOmcu refused the arm.
  *
  * The latch stays clear: a heartbeat that is running is the truth about a loop
- * that is running, and the operator can ask again.
+ * that is running, and the operator can ask again.  The arm's stamp becomes
+ * arming_refused_ask().
  *
  * @param a Policy state.
  */

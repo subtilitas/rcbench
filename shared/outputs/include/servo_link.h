@@ -67,9 +67,10 @@ typedef struct {
     /** @brief The arming policy's count of stops (arming_stop_count()). */
     uint32_t (*stop_count)(void *ctx);
     /** @brief Ask the arming policy to arm the surfaces and the programming
-     *        ports, and no motor.
+     *        ports, and no motor, for the ARM stamped @p ask
+     *        (servo_cmd_t.ask; arming_request_arm_ask()).
      */
-    void     (*arm_surfaces)(void *ctx);
+    void     (*arm_surfaces)(void *ctx, uint32_t ask);
 } servo_link_ctx_t;
 
 /**

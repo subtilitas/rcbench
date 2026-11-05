@@ -35,6 +35,17 @@ history is in git.
 - STATUS.md's open item on screens that do not name the output they drive
   lists the one case left: a programming port held after SERVO is left.
   ARM names its roles, and the programmers name their port and pin.
+- A refused ARM returns MOTOR & ESC and SERVO to SAFE at once. The screen
+  no longer stays on ARMING with TARGET, Idle pulse, Full pulse and ARM
+  locked until STOP or leaving the screen. Every refusal counts: a
+  programmer on the port, a servo release or rate not taken, the pulse
+  endpoints owed, the arm's deadline, the line never trusted, a STOP that
+  stands, and a NACK (negative acknowledgement) of CLEAR or of the arming
+  frame from the IOmcu. The band's alert still says why. Each ARM carries a
+  32-bit stamp, and a refusal reaches only the ask still waiting under its
+  stamp: one that arrives after a DISARM, after a STOP, behind a newer ARM or
+  for an ARM asked on the other screen changes nothing. A refusal moves no
+  STOP latch and arms nothing.
 
 ## 0.23.8 - 2026-11-05
 

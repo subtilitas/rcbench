@@ -145,6 +145,22 @@ void servo_screen_set_bench_armed(bool armed);
  */
 void servo_screen_cancel_arm(void);
 
+/**
+ * @brief The bench refused the ARM stamped @p ask (servo_cmd_t.ask), for
+ *        the panel's frame to pass on every frame.
+ *
+ * An ARM this screen still waits on under that stamp ends: the screen reads
+ * SAFE, ARM takes a press again and a servo programmer may take its port.
+ * A hold of ARM under way ends with it.  The band's alert, which says why,
+ * is the panel's.  Any other stamp changes nothing: an ARM answered,
+ * dropped by a DISARM, a STOP or leaving the screen, followed by a newer
+ * ARM, or asked on another screen.  Nothing is posted, and no STOP latch
+ * moves.
+ *
+ * @param ask The stamp of the ARM the bench refused last.
+ */
+void servo_screen_arm_refused(uint32_t ask);
+
 /** Commanded pulse width, for the application and for tests. */
 uint16_t servo_screen_commanded(void);
 
