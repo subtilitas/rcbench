@@ -337,6 +337,10 @@ TEST_CASE(a_serial_is_7_ascii_digits_each_read)
                                hitec_image_cell(&model()->servo,
                                                 HITEC_C_SERIAL + 6u));
     CHECK(hitec_prog_unit_told_apart(model()));
+    /* Cell 0x87, past the 7 digits, is no part of the serial. */
+    (void)hitec_image_put_cell(&model()->bk, HITEC_C_SERIAL + 7u, 'X');
+    CHECK(hitec_image_cell(&model()->servo, HITEC_C_SERIAL + 7u) != 'X');
+    CHECK(hitec_prog_unit_told_apart(model()));
     /* No backup, another series. */
     model()->have_bk = false;
     CHECK(!hitec_prog_unit_told_apart(model()));
