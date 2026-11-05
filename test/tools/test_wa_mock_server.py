@@ -354,3 +354,35 @@ def test_the_name_rule_is_the_panel_keyboards(api):
     for name in ("a b.txt", "Größe.TXT", "x" * 59):
         assert m.name_ok(name), name
     assert m.fold("aäz") == "AÄZ" and m.fold("ß") == "ß"
+
+
+def test_renaming_a_folder_keeps_what_it_holds(api):
+    """The files, folders and stamps under the folder follow its new name."""
+    s, _, _ = api.form("rename", **{"from": "USER/LOGS/OLD",
+                                    "to": "USER/LOGS/ARCHIVE", "dir": 1})
+    assert s == 200
+    tree = api.json("GET", "/__mock/tree")[2]
+    assert "USER/LOGS/ARCHIVE/OLD001.CSV" in tree["files"]
+    assert not [p for p in tree["files"] if p.startswith("USER/LOGS/OLD")]
+    assert "USER/LOGS/ARCHIVE" in tree["dirs"]
+    rows = api.json("GET", "/api/list?path=USER/LOGS/ARCHIVE")[2]["entries"]
+    assert [e["n"] for e in rows] == ["OLD001.CSV"]
+    info = api.json("GET", "/api/info?path=USER/LOGS/ARCHIVE/OLD001.CSV")[2]
+    assert info["t"] > 0
+
+
+def test_a_path_outside_ascii_is_refused_as_fm_path_plain_does(api):
+    """Umlauts pass the name rule but not a write path: 400 NAME."""
+    s, _, body = api.json("PUT", "/api/file?path=Gr%C3%B6%C3%9Fe.TXT", b"x")
+    assert (s, body["error"]) == (400, "NAME")
+    assert api.form("mkdir", path="Gr%C3%B6%C3%9Fe")[2]["error"] == "NAME"
+    assert api.json("GET", "/api/list")[2]["total"] == 3
+
+
+def test_a_scripted_busy_file_is_listed_as_busy_and_refused(api):
+    """A busy path in the reset sets b in the list and answers 423."""
+    api.reset(busy=["HELLO.TXT"])
+    rows = {e["n"]: e for e in api.json("GET", "/api/list")[2]["entries"]}
+    assert rows["HELLO.TXT"]["b"] is True and rows["BENCH"]["b"] is False
+    assert api.json("GET", "/api/file?path=HELLO.TXT")[0] == 423
+    assert api.json("PUT", "/api/file?path=HELLO.TXT", b"x")[0] == 423

@@ -219,13 +219,14 @@ def plain_ok(path: str) -> bool:
         path: A path from the root.
 
     Returns:
-        True when no name has a character FAT refuses.
+        True when no name has a character FAT refuses or one outside ASCII,
+        as fm_path_plain() holds it.
     """
     for seg in path.split("/"):
         if seg == "" or seg[0] == " " or seg[-1] in " .":
             return False
         for i, c in enumerate(seg):
-            if not " " <= c < "\x7f" and c not in "äöüÄÖÜß":
+            if not " " <= c < "\x7f":
                 return False
             if c in '"*:<>?\\|':
                 return False
@@ -355,11 +356,13 @@ class Card:
                 out.append((tail, p in self.dirs))
         return out
 
-    def listing(self, dirpath: str) -> tuple[list[dict], int]:
+    def listing(self, dirpath: str,
+                busy: frozenset[str] = frozenset()) -> tuple[list[dict], int]:
         """The listed entries of a folder in the pane's order.
 
         Args:
             dirpath: The folder.
+            busy: The paths of the files the logger writes.
 
         Returns:
             The entries as the list answer gives them, folders first and
@@ -376,7 +379,8 @@ class Card:
             ents.append({"n": name, "d": is_dir,
                          "s": 0 if is_dir else len(self.files[path]),
                          "k": kind_of(dirpath, name, is_dir),
-                         "p": place_of(dirpath, name, is_dir), "b": False})
+                         "p": place_of(dirpath, name, is_dir),
+                         "b": not is_dir and path in busy})
         ents.sort(key=rank)
         return ents, unlisted
 
@@ -403,18 +407,18 @@ class Card:
         self.mtime.pop(path, None)
 
     def move(self, src: str, dst: str) -> None:
-        """Move a file or an empty folder.
+        """Rename or move a file, or a folder with everything in it.
 
         Args:
             src: The entry's path as the card spells it.
             dst: Where it goes.
         """
-        if src in self.dirs:
-            self.dirs.discard(src)
-            self.dirs.add(dst)
-        else:
-            self.files[dst] = self.files.pop(src)
-        self.mtime[dst] = self.mtime.pop(src, time.time())
+        for table in (self.files, self.mtime):
+            for old in [k for k in table if within(src, k)]:
+                table[dst + old[len(src):]] = table.pop(old)
+        for old in [d for d in self.dirs if within(src, d)]:
+            self.dirs.discard(old)
+            self.dirs.add(dst + old[len(src):])
 
 
 def rank(e: dict) -> tuple:
@@ -997,7 +1001,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         found = self.st.card.find(path) if path else ("", True)
         if not found or not found[1]:
             raise Refused("NOT_FOUND")
-        ents, unlisted = self.st.card.listing(found[0])
+        ents, unlisted = self.st.card.listing(found[0],
+                                              frozenset(self.st.busy))
         ranks = [rank(e) for e in ents]
         total = len(ents)
 
