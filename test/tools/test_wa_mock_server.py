@@ -402,6 +402,15 @@ def test_a_destination_the_panel_protects_is_refused_for_put_rename_move(api):
     assert (s, body["error"]) == (403, "LOCKED")
 
 
+def test_a_folder_named_as_a_protected_record_is_refused(api):
+    """MKDIR of KST.NEW or RCBENCH.OLD is LOCKED or FIXED (fm_job_mkdir())."""
+    s, _, body = api.form("mkdir", path="BENCH/KST/CONF/KST.NEW")
+    assert (s, body["error"]) == (403, "LOCKED")
+    s, _, body = api.form("mkdir", path="BENCH/RCBENCH.OLD")
+    assert (s, body["error"]) == (403, "FIXED")
+    assert api.form("mkdir", path="BENCH/FREE")[0] == 201
+
+
 def test_a_parent_named_in_other_case_is_stored_as_the_card_spells_it(api):
     """A file or folder made in user/logs lands in USER/LOGS and is listed."""
     s, _, body = api.json("PUT", "/api/file?path=user/logs/NEW.TXT", b"x")

@@ -1313,6 +1313,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.job_rules(path, True, "new")
         if not name_ok(path.rpartition("/")[2]):
             raise Refused("NAME")
+        # fm_job_mkdir() checks a folder's name as a save's: its ".NEW"
+        # fits, and neither is a record the programmers keep or the fault
+        # log (fm_target_check()).
+        self.target_rules(path, False, True)
         card = self.st.card
         path = self.canon(path)
         if card.find(path):
