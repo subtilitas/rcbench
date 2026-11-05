@@ -4,6 +4,10 @@
  *        the scan and its list, the HC-05's version and state, the
  *        calibration hold, ZERO, battery and the live angles.  Fed a view
  *        each frame; its commands are taken by the control task.
+ *
+ * The view's types name no radio: the link under the controller
+ * (imu_hc05.h) converts its devices, errors and version into them.
+ *
  * SPDX-License-Identifier: MIT
  */
 #pragma once
@@ -11,13 +15,49 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "hc05.h"
 #include "imu.h"
 #include "ui_screen.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @name Sizes of the view's texts and list, NUL included
+ *  @{ */
+#define IMU_ADDR_MAX    18u  /**< "00:0C:BF:08:19:29" + NUL */
+#define IMU_NAME_MAX    32u  /**< a device's name, 31 bytes + NUL */
+#define IMU_VERSION_MAX 24u  /**< the radio's firmware version + NUL */
+#define IMU_FOUND_MAX   8u   /**< devices a scan lists */
+/** @} */
+
+/** @name imu_dev_t.flags
+ *  @{ */
+#define IMU_DEV_UUID_18F0 0x01u  /**< advertises the 16-bit UUID 0x18F0 */
+#define IMU_DEV_ISSC      0x02u  /**< advertises the ISSC UART service */
+/** @} */
+
+/** @brief A device of a scan, whichever radio found it. */
+typedef struct {
+    char    addr[IMU_ADDR_MAX];  /**< the address as text, colons */
+    uint8_t addr_type;           /**< 0 public, 1 random; 0 for a Classic
+                                      address */
+    char    name[IMU_NAME_MAX];  /**< its name, "" when none came */
+    int16_t rssi;                /**< the received signal strength, dBm;
+                                      the HC-05's +INQ RSSI word as it came */
+    uint8_t flags;               /**< IMU_DEV_* */
+} imu_dev_t;
+
+/** @brief Why the link's last operation failed. */
+typedef enum {
+    IMU_ERR_NONE = 0,     /**< none, or ended by IMU OFF */
+    IMU_ERR_NO_AT,        /**< the HC-05 answered AT at no baud */
+    IMU_ERR_TIMEOUT,      /**< the HC-05's answer did not come */
+    IMU_ERR_REFUSED,      /**< ERROR:(code), or FAIL with code 0 */
+    IMU_ERR_INQ_REFUSED,  /**< AT+INQ answered ERROR:(1F) */
+    IMU_ERR_PAIR,         /**< AT+PAIR did not end in OK */
+    IMU_ERR_NONE_FOUND,   /**< the scan ended with no device */
+    IMU_ERR_ARG,          /**< a bad address or PIN */
+} imu_err_t;
 
 /** @brief The link's state, as the controller sees it (imu_ctl.h). */
 typedef enum {
@@ -39,12 +79,12 @@ typedef enum {
 /** @brief What the screen shows: the panel hands it over each frame. */
 typedef struct {
     imu_link_t    link;            /**< the link's state */
-    char          version[HC05_VERSION_MAX];  /**< the HC-05's, "" unknown */
-    char          bound_addr[HC05_ADDR_MAX];  /**< "" none, "*" any */
-    char          bound_name[HC05_NAME_MAX];  /**< from the scan, "" none */
+    char          version[IMU_VERSION_MAX];  /**< the radio's, "" unknown */
+    char          bound_addr[IMU_ADDR_MAX];  /**< "" none, "*" any */
+    char          bound_name[IMU_NAME_MAX];  /**< from the scan, "" none */
     uint8_t       found_n;         /**< devices of the last scan */
-    hc05_dev_t    found[HC05_FOUND_MAX];      /**< those devices */
-    hc05_err_t    err;             /**< the last operation's */
+    imu_dev_t     found[IMU_FOUND_MAX];      /**< those devices */
+    imu_err_t     err;             /**< the last operation's */
     uint8_t       err_code;        /**< its ERROR:(hh) */
     bool          inq_refused;     /**< offer CONNECT TO ANY SENSOR */
     imu_cal_t     cal;             /**< the calibration */
@@ -82,7 +122,7 @@ void imu_screen_invalidate(void);
 /** @brief A control of the screen. @param row Its index (imu_screen_int.h).
  *  @return Its rectangle in the body; empty for none. */
 gfx_rect_t imu_screen_row_rect(int row);
-/** @brief Row @p i of the found list. @param i 0 to HC05_FOUND_MAX - 1.
+/** @brief Row @p i of the found list. @param i 0 to IMU_FOUND_MAX - 1.
  *  @return Its rectangle in the body; empty past the list. */
 gfx_rect_t imu_screen_choice_rect(int i);
 /** @brief The calibration's hold. @return Its rectangle in the body. */

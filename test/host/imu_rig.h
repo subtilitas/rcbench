@@ -114,7 +114,7 @@ static void rig_tick(rig_t *r)
     rig_deliver(r);
     hc05_act_t a;
     for (int i = 0; i < 16 && imu_ctl_step(&r->c, r->t, &a); ++i) {
-        if (a.kind == HC05_ACT_SEND && !hc05_busy(&r->c.bt)) {
+        if (a.kind == HC05_ACT_SEND && !hc05_busy(&r->c.hc05.bt)) {
             if (r->nsent < RIG_SENT_MAX && a.len == WIT_CMD_LEN) {
                 memcpy(r->sent[r->nsent], a.data, WIT_CMD_LEN);
                 r->sent_at[r->nsent] = r->t;
@@ -145,7 +145,8 @@ static uint32_t rig_settle(rig_t *r, uint32_t max)
     uint32_t k = 0;
     for (; k < max; ++k) {
         rig_tick(r);
-        if (!hc05_busy(&r->c.bt) && !r->c.bt.key && !r->c.op_open) {
+        const imu_hc05_t *l = &r->c.hc05;
+        if (!hc05_busy(&l->bt) && !l->bt.key && !l->op_open) {
             break;
         }
     }

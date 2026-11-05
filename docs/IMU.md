@@ -33,7 +33,9 @@ the project's notice.
 | the HC-05's AT set-up | `protocols/hc05`, no pin driver |
 | the sensor's frames and commands | `protocols/witmotion`, no pin driver |
 | the reading: angles, zero, still time, rate, battery, age | `shared/bench/imu.c` |
-| the controller: the HC-05's operations, the sensor's commands, the link state | `shared/ui/imu_ctl.c` |
+| the sensor's side: the reading, its commands, the calibration, the gaps, the handout to SERVO; no radio | `shared/ui/imu_sensor.c` |
+| the HC-05 link: the module's operations, its devices, errors and version in the view's types | `shared/ui/imu_hc05.c` |
+| the controller: joins the link and the sensor's side, the link state, the view | `shared/ui/imu_ctl.c` |
 | the screen and SETUP's IMU entry | `shared/ui/imu_screen.c`, `shared/ui/sensors_pane.c` |
 | the UART, the KEY line and the task | `firmware/panel/main/panel_imu.c` |
 

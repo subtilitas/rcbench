@@ -25,7 +25,7 @@ static void connected(rig_t *r)
 {
     on_with_sensor(r, "98D3:31:F5A1B2");
     (void)rig_settle(r, 5000u);
-    CHECK(r->c.probed);
+    CHECK(r->c.hc05.probed);
     rig_stream(r, 100u, 20u, 1.0f, 2.0f, 3.0f);
     CHECK_EQ(imu_ctl_link(&r->c), IMU_LINK_CONNECTED);
 }
@@ -47,7 +47,7 @@ TEST_CASE(imu_on_probes_and_a_silent_hc05_is_no_module_retried_every_10s)
     /* KEY settles, AT times out at the 3 bauds, then the fence's
      * AT+STATE? waits its 2000ms. */
     CHECK(took <= HC05_KEY_SETTLE_MS + 3u * HC05_AT_MS + 2u * HC05_AT_MS);
-    CHECK_EQ(r.c.err, HC05_ERR_NO_AT);
+    CHECK_EQ(r.c.hc05.err, IMU_ERR_NO_AT);
     CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_NO_MODULE);
     const unsigned sends = r.sim.sends;
     CHECK(sends >= 3u);              /* AT at each of the three bauds */
@@ -62,7 +62,7 @@ TEST_CASE(imu_on_probes_and_a_silent_hc05_is_no_module_retried_every_10s)
     (void)rig_settle(&r, 10000u);
     rig_run(&r, IMU_PROBE_RETRY_MS + 10u);
     (void)rig_settle(&r, 10000u);
-    CHECK(r.c.probed);
+    CHECK(r.c.hc05.probed);
     CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_READY);
     imu_view_t v;
     imu_ctl_view(&r.c, &v);
@@ -75,7 +75,7 @@ TEST_CASE(imu_on_probes_and_a_silent_hc05_is_no_module_retried_every_10s)
     (void)rig_settle(&r, 10000u);
     rig_cfg(&r, true, "", 2, true);
     (void)rig_settle(&r, 10000u);
-    CHECK_EQ(r.c.err, HC05_ERR_NO_AT);
+    CHECK_EQ(r.c.hc05.err, IMU_ERR_NO_AT);
     rig_cfg(&r, false, "", 2, true);
     rig_cfg(&r, true, "", 2, true);
     const unsigned before = r.sim.sends;
@@ -104,7 +104,7 @@ TEST_CASE(a_probe_that_answers_is_ready_without_a_sensor_and_bound_with_one)
     /* Another address in SETUP: no frames from it yet. */
     rig_cfg(&r, true, "1:2:3", 2, true);
     CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_BOUND);
-    CHECK(!r.c.op_open);
+    CHECK(!r.c.hc05.op_open);
 }
 
 /* SCAN lists the devices with their names; BIND binds the one picked and
@@ -137,7 +137,7 @@ TEST_CASE(scan_lists_the_devices_and_bind_keeps_the_address_and_name)
     CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_BINDING);
     (void)rig_settle(&r, 40000u);
     imu_ctl_view(&r.c, &v);
-    CHECK_EQ(r.c.err, HC05_ERR_NONE);
+    CHECK_EQ(r.c.hc05.err, IMU_ERR_NONE);
     CHECK_EQ(r.c.bind_seq, 1u);
     CHECK_STR_EQ(v.bound_addr, "98D3:31:F5A1B2");
     CHECK_STR_EQ(v.bound_name, "HC-06");
@@ -154,7 +154,7 @@ TEST_CASE(scan_lists_the_devices_and_bind_keeps_the_address_and_name)
     r.sim.silent = true;
     CHECK(imu_ctl_command(&r.c, &scan, r.t));
     (void)rig_settle(&r, 40000u);
-    CHECK_EQ(r.c.err, HC05_ERR_NO_AT);
+    CHECK_EQ(r.c.hc05.err, IMU_ERR_NO_AT);
     CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_NO_MODULE);
     CHECK(!imu_ctl_command(&r.c, &scan, r.t));
     r.sim.silent = false;
@@ -177,20 +177,20 @@ TEST_CASE(a_refused_scan_offers_any_and_any_keeps_the_any_address)
     imu_view_t v;
     imu_ctl_view(&r.c, &v);
     CHECK(v.inq_refused);
-    CHECK_EQ(v.err, HC05_ERR_INQ_REFUSED);
+    CHECK_EQ(v.err, IMU_ERR_INQ_REFUSED);
     CHECK_EQ(v.err_code, 0x1Fu);
     CHECK_EQ(v.found_n, 0u);
     /* The next operation's start clears the last error until it ends. */
     CHECK(imu_ctl_command(&r.c, &scan, r.t));
-    CHECK_EQ(r.c.err, HC05_ERR_NONE);
-    CHECK_EQ(r.c.err_code, 0u);
+    CHECK_EQ(r.c.hc05.err, IMU_ERR_NONE);
+    CHECK_EQ(r.c.hc05.err_code, 0u);
     (void)rig_settle(&r, 40000u);
-    CHECK_EQ(r.c.err, HC05_ERR_INQ_REFUSED);
+    CHECK_EQ(r.c.hc05.err, IMU_ERR_INQ_REFUSED);
     const imu_cmd_t any = { IMU_CMD_ANY, 0u };
     CHECK(imu_ctl_command(&r.c, &any, r.t));
     (void)rig_settle(&r, 40000u);
     imu_ctl_view(&r.c, &v);
-    CHECK_EQ(v.err, HC05_ERR_NONE);
+    CHECK_EQ(v.err, IMU_ERR_NONE);
     CHECK_STR_EQ(v.bound_addr, IMU_ADDR_ANY);
     CHECK_STR_EQ(v.bound_name, "");
     CHECK_EQ(r.c.bind_seq, 1u);
@@ -198,14 +198,14 @@ TEST_CASE(a_refused_scan_offers_any_and_any_keeps_the_any_address)
     CHECK_EQ(v.link, IMU_LINK_BOUND);
     /* A scan that starts again clears the offer until it ends. */
     CHECK(imu_ctl_command(&r.c, &scan, r.t));
-    CHECK(!r.c.inq_refused);
+    CHECK(!r.c.hc05.inq_refused);
     (void)rig_settle(&r, 40000u);
-    CHECK(r.c.inq_refused);
+    CHECK(r.c.hc05.inq_refused);
     /* IMU OFF clears it too. */
     rig_cfg(&r, false, IMU_ADDR_ANY, 2, true);
     imu_ctl_view(&r.c, &v);
     CHECK(!v.inq_refused);
-    CHECK_EQ(v.err, HC05_ERR_NONE);
+    CHECK_EQ(v.err, IMU_ERR_NONE);
 }
 
 /* Outside an operation the bytes are the sensor's; inside one they are the
@@ -214,19 +214,19 @@ TEST_CASE(sensor_bytes_reach_the_reading_only_outside_an_operation)
 {
     rig_t r;
     connected(&r);
-    const uint32_t frames = r.c.m.r.frames;
+    const uint32_t frames = r.c.sensor.m.r.frames;
     const imu_cmd_t scan = { IMU_CMD_SCAN, 0u };
     CHECK(imu_ctl_command(&r.c, &scan, r.t));
     rig_stream(&r, 400u, 20u, 5.0f, 5.0f, 5.0f);
-    CHECK_EQ(r.c.m.r.frames, frames);
+    CHECK_EQ(r.c.sensor.m.r.frames, frames);
     CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_SCANNING);
     (void)rig_settle(&r, 40000u);
     rig_stream(&r, 40u, 20u, 5.0f, 5.0f, 5.0f);
-    CHECK(r.c.m.r.frames > frames);
+    CHECK(r.c.sensor.m.r.frames > frames);
     /* IMU OFF: no reading at all. */
     rig_cfg(&r, false, "98D3:31:F5A1B2", 2, true);
     rig_stream(&r, 40u, 20u, 5.0f, 5.0f, 5.0f);
-    CHECK_EQ(r.c.m.r.frames, 0u);
+    CHECK_EQ(r.c.sensor.m.r.frames, 0u);
     CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_OFF);
 }
 
@@ -308,9 +308,9 @@ TEST_CASE(calibrate_with_frames_300ms_apart_ends_failed)
     connected(&r);
     const imu_cmd_t cal = { IMU_CMD_CALIBRATE, 0u };
     CHECK(imu_ctl_command(&r.c, &cal, r.t));
-    const uint32_t g0 = r.c.gaps;
+    const uint32_t g0 = r.c.sensor.gaps;
     rig_stream(&r, 3100u, IMU_STALE_MS, 0.0f, 0.0f, 0.0f);
-    CHECK(r.c.gaps > g0);
+    CHECK(r.c.sensor.gaps > g0);
     imu_view_t v;
     imu_ctl_view(&r.c, &v);
     CHECK_EQ(v.cal, IMU_CAL_FAILED);
@@ -322,10 +322,10 @@ TEST_CASE(a_full_outbox_drops_the_command_past_its_room)
     rig_t r;
     connected(&r);
     const unsigned at = r.nsent;
-    r.c.out_n = IMU_OUTBOX - 1u;              /* 7 held: room for one */
+    r.c.sensor.out_n = IMU_OUTBOX - 1u;              /* 7 held: room for one */
     const imu_cmd_t cal = { IMU_CMD_CALIBRATE, 0u };
     CHECK(imu_ctl_command(&r.c, &cal, r.t));  /* unlock in, CALSW 1 out */
-    CHECK_EQ(r.c.out_n, IMU_OUTBOX);
+    CHECK_EQ(r.c.sensor.out_n, IMU_OUTBOX);
     rig_stream(&r, 100u * IMU_OUTBOX, 20u, 0.0f, 0.0f, 0.0f);
     CHECK_EQ(r.nsent, at + IMU_OUTBOX);
     CHECK(rig_sent_unlock(&r, at + IMU_OUTBOX - 1u));
@@ -366,8 +366,8 @@ TEST_CASE(a_rate_change_goes_to_the_sensor_once_it_is_connected)
         rig_stream(&r, 33u, 20u, 0.0f, 0.0f, 0.0f);
     }
     rig_stream(&r, 1000u, 20u, 0.0f, 0.0f, 0.0f);
-    CHECK(!r.c.algo_due);
-    CHECK_EQ(r.c.out_n, 0u);
+    CHECK(!r.c.sensor.algo_due);
+    CHECK_EQ(r.c.sensor.out_n, 0u);
     CHECK(r.nsent < RIG_SENT_MAX);
     unsigned last = RIG_SENT_MAX;
     for (unsigned i = 0; i < r.nsent; ++i) {
@@ -404,7 +404,7 @@ TEST_CASE(imu_off_aborts_the_operation_and_lowers_key)
     /* The machine fences the inquiry's late answers before KEY goes low. */
     (void)rig_settle(&r, 40000u);
     CHECK(!r.sim.key);
-    CHECK(!hc05_busy(&r.c.bt));
+    CHECK(!hc05_busy(&r.c.hc05.bt));
     CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_OFF);
     imu_view_t v;
     imu_ctl_view(&r.c, &v);
@@ -443,18 +443,18 @@ TEST_CASE(commands_are_refused_when_they_cannot_run)
     imu_ctl_view(&r.c, &v);
     CHECK(v.r.zeroed);
     CHECK(fabsf(v.r.zero[2] - 3.0f) < 0.01f);
-    CHECK_EQ(r.c.zero_gen, 1u);
+    CHECK_EQ(r.c.sensor.zero_gen, 1u);
     CHECK(imu_ctl_command(&r.c, &unzero, r.t));
     imu_ctl_view(&r.c, &v);
     CHECK(!v.r.zeroed);
-    CHECK_EQ(r.c.zero_gen, 2u);
+    CHECK_EQ(r.c.sensor.zero_gen, 2u);
     /* IMU OFF with a zero kept is a new zero too; without one it is not. */
     CHECK(imu_ctl_command(&r.c, &zero, r.t));
     rig_cfg(&r, false, "98D3:31:F5A1B2", 2, true);
-    CHECK_EQ(r.c.zero_gen, 4u);
+    CHECK_EQ(r.c.sensor.zero_gen, 4u);
     rig_cfg(&r, true, "98D3:31:F5A1B2", 2, true);
     rig_cfg(&r, false, "98D3:31:F5A1B2", 2, true);
-    CHECK_EQ(r.c.zero_gen, 4u);
+    CHECK_EQ(r.c.sensor.zero_gen, 4u);
 }
 
 /* No AT operation while the calibration runs or its exit commands wait:
@@ -470,13 +470,13 @@ TEST_CASE(no_at_operation_while_the_calibration_or_a_sensor_command_waits)
     CHECK(imu_ctl_command(&r.c, &cal, r.t));
     CHECK(!imu_ctl_command(&r.c, &scan, r.t));  /* unlock still queued */
     rig_stream(&r, 1000u, 20u, 0.0f, 0.0f, 0.0f);
-    CHECK_EQ(r.c.out_n, 0u);
+    CHECK_EQ(r.c.sensor.out_n, 0u);
     CHECK(!imu_ctl_command(&r.c, &scan, r.t));  /* the calibration runs */
     CHECK(!imu_ctl_command(&r.c, &any, r.t));
-    CHECK(!hc05_busy(&r.c.bt));
+    CHECK(!hc05_busy(&r.c.hc05.bt));
     rig_stream(&r, 2001u, 20u, 0.0f, 0.0f, 0.0f);
-    CHECK_EQ(r.c.cal, IMU_CAL_DONE);
-    CHECK(r.c.out_n > 0u);                       /* CALSW 0 and SAVE wait */
+    CHECK_EQ(r.c.sensor.cal, IMU_CAL_DONE);
+    CHECK(r.c.sensor.out_n > 0u);                /* CALSW 0 and SAVE wait */
     CHECK(!imu_ctl_command(&r.c, &scan, r.t));
     rig_stream(&r, 200u, 20u, 0.0f, 0.0f, 0.0f);
     CHECK_EQ(r.nsent, at + 5u);
@@ -498,11 +498,11 @@ TEST_CASE(a_rate_change_in_a_calibration_waits_for_its_end)
     for (int i = 0; i < 20; ++i) {
         rig_cfg(&r, true, "98D3:31:F5A1B2", i % 5, true);
         rig_stream(&r, 33u, 20u, 0.0f, 0.0f, 0.0f);
-        CHECK(r.c.cal != IMU_CAL_RUNNING || r.nsent <= at + 2u);
+        CHECK(r.c.sensor.cal != IMU_CAL_RUNNING || r.nsent <= at + 2u);
     }
     rig_stream(&r, 3000u, 20u, 0.0f, 0.0f, 0.0f);
-    CHECK_EQ(r.c.cal, IMU_CAL_DONE);
-    CHECK(!r.c.rate_due);
+    CHECK_EQ(r.c.sensor.cal, IMU_CAL_DONE);
+    CHECK(!r.c.sensor.rate_due);
     CHECK_EQ(r.nsent, at + 8u);
     CHECK(rig_sent_unlock(&r, at));
     CHECK(rig_sent_is(&r, at + 1u, WIT_REG_CALSW, 1u, 0u));
@@ -570,28 +570,28 @@ TEST_CASE(a_frame_after_the_stale_point_counts_a_gap)
 {
     rig_t r;
     connected(&r);
-    CHECK_EQ(r.c.gaps, 0u);
-    const uint32_t last = r.c.m.r.taken_ms;
+    CHECK_EQ(r.c.sensor.gaps, 0u);
+    const uint32_t last = r.c.sensor.m.r.taken_ms;
     rig_run(&r, 400u);
     rig_stream(&r, 1u, 20u, 0.0f, 0.0f, 0.0f);
-    CHECK_EQ(r.c.gaps, 1u);
-    CHECK_EQ(r.c.gap_at_ms, last + IMU_STALE_MS);
-    const uint32_t t1 = r.c.m.r.taken_ms;
+    CHECK_EQ(r.c.sensor.gaps, 1u);
+    CHECK_EQ(r.c.sensor.gap_at_ms, last + IMU_STALE_MS);
+    const uint32_t t1 = r.c.sensor.m.r.taken_ms;
     rig_run(&r, IMU_STALE_MS - 2u);
     rig_stream(&r, 1u, 20u, 0.0f, 0.0f, 0.0f);
-    CHECK(r.c.m.r.taken_ms - t1 < IMU_STALE_MS);
-    CHECK_EQ(r.c.gaps, 1u);
-    const uint32_t t2 = r.c.m.r.taken_ms;
+    CHECK(r.c.sensor.m.r.taken_ms - t1 < IMU_STALE_MS);
+    CHECK_EQ(r.c.sensor.gaps, 1u);
+    const uint32_t t2 = r.c.sensor.m.r.taken_ms;
     rig_run(&r, IMU_STALE_MS - 1u);
     rig_stream(&r, 1u, 20u, 0.0f, 0.0f, 0.0f);
-    CHECK_EQ(r.c.m.r.taken_ms - t2, IMU_STALE_MS);
-    CHECK_EQ(r.c.gaps, 2u);
+    CHECK_EQ(r.c.sensor.m.r.taken_ms - t2, IMU_STALE_MS);
+    CHECK_EQ(r.c.sensor.gaps, 2u);
     /* IMU OFF and ON: the first frame after is no gap. */
     rig_cfg(&r, false, "98D3:31:F5A1B2", 2, true);
     rig_cfg(&r, true, "98D3:31:F5A1B2", 2, true);
     (void)rig_settle(&r, 5000u);
     rig_stream(&r, 100u, 20u, 0.0f, 0.0f, 0.0f);
-    CHECK_EQ(r.c.gaps, 2u);
+    CHECK_EQ(r.c.sensor.gaps, 2u);
 }
 
 /* SET_IMU_RATE's options and what a NULL does. */

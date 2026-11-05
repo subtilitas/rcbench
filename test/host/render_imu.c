@@ -36,7 +36,7 @@ bool render_imu_view(const char *view)
  * @param addr its address, colons
  * @param name its name, "" for none
  */
-static void device(hc05_dev_t *d, const char *addr, const char *name)
+static void device(imu_dev_t *d, const char *addr, const char *name)
 {
     snprintf(d->addr, sizeof(d->addr), "%s", addr);
     snprintf(d->name, sizeof(d->name), "%s", name);

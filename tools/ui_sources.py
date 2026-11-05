@@ -168,6 +168,8 @@ SOURCES = [
     "shared/ui/upd_screen.c",
     # IMU, its controller and the protocol cores they read.
     "shared/ui/imu_ctl.c",
+    "shared/ui/imu_hc05.c",
+    "shared/ui/imu_sensor.c",
     "shared/ui/imu_screen.c",
     "shared/ui/imu_screen_draw.c",
     "shared/bench/imu.c",
