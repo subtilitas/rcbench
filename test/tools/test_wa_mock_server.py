@@ -430,3 +430,22 @@ def test_a_write_path_needs_room_for_the_new_suffix(api):
     long = f"{folder}/" + "f" * 58                  # 117 bytes
     s, _, body = api.json("PUT", f"/api/file?path={long}", b"x")
     assert (s, body["error"]) == (400, "NAME")
+
+
+def test_a_save_is_refused_while_its_new_file_exists(api):
+    """HELLO.TXT.NEW may be a copy to recover: the save is 409 EXISTS."""
+    api.call("POST", "/__mock/put", json.dumps(
+        {"path": "HELLO.TXT.NEW", "text": "x"}).encode())
+    s, _, body = api.json("PUT", "/api/file?path=HELLO.TXT", b"x")
+    assert (s, body["error"]) == (409, "EXISTS")
+
+
+def test_a_move_takes_a_name_of_63_bytes_that_a_save_refuses(api):
+    """A move makes no .NEW: 63 bytes pass, 64 are not listed at all."""
+    name = "n" * 60 + ".TX"                          # 63 bytes
+    api.call("POST", "/__mock/put", json.dumps(
+        {"path": name, "text": "x"}).encode())
+    s, _, body = api.form("rename", **{"from": name,
+                                       "to": f"USER/LOGS/{name}", "dir": 0})
+    assert (s, body["path"]) == (200, f"USER/LOGS/{name}")
+    assert api.json("PUT", f"/api/file?path={name}", b"x")[0] == 400

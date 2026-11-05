@@ -1170,26 +1170,29 @@ class Handler(http.server.BaseHTTPRequestHandler):
             raise Refused("NOT_FOUND")
         return f"{found[0]}/{name}"
 
-    def target_rules(self, path: str, is_dir: bool) -> None:
+    def target_rules(self, path: str, is_dir: bool, tmp: bool = True) -> None:
         """The rules of a destination (fm_target_check, target_path).
 
         Args:
             path: Where the entry will stand.
             is_dir: A folder.
+            tmp: A save or a rename, which write ".NEW" first; a move
+                makes none and takes names up to 63 bytes.
 
         Raises:
-            Refused: NAME when the name or the path with the ".NEW" a write
-                makes first is over its limit, LOCKED for a record the
-                programmers keep, FIXED for the fault log: the name and the
-                ".NEW" each.
+            Refused: NAME when the name or the path, with the ".NEW" for a
+                save, is over its limit, LOCKED for a record the
+                programmers keep, FIXED for the fault log: the name and,
+                for a save, the ".NEW" each.
         """
         if is_dir:
             return
         folder, _, name = path.rpartition("/")
-        if (len(name.encode()) > NAME_MAX
-                or len((path + ".NEW").encode()) > PATH_MAX):
+        suffix = ".NEW" if tmp else ""
+        if (len(name.encode()) > (NAME_MAX if tmp else LIST_NAME_MAX)
+                or len((path + suffix).encode()) > PATH_MAX):
             raise Refused("NAME")
-        for n in (name, name + ".NEW"):
+        for n in (name, name + suffix):
             place = place_of(folder, n, False)
             if place == "LOCKED":
                 raise Refused("LOCKED")
@@ -1241,6 +1244,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             have = "%08x" % zlib.crc32(card.files[found[0]]) if found else None
             if have != want:
                 raise Refused("CHANGED", have)
+        if card.find(path + ".NEW"):
+            raise Refused("EXISTS")           # maybe a copy to recover
         return (found[0] if found else path), mode, want
 
     def api_put(self, query: str) -> None:
@@ -1359,7 +1364,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 raise Refused("NOT_EMPTY")
             if card.find(dst):
                 raise Refused("EXISTS")
-        self.target_rules(dst, is_dir)
+        self.target_rules(dst, is_dir, op == "rename")
         card.move(found[0], dst)
         self.json(200, {"path": dst, "created": False, "note": ""})
 
