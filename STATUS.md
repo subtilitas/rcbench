@@ -35,10 +35,10 @@ output signals.
 | UI, touch, screens, settings, SD card | yes | |
 | Stop | drives the heartbeat line; sends the STOP command | honours the line; times out the link |
 | Servo outputs, PPM (pulse-position modulation), DShot, bidirectional DShot | | yes |
-| Receiver buses: S.BUS, iBUS, SUMD, CRSF, EX Bus, SRXL2 | | yes |
+| Receiver buses: S.BUS, iBUS, SUMD, CRSF, EX Bus, SRXL2 (S.BUS decoded; the rest not started) | | yes |
 | One-wire programming | | yes |
 | Current, voltage, cells, rpm (revolutions per minute), temperature | | yes |
-| Accelerometer and index pulse, one timebase | | yes |
+| Accelerometer and index pulse, one timebase (sensors not fitted) | | yes |
 | Balancing arithmetic, plots, verdicts | yes | |
 | Power path, current limiting, protection | | yes |
 | CAN | TWAI, the ESP32-P4's CAN controller | XL2515 over SPI (Serial Peripheral Interface) |
@@ -728,7 +728,7 @@ boot, saved once the bank is idle and the bus quiet.
 
 A save is one program of two pages; a sector erase falls to one per eight saves and is taken
 ahead of the save that needs it, or at boot. The placement rules are host-tested in
-`test_outstore`; Eight saves of the single-sector store this one replaces printed an
+`test_outstore`. Eight saves of the single-sector store printed an
 erase-and-program window of 19,174 to 19,186us. Every erase and program runs through
 `flash_safe_execute()`, which parks core 1 in RAM for the window; a window core 1 does not
 stop for within 10ms writes nothing, prints `window refused` and is tried again 1000ms on. A
@@ -2269,7 +2269,7 @@ end's 200ms failsafe: `FAULT 01`.
 
 The store reduces erase frequency, as described above. A flash window can still exceed the
 260us held by the two buffers. The recorded 19ms window combined an erase and a page program
-in the earlier store implementation. Neither operation was measured separately. The program
+in the single-sector store. Neither operation was measured separately. The program
 is the window every save still pays, and 256 bytes against the erase's 4,096 puts it one to
 two orders of magnitude below 19ms on serial NOR flash, or roughly 200 to 2,000us against a
 260us budget.
@@ -2549,9 +2549,7 @@ core that does not draw. Nothing exercises it deliberately: its files, `main.c`,
 `panel_link.c`, `panel_poll.c`, `panel_services.c`, `panel_supply.c`, `panel_arm.c`,
 `panel_art.c` and `panel_update.c` (the IOmcu's update), are not in the host suite. The
 `runlog` task beside it (`panel_log.c`), which owns every write to the card, is in the same
-position. A multi-agent review found six defects in it, including a heartbeat that stopped
-for up to 1000ms on an unanswered poll and a splash tap that latched STOP; those are fixed,
-and the rules it drives are in `shared/safety/arming.c` under `test_arming`, the link-loss
+position. The rules it drives are in `shared/safety/arming.c` under `test_arming`, the link-loss
 stop and the wait for the far end's word on the heartbeat included.
 
 **Next evidence or work:** a session with both boards: press ARM, drag the throttle while the screen is busy, press
