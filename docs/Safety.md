@@ -617,7 +617,7 @@ ARM. The bench does not switch to ARMED with that IOmcu connected. The
 panel offers the IOmcu image it carries at the link-up, after its own 2s
 hold; the IOmcu restarts after the update, and the link-up that follows
 marks the pair pending again. Without an IOmcu, the panel's own bank switches to
-ARMED as before.
+ARMED.
 
 An edit at time 0 is synchronized at the first poll at or after 300ms: a
 poll at 299ms leaves it pending; a poll at 300ms processes it. The time is taken modulo
@@ -647,7 +647,7 @@ reads the state and shows the alert, is not in the coverage figure.
   its pins and so its OFF path; the IOmcu switches it off.
 - A live PD mini output whose input reads under the set point plus 0.5V on
   2 input reads in a row is switched off by the IOmcu, which tells the
-  panel afterwards. A conservative rule chosen without a measurement: it may
+  panel afterwards. The 0.5V margin is not measured: the rule may
   cut a run that would have survived. Set points are capped 0.7V under the
   input voltage, 0.2V above that line, so an input voltage dropping less
   than 0.2V under load cuts nothing. An ON asked while the input voltage
@@ -795,7 +795,7 @@ reads the state and shows the alert, is not in the coverage figure.
   full queue loses nothing. A cancel while ARMED with a press of ARM still
   down whose hold did not fire switches to SAFE as well: the button under
   that finger reads DISARM. ARM has already sent its command by the time the finger
-  lifts, so an ARM cancelled part way asks for nothing, which is correct. A
+  lifts, so an ARM cancelled part way asks for nothing. A
   cancel also drops an ARM the screen has posted and the application has not
   yet collected. An ARM already handed to the control task carries how many
   times the render task had dropped gestures and the number of the last
