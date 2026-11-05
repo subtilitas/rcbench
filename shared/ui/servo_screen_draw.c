@@ -901,16 +901,18 @@ static gfx_rect_t angle_box(float deg)
 }
 
 /**
- * @brief Whether the dial's changes are repainted on their own: LIVE's
- *        card shown with nothing over it.  A box of a run or a limit run
- *        over the card, or any other page, repaints whole for them.
+ * @brief Whether the dial's changes repaint the buffer whole: LIVE's card
+ *        shown with the box of a run or a limit run over it, which the
+ *        dial's boxes would cut.  LIVE's card with nothing over it repaints
+ *        them on its own; no other page and no cover shows the dial, so
+ *        there a reading or a moving horn repaints nothing.
  * @param cover a panel or a session is over the left column
- * @return true when they are
+ * @return true when they do
  */
-static bool dial_on_its_own(bool cover)
+static bool dial_repaints_whole(bool cover)
 {
     return !cover && wb_task() == UI_WB_LIVE && rows_page() < 0
-           && !s.test_box && !s.lim_box;
+           && (s.test_box || s.lim_box);
 }
 
 /**
@@ -987,11 +989,11 @@ void svs_render(gfx_canvas_t *c, int buffer_index)
     }
 
     /* The keypad and the keyboard keep their own counts of what changed;
-     * the dial too, which repaints whole only where it is not on its own. */
+     * the dial too, which repaints whole only under a run's box. */
     const uint32_t ov_rev = s.ctrl_rev + s.kp.revision + s.tk.revision;
     /* RUDDER repaints its readout on its own (rudder_render_part()). */
     const bool rudder_alone = !cover && wb_task() == UI_WB_RUDDER;
-    const bool dial_whole = !dial_on_its_own(cover) && !rudder_alone
+    const bool dial_whole = dial_repaints_whole(cover)
                             && s.drawn_dial[buf] != s.dial_rev;
     if (s.drawn_ctrl[buf] != ov_rev || dial_whole) {
         /* The plot when it moved or this buffer has never had it. */

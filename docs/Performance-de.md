@@ -70,6 +70,7 @@ servo                        2,216     277 KiB
 servo-grip                     521      65 KiB
 servo-current                3,189     399 KiB
 servo-rudder                 4,030     504 KiB
+servo-test                       0       0 KiB
 supply                       9,871    1234 KiB
 supply-chrome               48,048    6006 KiB
 analyser                         0       0 KiB
@@ -119,6 +120,7 @@ est. ms and est. fps: not measured
 | `servo-grip` | der Servobildschirm, nur der Griff neu gezeichnet |
 | `servo-current` | wie `servo-grip`, mit dem INA3221 als Messgerät der Servo-Schiene und einem Fenster in jedem Frame, dessen Strom sich in den gezeigten Ziffern unterscheidet: der Griff, der Wert der Zeile STROM, die Zeile über dem Plot und der Plot neu gezeichnet, jedes auf sich selbst beschnitten |
 | `servo-rudder` | SERVO > RUDER mit einem AS5600-Messwert in jedem Frame, 0.26° vom vorigen entfernt: die Anzeige, die Zustandszeilen und das Ruder der Seitenansicht neu gezeichnet, jedes auf sich selbst beschnitten |
+| `servo-test` | SERVO > TEST mit bewegtem Arm und einem AS5600-Messwert in jedem Frame, wie ein automatischer Test oder ein Limit Run sie liefert: die Seite zeigt keines von beiden, also wird nichts neu gezeichnet |
 | `supply` | der Netzteilbildschirm mit eingeschaltetem Ausgang, ein Sample in jedem Frame |
 | `motor-wire-hold` | die Sitzung der ESC-Signalleitung auf der Seite VERLASSEN, ein Finger auf ihrem Hold von 2s |
 | `analyser`, `logs`, `settings`, `battery`, `balance`, `motor-stick`, `motor-wire`, `picker`, `wifi` | ein ruhiger Frame dieses Bildschirms, Chrome gecacht; `settings` sind die Kacheln von SETUP, `motor-stick` ESC STICK offen auf MOTOR & ESC > PROGRAMMIEREN |
@@ -256,6 +258,7 @@ im Modell. Sie erkennt nicht, ob ein Frame den nächsten Anzeigezeitpunkt verpas
 | `servo-grip` | 1 000 | ein Atmen, das mehr als seine Box neu zeichnet |
 | `servo-current` | 4 000 | eine geänderte Ziffer des Stroms, die die ganze Karte neu zeichnet |
 | `servo-rudder` | 4 600 | ein neuer Winkel auf RUDER, der mehr als die Anzeige, die Zustandszeilen und die beiden Boxen des Ruders neu zeichnet |
+| `servo-test` | 1 000 | einen bewegten Arm oder einen neuen Messwert, der die TEST-Seite neu zeichnet |
 | `motor-stick` | 2 000 | ein Wachsen des ruhigen Frames von ESC STICK, 1 713 Fills in der Tabelle oben |
 | die drei `-sim`-Modi | 3 600 | ein Watermark, das über die volle Canvas hinauswächst |
 | die elf `-chrome`-Modi | 72 000 | ein wachsendes vollständiges Neuzeichnen |
