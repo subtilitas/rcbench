@@ -662,8 +662,8 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   und damit seinen Weg zum OFF; der IOmcu schaltet es ab.
 - Einen eingeschalteten Ausgang des PD mini, dessen Eingangsspannung bei 2 Lesungen
   hintereinander unter dem Sollwert plus 0,5V liegt, schaltet der
-  IOmcu ab und meldet es dem Panel danach. Eine vorsichtige Regel,
-  ohne Messung gewählt: sie kann einen Lauf abbrechen, der durchgehalten
+  IOmcu ab und meldet es dem Panel danach. Der Abstand von 0,5V ist
+  nicht gemessen: die Regel kann einen Lauf abbrechen, der durchgehalten
   hätte. Sollwerte sind auf 0,7V unter der Eingangsspannung begrenzt, 0,2V
   über dieser Linie: sinkt die Eingangsspannung unter Last um weniger als
   0,2V, schaltet nichts ab. Ein ON, verlangt während die Eingangsspannung
