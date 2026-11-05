@@ -55,6 +55,7 @@ void imu_ctl_config(imu_ctl_t *c, const imu_cfg_t *cfg, uint32_t now_ms)
     c->cfg.addr[IMU_ADDR_MAX - 1u] = '\0';
     c->cfg.name[IMU_NAME_MAX - 1u] = '\0';
     imu_sensor_values(&c->sensor, cfg->rate_code, cfg->six, c->configured);
+    imu_sensor_filter(&c->sensor, cfg->filter);
     if (!c->configured || strcmp(was.addr, c->cfg.addr) != 0) {
         (void)imu_ble_set_addr(&c->ble, c->cfg.addr, now_ms);
         imu_sensor_rebind(&c->sensor);

@@ -331,9 +331,9 @@ TEST_CASE(zero_posts_zero_and_the_lines_show_the_zeroed_angles)
 {
     imu_view_t v = view_connected();
     on_imu(&v);
-    CHECK_STR_EQ(imu_screen_line(IMS_L_X), "X  +1.0°");
-    CHECK_STR_EQ(imu_screen_line(IMS_L_Y), "Y  -2.0°");
-    CHECK_STR_EQ(imu_screen_line(IMS_L_Z), "Z  +3.0°");
+    CHECK_STR_EQ(imu_screen_line(IMS_L_X), "X  +1.00°");
+    CHECK_STR_EQ(imu_screen_line(IMS_L_Y), "Y  -2.00°");
+    CHECK_STR_EQ(imu_screen_line(IMS_L_Z), "Z  +3.00°");
     tap_rect(imu_screen_row_rect(IMS_ROW_UNZERO));
     CHECK_EQ(took().kind, IMU_CMD_NONE);         /* nothing to clear */
     tap_rect(imu_screen_row_rect(IMS_ROW_ZERO));
@@ -343,9 +343,18 @@ TEST_CASE(zero_posts_zero_and_the_lines_show_the_zeroed_angles)
     v.r.zero[1] = -2.0f;
     v.r.zero[2] = -177.0f;
     imu_screen_set(&v);
-    CHECK_STR_EQ(imu_screen_line(IMS_L_X), "X  +0.0°");
-    CHECK_STR_EQ(imu_screen_line(IMS_L_Y), "Y  +0.0°");
-    CHECK_STR_EQ(imu_screen_line(IMS_L_Z), "Z  -180.0°");
+    CHECK_STR_EQ(imu_screen_line(IMS_L_X), "X  +0.00°");
+    CHECK_STR_EQ(imu_screen_line(IMS_L_Y), "Y  +0.00°");
+    CHECK_STR_EQ(imu_screen_line(IMS_L_Z), "Z  -180.00°");
+    /* Hundredths, rounded half away from zero, negative too. */
+    v.r.angle[0] = 1.0f - 12.345f;
+    v.r.angle[1] = -2.0f + 0.004f;
+    imu_screen_set(&v);
+    CHECK_STR_EQ(imu_screen_line(IMS_L_X), "X  -12.35°");
+    CHECK_STR_EQ(imu_screen_line(IMS_L_Y), "Y  +0.00°");
+    v.r.angle[0] = 1.0f;
+    v.r.angle[1] = -2.0f;
+    imu_screen_set(&v);
     tap_rect(imu_screen_row_rect(IMS_ROW_UNZERO));
     CHECK_EQ(took().kind, IMU_CMD_UNZERO);
     /* No reading: dashes, and ZERO takes no press. */

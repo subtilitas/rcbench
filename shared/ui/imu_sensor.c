@@ -14,6 +14,13 @@ void imu_sensor_init(imu_sensor_t *s)
     memset(s, 0, sizeof(*s));
     imu_init(&s->m);
     s->rate_code = WIT_RATE_50HZ;
+    s->filter    = (uint8_t)IMU_FILTER_DEFAULT;
+}
+
+void imu_sensor_filter(imu_sensor_t *s, int32_t filter)
+{
+    s->filter = imu_filter_clamp(filter);
+    imu_set_filter(&s->m, s->filter);
 }
 
 /**
@@ -89,6 +96,7 @@ void imu_sensor_off(imu_sensor_t *s)
         ++s->zero_gen;        /* the zero goes with the reading */
     }
     imu_init(&s->m);
+    imu_set_filter(&s->m, s->filter);
     s->angle_seen = false;
     s->had_frames = false;
 }
@@ -96,6 +104,7 @@ void imu_sensor_off(imu_sensor_t *s)
 void imu_sensor_rebind(imu_sensor_t *s)
 {
     s->had_frames = false;
+    imu_reseed(&s->m);
 }
 
 void imu_sensor_feed(imu_sensor_t *s, const uint8_t *b, size_t n,
@@ -119,6 +128,10 @@ void imu_sensor_feed(imu_sensor_t *s, const uint8_t *b, size_t n,
 
 void imu_sensor_tick(imu_sensor_t *s, uint32_t now_ms, bool link_up)
 {
+    if (link_up && !s->link_was_up) {
+        imu_reseed(&s->m);
+    }
+    s->link_was_up = link_up;
     imu_tick(&s->m, now_ms);
     if (s->m.r.valid) {
         s->had_frames = true;

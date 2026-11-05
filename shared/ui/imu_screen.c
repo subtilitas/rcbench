@@ -235,7 +235,8 @@ static const char *err_text(char *buf, size_t n)
 }
 
 /**
- * @brief An angle line: the axis, its degrees from the zero or "---".
+ * @brief An angle line: the axis, its degrees from the zero in hundredths
+ *        or "---".
  * @param axis The axis.
  * @param buf  Takes the line.
  * @param n    Its size, bytes.
@@ -246,8 +247,10 @@ static void angle_line(imu_axis_t axis, char *buf, size_t n)
         snprintf(buf, n, "%s  ---", imu_axis_name(axis));
         return;
     }
-    snprintf(buf, n, "%s  %+.1f°", imu_axis_name(axis),
-             (double)imu_deg(&ims.v.r, axis, false));
+    char deg[12];
+    snprintf(buf, n, "%s  %s°", imu_axis_name(axis),
+             imu_deg_text(deg, sizeof(deg), imu_deg(&ims.v.r, axis, false),
+                          true));
 }
 
 /**

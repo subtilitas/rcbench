@@ -15,7 +15,7 @@
 #include "imu_rig.h"
 #include "sensors_rows.h"
 
-TEST_CASE(the_imu_entry_shows_its_five_rows)
+TEST_CASE(the_imu_entry_shows_its_rows_under_on)
 {
     fresh_hub();
     CHECK_EQ(SENS_ENTRY_IMU, SENS_ENTRY_TAP + 1);
@@ -25,23 +25,26 @@ TEST_CASE(the_imu_entry_shows_its_five_rows)
     CHECK_EQ(sensors_pane_rows(SENS_ENTRY_IMU, rows, SENS_ENTRY_ROWS_MAX), 1);
     CHECK_EQ(rows[0], SET_IMU_EN);
     settings_set(SET_IMU_EN, 1.0f);
-    /* ON, AXIS, SIGN, RATE, ALGORITHM, and ANGLE SOURCE under them. */
+    /* ON, AXIS, SIGN, RATE, ALGORITHM, FILTER, and ANGLE SOURCE under
+     * them. */
     static const setting_id_t want[] = { SET_IMU_EN, SET_IMU_AXIS,
                                          SET_IMU_SIGN, SET_IMU_RATE,
-                                         SET_IMU_ALGO, SET_ANGLE_SOURCE };
-    CHECK_EQ(sensors_pane_rows(SENS_ENTRY_IMU, rows, SENS_ENTRY_ROWS_MAX), 6);
-    for (int i = 0; i < 6; ++i) {
+                                         SET_IMU_ALGO, SET_IMU_FILTER,
+                                         SET_ANGLE_SOURCE };
+    CHECK_EQ(sensors_pane_rows(SENS_ENTRY_IMU, rows, SENS_ENTRY_ROWS_MAX), 7);
+    for (int i = 0; i < 7; ++i) {
         CHECK_EQ(rows[i], want[i]);
         CHECK_EQ(sensors_pane_entry_of(want[i]), SENS_ENTRY_IMU);
         CHECK_EQ(settings_def(want[i])->cat, SET_CAT_SENSORS);
     }
-    /* The defaults: OFF, X, +, 50Hz, 6-AXIS. */
+    /* The defaults: OFF, X, +, 50Hz, 6-AXIS, FILTER 1. */
     fresh_hub();
     CHECK(!settings_get_bool(SET_IMU_EN));
     CHECK_EQ(settings_get_int(SET_IMU_AXIS), 0);
     CHECK_EQ(settings_get_int(SET_IMU_SIGN), 0);
     CHECK_EQ(settings_get_int(SET_IMU_RATE), 2);
     CHECK_EQ(settings_get_int(SET_IMU_ALGO), 0);
+    CHECK_EQ(settings_get_int(SET_IMU_FILTER), (int)IMU_FILTER_DEFAULT);
     CHECK_EQ(imu_ctl_rate_code(settings_get_int(SET_IMU_RATE)), WIT_RATE_50HZ);
     CHECK_STR_EQ(settings_text(SET_TEXT_IMU_ADDR), "");
     CHECK_STR_EQ(settings_text(SET_TEXT_IMU_NAME), "");
@@ -52,7 +55,7 @@ TEST_CASE(the_imu_entry_shows_its_five_rows)
     /* The entry and each of its rows on the glass: ON's ">" brings them. */
     open_sensor(SET_IMU_EN);
     CHECK_EQ(sensors_pane_selected(), SENS_ENTRY_IMU);
-    CHECK_EQ(settings_screen_rows(SET_CAT_SENSORS), 6);
+    CHECK_EQ(settings_screen_rows(SET_CAT_SENSORS), 7);
     setting_id_t ids[96];
     const int n = settings_in_category(SET_CAT_SENSORS, ids, 96);
     for (int i = 0; i < n; ++i) {
@@ -62,7 +65,7 @@ TEST_CASE(the_imu_entry_shows_its_five_rows)
     }
     /* A SENSORS row past the old cap of 58 is still a row. */
     CHECK(n > 58);
-    CHECK_EQ(n, 64);
+    CHECK_EQ(n, 65);
 }
 
 TEST_CASE(the_state_column_reads_every_link_state_in_its_colour)
@@ -179,7 +182,7 @@ TEST_CASE(a_rate_change_is_a_command_to_the_sensor_and_a_notice)
 
 int main(void)
 {
-    RUN(the_imu_entry_shows_its_five_rows);
+    RUN(the_imu_entry_shows_its_rows_under_on);
     RUN(the_state_column_reads_every_link_state_in_its_colour);
     RUN(a_rate_change_is_a_command_to_the_sensor_and_a_notice);
     return test_summary("imu_pane");

@@ -35,7 +35,7 @@ enthält den Hinweis des Projekts.
 | --- | --- |
 | die BLE-Central: Suchliste, Verbinden, GATT-Erkundung (Generic Attribute Profile), Abonnieren, Schreiben, Wiederholungen | `protocols/bleuart`, kein Funkcode |
 | Frames und Befehle des Sensors | `protocols/witmotion`, kein Pin-Treiber |
-| der Messwert: Winkel, Nullpunkt, Ruhezeit, Rate, Akku, Alter | `shared/bench/imu.c` |
+| der Messwert: Winkel, der Tiefpass, Nullpunkt, Ruhezeit, Rate, Akku, Alter | `shared/bench/imu.c` |
 | die Seite des Sensors: der Messwert, seine Befehle, die Kalibrierung, die Lücken, die Übergabe an SERVO; ohne Funk | `shared/ui/imu_sensor.c` |
 | die BLE-Verbindung: die Central für die IMU, ihre Geräte, Fehler und die Version des C6 in den Typen der Ansicht | `shared/ui/imu_ble.c` |
 | die Steuerung: verbindet die Verbindung mit der Seite des Sensors, der Verbindungszustand, die Ansicht | `shared/ui/imu_ctl.c` |
@@ -173,6 +173,56 @@ NULLPUNKT übernimmt die aktuellen Winkel auf dem Panel als Nullpunkt. Dabei
 wird nichts an den Sensor gesendet. Der Nullpunkt geht beim Neustart
 verloren.
 
+## Der Filter
+
+IMU-Filter (SETUP > SENSOREN > IMU, Schlüssel `imu_filter`) ist ein
+Tiefpass auf dem Winkel, auf dem Panel. Er läuft einmal je Winkel-Frame und
+Achse:
+
+```text
+deg += (new - deg) / k        k = IMU-Filter, 1 bis 50, Vorgabe 1
+```
+
+| Wert | Wirkung |
+| --- | --- |
+| 1 | keine Filterung: der Winkel jedes Frames, wie er kam |
+| k | jeder Frame bewegt den Winkel um 1/k des Rests; 63% eines Sprungs erreicht er nach etwa k Frames |
+| 0 oder über 50, gespeichert | gilt als 1 oder 50 |
+
+Die Zeitkonstante beträgt etwa k Frames. Sie hängt also von der Rate ab,
+mit der der Sensor läuft: seiner gespeicherten Rate, nicht der RATE in
+SETUP (siehe oben). Bei 10Hz braucht IMU-Filter 10 etwa 1s bis 63% eines
+Sprungs, bei 50Hz etwa 0,2s.
+
+- Jeder Messwert nutzt den gefilterten Winkel: der IMU-Bildschirm,
+  NULLPUNKT, RUDER, AUTO, der Servotest und der LIMIT RUN.
+- Der erste Winkel-Frame nach einem Verbinden, einem Neuverbinden, einem
+  Binden, IMU EIN oder einem veralteten Messwert setzt den Filter: der
+  Winkel beginnt beim Wert dieses Frames, nicht bei 0.
+- Die Differenz wird zuerst auf -180 bis 180° gefaltet. Ein Übergang von
+  179,9° auf -179,9° bewegt den Winkel 0,2° auf dem kurzen Weg, nicht über
+  0. Das gilt für jede Achse.
+
+Die Ruhezeit ist die des Sensors: der Winkel innerhalb von 0,5°
+(`IMU_STILL_DEG`) um den ersten Frame der Strecke. Solange der gefilterte
+Winkel dem des Sensors um mehr als 0,05° (`IMU_SETTLE_DEG`) nachläuft,
+zeigt die Ruhezeit 0. Das Panel bestimmt diesen Rest aus dem Abstand beim
+ersten Frame der Strecke, je Frame mit (1 - 1/k) verkleinert. Ist er 0,05°
+oder weniger, zählt die Ruhezeit ab dem Stillstand des Sensors. AUTO auf
+RUDER wartet auf 500ms Ruhezeit und nimmt damit einen eingeschwungenen
+Winkel, höchstens 0,05° vom Sensorwert entfernt. AUTO wartet nach dem
+Befehl bis zu 3 000ms plus das längste Einschwingen des Filters
+(`imu_filter_settle_ms()`): die Frames, die ein Abstand von 180° bis auf
+0,05° braucht, zum 1,5-Fachen der gemessenen Frame-Periode, höchstens
+300ms je Frame. Das sind 0ms bei IMU-Filter 1, 11 700ms bei IMU-Filter 10
+mit 10Hz und 60 900ms bei IMU-Filter 50 mit 10Hz. Der Bericht nennt die
+Wartezeit: `spätestens 14700ms nach dem Befehl`.
+
+Derzeitige Einschränkung: bei IMU-Filter über 1 zählt eine Bewegung des
+Servotests als verspätet, wenn der gefilterte Winkel bis zum nächsten
+Befehl nicht eingeschwungen ist. Eine rechtzeitig eingeschwungene Bewegung
+wird bis zum Stillstand des Sensors gemessen.
+
 ## Konsolenzeilen
 
 Die Zeilen tragen die Tags `imu` und `ble`:
@@ -213,7 +263,7 @@ Controller-Init- und Enable-Anfragen des C6 erneut
 | Verbinden | an einem Panel (Station, 2026-11-05) verbanden diese Werte beim ersten Versuch; mit Intervall 15ms, Supervision Timeout 1 000ms und einem Connect-Scan 10ms/10ms endeten 35 Versuche bei -59dBm mit HCI 0x3E |
 | Genauigkeit X, Y | 0,05° (Datenblatt), 0,2° (Webseite des Herstellers) |
 | Genauigkeit Z | 1° nach der Kalibrierung des Magnetometers, die der Servomotor stört; die Drift von Z ohne diese Kalibrierung ist nicht angegeben |
-| der Winkel eines Laufs | als AS5600-Zählerstand dargestellt: 360 / 4096 = 0,088° je Zähler |
+| der Winkel eines Laufs | der automatische Test urteilt in AS5600-Zählerständen: 360 / 4096 = 0,088° je Zähler; RUDER, AUTO, der LIMIT RUN und GEMESSEN nehmen die Grad, wie sie kommen, angezeigt auf 0,01° |
 | ein Verbindungsabbruch | ob das Funkmodul des Sensors Bytes, die es nicht senden kann, puffert oder verwirft, ist nicht bekannt; das Panel verbindet sich bei IMU EIN nach 1 000ms neu |
 | WLAN neben BLE | der C6 teilt seinen Funk zeitlich; die Wirkung auf beide ist nicht gemessen |
 | Schreiben | ob ein Schreiben auf 8841 den Sensor erreicht, ist nicht gemessen |

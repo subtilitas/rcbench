@@ -92,6 +92,7 @@ static void cfg_from_settings(imu_cfg_t *out)
     strncpy(out->name, settings_text(SET_TEXT_IMU_NAME), sizeof(out->name) - 1u);
     out->rate_code = imu_ctl_rate_code(settings_get_int(SET_IMU_RATE));
     out->six = settings_get_int(SET_IMU_ALGO) == 0;
+    out->filter = imu_filter_clamp(settings_get_int(SET_IMU_FILTER));
 }
 
 /** @brief SETUP's values to the task; dropped while its queue is full. */
@@ -259,7 +260,8 @@ void panel_imu_settings_changed(setting_id_t id)
                                   settings_get_int(SET_IMU_SIGN) == 1);
         return;
     }
-    if (id != SET_IMU_EN && id != SET_IMU_RATE && id != SET_IMU_ALGO) {
+    if (id != SET_IMU_EN && id != SET_IMU_RATE && id != SET_IMU_ALGO
+        && id != SET_IMU_FILTER) {
         return;
     }
     const char *notice = sensors_rows_imu_notice(id);
@@ -289,6 +291,9 @@ void panel_imu_frame(void)
     sensors_rows_set_imu_cal(s_seen.v.cal == IMU_CAL_RUNNING);
     /* A new IMU zero drops RUDDER's zero and MAX taken on the IMU. */
     servo_screen_set_imu_zero(s_seen.zero_gen);
+    /* AUTO waits this much longer for the filtered angle to settle. */
+    servo_screen_set_imu_settle(imu_filter_settle_ms(
+        settings_get_int(SET_IMU_FILTER), s_seen.v.r.rate_dhz));
     /* A bind that ended is kept in SETUP: the address and the name, with a
      * save asked, so the sensor is the bound one after a restart. */
     if (s_seen.bind_seq != s_kept_seq) {

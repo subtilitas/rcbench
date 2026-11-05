@@ -93,6 +93,8 @@ static void list_of(setting_cat_t cat)
     for (int p = 0; p < 4; ++p) {
         settings_set((setting_id_t)(SET_INA_FIT_0 + p), 1.0f);
     }
+    /* IMU ON: IMU FILTER shows. */
+    settings_set(SET_IMU_EN, 1.0f);
     open_category(cat);
 }
 
@@ -165,8 +167,8 @@ TEST_CASE(every_number_row_on_setup_takes_ok_and_refuses_and_cancels)
             ++rows;
         }
     }
-    /* PANEL 4, SENSORS 34: every number row an entry shows. */
-    CHECK_EQ(rows, 38);
+    /* PANEL 4, SENSORS 35: every number row an entry shows. */
+    CHECK_EQ(rows, 39);
 }
 
 /*

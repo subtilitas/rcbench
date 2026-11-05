@@ -9856,8 +9856,8 @@ UI_TEXT(RA_FILE, 50,
     "REPORT %s",
     "BERICHT %s")
 UI_TEXT(RA_BINDS_AT, 48,
-    "surface binds at %.1f°",
-    "Ruder klemmt bei %.1f°")
+    "surface binds at %s°",
+    "Ruder klemmt bei %s°")
 UI_TEXT(RA_NO_ANGLE, 0,
     "ANGLE SOURCE: NO READING",
     "WINKELQUELLE: KEIN MESSWERT")
@@ -10003,6 +10003,12 @@ UI_SETTING_LABEL(SET_IMU_ALGO,
 UI_SETTING_HELP(SET_IMU_ALGO,
     "6-AXIS without magnetometer, 9-AXIS with",
     "6-AXIS ohne Magnetometer, 9-AXIS mit")
+UI_SETTING_LABEL(SET_IMU_FILTER,
+    "IMU filter",
+    "IMU-Filter")
+UI_SETTING_HELP(SET_IMU_FILTER,
+    "Angle low-pass, frames to 63%; 1 is off",
+    "Winkel-Tiefpass, Frames bis 63%; 1 ist aus")
 UI_OPTIONS(imu_axis)
 UI_OPTION("X", NULL)
 UI_OPTION("Y", NULL)

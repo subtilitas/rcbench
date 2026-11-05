@@ -29,7 +29,7 @@ A press shorter than 2s does not start calibration. The band shows `Hold 2s to c
 | `SENSOR: HC-06` | the bound sensor's name from the scan, `NO NAME` without one, or `NONE BOUND`; its address and type (`P` public, `R` random) under it |
 | `C6: 2.13.0` | the C6's firmware version, `---` when the C6 reports none |
 | state | `IMU OFF IN IMU SETTINGS`, `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO SENSOR BOUND`, `SCANNING`, `CONNECTING`, `BOUND`, `CONNECTED 50Hz` or `NO FRAMES` |
-| X, Y, Z | the angles from the zero, 0.1°, `---` without a reading. The axis the servo runs read is in the accent colour |
+| X, Y, Z | the angles from the zero through IMU filter, 0.01°, `---` without a reading. The axis the servo runs read is in the accent colour |
 | RATE, AGE | the angle frames of the last second, and the time since the newest reached the screen |
 | BATTERY | the sensor's battery, from its 0x52 frame; hidden above 6.0V |
 
