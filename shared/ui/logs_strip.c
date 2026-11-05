@@ -25,11 +25,10 @@ static ui_tabs_t s_tabs;
 static bool s_made;
 
 /**
- * @brief The tabs, with @p here's selected.
- * @param here The screen on top.
+ * @brief The tabs, laid out on the first call.
  * @return The tabs.
  */
-static ui_tabs_t *tabs_for(ui_screen_id_t here)
+static ui_tabs_t *tabs_made(void)
 {
     if (!s_made) {
         const char *labels[STRIP_TABS];
@@ -41,6 +40,17 @@ static ui_tabs_t *tabs_for(ui_screen_id_t here)
                                    LOGS_STRIP_H));
         s_made = true;
     }
+    return &s_tabs;
+}
+
+/**
+ * @brief The tabs, with @p here's selected.
+ * @param here The screen on top.
+ * @return The tabs.
+ */
+static ui_tabs_t *tabs_for(ui_screen_id_t here)
+{
+    (void)tabs_made();
     for (int i = 0; i < STRIP_TABS; ++i) {
         if (k_screens[i] == here) {
             s_tabs.selected = i;
@@ -52,6 +62,17 @@ static ui_tabs_t *tabs_for(ui_screen_id_t here)
 void logs_strip_render(gfx_canvas_t *c, ui_screen_id_t here)
 {
     ui_tabs_render(tabs_for(here), c);
+}
+
+gfx_rect_t logs_strip_tab_rect(ui_screen_id_t id)
+{
+    const ui_tabs_t *t = tabs_made();
+    for (int i = 0; i < STRIP_TABS; ++i) {
+        if (k_screens[i] == id) {
+            return t->rect[i];
+        }
+    }
+    return gfx_rect_make(0, 0, 0, 0);
 }
 
 bool logs_strip_event(const touch_event_t *e, ui_screen_id_t here)

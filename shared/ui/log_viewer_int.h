@@ -548,6 +548,25 @@ void lv_bar_thumb_of(int total, int visible, int scroll, int *y, int *h);
  */
 int lv_bar_scroll_of(int total, int visible, int top);
 
+/* --- help_logs.c -------------------------------------------------------- */
+
+struct ui_help_page;
+
+/**
+ * @brief The screen guide's pages of LOGS in the view on top.
+ * @return 2 on the list and the import view, 1 on the plot, 0 while the
+ *         DELETE question is open.
+ */
+int lv_help_count(void);
+
+/**
+ * @brief Page @p i of LOGS' guide.
+ * @param i   The page, from 0.
+ * @param out The page, filled.
+ * @return False past the last page.
+ */
+bool lv_help_page(int i, struct ui_help_page *out);
+
 /* --- log_viewer_load.c -------------------------------------------------- */
 
 /**

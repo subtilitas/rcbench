@@ -2237,6 +2237,101 @@ UI_TEXT(LOG_UNREADABLE_CELLS, 50,
     "%d CELLS UNREADABLE",
     "%d ZELLEN UNLESBAR")
 
+/* The screen guide's pages of LOGS (help_logs.c): the titles, the names of
+ * marks the screen draws no label for, and what each mark does. */
+UI_TEXT(HG_LOG_TITLE_LIST, 0,
+    "LOGS: FOLDERS AND FILES",
+    "LOGS: ORDNER UND DATEIEN")
+UI_TEXT(HG_LOG_TITLE_OPEN, 0,
+    "LOGS: OPEN AND DELETE",
+    "LOGS: ÖFFNEN UND LÖSCHEN")
+UI_TEXT(HG_LOG_TITLE_READ, 0,
+    "LOGS: HOW THE FILE READS",
+    "LOGS: WIE DIE DATEI GELESEN WIRD")
+UI_TEXT(HG_LOG_TITLE_COLS, 0,
+    "LOGS: COLUMNS TO PLOT",
+    "LOGS: SPALTEN FÜR DIE GRAFIK")
+UI_TEXT(HG_LOG_TITLE_PLOT, 0,
+    "LOGS: THE PLOT",
+    "LOGS: DIE GRAFIK")
+UI_TEXT(HG_LOG_TABS_NAME, 0,
+    "FOLDERS",
+    "ORDNER")
+UI_TEXT(HG_LOG_PAGES_NAME, 0,
+    "PREV NEXT",
+    "VORIGE NÄCHSTE")
+UI_TEXT(HG_LOG_BAR_NAME, 0,
+    "SCROLL BAR",
+    "SCROLLLEISTE")
+UI_TEXT(HG_LOG_SEP_NAME, 0,
+    "SEP",
+    "TRENNZ.")
+UI_TEXT(HG_LOG_NUM_NAME, 0,
+    "NUM",
+    "ZAHLEN")
+UI_TEXT(HG_LOG_COLS_NAME, 0,
+    "COLUMNS",
+    "SPALTEN")
+UI_TEXT(HG_LOG_CHIP_NAME, 0,
+    "SERIES",
+    "REIHE")
+UI_TEXT(HG_LOG_TABS, 0,
+    "ROOT is the card's root, USER the User log folder, BENCH the Auto log folder.",
+    "STAMM ist die Wurzel der Karte, USER der Ordner Testaufzeichnungen, BENCH der Ordner Auto-Aufzeichnungen.")
+UI_TEXT(HG_LOG_ROW, 0,
+    "A file: name, date and size. A tap selects it, a second tap opens it. Drag the list to scroll.",
+    "Eine Datei: Name, Datum und Größe. Tippen wählt sie, ein zweites Tippen öffnet sie. Ziehen scrollt.")
+UI_TEXT(HG_LOG_RESCAN, 0,
+    "Reads the card again: a card put in, new runs, files a browser wrote.",
+    "Liest die Karte neu: eine eingesteckte Karte, neue Läufe, Dateien aus dem Browser.")
+UI_TEXT(HG_LOG_WIFI, 0,
+    "Opens WI-FI, to fetch the files in a browser. Its home tag returns here.",
+    "Öffnet WI-FI, um die Dateien im Browser zu laden. Sein Home-Feld führt hierher zurück.")
+UI_TEXT(HG_LOG_FILES, 0,
+    "Opens FILES: two panes to copy, move, rename and delete what the card holds.",
+    "Öffnet FILES: zwei Spalten zum Kopieren, Verschieben, Umbenennen und Löschen auf der Karte.")
+UI_TEXT(HG_LOG_PAGES, 0,
+    "Shown when the folder holds more files than one page: the page before and the page after.",
+    "Erscheinen, wenn der Ordner mehr Dateien als eine Seite hat: die Seite davor und danach.")
+UI_TEXT(HG_LOG_BAR, 0,
+    "Where the rows on screen are in the list. Tap the track or drag the thumb.",
+    "Wo die sichtbaren Zeilen in der Liste liegen. Tippe auf die Leiste oder ziehe den Schieber.")
+UI_TEXT(HG_LOG_DELETE, 0,
+    "Asks first, then deletes the selected file from the card.",
+    "Fragt zuerst und löscht dann die gewählte Datei von der Karte.")
+UI_TEXT(HG_LOG_OPEN, 0,
+    "A CSV opens in the import view, a report in the text viewer of FILES.",
+    "Eine CSV öffnet die Importansicht, ein Bericht den Textbetrachter von FILES.")
+UI_TEXT(HG_LOG_DETECTED, 0,
+    "How the reader takes the file: separator, number format, rows, columns and the time axis.",
+    "Wie der Leser die Datei nimmt: Trennzeichen, Zahlenformat, Zeilen, Spalten und Zeitachse.")
+UI_TEXT(HG_LOG_SEP, 0,
+    "Steps the separator from AUTO through each one the reader knows, for columns that look wrong.",
+    "Wechselt das Trennzeichen von AUTO durch alle bekannten, falls die Spalten falsch aussehen.")
+UI_TEXT(HG_LOG_NUM, 0,
+    "Steps the number format from AUTO through each one, for values that look wrong.",
+    "Wechselt das Zahlenformat von AUTO durch alle, falls die Werte falsch aussehen.")
+UI_TEXT(HG_LOG_COLS, 0,
+    "Each column with its first value and range. A tap adds or removes a number column, 4 at most.",
+    "Jede Spalte mit erstem Wert und Bereich. Tippen nimmt eine Zahlenspalte dazu oder weg, höchstens 4.")
+UI_TEXT(HG_LOG_BACK_LIST, 0,
+    "Back to the file list, as the home tag.",
+    "Zurück zur Dateiliste, wie das Home-Feld.")
+UI_TEXT(HG_LOG_PLOT, 0,
+    "Draws the picked columns over the file's time column.",
+    "Zeichnet die gewählten Spalten über der Zeitspalte der Datei.")
+UI_TEXT(HG_LOG_CHIP, 0,
+    "A column in its line's colour: its range on the left, its value at the cursor on the right.",
+    "Eine Spalte in der Farbe ihrer Linie: links ihr Bereich, rechts ihr Wert am Cursor.")
+UI_TEXT(HG_LOG_AREA, 0,
+    "One finger sets the cursor. Two fingers zoom: spread in, pinch out, move together to pan.",
+    "Ein Finger setzt den Cursor. Zwei Finger zoomen: spreizen, zusammenziehen, gemeinsam verschieben.")
+UI_TEXT(HG_LOG_BACK_IMPORT, 0,
+    "Back to the import view, as the home tag.",
+    "Zurück zur Importansicht, wie das Home-Feld.")
+UI_TEXT(HG_LOG_STEP, 0,
+    "Move the cursor one row; past the edge of a zoom the view moves along.",
+    "Bewegen den Cursor um eine Zeile; am Rand eines Zooms wandert die Ansicht mit.")
 /* --------------------------------------------------------------- FILES */
 /* The footer's buttons, 118px: a label that leaves under 6px at each side
  * in the 10 x 20 face (10 cells at most) is drawn in the 8 x 16 face.
@@ -2512,6 +2607,59 @@ UI_TEXT(FM_TK_RENAME, 0,
     "NEW NAME",
     "NEUER NAME")
 
+/* The screen guide's pages of FILES (help_files.c): the titles, the names of
+ * marks the screen draws no label for, and what each mark does. */
+UI_TEXT(HG_FS_TITLE_LEFT, 0,
+    "FILES: LEFT PANE",
+    "FILES: LINKE SPALTE")
+UI_TEXT(HG_FS_TITLE_BUTTONS, 0,
+    "FILES: LEFT BUTTONS",
+    "FILES: LINKE TASTEN")
+UI_TEXT(HG_FS_TITLE_RIGHT, 0,
+    "FILES: RIGHT PANE",
+    "FILES: RECHTE SPALTE")
+UI_TEXT(HG_FS_FOLDER_NAME, 0,
+    "FOLDER",
+    "ORDNER")
+UI_TEXT(HG_FS_PANE_NAME, 0,
+    "PANE",
+    "SPALTE")
+UI_TEXT(HG_FS_LOGS, 0,
+    "Opens LOGS: the runs on the card, their import and the plot.",
+    "Öffnet LOGS: die Läufe auf der Karte, ihr Import und die Grafik.")
+UI_TEXT(HG_FS_FOLDER, 0,
+    "The pane's folder. A tap goes up one folder; at the root it names the card.",
+    "Der Ordner der Spalte. Tippen geht einen Ordner höher; an der Wurzel steht der Name der Karte.")
+UI_TEXT(HG_FS_ROW, 0,
+    "A tap selects the entry and makes its pane the active one. A second tap opens it.",
+    "Tippen wählt den Eintrag und macht seine Spalte aktiv. Ein zweites Tippen öffnet ihn.")
+UI_TEXT(HG_FS_PANE, 0,
+    "A second folder, USER/LOGS at the start. COPY and MOVE take the active pane's entry to the other.",
+    "Ein zweiter Ordner, anfangs USER/LOGS. KOPIEREN und VERSCHIEBEN bringen den Eintrag in die andere Spalte.")
+UI_TEXT(HG_FS_RESCAN, 0,
+    "Checks the card slot and reads each pane's page again.",
+    "Prüft den Kartenslot und liest die Seite jeder Spalte neu.")
+UI_TEXT(HG_FS_COPY, 0,
+    "Copies the selected file into the other pane's folder. A name there is never overwritten.",
+    "Kopiert die gewählte Datei in den Ordner der anderen Spalte. Ein Name dort wird nie überschrieben.")
+UI_TEXT(HG_FS_MOVE, 0,
+    "Moves the selected file or folder into the other pane's folder. A FIXED folder stays.",
+    "Verschiebt die gewählte Datei oder den Ordner in die andere Spalte. Ein FEST-Ordner bleibt.")
+UI_TEXT(HG_FS_RENAME, 0,
+    "Opens the keyboard with the selected entry's name.",
+    "Öffnet die Tastatur mit dem Namen des gewählten Eintrags.")
+UI_TEXT(HG_FS_DELETE, 0,
+    "Asks first. A folder must be empty; a run's CSV takes its report along.",
+    "Fragt zuerst. Ein Ordner muss leer sein; die CSV eines Laufs nimmt ihren Bericht mit.")
+UI_TEXT(HG_FS_NEW, 0,
+    "Makes a folder or an empty text file in the active pane, named on the keyboard.",
+    "Legt in der aktiven Spalte einen Ordner oder eine leere Textdatei an, benannt über die Tastatur.")
+UI_TEXT(HG_FS_INFO, 0,
+    "Shows the selected entry's folder, kind, size, time and the rule that applies to it.",
+    "Zeigt Ordner, Art, Größe, Zeit und die geltende Regel des gewählten Eintrags.")
+UI_TEXT(HG_FS_OPEN, 0,
+    "Enters a folder, opens a log CSV in LOGS and another file up to 1MiB in the text viewer.",
+    "Öffnet einen Ordner, eine Log-CSV in LOGS und andere Dateien bis 1MiB im Textbetrachter.")
 /* ----------------------------------------------------- the text viewer */
 /* The footer's buttons, 140px: a label that leaves under 6px at each side
  * in the 10 x 20 face (12 cells at most) is drawn in the 8 x 16 face.

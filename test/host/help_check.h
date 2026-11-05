@@ -12,6 +12,8 @@
  * - test_help_pages.c
  * - test_help_setup.c
  * - test_help_outputs.c
+ * - test_help_logs.c
+ * - test_help_files.c
  *
  * SPDX-License-Identifier: MIT
  */

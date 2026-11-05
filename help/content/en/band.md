@@ -99,7 +99,7 @@ The save popup waits until the bench is idle: SAFE, supply output and PROG 5V of
 
 ![The menu's guide at page 1](view:help-overview)
 
-"?", 8px left of STOP, opens the guide for the current screen. The menu, OUTPUTS and SETUP have a guide; other screens have no "?" control. Each guide page marks up to 5 controls with numbered badges and corner brackets. A 480 x 488px dock on one half of the screen lists their names and functions, using at most 3 rows per control. The other half continues running. The dock's last row gives the address of this help.
+"?", 8px left of STOP, opens the guide for the current screen. The menu, OUTPUTS, SETUP, LOGS and FILES have a guide; other screens have no "?" control. Each guide page marks up to 5 controls with numbered badges and corner brackets. A 480 x 488px dock on one half of the screen lists their names and functions, using at most 3 rows per control. The other half continues running. The dock's last row gives the address of this help.
 
 - PREV and NEXT turn the guide pages. They replace the home tag in the band and stay in the same position on every page. Repeated taps at the same position keep turning pages. CLOSE at the bottom of the dock, or "?", closes the guide.
 - Tapping elsewhere closes the guide without acting on the screen below.
@@ -107,10 +107,12 @@ The save popup waits until the bench is idle: SAFE, supply output and PROG 5V of
 - The knob has no effect while the guide is open.
 - While ARMED, the guide shows only pages that leave output-stop controls and the TARGET row uncovered.
 
-OUTPUTS and SETUP have a set of pages for each state: the tiles, a list and SENSORS on SETUP, the board view, a PROG PORT entry and the grid view on OUTPUTS. Their dock takes the right half on page 1. A control the dock covers in part is marked where it shows. Neither screen drives an output, so all their pages show while ARMED.
+OUTPUTS, SETUP, LOGS and FILES have a set of pages for each state: the tiles, a list and SENSORS on SETUP, the board view, a PROG PORT entry and the grid view on OUTPUTS, the file list, the import view and the plot on LOGS, the panes on FILES. Their dock takes the right half on page 1. A control the dock covers in part is marked where it shows. These screens drive no output, so all their pages show while ARMED.
 
 ![SETUP's guide at page 1](view:help-setup)
 ![OUTPUTS' guide at page 1](view:help-outputs)
+![LOGS' guide at page 1](view:help-logs)
+![FILES' guide at page 1](view:help-files)
 
 ## The alert band
 

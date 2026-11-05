@@ -1216,6 +1216,8 @@ static const ui_screen_t s_screen = {
     .cancel = fs_cancel_press,
     .render = fs_render,
     .back = back,
+    .help_count = fs_help_count,
+    .help_page = fs_help_page,
 };
 
 const ui_screen_t *files_screen(void)
