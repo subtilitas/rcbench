@@ -12,9 +12,10 @@ RP2350 pin.
 | RP2350 pin driver | `rp2350/kst_line.pio`, `rp2350/kst_line.c`, `rp2350/kst_line.h` | the core; pico-sdk `hardware_pio`, `hardware_dma`, `hardware_gpio`, `hardware_clocks`, `hardware_timer` |
 
 A driver with 3 functions (`kst_driver_t`) connects the core to a pin.
-The RP2350 implementation is in `rp2350/`. Neither the core nor the pin
-driver has been tested on hardware. No frame from this code has been sent
-to a servo.
+The RP2350 implementation is in `rp2350/`. The core and the pin driver
+read and wrote one Chaservo servo on the bench (2026-10-16, see
+[the power cycle](../../docs/ServoProgrammer.md#the-power-cycle)). No other
+servo has been connected.
 
 ## Constraints
 
@@ -517,9 +518,9 @@ Not measured:
 - The series of a servo: no register holds it, and `kst_type()` is a
   guess from `20k_sel`.
 
-No frame of this code has been sent to a servo, and the pin driver has not
-run on a chip. The tests run against the servo and line model in
-`test/host/kst_sim.h`.
+The code ran on 1 Chaservo servo (2026-10-16): all 32 registers read, LEFT
+ANGLE and RIGHT ANGLE written and verified. The tests run against the servo
+and line model in `test/host/kst_sim.h`.
 
 Before relying on writes to a servo, measure the following through the
 same port and wiring as the intended installation:
@@ -550,7 +551,7 @@ notice is in the repository's
 ## Tests
 
 `test/host/test_kst_wire.c`, `test_kst_reg.c`, `test_kst_plan.c`,
-`test_kst_session.c`, `test_kst_pio.c` and `test_kst_file.c`, 268 cases. The table in
+`test_kst_session.c`, `test_kst_pio.c` and `test_kst_file.c`, 274 cases. The table in
 `STATUS.md` has the line coverage per file. The pin driver's C file is not
 in the host build.
 
