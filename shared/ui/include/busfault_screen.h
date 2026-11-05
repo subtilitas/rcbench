@@ -169,6 +169,8 @@ const busfault_report_t *busfault_screen_report(void);
  */
 bool busfault_screen_take_ack(void);
 
+/** @brief Paint the whole screen again in both framebuffers at the next
+ *         frames. */
 void busfault_screen_invalidate(void);
 
 /**
@@ -177,6 +179,8 @@ void busfault_screen_invalidate(void);
  */
 const char *busfault_verdict_text(can_selftest_verdict_t v);
 
+/** @brief The screen, for the router.
+ *  @return Its table of handlers. */
 const ui_screen_t *busfault_screen(void);
 
 #ifdef __cplusplus
