@@ -107,8 +107,10 @@ bool ui_link_refused_label(const ui_bench_status_t *st, char *out, size_t n);
  * and an open wire both clear the line.  The red HWSTOP chip then stands in
  * FAULT's place; the other bits are in its help box, and the FAULT chip
  * returns with them when the line closes.  The bit itself is the IOmcu's,
- * read with STATUS every 500ms; the chip goes on the first band drawn from
- * a bitmap without it.  With the setting OFF the band is as without it.
+ * read with STATUS at every bench poll while the chip stands
+ * (status_poll_fast(), the same rule); the chip goes on the first band
+ * drawn from a bitmap without it.  With the setting OFF the band is as
+ * without it.
  * @param st The bench status; NULL is false.
  * @return true while HWSTOP shows.
  */

@@ -1561,7 +1561,11 @@ Die Zahl ist eine vorzeichenlose 32-Bit-Zahl. Sie ist 0 nach dem Einschalten
 und nach jedem Neustart des IOmcu, nichts über den Link setzt sie
 zurück, und sie läuft von 4.294.967.295 auf 0 über.
 
-Das Panel liest STATUS alle 500ms. Einen 4.21-IOmcu fragt es nach 10
+Das Panel liest STATUS alle 500ms, und bei jeder 50ms-Abfrage, solange das
+Band HWSTOP zeigt (`status_poll.h`, [STOP-Taster am Prüfstand](Safety-de.md#stop-taster-am-prüfstand)).
+Ein Lesen von 10 Registern ist eine Anfrage und 3 Antworten, das schnelle
+Lesen fügt also 18 Lesevorgänge, 72 Frames pro Sekunde hinzu, solange HWSTOP
+steht. Einen 4.21-IOmcu fragt es nach 10
 Registern, einen älteren nach den 8, die seine Page hat: eine 4.20-Page
 weist einen Lesezugriff auf 10 Register mit BAD_RANGE ab, und damit fehlte
 jeder Zähler von STATUS. Das Panel setzt seinen lokalen Zähler bei jedem

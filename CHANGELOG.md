@@ -25,9 +25,10 @@ history is in git.
 - SETUP > PANEL > Hardware stop, OFF by default, for a bench with a stop
   button in the heartbeat line. ON, the band shows the heartbeat bit as a red
   HWSTOP chip in place of FAULT 10, with a help box that names the pressed
-  button or a broken cable and how to clear it. The chip goes 80 to about
-  680ms after the line closes, with no ARM. What the bench does on the bit
-  is unchanged; OFF, the band is as before.
+  button or a broken cable and how to clear it. While the chip stands the
+  panel reads STATUS at every 50ms poll, not every 500ms, so the chip goes
+  80 to about 180ms after the line closes, with no ARM. What the bench does
+  on the bit is unchanged; OFF, the band and the reads are as before.
 
 ### Fixed
 

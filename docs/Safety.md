@@ -434,10 +434,15 @@ apart: both are a line with no edges.
 | The line opens | no edge for 150ms (`HEARTBEAT_MAX_GAP_MS`): the IOmcu stops trusting the line, switches its outputs to SAFE, sets its arm latch and sets STATUS bit 10, LINK_FAULT_HEARTBEAT. The PD mini output goes off |
 | The band | FAULT 10; with SETUP > PANEL > Hardware stop ON, a red HWSTOP chip in FAULT's place. The setting changes the band and nothing else |
 | The line closes | the first edge ends a gap over 150ms and counts as a bad interval; 4 good intervals of 20ms later the IOmcu trusts the line and clears bit 10, 80 to 100ms after the line closes. The bit is not latched |
-| The band again | the panel reads STATUS every 500ms, at the first 50ms poll past 500ms, so reads are 500 to 555ms apart; the frame after the read draws the band without the bit, at about 60Hz. HWSTOP or FAULT 10 goes 80 to about 680ms after the line closes |
+| The band again | the panel reads STATUS every 500ms, at the first 50ms poll past 500ms, so reads are 500 to 555ms apart. While the band shows HWSTOP it reads STATUS at every 50ms poll instead, 50 to 55ms apart, and the first read without bit 10 ends that (`status_poll.h`). The frame after the read draws the band without the bit, at about 60Hz. HWSTOP goes 80 to about 180ms after the line closes; FAULT 10, with the setting OFF, 80 to about 680ms |
 | ARM | refused until an operator holds ARM for 2s: the IOmcu's arm latch stays set until CLEAR, which the panel writes once STATUS reads bit 10 clear ([The first switch to ARMED after a stop](#the-first-switch-to-armed-after-a-stop)) |
 
-The 80 to 680ms are computed from these periods and not measured. A
+The 80 to 180ms and the 80 to 680ms are computed from these periods: 100ms
+for the IOmcu, 55ms or 555ms to the next read, 3ms of the bench read ahead
+of it and 17ms to the next frame. They are not measured. Until a read
+carries bit 10 the reads stay 500ms apart, so HWSTOP shows 150 to about
+730ms after the button is pressed. The fast reads add 18 STATUS reads a
+second, 72 CAN frames, while HWSTOP stands ([Link](Link.md#refused-frames)). A
 button's contact bounce adds its own length: each bounce interval under 4ms
 counts as noise and starts the 4 good intervals again. The bounce of a
 given button is not measured.

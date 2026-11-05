@@ -19,6 +19,10 @@
  * - the_setting_is_a_panel_row
  * - the_row_and_the_box_fit_in_both_languages
  * - the_iomcu_clears_the_bit_with_the_line_and_keeps_the_arm_latch
+ * - status_is_due_every_500ms_and_at_every_poll_while_fast
+ * - only_hwstop_shown_reads_fast
+ * - the_reads_go_fast_on_the_edge_and_slow_at_the_clear
+ * - off_the_reads_stay_at_500ms_through_the_fault
  *
  * SPDX-License-Identifier: MIT
  */
@@ -28,6 +32,7 @@
 #include "heartbeat.h"
 #include "link_dev.h"
 #include "safety_gate.h"
+#include "status_poll.h"
 #include "stop_latch.h"
 
 /** @brief LINK_FAULT_HEARTBEAT, FAULT 10. */
@@ -590,6 +595,190 @@ TEST_CASE(the_iomcu_clears_the_bit_with_the_line_and_keeps_the_arm_latch)
     }
 }
 
+/* ------------------------------------------------- the STATUS read rate */
+
+/* Slow: due at STATUS_POLL_MS after the last read and not 1ms before,
+ * across the 32-bit wrap.  Fast: due at every call.  The read's time is
+ * kept only when due. */
+TEST_CASE(status_is_due_every_500ms_and_at_every_poll_while_fast)
+{
+    const uint32_t starts[] = { 0u, 1000u, 0xFFFFFF00u };
+    for (size_t k = 0; k < sizeof(starts) / sizeof(starts[0]); ++k) {
+        uint32_t last = starts[k];
+        CHECK(!status_poll_due(&last, starts[k] + STATUS_POLL_MS - 1u,
+                               false));
+        CHECK_EQ(last, starts[k]);
+        CHECK(status_poll_due(&last, starts[k] + STATUS_POLL_MS, false));
+        CHECK_EQ(last, starts[k] + STATUS_POLL_MS);
+        CHECK(status_poll_due(&last, last + 1u, true));
+        CHECK(status_poll_due(&last, last, true));
+        CHECK(!status_poll_due(&last, last + STATUS_POLL_MS - 1u, false));
+    }
+    CHECK(!status_poll_due(NULL, 1000u, true));
+    CHECK_EQ(STATUS_POLL_MS, 500u);
+}
+
+/* Fast only with the setting ON and bit 10 in the band's bitmap: not with
+ * the setting OFF, not for other bits, not under the STOP latch or its
+ * grace, and by the rule the band's chip follows. */
+TEST_CASE(only_hwstop_shown_reads_fast)
+{
+    for (size_t f = 0; f < N_FAULTS; ++f) {
+        const uint16_t b = k_faults[f];
+        CHECK(!status_poll_fast(false, b));
+        CHECK_EQ(status_poll_fast(true, b), (b & BEAT) != 0u);
+        for (int on = 0; on < 2; ++on) {
+            hw_stop(on != 0);
+            ui_bench_status_t st = k_band;
+            st.faults = b;
+            CHECK_EQ(ui_band_hwstop(&st), status_poll_fast(on != 0, b));
+        }
+    }
+    CHECK(!status_poll_fast(true, stop_latch_faults(NULL, 0u, true, BEAT)));
+    stop_latch_t l;
+    memset(&l, 0, sizeof(l));
+    l.grace    = true;
+    l.grace_ms = 1000u;
+    CHECK(!status_poll_fast(true, stop_latch_faults(&l, 1000u
+                                                        + STOP_LATCH_GRACE_MS,
+                                                    false, BEAT)));
+    CHECK(status_poll_fast(true, stop_latch_faults(&l, 1001u
+                                                       + STOP_LATCH_GRACE_MS,
+                                                   false, BEAT)));
+    hw_stop(false);
+}
+
+/** @brief One bench poll's STATUS read in the model: when and what. */
+typedef struct {
+    uint32_t t;      /**< the read, ms                          */
+    uint16_t faults; /**< STATUS's bitmap at that moment        */
+} st_read_t;
+
+/**
+ * @brief The panel's polls against the IOmcu's monitor, 1ms a step.
+ *
+ * The panel edges the line every 20ms while it is closed; the line is open
+ * from @p open_at to @p close_at.  The control task looks every 5ms and
+ * polls 50ms or more after the last poll; the bench read takes 3ms and the
+ * STATUS read, when status_poll_due() says so, comes after it, as in
+ * poll_far_end().  Every read is recorded.
+ * @param hw_stop  SET_HW_STOP.
+ * @param t0       The start, ms; the wrap is crossed from 0xFFFFF000.
+ * @param open_at  The line opens, ms after @p t0.
+ * @param close_at The line closes, ms after @p t0.
+ * @param end      The run's length, ms.
+ * @param out      The reads, at most @p max.
+ * @param max      Room in @p out.
+ * @return The reads recorded.
+ */
+static int run_polls(bool hw_stop, uint32_t t0, uint32_t open_at,
+                     uint32_t close_at, uint32_t end, st_read_t *out,
+                     int max)
+{
+    heartbeat_mon_t beat;
+    link_dev_t dev;
+    uint16_t control[LINK_CT_COUNT];
+    memset(control, 0, sizeof(control));
+    heartbeat_mon_init(&beat);
+    link_dev_init(&dev, NULL, 0, NULL, t0);
+    link_dev_clear_failsafe(&dev, t0);
+    uint32_t last_poll = t0, last_status = t0;
+    uint16_t faults = 0u;   /* the bitmap of the last read, as the band has */
+    int n = 0;
+    for (uint32_t i = 0; i < end; ++i) {
+        const uint32_t t = t0 + i;
+        const bool closed = i < open_at || i >= close_at;
+        dev.last_request_ms = t;
+        (void)safety_gate_step(&beat, closed && i % 20u == 0u, &dev, control,
+                               t);
+        if (i % 5u == 0u && (uint32_t)(t - last_poll) >= 50u) {
+            last_poll = t;
+            /* The bench read; the STATUS read is decided 3ms later. */
+            const uint32_t at = t + 3u;
+            if (status_poll_due(&last_status, at,
+                                status_poll_fast(hw_stop, faults))) {
+                uint16_t state = 0u;
+                safety_gate_status(&beat, &dev, control, &state, &faults);
+                if (n < max) {
+                    out[n].t      = at;
+                    out[n].faults = faults;
+                }
+                ++n;
+            }
+        }
+    }
+    return n < max ? n : max;
+}
+
+/*
+ * ON: STATUS every 500 to 555ms until a read carries bit 10, then at every
+ * poll, 50 to 55ms apart, until the first read without it; that read comes
+ * 160ms or less after the line closes, and the next STATUS_POLL_MS or more
+ * after it.  The first edge after the close lands 0 to 19ms later, so every
+ * phase of the panel's 20ms is covered, and the run crosses the wrap.
+ */
+TEST_CASE(the_reads_go_fast_on_the_edge_and_slow_at_the_clear)
+{
+    static st_read_t r[256];
+    const uint32_t t0s[] = { 0u, 0xFFFFF000u };
+    uint32_t worst = 0u, best = UINT32_MAX;
+    for (size_t k = 0; k < sizeof(t0s) / sizeof(t0s[0]); ++k) {
+        for (uint32_t ph = 0; ph < 60u; ++ph) {
+            const uint32_t open_at = 2000u + ph, close_at = 5000u + ph;
+            const int n = run_polls(true, t0s[k], open_at, close_at, 8000u, r,
+                                    256);
+            int first_set = -1, first_clear = -1;
+            for (int i = 0; i < n; ++i) {
+                if (first_set < 0 && (r[i].faults & BEAT) != 0u) {
+                    first_set = i;
+                }
+                if (first_set >= 0 && first_clear < 0
+                    && (r[i].faults & BEAT) == 0u) {
+                    first_clear = i;
+                }
+            }
+            REQUIRE(first_set > 0 && first_clear > first_set + 1);
+            REQUIRE(first_clear + 1 < n);
+            for (int i = 1; i < n; ++i) {
+                const uint32_t gap = r[i].t - r[i - 1].t;
+                const bool fast = i > first_set && i <= first_clear;
+                if (fast ? (gap < 50u || gap > 55u)
+                         : (gap < STATUS_POLL_MS || gap > 555u)) {
+                    T_FAIL("phase %u read %d: %ums after the last", ph, i,
+                           gap);
+                    return;
+                }
+            }
+            const uint32_t after = r[first_clear].t - (t0s[k] + close_at);
+            worst = after > worst ? after : worst;
+            best  = after < best ? after : best;
+            /* The fast reads stop at the clear. */
+            CHECK(r[first_clear + 1].t - r[first_clear].t >= STATUS_POLL_MS);
+        }
+    }
+    CHECK(worst <= 160u);
+    CHECK(best >= 80u);
+}
+
+/* OFF: the same press and release, every read 500 to 555ms apart, and the
+ * clear read up to 100 + 555ms after the close. */
+TEST_CASE(off_the_reads_stay_at_500ms_through_the_fault)
+{
+    static st_read_t r[64];
+    for (uint32_t ph = 0; ph < 60u; ph += 7u) {
+        const int n = run_polls(false, 0u, 2000u + ph, 5000u + ph, 8000u, r,
+                                64);
+        REQUIRE(n > 10);
+        bool saw = false;
+        for (int i = 1; i < n; ++i) {
+            const uint32_t gap = r[i].t - r[i - 1].t;
+            CHECK(gap >= STATUS_POLL_MS && gap <= 555u);
+            saw = saw || (r[i].faults & BEAT) != 0u;
+        }
+        CHECK(saw);
+    }
+}
+
 int main(void)
 {
     RUN(off_the_band_is_as_without_the_setting);
@@ -603,5 +792,9 @@ int main(void)
     RUN(the_setting_is_a_panel_row);
     RUN(the_row_and_the_box_fit_in_both_languages);
     RUN(the_iomcu_clears_the_bit_with_the_line_and_keeps_the_arm_latch);
+    RUN(status_is_due_every_500ms_and_at_every_poll_while_fast);
+    RUN(only_hwstop_shown_reads_fast);
+    RUN(the_reads_go_fast_on_the_edge_and_slow_at_the_clear);
+    RUN(off_the_reads_stay_at_500ms_through_the_fault);
     return test_summary("band_hwstop");
 }

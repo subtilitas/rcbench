@@ -89,7 +89,7 @@ A stop button on the bench sits in the heartbeat line between the panel and the 
 
 - The bench reacts the same either way: the IOmcu is SAFE, the motor and servo outputs and the PD mini output are off, and ARM is refused.
 - HWSTOP does not tell a pressed button from a broken cable. If releasing the button does not clear it, check the cable and its plugs.
-- To clear it, release the button or repair the cable. HWSTOP goes 80 to 700ms after the line closes, without an ARM: the IOmcu trusts the line after 4 good heartbeat intervals of 20ms, and the panel reads the IOmcu's status every 500ms.
+- To clear it, release the button or repair the cable. HWSTOP goes 80 to 180ms after the line closes, without an ARM: the IOmcu trusts the line after 4 good heartbeat intervals of 20ms, and while HWSTOP shows the panel reads the IOmcu's status every 50ms, not every 500ms.
 - The bench stays SAFE. Hold ARM for 2s to switch the outputs on again.
 - Other bits set at the same time are listed in HWSTOP's box, which spans the panel as FAULT's does. They show as a FAULT code again once HWSTOP goes.
 - While the panel's own STOP is latched, while its reset runs and for 1000ms after it, the panel withholds the heartbeat itself, and the band shows neither HWSTOP nor FAULT 10.

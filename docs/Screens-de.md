@@ -174,8 +174,10 @@ standardmäßig AUS, und mit AUS zeigt das Band FEHLER 10.
   erscheinen wieder als FEHLER-Code, sobald HWSTOP verschwindet.
 - Der Chip hat das Rot des Badges eines eingerasteten STOP, seine Schrift
   die dunkle Farbe der hellen Flächen.
-- Er verschwindet mit dem ersten Band, das aus einem STATUS ohne das Bit
-  gezeichnet wird, 80 bis etwa 680ms nachdem die Leitung schließt, ohne ARM.
+- Solange er steht, liest das Panel STATUS bei jeder 50ms-Abfrage statt
+  alle 500ms. Er verschwindet mit dem ersten Band, das aus einem STATUS ohne
+  das Bit gezeichnet wird, 80 bis etwa 180ms nachdem die Leitung schließt,
+  ohne ARM.
 - Solange der eigene STOP des Panels eingerastet ist, während sein Lösen
   läuft und 1000ms danach lässt das Band Bit 10 weg, als HWSTOP und als
   FEHLER 10.

@@ -12,6 +12,7 @@
 
 #include "link_pages.h"
 #include "settings.h"
+#include "status_poll.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -78,8 +79,10 @@ bool ui_link_refused_label(const ui_bench_status_t *st, char *out, size_t n)
 
 bool ui_band_hwstop(const ui_bench_status_t *st)
 {
-    return st != NULL && (st->faults & (uint16_t)LINK_FAULT_HEARTBEAT) != 0u
-           && settings_get_bool(SET_HW_STOP);
+    /* The rule the panel's STATUS reads follow, so the reads go fast while
+     * the chip stands and slow when it goes. */
+    return st != NULL
+           && status_poll_fast(settings_get_bool(SET_HW_STOP), st->faults);
 }
 
 /* The chip's label for @p st, in @p buf where it is formatted. */

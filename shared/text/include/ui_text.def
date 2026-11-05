@@ -246,8 +246,8 @@ UI_TEXT(BH_HWSTOP, 0,
     "The bench's stop button is pressed, or its cable is broken. The IOmcu receives no heartbeat, is SAFE and refuses ARM. Motor and servo outputs and the PD mini output are off.",
     "Der STOP-Taster des Prüfstands ist gedrückt oder sein Kabel unterbrochen. Der IOmcu empfängt keinen Heartbeat, ist SAFE und sperrt ARM. Motor-, Servo- und PD-mini-Ausgang sind aus.")
 UI_TEXT(BH_HWSTOP_CLEAR, 0,
-    "Release the button or repair the cable. HWSTOP goes 80 to 700ms after the line closes. The bench stays SAFE: hold ARM for 2s to switch the outputs on again.",
-    "Löse den Taster oder repariere das Kabel. HWSTOP verschwindet 80 bis 700ms danach. Der Prüfstand bleibt SAFE: Halte ARM 2s, um die Ausgänge einzuschalten.")
+    "Release the button or repair the cable. HWSTOP goes 80 to 180ms after the line closes. The bench stays SAFE: hold ARM for 2s to switch the outputs on again.",
+    "Löse den Taster oder repariere das Kabel. HWSTOP verschwindet 80 bis 180ms danach. Der Prüfstand bleibt SAFE: Halte ARM 2s, um die Ausgänge einzuschalten.")
 UI_TEXT(BH_F_VERSION, 0,
     "The versions on the two devices do not match.",
     "Die Versionen der beiden Geräte passen nicht zusammen.")

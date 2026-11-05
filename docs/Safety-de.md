@@ -469,10 +469,16 @@ kann beides nicht unterscheiden: In beiden Fällen kommen keine Flanken.
 | Die Leitung öffnet | 150ms keine Flanke (`HEARTBEAT_MAX_GAP_MS`): Der IOmcu misstraut der Leitung, schaltet seine Ausgänge auf SAFE, setzt seinen Arm-Latch und setzt STATUS-Bit 10, LINK_FAULT_HEARTBEAT. Der PD-mini-Ausgang geht aus |
 | Das Band | FEHLER 10; mit SETUP > PANEL > Hardware-STOP auf EIN ein roter Chip HWSTOP an der Stelle von FEHLER. Die Einstellung ändert das Band und sonst nichts |
 | Die Leitung schließt | die erste Flanke beendet eine Lücke über 150ms und zählt als schlechter Abstand; 4 gute Abstände von 20ms später vertraut der IOmcu der Leitung und löscht Bit 10, 80 bis 100ms nachdem die Leitung schließt. Das Bit rastet nicht ein |
-| Das Band wieder | das Panel liest STATUS alle 500ms, bei der ersten 50ms-Abfrage nach 500ms, also im Abstand von 500 bis 555ms; das Bild nach dem Lesen zeichnet das Band ohne das Bit, mit etwa 60Hz. HWSTOP oder FEHLER 10 verschwindet 80 bis etwa 680ms nachdem die Leitung schließt |
+| Das Band wieder | das Panel liest STATUS alle 500ms, bei der ersten 50ms-Abfrage nach 500ms, also im Abstand von 500 bis 555ms. Solange das Band HWSTOP zeigt, liest es STATUS stattdessen bei jeder 50ms-Abfrage, im Abstand von 50 bis 55ms, und das erste Lesen ohne Bit 10 beendet das (`status_poll.h`). Das Bild nach dem Lesen zeichnet das Band ohne das Bit, mit etwa 60Hz. HWSTOP verschwindet 80 bis etwa 180ms nachdem die Leitung schließt; FEHLER 10, mit AUS, 80 bis etwa 680ms |
 | ARM | gesperrt, bis jemand ARM 2s hält: Der Arm-Latch des IOmcu bleibt bis CLEAR gesetzt, und das Panel schreibt CLEAR, sobald STATUS Bit 10 als gelöscht liest ([Das erste Schalten auf ARMED nach einem Stopp](#das-erste-schalten-auf-armed-nach-einem-stopp)) |
 
-Die 80 bis 680ms sind aus diesen Perioden berechnet und nicht gemessen. Das
+Die 80 bis 180ms und die 80 bis 680ms sind aus diesen Perioden berechnet:
+100ms für den IOmcu, 55ms oder 555ms bis zum nächsten Lesen, 3ms des
+Bench-Lesens davor und 17ms bis zum nächsten Bild. Sie sind nicht gemessen.
+Bis ein Lesen Bit 10 enthält, bleiben die Lesevorgänge 500ms auseinander,
+daher erscheint HWSTOP 150 bis etwa 730ms nach dem Drücken des Tasters. Das
+schnelle Lesen fügt, solange HWSTOP steht, 18 STATUS-Lesevorgänge pro
+Sekunde hinzu, 72 CAN-Frames ([Link](Link-de.md#abgelehnte-frames)). Das
 Prellen eines Tasters kommt mit seiner eigenen Dauer hinzu: Jeder
 Prellabstand unter 4ms gilt als Rauschen und startet die 4 guten Abstände
 neu. Das Prellen eines bestimmten Tasters ist nicht gemessen.

@@ -159,8 +159,9 @@ default, and OFF the band shows FAULT 10.
   after its two paragraphs, and come back as a FAULT code when it goes.
 - The chip is the danger red of the latched STOP's badge, its text in the
   dark ink of the bright fills.
-- It goes on the first band drawn from a STATUS read without the bit, 80 to
-  about 680ms after the line closes, with no ARM.
+- While it stands the panel reads STATUS at every 50ms poll, not every
+  500ms. It goes on the first band drawn from a read without the bit, 80
+  to about 180ms after the line closes, with no ARM.
 - While the panel's own STOP is latched, while its reset runs and for
   1000ms after it, the band leaves out bit 10, as HWSTOP and as FAULT 10.
 
