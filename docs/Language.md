@@ -15,7 +15,7 @@ SAVE stores the choice in NVS (non-volatile storage), like other settings.
 | --- | --- |
 | labels, setting names and their help, alerts in the band, warning panels, refusal notes, the splash's details | the terms listed under [Terms that stay English](#terms-that-stay-english) |
 | the servo test's TXT (plain text) report, in the language selected when the run starts | the servo test's CSV (comma-separated values) file: its header and the words in its rows (`test`, `phase`, `mode`), so tools read every run alike |
-| the stick programmer's notes and refusals, and an ESC profile's manual steps where the profile gives them in German (`action_de`) | the ESC (electronic speed controller) profile names, items and values as given in the manuals |
+| the stick programmer's notes and refusals, and an ESC profile's family and manual steps where the profile gives them in German (`family_de`, `action_de`) | the ESC (electronic speed controller) profile names, items and values as given in the manuals |
 | | firmware parameter names and values, as shown in the corresponding configurators |
 | | the console log |
 
@@ -389,5 +389,6 @@ Two readers take the German column by position: `TABLE_ENTRY` in
 `tools/check_docs.py` and the servo controls' check in
 `configurator/core/test/help.test.ts`. The Wi-Fi page chooses its language
 by a flag, `wifi_access_set_german()`, and an ESC profile carries its
-manual steps in English and in German (`action`, `action_de`); neither
-takes a third language without a change of its own.
+family and manual steps in English and in German (`family`, `family_de`,
+`action`, `action_de`); neither takes a third language without a change of
+its own.

@@ -2,6 +2,7 @@
   "id": "hobbywing-flyfun-hv-9item",
   "brand": "Hobbywing",
   "family": "FlyFun HV sensorless, 9-item menu",
+  "family_de": "FlyFun HV sensorlos, Menü mit 9 Punkten",
   "models": [
     {
       "name": "FLYFUN-80-HV",

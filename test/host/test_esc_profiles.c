@@ -93,6 +93,7 @@ static void same(const esc_profile_t *a, const esc_profile_t *b)
     CHECK_STR_EQ(a->id, b->id);
     CHECK_STR_EQ(a->brand, b->brand);
     CHECK_STR_EQ(a->family, b->family);
+    CHECK_STR_EQ(a->family_de, b->family_de);
     CHECK_EQ(a->scheme, b->scheme);
     CHECK_EQ(a->encoding, b->encoding);
     CHECK_EQ(a->announce, b->announce);
@@ -885,6 +886,92 @@ TEST_CASE(escapes_become_the_characters_they_name)
     free(j);
 }
 
+/* A profile's family beside the German one: absent or null gives "", an
+ * escaped umlaut is read, and 120 bytes is the most. */
+TEST_CASE(a_profile_reads_its_german_family)
+{
+    esc_profile_t p;
+    void *block = NULL;
+    CHECK(esc_profile_parse(k_min, strlen(k_min), &p, &block, NULL, 0));
+    if (block != NULL) {
+        CHECK_STR_EQ(p.family_de, "");
+    }
+    free(block);
+    char *j = subst("\"family\": \"Test 30\"",
+                    "\"family\": \"Test 30\", \"family_de\": "
+                    "\"Z\\u00e4hlmen\\u00fc mit 8 Punkten\"");
+    block = NULL;
+    CHECK(esc_profile_parse(j, strlen(j), &p, &block, NULL, 0));
+    if (block != NULL) {
+        CHECK_STR_EQ(p.family, "Test 30");
+        CHECK_STR_EQ(p.family_de, "Z\xC3\xA4hlmen\xC3\xBC mit 8 Punkten");
+    }
+    free(block);
+    free(j);
+    j = subst("\"family\": \"Test 30\"",
+              "\"family\": \"Test 30\", \"family_de\": null");
+    block = NULL;
+    CHECK(esc_profile_parse(j, strlen(j), &p, &block, NULL, 0));
+    if (block != NULL) {
+        CHECK_STR_EQ(p.family_de, "");
+    }
+    free(block);
+    free(j);
+}
+
+TEST_CASE(a_german_family_of_120_bytes_is_taken_and_121_refused)
+{
+    char to[600];
+    char err[96];
+    for (int over = 0; over < 2; ++over) {
+        char de[200];
+        (void)memset(de, 'x', (size_t)(120 + over));
+        de[120 + over] = '\0';
+        (void)snprintf(to, sizeof(to),
+                       "\"family\": \"Test 30\", \"family_de\": \"%s\"", de);
+        char *j = subst("\"family\": \"Test 30\"", to);
+        err[0] = '\0';
+        CHECK_EQ(parses(j, err, sizeof(err)), over == 0);
+        if (over != 0) {
+            CHECK_STR_EQ(err, "family_de: longer than 120 bytes");
+        }
+        free(j);
+    }
+    /* 60 two-byte letters are 120 bytes; 61 are 122. */
+    for (int n = 60; n <= 61; ++n) {
+        char de[400] = "";
+        for (int i = 0; i < n; ++i) {
+            (void)strcat(de, "\\u00fc");
+        }
+        (void)snprintf(to, sizeof(to),
+                       "\"family\": \"Test 30\", \"family_de\": \"%s\"", de);
+        char *j = subst("\"family\": \"Test 30\"", to);
+        CHECK_EQ(parses(j, NULL, 0u), n == 60);
+        free(j);
+    }
+}
+
+TEST_CASE(an_empty_or_mistyped_german_family_is_refused)
+{
+    static const struct { const char *value, *why; } k[] = {
+        { "\"\"", "family_de: empty" },
+        { "1", "family_de: not a string" },
+        { "true", "family_de: not a string" },
+        { "[\"x\"]", "family_de: not a string" },
+        { "{}", "family_de: not a string" },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        char to[96];
+        (void)snprintf(to, sizeof(to),
+                       "\"family\": \"Test 30\", \"family_de\": %s", k[i].value);
+        char *j = subst("\"family\": \"Test 30\"", to);
+        char err[96] = "";
+        CHECK(!parses(j, err, sizeof(err)));
+        CHECK_STR_EQ(err, k[i].why);
+        free(j);
+    }
+}
+
 TEST_CASE(control_escapes_and_a_surrogate_pair_are_read)
 {
     char *j = subst("\"Test 30\"",
@@ -1536,6 +1623,9 @@ int main(void)
     RUN(a_value_reads_its_moves_after_the_selection);
     RUN(a_manual_step_the_generator_refuses_is_refused_here_too);
     RUN(escapes_become_the_characters_they_name);
+    RUN(a_profile_reads_its_german_family);
+    RUN(a_german_family_of_120_bytes_is_taken_and_121_refused);
+    RUN(an_empty_or_mistyped_german_family_is_refused);
     RUN(control_escapes_and_a_surrogate_pair_are_read);
     RUN(escaped_keys_and_values_read_as_their_plain_spelling);
     RUN(a_broken_profile_is_refused_with_its_place_named);

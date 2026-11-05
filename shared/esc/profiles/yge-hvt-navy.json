@@ -2,6 +2,7 @@
   "id": "yge-hvt-navy",
   "brand": "YGE",
   "family": "HVT Navy (205/260HVT Navy telemetry, 6-mode setup, always mode 5)",
+  "family_de": "HVT Navy (205/260HVT Navy Telemetrie, Setup mit 6 Modi, immer Modus 5)",
   "models": [
     {
       "name": "205/260HVT Navy",

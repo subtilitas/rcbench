@@ -12,6 +12,7 @@
  * - abort_on_the_prompt_ends_the_run
  * - the_supply_stays_on_until_done_after_the_store
  * - a_manual_step_shows_in_the_language_showing
+ * - a_family_shows_in_the_language_showing
  * - an_unsure_selection_is_not_counted_as_made
  *
  * SPDX-License-Identifier: MIT
@@ -265,6 +266,72 @@ TEST_CASE(a_manual_step_shows_in_the_language_showing)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* The pixels of the crumb's text, right of BACK and left of TIMING, as
+ * one number. */
+static uint32_t crumb_look(void)
+{
+    uint32_t h = 2166136261u;
+    stick_invalidate();
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    scr->render(&cv, 0);
+    for (int y = ST_CRUMB_CY - 22; y < ST_CRUMB_CY + 22; ++y) {
+        for (int x = 170; x < 820; ++x) {
+            h = (h ^ (uint32_t)fb[y * W + x]) * 16777619u;
+        }
+    }
+    return h;
+}
+
+/* A family shows in German where the profile gives family_de and German
+ * shows, and in English otherwise; the page's crumb drawn changes with the
+ * language for a profile with a family_de and does not for one without. */
+TEST_CASE(a_family_shows_in_the_language_showing)
+{
+    const esc_profile_t *p = esc_profiles_find("jeti-spin-3p");
+    CHECK(p != NULL && p->family_de != NULL);
+    if (p == NULL || p->family_de == NULL) {
+        return;
+    }
+    ui_text_set_language(UI_LANG_EN);
+    CHECK_STR_EQ(esc_stick_panel_family_text(p), "Spin / Master / Advance / JES 3P series");
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(esc_stick_panel_family_text(p), "Serie Spin / Master / Advance / JES 3P");
+    /* No German in the profile: the English. */
+    esc_profile_t q = *p;
+    q.family_de = "";
+    CHECK_STR_EQ(esc_stick_panel_family_text(&q), q.family);
+    q.family_de = NULL;
+    CHECK_STR_EQ(esc_stick_panel_family_text(&q), q.family);
+    CHECK_STR_EQ(esc_stick_panel_family_text(NULL), "");
+    ui_text_set_language(UI_LANG_EN);
+    CHECK_STR_EQ(esc_stick_panel_family_text(p), p->family);
+
+    /* The names-only families carry none, and read the same in both. */
+    const esc_profile_t *n = esc_profiles_find("hobbywing-platinum-v3");
+    CHECK(n != NULL && (n->family_de == NULL || n->family_de[0] == '\0'));
+    ui_text_set_language(UI_LANG_DE);
+    if (n != NULL) {
+        CHECK_STR_EQ(esc_stick_panel_family_text(n), n->family);
+    }
+
+    /* Drawn: the crumb of the page. */
+    fresh();
+    ui_text_set_language(UI_LANG_EN);
+    open_profile("jeti-spin-3p");
+    const uint32_t en = crumb_look();
+    ui_text_set_language(UI_LANG_DE);
+    const uint32_t de = crumb_look();
+    CHECK(en != de);
+    ui_text_set_language(UI_LANG_EN);
+    CHECK_EQ(crumb_look(), en);
+    fresh();
+    open_profile("hobbywing-platinum-v3");
+    const uint32_t n_en = crumb_look();
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_EQ(crumb_look(), n_en);
+    ui_text_set_language(UI_LANG_EN);
+}
+
 /* KONTROL-X mode 2 to the step before the supply goes off: the button
  * pressed when asked, the ESC powered and the stick at MAX after the
  * store. */
@@ -497,6 +564,7 @@ int main(void)
     RUN(abort_on_the_prompt_ends_the_run);
     RUN(the_supply_stays_on_until_done_after_the_store);
     RUN(a_manual_step_shows_in_the_language_showing);
+    RUN(a_family_shows_in_the_language_showing);
     RUN(an_unsure_selection_is_not_counted_as_made);
     return test_summary("esc_stick_panel_steps");
 }

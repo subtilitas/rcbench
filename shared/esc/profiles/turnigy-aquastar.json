@@ -2,6 +2,7 @@
   "id": "turnigy-aquastar",
   "brand": "HobbyKing/Turnigy",
   "family": "Aquastar boat ESC, throttle count menu",
+  "family_de": "Aquastar Boots-ESC, Zählmenü per Gas",
   "models": [
     {
       "name": "Aquastar 90A",

@@ -2,6 +2,7 @@
   "id": "hacker-x-series",
   "brand": "Hacker",
   "family": "X-Series (X-5 to X-40, 2004 to 2010)",
+  "family_de": "X-Series (X-5 bis X-40, 2004 bis 2010)",
   "models": [
     {
       "name": "X-5",
