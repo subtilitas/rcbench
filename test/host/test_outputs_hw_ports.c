@@ -86,6 +86,12 @@ void out_dshot_stop(uint8_t pin)
     (void)pin;
     ++g_dshot_stops;
 }
+/* Ports are plain DShot: nothing to wake, the frame goes out at once. */
+bool out_dshot_wake(uint8_t pin)
+{
+    (void)pin;
+    return false;
+}
 bool out_dshot_poll(uint8_t pin, bool edt, dshot_telem_t *out)
 {
     (void)pin;

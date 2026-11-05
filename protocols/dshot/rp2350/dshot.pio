@@ -51,6 +51,10 @@ do_zero:
 ; the line has to be released and the receiver started.  Sixteen bits, then
 ; the pin goes back to being an input and interrupt 0 says so.
 ;
+; Between frames of a run the line idles high on its pull-up.  A stopped pin
+; does not: out_dshot.c holds it low, at a latch of 1 through the pad's
+; inverter, and releases it one frame period before the first frame.
+;
 .program dshot_bidir_tx
 .side_set 1
 
@@ -150,10 +154,11 @@ static inline void dshot_bidir_tx_program_init(PIO pio, uint sm, uint offset,
                                                uint pin,
                                                uint32_t bits_per_second)
 {
-    pio_gpio_init(pio, pin);
-    /* Starts as an input: between frames the line belongs to the ESC, and a
-     * pull-up holds it at the idle the protocol expects. */
+    /* An input before the pad is the block's, so the pad is never driven
+     * at a direction and a level another program left in the block.  The
+     * caller sets the inverter after this and then the pin's rest. */
     pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, false);
+    pio_gpio_init(pio, pin);
 
     pio_sm_config c = dshot_bidir_tx_program_get_default_config(offset);
     sm_config_set_sideset_pins(&c, pin);
