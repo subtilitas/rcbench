@@ -13,6 +13,7 @@ rcbench/
   docs/                   wiki source, English and German
   tools/                  the checks, generators and measurements below
   test/tools/             pytest cases for the tools
+  test/web/               Playwright test of the Wi-Fi page's file manager
   shared/                 pure C: no ESP-IDF, no pico-sdk, no FreeRTOS types
     gfx/                  rasteriser and seven fonts
     touch/                coordinate and event mapping
@@ -318,6 +319,12 @@ cmake -S test/host -B test/host/build -DCMAKE_BUILD_TYPE=Debug
 cmake --build test/host/build
 ctest --test-dir test/host/build --output-on-failure
 
+# browser test of the Wi-Fi page's file manager (The file manager's browser
+# test)
+cmake --build test/host/build --target wa_page_dump
+(cd test/web && npm ci && npx playwright install chromium \
+  && WA_PAGE_DUMP=../host/build/wa_page_dump npm run e2e)
+
 # panel
 . $IDF_PATH/export.sh
 idf.py -C firmware/panel set-target esp32p4
@@ -430,7 +437,8 @@ pin budget is 27 to 32 GPIO (general-purpose input/output).
 | `tools/release_kind.py` | reads a release tag and prints its kind, `testing` for an odd minor number and `stable` for an even one, with the `prerelease` and `latest` flags `release.yml` publishes by; with the tags of the full releases on GitHub after it, `latest` is `false` for a stable tag older than one of them; exits 1 on a tag out of form ([Releases](#releases)) |
 | `tools/doc_check.py`, `Doxyfile` | runs Doxygen 1.18.0 with the `Doxyfile` over the C of `shared/`, `protocols/`, `firmware/panel/`, `firmware/iomcu/` and `testbench/touch-injector/core/`, without the generated tables, and compares its warnings, as file and message without the line, with `tools/doc_check_baseline.txt`; adds a warning for a C file without a `@file` block or without its `@brief`; `--check` fails on a warning not in the baseline and on a baseline line the tree does not produce, and with `--base REF` on any warning in a C file added since the merge base with `REF`, on a changed line or its comment block, for a missing `@file` block in a changed file, and on a comment block without `@brief` that the change adds or edits; a renamed file counts as new; `--update` rewrites the baseline. The HTML in `build/doxygen/html/` is the [C API (application programming interface) reference](https://subtilitas.github.io/rcbench/api/) |
 | `tools/pages_changes.py` | decides whether a run of `pages.yml` is a full one, with the configurator's tests and browser tests, or builds the configurator page, the help and the API reference only: full when a changed path is under `configurator/`, `help/` or `docs/img/`, or is `pages.yml`, `rcbench_version.h`, `ui_screen.h`, `tools/help_site.py` or `tools/render_ui.py`; a push counts its changes from the newest successful push run of `pages.yml` on `main`, and is full when there is none |
-| `test/tools/` | pytest cases for the tools above: `python3 -m pytest test/tools` |
+| `test/tools/` | pytest cases for the tools above and for the file manager's mock server: `python3 -m pytest test/tools` |
+| `test/host/wa_page_dump.c`, `test/host/wa_mock_server.py`, `test/web/` | the browser test of the Wi-Fi page's file manager, below |
 | `.clang-tidy`, `.cppcheck-suppress`, `ruff.toml` | static analysis and lint configuration; every finding is an error. `ruff.toml` lists the files excused some docstring (D) codes; each listed file is excused the codes on its line; delete a code when its file is fixed |
 
 `doc_check.py` needs Doxygen 1.18.0 and stops with exit code 2 on another
@@ -443,6 +451,48 @@ installs it as `PREFIX/bin/doxygen`.
 git and CMake as well, and `ci_gate.py` the `gh` command. `sense_trace.py`
 needs CMake and a C compiler: it builds `test/host/sense_trace_replay.c`
 into `build-trace/` unless `--replay` names a built one.
+
+## The file manager's browser test
+
+The Wi-Fi page's file manager (`shared/webaccess/web/`) runs in Chromium
+against a mock of the panel. The test needs no panel, no card and no network.
+
+| Part | What it does |
+| --- | --- |
+| `test/host/wa_page_dump.c` | a host program, the CMake target `wa_page_dump`: writes the page `wa_page_main()` builds, in English and German, with the panel's highlighter words and colours, and the servo test's reports as the panel writes them, with the spans `text_hl_line()` gives each of their lines |
+| `test/host/wa_mock_server.py` | serves the dumped page byte for byte and answers `/api/status`, `/api/list`, `/api/info`, `/api/file`, `PUT /api/file`, `/api/mkdir`, `/api/rename`, `/api/delete` and `/card/PATH` from a card in memory, with the JSON, headers, status codes and refusals of `wa_api.c`, `If-Match` and `If-None-Match` with 412 and 409, and the request guard of `wa_guard.c` (Host 421, Origin and `X-Rcbench-Upload` 403, body limits of 1MiB for a PUT and 1,024B for a form 413). One request at a time. The reason words and their statuses are read from `wa_api.c`, the sentences from `ui_text.def`. Python standard library only |
+| `test/web/` | Playwright 1.64.0, the configurator's version, one worker, Chromium: `files.spec.ts` runs 18 tests in English and in German |
+| `test/tools/test_wa_mock_server.py` | pytest cases of the mock's contract: the guard, the status codes, the PUT checks, paging, the rules of rename, move and delete |
+
+The 18 tests: the page opens on the card's root and the User log folder;
+a folder of 49 entries pages as 48 and 1; a report is viewed and every line
+carries the classes of `text_hl_line()`; an edit is saved with `If-Match`;
+a save over a changed file gets 412 and the unsaved question, STAY keeps the
+edit and READ AGAIN drops it; the 2s hold on OVERWRITE saves with the ETag
+of the refusal; upload, upload over an existing name with the question,
+new folder, rename, move and delete (also cancelled, and a folder that
+holds a file); DOWNLOAD and INFO; the write buttons while the bench is ARMED,
+with Browser writes OFF and with HOLD. Each test also fails on an uncaught
+script error of the page.
+
+```bash
+cmake -S test/host -B test/host/build -DCMAKE_BUILD_TYPE=Debug
+cmake --build test/host/build --target wa_page_dump
+cd test/web
+npm ci
+npx playwright install chromium
+WA_PAGE_DUMP=../host/build/wa_page_dump npm run e2e
+```
+
+The test needs Node.js 24. `E2E_PORT` names another port than 4180. The
+36 runs take 29s on the development machine; the job's time on the CI
+runner is not measured.
+
+What the mock does not do: the access code (Browser writes CODE), the ZIP
+of the card, the firmware update, `PANEL_BUSY`, a full card and the panel's
+hold on WI-FI. Its Host and Origin checks take the mock's own port where the
+panel takes port 80 only. The page's behaviour with the panel's 4 sockets and
+its timing on the ESP32-P4 are not covered.
 
 ## Wi-Fi through the ESP32-C6
 
@@ -634,7 +684,7 @@ Other allocations of esp_hosted are not counted here. The console line
 
 | Workflow | Trigger | Jobs |
 | --- | --- | --- |
-| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under AddressSanitizer and UBSan (UndefinedBehaviorSanitizer); coverage floors and Codecov upload, which fails the job when it fails; font, docs, web help, wiki-link, screenshot and research-script checks; the protocol module check; clang-tidy and cppcheck over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff; the tools' pytest cases; the Doxygen comment check of `tools/doc_check.py`, which in a pull request also fails on any warning in a C file the pull request adds or on a line it changes; on a pull request the mutation check of the changed lines, which reports and does not fail on a survivor; panel build on ESP-IDF v6.1 for the ESP32-P4 with the check of the image against its update slot, a check that the image carries the IOmcu image and holds the touch injector's symbols, the console's frame lines (`tools/check_perf_log.py`) and exFAT, and a second build with `RCBENCH_TOUCH_INJECTOR=OFF` and `RCBENCH_PERF_LOG=OFF` that fails when it holds an injector symbol or a frame line; IOmcu build on pico-sdk 2.3.0 with the pin map check and the stack check of its two cores, once more with `-DSENSE_TRACE=ON`, with the same stack check, failing when the default image holds a trace symbol, and once more with `-DIOMCU_CONSOLE=ON`, with the same stack check, failing when the default image holds a console symbol; the touch injector build on pico-sdk 2.3.0 for `waveshare_rp2350_zero`, not uploaded; firmware artifacts including a merged panel image for offset 0 |
+| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under AddressSanitizer and UBSan (UndefinedBehaviorSanitizer); coverage floors and Codecov upload, which fails the job when it fails; font, docs, web help, wiki-link, screenshot and research-script checks; the protocol module check; clang-tidy and cppcheck over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff; the tools' pytest cases; the Doxygen comment check of `tools/doc_check.py`, which in a pull request also fails on any warning in a C file the pull request adds or on a line it changes; on a pull request the mutation check of the changed lines, which reports and does not fail on a survivor; panel build on ESP-IDF v6.1 for the ESP32-P4 with the check of the image against its update slot, a check that the image carries the IOmcu image and holds the touch injector's symbols, the console's frame lines (`tools/check_perf_log.py`) and exFAT, and a second build with `RCBENCH_TOUCH_INJECTOR=OFF` and `RCBENCH_PERF_LOG=OFF` that fails when it holds an injector symbol or a frame line; IOmcu build on pico-sdk 2.3.0 with the pin map check and the stack check of its two cores, once more with `-DSENSE_TRACE=ON`, with the same stack check, failing when the default image holds a trace symbol, and once more with `-DIOMCU_CONSOLE=ON`, with the same stack check, failing when the default image holds a console symbol; the touch injector build on pico-sdk 2.3.0 for `waveshare_rp2350_zero`, not uploaded; the file manager's browser test (`Web file manager browser test`: the `wa_page_dump` target, then `test/web` on Node.js 24 and Chromium, traces and screenshots kept for 14 days on a failure only); firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/`, manual | waits for the CI run on the same commit and, when it passed, mirrors `docs/` to the GitHub wiki |
 | `mutation.yml` | Sunday 03:17 UTC, manual | every mutant of the lines of `shared/safety` and `shared/outputs` (3032 mutants) in 6 parallel shards of files, no mutant limit, no mutant started after 18000s in a shard; the mutants left then are reported as not run; does not fail on a survivor; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
 | `release.yml` | tag `v*`, manual for a tag | waits for the CI run on the tagged commit and, when it passed, builds both images, the panel's with `-D RCBENCH_PERF_LOG=OFF` and a check that it holds no frame line, packages them with checksums and creates a release, a pre-release for an odd minor number ([Releases](#releases)); beside that, without holding the release back, runs the configurator data check (`configurator/core/tools/check-annotate.sh --warn-only`) and shows each warning, such as a release tag newer than the configurator data, as an annotation and in the run summary |

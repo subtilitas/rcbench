@@ -1067,3 +1067,65 @@ jobs:
           cmake --build build -j"$(nproc)"
           ls -l build/rcbench-touch-injector.uf2
           sha256sum build/rcbench-touch-injector.uf2
+
+  web-files:
+    # The Wi-Fi page's file manager in Chromium, against test/host/
+    # wa_mock_server.py: the page as wa_page_main() builds it (the
+    # wa_page_dump target of the host build) and a mock of the file API.
+    # Python needs its standard library only; the browser test is
+    # test/web, on the Playwright version the configurator's tests use.
+    name: Web file manager browser test
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: test/web
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/host-deps
+
+      - name: Build the page dump
+        working-directory: .
+        run: |
+          cmake -S test/host -B test/host/build -DCMAKE_BUILD_TYPE=Debug
+          cmake --build test/host/build -j"$(nproc)" --target wa_page_dump
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: test/web/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run typecheck
+
+      # The browser download is cached on the Playwright version; the
+      # system packages the install fetches are not, and the install takes
+      # up to 12.5min on a slow runner, so it has its own limit and the
+      # test keeps its own.
+      - name: Cache Chromium
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-1.64.0-chromium-${{ runner.os }}-${{ runner.arch }}
+
+      - name: Install Chromium
+        timeout-minutes: 15
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser test
+        timeout-minutes: 10
+        env:
+          WA_PAGE_DUMP: ${{ github.workspace }}/test/host/build/wa_page_dump
+        run: npm run e2e
+
+      - name: Keep the traces and screenshots of failed tests
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-files-failures
+          path: test/web/test-results
+          if-no-files-found: ignore
+          retention-days: 14

@@ -341,6 +341,16 @@ target_compile_definitions(test_wa_hl PRIVATE
     "PROFILE_DIR=\"${SHARED}/esc/profiles\"")
 set_tests_properties(wa_hl PROPERTIES FIXTURES_SETUP wa_hl_files)
 
+# The page as the panel builds it, for the browser test (test/web): the
+# mock server runs this program and serves its files.  The test here holds
+# that it writes both pages.
+add_executable(wa_page_dump wa_page_dump.c)
+target_link_libraries(wa_page_dump PRIVATE ${UNDER_TEST})
+target_include_directories(wa_page_dump PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_compile_options(wa_page_dump PRIVATE ${STRICT})
+add_test(NAME wa_page_dump
+    COMMAND wa_page_dump "${CMAKE_CURRENT_BINARY_DIR}/wa_page_out")
+
 # The page with the editor and the fixtures test_wa_edit writes from the
 # panel's text buffer and the KST file reader, handed to node with the
 # page's own edit.js.
