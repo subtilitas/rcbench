@@ -287,11 +287,14 @@ jobs:
       # A new angle on RUDDER repaints the readout, the state lines and the
       # side view's flap in the boxes of its old and new place; 4,600
       # catches one that repaints the side view or the card whole.
+      # TEST shows neither the arm nor the angle; 1,000 catches a moving
+      # arm or a new reading that repaints the page.
       - name: The servo card is drawn, and its grip is only breathed on
         run: python3 tools/frame_cost.py servo --max-lines 2800
              && python3 tools/frame_cost.py servo-grip --max-lines 1000
              && python3 tools/frame_cost.py servo-current --max-lines 4000
              && python3 tools/frame_cost.py servo-rudder --max-lines 4600
+             && python3 tools/frame_cost.py servo-test --max-lines 1000
 
       # The screen guide caches its dock and draws its badges and corner
       # brackets every frame, about 370 fills on the menu; 1,000 catches

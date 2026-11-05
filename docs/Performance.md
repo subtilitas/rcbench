@@ -67,6 +67,7 @@ servo                        2,216     277 KiB
 servo-grip                     521      65 KiB
 servo-current                3,189     399 KiB
 servo-rudder                 4,030     504 KiB
+servo-test                       0       0 KiB
 supply                       9,871    1234 KiB
 supply-chrome               48,048    6006 KiB
 analyser                         0       0 KiB
@@ -116,6 +117,7 @@ est. ms and est. fps: not measured
 | `servo-grip` | the servo screen with only the grip repainted |
 | `servo-current` | as `servo-grip`, with the INA3221 as the servo rail's meter and a window in every frame whose current differs in the digits shown: the grip, the CURRENT row's value, the line and the plot repainted, each clipped to itself |
 | `servo-rudder` | SERVO > RUDDER with an AS5600 reading in every frame, 0.26° from the one before: the readout, the state lines and the side view's flap repainted, each clipped to itself |
+| `servo-test` | SERVO > TEST with the arm moved and an AS5600 reading in every frame, as an automatic test or a limit run gives: the page shows neither, so nothing is repainted |
 | `supply` | the supply screen with its output on, a sample landing every frame |
 | `motor-wire-hold` | the ESC signal wire session on LEAVE's page, a finger on its 2s hold |
 | `analyser`, `logs`, `settings`, `battery`, `balance`, `motor-stick`, `motor-wire`, `picker`, `wifi` | one steady frame of that screen, chrome cached; `settings` is SETUP's tiles, `motor-stick` ESC STICK open on MOTOR & ESC > PROGRAM |
@@ -239,6 +241,7 @@ increased drawing work in the model; it does not detect a missed display deadlin
 | `servo-grip` | 1,000 | a breath that repaints more than its box |
 | `servo-current` | 4,000 | a changed digit of the current that repaints the whole card |
 | `servo-rudder` | 4,600 | a new angle on RUDDER that repaints more than the readout, the state lines and the flap's two boxes |
+| `servo-test` | 1,000 | a moving arm or a new reading that repaints the TEST page |
 | `motor-stick` | 2,000 | a growing steady frame of ESC STICK, 1,713 fills in the table above |
 | the three `-sim` modes | 3,600 | a watermark that has grown past the full canvas |
 | the eleven `-chrome` modes | 72,000 | a growing full repaint |
@@ -389,7 +392,7 @@ its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,304 | 2,848 |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,288 | 2,864 |
 | `control` | `control_task` | 6,144 | 3,376 | 1,728 |
 | `runlog` | `log_task` | 6,656 | 3,824 | 1,792 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |

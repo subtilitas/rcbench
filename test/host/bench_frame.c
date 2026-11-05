@@ -17,6 +17,9 @@
  *             whose deflection differs in the tenths shown: the readout,
  *             the state lines and the side view of the surface, each
  *             clipped to itself
+ *   servo-test  SERVO's TEST task with the arm moved and an AS5600 reading
+ *             in every frame, as an automatic test or a limit run gives:
+ *             nothing on the page shows either, so nothing is repainted
  *   servo-current  the same as servo-grip with the INA3221 as the servo
  *             rail's meter and a window every frame whose current differs
  *             in the digits shown: the grip, the CURRENT row's value, the
@@ -237,6 +240,23 @@ static void rudder_open(void)
     rudder_reading(2048u - 280u, 100u);
     rudder_reading(2048u + 290u, 140u);
     rudder_reading(2048u + 140u, 180u);
+}
+
+/**
+ * @brief SERVO's TEST task with the AS5600 on and linked, from RUDDER's
+ *        set-up: the page of the automatic test and the limit run.
+ */
+static void test_open(void)
+{
+    rudder_open();
+    const int16_t x = SV_TAB_TEST_X;
+    const int16_t y = (int16_t)(UI_BAND_H + SV_TAB_Y);
+    const touch_event_t tap[] = {
+        { .type = TOUCH_EVENT_DOWN, .point = { .id = 1, .x = x, .y = y } },
+        { .type = TOUCH_EVENT_UP,   .point = { .id = 1, .x = x, .y = y } },
+    };
+    ui_router_event(&tap[0]);
+    ui_router_event(&tap[1]);
 }
 
 /**
@@ -492,6 +512,9 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
         if (strcmp(mode, "servo-rudder") == 0) {
             rudder_open();
         }
+        if (strcmp(mode, "servo-test") == 0) {
+            test_open();
+        }
         /* One tick a phase, and the first spends nothing. */
         for (int f = 0; f <= UI_HOLD_FLASH_MS / UI_HOLD_FLASH_PHASE_MS; ++f) {
             ui_router_tick((float)UI_HOLD_FLASH_PHASE_MS / 1000.0f);
@@ -554,10 +577,11 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
             /* "servo" moves the arm every frame: the drag case, and the
              * worst one.  "servo-grip" holds it still, so only the grip
              * breathes, which is the frame the clipped repaint exists for. */
-            if (strcmp(mode, "servo") == 0) {
+            if (strcmp(mode, "servo") == 0 || strcmp(mode, "servo-test") == 0) {
                 servo_screen_set_commanded(38.0f + (float)((i % 20) - 10));
             }
-            if (strcmp(mode, "servo-rudder") == 0) {
+            if (strcmp(mode, "servo-rudder") == 0
+                || strcmp(mode, "servo-test") == 0) {
                 /* A reading a frame, 3 counts (0.26°) apart: the readout
                  * and the drawing change on every one. */
                 rudder_reading((uint16_t)(2048u + 140u + 3u * (unsigned)(i % 16)),

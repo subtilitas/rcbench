@@ -6,6 +6,17 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- SERVO > TEST, SERVO > PROGRAM and the SERVO settings pages no longer repaint
+  the whole screen when the arm moves or the AS5600 angle changes in its
+  tenths. None of these pages shows either value. The station measured 15.1
+  to 23.8fps on SERVO > TEST during an automatic test, during a LIMIT RUN and
+  while SAFE with a weak magnet, with DRAW peaks of 58ms. In the host frame
+  model the TEST page with a moving arm and a new reading in every frame
+  costs 0 cache-line fills, against 30,731 before. CI holds the new
+  `servo-test` mode to 1,000.
+
 ## 0.23.8 - 2026-11-05
 
 0.23.8 is a testing release. Its minor number, 23, is odd. GitHub
