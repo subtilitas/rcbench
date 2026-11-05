@@ -8,7 +8,6 @@ This code was written from a behavioural specification, without access to the fi
 
 ## Current limitations
 
-- A bidirectional DShot pin rests high on SAFE, which is a bootloader's entry condition. What the next ARM does after that is not measured.
 - All outputs go off after `TORN` or `LOST`. On BLHeli_S and Bluejay the settings page then loses its 48 tag bytes and becomes read-only. An AM32 stays erased until RESTORE FROM BACKUP.
 - 10 failed reads of the page, 50ms at the poll rate, stop a session. This also applies during a write: it ends as `NO_ANSWER`, with a fault and a STOP.
 - The record `ESCW.TXT` is saved before the write starts. It stays on the card even if the write is then abandoned. It does not record the write's outcome.

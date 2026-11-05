@@ -222,6 +222,12 @@ keine Flanken, und ein ESC stoppt nach seinem eigenen Timeout auf Stille. Statt
 dessen ausdrückliche Nullen zu senden hielte ihn armed und wartend, und so soll
 ein Prüfstand in SAFE von der ESC-Seite aus nicht aussehen.
 
+**Ein Pin, der keine Frames sendet, wird low getrieben**, in beiden Modi: von
+der Zuordnung bis zum ersten Frame und von jedem Stopp bis zum nächsten Lauf.
+Ein Stopp ist SAFE, STOP, ein Fehler, ein verlorener Link und die
+Failsafe-Flanke; jeder schaltet die Bank auf SAFE, und der Durchlauf, der das
+tut, ruft `out_dshot_stop()` auf.
+
 ## Bidirektionales DShot
 
 Derselbe Frame mit invertierter Leitung und komplementierter Prüfsumme, sodass
@@ -273,6 +279,50 @@ Bei der Zuordnung wird das Register zurückgelesen. Ist die benötigte
 Polarität nicht gesetzt, wird die Zuordnung abgelehnt. Die Reihenfolge
 der Initialisierung ist deshalb entscheidend; kein anderer Teil des
 Treibers erkennt eine verlorene Invertierung.
+
+### Ein gestoppter Pin wird low getrieben
+
+Zwischen den Frames eines Laufs liegt die Leitung über den Pull-up des Pads
+auf high, 32 bis 86kΩ an 3.3V. Ein Pin, der keine Frames sendet, nicht: ab der
+Zuordnung und ab jedem Stopp treibt der IOmcu ihn low. Eine Leitung, die ohne
+Frames high liegt, ist die Eintrittsbedingung der Bootloader der ESC-Firmware
+Familie S (BLHeli_S), Bluejay und AM32.
+
+Den Low-Pegel treibt der PIO-Block. Der Ausgangs-Latch des Pins wird auf 1
+gesetzt, was der Inverter des Pads zu low macht, und danach die Richtung auf
+Ausgang. Der Latch kommt zuerst, damit ein Pad, das ein abgeschnittener Frame
+high getrieben hat, direkt auf low geht. Das Pad bleibt beim Block, und die
+Invertierung, die die Zuordnung gesetzt und zurückgelesen hat, bleibt stehen.
+Der Pull-up kommt erst, wenn der Pin low getrieben wird, damit die Zuordnung
+kein High zeigt.
+
+Bei ARM geht die Leitung einen Frame-Abstand vor dem ersten Frame auf ihren
+High-Idle zurück:
+
+| Schritt | Zeit | Code |
+| --- | --- | --- |
+| Der erste fällige Durchlauf des Laufs lässt den Pin auf seinen Pull-up los und sendet nichts | 0 | `out_dshot_wake()` aus `service_dshot()` in `firmware/iomcu/src/outputs_hw.c` |
+| Der erste Frame: die erste der zehn Wiederholungen von `DSHOT_CMD_EDT_ENABLE` bei Gas null | 1000µs oder später, ein Frame-Abstand bei 1kHz (`DSHOT_PERIOD_US`) | `out_dshot_send()` |
+| Der Befehl nach der Anfrage | 11ms nach Laufbeginn | `service_dshot()` |
+
+Der ESC sieht die Leitung einen ganzen Frame-Abstand lang high, bevor der
+erste Frame kommt, so wie vor jedem anderen Frame des Laufs. Der Wake-Durchlauf
+sendet keinen Frame, also behält die Anfrage alle zehn Wiederholungen.
+`out_dshot_send()` lässt einen Pin, der noch low ruht, los und sendet nichts,
+also beginnt kein Frame auf einer Low-Leitung. `test_out_dshot` hält den Pegel
+des Pads bei jedem Schritt fest, `test_outputs_hw` die 1000µs, auch über den
+Überlauf der 32-Bit-Mikrosekundenuhr.
+
+Ein Pin, den die ESC-Signalleitungs-Session übernimmt, wird vorher
+freigegeben: Er ist ein einfacher Eingang, die Session setzt die Leitung, und
+die Low-Ruhe gilt für ihn nicht. Nach der Session wird der Pin wieder
+zugeordnet und ruht low.
+
+Nicht gemessen: die Anstiegszeit der losgelassenen Leitung, die vom Pull-up
+und von der Kapazität der Leitung abhängt; welche Idle-Zeit ein ESC vor seinem
+ersten Frame braucht; ob ein ESC, der auf einer Low-Leitung neu startet, wie
+AM32 nach 0,5s bis 2s ohne Frames, aus den folgenden Frames bidirektionales
+DShot annimmt.
 
 ### Die Antwort wird abgetastet, nicht gemessen
 
@@ -429,7 +479,9 @@ ist über diesen einen ESC hinaus unbestätigt:
   Frame mit Throttle null. Das klärt der Text der Spezifikation und keine
   Platine;
 - jedes Bit-Timing, gegen die Toleranz eines echten ESC statt gegen die
-  Spezifikation.
+  Spezifikation;
+- die Low-Ruhe eines gestoppten bidirektionalen Pins und das Loslassen 1000µs
+  vor dem ersten Frame, und ob ein ESC danach sein Arming abschließt.
 
 ## Wo der Code liegt
 

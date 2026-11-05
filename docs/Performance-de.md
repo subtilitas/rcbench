@@ -573,7 +573,7 @@ eine Marge von 256 Bytes den Stack eines Kerns überschreiten.
 
 | Kern | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Ein Interrupt (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Kern 0 | `main` | 4 096 | 1 492 | 528 | 1 820 |
+| Kern 0 | `main` | 4 096 | 1 500 | 528 | 1 812 |
 | Kern 1 | `core1_main` | 4 096 | 644 | 528 | 2 668 |
 
 Gemessen am Image, das CI baut, pico-sdk 2.3.0 mit arm-none-eabi-gcc 14.2.1

@@ -570,11 +570,11 @@ uint16_t outputs_pulse_us(const outputs_t *o, uint8_t ch);
  * A surface rests at the middle of its travel and ramps either way.
  *
  * The bank is what carries it; the pin can lag.  A driver with a setup
- * sequence sends that first: firmware/iomcu/src/outputs_hw.c sends
- * DSHOT_CMD_EDT_ENABLE for DSHOT_CMD_REPEATS (10) frames on the edge into
- * driving for a bidirectional DShot slot, which at the IOmcu's
- * 1,000Hz update rate is the first 10ms of the arm.  The command reaches
- * that ESC after them.
+ * sequence sends that first: on the edge into driving for a bidirectional
+ * DShot slot, firmware/iomcu/src/outputs_hw.c releases the pin from its low
+ * rest for one frame period and then sends DSHOT_CMD_EDT_ENABLE for
+ * DSHOT_CMD_REPEATS (10) frames, which at the IOmcu's 1,000Hz update rate
+ * is the first 11ms of the arm.  The command reaches that ESC after them.
  *
  * What an ESC (electronic speed controller) does with the surface rest is a
  * question about the ESC.  A receiver output of 1500us is about half

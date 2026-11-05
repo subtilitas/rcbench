@@ -81,7 +81,10 @@ memory page remains erased. See
 Parked is an input with its pull-down and its buffer off. No state above sends a
 throttle signal: while the page holds the pin the output has released it, an apply
 leaves that slot unbound (`esc_port_may_bind()`), and the module has no function
-that makes a pulse pattern.
+that makes a pulse pattern. The output's low rest of a stopped DShot pin does not
+apply while the page holds the pin. When the page gives the pin back, its output
+binds it again, and a DShot pin then rests low until the next ARM
+([DShot](DShot.md#a-stopped-pin-is-driven-low)).
 
 Disarming does not count as a stop: ARM is refused from OPEN onward,
 so the bank is already disarmed. The panel's STOP sends the STOP
@@ -155,12 +158,6 @@ The SUPPLY page's half (`shared/bench/supply_link.c`) under a hold:
   through this page. An AM32 stays erased (byte 0 reads 0xFF) in its bootloader until
   RESTORE writes a backup. On `BY HAND` the ESC keeps its own supply until a person
   disconnects it.
-- **A bidirectional DShot pin rests high on SAFE.** Condition: a slot or port bound
-  as bidirectional DShot, with the bank SAFE and the ESC powered. The pin rests on
-  its pull-up (`out_dshot_stop()`), and a line high after signal loss is the entry
-  condition of the family S, Bluejay and AM32 bootloaders. Such an ESC may sit in its
-  bootloader after a SAFE, with or without this page. What the next ARM does then is
-  not measured. Plain DShot and PPM rest low. The page does not change this.
 - **A line with a load.** The pull-up is the pad's, 50 to 80kOhm. A line a load holds
   down, such as a servo's signal wire, stays low on it, and a first contact fails.
   Whether it raises an open-drain answer at 52us a bit is not measured.

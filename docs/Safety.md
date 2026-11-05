@@ -356,9 +356,14 @@ is not measured.
 
 [The ESC settings pages](LinkEsc.md#what-each-event-does) state the line and the supply
 for each of ARMED, STOP, a lost link, an error and a restart. While the page holds a pin
-the bank does not arm, and an error parks the line and switches the PD mini off. A
-bidirectional DShot pin rests high on SAFE, the entry condition of three ESC bootloaders
-([the limitation](LinkEsc.md#current-limitations)).
+the bank does not arm, and an error parks the line and switches the PD mini off.
+
+A stopped DShot pin is driven low in both modes, bidirectional DShot included: from
+the bind, at SAFE, STOP, an error, a lost link and the failsafe edge, until the next
+ARM ([DShot](DShot.md#a-stopped-pin-is-driven-low)). A bidirectional line high with no
+frames on it would be the entry condition of the family S, Bluejay and AM32
+bootloaders. A pin the ESC settings session holds is released to the session and
+is not driven low.
 
 ## Required external circuit: the monostable
 

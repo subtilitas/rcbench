@@ -12,7 +12,7 @@
  *
  * And the edge into driving on a bidirectional slot: the pin is woken from
  * its low rest one frame period before the first frame, also across the
- * wrap of the 32-bit microsecond clock; a disarm stops it in the same pass;
+ * wrap of the 32-bit microsecond clock; SAFE stops it in the same pass;
  * a slot the ESC_WIRE page holds is neither stopped nor woken.
  *
  * The pin drivers are fakes: a bind succeeds, a frame goes nowhere, and a
@@ -416,7 +416,7 @@ TEST_CASE(a_held_slot_is_let_go_alone_and_comes_back_the_same)
  * first pass wakes the pin and sends nothing, the first frame goes out
  * DSHOT_PERIOD_US (1000us) later and not at 999us, and the ask that leads
  * the run keeps its DSHOT_CMD_REPEATS (10) frames before the throttle's stop
- * frame.  A disarm stops the pin every pass; the next arm wakes it again
+ * frame.  SAFE stops the pin every pass; the next ARM wakes it again
  * before any frame.  No frame goes out from the low rest.
  */
 static void a_run_starts_one_frame_period_after_the_wake(uint64_t t0)
@@ -483,11 +483,11 @@ TEST_CASE(a_bidirectional_run_starts_one_frame_period_after_the_wake)
 }
 
 /*
- * An error, a STOP and a lost link all disarm the bank through
+ * An error, a STOP and a lost link all switch the bank to SAFE through
  * outputs_off(), which services the pins at once: the bidirectional slot is
  * stopped in that pass, so its pin goes to the low rest with no frame after.
  */
-TEST_CASE(a_disarm_stops_the_bidirectional_pin_in_the_same_pass)
+TEST_CASE(a_switch_to_safe_stops_the_bidirectional_pin_in_the_same_pass)
 {
     bind_one_bidir_slot(1000u);
     at_us(1000000u);
@@ -506,7 +506,7 @@ TEST_CASE(a_disarm_stops_the_bidirectional_pin_in_the_same_pass)
 int main(void)
 {
     RUN(a_bidirectional_run_starts_one_frame_period_after_the_wake);
-    RUN(a_disarm_stops_the_bidirectional_pin_in_the_same_pass);
+    RUN(a_switch_to_safe_stops_the_bidirectional_pin_in_the_same_pass);
     RUN(a_held_slot_is_let_go_alone_and_comes_back_the_same);
     RUN(a_speed_readings_age_holds_across_the_millisecond_wrap);
     RUN(a_temperature_readings_age_holds_across_the_millisecond_wrap);

@@ -535,7 +535,7 @@ core's chain, one interrupt and a margin of 256 bytes exceed its stack.
 
 | Core | Entry | Stack (bytes) | Deepest chain (bytes) | One interrupt (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| core 0 | `main` | 4,096 | 1,492 | 528 | 1,820 |
+| core 0 | `main` | 4,096 | 1,500 | 528 | 1,812 |
 | core 1 | `core1_main` | 4,096 | 644 | 528 | 2,668 |
 
 Measured on the image CI builds, pico-sdk 2.3.0 with arm-none-eabi-gcc

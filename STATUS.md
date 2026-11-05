@@ -659,7 +659,11 @@ loaded before the table takes one USB load of `rcbench-iomcu-install.uf2`.
 ### Output drivers (PWM, PPM, DShot, bidirectional DShot)
 
 Built; the frame arithmetic, the group code, the reply sampler and the GPIO-to-PWM-slice
-fold are host-tested. No instrument has been on any output pin. [Reference](docs/DShot.md).
+fold are host-tested. `test_out_dshot` runs the DShot pin driver on a fake of the pico-sdk
+calls it makes: a pin that sends no frames is driven low in both modes, and a bidirectional
+frame never starts from a low line. `test_outputs_hw` holds the 1000µs between the release
+of a bidirectional pin and its first frame. No instrument has been on any output pin.
+[Reference](docs/DShot.md).
 
 ### S.BUS decoder
 
@@ -1220,7 +1224,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 452 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 453 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1267,7 +1271,7 @@ The host suite is 452 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_sense_i228_setup`, `test_supply_link`, `test_supply_keep`, `test_sense_link`,
 `test_sense_link_view`, `test_sense_map_link`, `test_sense_win_link`,
 `test_sense_limit_link`, `test_log_cols`, `test_sense_windows`, `test_servo_source`,
-`test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`, `test_ppm`,
+`test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`, `test_out_dshot`, `test_ppm`,
 `test_outbind`, `test_board_fix`, `test_outputs_screen`, `test_outputs_screen_draw`,
 `test_outputs_screen_off`, `test_outputs_screen_port`, `test_outputs_screen_carrier`,
 `test_prog_choice`, `test_layout_screen`, `test_outputs_layout`, `test_outputs_view`,
@@ -1746,7 +1750,7 @@ known (none listed). `image_slot.py` holds the panel image to the smaller of its
 slots.
 
 `stack_check.py --iomcu` holds each IOmcu core's deepest chain, one interrupt and 256 bytes
-to the core's stack: core 0 reaches 1492 of 4096 with 528 for an interrupt. `stack_check.py`
+to the core's stack: core 0 reaches 1500 of 4096 with 528 for an interrupt. `stack_check.py`
 holds each panel task's deepest chain on the ESP32-P4, decoded from its RISC-V code, and
 1024 bytes to the task's stack; the main task reaches 5424 of 8192. `frame_cost.py` holds 27
 modes to ceilings of L2 fills under the P4's caches; the bench frame has no ceiling while
@@ -2137,8 +2141,9 @@ the RUN pin held low for 100ms; pulses must not return on GPIO 0 until ARM is he
 
 No timing has been seen on an instrument. What a host test cannot reach: every bit timing,
 the DMA ring that plays a PPM frame, the PIO turnaround from a bidirectional DShot frame to
-its reply, and whether an ESC other than the one AM32 2.21 ESC on a tester's bench (#172)
-answers.
+its reply, the low rest of a stopped bidirectional DShot pin and its release 1000µs before
+the first frame on a real ESC, and whether an ESC other than the one AM32 2.21 ESC on a
+tester's bench (#172) answers.
 
 **Next evidence or work:** an oscilloscope, a servo, and an ESC that does bidirectional DShot. [What is
 unconfirmed](docs/DShot.md#what-has-not-been-confirmed-on-a-wire).
@@ -2351,8 +2356,8 @@ stop, a pulled cable, the input lowered under a live set point in 0.5V steps.
 
 ### IOmcu core 0's stack
 
-`stack_check.py --iomcu` measures 1492 bytes for the deepest chain and 528 for one interrupt
-on the 4096-byte stack, 1820 bytes above the 256-byte margin. The figures are those of the
+`stack_check.py --iomcu` measures 1500 bytes for the deepest chain and 528 for one interrupt
+on the 4096-byte stack, 1812 bytes above the 256-byte margin. The figures are those of the
 image CI builds with arm-none-eabi-gcc 14.2.1, and `stack_check.py --iomcu --check-doc`
 holds them. The depth is a lower bound: 250 calls through a register are not followed. The
 stack has no guard (`PICO_USE_STACK_GUARDS` is off). Not measured on hardware. An image
