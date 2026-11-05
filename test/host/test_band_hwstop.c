@@ -23,6 +23,7 @@
  * - only_hwstop_shown_reads_fast
  * - the_reads_go_fast_on_the_edge_and_slow_at_the_clear
  * - off_the_reads_stay_at_500ms_through_the_fault
+ * - the_box_frames_are_red_for_hwstop_and_an_arm_and_accent_otherwise
  *
  * SPDX-License-Identifier: MIT
  */
@@ -779,6 +780,71 @@ TEST_CASE(off_the_reads_stay_at_500ms_through_the_fault)
     }
 }
 
+/**
+ * @brief The pixels of @p colour in the top 24 rows of @p chip's box, opened
+ *        on the menu with @p st.
+ * @param st     The status.
+ * @param chip   The chip whose box opens.
+ * @param colour The colour counted.
+ * @return The count; -1 when the box does not open.
+ */
+static int box_frame(const ui_bench_status_t *st, ui_band_chip_t chip,
+                     gfx_color_t colour)
+{
+    fresh();
+    to_overview();
+    ui_router_set_status(st);
+    gfx_rect_t r;
+    if (!ui_band_chip_rect(st, chip, &r)) {
+        return -1;
+    }
+    tap(r.x + r.w / 2, r.y + r.h / 2);
+    if (ui_router_help() != chip) {
+        return -1;
+    }
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    ui_router_render(&cv, 0);
+    gfx_rect_t box;
+    if (!ui_router_help_rect(&box)) {
+        return -1;
+    }
+    int n = 0;
+    for (int y = box.y; y < box.y + 24; ++y) {
+        for (int x = box.x; x < box.x + box.w; ++x) {
+            n += fb[(size_t)y * W + x] == colour;
+        }
+    }
+    return n;
+}
+
+/* HWSTOP's box and the arm chip's while ARMED or STOP is latched have the
+ * danger frame; the arm chip's at SAFE and the run clock's, ARMED or not,
+ * the accent. */
+TEST_CASE(the_box_frames_are_red_for_hwstop_and_an_arm_and_accent_otherwise)
+{
+    const gfx_color_t red = ui_theme_color(UI_C_DANGER);
+    const gfx_color_t accent = ui_theme_color(UI_C_ACCENT);
+    hw_stop(true);
+    CHECK(box_frame(&k_band, UI_BAND_CHIP_HWSTOP, red) > 0);
+    CHECK_EQ(box_frame(&k_band, UI_BAND_CHIP_HWSTOP, accent), 0);
+    hw_stop(false);
+
+    ui_bench_status_t st = k_band;
+    st.faults = 0u;
+    CHECK(box_frame(&st, UI_BAND_CHIP_ARMED, accent) > 0);
+    CHECK_EQ(box_frame(&st, UI_BAND_CHIP_ARMED, red), 0);
+    CHECK(box_frame(&st, UI_BAND_CHIP_CLOCK, accent) > 0);
+    st.armed = true;
+    st.armed_roles = UI_ARMED_MOTOR;
+    CHECK(box_frame(&st, UI_BAND_CHIP_ARMED, red) > 0);
+    CHECK_EQ(box_frame(&st, UI_BAND_CHIP_ARMED, accent), 0);
+    CHECK(box_frame(&st, UI_BAND_CHIP_CLOCK, accent) > 0);
+    CHECK_EQ(box_frame(&st, UI_BAND_CHIP_CLOCK, red), 0);
+    st.armed = false;
+    st.stop_latched = true;
+    CHECK(box_frame(&st, UI_BAND_CHIP_ARMED, red) > 0);
+}
+
 int main(void)
 {
     RUN(off_the_band_is_as_without_the_setting);
@@ -796,5 +862,6 @@ int main(void)
     RUN(only_hwstop_shown_reads_fast);
     RUN(the_reads_go_fast_on_the_edge_and_slow_at_the_clear);
     RUN(off_the_reads_stay_at_500ms_through_the_fault);
+    RUN(the_box_frames_are_red_for_hwstop_and_an_arm_and_accent_otherwise);
     return test_summary("band_hwstop");
 }
