@@ -87,6 +87,10 @@ gfx_rect_t imu_screen_row_rect(int row);
 gfx_rect_t imu_screen_choice_rect(int i);
 /** @brief The calibration's hold. @return Its rectangle in the body. */
 gfx_rect_t imu_screen_hold_rect(void);
+/** @brief Card line @p i's box, as the card draws it and repaints it alone.
+ *  @param i The line, 0 (the sensor) to 8 (the battery).
+ *  @return Its rectangle in the body; empty for any other line. */
+gfx_rect_t imu_screen_line_rect(int i);
 /** @brief State line @p i as it reads now. @param i The line.
  *  @return The line; NULL past the last. */
 const char *imu_screen_line(int i);    /**< state lines; NULL past the last */

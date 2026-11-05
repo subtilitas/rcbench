@@ -119,6 +119,16 @@ static void card_line(int i, card_line_t *out)
                              gfx_text_height(out->face, 1));
 }
 
+gfx_rect_t imu_screen_line_rect(int i)
+{
+    if (i < 0 || i >= IMS_CARD_LINES) {
+        return gfx_rect_make(0, 0, 0, 0);
+    }
+    card_line_t l;
+    card_line(i, &l);
+    return l.box;
+}
+
 /**
  * @brief The card: the sensor, the HC-05, the state, the angles, the rate
  *        and the battery.
