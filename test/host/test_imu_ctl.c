@@ -623,6 +623,44 @@ TEST_CASE(the_rate_options_are_the_wit_codes_and_null_does_nothing)
     imu_ctl_view(&c, NULL);
 }
 
+/* The HC-05 link names each failure of the module with the view's error
+ * of the same reason, keeps ERROR:(hh), and an IMU OFF end takes nothing
+ * but the error. */
+TEST_CASE(each_hc05_error_reaches_the_view_as_its_imu_error)
+{
+    static const struct { hc05_err_t h; imu_err_t v; } k[] = {
+        { HC05_ERR_NONE, IMU_ERR_NONE },
+        { HC05_ERR_NO_AT, IMU_ERR_NO_AT },
+        { HC05_ERR_TIMEOUT, IMU_ERR_TIMEOUT },
+        { HC05_ERR_REFUSED, IMU_ERR_REFUSED },
+        { HC05_ERR_INQ_REFUSED, IMU_ERR_INQ_REFUSED },
+        { HC05_ERR_PAIR, IMU_ERR_PAIR },
+        { HC05_ERR_NONE_FOUND, IMU_ERR_NONE_FOUND },
+        { HC05_ERR_ARG, IMU_ERR_ARG },
+        { (hc05_err_t)99, IMU_ERR_NONE },
+    };
+    for (size_t i = 0; i < sizeof k / sizeof k[0]; ++i) {
+        imu_hc05_t l;
+        imu_hc05_init(&l);
+        l.probed = true;
+        l.op_open = true;
+        l.bt.op = HC05_OP_BIND;
+        l.bt.state = HC05_ST_FAILED;
+        l.bt.err = k[i].h;
+        l.bt.err_code = 0x1Du;
+        imu_bound_t b;
+        CHECK(!imu_hc05_ended(&l, false, 100u, &b));
+        CHECK_EQ(l.err, k[i].v);
+        CHECK_EQ(l.err_code, 0x1Du);
+        CHECK(l.probed);                 /* IMU OFF: nothing taken */
+        CHECK(!imu_hc05_ended(&l, true, 100u, &b));  /* read once */
+        imu_view_t v;
+        memset(&v, 0, sizeof v);
+        imu_hc05_view(&l, &v);
+        CHECK_EQ(v.err, k[i].v);
+    }
+}
+
 int main(void)
 {
     RUN(imu_on_probes_and_a_silent_hc05_is_no_module_retried_every_10s);
@@ -642,5 +680,6 @@ int main(void)
     RUN(the_handout_gives_each_frame_once_and_again_after_a_reset);
     RUN(a_frame_after_the_stale_point_counts_a_gap);
     RUN(the_rate_options_are_the_wit_codes_and_null_does_nothing);
+    RUN(each_hc05_error_reaches_the_view_as_its_imu_error);
     return test_summary("imu_ctl");
 }
