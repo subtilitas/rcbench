@@ -64,7 +64,7 @@ die Sitzungen des Laufs ([Hitec-Servos](#hitec-servos)). Es beginnt bei
 KST/CHASERVO und übernimmt den Programmierer, der unter PROGRAMMIEREN
 zuletzt geöffnet wurde. **SERVOPULSE**, nur mit ZIEL auf PROG-PORT und
 SERVO auf KST/CHASERVO angezeigt, wählt mit einem Tippen BEHALTEN oder
-1000-2000; es beginnt bei BEHALTEN. Die Home-Markierung führt zurück zur Karte. **ENDLAGENLAUF STARTEN** auf der Karte
+1000-2000; es beginnt bei BEHALTEN. Das Home-Feld führt zurück zur Karte. **ENDLAGENLAUF STARTEN** auf der Karte
 startet den Lauf nach 2s Halten, wie TEST STARTEN; ein Tippen oder ein
 kürzeres Halten startet nichts.
 
@@ -508,11 +508,11 @@ Prüfstand: die gefundenen Enden werden nicht auf PULS MIN und PULS MAX angewend
 ```
 
 Mit eingebautem AS5600 hat jedes Ende eine Zeile mit dem Winkel des Horns
-an seiner letzten freien Stellung, `AS5600 +38.5 Grad an der letzten freien
+an seiner letzten freien Stellung, `AS5600 +38.5° an der letzten freien
 Stellung`. Ein Lauf, der schrieb und nicht bestand, hat eine Zeile
-`Rückholen:`. Ein Lauf, der kein Schreiben sendete, hat keine Zeile
-`Sicherung:`: die Werte vor dem Lauf liegen ab dem ersten Schreiben vor.
-Die Zeile `Sicherung:` nennt die Datei, die das erste Schreiben dieses
+`Zurückspielen:`. Ein Lauf, der kein Schreiben sendete, hat keine Zeile
+`Backup:`: die Werte vor dem Lauf liegen ab dem ersten Schreiben vor.
+Die Zeile `Backup:` nennt die Datei, die das erste Schreiben dieses
 Laufs sicherte, auch wenn dieses Schreiben gesendet wurde und verloren ging,
 nie die Datei eines früheren Laufs. Die Zeile `Gesucht:` nennt Mitte und Enden der Suche; ein
 Lauf, der vor seiner ersten Suche endete, hat keine. Ein Lauf an einem
@@ -955,7 +955,7 @@ Die Toleranz ist `SENSE_ENC_STILL_TOL` des IOmcu; `test_as5600` hält
 beide gleich. Der IOmcu ermittelt die Ruhezeit mit seinem Messintervall von 2ms,
 die Stellzeit hängt also nicht davon ab, wie oft das Panel die Page liest (alle
 40ms). Sie beginnt beim Befehl, wie der Test ihn ausgibt, und enthält den
-Weg des Befehls zum Pin: die Render-Schleife, den Control Task, den Link und
+Weg des Befehls zum Pin: die Render-Schleife, den Control-Task, den Link und
 den nächsten PWM-Frame, bis zu einem Poll-Intervall und einem Frame, nicht
 gemessen. Sie endet, sobald der Winkel höchstens 1,05 Grad vom Endwert abweicht.
 Der Arm kann sich während des verbleibenden Wegs noch bewegen: bei einem Servo mit 0,09 Grad je Mikrosekunde und 1,2µs je
@@ -1018,13 +1018,13 @@ eine solche Lücke (Konstanten in
 
 | Lücke | Lauf |
 | --- | --- |
-| bis 300ms (`SERVO_GAP_MAX_MS`), Beginn 10000ms (`SERVO_GAP_EVERY_MS`) oder mehr nach dem Beginn der Lücke davor | geht weiter: die Winkelspalte der CSV ist darin leer, eine Bewegung, die über die Lücke offen und nicht beruhigt war, fällt wie oben heraus, ab dem nächsten Messwert zählen die Winkel wieder |
+| bis 300ms (`SERVO_GAP_MAX_MS`), Beginn 10.000ms (`SERVO_GAP_EVERY_MS`) oder mehr nach dem Beginn der Lücke davor | geht weiter: die Winkelspalte der CSV ist darin leer, eine Bewegung, die über die Lücke offen und nicht beruhigt war, fällt wie oben heraus, ab dem nächsten Messwert zählen die Winkel wieder |
 | länger als 300ms | endet im ersten Durchlauf nach 300ms, oder mit dem Messwert, der eine Lücke von 301ms beendet: `AS5600 antwortet nicht` |
-| Beginn weniger als 10000ms nach dem Beginn der Lücke davor, 9999ms eingeschlossen | endet mit ihrem Beginn: `AS5600 2x in 10s ausgefallen` |
+| Beginn weniger als 10.000ms nach dem Beginn der Lücke davor, 9999ms eingeschlossen | endet mit ihrem Beginn: `AS5600 2x in 10s ausgefallen` |
 
 Beide Abbruchgründe gelten als Fehler: Der Ausgang wird ausgeschaltet
 und der Prüfstand auf SAFE gesetzt. Eine Lücke beginnt
-mit der Abfrage der Steuer-Task, die den Baustein nicht antwortend findet
+mit der Abfrage der Control-Task, die den Baustein nicht antwortend findet
 (das SENSE-Lesen alle 40ms), und endet mit dem ersten Lesen eines
 antwortenden Bausteins, mit Winkel oder mit "kein Magnet". Ein Lauf, der
 startet, während der Baustein nicht antwortet, startet in einer Lücke. Ein
@@ -1143,9 +1143,9 @@ wird. Sollwerte, die du nach dem Lauf geändert hast, bleiben erhalten.
 | `INA3221-Einstellung fehlt` | ein Lauf am INA3221: der IOmcu hört auf, die Einstellung zu halten, oder SETUP hat den INA3221 aus |
 | `INA3221 misst nicht mehr` | ein Lauf am INA3221: das Messgerät wechselte, und das Panel nannte die Bedingung nicht |
 | `AS5600 antwortet nicht` | ein Lauf mit AS5600 in Gebrauch: der Baustein antwortet länger als `SERVO_GAP_MAX_MS`, 300ms, nicht ([Der Ausgangsencoder](#der-ausgangsencoder)) |
-| `AS5600 2x in 10s ausgefallen` | ein Lauf mit AS5600 in Gebrauch: der Baustein verstummte weniger als `SERVO_GAP_EVERY_MS`, 10000ms, nach Beginn der vorherigen Lücke |
+| `AS5600 2x in 10s ausgefallen` | ein Lauf mit AS5600 in Gebrauch: der Baustein verstummte weniger als `SERVO_GAP_EVERY_MS`, 10.000ms, nach Beginn der vorherigen Lücke |
 | `IMU antwortet nicht` | ein Lauf mit WINKELQUELLE IMU: länger als `SERVO_GAP_MAX_MS`, 300ms, kein Messwert der IMU ([Winkelquelle](#winkelquelle)) |
-| `IMU 2x in 10s ausgefallen` | ein Lauf mit WINKELQUELLE IMU: die IMU verstummte weniger als `SERVO_GAP_EVERY_MS`, 10000ms, nach Beginn der vorherigen Lücke |
+| `IMU 2x in 10s ausgefallen` | ein Lauf mit WINKELQUELLE IMU: die IMU verstummte weniger als `SERVO_GAP_EVERY_MS`, 10.000ms, nach Beginn der vorherigen Lücke |
 
 Die sechs Gründe eines Laufs am INA3221 sind die Bedingungen, unter denen der
 INA3221 das Messgerät der Schiene ist. Jeder beendet den Lauf in der ersten
@@ -1465,7 +1465,7 @@ Augenmaß eingestellten Weg am Sender. Der Lauf steht in
   `rud_defl_lo`, `rud_defl_hi`). Mit gesetzter LÄNGE zeigt die Zeile die mm
   an der Hinterkante neben den Grad. RESERVE: 0 bis 50%, 10%
   (`rud_margin`). TOLERANZ: 0,1 bis 5,0°, vorgegeben 0,5° (`rud_tol`). Ein Tippen
-  öffnet die Zifferntastatur.
+  öffnet das Tastenfeld.
 - Der Zielwert einer Seite ist der eingegebene Ausschlag x (1 + RESERVE):
   20,0° bei 10% ergeben 22,0°.
 - Halte 2s HALTEN: START für 2s gedrückt, um den Lauf zu starten. Während
