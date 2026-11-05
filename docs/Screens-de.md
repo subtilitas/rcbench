@@ -5788,7 +5788,7 @@ Scheitert ein Umbenennen oder dieses Löschen oder lässt sich eine Größe nich
 lesen, wird die Zeile nicht geschrieben. Firmware 0.21.0 und älter schrieb `RCBENCH.LOG` ins
 Stammverzeichnis; diese Datei bleibt und wird nicht erneut beschrieben:
 
-    t=182s link=down for 47s  bus=OFF tx_err=248 rx_err=0 bus_err=1976 rejoins=44/44  polls=5323 replies=5279 timeouts=44
+    t=182s link=down for 47s  bus=OFF tx_err=248 rx_err=0 bus_err=1976 rejoins=44/44  polls=5323 replies=5279 timeouts=44 retried=0
 
 Felder und Reihenfolge bleiben in jeder Zeile gleich. `rejoins` nennt die
 Wiederverbindungen während dieses Ausfalls und die Gesamtzahl seit dem Start.

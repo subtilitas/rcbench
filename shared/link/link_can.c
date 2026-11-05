@@ -110,11 +110,14 @@ size_t link_can_encode(const link_msg_t *msg, link_can_frame_t *out, size_t cap)
     }
     /* A page is LINK_MAX_REGS wide, so a transfer starting inside one and
      * running past its end is a caller bug rather than a wire condition. */
-    if ((size_t)msg->offset + (size_t)msg->count > LINK_MAX_REGS) {
+    if ((size_t)msg->offset + (size_t)msg->count > LINK_MAX_REGS
+        || msg->offset > LINK_CAN_REG_MASK || msg->seq > LINK_SEQ_MAX) {
         return 0;
     }
 
     const link_can_prio_t prio = link_can_priority(msg->page, msg->op);
+    /* The exchange number rides above the register in the offset field. */
+    const uint8_t seq_bits = (uint8_t)(msg->seq << LINK_CAN_SEQ_SHIFT);
 
     if (!op_carries_payload(msg->op)) {
         /* The whole question fits in the identifier. */
@@ -122,7 +125,8 @@ size_t link_can_encode(const link_msg_t *msg, link_can_frame_t *out, size_t cap)
             return 0;
         }
         memset(&out[0], 0, sizeof(out[0]));
-        out[0].id = link_can_id(prio, msg->op, msg->page, msg->offset,
+        out[0].id = link_can_id(prio, msg->op, msg->page,
+                                (uint8_t)(seq_bits | msg->offset),
                                 msg->count);
         out[0].dlc = 0;
         return 1;
@@ -147,7 +151,8 @@ size_t link_can_encode(const link_msg_t *msg, link_can_frame_t *out, size_t cap)
         }
         memset(&out[i], 0, sizeof(out[i]));
         out[i].id = link_can_id(prio, msg->op, msg->page,
-                                (uint8_t)(msg->offset + first),
+                                (uint8_t)(seq_bits
+                                          | (uint8_t)(msg->offset + first)),
                                 (uint8_t)here);
         out[i].dlc = (uint8_t)(here * 2u);
         for (size_t r = 0; r < here; ++r) {
@@ -165,8 +170,11 @@ bool link_can_decode(const link_can_frame_t *f, link_msg_t *out)
         return false;
     }
 
-    uint8_t op = 0, page = 0, offset = 0, count = 0;
-    link_can_id_split(f->id, NULL, &op, &page, &offset, &count);
+    uint8_t op = 0, page = 0, field = 0, count = 0;
+    link_can_id_split(f->id, NULL, &op, &page, &field, &count);
+    /* The offset field: the exchange number above the register. */
+    const uint8_t seq    = (uint8_t)(field >> LINK_CAN_SEQ_SHIFT);
+    const uint8_t offset = (uint8_t)(field & LINK_CAN_REG_MASK);
 
     if (!op_is_known(op)) {
         return false;
@@ -194,6 +202,7 @@ bool link_can_decode(const link_can_frame_t *f, link_msg_t *out)
     out->page   = page;
     out->offset = offset;
     out->count  = count;
+    out->seq    = seq;
     for (size_t r = 0; r < count && op_carries_payload(op); ++r) {
         out->regs[r] = (uint16_t)((uint16_t)f->data[2 * r]
                                   | ((uint16_t)f->data[2 * r + 1u] << 8));

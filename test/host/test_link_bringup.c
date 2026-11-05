@@ -293,6 +293,34 @@ TEST_CASE(an_iomcu_that_restarted_counts_from_its_new_values)
     CHECK_EQ(w.polls, 10u);
 }
 
+/*
+ * Answers recovered by their repeat are counted in the window and are no
+ * fault: every poll was answered.  Retried counts wrap like the others.
+ */
+TEST_CASE(answers_recovered_by_a_repeat_are_counted_and_are_no_fault)
+{
+    link_bringup_t prev = healthy();
+    prev.polls   = 5000u;
+    prev.replies = 5000u;
+    prev.dev_frames = 5000u;
+    prev.retried = 0xFFFFFFFEu;
+
+    link_bringup_t now = prev;
+    now.polls      = 6200u;
+    now.replies    = 6200u;
+    now.dev_frames = 6203u;   /* the three repeats are frames there */
+    now.retried    = 1u;      /* three more, across 2^32 */
+    link_bringup_t w;
+    link_bringup_window(&now, &prev, &w);
+    CHECK_EQ(w.retried, 1u);  /* a counter that went back counts from 0 */
+    CHECK_EQ(link_bringup_diagnose(&w), LINK_DIAG_OK);
+
+    now.retried = 0xFFFFFFFFu;
+    link_bringup_window(&now, &prev, &w);
+    CHECK_EQ(w.retried, 1u);
+    CHECK_EQ(w.timeouts, 0u);
+}
+
 /* The first report has no previous one: its window is the whole run, the
  * same as a previous report of all zeros. */
 TEST_CASE(the_first_window_is_everything_so_far)
@@ -723,10 +751,10 @@ TEST_CASE(a_healthy_report_prints_the_lines_the_console_printed)
     CHECK_EQ(report_lines(&r, t, w), 6u);
     CHECK_STR_EQ(t[0], "LINK link healthy");
     CHECK_STR_EQ(t[1], "  last 60s  polls 100 replies 100 timeouts 0 "
-                       "stale 0 nack 0  iomcu frames 100 crc 0 resync 0 "
-                       "refused 0");
-    CHECK_STR_EQ(t[2], "  panel  polls 100 replies 100 timeouts 0 stale 0 "
-                       "nack 0 crc 0 resync 0");
+                       "retried 0 stale 0 nack 0  iomcu frames 100 crc 0 "
+                       "resync 0 refused 0");
+    CHECK_STR_EQ(t[2], "  panel  polls 100 replies 100 timeouts 0 "
+                       "retried 0 stale 0 nack 0 crc 0 resync 0");
     CHECK_STR_EQ(t[3], "  iomcu  frames 100 crc 0 resync 0 refused 0");
     CHECK_STR_EQ(t[4], "  round trip min 400 avg 450 max 500 us");
     /* Frames the receive FIFO or the driver's queue had no room for: lost with
@@ -763,8 +791,8 @@ TEST_CASE(a_silent_link_warns_and_names_what_never_answered)
     CHECK_STR_EQ(t[1], "  check: iomcu powered? CANH/CANL swapped? same bit "
                        "rate? terminators?");
     CHECK(w[1]);
-    CHECK_STR_EQ(t[2], "  last 5s  polls 5 replies 0 timeouts 5 stale 0 "
-                       "nack 0");
+    CHECK_STR_EQ(t[2], "  last 5s  polls 5 replies 0 timeouts 5 retried 0 "
+                       "stale 0 nack 0");
     CHECK_STR_EQ(t[4], "  iomcu  never answered a status read");
     CHECK_STR_EQ(t[5], "  bus    the controller is not running");
     r.bus.have = true;
@@ -812,7 +840,7 @@ TEST_CASE(every_report_line_fits_at_the_largest_counters)
         }
     }
     CHECK_EQ(most, (unsigned)LINK_REPORT_LINES);
-    CHECK_EQ(longest, (size_t)167);
+    CHECK_EQ(longest, (size_t)186);
 }
 
 /* A short buffer takes the start of the line and the count says it was
@@ -850,6 +878,7 @@ int main(void)
     RUN(a_clean_window_after_a_burst_of_late_answers_is_healthy);
     RUN(a_burst_inside_the_window_is_stale);
     RUN(an_iomcu_that_restarted_counts_from_its_new_values);
+    RUN(answers_recovered_by_a_repeat_are_counted_and_are_no_fault);
     RUN(the_first_window_is_everything_so_far);
     RUN(the_window_keeps_identity_flags_and_round_trip_of_now);
     RUN(the_iomcu_error_counters_are_levels_not_counts);

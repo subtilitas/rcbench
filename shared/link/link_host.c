@@ -39,6 +39,22 @@ void link_host_init(link_host_t *h, uint32_t now_ms)
     }
     memset(h, 0, sizeof(*h));
     h->last_reply_ms = now_ms;
+    h->next_seq      = 1u;
+}
+
+/**
+ * @brief Whether a request is the ACTIVATE of an update: the IOmcu restarts
+ *        20ms after it, so a repeat could reach the new image and be taken
+ *        as a command of its own.
+ *
+ * @param r The request.
+ * @return true for a write of LINK_UPD_CMD_ACTIVATE to UPDATE_CTL's CMD.
+ */
+static bool is_activate(const link_msg_t *r)
+{
+    return r->op == LINK_OP_WRITE && r->page == LINK_PAGE_UPDATE_CTL
+           && r->offset == LINK_UPD_CMD && r->count > 0u
+           && r->regs[0] == LINK_UPD_CMD_ACTIVATE;
 }
 
 /**
@@ -85,6 +101,22 @@ static bool start(link_host_t *h, uint8_t op, uint8_t page, uint8_t offset,
     memset(h->acc, 0, sizeof(h->acc));
     h->sent_ms  = now_ms;   /* this request's own timeout runs from here */
     ++h->polls;
+
+    /* Numbered while the far end answers a repeat from its copy; the
+     * numbers run 1 to LINK_SEQ_MAX, so no two requests in a row share
+     * one. */
+    h->seq = 0u;
+    if (h->numbered) {
+        if (h->next_seq == 0u || h->next_seq > LINK_SEQ_MAX) {
+            h->next_seq = 1u;
+        }
+        h->seq      = h->next_seq;
+        h->next_seq = (uint8_t)(h->next_seq % LINK_SEQ_MAX + 1u);
+    }
+    out->seq       = h->seq;
+    h->req         = *out;
+    h->retry_ok    = h->seq != 0u && !is_activate(out);
+    h->retry_sent  = false;
     return true;
 }
 
@@ -136,6 +168,9 @@ static void answered(link_host_t *h, uint32_t now_ms, bool refused)
     h->last_reply_ms = now_ms;
     h->escalated     = false;
     ++h->replies;
+    if (h->retry_sent) {
+        ++h->retried;
+    }
     if (refused) {
         ++h->nacks;
     }
@@ -161,8 +196,10 @@ bool link_host_accept(link_host_t *h, const link_msg_t *part, uint32_t now_ms,
                                 && part->op == LINK_OP_ACK);
     const bool refuses       = (part->op == LINK_OP_NACK);
 
+    /* An answer carries the number of the request it answers; one of
+     * another number belongs to an exchange already closed. */
     if ((!answers_read && !answers_write && !refuses)
-        || part->page != h->page) {
+        || part->page != h->page || part->seq != h->seq) {
         ++h->mismatches;
         return false;
     }
@@ -317,6 +354,30 @@ bool link_host_tick(link_host_t *h, uint32_t now_ms)
         acted = true;
     }
     return acted;
+}
+
+bool link_host_retry(link_host_t *h, uint32_t now_ms, link_msg_t *out)
+{
+    if (h == NULL || out == NULL || !h->pending || !h->retry_ok
+        || h->retry_sent || !elapsed(now_ms, h->sent_ms, LINK_HOST_RETRY_MS)) {
+        return false;
+    }
+    if (elapsed(now_ms, h->sent_ms, LINK_HOST_RETRY_LAST_MS)) {
+        /* Too late to keep the far end from going quiet: the request waits
+         * out its timeout as an unnumbered one does. */
+        h->retry_ok = false;
+        return false;
+    }
+    h->retry_sent = true;
+    *out = h->req;
+    return true;
+}
+
+void link_host_retry_cancel(link_host_t *h)
+{
+    if (h != NULL) {
+        h->retry_ok = false;
+    }
 }
 
 bool link_host_pending(const link_host_t *h)

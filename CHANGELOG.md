@@ -6,6 +6,20 @@ history is in git.
 
 ## Unreleased
 
+### Changed
+
+- The link protocol is 4.37. The panel numbers its requests to a 4.37
+  IOmcu and sends a request once more when its answer has not come within
+  50ms. The IOmcu answers the repeat from its copy of the first answer and
+  does not act on it again. A lost answer costs about 50ms, latches no
+  `FAULT 01` and keeps the link up. In 0.23.8 it cost the 1000ms timeout,
+  the IOmcu latched `FAULT 01` after 200ms of silence, and the link went
+  down. ACTIVATE, the update transfer and a request whose wait saw a STOP
+  are not repeated. A second loss of the same request ends at the 1000ms
+  timeout. The console report and the card's log line count the recovered
+  answers as `retried`. An IOmcu older than 4.37 gets unnumbered requests
+  and no repeat.
+
 ### Fixed
 
 - SERVO > TEST, SERVO > PROGRAM and the SERVO settings pages no longer repaint

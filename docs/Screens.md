@@ -5345,7 +5345,7 @@ by a power cut or a removal the card refused, is removed first, or named
 does not read, the line is not written. Firmware 0.21.0 and older wrote
 `RCBENCH.LOG` in the root; that file stays and is not written again:
 
-    t=182s link=down for 47s  bus=OFF tx_err=248 rx_err=0 bus_err=1976 rejoins=44/44  polls=5323 replies=5279 timeouts=44
+    t=182s link=down for 47s  bus=OFF tx_err=248 rx_err=0 bus_err=1976 rejoins=44/44  polls=5323 replies=5279 timeouts=44 retried=0
 
 The fields are the same in the same order every time. `rejoins` is this outage
 over the total since boot, and an unreadable controller writes `?` in its

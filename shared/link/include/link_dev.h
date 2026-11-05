@@ -34,6 +34,27 @@ extern "C" {
 #define LINK_DEV_SILENCE_MS 200u
 
 /**
+ * @brief Messages of one numbered exchange kept for a repeat: a write of
+ *        LINK_MAX_REGS registers sent as frames of 4 is 8 messages.
+ */
+#define LINK_DEV_REPEAT_KEEP 8u
+
+/**
+ * @brief How long a numbered exchange's answers are kept for a repeat, from
+ *        its first message: the panel's LINK_HOST_TIMEOUT_MS, after which no
+ *        repeat of it is sent.
+ */
+#define LINK_DEV_REPEAT_MS 1000u
+
+/**
+ * @brief One message of a numbered exchange and the answer it got.
+ */
+typedef struct {
+    link_msg_t req;    /**< the request as it arrived */
+    link_msg_t reply;  /**< the answer it got         */
+} link_dev_kept_t;
+
+/**
  * @brief One page, as the IOmcu sees it.
  *
  * `read` is not optional: a page nobody can read is a page nobody can check
@@ -97,6 +118,20 @@ typedef struct {
     uint8_t  held_page;   /**< the page `held` is of                      */
     uint8_t  held_offset; /**< the register held[0] is                    */
     uint8_t  held_count;  /**< registers in `held`; 0 when nothing is kept */
+
+    /**
+     * @brief The exchange number of the last numbered request (4.37,
+     *        LINK_MINOR_REPEAT); 0 after an unnumbered one.
+     *
+     * A request with this number that equals a kept one is a repeat: it is
+     * answered with the kept answer and acts on nothing.
+     */
+    uint8_t  seq;
+    uint32_t seq_ms;      /**< when the exchange's first message arrived  */
+    uint8_t  kept_count;  /**< entries of `kept` in use                   */
+    /** @brief The exchange's messages and their answers, in arrival order. */
+    link_dev_kept_t kept[LINK_DEV_REPEAT_KEEP];
+    uint32_t repeats;     /**< repeats answered from `kept`, modulo 2^32  */
 } link_dev_t;
 
 /**
@@ -125,6 +160,15 @@ void link_dev_init(link_dev_t *d, const link_page_t *pages, uint8_t page_count,
  * READ_HELD for anything else is refused with LINK_NACK_BUSY; one wider than
  * what is kept with LINK_NACK_BAD_RANGE.  Only requests from the link reach
  * this; link_dev_apply() keeps nothing and refuses READ_HELD.
+ *
+ * A request with an exchange number (link_msg_t seq, 4.37) that is the
+ * number of the exchange before and equals one of its messages, inside
+ * LINK_DEV_REPEAT_MS of that exchange's first message, is a repeat: @p reply
+ * is the answer that message got, and no page is read or written.  Any other
+ * numbered request acts as usual and is kept with its answer; one with a new
+ * number starts a new exchange and drops what was kept.  An unnumbered
+ * request drops it as well.  The reply carries the request's number.  A
+ * repeat restarts the silence watchdog as any request does.
  *
  * False only on a null argument.  Every request produces exactly one reply,
  * refusals included: silence means an IOmcu that is not there, and must

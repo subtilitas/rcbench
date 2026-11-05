@@ -32,13 +32,16 @@ extern "C" {
  */
 typedef struct {
     /* The panel's view: what it asked, and what came back. */
-    uint32_t polls;
-    uint32_t replies;
-    uint32_t timeouts;
+    uint32_t polls;         /**< requests sent                            */
+    uint32_t replies;       /**< requests answered                        */
+    uint32_t timeouts;      /**< requests that waited out their timeout   */
+    /** @brief Requests answered after their repeat (link_host_retry()):
+     *         answers lost once and recovered, not a link fault. */
+    uint32_t retried;
     uint32_t mismatches;    /**< answers to questions nobody is still asking */
-    uint32_t nacks;
+    uint32_t nacks;         /**< requests answered with a NACK            */
     uint32_t rx_crc_errors; /**< frames this end received corrupt; 0 on CAN */
-    uint32_t rx_resyncs;
+    uint32_t rx_resyncs;    /**< resynchronisations at this end; 0 on CAN */
 
     /* The IOmcu's view of itself, read from the STATUS page.  Absent
      * until a status read succeeds, which is itself informative. */
@@ -206,10 +209,10 @@ void link_bringup_add_rtt(link_bringup_t *b, uint32_t us);
 
 /**
  * @brief Bytes of one line of the console report, its NUL included: the
- *        longest line, the window's with the IOmcu's counts, is 167
+ *        longest line, the window's with the IOmcu's counts, is 186
  *        characters with every counter at 4,294,967,295.
  */
-#define LINK_REPORT_LINE 176
+#define LINK_REPORT_LINE 192
 
 /** @brief The most lines one console report prints. */
 #define LINK_REPORT_LINES 7

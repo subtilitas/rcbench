@@ -174,6 +174,7 @@ void link_bringup_window(const link_bringup_t *now,
         w.polls          = since(now->polls, prev->polls);
         w.replies        = since(now->replies, prev->replies);
         w.timeouts       = since(now->timeouts, prev->timeouts);
+        w.retried        = since(now->retried, prev->retried);
         w.mismatches     = since(now->mismatches, prev->mismatches);
         w.nacks          = since(now->nacks, prev->nacks);
         w.rx_crc_errors  = since(now->rx_crc_errors, prev->rx_crc_errors);
@@ -261,27 +262,32 @@ static int format_line(const link_report_in_t *r, report_line_t k,
             return snprintf(out, size,
                             "  last %" PRIu32 "s  polls %" PRIu32
                             " replies %" PRIu32 " timeouts %" PRIu32
+                            " retried %" PRIu32
                             " stale %" PRIu32 " nack %" PRIu32
                             "  iomcu frames %" PRIu32 " crc %" PRIu32
                             " resync %" PRIu32 " refused %" PRIu32,
                             r->win_s, w->polls, w->replies, w->timeouts,
-                            w->mismatches, w->nacks, w->dev_frames,
+                            w->retried, w->mismatches, w->nacks,
+                            w->dev_frames,
                             w->dev_crc_errors, w->dev_resyncs,
                             w->dev_refused);
         }
         return snprintf(out, size,
                         "  last %" PRIu32 "s  polls %" PRIu32
                         " replies %" PRIu32 " timeouts %" PRIu32
+                        " retried %" PRIu32
                         " stale %" PRIu32 " nack %" PRIu32,
                         r->win_s, w->polls, w->replies, w->timeouts,
-                        w->mismatches, w->nacks);
+                        w->retried, w->mismatches, w->nacks);
     case LINE_PANEL:
         return snprintf(out, size,
                         "  panel  polls %" PRIu32 " replies %" PRIu32
-                        " timeouts %" PRIu32 " stale %" PRIu32
+                        " timeouts %" PRIu32 " retried %" PRIu32
+                        " stale %" PRIu32
                         " nack %" PRIu32 " crc %" PRIu32 " resync %" PRIu32,
-                        t->polls, t->replies, t->timeouts, t->mismatches,
-                        t->nacks, t->rx_crc_errors, t->rx_resyncs);
+                        t->polls, t->replies, t->timeouts, t->retried,
+                        t->mismatches, t->nacks, t->rx_crc_errors,
+                        t->rx_resyncs);
     case LINE_IOMCU:
         if (t->have_status) {
             return snprintf(out, size,
