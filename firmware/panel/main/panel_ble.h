@@ -112,3 +112,12 @@ uint32_t panel_ble_dropped(void);
  *         a length out of range; ESP_FAIL when NimBLE refused it.
  */
 esp_err_t panel_ble_scan(uint32_t ms, panel_ble_report_fn report);
+
+/**
+ * @brief The C6's controller init and enable requests again, on the
+ *        caller's task: each answered or ended by esp_hosted after 5s, both
+ *        logged with their time.
+ * @return ESP_OK when they went; ESP_ERR_INVALID_STATE before
+ *         panel_ble_start() or while its start task runs.
+ */
+esp_err_t panel_ble_controller(void);

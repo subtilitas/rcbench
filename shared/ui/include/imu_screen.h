@@ -41,7 +41,7 @@ typedef struct {
     char    addr[IMU_ADDR_MAX];  /**< the address as text, colons, no type */
     uint8_t addr_type;           /**< 0 public, 1 random */
     char    name[IMU_NAME_MAX];  /**< its name, "" when none came */
-    int16_t rssi;                /**< the received signal strength, dBm;
+    int8_t  rssi;                /**< the received signal strength, dBm;
                                       127 unknown */
     uint8_t flags;               /**< IMU_DEV_* */
 } imu_dev_t;

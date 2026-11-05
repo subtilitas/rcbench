@@ -144,8 +144,17 @@ static void ble_report(const bleu_evt_t *e)
  */
 static void ble_command(const char *line)
 {
+    if (strcmp(line, "ble controller") == 0) {
+        printf("ble: the C6 controller init and enable requests, up to "
+               "10s\n");
+        const esp_err_t r = panel_ble_controller();
+        printf("ble: controller requests: %s\n",
+               r == ESP_OK ? "sent, see the ble lines"
+                           : "Bluetooth LE is not started or still starting");
+        return;
+    }
     if (strcmp(line, "ble scan") != 0) {
-        printf("ble: commands: ble scan\n");
+        printf("ble: commands: ble scan, ble controller\n");
         return;
     }
     if (s_ble != BLE_CMD_IDLE) {

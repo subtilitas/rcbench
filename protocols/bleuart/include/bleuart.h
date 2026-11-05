@@ -38,18 +38,25 @@ extern "C" {
 /** @brief The timeouts and waits, in ms. @{ */
 #define BLEU_SCAN_MS     10000u /**< one active scan */
 #define BLEU_CONNECT_MS  5000u  /**< one connect attempt */
-#define BLEU_RETRY_MS    1000u  /**< a failed attempt or a drop to the next */
+#define BLEU_RETRY_MS    1000u  /**< a timed-out attempt or a drop to the next */
+#define BLEU_RETRY_CONNECT_MS 7000u /**< a connect the host stack ends with a
+                                         failure, among them HCI 0x3E (failed
+                                         to be established), to the next */
 #define BLEU_GATT_MS     5000u  /**< one discovery, MTU, CCCD or read step */
 #define BLEU_WRITE_MS    1000u  /**< one command write's answer */
 #define BLEU_SETTLE_MS   2000u  /**< a cancel or a disconnect to its event */
 /** @} */
 
-/** @brief The connection parameters a connect asks for.  Interval in
- *         1.25ms units, supervision timeout in 10ms units. @{ */
-#define BLEU_ITVL_MIN    12u    /**< 15ms */
-#define BLEU_ITVL_MAX    12u    /**< 15ms */
+/** @brief The connection parameters a connect asks for, in one place.
+ *         Chosen as a phone's central asks them, not measured against
+ *         other values.  Interval in 1.25ms units, supervision timeout in
+ *         10ms units, the scan while connecting in 0.625ms units. @{ */
+#define BLEU_ITVL_MIN    24u    /**< 30ms */
+#define BLEU_ITVL_MAX    40u    /**< 50ms */
 #define BLEU_LATENCY     0u     /**< peripheral latency, events */
-#define BLEU_SUPERVISION 100u   /**< 1,000ms */
+#define BLEU_SUPERVISION 400u   /**< 4,000ms */
+#define BLEU_CONN_SCAN_ITVL   0x60u /**< 60ms */
+#define BLEU_CONN_SCAN_WINDOW 0x30u /**< 30ms */
 #define BLEU_MTU         247u   /**< the ATT (attribute protocol) MTU asked */
 /** @} */
 
@@ -174,7 +181,9 @@ typedef struct {
     uint8_t     len;     /**< bytes in data, at most BLEU_EVT_DATA */
     uint16_t    conn;    /**< connection handle */
     uint16_t    status;  /**< 0 or the error */
-    uint16_t    token;   /**< the token of the action it answers */
+    uint16_t    token;   /**< the token of the action it answers;
+                              DISCONNECT: the connect's when the
+                              connection failed to be established */
     uint16_t    h1;      /**< a handle or a value, by kind */
     uint16_t    h2;      /**< a handle or a value, by kind */
     uint16_t    h3;      /**< a value, by kind */

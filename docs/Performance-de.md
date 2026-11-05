@@ -423,7 +423,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | `control` | `control_task` | 6 144 | 3 472 | 1 632 |
 | `runlog` | `log_task` | 6 656 | 3 824 | 1 792 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
-| `imu` | `imu_task`, die Verbindung der Bluetooth-IMU: die Werte aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_imu.c`) | 4 096 | 1 872 | 1 184 |
+| `imu` | `imu_task`, die Verbindung der Bluetooth-IMU: die Werte aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_imu.c`) | 4 096 | 1 888 | 1 168 |
 | `blestart` | `ble_start_task`, die Verbindung zum C6, seine Controller-Anfragen, der Start des Hosts und das Warten auf seinen Sync, dann weg (`panel_ble.c`) | 4 096 | 1 200 | 1 856 |
 | `nimble_host` | `ble_host_task`, der Host von NimBLE: HCI (Host Controller Interface) zum C6 und zurück, die Berichte des Scans, die Antworten der Verbindung und von GATT (`panel_ble.c`) | 4 096 | 1 936 | 1 120 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 392 | 1 664 |
@@ -462,7 +462,7 @@ Prüfstandskonsole](BenchConsole-de.md)) hat einen Task mehr.
 
 | Task des Konsolen-Builds | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `console` | `console_task`, die seriellen Ports zur Konsole des IOmcu, und `ble scan` (`panel_console.c`) | 4 096 | 1 472 | 1 584 |
+| `console` | `console_task`, die seriellen Ports zur Konsole des IOmcu, und `ble scan` (`panel_console.c`) | 4 096 | 1 280 | 1 776 |
 
 Die tiefste Kette von `runlog` bindet die SD-Karte ein: die Liste der
 Servodateien, die die Karte bedient (`hitec_card_run()`, `list()`,
@@ -740,15 +740,19 @@ einem Panel (Station, 2026-11-05, Konsolen-Build) belegte der Start 5 152
 Bytes internen RAM, 264 307 frei davor und 259 155 danach, und 25 176 Bytes
 PSRAM; mit dem Hotspot danach waren 251 103 Bytes interner RAM frei.
 
-Was die Bluetooth-LE-Konfiguration zum Image hinzufügt, aus der Linker-Map
-(`esp_idf_size`), ESP-IDF v6.1, gebaut ohne die IOmcu-Images. Der
-Standard-Build ruft den Host nicht auf, deshalb fehlt ihm der größte Teil von
-NimBLE:
+Der Bluetooth-LE-Teil des Images, aus der Linker-Map (`esp_idf_size`),
+ESP-IDF v6.1, gebaut ohne die IOmcu-Images. Beide Builds enthalten den Host,
+weil die IMU ihn startet:
 
-| Build | Anwendungs-Image (Bytes) | Davon Bluetooth LE (Bytes) | Interner RAM des Images, DIRAM (Bytes) | Davon Bluetooth LE (Bytes) |
-| --- | ---: | ---: | ---: | ---: |
-| Standard | 3 078 608 | 44 688 | 179 190 | 486 |
-| Konsole (`RCBENCH_PANEL_CONSOLE`) | 3 114 560 | 76 080 | 188 360 | 3 448 |
+| Build | Anwendungs-Image (Bytes) | Davon NimBLE, `libbt.a` (Bytes) | Davon die Central, `libbleuart.a` (Bytes) | Interner RAM des Images, DIRAM (Bytes) | Davon NimBLE (Bytes) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Standard | 3 092 548 | 62 731 | 8 697 | 179 306 | 693 |
+| Konsole (`RCBENCH_PANEL_CONSOLE`) | 3 116 674 | 62 771 | 8 697 | 189 144 | 693 |
+
+Die 2 048 Bytes der Ereignis-Warteschlange stecken in der DIRAM-Zahl,
+außerhalb von `libbt.a`. esp_hosted (157 292 Bytes Flash, 1 571 Bytes DIRAM)
+trägt WLAN und Bluetooth LE zusammen; sein Bluetooth-LE-Anteil ist nicht
+gemessen.
 
 Die .bss im PSRAM ist in beiden Builds 2 587 632 Bytes, mit und ohne
 Bluetooth LE.

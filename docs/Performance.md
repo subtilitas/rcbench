@@ -396,7 +396,7 @@ its stack less 1024 bytes.
 | `control` | `control_task` | 6,144 | 3,472 | 1,632 |
 | `runlog` | `log_task` | 6,656 | 3,824 | 1,792 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
-| `imu` | `imu_task`, the Bluetooth IMU's link: SETUP's values, the host stack's events and the actions to NimBLE (`panel_imu.c`) | 4,096 | 1,872 | 1,184 |
+| `imu` | `imu_task`, the Bluetooth IMU's link: SETUP's values, the host stack's events and the actions to NimBLE (`panel_imu.c`) | 4,096 | 1,888 | 1,168 |
 | `blestart` | `ble_start_task`, the C6's link, its controller requests, the host's start and the wait for its sync, then gone (`panel_ble.c`) | 4,096 | 1,200 | 1,856 |
 | `nimble_host` | `ble_host_task`, NimBLE's host: HCI (host controller interface) to and from the C6, the scan's reports, the connection's and GATT's answers (`panel_ble.c`) | 4,096 | 1,936 | 1,120 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,392 | 1,664 |
@@ -433,7 +433,7 @@ console](BenchConsole.md)) has one task more.
 
 | Task of the console build | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `console` | `console_task`, the serial ports to the IOmcu's console, and `ble scan` (`panel_console.c`) | 4,096 | 1,472 | 1,584 |
+| `console` | `console_task`, the serial ports to the IOmcu's console, and `ble scan` (`panel_console.c`) | 4,096 | 1,280 | 1,776 |
 
 `runlog`'s deepest chain mounts the SD card: the listing of the servo
 files the card serves (`hitec_card_run()`, `list()`, `servo_store_preset()`,
@@ -693,14 +693,18 @@ packet; those are not counted. NimBLE's pools and buffers are in PSRAM
 264,307 free before and 259,155 after, and 25,176 bytes of PSRAM; with the
 access point up after it, 251,103 bytes of internal RAM were free.
 
-What the Bluetooth LE configuration adds to the image, from the linker map
-(`esp_idf_size`), ESP-IDF v6.1, built without the IOmcu images. The default
-build has no caller of the host, so most of NimBLE is left out of it:
+The Bluetooth LE part of the image, from the linker map (`esp_idf_size`),
+ESP-IDF v6.1, built without the IOmcu images. Both builds hold the host,
+since the IMU starts it:
 
-| Build | Application image (bytes) | Of it Bluetooth LE (bytes) | Internal RAM the image holds, DIRAM (bytes) | Of it Bluetooth LE (bytes) |
-| --- | ---: | ---: | ---: | ---: |
-| default | 3,078,608 | 44,688 | 179,190 | 486 |
-| console (`RCBENCH_PANEL_CONSOLE`) | 3,114,560 | 76,080 | 188,360 | 3,448 |
+| Build | Application image (bytes) | Of it NimBLE, `libbt.a` (bytes) | Of it the central, `libbleuart.a` (bytes) | Internal RAM the image holds, DIRAM (bytes) | Of it NimBLE (bytes) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| default | 3,092,548 | 62,731 | 8,697 | 179,306 | 693 |
+| console (`RCBENCH_PANEL_CONSOLE`) | 3,116,674 | 62,771 | 8,697 | 189,144 | 693 |
+
+The event queue's 2,048 bytes are in the DIRAM figure, outside `libbt.a`.
+esp_hosted (157,292 bytes of flash, 1,571 of DIRAM) carries Wi-Fi and
+Bluetooth LE together; its Bluetooth LE share is not measured.
 
 The .bss in PSRAM is 2,587,632 bytes in both builds, with and without
 Bluetooth LE.

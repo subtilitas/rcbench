@@ -83,6 +83,36 @@ static SemaphoreHandle_t s_synced;
 /** @brief s_synced's memory. */
 static StaticSemaphore_t s_synced_mem;
 
+/** The connect variants, rotating after each failed connect: bleuart's
+ *  parameters or NimBLE's defaults (NULL), each with the own address type
+ *  the sync inferred and then with the other one.  Diagnostics for a
+ *  sensor that fails every connect with HCI 0x3E. */
+#define TRY_VARIANTS 4u
+/** The next connect's variant, counted up after each failed connect. */
+static atomic_uint s_try;
+/** A connection was reported up and is not down yet. */
+static atomic_bool s_conn_up;
+/** The static random address is set for the variants that use it. */
+static atomic_bool s_rnd_set;
+
+/** Advertisers whose last report a connect's log line names. */
+#define HEARD_MAX 8u
+
+/** @brief One advertiser's last report. */
+typedef struct {
+    uint8_t  val[6];   /**< its address, least significant byte first */
+    uint8_t  type;     /**< its address type */
+    int8_t   rssi;     /**< dBm */
+    uint32_t at;       /**< ble_now_ms() of the report */
+    bool     used;     /**< the slot holds one */
+} heard_t;
+/** The last report of up to HEARD_MAX advertisers, the oldest replaced. */
+static heard_t s_heard[HEARD_MAX];
+/** The next slot to replace. */
+static unsigned s_heard_next;
+/** Guards s_heard: written on nimble_host, read on the IMU's task. */
+static portMUX_TYPE s_heard_lock = portMUX_INITIALIZER_UNLOCKED;
+
 /**
  * @brief ms since the panel started, 32 bits, wrapping.
  * @return The time.
@@ -220,12 +250,61 @@ static void ble_host_task(void *arg)
 }
 
 /**
+ * @brief Keep a report's RSSI for the connect's log line.
+ * @param d NimBLE's report.
+ */
+static void heard(const struct ble_gap_disc_desc *d)
+{
+    portENTER_CRITICAL(&s_heard_lock);
+    unsigned i = 0;
+    while (i < HEARD_MAX
+           && !(s_heard[i].used && s_heard[i].type == d->addr.type
+                && memcmp(s_heard[i].val, d->addr.val, 6u) == 0)) {
+        ++i;
+    }
+    if (i == HEARD_MAX) {
+        i = s_heard_next;
+        s_heard_next = (s_heard_next + 1u) % HEARD_MAX;
+    }
+    s_heard[i].type = d->addr.type;
+    memcpy(s_heard[i].val, d->addr.val, 6u);
+    s_heard[i].rssi = d->rssi;
+    s_heard[i].at = ble_now_ms();
+    s_heard[i].used = true;
+    portEXIT_CRITICAL(&s_heard_lock);
+}
+
+/**
+ * @brief The last report of @p a.
+ * @param a    The address.
+ * @param rssi Takes its RSSI, dBm.
+ * @param age  Takes its age, ms.
+ * @return Whether one was heard since the start.
+ */
+static bool last_heard(const ble_addr_t *a, int8_t *rssi, uint32_t *age)
+{
+    bool found = false;
+    portENTER_CRITICAL(&s_heard_lock);
+    for (unsigned i = 0; i < HEARD_MAX && !found; ++i) {
+        if (s_heard[i].used && s_heard[i].type == a->type
+            && memcmp(s_heard[i].val, a->val, 6u) == 0) {
+            *rssi = s_heard[i].rssi;
+            *age = ble_now_ms() - s_heard[i].at;
+            found = true;
+        }
+    }
+    portEXIT_CRITICAL(&s_heard_lock);
+    return found;
+}
+
+/**
  * @brief An advertising report as bleuart's event.
  * @param d NimBLE's report.
  * @param e Takes it.
  */
 static void adv_event(const struct ble_gap_disc_desc *d, bleu_evt_t *e)
 {
+    heard(d);
     memset(e, 0, sizeof(*e));
     e->kind = BLEU_EV_ADV;
     e->rssi = d->rssi;
@@ -333,6 +412,38 @@ static void notify_events(const struct ble_gap_event *ev)
 }
 
 /**
+ * @brief Log a connection's record from NimBLE.
+ * @param what The line's head.
+ * @param d    The record.
+ */
+static void log_desc(const char *what, const struct ble_gap_conn_desc *d)
+{
+    ESP_LOGI(TAG, "%s: handle %u, peer %02X:%02X:%02X:%02X:%02X:%02X type "
+                  "%u (over the air type %u), own type %u, role %u, "
+                  "interval %u x 1.25ms, latency %u, timeout %u x 10ms, "
+                  "clock accuracy %u",
+             what, (unsigned)d->conn_handle, d->peer_id_addr.val[5],
+             d->peer_id_addr.val[4], d->peer_id_addr.val[3],
+             d->peer_id_addr.val[2], d->peer_id_addr.val[1],
+             d->peer_id_addr.val[0], (unsigned)d->peer_id_addr.type,
+             (unsigned)d->peer_ota_addr.type, (unsigned)d->our_ota_addr.type,
+             (unsigned)d->role, (unsigned)d->conn_itvl,
+             (unsigned)d->conn_latency, (unsigned)d->supervision_timeout,
+             (unsigned)d->master_clock_accuracy);
+}
+
+/**
+ * @brief A connect that failed: the next one takes the next variant.
+ * @param why The status or reason.
+ */
+static void try_failed(int why)
+{
+    const unsigned next = atomic_fetch_add(&s_try, 1u) + 1u;
+    ESP_LOGI(TAG, "connect failed with 0x%X: the next try is variant %u",
+             (unsigned)why, next % TRY_VARIANTS);
+}
+
+/**
  * @brief A connection's events into the queue.  Runs on nimble_host.
  * @param ev  NimBLE's event.
  * @param arg The connect's token.
@@ -348,18 +459,40 @@ static int conn_event(struct ble_gap_event *ev, void *arg)
         e.token = token_of(arg);
         e.status = (uint16_t)ev->connect.status;
         e.conn = ev->connect.conn_handle;
+        ESP_LOGI(TAG, "connect: status 0x%X, handle %u, token %u",
+                 (unsigned)ev->connect.status, (unsigned)e.conn,
+                 (unsigned)e.token);
         if (ev->connect.status == 0) {
+            atomic_store(&s_conn_up, true);
             put_params(e.conn, &e);
+        } else {
+            try_failed(ev->connect.status);
         }
-        ESP_LOGI(TAG, "connect: status %d, handle %u, interval %u x 1.25ms",
-                 ev->connect.status, (unsigned)e.conn, (unsigned)e.h1);
+        {
+            struct ble_gap_conn_desc d;
+            if (ble_gap_conn_find(e.conn, &d) == 0) {
+                log_desc("connect: record", &d);
+            } else {
+                ESP_LOGI(TAG, "connect: no record of handle %u",
+                         (unsigned)e.conn);
+            }
+        }
         post(&e);
         break;
     case BLE_GAP_EVENT_DISCONNECT:
+        /* The connect's token: a connection that failed to be
+         * established (HCI 0x3E) ends the connect with it. */
         e.kind = BLEU_EV_DISCONNECT;
+        e.token = token_of(arg);
         e.status = (uint16_t)ev->disconnect.reason;
         e.conn = ev->disconnect.conn.conn_handle;
-        ESP_LOGI(TAG, "disconnect: reason 0x%X", ev->disconnect.reason);
+        ESP_LOGI(TAG, "disconnect: reason 0x%X, handle %u, token %u",
+                 (unsigned)ev->disconnect.reason, (unsigned)e.conn,
+                 (unsigned)e.token);
+        log_desc("disconnect: record", &ev->disconnect.conn);
+        if (!atomic_exchange(&s_conn_up, false)) {
+            try_failed(ev->disconnect.reason);
+        }
         post(&e);
         break;
     case BLE_GAP_EVENT_CONN_UPDATE:
@@ -730,7 +863,40 @@ esp_err_t panel_ble_scan(uint32_t ms, panel_ble_report_fn report)
 }
 
 /**
- * @brief A connect to @p a with bleuart's parameters.
+ * @brief The own address type of a variant: the inferred one, or for
+ *        variants 2 and 3 the other one.  Random means a static random
+ *        address, set once.
+ * @param v The variant.
+ * @return The type.
+ */
+static uint8_t own_type_of(unsigned v)
+{
+    const uint8_t inferred = (uint8_t)atomic_load(&s_own_type);
+    if (v < 2u) {
+        return inferred;
+    }
+    if (inferred != BLE_OWN_ADDR_PUBLIC) {
+        return BLE_OWN_ADDR_PUBLIC;
+    }
+    if (!atomic_load(&s_rnd_set)) {
+        ble_addr_t rnd;
+        int rc = ble_hs_id_gen_rnd(0, &rnd);
+        if (rc == 0) {
+            rc = ble_hs_id_set_rnd(rnd.val);
+        }
+        ESP_LOGI(TAG, "connect: static random address "
+                      "%02X:%02X:%02X:%02X:%02X:%02X set: %d",
+                 rnd.val[5], rnd.val[4], rnd.val[3], rnd.val[2], rnd.val[1],
+                 rnd.val[0], rc);
+        atomic_store(&s_rnd_set, rc == 0);
+    }
+    return BLE_OWN_ADDR_RANDOM;
+}
+
+/**
+ * @brief A connect to @p a in the current variant (s_try): bleuart's
+ *        parameters or NimBLE's defaults, the inferred own address type or
+ *        the other.  Every value goes to the log.
  * @param a The action.
  * @return NimBLE's status.
  */
@@ -739,11 +905,9 @@ static int do_connect(const bleu_act_t *a)
     ble_addr_t peer;
     peer.type = a->addr.type;
     memcpy(peer.val, a->addr.val, sizeof(peer.val));
-    /* The scan's interval and window while connecting: NimBLE's 16 x
-     * 0.625ms = 10ms each. */
     const struct ble_gap_conn_params cp = {
-        .scan_itvl = 0x0010,
-        .scan_window = 0x0010,
+        .scan_itvl = BLEU_CONN_SCAN_ITVL,
+        .scan_window = BLEU_CONN_SCAN_WINDOW,
         .itvl_min = BLEU_ITVL_MIN,
         .itvl_max = BLEU_ITVL_MAX,
         .latency = BLEU_LATENCY,
@@ -751,11 +915,56 @@ static int do_connect(const bleu_act_t *a)
         .min_ce_len = 0,
         .max_ce_len = 0,
     };
+    const unsigned v = atomic_load(&s_try) % TRY_VARIANTS;
+    const bool dflt = (v % 2u) != 0u;
+    const uint8_t own = own_type_of(v);
     ESP_LOGI(TAG, "connect to %02X:%02X:%02X:%02X:%02X:%02X type %u for %ums",
              peer.val[5], peer.val[4], peer.val[3], peer.val[2], peer.val[1],
              peer.val[0], (unsigned)peer.type, (unsigned)a->ms);
-    return ble_gap_connect((uint8_t)atomic_load(&s_own_type), &peer,
-                           (int32_t)a->ms, &cp, conn_event, arg_of(a->token));
+    ESP_LOGI(TAG, "connect: variant %u, own address %s (type %u), %s",
+             v, own == BLE_OWN_ADDR_PUBLIC ? "public" : "random",
+             (unsigned)own, dflt ? "NimBLE's default parameters"
+                                 : "bleuart's parameters");
+    if (dflt) {
+        ESP_LOGI(TAG, "connect: interval %u-%u x 1.25ms, latency %u, "
+                      "timeout %u x 10ms, scan 16/16 x 0.625ms",
+                 (unsigned)BLE_GAP_INITIAL_CONN_ITVL_MIN,
+                 (unsigned)BLE_GAP_INITIAL_CONN_ITVL_MAX,
+                 (unsigned)BLE_GAP_INITIAL_CONN_LATENCY,
+                 (unsigned)BLE_GAP_INITIAL_SUPERVISION_TIMEOUT);
+    } else {
+        ESP_LOGI(TAG, "connect: interval %u-%u x 1.25ms, latency %u, "
+                      "timeout %u x 10ms, scan %u/%u x 0.625ms",
+                 (unsigned)cp.itvl_min, (unsigned)cp.itvl_max,
+                 (unsigned)cp.latency, (unsigned)cp.supervision_timeout,
+                 (unsigned)cp.scan_itvl, (unsigned)cp.scan_window);
+    }
+    int8_t rssi = 0;
+    uint32_t age = 0;
+    if (last_heard(&peer, &rssi, &age)) {
+        ESP_LOGI(TAG, "connect: last report %ddBm, %ums ago", (int)rssi,
+                 (unsigned)age);
+    } else {
+        ESP_LOGI(TAG, "connect: no report heard since the start");
+    }
+    atomic_store(&s_conn_up, false);
+    const int rc = ble_gap_connect(own, &peer, (int32_t)a->ms,
+                                   dflt ? NULL : &cp, conn_event,
+                                   arg_of(a->token));
+    if (rc != 0) {
+        try_failed(rc);
+    }
+    return rc;
+}
+
+esp_err_t panel_ble_controller(void)
+{
+    const panel_ble_state_t st = panel_ble_state();
+    if (st == PANEL_BLE_OFF || st == PANEL_BLE_STARTING) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    controller_requests();
+    return ESP_OK;
 }
 
 void panel_ble_do(const bleu_act_t *a)
