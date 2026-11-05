@@ -27,6 +27,10 @@
  * after it may meet. */
 #include "hitec_panel_int.h"
 
+/** @brief The age of a backup from which the page names it in whole
+ *         minutes, s: 119s still reads in seconds. */
+#define HPN_UNIT_AGE_MIN_S 120u
+
 _Static_assert(HITEC_CARD_FILES + 2u <= HP_CHOICE_MAX,
                "the FILES list fits HP_CHOICE_MAX entries");
 
@@ -251,18 +255,61 @@ void hpn_page_factory(void)
     (void)hpn_page_fit();
 }
 
+/**
+ * @brief The lines of a servo the bench does not tie to the session's
+ *        backup: that it cannot check the unit, the model with its ID 0x32
+ *        or its missing serial, and how long ago the backup was read.
+ */
+static void unit_lines(void)
+{
+    const hitec_prog_t *p = &hp.prog;
+    const hitec_model_t *m = hitec_prog_model(p);
+    const uint32_t age_s = hitec_prog_backup_age_ms(p) / 1000u;
+    char name[24];
+    char line[HITEC_PANEL_LINE];
+
+    if (m != NULL && hitec_model_name(m->model)[0] != '\0') {
+        snprintf(name, sizeof(name), "%s", hitec_model_name(m->model));
+    } else if (m != NULL && m->name[0] != '\0') {
+        snprintf(name, sizeof(name), "%.14s", m->name);
+    } else {
+        snprintf(name, sizeof(name), "SERVO %u",
+                 m != NULL ? (unsigned)m->number : 0u);
+    }
+    hpn_page_add(HITEC_PROG_WARN, TR(HP_UNIT_UNCHECKED));
+    if (hitec_prog_series(p) == (uint8_t)HITEC_D) {
+        snprintf(line, sizeof(line), TR(HP_UNIT_D), name,
+                 (unsigned)hitec_image_reg(hitec_prog_servo(p), 0x32u));
+    } else {
+        snprintf(line, sizeof(line), TR(HP_UNIT_C), name);
+    }
+    hpn_page_add(HITEC_PROG_INFO, line);
+    /* Seconds below 2min, whole minutes from there. */
+    snprintf(line, sizeof(line), TR(HP_UNIT_AGE),
+             (unsigned)(age_s < HPN_UNIT_AGE_MIN_S ? age_s : age_s / 60u),
+             age_s < HPN_UNIT_AGE_MIN_S ? "s" : "min");
+    hpn_page_add(HITEC_PROG_INFO, line);
+}
+
 void hpn_page_backup(void)
 {
     hitec_image_t to;
+    /* The bench cannot tie the servo to the backup: 3 lines of the unit
+     * take the room of 3 values. */
+    const bool ask = !hitec_prog_unit_told_apart(&hp.prog);
 
     hpn_page_open(W_BACKUP, true, TR(KP_RESTORE_TITLE),  TR(KP_HOLD_RESTORE), TX_HOLD_HINT_RESTORE);
     hpn_page_add(HITEC_PROG_INFO, TR(KP_FROM_SESSION));
     hpn_page_add(HITEC_PROG_WARN, TR(KP_RESTORE_UNCHECKED));
-    /* The write gate has passed: the backup differs from the servo. */
+    if (ask) {
+        unit_lines();
+    }
+    /* The write gate has passed but for the unit: the backup differs from
+     * the servo. */
     if (hitec_prog_backup_image(&hp.prog, &to)) {
         const unsigned raw = hitec_prog_raw_cells(&hp.prog, &to);
 
-        hpn_page_values(&to, HP_PAGE_VALUES - 1);
+        hpn_page_values(&to, HP_PAGE_VALUES - 1 - (ask ? 3 : 0));
         if (raw != 0u) {
             char line[HITEC_PANEL_LINE];
 

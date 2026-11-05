@@ -294,7 +294,7 @@ SCREENS = {
                                    "servo", "dark"),
     "servo-hitec-restore-page": ("servo-hitec-restore-page.png", "servo",
                                  "dark"),
-    # RESTORE of a D485HW's session backup: no serial, refused.
+    # RESTORE of a D485HW's session backup: no serial, the unit asked for.
     "servo-hitec-restore-unit": ("servo-hitec-restore-unit.png", "servo",
                                  "dark"),
     "servo-hitec-classic-more-factory": (

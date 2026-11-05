@@ -509,12 +509,16 @@ hitec_prog_msg_id_t hitec_prog_write_gate(const hitec_prog_t *p,
         || (kind == (uint8_t)HITEC_PROG_WR_FACTORY && !factory_differs(p))) {
         return HITEC_PROG_MSG_NO_CHANGES;
     }
-    if (kind == (uint8_t)HITEC_PROG_WR_BACKUP
+    if (!p->write_on) {
+        return HITEC_PROG_MSG_WRITE_OFF;
+    }
+    if (kind == (uint8_t)HITEC_PROG_WR_BACKUP && !p->bk_unit_ok
         && !hitec_prog_unit_told_apart(p)) {
-        /* Another unit of the model could hold these values. */
+        /* Another unit of the model could hold these values: the
+         * operator confirms the unit first. */
         return HITEC_PROG_MSG_BACKUP_UNIT;
     }
-    return p->write_on ? HITEC_PROG_MSG_NONE : HITEC_PROG_MSG_WRITE_OFF;
+    return HITEC_PROG_MSG_NONE;
 }
 
 /**

@@ -924,7 +924,7 @@ TEST_CASE(a_load_answered_after_the_servo_went_changes_nothing)
 
 /* ----------------------------------------------------------- restores */
 
-TEST_CASE(a_d_series_restore_of_the_backup_is_refused_and_sends_nothing)
+TEST_CASE(a_d_series_restore_of_the_backup_waits_for_the_unit_raw_included)
 {
     hitec_image_t img;
     unsigned writes;
@@ -946,17 +946,27 @@ TEST_CASE(a_d_series_restore_of_the_backup_is_refused_and_sends_nothing)
     CHECK(hitec_prog_backup_differs(model()));
     CHECK(hitec_prog_backup_image(model(), &img));
     CHECK_EQ(hitec_image_reg(&img, 0x54), 7u);
-    /* No serial ties the servo to the backup: refused with the switch on
-     * and off, before the switch's own refusal. */
+    /* No serial ties the servo to the backup: refused without the unit
+     * confirmed, after the switch's own refusal. */
     writes = g_drv.d_writes;
     CHECK_EQ(hitec_prog_restore_backup(model()), HITEC_PROG_MSG_BACKUP_UNIT);
     CHECK_EQ(hitec_prog_write_enable(model(), false), HITEC_PROG_MSG_NONE);
-    CHECK_EQ(hitec_prog_restore_backup(model()), HITEC_PROG_MSG_BACKUP_UNIT);
+    CHECK_EQ(hitec_prog_restore_backup(model()), HITEC_PROG_MSG_WRITE_OFF);
     prun(200u);
     CHECK_EQ(pstate(), HITEC_PROG_HELD);
     CHECK_EQ(g_drv.d_writes, writes);
     CHECK_EQ(g_drv.dreg[0x54], 10u);
     CHECK(!hitec_prog_record(model()));
+    /* Confirmed: every value back, the raw 7 included. */
+    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
+    CHECK_EQ(hitec_prog_restore_backup_unit(model()), HITEC_PROG_MSG_NONE);
+    reread();
+    CHECK_EQ(pstate(), HITEC_PROG_RECORDING);
+    written();
+    CHECK_EQ(msg(), HITEC_PROG_MSG_BACKUP_RESTORED);
+    CHECK_EQ(g_drv.dreg[0x54], 7u);
+    CHECK(!hitec_prog_record(model()));
+    CHECK(!hitec_prog_backup_differs(model()));
     /* No servo read, no backup: nothing to restore. */
     CHECK_EQ(hitec_prog_leave(model()), HITEC_PROG_MSG_NONE);
     until(HITEC_PROG_PWM);
@@ -1009,11 +1019,15 @@ TEST_CASE(after_a_lost_link_the_backup_file_brings_the_old_values_back)
     CHECK_EQ(hitec_image_reg(&img, 0x54), 10u);
     load("HITEC001");
     CHECK_EQ(msg(), HITEC_PROG_MSG_LOAD_SAME);
-    /* The session's backup differs, and a D series servo is not tied to
-     * it: refused, the old value stays. */
+    /* The session's backup back, the unit confirmed: the written value
+     * once more. */
     CHECK(hitec_prog_backup_differs(model()));
     CHECK_EQ(hitec_prog_restore_backup(model()), HITEC_PROG_MSG_BACKUP_UNIT);
     CHECK_EQ(g_drv.dreg[0x54], 4095u);
+    CHECK_EQ(hitec_prog_restore_backup_unit(model()), HITEC_PROG_MSG_NONE);
+    written();
+    CHECK_EQ(msg(), HITEC_PROG_MSG_BACKUP_RESTORED);
+    CHECK_EQ(g_drv.dreg[0x54], 10u);
 }
 
 TEST_CASE(a_file_with_the_servos_values_replaces_an_edit_in_the_draft)
@@ -1203,7 +1217,7 @@ int main(void)
     RUN(a_raw_value_comes_back_by_a_load);
     RUN(a_load_needs_a_servo_read_in_programming_mode);
     RUN(a_load_answered_after_the_servo_went_changes_nothing);
-    RUN(a_d_series_restore_of_the_backup_is_refused_and_sends_nothing);
+    RUN(a_d_series_restore_of_the_backup_waits_for_the_unit_raw_included);
     RUN(after_a_lost_link_the_backup_file_brings_the_old_values_back);
     RUN(a_file_with_the_servos_values_replaces_an_edit_in_the_draft);
     RUN(a_late_backup_file_saves_nothing_for_the_next_session);

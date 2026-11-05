@@ -359,7 +359,9 @@ static void ask_write(uint8_t kind)
             (void)hitec_prog_factory(p);
         }
     } else if (kind == (uint8_t)HITEC_PROG_WR_BACKUP) {
-        if (go) {
+        /* A unit the bench does not tie to the backup: the page asks the
+         * operator to confirm it (hpn_page_backup()). */
+        if (go || m == HITEC_PROG_MSG_BACKUP_UNIT) {
             hpn_page_backup();
         } else {
             (void)hitec_prog_restore_backup(p);

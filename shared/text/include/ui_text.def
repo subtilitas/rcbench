@@ -6739,11 +6739,23 @@ UI_TEXT(HP_OTHER_SERVO_2, 116,
     "Its backup contains the values from this read.",
     "Sein Backup enthält die Werte dieses Auslesevorgangs.")
 UI_TEXT(HP_BACKUP_UNIT, 116,
-    "RESTORE refused: this servo cannot be told apart from another servo of its model.",
-    "ZURÜCKSPIELEN abgelehnt: Dieses Servo ist von einem anderen Servo seines Modells nicht zu unterscheiden.")
+    "RESTORE not started: the servo is not confirmed as the backup's servo.",
+    "ZURÜCKSPIELEN nicht gestartet: Das Servo ist nicht als Servo des Backups bestätigt.")
 UI_TEXT(HP_BACKUP_UNIT_2, 116,
-    "It has no serial. Load its backup file under FILES.",
-    "Es hat keine Seriennummer. Lade seine Backup-Datei unter DATEIEN.")
+    "Confirm it with the 2s hold on the RESTORE page.",
+    "Bestätige es mit 2s Halten auf der Seite ZURÜCKSPIELEN.")
+UI_TEXT(HP_UNIT_UNCHECKED, 0,
+    "The bench cannot check that this is the servo the backup came from. Hold only if it is.",
+    "Der Prüfstand kann nicht prüfen, ob dies das Servo ist, von dem das Backup stammt. Halte nur, wenn es das ist.")
+UI_TEXT(HP_UNIT_D, 0,
+    "Servo: %s, ID %u (0x32).",
+    "Servo: %s, ID %u (0x32).")
+UI_TEXT(HP_UNIT_C, 58,
+    "Servo: %s, no serial.",
+    "Servo: %s, keine Seriennummer.")
+UI_TEXT(HP_UNIT_AGE, 0,
+    "Backup read %u%s ago.",
+    "Backup vor %u%s ausgelesen.")
 /* --------------------- end of the Hitec programmer */
 
 /* ------------------------------------------------- WI-FI, PANEL UPDATE */

@@ -703,6 +703,8 @@ TEST_CASE(restore_writes_the_session_backup_back_from_its_page)
     CHECK_STR_EQ(hitec_panel_page_line(0), TR(KP_RESTORE_TITLE));
     CHECK(page_has(TR(KP_FROM_SESSION)));
     CHECK(page_has(TR(KP_RESTORE_UNCHECKED)));
+    /* The serial ties it to the backup: no question of the unit. */
+    CHECK(!page_has(TR(HP_UNIT_UNCHECKED)));
     CHECK(page_fits());
     hold(2.1f);
     until(HITEC_PROG_HELD);
@@ -710,32 +712,6 @@ TEST_CASE(restore_writes_the_session_backup_back_from_its_page)
     CHECK_STR_EQ(said(), TR(KP_M_RESTORED));
     CHECK_EQ(g_drv.eeprom[0x06], fix_hs5645()[0x06]);
     CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 4, 0));
-}
-
-TEST_CASE(restore_of_a_d_series_session_backup_says_why_and_opens_no_page)
-{
-    d_open(UI_LANG_EN);
-    card_in();
-    tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SOFT_START, 60),
-             HITEC_PROG_EDIT_OK);
-    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
-    tap(val(HITEC_PANEL_SERVO, 4, 1));
-    hold(2.1f);
-    until(HITEC_PROG_HELD);
-    show();
-    CHECK_EQ(g_drv.dreg[0x60], 6u);
-    /* Offered, as the backup differs; the tap says the refusal. */
-    tap(val(HITEC_PANEL_SERVO, 4, 0));
-    CHECK_EQ(choices(), 1);
-    pick(TR(KP_FROM_SESSION));
-    CHECK(hitec_panel_editor() != 3);
-    CHECK_STR_EQ(said(), TR(HP_BACKUP_UNIT));
-    CHECK_EQ(msg(), HITEC_PROG_MSG_BACKUP_UNIT);
-    CHECK(hitec_prog_write_on(model()));
-    prun(200u);
-    CHECK_EQ(pstate(), HITEC_PROG_HELD);
-    CHECK_EQ(g_drv.dreg[0x60], 6u);
 }
 
 TEST_CASE(factory_default_comes_from_more_for_a_classic_servo)
@@ -1020,7 +996,6 @@ int main(void)
     RUN(a_backup_file_names_the_stored_values_it_brings_back);
     RUN(a_count_of_stored_values_stays_on_its_sentences_row);
     RUN(restore_writes_the_session_backup_back_from_its_page);
-    RUN(restore_of_a_d_series_session_backup_says_why_and_opens_no_page);
     RUN(factory_default_comes_from_more_for_a_classic_servo);
     RUN(every_file_message_has_its_lines_in_both_languages);
     RUN(every_new_page_fits_in_both_languages);

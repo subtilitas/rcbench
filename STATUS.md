@@ -1116,9 +1116,8 @@ a record of the values before each write (`shared/bench/hitec_prog_write.c`,
 `shared/bench/hitec_card.c`, `firmware/panel/main/hitec_record.c`), saves the session's
 backup before the first write, saves and loads servo files in `BENCH/HITEC/CONF`, reads what
 a write's plan depends on a second time and refuses the write where two reads differ,
-restores the session's backup to a classic servo whose serial ties it to the backup and
-refuses it for a D series servo and a classic one without a serial
-(`shared/bench/hitec_prog_unit.c`), writes a classic servo's FACTORY DEFAULT
+restores the session's backup, with the unit confirmed by a 2s hold for a D series servo and
+a classic one without a serial (`shared/bench/hitec_prog_unit.c`), writes a classic servo's FACTORY DEFAULT
 (`shared/bench/hitec_prog_file.c`, `shared/bench/hitec_card_run.c`,
 `shared/logfile/servo_store.c`, `firmware/panel/main/hitec_files.c`) and leaves through
 them, and is host-tested against the page, the servo model and a card in memory
@@ -1223,7 +1222,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 454 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 455 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1310,7 +1309,7 @@ The host suite is 454 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_hitec_link_loss`, `test_hitec_link_run`, `test_hitec_prog`, `test_hitec_prog_safe`,
 `test_hitec_prog_codes`, `test_hitec_prog_write`, `test_hitec_prog_file`,
 `test_hitec_prog_backup`, `test_hitec_prog_chain`, `test_hitec_prog_unit`,
-`test_hitec_prog_reread`, `test_hitec_card`, `test_hitec_card_run`, `test_servo_store`,
+`test_hitec_prog_reread`, `test_hitec_panel_unit`, `test_hitec_card`, `test_hitec_card_run`, `test_servo_store`,
 `test_hitec_panel`, `test_hitec_panel_states`, `test_hitec_panel_write`,
 `test_hitec_panel_file`, `test_page_console`, `test_kst_card`, `test_prog_link`,
 `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`,
@@ -1697,8 +1696,8 @@ backup of another servo, saves by hand and their refusals, FILES' pages, the req
 wrap, a load into the draft with the switch off and on, the other series and layout, another
 model, a soft rule, a hand-edited file, values outside the editable ones counted, a raw
 value back by a load, the load's gates (ARMED, STOP, no read, a read owed), RESTORE of a
-D series backup refused after a write and after a lost link, and FACTORY DEFAULT of a
-classic servo.
+D series backup with a raw value, the unit confirmed, after a write and after a lost link,
+and FACTORY DEFAULT of a classic servo.
 
 `test_hitec_prog_backup` runs the load of a backup file: FACTORY DEFAULT of an HS-7955TG
 undone after LEAVE and CONNECT, cell 0x22 included; a backup file of another servo, a save
@@ -1711,10 +1710,14 @@ write of the ID; a write left unverified with the verdicts SAME, DONE, MIX and O
 with its record discarded; LEAVE and CONNECT; a lost link; a classic servo of another
 serial; the message in both languages. `test_hitec_prog_unit` runs the unit a session's
 backup is of: a second unit of one model with another serial or ID takes its own backup;
-the same unit read again keeps it; RESTORE goes for a classic servo with one serial and is
-refused, with nothing sent, for a D series servo and a classic one without a serial; the
-serial's limits, '0' to '9' and each cell read; a swap with no read after it, ended by the
-second read; a READ ALL aborted after a swap; ABORT and STOP during RESTORE's second read.
+the same unit read again keeps it; RESTORE goes for a classic servo with one serial, and
+for a D series servo and a classic one without a serial only with the unit confirmed, the
+second read still run; the serial's limits, '0' to '9' and each cell read; the backup's age
+across the clock wrap; a swap with no read after it, ended by the second read; a READ ALL
+aborted after a swap; ABORT and STOP during RESTORE's second read. `test_hitec_panel_unit`
+runs the RESTORE page that asks for the unit: its lines, its hold, a short press and its
+hint, CANCEL, a tap elsewhere, a finger off the button, a cancelled touch, STOP during the
+hold, the age in seconds and minutes, and both languages without a card.
 
 `test_hitec_prog_reread` runs the second read before a write's plan (reads that agree or
 differ, ABORT, STOP, its time); `test_servo_restore` SERVO's question after a LEAVE ([Servo

@@ -2,8 +2,8 @@
  * @file
  * @brief Which unit the session's backup is of: whether the programmer for
  *        servos by Hitec tells the servo read apart from every other unit
- *        of its model, the condition RESTORE of the session's backup
- *        needs.  See hitec_prog.h.
+ *        of its model, which decides whether RESTORE of the session's
+ *        backup asks the operator to confirm the unit.  See hitec_prog.h.
  *
  * Hitec is a name or trademark of its owner; it is used here only to say
  * which servos this module works with.
@@ -14,6 +14,8 @@
  * the same ID and the same values.  The session's chain (hitec_prog_file.c)
  * ends the backup where the serial, the ID or another written value
  * differs; where nothing differs, only a serial says the unit is the same.
+ * Without one the operator says it: the screen's 2s hold calls
+ * hitec_prog_restore_backup_unit().
  *
  * SPDX-License-Identifier: MIT
  */
@@ -61,4 +63,21 @@ bool hitec_prog_unit_told_apart(const hitec_prog_t *p)
         }
     }
     return true;
+}
+
+uint32_t hitec_prog_backup_age_ms(const hitec_prog_t *p)
+{
+    return p->have_bk ? p->f.now_ms - p->bk_ms : 0u;
+}
+
+hitec_prog_msg_id_t hitec_prog_restore_backup_unit(hitec_prog_t *p)
+{
+    hitec_prog_msg_id_t m;
+
+    /* The confirmation holds for this call only: the write's gate reads it
+     * once, at its start. */
+    p->bk_unit_ok = true;
+    m = hitec_prog_restore_backup(p);
+    p->bk_unit_ok = false;
+    return m;
 }

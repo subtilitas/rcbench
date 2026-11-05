@@ -491,7 +491,7 @@ static bool files_view(const char *v)
         || strcmp(v, "-restore-page") == 0
         || strcmp(v, "-restore-unit") == 0) {
         /* -restore-page on the classic HS-5645MG, its serial read; the
-         * D485HW of -restore-unit has none, and RESTORE says so. */
+         * D485HW of -restore-unit has none, and its page asks for the unit. */
         hwrite_page();
         hhold();
         hwait(HITEC_PROG_HELD);

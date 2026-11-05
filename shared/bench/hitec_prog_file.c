@@ -163,6 +163,7 @@ void hpf_read_done(hitec_prog_t *p, bool owed, bool changed)
     p->have_bk = true;
     p->bk_gen++;
     p->bk = p->servo;
+    p->bk_ms = p->f.now_ms;
     p->bk_saved = false;
     p->bk_no_file = false;
     p->bk_name[0] = '\0';

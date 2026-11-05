@@ -8,8 +8,11 @@
  *    backup, and the read is the new unit's backup;
  *  - the same unit read again keeps its backup;
  *  - RESTORE of the session's backup goes for a classic servo whose read
- *    and backup hold one serial, and is refused, with nothing sent, for a
- *    D series servo and for a classic servo with no serial;
+ *    and backup hold one serial; for a D series servo and a classic servo
+ *    with no serial it is refused, with nothing sent, until the operator
+ *    confirms the unit (hitec_prog_restore_backup_unit()), and the second
+ *    read still runs;
+ *  - the backup's age across the 32-bit millisecond wrap;
  *  - the serial's limits: 7 ASCII digits '0' to '9', each cell read;
  *  - a swap with no read after it: RESTORE's second read reads the serial
  *    again and ends the write before a step;
@@ -107,9 +110,9 @@ static void put_serial(const char *s)
     }
 }
 
-/* RESTORE of the session's backup refused, nothing sent, the switch and
- * the backup as they were. */
-static void restore_refused(void)
+/* RESTORE of the session's backup without the unit confirmed: refused,
+ * nothing sent, the switch and the backup as they were. */
+static void restore_needs_the_unit(void)
 {
     const unsigned c_writes = g_drv.c_writes;
     const unsigned d_writes = g_drv.d_writes;
@@ -131,6 +134,19 @@ static void restore_refused(void)
     CHECK(!hitec_prog_record(model()));
     CHECK_EQ(hitec_prog_write_on(model()), on);
     CHECK(hitec_prog_backup_differs(model()));
+    /* The confirmation is for one call: none is left over. */
+    CHECK(!model()->bk_unit_ok);
+}
+
+/* RESTORE of the session's backup with the unit confirmed: written and
+ * verified. */
+static void restore_with_the_unit(void)
+{
+    CHECK_EQ(hitec_prog_restore_backup_unit(model()), HITEC_PROG_MSG_NONE);
+    CHECK(!model()->bk_unit_ok);
+    written();
+    CHECK_EQ(msg(), HITEC_PROG_MSG_BACKUP_RESTORED);
+    CHECK(!hitec_prog_backup_differs(model()));
 }
 
 /* ------------------------------------------------------- a second unit */
@@ -196,8 +212,12 @@ TEST_CASE(a_second_d_series_unit_of_another_id_takes_its_own_backup)
     CHECK_STR_EQ(hitec_prog_backup_name(model()), "HITEC002");
     CHECK(files_image("HITEC002.TXT", &img));
     CHECK_EQ(hitec_image_reg(&img, 0x32), 7u);
-    restore_refused();
     CHECK_EQ(g_drv.dreg[0x54], 6u);
+    /* Confirmed, RESTORE brings B back as found, not A. */
+    restore_needs_the_unit();
+    restore_with_the_unit();
+    CHECK_EQ(g_drv.dreg[0x54], 10u);
+    CHECK_EQ(g_drv.dreg[0x32], 7u);
 }
 
 TEST_CASE(a_second_d_series_unit_of_another_id_breaks_an_unverified_write)
@@ -244,7 +264,7 @@ TEST_CASE(the_same_classic_unit_keeps_its_backup_and_restore_goes)
     CHECK(!hitec_prog_backup_differs(model()));
 }
 
-TEST_CASE(the_same_d_series_unit_keeps_its_backup_and_restore_is_refused)
+TEST_CASE(the_same_d_series_unit_keeps_its_backup_and_restore_asks_for_it)
 {
     hitec_image_t img;
 
@@ -255,20 +275,34 @@ TEST_CASE(the_same_d_series_unit_keeps_its_backup_and_restore_is_refused)
     CHECK_STR_EQ(hitec_prog_backup_name(model()), "HITEC001");
     CHECK(hitec_prog_backup_image(model(), &img));
     CHECK_EQ(hitec_image_reg(&img, 0x54), 4095u);
-    restore_refused();
+    restore_needs_the_unit();
     CHECK_EQ(g_drv.dreg[0x54], 10u);
-    /* With the switch off the refusal is the same: no switch page for a
-     * write that cannot go. */
+    /* With the switch off the switch comes first, confirmed or not. */
     CHECK_EQ(hitec_prog_write_enable(model(), false), HITEC_PROG_MSG_NONE);
-    restore_refused();
-    /* The backup file brings the values back through FILES. */
-    CHECK(files_image("HITEC001.TXT", &img));
-    CHECK_EQ(hitec_image_reg(&img, 0x54), 4095u);
+    const unsigned writes = g_drv.d_writes;
+    CHECK_EQ(hitec_prog_write_gate(model(), (uint8_t)HITEC_PROG_WR_BACKUP),
+             HITEC_PROG_MSG_WRITE_OFF);
+    CHECK_EQ(hitec_prog_restore_backup_unit(model()),
+             HITEC_PROG_MSG_WRITE_OFF);
+    CHECK(!model()->bk_unit_ok);
+    /* A confirmed RESTORE refused by another gate leaves no confirmation:
+     * an edit standing. */
+    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 30),
+             HITEC_PROG_EDIT_OK);
+    CHECK_EQ(hitec_prog_restore_backup_unit(model()),
+             HITEC_PROG_MSG_EDITS_PENDING);
+    hitec_prog_discard(model());
+    CHECK_EQ(g_drv.d_writes, writes);
+    restore_needs_the_unit();
+    /* Confirmed: the values of the session's start. */
+    restore_with_the_unit();
+    CHECK_EQ(g_drv.dreg[0x54], 4095u);
 }
 
 /* ---------------------------------------------------- no serial to read */
 
-TEST_CASE(a_classic_unit_with_no_serial_keeps_its_backup_and_restore_is_refused)
+TEST_CASE(a_classic_unit_with_no_serial_keeps_its_backup_and_restore_asks_for_it)
 {
     static const uint8_t k_blank[HITEC_C_SERIAL_LEN] = {
         0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
@@ -279,8 +313,10 @@ TEST_CASE(a_classic_unit_with_no_serial_keeps_its_backup_and_restore_is_refused)
     read_all();
     CHECK_EQ(msg(), HITEC_PROG_MSG_READ);
     CHECK_STR_EQ(hitec_prog_backup_name(model()), "HITEC001");
-    restore_refused();
+    restore_needs_the_unit();
     CHECK(g_drv.eeprom[0x06] != fix_hs5645()[0x06]);
+    restore_with_the_unit();
+    CHECK_EQ(g_drv.eeprom[0x06], fix_hs5645()[0x06]);
 }
 
 TEST_CASE(a_second_classic_unit_with_no_serial_gets_nothing_of_the_first)
@@ -296,7 +332,7 @@ TEST_CASE(a_second_classic_unit_with_no_serial_gets_nothing_of_the_first)
     const uint8_t written06 = g_drv.eeprom[0x06];
     read_all();
     CHECK_EQ(msg(), HITEC_PROG_MSG_READ);
-    restore_refused();
+    restore_needs_the_unit();
     CHECK_EQ(g_drv.eeprom[0x06], written06);
 }
 
@@ -468,6 +504,33 @@ TEST_CASE(abort_and_stop_during_restores_second_read_send_nothing)
     CHECK_EQ(g_drv.eeprom[0x06], fix_hs5645()[0x06]);
 }
 
+TEST_CASE(a_confirmed_d_series_restore_still_reads_the_servo_again)
+{
+    /* B, with another ID, on the port after the last READ ALL: the
+     * operator's confirmation does not pass the second read. */
+    d_ready();
+    d_speed_written();
+    g_drv.dreg[0x32] = 9u;
+    const unsigned writes = g_drv.d_writes;
+    CHECK_EQ(hitec_prog_restore_backup_unit(model()), HITEC_PROG_MSG_NONE);
+    written();
+    CHECK_EQ(msg(), HITEC_PROG_MSG_READS_DIFFER);
+    CHECK_EQ(hitec_prog_message(model())->arg, 0x32u);
+    CHECK_EQ(g_drv.d_writes, writes);
+    CHECK(!hitec_prog_record(model()));
+}
+
+TEST_CASE(the_backup_age_counts_across_the_clock_wrap)
+{
+    d_ready();
+    CHECK(hitec_prog_backup_age_ms(model()) < 1000u);
+    model()->bk_ms = 0xFFFFFF00u;
+    model()->f.now_ms = 0x00000100u;
+    CHECK_EQ(hitec_prog_backup_age_ms(model()), 0x200u);
+    model()->have_bk = false;
+    CHECK_EQ(hitec_prog_backup_age_ms(model()), 0u);
+}
+
 TEST_CASE(the_session_end_takes_the_refusal_with_it)
 {
     d_ready();
@@ -487,13 +550,13 @@ TEST_CASE(the_refusal_has_two_lines_in_both_languages)
     char t[HITEC_PANEL_MSG_LINES][HITEC_PANEL_LINE];
 
     CHECK_EQ(hitec_panel_message_lines(&m, t), 2);
-    CHECK_STR_EQ(t[0], "RESTORE refused: this servo cannot be told apart "
-                       "from another servo of its model.");
-    CHECK_STR_EQ(t[1], "It has no serial. Load its backup file under FILES.");
+    CHECK_STR_EQ(t[0], "RESTORE not started: the servo is not confirmed as "
+                       "the backup's servo.");
+    CHECK_STR_EQ(t[1], "Confirm it with the 2s hold on the RESTORE page.");
     ui_text_set_language(UI_LANG_DE);
     CHECK_EQ(hitec_panel_message_lines(&m, t), 2);
-    CHECK_STR_EQ(t[1], "Es hat keine Seriennummer. Lade seine Backup-Datei "
-                       "unter DATEIEN.");
+    CHECK_STR_EQ(t[1], "Bestätige es mit 2s Halten auf der Seite "
+                       "ZURÜCKSPIELEN.");
     ui_text_set_language(UI_LANG_EN);
 }
 
@@ -503,13 +566,15 @@ int main(void)
     RUN(a_second_d_series_unit_of_another_id_takes_its_own_backup);
     RUN(a_second_d_series_unit_of_another_id_breaks_an_unverified_write);
     RUN(the_same_classic_unit_keeps_its_backup_and_restore_goes);
-    RUN(the_same_d_series_unit_keeps_its_backup_and_restore_is_refused);
-    RUN(a_classic_unit_with_no_serial_keeps_its_backup_and_restore_is_refused);
+    RUN(the_same_d_series_unit_keeps_its_backup_and_restore_asks_for_it);
+    RUN(a_classic_unit_with_no_serial_keeps_its_backup_and_restore_asks_for_it);
     RUN(a_second_classic_unit_with_no_serial_gets_nothing_of_the_first);
     RUN(a_serial_is_7_ascii_digits_each_read);
     RUN(an_aborted_read_after_a_swap_leaves_nothing_to_restore_from);
     RUN(a_swap_with_no_read_after_it_ends_restore_at_the_second_read);
     RUN(abort_and_stop_during_restores_second_read_send_nothing);
+    RUN(a_confirmed_d_series_restore_still_reads_the_servo_again);
+    RUN(the_backup_age_counts_across_the_clock_wrap);
     RUN(the_session_end_takes_the_refusal_with_it);
     RUN(the_refusal_has_two_lines_in_both_languages);
     return test_summary("hitec_prog_unit");
