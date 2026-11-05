@@ -99,14 +99,14 @@ check_pages(const ui_screen_t *scr, const char *what)
         || near(ui_band_stop_rect(), next0, 2)) {
         T_FAIL("%s: NEXT covers \"?\" or STOP", what);
     }
-    const int count = ui_help_count(scr, armed);
-    if (count != scr->help_count() && !armed) {
-        T_FAIL("%s: %d pages offered, %d given", what, count,
+    const int offered = ui_help_count(scr, armed);
+    if (offered != scr->help_count() && !armed) {
+        T_FAIL("%s: %d pages offered, %d given", what, offered,
                scr->help_count());
     }
     const bool note = ui_help_armed_note(scr, armed);
     const gfx_rect_t band = gfx_rect_make(0, 0, UI_PANEL_W, UI_BAND_H);
-    for (int n = 0; n < count; ++n) {
+    for (int n = 0; n < offered; ++n) {
         ui_help_page_t p;
         if (!ui_help_page(scr, armed, n, &p)) {
             T_FAIL("%s: page %d missing", what, n + 1);
