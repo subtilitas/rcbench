@@ -83,13 +83,13 @@ are dropped, followed by `err output full, N bytes dropped`.
 
 ```text
 > r 0x00 0 2
-data page=0x00 off=0 n=2: 0x0004 0x001B
+data page=0x00 off=0 n=2: 0x0004 0x0024
 > w 0x2A 4 1 5000 1000
 nack page=0x2A off=4: NOT_ARMED (5)
 ```
 
 Lines typed are shown here after `> `; the console prints no prompt. The
-first line reads the protocol version, 4.27. The second is SUPPLY's ON at
+first line reads the protocol version, 4.36. The second is SUPPLY's ON at
 5000mV and 1000mA, refused because no panel sends a heartbeat. With a
 panel running, the same line is taken:
 
