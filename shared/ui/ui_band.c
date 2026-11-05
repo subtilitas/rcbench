@@ -543,13 +543,12 @@ void ui_band_help_render(gfx_canvas_t *c, const ui_bench_status_t *st,
     gfx_color_t accent = ui_theme_color(UI_C_ACCENT);
     if (chip == UI_BAND_CHIP_FAULT) {
         accent = ui_theme_color(UI_C_WARN);
-    } else if (chip == UI_BAND_CHIP_HWSTOP) {
-        accent = ui_theme_color(UI_C_DANGER);
     } else if (chip == UI_BAND_CHIP_LINK) {
         accent = st->link_up ? ui_theme_color(UI_C_OK)
                              : ui_theme_color(UI_C_DANGER);
-    } else if (chip == UI_BAND_CHIP_ARMED
-               && (st->armed || st->stop_latched)) {
+    } else if (chip == UI_BAND_CHIP_HWSTOP
+               || (chip == UI_BAND_CHIP_ARMED
+                   && (st->armed || st->stop_latched))) {
         accent = ui_theme_color(UI_C_DANGER);
     }
     char buf[24];
