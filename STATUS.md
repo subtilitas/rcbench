@@ -1525,12 +1525,12 @@ over the page and a servo whose horn follows its target: the passes toward the f
 position at 150 counts a pass at most, the reach edge, the end with one restart and no save,
 a bind by the lag, by the current (799mA for 3s, 800mA for 350ms, 800mA held to 400ms and
 across the 32-bit millisecond wrap) and by the AS5600, the hard ends (STOP, a switch to SAFE
-at the bench, a lost link, the supply off, the AS5600 gone, a failed read), each one fault at
-the gate, ABORT at the start, in the loop and in the end, a register changed during the
-loop, a start outside the reach at 51 and 50 counts, the edits with the hold's consent, and
-every refusal with nothing sent. `test_hitec_panel_move` runs its row, page, hint, `-`/`+`
-keys with their repeat at 0.40s and 1.0s, the keypad, the live lines naming the port and pin
-the loop drives, and every way off on the overlay.
+at the bench, a lost link, a step the link does not run, the supply off, the AS5600 gone, a
+failed read), each one fault at the gate, ABORT at the start, in the loop and in the end, a
+register changed during the loop, a start outside the reach at 51 and 50 counts, the edits
+with the hold's consent, and every refusal with nothing sent. `test_hitec_panel_move` runs
+its row, page, hint, `-`/`+` keys with their repeat at 0.40s and 1.0s, the keypad, the live
+lines naming the port and pin the loop drives, and every way off on the overlay.
 
 `hitec_headers_cxx` calls the module through its 6 headers from C++11. `test_i2c_txq`,
 `test_i2c_txq_calls` and `test_i2c_txq_wire` run the core of `protocols/i2c_txq/` over a

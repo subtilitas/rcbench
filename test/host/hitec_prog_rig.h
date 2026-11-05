@@ -66,6 +66,7 @@ static uint32_t             g_stops, g_stops_seen;
 /* The panel's facts. */
 static bool     g_stopped;              /* STOP latched                  */
 static bool     g_armed;                /* the outputs armed             */
+static bool     g_step_busy;            /* the link refuses each step    */
 static uint8_t  g_target;               /* 0 standard, 1 + n port n      */
 static bool     g_pin_known;            /* port CH names PIN             */
 static bool     g_fixed;                /* the supply is the ports' own
@@ -303,7 +304,9 @@ static inline void carry_out(const hitec_prog_cmd_t *c)
                                       c->id);
         break;
     case HITEC_PROG_CMD_STEP:
-        a = hitec_link_step(&g_l, c->port, &c->step, c->mv, c->ma, c->id);
+        a = g_step_busy ? HITEC_LINK_START_BUSY
+                        : hitec_link_step(&g_l, c->port, &c->step, c->mv,
+                                          c->ma, c->id);
         break;
     case HITEC_PROG_CMD_CLEAR:
         a = hitec_link_clear(&g_l, c->port, c->id);
@@ -564,6 +567,7 @@ static inline void rig_from(uint32_t t0, supply_kind_t supply, bool panel)
     g_frame_ms = 16u;
     g_arm_refused = 0;
     g_out_ma = 41u;
+    g_step_busy = false;
     g_angle_on = false;
     g_angle_follow = false;
     g_angle = 0u;

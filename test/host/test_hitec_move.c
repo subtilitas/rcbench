@@ -359,6 +359,27 @@ TEST_CASE(a_stop_ends_the_loop_hard_counts_a_fault_and_owes_read_all)
     CHECK_EQ(hitec_prog_move_gate(model()), HITEC_PROG_MSG_STOP_LATCHED);
 }
 
+TEST_CASE(a_step_the_link_does_not_run_ends_the_loop_hard_with_a_fault)
+{
+    uint32_t f0;
+    unsigned reboots;
+
+    held();
+    moving();
+    f0 = faults();
+    reboots = g_drv.d_reboots;
+    g_step_busy = true;
+    until_move(HITEC_MOVE_OFF);
+    g_step_busy = false;
+    prun(50u);
+    CHECK_EQ(faults(), f0 + 1u);
+    CHECK_EQ(g_drv.d_reboots, reboots);
+    CHECK(model()->must_read);
+    CHECK(model()->mv.owed);
+    CHECK(!hitec_prog_write_on(model()));
+    CHECK(!hitec_prog_move_on(model()));
+}
+
 TEST_CASE(a_switch_to_safe_at_the_bench_ends_the_loop_with_a_fault)
 {
     uint32_t f0;
@@ -694,6 +715,7 @@ int main(void)
     RUN(a_stop_ends_the_loop_hard_counts_a_fault_and_owes_read_all);
     RUN(a_switch_to_safe_at_the_bench_ends_the_loop_with_a_fault);
     RUN(a_lost_link_ends_the_loop_with_a_fault);
+    RUN(a_step_the_link_does_not_run_ends_the_loop_hard_with_a_fault);
     RUN(the_supply_going_off_ends_the_loop_hard_with_a_fault);
     RUN(a_failed_position_read_is_one_fault_and_ends_the_loop);
     RUN(abort_during_the_loop_runs_the_end_with_no_fault);
