@@ -27,6 +27,18 @@ history is in git.
   `text_hl_line()`, an edit and save, the 412 round trip with the unsaved
   question, upload, rename, move and delete, and the write buttons while
   writes are closed. The CI job is `Web file manager browser test`.
+- The C6 radio's update. CI and the release build esp_hosted 2.13.0's
+  co-processor firmware for the board's ESP32-C6 from the component the
+  panel pins (`.github/workflows/c6.yml`, `tools/c6_image.py`,
+  `firmware/c6/dependencies.lock`); the release publishes
+  `rcbench-c6-2.13.0.bin` (1,283,616 bytes) and
+  `rcbench-c6-merged-2.13.0.bin` with SHA256SUMS lines, and the panel image
+  carries the first (`RCBENCH_C6_BIN`, 1,284,272 bytes of flash). SETUP >
+  UPDATES gets a C6 RADIO row: the C6's version or `not reported`, the
+  carried one, and a 2s hold that sends the image over SDIO at SAFE only,
+  with a limit on each step, the old firmware kept on every failure, and a
+  restart of the panel after a success. ARM is refused while it runs.
+  docs/Building.md gives the recovery over header H4.
 
 ### Changed
 
