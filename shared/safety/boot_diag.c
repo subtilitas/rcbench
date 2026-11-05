@@ -8,7 +8,7 @@
 
 #include <stdio.h>
 
-/** @brief Room for the longest partition name: "0xFF" or "slot 0". */
+/** @brief Room for a name formatted into a buffer: "0xFF" or "15" and the NUL. */
 #define NAME_MAX_BYTES 8u
 
 /**
