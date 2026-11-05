@@ -449,10 +449,14 @@ const char *sensors_rows_imu_word(imu_link_t link, uint16_t rate_dhz,
         return "";
     }
     switch (link) {
-    case IMU_LINK_NO_MODULE: snprintf(buf, n, "%s", TR(IMU_ST_NO_MODULE)); break;
+    case IMU_LINK_STARTING:  snprintf(buf, n, "%s", TR(IMU_ST_STARTING));  break;
+    case IMU_LINK_NO_BT:     snprintf(buf, n, "%s", TR(IMU_ST_NO_BT));     break;
+    case IMU_LINK_C6_FAILED: snprintf(buf, n, "%s", TR(IMU_ST_C6_FAILED)); break;
     case IMU_LINK_READY:     snprintf(buf, n, "%s", TR(IMU_ST_READY));     break;
     case IMU_LINK_SCANNING:  snprintf(buf, n, "%s", TR(IMU_ST_SCANNING));  break;
-    case IMU_LINK_BINDING:   snprintf(buf, n, "%s", TR(IMU_ST_BINDING));   break;
+    case IMU_LINK_CONNECTING:
+        snprintf(buf, n, "%s", TR(IMU_ST_CONNECTING));
+        break;
     case IMU_LINK_BOUND:     snprintf(buf, n, "%s", TR(IMU_ST_BOUND));     break;
     case IMU_LINK_CONNECTED:
         snprintf(buf, n, TR(IMU_ST_CONNECTED), (unsigned)((rate_dhz + 5u) / 10u));
@@ -477,7 +481,8 @@ gfx_color_t sensors_rows_imu_color(imu_link_t link)
     switch (link) {
     case IMU_LINK_CONNECTED:
         return UI_OK;
-    case IMU_LINK_NO_MODULE:
+    case IMU_LINK_NO_BT:
+    case IMU_LINK_C6_FAILED:
     case IMU_LINK_NO_FRAMES:
         return UI_WARN;
     default:

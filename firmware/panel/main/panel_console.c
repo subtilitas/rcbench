@@ -14,6 +14,7 @@
  */
 #include "panel_console.h"
 
+#include <stdatomic.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -65,7 +66,11 @@ typedef enum {
 /** @brief The console's task: `ble scan`'s state. */
 static ble_cmd_t s_ble;
 /** @brief The console's task: reports printed in this scan. */
-static unsigned s_ble_reports;
+static atomic_uint s_ble_reports;
+/** @brief The scan's end came, on the host task. */
+static atomic_bool s_ble_done;
+/** @brief Its reason. */
+static atomic_int s_ble_reason;
 
 /**
  * @brief The link's state and at most one exchange of the page.
@@ -102,19 +107,35 @@ void panel_console_pass(bool link_up)
  *        hexadecimal.
  * @param e The report.
  */
-static void ble_print_adv(const panel_ble_evt_t *e)
+static void ble_print_adv(const bleu_evt_t *e)
 {
-    char hex[2u * PANEL_BLE_DATA_MAX + 1u];
+    char hex[2u * BLEU_EVT_DATA + 1u];
     size_t n = 0u;
 
-    for (size_t i = 0u; i < e->len && i < PANEL_BLE_DATA_MAX; ++i) {
+    for (size_t i = 0u; i < e->len && i < BLEU_EVT_DATA; ++i) {
         n += (size_t)snprintf(&hex[n], sizeof(hex) - n, "%02X", e->data[i]);
     }
     hex[n] = '\0';
     printf("ble: adv %02X:%02X:%02X:%02X:%02X:%02X type %u rssi %ddBm "
-           "evtype %d data %s\n", e->addr[5], e->addr[4], e->addr[3],
-           e->addr[2], e->addr[1], e->addr[0], (unsigned)e->addr_type,
-           (int)e->rssi, (int)e->status, hex);
+           "evtype %d data %s\n", e->addr.val[5], e->addr.val[4],
+           e->addr.val[3], e->addr.val[2], e->addr.val[1], e->addr.val[0],
+           (unsigned)e->addr.type, (int)e->rssi, (int)e->status, hex);
+}
+
+/**
+ * @brief The console scan's reports, on the host task: each one printed,
+ *        the end noted for ble_pass().
+ * @param e A report or the end.
+ */
+static void ble_report(const bleu_evt_t *e)
+{
+    if (e->kind == BLEU_EV_ADV) {
+        atomic_fetch_add(&s_ble_reports, 1u);
+        ble_print_adv(e);
+    } else if (e->kind == BLEU_EV_SCAN_END) {
+        atomic_store(&s_ble_reason, (int)e->status);
+        atomic_store(&s_ble_done, true);
+    }
 }
 
 /**
@@ -136,7 +157,8 @@ static void ble_command(const char *line)
         panel_ble_start();
     }
     s_ble = BLE_CMD_WAIT;
-    s_ble_reports = 0u;
+    atomic_store(&s_ble_reports, 0u);
+    atomic_store(&s_ble_done, false);
 }
 
 /**
@@ -145,13 +167,11 @@ static void ble_command(const char *line)
  */
 static void ble_pass(void)
 {
-    panel_ble_evt_t e;
-
     if (s_ble == BLE_CMD_WAIT) {
         const panel_ble_state_t st = panel_ble_state();
 
         if (st == PANEL_BLE_READY) {
-            const esp_err_t r = panel_ble_scan(CONSOLE_BLE_SCAN_MS);
+            const esp_err_t r = panel_ble_scan(CONSOLE_BLE_SCAN_MS, ble_report);
 
             if (r == ESP_OK) {
                 printf("ble: scan for %ums\n", (unsigned)CONSOLE_BLE_SCAN_MS);
@@ -166,19 +186,11 @@ static void ble_pass(void)
             s_ble = BLE_CMD_IDLE;
         }
     }
-    while (s_ble != BLE_CMD_IDLE && panel_ble_get(&e)) {
-        if (e.kind == PANEL_BLE_EV_ADV) {
-            ++s_ble_reports;
-            ble_print_adv(&e);
-        } else if (e.kind == PANEL_BLE_EV_SCAN_DONE) {
-            printf("ble: scan done: %u reports, reason %d, %u events dropped "
-                   "since start-up\n", s_ble_reports, (int)e.status,
-                   (unsigned)panel_ble_dropped());
-            s_ble = BLE_CMD_IDLE;
-        } else {
-            printf("ble: event %u, status %d\n", (unsigned)e.kind,
-                   (int)e.status);
-        }
+    if (s_ble == BLE_CMD_SCAN && atomic_load(&s_ble_done)) {
+        printf("ble: scan done: %u reports, reason %d, %u events dropped "
+               "since start-up\n", (unsigned)atomic_load(&s_ble_reports),
+               atomic_load(&s_ble_reason), (unsigned)panel_ble_dropped());
+        s_ble = BLE_CMD_IDLE;
     }
 }
 

@@ -345,7 +345,9 @@ SERVO_STORE_CALLS = {
 # The Bluetooth LE host task, nimble_host: NimBLE's event loop runs every
 # piece of the host as an event through a pointer (ble_npl_event_run(),
 # inlined into nimble_port_run()), and a scan's reports reach the panel's
-# GAP callback through one (ble_gap_disc_report()).  The events are those
+# GAP callback through one (ble_gap_disc_report()): the IMU's scan_event.
+# The console's console_scan_event is in console builds only and is not
+# listed; there the depth through it is not counted.  The events are those
 # ble_hs.c sets up: an HCI event from the C6, the host timer, the reset and
 # the two start stages.  A build without the host task (no caller of
 # panel_ble_start()) has none of these, and the table is not read.
@@ -353,7 +355,7 @@ NIMBLE_CALLS = {
     "nimble_port_run": ("ble_hs_event_rx_hci_ev", "ble_hs_timer_exp",
                         "ble_hs_event_reset", "ble_hs_event_start_stage1",
                         "ble_hs_event_start_stage2"),
-    "ble_gap_disc_report": ("panel_ble.c:gap_event",),
+    "ble_gap_disc_report": ("panel_ble.c:scan_event",),
 }
 
 # The fw_boot_ops_t and fw_note_ops_t callbacks shared/fwupdate calls: the

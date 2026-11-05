@@ -45,8 +45,14 @@
  *         ESP_HOSTED_VERSION_VAL() packs it. */
 #define BLE_RPC_FIRST ESP_HOSTED_VERSION_VAL(2, 5, 2)
 
-_Static_assert(PANEL_BLE_DATA_MAX >= BLE_HS_ADV_MAX_SZ,
+_Static_assert(BLEU_EVT_DATA >= BLE_HS_ADV_MAX_SZ,
                "a legacy advertising report fits an event");
+_Static_assert(sizeof(ble_addr_t) == sizeof(((bleu_addr_t *)0)->val) + 1u,
+               "NimBLE's address is bleuart's: type and 6 bytes");
+
+/** @brief Bytes of one notification flattened before it is cut into
+ *         events: the largest ATT value of BLEU_MTU. */
+#define BLE_NOTIFY_MAX (BLEU_MTU - 3u)
 
 /** @brief Log tag. */
 static const char *TAG = "ble";
@@ -69,7 +75,9 @@ static QueueHandle_t s_queue;
 /** @brief The queue's control block: no heap allocation that can fail. */
 static StaticQueue_t s_queue_mem;
 /** @brief The queue's elements, 32 x 64 = 2,048 bytes of internal RAM. */
-static uint8_t s_queue_buf[PANEL_BLE_QUEUE_LEN * sizeof(panel_ble_evt_t)];
+static uint8_t s_queue_buf[PANEL_BLE_QUEUE_LEN * sizeof(bleu_evt_t)];
+/** @brief The console scan's report function; NULL when none runs. */
+static panel_ble_report_fn s_report;
 /** @brief Given at the host's first sync, for the start task's wait. */
 static SemaphoreHandle_t s_synced;
 /** @brief s_synced's memory. */
@@ -88,7 +96,7 @@ static uint32_t ble_now_ms(void)
  * @brief Queue one event without waiting; a full queue counts the drop.
  * @param e The event.
  */
-static void post(const panel_ble_evt_t *e)
+static void post(const bleu_evt_t *e)
 {
     if (s_queue == NULL || xQueueSend(s_queue, e, 0) != pdTRUE) {
         atomic_fetch_add(&s_dropped, 1u);
@@ -96,18 +104,73 @@ static void post(const panel_ble_evt_t *e)
 }
 
 /**
- * @brief An event of @p kind with @p status and nothing else.
- * @param kind   panel_ble_kind_t.
- * @param status Its status.
+ * @brief An event of @p kind answering @p token with @p status.
+ * @param kind   bleu_ev_kind_t.
+ * @param token  The action's token.
+ * @param conn   The connection handle.
+ * @param status 0, or NimBLE's status.
  */
-static void post_plain(panel_ble_kind_t kind, int status)
+static void post_answer(uint8_t kind, uint16_t token, uint16_t conn,
+                        int status)
 {
-    panel_ble_evt_t e;
+    bleu_evt_t e;
     memset(&e, 0, sizeof(e));
-    e.kind = (uint8_t)kind;
-    e.status = (int16_t)status;
-    e.conn = 0xFFFFu;
+    e.kind = kind;
+    e.token = token;
+    e.conn = conn;
+    e.status = (uint16_t)status;
     post(&e);
+}
+
+/**
+ * @brief A token carried through NimBLE's callback argument.
+ * @param arg The argument.
+ * @return The token.
+ */
+static uint16_t token_of(void *arg)
+{
+    return (uint16_t)(uintptr_t)arg;
+}
+
+/**
+ * @brief A token as a callback argument.
+ * @param token The token.
+ * @return The argument.
+ */
+static void *arg_of(uint16_t token)
+{
+    return (void *)(uintptr_t)token;
+}
+
+/**
+ * @brief A GATT step's status: 0 for success and for NimBLE's end of a
+ *        discovery (BLE_HS_EDONE).
+ * @param err NimBLE's error; NULL is success.
+ * @return The status.
+ */
+static int gatt_status(const struct ble_gatt_error *err)
+{
+    return (err == NULL || err->status == BLE_HS_EDONE) ? 0 : err->status;
+}
+
+/**
+ * @brief A UUID as bleuart's event data: 2 or 16 bytes, least significant
+ *        byte first.
+ * @param u The UUID.
+ * @param e Takes data and len.
+ */
+static void put_uuid(const ble_uuid_any_t *u, bleu_evt_t *e)
+{
+    if (u->u.type == BLE_UUID_TYPE_16) {
+        e->data[0] = (uint8_t)(u->u16.value & 0xFFu);
+        e->data[1] = (uint8_t)(u->u16.value >> 8);
+        e->len = 2u;
+    } else if (u->u.type == BLE_UUID_TYPE_128) {
+        memcpy(e->data, u->u128.value, 16u);
+        e->len = 16u;
+    } else {
+        e->len = 0u;
+    }
 }
 
 /**
@@ -131,7 +194,6 @@ static void on_sync(void)
         ESP_LOGI(TAG, "synced again, own address type %u", (unsigned)type);
     }
     (void)xSemaphoreGive(s_synced);
-    post_plain(PANEL_BLE_EV_SYNC, rc);
 }
 
 /**
@@ -143,7 +205,6 @@ static void on_reset(int reason)
 {
     atomic_store(&s_state, PANEL_BLE_NO_SYNC);
     ESP_LOGW(TAG, "host reset, reason %d", reason);
-    post_plain(PANEL_BLE_EV_RESET, reason);
 }
 
 /**
@@ -159,41 +220,327 @@ static void ble_host_task(void *arg)
 }
 
 /**
- * @brief A scan's events into the queue.  Runs on nimble_host.
+ * @brief An advertising report as bleuart's event.
+ * @param d NimBLE's report.
+ * @param e Takes it.
+ */
+static void adv_event(const struct ble_gap_disc_desc *d, bleu_evt_t *e)
+{
+    memset(e, 0, sizeof(*e));
+    e->kind = BLEU_EV_ADV;
+    e->rssi = d->rssi;
+    e->status = d->event_type;
+    e->addr.type = d->addr.type;
+    memcpy(e->addr.val, d->addr.val, sizeof(e->addr.val));
+    e->len = d->length_data <= BLEU_EVT_DATA ? d->length_data
+                                             : (uint8_t)BLEU_EVT_DATA;
+    if (d->data != NULL) {
+        memcpy(e->data, d->data, e->len);
+    } else {
+        e->len = 0u;
+    }
+}
+
+/**
+ * @brief The IMU's scan: its reports and its end into the queue.  Runs on
+ *        nimble_host.
+ * @param ev  NimBLE's event.
+ * @param arg The scan's token.
+ * @return 0.
+ */
+static int scan_event(struct ble_gap_event *ev, void *arg)
+{
+    bleu_evt_t e;
+    if (ev->type == BLE_GAP_EVENT_DISC) {
+        adv_event(&ev->disc, &e);
+        post(&e);
+    } else if (ev->type == BLE_GAP_EVENT_DISC_COMPLETE) {
+        ESP_LOGI(TAG, "scan done, reason %d", ev->disc_complete.reason);
+        post_answer(BLEU_EV_SCAN_END, token_of(arg), 0xFFFFu,
+                    ev->disc_complete.reason);
+    }
+    return 0;
+}
+
+/**
+ * @brief A console scan's events to its report function.  Runs on
+ *        nimble_host.
  * @param ev  NimBLE's event.
  * @param arg Unused.
  * @return 0.
  */
-static int gap_event(struct ble_gap_event *ev, void *arg)
+static int console_scan_event(struct ble_gap_event *ev, void *arg)
 {
     (void)arg;
-    panel_ble_evt_t e;
+    const panel_ble_report_fn report = s_report;
+    bleu_evt_t e;
+    if (report == NULL) {
+        return 0;
+    }
+    if (ev->type == BLE_GAP_EVENT_DISC) {
+        adv_event(&ev->disc, &e);
+        report(&e);
+    } else if (ev->type == BLE_GAP_EVENT_DISC_COMPLETE) {
+        memset(&e, 0, sizeof(e));
+        e.kind = BLEU_EV_SCAN_END;
+        e.status = (uint16_t)ev->disc_complete.reason;
+        s_report = NULL;
+        report(&e);
+    }
+    return 0;
+}
+
+/**
+ * @brief A connection's parameters into @p e's h1, h2 and h3: interval,
+ *        latency, supervision timeout.
+ * @param conn The connection.
+ * @param e    Takes them.
+ */
+static void put_params(uint16_t conn, bleu_evt_t *e)
+{
+    struct ble_gap_conn_desc d;
+    if (ble_gap_conn_find(conn, &d) == 0) {
+        e->h1 = d.conn_itvl;
+        e->h2 = d.conn_latency;
+        e->h3 = d.supervision_timeout;
+    }
+}
+
+/**
+ * @brief A notification, flattened and cut into events of BLEU_EVT_DATA
+ *        bytes, in order.
+ * @param ev NimBLE's notification event.
+ */
+static void notify_events(const struct ble_gap_event *ev)
+{
+    static uint8_t flat[BLE_NOTIFY_MAX];  /* the host task's own */
+    uint16_t len = 0u;
+    if (ble_hs_mbuf_to_flat(ev->notify_rx.om, flat, sizeof(flat), &len)
+        != 0) {
+        len = (uint16_t)(len > sizeof(flat) ? sizeof(flat) : len);
+    }
+    for (uint16_t at = 0u; at < len; at = (uint16_t)(at + BLEU_EVT_DATA)) {
+        bleu_evt_t e;
+        memset(&e, 0, sizeof(e));
+        e.kind = BLEU_EV_NOTIFY;
+        e.conn = ev->notify_rx.conn_handle;
+        e.h1 = ev->notify_rx.attr_handle;
+        e.len = (uint8_t)((len - at) < BLEU_EVT_DATA ? (len - at)
+                                                     : BLEU_EVT_DATA);
+        memcpy(e.data, &flat[at], e.len);
+        post(&e);
+    }
+}
+
+/**
+ * @brief A connection's events into the queue.  Runs on nimble_host.
+ * @param ev  NimBLE's event.
+ * @param arg The connect's token.
+ * @return 0: a parameter update the sensor asks for is accepted.
+ */
+static int conn_event(struct ble_gap_event *ev, void *arg)
+{
+    bleu_evt_t e;
     memset(&e, 0, sizeof(e));
-    e.conn = 0xFFFFu;
     switch (ev->type) {
-    case BLE_GAP_EVENT_DISC:
-        e.kind = PANEL_BLE_EV_ADV;
-        e.addr_type = ev->disc.addr.type;
-        e.rssi = ev->disc.rssi;
-        e.status = (int16_t)ev->disc.event_type;
-        memcpy(e.addr, ev->disc.addr.val, sizeof(e.addr));
-        e.len = ev->disc.length_data <= PANEL_BLE_DATA_MAX
-                    ? ev->disc.length_data : (uint8_t)PANEL_BLE_DATA_MAX;
-        if (ev->disc.data != NULL) {
-            memcpy(e.data, ev->disc.data, e.len);
-        } else {
-            e.len = 0u;
+    case BLE_GAP_EVENT_CONNECT:
+        e.kind = BLEU_EV_CONNECT;
+        e.token = token_of(arg);
+        e.status = (uint16_t)ev->connect.status;
+        e.conn = ev->connect.conn_handle;
+        if (ev->connect.status == 0) {
+            put_params(e.conn, &e);
         }
+        ESP_LOGI(TAG, "connect: status %d, handle %u, interval %u x 1.25ms",
+                 ev->connect.status, (unsigned)e.conn, (unsigned)e.h1);
         post(&e);
         break;
-    case BLE_GAP_EVENT_DISC_COMPLETE:
-        e.kind = PANEL_BLE_EV_SCAN_DONE;
-        e.status = (int16_t)ev->disc_complete.reason;
+    case BLE_GAP_EVENT_DISCONNECT:
+        e.kind = BLEU_EV_DISCONNECT;
+        e.status = (uint16_t)ev->disconnect.reason;
+        e.conn = ev->disconnect.conn.conn_handle;
+        ESP_LOGI(TAG, "disconnect: reason 0x%X", ev->disconnect.reason);
         post(&e);
+        break;
+    case BLE_GAP_EVENT_CONN_UPDATE:
+        e.kind = BLEU_EV_CONN_UPDATE;
+        e.status = (uint16_t)ev->conn_update.status;
+        e.conn = ev->conn_update.conn_handle;
+        put_params(e.conn, &e);
+        ESP_LOGI(TAG, "connection update: status %d, interval %u, latency "
+                      "%u, timeout %u", ev->conn_update.status,
+                 (unsigned)e.h1, (unsigned)e.h2, (unsigned)e.h3);
+        post(&e);
+        break;
+    case BLE_GAP_EVENT_CONN_UPDATE_REQ:
+        ESP_LOGI(TAG, "the sensor asks interval %u-%u, latency %u, timeout "
+                      "%u: accepted",
+                 (unsigned)ev->conn_update_req.peer_params->itvl_min,
+                 (unsigned)ev->conn_update_req.peer_params->itvl_max,
+                 (unsigned)ev->conn_update_req.peer_params->latency,
+                 (unsigned)ev->conn_update_req.peer_params->supervision_timeout);
+        break;
+    case BLE_GAP_EVENT_NOTIFY_RX:
+        notify_events(ev);
+        break;
+    case BLE_GAP_EVENT_MTU:
+        ESP_LOGI(TAG, "MTU %u", (unsigned)ev->mtu.value);
         break;
     default:
         break;
     }
+    return 0;
+}
+
+/**
+ * @brief Service discovery's answers.  Runs on nimble_host.
+ * @param conn The connection.
+ * @param err  NimBLE's status.
+ * @param svc  The service found, or NULL at the end.
+ * @param arg  The token.
+ * @return 0.
+ */
+static int svc_cb(uint16_t conn, const struct ble_gatt_error *err,
+                  const struct ble_gatt_svc *svc, void *arg)
+{
+    if (err != NULL && err->status == 0 && svc != NULL) {
+        bleu_evt_t e;
+        memset(&e, 0, sizeof(e));
+        e.kind = BLEU_EV_SVC;
+        e.token = token_of(arg);
+        e.conn = conn;
+        e.h1 = svc->start_handle;
+        e.h2 = svc->end_handle;
+        post(&e);
+        return 0;
+    }
+    post_answer(BLEU_EV_SVC_DONE, token_of(arg), conn, gatt_status(err));
+    return 0;
+}
+
+/**
+ * @brief Characteristic discovery's answers.  Runs on nimble_host.
+ * @param conn The connection.
+ * @param err  NimBLE's status.
+ * @param chr  The characteristic, or NULL at the end.
+ * @param arg  The token.
+ * @return 0.
+ */
+static int chr_cb(uint16_t conn, const struct ble_gatt_error *err,
+                  const struct ble_gatt_chr *chr, void *arg)
+{
+    if (err != NULL && err->status == 0 && chr != NULL) {
+        bleu_evt_t e;
+        memset(&e, 0, sizeof(e));
+        e.kind = BLEU_EV_CHR;
+        e.token = token_of(arg);
+        e.conn = conn;
+        e.h1 = chr->def_handle;
+        e.h2 = chr->val_handle;
+        e.props = chr->properties;
+        put_uuid(&chr->uuid, &e);
+        post(&e);
+        return 0;
+    }
+    post_answer(BLEU_EV_CHR_DONE, token_of(arg), conn, gatt_status(err));
+    return 0;
+}
+
+/**
+ * @brief Descriptor discovery's answers.  Runs on nimble_host.
+ * @param conn    The connection.
+ * @param err     NimBLE's status.
+ * @param chr_val The characteristic's value handle.
+ * @param dsc     The descriptor, or NULL at the end.
+ * @param arg     The token.
+ * @return 0.
+ */
+static int dsc_cb(uint16_t conn, const struct ble_gatt_error *err,
+                  uint16_t chr_val, const struct ble_gatt_dsc *dsc, void *arg)
+{
+    (void)chr_val;
+    if (err != NULL && err->status == 0 && dsc != NULL) {
+        bleu_evt_t e;
+        memset(&e, 0, sizeof(e));
+        e.kind = BLEU_EV_DSC;
+        e.token = token_of(arg);
+        e.conn = conn;
+        e.h1 = dsc->handle;
+        put_uuid(&dsc->uuid, &e);
+        post(&e);
+        return 0;
+    }
+    post_answer(BLEU_EV_DSC_DONE, token_of(arg), conn, gatt_status(err));
+    return 0;
+}
+
+/**
+ * @brief The MTU exchange's answer.  Runs on nimble_host.
+ * @param conn The connection.
+ * @param err  NimBLE's status.
+ * @param mtu  The MTU.
+ * @param arg  The token.
+ * @return 0.
+ */
+static int mtu_cb(uint16_t conn, const struct ble_gatt_error *err,
+                  uint16_t mtu, void *arg)
+{
+    bleu_evt_t e;
+    memset(&e, 0, sizeof(e));
+    e.kind = BLEU_EV_MTU;
+    e.token = token_of(arg);
+    e.conn = conn;
+    e.status = (uint16_t)gatt_status(err);
+    e.h1 = mtu;
+    ESP_LOGI(TAG, "MTU exchange: status %d, MTU %u", gatt_status(err),
+             (unsigned)mtu);
+    post(&e);
+    return 0;
+}
+
+/**
+ * @brief A write's answer.  Runs on nimble_host.
+ * @param conn The connection.
+ * @param err  NimBLE's status.
+ * @param attr The attribute.
+ * @param arg  The token.
+ * @return 0.
+ */
+static int write_cb(uint16_t conn, const struct ble_gatt_error *err,
+                    struct ble_gatt_attr *attr, void *arg)
+{
+    (void)attr;
+    post_answer(BLEU_EV_WRITE_DONE, token_of(arg), conn, gatt_status(err));
+    return 0;
+}
+
+/**
+ * @brief A read's answer, its value in the event's data.  Runs on
+ *        nimble_host.
+ * @param conn The connection.
+ * @param err  NimBLE's status.
+ * @param attr The attribute and its value.
+ * @param arg  The token.
+ * @return 0.
+ */
+static int read_cb(uint16_t conn, const struct ble_gatt_error *err,
+                   struct ble_gatt_attr *attr, void *arg)
+{
+    bleu_evt_t e;
+    memset(&e, 0, sizeof(e));
+    e.kind = BLEU_EV_READ;
+    e.token = token_of(arg);
+    e.conn = conn;
+    e.status = (uint16_t)gatt_status(err);
+    if (e.status == 0u && attr != NULL && attr->om != NULL) {
+        uint16_t len = 0u;
+        (void)ble_hs_mbuf_to_flat(attr->om, e.data, BLEU_EVT_DATA, &len);
+        e.len = (uint8_t)(len > BLEU_EVT_DATA ? BLEU_EVT_DATA : len);
+        ESP_LOGI(TAG, "6DAA: %u bytes %02X %02X %02X %02X %02X %02X %02X %02X",
+                 (unsigned)e.len, e.data[0], e.data[1], e.data[2], e.data[3],
+                 e.data[4], e.data[5], e.data[6], e.data[7]);
+    }
+    post(&e);
     return 0;
 }
 
@@ -289,6 +636,7 @@ static void ble_start_task(void *arg)
         vTaskDelete(NULL);
         return;
     }
+    (void)ble_att_set_preferred_mtu(BLEU_MTU);
     ble_hs_cfg.sync_cb = on_sync;
     ble_hs_cfg.reset_cb = on_reset;
     atomic_store(&s_host_t0, ble_now_ms());
@@ -326,7 +674,7 @@ void panel_ble_start(void)
     if (atomic_flag_test_and_set(&s_started)) {
         return;
     }
-    s_queue = xQueueCreateStatic(PANEL_BLE_QUEUE_LEN, sizeof(panel_ble_evt_t),
+    s_queue = xQueueCreateStatic(PANEL_BLE_QUEUE_LEN, sizeof(bleu_evt_t),
                                  s_queue_buf, &s_queue_mem);
     s_synced = xSemaphoreCreateBinaryStatic(&s_synced_mem);
     atomic_store(&s_state, PANEL_BLE_STARTING);
@@ -343,7 +691,7 @@ panel_ble_state_t panel_ble_state(void)
     return (panel_ble_state_t)atomic_load(&s_state);
 }
 
-bool panel_ble_get(panel_ble_evt_t *out)
+bool panel_ble_get(bleu_evt_t *out)
 {
     return s_queue != NULL && out != NULL
            && xQueueReceive(s_queue, out, 0) == pdTRUE;
@@ -354,9 +702,9 @@ uint32_t panel_ble_dropped(void)
     return atomic_load(&s_dropped);
 }
 
-esp_err_t panel_ble_scan(uint32_t ms)
+esp_err_t panel_ble_scan(uint32_t ms, panel_ble_report_fn report)
 {
-    if (ms == 0u || ms > BLE_SCAN_MAX_MS) {
+    if (ms == 0u || ms > BLE_SCAN_MAX_MS || report == NULL) {
         return ESP_ERR_INVALID_ARG;
     }
     if (atomic_load(&s_state) != PANEL_BLE_READY || ble_gap_disc_active()
@@ -369,12 +717,119 @@ esp_err_t panel_ble_scan(uint32_t ms)
         .passive = 0,
         .filter_duplicates = 1,
     };
+    s_report = report;
     const int rc = ble_gap_disc((uint8_t)atomic_load(&s_own_type), (int32_t)ms,
-                                &p, gap_event, NULL);
+                                &p, console_scan_event, NULL);
     if (rc != 0) {
+        s_report = NULL;
         ESP_LOGW(TAG, "scan refused: %d", rc);
         return rc == BLE_HS_EALREADY || rc == BLE_HS_EBUSY
                    ? ESP_ERR_INVALID_STATE : ESP_FAIL;
     }
     return ESP_OK;
+}
+
+/**
+ * @brief A connect to @p a with bleuart's parameters.
+ * @param a The action.
+ * @return NimBLE's status.
+ */
+static int do_connect(const bleu_act_t *a)
+{
+    ble_addr_t peer;
+    peer.type = a->addr.type;
+    memcpy(peer.val, a->addr.val, sizeof(peer.val));
+    /* The scan's interval and window while connecting: NimBLE's 16 x
+     * 0.625ms = 10ms each. */
+    const struct ble_gap_conn_params cp = {
+        .scan_itvl = 0x0010,
+        .scan_window = 0x0010,
+        .itvl_min = BLEU_ITVL_MIN,
+        .itvl_max = BLEU_ITVL_MAX,
+        .latency = BLEU_LATENCY,
+        .supervision_timeout = BLEU_SUPERVISION,
+        .min_ce_len = 0,
+        .max_ce_len = 0,
+    };
+    ESP_LOGI(TAG, "connect to %02X:%02X:%02X:%02X:%02X:%02X type %u for %ums",
+             peer.val[5], peer.val[4], peer.val[3], peer.val[2], peer.val[1],
+             peer.val[0], (unsigned)peer.type, (unsigned)a->ms);
+    return ble_gap_connect((uint8_t)atomic_load(&s_own_type), &peer,
+                           (int32_t)a->ms, &cp, conn_event, arg_of(a->token));
+}
+
+void panel_ble_do(const bleu_act_t *a)
+{
+    if (a == NULL) {
+        return;
+    }
+    ble_uuid128_t svc = { .u = { .type = BLE_UUID_TYPE_128 } };
+    memcpy(svc.value, bleu_uuid_svc, sizeof(svc.value));
+    const struct ble_gap_disc_params dp = {
+        .passive = 0,
+        .filter_duplicates = 1,
+    };
+    int rc = 0;
+    uint8_t answer = BLEU_EV_NONE;
+    switch (a->kind) {
+    case BLEU_ACT_SCAN:
+        ESP_LOGI(TAG, "scan for %ums", (unsigned)a->ms);
+        rc = ble_gap_disc((uint8_t)atomic_load(&s_own_type), (int32_t)a->ms,
+                          &dp, scan_event, arg_of(a->token));
+        answer = BLEU_EV_SCAN_END;
+        break;
+    case BLEU_ACT_SCAN_STOP:
+        (void)ble_gap_disc_cancel();
+        break;
+    case BLEU_ACT_CONNECT:
+        rc = do_connect(a);
+        answer = BLEU_EV_CONNECT;
+        break;
+    case BLEU_ACT_CANCEL:
+        (void)ble_gap_conn_cancel();
+        break;
+    case BLEU_ACT_DISCONNECT:
+        (void)ble_gap_terminate(a->conn, BLE_ERR_REM_USER_CONN_TERM);
+        break;
+    case BLEU_ACT_DISC_SVC:
+        rc = ble_gattc_disc_svc_by_uuid(a->conn, &svc.u, svc_cb,
+                                        arg_of(a->token));
+        answer = BLEU_EV_SVC_DONE;
+        break;
+    case BLEU_ACT_DISC_CHRS:
+        rc = ble_gattc_disc_all_chrs(a->conn, a->h1, a->h2, chr_cb,
+                                     arg_of(a->token));
+        answer = BLEU_EV_CHR_DONE;
+        break;
+    case BLEU_ACT_DISC_DSCS:
+        rc = ble_gattc_disc_all_dscs(a->conn, a->h1, a->h2, dsc_cb,
+                                     arg_of(a->token));
+        answer = BLEU_EV_DSC_DONE;
+        break;
+    case BLEU_ACT_MTU:
+        rc = ble_gattc_exchange_mtu(a->conn, mtu_cb, arg_of(a->token));
+        answer = BLEU_EV_MTU;
+        break;
+    case BLEU_ACT_SUBSCRIBE:
+    case BLEU_ACT_WRITE:
+        rc = ble_gattc_write_flat(a->conn, a->h1, a->data, a->len, write_cb,
+                                  arg_of(a->token));
+        answer = BLEU_EV_WRITE_DONE;
+        break;
+    case BLEU_ACT_WRITE_NR:
+        rc = ble_gattc_write_no_rsp_flat(a->conn, a->h1, a->data, a->len);
+        post_answer(BLEU_EV_WRITE_DONE, a->token, a->conn, rc);
+        return;
+    case BLEU_ACT_READ:
+        rc = ble_gattc_read(a->conn, a->h1, read_cb, arg_of(a->token));
+        answer = BLEU_EV_READ;
+        break;
+    case BLEU_ACT_NONE:
+    default:
+        return;
+    }
+    if (rc != 0 && answer != BLEU_EV_NONE) {
+        ESP_LOGW(TAG, "action %u refused: %d", (unsigned)a->kind, rc);
+        post_answer(answer, a->token, a->conn, rc);
+    }
 }

@@ -22,10 +22,16 @@
  *    Without it the state is PANEL_BLE_NO_SYNC and the host keeps trying;
  *    a sync later makes it PANEL_BLE_READY.
  *
- * The events come from the host task's callbacks through a FreeRTOS queue of
- * PANEL_BLE_QUEUE_LEN elements of 64 bytes.  A full queue drops the event
- * and counts it (panel_ble_dropped()).  One task reads the queue
- * (panel_ble_get()).
+ * The IMU's link (protocols/bleuart) runs on the IMU task: panel_ble_do()
+ * turns each of its actions into a NimBLE call, and the host task's
+ * callbacks turn NimBLE's answers into bleuart's events, each with the
+ * token of the action it answers.  A call NimBLE refuses is answered at
+ * once with its status.  The events go through a FreeRTOS queue of
+ * PANEL_BLE_QUEUE_LEN elements of 64 bytes (bleu_evt_t); a notification
+ * longer than BLEU_EVT_DATA bytes comes as several, in order.  A full queue
+ * drops the event and counts it (panel_ble_dropped()); a dropped
+ * notification breaks a frame, which the WitMotion parser counts as bad
+ * and resyncs.  One task reads the queue (panel_ble_get()).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -34,6 +40,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "bleuart.h"
 #include "esp_err.h"
 
 /** @brief How long the start waits for the host's sync after the host task
@@ -42,10 +49,6 @@
 
 /** @brief Events the queue holds. */
 #define PANEL_BLE_QUEUE_LEN 32u
-
-/** @brief Bytes of data an event carries: a legacy advertising report's 31
- *         fit. */
-#define PANEL_BLE_DATA_MAX 48u
 
 /** @brief Where the start is. */
 typedef enum {
@@ -56,34 +59,11 @@ typedef enum {
     PANEL_BLE_READY,    /**< synced: scans and connects can start */
 } panel_ble_state_t;
 
-/** @brief What an event says. */
-typedef enum {
-    PANEL_BLE_EV_SYNC = 1,    /**< the host synced with the C6 */
-    PANEL_BLE_EV_RESET,       /**< the host lost its sync; status: NimBLE's
-                                   reason */
-    PANEL_BLE_EV_ADV,         /**< an advertising report: address, type,
-                                   RSSI, its data */
-    PANEL_BLE_EV_SCAN_DONE,   /**< a scan ended; status: NimBLE's reason */
-} panel_ble_kind_t;
+_Static_assert(sizeof(bleu_evt_t) == 64u, "64-byte events");
 
-/** @brief One event, 64 bytes. */
-typedef struct {
-    uint8_t kind;      /**< panel_ble_kind_t */
-    uint8_t addr_type; /**< BLE_ADDR_PUBLIC 0, RANDOM 1, PUBLIC_ID 2,
-                            RANDOM_ID 3 */
-    int8_t  rssi;      /**< dBm, PANEL_BLE_EV_ADV */
-    uint8_t len;       /**< bytes in data */
-    int16_t status;    /**< NimBLE's status or reason, 0 for none; for
-                            PANEL_BLE_EV_ADV the report's event type
-                            (BLE_HCI_ADV_RPT_EVTYPE_*) */
-    uint16_t conn;     /**< connection handle; 0xFFFF for none */
-    uint16_t handle;   /**< attribute handle; 0 for none */
-    uint8_t addr[6];   /**< the peer's address, least significant byte
-                            first, as NimBLE gives it */
-    uint8_t data[PANEL_BLE_DATA_MAX]; /**< the advertising data */
-} panel_ble_evt_t;
-
-_Static_assert(sizeof(panel_ble_evt_t) == 64u, "64-byte events");
+/** @brief A report of a console scan, on the host task: BLEU_EV_ADV for
+ *         each report, BLEU_EV_SCAN_END at its end. */
+typedef void (*panel_ble_report_fn)(const bleu_evt_t *e);
 
 /**
  * @brief Start Bluetooth LE: the queue and the `blestart` task, once.  Later
@@ -103,7 +83,17 @@ panel_ble_state_t panel_ble_state(void);
  * @return true when @p out holds one; false with the queue empty or before
  *         panel_ble_start().
  */
-bool panel_ble_get(panel_ble_evt_t *out);
+bool panel_ble_get(bleu_evt_t *out);
+
+/**
+ * @brief Perform one action of the IMU's link (bleuart.h): a scan, a
+ *        connect, a GATT step, a write.  Its answer comes as an event with
+ *        its token; a call NimBLE refuses is answered at once with the
+ *        refusal's status.  BLEU_ACT_CANCEL, BLEU_ACT_DISCONNECT and
+ *        BLEU_ACT_SCAN_STOP are answered by NimBLE's events or not at all.
+ * @param a The action; NULL does nothing.
+ */
+void panel_ble_do(const bleu_act_t *a);
 
 /**
  * @brief Events dropped on a full queue since start-up.
@@ -112,12 +102,13 @@ bool panel_ble_get(panel_ble_evt_t *out);
 uint32_t panel_ble_dropped(void);
 
 /**
- * @brief An active scan for @p ms with the controller's duplicate filter
- *        on: its reports (PANEL_BLE_EV_ADV), then PANEL_BLE_EV_SCAN_DONE
- *        with reason 0 at its end.
- * @param ms The scan's length, 1 to 180,000ms.
+ * @brief A console scan: active, for @p ms, the controller's duplicate
+ *        filter on; @p report gets each report and the end, on the host
+ *        task, and nothing goes to the queue.
+ * @param ms     The scan's length, 1 to 180,000ms.
+ * @param report Takes the reports; not NULL.
  * @return ESP_OK when the scan started; ESP_ERR_INVALID_STATE before the
  *         sync or with a scan or connect under way; ESP_ERR_INVALID_ARG for
  *         a length out of range; ESP_FAIL when NimBLE refused it.
  */
-esp_err_t panel_ble_scan(uint32_t ms);
+esp_err_t panel_ble_scan(uint32_t ms, panel_ble_report_fn report);

@@ -29,21 +29,20 @@ void imu_ctl_init(imu_ctl_t *c)
         return;
     }
     memset(c, 0, sizeof(*c));
-    imu_hc05_init(&c->hc05);
+    imu_ble_init(&c->ble);
     imu_sensor_init(&c->sensor);
     c->cfg.rate_code = WIT_RATE_50HZ;
 }
 
 /**
- * @brief Whether the sensor's stream flows: IMU ON, the link up, a sensor
- *        bound.
+ * @brief Whether the sensor's stream flows: IMU ON, a sensor bound, the
+ *        link subscribed.
  * @param c The controller.
  * @return Whether it does.
  */
 static bool stream_up(const imu_ctl_t *c)
 {
-    return c->cfg.en && imu_hc05_link(&c->hc05) == IMU_LINK_READY
-           && c->cfg.addr[0] != '\0';
+    return c->cfg.en && imu_ble_bound(&c->ble) && imu_ble_up(&c->ble);
 }
 
 void imu_ctl_config(imu_ctl_t *c, const imu_cfg_t *cfg, uint32_t now_ms)
@@ -56,19 +55,24 @@ void imu_ctl_config(imu_ctl_t *c, const imu_cfg_t *cfg, uint32_t now_ms)
     c->cfg.addr[IMU_ADDR_MAX - 1u] = '\0';
     c->cfg.name[IMU_NAME_MAX - 1u] = '\0';
     imu_sensor_values(&c->sensor, cfg->rate_code, cfg->six, c->configured);
-    if (!c->configured) {
-        c->configured = true;
-        imu_hc05_on(&c->hc05, now_ms);
-        return;
-    }
-    if (was.en && !cfg->en) {
-        imu_hc05_off(&c->hc05);
-        imu_sensor_off(&c->sensor);
-    } else if (!was.en && cfg->en) {
-        imu_hc05_on(&c->hc05, now_ms);
-    }
-    if (strcmp(was.addr, c->cfg.addr) != 0) {
+    if (!c->configured || strcmp(was.addr, c->cfg.addr) != 0) {
+        (void)imu_ble_set_addr(&c->ble, c->cfg.addr, now_ms);
         imu_sensor_rebind(&c->sensor);
+    }
+    if (!c->configured || was.en != cfg->en) {
+        imu_ble_on(&c->ble, cfg->en, now_ms);
+        if (c->configured && !cfg->en) {
+            imu_sensor_off(&c->sensor);
+        }
+    }
+    c->configured = true;
+}
+
+void imu_ctl_radio(imu_ctl_t *c, imu_radio_t radio, const char *version,
+                   uint32_t now_ms)
+{
+    if (c != NULL) {
+        imu_ble_radio(&c->ble, radio, version, now_ms);
     }
 }
 
@@ -77,17 +81,22 @@ bool imu_ctl_command(imu_ctl_t *c, const imu_cmd_t *cmd, uint32_t now_ms)
     if (c == NULL || cmd == NULL || !c->cfg.en) {
         return false;
     }
-    /* An AT operation takes the UART from the sensor: not while the
-     * calibration runs or a sensor command still waits to go out. */
-    const bool at_free = imu_hc05_ready(&c->hc05)
-                         && imu_sensor_quiet(&c->sensor);
     switch (cmd->kind) {
     case IMU_CMD_SCAN:
-        return at_free && imu_hc05_scan(&c->hc05, now_ms);
-    case IMU_CMD_BIND:
-        return at_free && imu_hc05_bind(&c->hc05, cmd->arg, now_ms);
-    case IMU_CMD_ANY:
-        return at_free && imu_hc05_any(&c->hc05, now_ms);
+        return imu_ble_scan(&c->ble, now_ms);
+    case IMU_CMD_BIND: {
+        imu_bound_t b;
+        if (!imu_ble_bind(&c->ble, cmd->arg, now_ms, &b)) {
+            return false;
+        }
+        /* What SETUP keeps now, until the panel's next imu_ctl_config()
+         * says the same. */
+        memcpy(c->cfg.addr, b.addr, sizeof(c->cfg.addr));
+        memcpy(c->cfg.name, b.name, sizeof(c->cfg.name));
+        imu_sensor_rebind(&c->sensor);
+        ++c->bind_seq;
+        return true;
+    }
     case IMU_CMD_CALIBRATE:
         return imu_sensor_calibrate(&c->sensor, stream_up(c), now_ms);
     case IMU_CMD_ZERO:
@@ -101,45 +110,37 @@ bool imu_ctl_command(imu_ctl_t *c, const imu_cmd_t *cmd, uint32_t now_ms)
     }
 }
 
-void imu_ctl_feed(imu_ctl_t *c, const uint8_t *b, size_t n, uint32_t now_ms)
+void imu_ctl_event(imu_ctl_t *c, const bleu_evt_t *e, uint32_t now_ms)
 {
-    if (c == NULL || b == NULL || n == 0u) {
+    if (c == NULL || e == NULL) {
         return;
     }
-    if (!imu_hc05_take(&c->hc05, b, n) && c->cfg.en) {
-        imu_sensor_feed(&c->sensor, b, n, now_ms);
+    if (imu_ble_event(&c->ble, e, now_ms) && c->cfg.en) {
+        imu_sensor_feed(&c->sensor, e->data, e->len, now_ms);
+    }
+    if (imu_ble_write_failed(&c->ble)) {
+        imu_sensor_flush(&c->sensor);
     }
 }
 
-bool imu_ctl_step(imu_ctl_t *c, uint32_t now_ms, hc05_act_t *out)
+bool imu_ctl_step(imu_ctl_t *c, uint32_t now_ms, bleu_act_t *out)
 {
     if (c == NULL || out == NULL) {
         return false;
     }
-    out->kind = HC05_ACT_NONE;
-    /* The machine first, also when idle: it lowers KEY after an end. */
-    if (imu_hc05_act(&c->hc05, now_ms, out)) {
+    if (imu_ble_act(&c->ble, now_ms, out)) {
         return true;
     }
-    imu_bound_t bound;
-    if (imu_hc05_ended(&c->hc05, c->cfg.en, now_ms, &bound)) {
-        /* What SETUP keeps now, until the panel's next imu_ctl_config()
-         * says the same. */
-        memcpy(c->cfg.addr, bound.addr, sizeof(c->cfg.addr));
-        memcpy(c->cfg.name, bound.name, sizeof(c->cfg.name));
-        imu_sensor_rebind(&c->sensor);
-        ++c->bind_seq;
-    }
-    if (imu_hc05_probe(&c->hc05, c->cfg.en, now_ms)) {
-        return imu_hc05_act(&c->hc05, now_ms, out);
+    if (imu_ble_write_failed(&c->ble)) {
+        imu_sensor_flush(&c->sensor);
     }
     imu_sensor_tick(&c->sensor, now_ms, stream_up(c));
-    /* A sensor command over the link: in data mode only, one at a time. */
+    /* A sensor command on 8841: one write in flight at a time. */
     uint8_t cmd[WIT_CMD_LEN];
-    if (imu_hc05_can_send(&c->hc05)
-        && imu_sensor_next(&c->sensor, now_ms, cmd)) {
-        imu_hc05_send(cmd, out);
-        return true;
+    if (imu_ble_can_send(&c->ble)
+        && imu_sensor_next(&c->sensor, now_ms, cmd)
+        && imu_ble_send(&c->ble, cmd, now_ms)) {
+        return imu_ble_act(&c->ble, now_ms, out);
     }
     return false;
 }
@@ -149,11 +150,11 @@ imu_link_t imu_ctl_link(const imu_ctl_t *c)
     if (c == NULL || !c->cfg.en) {
         return IMU_LINK_OFF;
     }
-    const imu_link_t l = imu_hc05_link(&c->hc05);
+    const imu_link_t l = imu_ble_link(&c->ble);
     if (l != IMU_LINK_READY) {
         return l;
     }
-    if (c->cfg.addr[0] == '\0') {
+    if (!imu_ble_bound(&c->ble)) {
         return IMU_LINK_READY;
     }
     return imu_sensor_link(&c->sensor);
@@ -169,8 +170,10 @@ void imu_ctl_view(const imu_ctl_t *c, imu_view_t *out)
         return;
     }
     out->link = imu_ctl_link(c);
-    imu_hc05_view(&c->hc05, out);
-    memcpy(out->bound_addr, c->cfg.addr, sizeof(out->bound_addr));
-    memcpy(out->bound_name, c->cfg.name, sizeof(out->bound_name));
+    imu_ble_view(&c->ble, out);
+    if (imu_ble_bound(&c->ble)) {
+        memcpy(out->bound_addr, c->cfg.addr, sizeof(out->bound_addr));
+        memcpy(out->bound_name, c->cfg.name, sizeof(out->bound_name));
+    }
     imu_sensor_view(&c->sensor, out);
 }

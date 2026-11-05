@@ -71,10 +71,13 @@ TEST_CASE(the_state_column_reads_every_link_state_in_its_colour)
     static const struct {
         imu_link_t l; const char *en, *de; gfx_color_t ink;
     } k[] = {
-        { IMU_LINK_NO_MODULE, "NO HC-05", "KEIN HC-05", 0 },
+        { IMU_LINK_STARTING, "STARTING BLUETOOTH", "BLUETOOTH STARTET", 1 },
+        { IMU_LINK_NO_BT, "NO BLUETOOTH ON C6", "KEIN BLUETOOTH AM C6", 0 },
+        { IMU_LINK_C6_FAILED, "C6 FAILED: RESTART",
+          "C6 AUSGEFALLEN: NEUSTART", 0 },
         { IMU_LINK_READY, "NO SENSOR BOUND", "KEIN SENSOR GEBUNDEN", 1 },
         { IMU_LINK_SCANNING, "SCANNING", "SUCHE LÄUFT", 1 },
-        { IMU_LINK_BINDING, "BINDING", "BINDEN LÄUFT", 1 },
+        { IMU_LINK_CONNECTING, "CONNECTING", "VERBINDE", 1 },
         { IMU_LINK_BOUND, "BOUND", "GEBUNDEN", 1 },
         { IMU_LINK_CONNECTED, "CONNECTED 50Hz", "VERBUNDEN 50Hz", 2 },
         { IMU_LINK_NO_FRAMES, "NO FRAMES", "KEINE FRAMES", 0 },
@@ -160,13 +163,13 @@ TEST_CASE(a_rate_change_is_a_command_to_the_sensor_and_a_notice)
     sensors_rows_set_imu(IMU_LINK_OFF, 0u);
     /* The command: SETUP's RATE 100Hz to a connected controller. */
     rig_t r;
-    rig_init(&r, 2, HC05_BAUD_DATA);
-    rig_cfg(&r, true, "98D3:31:F5A1B2", settings_get_int(SET_IMU_RATE), true);
-    (void)rig_settle(&r, 5000u);
+    rig_init(&r);
+    rig_cfg(&r, true, RIG_ADDR, settings_get_int(SET_IMU_RATE), true);
+    (void)rig_settle(&r, 2000u);
     rig_stream(&r, 100u, 20u, 0.0f, 0.0f, 0.0f);
     CHECK_EQ(r.nsent, 0u);
     settings_set(SET_IMU_RATE, 3.0f);
-    rig_cfg(&r, true, "98D3:31:F5A1B2", settings_get_int(SET_IMU_RATE), true);
+    rig_cfg(&r, true, RIG_ADDR, settings_get_int(SET_IMU_RATE), true);
     rig_stream(&r, 300u, 20u, 0.0f, 0.0f, 0.0f);
     CHECK_EQ(r.nsent, 3u);
     CHECK(rig_sent_unlock(&r, 0u));

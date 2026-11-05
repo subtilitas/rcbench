@@ -204,6 +204,12 @@ bool imu_sensor_quiet(const imu_sensor_t *s)
     return s->cal != IMU_CAL_RUNNING && s->out_n == 0u;
 }
 
+void imu_sensor_flush(imu_sensor_t *s)
+{
+    s->out_n = 0u;
+    s->out_head = 0u;
+}
+
 imu_link_t imu_sensor_link(const imu_sensor_t *s)
 {
     if (s->m.r.valid) {
