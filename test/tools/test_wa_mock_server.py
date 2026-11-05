@@ -419,3 +419,14 @@ def test_info_of_a_folder_sums_its_immediate_files(api):
     """USER/LOGS/OLD holds one file of 8 bytes."""
     info = api.json("GET", "/api/info?path=USER/LOGS/OLD&dir=1")[2]
     assert (info["s"], info["entries"]) == (8, 1)
+
+
+def test_a_write_path_needs_room_for_the_new_suffix(api):
+    """A path of 117 bytes is refused, 116 is taken: ".NEW" fits 120."""
+    folder = "USER/LOGS/" + "d" * 48               # 58 bytes
+    assert api.form("mkdir", path=folder)[0] == 201
+    ok = f"{folder}/" + "f" * 57                    # 116 bytes
+    assert api.json("PUT", f"/api/file?path={ok}", b"x")[0] == 201
+    long = f"{folder}/" + "f" * 58                  # 117 bytes
+    s, _, body = api.json("PUT", f"/api/file?path={long}", b"x")
+    assert (s, body["error"]) == (400, "NAME")

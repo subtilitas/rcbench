@@ -1178,13 +1178,17 @@ class Handler(http.server.BaseHTTPRequestHandler):
             is_dir: A folder.
 
         Raises:
-            Refused: LOCKED for a record the programmers keep, FIXED for
-                the fault log, for the name and for the ".NEW" a write
-                makes first.
+            Refused: NAME when the name or the path with the ".NEW" a write
+                makes first is over its limit, LOCKED for a record the
+                programmers keep, FIXED for the fault log: the name and the
+                ".NEW" each.
         """
         if is_dir:
             return
         folder, _, name = path.rpartition("/")
+        if (len(name.encode()) > NAME_MAX
+                or len((path + ".NEW").encode()) > PATH_MAX):
+            raise Refused("NAME")
         for n in (name, name + ".NEW"):
             place = place_of(folder, n, False)
             if place == "LOCKED":
