@@ -24,7 +24,7 @@ used for any of them.
 | Two 120Ω terminators | one at each end of the CAN pair. Two in parallel are the 60Ω the pair should measure |
 | Level translation | for any line that leaves the 3.3V island: a translator that senses the target's rail, not a divider chosen once |
 | A camera and a mount | rigid enough that it does not move between sessions; the calibration is only valid while it does not |
-| The monostable | required by `docs/Safety.md`, on no board, **and not specified anywhere in this tree**. It cannot be built from this guide. What it has to do is below; what it is made of is a decision nobody has taken |
+| The monostable | required by `docs/Safety.md`, on no board, **and not buildable from this guide**, which gives no part. What it has to do is below. The IO board's design record selects its parts ([hardware STATUS](../hardware/STATUS.md#decided), rows Safety gate and Monostable isolation) |
 
 ---
 
@@ -266,11 +266,11 @@ The relays are at GPIO 16 to GPIO 19 rather than at the start of the header so t
 GPIO 0 to GPIO 15 stay free for the analyser leads and for a stimulus generator this
 guide does not yet describe.
 
-**Before the panel half of this check**, set the panel's UART selector to
-`UART1` and use the bridged USB-C socket with a cable that carries data. On
-`UART2` the CH343 port still enumerates and passes nothing
-(`docs/FirstRun.md`), so a correctly wired relay reads as a loader that will
-not accept a download.
+**Before the panel half of this check**, use a USB-C cable that carries
+data. The 7-inch ESP32-P4 board has two USB-C sockets, and which of them
+reaches UART0 and which USB-Serial-JTAG is not traced (`docs/FirstRun.md`);
+`esptool.py` flashes the board over either serial port it shows. A socket
+with a charge-only cable reads as a loader that will not accept a download.
 
 **Check**, one at a time, with the boards powered:
 
@@ -478,10 +478,11 @@ path; GPIO 3 sees the line as well so the firmware can judge it. `docs/Safety.md
 sets this out and `docs/FirstRun.md` step 3 routes the wire through it.
 
 **The circuit does not exist yet.** `docs/Safety.md` requires it and says it
-is on no board; no page in this tree gives a part, a timing network, a trigger
-polarity, or the two gates. So this guide cannot be followed to build it, and
-an assembler improvising one may well produce something that stays enabled
-after the edges stop, which is the failure it exists to prevent.
+is on no board. This guide gives no part, timing network, trigger polarity or
+gates, so it cannot be followed to build it, and an assembler improvising one
+may produce something that stays enabled after the edges stop, which is the
+failure it exists to prevent. The parts selected for the IO board are in
+[Control](../hardware/docs/Control.md), group A.
 
 What it has to do, so that a circuit can be designed against it and checked:
 
@@ -496,8 +497,8 @@ What it has to do, so that a circuit can be designed against it and checked:
 | Two links, both removable | one in the panel's GPIO28 branch and one in the monostable's trigger branch, meeting at a junction with the IOmcu's GPIO 3. The differential test needs to split that node three ways, and the panel drives GPIO28 push-pull, so it cannot be joined |
 
 Part numbers are deliberately absent: `hardware/README.md` says a part is not
-chosen until it is available at a vendor, and this belongs in `hardware/` as
-its own page rather than being improvised inside a wiring guide.
+chosen until it is available at a vendor. The selected parts are in
+[Control](../hardware/docs/Control.md), not in this guide.
 
 A direct wire is the failure this bench must not build. It satisfies the
 firmware's heartbeat monitor, so every check in this guide would pass, and the
@@ -602,7 +603,7 @@ Split it before injecting anything, which is what the two links are for:
    next step is not contention.
 2. **Have the RP2350 drive the junction from GPIO 22** with one edge every
    20ms (a 40ms cycle, not a 40ms edge spacing and not a 20ms cycle),
-   so `heartbeat_poll()` on the IOmcu never expires. The monitor rejects only
+   so `heartbeat_mon_alive()` on the IOmcu never reports the line lost. The monitor rejects only
    edges closer than 4ms (`HEARTBEAT_MIN_GAP_MS`), so an edge every 10ms is
    accepted and a wrong rate here is injected rather than caught.
 
