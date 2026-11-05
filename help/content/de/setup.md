@@ -39,7 +39,7 @@ Das Home-Feld oben links führt jeweils eine Ebene zurück:
 
 ![Die Kacheln, alles gespeichert](view:setup)
 
-Die Liste ist 984px breit, auf SENSORS 754px, und zeigt 6 Zeilen zu 64px. Eine 48px hohe Leiste darunter enthält Kategoriename, KATEGORIE ZURÜCKSETZEN und Speichertaste. Sie endet 4px über dem Hinweisband, sodass Meldungen keine Tasten oder Zeilen verdecken.
+Die Liste ist 984px breit, auf SENSORS 754px, und zeigt 6 Zeilen zu 64px. Eine 48px hohe Leiste darunter enthält Kategoriename, KATEGORIE ZURÜCKSETZEN und Speichertaste. Sie endet 4px über dem Alarmband, sodass Meldungen keine Tasten oder Zeilen verdecken.
 
 Eine Zeile zeigt die Einstellung, eine Hilfezeile und ihren Wert mit Einheit. Eine Zahl hat die Tasten `-` und `+`; ein Schalter oder eine Auswahl hat `<` und `>`.
 
@@ -75,7 +75,7 @@ Geschrieben wird im ersten Frame bei SAFE, ausgeschaltetem Netzteilausgang und o
 
 ## Mit ungespeicherten Werten verlassen
 
-![Ein ungespeicherter Wert, am Home-Tag](view:setup-leave)
+![Ein ungespeicherter Wert, am Home-Feld](view:setup-leave)
 
 Das Home-Feld auf der Kachelseite führt zum Menü. Zeigt die Speichertaste `SPEICHERN` oder `NICHT GESPEICHERT`, erscheint zuerst eine Warnung. Sie listet jeden geänderten Wert als `Name: gespeichert -> jetzt`, mit demselben Zahlenformat und derselben Einheit wie in der Liste. Als gespeicherter Stand gelten die beim Start geladenen oder zuletzt erfolgreich geschriebenen Werte.
 

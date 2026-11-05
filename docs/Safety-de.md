@@ -834,9 +834,9 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   anhalten: AUSGANG AUS und START TEST, solange ein Servotest läuft. STOP
   und DISARM auf MOTOR & ESC und auf SERVO haben schon beim Aufsetzen
   gewirkt, und ihr Release tut nichts.
-  STOP und das Home-Tag reagieren auf einen Druck, der auf ihnen aufsetzt:
+  STOP und das Home-Feld reagieren auf einen Druck, der auf ihnen aufsetzt:
   Ein Kontakt, der vom Bildschirm auf STOP rutscht, drückt nichts. Ein Druck,
-  den der Router der Seite vorenthält (auf dem Band, auf STOP, dem Home-Tag,
+  den der Router der Seite vorenthält (auf dem Band, auf STOP, dem Home-Feld,
   einem Chip oder dem Alarmband), lässt die Kontakte der Seite ebenso los,
   an ihrer letzten Stelle im Bildschirm und markiert: Ein laufender Drag auf
   dem Zifferblatt oder einem Schieberegler endet bei diesem Druck, und nichts,
