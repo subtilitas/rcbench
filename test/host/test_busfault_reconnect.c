@@ -22,6 +22,7 @@
  * - a_new_controller_state_repaints_the_heading
  * - the_hint_ends_at_exactly_4s
  * - every_number_of_the_link_column_repaints_it
+ * - the_link_column_is_painted_once_per_buffer_and_after_a_repaint
  * - the_link_column_moves_with_its_counters
  * - the_start_up_verdict_does_not_take_live_numbers
  * - the_start_up_verdict_offers_reconnect_the_same_way
@@ -114,9 +115,10 @@ static gfx_color_t bar_face(void)
 TEST_CASE(a_link_answering_for_1000ms_offers_reconnect_and_999ms_does_not)
 {
     fresh();
-    answers(5000u, BUSFAULT_BACK_MS - 1u);
+    CHECK_EQ(BUSFAULT_BACK_MS, 1000u);
+    answers(5000u, 999u);
     CHECK(!busfault_screen_link_back());
-    busfault_screen_link(true, 5000u + BUSFAULT_BACK_MS);
+    busfault_screen_link(true, 5000u + 1000u);
     CHECK(busfault_screen_link_back());
 }
 
@@ -444,6 +446,22 @@ TEST_CASE(the_link_column_moves_with_its_counters)
     CHECK(column_sum(0) != one);
 }
 
+TEST_CASE(the_link_column_is_painted_once_per_buffer_and_after_a_repaint)
+{
+    for (int b = 0; b < 2; ++b) {
+        fresh();
+        const unsigned long drawn = column_sum(b);
+        /* A mark in the column survives a frame with the same numbers:
+         * the column is not painted again. */
+        s_px[200 * SCREEN_W + BF_NUM_X + 200] = GFX_WHITE;
+        const unsigned long marked = column_sum(b);
+        CHECK(marked != drawn);
+        /* A whole repaint paints the column too. */
+        busfault_screen_invalidate();
+        CHECK_EQ(column_sum(b), drawn);
+    }
+}
+
 TEST_CASE(the_start_up_verdict_does_not_take_live_numbers)
 {
     fresh();
@@ -574,6 +592,7 @@ int main(void)
     RUN(a_new_controller_state_repaints_the_heading);
     RUN(the_hint_ends_at_exactly_4s);
     RUN(every_number_of_the_link_column_repaints_it);
+    RUN(the_link_column_is_painted_once_per_buffer_and_after_a_repaint);
     RUN(the_link_column_moves_with_its_counters);
     RUN(the_start_up_verdict_does_not_take_live_numbers);
     RUN(the_start_up_verdict_offers_reconnect_the_same_way);

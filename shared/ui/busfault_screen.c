@@ -127,9 +127,8 @@ typedef struct {
     uint32_t rx_errors;   /**< the receive error counter                */
     uint32_t bus_errors;  /**< the bus error count                      */
     uint32_t recoveries;  /**< rejoins of this outage                   */
-    uint32_t bus;         /**< busfault_bus_t                           */
-    uint32_t back;        /**< RECONNECT offered                        */
-} col_key_t;
+} col_key_t;  /* A new controller state or the offer paints the whole
+               * screen, the column with it. */
 
 /** @brief How long a hold's hint shows: the band's notice time, 4s. */
 #define HINT_S UI_NOTICE_SHOW_S
@@ -596,8 +595,6 @@ static col_key_t col_key(void)
     k.rx_errors  = s.r.rx_errors;
     k.bus_errors = s.r.bus_errors;
     k.recoveries = s.r.recoveries;
-    k.bus        = (uint32_t)s.r.bus;
-    k.back       = s.back ? 1u : 0u;
     return k;
 }
 
