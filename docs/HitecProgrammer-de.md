@@ -133,7 +133,7 @@ Solange der Port gehalten ist:
 
 - ARM ist ausgegraut. Ein Druck darauf schaltet nichts und zeigt
   `ARMED gesperrt: Die Servoprogrammierung belegt einen Port.` im
-  Alert-Band, auf SERVO wie auf MOTOR & ESC. STOP wirkt. DISARM hat nichts
+  Alarmband, auf SERVO wie auf MOTOR & ESC. STOP wirkt. DISARM hat nichts
   zu beenden: der Prüfstand kann nicht ARMED sein, solange der Port
   gehalten ist.
 - Wenn das PD mini die Programmierports versorgt, sind seine Sollwerte und

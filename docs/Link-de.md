@@ -237,7 +237,7 @@ unabhängig von ENABLE; ein IOmcu von 0.15.0 oder älter nimmt sie mit
 ENABLE 0 an und weist das danach freigegebene Bauteil ab. Das Format auf dem
 Draht und die Protokoll-Minor sind dieselben. Ein Panel von 0.15.0 oder
 älter, dessen zwei Pin-Einstellungen unabhängig sind, sieht die Abweisung bei
-der Änderung statt bei der Freigabe: sein Alert `Sensor-Pins GPIO 15/GPIO 17 abgelehnt. Prüfe SENSORS.`, einmal je Änderung und je Link-Aufbau,
+der Änderung statt bei der Freigabe: sein Alarm `Sensor-Pins GPIO 15/GPIO 17 abgelehnt. Prüfe SENSORS.`, einmal je Änderung und je Link-Aufbau,
 und die Page behält die Pins, die sie hatte. Seine Pins auf −1 werden als
 ENABLE 0 mit 0 für den Pin geschrieben und angenommen. Eine
 Konfiguration im Flash des IOmcu, deren Pins kein Paar sind, wird

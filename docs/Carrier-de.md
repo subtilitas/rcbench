@@ -299,11 +299,11 @@ fest:
   ([Der Programmierport](#der-programmierport);
   [Bildschirme: Auf dem rbmod-Carrier](Screens-de.md#auf-dem-rbmod-carrier)).
 - SETUP > SENSORS zeigt Sensor SDA und SCL sowie Tap pin auf den Pins des
-  Carriers, ohne Tasten und ohne Keypad, der Eintrag SENSORBUS lautet
+  Carriers, ohne Tasten und ohne Tastenfeld, der Eintrag SENSORBUS lautet
   `GPIO 16 / 17 VERLÖTET`, und 0x40 ist bestückt mit seinen drei Kanälen auf
   den Schienen, ohne Tasten ([Der Strommonitor](#der-strommonitor)).
 - Der Tab PD MINI auf SUPPLY zeigt PD mini TX und RX auf den Pins des Carriers, ohne
-  Tasten und ohne Keypad.
+  Tasten und ohne Tastenfeld.
 - Eine Kachel LAYOUT öffnet LAYOUT: J1 und J2 in ihrer
   Positionsfolge mit Rolle, GPIO, Netz am + und dem gebundenen
   Protokoll jeder Position, und die weiteren Stecker

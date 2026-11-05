@@ -134,7 +134,7 @@ erscheinen.
 | Link zurück, kein Neustart | nichts wird geschlossen |
 | Die STOP-Taste oder jeder Stop des Panels | die Operation `STOP`, sobald die Page bekannt ist und einen Pin hält; ein Stop in einer Link-Lücke geht danach. Ein `BAD_VALUE`, eine SEQ eines anderen Schreibers: lesen und erneut, höchstens 6 Mal. |
 | `FAULT` steigt, oder der Zustand erreicht `NOT_BACK` | ein Fehler: alle Ausgänge aus (`prog_faults_follow()`). Ein `FAULT`, der beim ersten Lesen nach Link-Aufbau schon steht, zählt nicht. |
-| Der Zustand erreicht `NOT_BACK` | ein Alert, der Slot oder Port nennt |
+| Der Zustand erreicht `NOT_BACK` | ein Alarm, der Slot oder Port nennt |
 | Ein Pin gehalten, von wem auch immer | ARM auf MOTOR und SERVO, die TARGET-Zeile des Motors, ESC STICK, der Limit-Lauf und der Screenshot warten; ein angefragtes, abgelehntes ARM entfällt auf MOTOR und SERVO |
 | Ein Stop eingerastet | kein Befehl außer CLOSE, LEAVE und ABORT geht (`esc_prog_cmd_allowed()`) |
 | 10 Lesezugriffe der Page in Folge fehlgeschlagen, in einer Anfrage | die Anfrage endet. Mit einem Halten im letzten Lesen: ein Fehler, und `STOP` |
