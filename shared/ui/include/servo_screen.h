@@ -624,11 +624,16 @@ void servo_screen_test_pop(void);
  * @param report whether the card took the .TXT whole
  */
 void servo_screen_test_files(int number, bool report);
-/** Whether the logger still holds an OPEN or an END the outbox gave it,
- *  or an OPEN waits for the queue.  While it does no automatic test and no
- *  limit run starts (REPORT STILL BEING WRITTEN), so the number and report
- *  state servo_screen_test_files() passes go to the run that sent them.
- *  Every frame, after servo_screen_test_files(). */
+/**
+ * @brief Whether the logger still holds an OPEN or an END the outbox gave
+ *        it, or an OPEN waits for the queue.
+ *
+ * While it does, no automatic test and no limit run starts (REPORT STILL
+ * BEING WRITTEN), so the number and report state
+ * servo_screen_test_files() passes go to the run that sent them.  Every
+ * frame, after servo_screen_test_files().
+ * @param busy whether the logger holds a file operation or one waits
+ */
 void servo_screen_test_logger_busy(bool busy);
 
 /**
