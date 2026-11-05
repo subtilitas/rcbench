@@ -80,7 +80,7 @@ typedef struct {
      */
     link_msg_t req;      /**< the outstanding request, as built            */
     uint8_t    seq;      /**< its exchange number; 0 unnumbered            */
-    uint8_t    next_seq; /**< the number the next request takes, 1 to 7    */
+    uint8_t    next_seq; /**< the number the next request takes, 1 to 7; 0 reads as 1 */
     bool       retry_ok; /**< it is numbered and may be repeated           */
     bool       retry_sent; /**< its repeat has been handed out            */
 

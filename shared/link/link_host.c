@@ -39,7 +39,7 @@ void link_host_init(link_host_t *h, uint32_t now_ms)
     }
     memset(h, 0, sizeof(*h));
     h->last_reply_ms = now_ms;
-    h->next_seq      = 1u;
+    /* next_seq 0: start() numbers the first request 1. */
 }
 
 /**

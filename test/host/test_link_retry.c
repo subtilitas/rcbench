@@ -617,11 +617,28 @@ TEST_CASE(exchange_numbers_run_one_to_seven)
         last = req.seq;
         link_host_abandon(&host);
     }
-    /* A number out of range is put back to 1. */
-    host.next_seq = 0u;
+    /* A number out of range is put back to 1: 0, 8 and 255. */
     link_msg_t req;
+    const uint8_t outside[] = { 0u, LINK_SEQ_MAX + 1u, 255u };
+    for (unsigned i = 0; i < sizeof(outside); ++i) {
+        host.next_seq = outside[i];
+        CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0u, 1u, 0u, &req));
+        CHECK_EQ(req.seq, 1u);
+        link_host_abandon(&host);
+    }
+    /* 7 is in range and taken as it is. */
+    host.next_seq = LINK_SEQ_MAX;
     CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0u, 1u, 0u, &req));
-    CHECK_EQ(req.seq, 1u);
+    CHECK_EQ(req.seq, LINK_SEQ_MAX);
+
+    /* The link down: the next request goes unnumbered and has no repeat. */
+    link_host_abandon(&host);
+    host.numbered = false;
+    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0u, 1u, 0u, &req));
+    CHECK_EQ(req.seq, 0u);
+    CHECK_EQ(host.seq, 0u);
+    link_msg_t again;
+    CHECK(!link_host_retry(&host, LINK_HOST_RETRY_MS, &again));
 }
 
 /* -------------------------------------------------------- the IOmcu's copy */
@@ -695,6 +712,53 @@ TEST_CASE(the_iomcu_keeps_an_exchange_for_its_repeat_only)
     CHECK_EQ(g.control_writes, 7u);
 }
 
+/*
+ * Only the messages of the exchange under way answer a repeat.  A message
+ * of an earlier exchange with the same number, left in the copy past its
+ * count, is no answer: the page acts on it.
+ */
+TEST_CASE(a_message_of_an_earlier_exchange_is_no_repeat)
+{
+    fresh(0u, true);
+    link_msg_t reply;
+    link_msg_t a = numbered_write(3u, 1u);
+    link_msg_t b = numbered_write(3u, 2u);
+    CHECK(link_dev_dispatch(&dev, &a, &reply, 10u));
+    CHECK(link_dev_dispatch(&dev, &b, &reply, 11u));
+    CHECK_EQ(dev.kept_count, 2u);
+    link_msg_t none = numbered_write(0u, 5u);
+    CHECK(link_dev_dispatch(&dev, &none, &reply, 12u));
+    CHECK(link_dev_dispatch(&dev, &a, &reply, 13u));
+    CHECK_EQ(dev.kept_count, 1u);
+    const uint32_t before = g.control_writes;
+    CHECK(link_dev_dispatch(&dev, &b, &reply, 14u));
+    CHECK_EQ(g.control_writes, before + 1u);
+    CHECK_EQ(dev.repeats, 0u);
+}
+
+/*
+ * After an unnumbered request the next numbered one starts an exchange of
+ * its own, even with the number before it: its copy lasts from its own
+ * first message, not from the earlier exchange's.
+ */
+TEST_CASE(an_exchange_after_an_unnumbered_request_is_timed_from_its_start)
+{
+    fresh(0u, true);
+    link_msg_t reply;
+    link_msg_t a = numbered_write(3u, 1u);
+    CHECK(link_dev_dispatch(&dev, &a, &reply, 10u));
+    link_msg_t none = numbered_write(0u, 5u);
+    CHECK(link_dev_dispatch(&dev, &none, &reply, 900u));
+    CHECK_EQ(dev.seq, 0u);
+    CHECK(link_dev_dispatch(&dev, &a, &reply, 950u));
+    CHECK_EQ(dev.seq_ms, 950u);
+    const uint32_t before = g.control_writes;
+    /* 1040ms after the first exchange, 90ms into this one: a repeat. */
+    CHECK(link_dev_dispatch(&dev, &a, &reply, 1050u));
+    CHECK_EQ(g.control_writes, before);
+    CHECK_EQ(dev.repeats, 1u);
+}
+
 /* A refusal is kept and repeated as it was: the page is not asked again. */
 TEST_CASE(a_refused_request_is_repeated_as_its_refusal)
 {
@@ -749,6 +813,8 @@ int main(void)
     RUN(the_repeat_and_the_timeout_hold_across_the_wrap);
     RUN(exchange_numbers_run_one_to_seven);
     RUN(the_iomcu_keeps_an_exchange_for_its_repeat_only);
+    RUN(a_message_of_an_earlier_exchange_is_no_repeat);
+    RUN(an_exchange_after_an_unnumbered_request_is_timed_from_its_start);
     RUN(a_refused_request_is_repeated_as_its_refusal);
     RUN(messages_past_the_copy_are_acted_on_and_not_kept);
     return test_summary("link_retry");

@@ -101,6 +101,11 @@ TEST_CASE(the_exchange_number_rides_above_the_offset_in_every_frame)
     CHECK_EQ(link_can_encode(&m, f, LINK_CAN_MAX_FRAMES), 0);
     m = msg(LINK_OP_ACK, LINK_PAGE_BENCH, 32, 0);
     CHECK_EQ(link_can_encode(&m, f, LINK_CAN_MAX_FRAMES), 0);
+    /* One register past the page: offset 31 and 2 registers. */
+    m = msg(LINK_OP_DATA, LINK_PAGE_BENCH, 31, 2);
+    CHECK_EQ(link_can_encode(&m, f, LINK_CAN_MAX_FRAMES), 0);
+    m = msg(LINK_OP_DATA, LINK_PAGE_BENCH, 31, 1);
+    CHECK_EQ(link_can_encode(&m, f, LINK_CAN_MAX_FRAMES), 1);
 
     /* A numbered frame still has to fit its page: register 30 and 4. */
     memset(&f[0], 0, sizeof(f[0]));
