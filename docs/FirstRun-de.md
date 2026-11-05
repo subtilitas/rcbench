@@ -208,8 +208,9 @@ Der IOmcu-Build gibt seine eigene Größenprüfung aus:
 
 **Achtung:** das Modul für das Bring-up ist ein Waveshare RP2350-CAN mit
 **4MB**, während `PICO_BOARD` auf eine Board-Datei zeigt, die **16MB**
-angibt. Der Linker misst gegen 16MB und warnt nicht. Prüfe deshalb die Größenmeldung oben; nur diese Prüfung
-berücksichtigt die tatsächliche Grenze.
+angibt. Der Linker misst gegen 16MB und warnt nicht. `firmware/iomcu/cmake/image_fits.cmake`
+prüft das Image gegen einen Slot der Partitionstabelle, 2.084.864 Bytes, gibt die Zeile oben aus
+und lässt den Build fehlschlagen, wenn das Image größer ist.
 
 ### Die Partitionstabelle des IOmcu
 
@@ -1031,7 +1032,7 @@ gewählt, nicht gemessen.
 | Link steht, Bildschirm bietet keine Pins an | Der Katalog der Platine kam nicht an. Die Konsole sagt, welche Page scheiterte. |
 | Heartbeat fällt beim ersten Link-Aufbau aus | **Die Übertragung der Zeichnung oder der Flash-Keeper.** Siehe §4. |
 | Display friert kurz ein | Prüfe, ob gerade die Platinenzeichnung im Flash gespeichert wird: 4 Vorgänge für die Zeichnung des RP2350-CAN. Das Verhalten der Anzeige dabei ist nicht gemessen. |
-| IOmcu bootet nach dem Flashen nicht | Image über 4MB. Die Größenzeile aus §1 prüfen. |
+| IOmcu bootet nach dem Flashen nicht | Ursache nicht bestimmt. Lade `rcbench-iomcu-install.uf2` erneut ([Schritt 2](#aus-den-release-assets)) und lies die Größenzeile des Builds in §1: ein Image über einem Slot, 2.084.864 Bytes, baut nicht. |
 | Panel bootet, aber keine `boardart`-Partition | Nur die App über eine alte Tabelle geflasht. Merge-bin bei Offset 0. |
 | Output geht nach 500ms in die Mitte | Kein Fehler: in diesen Kanal hat nichts geschrieben, also ist er in seine Ruhelage gegangen: Mitte beim Servo, null beim Motor. Die Impulse laufen weiter, solange der Prüfstand ARMED ist |
 | Impulse hören ganz auf | Nicht der Timeout. Etwas hat den Pin freigegeben, auf SAFE geschaltet oder den Prüfstand gestoppt |
