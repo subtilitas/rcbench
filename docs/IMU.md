@@ -21,9 +21,9 @@ If an incoming angle frame ends a stale period before the next display
 frame, SERVO still receives the stale state. A stale reading timestamped
 300ms after the previous angle frame is delivered before the new reading.
 
-WitMotion, BWT901CL, HC-05 and HC-06 are names of their makers' products,
-and Bluetooth is a trademark of its owner. rcbench is independent: it is
-not affiliated with, endorsed by or sponsored by them. The names say which
+WitMotion, BWT901CL, HC-05, HC-06, JDY, Jieli, CSR, BC417 and ESP32 are
+names of their makers' products, and Bluetooth is a trademark of its
+owner. rcbench is independent: it is not affiliated with, endorsed by or sponsored by them. The names say which
 devices the panel talks to.
 [Legal notice and disclaimer](../README.md#legal-notice-and-disclaimer) holds
 the project's notice.
@@ -36,8 +36,21 @@ the project's notice.
 | the controller: the HC-05's operations, the sensor's commands, the link state | `shared/ui/imu_ctl.c` |
 | the screen and SETUP's IMU entry | `shared/ui/imu_screen.c`, `shared/ui/sensors_pane.c` |
 | the UART, the KEY line and the task | `firmware/panel/main/panel_imu.c` |
+| the Bluetooth bridge in the HC-05's place | `protocols/hc05emu`, `firmware/btbridge` ([The Bluetooth bridge](BtBridge.md)) |
 
 ## Wiring
+
+The module on UART1 is a genuine HC-05 or the Bluetooth bridge. A genuine
+HC-05 carries the CSR BC417 chip and its flash chip, and only that module
+acts as a master. HC-06 and JDY-xx modules and the Jieli-based clones sold
+as HC-05 are slaves only: they answer AT, and they cannot connect to the
+sensor. The bridge is a classic ESP32 board (ESP32-WROOM-32) that answers
+the same AT commands; the panel needs no change for it.
+
+| Module | Wiring |
+| --- | --- |
+| a genuine HC-05 (CSR BC417) on a ZS-040 breakout | the table below |
+| the Bluetooth bridge on a D1 mini ESP32 | [The Bluetooth bridge: Wiring](BtBridge.md#wiring): the same headers and panel pins |
 
 The pins are `PANEL_IMU_*` in
 `firmware/panel/components/board/include/board_pins.h`. The signals go to

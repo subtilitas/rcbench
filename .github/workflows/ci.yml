@@ -860,6 +860,43 @@ jobs:
             firmware/panel/build/flash_args
           if-no-files-found: error
 
+  # The Bluetooth bridge (firmware/btbridge, docs/BtBridge.md): a classic
+  # ESP32 that answers the panel's HC-05 AT commands.  Built in the same
+  # container as the panel; nothing else needs it.
+  btbridge:
+    name: Bluetooth bridge (ESP-IDF v6.1, ESP32)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      # The checkout holds no sdkconfig, so the build generates one from
+      # sdkconfig.defaults.  The merged image goes to 0x0 on its own.
+      - name: Build
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v6.1
+          target: esp32
+          path: 'firmware/btbridge'
+          command: idf.py build && idf.py merge-bin -o rcbench-btbridge-merged.bin
+
+      - name: Size report
+        run: |
+          ls -l firmware/btbridge/build/*.bin
+          sha256sum firmware/btbridge/build/*.bin
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: btbridge
+          path: |
+            firmware/btbridge/build/rcbench-btbridge-merged.bin
+            firmware/btbridge/build/rcbench-btbridge.bin
+            firmware/btbridge/build/rcbench-btbridge.elf
+            firmware/btbridge/build/bootloader/bootloader.bin
+            firmware/btbridge/build/partition_table/partition-table.bin
+            firmware/btbridge/build/flash_args
+          if-no-files-found: error
+
   iomcu:
     # The env context is not available in a job name (only github, needs,
     # strategy, matrix, vars and inputs are), so the pin is spelled out here

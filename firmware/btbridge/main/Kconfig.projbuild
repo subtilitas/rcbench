@@ -1,0 +1,39 @@
+# The bridge's pins.  The defaults are a D1 mini ESP32 (ESP32-WROOM-32):
+# UART2 on GPIO 17 (D3) and GPIO 16 (D4), KEY on GPIO 18 (D5), STATE on
+# GPIO 19 (D6), the board's LED on GPIO 2.  None of them is a strapping pin
+# except GPIO 2, which the board itself wires to its LED.
+menu "rcbench Bluetooth bridge"
+
+config BTBRIDGE_UART_TX_GPIO
+    int "UART2 TX, to the panel's UART1 RX (IO5)"
+    range 0 33
+    default 17
+
+config BTBRIDGE_UART_RX_GPIO
+    int "UART2 RX, from the panel's UART1 TX (IO4)"
+    range 0 39
+    default 16
+
+config BTBRIDGE_KEY_GPIO
+    int "KEY input, from the panel's IO29: high is AT mode"
+    range 0 39
+    default 18
+    help
+        Read with the internal pull-down where the pin has one, so an
+        unwired KEY is low: data mode.  GPIO 34 to 39 have no pull-down.
+
+config BTBRIDGE_STATE_GPIO
+    int "STATE output, high with the link open; -1 for none"
+    range -1 33
+    default 19
+
+config BTBRIDGE_LED_GPIO
+    int "Status LED; -1 for none"
+    range -1 33
+    default 2
+
+config BTBRIDGE_LED_ACTIVE_LOW
+    bool "The LED lights with its GPIO low"
+    default n
+
+endmenu

@@ -320,6 +320,33 @@ jobs:
             firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod.elf
           if-no-files-found: error
 
+  # The Bluetooth bridge's image (firmware/btbridge): the merged image,
+  # flashed at 0x0 with esptool (docs/BtBridge.md).
+  btbridge:
+    needs: [version]
+    name: Bluetooth bridge image
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # The commit the version job pinned, not the tag again.
+          ref: ${{ needs.version.outputs.sha }}
+
+      - name: Build
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v6.1
+          target: esp32
+          path: 'firmware/btbridge'
+          command: idf.py build && idf.py merge-bin -o rcbench-btbridge-merged.bin
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: btbridge
+          path: firmware/btbridge/build/rcbench-btbridge-merged.bin
+          if-no-files-found: error
+
   # The configurator anchors its data to one release tag, and a tag alone
   # starts no Configurator workflow run.  This job runs the check of that
   # workflow on the commit of the run: a release tag newer than the data
@@ -356,7 +383,7 @@ jobs:
 
   publish:
     name: Package and publish
-    needs: [version, panel, iomcu]
+    needs: [version, panel, iomcu, btbridge]
     runs-on: ubuntu-26.04
     timeout-minutes: 20
     # One publish at a time across every tag, so the latest mark is decided
@@ -421,6 +448,9 @@ jobs:
             }
           done
           cp artifacts/panel/rcbench-panel.bin "dist/rcbench-panel-p4-$TAG.bin"
+          # The Bluetooth bridge's merged image, for esptool at 0x0.
+          cp artifacts/btbridge/rcbench-btbridge-merged.bin \
+             "dist/rcbench-btbridge-$TAG.bin"
           (cd dist && sha256sum ./*.zip ./*.bin > SHA256SUMS)
           ls -l dist
 

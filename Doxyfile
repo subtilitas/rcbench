@@ -25,6 +25,7 @@ INPUT                  = shared \
                          protocols \
                          firmware/panel \
                          firmware/iomcu \
+                         firmware/btbridge \
                          testbench/touch-injector/core
 FILE_PATTERNS          = *.c *.h
 RECURSIVE              = YES

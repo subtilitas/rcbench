@@ -75,7 +75,8 @@ nicht liest ([unten](#die-sd-karte-von-0210-und-älter)).
 | `rcbench-iomcu-rbmod-vX.Y.Z.zip` | dieselben fünf Dateien, benannt `rcbench-iomcu-rbmod-*` | den IOmcu auf dem rbmod-Carrier ([Link: Boards mit verlöteten Pins](Link-de.md#boards-mit-verlöteten-pins)): `rcbench-iomcu-rbmod-install.uf2` |
 | `rcbench-panel-p4-vX.Y.Z.zip` | `flash_args`, `bootloader/bootloader.bin`, `partition_table/partition-table.bin`, `ota_data_initial.bin`, `rcbench-panel.bin`, `rcbench-panel-merged.bin`, `rcbench-panel.elf`, `NOTICE`, `LICENSE` | den USB-Flash des Panels |
 | `rcbench-panel-p4-vX.Y.Z.bin` | die Anwendung des Panels allein, mit den zwei IOmcu-Images, die es über CAN anbietet | ein Update über WLAN; nicht für USB |
-| `SHA256SUMS` | die SHA-256 (Secure Hash Algorithm) der vier Dateien oben | die Prüfung in Schritt 1 |
+| `rcbench-btbridge-vX.Y.Z.bin` | das zusammengeführte Image der Bluetooth-Bridge, für einen ESP32-WROOM-32 | eine Bridge statt des HC-05 ([Die Bluetooth-Bridge](BtBridge-de.md)); esptool an 0x0 |
+| `SHA256SUMS` | die SHA-256 (Secure Hash Algorithm) der fünf Dateien oben | die Prüfung in Schritt 1 |
 
 Werkzeuge: das Laufwerk `RP2350` oder `picotool` für den IOmcu,
 `esptool.py` für das Panel (`pip install esptool`; ESP-IDF v6.1 bringt
@@ -84,7 +85,7 @@ esptool 5 (`--flash-mode`); esptool 4.x, das ESP-IDF v5.5 mitbringt, lehnt
 diese Schreibweise ab, sodass `@flash_args` esptool 5 oder neuer braucht.
 `/dev/ttyACM0` unten heißt unter Windows `COMx`.
 
-1. Führe im Download-Ordner `sha256sum -c SHA256SUMS` aus. Für jede der vier
+1. Führe im Download-Ordner `sha256sum -c SHA256SUMS` aus. Für jede der fünf
    Dateien muss `OK` erscheinen.
 2. **IOmcu.** Entpacke `rcbench-iomcu-vX.Y.Z.zip`. Verwende auf dem
    rbmod-Carrier stattdessen `rcbench-iomcu-rbmod-vX.Y.Z.zip` und dessen

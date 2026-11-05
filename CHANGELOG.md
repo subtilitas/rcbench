@@ -6,6 +6,21 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- The Bluetooth bridge: a D1 mini ESP32 (ESP32-WROOM-32) in the HC-05's
+  place between the panel and the BWT901CL ([The Bluetooth bridge](docs/BtBridge.md)).
+  It answers the panel's HC-05 AT commands (`protocols/hc05emu`), pairs with
+  PIN 1234, keeps the bound address in NVS and passes the sensor's bytes at
+  115200 baud in data mode; the panel needs no change. It is wired like the
+  HC-05: UART2 on GPIO 17 and GPIO 16 to IO5 and IO4, KEY on GPIO 18 from
+  IO29, 5V and GND from H9. The release carries its merged image,
+  `rcbench-btbridge-vX.Y.Z.bin`, for esptool at 0x0. Its current from H9's
+  Core_5V is not measured.
+- The IMU pages state that only a genuine HC-05 with the CSR BC417 acts as a
+  master: HC-06 and JDY-xx modules and the Jieli-based clones sold as HC-05
+  are slaves and cannot connect to the sensor.
+
 ### Fixed
 
 - SERVO > TEST, SERVO > PROGRAM and the SERVO settings pages no longer repaint

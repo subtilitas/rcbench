@@ -24,8 +24,9 @@ veralteten Zustand. Dazu wird vor dem neuen Messwert ein veralteter
 Messwert mit einem Zeitstempel 300ms nach dem vorherigen Winkel-Frame
 übergeben.
 
-WitMotion, BWT901CL, HC-05 und HC-06 sind Namen von Produkten ihrer
-Hersteller, und Bluetooth ist eine Marke ihres Inhabers. rcbench ist
+WitMotion, BWT901CL, HC-05, HC-06, JDY, Jieli, CSR, BC417 und ESP32 sind
+Namen von Produkten ihrer Hersteller, und Bluetooth ist eine Marke ihres
+Inhabers. rcbench ist
 unabhängig: nicht mit ihnen verbunden, nicht von ihnen unterstützt oder
 gesponsert. Die Namen sagen, mit welchen Geräten das Panel spricht.
 [Rechtliche Hinweise und Haftungsausschluss](../README-de.md#rechtliche-hinweise-und-haftungsausschluss)
@@ -39,8 +40,22 @@ enthält den Hinweis des Projekts.
 | die Steuerung: die Operationen des HC-05, die Befehle des Sensors, der Verbindungszustand | `shared/ui/imu_ctl.c` |
 | die Seite IMU und ihr Eintrag unter SETUP | `shared/ui/imu_screen.c`, `shared/ui/sensors_pane.c` |
 | UART, KEY-Leitung und Task | `firmware/panel/main/panel_imu.c` |
+| die Bluetooth-Bridge an der Stelle des HC-05 | `protocols/hc05emu`, `firmware/btbridge` ([Die Bluetooth-Bridge](BtBridge-de.md)) |
 
 ## Verdrahtung
+
+Das Modul an UART1 ist ein echter HC-05 oder die Bluetooth-Bridge. Ein
+echter HC-05 trägt den Chip CSR BC417 und seinen Flash-Chip, und nur dieses
+Modul arbeitet als Master. HC-06- und JDY-xx-Module und die als HC-05
+verkauften Nachbauten mit Jieli-Chip sind nur Slaves: Sie antworten auf AT
+und können sich nicht mit dem Sensor verbinden. Die Bridge ist eine
+Platine mit einem klassischen ESP32 (ESP32-WROOM-32), die dieselben
+AT-Befehle beantwortet; das Panel braucht dafür keine Änderung.
+
+| Modul | Verdrahtung |
+| --- | --- |
+| ein echter HC-05 (CSR BC417) auf einem Breakout ZS-040 | die Tabelle unten |
+| die Bluetooth-Bridge auf einem D1 mini ESP32 | [Die Bluetooth-Bridge: Verdrahtung](BtBridge-de.md#verdrahtung): dieselben Header und Pins des Panels |
 
 Die Pins sind `PANEL_IMU_*` in
 `firmware/panel/components/board/include/board_pins.h`. Die Signale gehen auf

@@ -71,7 +71,8 @@ not read ([below](#the-sd-card-of-0210-and-older)).
 | `rcbench-iomcu-rbmod-vX.Y.Z.zip` | the same five files, named `rcbench-iomcu-rbmod-*` | the IOmcu on the rbmod carrier ([Link: Boards with soldered pins](Link.md#boards-with-soldered-pins)): `rcbench-iomcu-rbmod-install.uf2` |
 | `rcbench-panel-p4-vX.Y.Z.zip` | `flash_args`, `bootloader/bootloader.bin`, `partition_table/partition-table.bin`, `ota_data_initial.bin`, `rcbench-panel.bin`, `rcbench-panel-merged.bin`, `rcbench-panel.elf`, `NOTICE`, `LICENSE` | the panel's USB flash |
 | `rcbench-panel-p4-vX.Y.Z.bin` | the panel's application alone, with the two IOmcu images it offers over CAN | an update over Wi-Fi; not for USB |
-| `SHA256SUMS` | the SHA-256 (Secure Hash Algorithm) of the four files above | the check in step 1 |
+| `rcbench-btbridge-vX.Y.Z.bin` | the Bluetooth bridge's merged image, for an ESP32-WROOM-32 | a bridge in place of the HC-05 ([The Bluetooth bridge](BtBridge.md)); esptool at 0x0 |
+| `SHA256SUMS` | the SHA-256 (Secure Hash Algorithm) of the five files above | the check in step 1 |
 
 Tools: the RP2350's `RP2350` drive or `picotool` for the IOmcu,
 `esptool.py` for the panel (`pip install esptool`; ESP-IDF v6.1 carries
@@ -81,7 +82,7 @@ spelling, so `@flash_args` needs esptool 5 or later.
 `/dev/ttyACM0` below is `COMx` on Windows.
 
 1. In the download folder, `sha256sum -c SHA256SUMS` prints `OK` for each
-   of the four files.
+   of the five files.
 2. **IOmcu.** Unpack `rcbench-iomcu-vX.Y.Z.zip`, or on the rbmod carrier
    `rcbench-iomcu-rbmod-vX.Y.Z.zip` and its `rcbench-iomcu-rbmod-*` files in
    place of the names below. Hold BOOTSEL while

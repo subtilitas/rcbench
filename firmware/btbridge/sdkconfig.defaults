@@ -1,0 +1,27 @@
+# Target --------------------------------------------------------------------
+# The original ESP32 (ESP32-WROOM-32 module): the only ESP32 with Bluetooth
+# Classic.  4MB flash, as on the D1 mini ESP32 boards.
+CONFIG_IDF_TARGET="esp32"
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+
+# Partitions ----------------------------------------------------------------
+# The large single app, 1.5MB (0x177000 bytes), not the default 1MB: the
+# image with Bluedroid Classic and SPP is 651,232 bytes at 0.23.8, and the
+# room left holds a debug build's logs.
+CONFIG_PARTITION_TABLE_SINGLE_APP_LARGE=y
+
+# FreeRTOS ------------------------------------------------------------------
+# A 1ms tick: the bridge task blocks 2ms on the UART, which a 10ms tick
+# would round to no wait at all.
+CONFIG_FREERTOS_HZ=1000
+
+# Bluetooth -----------------------------------------------------------------
+# Classic only, with SPP; the controller in BR/EDR (basic rate, enhanced
+# data rate) mode, no BLE (Bluetooth Low Energy).
+CONFIG_BT_ENABLED=y
+CONFIG_BTDM_CTRL_MODE_BLE_ONLY=n
+CONFIG_BTDM_CTRL_MODE_BR_EDR_ONLY=y
+CONFIG_BTDM_CTRL_MODE_BTDM=n
+CONFIG_BT_CLASSIC_ENABLED=y
+CONFIG_BT_SPP_ENABLED=y
+CONFIG_BT_BLE_ENABLED=n
