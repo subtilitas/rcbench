@@ -310,24 +310,30 @@ uint8_t out_store_last_record(void);
 bool out_store_window_open(void);
 
 /**
- * @brief Erase the 4KiB sector at flash offset @p off, below the store.
+ * @brief Erase the 4KiB sector at flash offset @p off, between the boot
+ * ROM's boot slots and the store (out_store_range.h).
  *
  * True when the erase ran.
  *
  * @param off  Flash offset of the sector, in bytes. An offset that is not a
- *             sector boundary, or that is at or past the store, is refused.
+ *             sector boundary, below 0x2000 (the partition table's boot
+ *             slots), or whose sector reaches past the store's start, is
+ *             refused.
  * @return True when the erase ran.
  */
 bool out_store_flash_erase(uint32_t off);
 
 /**
  * @brief Program @p len bytes, whole 256-byte pages up to one sector, at
- * flash offset @p off, below the store.
+ * flash offset @p off, between the boot ROM's boot slots and the store
+ * (out_store_range.h).
  *
  * True when the program ran.
  *
- * @param off  Flash offset, in bytes. A null @p data, a @p len that is not a
- *             whole number of pages, or a range past the store is refused.
+ * @param off  Flash offset, in bytes. A null @p data, an @p off that is not
+ *             a sector boundary or is below 0x2000 (the partition table's
+ *             boot slots), a @p len that is not a whole number of pages, or
+ *             a range past the store's start is refused.
  * @param data  The bytes to program.
  * @param len  Number of bytes, at most one sector.
  * @return True when the program ran.

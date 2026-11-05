@@ -16,9 +16,20 @@ history is in git.
   `text_hl_line()`, an edit and save, the 412 round trip with the unsaved
   question, upload, rename, move and delete, and the write buttons while
   writes are closed. The CI job is `Web file manager browser test`.
+- The IOmcu console prints the boot ROM's record of each start after its
+  reset line: `rcbench-iomcu: boot type NORMAL partition 1 source slot 0
+  diagnostic 0x00010355`. It names the boot type, the partition booted, what
+  the diagnostic word describes and the word, read through
+  `rom_get_boot_info()`. After `picotool reboot -a -g 0` the word shows
+  which steps slots A and B passed. Both boards, rp2350_can and rbmod.
 
 ### Fixed
 
+- The IOmcu's firmware update cannot erase or program flash below 0x2000,
+  the boot ROM's boot slots 0 and 1 that hold the partition table. The
+  flash calls of the update refused only ranges past the store before. No
+  update wrote there; an erase of the table would leave the IOmcu in
+  BOOTSEL until a USB load of the install UF2.
 - SERVO > TEST, SERVO > PROGRAM and the SERVO settings pages no longer repaint
   the whole screen when the arm moves or the AS5600 angle changes in its
   tenths. None of these pages shows either value. The station measured 15.1
