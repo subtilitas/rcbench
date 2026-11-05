@@ -402,6 +402,20 @@ def test_a_destination_the_panel_protects_is_refused_for_put_rename_move(api):
     assert (s, body["error"]) == (403, "LOCKED")
 
 
+def test_an_info_etag_of_a_busy_or_locked_file_is_refused(api):
+    """INFO etag=1 opens the file: BUSY and LOCKED as a GET of it."""
+    s, _, body = api.json("GET", "/api/info?path=HELLO.TXT&etag=1")
+    assert s == 200 and body["etag"] != ""
+    q = "/api/info?path=BENCH/KST/CONF/KST.TXT"
+    assert api.json("GET", q)[0] == 200
+    s, _, body = api.json("GET", q + "&etag=1")
+    assert (s, body["error"]) == (403, "LOCKED")
+    api.reset(busy=["HELLO.TXT"])
+    s, _, body = api.json("GET", "/api/info?path=HELLO.TXT&etag=1")
+    assert (s, body["error"]) == (423, "BUSY")
+    assert api.json("GET", "/api/info?path=HELLO.TXT")[0] == 200
+
+
 def test_a_folder_named_as_a_protected_record_is_refused(api):
     """MKDIR of KST.NEW or RCBENCH.OLD is LOCKED or FIXED (fm_job_mkdir())."""
     s, _, body = api.form("mkdir", path="BENCH/KST/CONF/KST.NEW")

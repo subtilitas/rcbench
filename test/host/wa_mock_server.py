@@ -1077,6 +1077,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 "time": time.strftime("%Y-%m-%d %H:%M", time.gmtime(stamp))
                 if stamp >= 946684800 else ""}
         if q.get("etag") == "1" and not is_dir:
+            # The sum opens the file (fm_job_sum_file(), FM_OP_OPEN): a
+            # programmer's record or a file a job holds is refused as a
+            # GET /api/file of it is.
+            folder, _, name = path.rpartition("/")
+            if place_of(folder, name, False) == "LOCKED":
+                raise Refused("LOCKED")
+            if path in self.st.busy:
+                raise Refused("BUSY")
             body["etag"] = ("%08x" % zlib.crc32(card.files[path])
                             if size <= FILE_MAX else "")
         self.json(200, body)
