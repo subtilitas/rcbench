@@ -219,7 +219,7 @@ ESP32-P4-WIFI6-Touch-LCD-7B, Schaltplan vom 2025-09-25) trägt keinen
 RTC-Chip (Real-Time Clock). Ihr I2C-Bus (GPIO7, GPIO8) erreicht den
 Touch-Controller GT911 (0x5D), den Audio-Codec ES8311, den Audio-ADC ES7210
 (Analog-Digital-Wandler), den Kameraanschluss und den 4-poligen I2C-Stecker;
-Keiner davon führt eine Uhr. Waveshares Board
+keiner davon führt eine Uhr. Waveshares Board
 Support Package 3.0.1 und seine Demo-Firmware (Commit 9fcd49a8 vom
 2026-08-21) haben keinen RTC-Treiber; die Demo stellt ihre Uhr über SNTP
 (Simple Network Time Protocol). Die Platine enthält folgende Bauteile für die Uhr des ESP32-P4:
@@ -331,7 +331,7 @@ die dabei verlorene Zeit zurück.
 ## Befehle
 
 ```bash
-# host suite
+# Host-Suite
 cmake -S test/host -B test/host/build -DCMAKE_BUILD_TYPE=Debug
 cmake --build test/host/build
 ctest --test-dir test/host/build --output-on-failure
@@ -342,7 +342,7 @@ cmake --build test/host/build --target wa_page_dump
 (cd test/web && npm ci && npx playwright install chromium \
   && WA_PAGE_DUMP=../host/build/wa_page_dump npm run e2e)
 
-# panel
+# Panel
 . $IDF_PATH/export.sh
 idf.py -C firmware/panel set-target esp32p4
 idf.py -C firmware/panel build
@@ -352,8 +352,8 @@ idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor    # COMx on Windows
 # ersten Blick auf eine Platine
 idf.py -C firmware/panel -B firmware/panel/build-bars -D RCBENCH_DISPLAY_BARS=ON build
 
-# panel carrying the IOmcu images it offers over CAN, the module's and
-# the rbmod carrier's; build both IOmcu images first
+# Panel mit den IOmcu-Images, die es über CAN anbietet, dem des Moduls und
+# dem des rbmod-Carriers; baue zuerst beide IOmcu-Images
 idf.py -C firmware/panel -D RCBENCH_IOMCU_BIN=$PWD/firmware/iomcu/build/rcbench-iomcu.bin \
     -D RCBENCH_IOMCU_RBMOD_BIN=$PWD/firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod.bin build
 
@@ -369,8 +369,8 @@ idf.py -C firmware/panel -B firmware/panel/build-noinject -D RCBENCH_TOUCH_INJEC
 # den Zeilen ohne das Flag bauen
 idf.py -C firmware/panel -B firmware/panel/build-noperf -D RCBENCH_PERF_LOG=OFF build
 
-# panel, as one image at offset 0 (the ESP32-P4's bootloader sits at
-# 0x2000 inside it); it erases the settings in nvs
+# Panel als ein Image bei Offset 0 (der Bootloader des ESP32-P4 liegt darin
+# bei 0x2000); es löscht die Einstellungen im NVS
 idf.py -C firmware/panel merge-bin -o rcbench-panel-merged.bin
 esptool.py -p /dev/ttyACM0 write_flash 0x0 \
     firmware/panel/build/rcbench-panel-merged.bin
@@ -380,16 +380,16 @@ export PICO_SDK_PATH=/path/to/pico-sdk
 cmake -S firmware/iomcu -B firmware/iomcu/build
 cmake --build firmware/iomcu/build
 
-# IOmcu for the rbmod carrier: files rcbench-iomcu-rbmod.*
+# IOmcu für den rbmod-Carrier: Dateien rcbench-iomcu-rbmod.*
 cmake -S firmware/iomcu -B firmware/iomcu/build-rbmod -DIOMCU_BOARD=rbmod
 cmake --build firmware/iomcu/build-rbmod
 
-# IOmcu, debug build that prints INA3221 CH1's 1ms samples
+# IOmcu, Debug-Build, der die 1-ms-Samples von INA3221 CH1 ausgibt
 cmake -S firmware/iomcu -B firmware/iomcu/build-trace -DSENSE_TRACE=ON
 cmake --build firmware/iomcu/build-trace
 
-# IOmcu, bench build that reads and writes link pages from the USB console
-# (Die Prüfstandskonsole, BenchConsole-de.md); not with SENSE_TRACE
+# IOmcu, Prüfstands-Build, der Link-Pages von der USB-Konsole liest und
+# schreibt (Die Prüfstandskonsole, BenchConsole-de.md); nicht mit SENSE_TRACE
 cmake -S firmware/iomcu -B firmware/iomcu/build-console -DIOMCU_CONSOLE=ON
 cmake --build firmware/iomcu/build-console
 ```
@@ -444,6 +444,7 @@ bis 32 GPIO (General-Purpose Input/Output).
 | `tools/render_ui.py` | rendert jeden Bildschirm mit dem Code, den das Panel ausführt, als PNG (Portable Network Graphics), auf Englisch nach `docs/img/` und auf Deutsch nach `docs/img/de/`; `--check` vergleicht mit den eingecheckten Bildern; `--fit` schlägt fehl, wenn ein Text in einer der beiden Sprachen dort überläuft, wo er gezeichnet wird, außer den englischen Überläufen, die das Werkzeug als bekannt führt ([Sprache](Language-de.md)) |
 | `tools/frame_cost.py` | misst L2-Cache-Line-Fills je Frame unter cachegrind mit dem L1- und dem L2-Cache des ESP32-P4 bei 1024 x 600px; `--max-lines N` schlägt fehl, wenn ein Modus N überschreitet, wie CI es je Gruppe von Modi ausführt; `--check-doc` hält den Block in [Performance](Performance-de.md) an der Messung, mit einer Toleranz von 3%, mindestens jedoch 500 Fills, und die Zeile der Startmessung in der Tabelle des Boards an `PROBE_CLEAR_US`; `--update-doc` schreibt den Block |
 | `tools/stack_check.py` | liest die tiefste Aufrufkette jeder Panel-Task aus der gebauten ELF-Datei (Executable and Linkable Format) und schlägt fehl, wenn eine ihren Stack abzüglich 1024 Bytes überschreitet; dekodiert den RISC-V-Code des ESP32-P4 mit `tools/stack_riscv.py` und hält bei einer ELF-Datei einer anderen Maschine an; CI führt es nach beiden Panel-Builds aus; nimmt das Build-Verzeichnis, Standard `firmware/panel/build`; `-v` gibt jede tiefste Kette und jeden Aufruf aus, dem es nicht folgen kann; `--check-doc` hält die Task-Tabelle in [Performance](Performance-de.md#stacks) am Build; `--iomcu` liest stattdessen das IOmcu-Image und schlägt fehl, wenn die tiefste Kette eines Kerns, ein Interrupt und 256 Bytes seinen Stack überschreiten; mit `--check-doc` hält es die Zeile von Kern 0 der IOmcu-Tabelle, die Zahl der von `main` aus erreichbaren Aufrufe über ein Register in beiden Performance-Seiten und den Satz zu Kern 0 in `STATUS.md`; der ELF-Leser und der Aufrufgraph stehen in `tools/stack_elf.py`, die IOmcu-Hälfte in `tools/stack_iomcu.py` |
+| `tools/check_panel_console.py` | liest eine ELF-Datei des Panels auf die Symbole des Konsolen-Relays und seine Link-Zeile: `off ELF` schlägt fehl, wenn das Image eines davon enthält, `on ELF`, wenn ihm eines fehlt. CI und der Release-Workflow halten jeden veröffentlichten Build an `off` |
 | `tools/check_perf_log.py` | liest eine ELF-Datei des Panels auf den Text der Start-up-Messung, den Text des Stack-Scans und das Symbol `scan_stacks`: `off ELF` schlägt fehl, wenn das Image eines davon enthält, `on ELF`, wenn ihm eines fehlt; `ci.yml` führt beides auf seinen zwei Panel-Builds aus und `release.yml` führt `off` auf dem Release-Image aus, so dass ein Release-Build, der `-D RCBENCH_PERF_LOG=OFF` weglässt, fehlschlägt |
 | `tools/image_slot.py` | liest die Partitionstabelle eines Panel-Builds und schlägt fehl, wenn das Image größer ist als der kleinere der zwei OTA-Anwendungsslots (Over-the-Air), wenn die Tabelle weniger als zwei solche Slots hat oder wenn sie sich in der Größe unterscheiden; gibt den verbleibenden Platz aus; nimmt das Build-Verzeichnis, Standard `firmware/panel/build` |
 | `tools/psram_bss.py` | liest die Linker-Map eines Panel-Builds und schlägt fehl, wenn eine Zeile in den Einträgen eines Mappings in `firmware/panel/main/psram_bss.lf` nicht `<object> (rcbench_extram_bss)` lautet, wenn ein Objekt, das das Fragment in den PSRAM (Pseudo-Static Random-Access Memory) legt, kein .bss in `.ext_ram.bss` hat oder .bss im internen RAM behält; gibt die verschobenen Bytes aus; `--list N` listet außerdem jedes Objekt mit mehr als N Bytes .bss im internen RAM; nimmt das Build-Verzeichnis, Standard `firmware/panel/build` |
