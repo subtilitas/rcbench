@@ -48,6 +48,20 @@ void draw_save_line(gfx_canvas_t *c)
                         : ui_theme_color(UI_C_TEXT_DIM), 1);
 }
 
+void draw_kx_value(gfx_canvas_t *c)
+{
+    const bool on = settings_get_bool(SET_KST_EXPERT);
+    const gfx_color_t sunk = ui_theme_color(UI_C_PANEL_SUNK);
+    const gfx_color_t danger = ui_theme_color(UI_C_DANGER);
+    const bool pressed = s.ov_have && s.ov_pressed == OP_KST_EXPERT;
+
+    ui_button_font(c, kx_value_rect(), ui_on_off(on),
+                   on ? danger : s.kx_down ? ui_hold_fill(sunk, danger,
+                                                          s.kx_hold.held_s)
+                                           : sunk,
+                   pressed && !s.kx_down, true, SV_FONT_LABEL);
+}
+
 /**
  * @brief Whether a row is drawn faint: a test setting the length rule
  *        leaves unused, a setting under its lock, a limit run's row it
@@ -102,6 +116,9 @@ static void row_value(const ov_row_t *r, char *buf, size_t n)
     case R_TEXT:    snprintf(buf, n, "%s", settings_text(SET_TEXT_DUT_NAME));
                     return;
     case R_HV:      snprintf(buf, n, "%s", ui_on_off(s.test_hv)); return;
+    case R_KST_EXPERT:
+        snprintf(buf, n, "%s", ui_on_off(settings_get_bool(SET_KST_EXPERT)));
+        return;
     case R_BROWNOUT:
         /* ON 3.0/0.2V: LOWEST VOLTAGE and STEP; OFF alone. */
         if (settings_get_bool(SET_SERVO_BROWNOUT)) {
@@ -381,6 +398,10 @@ void draw_rows_page(gfx_canvas_t *c)
                            ui_theme_color(UI_C_PANEL_HI),
                            s.ov_have && s.ov_pressed == OP_TRIM_UP, true,
                            SV_FONT_LABEL);
+            continue;
+        }
+        if (r->kind == R_KST_EXPERT) {
+            draw_kx_value(c);
             continue;
         }
         /* The type and the rate in force in the danger colour when they

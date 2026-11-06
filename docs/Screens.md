@@ -1998,6 +1998,7 @@ APPLY and CANCEL buttons ending 4px above the alert band.
 | SETTINGS > DUT | NAME | the device under test, up to 23 characters, for the report |
 | SETTINGS > DUT | REPORT | a text report beside each test's log |
 | SETTINGS > DUT | ENC CENTRE | a tap takes the live count as the centre, with the servo at its neutral, and sets nothing without a reading from the current link (none after a link loss until a new one arrives) or while the sensor reports no magnet; the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, SENSORS, AS5600 centre |
+| SETTINGS > DUT | KST EXPERT MODE | whether the [KST and Chaservo programmer](ServoProgrammer.md#expert-mode) shows DEAD BAND, BOOST, STRETCH, RELEASE PAIRING and the LOCKED tab; OFF by default, ON after a 2s hold (a shorter press shows the hint on the band), OFF with a tap. Kept across restarts |
 
 TRIM is the only keypad accepting a sign. Its `+/-` key, between the
 point and OK, adds or removes a leading minus before or after digits are

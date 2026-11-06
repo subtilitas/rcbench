@@ -1009,7 +1009,18 @@ static void program_view(const char *view)
  */
 static void kst_view(const char *view)
 {
-    const char *v = view + strlen("servo-kst");
+    /* A view with -expert-off is its view with KST EXPERT MODE OFF; every
+     * other has it ON and shows every row. */
+    static const char k_off[] = "-expert-off";
+    static char vb[64];
+    const char *full = view + strlen("servo-kst");
+    const size_t fl = strlen(full);
+    const bool expert_off = fl >= sizeof(k_off) - 1u
+        && strcmp(full + fl - (sizeof(k_off) - 1u), k_off) == 0;
+
+    snprintf(vb, sizeof(vb), "%.*s",
+             (int)(expert_off ? fl - (sizeof(k_off) - 1u) : fl), full);
+    const char *v = vb;
     const bool nopage = strcmp(v, "-nopage") == 0;
     const bool cut = strcmp(v, "-doubt") == 0 || strcmp(v, "-journal") == 0
                   || strcmp(v, "-restore-list") == 0
@@ -1031,6 +1042,7 @@ static void kst_view(const char *view)
                  || strcmp(v, "-left-cycled") == 0;
 
     rig_fresh();
+    settings_set(SET_KST_EXPERT, expert_off ? 0.0f : 1.0f);
     g_rig.card = true;
     g_rig.rail = supply || on;
     if (on) {
@@ -3805,6 +3817,7 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
                                  || strcmp(view, "servo-sweep-page") == 0
                                  || strcmp(view, "servo-warning") == 0
                                  || strcmp(view, "servo-encoder") == 0
+                                 || strcmp(view, "servo-dut-expert") == 0
                                  || strcmp(view, "servo-name") == 0
                                  || strcmp(view, "servo-trim-keypad") == 0
                                  || strncmp(view, "servo-rate-", 11) == 0;
@@ -3828,7 +3841,11 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
             tap(165, UI_BAND_H + 256);                /* HELI CYCLIC */
         } else if (strcmp(view, "servo-sweep-page") == 0) {
             tap(SV_PAGE_X(1), UI_BAND_H + SV_PAGE_TAB_Y); /* SWEEP */
-        } else if (strcmp(view, "servo-encoder") == 0) {
+        } else if (strcmp(view, "servo-encoder") == 0
+                   || strcmp(view, "servo-dut-expert") == 0) {
+            if (strcmp(view, "servo-dut-expert") == 0) {
+                settings_set(SET_KST_EXPERT, 1.0f); /* after the 2s hold */
+            }
             tap(SV_PAGE_X(2), UI_BAND_H + SV_PAGE_TAB_Y); /* DUT */
         } else if (strcmp(view, "servo-trim-keypad") == 0) {
             /* TRIM's value, between its steps: the signed keypad, -25us

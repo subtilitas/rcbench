@@ -508,7 +508,7 @@ Versorgungszyklus eines **VERLASSEN** einer ab 4.30.
 | SERVO | **ALLES AUSLESEN** | liest die 32 Register, jedes, bis 3 von höchstens 5 Lesungen übereinstimmen |
 | TYP | `--`, `V6?`, `V8?`, **V6**, **V8** | [der Servotyp](#der-servotyp), den der Bediener setzt; `V6?` ist die Vermutung aus 20k_sel |
 | DATEIEN | **WÄHLEN** | [speichert die Werte des Servos auf die Karte und lädt eine Datei](#servodateien) |
-| WEITERES | **WÄHLEN** | in PWM [was VERBINDEN stellt](#die-versorgung); im Programmiermodus [PRÜFEN, ÄNDERUNGEN VERWERFEN, PAIRING LÖSEN](#weiteres) |
+| WEITERES | **WÄHLEN** | in PWM [was VERBINDEN stellt](#die-versorgung); im Programmiermodus [PRÜFEN, ÄNDERUNGEN VERWERFEN und, bei KST EXPERT MODE EIN, PAIRING LÖSEN](#weiteres) |
 | SCHREIBEN INS SERVO FREIGEBEN | **AUS**, **EIN** | [der Schreibschalter](#der-schreibschalter) |
 | ZURÜCKSPIELEN | **WÄHLEN** | [schreibt ein Backup zurück](#zurückspielen) |
 | (keine Beschriftung) | **n WERTE SCHREIBEN**, **1 WERT SCHREIBEN** | [schreibt die geänderten Werte](#schreiben) |
@@ -568,6 +568,9 @@ Sekunde und nach weiteren 1,8s 30 je Sekunde.
 ![Die Stretch-Liste](img/de/servo-kst-stretch.png)
 
 ### ABSTIMMEN
+
+DEAD BAND, BOOST und STRETCH erscheinen nur bei
+[KST EXPERT MODE](#expertenmodus) EIN.
 
 | Zeile | Registerfeld | Hartes Limit |
 | --- | --- | --- |
@@ -672,6 +675,8 @@ vergleichen ebenfalls mit den zuletzt ausgelesenen Werten.
 
 ![Der Reiter GESPERRT](img/de/servo-kst-locked.png)
 
+Der Reiter erscheint nur bei [KST EXPERT MODE](#expertenmodus) EIN.
+
 | Zeile | Feld |
 | --- | --- |
 | 20K SEL | 20k_sel, EIN oder AUS: eine Einstellung der Ansteuerung, nicht [der Servotyp](#der-servotyp) |
@@ -684,6 +689,68 @@ oder ihre Kodierung ist nicht bestätigt. Der Reiter zeigt außerdem den
 Pairing-Wert, Register 1D, und die Kartennummer, die das Hersteller-Tool
 für dieses Servo braucht. Ein Servo im Modus Gyro Servo lässt sich auslesen, aber
 nicht beschreiben: die Limits dieses Modus sind nicht bekannt.
+
+## Expertenmodus
+
+KST EXPERT MODE legt fest, welche Einstellungen und Aktionen der
+Programmierer zeigt. Er ist eine Zeile auf SERVO > OPTIONEN > PRÜFLING,
+standardmäßig AUS, und das Panel behält ihn über einen Neustart. Von AUS
+auf EIN schaltest du mit 2s Halten der Zeile; ein kürzerer Druck zeigt
+`Halte 2s, um KST EXPERT MODE einzuschalten.` auf dem Alarmband und ändert
+nichts. Ein Tipp schaltet ihn AUS. EIN steht in der Gefahrenfarbe.
+
+![KST EXPERT MODE EIN auf PRÜFLING](img/de/servo-dut-expert.png)
+
+Bei AUS sind diese Punkte verborgen. Der Grund ist die Warnung, die die
+[weichen Limits](#ein-wert-der-einen-zweiten-blick-braucht) geben, oder
+was nicht bekannt ist:
+
+| Punkt | Wo | Warum er hinter dem Modus liegt |
+| --- | --- | --- |
+| DEAD BAND | ABSTIMMEN | `Ein kleiner DEAD BAND-Wert kann Pendeln und Erwärmung verursachen.` und unter 1,0µs `Sehr kleiner DEAD BAND-Wert. Pendeln und Erwärmung sind wahrscheinlich.` |
+| BOOST | ABSTIMMEN | `Ein höherer BOOST-Wert kann Brummen und Erwärmung verursachen.` |
+| STRETCH | ABSTIMMEN | `Ein höherer STRETCH-Wert kann das Servo zum Schwingen bringen.`; bei DEAD BAND unter 1,0µs `Ein kleiner DEAD BAND-Wert und mehr Gain können Schwingungen verursachen.` |
+| PAIRING LÖSEN | WEITERES | was das Servo mit Register 1D auf 00 tut, ist nicht bekannt |
+| der Reiter GESPERRT | die Reiterleiste | Funktion oder Kodierung seiner Werte sind nicht bestätigt; der Reiter ist in beiden Modi nur zum Lesen |
+
+Jede andere Zeile und Aktion ist in beiden Modi gleich: SOFT START, MAX.
+DUTY, TEMPOGRENZE, TEMPO, die Reiter PULS und FAILSAFE, PRÜFEN,
+ÄNDERUNGEN VERWERFEN, der Schreibschalter, SCHREIBEN, ZURÜCKSPIELEN, die
+Servodateien, der [Endlagenlauf](#der-endlagenlauf) und RUDER > AUTO.
+
+Die Seiten rücken zusammen. ABSTIMMEN zeigt MAX. DUTY und SOFT START in der
+ersten Zeile, TEMPOGRENZE und TEMPO in der zweiten. Die Reiterleiste hält 4
+Reiter über der Zeile, die bei EIN 5 einnehmen. WEITERES listet PRÜFEN und
+ÄNDERUNGEN VERWERFEN. Ein Druck auf die Stelle, an der bei EIN eine
+verborgene Zeile stand, erreicht keine verborgene Zeile.
+
+![ABSTIMMEN bei KST EXPERT MODE AUS](img/de/servo-kst-tune-expert-off.png)
+![WEITERES bei KST EXPERT MODE AUS](img/de/servo-kst-more-expert-off.png)
+
+Ein verborgener Wert erreicht das Servo trotzdem, wo eine Datei oder ein
+Backup ihn hält, und die Seite, die ihn sendet, nennt ihn:
+
+- Das Laden einer Datei übernimmt die ganze Datei in den Entwurf, die
+  verborgenen Werte eingeschlossen, und **n WERTE SCHREIBEN** zählt sie.
+- Die Schreibseite nennt jeden verborgenen Wert, den das Schreiben ändert,
+  zuerst und in der Warnfarbe: `DEAD BAND (KST EXPERT MODE): 2.0 -> 1.6us`.
+  Diese Zeilen gehen nie in `und n weitere` auf; die Zahl gilt den Werten,
+  die ein Reiter zeigt. DIESE DATEI PRÜFEN nennt sie ebenso.
+- Die Seite [des Zurückspielens](#zurückspielen) nennt jeden verborgenen
+  Wert, den das Zurückspielen ändert, den Pairing-Wert als
+  `Pairing (KST EXPERT MODE): 00 -> 5A`. Das Zurückspielen des
+  Sitzungsbackups auf ein Servo, dessen Werte das Panel nicht kennt, sagt
+  `Auch zurückgespielt (KST EXPERT MODE): DEAD BAND, BOOST, STRETCH, GESPERRT, Pairing.`
+
+![Die Schreibseite nennt die verborgenen Werte](img/de/servo-kst-write-expert-off.png)
+
+Ein Entwurf, der beim Ausschalten des Modus eine Änderung eines
+verborgenen Werts hält, behält sie: **n WERTE SCHREIBEN** zählt sie, die
+Schreibseite nennt sie, und **ÄNDERUNGEN VERWERFEN** verwirft sie. Ein
+Wechsel des Modus schließt die Tastatur, die Liste oder die Seite, die im
+Programmierer offen ist; eine so geschlossene Seite sendet nichts.
+
+Die anderen Bilder dieser Seite zeigen den Modus EIN.
 
 ## Der Schreibschalter
 
@@ -750,6 +817,8 @@ und die Einheit. Ein Wert, der
 steht in der Warnfarbe. Bei mehr Werten als Zeilen zählt die letzte dieser
 Zeilen den Rest: `und 4 weitere`. Ein erstes Schreiben mit Karte zeigt 7
 Werte oder 6 und die Zahl; eines ohne Karte 6 oder 5 und die Zahl.
+Bei [KST EXPERT MODE](#expertenmodus) AUS stehen die Werte, die die Reiter
+verbergen, zuerst und werden nie mitgezählt.
 
 `Halte das Ruderhorn frei. Löse das Gestänge.` und `Teste das Servo am Prüfstand, bevor du es ins Modell einbaust.` folgen beim ersten Schreiben nach einem
 **VERBINDEN** und bei jedem Schreiben, das REVERSION, NEUTRAL, PULSE LOWER,
@@ -1129,7 +1198,9 @@ verfügbar.
 ## Zurückspielen
 
 **ZURÜCKSPIELEN** öffnet die Liste dessen, was sich zurückspielen lässt.
-Jedes Zurückspielen braucht den Schreibschalter und 2s Halten.
+Jedes Zurückspielen braucht den Schreibschalter und 2s Halten. Bei
+[KST EXPERT MODE](#expertenmodus) AUS nennt seine Seite jeden Wert, den
+die Reiter verbergen und den das Zurückspielen ändert.
 
 ![Die Liste zum Zurückspielen](img/de/servo-kst-restore-list.png)
 ![Das Backup der Sitzung zurückspielen](img/de/servo-kst-restore.png)
@@ -1278,8 +1349,8 @@ Prüfstand, für die Sitzung schon SAFE, wird nicht erneut auf SAFE gesetzt.
   abweichenden Register.
 - **ÄNDERUNGEN VERWERFEN** setzt den Entwurf auf die Werte des Servos
   zurück.
-- **PAIRING LÖSEN** setzt Register 1D auf 00, nach dem Schreibschalter und
-  2s Halten. Was das Servo mit dem Wert tut, ist nicht bekannt. Das
+- **PAIRING LÖSEN**, bei [KST EXPERT MODE](#expertenmodus) EIN, setzt
+  Register 1D auf 00, nach dem Schreibschalter und 2s Halten. Was das Servo mit dem Wert tut, ist nicht bekannt. Das
   Zurückspielen des Backups der Sitzung setzt ihn zurück.
 
 ![Das Pairing lösen](img/de/servo-kst-release.png)

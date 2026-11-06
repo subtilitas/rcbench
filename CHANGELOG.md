@@ -31,6 +31,13 @@ history is in git.
 - The screen guide covers LOGS and FILES: LOGS' file list and import view
   (2 pages each) and its plot (1 page), FILES' panes (3 pages). The DELETE
   question, a box, a keyboard and the text viewer have no guide.
+- KST EXPERT MODE, a row of SERVO > SETTINGS > DUT, OFF by default and kept
+  across restarts: ON after a 2s hold, OFF with a tap. With it OFF the KST
+  and Chaservo programmer hides DEAD BAND, BOOST and STRETCH on TUNE,
+  RELEASE PAIRING in MORE and the LOCKED tab; TUNE closes up and the tab
+  strip holds 4 tabs. A file load and a RESTORE still write the whole
+  image: the write page, CHECK THIS FILE and the restore's page name each
+  hidden value that changes, first and in the warning colour.
 
 ### Fixed
 

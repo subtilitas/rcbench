@@ -855,6 +855,9 @@ void svs_tick_body(float dt_s)
         }
     }
 
+    /* KST EXPERT MODE's hold on DUT: the mode turns ON when it completes. */
+    kx_tick(dt_s);
+
     /* START TEST's hold: the run starts when it completes. */
     if (s.test_down) {
         ++s.test_rev;

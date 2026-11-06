@@ -297,7 +297,7 @@ enum { RL_NONE = 0, RL_AUTO, RL_LIMIT, RL_BROWNOUT };
 /* What a settings row edits. */
 enum { R_TYPE = 0, R_RATE, R_MIN, R_CENTRE, R_MAX, R_TRIM, R_TRAVEL,
        R_REVERSE, R_SETTING, R_TEXT, R_HV, R_ENC_CENTRE, R_LIM_MODE,
-       R_LIM_PULSES, R_BROWNOUT, R_LIM_SERVO };
+       R_LIM_PULSES, R_BROWNOUT, R_LIM_SERVO, R_KST_EXPERT };
 
 typedef struct {
     uint8_t      page;
@@ -312,7 +312,8 @@ typedef struct {
 enum { OP_NONE = 0, OP_TAB, OP_ROW, OP_TRIM_DN, OP_TRIM_UP, OP_KEYPAD,
        OP_TEXT, OP_CHOICE, OP_CHOICE_CANCEL, OP_WARN_APPLY, OP_WARN_CANCEL,
        OP_SUP_V, OP_SUP_I, OP_ASK_APPLY, OP_ASK_CANCEL, OP_TEST_START,
-       OP_LIM_START, OP_RUN_SET, OP_RUN_CLOSE, OP_OPEN_CAPS, OP_OPEN_ENC };
+       OP_LIM_START, OP_RUN_SET, OP_RUN_CLOSE, OP_OPEN_CAPS, OP_OPEN_ENC,
+       OP_KST_EXPERT };
 
 /* What the list chooses, and what the keypad types. */
 enum { CH_NONE = 0, CH_TYPE, CH_RATE, CH_ENUM };
@@ -716,6 +717,15 @@ typedef struct {
     bool      test_down;
     uint32_t  test_rev;
     uint32_t  drawn_test[2];
+    /*
+     * DUT's KST EXPERT MODE row (SET_KST_EXPERT): ON after a 2s hold, OFF
+     * with a tap.  kx_down while a hold of it runs; kx_rev counts what its
+     * value shows, drawn_kx what each buffer has of it.
+     */
+    ui_hold_t kx_hold;       /**< the row's 2s hold to ON           */
+    bool      kx_down;       /**< that hold runs                     */
+    uint32_t  kx_rev;        /**< counts what the row's value shows  */
+    uint32_t  drawn_kx[2];   /**< kx_rev as each buffer drew it      */
     uint32_t  now_ms;        /**< the panel's clock, servo_screen_clock() */
     bool      have_now;
     bool      link_up;
@@ -955,6 +965,23 @@ void draw_overlay(gfx_canvas_t *c);
 void draw_save_line(gfx_canvas_t *c);
 void draw_warn_apply(gfx_canvas_t *c);
 void draw_ask_apply(gfx_canvas_t *c);
+/**
+ * @brief The KST EXPERT MODE row's hold, each frame: SET_KST_EXPERT ON
+ *        and saved when it completes, the hold dropped with its press.
+ * @param dt_s the frame's time, s
+ */
+void kx_tick(float dt_s);
+/**
+ * @brief The KST EXPERT MODE row's value on DUT, the part a hold repaints.
+ * @return the value's rectangle
+ */
+gfx_rect_t kx_value_rect(void);
+/**
+ * @brief Draws the KST EXPERT MODE row's value: ON in the danger colour,
+ *        OFF sunk, the fill fading towards ON while its hold runs.
+ * @param c the canvas
+ */
+void draw_kx_value(gfx_canvas_t *c);
 
 
 /* --- servo_test_panel.c's side, which the other files call -------------- */

@@ -2152,6 +2152,7 @@ Die 56px hohen Tasten 2s HALTEN ZUM ÜBERNEHMEN und ABBRECHEN enden 4px
 | OPTIONEN > PRÜFLING | NAME | der Prüfling, bis 23 Zeichen, für den Bericht |
 | OPTIONEN > PRÜFLING | BERICHT | ein Textbericht neben der Aufzeichnung jedes Tests |
 | OPTIONEN > PRÜFLING | SENSOR-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert seit dem aktuellen Verbindungsaufbau (keinen nach einem Verbindungsverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, SENSORS, AS5600-Mitte |
+| OPTIONEN > PRÜFLING | KST EXPERT MODE | ob der [Programmierer für KST- und Chaservo-Servos](ServoProgrammer-de.md#expertenmodus) DEAD BAND, BOOST, STRETCH, PAIRING LÖSEN und den Reiter GESPERRT zeigt; standardmäßig AUS, EIN nach 2s Halten (ein kürzerer Druck zeigt den Hinweis auf dem Band), AUS mit einem Tipp. Bleibt über einen Neustart erhalten |
 
 TRIMMUNG ist das einzige Tastenfeld mit Vorzeichen. `+/-` zwischen Punkt
 und OK setzt oder entfernt ein führendes Minus, vor oder nach der
