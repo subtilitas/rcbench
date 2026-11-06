@@ -2,8 +2,9 @@
  * @file render_imu.c
  * @brief The Bluetooth IMU's views for tools/render_ui.py (render_imu.h).
  *
- * imu: the HC-05 answering (firmware 2.0-20100601), no sensor bound.
- * imu-scan: SCAN tapped, three devices found, the BWT901CL's radio first.
+ * imu: Bluetooth LE synced on a C6 that reports 2.13.0, no sensor bound.
+ * imu-scan: SCAN tapped, two sensors listed, the nearer first, and four
+ * other devices hidden.
  * imu-connected: bound to it, 50Hz, ZERO taken, the surface at +12.3° on
  * X, the battery at 3.95V and the calibration done.  setup-sensors-imu:
  * SENSORS on the IMU entry, the IMU on and connected at 50Hz.
@@ -31,15 +32,19 @@ bool render_imu_view(const char *view)
 }
 
 /**
- * @brief A device of the found list.
+ * @brief A sensor of the found list.
  * @param d    the device
  * @param addr its address, colons
  * @param name its name, "" for none
+ * @param rssi its RSSI, dBm
  */
-static void device(hc05_dev_t *d, const char *addr, const char *name)
+static void device(imu_dev_t *d, const char *addr, const char *name,
+                   int8_t rssi)
 {
     snprintf(d->addr, sizeof(d->addr), "%s", addr);
     snprintf(d->name, sizeof(d->name), "%s", name);
+    d->rssi = rssi;
+    d->flags = IMU_DEV_UUID_18F0;
 }
 
 /**
@@ -65,7 +70,7 @@ static void tap_rect(gfx_rect_t r)
 static void connected(imu_view_t *v)
 {
     v->link = IMU_LINK_CONNECTED;
-    snprintf(v->bound_addr, sizeof(v->bound_addr), "98D3:31:F5A1B2");
+    snprintf(v->bound_addr, sizeof(v->bound_addr), "00:0C:BF:08:19:29 P");
     snprintf(v->bound_name, sizeof(v->bound_name), "HC-06");
     v->r.valid = true;
     v->r.taken_ms = 1000u;
@@ -91,7 +96,7 @@ void render_imu_pose(const char *view)
     imu_view_t v;
     memset(&v, 0, sizeof(v));
     v.link = IMU_LINK_READY;
-    snprintf(v.version, sizeof(v.version), "2.0-20100601");
+    snprintf(v.version, sizeof(v.version), "2.13.0");
     v.r.battery_v = NAN;
     v.r.temp_c = NAN;
     settings_set(SET_IMU_EN, 1.0f);
@@ -108,10 +113,10 @@ void render_imu_pose(const char *view)
         tap_rect(imu_screen_row_rect(0));   /* SCAN FOR SENSORS */
         imu_cmd_t c;
         while (imu_screen_take(&c)) { }
-        v.found_n = 3u;
-        device(&v.found[0], "98D3:31:F5A1B2", "HC-06");
-        device(&v.found[1], "2C:F4:5A7E19", "BENCH LAPTOP");
-        device(&v.found[2], "1A:7D:DA7109", "");
+        v.found_n = 2u;
+        device(&v.found[0], "00:0C:BF:08:19:29", "HC-06", -50);
+        device(&v.found[1], "00:0C:BF:0A:44:17", "", -71);
+        v.hidden = 4u;
         imu_screen_set(&v);
     }
 }

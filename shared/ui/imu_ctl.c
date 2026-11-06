@@ -29,86 +29,20 @@ void imu_ctl_init(imu_ctl_t *c)
         return;
     }
     memset(c, 0, sizeof(*c));
-    hc05_init(&c->bt);
-    imu_init(&c->m);
+    imu_ble_init(&c->ble);
+    imu_sensor_init(&c->sensor);
     c->cfg.rate_code = WIT_RATE_50HZ;
 }
 
 /**
- * @brief Queue one sensor command for the outbox; a full outbox drops it.
- * @param c   The controller.
- * @param cmd WIT_CMD_LEN bytes.
- * @param len Their count from the encoder: 0 queues nothing.
- */
-static void queue(imu_ctl_t *c, const uint8_t cmd[WIT_CMD_LEN], size_t len)
-{
-    if (len != WIT_CMD_LEN || c->out_n >= IMU_OUTBOX) {
-        return;
-    }
-    const uint8_t at = (uint8_t)((c->out_head + c->out_n) % IMU_OUTBOX);
-    memcpy(c->out[at], cmd, WIT_CMD_LEN);
-    ++c->out_n;
-}
-
-/** @brief Queue the unlock. @param c The controller. */
-static void queue_unlock(imu_ctl_t *c)
-{
-    uint8_t b[WIT_CMD_LEN] = { 0 };
-    queue(c, b, wit_cmd_unlock(b));
-}
-
-/** @brief Queue SAVE. @param c The controller. */
-static void queue_save(imu_ctl_t *c)
-{
-    uint8_t b[WIT_CMD_LEN] = { 0 };
-    queue(c, b, wit_cmd_save(b));
-}
-
-/** @brief Queue CALSW @p mode. @param c The controller. @param mode wit_cal_t. */
-static void queue_calsw(imu_ctl_t *c, uint8_t mode)
-{
-    uint8_t b[WIT_CMD_LEN] = { 0 };
-    queue(c, b, wit_cmd_calsw(b, mode));
-}
-
-/**
- * @brief The end of a calibration: CALSW 0 and SAVE after the unlock.
- * @param c  The controller.
- * @param ok Whether the reading stayed valid through it.
- */
-static void cal_end(imu_ctl_t *c, bool ok)
-{
-    queue_unlock(c);
-    queue_calsw(c, WIT_CAL_EXIT);
-    queue_save(c);
-    c->cal = ok ? IMU_CAL_DONE : IMU_CAL_FAILED;
-    c->cal_left_ms = 0u;
-}
-
-/**
- * @brief IMU OFF: the operation ended, the calibration ended FAILED, the
- *        reading and the scan forgotten.
+ * @brief Whether the sensor's stream flows: IMU ON, a sensor bound, the
+ *        link subscribed.
  * @param c The controller.
+ * @return Whether it does.
  */
-static void switch_off(imu_ctl_t *c)
+static bool stream_up(const imu_ctl_t *c)
 {
-    if (hc05_busy(&c->bt)) {
-        hc05_abort(&c->bt);
-    }
-    if (c->cal == IMU_CAL_RUNNING) {
-        cal_end(c, false);
-    }
-    if (c->m.r.zeroed) {
-        ++c->zero_gen;        /* the zero goes with the reading */
-    }
-    imu_init(&c->m);
-    c->angle_seen = false;
-    c->probed = false;
-    c->had_frames = false;
-    c->found_n = 0u;
-    c->inq_refused = false;
-    c->err = HC05_ERR_NONE;
-    c->err_code = 0u;
+    return c->cfg.en && imu_ble_bound(&c->ble) && imu_ble_up(&c->ble);
 }
 
 void imu_ctl_config(imu_ctl_t *c, const imu_cfg_t *cfg, uint32_t now_ms)
@@ -118,43 +52,29 @@ void imu_ctl_config(imu_ctl_t *c, const imu_cfg_t *cfg, uint32_t now_ms)
     }
     const imu_cfg_t was = c->cfg;
     c->cfg = *cfg;
-    c->cfg.addr[HC05_ADDR_MAX - 1u] = '\0';
-    c->cfg.name[HC05_NAME_MAX - 1u] = '\0';
-    if (!c->configured) {
-        c->configured = true;
-        c->probe_at_ms = now_ms;
-        return;
+    c->cfg.addr[IMU_ADDR_MAX - 1u] = '\0';
+    c->cfg.name[IMU_NAME_MAX - 1u] = '\0';
+    imu_sensor_values(&c->sensor, cfg->rate_code, cfg->six, c->configured);
+    imu_sensor_filter(&c->sensor, cfg->filter);
+    if (!c->configured || strcmp(was.addr, c->cfg.addr) != 0) {
+        (void)imu_ble_set_addr(&c->ble, c->cfg.addr, now_ms);
+        imu_sensor_rebind(&c->sensor);
     }
-    if (was.en && !cfg->en) {
-        switch_off(c);
-    } else if (!was.en && cfg->en) {
-        c->probe_at_ms = now_ms;
+    if (!c->configured || was.en != cfg->en) {
+        imu_ble_on(&c->ble, cfg->en, now_ms);
+        if (c->configured && !cfg->en) {
+            imu_sensor_off(&c->sensor);
+        }
     }
-    if (strcmp(was.addr, c->cfg.addr) != 0) {
-        c->had_frames = false;
-    }
-    if (was.rate_code != cfg->rate_code) {
-        c->rate_due = true;
-    }
-    if (was.six != cfg->six) {
-        c->algo_due = true;
-    }
+    c->configured = true;
 }
 
-/**
- * @brief Note that an operation started, so its end is read once.
- * @param c       The controller.
- * @param started What the start returned.
- * @return @p started.
- */
-static bool opened(imu_ctl_t *c, bool started)
+void imu_ctl_radio(imu_ctl_t *c, imu_radio_t radio, const char *version,
+                   uint32_t now_ms)
 {
-    if (started) {
-        c->op_open = true;
-        c->err = HC05_ERR_NONE;
-        c->err_code = 0u;
+    if (c != NULL) {
+        imu_ble_radio(&c->ble, radio, version, now_ms);
     }
-    return started;
 }
 
 bool imu_ctl_command(imu_ctl_t *c, const imu_cmd_t *cmd, uint32_t now_ms)
@@ -162,50 +82,28 @@ bool imu_ctl_command(imu_ctl_t *c, const imu_cmd_t *cmd, uint32_t now_ms)
     if (c == NULL || cmd == NULL || !c->cfg.en) {
         return false;
     }
-    /* An AT operation takes the UART from the sensor: not while the
-     * calibration runs or a sensor command still waits to go out. */
-    const bool at_free = c->probed && !hc05_busy(&c->bt)
-                         && c->cal != IMU_CAL_RUNNING && c->out_n == 0u;
     switch (cmd->kind) {
     case IMU_CMD_SCAN:
-        if (!at_free) {
+        return imu_ble_scan(&c->ble, now_ms);
+    case IMU_CMD_BIND: {
+        imu_bound_t b;
+        if (!imu_ble_bind(&c->ble, cmd->arg, now_ms, &b)) {
             return false;
         }
-        c->found_n = 0u;
-        c->inq_refused = false;
-        return opened(c, hc05_scan(&c->bt, now_ms));
-    case IMU_CMD_BIND:
-        if (!at_free || cmd->arg >= c->found_n) {
-            return false;
-        }
-        return opened(c, hc05_bind(&c->bt, c->found[cmd->arg].addr, IMU_PIN,
-                                   now_ms));
-    case IMU_CMD_ANY:
-        if (!at_free) {
-            return false;
-        }
-        return opened(c, hc05_any(&c->bt, IMU_PIN, now_ms));
+        /* What SETUP keeps now, until the panel's next imu_ctl_config()
+         * says the same. */
+        memcpy(c->cfg.addr, b.addr, sizeof(c->cfg.addr));
+        memcpy(c->cfg.name, b.name, sizeof(c->cfg.name));
+        imu_sensor_rebind(&c->sensor);
+        ++c->bind_seq;
+        return true;
+    }
     case IMU_CMD_CALIBRATE:
-        if (imu_ctl_link(c) != IMU_LINK_CONNECTED
-            || c->cal == IMU_CAL_RUNNING) {
-            return false;
-        }
-        queue_unlock(c);
-        queue_calsw(c, WIT_CAL_ACC);
-        c->cal = IMU_CAL_RUNNING;
-        c->cal_from_ms = now_ms;
-        c->cal_lost = false;
-        c->cal_left_ms = IMU_CAL_MS;
-        return true;
+        return imu_sensor_calibrate(&c->sensor, stream_up(c), now_ms);
     case IMU_CMD_ZERO:
-        if (!imu_zero(&c->m)) {
-            return false;
-        }
-        ++c->zero_gen;
-        return true;
+        return imu_sensor_zero(&c->sensor);
     case IMU_CMD_UNZERO:
-        imu_unzero(&c->m);
-        ++c->zero_gen;
+        imu_sensor_unzero(&c->sensor);
         return true;
     case IMU_CMD_NONE:
     default:
@@ -213,166 +111,37 @@ bool imu_ctl_command(imu_ctl_t *c, const imu_cmd_t *cmd, uint32_t now_ms)
     }
 }
 
-void imu_ctl_feed(imu_ctl_t *c, const uint8_t *b, size_t n, uint32_t now_ms)
+void imu_ctl_event(imu_ctl_t *c, const bleu_evt_t *e, uint32_t now_ms)
 {
-    if (c == NULL || b == NULL || n == 0u) {
+    if (c == NULL || e == NULL) {
         return;
     }
-    if (hc05_busy(&c->bt)) {
-        hc05_feed(&c->bt, b, n);
-    } else if (c->cfg.en) {
-        const uint32_t before = c->m.r.taken_ms;
-        imu_feed(&c->m, b, n, now_ms);
-        if (c->m.r.taken_ms != before) {
-            /* An angle after the stale point: the reading was stale for
-             * a while, which the frame task may not have seen. */
-            if (c->angle_seen && c->m.r.taken_ms - before >= IMU_STALE_MS) {
-                ++c->gaps;
-                c->gap_at_ms = before + IMU_STALE_MS;
-                if (c->cal == IMU_CAL_RUNNING) {
-                    c->cal_lost = true;   /* a stretch the step missed */
-                }
-            }
-            c->angle_seen = true;
-        }
+    if (imu_ble_event(&c->ble, e, now_ms) && c->cfg.en) {
+        imu_sensor_feed(&c->sensor, e->data, e->len, now_ms);
+    }
+    if (imu_ble_write_failed(&c->ble)) {
+        imu_sensor_flush(&c->sensor);
     }
 }
 
-/**
- * @brief Read the end of the operation that ran, once.
- * @param c      The controller.
- * @param now_ms The clock.
- */
-static void op_ended(imu_ctl_t *c, uint32_t now_ms)
-{
-    const hc05_t *h = &c->bt;
-    if (!c->op_open || hc05_busy(h)
-        || (h->state != HC05_ST_DONE && h->state != HC05_ST_FAILED)) {
-        return;
-    }
-    c->op_open = false;
-    c->err = h->err;
-    c->err_code = h->err_code;
-    if (!c->cfg.en) {
-        return;               /* ended by IMU OFF: nothing to take */
-    }
-    if (h->state == HC05_ST_FAILED) {
-        /* No AT at any baud, in a probe or later: the module is gone, and
-         * the probe goes again IMU_PROBE_RETRY_MS on. */
-        if (h->op == HC05_OP_PROBE || h->err == HC05_ERR_NO_AT) {
-            c->probed = false;
-            c->probe_at_ms = now_ms + IMU_PROBE_RETRY_MS;
-        }
-        if (h->op == HC05_OP_SCAN) {
-            c->inq_refused = h->err == HC05_ERR_INQ_REFUSED;
-        }
-        return;
-    }
-    switch (h->op) {
-    case HC05_OP_PROBE:
-        c->probed = true;
-        break;
-    case HC05_OP_SCAN:
-        c->found_n = (h->found_n > HC05_FOUND_MAX) ? (uint8_t)HC05_FOUND_MAX
-                                                   : h->found_n;
-        memcpy(c->found, h->found, sizeof(c->found));
-        break;
-    case HC05_OP_BIND:
-    case HC05_OP_ANY: {
-        /* The module is set and restarted in data mode: what SETUP keeps
-         * now, until the panel's next imu_ctl_config() says the same. */
-        const bool any = h->op == HC05_OP_ANY;
-        memcpy(c->cfg.addr, any ? IMU_ADDR_ANY : h->target,
-               any ? sizeof(IMU_ADDR_ANY) : HC05_ADDR_MAX);
-        c->cfg.addr[HC05_ADDR_MAX - 1u] = '\0';
-        c->cfg.name[0] = '\0';
-        for (uint8_t i = 0; !any && i < c->found_n; ++i) {
-            if (strcmp(c->found[i].addr, h->target) == 0) {
-                memcpy(c->cfg.name, c->found[i].name, HC05_NAME_MAX);
-            }
-        }
-        c->had_frames = false;
-        ++c->bind_seq;
-        break;
-    }
-    case HC05_OP_NONE:
-    default:
-        break;
-    }
-}
-
-/**
- * @brief The reading's age, the calibration's clock and the commands due
- *        on a connected sensor.
- * @param c      The controller.
- * @param now_ms The clock.
- */
-static void data_side(imu_ctl_t *c, uint32_t now_ms)
-{
-    imu_tick(&c->m, now_ms);
-    if (c->m.r.valid) {
-        c->had_frames = true;
-    }
-    if (c->cal == IMU_CAL_RUNNING) {
-        if (!c->m.r.valid) {
-            c->cal_lost = true;
-        }
-        const uint32_t held = now_ms - c->cal_from_ms;
-        if (held >= IMU_CAL_MS) {
-            cal_end(c, !c->cal_lost);
-        } else {
-            c->cal_left_ms = IMU_CAL_MS - held;
-        }
-    }
-    /* Unlock, the writes due and SAVE go as one sequence, once all of it
-     * fits: a change that comes while the outbox is full waits, and the
-     * write that goes carries SETUP's latest value. */
-    const unsigned need = 2u + (c->rate_due ? 1u : 0u) + (c->algo_due ? 1u : 0u);
-    /* Not while the calibration runs: its CALSW 0 and SAVE go first. */
-    if (imu_ctl_link(c) == IMU_LINK_CONNECTED && (c->rate_due || c->algo_due)
-        && c->cal != IMU_CAL_RUNNING && IMU_OUTBOX - c->out_n >= need) {
-        uint8_t b[WIT_CMD_LEN] = { 0 };
-        queue_unlock(c);
-        if (c->rate_due) {
-            queue(c, b, wit_cmd_rate(b, c->cfg.rate_code));
-        }
-        if (c->algo_due) {
-            queue(c, b, wit_cmd_axis6(b, c->cfg.six));
-        }
-        queue_save(c);
-        c->rate_due = false;
-        c->algo_due = false;
-    }
-}
-
-bool imu_ctl_step(imu_ctl_t *c, uint32_t now_ms, hc05_act_t *out)
+bool imu_ctl_step(imu_ctl_t *c, uint32_t now_ms, bleu_act_t *out)
 {
     if (c == NULL || out == NULL) {
         return false;
     }
-    out->kind = HC05_ACT_NONE;
-    /* The machine first, also when idle: it lowers KEY after an end. */
-    if (hc05_step(&c->bt, now_ms, out)) {
+    if (imu_ble_act(&c->ble, now_ms, out)) {
         return true;
     }
-    op_ended(c, now_ms);
-    if (c->cfg.en && !c->probed && !hc05_busy(&c->bt)
-        && (int32_t)(now_ms - c->probe_at_ms) >= 0
-        && opened(c, hc05_probe(&c->bt, now_ms))) {
-        return hc05_step(&c->bt, now_ms, out);
+    if (imu_ble_write_failed(&c->ble)) {
+        imu_sensor_flush(&c->sensor);
     }
-    data_side(c, now_ms);
-    /* A sensor command over the link: in data mode only, one at a time. */
-    if (c->out_n > 0u && !hc05_busy(&c->bt) && !c->bt.key
-        && (!c->out_sent || now_ms - c->out_ms >= IMU_CMD_GAP_MS)) {
-        out->kind = HC05_ACT_SEND;
-        memcpy(out->data, c->out[c->out_head], WIT_CMD_LEN);
-        out->len = WIT_CMD_LEN;
-        c->out_head = (uint8_t)((c->out_head + 1u) % IMU_OUTBOX);
-        --c->out_n;
-        c->out_ms = now_ms;
-        c->out_sent = true;
-        return true;
+    imu_sensor_tick(&c->sensor, now_ms, stream_up(c));
+    /* A sensor command on 8841: one write in flight at a time. */
+    uint8_t cmd[WIT_CMD_LEN];
+    if (imu_ble_can_send(&c->ble)
+        && imu_sensor_next(&c->sensor, now_ms, cmd)
+        && imu_ble_send(&c->ble, cmd, now_ms)) {
+        return imu_ble_act(&c->ble, now_ms, out);
     }
     return false;
 }
@@ -382,24 +151,14 @@ imu_link_t imu_ctl_link(const imu_ctl_t *c)
     if (c == NULL || !c->cfg.en) {
         return IMU_LINK_OFF;
     }
-    if (hc05_busy(&c->bt)) {
-        if (c->bt.op == HC05_OP_SCAN) {
-            return IMU_LINK_SCANNING;
-        }
-        if (c->bt.op == HC05_OP_BIND || c->bt.op == HC05_OP_ANY) {
-            return IMU_LINK_BINDING;
-        }
+    const imu_link_t l = imu_ble_link(&c->ble);
+    if (l != IMU_LINK_READY) {
+        return l;
     }
-    if (!c->probed) {
-        return IMU_LINK_NO_MODULE;
-    }
-    if (c->cfg.addr[0] == '\0') {
+    if (!imu_ble_bound(&c->ble)) {
         return IMU_LINK_READY;
     }
-    if (c->m.r.valid) {
-        return IMU_LINK_CONNECTED;
-    }
-    return c->had_frames ? IMU_LINK_NO_FRAMES : IMU_LINK_BOUND;
+    return imu_sensor_link(&c->sensor);
 }
 
 void imu_ctl_view(const imu_ctl_t *c, imu_view_t *out)
@@ -412,49 +171,10 @@ void imu_ctl_view(const imu_ctl_t *c, imu_view_t *out)
         return;
     }
     out->link = imu_ctl_link(c);
-    if (c->probed) {
-        memcpy(out->version, c->bt.version, sizeof(out->version));
-        out->version[HC05_VERSION_MAX - 1u] = '\0';
+    imu_ble_view(&c->ble, out);
+    if (imu_ble_bound(&c->ble)) {
+        memcpy(out->bound_addr, c->cfg.addr, sizeof(out->bound_addr));
+        memcpy(out->bound_name, c->cfg.name, sizeof(out->bound_name));
     }
-    memcpy(out->bound_addr, c->cfg.addr, sizeof(out->bound_addr));
-    memcpy(out->bound_name, c->cfg.name, sizeof(out->bound_name));
-    out->found_n = c->found_n;
-    memcpy(out->found, c->found, sizeof(out->found));
-    out->err = c->err;
-    out->err_code = c->err_code;
-    out->inq_refused = c->inq_refused;
-    out->cal = c->cal;
-    out->cal_left_ms = (c->cal == IMU_CAL_RUNNING) ? c->cal_left_ms : 0u;
-    out->r = c->m.r;
-}
-
-void imu_handout_reset(imu_handout_t *h)
-{
-    if (h != NULL) {
-        memset(h, 0, sizeof(*h));
-    }
-}
-
-imu_hand_t imu_handout_next(imu_handout_t *h, const imu_reading_t *r,
-                            uint32_t gaps)
-{
-    if (h == NULL || r == NULL) {
-        return IMU_HAND_NONE;
-    }
-    const bool gap = h->given && h->gaps != gaps;
-    h->gaps = gaps;
-    if (gap && h->was_valid && r->valid) {
-        h->was_valid = false;
-        return IMU_HAND_GAP;
-    }
-    if (h->given && h->was_valid == r->valid
-        && (!r->valid || r->taken_ms == h->last_taken)) {
-        return IMU_HAND_NONE;
-    }
-    h->given = true;
-    h->was_valid = r->valid;
-    if (r->valid) {
-        h->last_taken = r->taken_ms;
-    }
-    return IMU_HAND_READING;
+    imu_sensor_view(&c->sensor, out);
 }

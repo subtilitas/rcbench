@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "imu.h"
 #include "outputs.h"
 #include "servo_limrun.h"
 #include "ui_plot.h"
@@ -318,15 +319,17 @@ void servo_screen_encoder(const servo_test_enc_t *e)
     s.enc_valid     = e->valid;
     s.enc_no_magnet = !e->valid && e->no_magnet;
     if (e->valid) {
-        s.enc_raw = e->raw;
+        s.enc_raw   = e->raw;
+        s.enc_exact = e->exact;
+        s.enc_deg   = e->deg;
     }
     rudder_angle();
     servo_test_encoder(&s.test, e);
     servo_limrun_encoder(&s.lim, e);
     rauto_angle(e);
     test_tell();
-    /* Redrawn only when the digits change: tenths of a degree. */
-    const int q = e->valid ? (int)lroundf(enc_deg_now() * 10.0f) : 0x7FFF;
+    /* Redrawn only when the digits change: hundredths of a degree. */
+    const int q = e->valid ? (int)lroundf(enc_deg_now() * 100.0f) : 0x7FFF;
     if (q != s.shown_q_enc) {
         s.shown_q_enc = q;
         ++s.dial_rev;           /* MEASURED shows it */
@@ -766,6 +769,22 @@ void servo_screen_set_imu_axis(uint8_t axis, bool neg)
 void servo_screen_set_imu_zero(uint32_t gen)
 {
     s.imu_zero_gen = gen;
+}
+
+void servo_screen_set_imu_settle(uint32_t ms)
+{
+    s.imu_settle_ms = ms;
+}
+
+const char *svs_angle_text(char *buf, size_t n, float deg, bool plus)
+{
+    if (enc_src() == SERVO_ANGLE_IMU) {
+        return imu_deg_text(buf, n, deg, plus);
+    }
+    if (buf != NULL && n > 0u) {
+        snprintf(buf, n, plus ? "%+.1f" : "%.1f", (double)deg);
+    }
+    return buf;
 }
 
 void servo_screen_set_drive(uint8_t target, uint8_t gpio, bool pwm)

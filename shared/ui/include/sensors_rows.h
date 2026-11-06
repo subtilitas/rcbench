@@ -243,9 +243,9 @@ imu_link_t sensors_rows_imu(void);
 const char *sensors_rows_imu_state(char *buf, size_t n, gfx_color_t *ink);
 
 /**
- * @brief A link state in words, in the language showing: OFF, NO HC-05,
- *        NO SENSOR BOUND, SCANNING, BINDING, BOUND, CONNECTED 50Hz or NO
- *        FRAMES.
+ * @brief A link state in words, in the language showing: OFF, STARTING
+ *        BLUETOOTH, NO BLUETOOTH ON C6, C6 FAILED: RESTART, NO SENSOR
+ *        BOUND, SCANNING, CONNECTING, BOUND, CONNECTED 50Hz or NO FRAMES.
  * @param link     The state; one out of range reads as OFF.
  * @param rate_dhz CONNECTED's rate, 0.1Hz, shown in whole Hz.
  * @param buf      Takes the words, at most 25 cells.
@@ -258,7 +258,8 @@ const char *sensors_rows_imu_word(imu_link_t link, uint16_t rate_dhz,
 /**
  * @brief The colour a link state is drawn in.
  * @param link The state.
- * @return UI_OK connected, UI_WARN for NO HC-05 and NO FRAMES, dim else.
+ * @return UI_OK connected, UI_WARN for NO BLUETOOTH ON C6, C6 FAILED and
+ *         NO FRAMES, dim else.
  */
 gfx_color_t sensors_rows_imu_color(imu_link_t link);
 

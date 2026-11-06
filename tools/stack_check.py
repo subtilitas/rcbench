@@ -72,11 +72,13 @@ of the margin is for what the graph does not follow.
 The stacks: the main task's is CONFIG_ESP_MAIN_TASK_STACK_SIZE from the
 build's config/sdkconfig.h; every other task's is the size its
 xTaskCreatePinnedToCore() or xTaskCreate() call passes, found in every C
-file under firmware/panel.  The check fails when a task's depth exceeds its
-stack less the margin, when a task creation's entry or stack size is not a
-name and a number, when another xTaskCreate*() variant appears, when a
-screen table cannot be read, or when a router function in SCREEN_CALLS
-makes no indirect call.
+file under firmware/panel.  The Bluetooth LE host task, which ESP-IDF's
+nimble_port_freertos_init() creates, has the entry the panel's call passes
+and the stack CONFIG_BT_NIMBLE_HOST_TASK_STACK_SIZE.  The check fails when
+a task's depth exceeds its stack less the margin, when a task creation's
+entry or stack size is not a name and a number, when another xTaskCreate*()
+variant appears, when a screen table cannot be read, or when a router
+function in SCREEN_CALLS makes no indirect call.
 
 The IOmcu.  With --iomcu the tool reads the RP2350 image instead.
 Core 0 runs main() on the pico-sdk's main stack, __StackBottom to __StackTop
@@ -109,7 +111,9 @@ and recursion are counted and named, as for the panel.
     tools/stack_check.py [BUILD] --check-doc
                                         and hold the panel's table in
                                         docs/Performance.md and its German
-                                        page to this build
+                                        page to this build; a console
+                                        build to the table of the console
+                                        build's tasks instead
     tools/stack_check.py --iomcu [BUILD] --check-doc
                                         and hold core 0's row of the
                                         IOmcu table in the same pages,
@@ -138,9 +142,19 @@ PANEL_DIR = ROOT / "firmware" / "panel"
 # The FreeRTOS calls that create a task with a stack from the heap; the
 # entry, the name and the stack size are their first three arguments.
 TASK_CREATE = ("xTaskCreatePinnedToCore", "xTaskCreate")
-# Entries of a task only a build option compiles (RCBENCH_PANEL_CONSOLE): a
-# build without the option has none, and one with it is held as any other.
+# Entries of a task only a build option reaches: console_task, which
+# RCBENCH_PANEL_CONSOLE compiles.  A build without the option does not have
+# it; one with it holds it as any other, and --check-doc holds it to the
+# table of the console build.  Bluetooth LE's start and host tasks are in
+# every build: the IMU's first IMU ON starts them (main/panel_imu.c).
 OPTION_TASKS = {"console_task"}
+# ESP-IDF's NimBLE port creates the Bluetooth LE host task itself
+# (nimble_port_freertos_init() in nimble_port_freertos.c): its entry is the
+# one the panel's call passes, its name ESP-IDF's, its stack this option of
+# the build's sdkconfig.h.
+NIMBLE_INIT = "nimble_port_freertos_init"
+NIMBLE_TASK = "nimble_host"
+NIMBLE_STACK = "CONFIG_BT_NIMBLE_HOST_TASK_STACK_SIZE"
 SCREEN_H = ROOT / "shared" / "ui" / "include" / "ui_screen.h"
 UI_DIR = ROOT / "shared" / "ui"
 ELF_NAME = "rcbench-panel.elf"
@@ -328,6 +342,22 @@ SERVO_STORE_CALLS = {
                          "hitec_files.c:io_size", "hitec_files.c:io_read"),
 }
 
+# The Bluetooth LE host task, nimble_host: NimBLE's event loop runs every
+# piece of the host as an event through a pointer (ble_npl_event_run(),
+# inlined into nimble_port_run()), and a scan's reports reach the panel's
+# GAP callback through one (ble_gap_disc_report()): the IMU's scan_event.
+# The console's console_scan_event is in console builds only and is not
+# listed; there the depth through it is not counted.  The events are those
+# ble_hs.c sets up: an HCI event from the C6, the host timer, the reset and
+# the two start stages.  A build without the host task (no caller of
+# panel_ble_start()) has none of these, and the table is not read.
+NIMBLE_CALLS = {
+    "nimble_port_run": ("ble_hs_event_rx_hci_ev", "ble_hs_timer_exp",
+                        "ble_hs_event_reset", "ble_hs_event_start_stage1",
+                        "ble_hs_event_start_stage2"),
+    "ble_gap_disc_report": ("panel_ble.c:scan_event",),
+}
+
 # The fw_boot_ops_t and fw_note_ops_t callbacks shared/fwupdate calls: the
 # panel's start check after an update, in components/fw_ota, which writes
 # otadata and erases the restart note in NVS on the main task, and the
@@ -474,15 +504,79 @@ def task_stacks() -> tuple:
     return rows, errors
 
 
-def main_stack(build: Path) -> int:
+def config_int(build: Path, name: str) -> int | None:
+    """A number of the build's config/sdkconfig.h.
+
+    Args:
+        build: The ESP-IDF build directory.
+        name: The option, CONFIG_ included.
+
+    Returns:
+        Its value; None when the build does not define it.
+
+    Raises:
+        SystemExit: The build has no sdkconfig.h.
+    """
     hdr = build / "config" / "sdkconfig.h"
     if not hdr.exists():
         die(f"{hdr} not found; is {build} an ESP-IDF build directory?")
-    m = re.search(r"#define CONFIG_ESP_MAIN_TASK_STACK_SIZE (\d+)",
-                  hdr.read_text(encoding="utf-8"))
-    if not m:
-        die(f"no CONFIG_ESP_MAIN_TASK_STACK_SIZE in {hdr}")
-    return int(m.group(1))
+    m = re.search(rf"#define {name} (\d+)", hdr.read_text(encoding="utf-8"))
+    return int(m.group(1)) if m else None
+
+
+def main_stack(build: Path) -> int:
+    """The main task's stack, CONFIG_ESP_MAIN_TASK_STACK_SIZE.
+
+    Args:
+        build: The ESP-IDF build directory.
+
+    Returns:
+        The stack in bytes.
+
+    Raises:
+        SystemExit: The build does not define it.
+    """
+    size = config_int(build, "CONFIG_ESP_MAIN_TASK_STACK_SIZE")
+    if size is None:
+        die(f"no CONFIG_ESP_MAIN_TASK_STACK_SIZE in {build}")
+    return size
+
+
+def nimble_tasks(build: Path) -> tuple:
+    """The Bluetooth LE host task ESP-IDF creates for the panel.
+
+    Args:
+        build: The ESP-IDF build directory, for the stack's size.
+
+    Returns:
+        (rows, errors): a row (entry, NIMBLE_TASK, stack bytes, where) for
+        each nimble_port_freertos_init() call in the panel's own code, and
+        an error for a call whose entry is not a function name or a build
+        without NIMBLE_STACK.
+    """
+    rows, errors = [], []
+    for src in sorted(PANEL_DIR.rglob("*.c")):
+        if in_build_dir(src.relative_to(PANEL_DIR)):
+            continue
+        text = re.sub(r"/\*.*?\*/|//[^\n]*",
+                      lambda m: re.sub(r"[^\n]", " ", m.group(0)),
+                      src.read_text(encoding="utf-8"), flags=re.S)
+        for m in re.finditer(rf"\b{NIMBLE_INIT}\s*\(", text):
+            line = text.count("\n", 0, m.start()) + 1
+            where = f"{src.relative_to(ROOT)}:{line}"
+            args = call_args(text, m.end() - 1)
+            if args is None or len(args) != 1 \
+                    or not re.fullmatch(r"\w+", args[0]):
+                errors.append(f"{where}: {NIMBLE_INIT}() entry not a "
+                              f"function name")
+                continue
+            size = config_int(build, NIMBLE_STACK)
+            if size is None:
+                errors.append(f"{where}: {NIMBLE_INIT}() in a build "
+                              f"without {NIMBLE_STACK}")
+                continue
+            rows.append((args[0], NIMBLE_TASK, size, NIMBLE_STACK))
+    return rows, errors
 
 
 def tls_bytes(elf: Elf) -> int:
@@ -509,17 +603,22 @@ def tls_bytes(elf: Elf) -> int:
 
 # ------------------------------------------------- the tables in the docs --
 
-# The panel's task table in each language, and the sentence that counts the
-# calls through a pointer reachable from the main task.
+# The panel's task table in each language, the sentence that counts the
+# calls through a pointer reachable from the main task, and the table of the
+# tasks only the console build has (OPTION_TASKS).
 PERFORMANCE = (
     (ROOT / "docs" / "Performance.md",
      "| Task | Entry | Stack (bytes) | Deepest chain (bytes) | "
      "Spare below the margin (bytes) |",
-     r"(\d+) such calls are reachable from `main_task`"),
+     r"(\d+) such calls are reachable from `main_task`",
+     "| Task of the console build | Entry | Stack (bytes) | "
+     "Deepest chain (bytes) | Spare below the margin (bytes) |"),
     (ROOT / "docs" / "Performance-de.md",
      "| Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | "
      "Reserve unter der Marge (Bytes) |",
-     r"(\d+) solche Aufrufe sind von `main_task` aus erreichbar"),
+     r"(\d+) solche Aufrufe sind von `main_task` aus erreichbar",
+     "| Task des Konsolen-Builds | Einstieg | Stack (Bytes) | "
+     "Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |"),
 )
 
 
@@ -541,12 +640,27 @@ def table_problems(page: str, said: dict | None, measured: dict) -> list:
     return out
 
 
-def check_panel_doc(rows: dict, pointer_calls: int) -> list:
-    """Performance.md's task table and its count of pointer calls against
-    the measurement: {task: (stack, depth, spare)}."""
+def check_panel_doc(rows: dict, pointer_calls: int,
+                    option_rows: dict | None = None) -> list:
+    """Performance.md's tables against the measurement.
+
+    Args:
+        rows: {task: (stack, depth, spare)} of the tasks every build has.
+        pointer_calls: The calls through a pointer reachable from main_task.
+        option_rows: The same for the tasks of OPTION_TASKS the build has.
+
+    Returns:
+        What the pages say that the measurement does not.  A build with an
+        option task (the console build) is held to the table of the console
+        build only, a build without one to the task table and the count.
+    """
     out = []
-    for page, header, sentence in PERFORMANCE:
+    for page, header, sentence, option_header in PERFORMANCE:
         text = page.read_text(encoding="utf-8")
+        if option_rows:
+            out += table_problems(page.name, doc_rows(text, option_header),
+                                  option_rows)
+            continue
         out += table_problems(page.name, doc_rows(text, header), rows)
         m = re.search(sentence, " ".join(text.split()))
         if m is None:
@@ -743,7 +857,10 @@ def main() -> int:
                                ("FAULT_CALLS", "shared/logfile",
                                 FAULT_CALLS),
                                ("SERVO_STORE_CALLS", "shared/logfile",
-                                SERVO_STORE_CALLS)):
+                                SERVO_STORE_CALLS),
+                               ("NIMBLE_CALLS", "NimBLE",
+                                NIMBLE_CALLS if by_name.get("ble_host_task")
+                                else {})):
         for caller, callbacks in calls.items():
             addrs = by_name.get(caller, [])
             if len(addrs) != 1:
@@ -780,6 +897,9 @@ def main() -> int:
     found_tasks, task_errors = task_stacks()
     fails += task_errors
     tasks += found_tasks
+    found_tasks, task_errors = nimble_tasks(build)
+    fails += task_errors
+    tasks += found_tasks
 
     g = Graph(funcs, names)
     tls = outside - OUTSIDE_FRAMES
@@ -793,7 +913,7 @@ def main() -> int:
     print(f"{'task':<8} {'entry':<14} {'stack':>6} {'limit':>6} "
           f"{'depth':>6} {'spare':>6}  result")
     detail = []
-    measured, pointer_calls = {}, 0
+    measured, option_measured, pointer_calls = {}, {}, 0
     for entry, name, stack, src in tasks:
         addrs = by_name.get(entry, [])
         if not addrs and entry in OPTION_TASKS:
@@ -820,7 +940,8 @@ def main() -> int:
             result = "within"
         print(f"{name:<8} {entry:<14} {stack:>6} {limit:>6} {depth:>6} "
               f"{limit - depth:>6}  {result}")
-        measured[name] = (stack, depth, limit - depth)
+        (option_measured if entry in OPTION_TASKS
+         else measured)[name] = (stack, depth, limit - depth)
         if entry == MAIN_TASK:
             pointer_calls = sum(n for _, n in r.indirect)
         if unknown:
@@ -838,7 +959,7 @@ def main() -> int:
             r.print_detail()
 
     if args.check_doc:
-        fails += check_panel_doc(measured, pointer_calls)
+        fails += check_panel_doc(measured, pointer_calls, option_measured)
 
     for f in fails:
         print("FAIL " + f)

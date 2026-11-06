@@ -34,7 +34,7 @@ TEST_CASE(the_log_takes_the_encoders_angle_only_while_measured_shows_it)
     fresh();
     float deg = 0.0f;
     const servo_test_enc_t e = { true, 3100u, 0u, 1000u, false, false, false,
-                                 false };
+                                 false, false, 0.0f };
     /* AS5600 off in SETUP: no angle, whatever arrives. */
     servo_screen_encoder(&e);
     CHECK(!servo_screen_log_angle(&deg));
@@ -49,7 +49,7 @@ TEST_CASE(the_log_takes_the_encoders_angle_only_while_measured_shows_it)
 
     /* A reading that is not valid, and a link that went down: none. */
     const servo_test_enc_t gone = { false, 0u, 0u, 1040u, false, false, false,
-                                    false };
+                                    false, false, 0.0f };
     servo_screen_encoder(&gone);
     CHECK(!servo_screen_log_angle(&deg));
     servo_screen_encoder(&e);

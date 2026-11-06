@@ -515,6 +515,7 @@ ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | 2s HALTEN ZUM INSTALLIEREN auf WI-FI | `Halte 2s, um zu installieren.` |
 | 2s HALTEN ZUM LADEN & INSTALLIEREN auf UPDATES und in der Update-Erinnerung | `Halte 2s, um zu laden und zu installieren.` |
 | 2s HALTEN ZUM IOMCU-UPDATE auf UPDATES und START im Bestätigungsdialog des IOmcu-Updates | `Halte 2s, um den IOmcu zu aktualisieren.` |
+| 2s HALTEN ZUM C6-FUNK-UPDATE auf UPDATES | `Halte 2s, um den C6-Funk zu aktualisieren. Das WLAN bleibt bis zum Ende aus.` |
 | 2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN auf OUTPUTS | `Halte 2s, um alle Pin-Zuordnungen zu löschen.` |
 | ÜBERSCHREIBEN im Bestätigungsdialog des FILES-Editors | `Halte 2s, um zu überschreiben.` |
 
@@ -5145,7 +5146,7 @@ Schrift 10 x 20px.
 | INA3221 0x40 bis 0x43 | ein Zustand der Tabelle unter [SENSORS: die INA3221-Bausteine](#sensors-die-ina3221-bausteine) | 10 |
 | AS5600 | `EIN`, `VOM IOMCU ABGELEHNT` | 2 |
 | PHASENABGRIFF | `EIN`, `VOM IOMCU ABGELEHNT` | 7 |
-| IMU | `KEIN HC-05`, `KEIN SENSOR GEBUNDEN`, `SUCHE LÄUFT`, `BINDEN LÄUFT`, `GEBUNDEN`, `VERBUNDEN 50Hz`, `KEINE FRAMES` ([Die Bluetooth-IMU](#die-bluetooth-imu)) | 6 |
+| IMU | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN SENSOR GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN`, `VERBUNDEN 50Hz`, `KEINE FRAMES` ([Die Bluetooth-IMU](#die-bluetooth-imu)) | 6 |
 
 - Bei einem ausgeschalteten Eintrag mit Einschaltzeile erscheint nur diese
   Zeile; sein Zustand lautet `AUS`. EIN blendet die übrigen Zeilen ein.
@@ -5627,21 +5628,22 @@ des tiefsten Tons lang sein, 2,5ms bei 400Hz (`tone_init()`,
 ![IMU, verbunden mit 50Hz, NULLPUNKT gesetzt](img/de/imu-connected.png)
 
 Die IMU-Kachel unter SETUP öffnet den Bildschirm für den Winkelsensor
-WitMotion BWT901CL. Er ist über ein HC-05-Bluetooth-Modul an UART1 mit dem
-Panel verbunden ([Die Bluetooth-IMU](IMU-de.md)). Seine Einstellungen
+WitMotion BWT901CL. Er ist über Bluetooth LE durch den ESP32-C6 des Boards
+mit dem Panel verbunden ([Die Bluetooth-IMU](IMU-de.md)); das erste IMU EIN
+startet Bluetooth LE. Seine Einstellungen
 stehen im IMU-Eintrag unter SENSORS: IMU EIN oder AUS, ACHSE (X, Y, Z), VORZEICHEN (+, -), RATE (10, 20,
 50, 100 oder 200Hz, ab Werk 50Hz), ALGORITHMUS (6-AXIS oder 9-AXIS) und
 WINKELQUELLE. Die Bedienelemente links, 460 x 56px im Abstand von 64px ab
-Body-y 16: SENSOREN SUCHEN, MIT JEDEM SENSOR VERBINDEN (nur, nachdem der HC-05
-eine Suche mit `ERROR:(1F)` abgelehnt hat), `2s HALTEN: BESCHLEUNIGUNG KALIBRIEREN`, NULLPUNKT und NULLPUNKT LÖSCHEN nebeneinander, und
+Body-y 16: SENSOREN SUCHEN, ein freier Platz, `2s HALTEN: BESCHLEUNIGUNG KALIBRIEREN`, NULLPUNKT und NULLPUNKT LÖSCHEN nebeneinander, und
 IMU-OPTIONEN, das SENSORS auf dem IMU-Eintrag öffnet; dessen Home-Tag
 führt zurück. Die Karte rechts, x 484 bis 1016, nennt den gebundenen Sensor
-und seine Adresse, die Firmware des HC-05, den Zustand, die Winkel X, Y und Z
+und seine Adresse mit ihrem Typ, die Firmware des C6, den Zustand, die Winkel X, Y und Z
 relativ zum Nullpunkt in der Schrift 16 x 28px (die von den Läufen
 verwendete Achse in der Akzentfarbe), die Rate der Winkel-Frames, das Alter des neuesten und den Akku
-des Sensors. SENSOREN SUCHEN öffnet die Liste der gefundenen Geräte: bis zu 8
-Geräte von 640 x 48px im Abstand von 52px; ein Tippen bindet eines und
-schließt die Liste. Das Home-Tag schließt zuerst die Liste. Der Messwert ist
+des Sensors. SENSOREN SUCHEN öffnet die Liste für eine Suche von 10s: bis zu
+8 Sensoren von 640 x 48px im Abstand von 52px mit Name, Adresse und RSSI,
+unter AKTUALISIEREN die Zahl der übrigen Geräte, die die Suche hörte; ein
+Tippen bindet einen und schließt die Liste. Das Home-Tag schließt zuerst die Liste. Der Messwert ist
 300ms nach dem letzten Winkel-Frame veraltet, die Aussetzer-Toleranz eines
 Laufs ([Servoverfahren](Servo-de.md)).
 
@@ -6007,10 +6009,13 @@ dem ESP32-P4-Panel wird jedes neuere Release angeboten
 ![UPDATES](img/de/updates.png)
 
 Die Tasten sind 460 x 56px, 64px auseinander, links. Die Karte rechts ist
-532px breit und endet 8px über dem Alarmband; ihr Text läuft in Zeilen
-von 41 Zeichen der Schrift 12 x 24px, 28px auseinander. Unter den Tasten
+532px breit, von y 16 bis 384 im Körper; ihr Text läuft in Zeilen von 41
+Zeichen der Schrift 12 x 24px, 28px auseinander. Reicht ein Ergebnis bis in
+die letzten drei Zeilen der Karte, entfallen diese Zeilen. Unter den Tasten
 stehen die Zeilen des IOmcu-Abschnitts in der Schrift 10 x 20px, und sein
-Halten ist eine fünfte Taste derselben Größe, ab y 428 im Körper.
+Halten ist eine fünfte Taste derselben Größe, ab y 428 im Körper. Unter der
+Karte steht die Zeile C6 RADIO: eine Zeile bei y 396 im Körper und ihr
+Halten, 532 x 56px, neben dem des IOmcu ([Der C6-Funk](#der-c6-funk)).
 
 | Bedienelement | Wirkung |
 | --- | --- |
@@ -6019,6 +6024,7 @@ Halten ist eine fünfte Taste derselben Größe, ab y 428 im Körper.
 | `RELEASES: STABLE` / `TESTING` | Legt fest, welche Releases eine Suche liest ([Die Suche](#die-suche)). Gespeichert mit SPEICHERN auf SETUP. Ab Werk `STABLE`. Ein Wechsel blendet das Ergebnis der letzten Suche aus: ein Release, das mit der anderen Einstellung gefunden wurde, wird nicht angeboten. |
 | `2s HALTEN ZUM LADEN & INSTALLIEREN` | Erscheint, sobald eine Suche ein neueres Release gefunden hat. Lädt es, prüft es und installiert es. |
 | `2s HALTEN ZUM IOMCU-UPDATE` | Startet das Update des IOmcu aus dem Image, das dieses Panel mitbringt ([Der IOmcu](#der-iomcu)). |
+| `2s HALTEN ZUM C6-FUNK-UPDATE` | Sendet das Image des C6-Funks, das dieses Panel mitbringt, an den ESP32-C6 des Boards ([Der C6-Funk](#der-c6-funk)). |
 
 Die Karte nennt die laufende Version und das gespeicherte Heimnetz. Suche
 und Download brauchen:
@@ -6233,6 +6239,54 @@ der Netzteilausgang aus, der Funk ganz aus und keine Panel-Installation. Verwend
 Halten inaktiv. Auch die Frage beim Verbindungsaufbau erscheint dann nicht. Ein IOmcu einer
 anderen Protokoll-Hauptversion zeigt KEINE VERBINDUNG im Band und nimmt das
 Update trotzdem, wie die Frage es auch ihm anbietet.
+
+### Der C6-Funk
+
+Unter der Karte zeigt UPDATES den ESP32-C6 des Boards, der Wi-Fi und
+Bluetooth trägt: `C6-Funk: 2.13.0. Auf diesem Panel: 2.13.0.`, die Version,
+die der C6 beim ersten Wi-Fi-Start seit dem Panel-Start gemeldet hat, oder
+`nicht gemeldet`, und die Version des Images, das dieses Panel mitbringt,
+oder `keine`. Darunter `2s HALTEN ZUM C6-FUNK-UPDATE`. Während das Update
+läuft, zeigt die Taste `C6-UPDATE 37%`, den Anteil des Images, den der C6
+angenommen hat. Die Schritte, ihre Grenzen und wie jeder endet, stehen in
+[Bauen: Die Firmware des C6](Building-de.md#die-firmware-des-c6).
+
+![Die Zeile C6 RADIO mit dem C6 im Auslieferungszustand](img/de/updates-c6.png)
+
+Das Halten ist nur aktiv, wenn keiner der Gründe unten zutrifft. Sonst ist
+es grau, und ein Tippen darauf zeigt den ersten Grund im Alarmband:
+
+| Band | Bedingung |
+| --- | --- |
+| `Dieses Panel enthält keine C6-Funk-Firmware.` | Das Panel wurde ohne das Image des C6 gebaut. |
+| `Die enthaltene C6-Funk-Firmware hat die Prüfung nicht bestanden.` | Das mitgebrachte Image ist kein ESP32-C6-Build von esp_hosted, oder sein SHA-256 weicht ab. |
+| `Das C6-Funk-Update läuft.` | Ein Update läuft. |
+| `Der C6-Funk hat nicht geantwortet. Starte das Panel neu.` | Die Verbindung zum C6 ist seit dem Panel-Start ausgefallen; der C6 wird im Reset gehalten. |
+| `Der C6-Funk nutzt die im Panel enthaltene Firmware.` | Der C6 hat die mitgebrachte Version gemeldet. |
+| `Das C6-Update erfordert SAFE.` | ARMED, oder ein ARM wartet. |
+| `Das C6-Update erfordert einen ausgeschalteten Netzteilausgang.` | Der Netzteilausgang ist an oder schaltet ein. |
+| `Das C6-Update wartet: Ein Aufzeichnungslauf ist offen.` | Ein Log-Lauf ist offen. |
+| `Das C6-Update wartet: Eine Platinenzeichnung wird geladen oder gespeichert.` | Eine Platinenzeichnung wird geholt oder behalten. |
+| `Das C6-Update wartet auf das Ende des IOmcu-Updates.` | Das IOmcu-Update läuft. |
+| `Das C6-Update wartet: Die Installation der Panel-Firmware läuft.` | Download oder Installation des Panels laufen. |
+| `Das C6-Update wartet, bis das WLAN des Panels aus ist.` | Eine Prüfung, ein Download oder WI-FI hat den Funk an. |
+| `Das C6-Update wartet: Bluetooth startet.` | Die Start-Task `blestart` von Bluetooth LE läuft. |
+| `Das C6-Update wartet auf die letzte Antwort des C6-Funks.` | Ein Schritt eines beendeten Updates ist aus seinem Aufruf noch nicht zurück. |
+
+Ein C6, der keine Version meldet, wie der ausgelieferte, bekommt das Update
+angeboten. Das Alarmband sagt, wie ein Update endete:
+
+| Alarm | Bedeutung |
+| --- | --- |
+| `C6-Funk auf 2.13.0 aktualisiert. Das Panel startet neu.` | Der C6 hat das Image angenommen und geprüft; das Panel startet 3s später neu. |
+| `Der C6-Funk nutzt bereits 2.13.0. Nichts gesendet.` | Der C6 hat beim Verbindungsaufbau des Updates die mitgebrachte Version gemeldet. |
+| `Der C6-Funk nimmt kein Update über SDIO an. Flashe ihn über Header H4.` | Der Beginn-Aufruf ist fehlgeschlagen oder abgelaufen: die Firmware des C6 hat kein Update über SDIO ([Bauen: Wiederherstellung über Header H4](Building-de.md#wiederherstellung-über-header-h4)). |
+| `Der C6-Funk hat nicht geantwortet. WLAN ist bis zum Neustart des Panels aus.` | Die Verbindung zum C6 ist ausgefallen. |
+| `C6-Update abgebrochen: <Grund>. Vorherige Firmware läuft.` | Ein Schreiben, die Prüfung im C6 oder das Aktivieren ist fehlgeschlagen (`Schreiben fehlgeschlagen`, `Prüfung im C6 fehlgeschlagen`, `Aktivierung fehlgeschlagen`), oder ein Schritt blieb über seine Grenze ohne Antwort (`keine Antwort`). |
+
+Während das Update läuft, wird ARM mit `ARMED gesperrt: Das C6-Funk-Update
+läuft.` abgelehnt, das WLAN startet nicht, und Installation des Panels,
+GitHub-Prüfung und IOmcu-Update warten.
 
 ### Die Erinnerung
 

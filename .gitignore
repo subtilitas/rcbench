@@ -11,6 +11,10 @@ dependencies.lock
 # The panel's lock file pins the managed components of its Wi-Fi
 # (firmware/panel/components/wifi_access/idf_component.yml) and is kept.
 !firmware/panel/dependencies.lock
+# And the C6 radio's (tools/c6_image.py); its project is a copy made at
+# build time.
+!firmware/c6/dependencies.lock
+firmware/c6/slave/
 
 # Host suite and coverage -------------------------------------------------
 test/host/build/
