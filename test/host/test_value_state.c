@@ -644,14 +644,14 @@ static void s_input(int control)
 static bool s_drawn_live(void)
 {
     picture(fb);
-    return px(CENTRE_X - 36, BTN_Y - 10) == ui_theme_color(UI_C_ACCENT)
+    return px(CENTRE_X - 36, BTN_Y - 10) == ui_theme_color(UI_C_OK)
            && count_px(52, 200, S_HINT_Y, ui_theme_color(UI_C_WARN)) == 0;
 }
 
 static bool s_drawn_refused(void)
 {
     picture(fb);
-    return px(CENTRE_X - 36, BTN_Y - 10) != ui_theme_color(UI_C_ACCENT)
+    return px(CENTRE_X - 36, BTN_Y - 10) != ui_theme_color(UI_C_OK)
            && px(SHAFT_X + 22, SHAFT_Y) != ui_theme_color(UI_C_ACCENT)
            && count_px(52, 200, S_HINT_Y, ui_theme_color(UI_C_WARN)) > 0;
 }

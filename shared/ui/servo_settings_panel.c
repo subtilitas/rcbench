@@ -1007,6 +1007,10 @@ void ov_rest(const touch_event_t *evt)
             test_end_now(SERVO_TEST_AB_OPERATOR);
         } else if (test_blocked() == 0 && test_needs_hv()) {
             ask_hv_test();
+        } else if (test_blocked() != 0) {
+            /* A tap on the grey START TEST: why, in the band too. */
+            ui_action_refused(
+                ui_servo_str((servo_str_t)test_blocked()));
         }
         ++s.test_rev;
         break;
@@ -1014,6 +1018,8 @@ void ov_rest(const touch_event_t *evt)
         if (gfx_rect_contains(lim_start_rect(), x, y)
             && servo_limrun_running(&s.lim)) {
             lim_end_now(SERVO_TEST_AB_OPERATOR);
+        } else if (gfx_rect_contains(lim_start_rect(), x, y)) {
+            ui_action_refused(lim_blocked());
         }
         ++s.test_rev;
         break;

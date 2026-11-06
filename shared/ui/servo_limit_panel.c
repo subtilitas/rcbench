@@ -500,7 +500,7 @@ void lim_meter_follow(servo_source_id_t id, uint32_t changes)
  * TEST's card and LIVE's box show the run. */
 void lim_begin(void)
 {
-    ui_hold_reset(&s.lim_hold);
+    ui_hold_spend(&s.lim_hold);         /* its flash runs on */
     s.lim_down = false;
     ++s.test_rev;
     s.lim_note = NULL;
@@ -752,15 +752,11 @@ void draw_lim_box(gfx_canvas_t *c)
 void draw_lim_start(gfx_canvas_t *c)
 {
     const bool running = servo_limrun_running(&s.lim);
-    gfx_color_t fill = ui_theme_color(UI_C_OK);
-    if (running) {
-        fill = ui_theme_color(UI_C_DANGER);
-    } else if (s.lim_hold.held_s > 0.0f) {
-        fill = ui_hold_fill(fill, ui_theme_color(UI_C_DANGER),
-                            s.lim_hold.held_s);
-    }
-    ui_button_font(c, lim_start_rect(),
-                   running ? TR(SV_LIM_STOP) : TR(SV_LIM_START), fill,
+    ui_hold_button(c, lim_start_rect(),
+                   running ? TR(SV_LIM_STOP) : TR(SV_LIM_START),
+                   ui_action_fill(running ? UI_ACTION_ACTIVE
+                                          : UI_ACTION_AVAILABLE),
+                   ui_action_fill(UI_ACTION_ACTIVE), &s.lim_hold,
                    s.ov_have && s.ov_pressed == OP_LIM_START,
                    running || lim_blocked() == NULL, SV_FONT_LABEL);
 }

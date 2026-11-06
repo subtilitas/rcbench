@@ -617,6 +617,41 @@ static void remember_shown(void)
     }
 }
 
+/**
+ * @brief One frame of a hold's flash: stepped, and @p rev moved so the
+ *        button is drawn again, while it runs.
+ * @param h    the hold
+ * @param dt_s the frame's time, in seconds
+ * @param rev  the revision of what draws the button
+ */
+static void flash_frame(ui_hold_t *h, float dt_s, uint32_t *rev)
+{
+    if (ui_hold_flashing(h)) {
+        ui_hold_flash_step(h, dt_s);
+        ++*rev;
+    }
+}
+
+/**
+ * @brief flash_frame() for a warning's hold: a warning that closed as it
+ *        fired has its button drawn over the screen while the flash runs
+ *        (svs_render()), and the screen repaints whole as it ends.
+ * @param h    the hold
+ * @param open whether its warning is still up
+ * @param dt_s the frame's time, in seconds
+ * @param rev  the revision of what draws the button
+ */
+static void ghost_frame(ui_hold_t *h, bool open, float dt_s, uint32_t *rev)
+{
+    if (!ui_hold_flashing(h)) {
+        return;
+    }
+    flash_frame(h, dt_s, rev);
+    if (!open && !ui_hold_flashing(h)) {
+        servo_invalidate();
+    }
+}
+
 void svs_tick_body(float dt_s)
 {
     /* PROGRAM's sessions: their holds and repeats, and the left column
@@ -879,6 +914,13 @@ void svs_tick_body(float dt_s)
         }
     }
     lim_tick();
+    /* The flashes of the holds that fired: the frames keep coming while
+     * one runs. */
+    flash_frame(&s.test_hold, dt_s, &s.test_rev);
+    flash_frame(&s.lim_hold, dt_s, &s.test_rev);
+    ghost_frame(&s.ask.hold, s.ask.open, dt_s, &s.ask.rev);
+    ghost_frame(&s.warn.hold, s.warn.open, dt_s, &s.warn.rev);
+    flash_frame(&s.kx_hold, dt_s, &s.kx_rev);
     /* AUTO on RUDDER: START's hold, then the run. */
     rauto_frame(dt_s);
 

@@ -429,10 +429,10 @@ static gfx_color_t ack_face(void)
 }
 
 /*
- * The hold that acknowledges ends in the 150ms flash ARM gives, by time:
- * white, black and the OK green for 25ms each, twice, then the OK green.
+ * The hold that acknowledges ends in the 300ms flash ARM gives, by time:
+ * white, black and the OK green for 50ms each, twice, then the OK green.
  */
-TEST_CASE(the_acknowledgement_flashes_for_150_ms)
+TEST_CASE(the_acknowledgement_flashes_for_300_ms)
 {
     fresh();
     down(ack_cx(), ack_cy());
@@ -446,8 +446,8 @@ TEST_CASE(the_acknowledgement_flashes_for_150_ms)
     const gfx_color_t ok = ui_theme_color(UI_C_OK);
     /* 'W' white, 'B' black, 'G' the OK green. */
     static const struct { int ms; char want; } k_steps[] = {
-        { 0, 'W' }, { 25, 'B' }, { 50, 'G' },
-        { 75, 'W' }, { 100, 'B' }, { 125, 'G' }, { 150, 'G' },
+        { 0, 'W' }, { 50, 'B' }, { 100, 'G' },
+        { 150, 'W' }, { 200, 'B' }, { 250, 'G' }, { 300, 'G' },
     };
     int at = 0;
     for (size_t i = 0; i < sizeof(k_steps) / sizeof(k_steps[0]); ++i) {
@@ -477,7 +477,7 @@ int main(void)
     RUN(a_lost_link_is_acknowledged_the_same_way);
     RUN(the_two_faults_do_not_share_a_heading);
     RUN(the_button_fills_towards_the_colour_it_settles_on);
-    RUN(the_acknowledgement_flashes_for_150_ms);
+    RUN(the_acknowledgement_flashes_for_300_ms);
     RUN(one_late_frame_cannot_acknowledge_a_fault);
     RUN(a_cancelled_gesture_acknowledges_nothing);
     return test_summary("busfault_screen");

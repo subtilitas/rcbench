@@ -38,37 +38,19 @@ static const ui_text_id_t k_extreme[S_COUNT] = { TX_HERO_MIN, TX_HERO_PEAK,
 /* ----------------------------------------------------------------- drawing */
 
 /**
- * @brief Green while it will arm, red by the time the fade completes, and white for
- *        the flash as the arm takes effect.  With nothing held and nothing flashing
- *        this is the plain OK or WARN the button has always carried.
- */
-static gfx_color_t arm_fill(void)
-{
-    /* Armed is the danger red the press fades towards, so the fade previews
-     * the colour the button is about to hold. */
-    gfx_color_t fill = s.gate.armed ? ui_theme_color(UI_C_DANGER)
-                               : ui_theme_color(UI_C_OK);
-    /* The flash is the whole button, its colour by the time it has run, and
-     * it overrides everything else while it runs. */
-    if (s.arm.flash_ms > 0) {
-        return ui_hold_flash(ui_theme_color(UI_C_DANGER), s.arm.flash_ms);
-    }
-    if (!s.gate.armed && s.arm.held_s > 0.0f) {
-        fill = ui_hold_fill(fill, ui_theme_color(UI_C_DANGER), s.arm.held_s);
-    }
-    return fill;
-}
-
-/**
  * @brief ARM, or DISARM while the bench is armed, in its fill of the
  *        moment, on the rail where SERVO has its ARM.
  * @param c the canvas
  */
 static void draw_arm(gfx_canvas_t *c)
 {
-    ui_button_font(c, s.arm_rect, s.gate.armed ? "DISARM" : "ARM",
-                   arm_fill(), s.pressed == 1, !mo_arm_locked(),
-                   MO_FONT_LABEL);
+    /* Green while it will arm, fading to the red of ARMED across the hold,
+     * so the fade previews the colour the button is about to hold. */
+    ui_hold_button(c, s.arm_rect, s.gate.armed ? "DISARM" : "ARM",
+                   ui_action_fill(s.gate.armed ? UI_ACTION_ACTIVE
+                                               : UI_ACTION_AVAILABLE),
+                   ui_action_fill(UI_ACTION_ACTIVE), &s.arm, s.pressed == 1,
+                   !mo_arm_locked(), MO_FONT_LABEL);
 }
 
 /**

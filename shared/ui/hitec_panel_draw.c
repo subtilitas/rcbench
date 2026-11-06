@@ -357,6 +357,37 @@ static void draw_port_label(gfx_canvas_t *c, gfx_rect_t rr)
 }
 
 /**
+ * @brief The PORT button's fill by the programmer's state: CONNECT green,
+ *        ABORT and LEAVE red while the port is the programmer's, WAIT
+ *        amber while it is let go, RELEASE neutral.
+ * @return the colour
+ */
+static gfx_color_t port_fill(void)
+{
+    const hitec_prog_state_t st = hitec_prog_state(&hp.prog);
+
+    switch (st) {
+    case HITEC_PROG_PWM:
+        return ui_action_fill(UI_ACTION_AVAILABLE);
+    case HITEC_PROG_HELD:
+    case HITEC_PROG_OPENING:
+    case HITEC_PROG_ENTERING:
+    case HITEC_PROG_READING:
+    case HITEC_PROG_RECORDING:
+    case HITEC_PROG_BACKUP:
+    case HITEC_PROG_WRITING:
+        return ui_action_fill(UI_ACTION_ACTIVE);
+    case HITEC_PROG_CLEARING:
+    case HITEC_PROG_LEAVING:
+    case HITEC_PROG_RELEASING:
+    case HITEC_PROG_MOVING:
+        return ui_action_fill(UI_ACTION_WAITING);
+    default:
+        return ui_theme_color(UI_C_PANEL_SUNK);
+    }
+}
+
+/**
  * @brief Draws row @p i: its label and its control.
  * @param c the canvas
  * @param i the row's index
@@ -391,12 +422,23 @@ static void draw_row(gfx_canvas_t *c, int i)
     if (r->kind == K_ACT) {
         gfx_color_t fill = ui_theme_color(UI_C_PANEL_SUNK);
 
-        if ((r->what == A_CLEAR && live)
-            || (r->what == A_ENABLE && hitec_prog_write_on(&hp.prog))
-            || (r->what == A_MOVE && hitec_prog_move_on(&hp.prog))) {
+        /* The buttons that start a port action: green while a press
+         * starts it, red while it drives the port (ABORT, LEAVE, the write
+         * switch or MOVE SERVO on), amber while the port is let go. */
+        if (r->what == A_PORT) {
+            fill = port_fill();
+        } else if (r->what == A_ENABLE) {
+            fill = ui_action_fill(hitec_prog_write_on(&hp.prog)
+                                      ? UI_ACTION_ACTIVE
+                                      : UI_ACTION_AVAILABLE);
+        } else if (r->what == A_MOVE) {
+            fill = ui_action_fill(hitec_prog_move_on(&hp.prog)
+                                      ? UI_ACTION_ACTIVE
+                                      : UI_ACTION_AVAILABLE);
+        } else if (r->what == A_WRITE) {
+            fill = ui_action_fill(UI_ACTION_AVAILABLE);
+        } else if (r->what == A_CLEAR && live) {
             fill = ui_theme_color(UI_C_WARN);
-        } else if (r->what == A_WRITE && live) {
-            fill = ui_theme_color(UI_C_ACCENT);
         }
         button(c, vr, v, fill, pressed, live);
         return;
@@ -457,6 +499,20 @@ static void draw_choice(gfx_canvas_t *c)
 }
 
 /**
+ * @brief The page's hold button: sunk, fading to the page's edge colour
+ *        across its hold, flashing as it fires.
+ * @param c the canvas
+ */
+static void draw_apply(gfx_canvas_t *c)
+{
+    const gfx_color_t edge = ui_theme_color(hp.page.danger ? UI_C_DANGER
+                                                           : UI_C_WARN);
+    ui_hold_button(c, hitec_panel_apply_rect(), hp.page.apply,
+                   ui_theme_color(UI_C_PANEL_SUNK), edge, &hp.page.hold,
+                   hp.page.down, true, HP_FONT);
+}
+
+/**
  * @brief Draws a hold page: its title, its lines and the two buttons.
  * @param c the canvas
  */
@@ -476,16 +532,18 @@ static void draw_hold(gfx_canvas_t *c)
                           level_color(hp.page.level[i]))
             + 8;
     }
-    button(c, hitec_panel_apply_rect(), hp.page.apply,
-           ui_hold_fill(ui_theme_color(UI_C_PANEL_SUNK), edge,
-                        hp.page.hold.held_s),
-           hp.page.down, true);
+    draw_apply(c);
     button(c, hitec_panel_cancel_rect(), TR(CANCEL),
            ui_theme_color(UI_C_PANEL_SUNK), hp.have && hp.pressed == P_CANCEL,
            true);
 }
 
-void hitec_panel_render(gfx_canvas_t *c)
+/**
+ * @brief The overlay less the flash of a page that closed as its hold
+ *        fired (hitec_panel_render()).
+ * @param c the canvas
+ */
+static void render_body(gfx_canvas_t *c)
 {
     const gfx_rect_t a = hp.area;
 
@@ -508,4 +566,14 @@ void hitec_panel_render(gfx_canvas_t *c)
         return;
     }
     draw_tab(c);
+}
+
+void hitec_panel_render(gfx_canvas_t *c)
+{
+    render_body(c);
+    /* A page closes as its hold fires: its button flashes where it was
+     * until the flash ends (hitec_panel_tick()). */
+    if (!hp.page.open && ui_hold_flashing(&hp.page.hold)) {
+        draw_apply(c);
+    }
 }

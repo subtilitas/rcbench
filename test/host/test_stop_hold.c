@@ -320,11 +320,16 @@ TEST_CASE(a_reset_done_under_the_finger_flashes_it)
         ui_router_tick(Q);
     }
     CHECK(stop_hold_take_reset());
-    CHECK_EQ(stop_hold_flash_ms(), 0);
-    /* The control task confirms and releases the latch. */
+    /* The hold flashes as it fires: 300ms, of which the 2s of frames
+     * above spent none after the firing frame. */
+    CHECK(stop_hold_flash_ms() > 0);
+    const int left = stop_hold_flash_ms();
+    /* The control task confirms and releases the latch: the flash under
+     * way runs on, not restarted. */
     latch(false);
     ui_router_tick(0.016f);
     CHECK(stop_hold_flash_ms() > 0);
+    CHECK(stop_hold_flash_ms() <= left);
     touch(sx(), sy(), TOUCH_EVENT_UP, 0);
     CHECK(ui_router_alert() == NULL);
 }

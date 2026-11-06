@@ -31,6 +31,7 @@
 #include "wa_zip.h"
 
 #include "files_edit_rig.h"
+#include "hold_flash.h"
 
 /** @brief A short text file. */
 static const char k_note[] =
@@ -361,6 +362,26 @@ static void over_hold(void)
     over_up();
 }
 
+/* The hold flash walk's case for OVERWRITE: the question closes as the
+ * hold fires, and the button flashes where it was, x 630 to 838, y 304
+ * to 360. */
+static void ov_frame(float dt_s) { screen()->tick(dt_s); }
+
+TEST_CASE(overwrite_flashes_as_it_fires)
+{
+    refused();
+    draw();
+    const gfx_rect_t r = { 642, 308, 184, 6 };
+    const hold_flash_rig_t rig = { ov_frame, draw, s_fb, W };
+    char seen[64];
+    over_down();
+    if (!hold_flash_walk(&rig, r, 2.6f, seen, sizeof(seen))) {
+        T_FAIL("OVERWRITE drew %s, no flash", seen);
+    }
+    over_up();
+    CHECK(card_holds("USER/LOGS/NOTE.TXT", k_mine, strlen(k_mine)));
+}
+
 /*
  * The whole hold: the editor's text replaces the file the browser wrote,
  * the question closed, nothing dirty; the next SAVE compares with what
@@ -601,5 +622,6 @@ int main(void)
     RUN(a_file_deleted_during_the_hold_is_not_made_again);
     RUN(a_file_gone_at_the_first_refusal_offers_no_overwrite);
     RUN(a_failed_overwrite_keeps_the_text_and_the_compare);
+    RUN(overwrite_flashes_as_it_fires);
     return test_summary("files_changed");
 }

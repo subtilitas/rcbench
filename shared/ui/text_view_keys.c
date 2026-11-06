@@ -721,8 +721,15 @@ void text_view_offer_overwrite(bool can)
 
 text_view_result_t text_view_tick(float dt_s)
 {
+    /* OVERWRITE's flash: the question closes as the hold fires, and the
+     * button flashes where it was (text_view_render()). */
+    const bool flashed = ui_hold_flashing(&tv.over);
+    if (flashed) {
+        ui_hold_flash_step(&tv.over, dt_s);
+        ++tv.rev;
+    }
     if (tv.press != TV_HIT_OVERWRITE) {
-        return TEXT_VIEW_NONE;
+        return flashed ? TEXT_VIEW_CHANGED : TEXT_VIEW_NONE;
     }
     if (!tv_over_live()) {
         (void)ui_hold_left(&tv.over);    /* the question or the rule ended it */
@@ -734,7 +741,7 @@ text_view_result_t text_view_tick(float dt_s)
     if (!ui_hold_tick(&tv.over, dt_s)) {
         return TEXT_VIEW_CHANGED;        /* the fill follows the hold */
     }
-    ui_hold_reset(&tv.over);
+    ui_hold_spend(&tv.over);             /* its flash runs on */
     tv.press = TV_HIT_NONE;
     tv.tap_have = false;                 /* the release acts on nothing */
     tv.ask = TEXT_VIEW_ASK_NONE;

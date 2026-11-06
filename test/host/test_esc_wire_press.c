@@ -11,6 +11,7 @@
 #include "link_pages.h"
 
 #include "esc_wire_rig.h"
+#include "hold_flash.h"
 
 /** @brief The canvas's width. */
 #define W 1024
@@ -263,6 +264,30 @@ TEST_CASE(every_hold_fills_its_button_and_nothing_else)
     hold_fills();
 }
 
+/* The hold flash walk's case for the session's hold: CONNECT fires, the
+ * stage moves on and the button goes, and its flash shows where it was. */
+static void ew_frame(float dt_s)
+{
+    (void)dt_s;
+    bench_run(15u);
+}
+
+TEST_CASE(the_connect_hold_flashes_as_it_fires)
+{
+    session_up(up_am_rig);
+    draw();
+    const gfx_rect_t b = esc_wire_panel_hold_rect();
+    const gfx_rect_t r = { (int16_t)(b.x + 12), (int16_t)(b.y + 4),
+                           (int16_t)(b.w - 24), 6 };
+    const hold_flash_rig_t rig = { ew_frame, draw, g_fb, W };
+    char seen[64];
+    touch(TOUCH_EVENT_DOWN, b, 0u);
+    if (!hold_flash_walk(&rig, r, 2.6f, seen, sizeof(seen))) {
+        T_FAIL("CONNECT's hold drew %s, no flash", seen);
+    }
+    touch(TOUCH_EVENT_UP, b, 0u);
+}
+
 int main(void)
 {
     RUN(every_button_of_connect_and_a_session_shows_its_press);
@@ -270,5 +295,6 @@ int main(void)
     RUN(every_button_of_a_stage_shows_its_press);
     RUN(every_button_of_a_page_and_a_list_shows_its_press);
     RUN(every_hold_fills_its_button_and_nothing_else);
+    RUN(the_connect_hold_flashes_as_it_fires);
     return test_summary("esc_wire_press");
 }

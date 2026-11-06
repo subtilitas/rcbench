@@ -59,7 +59,7 @@ void kpn_close_editors(void)
     k.ch.open = false;
     k.warn.open = false;
     k.warn.down = false;
-    ui_hold_reset(&k.warn.hold);
+    ui_hold_spend(&k.warn.hold);       /* a flash under way runs on */
 }
 
 /**

@@ -476,13 +476,20 @@ void ewp_tick(float dt_s)
         }
         ++ewp_s.hold_rev;
     }
+    if (ui_hold_flashing(&ewp_s.hold)) {
+        ui_hold_flash_step(&ewp_s.hold, dt_s);
+        ++ewp_s.hold_rev;
+        if (!ui_hold_flashing(&ewp_s.hold)) {
+            ++ewp_s.rev;        /* the page under the flash, whole */
+        }
+    }
 }
 
 void ewp_cancel(void)
 {
     ui_keypad_cancel_press(&ewp_s.kp);
     ui_tabs_cancel(&ewp_s.tabs);
-    ui_hold_reset(&ewp_s.hold);
+    ui_hold_spend(&ewp_s.hold);         /* a flash under way runs on */
     ewp_s.hold_down = false;
     let_go();
     ++ewp_s.rev;

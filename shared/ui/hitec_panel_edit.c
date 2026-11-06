@@ -52,7 +52,7 @@ void hpn_close_editors(void)
     hp.ch.open = false;
     hp.page.open = false;
     hp.page.down = false;
-    ui_hold_reset(&hp.page.hold);
+    ui_hold_spend(&hp.page.hold);      /* a flash under way runs on */
 }
 
 /**

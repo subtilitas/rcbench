@@ -60,10 +60,7 @@ static void button(gfx_canvas_t *c, int row, const char *label,
  */
 static gfx_color_t hold_fill(void)
 {
-    if (ims.hold.flash_ms > 0) {
-        return ui_hold_flash(UI_OK, ims.hold.flash_ms);
-    }
-    return ui_hold_fill(UI_PANEL_HI, UI_OK, ims.hold.held_s);
+    return ui_hold_button_fill(UI_PANEL_HI, UI_OK, &ims.hold);
 }
 
 /**

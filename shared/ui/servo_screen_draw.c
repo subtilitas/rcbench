@@ -412,30 +412,18 @@ static void draw_left(gfx_canvas_t *c)
 }
 
 /**
- * @brief The same fill as MOTOR & ESC's ARM, from the same widget: armed is the
- *        danger red the press fades towards, and the flash is the whole button.
- */
-static gfx_color_t arm_fill(void)
-{
-    gfx_color_t fill = s.gate.armed ? ui_theme_color(UI_C_DANGER)
-                               : ui_theme_color(UI_C_OK);
-    if (s.arm.flash_ms > 0) {
-        return ui_hold_flash(ui_theme_color(UI_C_DANGER), s.arm.flash_ms);
-    }
-    if (!s.gate.armed && s.arm.held_s > 0.0f) {
-        fill = ui_hold_fill(fill, ui_theme_color(UI_C_DANGER), s.arm.held_s);
-    }
-    return fill;
-}
-
-/**
- * @brief ARM, or DISARM while armed, across the column.
+ * @brief ARM, or DISARM while armed, across the column: MOTOR & ESC's
+ *        hold button, green fading to the red of ARMED, flashing as it
+ *        fires.
  * @param c the canvas
  */
 static void draw_arm(gfx_canvas_t *c)
 {
-    ui_button_font(c, s.arm_btn, s.gate.armed ? "DISARM" : "ARM", arm_fill(),
-                   s.arm_down, !svs_arm_locked(), SV_FONT_LABEL);
+    ui_hold_button(c, s.arm_btn, s.gate.armed ? "DISARM" : "ARM",
+                   ui_action_fill(s.gate.armed ? UI_ACTION_ACTIVE
+                                               : UI_ACTION_AVAILABLE),
+                   ui_action_fill(UI_ACTION_ACTIVE), &s.arm, s.arm_down,
+                   !svs_arm_locked(), SV_FONT_LABEL);
 }
 
 /** @brief Gives the rectangle of the power readout on the rail. */
@@ -659,25 +647,6 @@ static void draw_readings(gfx_canvas_t *c)
     cur_value(c);
 }
 
-/**
- * @brief OUTPUT ON and OFF in SUPPLY's colours: off is the green the hold fades
- *        from, on the danger red it fades to.
- */
-static gfx_color_t out_fill(void)
-{
-    if (s.out_hold.flash_ms > 0) {
-        return ui_hold_flash(ui_theme_color(UI_C_DANGER),
-                             s.out_hold.flash_ms);
-    }
-    gfx_color_t fill = s.out_on ? ui_theme_color(UI_C_DANGER)
-                                : ui_theme_color(UI_C_OK);
-    if (!s.out_on && s.out_hold.held_s > 0.0f) {
-        fill = ui_hold_fill(fill, ui_theme_color(UI_C_DANGER),
-                            s.out_hold.held_s);
-    }
-    return fill;
-}
-
 /** @brief SET, the two set points, and the output switch. */
 static void draw_sup_row(gfx_canvas_t *c)
 {
@@ -705,9 +674,14 @@ static void draw_sup_row(gfx_canvas_t *c)
         gfx_text_in(c, b, k[i].txt, SV_FONT_LABEL, k[i].col, 1,
                     GFX_ALIGN_CENTER);
     }
-    ui_button_font(c, s.out_btn,
+    /* SUPPLY's colours: off is the green the hold fades from, on the red
+     * it fades to. */
+    ui_hold_button(c, s.out_btn,
                    s.out_on ? TR(SUP_OUTPUT_OFF) : TR(SUP_OUTPUT_ON),
-                   out_fill(), s.out_down, s.out_on || !held, SV_FONT_LABEL);
+                   ui_action_fill(s.out_on ? UI_ACTION_ACTIVE
+                                           : UI_ACTION_AVAILABLE),
+                   ui_action_fill(UI_ACTION_ACTIVE), &s.out_hold, s.out_down,
+                   s.out_on || !held, SV_FONT_LABEL);
 }
 
 /** @brief Gives the rectangle of the telemetry tag on the rail. */
@@ -788,16 +762,16 @@ static void draw_right(gfx_canvas_t *c, bool power)
     draw_target(c);
 
     /* CENTRE sets a position, so it is dimmed with SWEEP while the bench
-     * is disarmed. */
+     * is disarmed: green, a press drives the servo. */
     ui_button_font(c, s.centre_btn, TR(SV_CENTRE_BTN),
-                   ui_theme_color(UI_C_ACCENT), false, value_live(),
+                   ui_action_fill(UI_ACTION_AVAILABLE), false, value_live(),
                    SV_FONT_LABEL);
-    /* PAUSE while a sweep runs, in the accent; PAUSED (PAUSIERT) while it
-     * is paused, filled in the warning colour, so the two read apart by
-     * fill as well as by the word. */
-    const gfx_color_t sweep_fill = s.sweeping ? ui_theme_color(UI_C_ACCENT)
-                                   : s.paused ? ui_theme_color(UI_C_WARN)
-                                              : ui_theme_color(UI_C_PANEL_HI);
+    /* SWEEP green; PAUSE in red while a sweep drives the servo; PAUSED
+     * (PAUSIERT) amber while it is paused, so the two read apart by fill
+     * as well as by the word. */
+    const gfx_color_t sweep_fill =
+        ui_action_fill(s.sweeping ? UI_ACTION_ACTIVE
+                       : s.paused ? UI_ACTION_WAITING : UI_ACTION_AVAILABLE);
     ui_button_font(c, s.sweep_btn,
                    s.paused     ? TR(SV_PAUSED)
                    : s.sweeping ? TR(SV_PAUSE) : "SWEEP",
@@ -959,7 +933,13 @@ static void draw_dial_part(gfx_canvas_t *c, int buf)
     s.drawn_pulse[buf] = (int)(s.pulse * 8.0f);
 }
 
-void svs_render(gfx_canvas_t *c, int buffer_index)
+/**
+ * @brief The screen in buffer @p buffer_index, less the flashes of the
+ *        warnings' holds (svs_render()).
+ * @param c the canvas
+ * @param buffer_index the buffer
+ */
+static void render_body(gfx_canvas_t *c, int buffer_index)
 {
     const unsigned bit = 1u << (buffer_index & 1);
     const int buf = buffer_index & 1;
@@ -1142,4 +1122,18 @@ void svs_render(gfx_canvas_t *c, int buffer_index)
                              (int16_t)(grip_r * 2 + 1),
                              (int16_t)(grip_r * 2 + 1) };
     clipped(c, box, draw_left);
+}
+
+void svs_render(gfx_canvas_t *c, int buffer_index)
+{
+    render_body(c, buffer_index);
+    /* A warning closes as its hold fires: its HOLD TO APPLY flashes where
+     * it was, over what the close uncovered, until the flash ends and the
+     * screen repaints whole (svs_tick_body()). */
+    if (!s.warn.open && ui_hold_flashing(&s.warn.hold)) {
+        clipped(c, warn_apply_rect(), draw_warn_apply);
+    }
+    if (!s.ask.open && ui_hold_flashing(&s.ask.hold)) {
+        clipped(c, warn_apply_rect(), draw_ask_apply);
+    }
 }

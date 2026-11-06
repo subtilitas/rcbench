@@ -34,6 +34,7 @@
 #include <math.h>
 
 #include "kst_panel_rig.h"
+#include "hold_flash.h"
 #include "imu.h"
 #include "log_name.h"
 #include "servo_rudder_auto.h"
@@ -890,6 +891,35 @@ TEST_CASE(on_the_carrier_the_lines_lead_to_a_start_from_armed)
     carrier_done();
 }
 
+/* The hold flash walk's case for START on AUTO: the run starts as the
+ * hold fires, the label turns to STOP RUN, and the button flashes. */
+static void ra_frame(float dt_s)
+{
+    (void)dt_s;
+    ra_ms(17u);
+}
+
+static void ra_draw(void) { scr->render(&cv, 0); }
+
+TEST_CASE(auto_start_flashes_as_it_fires)
+{
+    ra_setup(true, true);
+    CHECK(rauto_blocked() == NULL);
+    const gfx_rect_t b = rauto_rect(RA_C_START);
+    const gfx_rect_t r = { (int16_t)(b.x + 12), (int16_t)(b.y + 4),
+                           (int16_t)(b.w - 24), 6 };
+    const hold_flash_rig_t rig = { ra_frame, ra_draw, fb, UI_PANEL_W };
+    char seen[64];
+    scr->render(&cv, 0);
+    ev(SV_RUD_LEN_X, SV_RA_ROW_Y(2), TOUCH_EVENT_DOWN, 1);
+    if (!hold_flash_walk(&rig, r, 2.6f, seen, sizeof(seen))) {
+        T_FAIL("START on AUTO drew %s, no flash", seen);
+    }
+    ev(SV_RUD_LEN_X, SV_RA_ROW_Y(2), TOUCH_EVENT_UP, 1);
+    CHECK(servo_screen_rauto_running());
+    rauto_end_now(SERVO_TEST_AB_OPERATOR);
+}
+
 int main(void)
 {
     RUN(auto_programs_both_end_points_to_the_goal_and_ends_safe);
@@ -906,5 +936,6 @@ int main(void)
     RUN(on_the_carrier_auto_off_the_port_names_the_port);
     RUN(on_the_carrier_the_lines_lead_to_a_start_from_safe);
     RUN(on_the_carrier_the_lines_lead_to_a_start_from_armed);
+    RUN(auto_start_flashes_as_it_fires);
     return test_summary("servo_rauto_kst");
 }

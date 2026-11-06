@@ -451,7 +451,8 @@ void text_view_offer_overwrite(bool can);
  * @param dt_s  seconds since the last tick
  * @return TEXT_VIEW_OVERWRITE on the tick the hold completes, the save's
  *         checks passed and the text held still as for SAVE;
- *         TEXT_VIEW_CHANGED while the hold's fill moves; else TEXT_VIEW_NONE
+ *         TEXT_VIEW_CHANGED while the hold's fill moves or its flash
+ *         runs; else TEXT_VIEW_NONE
  */
 text_view_result_t text_view_tick(float dt_s);
 

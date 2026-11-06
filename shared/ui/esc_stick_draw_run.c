@@ -790,9 +790,8 @@ DRAWER void sp_draw_warning(gfx_canvas_t *c)
     gfx_text(c, a.x + 20, top + 44, TR(SP_WARN_UNVERIFIED),
              SP_FONT, ui_theme_color(UI_C_TEXT_DIM), 1);
     sp_draw_warning_hand(c, t->p, a, top + 66);
-    ui_button_font(c, t->hold_btn, TR(SP_HOLD_TO_RUN),
-                   ui_hold_fill(ui_theme_color(UI_C_PANEL_SUNK), red,
-                                t->hold.held_s),
+    ui_hold_button(c, t->hold_btn, TR(SP_HOLD_TO_RUN),
+                   ui_theme_color(UI_C_PANEL_SUNK), red, &s.st.hold,
                    t->warn_down, !sp_hold_blocked(), SP_FONT);
     if (!sp_warn_steps_fit(t->p)) {
         ui_button_font(c, t->steps_btn, TR(SP_STEPS_BTN),

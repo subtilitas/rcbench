@@ -210,6 +210,12 @@ jobs:
       - name: Numbers carry their unit without a space
         run: python3 tools/check_units.py --check
 
+      # Every ui_hold_begin() of the screens is drawn through
+      # ui_hold_button() and stepped by ui_hold_flash_step(): each 2s
+      # hold flashes as it fires.
+      - name: Every 2s hold flashes
+        run: python3 tools/check_holds.py --check
+
       # The documents follow the writing rules: no " -- " dashes, no
       # marketing words, no narrator, no history words, no emoji, no stale
       # names; the exceptions are in tools/check_prose_allow.txt with their

@@ -852,10 +852,24 @@ static void draw_row(gfx_canvas_t *c, int i)
              1);
     if (r->kind == K_ACT) {
         act_value(r, v, sizeof(v));
-        if (r->what == A_ENABLE && kst_prog_write_enabled(p)) {
-            fill = ui_theme_color(UI_C_DANGER);
-        } else if (r->what == A_WRITE && live) {
-            fill = ui_theme_color(UI_C_ACCENT);
+        /* The buttons that start a port action: green while a press
+         * starts it, red while the port is the programmer's (ABORT,
+         * LEAVE) or the write switch is on. */
+        if (r->what == A_PORT) {
+            const kst_prog_state_t st = kst_prog_state(p);
+            const bool held = st == KST_PROG_ENTERING
+                              || st == KST_PROG_WORKING
+                              || st == KST_PROG_PROGRAMMING
+                              || st == KST_PROG_LEAVING
+                              || kpn_leave_waits(p);
+            fill = ui_action_fill(held ? UI_ACTION_ACTIVE
+                                       : UI_ACTION_AVAILABLE);
+        } else if (r->what == A_ENABLE) {
+            fill = ui_action_fill(kst_prog_write_enabled(p)
+                                      ? UI_ACTION_ACTIVE
+                                      : UI_ACTION_AVAILABLE);
+        } else if (r->what == A_WRITE) {
+            fill = ui_action_fill(UI_ACTION_AVAILABLE);
         }
         kp_button(c, vr, v, fill, pressed, live);
         return;
@@ -936,6 +950,20 @@ static void draw_choice(gfx_canvas_t *c)
               k.have && k.pressed == P_CHOICE_CANCEL, true);
 }
 
+/**
+ * @brief The warning page's hold button: sunk, fading to the page's edge
+ *        colour across its hold, flashing as it fires.
+ * @param c the canvas
+ */
+static void draw_apply(gfx_canvas_t *c)
+{
+    const gfx_color_t edge = k.warn.danger ? ui_theme_color(UI_C_DANGER)
+                                           : ui_theme_color(UI_C_WARN);
+    ui_hold_button(c, kst_panel_apply_rect(), k.warn.apply,
+                   ui_theme_color(UI_C_PANEL_SUNK), edge, &k.warn.hold,
+                   k.warn.down, true, KP_FONT);
+}
+
 /** @brief Draws the warning page: the title, its lines and the hold button. */
 static void draw_warning(gfx_canvas_t *c)
 {
@@ -969,21 +997,18 @@ static void draw_warning(gfx_canvas_t *c)
               + pitch - LINE_H;
         }
     }
-    kp_button(c, kst_panel_apply_rect(), k.warn.apply,
-              ui_hold_fill(ui_theme_color(UI_C_PANEL_SUNK), edge,
-                           k.warn.hold.held_s),
-              k.warn.down, true);
+    draw_apply(c);
     kp_button(c, kst_panel_cancel_rect(), TR(CANCEL),
               ui_theme_color(UI_C_PANEL_SUNK),
               k.have && k.pressed == P_CANCEL, true);
 }
 
 /**
- * @brief Draws the overlay: the keypad or the keyboard alone while one is
- *        open, else the warning, the list of choices or the page.
+ * @brief The overlay less the flash of a warning that closed as its hold
+ *        fired (kst_panel_render()).
  * @param c the canvas
  */
-void kst_panel_render(gfx_canvas_t *c)
+static void render_body(gfx_canvas_t *c)
 {
     const gfx_rect_t a = k.area;
 
@@ -1008,4 +1033,19 @@ void kst_panel_render(gfx_canvas_t *c)
         return;
     }
     draw_page(c);
+}
+
+/**
+ * @brief Draws the overlay: the keypad or the keyboard alone while one is
+ *        open, else the warning, the list of choices or the page.
+ * @param c the canvas
+ */
+void kst_panel_render(gfx_canvas_t *c)
+{
+    render_body(c);
+    /* A warning closes as its hold fires: its button flashes where it
+     * was until the flash ends (kst_panel_tick()). */
+    if (!k.warn.open && ui_hold_flashing(&k.warn.hold)) {
+        draw_apply(c);
+    }
 }

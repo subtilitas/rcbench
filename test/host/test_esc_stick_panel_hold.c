@@ -15,6 +15,7 @@
  */
 
 #include "esc_stick_panel_rig.h"
+#include "hold_flash.h"
 
 /* SUN PLUS mode 4 waits 5s from power-on, the profile's entry 2s: the
  * page shows 5s when mode 4 is picked, through the run, and on the result
@@ -61,6 +62,29 @@ TEST_CASE(the_page_shows_the_entry_the_run_waits)
  * none cut, HOLD TO RUN does not count until ALL STEPS has been opened and
  * closed over it, and then it does.  The steps are read again for the next
  * warning. */
+/* The hold flash walk's case for HOLD TO RUN: the warning closes as the
+ * hold fires and the run starts, and the button flashes where it was. */
+static void st_frame(float dt_s) { scr->tick(dt_s); }
+
+static void st_draw(void) { scr->render(&cv, 0); }
+
+TEST_CASE(hold_to_run_flashes_as_it_fires)
+{
+    at_warning();
+    st_draw();
+    const gfx_rect_t r = { HOLD_X - 60, ST_PBTN_CY - 20, 120, 6 };
+    const hold_flash_rig_t rig = { st_frame, st_draw, fb, W };
+    char seen[64];
+    press(TOUCH_EVENT_DOWN, HOLD_X, HOLD_Y);
+    if (!hold_flash_walk(&rig, r, 2.6f, seen, sizeof(seen))) {
+        T_FAIL("HOLD TO RUN drew %s, no flash", seen);
+    }
+    press(TOUCH_EVENT_UP, HOLD_X, HOLD_Y);
+    CHECK_EQ(esc_stick_panel_runs(), 1u);
+    tap(WRITE_X, BTN_CY);                    /* ABORT */
+    (void)drain_cmds(MOTOR_CMD_ARM);
+}
+
 TEST_CASE(the_hold_needs_every_pre_power_step_read)
 {
     static const esc_manual_t k[] = {
@@ -655,5 +679,6 @@ int main(void)
     RUN(every_step_after_programming_is_shown);
     RUN(no_step_at_the_esc_while_the_supply_reads_live);
     RUN(the_run_page_shows_the_phase_tap_while_it_is_enabled);
+    RUN(hold_to_run_flashes_as_it_fires);
     return test_summary("esc_stick_panel_hold");
 }

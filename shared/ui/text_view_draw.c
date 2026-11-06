@@ -480,16 +480,16 @@ static void draw_question(gfx_canvas_t *c)
     if (tv.ask == TEXT_VIEW_ASK_CHANGED) {
         ui_button_font(c, TV_Q3_STAY, TR(SET_STAY), UI_PANEL_HI,
                        tv.press == TV_HIT_STAY, true, TV_FONT_LABEL);
-        ui_button_font(c, TV_Q3_READ, TR(ED_READ_AGAIN), UI_WARN,
+        ui_button_font(c, TV_Q3_READ, TR(ED_READ_AGAIN), UI_PANEL_HI,
                        tv.press == TV_HIT_DISCARD, !tv.saving, TV_FONT_LABEL);
-        ui_button_font(c, TV_Q3_OVER, TR(ED_OVERWRITE),
-                       ui_hold_fill(UI_PANEL_HI, UI_DANGER, tv.over.held_s),
-                       false, tv_over_live(), TV_FONT_LABEL);
+        ui_hold_button(c, TV_Q3_OVER, TR(ED_OVERWRITE), UI_PANEL_HI,
+                       UI_DANGER, &tv.over, false, tv_over_live(),
+                       TV_FONT_LABEL);
         return;
     }
     ui_button_font(c, TV_Q_STAY, TR(SET_STAY), UI_PANEL_HI,
                    tv.press == TV_HIT_STAY, true, TV_FONT_LABEL);
-    ui_button_font(c, TV_Q_DISCARD, TR(SET_DISCARD), UI_WARN,
+    ui_button_font(c, TV_Q_DISCARD, TR(SET_DISCARD), UI_PANEL_HI,
                    tv.press == TV_HIT_DISCARD, !tv.saving, TV_FONT_LABEL);
 }
 
@@ -525,5 +525,7 @@ void text_view_render(gfx_canvas_t *c)
     }
     if (tv.ask != TEXT_VIEW_ASK_NONE) {
         draw_question(c);
+    } else {
+        ui_hold_ghost(c, &tv.over);  /* OVERWRITE, as the question goes */
     }
 }

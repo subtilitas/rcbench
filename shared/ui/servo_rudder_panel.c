@@ -611,17 +611,20 @@ static void draw_buttons(gfx_canvas_t *c)
 {
     static const char *const k_us[2] = { "1000us", "2000us" };
     const gfx_color_t fill = ui_theme_color(UI_C_PANEL_HI);
+    /* The three that drive the servo, and ZERO, green while they take a
+     * press; RESET MAX and AUTO neutral. */
+    const gfx_color_t go = ui_action_fill(UI_ACTION_AVAILABLE);
     const bool live = value_live();
     if (!s.ra.view) {
-        ui_button_font(c, rudder_rect(RUD_C_1000), k_us[0], fill, false,
+        ui_button_font(c, rudder_rect(RUD_C_1000), k_us[0], go, false,
                        live, SV_FONT_LABEL);
-        ui_button_font(c, rudder_rect(RUD_C_CENTRE), TR(SV_CENTRE_BTN), fill,
+        ui_button_font(c, rudder_rect(RUD_C_CENTRE), TR(SV_CENTRE_BTN), go,
                        false, live, SV_FONT_LABEL);
-        ui_button_font(c, rudder_rect(RUD_C_2000), k_us[1], fill, false,
+        ui_button_font(c, rudder_rect(RUD_C_2000), k_us[1], go, false,
                        live, SV_FONT_LABEL);
     }
     const bool idle = !servo_rauto_running(&s.ra.run);
-    ui_button_font(c, rudder_rect(RUD_C_ZERO), TR(RUD_ZERO), fill,
+    ui_button_font(c, rudder_rect(RUD_C_ZERO), TR(RUD_ZERO), go,
                    s.rud.pressed == RUD_C_ZERO, enc_shown() && idle,
                    SV_FONT_LABEL);
     ui_button_font(c, rudder_rect(RUD_C_RESET), TR(RUD_RESET_MAX), fill,

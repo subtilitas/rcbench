@@ -439,7 +439,7 @@ static void sp_start(void)
     stick_t *t = &s.st;
     t->warn = false;
     t->warn_down = false;
-    ui_hold_reset(&t->hold);
+    ui_hold_spend(&t->hold);            /* its flash runs on */
     ++pg.rev;
     esc_stick_change_t ch[ESC_STICK_MAX_CHANGES];
     size_t n;
@@ -548,6 +548,10 @@ void esc_stick_panel_tick(float dt_s)
         if (ui_hold_tick(&t->hold, dt_s)) {
             sp_start();
         }
+    }
+    if (ui_hold_flashing(&t->hold)) {
+        ui_hold_flash_step(&t->hold, dt_s);
+        ++pg.rev;            /* the flash's frames, and the page after it */
     }
     const bool running = esc_stick_running(&t->run);
     /* Not gated on the result still showing: a tap queued in the frame

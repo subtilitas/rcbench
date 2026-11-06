@@ -13,6 +13,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "hitec_panel_rig.h"
+#include "hold_flash.h"
 
 #include "hitec_card.h"
 
@@ -570,6 +571,36 @@ TEST_CASE(repair_waits_for_the_edits_and_enable_opens_its_page)
     CHECK_EQ(g_drv.c_writes, 0u);
 }
 
+/* The hold flash walk's case for the hold pages: ENABLE WRITE's page
+ * closes as its hold fires, and its button flashes where it was. */
+static void hp_frame(float dt_s)
+{
+    hitec_panel_tick(dt_s);
+    prun(17u);
+}
+
+TEST_CASE(a_hold_pages_button_flashes_as_it_fires)
+{
+    open_en();
+    servo_d485();
+    tap_connect();
+    tap(val(HITEC_PANEL_SERVO, 3, 0));
+    CHECK_STR_EQ(hitec_panel_page_line(0), TR(KP_ENABLE_TITLE));
+    const gfx_rect_t b = hitec_panel_apply_rect();
+    const gfx_rect_t r = { (int16_t)(b.x + 12), (int16_t)(b.y + 4),
+                           (int16_t)(b.w - 24), 6 };
+    const hold_flash_rig_t rig = { hp_frame, show, fb, UI_PANEL_W };
+    char seen[64];
+    ev(cx(b), cy(b), TOUCH_EVENT_DOWN);
+    if (!hold_flash_walk(&rig, r, 2.6f, seen, sizeof(seen))) {
+        T_FAIL("ENABLE WRITE's hold drew %s, no flash", seen);
+    }
+    ev(cx(b), cy(b), TOUCH_EVENT_UP);
+    CHECK(hitec_prog_write_on(model()));
+    show();
+    CHECK_EQ(hold_flash_body(&rig, r), '.');
+}
+
 TEST_CASE(a_later_write_that_moves_the_horn_warns_again)
 {
     open_en();
@@ -767,6 +798,7 @@ int main(void)
     RUN(a_value_row_under_the_finger_is_drawn_pressed);
     RUN(every_write_message_names_its_step_and_its_servo);
     RUN(a_record_loaded_at_the_start_keeps_its_gpio_line);
+    RUN(a_hold_pages_button_flashes_as_it_fires);
     free(fb);
     return test_summary("hitec_panel_write");
 }

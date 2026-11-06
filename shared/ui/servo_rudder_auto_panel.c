@@ -527,7 +527,7 @@ void rauto_supply(const servo_test_reading_t *r)
 /** @brief START's hold completed: the run starts. */
 static void ra_begin(void)
 {
-    ui_hold_reset(&s.ra.hold);
+    ui_hold_spend(&s.ra.hold);          /* its flash runs on */
     s.ra.down = false;
     s.ra.note = NULL;
     ++s.ctrl_rev;
@@ -569,6 +569,10 @@ void rauto_frame(float dt_s)
         if (ui_hold_tick(&s.ra.hold, dt_s)) {
             ra_begin();
         }
+    }
+    if (ui_hold_flashing(&s.ra.hold)) {
+        ui_hold_flash_step(&s.ra.hold, dt_s);
+        ++s.ctrl_rev;                   /* the frames of the flash */
     }
     ra_poll();
     ra_step();
@@ -656,6 +660,10 @@ bool rauto_rest(const touch_event_t *evt)
     if (k == RA_C_START) {
         if (s.ra.down) {
             (void)ui_hold_end(&s.ra.hold, evt, r);
+        } else if (over && touch_event_is_tap_up(evt)
+                   && !servo_rauto_running(&s.ra.run)) {
+            /* A tap on the grey START: why, in the band. */
+            ui_action_refused(rauto_blocked());
         }
         s.ra.down = false;
         return true;
@@ -861,15 +869,11 @@ void rauto_render(gfx_canvas_t *c)
         draw_row(c, (rauto_ctl_t)k);
     }
     const bool running = servo_rauto_running(&s.ra.run);
-    gfx_color_t fill = ui_theme_color(UI_C_OK);
-    if (running) {
-        fill = ui_theme_color(UI_C_DANGER);
-    } else if (s.ra.hold.held_s > 0.0f) {
-        fill = ui_hold_fill(fill, ui_theme_color(UI_C_DANGER),
-                            s.ra.hold.held_s);
-    }
-    ui_button_font(c, rauto_rect(RA_C_START),
-                   running ? TR(SV_LIM_STOP) : TR(RA_START), fill,
+    ui_hold_button(c, rauto_rect(RA_C_START),
+                   running ? TR(SV_LIM_STOP) : TR(RA_START),
+                   ui_action_fill(running ? UI_ACTION_ACTIVE
+                                          : UI_ACTION_AVAILABLE),
+                   ui_action_fill(UI_ACTION_ACTIVE), &s.ra.hold,
                    s.ra.pressed == RA_C_START,
                    running || rauto_blocked() == NULL, SV_FONT_LABEL);
     const gfx_rect_t lr = rauto_lines_rect();

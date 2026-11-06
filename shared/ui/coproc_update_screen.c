@@ -230,18 +230,26 @@ static void event(const touch_event_t *evt)
 
 static void tick(float dt_s)
 {
+    /* START's flash runs on over the progress the hold opened, and the
+     * progress is drawn whole once it ends. */
+    if (ui_hold_flashing(&s.hold)) {
+        ui_hold_flash_step(&s.hold, dt_s);
+        if (!ui_hold_flashing(&s.hold) && s.view == CU_VIEW_PROGRESS) {
+            s.drawn_mask = 0;
+        }
+    }
     if (s.view != CU_VIEW_QUESTION) {
         return;
     }
     if (ui_hold_tick(&s.hold, dt_s)) {
-        /* The hold is the gesture: it completes here, not on the release. */
-        ui_hold_reached(&s.hold);
+        /* The hold is the gesture: it completes here, not on the release.
+         * Its flash started with it. */
         s.start = true;
         s.view = CU_VIEW_PROGRESS;
         s.step = CU_STEP_PREPARE;
         s.drawn_mask = 0;
+        ui_hold_flash_step(&s.hold, dt_s);
     }
-    ui_hold_flash_step(&s.hold, dt_s);
 }
 
 /**
@@ -326,12 +334,8 @@ static void render_question(gfx_canvas_t *c, unsigned bit)
     /* The buttons every frame: START fades across its hold. */
     ui_button_font(c, Q_CANCEL, TR(CANCEL), UI_PANEL_HI, s.press_btn == 0,
                    true, CU_FONT_LABEL);
-    const gfx_color_t fill =
-        (s.hold.flash_ms > 0)
-            ? ui_hold_flash(UI_ACCENT, s.hold.flash_ms)
-            : ui_hold_fill(UI_PANEL_HI, UI_ACCENT, s.hold.held_s);
-    ui_button_font(c, Q_START, TR(CU_START), fill, false, true,
-                   CU_FONT_LABEL);
+    ui_hold_button(c, Q_START, TR(CU_START), UI_PANEL_HI, UI_ACCENT, &s.hold,
+                   false, true, CU_FONT_LABEL);
 }
 
 static const char *step_text(cu_step_t step)
@@ -410,6 +414,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
                              ? 1u << buffer_index : 0u;
     if (s.view == CU_VIEW_PROGRESS) {
         render_progress(c, bit);
+        ui_hold_ghost(c, &s.hold);      /* START, as the question goes */
     } else {
         render_question(c, bit);
     }
