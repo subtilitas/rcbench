@@ -392,13 +392,13 @@ dreht sich also nichts, während sie hinausgeht:
   anderer ESC angesteckt werden.
 
 Das Wiederholen ist für ESCs mit AM32-Firmware. Ein ESC mit AM32 2.21 nimmt
-ein Command nur an, solange er scharf ist und der Motor steht, und er schaltet
-sich nach 1s Throttle null selbst scharf, gezählt ab dem ersten Frame, den er
+ein Command nur an, solange er armed ist und der Motor steht, und er armt
+sich nach 1s Throttle null selbst, gezählt ab dem ersten Frame, den er
 hört (`Src/dshot.c:157`,
 `Src/main.c:1353-1356`). Ein Prüfstand in SAFE sendet keine Frames, und
-die AM32-Firmware startet nach 0,5s ohne Frame neu, wenn der ESC scharf ist,
+die AM32-Firmware startet nach 0,5s ohne Frame neu, wenn der ESC armed ist,
 und nach 2s, wenn nicht. Jeder Lauf beginnt also mit einem ESC, der nicht
-scharf ist. Eine Anfrage nur in den ersten 10ms eines Laufs kommt an, bevor
+armed ist. Eine Anfrage nur in den ersten 10ms eines Laufs kommt an, bevor
 der ESC sie annehmen kann. `test_dshot_edt` prüft den Ablauf gegen ein Modell
 dieser Regeln: ein ESC mit AM32-Firmware, der aus der Stille bei Throttle null
 startet, nimmt die dritte Anfrage an, 1,02s nach Beginn des Laufs. Die

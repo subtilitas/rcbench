@@ -721,7 +721,7 @@ cycles between changes, readings 100 to 190ms apart, noise of 30mA, a
 beep lost from a group, a menu one item longer than the profile, an ESC
 that never beeps, and each way a run can end. A sweep of a lost beep in
 each of the first ten groups against ESC entries 2000ms either side of the
-engine's stores no value other than the one asked for.
+engine's own entry time stores no value other than the one asked for.
 
 ## Current limitations
 

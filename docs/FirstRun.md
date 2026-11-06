@@ -139,7 +139,7 @@ is 4.37, and an IOmcu of 0.19.0 or later speaks 4.22 or later: the major,
 1. Power both boards with the link wired. At link-up the panel compares
    the IOmcu's running image with the image it carries by SHA-256, finds
    another build, and the band says `IOmcu runs a different build. Update
-   it under SETUP > UPDATES.`.
+   it on UPDATES.`.
 2. The question opens on the menu while the bench is SAFE, the supply's
    output is off and the panel's Wi-Fi radio is off. It names the version
    on the IOmcu and the version in the panel. Hold START for 2s, or after
@@ -214,12 +214,13 @@ idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor
 
 The IOmcu build prints its own size check:
 
-    -- rcbench: image 191808 bytes, 9% of the 2084864 bytes of one slot
+    -- rcbench: image 279860 bytes, 13% of the 2084864 bytes of one slot
 
 **Watch for:** the module used for bring-up is a Waveshare RP2350-CAN with
 **4MB**, while `PICO_BOARD` defaults to a board file claiming **16MB**. The
-linker measures against 16MB and will not warn. The line above is the only
-thing that will, so read it.
+linker measures against 16MB and does not warn. `firmware/iomcu/cmake/image_fits.cmake`
+checks the image against one slot of the partition table, 2,084,864 bytes,
+prints the line above and fails the build when the image is larger.
 
 ### The IOmcu's partition table
 
@@ -337,7 +338,7 @@ is not traced:
 
 ---
 
-## 3. The heartbeat wire — the thing that has blocked everything
+## 3. The heartbeat wire
 
 | | |
 |---|---|
@@ -972,9 +973,9 @@ capture's filter length (`SENSE_CAP_FILTER_N`, 4) and arrival band
 | Link up, screen offers no pins | The board's catalogue did not arrive. Console says which page failed. |
 | Heartbeat drops at the first link-up | **The drawing transfer or the flash keeper.** See §4. |
 | Display freezes briefly | Check for a flash write while the board drawing is saved: 4 operations for the RP2350-CAN's drawing. The display behavior during those writes is not measured. |
-| IOmcu does not boot after flashing | Image past 4MB. Check the size line from §1. |
+| IOmcu does not boot after flashing | Cause not determined. Load `rcbench-iomcu-install.uf2` again ([step 2](#from-the-release-assets)) and read the size line of the build in §1: an image over one slot, 2,084,864 bytes, does not build. |
 | Panel boots but no `boardart` partition | Flashed app-only over an old table. Merge-bin at offset 0. |
-| Output goes to mid-travel after ½ s | Working as intended — nothing wrote to that channel, so it went to its rest: mid-travel for a servo, zero for a motor. The pulses continue while the bench is ARMED |
+| Output goes to mid-travel after 500ms | Not a fault: nothing wrote to that channel, so it went to its rest: mid-travel for a servo, zero for a motor. The pulses continue while the bench is ARMED |
 | Pulses stop altogether | Not the timeout. Something released the pin, switched the bench to SAFE, or stopped the bench |
 | `sense flags` without 0x0100, a part enabled | The I2C block did not open on those pins. They must be one block's SDA and SCL: SDA's GPIO number mod 4 is 0 or 2, SCL the next |
 | `sense flags` 0x0200 that stays | SDA or SCL held low: an unpowered module clamping the bus, a missing pull-up, or a short |
@@ -1004,4 +1005,4 @@ about drivers on hardware, the control page and the flash store are the ones
 this run answers.
 
 **Anything that is not measured stays written as not measured.** A number
-guessed into that table is worse than an empty cell.
+that was not measured does not go into that table.

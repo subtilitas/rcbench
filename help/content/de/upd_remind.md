@@ -12,7 +12,7 @@ Die Erinnerung meldet ein neueres Release der Panel-Firmware auf GitHub. Sie öf
 
 | Bedienelement | Funktion |
 |---|---|
-| JETZT NICHT | schließt die Erinnerung bis zum nächsten Start des Panels; das HOME-Feld hat dieselbe Wirkung |
+| JETZT NICHT | schließt die Erinnerung bis zum nächsten Start des Panels; das Home-Feld hat dieselbe Wirkung |
 | NICHT MEHR ERINNERN | schaltet ERINNERUNG BEIM START aus und fordert das Speichern an; unter SETUP > UPDATES kannst du die Erinnerung wieder einschalten |
 | 2s HALTEN ZUM LADEN & INSTALLIEREN | startet dieselbe Aktion wie unter [Updates](updates.md#der-download) |
 

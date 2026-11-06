@@ -124,7 +124,7 @@ est. ms and est. fps: not measured
 | `servo` | der Servobildschirm mit neu gezeichnetem Arm |
 | `servo-grip` | der Servobildschirm, nur der Griff neu gezeichnet |
 | `servo-current` | wie `servo-grip`, mit dem INA3221 als Messgerät der Servo-Schiene und einem Fenster in jedem Frame, dessen Strom sich in den gezeigten Ziffern unterscheidet: der Griff, der Wert der Zeile STROM, die Zeile über dem Plot und der Plot neu gezeichnet, jedes auf sich selbst beschnitten |
-| `servo-rudder` | SERVO > RUDER mit einem AS5600-Messwert in jedem Frame, 0.26° vom vorigen entfernt: die Anzeige, die Zustandszeilen und das Ruder der Seitenansicht neu gezeichnet, jedes auf sich selbst beschnitten |
+| `servo-rudder` | SERVO > RUDER mit einem AS5600-Messwert in jedem Frame, 0,26° vom vorigen entfernt: die Anzeige, die Zustandszeilen und das Ruder der Seitenansicht neu gezeichnet, jedes auf sich selbst beschnitten |
 | `servo-test` | SERVO > TEST mit bewegtem Arm und einem AS5600-Messwert in jedem Frame, wie ein automatischer Test oder ein Limit Run sie liefert: die Seite zeigt keines von beiden, also wird nichts neu gezeichnet |
 | `servo-kst` | die KST-Sitzung von SERVO > PROGRAMMIEREN an einem Port in PWM, der Messwert des PD mini in jedem Frame 3mV und 1mA vom vorigen entfernt: dort zeigt die Zustandszeile den Sollwert, also wird nichts neu gezeichnet |
 | `servo-hitec` | dasselbe in der Hitec-Sitzung |
@@ -152,8 +152,8 @@ die Zahl weiterhin. Die Tabelle enthält die Zahlen des ubuntu-26.04-Runners
 der CI (Continuous Integration), und eine Maschine mit anderen Versionen misst
 andere Zahlen. Eine Änderung irgendwo in den gemessenen Quellen verschiebt die
 Adressen von Code und Daten und damit die Zahl auch von Modi, die sie nicht
-berührt: Eine Änderung an Texten und am Hitec-Code verschob 24 der 37 Modi um
-bis zu 22 Fills. Fills hängen vom Code-Layout ab: 18 Builds eines Baums, mit anderen Paddings und
+berührt: Eine Änderung an Texten und am Hitec-Code verschob 24 der damals 37 Modi der
+Tabelle um bis zu 22 Fills. Fills hängen vom Code-Layout ab: 18 Builds eines Baums, mit anderen Paddings und
 Link-Reihenfolgen, ergaben battery-sim 3167 bis 3353 Fills, frame 9466 bis 9810, servo
 2236 bis 2693 und settings-list-chrome 36320 bis 37282. `frame_cost.py --check-doc`
 prüft die Tabelle deshalb mit einer Toleranz von 3%, mindestens 500 Fills. Keine zwei
@@ -244,7 +244,7 @@ das Band 102 288 Pixelbesuche SAFE und 114 281 ARMED, mit rotem Chip und
 Laufuhr. Der Router merkt sich je Framebuffer `ui_band_key()` des zuletzt
 gezeichneten Bands und zeichnet es nur neu, wenn sich der Schlüssel bewegt: die
 Laufuhr einmal je Sekunde, solange der Prüfstand ARMED ist, ein Chip, ein Druck
-auf STOP oder auf den Home-Tag. Über einem simulierten Prüfstand wird es jeden
+auf STOP oder auf das Home-Feld. Über einem simulierten Prüfstand wird es jeden
 Frame gezeichnet, unter dem Watermark. `test_frame_work` zählt die Pixel, die
 der Rasterizer je Frame besucht (`gfx_work()`, nur in die Host-Suite gebaut),
 und hält ARMED in Ruhe bei SAFE in Ruhe plus dem Band einmal je Sekunde, eine

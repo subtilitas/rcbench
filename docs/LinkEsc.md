@@ -86,8 +86,8 @@ apply while the page holds the pin. When the page gives the pin back, its output
 binds it again, and a DShot pin then rests low until the next ARM
 ([DShot](DShot.md#a-stopped-pin-is-driven-low)).
 
-Disarming does not count as a stop: ARM is refused from OPEN onward,
-so the bank is already disarmed. The panel's STOP sends the STOP
+Switching to SAFE does not count as a stop: ARM is refused from OPEN onward,
+so the bank is already SAFE. The panel's STOP sends the STOP
 operation; a failsafe edge independently triggers a stop.
 
 **What counts as an error.** Any operation of the session that ends other than

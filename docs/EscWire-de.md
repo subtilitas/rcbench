@@ -68,10 +68,10 @@ Der Streifen zeigt das Ziel der Sitzung, zum Beispiel `ZIEL SLOT 1 GPIO 0`, gefo
 |---|---|---|
 | ZIEL | Gas-Slots und DShot-Ports | der erste |
 | VERSORGUNG | SWITCHED, BY HAND | SWITCHED |
-| SPANNUNG | 3.00V, oder die untere Grenze von SUPPLY, falls höher, bis zur oberen Grenze von SUPPLY für diese Platine und diese Einstellung | Sollwert von SUPPLY |
-| STROMBEGRENZUNG | 0.05A, oder die untere Grenze von SUPPLY, falls höher, bis zur oberen Grenze von SUPPLY für diese Platine und diese Einstellung | Sollwert von SUPPLY |
-| EINSTIEGSZEIT | 0.5s bis 120s | 3.0s |
-| AUS-ZEIT | 0s bis 10s | 1.0s |
+| SPANNUNG | 3,00V, oder die untere Grenze von SUPPLY, falls höher, bis zur oberen Grenze von SUPPLY für diese Platine und diese Einstellung | Sollwert von SUPPLY |
+| STROMBEGRENZUNG | 0,05A, oder die untere Grenze von SUPPLY, falls höher, bis zur oberen Grenze von SUPPLY für diese Platine und diese Einstellung | Sollwert von SUPPLY |
+| EINSTIEGSZEIT | 0,5s bis 120s | 3,0s |
+| AUS-ZEIT | 0s bis 10s | 1,0s |
 
 Die Sitzung hat keine Vorgabespannung. SPANNUNG und STROMBEGRENZUNG folgen SUPPLY, bis du auf eine Zahl tippst und einen anderen Wert eingibst. VERSORGUNG behält die letzte Wahl auch nach einem Neustart des Panels im nichtflüchtigen Speicher (NVS-Schlüssel `escw_by_hand`). Ohne gespeicherten Wert beginnt sie mit SWITCHED. SWITCHED nutzt den PD mini. BY HAND legt die Leitung auf high und wartet höchstens 60s auf `VERSORGUNG EIN`.
 
