@@ -113,7 +113,8 @@ static const char *verdict_word(const cursor_t *c, bool checked,
 static void ma_text(char *b, size_t n, float a)
 {
     if (a >= -CELL_MAX_A && a <= CELL_MAX_A) {
-        snprintf(b, n, "%ld", lroundf(a * 1000.0f));
+        /* At most 6 cells; an int keeps the text inside 12 bytes. */
+        snprintf(b, n, "%d", (int)lroundf(a * 1000.0f));
     } else {
         snprintf(b, n, "--");
     }

@@ -21,10 +21,11 @@
  *     binding of PWM01 to PWM04 wins.  PROGP02 and PROGP03 share slice 7
  *     and only one of them carries a pulse.
  *   - The ports run from M7's fixed 5V on GPIO 21.  The pulse is asked for
- *     only while the PROG 5V box reads ON (prog_choice_want_pwm()), and
- *     PORT PWM ON, a test and a limit run are refused with a line naming
- *     the box while it is off.  Voltage steps reach the servo rails, not
- *     the ports: a test with steps on a port is refused.
+ *     only while the PROG 5V box reads ON (prog_choice_want_pwm()).
+ *     PORT PWM ON is taken while the box is off, and the pulse waits for
+ *     it; a test and a limit run are refused with a line naming the box
+ *     while it is off.  Voltage steps reach the servo rails, not the
+ *     ports: a test with steps on a port is refused.
  *
  * On a board whose pins are chosen every function here passes the settings
  * through unchanged and asks nothing.

@@ -139,14 +139,17 @@ AUTO-Lauf von RUDER mit WINKELQUELLE IMU programmiert daraus Endpoints.
 ## Der Sensor
 
 Frames: 0x55, der Typ, vier int16-Wörter Little-Endian, das untere Byte der
-Summe. Das Panel liest 0x53 (die Winkel, 180° bei 32768, und die
-Firmware-Version), 0x52 (den Akku, das vierte Wort ohne Vorzeichen, V x 100)
-und 0x51 (die Temperatur, °C x 100). Nur ein Winkel-Frame macht den Messwert
-gültig.
+Summe. Das Panel nutzt 0x53 (die Winkel, 180° bei 32768, und die
+Firmware-Version) und 0x52 (den Akku, das vierte Wort ohne Vorzeichen,
+V x 100). Es erfragt beim Sensor nur diese beiden (RSW, unten). Ein
+0x51-Frame von einem Sensor mit anderem RSW füllt die Temperatur des
+Messwerts (°C x 100), die kein Bildschirm und keine Konsolenzeile zeigt;
+0x54 bleibt ungenutzt. Nur ein Winkel-Frame macht den Messwert gültig.
 
 | Befehl | Bytes | Gesendet |
 | --- | --- | --- |
 | Entsperren | `FF AA 69 88 B5` | vor jedem anderen Befehl; auf der älteren Firmware harmlos (an diesem Sensor nicht gemessen) |
+| RSW, SAVE | `FF AA 02 0C 00`, `FF AA 00 00 00` | einmal je Verbindung, wenn deren erste 8 gültige Frames andere Typen als 0x52 und 0x53 zeigen |
 | CALSW 1, 3s, CALSW 0, SAVE | `FF AA 01 01 00`, `FF AA 01 00 00`, `FF AA 00 00 00` | `2s HALTEN: BESCHLEUNIGUNG KALIBRIEREN`, verbunden |
 | RATE, SAVE | `FF AA 03 <code> 00`, `FF AA 00 00 00` | eine Änderung von IMU-Rate: 0x06 10Hz, 0x07 20Hz, 0x08 50Hz, 0x09 100Hz, 0x0B 200Hz |
 | AXIS6, SAVE | `FF AA 24 01 00` (6-AXIS) oder `FF AA 24 00 00` (9-AXIS), `FF AA 00 00 00` | eine Änderung von IMU-Algorithmus |
@@ -157,8 +160,8 @@ Antwort; hat es nur WRITE NO RESPONSE, ohne. Ein abgelehntes oder
 unbeantwortetes Schreiben verwirft den Rest seiner Gruppe und zeigt `DER
 SENSOR HAT DEN BEFEHL NICHT ANGENOMMEN`. Wofür die Gruppe war, steht
 bei der nächsten Verbindung wieder an: der Ausstieg aus einer
-Kalibrierung (Unlock, CALSW 0, SAVE), eine RATE oder ein ALGORITHMUS,
-mit den dann aktuellen Werten aus SETUP. IMU AUS lässt ein laufendes
+Kalibrierung (Unlock, CALSW 0, SAVE), ein RSW, eine RATE oder ein
+ALGORITHMUS, mit den dann aktuellen Werten aus SETUP. IMU AUS lässt ein laufendes
 Schreiben genauso scheitern; eine durch IMU AUS beendete Kalibrierung
 sendet CALSW 0 und SAVE also, sobald der Sensor wieder verbunden ist. Ein
 abgelehntes Unlock oder CALSW 1 am Start der Kalibrierung lässt sie sofort
@@ -176,8 +179,44 @@ erst nach dem Aus- und Einschalten. RATE in SETUP ist das, was das Panel
 erfragt, Vorgabe 50Hz. Der Sensor läuft mit der zuletzt gespeicherten
 Rate, ab Werk 10Hz. Der IMU-Bildschirm und SETUP > SENSOREN > IMU zeigen
 die Rate, mit der die Winkel-Frames ankommen, gemessen am Panel. Welche
-RATE-Werte über die BLE-Verbindung passen, ist noch nicht gemessen: 50Hz
-mit allen Frames braucht 2 200B/s.
+RATE-Werte über die BLE-Verbindung passen, hängt von den Frames je
+Messung ab (RSW, unten).
+
+RSW (Register 0x02) legt fest, welche Frames der Sensor sendet. Ab Werk ist
+es 0x1E: 0x51, 0x52, 0x53 und 0x54, 4 Frames zu 11 Bytes je Messung. Das
+Panel schreibt 0x0C: 0x52 und 0x53, 2 Frames je Messung. Der Datenstrom
+dient als Rücklesen. Das Panel prüft die ersten 8 gültigen Frames jeder
+Verbindung, 2 Messungen bei 0x1E und 4 bei 0x0C. Andere Typen, oder kein
+0x52 darunter, machen RSW fällig: Unlock, RSW 0x0C, SAVE, einmal auf
+dieser Verbindung, in einer Gruppe mit einer gleichzeitig fälligen
+Änderung von RATE oder ALGORITHMUS. Ein Sensor, der nur 0x52 und 0x53
+sendet, bekommt kein Schreiben, sein Flash also kein SAVE dafür. Ein
+abgelehntes RSW-Schreiben steht bei der nächsten Verbindung wieder an, wie
+eine RATE. Der Sensor speichert RSW mit dem SAVE, es bleibt also über das
+Aus- und Einschalten des Sensors erhalten. Ob ein neues RSW sofort gilt
+oder erst nach dem Aus- und Einschalten, ist nicht gemessen; bis es gilt,
+schreibt jede Verbindung es erneut.
+
+Die Kapazität der Verbindung, gemessen an einem Panel (Station,
+2026-11-06): der Sensor lag still in höchstens 1m Abstand, der C6 lief mit
+esp_hosted 2.13.0, MTU 64, Verbindungsintervall 16 x 1,25ms (20ms).
+
+| Rate, RSW | Zeit | Frames | Fehlerbytes |
+| --- | --- | --- | --- |
+| etwa 144Hz, 0x1E | 50s | 28 467: 569 Frames/s, etwa 6,3kB/s | 23 955 |
+| 10Hz, 0x1E | 36min | 71 912 | 8 |
+
+Fehlerbytes sind falsche Summen plus Resync-Bytes (`bad` in der
+Konsolenzeile). Die Verbindung trägt etwa 570 Frames/s. Bei 4 Frames je
+Messung läuft sie oberhalb von etwa 140Hz über. Bei 2 Frames je Messung
+reicht sie für etwa 285Hz, 200Hz passen also; 200Hz bei RSW 0x0C sind
+noch nicht gemessen.
+
+Derzeitige Einschränkung: der Sensor behält RSW 0x0C in seinem Flash. Ein
+anderes Gerät, das den Sensor danach liest, eine App auf dem Telefon oder
+ein Flugcontroller, bekommt nur noch 0x52- und 0x53-Frames, keine
+Beschleunigung (0x51) und kein Magnetfeld (0x54). Die App des Sensors
+stellt RSW zurück.
 
 IMU AUS
 während einer Kalibrierung beendet sie mit FAILED; ihr CALSW 0 und SAVE
@@ -276,7 +315,7 @@ Controller-Init- und Enable-Anfragen des C6 erneut
 | --- | --- |
 | Akku | 250mAh, 4h je Ladung (Datenblatt) |
 | Ausgaberate | 0,2 bis 200Hz, ab Werk 10Hz; das Panel bietet 10 bis 200Hz, Vorgabe 50Hz |
-| BLE-Durchsatz | 20 Bytes je Notification; bei 30 bis 50ms und einer Notification je Verbindungsereignis 400 bis 667B/s, unter den 2 200B/s von 50Hz mit allen Frames; die Notifications je Ereignis und die passenden Raten sind nicht gemessen |
+| BLE-Durchsatz | etwa 570 Frames/s, etwa 6,3kB/s, an einem Panel (Station, 2026-11-06, MTU 64, Intervall 20ms); 4 Frames je Messung laufen oberhalb von etwa 140Hz über, 2 Frames je Messung (RSW 0x0C) reichen für etwa 285Hz; 200Hz bei RSW 0x0C sind nicht gemessen |
 | Verbinden | an einem Panel (Station, 2026-11-05) verbanden diese Werte beim ersten Versuch; mit Intervall 15ms, Supervision Timeout 1 000ms und einem Connect-Scan 10ms/10ms endeten 35 Versuche bei -59dBm mit HCI 0x3E |
 | Genauigkeit X, Y | 0,05° (Datenblatt), 0,2° (Webseite des Herstellers) |
 | Genauigkeit Z | 1° nach der Kalibrierung des Magnetometers, die der Servomotor stört; die Drift von Z ohne diese Kalibrierung ist nicht angegeben |

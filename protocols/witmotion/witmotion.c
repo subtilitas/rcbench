@@ -223,6 +223,14 @@ size_t wit_cmd_rsw(uint8_t out[WIT_CMD_LEN], uint16_t mask)
     return wit_cmd(out, WIT_REG_RSW, mask);
 }
 
+uint16_t wit_rsw_bit(uint8_t type)
+{
+    if (type < WIT_T_TIME || type > WIT_T_TIME + 15u) {
+        return 0u;
+    }
+    return (uint16_t)(1u << (type - WIT_T_TIME));
+}
+
 size_t wit_cmd_calsw(uint8_t out[WIT_CMD_LEN], uint8_t mode)
 {
     if (mode > WIT_CAL_MAX) {

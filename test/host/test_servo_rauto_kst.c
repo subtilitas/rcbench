@@ -28,6 +28,8 @@
  * - on_the_carrier_auto_off_the_port_names_the_port
  * - on_the_carrier_the_lines_lead_to_a_start_from_safe
  * - on_the_carrier_the_lines_lead_to_a_start_from_armed
+ * - a_session_holding_the_port_is_named_before_port_pwm
+ * - on_the_carrier_port_pwm_on_from_outputs_with_the_5v_off_leads_to_a_start
  *
  * SPDX-License-Identifier: MIT
  */
@@ -38,8 +40,12 @@
 #include "log_name.h"
 #include "servo_rudder_auto.h"
 #include "servo_rudder_auto_int.h"
+#include "outputs_screen.h"
+#include "outputs_spots.h"
+#include "port_view.h"
 #include "prog5v_box.h"
 #include "prog_choice.h"
+#include "prog_registry.h"
 #include "settings_sensors.h"
 #include "ui_board.h"
 #include "wit_frame.h"
@@ -890,6 +896,170 @@ TEST_CASE(on_the_carrier_the_lines_lead_to_a_start_from_armed)
     carrier_done();
 }
 
+/* servo_limit_panel.c's start gate and its pulse line, declared in
+ * servo_screen_int.h. */
+const char *lim_blocked(void);
+const char *lim_pwm_why(void);
+
+/* A programmer session holding the port: AUTO names the session, not PORT
+ * PWM OFF, whether the pulse reads off or a report still has it on; the
+ * limit run's gate the same.  With the session gone AUTO starts. */
+TEST_CASE(a_session_holding_the_port_is_named_before_port_pwm)
+{
+    ra_setup(true, true);
+    CHECK(rauto_blocked() == NULL);
+    /* SAFE, PROGRAM and CONNECT: the session holds the port. */
+    ra.armed = false;
+    servo_screen_set_armed(false);
+    ra_ms(40u);
+    program_open();
+    tap(val(PG_SERVO, 0, 0));
+    settle();
+    CHECK(kst_panel_holds_port());
+    CHECK(prog_reg_servo_holds());
+    /* The bench reports ARMED, the pulse off as the session has it. */
+    ra.armed = true;
+    servo_screen_set_armed(true);
+    servo_screen_set_drive(1u + RIG_PORT, RIG_PIN, false);
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        CHECK_STR_EQ(rauto_blocked(), TR(OUT_PORT_HELD));
+        CHECK_STR_EQ(lim_blocked(), TR(OUT_PORT_HELD));
+    }
+    ui_text_set_language(UI_LANG_EN);
+    CHECK(strcmp(rauto_blocked(), TR(SV_LIM_PWM_OFF_ARMED)) != 0);
+    /* A report that still has the pulse on: the session first too. */
+    servo_screen_set_drive(1u + RIG_PORT, RIG_PIN, true);
+    CHECK_STR_EQ(rauto_blocked(), TR(OUT_PORT_HELD));
+    CHECK_STR_EQ(lim_blocked(), TR(OUT_PORT_HELD));
+    /* The setting off makes no difference while the session holds it. */
+    settings_set(SET_SERVO_PORT_PWM, 0.0f);
+    servo_screen_set_drive(1u + RIG_PORT, RIG_PIN, false);
+    CHECK_STR_EQ(rauto_blocked(), TR(OUT_PORT_HELD));
+    settings_set(SET_SERVO_PORT_PWM, 1.0f);
+}
+
+/**
+ * @brief The carrier's four ports as read, @p port at FUNC SERVO PWM and
+ *        the others NONE, as the OUTPUTS entry reads them.
+ * @param port the chosen port, 0 for port 1
+ */
+static void carrier_ports(uint8_t port)
+{
+    static const uint8_t pins[4] = { 13u, 14u, 15u, 0u };
+    port_view_t v;
+    port_view_unknown(&v);
+    v.count = 4u;
+    v.has_func = true;
+    for (uint8_t n = 0u; n < 4u; ++n) {
+        v.pin[n] = pins[n];
+        v.func[n] = n == port ? (uint8_t)LINK_PG_FN_SERVO_PWM
+                              : (uint8_t)LINK_PG_FN_NONE;
+    }
+    port_view_set(&v);
+    outputs_screen()->reset();
+    outputs_screen_set_prog_ports(4u, pins);
+    outbind_t b;
+    outbind_init(&b);
+    outbind_set_board(&b, OUTBIND_BOARD_RBMOD);
+    outputs_screen_set_binding(&b);
+}
+
+/* PROG 5V ON's 2s hold on SERVO's box, switched on as the control task
+ * does once the box asks. */
+static void prog5v_on_from_servo(void)
+{
+    const int x = SV_RC_X + SV_RC_W - PROG5V_BOX_BTN_W / 2;
+    const int y = UI_MARGIN + 90 + PROG5V_BOX_H / 2;
+    ev(x, y, TOUCH_EVENT_DOWN, 2);
+    ra_ms(2300u);
+    ev(x, y, TOUCH_EVENT_UP, 2);
+    prog5v_cmd_t c;
+    CHECK(prog5v_box_poll_cmd(&c) && c.on && c.by == PROG5V_BY_SERVO);
+    prog5v_box_publish(3u, 21u, PROG5V_HELD_NONE);
+    ra_ms(200u);
+}
+
+/* The owner's way on the rbmod carrier: PORT PWM off, the PROG 5V box
+ * switched on on SERVO.  ARMED, AUTO says DISARM and TARGET; SAFE, it says
+ * TARGET.  TARGET opens the port's entry on OUTPUTS; leaving SERVO
+ * switches the PROG 5V off.  There PORT PWM ON is taken and saved with the
+ * box off, and the line says the pulse waits for the box on SERVO; no
+ * pulse is asked.  Back on SERVO, PROG 5V ON, the pulse comes on in SAFE,
+ * ARM, and a hold on START starts AUTO. */
+TEST_CASE(on_the_carrier_port_pwm_on_from_outputs_with_the_5v_off_leads_to_a_start)
+{
+    carrier_port(false);
+    carrier_ports(RIG_PORT);
+    settings_set(SET_SERVO_PORT_PWM, 0.0f);
+    ra_ms(200u);
+    prog5v_on_from_servo();
+    ra.armed = true;
+    servo_screen_set_armed(true);
+    ra_ms(200u);
+    CHECK_STR_EQ(rauto_blocked(), TR(SV_LIM_PWM_OFF_ARMED));
+    ra.armed = false;
+    servo_screen_set_armed(false);
+    ra_ms(200u);
+    CHECK_STR_EQ(rauto_blocked(), ui_servo_str(SERVO_STR_START_NOT_ARMED));
+    CHECK_STR_EQ(lim_pwm_why(), TR(SV_LIM_PWM_OFF));
+    /* TARGET: the router opens the port's entry on OUTPUTS.  The rig
+     * drives SERVO by hand, so the router leaves the overview and SERVO's
+     * leave is called here: it switches the PROG 5V off. */
+    screen_tap(SV_TARGET_X, SV_TARGET_Y);
+    CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
+    CHECK_EQ(outputs_screen_port_shown(), (int)RIG_PORT);
+    scr->leave();
+    prog5v_cmd_t c;
+    CHECK(prog5v_box_poll_cmd(&c) && c.off && !c.on);
+    prog5v_box_publish(2u, 21u, PROG5V_HELD_NONE);
+    const ui_screen_t *out = outputs_screen();
+    (void)settings_save();
+    const touch_event_t d = { TOUCH_EVENT_DOWN,
+                              { 3, (int16_t)OU_SEG_X(0), (int16_t)OU_PWM_Y,
+                                40 }, 0u };
+    const touch_event_t u = { TOUCH_EVENT_UP,
+                              { 3, (int16_t)OU_SEG_X(0), (int16_t)OU_PWM_Y,
+                                40 }, 0u };
+    out->event(&d);
+    out->event(&u);
+    CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
+    CHECK(settings_save_asked());
+    char line[96];
+    CHECK(outputs_screen_port_reason(line, sizeof(line)));
+    CHECK_STR_EQ(line, TR(PC_PWM_WAITS_5V));
+    CHECK(!prog_choice_want_pwm());
+    /* SERVO again, as the home tag goes: RUDDER, AUTO, the box, ARM,
+     * START. */
+    ui_router_goto(SCREEN_SERVO);
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO);
+    ra_ms(200u);
+    CHECK(!prog_choice_want_pwm());
+    screen_tap(SV_TAB_RUDDER_X, SV_TAB_Y);
+    if (!rauto_shown()) {
+        screen_tap(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);   /* the task kept it */
+    }
+    CHECK(rauto_shown());
+    CHECK_STR_EQ(rauto_blocked(), ui_servo_str(SERVO_STR_START_PROG_5V));
+    prog5v_on_from_servo();
+    CHECK(prog_choice_want_pwm());
+    CHECK_STR_EQ(rauto_blocked(), ui_servo_str(SERVO_STR_START_NOT_ARMED));
+    ra.armed = true;
+    servo_screen_set_armed(true);
+    ra_ms(200u);
+    CHECK(rauto_blocked() == NULL);
+    ra_hold_start();
+    CHECK(servo_screen_rauto_running());
+    rauto_end_now(SERVO_TEST_AB_OPERATOR);
+    ra_ms(2000u);
+    ui_router_goto(SCREEN_OVERVIEW);
+    port_view_t v;
+    port_view_unknown(&v);
+    port_view_set(&v);
+    outputs_screen_set_prog_ports(OUTPUTS_PORTS_UNKNOWN, NULL);
+    carrier_done();
+}
+
 int main(void)
 {
     RUN(auto_programs_both_end_points_to_the_goal_and_ends_safe);
@@ -906,5 +1076,7 @@ int main(void)
     RUN(on_the_carrier_auto_off_the_port_names_the_port);
     RUN(on_the_carrier_the_lines_lead_to_a_start_from_safe);
     RUN(on_the_carrier_the_lines_lead_to_a_start_from_armed);
+    RUN(a_session_holding_the_port_is_named_before_port_pwm);
+    RUN(on_the_carrier_port_pwm_on_from_outputs_with_the_5v_off_leads_to_a_start);
     return test_summary("servo_rauto_kst");
 }

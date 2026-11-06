@@ -480,6 +480,7 @@ TEST_CASE(the_column_holds_every_reason_and_meets_no_key)
         TX_OUT_PORT_WAIT_READ, TX_OUT_PORT_WAIT_KST, TX_OUT_PORT_WAIT_HITEC,
         TX_OUT_PORT_WAIT_ESC, TX_OUT_PORT_WAIT_SAFE, TX_OUT_PORT_WAIT_TEST,
         TX_OUT_PORT_TESTER_ON, TX_PK_PORT_SLICE_WHY, TX_OUT_COMPARE_WHY,
+        TX_PC_PWM_WAITS_5V,
     };
     const gfx_rect_t first = gfx_rect_make(OB_COL_X, OB_WHY_Y, OB_COL_W, 16);
     for (int lang = 0; lang < 2; ++lang) {

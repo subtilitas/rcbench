@@ -63,7 +63,8 @@ typedef struct {
                                 that from the sensor's */
     uint16_t rate_dhz;     /**< angle frames in the last second, 0.1Hz */
     float    battery_v;    /**< from 0x52; NAN until one came */
-    float    temp_c;       /**< from 0x51; NAN until one came */
+    float    temp_c;       /**< from 0x51; NAN until one came, and
+                                with RSW 0x0C the sensor sends none */
     uint16_t version;      /**< from 0x53 */
     uint32_t frames;       /**< good frames, all types */
     uint32_t bad;          /**< bad sums + resync bytes */
@@ -83,6 +84,9 @@ typedef struct {
     float    resid;               /**< the filter's distance from the sensor's
                                        angle as the still time began, decayed
                                        a frame at a time, ° */
+    uint16_t content;             /**< WIT_RSW_* bits of the frame types
+                                       since imu_content_restart() */
+    uint8_t  content_n;           /**< good frames since then, held at 255 */
 } imu_t;
 
 /** @brief Clear, IMU FILTER 1, the filter to seed.
@@ -98,6 +102,9 @@ void imu_set_filter(imu_t *m, int32_t filter);
 /** @brief The next angle frame seeds the filter: a connect or a bind.
  *  @param m The model; NULL does nothing. */
 void imu_reseed(imu_t *m);
+/** @brief Count the frame types again from the next frame on: content and
+ *         content_n to 0.  @param m The model; NULL does nothing. */
+void imu_content_restart(imu_t *m);
 /**
  * @brief Feed bytes at @p now_ms.
  * @param m      The model; NULL does nothing.

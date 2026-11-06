@@ -24,6 +24,7 @@
 #include "log_name.h"
 #include "prog5v_box.h"
 #include "prog_choice.h"
+#include "prog_registry.h"
 #include "rcbench_version.h"
 #include "sensors_rows.h"
 #include "settings.h"
@@ -214,7 +215,9 @@ const char *rauto_blocked(void)
     if (prog_choice_needs_5v()) {
         return ui_servo_str(SERVO_STR_START_PROG_5V);
     }
-    if (!s.drive_pwm) {
+    /* A programmer holding the port before PORT PWM: its session is why
+     * no pulse runs, whatever the setting says. */
+    if (!s.drive_pwm || prog_reg_servo_holds()) {
         return lim_pwm_why();
     }
     /* The end pulses lie inside the bench's own range. */

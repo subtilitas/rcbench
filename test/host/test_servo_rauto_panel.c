@@ -205,7 +205,8 @@ static void first_lines(cands_t *c)
     cand(c, t);
     static const ui_text_id_t k_why[] = {
         TX_RA_NO_ANGLE, TX_RA_NO_ZERO, TX_RA_RANGE, TX_RA_PROG_PORT,
-        TX_RA_REFUSED, TX_SV_LIM_PWM_OFF, TX_SV_LIM_PWM_SAFE,
+        TX_RA_REFUSED, TX_SV_LIM_PWM_OFF, TX_SV_LIM_PWM_OFF_ARMED,
+        TX_SV_LIM_PWM_SAFE, TX_OUT_PORT_HELD,
         TX_SV_LIM_INA_SETUP, TX_SV_LIM_INA_OFFLINE, TX_SV_LIM_INA_NO_WIN,
         TX_SV_LIM_RAIL_LOW,
         TX_SV_LIM_PROG_PORT, TX_SV_LIM_PROG_BUSY, TX_SV_LIM_PROG_PD_OFF,

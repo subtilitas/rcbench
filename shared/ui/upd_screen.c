@@ -314,7 +314,12 @@ static void blocked_text(upd_why_t why, char *out, size_t n, char *second,
         snprintf(out, n, "%s", TR(WF_NEEDS_1));
         snprintf(second, n2, "%s", TR(WF_NEEDS_2));
         break;
-    case UPD_WHY_COPROC:  snprintf(out, n, "%s", TR(UPD_WAIT_COPROC));  break;
+    case UPD_WHY_COPROC:
+        /* The gate holds for the IOmcu's update and the C6's alike. */
+        snprintf(out, n, "%s",
+                 upd_c6_view()->row == FW_C6_ROW_UPDATING ? TR(UPD_WAIT_C6)
+                                                          : TR(UPD_WAIT_COPROC));
+        break;
     case UPD_WHY_DRAWING: snprintf(out, n, "%s", TR(UPD_WAIT_DRAWING)); break;
     case UPD_WHY_FILES:   snprintf(out, n, "%s", TR(UPD_STOP_FILES));   break;
     case UPD_WHY_INSTALL:
