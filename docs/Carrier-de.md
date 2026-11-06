@@ -83,7 +83,7 @@ dieser Stellen:
 | FUNC beim Start des IOmcu | NONE auf jedem Port; das Panel bittet erneut um SERVO PWM |
 | Gesperrt | ARMED oder ARMED angefordert, ein Test, ein Sweep oder ein Endlagenlauf, ein Programmer, der einen Port hält |
 | PROGP04 | nicht angeboten, solange PWM04 einen PWM-Ausgang trägt: `PROGP04 TEILT PWM-SLICE 0 MIT PWM04 (GPIO 1)` |
-| Puls | nur solange das Feld PROG 5V EIN zeigt; PORT-PWM EIN, ein Servotest und ein Endlagenlauf werden mit `PROG 5V AUS: SCHALTE ES IM FELD PROG 5V EIN` abgelehnt |
+| Puls | nur solange das Feld PROG 5V EIN zeigt. PORT-PWM EIN wird bei ausgeschaltetem Feld angenommen, und die Zeile lautet `PORT-PWM EIN: PULSE STARTEN MIT PROG 5V AUF SERVO`; ein Servotest und ein Endlagenlauf werden mit `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN` abgelehnt |
 | Versorgung | die festen 5V von M7 an GPIO 21; die Spannungsstufen eines Servotests erreichen die Servoschienen, nicht den Port, ein Test dort wird also mit `PROG-PORTS LAUFEN MIT FESTEN 5V: KEINE STUFEN` abgelehnt |
 | Strom | INA3221 0x40 CH3 misst alle vier Ports zusammen |
 
@@ -101,6 +101,19 @@ aus: AUTO auf RUDDER und der Endlagenlauf zeigen dann
 `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM`. Bei SAFE mit dem Feld
 aus zeigen beide `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN` vor
 `ZUERST ARM`.
+
+PORT-PWM liegt auf OUTPUTS, das Feld PROG 5V auf SERVO und SUPPLY. Das
+Verlassen von SERVO schaltet ein dort eingeschaltetes PROG 5V aus, daher
+wird PORT-PWM EIN bei ausgeschaltetem Feld angenommen, und der Puls
+wartet darauf. Mit PORT-PWM aus zeigen AUTO und der Endlagenlauf bei SAFE
+`PORT-PWM AUS: TIPPE AUF ZIEL UND SCHALTE ES EIN` und bei ARMED
+`PORT-PWM AUS: DISARM, TIPPE AUF ZIEL, SCHALTE ES EIN`. ZIEL öffnet den
+Eintrag des Ports auf OUTPUTS. Der Weg von PORT-PWM aus:
+
+1. SAFE: tippe auf SERVO auf ZIEL. OUTPUTS öffnet den Eintrag des Ports.
+2. PORT-PWM EIN. Die Zeile lautet `PORT-PWM EIN: PULSE STARTEN MIT PROG 5V AUF SERVO`.
+3. Zurück zu SERVO, halte PROG 5V EIN 2s lang. Der Puls kommt bei SAFE.
+4. ARM, dann START halten.
 
 ## Versorgung
 

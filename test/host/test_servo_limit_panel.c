@@ -189,12 +189,19 @@ TEST_CASE(a_limit_run_starts_only_armed_on_the_ina3221)
         lim_hold(2.3f);
         CHECK(!servo_screen_limit_running());
         close_settings();
-        /* A port in its programmer's hands renders no pulse. */
+        /* The port without its pulse on an ARMED bench: PORT PWM ON waits
+         * for SAFE, as a pulse comes on only on a bench at rest; PORT PWM
+         * OFF asks for the DISARM before TARGET. */
         lim_bench();
         servo_screen_set_drive(1u, 13u, false);
         lim_page();
-        CHECK(lim_line_reads(1, TR(SV_LIM_PWM_OFF), UI_C_WARN));
+        CHECK(lim_line_reads(1, TR(SV_LIM_PWM_SAFE), UI_C_WARN));
         close_settings();
+        settings_set(SET_SERVO_PORT_PWM, 0.0f);
+        lim_page();
+        CHECK(lim_line_reads(1, TR(SV_LIM_PWM_OFF_ARMED), UI_C_WARN));
+        close_settings();
+        settings_set(SET_SERVO_PORT_PWM, 1.0f);
         servo_screen_set_drive(0u, SERVO_SCREEN_NO_PIN, false);
         /* Ready: the page says so, and only the whole hold starts it. */
         lim_bench();
