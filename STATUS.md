@@ -1756,7 +1756,7 @@ known (none listed). `image_slot.py` holds the panel image to the smaller of its
 slots.
 
 `stack_check.py --iomcu` holds each IOmcu core's deepest chain, one interrupt and 256 bytes
-to the core's stack: core 0 reaches 1500 of 4096 with 528 for an interrupt. `stack_check.py`
+to the core's stack: core 0 reaches 1508 of 4096 with 528 for an interrupt. `stack_check.py`
 holds each panel task's deepest chain on the ESP32-P4, decoded from its RISC-V code, and
 1024 bytes to the task's stack; the main task reaches 5424 of 8192. `frame_cost.py` holds 27
 modes to ceilings of L2 fills under the P4's caches; the bench frame has no ceiling while
@@ -2371,8 +2371,8 @@ stop, a pulled cable, the input lowered under a live set point in 0.5V steps.
 
 ### IOmcu core 0's stack
 
-`stack_check.py --iomcu` measures 1500 bytes for the deepest chain and 528 for one interrupt
-on the 4096-byte stack, 1812 bytes above the 256-byte margin. The figures are those of the
+`stack_check.py --iomcu` measures 1508 bytes for the deepest chain and 528 for one interrupt
+on the 4096-byte stack, 1804 bytes above the 256-byte margin. The figures are those of the
 image CI builds with arm-none-eabi-gcc 14.2.1, and `stack_check.py --iomcu --check-doc`
 holds them. The depth is a lower bound: 251 calls through a register are not followed. The
 stack has no guard (`PICO_USE_STACK_GUARDS` is off). Not measured on hardware. An image

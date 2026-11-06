@@ -259,23 +259,29 @@ bool link_dev_dispatch(link_dev_t *d, const link_msg_t *req,
          * this end's minor yet.  Nothing it sends is a repeat. */
         d->seq        = 0u;
         d->kept_count = 0u;
-        answer(d, req, reply);
-        return true;
+    } else {
+        /*
+         * A repeat is the panel asking again for an answer it did not hear.
+         * The page acted on the first one, so the answer is the one that
+         * went out then: a write taken twice would arm twice, step a
+         * programming session twice or append a block twice.
+         */
+        const link_msg_t *again = repeat_of(d, req, now_ms);
+        if (again != NULL) {
+            *reply = *again;
+            ++d->repeats;
+            return true;
+        }
     }
 
     /*
-     * A repeat is the panel asking again for an answer it did not hear.  The
-     * page acted on the first one, so the answer is the one that went out
-     * then: a write taken twice would arm twice, step a programming session
-     * twice or append a block twice.
+     * One call of answer(), so the compiler takes it and the page calls into
+     * this function: tools/stack_iomcu.py follows the page table from here.
      */
-    const link_msg_t *again = repeat_of(d, req, now_ms);
-    if (again != NULL) {
-        *reply = *again;
-        ++d->repeats;
+    answer(d, req, reply);
+    if (req->seq == 0u) {
         return true;
     }
-    answer(d, req, reply);
     reply->seq = req->seq;
     if (d->kept_count < LINK_DEV_REPEAT_KEEP) {
         d->kept[d->kept_count].req   = *req;
