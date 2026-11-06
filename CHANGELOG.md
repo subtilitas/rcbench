@@ -19,6 +19,13 @@ history is in git.
   `ble scan` starts it and prints every report of a 10,000ms scan; no other
   build starts it, and no screen shows it. The default image grows by
   44,688 bytes, the console image by 76,080.
+- `protocols/bleuart`: a BLE (Bluetooth Low Energy) central for the ISSC
+  Transparent UART service of the BWT901CL, without radio code. It parses
+  advertising reports into a scan list of 8 devices, connects to the bound
+  address, discovers the service, subscribes to 1E4D, reads 6DAA once,
+  writes commands on 8841 and reconnects 1000ms after a failure or drop.
+  Host-tested by `test_bleuart`, `test_bleuart_link` and
+  `test_bleuart_adv`; no firmware uses it yet.
 - Browser test of the Wi-Fi page's file manager. `test/host/wa_page_dump.c`
   writes the page `wa_page_main()` builds, and `test/host/wa_mock_server.py`
   serves it with a mock of the file API, its refusals and its request guard.
