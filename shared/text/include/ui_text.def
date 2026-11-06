@@ -7464,6 +7464,9 @@ UI_TEXT(HP_MOVE_NO_MAP, 116,
 UI_TEXT(HP_MOVE_OUTSIDE, 116,
     "The servo stands at %u, outside its reach. MOVE SERVO is OFF.",
     "Das Servo steht bei %u, außerhalb seiner Reichweite. SERVO BEWEGEN steht auf AUS.")
+UI_TEXT(HP_MOVE_SWAPPED, 116,
+    "The servo's direction or end points differ from the last read. Tap READ ALL.",
+    "Drehrichtung oder Endpunkte des Servos weichen vom letzten Auslesen ab. Tippe auf ALLES AUSLESEN.")
 UI_TEXT(HP_MOVE_DONE, 116,
     "MOVE SERVO is OFF. The stored values read back unchanged.",
     "SERVO BEWEGEN steht auf AUS. Die gespeicherten Werte sind unverändert zurückgelesen.")

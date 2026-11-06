@@ -17,7 +17,8 @@
 
 /** @brief The registers the start reads besides the full read's: the
  *         position, and the ones of the loop's set the full read lacks. */
-static const uint8_t k_start[] = { 0x0Cu, 0x1Eu, 0x50u, 0x52u, 0x56u };
+static const uint8_t k_start[] = { 0x0Cu, 0x1Eu, 0x50u, 0x52u, 0x56u,
+                                   0x5Eu, 0xB0u, 0xB2u, 0xC2u };
 
 /** @brief The loop's set the full read lacks, read again at the end. */
 static const uint8_t k_extra[] = { 0x1Eu, 0x50u, 0x52u, 0x56u };
@@ -148,10 +149,22 @@ static void start_done(hitec_prog_t *p)
     uint16_t lo = 0;
     uint16_t hi = 0;
 
+    hitec_live_ends_t now;
+
     m->start = p->ses.image;
     if (m->off) {
         /* Nothing moved: nothing to end. */
         m->phase = (uint8_t)HITEC_MOVE_OFF;
+        return;
+    }
+    /* The unit on the line now: its direction and end points against the
+     * map the loop commands from, so a servo swapped since the read never
+     * moves on another's map. */
+    if (!hitec_live_d_ends(&p->ses.image, &now) || now.left != m->ends.left
+        || now.mid != m->ends.mid || now.right != m->ends.right) {
+        m->phase = (uint8_t)HITEC_MOVE_OFF;
+        p->must_read = true;
+        (void)hpg_say2(p, HITEC_PROG_MSG_MOVE_SWAPPED, 0u, 0u);
         return;
     }
     hitec_live_d_reach(&m->ends, &lo, &hi);

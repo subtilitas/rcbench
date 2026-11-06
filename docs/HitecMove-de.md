@@ -35,8 +35,13 @@ Es wird abgelehnt, und nichts wird gesendet:
 
 Solange es an ist:
 
-1. Der Start liest Register 0x0C, die Position, und 0x1E, 0x50, 0x52 und
-   0x56. Eine Position mehr als 50 Zählwerte außerhalb der Reichweite
+1. Der Start liest Register 0x0C, die Position, 0x1E, 0x50, 0x52 und
+   0x56 sowie Richtung und Positionen 0x5E, 0xB0, 0xB2 und 0xC2. Eine
+   Richtung oder Position, die nicht der des Auslesens entspricht, etwa
+   von einem seither getauschten Servo, beendet es, ohne dass sich etwas
+   bewegt hat, und verlangt ALLES AUSLESEN: `Drehrichtung oder Endpunkte
+   des Servos weichen vom letzten Auslesen ab. Tippe auf ALLES AUSLESEN.` Eine Position mehr als 50
+   Zählwerte außerhalb der Reichweite
    beendet es, ohne dass sich etwas bewegt hat:
    `Das Servo steht bei 2555, außerhalb seiner Reichweite. SERVO BEWEGEN steht auf AUS.`
 2. Jeder Durchlauf schreibt 0x1E, wartet 20ms und liest 0x0C. Die

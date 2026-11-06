@@ -33,9 +33,13 @@ It is refused, with nothing sent:
 
 While it is on:
 
-1. The start reads register 0x0C, the position, and 0x1E, 0x50, 0x52 and
-   0x56. A position more than 50 counts outside the reach ends it with
-   nothing moved: `The servo stands at 2555, outside its reach. MOVE SERVO is OFF.`
+1. The start reads register 0x0C, the position, 0x1E, 0x50, 0x52 and
+   0x56, and the direction and positions 0x5E, 0xB0, 0xB2 and 0xC2. A
+   direction or position unlike the read's, as from a servo swapped since
+   it, ends it with nothing moved and owes READ ALL: `The servo's direction
+   or end points differ from the last read. Tap READ ALL.` A position more than
+   50 counts outside the reach ends it with nothing moved:
+   `The servo stands at 2555, outside its reach. MOVE SERVO is OFF.`
 2. Each pass writes 0x1E, waits 20ms and reads 0x0C. The commanded
    position is the draft's value of the followed row, NEUTRAL at the
    start. It moves 150 counts (2.0°) a pass at most and stays inside the

@@ -349,6 +349,9 @@ typedef enum {
     HITEC_PROG_MSG_MOVE_OUTSIDE,  /**< ended at its start: the position
                                        read lies outside the reach; arg the
                                        position                            */
+    HITEC_PROG_MSG_MOVE_SWAPPED,  /**< ended at its start: the servo's
+                                       direction or stored positions differ
+                                       from the read; READ ALL is owed      */
     HITEC_PROG_MSG_MOVE_BLOCKED,  /**< bound by the lag: arg the position
                                        read, reg the position moved back to */
     HITEC_PROG_MSG_MOVE_CURRENT,  /**< bound by the current: arg the stall

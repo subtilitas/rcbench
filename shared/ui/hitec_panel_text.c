@@ -682,6 +682,7 @@ static const int16_t k_lines[HITEC_PROG_MSG_COUNT][2] = {
     [HITEC_PROG_MSG_MOVE_NEED_DIR] = { TX_HP_MOVE_NEED_DIR, -1 },
     [HITEC_PROG_MSG_MOVE_NO_MAP]   = { TX_HP_MOVE_NO_MAP, -1 },
     [HITEC_PROG_MSG_MOVE_OUTSIDE]  = { -1, -1 },
+    [HITEC_PROG_MSG_MOVE_SWAPPED]  = { TX_HP_MOVE_SWAPPED, -1 },
     [HITEC_PROG_MSG_MOVE_BLOCKED]  = { -1, -1 },
     [HITEC_PROG_MSG_MOVE_CURRENT]  = { -1, -1 },
     [HITEC_PROG_MSG_MOVE_ENC]      = { -1, -1 },

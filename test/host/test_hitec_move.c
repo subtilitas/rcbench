@@ -502,6 +502,26 @@ TEST_CASE(abort_during_the_end_ends_it_hard)
     CHECK(!model()->mv.owed);
 }
 
+/* A D servo swapped since the read: the start reads its direction and end
+ * points, finds them unlike the map the loop would command from, moves
+ * nothing and asks for a read; MOVE SERVO is refused until one. */
+TEST_CASE(a_servo_swapped_since_the_read_moves_nothing)
+{
+    unsigned moves;
+
+    held();
+    moves = g_drv.d_moves;
+    g_drv.dreg[0xB2] = 3000u;
+    g_drv.dreg[0xC2] = 8000u;
+    g_drv.dreg[0xB0] = 13000u;
+    CHECK_EQ(hitec_prog_move_start(model()), HITEC_PROG_MSG_NONE);
+    until_move(HITEC_MOVE_OFF);
+    CHECK_EQ(g_drv.d_moves, moves);
+    CHECK_EQ(msg(), HITEC_PROG_MSG_MOVE_SWAPPED);
+    CHECK_EQ(hitec_prog_level(msg()), HITEC_PROG_WARN);
+    CHECK_EQ(hitec_prog_move_gate(model()), HITEC_PROG_MSG_MUST_READ);
+}
+
 TEST_CASE(move_off_during_the_start_moves_nothing)
 {
     unsigned moves, reboots;
@@ -721,6 +741,7 @@ int main(void)
     RUN(abort_during_the_loop_runs_the_end_with_no_fault);
     RUN(abort_during_the_start_moves_nothing);
     RUN(abort_during_the_end_ends_it_hard);
+    RUN(a_servo_swapped_since_the_read_moves_nothing);
     RUN(move_off_during_the_start_moves_nothing);
     RUN(a_register_changed_during_the_loop_owes_read_all);
     RUN(a_position_outside_the_reach_at_the_start_moves_nothing);
