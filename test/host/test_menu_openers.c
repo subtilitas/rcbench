@@ -13,6 +13,7 @@
 #include "nav_rig.h"
 #include "sensors_pane.h"
 #include "supply_spots.h"
+#include "ui_setlist.h"
 #include "upd_screen.h"
 #include "wifi_screen.h"
 #include "wifi_spots.h"
@@ -115,8 +116,8 @@ static void updates_no_net(void)
 
 /* ------------------------------------------------------- caps, SERVO > TEST */
 
-/* The caps button opens SUPPLY on SETTINGS' LIMITS, from any tab it was left
- * on, and the home tag comes back to TEST. */
+/* The caps button opens SUPPLY's SETTINGS list at the limits, wherever it was
+ * left; the home tag closes the list, and the next comes back to TEST. */
 TEST_CASE(the_caps_button_opens_limits_and_the_tag_returns_to_test)
 {
     start();
@@ -133,11 +134,14 @@ TEST_CASE(the_caps_button_opens_limits_and_the_tag_returns_to_test)
     CHECK_EQ(supply_screen_settings_tab(), 0);
     CHECK_EQ(ui_router_parent(SCREEN_SUPPLY), SCREEN_SERVO);
     tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_SUPPLY);
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
+    tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_SERVO);
     CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
 }
 
-/* The same button on DUT comes back to DUT: task and page. */
+/* The same button on DUT comes back to DUT, task and page, after the list. */
 TEST_CASE(the_caps_button_on_dut_returns_to_dut)
 {
     start();
@@ -145,6 +149,7 @@ TEST_CASE(the_caps_button_on_dut_returns_to_dut)
     tap(CAPS_DUT);
     CHECK_EQ(ui_router_current(), SCREEN_SUPPLY);
     CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
+    tap_home();                                 /* the list */
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_SERVO);
     CHECK_EQ(servo_screen_task(), (int)UI_WB_SETTINGS);
@@ -197,10 +202,15 @@ TEST_CASE(a_keypad_open_on_supply_closes_before_the_tag_returns)
     servo_on(SV_TAB_TEST_X);
     tap(CAPS_TEST);
     CHECK_EQ(ui_router_current(), SCREEN_SUPPLY);
-    tap(SU_ROW_L_X, UI_BAND_H + SU_VMAX_Y);
-    CHECK(supply_screen_keypad()->open);
+    const gfx_rect_t v = ui_setlist_row_part(
+        supply_settings_list(), supply_settings_row(SET_SUPPLY_V_MAX),
+        UI_SL_PART_VALUE);
+    tap(v.x + v.w / 2, UI_BAND_H + v.y + v.h / 2);
+    CHECK(supply_settings_keypad()->open);
     tap_home();
-    CHECK(!supply_screen_keypad()->open);
+    CHECK(!supply_settings_keypad()->open);
+    CHECK_EQ(ui_router_current(), SCREEN_SUPPLY);
+    tap_home();                                 /* the list */
     CHECK_EQ(ui_router_current(), SCREEN_SUPPLY);
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_SERVO);
@@ -214,6 +224,7 @@ TEST_CASE(a_later_tile_finds_no_opener)
     start();
     servo_on(SV_TAB_TEST_X);
     tap(CAPS_TEST);
+    tap_home();                                 /* the list */
     tap_home();
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);

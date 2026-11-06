@@ -600,8 +600,9 @@ SCREENS = {
     # FOLDER; the folder keyboard with a folder refused.
     "setup-card": ("setup-card.png", "setup", "dark"),
     "setup-folder": ("setup-folder.png", "setup", "dark"),
-    # SUPPLY > SETTINGS' PD MINI tab: as wired, and on the carrier with TX and
-    # RX soldered.  Its keypad refusing the other pin's GPIO.
+    # SUPPLY's SETTINGS list at the PD mini's heading: as wired, and on the
+    # carrier with TX and RX soldered.  Its keypad refusing the other pin's
+    # GPIO.
     "supply-pdmini": ("supply-pdmini.png", "supply", "dark"),
     "supply-pdmini-rbmod": ("supply-pdmini-rbmod.png", "supply", "dark"),
     "supply-pdmini-why": ("supply-pdmini-why.png", "supply", "dark"),
@@ -894,13 +895,14 @@ FIT_ONLY = {
     "help-servo-output-2":     (None, "servo", "dark"),
     "help-servo-sweep":        (None, "servo", "dark"),
     "help-servo-dut":          (None, "servo", "dark"),
-    # SUPPLY's guide: the rail's two pages, SETTINGS' LIMITS and TRIPS and
-    # the PD MINI tab.
+    # SUPPLY's guide: the rail's two pages, and the SETTINGS list's two at
+    # its top and at the PD mini's heading.
     "help-supply-2":           (None, "supply", "dark"),
     "help-supply-3":           (None, "supply", "dark"),
-    "help-supply-limits":      (None, "supply", "dark"),
-    "help-supply-limits-2":    (None, "supply", "dark"),
+    "help-supply-settings":    (None, "supply", "dark"),
+    "help-supply-settings-2":  (None, "supply", "dark"),
     "help-supply-pdmini":      (None, "supply", "dark"),
+    "help-supply-pdmini-2":    (None, "supply", "dark"),
     # ESC STICK > Great Planes: model rows with the MANUAL tag and the
     # longest reason beside their family.
     "motor-stick-greatplanes": (None, "motor", "dark"),
@@ -918,9 +920,9 @@ FIT_ONLY = {
     "motor-settings-gap-full": (None, "motor", "dark"),
     # Tap pin's keypad with GP23 typed: refused, with the pins it takes.
     "setup-tap-why": (None, "setup", "dark"),
-    # SUPPLY's PD MINI tab with the output on, the rows locked, and stored on
-    # one pin for both.
-    "supply-pdmini-on": (None, "supply", "dark"),
+    # SUPPLY's list at the PD mini with a programming port holding the
+    # supply, the rows locked, and stored on one pin for both.
+    "supply-pdmini-locked": (None, "supply", "dark"),
     "supply-pdmini-same": (None, "supply", "dark"),
     "band-fault-all":   (None, "overview", "dark"),
     "band-hwstop-all":  (None, "overview", "dark"),

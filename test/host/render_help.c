@@ -7,8 +7,8 @@
  * the router as a person does.  help-setup, help-outputs, help-logs,
  * help-files, help-servo, help-supply and their states' views open the
  * guide over the view render_help_base() names, posed as that view is:
- * SERVO's on a task or SETTINGS' page, SUPPLY's with the output off, as a
- * task's page is offered only then.  help-band-worst is MOTOR & ESC's band
+ * SERVO's on a task or SETTINGS' page, SUPPLY's with the output off, as its
+ * pages are offered only then.  help-band-worst is MOTOR & ESC's band
  * with the widest row of chips test_nav_bubble finds: a clock of 10 hours,
  * ARMED MOTOR, FAULT 7F, BENCH and LINK.
  *
@@ -70,7 +70,7 @@ static const struct {
     { "help-servo-sweep", "servo-sweep-page" },
     { "help-servo-dut", "servo-encoder" },
     { "help-supply", "supply-off" },
-    { "help-supply-limits", "supply-settings-off" },
+    { "help-supply-settings", "supply-settings-off" },
     { "help-supply-pdmini", "supply-pdmini" },
 };
 

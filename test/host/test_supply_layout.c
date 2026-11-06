@@ -1,16 +1,17 @@
 /**
  * @file test_supply_layout.c
- * @brief SUPPLY at the 1024 x 600 sizes: OUTPUT OFF is a finger tall,
- *        acts where it is drawn and lies above the alert band; every
- *        control a finger taps is UI_TAP_MIN tall from its first row to its
- *        last; a finger that misses OUTPUT OFF to the left changes no set
- *        point; no text of LIVE, TABLE, SETTINGS, the keypad or the question
- *        reaches the alert band, in English or German at the longest texts.
+ * @brief SUPPLY at the 1024 x 600 sizes: OUTPUT OFF is a finger tall, in
+ *        the footer's middle slot, acts where it is drawn and lies above
+ *        the alert band; every control a finger taps is UI_TAP_MIN tall
+ *        from its first row to its last; a finger that misses OUTPUT OFF
+ *        changes nothing; no text of LIVE, TABLE, the SETTINGS list, the
+ *        keypad or the question reaches the alert band, in English or
+ *        German at the longest texts.
  *
  * Cases:
  * - output_off_acts_where_it_is_drawn_and_is_a_finger_tall
  * - every_tapped_control_takes_a_finger_from_edge_to_edge
- * - a_finger_that_misses_output_off_to_the_left_changes_no_set_point
+ * - a_finger_that_misses_output_off_changes_nothing
  * - no_text_lies_under_the_alert_band
  *
  * SPDX-License-Identifier: MIT
@@ -51,7 +52,7 @@ static gfx_rect_t stop_bounds(void)
 
 /*
  * On, OUTPUT OFF is the one stop of the screen: UI_TAP_MIN or taller,
- * where its danger-red fill is drawn, at the CONTROL card's foot, and its
+ * where its danger-red fill is drawn, in the footer's middle slot, and its
  * bottom row 4px or more above the alert band.  Off, OUTPUT ON is no stop.
  */
 TEST_CASE(output_off_acts_where_it_is_drawn_and_is_a_finger_tall)
@@ -60,8 +61,8 @@ TEST_CASE(output_off_acts_where_it_is_drawn_and_is_a_finger_tall)
     CHECK_EQ(stop_bounds().w, 0);
     supply_screen_set_output(true);
     const gfx_rect_t r = stop_bounds();
-    CHECK_EQ(r.x, SU_RC_X);
-    CHECK_EQ(r.w, SU_RC_W);
+    CHECK_EQ(r.x, SU_OUT_L);
+    CHECK_EQ(r.w, SU_OUT_W);
     CHECK_EQ(r.y, SU_OUT_T);
     CHECK_EQ(r.h, SU_OUT_H);
     CHECK(r.h >= UI_TAP_MIN && r.w >= UI_TAP_MIN);
@@ -103,10 +104,23 @@ static bool opens_keypad(int x, int y)
     return open;
 }
 
+/** @brief Whether a tap at (@p x, @p y) on the SETTINGS list opens its
+ *         keypad; it is closed again, and the list stays.
+ *  @return true when it opened */
+static bool list_opens_keypad(int x, int y)
+{
+    tap(x, y);
+    const bool open = supply_screen_keypad_setting() >= 0;
+    if (open) {
+        CHECK(scr->back());
+    }
+    return open;
+}
+
 /*
- * The step keys, the values and SETTINGS' values take a press from their
- * first row to their last, SU_CTRL_H (UI_TAP_MIN) apart, and none a row
- * outside them.
+ * The step keys, the values and the SETTINGS list's values take a press
+ * from their first row to their last, SU_CTRL_H (UI_TAP_MIN) apart, and
+ * none a row outside them.
  */
 TEST_CASE(every_tapped_control_takes_a_finger_from_edge_to_edge)
 {
@@ -140,60 +154,70 @@ TEST_CASE(every_tapped_control_takes_a_finger_from_edge_to_edge)
         CHECK(b + UI_SLIDER_OVERHANG + 2 <= TEXT_FLOOR);
     }
 
-    /* SETTINGS: VOLTAGE MAX's value from its first row to its last. */
+    /* The list: VOLTAGE MAX's value from its first row to its last. */
     fresh();
-    tap(SET_TAB_X, STRIP_Y);
-    const int t = SU_VMAX_Y - UI_TAP_MIN / 2;
-    CHECK(opens_keypad(SU_ROW_L_X, t));
-    CHECK(opens_keypad(SU_ROW_L_X, t + UI_TAP_MIN - 1));
-    CHECK(!opens_keypad(SU_ROW_L_X, t - 1));
-    CHECK(!opens_keypad(SU_ROW_L_X, t + UI_TAP_MIN));
+    open_settings();
+    const gfx_rect_t v = value_box(SET_SUPPLY_V_MAX);
+    CHECK(v.h >= UI_TAP_MIN);
+    const int x = v.x + v.w / 2;
+    CHECK(list_opens_keypad(x, v.y));
+    CHECK(list_opens_keypad(x, v.y + v.h - 1));
+    CHECK(!list_opens_keypad(x, v.y - 1));
+    CHECK(!list_opens_keypad(x, v.y + v.h));
+    CHECK(supply_screen_settings_shown());
 }
 
 /*
- * Between the values and OUTPUT OFF lies the rail's margin, on the rows
- * they share: with the output on, a tap anywhere in it commands nothing,
- * opens nothing and is no stop, while the value's right column opens the
- * keypad and changes no set point.
+ * Around OUTPUT OFF lie the footer's 10px gaps and, over it, the rows
+ * between the current limit's controls and the footer: with the output
+ * on, a tap anywhere there commands nothing, opens nothing and is no stop.
+ * The footer's name slot is no button.
  */
-TEST_CASE(a_finger_that_misses_output_off_to_the_left_changes_no_set_point)
+TEST_CASE(a_finger_that_misses_output_off_changes_nothing)
 {
     fresh();
     supply_screen_set_output(true);
     drain();
     const float v = supply_screen_set_v();
     const float i = supply_screen_set_i();
-    const int y = SU_I_ROW_Y;                   /* the limit's and OUTPUT's */
-    CHECK(y >= SU_OUT_T && y < SU_OUT_T + SU_OUT_H);
-    CHECK(scr->safe_at(SU_RC_X, y));
-    CHECK(!scr->safe_at(SU_RC_X - 1, y));
-    for (int x = SU_VAL_R + 1; x < SU_RC_X; ++x) {
+    const int y = SU_OUT_Y;
+    CHECK(scr->safe_at(SU_OUT_L, y));
+    CHECK(!scr->safe_at(SU_OUT_L - 1, y));
+    CHECK(!scr->safe_at(SU_OUT_L + SU_OUT_W, y));
+    for (int x = 0; x < SU_OUT_L; x += 3) {
         tap(x, y);
         CHECK(!supply_screen_poll_cmd(NULL));
         CHECK(!scr->back());
     }
-    CHECK(opens_keypad(SU_VAL_R, y));
+    for (int x = SU_OUT_L + SU_OUT_W; x < SU_SETTINGS_X - 164; ++x) {
+        tap(x, y);
+        CHECK(!supply_screen_poll_cmd(NULL));
+        CHECK(!scr->back());
+    }
+    for (int yy = SU_I_ROW_Y + SU_CTRL_H / 2 + UI_SLIDER_OVERHANG + 1;
+         yy < SU_OUT_T; ++yy) {
+        tap(SU_OUT_X, yy);
+        CHECK(!supply_screen_poll_cmd(NULL));
+        CHECK(!scr->back());
+        CHECK(!scr->safe_at(SU_OUT_X, yy));
+    }
     CHECK_NEAR(supply_screen_set_v(), v, 1e-4f);
     CHECK_NEAR(supply_screen_set_i(), i, 1e-4f);
     CHECK(supply_screen_output_on());
 }
 
-/** @brief The pixels of the left column and the rail from TEXT_FLOOR down
- *         to the body's foot, clear of the cards' edges and chamfers, that
- *         are not the panels' fill.  Drawn whole first.
+/** @brief The pixels from TEXT_FLOOR down to the body's foot that are
+ *         not the background.  Drawn whole first.
  *  @return the count */
 static int ink_under_the_alert_band(void)
 {
     supply_invalidate();
     scr->render(&cv, 0);
-    const gfx_color_t fill = ui_theme_color(UI_C_PANEL);
+    const gfx_color_t bg = ui_theme_color(UI_C_BG);
     int n = 0;
-    for (int y = TEXT_FLOOR; y < UI_BODY_H - UI_MARGIN - 12; ++y) {
-        for (int x = UI_MARGIN + 2; x < UI_MARGIN + 620 - 2; ++x) {
-            n += fb[(size_t)y * W + x] != fill;
-        }
-        for (int x = SU_RC_X - 10; x < SU_RC_X + SU_RC_W + 10; ++x) {
-            n += fb[(size_t)y * W + x] != fill;
+    for (int y = TEXT_FLOOR; y < UI_BODY_H; ++y) {
+        for (int x = 0; x < W; ++x) {
+            n += fb[(size_t)y * W + x] != bg;
         }
     }
     return n;
@@ -202,8 +226,8 @@ static int ink_under_the_alert_band(void)
 /*
  * In both languages nothing is drawn under the alert band: LIVE on the
  * model with the output on, PLOT and TABLE; a trip; a programming port
- * holding the supply; SETTINGS with the PD mini (RESET PD MINI) and
- * SETUP's change not saved, the longest save line; the keypad; and the
+ * holding the supply; the SETTINGS list with the PD mini at its top and
+ * its end (RESET PD MINI), and its leave warning; the keypad; and the
  * question with its two-line foot.
  */
 TEST_CASE(no_text_lies_under_the_alert_band)
@@ -244,19 +268,19 @@ TEST_CASE(no_text_lies_under_the_alert_band)
         supply_screen_push(&st);
         CHECK_EQ(ink_under_the_alert_band(), 0);
 
+        /* The list with the PD mini, at its top and at its end (RESET PD
+         * MINI); and the leave warning over a change nobody saved. */
         supply_screen_set_model(false);
-        tap(SET_TAB_X, STRIP_Y);
+        open_settings();
+        CHECK(supply_screen_settings_shown());
+        CHECK_EQ(ink_under_the_alert_band(), 0);
+        show_row(supply_settings_modreset_row());
+        CHECK_EQ(ink_under_the_alert_band(), 0);
         settings_set(SET_PACK_CELLS, cells + 1.0f);   /* SETUP's, unsaved */
         CHECK(settings_dirty());
+        CHECK(scr->back());
+        CHECK(supply_settings_list()->warn);
         CHECK_EQ(ink_under_the_alert_band(), 0);
-        /* The save line is there, above the band. */
-        int ink = 0;
-        for (int y = SU_SAVE_LINE_Y; y < SU_SAVE_LINE_Y + 20; ++y) {
-            for (int x = UI_MARGIN + 10; x < UI_MARGIN + 400; ++x) {
-                ink += fb[(size_t)y * W + x] != ui_theme_color(UI_C_PANEL);
-            }
-        }
-        CHECK(ink > 100);
         settings_set(SET_PACK_CELLS, cells);          /* as stored */
     }
     ui_text_set_language(UI_LANG_EN);
@@ -266,7 +290,7 @@ int main(void)
 {
     RUN(output_off_acts_where_it_is_drawn_and_is_a_finger_tall);
     RUN(every_tapped_control_takes_a_finger_from_edge_to_edge);
-    RUN(a_finger_that_misses_output_off_to_the_left_changes_no_set_point);
+    RUN(a_finger_that_misses_output_off_changes_nothing);
     RUN(no_text_lies_under_the_alert_band);
     return test_summary("supply_layout");
 }

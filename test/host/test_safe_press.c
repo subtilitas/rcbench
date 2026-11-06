@@ -498,9 +498,9 @@ TEST_CASE(no_stop_control_lies_under_the_alert_band)
     supply_screen_set_output(true);
     CHECK(supply_screen()->safe_at(SU_OUT_PX, SU_OUT_PY - UI_BAND_H));
     CHECK_EQ(stops_under_the_band(supply_screen()), 0);
-    /* The same OUTPUT OFF on SETTINGS: the rail stays. */
-    feed_tap(FEED_LONE, SU_TAB_X(1), P(SU_TAB_Y));
-    CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
+    /* SETTINGS refuses a live output: OUTPUT OFF stays in reach. */
+    feed_tap(FEED_LONE, SU_SETTINGS_X, P(SU_SETTINGS_Y));
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
     CHECK(supply_screen()->safe_at(SU_OUT_PX, SU_OUT_PY - UI_BAND_H));
     CHECK_EQ(stops_under_the_band(supply_screen()), 0);
     supply_screen_set_output(false);

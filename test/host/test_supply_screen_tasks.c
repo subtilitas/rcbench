@@ -1,20 +1,20 @@
 /**
  * @file test_supply_screen_tasks.c
- * @brief The supply screen's task strip, its settings page and its question: the
- * caps and the start values, a change to a live output, and the keypads.
+ * @brief The supply screen's footer SETTINGS and the list it opens, and its
+ * question: the caps and the start values, a change to a live output, and
+ * the keypads.
  *
  * Cases:
- * - the_strip_switches_the_task_and_a_tile_opens_live
- * - a_release_the_finger_did_not_make_switches_no_task
- * - a_tab_switch_takes_the_keypad_with_it
- * - a_question_on_settings_holds_the_strip_until_answered
- * - a_second_finger_on_the_strip_switches_nothing_while_off_is_held
- * - the_source_line_stays_in_sight_on_every_task
- * - the_settings_page_sets_a_cap_the_set_points_obey
+ * - settings_opens_the_list_and_a_tile_opens_live
+ * - a_release_the_finger_did_not_make_opens_no_list
+ * - settings_takes_the_keypad_with_it
+ * - settings_opens_with_the_output_off_only
+ * - a_second_finger_on_settings_opens_nothing_while_off_is_held
+ * - the_source_line_stays_in_sight_under_the_list
+ * - the_list_sets_a_cap_the_set_points_obey
  * - a_lowered_cap_brings_the_set_point_and_the_start_down
- * - a_switch_in_the_settings_flips_on_a_tap
+ * - a_switch_in_the_list_flips_on_its_key
  * - a_start_value_read_over_its_cap_is_corrected_and_kept
- * - the_page_tells_an_unsaved_setup_change_from_a_waiting_save
  * - the_set_points_start_at_the_start_values
  * - a_card_or_a_value_opens_the_keypad_for_its_set_point
  * - a_change_to_a_live_output_waits_for_the_question
@@ -28,11 +28,8 @@
 
 #include "supply_screen_rig.h"
 
-#define VSTART_Y  SU_VSTART_Y
-
-#define CONF_KP_Y SU_CONF_KP_Y
-
-/* ------------------------------------------------------- the task strip */
+#include "ui_footer.h"
+#include "ui_screen.h"
 
 /* Pixels that differ between the two buffers inside a rectangle. */
 static int differ_box(int x0, int y0, int x1, int y1)
@@ -46,44 +43,48 @@ static int differ_box(int x0, int y0, int x1, int y1)
     return n;
 }
 
+/* The list's SAVE, then the home tag's way back: LIVE again. */
+static void leave_settings(void)
+{
+    list_save();
+    CHECK(scr->back());
+}
+
 /*
- * LIVE | SETTINGS: a tap on the other tab switches, a tap on the tab shown
- * changes nothing, and a tile's entry opens LIVE whatever was shown when
- * the screen was left.  A press that slides off its tab, one dropped by a
- * touch loss and one whose release the finger did not make switch nothing.
+ * The footer's SETTINGS opens the list; the back way closes it.  A press
+ * that slides off the button, one dropped by a touch loss and one under
+ * which the screen is left open nothing, and a tile's entry opens LIVE
+ * whatever was shown when the screen was left.
  */
-TEST_CASE(the_strip_switches_the_task_and_a_tile_opens_live)
+TEST_CASE(settings_opens_the_list_and_a_tile_opens_live)
 {
     fresh();
     CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
-    tap(LIVE_TAB_X, STRIP_Y);
-    CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
-    tap(SET_TAB_X, STRIP_Y);
+    open_settings();
     CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
-    tap(SET_TAB_X, STRIP_Y);
-    CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
-    tap(LIVE_TAB_X, STRIP_Y);
+    CHECK(supply_screen_settings_shown());
+    CHECK(scr->back());                       /* nothing changed: closed */
     CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
 
-    /* Off the tab before the release. */
-    ev(SET_TAB_X, STRIP_Y, TOUCH_EVENT_DOWN, 1);
-    ev(SET_TAB_X, STRIP_Y + 120, TOUCH_EVENT_MOVE, 1);
-    ev(SET_TAB_X, STRIP_Y + 120, TOUCH_EVENT_UP, 1);
+    /* Off the button before the release. */
+    ev(SETTINGS_X, SETTINGS_Y, TOUCH_EVENT_DOWN, 1);
+    ev(SETTINGS_X, SETTINGS_Y - 120, TOUCH_EVENT_MOVE, 1);
+    ev(SETTINGS_X, SETTINGS_Y - 120, TOUCH_EVENT_UP, 1);
     CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
     /* Touch events lost under the press. */
-    ev(SET_TAB_X, STRIP_Y, TOUCH_EVENT_DOWN, 1);
+    ev(SETTINGS_X, SETTINGS_Y, TOUCH_EVENT_DOWN, 1);
     scr->cancel();
-    ev(SET_TAB_X, STRIP_Y, TOUCH_EVENT_UP, 1);
+    ev(SETTINGS_X, SETTINGS_Y, TOUCH_EVENT_UP, 1);
     CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
     /* Left under the press, and entered again. */
-    ev(SET_TAB_X, STRIP_Y, TOUCH_EVENT_DOWN, 1);
+    ev(SETTINGS_X, SETTINGS_Y, TOUCH_EVENT_DOWN, 1);
     scr->leave();
     scr->enter();
-    ev(SET_TAB_X, STRIP_Y, TOUCH_EVENT_UP, 1);
+    ev(SETTINGS_X, SETTINGS_Y, TOUCH_EVENT_UP, 1);
     CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
 
-    /* SETTINGS when left: the next entry is LIVE. */
-    tap(SET_TAB_X, STRIP_Y);
+    /* The list open when left: the next entry is LIVE. */
+    open_settings();
     CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
     scr->leave();
     scr->enter();
@@ -91,96 +92,93 @@ TEST_CASE(the_strip_switches_the_task_and_a_tile_opens_live)
     CHECK(!supply_screen_poll_cmd(NULL));
 }
 
-/* The release the tracker makes for a contact that jumps switches no task:
+/* The release the tracker makes for a contact that jumps opens no list:
  * it is not a tap. */
-TEST_CASE(a_release_the_finger_did_not_make_switches_no_task)
+TEST_CASE(a_release_the_finger_did_not_make_opens_no_list)
 {
     fresh();
     feed_reset();
     feed_to_screen(scr);
-    finger(FEED_LONE, SET_TAB_X, STRIP_Y + UI_BAND_H);
+    finger(FEED_LONE, SETTINGS_X, SETTINGS_Y + UI_BAND_H);
     finger(FEED_LONE, OFF_X, OFF_Y + UI_BAND_H);
     CHECK_EQ(feed_ups, 1);
     lift(FEED_LONE);
     CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
-    feed_tap(FEED_LONE, SET_TAB_X, STRIP_Y + UI_BAND_H);
+    feed_tap(FEED_LONE, SETTINGS_X, SETTINGS_Y + UI_BAND_H);
     CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
 }
 
 /*
- * A tap on the other tab takes an open keypad with it, typed or not, as its
- * CANCEL does: the set point or the setting stays as it was.  The keypad is
- * the task's it was opened on; the task shown is the tab's.
+ * SETTINGS takes an open set point's keypad with it, typed or not, as its
+ * CANCEL does: the set point stays as it was.  The list's own keypad goes
+ * with the back way, and the setting stays as it was.
  */
-TEST_CASE(a_tab_switch_takes_the_keypad_with_it)
+TEST_CASE(settings_takes_the_keypad_with_it)
 {
     fresh();
     tap(CARD_X, CARD_V_Y);                    /* VOLTAGE's keypad, on LIVE */
     key(UI_KEY_9);
-    tap(SET_TAB_X, STRIP_Y);
+    open_settings();
     CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
-    tap(LIVE_TAB_X, STRIP_Y);
+    CHECK(scr->back());
     CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
     tap(V_UP_X, V_ROW_Y);                     /* no keypad over the step */
     CHECK_NEAR(supply_screen_set_v(), 6.1f, 1e-4f);
 
-    tap(SET_TAB_X, STRIP_Y);
-    tap(ROW_L_X, VMAX_Y);                     /* VOLTAGE MAX's, on SETTINGS */
-    key(UI_KEY_8);
-    tap(LIVE_TAB_X, STRIP_Y);
-    CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
+    open_settings();
+    tap_value(SET_SUPPLY_V_MAX);              /* VOLTAGE MAX's keypad */
+    CHECK_EQ(supply_screen_keypad_setting(), (int)SET_SUPPLY_V_MAX);
+    list_key(UI_KEY_8);
+    CHECK(scr->back());                       /* the keypad closes */
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
     CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 21.0f, 1e-4f);
     CHECK(!settings_save_asked());
-    tap(SET_TAB_X, STRIP_Y);                  /* the page, no keypad on it */
-    tap(ROW_L_X, VMAX_Y);
-    keys("9");
+    tap_value(SET_SUPPLY_V_MAX);
+    list_keys("9");
     CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 9.0f, 1e-4f);
-
-    /* A tap on the tab shown keeps the keypad and what it holds. */
-    tap(LIVE_TAB_X, STRIP_Y);
-    tap(CARD_X, CARD_V_Y);
-    key(UI_KEY_7);
-    tap(LIVE_TAB_X, STRIP_Y);
-    key(UI_KEY_OK);
-    CHECK_NEAR(supply_screen_set_v(), 7.0f, 1e-4f);
 }
 
 /*
- * A card's keypad works on SETTINGS too, and a change to a live output asks
- * there as on LIVE.  The strip waits for the answer; once answered the page
- * is back.
+ * The list covers OUTPUT OFF, so SETTINGS opens it with the output off
+ * only: on a live output, or with an ON on its way, the band says why it
+ * does not.  An output going on under the list closes it.
  */
-TEST_CASE(a_question_on_settings_holds_the_strip_until_answered)
+TEST_CASE(settings_opens_with_the_output_off_only)
 {
     fresh();
     supply_screen_set_output(true);
-    tap(SET_TAB_X, STRIP_Y);
-    tap(CARD_X, CARD_V_Y);
-    keys("7");                                /* asked: the output is on */
-    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
-    tap(LIVE_TAB_X, STRIP_Y);
-    CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
-    tap(APPLY_X, ASK_Y);
-    CHECK_NEAR(supply_screen_set_v(), 7.0f, 1e-4f);
-    /* The page answers again. */
-    const bool was = settings_get_bool(SET_SUPPLY_CONFIRM_SLIDE);
-    tap(ROW_R_X, CONF_SL_Y);
-    CHECK_EQ(settings_get_bool(SET_SUPPLY_CONFIRM_SLIDE), !was);
-    tap(LIVE_TAB_X, STRIP_Y);
+    ui_router_set_alert(NULL);
+    open_settings();
     CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
-    CHECK(supply_screen_output_on());
-    CHECK(!supply_screen_poll_cmd(NULL));
+    CHECK(ui_router_alert() != NULL);
+    CHECK_STR_EQ(ui_router_alert(), TR(FOOT_SETTINGS_ON));
+    supply_screen_open_limits();              /* nor from another screen */
+    CHECK(!supply_screen_settings_shown());
+
+    supply_screen_set_output(false);
+    hold_on();                                /* the ON on its way */
+    open_settings();
+    CHECK(!supply_screen_settings_shown());
+    supply_screen_cancel_on();
+    drain();
+
+    open_settings();
+    CHECK(supply_screen_settings_shown());
+    supply_screen_set_output(true);           /* on under the list */
+    scr->tick(TICK_S);
+    CHECK(!supply_screen_settings_shown());
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
 }
 
-/* One contact holds the screen: a second finger on the strip while OUTPUT
- * OFF is held switches nothing, and the OFF is the first finger's. */
-TEST_CASE(a_second_finger_on_the_strip_switches_nothing_while_off_is_held)
+/* One contact holds the screen: a second finger on SETTINGS while OUTPUT
+ * OFF is held opens nothing, and the OFF is the first finger's. */
+TEST_CASE(a_second_finger_on_settings_opens_nothing_while_off_is_held)
 {
     fresh();
     supply_screen_set_output(true);
     ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
-    ev(SET_TAB_X, STRIP_Y, TOUCH_EVENT_DOWN, 2);
-    ev(SET_TAB_X, STRIP_Y, TOUCH_EVENT_UP, 2);
+    ev(SETTINGS_X, SETTINGS_Y, TOUCH_EVENT_DOWN, 2);
+    ev(SETTINGS_X, SETTINGS_Y, TOUCH_EVENT_UP, 2);
     CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
     ev(OUT_X, OUT_Y, TOUCH_EVENT_UP, 1);
     supply_cmd_t c;
@@ -188,35 +186,35 @@ TEST_CASE(a_second_finger_on_the_strip_switches_nothing_while_off_is_held)
 }
 
 /*
- * The line right of the strip -- the source, ONLINE or NOT ANSWERING, the
- * range -- is drawn the same on LIVE, on SETTINGS and under the keypad: it
- * says where the numbers come from wherever the left column is.  The strip
- * shows the task.
+ * The footer's left slot -- SUPPLY and the source under it -- is drawn the
+ * same on LIVE, under the keypad and in the list's strip: where the output
+ * comes from stays in sight wherever the body is.
  */
-TEST_CASE(the_source_line_stays_in_sight_on_every_task)
+TEST_CASE(the_source_line_stays_in_sight_under_the_list)
 {
     fresh();
     supply_screen_set_model(false);
     supply_screen_set_pins(12, 13);
     supply_state_t st = reading(6.0f, 1.0f);
     supply_screen_push(&st);
+    const gfx_rect_t name = ui_footer_rect(UI_FOOTER_NAME);
     supply_invalidate();
     scr->render(&cv, 0);
-    tap(SET_TAB_X, STRIP_Y);
+    tap(CARD_X, CARD_V_Y);                    /* the keypad over the column */
     supply_invalidate();
     scr->render(&cv2, 0);
-    CHECK_EQ(header_differs(), 0);
-    CHECK(differ_box(6, 3, 240, 34) > 0);     /* the strip says SETTINGS */
-    tap(ROW_L_X, VMAX_Y);                     /* the keypad over the page */
+    CHECK_EQ(differ_box(name.x, name.y, name.x + name.w, name.y + name.h), 0);
+    key(UI_KEY_CANCEL);
+    open_settings();
     supply_invalidate();
     scr->render(&cv2, 0);
-    CHECK_EQ(header_differs(), 0);
-    CHECK(differ_box(6, 3, 240, 34) > 0);
+    CHECK(differ_box(0, 0, W, UI_FOOTER_Y) > 0);     /* the list is drawn */
+    CHECK_EQ(differ_box(name.x, name.y, name.x + name.w, name.y + name.h), 0);
     /* And the line itself is there: not the background. */
     int ink = 0;
     const gfx_color_t bg = ui_theme_color(UI_C_BG);
-    for (int y = 0; y < 34; ++y) {
-        for (int x = 252; x < 600; ++x) {
+    for (int y = name.y + 27; y < name.y + name.h; ++y) {
+        for (int x = name.x; x < name.x + name.w; ++x) {
             ink += (fb2[y * W + x] != bg) ? 1 : 0;
         }
     }
@@ -225,80 +223,81 @@ TEST_CASE(the_source_line_stays_in_sight_on_every_task)
 
 /* ------------------------------------------------- settings and keypad */
 
-TEST_CASE(the_settings_page_sets_a_cap_the_set_points_obey)
+TEST_CASE(the_list_sets_a_cap_the_set_points_obey)
 {
     fresh();
-    tap(SET_TAB_X, STRIP_Y);             /* SETTINGS */
-    tap(ROW_L_X, VMAX_Y);                /* VOLTAGE MAX */
-    keys("8.4");
+    open_settings();
+    tap_value(SET_SUPPLY_V_MAX);
+    list_keys("8.4");
     CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 8.4f, 1e-4f);
     CHECK_NEAR(supply_screen_limits().v_max, 8.4f, 1e-4f);
+    CHECK(!settings_save_asked());            /* SAVE writes, as on SETUP */
+    list_save();
     CHECK(settings_save_asked());
-    /* The set point's controls are LIVE's, out of sight on SETTINGS. */
+    /* The set point's controls are LIVE's, under the list. */
     tap(V_UP_X, V_ROW_Y);
     CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
-    tap(LIVE_TAB_X, STRIP_Y);
+    CHECK(scr->back());
     for (int k = 0; k < 40; ++k) {
         tap(V_UP_X, V_ROW_Y);
     }
     CHECK_NEAR(supply_screen_set_v(), 8.4f, 1e-4f);
-    /* A tap on the tab shown changes nothing; the other tab switches. */
-    tap(LIVE_TAB_X, STRIP_Y);
-    CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
-    tap(SET_TAB_X, STRIP_Y);
-    tap(SET_TAB_X, STRIP_Y);
-    CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
-    tap(LIVE_TAB_X, STRIP_Y);
     tap(V_DOWN_X, V_ROW_Y);
     CHECK_NEAR(supply_screen_set_v(), 8.3f, 1e-4f);
     CHECK(!supply_screen_poll_cmd(NULL));
 }
 
+/*
+ * A start value takes effect at a restart; a cap lowered under the set
+ * point and the start brings both down, and the keypad refuses a start
+ * over the cap.
+ */
 TEST_CASE(a_lowered_cap_brings_the_set_point_and_the_start_down)
 {
     fresh();
-    tap(SET_TAB_X, STRIP_Y);
-    tap(ROW_L_X, VSTART_Y);
-    keys("12");
+    open_settings();
+    tap_value(SET_SUPPLY_V_START);
+    list_keys("12");
     CHECK_NEAR(settings_get(SET_SUPPLY_V_START), 12.0f, 1e-4f);
     CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);   /* at a restart only */
-    tap(LIVE_TAB_X, STRIP_Y);
+    leave_settings();
     tap(CARD_X, CARD_V_Y);
     keys("12");
     CHECK_NEAR(supply_screen_set_v(), 12.0f, 1e-4f);
-    tap(SET_TAB_X, STRIP_Y);
-    tap(ROW_L_X, VMAX_Y);
-    keys("8");
+    open_settings();
+    tap_value(SET_SUPPLY_V_MAX);
+    list_keys("8");
     CHECK_NEAR(supply_screen_set_v(), 8.0f, 1e-4f);
     CHECK_NEAR(settings_get(SET_SUPPLY_V_START), 8.0f, 1e-4f);
+    tap_value(SET_SUPPLY_V_START);
+    list_keys("7");
+    CHECK_NEAR(settings_get(SET_SUPPLY_V_START), 7.0f, 1e-4f);
     /* And the keypad for a start value offers only what the cap allows:
      * 12V is refused, and the start stays where it was. */
-    tap(ROW_L_X, VSTART_Y);
-    keys("7");
-    CHECK_NEAR(settings_get(SET_SUPPLY_V_START), 7.0f, 1e-4f);
-    tap(ROW_L_X, VSTART_Y);
-    keys("12");
-    key(UI_KEY_CANCEL);
+    tap_value(SET_SUPPLY_V_START);
+    list_keys("12");
+    CHECK_EQ(supply_screen_keypad_setting(), (int)SET_SUPPLY_V_START);
+    list_key(UI_KEY_CANCEL);
     CHECK_NEAR(settings_get(SET_SUPPLY_V_START), 7.0f, 1e-4f);
 }
 
-TEST_CASE(a_switch_in_the_settings_flips_on_a_tap)
+TEST_CASE(a_switch_in_the_list_flips_on_its_key)
 {
     fresh();
-    tap(SET_TAB_X, STRIP_Y);
-    tap(ROW_R_X, CONF_SL_Y);
+    open_settings();
+    tap_plus(SET_SUPPLY_CONFIRM_SLIDE);
     CHECK(!settings_get_bool(SET_SUPPLY_CONFIRM_SLIDE));
     CHECK(settings_get_bool(SET_SUPPLY_CONFIRM_KEYS));
-    tap(ROW_R_X, CONF_KP_Y);
+    tap_plus(SET_SUPPLY_CONFIRM_KEYS);
     CHECK(!settings_get_bool(SET_SUPPLY_CONFIRM_KEYS));
-    tap(ROW_R_X, CONF_SL_Y);
+    tap_plus(SET_SUPPLY_CONFIRM_SLIDE);
     CHECK(settings_get_bool(SET_SUPPLY_CONFIRM_SLIDE));
     /* A trip is typed, in amps, and 0 turns it off. */
-    tap(ROW_R_X, TRIPI_Y);
-    keys("2.5");
+    tap_value(SET_SUPPLY_TRIP_I);
+    list_keys("2.5");
     CHECK_NEAR(supply_screen_limits().trip_i, 2.5f, 1e-4f);
-    tap(ROW_R_X, TRIPI_Y);
-    keys("0");
+    tap_value(SET_SUPPLY_TRIP_I);
+    list_keys("0");
     CHECK_EQ(supply_screen_limits().trip_i, 0.0f);
 }
 
@@ -314,29 +313,6 @@ TEST_CASE(a_start_value_read_over_its_cap_is_corrected_and_kept)
     CHECK_NEAR(settings_get(SET_SUPPLY_V_START), 8.0f, 1e-4f);
     CHECK_NEAR(supply_screen_set_v(), 8.0f, 1e-4f);
     CHECK(settings_save_asked());
-}
-
-TEST_CASE(the_page_tells_an_unsaved_setup_change_from_a_waiting_save)
-{
-    /* A change left on SETUP without SAVE is not a save waiting: nothing
-     * will write it.  The overlay's bottom line says which. */
-    fresh();
-    tap(SET_TAB_X, STRIP_Y);
-    settings_set(SET_PACK_CELLS, 4.0f);          /* SETUP's, no save asked */
-    supply_invalidate();
-    scr->render(&cv, 0);
-    settings_request_save();
-    supply_invalidate();
-    scr->render(&cv2, 0);
-    /* The bottom line, 4px over the alert band: x 18..300. */
-    int differ = 0;
-    const int y0 = SU_SAVE_LINE_Y;
-    for (int y = y0; y < y0 + 20; ++y) {
-        for (int x = 18; x < 300; ++x) {
-            differ += (fb[y * W + x] != fb2[y * W + x]) ? 1 : 0;
-        }
-    }
-    CHECK(differ > 0);
 }
 
 TEST_CASE(the_set_points_start_at_the_start_values)
@@ -509,17 +485,16 @@ TEST_CASE(each_question_is_switched_on_its_own)
 
 int main(void)
 {
-    RUN(the_strip_switches_the_task_and_a_tile_opens_live);
-    RUN(a_release_the_finger_did_not_make_switches_no_task);
-    RUN(a_tab_switch_takes_the_keypad_with_it);
-    RUN(a_question_on_settings_holds_the_strip_until_answered);
-    RUN(a_second_finger_on_the_strip_switches_nothing_while_off_is_held);
-    RUN(the_source_line_stays_in_sight_on_every_task);
-    RUN(the_settings_page_sets_a_cap_the_set_points_obey);
+    RUN(settings_opens_the_list_and_a_tile_opens_live);
+    RUN(a_release_the_finger_did_not_make_opens_no_list);
+    RUN(settings_takes_the_keypad_with_it);
+    RUN(settings_opens_with_the_output_off_only);
+    RUN(a_second_finger_on_settings_opens_nothing_while_off_is_held);
+    RUN(the_source_line_stays_in_sight_under_the_list);
+    RUN(the_list_sets_a_cap_the_set_points_obey);
     RUN(a_lowered_cap_brings_the_set_point_and_the_start_down);
-    RUN(a_switch_in_the_settings_flips_on_a_tap);
+    RUN(a_switch_in_the_list_flips_on_its_key);
     RUN(a_start_value_read_over_its_cap_is_corrected_and_kept);
-    RUN(the_page_tells_an_unsaved_setup_change_from_a_waiting_save);
     RUN(the_set_points_start_at_the_start_values);
     RUN(a_card_or_a_value_opens_the_keypad_for_its_set_point);
     RUN(a_change_to_a_live_output_waits_for_the_question);

@@ -1,16 +1,17 @@
 /**
  * @file
- * @brief The SUPPLY screen's guide pages (ui_help.h): the task's page on
- *        the left column, then the rail's two pages.
+ * @brief The SUPPLY screen's guide pages (ui_help.h): LIVE's page on the
+ *        left column, then the rail's two pages; over the SETTINGS list the
+ *        list's two (ui_setlist_help_page()).
  *
- * A task's page takes the dock on the right and marks the left column in
+ * LIVE's page takes the dock on the right and marks the left column in
  * the live half, x 0 to 528; a control that runs past x 528 is marked up
- * to there, the part the screen shows (ui_help_add()).  Its dock covers
- * the rail with OUTPUT OFF, so it is not offered while the output is on or
- * an ON is on its way.  The rail's pages take the dock on the left, over
- * the left column, and show on LIVE and SETTINGS alike, ARMED too.  The
- * keypad and the question about a live output take the guide away: neither
- * has pages.
+ * to there, the part the screen shows (ui_help_add()).  The rail's pages
+ * take the dock on the left, x 8 to 488, ARMED too; CONTROL's marks the
+ * footer's OUTPUT ON and SETTINGS.  OUTPUT OFF, the footer's middle slot
+ * at x 348 to 676, lies under either dock, so no page is offered while the
+ * output is on or an ON is on its way.  The keypad and the question about
+ * a live output take the guide away: neither has pages.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -19,14 +20,17 @@
 #include <string.h>
 
 #include "settings.h"
+#include "supply_screen.h"
+#include "ui_footer.h"
 #include "ui_help.h"
+#include "ui_setlist.h"
 #include "ui_text.h"
 #include "ui_widgets.h"
 
 #include "supply_screen_int.h"
 
-/** @brief The most pages a state offers: a task's two and the rail's two. */
-#define GUIDE_MAX 4
+/** @brief The most pages a state offers: LIVE's and the rail's two. */
+#define GUIDE_MAX 3
 
 /** @brief A page's builder: fills @p out, a zeroed page. */
 typedef void (*guide_fn)(ui_help_page_t *out);
@@ -45,21 +49,6 @@ static gfx_rect_t both(gfx_rect_t a, gfx_rect_t b)
     const int y1 = (a.y + a.h > b.y + b.h) ? a.y + a.h : b.y + b.h;
     return (gfx_rect_t){ (int16_t)x0, (int16_t)y0, (int16_t)(x1 - x0),
                          (int16_t)(y1 - y0) };
-}
-
-/**
- * @brief SETTINGS' row that edits @p id: its value box.
- * @param id The setting.
- * @return The box, empty for a setting the page does not show.
- */
-static gfx_rect_t value_of(setting_id_t id)
-{
-    for (int i = 0; i < ROW_COUNT; ++i) {
-        if (k_rows[i].id == id) {
-            return sup_row_value_rect(i);
-        }
-    }
-    return (gfx_rect_t){ 0, 0, 0, 0 };
 }
 
 /**
@@ -100,13 +89,11 @@ static void task_page(ui_help_page_t *p, ui_text_id_t title)
     p->armed_ok = false;
 }
 
-/** @brief LIVE: the strip, PLOT and TABLE, and the two set points.
+/** @brief LIVE: PLOT and TABLE and the two set points.
  *  @param p The page. */
 static void page_live(ui_help_page_t *p)
 {
     task_page(p, TX_HG_SU_TITLE_LIVE);
-    (void)ui_help_add(p, TR(HG_SV_TASKS_NAME), TX_HG_SU_TASKS,
-                      sup_strip_area());
     /* Without PROG 5V beside them, 40px of the empty row more, where the
      * badge sits clear of PLOT and TABLE. */
     gfx_rect_t tabs = both(s.tabs.rect[0], s.tabs.rect[s.tabs.count - 1]);
@@ -119,85 +106,6 @@ static void page_live(ui_help_page_t *p)
                          UI_HELP_AT_RIGHT);
     (void)ui_help_add_at(p, TR(SUP_CURRENT_LIMIT), TX_HG_SU_CURRENT, track(1),
                          UI_HELP_AT_RIGHT);
-}
-
-/** @brief SETTINGS > LIMITS, the left column: the tabs, the caps, the
- *         start values and RESET PD MINI.
- *  @param p The page. */
-static void page_limits(ui_help_page_t *p)
-{
-    task_page(p, TX_HG_SU_TITLE_LIMITS);
-    (void)ui_help_add(p, TR(SUP_TAB_LIMITS), TX_HG_SU_TABS,
-                      both(s.ov_tabs.rect[0],
-                           s.ov_tabs.rect[s.ov_tabs.count - 1]));
-    (void)ui_help_add(p, TR(SUP_CAPS), TX_HG_SU_CAPS,
-                      both(value_of(SET_SUPPLY_V_MAX),
-                           value_of(SET_SUPPLY_I_MAX)));
-    (void)ui_help_add(p, TR(SUP_AFTER_RESTART), TX_HG_SU_START,
-                      both(value_of(SET_SUPPLY_V_START),
-                           value_of(SET_SUPPLY_I_START)));
-    if (!s.model) {
-        (void)ui_help_add(p, TR(SUP_RESET_PDMINI), TX_HG_SU_RESET_PD,
-                          s.modreset_btn);
-    }
-}
-
-/** @brief SETTINGS > LIMITS, the right column: the trips and the
- *         questions, the dock on the left over the left column.
- *  @param p The page. */
-static void page_trips(ui_help_page_t *p)
-{
-    p->title = TX_HG_SU_TITLE_TRIPS;
-    p->side = UI_HELP_DOCK_LEFT;
-    p->armed_ok = true;
-    (void)ui_help_add(p, TR(SUP_ROW_TRIP_I), TX_HG_SU_TRIP_I,
-                      value_of(SET_SUPPLY_TRIP_I));
-    (void)ui_help_add(p, TR(SUP_ROW_TRIP_V), TX_HG_SU_TRIP_V,
-                      value_of(SET_SUPPLY_TRIP_V));
-    (void)ui_help_add(p, TR(SUP_ROW_TRIP_MS), TX_HG_SU_TRIP_MS,
-                      value_of(SET_SUPPLY_TRIP_MS));
-    (void)ui_help_add(p, TR(SUP_ROW_CONFIRM_SLIDE), TX_HG_SU_ASK_SLIDE,
-                      value_of(SET_SUPPLY_CONFIRM_SLIDE));
-    (void)ui_help_add(p, TR(SUP_ROW_CONFIRM_KEYS), TX_HG_SU_ASK_KEYS,
-                      value_of(SET_SUPPLY_CONFIRM_KEYS));
-}
-
-/** @brief The PD MINI tab's rows' settings, in sup_pd_row_rect()'s order. */
-static const setting_id_t k_pd[SUP_PD_ROWS] = {
-    SET_PDMINI_EN, SET_PDMINI_TX, SET_PDMINI_RX, SET_PDMINI_BAUD,
-};
-
-/**
- * @brief PD MINI row @p i's controls: its - key to its + key, or its value
- *        alone for the switch and a pin soldered on the board.
- * @param i The row.
- * @return The rect.
- */
-static gfx_rect_t pd_controls(int i)
-{
-    gfx_rect_t r = sup_pd_value_rect(i);
-    if (sup_pd_has_keys(i)) {
-        r = both(sup_pd_key_rect(i, false), sup_pd_key_rect(i, true));
-        /* From 10px into the - key, so the badge left of it clears the
-         * row's help line, which runs to x 354 in German. */
-        r.x = (int16_t)(r.x + 10);
-        r.w = (int16_t)(r.w - 10);
-    }
-    return r;
-}
-
-/** @brief SETTINGS > PD MINI: the module and its wiring.
- *  @param p The page. */
-static void page_pdmini(ui_help_page_t *p)
-{
-    task_page(p, TX_HG_SU_TITLE_PDMINI);
-    static const ui_text_id_t k_text[SUP_PD_ROWS] = {
-        TX_HG_SU_PD_EN, TX_HG_SU_PD_TX, TX_HG_SU_PD_RX, TX_HG_SU_PD_BAUD,
-    };
-    for (int i = 0; i < SUP_PD_ROWS; ++i) {
-        (void)ui_help_add(p, ui_setting_label(k_pd[i]), k_text[i],
-                          pd_controls(i));
-    }
 }
 
 /* ---------------------------------------------------------- the rail's */
@@ -231,20 +139,21 @@ static void page_readings(ui_help_page_t *p)
                          UI_HELP_AT_RIGHT);
 }
 
-/** @brief The rail's CONTROL card and, on LIVE, the set points' values.
+/** @brief The rail's CONTROL card, the set points' values and the footer's
+ *         OUTPUT ON and SETTINGS.
  *  @param p The page. */
 static void page_control(ui_help_page_t *p)
 {
     p->title = TX_HG_SU_TITLE_CONTROL;
     p->side = UI_HELP_DOCK_LEFT;
     p->armed_ok = true;
-    if (sup_on_live()) {
-        (void)ui_help_add(p, TR(SUP_SET_POINTS), TX_HG_SU_VALUES,
-                          both(sup_set_value_rect(0), sup_set_value_rect(1)));
-    }
+    (void)ui_help_add(p, TR(SUP_SET_POINTS), TX_HG_SU_VALUES,
+                      both(sup_set_value_rect(0), sup_set_value_rect(1)));
     (void)ui_help_add(p, TR(MO_RESET_PEAKS), TX_HG_SU_RESET, s.reset_rect);
     (void)ui_help_add(p, s.on ? TR(SUP_OUTPUT_OFF) : TR(SUP_OUTPUT_ON),
                       TX_HG_SU_OUTPUT, s.out_rect);
+    (void)ui_help_add(p, TR(FOOT_SETTINGS), TX_HG_SU_SETTINGS,
+                      ui_footer_rect(UI_FOOTER_SETTINGS));
 }
 
 /* ------------------------------------------------------------- the set */
@@ -259,23 +168,15 @@ static int pages_now(guide_fn out[GUIDE_MAX])
     if (s.kp.open || s.confirm_open) {
         return 0;
     }
+    /* OUTPUT OFF, the footer's middle slot, lies under either dock: no
+     * page while the output is on or an ON is on its way. */
+    if (s.on || s.on_asked) {
+        return 0;
+    }
     int n = 0;
-    /* OUTPUT OFF and PROG 5V OFF are under a dock on the right. */
-    const bool right_ok = !s.on && !s.on_asked
-                          && !(sup_p5_shown() && prog5v_box_on());
-    if (sup_on_live()) {
-        if (right_ok) {
-            out[n++] = page_live;
-        }
-    } else if (sup_on_pdmini()) {
-        if (right_ok) {
-            out[n++] = page_pdmini;
-        }
-    } else {
-        if (right_ok) {
-            out[n++] = page_limits;
-        }
-        out[n++] = page_trips;
+    /* PROG 5V OFF is under a dock on the right. */
+    if (!(sup_p5_shown() && prog5v_box_on())) {
+        out[n++] = page_live;
     }
     out[n++] = page_readings;
     out[n++] = page_control;
@@ -284,12 +185,18 @@ static int pages_now(guide_fn out[GUIDE_MAX])
 
 int supply_help_count(void)
 {
+    if (sup_list_shown()) {
+        return ui_setlist_help_count(supply_settings_list());
+    }
     guide_fn f[GUIDE_MAX];
     return pages_now(f);
 }
 
 bool supply_help_page(int i, ui_help_page_t *out)
 {
+    if (sup_list_shown()) {
+        return ui_setlist_help_page(supply_settings_list(), i, out);
+    }
     guide_fn f[GUIDE_MAX];
     const int n = pages_now(f);
     if (out == NULL || i < 0 || i >= n) {

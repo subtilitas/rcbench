@@ -648,6 +648,12 @@ void mo_render(gfx_canvas_t *c, int buffer_index)
         s.drawn_title[buf] = 0xFFu;
     }
     if (msp_shown()) {
+        if ((s.drawn_mask & bit) == 0) {
+            /* A whole repaint: the canvas cleared under the list. */
+            gfx_clear(c, ui_theme_color(UI_C_BG));
+            s.drawn_mask |= bit;
+            s.drawn_list[buf] = UINT32_MAX;
+        }
         if (s.drawn_list[buf] != msp_revision()) {
             s.drawn_list[buf] = msp_revision();
             msp_render(c);

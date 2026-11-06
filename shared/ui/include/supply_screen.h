@@ -30,6 +30,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#include "settings.h"
 #include "supply.h"
 #include "ui_keypad.h"
 #include "ui_screen.h"
@@ -74,8 +75,8 @@ typedef struct {
 } supply_cmd_t;
 
 /**
- * The task shown, a ui_wb_task_t: LIVE or SETTINGS.  A tile opens LIVE; a
- * tap on the other tab switches, and takes an open keypad with it.
+ * What shows, a ui_wb_task_t: UI_WB_SETTINGS while the SETTINGS list the
+ * footer opens covers the body, UI_WB_LIVE otherwise.  A tile opens LIVE.
  */
 int supply_screen_task(void);
 
@@ -144,24 +145,55 @@ void supply_screen_set_prog_5v(uint8_t state, uint8_t pin);
 void supply_screen_header_text(char *out, size_t size);
 
 /**
- * @brief SETTINGS' PD MINI tab, as a tap on the SIMULATED line opens it: the
- *        PD mini's enable, TX, RX and baud.  Nothing else changes, and nothing
- *        is sent.
+ * @brief The SETTINGS list at the PD mini's heading, as a tap on the
+ *        SIMULATED line opens it: the PD mini's enable, TX, RX and baud.
+ *        With the output on it does not open, and the alert band says why.
+ *        Nothing else changes, and nothing is sent.
  */
 void supply_screen_open_pdmini(void);
 
 /**
- * @brief SETTINGS' LIMITS tab, as SERVO's caps button opens it: where the caps
- *        are set.  Called after the router's entry, which opens LIVE.  Nothing
- *        else changes, and nothing is sent.
+ * @brief The SETTINGS list at its top, as SERVO's caps button opens it:
+ *        where the caps are set.  Called after the router's entry, which
+ *        opens LIVE.  With the output on it does not open, and the alert
+ *        band says why.  Nothing else changes, and nothing is sent.
  */
 void supply_screen_open_limits(void);
 
 /**
- * @brief SETTINGS' tab selected.
- * @return 0 for LIMITS, 1 for PD MINI
+ * @brief The section of the SETTINGS list in view.
+ * @return 0 the limits, 1 the PD mini's heading in the pane's top half or
+ *         above it, -1 with the list closed
  */
 int supply_screen_settings_tab(void);
+
+/** @brief Whether the SETTINGS list the footer opens shows, over the body.
+ *  @return true while it does */
+bool supply_screen_settings_shown(void);
+
+struct ui_setlist;
+/** @brief The SETTINGS list, for a test to read its geometry and state.
+ *  @return the list */
+const struct ui_setlist *supply_settings_list(void);
+
+/**
+ * @brief The list row of setting @p id.
+ * @param id the setting
+ * @return the row, -1 for a setting the list does not hold
+ */
+int supply_settings_row(setting_id_t id);
+
+/** @brief RESET PD MINI's list row: the last, on a PD mini.
+ *  @return the row, -1 on the model */
+int supply_settings_modreset_row(void);
+
+/** @brief The setting the list's keypad is open for.
+ *  @return the setting, -1 with no keypad open */
+int supply_screen_keypad_setting(void);
+
+/** @brief The SETTINGS list's keypad, for a test to find its keys.
+ *  @return the keypad */
+const ui_keypad_t *supply_settings_keypad(void);
 
 /** The set points as the screen holds them, snapped to the caps. */
 float supply_screen_set_v(void);

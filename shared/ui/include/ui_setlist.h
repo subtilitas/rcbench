@@ -174,6 +174,9 @@ typedef struct ui_setlist_host {
     void (*changed)(setting_id_t id);
     /** @brief A typed value before it is set; NULL takes it as typed. */
     float (*typed)(setting_id_t id, float v);
+    /** @brief Narrows the keypad's range of a setting, the schema's handed
+     *         in; NULL keeps the schema's.  A value outside is refused. */
+    void (*range)(setting_id_t id, float *min, float *max);
     /** @brief The list's look changed. */
     void (*invalidate)(void);
     /** @brief The leave warning's SAVE and DISCARD: the way out it held. */
@@ -383,6 +386,29 @@ void ui_setlist_draw_choices(ui_setlist_t *sl, gfx_canvas_t *c);
  */
 bool ui_setlist_warn_line(const ui_setlist_t *sl, int i, char *line,
                           size_t n);
+
+/* --------------------------------------------------------- screen guide */
+
+struct ui_help_page;
+
+/**
+ * @brief The screen guide's pages of an open list: its rows, name and RESET
+ *        with the dock on the right, then one row's keys and value and SAVE
+ *        with the dock on the left; none while something covers it.
+ * @param sl The list.
+ * @return The count, 0 or 2.
+ */
+int ui_setlist_help_count(const ui_setlist_t *sl);
+
+/**
+ * @brief Page @p i of the list's guide.
+ * @param sl  The list.
+ * @param i   The page, from 0.
+ * @param out The page, filled.
+ * @return False past the last page.
+ */
+bool ui_setlist_help_page(const ui_setlist_t *sl, int i,
+                          struct ui_help_page *out);
 
 /* ------------------------------------------------------------- geometry */
 

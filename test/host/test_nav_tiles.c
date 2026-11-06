@@ -31,6 +31,7 @@
 #include "motor_spots.h"
 #include "stick_spots.h"
 #include "supply_spots.h"
+#include "ui_setlist.h"
 #include "wifi_spots.h"
 
 static void tap_tile(int index)
@@ -412,7 +413,7 @@ TEST_CASE(the_home_tag_climbs_from_a_setup_list_to_the_tiles_to_the_menu)
  */
 static void open_supply_settings(void)
 {
-    tap(SU_TAB_X(1), UI_BAND_H + SU_TAB_Y);
+    tap(SU_SETTINGS_X, UI_BAND_H + SU_SETTINGS_Y);
 }
 
 static void open_supply_keypad(void)
@@ -420,11 +421,14 @@ static void open_supply_keypad(void)
     tap(SU_CARD_X, UI_BAND_H + SU_CARD_Y(0));
 }
 
-/* SETTINGS, then VOLTAGE MAX's keypad over its page. */
+/* SETTINGS, then VOLTAGE MAX's keypad over the list. */
 static void open_supply_settings_keypad(void)
 {
     open_supply_settings();
-    tap(SU_ROW_L_X, UI_BAND_H + SU_VMAX_Y);
+    const ui_setlist_t *sl = supply_settings_list();
+    const gfx_rect_t v = ui_setlist_row_part(
+        sl, supply_settings_row(SET_SUPPLY_V_MAX), UI_SL_PART_VALUE);
+    tap(v.x + v.w / 2, UI_BAND_H + v.y + v.h / 2);
 }
 
 static void open_wifi_list(void)
@@ -496,8 +500,8 @@ TEST_CASE(the_home_tag_leaves_supply_under_a_drag)
  * SUPPLY, WI-FI and OUTPUTS in both views through the router's home tag:
  * over what the screen opened the tag closes it, one level a tap, and the
  * screen stays; with nothing open it goes to the screen's parent, for
- * OUTPUTS the workbench whose TARGET row opened it.  SUPPLY's SETTINGS is
- * a task of its strip, no level: the tag leaves from it.
+ * OUTPUTS the workbench whose TARGET row opened it.  SUPPLY's SETTINGS
+ * list is a level, as MOTOR & ESC's.
  */
 TEST_CASE(the_home_tag_closes_what_a_tool_screen_opened_first)
 {
@@ -507,9 +511,9 @@ TEST_CASE(the_home_tag_closes_what_a_tool_screen_opened_first)
         void         (*open)(void);
         int            levels;
     } k_cases[] = {
-        { SCREEN_SUPPLY,  SCREEN_OVERVIEW, open_supply_settings, 0 },
+        { SCREEN_SUPPLY,  SCREEN_OVERVIEW, open_supply_settings, 1 },
         { SCREEN_SUPPLY,  SCREEN_OVERVIEW, open_supply_keypad,   1 },
-        { SCREEN_SUPPLY,  SCREEN_OVERVIEW, open_supply_settings_keypad, 1 },
+        { SCREEN_SUPPLY,  SCREEN_OVERVIEW, open_supply_settings_keypad, 2 },
         { SCREEN_WIFI,    SCREEN_SETUP,    open_wifi_list,       1 },
         { SCREEN_WIFI,    SCREEN_SETUP,    open_wifi_keyboard,   2 },
         { SCREEN_OUTPUTS, SCREEN_SETUP,    open_outputs_list,    1 },

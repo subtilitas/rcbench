@@ -61,7 +61,7 @@ SOURCES = [
     "shared/ui/supply_screen.c",
     "shared/ui/supply_events.c",
     "shared/ui/supply_draw.c",
-    "shared/ui/supply_pdmini.c",
+    "shared/ui/supply_settings.c",
     "shared/ui/supply_guide.c",
     "shared/ui/ui_keypad.c",
     "shared/ui/ui_setting_keypad.c",

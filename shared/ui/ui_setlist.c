@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include "settings.h"
+#include "ui_help.h"
 #include "ui_pinlist.h"
 #include "ui_screen.h"
 #include "ui_setting_keypad.h"
@@ -426,6 +427,9 @@ static void open_keypad(ui_setlist_t *sl, int index)
 {
     const setting_id_t id = sl_row(sl, index).id;
     ui_setting_keypad_open(&sl->kp, TK_AREA, id);
+    if (sl->host->range != NULL) {
+        sl->host->range(id, &sl->kp.min, &sl->kp.max);
+    }
     sl->kp_id = id;
     invalidate(sl);
 }
@@ -767,6 +771,13 @@ static void press(ui_setlist_t *sl, const touch_event_t *evt, int x, int y)
         if (sl->hit_kind != UI_SL_HIT_LIST) {
             invalidate(sl);   /* the key draws pressed */
         }
+        /* A row the host locks says why on the band at the press, as its
+         * help line does. */
+        const char *why = (!jump && r.kind == UI_SL_SETTING)
+                              ? sl_locked(sl, r.id) : NULL;
+        if (why != NULL) {
+            ui_router_set_alert(why);
+        }
         return;
     }
     sl->hit_kind = UI_SL_HIT_NONE;
@@ -1080,4 +1091,90 @@ void ui_setlist_cancel(ui_setlist_t *sl)
     ui_textkey_cancel_press(&sl->tk);
     ui_keypad_cancel_press(&sl->kp);
     invalidate(sl);
+}
+
+/* ------------------------------------------------------- the screen guide */
+
+int ui_setlist_help_count(const ui_setlist_t *sl)
+{
+    return (!sl->open || ui_setlist_covered(sl)) ? 0 : 2;
+}
+
+/**
+ * @brief A row whole in the pane: the first setting with keys whose value
+ *        opens the keypad, else the first with keys, else the first row of
+ *        any kind but a heading; -1 for none.
+ * @param sl   The list.
+ * @param keys Only a setting with keys.
+ * @return The row.
+ */
+static int whole_row(const ui_setlist_t *sl, bool keys)
+{
+    const gfx_rect_t pane = ui_setlist_pane(sl);
+    int with_keys = -1;
+    for (int i = 0; i < ui_setlist_count(sl); ++i) {
+        const gfx_rect_t r = ui_setlist_row_rect(sl, i);
+        if (r.y < pane.y) {
+            continue;
+        }
+        if (r.y + r.h > pane.y + pane.h) {
+            break;
+        }
+        const ui_setlist_row_t e = sl_row(sl, i);
+        if (!keys) {
+            if (e.kind != UI_SL_HEADING) {
+                return i;
+            }
+            continue;
+        }
+        if (e.kind == UI_SL_SETTING && !keyless(sl, i)
+            && !settings_held(e.id)) {
+            if (ui_setting_keypad_offered(e.id)) {
+                return i;
+            }
+            with_keys = (with_keys < 0) ? i : with_keys;
+        }
+    }
+    return with_keys;
+}
+
+bool ui_setlist_help_page(const ui_setlist_t *sl, int i, ui_help_page_t *out)
+{
+    if (out == NULL || i < 0 || i >= ui_setlist_help_count(sl)) {
+        return false;
+    }
+    memset(out, 0, sizeof(*out));
+    out->armed_ok = true;
+    if (i == 0) {
+        out->side = UI_HELP_DOCK_RIGHT;
+        out->title = TX_HG_SL_TITLE_ROWS;
+        const int row = whole_row(sl, false);
+        if (row >= 0) {
+            (void)ui_help_add(out, TR(HG_SET_ROW_NAME), TX_HG_SET_ROW,
+                              ui_setlist_row_rect(sl, row));
+        }
+        (void)ui_help_add(out, sl->host->name != NULL ? sl->host->name() : "",
+                          TX_HG_SL_HEAD, ui_setlist_strip_rect(0));
+        (void)ui_help_add(out, TR(HG_SET_RESET_NAME), TX_HG_SL_RESET,
+                          ui_setlist_strip_rect(1));
+        return true;
+    }
+    out->side = UI_HELP_DOCK_LEFT;
+    out->title = TX_HG_SL_TITLE_VALUES;
+    const int row = whole_row(sl, true);
+    if (row >= 0) {
+        const setting_id_t id = sl_row(sl, row).id;
+        const bool cycles = settings_cycles(id);
+        (void)ui_help_add(out, cycles ? "<" : "-", TX_HG_SET_MINUS,
+                          ui_setlist_row_part(sl, row, UI_SL_PART_MINUS));
+        if (ui_setting_keypad_offered(id)) {
+            (void)ui_help_add(out, TR(HG_SET_VALUE_NAME), TX_HG_SET_VALUE,
+                              ui_setlist_row_part(sl, row, UI_SL_PART_VALUE));
+        }
+        (void)ui_help_add(out, cycles ? ">" : "+", TX_HG_SET_PLUS,
+                          ui_setlist_row_part(sl, row, UI_SL_PART_PLUS));
+    }
+    (void)ui_help_add(out, TR(SET_SAVE), TX_HG_SET_SAVE,
+                      ui_setlist_strip_rect(2));
+    return true;
 }

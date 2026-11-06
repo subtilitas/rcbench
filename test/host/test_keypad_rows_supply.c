@@ -1,7 +1,7 @@
 /**
  * @file test_keypad_rows_supply.c
  * @brief SUPPLY's keypads held to keypad_rows_rig.h's four rules: the two
- *        set points on LIVE and every number row of SETTINGS.  A tap opens
+ *        set points on LIVE and every number row of the SETTINGS list.  A tap opens
  *        the keypad with the row's title, unit, range and digits; a value
  *        past the range is refused and the row keeps its value; CANCEL
  *        keeps it; OK sets the value typed.
@@ -9,7 +9,8 @@
  * The supply reports caps of 4.00 to 20.00V in 0.02V steps and 1.00 to
  * 4.50A in 0.05A steps, inside the schema's 3.3 to 21.0V and 0.5 to 5.0A,
  * so a range that is the caps' tells itself from one that is the
- * schema's.
+ * schema's.  The set points, the caps and the start values take the
+ * supply's caps; the trips and the trip time the schema's range.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -21,28 +22,24 @@
 /** @brief The caps the supply reports. */
 static const supply_caps_t k_caps = { 4.0f, 20.0f, 0.02f, 1.0f, 4.5f, 0.05f };
 
-/** @brief A row: where a tap opens its keypad, and on which task. */
-typedef struct {
-    bool settings;  /**< on SETTINGS, else on LIVE */
-    int  x, y;      /**< the tap, in the screen's coordinates */
-} where_t;
-
-/** @brief The rows, in the order of k_rows below. */
-static const where_t k_where[] = {
-    { false, CARD_X,   CARD_V_Y },              /* VOLTAGE's card     */
-    { false, CARD_X,   CARD_I_Y },              /* CURRENT's card     */
-    { true,  ROW_L_X,  VMAX_Y },                /* VOLTAGE MAX        */
-    { true,  ROW_L_X,  VMAX_Y + SU_ROW_PITCH }, /* CURRENT MAX        */
-    { true,  ROW_L_X,  SU_VSTART_Y },           /* START VOLTAGE      */
-    { true,  ROW_L_X,  ISTART_Y },              /* START CURRENT      */
-    { true,  ROW_R_X,  TRIPI_Y },               /* CURRENT TRIP       */
-    { true,  ROW_R_X,  TRIPI_Y + SU_ROW_PITCH },     /* VOLTAGE TRIP  */
-    { true,  ROW_R_X,  TRIPI_Y + 2 * SU_ROW_PITCH }, /* TRIP TIME     */
+/** @brief The SETTINGS list's number rows, in the order of k_rows below
+ *         from its third row on. */
+static const setting_id_t k_ids[] = {
+    SET_SUPPLY_V_MAX, SET_SUPPLY_I_MAX, SET_SUPPLY_V_START,
+    SET_SUPPLY_I_START, SET_SUPPLY_TRIP_I, SET_SUPPLY_TRIP_V,
+    SET_SUPPLY_TRIP_MS,
 };
-#define ROW_COUNT ((int)(sizeof(k_where) / sizeof(k_where[0])))
+/** @brief The rows: the two set points' cards, then the list's. */
+#define ROW_COUNT (2 + (int)(sizeof(k_ids) / sizeof(k_ids[0])))
 
-/** @brief The keypad SUPPLY holds. */
-static const ui_keypad_t *kp(void) { return supply_screen_keypad(); }
+/** @brief Whether the last row opened is the list's. */
+static bool s_list;
+
+/** @brief The keypad SUPPLY holds for the row opened last. */
+static const ui_keypad_t *kp(void)
+{
+    return s_list ? supply_settings_keypad() : supply_screen_keypad();
+}
 
 /**
  * @brief A key of SUPPLY's keypad tapped, in the screen's coordinates.
@@ -50,18 +47,26 @@ static const ui_keypad_t *kp(void) { return supply_screen_keypad(); }
  */
 static void kkey(ui_key_t k)
 {
-    const gfx_rect_t r = ui_keypad_key_rect(supply_screen_keypad(), k);
+    const gfx_rect_t r = ui_keypad_key_rect(kp(), k);
     tap(r.x + r.w / 2, r.y + r.h / 2);
 }
 
 /**
- * @brief The keypad of row @p row, by a tap on its card or its row.
- * @param row The row, an index of k_where.
+ * @brief The keypad of row @p row: a tap on its card on LIVE, or on its
+ *        value in the SETTINGS list.
+ * @param row The row.
  */
 static void open_row(int row)
 {
-    tap(k_where[row].settings ? SET_TAB_X : LIVE_TAB_X, STRIP_Y);
-    tap(k_where[row].x, k_where[row].y);
+    s_list = row >= 2;
+    if (!s_list) {
+        tap(CARD_X, row == 0 ? CARD_V_Y : CARD_I_Y);
+        return;
+    }
+    if (!supply_screen_settings_shown()) {
+        open_settings();
+    }
+    tap_value(k_ids[row - 2]);
 }
 
 /** @brief SUPPLY's keypad as keypad_rows_rig.h reaches it. */
@@ -70,21 +75,26 @@ static const kpr_screen_t k_supply = { kp, kkey, open_row };
 /*
  * The set points take the caps narrowed by the operator's, the caps the
  * supply's own, the start values the set points' range, the trips and
- * the trip time the schema's.
+ * the trip time the schema's.  The list's rows carry the setting's own
+ * title, as SETUP's.
  */
 TEST_CASE(every_supply_keypad_takes_ok_and_refuses_and_cancels)
 {
-    const kpr_row_t rows[ROW_COUNT] = {
+    kpr_row_t rows[ROW_COUNT] = {
         { "set V", TR(SUP_VOLTAGE), "V", 4.0f, 20.0f, 2, 12.34f },
         { "set I", TR(SUP_CURRENT_LIMIT), "A", 1.0f, 4.5f, 2, 2.35f },
-        { "V max", TR(SUP_ROW_V_MAX), "V", 4.0f, 20.0f, 2, 15.0f },
-        { "I max", TR(SUP_ROW_I_MAX), "A", 1.0f, 4.5f, 2, 3.0f },
-        { "V start", TR(SUP_ROW_V_START), "V", 4.0f, 20.0f, 2, 9.0f },
-        { "I start", TR(SUP_ROW_I_START), "A", 1.0f, 4.5f, 2, 1.5f },
-        { "trip I", TR(SUP_ROW_TRIP_I), "A", 0.0f, 5.0f, 2, 2.5f },
-        { "trip V", TR(SUP_ROW_TRIP_V), "V", 0.0f, 21.0f, 2, 18.0f },
-        { "trip ms", TR(SUP_ROW_TRIP_MS), "ms", 0.0f, 5000.0f, 0, 250.0f },
     };
+    for (int r = 2; r < ROW_COUNT; ++r) {
+        rows[r] = kpr_setting(k_ids[r - 2], NULL);
+    }
+    /* The caps and the start values: the supply's caps, as the set points. */
+    static const float k_ok[4] = { 15.0f, 3.0f, 9.0f, 1.5f };
+    for (int r = 2; r < 6; ++r) {
+        const bool volts = (r % 2) == 0;
+        rows[r].min = volts ? k_caps.v_min : k_caps.i_min;
+        rows[r].max = volts ? k_caps.v_max : k_caps.i_max;
+        rows[r].ok  = k_ok[r - 2];
+    }
     for (int r = 0; r < ROW_COUNT; ++r) {
         fresh();
         supply_screen_set_caps(&k_caps);
@@ -105,15 +115,10 @@ TEST_CASE(every_supply_keypad_takes_ok_and_refuses_and_cancels)
 
 /*
  * Every number of the schema's supply category has a row above: the
- * seven SETTINGS rows, each once.
+ * seven rows of the SETTINGS list, each once.
  */
 TEST_CASE(every_supply_number_has_a_keypad_row)
 {
-    static const setting_id_t k_ids[] = {
-        SET_SUPPLY_V_MAX, SET_SUPPLY_I_MAX, SET_SUPPLY_V_START,
-        SET_SUPPLY_I_START, SET_SUPPLY_TRIP_I, SET_SUPPLY_TRIP_V,
-        SET_SUPPLY_TRIP_MS,
-    };
     setting_id_t cat[64];
     const int n = settings_in_category(SET_CAT_SUPPLY, cat, 64);
     int numbers = 0;

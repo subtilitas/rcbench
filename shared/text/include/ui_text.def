@@ -1916,6 +1916,10 @@ UI_TEXT(SUP_MODEL, 33,
 UI_TEXT(SUP_PD_PINS, 29,
     "PD MINI TX GPIO %d RX GPIO %d",
     "PD MINI TX GPIO %d RX GPIO %d")
+/* The footer's line under SUPPLY on the panel's model supply. */
+UI_TEXT(SUP_SOURCE_SIM, 31,
+    "SIMULATED",
+    "SIMULIERT")
 UI_TEXT(SUP_PD_NO_PINS, 25,
     "PD MINI NO PINS",
     "PD MINI OHNE PINS")
@@ -1937,6 +1941,19 @@ UI_TEXT(FOOT_SETTINGS_SAFE, 94,
 UI_TEXT(FOOT_SETTINGS_ON, 94,
     "SETTINGS open with the output off only. Switch it off first.",
     "OPTIONEN nur bei Ausgang aus. Schalte ihn zuerst aus.")
+/* The settings list's screen guide (ui_setlist.h). */
+UI_TEXT(HG_SL_TITLE_ROWS, 0,
+    "SETTINGS: ROWS",
+    "OPTIONEN: ZEILEN")
+UI_TEXT(HG_SL_TITLE_VALUES, 0,
+    "SETTINGS: VALUES",
+    "OPTIONEN: WERTE")
+UI_TEXT(HG_SL_HEAD, 0,
+    "The screen's name and what it drives. The home tag closes the list; with a change not saved it asks first.",
+    "Bildschirm und was er ansteuert. Das Home-Feld schließt die Liste, bei ungespeicherter Änderung mit Rückfrage.")
+UI_TEXT(HG_SL_RESET, 0,
+    "Sets this list's values to their defaults and no others. SAVE keeps them.",
+    "Setzt die Werte dieser Liste auf die Vorgaben, keine anderen. SPEICHERN behält sie.")
 UI_TEXT(SUP_SETTINGS, 0,
     "SETTINGS",
     "OPTIONEN")
@@ -1952,6 +1969,9 @@ UI_TEXT(SUP_CLOSE, 0,
 UI_TEXT(SUP_RESET_PDMINI, 0,
     "RESET PD MINI",
     "PD MINI ZURÜCKSETZEN")
+UI_TEXT(SUP_RESET_PDMINI_HELP, 0,
+    "Restarts the module; its output switches off first",
+    "Startet das Modul neu; sein Ausgang schaltet zuerst aus")
 UI_TEXT(SUP_TAB_LIMITS, 0,
     "LIMITS",
     "GRENZEN")
@@ -2054,9 +2074,9 @@ UI_TEXT(HG_SU_TITLE_CONTROL, 0,
 UI_TEXT(HG_SU_RANGE_NAME, 0,
     "RANGE",
     "BEREICH")
-UI_TEXT(HG_SU_TASKS, 0,
-    "LIVE: the plot and the set points. SETTINGS: caps, trips, questions and the PD mini's wiring.",
-    "LIVE: Grafik und Sollwerte. OPTIONEN: Grenzen, Abschaltungen, Rückfragen und Anschlüsse des PD mini.")
+UI_TEXT(HG_SU_SETTINGS, 0,
+    "Opens the list of caps, trips, questions and the PD mini's wiring. Grey while the output is on.",
+    "Öffnet die Liste mit Grenzen, Abschaltungen, Rückfragen und Anschlüssen des PD mini. Grau bei Ausgang ein.")
 UI_TEXT(HG_SU_PLOT, 0,
     "Voltage, current and power over the last 30s, the set points dashed. TABLE lists the same values.",
     "Spannung, Strom und Leistung der letzten 30s, die Sollwerte gestrichelt. TABELLE zeigt dieselben Werte.")
