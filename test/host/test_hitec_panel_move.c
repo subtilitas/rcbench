@@ -292,6 +292,24 @@ TEST_CASE(the_as5600_angle_shows_in_the_live_line)
     CHECK(strstr(hitec_panel_note(1), "AS5600 -90.0") != NULL);
 }
 
+/* The live line writes the PD mini's current in 10mA: a step of 10mA with
+ * the horn standing still moves the page's revision and the line. */
+TEST_CASE(the_current_in_the_live_line_repaints_with_the_horn_at_rest)
+{
+    travel();
+    move_on();
+    prun(300u);
+    show();
+    CHECK(strstr(hitec_panel_note(1), "0.04A") != NULL);
+    const uint32_t rev = hitec_panel_revision();
+    g_out_ma = 51u;
+    prun(200u);
+    CHECK(hitec_panel_revision() != rev);
+    show();
+    CHECK(strstr(hitec_panel_note(1), "0.05A") != NULL);
+    g_out_ma = 41u;
+}
+
 TEST_CASE(a_tab_change_switches_it_off_and_the_end_runs)
 {
     unsigned reboots;
@@ -380,6 +398,7 @@ int main(void)
     RUN(the_value_between_the_keys_opens_the_keypad);
     RUN(the_live_lines_name_the_port_the_loop_drives_and_the_position);
     RUN(the_as5600_angle_shows_in_the_live_line);
+    RUN(the_current_in_the_live_line_repaints_with_the_horn_at_rest);
     RUN(a_tab_change_switches_it_off_and_the_end_runs);
     RUN(close_switches_it_off_first_and_leaves_after_the_end);
     RUN(a_screen_change_switches_it_off);

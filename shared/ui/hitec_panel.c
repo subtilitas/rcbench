@@ -526,8 +526,9 @@ uint32_t hitec_panel_hold_revision(void)
 /**
  * @brief Everything of the model a render shows, as one number.  The PD
  *        mini's reading counts as the state line writes it: 10mV and 1mA
- *        while the port is held in mode, nothing in any other state, so a
- *        reading the page does not show repaints nothing.
+ *        while the port is held in mode, nothing in any other state, and
+ *        as MOVE SERVO's live line writes the current: 10mA while the loop
+ *        runs.  A reading the page does not show repaints nothing.
  * @return the number
  */
 static uint32_t signature(void)
@@ -560,6 +561,9 @@ static uint32_t signature(void)
         p->load_pend, p->mv.phase, p->mv.off, p->mv.follow, p->mv.pos,
         p->mv.has_pos, p->f.has_angle ? p->f.angle : 0xFFFFu,
         (uint32_t)hitec_prog_find_side(p), p->mv.find_go, p->mv.fs.p,
+        /* MOVE SERVO's live line writes the current in 10mA. */
+        hitec_prog_state(p) == HITEC_PROG_MOVING && p->f.supply_read
+            ? (p->f.out_ma + 5u) / 10u : 0u,
     };
     uint32_t sig = 2166136261u;
 
