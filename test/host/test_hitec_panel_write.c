@@ -589,16 +589,16 @@ TEST_CASE(a_hold_pages_button_flashes_as_it_fires)
     const gfx_rect_t b = hitec_panel_apply_rect();
     const gfx_rect_t r = { (int16_t)(b.x + 12), (int16_t)(b.y + 4),
                            (int16_t)(b.w - 24), 6 };
-    const hold_flash_rig_t rig = { hp_frame, show, fb, UI_PANEL_W };
+    const hold_flash_rig_t frig = { hp_frame, show, fb, UI_PANEL_W };
     char seen[64];
     ev(cx(b), cy(b), TOUCH_EVENT_DOWN);
-    if (!hold_flash_walk(&rig, r, 2.6f, seen, sizeof(seen))) {
+    if (!hold_flash_walk(&frig, r, 2.6f, seen, sizeof(seen))) {
         T_FAIL("ENABLE WRITE's hold drew %s, no flash", seen);
     }
     ev(cx(b), cy(b), TOUCH_EVENT_UP);
     CHECK(hitec_prog_write_on(model()));
     show();
-    CHECK_EQ(hold_flash_body(&rig, r), '.');
+    CHECK_EQ(hold_flash_body(&frig, r), '.');
 }
 
 TEST_CASE(a_later_write_that_moves_the_horn_warns_again)
