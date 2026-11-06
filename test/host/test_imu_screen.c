@@ -539,8 +539,29 @@ TEST_CASE(every_string_fits_its_field)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* The card's lines where the card draws them, from x 500 and 500px wide:
+ * the sensor, the address, the HC-05 and the state 28px apart from y 32,
+ * 8px more after the address; the angles in the 16 x 28 face from y 164,
+ * 40px apart; the rate and the battery 28px apart from y 296.  A new
+ * reading repaints each of them alone, in this box. */
+TEST_CASE(the_cards_lines_stand_where_the_card_draws_them)
+{
+    static const int k_y[9] = { 32, 60, 96, 124, 164, 204, 244, 296, 324 };
+    for (int i = 0; i < 9; ++i) {
+        const gfx_rect_t r = imu_screen_line_rect(i);
+        CHECK_EQ(r.x, 500);
+        CHECK_EQ(r.w, 500);
+        CHECK_EQ(r.y, k_y[i]);
+        CHECK_EQ(r.h, (i >= 4 && i <= 6) ? 28 : 24);
+    }
+    CHECK_EQ(imu_screen_line_rect(-1).w, 0);
+    CHECK_EQ(imu_screen_line_rect(9).w, 0);
+    CHECK_EQ(imu_screen_line_rect(9).h, 0);
+}
+
 int main(void)
 {
+    RUN(the_cards_lines_stand_where_the_card_draws_them);
     RUN(the_tile_opens_the_screen_and_home_returns_to_setup);
     RUN(scan_posts_the_command_and_the_list_shows_the_found_devices);
     RUN(a_tap_on_a_device_posts_bind_with_its_index);

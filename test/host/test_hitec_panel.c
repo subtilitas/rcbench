@@ -363,6 +363,27 @@ TEST_CASE(the_port_row_names_the_port_and_its_gpio_in_every_state)
 
 /* ---------------------------------------------------- LEAVE and RELEASE */
 
+/* Held in mode on the PD mini, the state line writes the output's reading
+ * in 10mV and 1mA: a reading inside its 10mV moves no revision of the page,
+ * one past it does. */
+TEST_CASE(a_held_ports_reading_moves_the_page_as_its_state_line_shows_it)
+{
+    open_en();
+    servo_d485();
+    tap_connect();
+    until(HITEC_PROG_HELD);
+    prun(200);
+    const uint16_t mv = g_hw.v.set_mv;
+    const uint32_t rev = hitec_panel_revision();
+    g_hw.v.set_mv = (uint16_t)(mv - mv % 10u + 9u);
+    prun(200);
+    CHECK_EQ(hitec_panel_revision(), rev);
+    g_hw.v.set_mv = (uint16_t)(mv - mv % 10u + 10u);
+    prun(200);
+    CHECK(hitec_panel_revision() != rev);
+    g_hw.v.set_mv = mv;
+}
+
 TEST_CASE(close_while_held_opens_leave_and_a_2s_hold_leaves)
 {
     open_en();
@@ -710,6 +731,7 @@ TEST_CASE(the_screenshot_gate_reads_the_hold_of_the_port)
 int main(void)
 {
     RUN(the_screenshot_gate_reads_the_hold_of_the_port);
+    RUN(a_held_ports_reading_moves_the_page_as_its_state_line_shows_it);
     RUN(the_series_is_chosen_before_connect_and_kept_in_the_settings);
     RUN(on_the_carrier_the_port_row_chooses_the_port);
     RUN(the_series_row_and_more_take_no_tap_while_the_port_is_held);

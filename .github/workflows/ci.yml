@@ -303,6 +303,17 @@ jobs:
              && python3 tools/frame_cost.py servo-rudder --max-lines 4600
              && python3 tools/frame_cost.py servo-test --max-lines 1000
 
+      # The KST and Hitec sessions count a PD mini reading as their state
+      # line writes it, and WI-FI its idle time in whole minutes: a reading
+      # the page does not show repaints nothing.  The IMU screen repaints
+      # the card lines a reading changes and CALIBRATE's button while its
+      # hold fills, about 100 and 700 fills.  1,000 catches any of them
+      # repainting its page whole, 16,000 to 31,000 fills.
+      - name: A reading repaints only what the page shows of it
+        run: python3 tools/frame_cost.py servo-kst servo-hitec --max-lines 1000
+             && python3 tools/frame_cost.py wifi-idle --max-lines 1000
+             && python3 tools/frame_cost.py imu imu-hold --max-lines 1000
+
       # The screen guide caches its dock and draws its badges and corner
       # brackets every frame, about 370 fills on the menu; 1,000 catches
       # marks that draw more, such as a full outline (about 4,400).

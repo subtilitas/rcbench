@@ -494,19 +494,32 @@ uint32_t hitec_panel_hold_revision(void)
     return hp.hold_rev;
 }
 
-/** @brief Everything of the model a render shows, as one number. */
+/**
+ * @brief Everything of the model a render shows, as one number.  The PD
+ *        mini's reading counts as the state line writes it: 10mV and 1mA
+ *        while the port is held in mode, nothing in any other state, so a
+ *        reading the page does not show repaints nothing.
+ * @return the number
+ */
 static uint32_t signature(void)
 {
     const hitec_prog_t *p = &hp.prog;
     unsigned done = 0;
     unsigned total = 0;
+    char text[HITEC_PANEL_LINE];
+    uint32_t line = 2166136261u;
+
+    hpn_state_line(text, sizeof(text));
+    for (const char *t = text; *t != '\0'; ++t) {
+        line = (line ^ (uint8_t)*t) * 16777619u;
+    }
     const uint32_t part[] = {
         (uint32_t)hitec_prog_state(p), p->msg.seq, p->f.rd.flags,
         p->f.rd.port_no, p->f.rd.held, p->f.rd.ours, p->f.rd.have_line,
         p->f.rd.pin, p->f.rd.line, p->f.target, p->f.port_pin_known,
         p->f.port_pin[0], p->f.port_pin[1], p->f.port_pin[2],
         p->f.port_pin[3], p->f.stopped, p->f.supply_read,
-        p->f.out_mv / 10u, p->f.out_ma, p->f.rx_mark, p->have_servo,
+        line, p->f.rx_mark, p->have_servo,
         p->series, hitec_prog_mv(p), hitec_prog_ma(p),
         hitec_prog_mv_capped(p), hitec_prog_in_mode(p),
         hitec_prog_progress(p, &done, &total) ? done : 0u,
