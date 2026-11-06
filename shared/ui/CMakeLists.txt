@@ -125,6 +125,8 @@ set(SRCS
     files_screen.c
     layout_screen.c
     imu_ctl.c
+    imu_hc05.c
+    imu_sensor.c
     imu_screen.c
     imu_screen_draw.c
     files_draw.c

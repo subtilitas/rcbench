@@ -960,9 +960,10 @@ command to the pin.
 
 Built and host-tested: a WitMotion BWT901CL through an HC-05 on the panel's UART1
 (`PANEL_IMU_*` in board_pins.h: TX IO4, RX IO5 and KEY IO29 of header P3, 5V and GND from
-the RS485 header H9). The reading (`shared/bench/imu.c`, `test_imu`), the controller of the
-HC-05's AT set-up and the sensor's commands (`shared/ui/imu_ctl.c`, `test_imu_ctl` against
-`hc05_sim.h`), the IMU screen on SETUP's IMU tile (`test_imu_screen`), SETUP > SENSORS > IMU
+the RS485 header H9). The reading (`shared/bench/imu.c`, `test_imu`), the sensor's side: its
+commands, the calibration and the gaps (`shared/ui/imu_sensor.c`, `test_imu_sensor` without
+a radio), the HC-05 link's AT set-up (`shared/ui/imu_hc05.c`), the controller that joins the
+two (`shared/ui/imu_ctl.c`, `test_imu_ctl` against `hc05_sim.h`), the IMU screen on SETUP's IMU tile (`test_imu_screen`), SETUP > SENSORS > IMU
 (`test_imu_pane`) and the panel's UART task (`firmware/panel/main/panel_imu.c`). With ANGLE
 SOURCE IMU the servo runs read its angle in AS5600 counts. No HC-05 or BWT901CL has been run
 with this code.
@@ -1231,7 +1232,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 462 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 463 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1336,7 +1337,7 @@ The host suite is 462 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_angle`, `test_servo_source_angle`, `test_hitec_prog_run` and
 `test_hitec_panel_run`, `test_servo_rudder`, `test_servo_rudder_panel`,
 `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`, `test_bleuart`,
-`test_bleuart_adv`, `test_bleuart_link`, `test_imu`,
+`test_bleuart_adv`, `test_bleuart_link`, `test_imu`, `test_imu_sensor`,
 `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_kst`, `test_servo_rauto_panel`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
@@ -1916,7 +1917,9 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
 | `shared/ui/coproc_update_screen.c` | 276 | 275 | 99.6% |
 | `shared/ui/upd_screen.c` | 628 | 605 | 96.3% |
-| `shared/ui/imu_ctl.c` | 277 | 275 | 99.3% |
+| `shared/ui/imu_ctl.c` | 98 | 98 | 100.0% |
+| `shared/ui/imu_hc05.c` | 126 | 124 | 98.4% |
+| `shared/ui/imu_sensor.c` | 145 | 145 | 100.0% |
 | `shared/ui/imu_screen.c` | 316 | 308 | 97.5% |
 | `shared/ui/imu_screen_draw.c` | 81 | 81 | 100.0% |
 | `shared/settings/settings.c` | 415 | 408 | 98.3% |

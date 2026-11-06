@@ -132,9 +132,9 @@ static void draw_list(gfx_canvas_t *c)
         ui_choice_list(c, gfx_rect_make(IMS_LX - 4, IMS_LY - 4, IMS_LW + 8,
                                         (n - 1) * IMS_LP + IMS_LH + 8));
     }
-    for (int i = 0; i < n && i < (int)HC05_FOUND_MAX; ++i) {
+    for (int i = 0; i < n && i < (int)IMU_FOUND_MAX; ++i) {
         const gfx_rect_t r = imu_screen_choice_rect(i);
-        const hc05_dev_t *d = &ims.v.found[i];
+        const imu_dev_t *d = &ims.v.found[i];
         ui_choice_row(c, r, "", false,
                       ims.have_press && ims.hit == IMS_HIT_DEV0 + i);
         /* A name of 31 bytes takes 372px of the body face, 12px in; the

@@ -36,7 +36,9 @@ enthält den Hinweis des Projekts.
 | die AT-Einrichtung des HC-05 | `protocols/hc05`, kein Pin-Treiber |
 | Frames und Befehle des Sensors | `protocols/witmotion`, kein Pin-Treiber |
 | der Messwert: Winkel, Nullpunkt, Ruhezeit, Rate, Akku, Alter | `shared/bench/imu.c` |
-| die Steuerung: die Operationen des HC-05, die Befehle des Sensors, der Verbindungszustand | `shared/ui/imu_ctl.c` |
+| die Seite des Sensors: der Messwert, seine Befehle, die Kalibrierung, die Lücken, die Übergabe an SERVO; ohne Funk | `shared/ui/imu_sensor.c` |
+| die Verbindung über den HC-05: die Operationen des Moduls, seine Geräte, Fehler und Version in den Typen der Ansicht | `shared/ui/imu_hc05.c` |
+| die Steuerung: verbindet die Verbindung mit der Seite des Sensors, der Verbindungszustand, die Ansicht | `shared/ui/imu_ctl.c` |
 | die Seite IMU und ihr Eintrag unter SETUP | `shared/ui/imu_screen.c`, `shared/ui/sensors_pane.c` |
 | UART, KEY-Leitung und Task | `firmware/panel/main/panel_imu.c` |
 
