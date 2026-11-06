@@ -118,6 +118,7 @@ No warning shows when nothing is unsaved, when a save is asked (`WHEN IDLE`), or
 | Knob range | 90 to 720°, steps of 10 | 270 | the knob angle that moves the slider across its whole span |
 | Keyboard transparency | OFF, 25%, 50% | OFF | how much of the text shows through the text editor's keyboard on [Files](files.md#the-text-editor); other keyboards stay opaque |
 | Demo mode | ON, OFF | OFF | hides the SIMULATION watermark from the next frame; the band still says SIM and the tiles still say SIMULATED. The panel draws the watermark only while no IOmcu answers, so the setting changes nothing on a bench with an IOmcu |
+| Hardware stop | ON, OFF | OFF | for a bench with a stop button in the heartbeat line: the band shows the heartbeat fault as a red HWSTOP chip in place of FAULT 10 ([HWSTOP](band.md#hwstop)). A broken cable shows HWSTOP too. What the bench does on the fault stays the same |
 
 The backlight is on while the panel runs. No setting switches it.
 

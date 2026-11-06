@@ -100,6 +100,9 @@ SCREENS = {
     # A latched STOP: the button red in its yellow frame, the chip STOP,
     # and the chip's box.
     "band-stop":  ("band-stop.png",  "overview", "dark"),
+    # SETUP > PANEL > Hardware stop ON and the heartbeat bit: the red
+    # HWSTOP chip in FAULT's place, and its box.
+    "band-hwstop": ("band-hwstop.png", "overview", "dark"),
     # An alert across the bottom of the menu, with its x.
     "overview-alert": ("overview-alert.png", "overview", "dark"),
     # The screen guide over the menu at page 1: the dock on the right, the
@@ -571,6 +574,8 @@ SCREENS = {
     # PANEL scrolled to Time zone, stored at LOS ANGELES, its longest
     # option.
     "setup-time-zone": ("setup-time-zone.png", "setup", "dark"),
+    # PANEL scrolled to its end: Hardware stop stored ON.
+    "setup-hw-stop": ("setup-hw-stop.png", "setup", "dark"),
     # SD CARD: AUTO LOGS and USER LOGS, AUTO LOG FOLDER and USER LOG
     # FOLDER; the folder keyboard with a folder refused.
     "setup-card": ("setup-card.png", "setup", "dark"),
@@ -865,6 +870,7 @@ FIT_ONLY = {
     "supply-pdmini-on": (None, "supply", "dark"),
     "supply-pdmini-same": (None, "supply", "dark"),
     "band-fault-all":   (None, "overview", "dark"),
+    "band-hwstop-all":  (None, "overview", "dark"),
     # SERVO > PROGRAM with a table of 12 rows: SEARCH, the page keys, two
     # group headings and a row dimmed with its reason.
     "servo-program-many": (None, "servo", "dark"),

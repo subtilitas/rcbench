@@ -1228,12 +1228,13 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 462 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 463 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
 `test_nav_tiles`, `test_menu_openers`, `test_nav_alert`, `test_nav_mark`,
-`test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_help_router`,
+`test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_band_hwstop`,
+`test_help_router`,
 `test_help_pages`, `test_help_setup`, `test_help_outputs`, `test_help_logs`,
 `test_help_files`, `test_widgets`, `test_hold_hint`, `test_workbench`, `test_prog_registry`,
 `test_keypad`, `test_keypad_sign`, `test_keypad_rows_setup`, `test_keypad_rows_stick`,
@@ -1751,8 +1752,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 852 committed screenshots to the current render,
-426 in English and the same 426 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` holds 856 committed screenshots to the current render,
+428 in English and the same 428 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -2085,6 +2086,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/bench/sense_limit_link.c` | 201 | 201 | 100.0% |
 | `shared/bench/servo_source.c` | 108 | 108 | 100.0% |
 | `shared/bench/tone_link.c` | 451 | 446 | 98.9% |
+| `shared/bench/status_poll.c` | 9 | 9 | 100.0% |
 | `shared/bench/endpoints_link.c` | 80 | 80 | 100.0% |
 | `shared/bench/hitec_rx_link.c` | 57 | 57 | 100.0% |
 | `shared/bench/knob.c` | 47 | 47 | 100.0% |

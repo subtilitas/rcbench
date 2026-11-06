@@ -66,7 +66,10 @@ host-tested in `test_stop_latch` and `test_stop_hold`.
   LINK_FAULT_HEARTBEAT: the
   panel withholds the line itself, and FAULT 10 would read as the
   emergency stop or an open wire. The hardware emergency stop on the
-  heartbeat line and an open wire show as FAULT 10.
+  heartbeat line and an open wire show as FAULT 10, or as HWSTOP with
+  SETUP > PANEL > Hardware stop ON
+  ([Hardware stop button](Safety.md#hardware-stop-button)). The grace
+  leaves out HWSTOP the same way: both are the same bit.
 - **Restart.** The latch is not kept: a panel that restarts comes up
   unlatched, SAFE, with every output off.
 - A stop the bench raises on its own, the link lost while ARMED, the IOmcu

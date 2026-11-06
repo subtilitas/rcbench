@@ -71,7 +71,10 @@ und `shared/ui/stop_hold.c`, auf dem Host getestet in `test_stop_latch` und
   LINK_FAULT_HEARTBEAT weg:
   das Panel hält die Leitung selbst an, und FEHLER 10 sähe aus wie der
   Not-Aus oder eine offene Leitung. Der Hardware-Not-Aus an der
-  Heartbeat-Leitung und eine offene Leitung zeigen FEHLER 10.
+  Heartbeat-Leitung und eine offene Leitung zeigen FEHLER 10, oder HWSTOP
+  mit SETUP > PANEL > Hardware-STOP auf EIN
+  ([STOP-Taster am Prüfstand](Safety-de.md#stop-taster-am-prüfstand)).
+  Die Frist lässt HWSTOP genauso weg: Beides ist dasselbe Bit.
 - **Neustart.** Die STOP-Sperre wird nicht gespeichert. Nach einem Neustart
   ist das Panel unverriegelt und SAFE; alle Ausgänge sind ausgeschaltet.
 - Ein Stopp, den der Prüfstand selbst auslöst, ein bei ARMED verlorener

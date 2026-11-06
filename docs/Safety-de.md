@@ -457,6 +457,40 @@ schalten den Prüfstand auf SAFE und stoppen den Heartbeat. Der Eingang des
 IOmcu hat einen Pull-down, sodass ein unversorgtes oder abgestecktes
 Panel als Leitung ohne Flanken gelesen wird.
 
+## STOP-Taster am Prüfstand
+
+Ein STOP-Taster am Prüfstand liegt in Reihe mit der Heartbeat-Leitung,
+zwischen Panel-GPIO28 und IOmcu-GPIO 3. Gedrückt öffnet er die Leitung. Ein
+unterbrochenes oder abgezogenes Kabel öffnet sie genauso, und der IOmcu
+kann beides nicht unterscheiden: In beiden Fällen kommen keine Flanken.
+
+| Schritt | Was geschieht |
+| --- | --- |
+| Die Leitung öffnet | 150ms keine Flanke (`HEARTBEAT_MAX_GAP_MS`): Der IOmcu misstraut der Leitung, schaltet seine Ausgänge auf SAFE, setzt seinen Arm-Latch und setzt STATUS-Bit 10, LINK_FAULT_HEARTBEAT. Der PD-mini-Ausgang geht aus |
+| Das Band | FEHLER 10; mit SETUP > PANEL > Hardware-STOP auf EIN ein roter Chip HWSTOP an der Stelle von FEHLER. Die Einstellung ändert das Band und sonst nichts |
+| Die Leitung schließt | die erste Flanke beendet eine Lücke über 150ms und zählt als schlechter Abstand; 4 gute Abstände von 20ms später vertraut der IOmcu der Leitung und löscht Bit 10, 80 bis 100ms nachdem die Leitung schließt. Das Bit rastet nicht ein |
+| Das Band wieder | das Panel liest STATUS alle 500ms, bei der ersten 50ms-Abfrage nach 500ms, also im Abstand von 500 bis 555ms. Solange das Band HWSTOP zeigt, liest es STATUS stattdessen bei jeder 50ms-Abfrage, im Abstand von 50 bis 55ms, und das erste Lesen ohne Bit 10 beendet das (`status_poll.h`). Das Bild nach dem Lesen zeichnet das Band ohne das Bit, mit etwa 60Hz. HWSTOP verschwindet 80 bis etwa 180ms nachdem die Leitung schließt; FEHLER 10, mit AUS, 80 bis etwa 680ms |
+| ARM | gesperrt, bis jemand ARM 2s hält: Der Arm-Latch des IOmcu bleibt bis CLEAR gesetzt, und das Panel schreibt CLEAR, sobald STATUS Bit 10 als gelöscht liest ([Das erste Schalten auf ARMED nach einem Stopp](#das-erste-schalten-auf-armed-nach-einem-stopp)) |
+
+Die 80 bis 180ms und die 80 bis 680ms sind aus diesen Perioden berechnet:
+100ms für den IOmcu, 55ms oder 555ms bis zum nächsten Lesen, 3ms des
+Bench-Lesens davor und 17ms bis zum nächsten Bild. Sie sind nicht gemessen.
+Bis ein Lesen Bit 10 enthält, bleiben die Lesevorgänge 500ms auseinander,
+daher erscheint HWSTOP 150 bis etwa 730ms nach dem Drücken des Tasters. Das
+schnelle Lesen fügt, solange HWSTOP steht, 18 STATUS-Lesevorgänge pro
+Sekunde hinzu, 72 CAN-Frames ([Link](Link-de.md#abgelehnte-frames)). Das
+Prellen eines Tasters kommt mit seiner eigenen Dauer hinzu: Jeder
+Prellabstand unter 4ms gilt als Rauschen und startet die 4 guten Abstände
+neu. Das Prellen eines bestimmten Tasters ist nicht gemessen.
+
+Solange der eigene STOP des Panels eingerastet ist, während sein Lösen läuft
+und 1000ms danach (`STOP_LATCH_GRACE_MS`), hält das Panel die Leitung selbst
+an, und das Band lässt Bit 10 in beiden Formen weg ([STOP als
+Not-Aus](Stop-de.md)). Ein in dieser Zeit gedrückter Taster erscheint, sobald
+die Frist endet. Bei unterbrochener Verbindung zeigt das Band keine
+Fehlerbits, also weder FEHLER 10 noch HWSTOP. Auf dem Host getestet in
+`test_band_hwstop`.
+
 ## Arm-Latch
 
 Der IOmcu hält einen Arm-Latch. Solange er gesetzt ist, wird ein

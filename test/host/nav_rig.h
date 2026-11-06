@@ -15,6 +15,7 @@
  * - test_nav_drag.c
  * - test_nav_stop.c
  * - test_nav_bubble.c
+ * - test_band_hwstop.c
  *
  * SPDX-License-Identifier: MIT
  */

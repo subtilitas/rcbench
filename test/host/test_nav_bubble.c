@@ -159,6 +159,11 @@ TEST_CASE(the_fault_chip_text_reads_on_its_fill_in_both_themes)
         }                                                                     \
     } while (0)
 
+/* The chips k_all_chips draws run from UI_BAND_CHIP_LINK up to this one:
+ * HWSTOP stands in FAULT's place only with SETUP > PANEL > Hardware stop
+ * ON, and test_band_hwstop holds it. */
+#define ALL_CHIPS_END UI_BAND_CHIP_HWSTOP
+
 /* Every chip on the band at once: the link up, BENCH, a fault, SAFE and
  * a run clock. */
 static const ui_bench_status_t k_all_chips = {
@@ -185,7 +190,7 @@ static void open_on_overview(const ui_bench_status_t *st, ui_band_chip_t chip)
 
 TEST_CASE(a_tap_on_each_chip_opens_its_bubble)
 {
-    for (int chip = UI_BAND_CHIP_LINK; chip < UI_BAND_CHIP_COUNT; ++chip) {
+    for (int chip = UI_BAND_CHIP_LINK; chip < ALL_CHIPS_END; ++chip) {
         open_on_overview(&k_all_chips, (ui_band_chip_t)chip);
         CHECK_EQ(ui_router_help(), (ui_band_chip_t)chip);
         gfx_rect_t r;
@@ -276,8 +281,8 @@ TEST_CASE(a_tap_closes_the_bubble_and_does_nothing_else)
  * leaves no bubble open.  Every chip to every other one. */
 TEST_CASE(a_tap_on_another_chip_moves_the_bubble_to_it)
 {
-    for (int from = UI_BAND_CHIP_LINK; from < UI_BAND_CHIP_COUNT; ++from) {
-        for (int to = UI_BAND_CHIP_LINK; to < UI_BAND_CHIP_COUNT; ++to) {
+    for (int from = UI_BAND_CHIP_LINK; from < ALL_CHIPS_END; ++from) {
+        for (int to = UI_BAND_CHIP_LINK; to < ALL_CHIPS_END; ++to) {
             if (to == from) {
                 continue;
             }
@@ -333,7 +338,7 @@ TEST_CASE(a_tap_on_another_chip_moves_the_bubble_to_it)
  * bubble closes with it, and the release latches the stop. */
 TEST_CASE(stop_works_through_an_open_bubble)
 {
-    for (int chip = UI_BAND_CHIP_LINK; chip < UI_BAND_CHIP_COUNT; ++chip) {
+    for (int chip = UI_BAND_CHIP_LINK; chip < ALL_CHIPS_END; ++chip) {
         open_on_overview(&k_all_chips, (ui_band_chip_t)chip);
         const gfx_rect_t r = ui_band_stop_rect();
         touch(r.x + r.w / 2, r.y + r.h / 2, TOUCH_EVENT_DOWN, 1);
@@ -785,7 +790,7 @@ TEST_CASE(a_closed_bubble_leaves_no_pixels_behind)
     gfx_canvas_t cv1;
     gfx_canvas_init(&cv1, fb1, W, H, W);
 
-    for (int chip = UI_BAND_CHIP_LINK; chip < UI_BAND_CHIP_COUNT; ++chip) {
+    for (int chip = UI_BAND_CHIP_LINK; chip < ALL_CHIPS_END; ++chip) {
         /* The menu never opened. */
         fresh();
         to_overview();
@@ -918,7 +923,7 @@ TEST_CASE(every_chip_reads_at_4_5_to_1_in_both_themes)
  * closes, the turn reaches no screen, and the next turn does. */
 TEST_CASE(a_knob_turn_closes_the_bubble_and_moves_nothing)
 {
-    for (int chip = UI_BAND_CHIP_LINK; chip < UI_BAND_CHIP_COUNT; ++chip) {
+    for (int chip = UI_BAND_CHIP_LINK; chip < ALL_CHIPS_END; ++chip) {
         open_on_overview(&k_all_chips, (ui_band_chip_t)chip);
         CHECK_EQ(ui_router_help(), (ui_band_chip_t)chip);
         CHECK(!ui_router_take_knob());

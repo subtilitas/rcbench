@@ -97,6 +97,12 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
     [SET_DEMO_MODE] = {
         "demo_mode", "",
         SET_CAT_APP, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
+    /* The bench has a stop button in the heartbeat line: the band names
+     * LINK_FAULT_HEARTBEAT HWSTOP in place of FAULT 10 (ui_band.c).  What
+     * the bench does on the bit stays as it is. */
+    [SET_HW_STOP] = {
+        "hw_stop", "",
+        SET_CAT_APP, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
 
     /*
      * The current monitors, on the IOmcu's I2C (Inter-Integrated

@@ -359,6 +359,9 @@ typedef enum {
     UI_BAND_CHIP_FAULT,   /**< FAULT and the link_fault_t bitmap           */
     UI_BAND_CHIP_ARMED,   /**< SAFE, ARMED, ARMED MOTOR or ARMED SERVO     */
     UI_BAND_CHIP_CLOCK,   /**< the run clock                               */
+    /** @brief HWSTOP, in FAULT's place while SETUP > PANEL > Hardware stop
+     *         is ON and LINK_FAULT_HEARTBEAT is set (ui_band_hwstop()). */
+    UI_BAND_CHIP_HWSTOP,
     UI_BAND_CHIP_COUNT
 } ui_band_chip_t;
 

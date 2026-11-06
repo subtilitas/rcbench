@@ -372,6 +372,7 @@ TRACKED = [
     "shared/bench/sense_limit_link.c",
     "shared/bench/servo_source.c",
     "shared/bench/tone_link.c",
+    "shared/bench/status_poll.c",
     "shared/bench/endpoints_link.c",
     "shared/bench/hitec_rx_link.c",
     "shared/bench/knob.c",

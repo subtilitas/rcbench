@@ -32,6 +32,8 @@
 #include "servo_page.h"
 #include "servo_screen.h"
 #include "servo_source.h"
+#include "settings.h"
+#include "status_poll.h"
 #include "supply_link.h"
 #include "telemetry_sim.h"
 #include "tone_link.h"
@@ -735,10 +737,16 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
 
         /*
          * The status page is read a tenth as often as the bench page: a status
-         * read costs a whole transaction and its numbers move slowly.
+         * read costs a whole transaction and its numbers move slowly.  While
+         * the band shows HWSTOP it is read at every poll, so the chip goes
+         * within a poll of the IOmcu clearing the bit (status_poll.h); the
+         * bitmap is the band's, the STOP latch's grace applied.
          */
-        if (*link_up && (uint32_t)(now_ms() - *last_status) >= 500u) {
-            *last_status = now_ms();
+        const bool status_fast = status_poll_fast(
+            settings_get_bool(SET_HW_STOP),
+            stop_latch_faults(&s_stop_latch, now_ms(), arming_held(&s_arm),
+                              s_dev_faults));
+        if (*link_up && status_poll_due(last_status, now_ms(), status_fast)) {
             read_status_counters();
             /*
              * And the binding, while it is unknown.  Without a retry an
