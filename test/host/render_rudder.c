@@ -9,8 +9,9 @@
  * servo-rudder-nolength.  servo-rudder-armed is ARMED with 2000us tapped.
  * servo-rudder-85 then goes to -85.0°, which MAX takes as its negative side.
  * servo-rudder-auto is ARMED with AUTO's box shown: no KST servo on the
- * programming port, which its first line names.  help-servo-rudder is the
- * task's guide page over the same card, SAFE.
+ * programming port, which its first line names.  servo-rudder-auto-safe is
+ * AUTO's box while SAFE, the view help-servo-rudder-auto opens SERVO's
+ * guide over (render_help.c); help-servo-rudder opens it over servo-rudder.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -56,8 +57,7 @@ static void reading(uint16_t raw, uint32_t at_ms)
 
 bool render_rudder_view(const char *view)
 {
-    return strncmp(view, "servo-rudder", 12) == 0
-           || strncmp(view, "help-servo-rudder", 17) == 0;
+    return strncmp(view, "servo-rudder", 12) == 0;
 }
 
 bool render_rudder_armed(const char *view)
@@ -92,6 +92,9 @@ void render_rudder_pose(const char *view)
     if (strcmp(view, "servo-rudder-auto") == 0) {
         servo_screen_set_armed(true);
         tap_body(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);   /* AUTO */
+    }
+    if (strcmp(view, "servo-rudder-auto-safe") == 0) {
+        tap_body(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);   /* AUTO, SAFE */
     }
     servo_cmd_t c;
     while (servo_screen_take(&c)) { }

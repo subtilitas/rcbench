@@ -5,9 +5,11 @@
  * help-overview is the menu's guide at page 1, help-overview-2 to
  * help-overview-4 its other pages, each opened and turned by taps through
  * the router as a person does.  help-setup, help-outputs, help-logs,
- * help-files and their states' views open the guide over the view
- * render_help_base() names, posed as that view is.  help-band-worst is MOTOR & ESC's band with
- * the widest row of chips test_nav_bubble finds: a clock of 10 hours,
+ * help-files, help-servo, help-supply and their states' views open the
+ * guide over the view render_help_base() names, posed as that view is:
+ * SERVO's on a task or SETTINGS' page, SUPPLY's with the output off, as a
+ * task's page is offered only then.  help-band-worst is MOTOR & ESC's band
+ * with the widest row of chips test_nav_bubble finds: a clock of 10 hours,
  * ARMED MOTOR, FAULT 7F, BENCH and LINK.
  *
  * SPDX-License-Identifier: MIT
@@ -58,6 +60,17 @@ static const struct {
     { "help-logs-import", "logs-import" },
     { "help-logs-plot", "logs-plot" },
     { "help-files", "files" },
+    { "help-servo", "servo" },
+    { "help-servo-test", "servo-test" },
+    { "help-servo-program", "servo-program" },
+    { "help-servo-rudder", "servo-rudder" },
+    { "help-servo-rudder-auto", "servo-rudder-auto-safe" },
+    { "help-servo-output", "servo-settings" },
+    { "help-servo-sweep", "servo-sweep-page" },
+    { "help-servo-dut", "servo-encoder" },
+    { "help-supply", "supply-off" },
+    { "help-supply-limits", "supply-settings-off" },
+    { "help-supply-pdmini", "supply-pdmini" },
 };
 
 const char *render_help_base(const char *view)

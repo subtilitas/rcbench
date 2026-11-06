@@ -14,6 +14,7 @@
  * - test_help_outputs.c
  * - test_help_logs.c
  * - test_help_files.c
+ * - test_help_guides.c
  *
  * SPDX-License-Identifier: MIT
  */
@@ -66,22 +67,23 @@ static bool __attribute__((unused)) same(gfx_rect_t a, gfx_rect_t b)
 }
 
 /**
- * @brief Every page of @p scr, on top, as the bench is now: PREV and NEXT
+ * @brief Every page of @p sc, on top, as the bench is now: PREV and NEXT
  *        in one place over no chip, "?" or STOP; 1 to 5 items, each with a
  *        label and a text of 3 rows at most, in the live half or the band
  *        and under no dock or button; badges in the live half, 2px apart;
- *        on a page for ARMED no safe control and no must_show under the
- *        dock.  A finding fails the case with @p what.
- * @param scr  The screen.
+ *        no safe control under the dock, SAFE as well; while ARMED only
+ *        pages for ARMED, and on those no must_show under the dock.  A
+ *        finding fails the case with @p what.
+ * @param sc   The screen.
  * @param what The state, for a failure.
  */
 static void __attribute__((unused))
-check_pages(const ui_screen_t *scr, const char *what)
+check_pages(const ui_screen_t *sc, const char *what)
 {
     /* PREV and NEXT where page 1 has them, on every page. */
     const bool armed = ui_router_status()->armed;
     ui_help_page_t p0;
-    if (!ui_help_page(scr, armed, 0, &p0)) {
+    if (!ui_help_page(sc, armed, 0, &p0)) {
         T_FAIL("%s: no page 1", what);
         return;
     }
@@ -101,16 +103,16 @@ check_pages(const ui_screen_t *scr, const char *what)
         || near(ui_band_stop_rect(), next0, 2)) {
         T_FAIL("%s: NEXT covers \"?\" or STOP", what);
     }
-    const int offered = ui_help_count(scr, armed);
-    if (offered != scr->help_count() && !armed) {
+    const int offered = ui_help_count(sc, armed);
+    if (offered != sc->help_count() && !armed) {
         T_FAIL("%s: %d pages offered, %d given", what, offered,
-               scr->help_count());
+               sc->help_count());
     }
-    const bool note = ui_help_armed_note(scr, armed);
+    const bool note = ui_help_armed_note(sc, armed);
     const gfx_rect_t band = gfx_rect_make(0, 0, UI_PANEL_W, UI_BAND_H);
     for (int n = 0; n < offered; ++n) {
         ui_help_page_t p;
-        if (!ui_help_page(scr, armed, n, &p)) {
+        if (!ui_help_page(sc, armed, n, &p)) {
             T_FAIL("%s: page %d missing", what, n + 1);
             continue;
         }
@@ -174,25 +176,32 @@ check_pages(const ui_screen_t *scr, const char *what)
                 }
             }
         }
+        if (armed && !p.armed_ok) {
+            T_FAIL("%s: page %d offered while ARMED", what, n + 1);
+        }
+        /* On every page, SAFE as well, the dock covers no control that
+         * stops an output: OUTPUT OFF stops one while SAFE. */
+        for (int y = dock.y; y < dock.y + dock.h && sc->safe_at; y += 8) {
+            for (int x = dock.x; x < dock.x + dock.w; x += 8) {
+                if (sc->safe_at(x, y - UI_BAND_H)) {
+                    T_FAIL("%s: page %d's dock covers a safe control at "
+                           "x %d y %d", what, n + 1, x, y);
+                    y = dock.y + dock.h;
+                    break;
+                }
+            }
+        }
         if (!p.armed_ok) {
             continue;
         }
-        /* On a page for ARMED, the dock covers no control that stops an
-         * output and no rect the screen must keep in view. */
+        /* On a page for ARMED, the dock covers no rect the screen must
+         * keep in view. */
         if (p.must_show.w > 0) {
             gfx_rect_t m = p.must_show;
             m.y = (int16_t)(m.y + UI_BAND_H);
             if (near(m, dock, 0)) {
                 T_FAIL("%s: page %d's dock covers its must_show", what,
                        n + 1);
-            }
-        }
-        for (int y = dock.y; y < dock.y + dock.h && scr->safe_at; y += 8) {
-            for (int x = dock.x; x < dock.x + dock.w; x += 8) {
-                if (scr->safe_at(x, y - UI_BAND_H)) {
-                    T_FAIL("%s: page %d's dock covers a safe control at "
-                           "x %d y %d", what, n + 1, x, y);
-                }
             }
         }
     }
@@ -206,13 +215,13 @@ typedef void (*help_pose_fn)(void);
  * @brief check_pages() over each language and theme, SAFE and ARMED, with
  *        the link up and every capability and with it down; @p pose puts
  *        the screen in its state first, each time.
- * @param scr  The screen.
+ * @param sc   The screen.
  * @param pose The pose.
  * @param name The state's name for a failure.
  * @return The pages the state offers while SAFE, in the last language.
  */
 static int __attribute__((unused))
-check_every_state(const ui_screen_t *scr, help_pose_fn pose,
+check_every_state(const ui_screen_t *sc, help_pose_fn pose,
                   const char *name)
 {
     int pages = 0;
@@ -237,9 +246,9 @@ check_every_state(const ui_screen_t *scr, help_pose_fn pose,
                     snprintf(what, sizeof(what),
                              "%s lang %d theme %d armed %d up %d", name,
                              lang, th, armed, up);
-                    check_pages(scr, what);
+                    check_pages(sc, what);
                     if (!armed) {
-                        pages = ui_help_count(scr, false);
+                        pages = ui_help_count(sc, false);
                     }
                 }
             }

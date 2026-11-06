@@ -62,6 +62,7 @@ SOURCES = [
     "shared/ui/supply_events.c",
     "shared/ui/supply_draw.c",
     "shared/ui/supply_pdmini.c",
+    "shared/ui/supply_guide.c",
     "shared/ui/ui_keypad.c",
     "shared/ui/ui_setting_keypad.c",
     "shared/ui/ui_textkey.c",
@@ -85,6 +86,7 @@ SOURCES = [
     "shared/ui/servo_rudder_panel.c",
     "shared/ui/servo_rudder_auto_panel.c",
     "shared/ui/servo_rudder_flap.c",
+    "shared/ui/servo_guide.c",
     # The programmer for KST and Chaservo servos SERVO opens, and the
     # core its model takes fields and limits from.
     "shared/ui/kst_panel.c",
