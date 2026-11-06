@@ -51,6 +51,15 @@ history is in git.
   sets LEFT END or RIGHT END in the draft 75 counts inside the stop;
   nothing is written. The search's step, cap and the stop found are not
   measured.
+- Host tests of the Hitec line's RP2350 driver and of the end of a LISTEN's
+  answer. `test/host/test_hitec_line.c` (13 cases) runs
+  `protocols/hitec/rp2350/hitec_line.c` on a fake of the pico-sdk: a
+  transaction past its time and every abort stop the state machine, let the
+  receive channel take the FIFO and count the bytes before the restart, so a
+  byte pushed before the stop reaches the capture and none reaches the next
+  transaction. `test/host/test_hitec_pio_answer.c` (3 cases) holds the
+  receiver back 1 state machine cycle after the answer's 10th bit time, not
+  after the 16 bit times of the answer word.
 
 ### Fixed
 
