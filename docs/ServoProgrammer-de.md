@@ -8,7 +8,7 @@ und schreibt geänderte Werte zurück. Die Servos beider Marken verwenden
 dasselbe Protokoll und denselben Registersatz. Öffne die Zeile `KST- und
 Chaservo-Servos` unter **PROGRAMMIEREN** auf der
 [SERVO-Seite](Screens-de.md#servo). Die Servoprogrammierung erscheint eine
-Ebene tiefer und bedeckt die linke Spalte samt den Reitern der Leiste. **SCHLIESSEN** oder das Home-Tag
+Ebene tiefer und bedeckt die linke Spalte samt den Reitern der Leiste. **SCHLIESSEN** oder das Home-Feld
 führt zurück zur Liste von PROGRAMMIEREN. Das Öffnen beendet einen laufenden
 automatischen Test als `vom Bediener gestoppt`. Die Zeile ist mit
 `IOMCU OHNE SERVO PWM` gedimmt und öffnet nichts, solange der IOmcu, die
@@ -117,7 +117,7 @@ Ein Tippen auf die Zeile ZIEL der rechten Karte öffnet **OUTPUTS** auf dem
 Eintrag PROG-PORT, solange der IOmcu den Port treibt, auf SERVO PWM, solange
 er die Ausgänge treibt, und auf der Übersicht, solange das Ziel nicht
 bekannt ist. Das
-Home-Tag dort führt zurück zu SERVO, auf die Aufgabe, auf der die Zeile
+Home-Feld dort führt zurück zu SERVO, auf die Aufgabe, auf der die Zeile
 angetippt wurde. Das Verlassen von SERVO schaltet den Prüfstand auf SAFE
 und beendet einen Sweep oder einen Test, wie jeder Weg aus dem Bildschirm.
 
@@ -208,8 +208,8 @@ einen Neustart erhalten.
   `PROG 5V AUS: SCHALTE ES IM FELD PROG 5V EIN`, solange es aus ist. Die
   Spannungsstufen eines Servotests erreichen den Port nicht: ein Test auf
   ihm sagt `PROG-PORTS LAUFEN MIT FESTEN 5V: KEINE STUFEN`.
-- Für den Endlagenlauf steht das Feld PROG 5V für den PD mini: SEARCH+PROG
-  und SERVO PULSES werden mit dem Feld EIN angeboten, und die
+- Für den Endlagenlauf steht das Feld PROG 5V für den PD mini: SUCHEN + PROGRAMMIEREN
+  und SERVOPULSE werden mit dem Feld EIN angeboten, und die
   Versorgungszyklen der Sitzung schalten GPIO 21. Mit dem Feld AUS und einem
   der beiden gewählt zeigt die Karte ENDLAGENLAUF
   `PROG 5V AUS: SCHALTE ES IM FELD PROG 5V EIN`, nicht die Zeile zum PD mini.
@@ -254,9 +254,9 @@ das Schreiben ohne Ergebnis endet.
 
 Solange der Port im Programmiermodus ist, bleibt die Überlagerung offen, die
 Reiter der Leiste darunter nehmen keinen Druck, und die Bedienelemente des Testers senden nichts an
-den Port. **SCHLIESSEN** und das Home-Tag öffnen PROGRAMMIERMODUS
+den Port. **SCHLIESSEN** und das Home-Feld öffnen PROGRAMMIERMODUS
 VERLASSEN; über einem offenen Tastenfeld, einer Liste, einer Warnung oder
-der Buchstabentastatur schließt das Home-Tag zuerst dieses Feld. **STOP**
+der Buchstabentastatur schließt das Home-Feld zuerst dieses Feld. **STOP**
 auf der rechten Karte wirkt weiterhin. Das Verlassen des SERVO-Bildschirms lässt
 den Port, wie er ist; beim nächsten Aufruf ist das Overlay auf
 PROGRAMMIEREN wieder offen.
@@ -369,9 +369,9 @@ gilt auch auf dem Carrier.
 | --- | --- | --- | --- |
 | PROGRAMMIERSPANNUNG | 4,8 bis 6,0V in 0,1V; bis 8,4V mit HV-SERVO ein | 5,0V | die Versorgungsspannung des Servos im Programmiermodus |
 | STROMBEGRENZUNG | 50 bis 3000mA | 1000mA | die Stromgrenze der Versorgung während des Programmierens |
-| WARTEZEIT VOR PWM | 0 bis 10 000ms | 100ms | die Zeit, die der Port seine Leitung zwischen **VERLASSEN** und dem ersten Puls auf Low hält |
+| WARTEZEIT VOR PWM | 0 bis 10.000ms | 100ms | die Zeit, die der Port seine Leitung zwischen **VERLASSEN** und dem ersten Puls auf Low hält |
 
-Jeder Eintrag öffnet die Zahlentastatur mit seinem Bereich. Ein Wert
+Jeder Eintrag öffnet das Tastenfeld mit seinem Bereich. Ein Wert
 außerhalb des Bereichs wird nicht übernommen. Alle drei werden mit den
 SERVO-Einstellungen gespeichert.
 
@@ -455,7 +455,7 @@ fragt ebenso.
 
 Eine AUS-Anforderung wird sofort als aus gemeldet. Ab IOmcu-Protokoll 4.31
 wartet **AUSGANG AUS** auf das Ende eines laufenden Schreibvorgangs in den
-Servospeicher, höchstens 10000ms, bevor der Befehl den PD mini erreicht.
+Servospeicher, höchstens 10.000ms, bevor der Befehl den PD mini erreicht.
 Ein älterer IOmcu wartet nicht auf den gesamten Schreibvorgang. **STOP**,
 Heartbeat-Verlust und Verbindungsverlust warten nicht auf das Schreiben:
 Der Port bricht es ab, lässt aber einen bereits übertragenen Frame noch
@@ -610,8 +610,8 @@ schreiben `us` für µs: ihre Schrift hat kein Mikro-Zeichen.
 | POSITION | Uncontrolled Pos, µs | 500 bis 2500µs und innerhalb PULSE LOWER bis PULSE UPPER |
 | NACH | Uncontrolled Time, s | 0,4 bis 13,0s |
 
-Die Limits sind die aus `protocols/kst/kst_limits.c`; das Panel hält keine
-eigenen. Das untere Limit von MAX. DUTY und die 5% von TEMPO sind
+Die Limits sind die Konstanten aus `protocols/kst/include/kst_limits.h`, geprüft
+in `protocols/kst/kst_limits.c`; das Panel hält keine eigenen. Das untere Limit von MAX. DUTY und die 5% von TEMPO sind
 Festlegungen, keine Messwerte eines Servos.
 
 ### Ein Wert, den ein hartes Limit ablehnt
@@ -886,7 +886,7 @@ nie geschrieben; Register 1D schreibt nur **PAIRING LÖSEN**.
 | Meldung | Das Servo |
 | --- | --- |
 | `Für diese Werte gibt es keine sichere Schreibreihenfolge.` | hält, was es hielt; nichts wurde gesendet |
-| `Zu viele Änderungen für einen gemeinsamen Plan. Nichts geschrieben.` `Teile die Änderungen auf. Schreibe weniger Werte auf einmal.` | hält, was es hielt; nichts wurde gesendet. Der Planer hört nach 216 000 Arbeitseinheiten ohne Ergebnis auf. Die Sitzung läuft weiter, und die offenen Werte bleiben |
+| `Zu viele Änderungen für einen gemeinsamen Plan. Nichts geschrieben.` `Teile die Änderungen auf. Schreibe weniger Werte auf einmal.` | hält, was es hielt; nichts wurde gesendet. Der Planer hört nach 216.000 Arbeitseinheiten ohne Ergebnis auf. Die Sitzung läuft weiter, und die offenen Werte bleiben |
 | `Schreiben fehlgeschlagen. Kein Wert wurde unvollständig geschrieben.` | hält, was es hielt |
 | `Schreiben fehlgeschlagen. Der vorherige Wert wurde zurückgespielt.` | hält, was es hielt |
 | `Schreiben fehlgeschlagen. Zuvor geschriebene Werte bleiben. Tippe auf ALLES AUSLESEN.` | hält die Register, die vor dem fehlgeschlagenen geschrieben wurden, und in den übrigen den alten Wert. Die zweite Zeile nennt das Register und die Zahl der erledigten Schreibvorgänge. Der Schreibschalter geht aus, und **ALLES AUSLESEN** kommt vor dem nächsten Schreiben |
@@ -1093,7 +1093,7 @@ wiederherstellbar.
 | Die Karte wird entnommen, während eine Seite offen ist, die die Datei zusagt | das Halten sendet nichts, und die Seite kommt mit den drei Zeilen zurück; ihr eigenes Halten von 2s sendet das Schreiben |
 | Die Karte wird entnommen, nachdem die Backup-Datei gespeichert ist | spätere Schreiben der Sitzung werden gesendet; der Vermerk des Schreibens bleibt im RAM |
 | **DATEIEN**, Speichern und Laden ohne Karte | abgelehnt: `Keine Karte. Nichts gespeichert oder ins Servo geschrieben.` |
-| Eine Karte, die nach dem Start des Panels eingesteckt, entnommen oder getauscht wird | das Panel sieht in den Steckplatz, wenn der Programmierer öffnet und bei jedem Tippen auf **VERBINDEN**, **ALLES AUSLESEN**, **DATEIEN**, **ZURÜCKSPIELEN**, **WEITERES**, **SCHREIBEN INS SERVO FREIGEBEN** oder die Schreibzeile: Eine eingesteckte oder getauschte Karte wird eingebunden, eine entnommene freigegeben. Der Blick auf eine eingebundene Karte ist ein Befehl SEND_STATUS (CMD13). Eine Dateianfrage (Liste, Laden, Speichern) läuft auf der Karte, für die sie gestellt wurde; ist bis dahin eine andere an ihrer Stelle eingebunden, findet sie keine Karte. Das Protokoll eines Schreibvorgangs geht auf die Karte, deren Protokoll der Programmierer zuletzt gelesen hat, nie auf eine an ihrer Stelle eingebundene, bevor der nächste Blick deren Protokoll liest. Das Tippen, das eine neue Karte findet, liest noch den Kartenzustand von vorher; das nächste hat ihn, und eine offene Schreibseite wechselt zur Seite mit der Datei |
+| Eine Karte, die nach dem Start des Panels eingesteckt, entnommen oder getauscht wird | das Panel sieht in den Steckplatz, wenn der Programmierer öffnet und bei jedem Tippen auf **VERBINDEN**, **ALLES AUSLESEN**, **DATEIEN**, **ZURÜCKSPIELEN**, **WEITERES**, **SCHREIBEN INS SERVO FREIGEBEN** oder die Schreibzeile: Eine eingesteckte oder getauschte Karte wird eingebunden, eine entnommene freigegeben. Der Blick auf eine eingebundene Karte ist ein Befehl SEND_STATUS (CMD13). Eine Dateianfrage (Liste, Laden, Speichern) läuft auf der Karte, für die sie gestellt wurde; ist bis dahin eine andere an ihrer Stelle eingebunden, findet sie keine Karte. Der Vermerk eines Schreibvorgangs geht auf die Karte, deren Vermerk der Programmierer zuletzt gelesen hat, nie auf eine an ihrer Stelle eingebundene, bevor der nächste Blick deren Vermerk liest. Das Tippen, das eine neue Karte findet, liest noch den Kartenzustand von vorher; das nächste hat ihn, und eine offene Schreibseite wechselt zur Seite mit der Datei |
 
 Eine Karte, die sich nicht einbinden lässt, gilt als nicht vorhanden.
 Schreiben, Zurückspielen und Lösen des Pairings folgen dem oben
@@ -1484,12 +1484,12 @@ mit **SERVO-TESTER** auf diesem Port und **PORT-PWM** ein. Das nächste
 
 ### Das Warten vor PWM
 
-**WARTEZEIT VOR PWM** ist 0 bis 10 000ms, ab Werk 100ms. Ein
+**WARTEZEIT VOR PWM** ist 0 bis 10.000ms, ab Werk 100ms. Ein
 **VERLASSEN** durch den Versorgungszyklus wendet sie nach dem Zyklus an:
 der Port hält die Leitung 1000ms auf Low, nachdem die Versorgung als
 eingeschaltet gemeldet wird,
-und dann für **WARTEZEIT VOR PWM** (IOmcu ab Link-Version 4.30). Der Ziffernblock
-nimmt keinen Wert über 10 000ms an, und mit einem solchen wird kein
+und dann für **WARTEZEIT VOR PWM** (IOmcu ab Link-Version 4.30). Das Tastenfeld
+nimmt keinen Wert über 10.000ms an, und mit einem solchen wird kein
 Verlassen gesendet. Ein Warten von 0ms endet beim nächsten Durchlauf des
 IOmcu. Die Restzeit eines laufenden Wartens wird nicht angezeigt.
 Die für ein Servo nötige Wartezeit ist nicht gemessen.
@@ -1563,7 +1563,7 @@ Bei 0ms ist es die Meldung eines IOmcu mit 4.30.
 | **STOP**, ein eingerasteter Stopp des Prüfstands | der laufende Vorgang endet nach dem Frame auf der Leitung, höchstens 12ms; der Schalter geht aus; `STOP: Der Vorgang wurde abgebrochen.`; der Port verlangt **ALLES AUSLESEN** vor allem anderen. Die schaltbare Servoversorgung (PD mini oder Carrier-5V) wird ausgeschaltet; 1000ms nach der Meldung, dass sie aus ist, kehrt der Port zu PWM zurück |
 | **ABBRECHEN** | dasselbe, ohne den eingerasteten Stopp |
 | Der Link fällt weg | der Schalter geht aus, offene Seiten schließen; ein laufendes Schreiben ist [unterbrochen](#ein-unterbrochenes-schreiben) |
-| Ein Fehler des Prüfstands ([Sicherheit, Fehler](Safety-de.md#fehler)) oder ein Vorgang, der in einer Störung des Servos oder der Leitung endet: kein Servo, ein fehlgeschlagenes Auslesen, geänderte Servowerte, ein Schreibvorgang, der fehlgeschlagen, zurückgesetzt oder unvollständig geblieben ist, eine Prüfung mit Abweichung, ein Fehler des Treibers | ein laufender Schreibvorgang endet zuerst einschließlich seiner Kontrolllesungen: der IOmcu hält die Versorgung bis dahin und 150ms danach an, höchstens 10000ms; das anschließende vollständige Auslesen wird abgebrochen. Danach wird die schaltbare Servoversorgung ausgeschaltet; der Port erkennt dies und hält sie 1000ms ausgeschaltet und ist wieder in PWM: `Der Port hat die Sitzung beendet: Versorgung aus oder Neustart.` Ein IOmcu älter als Link 4.31 lässt die Versorgung an ([Die Versorgung eines Programmierports](Safety-de.md#die-versorgung-eines-programmierports)) |
+| Ein Fehler des Prüfstands ([Sicherheit, Fehler](Safety-de.md#fehler)) oder ein Vorgang, der in einer Störung des Servos oder der Leitung endet: kein Servo, ein fehlgeschlagenes Auslesen, geänderte Servowerte, ein Schreibvorgang, der fehlgeschlagen, zurückgesetzt oder unvollständig geblieben ist, eine Prüfung mit Abweichung, ein Fehler des Treibers | ein laufender Schreibvorgang endet zuerst einschließlich seiner Kontrolllesungen: der IOmcu hält die Versorgung bis dahin und 150ms danach an, höchstens 10.000ms; das anschließende vollständige Auslesen wird abgebrochen. Danach wird die schaltbare Servoversorgung ausgeschaltet; der Port erkennt dies und hält sie 1000ms ausgeschaltet und ist wieder in PWM: `Der Port hat die Sitzung beendet: Versorgung aus oder Neustart.` Ein IOmcu älter als Link 4.31 lässt die Versorgung an ([Die Versorgung eines Programmierports](Safety-de.md#die-versorgung-eines-programmierports)) |
 | Der IOmcu startet neu | seine Sitzung und sein Backup sind weg; `IOmcu neu gestartet. Tippe auf VERBINDEN, dann auf ALLES AUSLESEN.` und `Schalte zuerst die Servoversorgung aus und wieder ein.`: der Port ist in PWM, und das Servo wurde nicht aus dem Programmiermodus geführt |
 | Der Port liest PWM bei gelesenem Servo, eingeschaltetem Schalter, erfolgtem Schreiben oder verlangtem Lesen, und kein Kommando des Programmierers hat ihn dorthin gebracht | die Werte des Servos, das Backup und der Schalter sind auf dem Panel weg; `Der Port hat die Sitzung beendet: Versorgung aus oder Neustart.` und `Schalte die Servoversorgung aus und ein. Tippe dann auf VERBINDEN.` Ein Vorgang, der in derselben Ablesung endete, behält seine eigene Zeile |
 | Die Control-Task des Panels nimmt 2s kein Kommando an | nichts wird gesendet; `Kein Ergebnis vom IOmcu. Tippe auf ALLES AUSLESEN.` Das Kommando ist zurückgezogen: die Control-Task verwirft es, wenn es die Warteschlange verlässt, wie spät auch immer |
@@ -1779,7 +1779,7 @@ Reiters PRÜFLING.
 `test_kst_panel` und die zugehörigen Tests prüfen die Oberfläche. Beide
 nutzen den Port des IOmcu, ein Versorgungsmodell und das Servomodell über
 den Link-Dispatcher. Geprüft werden: die Bereiche der Versorgung an ihren Enden und einen
-Schritt außerhalb, das Warten bei 0ms, 100ms, 10 000ms und 10 001ms als
+Schritt außerhalb, das Warten bei 0ms, 100ms, 10.000ms und 10.001ms als
 Warten des Verlassens, ein Abbruch, ein Wechsel auf SAFE und eine Versorgung, die im
 Warten ausgeht, ein Verlassen an den Link-Versionen 4.13 und 4.14 mit und
 ohne PD mini, **STOP** während eines Verlassens, jedes Limit an seiner Kante, das Halten von 2s
@@ -1811,7 +1811,7 @@ und ein Link-Ausfall in der Zeit aus; den Zyklus über den Überlauf der Uhr
 bei 2^32ms; **VERLASSEN** nach einem Schreiben mit und ohne PD mini, ohne
 Schreiben, mit **ABBRECHEN**, **STOP** und einem Link-Ausfall im Zyklus,
 an einem IOmcu ohne LEAVE und für eine Sitzung, deren Beginn das Panel
-nicht sah; das Warten nach diesem Zyklus bei 0, 1, 3000 und 10 000ms, mit
+nicht sah; das Warten nach diesem Zyklus bei 0, 1, 3000 und 10.000ms, mit
 **ABBRECHEN**, **STOP** vor und nach einem **ABBRECHEN**, einem
 Link-Ausfall und dem ausgeschalteten Ausgang darin, über den Überlauf bei
 2^32ms und an einem IOmcu vor Link-Version 4.30 mit und ohne Warten.
