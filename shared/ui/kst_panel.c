@@ -668,7 +668,7 @@ static bool page_shown(int page)
 void kpn_mode_sync(void)
 {
     const bool on = settings_get_bool(SET_KST_EXPERT);
-    ui_text_id_t ids[PG_COUNT];
+    ui_text_id_t ids[PG_COUNT] = {0};
     int page;
     int n = 0;
 

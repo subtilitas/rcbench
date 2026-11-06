@@ -719,7 +719,6 @@ TEST_CASE(a_restore_of_an_unknown_servo_names_the_hidden_values_on_one_line)
 TEST_CASE(a_step_key_held_as_the_mode_turns_off_stops_its_repeat)
 {
     uint16_t at;
-    uint32_t rev;
 
     fresh();
     connected();
@@ -731,7 +730,7 @@ TEST_CASE(a_step_key_held_as_the_mode_turns_off_stops_its_repeat)
         ticks(1.0f);
         CHECK(kst_prog_changes(M) > 0u);
         at = draft(KST_F_DEAD_BAND);
-        rev = kst_panel_revision();
+        const uint32_t rev = kst_panel_revision();
         mode(false);
         CHECK(kst_panel_revision() != rev);
         ticks(1.5f);
