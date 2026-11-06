@@ -319,7 +319,9 @@ builds the renderer with `GFX_TEXT_TRACE`, draws all 564 views in English and
 in German, and fails when a string in either language
 
 - is wider than the box `gfx_text_in()` was given,
-- is cut at the edge of the area it is drawn in,
+- is cut at the edge of the area it is drawn in, except in a view of the
+  screen guide (`help-...`) at the edge of the live half that faces the
+  dock, which covers the rest of the screen by design,
 - runs past the filled shape it is printed on,
 - overlaps another string the frame shows, or
 - is painted over by a fill drawn after it and not drawn again.

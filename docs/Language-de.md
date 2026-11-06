@@ -333,7 +333,9 @@ Englisch und auf Deutsch und schlägt fehl, wenn ein Text in einer der beiden
 Sprachen
 
 - breiter ist als die Box, die `gfx_text_in()` bekam,
-- am Rand des Bereichs abgeschnitten wird, in dem er steht,
+- am Rand des Bereichs abgeschnitten wird, in dem er steht, außer in einer
+  Ansicht der Bildschirmhilfe (`help-...`) am Rand der freien Hälfte zum
+  Hilfefeld hin, das den Rest der Seite absichtlich verdeckt,
 - über die gefüllte Form hinausläuft, auf der er steht,
 - einen anderen Text des Bildes überlappt, oder
 - von einer später gezeichneten Fläche übermalt und nicht neu

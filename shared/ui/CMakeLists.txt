@@ -45,6 +45,7 @@ set(SRCS
     supply_events.c
     supply_draw.c
     supply_pdmini.c
+    supply_guide.c
     servo_screen.c
     servo_screen_sweep.c
     servo_screen_link.c
@@ -59,6 +60,7 @@ set(SRCS
     servo_rudder_panel.c
     servo_rudder_auto_panel.c
     servo_rudder_flap.c
+    servo_guide.c
     kst_panel.c
     kst_panel_text.c
     kst_panel_warn.c

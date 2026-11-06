@@ -71,6 +71,17 @@ history is in git.
   with a limit on each step, the old firmware kept on every failure, and a
   restart of the panel after a success. ARM is refused while it runs.
   docs/Building.md gives the recovery over header H4.
+- SUPPLY and SERVO have screen guides. "?" in the band opens them, as on
+  the menu. SERVO has a page or two for each task, LIVE, TEST, PROGRAM,
+  RUDDER with and without AUTO's box and SETTINGS' OUTPUT, SWEEP and DUT,
+  then two pages for the output card: 12 pages, 47 items. SUPPLY has a
+  page for LIVE, LIMITS and PD MINI and a second for LIMITS' trips, then
+  two for the readings and the CONTROL card: 6 pages, 25 items. While
+  ARMED only the output card's and the rail's pages show. A page whose dock
+  would cover OUTPUT OFF is left out while the supply's output is on, and
+  SERVO offers no page while a test, a limit run or AUTO runs, so STOP TEST
+  and STOP RUN stay in view. A guide item can put its badge in the
+  control's top-right corner (`UI_HELP_AT_RIGHT`).
 
 ### Changed
 
@@ -118,6 +129,9 @@ history is in git.
 
 ### Fixed
 
+- PROG 5V OFF on SERVO and SUPPLY takes a press under the alert band and
+  a chip's help box while the ports' 5V reads ON, as OUTPUT OFF does. The
+  screen guide leaves out every page whose dock would cover it.
 - The IOmcu's firmware update cannot erase or program flash below 0x2000,
   the boot ROM's boot slots 0 and 1 that hold the partition table. The
   flash calls of the update refused only ranges past the store before. No
@@ -125,6 +139,9 @@ history is in git.
   BOOTSEL until a USB load of the install UF2.
 - SETUP's lists clip their rows inside the clip they are drawn with. With
   the screen guide open on a list, the rows drew under the dock.
+- SERVO's own repaints, the SET row, the rail's plot, ARM and RUDDER's
+  readout among them, stay inside the screen guide's live half. They drew
+  over the dock, on RUDDER's guide page with each new angle reading.
 - SERVO > TEST, SERVO > PROGRAM and the SERVO settings pages no longer repaint
   the whole screen when the arm moves or the AS5600 angle changes in its
   tenths. None of these pages shows either value. The station measured 15.1

@@ -146,9 +146,10 @@ says to flash both boards from one release.
 ## The screen guide
 
 "?" in the status band opens the current screen's guide. Numbered marks
-identify its controls, and a dock explains each one. The menu, OUTPUTS,
-SETUP, LOGS and FILES have a guide; the other screens have no "?". Keypads,
-keyboards, open lists, boxes and confirmation dialogs also have no "?".
+identify its controls, and a dock explains each one. The menu, SUPPLY,
+SERVO, OUTPUTS, SETUP, LOGS and FILES have guides; the other screens have
+no "?". Keypads, keyboards, open lists, boxes, warnings and confirmation
+dialogs also have no "?".
 
 ![The menu's guide at page 1](img/help-overview.png)
 
@@ -162,11 +163,12 @@ keyboards, open lists, boxes and confirmation dialogs also have no "?".
 | Web line | `More: subtilitas.github.io/rcbench/help/`, German `Mehr: subtilitas.github.io/rcbench/help/de/` |
 | PREV and NEXT | 124 x 48px, 8px apart, in the band from x 8 to 264, y 6 to 54, in the home tag's place, the same on every page |
 | CLOSE | 140 x 48px, centred at the dock's bottom, y 496 to 544 |
-| Marks | a 28px badge with the item's number 4px inside the control's top-left corner, or 4px left of a control less than 56px tall or wide; 2px brackets at the control's corners, 3px outside it |
+| Marks | a 28px badge with the item's number 4px inside the control's top-left corner, or 4px left of a control less than 56px tall or wide; 4px inside the top-right corner for a control whose own text starts at its left edge; 2px brackets at the control's corners, 3px outside it |
 
 A control in the band has its badge under the band, below the control's
 left end. The dock ends 4px above the alert band, so an alert covers none
-of it.
+of it. A control that runs past the live half is marked up to the half's
+edge, and the screen's text there is cut at that edge.
 
 PREV and NEXT stay in place when the dock changes sides, so repeated taps
 at the same position keep turning pages. They occupy the band, which no
@@ -195,8 +197,10 @@ chip, "?" or STOP. The home tag returns when the guide closes.
 - A knob turn moves nothing while the guide is open, and the guide stays
   open.
 - Leaving the screen closes the guide, and so does a change of the
-  screen's pages. A link lost or back and the switch between SAFE and ARMED
-  leave it open; the names on its page follow the state.
+  screen's pages: another task or tab, and on SUPPLY and SERVO the switch
+  between SAFE and ARMED, the supply's output switching on or off and a
+  run starting. A link lost or back leaves it open; the names on its page
+  follow the state.
 - While ARMED the guide offers only the pages whose dock covers no control
   that stops an output and no TARGET row; page 1 then says so in one line.
   The menu's pages all show while ARMED.
@@ -235,6 +239,45 @@ ARMED.
 ![LOGS' guide at page 1](img/help-logs.png)
 
 ![FILES' guide at page 1](img/help-files.png)
+
+### SERVO's and SUPPLY's guides
+
+![SERVO's guide at page 1 on LIVE](img/help-servo.png)
+
+A page for the left card takes the dock on the right. The pages for the
+right card, SERVO's output card and SUPPLY's readings and CONTROL card,
+take the dock on the left and are the pages offered while ARMED. The task
+on the left card decides the first pages:
+
+| Screen and task | Pages, items |
+| --- | --- |
+| SERVO LIVE | the strip, the horn's angle, the dial and the readings (4) |
+| SERVO TEST | START TEST, a run card's SETTINGS, START LIMIT RUN and the caps (4) |
+| SERVO PROGRAM | the programmers' list, and SEARCH when the list shows its bar (1 or 2) |
+| SERVO RUDDER | LENGTH, the drive buttons, ZERO, RESET MAX and AUTO (5); DEFLECTION, TRAILING EDGE and the state lines (3) |
+| SERVO RUDDER with AUTO's box | the targets, MARGIN and TOLERANCE, START and MANUAL (4); DEFLECTION and TRAILING EDGE (2) |
+| SERVO SETTINGS > OUTPUT | the page tabs, TYPE, FRAME RATE, PULSE MIN and PULSE MAX (5); PULSE CENTRE, TRIM, TRAVEL and REVERSE (4) |
+| SERVO SETTINGS > SWEEP | CURVE, SPEED and RANGE (3) |
+| SERVO SETTINGS > DUT | NAME, REPORT, ENC CENTRE, the AS5600 button and the caps (5) |
+| SERVO, every task | the type, the plot or PROG 5V, SET and SPEED (4); TARGET, CENTRE with SWEEP and RELEASE, ARM, and on RUDDER the side view (3 or 4) |
+| SUPPLY LIVE | the strip, PLOT and TABLE, VOLTAGE and CURRENT LIMIT (4) |
+| SUPPLY SETTINGS > LIMITS | the tabs, the caps, the start values and RESET PD MINI with the PD mini (3 or 4); the trips and the questions, dock on the left (5) |
+| SUPPLY SETTINGS > PD MINI | the four rows: PD mini, TX, RX and baud (4) |
+| SUPPLY, every task | the range and the four reading cards (5); the set points' values on LIVE, RESET PEAKS and OUTPUT (2 or 3) |
+
+A page whose dock would cover a control that stops an output is left out
+while that control shows:
+
+- The left card's pages cover the SET row on SERVO and the rail on
+  SUPPLY, so they are not offered while the supply's output is on or an
+  ON is on its way: OUTPUT OFF stays in view.
+- SERVO's output card pages cover the left card, so they are not offered
+  while the automatic test, a limit run or AUTO runs: STOP TEST or STOP
+  RUN stays in view. Such a run is ARMED, so SERVO then offers no page and
+  the band shows no "?".
+- SERVO offers no page over a keypad, a keyboard, a list, a warning, a
+  question, a programmer or a run's settings; SUPPLY none over its keypad
+  or the question about a live output.
 
 ## Screenshot
 

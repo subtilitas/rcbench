@@ -116,6 +116,8 @@ void test_page_down(const touch_event_t *evt);
 void prog_page_down(const touch_event_t *evt);
 /* The search typed on the keyboard opened from PROGRAM's list. */
 void prog_search_done(const char *text);
+/* PROGRAM's list as it stands: SERVO's PROGRAM rows, the search applied. */
+void prog_list_now(prog_list_t *l);
 /* The strip; TEST's page; the TARGET row on the right card; SUPPLY's caps,
  * read-only, at (@p x, @p y). */
 void draw_strip(gfx_canvas_t *c);
@@ -126,6 +128,26 @@ void draw_caps_button(gfx_canvas_t *c);
 /* The strip's row, and START LIMIT RUN on its card. */
 gfx_rect_t strip_area(void);
 gfx_rect_t lim_start_rect(void);
+
+/* --- servo_guide.c: the screen guide's pages (ui_help.h) ---------------- */
+
+struct ui_help_page;
+
+/**
+ * @brief The guide's pages for what SERVO shows now: the task's, then the
+ *        output card's two; 0 under a panel, a programmer or a run's
+ *        settings.
+ * @return the count
+ */
+int servo_help_count(void);
+
+/**
+ * @brief Page @p i of those servo_help_count() counts.
+ * @param i the page, from 0
+ * @param out the page
+ * @return false past the last or for NULL
+ */
+bool servo_help_page(int i, struct ui_help_page *out);
 
 /* --- the page area and TEST's run cards --------------------------------- */
 

@@ -160,9 +160,9 @@ zu flashen.
 
 "?" im Statusband öffnet die Hilfe zur aktuellen Seite. Nummerierte Marken
 kennzeichnen die Bedienelemente; ein Hilfefeld erklärt ihre Funktion.
-Das Menü, OUTPUTS, SETUP, LOGS und FILES haben eine Hilfe, die anderen
-Seiten haben kein "?". Auch Tastenfelder, Tastaturen, offene Listen, Boxen
-und Bestätigungsdialoge zeigen kein "?".
+Das Menü, SUPPLY, SERVO, OUTPUTS, SETUP, LOGS und FILES haben eine Hilfe,
+die anderen Seiten haben kein "?". Auch Tastenfelder, Tastaturen, offene
+Listen, Boxen, Warnungen und Bestätigungsdialoge zeigen kein "?".
 
 ![Die Hilfe des Menüs auf Seite 1](img/de/help-overview.png)
 
@@ -176,11 +176,13 @@ und Bestätigungsdialoge zeigen kein "?".
 | Web-Zeile | `Mehr: subtilitas.github.io/rcbench/help/de/`, auf Englisch die Adresse ohne `de/` |
 | VORIGE und NÄCHSTE | 124 x 48px, 8px auseinander, im Band von x 8 bis 264, y 6 bis 54, an der Stelle des Home-Felds, auf jeder Seite dieselbe |
 | SCHLIESSEN | 140 x 48px, mittig am unteren Rand des Hilfefelds, y 496 bis 544 |
-| Marken | eine 28px-Marke mit der Nummer des Eintrags 4px innerhalb der oberen linken Ecke des Bedienelements, oder 4px links von einem Bedienelement unter 56px Höhe oder Breite; Winkel von 2px an den Ecken des Bedienelements, 3px außerhalb |
+| Marken | eine 28px-Marke mit der Nummer des Eintrags 4px innerhalb der oberen linken Ecke des Bedienelements, oder 4px links von einem Bedienelement unter 56px Höhe oder Breite; 4px innerhalb der oberen rechten Ecke bei einem Bedienelement, dessen eigener Text an seiner linken Kante beginnt; Winkel von 2px an den Ecken des Bedienelements, 3px außerhalb |
 
 Bei einem Bedienelement im Statusband steht die Nummernmarke darunter,
 unter seiner linken Kante. Das Hilfefeld endet 4px über dem Alarmband,
-sodass ein Alarm nichts davon verdeckt.
+sodass ein Alarm nichts davon verdeckt. Ein Bedienelement, das über die
+freie Hälfte hinausreicht, wird bis zu ihrem Rand markiert; Text der Seite
+endet dort an diesem Rand.
 
 VORIGE und NÄCHSTE bleiben an derselben Stelle, wenn das Hilfefeld die
 Seite wechselt. Wiederholtes Tippen auf dieselbe Position blättert weiter.
@@ -209,9 +211,12 @@ wieder.
 - Beim Öffnen der Hilfe endet eine Ziehbewegung an der aktuellen Position.
   Eine Haltegeste auf ARM wird abgebrochen.
 - Der Drehknopf bewegt bei geöffneter Hilfe nichts und schließt sie nicht.
-- Das Verlassen der Seite oder der Wechsel ihrer Unterseite schließt die
-  Hilfe. Verbindungsverlust, Rückkehr der Verbindung und Wechsel zwischen
-  SAFE und ARMED lassen sie offen. Ihre Beschriftungen folgen dem Zustand.
+- Das Verlassen der Seite oder ein Wechsel ihrer Hilfeseiten schließt die
+  Hilfe: eine andere Aufgabe oder ein anderer Tab, und auf SUPPLY und SERVO
+  der Wechsel zwischen SAFE und ARMED, das Ein- oder Ausschalten des
+  Netzteilausgangs und der Start eines Laufs. Verbindungsverlust und
+  Rückkehr der Verbindung lassen sie offen. Ihre Beschriftungen folgen dem
+  Zustand.
 - In ARMED zeigt die Hilfe nur Seiten, deren Hilfefeld weder ein
   Bedienelement zum Anhalten noch eine ZIEL-Zeile verdeckt. Hilfeseite 1
   weist darauf hin. Im Menü bleiben alle Hilfeseiten auch in ARMED sichtbar.
@@ -251,6 +256,46 @@ alle ihre Hilfeseiten auch in ARMED sichtbar.
 ![Die Hilfe von LOGS auf Seite 1](img/de/help-logs.png)
 
 ![Die Hilfe von FILES auf Seite 1](img/de/help-files.png)
+
+### Die Hilfe von SERVO und SUPPLY
+
+![Die Hilfe von SERVO auf Seite 1 in LIVE](img/de/help-servo.png)
+
+Eine Hilfeseite zur linken Karte hat das Hilfefeld rechts. Die Hilfeseiten
+zur rechten Karte, der Ausgangskarte von SERVO und den Messwerten und der
+Karte STEUERUNG von SUPPLY, haben es links; nur sie erscheinen in ARMED.
+Die Aufgabe auf der linken Karte bestimmt die ersten Hilfeseiten:
+
+| Seite und Aufgabe | Hilfeseiten, Einträge |
+| --- | --- |
+| SERVO LIVE | die Aufgabenleiste, der Winkel des Ruderhorns, die Skala und die Messwerte (4) |
+| SERVO TEST | TEST STARTEN, OPTIONEN einer Laufkarte, ENDLAGENLAUF STARTEN und die Grenzen (4) |
+| SERVO PROGRAMMIEREN | die Liste der Servoprogrammierungen, und SUCHE, wenn die Liste ihre Leiste zeigt (1 oder 2) |
+| SERVO RUDER | LÄNGE, die Fahrtasten, NULLPUNKT, MAX LÖSCHEN und AUTO (5); AUSSCHLAG, HINTERKANTE und die Statuszeilen (3) |
+| SERVO RUDER mit AUTO | die Sollwerte, RESERVE und TOLERANZ, START und MANUELL (4); AUSSCHLAG und HINTERKANTE (2) |
+| SERVO OPTIONEN > AUSGANG | die Tabs, TYP, PULSRATE, PULS MIN und PULS MAX (5); PULS MITTE, TRIMMUNG, WEG und UMKEHREN (4) |
+| SERVO OPTIONEN > SWEEP | KURVE, TEMPO und BEREICH (3) |
+| SERVO OPTIONEN > PRÜFLING | NAME, BERICHT, SENSOR-MITTE, die Taste AS5600 und die Grenzen (5) |
+| SERVO, jede Aufgabe | Typ, Grafik oder PROG 5V, SOLL und TEMPO (4); ZIEL, ZENTRIEREN mit SWEEP und FREIGEBEN, ARM, auf RUDER auch die Seitenansicht (3 oder 4) |
+| SUPPLY LIVE | die Aufgabenleiste, GRAFIK und TABELLE, SPANNUNG und STROMBEGRENZUNG (4) |
+| SUPPLY OPTIONEN > GRENZEN | die Tabs, die Obergrenzen, die Startwerte und mit dem PD mini PD MINI ZURÜCKSETZEN (3 oder 4); die Abschaltungen und Rückfragen, Hilfefeld links (5) |
+| SUPPLY OPTIONEN > PD MINI | die vier Zeilen: PD mini, TX, RX und Baud (4) |
+| SUPPLY, jede Aufgabe | der Bereich und die vier Messwertkarten (5); in LIVE die Sollwerte, SPITZENWERTE ZURÜCKSETZEN und der Ausgang (2 oder 3) |
+
+Eine Hilfeseite, deren Hilfefeld ein Bedienelement zum Anhalten eines
+Ausgangs verdecken würde, fehlt, solange dieses Element sichtbar ist:
+
+- Die Hilfeseiten zur linken Karte verdecken die SOLL-Zeile von SERVO und
+  die rechte Spalte von SUPPLY. Sie fehlen, solange der Netzteilausgang an
+  ist oder ein EIN unterwegs ist: AUSGANG AUS bleibt sichtbar.
+- Die Hilfeseiten zur Ausgangskarte von SERVO verdecken die linke Karte. Sie
+  fehlen, solange der automatische Test, ein Endlagenlauf oder AUTO läuft:
+  TEST BEENDEN oder LAUF BEENDEN bleibt sichtbar. Ein solcher Lauf ist
+  ARMED; SERVO bietet dann keine Hilfeseite, und das Band zeigt kein "?".
+- SERVO bietet keine Hilfeseite über einem Tastenfeld, einer Tastatur,
+  einer Liste, einer Warnung, einer Rückfrage, einer Servoprogrammierung
+  oder den Optionen eines Laufs; SUPPLY keine über seinem Tastenfeld oder
+  der Rückfrage zu einem aktiven Ausgang.
 
 ## Screenshot
 

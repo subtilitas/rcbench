@@ -30,7 +30,7 @@
  * - a_reading_repaints_the_readout_alone_and_as_a_whole_frame_would
  * - a_new_max_in_mm_alone_repaints_the_readout
  * - the_max_lines_the_state_colours_and_a_press_are_drawn
- * - the_help_page_leaves_the_target_row_in_view
+ * - the_guide_marks_rudder_and_leaves_the_target_row_in_view
  * - every_string_fits
  *
  * SPDX-License-Identifier: MIT
@@ -447,7 +447,7 @@ TEST_CASE(length_takes_0_or_10_to_500mm_and_refuses_the_gap)
     CHECK_STR_EQ(k->unit, "mm");
     CHECK_NEAR(k->min, 0.0f, 1e-6f);
     CHECK_NEAR(k->max, 500.0f, 1e-6f);
-    CHECK_EQ(rudder_help_count(), 0);
+    CHECK_EQ(scr->help_count(), 0);
     keys("5");
     CHECK(k->open);
     CHECK_STR_EQ(k->reason, "0 or 10 to 500mm");
@@ -1000,22 +1000,35 @@ TEST_CASE(the_max_lines_the_state_colours_and_a_press_are_drawn)
 
 /* ------------------------------------------------------------ the guide */
 
-/* One page on RUDDER, SAFE and ARMED: the output card's, the dock on the
- * left over RUDDER's card, the TARGET row and DISARM in view.  Every item
- * in the live half, at most 3 rows, in both languages.  No page on LIVE or
- * under a panel. */
-TEST_CASE(the_help_page_leaves_the_target_row_in_view)
+/* RUDDER's two pages, the dock on the right over the output card, and the
+ * output card's two, the dock on the left over RUDDER's card, the TARGET
+ * row and DISARM in view: four SAFE, the output card's two ARMED.  Every
+ * item in the live half, at most 3 rows, in both languages.  AUTO's box
+ * has its own first page; no page under a panel. */
+TEST_CASE(the_guide_marks_rudder_and_leaves_the_target_row_in_view)
 {
     fresh();
-    CHECK_EQ(scr->help_count(), 0);
     to_rudder();
-    CHECK_EQ(scr->help_count(), 1);
-    CHECK_EQ(ui_help_count(scr, false), 1);
-    CHECK_EQ(ui_help_count(scr, true), 1);
+    CHECK_EQ(scr->help_count(), 4);
+    CHECK_EQ(ui_help_count(scr, false), 4);
+    CHECK_EQ(ui_help_count(scr, true), 2);
+    CHECK(ui_help_armed_note(scr, true));
     ui_help_page_t p;
+    CHECK(ui_help_page(scr, false, 0, &p));
+    CHECK_EQ(p.title, TX_HG_SV_TITLE_RUDDER);
+    CHECK_EQ(p.side, UI_HELP_DOCK_RIGHT);
+    CHECK(!p.armed_ok);
+    CHECK_EQ(p.count, 5);
+    CHECK(ui_help_page(scr, false, 1, &p));
+    CHECK_EQ(p.title, TX_HG_SV_TITLE_RUD_READ);
+    CHECK_EQ(p.count, 3);
     CHECK(ui_help_page(scr, true, 0, &p));
     CHECK(p.armed_ok);
-    CHECK_EQ(p.title, TX_HG_RUD_TITLE_OUT);
+    CHECK_EQ(p.title, TX_HG_SV_TITLE_CARD);
+    CHECK(ui_help_page(scr, true, 1, &p));
+    CHECK_EQ(p.title, TX_HG_SV_TITLE_DRIVE);
+    /* TARGET, the buttons, ARM and the side view. */
+    CHECK_EQ(p.count, 4);
     CHECK_EQ(p.must_show.x, SV_RC_X);
     CHECK_EQ(p.must_show.y, TARGET_ROW_Y);
     CHECK_EQ(p.must_show.w, SV_RC_W);
@@ -1027,10 +1040,10 @@ TEST_CASE(the_help_page_leaves_the_target_row_in_view)
     CHECK(m.x >= dock.x + dock.w || m.x + m.w <= dock.x);
     CHECK(m.y >= dock.y && m.y + m.h <= dock.y + dock.h);
     /* DISARM out from under the dock. */
-    CHECK(p.item[1].rect.x >= dock.x + dock.w);
+    CHECK(p.item[2].rect.x >= dock.x + dock.w);
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
-        for (int i = 0; i < 1; ++i) {
+        for (int i = 0; i < 4; ++i) {
             CHECK(scr->help_page(i, &p));
             const gfx_rect_t live = ui_help_live_rect(p.side);
             const gfx_rect_t d = ui_help_dock_rect(p.side);
@@ -1045,20 +1058,36 @@ TEST_CASE(the_help_page_leaves_the_target_row_in_view)
                 CHECK(rows >= 1 && rows <= UI_HELP_ROWS);
                 CHECK(p.item[k].label != NULL && p.item[k].label[0] != '\0');
             }
-            CHECK(ui_help_text_bottom(&p, true) <= ui_help_text_limit());
+            CHECK(ui_help_text_bottom(&p, false) <= ui_help_text_limit());
         }
+        /* The ARMED note over the first page ARMED offers. */
+        CHECK(ui_help_page(scr, true, 0, &p));
+        CHECK(ui_help_text_bottom(&p, true) <= ui_help_text_limit());
     }
     ui_text_set_language(UI_LANG_EN);
-    CHECK(!scr->help_page(1, &p));
+    CHECK(!scr->help_page(4, &p));
     CHECK(!scr->help_page(-1, &p));
     CHECK(!scr->help_page(0, NULL));
     press(RUD_C_LENGTH);
     CHECK_EQ(scr->help_count(), 0);
     CHECK(!scr->help_page(0, &p));
     key(UI_KEY_CANCEL);
-    CHECK_EQ(scr->help_count(), 1);
+    CHECK_EQ(scr->help_count(), 4);
+    /* AUTO's box: its own page first, LENGTH and the drive buttons gone. */
+    press(RUD_C_AUTO);
+    CHECK(scr->help_page(0, &p));
+    CHECK_EQ(p.title, TX_HG_SV_TITLE_AUTO);
+    CHECK_EQ(p.count, 4);
+    CHECK(scr->help_page(1, &p));
+    CHECK_EQ(p.title, TX_HG_SV_TITLE_RUD_READ);
+    CHECK_EQ(p.count, 2);
+    press(RUD_C_AUTO);
+    CHECK(scr->help_page(0, &p));
+    CHECK_EQ(p.title, TX_HG_SV_TITLE_RUDDER);
     tap(SV_TAB_LIVE_X, SV_TAB_Y);
-    CHECK_EQ(scr->help_count(), 0);
+    CHECK_EQ(scr->help_count(), 3);
+    CHECK(scr->help_page(0, &p));
+    CHECK_EQ(p.title, TX_HG_SV_TITLE_LIVE);
 }
 
 /* ---------------------------------------------------------- the strings */
@@ -1158,7 +1187,7 @@ int main(void)
     RUN(a_reading_repaints_the_readout_alone_and_as_a_whole_frame_would);
     RUN(a_new_max_in_mm_alone_repaints_the_readout);
     RUN(the_max_lines_the_state_colours_and_a_press_are_drawn);
-    RUN(the_help_page_leaves_the_target_row_in_view);
+    RUN(the_guide_marks_rudder_and_leaves_the_target_row_in_view);
     RUN(every_string_fits);
     return test_summary("servo_rudder_panel");
 }
