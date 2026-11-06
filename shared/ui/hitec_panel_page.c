@@ -418,7 +418,11 @@ void hpn_page_apply(void)
         (void)hitec_prog_factory(p);
         break;
     case W_BACKUP:
-        (void)hitec_prog_restore_backup(p);
+        /* The hold confirms the unit where the bench cannot tie the servo
+         * to the backup; a classic servo of the backup's serial needs no
+         * confirmation. */
+        (void)(hitec_prog_unit_told_apart(p) ? hitec_prog_restore_backup(p)
+                                             : hitec_prog_restore_backup_unit(p));
         break;
     case W_MOVE:
         (void)hitec_prog_move_start(p);

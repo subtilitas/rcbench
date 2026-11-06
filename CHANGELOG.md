@@ -61,6 +61,18 @@ history is in git.
   BOOTSEL until a USB load of the install UF2.
 - SETUP's lists clip their rows inside the clip they are drawn with. With
   the screen guide open on a list, the rows drew under the dock.
+- RESTORE of a Hitec session's backup asks the operator to confirm the
+  unit where the bench cannot check it. A second servo of one model, put
+  on the port without LEAVE or CONNECT, could get the first one's backup
+  when its registers held the first one's last-read values. A D series
+  servo has no serial register, and a classic one with a non-digit serial
+  cell holds none. For both the RESTORE page says `The bench cannot check
+  that this is the servo the backup came from. Hold only if it is.`, names
+  the model with its ID 0x32 or `no serial` and the backup's age, and its
+  2s hold confirms the unit. A classic servo with the backup's serial,
+  cells 0x80 to 0x86, restores as before. The write's second read reads
+  that serial again, 43 cells instead of 36, so a servo swapped after the
+  last READ ALL ends the write before a step.
 - SERVO > TEST, SERVO > PROGRAM and the SERVO settings pages no longer repaint
   the whole screen when the arm moves or the AS5600 angle changes in its
   tenths. None of these pages shows either value. The station measured 15.1

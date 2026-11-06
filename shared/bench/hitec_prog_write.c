@@ -512,7 +512,16 @@ hitec_prog_msg_id_t hitec_prog_write_gate(const hitec_prog_t *p,
         || (kind == (uint8_t)HITEC_PROG_WR_FACTORY && !factory_differs(p))) {
         return HITEC_PROG_MSG_NO_CHANGES;
     }
-    return p->write_on ? HITEC_PROG_MSG_NONE : HITEC_PROG_MSG_WRITE_OFF;
+    if (!p->write_on) {
+        return HITEC_PROG_MSG_WRITE_OFF;
+    }
+    if (kind == (uint8_t)HITEC_PROG_WR_BACKUP && !p->bk_unit_ok
+        && !hitec_prog_unit_told_apart(p)) {
+        /* Another unit of the model could hold these values: the
+         * operator confirms the unit first. */
+        return HITEC_PROG_MSG_BACKUP_UNIT;
+    }
+    return HITEC_PROG_MSG_NONE;
 }
 
 /**
@@ -619,8 +628,10 @@ static void go(hitec_prog_t *p)
 /**
  * @brief The addresses the plan of a write of @p kind depends on, which the
  *        second read reads again: classic cells 0x00 to 0x23, the balance
- *        0x1C included, and for FACTORY DEFAULT the factory block 0x30 to
- *        0x53 its target is copied from; D series the registers a plan
+ *        0x1C included, for FACTORY DEFAULT the factory block 0x30 to 0x53
+ *        its target is copied from, and for RESTORE of the session's backup
+ *        the serial 0x80 to 0x86 that ties the servo to the backup
+ *        (hitec_prog_unit_told_apart()); D series the registers a plan
  *        writes (hitec_writable()).
  *
  * @param p     The programmer.
@@ -640,6 +651,10 @@ static uint16_t reread_set(const hitec_prog_t *p, uint8_t kind,
         for (unsigned a = 0; kind == (uint8_t)HITEC_PROG_WR_FACTORY
                              && a < HITEC_C_BLOCK_LEN; ++a) {
             addrs[n++] = (uint8_t)(HITEC_C_FACTORY + a);
+        }
+        for (unsigned a = 0; kind == (uint8_t)HITEC_PROG_WR_BACKUP
+                             && a < HITEC_C_SERIAL_LEN; ++a) {
+            addrs[n++] = (uint8_t)(HITEC_C_SERIAL + a);
         }
         return n;
     }

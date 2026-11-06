@@ -473,6 +473,7 @@ TEST_CASE(a_session_lost_takes_the_lines_of_what_it_held)
         HITEC_PROG_MSG_LOAD_SAME, HITEC_PROG_MSG_LOAD_CHECK,
         HITEC_PROG_MSG_LOADED, HITEC_PROG_MSG_LOADED_RAW,
         HITEC_PROG_MSG_OTHER_SERVO, HITEC_PROG_MSG_READS_DIFFER,
+        HITEC_PROG_MSG_BACKUP_UNIT,
     };
     static const hitec_link_phase_t k_phase[] = { HITEC_LINK_DOWN,
                                                   HITEC_LINK_NO_PAGE };

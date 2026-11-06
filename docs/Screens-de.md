@@ -2082,7 +2082,9 @@ Seite unter dem Speichereintrag. Ein neuer Name öffnet die Tastatur;
 Dateien für andere Modelle oder außerhalb weicher Regeln öffnen
 DIESE DATEI PRÜFEN.
 
-ZURÜCKSPIELEN schreibt das Sitzungsbackup zurück. WEITERES enthält für
+ZURÜCKSPIELEN schreibt das Sitzungsbackup zurück; wo der Prüfstand nicht
+prüfen kann, ob das Servo das des Backups ist, bestätigt sein 2s Halten das
+Exemplar. WEITERES enthält für
 klassische Servos WERKSEINSTELLUNG. Ein Port einer anderen HITEC-Sitzung
 öffnet mit PORT FREIGEBEN; 2s Halten gibt ihn bei unveränderter Versorgung
 an PWM zurück. [Servoprogrammierung für Hitec-Servos](HitecProgrammer-de.md)

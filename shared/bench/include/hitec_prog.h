@@ -85,9 +85,11 @@
  *     becomes the session's backup (HITEC_PROG_MSG_OTHER_SERVO).  A D
  *     series read is of the servo read before it only by the chain of the
  *     session: with a write unverified, its record's verdict SAME, DONE
- *     or MIX; otherwise every writable register as that read found it.
- *     Two D series servos of one model with equal writable registers are
- *     not told apart.
+ *     or MIX; otherwise every writable register as that read found it,
+ *     the ID 0x32 included.  Two D series servos of one model with equal
+ *     writable registers are not told apart, nor are two classic servos
+ *     with no serial (hitec_prog_unit_told_apart()): RESTORE of the
+ *     session's backup asks the operator for the unit.
  *   - The backup file: before the first write of a session that sends a
  *     step (WRITE n VALUES, REPAIR, a RESTORE, FACTORY DEFAULT) the session's
  *     backup is saved to a new file, HITEC001 to HITEC999 (hitec_card.h),
@@ -111,7 +113,13 @@
  *     parameters differs.  Nothing reaches the servo before WRITE n VALUES.
  *   - RESTORE of the session's backup writes every address a plan writes
  *     (hitec_writable()) back from the backup, raw values included, as a
- *     write with its read-back.
+ *     write with its read-back.  It needs a servo told apart from every
+ *     other unit of its model: a classic servo whose serial the read and
+ *     the backup hold alike, read again by the write's second read.  For a
+ *     D series servo, and a classic one without a serial, the operator
+ *     confirms the unit (hitec_prog_restore_backup_unit(), the screen's 2s
+ *     hold); hitec_prog_restore_backup() alone refuses them
+ *     (HITEC_PROG_MSG_BACKUP_UNIT) and sends nothing.
  *   - FACTORY DEFAULT, classic servos only: cells 0x00 to 0x23 from the
  *     servo's own factory cells 0x30 to 0x53 (hitec_c_factory()), as a write.
  *     The D series reset (0x6E = 0x0F0F) is not offered: the values it
@@ -314,6 +322,11 @@ typedef enum {
                                        loaded                              */
     HITEC_PROG_MSG_BACKUP_RESTORED, /**< the session's backup written back
                                        and verified                        */
+    HITEC_PROG_MSG_BACKUP_UNIT,   /**< RESTORE of the session's backup
+                                       refused: the servo read is not told
+                                       apart from another unit of its
+                                       model (hitec_prog_unit_told_apart())
+                                       and the unit is not confirmed       */
     HITEC_PROG_MSG_FACTORY_DONE,  /**< the factory values written and
                                        verified                            */
     HITEC_PROG_MSG_LOADED_RAW,    /**< the draft holds a backup file with
@@ -668,6 +681,10 @@ typedef struct {
 
     /* --- files and backups, hitec_prog_file.c ------------------------- */
     bool     have_bk;         /**< the session's backup is held           */
+    bool     bk_unit_ok;      /**< the operator confirms the unit for the
+                                   RESTORE that starts now
+                                   (hitec_prog_restore_backup_unit())     */
+    uint32_t bk_ms;           /**< f.now_ms of the read the backup is     */
     bool     bk_saved;        /**< and a file on the card holds it        */
     bool     bk_no_file;      /**< a write went with no card for it       */
     uint32_t bk_gen;          /**< counts the backups: one per session and
@@ -1542,7 +1559,45 @@ bool hitec_prog_backup_image(const hitec_prog_t *p, hitec_image_t *out);
 bool hitec_prog_backup_differs(const hitec_prog_t *p);
 
 /**
- * @brief RESTORE of the session's backup, as a write.
+ * @brief Whether the servo read is told apart from every other unit of its
+ *        model as the unit the session's backup was taken from
+ *        (hitec_prog_unit.c): a classic servo whose read and backup hold
+ *        the same serial, 7 ASCII digits in cells 0x80 to 0x86.  A D series
+ *        servo has no serial register the programmer knows of, and a
+ *        classic one with an unread or non-digit serial cell holds none:
+ *        both are false.
+ *
+ * @param p The programmer.
+ * @return true when it is.
+ */
+bool hitec_prog_unit_told_apart(const hitec_prog_t *p);
+
+/**
+ * @brief How long ago the read was that the session's backup is, by
+ *        unsigned difference of the 32-bit millisecond clock.
+ *
+ * @param p The programmer.
+ * @return The age in ms; 0 with no backup.
+ */
+uint32_t hitec_prog_backup_age_ms(const hitec_prog_t *p);
+
+/**
+ * @brief RESTORE of the session's backup with the unit confirmed by the
+ *        operator: the servo read is the unit the backup was taken from.
+ *        The screen calls it after its 2s hold on a servo
+ *        hitec_prog_unit_told_apart() does not tie to the backup; every
+ *        other gate of the write stands.
+ *
+ * @param p The programmer.
+ * @return HITEC_PROG_MSG_NONE when it starts, else the message said.
+ */
+hitec_prog_msg_id_t hitec_prog_restore_backup_unit(hitec_prog_t *p);
+
+/**
+ * @brief RESTORE of the session's backup, as a write.  It is refused
+ *        (HITEC_PROG_MSG_BACKUP_UNIT) while hitec_prog_unit_told_apart()
+ *        is false: hitec_prog_restore_backup_unit() takes those.  A classic
+ *        second read reads the serial again.
  *
  * @param p The programmer.
  * @return HITEC_PROG_MSG_NONE when it starts, else the message said.

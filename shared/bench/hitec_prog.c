@@ -303,6 +303,7 @@ static bool of_the_session(unsigned id)
     case HITEC_PROG_MSG_READS_DIFFER:
     case HITEC_PROG_MSG_MOVE_NEED_DIR:
     case HITEC_PROG_MSG_MOVE_NO_MAP:
+    case HITEC_PROG_MSG_BACKUP_UNIT:
         return true;
     default:
         return false;

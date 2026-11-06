@@ -83,7 +83,7 @@ from 1 HS-5645MG, 1 HS-7955TG and 1 HS-5955TG (2026-10-18 to 2026-10-20)
 | MORE | The programming voltage and current limit, each on the keypad, and [Hitec D receive](#hitec-d-receive), while the tester holds the port. While the port is held: DISCARD EDITS with an edit standing, REPAIR CHECKSUM with a classic checksum that is wrong, and FACTORY DEFAULT for a classic servo read ([FACTORY DEFAULT](#factory-default)) |
 | AFTER STOP | CLEAR after a switch to SAFE at the bench: the IOmcu clears the port's STOPPED flag and the read goes on, or the entry again where the supply went off |
 | ENABLE WRITE TO SERVO | The write switch, OFF or ON ([The write switch](#the-write-switch)) |
-| RESTORE | The session's backup back to the servo, while it differs from the servo ([Restore of the session's backup](#restore-of-the-sessions-backup)); while a record of an interrupted write stands: the values before it back to the servo, or the record discarded ([The record of a write](#the-record-of-a-write)) |
+| RESTORE | The session's backup back to the servo, while it differs from the servo; the unit confirmed where the bench cannot check it ([Restore of the session's backup](#restore-of-the-sessions-backup)); while a record of an interrupted write stands: the values before it back to the servo, or the record discarded ([The record of a write](#the-record-of-a-write)) |
 | WRITE n VALUES | The draft to the servo ([Writing](#writing)); `WRITE 1 VALUE` for one, off with none |
 
 Below the rows, the state line shows the port's current operation. The
@@ -342,7 +342,8 @@ It compares them with the values on which the plan is based:
 
 | Write | Read again |
 | --- | --- |
-| Classic: WRITE n VALUES, a loaded file's values, REPAIR CHECKSUM, RESTORE of a record or of the session's backup | cells 0x00 to 0x23, the balance 0x1C included: 36 |
+| Classic: WRITE n VALUES, a loaded file's values, REPAIR CHECKSUM, RESTORE of a record | cells 0x00 to 0x23, the balance 0x1C included: 36 |
+| Classic: RESTORE of the session's backup | cells 0x00 to 0x23 and the serial 0x80 to 0x86: 43 |
 | Classic: FACTORY DEFAULT | cells 0x00 to 0x23 and the factory block 0x30 to 0x53 its values come from: 72 |
 | D series: every write | the 12 registers a plan writes (`hitec_writable()`): 0x32, 0x44, 0x4C, 0x4E, 0x54, 0x5E, 0x60, 0x6C, 0x9C, 0xB0, 0xB2, 0xC2 |
 
@@ -518,7 +519,10 @@ is treated as coming from the servo of the last read when:
   back.
 
 The chain compares with the read before, not with the backup: the
-session's own verified writes, the ID 0x32 included, keep it. A read of
+session's own verified writes, the ID 0x32 included, keep it. A second
+unit of one model on the port without LEAVE or CONNECT therefore ends the
+backup at its first full read when its serial (classic) or its ID 0x32
+(D series) differs from the unit the backup was taken from. A read of
 another servo says
 
 ```
@@ -686,7 +690,41 @@ FACTORY DEFAULT wait for it as for an edit; DISCARD EDITS drops it.
 **RESTORE** offers `Backup of the first settings read in this session.`
 while the backup differs from the servo in an address a write sends:
 every D series register and classic cell 0x00 to 0x23 that a plan writes,
-raw values included. A tap opens RESTORE: the values that change, `This
+raw values included.
+
+A classic servo whose serial, 7 ASCII digits in cells 0x80 to 0x86, the
+read and the backup hold alike is the unit the backup was taken from. For
+it a tap opens RESTORE as below. A D series servo has no serial register
+the bench knows of: its ID 0x32 is a setting, and two units of one model
+can hold the same ID and the same values. A classic servo with a serial
+cell that is not an ASCII digit holds no serial either. For both the page
+of RESTORE carries three more lines, and its 2s hold confirms the unit:
+
+```
+The bench cannot check that this is the servo the backup came from. Hold only if it is.
+Servo: D485HW, ID 0 (0x32).
+Backup read 5s ago.
+```
+
+A classic servo without a serial reads `Servo: HS-5645MG, no serial.`
+The age is in seconds up to 119s and in whole minutes from 120s. The three
+lines take the room of three values: the page has 2 lines for the values
+that change. CANCEL leaves without writing. A tap elsewhere on the page
+does nothing. A press shorter than 2s shows `Hold 2s to restore.` on the
+band and writes nothing. A finger that leaves the button and a cancelled
+touch end the hold with nothing sent; a STOP during the hold refuses the
+write before a step. The confirmation is for that one write.
+
+The write's second read reads the serial of a classic servo again, and
+the registers a plan writes of a D series servo, ID 0x32 included. A servo
+put on the port after the last READ ALL with another serial or ID ends the
+write before a step goes out, the hold given or not, with the first cell
+or register that differs: `Two reads differ at 0x32: read again with READ
+ALL.`
+
+![RESTORE of a D series session backup, the unit asked for](img/servo-hitec-restore-unit.png)
+
+A tap opens RESTORE: the values that change, `This
 backup will be restored without checking the limits.`, the count of
 classic cells of no editable value it writes back, `Stored values outside
 the settings restored too: 1.`, and the backup file's lines. **HOLD 2s TO
@@ -697,7 +735,7 @@ interrupted write standing it keeps that record and needs the record's
 comparison by READ ALL first, as RESTORE of the record does.
 
 ![RESTORE's list](img/servo-hitec-restore-backup.png)
-![RESTORE of the session's backup](img/servo-hitec-restore-page.png)
+![RESTORE of an HS-5645MG's session backup](img/servo-hitec-restore-page.png)
 
 ## FACTORY DEFAULT
 
@@ -939,8 +977,10 @@ CW and CCW are DIRECTION as read: D series register 0x5E, classic cell
   ([Loading a backup file](#loading-a-backup-file)) and write it with
   WRITE n VALUES. It brings both end points back with every other address
   a write sends. RESTORE of the session's backup returns to the values at
-  the start of that session. In a later session of the same run, those
-  values already include earlier writes from the run.
+  the start of that session; in a later session of the same run, those
+  values already include earlier writes from the run. On a D series servo
+  its page asks for the unit
+  ([Restore of the session's backup](#restore-of-the-sessions-backup)).
 - The run's end switches ENABLE WRITE TO SERVO off, drops the draft and
   gives the programming voltage and current back to the settings' values.
 - Which horn position a D series end point gives on a CCW servo, and
@@ -971,11 +1011,11 @@ CW and CCW are DIRECTION as read: D series register 0x5E, classic cell
   backup is the servo as found then, with the values of the cut write; the
   record of the write and the old session's backup file hold the values
   before it.
-- Two D series servos of one model are told apart by their values only. A
-  second D485HW whose registers a write sends hold the values of the first
-  one's last read keeps the first one's backup, and RESTORE of the
-  session's backup writes the first one's values into it. Which register,
-  if any, differs between two units of one model is not measured.
+- The bench cannot tell two D series servos of one model with the same ID
+  0x32 apart, nor two classic servos without a serial; RESTORE of the
+  session's backup asks for confirmation that the servo on the port is the
+  one the backup came from. Whether a D series register other than 0x32
+  differs between two units of one model is not measured.
 - A servo file written or edited outside the panel does not load.
 - The record is read from the card at the panel's start only. A card put
   in later is not read for one, and a record made with no card mounted is

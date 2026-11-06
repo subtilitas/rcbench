@@ -1931,7 +1931,8 @@ FILES replaces SERIES and opens `BENCH/HITEC/CONF`, with 5 files per page
 below the save entry. A new name uses the keyboard; files for another
 model or beyond a soft rule open CHECK THIS FILE.
 
-RESTORE writes the session backup back. MORE offers FACTORY DEFAULT for
+RESTORE writes the session backup back; where the bench cannot check that
+the servo is the backup's, its 2s hold confirms the unit. MORE offers FACTORY DEFAULT for
 a classic servo. A port held by another HITEC session opens with RELEASE
 PORT, a 2s hold that returns the port to PWM without changing the supply.
 [Servo programmer for Hitec servos](HitecProgrammer.md) details the rows,

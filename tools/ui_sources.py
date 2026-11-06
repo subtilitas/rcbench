@@ -140,6 +140,7 @@ SOURCES = [
     "shared/bench/hitec_prog_file.c",
     "shared/bench/hitec_prog_run.c",
     "shared/bench/hitec_move.c",
+    "shared/bench/hitec_prog_unit.c",
     "shared/bench/hitec_card.c",
     "protocols/hitec/hitec_reg.c",
     "protocols/hitec/hitec_session.c",
