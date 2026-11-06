@@ -404,6 +404,7 @@ its stack less 1024 bytes.
 | `mdns` | `mdns_task`, the mDNS (multicast domain name system) responder while the panel is joined to a home network | 4,096 | 1,440 | 1,616 |
 | `wifi_get` | `fetch_task`, one release check or download from GitHub (`components/wifi_access`) | 8,192 | 1,568 | 5,584 |
 | `cardjob` | `files_task`, FILES' card operations (`panel_files.c`) | 6,656 | 2,064 | 3,552 |
+| `c6upd` | `c6_task`, the C6 radio's update, one step at a time (`panel_c6.c`) | 4,096 | 1,248 | 1,808 |
 | `shot` | `shot_task`, one screenshot job, then gone (`panel_shot.c`) | 7,168 | 2,416 | 3,712 |
 
 The page's HTTP (hypertext transfer protocol) server runs on a task of
@@ -538,6 +539,7 @@ tool does not follow.
 | `mdns` | 4,096 | not measured |
 | `wifi_get` | 8,192 | not measured |
 | `cardjob` | 6,656 | not measured |
+| `c6upd` | 4,096 | not measured |
 | `shot` | 7,168 | not measured |
 
 The tasks of ESP-IDF and esp_hosted are not in the table: their names and

@@ -1,0 +1,81 @@
+name: C6 radio image
+
+# The board's ESP32-C6 runs esp_hosted's co-processor firmware.  This
+# workflow builds it from the slave/ folder of the esp_hosted component the
+# panel pins (firmware/panel/components/wifi_access/idf_component.yml), so
+# the C6 and the panel's host side run one version, with the component's
+# default configuration: Wi-Fi and the BT controller with its HCI (host
+# controller interface) over the SDIO link (VHCI).  tools/c6_image.py
+# copies the project with firmware/c6/dependencies.lock and holds the build
+# to the pin, the C6's slot and that configuration.
+#
+# Called by ci.yml, whose panel job carries the image, and by release.yml,
+# which publishes it.  Artifact "c6": rcbench-c6-<version>.bin, the
+# application the panel sends over SDIO, and rcbench-c6-merged-<version>.bin,
+# bootloader, partition table and application for 0x0 over header H4.
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: 'The commit to build'
+        type: string
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  c6:
+    name: C6 radio image (ESP-IDF v6.1, ESP32-C6)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+
+      # The panel's managed components, esp_hosted among them, as the panel
+      # job restores them; fetched by a configure of the panel otherwise.
+      - name: Restore the managed components
+        id: components
+        uses: actions/cache@v6
+        with:
+          path: firmware/panel/managed_components
+          key: managed-components-${{ hashFiles('firmware/panel/dependencies.lock') }}
+
+      - name: Fetch the managed components
+        if: steps.components.outputs.cache-hit != 'true'
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v6.1
+          target: esp32p4
+          path: 'firmware/panel'
+          command: idf.py -B build-fetch reconfigure
+
+      # Inside the container: prepare writes the lock file's ESP-IDF path
+      # for the IDF_PATH the build sees.
+      - name: Build
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v6.1
+          target: esp32c6
+          path: 'firmware/c6'
+          command: >-
+            python3 ../../tools/c6_image.py prepare
+            ../panel/managed_components/espressif__esp_hosted slave
+            && cd slave && idf.py build
+            && idf.py merge-bin -o rcbench-c6-merged.bin
+
+      - name: The image is the pinned C6 build and fits its slot
+        run: |
+          python3 tools/c6_image.py check firmware/c6/slave \
+            firmware/c6/slave/build c6-dist
+          sha256sum c6-dist/*.bin
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: c6
+          path: c6-dist/*.bin
+          if-no-files-found: error

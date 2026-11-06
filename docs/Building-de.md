@@ -596,10 +596,141 @@ esp_hosted für die Anfrage, 1s, mit
 außerdem `Version mismatch: Host [2.13.0] > Co-proc [x.y.z]`, wenn Haupt-
 oder Nebenversion abweichen. Laut Espressif kann ein Host mit einem älteren
 Co-Prozessor laufen; dabei sind Zeitüberschreitungen bei Anfragen möglich. Das
-Verhalten des Panels mit einer älteren C6-Firmware ist nicht gemessen. Das
-Panel kann die Firmware des C6 nicht aktualisieren. Ein antwortender C6 wird
-einmal je Panel-Start zurückgesetzt. Spätere Wi-Fi-Starts nutzen die
-bestehende Verbindung ohne erneuten Reset.
+Verhalten des Panels mit einer älteren C6-Firmware ist nicht gemessen. Ein
+antwortender C6 wird einmal je Panel-Start zurückgesetzt. Spätere
+Wi-Fi-Starts nutzen die bestehende Verbindung ohne erneuten Reset.
+
+Am Panel der Station (2026-11-06) meldet der ausgelieferte C6
+`transport: capabilities: 0xd` (Wi-Fi, HCI (Host Controller Interface) über
+SDIO, BLE (Bluetooth Low Energy)) und `Version mismatch: Host [2.13.0] >
+Co-proc [0.0.0]` und beantwortet die Versionsabfrage nicht. Ob er das Update
+über SDIO annimmt, ist nicht bekannt.
+
+#### Das Image, das das Panel mitbringt
+
+CI und das Release bauen die Firmware des C6 aus dem Ordner `slave/` der
+esp_hosted-Komponente, die das Panel festlegt, 2.13.0, mit ESP-IDF v6.1 für
+den ESP32-C6, mit der eigenen Konfiguration der Komponente: Wi-Fi und nur der
+BT-Controller, dessen HCI über die SDIO-Verbindung im RAM läuft (VHCI); das
+braucht der NimBLE-Host des Panels über VHCI. Der Workflow ist
+`.github/workflows/c6.yml`; `tools/c6_image.py` kopiert das Projekt mit
+`firmware/c6/dependencies.lock` (die 5 Registry-Komponenten des Slave mit
+festen Versionen und Hashes) und schlägt fehl, wenn das Image keine
+ESP32-C6-Anwendung `network_adapter` der festgelegten Version mit angehängtem
+SHA-256 ist, wenn es nicht in den Anwendungs-Slot des C6 passt (`ota_0` und
+`ota_1` aus `slave/partitions.esp32c6.csv`, je 1 966 080 Bytes), wenn der
+sdkconfig eine dieser Einstellungen fehlt oder wenn der Build eine Festlegung
+der Lock-Datei verschoben hat.
+
+| Punkt | Wert |
+| --- | --- |
+| `rcbench-c6-2.13.0.bin` (über SDIO gesendet) | 1 283 616 Bytes, 65,3% des C6-Slots |
+| `rcbench-c6-merged-2.13.0.bin` (über H4 ab 0x0 geflasht) | 1 349 152 Bytes: Bootloader, Partitionstabelle, otadata und die Anwendung |
+| Wachstum des Panel-Images, wenn es mitgebracht wird | 1 284 272 Bytes Flash; 1 408 Bytes interner RAM (ein Puffer für einen Block von 1 400 Bytes) |
+| Panel-Image damit, mit NimBLE und einem IOmcu-Image | 4 419 968 von 8 126 464 Bytes im Update-Slot, 45,6% frei; das Release-Image mit beiden IOmcu-Images ist nicht gemessen |
+
+Ein Build bringt das Image mit `-D RCBENCH_C6_BIN=<Pfad>` mit, wie die
+IOmcu-Images; ein Build ohne bringt keines mit, und die Zeile C6 RADIO auf
+UPDATES sagt das.
+
+```bash
+# das Image des C6 aus der Managed Component des Panels (ein Panel-Build
+# lädt sie vorher nach firmware/panel/managed_components)
+. ~/esp/esp-idf-v6.1/export.sh
+cd firmware/c6
+python3 ../../tools/c6_image.py prepare \
+  ../panel/managed_components/espressif__esp_hosted slave
+cd slave && IDF_TARGET=esp32c6 idf.py build \
+  && idf.py merge-bin -o rcbench-c6-merged.bin
+cd ../../.. && python3 tools/c6_image.py check firmware/c6/slave \
+  firmware/c6/slave/build c6-dist
+# das Panel, das es mitbringt
+cd firmware/panel && idf.py -D RCBENCH_C6_BIN=../../c6-dist/rcbench-c6-2.13.0.bin build
+```
+
+#### Das Update über SDIO
+
+Die Zeile C6 RADIO auf SETUP > UPDATES zeigt die Version, die der C6 beim
+ersten Wi-Fi-Start gemeldet hat, oder `nicht gemeldet`, die mitgebrachte
+Version und `2s HALTEN ZUM C6-FUNK-UPDATE`. Das Halten ist aktiv, wenn der
+Build ein Image mitbringt, das seine Prüfung bestanden hat, der C6 nicht die
+mitgebrachte Version meldet, die Verbindung zum C6 nicht ausgefallen ist, die
+Bench SAFE ist und kein ARM wartet, der Netzteilausgang aus ist, kein
+Aufzeichnungslauf offen ist, keine Platinenzeichnung geladen wird, weder das
+IOmcu-Update noch Download oder Installation des Panels laufen, das WLAN aus
+ist und die Start-Task `blestart` von Bluetooth LE nicht läuft. Ein Tippen auf das graue Halten zeigt den Grund im Alarmband. Das
+Update läuft auf der Task `c6upd` (Kern 0, Priorität 2, Stack 4 096 Bytes,
+beim ersten Update angelegt), ein Schritt nach dem anderen:
+
+| Schritt | Aufruf | Grenze | Endet als |
+| --- | --- | ---: | --- |
+| Verbindung | `c6_link_up()`, dann die Version des C6 | 30 000ms | `Der C6-Funk hat nicht geantwortet. WLAN ist bis zum Neustart des Panels aus.`; ein C6, der 2.13.0 meldet, bekommt nichts: `Der C6-Funk nutzt bereits 2.13.0. Nichts gesendet.` |
+| Beginn | `esp_hosted_slave_ota_begin()`: der C6 löscht den Slot, aus dem er nicht läuft | 20 000ms | ein Fehler: `Der C6-Funk nimmt kein Update über SDIO an. Flashe ihn über Header H4.` |
+| Schreiben | `esp_hosted_slave_ota_write()`, 1 400 Bytes je Aufruf, 4 Aufrufe je Schritt | 10 000ms je Schritt | ein Fehler: noch einmal der Ende-Aufruf, der das OTA-Handle des C6 freigibt, dann `C6-Update abgebrochen: Schreiben fehlgeschlagen. Vorherige Firmware läuft.` |
+| Ende | `esp_hosted_slave_ota_end()`: der C6 prüft den SHA-256 des Images | 10 000ms | `... Prüfung im C6 fehlgeschlagen ...` |
+| Aktivieren | `esp_hosted_slave_ota_activate()`, nur bei einem C6, der 2.6.0 oder neuer gemeldet hat | 10 000ms | `... Aktivierung fehlgeschlagen ...` |
+
+Ein Schritt über seiner Grenze beendet das Update mit `C6-Update
+abgebrochen: keine Antwort. Vorherige Firmware läuft.`; danach wird nichts
+mehr gesendet, und die späte Antwort des Schritts wird verworfen. Jede Grenze
+liegt über der eigenen Antwortzeitgrenze von esp_hosted für den Aufruf (15s
+für Beginn, 5s für die anderen). Der C6 behält den Slot, aus dem er startet,
+bis zum Aktivieren (C6-Firmware ab 2.6.0) oder bis zum Ende-Aufruf (ältere
+Firmware und ein C6, der keine Version meldet: er bekommt keinen
+Aktivieren-Aufruf). Nach einem Erfolg lautet der Alarm `C6-Funk auf 2.13.0
+aktualisiert. Das Panel startet neu.`, und das Panel startet 3s später neu,
+damit Host und C6 ihre Verbindung neu aufbauen. Solange das Update läuft und
+bis ein Schritt über seiner Grenze zurückkehrt, startet kein WLAN, ARM wird
+abgelehnt (`ARMED gesperrt: Das C6-Funk-Update läuft.`), und Installation des
+Panels, GitHub-Prüfung und IOmcu-Update warten. Die Dauer eines Updates ist
+nicht gemessen.
+
+Konsolenzeilen, Tag `rcbench`:
+
+```
+I (…) rcbench: C6: carries esp_hosted 2.13.0, 1283616 bytes
+I (…) rcbench: C6 update: esp_hosted 2.13.0, 1283616 bytes
+I (…) rcbench: C6: updated to esp_hosted 2.13.0, 1283616 bytes; restarting in 3000ms
+E (…) rcbench: C6 update: begin refused, error 0x<e>; the C6 takes no update over SDIO
+E (…) rcbench: C6 update ended <result> in phase <phase>, error 0x<e>, <n> of 1283616 bytes; the C6 keeps its firmware
+W (…) rcbench: C6 update refused: row <row>, reason <why>
+```
+
+#### Wiederherstellung über Header H4
+
+Ein C6 ohne startende Firmware, oder einer, der das Update über SDIO
+ablehnt, nimmt das zusammengeführte Image über seine eigene serielle
+Schnittstelle an. Header H4 führt UART0 des C6 (TXD0, RXD0), GND und seinen
+Strapping-Pin IO9; die Reihenfolge der Pins von H4 ist hier nicht erfasst und
+wird vom Bestückungsdruck des Boards abgelesen. IO9 auf Low, wenn der C6 aus
+dem Reset kommt, startet seinen ROM-Download-Modus. EN liegt nicht auf H4:
+GPIO54 des Panels treibt ihn.
+
+1. Schalte das Panel aus. Prüfe das Image:
+   `sha256sum -c SHA256SUMS --ignore-missing` im Ordner mit
+   `rcbench-c6-merged-2.13.0.bin` und `SHA256SUMS` des Release.
+2. Verdrahte einen 3,3V-USB-UART-Adapter (Universal Asynchronous
+   Receiver-Transmitter): sein RX an H4 TXD0, sein TX an H4 RXD0, sein GND an
+   H4 GND. Lege H4 IO9 auf GND.
+3. Schalte das Panel ein. Öffne weder WI-FI noch das Halten C6 RADIO: ein
+   Wi-Fi-Start setzt den C6 über GPIO54 zurück und beendet das Flashen.
+4. Flashe ohne Reset durch den Adapter (seine Leitungen DTR und RTS
+   erreichen keinen Pin des C6):
+
+   ```bash
+   python -m esptool --chip esp32c6 -p /dev/ttyUSB0 -b 460800 \
+     --before no-reset --after no-reset \
+     write-flash 0x0 rcbench-c6-merged-2.13.0.bin
+   ```
+
+   esptool 5 schreibt den Befehl `write-flash`, esptool 4 `write_flash`.
+5. Schalte das Panel aus, nimm IO9 von GND, schalte es ein und starte Wi-Fi
+   einmal. Die Konsole zeigt `c6: C6: esp_hosted firmware 2.13.0, host
+   2.13.0`, die Zeile C6 RADIO `C6-Funk: 2.13.0. Auf diesem Panel: 2.13.0.`
+
+Das zusammengeführte Image schreibt die ganze Partitionstabelle, also werden
+NVS (Non-Volatile Storage, 16KiB ab 0x9000) und otadata des C6 neu
+geschrieben; der C6 hält keine Einstellung, die das Panel braucht.
 
 ### Fehler
 
@@ -831,10 +962,11 @@ Aktuelle Einschränkungen:
 
 | Workflow | Auslöser | Jobs |
 | --- | --- | --- |
-| `ci.yml` | Push auf `main`, Tag `v*`, ein Label an einem Pull Request (`ci`, sobald seine Reviews sauber sind; ein Push auf einen Pull Request startet keinen Lauf), manuell (`gh workflow run ci.yml --ref <branch>`, dessen Checks ein Pull Request nicht übernimmt) | Host-Suite; dieselbe Suite unter AddressSanitizer und UBSan (UndefinedBehaviorSanitizer); Coverage-Untergrenzen und Codecov-Upload, dessen Fehlschlag den Job fehlschlagen lässt; Font-, Docs-, Webhilfe-, Wiki-Link-, Screenshot- und Research-Skript-Prüfungen; die Prüfung der Protokollmodule; clang-tidy und cppcheck über `shared/`, die Kerne unter `protocols/` und `test/host/`, die Klassen warning, performance und portability von cppcheck über `firmware/` und die Pin-Treiber unter `protocols/`, und ruff; die pytest-Fälle der Werkzeuge; die Prüfung der Doxygen-Kommentare mit `tools/doc_check.py`, die bei einem Pull Request auch bei jeder Warnung in einer C-Datei fehlschlägt, die er hinzufügt, oder auf einer Zeile, die er ändert; bei einem Pull Request die Mutationsprüfung der geänderten Zeilen, die meldet und bei einem Überlebenden nicht fehlschlägt; Panel-Build mit ESP-IDF v6.1 für den ESP32-P4 mit der Prüfung des Images gegen seinen Update-Slot, der Prüfung, dass das Image das IOmcu-Image trägt und die Symbole des Touch-Injectors, die Frame-Zeilen der Konsole (`tools/check_perf_log.py`) und exFAT enthält, und einem zweiten Build mit `RCBENCH_TOUCH_INJECTOR=OFF` und `RCBENCH_PERF_LOG=OFF`, der fehlschlägt, wenn er ein Injector-Symbol oder eine Frame-Zeile enthält; IOmcu-Build mit pico-sdk 2.3.0 mit der Prüfung der Pinbelegung und der Stacks seiner zwei Kerne, ein zweiter mit `-DSENSE_TRACE=ON` und derselben Stack-Prüfung, der fehlschlägt, wenn das Standard-Image ein Trace-Symbol enthält, und ein dritter mit `-DIOMCU_CONSOLE=ON` und derselben Stack-Prüfung, der fehlschlägt, wenn das Standard-Image ein Symbol der Konsole enthält; der Build des Touch-Injectors mit pico-sdk 2.3.0 für `waveshare_rp2350_zero`, nicht hochgeladen; der Browser-Test des Dateimanagers (`Web file manager browser test`: das Target `wa_page_dump`, dann `test/web` mit Node.js 24 und Chromium, Traces und Screenshots 14 Tage lang nur bei einem Fehlschlag aufbewahrt); Firmware-Artefakte einschließlich eines zusammengeführten Panel-Images für Offset 0 |
+| `ci.yml` | Push auf `main`, Tag `v*`, ein Label an einem Pull Request (`ci`, sobald seine Reviews sauber sind; ein Push auf einen Pull Request startet keinen Lauf), manuell (`gh workflow run ci.yml --ref <branch>`, dessen Checks ein Pull Request nicht übernimmt) | Host-Suite; dieselbe Suite unter AddressSanitizer und UBSan (UndefinedBehaviorSanitizer); Coverage-Untergrenzen und Codecov-Upload, dessen Fehlschlag den Job fehlschlagen lässt; Font-, Docs-, Webhilfe-, Wiki-Link-, Screenshot- und Research-Skript-Prüfungen; die Prüfung der Protokollmodule; clang-tidy und cppcheck über `shared/`, die Kerne unter `protocols/` und `test/host/`, die Klassen warning, performance und portability von cppcheck über `firmware/` und die Pin-Treiber unter `protocols/`, und ruff; die pytest-Fälle der Werkzeuge; die Prüfung der Doxygen-Kommentare mit `tools/doc_check.py`, die bei einem Pull Request auch bei jeder Warnung in einer C-Datei fehlschlägt, die er hinzufügt, oder auf einer Zeile, die er ändert; bei einem Pull Request die Mutationsprüfung der geänderten Zeilen, die meldet und bei einem Überlebenden nicht fehlschlägt; das Image des C6-Funks aus dem Ordner `slave/` von esp_hosted mit ESP-IDF v6.1 für den ESP32-C6 (`c6.yml`, [Das Image, das das Panel mitbringt](#das-image-das-das-panel-mitbringt)); Panel-Build mit ESP-IDF v6.1 für den ESP32-P4 mit der Prüfung des Images gegen seinen Update-Slot, der Prüfung, dass das Image die IOmcu-Images und das C6-Image trägt und die Symbole des Touch-Injectors, die Frame-Zeilen der Konsole (`tools/check_perf_log.py`) und exFAT enthält, und einem zweiten Build mit `RCBENCH_TOUCH_INJECTOR=OFF` und `RCBENCH_PERF_LOG=OFF`, der fehlschlägt, wenn er ein Injector-Symbol oder eine Frame-Zeile enthält; IOmcu-Build mit pico-sdk 2.3.0 mit der Prüfung der Pinbelegung und der Stacks seiner zwei Kerne, ein zweiter mit `-DSENSE_TRACE=ON` und derselben Stack-Prüfung, der fehlschlägt, wenn das Standard-Image ein Trace-Symbol enthält, und ein dritter mit `-DIOMCU_CONSOLE=ON` und derselben Stack-Prüfung, der fehlschlägt, wenn das Standard-Image ein Symbol der Konsole enthält; der Build des Touch-Injectors mit pico-sdk 2.3.0 für `waveshare_rp2350_zero`, nicht hochgeladen; der Browser-Test des Dateimanagers (`Web file manager browser test`: das Target `wa_page_dump`, dann `test/web` mit Node.js 24 und Chromium, Traces und Screenshots 14 Tage lang nur bei einem Fehlschlag aufbewahrt); Firmware-Artefakte einschließlich eines zusammengeführten Panel-Images für Offset 0 |
 | `docs.yml` | Push auf `main`, der `docs/` berührt, manuell | wartet auf den CI-Lauf desselben Commits und spiegelt, wenn er bestanden hat, `docs/` ins GitHub-Wiki |
 | `mutation.yml` | sonntags 03:17 UTC, manuell | jede Mutante der Zeilen von `shared/safety` und `shared/outputs` (3032 Mutanten) in 6 parallelen Shards von Dateien, ohne Obergrenze der Mutantenzahl, nach 18000s startet in einem Shard keine mehr, die übrigen werden als nicht gelaufen gemeldet; schlägt bei einer überlebenden Mutante nicht fehl; das Ergebnis sind die Artifacts `mutation-full-0` bis `mutation-full-5` und die Job-Zusammenfassungen |
-| `release.yml` | Tag `v*`, manuell für einen Tag | wartet auf den CI-Lauf des getaggten Commits und baut, wenn er bestanden hat, beide Images, das des Panels mit `-D RCBENCH_PERF_LOG=OFF` und einer Prüfung, dass es keine Frame-Zeile enthält, packt sie mit Prüfsummen und erstellt ein Release, ein Pre-Release bei ungerader Minor-Nummer ([Releases](#releases)); daneben, ohne das Release aufzuhalten, läuft die Prüfung der Konfigurator-Daten (`configurator/core/tools/check-annotate.sh --warn-only`) und zeigt jede Warnung, etwa einen Release-Tag neuer als die Daten des Konfigurators, als Annotation und in der Zusammenfassung des Laufs |
+| `c6.yml` | von `ci.yml` und `release.yml` aufgerufen | das Image des C6-Funks und seine Prüfungen (`tools/c6_image.py`); Artefakt `c6` |
+| `release.yml` | Tag `v*`, manuell für einen Tag | wartet auf den CI-Lauf des getaggten Commits und baut, wenn er bestanden hat, beide Images und das des C6-Funks (`c6.yml`), das des Panels mit den IOmcu-Images und dem C6-Image und mit `-D RCBENCH_PERF_LOG=OFF` und einer Prüfung, dass es keine Frame-Zeile enthält, packt sie mit Prüfsummen und erstellt ein Release, ein Pre-Release bei ungerader Minor-Nummer ([Releases](#releases)); daneben, ohne das Release aufzuhalten, läuft die Prüfung der Konfigurator-Daten (`configurator/core/tools/check-annotate.sh --warn-only`) und zeigt jede Warnung, etwa einen Release-Tag neuer als die Daten des Konfigurators, als Annotation und in der Zusammenfassung des Laufs |
 | `pages.yml` | Pull Request und Push auf `main`, der `configurator/`, `help/`, `docs/img/`, den Hilfe-Generator, das `Doxyfile` oder `tools/install_doxygen.sh` berührt; ein Push auf `main` auch, wenn er die C-Quellen berührt | Typprüfung, Tests, Datenprüfung, Größenbudget und Browser-Tests des Configurators; der Bau der Webhilfe mit `tools/help_site.py`; die C-API-Referenz, gebaut von Doxygen 1.18.0; bei einem Push auf `main` veröffentlicht es die gebaute Seite auf GitHub Pages, mit der Webhilfe unter `help/` und der API-Referenz unter `api/`. Ein Lauf, der nur die C-Quellen, das `Doxyfile` oder `tools/install_doxygen.sh` ändert, baut die Seite des Configurators ohne ihre Prüfungen und startet keinen Browser-Test |
 
 Jeder Job läuft auf Ubuntu 26.04 (`runs-on: ubuntu-26.04`), nicht auf
@@ -959,4 +1091,7 @@ Release lässt sich auch von Hand laden: seine
 Archive über USB (Universal Serial Bus), wie in
 [Erster Lauf, §1](FirstRun-de.md#1-beide-platinen-flashen). Das
 `rcbench-iomcu-vX.Y.Z.zip` des Releases und das Image, das das Panel
-trägt, stammen aus demselben Commit.
+trägt, stammen aus demselben Commit. Ebenso `rcbench-c6-2.13.0.bin`, das
+C6-Image, das das Panel trägt, und `rcbench-c6-merged-2.13.0.bin`, das für
+Header H4; ihre Namen tragen die Version von esp_hosted, und SHA256SUMS führt
+beide.

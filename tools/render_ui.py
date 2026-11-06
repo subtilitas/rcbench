@@ -732,6 +732,9 @@ SCREENS = {
     # Its IOmcu section with an IOmcu on another build: the
     # hold that starts the IOmcu's update.
     "updates-coproc": ("updates-coproc.png", "updates", "dark"),
+    # Its C6 RADIO row with the C6 as shipped: no version reported, the
+    # hold that updates it to the carried image.
+    "updates-c6": ("updates-c6.png", "updates", "dark"),
     "upd-remind": ("upd-remind.png", "upd-remind", "dark"),
     "panel-download": ("panel-download.png", "panel-update", "dark"),
     "panel-download-failed": ("panel-download-failed.png", "panel-update",
@@ -906,6 +909,10 @@ FIT_ONLY = {
     "updates-cu-unsafe":   (None, "updates", "dark"),
     "updates-cu-radio":    (None, "updates", "dark"),
     "updates-cu-install":  (None, "updates", "dark"),
+    # The C6 RADIO row's update running, no image carried, a failed link.
+    "updates-c6-progress": (None, "updates", "dark"),
+    "updates-c6-noimage":  (None, "updates", "dark"),
+    "updates-c6-failed":   (None, "updates", "dark"),
     "upd-remind-blocked": (None, "upd-remind", "dark"),
     # The warning on leaving SETUP with a save refused and the bench ARMED.
     "setup-leave-armed": (None, "setup", "dark"),

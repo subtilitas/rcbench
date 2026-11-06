@@ -431,6 +431,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | `mdns` | `mdns_task`, der mDNS-Responder (Multicast Domain Name System), solange das Panel mit einem Heimnetz verbunden ist | 4 096 | 1 440 | 1 616 |
 | `wifi_get` | `fetch_task`, eine Release-Suche oder ein Download von GitHub (`components/wifi_access`) | 8 192 | 1 568 | 5 584 |
 | `cardjob` | `files_task`, die Kartenoperationen von FILES (`panel_files.c`) | 6 656 | 2 064 | 3 552 |
+| `c6upd` | `c6_task`, das Update des C6-Funks, ein Schritt nach dem anderen (`panel_c6.c`) | 4 096 | 1 248 | 1 808 |
 | `shot` | `shot_task`, ein Screenshot-Auftrag, dann weg (`panel_shot.c`) | 7 168 | 2 416 | 3 712 |
 
 Der HTTP-Server (Hypertext Transfer Protocol) der Seite läuft in einem Task
@@ -576,6 +577,7 @@ zeigt Speicherbedarf, den das Werkzeug nicht verfolgt.
 | `mdns` | 4 096 | nicht gemessen |
 | `wifi_get` | 8 192 | nicht gemessen |
 | `cardjob` | 6 656 | nicht gemessen |
+| `c6upd` | 4 096 | nicht gemessen |
 | `shot` | 7 168 | nicht gemessen |
 
 Die Tasks von ESP-IDF und esp_hosted stehen nicht in der Tabelle: ihre Namen

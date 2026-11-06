@@ -670,33 +670,22 @@ jobs:
     # stays "ESP-IDF v5.5.5" until the ruleset's required check is renamed
     # to the same text as this name (tools/check_docs.py, PANEL_CHECK_NAME).
     name: Panel (ESP-IDF v6.1, ESP32-P4)
-    # The build carries the IOmcu image of this commit, as the release
-    # does.
-    needs: [iomcu]
+    # The build carries the IOmcu and C6 images of this commit, as the
+    # release does.
+    needs: [iomcu, c6]
     runs-on: ubuntu-26.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
 
       # Inside firmware/panel, the directory the build runs in, so the
-      # container sees it under the same relative path.
-      - name: Fetch the IOmcu image
+      # container sees it under the same relative path: each artifact in a
+      # folder of its name (iomcu, iomcu-console, iomcu-rbmod, c6).
+      - name: Fetch the IOmcu and C6 images
         uses: actions/download-artifact@v7
         with:
-          name: iomcu
-          path: firmware/panel/iomcu-image
-
-      - name: Fetch the IOmcu's console image
-        uses: actions/download-artifact@v7
-        with:
-          name: iomcu-console
-          path: firmware/panel/iomcu-console
-
-      - name: Fetch the rbmod carrier's IOmcu image
-        uses: actions/download-artifact@v7
-        with:
-          name: iomcu-rbmod
-          path: firmware/panel/iomcu-rbmod
+          pattern: '{iomcu,iomcu-console,iomcu-rbmod,c6}'
+          path: firmware/panel
 
       # The managed components (firmware/panel/managed_components) come from
       # the ESP component registry at build time; the lock file pins their
@@ -726,8 +715,9 @@ jobs:
           # Flashing bootloader, partition table and app at three offsets is
           # three chances to get an offset wrong; the merged one has none.
           command: >-
-            idf.py -D RCBENCH_IOMCU_BIN=iomcu-image/rcbench-iomcu.bin
-            -D RCBENCH_IOMCU_RBMOD_BIN=iomcu-rbmod/rcbench-iomcu-rbmod.bin build
+            idf.py -D RCBENCH_IOMCU_BIN=iomcu/rcbench-iomcu.bin
+            -D RCBENCH_IOMCU_RBMOD_BIN=iomcu-rbmod/rcbench-iomcu-rbmod.bin
+            -D RCBENCH_C6_BIN=$(ls c6/rcbench-c6-[0-9]*.bin) build
             && idf.py merge-bin -o rcbench-panel-merged.bin
 
       # A build that rewrites the lock file resolved a version the commit
@@ -761,13 +751,13 @@ jobs:
         run: python3 tools/stack_check.py firmware/panel/build --check-doc
 
       # The symbols target_add_binary_data() names the embedded images by:
-      # the module's and the rbmod carrier's.
-      - name: Both IOmcu images are carried
+      # the module's, the rbmod carrier's and the C6 radio's.
+      - name: Both IOmcu images and the C6 image are carried
         run: |
-          grep -aq _binary_rcbench_iomcu_bin_start \
-            firmware/panel/build/rcbench-panel.elf
-          grep -aq _binary_rcbench_iomcu_rbmod_bin_start \
-            firmware/panel/build/rcbench-panel.elf
+          for s in iomcu iomcu_rbmod c6; do
+            grep -aq "_binary_rcbench_${s}_bin_start" \
+              firmware/panel/build/rcbench-panel.elf
+          done
 
       # The default build reads a touch injector at 0x14 beside the glass
       # (testbench/touch-injector).  The image must hold its code, INJECT's
@@ -860,6 +850,9 @@ jobs:
             firmware/panel/build/ota_data_initial.bin
             firmware/panel/build/flash_args
           if-no-files-found: error
+
+  c6:
+    uses: ./.github/workflows/c6.yml
 
   iomcu:
     # The env context is not available in a job name (only github, needs,

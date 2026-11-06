@@ -396,6 +396,36 @@ bool panel_run_open(void);
  */
 bool panel_update_busy(void);
 
+/**
+ * @brief Whether the IOmcu's update runs, or the BUY of an image on trial.
+ *        Any task.
+ * @return true while one does (panel_update.c)
+ */
+bool panel_cu_busy(void);
+
+/**
+ * @brief Whether the panel's own download or install runs.  Render task.
+ * @return true from its hold until it has failed (panel_update.c)
+ */
+bool panel_fw_busy(void);
+
+/* ------------------------------------------------------------- panel_c6.c */
+
+/**
+ * @brief SETUP > UPDATES' C6 RADIO row and the C6 radio's update, once a
+ *        frame on app_main, after upd_service().
+ * @param armed ARMED, or an arm waiting
+ */
+void c6_service(bool armed);
+
+/**
+ * @brief Whether the C6 radio's update runs, a step of it is still in a
+ *        call, or its restart is due: Wi-Fi does not start, ARM is refused
+ *        and the other updates wait.  Any task.
+ * @return true while one of these holds
+ */
+bool panel_c6_busy(void);
+
 /* ----------------------------------------------------------- panel_files.c */
 
 /** @brief FILES' way to the card: its requests run on the task cardjob. */
