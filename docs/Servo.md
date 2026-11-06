@@ -84,12 +84,12 @@ and the line under it says why.
 | --- | --- |
 | `ARM FIRST` | the bench is SAFE |
 | `REPORT STILL BEING WRITTEN` | an automatic test or a limit run is under way, or its report is still going to the card |
+| `NO SERVO PWM PIN`, `PINS NOT READ` | TARGET on the bench's outputs with no output bound as SERVO PWM, or the binding not read yet: the TARGET row's own words. Named before the meter: on the rbmod carrier a channel watches a rail, and the outputs are on a rail only once one is bound ([Carrier: The current monitor](Carrier.md#the-current-monitor)) |
 | `INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT` | no channel of a fitted INA3221 watches the tester's target in SETUP > SENSORS, CH2 or CH3 watches it on an IOmcu older than 4.25, an IOmcu older than protocol 4.11, or a SENSE page that does not hold the set-up |
 | `INA3221 OFFLINE` | no link, the part not answering, or its reset count moved |
 | `NO INA3221 MEASUREMENT WINDOWS YET` | the INA3221 is not the servo rail's meter yet: its set-up held for less than 1000ms, or no window with current in the last 200ms |
 | `SERVO SUPPLY BELOW 3.0V OR NOT READ` | the last INA3221 window holds no rail voltage, or its mean is under 3.0V (`SERVO_LIMRUN_RAIL_MIN_MV`). An output that is off reads 0V, and a search there would find two free ends on a servo that never moved. 3.0V lies under the 4.8V servos are commonly specified from, so a single lithium cell's rail still starts; the voltage a given servo stops moving at is not measured |
 | `PORT PWM OFF. NO PULSES ON THIS PORT.` | TARGET on PROG PORT with PORT PWM off |
-| `NO SERVO PWM PIN`, `PINS NOT READ` | TARGET on the bench's outputs with no output bound as SERVO PWM, or the binding not read yet: the TARGET row's own words |
 | `CENTRE MUST BE BETWEEN PULSE MIN AND MAX` | PULSE CENTRE is not between PULSE MIN and PULSE MAX |
 
 ### Programming the servo's travel limits
@@ -1448,8 +1448,8 @@ A START is refused, the reason on the first line, while:
 | --- | --- |
 | the bench is SAFE | `ARM FIRST`, as on TEST |
 | another run runs, or a report is still being written | the run's line, as on TEST |
+| TARGET is the bench's outputs, or the output is otherwise not the programming port | `AUTO PROGRAMS A SERVO ON THE PROG PORT`. TARGET on the outputs is named before the meter: on the rbmod carrier the outputs have no channel watching them until one is bound as SERVO PWM |
 | the meter is not set up for the servo's current | the limit run's line |
-| the output is not the programming port | `AUTO PROGRAMS A SERVO ON THE PROG PORT` |
 | PULSE MIN is above 1000us, PULSE MAX below 2000us, or PULSE CENTRE is not strictly between 1000us and 2000us | `PULSE MIN TO MAX MUST INCLUDE 1000 TO 2000us` |
 | the programmer is busy, or a KST/Chaservo or classic Hitec servo has neither a PD mini nor PROG 5V to cycle its supply | the limit run's line |
 | the angle source gives no reading | `ANGLE SOURCE: NO READING` |

@@ -166,12 +166,12 @@ Der Lauf verwendet ausschließlich den INA3221-Kanal für das Testerziel. Mit PD
 | Zeile | Bedingung |
 |---|---|
 | `ZUERST ARM` | der Prüfstand ist SAFE |
+| `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | ZIEL sind die Ausgänge des Prüfstands, und kein Ausgang ist als SERVO PWM zugeordnet, oder die Zuordnung ist noch nicht ausgelesen |
 | `INA3221 NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET` | kein Kanal eines bestückten INA3221 überwacht in SETUP > SENSORS das Ziel des Testers |
 | `INA3221 NICHT ERREICHBAR` | keine Verbindung, oder der INA3221 antwortet nicht |
 | `NOCH KEINE INA3221-MESSFENSTER` | der INA3221 ist noch nicht das Messgerät |
 | `SERVOVERSORGUNG UNTER 3.0V ODER OHNE MESSWERT` | das letzte INA3221-Fenster hat keine Schienenspannung oder weniger als 3,0V: ein ausgeschalteter Ausgang liest 0V |
 | `PORT-PWM AUS. KEINE PULSE AN DIESEM PORT.` | ZIEL ist PROG-PORT und PORT-PWM ist aus |
-| `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | ZIEL sind die Ausgänge des Prüfstands, und kein Ausgang ist als SERVO PWM zugeordnet, oder die Zuordnung ist noch nicht ausgelesen |
 | `MITTE MUSS ZWISCHEN PULS MIN UND PULS MAX LIEGEN` | der Pulsbereich enthält PULS MITTE nicht |
 | `BERICHT WIRD NOCH GESCHRIEBEN` | ein Test oder ein Lauf ist im Gang, oder sein Bericht geht noch auf die Karte |
 

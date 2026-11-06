@@ -195,6 +195,12 @@ const char *rauto_blocked(void)
         || !servo_rauto_drained(&s.ra.run) || s.logger_busy) {
         return ui_servo_str(SERVO_STR_START_BUSY);
     }
+    /* The programming port before the meter: the meter is the channel
+     * watching the target, and on the rbmod carrier the bench's outputs
+     * have none until one is bound as SERVO PWM. */
+    if (s.drive_target == 0u) {
+        return TR(RA_PROG_PORT);
+    }
     const char *meter = lim_meter_why();
     if (meter != NULL) {
         return meter;

@@ -86,12 +86,12 @@ Schaltfläche bleibt grau, und die Zeile darunter sagt warum.
 | --- | --- |
 | `ZUERST ARM` | der Prüfstand ist SAFE |
 | `BERICHT WIRD NOCH GESCHRIEBEN` | ein automatischer Test oder ein Endlagenlauf läuft, oder sein Bericht geht noch auf die Karte |
+| `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | ZIEL auf den Ausgängen des Prüfstands, ohne einen SERVO PWM zugeordneten Ausgang oder mit noch nicht ausgelesener Zuordnung: die Worte der Zeile ZIEL. Vor dem Messgerät genannt: auf dem rbmod-Carrier überwacht ein Kanal eine Schiene, und die Ausgänge liegen erst auf einer Schiene, wenn einer zugeordnet ist ([Carrier: Der Strommonitor](Carrier-de.md#der-strommonitor)) |
 | `INA3221 NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET` | kein Kanal eines bestückten INA3221 überwacht in SETUP > SENSORS das Ziel des Testers, an einem IOmcu älter als 4.25 überwacht CH2 oder CH3 es, ein IOmcu älter als Protokoll 4.11, oder eine SENSE-Page, die die Einrichtung nicht hält |
 | `INA3221 NICHT ERREICHBAR` | kein Link, das Bauteil antwortet nicht, oder sein Reset-Zähler hat sich geändert |
 | `NOCH KEINE INA3221-MESSFENSTER` | der INA3221 ist noch nicht das Messgerät der Servoschiene: seine Einrichtung ist seit weniger als 1000ms bestätigt, oder kein Fenster mit Strom in den letzten 200ms |
 | `SERVOVERSORGUNG UNTER 3.0V ODER OHNE MESSWERT` | das letzte INA3221-Fenster enthält keine Schienenspannung, oder ihr Mittel liegt unter 3,0V (`SERVO_LIMRUN_RAIL_MIN_MV`). An einem ausgeschalteten Ausgang werden 0V gemessen, und eine Suche dort fände zwei freie Enden an einem Servo, das sich nie bewegt hat. 3,0V liegen unter den 4,8V, für die Servos üblicherweise angegeben sind, so dass die Schiene einer einzelnen Lithiumzelle noch startet; die Spannung, bei der ein bestimmtes Servo stehen bleibt, ist nicht gemessen |
 | `PORT-PWM AUS. KEINE PULSE AN DIESEM PORT.` | ZIEL auf PROG-PORT mit PORT-PWM aus |
-| `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | ZIEL auf den Ausgängen des Prüfstands, ohne einen SERVO PWM zugeordneten Ausgang oder mit noch nicht ausgelesener Zuordnung: die Worte der Zeile ZIEL |
 | `MITTE MUSS ZWISCHEN PULS MIN UND PULS MAX LIEGEN` | PULS MITTE liegt nicht zwischen PULS MIN und PULS MAX |
 
 ### Die Weggrenzen des Servos programmieren
@@ -1492,8 +1492,8 @@ Ein START wird abgelehnt, der Grund in der ersten Zeile, solange:
 | --- | --- |
 | der Prüfstand SAFE ist | `ZUERST ARM`, wie auf TEST |
 | ein anderer Lauf läuft oder ein Bericht noch geschrieben wird | die Zeile des Laufs, wie auf TEST |
+| ZIEL die Ausgänge des Prüfstands sind oder der Ausgang sonst nicht der Programmierport ist | `AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT`. ZIEL auf den Ausgängen wird vor dem Messgerät genannt: auf dem rbmod-Carrier überwacht kein Kanal die Ausgänge, bis einer als SERVO PWM zugeordnet ist |
 | das Messgerät nicht für den Servostrom eingerichtet ist | die Zeile des Endlagenlaufs |
-| der Ausgang nicht der Programmierport ist | `AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT` |
 | PULS MIN über 1000us, PULS MAX unter 2000us oder PULS MITTE nicht strikt zwischen 1000us und 2000us liegt | `PULS MIN BIS MAX MUSS 1000 BIS 2000us ABDECKEN` |
 | die Servoprogrammierung belegt ist oder bei KST/Chaservo und klassischen Hitec-Servos weder PD mini noch PROG 5V die Versorgung schalten kann | die Zeile des Endlagenlaufs |
 | die Winkelquelle keinen Messwert gibt | `WINKELQUELLE: KEIN MESSWERT` |
