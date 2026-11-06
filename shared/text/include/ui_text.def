@@ -8024,6 +8024,9 @@ UI_TEXT(UPD_STAGED, 81,
 UI_TEXT(UPD_WAIT_COPROC, 67,
     "Waiting for the IOmcu update to finish.",
     "Wartet auf das Ende des IOmcu-Updates.")
+UI_TEXT(UPD_WAIT_C6, 67,
+    "Waiting for the C6 radio update to finish.",
+    "Wartet auf das Ende des C6-Updates.")
 UI_TEXT(UPD_WAIT_DRAWING, 67,
     "Waiting: a board drawing is being downloaded or saved.",
     "Wartet: Eine Platinenzeichnung wird geladen oder gespeichert.")

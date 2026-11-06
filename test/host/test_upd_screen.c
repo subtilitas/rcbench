@@ -19,6 +19,7 @@
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
+#include "upd_c6.h"
 #include "upd_screen.h"
 #include "wa_fetch.h"
 #include "wifi_screen.h"
@@ -494,6 +495,33 @@ TEST_CASE(every_result_has_a_text_in_both_languages)
     upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
     CHECK_STR_EQ(a, "No newer release for the ESP32-S3 panel. Panel version: 0.19.0.");
     CHECK_STR_EQ(b, "Latest release on GitHub: 0.21.0.");
+}
+
+TEST_CASE(the_wait_names_the_c6_while_its_update_runs)
+{
+    char a[96], b[96];
+    upd_c6_view_t c6;
+    memset(&c6, 0, sizeof(c6));
+    base_view();
+    g_v.phase = UPD_PH_ENDED;
+    g_v.got = UPD_GOT_BLOCKED;
+    g_v.why = UPD_WHY_COPROC;
+
+    c6.row = FW_C6_ROW_UPDATING;
+    upd_c6_set(&c6);
+    upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+    CHECK_STR_EQ(a, "Waiting for the C6 radio update to finish.");
+    ui_text_set_language(UI_LANG_DE);
+    upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+    CHECK_STR_EQ(a, "Wartet auf das Ende des C6-Updates.");
+    ui_text_set_language(UI_LANG_EN);
+
+    /* With the C6 idle the same gate is the IOmcu's. */
+    c6.row = FW_C6_ROW_READY;
+    upd_c6_set(&c6);
+    upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+    CHECK_STR_EQ(a, "Waiting for the IOmcu update to finish.");
+    upd_c6_drop();
 }
 
 TEST_CASE(a_running_job_says_its_step_and_the_time_left)
@@ -1062,7 +1090,7 @@ TEST_CASE(every_card_text_takes_two_lines_at_most)
         TX_WF_OFF_GUESSES, TX_WF_OFF_FAILED, TX_WF_JOIN_PASSWORD,
         TX_WF_JOIN_NOT_FOUND, TX_WF_JOIN_NO_ADDRESS, TX_WF_JOIN_LOST,
         TX_WF_TRY_AP, TX_WF_NEEDS_1, TX_WF_NEEDS_2, TX_UPD_STAGED,
-        TX_UPD_WAIT_COPROC, TX_UPD_WAIT_DRAWING, TX_UPD_WAIT_BUSY,
+        TX_UPD_WAIT_COPROC, TX_UPD_WAIT_C6, TX_UPD_WAIT_DRAWING, TX_UPD_WAIT_BUSY,
         TX_UPD_STOP_FILES, TX_UPD_STOP_CANCEL, TX_UPD_STOP_COPROC,
         TX_UPD_STOP_INSTALL, TX_UPD_STOP_DRAWING, TX_UPD_FAIL_CONNECT,
         TX_UPD_FAIL_REFUSED, TX_UPD_FAIL_UNEXPECTED, TX_UPD_FAIL_SUMS,
@@ -1104,6 +1132,7 @@ int main(void)
     RUN(the_download_hold_is_there_only_for_a_newer_release);
     RUN(the_download_hold_ends_unfired_when_the_gate_closes_under_it);
     RUN(every_result_has_a_text_in_both_languages);
+    RUN(the_wait_names_the_c6_while_its_update_runs);
     RUN(a_running_job_says_its_step_and_the_time_left);
     RUN(a_stop_for_wifi_clears_once_the_radio_is_free);
     RUN(a_result_cut_to_a_short_buffer_stays_terminated);
