@@ -132,11 +132,11 @@ POOL = [None, True, False, 0, 1, -1, 2, 3, 4, 5, 254, 255, 256, 1000, 59999,
         "ä" * 61, "A", "a_b", "a-b", "a" * 32, "a" * 33, "a" * 48,
         "a" * 49, " ", "\t", "ü", "\U0001f600", "\x7f", "\x01"]
 
-ADDED = ["family_de", "after_select", "entry_throttle", "entry_hold_ms", "hold_ms",
-         "starts_menu", "locks", "action_de", "default", "applies_to",
-         "applies_when", "cell_type", "v_min_mv", "manual", "listen", "store",
-         "value_select", "repeat", "long_equals_short", "within_ms",
-         "throttle", "when", "number"]
+ADDED = ["family_de", "after_select", "entry_throttle", "entry_hold_ms",
+         "hold_ms", "starts_menu", "locks", "action_de", "default",
+         "applies_to", "applies_when", "cell_type", "v_min_mv", "manual",
+         "listen", "store", "value_select", "repeat", "long_equals_short",
+         "within_ms", "throttle", "when", "number"]
 
 
 def paths(v, at=()):
