@@ -253,6 +253,38 @@ TEST_CASE(a_null_argument_does_nothing)
     CHECK_STR_EQ(imu_axis_name((imu_axis_t)3), "");
 }
 
+/* The frame types since the restart as RSW bits, and the good frames,
+ * held at 255; a bad sum counts in neither; a restart clears both. */
+TEST_CASE(the_content_counts_frame_types_since_the_restart)
+{
+    imu_t m;
+    imu_init(&m);
+    CHECK_EQ(m.content, 0u);
+    CHECK_EQ(m.content_n, 0u);
+    uint8_t f[WIT_FRAME_LEN];
+    rig_frame(f, WIT_T_ACC, 0, 0, 2048, 2450);
+    imu_feed(&m, f, sizeof f, 1u);
+    rig_frame(f, WIT_T_MAG, 1, 2, 3, 4);
+    imu_feed(&m, f, sizeof f, 2u);
+    CHECK_EQ(m.content, WIT_RSW_ACC | WIT_RSW_MAG);
+    CHECK_EQ(m.content_n, 2u);
+    imu_content_restart(&m);
+    CHECK_EQ(m.content, 0u);
+    CHECK_EQ(m.content_n, 0u);
+    rig_frame(f, WIT_T_GYRO, 0, 0, 0, 395);
+    f[10] = (uint8_t)(f[10] + 1u);                  /* a bad sum */
+    imu_feed(&m, f, sizeof f, 3u);
+    CHECK_EQ(m.content, 0u);
+    CHECK_EQ(m.content_n, 0u);
+    for (int i = 0; i < 300; ++i) {
+        rig_frame(f, (i % 2 == 0) ? WIT_T_GYRO : WIT_T_ANGLE, 0, 0, 0, 395);
+        imu_feed(&m, f, sizeof f, 4u + (uint32_t)i);
+    }
+    CHECK_EQ(m.content, WIT_RSW_GYRO | WIT_RSW_ANGLE);
+    CHECK_EQ(m.content_n, 255u);
+    imu_content_restart(NULL);
+}
+
 int main(void)
 {
     RUN(imu_stale_equals_the_gap_allowance);
@@ -261,6 +293,7 @@ int main(void)
     RUN(still_ms_counts_while_the_angle_stays_within_half_a_degree);
     RUN(the_rate_counts_angle_frames_over_the_last_second);
     RUN(battery_and_temperature_come_from_their_frames);
+    RUN(the_content_counts_frame_types_since_the_restart);
     RUN(a_null_argument_does_nothing);
     return test_summary("imu");
 }

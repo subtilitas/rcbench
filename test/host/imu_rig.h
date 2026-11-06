@@ -207,15 +207,49 @@ static void rig_notify(rig_t *r, const uint8_t *b, size_t n, size_t cut)
     }
 }
 
-/** Angle frames every @p period_ms for @p ms ms, as the sensor streams. */
+/** A sample every @p period_ms for @p ms ms, as a sensor that holds RSW
+ *  0x0C streams it: a 0x52 frame (battery 4.00V), then the angle frame. */
 static void rig_stream(rig_t *r, uint32_t ms, uint32_t period_ms, float roll,
                        float pitch, float yaw)
 {
-    uint8_t f[WIT_FRAME_LEN];
-    rig_angle(f, roll, pitch, yaw);
+    uint8_t f[2u * WIT_FRAME_LEN];
+    rig_frame(f, WIT_T_GYRO, 0, 0, 0, 400);
+    rig_angle(&f[WIT_FRAME_LEN], roll, pitch, yaw);
     for (uint32_t k = 0; k < ms; ++k) {
         if (k % period_ms == 0u) {
             rig_notify(r, f, sizeof f, 20u);
+        }
+        rig_tick(r);
+    }
+}
+
+/** A sample every @p period_ms for @p ms ms from a sensor at RSW @p rsw:
+ *  of 0x51, 0x52 (battery 4.00V), 0x53 (angles 0) and 0x54 the frames its
+ *  bits name, in that order. */
+static void rig_stream_rsw(rig_t *r, uint32_t ms, uint32_t period_ms,
+                           uint16_t rsw)
+{
+    uint8_t f[4u * WIT_FRAME_LEN];
+    size_t n = 0u;
+    if ((rsw & WIT_RSW_ACC) != 0u) {
+        rig_frame(&f[n], WIT_T_ACC, 0, 0, 2048, 2450);
+        n += WIT_FRAME_LEN;
+    }
+    if ((rsw & WIT_RSW_GYRO) != 0u) {
+        rig_frame(&f[n], WIT_T_GYRO, 0, 0, 0, 400);
+        n += WIT_FRAME_LEN;
+    }
+    if ((rsw & WIT_RSW_ANGLE) != 0u) {
+        rig_angle(&f[n], 0.0f, 0.0f, 0.0f);
+        n += WIT_FRAME_LEN;
+    }
+    if ((rsw & WIT_RSW_MAG) != 0u) {
+        rig_frame(&f[n], WIT_T_MAG, 100, 200, 300, 0);
+        n += WIT_FRAME_LEN;
+    }
+    for (uint32_t k = 0; k < ms; ++k) {
+        if (k % period_ms == 0u) {
+            rig_notify(r, f, n, 20u);
         }
         rig_tick(r);
     }

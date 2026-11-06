@@ -6,6 +6,19 @@ history is in git.
 
 ## Unreleased
 
+### Changed
+
+- The panel sets the Bluetooth IMU's output content register RSW (0x02) to
+  0x0C: angle (0x53) and angular rate with the battery (0x52), 2 frames a
+  sample in place of the 4 of the sensor's default 0x1E. It writes unlock,
+  RSW 0x0C and SAVE once on a connection whose first 8 good frames show
+  other types; a sensor that already sends 0x52 and 0x53 only gets no
+  write. On one panel the BLE link carried about 570 frames/s (6.3kB/s):
+  4 frames a sample overflow it above about 140Hz, 2 frames a sample leave
+  room for about 285Hz. The sensor stores RSW, so another device reading it
+  afterwards gets 0x52 and 0x53 only until the sensor's app sets RSW back
+  ([IMU](docs/IMU.md#the-sensor)).
+
 ## 0.23.9 - 2026-11-06
 
 0.23.9 is a testing release. Its minor number, 23, is odd. GitHub

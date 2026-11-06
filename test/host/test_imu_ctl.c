@@ -725,6 +725,74 @@ TEST_CASE(imu_off_in_a_rate_write_sends_it_again_at_the_next_connection)
     CHECK(rig_sent_is(&r, at + 4u, WIT_REG_SAVE, 0u, 0u));
 }
 
+/* A sensor at its default RSW (0x51 to 0x54) connects: unlock, RSW 0x0C,
+ * SAVE go, 50ms apart, once on the connection.  It reconnects still
+ * sending 0x51 to 0x54: the three go again.  It reconnects sending 0x52
+ * and 0x53 only: nothing goes. */
+TEST_CASE(a_connect_at_the_default_rsw_sends_rsw_0x0c_and_save)
+{
+    rig_t r;
+    on_with_sensor(&r, RIG_ADDR);
+    (void)rig_settle(&r, 2000u);
+    rig_stream_rsw(&r, 300u, 20u, WIT_RSW_DEFAULT);
+    CHECK_EQ(r.nsent, 3u);
+    CHECK(rig_sent_unlock(&r, 0u));
+    CHECK(rig_sent_is(&r, 1u, WIT_REG_RSW, 0x0Cu, 0x00u));
+    CHECK(rig_sent_is(&r, 2u, WIT_REG_SAVE, 0u, 0u));
+    CHECK(r.sent_at[1] - r.sent_at[0] >= IMU_CMD_GAP_MS);
+    CHECK(r.sent_at[2] - r.sent_at[1] >= IMU_CMD_GAP_MS);
+    rig_stream_rsw(&r, 1000u, 20u, WIT_RSW_DEFAULT);
+    CHECK_EQ(r.nsent, 3u);                           /* once */
+    bsim_drop(&r.sim, r.t, 0x208u);
+    (void)rig_settle(&r, BLEU_RETRY_MS + 2000u);
+    CHECK(imu_ble_up(&r.c.ble));
+    rig_stream_rsw(&r, 300u, 20u, WIT_RSW_DEFAULT);
+    CHECK_EQ(r.nsent, 6u);
+    CHECK(rig_sent_unlock(&r, 3u));
+    CHECK(rig_sent_is(&r, 4u, WIT_REG_RSW, 0x0Cu, 0x00u));
+    CHECK(rig_sent_is(&r, 5u, WIT_REG_SAVE, 0u, 0u));
+    bsim_drop(&r.sim, r.t, 0x208u);
+    (void)rig_settle(&r, BLEU_RETRY_MS + 2000u);
+    CHECK(imu_ble_up(&r.c.ble));
+    rig_stream_rsw(&r, 1000u, 20u, WIT_RSW_ANGLE | WIT_RSW_GYRO);
+    CHECK_EQ(r.nsent, 6u);
+    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_CONNECTED);
+}
+
+/* The sensor's module refuses RSW's unlock: THE SENSOR DID NOT TAKE THE
+ * COMMAND, RSW and SAVE do not go alone, nothing more on that connection;
+ * at the next connection unlock, RSW 0x0C, SAVE go. */
+TEST_CASE(a_refused_rsw_write_is_sent_again_at_the_next_connection)
+{
+    rig_t r;
+    on_with_sensor(&r, RIG_ADDR);
+    (void)rig_settle(&r, 2000u);
+    r.sim.fail = BSIM_Q_WRITE;
+    r.sim.fail_status = 0x10Eu;
+    rig_stream_rsw(&r, 300u, 20u, WIT_RSW_DEFAULT);
+    CHECK_EQ(r.nsent, 1u);
+    CHECK(rig_sent_unlock(&r, 0u));
+    CHECK_EQ(r.c.sensor.out_n, 0u);
+    imu_view_t v;
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.err, IMU_ERR_WRITE);
+    CHECK_EQ(v.err_code, 0x10Eu);
+    CHECK_EQ(v.link, IMU_LINK_CONNECTED);
+    r.sim.fail = 0u;
+    rig_stream_rsw(&r, 1000u, 20u, WIT_RSW_DEFAULT);
+    CHECK_EQ(r.nsent, 1u);
+    bsim_drop(&r.sim, r.t, 0x208u);
+    (void)rig_settle(&r, BLEU_RETRY_MS + 2000u);
+    CHECK(imu_ble_up(&r.c.ble));
+    rig_stream_rsw(&r, 300u, 20u, WIT_RSW_DEFAULT);
+    CHECK_EQ(r.nsent, 4u);
+    CHECK(rig_sent_unlock(&r, 1u));
+    CHECK(rig_sent_is(&r, 2u, WIT_REG_RSW, 0x0Cu, 0x00u));
+    CHECK(rig_sent_is(&r, 3u, WIT_REG_SAVE, 0u, 0u));
+    rig_stream_rsw(&r, 1000u, 20u, WIT_RSW_DEFAULT);
+    CHECK_EQ(r.nsent, 4u);
+}
+
 /* What goes on to SERVO: each frame once, a stale reading once, after a
  * reset (ANGLE SOURCE turned to IMU) the next reading whatever went before,
  * and a stale stretch that frames ended before SERVO looked as a stale
@@ -858,6 +926,8 @@ int main(void)
     RUN(a_rate_change_in_a_calibration_waits_for_its_end);
     RUN(imu_off_with_calsw_1_unanswered_sends_the_exit_at_the_next_connection);
     RUN(imu_off_in_a_rate_write_sends_it_again_at_the_next_connection);
+    RUN(a_connect_at_the_default_rsw_sends_rsw_0x0c_and_save);
+    RUN(a_refused_rsw_write_is_sent_again_at_the_next_connection);
     RUN(the_handout_gives_each_frame_once_and_again_after_a_reset);
     RUN(a_frame_after_the_stale_point_counts_a_gap);
     RUN(the_rate_options_are_the_wit_codes_and_null_does_nothing);
