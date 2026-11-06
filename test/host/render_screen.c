@@ -2773,13 +2773,19 @@ static void pose_motor_supply(ui_screen_id_t id, const char *view,
          * a probe opened where the screen opens its own, over the left
          * column under the strip.
          */
-        if (strcmp(view, "supply-settings") == 0) {
-            /* The list opens with the output off: the run switched off. */
+        if (strncmp(view, "supply-settings", 15) == 0
+            && strcmp(view, "supply-settings-off") != 0) {
+            /* The list opens with the output off: the run switched off.
+             * -mid: dragged 300px, the trips and the questions. */
             st.output = false;
             supply_screen_set_output(false);
             supply_screen_push(&st);
             ui_router_goto(SCREEN_SUPPLY);
             tap(SU_SETTINGS_X, UI_BAND_H + SU_SETTINGS_Y);
+            if (strcmp(view, "supply-settings-mid") == 0) {
+                drag(300, UI_BAND_H + 400, UI_BAND_H + 250);
+                drag(300, UI_BAND_H + 400, UI_BAND_H + 250);
+            }
         } else if (strcmp(view, "supply-confirm") == 0) {
             /* +0.1V on a live output: the question, as the settings'
              * default asks it. */

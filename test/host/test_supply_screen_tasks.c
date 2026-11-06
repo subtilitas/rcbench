@@ -150,8 +150,8 @@ TEST_CASE(settings_opens_with_the_output_off_only)
     ui_router_set_alert(NULL);
     open_settings();
     CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
-    CHECK(ui_router_alert() != NULL);
-    CHECK_STR_EQ(ui_router_alert(), TR(FOOT_SETTINGS_ON));
+    CHECK_STR_EQ(ui_router_alert() != NULL ? ui_router_alert() : "",
+                 TR(FOOT_SETTINGS_ON));
     supply_screen_open_limits();              /* nor from another screen */
     CHECK(!supply_screen_settings_shown());
 

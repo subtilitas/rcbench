@@ -923,6 +923,8 @@ FIT_ONLY = {
     # SUPPLY's list at the PD mini with a programming port holding the
     # supply, the rows locked, and stored on one pin for both.
     "supply-pdmini-locked": (None, "supply", "dark"),
+    # SUPPLY's list dragged to its middle: the trips and the questions.
+    "supply-settings-mid": (None, "supply", "dark"),
     "supply-pdmini-same": (None, "supply", "dark"),
     "band-fault-all":   (None, "overview", "dark"),
     "band-hwstop-all":  (None, "overview", "dark"),
