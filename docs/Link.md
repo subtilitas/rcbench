@@ -1552,7 +1552,7 @@ The IOmcu's flash (4MB module, RP2350A):
 | 0x3FE000 to 0x3FFFFF | 8KiB | output store | unused: read once for old bindings, never written |
 
 A slot is 2,084,864 bytes, 509 sectors of 4KiB. The default image is
-278,508 bytes, 13% of a slot. The last sector stays unused because the RP2350-E10
+279,860 bytes, 13% of a slot. The last sector stays unused because the RP2350-E10
 workaround of an A2 chip's UF2 (USB Flashing Format) load can erase it.
 `firmware/iomcu/partitions.json` is the table; the build passes its offsets
 to the code, and the build fails when the image does not fit one slot.

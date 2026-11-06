@@ -1688,7 +1688,7 @@ Der Flash des IOmcu (Modul mit 4MB, RP2350A):
 | 0x3FE000 bis 0x3FFFFF | 8KiB | Ausgangsspeicher | ungenutzt: einmal für alte Bindungen gelesen, nie geschrieben |
 
 Ein Slot hat 2.084.864 Byte, 509 Sektoren zu 4KiB. Das Standard-Image hat
-278.508 Byte, 13% eines Slots. Der letzte Sektor bleibt ungenutzt, weil die
+279.860 Byte, 13% eines Slots. Der letzte Sektor bleibt ungenutzt, weil die
 Umgehung für RP2350-E10 beim Laden einer UF2 (USB Flashing Format) auf einen
 Chip mit Stepping A2 ihn löschen kann. `firmware/iomcu/partitions.json` ist
 die Tabelle; der Build gibt ihre Offsets an den Code weiter und schlägt fehl,

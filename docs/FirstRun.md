@@ -214,7 +214,7 @@ idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor
 
 The IOmcu build prints its own size check:
 
-    -- rcbench: image 278508 bytes, 13% of the 2084864 bytes of one slot
+    -- rcbench: image 279860 bytes, 13% of the 2084864 bytes of one slot
 
 **Watch for:** the module used for bring-up is a Waveshare RP2350-CAN with
 **4MB**, while `PICO_BOARD` defaults to a board file claiming **16MB**. The
