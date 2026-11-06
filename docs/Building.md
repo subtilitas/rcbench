@@ -44,7 +44,8 @@ rcbench/
     kst/                  programming of KST and Chaservo servos: frames, registers, limits, write plans, session · rp2350: kst_line.pio · kst_line
     hitec/                Hitec servo wire, both families: frames, transactions, reply decoders · rp2350: hitec_line.pio · hitec_line
     escwire/              ESC settings over the signal wire: protocol A, the text interface, the guard, identification, field maps, session · rp2350: ew_line.pio · ew_line · rp2350: ew_line.pio · ew_line
-    hc05/                 HC-05 Bluetooth module AT set-up: probe, scan, bind, connect to any; no pin driver
+    hc05/                 HC-05 Bluetooth module AT set-up: probe, scan, bind, connect to any; no pin driver; host suite only
+    bleuart/              BLE central for the ISSC transparent-UART service: advertising parser, scan list, connect, discovery, subscribe, writes, reconnect; no pin driver
     i2c_txq/              I2C transaction queue: earliest deadline, timeouts, line check, bus clear · rp2350: i2c_txq_block on an I2C block, no PIO program
     witmotion/            WitMotion IMU frames: parser, decoders, command encoder; no pin driver
   firmware/
@@ -92,7 +93,8 @@ in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |
 | `escwire` | yes | yes | yes |
 | `witmotion` | yes | | yes |
-| `hc05` | yes | | yes |
+| `hc05` | | | yes |
+| `bleuart` | yes | | yes |
 
 ## Toolchains
 
@@ -353,7 +355,9 @@ idf.py -C firmware/panel -B firmware/panel/build-noinject -D RCBENCH_TOUCH_INJEC
 idf.py -C firmware/panel -B firmware/panel/build-noperf -D RCBENCH_PERF_LOG=OFF build
 
 # panel, as one image at offset 0 (the ESP32-P4's bootloader sits at
-# 0x2000 inside it); it erases the settings in nvs
+# 0x2000 inside it); it erases the settings in nvs: the image fills
+# 0xD000 to 0x12FFF (nvs, 24,576 bytes) with 0xFF. `idf.py flash` writes
+# 0x2000, 0xC000, 0x14000 and 0x20000 only and keeps nvs.
 idf.py -C firmware/panel merge-bin -o rcbench-panel-merged.bin
 esptool.py -p /dev/ttyACM0 write_flash 0x0 \
     firmware/panel/build/rcbench-panel-merged.bin
@@ -514,7 +518,12 @@ P4; the C6 runs the radio.
 
 SDIO runs 4 bits wide at 40MHz. `components/board/include/board_pins.h`
 names the pins (`BOARD_C6_*`), `firmware/panel/sdkconfig.defaults` hands
-them to esp_hosted, and `wifi_radio.c` fails the build when the two differ.
+them to esp_hosted, and `components/c6_link/c6_link.c` fails the build when
+the two differ. `c6_link` brings the link up behind one mutex, so every
+user of the C6 shares one reset and one start: the Wi-Fi task calls
+`c6_link_up()` before `esp_wifi_init()`, the Bluetooth LE start before
+NimBLE ([Bluetooth LE through the
+ESP32-C6](#bluetooth-le-through-the-esp32-c6)).
 
 ### The managed components
 
@@ -554,24 +563,155 @@ and polls for its start event every 200ms. The panel then writes the C6's
 version to the console:
 
 ```
-wifi: C6: esp_hosted firmware 2.13.0, host 2.13.0
+c6: C6: esp_hosted firmware 2.13.0, host 2.13.0
 ```
 
 A C6 firmware without the version request answers with
-`wifi: C6: firmware version not reported, host 2.13.0`, after up to 5s.
+`c6: C6: firmware version not reported, host 2.13.0`, after esp_hosted's
+time-out for the request, 1s.
 esp_hosted also logs `Version mismatch: Host [2.13.0] > Co-proc [x.y.z]`
 when the major or minor numbers differ. Espressif states that a host newer
 than its co-processor runs and may see request time-outs; the panel's
-behaviour with an older C6 firmware is not measured. The panel has no path
-that updates the C6. A responding C6 is reset once per panel start.
-Later Wi-Fi starts reuse the active link without another reset.
+behaviour with an older C6 firmware is not measured. A responding C6 is
+reset once per panel start. Later Wi-Fi starts reuse the active link without
+another reset.
+
+On the station's panel (2026-11-06) the shipped C6 reports
+`transport: capabilities: 0xd` (Wi-Fi, HCI (host controller interface) over
+SDIO, BLE (Bluetooth Low Energy)) and `Version mismatch: Host [2.13.0] >
+Co-proc [0.0.0]`, and does not answer the version request. Whether it takes
+the update over SDIO is not known.
+
+#### The image the panel carries
+
+CI and the release build the C6's firmware from the `slave/` folder of the
+esp_hosted component the panel pins, 2.13.0, on ESP-IDF v6.1 for the
+ESP32-C6, with the component's own configuration: Wi-Fi, and the BT
+controller alone with its HCI over the SDIO link in RAM (VHCI), which the
+panel's NimBLE host over VHCI needs. The workflow is `.github/workflows/c6.yml`;
+`tools/c6_image.py` copies the project with `firmware/c6/dependencies.lock`
+(the slave's 5 registry components at fixed versions and hashes) and fails
+when the image is not an ESP32-C6 application `network_adapter` of the
+pinned version with its SHA-256 appended, when it does not fit the C6's
+application slot (`ota_0` and `ota_1` of `slave/partitions.esp32c6.csv`,
+1,966,080 bytes each), when the sdkconfig lacks one of those settings, or
+when the build moved a pin of the lock file.
+
+| Item | Value |
+| --- | --- |
+| `rcbench-c6-2.13.0.bin` (sent over SDIO) | 1,283,616 bytes, 65.3% of the C6's slot |
+| `rcbench-c6-merged-2.13.0.bin` (flashed at 0x0 over H4) | 1,349,152 bytes: bootloader, partition table, otadata and the application |
+| Panel image growth with it carried | 1,284,272 bytes of flash; 1,408 bytes of internal RAM (one 1,400-byte chunk buffer) |
+| Panel image with it, NimBLE and one IOmcu image | 4,419,968 of 8,126,464 bytes in the update slot, 45.6% free; the release image with both IOmcu images is not measured |
+
+A build carries the image with `-D RCBENCH_C6_BIN=<path>`, as it carries the
+IOmcu images; a build without it carries none, and UPDATES' C6 RADIO row
+says so.
+
+```bash
+# the C6's image from the panel's managed component (a panel build fetches
+# it into firmware/panel/managed_components first)
+. ~/esp/esp-idf-v6.1/export.sh
+cd firmware/c6
+python3 ../../tools/c6_image.py prepare \
+  ../panel/managed_components/espressif__esp_hosted slave
+cd slave && IDF_TARGET=esp32c6 idf.py build \
+  && idf.py merge-bin -o rcbench-c6-merged.bin
+cd ../../.. && python3 tools/c6_image.py check firmware/c6/slave \
+  firmware/c6/slave/build c6-dist
+# the panel carrying it
+cd firmware/panel && idf.py -D RCBENCH_C6_BIN=../../c6-dist/rcbench-c6-2.13.0.bin build
+```
+
+#### The update over SDIO
+
+SETUP > UPDATES' C6 RADIO row shows the version the C6 reported at the
+first Wi-Fi start, or `not reported`, and the carried version, and
+`HOLD 2s TO UPDATE THE C6 RADIO`. The hold is live when the build carries
+an image that passed its check, the C6 does not report the carried
+version, the link to the C6 has not failed, the bench is SAFE with no arm
+waiting, the supply output is off, no log run is open, no board drawing is
+being fetched, neither the IOmcu's update nor the panel's own download or
+install runs, Wi-Fi is off and Bluetooth LE's start task `blestart` does
+not run. A tap on the grey hold shows the reason on
+the alert band. The update runs on the task `c6upd` (core 0, priority 2,
+4,096-byte stack, created at the first update), one step at a time:
+
+| Step | Call | Limit | Ends as |
+| --- | --- | ---: | --- |
+| link | `c6_link_up()`, then the C6's version | 30,000ms | `The C6 radio did not answer. Wi-Fi is off until the panel restarts.`; a C6 that reports 2.13.0 gets nothing: `The C6 radio runs 2.13.0 already. Nothing was sent.` |
+| begin | `esp_hosted_slave_ota_begin()`: the C6 erases the slot it does not run from | 20,000ms | an error: `The C6 radio takes no update over SDIO. Flash it over header H4.` |
+| write | `esp_hosted_slave_ota_write()`, 1,400 bytes a call, 4 calls a step | 10,000ms a step | an error: the end call once more to release the C6's OTA handle, then `C6 update stopped: a write failed. Previous firmware is running.` |
+| end | `esp_hosted_slave_ota_end()`: the C6 checks the image's SHA-256 | 10,000ms | `... the C6's image check failed ...` |
+| activate | `esp_hosted_slave_ota_activate()`, only on a C6 that reported 2.6.0 or later | 10,000ms | `... activation failed ...` |
+
+A step past its limit ends the update with `C6 update stopped: no
+response. Previous firmware is running.`; nothing more is sent, and the
+step's late answer is ignored. Each limit is above esp_hosted's own
+response time-out for its call (15s for begin, 5s for the others). The C6
+keeps the slot it starts from until the activate call (C6 firmware 2.6.0
+and later) or the end call (older firmware, and a C6 that reports no
+version: it gets no activate call). After a success the alert reads
+`C6 radio updated to 2.13.0. The panel restarts.` and the panel restarts
+3s later, so host and C6 start their link afresh. While the update runs,
+and until a step out past its limit returns, Wi-Fi does not start, ARM is
+refused (`Cannot switch to ARMED: the C6 radio update is running.`) and
+the panel's install, the GitHub check and the IOmcu's update wait. The
+time an update takes is not measured.
+
+Console lines, tag `rcbench`:
+
+```
+I (…) rcbench: C6: carries esp_hosted 2.13.0, 1283616 bytes
+I (…) rcbench: C6 update: esp_hosted 2.13.0, 1283616 bytes
+I (…) rcbench: C6: updated to esp_hosted 2.13.0, 1283616 bytes; restarting in 3000ms
+E (…) rcbench: C6 update: begin refused, error 0x<e>; the C6 takes no update over SDIO
+E (…) rcbench: C6 update ended <result> in phase <phase>, error 0x<e>, <n> of 1283616 bytes; the C6 keeps its firmware
+W (…) rcbench: C6 update refused: row <row>, reason <why>
+```
+
+#### Recovery over header H4
+
+A C6 left without a firmware that starts, or one that refuses the update
+over SDIO, takes the merged image over its own serial port. Header H4
+carries the C6's UART0 (TXD0, RXD0), GND and its strapping pin IO9; the
+order of H4's pins is not recorded here and is read from the board's
+silkscreen. IO9 low when the C6 comes out of reset starts its ROM download
+mode. EN is not on H4: the panel's GPIO54 drives it.
+
+1. Switch the panel off. Check the image:
+   `sha256sum -c SHA256SUMS --ignore-missing` in the folder with the
+   release's `rcbench-c6-merged-2.13.0.bin` and `SHA256SUMS`.
+2. Wire a 3.3V USB-UART (universal asynchronous receiver-transmitter)
+   adapter: its RX to H4 TXD0, its TX to H4 RXD0, its GND to H4 GND. Tie H4
+   IO9 to GND.
+3. Switch the panel on. Open neither WI-FI nor the C6 RADIO hold: a Wi-Fi
+   start resets the C6 through GPIO54, which ends the flash.
+4. Flash, with no reset by the adapter (its DTR and RTS lines reach no
+   pin of the C6):
+
+   ```bash
+   python -m esptool --chip esp32c6 -p /dev/ttyUSB0 -b 460800 \
+     --before no-reset --after no-reset \
+     write-flash 0x0 rcbench-c6-merged-2.13.0.bin
+   ```
+
+   esptool 5 spells the command `write-flash`; esptool 4 `write_flash`.
+5. Switch the panel off, take IO9 off GND, switch it on and start Wi-Fi
+   once. The console shows `c6: C6: esp_hosted firmware 2.13.0, host
+   2.13.0`, and the C6 RADIO row `C6 radio: 2.13.0. Included: 2.13.0.`
+
+The merged image writes the whole partition table, so the C6's NVS
+(non-volatile storage, 16KiB at 0x9000) and its otadata are written anew;
+the C6 keeps no setting the panel needs.
 
 ### Failures
 
 `esp_hosted_connect_to_slave()` returns `ESP_OK` whether or not the C6
 came up (`esp_hosted_api.c` 177-192). The panel takes esp_hosted's
 `ESP_HOSTED_EVENT_TRANSPORT_UP` event as the answer, and waits for it at
-most 1,000ms after that call has returned (`wifi_radio.c`).
+most 1,000ms after that call has returned (`c6_link.c`). A second caller
+waits on the mutex until the first call has ended and then gets its result.
 
 - A C6 that does not start as an SDIO card: esp_hosted gives up after the
   card's start-up, at least 1,500ms after the 1,520ms reset; 1 reset.
@@ -584,8 +724,8 @@ most 1,000ms after that call has returned (`wifi_radio.c`).
   radio's start runs on its own task.
 - A link that fails during a session: esp_hosted posts
   `ESP_HOSTED_EVENT_TRANSPORT_FAILURE`. The panel logs
-  `wifi: C6 link failed: C6 held in reset, Wi-Fi is off until the panel
-  restarts` once, holds the C6 in reset, and the session ends as a failed
+  `c6: C6 link failed: C6 held in reset, Wi-Fi and Bluetooth are off until
+  the panel restarts` once, holds the C6 in reset, and the session ends as a failed
   start. With the C6 in reset its SDIO lines are held high by their
   51kΩ pull-ups, so esp_hosted's read task, priority 23 on core 0, waits
   instead of failing in a loop; this is not measured on a board. The panel
@@ -650,7 +790,7 @@ The SD card on slot 0 and the C6 on slot 1 share one SDMMC controller:
 On the ESP32-P4 a task created through `xTaskCreate()` or
 `xTaskCreatePinnedToCore()` without a core runs on core 0, and core 1
 belongs to the control task and the tasks pinned there. The panel links
-with `--wrap=xTaskCreatePinnedToCore` (`components/wifi_access/wifi_radio.c`)
+with `--wrap=xTaskCreatePinnedToCore` (`components/c6_link/c6_link.c`)
 for it: esp_hosted creates 6 tasks at priority 23 without naming a core.
 `xTaskCreateStatic()` and the `xTaskCreate*WithCaps()` calls are not
 wrapped; esp_hosted uses `xTaskCreateStatic()` only with
@@ -680,14 +820,110 @@ to PSRAM; it is off, and the free internal RAM with it on is not measured.
 Other allocations of esp_hosted are not counted here. The console line
 `wifi: radio up` names the internal RAM free with the radio up.
 
+## Bluetooth LE through the ESP32-C6
+
+The C6 runs the BLE (Bluetooth Low Energy) controller, the P4 runs the BLE
+host, NimBLE. esp_hosted carries the HCI (host controller interface) packets
+between them as VHCI (virtual HCI) on the SDIO link Wi-Fi uses, interface
+`ESP_HCI_IF`: no extra pins. `firmware/panel/sdkconfig.defaults` holds the
+configuration under "Bluetooth LE through the ESP32-C6": a central and
+observer, one connection, no security manager, no Bluetooth 5.0 features,
+NimBLE's memory in PSRAM, its host task on core 0.
+
+`firmware/panel/main/panel_ble.c` starts the host once, at
+`panel_ble_start()`, on a task of its own, `blestart`, and the host stays
+until the panel restarts. The IMU task calls it at the first IMU ON
+([The Bluetooth IMU](IMU.md)), the console build's `ble scan` ([The bench
+console](BenchConsole.md#over-the-link-with-no-usb-on-the-iomcu)) too. The steps and their console lines:
+
+1. `c6_link_up()`, shared with Wi-Fi: the first of the two resets and
+   starts the C6. A failed link ends the start:
+   `ble: no link to the C6: no Bluetooth until the panel restarts`.
+2. The C6's controller requests, `esp_hosted_bt_controller_init()` and
+   `_enable()`. esp_hosted 2.5.2 and later on the C6 leave its controller
+   off until asked. Older firmware has no such requests (FeatureControl,
+   2.5.2 in esp_hosted's `docs/implemented_rpcs.md`) and starts its
+   controller itself. The version request exists since 1.0.0, so the start
+   decides by the C6's version (`c6_link_version()`):
+   - no version reported, as on the board's C6 with 0.0.0, or one before
+     2.5.2: no requests, and `ble: C6 firmware version not reported: older
+     than 2.5.2, no controller requests; its controller runs from its own
+     start` (or `ble: C6 firmware <x.y.z>: older than 2.5.2, ...`). Should
+     the host have no sync within 3,000ms then, the start logs `ble: no
+     sync within 3000ms without the controller requests: sending them`,
+     sends them and waits another 3,000ms;
+   - 2.5.2 or later: the requests go out. esp_hosted ends an unanswered
+     request after 5s, and the start logs one of
+     `ble: C6 controller init and enable answered in <n>ms and <n>ms`,
+     `ble: C6 controller init not answered in <n>ms: a C6 firmware before
+     2.5.2, its controller runs from its own start` (the enable is not
+     sent then), or `ble: C6 controller init <error> in <n>ms, enable
+     <error> in <n>ms: the host start goes on`.
+
+   The version request itself costs 1s once on a C6 that does not answer
+   it (`c6_link_up()`). On the board's C6 the controller requests go
+   unanswered: sent, they cost 5,003ms (station, 2026-11-05).
+3. `nimble_port_init()` and the host task `nimble_host`, then the wait for
+   the host's sync, its HCI reset and the reads after it answered by the
+   C6, at most 3,000ms (`PANEL_BLE_SYNC_MS`):
+   - `ble: synced in <n>ms, own address type <n>`, the time from the host
+     task's start; or
+   - `ble: no sync within 3000ms: the C6 answers no HCI; the host keeps
+     trying`. A sync after that logs its own `synced in` line with the
+     longer time, and Bluetooth LE becomes ready then.
+4. `ble: host started; internal RAM <n>B free before, <n>B after; PSRAM
+   <n>B before, <n>B after`, and `blestart` ends.
+
+A host reset later, for an HCI error or a C6 that went silent, logs `ble:
+host reset, reason <n>`; NimBLE syncs again on its own and logs `ble: synced
+again`. The events of the host's callbacks go to a FreeRTOS queue of 32
+elements of 64 bytes (`panel_ble.h`); a full queue drops the event and
+counts it.
+
+Each host start logs `NimBLE: Failed to persist local IRK (rc=8)`. The
+host makes a random IRK (identity resolving key) at its start and hands it
+to the bond store (`ble_hs_pvcy.c`). The panel configures no store: no
+security manager, no bonding. The write answers `BLE_HS_ENOTSUP`, 8. The
+panel scans and connects with its public address and resolves no private
+addresses, so the key is never used.
+
+On the board's C6 (firmware 0.0.0, `capabilities: 0xd`) the station
+measured on 2026-11-05: a sync 13ms after the host task's start, internal
+RAM 264,307 bytes free before the start and 259,155 after (5,152 bytes),
+PSRAM 25,994,264 and 25,969,088 (25,176 bytes), two scans with 2 and 3
+reports and no event dropped, and the Wi-Fi access point working before
+and after the scans, with 251,103 bytes of internal RAM free with the
+access point up after the host's start. That start still sent the
+controller requests and waited 5,003ms for the unanswered init. With a
+BWT901CL on, its advertising appeared once in each 10,000ms scan, at
+-82dBm: `ble: adv 00:0C:BF:08:19:29 type 0 rssi -82dBm evtype 0 data
+02010A0303F018170948432D3036...`, flags 0x0A, the 16-bit service 0x18F0
+and the name `HC-06`. The sensor advertises about every 256ms (a phone's
+reading), so the controller's duplicate filter holds back the repeats; for
+a scan that lists devices this is what is wanted.
+
+Current limitations:
+
+- NimBLE's transport start (`ble_transport_ll_init()` in esp_hosted's
+  `vhci_drv.c`) stops the panel with an abort when the SDIO link is not up.
+  `panel_ble.c` starts NimBLE only after `c6_link_up()` returned the link
+  up; a link that fails between that answer and the transport start
+  triggers the abort.
+- The shipped C6's firmware reports version 0.0.0 and answers no version
+  request and no controller request; its controller answers HCI.
+- Wi-Fi and Bluetooth LE share the C6's one 2.4GHz radio (the C6's software
+  coexistence) and the SDMMC controller with the SD card. Their effect on
+  each other is not measured.
+
 ## CI
 
 | Workflow | Trigger | Jobs |
 | --- | --- | --- |
-| `ci.yml` | push to `main`, tag `v*`, a label added to a pull request (`ci` by convention, once its reviews are clean; a push to a pull request starts no run), manual (`gh workflow run ci.yml --ref <branch>`, whose checks a pull request does not take) | host suite; the same suite under AddressSanitizer and UBSan (UndefinedBehaviorSanitizer); coverage floors and Codecov upload, which fails the job when it fails; font, docs, web help, wiki-link, screenshot and research-script checks; the protocol module check; clang-tidy and cppcheck over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff; the tools' pytest cases; the Doxygen comment check of `tools/doc_check.py`, which in a pull request also fails on any warning in a C file the pull request adds or on a line it changes; on a pull request the mutation check of the changed lines, which reports and does not fail on a survivor; panel build on ESP-IDF v6.1 for the ESP32-P4 with the check of the image against its update slot, a check that the image carries the IOmcu image and holds the touch injector's symbols, the console's frame lines (`tools/check_perf_log.py`) and exFAT, and a second build with `RCBENCH_TOUCH_INJECTOR=OFF` and `RCBENCH_PERF_LOG=OFF` that fails when it holds an injector symbol or a frame line; IOmcu build on pico-sdk 2.3.0 with the pin map check and the stack check of its two cores, once more with `-DSENSE_TRACE=ON`, with the same stack check, failing when the default image holds a trace symbol, and once more with `-DIOMCU_CONSOLE=ON`, with the same stack check, failing when the default image holds a console symbol; the touch injector build on pico-sdk 2.3.0 for `waveshare_rp2350_zero`, not uploaded; the file manager's browser test (`Web file manager browser test`: the `wa_page_dump` target, then `test/web` on Node.js 24 and Chromium, traces and screenshots kept for 14 days on a failure only); firmware artifacts including a merged panel image for offset 0 |
+| `ci.yml` | push to `main`, tag `v*`, a label added to a pull request (`ci` by convention, once its reviews are clean; a push to a pull request starts no run), manual (`gh workflow run ci.yml --ref <branch>`, whose checks a pull request does not take) | host suite; the same suite under AddressSanitizer and UBSan (UndefinedBehaviorSanitizer); coverage floors and Codecov upload, which fails the job when it fails; font, docs, web help, wiki-link, screenshot and research-script checks; the protocol module check; clang-tidy and cppcheck over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff; the tools' pytest cases; the Doxygen comment check of `tools/doc_check.py`, which in a pull request also fails on any warning in a C file the pull request adds or on a line it changes; on a pull request the mutation check of the changed lines, which reports and does not fail on a survivor; the C6 radio's image from esp_hosted's `slave/` folder on ESP-IDF v6.1 for the ESP32-C6 (`c6.yml`, [The image the panel carries](#the-image-the-panel-carries)); panel build on ESP-IDF v6.1 for the ESP32-P4 with the check of the image against its update slot, a check that the image carries the IOmcu images and the C6 image and holds the touch injector's symbols, the console's frame lines (`tools/check_perf_log.py`) and exFAT, and a second build with `RCBENCH_TOUCH_INJECTOR=OFF` and `RCBENCH_PERF_LOG=OFF` that fails when it holds an injector symbol or a frame line; IOmcu build on pico-sdk 2.3.0 with the pin map check and the stack check of its two cores, once more with `-DSENSE_TRACE=ON`, with the same stack check, failing when the default image holds a trace symbol, and once more with `-DIOMCU_CONSOLE=ON`, with the same stack check, failing when the default image holds a console symbol; the touch injector build on pico-sdk 2.3.0 for `waveshare_rp2350_zero`, not uploaded; the file manager's browser test (`Web file manager browser test`: the `wa_page_dump` target, then `test/web` on Node.js 24 and Chromium, traces and screenshots kept for 14 days on a failure only); firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/`, manual | waits for the CI run on the same commit and, when it passed, mirrors `docs/` to the GitHub wiki |
 | `mutation.yml` | Sunday 03:17 UTC, manual | every mutant of the lines of `shared/safety` and `shared/outputs` (3032 mutants) in 6 parallel shards of files, no mutant limit, no mutant started after 18000s in a shard; the mutants left then are reported as not run; does not fail on a survivor; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
-| `release.yml` | tag `v*`, manual for a tag | waits for the CI run on the tagged commit and, when it passed, builds both images, the panel's with `-D RCBENCH_PERF_LOG=OFF` and a check that it holds no frame line, packages them with checksums and creates a release, a pre-release for an odd minor number ([Releases](#releases)); beside that, without holding the release back, runs the configurator data check (`configurator/core/tools/check-annotate.sh --warn-only`) and shows each warning, such as a release tag newer than the configurator data, as an annotation and in the run summary |
+| `c6.yml` | called by `ci.yml` and `release.yml` | the C6 radio's image and its checks (`tools/c6_image.py`); artifact `c6` |
+| `release.yml` | tag `v*`, manual for a tag | waits for the CI run on the tagged commit and, when it passed, builds both images and the C6 radio's (`c6.yml`), the panel's carrying the IOmcu images and the C6 image, with `-D RCBENCH_PERF_LOG=OFF` and a check that it holds no frame line, packages them with checksums and creates a release, a pre-release for an odd minor number ([Releases](#releases)); beside that, without holding the release back, runs the configurator data check (`configurator/core/tools/check-annotate.sh --warn-only`) and shows each warning, such as a release tag newer than the configurator data, as an annotation and in the run summary |
 | `pages.yml` | pull request and push to `main` touching `configurator/`, `help/`, `docs/img/`, the help generator, the `Doxyfile` or `tools/install_doxygen.sh`; a push to `main` touching the C sources as well | type check, tests, data check, size budget and browser tests of the configurator; the web help build of `tools/help_site.py`; the C API reference built by Doxygen 1.18.0; on a push to `main` it publishes the built page to GitHub Pages, with the web help under `help/` and the API reference under `api/`. A run that changes only the C sources, the `Doxyfile` or `tools/install_doxygen.sh` builds the configurator page without its checks and runs no browser test |
 
 Every job runs on Ubuntu 26.04 (`runs-on: ubuntu-26.04`), not on
@@ -801,4 +1037,6 @@ A release can also be loaded manually: its
 archives over USB (Universal Serial Bus), as described in
 [First run, §1](FirstRun.md#1-flash-both-boards). The release's
 `rcbench-iomcu-vX.Y.Z.zip` and the image the panel carries are of the same
-commit.
+commit. So are `rcbench-c6-2.13.0.bin`, the C6 image the panel carries, and
+`rcbench-c6-merged-2.13.0.bin`, the one for header H4; their names carry
+esp_hosted's version, and SHA256SUMS lists both.

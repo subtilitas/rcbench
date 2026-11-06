@@ -310,7 +310,7 @@ TEST_CASE(the_run_log_angle_follows_the_source)
     float deg = 0.0f;
     /* The AS5600's reading 100 counts past its centre. */
     const servo_test_enc_t as = { true, 3100u, 0u, bench.now, false, false,
-                                  false, false };
+                                  false, false, false, 0.0f };
     servo_screen_encoder(&as);
     CHECK(servo_screen_log_angle(&deg));
     CHECK_NEAR(deg, 100.0f * 360.0f / 4096.0f, 0.01f);

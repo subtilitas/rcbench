@@ -286,7 +286,7 @@ TEST_CASE(the_dut_page_sets_the_encoders_centre_from_the_live_count)
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 0);
 
     /* A live count is the centre. */
-    const servo_test_enc_t e = { true, 2871u, 0u, 5000u, false, false, false, false };
+    const servo_test_enc_t e = { true, 2871u, 0u, 5000u, false, false, false, false, false, 0.0f };
     servo_screen_encoder(&e);
     tap(ROW_L_X, ROW_Y(2));
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 2871);
@@ -300,7 +300,7 @@ TEST_CASE(the_dut_page_sets_the_encoders_centre_from_the_live_count)
 
     /* A reading that has gone sets nothing; with the encoder off in SETUP
      * the row is faint and sets nothing either. */
-    const servo_test_enc_t e2 = { true, 100u, 0u, 5040u, false, false, false, false };
+    const servo_test_enc_t e2 = { true, 100u, 0u, 5040u, false, false, false, false, false, 0.0f };
     servo_screen_encoder(&e2);
     settings_set(SET_ENC_EN, 0.0f);
     tap(ROW_L_X, ROW_Y(2));
@@ -314,7 +314,7 @@ TEST_CASE(a_link_that_goes_down_takes_the_encoders_angle_with_it)
     tap(TAB_X(PAGE_DUT), TAB_Y);               /* DUT */
     settings_set(SET_ENC_EN, 1.0f);            /* SETUP > SENSORS */
     settings_set(SET_ENC_CENTRE, 1000.0f);
-    const servo_test_enc_t e = { true, 2871u, 0u, 5000u, false, false, false, false };
+    const servo_test_enc_t e = { true, 2871u, 0u, 5000u, false, false, false, false, false, 0.0f };
     servo_screen_encoder(&e);
 
     /* The link drops: ENC CENTRE takes nothing from the last count. */
@@ -333,7 +333,7 @@ TEST_CASE(a_link_that_goes_down_takes_the_encoders_angle_with_it)
     servo_screen_set_link(true);
     tap(ROW_L_X, ROW_Y(2));
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 1000);
-    const servo_test_enc_t f = { true, 1500u, 0u, 6000u, false, false, false, false };
+    const servo_test_enc_t f = { true, 1500u, 0u, 6000u, false, false, false, false, false, 0.0f };
     servo_screen_encoder(&f);
     tap(ROW_L_X, ROW_Y(2));
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 1500);

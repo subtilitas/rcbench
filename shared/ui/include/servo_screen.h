@@ -403,8 +403,8 @@ void servo_screen_set_enc_held(bool held);
  * @brief The IMU's AXIS and SIGN, as SETUP > SENSORS > IMU sets them: the
  *        name a run with ANGLE SOURCE IMU gives its report and CSV
  *        ("IMU X+").  The angle itself comes in through
- *        servo_screen_encoder(), in AS5600 counts from count 0
- *        (servo_angle_enc()).
+ *        servo_screen_encoder(), in AS5600 counts from count 0 and in
+ *        degrees as read (servo_angle_enc()).
  * @param axis 0 X, 1 Y, 2 Z.
  * @param neg  The SIGN negative.
  */
@@ -418,6 +418,14 @@ void servo_screen_set_imu_axis(uint8_t axis, bool neg);
  * @param gen The generation.
  */
 void servo_screen_set_imu_zero(uint32_t gen);
+
+/**
+ * @brief How much longer the IMU's filtered angle can take to settle after
+ *        the surface stopped (imu_filter_settle_ms()): AUTO on RUDDER adds
+ *        it to SERVO_RAUTO_MOVE_MS with ANGLE SOURCE IMU.
+ * @param ms The time, ms; 0 for IMU FILTER 1.
+ */
+void servo_screen_set_imu_settle(uint32_t ms);
 
 /** The pin servo_screen_set_drive() takes for a port without a known pin. */
 #define SERVO_SCREEN_NO_PIN 0xFFu

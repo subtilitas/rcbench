@@ -474,12 +474,13 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
         10.0f },
     /*
      * The Bluetooth IMU (imu_ctl.h, docs/IMU.md): a WitMotion BWT901CL
-     * through an HC-05 on the panel's UART.  ON runs the HC-05's set-up
-     * and reads the sensor.  AXIS and SIGN pick the angle the servo runs
+     * over Bluetooth LE through the board's ESP32-C6.  ON starts Bluetooth
+     * LE, connects the bound sensor and reads it.  AXIS and SIGN pick the angle the servo runs
      * and RUDDER read (imu_axis_t).  RATE (imu_rate) and ALGORITHM
      * (imu_algo, AXIS6) go to the sensor as a command with SAVE when it is
      * connected, else when it next connects; a RATE takes effect after a
-     * power cycle of the sensor.
+     * power cycle of the sensor.  FILTER (imu_filter) is the panel's
+     * low-pass on the angle, 1 to 50 frames, 1 none (imu.h).
      */
     [SET_IMU_EN] = {
         "imu_en", "",
@@ -496,6 +497,9 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
     [SET_IMU_ALGO] = {
         "imu_algo", "",
         SET_CAT_SENSORS, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(imu_algo) },
+    [SET_IMU_FILTER] = {
+        "imu_filter", "",
+        SET_CAT_SENSORS, SET_TYPE_INT, 1, 50, 1, 1, NULL, 0 },
     /*
      * AUTO on RUDDER (servo_rudder_auto.h): the deflection each end pulse
      * is to reach, 1000us and 2000us, as a magnitude; the margin it is

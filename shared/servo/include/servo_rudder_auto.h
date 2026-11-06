@@ -12,7 +12,7 @@
  * D series takes 1000us as 76.9% of the way to 0xB2, hitec_live.h); then
  * per side, at most SERVO_RAUTO_WRITES_MAX times: move to the end pulse,
  * wait for still (SERVO_RAUTO_STILL_MS within IMU_STILL_DEG, at most
- * SERVO_RAUTO_MOVE_MS), measure, done when |measured - goal| <= tol, else
+ * SERVO_RAUTO_MOVE_MS plus the angle source's settle), measure, done when |measured - goal| <= tol, else
  * value = value x goal / measured within lo..hi (a linear servo between
  * neutral and the end), write in a session, move again.  Which register
  * moves which side is found on the first write as the limit run finds it
@@ -35,8 +35,11 @@
  *   - A measure: the end pulse commanded (phase MOVE), the surface judged
  *     from SERVO_RAUTO_STILL_MS after the command on (phase SETTLE): the
  *     first step with a valid angle still for SERVO_RAUTO_STILL_MS takes
- *     the angle.  None by SERVO_RAUTO_MOVE_MS after the command ends the
- *     run as FAIL (SERVO_RAUTO_WHY_NOT_STILL).  A side measured again after
+ *     the angle.  None by SERVO_RAUTO_MOVE_MS after the command, plus the
+ *     caller's settle_ms, ends the run as FAIL (SERVO_RAUTO_WHY_NOT_STILL).
+ *     settle_ms is the time the IMU's filter can take to settle after the
+ *     surface stopped (imu_filter_settle_ms()); the IMU's still time reads
+ *     0 until it has, so the angle a measure takes is a settled one.  A side measured again after
  *     a write to the other register is a CHECK.
  *   - A side's direction is the sign of its first measure, which must lie
  *     at least the tolerance from the zero unless it is within the
@@ -181,6 +184,8 @@ typedef struct {
     bool  angle_valid;        /**< the angle source has an angle */
     float angle_deg;          /**< deflection from the zero */
     uint16_t still_ms;        /**< the angle still this long, ms */
+    uint32_t settle_ms;       /**< the angle source's filter may take this
+                                   much longer to settle, ms; 0 none */
 } servo_rauto_in_t;
 
 /** @brief What the run wants done. */
@@ -250,6 +255,7 @@ typedef struct {
     float    goal_deg[2],             /**< target x (1 + margin), ° */
              measured_deg[2];         /**< each side's last measure, ° */
     float    bind_deg;                /**< the angle at a bind */
+    uint32_t settle_ms;               /**< the largest settle_ms a step had */
     servo_gap_t gap;                  /**< the angle source's gaps */
     /** @brief Every measure, in order. */
     servo_rauto_step_t steps[SERVO_RAUTO_STEPS_MAX];

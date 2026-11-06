@@ -254,7 +254,7 @@ static bool head_lines(const servo_rauto_t *r, cur_t *c)
     if (here(c)) {
         snprintf(c->buf, c->n, LS(RA_R_SETTLE),
                  (unsigned)SERVO_RAUTO_STILL_MS,
-                 (unsigned)SERVO_RAUTO_MOVE_MS);
+                 (unsigned)(SERVO_RAUTO_MOVE_MS + r->settle_ms));
         return true;
     }
     if (here(c)) {

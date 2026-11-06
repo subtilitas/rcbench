@@ -365,6 +365,17 @@ LIBRARY_RE = re.compile(r"\brcbench_\w+")
 # protocols/ with an assertion that names a macro or enumerator of the
 # module's public headers.  Paths are relative to the repository root.
 ASSERTED = {
+    "bleuart": {
+        "firmware/panel/main/panel_ble.c": (
+            "BLEU_EVT_DATA >= BLE_HS_ADV_MAX_SZ",
+        ),
+        "shared/ui/imu_ble.c": (
+            "BLEU_ADDR_TEXT_MAX <= IMU_ADDR_MAX",
+            "BLEU_NAME_MAX <= IMU_NAME_MAX",
+            "BLEU_FOUND_MAX <= IMU_FOUND_MAX",
+            "WIT_CMD_LEN <= BLEU_WRITE_MAX",
+        ),
+    },
     "dshot": {
         "firmware/iomcu/src/outputs_hw.c": (
             "OUT_DSHOT_MAX_PINS >= OUT_MAX_SLOTS + LINK_PG_PORTS_MAX",
@@ -406,11 +417,6 @@ ASSERTED = {
             "&& (int)LINK_ESC_LINE_LOW == (int)EW_LINE_LOW",
         ),
     },
-    "hc05": {
-        "shared/ui/imu_screen.c": (
-            "IMS_LY + (HC05_FOUND_MAX - 1) * IMS_LP + IMS_LH + 4 <= IMS_FLOOR",
-        ),
-    },
     "hitec": {
         "shared/bench/hitec_link.c": (
             "(int)HITEC_DEC_LISTEN == (int)LINK_HITEC_DEC_LISTEN "
@@ -442,6 +448,11 @@ ASSERTED = {
             "OUT_PPM_MAX_PINS >= OUT_MAX_SLOTS",
             "PPM_CHANNEL_MIN_US == OUT_FLOOR_US "
             "&& PPM_CHANNEL_MAX_US == OUT_CEILING_US",
+        ),
+    },
+    "witmotion": {
+        "shared/ui/imu_ble.c": (
+            "WIT_CMD_LEN <= BLEU_WRITE_MAX",
         ),
     },
 }

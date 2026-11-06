@@ -14,9 +14,9 @@
 #include "settings_screen.h"
 #include "settings_sensors.h"
 
-/** @brief The settings a category holds, at most: SENSORS' 64, the 40 of
- *         the INA3221 parts and 24 others (test_imu_pane holds it). */
-#define MAX_ROWS 64
+/** @brief The settings a category holds, at most: SENSORS' 65, the 40 of
+ *         the INA3221 parts and 25 others (test_imu_pane holds it). */
+#define MAX_ROWS 65
 
 /** @brief The most rows a list has: its settings and strings. */
 #define MAX_ENTRIES (MAX_ROWS + SETTING_TEXT_COUNT)
@@ -91,5 +91,5 @@ settings_row_t settings_rows_entry(setting_cat_t cat, int index)
     return e[index];
 }
 
-_Static_assert(MAX_ROWS == SET_INA_PARTS + SET_INA_CHANNELS * SET_INA_CH_ROWS + 24,
+_Static_assert(MAX_ROWS == SET_INA_PARTS + SET_INA_CHANNELS * SET_INA_CH_ROWS + 25,
                "SENSORS' rows fit a list");

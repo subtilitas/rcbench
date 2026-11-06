@@ -42,6 +42,12 @@ bool servo_angle_enc(const servo_angle_in_t *in, servo_test_enc_t *out)
     out->valid    = true;
     out->raw      = (uint16_t)c;
     out->still_ms = in->still_ms;
+    /* The degrees as read too, for the readouts' hundredths: raw holds
+     * them to 0.088°. */
+    const double w = (turn > 180.0) ? turn - 360.0
+                     : (turn < -180.0) ? turn + 360.0 : turn;
+    out->exact    = true;
+    out->deg      = (float)w;
     return true;
 }
 
