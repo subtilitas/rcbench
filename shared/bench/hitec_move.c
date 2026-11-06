@@ -324,15 +324,17 @@ static void find_done(hitec_prog_t *p)
     st = hitec_live_find_pass(&m->fs, &o);
     if (m->off) {
         end_begin(p);
+    } else if (m->find_halt) {
+        /* A tap during the pass ends the search as it is: a stop this
+         * pass found does not reach the draft. */
+        hitec_live_find_abort(&m->fs);
+        find_end(p, HITEC_PROG_MSG_FIND_HALT, 0u, 0u);
     } else if (st == (uint8_t)HITEC_FIND_FOUND) {
         find_found(p);
     } else if (st == (uint8_t)HITEC_FIND_NONE) {
         find_end(p, HITEC_PROG_MSG_FIND_FREE, m->fs.edge, 0u);
     } else if (st == (uint8_t)HITEC_FIND_TIMEOUT) {
         find_end(p, HITEC_PROG_MSG_FIND_TIME, o.pos, 0u);
-    } else if (m->find_halt) {
-        hitec_live_find_abort(&m->fs);
-        find_end(p, HITEC_PROG_MSG_FIND_HALT, 0u, 0u);
     } else {
         find_pass(p);
     }

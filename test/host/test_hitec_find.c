@@ -268,6 +268,35 @@ TEST_CASE(a_tap_during_the_search_ends_it_and_leaves_the_draft)
     CHECK(hitec_prog_move_on(model()));
 }
 
+/* A tap while the pass that finds the block is in flight: the search ends
+ * HALT, the draft keeps its LEFT END and the horn follows nothing.  The tap
+ * lands every 16ms from the first command into the block up to the find,
+ * about 1,056ms later in this rig, so one lands inside the finding pass. */
+TEST_CASE(a_tap_during_the_finding_pass_leaves_the_draft)
+{
+    for (unsigned at = 0u; at < 1200u; at += 16u) {
+        moving();
+        const int32_t left0 = draft(HITEC_P_D_LEFT_END);
+        g_drv.d_block_lo = BLOCK_L;
+        (void)hitec_prog_find_start(model(), HITEC_FIND_LEFT);
+        for (unsigned i = 0; i < 60000u
+             && !(model()->mv.find_go && model()->mv.fs.p <= BLOCK_L)
+             && msg() != HITEC_PROG_MSG_FIND_FOUND_L; ++i) {
+            pms();
+        }
+        prun(at);
+        if (msg() == HITEC_PROG_MSG_FIND_FOUND_L) {
+            break;              /* later taps come after the stop */
+        }
+        hitec_prog_find_stop(model());
+        until_msg(HITEC_PROG_MSG_FIND_HALT, 2000u);
+        CHECK_EQ(draft(HITEC_P_D_LEFT_END), left0);
+        CHECK_EQ(hitec_prog_changes(model()), 0u);
+        CHECK(model()->mv.follow != HITEC_P_D_LEFT_END);
+        CHECK_EQ(phase(), HITEC_MOVE_RUN);
+    }
+}
+
 TEST_CASE(a_stop_asked_before_the_search_begins_drops_it)
 {
     unsigned m0;
@@ -445,6 +474,7 @@ int main(void)
     RUN(the_cap_counts_the_way_to_the_neutral_too);
     RUN(a_stop_too_close_to_the_neutral_leaves_the_draft);
     RUN(a_tap_during_the_search_ends_it_and_leaves_the_draft);
+    RUN(a_tap_during_the_finding_pass_leaves_the_draft);
     RUN(a_stop_asked_before_the_search_begins_drops_it);
     RUN(find_stop_is_refused_without_move_servo_on_and_while_one_runs);
     RUN(the_positions_take_no_edit_while_the_search_runs);
