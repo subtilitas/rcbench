@@ -74,6 +74,14 @@ void imu_reseed(imu_t *m)
     }
 }
 
+void imu_content_restart(imu_t *m)
+{
+    if (m != NULL) {
+        m->content = 0u;
+        m->content_n = 0u;
+    }
+}
+
 uint8_t imu_filter_clamp(int32_t v)
 {
     if (v < (int32_t)IMU_FILTER_MIN) {
@@ -242,6 +250,10 @@ void imu_feed(imu_t *m, const uint8_t *b, size_t n, uint32_t now_ms)
             continue;
         }
         ++m->r.frames;
+        m->content |= wit_rsw_bit(f.type);
+        if (m->content_n < UINT8_MAX) {
+            ++m->content_n;
+        }
         wit_acc_t acc;
         wit_gyro_t gyro;
         wit_angle_t ang;

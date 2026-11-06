@@ -111,12 +111,22 @@ void imu_sensor_off(imu_sensor_t *s)
     imu_set_filter(&s->m, s->filter);
     s->angle_seen = false;
     s->had_frames = false;
+    s->rsw_checked = false;
+}
+
+/** @brief Hold the frame types against IMU_RSW again, from the next frame
+ *         on.  @param s The sensor. */
+static void rsw_recheck(imu_sensor_t *s)
+{
+    imu_content_restart(&s->m);
+    s->rsw_checked = false;
 }
 
 void imu_sensor_rebind(imu_sensor_t *s)
 {
     s->had_frames = false;
     imu_reseed(&s->m);
+    rsw_recheck(s);
 }
 
 void imu_sensor_feed(imu_sensor_t *s, const uint8_t *b, size_t n,
@@ -142,9 +152,17 @@ void imu_sensor_tick(imu_sensor_t *s, uint32_t now_ms, bool link_up)
 {
     if (link_up && !s->link_was_up) {
         imu_reseed(&s->m);
+        rsw_recheck(s);
         s->held = false;    /* what a failed write dropped goes now */
     }
     s->link_was_up = link_up;
+    /* The stream is RSW's read-back: frames of other types, or no 0x52,
+     * make RSW due once a connection.  A sensor that holds IMU_RSW gets
+     * no write, so its flash takes no SAVE for it. */
+    if (link_up && !s->rsw_checked && s->m.content_n >= IMU_RSW_FRAMES) {
+        s->rsw_checked = true;
+        s->rsw_due = s->rsw_due || s->m.content != IMU_RSW;
+    }
     imu_tick(&s->m, now_ms);
     if (s->m.r.valid) {
         s->had_frames = true;
@@ -167,14 +185,25 @@ void imu_sensor_tick(imu_sensor_t *s, uint32_t now_ms, bool link_up)
     /* Unlock, the writes due and SAVE go as one sequence, once all of it
      * fits: a change that comes while the outbox is full waits, and the
      * write that goes carries SETUP's latest value. */
-    const unsigned need = 2u + (s->rate_due ? 1u : 0u) + (s->algo_due ? 1u : 0u);
-    /* Not while the calibration runs: its CALSW 0 and SAVE go first. */
-    if (link_up && s->m.r.valid && (s->rate_due || s->algo_due) && !s->held
-        && s->cal != IMU_CAL_RUNNING && IMU_OUTBOX - s->out_n >= need) {
+    const unsigned need = 2u + (s->rsw_due ? 1u : 0u)
+                          + (s->rate_due ? 1u : 0u) + (s->algo_due ? 1u : 0u);
+    /* Not while the calibration runs: its CALSW 0 and SAVE go first.  A
+     * sensor streaming without angle frames takes RSW all the same: its
+     * frames, not an angle, show it answers. */
+    const bool streams = s->m.r.valid
+                         || (s->rsw_due && s->m.content_n >= IMU_RSW_FRAMES);
+    if (link_up && streams && (s->rsw_due || s->rate_due || s->algo_due)
+        && !s->held && s->cal != IMU_CAL_RUNNING
+        && IMU_OUTBOX - s->out_n >= need) {
         uint8_t b[WIT_CMD_LEN] = { 0 };
-        const uint8_t why = (uint8_t)((s->rate_due ? IMU_OUT_RATE : 0u)
+        const uint8_t why = (uint8_t)((s->rsw_due ? IMU_OUT_RSW : 0u)
+                                      | (s->rate_due ? IMU_OUT_RATE : 0u)
                                       | (s->algo_due ? IMU_OUT_ALGO : 0u));
         queue_unlock(s, why);
+        if (s->rsw_due) {
+            queue(s, b, wit_cmd_rsw(b, IMU_RSW), why);
+            s->rsw_checked = true;  /* written on this connection */
+        }
         if (s->rate_due) {
             queue(s, b, wit_cmd_rate(b, s->rate_code), why);
         }
@@ -182,6 +211,7 @@ void imu_sensor_tick(imu_sensor_t *s, uint32_t now_ms, bool link_up)
             queue(s, b, wit_cmd_axis6(b, s->six), why);
         }
         queue_save(s, why);
+        s->rsw_due = false;
         s->rate_due = false;
         s->algo_due = false;
     }
@@ -258,6 +288,7 @@ void imu_sensor_flush(imu_sensor_t *s)
     s->exit_due = s->exit_due || (why & IMU_OUT_EXIT) != 0u;
     s->rate_due = s->rate_due || (why & IMU_OUT_RATE) != 0u;
     s->algo_due = s->algo_due || (why & IMU_OUT_ALGO) != 0u;
+    s->rsw_due = s->rsw_due || (why & IMU_OUT_RSW) != 0u;
     s->held = true;
 }
 

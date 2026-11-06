@@ -188,6 +188,12 @@ size_t wit_cmd_calsw(uint8_t out[WIT_CMD_LEN], uint8_t mode);
  *  @return WIT_CMD_LEN; 0 for NULL. */
 size_t wit_cmd_axis6(uint8_t out[WIT_CMD_LEN], bool six);
 
+/** @brief The RSW bit of a frame type: bit (type - 0x50), so 0x02 for
+ *         0x51 and 0x200 for 0x59.
+ *  @param type The frame's type byte.
+ *  @return The bit; 0 for a type outside 0x50 to 0x5F. */
+uint16_t wit_rsw_bit(uint8_t type);
+
 /** @brief The output rate of a code, in 0.1Hz: 2 for 0x01, 2000 for 0x0B.
  *  @param code The rate code.
  *  @return The rate in 0.1Hz; 0 for a code the table does not hold. */
