@@ -26,8 +26,8 @@ describes. The IMU (inertial measurement unit) is read over Bluetooth LE (Low
 Energy) in place of an HC-05; an HC-05 binding is not carried over, so scan
 and bind the sensor once on SETUP > SENSORS > IMU.
 
-The entries below cover the 13 pull requests merged since v0.23.8: #734 to
-#746.
+The entries below cover the 14 pull requests merged since v0.23.8: #734 to
+#747.
 
 ### Added
 
