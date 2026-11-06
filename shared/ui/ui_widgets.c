@@ -711,7 +711,8 @@ gfx_color_t ui_hold_button_fill(gfx_color_t base, gfx_color_t target,
     if (h->flash_ms > 0) {
         return ui_hold_flash(target, h->flash_ms);
     }
-    return ui_hold_fill(base, target, h->held_s);
+    /* The fade is the press's: a hold no finger holds draws its base. */
+    return h->down ? ui_hold_fill(base, target, h->held_s) : base;
 }
 
 void ui_hold_button(gfx_canvas_t *c, gfx_rect_t r, const char *label,

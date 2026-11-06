@@ -776,6 +776,9 @@ void kx_tick(float dt_s)
     }
     ++s.kx_rev;
     if (ui_hold_tick(&s.kx_hold, dt_s)) {
+        /* The press is dropped here, so the hold ends with it: its fade
+         * stays off the value a later OFF draws. */
+        ui_hold_spend(&s.kx_hold);
         s.kx_down = false;
         ov_let_go();
         settings_set(SET_KST_EXPERT, 1.0f);

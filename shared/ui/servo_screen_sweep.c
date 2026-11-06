@@ -874,6 +874,7 @@ void svs_tick_body(float dt_s)
     if (s.ask.open && s.ask.down) {
         ++s.ask.rev;
         if (ui_hold_tick(&s.ask.hold, dt_s)) {
+            ui_hold_spend(&s.ask.hold);     /* the press goes with it */
             ov_let_go();
             ask_apply();
         }
@@ -883,6 +884,7 @@ void svs_tick_body(float dt_s)
     if (s.warn.open && s.warn.down) {
         ++s.warn.rev;
         if (ui_hold_tick(&s.warn.hold, dt_s)) {
+            ui_hold_spend(&s.warn.hold);    /* the press goes with it */
             s.warn.open = false;
             s.warn.down = false;
             ov_let_go();
