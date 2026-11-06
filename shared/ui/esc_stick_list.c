@@ -78,14 +78,21 @@ const char *esc_stick_panel_family_text(const esc_profile_t *p)
 }
 
 /**
- * @brief Whether byte @p c may end the part of a family a cut crumb keeps:
- *        not a space and not the punctuation before one.
- * @param c The byte.
- * @return True where the kept part may end in it.
+ * @brief Whether a word of @p text ends before byte @p i: at a space, or at a
+ *        comma, semicolon or colon before a space or the end.
+ * @param text The text.
+ * @param len Its length, bytes.
+ * @param i The byte, below @p len; @p len itself is the end.
+ * @return True where a cut crumb may end its family's words.
  */
-static bool crumb_end_ok(char c)
+static bool crumb_break(const char *text, size_t len, size_t i)
 {
-    return c != ' ' && c != ',' && c != ';' && c != ':';
+    if (i >= len) {
+        return true;
+    }
+    const char c = text[i];
+    const char next = (i + 1u < len) ? text[i + 1u] : ' ';
+    return c == ' ' || ((c == ',' || c == ';' || c == ':') && next == ' ');
 }
 
 void esc_stick_panel_crumb(const esc_profile_t *p, int model, int cells,
@@ -111,15 +118,17 @@ void esc_stick_panel_crumb(const esc_profile_t *p, int model, int cells,
     const char *close = named ? ")" : "";
     const int room = cells - gfx_text_cells(out) - gfx_text_cells(open)
                      - gfx_text_cells(close);
-    size_t take = strlen(fam);
+    const size_t len = strlen(fam);
+    size_t take = len;
     bool cut = false;
     if (gfx_text_cells(fam) > room) {
         /* Whole words up to a space, and " .." after them. */
         take = (room > 3) ? gfx_text_prefix(fam, room - 3) : 0u;
-        while (take > 0u && fam[take] != ' ') {
+        take = (take < len) ? take : len;
+        while (take > 0u && !crumb_break(fam, len, take)) {
             --take;
         }
-        while (take > 0u && !crumb_end_ok(fam[take - 1u])) {
+        while (take > 0u && crumb_break(fam, len, take - 1u)) {
             --take;
         }
         cut = true;

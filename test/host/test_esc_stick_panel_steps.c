@@ -383,6 +383,11 @@ static const char *crumb_wrong(const esc_profile_t *p, int model, int cells,
     if (body == strlen(fam) && strncmp(rest, fam, body) == 0) {
         return NULL;
     }
+    /* The whole family fits: it shows whole. */
+    if (gfx_text_cells(head) + gfx_text_cells(open) + gfx_text_cells(fam)
+            + gfx_text_cells(close) <= cells) {
+        return "a family cut that fits whole";
+    }
     /* Part of the family: whole words of it, then " ..". */
     if (body < 4u || strncmp(rest + body - 3u, " ..", 3) != 0) {
         return "part of the family without \" ..\"";
@@ -392,8 +397,29 @@ static const char *crumb_wrong(const esc_profile_t *p, int model, int cells,
         return "a family that is not the profile's";
     }
     const char next = fam[kept];
-    if (next != ' ' && next != ',' && next != ';' && next != ':') {
+    const bool mark = next == ',' || next == ';' || next == ':';
+    if (next != ' '
+        && !(mark && (fam[kept + 1u] == ' ' || fam[kept + 1u] == '\0'))) {
         return "a family cut inside a word";
+    }
+    /* As many words as fit: the next one with " .." does not. */
+    size_t more = kept + 1u;
+    while (fam[more] == ' ') {
+        ++more;
+    }
+    while (fam[more] != '\0' && fam[more] != ' ') {
+        ++more;
+    }
+    size_t end = more;
+    while (end > kept && (fam[end - 1u] == ',' || fam[end - 1u] == ';'
+                          || fam[end - 1u] == ':')) {
+        --end;
+    }
+    char longer[400];
+    snprintf(longer, sizeof(longer), "%s%s%.*s ..%s", head, open, (int)end,
+             fam, close);
+    if (fam[more] != '\0' && end > kept && gfx_text_cells(longer) <= cells) {
+        return "fewer words than fit";
     }
     return NULL;
 }
@@ -447,6 +473,27 @@ TEST_CASE(a_crumb_never_cuts_inside_a_word_of_the_family)
     esc_stick_panel_crumb(NULL, 0, 56, crumb, sizeof(crumb));
     CHECK_STR_EQ(crumb, "");
     esc_stick_panel_crumb(p, 0, 56, NULL, 0u);
+    crumb[0] = 'x';
+    esc_stick_panel_crumb(p, 0, 56, crumb, 1u);
+    CHECK_STR_EQ(crumb, "");
+    /* A model index past the last is no model. */
+    char none[160];
+    esc_stick_panel_crumb(p, -1, 200, none, sizeof(none));
+    esc_stick_panel_crumb(p, (int)p->model_count, 200, crumb, sizeof(crumb));
+    CHECK_STR_EQ(crumb, none);
+    /* A buffer one byte short of the whole crumb: the name alone, and not
+     * a byte past the buffer. */
+    char whole[160];
+    esc_stick_panel_crumb(p, 0, 200, whole, sizeof(whole));
+    char head[160];
+    snprintf(head, sizeof(head), "ESC STICK  >  %s  >  %s", p->brand,
+             p->models[0].name);
+    memset(crumb, '#', sizeof(crumb));
+    esc_stick_panel_crumb(p, 0, 200, crumb, strlen(whole));
+    CHECK_STR_EQ(crumb, head);
+    CHECK_EQ(crumb[strlen(whole)], '#');
+    esc_stick_panel_crumb(p, 0, 200, crumb, strlen(whole) + 1u);
+    CHECK_STR_EQ(crumb, whole);
     ui_text_set_language(UI_LANG_EN);
 }
 

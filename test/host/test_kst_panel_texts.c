@@ -356,6 +356,16 @@ TEST_CASE(every_text_the_overlay_copies_fits_a_line_whole)
     }
     /* Both languages' KP_ and PC_ texts and the list above. */
     CHECK(seen > 2 * 300);
+    /* The line's cells are the widest KP_ text's: two rows of 58. */
+    int widest = 0;
+    for (unsigned id = 0; id < (unsigned)TX_COUNT; ++id) {
+        if (strncmp(ui_text_name((ui_text_id_t)id), "KP_", 3) == 0
+            && ui_text_cells((ui_text_id_t)id) > widest) {
+            widest = ui_text_cells((ui_text_id_t)id);
+        }
+    }
+    CHECK_EQ(widest, KST_PANEL_LINE_CELLS);
+    CHECK_EQ(KST_PANEL_LINE_CELLS, 2 * 58);
 }
 
 /*
