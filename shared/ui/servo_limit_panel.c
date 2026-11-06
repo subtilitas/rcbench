@@ -105,11 +105,23 @@ const char *lim_meter_why(void)
     return NULL;
 }
 
+const char *lim_pwm_why(void)
+{
+    /* A programmer holding the port renders no pulse either: that is no
+     * wait for SAFE. */
+    const bool waits = prog_choice_carrier() && prog_choice_want_pwm()
+                       && !prog_reg_servo_holds();
+    return waits ? TR(SV_LIM_PWM_SAFE) : TR(SV_LIM_PWM_OFF);
+}
+
 /* Why a limit run cannot start now, before any hold, or NULL. */
 const char *lim_blocked(void)
 {
     if (!value_live()) {
-        return ui_servo_str(SERVO_STR_START_NOT_ARMED);
+        /* The rbmod carrier's port: the PROG 5V before ARM, as the port's
+         * pulse comes on only with it and only in SAFE (lim_pwm_why()). */
+        return ui_servo_str(prog_choice_needs_5v() ? SERVO_STR_START_PROG_5V
+                                                   : SERVO_STR_START_NOT_ARMED);
     }
     if (servo_test_running(&s.test)) {
         return ui_servo_str(SERVO_STR_START_TEST_RUNS);
@@ -143,7 +155,7 @@ const char *lim_blocked(void)
         return TR(SV_LIM_RAIL_LOW);
     }
     if (s.drive_target != 0u && !s.drive_pwm) {
-        return TR(SV_LIM_PWM_OFF);
+        return lim_pwm_why();
     }
     if (!(s.min_us < s.centre_us && s.centre_us < s.max_us)) {
         return TR(SV_LIM_REFUSED);

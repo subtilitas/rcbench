@@ -1014,6 +1014,17 @@ const char *lim_prog_why(void);
  */
 const char *lim_write_why(void);
 /**
+ * @brief Why the target's pulse is off on an ARMED bench: PORT PWM off, or
+ *        on the rbmod carrier PORT PWM on and the pulse waiting for SAFE.
+ *        A pulse comes on only on a bench at rest
+ *        (servo_link_prog_service()); the carrier's panel asks for it only
+ *        with the PROG 5V on, so a PROG 5V switched on while ARMED leaves
+ *        it off until a DISARM.
+ * @return SV_LIM_PWM_SAFE's line on the carrier while the pulse is asked
+ *         and no programmer holds the port, else SV_LIM_PWM_OFF's
+ */
+const char *lim_pwm_why(void);
+/**
  * @brief The run drives the rbmod carrier's programming port, fed from the
  *        PROG 5V box: a PD mini on the servo rails is not its supply, and
  *        the run neither asks nor watches it.

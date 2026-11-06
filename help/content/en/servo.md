@@ -165,6 +165,7 @@ The run reads only the INA3221 channel that watches the tester's target. With th
 
 | Line | Condition |
 |---|---|
+| `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` | SAFE on the rbmod carrier with TARGET on a programming port and the PROG 5V box off; named before `ARM FIRST`, as the port's pulse comes on only while SAFE |
 | `ARM FIRST` | the bench is SAFE |
 | `NO SERVO PWM PIN`, `PINS NOT READ` | TARGET is the bench's outputs, and no output is bound as SERVO PWM, or the binding is not read yet |
 | `INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT` | no channel of a fitted INA3221 watches the tester's target in SETUP > SENSORS |
@@ -172,6 +173,7 @@ The run reads only the INA3221 channel that watches the tester's target. With th
 | `NO INA3221 MEASUREMENT WINDOWS YET` | the INA3221 is not the meter yet |
 | `SERVO SUPPLY BELOW 3.0V OR NOT READ` | the last INA3221 window has no rail voltage, or less than 3.0V: an output that is off reads 0V |
 | `PORT PWM OFF. NO PULSES ON THIS PORT.` | TARGET is PROG PORT with PORT PWM off |
+| `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` | on the rbmod carrier, TARGET is a programming port with PORT PWM on and its pulse still off, as after a PROG 5V switched on while ARMED: the pulse comes on only while SAFE |
 | `CENTRE MUST BE BETWEEN PULSE MIN AND MAX` | the pulse range does not hold PULSE CENTRE |
 | `REPORT STILL BEING WRITTEN` | a test or a run is under way, or its report is still going to the card |
 

@@ -183,7 +183,10 @@ static void ra_cfg(servo_rauto_cfg_t *c)
 const char *rauto_blocked(void)
 {
     if (!value_live()) {
-        return ui_servo_str(SERVO_STR_START_NOT_ARMED);
+        /* The rbmod carrier's port: the PROG 5V before ARM, as the port's
+         * pulse comes on only with it and only in SAFE (lim_pwm_why()). */
+        return ui_servo_str(prog_choice_needs_5v() ? SERVO_STR_START_PROG_5V
+                                                   : SERVO_STR_START_NOT_ARMED);
     }
     if (servo_test_running(&s.test)) {
         return ui_servo_str(SERVO_STR_START_TEST_RUNS);
@@ -212,7 +215,7 @@ const char *rauto_blocked(void)
         return ui_servo_str(SERVO_STR_START_PROG_5V);
     }
     if (!s.drive_pwm) {
-        return TR(SV_LIM_PWM_OFF);
+        return lim_pwm_why();
     }
     /* The end pulses lie inside the bench's own range. */
     if (s.min_us > 1000u || s.max_us < 2000u

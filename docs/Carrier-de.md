@@ -94,6 +94,14 @@ verlorener Heartbeat und ein stiller Link schalten außerdem GPIO 21 aus.
 Ein PROG 5V AUS von Hand beendet den Puls ebenso: das Panel fordert den
 Puls nur an, solange das Feld EIN zeigt.
 
+Das Panel schaltet den Puls des Ports nur bei SAFE ein, wie auf jedem
+Board; aus schaltet es ihn sofort. Zuerst PROG 5V einschalten, dann ARM.
+Ein bei ARMED eingeschaltetes PROG 5V lässt den Puls bis zum nächsten SAFE
+aus: AUTO auf RUDDER und der Endlagenlauf zeigen dann
+`PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM`. Bei SAFE mit dem Feld
+aus zeigen beide `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN` vor
+`ZUERST ARM`.
+
 ## Versorgung
 
 | Teil | Eingang | Ausgang | Geschaltet von |

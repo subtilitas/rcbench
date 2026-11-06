@@ -813,6 +813,9 @@ FIT_ONLY = {
     "help-band-worst": (None, "motor", "dark"),
     # SERVO's RUDDER guide: the output card's page over the task.
     "help-servo-rudder":   (None, "servo", "dark"),
+    # AUTO's box on the rbmod carrier: SAFE, TARGET on PROG PORT 1, the PROG
+    # 5V box off.
+    "servo-rudder-auto-rbmod": (None, "servo", "dark"),
     # The other pages of SETUP's, OUTPUTS', LOGS' and FILES' guides, in
     # each state that has its own: a list, SENSORS, the carrier's tiles, a
     # PROG PORT entry, the grid view, the carrier, a paged list, the import
