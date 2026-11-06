@@ -101,6 +101,9 @@ set(SRCS
     settings_screen.c
     settings_draw.c
     settings_rows.c
+    ui_setlist.c
+    ui_setlist_draw.c
+    ui_footer.c
     prog5v_box.c
     prog_choice.c
     sensors_pane.c

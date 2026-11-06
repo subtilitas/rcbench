@@ -1,7 +1,8 @@
 /**
  * @file settings_draw.c
- * @brief SETUP's drawing: the hub's tiles, a category's list and its rows, the
- *        SAVE strip under both, and the warning that holds the way out.
+ * @brief SETUP's drawing: the hub's tiles and SENSORS' left list; a
+ *        category's rows, the SAVE strip and the warning that holds the way
+ *        out are the settings list's (ui_setlist.h).
  *        settings_screen.c holds the state, the touch handling and the
  *        screen's interface (settings_screen.h); settings_screen_int.h is what
  *        the two share.
@@ -17,6 +18,7 @@
 #include "settings_screen.h"
 #include "ui_icons.h"
 #include "ui_keypad.h"
+#include "ui_setlist.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
 #include "ui_widgets.h"
@@ -24,36 +26,6 @@
 #include "settings_screen_int.h"
 
 /* ------------------------------------------------------------------ render */
-
-/**
- * @brief Four states, and the label is the whole of the feedback: nothing to write
- *        (SAVED), something to write (SAVE), something asked for and waiting for a
- *        moment to write it in (WHEN IDLE), and an attempt the store refused (NOT
- *        SAVED).  WHEN IDLE is seen only while the bench is armed or a transfer is
- *        running; disarmed, the write is taken on the next frame.  SAVE takes the
- *        accent rather than the warning colour: RESET sits beside it and
- *        two amber buttons in a row read as one control.  NOT SAVED takes the
- *        danger colour, because the values on this screen are not the values the
- *        next boot will load and nothing else on the panel says so.  The same
- *        button on the tiles and on a list: the values are one set, not one per
- *        category.
- */
-static void draw_save(gfx_canvas_t *c)
-{
-    const bool dirty  = settings_dirty();
-    const bool asked  = settings_save_asked();
-    const bool failed = settings_save_failed();
-    s.drawn_dirty  = dirty;
-    s.drawn_asked  = asked;
-    s.drawn_failed = failed;
-    const char *label = !dirty ? TR(SET_SAVED)
-                        : asked ? TR(SET_WHEN_IDLE)
-                        : failed ? TR(SET_NOT_SAVED) : TR(SET_SAVE);
-    ui_button_font(c, stg_save_rect(), label,
-                   dirty ? (asked ? UI_WARN : failed ? UI_DANGER : UI_ACCENT)
-                         : UI_PANEL_HI,
-                   s.hit_kind == HIT_SAVE, stg_save_offered(), STG_F_LABEL);
-}
 
 /** @brief A hub tile's look: its icon, name and line (settings_screen_int.h). */
 static const ui_tile_look_t k_hub_look = {
@@ -68,7 +40,7 @@ static void draw_hub(gfx_canvas_t *c)
 {
     for (int i = 0; i < stg_tile_count(); ++i) {
         const hub_tile_t *t = stg_hub_tile(i);
-        const bool down = (s.hit_kind == HIT_TILE && s.hit_index == i);
+        const bool down = (s.sl.hit_kind == HIT_TILE && s.sl.hit_index == i);
         if (t->cat < 0) {
             ui_tile(c, stg_tile_rect(i), &k_hub_look, t->icon,
                     ui_router_title(t->screen), ui_tr(t->line), down);
@@ -81,149 +53,6 @@ static void draw_hub(gfx_canvas_t *c)
 }
 
 /**
- * @brief A string's row: its name and help on the left, its text on the right in
- *        the value's colour, against the row's right edge where a setting's "+"
- *        is.  No keys: a tap opens the keyboard, and the row's edge takes the
- *        accent while it is pressed.  The text is in the body face, or in the
- *        label face where it is wider than the gap left of it.
- */
-static void draw_text_row(gfx_canvas_t *c, int index, gfx_rect_t r,
-                          setting_text_id_t id)
-{
-    const bool down = (s.hit_kind == HIT_TEXT && s.hit_index == index);
-    gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 8, 0, 8, 0, UI_PANEL);
-    gfx_draw_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 8, 0, 8, 0,
-                             down ? UI_ACCENT : UI_EDGE);
-
-    const char *label = ui_tr(k_text_ui[id].label);
-    const char *help = (k_text_ui[id].help != TX_COUNT)
-                           ? ui_tr(k_text_ui[id].help) : "";
-    const int right = PLUS_X + BTN_W;
-    int left = r.x + 16 + gfx_text_width(STG_F_HEAD, label, 1);
-    const int help_end = r.x + 16 + gfx_text_width(STG_F_LABEL, help, 1);
-    left = ((help_end > left) ? help_end : left) + 16;
-
-    const char *value = settings_text(id);
-    const gfx_font_t *vf = STG_F_BODY;
-    int vw = gfx_text_width(vf, value, 1);
-    if (vw > right - left) {
-        vf = STG_F_LABEL;
-        vw = gfx_text_width(vf, value, 1);
-    }
-    const int vx = right - vw;
-
-    gfx_rect_t saved = gfx_clip_get(c);
-    gfx_clip_intersect(c, gfx_rect_make(r.x, r.y, vx - 10 - r.x, r.h));
-    gfx_text(c, r.x + 16, r.y + ROW_NAME_DY, label, STG_F_HEAD, UI_TEXT, 1);
-    if (help[0] != '\0') {
-        gfx_text(c, r.x + 16, r.y + ROW_HELP_DY, help, STG_F_LABEL,
-                 UI_TEXT_FAINT, 1);
-    }
-    c->clip = saved;
-    gfx_text(c, vx, r.y + (ROW_H - gfx_text_height(vf, 1)) / 2, value, vf,
-             UI_ACCENT, 1);
-}
-
-/**
- * @brief List row @p index: a string, or a setting with its
- *        value and its keys.  A setting's edge takes the accent while its
- *        value is pressed.
- * @param c The canvas.
- * @param index The row.
- */
-static void draw_row(gfx_canvas_t *c, int index)
-{
-    gfx_rect_t r = stg_row_rect(index);
-    if (r.y + r.h <= LIST_Y || r.y >= LIST_Y + LIST_H) {
-        return;
-    }
-    const settings_row_t e = stg_row_entry(index);
-    if (e.text >= 0) {
-        draw_text_row(c, index, r, (setting_text_id_t)e.text);
-        return;
-    }
-    setting_id_t id = e.id;
-    const setting_def_t *d = settings_def(id);
-    if (!d) {
-        return;
-    }
-
-    /* A value the IOmcu does not hold: the row's edge, its value and one
-     * line in place of its help, in the colour of a write that waits. */
-    const bool unheld = settings_screen_unheld(id);
-    /* A press on the value, which opens the keypad on its release, lights
-     * the row's edge as a press on a string's row does. */
-    const bool value_down = (s.hit_kind == HIT_VALUE && s.hit_index == index);
-    gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 8, 0, 8, 0, UI_PANEL);
-    gfx_draw_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 8, 0, 8, 0,
-                             unheld ? UI_WARN
-                                    : value_down ? UI_ACCENT : UI_EDGE);
-
-    /* Label and help are clipped short of the keys rather than allowed to
-     * run under them. */
-    gfx_rect_t saved = gfx_clip_get(c);
-    gfx_clip_intersect(c, gfx_rect_make(r.x, r.y, MINUS_X - 10 - r.x, r.h));
-    gfx_text(c, r.x + 16, r.y + ROW_NAME_DY, ui_setting_label(id),
-             STG_F_HEAD, UI_TEXT, 1);
-    const char *help = settings_screen_help(id);
-    if (help[0] != '\0') {
-        gfx_text(c, r.x + 16, r.y + ROW_HELP_DY, help, STG_F_LABEL,
-                 unheld ? UI_WARN : UI_TEXT_FAINT, 1);
-    }
-    c->clip = saved;
-
-    /* Value, then the unit after it (a pin word before it: "GPIO 4"), both
-     * right-aligned against the + key and centred in the row's height.
-     * A value takes the body face, a
-     * number and a switch's or a choice's word alike.  A value wider than
-     * the gap takes the label face, because a clipped value is worse than
-     * a small one; no value of the present schema needs it
-     * (test_settings_rows). */
-    char buf[32];
-    ui_setting_value(id, buf, sizeof(buf));
-    int ux = VALUE_R;
-    const bool has_unit = d->unit && d->unit[0]
-        && !(d->off_below > 0.0f && settings_get(id) == 0.0f);
-    const bool before = has_unit && ui_unit_is_prefix(d->unit);
-    const int uw = has_unit ? gfx_text_width(STG_F_LABEL, d->unit, 1) : 0;
-    if (has_unit && !before) {
-        gfx_text(c, VALUE_R - uw,
-                 r.y + (ROW_H - gfx_text_height(STG_F_LABEL, 1)) / 2 + 2,
-                 d->unit, STG_F_LABEL, UI_TEXT_DIM, 1);
-        ux = VALUE_R - uw - 6;
-    }
-    const gfx_font_t *vf = STG_F_BODY;
-    int vw = gfx_text_width(vf, buf, 1);
-    const int avail = ux - (MINUS_X + BTN_W + 8) - (before ? uw + 6 : 0);
-    if (vw > avail) {
-        vf = STG_F_LABEL;
-        vw = gfx_text_width(vf, buf, 1);
-    }
-    if (before) {
-        /* A pin word leads its number: "GPIO 4". */
-        gfx_text(c, ux - vw - 6 - uw,
-                 r.y + (ROW_H - gfx_text_height(STG_F_LABEL, 1)) / 2 + 2,
-                 d->unit, STG_F_LABEL, UI_TEXT_DIM, 1);
-    }
-    int vy = r.y + (ROW_H - gfx_text_height(vf, 1)) / 2;
-    gfx_text(c, ux - vw, vy, buf, vf, unheld ? UI_WARN : UI_ACCENT, 1);
-
-    if (settings_derived(id) || settings_fixed(id) || settings_held(id)) {
-        return;                 /* shown, not set here: no keys */
-    }
-    bool minus_down = (s.hit_kind == HIT_MINUS && s.hit_index == index);
-    bool plus_down  = (s.hit_kind == HIT_PLUS  && s.hit_index == index);
-    int by = r.y + (ROW_H - BTN_H) / 2;
-    const bool cycles = settings_cycles(id);
-    ui_button_font(c, gfx_rect_make(MINUS_X, by, BTN_W, BTN_H),
-                   cycles ? "<" : "-", UI_EDGE_HI, minus_down, true,
-                   STG_F_BODY);
-    ui_button_font(c, gfx_rect_make(PLUS_X, by, BTN_W, BTN_H),
-                   cycles ? ">" : "+", UI_EDGE_HI, plus_down, true,
-                   STG_F_BODY);
-}
-
-/**
  * @brief SENSORS' left list: each entry's name and its state under it, the
  *        selected entry lit, a pressed one with the accent edge.
  * @param c The canvas.
@@ -233,7 +62,7 @@ static void draw_entries(gfx_canvas_t *c)
     for (int e = 0; e < SENS_ENTRY_COUNT; ++e) {
         const gfx_rect_t r = settings_screen_entry_rect(e);
         const bool sel = e == sensors_pane_selected();
-        const bool down = s.hit_kind == HIT_ENTRY && s.hit_index == e;
+        const bool down = s.sl.hit_kind == HIT_ENTRY && s.sl.hit_index == e;
         const int cy = r.y + ENTRY_INSET, ch = r.h - 2 * ENTRY_INSET;
         gfx_fill_chamfer_rect_ex(c, r.x, cy, r.w, ch, 8, 0, 8, 0,
                                  sel ? UI_PANEL_HI : UI_PANEL);
@@ -251,133 +80,39 @@ static void draw_entries(gfx_canvas_t *c)
 }
 
 /**
- * @brief Draws the list of the open category: a row per setting, clipped to
- *        the pane, on SENSORS beside its left list.
+ * @brief Draws the list of the open category: on SENSORS its left list, then
+ *        the rows clipped to the pane, the category's name and RESET
+ *        (ui_setlist.h).
  * @param c The canvas.
  */
 static void draw_list(gfx_canvas_t *c)
 {
-    const bool sensors = s.cat == SET_CAT_SENSORS;
-    if (sensors) {
+    if (s.cat == SET_CAT_SENSORS) {
         draw_entries(c);
     }
-    /* The list is clipped rather than masked, so a part-scrolled row is cut
-     * cleanly at the pane edge instead of drawing over the strip. */
-    gfx_rect_t saved = gfx_clip_get(c);
-    gfx_clip_intersect(c, gfx_rect_make(LIST_X, LIST_Y, LIST_W, LIST_H));
-    /* SENSORS' list changes length with an enable row or a reset: the
-     * scroll follows before a row is placed. */
-    stg_clamp_scroll();
-    int n = stg_row_count();
-    for (int i = 0; i < n; ++i) {
-        draw_row(c, i);
-    }
-    c->clip = saved;
-
-    /* Scroll position, drawn only when there is somewhere to scroll to. */
-    if (s.scroll_max > 0) {
-        int track_h = LIST_H;
-        int knob_h = track_h * LIST_H / ((n > 0 ? n : 1) * ROW_PITCH);
-        if (knob_h < 32) { knob_h = 32; }
-        int knob_y = LIST_Y + (track_h - knob_h) * s.scroll / s.scroll_max;
-        gfx_fill_round_rect(c, SCROLL_X, LIST_Y, SCROLL_W, track_h,
-                            SCROLL_W / 2, UI_PANEL_SUNK);
-        gfx_fill_round_rect(c, SCROLL_X, knob_y, SCROLL_W, knob_h,
-                            SCROLL_W / 2, UI_ACCENT);
-    }
-
-    /* Which category is open, under the first column: in the head face
-     * where it fits, as the rows' names, a longer name in the body face. */
-    const gfx_rect_t nr = stg_strip_rect(0);
-    const char *name = ui_setting_category(s.cat);
-    const bool big = gfx_text_width(STG_F_HEAD, name, 1) <= nr.w - 16;
-    const gfx_font_t *nf = big ? STG_F_HEAD : STG_F_BODY;
-    gfx_text(c, nr.x + 16, nr.y + (nr.h - gfx_text_height(nf, 1)) / 2,
-             name, nf, UI_TEXT, 1);
-
-    /* RESET names what it resets on SENSORS: the selected entry alone. */
-    char entry[24], reset[48];
-    if (sensors) {
-        snprintf(reset, sizeof(reset), TR(SET_RESET_ONE),
-                 sensors_pane_name(sensors_pane_selected(), entry, sizeof(entry)));
-    } else {
-        snprintf(reset, sizeof(reset), "%s", TR(SET_RESET));
-    }
-    ui_button_font(c, stg_reset_rect(), reset, UI_WARN,
-                   s.hit_kind == HIT_RESET, true, STG_F_LABEL);
-}
-
-/**
- * @brief The warning: what differs from the stored values, one line each as
- *        "name: saved -> now" with the values as the list shows them, and the
- *        three answers.  DISCARD is drawn inert while the bench is ARMED, and a
- *        note says why; another says that the last save failed.
- */
-static void draw_warning(gfx_canvas_t *c)
-{
-    const bool armed = stg_bench_armed();
-    s.drawn_armed  = armed;
-    s.drawn_dirty  = settings_dirty();
-    s.drawn_asked  = settings_save_asked();
-    s.drawn_failed = settings_save_failed();
-
-    gfx_fill_rect(c, WARN_X, WARN_Y, WARN_W, WARN_H, UI_PANEL);
-    for (int i = 0; i < 3; ++i) {
-        gfx_draw_rect(c, WARN_X + i, WARN_Y + i, WARN_W - 2 * i,
-                      WARN_H - 2 * i, UI_WARN);
-    }
-    const gfx_rect_t saved = gfx_clip_get(c);
-    gfx_clip_intersect(c, gfx_rect_make(WARN_X + 4, WARN_Y + 4, WARN_W - 8,
-                                        WARN_H - 8));
-    gfx_text(c, WARN_X + 16, WARN_Y + WARN_TITLE_Y, TR(SET_LEAVE_TITLE),
-             STG_F_HEAD, UI_WARN, 1);
-    (void)ui_text_wrap(c, gfx_rect_make(WARN_X + 16, WARN_Y + WARN_WHY_Y,
-                                        WARN_W - 32, WARN_WHY_PITCH),
-                       WARN_WHY_PITCH, TR(SET_LEAVE_WHY), STG_F_BODY,
-                       UI_TEXT_DIM);
-    char line[128];
-    for (int i = 0; settings_screen_warn_line(i, line, sizeof(line)); ++i) {
-        gfx_text(c, WARN_X + 16, WARN_Y + WARN_LINE_Y + i * WARN_PITCH, line,
-                 STG_F_LABEL, UI_TEXT, 1);
-    }
-    int note_y = WARN_Y + WARN_NOTE_Y;
-    if (s.drawn_failed) {
-        gfx_text(c, WARN_X + 16, note_y, TR(SET_LEAVE_FAILED), STG_F_BODY,
-                 UI_DANGER, 1);
-        note_y += WARN_NOTE_PITCH;
-    }
-    if (armed) {
-        gfx_text(c, WARN_X + 16, note_y, TR(SET_LEAVE_ARMED), STG_F_BODY,
-                 UI_WARN, 1);
-    }
-    c->clip = saved;
-
-    ui_button_font(c, stg_stay_rect(), TR(SET_STAY), UI_PANEL_HI,
-                   s.hit_kind == HIT_STAY, true, STG_F_LABEL);
-    ui_button_font(c, stg_discard_rect(), TR(SET_DISCARD), UI_WARN,
-                   s.hit_kind == HIT_DISCARD, !armed, STG_F_LABEL);
-    ui_button_font(c, stg_save_rect(), TR(SET_SAVE), UI_ACCENT,
-                   s.hit_kind == HIT_LEAVE_SAVE, true, STG_F_LABEL);
+    ui_setlist_draw_rows(&s.sl, c);
+    ui_setlist_draw_strip(&s.sl, c);
 }
 
 void stg_render(gfx_canvas_t *c, int buffer_index)
 {
     /* The keyboard and the keypad move on their own events: every change
      * bumps a revision, and a buffer drawn under another one is stale. */
-    if (s.tk.revision != s.drawn_tk_rev || s.tk.open != s.drawn_tk) {
+    ui_setlist_t *sl = &s.sl;
+    if (sl->tk.revision != sl->drawn_tk_rev || sl->tk.open != sl->drawn_tk) {
         settings_screen_invalidate();
-        s.drawn_tk_rev = s.tk.revision;
-        s.drawn_tk = s.tk.open;
+        sl->drawn_tk_rev = sl->tk.revision;
+        sl->drawn_tk = sl->tk.open;
     }
-    if (s.kp.revision != s.drawn_kp_rev || s.kp.open != s.drawn_kp) {
+    if (sl->kp.revision != sl->drawn_kp_rev || sl->kp.open != sl->drawn_kp) {
         settings_screen_invalidate();
-        s.drawn_kp_rev = s.kp.revision;
-        s.drawn_kp = s.kp.open;
+        sl->drawn_kp_rev = sl->kp.revision;
+        sl->drawn_kp = sl->kp.open;
     }
     bool stale = true;
     if (buffer_index >= 0 && buffer_index < MAX_FBS) {
         stale = !s.chrome_valid[buffer_index] || s.drawn_cat != s.cat
-                || s.drawn_list != s.list || s.drawn_warn != s.warn;
+                || s.drawn_list != sl->open || s.drawn_warn != sl->warn;
     }
     if (!stale) {
         return;
@@ -385,28 +120,28 @@ void stg_render(gfx_canvas_t *c, int buffer_index)
 
     /* A list draws a SAFE-only row without keys while ARMED
      * (settings_safe_only()), so an arm or a disarm redraws it. */
-    s.drawn_armed = stg_bench_armed();
+    sl->drawn_armed = stg_bench_armed();
     gfx_clear(c, UI_BG);
-    if (s.kp.open) {
+    if (sl->kp.open) {
         /* The keypad covers the list and the strip: nothing under it is
          * drawn, as nothing under it presses. */
-        ui_keypad_render(&s.kp, c);
-    } else if (s.warn) {
-        draw_warning(c);
+        ui_keypad_render(&sl->kp, c);
+    } else if (sl->warn) {
+        ui_setlist_draw_warning(sl, c);
     } else {
-        if (s.list) {
+        if (sl->open) {
             draw_list(c);
         } else {
             draw_hub(c);
         }
-        draw_save(c);
+        ui_setlist_draw_save(sl, c);
     }
-    ui_textkey_render(&s.tk, c);
+    ui_textkey_render(&sl->tk, c);
 
     if (buffer_index >= 0 && buffer_index < MAX_FBS) {
         s.chrome_valid[buffer_index] = true;
         s.drawn_cat = s.cat;
-        s.drawn_list = s.list;
-        s.drawn_warn = s.warn;
+        s.drawn_list = sl->open;
+        s.drawn_warn = sl->warn;
     }
 }

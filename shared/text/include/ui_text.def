@@ -1925,6 +1925,10 @@ UI_TEXT(SUP_ONLINE, 0,
 UI_TEXT(SUP_NOT_ANSWERING, 26,
     "NOT ANSWERING",
     "ANTWORTET NICHT")
+/* The footer's SETTINGS (ui_footer.h), on every screen that has a list. */
+UI_TEXT(FOOT_SETTINGS, 0,
+    "SETTINGS",
+    "OPTIONEN")
 UI_TEXT(SUP_SETTINGS, 0,
     "SETTINGS",
     "OPTIONEN")
