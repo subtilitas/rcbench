@@ -6,6 +6,15 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- UPDATES' release pane says `Waiting for the C6 radio update to finish.`
+  while the C6 radio update runs. It said
+  `Waiting for the IOmcu update to finish.` for both updates.
+- A servo report's current cells print the whole mA as an int. gcc 14.2 on
+  aarch64 failed `tools/render_ui.py`'s `-Werror` build with a
+  format-truncation warning on the `%ld` text.
+
 ## 0.23.9 - 2026-11-06
 
 0.23.9 is a testing release. Its minor number, 23, is odd. GitHub
