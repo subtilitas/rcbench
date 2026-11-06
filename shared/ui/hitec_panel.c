@@ -214,10 +214,17 @@ gfx_rect_t hpn_row_rect(const hpn_row_t *r)
 gfx_rect_t hpn_value_rect(const hpn_row_t *r)
 {
     const gfx_rect_t rr = hpn_row_rect(r);
-    const int w = r->kind == K_ACT && r->what == A_WRITE ? HP_WRITE_W
-                : (r->wide != 0u && r->kind == K_SHOW)
-                      || (r->kind == K_ACT && r->what == A_FIND) ? HP_WIDE_W
-                                                         : HP_VAL_W;
+    int w = HP_VAL_W;
+
+    if (r->kind == K_ACT) {
+        if (r->what == A_WRITE) {
+            w = HP_WRITE_W;
+        } else if (r->what == A_FIND) {
+            w = HP_WIDE_W;
+        }
+    } else if (r->wide != 0u) {
+        w = HP_WIDE_W;
+    }
 
     if (hpn_stepped(r)) {
         /* Between its -/+ keys (hpn_step_rect()). */
