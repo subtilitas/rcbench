@@ -730,7 +730,16 @@ static void kkey(ui_key_t key)
     ktap(ui_keypad_key_rect(kst_panel_keypad(), key));
 }
 
-/* A warning page's button, held past UI_HOLD_S. */
+/* The 300ms flash of a hold that fired run out, in frames of 20ms, so a
+ * view shows the screen after it. */
+static void flash_out(void)
+{
+    for (int i = 0; i < 24; ++i) {
+        ui_router_tick(0.02f);
+    }
+}
+
+/* A warning page's button, held past UI_HOLD_S, and its flash. */
 static void khold(void)
 {
     const gfx_rect_t r = kst_panel_apply_rect();
@@ -745,6 +754,7 @@ static void khold(void)
     }
     e.type = TOUCH_EVENT_UP;
     ui_router_event(&e);
+    flash_out();
 }
 
 static void ksettle(void)

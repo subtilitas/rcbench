@@ -15,11 +15,16 @@
  * profile warning and KST EXPERT MODE on SERVO; ARM on MOTOR & ESC and
  * OUTPUT ON on SUPPLY through the router.  The holds of the other screens
  * have their *_flashes_as_it_fires case in their own suite, on their own
- * rig: test_servo_rauto_panel.c (START on AUTO), test_kst_panel_write.c,
- * test_hitec_panel_write.c, test_esc_wire_press.c,
- * test_esc_stick_panel_hold.c, test_outputs_screen.c, test_files_edit.c,
- * test_prog5v_box.c; tools/check_holds.py holds every ui_hold_begin()
- * site to ui_hold_button() and ui_hold_flash_step() in the source.
+ * rig: test_servo_rauto_kst.c (START on AUTO), test_kst_panel_write.c
+ * (a warning page's hold), test_hitec_panel_write.c (a hold page),
+ * test_esc_wire_press.c (CONNECT), test_esc_stick_panel_hold.c (HOLD 2s
+ * TO RUN), test_outputs_view.c (UNBIND ALL PINS), test_files_changed.c
+ * (OVERWRITE); test_prog5v_box.c and test_stop_hold.c hold PROG 5V ON and
+ * STOP's reset to their flash, test_busfault_screen.c ACKNOWLEDGE.  Not
+ * driven on a screen: the HV warning's APPLY, the updates' and Wi-Fi's
+ * holds, the IOmcu update's START, IMU CALIBRATE and RECONNECT;
+ * tools/check_holds.py holds every ui_hold_begin() site to
+ * ui_hold_button() and ui_hold_flash_step() in the source.
  *
  * SPDX-License-Identifier: MIT
  */

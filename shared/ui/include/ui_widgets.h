@@ -514,8 +514,10 @@ float ui_hold_credit(float dt_s);
 bool ui_hold_tick(ui_hold_t *h, float dt_s);
 
 /**
- * What the hold asked for has arrived: stop filling, and flash unless this
- * press has had its flash (ui_hold_tick() starts it as the hold fires).
+ * @brief What the hold asked for has arrived: stop filling, and flash
+ *        unless this press has had its flash (ui_hold_tick() starts it as
+ *        the hold fires).
+ *
  * A flash that runs is not restarted, so an answer that arrives inside the
  * 300ms does not flash twice; a state that arrives with no press, from
  * another screen or after ui_hold_left(), flashes.
@@ -524,6 +526,7 @@ bool ui_hold_tick(ui_hold_t *h, float dt_s);
  * finger is the one that fired, and the application calls this between the
  * hold completing and the finger lifting; clearing it would make that
  * release look like a fresh press.
+ * @param h The hold.
  */
 void ui_hold_reached(ui_hold_t *h);
 

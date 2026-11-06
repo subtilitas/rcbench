@@ -8,6 +8,26 @@ history is in git.
 
 ### Changed
 
+- Every 2s hold flashes on the frame it completes, 300ms in phases of 50ms:
+  white, black, then the button's new colour, twice. The flash starts in
+  `ui_hold_tick()`, so START TEST, START LIMIT RUN, START on AUTO, the
+  warnings' and programmer pages' holds, KST EXPERT MODE, HOLD 2s TO RUN,
+  the ESC wire holds, UNBIND ALL PINS and OVERWRITE flash as ARM does. A
+  button that goes as its hold fires flashes where it was drawn.
+  `tools/check_holds.py --check` holds every `ui_hold_begin()` to its draw
+  and its step in CI (continuous integration).
+- Buttons take their colour from what a press does to an output: green
+  available, red while it drives an output, amber while it waits, grey
+  refused. CENTRE, SWEEP, the rudder's 1000us, CENTRE, 2000us and ZERO and
+  the KST and Hitec programmers' CONNECT, ENABLE WRITE TO SERVO, WRITE n
+  VALUES and MOVE SERVO follow it; PAUSE is red while a sweep drives.
+  RESET CATEGORY, DISCARD and READ AGAIN are neutral, SAVE on SETUP green
+  while values are unsaved and its NOT SAVED a red label on a neutral
+  button, LOGS' OPEN and PLOT neutral, DELETE on FILES and LOGS neutral
+  with a red label (docs/Screens.md, "Button colours").
+- A tap on a grey START TEST, START LIMIT RUN or HOLD 2s TO START on AUTO
+  puts its reason in the alert band for 4s, as a hold's hint.
+
 - The panel sets the Bluetooth IMU's output content register RSW (0x02) to
   0x0C: angle (0x53) and angular rate with the battery (0x52), 2 frames a
   sample in place of the 4 of the sensor's default 0x1E. It writes unlock,

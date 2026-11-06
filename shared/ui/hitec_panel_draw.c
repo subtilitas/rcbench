@@ -432,9 +432,10 @@ static void draw_row(gfx_canvas_t *c, int i)
                                       ? UI_ACTION_ACTIVE
                                       : UI_ACTION_AVAILABLE);
         } else if (r->what == A_MOVE) {
-            fill = ui_action_fill(hitec_prog_move_on(&hp.prog)
-                                      ? UI_ACTION_ACTIVE
-                                      : UI_ACTION_AVAILABLE);
+            fill = ui_action_fill(
+                hitec_prog_move_on(&hp.prog) ? UI_ACTION_ACTIVE
+                : hitec_prog_state(&hp.prog) == HITEC_PROG_MOVING
+                    ? UI_ACTION_WAITING : UI_ACTION_AVAILABLE);
         } else if (r->what == A_WRITE) {
             fill = ui_action_fill(UI_ACTION_AVAILABLE);
         } else if (r->what == A_CLEAR && live) {

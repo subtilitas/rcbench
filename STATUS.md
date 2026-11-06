@@ -1255,14 +1255,14 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 483 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 486 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
 `test_nav_tiles`, `test_menu_openers`, `test_nav_alert`, `test_nav_mark`,
 `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_band_hwstop`,
 `test_help_router`, `test_help_pages`, `test_help_guides`, `test_help_setup`,
-`test_help_outputs`, `test_help_logs`, `test_help_files`, `test_widgets`, `test_hold_hint`,
+`test_help_outputs`, `test_help_logs`, `test_help_files`, `test_widgets`, `test_hold_hint`, `test_hold_flash`, `test_hold_button`, `test_action_fill`,
 `test_workbench`, `test_prog_registry`,
 `test_keypad`, `test_keypad_sign`, `test_keypad_rows_setup`, `test_keypad_rows_stick`,
 `test_keypad_rows_motor`, `test_keypad_rows_supply`, `test_keypad_rows_servo`,
