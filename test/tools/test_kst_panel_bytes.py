@@ -1,7 +1,8 @@
-"""The KST programmer overlay's texts against the host test that holds
-their bytes: every text shared/ui/kst_panel*.c names is a KP_ or PC_ text or
-in k_routed of test/host/test_kst_panel_texts.c, so that test measures every
-text the overlay copies into a KST_PANEL_LINE buffer.
+"""The KST programmer overlay's texts against the host test of their bytes.
+
+Every text shared/ui/kst_panel*.c names is a KP_ or PC_ text or in k_routed
+of test/host/test_kst_panel_texts.c, so that test measures every text the
+overlay copies into a KST_PANEL_LINE buffer.
 
 SPDX-License-Identifier: MIT
 """
@@ -64,20 +65,24 @@ def unmeasured(named, routed):
 
 
 def test_tr_and_tx_names_are_read():
+    """TR(ID) and TX_ID are read, TX_COUNT is not."""
     src = "x = TR(KP_A); y = TX_SV_HV_1; z = TX_COUNT; TR(CANCEL)"
     assert named_texts(src) == {"KP_A", "SV_HV_1", "CANCEL"}
 
 
 def test_a_text_neither_prefixed_nor_listed_is_reported():
+    """An ID neither KP_, PC_ nor listed is reported."""
     assert unmeasured({"KP_A", "PC_B", "ON", "SUP_X"}, {"ON"}) == ["SUP_X"]
 
 
 def test_the_list_is_read_from_its_array():
+    """The IDs of k_routed[] are read from its braces."""
     src = "static const ui_text_id_t k_routed[] = {\n TX_ON, TX_OFF,\n};"
     assert routed_list(src) == {"ON", "OFF"}
 
 
 def test_every_text_the_overlay_names_is_measured():
+    """Every text the overlay names is measured by the host test."""
     named = set()
     for path in sorted(UI.glob("kst_panel*.[ch]")):
         named |= named_texts(path.read_text(encoding="utf-8"))
@@ -88,6 +93,7 @@ def test_every_text_the_overlay_names_is_measured():
 
 
 def test_every_listed_text_is_still_named():
+    """Every entry of k_routed[] is a text the overlay names."""
     named = set()
     for path in sorted(UI.glob("kst_panel*.[ch]")):
         named |= named_texts(path.read_text(encoding="utf-8"))

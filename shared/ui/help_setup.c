@@ -9,9 +9,10 @@
  * marked where the dock leaves it in view.  A list: a row, the list's name
  * and RESET with the dock on the right, then one row's keys and value and
  * SAVE with the dock on the left, the row whose value opens the keypad
- * where one shows; SENSORS adds its selected entry to the
- * first, the IMU's as the panel's own over Bluetooth LE.  The warning, the keyboard and the keypad leave no page.  SETUP
- * drives no output, so every page shows while ARMED as well.
+ * where one shows; SENSORS adds its selected entry to the first, the
+ * IMU's as the panel's own over Bluetooth LE.  The warning, the keyboard
+ * and the keypad leave no page.  SETUP drives no output, so every page
+ * shows while ARMED as well.
  *
  * SPDX-License-Identifier: MIT
  */
