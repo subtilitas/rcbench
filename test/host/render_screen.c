@@ -1974,6 +1974,25 @@ static void stick_open(const char *name, const char *id)
     }
 }
 
+/* On the makers, the one named @p maker; on its models, the row of model
+ * @p name of profile @p id. */
+static void stick_open_model(const char *maker, const char *id,
+                             const char *name)
+{
+    stick_open(maker, NULL);
+    for (int i = 0; i < esc_stick_panel_listed(NULL); ++i) {
+        int m = -1;
+        const esc_profile_t *p = esc_stick_panel_row(i, &m);
+        if (p != NULL && m >= 0 && strcmp(p->id, id) == 0
+            && strcmp(p->models[m].name, name) == 0) {
+            stick_tap_row(i);
+            return;
+        }
+    }
+    fprintf(stderr, "render_screen: no model %s of %s\n", name, id);
+    exit(2);
+}
+
 /* A protocol by its name, so a view cannot come to select the entry beside
  * the one its comment names when the list changes. */
 static uint8_t proto_named(const char *name)
@@ -3010,6 +3029,12 @@ static void pose_motor_tools(ui_screen_id_t id, const char *view)
         } else if (strcmp(view, "motor-stick-hand-list") == 0) {
             /* Kontronik's models, those with manual steps tagged. */
             stick_open("Kontronik", NULL);
+        } else if (strcmp(view, "motor-stick-crumb") == 0) {
+            /* The longest crumb of a model that runs and its family, 97
+             * cells in German: the family's whole words that fit beside
+             * TIMING. */
+            stick_open_model("Sunrise", "sunrise-pro",
+                             "Sunrise PRO HV 180A OPTO");
         } else if (strcmp(view, "motor-stick-greatplanes") == 0) {
             /* Great Planes' models: the C Series refused for a menu
              * entered after power-on, beside the MANUAL tag. */

@@ -205,6 +205,20 @@ history is in git.
 
 ### Fixed
 
+- The KST programmer's lines, titles and button labels hold 233 bytes, two
+  rows of 58 cells at 2 bytes a cell and the terminator, in place of 96 and
+  of 40 and 64. The German refusal of a latched failsafe on the SERVO tab
+  (103 bytes) showed cut at 95 bytes. A host test holds every text the
+  overlay copies to its buffer, in both languages.
+- The German HWSTOP box says what the 80 to 180ms count from:
+  `HWSTOP verschwindet 80 bis 180ms, nachdem die Leitung schließt.`
+- SETUP's screen guide names the IMU as the panel's, read over Bluetooth LE
+  through the ESP32-C6. The SENSORS entry of the IMU said the IOmcu reads
+  it, the SENSORS tile listed the IMU among what the IOmcu reads, and the
+  IMU tile named an HC-05.
+- ESC STICK's crumb shows a family whole, as its whole words and ` ..`,
+  or not at all. The German crumb of XC-12-Lite read
+  `(XController Lit..`.
 - PROG 5V OFF on SERVO and SUPPLY takes a press under the alert band and
   a chip's help box while the ports' 5V reads ON, as OUTPUT OFF does. The
   screen guide leaves out every page whose dock would cover it.

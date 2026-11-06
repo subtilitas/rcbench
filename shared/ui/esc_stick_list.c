@@ -77,6 +77,68 @@ const char *esc_stick_panel_family_text(const esc_profile_t *p)
     return (p->family != NULL) ? p->family : "";
 }
 
+/**
+ * @brief Whether byte @p c may end the part of a family a cut crumb keeps:
+ *        not a space and not the punctuation before one.
+ * @param c The byte.
+ * @return True where the kept part may end in it.
+ */
+static bool crumb_end_ok(char c)
+{
+    return c != ' ' && c != ',' && c != ';' && c != ':';
+}
+
+void esc_stick_panel_crumb(const esc_profile_t *p, int model, int cells,
+                           char *out, size_t n)
+{
+    if (out == NULL || n == 0u) {
+        return;
+    }
+    out[0] = '\0';
+    if (p == NULL) {
+        return;
+    }
+    const bool named = model >= 0 && (unsigned)model < p->model_count;
+    if (named) {
+        snprintf(out, n, "ESC STICK  >  %s  >  %s", p->brand,
+                 p->models[model].name);
+    } else {
+        snprintf(out, n, "ESC STICK  >  %s", p->brand);
+    }
+    sp_cut(out, n, cells);
+    const char *fam = esc_stick_panel_family_text(p);
+    const char *open = named ? "  (" : " ";
+    const char *close = named ? ")" : "";
+    const int room = cells - gfx_text_cells(out) - gfx_text_cells(open)
+                     - gfx_text_cells(close);
+    size_t take = strlen(fam);
+    bool cut = false;
+    if (gfx_text_cells(fam) > room) {
+        /* Whole words up to a space, and " .." after them. */
+        take = (room > 3) ? gfx_text_prefix(fam, room - 3) : 0u;
+        while (take > 0u && fam[take] != ' ') {
+            --take;
+        }
+        while (take > 0u && !crumb_end_ok(fam[take - 1u])) {
+            --take;
+        }
+        cut = true;
+    }
+    size_t at = strlen(out);
+    const char *cont = cut ? " .." : "";
+    if (take == 0u
+        || at + strlen(open) + take + strlen(cont) + strlen(close) >= n) {
+        return;
+    }
+    memcpy(out + at, open, strlen(open));
+    at += strlen(open);
+    memcpy(out + at, fam, take);
+    at += take;
+    memcpy(out + at, cont, strlen(cont));
+    at += strlen(cont);
+    memcpy(out + at, close, strlen(close) + 1u);
+}
+
 const char *sp_action(const esc_manual_t *m)
 {
     return esc_stick_panel_step_text(m);

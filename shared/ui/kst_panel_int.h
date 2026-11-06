@@ -195,7 +195,7 @@ typedef struct {
         bool open;                      /**< whether the list shows */
         int  kind;                      /**< what the list was opened for, C_* */
         int  count;                     /**< entries */
-        char title[64];                 /**< the list's title */
+        char title[KST_PANEL_LINE];     /**< the list's title */
         char labels[CHOICE_MAX][KST_PANEL_LINE];  /**< the entries' labels */
         int  values[CHOICE_MAX];        /**< the entries' values */
     } ch;                               /**< the list of choices */
@@ -207,8 +207,8 @@ typedef struct {
         bool      down;                 /**< whether the hold button is down */
         ui_hold_t hold;                 /**< the hold counter */
         int       count;                /**< lines used */
-        char      title[64];            /**< the page's title */
-        char      apply[64];            /**< the label of the hold button */
+        char      title[KST_PANEL_LINE];  /**< the page's title */
+        char      apply[KST_PANEL_LINE];  /**< the label of the hold button */
         int hint;              /**< the band's hint for a short release */
         char      lines[WARN_LINES][KST_PANEL_LINE];  /**< the page's lines */
         uint8_t   level[WARN_LINES];    /**< each line's level */

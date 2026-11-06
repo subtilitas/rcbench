@@ -75,7 +75,10 @@ run drives, the supply and the bench:
   BACK returns to the makers on the page it left.
 
 A tap on a model opens its family's profile, named with the model:
-`ESC STICK > Kontronik > JAZZ 55 LV (JAZZ / MINIJAZZ)`. The supply takes the
+`ESC STICK > Kontronik > JAZZ 55 LV (JAZZ / MINIJAZZ)`. A family wider
+than the crumb's room, 56 cells of 12px beside TIMING and 70 on TIMING's
+page, shows its whole words that fit and ` ..`, or nothing where its first
+word does not fit; a word is never cut. The supply takes the
 model's own lowest cell count where it states one, else the family's
 lowest. A model whose profile the bench cannot run names the reason on its
 row and opens nothing; so does one whose voltage is over the SUPPLY cap.

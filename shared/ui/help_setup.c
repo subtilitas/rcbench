@@ -10,7 +10,7 @@
  * and RESET with the dock on the right, then one row's keys and value and
  * SAVE with the dock on the left, the row whose value opens the keypad
  * where one shows; SENSORS adds its selected entry to the
- * first.  The warning, the keyboard and the keypad leave no page.  SETUP
+ * first, the IMU's as the panel's own over Bluetooth LE.  The warning, the keyboard and the keypad leave no page.  SETUP
  * drives no output, so every page shows while ARMED as well.
  *
  * SPDX-License-Identifier: MIT
@@ -131,8 +131,11 @@ static void list_rows(ui_help_page_t *p)
     p->title = sensors ? TX_HG_SET_TITLE_SENSORS : TX_HG_SET_TITLE_ROWS;
     if (sensors) {
         const int e = sensors_pane_selected();
+        /* The IMU is the panel's, over Bluetooth LE; the rest the IOmcu's. */
         (void)ui_help_add(p, sensors_pane_name(e, s_entry, sizeof(s_entry)),
-                          TX_HG_SET_ENTRY, settings_screen_entry_rect(e));
+                          (e == SENS_ENTRY_IMU) ? TX_HG_SET_ENTRY_IMU
+                                                : TX_HG_SET_ENTRY,
+                          settings_screen_entry_rect(e));
     }
     const int row = first_row(false);
     if (row >= 0) {

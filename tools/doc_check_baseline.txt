@@ -3009,7 +3009,6 @@ shared/ui/include/esc_stick_panel.h: warning: return type of member esc_stick_pa
 shared/ui/include/esc_stick_panel.h: warning: return type of member esc_stick_panel_supply_reads_off is not documented
 shared/ui/include/esc_stick_panel.h: warning: return type of member esc_stick_panel_why_text is not documented
 shared/ui/include/esc_stick_panel.h: warning: return type of member esc_stick_panel_wrap_lines is not documented
-shared/ui/include/kst_panel.h: warning: Member KST_PANEL_LINE (macro definition) of file kst_panel.h is not documented.
 shared/ui/include/kst_panel.h: warning: Member kst_panel_choice_label(int i) (function) of file kst_panel.h is not documented.
 shared/ui/include/kst_panel.h: warning: Member kst_panel_keypad(void) (function) of file kst_panel.h is not documented.
 shared/ui/include/kst_panel.h: warning: Member kst_panel_run_t (enumeration) of file kst_panel.h is not documented.

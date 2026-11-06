@@ -10,6 +10,7 @@
  * - a_list_marks_the_keys_of_a_row_whose_value_opens_the_keypad
  * - the_keypad_leaves_no_page
  * - the_list_draws_nothing_under_the_dock
+ * - the_imu_entry_says_the_panel_reads_it
  *
  * SPDX-License-Identifier: MIT
  */
@@ -75,6 +76,13 @@ static void pose_sensors(void)
     open_cat(SET_CAT_SENSORS);
 }
 
+/** @brief SENSORS on top, the IMU selected. */
+static void pose_sensors_imu(void)
+{
+    pose_sensors();
+    sensors_pane_select(SENS_ENTRY_IMU);
+}
+
 TEST_CASE(every_page_of_setup_fits)
 {
     for (int b = 0; b < 2; ++b) {
@@ -86,6 +94,8 @@ TEST_CASE(every_page_of_setup_fits)
         CHECK_EQ(check_every_state(settings_screen(), pose_card, "card"), 2);
         CHECK_EQ(check_every_state(settings_screen(), pose_sensors,
                                    "sensors"), 2);
+        CHECK_EQ(check_every_state(settings_screen(), pose_sensors_imu,
+                                   "sensors imu"), 2);
     }
     s_board = (uint16_t)OUTBIND_BOARD_UNKNOWN;
     ui_board_set(s_board);
@@ -171,6 +181,30 @@ TEST_CASE(a_list_marks_the_keys_of_a_row_whose_value_opens_the_keypad)
     CHECK_STR_EQ(p.item[0].label,
                  sensors_pane_name(sensors_pane_selected(), name,
                                    sizeof(name)));
+    CHECK_EQ(p.item[0].text, TX_HG_SET_ENTRY);
+}
+
+/* The IMU is the panel's, over Bluetooth LE through the ESP32-C6: its entry's
+ * mark says so and not that the IOmcu reads it, every other entry's says
+ * the IOmcu reads it. */
+TEST_CASE(the_imu_entry_says_the_panel_reads_it)
+{
+    s_board = (uint16_t)OUTBIND_BOARD_UNKNOWN;
+    for (int e = 0; e < SENS_ENTRY_COUNT; ++e) {
+        pose_sensors();
+        sensors_pane_select(e);
+        ui_help_page_t p;
+        REQUIRE(ui_help_page(settings_screen(), false, 0, &p));
+        CHECK_EQ(p.item[0].text, (e == SENS_ENTRY_IMU) ? TX_HG_SET_ENTRY_IMU
+                                                       : TX_HG_SET_ENTRY);
+    }
+    for (int l = 0; l < (int)UI_LANG_COUNT; ++l) {
+        const char *s = ui_tr_in((ui_lang_t)l, TX_HG_SET_ENTRY_IMU);
+        CHECK(strstr(s, "IOmcu") == NULL);
+        CHECK(strstr(s, "Bluetooth LE") != NULL);
+        CHECK(strstr(s, "ESP32-C6") != NULL);
+        CHECK(strstr(ui_tr_in((ui_lang_t)l, TX_HG_SET_IMU), "HC-05") == NULL);
+    }
 }
 
 TEST_CASE(the_keypad_leaves_no_page)
@@ -239,5 +273,6 @@ int main(void)
     RUN(a_list_marks_the_keys_of_a_row_whose_value_opens_the_keypad);
     RUN(the_keypad_leaves_no_page);
     RUN(the_list_draws_nothing_under_the_dock);
+    RUN(the_imu_entry_says_the_panel_reads_it);
     return test_summary("help_setup");
 }

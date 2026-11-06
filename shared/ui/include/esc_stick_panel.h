@@ -166,6 +166,24 @@ const char *esc_stick_panel_step_text(const esc_manual_t *m);
  */
 const char *esc_stick_panel_family_text(const esc_profile_t *p);
 
+/**
+ * @brief The profile page's crumb trail: ESC STICK, the brand, the model
+ *        where @p model names one, and the family in the language showing
+ *        (esc_stick_panel_family_text()), in @p cells cells at most.
+ *
+ * The family shows whole where it fits; else its whole words that fit with
+ * " .." after them, never part of a word; else not at all.  A brand and
+ * model wider than @p cells alone end in "..", with no family.
+ *
+ * @param p     The profile, or NULL for "".
+ * @param model The model's index in @p p, or -1 for none.
+ * @param cells The trail's room, in cells.
+ * @param out   Takes the trail.
+ * @param n     Bytes of @p out.
+ */
+void esc_stick_panel_crumb(const esc_profile_t *p, int model, int cells,
+                           char *out, size_t n);
+
 /** Why the manual steps' pop-up says its profile does not run, for the
  *  model it was opened for; NULL when it runs or no pop-up is open.  For
  *  tests. */

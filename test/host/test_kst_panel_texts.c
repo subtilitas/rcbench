@@ -10,6 +10,8 @@
  * - a_message_goes_when_what_it_says_no_longer_holds
  * - every_wrapped_text_takes_two_rows_at_most
  * - no_german_text_writes_a_number_with_a_comma
+ * - every_text_the_overlay_copies_fits_a_line_whole
+ * - the_german_refusal_of_a_latched_failsafe_is_a_whole_line
  *
  * SPDX-License-Identifier: MIT
  */
@@ -30,6 +32,8 @@ static bool lines_ok(unsigned id, unsigned arg, uint8_t reg)
         /* A line wraps onto two rows of the card's 58 cells at most. */
         ok = ok && t[i][0] != '\0' && kst_panel_text_rows(t[i]) <= 2;
         ok = ok && strchr(t[i], '%') == NULL;
+        /* Not cut: a line snprintf() cut fills its buffer to the brim. */
+        ok = ok && strlen(t[i]) + 1u < KST_PANEL_LINE;
     }
     return ok;
 }
@@ -285,6 +289,94 @@ TEST_CASE(no_german_text_writes_a_number_with_a_comma)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* ---------------------------------------------------- the lines' bytes */
+
+/*
+ * The texts the overlay copies into a line, a title or a label that are not
+ * KP_ or PC_ texts.  test/tools/test_kst_panel_bytes.py holds this list to
+ * every TR() and TX_ name of shared/ui/kst_panel*.c, so a text the overlay
+ * takes up later is either here, a KP_ or PC_ text, or a failing test.
+ */
+static const ui_text_id_t k_routed[] = {
+    TX_CANCEL,          TX_HOLD_HINT_APPLY,   TX_HOLD_HINT_CONTINUE,
+    TX_HOLD_HINT_ENABLE, TX_HOLD_HINT_LEAVE,  TX_HOLD_HINT_LOAD,
+    TX_HOLD_HINT_RESTORE, TX_HOLD_HINT_WRITE, TX_HP_PORT_NONE,
+    TX_OFF,             TX_ON,                TX_SUP_CLOSE,
+    TX_SV_HOLD_TO_APPLY, TX_SV_HV_1,          TX_SV_HV_2,
+    TX_SV_HV_3,         TX_SV_HV_4,           TX_SV_HV_5,
+};
+
+/* Whether the overlay copies text @p id into one of its buffers. */
+static bool routed(ui_text_id_t id)
+{
+    const char *name = ui_text_name(id);
+
+    if (strncmp(name, "KP_", 3) == 0 || strncmp(name, "PC_", 3) == 0) {
+        return true;
+    }
+    for (size_t i = 0; i < sizeof(k_routed) / sizeof(k_routed[0]); ++i) {
+        if (k_routed[i] == id) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/*
+ * Every buffer the overlay copies a text into is KST_PANEL_LINE bytes: two
+ * rows of 58 cells, 2 bytes a cell, and the terminator.  Every text it
+ * copies, in every language, has a declared width of no more than those
+ * cells, takes no more and has fewer bytes than the buffer, so none is cut.
+ */
+TEST_CASE(every_text_the_overlay_copies_fits_a_line_whole)
+{
+    int seen = 0;
+
+    CHECK_EQ(KST_PANEL_LINE, 2 * KST_PANEL_LINE_CELLS + 1);
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        for (unsigned id = 0; id < (unsigned)TX_COUNT; ++id) {
+            const ui_text_id_t t = (ui_text_id_t)id;
+            const char *s = ui_tr_in((ui_lang_t)lang, t);
+
+            if (!routed(t)) {
+                continue;
+            }
+            ++seen;
+            if (ui_text_cells(t) > KST_PANEL_LINE_CELLS
+                || gfx_text_cells(s) > KST_PANEL_LINE_CELLS) {
+                T_FAIL("%s in language %d: %d cells, declared %d, a line %d",
+                       ui_text_name(t), lang, gfx_text_cells(s),
+                       ui_text_cells(t), KST_PANEL_LINE_CELLS);
+            }
+            if (strlen(s) + 1u > (size_t)KST_PANEL_LINE) {
+                T_FAIL("%s in language %d: %zu bytes, a line %d",
+                       ui_text_name(t), lang, strlen(s), KST_PANEL_LINE);
+            }
+        }
+    }
+    /* Both languages' KP_ and PC_ texts and the list above. */
+    CHECK(seen > 2 * 300);
+}
+
+/*
+ * The 0.23.9 walk's cut: the German refusal of a latched failsafe is 103
+ * bytes, and the SERVO tab shows it whole.
+ */
+TEST_CASE(the_german_refusal_of_a_latched_failsafe_is_a_whole_line)
+{
+    char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
+    const kst_prog_msg_t m = {
+        .id = (uint8_t)(KST_PROG_MSG_REF + LINK_KST_REF_UNSAFE),
+        .level = KST_PROG_WARN, .reg = 0xFFu, .seq = 1 };
+
+    fresh();
+    ui_text_set_language(UI_LANG_DE);
+    CHECK(strlen(TR(KP_R_UNSAFE)) > 96u);
+    CHECK(kst_panel_message_lines(&m, t) >= 1);
+    CHECK_STR_EQ(t[0], TR(KP_R_UNSAFE));
+    ui_text_set_language(UI_LANG_EN);
+}
+
 int main(void)
 {
     RUN(every_message_refusal_result_and_rule_has_a_line_in_english);
@@ -293,5 +385,7 @@ int main(void)
     RUN(a_message_goes_when_what_it_says_no_longer_holds);
     RUN(every_wrapped_text_takes_two_rows_at_most);
     RUN(no_german_text_writes_a_number_with_a_comma);
+    RUN(every_text_the_overlay_copies_fits_a_line_whole);
+    RUN(the_german_refusal_of_a_latched_failsafe_is_a_whole_line);
     return test_summary("kst_panel_texts");
 }

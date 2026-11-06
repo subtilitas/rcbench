@@ -247,7 +247,7 @@ UI_TEXT(BH_HWSTOP, 0,
     "Der STOP-Taster des Prüfstands ist gedrückt oder sein Kabel unterbrochen. Der IOmcu empfängt keinen Heartbeat, ist SAFE und sperrt ARM. Motor-, Servo- und PD-mini-Ausgang sind aus.")
 UI_TEXT(BH_HWSTOP_CLEAR, 0,
     "Release the button or repair the cable. HWSTOP goes 80 to 180ms after the line closes. The bench stays SAFE: hold ARM for 2s to switch the outputs on again.",
-    "Löse den Taster oder repariere das Kabel. HWSTOP verschwindet 80 bis 180ms danach. Der Prüfstand bleibt SAFE: Halte ARM 2s, um die Ausgänge einzuschalten.")
+    "Löse den Taster oder repariere das Kabel. HWSTOP verschwindet 80 bis 180ms, nachdem die Leitung schließt. Der Prüfstand bleibt SAFE: Halte ARM 2s, um die Ausgänge einzuschalten.")
 UI_TEXT(BH_F_VERSION, 0,
     "The versions on the two devices do not match.",
     "Die Versionen der beiden Geräte passen nicht zusammen.")
@@ -1652,8 +1652,8 @@ UI_TEXT(HG_SET_PANEL, 0,
     "This panel: theme, brightness, rotation, language, units, time zone and the knob.",
     "Dieses Panel: Design, Helligkeit, Drehung, Sprache, Einheiten, Zeitzone und Drehknopf.")
 UI_TEXT(HG_SET_SENSORS, 0,
-    "What the IOmcu reads: the sensor bus, INA228, INA3221, AS5600, the phase tap and the IMU.",
-    "Was der IOmcu liest: Sensorbus, INA228, INA3221, AS5600, Phasenabgriff und IMU.")
+    "The IOmcu's sensor bus, INA228, INA3221, AS5600 and phase tap, and the panel's Bluetooth IMU.",
+    "Sensorbus, INA228, INA3221, AS5600 und Phasenabgriff des IOmcu sowie die Bluetooth-IMU des Panels.")
 UI_TEXT(HG_SET_OUTPUTS, 0,
     "Binds the IOmcu's pins to protocols and sets each programming port's pin and function.",
     "Ordnet die Pins des IOmcu Protokollen zu und stellt Pin und Funktion jedes Programmierports ein.")
@@ -1667,8 +1667,8 @@ UI_TEXT(HG_SET_UPDATES, 0,
     "Looks for a newer panel firmware on GitHub and installs it.",
     "Sucht auf GitHub eine neuere Firmware für das Panel und installiert sie.")
 UI_TEXT(HG_SET_IMU, 0,
-    "The Bluetooth angle sensor: the HC-05 on the panel, the scan for the sensor and its angles.",
-    "Der Bluetooth-Winkelsensor: das HC-05 am Panel, die Suche nach dem Sensor und seine Winkel.")
+    "The Bluetooth angle sensor: Bluetooth LE through the ESP32-C6, the scan for it and its angles.",
+    "Der Bluetooth-Winkelsensor: Bluetooth LE über den ESP32-C6, die Suche nach ihm und seine Winkel.")
 UI_TEXT(HG_SET_LAYOUT, 0,
     "The carrier's connectors and the soldered pin of each, and what each one drives now.",
     "Die Stecker des Trägers, der verlötete Pin jedes Steckers und was er gerade ansteuert.")
@@ -1696,6 +1696,9 @@ UI_TEXT(HG_SET_VALUE, 0,
 UI_TEXT(HG_SET_ENTRY, 0,
     "One sensor. Its line says how the IOmcu reads it now. A tap shows its rows on the right.",
     "Ein Sensor. Seine Zeile sagt, wie der IOmcu ihn gerade liest. Tippen zeigt rechts seine Zeilen.")
+UI_TEXT(HG_SET_ENTRY_IMU, 0,
+    "The panel reads it over Bluetooth LE through the ESP32-C6. A tap shows its rows on the right.",
+    "Das Panel liest sie per Bluetooth LE über den ESP32-C6. Tippen zeigt rechts ihre Zeilen.")
 /* ------------------------------------------------ plots and hero cards */
 UI_TEXT(PLOT_NOW, 0,
     "NOW",

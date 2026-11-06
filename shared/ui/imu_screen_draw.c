@@ -91,7 +91,7 @@ typedef struct {
 } card_line_t;
 
 /**
- * @brief Card line @p i as it reads now: the sensor, the HC-05 and the
+ * @brief Card line @p i as it reads now: the sensor, the C6 and the
  *        state 28px apart, 8px more after the address; 12px down the three
  *        angles in the heading face, 40px apart, the axis the runs read in
  *        the accent; 12px down the rate and the battery, 28px apart.

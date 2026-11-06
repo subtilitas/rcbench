@@ -367,7 +367,7 @@ void kpn_warn_file(void)
 
 void kpn_warn_write(void)
 {
-    char title[64];
+    char title[KST_PANEL_LINE];
 
     const kst_image_t *to = kst_prog_draft(&k.prog);
     const bool moves = moves_horn(to);
