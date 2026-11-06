@@ -55,7 +55,7 @@ Was nicht bekannt oder geprüft ist:
    dem das Netzteil selbst seinen Ausgang als aus meldet, mit einem Strom
    von höchstens 20mA über 200ms. Kein Messwert, ein älterer oder ein
    Netzteil, das nicht antwortet, lehnt START ab mit `Kein aktueller Messwert bestätigt, dass das Netzteil aus ist.`. Ein Lauf schaltet den Prüfstand auf
-   ARMED: solange der [Servoprogrammierung](ServoProgrammer-de.md) einen Port
+   ARMED: solange die [Servoprogrammierung](ServoProgrammer-de.md) einen Port
    hält, wird START abgelehnt mit
    `Servoprogrammierung belegt einen Port. Tippe zuerst auf SERVO auf VERLASSEN.`
 
@@ -852,7 +852,7 @@ und nach dem des Ablaufs speichert keinen anderen Wert als den verlangten.
   vor ERLEDIGT aus bei NICHT BESTÄTIGT (kein ERLEDIGT innerhalb von 60s),
   STOP, ABBRECHEN, einem Schalten auf SAFE, einem verlorenen Link und jeder
   Netzteilregel, und sagt dann, dass der ESC gesperrt sein kann. Der
-  Prüfstand sieht weder die Bestätigung noch die Sperre; Mit ERLEDIGT bestätigst du,
+  Prüfstand sieht weder die Bestätigung noch die Sperre; mit ERLEDIGT bestätigst du,
   dass die Bestätigung des ESC abgeschlossen ist.
 - Welche Werte ein Kontronik-ESC aus der Mitte programmiert, ist den
   Handbüchern entnommen. Für JAZZ-Modi 6 und 8, KONTROL-X-Modus 3 und
