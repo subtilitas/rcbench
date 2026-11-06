@@ -726,26 +726,19 @@ static DRAWER void sp_draw_items(gfx_canvas_t *c)
 
 /**
  * @brief The profile page's crumb: BACK and the profile's name in
- *        SP_FONT_CRUMB, up to TIMING where the page shows it.
+ *        SP_FONT_CRUMB, up to TIMING where the page shows it
+ *        (esc_stick_panel_crumb()).
  */
 static DRAWER void sp_draw_crumb(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
-    const esc_profile_t *p = t->p;
-    char line[128];
-    if (t->model >= 0 && (unsigned)t->model < p->model_count) {
-        snprintf(line, sizeof(line), "ESC STICK  >  %s  >  %s  (%s)",
-                 p->brand, p->models[t->model].name,
-                 esc_stick_panel_family_text(p));
-    } else {
-        snprintf(line, sizeof(line), "ESC STICK  >  %s %s", p->brand,
-                 esc_stick_panel_family_text(p));
-    }
+    char line[160];
     ui_button_font(c, pg.back, TR(LOG_BACK), ui_theme_color(UI_C_PANEL_HI),
                    false, !esc_stick_running(&t->run), SP_FONT);
     const int x = pg.back.x + pg.back.w + 16;
     const int right = t->timing ? W - PAD - 12 : t->timing_btn.x - 8;
-    sp_cut(line, sizeof(line), (right - x) / SP_CRUMB_CELL);
+    esc_stick_panel_crumb(t->p, t->model, (right - x) / SP_CRUMB_CELL, line,
+                          sizeof(line));
     gfx_text(c, x, CRUMB_Y + (CRUMB_H - 24) / 2, line, SP_FONT_CRUMB,
              ui_theme_color(UI_C_TEXT_DIM), 1);
 }

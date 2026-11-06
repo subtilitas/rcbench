@@ -49,6 +49,7 @@ static const struct {
     { "help-setup-rbmod", "setup-rbmod" },
     { "help-setup-list", "setup-application" },
     { "help-setup-sensors", "setup-sensors" },
+    { "help-setup-sensors-imu", "setup-sensors-imu" },
     { "help-outputs", "outputs" },
     { "help-outputs-port", "outputs-port" },
     { "help-outputs-grid", "outputs-grid" },

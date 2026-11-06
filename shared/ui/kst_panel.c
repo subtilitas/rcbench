@@ -152,7 +152,7 @@ const char *kpn_row_label(const row_t *r)
 {
     if (r->kind == K_ACT && r->what == A_PORT && prog_choice_offered()) {
         /* The carrier's port, chosen on this row, at its fixed 5V. */
-        static char port[40];
+        static char port[KST_PANEL_LINE];
         const outbind_roles_t *roles = ui_board_roles();
 
         if (!kpn_on_port() || roles == NULL) {
@@ -168,7 +168,7 @@ const char *kpn_row_label(const row_t *r)
     if (r->kind == K_ACT && r->what == A_PORT && kpn_on_port()
         && kpn_flag(LINK_KS_F_RAIL)) {
         /* What CONNECT asks of the supply, and what it holds after. */
-        static char port[40];
+        static char port[KST_PANEL_LINE];
         const unsigned mv = kst_prog_supply_mv(&k.prog);
 
         if (ui_board_prog_5v_pin() >= 0) {

@@ -122,7 +122,7 @@ static void files_open(void)
     const kst_prog_t *p = &k.prog;
     unsigned total = 0;
     const unsigned n = kst_prog_file_count(p, &total);
-    char title[64];
+    char title[KST_PANEL_LINE];
 
     const unsigned first = kst_prog_files_first(p);
 
