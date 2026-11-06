@@ -485,6 +485,7 @@ replaces a visible hint.
 | HOLD 2s TO INSTALL on Wi-Fi | `Hold 2s to install.` |
 | HOLD 2s TO DOWNLOAD & INSTALL on UPDATES and in the update reminder | `Hold 2s to download and install.` |
 | HOLD 2s TO UPDATE THE IOMCU on UPDATES, and START on the IOmcu update's question | `Hold 2s to update the IOmcu.` |
+| HOLD 2s TO UPDATE THE C6 RADIO on UPDATES | `Hold 2s to update the C6 radio. Wi-Fi stays off until it ends.` |
 | HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS on OUTPUTS | `Hold 2s to clear all pin assignments.` |
 | OVERWRITE on FILES' editor's question | `Hold 2s to overwrite.` |
 
@@ -4721,7 +4722,7 @@ of the 10 x 20px face.
 | INA3221 0x40 to 0x43 | a state of the table in [SENSORS: the INA3221 parts](#sensors-the-ina3221-parts) | 10 |
 | AS5600 | `ON`, `NOT ACCEPTED BY THE IOMCU` | 2 |
 | PHASE TAP | `ON`, `NOT ACCEPTED BY THE IOMCU` | 7 |
-| IMU | `NO HC-05`, `NO SENSOR BOUND`, `SCANNING`, `BINDING`, `BOUND`, `CONNECTED 50Hz`, `NO FRAMES` ([The Bluetooth IMU](#the-bluetooth-imu)) | 6 |
+| IMU | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO SENSOR BOUND`, `SCANNING`, `CONNECTING`, `BOUND`, `CONNECTED 50Hz`, `NO FRAMES` ([The Bluetooth IMU](#the-bluetooth-imu)) | 6 |
 
 - An entry with an enable row shows that row alone and reads `OFF` while it is
   off. ON adds the entry's other rows under it.
@@ -5178,20 +5179,20 @@ at least one period of the lowest tone, 2.5ms at 400Hz
 ![IMU, connected at 50Hz with ZERO taken](img/imu-connected.png)
 
 SETUP's IMU tile opens the screen for a WitMotion BWT901CL angle sensor,
-connected to the panel through an HC-05 Bluetooth module on UART1
-([The Bluetooth IMU](IMU.md)). SENSORS' IMU entry holds its rows: IMU ON or
+connected to the panel over Bluetooth LE through the board's ESP32-C6
+([The Bluetooth IMU](IMU.md)); the first IMU ON starts Bluetooth LE. SENSORS' IMU entry holds its rows: IMU ON or
 OFF, AXIS (X, Y, Z), SIGN (+, -), RATE (10, 20, 50, 100 or 200Hz, 50Hz by
 default), ALGORITHM (6-AXIS or 9-AXIS) and ANGLE SOURCE. The screen's
 controls, left, 460 x 56px at a 64px pitch from body y 16: SCAN FOR SENSORS,
-CONNECT TO ANY SENSOR (only after the HC-05 refused a scan with
-`ERROR:(1F)`), `HOLD 2s: CALIBRATE ACCELEROMETER`, ZERO and CLEAR ZERO side
+a free slot, `HOLD 2s: CALIBRATE ACCELEROMETER`, ZERO and CLEAR ZERO side
 by side, and IMU SETTINGS, which opens SENSORS on the IMU entry; its home tag
 comes back. The card on the right, x 484 to 1016, names the bound sensor and
-its address, the HC-05's firmware, the state, the angles X, Y and Z from the
+its address with its type, the C6's firmware, the state, the angles X, Y and Z from the
 zero in the 16 x 28px face (the axis the runs read in the accent), the rate
 of angle frames, the age of the newest one and the sensor's battery. SCAN
-opens the found list: up to 8 devices of 640 x 48px at a 52px pitch, a tap
-binds one and closes the list. The home tag closes the list first. The
+opens the found list for a scan of 10s: up to 8 sensors of 640 x 48px at a
+52px pitch with name, address and RSSI, and the count of the other devices
+the scan heard under SCAN AGAIN; a tap binds one and closes the list. The home tag closes the list first. The
 reading is stale 300ms after the last angle frame, the dropout allowance of
 a run ([Servo procedures](Servo.md)).
 
@@ -5521,10 +5522,13 @@ release ([The release line](#the-release-line)).
 ![UPDATES](img/updates.png)
 
 The buttons are 460 x 56px, 64px apart, on the left. The card on the
-right is 532px wide and ends 8px above the alert band; its text runs in
-lines of 41 characters of the 12 x 24px face, 28px apart. Under the
+right is 532px wide, from body y 16 to 384; its text runs in lines of 41
+characters of the 12 x 24px face, 28px apart. When a result runs down to
+the card's last three lines, those lines are left out. Under the
 buttons the IOmcu section's lines are in the 10 x 20px face, and its
-hold is a fifth button of the same size, from body y 428.
+hold is a fifth button of the same size, from body y 428. Under the card
+the C6 RADIO row: one line at body y 396 and its hold, 532 x 56px, beside
+the IOmcu's ([The C6 radio](#the-c6-radio)).
 
 | Control | Action |
 | --- | --- |
@@ -5533,6 +5537,7 @@ hold is a fifth button of the same size, from body y 428.
 | `RELEASES: STABLE` / `TESTING` | Sets which releases a check reads ([The check](#the-check)). Kept with SAVE on SETUP. `STABLE` by default. A switch hides the last check's result: a release found on the other setting is not offered. |
 | `HOLD 2s TO DOWNLOAD & INSTALL` | Shown once a check found a newer release. Downloads, checks and installs it. |
 | `HOLD 2s TO UPDATE THE IOMCU` | Starts the IOmcu's update from the image this panel carries ([The IOmcu](#the-iomcu)). |
+| `HOLD 2s TO UPDATE THE C6 RADIO` | Sends the C6 radio's image this panel carries to the board's ESP32-C6 ([The C6 radio](#the-c6-radio)). |
 
 The card names the running version and the kept home network. Both the
 check and the download need:
@@ -5745,6 +5750,54 @@ that runs the carried build gets no hold; the link-up's question does not
 open for it either. An IOmcu of another protocol major shows NO LINK in
 the band and still takes the update, as the question offers it to that
 IOmcu too.
+
+### The C6 radio
+
+Under the card, UPDATES shows the board's ESP32-C6, which carries Wi-Fi and
+Bluetooth: `C6 radio: 2.13.0. Included: 2.13.0.`, the version the C6
+reported at the first Wi-Fi start since the panel started, or
+`not reported`, and the version of the image this panel carries, or
+`none`. Under it `HOLD 2s TO UPDATE THE C6 RADIO`. While the update runs the
+button reads `C6 UPDATE 37%`, the share of the image the C6 took. The
+steps, their limits and how each ends are in
+[Building: The C6's firmware](Building.md#the-c6s-firmware).
+
+![The C6 RADIO row with the C6 as shipped](img/updates-c6.png)
+
+The hold is live only when none of the reasons below holds. Otherwise it is
+grey, and a tap on it shows the first reason on the alert band:
+
+| Band | Condition |
+| --- | --- |
+| `This panel includes no C6 radio firmware.` | The panel was built without the C6's image. |
+| `The included C6 radio firmware failed its check.` | The carried image is no ESP32-C6 build of esp_hosted, or its SHA-256 differs. |
+| `The C6 radio update is running.` | An update runs. |
+| `The C6 radio did not answer. Restart the panel.` | The link to the C6 failed since the panel started; the C6 is held in reset. |
+| `The C6 radio runs the firmware included on this panel.` | The C6 reported the carried version. |
+| `The C6 update requires SAFE.` | ARMED, or an arm waiting. |
+| `The C6 update requires the supply output off.` | The supply output is on or switching on. |
+| `The C6 update waits: a recording session is open.` | A log run is open. |
+| `The C6 update waits: a board drawing is being downloaded or saved.` | A board drawing is being fetched or kept. |
+| `The C6 update waits for the IOmcu update to finish.` | The IOmcu's update runs. |
+| `The C6 update waits: panel firmware installation is running.` | The panel's download or install runs. |
+| `The C6 update waits for the panel's Wi-Fi to switch off.` | A check, a download or the WI-FI screen has the radio on. |
+| `The C6 update waits: Bluetooth is starting.` | Bluetooth LE's start task `blestart` runs. |
+| `The C6 update waits for the C6 radio's last answer.` | A step of an ended update has not returned from its call. |
+
+A C6 that reports no version, as the shipped one does, is offered the
+update. The alert band says how an update ended:
+
+| Alert | Meaning |
+| --- | --- |
+| `C6 radio updated to 2.13.0. The panel restarts.` | The C6 took and checked the image; the panel restarts 3s later. |
+| `The C6 radio runs 2.13.0 already. Nothing was sent.` | The C6 reported the carried version at the update's link-up. |
+| `The C6 radio takes no update over SDIO. Flash it over header H4.` | The begin call failed or ran out: the C6's firmware has no update over SDIO ([Building: Recovery over header H4](Building.md#recovery-over-header-h4)). |
+| `The C6 radio did not answer. Wi-Fi is off until the panel restarts.` | The link to the C6 failed. |
+| `C6 update stopped: <reason>. Previous firmware is running.` | A write, the C6's image check or the activate call failed (`a write failed`, `the C6's image check failed`, `activation failed`), or a step went unanswered past its limit (`no response`). |
+
+While the update runs, ARM is refused with `Cannot switch to ARMED: the C6
+radio update is running.`, Wi-Fi does not start, and the panel's install,
+the GitHub check and the IOmcu's update wait.
 
 ### The reminder
 

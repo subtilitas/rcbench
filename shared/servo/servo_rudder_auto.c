@@ -513,7 +513,7 @@ static void measure_step(servo_rauto_t *r, uint32_t now_ms,
     if (in->angle_valid && in->still_ms >= SERVO_RAUTO_STILL_MS
         && r->gap.open == false) {
         measured(r, in->angle_deg, now_ms);
-    } else if (due(now_ms, r->move_ms, SERVO_RAUTO_MOVE_MS)) {
+    } else if (due(now_ms, r->move_ms, SERVO_RAUTO_MOVE_MS + r->settle_ms)) {
         fail(r, SERVO_RAUTO_WHY_NOT_STILL, now_ms);
     }
 }
@@ -912,6 +912,11 @@ void servo_rauto_step(servo_rauto_t *r, uint32_t now_ms,
     if (servo_rauto_running(r) && in != NULL) {
         r->angle_valid = in->angle_valid;
         r->angle_deg   = in->angle_deg;
+        /* The longest: a filter made slower in a run waits longer from
+         * then on, one made faster does not cut a wait short. */
+        if (in->settle_ms > r->settle_ms) {
+            r->settle_ms = in->settle_ms;
+        }
         if (due(now_ms, r->last_win_ms, SERVO_LIMRUN_WIN_STALE_MS)) {
             servo_rauto_abort(r, SERVO_TEST_AB_WIN_STALE, now_ms);
         } else if (servo_gap_check(&r->gap, now_ms) == SERVO_GAP_TOO_LONG) {

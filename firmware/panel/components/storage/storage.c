@@ -4,7 +4,7 @@
  *        at a card that does not mount.
  *
  * The SDMMC host is shared with the ESP32-C6's SDIO link on slot 1
- * (wifi_radio.c).  ESP-IDF v6.1's SDMMC driver takes the controller's mutex
+ * (c6_link.c).  ESP-IDF v6.1's SDMMC driver takes the controller's mutex
  * for each command and sets the clock of the command's slot inside it
  * (sd_trans_sdmmc.c, sd_host_slot_sdmmc_do_transaction()); starting a slot
  * only registers it.  Whether a mount here costs a C6 transfer time, or

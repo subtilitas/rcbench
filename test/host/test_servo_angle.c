@@ -68,6 +68,31 @@ TEST_CASE(degrees_become_counts_with_centre_zero)
     CHECK(!e.gap && !e.no_magnet && !e.weak && !e.strong);
 }
 
+/* The degrees as read ride beside the counts, wrapped to -180 to 180:
+ * 12.345° stays 12.345°, not the 12.30° of its 140 counts; 180° stays
+ * 180°, 180.5° is -179.5°; one not valid carries none. */
+TEST_CASE(the_degrees_as_read_come_with_the_counts)
+{
+    static const struct { float in, out; } k[] = {
+        { 12.345f, 12.345f }, { -12.345f, -12.345f }, { 0.0f, 0.0f },
+        { 180.0f, 180.0f }, { -180.0f, -180.0f }, { 180.5f, -179.5f },
+        { -180.5f, 179.5f }, { 450.25f, 90.25f }, { -359.0f, 1.0f },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        const servo_angle_in_t in = { .valid = true, .deg = k[i].in,
+                                      .taken_ms = 5u };
+        servo_test_enc_t e;
+        CHECK(servo_angle_enc(&in, &e));
+        CHECK(e.exact);
+        CHECK_NEAR(e.deg, k[i].out, 1e-4f);
+    }
+    const servo_angle_in_t lost = { .valid = false, .deg = 3.0f };
+    servo_test_enc_t e;
+    CHECK(!servo_angle_enc(&lost, &e));
+    CHECK(!e.exact);
+    CHECK_EQ(e.deg, 0.0f);
+}
+
 TEST_CASE(a_reading_not_valid_keeps_its_time_and_gap)
 {
     servo_test_enc_t e;
@@ -151,6 +176,7 @@ TEST_CASE(the_name_of_every_source_and_axis)
 int main(void)
 {
     RUN(degrees_become_counts_with_centre_zero);
+    RUN(the_degrees_as_read_come_with_the_counts);
     RUN(a_reading_not_valid_keeps_its_time_and_gap);
     RUN(centre_is_the_setting_for_the_as5600_and_zero_for_the_imu);
     RUN(the_name_of_every_source_and_axis);

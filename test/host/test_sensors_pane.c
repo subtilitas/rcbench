@@ -78,7 +78,7 @@ TEST_CASE(every_sensor_row_has_one_entry_and_balance_has_none)
     fresh_hub();
     setting_id_t ids[96];
     const int n = settings_in_category(SET_CAT_SENSORS, ids, 96);
-    CHECK_EQ(n, 64);
+    CHECK_EQ(n, 65);
     int on_entry = 0;
     for (int i = 0; i < n; ++i) {
         const int e = sensors_pane_entry_of(ids[i]);
@@ -89,7 +89,7 @@ TEST_CASE(every_sensor_row_has_one_entry_and_balance_has_none)
             ++on_entry;
         }
     }
-    CHECK_EQ(on_entry, 61);
+    CHECK_EQ(on_entry, 62);
     CHECK_EQ(sensors_pane_entry_of(SET_HITEC_RX), -1);
     CHECK_STR_EQ(settings_def(SET_VIBE_EN)->key, "vibe_en");
     CHECK_STR_EQ(settings_def(SET_OPTICAL_EN)->key, "optical_en");
@@ -130,7 +130,7 @@ TEST_CASE(rows_appear_when_a_sensor_is_enabled)
         { SENS_ENTRY_INA3221_0 + 3, (setting_id_t)(SET_INA_FIT_0 + 3), 10 },
         { SENS_ENTRY_AS5600, SET_ENC_EN, 2 },
         { SENS_ENTRY_TAP, SET_TONE_EN, 7 },
-        { SENS_ENTRY_IMU, SET_IMU_EN, 6 },
+        { SENS_ENTRY_IMU, SET_IMU_EN, 7 },
     };
     pane();
     CHECK_EQ(settings_screen_rows(SET_CAT_SENSORS), 2);

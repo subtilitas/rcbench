@@ -64,8 +64,8 @@ typedef enum {
     /* LAYOUT, from SETUP on a board with soldered pins: its
      * connectors and the role of each position. */
     SCREEN_LAYOUT,
-    /* IMU, from SETUP's IMU tile: the Bluetooth IMU's HC-05, the scan and
-     * the bind, the calibration, ZERO and the live angles (imu_screen.h). */
+    /* IMU, from SETUP's IMU tile: the Bluetooth IMU's BLE link, the scan
+     * and the bind, the calibration, ZERO and the live angles (imu_screen.h). */
     SCREEN_IMU,
     SCREEN_COUNT
 } ui_screen_id_t;

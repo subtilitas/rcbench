@@ -1,9 +1,10 @@
 /*
  * The rig of the Bluetooth IMU's suites: WitMotion frames built byte by byte
  * from the layout in witmotion.h, and the controller (imu_ctl.h) run 1ms at
- * a time against the scripted HC-05 of hc05_sim.h.  A SEND the controller
- * hands out while no AT operation runs is a sensor command: it is logged
- * apart and the module does not see it.
+ * a time against the scripted host stack and sensor of ble_sim.h.  A write
+ * on 8841 the controller hands out is a sensor command: it is logged apart.
+ * The sensor's frames come as notifications on 1E4D while the sim is
+ * connected; before that they reach nothing, as on the air.
  *
  * Functions are `static`, under the sim's unused-function pragma.
  *
@@ -13,13 +14,30 @@
 #define IMU_RIG_H
 
 #include <math.h>
+#include <stdio.h>
 #include <string.h>
 
+#include "ble_sim.h"
 #include "greatest.h"
-#include "hc05_sim.h"
 #include "imu.h"
 #include "imu_ctl.h"
 #include "witmotion.h"
+
+/** The sensor's address as the owner's phone read it: 00:0C:BF:08:19:29,
+ *  public, least significant byte first. */
+static const bleu_addr_t k_rig_addr = {
+    { 0x29u, 0x19u, 0x08u, 0xBFu, 0x0Cu, 0x00u }, BLEU_ADDR_PUBLIC
+};
+/** That address as SETUP keeps it. */
+#define RIG_ADDR "00:0C:BF:08:19:29 P"
+
+/** The sensor's advertising data as the station captured it: flags 0x0A,
+ *  the 16-bit UUID list 0x18F0, the complete name `HC-06` padded with NUL
+ *  bytes to 22. */
+static const uint8_t k_rig_adv[31] = {
+    0x02, 0x01, 0x0A, 0x03, 0x03, 0xF0, 0x18, 0x17, 0x09,
+    'H', 'C', '-', '0', '6',
+};
 
 /** Build one frame: sync, type, four little-endian words, sum. */
 static void rig_frame(uint8_t f[WIT_FRAME_LEN], uint8_t type, int16_t a,
@@ -65,67 +83,72 @@ static void rig_feed_angle(imu_t *m, float roll, float pitch, float yaw,
 #define RIG_SENT_MAX 32u
 
 typedef struct {
-    sim_t     sim;
+    bsim_t    sim;
     imu_ctl_t c;
     uint32_t  t;                            /* the clock, ms */
     uint8_t   sent[RIG_SENT_MAX][WIT_CMD_LEN]; /* sensor commands */
     uint32_t  sent_at[RIG_SENT_MAX];
     unsigned  nsent;
-    unsigned  at_key_low;                   /* AT bytes while KEY low */
+    unsigned  scans;                        /* SCAN actions */
 } rig_t;
 
-/** A rig on a 2.0 module at @p baud, the clock at 1000ms. */
-static void rig_init(rig_t *r, int fw, uint32_t baud)
+/** A rig with the sensor advertising at -50dBm 200ms into a scan, the
+ *  panel's Bluetooth synced on a C6 2.13.0, the clock at 1000ms. */
+static void rig_init(rig_t *r)
 {
     memset(r, 0, sizeof *r);
-    sim_init(&r->sim, fw, baud);
+    bsim_init(&r->sim);
+    bsim_adv(&r->sim, 200u, &k_rig_addr, -50, k_rig_adv, sizeof k_rig_adv);
     imu_ctl_init(&r->c);
     r->t = 1000u;
+    imu_ctl_radio(&r->c, IMU_RADIO_READY, "2.13.0", r->t);
 }
 
-/** The module's answers due now, into the controller (sim_deliver()'s). */
+/** The events due now, in time order, into the controller. */
 static void rig_deliver(rig_t *r)
 {
-    sim_t *s = &r->sim;
-    if (s->restart_due && (int32_t)(r->t - s->restart_at) >= 0) {
-        s->restart_due = false;
-        s->restarted_key = s->key;
-        s->baud = s->key ? HC05_BAUD_ALT : s->uart_set;
-        s->inited = false;
-        ++s->restarts;
-    }
-    unsigned keep = 0;
-    for (unsigned i = 0; i < s->nout; ++i) {
-        const sim_out_t *o = &s->out[i];
-        if ((int32_t)(r->t - o->at) >= 0) {
-            if (s->uart == s->baud || o->text[0] == '\xF8') {
-                imu_ctl_feed(&r->c, (const uint8_t *)o->text, o->n, r->t);
+    bsim_t *s = &r->sim;
+    for (;;) {
+        unsigned best = s->nev;
+        for (unsigned i = 0; i < s->nev; ++i) {
+            if (bsim_due(s->ev[i].at, r->t)
+                && (best == s->nev
+                    || (int32_t)(s->ev[i].at - s->ev[best].at) < 0)) {
+                best = i;
             }
-        } else {
-            s->out[keep++] = *o;
         }
+        if (best == s->nev) {
+            return;
+        }
+        const bleu_evt_t e = s->ev[best].e;
+        memmove(&s->ev[best], &s->ev[best + 1u],
+                (s->nev - best - 1u) * sizeof s->ev[0]);
+        --s->nev;
+        bsim_open(s, &e);
+        imu_ctl_event(&r->c, &e, r->t);
     }
-    s->nout = keep;
 }
 
-/** One ms: the answers due, then every action of that ms. */
+/** One ms: the events due, then every action of that ms, logged as
+ *  bsim_tick() logs them. */
 static void rig_tick(rig_t *r)
 {
     rig_deliver(r);
-    hc05_act_t a;
+    bleu_act_t a;
     for (int i = 0; i < 16 && imu_ctl_step(&r->c, r->t, &a); ++i) {
-        if (a.kind == HC05_ACT_SEND && !hc05_busy(&r->c.bt)) {
-            if (r->nsent < RIG_SENT_MAX && a.len == WIT_CMD_LEN) {
-                memcpy(r->sent[r->nsent], a.data, WIT_CMD_LEN);
-                r->sent_at[r->nsent] = r->t;
-                ++r->nsent;
-            }
-            continue;
+        if ((a.kind == BLEU_ACT_WRITE || a.kind == BLEU_ACT_WRITE_NR)
+            && a.len == WIT_CMD_LEN && r->nsent < RIG_SENT_MAX) {
+            memcpy(r->sent[r->nsent], a.data, WIT_CMD_LEN);
+            r->sent_at[r->nsent] = r->t;
+            ++r->nsent;
         }
-        if (a.kind == HC05_ACT_SEND && !r->sim.key) {
-            ++r->at_key_low;
+        r->scans += a.kind == BLEU_ACT_SCAN;
+        if (r->sim.nlog < BSIM_LOG_MAX) {
+            r->sim.log[r->sim.nlog].t = r->t;
+            r->sim.log[r->sim.nlog].a = a;
+            ++r->sim.nlog;
         }
-        sim_take(&r->sim, &a, r->t);
+        bsim_act(&r->sim, r->t, &a);
     }
     ++r->t;
 }
@@ -138,14 +161,14 @@ static void rig_run(rig_t *r, uint32_t ms)
     }
 }
 
-/** Run until no operation runs and KEY is low, @p max ms at most.
+/** Run until a sensor command can go, @p max ms at most.
  *  @return the ms it took. */
 static uint32_t rig_settle(rig_t *r, uint32_t max)
 {
     uint32_t k = 0;
     for (; k < max; ++k) {
         rig_tick(r);
-        if (!hc05_busy(&r->c.bt) && !r->c.bt.key && !r->c.op_open) {
+        if (imu_ble_can_send(&r->c.ble)) {
             break;
         }
     }
@@ -165,6 +188,25 @@ static void rig_cfg(rig_t *r, bool en, const char *addr, int rate, bool six)
     imu_ctl_config(&r->c, &cfg, r->t);
 }
 
+/** @p n bytes as notifications on 1E4D of the sim's connection, cut at
+ *  @p cut bytes each; they reach nothing while the sim is not connected. */
+static void rig_notify(rig_t *r, const uint8_t *b, size_t n, size_t cut)
+{
+    if (!r->sim.connected) {
+        return;
+    }
+    for (size_t at = 0; at < n; at += cut) {
+        bleu_evt_t e;
+        memset(&e, 0, sizeof e);
+        e.kind = BLEU_EV_NOTIFY;
+        e.conn = r->sim.conn;
+        e.h1 = H_TX_VAL;
+        e.len = (uint8_t)((n - at) < cut ? (n - at) : cut);
+        memcpy(e.data, &b[at], e.len);
+        imu_ctl_event(&r->c, &e, r->t);
+    }
+}
+
 /** Angle frames every @p period_ms for @p ms ms, as the sensor streams. */
 static void rig_stream(rig_t *r, uint32_t ms, uint32_t period_ms, float roll,
                        float pitch, float yaw)
@@ -173,7 +215,7 @@ static void rig_stream(rig_t *r, uint32_t ms, uint32_t period_ms, float roll,
     rig_angle(f, roll, pitch, yaw);
     for (uint32_t k = 0; k < ms; ++k) {
         if (k % period_ms == 0u) {
-            imu_ctl_feed(&r->c, f, sizeof f, r->t);
+            rig_notify(r, f, sizeof f, 20u);
         }
         rig_tick(r);
     }

@@ -423,12 +423,15 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | `control` | `control_task` | 6 144 | 3 472 | 1 632 |
 | `runlog` | `log_task` | 6 656 | 3 824 | 1 792 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
-| `imu` | `imu_task`, UART und HC-05-Einrichtung der Bluetooth-IMU (`panel_imu.c`) | 3 072 | 1 200 | 832 |
+| `imu` | `imu_task`, die Verbindung der Bluetooth-IMU: die Werte aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_imu.c`) | 4 096 | 1 888 | 1 168 |
+| `blestart` | `ble_start_task`, die Verbindung zum C6, seine Controller-Anfragen, der Start des Hosts und das Warten auf seinen Sync, dann weg (`panel_ble.c`) | 4 096 | 1 200 | 1 856 |
+| `nimble_host` | `ble_host_task`, der Host von NimBLE: HCI (Host Controller Interface) zum C6 und zurück, die Berichte des Scans, die Antworten der Verbindung und von GATT (`panel_ble.c`) | 4 096 | 1 936 | 1 120 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 392 | 1 664 |
 | `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 6 912 | 2 912 | 2 960 |
 | `mdns` | `mdns_task`, der mDNS-Responder (Multicast Domain Name System), solange das Panel mit einem Heimnetz verbunden ist | 4 096 | 1 440 | 1 616 |
 | `wifi_get` | `fetch_task`, eine Release-Suche oder ein Download von GitHub (`components/wifi_access`) | 8 192 | 1 568 | 5 584 |
 | `cardjob` | `files_task`, die Kartenoperationen von FILES (`panel_files.c`) | 6 656 | 2 064 | 3 552 |
+| `c6upd` | `c6_task`, das Update des C6-Funks, ein Schritt nach dem anderen (`panel_c6.c`) | 4 096 | 1 248 | 1 808 |
 | `shot` | `shot_task`, ein Screenshot-Auftrag, dann weg (`panel_shot.c`) | 7 168 | 2 416 | 3 712 |
 
 Der HTTP-Server (Hypertext Transfer Protocol) der Seite läuft in einem Task
@@ -441,6 +444,26 @@ TLS-Handshake (Transport Layer Security) und jedes Lesen darunter aus:
 esp_http_client erreicht seinen Transport über einen Funktionszeiger. Sein
 Stack nutzt den Speicher des Seitenservers; die beiden Tasks laufen nie gleichzeitig; die Tiefe des
 Handshakes ist nicht gemessen.
+
+Die Bluetooth-LE-Tasks (Low Energy) starten beim ersten IMU EIN
+(`panel_imu.c` ruft `panel_ble_start()` auf) oder mit `ble scan` des
+Konsolen-Builds und bleiben bis zum Neustart des Panels.
+`nimble_port_freertos_init()` von ESP-IDF legt `nimble_host` mit dem
+Einstieg des Panels an, Priorität 21 auf Kern 0, Stack
+`CONFIG_BT_NIMBLE_HOST_TASK_STACK_SIZE`. Seine Tiefe folgt den Events von
+NimBLE und dem Callback des IMU-Scans über ihre Namen (`NIMBLE_CALLS`); den
+übrigen Aufrufen des Hosts über einen Zeiger, darunter die Callbacks der
+Verbindung und von GATT, folgt sie nicht, die Ausgabe des Werkzeugs zählt
+sie. `blestart` endet, sobald das Warten auf den Sync des Hosts vorbei ist.
+Die Tiefe des Tasks `imu` endet an den NimBLE-Aufrufen von
+`panel_ble_do()`, die über einen Zeiger gehen.
+
+Der Konsolen-Build (`RCBENCH_PANEL_CONSOLE`, [Die
+Prüfstandskonsole](BenchConsole-de.md)) hat einen Task mehr.
+
+| Task des Konsolen-Builds | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
+| --- | --- | ---: | ---: | ---: |
+| `console` | `console_task`, die seriellen Ports zur Konsole des IOmcu, und `ble scan` (`panel_console.c`) | 4 096 | 1 280 | 1 776 |
 
 Die tiefste Kette von `runlog` bindet die SD-Karte ein: die Liste der
 Servodateien, die die Karte bedient (`hitec_card_run()`, `list()`,
@@ -487,7 +510,7 @@ oben ist deshalb eine Untergrenze:
   Servodateien geschrieben werden, die es anhand ihrer Namen verfolgt
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `SERVO_STORE_CALLS`):
-  296
+  297
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Sprünge über ein Register: eine Sprungtabelle, die in ihrer Funktion
@@ -503,7 +526,9 @@ oben ist deshalb eine Untergrenze:
   Zyklus.
 
 CI führt das Werkzeug mit `--check-doc` aus; das schlägt fehl, wenn die
-Tabelle oben oder die Zahl der Aufrufe über einen Zeiger vom Build abweicht.
+erste Tabelle oben oder die Zahl der Aufrufe über einen Zeiger vom
+Standard-Build abweicht oder die Tabelle des Konsolen-Builds vom
+Konsolen-Build.
 
 ### High-Water-Marks auf dem Board
 
@@ -546,12 +571,13 @@ zeigt Speicherbedarf, den das Werkzeug nicht verfolgt.
 | `control` | 6 144 | nicht gemessen |
 | `runlog` | 6 656 | nicht gemessen |
 | `knob` | 3 072 | nicht gemessen |
-| `imu` | 3 072 | nicht gemessen |
+| `imu` | 4 096 | nicht gemessen |
 | `touch` | 4 096 | nicht gemessen |
 | `wifi_ctl` | 6 912 | nicht gemessen |
 | `mdns` | 4 096 | nicht gemessen |
 | `wifi_get` | 8 192 | nicht gemessen |
 | `cardjob` | 6 656 | nicht gemessen |
+| `c6upd` | 4 096 | nicht gemessen |
 | `shot` | 7 168 | nicht gemessen |
 
 Die Tasks von ESP-IDF und esp_hosted stehen nicht in der Tabelle: ihre Namen
@@ -695,6 +721,43 @@ I (…) rcbench: internal RAM: <n> B free at the lowest, <n> B free now, largest
 | Modus 3, eine Release-Suche | nicht gemessen | nicht gemessen |
 
 Freier PSRAM beim Start: nicht gemessen.
+
+Auch Bluetooth LE (Low Energy) läuft auf dem C6; der P4 betreibt seinen Host,
+NimBLE ([Bauen, Bluetooth LE über den
+ESP32-C6](Building-de.md#bluetooth-le-über-den-esp32-c6)). Der Host startet
+mit `panel_ble_start()`, das der IMU-Task beim ersten IMU EIN und `ble scan`
+des Konsolen-Builds aufrufen, und bleibt bis zum Neustart des Panels. Der Start protokolliert den freien
+Speicher davor und danach:
+
+```text
+I (…) ble: host started; internal RAM <n>B free before, <n>B after; PSRAM <n>B before, <n>B after
+```
+
+Sein interner RAM: der Stack von `nimble_host` mit 4 096 Bytes auf Dauer,
+der Stack von `blestart` mit 4 096 Bytes, bis der Start vorbei ist, und die
+Event-Queue mit 32 x 64 = 2 048 Bytes in .bss. esp_hosted belegt je
+HCI-Paket einen Puffer; diese sind nicht gezählt. Die Pools und Puffer von
+NimBLE liegen im PSRAM (`CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL`). Auf
+einem Panel (Station, 2026-11-05, Konsolen-Build) belegte der Start 5 152
+Bytes internen RAM, 264 307 frei davor und 259 155 danach, und 25 176 Bytes
+PSRAM; mit dem Hotspot danach waren 251 103 Bytes interner RAM frei.
+
+Der Bluetooth-LE-Teil des Images, aus der Linker-Map (`esp_idf_size`),
+ESP-IDF v6.1, gebaut ohne die IOmcu-Images. Beide Builds enthalten den Host,
+weil die IMU ihn startet:
+
+| Build | Anwendungs-Image (Bytes) | Davon NimBLE, `libbt.a`, Flash (Bytes) | Davon die Central, `libbleuart.a`, Flash (Bytes) | Interner RAM des Images, DIRAM (Bytes) | Davon NimBLE (Bytes) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Standard | 3 094 450 | 62 038 | 8 821 | 179 338 | 693 |
+| Konsole (`RCBENCH_PANEL_CONSOLE`) | 3 118 804 | 62 078 | 8 821 | 189 176 | 693 |
+
+Die 2 048 Bytes der Ereignis-Warteschlange stecken in der DIRAM-Zahl,
+außerhalb von `libbt.a`. esp_hosted (157 292 Bytes Flash, 1 571 Bytes DIRAM)
+trägt WLAN und Bluetooth LE zusammen; sein Bluetooth-LE-Anteil ist nicht
+gemessen.
+
+Die .bss im PSRAM ist in beiden Builds 2 587 632 Bytes, mit und ohne
+Bluetooth LE.
 
 Ein WLAN-Start, der fehlschlägt, protokolliert den Schritt, den Namen des
 Fehlers und den internen Heap in diesem Moment:

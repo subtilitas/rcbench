@@ -981,7 +981,11 @@ processing above to use either source:
 count = round(angle x 4096 / 360) mod 4096     centre count 0
 ```
 
-One count is 0.088°. The angle a run reports is quantised to that step.
+One count is 0.088°. The servo test judges and reports the IMU's angle in
+that step. The reading also carries the IMU's degrees as they came:
+MEASURED, RUDDER, AUTO, the LIMIT RUN's angle lines and the SERVO run log
+take those, and the screens show them to 0.01°. The IMU's angle passes
+its IMU filter first ([The Bluetooth IMU](IMU.md#the-filter)).
 The sensor's stated resolution is 0.05 to 0.2° on X and Y and 1° on Z,
 which needs the magnetometer (not measured on the bench). AS5600 centre
 does not apply to the IMU, and ENC CENTRE takes no count from it.
@@ -1386,7 +1390,7 @@ the task is `shared/ui/servo_rudder_panel.c`.
 
 | Reading | Resolution | Range |
 | --- | --- | --- |
-| DEFLECTION | 0.1° shown; 4096 counts a turn, 0.088°, for either source | -180.0 to +179.9° |
+| DEFLECTION | AS5600: 0.1° shown, 4096 counts a turn, 0.088°; IMU: 0.01° shown, the degrees as read | AS5600: -180.0 to +179.9°; IMU: -180.00 to +180.00° |
 | TRAILING EDGE | 0.1mm shown | -500.0 to +500.0mm |
 
 ### Limits
@@ -1408,7 +1412,9 @@ Hitec servo's end points so that 1000us and 2000us reach the deflection entered
 for each side, measured on the angle source. It closes the loop on the
 surface's angle in place of the throw a radio's end points are set to by
 eye. The run is `shared/servo/servo_rudder_auto.c`; the box is
-`shared/ui/servo_rudder_auto_panel.c`.
+`shared/ui/servo_rudder_auto_panel.c`. AUTO trusts the angle source: with
+ANGLE SOURCE IMU it takes the angles the Bluetooth link delivers, and that
+link is not authenticated (`SECURITY.md`, the Bluetooth IMU).
 
 ### Running it
 

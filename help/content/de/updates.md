@@ -17,6 +17,7 @@ UPDATES sucht auf GitHub nach neuerer Panel-Firmware und bietet deren Installati
 | RELEASES: STABLE / TESTING | Wählt die geprüften Releases; siehe [Die Suche](#die-suche). Mit SPEICHERN unter [Setup](setup.md#die-werte-behalten) speichern; Vorgabe STABLE. Ein Wechsel verwirft die Ergebnisanzeige. Ein unter der anderen Einstellung gefundenes Release wird nicht angeboten. |
 | 2s HALTEN ZUM LADEN & INSTALLIEREN | Erscheint nach Fund eines neueren Releases und lädt, prüft und installiert es. |
 | 2s HALTEN ZUM IOMCU-UPDATE | Startet das [IOmcu-Update](coproc_update.md) aus dem mitgelieferten Image, auch nach Ablehnung der Verbindungsrückfrage. |
+| 2s HALTEN ZUM C6-FUNK-UPDATE | Sendet das mitgelieferte Image des C6-Funks an den ESP32-C6 des Boards, siehe [Der C6-Funk](#der-c6-funk). |
 
 ## Was die Suche braucht
 
@@ -131,9 +132,30 @@ Für das Halten gelten dieselben Voraussetzungen wie für die Rückfrage: ein IO
 
 Bei verfügbarer Haltetaste steht `Ausgänge bleiben aus. ARMED ist bis zum Ende des Updates gesperrt.`. Bei einem älteren Image erscheint stattdessen `Die Firmware auf diesem Panel ist älter.` in der Warnfarbe.
 
+## Der C6-Funk
+
+![Der C6 im Auslieferungszustand: keine Version gemeldet](view:updates-c6)
+
+Unter der Karte zeigt UPDATES den ESP32-C6 des Boards, der Wi-Fi und Bluetooth trägt: `C6-Funk: nicht gemeldet. Auf diesem Panel: 2.13.0.` Die erste Version ist die, die der C6 beim ersten Wi-Fi-Start seit dem Panel-Start genannt hat; der ausgelieferte C6 nennt keine. 2s HALTEN ZUM C6-FUNK-UPDATE sendet das mitgelieferte Image über die SDIO-Verbindung (Secure Digital Input/Output) des Boards; die Taste zeigt dann `C6-UPDATE 37%`.
+
+Das Halten ist aktiv, wenn der Prüfstand SAFE ist, kein ARM wartet, der Netzteilausgang aus ist, kein Log-Lauf offen ist, keine Platinenzeichnung geholt wird, kein anderes Update läuft, das WLAN aus ist und der C6 nicht die mitgelieferte Version hat. Ein Tippen auf das graue Halten zeigt den Grund im Alarmband, zum Beispiel `Das C6-Update wartet, bis das WLAN des Panels aus ist.`
+
+Während das Update läuft, wird ARM abgelehnt, und das WLAN bleibt aus. Es endet mit einem Alarm:
+
+| Alarm | Bedeutung |
+|---|---|
+| `C6-Funk auf 2.13.0 aktualisiert. Das Panel startet neu.` | fertig; das Panel startet 3s später neu |
+| `Der C6-Funk nutzt bereits 2.13.0. Nichts gesendet.` | nichts zu senden |
+| `Der C6-Funk nimmt kein Update über SDIO an. Flashe ihn über Header H4.` | die Firmware des C6 hat das Update abgelehnt; die alte Firmware läuft |
+| `Der C6-Funk hat nicht geantwortet. WLAN ist bis zum Neustart des Panels aus.` | die Verbindung zum C6 ist ausgefallen |
+| `C6-Update abgebrochen: keine Antwort. Vorherige Firmware läuft.` | ein Schritt blieb ohne Antwort; `Schreiben fehlgeschlagen`, `Prüfung im C6 fehlgeschlagen` und `Aktivierung fehlgeschlagen` lauten ebenso |
+
+Nach jedem Ende außer dem ersten behält der C6 die Firmware, die er hatte, und das WLAN arbeitet wie zuvor (nach einer ausgefallenen Verbindung erst nach einem Neustart des Panels). Das Flashen über Header H4 mit einem USB-UART-Adapter steht in [Bauen](https://github.com/subtilitas/rcbench/wiki/Building-de#wiederherstellung-über-header-h4).
+
 ## Aktuelle Einschränkungen
 
 - Die Dauer von Suche und Download in einem echten Netz wurde nicht gemessen.
+- Die Dauer des C6-Funk-Updates ist nicht gemessen, und ob der ausgelieferte C6 es über SDIO annimmt, ist nicht bekannt.
 - Ein nicht antwortender erster DNS-Server (Domain Name System) verzögert nach dem Verbinden jede Namensauflösung um etwa 7s innerhalb der Suchfrist von 30s. lwIP fragt diesen Server 4-mal für insgesamt bis zu 7s ab, bevor es den nächsten versucht.
 - Unter TESTING erlaubt GitHub ohne Konto 60 API-Anfragen pro Stunde und öffentlicher Adresse, gemeinsam für alle Geräte dahinter. Das Panel wiederholt keine Anfrage.
 - TESTING liest die 10 nach Datum neuesten Releases. Ältere Veröffentlichungen werden unabhängig von ihrer Versionsnummer nicht erfasst.

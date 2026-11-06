@@ -33,7 +33,7 @@ static const setting_id_t k_tap[] = { SET_TONE_EN, SET_TONE_PIN, SET_TONE_F_MIN,
 /** @brief The IMU's rows, the enable row first; ANGLE SOURCE last. */
 static const setting_id_t k_imu[] = { SET_IMU_EN, SET_IMU_AXIS, SET_IMU_SIGN,
                                       SET_IMU_RATE, SET_IMU_ALGO,
-                                      SET_ANGLE_SOURCE };
+                                      SET_IMU_FILTER, SET_ANGLE_SOURCE };
 
 /** @brief Appends @p table to all_rows()'s out, counted in its n. */
 #define COPY_ROWS(table)                                             \

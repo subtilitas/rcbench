@@ -20,7 +20,7 @@ SETUP contains bench-wide panel settings under PANEL, SENSORS and SD CARD. ESC (
 | SD CARD | `LOGS, BROWSER WRITES` | the list of SD CARD: which logs the panel writes, and where, and what a browser needs to write |
 | WI-FI | `NETWORK, FILES, UPLOAD` | [Wi-Fi](wifi.md): the panel's radio, for the card's files and a firmware image in a browser |
 | UPDATES | `RELEASES ON GITHUB` | [Updates](updates.md): the check for a newer panel firmware release and the reminder switch |
-| IMU | `BLUETOOTH ANGLE SENSOR` | [IMU](imu.md): the HC-05 and the WitMotion BWT901CL bound to it, the scan, the calibration and the live angles |
+| IMU | `BLUETOOTH ANGLE SENSOR` | [IMU](imu.md): the WitMotion BWT901CL over Bluetooth LE, the scan and the bind, the calibration and the live angles |
 | LAYOUT | `CONNECTORS AND PINS` | [Layout](layout.md), on the rbmod carrier only, whose pins are soldered |
 
 2 slots are free, and the carrier's LAYOUT takes one. The save button sits at the bottom right, as on every list. A change left unsaved in any category shows on it:

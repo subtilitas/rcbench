@@ -1,7 +1,7 @@
 /**
  * @file panel_imu.h
- * @brief The Bluetooth IMU on the panel: the HC-05's UART and KEY line, the
- *        task that runs the controller (imu_ctl.h), and the frame task's
+ * @brief The Bluetooth IMU on the panel: the task that runs the controller
+ *        (imu_ctl.h) over Bluetooth LE (panel_ble.h), and the frame task's
  *        side of it: the IMU screen's view and commands, SETUP's values,
  *        the bind kept in SETUP, and the angle source of the servo runs.
  *
@@ -21,9 +21,9 @@
 #include "settings.h"
 
 /**
- * @brief Set up the UART (PANEL_IMU_UART_NUM at PANEL_IMU_BAUD), the KEY line
- *        low, the queue and the task, and hand it SETUP's values.  Once, at
- *        start-up, after the settings are loaded.
+ * @brief Set up the queue and the task, and hand it SETUP's values.  Once,
+ *        at start-up, after the settings are loaded.  Bluetooth starts at
+ *        the first IMU ON.
  */
 void panel_imu_start(void);
 

@@ -202,9 +202,15 @@ static void cu_publish_check(cu_check_t check)
 /* Whether the update may start: see fw_coproc_may_start().  From any task. */
 bool cu_may_start(void)
 {
-    return fw_coproc_may_start(!s_wifi_ok || wifi_access_down(),
-                               atomic_load(&s_fw_installing));
+    /* The C6 radio's update restarts the panel at its end: not under an
+     * IOmcu update. */
+    return !panel_c6_busy()
+           && fw_coproc_may_start(!s_wifi_ok || wifi_access_down(),
+                                  atomic_load(&s_fw_installing));
 }
+
+bool panel_cu_busy(void) { return atomic_load(&s_cu_busy); }
+
 
 static cu_version_t cu_carried(void)
 {
@@ -584,7 +590,7 @@ static fw_gate_t fw_gate_now(bool armed)
 {
     return fw_gate(armed, supplies_live_or_coming(), run_open_now(),
                    s_artbusy || atomic_load(&s_keeping),
-                   atomic_load(&s_cu_busy));
+                   atomic_load(&s_cu_busy) || panel_c6_busy());
 }
 
 /* The update screen, drawn now: the install's loop runs no router tick. */
@@ -713,7 +719,9 @@ void wifi_service(bool armed, uint32_t stops_now)
     }
     const bool supply = supplies_live_or_coming();
     const bool run = run_open_now();
-    const wa_off_t gate = wa_gate(armed, supply, run);
+    /* The C6 radio's update has the C6: no session starts under it. */
+    const wa_off_t gate = panel_c6_busy() ? WA_OFF_INSTALL
+                                          : wa_gate(armed, supply, run);
     const bool stop = (stops_now != seen_stops);
     seen_stops = stops_now;
     const fw_gate_t fgate = fw_gate_now(armed);
@@ -884,7 +892,7 @@ static wa_why_t why_of_fw_gate(fw_gate_t g)
 static wa_why_t upd_check_gate(bool armed)
 {
     return wa_fetch_gate(armed, supplies_live_or_coming(), run_open_now(),
-                         atomic_load(&s_cu_busy),
+                         atomic_load(&s_cu_busy) || panel_c6_busy(),
                          atomic_load(&s_fw_installing));
 }
 
@@ -905,7 +913,8 @@ static upd_feed_t upd_feed_now(bool armed, bool unsafe, const cu_snap_t *cs,
         .have_net   = have_net,
         .gate_open  = upd_check_gate(armed) == WA_WHY_NONE,
         .files_open = ui_router_current() == SCREEN_WIFI,
-        .coproc     = cs->offered || cs->active || atomic_load(&s_cu_busy),
+        .coproc     = cs->offered || cs->active || atomic_load(&s_cu_busy)
+                      || panel_c6_busy(),
         .unsafe     = unsafe,
         .newer      = s_upd_boot_gen != 0u && f->gen == s_upd_boot_gen
                       && wa_fetch_offers(f, upd_channel()),
@@ -1124,5 +1133,10 @@ bool panel_update_busy(void)
     wa_fetch_t f;
     wifi_access_fetch_get(&f);
     return atomic_load(&s_cu_busy) || atomic_load(&s_fw_installing) || s_upd_dl
-           || wa_fetch_busy(&f);
+           || wa_fetch_busy(&f) || panel_c6_busy();
+}
+
+bool panel_fw_busy(void)
+{
+    return atomic_load(&s_fw_installing) || s_upd_dl;
 }

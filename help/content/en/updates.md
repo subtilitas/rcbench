@@ -17,6 +17,7 @@ UPDATES checks GitHub for newer panel firmware and offers to install it. Open it
 | RELEASES: STABLE / TESTING | sets which releases a check reads, see [The check](#the-check); kept with SAVE on [Setup](setup.md#keeping-the-values); STABLE by default; a switch hides the last result, and a release found on the other setting is not offered |
 | HOLD 2s TO DOWNLOAD & INSTALL | shown once a check found a newer release; downloads, checks and installs it |
 | HOLD 2s TO UPDATE THE IOMCU | starts the [IOmcu update](coproc_update.md) from the image this panel carries, also after its question was declined |
+| HOLD 2s TO UPDATE THE C6 RADIO | sends the C6 radio's image this panel carries to the board's ESP32-C6, see [The C6 radio](#the-c6-radio) |
 
 ## What the check needs
 
@@ -131,9 +132,30 @@ The hold has the same requirements as the prompt: an IOmcu running a different b
 
 With the hold live the line reads `Outputs stay off. ARMED is blocked until the update ends.`, or `The firmware on this panel is older.` in the warning colour for an older image.
 
+## The C6 radio
+
+![The C6 as shipped: no version reported](view:updates-c6)
+
+Under the card, UPDATES shows the board's ESP32-C6, which carries Wi-Fi and Bluetooth: `C6 radio: not reported. Included: 2.13.0.` The first version is the one the C6 named at the first Wi-Fi start since the panel started; the shipped C6 names none. HOLD 2s TO UPDATE THE C6 RADIO sends the carried image over the board's SDIO (Secure Digital input/output) link; the button then reads `C6 UPDATE 37%`.
+
+The hold is live with the bench SAFE, no arm waiting, the supply output off, no open log run, no board drawing being fetched, no other update running, Wi-Fi off, and the C6 not on the carried version. A tap on the grey hold shows the reason on the alert band, for example `The C6 update waits for the panel's Wi-Fi to switch off.`
+
+While the update runs, ARM is refused and Wi-Fi stays off. It ends with one alert:
+
+| Alert | Meaning |
+|---|---|
+| `C6 radio updated to 2.13.0. The panel restarts.` | done; the panel restarts 3s later |
+| `The C6 radio runs 2.13.0 already. Nothing was sent.` | nothing to send |
+| `The C6 radio takes no update over SDIO. Flash it over header H4.` | the C6's firmware refused the update; the old firmware runs |
+| `The C6 radio did not answer. Wi-Fi is off until the panel restarts.` | the link to the C6 failed |
+| `C6 update stopped: no response. Previous firmware is running.` | a step went unanswered; `a write failed`, `the C6's image check failed` and `activation failed` read the same way |
+
+After every end but the first, the C6 keeps the firmware it ran and Wi-Fi works as before (after a failed link only once the panel restarts). The flash over header H4 with a USB-UART adapter is in [Building](https://github.com/subtilitas/rcbench/wiki/Building#recovery-over-header-h4).
+
 ## Current limitations
 
 - How long the check and the download take on a real network is not measured.
+- How long the C6 radio's update takes is not measured, and whether the shipped C6 takes it over SDIO is not known.
 - A first DNS (Domain Name System) server of the home network that does not answer delays each name lookup by about 7s after a join, out of the check's 30s: lwIP asks that server 4 times, up to 7s, before the next.
 - TESTING: GitHub answers 60 API requests an hour for each public address without an account, shared by every device behind it. The panel sends no retry.
 - TESTING reads the 10 newest releases by date. A release older by date than those is not seen, however high its version.

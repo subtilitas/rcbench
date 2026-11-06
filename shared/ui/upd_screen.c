@@ -14,6 +14,7 @@
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
+#include "upd_c6.h"
 
 /*
  * The faces of the type scale these screens draw in:
@@ -30,9 +31,10 @@
  * UPDATES, in the body below the band: 1024 x 540px:
  * The buttons on the left, 460 x 56px at a 64px pitch from y 16: CHECK,
  * the reminder, RELEASES, and the download's hold.  The card on the right,
- * x 484 to 1016, y 16 to 488: what is kept and what last happened, each
+ * x 484 to 1016, y 16 to 384: what is kept and what last happened, each
  * text broken into lines of its 500px column (41 cells of UPD_FONT_BODY),
- * 28px apart.
+ * 28px apart.  Under it the C6 RADIO row (upd_c6.h): its line at y 396,
+ * its hold beside the IOmcu's at y 428.
  */
 /** @brief The buttons' left edge. */
 #define BX      16
@@ -48,8 +50,8 @@
 #define RY      16
 /** @brief The card's width, px. */
 #define RW      532
-/** @brief The card's height, px. */
-#define RH      472
+/** @brief The card's height, px: it ends 12px over the C6 row's line. */
+#define RH      368
 /** @brief The card's inner padding, px. */
 #define RPAD    16
 /** @brief A UPD_FONT_BODY line's pitch, px. */
@@ -101,6 +103,7 @@ _Static_assert(CU_LINE_Y + 2 * CU_PITCH + 20 < 428,
                "two lines of state end over the IOmcu's hold");
 _Static_assert(428 + BH <= UPD_FLOOR, "the IOmcu's hold ends over the band");
 _Static_assert(RY + RH <= UPD_FLOOR, "the card ends over the alert band");
+_Static_assert(RY + RH + 12 <= UPD_C6_LINE_Y, "the card ends over the C6 row");
 _Static_assert(RX + RW <= UI_PANEL_W - UI_MARGIN, "the card keeps the margin");
 _Static_assert(8 + 480 <= UPD_FLOOR, "the reminder ends over the band");
 _Static_assert(400 + 64 + 24 <= 8 + 480, "the hold ends inside the box");
@@ -632,6 +635,7 @@ static void reset(void)
     memset(&s, 0, sizeof(s));
     ui_hold_reset(&s.hold);
     ui_hold_reset(&s.cu_hold);
+    upd_c6_drop();
     memset(&s_cu, 0, sizeof(s_cu));
     s_cu_req = false;
 }
@@ -641,9 +645,12 @@ static void event(const touch_event_t *evt)
     if (evt == NULL) {
         return;
     }
+    if (upd_c6_event(evt, s.have_press)) {
+        return;                    /* the C6 RADIO row's press */
+    }
     const int x = evt->point.x, y = evt->point.y;
     if (evt->type == TOUCH_EVENT_DOWN) {
-        if (s.have_press) {
+        if (s.have_press || upd_c6_pressed()) {
             return;                /* one press at a time */
         }
         s.hit = hit_at(x, y);
@@ -698,6 +705,9 @@ static void event(const touch_event_t *evt)
 static void tick(float dt_s)
 {
     drop_holds_if_gone();
+    if (upd_c6_tick(dt_s)) {
+        touched();             /* the C6 row's fill follows its hold */
+    }
     if (s.hold.down || s.hold.flash_ms > 0 || s.cu_hold.down
         || s.cu_hold.flash_ms > 0) {
         touched();             /* the fill follows the hold */
@@ -718,6 +728,7 @@ static void tick(float dt_s)
 
 static void cancel(void)
 {
+    upd_c6_drop();
     if (s.hit == HIT_DOWNLOAD) {
         (void)ui_hold_left(&s.hold);
     } else if (s.hit == HIT_COPROC) {
@@ -730,6 +741,7 @@ static void cancel(void)
 
 static void enter(void)
 {
+    upd_c6_drop();
     ui_hold_reset(&s.hold);
     ui_hold_reset(&s.cu_hold);
     touched();
@@ -737,6 +749,7 @@ static void enter(void)
 
 static void leave(void)
 {
+    upd_c6_drop();
     s.hit = HIT_NONE;
     s.have_press = false;
     ui_hold_reset(&s.hold);
@@ -851,6 +864,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
                download_allowed());
     }
     render_coproc(c);
+    upd_c6_render(c);
 
     /* What is kept, what runs, what last happened. */
     ui_card(c, gfx_rect_make(RX, RY, RW, RH), UI_PANEL);
@@ -913,14 +927,17 @@ static void render(gfx_canvas_t *c, int buffer_index)
         foot += ui_text_wrap(NULL, gfx_rect_make(x, 0, w, 24), PITCH,
                              ui_tr(about[i]), UPD_FONT_BODY, UI_TEXT);
     }
-    y = RY + RH - 12 - gfx_text_height(UPD_FONT_BODY, 1)
-        - PITCH * (foot - 1);
-    for (size_t i = 0; i < n_about; ++i) {
+    const int top = RY + RH - 12 - gfx_text_height(UPD_FONT_BODY, 1)
+                    - PITCH * (foot - 1);
+    /* Under a long result they give way: the result is what happened. */
+    const bool fits = top >= y;
+    y = top;
+    for (size_t i = 0; fits && i < n_about; ++i) {
         const bool lit = s_v.line_capped && i == 0u;
         y = para(c, x, y, w, ui_tr(about[i]), lit ? UI_TEXT : UI_TEXT_DIM);
     }
 
-    if (s.hold.flash_ms > 0 || s.cu_hold.flash_ms > 0) {
+    if (s.hold.flash_ms > 0 || s.cu_hold.flash_ms > 0 || upd_c6_flashing()) {
         s.drawn_mask = 0u;
     } else {
         s.drawn_mask |= bit;

@@ -2,14 +2,16 @@
  * @file
  * @brief Where a finger lands on UPDATES, the start-up reminder, the
  *        IOmcu's update question and PANEL UPDATE, mirrored from
- *        upd_screen.c, coproc_update_screen.c and update_screen.c.
+ *        upd_screen.c, upd_c6.h, coproc_update_screen.c and
+ *        update_screen.c.
  *
  * If the layout moves these move with it.  Taken by the screens' suites.
  *
  *   - UPDATES, in the body under the band: the buttons 460 x 56px from
  *     x 16 at a 64px pitch from y 16 (CHECK, the reminder, RELEASES, the
  *     download's hold); the IOmcu's hold 460 x 56px at y 428; the card
- *     x 484 to 1016, y 16 to 488;
+ *     x 484 to 1016, y 16 to 384; the C6 RADIO hold 532 x 56px from x 484
+ *     at y 428;
  *   - the reminder, in the body: NOT NOW and NEVER REMIND ME 398 x 56px
  *     at y 328 from x 106 and 520, the hold 812 x 64px at y 400 from
  *     x 106;
@@ -37,7 +39,10 @@
 #define UP_CU_T        428      /**< HOLD 2s: UPDATE IOMCU's top. */
 #define UP_CU_Y        (UP_CU_T + 28)  /**< Its middle row. */
 #define UP_CARD_X      484      /**< The card's left edge. */
-#define UP_CARD_B      488      /**< The row under the card's foot. */
+#define UP_CARD_B      384      /**< The row under the card's foot. */
+#define UP_C6_X        750      /**< HOLD 2s TO UPDATE THE C6 RADIO's middle. */
+#define UP_C6_T        428      /**< Its top, the IOmcu hold's row. */
+#define UP_C6_Y        (UP_C6_T + 28)  /**< Its middle row. */
 
 #define UP_R_IGNORE_X  305      /**< NOT NOW. */
 #define UP_R_NEVER_X   719      /**< NEVER REMIND ME. */

@@ -1,13 +1,22 @@
 /**
  * @file
  * @brief The IMU's reading (imu.h): frames from protocols/witmotion into
- *        the newest angles, the frame rate, battery, temperature, the zero,
- *        the still time and the age.
+ *        the newest angles through the low-pass, the frame rate, battery,
+ *        temperature, the zero, the still time and the age.
  *
  * Only an angle frame (0x53) makes the reading valid; it goes stale
  * IMU_STALE_MS after the last one, the non-safety allowance of servo_gap.h.
  * Every time is an unsigned difference of the 32-bit ms clock, so the age,
  * the still time and the rate window hold across its wrap.
+ *
+ * The still time is the sensor's: its angle within IMU_STILL_DEG of the
+ * first frame of the stretch.  It reads 0 until the filtered angle has
+ * settled too.  The filter's distance from the sensor's angle at the
+ * stretch's first frame shrinks by (1 - 1/k) each frame after it, the
+ * sensor's angle held; once that is IMU_SETTLE_DEG or less the filtered
+ * angle has settled, and the still time counts from the stretch's start
+ * again.  A run that waits for a still time then takes a settled angle,
+ * and the servo test times a move to where the sensor stopped.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -15,10 +24,14 @@
 #include "imu.h"
 
 #include <math.h>
+#include <stdio.h>
 #include <string.h>
 
 /** @brief The longest still time kept, ms: the field's range. */
 #define IMU_STILL_MAX_MS 65535u
+/** @brief The largest distance the filter can have from the sensor, °:
+ *         the wrapped difference. */
+#define IMU_FILTER_SPAN_DEG 180.0f
 
 /**
  * @brief @p d wrapped to -180 up to just under 180.
@@ -43,6 +56,76 @@ void imu_init(imu_t *m)
     wit_parser_init(&m->p);
     m->r.battery_v = NAN;
     m->r.temp_c    = NAN;
+    m->filter      = IMU_FILTER_DEFAULT;
+    m->seed        = true;
+}
+
+void imu_set_filter(imu_t *m, int32_t filter)
+{
+    if (m != NULL) {
+        m->filter = imu_filter_clamp(filter);
+    }
+}
+
+void imu_reseed(imu_t *m)
+{
+    if (m != NULL) {
+        m->seed = true;
+    }
+}
+
+uint8_t imu_filter_clamp(int32_t v)
+{
+    if (v < (int32_t)IMU_FILTER_MIN) {
+        return (uint8_t)IMU_FILTER_MIN;
+    }
+    return (uint8_t)((v > (int32_t)IMU_FILTER_MAX) ? IMU_FILTER_MAX
+                                                    : (uint32_t)v);
+}
+
+float imu_filter_step(float deg, float now, int32_t filter)
+{
+    const uint8_t k = imu_filter_clamp(filter);
+    if (k == 1u) {
+        return now;
+    }
+    return wrap180(deg + wrap180(now - deg) / (float)k);
+}
+
+uint32_t imu_filter_settle_ms(int32_t filter, uint16_t rate_dhz)
+{
+    const uint8_t k = imu_filter_clamp(filter);
+    if (k == 1u) {
+        return 0u;
+    }
+    /* (1 - 1/k)^n <= IMU_SETTLE_DEG / IMU_FILTER_SPAN_DEG. */
+    const double n = ceil(log((double)IMU_SETTLE_DEG
+                              / (double)IMU_FILTER_SPAN_DEG)
+                          / log(1.0 - 1.0 / (double)k));
+    /* 1.5 periods of the rate measured, 15000 / dHz ms, rounded up. */
+    uint32_t per = IMU_STALE_MS;
+    if (rate_dhz > 0u) {
+        const uint32_t p = (15000u + rate_dhz - 1u) / rate_dhz;
+        per = (p < IMU_STALE_MS) ? p : IMU_STALE_MS;
+    }
+    return (uint32_t)n * per;
+}
+
+const char *imu_deg_text(char *buf, size_t n, float deg, bool plus)
+{
+    if (buf == NULL || n == 0u) {
+        return buf;
+    }
+    if (!isfinite(deg) || fabsf(deg) > 100000.0f) {
+        snprintf(buf, n, "---");
+        return buf;
+    }
+    /* In float, as the angle is: 0.005f is 0.5 hundredths and rounds up. */
+    const long q = lroundf(deg * 100.0f);
+    const unsigned long a = (unsigned long)((q < 0) ? -q : q);
+    snprintf(buf, n, "%s%lu.%02lu", (q < 0) ? "-" : (plus ? "+" : ""),
+             a / 100ul, a % 100ul);
+    return buf;
 }
 
 /**
@@ -68,8 +151,44 @@ static void rate_roll(imu_t *m, uint32_t now_ms)
 }
 
 /**
- * @brief An angle frame: the reading valid at @p now_ms, the still time
- *        carried on or started again, the rate counted.
+ * @brief Expire the reading once IMU_STALE_MS passed since its last angle
+ *        frame: valid and the still time go.
+ * @param m      The model.
+ * @param now_ms The time now.
+ */
+static void expire(imu_t *m, uint32_t now_ms)
+{
+    if (m->r.valid && now_ms - m->r.taken_ms >= IMU_STALE_MS) {
+        m->r.valid = false;
+        m->r.still_ms = 0u;
+    }
+}
+
+/**
+ * @brief The filter's step on every axis, or its seed: the first frame
+ *        after a reseed or a stale reading.
+ * @param m The model.
+ * @param v The frame's angles, °.
+ * @return The largest distance left between the filtered angle and @p v, °.
+ */
+static float filter_take(imu_t *m, const float v[3])
+{
+    float far = 0.0f;
+    const bool seed = m->seed || !m->r.valid;
+    for (int i = 0; i < 3; ++i) {
+        m->r.angle[i] = seed ? v[i]
+                             : imu_filter_step(m->r.angle[i], v[i], m->filter);
+        const float d = fabsf(wrap180(v[i] - m->r.angle[i]));
+        far = (d > far) ? d : far;
+    }
+    m->seed = false;
+    return far;
+}
+
+/**
+ * @brief An angle frame: the reading valid at @p now_ms, the filter
+ *        stepped, the still time carried on or started again, the rate
+ *        counted.
  * @param m      The model.
  * @param a      The decoded frame.
  * @param now_ms When it came.
@@ -77,22 +196,35 @@ static void rate_roll(imu_t *m, uint32_t now_ms)
 static void take_angle(imu_t *m, const wit_angle_t *a, uint32_t now_ms)
 {
     const float v[3] = { a->roll, a->pitch, a->yaw };
+    /* A gap that no tick saw yet ends the old reading before this frame:
+     * the frame seeds the filter and starts the still time again. */
+    expire(m, now_ms);
     bool still = m->r.valid;
     for (int i = 0; still && i < 3; ++i) {
         if (fabsf(wrap180(v[i] - m->still_ref[i])) > IMU_STILL_DEG) {
             still = false;
         }
     }
+    const float far = filter_take(m, v);
     if (still) {
+        if (!m->settled) {
+            m->resid *= 1.0f - 1.0f / (float)imu_filter_clamp(m->filter);
+            m->settled = m->resid <= IMU_SETTLE_DEG;
+        }
+        /* The lag now, too: a drift inside IMU_STILL_DEG keeps the still
+         * stretch but can open the distance again after it settled. */
+        const bool near = far <= IMU_SETTLE_DEG;
         const uint32_t held = now_ms - m->still_from_ms;
-        m->r.still_ms = (uint16_t)((held > IMU_STILL_MAX_MS) ? IMU_STILL_MAX_MS
-                                                              : held);
+        m->r.still_ms = (!m->settled || !near) ? 0u
+                        : (uint16_t)((held > IMU_STILL_MAX_MS)
+                                         ? IMU_STILL_MAX_MS : held);
     } else {
         memcpy(m->still_ref, v, sizeof(m->still_ref));
         m->still_from_ms = now_ms;
         m->r.still_ms = 0u;
+        m->resid   = far;
+        m->settled = false;     /* judged from the next still frame on */
     }
-    memcpy(m->r.angle, v, sizeof(m->r.angle));
     m->r.version  = a->version;
     m->r.taken_ms = now_ms;
     m->r.valid    = true;
@@ -130,10 +262,7 @@ void imu_tick(imu_t *m, uint32_t now_ms)
     if (m == NULL) {
         return;
     }
-    if (m->r.valid && now_ms - m->r.taken_ms >= IMU_STALE_MS) {
-        m->r.valid = false;
-        m->r.still_ms = 0u;
-    }
+    expire(m, now_ms);
     rate_roll(m, now_ms);
 }
 

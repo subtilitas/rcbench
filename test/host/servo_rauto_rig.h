@@ -71,6 +71,7 @@ typedef struct {
 
     /* the angle source */
     bool angle_on;               /* fed at all                            */
+    uint32_t settle_ms;          /* the source's filter's settle, ms      */
     uint32_t lost_from, lost_to; /* not valid in [from, to)               */
 
     /* the programmer */
@@ -420,6 +421,7 @@ static inline servo_rauto_in_t rig_in(void)
     in.angle_valid = angle_ok();
     in.angle_deg = g.angle;
     in.still_ms = still_ms();
+    in.settle_ms = g.settle_ms;
     return in;
 }
 
