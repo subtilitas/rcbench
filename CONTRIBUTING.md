@@ -68,6 +68,7 @@ python3 tools/check_formats.py        # every translated format against its call
 python3 tools/check_units.py --check  # a number and its unit without a space
 python3 tools/check_prose.py --check  # the writing rules, exceptions in check_prose_allow.txt
 python3 tools/render_ui.py --fit      # every string fits where it is drawn
+python3 tools/help_site.py --check    # the help pages agree in both languages
 python3 -m pytest test/tools          # the tools' own tests
 python3 tools/doc_check.py --check --base origin/main  # Doxygen comments, see Comments
 python3 tools/mutate.py               # what the suite misses in the changed lines
@@ -216,7 +217,7 @@ fail the job. Answer each survivor of a change with a test, or say in the
 pull request why the two lines behave the same.
 
 `mutation.yml` runs every mutant of every line of `shared/safety` and
-`shared/outputs` (3032 mutants) each Sunday at 03:17 UTC and on demand. It has
+`shared/outputs` (6140 mutants in 79 files) each Sunday at 03:17 UTC and on demand. It has
 no mutant limit and runs in 6 shards of files (file i of the sorted list goes
 to shard i mod 6). A shard starts no mutant after 18000s, stops one build or
 suite run after 600s and ends within 21000s; the mutants left are reported as
@@ -471,8 +472,8 @@ pull requests and issues.
   "we", no "previously" or "now". Version history is in `CHANGELOG.md` and git.
 - No self-assessment. A defect that affects a user is documented as a current
   limitation with the condition that triggers it.
-- No marketing words (powerful, seamless, robust, comprehensive, simply, just,
-  easy). No exclamation marks, no emoji.
+- No marketing words (powerful, seamless, robust, blazing, comprehensive,
+  simply, just, easy). No exclamation marks, no emoji.
 - Facts carry numbers and units: pin numbers, voltage ranges, timings, buffer
   sizes, error codes. An adjective that could be a number is a missing number.
 - Short sentences, one idea each. Expand every acronym on first use in each

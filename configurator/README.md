@@ -61,7 +61,7 @@ stays on the part.
 | `src/export/` | PDF export of the resolved setup. See "PDF export". |
 | `public/pictures/` | Pictures of the parts: photos as WebP, drawings as SVG. |
 | `drawings/` | Generator and check of the part drawings, anchor table, wire palette, and the panel drawing of the IOmcu board (`panel.json`). See `drawings/README.md`. |
-| `public/drawings/` | The part drawings, written by `npm run drawings`: 23 SVG files in English, 23 in German under `de/`. |
+| `public/drawings/` | The part drawings, written by `npm run drawings`: 24 SVG files in English, 24 in German under `de/`. |
 | `test/`, `drawings/test/` | Unit tests, run by `node --test`. |
 | `test/property/` | Properties of the hash codec, the markup and the texts over the whole selection space. |
 | `test/corpus/` | Stored links with the setup each one gives. See `test/corpus/README.md`. |

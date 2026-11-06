@@ -96,7 +96,7 @@ as raw data, for example `raw 17`.
 
 ## Text interface
 
-ESCape32 has no bootloader frames: a command line on the signal wire, 38400baud,
+ESCape32 has no bootloader frames: a command line on the signal wire, 38400 baud,
 8N1, half duplex, no echo, no checksum, LF line ends. A reply ends with a line
 `OK` or `ERROR`.
 
@@ -397,7 +397,7 @@ interrupt is used. The object is 3,488B.
 | Rate | Bit time | Divider at 150MHz | Tick of a wait |
 |---|---|---|---|
 | protocol A | 52us | 487 + 128/256 | 6.5us |
-| text line | 26.04us, 38400baud | 244 + 36/256 | 3.26us |
+| text line | 26.04us, 38400 baud | 244 + 36/256 | 3.26us |
 
 The bit time is exact at 150MHz. An open is refused when a divider is below 4 or
 a bit time more than 0.05% off.
@@ -440,7 +440,7 @@ console test: `ew_line_start()` 216us, `ew_line_poll()` 96us, `ew_line_level()`
 stream of 264B, a capture of 1536B.
 
 The pad is driven high for 2 state machine cycles before a frame's first start
-bit: 6.5us at 52us a bit, 3.26us at 38400baud. It shows as a high pulse only on a
+bit: 6.5us at 52us a bit, 3.26us at 38400 baud. It shows as a high pulse only on a
 line that rests low. A pad at rest up, or driven high, does not dip before a
 frame.
 
@@ -459,13 +459,13 @@ absence of the dip before a mark and the `rx` test's start are host-tested only.
 | Check | Seen |
 |---|---|
 | bit time, 52us | 51.997us, -0.006%; edges within 0.03us of the grid |
-| bit time, 38400baud | 26.040us, -0.007% |
+| bit time, 38400 baud | 26.040us, -0.007% |
 | bytes, sigrok's UART decoder | right, but for the 0x55 marks on aeea917d (dip below) |
 | abort | 21 to 53us for the call; 13 of 13 no edge 20.6 to 23ms after |
 | ARMED | refused, 0 edges in 4s |
 | 16-bit read of the FIFO word | `n=9 bad_stop=3 match=1` 12 of 12 on GP13, a27d3e3f |
 | on aeea917d, on GP14: cut in a low bit | a high pulse of 1.35 to 3.70us, once 9.15us, 11 of 12, with the pull-up still on at the release; the order is changed, the likely cause is not separately tested |
-| on aeea917d, on GP14: before a 0x55 mark | a low of 27.75us, 25.10us at 38400baud, from the pull-down set ahead of the frame; changed |
+| on aeea917d, on GP14: before a 0x55 mark | a low of 27.75us, 25.10us at 38400 baud, from the pull-down set ahead of the frame; changed |
 
 GP13 carried a KST servo's signal wire, unpowered: on the pull-up alone it read
 low. A line loaded this way does not reach idle high on the pad's pull-up. Volts
