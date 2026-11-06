@@ -1065,15 +1065,38 @@ Die Regel:
   Position zurück, 75 Zähler (1.0deg) zur Neutralstellung hin.
 - Die Abbildung gilt nur für ein auf CW gestelltes Servo
   (`hitec_live_d_ends()`).
-- Bewegungen werden mit einem 2s langen Halten eingeschaltet, und nur mit
-  einem antwortenden PD mini mit eingeschaltetem Ausgang: STOP schaltet den
-  PD mini aus und damit das Servo. Die eigene Stromgrenze des PD mini ist
-  die feste Obergrenze.
+- Bewegungen schaltet SERVO BEWEGEN auf dem Reiter WEG ein
+  ([SERVO BEWEGEN in der Hitec-Programmierung](HitecMove-de.md), `hitec_move.h`),
+  mit einem 2s langen Halten und nur mit einem antwortenden PD mini mit
+  eingeschaltetem und gemessenem Ausgang: STOP schaltet den PD mini aus und
+  damit das Servo. Die eigene Stromgrenze des PD mini ist die feste
+  Obergrenze. Die festen 5V des rbmod-Carriers haben keinen Strommesswert:
+  dort wird SERVO BEWEGEN abgelehnt.
+- Der Drehknopf bewegt nichts, solange SERVO BEWEGEN an ist: die Tasten
+  `-`/`+` und das Tastenfeld ändern die Position, die Regel des Drehknopfs
+  bei SAFE bleibt.
+- Eine Blockierung fährt das Ruderhorn zurück und beendet die Schleife mit
+  ihrer Endfolge: 0x1E = 3000, der Neustart des Servos (0x46 = 1) und ein
+  Lesen, das mit dem Start der Schleife verglichen wird. Eine Blockierung
+  ist kein Fehler; die Versorgung bleibt an.
+- Ein STOP, ein Schalten auf SAFE am Prüfstand, eine verlorene Verbindung,
+  ein Ausgang des PD mini, der aus liest oder keinen Messwert liefert, ein
+  AS5600-Messwert vom Start, der wegfällt, und ein gescheitertes
+  Positionslesen beenden die Schleife sofort, ohne Endfolge. Jedes davon
+  ist ein Fehler: die Programmierung zählt eine Sitzungsstörung
+  (`hitec_prog_gate_faults()`), und alle Ausgänge gehen aus, die
+  Versorgung des Servos eingeschlossen ([Fehler](#fehler)). Ein Messwert,
+  der eine Beurteilung speist, bekommt keine Aussetzer-Toleranz. ABBRECHEN
+  vor dem Ende führt die Endfolge aus und ist kein Fehler.
+- Jeder Durchlauf schreibt 0x1E, einen Schreib-Frame der D-Serie. Der IOmcu
+  hält das OFF eines Fehlers 150ms danach zurück (`HITEC_PORT_WRITE_TAIL_MS`,
+  [Die Versorgung eines Programmierports](#die-versorgung-eines-programmierports)).
+  Die Schleife sendet keinen Frame mehr, sobald das Panel den Ausgang aus
+  liest; das OFF erreicht den PD mini also höchstens 150ms nach dem
+  letzten Frame des laufenden Durchlaufs.
 
 Aktuelle Einschränkungen:
 
-- Das Panel hat kein Bedienelement, das Bewegungen einschaltet (MOVE SERVO
-  auf dem Reiter WEG): nichts ruft `hitec_session_move()` auf.
 - Jede Schwelle der Beurteilung ist gewählt, nicht mit einem Servohebel an
   einem Anschlag gemessen. Der Blockierstrom eines D485HW ist nicht bekannt.
 - Ob das Servo der Ziellinie unter 400 und über 5600 folgt oder an seinen
@@ -1081,7 +1104,11 @@ Aktuelle Einschränkungen:
   dass die Linie weitergeht.
 - Ob ein Servo der D series ohne Frames sein letztes Ziel hält, ist nicht
   gemessen. Ein Schalten auf SAFE am Prüfstand allein stoppt den Port und
-  lässt die Versorgung an ([LinkHitec, STOP](LinkHitec-de.md#stop-schalten-auf-safe-heartbeat-verlust-und-link-verlust)).
+  lässt die Versorgung an ([LinkHitec, STOP](LinkHitec-de.md#stop-schalten-auf-safe-heartbeat-verlust-und-link-verlust));
+  bei SERVO BEWEGEN schaltet das Panel dann selbst alle Ausgänge aus.
+- Die Zeit von einem STOP während SERVO BEWEGEN bis zur ausgeschalteten
+  Versorgung des Servos ist nicht gemessen (Prüfstandsschritt L0.5 des
+  Hitec-Plans verlangt 500ms oder weniger).
 - Ob ein Neustart einen nicht gespeicherten RAM-Wert verwirft, ist nicht
   gemessen.
 - Die Abbildung eines auf CCW gestellten Servos ist nicht gemessen.

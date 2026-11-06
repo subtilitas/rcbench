@@ -152,7 +152,7 @@ writable value takes a tap while the port is held and not stopped
 | Tab | D series | Classic |
 | --- | --- | --- |
 | MOTION | SPEED, DEAD BAND, SOFT START | SPEED, DEAD BAND, RESOLUTION |
-| TRAVEL | NEUTRAL, LEFT END, RIGHT END in servo counts with degrees (220° over 16383 counts, 8192 the centre), DIRECTION | CENTRE in microseconds, LEFT END, RIGHT END as raw values (unit unknown), DIRECTION |
+| TRAVEL | NEUTRAL, LEFT END, RIGHT END in servo counts with degrees (220° over 16383 counts, 8192 the centre), DIRECTION, [MOVE SERVO](#move-servo) | CENTRE in microseconds, LEFT END, RIGHT END as raw values (unit unknown), DIRECTION |
 | PROTECT | FAILSAFE (OFF, LIMP, or a position in microseconds), OVERLOAD PROTECTION, SMART SENSOR, SENSITIVITY (raw) | FAILSAFE, FAILSAFE POSITION, OVERLOAD PROTECTION |
 | INFO | MODEL, ID, POSITION, and registers 0x04, 0x22, 0x8A, 0x8C, 0xD4 and 0xD6 raw | MODEL, VERSION, DATE, SERIAL, CHECKSUM |
 
@@ -238,6 +238,17 @@ compared, so every change to it requires confirmation.
 ![An edited value](img/servo-hitec-edit.png)
 ![SPEED on the keypad](img/servo-hitec-keypad.png)
 ![CHECK THIS CHANGE](img/servo-hitec-soft.png)
+
+## MOVE SERVO
+
+MOVE SERVO, the row under DIRECTION on a D series servo's TRAVEL tab,
+moves the horn to the NEUTRAL, LEFT END or RIGHT END being edited, inside
+the held session, while the bench stays SAFE. It needs a PD mini with its
+output on and DIRECTION CW, and a 2s hold switches it on. It never saves.
+[MOVE SERVO on the Hitec programmer](HitecMove.md) describes the page, the
+`-`/`+` keys, the judges, the end and every refusal and message.
+
+![MOVE SERVO on, LEFT END followed](img/servo-hitec-move-on.png)
 
 ## The write switch
 
@@ -968,9 +979,9 @@ CW and CCW are DIRECTION as read: D series register 0x5E, classic cell
   kept in RAM and is gone after a panel restart. A card that refuses the
   text that clears a record keeps the record: the next panel start reports
   that write as interrupted.
-- NEUTRAL, LEFT END and RIGHT END are edited as numbers on the keypad; the
-  servo does not move to them while they are edited, and the keypad has no
-  `-`/`+` keys.
+- MOVE SERVO moves D series servos only, CW only, and only with a PD mini.
+  The classic CENTRE and end points are edited as numbers; the servo does
+  not move to them.
 - FACTORY DEFAULT is not offered for the D series; for a classic servo it
   is the HPP-21 Plus's copy of cells 0x30 to 0x53, tested in the host
   model only.

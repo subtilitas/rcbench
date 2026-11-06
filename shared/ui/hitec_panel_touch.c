@@ -12,6 +12,7 @@
  */
 #include "hitec_panel.h"
 
+#include "hitec_move.h"
 #include "supply_screen.h"
 #include "ui_tabs.h"
 #include "ui_textkey.h"
@@ -94,8 +95,24 @@ static void down(const touch_event_t *evt)
     for (int i = 0; i < HP_ROW_COUNT; ++i) {
         const hpn_row_t *r = &hpn_rows[i];
 
-        if (r->page == hp.tabs.selected && hpn_row_shown(r) && hpn_row_live(r)
-            && gfx_rect_contains(hpn_value_rect(r), x, y)) {
+        if (r->page != hp.tabs.selected || !hpn_row_shown(r)
+            || !hpn_row_live(r)) {
+            continue;
+        }
+        if (hpn_stepped(r)) {
+            /* A step on the press, the repeat while held. */
+            const bool plus = gfx_rect_contains(hpn_step_rect(r, true), x, y);
+
+            if (plus || gfx_rect_contains(hpn_step_rect(r, false), x, y)) {
+                take(evt, plus ? P_PLUS : P_MINUS, i);
+                hp.held_s = 0.0f;
+                if (!hpn_step(r, plus)) {
+                    let_go();
+                }
+                return;
+            }
+        }
+        if (gfx_rect_contains(hpn_value_rect(r), x, y)) {
             take(evt, P_ROW, i);
             return;
         }
@@ -111,6 +128,8 @@ void hitec_panel_close(void)
 {
     const hitec_prog_state_t st = hitec_prog_state(&hp.prog);
 
+    /* MOVE SERVO ends first; a tap after its end leaves. */
+    hitec_prog_move_stop(&hp.prog);
     if (!hitec_panel_holds_port()) {
         hpn_close_editors();
         hp.open = false;
@@ -175,6 +194,14 @@ static void rest(const touch_event_t *evt)
     if (was == P_TAB) {
         (void)ui_tabs_event(&hp.tabs, evt);
         if (up) {
+            let_go();
+        }
+        return;
+    }
+    if (was == P_PLUS || was == P_MINUS) {
+        /* A finger that leaves the key ends the repeat. */
+        if (up || !gfx_rect_contains(hpn_step_rect(&hpn_rows[which],
+                                                   was == P_PLUS), x, y)) {
             let_go();
         }
         return;
@@ -274,6 +301,7 @@ void hitec_panel_event(const touch_event_t *evt)
         /* One press at a time in the overlay. */
         down(evt);
     }
+    hpn_move_follow();
     hpn_supply_sync();
     ++hp.rev;
 }
@@ -291,6 +319,7 @@ void hitec_panel_cancel(void)
 
 void hitec_panel_leave(void)
 {
+    hitec_prog_move_stop(&hp.prog);
     hitec_panel_cancel();
     hpn_close_editors();
     hp.open = false;
@@ -298,6 +327,7 @@ void hitec_panel_leave(void)
 
 void hitec_panel_tick(float dt_s)
 {
+    hpn_step_tick(dt_s);
     if (hp.page.open && hp.page.down) {
         if (ui_hold_tick(&hp.page.hold, dt_s)) {
             hpn_page_apply();

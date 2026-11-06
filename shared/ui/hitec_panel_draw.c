@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "hitec_move.h"
 #include "hitec_reg.h"
 #include "ui_tabs.h"
 #include "prog_choice.h"
@@ -107,7 +108,8 @@ static void record_notes(plan_t *p)
             break;
         }
     } else if (pr->must_read && hitec_prog_state(pr) == HITEC_PROG_HELD) {
-        note(p, TR(HP_MUST_READ), ui_theme_color(UI_C_WARN));
+        note(p, pr->mv.owed ? TR(HP_LIVE_OWED) : TR(HP_MUST_READ),
+             ui_theme_color(UI_C_WARN));
     }
 }
 
@@ -165,6 +167,17 @@ static void value_notes(plan_t *p)
 {
     const bool d = hitec_prog_series(&hp.prog) == (uint8_t)HITEC_D;
     const gfx_color_t faint = ui_theme_color(UI_C_TEXT_FAINT);
+    const char *ms[NOTES_MAX];
+    gfx_color_t mc[NOTES_MAX];
+    const int mn = hpn_move_notes(ms, mc, NOTES_MAX);
+
+    /* MOVE SERVO's loop: its own lines take the notes' place. */
+    for (int i = 0; i < mn; ++i) {
+        note(p, ms[i], mc[i]);
+    }
+    if (mn >= 0) {
+        return;
+    }
 
     if (hitec_prog_servo(&hp.prog) == NULL) {
         note(p, TR(HP_NOT_READ), faint);
@@ -361,15 +374,22 @@ static void draw_row(gfx_canvas_t *c, int i)
     if (r->kind == K_ACT && r->what == A_PORT) {
         draw_port_label(c, rr);
     } else {
+        /* The position MOVE SERVO's horn follows: its label in the
+         * accent colour. */
+        const bool follows = hpn_stepped(r)
+                             && hp.prog.mv.follow == r->what;
+
         gfx_text(c, rr.x, rr.y + (HP_ROW_H - HP_LINE_H) / 2, hpn_label(r),
-                 HP_FONT, ui_theme_color(UI_C_TEXT_DIM), 1);
+                 HP_FONT, ui_theme_color(follows ? UI_C_ACCENT
+                                                 : UI_C_TEXT_DIM), 1);
     }
     hpn_value_text(r, v, sizeof(v), &warn);
     if (r->kind == K_ACT) {
         gfx_color_t fill = ui_theme_color(UI_C_PANEL_SUNK);
 
         if ((r->what == A_CLEAR && live)
-            || (r->what == A_ENABLE && hitec_prog_write_on(&hp.prog))) {
+            || (r->what == A_ENABLE && hitec_prog_write_on(&hp.prog))
+            || (r->what == A_MOVE && hitec_prog_move_on(&hp.prog))) {
             fill = ui_theme_color(UI_C_WARN);
         } else if (r->what == A_WRITE && live) {
             fill = ui_theme_color(UI_C_ACCENT);
@@ -385,6 +405,9 @@ static void draw_row(gfx_canvas_t *c, int i)
     gfx_text_in(c, vr, v, HP_FONT,
                 warn ? ui_theme_color(UI_C_WARN) : ui_theme_color(UI_C_TEXT),
                 1, GFX_ALIGN_CENTER);
+    if (hpn_stepped(r)) {
+        hpn_step_draw(c, r, i);
+    }
 }
 
 /**
@@ -399,7 +422,7 @@ static void draw_tab(gfx_canvas_t *c)
     button(c, hitec_panel_close_rect(), TR(SUP_CLOSE),
            ui_theme_color(UI_C_PANEL_SUNK), hp.have && hp.pressed == P_CLOSE,
            !hitec_panel_holds_port() || st == HITEC_PROG_HELD
-               || st == HITEC_PROG_OTHER);
+               || st == HITEC_PROG_OTHER || hitec_prog_move_on(&hp.prog));
     for (int i = 0; i < HP_ROW_COUNT; ++i) {
         if (hpn_rows[i].page == hp.tabs.selected && hpn_row_shown(&hpn_rows[i])) {
             draw_row(c, i);

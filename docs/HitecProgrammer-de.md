@@ -164,7 +164,7 @@ solange der Port gehalten und nicht gestoppt ist
 | Reiter | D-Serie | Klassisch |
 | --- | --- | --- |
 | BEWEGUNG | TEMPO, DEAD BAND, SOFT START | TEMPO, DEAD BAND, AUFLÖSUNG |
-| WEG | NEUTRAL, ENDE LINKS, ENDE RECHTS in Servo-Zählern mit Grad (220° über 16383 Zähler, 8192 die Mitte), DREHRICHTUNG | MITTE in Mikrosekunden, ENDE LINKS, ENDE RECHTS als Rohwerte (Einheit unbekannt), DREHRICHTUNG |
+| WEG | NEUTRAL, ENDE LINKS, ENDE RECHTS in Servo-Zählern mit Grad (220° über 16383 Zähler, 8192 die Mitte), DREHRICHTUNG, [SERVO BEWEGEN](#servo-bewegen) | MITTE in Mikrosekunden, ENDE LINKS, ENDE RECHTS als Rohwerte (Einheit unbekannt), DREHRICHTUNG |
 | SCHUTZ | FAILSAFE (AUS, KRAFTLOS oder eine Position in Mikrosekunden), ÜBERLASTSCHUTZ, SMART SENSOR, EMPFINDLICHKEIT (roh) | FAILSAFE, FAILSAFE-POSITION, ÜBERLASTSCHUTZ |
 | INFO | MODELL, ID, POSITION und die Register 0x04, 0x22, 0x8A, 0x8C, 0xD4 und 0xD6 roh | MODELL, VERSION, DATUM, SERIENNR., PRÜFSUMME |
 
@@ -254,6 +254,19 @@ jede Änderung daran bestätigen.
 ![Ein geänderter Wert](img/de/servo-hitec-edit.png)
 ![TEMPO auf dem Tastenfeld](img/de/servo-hitec-keypad.png)
 ![ÄNDERUNG PRÜFEN](img/de/servo-hitec-soft.png)
+
+## SERVO BEWEGEN
+
+SERVO BEWEGEN, die Zeile unter DREHRICHTUNG auf WEG eines Servos der
+D-Serie, fährt das Ruderhorn auf das bearbeitete NEUTRAL, ENDE LINKS oder
+ENDE RECHTS, in der gehaltenen Sitzung, während der Prüfstand SAFE bleibt.
+Es braucht ein PD mini mit eingeschaltetem Ausgang und DREHRICHTUNG CW,
+und 2s Halten schaltet es ein. Es speichert nie.
+[SERVO BEWEGEN in der Hitec-Programmierung](HitecMove-de.md) beschreibt die
+Seite, die Tasten `-`/`+`, die Beurteilung, das Ende und jede Ablehnung und
+Meldung.
+
+![SERVO BEWEGEN an, ENDE LINKS verfolgt](img/de/servo-hitec-move-on.png)
 
 ## Der Schreibschalter
 
@@ -1051,9 +1064,9 @@ Richtungen gleich.
   bei einem Neustart des Panels verloren. Scheitert das Löschen des
   Vermerks auf der Karte, bleibt er dort erhalten. Beim nächsten Start
   meldet das Panel diesen Schreibvorgang als unterbrochen.
-- NEUTRAL, ENDE LINKS und ENDE RECHTS werden als Zahlen auf dem Tastenfeld
-  geändert; das Servo fährt beim Ändern nicht dorthin, und das Tastenfeld
-  hat keine Tasten `-`/`+`.
+- SERVO BEWEGEN bewegt nur Servos der D-Serie, nur mit CW und nur mit
+  einem PD mini. MITTE und Endlagen klassischer Servos werden als Zahlen
+  geändert; das Servo fährt nicht dorthin.
 - WERKSEINSTELLUNG wird für die D-Serie nicht angeboten; bei einem
   klassischen Servo ist sie die Kopie der Zellen 0x30 bis 0x53 durch das
   HPP-21 Plus, nur im Host-Modell getestet.

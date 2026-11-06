@@ -25,6 +25,7 @@
 
 #include "greatest.h"
 
+#include "hitec_live.h"
 #include "hitec_port.h"
 #include "hitec_reg.h"
 #include "hitec_wire.h"
@@ -85,6 +86,14 @@ static struct {
      * takes no write. */
     unsigned d_writes, d_saves, d_reboots;
     bool     d_drop;
+    /* With d_follow a write of the target 0x1E puts the position 0x0C
+     * where hitec_live_d_pos() says through 0xB2, 0xC2 and 0xB0, held at
+     * d_block_lo and d_block_hi where they are not 0 (a horn against a
+     * block); a reboot sets the target back to 3000.  d_moves counts the
+     * target writes. */
+    bool     d_follow;
+    uint16_t d_block_lo, d_block_hi;
+    unsigned d_moves;
     /* Classic writes: with c_mute the servo neither takes nor answers
      * them; c_writes counts the ones taken. */
     unsigned c_writes;
@@ -130,6 +139,26 @@ static inline void reply_bytes(const uint8_t *b, unsigned n,
         g_drv.reply[i].framing = 0;
         g_drv.reply[i].at_ns = first_ns + i * step;
     }
+}
+
+/* With d_follow: the position the target gives, held at the blocks. */
+static inline void sim_d_follow(void)
+{
+    const hitec_live_ends_t e = { g_drv.dreg[0xB2], g_drv.dreg[0xC2],
+                                  g_drv.dreg[0xB0] };
+    uint16_t pos;
+
+    if (!g_drv.d_follow) {
+        return;
+    }
+    pos = hitec_live_d_pos(&e, g_drv.dreg[HITEC_D_REG_TARGET]);
+    if (g_drv.d_block_lo != 0u && pos < g_drv.d_block_lo) {
+        pos = g_drv.d_block_lo;
+    }
+    if (g_drv.d_block_hi != 0u && pos > g_drv.d_block_hi) {
+        pos = g_drv.d_block_hi;
+    }
+    g_drv.dreg[HITEC_D_REG_POSITION] = pos;
 }
 
 /* What the servo says to @p x. */
@@ -215,9 +244,17 @@ static inline void servo_answers(const hitec_xfer_t *x)
             g_drv.d_saves++;
         } else if (x->tx[2] == HITEC_D_REG_REBOOT) {
             g_drv.d_reboots++;
+            if (g_drv.d_follow) {
+                g_drv.dreg[HITEC_D_REG_TARGET] = HITEC_LIVE_D_T_MID;
+                sim_d_follow();
+            }
         } else if (!g_drv.d_drop) {
             g_drv.dreg[x->tx[2]] = (uint16_t)(x->tx[4] | (x->tx[5] << 8));
             g_drv.d_writes++;
+            if (x->tx[2] == HITEC_D_REG_TARGET) {
+                g_drv.d_moves++;
+                sim_d_follow();
+            }
         }
     }
 }

@@ -17,6 +17,7 @@
 #include <math.h>
 #include <stdio.h>
 
+#include "hitec_move.h"
 #include "hitec_reg.h"
 #include "hitec_rx_link.h"
 #include "link_pages.h"
@@ -114,7 +115,11 @@ void hpn_options_load(void)
 
 hitec_prog_edit_t hpn_edit_take(int32_t value)
 {
-    const hitec_prog_edit_t r = hitec_prog_edit(&hp.prog, hp.ed_id, value);
+    /* A position MOVE SERVO follows: the hold's consent, no CHECK. */
+    const hitec_prog_edit_t r =
+        hitec_prog_move_live(&hp.prog, hp.ed_id)
+            ? hitec_prog_move_edit(&hp.prog, hp.ed_id, value)
+            : hitec_prog_edit(&hp.prog, hp.ed_id, value);
 
     if (r == HITEC_PROG_EDIT_CHECK) {
         hpn_page_soft();
@@ -287,6 +292,9 @@ bool hpn_row_live(const hpn_row_t *r)
     const hitec_prog_state_t st = hitec_prog_state(p);
 
     if (r->kind != K_ACT) {
+        if (st == HITEC_PROG_MOVING) {
+            return hitec_prog_move_live(p, r->what);
+        }
         return hitec_prog_can_edit(p) && hitec_prog_editable(p, r->what);
     }
     switch (r->what) {
@@ -320,6 +328,11 @@ bool hpn_row_live(const hpn_row_t *r)
     }
     case A_WRITE:
         return st == HITEC_PROG_HELD && hitec_prog_changes(p) != 0u;
+    case A_MOVE:
+        /* On: a tap ends it.  Held: a tap opens its page or says why
+         * not. */
+        return hitec_prog_move_on(p)
+               || (st == HITEC_PROG_HELD && p->have_servo);
     default:
         /* Not with a STOP latched here: the IOmcu would refuse it. */
         return st == HITEC_PROG_HELD && hitec_prog_stopped(p) && !p->f.stopped;
@@ -538,6 +551,9 @@ void hpn_act(const hpn_row_t *r)
         break;
     case A_WRITE:
         ask_write((uint8_t)HITEC_PROG_WR_EDITS);
+        break;
+    case A_MOVE:
+        hpn_move_act();
         break;
     default:
         (void)hitec_prog_clear(p);

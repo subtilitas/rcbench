@@ -14,10 +14,13 @@
  */
 #include "hitec_panel.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
+#include "hitec_move.h"
 #include "hitec_reg.h"
+#include "servo_screen.h"
 #include "settings.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
@@ -67,6 +70,8 @@ const hpn_row_t hpn_rows[] = {
       TX_HP_END_R, NULL },
     { HITEC_PANEL_TRAVEL, 3, 0, 1, K_SHOW, HITEC_P_D_DIRECTION, S_D,
       TX_HP_DIRECTION, NULL },
+    /* MOVE SERVO: the horn follows the position edited (hitec_move.h). */
+    { HITEC_PANEL_TRAVEL, 4, 0, 1, K_ACT, A_MOVE, S_D, TX_HP_MOVE, NULL },
     { HITEC_PANEL_TRAVEL, 0, 0, 1, K_SHOW, HITEC_P_C_CENTRE, S_C,
       TX_HP_CENTRE, NULL },
     { HITEC_PANEL_TRAVEL, 1, 0, 1, K_SHOW, HITEC_P_C_LEFT_END, S_C,
@@ -204,6 +209,12 @@ gfx_rect_t hpn_value_rect(const hpn_row_t *r)
                 : r->wide != 0u && r->kind == K_SHOW     ? HP_WIDE_W
                                                          : HP_VAL_W;
 
+    if (hpn_stepped(r)) {
+        /* Between its -/+ keys (hpn_step_rect()). */
+        return (gfx_rect_t){ (int16_t)(rr.x + rr.w - w + HP_STEP_W + 4),
+                             rr.y, (int16_t)(w - 2 * (HP_STEP_W + 4)),
+                             rr.h };
+    }
     return (gfx_rect_t){ (int16_t)(rr.x + rr.w - w), rr.y, (int16_t)w,
                          rr.h };
 }
@@ -443,6 +454,7 @@ static void options_fresh(void)
 
 void hitec_panel_screen_entry(void)
 {
+    hitec_prog_move_stop(&hp.prog);
     options_fresh();
     /* Writing is switched off at every entry of the screen. */
     (void)hitec_prog_write_enable(&hp.prog, false);
@@ -515,7 +527,8 @@ static uint32_t signature(void)
         (uint32_t)hitec_prog_record_verdict(p), p->ses.step_index,
         p->must_read, p->f.card, p->ses.done, p->f.card_state, p->bk_saved,
         p->bk_no_file, p->have_bk, p->files_seq, hitec_prog_card_busy(p),
-        p->load_pend,
+        p->load_pend, p->mv.phase, p->mv.off, p->mv.follow, p->mv.pos,
+        p->mv.has_pos, p->f.has_angle ? p->f.angle : 0xFFFFu,
     };
     uint32_t sig = 2166136261u;
 
@@ -538,6 +551,7 @@ void hpn_moved(void)
         }
         hp.state_seen = st;
     }
+    hpn_move_follow();
     hpn_supply_sync();
     sig = signature();
     if (sig != hp.sig) {
@@ -548,7 +562,18 @@ void hpn_moved(void)
 
 void hitec_panel_feed(const hitec_prog_feed_t *f)
 {
-    hitec_prog_feed(&hp.prog, f);
+    hitec_prog_feed_t g = *f;
+    float deg = 0.0f;
+
+    /* The AS5600 on the horn as the SERVO screen shows it, for MOVE
+     * SERVO's judge, where the feed carries none. */
+    if (!g.has_angle && servo_screen_log_angle(&deg)) {
+        const long counts = lroundf(deg * 4096.0f / 360.0f) % 4096L;
+
+        g.has_angle = true;
+        g.angle = (uint16_t)(counts < 0 ? counts + 4096L : counts);
+    }
+    hitec_prog_feed(&hp.prog, &g);
     hpn_moved();
 }
 

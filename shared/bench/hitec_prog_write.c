@@ -283,14 +283,17 @@ static bool covered(const hitec_prog_t *p, uint8_t id, int32_t value)
 /* ------------------------------------------------------------------ edits */
 
 /**
- * @brief Why an edit is not taken now.
+ * @brief Why an edit of @p id is not taken now.  MOVE SERVO's loop takes
+ *        the edits of the positions it follows (hpm_edit_ok()).
  *
- * @param p The programmer.
+ * @param p  The programmer.
+ * @param id hitec_param_t.
  * @return HITEC_PROG_MSG_NONE when it is.
  */
-static hitec_prog_msg_id_t edit_gate(const hitec_prog_t *p)
+static hitec_prog_msg_id_t edit_gate(const hitec_prog_t *p, uint8_t id)
 {
-    const hitec_prog_msg_id_t m = hpg_held_idle(p, false);
+    const hitec_prog_msg_id_t m =
+        hpm_edit_ok(p, id) ? HITEC_PROG_MSG_NONE : hpg_held_idle(p, false);
 
     if (m != HITEC_PROG_MSG_NONE) {
         return m;
@@ -317,7 +320,7 @@ static hitec_prog_msg_id_t edit_gate(const hitec_prog_t *p)
 static hitec_prog_edit_t trial(hitec_prog_t *p, uint8_t id, int32_t value,
                                hitec_image_t *out)
 {
-    const hitec_prog_msg_id_t m = edit_gate(p);
+    const hitec_prog_msg_id_t m = edit_gate(p, id);
     hitec_set_t r;
 
     if (m != HITEC_PROG_MSG_NONE) {

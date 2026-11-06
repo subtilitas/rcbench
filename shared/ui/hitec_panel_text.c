@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "hitec_move.h"
 #include "hitec_reg.h"
 #include "link_pages.h"
 #include "ui_board.h"
@@ -282,7 +283,8 @@ static void act_value(const hpn_row_t *r, char *out, size_t n)
                        || st == HITEC_PROG_BACKUP
                        || st == HITEC_PROG_WRITING ? TR(KP_ABORT)
                  : st == HITEC_PROG_CLEARING || st == HITEC_PROG_LEAVING
-                       || st == HITEC_PROG_RELEASING ? TR(KP_WAIT)
+                       || st == HITEC_PROG_RELEASING
+                       || st == HITEC_PROG_MOVING ? TR(KP_WAIT)
                                                      : TR(KP_CONNECT));
         break;
     case A_SERIES:
@@ -298,6 +300,11 @@ static void act_value(const hpn_row_t *r, char *out, size_t n)
         break;
     case A_ENABLE:
         snprintf(out, n, "%s", hitec_prog_write_on(p) ? TR(ON) : TR(OFF));
+        break;
+    case A_MOVE:
+        snprintf(out, n, "%s", hitec_prog_move_on(p) ? TR(ON)
+                               : st == HITEC_PROG_MOVING ? TR(KP_WAIT)
+                                                         : TR(OFF));
         break;
     case A_WRITE: {
         const unsigned c = hitec_prog_changes(p);
@@ -572,6 +579,10 @@ void hpn_state_line(char *out, size_t n)
     case HITEC_PROG_WRITING:
         writing_line(out, n);
         break;
+    case HITEC_PROG_MOVING:
+        /* Off the TRAVEL tab the loop is at its end. */
+        snprintf(out, n, "%s", TR(HP_LIVE_ENDING));
+        break;
     default:
         snprintf(out, n, "%s", TR(HP_ST_RELEASING));
         break;
@@ -661,8 +672,19 @@ static const int16_t k_lines[HITEC_PROG_MSG_COUNT][2] = {
     [HITEC_PROG_MSG_OTHER_SERVO]   = { TX_HP_OTHER_SERVO,
                                        TX_HP_OTHER_SERVO_2 },
     [HITEC_PROG_MSG_READS_DIFFER]  = { -1, -1 },
+    [HITEC_PROG_MSG_MOVE_NEED_PD]  = { TX_HP_MOVE_NEED_PD, -1 },
+    [HITEC_PROG_MSG_MOVE_NEED_DIR] = { TX_HP_MOVE_NEED_DIR, -1 },
+    [HITEC_PROG_MSG_MOVE_NO_MAP]   = { TX_HP_MOVE_NO_MAP, -1 },
+    [HITEC_PROG_MSG_MOVE_OUTSIDE]  = { -1, -1 },
+    [HITEC_PROG_MSG_MOVE_BLOCKED]  = { -1, -1 },
+    [HITEC_PROG_MSG_MOVE_CURRENT]  = { -1, -1 },
+    [HITEC_PROG_MSG_MOVE_ENC]      = { -1, -1 },
+    [HITEC_PROG_MSG_MOVE_CHANGED]  = { TX_HP_LIVE_CHANGED, -1 },
+    [HITEC_PROG_MSG_MOVE_DONE]     = { TX_HP_MOVE_DONE, -1 },
+    [HITEC_PROG_MSG_MOVE_SUPPLY]   = { TX_HP_LIVE_SUPPLY, -1 },
+    [HITEC_PROG_MSG_MOVE_ENC_LOST] = { TX_HP_LIVE_ENC_LOST, -1 },
 };
-_Static_assert(HITEC_PROG_MSG_READS_DIFFER + 1 == HITEC_PROG_MSG_COUNT,
+_Static_assert(HITEC_PROG_MSG_MOVE_ENC_LOST + 1 == HITEC_PROG_MSG_COUNT,
                "k_lines has a row for every message");
 
 /**
@@ -810,6 +832,9 @@ static int formatted(const hitec_prog_msg_t *m,
     if (w == 0) {
         w = hpn_file_lines(m, out);
     }
+    if (w == 0) {
+        w = hpn_move_lines(m, out);
+    }
     if (w > 0) {
         return w;
     }
@@ -866,6 +891,11 @@ int hitec_panel_message_lines(const hitec_prog_msg_t *m,
         /* With the STOP latched at this end CLEAR is refused: the latched
          * path is the one said (station, #612). */
         snprintf(out[0], HITEC_PANEL_LINE, "%s", TR(HP_ST_STOP_LATCHED));
+        return 1;
+    }
+    if (m->id == HITEC_PROG_MSG_MUST_READ && hp.prog.mv.owed) {
+        /* No write is owed its check: MOVE SERVO's end is. */
+        snprintf(out[0], HITEC_PANEL_LINE, "%s", TR(HP_LIVE_OWED));
         return 1;
     }
     if (k_lines[m->id][0] < 0) {

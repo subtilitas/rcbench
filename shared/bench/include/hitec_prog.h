@@ -117,6 +117,11 @@
  *     The D series reset (0x6E = 0x0F0F) is not offered: the values it
  *     leaves are not known before it.
  *
+ * MOVE SERVO (hitec_move.c, hitec_move.h): the horn of a D series servo
+ * moved to the position being edited, inside the held session, while the
+ * bench is SAFE; HITEC_PROG_MOVING while the loop or its end runs, when the
+ * programmer's other operations are refused BUSY.
+ *
  * Every model is written: the D series with the HFP-30's registers, the
  * classic servos with the HPP-21 Plus's cells (hitec_reg.h).
  *
@@ -142,6 +147,7 @@
 #include "hitec_card.h"
 #include "hitec_link.h"
 #include "hitec_reg.h"
+#include "hitec_live.h"
 #include "hitec_session.h"
 #include "link_pages.h"
 
@@ -195,6 +201,8 @@ typedef enum {
     HITEC_PROG_RECORDING,  /**< a write waits for the card's record       */
     HITEC_PROG_WRITING,    /**< a write runs, with its read-back          */
     HITEC_PROG_BACKUP,     /**< a write waits for the card's backup file  */
+    HITEC_PROG_MOVING,     /**< MOVE SERVO's loop or its end runs
+                                (hitec_move.h)                            */
 } hitec_prog_state_t;
 
 /** @brief What the screen says. */
@@ -317,6 +325,30 @@ typedef enum {
                                        before its plan differs from the
                                        read the plan is made from; arg the
                                        first address that differs          */
+    HITEC_PROG_MSG_MOVE_NEED_PD,  /**< MOVE SERVO refused: no PD mini
+                                       answers with its output on          */
+    HITEC_PROG_MSG_MOVE_NEED_DIR, /**< refused: DIRECTION of the servo or
+                                       of the draft is not CW              */
+    HITEC_PROG_MSG_MOVE_NO_MAP,   /**< refused: no D series servo read
+                                       whose stored positions ascend       */
+    HITEC_PROG_MSG_MOVE_OUTSIDE,  /**< ended at its start: the position
+                                       read lies outside the reach; arg the
+                                       position                            */
+    HITEC_PROG_MSG_MOVE_BLOCKED,  /**< bound by the lag: arg the position
+                                       read, reg the position moved back to */
+    HITEC_PROG_MSG_MOVE_CURRENT,  /**< bound by the current: arg the stall
+                                       level, mA, reg the position moved
+                                       back to                             */
+    HITEC_PROG_MSG_MOVE_ENC,      /**< bound by the AS5600: reg the position
+                                       moved back to                       */
+    HITEC_PROG_MSG_MOVE_CHANGED,  /**< the end's read differs from the
+                                       start's: READ ALL is owed           */
+    HITEC_PROG_MSG_MOVE_DONE,     /**< the loop ended; the end's read equals
+                                       the start's                         */
+    HITEC_PROG_MSG_MOVE_SUPPLY,   /**< the servo supply went off during the
+                                       loop                                */
+    HITEC_PROG_MSG_MOVE_ENC_LOST, /**< the AS5600 reading went away during
+                                       the loop                            */
     HITEC_PROG_MSG_COUNT
 } hitec_prog_msg_id_t;
 
@@ -458,6 +490,9 @@ typedef struct {
                                    holds it (LINK_SP_PORT)                */
     bool     card;            /**< a card is mounted: a write's record
                                    and its backup file go to it           */
+    bool     has_angle;       /**< angle is an AS5600 reading of the
+                                   horn, as the SERVO screen shows it     */
+    uint16_t angle;           /**< that angle, 0 to 4095 a turn           */
     uint8_t  card_state;      /**< card_state_t of the panel's slot: what
                                    the screen says without a card         */
 } hitec_prog_feed_t;
@@ -511,6 +546,32 @@ typedef enum {
     HITEC_PROG_WR_BACKUP,     /**< the session's backup back             */
     HITEC_PROG_WR_FACTORY,    /**< classic: the factory cells            */
 } hitec_prog_wr_t;
+
+/**
+ * @brief MOVE SERVO's loop, hitec_move.c's (hitec_move.h); the fields are
+ *        private but for the tests.
+ */
+typedef struct {
+    uint8_t  phase;           /**< hitec_move_phase_t                     */
+    uint8_t  follow;          /**< the hitec_param_t the horn follows     */
+    uint8_t  end_why;         /**< hitec_prog_msg_id_t of a hard end on its
+                                   way; HITEC_PROG_MSG_NONE none          */
+    bool     off;             /**< MOVE OFF asked: the end follows the pass
+                                   that runs                              */
+    bool     bound;           /**< a bind or an ABORT said its message:
+                                   the end keeps it                       */
+    bool     owed;            /**< the loop owes the READ ALL that
+                                   must_read asks for                     */
+    bool     enc_start;       /**< an AS5600 reading at the start: one
+                                   missing later ends the loop            */
+    bool     has_pos;         /**< pos is a reading                       */
+    uint16_t pos;             /**< 0x0C as the last pass read it          */
+    uint16_t last_p;          /**< the command of the last pass           */
+    hitec_live_ends_t  ends;  /**< the servo's stored positions           */
+    hitec_live_judge_t j;     /**< the judge of the passes                */
+    hitec_live_cmd_t   cmd;   /**< the command of the last pass           */
+    hitec_image_t start;      /**< the session's image at the start       */
+} hitec_move_t;
 
 /** @brief The programmer's state. */
 typedef struct {
@@ -620,6 +681,9 @@ typedef struct {
                                    differ from the servo read             */
     hitec_image_t load_img;   /**< the draft it leaves                    */
     char     load_model[HITEC_CARD_MODEL_MAX + 1u]; /**< its model line   */
+
+    /* --- MOVE SERVO, hitec_move.c ------------------------------------- */
+    hitec_move_t mv;          /**< the loop                               */
 } hitec_prog_t;
 
 /**

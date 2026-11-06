@@ -224,6 +224,15 @@ SCREENS = {
     "servo-hitec-classic-leave": ("servo-hitec-classic-leave.png", "servo",
                                   "dark"),
     "servo-hitec-nopd": ("servo-hitec-nopd.png", "servo", "dark"),
+    # MOVE SERVO on TRAVEL of the D485HW: its hold page, the loop on with
+    # LEFT END followed, a LEFT END beyond the reach, a horn held at a block
+    # and its line after the end, and the refusal with no PD mini.
+    "servo-hitec-move": ("servo-hitec-move.png", "servo", "dark"),
+    "servo-hitec-move-on": ("servo-hitec-move-on.png", "servo", "dark"),
+    "servo-hitec-move-reach": ("servo-hitec-move-reach.png", "servo", "dark"),
+    "servo-hitec-move-blocked": ("servo-hitec-move-blocked.png", "servo",
+                                 "dark"),
+    "servo-hitec-move-nopd": ("servo-hitec-move-nopd.png", "servo", "dark"),
     "servo-hitec-other": ("servo-hitec-other.png", "servo", "dark"),
     "servo-hitec-release": ("servo-hitec-release.png", "servo", "dark"),
     "servo-hitec-released": ("servo-hitec-released.png", "servo", "dark"),
