@@ -30,6 +30,26 @@ extern "C" {
 #define LINK_HOST_TIMEOUT_MS 1000u
 
 /**
+ * @brief How long a numbered request waits for its answer before it is sent
+ *        once more: 50ms.
+ *
+ * The longest answer the IOmcu gives on purpose is a COMMIT or ACTIVATE
+ * that writes a 4KiB sector first, about 19.2ms; a store save delays a
+ * request by up to 19ms the same way.  The round trip of one exchange is
+ * 334 to 1400us.  So an answer not in by 50ms is lost rather than slow, and
+ * the repeat, sent at most one 50ms poll after the request before, reaches
+ * the IOmcu well inside its LINK_DEV_SILENCE_MS (200ms).
+ */
+#define LINK_HOST_RETRY_MS 50u
+
+/**
+ * @brief The latest a repeat is sent, from the request: the IOmcu's
+ *        LINK_DEV_SILENCE_MS.  A caller that comes back to the wait later
+ *        than this waits out LINK_HOST_TIMEOUT_MS instead.
+ */
+#define LINK_HOST_RETRY_LAST_MS 200u
+
+/**
  * @brief The panel's state for one link: the outstanding request, the counters and the reassembly buffer.
  */
 typedef struct {
@@ -50,6 +70,19 @@ typedef struct {
     uint32_t mismatches; /**< answers to questions nobody is still asking */
     uint32_t nacks;
     uint32_t timeouts;   /**< requests abandoned at the escalation           */
+    /** @brief Requests answered after their repeat was sent, modulo 2^32. */
+    uint32_t retried;
+
+    /*
+     * The repeat (4.37, LINK_MINOR_REPEAT).  The outstanding request as it
+     * was sent, its exchange number, whether it may be repeated and whether
+     * the repeat has gone.
+     */
+    link_msg_t req;      /**< the outstanding request, as built            */
+    uint8_t    seq;      /**< its exchange number; 0 unnumbered            */
+    uint8_t    next_seq; /**< the number the next request takes, 1 to 7; 0 reads as 1 */
+    bool       retry_ok; /**< it is numbered and may be repeated           */
+    bool       retry_sent; /**< its repeat has been handed out            */
 
     /*
      * Reassembly.  A CAN (Controller Area Network) frame carries four
@@ -70,6 +103,17 @@ typedef struct {
      * exchange.
      */
     bool     held_reads;
+
+    /**
+     * @brief The far end answers a repeat from its copy (4.37,
+     *        LINK_MINOR_REPEAT).
+     *
+     * Set by the caller from the far end's IDENTITY and cleared when the
+     * link goes down; false after link_host_init().  While set every request
+     * carries an exchange number and link_host_retry() hands out its repeat;
+     * while clear requests go unnumbered and none is repeated.
+     */
+    bool     numbered;
 } link_host_t;
 
 /**
@@ -138,9 +182,11 @@ bool link_host_write(link_host_t *h, uint8_t page, uint8_t offset,
  * feeding until it gets true or the request times out.
  *
  * Anything that does not answer the question in flight is counted as a
- * mismatch and refused.  A late reply can arrive after the panel has moved
- * on, and accepting it would attach one page's registers to another page's
- * request.
+ * mismatch and refused, an answer of another exchange number among them:
+ * the late answer of a request already answered through its repeat is not
+ * taken a second time, even by a request for the same window.  A late
+ * reply can arrive after the panel has moved on, and accepting it would
+ * attach one page's registers to another page's request.
  *
  * @param h The panel's link state.
  * @param part The received message.
@@ -167,6 +213,37 @@ bool link_host_accept(link_host_t *h, const link_msg_t *part, uint32_t now_ms,
  *       reply stops waiting.
  */
 bool link_host_tick(link_host_t *h, uint32_t now_ms);
+
+/**
+ * @brief The repeat of the outstanding request, once, when its answer is due.
+ *
+ * True, with the request as it was first built in @p out, when a numbered
+ * request has been outstanding for LINK_HOST_RETRY_MS and less than
+ * LINK_HOST_RETRY_LAST_MS and has not been repeated or cancelled: the caller
+ * sends @p out.  The request's own timeout still runs from the first send,
+ * so a repeat that is lost as well ends at LINK_HOST_TIMEOUT_MS as an
+ * unrepeated one does.  A request answered after its repeat counts in
+ * `retried`.  An unnumbered request, an ACTIVATE (the IOmcu restarts 20ms
+ * after it, and a repeat could reach the new image) and a request whose
+ * repeat link_host_retry_cancel() took back are never repeated.
+ *
+ * @param h The panel's link state.
+ * @param now_ms The current time, in ms.
+ * @param out Receives the repeat.
+ * @return true when the repeat is to be sent now, else false.
+ */
+bool link_host_retry(link_host_t *h, uint32_t now_ms, link_msg_t *out);
+
+/**
+ * @brief Take back the outstanding request's repeat: it waits for its answer
+ *        to LINK_HOST_TIMEOUT_MS as an unnumbered one does.
+ *
+ * For a caller whose bench stopped while it waited: a request from before
+ * the stop, an ARM among them, is not sent again after it.
+ *
+ * @param h The panel's link state; NULL is ignored.
+ */
+void link_host_retry_cancel(link_host_t *h);
 
 /**
  * @brief Give up on the outstanding request.

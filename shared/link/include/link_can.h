@@ -49,10 +49,14 @@ extern "C" {
  *     28..26  priority   3 bits   lower wins arbitration
  *     25..22  op         4 bits   a link_op_t
  *     21..14  page       8 bits   the page map
- *     13..6   offset     8 bits   first register this frame carries
+ *     13..6   offset     8 bits   bits 7..5 the exchange number (link_msg_t
+ *                                 seq, 0..LINK_SEQ_MAX), bits 4..0 the first
+ *                                 register this frame carries, 0..31
  *      5..0   count      6 bits   registers this frame is about, 0..32
  *
- * Exactly 29 bits: the whole extended identifier.
+ * Exactly 29 bits: the whole extended identifier.  A frame of an exchange
+ * number other than 0 has an offset field of 32 or more, which an IOmcu
+ * older than 4.37 refuses as a window past the end of a page.
  */
 #define LINK_CAN_PRIO_SHIFT   26
 #define LINK_CAN_OP_SHIFT     22
@@ -68,6 +72,11 @@ extern "C" {
 #define LINK_CAN_PAGE_MASK    0xFFu
 #define LINK_CAN_OFFSET_MASK  0xFFu
 #define LINK_CAN_COUNT_MASK   0x3Fu
+
+/** @brief The exchange number's place inside the offset field. */
+#define LINK_CAN_SEQ_SHIFT    5
+/** @brief The register's bits of the offset field. */
+#define LINK_CAN_REG_MASK     0x1Fu
 
 /** @brief Registers that fit one 8-byte payload. */
 #define LINK_CAN_REGS_PER_FRAME 4
@@ -147,7 +156,10 @@ void link_can_id_split(uint32_t id, link_can_prio_t *prio, uint8_t *op,
  * @brief Render a message as one or more CAN frames.
  *
  * Returns how many were written, or 0 if the message is malformed or would
- * not fit.  A READ carries no registers and is always one frame.
+ * not fit: an unknown op, a window past the end of a page, an offset above
+ * 31 or an exchange number above LINK_SEQ_MAX.  A READ carries no registers
+ * and is always one frame.  Every frame carries the message's exchange
+ * number.
  *
  * @param msg The message to render.
  * @param out Receives the frames.
@@ -159,7 +171,7 @@ size_t link_can_encode(const link_msg_t *msg, link_can_frame_t *out,
 
 /**
  * @brief Turn one received frame back into a message carrying up to four
- * registers.
+ * registers, and the exchange number of its offset field.
  *
  * False if the identifier describes something impossible: an unknown op, a
  * count past the end of a page, a payload that disagrees with the count.

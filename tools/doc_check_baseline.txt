@@ -2011,17 +2011,12 @@ shared/link/include/link_artxfer.h: warning: Member blocks (variable) of struct 
 shared/link/include/link_artxfer.h: warning: Member meta (variable) of struct link_artxfer_t is not documented.
 shared/link/include/link_bringup.h: warning: Member have_identity (variable) of struct link_bringup_t is not documented.
 shared/link/include/link_bringup.h: warning: Member have_status (variable) of struct link_bringup_t is not documented.
-shared/link/include/link_bringup.h: warning: Member nacks (variable) of struct link_bringup_t is not documented.
-shared/link/include/link_bringup.h: warning: Member polls (variable) of struct link_bringup_t is not documented.
 shared/link/include/link_bringup.h: warning: Member proto_major (variable) of struct link_bringup_t is not documented.
 shared/link/include/link_bringup.h: warning: Member proto_minor (variable) of struct link_bringup_t is not documented.
-shared/link/include/link_bringup.h: warning: Member replies (variable) of struct link_bringup_t is not documented.
 shared/link/include/link_bringup.h: warning: Member rt_max_us (variable) of struct link_bringup_t is not documented.
 shared/link/include/link_bringup.h: warning: Member rt_mean_us (variable) of struct link_bringup_t is not documented.
 shared/link/include/link_bringup.h: warning: Member rt_min_us (variable) of struct link_bringup_t is not documented.
 shared/link/include/link_bringup.h: warning: Member rt_samples (variable) of struct link_bringup_t is not documented.
-shared/link/include/link_bringup.h: warning: Member rx_resyncs (variable) of struct link_bringup_t is not documented.
-shared/link/include/link_bringup.h: warning: Member timeouts (variable) of struct link_bringup_t is not documented.
 shared/link/include/link_can.h: warning: Member LINK_CAN_COUNT_MASK (macro definition) of file link_can.h is not documented.
 shared/link/include/link_can.h: warning: Member LINK_CAN_COUNT_SHIFT (macro definition) of file link_can.h is not documented.
 shared/link/include/link_can.h: warning: Member LINK_CAN_OFFSET_MASK (macro definition) of file link_can.h is not documented.

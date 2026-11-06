@@ -32,6 +32,20 @@ history is in git.
   (2 pages each) and its plot (1 page), FILES' panes (3 pages). The DELETE
   question, a box, a keyboard and the text viewer have no guide.
 
+### Changed
+
+- The link protocol is 4.37. The panel numbers its requests to a 4.37
+  IOmcu and sends a request once more when its answer has not come within
+  50ms. The IOmcu answers the repeat from its copy of the first answer and
+  does not act on it again. A lost answer costs about 50ms, latches no
+  `FAULT 01` and keeps the link up. In 0.23.8 it cost the 1000ms timeout,
+  the IOmcu latched `FAULT 01` after 200ms of silence, and the link went
+  down. ACTIVATE, the update transfer and a request whose wait saw a STOP
+  are not repeated. A second loss of the same request ends at the 1000ms
+  timeout. The console report and the card's log line count the recovered
+  answers as `retried`. An IOmcu older than 4.37 gets unnumbered requests
+  and no repeat.
+
 ### Fixed
 
 - The IOmcu's firmware update cannot erase or program flash below 0x2000,
