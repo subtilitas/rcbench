@@ -45,6 +45,7 @@ typedef struct {
     bool     bidir;          /**< bidirectional: inverted line and a receiver */
     bool     running;        /**< the transmitter is enabled                  */
     bool     armed;          /**< a reply is expected for the frame just sent */
+    bool     low;            /**< the pin is held at the stopped rest, low    */
     uint8_t  pin;            /**< GPIO number                                 */
     uint32_t bits_per_second; /**< bit rate                                   */
 
@@ -159,6 +160,48 @@ static void teardown(dshot_out_t *s)
     release_pad(pin);
 }
 
+/**
+ * @brief Stop both state machines and hold the pin low: the rest of a pin
+ *        that sends no frames, in either mode.
+ *
+ * Low, not released.  A bidirectional line released to its pull-up sits
+ * high with no frames on it, and a line high after signal loss is the entry
+ * condition of the family S, Bluejay and AM32 bootloaders.  Low is also
+ * plain DShot's own idle.
+ *
+ * A bidirectional pin stays the block's, at an output latch of 1 that the
+ * pad's inverter turns into a low.  The latch goes first: a pad a cut frame
+ * left driven goes from wherever it was straight to low, and a released pad
+ * is driven only once the latch says low.  Kept on the block, the inversion
+ * stays where bind put it and checked it; handing the pad to the processor
+ * would wipe it (release_pad()).
+ *
+ * A plain pin goes to the processor at 0: a stopped state machine cannot be
+ * relied on to hold low.  The level first, then the direction, then the
+ * function, so the pad never shows an old level of the processor's.
+ *
+ * @param s  Bound slot.
+ */
+static void rest_low(dshot_out_t *s)
+{
+    pio_sm_set_enabled(s->pio, s->tx_sm, false);
+    pio_sm_clear_fifos(s->pio, s->tx_sm);
+    if (s->bidir) {
+        pio_sm_set_enabled(s->pio, s->rx_sm, false);
+        pio_sm_clear_fifos(s->pio, s->rx_sm);
+        pio_sm_set_pins_with_mask64(s->pio, s->tx_sm, 1ull << s->pin,
+                                    1ull << s->pin);
+        pio_sm_set_consecutive_pindirs(s->pio, s->tx_sm, s->pin, 1, true);
+    } else {
+        gpio_put(s->pin, 0);
+        gpio_set_dir(s->pin, GPIO_OUT);
+        gpio_set_function(s->pin, GPIO_FUNC_SIO);
+    }
+    s->running = false;
+    s->armed   = false;
+    s->low     = true;
+}
+
 bool out_dshot_bind(uint8_t pin, uint16_t rate_kbit, bool bidirectional)
 {
     if (rate_kbit == 0u) {
@@ -196,7 +239,7 @@ bool out_dshot_bind(uint8_t pin, uint16_t rate_kbit, bool bidirectional)
          * Inverted at the pad rather than in the program.  The inverter is on
          * the output driver only, so the same pin still reads the line's true
          * level once the transmitter has let go of it, and the pull-up is
-         * what holds the idle in between.
+         * what holds the idle between frames.
          *
          * After the program's init, never before it.  That init begins with
          * pio_gpio_init(), which is gpio_set_function(), which assigns the
@@ -207,8 +250,10 @@ bool out_dshot_bind(uint8_t pin, uint16_t rate_kbit, bool bidirectional)
          * pulls live in the pad block instead, so the line still idles high
          * and the fault reads as a protocol that no ESC accepts rather than
          * as a pin that was never inverted.
+         *
+         * The init leaves the pad an input, so nothing is driven while the
+         * inverter is off.
          */
-        gpio_pull_up(pin);
         dshot_bidir_tx_program_init(s->pio, s->tx_sm, s->tx_offset, pin,
                                     s->bits_per_second);
         gpio_set_outover(pin, GPIO_OVERRIDE_INVERT);
@@ -238,13 +283,22 @@ bool out_dshot_bind(uint8_t pin, uint16_t rate_kbit, bool bidirectional)
             release_pad(pin);
             return false;
         }
+        /* Low before the pull-up goes on, so the pad does not rise between
+         * the two; the pull-up is the idle out_dshot_wake() releases to. */
+        rest_low(s);
+        gpio_pull_up(pin);
     } else {
+        /* The block's latch at 0 before the pad is the block's: another
+         * program in the block may have left the pin's latch at 1, and the
+         * init drives the pad at once. */
+        pio_sm_set_pins_with_mask64(s->pio, s->tx_sm, 0u, 1ull << pin);
         dshot_tx_program_init(s->pio, s->tx_sm, s->tx_offset, pin,
                               s->bits_per_second);
+        rest_low(s);
     }
 
     s->used = true;
-    /* Not enabled here: nothing is on the wire until a frame is sent. */
+    /* Not enabled here: the pin rests low until the first frame. */
     return true;
 }
 
@@ -261,8 +315,8 @@ void out_dshot_release(uint8_t pin)
 void out_dshot_stop(uint8_t pin)
 {
     dshot_out_t *s = find(pin);
-    if (s == NULL || (!s->running && !s->armed)) {
-        return;      /* already stopped; the loop asks every pass */
+    if (s == NULL || s->low) {
+        return;      /* already at rest; the loop asks every pass */
     }
     /*
      * The frame in flight is cut rather than allowed to finish.  A truncated
@@ -273,24 +327,26 @@ void out_dshot_stop(uint8_t pin)
      *
      * What the cut must not leave undefined is the level.  A state machine
      * stopped mid-bit holds whatever its side-set wrote last, so the pin is
-     * taken back and put at the idle its protocol expects.
+     * taken to the low rest, in both modes.
      */
-    pio_sm_set_enabled(s->pio, s->tx_sm, false);
-    pio_sm_clear_fifos(s->pio, s->tx_sm);
-    s->running = false;
-    if (s->bidir) {
-        pio_sm_set_enabled(s->pio, s->rx_sm, false);
-        pio_sm_clear_fifos(s->pio, s->rx_sm);
-        /* Released, so the line sits at the idle its pull-up gives it. */
-        pio_sm_set_consecutive_pindirs(s->pio, s->tx_sm, s->pin, 1, false);
-    } else {
-        /* Plain DShot idles low, and low is what a stopped state machine
-         * cannot be relied on to be holding. */
-        gpio_set_function(s->pin, GPIO_FUNC_SIO);
-        gpio_set_dir(s->pin, GPIO_OUT);
-        gpio_put(s->pin, 0);
+    rest_low(s);
+}
+
+bool out_dshot_wake(uint8_t pin)
+{
+    dshot_out_t *s = find(pin);
+    if (s == NULL || !s->bidir || !s->low) {
+        return false;
     }
-    s->armed = false;
+    /*
+     * Released, so the line rises on its pull-up to the high idle every
+     * bidirectional frame starts from, and the program finds the pad an
+     * input as its own release leaves it.  The latch stays at 1 until the
+     * program's first side-set, which is harmless on an undriven pad.
+     */
+    pio_sm_set_consecutive_pindirs(s->pio, s->tx_sm, s->pin, 1, false);
+    s->low = false;
+    return true;
 }
 
 /**
@@ -322,11 +378,14 @@ void out_dshot_send(uint8_t pin, uint16_t value, bool telemetry)
     if (!s->bidir) {
         if (!s->running) {
             /* The pad went back to the processor when it stopped, so it is
-             * handed to the block again before the machine runs. */
+             * handed to the block again before the machine runs, with the
+             * block's latch at the low the processor held. */
+            pio_sm_set_pins_with_mask64(s->pio, s->tx_sm, 0u, 1ull << pin);
             pio_gpio_init(s->pio, pin);
             pio_sm_set_consecutive_pindirs(s->pio, s->tx_sm, pin, 1, true);
             restart(s->pio, s->tx_sm, s->tx_offset);
             s->running = true;
+            s->low     = false;
         }
         /*
          * Dropped rather than queued.  A full queue means the last frame has
@@ -339,6 +398,14 @@ void out_dshot_send(uint8_t pin, uint16_t value, bool telemetry)
         return;
     }
 
+    /*
+     * A line at its low rest is never taken straight into a frame: the frame
+     * would start on no falling edge.  This call releases it and sends
+     * nothing; the next one sends.
+     */
+    if (out_dshot_wake(pin)) {
+        return;
+    }
     /*
      * The receiver is put back to the top and the rendezvous flag cleared
      * before the frame is queued.  A flag left set from the frame before

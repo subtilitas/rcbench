@@ -62,6 +62,60 @@ TEST_CASE(the_fields_do_not_overlap_at_their_extremes)
 }
 
 /*
+ * The exchange number rides in bits 7 to 5 of the offset field of every
+ * frame of a message and comes back out; an unnumbered message's frames are
+ * the identifiers they always were.  A number above 7 or an offset above 31
+ * is refused.
+ */
+TEST_CASE(the_exchange_number_rides_above_the_offset_in_every_frame)
+{
+    link_can_frame_t f[LINK_CAN_MAX_FRAMES];
+    link_msg_t m = msg(LINK_OP_DATA, LINK_PAGE_OUTPUTS, 8, 9);
+    m.seq = LINK_SEQ_MAX;
+    CHECK_EQ(link_can_encode(&m, f, LINK_CAN_MAX_FRAMES), 3);
+    for (size_t i = 0; i < 3u; ++i) {
+        uint8_t field = 0;
+        link_can_id_split(f[i].id, NULL, NULL, NULL, &field, NULL);
+        CHECK_EQ(field >> 5, 7);
+        CHECK_EQ(field & 0x1F, 8 + 4 * i);
+        link_msg_t out;
+        CHECK(link_can_decode(&f[i], &out));
+        CHECK_EQ(out.seq, 7);
+        CHECK_EQ(out.offset, 8 + 4 * i);
+        CHECK_EQ(out.regs[0], 0x1000 + 4 * i);
+    }
+
+    /* Unnumbered: the identifier of the layout without a number. */
+    m = msg(LINK_OP_READ, LINK_PAGE_BENCH, 31, 1);
+    CHECK_EQ(link_can_encode(&m, f, LINK_CAN_MAX_FRAMES), 1);
+    CHECK_EQ(f[0].id, link_can_id(LINK_CAN_PRIO_NORMAL, LINK_OP_READ,
+                                  LINK_PAGE_BENCH, 31, 1));
+    link_msg_t out;
+    CHECK(link_can_decode(&f[0], &out));
+    CHECK_EQ(out.seq, 0);
+    CHECK_EQ(out.offset, 31);
+
+    /* A number past 7, an offset past 31. */
+    m = msg(LINK_OP_READ, LINK_PAGE_BENCH, 0, 1);
+    m.seq = LINK_SEQ_MAX + 1u;
+    CHECK_EQ(link_can_encode(&m, f, LINK_CAN_MAX_FRAMES), 0);
+    m = msg(LINK_OP_ACK, LINK_PAGE_BENCH, 32, 0);
+    CHECK_EQ(link_can_encode(&m, f, LINK_CAN_MAX_FRAMES), 0);
+    /* One register past the page: offset 31 and 2 registers. */
+    m = msg(LINK_OP_DATA, LINK_PAGE_BENCH, 31, 2);
+    CHECK_EQ(link_can_encode(&m, f, LINK_CAN_MAX_FRAMES), 0);
+    m = msg(LINK_OP_DATA, LINK_PAGE_BENCH, 31, 1);
+    CHECK_EQ(link_can_encode(&m, f, LINK_CAN_MAX_FRAMES), 1);
+
+    /* A numbered frame still has to fit its page: register 30 and 4. */
+    memset(&f[0], 0, sizeof(f[0]));
+    f[0].id = link_can_id(LINK_CAN_PRIO_NORMAL, LINK_OP_DATA,
+                          LINK_PAGE_BENCH, (uint8_t)((3u << 5) | 30u), 4);
+    f[0].dlc = 8;
+    CHECK(!link_can_decode(&f[0], &out));
+}
+
+/*
  * The property that makes stopping work: a control write outranks every
  * telemetry frame on the bus, decided by the identifier and therefore by the
  * bus itself rather than by anything either processor chooses to do.
@@ -373,6 +427,7 @@ int main(void)
 {
     RUN(an_identifier_carries_every_field_and_survives_the_round_trip);
     RUN(the_fields_do_not_overlap_at_their_extremes);
+    RUN(the_exchange_number_rides_above_the_offset_in_every_frame);
     RUN(stopping_the_bench_wins_arbitration_against_reading_it);
     RUN(a_read_request_is_one_frame_carrying_no_payload);
     RUN(a_split_reply_is_frames_that_each_stand_alone);

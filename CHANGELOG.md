@@ -85,6 +85,29 @@ history is in git.
 
 ### Changed
 
+- The link protocol is 4.37. The panel numbers its requests to a 4.37
+  IOmcu and sends a request once more when its answer has not come within
+  50ms. The IOmcu answers the repeat from its copy of the first answer and
+  does not act on it again. A lost answer costs about 50ms, latches no
+  `FAULT 01` and keeps the link up. In 0.23.8 it cost the 1000ms timeout,
+  the IOmcu latched `FAULT 01` after 200ms of silence, and the link went
+  down. ACTIVATE, the update transfer and a request whose wait saw a STOP
+  are not repeated. A second loss of the same request ends at the 1000ms
+  timeout. The console report and the card's log line count the recovered
+  answers as `retried`. An IOmcu older than 4.37 gets unnumbered requests
+  and no repeat.
+- The bus-fault screen follows the link while it shows. Its counters move
+  instead of freezing at the moment it opened. Once the IOmcu has answered
+  every poll for 1000ms, the bar reads `LINK BACK` and the hold reads
+  `HOLD 2s TO RECONNECT`: it opens the menu on the live bench, SAFE. One poll
+  without an answer withdraws it, and the hold is the acknowledgement into
+  simulation again. The start-up test's screen offers RECONNECT on the same
+  condition. RECONNECT clears no STOP and no fault code; FAULT 01 clears at
+  the next ARM. On the station, an IOmcu back from a 12 to 16s BOOTSEL stay
+  left the screen showing a frozen snapshot until a panel restart.
+- The bus-fault screen's holds show their hint on a release before 2s:
+  `Hold 2s to acknowledge.` or `Hold 2s to reconnect.`, amber in place of
+  the bar for 4s. The screen has no band to show it on.
 - The IMU's angles show two decimals: the IMU screen's X, Y and Z, RUDDER's
   DEFLECTION and MAX with ANGLE SOURCE IMU, SERVO's MEASURED and AUTO's
   `surface binds at x°`. The servo runs' reading carries the IMU's degrees
@@ -141,6 +164,18 @@ history is in git.
   BOOTSEL until a USB load of the install UF2.
 - SETUP's lists clip their rows inside the clip they are drawn with. With
   the screen guide open on a list, the rows drew under the dock.
+- A bidirectional DShot pin that sends no frames is driven low: from the
+  bind to the first frame, and at SAFE, STOP, an error, a lost link and the
+  failsafe edge until the next ARM. It rested high on its pull-up, the
+  bootloader entry condition of family S (BLHeli_S), Bluejay and AM32 ESCs.
+  On ARM the IOmcu releases the line to its high idle and sends the first
+  frame 1000µs later, one frame period at 1kHz; the extended telemetry ask
+  keeps its 10 frames. A pin held by the ESC signal wire session is not
+  driven low. Plain DShot also sets its PIO latch to 0 before the pad is
+  handed to the block, so a latch another program left at 1 shows no high
+  between the bind and the first frame. What an ESC does after the low rest
+  is not measured.
+
 - SERVO's own repaints, the SET row, the rail's plot, ARM and RUDDER's
   readout among them, stay inside the screen guide's live half. They drew
   over the dock, on RUDDER's guide page with each new angle reading.

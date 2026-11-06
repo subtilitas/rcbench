@@ -163,8 +163,8 @@ bei Ausgabe durch die Logger-Task ist nicht gemessen.
 
     I (…) rcbench: LINK answers arrive too late
     W (…) rcbench:   check: a reply slower than the poll timeout, or a stalled far end
-    I (…) rcbench:   last 60s  polls 1200 replies 1197 timeouts 3 stale 3 nack 0  iomcu frames 1200 crc 0 resync 0 refused 0
-    I (…) rcbench:   panel  polls 36000 replies 35990 timeouts 10 stale 7 nack 0 crc 0 resync 0
+    I (…) rcbench:   last 60s  polls 1200 replies 1197 timeouts 3 retried 1 stale 3 nack 0  iomcu frames 1201 crc 0 resync 0 refused 0
+    I (…) rcbench:   panel  polls 36000 replies 35990 timeouts 10 retried 4 stale 7 nack 0 crc 0 resync 0
     I (…) rcbench:   iomcu  frames 36000 crc 0 resync 0 refused 0
     I (…) rcbench:   round trip min 620 avg 700 max 1400 us
 
@@ -204,6 +204,18 @@ keines für die Werte, die er übernimmt. Ein Pin, der abgelehnt wurde, weil
 etwas anderes ihn hält, wird alle 5s erneut angeboten und zählt jedes Mal
 einmal. `timeouts`, `stale` und `crc` sind die Spalten, die einen Linkfehler
 zählen.
+
+`retried` zählt Anfragen, die beantwortet wurden, nachdem das Panel sie ein
+zweites Mal gesendet hat, 50ms nachdem eine Antwort ausblieb (Protokoll
+4.37, [Eine verlorene Antwort](Link-de.md#eine-verlorene-antwort)). Jede
+ist eine einmal verlorene und wiedergewonnene Antwort: sie setzt kein
+`FEHLER 01`, baut keinen Link ab und ist für die Diagnose kein Linkfehler.
+Eine Wiederholung ist ein Frame, den der IOmcu dekodiert, deshalb kann
+`frames` in der IOmcu-Zeile `polls` um die Wiederholungen übersteigen. Eine
+Anfrage, deren Wiederholung ebenfalls verloren geht, zählt in `timeouts`
+und nicht in `retried`. Die Logzeile auf der Karte trägt dieselbe Summe als
+`retried=`. Ein Austausch, der nach seiner Wiederholung beantwortet wird,
+liefert keinen Round-Trip-Wert.
 
 Die Spalten `crc` und `resync` der IOmcu-Zeile tragen den Empfangs- und
 den Sendefehlerzähler des XL2515 (Statusregister `LINK_ST_CRC_ERRORS` und

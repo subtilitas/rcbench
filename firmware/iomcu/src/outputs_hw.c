@@ -475,6 +475,7 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
     }
 
     if (!drive) {
+        /* Driven low, in both modes, until the next run. */
         out_dshot_stop(s->pin);
         /*
          * Kept current while nothing is being sent.  The comparison below is
@@ -506,6 +507,17 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
         return;                              /* not due yet, wrap-safe */
     }
     st->next_us = now + DSHOT_PERIOD_US;
+    /*
+     * A bidirectional pin at its low rest is released to its high idle on
+     * the first due pass of a run, and the first frame goes out on the next,
+     * DSHOT_PERIOD_US (1000us) later or more: the ESC sees the line high for
+     * a whole frame period before the first frame, as before every other.
+     * The pass sends nothing and asks nothing, so the ask below keeps all
+     * DSHOT_CMD_REPEATS of its frames.
+     */
+    if (out_dshot_wake(s->pin)) {
+        return;
+    }
 
     /*
      * The ask goes out in place of a stop frame and never in place of a

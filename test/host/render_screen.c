@@ -3248,6 +3248,24 @@ static void pose_bench_views(ui_screen_id_t id, const char *view)
                 .tx_errors = 248, .rx_errors = 0, .bus_errors = 1976,
             };
             r = q;
+        } else if (strncmp(view, "busfault-back", 13) == 0) {
+            /* The link answering again for 3s after it stopped, or after
+             * the start-up test failed ("busfault-back-test"): RECONNECT
+             * offered. */
+            const busfault_report_t q = {
+                .kind = BUSFAULT_LINK_LOST,
+                .bus = BUSFAULT_BUS_RUNNING,
+                .down_s = 0, .recoveries = 0,
+                .polls = 5401, .timeouts = 47,
+                .tx_errors = 0, .rx_errors = 0, .bus_errors = 1976,
+            };
+            if (strcmp(view, "busfault-back") == 0) {
+                r = q;
+            }
+            busfault_screen_set(&r);
+            busfault_screen_link(true, 0u);
+            busfault_screen_link(true, 3400u);
+            return;
         }
         busfault_screen_set(&r);
     }

@@ -47,7 +47,8 @@ output signals.
 page, offset and count; a frame carries up to four registers; the transport
 does no reassembly; the IOmcu transmits only when asked. Worst-case
 payload 52kB/s against 12 to 30kB/s of expected traffic. Protocol version
-4.36. [Reference](docs/Link.md).
+4.37. A request whose answer is lost is sent once more after 50ms.
+[Reference](docs/Link.md).
 
 **Safety.** The panel's control task drives GPIO28 (`PANEL_HEARTBEAT_PIN`, IO28 of header P3) from the core that does
 not draw. The task runs every 5ms; the line edges every 20ms
@@ -665,7 +666,11 @@ loaded before the table takes one USB load of `rcbench-iomcu-install.uf2`.
 ### Output drivers (PWM, PPM, DShot, bidirectional DShot)
 
 Built; the frame arithmetic, the group code, the reply sampler and the GPIO-to-PWM-slice
-fold are host-tested. No instrument has been on any output pin. [Reference](docs/DShot.md).
+fold are host-tested. `test_out_dshot` runs the DShot pin driver on a fake of the pico-sdk
+calls it makes: a pin that sends no frames is driven low in both modes, and a bidirectional
+frame never starts from a low line. `test_outputs_hw` holds the 1000µs between the release
+of a bidirectional pin and its first frame. No instrument has been on any output pin.
+[Reference](docs/DShot.md).
 
 ### S.BUS decoder
 
@@ -1236,7 +1241,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 468 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 471 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1269,7 +1274,7 @@ The host suite is 468 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_settings_folders`, `test_settings_sensors`, `test_settings_keypad`,
 `test_settings_rows`, `test_setting_keypad_eq`, `test_log_numbers`, `test_log_reader`,
 `test_log_csv`, `test_link_crc`, `test_link_pages`, `test_link_watchdog`,
-`test_link_loopback`, `test_link_bringup`, `test_link_read_split`, `test_link_can`,
+`test_link_loopback`, `test_link_bringup`, `test_link_read_split`, `test_link_retry`, `test_link_can`,
 `test_link_sha256`, `test_link_update`, `test_link_artxfer`, `test_link_drawing`,
 `test_art_store`, `test_art_fetch`, `test_outputs`, `test_outputs_hw`,
 `test_outputs_hw_ports`, `test_outstore`, `test_outstore_range`, `test_can_timing`, `test_can_selftest`,
@@ -1286,12 +1291,12 @@ The host suite is 468 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_sense_i228_setup`, `test_supply_link`, `test_supply_keep`, `test_sense_link`,
 `test_sense_link_view`, `test_sense_map_link`, `test_sense_win_link`,
 `test_sense_limit_link`, `test_log_cols`, `test_sense_windows`, `test_servo_source`,
-`test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`, `test_ppm`,
+`test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`, `test_out_dshot`, `test_ppm`,
 `test_outbind`, `test_board_fix`, `test_outputs_screen`, `test_outputs_screen_draw`,
 `test_outputs_screen_off`, `test_outputs_screen_port`, `test_outputs_screen_carrier`,
 `test_prog_choice`, `test_layout_screen`, `test_outputs_layout`, `test_outputs_view`,
 `test_picker_screen`, `test_picker_screen_hold`, `test_picker_screen_table`,
-`test_picker_layout`, `test_picker_cat`, `test_board_drawing`, `test_busfault_screen`,
+`test_picker_layout`, `test_picker_cat`, `test_board_drawing`, `test_busfault_screen`, `test_busfault_reconnect`,
 `test_coproc_update_screen`, `test_upd_coproc`, `test_upd_layout`, `test_text`,
 `test_openyge_frame`, `test_openyge_status`, `test_openyge_params`, `test_esc_profiles`,
 `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`,
@@ -1771,14 +1776,14 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 858 committed screenshots to the current render,
-429 in English and the same 429 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` holds 860 committed screenshots to the current render,
+430 in English and the same 430 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
 
 `stack_check.py --iomcu` holds each IOmcu core's deepest chain, one interrupt and 256 bytes
-to the core's stack: core 0 reaches 1492 of 4096 with 528 for an interrupt. `stack_check.py`
+to the core's stack: core 0 reaches 1508 of 4096 with 528 for an interrupt. `stack_check.py`
 holds each panel task's deepest chain on the ESP32-P4, decoded from its RISC-V code, and
 1024 bytes to the task's stack; the main task reaches 5424 of 8192. `frame_cost.py` holds 27
 modes to ceilings of L2 fills under the P4's caches; the bench frame has no ceiling while
@@ -1919,7 +1924,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_cats.c` | 65 | 64 | 98.5% |
 | `shared/ui/picker_port.c` | 116 | 109 | 94.0% |
 | `shared/ui/board_drawing.c` | 88 | 85 | 96.6% |
-| `shared/ui/busfault_screen.c` | 320 | 319 | 99.7% |
+| `shared/ui/busfault_screen.c` | 425 | 424 | 99.8% |
 | `shared/ui/wifi_screen.c` | 625 | 617 | 98.7% |
 | `shared/ui/wifi_kept.c` | 31 | 31 | 100.0% |
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
@@ -2062,11 +2067,11 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/can/can_timing.c` | 105 | 103 | 98.1% |
 | `shared/can/can_selftest.c` | 147 | 137 | 93.2% |
 | `shared/can/mcp2515.c` | 44 | 43 | 97.7% |
-| `shared/link/link_bringup.c` | 160 | 160 | 100.0% |
-| `shared/link/link_can.c` | 105 | 103 | 98.1% |
+| `shared/link/link_bringup.c` | 163 | 163 | 100.0% |
+| `shared/link/link_can.c` | 112 | 111 | 99.1% |
 | `shared/link/link_crc.c` | 13 | 13 | 100.0% |
-| `shared/link/link_dev.c` | 133 | 129 | 97.0% |
-| `shared/link/link_host.c` | 139 | 135 | 97.1% |
+| `shared/link/link_dev.c` | 169 | 165 | 97.6% |
+| `shared/link/link_host.c` | 169 | 165 | 97.6% |
 | `shared/link/link_artxfer.c` | 94 | 93 | 98.9% |
 | `shared/link/link_drawing.c` | 141 | 141 | 100.0% |
 | `shared/link/link_control.c` | 35 | 35 | 100.0% |
@@ -2156,7 +2161,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **83482** | **81915** | **98.1%** |
+| **total** | **83663** | **82097** | **98.1%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -2184,8 +2189,9 @@ the RUN pin held low for 100ms; pulses must not return on GPIO 0 until ARM is he
 
 No timing has been seen on an instrument. What a host test cannot reach: every bit timing,
 the DMA ring that plays a PPM frame, the PIO turnaround from a bidirectional DShot frame to
-its reply, and whether an ESC other than the one AM32 2.21 ESC on a tester's bench (#172)
-answers.
+its reply, the low rest of a stopped bidirectional DShot pin and its release 1000µs before
+the first frame on a real ESC, and whether an ESC other than the one AM32 2.21 ESC on a
+tester's bench (#172) answers.
 
 **Next evidence or work:** an oscilloscope, a servo, and an ESC that does bidirectional DShot. [What is
 unconfirmed](docs/DShot.md#what-has-not-been-confirmed-on-a-wire).
@@ -2196,9 +2202,11 @@ Measured on the bring-up module: eight erase-and-program windows printed 19,174 
 and the XL2515's overrun count climbed from 2 to 8 while nine saves were taken. A frame at
 1Mbit/s is about 130us and the controller holds two, so 19ms is about 150 frame times, or
 seventy times over the 260us the two buffers hold, with nobody emptying them; the bus
-reports no error, because the frames arrived and nobody collected them. A lost request costs
-the panel LINK_HOST_TIMEOUT_MS (1000ms) of waiting, and 1000ms of silence latches this end's
-200ms failsafe, so one lost frame is enough for `FAULT 01`.
+reports no error, because the frames arrived and nobody collected them. A lost request is
+sent once more after LINK_HOST_RETRY_MS (50ms) to a 4.37 IOmcu
+([A lost answer](docs/Link.md#a-lost-answer)). Lost twice, or lost on an older IOmcu, it
+costs the panel LINK_HOST_TIMEOUT_MS (1000ms) of waiting, and that silence latches this
+end's 200ms failsafe: `FAULT 01`.
 
 The store reduces erase frequency, as described above. A flash window can still exceed the
 260us held by the two buffers. The recorded 19ms window combined an erase and a page program
@@ -2398,8 +2406,8 @@ stop, a pulled cable, the input lowered under a live set point in 0.5V steps.
 
 ### IOmcu core 0's stack
 
-`stack_check.py --iomcu` measures 1492 bytes for the deepest chain and 528 for one interrupt
-on the 4096-byte stack, 1820 bytes above the 256-byte margin. The figures are those of the
+`stack_check.py --iomcu` measures 1508 bytes for the deepest chain and 528 for one interrupt
+on the 4096-byte stack, 1804 bytes above the 256-byte margin. The figures are those of the
 image CI builds with arm-none-eabi-gcc 14.2.1, and `stack_check.py --iomcu --check-doc`
 holds them. The depth is a lower bound: 251 calls through a register are not followed. The
 stack has no guard (`PICO_USE_STACK_GUARDS` is off). Not measured on hardware. An image
@@ -2545,7 +2553,7 @@ checked afterwards with the ESC's program card.
 
 ### The German interface
 
-The tables, the fonts and the fit check are built and tested on the host, and the 426 German
+The tables, the fonts and the fit check are built and tested on the host, and the 430 German
 screenshots are rendered by the panel's code. An alert already on the band, and the title of
 a keypad or choice already open, keep the language they were raised in until replaced.
 

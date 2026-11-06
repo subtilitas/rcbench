@@ -420,7 +420,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
 | `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 320 | 2 832 |
-| `control` | `control_task` | 6 144 | 3 472 | 1 632 |
+| `control` | `control_task` | 6 144 | 3 648 | 1 456 |
 | `runlog` | `log_task` | 6 656 | 3 824 | 1 792 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
 | `imu` | `imu_task`, die Verbindung der Bluetooth-IMU: die Werte aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_imu.c`) | 4 096 | 1 888 | 1 168 |
@@ -599,7 +599,7 @@ eine Marge von 256 Bytes den Stack eines Kerns überschreiten.
 
 | Kern | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Ein Interrupt (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Kern 0 | `main` | 4 096 | 1 492 | 528 | 1 820 |
+| Kern 0 | `main` | 4 096 | 1 508 | 528 | 1 804 |
 | Kern 1 | `core1_main` | 4 096 | 644 | 528 | 2 668 |
 
 Gemessen am Image, das CI baut, pico-sdk 2.3.0 mit arm-none-eabi-gcc 14.2.1
@@ -612,7 +612,7 @@ ergibt 640 Bytes), und CI baut das Image mit dem Compiler aus dem Paket des
 Runners. Die unten genannten Frames stammen aus demselben Build.
 
 Die tiefste Kette von Kern 0 ist eine Anfrage, die einen Ausgang bindet und
-im pico-sdk scheitert: `main` (256 Bytes), `can_service` (344),
+im pico-sdk scheitert: `main` (256 Bytes), `can_service` (352),
 `link_dev_dispatch`, `slots_write`, `slots_take`, `ports_apply`,
 `slots_rerate`, `outputs_hw_apply_only`, `out_dshot_bind`, die Belegung einer PIO-State-Machine (PIO: Programmable
 Input/Output) im pico-sdk und `panic()` mit dem, was es zur Ausgabe

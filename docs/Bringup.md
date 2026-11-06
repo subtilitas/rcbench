@@ -156,8 +156,8 @@ is not measured.
 
     I (…) rcbench: LINK answers arrive too late
     W (…) rcbench:   check: a reply slower than the poll timeout, or a stalled far end
-    I (…) rcbench:   last 60s  polls 1200 replies 1197 timeouts 3 stale 3 nack 0  iomcu frames 1200 crc 0 resync 0 refused 0
-    I (…) rcbench:   panel  polls 36000 replies 35990 timeouts 10 stale 7 nack 0 crc 0 resync 0
+    I (…) rcbench:   last 60s  polls 1200 replies 1197 timeouts 3 retried 1 stale 3 nack 0  iomcu frames 1201 crc 0 resync 0 refused 0
+    I (…) rcbench:   panel  polls 36000 replies 35990 timeouts 10 retried 4 stale 7 nack 0 crc 0 resync 0
     I (…) rcbench:   iomcu  frames 36000 crc 0 resync 0 refused 0
     I (…) rcbench:   round trip min 620 avg 700 max 1400 us
 
@@ -195,6 +195,16 @@ lowest tone at 400Hz, or PD mini RX on the sensor bus's SCL) and none for
 the values it takes. A pin refused because something else holds it is
 offered again every 5s and counts one each time. `timeouts`, `stale` and
 `crc` are the columns that count a link fault.
+
+`retried` counts requests answered after the panel sent them a second
+time, 50ms after an answer did not come (protocol 4.37, [A lost
+answer](Link.md#a-lost-answer)). Each is an answer lost once and
+recovered: it raises no `FAULT 01`, takes no link down and is not a link
+fault for the diagnosis. A repeat is a frame the IOmcu decodes, so
+`frames` in the IOmcu line can exceed `polls` by the repeats. A request
+whose repeat is lost as well counts in `timeouts` and not in `retried`.
+The card's log line carries the same total as `retried=`.
+An exchange answered after its repeat adds no round-trip sample.
 
 The `crc` and `resync` columns of the IOmcu line carry the XL2515's
 receive and transmit error counters (status registers `LINK_ST_CRC_ERRORS` and

@@ -622,6 +622,36 @@ UI_TEXT(BF_ACKNOWLEDGED, 90,
 UI_TEXT(BF_HOLD, 0,
     "HOLD 2s TO ACKNOWLEDGE",
     "2s HALTEN ZUM BESTÄTIGEN")
+UI_TEXT(BF_HOLD_RECONNECT, 0,
+    "HOLD 2s TO RECONNECT",
+    "2s HALTEN ZUM NEUVERBINDEN")
+UI_TEXT(BF_TITLE_BACK, 0,
+    "LINK BACK",
+    "LINK WIEDER DA")
+UI_TEXT(BF_BACK_TEXT, 0,
+    "The link answers again.",
+    "Die Verbindung antwortet wieder.")
+UI_TEXT(BF_BACK_MEANS, 0,
+    "The IOmcu has answered every request for 1s or longer.",
+    "Der IOmcu beantwortet seit 1s oder länger jede Anfrage.")
+UI_TEXT(BF_BACK_1, 0,
+    "A STOP that stands and the FAULT chip stay as they are.",
+    "Ein bestehender STOP und der FEHLER-Chip bleiben, wie sie sind.")
+UI_TEXT(BF_BACK_2, 0,
+    "A FAULT 01, the IOmcu's failsafe, clears at the next ARM.",
+    "Ein FEHLER 01, der Failsafe des IOmcu, erlischt beim nächsten ARM.")
+UI_TEXT(BF_BACK_3, 0,
+    "If the link drops again, only the simulation is offered.",
+    "Bricht die Verbindung wieder ab, bleibt nur die Simulation.")
+UI_TEXT(BF_BACK_NOTE_1, 0,
+    "After reconnecting, the bench shows the IOmcu's values again.",
+    "Nach dem Neuverbinden zeigt der Prüfstand wieder die Werte des IOmcu.")
+UI_TEXT(BF_BACK_NOTE_2, 0,
+    "It stays SAFE. Nothing is driven before the next ARM.",
+    "Er bleibt SAFE. Vor dem nächsten ARM wird nichts angesteuert.")
+UI_TEXT(BF_BACK_FOR, 0,
+    "back      %lus",
+    "verbunden     %lus")
 UI_TEXT(BF_THIS_PANEL, 0,
     "THIS PANEL",
     "DIESES PANEL")
@@ -5740,6 +5770,12 @@ UI_TEXT(HOLD_HINT_WRITE, 94,
 UI_TEXT(HOLD_HINT_RESTORE, 94,
     "Hold 2s to restore.",
     "Halte 2s, um zurückzuspielen.")
+UI_TEXT(HOLD_HINT_ACKNOWLEDGE, 81,
+    "Hold 2s to acknowledge.",
+    "Halte 2s, um zu bestätigen.")
+UI_TEXT(HOLD_HINT_RECONNECT, 81,
+    "Hold 2s to reconnect.",
+    "Halte 2s, um neu zu verbinden.")
 UI_TEXT(HOLD_HINT_CONTINUE, 94,
     "Hold 2s to continue.",
     "Halte 2s, um fortzufahren.")

@@ -166,9 +166,9 @@ typedef enum {
  * major change; it is a new page.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-/** @brief The minor this build speaks: 36, SERVO PWM on the rbmod carrier's
- *         programming ports. */
-#define LINK_PROTOCOL_MINOR 36u
+/** @brief The minor this build speaks: 37, numbered exchanges and the
+ *         answered repeat (LINK_MINOR_REPEAT). */
+#define LINK_PROTOCOL_MINOR 37u
 
 /** @brief The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -385,6 +385,17 @@ typedef enum {
  * offers the choice of a programming port only to 4.36 or later.
  */
 #define LINK_MINOR_CARRIER_PWM 36u
+
+/**
+ * @brief The first minor that takes numbered exchanges and answers a repeat
+ *        from its copy (link_dev_dispatch()).
+ *
+ * The exchange number is bits 7 to 5 of a frame's offset field (link_can.h).
+ * An older IOmcu refuses such a frame as a window past the end of a page, so
+ * the panel numbers its requests, and repeats a lost answer's request, on a
+ * 4.37 or later IOmcu only.
+ */
+#define LINK_MINOR_REPEAT 37u
 
 /* ----------------------------------------------------------------- outputs */
 

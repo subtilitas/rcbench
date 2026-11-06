@@ -64,6 +64,7 @@ bool out_dshot_bind(uint8_t pin, uint16_t rate_kbit, bool bidirectional);
 void out_dshot_send(uint8_t pin, uint16_t value, bool telemetry);
 bool out_dshot_poll(uint8_t pin, bool edt, dshot_telem_t *out);
 void out_dshot_stop(uint8_t pin);
+bool out_dshot_wake(uint8_t pin);
 void out_dshot_release(uint8_t pin);
 ```
 
@@ -72,8 +73,22 @@ requested rate and mode. The output continues running. A different rate
 or mode returns false and also leaves the existing output running. Call
 `out_dshot_release()` before binding the pin with different settings.
 
-`out_dshot_stop()` stops sending frames. The ESC stops after its own
-signal-loss timeout.
+`out_dshot_stop()` stops sending frames and drives the pin low, in both
+modes. The ESC stops after its own signal-loss timeout. A bound pin is low
+from the bind to the first frame as well. A bidirectional line high with no
+frames on it is the bootloader entry condition of the family S (BLHeli_S),
+Bluejay and AM32 ESC firmware.
+
+A bidirectional pin idles high on its pull-up between the frames of a run.
+`out_dshot_wake()` takes it from the low rest to that idle and sends nothing;
+it returns true when it released the line. Call it one frame period before
+the first frame of a run. `out_dshot_send()` on a bidirectional pin still at
+its low rest does the same and sends no frame, so no frame starts from a low
+line. A plain DShot pin needs no wake: its frames start from its low idle.
+
+`out_dshot_release()` gives the pad back as a plain input with no pull. The
+driver does not touch a released pin, so a programmer that holds it sets
+its level.
 
 ## Use in another pico-sdk project
 

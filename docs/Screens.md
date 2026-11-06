@@ -462,8 +462,8 @@ replaces a visible hint.
 - A press on STOP clears the hint in the same frame, and so do a fault bit
   that comes up on the FAULT chip and a switch from ARMED to SAFE,
   including one caused by an error. An alert stays through both.
-- HOLD 2s TO ACKNOWLEDGE on the bus-fault screen has no hint: that screen
-  has no band.
+- The bus-fault screen has no band. Its hold shows the hint in place of
+  its 64px bar, amber with dark text, for 4s. A tap on the bar closes it.
 
 | Button | Hint |
 | --- | --- |
@@ -488,6 +488,8 @@ replaces a visible hint.
 | HOLD 2s TO UPDATE THE C6 RADIO on UPDATES | `Hold 2s to update the C6 radio. Wi-Fi stays off until it ends.` |
 | HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS on OUTPUTS | `Hold 2s to clear all pin assignments.` |
 | OVERWRITE on FILES' editor's question | `Hold 2s to overwrite.` |
+| HOLD 2s TO ACKNOWLEDGE on the bus-fault screen | `Hold 2s to acknowledge.` |
+| HOLD 2s TO RECONNECT on the bus-fault screen | `Hold 2s to reconnect.` |
 
 ## Menu marks
 
@@ -5377,7 +5379,9 @@ panel's edge.
 Leaving it takes a two-second hold, the ARM gesture and the same fade.
 Acknowledging repairs nothing: the bench runs in simulation, nothing drives an
 output, and the test runs again at the next start-up. There is no band and no
-STOP, because the bench cannot switch to ARMED behind it.
+STOP, because the bench cannot switch to ARMED behind it. Once the link
+answers again, the hold is RECONNECT instead
+([A link that answers again](#a-link-that-answers-again)).
 
 ### A link that stops
 
@@ -5415,7 +5419,7 @@ by a power cut or a removal the card refused, is removed first, or named
 does not read, the line is not written. Firmware 0.21.0 and older wrote
 `RCBENCH.LOG` in the root; that file stays and is not written again:
 
-    t=182s link=down for 47s  bus=OFF tx_err=248 rx_err=0 bus_err=1976 rejoins=44/44  polls=5323 replies=5279 timeouts=44
+    t=182s link=down for 47s  bus=OFF tx_err=248 rx_err=0 bus_err=1976 rejoins=44/44  polls=5323 replies=5279 timeouts=44 retried=0
 
 The fields are the same in the same order every time. `rejoins` is this outage
 over the total since boot, and an unreadable controller writes `?` in its
@@ -5432,6 +5436,41 @@ on GPIO21 (receive) and GPIO22 (transmit), to a TJA1051T/3 transceiver; neither
 pin carries anything else.
 
 [Bringing up the link](Link.md) has the verdicts and what each one means.
+
+### A link that answers again
+
+The screen follows the link while it shows. Its right column moves with the
+link: `down` counts the seconds since the last answer, `requests` and
+`no answer` count the requests, and the CONTROLLER lines show the
+controller's state and error counters. Only the column is painted again when
+a number changes.
+
+Once the IOmcu has answered every poll for 1000ms (`BUSFAULT_BACK_MS`, the
+band's LINK), the screen offers RECONNECT:
+
+- The bar turns green and reads `LINK BACK`.
+- The heading reads `The link answers again.`
+- `back` counts the seconds since the first answer, in place of `down`.
+- The hold across the foot reads `HOLD 2s TO RECONNECT`. It opens the menu
+  on the live bench, SAFE.
+
+![The link answers again](img/busfault-back.png)
+
+- While the link is silent, RECONNECT is not offered. The hold is
+  `HOLD 2s TO ACKNOWLEDGE` and leads to the menu in simulation.
+- One poll without an answer withdraws RECONNECT at once and brings the
+  acknowledgement back. The next 1000ms of answers offer it again.
+- RECONNECT arriving or going abandons a hold in progress. Lift the finger
+  and hold again.
+- The start-up test's screen offers RECONNECT on the same condition. Its
+  right column keeps the test's counts.
+- RECONNECT clears nothing. A STOP that stands stays, and so does the FAULT
+  chip. FAULT 01 (`LINK_SILENT`: the IOmcu received no data for 200ms and
+  switched itself to SAFE) clears at the next ARM. After RECONNECT the band
+  shows SAFE, LINK and BENCH, and STOP or FAULT 01 where either stands.
+- An acknowledgement while the link is silent ends the screen for that
+  outage. The screen opens again only after the link has answered and then
+  stopped for 4s once more.
 
 ## IOmcu update
 
