@@ -2,6 +2,7 @@
   "id": "hobbywing-flyfun-8item",
   "brand": "Hobbywing",
   "family": "FlyFun 6A-100A sensorless, 8-item menu",
+  "family_de": "FlyFun 6A-100A sensorlos, Menü mit 8 Punkten",
   "models": [
     {
       "name": "FlyFun-6A",

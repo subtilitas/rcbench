@@ -2,6 +2,7 @@
   "id": "dualsky-xcontroller-lite",
   "brand": "Dualsky",
   "family": "XController Lite XC-12/22/45/65, stop/up count menu",
+  "family_de": "XController Lite XC-12/22/45/65, Zählmenü (stop/up)",
   "models": [
     {
       "name": "XC-12-Lite",

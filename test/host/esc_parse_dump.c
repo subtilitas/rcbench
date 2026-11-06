@@ -33,6 +33,7 @@ static void dump(const esc_profile_t *p)
     hx(p->id);
     hx(p->brand);
     hx(p->family);
+    hx(p->family_de);
     printf("|%d %d %d %d|", p->scheme, p->encoding, p->announce,
            p->automatable);
     hx(p->automatable_note);

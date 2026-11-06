@@ -63,6 +63,20 @@ const char *esc_stick_panel_step_text(const esc_manual_t *m)
     return (m->action != NULL) ? m->action : "";
 }
 
+/* A profile's family in the language showing: the profile's German where it
+ * gives one and German shows, else its English. */
+const char *esc_stick_panel_family_text(const esc_profile_t *p)
+{
+    if (p == NULL) {
+        return "";
+    }
+    if (ui_text_language() == UI_LANG_DE && p->family_de != NULL
+        && p->family_de[0] != '\0') {
+        return p->family_de;
+    }
+    return (p->family != NULL) ? p->family : "";
+}
+
 const char *sp_action(const esc_manual_t *m)
 {
     return esc_stick_panel_step_text(m);

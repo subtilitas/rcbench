@@ -2,6 +2,7 @@
   "id": "hobbywing-skywalker-v2-mini",
   "brand": "Hobbywing",
   "family": "Skywalker V2 15A-100A, 11-item menu",
+  "family_de": "Skywalker V2 15A-100A, Menü mit 11 Punkten",
   "models": [
     {
       "name": "Skywalker 15A V2",

@@ -2,6 +2,7 @@
   "id": "yge-hv",
   "brand": "YGE",
   "family": "HV (5-mode setup: 60HV, 90HV, 120HV, 160HV, 200HV)",
+  "family_de": "HV (Setup mit 5 Modi: 60HV, 90HV, 120HV, 160HV, 200HV)",
   "models": [
     {
       "name": "60HV",

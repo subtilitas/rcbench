@@ -54,6 +54,7 @@ MANUAL_MAX = 4          # steps in one profile: ESC_MANUAL_MAX
 AFTER_MAX = 4           # moves after a value's selection: ESC_AFTER_MAX
 MAKER_MODELS_MAX = 512  # one maker's models: ESC_MAKER_MODELS_MAX
 ACTION_MAX = 120        # bytes of one step's text: ESC_MANUAL_ACTION_MAX
+FAMILY_DE_MAX = 120     # bytes of the German family: ESC_FAMILY_DE_MAX
 
 
 class Bad(Exception):
@@ -303,9 +304,15 @@ def check(path: pathlib.Path) -> dict:
          "not one or many")
     rep = num(a, "repeat", f"{w}.scheme.announce", 255)
 
+    # The German family beside it: absent or null, none; else as the
+    # manual steps' German, 1 to FAMILY_DE_MAX bytes.
+    fde = "" if d.get("family_de") is None else text(d, "family_de", w)
+    want(len(fde.encode("utf-8")) <= FAMILY_DE_MAX, f"{w}.family_de",
+         f"longer than {FAMILY_DE_MAX} bytes")
+
     p = {
         "id": pid, "brand": text(d, "brand", w),
-        "family": text(d, "family", w),
+        "family": text(d, "family", w), "family_de": fde,
         "scheme": pick(s, "type", f"{w}.scheme", SCHEME),
         "encoding": enc,
         "announce": pick(a, "what", f"{w}.scheme.announce", ANNOUNCE),
@@ -511,7 +518,7 @@ def emit(profiles: list[dict]) -> str:
         manual = f"{n}_manual" if p["manual"] else "NULL"
         o.append(
             f"    {{ {c_str(p['id'])}, {c_str(p['brand'])},\n"
-            f"      {c_str(p['family'])},\n"
+            f"      {c_str(p['family'])}, {c_str(p['family_de'])},\n"
             f"      {p['scheme']}, {p['encoding']}, {p['announce']},"
             f" {p['auto']},\n"
             f"      {c_str(p['note'])},\n"
@@ -569,9 +576,19 @@ def self_test() -> list[str]:
                                 '"select": {', 1)
         return text.encode("utf-8")
 
+    fam = '"family": "RCE-BL15X (T-REX 250)",'
     jumper = '{"when": "before_power", "action": "Fit the jumper."}'
     pull = '{"when": "before_menu", "action": "Pull the jumper."}'
     refuse = {
+        "family_de empty": at(fam, fam + ' "family_de": "",'),
+        "family_de a number": at(fam, fam + ' "family_de": 1,'),
+        "family_de a list": at(fam, fam + ' "family_de": ["x"],'),
+        "family_de 121 bytes": at(fam, fam + ' "family_de": "'
+                                  + "x" * 121 + '",'),
+        "family_de 61 umlauts": at(fam, fam + ' "family_de": "'
+                                   + "\u00fc" * 61 + '",'),
+        "family_de twice": at(fam, fam + ' "family_de": "a", "family_de": '
+                              '"b",'),
         "schema true": at(head, '"schema": true,'),
         "key twice": at(head, head + ' "schema": 1,'),
         "escaped key twice": at(head, head + ' "sch\\u0065ma": 1,'),
@@ -788,6 +805,13 @@ def self_test() -> list[str]:
         "manual de 60 umlauts": man('[{"when": "before_menu", "action": "x", '
                                     '"action_de": "' + "\u00fc" * 60
                                     + '"}]'),
+        "family_de null": at(fam, fam + ' "family_de": null,'),
+        "family_de 120 bytes": at(fam, fam + ' "family_de": "'
+                                  + "x" * 120 + '",'),
+        "family_de 60 umlauts": at(fam, fam + ' "family_de": "'
+                                   + "\u00fc" * 60 + '",'),
+        "family_de escaped": at(fam, fam + ' "family_de": "Z\\u00e4hlmen'
+                                '\\u00fc",'),
         "manual de escaped": man('[{"when": "before_menu", "action": "x", '
                                  '"action_de": "Br\\u00fccke ab"}]'),
     }

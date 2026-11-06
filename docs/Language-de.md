@@ -16,7 +16,7 @@ Einstellungen im NVS (Non-Volatile Storage) ab.
 | --- | --- |
 | Beschriftungen, Namen und Hilfetexte der Einstellungen, Alarme im Band, Warnfelder, Ablehnungshinweise, die Details des Splash | die Begriffe unter [Begriffe, die Englisch bleiben](#begriffe-die-englisch-bleiben) |
 | der TXT-Bericht (reiner Text) des Servotests, in der Sprache beim Start des Laufs | die CSV-Datei (Comma-Separated Values) des Servotests: Kopfzeile und die Wörter in ihren Zeilen (`test`, `phase`, `mode`), damit Werkzeuge jeden Lauf gleich lesen |
-| die Hinweise und Ablehnungen der Stick-Programmierung, und die Handgriffe eines ESC-Profils, wo das Profil sie auf Deutsch nennt (`action_de`) | Namen, Punkte und Werte der Profile des ESC (Electronic Speed Controller), die aus den Anleitungen stammen |
+| die Hinweise und Ablehnungen der Stick-Programmierung, und die Familie und die Handgriffe eines ESC-Profils, wo das Profil sie auf Deutsch nennt (`family_de`, `action_de`) | Namen, Punkte und Werte der Profile des ESC (Electronic Speed Controller), die aus den Anleitungen stammen |
 | | die Parameternamen des Programmers und ihre Werte, die der Firmware gehören, wie ihre Konfiguratoren sie zeigen |
 | | das Konsolen-Log |
 
@@ -410,6 +410,6 @@ Zwei Leser nehmen die deutsche Spalte nach ihrer Position: `TABLE_ENTRY` in
 `tools/check_docs.py` und die Prüfung der Servo-Bedienelemente in
 `configurator/core/test/help.test.ts`. Die WLAN-Seite wählt ihre Sprache
 über einen Schalter, `wifi_access_set_german()`, und ein ESC-Profil trägt
-seine manuellen Schritte auf Englisch und auf Deutsch (`action`,
-`action_de`); keines von beiden nimmt eine dritte Sprache ohne eigene
-Änderung.
+seine Familie und seine manuellen Schritte auf Englisch und auf Deutsch
+(`family`, `family_de`, `action`, `action_de`); keines von beiden nimmt eine
+dritte Sprache ohne eigene Änderung.

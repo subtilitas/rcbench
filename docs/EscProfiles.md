@@ -92,6 +92,16 @@ characters of `a-z 0-9 -`.
 `sources`, `unknowns`, `notes` and every `description` field stay in the
 JSON. The panel does not load them.
 
+`family` is the family's text in English. `family_de` is the same text in
+German: 1 to 120 bytes of UTF-8, umlauts included; absent or null when none,
+and the English shows in German too. The crumb, the model rows and the
+pop-ups of ESC STICK show `family_de` where it exists and the interface is
+German, and `family` otherwise. Brand and model names and the terms that stay
+English (`brushed`, `brushless`, `sensorless`, `BEC`, `OPTO`, `ESC`) are the
+same in both. A family of names and those terms only has no `family_de`: 36
+of the 72 profiles of record give one. The search field matches `family`, in
+both languages.
+
 ### Fields the panel reads
 
 | Field | Values |
@@ -199,7 +209,7 @@ python3 tools/check_units.py --check
 
 The texts the panel carries write a number and its unit together: `2s`,
 `1.2-1.8ms`, `3.0V per cell`, `8kHz`. A word after a number keeps its space
-(`3 beeps`). These are `brand`, `family`, `automatable_note`, the entry's
+(`3 beeps`). These are `brand`, `family`, `family_de`, `automatable_note`, the entry's
 `steps`, a model's `name`, an item's `name` and `applies_when`, a value's
 `name` and a manual step's `action` and `action_de`, the strings
 `gen_esc_profiles.py` compiles into C. `check_units.py` checks these strings;

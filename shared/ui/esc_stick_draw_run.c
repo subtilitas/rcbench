@@ -762,7 +762,8 @@ DRAWER void sp_draw_warning(gfx_canvas_t *c)
     /* A profile with manual steps gives up the blank line above its name
      * to the steps below. */
     const int top = a.y + 68 + ((t->p->manual_count > 0u) ? n : n + 1) * 22;
-    snprintf(line, sizeof(line), "%s %s", t->p->brand, t->p->family);
+    snprintf(line, sizeof(line), "%s %s", t->p->brand,
+             esc_stick_panel_family_text(t->p));
     sp_text(c, a.x + 20, top, line, 90, ui_theme_color(UI_C_ACCENT));
     uint32_t mv, ma;
     sp_supply(&mv, &ma);
@@ -814,7 +815,8 @@ DRAWER void sp_draw_hand(gfx_canvas_t *c)
     const esc_profile_t *p = t->hand_p;
     const gfx_rect_t a = sp_panel(c, TR(SP_HAND_BTN));
     char line[256];
-    snprintf(line, sizeof(line), "%s %s", p->brand, p->family);
+    snprintf(line, sizeof(line), "%s %s", p->brand,
+             esc_stick_panel_family_text(p));
     sp_text(c, a.x + 20, a.y + 64, line, 92, ui_theme_color(UI_C_ACCENT));
     /* ESC_MANUAL_MAX steps of a label and two lines each fit above the
      * buttons at a pitch of LINE_P. */
@@ -875,7 +877,8 @@ DRAWER void sp_draw_prompt(gfx_canvas_t *c)
     const esc_manual_t *m = esc_stick_hand(e);
     const gfx_rect_t a = sp_panel(c, TR(SP_PROMPT_TITLE));
     char line[256];
-    snprintf(line, sizeof(line), "%s %s", e->p->brand, e->p->family);
+    snprintf(line, sizeof(line), "%s %s", e->p->brand,
+             esc_stick_panel_family_text(e->p));
     sp_text(c, a.x + 20, a.y + 64, line, 92, ui_theme_color(UI_C_ACCENT));
     gfx_text(c, a.x + 20, a.y + 92, sp_when_text(m), SP_FONT,
              ui_theme_color(UI_C_WARN), 1);

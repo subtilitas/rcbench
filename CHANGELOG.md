@@ -39,6 +39,17 @@ history is in git.
   image: the write page, CHECK THIS FILE and the restore's page name each
   hidden value that changes, first and in the warning colour.
 
+### Changed
+
+- ESC profiles carry an optional `family_de`, the family text in German. The
+  ESC STICK crumb, model rows and manual-step pop-ups show it in German and
+  show `family` in English and where a profile has none. 36 of the 72
+  profiles of record give one, for example `Zählmenü mit 8 Punkten` for
+  `8-item count menu`; a family of names and terms only (`brushed`,
+  `sensorless`, `ESC`) has none. `tools/gen_esc_profiles.py` and the card
+  reader accept 1 to 120 bytes of UTF-8, and `family_de` is held to the
+  unit rule of `tools/check_units.py`.
+
 ### Fixed
 
 - The IOmcu's firmware update cannot erase or program flash below 0x2000,

@@ -97,6 +97,16 @@ Zeichen aus `a-z 0-9 -`.
 `sources`, `unknowns`, `notes` und jedes `description`-Feld bleiben im
 JSON. Das Panel lädt sie nicht.
 
+`family` ist der Text der Familie auf Englisch. `family_de` ist derselbe Text
+auf Deutsch: 1 bis 120 Byte UTF-8, Umlaute eingeschlossen; fehlt das Feld oder
+ist es null, erscheint auch auf Deutsch das Englische. Die Brotkrumen, die
+Modellzeilen und die Pop-ups von ESC STICK zeigen `family_de`, wo es existiert
+und die Oberfläche auf Deutsch eingestellt ist, sonst `family`. Marken- und
+Modellnamen und die Begriffe, die englisch bleiben (`brushed`, `brushless`,
+`sensorless`, `BEC`, `OPTO`, `ESC`), sind in beiden gleich. Eine Familie, die
+nur aus Namen und diesen Begriffen besteht, hat kein `family_de`: 36 der 72
+Profile geben eines an. Das Suchfeld vergleicht `family`, in beiden Sprachen.
+
 ### Felder, die das Panel liest
 
 | Feld | Werte |
@@ -210,7 +220,7 @@ python3 tools/check_units.py --check
 
 Die Texte, die das Panel mitführt, schreiben Zahl und Einheit zusammen:
 `2s`, `1.2-1.8ms`, `3.0V per cell`, `8kHz`. Ein Wort nach einer Zahl behält
-sein Leerzeichen (`3 beeps`). Das sind `brand`, `family`,
+sein Leerzeichen (`3 beeps`). Das sind `brand`, `family`, `family_de`,
 `automatable_note`, die `steps` des Einstiegs, der `name` eines Modells, der
 `name` und `applies_when` eines Menüpunkts, der `name` eines Werts und
 `action` und `action_de` eines Handgriffs: die Strings, die
