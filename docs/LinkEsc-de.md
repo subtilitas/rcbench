@@ -135,11 +135,11 @@ erscheinen.
 | Register 0 bis 20 | alle 5ms in einer Anfrage, 100ms bei gehaltenem Pin, 500ms sonst |
 | Erstes Lesen nach einem Panel-Neustart, ein Pin gehalten | CLOSE; erneut alle 1000ms, solange die Page `WRITING` antwortet oder in `NOT_BACK` bleibt. Keine Anfrage, bis die Page frei ist. |
 | Link zurück, kein Neustart | nichts wird geschlossen |
-| Die STOP-Taste oder jeder Stop des Panels | die Operation `STOP`, sobald die Page bekannt ist und einen Pin hält; ein Stop in einer Link-Lücke geht danach. Ein `BAD_VALUE`, eine SEQ eines anderen Schreibers: lesen und erneut, höchstens 6 Mal. |
+| Die STOP-Taste oder jeder Stopp des Panels | die Operation `STOP`, sobald die Page bekannt ist und einen Pin hält; ein Stopp in einer Link-Lücke geht danach. Ein `BAD_VALUE`, eine SEQ eines anderen Schreibers: lesen und erneut, höchstens 6 Mal. |
 | `FAULT` steigt, oder der Zustand erreicht `NOT_BACK` | ein Fehler: alle Ausgänge aus (`prog_faults_follow()`). Ein `FAULT`, der beim ersten Lesen nach Link-Aufbau schon steht, zählt nicht. |
 | Der Zustand erreicht `NOT_BACK` | ein Alarm, der Slot oder Port nennt |
 | Ein Pin gehalten, von wem auch immer | ARM auf MOTOR und SERVO, die TARGET-Zeile des Motors, ESC STICK, der Limit-Lauf und der Screenshot warten; ein angefragtes, abgelehntes ARM entfällt auf MOTOR und SERVO |
-| Ein Stop eingerastet | kein Befehl außer CLOSE, LEAVE und ABORT geht (`esc_prog_cmd_allowed()`) |
+| Ein Stopp eingerastet | kein Befehl außer CLOSE, LEAVE und ABORT geht (`esc_prog_cmd_allowed()`) |
 | 10 Lesezugriffe der Page in Folge fehlgeschlagen, in einer Anfrage | die Anfrage endet. Mit einem Halten im letzten Lesen: ein Fehler, und `STOP` |
 | Eine Lesekopie mit neuem `READS` oder `READ_CRC` | in Blöcken geholt und gegen `READ_CRC` geprüft, 3 Versuche |
 
@@ -157,7 +157,7 @@ sich während einer Reservierung so:
 
 - **Ein zurückgekehrter Link behält das Halten.** Bedingung: der Link war über 200ms still,
   ohne Panel-Neustart. Die Page bleibt `OPEN` und `STOPPED` mit gesetztem Quiet-Bit, die Bank
-  kann also nicht armen. Das ist die sichere Seite. Heraus führen CLOSE auf dem Screen, `esc close`
+  kann also nicht armen. Das ist die sichere Seite. Heraus führen CLOSE auf dem Bildschirm, `esc close`
   auf der Bench-Konsole oder ein IOmcu- oder Panel-Neustart.
 - **Ein von der Bench-Konsole gehaltener Pin geht mit einem Panel-Neustart.** Bedingung:
   `esc open` auf der Konsole, dann ein Panel-Neustart. Das Panel unterscheidet ihn nicht vom
@@ -188,7 +188,7 @@ sich während einer Reservierung so:
 | 2 | `OP` | die letzte Operation |
 | 3 | `RESULT` | Low-Byte das Ergebnis, High-Byte die Ablehnung des letzten Befehls |
 | 4 | `FLAGS` | Bit 0 `STOPPED`, 1 `FAULT`, 2 diese Session hat die Versorgung eingeschaltet, 3 ein PD mini antwortet, 4 schreibbar, 5 AM32-Einstellungen gelöscht, 6 AM32 für CAN-Boards (Controller Area Network) gebaut, 7 im Bootloader, 8 SUPPLY hält das OFF des Panels zurück, 9 eine Page halb geschrieben, 10 eine ganze Page gelesen, 11 ein Text-`save` nicht bewiesen |
-| 5 | `LINE` | Low-Byte 0 geparkt, 1 high getrieben, 2 Pull-up, 3 low getrieben, 4 eine Transaktion; High-Byte der GPIO, 0xFF für keinen. Ein Screen zeigt den aktiven Ausgang aus diesem Register. |
+| 5 | `LINE` | Low-Byte 0 geparkt, 1 high getrieben, 2 Pull-up, 3 low getrieben, 4 eine Transaktion; High-Byte der GPIO, 0xFF für keinen. Ein Bildschirm zeigt den aktiven Ausgang aus diesem Register. |
 | 6 | `TARGET` | wie gestaged; 0 wenn frei |
 | 7 | `SES` | Low-Byte das letzte Ergebnis der Session, High-Byte die letzte Ablehnung des Guards |
 | 8 | `ID` | Low-Byte die Firmware, High-Byte Layout oder Revision |
