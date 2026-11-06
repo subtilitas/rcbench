@@ -262,9 +262,12 @@ D-Serie, fährt das Ruderhorn auf das bearbeitete NEUTRAL, ENDE LINKS oder
 ENDE RECHTS, in der gehaltenen Sitzung, während der Prüfstand SAFE bleibt.
 Es braucht ein PD mini mit eingeschaltetem Ausgang und DREHRICHTUNG CW,
 und 2s Halten schaltet es ein. Es speichert nie.
+Solange es läuft, sucht ANSCHLAG SUCHEN an der Stelle von DREHRICHTUNG
+den Anschlag einer Seite und setzt ENDE LINKS oder ENDE RECHTS im
+Entwurf, ohne zu schreiben.
 [SERVO BEWEGEN in der Hitec-Programmierung](HitecMove-de.md) beschreibt die
-Seite, die Tasten `-`/`+`, die Beurteilung, das Ende und jede Ablehnung und
-Meldung.
+Seite, die Tasten `-`/`+`, die Beurteilung, das Ende, ANSCHLAG SUCHEN und
+jede Ablehnung und Meldung.
 
 ![SERVO BEWEGEN an, ENDE LINKS verfolgt](img/de/servo-hitec-move-on.png)
 

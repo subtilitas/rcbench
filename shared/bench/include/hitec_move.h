@@ -86,6 +86,28 @@
  * edits.  Every hard rule stays: the encoding and the order left end <
  * neutral < right end.
  *
+ * FIND STOP (hitec_prog_find_start()), while the switch reads ON and no
+ * other search runs: after the pass that runs, the horn moves to the
+ * neutral at the loop's slew; from there hitec_live_find_pass() moves it
+ * HITEC_LIVE_FIND_STEP outward every HITEC_LIVE_FIND_PASSES passes, up to
+ * the reach's edge, judged as a pass of the loop is.  Its end, and the
+ * loop's passes again toward the followed value:
+ *
+ *   - a bind: the end point, the stop moved HITEC_LIVE_BACK toward the
+ *     neutral, is the draft's LEFT END or RIGHT END, with the hold's
+ *     consent as an edit's; that end is followed
+ *     (HITEC_PROG_MSG_FIND_FOUND_L, _R).  An end the draft does not take
+ *     leaves the draft as it was (HITEC_PROG_MSG_FIND_NEAR);
+ *   - the reach's edge with no bind (HITEC_PROG_MSG_FIND_FREE);
+ *   - HITEC_LIVE_FIND_MS after the first pass of the request, the way to
+ *     the neutral included (HITEC_PROG_MSG_FIND_TIME);
+ *   - hitec_prog_find_stop() (HITEC_PROG_MSG_FIND_HALT).
+ *
+ * A bind on the way to the neutral is the loop's.  MOVE OFF and ABORT end
+ * FIND STOP and the loop as during a pass; every hard end stays.  FIND STOP
+ * writes nothing: a bind is what it looks for, so it says no error.  While
+ * it runs the positions take no edit.
+ *
  * Not measured (README.md of protocols/hitec, "Live loop"): the pass's
  * period, the servo's answer to targets below 400 and above 5600, the
  * thresholds of the judge on a blocked horn, the stall current of a
@@ -116,6 +138,7 @@ typedef enum {
     HITEC_MOVE_OFF = 0,  /**< no loop                                    */
     HITEC_MOVE_START,    /**< the start's read                           */
     HITEC_MOVE_RUN,      /**< the passes                                 */
+    HITEC_MOVE_FIND,     /**< FIND STOP: to the neutral, then the search */
     HITEC_MOVE_BACK,     /**< a bind: the move back                      */
     HITEC_MOVE_CENTRE,   /**< the end: 0x1E = 3000                       */
     HITEC_MOVE_REBOOT,   /**< the end: the reboot and the full read      */
@@ -135,6 +158,10 @@ typedef struct {
     bool     clamped;    /**< the followed value lies outside the reach  */
     uint16_t lo;         /**< the reach: the position of target 0        */
     uint16_t hi;         /**< the position of target 6000                */
+    int8_t   find;       /**< the hitec_find_side_t FIND STOP runs or is
+                              asked for; -1 none                         */
+    bool     find_go;    /**< FIND STOP searches past the neutral        */
+    uint16_t find_p;     /**< the position it commands                   */
 } hitec_move_view_t;
 
 /**
@@ -174,7 +201,8 @@ void hitec_prog_move_stop(hitec_prog_t *p);
 hitec_move_phase_t hitec_prog_move_phase(const hitec_prog_t *p);
 
 /**
- * @brief Whether the switch reads ON: START or RUN, no MOVE OFF asked.
+ * @brief Whether the switch reads ON: START, RUN or FIND, no MOVE OFF
+ *        asked.
  *
  * @param p The programmer.
  * @return true while it does.
@@ -184,7 +212,8 @@ bool hitec_prog_move_on(const hitec_prog_t *p);
 /**
  * @brief Whether parameter @p id takes an edit through
  *        hitec_prog_move_edit() now: NEUTRAL, LEFT END or RIGHT END of the
- *        D series while the switch reads ON.
+ *        D series while the switch reads ON and FIND STOP neither runs nor
+ *        is asked for.
  *
  * @param p  The programmer.
  * @param id hitec_param_t.
@@ -205,6 +234,33 @@ bool hitec_prog_move_live(const hitec_prog_t *p, uint8_t id);
  */
 hitec_prog_edit_t hitec_prog_move_edit(hitec_prog_t *p, uint8_t id,
                                        int32_t value);
+
+/**
+ * @brief FIND STOP on one side: the search starts after the pass that runs.
+ *
+ * @param p    The programmer.
+ * @param side hitec_find_side_t.
+ * @return HITEC_PROG_MSG_NONE when it is taken; HITEC_PROG_MSG_BUSY, said,
+ *         while the switch does not read ON, a search runs or is asked
+ *         for, or @p side is not a side.
+ */
+hitec_prog_msg_id_t hitec_prog_find_start(hitec_prog_t *p, uint8_t side);
+
+/**
+ * @brief FIND STOP off: a search asked for is dropped, one that runs ends
+ *        after its pass (HITEC_PROG_MSG_FIND_HALT).  Nothing without one.
+ *
+ * @param p The programmer.
+ */
+void hitec_prog_find_stop(hitec_prog_t *p);
+
+/**
+ * @brief The side FIND STOP runs on or is asked for.
+ *
+ * @param p The programmer.
+ * @return hitec_find_side_t; -1 none.
+ */
+int hitec_prog_find_side(const hitec_prog_t *p);
 
 /**
  * @brief The loop as the screen shows it.

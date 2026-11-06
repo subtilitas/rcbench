@@ -245,8 +245,11 @@ MOVE SERVO, the row under DIRECTION on a D series servo's TRAVEL tab,
 moves the horn to the NEUTRAL, LEFT END or RIGHT END being edited, inside
 the held session, while the bench stays SAFE. It needs a PD mini with its
 output on and DIRECTION CW, and a 2s hold switches it on. It never saves.
+While it runs, FIND STOP in DIRECTION's place searches for the stop of
+one side and sets LEFT END or RIGHT END in the draft, writing nothing.
 [MOVE SERVO on the Hitec programmer](HitecMove.md) describes the page, the
-`-`/`+` keys, the judges, the end and every refusal and message.
+`-`/`+` keys, the judges, the end, FIND STOP and every refusal and
+message.
 
 ![MOVE SERVO on, LEFT END followed](img/servo-hitec-move-on.png)
 

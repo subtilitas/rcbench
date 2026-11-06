@@ -120,7 +120,9 @@
  * MOVE SERVO (hitec_move.c, hitec_move.h): the horn of a D series servo
  * moved to the position being edited, inside the held session, while the
  * bench is SAFE; HITEC_PROG_MOVING while the loop or its end runs, when the
- * programmer's other operations are refused BUSY.
+ * programmer's other operations are refused BUSY.  FIND STOP runs inside
+ * it: the horn moved from the neutral outward until it binds, the end
+ * point that gives taken into the draft, nothing written.
  *
  * Every model is written: the D series with the HFP-30's registers, the
  * classic servos with the HPP-21 Plus's cells (hitec_reg.h).
@@ -349,6 +351,17 @@ typedef enum {
                                        loop                                */
     HITEC_PROG_MSG_MOVE_ENC_LOST, /**< the AS5600 reading went away during
                                        the loop                            */
+    HITEC_PROG_MSG_FIND_FOUND_L,  /**< FIND STOP bound on the left: arg the
+                                       stop, reg the LEFT END the draft
+                                       took                                */
+    HITEC_PROG_MSG_FIND_FOUND_R,  /**< the same on the right: RIGHT END    */
+    HITEC_PROG_MSG_FIND_FREE,     /**< FIND STOP reached the reach's edge
+                                       with no bind; arg the edge          */
+    HITEC_PROG_MSG_FIND_TIME,     /**< FIND STOP's cap of HITEC_LIVE_FIND_MS
+                                       passed; arg the position read       */
+    HITEC_PROG_MSG_FIND_HALT,     /**< FIND STOP ended by the operator     */
+    HITEC_PROG_MSG_FIND_NEAR,     /**< FIND STOP bound, and the draft does
+                                       not take the end: arg the stop      */
     HITEC_PROG_MSG_COUNT
 } hitec_prog_msg_id_t;
 
@@ -571,6 +584,13 @@ typedef struct {
     hitec_live_judge_t j;     /**< the judge of the passes                */
     hitec_live_cmd_t   cmd;   /**< the command of the last pass           */
     hitec_image_t start;      /**< the session's image at the start       */
+    hitec_live_find_t fs;     /**< FIND STOP's search                     */
+    uint8_t  find_req;        /**< FIND STOP asked: hitec_find_side_t + 1;
+                                   0 none                                 */
+    bool     find_go;         /**< FIND STOP searches: the horn stood at
+                                   the neutral                            */
+    bool     find_halt;       /**< FIND STOP's end asked by the operator  */
+    bool     find_edit;       /**< the draft takes FIND STOP's end now    */
 } hitec_move_t;
 
 /** @brief The programmer's state. */

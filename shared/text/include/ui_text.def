@@ -7103,6 +7103,29 @@ UI_TEXT(HP_LIVE_OWED, 116,
 UI_TEXT(HP_LIVE_ENDING, 116,
     "Servo restarting with its stored values.",
     "Servo startet mit seinen gespeicherten Werten neu.")
+/* FIND STOP on the TRAVEL tab while MOVE SERVO is ON (hitec_panel_move.c,
+ * hitec_move.h): its row, its note while it runs and how it ended. */
+UI_TEXT(HP_FIND, 0,
+    "FIND STOP",
+    "ANSCHLAG SUCHEN")
+UI_TEXT(HP_FIND_RUN, 0,
+    "FIND STOP toward %s: %u counts every %u passes from NEUTRAL, at most %us. Tap it again to stop.",
+    "ANSCHLAG SUCHEN Richtung %s: %u Zählwerte alle %u Durchläufe ab NEUTRAL, höchstens %us. Tippe erneut zum Anhalten.")
+UI_TEXT(HP_FIND_FOUND, 116,
+    "Stop at %u. %s set to %u in the edits.",
+    "Anschlag bei %u. %s in den Änderungen auf %u gesetzt.")
+UI_TEXT(HP_FIND_FREE, 116,
+    "No stop found up to %u.",
+    "Kein Anschlag bis %u gefunden.")
+UI_TEXT(HP_FIND_TIME, 116,
+    "No stop found in %us. The search ended at %u.",
+    "In %us kein Anschlag gefunden. Die Suche endete bei %u.")
+UI_TEXT(HP_FIND_HALT, 116,
+    "FIND STOP ended. The edits are unchanged.",
+    "ANSCHLAG SUCHEN beendet. Die Änderungen sind unverändert.")
+UI_TEXT(HP_FIND_NEAR, 116,
+    "Stop at %u, too close to NEUTRAL. The edits are unchanged.",
+    "Anschlag bei %u, zu nah an NEUTRAL. Die Änderungen sind unverändert.")
 /* --------------------- end of the Hitec programmer */
 
 /* ------------------------------------------------- WI-FI, PANEL UPDATE */

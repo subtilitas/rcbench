@@ -112,6 +112,57 @@ und mit ihr sein RAM eingeschlossen ([Sicherheit, Fehler](Safety-de.md#fehler)).
 | Ein Positionslesen scheitert in 3 Versuchen | `Auslesen bei Adresse 0x0C fehlgeschlagen. Tippe auf ALLES AUSLESEN.` |
 | ABBRECHEN während des Endes | `Der Vorgang wurde abgebrochen.`, kein Fehler |
 
+## ANSCHLAG SUCHEN
+
+ANSCHLAG SUCHEN sucht den mechanischen Anschlag einer Seite und setzt
+ENDE LINKS oder ENDE RECHTS im Entwurf. Es schreibt nichts ins Servo.
+
+Solange die Schleife von SERVO BEWEGEN läuft, steht die Zeile ANSCHLAG
+SUCHEN auf WEG an der Stelle von DREHRICHTUNG: DREHRICHTUNG ist während der
+ganzen Schleife CW, denn sonst lehnt SERVO BEWEGEN ab. Die Zeile hat zwei
+Tasten von 126 x 48px, ENDE LINKS und ENDE RECHTS.
+
+1. Ein Tippen auf eine Taste startet die Suche nach dem laufenden
+   Durchlauf. Die Taste wird in der Warnfarbe gezeichnet. Die andere
+   Taste, die Tasten `-` und `+` und die Zifferntastatur nehmen bis zum
+   Ende der Suche kein Tippen an.
+2. Das Ruderhorn fährt mit 150 Zählwerten je Durchlauf auf NEUTRAL.
+3. Ab NEUTRAL geht das Kommando alle 2 Durchläufe 37 Zählwerte (0.5°)
+   nach außen, bis zum Rand der Reichweite: 2606 oder 13743 bei einem
+   D485HW im Werkszustand. Jeder Durchlauf wird beurteilt wie ein
+   Durchlauf von SERVO BEWEGEN. Von NEUTRAL bis zum linken Rand eines
+   D485HW im Werkszustand sind das 151 Schritte, 32s bei 106ms je
+   Durchlauf.
+4. Der Hinweis zeigt
+   `ANSCHLAG SUCHEN Richtung ENDE LINKS: 37 Zählwerte alle 2 Durchläufe ab NEUTRAL, höchstens 40s. Tippe erneut zum Anhalten.`
+
+![ANSCHLAG SUCHEN links bei der Suche](img/de/servo-hitec-move-find.png)
+
+Die Suche endet auf eine dieser Arten. Danach laufen die Durchläufe von
+SERVO BEWEGEN weiter zur verfolgten Zeile.
+
+| Ende | Entwurf | Zeile |
+| --- | --- | --- |
+| Eine Blockierung jenseits von NEUTRAL | ENDE LINKS oder ENDE RECHTS = die letzte freie Position, 75 Zählwerte (1.0°) zu NEUTRAL hin, mit `*`; diese Zeile wird verfolgt | `Anschlag bei 4840. ENDE LINKS in den Änderungen auf 4915 gesetzt.` |
+| Eine Blockierung, deren Endlage nicht außerhalb von NEUTRAL läge | unverändert | `Anschlag bei 8152, zu nah an NEUTRAL. Die Änderungen sind unverändert.` |
+| Der Rand der Reichweite ohne Blockierung | unverändert | `Kein Anschlag bis 2606 gefunden.` |
+| 40s nach dem Tippen, der Weg zu NEUTRAL eingeschlossen | unverändert | `In 40s kein Anschlag gefunden. Die Suche endete bei 3100.` |
+| Ein zweites Tippen auf die Taste | unverändert | `ANSCHLAG SUCHEN beendet. Die Änderungen sind unverändert.` |
+
+![Ein Anschlag links gefunden](img/de/servo-hitec-move-found.png)
+
+Die gefundene Endlage nimmt die Endlagen-Regel von ÄNDERUNG PRÜFEN wie ein
+Bearbeiten mit `-` und `+`: das Halten von SERVO BEWEGEN hat sie
+bestätigt. n WERTE SCHREIBEN schreibt sie nach AUS.
+
+Eine Blockierung auf dem Weg zu NEUTRAL ist eine Blockierung von SERVO
+BEWEGEN: das Ruderhorn fährt zurück, und die Schleife endet. Ein Tippen
+auf EIN, ein Reiterwechsel, SCHLIESSEN, das Home-Tag, ein
+Bildschirmwechsel und ein ABBRECHEN beenden die Suche mit dem Ende der
+Schleife. STOP, ein Schalten auf SAFE am Prüfstand, die Versorgung aus und
+die anderen harten Enden bleiben harte Enden. Eine Blockierung der Suche
+ist kein Fehler: die Versorgung bleibt an.
+
 ## Bekannte Grenzen
 
 - Die Strombeurteilung liest den Strom des PD mini, der etwa 0.3s
@@ -131,3 +182,4 @@ und mit ihr sein RAM eingeschlossen ([Sicherheit, Fehler](Safety-de.md#fehler)).
 | der Puls eines Ziels und mit ihm 850us, 2150us und 77% im Hinweis zur Endlage | `HITEC_LIVE_D_US_ZERO` 750us, `HITEC_LIVE_D_T_PER_US` 4 | L0.7 |
 | die Abbildung eines CCW-Servos | abgelehnt | L0.8 |
 | die Änderung je Durchlauf | `HITEC_LIVE_SLEW` 150 Zählwerte, gewählt | S-L3 |
+| der Anschlag von ANSCHLAG SUCHEN innerhalb 0.5° eines festen Anschlags, sein Schritt und seine Grenze | `HITEC_LIVE_FIND_STEP` 37 Zählwerte, `HITEC_LIVE_FIND_PASSES` 2, `HITEC_LIVE_FIND_MS` 40000ms, gewählt | S-L6 |

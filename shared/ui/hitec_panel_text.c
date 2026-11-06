@@ -301,6 +301,10 @@ static void act_value(const hpn_row_t *r, char *out, size_t n)
     case A_ENABLE:
         snprintf(out, n, "%s", hitec_prog_write_on(p) ? TR(ON) : TR(OFF));
         break;
+    case A_FIND:
+        /* Two keys, each with its own label (hpn_find_draw()). */
+        snprintf(out, n, "%s", TR(HP_FIND));
+        break;
     case A_MOVE:
         snprintf(out, n, "%s", hitec_prog_move_on(p) ? TR(ON)
                                : st == HITEC_PROG_MOVING ? TR(KP_WAIT)
@@ -683,8 +687,14 @@ static const int16_t k_lines[HITEC_PROG_MSG_COUNT][2] = {
     [HITEC_PROG_MSG_MOVE_DONE]     = { TX_HP_MOVE_DONE, -1 },
     [HITEC_PROG_MSG_MOVE_SUPPLY]   = { TX_HP_LIVE_SUPPLY, -1 },
     [HITEC_PROG_MSG_MOVE_ENC_LOST] = { TX_HP_LIVE_ENC_LOST, -1 },
+    [HITEC_PROG_MSG_FIND_FOUND_L]  = { -1, -1 },
+    [HITEC_PROG_MSG_FIND_FOUND_R]  = { -1, -1 },
+    [HITEC_PROG_MSG_FIND_FREE]     = { -1, -1 },
+    [HITEC_PROG_MSG_FIND_TIME]     = { -1, -1 },
+    [HITEC_PROG_MSG_FIND_HALT]     = { TX_HP_FIND_HALT, -1 },
+    [HITEC_PROG_MSG_FIND_NEAR]     = { -1, -1 },
 };
-_Static_assert(HITEC_PROG_MSG_MOVE_ENC_LOST + 1 == HITEC_PROG_MSG_COUNT,
+_Static_assert(HITEC_PROG_MSG_FIND_NEAR + 1 == HITEC_PROG_MSG_COUNT,
                "k_lines has a row for every message");
 
 /**

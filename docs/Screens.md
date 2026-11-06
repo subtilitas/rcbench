@@ -1949,6 +1949,13 @@ supply current, the reach and the end point's note. A tap on ON, a tab
 change, CLOSE and the home tag switch it off; the button reads WAIT until
 the servo has restarted.
 
+While the loop runs, FIND STOP takes DIRECTION's row: two keys of
+126 x 48px, LEFT END and RIGHT END. A tap starts the search on that side,
+the key turns the warning colour, and a second tap ends it. The note says
+`FIND STOP toward LEFT END: 37 counts every 2 passes from NEUTRAL, at most 40s. Tap it again to stop.`
+A stop found sets that end in the draft:
+`Stop at 4840. LEFT END set to 4915 in the edits.`
+
 ![The Hitec programmer, the tester holding the port](img/servo-hitec.png)
 ![A D485HW read](img/servo-hitec-read.png)
 ![A port another session holds](img/servo-hitec-other.png)
@@ -1957,6 +1964,8 @@ the servo has restarted.
 ![RESTORE of the session's backup](img/servo-hitec-restore-page.png)
 ![MOVE SERVO's page](img/servo-hitec-move.png)
 ![MOVE SERVO on, LEFT END followed](img/servo-hitec-move-on.png)
+![FIND STOP searching on the left](img/servo-hitec-move-find.png)
+![A stop found on the left](img/servo-hitec-move-found.png)
 
 ### Settings
 

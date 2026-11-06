@@ -237,6 +237,18 @@ SERVO BEWEGEN auf dem Reiter WEG der Hitec-Programmierung fährt das Ruderhorn e
 - Ein Tippen auf EIN, ein Reiterwechsel, SCHLIESSEN oder das Home-Tag beenden es: Ziel 3000, ein Neustart des Servos und ein Lesen, das mit dem Start verglichen wird, etwa 2.6s im Host-Modell. `SERVO BEWEGEN steht auf AUS. Die gespeicherten Werte sind unverändert zurückgelesen.`
 - STOP, ein Schalten auf SAFE am Prüfstand, eine verlorene Verbindung, eine ausgefallene Versorgung und ein gescheitertes Lesen beenden es sofort, mit allen Ausgängen aus.
 
+### ANSCHLAG SUCHEN
+
+Solange SERVO BEWEGEN an ist, steht ANSCHLAG SUCHEN in der Zeile von DREHRICHTUNG. Es sucht den mechanischen Anschlag einer Seite und setzt diese Endlage im Entwurf; es schreibt nichts.
+
+![ANSCHLAG SUCHEN links bei der Suche](view:servo-hitec-move-find)
+![Ein Anschlag links gefunden](view:servo-hitec-move-found)
+
+- Tippe auf ENDE LINKS oder ENDE RECHTS. Das Ruderhorn fährt auf NEUTRAL, dann alle 2 Durchläufe 0.5° nach außen, bis zum Rand der Reichweite.
+- Eine Blockierung setzt diese Endlage 1.0° vor den Anschlag, mit `*`: `Anschlag bei 4840. ENDE LINKS in den Änderungen auf 4915 gesetzt.` Das Ruderhorn folgt dann dieser Endlage.
+- Keine Blockierung bis zum Rand, 40s vorbei oder ein zweites Tippen auf die Taste: die Änderungen bleiben, wie sie waren.
+- n WERTE SCHREIBEN nach AUS schreibt die gefundene Endlage.
+
 Die Schwellen sind gewählt, nicht mit einem Ruderhorn an einem Anschlag gemessen. [SERVO BEWEGEN in der Hitec-Programmierung](https://github.com/subtilitas/rcbench/wiki/HitecMove-de) nennt jede Meldung und Grenze.
 
 ## Verwandte Seiten

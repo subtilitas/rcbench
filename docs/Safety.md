@@ -954,6 +954,12 @@ The rule:
   current reading: MOVE SERVO is refused there.
 - The knob moves nothing while MOVE SERVO is on: the `-`/`+` keys and the
   keypad edit the position, the knob rule of a SAFE bench stays.
+- FIND STOP runs inside MOVE SERVO's loop and its consent: it drives the
+  horn outward from the neutral, 37 counts every 2 passes, until a judge
+  binds, up to the reach's edge and for 40s at most. It looks for the
+  bind, so the bind is no error; the stall level and the PD mini's own
+  current limit bound the force against the stop as for every pass. It
+  writes nothing: the end point found goes into the draft only.
 - A bind moves the horn back and ends the loop with its end sequence:
   0x1E = 3000, the servo's restart (0x46 = 1) and a read held against the
   loop's start. A bind is no error; the supply stays on.

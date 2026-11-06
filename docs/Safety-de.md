@@ -1072,6 +1072,14 @@ Die Regel:
   damit das Servo. Die eigene Stromgrenze des PD mini ist die feste
   Obergrenze. Die festen 5V des rbmod-Carriers haben keinen Strommesswert:
   dort wird SERVO BEWEGEN abgelehnt.
+- ANSCHLAG SUCHEN läuft in der Schleife von SERVO BEWEGEN und mit dessen
+  Zustimmung: es fährt das Ruderhorn von der Neutralstellung nach außen,
+  37 Zählwerte alle 2 Durchläufe, bis eine Beurteilung blockiert, bis zum
+  Rand der Reichweite und höchstens 40s lang. Es sucht die Blockierung,
+  darum ist sie kein Fehler; die Blockierschwelle und die eigene
+  Stromgrenze des PD mini begrenzen die Kraft gegen den Anschlag wie bei
+  jedem Durchlauf. Es schreibt nichts: die gefundene Endlage kommt nur in
+  den Entwurf.
 - Der Drehknopf bewegt nichts, solange SERVO BEWEGEN an ist: die Tasten
   `-`/`+` und das Tastenfeld ändern die Position, die Regel des Drehknopfs
   bei SAFE bleibt.

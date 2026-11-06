@@ -9,6 +9,10 @@
  * which servos this overlay works with.  The state and the seam are
  * hitec_panel_int.h.
  *
+ * FIND STOP is the row under MOVE SERVO: two keys, LEFT END and RIGHT END,
+ * that take a tap while the loop's passes run.  A tap starts the search on
+ * that side; a tap on the side that searches ends it.
+ *
  * The keys are KST's: 56px, a step on the press, the repeat after 0.45s at
  * 8Hz and at 30Hz from 1.8s.  A step the draft refuses ends the repeat.
  * The value between the keys opens the keypad as on every value row.  The
@@ -158,6 +162,68 @@ void hpn_move_follow(void)
     }
 }
 
+/* ------------------------------------------------------------- FIND STOP */
+
+gfx_rect_t hpn_find_rect(const hpn_row_t *r, bool right)
+{
+    const gfx_rect_t vr = hpn_value_rect(r);
+    const int w = (vr.w - 8) / 2;
+
+    return (gfx_rect_t){ (int16_t)(right ? vr.x + vr.w - w : vr.x), vr.y,
+                         (int16_t)w, vr.h };
+}
+
+bool hpn_find_live(bool right)
+{
+    const hitec_prog_t *p = &hp.prog;
+    const int side = hitec_prog_find_side(p);
+    const int mine = right ? (int)HITEC_FIND_RIGHT : (int)HITEC_FIND_LEFT;
+
+    return hitec_prog_move_on(p)
+           && hitec_prog_move_phase(p) != HITEC_MOVE_START
+           && (side < 0 || side == mine);
+}
+
+/**
+ * @brief Draws one key of the FIND STOP row.
+ * @param c     the canvas
+ * @param r     the row
+ * @param i     its index in hpn_rows, for the key pressed
+ * @param right true for RIGHT END's
+ */
+static void find_key(gfx_canvas_t *c, const hpn_row_t *r, int i, bool right)
+{
+    const bool runs = hitec_prog_find_side(&hp.prog)
+                      == (right ? (int)HITEC_FIND_RIGHT
+                                : (int)HITEC_FIND_LEFT);
+
+    ui_button_font(c, hpn_find_rect(r, right),
+                   right ? TR(HP_END_R) : TR(HP_END_L),
+                   ui_theme_color(runs ? UI_C_WARN : UI_C_PANEL_SUNK),
+                   hp.have && hp.pressed == P_ROW && hp.row == i
+                       && hp.find_right == right,
+                   hpn_find_live(right), HP_FONT);
+}
+
+void hpn_find_draw(gfx_canvas_t *c, const hpn_row_t *r, int i)
+{
+    find_key(c, r, i, false);
+    find_key(c, r, i, true);
+}
+
+void hpn_find_act(bool right)
+{
+    hitec_prog_t *p = &hp.prog;
+    const int mine = right ? (int)HITEC_FIND_RIGHT : (int)HITEC_FIND_LEFT;
+
+    ++hp.rev;
+    if (hitec_prog_find_side(p) == mine) {
+        hitec_prog_find_stop(p);
+    } else {
+        (void)hitec_prog_find_start(p, (uint8_t)mine);
+    }
+}
+
 /* ------------------------------------------------------------------ notes */
 
 /**
@@ -263,6 +329,17 @@ int hpn_move_notes(const char **s, gfx_color_t *color, int max)
         s[n] = reach;
         color[n++] = ui_theme_color(UI_C_WARN);
     }
+    if (v.find >= 0) {
+        snprintf(end, sizeof(end), TR(HP_FIND_RUN),
+                 v.find == (int8_t)HITEC_FIND_RIGHT ? TR(HP_END_R)
+                                                    : TR(HP_END_L),
+                 (unsigned)HITEC_LIVE_FIND_STEP,
+                 (unsigned)HITEC_LIVE_FIND_PASSES,
+                 (unsigned)(HITEC_LIVE_FIND_MS / 1000u));
+        s[n] = end;
+        color[n++] = ui_theme_color(UI_C_WARN);
+        return n;
+    }
     if (v.follow == (uint8_t)HITEC_P_D_LEFT_END
         || v.follow == (uint8_t)HITEC_P_D_RIGHT_END) {
         end_note(v.follow == (uint8_t)HITEC_P_D_LEFT_END, end, sizeof(end));
@@ -294,6 +371,26 @@ int hpn_move_lines(const hitec_prog_msg_t *m,
         snprintf(out[0], HITEC_PANEL_LINE, TR(HP_LIVE_ENC),
                  (unsigned)m->reg);
         return 1;
+    case HITEC_PROG_MSG_FIND_FOUND_L:
+    case HITEC_PROG_MSG_FIND_FOUND_R:
+        snprintf(out[0], HITEC_PANEL_LINE, TR(HP_FIND_FOUND),
+                 (unsigned)m->arg,
+                 m->id == HITEC_PROG_MSG_FIND_FOUND_L ? TR(HP_END_L)
+                                                      : TR(HP_END_R),
+                 (unsigned)m->reg);
+        return 1;
+    case HITEC_PROG_MSG_FIND_FREE:
+        snprintf(out[0], HITEC_PANEL_LINE, TR(HP_FIND_FREE),
+                 (unsigned)m->arg);
+        return 1;
+    case HITEC_PROG_MSG_FIND_TIME:
+        snprintf(out[0], HITEC_PANEL_LINE, TR(HP_FIND_TIME),
+                 (unsigned)(HITEC_LIVE_FIND_MS / 1000u), (unsigned)m->arg);
+        return 1;
+    case HITEC_PROG_MSG_FIND_NEAR:
+        snprintf(out[0], HITEC_PANEL_LINE, TR(HP_FIND_NEAR),
+                 (unsigned)m->arg);
+        return 1;
     default:
         return 0;
     }
@@ -307,6 +404,18 @@ gfx_rect_t hitec_panel_step_rect(int page, int row, bool plus)
 
     return r != NULL && hpn_stepped(r) ? hpn_step_rect(r, plus)
                                        : (gfx_rect_t){ 0, 0, 0, 0 };
+}
+
+gfx_rect_t hitec_panel_find_rect(bool right)
+{
+    for (int i = 0; i < HP_ROW_COUNT; ++i) {
+        const hpn_row_t *r = &hpn_rows[i];
+
+        if (r->kind == K_ACT && r->what == A_FIND && hpn_row_shown(r)) {
+            return hpn_find_rect(r, right);
+        }
+    }
+    return (gfx_rect_t){ 0, 0, 0, 0 };
 }
 
 int hitec_panel_page_hint(void)

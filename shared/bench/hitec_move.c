@@ -109,6 +109,7 @@ static void hard_end(hitec_prog_t *p, hitec_ses_t r)
  */
 static void end_begin(hitec_prog_t *p)
 {
+    hitec_live_find_abort(&p->mv.fs);
     p->mv.phase = (uint8_t)HITEC_MOVE_CENTRE;
     (void)runs(p, hitec_session_move(&p->ses, HITEC_LIVE_D_T_MID, false));
 }
@@ -171,8 +172,175 @@ static void start_done(hitec_prog_t *p)
 }
 
 /**
- * @brief A pass ended: its judge, then the next pass, the move back or the
- *        end.
+ * @brief What the pass that ended saw, and the loop's position from it.
+ *
+ * @param p The programmer.
+ * @param o Receives the pass.
+ */
+static void observe(hitec_prog_t *p, hitec_live_obs_t *o)
+{
+    hitec_move_t *m = &p->mv;
+
+    memset(o, 0, sizeof(*o));
+    o->now_ms = p->f.now_ms;
+    o->p = m->cmd.p;
+    o->pos = p->ses.position;
+    o->ma = p->f.out_ma;
+    o->has_ma = p->f.supply_read ? 1u : 0u;
+    o->angle = p->f.angle;
+    o->has_angle = p->f.has_angle ? 1u : 0u;
+    m->pos = p->ses.position;
+    m->has_pos = p->ses.has_position != 0u;
+    m->last_p = m->cmd.p;
+}
+
+/**
+ * @brief A bind of the loop's judge: its message, and the move back.
+ *
+ * @param p   The programmer.
+ * @param v   The verdict, one of the three binds.
+ * @param pos The position read.
+ */
+static void bind(hitec_prog_t *p, hitec_live_verdict_t v, uint16_t pos)
+{
+    hitec_move_t *m = &p->mv;
+    const uint16_t back = hitec_live_back(&m->j);
+
+    if (v == HITEC_LIVE_BOUND_LAG) {
+        (void)hpg_say2(p, HITEC_PROG_MSG_MOVE_BLOCKED, pos, back);
+    } else if (v == HITEC_LIVE_BOUND_CURRENT) {
+        (void)hpg_say2(p, HITEC_PROG_MSG_MOVE_CURRENT, m->j.stall_ma, back);
+    } else {
+        (void)hpg_say2(p, HITEC_PROG_MSG_MOVE_ENC, 0u, back);
+    }
+    hitec_live_find_abort(&m->fs);
+    m->find_req = 0u;
+    m->bound = true;
+    m->last_p = back;
+    m->phase = (uint8_t)HITEC_MOVE_BACK;
+    (void)runs(p, hitec_session_move(
+                      &p->ses, hitec_live_d_target(&m->ends, back), true));
+}
+
+/**
+ * @brief One pass of FIND STOP: toward the neutral at the loop's slew, or
+ *        the search's position.
+ *
+ * @param p The programmer.
+ */
+static void find_pass(hitec_prog_t *p)
+{
+    hitec_move_t *m = &p->mv;
+
+    if (m->find_go) {
+        m->cmd.p = m->fs.p;
+        m->cmd.target = hitec_live_d_target(&m->ends, m->fs.p);
+    } else {
+        (void)hitec_live_d_command(&m->ends, m->last_p, m->ends.mid, &m->cmd);
+    }
+    (void)runs(p, hitec_session_move(&p->ses, m->cmd.target, true));
+}
+
+/**
+ * @brief FIND STOP ended with message @p id: the loop's passes again.
+ *
+ * @param p   The programmer.
+ * @param id  Its message.
+ * @param arg The message's number.
+ * @param reg Its second number.
+ */
+static void find_end(hitec_prog_t *p, hitec_prog_msg_id_t id, unsigned arg,
+                     unsigned reg)
+{
+    hitec_move_t *m = &p->mv;
+
+    (void)hpg_say2(p, id, arg, reg);
+    m->find_req = 0u;
+    m->find_go = false;
+    m->phase = (uint8_t)HITEC_MOVE_RUN;
+    hitec_live_judge_init(&m->j, m->ends.mid, m->pos, p->ma_open);
+    pass(p);
+}
+
+/**
+ * @brief FIND STOP bound: its end point into the draft, with the hold's
+ *        consent.
+ *
+ * @param p The programmer.
+ */
+static void find_found(hitec_prog_t *p)
+{
+    hitec_move_t *m = &p->mv;
+    const bool left = m->fs.side == (uint8_t)HITEC_FIND_LEFT;
+    const uint8_t id = left ? (uint8_t)HITEC_P_D_LEFT_END
+                            : (uint8_t)HITEC_P_D_RIGHT_END;
+    hitec_prog_edit_t e;
+
+    m->find_edit = true;
+    e = hitec_prog_move_edit(p, id, (int32_t)m->fs.end);
+    m->find_edit = false;
+    if (e == HITEC_PROG_EDIT_OK) {
+        find_end(p, left ? HITEC_PROG_MSG_FIND_FOUND_L
+                         : HITEC_PROG_MSG_FIND_FOUND_R,
+                 m->fs.stop, m->fs.end);
+    } else {
+        find_end(p, HITEC_PROG_MSG_FIND_NEAR, m->fs.stop, 0u);
+    }
+}
+
+/**
+ * @brief A pass of FIND STOP ended: on to the neutral, the search's next
+ *        position, or its end.
+ *
+ * @param p The programmer.
+ */
+static void find_done(hitec_prog_t *p)
+{
+    hitec_move_t *m = &p->mv;
+    hitec_live_obs_t o;
+    uint8_t st;
+
+    observe(p, &o);
+    if (!m->find_go) {
+        const hitec_live_verdict_t v = hitec_live_judge(&m->j, &o);
+
+        if (v != HITEC_LIVE_FREE && v != HITEC_LIVE_FOLLOWING) {
+            bind(p, v, o.pos);
+        } else if (m->off) {
+            end_begin(p);
+        } else if (m->find_halt) {
+            find_end(p, HITEC_PROG_MSG_FIND_HALT, 0u, 0u);
+        } else if (o.now_ms - m->fs.t0 >= HITEC_LIVE_FIND_MS) {
+            /* The cap counts from the request: the way to the neutral
+             * too. */
+            find_end(p, HITEC_PROG_MSG_FIND_TIME, o.pos, 0u);
+        } else {
+            /* At the neutral the search starts. */
+            m->find_go = m->cmd.p == m->ends.mid && v == HITEC_LIVE_FREE;
+            find_pass(p);
+        }
+        return;
+    }
+    st = hitec_live_find_pass(&m->fs, &o);
+    if (m->off) {
+        end_begin(p);
+    } else if (st == (uint8_t)HITEC_FIND_FOUND) {
+        find_found(p);
+    } else if (st == (uint8_t)HITEC_FIND_NONE) {
+        find_end(p, HITEC_PROG_MSG_FIND_FREE, m->fs.edge, 0u);
+    } else if (st == (uint8_t)HITEC_FIND_TIMEOUT) {
+        find_end(p, HITEC_PROG_MSG_FIND_TIME, o.pos, 0u);
+    } else if (m->find_halt) {
+        hitec_live_find_abort(&m->fs);
+        find_end(p, HITEC_PROG_MSG_FIND_HALT, 0u, 0u);
+    } else {
+        find_pass(p);
+    }
+}
+
+/**
+ * @brief A pass ended: its judge, then the next pass, FIND STOP, the move
+ *        back or the end.
  *
  * @param p The programmer.
  */
@@ -181,41 +349,26 @@ static void run_done(hitec_prog_t *p)
     hitec_move_t *m = &p->mv;
     hitec_live_obs_t o;
     hitec_live_verdict_t v;
-    uint16_t back;
 
-    memset(&o, 0, sizeof(o));
-    o.now_ms = p->f.now_ms;
-    o.p = m->cmd.p;
-    o.pos = p->ses.position;
-    o.ma = p->f.out_ma;
-    o.has_ma = p->f.supply_read ? 1u : 0u;
-    o.angle = p->f.angle;
-    o.has_angle = p->f.has_angle ? 1u : 0u;
-    m->pos = p->ses.position;
-    m->has_pos = p->ses.has_position != 0u;
-    m->last_p = m->cmd.p;
+    observe(p, &o);
     v = hitec_live_judge(&m->j, &o);
-    if (v == HITEC_LIVE_FREE || v == HITEC_LIVE_FOLLOWING) {
-        if (m->off) {
-            end_begin(p);
-        } else {
-            pass(p);
-        }
-        return;
-    }
-    back = hitec_live_back(&m->j);
-    if (v == HITEC_LIVE_BOUND_LAG) {
-        (void)hpg_say2(p, HITEC_PROG_MSG_MOVE_BLOCKED, o.pos, back);
-    } else if (v == HITEC_LIVE_BOUND_CURRENT) {
-        (void)hpg_say2(p, HITEC_PROG_MSG_MOVE_CURRENT, m->j.stall_ma, back);
+    if (v != HITEC_LIVE_FREE && v != HITEC_LIVE_FOLLOWING) {
+        bind(p, v, o.pos);
+    } else if (m->off) {
+        end_begin(p);
+    } else if (m->find_req != 0u) {
+        /* The search's clock and edge from here; the horn goes to the
+         * neutral first.  The ends ascend: the gate held them. */
+        (void)hitec_live_find_start(&m->fs, &m->ends,
+                                    (uint8_t)(m->find_req - 1u), p->ma_open,
+                                    o.now_ms);
+        m->phase = (uint8_t)HITEC_MOVE_FIND;
+        m->find_go = false;
+        m->find_halt = false;
+        find_pass(p);
     } else {
-        (void)hpg_say2(p, HITEC_PROG_MSG_MOVE_ENC, 0u, back);
+        pass(p);
     }
-    m->bound = true;
-    m->last_p = back;
-    m->phase = (uint8_t)HITEC_MOVE_BACK;
-    (void)runs(p, hitec_session_move(
-                      &p->ses, hitec_live_d_target(&m->ends, back), true));
 }
 
 /**
@@ -312,6 +465,9 @@ void hpm_done(hitec_prog_t *p, hitec_ses_t r)
     case HITEC_MOVE_RUN:
         run_done(p);
         break;
+    case HITEC_MOVE_FIND:
+        find_done(p);
+        break;
     case HITEC_MOVE_BACK:
         end_begin(p);
         break;
@@ -364,7 +520,7 @@ void hpm_gone(hitec_prog_t *p)
 
 bool hpm_edit_ok(const hitec_prog_t *p, uint8_t id)
 {
-    return hitec_prog_move_live(p, id);
+    return hitec_prog_move_live(p, id) || (p->mv.find_edit && position_id(id));
 }
 
 /* ------------------------------------------------------------- interface */
@@ -443,13 +599,47 @@ hitec_move_phase_t hitec_prog_move_phase(const hitec_prog_t *p)
 bool hitec_prog_move_on(const hitec_prog_t *p)
 {
     return (p->mv.phase == (uint8_t)HITEC_MOVE_START
-            || p->mv.phase == (uint8_t)HITEC_MOVE_RUN)
+            || p->mv.phase == (uint8_t)HITEC_MOVE_RUN
+            || p->mv.phase == (uint8_t)HITEC_MOVE_FIND)
            && !p->mv.off && p->mv.end_why == (uint8_t)HITEC_PROG_MSG_NONE;
 }
 
 bool hitec_prog_move_live(const hitec_prog_t *p, uint8_t id)
 {
-    return hitec_prog_move_on(p) && position_id(id);
+    return hitec_prog_move_on(p) && position_id(id)
+           && hitec_prog_find_side(p) < 0;
+}
+
+hitec_prog_msg_id_t hitec_prog_find_start(hitec_prog_t *p, uint8_t side)
+{
+    if (!hitec_prog_move_on(p) || hitec_prog_find_side(p) >= 0
+        || side > (uint8_t)HITEC_FIND_RIGHT) {
+        return hpg_say2(p, HITEC_PROG_MSG_BUSY, 0u, 0u);
+    }
+    p->mv.find_req = (uint8_t)(side + 1u);
+    return HITEC_PROG_MSG_NONE;
+}
+
+void hitec_prog_find_stop(hitec_prog_t *p)
+{
+    hitec_move_t *m = &p->mv;
+
+    if (m->phase == (uint8_t)HITEC_MOVE_FIND) {
+        m->find_halt = true;
+    } else {
+        m->find_req = 0u;
+    }
+}
+
+int hitec_prog_find_side(const hitec_prog_t *p)
+{
+    const hitec_move_t *m = &p->mv;
+
+    if (m->find_req == 0u || (m->phase != (uint8_t)HITEC_MOVE_RUN
+                              && m->phase != (uint8_t)HITEC_MOVE_FIND)) {
+        return -1;
+    }
+    return (int)m->find_req - 1;
 }
 
 hitec_prog_edit_t hitec_prog_move_edit(hitec_prog_t *p, uint8_t id,
@@ -459,7 +649,7 @@ hitec_prog_edit_t hitec_prog_move_edit(hitec_prog_t *p, uint8_t id,
                                         | HITEC_RULE_BIT(HITEC_RULE_CENTRE));
     hitec_prog_edit_t e;
 
-    if (!hitec_prog_move_live(p, id)) {
+    if (!hpm_edit_ok(p, id)) {
         (void)hpg_say2(p, HITEC_PROG_MSG_BUSY, 0u, 0u);
         return HITEC_PROG_EDIT_REFUSED;
     }
@@ -499,6 +689,9 @@ bool hitec_prog_move_view(const hitec_prog_t *p, hitec_move_view_t *out)
     out->has_angle = p->f.has_angle;
     out->angle = p->f.angle;
     hitec_live_d_reach(&m->ends, &out->lo, &out->hi);
+    out->find = (int8_t)hitec_prog_find_side(p);
+    out->find_go = m->phase == (uint8_t)HITEC_MOVE_FIND && m->find_go;
+    out->find_p = m->fs.p;
     if (hitec_param_get(&p->draft, hitec_prog_layout(p), m->follow, &v)
         == HITEC_GET_OK) {
         out->clamped = v.value < (int32_t)out->lo || v.value > (int32_t)out->hi;

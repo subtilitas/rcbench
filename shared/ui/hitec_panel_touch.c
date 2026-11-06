@@ -113,6 +113,14 @@ static void down(const touch_event_t *evt)
             }
         }
         if (gfx_rect_contains(hpn_value_rect(r), x, y)) {
+            if (r->kind == K_ACT && r->what == A_FIND) {
+                /* The key under the finger, if it takes a tap. */
+                hp.find_right = gfx_rect_contains(hpn_find_rect(r, true), x, y);
+                if (!gfx_rect_contains(hpn_find_rect(r, hp.find_right), x, y)
+                    || !hpn_find_live(hp.find_right)) {
+                    return;
+                }
+            }
             take(evt, P_ROW, i);
             return;
         }
@@ -232,6 +240,12 @@ static void rest(const touch_event_t *evt)
         }
         break;
     case P_ROW:
+        if (hpn_rows[which].what == A_FIND && hpn_rows[which].kind == K_ACT
+            && !gfx_rect_contains(hpn_find_rect(&hpn_rows[which],
+                                                hp.find_right), x, y)) {
+            /* A finger that left its key taps nothing. */
+            break;
+        }
         if (gfx_rect_contains(hpn_value_rect(&hpn_rows[which]), x, y)
             && hpn_row_shown(&hpn_rows[which])
             && hpn_row_live(&hpn_rows[which])) {

@@ -328,6 +328,8 @@ bool hpn_row_live(const hpn_row_t *r)
     }
     case A_WRITE:
         return st == HITEC_PROG_HELD && hitec_prog_changes(p) != 0u;
+    case A_FIND:
+        return hpn_find_live(false) || hpn_find_live(true);
     case A_MOVE:
         /* On: a tap ends it.  Held: a tap opens its page or says why
          * not. */
@@ -554,6 +556,9 @@ void hpn_act(const hpn_row_t *r)
         break;
     case A_MOVE:
         hpn_move_act();
+        break;
+    case A_FIND:
+        hpn_find_act(hp.find_right);
         break;
     default:
         (void)hitec_prog_clear(p);
