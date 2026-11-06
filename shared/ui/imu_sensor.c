@@ -187,8 +187,12 @@ void imu_sensor_tick(imu_sensor_t *s, uint32_t now_ms, bool link_up)
      * write that goes carries SETUP's latest value. */
     const unsigned need = 2u + (s->rsw_due ? 1u : 0u)
                           + (s->rate_due ? 1u : 0u) + (s->algo_due ? 1u : 0u);
-    /* Not while the calibration runs: its CALSW 0 and SAVE go first. */
-    if (link_up && s->m.r.valid && (s->rsw_due || s->rate_due || s->algo_due)
+    /* Not while the calibration runs: its CALSW 0 and SAVE go first.  A
+     * sensor streaming without angle frames takes RSW all the same: its
+     * frames, not an angle, show it answers. */
+    const bool streams = s->m.r.valid
+                         || (s->rsw_due && s->m.content_n >= IMU_RSW_FRAMES);
+    if (link_up && streams && (s->rsw_due || s->rate_due || s->algo_due)
         && !s->held && s->cal != IMU_CAL_RUNNING
         && IMU_OUTBOX - s->out_n >= need) {
         uint8_t b[WIT_CMD_LEN] = { 0 };

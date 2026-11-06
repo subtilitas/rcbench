@@ -534,6 +534,16 @@ TEST_CASE(a_connection_at_another_rsw_queues_rsw_0x0c_and_save_once)
     CHECK_EQ(s.out_n, 3u);
     CHECK(is_cmd(s.out[1], WIT_REG_RSW, IMU_RSW));
 
+    /* 0x52 alone: no angle and so no reading, RSW 0x0C goes all the same. */
+    imu_sensor_init(&s);
+    imu_sensor_tick(&s, 0u, true);
+    for (unsigned i = 0u; i < IMU_RSW_FRAMES; ++i) {
+        (void)sample_at(&s, 100u + 20u * i, WIT_RSW_GYRO, true);
+    }
+    CHECK(!s.m.r.valid);
+    CHECK_EQ(s.out_n, 3u);
+    CHECK(is_cmd(s.out[1], WIT_REG_RSW, IMU_RSW));
+
     /* A sensor that holds 0x0C: no write, also over 40 frames. */
     imu_sensor_init(&s);
     imu_sensor_tick(&s, 0u, true);
