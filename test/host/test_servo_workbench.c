@@ -512,8 +512,9 @@ const char *lim_pwm_why(void);
 
 /* On the carrier's programming port the LIMIT RUN asks for the PROG 5V
  * before ARM: the port's pulse comes on only with it and only while SAFE.
- * The pulse line names PORT PWM ON waiting for SAFE while the panel asks
- * for the pulse, PORT PWM OFF where the setting is off. */
+ * The pulse line names the PROG 5V while PORT PWM ON waits for it, PORT
+ * PWM ON waiting for SAFE while the panel asks for the pulse, PORT PWM OFF
+ * where the setting is off. */
 TEST_CASE(the_limit_run_on_a_carrier_port_asks_the_prog_5v_before_arm)
 {
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
@@ -528,7 +529,7 @@ TEST_CASE(the_limit_run_on_a_carrier_port_asks_the_prog_5v_before_arm)
         prog5v_box_publish(2u, 21u, PROG5V_HELD_NONE);
         bench_frames(100u);
         CHECK_STR_EQ(lim_blocked(), ui_servo_str(SERVO_STR_START_PROG_5V));
-        CHECK_STR_EQ(lim_pwm_why(), TR(SV_LIM_PWM_OFF));
+        CHECK_STR_EQ(lim_pwm_why(), ui_servo_str(SERVO_STR_START_PROG_5V));
         prog5v_box_publish(3u, 21u, PROG5V_HELD_NONE);
         bench_frames(100u);
         CHECK_STR_EQ(lim_blocked(),
@@ -546,6 +547,48 @@ TEST_CASE(the_limit_run_on_a_carrier_port_asks_the_prog_5v_before_arm)
         bench_frames(100u);
         CHECK_STR_EQ(lim_blocked(),
                      ui_servo_str(SERVO_STR_START_NOT_ARMED));
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/* PORT PWM off: the line says what to do, TARGET (which opens the port's
+ * entry on OUTPUTS) while SAFE, and DISARM first while ARMED, where
+ * TARGET takes no tap.  The limit run's gate names it on an ARMED bench
+ * with the port's pulse off, in EN and DE. */
+TEST_CASE(port_pwm_off_says_how_to_switch_it_on_safe_and_armed)
+{
+    static const char *const k_safe[UI_LANG_COUNT] = {
+        "PORT PWM OFF: TAP TARGET AND SWITCH IT ON",
+        "PORT-PWM AUS: TIPPE AUF ZIEL UND SCHALTE ES EIN",
+    };
+    static const char *const k_armed[UI_LANG_COUNT] = {
+        "PORT PWM OFF: DISARM, TAP TARGET, SWITCH IT ON",
+        "PORT-PWM AUS: DISARM, TIPPE AUF ZIEL, SCHALTE ES EIN",
+    };
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        bench_fresh();
+        servo_screen_set_armed(false);
+        settings_set(SET_SERVO_TARGET, 1.0f);
+        settings_set(SET_SERVO_PORT_PWM, 0.0f);
+        servo_screen_set_drive(1u, 13u, false);
+        bench_frames(100u);
+        CHECK_STR_EQ(lim_pwm_why(), k_safe[lang]);
+        CHECK(!servo_screen_tester_target_locked());
+        servo_screen_set_armed(true);
+        bench_frames(100u);
+        CHECK_STR_EQ(lim_pwm_why(), k_armed[lang]);
+        CHECK(servo_screen_tester_target_locked());
+        /* The motor's ARM locks TARGET as well. */
+        servo_screen_set_armed(false);
+        servo_screen_set_bench_armed(true);
+        bench_frames(100u);
+        CHECK_STR_EQ(lim_pwm_why(), k_armed[lang]);
+        servo_screen_set_bench_armed(false);
+        settings_set(SET_SERVO_TARGET, 0.0f);
+        settings_set(SET_SERVO_PORT_PWM, 1.0f);
+        servo_screen_set_drive(0u, SERVO_SCREEN_NO_PIN, false);
+        bench_frames(100u);
     }
     ui_text_set_language(UI_LANG_EN);
 }
@@ -1182,6 +1225,7 @@ int main(void)
     RUN(the_test_card_on_a_carrier_port_names_the_prog_5v_and_the_steps);
     RUN(the_limit_runs_write_note_on_a_carrier_port_names_the_prog_5v);
     RUN(the_limit_run_on_a_carrier_port_asks_the_prog_5v_before_arm);
+    RUN(port_pwm_off_says_how_to_switch_it_on_safe_and_armed);
     RUN(the_supply_caps_show_on_their_button);
     RUN(the_output_page_names_the_tester_port_read_only);
     RUN(the_as5600_lives_on_sensors);

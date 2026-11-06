@@ -6293,10 +6293,12 @@ on the IOmcu's link (board 2).
   `PROGP04 SHARES PWM SLICE 0 WITH PWM04 (GPIO 1)`. The binding of PWM01
   to PWM04 is never changed for a programming port: a PWM protocol given
   to PWM04 sets PROGP04 back to FUNC NONE.
-- The ports run from M7's fixed 5V on GPIO 21. PORT PWM ON is taken only
-  while the PROG 5V box reads ON; otherwise the line reads
-  `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX`, and no pulse goes out.
-  The pulse stops when PROG 5V goes off.
+- The ports run from M7's fixed 5V on GPIO 21. PORT PWM ON is taken with
+  the PROG 5V box off. The box is on SERVO and SUPPLY, not here, and
+  leaving SERVO switches off a PROG 5V its box switched on. The line then
+  reads `PORT PWM ON: PULSES START WITH PROG 5V ON SERVO`, and no pulse
+  goes out until the box reads ON. The pulse stops when PROG 5V goes
+  off.
 - With an IOmcu older than 4.36, SERVO TESTER and PORT PWM are not drawn,
   and the line reads `PIN FIXED. THE TESTER NEEDS IOMCU PROTOCOL 4.36`.
 - WATCHED BY names the carrier's INA3221 channel on the ports' 5V,

@@ -6,6 +6,28 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- On the rbmod carrier PORT PWM ON on OUTPUTS > PROG PORT n is taken while
+  the PROG 5V box reads OFF. The tap did nothing, and leaving SERVO
+  switches off a PROG 5V that SERVO's box switched on, so PORT PWM could
+  not be switched on at all. The pulse still waits for the box to read ON
+  and comes on only while SAFE. The line under the rows reads
+  `PORT PWM ON: PULSES START WITH PROG 5V ON SERVO`.
+- AUTO on RUDDER and START LIMIT RUN with PORT PWM off say what to do:
+  `PORT PWM OFF: TAP TARGET AND SWITCH IT ON` while SAFE and
+  `PORT PWM OFF: DISARM, TAP TARGET, SWITCH IT ON` while ARMED, where
+  TARGET takes no tap. TARGET opens the port's entry on OUTPUTS. The line
+  read `PORT PWM OFF. NO PULSES ON THIS PORT.`, also with PORT PWM on and
+  the pulse waiting: that case reads
+  `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` on every board, or
+  `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` on the carrier with the
+  box off.
+- AUTO on RUDDER and START LIMIT RUN name a programmer session that holds
+  the port, `LOCKED: SERVO PROGRAMMING USES THE PORT`, before PORT PWM.
+  They read `PORT PWM OFF. NO PULSES ON THIS PORT.` while the session held
+  it.
+
 ## 0.23.9 - 2026-11-06
 
 0.23.9 is a testing release. Its minor number, 23, is odd. GitHub

@@ -90,8 +90,10 @@ and the line under it says why.
 | `INA3221 OFFLINE` | no link, the part not answering, or its reset count moved |
 | `NO INA3221 MEASUREMENT WINDOWS YET` | the INA3221 is not the servo rail's meter yet: its set-up held for less than 1000ms, or no window with current in the last 200ms |
 | `SERVO SUPPLY BELOW 3.0V OR NOT READ` | the last INA3221 window holds no rail voltage, or its mean is under 3.0V (`SERVO_LIMRUN_RAIL_MIN_MV`). An output that is off reads 0V, and a search there would find two free ends on a servo that never moved. 3.0V lies under the 4.8V servos are commonly specified from, so a single lithium cell's rail still starts; the voltage a given servo stops moving at is not measured |
-| `PORT PWM OFF. NO PULSES ON THIS PORT.` | TARGET on PROG PORT with PORT PWM off |
-| `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` | the rbmod carrier, TARGET on a programming port with PORT PWM and the PROG 5V on, no programmer holding the port, and its pulse still off. A pulse comes on only while SAFE, and the carrier's panel asks for it only with the PROG 5V on: a PROG 5V switched on while ARMED waits for the next SAFE |
+| `LOCKED: SERVO PROGRAMMING USES THE PORT` | TARGET on PROG PORT and a programmer session holds the port. Named before PORT PWM: the session is why no pulse runs, whatever PORT PWM says |
+| `PORT PWM OFF: DISARM, TAP TARGET, SWITCH IT ON` | TARGET on PROG PORT with PORT PWM off, the bench ARMED. TARGET takes no tap while ARMED |
+| `PORT PWM OFF: TAP TARGET AND SWITCH IT ON` | the same while SAFE, as the line reads after a DISARM. TARGET opens the port's entry on OUTPUTS, where PORT PWM is |
+| `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` | TARGET on PROG PORT with PORT PWM on, no programmer holding the port, and its pulse still off. A pulse comes on only while SAFE, and the rbmod carrier's panel asks for it only with the PROG 5V on: a PROG 5V switched on while ARMED waits for the next SAFE |
 | `CENTRE MUST BE BETWEEN PULSE MIN AND MAX` | PULSE CENTRE is not between PULSE MIN and PULSE MAX |
 
 ### Programming the servo's travel limits
@@ -1460,7 +1462,8 @@ A START is refused, the reason on the first line, while:
 | TARGET is the bench's outputs, or the output is otherwise not the programming port | `AUTO PROGRAMS A SERVO ON THE PROG PORT`. TARGET on the outputs is named before the meter: on the rbmod carrier the outputs have no channel watching them until one is bound as SERVO PWM |
 | the meter is not set up for the servo's current | the limit run's line |
 | ARMED on the rbmod carrier's port with the PROG 5V box off | `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` |
-| the port's pulse is off | `PORT PWM OFF. NO PULSES ON THIS PORT.` with PORT PWM off; `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` on the rbmod carrier with PORT PWM on, as after a PROG 5V switched on while ARMED |
+| a programmer session holds the port | `LOCKED: SERVO PROGRAMMING USES THE PORT`, before the pulse's line: the session is why no pulse runs |
+| the port's pulse is off | `PORT PWM OFF: DISARM, TAP TARGET, SWITCH IT ON` with PORT PWM off, as TARGET takes no tap while ARMED; `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` with PORT PWM on, as after a PROG 5V switched on while ARMED |
 | PULSE MIN is above 1000us, PULSE MAX below 2000us, or PULSE CENTRE is not strictly between 1000us and 2000us | `PULSE MIN TO MAX MUST INCLUDE 1000 TO 2000us` |
 | the programmer is busy, or a KST/Chaservo or classic Hitec servo has neither a PD mini nor PROG 5V to cycle its supply | the limit run's line |
 | the angle source gives no reading | `ANGLE SOURCE: NO READING` |

@@ -92,8 +92,10 @@ Schaltfläche bleibt grau, und die Zeile darunter sagt warum.
 | `INA3221 NICHT ERREICHBAR` | kein Link, das Bauteil antwortet nicht, oder sein Reset-Zähler hat sich geändert |
 | `NOCH KEINE INA3221-MESSFENSTER` | der INA3221 ist noch nicht das Messgerät der Servoschiene: seine Einrichtung ist seit weniger als 1000ms bestätigt, oder kein Fenster mit Strom in den letzten 200ms |
 | `SERVOVERSORGUNG UNTER 3.0V ODER OHNE MESSWERT` | das letzte INA3221-Fenster enthält keine Schienenspannung, oder ihr Mittel liegt unter 3,0V (`SERVO_LIMRUN_RAIL_MIN_MV`). An einem ausgeschalteten Ausgang werden 0V gemessen, und eine Suche dort fände zwei freie Enden an einem Servo, das sich nie bewegt hat. 3,0V liegen unter den 4,8V, für die Servos üblicherweise angegeben sind, so dass die Schiene einer einzelnen Lithiumzelle noch startet; die Spannung, bei der ein bestimmtes Servo stehen bleibt, ist nicht gemessen |
-| `PORT-PWM AUS. KEINE PULSE AN DIESEM PORT.` | ZIEL auf PROG-PORT mit PORT-PWM aus |
-| `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` | der rbmod-Carrier, ZIEL auf einem Programmierport mit PORT-PWM und PROG 5V ein, kein Programmer hält den Port, und sein Puls ist noch aus. Ein Puls kommt nur bei SAFE, und das Panel des Carriers fordert ihn nur mit PROG 5V ein an: ein bei ARMED eingeschaltetes PROG 5V wartet auf das nächste SAFE |
+| `GESPERRT: SERVOPROGRAMMIERUNG BELEGT DEN PORT` | ZIEL auf PROG-PORT, und eine Sitzung eines Programmers hält den Port. Vor PORT-PWM genannt: die Sitzung ist der Grund, dass kein Puls läuft, gleich was PORT-PWM sagt |
+| `PORT-PWM AUS: DISARM, TIPPE AUF ZIEL, SCHALTE ES EIN` | ZIEL auf PROG-PORT mit PORT-PWM aus, der Prüfstand ARMED. ZIEL nimmt bei ARMED kein Tippen an |
+| `PORT-PWM AUS: TIPPE AUF ZIEL UND SCHALTE ES EIN` | dasselbe bei SAFE, wie die Zeile nach einem DISARM lautet. ZIEL öffnet den Eintrag des Ports auf OUTPUTS, wo PORT-PWM liegt |
+| `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` | ZIEL auf PROG-PORT mit PORT-PWM ein, kein Programmer hält den Port, und sein Puls ist noch aus. Ein Puls kommt nur bei SAFE, und das Panel des rbmod-Carriers fordert ihn nur mit PROG 5V ein an: ein bei ARMED eingeschaltetes PROG 5V wartet auf das nächste SAFE |
 | `MITTE MUSS ZWISCHEN PULS MIN UND PULS MAX LIEGEN` | PULS MITTE liegt nicht zwischen PULS MIN und PULS MAX |
 
 ### Die Weggrenzen des Servos programmieren
@@ -1505,7 +1507,8 @@ Ein START wird abgelehnt, der Grund in der ersten Zeile, solange:
 | ZIEL die Ausgänge des Prüfstands sind oder der Ausgang sonst nicht der Programmierport ist | `AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT`. ZIEL auf den Ausgängen wird vor dem Messgerät genannt: auf dem rbmod-Carrier überwacht kein Kanal die Ausgänge, bis einer als SERVO PWM zugeordnet ist |
 | das Messgerät nicht für den Servostrom eingerichtet ist | die Zeile des Endlagenlaufs |
 | ARMED am Port des rbmod-Carriers mit dem Feld PROG 5V aus | `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN` |
-| der Puls des Ports aus ist | `PORT-PWM AUS. KEINE PULSE AN DIESEM PORT.` mit PORT-PWM aus; `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` auf dem rbmod-Carrier mit PORT-PWM ein, etwa nach einem bei ARMED eingeschalteten PROG 5V |
+| eine Sitzung eines Programmers den Port hält | `GESPERRT: SERVOPROGRAMMIERUNG BELEGT DEN PORT`, vor der Zeile zum Puls: die Sitzung ist der Grund, dass kein Puls läuft |
+| der Puls des Ports aus ist | `PORT-PWM AUS: DISARM, TIPPE AUF ZIEL, SCHALTE ES EIN` mit PORT-PWM aus, da ZIEL bei ARMED kein Tippen annimmt; `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` mit PORT-PWM ein, etwa nach einem bei ARMED eingeschalteten PROG 5V |
 | PULS MIN über 1000us, PULS MAX unter 2000us oder PULS MITTE nicht strikt zwischen 1000us und 2000us liegt | `PULS MIN BIS MAX MUSS 1000 BIS 2000us ABDECKEN` |
 | die Servoprogrammierung belegt ist oder bei KST/Chaservo und klassischen Hitec-Servos weder PD mini noch PROG 5V die Versorgung schalten kann | die Zeile des Endlagenlaufs |
 | die Winkelquelle keinen Messwert gibt | `WINKELQUELLE: KEIN MESSWERT` |

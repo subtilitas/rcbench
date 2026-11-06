@@ -6786,10 +6786,12 @@ IDENTITY-Register 5 am Link des IOmcu (Board 2).
   lautet `PROGP04 TEILT PWM-SLICE 0 MIT PWM04 (GPIO 1)`. Die Bindungen von PWM01 bis PWM04 werden für einen Programmierport nicht
   geändert. Ein PWM-Protokoll auf PWM04 setzt PROGP04 auf FUNC NONE zurück.
 - Die Ports nutzen die festen 5V von M7, geschaltet über GPIO 21.
-  PORT-PWM EIN wird nur angenommen, wenn das Feld PROG 5V EIN zeigt.
-  Andernfalls lautet die Zeile
-  `PROG 5V AUS: SCHALTE ES IM FELD PROG 5V EIN`, und es geht kein Puls
-  hinaus. Der Puls endet, wenn PROG 5V ausgeht.
+  PORT-PWM EIN wird bei ausgeschaltetem Feld PROG 5V angenommen. Das Feld
+  liegt auf SERVO und SUPPLY, nicht hier, und das Verlassen von SERVO
+  schaltet ein dort eingeschaltetes PROG 5V aus. Die Zeile lautet dann
+  `PORT-PWM EIN: PULSE STARTEN MIT PROG 5V AUF SERVO`, und es geht kein
+  Puls hinaus, bis das Feld EIN zeigt. Der Puls endet, wenn PROG 5V
+  ausgeht.
 - Mit einem IOmcu vor 4.36 werden SERVO-TESTER und PORT-PWM nicht
   gezeichnet, und die Zeile lautet
   `PIN FEST. DER TESTER BRAUCHT IOMCU-PROTOKOLL 4.36`.

@@ -81,7 +81,7 @@ outputs. Choose the port in either of these places:
 | FUNC at an IOmcu start | NONE on every port; the panel asks for SERVO PWM again |
 | Locked | ARMED or asked to arm, a test, a sweep or a limit run, a programmer holding a port |
 | PROGP04 | not offered while PWM04 carries a PWM output: `PROGP04 SHARES PWM SLICE 0 WITH PWM04 (GPIO 1)` |
-| Pulse | only while the PROG 5V box reads ON; PORT PWM ON, a servo test and a limit run are refused with `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` |
+| Pulse | only while the PROG 5V box reads ON. PORT PWM ON is taken with the box off, and the line reads `PORT PWM ON: PULSES START WITH PROG 5V ON SERVO`; a servo test and a limit run are refused with `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` |
 | Supply | M7's fixed 5V on GPIO 21; a servo test's voltage steps reach the servo rails, not the port, so a test there is refused with `PROG PORTS RUN AT 5V FIXED: NO STEPS` |
 | Current | INA3221 0x40 CH3 reads all four ports together |
 
@@ -98,6 +98,18 @@ SAFE: AUTO on RUDDER and the limit run then read
 `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM`. While SAFE with the box
 off both read `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` before
 `ARM FIRST`.
+
+PORT PWM is on OUTPUTS, the PROG 5V box on SERVO and SUPPLY. Leaving
+SERVO switches off a PROG 5V its box switched on, so PORT PWM ON is taken
+with the box off and the pulse waits for it. With PORT PWM off, AUTO and
+the limit run read `PORT PWM OFF: TAP TARGET AND SWITCH IT ON` while SAFE
+and `PORT PWM OFF: DISARM, TAP TARGET, SWITCH IT ON` while ARMED. TARGET
+opens the port's entry on OUTPUTS. The way from PORT PWM off:
+
+1. SAFE: tap TARGET on SERVO. OUTPUTS opens on the port's entry.
+2. PORT PWM ON. The line reads `PORT PWM ON: PULSES START WITH PROG 5V ON SERVO`.
+3. Back to SERVO, hold PROG 5V ON for 2s. The pulse comes on while SAFE.
+4. ARM, then hold START.
 
 ## Power
 

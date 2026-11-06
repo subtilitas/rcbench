@@ -172,8 +172,10 @@ The run reads only the INA3221 channel that watches the tester's target. With th
 | `INA3221 OFFLINE` | no link, or the INA3221 does not answer |
 | `NO INA3221 MEASUREMENT WINDOWS YET` | the INA3221 is not the meter yet |
 | `SERVO SUPPLY BELOW 3.0V OR NOT READ` | the last INA3221 window has no rail voltage, or less than 3.0V: an output that is off reads 0V |
-| `PORT PWM OFF. NO PULSES ON THIS PORT.` | TARGET is PROG PORT with PORT PWM off |
-| `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` | on the rbmod carrier, TARGET is a programming port with PORT PWM on and its pulse still off, as after a PROG 5V switched on while ARMED: the pulse comes on only while SAFE |
+| `LOCKED: SERVO PROGRAMMING USES THE PORT` | TARGET is PROG PORT and a programmer session holds the port; named before PORT PWM |
+| `PORT PWM OFF: DISARM, TAP TARGET, SWITCH IT ON` | TARGET is PROG PORT with PORT PWM off, the bench ARMED: TARGET takes no tap while ARMED |
+| `PORT PWM OFF: TAP TARGET AND SWITCH IT ON` | the same while SAFE: TARGET opens the port's entry on OUTPUTS, where PORT PWM is |
+| `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` | TARGET is PROG PORT with PORT PWM on and its pulse still off, as after a PROG 5V switched on while ARMED on the rbmod carrier: the pulse comes on only while SAFE |
 | `CENTRE MUST BE BETWEEN PULSE MIN AND MAX` | the pulse range does not hold PULSE CENTRE |
 | `REPORT STILL BEING WRITTEN` | a test or a run is under way, or its report is still going to the card |
 

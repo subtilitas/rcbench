@@ -172,8 +172,10 @@ Der Lauf verwendet ausschließlich den INA3221-Kanal für das Testerziel. Mit PD
 | `INA3221 NICHT ERREICHBAR` | keine Verbindung, oder der INA3221 antwortet nicht |
 | `NOCH KEINE INA3221-MESSFENSTER` | der INA3221 ist noch nicht das Messgerät |
 | `SERVOVERSORGUNG UNTER 3.0V ODER OHNE MESSWERT` | das letzte INA3221-Fenster hat keine Schienenspannung oder weniger als 3,0V: ein ausgeschalteter Ausgang liest 0V |
-| `PORT-PWM AUS. KEINE PULSE AN DIESEM PORT.` | ZIEL ist PROG-PORT und PORT-PWM ist aus |
-| `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` | auf dem rbmod-Carrier ist ZIEL ein Programmierport mit PORT-PWM ein, und sein Puls ist noch aus, etwa nach einem bei ARMED eingeschalteten PROG 5V: der Puls kommt nur bei SAFE |
+| `GESPERRT: SERVOPROGRAMMIERUNG BELEGT DEN PORT` | ZIEL ist PROG-PORT, und eine Sitzung eines Programmers hält den Port; vor PORT-PWM genannt |
+| `PORT-PWM AUS: DISARM, TIPPE AUF ZIEL, SCHALTE ES EIN` | ZIEL ist PROG-PORT mit PORT-PWM aus, der Prüfstand ARMED: ZIEL nimmt bei ARMED kein Tippen an |
+| `PORT-PWM AUS: TIPPE AUF ZIEL UND SCHALTE ES EIN` | dasselbe bei SAFE: ZIEL öffnet den Eintrag des Ports auf OUTPUTS, wo PORT-PWM liegt |
+| `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` | ZIEL ist PROG-PORT mit PORT-PWM ein, und sein Puls ist noch aus, etwa nach einem bei ARMED eingeschalteten PROG 5V auf dem rbmod-Carrier: der Puls kommt nur bei SAFE |
 | `MITTE MUSS ZWISCHEN PULS MIN UND PULS MAX LIEGEN` | der Pulsbereich enthält PULS MITTE nicht |
 | `BERICHT WIRD NOCH GESCHRIEBEN` | ein Test oder ein Lauf ist im Gang, oder sein Bericht geht noch auf die Karte |
 

@@ -20,7 +20,8 @@
  *              rbmod carrier through prog_choice_pick(), which also sets
  *              the port's FUNC (prog_choice.h).
  *   PORT PWM   ON | OFF: SET_SERVO_PORT_PWM, the target port's pulse.  On
- *              the carrier ON waits for the PROG 5V box to read ON.
+ *              the carrier ON is taken with the PROG 5V box off, and the
+ *              pulse waits for the box to read ON (prog_choice_want_pwm()).
  *
  * and one amber line that says why a row takes no press, or how the last
  * ask for this port stands.  The pin and the function are the IOmcu's,
@@ -325,8 +326,9 @@ static void sync_tabs(void)
 
 /**
  * @brief The carrier's line under the tester's rows: who holds the port, the
- *        lock, a slice an output holds, the PROG 5V the pulse waits for, the
- *        port the tester drives, or why PORT PWM is locked.
+ *        lock, a slice an output holds, PORT PWM ON waiting for the PROG 5V
+ *        box on SERVO, the port the tester drives, or why PORT PWM is
+ *        locked.
  * @param buf takes the line, empty for none
  * @param cap its size
  */
@@ -340,8 +342,11 @@ static void carrier_reason(char *buf, size_t cap)
     } else if (prog_choice_lock_line(buf, cap)
                || prog_choice_refusal(port, buf, cap)) {
         /* The lock's line, or the output on the port's slice by name. */
-    } else if (target() == port && prog_choice_needs_5v()) {
-        snprintf(buf, cap, "%s", TR(PC_NEED_5V));
+    } else if (target() == port && prog_choice_needs_5v()
+               && settings_get_bool(SET_SERVO_PORT_PWM)) {
+        /* The box is on SERVO and SUPPLY, not here; leaving SUPPLY
+         * switches off what it switched on, so SERVO is the one named. */
+        snprintf(buf, cap, "%s", TR(PC_PWM_WAITS_5V));
     } else if (target() > 0 && target() != port) {
         snprintf(buf, cap, TR(OUT_PORT_TESTER_ON), (unsigned)target());
     } else if (pwm_locked()) {
@@ -562,11 +567,9 @@ bool outputs_port_event(const touch_event_t *evt)
     }
     i = seg_event(&p.pwm, evt, pwm_locked(), &took);
     if (took) {
-        /* On the carrier the pulse needs the ports' 5V: ON waits for the
-         * PROG 5V box, and the line under the rows says so. */
-        if (i == 0 && carrier_tester() && prog_choice_needs_5v()) {
-            return true;
-        }
+        /* On the carrier ON is taken with the PROG 5V box off: the pulse
+         * waits for the box (prog_choice_want_pwm()), and the line under
+         * the rows says so.  The box is not on this screen. */
         if (i >= 0 && i != p.pwm.selected) {
             settings_set(SET_SERVO_PORT_PWM, (i == 0) ? 1.0f : 0.0f);
             settings_request_save();
