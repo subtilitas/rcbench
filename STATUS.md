@@ -35,10 +35,10 @@ output signals.
 | UI, touch, screens, settings, SD card | yes | |
 | Stop | drives the heartbeat line; sends the STOP command | honours the line; times out the link |
 | Servo outputs, PPM (pulse-position modulation), DShot, bidirectional DShot | | yes |
-| Receiver buses: S.BUS, iBUS, SUMD, CRSF, EX Bus, SRXL2 | | yes |
+| Receiver buses: S.BUS, iBUS, SUMD, CRSF, EX Bus, SRXL2 (S.BUS decoded; the rest not started) | | yes |
 | One-wire programming | | yes |
 | Current, voltage, cells, rpm (revolutions per minute), temperature | | yes |
-| Accelerometer and index pulse, one timebase | | yes |
+| Accelerometer and index pulse, one timebase (sensors not fitted) | | yes |
 | Balancing arithmetic, plots, verdicts | yes | |
 | Power path, current limiting, protection | | yes |
 | CAN | TWAI, the ESP32-P4's CAN controller | XL2515 over SPI (Serial Peripheral Interface) |
@@ -728,7 +728,7 @@ boot, saved once the bank is idle and the bus quiet.
 
 A save is one program of two pages; a sector erase falls to one per eight saves and is taken
 ahead of the save that needs it, or at boot. The placement rules are host-tested in
-`test_outstore`; Eight saves of the single-sector store this one replaces printed an
+`test_outstore`. Eight saves of the single-sector store printed an
 erase-and-program window of 19,174 to 19,186us. Every erase and program runs through
 `flash_safe_execute()`, which parks core 1 in RAM for the window; a window core 1 does not
 stop for within 10ms writes nothing, prints `window refused` and is tried again 1000ms on. A
@@ -1186,8 +1186,7 @@ rcbench/
   .clang-tidy  .cppcheck-suppress  ruff.toml  codecov.yml  Doxyfile
   .github/workflows/      ci · docs · pages · release
   docs/                   the wiki source, English and German
-  tools/                  generators, checks and analysis scripts;
-                          research/ holds the component research scripts
+  tools/                  generators, checks and analysis scripts
   test/tools/             pytest cases for the tools
   test/host/              one suite over shared/ and protocols/;
                           fixtures/ holds the CSV corpus
@@ -1240,9 +1239,9 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 
 | Workflow | Trigger | What it does |
 | --- | --- | --- |
-| `ci.yml` | push, pull request, tag `v*`, manual | on Ubuntu 26.04: the host suite in five parallel jobs, joined by the job the branch ruleset requires; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check` and the Codecov upload, which fails the job when it fails; the font, screenshot, fit, translated-format, docs, wiki-link and research-script checks; `check_protocols.py --check`; clang-tidy and cppcheck over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff with its docstring (D) rules; the pytest cases of the tools (`test/tools/`); `tools/doc_check.py --check`, the Doxygen comments of the C sources against `tools/doc_check_baseline.txt`, which on a pull request also fails on any warning in a C file the pull request adds or on a line it changes, on a C file it changes that has no `@file` block with a `@brief`, and on a comment block without `@brief` it adds or edits; on a pull request `tools/mutate.py` on the changed lines of `shared/` and of the cores under `protocols/`, which reports survivors and does not fail on one; the panel build on ESP-IDF (Espressif Internet-of-Things Development Framework) v6.1 for the ESP32-P4, with the check of the image against its update slot, of the embedded IOmcu image, of the touch injector and of exFAT, and a second build without the injector; the pico-sdk build of the IOmcu with `pinmap_check.py` and the stack check of its two cores, a second build with `-DSENSE_TRACE=ON`, with the same stack check, that fails when the default image holds a trace symbol, and a third with `-DIOMCU_CONSOLE=ON`, with the same stack check, that fails when the default image holds a console symbol; firmware artifacts including a merged panel image for offset 0 |
+| `ci.yml` | push, pull request, tag `v*`, manual | on Ubuntu 26.04: the host suite in five parallel jobs, joined by the job the branch ruleset requires; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check` and the Codecov upload, which fails the job when it fails; the font, screenshot, fit, translated-format, docs and wiki-link checks; `check_protocols.py --check`; clang-tidy and cppcheck over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff with its docstring (D) rules; the pytest cases of the tools (`test/tools/`); `tools/doc_check.py --check`, the Doxygen comments of the C sources against `tools/doc_check_baseline.txt`, which on a pull request also fails on any warning in a C file the pull request adds or on a line it changes, on a C file it changes that has no `@file` block with a `@brief`, and on a comment block without `@brief` it adds or edits; on a pull request `tools/mutate.py` on the changed lines of `shared/` and of the cores under `protocols/`, which reports survivors and does not fail on one; the panel build on ESP-IDF (Espressif Internet-of-Things Development Framework) v6.1 for the ESP32-P4, with the check of the image against its update slot, of the embedded IOmcu image, of the touch injector and of exFAT, and a second build without the injector; the pico-sdk build of the IOmcu with `pinmap_check.py` and the stack check of its two cores, a second build with `-DSENSE_TRACE=ON`, with the same stack check, that fails when the default image holds a trace symbol, and a third with `-DIOMCU_CONSOLE=ON`, with the same stack check, that fails when the default image holds a console symbol; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/`, manual | waits for the CI run on the same commit (`tools/ci_gate.py`, at most 5400s) and publishes `docs/` to the GitHub wiki when it passed |
-| `mutation.yml` | Sunday 03:17 UTC, manual | every mutant of the lines of `shared/safety` and `shared/outputs` (3032 mutants) in 6 parallel shards of files, no mutant limit, no mutant started after 18000s in a shard; the mutants left then are reported as not run; does not fail on a survivor; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
+| `mutation.yml` | Sunday 03:17 UTC, manual | every mutant of the lines of `shared/safety` and `shared/outputs` (6140 mutants in 79 files) in 6 parallel shards of files, no mutant limit, no mutant started after 18000s in a shard; the mutants left then are reported as not run; does not fail on a survivor; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
 | `release.yml` | tag `v*`, manual for a tag | waits for the CI run on the tagged commit and, when it passed, builds both images, packages them with checksums, creates a release, a pre-release for an odd minor number (`tools/release_kind.py`); beside that, without holding the release back, runs the configurator data check (`configurator/core/tools/check-annotate.sh --warn-only`) and shows each warning, such as a release tag newer than the configurator data, as an annotation and in the run summary |
 | `pages.yml` | pull request and push to `main` touching `configurator/`, `help/`, `docs/img/`, the help generator, the `Doxyfile` or `tools/install_doxygen.sh`; a push to `main` touching the C sources as well | type check, tests, data check, size budget and Playwright browser tests of the configurator; the web help; the C API (application programming interface) reference built by Doxygen 1.18.0; on a push to `main` it publishes the built page to GitHub Pages, with the help under `help/` and the API reference under `api/`. A run that changes only the C sources, the `Doxyfile` or `tools/install_doxygen.sh` builds the configurator page without its checks and runs no Playwright test |
 
@@ -1985,8 +1984,8 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/wifi_view.c` | 15 | 15 | 100.0% |
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
 | `shared/ui/coproc_update_screen.c` | 276 | 275 | 99.6% |
-| `shared/ui/upd_screen.c` | 639 | 616 | 96.4% |
-| `shared/ui/upd_c6.c` | 117 | 113 | 96.6% |
+| `shared/ui/upd_screen.c` | 643 | 620 | 96.4% |
+| `shared/ui/upd_c6.c` | 117 | 114 | 97.4% |
 | `shared/ui/imu_ctl.c` | 98 | 98 | 100.0% |
 | `shared/ui/imu_ble.c` | 134 | 133 | 99.2% |
 | `shared/ui/imu_sensor.c` | 182 | 182 | 100.0% |
@@ -2220,7 +2219,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **84763** | **83185** | **98.1%** |
+| **total** | **84767** | **83190** | **98.1%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -2269,7 +2268,7 @@ end's 200ms failsafe: `FAULT 01`.
 
 The store reduces erase frequency, as described above. A flash window can still exceed the
 260us held by the two buffers. The recorded 19ms window combined an erase and a page program
-in the earlier store implementation. Neither operation was measured separately. The program
+in the single-sector store. Neither operation was measured separately. The program
 is the window every save still pays, and 256 bytes against the erase's 4,096 puts it one to
 two orders of magnitude below 19ms on serial NOR flash, or roughly 200 to 2,000us against a
 260us budget.
@@ -2549,9 +2548,7 @@ core that does not draw. Nothing exercises it deliberately: its files, `main.c`,
 `panel_link.c`, `panel_poll.c`, `panel_services.c`, `panel_supply.c`, `panel_arm.c`,
 `panel_art.c` and `panel_update.c` (the IOmcu's update), are not in the host suite. The
 `runlog` task beside it (`panel_log.c`), which owns every write to the card, is in the same
-position. A multi-agent review found six defects in it, including a heartbeat that stopped
-for up to 1000ms on an unanswered poll and a splash tap that latched STOP; those are fixed,
-and the rules it drives are in `shared/safety/arming.c` under `test_arming`, the link-loss
+position. The rules it drives are in `shared/safety/arming.c` under `test_arming`, the link-loss
 stop and the wait for the far end's word on the heartbeat included.
 
 **Next evidence or work:** a session with both boards: press ARM, drag the throttle while the screen is busy, press
