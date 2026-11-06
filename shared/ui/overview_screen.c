@@ -402,7 +402,8 @@ static bool help_page(int i, ui_help_page_t *out)
             gap.x = HELP_SHOT_X;
         }
         out->item[out->count++] = (ui_help_item_t){
-            TR(HG_OV_SHOT_NAME), TX_HG_OV_SHOT, band_item(gap) };
+            TR(HG_OV_SHOT_NAME), TX_HG_OV_SHOT, band_item(gap),
+            UI_HELP_AT_LEFT };
         return true;
     }
     if (i < 2) {
@@ -414,29 +415,31 @@ static bool help_page(int i, ui_help_page_t *out)
                 continue;
             }
             out->item[out->count++] = (ui_help_item_t){
-                t->name, t->help, tile_rect(slot) };
+                t->name, t->help, tile_rect(slot), UI_HELP_AT_LEFT };
         }
         return true;
     }
     out->side = UI_HELP_DOCK_LEFT;
     const ui_bench_status_t *st = ui_router_status();
     out->item[out->count++] = (ui_help_item_t){
-        "STOP", TX_HG_OV_STOP, band_item(ui_band_stop_rect()) };
+        "STOP", TX_HG_OV_STOP, band_item(ui_band_stop_rect()),
+        UI_HELP_AT_LEFT };
     gfx_rect_t chip;
     if (ui_band_chip_rect(st, UI_BAND_CHIP_ARMED, &chip)) {
         out->item[out->count++] = (ui_help_item_t){
             st->armed ? ui_band_armed_label(st->armed_roles) : TR(BAND_SAFE),
-            TX_HG_OV_ARM, band_item(chip) };
+            TX_HG_OV_ARM, band_item(chip), UI_HELP_AT_LEFT };
     }
     out->item[out->count++] = (ui_help_item_t){
-        "?", TX_HG_OV_GUIDE, band_item(ui_band_guide_rect()) };
+        "?", TX_HG_OV_GUIDE, band_item(ui_band_guide_rect()),
+        UI_HELP_AT_LEFT };
     /* The first mark of the right half, top down by column. */
     static const uint8_t k_mark_slots[4] = { 2, 6, 3, 7 };
     for (int k = 0; k < 4; ++k) {
         gfx_rect_t mark;
         if (mark_rect(k_mark_slots[k], &mark)) {
             out->item[out->count++] = (ui_help_item_t){
-                TR(OV_MODELLED), TX_HG_OV_MARK, mark };
+                TR(OV_MODELLED), TX_HG_OV_MARK, mark, UI_HELP_AT_LEFT };
             break;
         }
     }

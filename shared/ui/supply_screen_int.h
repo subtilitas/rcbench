@@ -646,6 +646,13 @@ gfx_rect_t sup_pd_value_rect(int i);
  */
 gfx_rect_t sup_pd_key_rect(int i, bool plus);
 /**
+ * @brief Whether PD MINI's row @p i has - and + keys: a pin not soldered,
+ *        and the baud. Enable flips on a tap of its value.
+ * @param i the row
+ * @return true when it has
+ */
+bool sup_pd_has_keys(int i);
+/**
  * @brief A press on the PD MINI tab: taken on a key or a value, refused with
  *        the lock's reason on the band while a lock stands.
  * @param evt the DOWN event
@@ -678,6 +685,25 @@ void sup_pd_tick(void);
  * @param c the canvas
  */
 void sup_pd_draw(gfx_canvas_t *c);
+
+/* --- supply_guide.c: the screen guide's pages (ui_help.h) --------------- */
+
+struct ui_help_page;
+
+/**
+ * @brief The guide's pages for what SUPPLY shows now: the task's, then the
+ *        rail's two; 0 under the keypad or the question.
+ * @return the count
+ */
+int supply_help_count(void);
+
+/**
+ * @brief Page @p i of those supply_help_count() counts.
+ * @param i the page, from 0
+ * @param out the page
+ * @return false past the last or for NULL
+ */
+bool supply_help_page(int i, struct ui_help_page *out);
 
 /* --- supply_draw.c ------------------------------------------------------ */
 

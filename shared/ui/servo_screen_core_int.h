@@ -12,7 +12,8 @@
  * prefixed svs_: among them the conversions between angle, pulse and
  * command in servo_screen.c.  Nothing outside these five files includes
  * this header but servo_rudder_panel.c, RUDDER's task, whose buttons
- * command the horn as the output card's CENTRE does; the seam with the
+ * command the horn as the output card's CENTRE does, and servo_guide.c,
+ * whose guide pages mark the dial; the seam with the
  * screen's pages and panels is servo_screen_int.h, which this header
  * includes.
  *

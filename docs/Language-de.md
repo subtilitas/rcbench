@@ -328,12 +328,14 @@ Konfliktmarkierungen stehen.
 python3 tools/render_ui.py --fit
 ```
 
-baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 568 Ansichten auf
+baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 589 Ansichten auf
 Englisch und auf Deutsch und schlägt fehl, wenn ein Text in einer der beiden
 Sprachen
 
 - breiter ist als die Box, die `gfx_text_in()` bekam,
-- am Rand des Bereichs abgeschnitten wird, in dem er steht,
+- am Rand des Bereichs abgeschnitten wird, in dem er steht, außer in einer
+  Ansicht der Bildschirmhilfe (`help-...`) am Rand der freien Hälfte zum
+  Hilfefeld hin, das den Rest der Seite absichtlich verdeckt,
 - über die gefüllte Form hinausläuft, auf der er steht,
 - einen anderen Text des Bildes überlappt, oder
 - von einer später gezeichneten Fläche übermalt und nicht neu
@@ -379,7 +381,7 @@ ein Wort mit einer Beschriftung der Oberfläche teilen.
 
 ## Eine Sprache hinzufügen
 
-Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 3.194
+Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 3.291
 Einträge mit ID und 102 Optionen, 10 davon mit leerem Englisch.
 
 1. Ergänze die Spalte in jedem Eintrag von `shared/text/include/ui_text.def`

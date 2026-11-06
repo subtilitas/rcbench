@@ -38,7 +38,8 @@ bool svs_arm_locked(void)
 /*
  * The controls whose press stops what the bench drives, where svs_event_body()
  * hands a DOWN at (x, y) to them now: DISARM while the button reads DISARM,
- * OUTPUT OFF while the supply's output is on, STOP RUN and STOP TEST in
+ * OUTPUT OFF while the supply's output is on, PROG 5V OFF while the
+ * ports' 5V reads ON, STOP RUN and STOP TEST in
  * LIVE's result box, and START TEST and START LIMIT RUN on TEST while their
  * run is under way (a tap there stops it).
  * The router hands a press on one of them through the alert band and the
@@ -55,6 +56,10 @@ bool svs_safe_at(int x, int y)
     }
     if (prog_shown_set() != NULL || modal_open()) {
         return false;
+    }
+    if (prog5v_box_shown() && prog5v_box_on()
+        && gfx_rect_contains(prog5v_box_button(&s.p5), x, y)) {
+        return true;
     }
     if (live_shown() && gfx_rect_contains(test_btn_rect(), x, y)) {
         if (s.lim_box) {

@@ -4352,7 +4352,6 @@ shared/ui/servo_workbench.c: warning: Member prog_follow_hold(void) (function) o
 shared/ui/servo_workbench.c: warning: Member prog_holds(void) (function) of file servo_workbench.c is not documented.
 shared/ui/servo_workbench.c: warning: Member prog_init(void) (function) of file servo_workbench.c is not documented.
 shared/ui/servo_workbench.c: warning: Member prog_leave(void) (function) of file servo_workbench.c is not documented.
-shared/ui/servo_workbench.c: warning: Member prog_list_now(prog_list_t *l) (function) of file servo_workbench.c is not documented.
 shared/ui/servo_workbench.c: warning: Member prog_page_down(const touch_event_t *evt) (function) of file servo_workbench.c is not documented.
 shared/ui/servo_workbench.c: warning: Member prog_page_follow(void) (function) of file servo_workbench.c is not documented.
 shared/ui/servo_workbench.c: warning: Member prog_page_rest(const touch_event_t *evt) (function) of file servo_workbench.c is not documented.

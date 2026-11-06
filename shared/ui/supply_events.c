@@ -468,12 +468,17 @@ static void task_changed(void)
     supply_invalidate();
 }
 
-/* OUTPUT OFF, the one control here whose press stops what the bench
- * drives: the router hands a press on it through the alert band and the
- * band's help bubble (ui_screen_t's safe_at).  OUTPUT ON is none. */
+/* OUTPUT OFF and PROG 5V OFF, the controls here whose press stops what
+ * the bench drives: the router hands a press on one through the alert
+ * band and the band's help bubble (ui_screen_t's safe_at).  OUTPUT ON and
+ * PROG 5V ON are none. */
 bool sup_safe_at(int x, int y)
 {
-    return s.on && gfx_rect_contains(s.out_rect, x, y);
+    if (s.on && gfx_rect_contains(s.out_rect, x, y)) {
+        return true;
+    }
+    return sup_p5_shown() && prog5v_box_on()
+           && gfx_rect_contains(prog5v_box_button(&s.p5), x, y);
 }
 
 void sup_event(const touch_event_t *evt)

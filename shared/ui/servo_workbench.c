@@ -156,8 +156,12 @@ static uint16_t caps_now(void)
     return ui_router_status()->capabilities;
 }
 
-/* PROGRAM's list as it stands: SERVO's PROGRAM rows, the search applied. */
-static void prog_list_now(prog_list_t *l)
+/**
+ * @brief PROGRAM's list as it stands: SERVO's PROGRAM rows, the search
+ *        applied.
+ * @param l the list, filled
+ */
+void prog_list_now(prog_list_t *l)
 {
     size_t n = 0;
     const prog_reg_row_t *rows = prog_registry(&n);

@@ -1090,6 +1090,8 @@ static const ui_screen_t k_screen = {
     .render = sup_render,
     .back   = back,
     .safe_at = sup_safe_at,
+    .help_count = supply_help_count,
+    .help_page  = supply_help_page,
 };
 
 const ui_screen_t *supply_screen(void) { return &k_screen; }

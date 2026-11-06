@@ -2747,6 +2747,18 @@ static void pose_motor_supply(ui_screen_id_t id, const char *view,
             /* The fit check's: LIVE's TABLE, every row with a reading. */
             ui_router_goto(SCREEN_SUPPLY);
             tap(SU_TABLE_TAB_X, UI_BAND_H + SU_PANE_Y);
+        } else if (strcmp(view, "supply-off") == 0
+                   || strcmp(view, "supply-settings-off") == 0) {
+            /* The screen guide's: the run's output switched off, as a
+             * task's guide page is offered only then, on LIVE or on
+             * SETTINGS. */
+            st.output = false;
+            supply_screen_set_output(false);
+            supply_screen_push(&st);
+            if (strcmp(view, "supply-settings-off") == 0) {
+                ui_router_goto(SCREEN_SUPPLY);
+                tap(SU_TAB_SETTINGS_X, UI_BAND_H + SU_TAB_Y);
+            }
         } else if (strcmp(view, "supply-port") == 0) {
             /* The fit check's: a servo programming port holds the
              * supply, the set points faint and MODE's line saying why. */

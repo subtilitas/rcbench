@@ -369,11 +369,14 @@ and every frame over a simulated bench (`ui_band_key()`, `test_frame_work`).
 
 Built and tested on the host (`shared/ui/ui_help.c`, the router's guide in `ui_router.c`;
 `test_help_router`, `test_help_pages`): "?" in the band opens numbered marks and a dock with
-up to 5 controls a page, 3 rows each. The menu has 4 pages, SERVO's RUDDER task 1. OUTPUTS,
-SETUP, LOGS and FILES have 20 pages over 11 states (`help_outputs.c`, `help_setup.c`,
-`help_logs.c`, `help_files.c`; `test_help_outputs`, `test_help_setup`, `test_help_logs`,
-`test_help_files`).
-PREV and NEXT stand in the band, in the home tag's place, the same on every page.
+up to 5 controls a page, 3 rows each. The menu has 4 pages. SERVO has 12 pages over its
+tasks and SETTINGS' pages with 47 items (`shared/ui/servo_guide.c`), SUPPLY 6 with 25 items
+(`shared/ui/supply_guide.c`); `test_help_guides` holds them. A page whose dock would cover
+OUTPUT OFF, STOP TEST or STOP RUN is not offered while that control shows. OUTPUTS, SETUP,
+LOGS and FILES have 20 pages over 11 states (`help_outputs.c`, `help_setup.c`, `help_logs.c`,
+`help_files.c`; `test_help_outputs`, `test_help_setup`, `test_help_logs`, `test_help_files`).
+The other screens have none yet. PREV and NEXT stand in the band, in the home tag's place, the
+same on every page.
 
 ### Screenshot
 
@@ -1228,15 +1231,15 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 463 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 464 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
 `test_nav_tiles`, `test_menu_openers`, `test_nav_alert`, `test_nav_mark`,
 `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_band_hwstop`,
-`test_help_router`,
-`test_help_pages`, `test_help_setup`, `test_help_outputs`, `test_help_logs`,
-`test_help_files`, `test_widgets`, `test_hold_hint`, `test_workbench`, `test_prog_registry`,
+`test_help_router`, `test_help_pages`, `test_help_guides`, `test_help_setup`,
+`test_help_outputs`, `test_help_logs`, `test_help_files`, `test_widgets`, `test_hold_hint`,
+`test_workbench`, `test_prog_registry`,
 `test_keypad`, `test_keypad_sign`, `test_keypad_rows_setup`, `test_keypad_rows_stick`,
 `test_keypad_rows_motor`, `test_keypad_rows_supply`, `test_keypad_rows_servo`,
 `test_keypad_rows_kst`, `test_pinlist`, `test_bench`, `test_supply`, `test_supply_screen`,
@@ -1752,8 +1755,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 864 committed screenshots to the current render,
-432 in English and the same 432 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` holds 868 committed screenshots to the current render,
+434 in English and the same 434 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -1788,7 +1791,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_widgets.c` | 355 | 347 | 97.8% |
 | `shared/ui/ui_icons.c` | 189 | 189 | 100.0% |
 | `shared/ui/ui_band.c` | 341 | 324 | 95.0% |
-| `shared/ui/ui_help.c` | 253 | 243 | 96.0% |
+| `shared/ui/ui_help.c` | 259 | 249 | 96.1% |
 | `shared/ui/help_outputs.c` | 74 | 72 | 97.3% |
 | `shared/ui/help_setup.c` | 85 | 81 | 95.3% |
 | `shared/ui/help_logs.c` | 54 | 53 | 98.2% |
@@ -1813,9 +1816,10 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/motor_settings_page.c` | 189 | 179 | 94.7% |
 | `shared/ui/motor_program_page.c` | 174 | 169 | 97.1% |
 | `shared/ui/supply_screen.c` | 549 | 540 | 98.4% |
-| `shared/ui/supply_events.c` | 380 | 378 | 99.5% |
+| `shared/ui/supply_events.c` | 383 | 381 | 99.5% |
 | `shared/ui/supply_draw.c` | 433 | 414 | 95.6% |
 | `shared/ui/supply_pdmini.c` | 167 | 161 | 96.4% |
+| `shared/ui/supply_guide.c` | 119 | 118 | 99.2% |
 | `shared/ui/prog5v_box.c` | 195 | 194 | 99.5% |
 | `shared/ui/prog_choice.c` | 126 | 125 | 99.2% |
 | `shared/ui/ui_keypad.c` | 290 | 288 | 99.3% |
@@ -1830,7 +1834,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_screen.c` | 380 | 371 | 97.6% |
 | `shared/ui/servo_screen_sweep.c` | 490 | 487 | 99.4% |
 | `shared/ui/servo_screen_link.c` | 410 | 406 | 99.0% |
-| `shared/ui/servo_screen_touch.c` | 319 | 303 | 95.0% |
+| `shared/ui/servo_screen_touch.c` | 322 | 308 | 95.7% |
 | `shared/ui/servo_screen_draw.c` | 549 | 536 | 97.6% |
 | `shared/ui/servo_settings_panel.c` | 589 | 577 | 98.0% |
 | `shared/ui/servo_settings_draw.c` | 421 | 413 | 98.1% |
@@ -1841,6 +1845,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_rudder_panel.c` | 408 | 405 | 99.3% |
 | `shared/ui/servo_rudder_auto_panel.c` | 548 | 490 | 89.4% |
 | `shared/ui/servo_rudder_flap.c` | 101 | 99 | 98.0% |
+| `shared/ui/servo_guide.c` | 186 | 182 | 97.8% |
 | `shared/ui/kst_panel.c` | 345 | 341 | 98.8% |
 | `shared/ui/kst_panel_text.c` | 168 | 168 | 100.0% |
 | `shared/ui/kst_panel_warn.c` | 277 | 274 | 98.9% |
