@@ -235,7 +235,7 @@ suite's panel, which reads every 10ms; on the bench they are not measured.
 - A finger and an injected contact on the same pixel are two contacts with
   two track ids.
 - A touch event the panel loses aborts what it would abort for the glass
-  (`shared/safety/touch_loss.h`). 5 contacts that all jump more than 120px
+  (`shared/safety/include/touch_loss.h`). 5 contacts that all jump more than 120px
   in one report make 10 events, which the touch task's event buffer of
   `TOUCH_MAX_POINTS * 2` holds.
 
