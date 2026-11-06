@@ -241,7 +241,8 @@ static void second_lines(cands_t *c)
             r.why = (servo_rauto_why_t)why;
             r.test_why = (servo_test_abort_t)ab;
             if (why == SERVO_RAUTO_WHY_BINDS) {
-                snprintf(w, sizeof(w), TR(RA_BINDS_AT), -89.9);
+                /* The IMU's widest, in hundredths. */
+                snprintf(w, sizeof(w), TR(RA_BINDS_AT), "-180.00");
             } else {
                 snprintf(w, sizeof(w), "%s",
                          ui_servo_str(servo_rauto_why_str(&r)));

@@ -84,7 +84,7 @@ void rudder_init(void)
  */
 static float src_abs_now(void)
 {
-    return servo_test_enc_deg(s.enc_raw, 0u);
+    return enc_abs_now();
 }
 
 /**
@@ -390,18 +390,22 @@ void rudder_cancel(void)
 /* ------------------------------------------------------------ the texts */
 
 /**
- * @brief A deflection's text: signed tenths, or the dashes.
+ * @brief A reading's text: signed, or the dashes.  Degrees of the IMU in
+ *        hundredths, the AS5600's and every mm in tenths.
  * @param buf where it goes
  * @param n its size
  * @param have a value is on show
  * @param v the value
+ * @param deg the value is degrees
  */
-static void num_text(char *buf, size_t n, bool have, float v)
+static void num_text(char *buf, size_t n, bool have, float v, bool deg)
 {
-    if (have) {
-        snprintf(buf, n, "%+.1f", (double)v);
-    } else {
+    if (!have) {
         snprintf(buf, n, "---");
+    } else if (deg) {
+        (void)svs_angle_text(buf, n, v, true);
+    } else {
+        snprintf(buf, n, "%+.1f", (double)v);
     }
 }
 
@@ -423,8 +427,14 @@ static const char *max_line(char *buf, size_t n, bool mm)
             continue;
         }
         const float v = mm ? servo_rudder_mm(mag, len_now()) : mag;
-        snprintf(side[k], sizeof(side[k]), "%c%.1f%s", (k == 0) ? '-' : '+',
-                 (double)v, mm ? "mm" : "°");
+        char t[12];
+        if (mm) {
+            snprintf(t, sizeof(t), "%.1f", (double)v);
+        } else {
+            (void)svs_angle_text(t, sizeof(t), v, false);
+        }
+        snprintf(side[k], sizeof(side[k]), "%c%s%s", (k == 0) ? '-' : '+', t,
+                 mm ? "mm" : "°");
     }
     snprintf(buf, n, "%s %s  %s", TR(RUD_MAX), side[0], side[1]);
     return buf;
@@ -481,10 +491,16 @@ const char *rudder_line(int i, char *buf, size_t n)
 
 /* ---------------------------------------------------------- the drawing */
 
+/** @brief The width a reading with its unit takes at most, px: the
+ *         column's 250 less a 10px gap to the next. */
+#define RUD_READ_W 240
+
 /**
  * @brief The numerals of a reading in the 32 x 44 face, then the unit in
- *        the 20 x 36 face on their foot.  -500.0mm, the widest reading,
- *        takes 236px of the column's 250 (test_rudder_layout).
+ *        the 20 x 36 face on their foot.  -500.0mm, the widest reading in
+ *        mm, takes 236px of the column's 250 (test_rudder_layout).  A
+ *        reading wider than RUD_READ_W, an IMU angle of 100.00° or more,
+ *        takes the 20 x 36 face for its numerals too, on the same foot.
  * @param c the canvas
  * @param x the column's left edge
  * @param t the numerals
@@ -494,8 +510,13 @@ const char *rudder_line(int i, char *buf, size_t n)
 static void reading(gfx_canvas_t *c, int x, const char *t, const char *unit,
                     gfx_color_t col)
 {
-    const int w = gfx_text_width(SV_FONT_NUM, t, 1);
-    gfx_text(c, x, RUD_NUM_Y, t, SV_FONT_NUM, col, 1);
+    const int wu = gfx_text_width(SV_FONT_HEAD, unit, 1);
+    const gfx_font_t *f = SV_FONT_NUM;
+    if (gfx_text_width(f, t, 1) + 4 + wu > RUD_READ_W) {
+        f = SV_FONT_HEAD;
+    }
+    const int w = gfx_text_width(f, t, 1);
+    gfx_text(c, x, RUD_NUM_Y + READ_NUM_H - f->height, t, f, col, 1);
     gfx_text(c, x + w + 4, RUD_NUM_Y + READ_NUM_H - SV_FONT_HEAD->height,
              unit, SV_FONT_HEAD, ui_theme_color(UI_C_TEXT_DIM), 1);
 }
@@ -517,7 +538,7 @@ static void draw_readout(gfx_canvas_t *c)
     char t[24], line[64];
     gfx_text(c, RUD_X, RUD_LBL_Y, TR(RUD_DEFL), SV_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
-    num_text(t, sizeof(t), have, defl);
+    num_text(t, sizeof(t), have, defl, true);
     reading(c, RUD_X, t, "°", num);
     gfx_text(c, RUD_X, RUD_MAX_Y, max_line(line, sizeof(line), false),
              SV_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
@@ -529,7 +550,7 @@ static void draw_readout(gfx_canvas_t *c)
     }
     gfx_text(c, RUD_MM_X, RUD_LBL_Y, TR(RUD_EDGE), SV_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
-    num_text(t, sizeof(t), have, servo_rudder_mm(defl, len));
+    num_text(t, sizeof(t), have, servo_rudder_mm(defl, len), false);
     reading(c, RUD_MM_X, t, "mm", num);
     gfx_text(c, RUD_MM_X, RUD_MAX_Y, max_line(line, sizeof(line), true),
              SV_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
@@ -683,8 +704,9 @@ static uint32_t card_sig(void)
 }
 
 /**
- * @brief One number for what the readout and the state lines show, at the
- *        tenths they are drawn in: a change repaints them alone.
+ * @brief One number for what the readout and the state lines show, the
+ *        degrees in hundredths, the mm in tenths: a change repaints them
+ *        alone.
  * @return the number
  */
 static uint32_t read_sig(void)
@@ -696,11 +718,11 @@ static uint32_t read_sig(void)
     const float len = len_now();
     const uint32_t v[] = {
         have ? 1u : 0u,
-        have ? (uint32_t)lroundf(defl * 10.0f) : 0u,
+        have ? (uint32_t)lroundf(defl * 100.0f) : 0u,
         have ? (uint32_t)lroundf(servo_rudder_mm(defl, len_now()) * 10.0f)
              : 0u,
-        h0 ? (uint32_t)lroundf(m0 * 10.0f) + 1u : 0u,
-        h1 ? (uint32_t)lroundf(m1 * 10.0f) + 1u : 0u,
+        h0 ? (uint32_t)lroundf(m0 * 100.0f) + 1u : 0u,
+        h1 ? (uint32_t)lroundf(m1 * 100.0f) + 1u : 0u,
         /* The MAX in mm too: two maxima a tenth of a degree alike can
          * stand a tenth of a mm apart at 500mm. */
         h0 ? (uint32_t)lroundf(servo_rudder_mm(m0, len) * 10.0f) : 0u,

@@ -215,6 +215,7 @@ typedef enum {
     SET_IMU_SIGN,
     SET_IMU_RATE,
     SET_IMU_ALGO,
+    SET_IMU_FILTER,
     /* --- RUDDER's AUTO end points ---------------------------------------- */
     SET_RUDDER_DEFL_LO,
     SET_RUDDER_DEFL_HI,

@@ -41,6 +41,7 @@ typedef struct {
     char    name[IMU_NAME_MAX];       /**< SET_TEXT_IMU_NAME */
     uint8_t rate_code;                /**< wit_rate_t */
     bool    six;                      /**< ALGORITHM 6-AXIS (AXIS6 1) */
+    uint8_t filter;                   /**< IMU FILTER, 1 to 50; 0 is 1 */
 } imu_cfg_t;
 
 /** @brief The controller.  Its members are private but for the tests. */
@@ -60,7 +61,7 @@ void imu_ctl_init(imu_ctl_t *c);
  *        calibration; ON connects a bound sensor once Bluetooth is synced.
  *        A RATE or an ALGORITHM that differs from the one before is sent
  *        once the sensor is connected; the first call only takes the
- *        values.
+ *        values.  IMU FILTER holds from the next angle frame on.
  * @param c      The controller.
  * @param cfg    The values; NULL does nothing.
  * @param now_ms The clock.

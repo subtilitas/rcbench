@@ -8,6 +8,17 @@ history is in git.
 
 ### Added
 
+- IMU filter (SETUP > SENSORS > IMU, key `imu_filter`): a low-pass on the
+  IMU's angle, per angle frame and axis, deg += (new - deg) / k with k 1 to
+  50, default 1 (no filtering). It covers 63% of a step in about k frames:
+  at 10Hz IMU filter 10 takes about 1s. The first frame after a connect, a
+  reconnect, a bind or a stale reading seeds it; the difference is wrapped
+  at ±180°. The IMU screen, RUDDER, AUTO and the servo runs read the
+  filtered angle. The IMU's still time reads 0 until the filtered angle
+  lies within 0.05° of the sensor's (`IMU_SETTLE_DEG`), and AUTO waits
+  3000ms plus the filter's longest settle (`imu_filter_settle_ms()`,
+  11,700ms for IMU filter 10 at 10Hz) before NOT STILL. Host-tested by
+  `test_imu_filter` and `test_servo_rauto_filter`.
 - Bluetooth LE host on the panel: NimBLE on the P4, the controller on the
   ESP32-C6, HCI over the existing SDIO link (esp_hosted 2.13.0, VHCI).
   `main/panel_ble.c` starts it on the task `blestart`: the C6's link, the
@@ -63,6 +74,13 @@ history is in git.
 
 ### Changed
 
+- The IMU's angles show two decimals: the IMU screen's X, Y and Z, RUDDER's
+  DEFLECTION and MAX with ANGLE SOURCE IMU, SERVO's MEASURED and AUTO's
+  `surface binds at x°`. The servo runs' reading carries the IMU's degrees
+  beside its AS5600 counts (`servo_test_enc_t` `exact` and `deg`), so
+  RUDDER, AUTO, the LIMIT RUN and MEASURED no longer read it in 0.088°
+  steps. RUDDER draws a reading of 100.00° or more in the 20 x 36 face.
+  The AS5600's readings stay in tenths.
 - The Bluetooth IMU reads the WitMotion BWT901CL over Bluetooth LE through
   the board's ESP32-C6, in place of an HC-05 on UART1. The first IMU ON
   starts Bluetooth LE. SCAN FOR SENSORS scans for 10s and lists the

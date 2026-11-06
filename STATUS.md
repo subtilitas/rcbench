@@ -969,8 +969,11 @@ gaps (`shared/ui/imu_sensor.c`, `test_imu_sensor` without a radio), the BLE link
 (`shared/ui/imu_ble.c`), the controller that joins the two (`shared/ui/imu_ctl.c`,
 `test_imu_ctl` against `ble_sim.h`), the IMU screen on SETUP's IMU tile (`test_imu_screen`),
 SETUP > SENSORS > IMU (`test_imu_pane`) and the panel's IMU task
-(`firmware/panel/main/panel_imu.c`). With ANGLE SOURCE IMU the servo runs read its angle in
-AS5600 counts. The link has not run against NimBLE's answers or the sensor. `protocols/hc05`
+(`firmware/panel/main/panel_imu.c`). The angle's low-pass, IMU filter, its seed, its wrap
+at ±180° and the still time that waits for it (`test_imu_filter`), and AUTO on the filtered
+angle with the settle allowance (`test_servo_rauto_filter`, `test_servo_rauto_kst`). With
+ANGLE SOURCE IMU the servo test reads its angle in AS5600 counts; RUDDER, AUTO, the LIMIT
+RUN and MEASURED take its degrees as read. The link has not run against NimBLE's answers or the sensor. `protocols/hc05`
 and its suites stay in the host suite; no firmware builds them.
 
 ### Phase tap (ESC tones)
@@ -1230,7 +1233,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 465 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 467 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1335,9 +1338,10 @@ The host suite is 465 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_angle`, `test_servo_source_angle`, `test_hitec_prog_run` and
 `test_hitec_panel_run`, `test_servo_rudder`, `test_servo_rudder_panel`,
 `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`, `test_bleuart`,
-`test_bleuart_adv`, `test_bleuart_link`, `test_imu`, `test_imu_sensor`,
-`test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
-`test_servo_rauto_guard`, `test_servo_rauto_kst`, `test_servo_rauto_panel`,
+`test_bleuart_adv`, `test_bleuart_link`, `test_imu`, `test_imu_filter`,
+`test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
+`test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_kst`,
+`test_servo_rauto_panel`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_rudder_flap`, `test_rudder_flap_view`.
 
@@ -1840,7 +1844,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_board.c` | 56 | 56 | 100.0% |
 | `shared/ui/servo_screen.c` | 380 | 371 | 97.6% |
 | `shared/ui/servo_screen_sweep.c` | 490 | 487 | 99.4% |
-| `shared/ui/servo_screen_link.c` | 410 | 406 | 99.0% |
+| `shared/ui/servo_screen_link.c` | 421 | 417 | 99.0% |
 | `shared/ui/servo_screen_touch.c` | 319 | 303 | 95.0% |
 | `shared/ui/servo_screen_draw.c` | 549 | 536 | 97.6% |
 | `shared/ui/servo_settings_panel.c` | 589 | 577 | 98.0% |
@@ -1849,8 +1853,8 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_limit_panel.c` | 462 | 415 | 89.8% |
 | `shared/ui/servo_limit_seam.c` | 100 | 96 | 96.0% |
 | `shared/ui/servo_workbench.c` | 371 | 369 | 99.5% |
-| `shared/ui/servo_rudder_panel.c` | 408 | 405 | 99.3% |
-| `shared/ui/servo_rudder_auto_panel.c` | 546 | 489 | 89.6% |
+| `shared/ui/servo_rudder_panel.c` | 417 | 414 | 99.3% |
+| `shared/ui/servo_rudder_auto_panel.c` | 549 | 491 | 89.4% |
 | `shared/ui/servo_rudder_flap.c` | 101 | 99 | 98.0% |
 | `shared/ui/kst_panel.c` | 345 | 341 | 98.8% |
 | `shared/ui/kst_panel_text.c` | 168 | 168 | 100.0% |
@@ -1966,9 +1970,9 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/servo/servo_limrun.c` | 654 | 628 | 96.0% |
 | `shared/servo/servo_limrun_report.c` | 316 | 313 | 99.0% |
 | `shared/servo/servo_gap.c` | 33 | 33 | 100.0% |
-| `shared/servo/servo_angle.c` | 29 | 29 | 100.0% |
-| `shared/servo/servo_rudder_auto.c` | 470 | 460 | 97.9% |
-| `shared/servo/servo_rudder_auto_report.c` | 243 | 243 | 100.0% |
+| `shared/servo/servo_angle.c` | 33 | 33 | 100.0% |
+| `shared/servo/servo_rudder_auto.c` | 472 | 462 | 97.9% |
+| `shared/servo/servo_rudder_auto_report.c` | 244 | 244 | 100.0% |
 | `shared/servo/servo_limrun_family.c` | 29 | 29 | 100.0% |
 | `protocols/openyge/openyge_frame.c` | 172 | 169 | 98.3% |
 | `protocols/openyge/openyge_status.c` | 39 | 39 | 100.0% |
@@ -2109,7 +2113,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/bench/log_cols.c` | 53 | 53 | 100.0% |
 | `shared/bench/log_cadence.c` | 50 | 50 | 100.0% |
 | `shared/bench/perf_watch.c` | 66 | 66 | 100.0% |
-| `shared/bench/imu.c` | 89 | 89 | 100.0% |
+| `shared/bench/imu.c` | 144 | 144 | 100.0% |
 | `shared/sense/sense_bus.c` | 133 | 132 | 99.2% |
 | `shared/sense/ina228.c` | 200 | 200 | 100.0% |
 | `shared/sense/ina3221.c` | 142 | 142 | 100.0% |

@@ -20,6 +20,7 @@
  * - length_takes_0_or_10_to_500mm_and_refuses_the_gap
  * - the_state_line_names_no_source_stale_and_connected
  * - the_imu_as_the_source_is_named_and_read
+ * - the_imu_reads_in_hundredths_on_the_readout_and_the_max_line
  * - another_source_drops_the_zero_and_the_max
  * - another_imu_axis_drops_the_zero_and_the_max
  * - another_imu_sign_drops_the_zero_and_the_max
@@ -36,6 +37,7 @@
  */
 #include "servo_screen_rig.h"
 
+#include "servo_angle.h"
 #include "servo_rudder_int.h"
 #include "ui_help.h"
 #include "ui_workbench.h"
@@ -554,6 +556,79 @@ TEST_CASE(the_imu_as_the_source_is_named_and_read)
                  "ANGLE: AS5600 OFF IN SETUP");
 }
 
+/** @brief An IMU reading of @p deg as the panel hands it
+ *         (servo_angle_enc()): its counts and its degrees as read. */
+static void imu_reading(float deg)
+{
+    static uint32_t at_ms = 1000u;
+    at_ms += 100u;
+    const servo_angle_in_t in = { .valid = true, .deg = deg,
+                                  .taken_ms = at_ms };
+    servo_test_enc_t e;
+    CHECK(servo_angle_enc(&in, &e));
+    servo_screen_encoder(&e);
+}
+
+/* With the IMU as the source the readout, the MAX line and the deflection
+ * AUTO measures carry the IMU's degrees in hundredths, not its 0.088°
+ * counts: 12.345° reads +12.35, not the +12.3 of its 140 counts; the mm
+ * stay in tenths.  Back on the AS5600 the tenths again. */
+TEST_CASE(the_imu_reads_in_hundredths_on_the_readout_and_the_max_line)
+{
+    fresh();
+    two_buffers();
+    settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_IMU);
+    settings_set(SET_RUDDER_LEN_MM, 100.0f);
+    to_rudder();
+    imu_reading(0.0f);
+    press(RUD_C_ZERO);
+    imu_reading(12.345f);
+    float d = 0.0f;
+    CHECK(rudder_defl(&d));
+    CHECK_NEAR(d, 12.345f, 1e-4f);
+    scr->render(&cv, 0);
+    const gfx_color_t acc = ui_theme_color(UI_C_ACCENT);
+    const int wd = gfx_text_width(&gfx_font_num_32x44, "+12.35", 1);
+    numerals_ref(DEG_X, "+12.35", acc);
+    CHECK(box_same(DEG_X, SV_RUD_NUM_Y, wd, NUM_H));
+    /* 100mm x sin(12.345deg) = 21.38mm, in tenths. */
+    const int wm = gfx_text_width(&gfx_font_num_32x44, "+21.4", 1);
+    numerals_ref(SV_RUD_MM_X, "+21.4", acc);
+    CHECK(box_same(SV_RUD_MM_X, SV_RUD_NUM_Y, wm, NUM_H));
+    static const int max_y = 138;
+    gfx_fill_rect(&cref, DEG_X, max_y, 240, 20, ui_theme_color(UI_C_PANEL));
+    gfx_text(&cref, DEG_X, max_y, "MAX ---  +12.35°", &gfx_font_10x20,
+             ui_theme_color(UI_C_TEXT), 1);
+    CHECK(box_same(DEG_X, max_y, 240, 20));
+    /* A hundredth more repaints the readout. */
+    imu_reading(12.371f);
+    scr->render(&cv, 1);
+    scr->render(&cv, 0);
+    numerals_ref(DEG_X, "+12.37", acc);
+    CHECK(box_same(DEG_X, SV_RUD_NUM_Y, wd, NUM_H));
+    /* -100.00 and more take the 20 x 36 face, inside the column. */
+    imu_reading(-123.456f);
+    scr->render(&cv, 1);
+    scr->render(&cv, 0);
+    gfx_fill_rect(&cref, DEG_X, SV_RUD_NUM_Y, 250, NUM_H,
+                  ui_theme_color(UI_C_PANEL));
+    gfx_text(&cref, DEG_X, SV_RUD_NUM_Y + NUM_H - 36, "-123.46",
+             &gfx_font_20x36, acc, 1);
+    CHECK(box_same(DEG_X, SV_RUD_NUM_Y,
+                   gfx_text_width(&gfx_font_20x36, "-123.46", 1), NUM_H));
+    /* The AS5600 again: its tenths. */
+    settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_AS5600);
+    encoder_on();
+    reading(0);
+    press(RUD_C_ZERO);
+    reading(256);
+    scr->render(&cv, 1);
+    scr->render(&cv, 0);
+    numerals_ref(DEG_X, "+22.5", acc);
+    CHECK(box_same(DEG_X, SV_RUD_NUM_Y,
+                   gfx_text_width(&gfx_font_num_32x44, "+22.5", 1), NUM_H));
+}
+
 /**
  * @brief A zero taken at count 0 and a MAX of +22.5deg on the source in
  *        force, both checked.
@@ -1019,6 +1094,9 @@ TEST_CASE(every_string_fits)
         char line[80];
         snprintf(line, sizeof(line), "%s -180.0°  +180.0°", TR(RUD_MAX));
         CHECK(gfx_text_width(f, line, 1) <= 240);
+        /* The IMU's, in hundredths. */
+        snprintf(line, sizeof(line), "%s -180.00°  +180.00°", TR(RUD_MAX));
+        CHECK(gfx_text_width(f, line, 1) <= 240);
         snprintf(line, sizeof(line), "%s -500.0mm  +500.0mm", TR(RUD_MAX));
         CHECK(gfx_text_width(f, line, 1) <= 240);
         snprintf(line, sizeof(line), TR(RUD_PULSE), "2500us");
@@ -1043,6 +1121,17 @@ TEST_CASE(every_string_fits)
     CHECK(gfx_text_width(&gfx_font_num_32x44, "-180.0", 1) + 4
               + gfx_text_width(&gfx_font_20x36, "°", 1)
           <= 240);
+    /* The IMU's in hundredths: to -99.99 in the 32 x 44 face, from
+     * -100.00 in the 20 x 36 one. */
+    CHECK(gfx_text_width(&gfx_font_num_32x44, "-99.99", 1) + 4
+              + gfx_text_width(&gfx_font_20x36, "°", 1)
+          <= 240);
+    CHECK(gfx_text_width(&gfx_font_num_32x44, "-100.00", 1) + 4
+              + gfx_text_width(&gfx_font_20x36, "°", 1)
+          > 240);
+    CHECK(gfx_text_width(&gfx_font_20x36, "-180.00", 1) + 4
+              + gfx_text_width(&gfx_font_20x36, "°", 1)
+          <= 240);
 }
 
 int main(void)
@@ -1058,6 +1147,7 @@ int main(void)
     RUN(length_takes_0_or_10_to_500mm_and_refuses_the_gap);
     RUN(the_state_line_names_no_source_stale_and_connected);
     RUN(the_imu_as_the_source_is_named_and_read);
+    RUN(the_imu_reads_in_hundredths_on_the_readout_and_the_max_line);
     RUN(another_source_drops_the_zero_and_the_max);
     RUN(another_imu_axis_drops_the_zero_and_the_max);
     RUN(another_imu_sign_drops_the_zero_and_the_max);

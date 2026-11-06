@@ -32,7 +32,7 @@ the project's notice.
 | --- | --- |
 | the BLE central: scan list, connect, GATT (generic attribute profile) discovery, subscribe, writes, retries | `protocols/bleuart`, no radio code |
 | the sensor's frames and commands | `protocols/witmotion`, no pin driver |
-| the reading: angles, zero, still time, rate, battery, age | `shared/bench/imu.c` |
+| the reading: angles, the low-pass filter, zero, still time, rate, battery, age | `shared/bench/imu.c` |
 | the sensor's side: the reading, its commands, the calibration, the gaps, the handout to SERVO; no radio | `shared/ui/imu_sensor.c` |
 | the BLE link: the central for the IMU, its devices, errors and the C6's version in the view's types | `shared/ui/imu_ble.c` |
 | the controller: joins the link and the sensor's side, the link state, the view | `shared/ui/imu_ctl.c` |
@@ -157,6 +157,52 @@ calibration ends it FAILED; its CALSW 0 and SAVE go at the next connect.
 ZERO takes the current angles as zero on the panel; nothing goes to the
 sensor, and a restart forgets it.
 
+## The filter
+
+IMU filter (SETUP > SENSORS > IMU, key `imu_filter`) is a low-pass on the
+angle, on the panel. It runs once per angle frame and per axis:
+
+```text
+deg += (new - deg) / k        k = IMU filter, 1 to 50, default 1
+```
+
+| Value | Effect |
+| --- | --- |
+| 1 | no filtering: each frame's angle as it came |
+| k | each frame moves the angle by 1/k of the rest; it covers 63% of a step in about k frames |
+| 0 or above 50, stored | taken as 1 or 50 |
+
+The time constant is about k frames, so it depends on the rate the sensor
+runs, which is its saved rate and not SETUP's RATE (see above). At 10Hz,
+IMU filter 10 takes about 1s to 63% of a step; at 50Hz about 0.2s.
+
+- Every reading uses the filtered angle: the IMU screen, ZERO, RUDDER,
+  AUTO, the servo test and the LIMIT RUN.
+- The first angle frame after a connect, a reconnect, a bind, IMU ON or a
+  stale reading seeds the filter: the angle starts at that frame's value,
+  not at 0.
+- The difference is wrapped to -180 to 180° first. A crossing from 179.9°
+  to -179.9° moves the angle 0.2° the short way, not through 0. This
+  holds on every axis.
+
+The still time is the sensor's: the angle within 0.5° (`IMU_STILL_DEG`)
+of the stretch's first frame. While the filtered angle lags the sensor's
+by more than 0.05° (`IMU_SETTLE_DEG`), the still time reads 0. The panel
+works out that lag from the distance at the stretch's first frame, shrunk
+by (1 - 1/k) each frame. Once it is 0.05° or less, the still time counts
+from the sensor's stop. AUTO on RUDDER, which waits for 500ms of still
+time, then takes a settled angle, within 0.05° of the sensor's. AUTO waits
+up to 3,000ms after the command plus the filter's longest settle
+(`imu_filter_settle_ms()`): the frames a distance of 180° needs to come
+within 0.05°, at 1.5 times the frame period measured, 300ms a frame at
+most. That is 0ms for IMU filter 1, 11,700ms for IMU filter 10 at 10Hz and
+60,900ms for IMU filter 50 at 10Hz. The report names the wait:
+`within 14700ms of the command`.
+
+Current limitation: with IMU filter above 1, a move of the servo test
+counts as late when the filtered angle has not settled by the next
+command. A move that settles in time is timed to the sensor's stop.
+
 ## Console lines
 
 The lines carry the tags `imu` and `ble`:
@@ -197,7 +243,7 @@ sends the C6's controller init and enable requests again
 | connect | on one panel (station, 2026-11-05) these values connected on the first try; with interval 15ms, supervision timeout 1,000ms and a 10ms/10ms connect scan, 35 tries at -59dBm ended with HCI 0x3E |
 | accuracy X, Y | 0.05° (datasheet), 0.2° (maker's web page) |
 | accuracy Z | 1° after the magnetometer's calibration, which the servo's motor disturbs; Z drift without it is not stated |
-| a run's angle | carried in AS5600 counts: 360 / 4096 = 0.088° a count |
+| a run's angle | the automatic test judges in AS5600 counts: 360 / 4096 = 0.088° a count; RUDDER, AUTO, the LIMIT RUN and MEASURED take the degrees as read, shown to 0.01° |
 | a link drop | whether the sensor's module buffers or discards the bytes it cannot send is not known; the panel reconnects after 1,000ms while IMU is ON |
 | Wi-Fi beside BLE | the C6 time-shares its radio; the effect on either is not measured |
 | writes | whether a write on 8841 reaches the sensor is not measured |

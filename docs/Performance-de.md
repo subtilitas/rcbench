@@ -423,7 +423,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | `control` | `control_task` | 6 144 | 3 472 | 1 632 |
 | `runlog` | `log_task` | 6 656 | 3 824 | 1 792 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
-| `imu` | `imu_task`, die Verbindung der Bluetooth-IMU: die Werte aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_imu.c`) | 4 096 | 1 872 | 1 184 |
+| `imu` | `imu_task`, die Verbindung der Bluetooth-IMU: die Werte aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_imu.c`) | 4 096 | 1 888 | 1 168 |
 | `blestart` | `ble_start_task`, die Verbindung zum C6, seine Controller-Anfragen, der Start des Hosts und das Warten auf seinen Sync, dann weg (`panel_ble.c`) | 4 096 | 1 200 | 1 856 |
 | `nimble_host` | `ble_host_task`, der Host von NimBLE: HCI (Host Controller Interface) zum C6 und zurück, die Berichte des Scans, die Antworten der Verbindung und von GATT (`panel_ble.c`) | 4 096 | 1 936 | 1 120 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 392 | 1 664 |

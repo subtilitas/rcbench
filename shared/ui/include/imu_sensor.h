@@ -49,6 +49,8 @@ typedef struct {
     bool         had_frames;     /**< a valid reading since IMU ON or the
                                       last imu_sensor_rebind() */
     uint8_t      rate_code;      /**< SETUP's RATE, wit_rate_t */
+    uint8_t      filter;         /**< SETUP's IMU FILTER, 1 to 50 */
+    bool         link_was_up;    /**< the stream flowed at the last tick */
     bool         six;            /**< SETUP's ALGORITHM 6-AXIS */
     imu_cal_t    cal;            /**< the calibration */
     uint32_t     cal_from_ms;    /**< when it started */
@@ -69,9 +71,17 @@ typedef struct {
                                       zero kept, counted */
 } imu_sensor_t;
 
-/** @brief Clear: no reading, nothing held, RATE 50Hz.
+/** @brief Clear: no reading, nothing held, RATE 50Hz, IMU FILTER 1.
  *  @param s The sensor, not NULL. */
 void imu_sensor_init(imu_sensor_t *s);
+
+/**
+ * @brief Take SETUP's IMU FILTER, held to 1 to 50 (imu_filter_clamp()).
+ *        It holds from the next angle frame on, also after IMU OFF.
+ * @param s      The sensor, not NULL.
+ * @param filter The setting as stored.
+ */
+void imu_sensor_filter(imu_sensor_t *s, int32_t filter);
 
 /**
  * @brief Take SETUP's RATE and ALGORITHM.  With @p send a value that
@@ -94,7 +104,8 @@ void imu_sensor_values(imu_sensor_t *s, uint8_t rate_code, bool six,
 void imu_sensor_off(imu_sensor_t *s);
 
 /** @brief Another sensor is bound: NO FRAMES waits for its first valid
- *         reading.  @param s The sensor, not NULL. */
+ *         reading, which seeds the filter.  @param s The sensor, not
+ *         NULL. */
 void imu_sensor_rebind(imu_sensor_t *s);
 
 /**
@@ -113,7 +124,9 @@ void imu_sensor_feed(imu_sensor_t *s, const uint8_t *b, size_t n,
  * @brief Age the reading, run the calibration's clock, and queue the
  *        RATE and ALGORITHM writes due on a connected sensor: unlock, the
  *        writes, SAVE, once all of them fit in the outbox and no
- *        calibration runs.
+ *        calibration runs.  A stream that flows again after it stopped
+ *        (a connect or a reconnect) seeds the filter with its next angle
+ *        frame.
  * @param s       The sensor, not NULL.
  * @param now_ms  The clock.
  * @param link_up The sensor's stream flows.

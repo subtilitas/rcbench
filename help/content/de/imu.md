@@ -29,7 +29,7 @@ Ein Druck von weniger als 2s startet keine Kalibrierung. Das Band zeigt `Halte 2
 | `SENSOR: HC-06` | der bei der Suche ermittelte Name des gebundenen Sensors, `OHNE NAMEN` ohne Namen, oder `KEINER GEBUNDEN`; darunter stehen Adresse und Typ (`P` öffentlich, `R` zufällig) |
 | `C6: 2.13.0` | die Firmware-Version des C6, `---`, wenn der C6 keine meldet |
 | Zustand | `IMU AUS IN IMU-OPTIONEN`, `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN SENSOR GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN`, `VERBUNDEN 50Hz` oder `KEINE FRAMES` |
-| X, Y, Z | die Winkel relativ zum Nullpunkt mit einer Auflösung von 0,1°, ohne Messwert `---`; die von Servoläufen verwendete Achse erscheint in der Akzentfarbe |
+| X, Y, Z | die Winkel relativ zum Nullpunkt durch den IMU-Filter, mit einer Auflösung von 0,01°, ohne Messwert `---`; die von Servoläufen verwendete Achse erscheint in der Akzentfarbe |
 | RATE, ALTER | die Zahl der Winkel-Frames in der letzten Sekunde und die Zeit seit dem jüngsten Frame auf der Seite |
 | AKKU | der Akkuwert des Sensors aus Frame 0x52; über 6,0V ausgeblendet |
 

@@ -252,7 +252,7 @@ static inline void bench_frames(uint32_t ms)
             if ((int32_t)(bench.now - bench.enc_next) >= 0) {
                 bench.enc_next += 40u;
                 servo_test_enc_t e = { true, raw,
-                    (uint16_t)(bench.now - bench.enc_anchor_ms), bench.now, false, false, false, false };
+                    (uint16_t)(bench.now - bench.enc_anchor_ms), bench.now, false, false, false, false, false, 0.0f };
                 if (bench.imu) {
                     const servo_angle_in_t in = {
                         .valid = true,

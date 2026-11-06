@@ -281,7 +281,7 @@ void settings_changed(setting_id_t id)
         publish_pdmini();
     } else if (id == SET_HITEC_RX) {
         publish_hitec_rx();
-    } else if (id >= SET_IMU_EN && id <= SET_IMU_ALGO) {
+    } else if (id >= SET_IMU_EN && id <= SET_IMU_FILTER) {
         panel_imu_settings_changed(id);
     } else if (settings_sensors_row(id)) {
         publish_sense();          /* SETUP > SENSORS */

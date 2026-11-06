@@ -6,7 +6,7 @@
  * at 2999mA does not, a clipped one does; window means above 1000mA end it
  * at 400ms and not at 350ms; every one of those ends with the output off
  * and SAFE asked; not still within 3000ms ends NOT_STILL and still at
- * 3000ms is taken; the angle lost for 300ms is ridden through and 301ms
+ * 3000ms is taken, and the IMU filter's settle lengthens that wait; the angle lost for 300ms is ridden through and 301ms
  * ends the run, as does a second gap within 10s; no window for 200ms; the
  * bench not switching within 3s; the programmer silent for 150s; a refused
  * CONNECT, write and LEAVE; a CONNECT that finds no servo, or another one;
@@ -202,6 +202,42 @@ TEST_CASE(not_still_within_3s_ends_not_still)
     CHECK(servo_rauto_running(&g.run));
     CHECK_EQ(g.run.step_n, 1u);
     CHECK_NEAR(g.run.steps[0].measured_deg, 30.0f, 1e-4f);
+}
+
+/* The IMU filter's settle allowance: not still ends the run at 3000ms
+ * plus it, not a ms sooner, and the report names that time; a smaller
+ * allowance later in the run does not cut the wait short.  Still in time,
+ * the angle is taken as without it. */
+TEST_CASE(not_still_waits_the_filter_settle_longer)
+{
+    rig_init(0u);
+    g.jitter = true;
+    g.settle_ms = 5000u;
+    CHECK(start());
+    CHECK(run_to(SERVO_RAUTO_PH_MOVE, RAUTO_MS));
+    const uint32_t at = g.run.move_ms;
+    g.settle_ms = 0u;
+    while (g.now - at < SERVO_RAUTO_MOVE_MS + 5000u - 1u) {
+        tick();
+    }
+    CHECK(servo_rauto_running(&g.run));
+    CHECK_EQ(g.run.phase, SERVO_RAUTO_PH_SETTLE);
+    tick();
+    CHECK(!servo_rauto_running(&g.run));
+    CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_NOT_STILL);
+    CHECK_EQ(g.run.end_ms - at, SERVO_RAUTO_MOVE_MS + 5000u);
+    run_for(10u);
+    CHECK(ended_safe());
+    CHECK(in_report("angle stable for 500ms, within 8000ms of the command"));
+
+    /* Without jitter and with the allowance the run passes as it does
+     * without it. */
+    rig_init(0u);
+    g.settle_ms = 5000u;
+    CHECK(start());
+    run_for(RAUTO_MS);
+    CHECK(!servo_rauto_running(&g.run));
+    CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
 }
 
 /* The angle source stops answering at @p at. */
@@ -618,6 +654,7 @@ int main(void)
     RUN(a_hard_sample_ends_the_run_with_the_output_off_and_safe_asked);
     RUN(window_means_above_1000ma_end_the_run_at_400ms);
     RUN(not_still_within_3s_ends_not_still);
+    RUN(not_still_waits_the_filter_settle_longer);
     RUN(the_angle_lost_for_301ms_ends_the_run_and_300ms_is_ridden_through);
     RUN(the_meter_and_the_bench_silent_end_the_run);
     RUN(a_refused_connect_ends_prog_and_restore_is_offered_after_a_write);

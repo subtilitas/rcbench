@@ -203,7 +203,10 @@ Der Winkelsensor WitMotion BWT901CL wird über Bluetooth LE durch den ESP32-C6 d
 | IMU-Vorzeichen | +, - | + | `-` dreht diesen Winkel um |
 | IMU-Rate | 10Hz, 20Hz, 50Hz, 100Hz, 200Hz | 50Hz | die Frames des Sensors je Sekunde; nur bei einer Änderung gesendet, sie gilt, nachdem der Sensor aus- und wieder eingeschaltet wurde; ab Werk läuft der Sensor mit 10Hz, und `VERBUNDEN` zeigt die Rate, mit der er läuft |
 | IMU-Algorithmus | 6-AXIS, 9-AXIS | 6-AXIS | 9-AXIS nimmt das Magnetometer für Z |
+| IMU-Filter | 1 bis 50 | 1 | der Tiefpass des Panels auf dem Winkel; 1 ist aus |
 | Winkelquelle | AS5600, IMU | AS5600 | woher die Servoläufe ihren Winkel nehmen ([Servo-Optionen](servo-settings.md)) |
+
+IMU-Filter glättet den Winkel auf dem Panel, je Frame und Achse: der Winkel rückt um 1/k der Differenz zum neuen Frame vor, mit k dem eingestellten Wert. 63% eines Sprungs erreicht er nach etwa k Frames, bei 10Hz also mit IMU-Filter 10 nach etwa 1s. Die Frames je Sekunde sind die Rate, mit der der Sensor läuft und die `VERBUNDEN` zeigt, nicht die erfragte IMU-Rate. Der IMU-Bildschirm, RUDER, AUTO und die Servoläufe lesen den gefilterten Winkel. Der erste Frame nach einem Verbinden setzt den Filter auf seinen eigenen Wert, und ein Übergang über 180° nimmt den kurzen Weg. AUTO wartet, bis der gefilterte Winkel eingeschwungen ist, bis zu 3000ms plus die Zeit, die der Wert brauchen kann ([Die Bluetooth-IMU](https://github.com/subtilitas/rcbench/wiki/IMU-de#der-filter)).
 
 Änderungen an RATE und ALGORITHMUS werden mit dem SAVE-Befehl des Sensors (`FF AA 00 00 00`) gesendet. Bei verbundenem Sensor lautet die Ratenmeldung `RATE GESPEICHERT: SCHALTE DEN SENSOR AUS UND EIN`. Ohne Verbindung erscheint `RATE WIRD BEIM VERBINDEN GESENDET. SCHALTE DEN SENSOR DANACH AUS UND EIN`; das Panel wartet auf Frames. Während der Kalibrierung steht `RATE WIRD NACH DER KALIBRIERUNG GESENDET. SCHALTE DEN SENSOR DANACH AUS UND EIN`. Dann folgt die Änderung erst nach CALSW 0 und SAVE der Kalibrierung.
 

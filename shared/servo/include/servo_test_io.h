@@ -87,6 +87,9 @@ typedef struct {
                                  detects no magnet (STATUS MD clear)   */
     bool weak,                              /**< valid, with the field too weak (ML): the angle's noise is not specified */
          strong;                            /**< valid, with the field too strong (MH): likewise */
+    bool     exact;         /**< deg holds the source's own angle, finer
+                                 than raw: the IMU's (servo_angle_enc()) */
+    float    deg;           /**< that angle from count 0, ° -180 to 180 */
 } servo_test_enc_t;
 
 /**
