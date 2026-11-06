@@ -218,8 +218,7 @@ Prüfstand wählt sie also. 1kHz ist das Zwanzigfache der Poll-Rate des Panels
 und liegt weit innerhalb des Signal-Timeouts jedes ESC.
 
 **Während der Prüfstand nicht treibt, wird nichts gesendet.** Keine Frames heißt
-keine Flanken, und ein ESC stoppt nach seinem eigenen Timeout auf Stille. Statt
-dessen ausdrückliche Nullen zu senden hielte ihn armed und wartend, und so soll
+keine Flanken, und ein ESC stoppt nach seinem eigenen Timeout auf Stille. Stattdessen ausdrückliche Nullen zu senden hielte ihn armed und wartend, und so soll
 ein Prüfstand in SAFE von der ESC-Seite aus nicht aussehen.
 
 ## Bidirektionales DShot
