@@ -124,6 +124,16 @@ TEST_CASE(the_first_frame_seeds_the_filter_after_init_reseed_and_stale)
     CHECK(!m.r.valid);
     feed(&m, -20.0f, 1950u);
     CHECK_EQ(m.r.angle[0], word_of(-20.0f));
+    /* A frame 300ms after the last, with no tick past the deadline in
+     * between, seeds as well: the tick at 295ms left the reading valid. */
+    feed(&m, 0.0f, 3000u);
+    CHECK_EQ(m.r.angle[0], word_of(0.0f));
+    imu_tick(&m, 3295u);
+    CHECK(m.r.valid);
+    feed(&m, 90.0f, 3300u);
+    CHECK(m.r.valid);
+    CHECK_EQ(m.r.angle[0], word_of(90.0f));
+    CHECK_EQ(m.r.still_ms, 0u);
     /* NULL does nothing. */
     imu_reseed(NULL);
     imu_set_filter(NULL, 5);

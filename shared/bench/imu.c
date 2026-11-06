@@ -151,6 +151,20 @@ static void rate_roll(imu_t *m, uint32_t now_ms)
 }
 
 /**
+ * @brief Expire the reading once IMU_STALE_MS passed since its last angle
+ *        frame: valid and the still time go.
+ * @param m      The model.
+ * @param now_ms The time now.
+ */
+static void expire(imu_t *m, uint32_t now_ms)
+{
+    if (m->r.valid && now_ms - m->r.taken_ms >= IMU_STALE_MS) {
+        m->r.valid = false;
+        m->r.still_ms = 0u;
+    }
+}
+
+/**
  * @brief The filter's step on every axis, or its seed: the first frame
  *        after a reseed or a stale reading.
  * @param m The model.
@@ -182,6 +196,9 @@ static float filter_take(imu_t *m, const float v[3])
 static void take_angle(imu_t *m, const wit_angle_t *a, uint32_t now_ms)
 {
     const float v[3] = { a->roll, a->pitch, a->yaw };
+    /* A gap that no tick saw yet ends the old reading before this frame:
+     * the frame seeds the filter and starts the still time again. */
+    expire(m, now_ms);
     bool still = m->r.valid;
     for (int i = 0; still && i < 3; ++i) {
         if (fabsf(wrap180(v[i] - m->still_ref[i])) > IMU_STILL_DEG) {
@@ -242,10 +259,7 @@ void imu_tick(imu_t *m, uint32_t now_ms)
     if (m == NULL) {
         return;
     }
-    if (m->r.valid && now_ms - m->r.taken_ms >= IMU_STALE_MS) {
-        m->r.valid = false;
-        m->r.still_ms = 0u;
-    }
+    expire(m, now_ms);
     rate_roll(m, now_ms);
 }
 
