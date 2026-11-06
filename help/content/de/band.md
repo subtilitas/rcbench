@@ -114,12 +114,12 @@ Das Speicher-Popup wartet, bis der Prüfstand ruht: SAFE, Netzteilausgang und PR
 
 Eine Störung, die die geöffnete Seite nicht anzeigt, erscheint in einem roten, 44px hohen Band am unteren Bildschirmrand. Es verdeckt die darunterliegenden Inhalte. ARM und die Bedienelemente zum Anhalten des Prüfstands enden oberhalb des Bands.
 
-- Ein Alarm verschwindet nach 30s. Ein neuer Alarm beginnt diese Zeit erneut. Der Hinweis einer [Halte-Taste](#halte-buttons) erscheint dagegen 4s lang in Bernsteinfarbe und weicht einem Alarm.
+- Ein Alarm verschwindet nach 30s. Ein neuer Alarm beginnt diese Zeit erneut. Der Hinweis einer [Halte-Taste](#halte-tasten) erscheint dagegen 4s lang in Bernsteinfarbe und weicht einem Alarm.
 - Tippe auf das Band, um den Alarm vorzeitig zu löschen. Am rechten Rand steht ein `x`. Die Seite darunter erhält weder diesen Tipp noch die Berührung eines zweiten Fingers auf dem Band.
 - DISARM, AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN und LAUF BEENDEN liegen oberhalb des Bands. Ein Druck darauf führt die Aktion aus; der Alarm bleibt. Das Band blockiert Berührungen von ARM und AUSGANG EIN, soweit sie darunterliegen.
 - Die beim Start angezeigte Meldung "Touchscreen antwortet nicht. ARMED ist gesperrt." bleibt bis zum Neustart und hat kein `x`.
 
-## Halte-Buttons
+## Halte-Tasten
 
 Eine Halte-Taste wirkt nach 2s Berührung. ARM, AUSGANG EIN, TEST STARTEN, ENDLAGENLAUF STARTEN, ÜBERNEHMEN und jede Taste mit der Beschriftung `2s HALTEN ZUM ...` verwenden diese Geste. Loslassen vor 2s sendet keinen Befehl. Stattdessen erscheint der Hinweis 4s lang in Bernsteinfarbe im Alarmband, etwa `Halte 2s, um auf ARMED zu schalten.`.
 
