@@ -44,7 +44,7 @@ rcbench/
     kst/                  programming of KST and Chaservo servos: frames, registers, limits, write plans, session · rp2350: kst_line.pio · kst_line
     hitec/                Hitec servo wire, both families: frames, transactions, reply decoders · rp2350: hitec_line.pio · hitec_line
     escwire/              ESC settings over the signal wire: protocol A, the text interface, the guard, identification, field maps, session · rp2350: ew_line.pio · ew_line · rp2350: ew_line.pio · ew_line
-    hc05/                 HC-05 Bluetooth module AT set-up: probe, scan, bind, connect to any; no pin driver
+    hc05/                 HC-05 Bluetooth module AT set-up: probe, scan, bind, connect to any; no pin driver; host suite only
     bleuart/              BLE central for the ISSC transparent-UART service: advertising parser, scan list, connect, discovery, subscribe, writes, reconnect; no pin driver
     i2c_txq/              I2C transaction queue: earliest deadline, timeouts, line check, bus clear · rp2350: i2c_txq_block on an I2C block, no PIO program
     witmotion/            WitMotion IMU frames: parser, decoders, command encoder; no pin driver
@@ -93,8 +93,8 @@ in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |
 | `escwire` | yes | yes | yes |
 | `witmotion` | yes | | yes |
-| `hc05` | yes | | yes |
-| `bleuart` | | | yes |
+| `hc05` | | | yes |
+| `bleuart` | yes | | yes |
 
 ## Toolchains
 
@@ -355,7 +355,9 @@ idf.py -C firmware/panel -B firmware/panel/build-noinject -D RCBENCH_TOUCH_INJEC
 idf.py -C firmware/panel -B firmware/panel/build-noperf -D RCBENCH_PERF_LOG=OFF build
 
 # panel, as one image at offset 0 (the ESP32-P4's bootloader sits at
-# 0x2000 inside it); it erases the settings in nvs
+# 0x2000 inside it); it erases the settings in nvs: the image fills
+# 0xD000 to 0x12FFF (nvs, 24,576 bytes) with 0xFF. `idf.py flash` writes
+# 0x2000, 0xC000, 0x14000 and 0x20000 only and keeps nvs.
 idf.py -C firmware/panel merge-bin -o rcbench-panel-merged.bin
 esptool.py -p /dev/ttyACM0 write_flash 0x0 \
     firmware/panel/build/rcbench-panel-merged.bin
@@ -701,9 +703,9 @@ NimBLE's memory in PSRAM, its host task on core 0.
 
 `firmware/panel/main/panel_ble.c` starts the host once, at
 `panel_ble_start()`, on a task of its own, `blestart`, and the host stays
-until the panel restarts. Only the console build's `ble scan` ([The bench
-console](BenchConsole.md#over-the-link-with-no-usb-on-the-iomcu)) calls
-it. The steps and their console lines:
+until the panel restarts. The IMU task calls it at the first IMU ON
+([The Bluetooth IMU](IMU.md)), the console build's `ble scan` ([The bench
+console](BenchConsole.md#over-the-link-with-no-usb-on-the-iomcu)) too. The steps and their console lines:
 
 1. `c6_link_up()`, shared with Wi-Fi: the first of the two resets and
    starts the C6. A failed link ends the start:

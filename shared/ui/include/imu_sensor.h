@@ -7,7 +7,7 @@
  *        C, no radio: the controller (imu_ctl.h) joins it to a link.
  *
  * The link tells the sensor two things: whether the sensor's stream flows
- * (link_up: the HC-05 runs no AT operation and is bound) and whether a
+ * (link_up: the BLE link is subscribed to the sensor's notifications) and whether a
  * 5-byte command can go now (imu_sensor_next()'s caller asks the link
  * first).  The stream's bytes come in order, in chunks of any length.
  * The sensor is connected while the link is up and the reading is valid.
@@ -150,12 +150,19 @@ void imu_sensor_unzero(imu_sensor_t *s);
 
 /**
  * @brief Whether the sensor leaves the link alone: no calibration runs and
- *        no command waits to go out.  An HC-05 AT operation, which takes
- *        the UART from the sensor, starts only then.
+ *        no command waits to go out.
  * @param s The sensor, not NULL.
  * @return Whether it does.
  */
 bool imu_sensor_quiet(const imu_sensor_t *s);
+
+/**
+ * @brief Drop the commands held: the link did not take one, and the rest
+ *        of its group (unlock, register, SAVE) must not go alone.  A
+ *        running calibration goes on and queues its exit at its end.
+ * @param s The sensor, not NULL.
+ */
+void imu_sensor_flush(imu_sensor_t *s);
 
 /**
  * @brief The sensor's part of the link state, with its stream flowing.

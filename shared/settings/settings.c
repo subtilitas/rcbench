@@ -52,7 +52,7 @@ static const struct {
     [SET_TEXT_DUT_NAME]     = { "srv_dut", "SERVO", SET_CAT_COUNT },
     [SET_TEXT_LOG_AUTO_DIR] = { "log_auto_dir", "BENCH/LOGS", SET_CAT_CARD },
     [SET_TEXT_LOG_USER_DIR] = { "log_user_dir", "USER/LOGS", SET_CAT_CARD },
-    [SET_TEXT_IMU_ADDR]     = { "imu_addr", "", SET_CAT_COUNT },
+    [SET_TEXT_IMU_ADDR]     = { "imu_ble", "", SET_CAT_COUNT },
     [SET_TEXT_IMU_NAME]     = { "imu_name", "", SET_CAT_COUNT },
 };
 
@@ -738,6 +738,26 @@ const char *settings_text(setting_text_id_t id)
         return "";
     }
     return s.texts[id];
+}
+
+/** @brief Keys an earlier build wrote and no build reads. */
+static const char *const k_retired_keys[] = {
+    "imu_addr", /* the HC-05's address; the BLE bind is imu_ble */
+};
+
+const char *settings_retired_key(int i)
+{
+    const int n = (int)(sizeof(k_retired_keys) / sizeof(k_retired_keys[0]));
+    return (i >= 0 && i < n) ? k_retired_keys[i] : NULL;
+}
+
+int settings_forget_retired(settings_forget_fn forget)
+{
+    int gone = 0;
+    for (int i = 0; forget != NULL && settings_retired_key(i) != NULL; ++i) {
+        gone += forget(settings_retired_key(i)) ? 1 : 0;
+    }
+    return gone;
 }
 
 const char *settings_text_key(setting_text_id_t id)

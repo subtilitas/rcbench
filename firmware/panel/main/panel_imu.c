@@ -1,24 +1,23 @@
 /**
  * @file panel_imu.c
- * @brief The Bluetooth IMU on the panel (panel_imu.h): the UART driver on
- *        PANEL_IMU_UART_NUM, the KEY line, the task that runs imu_ctl.h,
- *        and the frame task's glue.
+ * @brief The Bluetooth IMU on the panel (panel_imu.h): the task that runs
+ *        imu_ctl.h over Bluetooth LE (panel_ble.h), and the frame task's
+ *        glue.
  *
- * The task polls the UART every IMU_POLL_MS: the bytes go to the controller,
- * then the queue's values and commands, then every action the controller
- * hands out (KEY, a baud, bytes to send), then the view is published.  The
- * UART's receive ring holds IMU_RX_RING bytes: 116ms of the sensor's 2200
- * bytes/s at 50Hz.
+ * The task runs every IMU_POLL_MS: the queue's values and commands go to
+ * the controller, then the Bluetooth state, then the host stack's events
+ * (panel_ble_get()), then every action the controller hands out
+ * (panel_ble_do()), then the view is published.  The first IMU ON starts
+ * Bluetooth (panel_ble_start()); it stays until the panel restarts.
  *
  * SPDX-License-Identifier: MIT
  */
 #include "panel_imu.h"
 
+#include <stdio.h>
 #include <string.h>
 
-#include "board_pins.h"
-#include "driver/gpio.h"
-#include "driver/uart.h"
+#include "c6_link.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
@@ -27,6 +26,7 @@
 #include "imu_ctl.h"
 #include "imu_screen.h"
 #include "panel.h"
+#include "panel_ble.h"
 #include "sensors_rows.h"
 #include "servo_angle.h"
 #include "servo_screen.h"
@@ -35,16 +35,16 @@
 /** @brief The console lines' tag. */
 static const char *TAG = "imu";
 
-/** @brief The UART's receive ring, bytes. */
-#define IMU_RX_RING   256
 /** @brief The task's poll, ms: the controller is stepped at least this often. */
 #define IMU_POLL_MS   5
 /** @brief Values and commands the queue holds. */
 #define IMU_Q_LEN     8
-/** @brief Bytes read from the UART at a time. */
-#define IMU_READ_MAX  64
+/** @brief Host stack events taken in one poll at most: the whole queue. */
+#define IMU_EVTS_MAX  PANEL_BLE_QUEUE_LEN
 /** @brief Actions taken in one poll at most. */
 #define IMU_ACTS_MAX  16
+/** @brief The console's reading line while connected, every this many ms. */
+#define IMU_LOG_MS    1000u
 
 _Static_assert(pdMS_TO_TICKS(IMU_POLL_MS) >= 1,
                "the poll blocks for a tick at least: the task never spins");
@@ -108,55 +108,103 @@ static void post_cfg(void)
 }
 
 /**
- * @brief One action of the controller on the pins and the UART.
- * @param a The action.
+ * @brief The panel's Bluetooth state as the controller's, and the C6's
+ *        version as text.
+ * @param ver Takes "2.13.0", or "" when the C6 reported none.
+ * @param n   Its size.
+ * @return The state.
  */
-static void perform(const hc05_act_t *a)
+static imu_radio_t radio_now(char *ver, size_t n)
 {
-    switch (a->kind) {
-    case HC05_ACT_KEY:
-        gpio_set_level(PANEL_IMU_PIN_KEY, a->key ? 1 : 0);
-        break;
-    case HC05_ACT_BAUD:
-        if (uart_set_baudrate(PANEL_IMU_UART_NUM, a->baud) != ESP_OK) {
-            ESP_LOGW(TAG, "baud %lu refused", (unsigned long)a->baud);
-        }
-        break;
-    case HC05_ACT_SEND:
-        (void)uart_write_bytes(PANEL_IMU_UART_NUM, a->data, a->len);
-        break;
-    case HC05_ACT_NONE:
-    default:
-        break;
+    c6_link_version_t v;
+    ver[0] = '\0';
+    if (c6_link_version(&v)) {
+        snprintf(ver, n, "%u.%u.%u", (unsigned)v.major, (unsigned)v.minor,
+                 (unsigned)v.patch);
+    }
+    switch (panel_ble_state()) {
+    case PANEL_BLE_STARTING: return IMU_RADIO_STARTING;
+    case PANEL_BLE_NO_LINK:  return IMU_RADIO_NO_LINK;
+    case PANEL_BLE_NO_SYNC:  return IMU_RADIO_NO_SYNC;
+    case PANEL_BLE_READY:    return IMU_RADIO_READY;
+    case PANEL_BLE_OFF:
+    default:                 return IMU_RADIO_OFF;
     }
 }
 
 /**
- * @brief The task: bytes, messages, actions, the view, every IMU_POLL_MS.
+ * @brief One action of the controller, to NimBLE; a sensor command written
+ *        on 8841 is logged.
+ * @param a The action.
+ */
+static void perform(const bleu_act_t *a)
+{
+    if ((a->kind == BLEU_ACT_WRITE || a->kind == BLEU_ACT_WRITE_NR)
+        && a->len == WIT_CMD_LEN) {
+        ESP_LOGI(TAG, "command %02X %02X %02X %02X %02X%s", a->data[0],
+                 a->data[1], a->data[2], a->data[3], a->data[4],
+                 a->kind == BLEU_ACT_WRITE ? "" : " (no response)");
+    }
+    panel_ble_do(a);
+}
+
+/**
+ * @brief The console's reading line, once a second while connected: frames
+ *        in the second, the rate, the angles, bad frames, the battery and
+ *        the dropped events.
+ * @param now The clock.
+ */
+static void log_reading(uint32_t now)
+{
+    static uint32_t at, frames;
+    const imu_reading_t *r = &s_next.v.r;
+    if (now - at < IMU_LOG_MS) {
+        return;
+    }
+    if (s_next.v.link == IMU_LINK_CONNECTED) {
+        ESP_LOGI(TAG, "%u frames in %ums, rate %.1fHz, roll %.3f pitch %.3f "
+                      "yaw %.3f deg, bad %u, battery %.2fV, %u events dropped",
+                 (unsigned)(r->frames - frames), (unsigned)(now - at),
+                 (double)r->rate_dhz / 10.0, (double)r->angle[0],
+                 (double)r->angle[1], (double)r->angle[2], (unsigned)r->bad,
+                 (double)r->battery_v, (unsigned)panel_ble_dropped());
+    }
+    at = now;
+    frames = r->frames;
+}
+
+/**
+ * @brief The task: messages, the Bluetooth state, events, actions, the
+ *        view, every IMU_POLL_MS.
  * @param arg Unused.
  */
 static void imu_task(void *arg)
 {
     (void)arg;
     imu_link_t was = IMU_LINK_OFF;
-    int state_was = -1;
     for (;;) {
-        uint8_t rx[IMU_READ_MAX];
-        const int n = uart_read_bytes(PANEL_IMU_UART_NUM, rx, sizeof(rx),
-                                      pdMS_TO_TICKS(IMU_POLL_MS));
+        vTaskDelay(pdMS_TO_TICKS(IMU_POLL_MS));
         const uint32_t now = now_ms();
-        if (n > 0) {
-            imu_ctl_feed(&s_ctl, rx, (size_t)n, now);
-        }
         imu_msg_t m;
         while (xQueueReceive(s_q, &m, 0) == pdTRUE) {
             if (m.is_cfg) {
+                if (m.cfg.en && panel_ble_state() == PANEL_BLE_OFF) {
+                    ESP_LOGI(TAG, "IMU ON: starting Bluetooth LE");
+                    panel_ble_start();
+                }
                 imu_ctl_config(&s_ctl, &m.cfg, now);
             } else {
                 (void)imu_ctl_command(&s_ctl, &m.cmd, now);
             }
         }
-        hc05_act_t act;
+        char ver[IMU_VERSION_MAX];
+        const imu_radio_t radio = radio_now(ver, sizeof(ver));
+        imu_ctl_radio(&s_ctl, radio, ver, now);
+        bleu_evt_t e;
+        for (unsigned i = 0; i < IMU_EVTS_MAX && panel_ble_get(&e); ++i) {
+            imu_ctl_event(&s_ctl, &e, now);
+        }
+        bleu_act_t act;
         for (int i = 0; i < IMU_ACTS_MAX && imu_ctl_step(&s_ctl, now, &act);
              ++i) {
             perform(&act);
@@ -167,18 +215,12 @@ static void imu_task(void *arg)
         s_next.gap_at_ms = s_ctl.sensor.gap_at_ms;
         s_next.zero_gen = s_ctl.sensor.zero_gen;
         if (s_next.v.link != was) {
-            ESP_LOGI(TAG, "link %d -> %d", (int)was, (int)s_next.v.link);
+            ESP_LOGI(TAG, "link %d -> %d, error %d code 0x%X", (int)was,
+                     (int)s_next.v.link, (int)s_next.v.err,
+                     (unsigned)s_next.v.err_code);
             was = s_next.v.link;
         }
-        /* STATE, where it is wired, on the console: the link state itself
-         * is the reading's age. */
-        if (PANEL_IMU_PIN_STATE != GPIO_NUM_NC) {
-            const int st = gpio_get_level(PANEL_IMU_PIN_STATE);
-            if (st != state_was) {
-                ESP_LOGI(TAG, "HC-05 STATE %s", st ? "high" : "low");
-                state_was = st;
-            }
-        }
+        log_reading(now);
         taskENTER_CRITICAL(&s_mux);
         s_pub = s_next;
         taskEXIT_CRITICAL(&s_mux);
@@ -188,38 +230,6 @@ static void imu_task(void *arg)
 void panel_imu_start(void)
 {
     imu_ctl_init(&s_ctl);
-    const gpio_config_t key = {
-        .pin_bit_mask = 1ULL << PANEL_IMU_PIN_KEY,
-        .mode = GPIO_MODE_OUTPUT,
-    };
-    gpio_set_level(PANEL_IMU_PIN_KEY, 0);
-    if (gpio_config(&key) != ESP_OK) {
-        ESP_LOGE(TAG, "KEY on GPIO%d not set up; IMU off",
-                 (int)PANEL_IMU_PIN_KEY);
-        return;
-    }
-    gpio_set_level(PANEL_IMU_PIN_KEY, 0);
-    const uart_config_t uc = {
-        .baud_rate = PANEL_IMU_BAUD,
-        .data_bits = UART_DATA_8_BITS,
-        .parity = UART_PARITY_DISABLE,
-        .stop_bits = UART_STOP_BITS_1,
-        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-        .source_clk = UART_SCLK_DEFAULT,
-    };
-    if (uart_driver_install(PANEL_IMU_UART_NUM, IMU_RX_RING, 0, 0, NULL, 0)
-            != ESP_OK
-        || uart_param_config(PANEL_IMU_UART_NUM, &uc) != ESP_OK
-        || uart_set_pin(PANEL_IMU_UART_NUM, PANEL_IMU_PIN_TX, PANEL_IMU_PIN_RX,
-                        UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE) != ESP_OK) {
-        ESP_LOGE(TAG, "UART%d on GPIO%d/%d not set up; IMU off",
-                 (int)PANEL_IMU_UART_NUM, (int)PANEL_IMU_PIN_TX,
-                 (int)PANEL_IMU_PIN_RX);
-        return;
-    }
-    if (PANEL_IMU_PIN_STATE != GPIO_NUM_NC) {
-        (void)gpio_set_direction(PANEL_IMU_PIN_STATE, GPIO_MODE_INPUT);
-    }
     s_q = xQueueCreate(IMU_Q_LEN, sizeof(imu_msg_t));
     if (s_q == NULL) {
         ESP_LOGE(TAG, "queue not created; IMU off");
@@ -230,10 +240,11 @@ void panel_imu_start(void)
                               settings_get_int(SET_IMU_SIGN) == 1);
     /*
      * Core 0 beside the renderer, at the knob's priority 2: polls of 5ms,
-     * nothing with a deadline.  Stack 3072 bytes: the controller is
-     * static; the deepest chain is the UART driver's read.
+     * nothing with a deadline.  Stack 4096 bytes: the controller is
+     * static; the deepest chain is a NimBLE call of panel_ble_do() or the
+     * reading's console line, tools/stack_check.py holds it.
      */
-    if (xTaskCreatePinnedToCore(imu_task, "imu", 3072, NULL, 2, NULL, 0)
+    if (xTaskCreatePinnedToCore(imu_task, "imu", 4096, NULL, 2, NULL, 0)
         != pdPASS) {
         ESP_LOGE(TAG, "task not created; IMU off");
         vQueueDelete(s_q);

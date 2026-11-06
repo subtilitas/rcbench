@@ -229,32 +229,12 @@ extern "C" {
 /** @brief The knob's I2C clock in Hz. */
 #define BOARD_KNOB_I2C_FREQ_HZ  400000
 
-/* --- IMU over an HC-05 --- */
+/* --- IMU --- */
 /*
- * A WitMotion BWT901CL reaches the panel through an HC-05 Bluetooth module
- * (panel_imu.c, docs/IMU.md).  The HC-05 takes 5V and GND from pins 1
- * and 2 of H9, the RS485 header (Core_5V, the same net as pin 1 of the CAN
- * header H11), and its signals from header P3.  IO4 and IO5 are the
- * ESP32-P4's pad-JTAG pins (MTMS, MTDO): with debugging over USB-JTAG they
- * are plain GPIOs.
+ * The WitMotion BWT901CL reaches the panel over Bluetooth LE through the
+ * board's ESP32-C6 (panel_ble.c, docs/IMU.md): no pin of its own.  IO4,
+ * IO5 and IO29 of header P3 are free.
  */
-/** @brief The HC-05's UART: UART1 through the GPIO matrix (UART0 is the
- *         console, panel_console.c). */
-#define PANEL_IMU_UART_NUM    1
-/** @brief Panel TX to the HC-05's RXD (3.3V): IO4 of header P3. */
-#define PANEL_IMU_PIN_TX      GPIO_NUM_4
-/** @brief Panel RX from the HC-05's TXD: IO5 of header P3. */
-#define PANEL_IMU_PIN_RX      GPIO_NUM_5
-/** @brief The HC-05's KEY (EN on the ZS-040): IO29 of header P3, beside the
- *         heartbeat's IO28, high for AT commands.  GPIO29 is no strapping
- *         pin (GPIO34-38), no USB-JTAG pin (GPIO24, GPIO25) and no pad-JTAG
- *         pin (GPIO2-5). */
-#define PANEL_IMU_PIN_KEY     GPIO_NUM_29
-/** @brief The HC-05's STATE, high while connected: not wired
- *         (GPIO_NUM_NC); the reading's age stands in for it. */
-#define PANEL_IMU_PIN_STATE   GPIO_NUM_NC
-/** @brief The data baud: the BWT901CL's fixed 115200. */
-#define PANEL_IMU_BAUD        115200
 
 #ifdef __cplusplus
 }

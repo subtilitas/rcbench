@@ -474,8 +474,8 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
         10.0f },
     /*
      * The Bluetooth IMU (imu_ctl.h, docs/IMU.md): a WitMotion BWT901CL
-     * through an HC-05 on the panel's UART.  ON runs the HC-05's set-up
-     * and reads the sensor.  AXIS and SIGN pick the angle the servo runs
+     * over Bluetooth LE through the board's ESP32-C6.  ON starts Bluetooth
+     * LE, connects the bound sensor and reads it.  AXIS and SIGN pick the angle the servo runs
      * and RUDDER read (imu_axis_t).  RATE (imu_rate) and ALGORITHM
      * (imu_algo, AXIS6) go to the sensor as a command with SAVE when it is
      * connected, else when it next connects; a RATE takes effect after a

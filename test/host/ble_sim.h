@@ -108,6 +108,8 @@ typedef struct {
     bool absent;           /* a connect is never answered */
     uint32_t conn_ms;      /* CONNECT to its event */
     uint16_t conn_status;  /* not 0: the connect fails with it */
+    bool conn_lost;        /* the failure comes as a DISCONNECT with the
+                              connect's token, as NimBLE gives HCI 0x3E */
     bool cancel_silent;    /* a CANCEL gives no event */
     bool cancel_race;      /* a CANCEL's event is a connection, status 0 */
     bool scan_fail;        /* a SCAN fails at once, status 2 */
@@ -365,13 +367,16 @@ static void bsim_act(bsim_t *s, uint32_t t, const bleu_act_t *a)
         s->connecting = true;
         s->conn_token = a->token;
         if (!s->absent) {
-            e = bsim_answer(s, t + s->conn_ms, BLEU_EV_CONNECT, a->token,
-                            s->conn_status);
+            const bool lost = s->conn_lost && s->conn_status != 0u;
+            e = bsim_answer(s, t + s->conn_ms,
+                            lost ? BLEU_EV_DISCONNECT : BLEU_EV_CONNECT,
+                            a->token, s->conn_status);
             if (e != NULL && s->conn_status == 0u) {
+                /* The interval the controller picks: the most asked. */
                 e->conn = s->next_conn;
-                e->h1 = 12;
-                e->h2 = 0;
-                e->h3 = 100;
+                e->h1 = BLEU_ITVL_MAX;
+                e->h2 = BLEU_LATENCY;
+                e->h3 = BLEU_SUPERVISION;
             }
         }
         break;

@@ -20,7 +20,7 @@ SETUP enthält die prüfstandsweiten Paneleinstellungen in den Kategorien PANEL,
 | SD CARD | `LOGS, BROWSER-SCHREIBEN` | Aufzeichnungsarten, Speicherordner und Voraussetzungen für Browser-Schreibzugriffe. |
 | WI-FI | `NETZWERK, DATEIEN, UPLOAD` | [WLAN](wifi.md): Funkverbindung für Kartendateien und Firmware-Images im Browser. |
 | UPDATES | `VERSIONEN AUF GITHUB` | [Updates](updates.md): Suche nach neuerer Panel-Firmware und Update-Erinnerung. |
-| IMU | `BLUETOOTH-WINKELSENSOR` | [IMU](imu.md): HC-05 und gebundener WitMotion BWT901CL, Sensorsuche, Kalibrierung und aktuelle Winkel. |
+| IMU | `BLUETOOTH-WINKELSENSOR` | [IMU](imu.md): WitMotion BWT901CL über Bluetooth LE, Sensorsuche und Binden, Kalibrierung und aktuelle Winkel. |
 | LAYOUT | `STECKER UND PINS` | [Layout](layout.md): nur auf dem rbmod-Carrier mit fest verlöteten Pins. |
 
 2 Plätze bleiben frei; auf dem Carrier belegt LAYOUT einen davon. Wie bei den Listen steht unten rechts die Speichertaste. Sie zeigt ungespeicherte Änderungen aus allen Kategorien an:

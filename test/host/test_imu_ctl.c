@@ -1,233 +1,263 @@
 /*
- * The Bluetooth IMU's controller (imu_ctl.h) against the scripted HC-05 of
- * hc05_sim.h, 1ms at a time (imu_rig.h).
+ * The Bluetooth IMU's controller (imu_ctl.h) against the scripted host
+ * stack and sensor of ble_sim.h, 1ms at a time (imu_rig.h).
  *
- * The failures this is about: a panel that never finds a module plugged in
- * after start; sensor frames fed to the AT machine or AT answers to the
- * reading; a bind that leaves SETUP without the address; a calibration
- * that leaves the sensor in CALSW 1; a RATE written to a sensor that is
- * not there and never again; an IMU OFF that leaves KEY high.
+ * The failures this is about: a panel that scans or connects before
+ * Bluetooth is synced; a scan that lists another device as the sensor or
+ * loses the sensor's name; a bind that leaves SETUP without the address;
+ * sensor bytes read before the link is subscribed; a link that drops and
+ * never comes back; a calibration that leaves the sensor in CALSW 1; a
+ * command group cut in the middle by a refused write; a RATE written to a
+ * sensor that is not there and never again; an IMU OFF that leaves the
+ * link up.
  *
  * SPDX-License-Identifier: MIT
  */
 #include "imu_rig.h"
 
-/* A 2.0 module at 115200 with one sensor in range, IMU ON. */
+/* The panel's Bluetooth synced, IMU ON, bound to @p addr. */
 static void on_with_sensor(rig_t *r, const char *addr)
 {
-    rig_init(r, 2, HC05_BAUD_DATA);
-    sim_add_dev(&r->sim, "98D3:31:F5A1B2", 0x1F00u, 0xFFC0u, "HC-06", 900u);
+    rig_init(r);
     rig_cfg(r, true, addr, 2, true);
 }
 
-/* Probed, bound to the sensor and streaming at 50Hz. */
+/* Bound to the sensor, subscribed, and streaming at 50Hz. */
 static void connected(rig_t *r)
 {
-    on_with_sensor(r, "98D3:31:F5A1B2");
-    (void)rig_settle(r, 5000u);
-    CHECK(r->c.hc05.probed);
+    on_with_sensor(r, RIG_ADDR);
+    (void)rig_settle(r, 2000u);
+    CHECK(imu_ble_can_send(&r->c.ble));
     rig_stream(r, 100u, 20u, 1.0f, 2.0f, 3.0f);
     CHECK_EQ(imu_ctl_link(&r->c), IMU_LINK_CONNECTED);
 }
 
-/* IMU ON probes at once; a module that does not answer is NO HC-05, and the
- * probe goes again 10s later, not before. */
-TEST_CASE(imu_on_probes_and_a_silent_hc05_is_no_module_retried_every_10s)
+/* Bluetooth's state is the link's until it is synced, and nothing goes to
+ * the host stack before: STARTING, NO BLUETOOTH ON C6, C6 FAILED.  Synced
+ * without a sensor bound: READY; IMU OFF: OFF whatever Bluetooth says. */
+TEST_CASE(the_link_waits_for_bluetooth_and_reads_its_state)
 {
     rig_t r;
-    rig_init(&r, 2, HC05_BAUD_DATA);
-    r.sim.silent = true;
-    rig_cfg(&r, false, "", 2, true);
-    rig_run(&r, 50u);
-    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_OFF);
-    CHECK_EQ(r.sim.sends, 0u);
-    rig_cfg(&r, true, "", 2, true);
-    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_NO_MODULE);
-    const uint32_t took = rig_settle(&r, 10000u);
-    /* KEY settles, AT times out at the 3 bauds, then the fence's
-     * AT+STATE? waits its 2000ms. */
-    CHECK(took <= HC05_KEY_SETTLE_MS + 3u * HC05_AT_MS + 2u * HC05_AT_MS);
-    CHECK_EQ(r.c.hc05.err, IMU_ERR_NO_AT);
-    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_NO_MODULE);
-    const unsigned sends = r.sim.sends;
-    CHECK(sends >= 3u);              /* AT at each of the three bauds */
-    const uint32_t failed_at = r.t;
-    rig_run(&r, IMU_PROBE_RETRY_MS - 2u);
-    CHECK_EQ(r.sim.sends, sends);
-    rig_run(&r, 200u);
-    CHECK(r.sim.sends > sends);
-    CHECK(r.t - failed_at >= IMU_PROBE_RETRY_MS);
-    /* The module plugged in: the next probe finds it. */
-    r.sim.silent = false;
-    (void)rig_settle(&r, 10000u);
-    rig_run(&r, IMU_PROBE_RETRY_MS + 10u);
-    (void)rig_settle(&r, 10000u);
-    CHECK(r.c.hc05.probed);
-    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_READY);
+    rig_init(&r);
+    imu_ctl_radio(&r.c, IMU_RADIO_OFF, NULL, r.t);
+    rig_cfg(&r, true, RIG_ADDR, 2, true);
+    static const struct { imu_radio_t radio; imu_link_t link; } k[] = {
+        { IMU_RADIO_OFF, IMU_LINK_STARTING },
+        { IMU_RADIO_STARTING, IMU_LINK_STARTING },
+        { IMU_RADIO_NO_SYNC, IMU_LINK_NO_BT },
+        { IMU_RADIO_NO_LINK, IMU_LINK_C6_FAILED },
+        { (imu_radio_t)99, IMU_LINK_STARTING },
+    };
+    for (size_t i = 0; i < sizeof k / sizeof k[0]; ++i) {
+        imu_ctl_radio(&r.c, k[i].radio, "", r.t);
+        rig_run(&r, 3000u);
+        CHECK_EQ(imu_ctl_link(&r.c), k[i].link);
+    }
+    CHECK_EQ(r.sim.nlog, 0u);
     imu_view_t v;
     imu_ctl_view(&r.c, &v);
-    CHECK_STR_EQ(v.version, "2.0-20100601");
-    CHECK_EQ(r.at_key_low, 0u);
-    /* OFF and ON again in the 10s after a failed probe: the probe goes at
-     * once, not at the retry's time. */
-    r.sim.silent = true;
-    rig_cfg(&r, false, "", 2, true);
-    (void)rig_settle(&r, 10000u);
+    CHECK_STR_EQ(v.version, "");
+    /* Synced: the bound sensor is connected at once. */
+    imu_ctl_radio(&r.c, IMU_RADIO_READY, "2.13.0", r.t);
+    rig_tick(&r);
+    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_CONNECTING);
+    CHECK_EQ(bsim_count(&r.sim, BLEU_ACT_CONNECT), 1u);
+    imu_ctl_view(&r.c, &v);
+    CHECK_STR_EQ(v.version, "2.13.0");
+    /* Nothing bound: READY. */
     rig_cfg(&r, true, "", 2, true);
-    (void)rig_settle(&r, 10000u);
-    CHECK_EQ(r.c.hc05.err, IMU_ERR_NO_AT);
-    rig_cfg(&r, false, "", 2, true);
-    rig_cfg(&r, true, "", 2, true);
-    const unsigned before = r.sim.sends;
-    rig_run(&r, 200u);
-    CHECK(r.sim.sends > before);
-}
-
-/* Probed: READY without a sensor, BOUND with one, CONNECTED with frames,
- * NO FRAMES when they stop for 300ms. */
-TEST_CASE(a_probe_that_answers_is_ready_without_a_sensor_and_bound_with_one)
-{
-    rig_t r;
-    on_with_sensor(&r, "");
-    (void)rig_settle(&r, 5000u);
+    rig_run(&r, 3000u);
     CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_READY);
-    on_with_sensor(&r, "98D3:31:F5A1B2");
-    (void)rig_settle(&r, 5000u);
-    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_BOUND);
-    CHECK(!r.sim.key);
-    rig_stream(&r, 60u, 20u, 0.0f, 0.0f, 0.0f);
-    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_CONNECTED);
-    rig_run(&r, 250u);
-    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_CONNECTED);
-    rig_run(&r, 60u);
-    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_NO_FRAMES);
-    /* Another address in SETUP: no frames from it yet. */
-    rig_cfg(&r, true, "1:2:3", 2, true);
-    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_BOUND);
-    CHECK(!r.c.hc05.op_open);
+    rig_cfg(&r, false, "", 2, true);
+    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_OFF);
+    /* A stored HC-05 address is no BLE address: nothing bound. */
+    rig_cfg(&r, true, "98D3:31:F5A1B2", 2, true);
+    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_READY);
+    imu_ctl_view(&r.c, &v);
+    CHECK_STR_EQ(v.bound_addr, "");
 }
 
-/* SCAN lists the devices with their names; BIND binds the one picked and
- * keeps its address and name; the bind counter says so once. */
-TEST_CASE(scan_lists_the_devices_and_bind_keeps_the_address_and_name)
+/* SCAN runs 10s: SCANNING at 9,999ms, the list at 10,000ms with the sensor
+ * by its name, address and RSSI, the phone that does not advertise the
+ * service counted as hidden.  A tap binds it at once: SETUP keeps the
+ * address with its type and the name, and the connect follows. */
+TEST_CASE(scan_lists_the_sensor_hides_the_rest_and_bind_keeps_its_address)
 {
     rig_t r;
     on_with_sensor(&r, "");
-    sim_add_dev(&r.sim, "12:34:56", 0x0200u, 0xFFB0u, "PHONE", 2000u);
-    (void)rig_settle(&r, 5000u);
+    static const uint8_t phone[] = { 0x02, 0x01, 0x06, 0x06, 0x09,
+                                     'P', 'H', 'O', 'N', 'E' };
+    const bleu_addr_t pa = { { 1, 2, 3, 4, 5, 6 }, BLEU_ADDR_RANDOM };
+    bsim_adv(&r.sim, 300u, &pa, -40, phone, sizeof phone);
+    rig_run(&r, 10u);
     const imu_cmd_t scan = { IMU_CMD_SCAN, 0u };
     CHECK(imu_ctl_command(&r.c, &scan, r.t));
     CHECK(!imu_ctl_command(&r.c, &scan, r.t));   /* one at a time */
-    rig_tick(&r);
     CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_SCANNING);
-    (void)rig_settle(&r, 40000u);
+    rig_tick(&r);
+    const bsim_log_t *s = bsim_last(&r.sim, BLEU_ACT_SCAN);
+    CHECK(s != NULL);
+    const uint32_t t0 = s->t;
+    while (r.t != t0 + BLEU_SCAN_MS) {
+        rig_tick(&r);
+    }
+    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_SCANNING);
+    rig_tick(&r);
     imu_view_t v;
     imu_ctl_view(&r.c, &v);
     CHECK_EQ(v.link, IMU_LINK_READY);
-    CHECK_EQ(v.found_n, 2u);
-    CHECK_STR_EQ(v.found[0].addr, "98D3:31:F5A1B2");
+    CHECK_EQ(v.found_n, 1u);
+    CHECK_STR_EQ(v.found[0].addr, "00:0C:BF:08:19:29");
+    CHECK_EQ(v.found[0].addr_type, BLEU_ADDR_PUBLIC);
     CHECK_STR_EQ(v.found[0].name, "HC-06");
-    CHECK_STR_EQ(v.found[1].name, "PHONE");
+    CHECK_EQ(v.found[0].rssi, -50);
+    CHECK_EQ(v.found[0].flags, IMU_DEV_UUID_18F0);
+    CHECK_EQ(v.hidden, 1u);
+    CHECK_EQ(v.err, IMU_ERR_NONE);
     /* An index past the list is refused. */
-    const imu_cmd_t past = { IMU_CMD_BIND, 2u };
+    const imu_cmd_t past = { IMU_CMD_BIND, 1u };
     CHECK(!imu_ctl_command(&r.c, &past, r.t));
     const imu_cmd_t bind = { IMU_CMD_BIND, 0u };
     CHECK(imu_ctl_command(&r.c, &bind, r.t));
-    rig_tick(&r);
-    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_BINDING);
-    (void)rig_settle(&r, 40000u);
+    CHECK_EQ(r.c.bind_seq, 1u);
     imu_ctl_view(&r.c, &v);
-    CHECK_EQ(r.c.hc05.err, IMU_ERR_NONE);
-    CHECK_EQ(r.c.bind_seq, 1u);
-    CHECK_STR_EQ(v.bound_addr, "98D3:31:F5A1B2");
+    CHECK_STR_EQ(v.bound_addr, RIG_ADDR);
     CHECK_STR_EQ(v.bound_name, "HC-06");
-    CHECK_EQ(v.link, IMU_LINK_BOUND);
-    CHECK_STR_EQ(r.sim.bind, "98D3,31,F5A1B2");
-    CHECK_EQ(r.sim.cmode, 0);
-    CHECK(!r.sim.key);
+    CHECK_EQ(v.link, IMU_LINK_CONNECTING);
     /* SETUP's next values say the same: nothing changes. */
-    rig_cfg(&r, true, "98D3:31:F5A1B2", 2, true);
+    rig_cfg(&r, true, RIG_ADDR, 2, true);
     CHECK_EQ(r.c.bind_seq, 1u);
+    (void)rig_settle(&r, 2000u);
+    const bsim_log_t *c = bsim_last(&r.sim, BLEU_ACT_CONNECT);
+    CHECK(c != NULL);
+    CHECK(bleu_addr_eq(&c->a.addr, &k_rig_addr));
     CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_BOUND);
-    /* The module unplugged: a scan finds no AT, the link reads NO HC-05,
-     * and the probe goes again 10s later. */
-    r.sim.silent = true;
-    CHECK(imu_ctl_command(&r.c, &scan, r.t));
-    (void)rig_settle(&r, 40000u);
-    CHECK_EQ(r.c.hc05.err, IMU_ERR_NO_AT);
-    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_NO_MODULE);
-    CHECK(!imu_ctl_command(&r.c, &scan, r.t));
-    r.sim.silent = false;
-    rig_run(&r, IMU_PROBE_RETRY_MS + 10u);
-    (void)rig_settle(&r, 10000u);
-    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_BOUND);
+    rig_stream(&r, 60u, 20u, 0.0f, 0.0f, 0.0f);
+    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_CONNECTED);
+    rig_run(&r, IMU_STALE_MS);
+    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_NO_FRAMES);
 }
 
-/* A 3.0 module refuses the scan with ERROR:(1F): CONNECT TO ANY SENSOR is
- * offered, and ANY keeps IMU_ADDR_ANY with no name. */
-TEST_CASE(a_refused_scan_offers_any_and_any_keeps_the_any_address)
+/* A scan that hears no sensor says so; a scan the host stack refuses
+ * gives its status; the next scan clears both. */
+TEST_CASE(a_scan_without_a_sensor_or_refused_says_why)
 {
     rig_t r;
-    rig_init(&r, 3, HC05_BAUD_DATA);
-    rig_cfg(&r, true, "", 2, true);
-    (void)rig_settle(&r, 5000u);
+    on_with_sensor(&r, "");
+    r.sim.nadv = 0u;
     const imu_cmd_t scan = { IMU_CMD_SCAN, 0u };
     CHECK(imu_ctl_command(&r.c, &scan, r.t));
-    (void)rig_settle(&r, 40000u);
+    rig_run(&r, BLEU_SCAN_MS + 10u);
     imu_view_t v;
     imu_ctl_view(&r.c, &v);
-    CHECK(v.inq_refused);
-    CHECK_EQ(v.err, IMU_ERR_INQ_REFUSED);
-    CHECK_EQ(v.err_code, 0x1Fu);
     CHECK_EQ(v.found_n, 0u);
-    /* The next operation's start clears the last error until it ends. */
+    CHECK_EQ(v.err, IMU_ERR_NONE_FOUND);
+    r.sim.scan_fail = true;
     CHECK(imu_ctl_command(&r.c, &scan, r.t));
-    CHECK_EQ(r.c.hc05.err, IMU_ERR_NONE);
-    CHECK_EQ(r.c.hc05.err_code, 0u);
-    (void)rig_settle(&r, 40000u);
-    CHECK_EQ(r.c.hc05.err, IMU_ERR_INQ_REFUSED);
-    const imu_cmd_t any = { IMU_CMD_ANY, 0u };
-    CHECK(imu_ctl_command(&r.c, &any, r.t));
-    (void)rig_settle(&r, 40000u);
     imu_ctl_view(&r.c, &v);
     CHECK_EQ(v.err, IMU_ERR_NONE);
-    CHECK_STR_EQ(v.bound_addr, IMU_ADDR_ANY);
-    CHECK_STR_EQ(v.bound_name, "");
-    CHECK_EQ(r.c.bind_seq, 1u);
-    CHECK_EQ(r.sim.cmode, 1);
-    CHECK_EQ(v.link, IMU_LINK_BOUND);
-    /* A scan that starts again clears the offer until it ends. */
-    CHECK(imu_ctl_command(&r.c, &scan, r.t));
-    CHECK(!r.c.hc05.inq_refused);
-    (void)rig_settle(&r, 40000u);
-    CHECK(r.c.hc05.inq_refused);
-    /* IMU OFF clears it too. */
-    rig_cfg(&r, false, IMU_ADDR_ANY, 2, true);
+    rig_run(&r, 10u);
     imu_ctl_view(&r.c, &v);
-    CHECK(!v.inq_refused);
-    CHECK_EQ(v.err, IMU_ERR_NONE);
+    CHECK_EQ(v.link, IMU_LINK_READY);
+    CHECK_EQ(v.err, IMU_ERR_SCAN);
+    CHECK_EQ(v.err_code, 2u);
 }
 
-/* Outside an operation the bytes are the sensor's; inside one they are the
- * HC-05's, and a frame there reaches no reading. */
-TEST_CASE(sensor_bytes_reach_the_reading_only_outside_an_operation)
+/* The sensor's bytes reach the reading only once 1E4D is subscribed; the
+ * owner's capture, cut at 20, 4 and 1 bytes, gives its angle frame. */
+TEST_CASE(the_stream_reaches_the_reading_once_subscribed)
+{
+    static const uint8_t cap[20] = {
+        0x02, 0x47, 0x55, 0x53, 0x33, 0xFF, 0x19, 0xFD, 0xF0, 0xED,
+        0x38, 0x48, 0x4D, 0x55, 0x54, 0x1A, 0xEE, 0x49, 0x24, 0x68,
+    };
+    static const size_t cuts[] = { 20u, 4u, 1u };
+    for (size_t k = 0; k < sizeof cuts / sizeof cuts[0]; ++k) {
+        rig_t r;
+        on_with_sensor(&r, RIG_ADDR);
+        /* Connected, not yet subscribed: a notification is not the
+         * stream. */
+        while (!r.sim.connected) {
+            rig_tick(&r);
+        }
+        rig_notify(&r, cap, sizeof cap, cuts[k]);
+        CHECK_EQ(r.c.sensor.m.r.frames, 0u);
+        (void)rig_settle(&r, 2000u);
+        rig_notify(&r, cap, sizeof cap, cuts[k]);
+        imu_view_t v;
+        imu_ctl_view(&r.c, &v);
+        CHECK(v.r.valid);
+        CHECK(fabsf(v.r.angle[0] - -1.126f) < 0.001f);
+        CHECK(fabsf(v.r.angle[1] - -4.081f) < 0.001f);
+        CHECK(fabsf(v.r.angle[2] - -25.400f) < 0.001f);
+        CHECK_EQ(v.r.version, 0x4838u);
+        CHECK_EQ(v.link, IMU_LINK_CONNECTED);
+    }
+}
+
+/* A bound device without the ISSC service: BOUND, NOT A WITMOTION SENSOR,
+ * and no connect again until another bind. */
+TEST_CASE(a_device_without_the_service_is_not_a_witmotion_sensor)
+{
+    rig_t r;
+    rig_init(&r);
+    r.sim.no_svc = true;
+    rig_cfg(&r, true, RIG_ADDR, 2, true);
+    rig_run(&r, 1000u);
+    imu_view_t v;
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.link, IMU_LINK_BOUND);
+    CHECK_EQ(v.err, IMU_ERR_NOT_WIT);
+    const unsigned n = bsim_count(&r.sim, BLEU_ACT_CONNECT);
+    rig_run(&r, 10000u);
+    CHECK_EQ(bsim_count(&r.sim, BLEU_ACT_CONNECT), n);
+}
+
+/* The link drops: CONNECTING with NO CONNECTION, the reading goes stale,
+ * the link comes back after the retry gap, and the zero stays. */
+TEST_CASE(a_dropped_link_comes_back_and_keeps_the_zero)
 {
     rig_t r;
     connected(&r);
-    const uint32_t frames = r.c.sensor.m.r.frames;
-    const imu_cmd_t scan = { IMU_CMD_SCAN, 0u };
-    CHECK(imu_ctl_command(&r.c, &scan, r.t));
-    rig_stream(&r, 400u, 20u, 5.0f, 5.0f, 5.0f);
-    CHECK_EQ(r.c.sensor.m.r.frames, frames);
-    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_SCANNING);
-    (void)rig_settle(&r, 40000u);
-    rig_stream(&r, 40u, 20u, 5.0f, 5.0f, 5.0f);
-    CHECK(r.c.sensor.m.r.frames > frames);
-    /* IMU OFF: no reading at all. */
-    rig_cfg(&r, false, "98D3:31:F5A1B2", 2, true);
-    rig_stream(&r, 40u, 20u, 5.0f, 5.0f, 5.0f);
-    CHECK_EQ(r.c.sensor.m.r.frames, 0u);
-    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_OFF);
+    const imu_cmd_t zero = { IMU_CMD_ZERO, 0u };
+    CHECK(imu_ctl_command(&r.c, &zero, r.t));
+    bsim_drop(&r.sim, r.t, 0x208u);
+    rig_run(&r, 10u);
+    imu_view_t v;
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.link, IMU_LINK_CONNECTING);
+    CHECK_EQ(v.err, IMU_ERR_CONNECT);
+    CHECK_EQ(v.err_code, 0x208u);
+    const uint32_t g = r.c.sensor.gaps;
+    (void)rig_settle(&r, BLEU_RETRY_MS + 2000u);
+    CHECK(imu_ble_up(&r.c.ble));
+    rig_stream(&r, 100u, 20u, 1.0f, 2.0f, 3.0f);
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.link, IMU_LINK_CONNECTED);
+    CHECK_EQ(v.err, IMU_ERR_NONE);
+    CHECK(v.r.zeroed);
+    CHECK_EQ(r.c.sensor.gaps, g + 1u);
+}
+
+/* A write the sensor's module refuses: THE SENSOR DID NOT TAKE THE COMMAND,
+ * and the rest of the group is dropped, not sent alone. */
+TEST_CASE(a_refused_write_drops_the_rest_of_its_group)
+{
+    rig_t r;
+    connected(&r);
+    r.sim.fail = BSIM_Q_WRITE;
+    r.sim.fail_status = 0x10Eu;
+    const unsigned at = r.nsent;
+    rig_cfg(&r, true, RIG_ADDR, 4, true);              /* RATE 200Hz */
+    rig_stream(&r, 300u, 20u, 0.0f, 0.0f, 0.0f);
+    CHECK_EQ(r.nsent, at + 1u);
+    CHECK(rig_sent_unlock(&r, at));
+    CHECK_EQ(r.c.sensor.out_n, 0u);
+    imu_view_t v;
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.err, IMU_ERR_WRITE);
+    CHECK_EQ(v.err_code, 0x10Eu);
+    CHECK_EQ(v.link, IMU_LINK_CONNECTED);
 }
 
 /* CALIBRATE: unlock, CALSW 1; 3000ms later unlock, CALSW 0, SAVE; each
@@ -274,7 +304,8 @@ TEST_CASE(calibrate_sends_calsw_1_then_after_3s_calsw_0_and_save)
 }
 
 /* Frames that stop during the 3s: CALSW 0 and SAVE all the same, FAILED.
- * IMU OFF in it: FAILED as well, the exit queued. */
+ * IMU OFF in it: FAILED as well, the exit queued; it goes once IMU is ON
+ * and the link is up again. */
 TEST_CASE(calibrate_with_the_frames_lost_ends_failed)
 {
     rig_t r;
@@ -293,11 +324,19 @@ TEST_CASE(calibrate_with_the_frames_lost_ends_failed)
     connected(&r);
     CHECK(imu_ctl_command(&r.c, &cal, r.t));
     rig_stream(&r, 500u, 20u, 0.0f, 0.0f, 0.0f);
-    rig_cfg(&r, false, "98D3:31:F5A1B2", 2, true);
+    rig_cfg(&r, false, RIG_ADDR, 2, true);
     imu_ctl_view(&r.c, &v);
     CHECK_EQ(v.cal, IMU_CAL_FAILED);
+    const unsigned off = r.nsent;
     rig_run(&r, 300u);
+    CHECK_EQ(r.nsent, off);
+    CHECK_EQ(r.c.sensor.out_n, 3u);
+    rig_cfg(&r, true, RIG_ADDR, 2, true);
+    (void)rig_settle(&r, 2000u);
+    rig_run(&r, 300u);
+    CHECK_EQ(r.nsent, off + 3u);
     CHECK(rig_sent_is(&r, r.nsent - 2u, WIT_REG_CALSW, 0u, 0u));
+    CHECK(rig_sent_is(&r, r.nsent - 1u, WIT_REG_SAVE, 0u, 0u));
 }
 
 /* Frames every 300ms in a calibration: each one ends a stale stretch the
@@ -336,9 +375,9 @@ TEST_CASE(a_full_outbox_drops_the_command_past_its_room)
 TEST_CASE(a_rate_change_goes_to_the_sensor_once_it_is_connected)
 {
     rig_t r;
-    on_with_sensor(&r, "98D3:31:F5A1B2");
-    (void)rig_settle(&r, 5000u);
-    rig_cfg(&r, true, "98D3:31:F5A1B2", 4, false);   /* 200Hz, 9-AXIS */
+    on_with_sensor(&r, RIG_ADDR);
+    (void)rig_settle(&r, 2000u);
+    rig_cfg(&r, true, RIG_ADDR, 4, false);   /* 200Hz, 9-AXIS */
     rig_run(&r, 500u);
     CHECK_EQ(r.nsent, 0u);
     rig_stream(&r, 300u, 20u, 0.0f, 0.0f, 0.0f);
@@ -350,10 +389,10 @@ TEST_CASE(a_rate_change_goes_to_the_sensor_once_it_is_connected)
     rig_stream(&r, 300u, 20u, 0.0f, 0.0f, 0.0f);
     CHECK_EQ(r.nsent, 4u);
     /* The same values again send nothing; ALGORITHM alone sends it alone. */
-    rig_cfg(&r, true, "98D3:31:F5A1B2", 4, false);
+    rig_cfg(&r, true, RIG_ADDR, 4, false);
     rig_stream(&r, 300u, 20u, 0.0f, 0.0f, 0.0f);
     CHECK_EQ(r.nsent, 4u);
-    rig_cfg(&r, true, "98D3:31:F5A1B2", 4, true);
+    rig_cfg(&r, true, RIG_ADDR, 4, true);
     rig_stream(&r, 300u, 20u, 0.0f, 0.0f, 0.0f);
     CHECK_EQ(r.nsent, 7u);
     CHECK(rig_sent_is(&r, 5u, WIT_REG_AXIS6, 1u, 0u));
@@ -362,7 +401,7 @@ TEST_CASE(a_rate_change_goes_to_the_sensor_once_it_is_connected)
     bool six = true;
     for (int i = 0; i < 12; ++i) {
         six = !six;
-        rig_cfg(&r, true, "98D3:31:F5A1B2", 4, six);
+        rig_cfg(&r, true, RIG_ADDR, 4, six);
         rig_stream(&r, 33u, 20u, 0.0f, 0.0f, 0.0f);
     }
     rig_stream(&r, 1000u, 20u, 0.0f, 0.0f, 0.0f);
@@ -380,54 +419,170 @@ TEST_CASE(a_rate_change_goes_to_the_sensor_once_it_is_connected)
     CHECK(rig_sent_is(&r, r.nsent - 1u, WIT_REG_SAVE, 0u, 0u));
     /* The first values a controller takes send nothing. */
     rig_t q;
-    rig_init(&q, 2, HC05_BAUD_DATA);
-    rig_cfg(&q, true, "98D3:31:F5A1B2", 0, false);
-    (void)rig_settle(&q, 5000u);
+    rig_init(&q);
+    rig_cfg(&q, true, RIG_ADDR, 0, false);
+    (void)rig_settle(&q, 2000u);
     rig_stream(&q, 300u, 20u, 0.0f, 0.0f, 0.0f);
     CHECK_EQ(q.nsent, 0u);
 }
 
-/* IMU OFF in a scan: the scan ends, KEY goes low once the machine has
- * fenced the inquiry's late answers, nothing is taken from it; ON again
- * probes again, and the probe 10s later finds a module still busy. */
-TEST_CASE(imu_off_aborts_the_operation_and_lowers_key)
+/* IMU OFF: the link ends, the list and the errors go, nothing is
+ * connected again; ON again connects the bound sensor. */
+TEST_CASE(imu_off_ends_the_link_and_forgets_the_list)
 {
     rig_t r;
-    on_with_sensor(&r, "");
-    (void)rig_settle(&r, 5000u);
+    connected(&r);
     const imu_cmd_t scan = { IMU_CMD_SCAN, 0u };
     CHECK(imu_ctl_command(&r.c, &scan, r.t));
-    rig_run(&r, 500u);
-    CHECK(r.sim.key);
-    rig_cfg(&r, false, "", 2, true);
-    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_OFF);
-    /* The machine fences the inquiry's late answers before KEY goes low. */
-    (void)rig_settle(&r, 40000u);
-    CHECK(!r.sim.key);
-    CHECK(!hc05_busy(&r.c.hc05.bt));
-    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_OFF);
+    rig_run(&r, BLEU_SCAN_MS + 10u);
     imu_view_t v;
     imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.found_n, 1u);
+    rig_cfg(&r, false, RIG_ADDR, 2, true);
+    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_OFF);
+    rig_run(&r, 100u);
+    CHECK(!r.sim.connected);
+    imu_ctl_view(&r.c, &v);
     CHECK_EQ(v.found_n, 0u);
-    CHECK_STR_EQ(v.version, "");
+    CHECK_EQ(v.hidden, 0u);
+    CHECK_EQ(v.err, IMU_ERR_NONE);
+    CHECK(!v.r.valid);
+    const unsigned n = bsim_count(&r.sim, BLEU_ACT_CONNECT);
+    rig_run(&r, 5000u);
+    CHECK_EQ(bsim_count(&r.sim, BLEU_ACT_CONNECT), n);
     /* Commands with IMU OFF are refused. */
     CHECK(!imu_ctl_command(&r.c, &scan, r.t));
-    rig_cfg(&r, true, "", 2, true);
-    (void)rig_settle(&r, 5000u);
-    rig_run(&r, IMU_PROBE_RETRY_MS + 10u);
-    (void)rig_settle(&r, 5000u);
-    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_READY);
+    rig_cfg(&r, true, RIG_ADDR, 2, true);
+    (void)rig_settle(&r, 2000u);
+    CHECK(imu_ble_up(&r.c.ble));
 }
 
-/* What cannot run now is refused: before the probe, ZERO without a
- * reading, an unknown kind.  ZERO and UNZERO with one. */
+/* The panel's start after a restart: SETUP holds the address and IMU OFF,
+ * Bluetooth is not started.  IMU OFF keeps the address in the view; IMU
+ * ON starts the radio, and its sync connects to the address at once,
+ * without a scan. */
+TEST_CASE(a_stored_address_with_imu_off_connects_without_a_scan_at_imu_on)
+{
+    rig_t r;
+    memset(&r, 0, sizeof r);
+    bsim_init(&r.sim);
+    bsim_adv(&r.sim, 200u, &k_rig_addr, -50, k_rig_adv, sizeof k_rig_adv);
+    imu_ctl_init(&r.c);
+    r.t = 1000u;
+    rig_cfg(&r, false, RIG_ADDR, 2, true);
+    rig_run(&r, 100u);
+    imu_view_t v;
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.link, IMU_LINK_OFF);
+    CHECK_STR_EQ(v.bound_addr, RIG_ADDR);
+    CHECK_EQ(bsim_count(&r.sim, BLEU_ACT_CONNECT), 0);
+    rig_cfg(&r, true, RIG_ADDR, 2, true);
+    imu_ctl_radio(&r.c, IMU_RADIO_STARTING, NULL, r.t);
+    rig_run(&r, 100u);
+    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_STARTING);
+    CHECK_EQ(bsim_count(&r.sim, BLEU_ACT_CONNECT), 0);
+    imu_ctl_radio(&r.c, IMU_RADIO_READY, "2.13.0", r.t);
+    rig_tick(&r);
+    CHECK_EQ(bsim_count(&r.sim, BLEU_ACT_CONNECT), 1);
+    CHECK_EQ(bsim_count(&r.sim, BLEU_ACT_SCAN), 0);
+    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_CONNECTING);
+    (void)rig_settle(&r, 2000u);
+    CHECK(imu_ble_up(&r.c.ble));
+    imu_ctl_view(&r.c, &v);
+    CHECK_STR_EQ(v.bound_addr, RIG_ADDR);
+}
+
+/* The view's list, hidden count and errors belong to the last scan: a new
+ * scan clears them at its start, IMU OFF clears them, and a failed write's
+ * mark does not outlive IMU OFF.  A random address binds with type R; one
+ * past the list is refused. */
+TEST_CASE(scan_and_imu_off_clear_the_list_the_hidden_count_and_the_error)
+{
+    static const bleu_addr_t rnd = {
+        { 0x01u, 0x02u, 0x03u, 0x04u, 0x05u, 0xC6u }, BLEU_ADDR_RANDOM
+    };
+    static const bleu_addr_t phone = {
+        { 0x11u, 0x22u, 0x33u, 0x44u, 0x55u, 0x66u }, BLEU_ADDR_PUBLIC
+    };
+    static const uint8_t phone_ad[] = { 0x02u, 0x01u, 0x06u, 0x06u, 0x09u,
+                                        'P', 'H', 'O', 'N', 'E' };
+    const imu_cmd_t scan = { IMU_CMD_SCAN, 0u };
+    rig_t r;
+    imu_view_t v;
+    rig_init(&r);
+    rig_cfg(&r, true, "", 2, true);
+    /* A scan the host refuses: its code. */
+    r.sim.scan_fail = true;
+    CHECK(imu_ctl_command(&r.c, &scan, r.t));
+    rig_run(&r, 10u);
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.err, IMU_ERR_SCAN);
+    CHECK_EQ(v.err_code, 2u);
+    /* A scan that hears nothing: NONE FOUND, the old code gone. */
+    r.sim.scan_fail = false;
+    r.sim.nadv = 0;
+    CHECK(imu_ctl_command(&r.c, &scan, r.t));
+    rig_run(&r, BLEU_SCAN_MS + 10u);
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.err, IMU_ERR_NONE_FOUND);
+    CHECK_EQ(v.err_code, 0u);
+    /* A random-address sensor and a phone: one listed, one hidden. */
+    bsim_adv(&r.sim, 300u, &rnd, -60, k_rig_adv, sizeof k_rig_adv);
+    bsim_adv(&r.sim, 400u, &phone, -70, phone_ad, sizeof phone_ad);
+    CHECK(imu_ctl_command(&r.c, &scan, r.t));
+    rig_run(&r, BLEU_SCAN_MS + 10u);
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.found_n, 1u);
+    CHECK_EQ(v.hidden, 1u);
+    CHECK_EQ(v.err, IMU_ERR_NONE);
+    /* The next scan starts with an empty list. */
+    CHECK(imu_ctl_command(&r.c, &scan, r.t));
+    rig_run(&r, 10u);
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.found_n, 0u);
+    CHECK_EQ(v.hidden, 0u);
+    rig_run(&r, BLEU_SCAN_MS + 10u);
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.found_n, 1u);
+    const imu_cmd_t past = { IMU_CMD_BIND, 1u };
+    CHECK(!imu_ctl_command(&r.c, &past, r.t));
+    const imu_cmd_t bind = { IMU_CMD_BIND, 0u };
+    CHECK(imu_ctl_command(&r.c, &bind, r.t));
+    imu_ctl_view(&r.c, &v);
+    CHECK_STR_EQ(v.bound_addr, "C6:05:04:03:02:01 R");
+    /* IMU OFF in a scan: list, count and errors gone; at ON no NONE FOUND
+     * of the scan it cut. */
+    CHECK(imu_ctl_command(&r.c, &scan, r.t));
+    rig_run(&r, 500u);
+    r.c.ble.op_err = IMU_ERR_WRITE;
+    r.c.ble.op_code = 9u;
+    r.c.ble.wr_failed = true;
+    r.c.ble.hidden = 3u;
+    rig_cfg(&r, false, "C6:05:04:03:02:01 R", 2, true);
+    CHECK(!imu_ble_write_failed(&r.c.ble));
+    rig_cfg(&r, true, "C6:05:04:03:02:01 R", 2, true);
+    rig_run(&r, 100u);
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.found_n, 0u);
+    CHECK_EQ(v.hidden, 0u);
+    CHECK(v.err != IMU_ERR_NONE_FOUND && v.err != IMU_ERR_WRITE);
+    CHECK_EQ(r.c.ble.op_code, 0u);
+    /* The list is empty now: its first row, still in memory, is not bound. */
+    CHECK(!imu_ctl_command(&r.c, &bind, r.t));
+}
+
+/* What cannot run now is refused: BIND without a scan, CALIBRATE and ZERO
+ * without a reading, an unknown kind, SCAN before Bluetooth is synced.
+ * ZERO and UNZERO with one. */
 TEST_CASE(commands_are_refused_when_they_cannot_run)
 {
     rig_t r;
-    rig_init(&r, 2, HC05_BAUD_DATA);
+    rig_init(&r);
     rig_cfg(&r, true, "", 2, true);
-    static const imu_cmd_kind_t k[] = { IMU_CMD_SCAN, IMU_CMD_ANY,
-                                        IMU_CMD_BIND, IMU_CMD_CALIBRATE,
+    imu_ctl_radio(&r.c, IMU_RADIO_STARTING, "", r.t);
+    CHECK(!imu_ctl_command(&r.c, &(imu_cmd_t){ IMU_CMD_SCAN, 0u }, r.t));
+    imu_ctl_radio(&r.c, IMU_RADIO_READY, "2.13.0", r.t);
+    static const imu_cmd_kind_t k[] = { IMU_CMD_BIND, IMU_CMD_CALIBRATE,
                                         IMU_CMD_ZERO, IMU_CMD_NONE,
                                         (imu_cmd_kind_t)99 };
     for (size_t i = 0; i < sizeof k / sizeof k[0]; ++i) {
@@ -450,39 +605,29 @@ TEST_CASE(commands_are_refused_when_they_cannot_run)
     CHECK_EQ(r.c.sensor.zero_gen, 2u);
     /* IMU OFF with a zero kept is a new zero too; without one it is not. */
     CHECK(imu_ctl_command(&r.c, &zero, r.t));
-    rig_cfg(&r, false, "98D3:31:F5A1B2", 2, true);
+    rig_cfg(&r, false, RIG_ADDR, 2, true);
     CHECK_EQ(r.c.sensor.zero_gen, 4u);
-    rig_cfg(&r, true, "98D3:31:F5A1B2", 2, true);
-    rig_cfg(&r, false, "98D3:31:F5A1B2", 2, true);
+    rig_cfg(&r, true, RIG_ADDR, 2, true);
+    rig_cfg(&r, false, RIG_ADDR, 2, true);
     CHECK_EQ(r.c.sensor.zero_gen, 4u);
 }
 
-/* No AT operation while the calibration runs or its exit commands wait:
- * CALSW 0 and SAVE go out on time, and SCAN, ANY and BIND are refused. */
-TEST_CASE(no_at_operation_while_the_calibration_or_a_sensor_command_waits)
+/* BIND waits while a scan runs; binding the sensor that is connected
+ * keeps the link. */
+TEST_CASE(no_bind_while_a_scan_runs_and_a_rebind_keeps_the_link)
 {
     rig_t r;
     connected(&r);
-    const unsigned at = r.nsent;
-    const imu_cmd_t cal = { IMU_CMD_CALIBRATE, 0u };
     const imu_cmd_t scan = { IMU_CMD_SCAN, 0u };
-    const imu_cmd_t any = { IMU_CMD_ANY, 0u };
-    CHECK(imu_ctl_command(&r.c, &cal, r.t));
-    CHECK(!imu_ctl_command(&r.c, &scan, r.t));  /* unlock still queued */
-    rig_stream(&r, 1000u, 20u, 0.0f, 0.0f, 0.0f);
-    CHECK_EQ(r.c.sensor.out_n, 0u);
-    CHECK(!imu_ctl_command(&r.c, &scan, r.t));  /* the calibration runs */
-    CHECK(!imu_ctl_command(&r.c, &any, r.t));
-    CHECK(!hc05_busy(&r.c.hc05.bt));
-    rig_stream(&r, 2001u, 20u, 0.0f, 0.0f, 0.0f);
-    CHECK_EQ(r.c.sensor.cal, IMU_CAL_DONE);
-    CHECK(r.c.sensor.out_n > 0u);                /* CALSW 0 and SAVE wait */
-    CHECK(!imu_ctl_command(&r.c, &scan, r.t));
-    rig_stream(&r, 200u, 20u, 0.0f, 0.0f, 0.0f);
-    CHECK_EQ(r.nsent, at + 5u);
-    CHECK(rig_sent_is(&r, at + 4u, WIT_REG_SAVE, 0u, 0u));
-    CHECK(r.sent_at[at + 4u] - r.sent_at[at] < IMU_CAL_MS + 4u * 60u);
-    CHECK(imu_ctl_command(&r.c, &scan, r.t));    /* free again */
+    const imu_cmd_t bind = { IMU_CMD_BIND, 0u };
+    CHECK(imu_ctl_command(&r.c, &scan, r.t));
+    rig_stream(&r, BLEU_SCAN_MS + 10u, 20u, 0.0f, 0.0f, 0.0f);
+    CHECK(imu_ctl_command(&r.c, &scan, r.t));
+    CHECK(!imu_ctl_command(&r.c, &bind, r.t));          /* a scan runs */
+    rig_stream(&r, BLEU_SCAN_MS + 10u, 20u, 0.0f, 0.0f, 0.0f);
+    CHECK(imu_ctl_command(&r.c, &bind, r.t));
+    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_CONNECTED);   /* the same one */
+    CHECK_EQ(r.c.bind_seq, 1u);
 }
 
 /* RATE held on the arrow during a calibration: no setting is queued while
@@ -496,7 +641,7 @@ TEST_CASE(a_rate_change_in_a_calibration_waits_for_its_end)
     const imu_cmd_t cal = { IMU_CMD_CALIBRATE, 0u };
     CHECK(imu_ctl_command(&r.c, &cal, r.t));
     for (int i = 0; i < 20; ++i) {
-        rig_cfg(&r, true, "98D3:31:F5A1B2", i % 5, true);
+        rig_cfg(&r, true, RIG_ADDR, i % 5, true);
         rig_stream(&r, 33u, 20u, 0.0f, 0.0f, 0.0f);
         CHECK(r.c.sensor.cal != IMU_CAL_RUNNING || r.nsent <= at + 2u);
     }
@@ -587,8 +732,8 @@ TEST_CASE(a_frame_after_the_stale_point_counts_a_gap)
     CHECK_EQ(r.c.sensor.m.r.taken_ms - t2, IMU_STALE_MS);
     CHECK_EQ(r.c.sensor.gaps, 2u);
     /* IMU OFF and ON: the first frame after is no gap. */
-    rig_cfg(&r, false, "98D3:31:F5A1B2", 2, true);
-    rig_cfg(&r, true, "98D3:31:F5A1B2", 2, true);
+    rig_cfg(&r, false, RIG_ADDR, 2, true);
+    rig_cfg(&r, true, RIG_ADDR, 2, true);
     (void)rig_settle(&r, 5000u);
     rig_stream(&r, 100u, 20u, 0.0f, 0.0f, 0.0f);
     CHECK_EQ(r.c.sensor.gaps, 2u);
@@ -606,13 +751,16 @@ TEST_CASE(the_rate_options_are_the_wit_codes_and_null_does_nothing)
     CHECK_EQ(imu_ctl_rate_code(-1), WIT_RATE_50HZ);
     imu_ctl_init(NULL);
     imu_ctl_config(NULL, NULL, 0u);
+    imu_ctl_radio(NULL, IMU_RADIO_READY, "", 0u);
     imu_ctl_t c;
     imu_ctl_init(&c);
     imu_ctl_config(&c, NULL, 0u);
     CHECK(!c.configured);
-    imu_ctl_feed(NULL, (const uint8_t *)"x", 1u, 0u);
-    imu_ctl_feed(&c, NULL, 1u, 0u);
-    hc05_act_t a;
+    bleu_evt_t e;
+    memset(&e, 0, sizeof e);
+    imu_ctl_event(NULL, &e, 0u);
+    imu_ctl_event(&c, NULL, 0u);
+    bleu_act_t a;
     CHECK(!imu_ctl_step(NULL, 0u, &a));
     CHECK(!imu_ctl_step(&c, 0u, NULL));
     CHECK(!imu_ctl_step(&c, 0u, &a));        /* OFF: nothing */
@@ -623,96 +771,28 @@ TEST_CASE(the_rate_options_are_the_wit_codes_and_null_does_nothing)
     imu_ctl_view(&c, NULL);
 }
 
-/* The HC-05 link names each failure of the module with the view's error
- * of the same reason, keeps ERROR:(hh), and an IMU OFF end takes nothing
- * but the error. */
-TEST_CASE(each_hc05_error_reaches_the_view_as_its_imu_error)
-{
-    static const struct { hc05_err_t h; imu_err_t v; } k[] = {
-        { HC05_ERR_NONE, IMU_ERR_NONE },
-        { HC05_ERR_NO_AT, IMU_ERR_NO_AT },
-        { HC05_ERR_TIMEOUT, IMU_ERR_TIMEOUT },
-        { HC05_ERR_REFUSED, IMU_ERR_REFUSED },
-        { HC05_ERR_INQ_REFUSED, IMU_ERR_INQ_REFUSED },
-        { HC05_ERR_PAIR, IMU_ERR_PAIR },
-        { HC05_ERR_NONE_FOUND, IMU_ERR_NONE_FOUND },
-        { HC05_ERR_ARG, IMU_ERR_ARG },
-        { (hc05_err_t)99, IMU_ERR_NONE },
-    };
-    for (size_t i = 0; i < sizeof k / sizeof k[0]; ++i) {
-        imu_hc05_t l;
-        imu_hc05_init(&l);
-        l.probed = true;
-        l.op_open = true;
-        l.bt.op = HC05_OP_BIND;
-        l.bt.state = HC05_ST_FAILED;
-        l.bt.err = k[i].h;
-        l.bt.err_code = 0x1Du;
-        imu_bound_t b;
-        CHECK(!imu_hc05_ended(&l, false, 100u, &b));
-        CHECK_EQ(l.err, k[i].v);
-        CHECK_EQ(l.err_code, 0x1Du);
-        CHECK(l.probed);                 /* IMU OFF: nothing taken */
-        CHECK(!imu_hc05_ended(&l, true, 100u, &b));  /* read once */
-        imu_view_t v;
-        memset(&v, 0, sizeof v);
-        imu_hc05_view(&l, &v);
-        CHECK_EQ(v.err, k[i].v);
-    }
-}
-
-/* A scan of 8 devices keeps all 8, the 8th's name too, and a count past
- * the list is held to 8; BIND and ANY under way read BINDING. */
-TEST_CASE(a_full_scan_keeps_eight_devices_and_any_reads_binding)
-{
-    imu_hc05_t l;
-    imu_hc05_init(&l);
-    l.probed = true;
-    l.op_open = true;
-    l.bt.op = HC05_OP_SCAN;
-    l.bt.state = HC05_ST_DONE;
-    for (unsigned i = 0; i < HC05_FOUND_MAX; ++i) {
-        snprintf(l.bt.found[i].addr, sizeof l.bt.found[i].addr, "1:2:%u", i);
-        snprintf(l.bt.found[i].name, sizeof l.bt.found[i].name, "DEV%u", i);
-        l.bt.found[i].rssi = (int16_t)(-40 - (int)i);
-    }
-    l.bt.found_n = HC05_FOUND_MAX + 1u;
-    imu_bound_t b;
-    CHECK(!imu_hc05_ended(&l, true, 100u, &b));
-    CHECK_EQ(l.found_n, IMU_FOUND_MAX);
-    CHECK_STR_EQ(l.found[HC05_FOUND_MAX - 1u].addr, "1:2:7");
-    CHECK_STR_EQ(l.found[HC05_FOUND_MAX - 1u].name, "DEV7");
-    CHECK_EQ(l.found[HC05_FOUND_MAX - 1u].rssi, -47);
-    static const hc05_op_t ops[] = { HC05_OP_BIND, HC05_OP_ANY };
-    for (size_t i = 0; i < sizeof ops / sizeof ops[0]; ++i) {
-        l.bt.op = ops[i];
-        l.bt.state = HC05_ST_RUNNING;
-        CHECK_EQ(imu_hc05_link(&l), IMU_LINK_BINDING);
-    }
-    l.bt.op = HC05_OP_PROBE;
-    CHECK_EQ(imu_hc05_link(&l), IMU_LINK_READY);
-}
-
 int main(void)
 {
-    RUN(imu_on_probes_and_a_silent_hc05_is_no_module_retried_every_10s);
-    RUN(a_probe_that_answers_is_ready_without_a_sensor_and_bound_with_one);
-    RUN(scan_lists_the_devices_and_bind_keeps_the_address_and_name);
-    RUN(a_refused_scan_offers_any_and_any_keeps_the_any_address);
-    RUN(sensor_bytes_reach_the_reading_only_outside_an_operation);
+    RUN(the_link_waits_for_bluetooth_and_reads_its_state);
+    RUN(scan_lists_the_sensor_hides_the_rest_and_bind_keeps_its_address);
+    RUN(a_scan_without_a_sensor_or_refused_says_why);
+    RUN(the_stream_reaches_the_reading_once_subscribed);
+    RUN(a_device_without_the_service_is_not_a_witmotion_sensor);
+    RUN(a_dropped_link_comes_back_and_keeps_the_zero);
+    RUN(a_refused_write_drops_the_rest_of_its_group);
     RUN(calibrate_sends_calsw_1_then_after_3s_calsw_0_and_save);
     RUN(calibrate_with_the_frames_lost_ends_failed);
     RUN(calibrate_with_frames_300ms_apart_ends_failed);
     RUN(a_full_outbox_drops_the_command_past_its_room);
     RUN(a_rate_change_goes_to_the_sensor_once_it_is_connected);
-    RUN(imu_off_aborts_the_operation_and_lowers_key);
+    RUN(imu_off_ends_the_link_and_forgets_the_list);
+    RUN(a_stored_address_with_imu_off_connects_without_a_scan_at_imu_on);
+    RUN(scan_and_imu_off_clear_the_list_the_hidden_count_and_the_error);
     RUN(commands_are_refused_when_they_cannot_run);
-    RUN(no_at_operation_while_the_calibration_or_a_sensor_command_waits);
+    RUN(no_bind_while_a_scan_runs_and_a_rebind_keeps_the_link);
     RUN(a_rate_change_in_a_calibration_waits_for_its_end);
     RUN(the_handout_gives_each_frame_once_and_again_after_a_reset);
     RUN(a_frame_after_the_stale_point_counts_a_gap);
     RUN(the_rate_options_are_the_wit_codes_and_null_does_nothing);
-    RUN(each_hc05_error_reaches_the_view_as_its_imu_error);
-    RUN(a_full_scan_keeps_eight_devices_and_any_reads_binding);
     return test_summary("imu_ctl");
 }

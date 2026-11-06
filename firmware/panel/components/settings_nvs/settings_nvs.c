@@ -1,5 +1,6 @@
-/*
- * NVS (non-volatile storage) backing for the settings model.
+/**
+ * @file
+ * @brief NVS (non-volatile storage) backing for the settings model.
  *
  * Values are stored one key at a time rather than as a blob, so a schema that
  * gains or loses an entry does not invalidate the rest: an unknown key is
@@ -16,9 +17,17 @@
 #include "nvs.h"
 #include "nvs_flash.h"
 
+/** @brief The log tag. */
 static const char *TAG = "settings";
+/** @brief The NVS namespace of every setting. */
 static const char *NAMESPACE = "bench";
 
+/**
+ * @brief Load the numbers, each stored x 1000 as an i32 under its key.
+ * @param values Takes the values found; the others keep theirs.
+ * @param count  The settings.
+ * @return Whether at least one value was found.
+ */
 static bool nvs_load(float *values, int count)
 {
     nvs_handle_t h;
@@ -45,6 +54,12 @@ static bool nvs_load(float *values, int count)
     return found > 0;
 }
 
+/**
+ * @brief Save the numbers, x 1000 as i32, one key each.
+ * @param values The values.
+ * @param count  The settings.
+ * @return Whether every value and the commit went.
+ */
 static bool nvs_save(const float *values, int count)
 {
     nvs_handle_t h;
@@ -90,8 +105,14 @@ static bool nvs_save(const float *values, int count)
     return wrote;
 }
 
-/* The strings, one NVS string key each, under the same namespace.  A key
- * that is missing keeps its default, as a number's does. */
+/**
+ * @brief Load the strings, one NVS string key each, under the same
+ *        namespace.  A key that is missing keeps its default, as a
+ *        number's does.
+ * @param texts Takes the strings found.
+ * @param count The strings.
+ * @return Whether the namespace opened.
+ */
 static bool nvs_load_text(char (*texts)[SETTINGS_TEXT_MAX], int count)
 {
     nvs_handle_t h;
@@ -114,6 +135,12 @@ static bool nvs_load_text(char (*texts)[SETTINGS_TEXT_MAX], int count)
     return true;
 }
 
+/**
+ * @brief Save the strings, one key each.
+ * @param texts The strings.
+ * @param count The strings' count.
+ * @return Whether every string and the commit went.
+ */
 static bool nvs_save_text(const char (*texts)[SETTINGS_TEXT_MAX], int count)
 {
     nvs_handle_t h;
@@ -139,8 +166,38 @@ static bool nvs_save_text(const char (*texts)[SETTINGS_TEXT_MAX], int count)
     return wrote && err == ESP_OK;
 }
 
+/** @brief The store settings_nvs_store() hands out. */
 static const settings_store_t s_store = { nvs_load, nvs_save, nvs_load_text,
                                           nvs_save_text };
+
+/** @brief The handle nvs_forget() erases through, open in forget_retired(). */
+static nvs_handle_t s_forget_h;
+
+/**
+ * @brief Erase one retired key.
+ * @param key The key.
+ * @return Whether NVS held it.
+ */
+static bool nvs_forget(const char *key)
+{
+    if (nvs_erase_key(s_forget_h, key) != ESP_OK) {
+        return false;
+    }
+    ESP_LOGI(TAG, "erased the retired key %s", key);
+    return true;
+}
+
+/** @brief Erase the keys no build reads (settings_forget_retired()). */
+static void forget_retired(void)
+{
+    if (nvs_open(NAMESPACE, NVS_READWRITE, &s_forget_h) != ESP_OK) {
+        return;
+    }
+    if (settings_forget_retired(nvs_forget) > 0) {
+        (void)nvs_commit(s_forget_h);
+    }
+    nvs_close(s_forget_h);
+}
 
 /*
  * A store that cannot be brought up must not stop the bench from booting:
@@ -166,6 +223,9 @@ const settings_store_t *settings_nvs_store(void)
                      esp_err_to_name(err));
         }
         usable = (err == ESP_OK);
+        if (usable) {
+            forget_retired();
+        }
     }
     return usable ? &s_store : NULL;
 }

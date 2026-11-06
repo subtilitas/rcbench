@@ -54,8 +54,8 @@ static imu_view_t view_connected(void)
     imu_view_t v;
     memset(&v, 0, sizeof v);
     v.link = IMU_LINK_CONNECTED;
-    snprintf(v.version, sizeof v.version, "2.0-20100601");
-    snprintf(v.bound_addr, sizeof v.bound_addr, "98D3:31:F5A1B2");
+    snprintf(v.version, sizeof v.version, "2.13.0");
+    snprintf(v.bound_addr, sizeof v.bound_addr, "00:0C:BF:08:19:29 P");
     snprintf(v.bound_name, sizeof v.bound_name, "HC-06");
     v.r.valid = true;
     v.r.taken_ms = 1000u;
@@ -127,7 +127,7 @@ TEST_CASE(scan_posts_the_command_and_the_list_shows_the_found_devices)
     /* The scan under way: the heading says so, no device takes a tap. */
     v.link = IMU_LINK_SCANNING;
     imu_screen_set(&v);
-    CHECK_STR_EQ(imu_screen_line(IMS_L_HEAD), "SCANNING: UP TO 40s");
+    CHECK_STR_EQ(imu_screen_line(IMS_L_HEAD), "SCANNING: 10s");
     tap_rect(imu_screen_choice_rect(0));
     CHECK_EQ(took().kind, IMU_CMD_NONE);
     tap_rect(imu_screen_row_rect(IMS_ROW_RESCAN));
@@ -135,18 +135,25 @@ TEST_CASE(scan_posts_the_command_and_the_list_shows_the_found_devices)
     /* Two found. */
     v.link = IMU_LINK_READY;
     v.found_n = 2u;
-    snprintf(v.found[0].addr, sizeof v.found[0].addr, "98D3:31:F5A1B2");
+    snprintf(v.found[0].addr, sizeof v.found[0].addr, "00:0C:BF:08:19:29");
     snprintf(v.found[0].name, sizeof v.found[0].name, "HC-06");
-    snprintf(v.found[1].addr, sizeof v.found[1].addr, "12:34:56");
+    v.found[0].rssi = -50;
+    snprintf(v.found[1].addr, sizeof v.found[1].addr, "00:0C:BF:08:19:30");
+    v.found[1].rssi = 127;
+    v.hidden = 3u;
     imu_screen_set(&v);
     CHECK_STR_EQ(imu_screen_line(IMS_L_HEAD), "FOUND 2: TAP ONE TO BIND IT");
+    CHECK_STR_EQ(imu_screen_line(IMS_L_HIDDEN), "3 OTHER DEVICES HIDDEN");
     ui_router_render(&s_c, 0);
     /* None found, and why. */
     v.found_n = 0u;
     v.err = IMU_ERR_NONE_FOUND;
     imu_screen_set(&v);
     CHECK_STR_EQ(imu_screen_line(IMS_L_HEAD),
-                 "NO DEVICE FOUND: IS THE SENSOR ON?");
+                 "NO SENSOR FOUND: IS IT ON, NO PHONE ON IT?");
+    v.hidden = 0u;
+    imu_screen_set(&v);
+    CHECK_STR_EQ(imu_screen_line(IMS_L_HIDDEN), "");
     v.err = IMU_ERR_NONE;
     imu_screen_set(&v);
     CHECK_STR_EQ(imu_screen_line(IMS_L_HEAD), "NO SCAN YET");
@@ -161,8 +168,8 @@ TEST_CASE(scan_posts_the_command_and_the_list_shows_the_found_devices)
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_IMU);
     CHECK(!imu_screen()->covered());
-    /* SCAN takes no press while the HC-05 is not there. */
-    v.link = IMU_LINK_NO_MODULE;
+    /* SCAN takes no press while Bluetooth has no sync with the C6. */
+    v.link = IMU_LINK_NO_BT;
     imu_screen_set(&v);
     tap_rect(imu_screen_row_rect(IMS_ROW_SCAN));
     CHECK_EQ(took().kind, IMU_CMD_NONE);
@@ -211,36 +218,23 @@ TEST_CASE(a_tap_on_a_device_posts_bind_with_its_index)
     CHECK_EQ(imu_screen_row_rect(IMS_ROW_COUNT).w, 0);
 }
 
-TEST_CASE(inq_refused_offers_connect_to_any_sensor)
+TEST_CASE(a_scan_error_reads_in_the_list_and_on_the_main_view)
 {
     imu_view_t v = view_connected();
     v.link = IMU_LINK_READY;
     on_imu(&v);
-    tap_rect(imu_screen_row_rect(IMS_ROW_ANY));
-    CHECK_EQ(took().kind, IMU_CMD_NONE);          /* not offered */
     tap_rect(imu_screen_row_rect(IMS_ROW_SCAN));
     (void)took();
-    v.err = IMU_ERR_INQ_REFUSED;
-    v.err_code = 0x1Fu;
-    v.inq_refused = true;
+    v.err = IMU_ERR_SCAN;
+    v.err_code = 2u;
     imu_screen_set(&v);
     CHECK_STR_EQ(imu_screen_line(IMS_L_HEAD),
-                 "THE HC-05 REFUSED THE SCAN: ERROR:(1F)");
-    tap_rect(imu_screen_row_rect(IMS_ROW_LIST_ANY));
-    CHECK_EQ(took().kind, IMU_CMD_ANY);
+                 "THE SCAN DID NOT START: CODE 2");
+    tap_rect(imu_screen_row_rect(IMS_ROW_CLOSE));
     CHECK(!imu_screen()->covered());
-    /* And on the main view, under SCAN. */
-    tap_rect(imu_screen_row_rect(IMS_ROW_ANY));
-    CHECK_EQ(took().kind, IMU_CMD_ANY);
     CHECK_STR_EQ(imu_screen_line(IMS_L_ERR),
-                 "THE HC-05 REFUSED THE SCAN: ERROR:(1F)");
+                 "THE SCAN DID NOT START: CODE 2");
     ui_router_render(&s_c, 0);
-    /* Bound to any sensor: the card says so. */
-    snprintf(v.bound_addr, sizeof v.bound_addr, "*");
-    v.bound_name[0] = '\0';
-    imu_screen_set(&v);
-    CHECK_STR_EQ(imu_screen_line(IMS_L_SENSOR), "SENSOR: ANY IN RANGE");
-    CHECK_STR_EQ(imu_screen_line(IMS_L_ADDR), "AT+CMODE=1, PIN 1234");
 }
 
 /* A finger held @p s seconds on the calibration's hold, in 0.25s frames. */
@@ -410,17 +404,19 @@ TEST_CASE(zero_posts_zero_and_the_lines_show_the_zeroed_angles)
     CHECK_EQ(ink, UI_WARN);
 }
 
-/* The card's state line: each of the 8 link states, in both languages. */
+/* The card's state line: each of the 10 link states, in both languages. */
 TEST_CASE(the_state_line_names_every_link_state)
 {
     static const char *const en[] = {
-        "IMU OFF IN IMU SETTINGS", "NO HC-05", "NO SENSOR BOUND", "SCANNING",
-        "BINDING", "BOUND", "CONNECTED 50Hz", "NO FRAMES",
+        "IMU OFF IN IMU SETTINGS", "STARTING BLUETOOTH",
+        "NO BLUETOOTH ON C6", "C6 FAILED: RESTART", "NO SENSOR BOUND",
+        "SCANNING", "CONNECTING", "BOUND", "CONNECTED 50Hz", "NO FRAMES",
     };
     static const char *const de[] = {
-        "IMU AUS IN IMU-OPTIONEN", "KEIN HC-05", "KEIN SENSOR GEBUNDEN",
-        "SUCHE LÄUFT", "BINDEN LÄUFT", "GEBUNDEN", "VERBUNDEN 50Hz",
-        "KEINE FRAMES",
+        "IMU AUS IN IMU-OPTIONEN", "BLUETOOTH STARTET",
+        "KEIN BLUETOOTH AM C6", "C6 AUSGEFALLEN: NEUSTART",
+        "KEIN SENSOR GEBUNDEN", "SUCHE LÄUFT", "VERBINDE", "GEBUNDEN",
+        "VERBUNDEN 50Hz", "KEINE FRAMES",
     };
     imu_view_t v = view_connected();
     on_imu(&v);
@@ -433,31 +429,30 @@ TEST_CASE(the_state_line_names_every_link_state)
         CHECK_STR_EQ(imu_screen_line(IMS_L_STATE), de[k]);
     }
     ui_text_set_language(UI_LANG_EN);
-    /* The sensor's and the HC-05's lines. */
+    /* The sensor's and the C6's lines. */
     CHECK_STR_EQ(imu_screen_line(IMS_L_SENSOR), "SENSOR: HC-06");
-    CHECK_STR_EQ(imu_screen_line(IMS_L_ADDR), "98D3:31:F5A1B2");
-    CHECK_STR_EQ(imu_screen_line(IMS_L_HC05), "HC-05: 2.0-20100601");
+    CHECK_STR_EQ(imu_screen_line(IMS_L_ADDR), "00:0C:BF:08:19:29 P");
+    CHECK_STR_EQ(imu_screen_line(IMS_L_RADIO), "C6: 2.13.0");
     v.bound_name[0] = '\0';
     v.version[0] = '\0';
     imu_screen_set(&v);
     CHECK_STR_EQ(imu_screen_line(IMS_L_SENSOR), "SENSOR: NO NAME");
-    CHECK_STR_EQ(imu_screen_line(IMS_L_HC05), "HC-05: ---");
+    CHECK_STR_EQ(imu_screen_line(IMS_L_RADIO), "C6: ---");
     v.bound_addr[0] = '\0';
     imu_screen_set(&v);
     CHECK_STR_EQ(imu_screen_line(IMS_L_SENSOR), "SENSOR: NONE BOUND");
-    /* Each error of an operation in words. */
-    static const struct { imu_err_t e; uint8_t code; const char *t; } k[] = {
+    /* Each error in words. */
+    static const struct { imu_err_t e; uint16_t code; const char *t; } k[] = {
         { IMU_ERR_NONE, 0u, "" },
-        { IMU_ERR_NO_AT, 0u,
-          "THE HC-05 DOES NOT ANSWER AT: CHECK ITS WIRES AND KEY" },
-        { IMU_ERR_TIMEOUT, 0u, "THE HC-05 DID NOT ANSWER IN TIME" },
-        { IMU_ERR_REFUSED, 0u, "THE HC-05 ANSWERED FAIL" },
-        { IMU_ERR_REFUSED, 0x1Du, "THE HC-05 ANSWERED ERROR:(1D)" },
-        { IMU_ERR_PAIR, 0u,
-          "PAIRING FAILED: IS THE SENSOR ON AND IN RANGE?" },
-        { IMU_ERR_NONE_FOUND, 0u, "NO DEVICE FOUND: IS THE SENSOR ON?" },
-        { IMU_ERR_ARG, 0u,
-          "THE HC-05 DOES NOT ACCEPT THIS ADDRESS OR PIN" },
+        { IMU_ERR_CONNECT, 0x208u,
+          "NO CONNECTION: SENSOR ON, IN RANGE, NO PHONE ON IT?" },
+        { IMU_ERR_NOT_WIT, 0u,
+          "NOT A WITMOTION SENSOR: NO ISSC UART SERVICE" },
+        { IMU_ERR_WRITE, 0x10Eu, "THE SENSOR DID NOT TAKE THE COMMAND" },
+        { IMU_ERR_NONE_FOUND, 0u,
+          "NO SENSOR FOUND: IS IT ON, NO PHONE ON IT?" },
+        { IMU_ERR_SCAN, 2u, "THE SCAN DID NOT START: CODE 2" },
+        { (imu_err_t)99, 0u, "" },
     };
     for (size_t i = 0; i < sizeof k / sizeof k[0]; ++i) {
         v.err = k[i].e;
@@ -475,11 +470,10 @@ TEST_CASE(every_string_fits_its_field)
     on_imu(&v);
     const gfx_font_t *label = &gfx_font_10x20, *body = &gfx_font_12x24;
     static const ui_text_id_t k_buttons[] = {
-        TX_IMU_SCAN, TX_IMU_ANY, TX_IMU_CAL_HOLD, TX_IMU_SETTINGS,
+        TX_IMU_SCAN, TX_IMU_CAL_HOLD, TX_IMU_SETTINGS,
     };
     static const ui_text_id_t k_half[] = { TX_IMU_ZERO, TX_IMU_UNZERO };
-    static const ui_text_id_t k_list[] = { TX_IMU_RESCAN, TX_IMU_ANY,
-                                           TX_IMU_CLOSE };
+    static const ui_text_id_t k_list[] = { TX_IMU_RESCAN, TX_IMU_CLOSE };
     for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
         for (size_t i = 0; i < sizeof k_buttons / sizeof k_buttons[0]; ++i) {
@@ -514,9 +508,9 @@ TEST_CASE(every_string_fits_its_field)
             CHECK(gfx_text_width(body, imu_screen_line(IMS_L_STATE), 1)
                   <= IMS_RW - 2 * IMS_RPAD);
         }
-        for (int e = IMU_ERR_NONE; e <= IMU_ERR_ARG; ++e) {
+        for (int e = IMU_ERR_NONE; e <= IMU_ERR_SCAN; ++e) {
             v.err = (imu_err_t)e;
-            v.err_code = 0xFFu;
+            v.err_code = 0xFFFFu;
             imu_screen_set(&v);
             CHECK(gfx_text_width(body, imu_screen_line(IMS_L_HEAD), 1)
                   <= IMS_LW);
@@ -525,8 +519,11 @@ TEST_CASE(every_string_fits_its_field)
         }
         v.found_n = 8u;
         v.err = IMU_ERR_NONE;
+        v.hidden = 65535u;
         imu_screen_set(&v);
         CHECK(gfx_text_width(body, imu_screen_line(IMS_L_HEAD), 1) <= IMS_LW);
+        CHECK(gfx_text_width(label, imu_screen_line(IMS_L_HIDDEN), 1)
+              <= 2 * IMS_SW);
         for (int c = IMU_CAL_RUNNING; c <= IMU_CAL_FAILED; ++c) {
             v.cal = (imu_cal_t)c;
             v.cal_left_ms = 3000u;
@@ -544,7 +541,7 @@ int main(void)
     RUN(the_tile_opens_the_screen_and_home_returns_to_setup);
     RUN(scan_posts_the_command_and_the_list_shows_the_found_devices);
     RUN(a_tap_on_a_device_posts_bind_with_its_index);
-    RUN(inq_refused_offers_connect_to_any_sensor);
+    RUN(a_scan_error_reads_in_the_list_and_on_the_main_view);
     RUN(calibrate_needs_a_2s_hold_and_the_band_hint_on_a_short_press);
     RUN(zero_posts_zero_and_the_lines_show_the_zeroed_angles);
     RUN(the_state_line_names_every_link_state);

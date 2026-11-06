@@ -396,7 +396,9 @@ its stack less 1024 bytes.
 | `control` | `control_task` | 6,144 | 3,472 | 1,632 |
 | `runlog` | `log_task` | 6,656 | 3,824 | 1,792 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
-| `imu` | `imu_task`, the Bluetooth IMU's UART and HC-05 set-up (`panel_imu.c`) | 3,072 | 1,200 | 832 |
+| `imu` | `imu_task`, the Bluetooth IMU's link: SETUP's values, the host stack's events and the actions to NimBLE (`panel_imu.c`) | 4,096 | 1,872 | 1,184 |
+| `blestart` | `ble_start_task`, the C6's link, its controller requests, the host's start and the wait for its sync, then gone (`panel_ble.c`) | 4,096 | 1,200 | 1,856 |
+| `nimble_host` | `ble_host_task`, NimBLE's host: HCI (host controller interface) to and from the C6, the scan's reports, the connection's and GATT's answers (`panel_ble.c`) | 4,096 | 1,936 | 1,120 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,392 | 1,664 |
 | `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 6,912 | 2,912 | 2,960 |
 | `mdns` | `mdns_task`, the mDNS (multicast domain name system) responder while the panel is joined to a home network | 4,096 | 1,440 | 1,616 |
@@ -414,22 +416,24 @@ security) handshake and every read under it: esp_http_client reaches its
 transport through a function pointer. Its stack uses the page server's allocation; the two tasks
 never run concurrently; the handshake's depth is not measured.
 
-The console build (`RCBENCH_PANEL_CONSOLE`, [The bench
-console](BenchConsole.md)) has three tasks more. Its `ble scan` is the only
-caller of `panel_ble_start()` (`main/panel_ble.c`), so the other builds hold
-neither Bluetooth LE (Low Energy) task. ESP-IDF's
+The Bluetooth LE (Low Energy) tasks start at the first IMU ON
+(`panel_imu.c` calls `panel_ble_start()`), or at the console build's `ble
+scan`, and stay until the panel restarts. ESP-IDF's
 `nimble_port_freertos_init()` creates `nimble_host` with the panel's entry,
 priority 21 on core 0 and the stack `CONFIG_BT_NIMBLE_HOST_TASK_STACK_SIZE`.
-Its depth follows NimBLE's events and the scan's callback by name
-(`NIMBLE_CALLS`); the host's other calls through a pointer are not
-followed, and the tool's output counts them. `blestart` ends once the wait for
-the host's sync has ended.
+Its depth follows NimBLE's events and the IMU scan's callback by name
+(`NIMBLE_CALLS`); the host's other calls through a pointer, the
+connection's and GATT's callbacks among them, are not followed, and the
+tool's output counts them. `blestart` ends once the wait for the host's
+sync has ended. The `imu` task's depth stops at the NimBLE calls of
+`panel_ble_do()` that go through a pointer.
+
+The console build (`RCBENCH_PANEL_CONSOLE`, [The bench
+console](BenchConsole.md)) has one task more.
 
 | Task of the console build | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `console` | `console_task`, the serial ports to the IOmcu's console, and `ble scan` (`panel_console.c`) | 4,096 | 1,472 | 1,584 |
-| `blestart` | `ble_start_task`, the C6's link, its controller requests, the host's start and the wait for its sync, then gone (`panel_ble.c`) | 4,096 | 1,200 | 1,856 |
-| `nimble_host` | `ble_host_task`, NimBLE's host: HCI (host controller interface) to and from the C6, the scan's reports (`panel_ble.c`) | 4,096 | 1,936 | 1,120 |
+| `console` | `console_task`, the serial ports to the IOmcu's console, and `ble scan` (`panel_console.c`) | 4,096 | 1,280 | 1,776 |
 
 `runlog`'s deepest chain mounts the SD card: the listing of the servo
 files the card serves (`hitec_card_run()`, `list()`, `servo_store_preset()`,
@@ -472,7 +476,7 @@ the tool cannot see, and each depth above is a lower bound for that reason:
   which it follows by name
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `SERVO_STORE_CALLS`):
-  296 such
+  297 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - jumps through a register: a switch table, which stays inside its
@@ -528,7 +532,7 @@ tool does not follow.
 | `control` | 6,144 | not measured |
 | `runlog` | 6,656 | not measured |
 | `knob` | 3,072 | not measured |
-| `imu` | 3,072 | not measured |
+| `imu` | 4,096 | not measured |
 | `touch` | 4,096 | not measured |
 | `wifi_ctl` | 6,912 | not measured |
 | `mdns` | 4,096 | not measured |
@@ -672,8 +676,8 @@ PSRAM free at start-up: not measured.
 Bluetooth LE (Low Energy) runs on the C6 as well; the P4 runs its host,
 NimBLE ([Building, Bluetooth LE through the
 ESP32-C6](Building.md#bluetooth-le-through-the-esp32-c6)). The host starts
-at `panel_ble_start()`, which only the console build's `ble scan` calls, and
-stays until the panel restarts. The start logs the free memory before and
+at `panel_ble_start()`, which the IMU task calls at the first IMU ON and
+the console build's `ble scan` calls, and stays until the panel restarts. The start logs the free memory before and
 after it:
 
 ```text
@@ -689,14 +693,18 @@ packet; those are not counted. NimBLE's pools and buffers are in PSRAM
 264,307 free before and 259,155 after, and 25,176 bytes of PSRAM; with the
 access point up after it, 251,103 bytes of internal RAM were free.
 
-What the Bluetooth LE configuration adds to the image, from the linker map
-(`esp_idf_size`), ESP-IDF v6.1, built without the IOmcu images. The default
-build has no caller of the host, so most of NimBLE is left out of it:
+The Bluetooth LE part of the image, from the linker map (`esp_idf_size`),
+ESP-IDF v6.1, built without the IOmcu images. Both builds hold the host,
+since the IMU starts it:
 
-| Build | Application image (bytes) | Of it Bluetooth LE (bytes) | Internal RAM the image holds, DIRAM (bytes) | Of it Bluetooth LE (bytes) |
-| --- | ---: | ---: | ---: | ---: |
-| default | 3,078,608 | 44,688 | 179,190 | 486 |
-| console (`RCBENCH_PANEL_CONSOLE`) | 3,114,560 | 76,080 | 188,360 | 3,448 |
+| Build | Application image (bytes) | Of it NimBLE, `libbt.a`, flash (bytes) | Of it the central, `libbleuart.a`, flash (bytes) | Internal RAM the image holds, DIRAM (bytes) | Of it NimBLE (bytes) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| default | 3,094,450 | 62,038 | 8,821 | 179,338 | 693 |
+| console (`RCBENCH_PANEL_CONSOLE`) | 3,118,804 | 62,078 | 8,821 | 189,176 | 693 |
+
+The event queue's 2,048 bytes are in the DIRAM figure, outside `libbt.a`.
+esp_hosted (157,292 bytes of flash, 1,571 of DIRAM) carries Wi-Fi and
+Bluetooth LE together; its Bluetooth LE share is not measured.
 
 The .bss in PSRAM is 2,587,632 bytes in both builds, with and without
 Bluetooth LE.

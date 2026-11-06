@@ -91,9 +91,9 @@ TEST_CASE(a_bound_sensor_connects_discovers_subscribes_and_reads_6daa)
     CHECK_EQ(b.rx_props, BLEU_PROP_WRITE | BLEU_PROP_WRITE_NR);
     CHECK_EQ(b.param_val, H_PAR_VAL);
     CHECK_EQ(b.mtu, 23);
-    CHECK_EQ(b.itvl, 12);
+    CHECK_EQ(b.itvl, 40);
     CHECK_EQ(b.latency, 0);
-    CHECK_EQ(b.supervision, 100);
+    CHECK_EQ(b.supervision, 400);
     CHECK_EQ(b.param_len, 8);
     CHECK(memcmp(b.param, k_param, 8) == 0);
     CHECK_EQ(b.param_status, 0);
@@ -347,37 +347,87 @@ TEST_CASE(a_connect_times_out_at_5000ms_not_at_4999)
     at_tick_0_and_before_the_wrap(connect_times_out, 100);
 }
 
-static void retry_gap_after_a_refusal(uint32_t t0)
+/* The connect fails with HCI 0x3E at t0 + 30, as a CONNECT event or, with
+ * @p lost, as NimBLE's DISCONNECT with the connect's token. */
+static void retry_gap_after_a_failure(uint32_t t0, bool lost)
 {
     bsim_t s;
     bleu_t b;
     bsim_init(&s);
     s.conn_status = BSIM_ST_REFUSED;
+    s.conn_lost = lost;
     bleu_init(&b);
     bleu_bind(&b, &k_cap_addr, t0);
     bleu_enable(&b, true, t0);
     bsim_run(&s, &b, t0, t0 + 31u);
-    /* Refused at t0 + 30. */
     CHECK_EQ(b.st, BLEU_ST_WAIT);
     CHECK_EQ(b.err, BLEU_ERR_CONNECT);
     CHECK_EQ(b.err_status, BSIM_ST_REFUSED);
+    CHECK_EQ(b.stray, 0);
+    CHECK_EQ(bsim_count(&s, BLEU_ACT_CANCEL), 0);
     const uint32_t tf = t0 + 30u;
-    bsim_run(&s, &b, t0 + 31u, tf + BLEU_RETRY_MS);
+    bsim_run(&s, &b, t0 + 31u, tf + BLEU_RETRY_CONNECT_MS);
     CHECK_EQ(bsim_count(&s, BLEU_ACT_CONNECT), 1);
     /* Accepted the next time, the error clears at UP. */
     s.conn_status = 0;
-    bsim_tick(&s, &b, tf + BLEU_RETRY_MS);
+    bsim_tick(&s, &b, tf + BLEU_RETRY_CONNECT_MS);
     CHECK_EQ(bsim_count(&s, BLEU_ACT_CONNECT), 2);
-    CHECK_EQ(bsim_last(&s, BLEU_ACT_CONNECT)->t, tf + BLEU_RETRY_MS);
+    CHECK_EQ(bsim_last(&s, BLEU_ACT_CONNECT)->t, tf + BLEU_RETRY_CONNECT_MS);
     CHECK_EQ(b.err, BLEU_ERR_CONNECT);
-    bsim_run(&s, &b, tf + BLEU_RETRY_MS + 1u, tf + BLEU_RETRY_MS + 500u);
+    bsim_run(&s, &b, tf + BLEU_RETRY_CONNECT_MS + 1u,
+             tf + BLEU_RETRY_CONNECT_MS + 500u);
     CHECK(bleu_link_up(&b));
     CHECK_EQ(b.err, BLEU_ERR_NONE);
 }
 
-TEST_CASE(the_retry_gap_is_1000ms_not_999)
+static void retry_gap_after_a_refusal(uint32_t t0)
+{
+    retry_gap_after_a_failure(t0, false);
+}
+
+static void retry_gap_after_a_lost_establishment(uint32_t t0)
+{
+    retry_gap_after_a_failure(t0, true);
+}
+
+TEST_CASE(a_failed_connect_retries_after_7000ms_not_6999)
 {
     at_tick_0_and_before_the_wrap(retry_gap_after_a_refusal, 100);
+}
+
+TEST_CASE(a_connection_that_failed_to_be_established_retries_after_7000ms)
+{
+    at_tick_0_and_before_the_wrap(retry_gap_after_a_lost_establishment, 100);
+}
+
+/* A DISCONNECT with a token that is not the connect's in flight is a
+ * stray: the connect goes on to its own event. */
+static void foreign_disconnect(uint32_t t0)
+{
+    bsim_t s;
+    bleu_t b;
+    bsim_init(&s);
+    s.conn_ms = 50u;
+    bleu_init(&b);
+    bleu_bind(&b, &k_cap_addr, t0);
+    bleu_enable(&b, true, t0);
+    bsim_run(&s, &b, t0, t0 + 10u);
+    CHECK_EQ(b.st, BLEU_ST_CONNECTING);
+    bleu_evt_t e;
+    memset(&e, 0, sizeof e);
+    e.kind = BLEU_EV_DISCONNECT;
+    e.token = (uint16_t)(b.tok_link + 1u);
+    e.status = BSIM_ST_REFUSED;
+    (void)bleu_event(&b, &e, t0 + 10u);
+    CHECK_EQ(b.st, BLEU_ST_CONNECTING);
+    CHECK_EQ(b.stray, 1);
+    bsim_run(&s, &b, t0 + 11u, t0 + 600u);
+    CHECK(bleu_link_up(&b));
+}
+
+TEST_CASE(a_disconnect_with_another_token_leaves_the_connect_running)
+{
+    at_tick_0_and_before_the_wrap(foreign_disconnect, 100);
 }
 
 /* The step held silent in gatt_step_times_out(). */
@@ -634,7 +684,9 @@ int main(void)
     RUN(a_scan_ends_at_10000ms_not_at_9999);
     RUN(a_scan_lists_the_owners_sensor_and_hides_the_rest);
     RUN(a_connect_times_out_at_5000ms_not_at_4999);
-    RUN(the_retry_gap_is_1000ms_not_999);
+    RUN(a_failed_connect_retries_after_7000ms_not_6999);
+    RUN(a_connection_that_failed_to_be_established_retries_after_7000ms);
+    RUN(a_disconnect_with_another_token_leaves_the_connect_running);
     RUN(each_gatt_step_times_out_at_5000ms_not_at_4999);
     RUN(a_write_answer_times_out_at_1000ms_not_at_999);
     RUN(a_cancel_without_its_event_settles_after_2000ms);

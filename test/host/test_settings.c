@@ -1132,6 +1132,57 @@ TEST_CASE(screen_rotation_is_held_while_armed_and_free_when_safe)
     CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 0);
 }
 
+/* What the fake medium holds and what was asked of it. */
+static struct {
+    const char *held[4];
+    int         nheld;
+    const char *asked[8];
+    int         nasked;
+} g_forget;
+
+static bool fake_forget(const char *key)
+{
+    if (g_forget.nasked < 8) {
+        g_forget.asked[g_forget.nasked++] = key;
+    }
+    for (int i = 0; i < g_forget.nheld; ++i) {
+        if (g_forget.held[i] != NULL && strcmp(g_forget.held[i], key) == 0) {
+            g_forget.held[i] = NULL;
+            return true;
+        }
+    }
+    return false;
+}
+
+TEST_CASE(the_hc05_address_key_is_erased_once_and_no_live_key_is_retired)
+{
+    memset(&g_forget, 0, sizeof g_forget);
+    g_forget.held[0] = "imu_addr";
+    g_forget.held[1] = "imu_ble";
+    g_forget.nheld = 2;
+    CHECK_EQ(settings_forget_retired(fake_forget), 1);
+    CHECK_EQ(g_forget.nasked, 1);
+    CHECK_STR_EQ(g_forget.asked[0], "imu_addr");
+    CHECK(g_forget.held[0] == NULL);
+    CHECK_STR_EQ(g_forget.held[1], "imu_ble");
+    /* The next start finds nothing left to erase. */
+    CHECK_EQ(settings_forget_retired(fake_forget), 0);
+    CHECK_EQ(settings_forget_retired(NULL), 0);
+    CHECK(settings_retired_key(-1) == NULL);
+    CHECK(settings_retired_key(1) == NULL);
+    for (int r = 0; settings_retired_key(r) != NULL; ++r) {
+        const char *k = settings_retired_key(r);
+        CHECK(strlen(k) <= 15u);
+        for (int i = 0; i < SETTING_TEXT_COUNT; ++i) {
+            CHECK(strcmp(k, settings_text_key((setting_text_id_t)i)) != 0);
+        }
+        for (int i = 0; i < SETTING_COUNT; ++i) {
+            const setting_def_t *d = settings_def((setting_id_t)i);
+            CHECK(d == NULL || d->key == NULL || strcmp(k, d->key) != 0);
+        }
+    }
+}
+
 int main(void)
 {
     RUN(defaults_come_from_the_schema);
@@ -1163,5 +1214,6 @@ int main(void)
     RUN(brightness_and_contrast_are_clamped_and_monotonic);
     RUN(the_card_switches_are_on_kept_and_on_after_an_update);
     RUN(the_log_folders_are_strings_kept_reset_and_observed);
+    RUN(the_hc05_address_key_is_erased_once_and_no_live_key_is_retired);
     return test_summary("settings");
 }

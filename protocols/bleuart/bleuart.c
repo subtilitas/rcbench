@@ -28,6 +28,10 @@ _Static_assert(BLEU_SUPERVISION >= 10u && BLEU_SUPERVISION <= 3200u,
 _Static_assert(BLEU_SUPERVISION * 10u * 4u
                > (1u + BLEU_LATENCY) * BLEU_ITVL_MAX * 5u * 2u,
                "the supervision timeout exceeds twice the latency's span");
+_Static_assert(BLEU_CONN_SCAN_ITVL >= 4u && BLEU_CONN_SCAN_ITVL <= 0x4000u
+               && BLEU_CONN_SCAN_WINDOW >= 4u
+               && BLEU_CONN_SCAN_WINDOW <= BLEU_CONN_SCAN_ITVL,
+               "the connect's scan window is 2.5ms to its interval");
 _Static_assert(BLEU_MTU >= 23u && BLEU_MTU <= 517u, "ATT MTU is 23 to 517");
 _Static_assert(BLEU_SCAN_MS <= 0xFFFFu && BLEU_CONNECT_MS <= 0xFFFFu,
                "bleu_act_t.ms holds the scan and connect durations");
@@ -472,7 +476,7 @@ static void on_connect(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms)
     if (e->status != 0u) {
         b->err = BLEU_ERR_CONNECT;
         b->err_status = e->status;
-        unlinked(b, true, BLEU_RETRY_MS, now_ms);
+        unlinked(b, true, BLEU_RETRY_CONNECT_MS, now_ms);
         return;
     }
     b->t_connect = now_ms - b->t_link;
@@ -493,13 +497,23 @@ static void on_connect(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms)
 }
 
 /**
- * @brief Take a DISCONNECT event.
+ * @brief Take a DISCONNECT event.  One with the token of the connect in
+ *        flight ends that connect as failed (HCI 0x3E, failed to be
+ *        established): retried after BLEU_RETRY_CONNECT_MS.
  * @param b      The machine.
  * @param e      The event.
  * @param now_ms The clock.
  */
 static void on_disconnect(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms)
 {
+    if (b->st == BLEU_ST_CONNECTING && e->token != 0u
+        && e->token == b->tok_link) {
+        b->reason = e->status;
+        b->err = BLEU_ERR_CONNECT;
+        b->err_status = e->status;
+        unlinked(b, true, BLEU_RETRY_CONNECT_MS, now_ms);
+        return;
+    }
     if (b->settle == SETTLE_CLOSE && e->conn == b->close_conn) {
         b->settle = SETTLE_NONE;
         b->reason = e->status;

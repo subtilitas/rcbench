@@ -958,22 +958,20 @@ command to the pin.
 
 ### Bluetooth IMU
 
-Built and host-tested: a WitMotion BWT901CL through an HC-05 on the panel's UART1
-(`PANEL_IMU_*` in board_pins.h: TX IO4, RX IO5 and KEY IO29 of header P3, 5V and GND from
-the RS485 header H9). The reading (`shared/bench/imu.c`, `test_imu`), the sensor's side: its
-commands, the calibration and the gaps (`shared/ui/imu_sensor.c`, `test_imu_sensor` without
-a radio), the HC-05 link's AT set-up (`shared/ui/imu_hc05.c`), the controller that joins the
-two (`shared/ui/imu_ctl.c`, `test_imu_ctl` against `hc05_sim.h`), the IMU screen on SETUP's IMU tile (`test_imu_screen`), SETUP > SENSORS > IMU
-(`test_imu_pane`) and the panel's UART task (`firmware/panel/main/panel_imu.c`). With ANGLE
-SOURCE IMU the servo runs read its angle in AS5600 counts. No HC-05 or BWT901CL has been run
-with this code.
-
-Built and host-tested, not yet in a firmware: the BLE (Bluetooth Low Energy) central for the
-sensor's ISSC Transparent UART service (`protocols/bleuart`): the advertising data parser and
-the scan list (`test_bleuart_adv`), connect, discovery, subscribe, the 6DAA read, the write
-path, the retries and every timeout (`test_bleuart`, `test_bleuart_link` against
-`test/host/ble_sim.h` and the owner's capture of the sensor's notifications). It has not run
-against NimBLE or the sensor.
+Built and host-tested: a WitMotion BWT901CL over Bluetooth LE (Low Energy, BLE) through the
+board's ESP32-C6, NimBLE on the P4 (`firmware/panel/main/panel_ble.c`). The BLE central for
+the sensor's ISSC Transparent UART service (`protocols/bleuart`): the advertising data parser
+and the scan list (`test_bleuart_adv`), connect, discovery, subscribe, the 6DAA read, the
+write path, the retries and every timeout (`test_bleuart`, `test_bleuart_link` against
+`test/host/ble_sim.h` and the owner's capture of the sensor's notifications). The reading
+(`shared/bench/imu.c`, `test_imu`), the sensor's side: its commands, the calibration and the
+gaps (`shared/ui/imu_sensor.c`, `test_imu_sensor` without a radio), the BLE link
+(`shared/ui/imu_ble.c`), the controller that joins the two (`shared/ui/imu_ctl.c`,
+`test_imu_ctl` against `ble_sim.h`), the IMU screen on SETUP's IMU tile (`test_imu_screen`),
+SETUP > SENSORS > IMU (`test_imu_pane`) and the panel's IMU task
+(`firmware/panel/main/panel_imu.c`). With ANGLE SOURCE IMU the servo runs read its angle in
+AS5600 counts. The link has not run against NimBLE's answers or the sensor. `protocols/hc05`
+and its suites stay in the host suite; no firmware builds them.
 
 ### Phase tap (ESC tones)
 
@@ -1198,8 +1196,8 @@ rcbench/
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |
 | `escwire` | yes | yes | yes |
 | `witmotion` | yes | | yes |
-| `hc05` | yes | | yes |
-| `bleuart` | | | yes |
+| `hc05` | | | yes |
+| `bleuart` | yes | | yes |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
 `ESP_PLATFORM` and a static library otherwise. The panel sets
@@ -1917,12 +1915,12 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
 | `shared/ui/coproc_update_screen.c` | 276 | 275 | 99.6% |
 | `shared/ui/upd_screen.c` | 628 | 605 | 96.3% |
-| `shared/ui/imu_ctl.c` | 98 | 98 | 100.0% |
-| `shared/ui/imu_hc05.c` | 126 | 124 | 98.4% |
-| `shared/ui/imu_sensor.c` | 145 | 145 | 100.0% |
-| `shared/ui/imu_screen.c` | 316 | 308 | 97.5% |
-| `shared/ui/imu_screen_draw.c` | 81 | 81 | 100.0% |
-| `shared/settings/settings.c` | 415 | 408 | 98.3% |
+| `shared/ui/imu_ctl.c` | 97 | 96 | 99.0% |
+| `shared/ui/imu_ble.c` | 134 | 133 | 99.2% |
+| `shared/ui/imu_sensor.c` | 149 | 149 | 100.0% |
+| `shared/ui/imu_screen.c` | 306 | 298 | 97.4% |
+| `shared/ui/imu_screen_draw.c` | 86 | 85 | 98.8% |
+| `shared/settings/settings.c` | 423 | 416 | 98.3% |
 | `shared/settings/settings_sensors.c` | 150 | 149 | 99.3% |
 | `shared/settings/settings_text.c` | 14 | 13 | 92.9% |
 | `shared/logfile/log_numbers.c` | 393 | 371 | 94.4% |
@@ -2016,7 +2014,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `protocols/escwire/ew_file_load.c` | 93 | 93 | 100.0% |
 | `protocols/hc05/hc05.c` | 384 | 383 | 99.7% |
 | `protocols/hc05/hc05_line.c` | 125 | 125 | 100.0% |
-| `protocols/bleuart/bleuart.c` | 388 | 388 | 100.0% |
+| `protocols/bleuart/bleuart.c` | 395 | 395 | 100.0% |
 | `protocols/bleuart/bleuart_adv.c` | 166 | 166 | 100.0% |
 | `protocols/i2c_txq/i2c_txq.c` | 379 | 379 | 100.0% |
 | `protocols/witmotion/witmotion.c` | 114 | 114 | 100.0% |
