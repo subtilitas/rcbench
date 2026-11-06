@@ -104,7 +104,7 @@ TEST_CASE(a_german_family_of_120_bytes_is_taken_and_121_refused)
     for (int over = 0; over < 2; ++over) {
         char member[256];
         char de[160];
-        (void)memset(de, 'x', (size_t)(120 + over));
+        (void)memset(de, 'x', (size_t)120 + (size_t)over);
         de[120 + over] = '\0';
         (void)snprintf(member, sizeof(member), "\"family_de\": \"%s\",", de);
         esc_profile_t p;

@@ -60,7 +60,8 @@ static uint64_t picture_hash(const gfx_color_t *px)
 {
     uint64_t h = 1469598103934665603ull;
     const uint8_t *b = (const uint8_t *)px;
-    for (size_t i = 0; i < sizeof(fb[0]); ++i) {
+    const size_t n = sizeof(fb[0]);
+    for (size_t i = 0; i < n; ++i) {
         h = (h ^ b[i]) * 1099511628211ull;
     }
     return h;
