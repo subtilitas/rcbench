@@ -386,7 +386,9 @@ Ausfalls des IOmcu von 15s in BOOTSEL an, und ein Power-on-Reset trennt das
 USB des IOmcu für 14,5 bis 15s. Wie lange ein echter Reset den PD mini vor
 dem OFF des Starts anlässt, ist nicht gemessen.
 
-[Die Pages für ESC-Einstellungen](LinkEsc-de.md#was-jedes-ereignis-tut) nennen Leitung und Versorgung für jedes von ARMED, STOP, verlorenem Link, Fehler und Neustart, und [die Einschränkung](LinkEsc-de.md#aktuelle-einschränkungen) eines Pins mit bidirektionalem DShot, der auf SAFE high ruht.
+[Die Pages für ESC-Einstellungen](LinkEsc-de.md#was-jedes-ereignis-tut) nennen Leitung und Versorgung für jedes von ARMED, STOP, verlorenem Link, Fehler und Neustart.
+
+Ein gestoppter DShot-Pin wird in beiden Modi low getrieben, auch bei bidirektionalem DShot: ab der Zuordnung, bei SAFE, STOP, einem Fehler, einem verlorenen Link und der Failsafe-Flanke, bis zum nächsten ARM ([DShot](DShot-de.md#ein-gestoppter-pin-wird-low-getrieben)). Eine bidirektionale Leitung, die ohne Frames high liegt, wäre die Eintrittsbedingung der Bootloader von Familie S, Bluejay und AM32. Ein Pin, den die Session für ESC-Einstellungen hält, ist an die Session freigegeben und wird nicht low getrieben.
 
 ## Vorausgesetzte externe Schaltung: das Monoflop
 

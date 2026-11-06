@@ -55,6 +55,18 @@ history is in git.
   BOOTSEL until a USB load of the install UF2.
 - SETUP's lists clip their rows inside the clip they are drawn with. With
   the screen guide open on a list, the rows drew under the dock.
+- A bidirectional DShot pin that sends no frames is driven low: from the
+  bind to the first frame, and at SAFE, STOP, an error, a lost link and the
+  failsafe edge until the next ARM. It rested high on its pull-up, the
+  bootloader entry condition of family S (BLHeli_S), Bluejay and AM32 ESCs.
+  On ARM the IOmcu releases the line to its high idle and sends the first
+  frame 1000µs later, one frame period at 1kHz; the extended telemetry ask
+  keeps its 10 frames. A pin held by the ESC signal wire session is not
+  driven low. Plain DShot also sets its PIO latch to 0 before the pad is
+  handed to the block, so a latch another program left at 1 shows no high
+  between the bind and the first frame. What an ESC does after the low rest
+  is not measured.
+
 - SERVO > TEST, SERVO > PROGRAM and the SERVO settings pages no longer repaint
   the whole screen when the arm moves or the AS5600 angle changes in its
   tenths. None of these pages shows either value. The station measured 15.1
