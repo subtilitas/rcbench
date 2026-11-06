@@ -79,3 +79,26 @@ def test_a_string_cut_by_its_clip_still_fails():
     assert len(found) == 1 and "is cut at the edge" in found[0][1]
     found = ui.fit_problems([text(470, 60, 496, 528)])
     assert len(found) == 1 and "is cut at the edge" in found[0][1]
+
+
+def dock_line(x):
+    """The guide's web line at @p x, which names the dock's side."""
+    return ("T", ui.Rect(x, 560, 300, 20), ui.Rect(x - 8, 60, 480, 540),
+            None, "More: rcbench/help")
+
+
+def test_a_guide_view_leaves_the_live_half_to_the_view_it_opens_over():
+    # SERVO's SETTINGS tab, x 524 to 604, cut by the live half with the
+    # dock on the right: servo-settings measures it.
+    assert ui.fit_problems([text(524, 80, 0, 528), dock_line(552)],
+                           guide=True) == []
+    # The same at x 470 with the dock on the left.
+    assert ui.fit_problems([text(470, 60, 496, 528), dock_line(24)],
+                           guide=True) == []
+    # Without the web line the side is unknown: it is measured.
+    found = ui.fit_problems([text(524, 80, 0, 528)], guide=True)
+    assert len(found) == 1 and "is cut at the edge" in found[0][1]
+    # A string the dock draws is measured.
+    found = ui.fit_problems([text(1000, 60, 544, 480), dock_line(552)],
+                            guide=True)
+    assert len(found) == 1 and "is cut at the edge" in found[0][1]

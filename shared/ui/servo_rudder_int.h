@@ -49,8 +49,6 @@
 extern "C" {
 #endif
 
-struct ui_help_page;
-
 /** @brief RUDDER's controls, as a press and the layout name them. */
 typedef enum {
     RUD_C_NONE = 0,  /**< no control                                  */
@@ -134,6 +132,10 @@ bool rudder_defl(float *deg);
  */
 gfx_rect_t rudder_rect(rudder_ctl_t k);
 
+/** @brief LENGTH's value box, at the right end of its row.
+ *  @return its rectangle */
+gfx_rect_t rudder_len_value_rect(void);
+
 /** @brief The readout: the two readings and the MAX lines.
  *  @return its rectangle */
 gfx_rect_t rudder_readout_rect(void);
@@ -202,21 +204,6 @@ void rudder_render(gfx_canvas_t *c, int buf);
  */
 void rudder_render_part(gfx_canvas_t *c, int buf);
 
-/**
- * @brief The screen guide's pages for what the screen shows (ui_help.h):
- *        one on RUDDER with nothing over its card, none otherwise.
- * @return the count
- */
-int rudder_help_count(void);
-
-/**
- * @brief Page @p i of the guide: the output card, the dock on the left
- *        over RUDDER's card, SAFE and ARMED, its TARGET row kept in view.
- * @param i the page, from 0
- * @param out the page
- * @return false past the last or for NULL
- */
-bool rudder_help_page(int i, struct ui_help_page *out);
 
 #ifdef __cplusplus
 }

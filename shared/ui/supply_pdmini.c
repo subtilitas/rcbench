@@ -82,13 +82,7 @@ gfx_rect_t sup_pd_key_rect(int i, bool plus)
                          v.y, OV_PD_KEY_W, OV_ROW_H };
 }
 
-/**
- * @brief Whether row @p i has - and + keys: a pin not soldered, and the baud.
- *        Enable flips on a tap of its value.
- * @param i The row.
- * @return true when it has.
- */
-static bool has_keys(int i)
+bool sup_pd_has_keys(int i)
 {
     return i != 0 && !settings_fixed(k_pd_rows[i]);
 }
@@ -96,9 +90,9 @@ static bool has_keys(int i)
 void sup_pd_down(const touch_event_t *evt, int x, int y)
 {
     for (int i = 0; i < SUP_PD_ROWS; ++i) {
-        const bool plus = has_keys(i)
+        const bool plus = sup_pd_has_keys(i)
                           && gfx_rect_contains(sup_pd_key_rect(i, true), x, y);
-        const bool minus = has_keys(i)
+        const bool minus = sup_pd_has_keys(i)
                            && gfx_rect_contains(sup_pd_key_rect(i, false), x, y);
         const bool value = !settings_fixed(k_pd_rows[i])
                            && gfx_rect_contains(sup_pd_value_rect(i), x, y);
@@ -261,7 +255,7 @@ void sup_pd_draw(gfx_canvas_t *c)
                        ui_theme_color(UI_C_PANEL_SUNK),
                        s.pressed == P_PD_VALUE && s.press_row == i,
                        free && !fixed, SU_FONT_LABEL);
-        if (has_keys(i)) {
+        if (sup_pd_has_keys(i)) {
             const bool cycles = settings_cycles(id);
             ui_button_font(c, sup_pd_key_rect(i, false), cycles ? "<" : "-",
                            ui_theme_color(UI_C_EDGE_HI),
