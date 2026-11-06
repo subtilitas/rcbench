@@ -842,7 +842,7 @@ on contact, with no hold or wait for release. DISARM and STOP stop the
 output without a ramp. RESET PEAKS clears the peak markers while leaving
 live readings unchanged.
 
-### EFF is a guessimetric
+### EFF is an estimate
 
 The telemetry panel's header shows the rated kV, the revolutions per minute
 per volt the motor is actually turning, and EFF, the second divided by the
@@ -1097,7 +1097,7 @@ IOmcu's own write check enforces 400 to 2500us for each pulse but does not
 check the gap.
 
 Idle pulse and Full pulse can change only while SAFE. The IOmcu accepts
-the endpoints while disarmed, 300ms after the last edit; switching to
+the endpoints while the bench is SAFE, 300ms after the last edit; switching to
 ARMED sends no endpoints. While ARMED, during an ARM hold, or while an ARM
 or DISARM response is pending, both value boxes are locked. Their help
 line reads `Set on a SAFE bench only` in the warning colour. An open
@@ -1467,7 +1467,7 @@ COMMANDED retain the last driven position, or PULSE CENTRE after restart.
 Changing a pulse-width setting while SAFE changes the microseconds shown
 for that angle; TRAVEL does not clamp the angle.
 
-The SAFE-column behavior also applies as soon as the screen requests
+The SAFE-column behaviour also applies as soon as the screen requests
 DISARM, by a tap or by leaving, or STOP is pressed while ARMED, before the
 bench's SAFE report arrives. A sweep, pause, held position or automatic
 test ends when that request is made.
@@ -1492,7 +1492,7 @@ follows, and the horn is drawn moving there at SPEED. Any drag ends.
 Press the dial to command a position again. The next knob turn starts
 from rest: a 1% turn with STANDARD PWM requests 1510us.
 
-The same behavior applies to release at the end of an automatic test or
+The same behaviour applies to release at the end of an automatic test or
 a release sent after changing type or pulse width while resting. Only
 one command waits per frame. If a position and RELEASE occur in the same
 frame, the later command is sent and shown. A knob turn is discarded in
@@ -3885,7 +3885,7 @@ and the screen says `Access code off. Any device on the network can open the pag
 panel.
 
 Every request is checked before the access code, with the code on and
-off (`shared/webaccess/wa_guard.h`):
+off (`shared/webaccess/include/wa_guard.h`):
 
 | Check | Refused with |
 | --- | --- |
@@ -4201,7 +4201,7 @@ the panel continues to run.
 The server also provides four read operations for scripts: a page of
 folder entries, details of one entry, a complete text file, and the panel's
 state
-(`shared/webaccess/wa_api.h`, `firmware/panel/components/wifi_access/wifi_files.c`);
+(`shared/webaccess/include/wa_api.h`, `firmware/panel/components/wifi_access/wifi_files.c`);
 and four writes (`shared/webaccess/wa_api_write.c`,
 `firmware/panel/components/wifi_access/wifi_write.c`).
 The page's file manager reads the card through them, through the same
@@ -4586,7 +4586,8 @@ panel mounted upside down.
 - A flip whose copies take longer than 50ms, or that the PPA refuses, sends
   its frame out unturned. Picture and touch are NORMAL from that frame on,
   the band says `Screen rotation 180° failed. NORMAL until restart.`, and
-  the console says `rotation 180 off: PPA timeout` (or `PPA error`). The
+  the console says `rotation 180 off: PPA timeout after <n> us` (or
+  `PPA error after <n> us`). The
   stored setting stays 180°, and the next start turns again. A copy the PPA
   ends after its timeout writes its block once more: that block shows
   turned until its screen repaints it.
@@ -4747,7 +4748,7 @@ across a third of its travel from -travel to +travel.
   unacknowledged probe to 0x06 every 100ms. In the host tests' model of the
   bus that changes nothing else. On the panel it is not measured: 0x00 to
   0x07 have not been scanned on this board.
-- The knob's direction, noise and behavior without a magnet have not been
+- The knob's direction, noise and behaviour without a magnet have not been
   measured on hardware.
 
 ### SENSORS: the split pane
@@ -4819,16 +4820,16 @@ frame, refused pins or an IOmcu without the SENSE page, and `NO BUS PINS`.
 | --- | --- | --- | --- |
 | INA228 | ON, OFF | OFF | the monitor in the ESC's power path |
 | INA228 address | 0x40 to 0x4F | 0x45 | the MATEK I2C-INA-BM as shipped; its solder bridges give 0x44 or 0x41 |
-| INA228 shunt | 50 to 20000 µΩ, 1 µΩ steps | 200 | the MATEK's |
-| INA228 max current | 1.0 to 300.0A, 0.1A steps | 204.8 | the current the range is set for: it chooses the ADC (analog-to-digital converter) range and nothing else. Up to 40.96mV across the shunt it takes ±40.96mV, 78.125nV a step; up to 163.84mV ±163.84mV, 312.5nV a step; past that the IOmcu refuses the pair. 300A is the bench's design maximum; the IOmcu refuses more. Its refusal of a range past 2000A full scale stays, and 300A on the smallest shunt, 50 µΩ, does not reach it |
+| INA228 shunt | 50 to 20000µΩ, 1µΩ steps | 200 | the MATEK's |
+| INA228 max current | 1.0 to 300.0A, 0.1A steps | 204.8 | the current the range is set for: it chooses the ADC (analog-to-digital converter) range and nothing else. Up to 40.96mV across the shunt it takes ±40.96mV, 78.125nV a step; up to 163.84mV ±163.84mV, 312.5nV a step; past that the IOmcu refuses the pair. 300A is the bench's design maximum; the IOmcu refuses more. Its refusal of a range past 2000A full scale stays, and 300A on the smallest shunt, 50µΩ, does not reach it |
 | Sensor SDA | −1, 0, 4, 6, 14, 16, 18, 20, 26 | 16 | IOmcu GPIO (general-purpose input/output). `-` and `+` step from one of these values to the next and stop at −1 and at 26. −1: the pins are not set, and no part is enabled on the page |
 | Sensor SCL | SDA + 1, or −1 | 17 | the GPIO after Sensor SDA, and −1 with it. The row shows the value and has no keys |
 
 Each row's help gives the range compatible with the other row's value:
 `Up to 300.0A on 200uΩ (163.84mV)` on INA228 max current, `Up to 800uΩ at 204.8A
 (163.84mV)` on INA228 shunt. Shunt in µΩ times maximum in A is at most 163840.
-Any shunt takes a maximum of at least 8.1A, at 20000 µΩ; up to 546 µΩ takes the
-whole 300.0A. 201 µΩ at 204.8A is 41.16mV and takes the wider range; lowering
+Any shunt takes a maximum of at least 8.1A, at 20000µΩ; up to 546µΩ takes the
+whole 300.0A. 201µΩ at 204.8A is 41.16mV and takes the wider range; lowering
 the maximum to 203.7A brings it back to the narrower one. A pair past 163.84mV
 is marked on both rows and said on the band: `INA228 shunt x maximum is over
 163.84mV: on 1000uΩ up to 163.8A. Check SENSORS.`.
@@ -5274,7 +5275,7 @@ a run ([Servo procedures](Servo.md)).
 - User logs is read at START TEST and START LIMIT RUN: a test keeps the
   state it started with. With it OFF, the run card and LIVE's box read
   `USER LOGS OFF` where the files would be named.
-- REPORT on SERVO > OPTIONS > DUT decides, with User logs ON, whether
+- REPORT on SERVO > SETTINGS > DUT decides, with User logs ON, whether
   `ATESTnnn.TXT` is written.
 - The fault log, `BENCH/RCBENCH.LOG`, is written whatever the two say.
 - [Logs](#logs) gives the names and the numbering.
@@ -5325,7 +5326,7 @@ cache, so neither core runs code from flash for its duration. The write is taken
 on the first frame at which the bench is SAFE with no switch to ARMED waiting, the
 supply's output is off with no ON queued, and no board drawing is being
 fetched or kept. On the settings screen that is the next frame, and
-the label goes to `SAVED` as fast as the eye follows the press. While ARMED, the
+the label goes to `SAVED` in that frame. While ARMED, the
 request stands as `WHEN IDLE` until the bench is SAFE.
 
 A failed write leaves the label at `NOT SAVED` in the danger colour
@@ -6038,13 +6039,13 @@ band says `Idle pulse must be at least 100us below Full pulse. Not sent.`.
 
 An ESC whose throttle range was calibrated on a transmitter takes that
 transmitter's shortest pulse as zero. An Idle pulse above it reads to the ESC
-as throttle not at the bottom, and the ESC does not arm; many ESCs beep
+as throttle not at the bottom, and the ESC does not arm; an ESC may beep
 rapidly in that state. Set the Idle pulse at or below the transmitter's
 shortest pulse and the Full pulse at or above its longest: for a transmitter
 that sends 985 to 2012us, 980us and 2020us.
 
 When the protocol can take no more pins, the reason is under the count in amber:
-`NEEDS 8 CHANNELS, 4 FREE`, `ALL 8 SLOTS IN USE`, or `SERVO PWM TAKES 8
+`NEEDS 8 CHANNELS, 4 FREE`, `ALL 8 SLOTS IN USE`, or `SERVO PWM USES 8
 PINS`. A board drawn entirely in grey with nothing beside it reads as a
 fault, and PPM greys the whole board whenever anything else is bound.
 
@@ -6568,7 +6569,7 @@ marked on the board itself, on a short trace in from the pad:
 | --- | --- |
 | white round marker, 36px, with a large **G**, 40px in from the pad | ground |
 | amber round marker, 32px, with the voltage: **5V0**, **3V3** | a rail at a fixed voltage |
-| amber round marker with **PWR** | a rail that is an input, VSYS: a number that is only sometimes true is worse here than none |
+| amber round marker with **PWR** | a rail that is an input, VSYS, which has no fixed voltage |
 | dim cross on the pad | neither, like RUN and 3V3_EN |
 
 The marks go inside the outline because that is the only room left: the
@@ -6605,9 +6606,9 @@ answers nothing while it is stopped: on the bring-up module a save that
 erased and programmed inside one window measured 19,178us, against a CAN
 frame of about 130us and two frames of buffer in the controller. The figure is one
 measurement: 1 sample, taken on the bring-up module, with the flash part not
-yet identified. The erase and the page program have not been timed apart from
-each other. The window must be checked against the flash part's datasheet maximum
-once the part is identified. The panel sends one request
+identified. The erase and the page program have not been timed apart from
+each other. The window is not checked against the flash part's datasheet maximum
+(part unidentified). The panel sends one request
 frame per exchange and waits for its answer before it sends the next, so at
 most one request frame waits in the controller's two buffers. A window delays
 that request by up to its length, about 19ms against the panel's 1000ms wait,

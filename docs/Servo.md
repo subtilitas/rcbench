@@ -624,9 +624,9 @@ Why the band stays 0.05A while the threshold scales: replays of the two
 bench runs below with the band at 0.05A and with the band equal to the
 threshold time the same moves to the same millisecond, because a reading
 above the level by the threshold is never an arrival. The threshold is what
-had to scale. 0.13.0 took movement to be 0.10A, and the MG90S moves at 0.04
-to 0.077A over a 0.001A hold: no move was seen, each ran out at 3000ms and
-was counted late, and the run read FAIL.
+scales. A fixed movement threshold of 0.10A, the figure of firmware 0.13.0,
+misses the MG90S, which moves at 0.04 to 0.077A over a 0.001A hold: no move
+is seen, each runs out at 3000ms and counts late, and the run reads FAIL.
 
 **Limitation: the move to the centre can reach IDLE.** With SETTLING TIME at
 500ms the IDLE readings can still carry the end of the step's move to the
@@ -893,7 +893,7 @@ includes the command's way to the pin: the render loop, the control task,
 the link and the next PWM frame, up to one poll interval and one frame, not
 measured. It ends when the angle comes within 1.05 degrees of its final
 value, which is earlier than the servo arm's last movement by the time that takes:
-on a 0.09 degrees a microsecond servo at 1.2us a millisecond, about 10ms.
+on a servo of 0.09 degrees a microsecond at 1.2µs a millisecond, about 10ms.
 Only counted moves are reported. The moves that place the horn at each end
 first are not. A move is left out of the angle's counts, neither unmoved nor
 late, when the angle has a gap while the move is open and the move has not
@@ -946,9 +946,9 @@ such a gap (constants in `servo_gap.h`):
 
 | Gap | Run |
 | --- | --- |
-| up to 300ms (`SERVO_GAP_MAX_MS`), starting 10000ms (`SERVO_GAP_EVERY_MS`) or more after the start of the gap before | goes on: the CSV's angle column is empty in it, a move open across it that had not settled is left out as above, the angles count again from the next reading |
+| up to 300ms (`SERVO_GAP_MAX_MS`), starting 10,000ms (`SERVO_GAP_EVERY_MS`) or more after the start of the gap before | goes on: the CSV's angle column is empty in it, a move open across it that had not settled is left out as above, the angles count again from the next reading |
 | longer than 300ms | ends at the first pass past 300ms, or at the reading that ends a gap of 301ms: `AS5600 not answering` |
-| starting less than 10000ms after the start of the gap before, 9999ms included | ends at its start: `AS5600 dropped out twice in 10s` |
+| starting less than 10,000ms after the start of the gap before, 9999ms included | ends at its start: `AS5600 dropped out twice in 10s` |
 
 Both endings are errors: the output off, the bench to SAFE. A gap starts at
 the poll of the control task that finds the part not answering (the SENSE
@@ -999,7 +999,7 @@ does not apply to the IMU, and ENC CENTRE takes no count from it.
 | a run reads angles when | AS5600 is on and the IOmcu holds it on | a reading under 300ms old is on show at the start |
 | still time | the IOmcu's, 12 counts (1.05°) | the IMU's own (`IMU_STILL_DEG`, 0.5°, `imu.h`) |
 | gap | not answering | no reading for 300ms (`IMU_STALE_MS`) |
-| report, `Encoder:` | `AS5600 on the horn shaft, centre count N` | `IMU X+, in AS5600 counts (0.088deg a count)` |
+| report, `Encoder:` | `AS5600 on the horn shaft, centre count N` | `IMU X+, in AS5600 counts (0.088° per count)` |
 
 IMU gaps use the same allowance as AS5600 gaps: at most 300ms, with
 at least 10s between the starts of consecutive gaps. Longer or more
@@ -1068,9 +1068,9 @@ left as they are.
 | `INA3221 set-up not held` | a run on the INA3221: the IOmcu stops holding the set-up, or SETUP has the INA3221 off |
 | `INA3221 no longer the meter` | a run on the INA3221: the meter changed and the panel did not name the condition |
 | `AS5600 not answering` | a run with AS5600 in use: the part has not answered for more than `SERVO_GAP_MAX_MS`, 300ms ([The output encoder](#the-output-encoder)) |
-| `AS5600 dropped out twice in 10s` | a run with AS5600 in use: the part stopped answering less than `SERVO_GAP_EVERY_MS`, 10000ms, after the start of the time before |
+| `AS5600 dropped out twice in 10s` | a run with AS5600 in use: the part stopped answering less than `SERVO_GAP_EVERY_MS`, 10,000ms, after the start of the time before |
 | `IMU not answering` | a run with ANGLE SOURCE IMU: no IMU reading for more than `SERVO_GAP_MAX_MS`, 300ms ([Angle source](#angle-source)) |
-| `IMU dropped out twice in 10s` | a run with ANGLE SOURCE IMU: the IMU went silent less than `SERVO_GAP_EVERY_MS`, 10000ms, after the start of the time before |
+| `IMU dropped out twice in 10s` | a run with ANGLE SOURCE IMU: the IMU went silent less than `SERVO_GAP_EVERY_MS`, 10,000ms, after the start of the time before |
 
 The six reasons of a run on the INA3221 are the conditions under which the
 INA3221 is the rail's meter. Each ends the run at the first poll that finds
@@ -1254,7 +1254,8 @@ No movement seen at 5.00V, the first step: not measurable.
 
 Its moves to the high end leave the low end's 0.028A and never pass it by
 0.020A: all of them are unseen. Its moves to the low end are seen and
-arrive. On 0.13.0 the same servo read FAIL with all 34 counted moves late.
+arrive. With the fixed threshold of 0.10A (firmware 0.13.0) the same servo reads FAIL
+with all 34 counted moves late.
 
 A run on the INA3221 has these lines in place of the PD mini's, here from
 the host suite's modelled bench:
@@ -1292,8 +1293,8 @@ every language.
 
 Three runs of 0.13.0 on the bench with the PD mini, from a tester: an MG90S micro servo, a 1102HB digital and an MS24
 digital. The MS24, moving at 0.16 to 0.18A, passed. The MG90S and the
-1102HB read FAIL, every move late, because 0.13.0 took movement to be
-0.10A; both servos moved. The host suite replays the MG90S's and the
+1102HB read FAIL, every move late, because firmware 0.13.0 fixed the
+movement threshold at 0.10A; both servos moved. The host suite replays the MG90S's and the
 1102HB's CSVs (`test/host/fixtures/`, trimmed) against the engine, and an
 MS24-like case, the MG90S's currents times 3. The host suite
 holds the engine to `servo_sim` and `supply_sim`, the SERVO screen driving

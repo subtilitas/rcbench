@@ -184,7 +184,7 @@ as the PROG PORT entries of **OUTPUTS**, and is kept over a restart.
   `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` while it is off. A servo
   test's voltage steps do not reach the port: a test on it says
   `PROG PORTS RUN AT 5V FIXED: NO STEPS`.
-- For the limit run the PROG 5V box stands for the PD mini: SEARCH+PROG
+- For the limit run the PROG 5V box stands for the PD mini: SEARCH + PROGRAM
   and SERVO PULSES are offered with the box ON, and the session's power
   cycles switch GPIO 21. With the box OFF and either chosen, the LIMIT RUN
   card says `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX`, not the PD mini
@@ -335,7 +335,7 @@ the carrier.
 | --- | --- | --- | --- |
 | PROGRAMMING VOLTAGE | 4.8 to 6.0V in 0.1V; up to 8.4V with HV SERVO on | 5.0V | the supply voltage of the servo in programming mode |
 | CURRENT LIMIT | 50 to 3000mA | 1000mA | the supply's current limit during programming |
-| WAIT BEFORE PWM | 0 to 10 000ms | 100ms | the time the port holds its line low between **LEAVE** and the first pulse |
+| WAIT BEFORE PWM | 0 to 10,000ms | 100ms | the time the port holds its line low between **LEAVE** and the first pulse |
 
 Each entry opens the number keypad with its range. A value outside the range
 is not taken. All three are kept with the SERVO settings.
@@ -412,7 +412,7 @@ question as NO. The
 ![The question after LEAVE](img/servo-hitec-restore-ask.png)
 
 An OFF request is reported as off immediately. From IOmcu protocol 4.31,
-**OUTPUT OFF** waits for a write to servo memory to finish, up to 10000ms,
+**OUTPUT OFF** waits for a write to servo memory to finish, up to 10,000ms,
 before reaching the PD mini. An earlier IOmcu does not defer OFF for the
 whole write. **STOP**, heartbeat loss and link loss do not wait for the
 write: the port cuts it, allowing a frame already on the wire to finish,
@@ -555,8 +555,8 @@ their font has no micro sign.
 | POSITION | Uncontrolled Pos, µs | 500 to 2500µs and within PULSE LOWER to PULSE UPPER |
 | AFTER | Uncontrolled Time, s | 0.4 to 13.0s |
 
-The limits are those of `protocols/kst/kst_limits.c`; the panel holds none
-of its own. The lower limit of MAX. DUTY and the 5% of SPEED are choices,
+The limits are the constants of `protocols/kst/include/kst_limits.h`, checked
+in `protocols/kst/kst_limits.c`; the panel holds none of its own. The lower limit of MAX. DUTY and the 5% of SPEED are choices,
 not readings of a servo.
 
 ### A value a hard limit refuses
@@ -1346,11 +1346,11 @@ read.
 
 ### The wait before PWM
 
-**WAIT BEFORE PWM** is 0 to 10 000ms, 100ms by default. A **LEAVE** that
+**WAIT BEFORE PWM** is 0 to 10,000ms, 100ms by default. A **LEAVE** that
 runs through the power cycle applies it after the cycle: the port holds the
 line low for 1000ms after the supply reads on and then for **WAIT BEFORE
 PWM** (IOmcu of link version 4.30 or later). The keypad takes
-no value above 10 000ms, and no leave is sent with one. A wait of 0ms
+no value above 10,000ms, and no leave is sent with one. A wait of 0ms
 ends at the IOmcu's next pass. The time left of a running wait is not
 shown. The wait a servo needs is not measured.
 
@@ -1420,7 +1420,7 @@ BEFORE PWM** above 0 the message after it reads
 | **STOP**, a latched stop of the bench | the running operation ends after the frame on the wire, at most 12ms; the switch goes off; `STOP: the operation was aborted.`; the port asks for **READ ALL** before anything else. The controllable servo supply (PD mini or carrier 5V) is switched off; the port returns to PWM 1000ms after the supply reports off |
 | **ABORT** | the same, without the latch |
 | The link goes | the switch goes off, open pages close; a write under way is [interrupted](#an-interrupted-write) |
-| An error of the bench ([Safety, Errors](Safety.md#errors)), or an operation that ends in a fault of the servo or the wire: no servo, a failed read, a servo that changed, a write that failed, was rolled back or torn, a verify that differs, a driver fault | a write under way ends first, with its read-backs: the IOmcu keeps the supply on until then and 150ms after, 10000ms at most; the full read after it is cut. Then the controllable servo supply goes off; the port detects this and keeps it off for 1000ms and is in PWM again: `The port ended the session: power off or restart.` An IOmcu older than link 4.31 keeps the supply on ([A programming port's supply](Safety.md#a-programming-ports-supply)) |
+| An error of the bench ([Safety, Errors](Safety.md#errors)), or an operation that ends in a fault of the servo or the wire: no servo, a failed read, a servo that changed, a write that failed, was rolled back or torn, a verify that differs, a driver fault | a write under way ends first, with its read-backs: the IOmcu keeps the supply on until then and 150ms after, 10,000ms at most; the full read after it is cut. Then the controllable servo supply goes off; the port detects this and keeps it off for 1000ms and is in PWM again: `The port ended the session: power off or restart.` An IOmcu older than link 4.31 keeps the supply on ([A programming port's supply](Safety.md#a-programming-ports-supply)) |
 | The IOmcu starts again | its session and backup are gone; `IOmcu restarted. Tap CONNECT, then READ ALL.` and `Switch the servo supply off and on first.`: the port is in PWM, and the servo was not led out of programming mode |
 | The port reads PWM with a servo read, the switch on, a write done or a read asked for, and no command of the programmer put it there | the servo's values, the backup and the switch are gone on the panel; `The port ended the session: power off or restart.` and `Switch the servo supply off and on, then tap CONNECT.` An operation that ended in the same reading keeps its own line |
 | The panel's control task takes no command for 2s | nothing is sent; `No result from the IOmcu. Tap READ ALL.` The command is withdrawn: the control task drops it when it leaves the queue, however late |
@@ -1607,8 +1607,8 @@ two rows of the DUT tab. `test_kst_card` runs the card's side
 of the files on a card held in memory. `test_kst_prog` and `test_kst_prog_card` run the model and
 `test_kst_panel` and its siblings the overlay, both against the IOmcu's port, a supply
 model and the servo model through the link's dispatcher: the supply's
-ranges at their ends and one step outside, the wait at 0ms, 10 000ms and
-10 001ms as the leave's wait, an abort, a switch to SAFE and a supply that goes
+ranges at their ends and one step outside, the wait at 0ms, 10,000ms and
+10,001ms as the leave's wait, an abort, a switch to SAFE and a supply that goes
 off in the wait, a leave on link versions 4.13 and 4.14 with and without a
 PD mini, **STOP** during a leave, every limit at its edge, the 2s holds on both sides of the
 threshold, every refusal and result with its line in both languages, the
@@ -1633,7 +1633,7 @@ a link loss in the off time; the cycle across the 2^32ms wrap of the
 clock; **LEAVE** after a write with and without a PD mini, without a
 write, with **ABORT**, **STOP** and a link loss in its cycle, on an IOmcu
 without LEAVE and for a session the panel did not see begin; the wait
-after that cycle at 0, 1, 3000 and 10 000ms, with **ABORT**, **STOP**
+after that cycle at 0, 1, 3000 and 10,000ms, with **ABORT**, **STOP**
 before and after an **ABORT**, a link loss and the output switched off in
 it, across the 2^32ms wrap, and on an IOmcu below link version 4.30 with
 and without a wait.
