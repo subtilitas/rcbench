@@ -253,6 +253,11 @@ SETUP > SENSORS shows these rows without editing keys:
   PWM: CH2 for GPIO 1 or GPIO 2, CH1 for GPIO 4 or GPIO 5. With SERVO PWM
   on both rails it reads only the rail of the lowest GPIO. With a
   programming port as the tester's target it is CH3.
+- With TARGET on the bench's outputs and no output bound as SERVO PWM no
+  channel watches the target, and none is read at 1kHz. The limit run
+  then reads `NO SERVO PWM PIN` and AUTO on RUDDER
+  `AUTO PROGRAMS A SERVO ON THE PROG PORT`, each before any line about the
+  INA3221 ([Servo](Servo.md#auto-end-points)).
 - SERVO and the limit run name the meter by its rail: `INA RAIL A` over
   the plot, `INA3221 RAIL A` on the TEST card. The band names the rail of
   a channel over its limit:

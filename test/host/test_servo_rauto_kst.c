@@ -24,6 +24,7 @@
  * - another_angle_source_drops_the_zero_and_ends_auto
  * - the_knob_moves_nothing_while_auto_runs
  * - a_stop_during_the_pulse_write_offers_restore_and_names_the_backup
+ * - on_the_carrier_auto_off_the_port_names_the_port
  *
  * SPDX-License-Identifier: MIT
  */
@@ -33,7 +34,10 @@
 #include "log_name.h"
 #include "servo_rudder_auto.h"
 #include "servo_rudder_auto_int.h"
+#include "prog5v_box.h"
+#include "prog_choice.h"
 #include "settings_sensors.h"
+#include "ui_board.h"
 
 /** @brief The AS5600's centre count. */
 #define CENTRE_COUNT 2048
@@ -626,6 +630,41 @@ TEST_CASE(a_stop_during_the_pulse_write_offers_restore_and_names_the_backup)
     CHECK(rig_settle());
 }
 
+/* On the rbmod carrier: the servo on PROGP01 reads CH3, PROG 5V, and AUTO
+ * may start.  TARGET on the bench's outputs with no output bound as SERVO
+ * PWM leaves no channel watching the target; the line names the
+ * programming port AUTO needs, not an INA3221 that is not set up. */
+TEST_CASE(on_the_carrier_auto_off_the_port_names_the_port)
+{
+    ra_setup(false, true);
+    g_rig.fixed = true;
+    ui_board_set(OUTBIND_BOARD_RBMOD);
+    (void)ui_board_apply_pins(NULL);
+    prog_choice_set_far_minor(LINK_MINOR_CARRIER_PWM);
+    prog5v_box_publish(3u, 21u, PROG5V_HELD_NONE);
+    settings_set(SET_SERVO_TARGET, (float)(1u + RIG_PORT));
+    ra_ms(200u);
+    CHECK_EQ(settings_sensors_fast(), 2u);
+    CHECK(rauto_blocked() == NULL);
+    /* The bench's outputs, none bound: what the panel does with the
+     * binding read (panel_frame.c). */
+    settings_set(SET_SERVO_TARGET, 0.0f);
+    servo_screen_set_drive(0u, SERVO_SCREEN_NO_PIN, true);
+    servo_screen_set_pins(0u, true);
+    (void)settings_sensors_set_tester_rail(ui_board_tester_rail(0u));
+    CHECK_EQ(settings_sensors_fast(), LINK_SM_FAST_NONE);
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        CHECK_STR_EQ(rauto_blocked(), TR(RA_PROG_PORT));
+    }
+    ui_text_set_language(UI_LANG_EN);
+    g_rig.fixed = false;
+    prog5v_box_reset();
+    prog_choice_reset();
+    ui_board_set(OUTBIND_BOARD_PICO_HEADER);
+    (void)ui_board_apply_pins(NULL);
+}
+
 int main(void)
 {
     RUN(auto_programs_both_end_points_to_the_goal_and_ends_safe);
@@ -638,5 +677,6 @@ int main(void)
     RUN(another_angle_source_drops_the_zero_and_ends_auto);
     RUN(the_knob_moves_nothing_while_auto_runs);
     RUN(a_stop_during_the_pulse_write_offers_restore_and_names_the_backup);
+    RUN(on_the_carrier_auto_off_the_port_names_the_port);
     return test_summary("servo_rauto_kst");
 }

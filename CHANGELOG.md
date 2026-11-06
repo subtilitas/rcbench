@@ -59,6 +59,15 @@ history is in git.
 
 ### Fixed
 
+- On the rbmod carrier, AUTO on RUDDER and the LIMIT RUN name the
+  tester's target before the INA3221. With TARGET on the bench's outputs
+  and no output bound as SERVO PWM no channel watches the target, since
+  each channel watches a rail; both read
+  `INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT` there. AUTO now
+  reads `AUTO PROGRAMS A SERVO ON THE PROG PORT` and the LIMIT RUN
+  `NO SERVO PWM PIN`. On every board TARGET on the outputs comes before the
+  meter: AUTO names the programming port, the LIMIT RUN `NO SERVO PWM PIN`
+  or `PINS NOT READ`.
 - The IOmcu's firmware update cannot erase or program flash below 0x2000,
   the boot ROM's boot slots 0 and 1 that hold the partition table. The
   flash calls of the update refused only ranges past the store before. No

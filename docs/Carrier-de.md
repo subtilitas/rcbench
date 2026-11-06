@@ -265,6 +265,11 @@ SETUP > SENSORS zeigt diese Zeilen ohne Tasten zum Bearbeiten:
   GPIO 4 oder GPIO 5. Mit SERVO PWM auf beiden Schienen liest er nur die
   Schiene des niedrigsten GPIO. Mit einem Programmierport als Ziel des
   Testers ist es CH3.
+- Mit ZIEL auf den Ausgängen des Prüfstands und keinem als SERVO PWM
+  zugeordneten Ausgang überwacht kein Kanal das Ziel, und keiner wird mit
+  1kHz gelesen. Der Endlagenlauf meldet dann `KEIN SERVO-PWM-PIN` und AUTO
+  auf RUDER `AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT`, jeweils vor jeder
+  Zeile zum INA3221 ([Servo](Servo-de.md#auto-endpoints)).
 - SERVO und der Endlagenlauf benennen das Messgerät nach seiner Schiene:
   `INA SCHIENE A` über dem Plot, `INA3221 SCHIENE A` auf der Karte TEST.
   Das Band nennt die Schiene eines Kanals über seiner Grenze:
