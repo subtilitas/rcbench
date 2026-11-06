@@ -811,24 +811,26 @@ static void draw_right(gfx_canvas_t *c, bool power)
     draw_arm(c);
 }
 
-/** @brief Draw @p fn clipped to @p box. */
+/** @brief Draw @p fn clipped to @p box inside the clip in force: the
+ *         screen guide's live half keeps a repaint off its dock. */
 static void clipped(gfx_canvas_t *c, gfx_rect_t box, void (*fn)(gfx_canvas_t *))
 {
     gfx_rect_t old_clip = c->clip;
-    if (gfx_clip_set(c, box)) {
+    if (gfx_clip_intersect(c, box)) {
         fn(c);
     }
     c->clip = old_clip;
 }
 
 /**
- * @brief The same for a session, drawn through its own function (PROG_CALLS).
+ * @brief The same for a session, drawn through its own function
+ *        (PROG_CALLS).
  */
 static void clipped_session(gfx_canvas_t *c, gfx_rect_t box,
                             const prog_page_set_t *ps)
 {
     gfx_rect_t old_clip = c->clip;
-    if (gfx_clip_set(c, box)) {
+    if (gfx_clip_intersect(c, box)) {
         prog_ps_render(ps, c);
     }
     c->clip = old_clip;

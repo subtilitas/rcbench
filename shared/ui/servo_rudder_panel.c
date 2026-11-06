@@ -3,8 +3,8 @@
  * @brief The SERVO workbench's RUDDER task: the control surface's
  *        deflection in ° and mm, LENGTH, the buttons that drive 1000us,
  *        CENTRE and 2000us, ZERO, the MAX of each side, the angle
- *        source's state line, the side view of the surface at the
- *        deflection shown, and the task's guide pages.
+ *        source's state line and the side view of the surface at the
+ *        deflection shown.
  *
  * See servo_rudder_int.h for the layout.  The angle is the one the screen
  * takes in (servo_screen_encoder(), enc_shown(), enc_deg_now()), in the
@@ -24,7 +24,6 @@
 
 #include "servo_rudder_flap.h"
 #include "settings.h"
-#include "ui_help.h"
 #include "ui_keypad.h"
 #include "ui_text.h"
 #include "ui_theme.h"
@@ -253,11 +252,7 @@ gfx_rect_t rudder_flap_rect(void)
                          (int16_t)(STOP_FLOOR - RUD_FLAP_AY) };
 }
 
-/**
- * @brief LENGTH's value box, right in its row.
- * @return the box
- */
-static gfx_rect_t len_value_rect(void)
+gfx_rect_t rudder_len_value_rect(void)
 {
     return (gfx_rect_t){ (int16_t)(RUD_X + RUD_W - RUD_LEN_VAL_W), RUD_LEN_Y,
                          RUD_LEN_VAL_W, UI_TAP_MIN };
@@ -580,8 +575,8 @@ static void draw_length(gfx_canvas_t *c)
     } else {
         snprintf(v, sizeof(v), "%s", TR(RUD_LEN_NOT_SET));
     }
-    ui_button_font(c, len_value_rect(), v, ui_theme_color(UI_C_PANEL_SUNK),
-                   s.rud.pressed == RUD_C_LENGTH, true, SV_FONT_LABEL);
+    ui_button_font(c, rudder_len_value_rect(), v,
+                   ui_theme_color(UI_C_PANEL_SUNK), s.rud.pressed == RUD_C_LENGTH, true, SV_FONT_LABEL);
 }
 
 /**
@@ -808,7 +803,8 @@ void rudder_render(gfx_canvas_t *c, int buf)
 }
 
 /**
- * @brief @p fn drawn into @p c clipped to @p r.
+ * @brief @p fn drawn into @p c clipped to @p r inside the clip in force,
+ *        which the screen guide narrows to its live half.
  * @param c the canvas
  * @param r the clip
  * @param fn what draws
@@ -817,7 +813,7 @@ static void clipped_to(gfx_canvas_t *c, gfx_rect_t r,
                        void (*fn)(gfx_canvas_t *))
 {
     const gfx_rect_t old = c->clip;
-    if (gfx_clip_set(c, r)) {
+    if (gfx_clip_intersect(c, r)) {
         fn(c);
     }
     c->clip = old;
@@ -829,7 +825,7 @@ void rudder_render_part(gfx_canvas_t *c, int buf)
     const int b = buf & 1;
     if (s.rud.drawn_card[b] != card_sig()) {
         const gfx_rect_t old = c->clip;
-        if (gfx_clip_set(c, page_area())) {
+        if (gfx_clip_intersect(c, page_area())) {
             rudder_render(c, b);
         }
         c->clip = old;
@@ -844,37 +840,4 @@ void rudder_render_part(gfx_canvas_t *c, int buf)
         s.rud.drawn_read[b] = sig;
     }
     flap_part(c, b);
-}
-
-/* ------------------------------------------------------------ the guide */
-
-int rudder_help_count(void)
-{
-    return rudder_shown() ? 1 : 0;
-}
-
-/*
- * One page, the output card's: the dock on the left over RUDDER's card,
- * the TARGET row and ARM in the live half, ARMED too.  A page of the card
- * itself would take the dock on the right, whose live half ends at x 528
- * and cuts the strip's SETTINGS tab (505 to 625), and its badges would sit
- * on the controls' labels at x 18: the card is the web help's
- * (servo-rudder.md).
- */
-bool rudder_help_page(int i, ui_help_page_t *out)
-{
-    if (out == NULL || i < 0 || i >= rudder_help_count()) {
-        return false;
-    }
-    memset(out, 0, sizeof(*out));
-    const gfx_rect_t target = { RC_X, TARGET_Y, RC_W, TARGET_H };
-    out->title     = TX_HG_RUD_TITLE_OUT;
-    out->side      = UI_HELP_DOCK_LEFT;
-    out->armed_ok  = true;
-    out->must_show = target;
-    out->item[out->count++] = (ui_help_item_t){ TR(SV_TARGET),
-                                                TX_HG_RUD_TARGET, target };
-    out->item[out->count++] = (ui_help_item_t){ "ARM", TX_HG_RUD_ARM,
-                                                s.arm_btn };
-    return true;
 }

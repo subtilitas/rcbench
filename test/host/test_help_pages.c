@@ -55,7 +55,8 @@ static bool fake_page(int i, ui_help_page_t *out)
     for (int k = 0; k < out->count; ++k) {
         out->item[k] = (ui_help_item_t){ "SERVO", TX_HG_OV_SERVO,
                                          gfx_rect_make(20, 20 + 100 * k, 200,
-                                                       80) };
+                                                       80),
+                                         UI_HELP_AT_LEFT };
     }
     return true;
 }
@@ -163,7 +164,7 @@ TEST_CASE(armed_offers_only_armed_pages_and_says_so)
     CHECK(!ui_help_armed_note(overview_screen(), true));
     CHECK_EQ(ui_help_count(overview_screen(), true), 4);
     /* A screen without a guide. */
-    CHECK_EQ(ui_help_count(servo_screen(), false), 0);
+    CHECK_EQ(ui_help_count(motor_screen(), false), 0);
     CHECK_EQ(ui_help_count(NULL, false), 0);
 
     /* The note takes its rows above the items and is drawn in the warning
