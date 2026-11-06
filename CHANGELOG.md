@@ -6,6 +6,29 @@ history is in git.
 
 ## Unreleased
 
+## 0.23.9 - 2026-11-06
+
+0.23.9 is a testing release. Its minor number, 23, is odd. GitHub
+publishes it as a pre-release and does not mark it as latest. It runs on the
+ESP32-P4 panel, as 0.23.8 does; an ESP32-S3 panel stays on the 0.22 line and
+is not offered it. The link protocol is 4.37; 0.23.8 has 4.36. The assets are
+`rcbench-panel-p4-v0.23.9.zip`, `rcbench-panel-p4-v0.23.9.bin`,
+`rcbench-iomcu-v0.23.9.zip`, `rcbench-iomcu-rbmod-v0.23.9.zip`,
+`rcbench-c6-2.13.0.bin`, `rcbench-c6-merged-2.13.0.bin` and `SHA256SUMS`.
+
+A bench on 0.23.8 gets 0.23.9 over Wi-Fi: SETUP > UPDATES, RELEASES: TESTING,
+CHECK FOR UPDATES, then hold the install button for 2s. With RELEASES: STABLE the
+check reads `releases/latest`, which names 0.22.1, and offers nothing. At
+link-up the panel offers to update the IOmcu over CAN (Controller Area Network)
+when the IOmcu runs a different build. To set up a new bench, load both boards over USB
+(Universal Serial Bus) as [First run, §1](docs/FirstRun.md#1-flash-both-boards)
+describes. The IMU (inertial measurement unit) is read over Bluetooth LE (Low
+Energy) in place of an HC-05; an HC-05 binding is not carried over, so scan
+and bind the sensor once on SETUP > SENSORS > IMU.
+
+The entries below cover the 14 pull requests merged since v0.23.8: #734 to
+#747.
+
 ### Added
 
 - IMU filter (SETUP > SENSORS > IMU, key `imu_filter`): a low-pass on the

@@ -1042,14 +1042,14 @@ const wires: Wire[] = [
     signal: SDA,
     note: t('One bus for all sensors, 400kHz. No output on GPIO 16 or GPIO 17.', 'Ein Bus für alle Sensoren, 400kHz. Kein Ausgang auf GPIO 16 oder GPIO 17.'),
     when: { has: 'ina3221' }, stage: 3, route: { kind: 'R', lane: 7 }, pin: 'default',
-    src: repo('docs/FirstRun.md', 511, '| SDA | GPIO 16 (pad 21) |'),
+    src: repo('docs/FirstRun.md', 533, '| SDA | GPIO 16 (pad 21) |'),
   },
   {
     n: 27, kind: 'wire', a: 'pad.22', b: 'ina3221.SCL', net: 'scl', cls: 'scl',
     signal: SCL,
     note: null,
     when: { has: 'ina3221' }, stage: 3, route: { kind: 'R', lane: 8 }, pin: 'default',
-    src: repo('docs/FirstRun.md', 512, '| SCL | GPIO 17 (pad 22) |'),
+    src: repo('docs/FirstRun.md', 534, '| SCL | GPIO 17 (pad 22) |'),
   },
   {
     n: 28, kind: 'wire', a: 'pdmini.OP', b: 'ina3221.C1A', net: 'pd_out', cls: 'power',
@@ -1225,7 +1225,7 @@ const wires: Wire[] = [
     signal: t('tap signal, 3.22V or less', 'Abgriffsignal, höchstens 3,22V'),
     note: t('Keep the lead shorter than 30cm. GPIO 22 must not drive an output while the tap is enabled.', 'Halte die Leitung kürzer als 30cm. GPIO 22 darf keinen Ausgang treiben, solange der Abgriff eingeschaltet ist.'),
     when: { has: 'tap' }, stage: 5, route: { kind: 'R', lane: 4 }, pin: 'default',
-    src: repo(SETTINGS_SCHEMA, 156, 'the pin GP22 (pad 29)'),
+    src: repo(SETTINGS_SCHEMA, 162, 'the pin GP22 (pad 29)'),
   },
   {
     n: 53, kind: 'component', a: 'pad.29', b: 'pad.28', net: 'tap', netB: 'gnd', cls: 'phase',
@@ -1351,14 +1351,14 @@ const functions: Fn[] = [
   {
     id: 'link', group: 'bench',
     name: t('CAN link at 1Mbit/s with an echo self-test at every start', 'CAN-Verbindung mit 1Mbit/s und Echo-Selbsttest bei jedem Start'),
-    needs: [], src: repo('STATUS.md', 568, 'CAN drivers (TWAI on the panel, XL2515 on the IOmcu) and the echo self-test'),
+    needs: [], src: repo('STATUS.md', 580, 'CAN drivers (TWAI on the panel, XL2515 on the IOmcu) and the echo self-test'),
   },
   {
     id: 'interlock', group: 'bench',
     name: t('ARM by a 2s hold, DISARM and the heartbeat interlock', 'ARM durch 2s Halten, DISARM und Heartbeat-Verriegelung'),
     // Arming works on the bring-up bench. The decision to arm is tested on
     // the host only.
-    needs: [], src: repo('STATUS.md', 625, 'The decision to switch to ARMED is `shared/safety/safety_gate.c`'),
+    needs: [], src: repo('STATUS.md', 637, 'The decision to switch to ARMED is `shared/safety/safety_gate.c`'),
   },
   {
     id: 'stop', group: 'bench',
@@ -1368,73 +1368,73 @@ const functions: Fn[] = [
   {
     id: 'bind', group: 'bench',
     name: t('Assign protocols to pads on the OUTPUTS screen', 'Protokolle auf der Seite OUTPUTS den Pads zuordnen'),
-    needs: [], src: repo('STATUS.md', 684, 'Ticking or unticking a pin writes the binding and reads it back'),
+    needs: [], src: repo('STATUS.md', 700, 'Ticking or unticking a pin writes the binding and reads it back'),
   },
   {
     id: 'signals', group: 'bench',
     name: t('Send PWM and DShot signals on assigned pads', 'PWM- und DShot-Signale auf zugeordneten Pads ausgeben'),
-    needs: [], src: repo('STATUS.md', 659, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
+    needs: [], src: repo('STATUS.md', 671, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
   },
   {
     id: 'sweep', group: 'bench',
     name: t('Servo signal: sweep (square, sine, triangle) and frame rates other than 50Hz', 'Servosignal: Sweep (Rechteck, Sinus, Dreieck) und eine andere Pulsrate als 50Hz'),
     needs: [],
-    src: repo('STATUS.md', 403, 'a sweep (square, sine or triangle, run by the IOmcu)'),
+    src: repo('STATUS.md', 410, 'a sweep (square, sine or triangle, run by the IOmcu)'),
   },
   {
     id: 'ppm', group: 'bench',
     name: t('Send a PPM signal with 8 channels on 1 pad', 'PPM-Signal mit 8 Kanälen auf 1 Pad ausgeben'),
-    needs: [], src: repo('STATUS.md', 659, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
+    needs: [], src: repo('STATUS.md', 671, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
   },
   {
     id: 'settings', group: 'bench',
     name: t('Settings on the SETUP screen, stored in the panel flash', 'Einstellungen auf der Seite SETUP, im Flash des Panels gespeichert'),
     needs: [],
-    src: repo('STATUS.md', 133, 'The panel loads and saves the values in NVS'),
+    src: repo('STATUS.md', 134, 'The panel loads and saves the values in NVS'),
   },
   {
     id: 'language', group: 'bench',
     name: t('User interface in English or German', 'Bedienoberfläche auf Englisch oder Deutsch'),
-    needs: [], src: repo('STATUS.md', 123, 'English and German, chosen by SETUP'),
+    needs: [], src: repo('STATUS.md', 124, 'English and German, chosen by SETUP'),
   },
   {
     id: 'profiles', group: 'bench',
     name: t('Browse and search the ESC profiles: 72 families, 451 models', 'ESC-Profile durchsuchen: 72 Familien, 451 Modelle'),
     // No statement of a run of the list on a panel.
-    needs: [], src: repo('STATUS.md', 1040, '72 families, 451 models, from 153 manuals'),
+    needs: [], src: repo('STATUS.md', 1065, '72 families, 451 models, from 153 manuals'),
   },
   {
     id: 'wifi', group: 'bench',
     name: t('Panel update and card files in a browser over Wi-Fi', 'Panel-Update und Kartendateien im Browser über WLAN'),
     // The WI-FI screen. The upload works with no card; the file
     // list then says the card is missing (docs/Screens.md, "Wi-Fi").
-    needs: [], src: repo('STATUS.md', 281, 'Panel firmware update and card files over Wi-Fi'),
+    needs: [], src: repo('STATUS.md', 282, 'Panel firmware update and card files over Wi-Fi'),
   },
   {
     id: 'canupdate', group: 'bench',
     name: t('IOmcu firmware update over CAN from the panel', 'Firmware-Update des IOmcu über CAN vom Panel'),
-    needs: [], src: repo('STATUS.md', 636, 'IOmcu firmware update over CAN'),
+    needs: [], src: repo('STATUS.md', 648, 'IOmcu firmware update over CAN'),
   },
   {
     id: 'servo', group: 'servo',
     name: t('Drive a servo', 'Servo ansteuern'),
-    needs: [], drives: 'servo', src: repo('STATUS.md', 659, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
+    needs: [], drives: 'servo', src: repo('STATUS.md', 671, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
   },
   {
     id: 'servotest', group: 'servo',
     name: t('Automatic servo test', 'Automatischer Servotest'),
-    // The test reads the current of the PD mini (docs/Servo.md, line 537).
-    needs: ['pdmini'], drives: 'servo', src: repo('docs/Servo.md', 537, 'the supply feeding the servo: the PD mini'),
+    // The test reads the current of the PD mini (docs/Servo.md, line 539).
+    needs: ['pdmini'], drives: 'servo', src: repo('docs/Servo.md', 539, 'the supply feeding the servo: the PD mini'),
   },
   {
     id: 'servocur', group: 'servo',
     name: t('Servo current from 1ms samples', 'Servostrom aus 1-ms-Abtastwerten'),
-    needs: ['ina3221'], drives: 'servo', src: repo('STATUS.md', 732, 'Current monitors (INA228, INA3221)'),
+    needs: ['ina3221'], drives: 'servo', src: repo('STATUS.md', 748, 'Current monitors (INA228, INA3221)'),
   },
   {
     id: 'angle', group: 'servo',
     name: t('Angle of the servo horn', 'Winkel des Ruderhorns'),
-    needs: ['as5600'], drives: 'servo', src: repo('STATUS.md', 909, 'Output encoder (AS5600)'),
+    needs: ['as5600'], drives: 'servo', src: repo('STATUS.md', 925, 'Output encoder (AS5600)'),
   },
   {
     id: 'servoprog', group: 'servo',
@@ -1449,12 +1449,12 @@ const functions: Fn[] = [
   {
     id: 'esc', group: 'esc',
     name: t('Drive an ESC and motor', 'ESC und Motor ansteuern'),
-    needs: [], drives: 'esc', src: repo('STATUS.md', 659, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
+    needs: [], drives: 'esc', src: repo('STATUS.md', 671, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
   },
   {
     id: 'escpow', group: 'esc',
     name: t('ESC voltage, current, energy', 'Spannung, Strom, Energie des ESC'),
-    needs: ['ina228'], drives: 'esc', src: repo('STATUS.md', 732, 'Current monitors (INA228, INA3221)'),
+    needs: ['ina228'], drives: 'esc', src: repo('STATUS.md', 748, 'Current monitors (INA228, INA3221)'),
   },
   {
     id: 'stick', group: 'esc',
@@ -1462,22 +1462,22 @@ const functions: Fn[] = [
     // The bench powers the ESC from the PD mini and counts the beeps from the
     // supply current (docs/StickProgramming.md, line 6).
     needs: ['pdmini'], drives: 'esc', forces: { escPower: 'pd' },
-    src: repo('STATUS.md', 1050, 'PROGRAM runs 24 of the 72 profiles'),
+    src: repo('STATUS.md', 1075, 'PROGRAM runs 24 of the 72 profiles'),
   },
   {
     id: 'tap', group: 'esc',
     name: t('Detect ESC beeps with the phase tap', 'ESC-Pieptöne mit dem Phasenabgriff erfassen'),
-    needs: ['sim', 'tap'], drives: 'esc', src: repo('STATUS.md', 967, 'Phase tap (ESC tones)'),
+    needs: ['sim', 'tap'], drives: 'esc', src: repo('STATUS.md', 992, 'Phase tap (ESC tones)'),
   },
   {
     id: 'supply', group: 'bench',
     name: t('Bench-controlled power supply, 1 to 20V', 'Vom Prüfstand gesteuertes Netzteil, 1 bis 20V'),
-    needs: ['pdmini'], src: repo('STATUS.md', 529, 'the IOmcu runs it on a PIO UART on'),
+    needs: ['pdmini'], src: repo('STATUS.md', 541, 'the IOmcu runs it on a PIO UART on'),
   },
   {
     id: 'logs', group: 'bench',
     name: t('Record runs on a card', 'Läufe auf einer Karte aufzeichnen'),
-    needs: ['sd'], src: repo('STATUS.md', 176, 'Built: a run is written while ARMED'),
+    needs: ['sd'], src: repo('STATUS.md', 177, 'Built: a run is written while ARMED'),
   },
   {
     id: 'estop', group: 'bench',
@@ -1567,7 +1567,7 @@ const checks: Check[] = [
       'Both boards run the same release. With different protocol versions the panel shows "Protocol versions do not match. ARMED is blocked."',
       'Beide Platinen laufen mit demselben Release. Bei verschiedenen Protokollversionen zeigt das Panel „Protokollversionen passen nicht zusammen. ARMED ist gesperrt.“',
     ),
-    when: null, src: repo('docs/Link.md', 84, 'Protocol versions do not match. ARMED is blocked.'),
+    when: null, src: repo('docs/Link.md', 147, 'Protocol versions do not match. ARMED is blocked.'),
   },
   {
     id: 'servo-pin', kind: 'note',
@@ -1599,7 +1599,7 @@ const checks: Check[] = [
   {
     id: 'ina3221-pullups', kind: 'unknown',
     text: t('Pull-ups with the INA3221 on the bus: the sources disagree. The build guide lists none, because the INA3221 board carries 10kΩ pull-ups. docs/FirstRun.md lists 2.2kΩ from SDA and from SCL to 3V3 (pad 36) as well. The drawing follows the build guide. No measurement of the bus at 400kHz is stated.', 'Pull-ups mit dem INA3221 am Bus: Die Quellen widersprechen sich. Die Bauanleitung nennt keine, weil die INA3221-Platine 10-kΩ-Pull-ups trägt. docs/FirstRun.md nennt zusätzlich je 2,2kΩ von SDA und SCL nach 3V3 (Pad 36). Die Zeichnung folgt der Bauanleitung. Eine Messung des Busses bei 400kHz ist nicht angegeben.'),
-    when: { has: 'ina3221' }, src: repo('docs/FirstRun.md', 513, '| Pull-ups | 2.2kΩ from SDA and from SCL | 3V3 (pad 36) |'),
+    when: { has: 'ina3221' }, src: repo('docs/FirstRun.md', 535, '| Pull-ups | 2.2kΩ from SDA and from SCL | 3V3 (pad 36) |'),
   },
   {
     id: 'matek-pullup', kind: 'measure',
@@ -1917,15 +1917,15 @@ const pinDefaults: PinDefault[] = [
     signal: 'sda', gpio: 16, pad: 21, choice: 'default', role: 'bus',
     // settings_sense_sda_valid(): −1 and the SDA pins whose pair is free.
     allowed: [-1, 0, 4, 6, 14, 16, 18, 20, 26],
-    src: repo(SETTINGS_SCHEMA, 134, '[SET_SENSE_SDA] = {'),
+    src: repo(SETTINGS_SCHEMA, 140, '[SET_SENSE_SDA] = {'),
   },
   {
     signal: 'scl', gpio: 17, pad: 22, choice: 'default', role: 'bus',
     // SCL follows SDA: the GPIO after it.
     allowed: [-1, 1, 5, 7, 15, 17, 19, 21, 27],
-    src: repo(SETTINGS_SCHEMA, 137, '[SET_SENSE_SCL] = {'),
+    src: repo(SETTINGS_SCHEMA, 143, '[SET_SENSE_SCL] = {'),
   },
-  { signal: 'tap', gpio: 22, pad: 29, choice: 'default', role: 'input', allowed: 'catalogue', src: repo(SETTINGS_SCHEMA, 164, '[SET_TONE_PIN] = {') },
+  { signal: 'tap', gpio: 22, pad: 29, choice: 'default', role: 'input', allowed: 'catalogue', src: repo(SETTINGS_SCHEMA, 170, '[SET_TONE_PIN] = {') },
   { signal: 'esc', gpio: 5, pad: 7, choice: 'example', role: 'output', allowed: 'catalogue', src: guide('wires') },
   { signal: 'servo', gpio: 2, pad: 4, choice: 'proposal', role: 'output', allowed: 'catalogue', src: PAGE },
   { signal: 'prog', gpio: 13, pad: 17, choice: 'default', role: 'output', allowed: 'catalogue', src: repo(PROG_PORT, 86, '#define PROG_PORT_DEFAULT_PIN 13u') },
