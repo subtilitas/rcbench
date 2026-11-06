@@ -15,7 +15,7 @@ No ESC has been recorded and no profile is verified. All beep timings are config
 1. Take the propeller off. A run moves the throttle to MAX and back while the ESC is powered. In rare cases a motor may start and run.
 2. Leave the motor on the ESC, mounted solid, or fit a resistor load across the motor leads in its place. The beeps are counted from the current either way.
 3. Connect the ESC's signal lead to a pin bound as a throttle on [Outputs](outputs.md): MOTOR PWM or a DShot entry.
-4. Connect the ESC's power leads to the supply output. Enable the PD mini on [SUPPLY's PD MINI tab](supply.md#pd-mini-tab).
+4. Connect the ESC's power leads to the supply output. Enable the PD mini on [SUPPLY's PD mini settings](supply.md#pd-mini-rows).
 5. Switch the supply output off.
 
 RUN remains unavailable until these requirements are met. The line beside it explains why, for example `No throttle pin assigned. Assign one on OUTPUTS.` or `Supply is simulated. RUN needs a PD mini.` RUN requires a supply reading no older than 1000ms, with the output off and current at or below 20mA for 200ms.

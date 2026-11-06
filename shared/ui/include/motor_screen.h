@@ -195,8 +195,9 @@ size_t motor_output_strip(char *out, size_t size, uint8_t proto,
                           uint64_t pins, bool known, bool armed, bool *warn);
 
 /**
- * The task shown, a ui_wb_task_t: LIVE or PROGRAM.  A tile opens LIVE; in
- * PROGRAM's session the home tag climbs it one level (back()).
+ * @brief The task shown.  A tile opens LIVE; in PROGRAM's session the home
+ *        tag climbs it one level (back()).
+ * @return A ui_wb_task_t: LIVE or PROGRAM.
  */
 int motor_screen_task(void);
 
@@ -212,11 +213,12 @@ int motor_screen_pane(void);
  *  programmer holds its port. */
 bool motor_screen_target_locked(void);
 
-/** Whether the SETTINGS list the footer opens shows, over the body. */
+/** @brief Whether the SETTINGS list the footer opens shows, over the body.
+ *  @return true while it does */
 bool motor_screen_settings_shown(void);
 
-/** The setting the SETTINGS list's keypad types, or -1 while it is
- *  closed. */
+/** @brief The setting the SETTINGS list's keypad types.
+ *  @return The setting, -1 while the keypad is closed. */
 int motor_screen_keypad_setting(void);
 
 /**
@@ -226,19 +228,35 @@ int motor_screen_keypad_setting(void);
  */
 const ui_keypad_t *motor_screen_keypad(void);
 
-/** The SETTINGS list's settings in their order, at most @p max into @p out
- *  (NULL counts them).  Returns how many there are. */
+/**
+ * @brief The SETTINGS list's settings in their order.
+ * @param out Takes at most @p max of them; NULL counts them.
+ * @param max The room at @p out.
+ * @return How many there are.
+ */
 int motor_settings_rows(setting_id_t *out, int max);
-/** The heading setting @p row sits under, a ui_text_id_t; -1 out of
- *  range. */
+/**
+ * @brief The heading a setting sits under.
+ * @param row The setting's index among the list's settings.
+ * @return A ui_text_id_t; -1 out of range.
+ */
 int motor_settings_heading(int row);
-/** Setting @p row's list row, headings counted; -1 out of range. */
+/**
+ * @brief A setting's row in the list, headings counted.
+ * @param row The setting's index among the list's settings.
+ * @return The list row; -1 out of range.
+ */
 int motor_settings_list_row(int row);
-/** Setting @p row's value at the list's scroll, where a tap opens the
- *  keypad (ui_setlist_row_part()). */
+/**
+ * @brief A setting's value at the list's scroll, where a tap opens the
+ *        keypad (ui_setlist_row_part()).
+ * @param row The setting's index among the list's settings.
+ * @return The rect in the body; empty out of range.
+ */
 gfx_rect_t motor_settings_box(int row);
 struct ui_setlist;
-/** The SETTINGS list, for a test to read its geometry and state. */
+/** @brief The SETTINGS list, for a test to read its geometry and state.
+ *  @return The list. */
 const struct ui_setlist *motor_settings_list(void);
 
 /** What the alert band says for a switch to ARMED refused because the pair

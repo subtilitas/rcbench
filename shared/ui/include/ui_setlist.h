@@ -7,7 +7,7 @@
  * edge, SENSORS' to 240) to 994, body y 8 to 436, a scroll bar at x 1002.
  * A row is 64px tall at a 70px pitch, 6 rows whole; a heading row 34px at a
  * 40px pitch.  Under the list the strip of three 328 x 48px columns at body
- * y 444 (ui_footer.h's slots): the list's name, RESET <name> and SAVE.
+ * y 444 (ui_footer.h's slots): the list's name, RESET name and SAVE.
  *
  * A row is one of:
  * - a setting (shared/settings): its label in the head face (20 x 36), its
@@ -27,7 +27,7 @@
  *
  * SAVE asks for a write (settings_request_save()) and reads SAVED, SAVE,
  * WHEN IDLE or NOT SAVED; the values are one set, so SAVE writes every
- * change, not only this list's.  RESET <name> sets the list's own settings
+ * change, not only this list's.  RESET name sets the list's own settings
  * to their defaults and no other.  The leave warning (ui_setlist_warn())
  * lists what differs from the stored values and offers STAY, DISCARD and
  * SAVE; DISCARD takes no press while the bench is ARMED.
@@ -155,7 +155,7 @@ typedef struct ui_setlist_host {
     /** @brief The line under the name, false for none (the name alone, as
      *         SETUP's); @p warn takes the warning colour. */
     bool (*name_line)(char *out, size_t n, bool *warn);
-    /** @brief RESET's label; NULL for "RESET <name>". */
+    /** @brief RESET's label; NULL for "RESET name". */
     void (*reset_label)(char *out, size_t n);
     /** @brief RESET; NULL resets the list's settings (settings_reset_rows())
      *         and calls changed(SETTING_COUNT). */
@@ -233,7 +233,7 @@ enum {
     UI_SL_HIT_NONE = 0,
     UI_SL_HIT_MINUS,      /**< a "-" or "<" key                       */
     UI_SL_HIT_PLUS,       /**< a "+" or ">" key                       */
-    UI_SL_HIT_RESET,      /**< RESET <name>                           */
+    UI_SL_HIT_RESET,      /**< RESET name                           */
     UI_SL_HIT_LIST,       /**< the list, for a scroll                 */
     UI_SL_HIT_SAVE,       /**< SAVE                                   */
     UI_SL_HIT_STAY,       /**< the warning's STAY                     */
@@ -347,7 +347,7 @@ void ui_setlist_draw_rows(ui_setlist_t *sl, gfx_canvas_t *c);
 
 /**
  * @brief The strip's first two columns: the name, with the host's line
- *        under it, and RESET <name> or the host's label for it.
+ *        under it, and RESET name or the host's label for it.
  * @param sl The list.
  * @param c  The canvas.
  */

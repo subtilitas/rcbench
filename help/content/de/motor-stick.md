@@ -15,7 +15,7 @@ Kein ESC wurde aufgezeichnet, und kein Profil ist geprüft. Alle Pieptonzeiten s
 1. Nimm den Propeller ab. Während der ESC versorgt ist, fährt der Lauf Gas auf MAX und zurück. In seltenen Fällen kann der Motor anlaufen und drehen.
 2. Lass den fest montierten Motor am ESC angeschlossen oder ersetze ihn durch einen Lastwiderstand an den Motorleitungen. In beiden Fällen werden die Pieptöne aus dem Strom gezählt.
 3. Verbinde die ESC-Signalleitung mit einem unter [Ausgänge](outputs.md) als Gas zugeordneten Pin: MOTOR PWM oder ein DShot-Eintrag.
-4. Verbinde die ESC-Versorgungsleitungen mit dem Netzteilausgang. Aktiviere den PD mini [im Reiter PD MINI auf SUPPLY](supply.md#tab-pd-mini).
+4. Verbinde die ESC-Versorgungsleitungen mit dem Netzteilausgang. Aktiviere den PD mini [im Reiter PD MINI auf SUPPLY](supply.md#zeilen-des-pd-mini).
 5. Schalte den Netzteilausgang aus.
 
 START bleibt gesperrt, bis diese Voraussetzungen erfüllt sind. Die Zeile daneben nennt den Grund, etwa `Kein Gas-Pin zugeordnet. Ordne einen auf der Seite OUTPUTS zu.` oder `Netzteil ist simuliert. START benötigt einen PD mini.` START benötigt einen höchstens 1000ms alten Netzteilmesswert: Ausgang aus und Strom für 200ms höchstens 20mA.

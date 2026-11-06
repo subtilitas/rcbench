@@ -5532,8 +5532,8 @@ UI_TEXT(ALERT_SUPPLY_REFUSED_FAILSAFE, 94,
     "Supply refused to switch on: IOmcu failsafe latched. Hold ARM, then DISARM.",
     "Netzteil bleibt aus: IOmcu-Failsafe ausgelöst. Halte ARM, dann tippe DISARM.")
 UI_TEXT(ALERT_PDMINI_PINS, 94,
-    "PD mini pins rejected. Check SUPPLY, tab PD MINI.",
-    "PD-mini-Pins abgelehnt. Prüfe SUPPLY, Tab PD MINI.")
+    "PD mini pins rejected. Check them in SUPPLY's SETTINGS.",
+    "PD-mini-Pins abgelehnt. Prüfe sie in den OPTIONEN von SUPPLY.")
 UI_TEXT(ALERT_PDMINI_SWITCH, 94,
     "PD mini output could not be switched.",
     "PD-mini-Ausgang ließ sich nicht schalten.")

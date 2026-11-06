@@ -8,24 +8,25 @@ order: 30
 
 SUPPLY steuert das programmierbare Netzteil PD mini und zeichnet seine Werte auf. Der USB-PD-Trigger (USB Power Delivery) kommuniziert über einen UART (Universal Asynchronous Receiver-Transmitter) an zwei Pins mit dem IOmcu. Öffne SUPPLY im [Menü](overview.md); die Seite beginnt immer auf LIVE.
 
-## Die Leiste
+## Der Aufbau
 
-Die obere Leiste wechselt zwischen LIVE und OPTIONEN. LIVE behält beim Zurückkehren die gewählte Ansicht GRAFIK oder TABELLE.
+Links stehen die Grafik oder die Tabelle und die Sollwerte, rechts die Messwerte und die Karte STEUERUNG mit SPITZENWERTE ZURÜCKSETZEN. Die Kopfzeile nennt Netzteil, Status und zulässigen Sollwertbereich; sie bleibt unter Tastenfeld und Rückfrage sichtbar.
 
-| Aufgabe | Die linke Spalte |
+Die Fußleiste unten hat drei Felder:
+
+| Feld | Was es tut |
 |---|---|
-| LIVE | die Grafik oder die Tabelle und die Sollwerte |
-| OPTIONEN | die Obergrenzen, die Startwerte, die Abschaltungen und die Rückfragen ([OPTIONEN](#optionen)) |
+| SUPPLY | der Name der Seite; darunter die Quelle: `PD MINI TX GPIO 12 RX GPIO 13`, `PD MINI OHNE PINS` oder `SIMULIERT`, in der Warnfarbe ohne Pins oder Antwort |
+| AUSGANG EIN / AUS | schaltet den Ausgang |
+| OPTIONEN | öffnet die Optionsliste ([OPTIONEN](#optionen)); grau bei eingeschaltetem Ausgang |
 
-Beide Aufgaben teilen sich die rechte Spalte mit Messwerten und der Karte STEUERUNG. Unten stehen SPITZENWERTE ZURÜCKSETZEN und AUSGANG EIN, an der Stelle von ARM bei SERVO und MOTOR & ESC. Die Kopfzeile rechts neben der Leiste nennt Netzteil, Status und zulässigen Sollwertbereich. Sie bleibt auch unter Tastenfeld und Rückfrage sichtbar.
-
-Das Home-Feld führt eine Ebene zurück. In einer Rückfrage verwirft es die Änderung wie ABBRECHEN; im Tastenfeld schließt es die Eingabe ohne Wertänderung. Von LIVE oder OPTIONEN ohne offenen Dialog führt es zum Menü. Ein Aufgabenwechsel fügt keine Navigationsebene hinzu.
+Das Home-Feld führt eine Ebene zurück. In einer Rückfrage verwirft es die Änderung wie ABBRECHEN; im Tastenfeld schließt es die Eingabe ohne Wertänderung. In der Optionsliste schließt es die Liste und fragt zuerst nach einer ungespeicherten Änderung. Von LIVE ohne offenen Dialog führt es zum Menü.
 
 ## Das Netzteilmodell
 
 ![SUPPLY mit abgeschaltetem PD mini: SIMULIERT](view:supply)
 
-Ist der PD mini im [Reiter PD MINI](#tab-pd-mini) deaktiviert, verwendet das Panel ein Netzteilmodell. Die antippbare Kopfzeile `SIMULIERT: SCHALTE IN PD MINI EIN` öffnet diesen Reiter; die Menükachel zeigt SIMULIERT. Das Modell besteht aus einer Last von 6Ω hinter 0,05Ω Quellwiderstand, mit einem Stromstoß von 1,4A für 0,6s alle 3s. Die Werte sind berechnet. Am Prüfstand wird nichts mit Strom versorgt.
+Ist der PD mini in der [Optionsliste](#zeilen-des-pd-mini) deaktiviert, verwendet das Panel ein Netzteilmodell. Die antippbare Kopfzeile `SIMULIERT: SCHALTE IN PD MINI EIN` öffnet die Liste bei den Zeilen des PD mini; die Menükachel zeigt SIMULIERT. Das Modell besteht aus einer Last von 6Ω hinter 0,05Ω Quellwiderstand, mit einem Stromstoß von 1,4A für 0,6s alle 3s. Die Werte sind berechnet. Am Prüfstand wird nichts mit Strom versorgt.
 
 ## Der PD mini
 
@@ -58,7 +59,7 @@ Die Grafik zeigt Spannung, Strom und Leistung der letzten 30s mit gestrichelten 
 | SPANNUNG | 3,3 bis 21V, Schritte von 20mV | 1 bis 20V, Schritte von 10mV | 0,1V |
 | STROMBEGRENZUNG | 0,5 bis 5A, Schritte von 50mA | 0,05 bis 3A, Schritte von 10mA | 0,1A |
 
-Die PD-mini-Bereiche stammen von der Herstellerseite und wurden nicht gemessen. Die Ausgangsspannung ist auf 0,7V unter der gemeldeten Eingangsspannung begrenzt. Bei 5V Eingang sind höchstens 4,3V möglich. Die Obergrenzen in OPTIONEN können beide Bereiche weiter einschränken. Rechts in der Kopfzeile steht der gültige Bereich.
+Die PD-mini-Bereiche stammen von der Herstellerseite und wurden nicht gemessen. Die Ausgangsspannung ist auf 0,7V unter der gemeldeten Eingangsspannung begrenzt. Bei 5V Eingang sind höchstens 4,3V möglich. Die Obergrenzen in der Optionsliste können beide Bereiche weiter einschränken. Rechts in der Kopfzeile steht der gültige Bereich.
 
 - Ziehe den Schieberegler oder tippe auf seine Spur, um den Wert an dieser Stelle zu setzen.
 - Ändere den Wert schrittweise mit `-0.1` und `+0.1`.
@@ -72,7 +73,7 @@ Das Tastenfeld nennt den Bereich in der Titelzeile. OK übernimmt gültige Werte
 
 ![Die Rückfrage vor einer Änderung an einem eingeschalteten Ausgang](view:supply-confirm)
 
-Eine Sollwertänderung bei eingeschaltetem Ausgang öffnet eine Rückfrage mit der geplanten Änderung. ÜBERNEHMEN sendet sie an das Netzteil; ABBRECHEN verwirft sie und setzt den Regler zurück. Beim Ziehen erscheint die Frage einmal nach dem Loslassen. Wird das Ziehen vorher unterbrochen, etwa durch einen zweiten Finger auf dem Home-Feld, kehrt der Regler ohne Rückfrage zurück. Bei ausgeschaltetem Ausgang entfällt die Frage. In OPTIONEN lassen sich Rückfragen für Regler und Tastenfeld getrennt abschalten.
+Eine Sollwertänderung bei eingeschaltetem Ausgang öffnet eine Rückfrage mit der geplanten Änderung. ÜBERNEHMEN sendet sie an das Netzteil; ABBRECHEN verwirft sie und setzt den Regler zurück. Beim Ziehen erscheint die Frage einmal nach dem Loslassen. Wird das Ziehen vorher unterbrochen, etwa durch einen zweiten Finger auf dem Home-Feld, kehrt der Regler ohne Rückfrage zurück. Bei ausgeschaltetem Ausgang entfällt die Frage. In der Optionsliste lassen sich Rückfragen für Regler und Tastenfeld getrennt abschalten.
 
 ## AUSGANG EIN und AUS
 
@@ -96,9 +97,9 @@ Ein von einer anderen Seite eingeschalteter Ausgang bleibt beim Verlassen von SU
 
 ![SUPPLY auf dem Carrier](view:supply-rbmod)
 
-Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) versorgt der PD mini die Servoschienen. Die Programmierports haben eine eigene, über GPIO 21 geschaltete 5V-Versorgung. Unter AUSGANG steht deren Status: `PROG-PORTS 5V, GPIO 21: EIN`, `AUS` oder ohne IOmcu-Antwort `UNBEKANNT`. Die KST- und Hitec-Servoprogrammierung schaltet diese Schiene für ihre Sitzungen. Den PD mini kannst du weiterhin selbst bedienen; AUSGANG EIN und Sollwerte bleiben verfügbar.
+Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) versorgt der PD mini die Servoschienen. Die Programmierports haben eine eigene, über GPIO 21 geschaltete 5V-Versorgung. Am Fuß der Karte STEUERUNG steht deren Status: `PROG-PORTS 5V, GPIO 21: EIN`, `AUS` oder ohne IOmcu-Antwort `UNBEKANNT`. Die KST- und Hitec-Servoprogrammierung schaltet diese Schiene für ihre Sitzungen. Den PD mini kannst du weiterhin selbst bedienen; AUSGANG EIN und Sollwerte bleiben verfügbar.
 
-Auf LIVE schaltet das Feld PROG 5V neben GRAFIK und TABELLE die Programmierschiene von Hand, bei SAFE und ARMED. Halte PROG 5V EIN 2s zum Einschalten und tippe auf PROG 5V AUS zum Ausschalten. Früheres Loslassen zeigt `Halte 2s, um die 5V der Programmierports einzuschalten.` Das Feld nennt den Pinstatus, etwa `PROG-PORTS 5V, GPIO 21: AUS`, und das letzte INA3221-Messfenster von 0x40 CH3, etwa `5.02V  0.120A`.
+Das Feld PROG 5V neben GRAFIK und TABELLE schaltet die Programmierschiene von Hand, bei SAFE und ARMED. Halte PROG 5V EIN 2s zum Einschalten und tippe auf PROG 5V AUS zum Ausschalten. Früheres Loslassen zeigt `Halte 2s, um die 5V der Programmierports einzuschalten.` Das Feld nennt den Pinstatus, etwa `PROG-PORTS 5V, GPIO 21: AUS`, und das letzte INA3221-Messfenster von 0x40 CH3, etwa `5.02V  0.120A`.
 
 Belegt eine Servoprogrammierung einen Port, zeigt das Feld `BELEGT VON PROG-PORT n` und nimmt keinen Druck an. Beim Verlassen von SUPPLY schalten die über dieses Feld aktivierten 5V aus, außer ein Port belegt sie. Auch jeder Fehler schaltet sie ab. Ein laufender Schreibvorgang im Servospeicher wird vorher beendet, mit höchstens 10000ms Wartezeit.
 
@@ -108,7 +109,9 @@ Bei eingeschaltetem Feld gelten zwei Messfenster unter 3000mV als Ausfall der 5V
 
 ![Die Optionen des Netzteils](view:supply-settings)
 
-OPTIONEN zeigt seine Einstellungen in der linken Spalte. Tippe auf einen Wert für das Tastenfeld oder auf einen Schalter zum Umschalten. Ein Tipp auf LIVE bei offenem Tastenfeld verwirft die Eingabe. Bei einer Rückfrage zum eingeschalteten Ausgang wartet die Leiste auf ÜBERNEHMEN oder ABBRECHEN.
+OPTIONEN in der Fußleiste öffnet eine Liste über der ganzen Seite: Obergrenzen, Startwerte, Abschaltungen und Rückfragen, danach die Anschlüsse des PD mini. Sie öffnet nur bei ausgeschaltetem Ausgang; sonst zeigt das Band `OPTIONEN nur bei Ausgang aus. Schalte ihn zuerst aus.` Schaltet der Ausgang bei offener Liste ein, schließt sie.
+
+Die Liste funktioniert wie die von SETUP: `-` und `+` verstellen einen Wert, `<` und `>` schalten um, ein Tippen auf eine Zahl öffnet das Tastenfeld, Ziehen rollt. Die Überschrift AUSGANGSGRENZEN zeigt den geltenden Sollwertbereich. Die Leiste unten zeigt `[SUPPLY] [SUPPLY ZURÜCKSETZEN] [SPEICHERN]`; unter SUPPLY bleibt die Quelle.
 
 | Option | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
@@ -125,16 +128,17 @@ OPTIONEN zeigt seine Einstellungen in der linken Spalte. Tippe auf einen Wert f�
 - Eine Schwelle von 0 deaktiviert die Abschaltung.
 - Eine Überstromschwelle auf oder über der STROMBEGRENZUNG löst nicht aus, weil das Netzteil den Strom in CC begrenzt.
 - Wird eine Obergrenze unter den Sollwert gesenkt, sinkt der Sollwert mit.
+- Die Tastenfelder der Obergrenzen nehmen den Bereich des Netzteils an, die der Startwerte höchstens die Obergrenzen.
 
-Die Optionen werden im NVS (nichtflüchtiger Speicher) gespeichert. Das Schreiben erfolgt im nächsten Frame bei SAFE und ausgeschaltetem Ausgang. Die Fußzeile zeigt `GESPEICHERT`, `SPEICHERN AUSSTEHEND`, `NICHT GESPEICHERT` oder `ÄNDERUNGEN IN SETUP NICHT GESPEICHERT`.
+Eine Änderung gilt sofort. SPEICHERN fordert das Schreiben in den NVS (nichtflüchtiger Speicher) an, im nächsten Frame bei SAFE und ausgeschaltetem Ausgang. SPEICHERN zeigt `GESPEICHERT` ohne Ungeschriebenes, `SPEICHERN` mit einer Änderung, `BEI STILLSTAND`, solange das Schreiben wartet, und `NICHT GESPEICHERT` nach abgelehntem Schreiben. SUPPLY ZURÜCKSETZEN setzt die Einstellungen der Liste auf ihre Vorgaben, die des PD mini nur, solange sie sich ändern lassen.
 
-Bei aktiviertem PD mini bietet OPTIONEN zusätzlich PD MINI ZURÜCKSETZEN. Es schaltet den Ausgang aus und startet das Modul neu, etwa bei ERR. Ob ein Neustart jedes ERR löscht, wurde nicht gemessen.
+Bei aktiviertem PD mini endet die Liste mit PD MINI ZURÜCKSETZEN. Es schaltet den Ausgang aus und startet das Modul neu, etwa bei ERR. Ob ein Neustart jedes ERR löscht, wurde nicht gemessen.
 
-## Tab PD MINI
+## Zeilen des PD mini
 
-![Der Tab PD MINI](view:supply-pdmini)
+![Die Zeilen des PD mini](view:supply-pdmini)
 
-OPTIONEN hat zwei Reiter: GRENZEN und PD MINI. Unter PD MINI stellst du die Modulverdrahtung ein.
+Unter der Überschrift PD MINI der Optionsliste stellst du die Modulverdrahtung ein.
 
 | Option | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
@@ -143,7 +147,7 @@ OPTIONEN hat zwei Reiter: GRENZEN und PD MINI. Unter PD MINI stellst du die Modu
 | PD mini RX | -1 bis 47 | -1 | der GPIO des IOmcu vom DP des Moduls |
 | PD mini Baud | 9600, 19200, 38400, 57600, 115200, 230400, 460800, AUTO | AUTO | die UART-Rate (Universal Asynchronous Receiver-Transmitter) des Moduls; AUTO probiert jede der 7 Raten, eine pro Sekunde |
 
-Änderungen gelten sofort und werden wie auf GRENZEN gespeichert. Es gibt keine separate Taste SPEICHERN. Das Zurücksetzen auf GRENZEN verändert diese Einstellungen nicht.
+Änderungen gelten sofort; SPEICHERN behält sie, wie bei den übrigen Zeilen.
 
 Verdrahtungsänderungen schalten einen aktiven Ausgang aus. Daher sind diese Einstellungen gesperrt, solange der Ausgang eingeschaltet ist, ein EIN-Befehl aussteht, ein Programmierport das Netzteil belegt oder der Prüfstand ARMED ist. Hilfezeile und Band nennen den Grund. Beginnt einer dieser Zustände bei offenem Pin-Tastenfeld, schließt es und verwirft die Eingabe.
 

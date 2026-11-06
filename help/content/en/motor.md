@@ -8,25 +8,33 @@ order: 10
 
 MOTOR & ESC drives an ESC (electronic speed controller) and records a run: voltage, current, power and rpm over time. It opens from the MOTOR & ESC tile on the [menu](overview.md), always on LIVE.
 
-## The strip
+## The layout
 
-The top strip has three tasks: LIVE, PROGRAM and SETTINGS. Tap a task to switch to it. LIVE retains its selected view, PLOT or TABLE, when you return.
+The top strip has two tasks: LIVE and PROGRAM. Tap a task to switch to it. LIVE retains its selected view, PLOT or TABLE, when you return.
 
 | Task | The left column |
 |---|---|
 | LIVE | the plot or the table, and the throttle |
 | PROGRAM | the list of ESC programmers ([PROGRAM](#program)) |
-| SETTINGS | [Motor settings](motor-settings.md): the pack, the motor and the throttle output |
 
-The right column is the same on all three tasks: the temperatures, four readouts and CONTROL card. The card contains totals on its title line, TARGET, RESET PEAKS and ARM. ARM is at the foot of the card, in the same position as on SERVO, and works on every task. A session opened from PROGRAM covers the card.
+The right column is the same on both tasks: the temperatures on one line, four readouts and the CONTROL card with totals on its title line, TARGET and RESET PEAKS. A session opened from PROGRAM covers both columns and the footer.
+
+The footer at the bottom has three slots:
+
+| Slot | What it does |
+|---|---|
+| MOTOR & ESC | the screen's name; under it the protocol and pins the throttle drives, `NO MOTOR PIN` in the warning colour with none |
+| ARM / DISARM | the 2s hold to ARMED, a tap to SAFE ([A run](#a-run)) |
+| SETTINGS | opens [Motor settings](motor-settings.md): the pack, the motor and the throttle output; grey unless the bench is SAFE |
 
 The home tag at the top left moves up one level at a time:
 
 | From | The home tag leads to |
 |---|---|
-| the keypad on SETTINGS | SETTINGS; the value is not changed |
+| the keypad over the settings list | the list; the value is not changed |
+| the settings list | LIVE or PROGRAM, first asking about a change you have not saved |
 | a session on PROGRAM | one level up in the session, then PROGRAM's list |
-| LIVE, PROGRAM's list or SETTINGS | the menu; the bench switches to SAFE |
+| LIVE or PROGRAM's list | the menu; the bench switches to SAFE |
 
 ## PROGRAM
 
@@ -34,7 +42,7 @@ The home tag at the top left moves up one level at a time:
 
 PROGRAM lists two ways to program an ESC. `ESCs via throttle stick`, under STICK MENU, opens [ESC STICK](motor-stick.md) and drives the pins bound as throttle. `AM32, Bluejay, BLHeli_S, ESCape32`, under SIGNAL WIRE, opens the [signal-wire session](motor-wire.md). The signal-wire row stays dimmed until the IOmcu reports the required capability.
 
-ESC STICK covers both columns. The tabs are replaced by a single output strip:
+ESC STICK covers both columns and the footer. The tabs are replaced by a single output strip:
 
 `TARGET DSHOT300 GPIO 0 GPIO 1   SUPPLY 7.60V  1.00A   SAFE`
 
@@ -126,7 +134,7 @@ TABLE lists voltage, current, power and rpm, each with its peak. A channel witho
 
 ## kV, rpm/V and EFF
 
-The plot header shows rated kV, measured rpm per volt and EFF. EFF is measured rpm/V divided by rated kV, capped at 199%. Set rated kV under MOTOR & ESC, SETTINGS, `Rated kV`: 0 to 10000rpm/V, default 0. At 0, the kV field stays empty and EFF is hidden. EFF counts only copper loss and includes ESC losses, so it is an upper bound rather than shaft efficiency.
+The plot header shows rated kV, measured rpm per volt and EFF. EFF is measured rpm/V divided by rated kV, capped at 199%. Set rated kV in MOTOR & ESC's SETTINGS list, `Rated kV`: 0 to 10000rpm/V, default 0. At 0, the kV field stays empty and EFF is hidden. EFF counts only copper loss and includes ESC losses, so it is an upper bound rather than shaft efficiency.
 
 ## The log of a run
 

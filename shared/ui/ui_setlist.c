@@ -30,15 +30,18 @@
 
 /* ---------------------------------------------------------------- strings */
 
+/** @brief A string setting's texts. */
+typedef struct {
+    ui_text_id_t label;  /**< the string's name */
+    ui_text_id_t help;   /**< the row's help line, TX_COUNT for none */
+} text_ui_t;
+
 /**
  * @brief Per string setting: the name for the warning, a row and its
  *        keyboard's title, and the row's help line.  The DUT name has no
  *        row on SETUP.
  */
-static const struct {
-    ui_text_id_t label;  /**< the string's name */
-    ui_text_id_t help;   /**< the row's help line, TX_COUNT for none */
-} k_text_ui[SETTING_TEXT_COUNT] = {
+static const text_ui_t k_text_ui[SETTING_TEXT_COUNT] = {
     [SET_TEXT_DUT_NAME]     = { TX_SET_DUT_NAME, TX_COUNT },
     [SET_TEXT_LOG_AUTO_DIR] = { TX_SET_AUTO_DIR, TX_SET_AUTO_DIR_HELP },
     [SET_TEXT_LOG_USER_DIR] = { TX_SET_USER_DIR, TX_SET_USER_DIR_HELP },
@@ -63,6 +66,8 @@ const char *sl_text_help(setting_text_id_t id)
 
 /* ----------------------------------------------------------- host's hooks */
 
+/** @brief The host's look changed.
+ *  @param sl The list. */
 static void invalidate(const ui_setlist_t *sl)
 {
     if (sl->host->invalidate != NULL) {
@@ -301,11 +306,17 @@ static bool keyless(const ui_setlist_t *sl, int i)
            || sl_locked(sl, r.id) != NULL;
 }
 
-/*
- * Whether (x, y) is on the "-" or the "+" key of row @p index: the key's
- * column over the row's own height.  The gap between two rows belongs to
- * neither key, so the keys of a column are apart and a press in a gap
- * scrolls and steps nothing.
+/**
+ * @brief Whether (x, y) is on the "-" or the "+" key of row @p index: the
+ *        key's column over the row's own height.  The gap between two rows
+ *        belongs to neither key, so the keys of a column are apart and a
+ *        press in a gap scrolls and steps nothing.
+ * @param sl    The list.
+ * @param kind  UI_SL_HIT_MINUS or UI_SL_HIT_PLUS.
+ * @param index The row.
+ * @param x     The point's x.
+ * @param y     Its y.
+ * @return True on the key.
  */
 static bool on_key(const ui_setlist_t *sl, int kind, int index, int x, int y)
 {
@@ -434,8 +445,12 @@ static void open_keypad(ui_setlist_t *sl, int index)
     invalidate(sl);
 }
 
-/* A tap on the row of string @p id: its keyboard, on the text in force.
- * The log folders take the folder mode (ui_textkey.h). */
+/**
+ * @brief A tap on the row of string @p id: its keyboard, on the text in
+ *        force.  The log folders take the folder mode (ui_textkey.h).
+ * @param sl The list.
+ * @param id The string.
+ */
 static void open_text(ui_setlist_t *sl, setting_text_id_t id)
 {
     if ((int)id < 0 || id >= SETTING_TEXT_COUNT) {
@@ -447,7 +462,8 @@ static void open_text(ui_setlist_t *sl, setting_text_id_t id)
     invalidate(sl);
 }
 
-/* No press in progress, and no repeat running for one. */
+/** @brief No press in progress, and no repeat running for one.
+ *  @param sl The list. */
 static void drop_press(ui_setlist_t *sl)
 {
     sl->have_press = false;
@@ -581,8 +597,13 @@ static void leave_value(setting_id_t id, float value, char *out, size_t n)
     snprintf(out, n, "%s%s", v, off ? "" : unit);
 }
 
-/* Change @p k, in schema order and the strings after the values, into
- * @p line as "name: saved -> now", each value with its unit. */
+/**
+ * @brief Change @p k, in schema order and the strings after the values,
+ *        as "name: saved -> now", each value with its unit.
+ * @param k    The change.
+ * @param line Takes the line.
+ * @param n    Bytes at @p line.
+ */
 static void change_line(int k, char *line, size_t n)
 {
     for (int i = 0; i < SETTING_COUNT; ++i) {
@@ -929,9 +950,13 @@ static void release(ui_setlist_t *sl, int kind, int index, bool repeated,
     }
 }
 
-/* An event while the keyboard is open goes to the keyboard alone.  OK
- * sets the string, as an edit by hand does; SAVE keeps it, as it keeps a
- * value. */
+/**
+ * @brief An event while the keyboard is open goes to the keyboard alone.
+ *        OK sets the string, as an edit by hand does; SAVE keeps it, as it
+ *        keeps a value.
+ * @param sl  The list.
+ * @param evt The event.
+ */
 static void textkey_event(ui_setlist_t *sl, const touch_event_t *evt)
 {
     char text[SETTINGS_TEXT_MAX];

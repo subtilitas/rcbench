@@ -303,17 +303,18 @@ Die Aufgabe auf der linken Karte bestimmt die ersten Hilfeseiten:
 | SERVO OPTIONEN > SWEEP | KURVE, TEMPO und BEREICH (3) |
 | SERVO OPTIONEN > PRÜFLING | NAME, BERICHT, SENSOR-MITTE, die Taste AS5600 und die Grenzen (5) |
 | SERVO, jede Aufgabe | Typ, Grafik oder PROG 5V, SOLL und TEMPO (4); ZIEL, ZENTRIEREN mit SWEEP und FREIGEBEN, ARM, auf RUDER auch die Seitenansicht (3 oder 4) |
-| SUPPLY LIVE | die Aufgabenleiste, GRAFIK und TABELLE, SPANNUNG und STROMBEGRENZUNG (4) |
-| SUPPLY OPTIONEN > GRENZEN | die Tabs, die Obergrenzen, die Startwerte und mit dem PD mini PD MINI ZURÜCKSETZEN (3 oder 4); die Abschaltungen und Rückfragen, Hilfefeld links (5) |
-| SUPPLY OPTIONEN > PD MINI | die vier Zeilen: PD mini, TX, RX und Baud (4) |
-| SUPPLY, jede Aufgabe | der Bereich und die vier Messwertkarten (5); in LIVE die Sollwerte, SPITZENWERTE ZURÜCKSETZEN und der Ausgang (2 oder 3) |
+| SUPPLY LIVE | GRAFIK und TABELLE, SPANNUNG und STROMBEGRENZUNG (3) |
+| SUPPLY LIVE, die rechte Spalte | der Bereich und die vier Messwertkarten (5); die Sollwerte, SPITZENWERTE ZURÜCKSETZEN, AUSGANG EIN und OPTIONEN (4) |
+| eine Optionsliste (MOTOR & ESC, SUPPLY) | eine Zeile, der Name der Leiste und Name ZURÜCKSETZEN (3); `-`, Wert und `+` einer Zeile und SPEICHERN (4) |
 
 Eine Hilfeseite, deren Hilfefeld ein Bedienelement zum Anhalten eines
 Ausgangs verdecken würde, fehlt, solange dieses Element sichtbar ist:
 
-- Die Hilfeseiten zur linken Karte verdecken die SOLL-Zeile von SERVO und
-  die rechte Spalte von SUPPLY. Sie fehlen, solange der Netzteilausgang an
-  ist oder ein EIN unterwegs ist: AUSGANG AUS bleibt sichtbar.
+- Die Hilfeseiten zur linken Karte verdecken die SOLL-Zeile von SERVO. Sie
+  fehlen, solange der Netzteilausgang an ist oder ein EIN unterwegs ist:
+  AUSGANG AUS bleibt sichtbar. AUSGANG AUS von SUPPLY, das mittlere Feld
+  der Fußleiste, liegt unter jedem Hilfefeld; SUPPLY bietet dann keine
+  Hilfeseite.
 - Die Hilfeseiten zur Ausgangskarte von SERVO verdecken die linke Karte. Sie
   fehlen, solange der automatische Test, ein Endlagenlauf oder AUTO läuft:
   TEST BEENDEN oder LAUF BEENDEN bleibt sichtbar. Ein solcher Lauf ist
@@ -640,7 +641,7 @@ aktiviert ist. Jede Seite nennt die Quelle ihrer Messwerte.
 | --- | --- |
 | MOTOR & ESC | der IOmcu ESCs ansteuert und eine INA228-Konfiguration hat, die unter SETUP, SENSORS eingeschaltet ist |
 | SERVO | der IOmcu Servo-PWM-Ausgänge ansteuert |
-| SUPPLY | der PD mini auf der Registerkarte PD MINI auf SUPPLY eingeschaltet ist, unabhängig davon, was der IOmcu meldet; sonst rechnet das Panel mit seinem eigenen Netzteilmodell |
+| SUPPLY | der PD mini im Abschnitt PD MINI der SUPPLY-Optionen eingeschaltet ist, unabhängig davon, was der IOmcu meldet; sonst rechnet das Panel mit seinem eigenen Netzteilmodell |
 | RECEIVER, BATTERY, BALANCE | in diesem Release nie: kein IOmcu meldet diese Fähigkeiten |
 
 Der IOmcu meldet seine Fähigkeitsbits beim Start. Antwortet kein IOmcu,
@@ -730,6 +731,67 @@ von ESC STICK verwendet 59 x 57px, das Tastenfeld unter OPTIONEN auf
 MOTOR & ESC 145 x 89px und das Tastenfeld der Blattzahl auf BALANCE
 242 x 72px.
 
+## Die Fußleiste und die Optionsliste
+
+MOTOR & ESC und SUPPLY enden in derselben Fußleiste: drei Felder von
+328 x 48px bei x 10, 348 und 686, y 444 bis 492 des Inhalts (y 504 bis
+552 des Panels), 4px über dem Alarmband bei y 556. Die Felder sind die
+Spalten der SETUP-Leiste. Eine Seite mit Fußleiste hält ihre eigenen
+Bedienelemente über y 436 des Inhalts.
+
+| Feld | Inhalt |
+| --- | --- |
+| links | der Name der Seite in 12 x 24 und darunter in 10 x 20, was sie gerade ansteuert: `DSHOT300 GPIO 0`, `PD MINI TX GPIO 12 RX GPIO 13`, `SIMULIERT`; in der Warnfarbe, solange sie nichts ansteuert, `KEIN MOTOR-PIN` |
+| Mitte | die eine 2s-Haltetaste der Seite: ARM / DISARM, AUSGANG EIN / AUS ([Halte-Tasten](#halte-tasten)) |
+| rechts | OPTIONEN, eine neutrale Taste mit dem Schieberegler-Symbol von SETUP |
+
+OPTIONEN öffnet die Optionsliste der Seite über dem ganzen Inhalt. Sie
+öffnet nur, solange die Seite nichts ansteuert. MOTOR & ESC braucht einen
+Prüfstand in SAFE ohne gehaltenes ARM, SUPPLY einen ausgeschalteten Ausgang
+ohne unterwegs befindliches EIN. Sonst ist die Taste grau, und ein Tippen
+zeigt `OPTIONEN nur bei SAFE. Schalte zuerst auf SAFE.` oder
+`OPTIONEN nur bei Ausgang aus. Schalte ihn zuerst aus.` im Alarmband.
+Wird ein Ausgang unter der offenen Liste aktiv, schließt sie.
+
+Die Liste ist die Kategorieliste von SETUP ([Tasten und Liste](#tasten-und-liste)):
+
+- Zeilen von 64px im Abstand von 70px; eine Überschrift von 34px im
+  Abstand von 40px, ihr Name in der Akzentfarbe, daneben eine Zeile, wo
+  die Seite eine liefert.
+- `-` und `+` von 56 x 48px bei x 704 und 926; `<` und `>` bei einem
+  Schalter und einer Auswahl. Eine Taste wirkt beim Loslassen. Gehalten
+  wiederholt sie nach 0,45s mit 8 Schritten je Sekunde und 1,8s später mit
+  30 je Sekunde.
+- Ein Tippen auf den Wert einer Zahl öffnet das Tastenfeld über dem
+  Inhalt, 1004 x 482px. OK übernimmt einen Wert im Bereich; die Seite kann
+  den Bereich enger fassen, den Wert runden oder ihn mit Grund ablehnen.
+- Ein Ziehen um mehr als 8px rollt und verstellt nichts. Die Rollleiste
+  ist 12px breit bei x 1002.
+- Eine Zeile, die die Seite sperrt, zeigt keine Tasten und nennt die
+  Sperre in ihrer Hilfezeile in der Warnfarbe. Ein Druck darauf nennt die
+  Sperre im Alarmband.
+
+Die Leiste der Liste nimmt den Platz der Fußleiste ein:
+`[Name] [Name ZURÜCKSETZEN] [SPEICHERN]`. Das linke Feld behält Name und
+Ansteuerung der Seite, so bleibt der aktive Ausgang sichtbar. Name
+ZURÜCKSETZEN setzt die Einstellungen der Liste auf ihre Vorgaben, keine
+anderen. SPEICHERN fordert das Schreiben des ganzen Speichers an, wie auf
+SETUP; die Liste selbst schreibt nichts.
+
+| SPEICHERN zeigt | Farbe | Stand |
+| --- | --- | --- |
+| `GESPEICHERT` | neutral, ohne Wirkung | nichts ist ungeschrieben |
+| `SPEICHERN` | grün | eine Änderung ist ungeschrieben; ein Tippen fordert das Schreiben an |
+| `BEI STILLSTAND` | gelb | Schreiben ist angefordert und wartet auf einen Prüfstand in SAFE |
+| `NICHT GESPEICHERT` | rote Schrift auf neutral | das letzte Schreiben wurde abgelehnt |
+
+Das Home-Feld schließt zuerst das Tastenfeld, dann eine Auswahlliste,
+dann die Liste. Ist eine Änderung ungeschrieben und kein Schreiben
+angefordert, zeigt es zuerst die Warnung beim Verlassen
+([Mit ungespeicherten Werten verlassen](#mit-ungespeicherten-werten-verlassen)):
+BLEIBEN, VERWERFEN und SPEICHERN. VERWERFEN nimmt in ARMED keinen Druck
+an. Ein Tippen auf das Home-Feld bei offener Warnung schließt die Warnung.
+
 ## Splash
 
 ![Der Splash](img/de/splash.png)
@@ -762,10 +824,10 @@ und öffnet dann das Menü. Tippe, um die Wartezeit zu überspringen.
 
 ![Motor und ESC](img/de/motor.png)
 
-MOTOR & ESC hat oben drei Aufgaben: LIVE, PROGRAMMIEREN und OPTIONEN.
-Jede Registerkarte ist 150 x 40px groß und beginnt bei y 8 des Inhalts;
-die Seite darunter beginnt bei y 56. Die Menükachel öffnet immer LIVE.
-Tippe auf eine Registerkarte, um die Aufgabe zu wechseln. Das fügt keine
+MOTOR & ESC hat oben zwei Aufgaben: LIVE und PROGRAMMIEREN. Jede
+Registerkarte ist 150 x 40px groß und beginnt bei y 8 des Inhalts; die
+Seite darunter beginnt bei y 56. Die Menükachel öffnet immer LIVE. Tippe
+auf eine Registerkarte, um die Aufgabe zu wechseln. Das fügt keine
 Navigationsebene hinzu und lässt die gewählte LIVE-Ansicht GRAFIK oder
 TABELLE unverändert.
 
@@ -773,31 +835,37 @@ TABELLE unverändert.
 | --- | --- |
 | LIVE | die Grafik oder die Tabelle über dem Gas |
 | PROGRAMMIEREN | die Liste der ESC-Programmierverfahren; eine Zeile öffnet ihre Sitzung über den gesamten Inhalt ([Programmieren](#programmieren)) |
-| OPTIONEN | die 8 ESC-Einstellungen unter AKKU, MOTOR und GASAUSGANG ([Optionen](#motor--esc-optionen)) |
+
+Die Fußleiste zeigt `[MOTOR & ESC] [ARM / DISARM] [OPTIONEN]`
+([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste)).
+Ihr linkes Feld nennt Protokoll und Pins von ZIEL; OPTIONEN öffnet die 8
+ESC-Einstellungen ([MOTOR & ESC, Optionen](#motor--esc-optionen)).
 
 MOTOR & ESC hat wie SERVO zwei Spalten: links den 620px breiten
 Aufgabenbereich, rechts eine 380px breite Leiste. So bleiben die Messwerte
 von der Gasbedienung getrennt. Die Leiste zeigt von oben nach unten die
-drei Temperaturen, vier Messwertanzeigen (je 56px hoch mit Ziffern in
-32 x 44) und das Feld STEUERUNG. Es enthält eine Titelzeile mit mAh und Wh
-des Laufs, die ZIEL-Zeile (48px), SPITZENWERTE ZURÜCKSETZEN (48px) und
-ARM (60px).
+drei Temperaturen in einer Zeile bei y 12 des Inhalts,
+`ESC 44°C  MOT --  MCU 38°C`, vier Messwertanzeigen (je 56px hoch mit
+Ziffern in 32 x 44) und das Feld STEUERUNG. Es enthält eine Titelzeile mit
+mAh und Wh des Laufs, die ZIEL-Zeile (48px) und SPITZENWERTE ZURÜCKSETZEN
+(48px). Beide Spalten enden bei y 436 des Inhalts; die Gastasten enden
+48px über ARM.
 
-ZIEL und ARM liegen an denselben Positionen wie im Ausgangsfeld von SERVO.
-ARM reicht von y 424 bis 484 des Inhalts und endet 8px über dem Alarmband.
-Die rechte Leiste erscheint auf LIVE, der Liste von PROGRAMMIEREN und
-OPTIONEN; ARM wirkt auf allen dreien. Eine geöffnete Programmiersitzung
-verdeckt die Leiste. Der eingeschaltete Drehknopf ändert auf LIVE das Gas
-([der Knopf](#panel-der-drehknopf)). Auf PROGRAMMIEREN und OPTIONEN hat
-eine Drehung keine Wirkung.
+ARM belegt das mittlere Feld der Fußleiste, y 444 bis 492 des Inhalts,
+x 348 bis 676. Es wirkt auf LIVE und auf der Liste von PROGRAMMIEREN. Eine
+geöffnete Programmiersitzung verdeckt Leiste und Fußleiste. Der
+eingeschaltete Drehknopf ändert auf LIVE das Gas
+([der Knopf](#panel-der-drehknopf)). Auf PROGRAMMIEREN und über der
+Optionsliste hat eine Drehung keine Wirkung.
 
 Das Home-Feld führt eine Navigationsebene zurück:
 
 | Von | Das Home-Feld führt zu |
 | --- | --- |
-| dem Tastenfeld auf OPTIONEN | OPTIONEN; der Wert bleibt unverändert |
+| dem Tastenfeld über der Optionsliste | der Liste; der Wert bleibt unverändert |
+| der Optionsliste | LIVE oder PROGRAMMIEREN, über die Warnung beim Verlassen, solange eine Änderung ungeschrieben ist |
 | einer Sitzung auf PROGRAMMIEREN | eine Ebene höher in der Sitzung; von ihrer obersten Ebene zur Liste von PROGRAMMIEREN ([Programmieren](#programmieren)) |
-| LIVE, der Liste von PROGRAMMIEREN oder OPTIONEN | dem Menü; der Prüfstand schaltet auf SAFE |
+| LIVE oder der Liste von PROGRAMMIEREN | dem Menü; der Prüfstand schaltet auf SAFE |
 
 ### ZIEL nennt das Protokoll und die Pins
 
@@ -1098,8 +1166,8 @@ auf MOTOR & ESC. Eine durch ARM auf SERVO begonnene SERVO-Datei hat vor
   hat.
 - Eine Zeile nimmt einen Wert nur aus einer Quelle, die ihre `source` ist:
   - alle fünf Zellen des Messgeräts sind leer in einer `measured`-Zeile,
-    solange das Netzteil das Modell des Panels ist (PD mini auf der
-    Registerkarte PD MINI von SUPPLY ausgeschaltet);
+    solange das Netzteil das Modell des Panels ist (PD mini im Abschnitt PD MINI
+    der SUPPLY-Optionen ausgeschaltet);
   - sie sind leer in einer `model`-Zeile, solange nach dem Verlust des Links
     noch der letzte Messwert des PD mini gezeigt wird;
   - eine `model`-Zeile hat keinen Wert des INA3221 und kein `angle`, da beide eine
@@ -1192,8 +1260,10 @@ LOGS gruppiert `out`, `port` und `supply` unter INA3221.
 
 ![OPTIONEN](img/de/motor-settings.png)
 
-OPTIONEN enthält die 8 Einstellungen für Akku, Motor und Gasausgang
-(`SET_CAT_ESC`), in Schemareihenfolge unter drei Überschriften:
+OPTIONEN in der Fußleiste öffnet die 8 Einstellungen für Akku, Motor und
+Gasausgang (`SET_CAT_ESC`) als Optionsliste, in Schemareihenfolge unter
+drei Überschriften
+([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste)):
 
 | Überschrift | Einstellungen |
 | --- | --- |
@@ -1201,19 +1271,17 @@ OPTIONEN enthält die 8 Einstellungen für Akku, Motor und Gasausgang
 | MOTOR | Motorpole, Nenn-kV |
 | GASAUSGANG | Leerlaufpuls, Vollgaspuls, Rampengrenze |
 
-Die Zeilen stehen in zwei 295px breiten Spalten: AKKU und MOTOR links,
-GASAUSGANG rechts. Jede 68px hohe Zeile enthält links die Beschriftung,
-rechts den Wert mit Einheit in einem Feld von 120 x 48px und darunter
-eine Hilfezeile in 8 x 16.
+Die Liste öffnet bei einem Prüfstand in SAFE ohne gehaltenes ARM und
+schließt, sobald er SAFE verlässt. Ihre Leiste zeigt
+`[MOTOR & ESC] [MOTOR & ESC ZURÜCKSETZEN] [SPEICHERN]`; unter dem Namen
+stehen Protokoll und Pins von ZIEL.
 
-Tippe auf ein Wertefeld, um das Tastenfeld zu öffnen. Es verdeckt die
-linke Spalte und die Aufgabenleiste (620 x 529px), sodass du darunter
-keine Aufgabe wechseln kannst. Die rechte Leiste bleibt erreichbar.
-Das Tastenfeld zeigt Name, Bereich und Einheit der Einstellung. OK
-übernimmt einen gültigen Wert und rundet auf die Schrittweite, etwa
-4321mAh auf 4300mAh. Bei Werten außerhalb des Bereichs bleibt es offen
-und zeigt den Bereich in der Warnfarbe. ABBRECHEN oder das Home-Feld
-schließt es ohne Wertänderung.
+Tippe auf einen Wert, um das Tastenfeld zu öffnen. Es verdeckt den Inhalt
+über der Leiste (1004 x 482px). Das Tastenfeld zeigt Name, Bereich und
+Einheit der Einstellung. OK übernimmt einen gültigen Wert und rundet auf
+die Schrittweite, etwa 4321mAh auf 4300mAh. Bei Werten außerhalb des
+Bereichs bleibt es offen und zeigt den Bereich in der Warnfarbe. ABBRECHEN
+oder das Home-Feld schließt es ohne Wertänderung.
 
 ![Das Tastenfeld über OPTIONEN](img/de/motor-settings-keypad.png)
 
@@ -1228,13 +1296,12 @@ Das Panel prüft denselben Abstand vor dem Senden des Paars an den IOmcu.
 Dessen eigene Schreibprüfung begrenzt jeden Puls auf 400 bis 2500us,
 prüft aber nicht den Abstand.
 
-Leerlaufpuls und Vollgaspuls lassen sich nur in SAFE ändern. Der IOmcu
+Leerlaufpuls und Vollgaspuls ändern sich nur in SAFE. Der IOmcu
 übernimmt die Endpunkte, solange der Prüfstand SAFE ist, 300ms nach der letzten
-Änderung. Beim Wechsel auf ARMED werden keine Endpunkte gesendet. In ARMED,
-während einer ARM-Haltegeste und bei ausstehender ARM- oder DISARM-Antwort
-sind beide Wertefelder gesperrt. Ihre Hilfezeile zeigt
-`Nur bei SAFE einstellbar` in der Warnfarbe. Ein offenes Tastenfeld schließt
-beim Druck auf ARM oder beim Verlassen von SAFE.
+Änderung. Beim Wechsel auf ARMED werden keine Endpunkte gesendet. In ARMED
+ist die Liste geschlossen; verlässt der Prüfstand SAFE bei offener Liste,
+schließt sie, und ein offenes Endpunkt-Tastenfeld schließt mit ihr, ohne
+die Eingabe zu übernehmen.
 
 Die 2s-Haltegeste gibt einer zuvor eingegebenen Änderung Zeit, den IOmcu zu
 erreichen. Ist bei bestehender Verbindung noch eine Übertragung offen,
@@ -1246,24 +1313,14 @@ eine wiederhergestellte Verbindung kann das Paar wirksam machen
 ([Ein Pulsbereich unterwegs](Safety-de.md#ein-pulsbereich-unterwegs)).
 Die übrigen 6 Einstellungen lassen sich jederzeit ändern.
 
-Alle Einstellungen nutzen einen gemeinsamen Speicher. OK übernimmt einen
-Wert sofort und fordert das Speichern an. Das Panel schreibt den gesamten
+Alle Einstellungen nutzen einen gemeinsamen Speicher. Eine Änderung gilt
+sofort; SPEICHERN fordert das Schreiben an. Das Panel schreibt den gesamten
 Speicher im ersten Frame mit Prüfstand SAFE, Netzteilausgang aus und ohne
-geladene oder gerade abgerufene Platinenzeichnung. Denselben Vorgang
-fordert SPEICHERN auf SETUP an ([Werte behalten](#werte-behalten)).
-
-Ungespeicherte SETUP-Änderungen werden mitgeschrieben; die Warnung beim
-Verlassen von SETUP entfällt. Wird das Schreiben abgelehnt, bleiben alle
-Änderungen ungespeichert. Die SETUP-Warnung nennt dann auch die
-ESC-Einstellungen. Die Statuszeile am Seitenende, 4px über dem Alarmband,
-zeigt den Speicherzustand:
-
-| Zeile | Stand |
-| --- | --- |
-| `GESPEICHERT` | alle Änderungen sind gespeichert |
-| `SPEICHERN AUSSTEHEND` | Speichern ist angefordert und wartet auf einen ruhenden Prüfstand |
-| `NICHT GESPEICHERT` | der letzte Speichervorgang wurde abgelehnt |
-| `ÄNDERUNGEN IN SETUP NICHT GESPEICHERT` | Änderungen sind ungespeichert, ohne offenen Speicherauftrag; die nächste Änderung hier speichert sie mit |
+geladene oder gerade abgerufene Platinenzeichnung, derselbe Vorgang, den
+SPEICHERN auf SETUP anfordert ([Werte behalten](#werte-behalten)).
+Ungespeicherte SETUP-Änderungen werden mitgeschrieben. Wird das Schreiben
+abgelehnt, bleiben alle Änderungen ungespeichert, und SPEICHERN zeigt
+`NICHT GESPEICHERT`.
 
 ### Programmieren
 
@@ -1676,12 +1733,12 @@ Pulsbereich keine Einheit. Eingetragene Pulsbreiten erscheinen sofort.
 | --- | --- | --- |
 | ein INA3221-Kanal | `INA`, die Adresse seines Bausteins und der Kanal: `INA 0x41 CH2` | das letzte 50ms-Fenster des Kanals: den mittleren Strom, die mittlere Busspannung auf der Lastseite des Shunts und ihr Produkt. Ein Punkt in der Grafik je Fenster, 20 in der Sekunde |
 | der PD mini | `PD MINI` | die letzte Abtastung des Netzteils. Ein Punkt je Abtastung |
-| das Modell, solange kein IOmcu antwortet | `PD MINI` | die letzte Abtastung des Netzteils: die des Netzteilmodells unter dem SIMULATION-Wasserzeichen, und keinen Messwert, wenn die Registerkarte PD MINI auf SUPPLY den PD mini einschaltet, der ohne Verbindung nicht antwortet |
+| das Modell, solange kein IOmcu antwortet | `PD MINI` | die letzte Abtastung des Netzteils: die des Netzteilmodells unter dem SIMULATION-Wasserzeichen, und keinen Messwert, wenn der Abschnitt PD MINI der SUPPLY-Optionen den PD mini einschaltet, der ohne Verbindung nicht antwortet |
 
 ![Der INA3221 als Messgerät](img/de/servo-ina.png)
 
-Der Name bleibt in beiden Sprachen `PD MINI`. Ist der PD mini auf der
-Registerkarte PD MINI von SUPPLY ausgeschaltet, verwendet das Panel sein
+Der Name bleibt in beiden Sprachen `PD MINI`. Ist der PD mini im Abschnitt PD MINI
+der SUPPLY-Optionen ausgeschaltet, verwendet das Panel sein
 Netzteilmodell. Links oben in der Grafik erscheint unter dem Namen die
 Markierung SIMULIERT (englisch SIMULATED), da rechts vom Namen drei
 Messwerte stehen. Sie ist 26px hoch und 30px plus Wortbreite breit,
@@ -2326,7 +2383,10 @@ Ruderhornwinkel unter GEMESSEN sowie in CSV und Bericht eines Laufs
 Die Spannungs- und Stromgrenzen von SUPPLY begrenzen Sollwerte und
 Teststufen. Sie stehen unter den TEST-Feldern und auf PRÜFLING in einer
 600 x 48px großen Taste: `GRENZEN 21.00V 5.00A: SUPPLY ÖFFNEN`.
-Tippe darauf, um SUPPLY > OPTIONEN > GRENZEN zu öffnen und sie einzustellen.
+Tippe darauf, um die Optionsliste von SUPPLY oben zu öffnen und sie
+einzustellen; bei eingeschaltetem Netzteilausgang bleibt die Liste zu, und
+das Band nennt den Grund. Das erste Home-Feld schließt die Liste, das
+nächste führt zu SERVO zurück.
 
 Beide Tasten öffnen wie ZIEL eine andere Seite. Deren Home-Feld führt zur
 ursprünglichen Aufgabe und Unterseite zurück. Das Verlassen von SERVO
@@ -2492,7 +2552,7 @@ Aktuelle Einschränkungen:
 - Am Netzteilmodell des Panels sind die Ströme des automatischen Tests die Last des Modells, nicht die
   des Servos: ein Lauf dort misst das Modell. [Was nicht gemessen ist](Servo-de.md#was-nicht-gemessen-ist).
 - Das Netzteil auf der rechten Fläche ist das von SUPPLY: der PD mini, wenn
-  die Registerkarte PD MINI auf SUPPLY ihn aktiviert, sonst das Modell des Panels, dessen Spannung, Strom
+  der Abschnitt PD MINI der SUPPLY-Optionen ihn aktiviert, sonst das Modell des Panels, dessen Spannung, Strom
   und Leistung simuliert und nicht gemessen sind.
 
 ## Netzteil
@@ -2506,37 +2566,38 @@ Receiver-Transmitter). Der IOmcu verwendet einen PIO-UART (Programmable
 Input/Output) auf zwei Pins, über die SUPPLY-Link-Page (Protokoll 4.3).
 Das Panel schreibt die Page und liest sie alle 100ms.
 
-Ist der PD mini auf der Registerkarte PD MINI aktiviert, zeigt die
+Ist der PD mini in der Optionsliste aktiviert, zeigt die
 Kopfzeile Modul und UART-Pins, etwa `PD MINI TX GPIO 12 RX GPIO 13`, aus
 den Einstellungen PD mini TX und PD mini RX. Ein fehlender Pin oder beide
 Signale auf demselben GPIO ergeben `PD MINI OHNE PINS`. Bei deaktiviertem
 Modul verwendet das Panel sein Netzteilmodell. Die Kopfzeile zeigt
 `SIMULIERT: SCHALTE IN PD MINI EIN`; die Menükachel trägt SIMULIERT.
 
-SUPPLY hat zwei Aufgaben, LIVE und OPTIONEN, mit je 150 x 40px großen
-Registerkarten über dem Inhaltsbereich. Die Menükachel öffnet immer LIVE.
-Tippe auf eine Registerkarte, um die Aufgabe zu wechseln. Der Wechsel
-fügt keine Navigationsebene hinzu und behält die LIVE-Ansicht GRAFIK
-oder TABELLE bei.
+Die Fußleiste zeigt `[SUPPLY] [AUSGANG EIN / AUS] [OPTIONEN]`
+([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste)).
+Die Zeile unter SUPPLY nennt die Quelle: `PD MINI TX GPIO 12 RX GPIO 13`,
+`PD MINI OHNE PINS` oder `SIMULIERT`, in der Warnfarbe ohne Pins oder
+solange der PD mini nicht antwortet. OPTIONEN öffnet die 9 Einstellungen
+des Netzteils und die Anschlüsse des PD mini als eine Liste
+([Netzteil, Optionen](#netzteil-optionen)). Die Menükachel öffnet die Seite
+mit geschlossener Liste.
 
-| Aufgabe | Die linke Spalte, 620px |
-| --- | --- |
-| LIVE | die Grafik oder die Tabelle über den Sollwerten |
-| OPTIONEN | die Registerkarten GRENZEN und PD MINI ([Der Tab PD MINI](#der-tab-pd-mini)); auf GRENZEN die 9 Einstellungen des Netzteils unter AUSGANGSGRENZEN, NACH DEM NEUSTART, ABSCHALTUNGEN und RÜCKFRAGE IM BETRIEB ([Netzteil, Optionen](#netzteil-optionen)) |
-
-Die Kopfzeile rechts neben der Aufgabenleiste zeigt Modul, Pins und
+Die Kopfzeile, y 8 bis 48 des Inhalts ab x 18, zeigt Modul, Pins und
 ONLINE oder ANTWORTET NICHT in 10 x 20. Rechts steht in 8 x 16 der
-zulässige Sollwertbereich, etwa `3.3-8.4V  0.50-5.00A`. Die Zeile bleibt
-auf beiden Aufgaben sowie unter Tastenfeld und Bestätigungsdialog sichtbar.
+zulässige Sollwertbereich, etwa `3.3-8.4V  0.50-5.00A`; die Liste
+wiederholt ihn neben ihrer Überschrift AUSGANGSGRENZEN. Die Kopfzeile
+bleibt unter Tastenfeld und Bestätigungsdialog sichtbar.
 
-Die 380px breite rechte Leiste ist auf beiden Aufgaben gleich: vier
-64px hohe Messwertfelder SPANN., STROM, LEIST. und MODUS, darunter
-STEUERUNG. Dessen Titelzeile zeigt mAh und Wh des Laufs. Unten stehen
-SPITZENWERTE ZURÜCKSETZEN (48px) und AUSGANG EIN / AUS (60px), an der
-Stelle von ARM und DISARM auf SERVO und MOTOR & ESC.
+Die 380px breite rechte Leiste zeigt vier 64px hohe Messwertfelder
+SPANN., STROM, LEIST. und MODUS, darunter STEUERUNG mit mAh und Wh des
+Laufs in der Titelzeile und SPITZENWERTE ZURÜCKSETZEN (48px). AUSGANG EIN
+/ AUS ist das mittlere Feld der Fußleiste, y 444 bis 492 des Inhalts,
+x 348 bis 676, wo MOTOR & ESC ARM hat. Beide Spalten enden bei y 436 des
+Inhalts.
 
-Das Layout entspricht MOTOR & ESC. Links auf LIVE stehen das Ausgangsfeld
-mit GRAFIK | TABELLE unter dem Titel und darunter SOLLWERTE. Jede
+Das Layout entspricht MOTOR & ESC. Links stehen das Ausgangsfeld mit
+GRAFIK | TABELLE unter dem Titel und einer 78px hohen Grafik, darunter
+SOLLWERTE. Jede
 Sollwertzeile enthält Name, `-0.1` (72 x 48px), Reglerbahn (312 x 48px),
 `+0.1` und ein Wertefeld von 120 x 48px.
 
@@ -2572,13 +2633,13 @@ aus- und wieder eingeschaltet wird. Der benötigte Abstand ist nicht gemessen.
 
 Die Grenze liegt 0,2V über der Abschaltlinie (siehe unten). Damit darf die
 Eingangsspannung unter Last um 0,2V sinken, bevor ein Sollwert an der Grenze
-zur Abschaltung führt. OPTIONEN begrenzt beide Bereiche zusätzlich.
+zur Abschaltung führt. Die Grenzen der Optionsliste engen beide Bereiche zusätzlich ein.
 Die Regler folgen dem aktiven Netzteil. Tippe auf eine Reglerbahn, um den
 Wert unter dem Finger zu setzen.
 
 **Tippe auf SPANN., STROM oder ein Sollwertfeld, um das Tastenfeld zu
-öffnen.** Es belegt die linke Spalte unter der Aufgabenleiste, mit Tasten
-von 145 x 76px. Die Titelzeile zeigt den erlaubten Bereich; der aktuelle
+öffnen.** Es belegt die linke Spalte unter der Kopfzeile, 620 x 380px,
+mit Tasten von 145 x 76px. Die Titelzeile zeigt den erlaubten Bereich; der aktuelle
 Wert bleibt bis zur ersten Ziffer blass. OK übernimmt einen Wert im
 Bereich und rundet auf die Schrittweite des Netzteils. Außerhalb des
 Bereichs wird der Wert abgelehnt und der Bereich in Warnfarbe markiert.
@@ -2597,7 +2658,7 @@ keine Rückfrage und der Regler kehrt zurück. Bei ausgeschaltetem Ausgang
 ist keine Bestätigung nötig.
 
 STOP schließt die Rückfrage unbeantwortet. ÜBERNEHMEN im selben Frame
-wie STOP (etwa 50ms) ändert nichts. Unter OPTIONEN lässt sich die
+wie STOP (etwa 50ms) ändert nichts. In der Optionsliste lässt sich die
 Bestätigung für Regler und Tastenfeld getrennt ausschalten.
 
 ![Die Frage](img/de/supply-confirm.png)
@@ -2619,8 +2680,8 @@ ESC über ESC STICK. MOTOR & ESC schaltet keine Versorgung; seine
 ESC-Läufe verwenden eine eigene Stromquelle.
 
 Ein von einer anderen Seite eingeschalteter Ausgang bleibt beim
-Verlassen von SUPPLY unverändert. Tastenfelder, Rückfragen, andere
-SUPPLY-Dialoge und Aufgabenwechsel zählen nicht als Verlassen. LINK LOST,
+Verlassen von SUPPLY unverändert. Tastenfelder, Rückfragen und die
+Optionsliste zählen nicht als Verlassen. LINK LOST,
 das kein STOP hat, öffnet sich bei eingeschaltetem Ausgang nicht.
 
 **Das Home-Feld führt eine Ebene zurück.** Das Schließen eines Dialogs
@@ -2629,11 +2690,9 @@ lässt den Ausgang unverändert; beim Rückweg ins Menü gilt die Abschaltregel:
 | Von | Das Home-Feld führt zu |
 | --- | --- |
 | der Rückfrage | dem, was darunter liegt; die Änderung wird verworfen, wie ABBRECHEN sie verwirft |
-| einem Tastenfeld | dem, was darunter liegt, LIVE oder OPTIONEN; der Wert bleibt unverändert |
-| LIVE oder OPTIONEN | dem Menü; ein Ausgang, den SUPPLY eingeschaltet hat, geht aus |
-
-Die Aufgaben liegen wie bei MOTOR & ESC und SERVO auf derselben Ebene.
-Das Home-Feld führt nicht von OPTIONEN zu LIVE.
+| einem Tastenfeld | dem, was darunter liegt, LIVE oder der Optionsliste; der Wert bleibt unverändert |
+| der Optionsliste | LIVE, über die Warnung beim Verlassen, solange eine Änderung ungeschrieben ist |
+| LIVE | dem Menü; ein Ausgang, den SUPPLY eingeschaltet hat, geht aus |
 
 **Beim PD mini** hat AUS Vorrang vor anderen ausstehenden Schreibvorgängen
 an die SUPPLY-Page. Der IOmcu schaltet den Ausgang auch selbst ab, wenn
@@ -2719,17 +2778,18 @@ Einbruch in ERR geht, ist nicht gemessen. Sie kann daher einen Lauf
 beenden, der sonst weiterlaufen würde.
 
 AUSGANG EIN und AUS, SPITZENWERTE ZURÜCKSETZEN und die Messwerte bleiben
-unter OPTIONEN, Tastenfeld und Rückfrage aktiv. Jeweils nur ein Finger
+unter Tastenfeld und Rückfrage aktiv. Die Optionsliste öffnet nur bei
+ausgeschaltetem Ausgang, AUSGANG AUS liegt also nie darunter. Jeweils nur ein Finger
 bedient die Seite: Hält einer ein Bedienelement, hat ein zweiter Finger
 auf der Seite keine Wirkung.
 
-Auf dem [rbmod-Carrier](Carrier-de.md#versorgung) nennt eine Zeile unter
-AUSGANG die getrennten 5V der Programmierports:
+Auf dem [rbmod-Carrier](Carrier-de.md#versorgung) nennt eine Zeile am Fuß
+von STEUERUNG die getrennten 5V der Programmierports:
 `PROG-PORTS 5V, GPIO 21: EIN`, `AUS` oder nach unbeantworteter Abfrage
 `UNBEKANNT`. EIN erscheint in Akzentfarbe. KST- und Hitec-Programmierung
-schalten diese Versorgung. Auf LIVE ermöglicht PROG 5V rechts von GRAFIK
-und TABELLE das manuelle Schalten und zeigt den INA3221-Messwert wie auf
-[SERVO](#servo). Die Zeile unter AUSGANG bleibt bei jeder Aufgabe sichtbar.
+schalten diese Versorgung. PROG 5V rechts von GRAFIK und TABELLE
+ermöglicht das manuelle Schalten und zeigt den INA3221-Messwert wie auf
+[SERVO](#servo).
 Beim Verlassen schaltet SUPPLY die von seinem Feld eingeschalteten 5V
 aus, außer ein Port hält sie. Platinen ohne Schalter zeigen beides nicht.
 
@@ -2737,27 +2797,35 @@ aus, außer ein Port hält sie. Platinen ohne Schalter zeigen beides nicht.
 
 ### Netzteil, Optionen
 
-OPTIONEN ist die zweite Aufgabe und enthält GRENZEN und PD MINI mit je
-40px hohen Registerkarten. GRENZEN zeigt links Obergrenzen und Startwerte,
-rechts Abschaltungen und Rückfragen. Jede Zeile ist 48px hoch mit einem
-120 x 48px großen Wertefeld; unten steht der Speicherstatus. Alle
-Einstellungen bleiben im NVS des Panels über Neustarts erhalten.
+OPTIONEN in der Fußleiste öffnet eine Optionsliste
+([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste)):
+die 9 Einstellungen des Netzteils unter AUSGANGSGRENZEN, NACH DEM NEUSTART,
+ABSCHALTUNGEN und RÜCKFRAGE IM BETRIEB, dann die Anschlüsse des PD mini
+unter PD MINI ([Die Zeilen des PD mini](#die-zeilen-des-pd-mini)) und, am
+PD mini, PD MINI ZURÜCKSETZEN als letzte Zeile. Die Überschrift
+AUSGANGSGRENZEN trägt den geltenden Sollwertbereich,
+`3.3-8.4V  0.50-5.00A`. Die Leiste zeigt
+`[SUPPLY] [SUPPLY ZURÜCKSETZEN] [SPEICHERN]`, die Quelle unter dem Namen.
+Alle Einstellungen bleiben im NVS des Panels über Neustarts erhalten.
 
-Tippe auf einen Wert für das Tastenfeld oder auf einen Schalter zum
-Umschalten. LIVE schließt ein offenes Einstellungstastenfeld ohne
-Wertänderung, wie ABBRECHEN. OPTIONEN schließt entsprechend ein offenes
-Sollwerttastenfeld. Bei einer Rückfrage zum eingeschalteten Ausgang
-bleiben Aufgabenwechsel bis ÜBERNEHMEN oder ABBRECHEN gesperrt.
+Die Liste öffnet bei ausgeschaltetem Ausgang ohne unterwegs befindliches
+EIN und schließt, sobald der Ausgang darunter einschaltet, von dieser oder
+einer anderen Seite. Sie verdeckt den ganzen Inhalt; AUSGANG EIN liegt
+darunter, also schaltet nichts den Ausgang ein, solange sie offen ist.
 
-Änderungen werden im nächsten Frame bei SAFE ohne ausstehendes ARM,
-Netzteilausgang aus ohne ausstehendes EIN und ohne geladene oder gerade
-abgerufene Platinenzeichnung gespeichert. Ungespeicherte SETUP-Änderungen
-werden mitgeschrieben. Flash-Schreiben hält beide Kerne einschließlich
-AUSGANG AUS und Abschaltprüfung an und wartet deshalb auf diese Bedingungen.
-Die Statuszeile zeigt GESPEICHERT, SPEICHERN AUSSTEHEND, nach abgelehntem
-Schreiben NICHT GESPEICHERT oder ÄNDERUNGEN IN SETUP NICHT GESPEICHERT.
-Letzteres bedeutet ungespeicherte SETUP-Änderungen ohne Speicherauftrag;
-SPEICHERN auf SETUP oder eine Änderung hier fordert ihn an.
+Tippe auf den Wert einer Zahl für das Tastenfeld. Die Tastenfelder der
+Grenzen nehmen den Bereich des Netzteils an, die der Startwerte den
+Bereich der Sollwerte; ein Wert außerhalb wird abgelehnt. Eine Änderung
+gilt sofort, SPEICHERN fordert das Schreiben an. Es wartet auf einen
+Frame bei SAFE ohne ausstehendes ARM, Netzteilausgang aus ohne
+ausstehendes EIN und ohne geladene oder gerade abgerufene
+Platinenzeichnung. Ungespeicherte SETUP-Änderungen werden mitgeschrieben.
+Flash-Schreiben hält beide Kerne einschließlich AUSGANG AUS und
+Abschaltprüfung an und wartet deshalb auf diese Bedingungen.
+
+SUPPLY ZURÜCKSETZEN setzt die Einstellungen der Liste auf ihre Vorgaben:
+die 9 des Netzteils und die 4 des PD mini, solange deren Zeilen einen
+Druck annehmen.
 
 ![Die Einstellungen des Netzteils](img/de/supply-settings.png)
 
@@ -2789,7 +2857,7 @@ darunter, um eine zu lange zu viel Strom ziehende Last abzuschalten.
 
 Nach einem Neustart ist der Ausgang aus, welche Startwerte auch gelten.
 
-Bei aktivem PD mini bietet OPTIONEN PD MINI ZURÜCKSETZEN. Es schaltet
+Bei aktivem PD mini endet die Liste mit PD MINI ZURÜCKSETZEN. Es schaltet
 den Ausgang aus und sendet SYSTEM_RESET. Ein Modul mit ERR nach einem
 zu hohen Sollwert kann so ohne Abstecken neu starten. Etwa 1s später wird
 seine Kennung erneut abgefragt. Ob dies jeden ERR löscht, ist nicht
@@ -2830,8 +2898,8 @@ kommt für 0,6s eine Lastspitze von 1,4A hinzu. Bei den Startwerten 6,00V
 und 2,00A führt sie in CC. Diese Werte sind berechnet; kein Gerät am
 Prüfstand wird dadurch versorgt.
 
-Die Einstellungen PD mini, PD mini TX, PD mini RX und PD mini Baud stehen
-unter OPTIONEN > PD MINI ([Der Tab PD MINI](#der-tab-pd-mini)). TX und RX
+Die Einstellungen PD mini, PD mini TX, PD mini RX und PD mini Baud bilden
+den letzten Abschnitt der Optionsliste ([Die Zeilen des PD mini](#die-zeilen-des-pd-mini)). TX und RX
 sind IOmcu-GPIOs: TX verbindet mit DM des Moduls, RX mit DP. `-` und `+`
 überspringen den GPIO des anderen Signals und stoppen am Bereichsende.
 Bei RX auf GPIO 47 endet TX bei GPIO 46. Das Tastenfeld lehnt den anderen
@@ -2844,7 +2912,7 @@ bis ein Wert geändert wird. Der Schalter PD mini deaktiviert das Modul.
 
 Der IOmcu lehnt reservierte Pins, Ausgangspins, Sensorbus- und
 Phasenabgriff-Pins sowie den anderen PD-mini-Pin ab. Der Alarm lautet
-`PD-mini-Pins abgelehnt. Prüfe SUPPLY, Tab PD MINI.` Beispielsweise ist
+`PD-mini-Pins abgelehnt. Prüfe sie in den OPTIONEN von SUPPLY.` Beispielsweise ist
 RX auf GPIO 17 bei Sensor-SDA auf GPIO 16 belegt, weil SCL dann GPIO 17
 verwendet. Der Alarm endet, sobald eine Abfrage die gewünschte Zuordnung
 bestätigt; beim Zurückstellen auf den weiterhin aktiven Pin sofort.
@@ -2866,30 +2934,29 @@ die aktive Rate nach ONLINE, etwa `ONLINE 38400`, bei AUTO und fester Wahl.
 
 ![GPIO 9 von RX für PD mini TX abgelehnt](img/de/supply-pdmini-why.png)
 
-#### Der Tab PD MINI
+#### Die Zeilen des PD mini
 
-OPTIONEN zeigt die 40px hohen Registerkarten GRENZEN und PD MINI. Unter
-PD MINI stehen vier Anschlusszeilen mit 56px Abstand, je mit Beschriftung,
-Hilfezeile, Wertefeld von 120 x 48px und `-`/`+`-Tasten von 56 x 48px.
+Unter der Überschrift PD MINI stehen die Anschlüsse, vier Zeilen der
+Optionsliste.
 
 | Zeile | Werte | Vorgabe | Ein Druck |
 | --- | --- | --- | --- |
-| PD mini | EIN, AUS | AUS | ein Tippen auf den Wert schaltet um |
-| PD mini TX | GPIO -1 bis 47 | -1 | - und + ändern schrittweise, der Wert öffnet das Tastenfeld |
-| PD mini RX | GPIO -1 bis 47 | -1 | - und + ändern schrittweise, der Wert öffnet das Tastenfeld |
-| PD mini Baud | 9600, 19200, 38400, 57600, 115200, 230400, 460800, AUTO | AUTO | < und > und der Wert gehen durch die 8 Werte |
+| PD mini | EIN, AUS | AUS | `<` und `>` schalten um |
+| PD mini TX | GPIO -1 bis 47 | -1 | `-` und `+` ändern schrittweise, der Wert öffnet das Tastenfeld |
+| PD mini RX | GPIO -1 bis 47 | -1 | `-` und `+` ändern schrittweise, der Wert öffnet das Tastenfeld |
+| PD mini Baud | 9600, 19200, 38400, 57600, 115200, 230400, 460800, AUTO | AUTO | `<` und `>` gehen durch die 8 Werte |
 
-Eine Änderung gilt sofort und wird nach der Regel oben gespeichert, wie eine
-Änderung auf GRENZEN. Es gibt kein SPEICHERN und keine Warnung beim Verlassen. Die
-gespeicherten Schlüssel sind `pdm_en`, `pdm_tx`, `pdm_rx` und `pdm_baud`. PD MINI
-ZURÜCKSETZEN startet das Modul neu und schreibt keine der vier Zeilen.
+Eine Änderung gilt sofort; SPEICHERN fordert das Schreiben an, wie bei den
+übrigen Zeilen. Die gespeicherten Schlüssel sind `pdm_en`, `pdm_tx`,
+`pdm_rx` und `pdm_baud`. PD MINI ZURÜCKSETZEN startet das Modul neu und
+schreibt keine der vier Zeilen.
 
 Anschlussänderungen schalten einen aktiven Ausgang aus. In folgenden
 Zuständen sind die Zeilen deshalb gesperrt:
 
 | Zustand | Ein Druck auf eine Zeile | Hilfezeile und Band |
 | --- | --- | --- |
-| Ausgang an oder eine Einschaltanforderung unterwegs, von jeder Seite, am PD mini oder am Modell | ändert nichts | `Ausgang ein: schalte ihn zuerst aus` |
+| Ausgang an oder eine Einschaltanforderung unterwegs, von jeder Seite, am PD mini oder am Modell | ändert nichts; die Liste schließt im nächsten Frame | `Ausgang ein: schalte ihn zuerst aus` |
 | ein Programmierport hält das Netzteil | ändert nichts | `Ein Programmierport belegt das Netzteil` |
 | Prüfstand ARMED | ändert nichts; auch `settings_set()` und eine Rücksetzung lassen die Zeilen unverändert | `Nur bei SAFE einstellbar` |
 
@@ -2900,10 +2967,9 @@ Aktivierung, Pins und Baudrate die SUPPLY-Page wie unter
 [Netzteil](#netzteil) beschrieben, nach Prüfung des AUS-Zustands am Modul.
 Erreicht eine Änderung dennoch einen aktiven Ausgang, etwa VERWERFEN nach
 abgelehntem Speichern in der SETUP-Warnung, schaltet sie ihn aus und meldet
-`PD-mini-Anschlüsse geändert. Ausgang aus.` PD MINI ZURÜCKSETZEN bleibt
-auf GRENZEN.
+`PD-mini-Anschlüsse geändert. Ausgang aus.`
 
-![Der Tab PD MINI](img/de/supply-pdmini.png)
+![Die Zeilen des PD mini](img/de/supply-pdmini.png)
 
 Auf dem [rbmod-Carrier](Carrier-de.md) sind PD mini TX auf 7 und RX auf 6
 festgelegt. Sie haben keine Schritttasten und kein Tastenfeld und zeigen
@@ -2911,12 +2977,13 @@ festgelegt. Sie haben keine Schritttasten und kein Tastenfeld und zeigen
 für ein von Hand verdrahtetes Modul erhalten. PD mini und PD mini Baud
 lassen sich unter denselben drei Zustandsbeschränkungen oben ändern.
 
-![Der Tab PD MINI auf dem Carrier](img/de/supply-pdmini-rbmod.png)
+![Die Zeilen des PD mini auf dem Carrier](img/de/supply-pdmini-rbmod.png)
 
 Bei aktivem Netzteilmodell dient der Quelltext in der Kopfzeile als Taste:
-`SIMULIERT: SCHALTE IN PD MINI EIN`. Tippe darauf, um PD MINI von LIVE oder
-GRENZEN aus zu öffnen. Ein offenes Tastenfeld schließt dabei. Eine offene
-Rückfrage zum aktiven Ausgang musst du zuerst beantworten.
+`SIMULIERT: SCHALTE IN PD MINI EIN`. Tippe darauf, um die Optionsliste bei
+der Überschrift PD MINI zu öffnen. Ein offenes Tastenfeld schließt dabei.
+Eine offene Rückfrage zum aktiven Ausgang musst du zuerst beantworten; bei
+eingeschaltetem Ausgang öffnet die Liste nicht.
 
 ## Receiver
 
@@ -6595,7 +6662,7 @@ Eine bereits gespeicherte Bindung behält diesen Pin. Der Programmierport
 hat dann keinen Pin; VERBINDEN in der Servoprogrammierung zeigt den Hinweis
 für einen Port ohne Pin ([der Port](ServoProgrammer-de.md#der-port)).
 
-Ein Pin, den SETUP > SENSORS oder der Tab PD MINI auf SUPPLY hält, wird ebenso gezeigt, rot und
+Ein Pin, den SETUP > SENSORS oder der Abschnitt PD MINI der SUPPLY-Optionen hält, wird ebenso gezeigt, rot und
 durchgestrichen, mit dem, was ihn hält, unter seinem Namen, und lässt sich
 nicht anhaken:
 
@@ -7058,7 +7125,7 @@ Zählung: `GPIO 28: TEILT PWM-SLICE MIT PROG-PORT GPIO 13`,
 
 ![GPIO 13 beim Programmierport](img/de/outputs-prog.png)
 
-Ein Pin, den SETUP > SENSORS oder der Tab PD MINI auf SUPPLY hält, ist ebenso grau, solange kein
+Ein Pin, den SETUP > SENSORS oder der Abschnitt PD MINI der SUPPLY-Optionen hält, ist ebenso grau, solange kein
 Protokoll ihn hält, ein Tippen darauf ändert nichts, und BELEGT führt ihn
 nach dem Programmierport unter `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF`
 in Rot, ohne Kanal. Welche Pins das sind und wann, steht in der Tabelle

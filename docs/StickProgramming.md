@@ -700,7 +700,7 @@ It is not done.
 
 ## Simulation
 
-With the PD mini off on SUPPLY's PD MINI tab, SUPPLY uses the panel's
+With the PD mini off in SUPPLY's PD mini settings SUPPLY uses the panel's
 supply model. The screen refuses RUN in this state, as described above;
 the model code also contains the following ESC simulation. During a stick run the model's current is a simulated ESC
 (`shared/esc/esc_sim.c`) following the profile: power-on at the entry

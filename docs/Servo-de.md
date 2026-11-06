@@ -579,7 +579,7 @@ das Servo vorgesehenen Spannungen und sucht die Spannung, bei der keine
 Bewegung mehr erkennbar ist (Brown-out). Ohne eingeschaltete Winkelquelle
 (siehe unten) misst er keine Hornposition. Bewegung wird aus dem Strom
 des Netzteils abgeleitet, das das Servo versorgt: am PD mini (WeAct PD
-Power Mini V1), wenn der Tab PD MINI auf SUPPLY ihn freigibt, sonst am Netzteilmodell
+Power Mini V1), wenn der Abschnitt PD MINI der SUPPLY-Optionen ihn freigibt, sonst am Netzteilmodell
 des Panels. Ein Lauf am Modell ist im Bericht als Simulation gekennzeichnet; seine
 Messwerte sind simuliert. Ist der INA3221 bei TEST STARTEN das Messgerät der
 Servo-Schiene und das Netzteil der PD mini, liest der Lauf stattdessen den

@@ -6,26 +6,27 @@ order: 30
 
 # Supply
 
-SUPPLY controls and records a programmable supply, the PD mini. This USB-PD (USB Power Delivery) trigger communicates with the IOmcu over a UART (universal asynchronous receiver-transmitter) on two pins. Open SUPPLY from the [menu](overview.md); it always starts on LIVE.
+SUPPLY controls and records a programmable supply, the PD mini. This USB-PD (USB Power Delivery) trigger communicates with the IOmcu over a UART (universal asynchronous receiver-transmitter) on two pins. Open SUPPLY from the [menu](overview.md).
 
-## The strip
+## The layout
 
-The top strip switches between LIVE and SETTINGS. LIVE retains its selected PLOT or TABLE view when you return.
+The left column holds the plot or the table and the set points. The right column holds the readings and the CONTROL card with RESET PEAKS. The header row names the supply, its state and the allowed set-point range; it stays visible under the keypad and the confirmation dialog.
 
-| Task | The left column |
+The footer at the bottom has three slots:
+
+| Slot | What it does |
 |---|---|
-| LIVE | the plot or the table, and the set points |
-| SETTINGS | the caps, the start values, the trips and the questions ([SETTINGS](#settings)) |
+| SUPPLY | the screen's name; under it the source: `PD MINI TX GPIO 12 RX GPIO 13`, `PD MINI NO PINS` or `SIMULATED`, in the warning colour with no pins or no answer |
+| OUTPUT ON / OFF | switches the output ([OUTPUT ON and OFF](#output-on-and-off)) |
+| SETTINGS | opens the settings list ([SETTINGS](#settings)); grey while the output is on |
 
-Both tasks share the right column: readings and the CONTROL card, with RESET PEAKS and OUTPUT ON at the bottom, where SERVO and MOTOR & ESC place ARM. The header to the right of the strip names the supply, its state and the allowed set-point range. It remains visible on both tasks, including under the keypad and confirmation dialog.
-
-The home tag returns one level. In a confirmation dialog, it discards the change like CANCEL. In a keypad, it closes the editor without changing the value. From LIVE or SETTINGS with no dialog open, it returns to the menu; switching tasks does not add a navigation level.
+The home tag returns one level. In a confirmation dialog, it discards the change like CANCEL. In a keypad, it closes the editor without changing the value. In the settings list, it closes the list, first asking about a change you have not saved. From LIVE with nothing open, it returns to the menu.
 
 ## The supply model
 
 ![SUPPLY with the PD mini disabled: SIMULATED](view:supply)
 
-With the PD mini disabled on the [PD MINI tab](#pd-mini-tab), the panel runs a model of a supply. The header reads `SIMULATED: SWITCH ON IN PD MINI`, a button that opens the tab, and the menu tile is marked SIMULATED. The model is a 6Ω load with a 1.4A burst for 0.6s every 3s, behind a 0.05Ω source resistance. Its readings are not measured, and nothing on the bench is powered.
+With the PD mini disabled in the [settings list](#pd-mini-rows), the panel runs a model of a supply. The header reads `SIMULATED: SWITCH ON IN PD MINI`, a button that opens the list at the PD mini's rows, and the menu tile is marked SIMULATED. The model is a 6Ω load with a 1.4A burst for 0.6s every 3s, behind a 0.05Ω source resistance. Its readings are not measured, and nothing on the bench is powered.
 
 ## The PD mini
 
@@ -58,7 +59,7 @@ The plot shows voltage, current and power over the last 30s, with each set point
 | VOLTAGE | 3.3 to 21V, 20mV steps | 1 to 20V, 10mV steps | 0.1V |
 | CURRENT LIMIT | 0.5 to 5A, 50mA steps | 0.05 to 3A, 10mA steps | 0.1A |
 
-The PD mini ranges come from the vendor's page and have not been measured. Output voltage is capped at 0.7V below the reported input voltage: a 5V input allows at most 4.3V. SETTINGS can narrow both ranges further. The active range appears at the right end of the header.
+The PD mini ranges come from the vendor's page and have not been measured. Output voltage is capped at 0.7V below the reported input voltage: a 5V input allows at most 4.3V. The caps in the settings list can narrow both ranges further. The active range appears at the right end of the header.
 
 - Drag a slider, or tap its track to set the value under the finger.
 - `-0.1` and `+0.1` step the value.
@@ -72,7 +73,7 @@ The keypad shows the range in its title row. OK takes a value inside the range, 
 
 ![The question before a change to a live output](view:supply-confirm)
 
-Changing a set point while the output is on opens a confirmation showing the change. APPLY sends it to the supply; CANCEL discards it and restores the slider. A drag asks once, on release. If the drag is interrupted before release, for example by a second finger tapping home, the slider returns without a question. No confirmation is needed with the output off. In SETTINGS, slider and keypad confirmations can be disabled separately.
+Changing a set point while the output is on opens a confirmation showing the change. APPLY sends it to the supply; CANCEL discards it and restores the slider. A drag asks once, on release. If the drag is interrupted before release, for example by a second finger tapping home, the slider returns without a question. No confirmation is needed with the output off. In the settings list, slider and keypad confirmations can be disabled separately.
 
 ## OUTPUT ON and OFF
 
@@ -96,9 +97,9 @@ An output another screen switched on stays as it is when SUPPLY is left. The out
 
 ![SUPPLY on the carrier](view:supply-rbmod)
 
-On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), the PD mini feeds the servo rails. The programming ports have a separate 5V supply switched by GPIO 21. Below OUTPUT, its status reads `PROG PORTS 5V, GPIO 21: ON`, `OFF`, or `NOT READ` if the IOmcu does not answer. KST and Hitec programming sessions control this rail. The PD mini remains under operator control: OUTPUT ON and its set points remain available.
+On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), the PD mini feeds the servo rails. The programming ports have a separate 5V supply switched by GPIO 21. At the foot of the CONTROL card, its status reads `PROG PORTS 5V, GPIO 21: ON`, `OFF`, or `NOT READ` if the IOmcu does not answer. KST and Hitec programming sessions control this rail. The PD mini remains under operator control: OUTPUT ON and its set points remain available.
 
-On LIVE, the PROG 5V box beside PLOT and TABLE controls the programming rail manually, while SAFE or ARMED. Hold PROG 5V ON for 2s to switch it on; tap PROG 5V OFF to switch it off. Early release shows `Hold 2s to switch the programming ports' 5V on.` The box shows the pin status, such as `PROG PORTS 5V, GPIO 21: OFF`, and the last INA3221 window for 0x40 CH3, such as `5.02V  0.120A`.
+The PROG 5V box beside PLOT and TABLE controls the programming rail manually, while SAFE or ARMED. Hold PROG 5V ON for 2s to switch it on; tap PROG 5V OFF to switch it off. Early release shows `Hold 2s to switch the programming ports' 5V on.` The box shows the pin status, such as `PROG PORTS 5V, GPIO 21: OFF`, and the last INA3221 window for 0x40 CH3, such as `5.02V  0.120A`.
 
 While a programmer holds a port, the box reads `HELD BY PROG PORT n` and accepts no press. Leaving SUPPLY switches off a 5V rail enabled by this box, unless a port holds it. Errors switch it off too, after an active servo-memory write finishes, with a maximum wait of 10000ms.
 
@@ -108,7 +109,9 @@ With the box set to ON, two measurement windows below 3000mV count as a 5V failu
 
 ![The supply's settings](view:supply-settings)
 
-SETTINGS shows its controls in the left column. Tap a value for the keypad or a switch to toggle it. Selecting LIVE while the keypad is open cancels the edit. While a live-output confirmation is open, the strip waits for APPLY or CANCEL.
+SETTINGS in the footer opens one list over the whole screen: the caps, the start values, the trips and the questions, then the PD mini's wiring. It opens with the output off only; with the output on, the band reads `SETTINGS open with the output off only. Switch it off first.` An output that goes on while the list is open closes it.
+
+The list works as SETUP's: `-` and `+` step a value, `<` and `>` flip a switch, a tap on a number opens the keypad, and a drag scrolls. The OUTPUT LIMITS heading shows the set-point range in force. The bottom strip reads `[SUPPLY] [RESET SUPPLY] [SAVE]`; SUPPLY keeps the source line under it.
 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
@@ -125,16 +128,17 @@ SETTINGS shows its controls in the left column. Tap a value for the keypad or a 
 - A trip of 0 is off.
 - A current trip at or above CURRENT LIMIT does not fire: the supply holds the limit in CC.
 - A cap lowered under a set point brings the set point down to it.
+- The caps' keypads take the supply's range; the start values' keypads take no more than the caps.
 
-The settings are kept in NVS (non-volatile storage). They are written on the next frame with the bench SAFE and the output off. The bottom line reads `SAVED`, `SAVE PENDING`, `NOT SAVED` or `SETUP CHANGES NOT SAVED`.
+A change takes effect at once. SAVE asks for the write to NVS (non-volatile storage), made on the next frame with the bench SAFE and the output off. SAVE reads `SAVED` with nothing to write, `SAVE` with a change, `WHEN IDLE` while the write waits, and `NOT SAVED` after a refused write. RESET SUPPLY sets the list's settings to their defaults; the PD mini's only while they can change.
 
-With the PD mini as the supply, SETTINGS also offers RESET PD MINI. It switches the output off and restarts the module, for a module that shows ERR. Whether a restart clears every ERR is not measured.
+With the PD mini as the supply, the list ends with RESET PD MINI. It switches the output off and restarts the module, for a module that shows ERR. Whether a restart clears every ERR is not measured.
 
-## PD MINI tab
+## PD mini rows
 
-![The PD MINI tab](view:supply-pdmini)
+![The PD mini's rows](view:supply-pdmini)
 
-SETTINGS has two tabs: LIMITS and PD MINI. Use PD MINI to configure the module's wiring.
+The PD MINI heading in the settings list holds the module's wiring.
 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
@@ -143,7 +147,7 @@ SETTINGS has two tabs: LIMITS and PD MINI. Use PD MINI to configure the module's
 | PD mini RX | -1 to 47 | -1 | the IOmcu GPIO from the module's DP |
 | PD mini baud | 9600, 19200, 38400, 57600, 115200, 230400, 460800, AUTO | AUTO | the module's UART (universal asynchronous receiver-transmitter) rate; AUTO tries each of the 7 rates, one a second |
 
-Changes take effect immediately and are saved as on LIMITS; there is no separate SAVE button. Resetting LIMITS does not reset these settings.
+Changes take effect immediately; SAVE keeps them, as for the other rows.
 
 Wiring changes switch an active output off. These settings are therefore locked while the output is on, an ON command is pending, a programming port holds the supply, or the bench is ARMED. The help line and band identify the condition. If one begins with a pin keypad open, the keypad closes and discards the entry.
 

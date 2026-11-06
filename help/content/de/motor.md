@@ -8,25 +8,33 @@ order: 10
 
 MOTOR & ESC steuert einen ESC (Electronic Speed Controller) und zeichnet Spannung, Strom, Leistung und Drehzahl eines Laufs über der Zeit auf. Öffne die Seite über die Kachel MOTOR & ESC im [Menü](overview.md). Sie beginnt immer mit LIVE.
 
-## Die Leiste
+## Der Aufbau
 
-Die obere Leiste bietet drei Aufgaben: LIVE, PROGRAMMIEREN und OPTIONEN. Tippe auf eine Aufgabe, um zu wechseln. LIVE behält dabei die gewählte Ansicht, GRAFIK oder TABELLE.
+Die obere Leiste bietet zwei Aufgaben: LIVE und PROGRAMMIEREN. Tippe auf eine Aufgabe, um zu wechseln. LIVE behält dabei die gewählte Ansicht, GRAFIK oder TABELLE.
 
 | Aufgabe | Linke Spalte |
 |---|---|
 | LIVE | Grafik oder Tabelle und Gasregler |
 | PROGRAMMIEREN | Liste der ESC-Programmierer ([Programmieren](#programmieren)) |
-| OPTIONEN | [Motor-Optionen](motor-settings.md): Akku, Motor und Gasausgang |
 
-Die rechte Spalte ist bei allen drei Aufgaben gleich: Temperaturen, vier Anzeigen und die Karte STEUERUNG. Die Karte enthält Summen in der Titelzeile, ZIEL, SPITZENWERTE ZURÜCKSETZEN und ARM. ARM steht wie bei SERVO am unteren Kartenrand und funktioniert bei jeder Aufgabe. Eine unter PROGRAMMIEREN geöffnete Sitzung verdeckt die Karte.
+Die rechte Spalte ist bei beiden Aufgaben gleich: die Temperaturen in einer Zeile, vier Anzeigen und die Karte STEUERUNG mit Summen in der Titelzeile, ZIEL und SPITZENWERTE ZURÜCKSETZEN. Eine unter PROGRAMMIEREN geöffnete Sitzung verdeckt beide Spalten und die Fußleiste.
+
+Die Fußleiste unten hat drei Felder:
+
+| Feld | Was es tut |
+|---|---|
+| MOTOR & ESC | der Name der Seite; darunter Protokoll und Pins des Gases, `KEIN MOTOR-PIN` in der Warnfarbe ohne Pin |
+| ARM / DISARM | 2s halten für ARMED, tippen für SAFE ([Ein Lauf](#ein-lauf)) |
+| OPTIONEN | öffnet die [Motor-Optionen](motor-settings.md): Akku, Motor und Gasausgang; grau, solange der Prüfstand nicht SAFE ist |
 
 Das Home-Feld oben links führt jeweils eine Ebene zurück:
 
 | Ausgangspunkt | Ziel des Home-Felds |
 |---|---|
-| Tastenfeld auf OPTIONEN | OPTIONEN; der Wert bleibt unverändert |
+| Tastenfeld über der Optionsliste | die Liste; der Wert bleibt unverändert |
+| die Optionsliste | LIVE oder PROGRAMMIEREN; vorher die Frage nach einer ungespeicherten Änderung |
 | Sitzung auf PROGRAMMIEREN | eine Ebene höher in der Sitzung, dann zur Liste von PROGRAMMIEREN |
-| LIVE, Liste von PROGRAMMIEREN oder OPTIONEN | Menü; der Prüfstand schaltet auf SAFE |
+| LIVE oder Liste von PROGRAMMIEREN | Menü; der Prüfstand schaltet auf SAFE |
 
 ## Programmieren
 
@@ -34,7 +42,7 @@ Das Home-Feld oben links führt jeweils eine Ebene zurück:
 
 PROGRAMMIEREN bietet zwei Wege zur ESC-Programmierung. `ESCs per Gasknüppel` unter STICK-MENÜ öffnet [ESC STICK](motor-stick.md) und steuert die als Gas zugeordneten Pins. `AM32, Bluejay, BLHeli_S, ESCape32` unter SIGNALLEITUNG öffnet die [Programmierung über die Signalleitung](motor-wire.md). Diese Zeile bleibt gedimmt, bis der IOmcu die benötigte Fähigkeit meldet.
 
-ESC STICK verdeckt beide Spalten. Anstelle der Reiter erscheint ein einzeiliger Ausgangsstreifen:
+ESC STICK verdeckt beide Spalten und die Fußleiste. Anstelle der Reiter erscheint ein einzeiliger Ausgangsstreifen:
 
 `ZIEL DSHOT300 GPIO 0 GPIO 1   NETZTEIL 7.60V  1.00A   SAFE`
 
@@ -126,7 +134,7 @@ TABELLE zeigt Spannung, Strom, Leistung und Drehzahl mit ihren Spitzenwerten. Oh
 
 ## kV, rpm/V und WIRK.
 
-Der Kopf der Grafik zeigt Nenn-kV, gemessene Drehzahl je Volt und WIRK. (geschätzter Wirkungsgrad). WIRK. ist die gemessene Drehzahl je Volt geteilt durch Nenn-kV, begrenzt auf 199%. Stelle `Nenn-kV` unter MOTOR & ESC, OPTIONEN ein: 0 bis 10000rpm/V, Vorgabe 0. Bei 0 bleibt das kV-Feld leer, und WIRK. entfällt. WIRK. berücksichtigt nur Kupferverluste einschließlich der ESC-Verluste. Es ist daher eine obere Grenze, kein Wirkungsgrad an der Welle.
+Der Kopf der Grafik zeigt Nenn-kV, gemessene Drehzahl je Volt und WIRK. (geschätzter Wirkungsgrad). WIRK. ist die gemessene Drehzahl je Volt geteilt durch Nenn-kV, begrenzt auf 199%. Stelle `Nenn-kV` in der Optionsliste von MOTOR & ESC ein: 0 bis 10000rpm/V, Vorgabe 0. Bei 0 bleibt das kV-Feld leer, und WIRK. entfällt. WIRK. berücksichtigt nur Kupferverluste einschließlich der ESC-Verluste. Es ist daher eine obere Grenze, kein Wirkungsgrad an der Welle.
 
 ## Das Log eines Laufs
 

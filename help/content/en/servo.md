@@ -85,7 +85,7 @@ The INA3221 becomes the meter after its requirements have held for 1000ms: a fit
 
 ![The panel's supply model as the meter, with the SIMULATED pill](view:servo-model)
 
-While the PD mini is disabled on SUPPLY's PD MINI tab, the supply is the panel's model, and a SIMULATED pill sits on the plot. Its readings are simulated, not measured.
+While the PD mini is disabled in SUPPLY's PD mini settings the supply is the panel's model, and a SIMULATED pill sits on the plot. Its readings are simulated, not measured.
 
 A reading that did not arrive is `---` in LIVE's CURRENT, `--` on the line and a gap in the plot.
 

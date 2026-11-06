@@ -282,17 +282,17 @@ on the left card decides the first pages:
 | SERVO SETTINGS > SWEEP | CURVE, SPEED and RANGE (3) |
 | SERVO SETTINGS > DUT | NAME, REPORT, ENC CENTRE, the AS5600 button and the caps (5) |
 | SERVO, every task | the type, the plot or PROG 5V, SET and SPEED (4); TARGET, CENTRE with SWEEP and RELEASE, ARM, and on RUDDER the side view (3 or 4) |
-| SUPPLY LIVE | the strip, PLOT and TABLE, VOLTAGE and CURRENT LIMIT (4) |
-| SUPPLY SETTINGS > LIMITS | the tabs, the caps, the start values and RESET PD MINI with the PD mini (3 or 4); the trips and the questions, dock on the left (5) |
-| SUPPLY SETTINGS > PD MINI | the four rows: PD mini, TX, RX and baud (4) |
-| SUPPLY, every task | the range and the four reading cards (5); the set points' values on LIVE, RESET PEAKS and OUTPUT (2 or 3) |
+| SUPPLY LIVE | PLOT and TABLE, VOLTAGE and CURRENT LIMIT (3) |
+| SUPPLY LIVE, the rail | the range and the four reading cards (5); the set points' values, RESET PEAKS, OUTPUT ON and SETTINGS (4) |
+| a settings list (MOTOR & ESC, SUPPLY) | a row, the strip's name and RESET name (3); a row's `-`, value and `+`, and SAVE (4) |
 
 A page whose dock would cover a control that stops an output is left out
 while that control shows:
 
-- The left card's pages cover the SET row on SERVO and the rail on
-  SUPPLY, so they are not offered while the supply's output is on or an
-  ON is on its way: OUTPUT OFF stays in view.
+- The left card's pages cover the SET row on SERVO, so they are not
+  offered while the supply's output is on or an ON is on its way: OUTPUT
+  OFF stays in view. SUPPLY's OUTPUT OFF, the footer's middle slot, lies
+  under either dock, so SUPPLY offers no page then.
 - SERVO's output card pages cover the left card, so they are not offered
   while the automatic test, a limit run or AUTO runs: STOP TEST or STOP
   RUN stays in view. Such a run is ARMED, so SERVO then offers no page and
@@ -599,7 +599,7 @@ source of its readings.
 | --- | --- |
 | MOTOR & ESC | the IOmcu drives ESCs and holds an INA228 set-up enabled on SETUP, SENSORS |
 | SERVO | the IOmcu drives servo PWM outputs |
-| SUPPLY | the PD mini is enabled on SUPPLY's PD MINI tab, whatever the IOmcu reports; otherwise the panel runs its own model of a supply |
+| SUPPLY | the PD mini is enabled in SUPPLY's PD mini settings whatever the IOmcu reports; otherwise the panel runs its own model of a supply |
 | RECEIVER, BATTERY, BALANCE | never in this release: no IOmcu reports these capabilities |
 
 The capability bits come from the IOmcu at bring-up. With no IOmcu
@@ -681,6 +681,63 @@ keypad's are 145 x 76px; on the ESC STICK search keyboard 59 x 57px; on
 MOTOR & ESC's SETTINGS the keypad's are 145 x 89px; on BALANCE the blade
 count's keypad's are 242 x 72px.
 
+## The footer and the settings list
+
+MOTOR & ESC and SUPPLY end in the same footer: three slots of
+328 x 48px at x 10, 348 and 686, body y 444 to 492 (panel y 504 to 552),
+4px above the alert band at panel y 556. The slots are SETUP's strip
+columns. A screen with the footer keeps its own controls above body
+y 436.
+
+| Slot | What it holds |
+| --- | --- |
+| left | the screen's name in 12 x 24 and, under it in 10 x 20, what it drives: `DSHOT300 GPIO 0`, `PD MINI TX GPIO 12 RX GPIO 13`, `SIMULATED`; in the warning colour while it drives nothing, `NO MOTOR PIN` |
+| middle | the screen's one 2s hold: ARM / DISARM, OUTPUT ON / OFF ([Hold buttons](#hold-buttons)) |
+| right | SETTINGS (German `OPTIONEN`), a neutral button with SETUP's sliders icon |
+
+SETTINGS opens the screen's settings list over the whole body. It opens
+only while the screen drives nothing. MOTOR & ESC needs a SAFE bench with
+ARM not held; SUPPLY needs the output off and no ON on its way. Otherwise
+the button is grey and a tap puts
+`SETTINGS open on a SAFE bench only. Switch to SAFE first.` or
+`SETTINGS open with the output off only. Switch it off first.` in the
+alert band. An output that goes live under an open list closes it.
+
+The list is SETUP's category list ([Keys and the list](#keys-and-the-list)):
+
+- Rows of 64px at a 70px pitch; a heading of 34px at a 40px pitch, its
+  name in the accent colour, a line beside it where the screen gives one.
+- `-` and `+` keys of 56 x 48px at x 704 and 926; `<` and `>` on a switch
+  and a choice. A key steps at its release. Held, it repeats after 0.45s
+  at 8 steps a second, and at 30 a second 1.8s later.
+- A tap on a number's value opens the keypad over the body,
+  1004 x 482px. OK takes a value inside the range; the screen can narrow
+  the range, round the value or refuse it with a reason.
+- A drag of more than 8px scrolls and steps nothing. The scroll bar is
+  12px wide at x 1002.
+- A row the screen locks draws no keys and names the lock in its help
+  line in the warning colour. A press on it names the lock in the alert
+  band.
+
+The list's strip takes the footer's place: `[name] [RESET name] [SAVE]`.
+The left slot keeps the screen's name and what it drives, so the active
+output stays in view. RESET name sets the list's own settings to their
+defaults and no other. SAVE asks for a write of the whole store, as on
+SETUP; the list itself writes nothing.
+
+| SAVE reads | Colour | State |
+| --- | --- | --- |
+| `SAVED` | neutral, no press | nothing is unwritten |
+| `SAVE` | green | a change is unwritten; a tap asks for the write |
+| `WHEN IDLE` | amber | a write is asked and waits for a SAFE bench |
+| `NOT SAVED` | red label on neutral | the last write was refused |
+
+The home tag closes the keypad first, then a choice list, then the list.
+With a change unwritten and no write asked, it shows the leave warning
+first ([Leaving with values unsaved](#leaving-with-values-unsaved)):
+STAY, DISCARD and SAVE. DISCARD takes no press while ARMED. A tap on the
+home tag with the warning shown closes the warning.
+
 ## Splash
 
 ![The splash](img/splash.png)
@@ -711,39 +768,45 @@ before opening the menu. Tap to skip the wait.
 
 ![Motor and ESC](img/motor.png)
 
-MOTOR & ESC has three tasks along the top: LIVE, PROGRAM and SETTINGS
-(German `LIVE`, `PROGRAMMIEREN`, `OPTIONEN`). Each tab is 150 x 40px,
-starting at body y 8; the page below starts at y 56. The menu tile always
-opens LIVE. Tap a tab to switch tasks. This does not add a navigation level
-or change LIVE's selected view, PLOT or TABLE.
+MOTOR & ESC has two tasks along the top: LIVE and PROGRAM (German `LIVE`,
+`PROGRAMMIEREN`). Each tab is 150 x 40px, starting at body y 8; the page
+below starts at y 56. The menu tile always opens LIVE. Tap a tab to switch
+tasks. This does not add a navigation level or change LIVE's selected
+view, PLOT or TABLE.
 
 | Task | The left column, 620px |
 | --- | --- |
 | LIVE | the plot or the table over the throttle |
 | PROGRAM | the list of ESC programmers; a row opens its session over the whole body ([PROGRAM](#program)) |
-| SETTINGS | the 8 ESC settings under PACK, MOTOR and THROTTLE OUTPUT ([Settings](#motor--esc-settings)) |
+
+The footer reads `[MOTOR & ESC] [ARM / DISARM] [SETTINGS]`
+([The footer and the settings list](#the-footer-and-the-settings-list)).
+Its left slot names TARGET's protocol and pins; SETTINGS opens the 8 ESC
+settings ([MOTOR & ESC settings](#motor--esc-settings)).
 
 MOTOR & ESC uses two columns, like SERVO: a 620px task area on the left and
 a 380px rail on the right. This keeps readings clear of the throttle
-controls. From top to bottom, the rail contains the three temperatures,
-four readouts (each 56px tall with 32 x 44 numerals), and the CONTROL card.
-That card has a title line showing the run's mAh and Wh, a 48px TARGET row,
-a 48px RESET PEAKS button and a 60px ARM button.
+controls. From top to bottom, the rail contains the three temperatures
+on one line at body y 12, `ESC 44°C  MOT --  MCU 38°C`, four readouts
+(each 56px tall with 32 x 44 numerals), and the CONTROL card. That card
+has a title line showing the run's mAh and Wh, a 48px TARGET row and a
+48px RESET PEAKS button. Both columns end at body y 436; the throttle's
+keys end 48px above ARM.
 
-TARGET and ARM align with those on SERVO's output card. ARM spans body
-y 424 to 484, ending 8px above the alert band. The rail appears on LIVE,
-the PROGRAM list and SETTINGS; ARM works on all three. A session opened
-from PROGRAM covers the rail. When enabled, the rotary knob changes
-throttle on LIVE ([the knob](#panel-the-rotary-knob)). It has no effect on
-PROGRAM or SETTINGS.
+ARM spans the footer's middle slot, body y 444 to 492, x 348 to 676. It
+works on LIVE and on the PROGRAM list. A session opened from PROGRAM covers
+the rail and the footer. When enabled, the rotary knob changes throttle on
+LIVE ([the knob](#panel-the-rotary-knob)). It has no effect on PROGRAM or
+over the settings list.
 
 The home tag moves up one navigation level:
 
 | From | The home tag leads to |
 | --- | --- |
-| the keypad on SETTINGS | SETTINGS; the value is not changed |
+| the keypad over the settings list | the list; the value is not changed |
+| the settings list | LIVE or PROGRAM, through the leave warning while a change is unwritten |
 | a session on PROGRAM | one level up in the session; from its top, PROGRAM's list ([PROGRAM](#program)) |
-| LIVE, PROGRAM's list or SETTINGS | the menu; the bench switches to SAFE |
+| LIVE or PROGRAM's list | the menu; the bench switches to SAFE |
 
 ### TARGET names the protocol and the pins
 
@@ -1020,7 +1083,7 @@ columns before `source`:
 - A cell is empty while its meter has not delivered that reading.
 - A row takes a figure only from a source that is the row's `source`:
   - all five meter cells are empty on a `measured` row while the supply is
-    the panel's model (PD mini disabled on SUPPLY's PD MINI tab);
+    the panel's model (PD mini disabled in SUPPLY's PD mini settings);
   - they are empty on a `model` row while the PD mini's last reading is
     still shown after the link went down;
   - a `model` row has no INA3221 figure and no `angle`, which require
@@ -1105,8 +1168,9 @@ whole run. LOGS groups `out`, `port` and `supply` columns under INA3221.
 
 ![SETTINGS](img/motor-settings.png)
 
-SETTINGS contains the 8 motor, pack and throttle-output settings
-(`SET_CAT_ESC`), in schema order under three headings:
+The footer's SETTINGS opens the 8 motor, pack and throttle-output settings
+(`SET_CAT_ESC`) as a settings list, in schema order under three headings
+([The footer and the settings list](#the-footer-and-the-settings-list)):
 
 | Heading | Settings |
 | --- | --- |
@@ -1114,13 +1178,12 @@ SETTINGS contains the 8 motor, pack and throttle-output settings
 | MOTOR | Motor poles, Rated kV |
 | THROTTLE OUTPUT | Idle pulse, Full pulse, Ramp limit |
 
-The rows occupy two 295px columns: PACK and MOTOR on the left, THROTTLE
-OUTPUT on the right. Each 68px row has a label on the left, a 120 x 48px box
-containing the value and unit on the right, and a help line below in 8 x 16.
+The list opens on a SAFE bench with ARM not held, and closes when the bench
+leaves SAFE. Its strip reads `[MOTOR & ESC] [RESET MOTOR & ESC] [SAVE]`;
+the line under the name is TARGET's protocol and pins.
 
-Tap a value box to open the keypad. It covers the left column and task
-strip (620 x 529px), preventing task changes, while the right-hand rail
-remains accessible. The keypad shows the setting's name, range and unit.
+Tap a value to open the keypad. It covers the body above the strip
+(1004 x 482px). The keypad shows the setting's name, range and unit.
 OK accepts an in-range value and rounds it to the setting's step, such as
 4321mAh to 4300mAh. Out-of-range values keep the keypad open and show the
 range in the warning colour. CANCEL or the home tag closes the keypad
@@ -1139,12 +1202,11 @@ The panel checks the same gap before sending the pair to the IOmcu. The
 IOmcu's own write check enforces 400 to 2500us for each pulse but does not
 check the gap.
 
-Idle pulse and Full pulse can change only while SAFE. The IOmcu accepts
+Idle pulse and Full pulse change only while SAFE. The IOmcu accepts
 the endpoints while the bench is SAFE, 300ms after the last edit; switching to
-ARMED sends no endpoints. While ARMED, during an ARM hold, or while an ARM
-or DISARM response is pending, both value boxes are locked. Their help
-line reads `Set on a SAFE bench only` in the warning colour. An open
-endpoint keypad closes when ARM is pressed or the bench leaves SAFE.
+ARMED sends no endpoints. The list is closed while ARMED; should the bench
+leave SAFE with the list open, it closes, and an open endpoint keypad goes
+with it without taking its entry.
 
 The 2s ARM hold gives an edit made before the press time to reach the
 IOmcu. If the link is up but an edit is still pending, ARM is refused with
@@ -1155,23 +1217,13 @@ change on OUTPUTS or a link reconnection must bring the pair into force
 ([A pulse range on its way](Safety.md#a-pulse-range-on-its-way)). The other
 6 settings can change at any time.
 
-All settings share one store. OK applies a value immediately and requests
-a save. The panel writes the whole store on the first frame with the bench
-SAFE, supply output off and no board drawing being fetched or retained.
-This is the same write requested by SETUP's SAVE
-([Keeping the values](#keeping-the-values)).
-
-Unsaved SETUP changes are included, clearing its warning on leaving.
-A refused write leaves all changes unsaved; SETUP's warning then lists the
-ESC settings alongside its own. The line at the page's foot, ending 4px
-above the alert band, shows the store's state:
-
-| Line | State |
-| --- | --- |
-| `SAVED` | nothing is unwritten |
-| `SAVE PENDING` | a write is asked and waits for a quiet bench |
-| `NOT SAVED` | the last write was refused |
-| `SETUP CHANGES NOT SAVED` | values are unsaved and no write is asked; the next change here writes them |
+All settings share one store. A change applies at once; SAVE asks for the
+write. The panel writes the whole store on the first frame with the bench
+SAFE, supply output off and no board drawing being fetched or retained,
+the same write SETUP's SAVE asks for
+([Keeping the values](#keeping-the-values)). Unsaved SETUP changes are
+written with it. A refused write leaves all changes unsaved and SAVE reads
+`NOT SAVED`.
 
 ### PROGRAM
 
@@ -1556,12 +1608,12 @@ typed in the settings reaches the row at once.
 | --- | --- | --- |
 | an INA3221 channel | `INA`, its part's address and channel: `INA 0x41 CH2` | the channel's last 50ms window: the mean current, the mean bus voltage at the load side of the shunt, and their product. One point of the plot per window, 20 a second |
 | the PD mini | `PD MINI` | the supply's last sample. One point per sample |
-| the model, while no IOmcu answers | `PD MINI` | the supply's last sample: the supply model's under the SIMULATION watermark, and no reading where SUPPLY's PD MINI tab enables the PD mini, which does not answer without the link |
+| the model, while no IOmcu answers | `PD MINI` | the supply's last sample: the supply model's under the SIMULATION watermark, and no reading where SUPPLY's PD mini settings enables the PD mini, which does not answer without the link |
 
 ![The INA3221 as the meter](img/servo-ina.png)
 
 The name stays `PD MINI` in both languages. With the PD mini disabled on
-SUPPLY's PD MINI tab, the panel uses its supply model. A SIMULATED pill
+SUPPLY's PD mini settings the panel uses its supply model. A SIMULATED pill
 (SIMULIERT in German) appears at the plot's upper-left corner below the
 name, leaving room for the three readings beside the name. It is 26px
 high, with a width of 30px plus the word, at least 110px; SIMULATED and
@@ -2155,8 +2207,10 @@ and report ([Servo](Servo.md#the-output-encoder)).
 SUPPLY's voltage and current caps limit both set points and test steps.
 They appear below the TEST cards and on a 600 x 48px DUT button:
 `CAPS 21.00V 5.00A: OPEN SUPPLY` (German
-`GRENZEN 21.00V 5.00A: SUPPLY ÖFFNEN`). Tap it to open SUPPLY > SETTINGS >
-LIMITS, where the caps are set.
+`GRENZEN 21.00V 5.00A: SUPPLY ÖFFNEN`). Tap it to open SUPPLY's settings
+list at its top, where the caps are set; with the supply's output on the
+list stays closed and the band says why. The first home tag closes the
+list, the next returns to SERVO.
 
 Both buttons open another screen like TARGET. The destination's home tag
 returns to the task and page where the button was tapped. Leaving SERVO
@@ -2314,7 +2368,7 @@ Current limitations:
   holds, which after a restart or a new binding is 50Hz.
 - On the panel's supply model the automatic test's currents are the model's load, not the servo's: a run there
   measures the model. [What is not measured](Servo.md#what-is-not-measured).
-- The supply on the right card is SUPPLY's: the PD mini when SUPPLY's PD MINI tab enables
+- The supply on the right card is SUPPLY's: the PD mini when SUPPLY's PD mini settings enables
   it, the panel's model otherwise, whose voltage, current and power are
   simulated, not measured.
 
@@ -2328,35 +2382,36 @@ asynchronous receiver-transmitter). The IOmcu uses a PIO (programmable
 input/output) UART on two pins, controlled through the SUPPLY link page
 (protocol 4.3). The panel writes the page and reads it every 100ms.
 
-When the PD mini is enabled on the PD MINI tab, the header names the module
+When the PD mini is enabled in the settings list, the header names the module
 and its IOmcu UART pins, for example `PD MINI TX GPIO 12 RX GPIO 13`, from
 the PD mini TX and PD mini RX settings. An unset pin or both signals on
 one GPIO gives `PD MINI NO PINS`. With the module disabled, the panel uses
 its supply model. The header reads `SIMULATED: SWITCH ON IN PD MINI` and
 the menu tile is marked SIMULATED.
 
-SUPPLY has two 150 x 40px task tabs, LIVE and SETTINGS (German `LIVE`,
-`OPTIONEN`), above the page area. The menu tile always opens LIVE. Tap a
-tab to switch tasks. This adds no navigation level and preserves LIVE's
-selected PLOT or TABLE view.
+The footer reads `[SUPPLY] [OUTPUT ON / OFF] [SETTINGS]`
+([The footer and the settings list](#the-footer-and-the-settings-list)).
+The line under SUPPLY names the source: `PD MINI TX GPIO 12 RX GPIO 13`,
+`PD MINI NO PINS` or `SIMULATED`, in the warning colour with no pins or
+while the PD mini does not answer. SETTINGS opens the 9 supply settings and
+the PD mini's wiring as one list ([Supply settings](#supply-settings)).
+The menu tile opens the screen with the list closed.
 
-| Task | The left column, 620px |
-| --- | --- |
-| LIVE | the plot or the table over the set points |
-| SETTINGS | the tabs LIMITS, the 9 supply settings under OUTPUT LIMITS, AFTER RESTART, TRIPS and CONFIRM WHILE ON ([Supply settings](#supply-settings)), and PD MINI, the module's wiring ([The PD MINI tab](#the-pd-mini-tab)) |
-
-The header to the right of the task strip shows the module, pins and
+The header row, body y 8 to 48 from x 18, shows the module, pins and
 ONLINE or NOT ANSWERING in 10 x 20. At its right end, 8 x 16 text gives
-the permitted set-point range, such as `3.3-8.4V  0.50-5.00A`. It stays
-visible on both tasks and beneath the keypad or confirmation dialog.
+the permitted set-point range, such as `3.3-8.4V  0.50-5.00A`; the list
+repeats it beside its OUTPUT LIMITS heading. The header stays visible
+beneath the keypad or confirmation dialog.
 
-The 380px right-hand rail is shared by both tasks: four 64px reading cards
-(VOLT, CURR, PWR, MODE), then CONTROL. Its title line holds run totals in
-mAh and Wh, with RESET PEAKS (48px) and OUTPUT ON / OFF (60px) at the foot,
-where SERVO and MOTOR & ESC place ARM and DISARM.
+The 380px right-hand rail holds four 64px reading cards (VOLT, CURR, PWR,
+MODE), then CONTROL with the run totals in mAh and Wh on its title line
+and RESET PEAKS (48px). OUTPUT ON / OFF is the footer's middle slot, body
+y 444 to 492, x 348 to 676, where MOTOR & ESC places ARM. Both columns end
+at body y 436.
 
-The layout is the one MOTOR & ESC uses. On LIVE the left column holds the
-output card, PLOT | TABLE under its title, and SET POINTS under it. Each
+The layout is the one MOTOR & ESC uses. The left column holds the
+output card, PLOT | TABLE under its title and a 78px plot, and SET POINTS
+under it. Each
 set point is a row: its label, then the `-0.1` key (72 x 48px), the track
 (312 x 48px), the `+0.1` key and the value in a 120 x 48px box. The plot
 shows voltage, current and power over the last 30s. The rail shows the readings, the run's lowest
@@ -2393,7 +2448,7 @@ cut-off. SETTINGS caps further narrow both ranges. Sliders follow the
 active supply; tap a track to set the value under the finger.
 
 **Tap VOLT, CURR or a set-point value box to open the keypad.** It covers
-the left column below the task strip, with 145 x 76px keys. The title row
+the left column under the header, 620 x 380px, with 145 x 76px keys. The title row
 shows the permitted range; the current value appears faint until the
 first digit is entered. OK accepts an in-range value rounded to the
 supply's step. An out-of-range value is refused and highlights the range
@@ -2430,8 +2485,8 @@ ESC STICK. MOTOR & ESC does not switch a supply; its ESC runs use a
 separate power source.
 
 Leaving SUPPLY does not change an output switched on by another screen.
-Keypads, confirmation dialogs, other SUPPLY overlays and task changes do
-not count as leaving. LINK LOST, which has no STOP, cannot open while
+Keypads, confirmation dialogs and the settings list do not count as
+leaving. LINK LOST, which has no STOP, cannot open while
 the output is on.
 
 **The home tag moves up one level.** Closing an overlay preserves the
@@ -2440,11 +2495,9 @@ output; returning to the menu applies the switch-off rule:
 | From | The home tag leads to |
 | --- | --- |
 | the question | what is under it; the change is dropped, as CANCEL drops it |
-| a keypad | what is under it, LIVE or SETTINGS; the value is not changed |
-| LIVE or SETTINGS | the menu; an output SUPPLY switched on goes off |
-
-Tasks share a navigation level, as on MOTOR & ESC and SERVO. The home tag
-does not return from SETTINGS to LIVE.
+| a keypad | what is under it, LIVE or the settings list; the value is not changed |
+| the settings list | LIVE, through the leave warning while a change is unwritten |
+| LIVE | the menu; an output SUPPLY switched on goes off |
 
 **With the PD mini**, OFF has priority over other pending writes to the
 SUPPLY page. The IOmcu also switches the output off if the panel heartbeat
@@ -2522,16 +2575,17 @@ to follow falling input voltage. This rule has not been verified by bench
 measurement: whether an active module enters ERR on an input sag is
 unknown, so the rule may stop a run that would otherwise continue.
 
-OUTPUT ON and OFF, RESET PEAKS and the readings stay live on SETTINGS and
-under the keypad and the question. One finger at a time: while one holds a control, a
+OUTPUT ON and OFF, RESET PEAKS and the readings stay live under the
+keypad and the question. The settings list opens with the output off only,
+so OUTPUT OFF is never under it. One finger at a time: while one holds a control, a
 second finger does nothing anywhere on the screen.
 
 On the [rbmod carrier](Carrier.md#power), a line below OUTPUT names the
 programming ports' separate 5V: `PROG PORTS 5V, GPIO 21: ON`, `OFF` or
-`NOT READ` after an unanswered read. ON uses the accent colour. KST and
-Hitec programmers switch this supply. On LIVE, the PROG 5V box to the
-right of PLOT and TABLE allows manual switching and shows its INA3221
-reading, as on [SERVO](#servo). The line below OUTPUT remains on every task.
+`NOT READ` after an unanswered read, at the foot of the CONTROL card. ON
+uses the accent colour. KST and Hitec programmers switch this supply. The
+PROG 5V box to the right of PLOT and TABLE allows manual switching and
+shows its INA3221 reading, as on [SERVO](#servo).
 Leaving SUPPLY turns off 5V switched on by its box unless a port holds it.
 Boards without the switch show neither control.
 
@@ -2539,24 +2593,31 @@ Boards without the switch show neither control.
 
 ### Supply settings
 
-SETTINGS, the second task tab, contains LIMITS and PD MINI, each with a
-40px tab. LIMITS puts caps and startup values on the left, trips and
-confirmations on the right. Rows are 48px high with 120 x 48px value boxes;
-the save status sits at the foot. All settings are kept in panel NVS
-(non-volatile storage) across restarts.
+The footer's SETTINGS opens one settings list
+([The footer and the settings list](#the-footer-and-the-settings-list)):
+the 9 supply settings under OUTPUT LIMITS, AFTER RESTART, TRIPS and
+CONFIRM WHILE ON, then the PD mini's wiring under PD MINI
+([The PD mini's rows](#the-pd-minis-rows)) and, on the PD mini, RESET PD
+MINI as the last row. The OUTPUT LIMITS heading carries the set-point
+range in force, `3.3-8.4V  0.50-5.00A`. The strip reads
+`[SUPPLY] [RESET SUPPLY] [SAVE]`, the source under the name. All settings
+are kept in panel NVS (non-volatile storage) across restarts.
 
-Tap a value to open the keypad or a switch to toggle it. Tapping LIVE
-closes an open settings keypad without changing its value, like CANCEL.
-Tapping SETTINGS does the same for a set-point keypad. During a live-output
-confirmation dialog, task tabs stay locked until APPLY or CANCEL.
+The list opens with the output off and no ON on its way, and closes when
+the output goes on under it, from this screen or another. It covers the
+whole body; OUTPUT ON is under it, so nothing switches the output on while
+it shows.
 
-Changes are saved on the next frame with SAFE, no pending ARM, supply off,
-no queued ON and no board drawing being fetched or retained. Any unsaved
-SETUP changes are saved too. Flash writes stall both cores, including
+Tap a number's value to open the keypad. The caps' keypads take the
+supply's own range, and the start values' the set points' range; a value
+outside is refused. A change applies at once, and SAVE asks for the write.
+The write waits for a frame with SAFE, no pending ARM, supply off, no
+queued ON and no board drawing being fetched or retained. Any unsaved
+SETUP changes are written too. Flash writes stall both cores, including
 OUTPUT OFF and trip handling, so they wait for these conditions.
-The status line shows SAVED, SAVE PENDING, NOT SAVED after a refused write,
-or SETUP CHANGES NOT SAVED. The latter means SETUP changes remain without
-a save request; SAVE on SETUP or an edit here requests their write.
+
+RESET SUPPLY sets the list's settings to their defaults: the 9 supply
+settings, and the PD mini's 4 while their rows take a press.
 
 ![The supply's settings](img/supply-settings.png)
 
@@ -2623,8 +2684,8 @@ The model is a 6Ω load with a 1.4A burst for 0.6s every 3s, behind a
 burst takes it into CC. Its readings are not measured and nothing on the bench
 is powered.
 
-PD mini, PD mini TX, PD mini RX and PD mini baud are on SETTINGS > PD MINI
-([The PD MINI tab](#the-pd-mini-tab)). TX and RX are IOmcu GPIO numbers:
+PD mini, PD mini TX, PD mini RX and PD mini baud are the settings list's
+last section ([The PD mini's rows](#the-pd-minis-rows)). TX and RX are IOmcu GPIO numbers:
 TX connects to module DM, RX to DP. The `-` and `+` buttons skip the GPIO
 used by the other signal and stop at the range boundary. With RX on
 GPIO 47, TX stops at GPIO 46. The keypad rejects the other signal's GPIO
@@ -2637,7 +2698,7 @@ changed. The PD mini switch disables the module.
 
 The IOmcu rejects reserved pins, output pins, sensor-bus or phase-tap pins,
 and the other PD mini pin. The alert is
-`PD mini pins rejected. Check SUPPLY, tab PD MINI.` For example, RX on
+`PD mini pins rejected. Check them in SUPPLY's SETTINGS.` For example, RX on
 GPIO 17 is refused when Sensor SDA is GPIO 16, because SCL is then GPIO 17.
 The alert clears once a read confirms the requested wiring, immediately
 if a pin is changed back to the value the page still holds.
@@ -2659,29 +2720,27 @@ both AUTO and fixed-rate selection.
 
 ![RX's GPIO 9 refused for PD mini TX](img/supply-pdmini-why.png)
 
-#### The PD MINI tab
+#### The PD mini's rows
 
-PD MINI holds the wiring, four rows at a 56px pitch: each its label and help
-line, its value in a 120 x 48px box, and - and + keys of 56 x 48px.
+The PD MINI heading holds the wiring, four rows of the settings list.
 
 | Row | Values | Default | A press |
 | --- | --- | --- | --- |
-| PD mini | ON, OFF | OFF | a tap on the value flips it |
-| PD mini TX | GPIO -1 to 47 | -1 | - and + step, the value opens the keypad |
-| PD mini RX | GPIO -1 to 47 | -1 | - and + step, the value opens the keypad |
-| PD mini baud | 9600, 19200, 38400, 57600, 115200, 230400, 460800, AUTO | AUTO | < and > and the value step round the 8 values |
+| PD mini | ON, OFF | OFF | `<` and `>` flip it |
+| PD mini TX | GPIO -1 to 47 | -1 | `-` and `+` step, the value opens the keypad |
+| PD mini RX | GPIO -1 to 47 | -1 | `-` and `+` step, the value opens the keypad |
+| PD mini baud | 9600, 19200, 38400, 57600, 115200, 230400, 460800, AUTO | AUTO | `<` and `>` step round the 8 values |
 
-A change applies at once and is saved by the rule above, as a change on LIMITS.
-There is no SAVE and no leave warning. The stored keys are `pdm_en`, `pdm_tx`,
-`pdm_rx` and `pdm_baud`. RESET PD MINI restarts the module and writes none of the
-four.
+A change applies at once; SAVE asks for the write, as for the other rows.
+The stored keys are `pdm_en`, `pdm_tx`, `pdm_rx` and `pdm_baud`. RESET PD
+MINI restarts the module and writes none of the four.
 
 Any change of the wiring switches a live output off, so a row changes nothing
 in these states:
 
 | State | A press on a row | The row's help line and the band |
 | --- | --- | --- |
-| the output on, or an ON on its way, from any screen, on the PD mini or the model | changes nothing | `Output on: switch it off first` |
+| the output on, or an ON on its way, from any screen, on the PD mini or the model | changes nothing; the list closes at the next frame | `Output on: switch it off first` |
 | a programming port holds the supply | changes nothing | `A programming port reserves the supply` |
 | the bench ARMED | changes nothing; `settings_set()` and a reset leave the rows too | `Set on a SAFE bench only` |
 
@@ -2691,10 +2750,9 @@ nothing. With SAFE and the output off, enable, pin and baud changes reach
 the IOmcu as described under [Supply](#supply), after checking the module's
 own OFF state. If a change still reaches an active output, such as DISCARD
 after a refused save on SETUP's leave warning, it switches the output off
-and reports `PD mini wiring changed. Output off.` RESET PD MINI remains
-on LIMITS.
+and reports `PD mini wiring changed. Output off.`
 
-![The PD MINI tab](img/supply-pdmini.png)
+![The PD mini's rows](img/supply-pdmini.png)
 
 On the [rbmod carrier](Carrier.md), PD mini TX is fixed at 7 and RX at 6.
 They have no step buttons or keypad and show
@@ -2702,12 +2760,12 @@ They have no step buttons or keypad and show
 for a module wired by hand. PD mini and PD mini baud remain editable
 subject to the same three state restrictions above.
 
-![The PD MINI tab on the carrier](img/supply-pdmini-rbmod.png)
+![The PD mini's rows on the carrier](img/supply-pdmini-rbmod.png)
 
 With the supply model active, the header's source text is a button:
-`SIMULATED: SWITCH ON IN PD MINI`. Tap it to open PD MINI from LIVE or
-LIMITS, closing any open keypad. An open live-output confirmation must
-be answered first.
+`SIMULATED: SWITCH ON IN PD MINI`. Tap it to open the settings list at the
+PD MINI heading, closing any open keypad. An open live-output confirmation
+must be answered first; with the output on the list does not open.
 
 ## Receiver
 
@@ -6113,7 +6171,7 @@ A stored binding that holds that pin keeps it: the port then has no pin, and
 the programmer's CONNECT ends with the line for a port without a pin
 ([the port](ServoProgrammer.md#the-port)).
 
-A pin SETUP > SENSORS or SUPPLY's PD MINI tab holds is shown the same way, red and struck
+A pin SETUP > SENSORS or SUPPLY's PD mini settings holds is shown the same way, red and struck
 through, with what holds it under its name, and cannot be ticked:
 
 | Under the name | Pins | While |
@@ -6545,7 +6603,7 @@ nothing and puts the reason under the count:
 
 ![GPIO 13 held by the programming port](img/outputs-prog.png)
 
-A pin SETUP > SENSORS or SUPPLY's PD MINI tab holds is grey the same way while no protocol holds
+A pin SETUP > SENSORS or SUPPLY's PD mini settings holds is grey the same way while no protocol holds
 it, a tap on it changes nothing, and IN USE lists it after the programming
 port, under `SENSOR BUS`, `PD MINI` or `PHASE TAP` in red, without a
 channel. Which pins those are, and when, is in the table under

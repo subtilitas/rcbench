@@ -75,8 +75,9 @@ typedef struct {
 } supply_cmd_t;
 
 /**
- * What shows, a ui_wb_task_t: UI_WB_SETTINGS while the SETTINGS list the
- * footer opens covers the body, UI_WB_LIVE otherwise.  A tile opens LIVE.
+ * @brief What shows.  A tile opens LIVE.
+ * @return A ui_wb_task_t: UI_WB_SETTINGS while the SETTINGS list the footer
+ *         opens covers the body, UI_WB_LIVE otherwise.
  */
 int supply_screen_task(void);
 

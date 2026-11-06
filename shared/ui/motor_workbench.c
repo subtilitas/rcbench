@@ -36,7 +36,7 @@
 /* Last: its layout macros have short names. */
 #include "motor_screen_int.h"
 
-/* MOTOR & ESC's tasks.  TEST has no page and is not drawn. */
+/** @brief MOTOR & ESC's tasks: LIVE and PROGRAM. */
 #define MOTOR_TASKS (UI_WB_HAS(UI_WB_LIVE) | UI_WB_HAS(UI_WB_PROGRAM))
 
 _Static_assert(MOTOR_PROTO_MIXED == OUTBIND_PROTO_MIXED,

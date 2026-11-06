@@ -6,11 +6,13 @@ order: 11
 
 # Motor-Optionen
 
-OPTIONEN ist der dritte Reiter von [MOTOR & ESC](motor.md). Der linke Bereich enthält die 8 ESC-Einstellungen (Electronic Speed Controller) des Prüfstands in zwei Spalten: AKKU und MOTOR links, GASAUSGANG rechts. Die rechte Hauptspalte bleibt sichtbar und bedienbar, mit Anzeigen, ZIEL, ARM, Summen und SPITZENWERTE ZURÜCKSETZEN.
+OPTIONEN in der Fußleiste von [MOTOR & ESC](motor.md) öffnet die 8 ESC-Einstellungen (Electronic Speed Controller) des Prüfstands als Liste über der ganzen Seite, unter AKKU, MOTOR und GASAUSGANG. Sie öffnet nur bei SAFE; sonst zeigt das Band `OPTIONEN nur bei SAFE. Schalte zuerst auf SAFE.` Verlässt der Prüfstand SAFE, schließt die Liste.
 
 ![OPTIONEN](view:motor-settings)
 
-Jede 48px hohe Zeile zeigt Einstellung, Wert, Einheit und eine Hilfezeile. Tippe auf den Wert, um das Tastenfeld über dem linken Bereich und der Reiterleiste zu öffnen. Es nennt die Einstellung und ihren Bereich. OK übernimmt gültige Werte. Bei einem Wert außerhalb des Bereichs bleibt das Tastenfeld offen und hebt den Bereich in der Warnfarbe hervor. ABBRECHEN oder das Home-Feld schließt es ohne Änderung. Werte werden auf die Schrittweite der Einstellung gerundet: Aus 4321mAh werden 4300mAh.
+Die Liste funktioniert wie die von SETUP: `-` und `+` verstellen einen Wert, gehalten wiederholen sie, und Ziehen rollt. Tippe auf einen Wert, um das Tastenfeld über der Seite zu öffnen. Es nennt die Einstellung und ihren Bereich. OK übernimmt gültige Werte. Bei einem Wert außerhalb des Bereichs bleibt das Tastenfeld offen und hebt den Bereich in der Warnfarbe hervor. ABBRECHEN oder das Home-Feld schließt es ohne Änderung. Werte werden auf die Schrittweite der Einstellung gerundet: Aus 4321mAh werden 4300mAh.
+
+Die Leiste unten zeigt `[MOTOR & ESC] [MOTOR & ESC ZURÜCKSETZEN] [SPEICHERN]`. Unter MOTOR & ESC bleiben Protokoll und Pins des Gases. MOTOR & ESC ZURÜCKSETZEN setzt diese 8 Einstellungen auf ihre Vorgaben, keine anderen.
 
 ![Das Tastenfeld für Kapazität](view:motor-settings-keypad)
 
@@ -31,7 +33,7 @@ Der Leerlaufpuls muss mindestens 100us unter dem Vollgaspuls liegen. Andernfalls
 
 Leerlaufpuls und Vollgaspuls werden beim Verbindungsaufbau und nach jeder Änderung an den IOmcu gesendet. Der IOmcu setzt Gasbefehle an zugeordneten Pins sofort um, ohne Rampe.
 
-Leerlaufpuls und Vollgaspuls lassen sich nur bei SAFE ändern. Sie sind gesperrt, solange der Prüfstand ARMED ist, ARM gehalten wird oder eine ARM- oder DISARM-Anfrage auf Antwort wartet. Dann zeigt die Hilfezeile `Nur bei SAFE einstellbar` in der Warnfarbe. Ein offenes Tastenfeld für einen der beiden Werte schließt, wenn ARM gedrückt wird oder der Prüfstand SAFE verlässt. Die übrigen 6 Werte lassen sich jederzeit ändern.
+Leerlaufpuls und Vollgaspuls lassen sich nur bei SAFE ändern. Die Liste öffnet nur bei SAFE und schließt, sobald der Prüfstand SAFE verlässt; ein offenes Tastenfeld schließt mit ihr, ohne die Eingabe zu übernehmen.
 
 Eine Änderung von Leerlaufpuls oder Vollgaspuls erreicht den IOmcu bei der ersten Abfrage mindestens 300ms nach der letzten Eingabe. Bis dahin wird ARM bei angeschlossenem IOmcu mit `Pulsbereich noch nicht an den IOmcu gesendet. Halte ARM erneut.` abgelehnt; der Prüfstand bleibt SAFE. Halte ARM erneut: Die 2s geben der Übertragung genügend Zeit.
 
@@ -48,16 +50,16 @@ Auch das Schreiben einer Zuordnung auf OUTPUTS oder ein erneuter Verbindungsaufb
 
 ## Die Werte behalten
 
-Ein geänderter Wert gilt sofort und fordert das Speichern an. Das Panel schreibt die Einstellungen im ersten Frame, in dem der Prüfstand SAFE, der Netzteilausgang ausgeschaltet und keine Platinenzeichnung im Lade- oder Speichervorgang ist. Dabei werden alle ungespeicherten Einstellungen gespeichert, auch Änderungen aus SETUP. Die Fußzeile zeigt den Speicherstatus:
+Ein geänderter Wert gilt sofort. SPEICHERN fordert das Schreiben an; das Panel schreibt die Einstellungen im ersten Frame, in dem der Prüfstand SAFE, der Netzteilausgang ausgeschaltet und keine Platinenzeichnung im Lade- oder Speichervorgang ist. Dabei werden alle ungespeicherten Einstellungen gespeichert, auch Änderungen aus SETUP.
 
-| Zeile | Bedeutung |
+| SPEICHERN zeigt | Bedeutung |
 |---|---|
 | `GESPEICHERT` | Alle Einstellungen sind gespeichert. |
-| `SPEICHERN AUSSTEHEND` | Speichern ist angefordert und wartet auf einen ruhenden Prüfstand. |
+| `SPEICHERN` | Eine Änderung ist ungespeichert; tippe, um sie zu speichern. |
+| `BEI STILLSTAND` | Speichern ist angefordert und wartet auf einen ruhenden Prüfstand. |
 | `NICHT GESPEICHERT` | Das Schreiben ist fehlgeschlagen; die Werte gelten weiter, sind aber ungespeichert. |
-| `ÄNDERUNGEN IN SETUP NICHT GESPEICHERT` | Änderungen aus SETUP oder einer anderen Seite sind ungespeichert, ohne Speicheranforderung. Die nächste Änderung hier speichert sie mit. |
 
-Nach einem fehlgeschlagenen Schreibvorgang bleiben die Werte ungespeichert. Die nächste Änderung fordert einen neuen Schreibvorgang an. Beim Verlassen von SETUP nennt die [Warnung zu ungespeicherten Werten](setup.md#mit-ungespeicherten-werten-verlassen) diese Änderungen.
+Ist eine Änderung ungespeichert, zeigt das Home-Feld zuerst die [Warnung zu ungespeicherten Werten](setup.md#mit-ungespeicherten-werten-verlassen): BLEIBEN, VERWERFEN oder SPEICHERN.
 
 ## Verwandte Seiten
 

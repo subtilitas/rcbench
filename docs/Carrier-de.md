@@ -328,7 +328,7 @@ fest:
   Carriers, ohne Tasten und ohne Tastenfeld, der Eintrag SENSORBUS lautet
   `GPIO 16 / 17 VERLÖTET`, und 0x40 ist bestückt mit seinen drei Kanälen auf
   den Schienen, ohne Tasten ([Der Strommonitor](#der-strommonitor)).
-- Der Tab PD MINI auf SUPPLY zeigt PD mini TX und RX auf den Pins des Carriers, ohne
+- Der Abschnitt PD MINI der SUPPLY-Optionen zeigt PD mini TX und RX auf den Pins des Carriers, ohne
   Tasten und ohne Tastenfeld.
 - Eine Kachel LAYOUT öffnet LAYOUT: J1 und J2 in ihrer
   Positionsfolge mit Rolle, GPIO, Netz am + und dem gebundenen
