@@ -128,13 +128,17 @@ points from them. `SECURITY.md` lists this as a current limitation.
 ## The sensor
 
 Frames: 0x55, the type, four int16 words little-endian, the low byte of the
-sum. The panel reads 0x53 (the angles, 180° at 32768, and the firmware
-version), 0x52 (the battery, the fourth word unsigned, V x 100) and 0x51
-(the temperature, °C x 100). Only an angle frame makes the reading valid.
+sum. The panel uses 0x53 (the angles, 180° at 32768, and the firmware
+version) and 0x52 (the battery, the fourth word unsigned, V x 100). It asks
+the sensor for these two only (RSW, below). A 0x51 frame from a sensor at
+another RSW fills the reading's temperature (°C x 100), which no screen and
+no console line shows; 0x54 is not used. Only an angle frame makes the
+reading valid.
 
 | Command | Bytes | Sent |
 | --- | --- | --- |
 | unlock | `FF AA 69 88 B5` | before every other command; harmless on the older firmware (not measured on this sensor) |
+| RSW, SAVE | `FF AA 02 0C 00`, `FF AA 00 00 00` | once on a connection whose first 8 good frames show other types than 0x52 and 0x53 |
 | CALSW 1, 3s, CALSW 0, SAVE | `FF AA 01 01 00`, `FF AA 01 00 00`, `FF AA 00 00 00` | `HOLD 2s: CALIBRATE ACCELEROMETER`, connected |
 | RATE, SAVE | `FF AA 03 <code> 00`, `FF AA 00 00 00` | a change of IMU rate: 0x06 10Hz, 0x07 20Hz, 0x08 50Hz, 0x09 100Hz, 0x0B 200Hz |
 | AXIS6, SAVE | `FF AA 24 01 00` (6-AXIS) or `FF AA 24 00 00` (9-AXIS), `FF AA 00 00 00` | a change of IMU algorithm |
@@ -144,8 +148,8 @@ within 1,000ms. With WRITE in 8841's properties the panel writes with a
 response; with WRITE NO RESPONSE only, without. A write that is refused or
 not answered drops the rest of its group and shows `THE SENSOR DID NOT
 TAKE THE COMMAND`. What the group was for is due again at the next
-connection: a calibration's exit (unlock, CALSW 0, SAVE), a RATE or an
-ALGORITHM, with the SETUP values of then. IMU OFF fails a write in flight
+connection: a calibration's exit (unlock, CALSW 0, SAVE), an RSW, a RATE
+or an ALGORITHM, with the SETUP values of then. IMU OFF fails a write in flight
 the same way, so a calibration ended by IMU OFF still sends CALSW 0 and
 SAVE once the sensor is connected again. A refused unlock or CALSW 1 at
 the calibration's start fails the calibration at once, and its exit goes
@@ -162,7 +166,39 @@ only after a power cycle. SETUP's RATE is what the panel asks for, 50Hz
 by default. The sensor runs the rate it last saved, 10Hz as shipped. The
 IMU screen and SETUP > SENSORS > IMU show the rate the angle frames
 arrive at, as measured on the panel. Which RATE values fit the BLE link
-is not measured yet: 50Hz with all frames needs 2,200B/s.
+depends on the frames a sample (RSW, below).
+
+RSW (register 0x02) sets which frames the sensor sends. As shipped it is
+0x1E: 0x51, 0x52, 0x53 and 0x54, 4 frames of 11 bytes a sample. The panel
+writes 0x0C: 0x52 and 0x53, 2 frames a sample. The stream is the
+read-back. The panel looks at the first 8 good frames of each connection,
+2 samples at 0x1E and 4 at 0x0C. Other types, or no 0x52 among them, make
+RSW due: unlock, RSW 0x0C, SAVE, once on that connection, in one group
+with a RATE or ALGORITHM change due at the same time. A sensor that sends
+0x52 and 0x53 only gets no write, so its flash takes no SAVE for it. A
+refused RSW write is due again at the next connection, as a RATE is. The
+sensor stores RSW with the SAVE, so it holds across the sensor's power
+cycles. Whether a new RSW takes effect at once or only after a power cycle
+is not measured; until it takes effect, each connection writes it again.
+
+The link's capacity, measured on one panel (station, 2026-11-06): the
+sensor lay still within 1m, the C6 ran esp_hosted 2.13.0, MTU 64,
+connection interval 16 x 1.25ms (20ms).
+
+| Rate, RSW | Time | Frames | Bad bytes |
+| --- | --- | --- | --- |
+| about 144Hz, 0x1E | 50s | 28,467: 569 frames/s, about 6.3kB/s | 23,955 |
+| 10Hz, 0x1E | 36min | 71,912 | 8 |
+
+Bad bytes are bad sums plus resync bytes (`bad` in the console line). The
+link carries about 570 frames/s. At 4 frames a sample that overflows above
+about 140Hz. At 2 frames a sample the link has room for about 285Hz, so
+200Hz fits; 200Hz at RSW 0x0C is not measured yet.
+
+Current limitation: the sensor keeps RSW 0x0C in its flash. Another device
+that reads the sensor afterwards, a phone app or a flight controller, gets
+0x52 and 0x53 frames only, no acceleration (0x51) and no magnetic field
+(0x54). The sensor's own app sets RSW back.
 
 IMU OFF during a
 calibration ends it FAILED; its CALSW 0 and SAVE go at the next connect.
@@ -253,7 +289,7 @@ sends the C6's controller init and enable requests again
 | --- | --- |
 | battery | 250mAh, 4h on a charge (datasheet) |
 | output rate | 0.2 to 200Hz, 10Hz as shipped; the panel offers 10 to 200Hz, 50Hz by default |
-| BLE throughput | 20 bytes a notification; at 30 to 50ms and one notification a connection event 400 to 667B/s, below the 2,200B/s of 50Hz with all frames on; the notifications per event and the rates that fit are not measured |
+| BLE throughput | about 570 frames/s, about 6.3kB/s, on one panel (station, 2026-11-06, MTU 64, interval 20ms); 4 frames a sample overflow it above about 140Hz, 2 frames a sample (RSW 0x0C) leave room for about 285Hz; 200Hz at RSW 0x0C is not measured |
 | connect | on one panel (station, 2026-11-05) these values connected on the first try; with interval 15ms, supervision timeout 1,000ms and a 10ms/10ms connect scan, 35 tries at -59dBm ended with HCI 0x3E |
 | accuracy X, Y | 0.05° (datasheet), 0.2° (maker's web page) |
 | accuracy Z | 1° after the magnetometer's calibration, which the servo's motor disturbs; Z drift without it is not stated |

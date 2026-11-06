@@ -8,7 +8,8 @@
  * RATE written while the sensor is not connected, or twice; a write group
  * cut by a full outbox; a stale stretch of exactly 300ms not counted; an
  * IMU OFF that leaves the sensor in CALSW 1 or keeps an old zero; a
- * failed write that loses the calibration's exit or a RATE for good.
+ * failed write that loses the calibration's exit or a RATE for good; an
+ * RSW written to a sensor that holds 0x0C, or twice on one connection.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -34,10 +35,25 @@ static void angle_frame(uint8_t f[WIT_FRAME_LEN], float deg)
     f[10] = sum;
 }
 
-/** One angle frame into @p s at @p t, then a tick with @p up. */
+/** A 0x52 frame of rates 0 and battery @p centivolt / 100V. */
+static void gyro_frame(uint8_t f[WIT_FRAME_LEN], uint16_t centivolt)
+{
+    uint8_t sum = (uint8_t)(0x55u + WIT_T_GYRO);
+    memset(f, 0, WIT_FRAME_LEN);
+    f[0] = 0x55u;
+    f[1] = WIT_T_GYRO;
+    f[8] = (uint8_t)(centivolt & 0xFFu);
+    f[9] = (uint8_t)(centivolt >> 8);
+    f[10] = (uint8_t)(sum + f[8] + f[9]);
+}
+
+/** One sample of a sensor that holds RSW 0x0C into @p s at @p t: a 0x52
+ *  frame, then an angle frame; then a tick with @p up. */
 static void frame_at(imu_sensor_t *s, uint32_t t, bool up)
 {
     uint8_t f[WIT_FRAME_LEN];
+    gyro_frame(f, 400u);
+    imu_sensor_feed(s, f, sizeof f, t);
     angle_frame(f, 1.0f);
     imu_sensor_feed(s, f, sizeof f, t);
     imu_sensor_tick(s, t, up);
@@ -420,6 +436,191 @@ TEST_CASE(the_link_state_runs_bound_connected_no_frames)
     CHECK(fabsf(v.r.angle[0] - 1.0f) < 0.01f);
 }
 
+/** One frame of @p type with words 0 and a fourth word @p w3. */
+static void typed_frame(uint8_t f[WIT_FRAME_LEN], uint8_t type, uint16_t w3)
+{
+    memset(f, 0, WIT_FRAME_LEN);
+    f[0] = 0x55u;
+    f[1] = type;
+    f[8] = (uint8_t)(w3 & 0xFFu);
+    f[9] = (uint8_t)(w3 >> 8);
+    f[10] = (uint8_t)(0x55u + type + f[8] + f[9]);
+}
+
+/** One sample of a sensor at RSW @p rsw into @p s at @p t, in the
+ *  sensor's order 0x51, 0x52, 0x53, 0x54, a tick with @p up after each
+ *  frame.  @return the frames it fed. */
+static unsigned sample_at(imu_sensor_t *s, uint32_t t, uint16_t rsw, bool up)
+{
+    static const uint8_t k_types[] = { WIT_T_ACC, WIT_T_GYRO, WIT_T_ANGLE,
+                                       WIT_T_MAG };
+    unsigned n = 0u;
+    for (size_t i = 0; i < sizeof k_types; ++i) {
+        if ((rsw & wit_rsw_bit(k_types[i])) == 0u) {
+            continue;
+        }
+        uint8_t f[WIT_FRAME_LEN];
+        if (k_types[i] == WIT_T_ANGLE) {
+            angle_frame(f, 1.0f);
+        } else {
+            typed_frame(f, k_types[i], 400u);
+        }
+        imu_sensor_feed(s, f, sizeof f, t);
+        imu_sensor_tick(s, t, up);
+        ++n;
+    }
+    return n;
+}
+
+/* A connection whose first 8 frames show other types than 0x52 and 0x53
+ * queues unlock, RSW 0x0C, SAVE: at the 8th frame and not at the 7th, once
+ * on the connection, and again on the next one while the sensor sends
+ * them.  A stream of 0x53 alone gets it too.  A sensor at 0x0C gets
+ * nothing; a RATE due goes in the same group, after RSW. */
+TEST_CASE(a_connection_at_another_rsw_queues_rsw_0x0c_and_save_once)
+{
+    imu_sensor_t s;
+    imu_sensor_init(&s);
+    imu_sensor_tick(&s, 0u, true);
+    unsigned fed = 0u;
+    uint32_t t = 100u;
+    while (fed + 4u < IMU_RSW_FRAMES) {             /* 4 frames a sample */
+        fed += sample_at(&s, t, WIT_RSW_DEFAULT, true);
+        t += 20u;
+    }
+    CHECK_EQ(fed, 4u);
+    uint8_t f[WIT_FRAME_LEN];
+    typed_frame(f, WIT_T_ACC, 400u);
+    imu_sensor_feed(&s, f, sizeof f, t);
+    typed_frame(f, WIT_T_GYRO, 400u);
+    imu_sensor_feed(&s, f, sizeof f, t);
+    angle_frame(f, 1.0f);
+    imu_sensor_feed(&s, f, sizeof f, t);
+    imu_sensor_tick(&s, t, true);                   /* the 7th frame */
+    CHECK_EQ(s.out_n, 0u);
+    CHECK(!s.rsw_due);
+    typed_frame(f, WIT_T_MAG, 0u);
+    imu_sensor_feed(&s, f, sizeof f, t);
+    imu_sensor_tick(&s, t, true);                   /* the 8th */
+    CHECK_EQ(s.out_n, 3u);
+    CHECK(!s.rsw_due);
+    CHECK(is_unlock(s.out[0]));
+    CHECK(is_cmd(s.out[1], WIT_REG_RSW, IMU_RSW));
+    CHECK(is_cmd(s.out[2], WIT_REG_SAVE, 0u));
+    CHECK_EQ(IMU_RSW, 0x0Cu);
+    for (int i = 0; i < 20; ++i) {                  /* once a connection */
+        t += 20u;
+        (void)sample_at(&s, t, WIT_RSW_DEFAULT, true);
+    }
+    CHECK_EQ(s.out_n, 3u);
+    /* The next connection: the sensor still sends 0x51 to 0x54. */
+    s.out_n = 0u;
+    s.out_head = 0u;
+    imu_sensor_tick(&s, t + 1u, false);
+    imu_sensor_tick(&s, t + 2u, true);
+    for (int i = 0; i < 2; ++i) {
+        t += 20u;
+        (void)sample_at(&s, t, WIT_RSW_DEFAULT, true);
+    }
+    CHECK_EQ(s.out_n, 3u);
+    CHECK(is_cmd(s.out[1], WIT_REG_RSW, IMU_RSW));
+
+    /* 0x53 alone: no battery frame, RSW 0x0C goes. */
+    imu_sensor_init(&s);
+    imu_sensor_tick(&s, 0u, true);
+    for (unsigned i = 0u; i < IMU_RSW_FRAMES; ++i) {
+        (void)sample_at(&s, 100u + 20u * i, WIT_RSW_ANGLE, true);
+    }
+    CHECK_EQ(s.out_n, 3u);
+    CHECK(is_cmd(s.out[1], WIT_REG_RSW, IMU_RSW));
+
+    /* 0x52 alone: no angle and so no reading, RSW 0x0C goes all the same. */
+    imu_sensor_init(&s);
+    imu_sensor_tick(&s, 0u, true);
+    for (unsigned i = 0u; i < IMU_RSW_FRAMES; ++i) {
+        (void)sample_at(&s, 100u + 20u * i, WIT_RSW_GYRO, true);
+    }
+    CHECK(!s.m.r.valid);
+    CHECK_EQ(s.out_n, 3u);
+    CHECK(is_cmd(s.out[1], WIT_REG_RSW, IMU_RSW));
+
+    /* A sensor that holds 0x0C: no write, also over 40 frames. */
+    imu_sensor_init(&s);
+    imu_sensor_tick(&s, 0u, true);
+    for (unsigned i = 0u; i < 20u; ++i) {
+        (void)sample_at(&s, 100u + 20u * i, IMU_RSW, true);
+    }
+    CHECK(s.rsw_checked);
+    CHECK(!s.rsw_due);
+    CHECK_EQ(s.out_n, 0u);
+
+    /* RSW and a RATE due: unlock, RSW, RATE, SAVE. */
+    imu_sensor_init(&s);
+    imu_sensor_values(&s, WIT_RATE_10HZ, false, false);
+    imu_sensor_values(&s, WIT_RATE_200HZ, false, true);
+    imu_sensor_tick(&s, 0u, true);
+    s.out_n = IMU_OUTBOX - 1u;                      /* no room: it waits */
+    for (unsigned i = 0u; i < 2u; ++i) {
+        (void)sample_at(&s, 100u + 20u * i, WIT_RSW_DEFAULT, true);
+    }
+    CHECK(s.rsw_due);
+    CHECK(s.rate_due);
+    s.out_n = 0u;
+    s.out_head = 0u;
+    (void)sample_at(&s, 200u, WIT_RSW_DEFAULT, true);
+    CHECK_EQ(s.out_n, 4u);
+    CHECK(is_unlock(s.out[0]));
+    CHECK(is_cmd(s.out[1], WIT_REG_RSW, IMU_RSW));
+    CHECK(is_cmd(s.out[2], WIT_REG_RATE, WIT_RATE_200HZ));
+    CHECK(is_cmd(s.out[3], WIT_REG_SAVE, 0u));
+}
+
+/* RSW's unlock refused: the group drops, RSW is due again and held while
+ * the stream flows on; at the next connection unlock, RSW 0x0C, SAVE go
+ * with the first valid reading.  A failure after all of it went brings
+ * RSW back the same way. */
+TEST_CASE(a_refused_rsw_write_is_due_again_at_the_next_connection)
+{
+    imu_sensor_t s;
+    imu_sensor_init(&s);
+    imu_sensor_tick(&s, 0u, true);
+    (void)sample_at(&s, 100u, WIT_RSW_DEFAULT, true);
+    (void)sample_at(&s, 120u, WIT_RSW_DEFAULT, true);
+    CHECK_EQ(s.out_n, 3u);
+    uint8_t c[WIT_CMD_LEN];
+    CHECK(imu_sensor_next(&s, 200u, c));
+    CHECK(is_unlock(c));
+    imu_sensor_flush(&s);                           /* the unlock refused */
+    CHECK_EQ(s.out_n, 0u);
+    CHECK(s.rsw_due);
+    CHECK(!s.rate_due);
+    CHECK(s.held);
+    for (uint32_t t = 300u; t < 1300u; t += 20u) {
+        (void)sample_at(&s, t, WIT_RSW_DEFAULT, true);
+    }
+    CHECK_EQ(s.out_n, 0u);
+    imu_sensor_tick(&s, 1300u, false);              /* the link drops */
+    frame_at(&s, 1400u, true);                      /* back: one sample */
+    CHECK(!s.held);
+    CHECK(!s.rsw_due);
+    CHECK_EQ(s.out_n, 3u);
+    CHECK(imu_sensor_next(&s, 1500u, c));
+    CHECK(is_unlock(c));
+    CHECK(imu_sensor_next(&s, 1550u, c));
+    CHECK(is_cmd(c, WIT_REG_RSW, IMU_RSW));
+    CHECK(imu_sensor_next(&s, 1600u, c));
+    CHECK(is_cmd(c, WIT_REG_SAVE, 0u));
+    for (uint32_t t = 1620u; t < 2600u; t += 20u) {  /* not twice */
+        (void)sample_at(&s, t, WIT_RSW_DEFAULT, true);
+    }
+    CHECK_EQ(s.out_n, 0u);
+    imu_sensor_flush(&s);                           /* SAVE not answered */
+    CHECK(s.rsw_due);
+    CHECK(s.held);
+    CHECK(!s.rate_due);
+    CHECK(!s.algo_due);
+}
+
 int main(void)
 {
     RUN(a_command_goes_50ms_after_the_one_before_and_not_at_49ms);
@@ -432,5 +633,7 @@ int main(void)
     RUN(a_refused_calibration_start_fails_the_calibration);
     RUN(a_failed_write_brings_back_its_group_at_the_next_connection);
     RUN(the_link_state_runs_bound_connected_no_frames);
+    RUN(a_connection_at_another_rsw_queues_rsw_0x0c_and_save_once);
+    RUN(a_refused_rsw_write_is_due_again_at_the_next_connection);
     return test_summary("imu_sensor");
 }

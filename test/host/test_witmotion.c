@@ -395,6 +395,22 @@ TEST_CASE(a_null_argument_does_nothing)
     CHECK_EQ(wit_cmd_axis6(NULL, true), 0u);
 }
 
+/* Each frame type maps to its RSW bit, so the frames seen add up to the
+ * RSW that sent them; 0x4F and 0x60 lie outside the register. */
+TEST_CASE(a_frame_type_maps_to_its_rsw_bit)
+{
+    CHECK_EQ(wit_rsw_bit(WIT_T_TIME), WIT_RSW_TIME);
+    CHECK_EQ(wit_rsw_bit(WIT_T_ACC), WIT_RSW_ACC);
+    CHECK_EQ(wit_rsw_bit(WIT_T_GYRO), WIT_RSW_GYRO);
+    CHECK_EQ(wit_rsw_bit(WIT_T_ANGLE), WIT_RSW_ANGLE);
+    CHECK_EQ(wit_rsw_bit(WIT_T_MAG), WIT_RSW_MAG);
+    CHECK_EQ(wit_rsw_bit(WIT_T_QUAT), WIT_RSW_QUAT);
+    CHECK_EQ(wit_rsw_bit(0x5Fu), 0x8000u);
+    CHECK_EQ(wit_rsw_bit(0x4Fu), 0u);
+    CHECK_EQ(wit_rsw_bit(0x60u), 0u);
+    CHECK_EQ(wit_rsw_bit(0x00u), 0u);
+}
+
 TEST_CASE(a_parser_state_past_its_buffer_is_reset_not_overrun)
 {
     wit_parser_t p;
@@ -429,6 +445,7 @@ int main(void)
     RUN(rate_dhz_names_every_code);
     RUN(two_thousand_frames_of_noise_never_hand_out_a_frame_with_a_bad_sum);
     RUN(a_null_argument_does_nothing);
+    RUN(a_frame_type_maps_to_its_rsw_bit);
     RUN(a_parser_state_past_its_buffer_is_reset_not_overrun);
     return test_summary("witmotion");
 }
