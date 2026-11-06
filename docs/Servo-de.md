@@ -1450,7 +1450,10 @@ Seite eingegebenen Ausschlag erreichen, gemessen an der Winkelquelle. Es
 schließt den Regelkreis über den Winkel der Fläche statt über einen nach
 Augenmaß eingestellten Weg am Sender. Der Lauf steht in
 `shared/servo/servo_rudder_auto.c`, der Kasten in
-`shared/ui/servo_rudder_auto_panel.c`.
+`shared/ui/servo_rudder_auto_panel.c`. AUTO vertraut der Winkelquelle: Mit
+WINKELQUELLE IMU nimmt es die Winkel, die die Bluetooth-Verbindung liefert,
+und diese Verbindung ist nicht authentifiziert (`SECURITY.md`, die
+Bluetooth-IMU).
 
 ### Ablauf
 

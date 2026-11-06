@@ -151,6 +151,20 @@ start-up, the panel never reads or probes 0x14 again until the next start,
 and a device attached later is ignored. A panel built with
 `RCBENCH_TOUCH_INJECTOR=OFF` never addresses 0x14 as an injector.
 
+Current limitation, the Bluetooth IMU: the BWT901CL's ISSC Transparent
+UART service offers no pairing and no bonding, so the BLE (Bluetooth Low
+Energy) link to it is not authenticated. The panel connects to the stored
+address and finds the service by its public UUIDs (universally unique
+identifiers). The trigger is a BLE device in range that wins the
+connection to the stored address, by advertising it while the sensor is
+off or out of range, and serves the ISSC service: it can send
+checksum-valid 0x53 angle frames, which the panel takes as the sensor's
+angle. With ANGLE SOURCE IMU, RUDDER's AUTO run measures on those angles
+and writes the servo's end points, which the servo keeps. What limits it:
+AUTO runs only ARMED, starts only after its 2s hold at the bench, keeps
+the current and stall guards of every servo run, and ends on STOP. A
+command write the panel sends reaches whichever device holds the link.
+
 Two classes of report apply.
 
 ## Unexpected output

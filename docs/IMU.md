@@ -119,6 +119,12 @@ a phone connected to the sensor keeps the panel out, because a connected
 peripheral stops advertising. Any central in range can connect to the
 sensor; it has no pairing.
 
+The link is not authenticated: the sensor's ISSC service offers no
+pairing or bonding. A BLE device in range that wins the connection to the
+stored address and serves the ISSC service can send angle frames the panel
+takes as the sensor's. RUDDER's AUTO run with ANGLE SOURCE IMU programs end
+points from them. `SECURITY.md` lists this as a current limitation.
+
 ## The sensor
 
 Frames: 0x55, the type, four int16 words little-endian, the low byte of the

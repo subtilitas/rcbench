@@ -1412,7 +1412,9 @@ Hitec servo's end points so that 1000us and 2000us reach the deflection entered
 for each side, measured on the angle source. It closes the loop on the
 surface's angle in place of the throw a radio's end points are set to by
 eye. The run is `shared/servo/servo_rudder_auto.c`; the box is
-`shared/ui/servo_rudder_auto_panel.c`.
+`shared/ui/servo_rudder_auto_panel.c`. AUTO trusts the angle source: with
+ANGLE SOURCE IMU it takes the angles the Bluetooth link delivers, and that
+link is not authenticated (`SECURITY.md`, the Bluetooth IMU).
 
 ### Running it
 

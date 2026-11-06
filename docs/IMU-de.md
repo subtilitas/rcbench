@@ -129,6 +129,13 @@ DRAN?`: Ein mit dem Sensor verbundenes Handy sperrt das Panel aus, weil ein
 verbundenes Peripheriegerät das Werben einstellt. Jede Central in Reichweite
 kann sich mit dem Sensor verbinden; er hat kein Pairing.
 
+Die Verbindung ist nicht authentifiziert: Der ISSC-Dienst des Sensors
+bietet weder Pairing noch Bonding. Ein BLE-Gerät in Reichweite, das die
+Verbindung zur gespeicherten Adresse bekommt und den ISSC-Dienst anbietet,
+kann Winkel-Frames senden, die das Panel als die des Sensors nimmt. Der
+AUTO-Lauf von RUDER mit WINKELQUELLE IMU programmiert daraus Endpoints.
+`SECURITY.md` führt das als aktuelle Einschränkung.
+
 ## Der Sensor
 
 Frames: 0x55, der Typ, vier int16-Wörter Little-Endian, das untere Byte der
