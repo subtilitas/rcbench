@@ -24,6 +24,7 @@ set(SRCS
     sense_limit_link.c
     servo_source.c
     tone_link.c
+    status_poll.c
     endpoints_link.c
     esc_link.c
     esc_prog.c

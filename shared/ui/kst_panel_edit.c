@@ -459,7 +459,11 @@ void kpn_act(const row_t *r)
         } else {
             choice_add(TR(KP_VERIFY), MORE_VERIFY);
             choice_add(TR(KP_DISCARD), MORE_DISCARD);
-            choice_add(TR(KP_RELEASE_TITLE), MORE_RELEASE);
+            /* Only with KST EXPERT MODE ON; a change of the mode closes
+             * the list (kpn_mode_sync()). */
+            if (kpn_expert()) {
+                choice_add(TR(KP_RELEASE_TITLE), MORE_RELEASE);
+            }
         }
         break;
     case A_TYPE:
@@ -500,7 +504,7 @@ const row_t *kpn_port_pick_row(void)
         const row_t *r = &kpn_rows[i];
 
         if (r->kind == K_ACT && r->what == A_PORT
-            && r->page == k.tabs.selected) {
+            && r->page == kpn_page()) {
             return r;
         }
     }
@@ -611,7 +615,7 @@ bool kpn_row_live(const row_t *r)
     const kst_prog_t *p = &k.prog;
     const kst_prog_state_t st = kst_prog_state(p);
 
-    if (r->kind == K_LOCKED) {
+    if (r->kind == K_LOCKED || !kpn_row_shown(r)) {
         return false;
     }
     if (kst_prog_card_busy(p) && st == KST_PROG_PROGRAMMING) {

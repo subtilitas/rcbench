@@ -11,6 +11,8 @@
 #include <string.h>
 
 #include "link_pages.h"
+#include "settings.h"
+#include "status_poll.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -75,6 +77,14 @@ bool ui_link_refused_label(const ui_bench_status_t *st, char *out, size_t n)
 
 /* ---------------------------------------------------------------- chips */
 
+bool ui_band_hwstop(const ui_bench_status_t *st)
+{
+    /* The rule the panel's STATUS reads follow, so the reads go fast while
+     * the chip stands and slow when it goes. */
+    return st != NULL
+           && status_poll_fast(settings_get_bool(SET_HW_STOP), st->faults);
+}
+
 /* The chip's label for @p st, in @p buf where it is formatted. */
 static const char *chip_label(const ui_bench_status_t *st,
                               ui_band_chip_t chip, char *buf, size_t n)
@@ -92,6 +102,8 @@ static const char *chip_label(const ui_bench_status_t *st,
     case UI_BAND_CHIP_FAULT:
         snprintf(buf, n, TR(BAND_FAULT), (unsigned)st->faults);
         return buf;
+    case UI_BAND_CHIP_HWSTOP:
+        return TR(BAND_HWSTOP);
     case UI_BAND_CHIP_MODE:
         return (st->mode != NULL) ? st->mode : "";
     case UI_BAND_CHIP_LINK:
@@ -106,7 +118,10 @@ static bool chip_shown(const ui_bench_status_t *st, ui_band_chip_t chip)
     switch (chip) {
     case UI_BAND_CHIP_CLOCK: return st->run_seconds > 0 || st->armed;
     case UI_BAND_CHIP_ARMED: return true;
-    case UI_BAND_CHIP_FAULT: return st->faults != 0;
+    /* HWSTOP takes FAULT's place, the other bits with it, so the row is
+     * never wider than with FAULT: HWSTOP is 6 cells, FEHLER 7F 9. */
+    case UI_BAND_CHIP_FAULT: return st->faults != 0 && !ui_band_hwstop(st);
+    case UI_BAND_CHIP_HWSTOP: return ui_band_hwstop(st);
     case UI_BAND_CHIP_MODE:  return st->mode != NULL;
     case UI_BAND_CHIP_LINK:  return true;
     default:                 return false;
@@ -152,8 +167,8 @@ static bool chip_shown(const ui_bench_status_t *st, ui_band_chip_t chip)
 #define CHIP_DOT_W 12      /* more right of LINK's label */
 /** @brief The chips from STOP leftwards. */
 static const ui_band_chip_t k_order[] = {
-    UI_BAND_CHIP_CLOCK, UI_BAND_CHIP_ARMED, UI_BAND_CHIP_FAULT,
-    UI_BAND_CHIP_MODE, UI_BAND_CHIP_LINK,
+    UI_BAND_CHIP_CLOCK, UI_BAND_CHIP_ARMED, UI_BAND_CHIP_HWSTOP,
+    UI_BAND_CHIP_FAULT, UI_BAND_CHIP_MODE, UI_BAND_CHIP_LINK,
 };
 
 typedef struct {
@@ -262,9 +277,10 @@ ui_band_chip_t ui_band_chip_at(const ui_bench_status_t *st, int x, int y)
  * The bubble is the DELETE question's box of LOGS: a panel with its border
  * and a title tab, the text in UI_FONT_BAND (10 x 20).  It opens 4px under
  * the band, 8px in from the panel's edges at most.  A bubble is 640px
- * wide, 60 cells of text; FAULT's spans the panel less 8px each side and
- * the text's 16px padding: 976px, 97 cells on the 1024px panel, so the
- * seven bits and their advice fit above the alert band in either language.
+ * wide, 60 cells of text; FAULT's and HWSTOP's span the panel less 8px
+ * each side and the text's 16px padding: 976px, 97 cells on the 1024px
+ * panel, so the seven bits and their advice fit above the alert band in
+ * either language.
  */
 /** @brief A help bubble's width: 640px, 60 cells of text. */
 #define HELP_W       640
@@ -354,6 +370,17 @@ static bool help_para(const ui_bench_status_t *st, ui_band_chip_t chip,
     switch (chip) {
     case UI_BAND_CHIP_FAULT:
         return fault_para(st->faults, i);
+    case UI_BAND_CHIP_HWSTOP:
+        /* What it is and how it clears, then the bits beside it as the
+         * FAULT box has them. */
+        if (i >= 2) {
+            return fault_para((uint16_t)(st->faults
+                                         & (uint16_t)~LINK_FAULT_HEARTBEAT),
+                              i - 2);
+        }
+        ids[n++] = TX_BH_HWSTOP;
+        ids[n++] = TX_BH_HWSTOP_CLEAR;
+        break;
     case UI_BAND_CHIP_LINK:
         ids[n++] = st->link_up ? TX_BH_LINK_UP : TX_BH_NO_LINK;
         /* The frames the IOmcu refused, as MOTOR & ESC's header strip
@@ -490,8 +517,9 @@ bool ui_band_help_rect(const ui_bench_status_t *st, ui_band_chip_t chip,
     if (!ui_band_chip_rect(st, chip, &at)) {
         return false;
     }
-    const int w = (chip == UI_BAND_CHIP_FAULT) ? PANEL_W - 2 * HELP_M
-                                               : HELP_W;
+    const int w = (chip == UI_BAND_CHIP_FAULT || chip == UI_BAND_CHIP_HWSTOP)
+                      ? PANEL_W - 2 * HELP_M
+                      : HELP_W;
     int x = at.x;
     if (x + w > PANEL_W - HELP_M) {
         x = PANEL_W - HELP_M - w;
@@ -521,8 +549,9 @@ void ui_band_help_render(gfx_canvas_t *c, const ui_bench_status_t *st,
     } else if (chip == UI_BAND_CHIP_LINK) {
         accent = st->link_up ? ui_theme_color(UI_C_OK)
                              : ui_theme_color(UI_C_DANGER);
-    } else if (chip == UI_BAND_CHIP_ARMED
-               && (st->armed || st->stop_latched)) {
+    } else if (chip == UI_BAND_CHIP_HWSTOP
+               || (chip == UI_BAND_CHIP_ARMED
+                   && (st->armed || st->stop_latched))) {
         accent = ui_theme_color(UI_C_DANGER);
     }
     char buf[24];
@@ -541,8 +570,8 @@ void ui_band_help_render(gfx_canvas_t *c, const ui_bench_status_t *st,
  * @param dot its dot's colour, 0 for none
  * @param fill its fill
  * @param ink its text colour: the theme's text, and on the bright fills of
- *        FAULT's warning and of the armed badge the dark text of the
- *        buttons on bright fills
+ *        FAULT's warning, of HWSTOP and of the armed badge the dark text
+ *        of the buttons on bright fills
  */
 static void chip_look(const ui_bench_status_t *st, ui_band_chip_t chip,
                       gfx_color_t *dot, gfx_color_t *fill, gfx_color_t *ink)
@@ -565,6 +594,11 @@ static void chip_look(const ui_bench_status_t *st, ui_band_chip_t chip,
         break;
     case UI_BAND_CHIP_FAULT:
         *fill = ui_theme_color(UI_C_WARN);
+        *ink  = ui_theme_color(UI_C_TEXT_ON_LIGHT);
+        break;
+    case UI_BAND_CHIP_HWSTOP:
+        /* The latched STOP's red badge: the bench is stopped. */
+        *fill = ui_theme_color(UI_C_DANGER);
         *ink  = ui_theme_color(UI_C_TEXT_ON_LIGHT);
         break;
     case UI_BAND_CHIP_LINK:

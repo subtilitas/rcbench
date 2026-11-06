@@ -728,15 +728,20 @@ void sup_render(gfx_canvas_t *c, int buffer_index)
     const bool set_moved  = (s.drawn_set[buf] != s.set_rev);
     const bool out_moved  = (s.drawn_out[buf] != s.out_rev);
 
-    if (ctrl_moved || data_moved) {
+    /* PLOT | TABLE and the heading's row show no reading: of a sample only
+     * whether the supply answers, so a sample repaints them only when that
+     * changes. */
+    const uint8_t online = s.sup.online ? 1u : 0u;
+    const bool head_moved = ctrl_moved || s.drawn_online[buf] != online;
+    if (head_moved) {
+        s.drawn_online[buf] = online;
         if (!covered) {
             ui_tabs_render(&s.tabs, c);
         }
         draw_header(c);
     }
     /* The PROG 5V box in the output card's head, on its own revision. */
-    if (sup_p5_shown()
-        && (s.drawn_p5[buf] != s.p5.rev || ctrl_moved || data_moved)) {
+    if (sup_p5_shown() && (s.drawn_p5[buf] != s.p5.rev || head_moved)) {
         s.drawn_p5[buf] = s.p5.rev;
         prog5v_box_render(&s.p5, c);
     }

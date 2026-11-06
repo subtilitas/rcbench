@@ -198,6 +198,8 @@ static bool s_enc_on;
 static bool s_rot_on;
 /* The time zone stored at LOS ANGELES, the longest option. */
 static bool s_tz_on;
+/* SETUP > PANEL > Hardware stop stored ON. */
+static bool s_hwstop_on;
 
 /* The settings model's ARMED source, as the panel's (panel_boot.c). */
 static bool router_armed(void)
@@ -218,6 +220,9 @@ static bool lang_load(float *values, int count)
     }
     if (s_tz_on && (int)SET_TIME_ZONE < count) {
         values[SET_TIME_ZONE] = 7.0f;
+    }
+    if (s_hwstop_on && (int)SET_HW_STOP < count) {
+        values[SET_HW_STOP] = 1.0f;
     }
     if (s_enc_on && (int)SET_ENC_CENTRE < count) {
         values[SET_ENC_EN]     = 1.0f;
@@ -1010,7 +1015,18 @@ static void program_view(const char *view)
  */
 static void kst_view(const char *view)
 {
-    const char *v = view + strlen("servo-kst");
+    /* A view with -expert-off is its view with KST EXPERT MODE OFF; every
+     * other has it ON and shows every row. */
+    static const char k_off[] = "-expert-off";
+    static char vb[64];
+    const char *full = view + strlen("servo-kst");
+    const size_t fl = strlen(full);
+    const bool expert_off = fl >= sizeof(k_off) - 1u
+        && strcmp(full + fl - (sizeof(k_off) - 1u), k_off) == 0;
+
+    snprintf(vb, sizeof(vb), "%.*s",
+             (int)(expert_off ? fl - (sizeof(k_off) - 1u) : fl), full);
+    const char *v = vb;
     const bool nopage = strcmp(v, "-nopage") == 0;
     const bool cut = strcmp(v, "-doubt") == 0 || strcmp(v, "-journal") == 0
                   || strcmp(v, "-restore-list") == 0
@@ -1032,6 +1048,7 @@ static void kst_view(const char *view)
                  || strcmp(v, "-left-cycled") == 0;
 
     rig_fresh();
+    settings_set(SET_KST_EXPERT, expert_off ? 0.0f : 1.0f);
     g_rig.card = true;
     g_rig.rail = supply || on;
     if (on) {
@@ -2479,7 +2496,9 @@ static void pose_update(const char *view)
  * A help bubble of the band, opened by a tap on its chip over the menu.
  * The status is the view's: band-fault has the three bits this release
  * sets, band-fault-all every bit and one this panel has no name for --
- * the tallest bubble there is.  band-stop has a STOP latched.
+ * the tallest bubble there is.  band-stop has a STOP latched.  band-hwstop
+ * has SETUP > PANEL > Hardware stop ON and the heartbeat bit, and
+ * band-hwstop-all every bit beside it.
  */
 static void band_view(const char *view, ui_bench_status_t *st)
 {
@@ -2494,6 +2513,11 @@ static void band_view(const char *view, ui_bench_status_t *st)
     if (strncmp(view, "band-fault", 10) == 0) {
         st->faults = (strcmp(view, "band-fault-all") == 0) ? 0xFFu : 0x51u;
         chip = UI_BAND_CHIP_FAULT;
+    } else if (strncmp(view, "band-hwstop", 11) == 0) {
+        /* SETUP > PANEL > Hardware stop ON and the heartbeat bit: HWSTOP
+         * in FAULT's place; -all with every other bit in its box. */
+        st->faults = (strcmp(view, "band-hwstop-all") == 0) ? 0xFFu : 0x10u;
+        chip = UI_BAND_CHIP_HWSTOP;
     } else if (strcmp(view, "band-bench") == 0
                || strcmp(view, "band-sim") == 0) {
         chip = UI_BAND_CHIP_MODE;
@@ -3248,6 +3272,24 @@ static void pose_bench_views(ui_screen_id_t id, const char *view)
                 .tx_errors = 248, .rx_errors = 0, .bus_errors = 1976,
             };
             r = q;
+        } else if (strncmp(view, "busfault-back", 13) == 0) {
+            /* The link answering again for 3s after it stopped, or after
+             * the start-up test failed ("busfault-back-test"): RECONNECT
+             * offered. */
+            const busfault_report_t q = {
+                .kind = BUSFAULT_LINK_LOST,
+                .bus = BUSFAULT_BUS_RUNNING,
+                .down_s = 0, .recoveries = 0,
+                .polls = 5401, .timeouts = 47,
+                .tx_errors = 0, .rx_errors = 0, .bus_errors = 1976,
+            };
+            if (strcmp(view, "busfault-back") == 0) {
+                r = q;
+            }
+            busfault_screen_set(&r);
+            busfault_screen_link(true, 0u);
+            busfault_screen_link(true, 3400u);
+            return;
         }
         busfault_screen_set(&r);
     }
@@ -3841,6 +3883,7 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
                                  || strcmp(view, "servo-sweep-page") == 0
                                  || strcmp(view, "servo-warning") == 0
                                  || strcmp(view, "servo-encoder") == 0
+                                 || strcmp(view, "servo-dut-expert") == 0
                                  || strcmp(view, "servo-name") == 0
                                  || strcmp(view, "servo-trim-keypad") == 0
                                  || strncmp(view, "servo-rate-", 11) == 0;
@@ -3864,7 +3907,11 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
             tap(165, UI_BAND_H + 256);                /* HELI CYCLIC */
         } else if (strcmp(view, "servo-sweep-page") == 0) {
             tap(SV_PAGE_X(1), UI_BAND_H + SV_PAGE_TAB_Y); /* SWEEP */
-        } else if (strcmp(view, "servo-encoder") == 0) {
+        } else if (strcmp(view, "servo-encoder") == 0
+                   || strcmp(view, "servo-dut-expert") == 0) {
+            if (strcmp(view, "servo-dut-expert") == 0) {
+                settings_set(SET_KST_EXPERT, 1.0f); /* after the 2s hold */
+            }
             tap(SV_PAGE_X(2), UI_BAND_H + SV_PAGE_TAB_Y); /* DUT */
         } else if (strcmp(view, "servo-trim-keypad") == 0) {
             /* TRIM's value, between its steps: the signed keypad, -25us
@@ -3970,6 +4017,12 @@ static void pose_shown_setup(ui_screen_id_t id, const char *view)
     if (strcmp(view, "setup-time-zone") == 0) {
         setup_tile(SET_CAT_APP);
         setup_scroll_rows(4);
+    }
+    /* PANEL scrolled to its end: Hardware stop, stored ON. */
+    if (strcmp(view, "setup-hw-stop") == 0) {
+        setup_tile(SET_CAT_APP);
+        setup_scroll_rows(5);
+        setup_scroll_rows(5);
     }
     /* SETUP's SD CARD: AUTO LOGS and USER LOGS, and the two folders. */
     if (strcmp(view, "setup-card") == 0) {
@@ -4191,6 +4244,8 @@ int main(int argc, char **argv)
     s_enc_on = strcmp(view, "servo-encoder") == 0;
     s_rot_on = strcmp(view, "setup-rotation") == 0;
     s_tz_on = strcmp(view, "setup-time-zone") == 0;
+    s_hwstop_on = strcmp(view, "setup-hw-stop") == 0
+                  || strcmp(view, "band-hwstop") == 0;
     s_tone_fed = strcmp(view, "motor-stick-tone") == 0;
 
     ui_theme_set(light ? UI_THEME_LIGHT : UI_THEME_DARK);

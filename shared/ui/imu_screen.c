@@ -16,6 +16,7 @@
 #include "imu_screen.h"
 
 #include <math.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -115,9 +116,19 @@ void imu_screen_set(const imu_view_t *v)
     if (v->r.taken_ms != ims.v.r.taken_ms || !v->r.valid) {
         s_age_ms = 0u;
     }
+    _Static_assert(offsetof(imu_view_t, r) + sizeof(imu_reading_t)
+                       == sizeof(imu_view_t),
+                   "the reading is the view's last member");
+    /* The reading alone, the view's last member: the card's lines that
+     * read differently repaint on their own (ims_render()). */
+    const bool alone = memcmp(v, &ims.v, offsetof(imu_view_t, r)) == 0;
     ims.v = *v;
     drop_hold_if_gone();
-    touched();
+    if (alone) {
+        ++ims.read_rev;
+    } else {
+        touched();
+    }
 }
 
 /**
@@ -532,7 +543,7 @@ static void tick(float dt_s)
         s_age_ms = (s_age_ms + add > 99999u) ? 99999u : s_age_ms + add;
     }
     if (ims.hold.down || ims.hold.flash_ms > 0) {
-        touched();             /* the fill follows the hold */
+        ++ims.hold_rev;        /* the fill follows the hold, on its own */
     }
     ui_hold_flash_step(&ims.hold, dt_s);
     if (ims_row_enabled(IMS_ROW_CAL) && ui_hold_tick(&ims.hold, dt_s)) {

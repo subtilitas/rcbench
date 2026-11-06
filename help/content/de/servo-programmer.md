@@ -98,7 +98,7 @@ Bei ausgeschaltetem Ausgang schaltet VERBINDEN ihn ein und öffnet den Programmi
 | SERVO | ALLES AUSLESEN | liest die 32 Register, jedes, bis 3 von höchstens 5 Lesungen übereinstimmen |
 | TYP | V6?, V8?, V6, V8 | der Servotyp, V6 oder V8, wie der Bediener ihn setzt |
 | DATEIEN | WÄHLEN | speichert die Werte des Servos auf die Karte, lädt eine Datei |
-| WEITERES | WÄHLEN | im Programmiermodus: PRÜFEN, ÄNDERUNGEN VERWERFEN, PAIRING LÖSEN |
+| WEITERES | WÄHLEN | im Programmiermodus: PRÜFEN, ÄNDERUNGEN VERWERFEN und, bei KST EXPERT MODE EIN, PAIRING LÖSEN |
 | SCHREIBEN INS SERVO FREIGEBEN | AUS, EIN | der Schreibschalter |
 | ZURÜCKSPIELEN | WÄHLEN | schreibt ein Backup zurück |
 | (keine Beschriftung) | n WERTE SCHREIBEN | schreibt die geänderten Werte |
@@ -125,10 +125,10 @@ Passt die Registerbelegung nicht zum bekannten Layout, bleibt das Servo schreibg
 
 | Reiter | Zeilen |
 |---|---|
-| ABSTIMMEN | DEAD BAND, MAX. DUTY (10 bis 98%), BOOST (bis 3000us), STRETCH (x1 bis x32), SOFT START, TEMPOGRENZE, TEMPO |
+| ABSTIMMEN | DEAD BAND, MAX. DUTY (10 bis 98%), BOOST (bis 3000us), STRETCH (x1 bis x32), SOFT START, TEMPOGRENZE, TEMPO; DEAD BAND, BOOST und STRETCH nur bei KST EXPERT MODE EIN |
 | PULS | NEUTRAL (1360 bis 1640us), PULSE LOWER (ab 500us), PULSE UPPER (bis 2500us), LEFT ANGLE, RIGHT ANGLE, REVERSION |
 | FAILSAFE | BEWEGEN BEI SIGNALVERLUST, POSITION (500 bis 2500us), NACH (0,4 bis 13,0s) |
-| GESPERRT | 20K SEL, LOCK, MODE und der Schutzblock; nur angezeigt, nie bearbeitet |
+| GESPERRT | 20K SEL, LOCK, MODE und der Schutzblock; nur angezeigt, nie bearbeitet; der Reiter erscheint nur bei KST EXPERT MODE EIN |
 
 ![Der Reiter PULS](view:servo-kst-pulse)
 ![Der Reiter FAILSAFE](view:servo-kst-failsafe)
@@ -144,6 +144,19 @@ Ein Tipp, der eine harte Grenze verletzen würde, ändert nichts und nennt die G
 Ein Wert innerhalb der harten Grenzen, aber außerhalb einer weichen Grenze, öffnet ÄNDERUNG PRÜFEN. Die Seite zeigt Servowert, vorgeschlagenen Wert und eine Zeile je betroffener Grenze. Halte 2s HALTEN ZUM ÜBERNEHMEN für 2s zur Bestätigung. ABBRECHEN behält den Entwurf. Beim [Endlagenlauf](servo.md#der-endlagenlauf) gilt bereits das Halten beim Start als Zustimmung zu LEFT ANGLE oder RIGHT ANGLE unter 50; eine weitere Frage entfällt.
 
 ![Der Reiter GESPERRT](view:servo-kst-locked)
+
+## KST EXPERT MODE
+
+KST EXPERT MODE auf [Servo-Optionen](servo-settings.md#prüfling) > PRÜFLING legt fest, was der Programmierer zeigt. Er ist standardmäßig AUS und bleibt über einen Neustart erhalten. Halte die Zeile 2s, um ihn einzuschalten; ein kürzerer Druck zeigt `Halte 2s, um KST EXPERT MODE einzuschalten.` auf dem Band. Tippe, um ihn auszuschalten.
+
+Bei AUS verschwinden DEAD BAND, BOOST und STRETCH von ABSTIMMEN, PAIRING LÖSEN aus WEITERES und der Reiter GESPERRT aus der Leiste. ABSTIMMEN rückt zusammen, und die Leiste hält 4 Reiter. DEAD BAND und BOOST können Pendeln, Brummen und Erwärmung verursachen, STRETCH Schwingungen; was PAIRING LÖSEN im Servo bewirkt und was die gesperrten Werte bedeuten, ist nicht bekannt.
+
+![ABSTIMMEN bei KST EXPERT MODE AUS](view:servo-kst-tune-expert-off)
+![WEITERES bei KST EXPERT MODE AUS](view:servo-kst-more-expert-off)
+
+Das Laden einer Datei und ZURÜCKSPIELEN schreiben weiter das ganze Abbild. Die Schreibseite, DIESE DATEI PRÜFEN und die Seite des Zurückspielens nennen jeden verborgenen Wert, der sich ändert, zuerst und in der Warnfarbe: `DEAD BAND (KST EXPERT MODE): 2.0 -> 1.6us`. Ein Entwurf behält beim Ausschalten eine Änderung eines verborgenen Werts, und die Schreibseite nennt sie.
+
+![Die Schreibseite nennt die verborgenen Werte](view:servo-kst-write-expert-off)
 
 ## Schreiben
 
@@ -192,7 +205,7 @@ ZURÜCKSPIELEN bietet das Sitzungsbackup (die zuerst nach VERBINDEN ausgelesenen
 
 - PRÜFEN liest alle Register aus und vergleicht sie mit dem gespeicherten Abbild.
 - ÄNDERUNGEN VERWERFEN setzt den Entwurf auf die Servowerte zurück.
-- PAIRING LÖSEN setzt Register 1D nach 2s Halten auf 00. Die Wirkung im Servo ist unbekannt.
+- PAIRING LÖSEN, bei KST EXPERT MODE EIN, setzt Register 1D nach 2s Halten auf 00. Die Wirkung im Servo ist unbekannt.
 
 ## Ein unterbrochenes Schreiben
 

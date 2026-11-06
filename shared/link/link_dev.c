@@ -167,6 +167,75 @@ static void serve_held(link_dev_t *d, const link_msg_t *req,
     d->held_count = 0u;
 }
 
+/**
+ * @brief Whether two requests are the same message: op, window and, for a
+ *        write, the values.
+ *
+ * @param a One request.
+ * @param b The other.
+ * @return true when a repeat of @p a would be @p b.
+ */
+static bool same_request(const link_msg_t *a, const link_msg_t *b)
+{
+    if (a->op != b->op || a->page != b->page || a->offset != b->offset
+        || a->count != b->count || a->seq != b->seq) {
+        return false;
+    }
+    if (a->op != LINK_OP_WRITE) {
+        return true;   /* a read carries no values */
+    }
+    return memcmp(a->regs, b->regs, (size_t)a->count * sizeof(a->regs[0]))
+           == 0;
+}
+
+/**
+ * @brief The kept answer of a repeat, or NULL when @p req is not one.
+ *
+ * @param d The link state.
+ * @param req A numbered request.
+ * @param now_ms The current time, in ms.
+ * @return The kept answer, or NULL when the request starts or continues an
+ *         exchange.
+ */
+static const link_msg_t *repeat_of(link_dev_t *d, const link_msg_t *req,
+                                   uint32_t now_ms)
+{
+    if (req->seq != d->seq || elapsed(now_ms, d->seq_ms, LINK_DEV_REPEAT_MS)) {
+        /* A new exchange: what the last one kept is no answer to it. */
+        d->seq        = req->seq;
+        d->seq_ms     = now_ms;
+        d->kept_count = 0u;
+        return NULL;
+    }
+    for (uint8_t i = 0; i < d->kept_count; ++i) {
+        if (same_request(&d->kept[i].req, req)) {
+            return &d->kept[i].reply;
+        }
+    }
+    return NULL;   /* another message of the same exchange */
+}
+
+/**
+ * @brief Answer a request that is not a repeat: READ_HELD, a read that keeps
+ *        the rest, or link_dev_apply().
+ *
+ * @param d The link state.
+ * @param req The request.
+ * @param reply Receives the answer.
+ */
+static void answer(link_dev_t *d, const link_msg_t *req, link_msg_t *reply)
+{
+    if (req->op == LINK_OP_READ_HELD) {
+        serve_held(d, req, reply);
+        return;
+    }
+    if (req->op == LINK_OP_READ && req->count == LINK_READ_REGS_MAX
+        && read_and_keep(d, req, reply)) {
+        return;
+    }
+    (void)link_dev_apply(d, req, reply);
+}
+
 bool link_dev_dispatch(link_dev_t *d, const link_msg_t *req,
                        link_msg_t *reply, uint32_t now_ms)
 {
@@ -177,22 +246,49 @@ bool link_dev_dispatch(link_dev_t *d, const link_msg_t *req,
     /*
      * A request that arrives proves the host is alive, so it stops the
      * silence counter.  It does not lift the failsafe latch: leaving failsafe
-     * takes an explicit clear, or a bench re-arms itself.
+     * takes an explicit clear, or a bench re-arms itself.  A repeat proves
+     * the same.
      */
     d->last_request_ms = now_ms;
     d->silent          = false;
     d->heard           = true;
     ++d->requests;
 
-    if (req->op == LINK_OP_READ_HELD) {
-        serve_held(d, req, reply);
+    if (req->seq == 0u) {
+        /* Unnumbered: a panel older than 4.37, or one that has not read
+         * this end's minor yet.  Nothing it sends is a repeat. */
+        d->seq        = 0u;
+        d->kept_count = 0u;
+    } else {
+        /*
+         * A repeat is the panel asking again for an answer it did not hear.
+         * The page acted on the first one, so the answer is the one that
+         * went out then: a write taken twice would arm twice, step a
+         * programming session twice or append a block twice.
+         */
+        const link_msg_t *again = repeat_of(d, req, now_ms);
+        if (again != NULL) {
+            *reply = *again;
+            ++d->repeats;
+            return true;
+        }
+    }
+
+    /*
+     * One call of answer(), so the compiler takes it and the page calls into
+     * this function: tools/stack_iomcu.py follows the page table from here.
+     */
+    answer(d, req, reply);
+    if (req->seq == 0u) {
         return true;
     }
-    if (req->op == LINK_OP_READ && req->count == LINK_READ_REGS_MAX
-        && read_and_keep(d, req, reply)) {
-        return true;
+    reply->seq = req->seq;
+    if (d->kept_count < LINK_DEV_REPEAT_KEEP) {
+        d->kept[d->kept_count].req   = *req;
+        d->kept[d->kept_count].reply = *reply;
+        ++d->kept_count;
     }
-    return link_dev_apply(d, req, reply);
+    return true;
 }
 
 bool link_dev_apply(const link_dev_t *d, const link_msg_t *req,

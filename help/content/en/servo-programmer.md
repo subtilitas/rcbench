@@ -98,7 +98,7 @@ If the output is off, CONNECT switches it on and enters programming. ABORT or ST
 | SERVO | READ ALL | reads the 32 registers, each until 3 of at most 5 reads agree |
 | TYPE | V6?, V8?, V6, V8 | the servo type, V6 or V8, as the operator sets it |
 | FILES | CHOOSE | saves the servo's values to the card, loads a file |
-| MORE | CHOOSE | in programming: VERIFY, DISCARD EDITS, RELEASE PAIRING |
+| MORE | CHOOSE | in programming: VERIFY, DISCARD EDITS and, with KST EXPERT MODE ON, RELEASE PAIRING |
 | ENABLE WRITE TO SERVO | OFF, ON | the write switch |
 | RESTORE | CHOOSE | writes a backup back |
 | (no label) | WRITE n VALUES | writes the changed values |
@@ -125,10 +125,10 @@ Edits remain in a draft on the panel until WRITE. Changed values have an `*` and
 
 | Tab | Rows |
 |---|---|
-| TUNE | DEAD BAND, MAX. DUTY (10 to 98%), BOOST (up to 3000us), STRETCH (x1 to x32), SOFT START, SPEED LIMIT, SPEED |
+| TUNE | DEAD BAND, MAX. DUTY (10 to 98%), BOOST (up to 3000us), STRETCH (x1 to x32), SOFT START, SPEED LIMIT, SPEED; DEAD BAND, BOOST and STRETCH with KST EXPERT MODE ON only |
 | PULSE | NEUTRAL (1360 to 1640us), PULSE LOWER (from 500us), PULSE UPPER (up to 2500us), LEFT ANGLE, RIGHT ANGLE, REVERSION |
 | FAILSAFE | MOVE ON SIGNAL LOSS, POSITION (500 to 2500us), AFTER (0.4 to 13.0s) |
-| LOCKED | 20K SEL, LOCK, MODE and the protection block; shown, never edited |
+| LOCKED | 20K SEL, LOCK, MODE and the protection block; shown, never edited; the tab shows with KST EXPERT MODE ON only |
 
 ![The PULSE tab](view:servo-kst-pulse)
 ![The FAILSAFE tab](view:servo-kst-failsafe)
@@ -144,6 +144,19 @@ A tap that would break a hard limit changes nothing and names the limit.
 A value within hard limits but outside a soft limit opens CHECK THIS CHANGE. It shows the servo's value, proposed value and one line per affected limit. Hold HOLD 2s TO APPLY for 2s to accept it; CANCEL preserves the draft. A [limit run](servo.md#the-limit-run) uses its 2s start hold as consent for LEFT ANGLE or RIGHT ANGLE below 50 and does not ask again here.
 
 ![The LOCKED tab](view:servo-kst-locked)
+
+## KST EXPERT MODE
+
+KST EXPERT MODE on [SERVO settings](servo-settings.md#dut) > DUT decides what the programmer shows. It is OFF by default and kept across restarts. Hold the row 2s to turn it ON; a shorter press shows `Hold 2s to switch KST EXPERT MODE on.` on the band. Tap it to turn it OFF.
+
+With the mode OFF, DEAD BAND, BOOST and STRETCH leave TUNE, RELEASE PAIRING leaves MORE, and the LOCKED tab leaves the strip. TUNE closes up and the strip holds 4 tabs. DEAD BAND and BOOST can cause back-and-forth movement, buzzing and heat, STRETCH oscillation; what RELEASE PAIRING does inside the servo and what the LOCKED values mean is not known.
+
+![TUNE with KST EXPERT MODE OFF](view:servo-kst-tune-expert-off)
+![MORE with KST EXPERT MODE OFF](view:servo-kst-more-expert-off)
+
+A file load or a RESTORE still writes the whole image. The write page, CHECK THIS FILE and the restore's page name each hidden value that changes, first and in the warning colour: `DEAD BAND (KST EXPERT MODE): 2.0 -> 1.6us`. A draft keeps an edit of a hidden value when the mode turns OFF, and the write page names it.
+
+![The write page naming the hidden values](view:servo-kst-write-expert-off)
 
 ## Writing
 
@@ -192,7 +205,7 @@ RESTORE offers the session backup (the first values read after CONNECT), the val
 
 - VERIFY reads all registers and compares them with the image held.
 - DISCARD EDITS sets the draft back to the servo's values.
-- RELEASE PAIRING sets register 1D to 00 after a 2s hold. What the servo does with the value is not known.
+- RELEASE PAIRING, with KST EXPERT MODE ON, sets register 1D to 00 after a 2s hold. What the servo does with the value is not known.
 
 ## An interrupted write
 

@@ -72,6 +72,18 @@ typedef enum {
 } link_nack_t;
 
 /**
+ * @brief The highest exchange number: 1 to LINK_SEQ_MAX number exchanges,
+ *        0 is a message without one.
+ *
+ * A panel numbers its requests from 4.37 (LINK_MINOR_REPEAT) on an IOmcu
+ * that reports 4.37 or later, and a repeat of a request carries the number
+ * of the request it repeats.  The IOmcu answers a repeat from its copy of
+ * the first answer and does not act on it again (link_dev_dispatch()); a
+ * reply carries the number of the request it answers.
+ */
+#define LINK_SEQ_MAX 7u
+
+/**
  * @brief One link message: the op, the register window and its values.
  */
 typedef struct {
@@ -80,6 +92,8 @@ typedef struct {
     uint8_t  offset; /**< first register within the page                    */
     uint8_t  count;  /**< registers meant, 0..LINK_MAX_REGS                 */
     uint16_t regs[LINK_MAX_REGS];       /**< the values, count of them */
+    /** @brief The exchange number, 1 to LINK_SEQ_MAX; 0 none. */
+    uint8_t  seq;
 } link_msg_t;
 
 #ifdef __cplusplus

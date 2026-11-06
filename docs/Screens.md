@@ -8,8 +8,8 @@ A guide to the controls, readings and menu marks on each screen.
 
 Every screen shares the top status band. From right to left it shows STOP,
 "?" on screens with a [guide](#the-screen-guide), the run clock (while ARMED
-or after a run), the arm chip, any reported FAULT code, the mode, and LINK or
-NO LINK. BENCH means the link is up and the panel controls the IOmcu's
+or after a run), the arm chip, any reported FAULT code or
+[HWSTOP](#hwstop), the mode, and LINK or NO LINK. BENCH means the link is up and the panel controls the IOmcu's
 outputs. SIM means no IOmcu answers and the panel uses its own models.
 INJECT replaces either mode while a touch injector answers at I2C
 (Inter-Integrated Circuit) address 0x14. The panel checks for an injector
@@ -77,12 +77,12 @@ tag and LINK.
 ### Chip help
 
 Tap a status chip to open its help box: LINK or NO LINK, the mode, FAULT,
-the arm chip or the run clock. The box explains the current state and what
+HWSTOP, the arm chip or the run clock. The box explains the current state and what
 to do. It opens 4px below the band, aligned with the chip's left edge and
 shifted left where necessary to remain 8px inside the panel.
 
 The box is 640px wide, fitting 60 characters per line in the 10 x 20px font
-with 21px line spacing. The FAULT box spans 1008px and fits 97 characters
+with 21px line spacing. The FAULT and HWSTOP boxes span 1008px and fit 97 characters
 per line, with one paragraph per set bit. No box overlaps the status band
 or the alert band, so STOP remains visible.
 
@@ -91,7 +91,8 @@ or the alert band, so STOP remains visible.
 - The text follows the state while the box is open. A fault that appears
   shows at once, one that clears goes, and a box follows its chip when the
   run clock appears and moves the chips.
-- A box whose chip goes closes: FAULT when the faults clear, the run clock
+- A box whose chip goes closes: FAULT when the faults clear, HWSTOP when
+  the heartbeat bit clears, the run clock
   when it goes.
 - A tap on another chip closes the box and opens that chip's box, in one
   tap. A press on the other chip that slides off it before it lifts closes
@@ -142,6 +143,27 @@ says to flash both boards from one release.
 ![The SAFE box](img/band-safe.png)
 
 ![The ARMED MOTOR box](img/band-armed.png)
+
+### HWSTOP
+
+![HWSTOP in FAULT's place, and its box](img/band-hwstop.png)
+
+With SETUP > PANEL > Hardware stop ON, the heartbeat bit (10) shows as a red
+HWSTOP chip in FAULT's place, for a bench with a stop button in the
+heartbeat line ([Hardware stop button](Safety.md#hardware-stop-button)). A
+pressed button and a broken cable both show HWSTOP. The setting is OFF by
+default, and OFF the band shows FAULT 10.
+
+- HWSTOP takes FAULT's place, so the row of chips is no wider: HWSTOP is 6
+  characters, `FEHLER 7F` 9. Other bits set with it are in HWSTOP's box,
+  after its two paragraphs, and come back as a FAULT code when it goes.
+- The chip is the danger red of the latched STOP's badge, its text in the
+  dark ink of the bright fills.
+- While it stands the panel reads STATUS at every 50ms poll, not every
+  500ms. It goes on the first band drawn from a read without the bit, 80
+  to about 180ms after the line closes, with no ARM.
+- While the panel's own STOP is latched, while its reset runs and for
+  1000ms after it, the band leaves out bit 10, as HWSTOP and as FAULT 10.
 
 ## The screen guide
 
@@ -462,8 +484,8 @@ replaces a visible hint.
 - A press on STOP clears the hint in the same frame, and so do a fault bit
   that comes up on the FAULT chip and a switch from ARMED to SAFE,
   including one caused by an error. An alert stays through both.
-- HOLD 2s TO ACKNOWLEDGE on the bus-fault screen has no hint: that screen
-  has no band.
+- The bus-fault screen has no band. Its hold shows the hint in place of
+  its 64px bar, amber with dark text, for 4s. A tap on the bar closes it.
 
 | Button | Hint |
 | --- | --- |
@@ -489,6 +511,8 @@ replaces a visible hint.
 | HOLD 2s TO UPDATE THE C6 RADIO on UPDATES | `Hold 2s to update the C6 radio. Wi-Fi stays off until it ends.` |
 | HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS on OUTPUTS | `Hold 2s to clear all pin assignments.` |
 | OVERWRITE on FILES' editor's question | `Hold 2s to overwrite.` |
+| HOLD 2s TO ACKNOWLEDGE on the bus-fault screen | `Hold 2s to acknowledge.` |
+| HOLD 2s TO RECONNECT on the bus-fault screen | `Hold 2s to reconnect.` |
 
 ## Menu marks
 
@@ -2067,6 +2091,7 @@ APPLY and CANCEL buttons ending 4px above the alert band.
 | SETTINGS > DUT | NAME | the device under test, up to 23 characters, for the report |
 | SETTINGS > DUT | REPORT | a text report beside each test's log |
 | SETTINGS > DUT | ENC CENTRE | a tap takes the live count as the centre, with the servo at its neutral, and sets nothing without a reading from the current link (none after a link loss until a new one arrives) or while the sensor reports no magnet; the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, SENSORS, AS5600 centre |
+| SETTINGS > DUT | KST EXPERT MODE | whether the [KST and Chaservo programmer](ServoProgrammer.md#expert-mode) shows DEAD BAND, BOOST, STRETCH, RELEASE PAIRING and the LOCKED tab; OFF by default, ON after a 2s hold (a shorter press shows the hint on the band), OFF with a tap. Kept across restarts |
 
 TRIM is the only keypad accepting a sign. Its `+/-` key, between the
 point and OK, adds or removes a leading minus before or after digits are
@@ -4442,7 +4467,11 @@ default and is described under [Logs](#logs). Keyboard transparency sets how
 much of the text shows through the text editor's keyboard: OFF, 25% or 50%,
 OFF by default; described under [The text editor](#the-text-editor). Demo mode
 hides the SIMULATION watermark and leaves the band's SIM chip
-([The status band](#the-status-band)).
+([The status band](#the-status-band)). Hardware stop, the last row and OFF
+by default, shows the heartbeat fault as HWSTOP in place of FAULT 10
+([HWSTOP](#hwstop)).
+
+![PANEL scrolled to Hardware stop, stored ON](img/setup-hw-stop.png)
 
 Eight settings are stored without affecting firmware operation. Units and
 Dim after appear under PANEL; Cells, Capacity and Internal R appear on
@@ -5402,7 +5431,9 @@ panel's edge.
 Leaving it takes a two-second hold, the ARM gesture and the same fade.
 Acknowledging repairs nothing: the bench runs in simulation, nothing drives an
 output, and the test runs again at the next start-up. There is no band and no
-STOP, because the bench cannot switch to ARMED behind it.
+STOP, because the bench cannot switch to ARMED behind it. Once the link
+answers again, the hold is RECONNECT instead
+([A link that answers again](#a-link-that-answers-again)).
 
 ### A link that stops
 
@@ -5440,7 +5471,7 @@ by a power cut or a removal the card refused, is removed first, or named
 does not read, the line is not written. Firmware 0.21.0 and older wrote
 `RCBENCH.LOG` in the root; that file stays and is not written again:
 
-    t=182s link=down for 47s  bus=OFF tx_err=248 rx_err=0 bus_err=1976 rejoins=44/44  polls=5323 replies=5279 timeouts=44
+    t=182s link=down for 47s  bus=OFF tx_err=248 rx_err=0 bus_err=1976 rejoins=44/44  polls=5323 replies=5279 timeouts=44 retried=0
 
 The fields are the same in the same order every time. `rejoins` is this outage
 over the total since boot, and an unreadable controller writes `?` in its
@@ -5457,6 +5488,41 @@ on GPIO21 (receive) and GPIO22 (transmit), to a TJA1051T/3 transceiver; neither
 pin carries anything else.
 
 [Bringing up the link](Link.md) has the verdicts and what each one means.
+
+### A link that answers again
+
+The screen follows the link while it shows. Its right column moves with the
+link: `down` counts the seconds since the last answer, `requests` and
+`no answer` count the requests, and the CONTROLLER lines show the
+controller's state and error counters. Only the column is painted again when
+a number changes.
+
+Once the IOmcu has answered every poll for 1000ms (`BUSFAULT_BACK_MS`, the
+band's LINK), the screen offers RECONNECT:
+
+- The bar turns green and reads `LINK BACK`.
+- The heading reads `The link answers again.`
+- `back` counts the seconds since the first answer, in place of `down`.
+- The hold across the foot reads `HOLD 2s TO RECONNECT`. It opens the menu
+  on the live bench, SAFE.
+
+![The link answers again](img/busfault-back.png)
+
+- While the link is silent, RECONNECT is not offered. The hold is
+  `HOLD 2s TO ACKNOWLEDGE` and leads to the menu in simulation.
+- One poll without an answer withdraws RECONNECT at once and brings the
+  acknowledgement back. The next 1000ms of answers offer it again.
+- RECONNECT arriving or going abandons a hold in progress. Lift the finger
+  and hold again.
+- The start-up test's screen offers RECONNECT on the same condition. Its
+  right column keeps the test's counts.
+- RECONNECT clears nothing. A STOP that stands stays, and so does the FAULT
+  chip. FAULT 01 (`LINK_SILENT`: the IOmcu received no data for 200ms and
+  switched itself to SAFE) clears at the next ARM. After RECONNECT the band
+  shows SAFE, LINK and BENCH, and STOP or FAULT 01 where either stands.
+- An acknowledgement while the link is silent ends the screen for that
+  outage. The screen opens again only after the link has answered and then
+  stopped for 4s once more.
 
 ## IOmcu update
 

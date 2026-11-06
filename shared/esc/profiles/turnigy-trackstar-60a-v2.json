@@ -2,6 +2,7 @@
   "id": "turnigy-trackstar-60a-v2",
   "brand": "HobbyKing/Turnigy",
   "family": "Trackstar 60A V2 car ESC, yes/no menu",
+  "family_de": "Trackstar 60A V2 Auto-ESC, Ja/Nein-Menü",
   "models": [
     {
       "name": "Trackstar 60A V2",

@@ -2509,7 +2509,8 @@ bool kst_prog_backup_other(const kst_prog_t *p)
         && (kst_prog_differ(&p->f.backup, &p->servo) & ~p->wrote) != 0u;
 }
 
-static const kst_image_t *source(const kst_prog_t *p, kst_prog_from_t from)
+const kst_image_t *kst_prog_restore_source(const kst_prog_t *p,
+                                          kst_prog_from_t from)
 {
     switch (from) {
     case KST_PROG_FROM_SESSION:
@@ -2525,7 +2526,7 @@ static const kst_image_t *source(const kst_prog_t *p, kst_prog_from_t from)
 }
 
 /**
- * @brief Why source() gives none.
+ * @brief Why kst_prog_restore_source() gives none.
  *
  * @param p    The programmer state.
  * @param from The source of the image.
@@ -2539,7 +2540,7 @@ static kst_prog_msg_id_t from_none(const kst_prog_t *p, kst_prog_from_t from)
 
 bool kst_prog_restore_offered(const kst_prog_t *p, kst_prog_from_t from)
 {
-    const kst_image_t *src = source(p, from);
+    const kst_image_t *src = kst_prog_restore_source(p, from);
 
     /* The port takes a read and nothing else while it asks for one. */
     if (src == NULL || p->journal_other
@@ -2599,7 +2600,7 @@ static unsigned editable_target(const kst_prog_t *p, const kst_image_t *src,
 kst_prog_msg_id_t kst_prog_restore_plan(kst_prog_t *p, kst_prog_from_t from,
                                         kst_prog_restore_t *out)
 {
-    const kst_image_t *src = source(p, from);
+    const kst_image_t *src = kst_prog_restore_source(p, from);
     kst_image_t target;
     kst_rules_t hard;
     unsigned stay;
@@ -2733,7 +2734,8 @@ kst_prog_msg_id_t kst_prog_restore(kst_prog_t *p,
                                    const kst_prog_restore_t *plan)
 {
     kst_link_request_t r;
-    const kst_image_t *src = source(p, (kst_prog_from_t)plan->from);
+    const kst_image_t *src =
+        kst_prog_restore_source(p, (kst_prog_from_t)plan->from);
     kst_prog_msg_id_t m;
     unsigned arg = 0;
 

@@ -207,6 +207,11 @@ and an ESC stops on silence after its own timeout. Sending explicit zeros
 instead would keep it armed and waiting, which is not what a bench that is SAFE
 should look like from the ESC's side.
 
+**A pin that sends no frames is driven low**, in both modes: from the bind to
+the first frame, and from every stop to the next run. A stop is SAFE, STOP, an
+error, a lost link and the failsafe edge; each one puts the bank to SAFE, and
+the pass that does so calls `out_dshot_stop()`.
+
 ## Bidirectional DShot
 
 The same frame with the line inverted and the checksum complemented, so an ESC
@@ -255,6 +260,47 @@ idles high and looks like a protocol fault rather than a pin fault.
 Binding reads the register back and fails if the required polarity
 was not set. Initialisation order is therefore critical; no other
 part of the driver detects the loss of inversion.
+
+### A stopped pin is driven low
+
+Between the frames of a run the line idles high on the pad's pull-up, 32 to
+86kΩ at 3.3V. A pin that sends no frames does not: from the bind, and from
+every stop, the IOmcu drives it low. A line high with no frames on it is the
+bootloader entry condition of the family S (BLHeli_S), Bluejay and AM32 ESC
+firmware.
+
+The low is driven by the PIO block. The pin's output latch is set to 1, which
+the pad's inverter turns into a low, and then its direction to output. The
+latch goes first, so a pad driven high by a cut frame goes straight to low.
+The pad stays on the block, so the inversion set and read back at the bind
+stays in place. The pull-up goes on after the pin is driven low, so the bind
+shows no high.
+
+On ARM the line goes back to its high idle one frame period before the first
+frame:
+
+| Step | Time | Code |
+| --- | --- | --- |
+| The first due pass of the run releases the pin onto its pull-up and sends nothing | 0 | `out_dshot_wake()` from `service_dshot()` in `firmware/iomcu/src/outputs_hw.c` |
+| The first frame: the first of the ten `DSHOT_CMD_EDT_ENABLE` repeats at zero throttle | 1000µs or later, one frame period at 1kHz (`DSHOT_PERIOD_US`) | `out_dshot_send()` |
+| The command after the ask | 11ms into the run | `service_dshot()` |
+
+The ESC sees the line high for a whole frame period before the first frame,
+the same idle it sees before every other frame of the run. The wake pass
+sends no frame, so the ask keeps all ten repeats. `out_dshot_send()` on a pin
+still at its low rest releases it and sends nothing, so no frame starts from a
+low line. `test_out_dshot` holds the pad's level at each step, `test_outputs_hw`
+the 1000µs, also across the wrap of the 32-bit microsecond clock.
+
+A pin handed to the ESC signal wire session is released first: it is a plain
+input, the session sets the line, and the low rest does not apply to it.
+After the session the pin is bound again and rests low.
+
+Not measured: the rise time of the released line, which depends on the
+pull-up and on the line's capacitance; which idle time an ESC needs before
+its first frame; whether an ESC that restarts on a low line, as AM32 does
+after 0.5s to 2s without frames, takes bidirectional DShot from the frames
+that follow.
 
 ### The reply is sampled, not timed
 
@@ -397,7 +443,9 @@ is unconfirmed beyond that one ESC:
   throttle, or another zero-throttle frame, at the next 1ms tick. Settling
   it needs the specification text rather than a board;
 - every bit timing, against a real ESC's tolerance rather than against the
-  specification.
+  specification;
+- the low rest of a stopped bidirectional pin and the 1000µs release before
+  the first frame, and whether an ESC completes its arming after them.
 
 ## Where the code is
 

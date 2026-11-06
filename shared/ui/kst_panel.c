@@ -236,6 +236,11 @@ void kpn_fmt_value(kst_field_id_t id, uint16_t raw, char *out, size_t n,
         snprintf(out, n, "%s", raw != 0u ? "GYRO" : "SERVO");
         return;
     }
+    if (id == KST_F_NODE_ADDR) {
+        /* The pairing value as the LOCKED tab gives it: two hex digits. */
+        snprintf(out, n, "%02X", (unsigned)raw);
+        return;
+    }
     if (!kst_field_display(id, raw, &v)) {
         snprintf(out, n, "%u", (unsigned)raw);
         return;
@@ -365,13 +370,53 @@ int kpn_notes_foot(void)
     return area < band ? area : band;
 }
 
+/**
+ * @brief Where row @p r is drawn: the page's rows that show, in the order
+ *        of kpn_rows, closed up from the top.  A wide row takes a line of
+ *        its own, the others two to a line.  With every row shown that is
+ *        each row's own row and column (test_kst_panel_expert).
+ * @param r the row, one of kpn_rows
+ * @param line the line it is drawn on, from 0
+ * @param col the column it is drawn in, 0 or 1
+ */
+static void packed(const row_t *r, int *line, int *col)
+{
+    int ln = 0, c = 0;
+
+    for (const row_t *q = kpn_rows; q < r; ++q) {
+        if (q->page != r->page || !kpn_row_shown(q)) {
+            continue;
+        }
+        if (q->wide != 0u) {
+            ln += c != 0 ? 2 : 1;       /* the line begun, and its own */
+            c = 0;
+        } else if (c == 1) {
+            ++ln;
+            c = 0;
+        } else {
+            c = 1;
+        }
+    }
+    if (r->wide != 0u && c != 0) {
+        ++ln;
+        c = 0;
+    }
+    *line = ln;
+    *col = c;
+}
+
 gfx_rect_t kpn_row_rect(const row_t *r)
 {
     const int col_w = (k.area.w - 30) / 2;
-    const int x = r->col == 0 ? k.area.x + 10 : k.area.x + 20 + col_w;
+    int line = 0, col = 0;
 
-    return (gfx_rect_t){ (int16_t)x,
-                         (int16_t)(k.area.y + ROW0 + r->row * PITCH),
+    if (!kpn_row_shown(r)) {
+        return (gfx_rect_t){ 0, 0, 0, 0 };
+    }
+    packed(r, &line, &col);
+    return (gfx_rect_t){ (int16_t)(col == 0 ? k.area.x + 10
+                                            : k.area.x + 20 + col_w),
+                         (int16_t)(k.area.y + ROW0 + line * PITCH),
                          (int16_t)(r->wide != 0u ? k.area.w - 20 : col_w),
                          ROW_H };
 }
@@ -423,9 +468,30 @@ const row_t *kpn_row_at(int page, int row, int col)
     return NULL;
 }
 
+/**
+ * @brief The row at (@p row, @p col) of page @p page while it shows.
+ * @param page the page
+ * @param row the row on the page, as kpn_rows has it
+ * @param col the column in the row
+ * @return the row, or NULL for none and for one hidden
+ */
+static const row_t *shown_at(int page, int row, int col)
+{
+    const row_t *r = kpn_row_at(page, row, col);
+
+    return r != NULL && kpn_row_shown(r) ? r : NULL;
+}
+
 gfx_rect_t kst_panel_tab_rect(int page)
 {
-    return k.tabs.rect[page >= 0 && page < PG_COUNT ? page : 0];
+    const int want = (unsigned)page < PG_COUNT ? page : PG_SERVO;
+
+    for (int t = 0; t < k.tab_count; ++t) {
+        if (k.tab_page[t] == want) {
+            return k.tabs.rect[t];
+        }
+    }
+    return (gfx_rect_t){ 0, 0, 0, 0 };
 }
 
 gfx_rect_t kst_panel_close_rect(void)
@@ -436,14 +502,14 @@ gfx_rect_t kst_panel_close_rect(void)
 
 gfx_rect_t kst_panel_value_rect(int page, int row, int col)
 {
-    const row_t *r = kpn_row_at(page, row, col);
+    const row_t *r = shown_at(page, row, col);
 
     return r != NULL ? kpn_value_rect(r) : (gfx_rect_t){ 0, 0, 0, 0 };
 }
 
 gfx_rect_t kst_panel_step_rect(int page, int row, bool up)
 {
-    const row_t *r = kpn_row_at(page, row, 0);
+    const row_t *r = shown_at(page, row, 0);
 
     return r != NULL ? kpn_step_rect(r, up) : (gfx_rect_t){ 0, 0, 0, 0 };
 }
@@ -513,7 +579,7 @@ int kst_panel_warning_level(int i)
 
 const char *kst_panel_label(int page, int row, int col)
 {
-    const row_t *r = kpn_row_at(page, row, col);
+    const row_t *r = shown_at(page, row, col);
 
     return r != NULL ? kpn_row_label(r) : NULL;
 }
@@ -530,7 +596,108 @@ const char *kst_panel_choice_label(int i)
 
 int kst_panel_page(void)
 {
-    return k.tabs.selected;
+    return kpn_page();
+}
+
+int kpn_page(void)
+{
+    return k.tabs.selected >= 0 && k.tabs.selected < k.tab_count
+         ? k.tab_page[k.tabs.selected] : PG_SERVO;
+}
+
+/* ------------------------------------------------------------ expert mode */
+
+/** @brief The fields whose rows KST EXPERT MODE OFF hides beside the
+ *         LOCKED tab's: DEAD BAND, BOOST and STRETCH. */
+static const uint8_t k_expert_fields[] = {
+    KST_F_DEAD_BAND, KST_F_BOOST, KST_F_STRETCH,
+};
+
+bool kpn_expert(void)
+{
+    return k.expert;
+}
+
+bool kpn_row_shown(const row_t *r)
+{
+    if (k.expert || r->kind == K_ACT) {
+        return true;
+    }
+    if (r->page == PG_LOCKED) {
+        return false;
+    }
+    for (unsigned i = 0; i < sizeof(k_expert_fields); ++i) {
+        if (r->what == k_expert_fields[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool kpn_field_hidden(unsigned id)
+{
+    if (k.expert) {
+        return false;
+    }
+    if (id == KST_F_NODE_ADDR) {
+        return true;
+    }
+    for (int i = 0; i < ROW_COUNT; ++i) {
+        if (kpn_rows[i].kind != K_ACT && kpn_rows[i].what == id) {
+            return !kpn_row_shown(&kpn_rows[i]);
+        }
+    }
+    return false;
+}
+
+/**
+ * @brief Whether page @p page keeps a row that shows.
+ * @param page the page
+ * @return true when its tab is in the strip
+ */
+static bool page_shown(int page)
+{
+    for (int i = 0; i < ROW_COUNT; ++i) {
+        if (kpn_rows[i].page == page && kpn_row_shown(&kpn_rows[i])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void kpn_mode_sync(void)
+{
+    const bool on = settings_get_bool(SET_KST_EXPERT);
+    ui_text_id_t ids[PG_COUNT] = {0};
+    int page;
+    int n = 0;
+
+    if (k.tab_count != 0u && on == k.expert) {
+        return;
+    }
+    page = kpn_page();
+    if (k.tab_count != 0u) {
+        /* An editor, a page or a press -- a held step key repeats -- may
+         * be about a row that goes. */
+        kpn_close_editors();
+        k.have = false;
+        k.pressed = P_NONE;
+    }
+    k.expert = on;
+    for (int p = 0; p < PG_COUNT; ++p) {
+        if (page_shown(p)) {
+            k.tab_page[n] = (uint8_t)p;
+            ids[n++] = k_pages[p];
+        }
+    }
+    k.tab_count = (uint8_t)n;
+    ui_tabs_init_text(&k.tabs, ids, n, kpn_tabs_rect());
+    for (int t = 0; t < n; ++t) {
+        if (k.tab_page[t] == page) {
+            k.tabs.selected = t;
+        }
+    }
+    ++k.rev;
 }
 
 int kst_panel_editor(void)
@@ -568,7 +735,7 @@ void kst_panel_init(gfx_rect_t area)
     settings_set_hold(holds_setting);
     kst_prog_gate_set(&k.prog, s_gate);
     k.area = area;
-    ui_tabs_init_text(&k.tabs, k_pages, PG_COUNT, kpn_tabs_rect());
+    kpn_mode_sync();
     k.kp.pressed = -1;
     k.tk.pressed = -1;
 }
@@ -591,11 +758,13 @@ void kst_panel_screen_entry(void)
 {
     kst_prog_screen_entry(&k.prog);
     options_fresh();
+    kpn_mode_sync();
     ++k.rev;
 }
 
 void kst_panel_open(void)
 {
+    kpn_mode_sync();
     if (!k.open) {
         k.open = true;
         k.note_page = 0;
@@ -629,10 +798,21 @@ uint32_t kst_panel_hold_revision(void)
     return k.hold_rev;
 }
 
-/** @brief Everything of the model a render shows, as one number. */
+/**
+ * @brief Everything of the model a render shows, as one number.  The PD
+ *        mini's reading counts as the state line writes it: 10mV and 1mA
+ *        while the port is in programming, nothing in any other state, so
+ *        a reading the page does not show repaints nothing.
+ * @return the number
+ */
 static uint32_t signature(void)
 {
     const kst_prog_t *p = &k.prog;
+    uint32_t line = 2166136261u;
+
+    for (const char *t = kst_panel_status_line(0); *t != '\0'; ++t) {
+        line = (line ^ (uint8_t)*t) * 16777619u;
+    }
     const uint32_t part[] = {
         (uint32_t)kst_prog_state(p), (uint32_t)kst_prog_op(p),
         kst_prog_planning(p),
@@ -645,7 +825,7 @@ static uint32_t signature(void)
         kst_prog_card_busy(p), kst_prog_files_seq(p),
         (uint32_t)kst_prog_load_skipped(p),
         (uint32_t)(kst_prog_load_skipped(p) >> 32),
-        p->f.target, p->f.supply_read, p->f.out_mv, p->f.out_ma,
+        p->f.target, p->f.supply_read, line,
         kst_prog_supply_mv(p), kst_prog_supply_ma(p), k.hv,
         kst_prog_wait_ms(p),
         /* RESTORE is offered from the backup once it is fetched. */

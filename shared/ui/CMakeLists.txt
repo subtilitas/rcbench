@@ -122,6 +122,7 @@ set(SRCS
     busfault_screen.c
     wifi_screen.c
     wifi_kept.c
+    wifi_view.c
     update_screen.c
     coproc_update_screen.c
     upd_screen.c

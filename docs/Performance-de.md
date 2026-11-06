@@ -71,7 +71,9 @@ servo-grip                     521      65 KiB
 servo-current                3,189     399 KiB
 servo-rudder                 4,030     504 KiB
 servo-test                       0       0 KiB
-supply                       9,871    1234 KiB
+servo-kst                        0       0 KiB
+servo-hitec                      0       0 KiB
+supply                       8,138    1017 KiB
 supply-chrome               48,048    6006 KiB
 analyser                         0       0 KiB
 logs                             0       0 KiB
@@ -98,6 +100,9 @@ picker-chrome               41,559    5195 KiB
 wifi                             0       0 KiB
 wifi-chrome                 22,447    2806 KiB
 wifi-keys                   36,970    4621 KiB
+wifi-idle                        0       0 KiB
+imu                            101      13 KiB
+imu-hold                       690      86 KiB
 clear                       19,206    2401 KiB
 vlines                      10,204    1276 KiB
 hlines                         180      22 KiB
@@ -121,11 +126,16 @@ est. ms and est. fps: not measured
 | `servo-current` | wie `servo-grip`, mit dem INA3221 als Messgerät der Servo-Schiene und einem Fenster in jedem Frame, dessen Strom sich in den gezeigten Ziffern unterscheidet: der Griff, der Wert der Zeile STROM, die Zeile über dem Plot und der Plot neu gezeichnet, jedes auf sich selbst beschnitten |
 | `servo-rudder` | SERVO > RUDER mit einem AS5600-Messwert in jedem Frame, 0.26° vom vorigen entfernt: die Anzeige, die Zustandszeilen und das Ruder der Seitenansicht neu gezeichnet, jedes auf sich selbst beschnitten |
 | `servo-test` | SERVO > TEST mit bewegtem Arm und einem AS5600-Messwert in jedem Frame, wie ein automatischer Test oder ein Limit Run sie liefert: die Seite zeigt keines von beiden, also wird nichts neu gezeichnet |
-| `supply` | der Netzteilbildschirm mit eingeschaltetem Ausgang, ein Sample in jedem Frame |
+| `servo-kst` | die KST-Sitzung von SERVO > PROGRAMMIEREN an einem Port in PWM, der Messwert des PD mini in jedem Frame 3mV und 1mA vom vorigen entfernt: dort zeigt die Zustandszeile den Sollwert, also wird nichts neu gezeichnet |
+| `servo-hitec` | dasselbe in der Hitec-Sitzung |
+| `supply` | der Netzteilbildschirm mit eingeschaltetem Ausgang, ein Sample in jedem Frame: Plot, Anzeigen und Summen neu gezeichnet; die Tabs PLOT und TABELLE und die Kopfzeile nur, wenn das Netzteil zu antworten beginnt oder aufhört |
 | `motor-wire-hold` | die Sitzung der ESC-Signalleitung auf der Seite VERLASSEN, ein Finger auf ihrem Hold von 2s |
 | `analyser`, `logs`, `settings`, `battery`, `balance`, `motor-stick`, `motor-wire`, `picker`, `wifi` | ein ruhiger Frame dieses Bildschirms, Chrome gecacht; `settings` sind die Kacheln von SETUP, `motor-stick` ESC STICK offen auf MOTOR & ESC > PROGRAMMIEREN |
 | `settings-list` | SETUP mit offener Liste PANEL, Chrome gecacht |
 | `wifi-keys` | WI-FI mit offener WLAN-Tastatur, in jedem Frame eine Taste getippt |
+| `wifi-idle` | WI-FI mit laufendem WLAN-Hotspot, die Leerlaufzeit in jedem Frame 1s kürzer: die Seite zeigt sie in ganzen Minuten, also wird nichts neu gezeichnet |
+| `imu` | der IMU-Bildschirm mit einem Winkelframe in jedem Frame, X 0.1° vom vorigen entfernt: die Zeile X neu gezeichnet, auf sich selbst beschnitten |
+| `imu-hold` | der IMU-Bildschirm, ein Finger auf 2s HALTEN: BESCHLEUNIGUNG KALIBRIEREN: der Knopf und das ALTER in der Zeile RATE neu gezeichnet, jedes auf sich selbst beschnitten |
 | `<screen>-sim` | derselbe Bildschirm mit dem SIMULATION-Watermark |
 | `<screen>-chrome` | derselbe Bildschirm, auf jedem Frame invalidiert |
 | `clear` | ein Löschen des ganzen Bildschirms |
@@ -259,6 +269,7 @@ im Modell. Sie erkennt nicht, ob ein Frame den nächsten Anzeigezeitpunkt verpas
 | `servo-current` | 4 000 | eine geänderte Ziffer des Stroms, die die ganze Karte neu zeichnet |
 | `servo-rudder` | 4 600 | ein neuer Winkel auf RUDER, der mehr als die Anzeige, die Zustandszeilen und die beiden Boxen des Ruders neu zeichnet |
 | `servo-test` | 1 000 | einen bewegten Arm oder einen neuen Messwert, der die TEST-Seite neu zeichnet |
+| `servo-kst`, `servo-hitec`, `wifi-idle`, `imu`, `imu-hold` | 1 000 | einen Messwert des PD mini, den die Zustandszeile nicht zeigt und der die Sitzung neu zeichnet, eine Sekunde Leerlauf innerhalb der gezeigten Minute, die WI-FI neu zeichnet, oder einen Messwert oder die Füllung des Holds, die den IMU-Bildschirm ganz neu zeichnen |
 | `motor-stick` | 2 000 | ein Wachsen des ruhigen Frames von ESC STICK, 1 713 Fills in der Tabelle oben |
 | die drei `-sim`-Modi | 3 600 | ein Watermark, das über die volle Canvas hinauswächst |
 | die elf `-chrome`-Modi | 72 000 | ein wachsendes vollständiges Neuzeichnen |
@@ -420,7 +431,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
 | `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 320 | 2 832 |
-| `control` | `control_task` | 6 144 | 3 472 | 1 632 |
+| `control` | `control_task` | 6 144 | 3 648 | 1 456 |
 | `runlog` | `log_task` | 6 656 | 3 824 | 1 792 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
 | `imu` | `imu_task`, die Verbindung der Bluetooth-IMU: die Werte aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_imu.c`) | 4 096 | 1 888 | 1 168 |
@@ -599,7 +610,7 @@ eine Marge von 256 Bytes den Stack eines Kerns überschreiten.
 
 | Kern | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Ein Interrupt (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Kern 0 | `main` | 4 096 | 1 492 | 528 | 1 820 |
+| Kern 0 | `main` | 4 096 | 1 508 | 528 | 1 804 |
 | Kern 1 | `core1_main` | 4 096 | 644 | 528 | 2 668 |
 
 Gemessen am Image, das CI baut, pico-sdk 2.3.0 mit arm-none-eabi-gcc 14.2.1
@@ -612,7 +623,7 @@ ergibt 640 Bytes), und CI baut das Image mit dem Compiler aus dem Paket des
 Runners. Die unten genannten Frames stammen aus demselben Build.
 
 Die tiefste Kette von Kern 0 ist eine Anfrage, die einen Ausgang bindet und
-im pico-sdk scheitert: `main` (256 Bytes), `can_service` (344),
+im pico-sdk scheitert: `main` (256 Bytes), `can_service` (352),
 `link_dev_dispatch`, `slots_write`, `slots_take`, `ports_apply`,
 `slots_rerate`, `outputs_hw_apply_only`, `out_dshot_bind`, die Belegung einer PIO-State-Machine (PIO: Programmable
 Input/Output) im pico-sdk und `panic()` mit dem, was es zur Ausgabe

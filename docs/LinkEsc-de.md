@@ -87,7 +87,10 @@ abgeschaltetem Puffer. Keiner der genannten Zustände sendet ein
 Gassignal. Solange die Page den Pin belegt, hat der Ausgang ihn
 freigegeben. Ein Apply lässt den Slot ohne Zuordnung
 (`esc_port_may_bind()`), und das Modul enthält keine Funktion zum
-Erzeugen eines Pulsmusters.
+Erzeugen eines Pulsmusters. Die Low-Ruhe, in die der Ausgang einen gestoppten
+DShot-Pin legt, gilt nicht, solange die Page den Pin belegt. Gibt die Page den
+Pin zurück, ordnet sein Ausgang ihn wieder zu, und ein DShot-Pin ruht dann low
+bis zum nächsten ARM ([DShot](DShot-de.md#ein-gestoppter-pin-wird-low-getrieben)).
 
 DISARM zählt nicht als Stopp: Ab OPEN wird ARM abgelehnt, die Bank
 ist also bereits ohne Freigabe. STOP am Panel sendet die Operation
@@ -168,13 +171,6 @@ sich während einer Reservierung so:
   bleibt gelöscht (Byte 0 liest 0xFF) in seinem Bootloader, bis RESTORE ein Backup
   schreibt. Bei `BY HAND` behält der ESC seine eigene Versorgung, bis ein Mensch ihn
   trennt.
-- **Ein Pin mit bidirektionalem DShot ruht auf SAFE high.** Bedingung: ein Slot oder
-  Port, gebunden als bidirektionales DShot, die Bank SAFE und der ESC versorgt. Der
-  Pin ruht auf seinem Pull-up (`out_dshot_stop()`), und eine Leitung, die nach
-  Signalverlust high ist, ist die Eintrittsbedingung der Bootloader von Familie S,
-  Bluejay und AM32. Ein solcher ESC kann nach einem SAFE in seinem Bootloader sitzen,
-  mit oder ohne diese Page. Was das nächste ARM dann tut, ist nicht gemessen. Plain
-  DShot und PPM ruhen low. Die Page ändert das nicht.
 - **Eine Leitung mit Last.** Der Pull-up ist der des Pads, 50 bis 80kOhm. Eine Leitung,
   die eine Last unten hält, etwa der Signaldraht eines Servos, bleibt darauf low, und
   ein First Contact schlägt fehl. Ob er eine Open-Drain-Antwort mit 52us pro Bit hebt,

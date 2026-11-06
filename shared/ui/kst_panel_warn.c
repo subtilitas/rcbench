@@ -102,20 +102,26 @@ static void warn_horn(bool moves)
 
 /**
  * @brief One value a write changes: the servo's, the new one, the unit once.  In
- *        the warning colour where the field is at fault for a soft limit.
+ *        the warning colour where the field is at fault for a soft limit, and
+ *        where KST EXPERT MODE OFF hides it, marked so (KP_HIDDEN_VALUE).
  */
 static void value_line(kst_field_id_t id, const kst_image_t *to,
                        kst_field_set_t soft)
 {
     const char *name = kpn_field_name(id);
+    const bool hidden = kpn_field_hidden(id);
     char was[24], now[24];
 
     kpn_fmt_value(id, kst_field_get(kst_prog_servo(&k.prog), id), was,
               sizeof(was), false);
     kpn_fmt_field(id, kst_field_get(to, id), now, sizeof(now));
-    snprintf(warn_line(kpn_in_set(soft, id) ? KST_PROG_WARN : KST_PROG_INFO),
-             KST_PANEL_LINE, "%s: %s -> %s",
-             name != NULL ? name : kst_field(id)->name, was, now);
+    if (name == NULL) {
+        name = id == KST_F_NODE_ADDR ? "Pairing" : kst_field(id)->name;
+    }
+    snprintf(warn_line(kpn_in_set(soft, id) || hidden ? KST_PROG_WARN
+                                                       : KST_PROG_INFO),
+             KST_PANEL_LINE, hidden ? TR(KP_HIDDEN_VALUE) : "%s: %s -> %s",
+             name, was, now);
 }
 
 int kpn_warn_room(void)
@@ -153,7 +159,11 @@ static bool warn_room(int i, int n, int rows, int used, int room,
 /**
  * @brief The values in which @p to differs from the servo, in the order of the
  *        tabs, on at most @p room lines and @p room_rows rows.  More than fit
- *        leave the last line to their count.
+ *        leave the last line to their count.  With KST EXPERT MODE OFF the
+ *        hidden ones come first, each on its line (kpn_field_hidden()): the
+ *        count is of values a tab shows.  A draft and a file differ from the
+ *        servo in the editable fields only, of which 3 are hidden, and the
+ *        least room, a file's FILE_VALUES, holds them and the count.
  */
 static void warn_values(const kst_image_t *to, int room, int room_rows)
 {
@@ -161,13 +171,16 @@ static void warn_values(const kst_image_t *to, int room, int room_rows)
     uint8_t ids[ROW_COUNT];
     int n = 0;
 
-    for (int i = 0; i < ROW_COUNT; ++i) {
-        const kst_field_id_t id = (kst_field_id_t)kpn_rows[i].what;
+    for (int pass = 0; pass < 2; ++pass) {
+        for (int i = 0; i < ROW_COUNT; ++i) {
+            const kst_field_id_t id = (kst_field_id_t)kpn_rows[i].what;
 
-        if (kpn_rows[i].kind != K_ACT
-            && kst_field_get(to, id)
-                   != kst_field_get(kst_prog_servo(&k.prog), id)) {
-            ids[n++] = (uint8_t)id;
+            if (kpn_rows[i].kind != K_ACT
+                && kpn_field_hidden(id) == (pass == 0)
+                && kst_field_get(to, id)
+                       != kst_field_get(kst_prog_servo(&k.prog), id)) {
+                ids[n++] = (uint8_t)id;
+            }
         }
     }
     for (int i = 0, used = 0; i < n; ++i) {
@@ -387,8 +400,54 @@ ui_text_id_t kpn_from_text(unsigned from)
                                          : TX_KP_FROM_JOURNAL;
 }
 
+/**
+ * @brief The values KST EXPERT MODE OFF hides that a restore by @p plan
+ *        changes, each on its line in the tabs' order with the pairing
+ *        value last.  A restore from a record or a run writes the editable
+ *        fields alone, 3 of them hidden; the session's backup every
+ *        register, of which the session changed at most those 3 and the
+ *        pairing value (a backup of another servo is none,
+ *        kst_prog_restore_source()).  The page leaves 4 lines at the least
+ *        for them.  Where the servo's values are not known, one line names
+ *        them all.  Nothing with the mode ON.
+ * @param plan the restore
+ */
+static void warn_hidden_restore(const kst_prog_restore_t *plan)
+{
+    const kst_prog_from_t from = (kst_prog_from_t)plan->from;
+    const kst_image_t *src = kst_prog_restore_source(&k.prog, from);
+    uint8_t ids[ROW_COUNT + 1];
+    int n = 0;
+
+    if (kpn_expert() || src == NULL) {
+        return;
+    }
+    if (plan->writes == 0xFFu) {
+        warn_text(KST_PROG_WARN, TR(KP_HIDDEN_UNKNOWN));
+        return;
+    }
+    for (int i = 0; i <= ROW_COUNT; ++i) {
+        const kst_field_id_t id = i < ROW_COUNT
+                                ? (kst_field_id_t)kpn_rows[i].what
+                                : KST_F_NODE_ADDR;
+
+        if ((i == ROW_COUNT || kpn_rows[i].kind != K_ACT)
+            && kpn_field_hidden(id)
+            && (from == KST_PROG_FROM_SESSION
+                || kst_field(id)->access == KST_ACCESS_EDITABLE)
+            && kst_field_get(src, id)
+                   != kst_field_get(kst_prog_servo(&k.prog), id)) {
+            ids[n++] = (uint8_t)id;
+        }
+    }
+    for (int i = 0; i < n; ++i) {
+        value_line((kst_field_id_t)ids[i], src, 0u);
+    }
+}
+
 void kpn_warn_restore(const kst_prog_restore_t *plan)
 {
+
     warn_open(W_RESTORE, true, TR(KP_RESTORE_TITLE),  TR(KP_HOLD_RESTORE), TX_HOLD_HINT_RESTORE);
     k.warn.plan = *plan;
     warn_text(KST_PROG_INFO, ui_tr(kpn_from_text(plan->from)));
@@ -406,6 +465,7 @@ void kpn_warn_restore(const kst_prog_restore_t *plan)
     if (plan->unchecked) {
         warn_text(KST_PROG_WARN, TR(KP_RESTORE_UNCHECKED));
     }
+    warn_hidden_restore(plan);
     warn_horn(true);
     if (plan->from != KST_PROG_FROM_SESSION) {
         warn_card();

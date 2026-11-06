@@ -77,6 +77,8 @@ First, use ZERO with the surface at neutral. During the run, ZERO, RESET MAX and
 
 The run reads the servo and, for KST, sets its pulse range to 1000 to 2000us. For each side it commands the end pulse, waits for the angle to remain still for 500ms, then writes a new end point. With the IMU and an [IMU filter](setup-sensors.md#the-imu) above 1 it waits until the filtered angle has settled too, up to 3000ms plus the filter's longest settle, which the report names. It makes at most 8 writes per side, each in a separate programmer session with the servo switched off and on. The limit run's current guard remains active throughout. A stall before the goal ends the run with `surface binds at x°`. Every end switches the bench to SAFE and the supply output off.
 
+On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) with TARGET on a programming port, switch PROG 5V on while SAFE, then ARM: the port's pulse comes on only while SAFE. A PROG 5V switched on while ARMED reads `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM`.
+
 The first line shows the current step, goals or reason START is refused. The second shows the result. The third names the report, RUDDRnnn.TXT. If an unsuccessful run wrote settings or interrupted a write, it instead shows `RESTORE IN PROGRAM`, or `LOAD HITEC001 IN FILES` for a Hitec servo.
 
 ## What the angle is

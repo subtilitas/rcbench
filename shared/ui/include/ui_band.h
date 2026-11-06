@@ -99,6 +99,24 @@ const char *ui_band_armed_label(uint8_t roles);
 bool ui_link_refused_label(const ui_bench_status_t *st, char *out, size_t n);
 
 /**
+ * @brief Whether the band names the heartbeat fault HWSTOP: SETUP > PANEL >
+ *        Hardware stop (SET_HW_STOP) is ON and @p st carries
+ *        LINK_FAULT_HEARTBEAT.
+ *
+ * The bench's stop button sits in the heartbeat line, so a pressed button
+ * and an open wire both clear the line.  The red HWSTOP chip then stands in
+ * FAULT's place; the other bits are in its help box, and the FAULT chip
+ * returns with them when the line closes.  The bit itself is the IOmcu's,
+ * read with STATUS at every bench poll while the chip stands
+ * (status_poll_fast(), the same rule); the chip goes on the first band
+ * drawn from a bitmap without it.  With the setting OFF the band is as
+ * without it.
+ * @param st The bench status; NULL is false.
+ * @return true while HWSTOP shows.
+ */
+bool ui_band_hwstop(const ui_bench_status_t *st);
+
+/**
  * Where @p chip is drawn for @p st, in panel coordinates, into @p out (which
  * may be NULL).  False when @p st draws no such chip: no FAULT chip while
  * the bitmap is 0, no clock before a run, no mode chip without a mode.
@@ -119,10 +137,15 @@ bool ui_band_chip_rect(const ui_bench_status_t *st, ui_band_chip_t chip,
 ui_band_chip_t ui_band_chip_at(const ui_bench_status_t *st, int x, int y);
 
 /**
- * The help bubble of @p chip for @p st, in panel coordinates: under the
- * band, at the chip's left edge, moved left as far as the panel's right
- * edge needs, and as tall as its text.  FAULT's spans the panel, so a line
- * per bit has room.  False when the chip is not drawn.
+ * @brief The help bubble of @p chip for @p st, in panel coordinates: under
+ *        the band, at the chip's left edge, moved left as far as the panel's
+ *        right edge needs, and as tall as its text.
+ *
+ * FAULT's and HWSTOP's span the panel, so a line per bit has room.
+ * @param st   The bench status.
+ * @param chip The chip.
+ * @param out  The bubble, filled; may be NULL.
+ * @return False when the chip is not drawn.
  */
 bool ui_band_help_rect(const ui_bench_status_t *st, ui_band_chip_t chip,
                        gfx_rect_t *out);

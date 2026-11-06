@@ -8,8 +8,8 @@ Bedienung, Anzeigen und Menümarkierungen auf jeder Seite.
 
 Das Statusband ist auf allen Seiten gleich. Von rechts nach links zeigt es
 STOP, "?" auf einer Seite mit [Hilfe](#die-bildschirmhilfe), die Laufzeituhr
-(in ARMED oder nach einem Lauf), den Arm-Chip, einen gemeldeten FEHLER-Code,
-den Modus und VERBINDUNG oder KEINE VERBINDUNG.
+(in ARMED oder nach einem Lauf), den Arm-Chip, einen gemeldeten FEHLER-Code
+oder [HWSTOP](#hwstop), den Modus und VERBINDUNG oder KEINE VERBINDUNG.
 
 BENCH bedeutet: Die Verbindung steht und das Panel steuert die Ausgänge
 des IOmcu. In SIM antwortet kein IOmcu; das Panel berechnet eigene Modelle.
@@ -89,14 +89,14 @@ selbst bei der breitesten Reihe bleiben 2px Abstand zum Verbindungschip.
 ### Hilfe zu den Chips
 
 Tippe auf einen Status-Chip, um sein Hilfefeld zu öffnen: VERBINDUNG oder
-KEINE VERBINDUNG, Modus, FEHLER, Arm-Chip oder Laufzeituhr. Das Feld erklärt
+KEINE VERBINDUNG, Modus, FEHLER, HWSTOP, Arm-Chip oder Laufzeituhr. Das Feld erklärt
 den aktuellen Zustand und was du tun kannst. Es beginnt 4px unter dem Band
 an der linken Kante des Chips. Falls nötig, wird es nach links verschoben,
 damit es mindestens 8px vom Panelrand entfernt bleibt.
 
 Das Feld ist 640px breit und fasst 60 Zeichen pro Zeile in der Schrift
-10 x 20px bei 21px Zeilenabstand. Das FEHLER-Feld ist 1008px breit und
-fasst 97 Zeichen pro Zeile, mit einem Absatz je gesetztem Bit. Kein Feld
+10 x 20px bei 21px Zeilenabstand. Die Felder von FEHLER und HWSTOP sind
+1008px breit und fassen 97 Zeichen pro Zeile, mit einem Absatz je gesetztem Bit. Kein Feld
 überlappt das Statusband oder das Alarmband; STOP bleibt sichtbar.
 
 - Drücke auf einen Chip und hebe den Finger dort ab, um sein Hilfefeld zu
@@ -105,7 +105,8 @@ fasst 97 Zeichen pro Zeile, mit einem Absatz je gesetztem Bit. Kein Feld
   gelöschte verschwinden. Verschiebt die Laufzeituhr die Chips, folgt das
   Hilfefeld seinem Chip.
 - Verschwindet ein Chip, schließt sich auch sein Feld: etwa FEHLER nach dem
-  Löschen aller Fehler oder die ausgeblendete Laufzeituhr.
+  Löschen aller Fehler, HWSTOP nach dem Löschen des Heartbeat-Bits oder die
+  ausgeblendete Laufzeituhr.
 - Ein Tipp auf einen anderen Chip wechselt zu dessen Hilfefeld. Gleitest
   du vor dem Loslassen von diesem Chip, schließt sich nur das offene Feld.
 - Jeder andere Tipp schließt das Feld ohne weitere Wirkung: auf seinen
@@ -155,6 +156,31 @@ zu flashen.
 ![Der Kasten von SAFE](img/de/band-safe.png)
 
 ![Der Kasten von ARMED MOTOR](img/de/band-armed.png)
+
+### HWSTOP
+
+![HWSTOP an der Stelle von FEHLER und sein Kasten](img/de/band-hwstop.png)
+
+Mit SETUP > PANEL > Hardware-STOP auf EIN zeigt das Band das Heartbeat-Bit
+(10) als roten Chip HWSTOP an der Stelle von FEHLER, für einen Prüfstand mit
+STOP-Taster in der Heartbeat-Leitung ([STOP-Taster am
+Prüfstand](Safety-de.md#stop-taster-am-prüfstand)). Ein gedrückter Taster
+und ein unterbrochenes Kabel zeigen beide HWSTOP. Die Einstellung ist
+standardmäßig AUS, und mit AUS zeigt das Band FEHLER 10.
+
+- HWSTOP nimmt den Platz von FEHLER ein, die Chipreihe wird also nicht
+  breiter: HWSTOP hat 6 Zeichen, `FEHLER 7F` 9. Weitere gleichzeitig
+  gesetzte Bits stehen im Kasten von HWSTOP nach dessen zwei Absätzen und
+  erscheinen wieder als FEHLER-Code, sobald HWSTOP verschwindet.
+- Der Chip hat das Rot des Badges eines eingerasteten STOP, seine Schrift
+  die dunkle Farbe der hellen Flächen.
+- Solange er steht, liest das Panel STATUS bei jeder 50ms-Abfrage statt
+  alle 500ms. Er verschwindet mit dem ersten Band, das aus einem STATUS ohne
+  das Bit gezeichnet wird, 80 bis etwa 180ms nachdem die Leitung schließt,
+  ohne ARM.
+- Solange der eigene STOP des Panels eingerastet ist, während sein Lösen
+  läuft und 1000ms danach lässt das Band Bit 10 weg, als HWSTOP und als
+  FEHLER 10.
 
 ## Die Bildschirmhilfe
 
@@ -491,8 +517,9 @@ ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 - STOP löscht den Hinweis im selben Frame. Dasselbe gilt bei einem neuen
   Fehlerbit im FEHLER-Chip oder einem Wechsel von ARMED auf SAFE, auch
   durch einen Fehler. Ein Alarm bleibt dabei sichtbar.
-- 2s HALTEN ZUM BESTÄTIGEN auf der Busfehler-Seite hat keinen Hinweis,
-  weil diese Seite kein Statusband hat.
+- Die Busfehler-Seite hat kein Statusband. Ihre Haltetaste zeigt den
+  Hinweis anstelle ihres Balkens von 64px, bernsteinfarben mit dunkler
+  Schrift, für 4s. Ein Tipp auf den Balken schließt ihn.
 
 | Taste | Hinweis |
 | --- | --- |
@@ -518,6 +545,8 @@ ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | 2s HALTEN ZUM C6-FUNK-UPDATE auf UPDATES | `Halte 2s, um den C6-Funk zu aktualisieren. Das WLAN bleibt bis zum Ende aus.` |
 | 2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN auf OUTPUTS | `Halte 2s, um alle Pin-Zuordnungen zu löschen.` |
 | ÜBERSCHREIBEN im Bestätigungsdialog des FILES-Editors | `Halte 2s, um zu überschreiben.` |
+| 2s HALTEN ZUM BESTÄTIGEN auf der Busfehler-Seite | `Halte 2s, um zu bestätigen.` |
+| 2s HALTEN ZUM NEUVERBINDEN auf der Busfehler-Seite | `Halte 2s, um neu zu verbinden.` |
 
 ## Marken im Menü
 
@@ -2228,6 +2257,7 @@ Die 56px hohen Tasten 2s HALTEN ZUM ÜBERNEHMEN und ABBRECHEN enden 4px
 | OPTIONEN > PRÜFLING | NAME | der Prüfling, bis 23 Zeichen, für den Bericht |
 | OPTIONEN > PRÜFLING | BERICHT | ein Textbericht neben der Aufzeichnung jedes Tests |
 | OPTIONEN > PRÜFLING | SENSOR-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert seit dem aktuellen Verbindungsaufbau (keinen nach einem Verbindungsverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, SENSORS, AS5600-Mitte |
+| OPTIONEN > PRÜFLING | KST EXPERT MODE | ob der [Programmierer für KST- und Chaservo-Servos](ServoProgrammer-de.md#expertenmodus) DEAD BAND, BOOST, STRETCH, PAIRING LÖSEN und den Reiter GESPERRT zeigt; standardmäßig AUS, EIN nach 2s Halten (ein kürzerer Druck zeigt den Hinweis auf dem Band), AUS mit einem Tipp. Bleibt über einen Neustart erhalten |
 
 TRIMMUNG ist das einzige Tastenfeld mit Vorzeichen. `+/-` zwischen Punkt
 und OK setzt oder entfernt ein führendes Minus, vor oder nach der
@@ -4814,7 +4844,11 @@ standardmäßig aus; Einzelheiten stehen unter [Logs](#logs). Tastaturtransparen
 Texts durch die Tastatur des Texteditors scheint: AUS, 25% oder 50%,
 standardmäßig AUS; beschrieben unter [Der Texteditor](#der-texteditor).
 Demo-Modus blendet das Wasserzeichen SIMULATION aus und lässt den SIM-Chip des
-Bands stehen ([Das Statusband](#das-statusband)).
+Bands stehen ([Das Statusband](#das-statusband)). Hardware-STOP, die letzte
+Zeile und standardmäßig AUS, zeigt den Heartbeat-Fehler als HWSTOP statt
+FEHLER 10 ([HWSTOP](#hwstop)).
+
+![PANEL bis Hardware-STOP gescrollt, gespeichert EIN](img/de/setup-hw-stop.png)
 
 Acht Einstellungen werden gespeichert, ohne den Firmwarebetrieb zu
 beeinflussen. Einheiten und Dimmen nach erscheinen unter PANEL; Zellen,
@@ -5852,6 +5886,8 @@ verlassen. Sie verwendet dieselbe Geste und Füllung wie ARM. Die Bestätigung
 behebt den Fehler nicht: Der Prüfstand läuft in Simulation, kein Ausgang
 wird angesteuert, und beim nächsten Start läuft der Test erneut. Band und
 STOP fehlen, weil der Prüfstand hinter diesem Bildschirm nicht ARMED sein kann.
+Antwortet die Verbindung wieder, ist die Haltetaste stattdessen NEUVERBINDEN
+([Eine Verbindung, die wieder antwortet](#eine-verbindung-die-wieder-antwortet)).
 
 ### Ein Link, der abreißt
 
@@ -5893,7 +5929,7 @@ Scheitert ein Umbenennen oder dieses Löschen oder lässt sich eine Größe nich
 lesen, wird die Zeile nicht geschrieben. Firmware 0.21.0 und älter schrieb `RCBENCH.LOG` ins
 Stammverzeichnis; diese Datei bleibt und wird nicht erneut beschrieben:
 
-    t=182s link=down for 47s  bus=OFF tx_err=248 rx_err=0 bus_err=1976 rejoins=44/44  polls=5323 replies=5279 timeouts=44
+    t=182s link=down for 47s  bus=OFF tx_err=248 rx_err=0 bus_err=1976 rejoins=44/44  polls=5323 replies=5279 timeouts=44 retried=0
 
 Felder und Reihenfolge bleiben in jeder Zeile gleich. `rejoins` nennt die
 Wiederverbindungen während dieses Ausfalls und die Gesamtzahl seit dem Start.
@@ -5911,6 +5947,45 @@ beiden Pins führt etwas anderes.
 
 [Den Link in Betrieb nehmen](Link-de.md) erklärt die Testergebnisse und
 ihre Bedeutung.
+
+### Eine Verbindung, die wieder antwortet
+
+Der Bildschirm folgt der Verbindung, solange er sichtbar ist. Seine rechte
+Spalte bewegt sich mit: `getrennt` zählt die Sekunden seit der letzten
+Antwort, `Anfragen` und `unbeantwortet` zählen die Anfragen, und die Zeilen
+unter CONTROLLER zeigen Zustand und Fehlerzähler des Controllers. Ändert sich
+eine Zahl, wird nur die Spalte neu gezeichnet.
+
+Hat der IOmcu 1000ms lang jede Abfrage beantwortet (`BUSFAULT_BACK_MS`, das
+LINK des Bands), bietet der Bildschirm NEUVERBINDEN an:
+
+- Der Balken wird grün und zeigt `LINK WIEDER DA`.
+- Die Überschrift lautet `Die Verbindung antwortet wieder.`
+- `verbunden` zählt anstelle von `getrennt` die Sekunden seit der ersten
+  Antwort.
+- Die Haltetaste am Fuß zeigt `2s HALTEN ZUM NEUVERBINDEN`. Sie öffnet das
+  Menü am echten Prüfstand, SAFE.
+
+![Die Verbindung antwortet wieder](img/de/busfault-back.png)
+
+- Solange die Verbindung schweigt, gibt es kein NEUVERBINDEN. Die
+  Haltetaste ist `2s HALTEN ZUM BESTÄTIGEN` und führt ins Menü in der
+  Simulation.
+- Eine einzige unbeantwortete Abfrage nimmt NEUVERBINDEN sofort zurück und
+  bringt die Bestätigung zurück. Die nächsten 1000ms Antworten bieten es
+  wieder an.
+- Kommt oder geht NEUVERBINDEN, bricht ein laufendes Halten ab. Hebe den
+  Finger und halte erneut.
+- Die Seite des Starttests bietet NEUVERBINDEN unter derselben Bedingung an.
+  Ihre rechte Spalte behält die Zähler des Tests.
+- NEUVERBINDEN löscht nichts. Ein bestehender STOP bleibt, ebenso der
+  FEHLER-Chip. FEHLER 01 (`LINK_SILENT`: Der IOmcu hat 200ms keine Daten
+  empfangen und selbst auf SAFE geschaltet) erlischt beim nächsten ARM. Nach
+  NEUVERBINDEN zeigt das Band SAFE, LINK und BENCH, dazu STOP oder FEHLER 01,
+  wo eines davon besteht.
+- Eine Bestätigung bei schweigender Verbindung beendet den Bildschirm für
+  diesen Ausfall. Er öffnet erst wieder, wenn die Verbindung geantwortet hat
+  und danach erneut 4s ausgefallen ist.
 
 ## IOmcu-Update
 

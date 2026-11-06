@@ -94,6 +94,14 @@ verlorener Heartbeat und ein stiller Link schalten außerdem GPIO 21 aus.
 Ein PROG 5V AUS von Hand beendet den Puls ebenso: das Panel fordert den
 Puls nur an, solange das Feld EIN zeigt.
 
+Das Panel schaltet den Puls des Ports nur bei SAFE ein, wie auf jedem
+Board; aus schaltet es ihn sofort. Zuerst PROG 5V einschalten, dann ARM.
+Ein bei ARMED eingeschaltetes PROG 5V lässt den Puls bis zum nächsten SAFE
+aus: AUTO auf RUDDER und der Endlagenlauf zeigen dann
+`PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM`. Bei SAFE mit dem Feld
+aus zeigen beide `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN` vor
+`ZUERST ARM`.
+
 ## Versorgung
 
 | Teil | Eingang | Ausgang | Geschaltet von |
@@ -265,6 +273,11 @@ SETUP > SENSORS zeigt diese Zeilen ohne Tasten zum Bearbeiten:
   GPIO 4 oder GPIO 5. Mit SERVO PWM auf beiden Schienen liest er nur die
   Schiene des niedrigsten GPIO. Mit einem Programmierport als Ziel des
   Testers ist es CH3.
+- Mit ZIEL auf den Ausgängen des Prüfstands und keinem als SERVO PWM
+  zugeordneten Ausgang überwacht kein Kanal das Ziel, und keiner wird mit
+  1kHz gelesen. Der Endlagenlauf meldet dann `KEIN SERVO-PWM-PIN` und AUTO
+  auf RUDER `AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT`, jeweils vor jeder
+  Zeile zum INA3221 ([Servo](Servo-de.md#auto-endpoints)).
 - SERVO und der Endlagenlauf benennen das Messgerät nach seiner Schiene:
   `INA SCHIENE A` über dem Plot, `INA3221 SCHIENE A` auf der Karte TEST.
   Das Band nennt die Schiene eines Kanals über seiner Grenze:

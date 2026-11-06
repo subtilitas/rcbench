@@ -149,7 +149,7 @@ MASK = "\0"
 # test_check_units.py holds the two to each other.
 PROFILE_DIR = "shared/esc/profiles/"
 PROFILE_TEXTS = frozenset({
-    ("brand",), ("family",), ("automatable_note",),
+    ("brand",), ("family",), ("family_de",), ("automatable_note",),
     ("scheme", "entry", "steps", "[]"),
     ("models", "[]", "name"),
     ("items", "[]", "name"), ("items", "[]", "applies_when"),

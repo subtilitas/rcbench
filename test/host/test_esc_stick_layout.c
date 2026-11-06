@@ -264,9 +264,10 @@ TEST_CASE(a_model_row_shows_its_family_beside_the_tag)
             sp_model_cols_t col;
             CHECK(!sp_model_cols(gp, m, row_w, &col));
             CHECK(col.tag);
-            if (col.fam < gfx_text_cells(gp->family)) {
+            const char *fam = esc_stick_panel_family_text(gp);
+            if (col.fam < gfx_text_cells(fam)) {
                 T_FAIL("language %d, %s: %d cells for \"%s\"", l,
-                       gp->models[m].name, col.fam, gp->family);
+                       gp->models[m].name, col.fam, fam);
             }
         }
         for (size_t i = 0; i < esc_profiles_count(); ++i) {
@@ -274,7 +275,7 @@ TEST_CASE(a_model_row_shows_its_family_beside_the_tag)
             for (int m = 0; m < (int)p->model_count; ++m) {
                 sp_model_cols_t col;
                 (void)sp_model_cols(p, m, row_w, &col);
-                const int need = gfx_text_cells(p->family);
+                const int need = gfx_text_cells(esc_stick_panel_family_text(p));
                 if (col.fam < need && col.fam > 0 && col.fam < 6) {
                     T_FAIL("language %d, %s %s: the family cut to %d cells",
                            l, p->id, p->models[m].name, col.fam);

@@ -1066,6 +1066,10 @@ FACTS = [
      ("LINK_PROTOCOL_MAJOR", "LINK_PROTOCOL_MINOR")),
     ("STATUS.md", rf"Protocol version {N}\.{N}\.",
      ("LINK_PROTOCOL_MAJOR", "LINK_PROTOCOL_MINOR")),
+    ("docs/FirstRun.md", rf"The panel's link protocol is {N}\.{N},",
+     ("LINK_PROTOCOL_MAJOR", "LINK_PROTOCOL_MINOR")),
+    ("docs/FirstRun-de.md", rf"Link-Protokoll des Panels ist {N}\.{N},",
+     ("LINK_PROTOCOL_MAJOR", "LINK_PROTOCOL_MINOR")),
     # The heartbeat.
     ("docs/Safety.md", rf"\| Panel edge interval \| {N}ms \|",
      ("HEARTBEAT_PERIOD_MS",)),

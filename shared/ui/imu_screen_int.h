@@ -92,6 +92,8 @@ enum {
     IMS_L_COUNT
 };
 
+/** @brief The card's lines, IMS_L_SENSOR to IMS_L_BATTERY. */
+#define IMS_CARD_LINES (IMS_L_BATTERY + 1)
 /** @brief BATTERY is hidden above this: 0xFFFF reads 655.35V. */
 #define IMS_BATTERY_MAX_V 6.0f
 /** @brief Commands the screen holds until the panel takes them. */
@@ -106,6 +108,15 @@ typedef struct {
     int        hit;          /**< IMS_HIT_NONE, a row or IMS_HIT_DEV0 + i */
     ui_hold_t  hold;         /**< CALIBRATE ACCELEROMETER */
     unsigned   drawn_mask;   /**< framebuffers drawn since the last change */
+    uint32_t   read_rev;     /**< counts views that changed the reading alone */
+    uint32_t   hold_rev;     /**< counts the frames the hold's fill moves in */
+    uint32_t   drawn_read[2];   /**< read_rev as each framebuffer last drew it */
+    uint32_t   drawn_hold[2];   /**< hold_rev as each framebuffer last drew it */
+    uint32_t   drawn_rows[2];   /**< the rows' shown and enabled states as
+                                     each framebuffer last drew them */
+    uint32_t   drawn_line[2][IMS_CARD_LINES]; /**< each card line's text,
+                                                   face and colour as each
+                                                   framebuffer last drew it */
     imu_cmd_t  cmds[IMS_CMDS];  /**< commands not yet taken, oldest first */
     uint8_t    cmd_n;        /**< how many */
 } ims_state_t;

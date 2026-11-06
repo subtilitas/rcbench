@@ -16,6 +16,7 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 #include "wifi_kept.h"
+#include "wifi_view.h"
 
 /** @brief The area below the band: 1024 x 540px. */
 #define W UI_PANEL_W
@@ -265,13 +266,10 @@ static void drop_hold_if_gone(void)
 
 void wifi_screen_set(const wifi_view_t *v)
 {
-    /* Padding that differs reads as a change and costs one repaint; a
-     * member that differs always differs in its bytes. */
-    /* NOLINTNEXTLINE(bugprone-suspicious-memory-comparison) */
-    if (v == NULL || memcmp(v, &s.v, sizeof(s.v)) == 0) {
+    /* Kept whatever it holds; repainted when what is drawn may differ. */
+    if (!wifi_view_take(&s.v, v)) {
         return;
     }
-    s.v = *v;
     if (!staged()) {
         s.q_cancelled = false;
     }
@@ -1086,7 +1084,7 @@ static void draw_running(gfx_canvas_t *c)
             y = line_at(c, y, v, UI_TEXT_DIM);
         }
         snprintf(v, sizeof(v), TR(WF_IDLE),
-                 (unsigned)((s.v.idle_left_s + 59u) / 60u));
+                 (unsigned)wifi_view_idle_min(s.v.idle_left_s));
         y = line_at(c, y, v, UI_TEXT_DIM);
         y = writes_line(c, y) + 8;
         if (s.v.up == WIFI_UP_RECEIVING) {

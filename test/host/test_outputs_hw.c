@@ -10,6 +10,11 @@
  * stays small would keep a dead one.  Each case runs at tick 0 and with the
  * reading taken 50ms before the wrap (tick_wrap.h).
  *
+ * And the edge into driving on a bidirectional slot: the pin is woken from
+ * its low rest one frame period before the first frame, also across the
+ * wrap of the 32-bit microsecond clock; SAFE stops it in the same pass;
+ * a slot the ESC_WIRE page holds is neither stopped nor woken.
+ *
  * The pin drivers are fakes: a bind succeeds, a frame goes nowhere, and a
  * poll returns the one reply the case queued.  The clock is
  * pico_stub/pico/stdlib.h's.
@@ -45,12 +50,29 @@ static uint16_t g_bind_kbit;
 static bool     g_bind_bidir;
 static bool     g_bind_refused;
 
+/*
+ * The pin's rest, as out_dshot.c keeps it: a bidirectional pin is low from
+ * its bind and from a stop, and a wake releases it once; a released pin is
+ * the driver's no more.  The suites' bidirectional slot is on pin 2.  The
+ * pins woken, stopped and sent to (bit n for pin n), pin 2's frames with the
+ * clock of the first, and any frame sent from the low rest.
+ */
+static bool     g_low;
+static uint32_t g_wake_pins, g_stop_pins, g_send_pins;
+static int      g_wakes, g_sends, g_from_low;
+static uint64_t g_wake_us, g_first_us;
+static uint16_t g_send_value;
+static bool     g_send_telemetry;
+
 bool out_dshot_bind(uint8_t pin, uint16_t rate_kbit, bool bidirectional)
 {
     g_binds++;
     g_bind_pin = pin;
     g_bind_kbit = rate_kbit;
     g_bind_bidir = bidirectional;
+    if (pin == 2u) {
+        g_low = bidirectional && !g_bind_refused;
+    }
     return !g_bind_refused;
 }
 
@@ -58,16 +80,47 @@ void out_dshot_release(uint8_t pin)
 {
     g_releases++;
     g_release_pin = pin;
+    if (pin == 2u) {
+        g_low = false;
+    }
+}
+
+bool out_dshot_wake(uint8_t pin)
+{
+    g_wake_pins |= 1u << pin;
+    if (pin != 2u || !g_low) {
+        return false;
+    }
+    g_low = false;
+    g_wakes++;
+    g_wake_us = pico_stub_us;
+    return true;
 }
 
 void out_dshot_send(uint8_t pin, uint16_t value, bool telemetry)
 {
-    (void)pin;
-    (void)value;
-    (void)telemetry;
+    g_send_pins |= 1u << pin;
+    if (pin != 2u) {
+        return;
+    }
+    if (g_low) {
+        g_from_low++;
+    }
+    if (g_sends == 0) {
+        g_first_us = pico_stub_us;
+    }
+    g_sends++;
+    g_send_value = value;
+    g_send_telemetry = telemetry;
 }
 
-void out_dshot_stop(uint8_t pin) { (void)pin; }
+void out_dshot_stop(uint8_t pin)
+{
+    g_stop_pins |= 1u << pin;
+    if (pin == 2u) {
+        g_low = true;
+    }
+}
 
 bool out_dshot_poll(uint8_t pin, bool edt, dshot_telem_t *out)
 {
@@ -139,6 +192,23 @@ void port_unpark(uint8_t pin) { (void)pin; }
 static void at_ms(uint32_t ms)
 {
     pico_stub_us = (uint64_t)ms * 1000u;
+}
+
+/* The suite's records of the DShot fake back to zero. */
+static void dshot_counts_zero(void)
+{
+    g_wake_pins = 0u;
+    g_stop_pins = 0u;
+    g_send_pins = 0u;
+    g_wakes = 0;
+    g_sends = 0;
+    g_from_low = 0;
+}
+
+/* The microsecond clock at @p us, which may be past the 32-bit wrap. */
+static void at_us(uint64_t us)
+{
+    pico_stub_us = us;
 }
 
 /* A bank with one bidirectional DShot slot on pin 2 at 600kbit/s, bound by
@@ -298,6 +368,21 @@ TEST_CASE(a_held_slot_is_let_go_alone_and_comes_back_the_same)
     CHECK_EQ(g_releases, 1);
     CHECK_EQ(g_release_pin, 2u);
     CHECK_EQ(g_binds, 0);
+    /* Held, the pin is the programmer's: no pass stops it to the low rest,
+     * wakes it or sends on it, SAFE or ARMED; slot 1 goes on as before. */
+    dshot_counts_zero();
+    outputs_hw_service(&g_bank);
+    outputs_arm(&g_bank, true, 1000u);
+    outputs_hw_service(&g_bank);
+    at_ms(1001u);
+    outputs_hw_service(&g_bank);
+    outputs_arm(&g_bank, false, 1001u);
+    outputs_hw_service(&g_bank);
+    CHECK_EQ(g_stop_pins & (1u << 2), 0u);
+    CHECK_EQ(g_wake_pins & (1u << 2), 0u);
+    CHECK_EQ(g_send_pins & (1u << 2), 0u);
+    CHECK((g_stop_pins & (1u << 3)) != 0u);
+    CHECK((g_send_pins & (1u << 3)) != 0u);
     /* Again, as any apply in a session asks: nothing moves. */
     g_releases = 0;
     outputs_hw_apply_only(&g_bank, rate, 0xFEu);
@@ -326,8 +411,102 @@ TEST_CASE(a_held_slot_is_let_go_alone_and_comes_back_the_same)
     CHECK(!outputs_hw_return_slot(&g_bank, rate, 5u));
 }
 
+/*
+ * The edge into driving on a bidirectional slot, at microsecond @p t0: the
+ * first pass wakes the pin and sends nothing, the first frame goes out
+ * DSHOT_PERIOD_US (1000us) later and not at 999us, and the ask that leads
+ * the run keeps its DSHOT_CMD_REPEATS (10) frames before the throttle's stop
+ * frame.  SAFE stops the pin every pass; the next ARM wakes it again
+ * before any frame.  No frame goes out from the low rest.
+ */
+static void a_run_starts_one_frame_period_after_the_wake(uint64_t t0)
+{
+    bind_one_bidir_slot((uint32_t)(t0 / 1000u));
+    CHECK(outputs_set_role(&g_bank, 0u, OUT_ROLE_THROTTLE));
+    at_us(t0);
+    outputs_hw_service(&g_bank);              /* SAFE: at rest */
+    dshot_counts_zero();
+
+    outputs_arm(&g_bank, true, (uint32_t)(t0 / 1000u));
+    outputs_hw_service(&g_bank);
+    CHECK_EQ(g_wakes, 1);
+    CHECK_EQ(g_sends, 0);
+    at_us(t0 + 999u);
+    outputs_hw_service(&g_bank);
+    CHECK_EQ(g_sends, 0);
+    at_us(t0 + 1000u);
+    outputs_hw_service(&g_bank);
+    CHECK_EQ(g_sends, 1);
+    CHECK_EQ((long)(g_first_us - g_wake_us), 1000);
+    CHECK_EQ(g_send_value, (uint16_t)DSHOT_CMD_EDT_ENABLE);
+    CHECK(g_send_telemetry);
+    for (unsigned i = 2u; i <= DSHOT_CMD_REPEATS; ++i) {
+        at_us(t0 + 1000u * i);
+        outputs_hw_service(&g_bank);
+        CHECK_EQ(g_send_value, (uint16_t)DSHOT_CMD_EDT_ENABLE);
+    }
+    CHECK_EQ(g_sends, (int)DSHOT_CMD_REPEATS);
+    at_us(t0 + 1000u * (DSHOT_CMD_REPEATS + 1u));
+    outputs_hw_service(&g_bank);
+    CHECK_EQ(g_send_value, (uint16_t)DSHOT_CMD_MOTOR_STOP);
+    CHECK(!g_send_telemetry);
+    CHECK_EQ(g_wakes, 1);
+
+    /* SAFE: the pin stops, and stays stopped, every pass. */
+    const uint64_t t1 = t0 + 1000u * (DSHOT_CMD_REPEATS + 2u);
+    outputs_arm(&g_bank, false, (uint32_t)(t1 / 1000u));
+    g_stop_pins = 0u;
+    const int sent = g_sends;
+    at_us(t1);
+    outputs_hw_service(&g_bank);
+    CHECK_EQ(g_stop_pins, 1u << 2);
+    at_us(t1 + 5000u);
+    outputs_hw_service(&g_bank);
+    CHECK_EQ(g_sends, sent);
+    /* ARM again: a wake first, the frame a period later. */
+    outputs_arm(&g_bank, true, (uint32_t)(t1 / 1000u) + 5u);
+    outputs_hw_service(&g_bank);
+    CHECK_EQ(g_wakes, 2);
+    CHECK_EQ(g_sends, sent);
+    at_us(t1 + 6000u);
+    outputs_hw_service(&g_bank);
+    CHECK_EQ(g_sends, sent + 1);
+    CHECK_EQ(g_from_low, 0);
+}
+
+TEST_CASE(a_bidirectional_run_starts_one_frame_period_after_the_wake)
+{
+    a_run_starts_one_frame_period_after_the_wake(5000000u);
+    /* Across the wrap of the 32-bit microsecond clock, 2^32us (71.6min),
+     * between the wake and the first frame. */
+    a_run_starts_one_frame_period_after_the_wake(0x100000000ull - 500u);
+}
+
+/*
+ * An error, a STOP and a lost link all switch the bank to SAFE through
+ * outputs_off(), which services the pins at once: the bidirectional slot is
+ * stopped in that pass, so its pin goes to the low rest with no frame after.
+ */
+TEST_CASE(a_switch_to_safe_stops_the_bidirectional_pin_in_the_same_pass)
+{
+    bind_one_bidir_slot(1000u);
+    at_us(1000000u);
+    outputs_arm(&g_bank, true, 1000u);
+    outputs_hw_service(&g_bank);
+    at_us(1001000u);
+    outputs_hw_service(&g_bank);
+    dshot_counts_zero();
+    outputs_arm(&g_bank, false, 1001u);
+    outputs_hw_service(&g_bank);
+    CHECK_EQ(g_stop_pins, 1u << 2);
+    CHECK_EQ(g_send_pins, 0u);
+    CHECK_EQ(g_wake_pins, 0u);
+}
+
 int main(void)
 {
+    RUN(a_bidirectional_run_starts_one_frame_period_after_the_wake);
+    RUN(a_switch_to_safe_stops_the_bidirectional_pin_in_the_same_pass);
     RUN(a_held_slot_is_let_go_alone_and_comes_back_the_same);
     RUN(a_speed_readings_age_holds_across_the_millisecond_wrap);
     RUN(a_temperature_readings_age_holds_across_the_millisecond_wrap);

@@ -32,6 +32,8 @@
 #include "servo_page.h"
 #include "servo_screen.h"
 #include "servo_source.h"
+#include "settings.h"
+#include "status_poll.h"
 #include "supply_link.h"
 #include "telemetry_sim.h"
 #include "tone_link.h"
@@ -420,6 +422,9 @@ static void link_came_up(const link_msg_t *reply)
     s_far_minor = reply->regs[LINK_ID_PROTOCOL_MINOR];
     /* From 4.35 a page wider than 16 registers is read in two exchanges. */
     s_host.held_reads = s_far_minor >= LINK_MINOR_READ_HELD;
+    /* From 4.37 requests are numbered and a lost answer's request is sent
+     * once more (link_host_retry()). */
+    s_host.numbered = s_far_minor >= LINK_MINOR_REPEAT;
     /* A refusal count is the IOmcu's that sent it: the band shows
      * none until this one's status page is read. */
     s_bring.have_refused = false;
@@ -660,6 +665,10 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
         } else if (*link_up) {
             /* The edge: it was up until this poll. */
             atomic_store(&s_link_lost_ms, now_ms());
+            /* The identity probes go unnumbered: whoever answers next may
+             * be an IOmcu older than 4.37, which refuses a numbered frame,
+             * or the image an update has just started. */
+            s_host.numbered = false;
             /*
              * An armed bench stops with the link, and so does an arm still
              * waiting for the line.  The far end has failed safe on its own
@@ -735,10 +744,16 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
 
         /*
          * The status page is read a tenth as often as the bench page: a status
-         * read costs a whole transaction and its numbers move slowly.
+         * read costs a whole transaction and its numbers move slowly.  While
+         * the band shows HWSTOP it is read at every poll, so the chip goes
+         * within a poll of the IOmcu clearing the bit (status_poll.h); the
+         * bitmap is the band's, the STOP latch's grace applied.
          */
-        if (*link_up && (uint32_t)(now_ms() - *last_status) >= 500u) {
-            *last_status = now_ms();
+        const bool status_fast = status_poll_fast(
+            settings_get_bool(SET_HW_STOP),
+            stop_latch_faults(&s_stop_latch, now_ms(), arming_held(&s_arm),
+                              s_dev_faults));
+        if (*link_up && status_poll_due(last_status, now_ms(), status_fast)) {
             read_status_counters();
             /*
              * And the binding, while it is unknown.  Without a retry an

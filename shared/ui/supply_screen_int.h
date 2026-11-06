@@ -444,6 +444,8 @@ typedef struct {
     uint32_t        drawn_push[2];      /**< plot pushes each frame buffer last drew */
     uint32_t        drawn_plot[2];      /**< plot revision each frame buffer last drew */
     uint8_t         drawn_title[2];     /**< title tag each frame buffer last drew */
+    uint8_t         drawn_online[2];    /**< whether the supply answered, as
+                                             each buffer's heading row says */
     uint32_t        ctrl_rev;           /**< revision of the CONTROL card */
     uint32_t        prog_5v;            /**< the ports' own supply as last drawn:
                                              state << 8 | pin                */

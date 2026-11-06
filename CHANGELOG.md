@@ -88,6 +88,20 @@ history is in git.
   transaction. `test/host/test_hitec_pio_answer.c` (3 cases) holds the
   receiver back 1 state machine cycle after the answer's 10th bit time, not
   after the 16 bit times of the answer word.
+- KST EXPERT MODE, a row of SERVO > SETTINGS > DUT, OFF by default and kept
+  across restarts: ON after a 2s hold, OFF with a tap. With it OFF the KST
+  and Chaservo programmer hides DEAD BAND, BOOST and STRETCH on TUNE,
+  RELEASE PAIRING in MORE and the LOCKED tab; TUNE closes up and the tab
+  strip holds 4 tabs. A file load and a RESTORE still write the whole
+  image: the write page, CHECK THIS FILE and the restore's page name each
+  hidden value that changes, first and in the warning colour.
+- SETUP > PANEL > Hardware stop, OFF by default, for a bench with a stop
+  button in the heartbeat line. ON, the band shows the heartbeat bit as a red
+  HWSTOP chip in place of FAULT 10, with a help box that names the pressed
+  button or a broken cable and how to clear it. While the chip stands the
+  panel reads STATUS at every 50ms poll, not every 500ms, so the chip goes
+  80 to about 180ms after the line closes, with no ARM. What the bench does
+  on the bit is unchanged; OFF, the band and the reads are as before.
 - The C6 radio's update. CI and the release build esp_hosted 2.13.0's
   co-processor firmware for the board's ESP32-C6 from the component the
   panel pins (`.github/workflows/c6.yml`, `tools/c6_image.py`,
@@ -114,6 +128,37 @@ history is in git.
 
 ### Changed
 
+- ESC profiles carry an optional `family_de`, the family text in German. The
+  ESC STICK crumb, model rows and manual-step pop-ups show it in German and
+  show `family` in English and where a profile has none. 36 of the 72
+  profiles of record give one, for example `Zählmenü mit 8 Punkten` for
+  `8-item count menu`; a family of names and terms only (`brushed`,
+  `sensorless`, `ESC`) has none. `tools/gen_esc_profiles.py` and the card
+  reader accept 1 to 120 bytes of UTF-8, and `family_de` is held to the
+  unit rule of `tools/check_units.py`.
+- The link protocol is 4.37. The panel numbers its requests to a 4.37
+  IOmcu and sends a request once more when its answer has not come within
+  50ms. The IOmcu answers the repeat from its copy of the first answer and
+  does not act on it again. A lost answer costs about 50ms, latches no
+  `FAULT 01` and keeps the link up. In 0.23.8 it cost the 1000ms timeout,
+  the IOmcu latched `FAULT 01` after 200ms of silence, and the link went
+  down. ACTIVATE, the update transfer and a request whose wait saw a STOP
+  are not repeated. A second loss of the same request ends at the 1000ms
+  timeout. The console report and the card's log line count the recovered
+  answers as `retried`. An IOmcu older than 4.37 gets unnumbered requests
+  and no repeat.
+- The bus-fault screen follows the link while it shows. Its counters move
+  instead of freezing at the moment it opened. Once the IOmcu has answered
+  every poll for 1000ms, the bar reads `LINK BACK` and the hold reads
+  `HOLD 2s TO RECONNECT`: it opens the menu on the live bench, SAFE. One poll
+  without an answer withdraws it, and the hold is the acknowledgement into
+  simulation again. The start-up test's screen offers RECONNECT on the same
+  condition. RECONNECT clears no STOP and no fault code; FAULT 01 clears at
+  the next ARM. On the station, an IOmcu back from a 12 to 16s BOOTSEL stay
+  left the screen showing a frozen snapshot until a panel restart.
+- The bus-fault screen's holds show their hint on a release before 2s:
+  `Hold 2s to acknowledge.` or `Hold 2s to reconnect.`, amber in place of
+  the bar for 4s. The screen has no band to show it on.
 - The IMU's angles show two decimals: the IMU screen's X, Y and Z, RUDDER's
   DEFLECTION and MAX with ANGLE SOURCE IMU, SERVO's MEASURED and AUTO's
   `surface binds at x°`. The servo runs' reading carries the IMU's degrees
@@ -163,6 +208,23 @@ history is in git.
 - PROG 5V OFF on SERVO and SUPPLY takes a press under the alert band and
   a chip's help box while the ports' 5V reads ON, as OUTPUT OFF does. The
   screen guide leaves out every page whose dock would cover it.
+- On the rbmod carrier with TARGET on a programming port, START of AUTO
+  on RUDDER and START LIMIT RUN no longer stay grey after the lines are
+  followed in their order. The port's pulse needs the PROG 5V and comes on
+  only while SAFE. While SAFE with the PROG 5V box off both read
+  `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` before `ARM FIRST`. ARMED
+  with PORT PWM on and the pulse still off, as after a PROG 5V switched on
+  while ARMED, both read `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM`
+  in place of `PORT PWM OFF. NO PULSES ON THIS PORT.`
+- On the rbmod carrier, AUTO on RUDDER and the LIMIT RUN name the
+  tester's target before the INA3221. With TARGET on the bench's outputs
+  and no output bound as SERVO PWM no channel watches the target, since
+  each channel watches a rail; both read
+  `INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT` there. AUTO now
+  reads `AUTO PROGRAMS A SERVO ON THE PROG PORT` and the LIMIT RUN
+  `NO SERVO PWM PIN`. On every board TARGET on the outputs comes before the
+  meter: AUTO names the programming port, the LIMIT RUN `NO SERVO PWM PIN`
+  or `PINS NOT READ`.
 - The IOmcu's firmware update cannot erase or program flash below 0x2000,
   the boot ROM's boot slots 0 and 1 that hold the partition table. The
   flash calls of the update refused only ranges past the store before. No
@@ -182,6 +244,18 @@ history is in git.
   cells 0x80 to 0x86, restores as before. The write's second read reads
   that serial again, 43 cells instead of 36, so a servo swapped after the
   last READ ALL ends the write before a step.
+- A bidirectional DShot pin that sends no frames is driven low: from the
+  bind to the first frame, and at SAFE, STOP, an error, a lost link and the
+  failsafe edge until the next ARM. It rested high on its pull-up, the
+  bootloader entry condition of family S (BLHeli_S), Bluejay and AM32 ESCs.
+  On ARM the IOmcu releases the line to its high idle and sends the first
+  frame 1000µs later, one frame period at 1kHz; the extended telemetry ask
+  keeps its 10 frames. A pin held by the ESC signal wire session is not
+  driven low. Plain DShot also sets its PIO latch to 0 before the pad is
+  handed to the block, so a latch another program left at 1 shows no high
+  between the bind and the first frame. What an ESC does after the low rest
+  is not measured.
+
 - SERVO's own repaints, the SET row, the rail's plot, ARM and RUDDER's
   readout among them, stay inside the screen guide's live half. They drew
   over the dock, on RUDDER's guide page with each new angle reading.
@@ -212,6 +286,28 @@ history is in git.
   stamp: one that arrives after a DISARM, after a STOP, behind a newer ARM or
   for an ARM asked on the other screen changes nothing. A refusal moves no
   STOP latch and arms nothing.
+- The IMU screen no longer repaints whole for every angle frame or for every
+  frame of the 2s hold on HOLD 2s: CALIBRATE ACCELEROMETER. A reading
+  repaints the card lines that read differently, and the hold its button and
+  the age on the RATE line. In the host frame model an angle frame in every
+  frame costs 101 cache-line fills, against 31,247 before, and the hold 690,
+  against 31,243. CI holds the new `imu` and `imu-hold` modes to 1,000.
+- The KST and Hitec sessions on SERVO > PROGRAM no longer repaint for a PD
+  mini reading their state line does not show: with the port in PWM the
+  line shows the set point, and in programming the reading in 10mV and 1mA.
+  In the host frame model a reading 3mV and 1mA off the one before in every
+  frame costs 0 cache-line fills on either session, against 16,860 (KST) and
+  16,246 (Hitec) before. CI holds the new `servo-kst` and `servo-hitec`
+  modes to 1,000.
+- WI-FI no longer repaints whole once a second while the idle time counts
+  down. The page shows the idle time in whole minutes and repaints when the
+  minute changes. In the host frame model an idle second in every frame costs 0
+  cache-line fills, against 20,331 before. CI holds the new `wifi-idle`
+  mode to 1,000.
+- SUPPLY no longer repaints the PLOT and TABLE tabs and its heading row for
+  every sample. They repaint when the supply starts or stops answering. In
+  the host frame model a sample in every frame costs 8,138 cache-line fills,
+  against 9,692 before.
 
 ## 0.23.8 - 2026-11-05
 

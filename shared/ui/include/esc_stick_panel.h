@@ -158,6 +158,14 @@ const esc_profile_t *esc_stick_panel_page(void);
  *  profile gives one and German shows, else its English action. */
 const char *esc_stick_panel_step_text(const esc_manual_t *m);
 
+/**
+ * @brief A profile's family in the language showing: its family_de where the
+ *        profile gives one and German shows, else its English family.
+ * @param p The profile, or NULL.
+ * @return The text, valid as long as the profile; "" for NULL.
+ */
+const char *esc_stick_panel_family_text(const esc_profile_t *p);
+
 /** Why the manual steps' pop-up says its profile does not run, for the
  *  model it was opened for; NULL when it runs or no pop-up is open.  For
  *  tests. */

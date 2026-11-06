@@ -165,13 +165,15 @@ Der Lauf verwendet ausschließlich den INA3221-Kanal für das Testerziel. Mit PD
 
 | Zeile | Bedingung |
 |---|---|
+| `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN` | SAFE auf dem rbmod-Carrier mit ZIEL auf einem Programmierport und dem Feld PROG 5V aus; vor `ZUERST ARM` genannt, da der Puls des Ports nur bei SAFE kommt |
 | `ZUERST ARM` | der Prüfstand ist SAFE |
+| `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | ZIEL sind die Ausgänge des Prüfstands, und kein Ausgang ist als SERVO PWM zugeordnet, oder die Zuordnung ist noch nicht ausgelesen |
 | `INA3221 NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET` | kein Kanal eines bestückten INA3221 überwacht in SETUP > SENSORS das Ziel des Testers |
 | `INA3221 NICHT ERREICHBAR` | keine Verbindung, oder der INA3221 antwortet nicht |
 | `NOCH KEINE INA3221-MESSFENSTER` | der INA3221 ist noch nicht das Messgerät |
 | `SERVOVERSORGUNG UNTER 3.0V ODER OHNE MESSWERT` | das letzte INA3221-Fenster hat keine Schienenspannung oder weniger als 3,0V: ein ausgeschalteter Ausgang liest 0V |
 | `PORT-PWM AUS. KEINE PULSE AN DIESEM PORT.` | ZIEL ist PROG-PORT und PORT-PWM ist aus |
-| `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | ZIEL sind die Ausgänge des Prüfstands, und kein Ausgang ist als SERVO PWM zugeordnet, oder die Zuordnung ist noch nicht ausgelesen |
+| `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` | auf dem rbmod-Carrier ist ZIEL ein Programmierport mit PORT-PWM ein, und sein Puls ist noch aus, etwa nach einem bei ARMED eingeschalteten PROG 5V: der Puls kommt nur bei SAFE |
 | `MITTE MUSS ZWISCHEN PULS MIN UND PULS MAX LIEGEN` | der Pulsbereich enthält PULS MITTE nicht |
 | `BERICHT WIRD NOCH GESCHRIEBEN` | ein Test oder ein Lauf ist im Gang, oder sein Bericht geht noch auf die Karte |
 

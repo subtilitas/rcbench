@@ -12,6 +12,9 @@
  * programming port, which its first line names.  servo-rudder-auto-safe is
  * AUTO's box while SAFE, the view help-servo-rudder-auto opens SERVO's
  * guide over (render_help.c); help-servo-rudder opens it over servo-rudder.
+ * servo-rudder-auto-rbmod is AUTO's box on the rbmod carrier, SAFE, TARGET
+ * on PROG PORT 1 (GPIO 13) and the PROG 5V box off: its first line asks for
+ * the PROG 5V before ARM.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -95,6 +98,11 @@ void render_rudder_pose(const char *view)
     }
     if (strcmp(view, "servo-rudder-auto-safe") == 0) {
         tap_body(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);   /* AUTO, SAFE */
+    }
+    if (strcmp(view, "servo-rudder-auto-rbmod") == 0) {
+        settings_set(SET_SERVO_TARGET, 1.0f);
+        servo_screen_set_drive(1u, 13u, false);
+        tap_body(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);   /* AUTO */
     }
     servo_cmd_t c;
     while (servo_screen_take(&c)) { }
