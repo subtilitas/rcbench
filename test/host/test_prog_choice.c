@@ -387,18 +387,32 @@ TEST_CASE(no_pulse_without_the_prog_5v)
     /* PORT PWM OFF is OFF whatever the 5V. */
     settings_set(SET_SERVO_PORT_PWM, 0.0f);
     CHECK(!prog_choice_want_pwm());
-    /* PROGP02's entry names the box with PORT PWM OFF too: the tap on ON
-     * is refused there and the line says why. */
+    /* PROGP02's entry with the box off, which is on SERVO and not here:
+     * PORT PWM ON is taken and saved, the line says the pulse waits for
+     * the box on SERVO, and no pulse is asked until the box reads ON. */
     prog5v_box_publish(2u, 21u, PROG5V_HELD_NONE);
     tap(DD_X + DD_W / 2, DD_Y + DD_H / 2);
     tap(OU_POP_X(1), OU_POP_ROW_Y(1));       /* PROG PORT 2 */
     CHECK_EQ(outputs_screen_port_shown(), 1);
-    CHECK_STR_EQ(reason(), TR(PC_NEED_5V));
-    tap(OU_SEG_X(0), OU_PWM_Y);              /* PORT PWM ON: refused */
-    CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
-    prog5v_box_publish(3u, 21u, PROG5V_HELD_NONE);
-    tap(OU_SEG_X(0), OU_PWM_Y);              /* with the 5V: taken */
+    CHECK_STR_EQ(reason(), "");
+    (void)settings_save();
+    tap(OU_SEG_X(0), OU_PWM_Y);              /* PORT PWM ON: taken */
     CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
+    CHECK(settings_save_asked());
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        CHECK_STR_EQ(reason(), TR(PC_PWM_WAITS_5V));
+    }
+    ui_text_set_language(UI_LANG_EN);
+    CHECK_STR_EQ(reason(), "PORT PWM ON: PULSES START WITH PROG 5V ON SERVO");
+    CHECK(!prog_choice_want_pwm());
+    /* The FUNC stays SERVO PWM: nothing is asked of the port. */
+    const int asks = g_asks;
+    prog_choice_tick();
+    CHECK_EQ(g_asks, asks);
+    prog5v_box_publish(3u, 21u, PROG5V_HELD_NONE);
+    CHECK(prog_choice_want_pwm());
+    CHECK_STR_EQ(reason(), "");
     /* SERVO TESTER on the entry: OUTPUTS, then PORT 2 again. */
     tap(OU_SEG_X(0), OU_TESTER_Y);
     CHECK_EQ(prog_choice_port(), 0u);
