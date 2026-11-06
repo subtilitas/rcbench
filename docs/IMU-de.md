@@ -222,7 +222,10 @@ Die Ruhezeit ist die des Sensors: der Winkel innerhalb von 0,5°
 Winkel dem des Sensors um mehr als 0,05° (`IMU_SETTLE_DEG`) nachläuft,
 zeigt die Ruhezeit 0. Das Panel bestimmt diesen Rest aus dem Abstand beim
 ersten Frame der Strecke, je Frame mit (1 - 1/k) verkleinert. Ist er 0,05°
-oder weniger, zählt die Ruhezeit ab dem Stillstand des Sensors. AUTO auf
+oder weniger, zählt die Ruhezeit ab dem Stillstand des Sensors. Auch danach
+zeigt sie auf jedem Frame 0, solange der gefilterte Winkel mehr als 0,05°
+vom Frame entfernt liegt; ein Wandern innerhalb der 0,5° hält sie also auf
+0, bis der Filter nachgezogen hat. AUTO auf
 RUDER wartet auf 500ms Ruhezeit und nimmt damit einen eingeschwungenen
 Winkel, höchstens 0,05° vom Sensorwert entfernt. AUTO wartet nach dem
 Befehl bis zu 3 000ms plus das längste Einschwingen des Filters

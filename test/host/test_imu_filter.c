@@ -296,6 +296,26 @@ static uint32_t settle_after_step(int32_t k, float deg, uint32_t period,
  * the sensor's, then counts from the sensor's stop: a run that waits for
  * 500ms of still time takes an angle within 0.05° of the surface, for k
  * 1, 2, 10 and 50, never a lagging one.  With k 1 it counts at once. */
+/* A drift inside IMU_STILL_DEG after the filter settled keeps the still
+ * stretch, but the still time reads 0 while the filtered angle lags the
+ * sensor's by more than IMU_SETTLE_DEG: k 50, 0° to 2000ms, then 0.49°. */
+TEST_CASE(a_drift_after_the_settle_holds_the_still_time_at_0)
+{
+    imu_t m;
+    imu_init(&m);
+    imu_set_filter(&m, 50);
+    uint32_t t = 0u;
+    for (; t <= 2000u; t += 100u) {
+        feed(&m, 0.0f, t);
+    }
+    CHECK(m.r.still_ms > 0u);
+    for (; t <= 2600u; t += 100u) {
+        feed(&m, 0.49f, t);
+        CHECK_EQ(m.r.still_ms, 0u);
+    }
+    CHECK(fabsf(m.r.angle[0] - word_of(0.49f)) > IMU_SETTLE_DEG);
+}
+
 TEST_CASE(the_still_time_waits_until_the_filtered_angle_settled)
 {
     static const int32_t k_k[] = { 1, 2, 10, 50 };
@@ -427,6 +447,7 @@ int main(void)
     RUN(a_connect_a_reconnect_and_a_bind_seed_the_filter);
     RUN(a_crossing_of_180_moves_the_short_way_both_directions);
     RUN(the_limits_1_and_50_hold_and_out_of_range_values_are_clamped);
+    RUN(a_drift_after_the_settle_holds_the_still_time_at_0);
     RUN(the_still_time_waits_until_the_filtered_angle_settled);
     RUN(the_settle_allowance_covers_the_slowest_settle);
     RUN(the_angle_text_has_two_decimals_and_rounds_005_away_from_zero);

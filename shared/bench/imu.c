@@ -211,8 +211,11 @@ static void take_angle(imu_t *m, const wit_angle_t *a, uint32_t now_ms)
             m->resid *= 1.0f - 1.0f / (float)imu_filter_clamp(m->filter);
             m->settled = m->resid <= IMU_SETTLE_DEG;
         }
+        /* The lag now, too: a drift inside IMU_STILL_DEG keeps the still
+         * stretch but can open the distance again after it settled. */
+        const bool near = far <= IMU_SETTLE_DEG;
         const uint32_t held = now_ms - m->still_from_ms;
-        m->r.still_ms = !m->settled ? 0u
+        m->r.still_ms = (!m->settled || !near) ? 0u
                         : (uint16_t)((held > IMU_STILL_MAX_MS)
                                          ? IMU_STILL_MAX_MS : held);
     } else {

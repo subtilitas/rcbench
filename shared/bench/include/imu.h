@@ -58,7 +58,9 @@ typedef struct {
     bool     zeroed;       /**< imu_zero() took zero[] */
     uint16_t still_ms;     /**< the sensor's angle within IMU_STILL_DEG for
                                 this long; 0 while the filtered angle
-                                has not settled to IMU_SETTLE_DEG */
+                                has not settled to IMU_SETTLE_DEG, and
+                                0 on any frame it lies further than
+                                that from the sensor's */
     uint16_t rate_dhz;     /**< angle frames in the last second, 0.1Hz */
     float    battery_v;    /**< from 0x52; NAN until one came */
     float    temp_c;       /**< from 0x51; NAN until one came */

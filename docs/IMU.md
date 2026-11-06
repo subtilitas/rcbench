@@ -202,7 +202,9 @@ of the stretch's first frame. While the filtered angle lags the sensor's
 by more than 0.05° (`IMU_SETTLE_DEG`), the still time reads 0. The panel
 works out that lag from the distance at the stretch's first frame, shrunk
 by (1 - 1/k) each frame. Once it is 0.05° or less, the still time counts
-from the sensor's stop. AUTO on RUDDER, which waits for 500ms of still
+from the sensor's stop. On every frame after that the still time also
+reads 0 while the filtered angle lies more than 0.05° from the frame's, so
+a drift inside the 0.5° holds it at 0 until the filter catches up. AUTO on RUDDER, which waits for 500ms of still
 time, then takes a settled angle, within 0.05° of the sensor's. AUTO waits
 up to 3,000ms after the command plus the filter's longest settle
 (`imu_filter_settle_ms()`): the frames a distance of 180° needs to come
