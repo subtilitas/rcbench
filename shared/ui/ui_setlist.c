@@ -901,7 +901,7 @@ static void release(ui_setlist_t *sl, int kind, int index, bool repeated,
             return;
         }
         /* The list's own settings and no other. */
-        setting_id_t ids[64];
+        setting_id_t ids[64] = { 0 };
         int n = 0;
         for (int i = 0; i < ui_setlist_count(sl) && n < 64; ++i) {
             const ui_setlist_row_t r = sl_row(sl, i);
