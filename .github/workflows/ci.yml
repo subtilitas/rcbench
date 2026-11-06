@@ -833,7 +833,7 @@ jobs:
                    -D RCBENCH_IOMCU_BIN=iomcu-console/rcbench-iomcu.bin build
 
       - name: Every task's stack holds its deepest call chain in the console build
-        run: python3 tools/stack_check.py firmware/panel/build-console
+        run: python3 tools/stack_check.py firmware/panel/build-console --check-doc
 
       - name: The console relay is in the console build only
         run: |

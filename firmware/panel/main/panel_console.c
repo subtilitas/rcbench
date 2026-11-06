@@ -5,6 +5,11 @@
  * The characters come from both serial ways the board has, UART0 and
  * USB-Serial-JTAG, and the output goes to both through stdout, as the log does.
  *
+ * A typed line goes to the relay at its end.  A line that starts with the
+ * word `ble` stays on the panel: `ble scan` starts Bluetooth LE when it has
+ * not started (panel_ble.h), waits for the host's sync and prints every
+ * device a 10s scan hears.
+ *
  * SPDX-License-Identifier: MIT
  */
 #include "panel_console.h"
@@ -20,6 +25,7 @@
 
 #include "console_relay.h"
 #include "panel.h"
+#include "panel_ble.h"
 
 /** @brief The console task's stack: printf and its buffers. */
 #define CONSOLE_STACK 4096u
@@ -36,6 +42,30 @@ static console_relay_t s_relay;
 static link_msg_t s_reply;
 /** @brief The console's task: a line going out. */
 static char s_out_line[256];
+
+/** @brief The length of `ble scan`'s scan, ms. */
+#define CONSOLE_BLE_SCAN_MS 10000u
+
+/** @brief The console's task: the line typed so far, held back from the
+ *         relay until its end. */
+static char s_typing[CONSOLE_RELAY_LINE_MAX + 1u];
+/** @brief Characters in s_typing. */
+static size_t s_typed;
+/** @brief The line ran past CONSOLE_RELAY_LINE_MAX: the relay has it and
+ *         takes the rest as typed. */
+static bool s_long;
+
+/** @brief Where `ble scan` is. */
+typedef enum {
+    BLE_CMD_IDLE = 0, /**< no command */
+    BLE_CMD_WAIT,     /**< the scan waits for the host's sync */
+    BLE_CMD_SCAN,     /**< the scan runs */
+} ble_cmd_t;
+
+/** @brief The console's task: `ble scan`'s state. */
+static ble_cmd_t s_ble;
+/** @brief The console's task: reports printed in this scan. */
+static unsigned s_ble_reports;
 
 /**
  * @brief The link's state and at most one exchange of the page.
@@ -67,6 +97,147 @@ void panel_console_pass(bool link_up)
 }
 
 /**
+ * @brief Print one advertising report: the address most significant byte
+ *        first, its type, the RSSI, the report's event type and its data in
+ *        hexadecimal.
+ * @param e The report.
+ */
+static void ble_print_adv(const panel_ble_evt_t *e)
+{
+    char hex[2u * PANEL_BLE_DATA_MAX + 1u];
+    size_t n = 0u;
+
+    for (size_t i = 0u; i < e->len && i < PANEL_BLE_DATA_MAX; ++i) {
+        n += (size_t)snprintf(&hex[n], sizeof(hex) - n, "%02X", e->data[i]);
+    }
+    hex[n] = '\0';
+    printf("ble: adv %02X:%02X:%02X:%02X:%02X:%02X type %u rssi %ddBm "
+           "evtype %d data %s\n", e->addr[5], e->addr[4], e->addr[3],
+           e->addr[2], e->addr[1], e->addr[0], (unsigned)e->addr_type,
+           (int)e->rssi, (int)e->status, hex);
+}
+
+/**
+ * @brief A typed line that starts with `ble`, kept from the relay.
+ * @param line The line, without its end.
+ */
+static void ble_command(const char *line)
+{
+    if (strcmp(line, "ble scan") != 0) {
+        printf("ble: commands: ble scan\n");
+        return;
+    }
+    if (s_ble != BLE_CMD_IDLE) {
+        printf("ble: a scan is under way\n");
+        return;
+    }
+    if (panel_ble_state() == PANEL_BLE_OFF) {
+        printf("ble: starting Bluetooth LE; the scan follows the sync\n");
+        panel_ble_start();
+    }
+    s_ble = BLE_CMD_WAIT;
+    s_ble_reports = 0u;
+}
+
+/**
+ * @brief The console's pass of `ble scan`: start the scan once synced, print
+ *        the events while it runs.
+ */
+static void ble_pass(void)
+{
+    panel_ble_evt_t e;
+
+    if (s_ble == BLE_CMD_WAIT) {
+        const panel_ble_state_t st = panel_ble_state();
+
+        if (st == PANEL_BLE_READY) {
+            const esp_err_t r = panel_ble_scan(CONSOLE_BLE_SCAN_MS);
+
+            if (r == ESP_OK) {
+                printf("ble: scan for %ums\n", (unsigned)CONSOLE_BLE_SCAN_MS);
+                s_ble = BLE_CMD_SCAN;
+            } else {
+                printf("ble: no scan: %s\n", esp_err_to_name(r));
+                s_ble = BLE_CMD_IDLE;
+            }
+        } else if (st == PANEL_BLE_NO_LINK || st == PANEL_BLE_NO_SYNC) {
+            printf("ble: no scan: %s\n", st == PANEL_BLE_NO_LINK
+                                             ? "no link to the C6" : "no sync");
+            s_ble = BLE_CMD_IDLE;
+        }
+    }
+    while (s_ble != BLE_CMD_IDLE && panel_ble_get(&e)) {
+        if (e.kind == PANEL_BLE_EV_ADV) {
+            ++s_ble_reports;
+            ble_print_adv(&e);
+        } else if (e.kind == PANEL_BLE_EV_SCAN_DONE) {
+            printf("ble: scan done: %u reports, reason %d, %u events dropped "
+                   "since start-up\n", s_ble_reports, (int)e.status,
+                   (unsigned)panel_ble_dropped());
+            s_ble = BLE_CMD_IDLE;
+        } else {
+            printf("ble: event %u, status %d\n", (unsigned)e.kind,
+                   (int)e.status);
+        }
+    }
+}
+
+/**
+ * @brief The held line's characters to the relay.
+ */
+static void flush_typed(void)
+{
+    for (size_t i = 0u; i < s_typed; ++i) {
+        console_relay_key(&s_relay, s_typing[i]);
+    }
+    s_typed = 0u;
+}
+
+/**
+ * @brief One character from a serial port: held until the line ends, then
+ *        to the relay, or to ble_command() for a line that starts with `ble`.
+ *        The relay's own rules for backspace, control characters and an
+ *        overlong line hold for what it is handed.
+ * @param ch The character.
+ */
+static void console_key(int ch)
+{
+    if (ch == '\r' || ch == '\n') {
+        s_typing[s_typed] = '\0';
+        if (!s_long && (strcmp(s_typing, "ble") == 0
+                        || strncmp(s_typing, "ble ", 4u) == 0)) {
+            ble_command(s_typing);
+            s_typed = 0u;
+        } else {
+            flush_typed();
+        }
+        s_long = false;
+        console_relay_key(&s_relay, ch);
+        return;
+    }
+    if (s_long) {
+        console_relay_key(&s_relay, ch);
+        return;
+    }
+    if (ch == 0x08 || ch == 0x7F) {
+        if (s_typed != 0u) {
+            --s_typed;
+        }
+        return;
+    }
+    if (ch < 0x20 || ch > 0x7E) {
+        return;
+    }
+    if (s_typed >= CONSOLE_RELAY_LINE_MAX) {
+        flush_typed();
+        s_long = true;
+        console_relay_key(&s_relay, ch);
+        return;
+    }
+    s_typing[s_typed++] = (char)ch;
+}
+
+/**
  * @brief The console's task.
  *
  * @param arg Unused.
@@ -80,15 +251,16 @@ static void console_task(void *arg)
         const int got = uart_read_bytes(UART_NUM_0, in, sizeof(in), 0);
 
         for (int i = 0; i < got; ++i) {
-            console_relay_key(&s_relay, in[i]);
+            console_key(in[i]);
         }
         if (usb_serial_jtag_ll_rxfifo_data_available() != 0) {
             const int usb = usb_serial_jtag_ll_read_rxfifo(in, sizeof(in));
 
             for (int i = 0; i < usb; ++i) {
-                console_relay_key(&s_relay, in[i]);
+                console_key(in[i]);
             }
         }
+        ble_pass();
         for (;;) {
             const size_t n = console_relay_take(&s_relay, s_out_line, sizeof(s_out_line));
 
