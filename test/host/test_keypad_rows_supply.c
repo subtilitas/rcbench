@@ -145,9 +145,33 @@ TEST_CASE(every_supply_number_has_a_keypad_row)
     }
 }
 
+/*
+ * A cap typed under the start value takes the start value down with it,
+ * and both wait for the list's SAVE: no save is asked, and DISCARD puts
+ * back the 21.00V cap and the 6.00V start value.
+ */
+TEST_CASE(a_cap_under_the_start_value_waits_for_save)
+{
+    fresh();
+    supply_screen_set_caps(&k_caps);
+    CHECK_NEAR(settings_get(SET_SUPPLY_V_START), 6.0f, 1e-4f);
+    open_row(2);
+    kpr_type(&k_supply, "5");
+    kkey(UI_KEY_OK);
+    CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 5.0f, 1e-4f);
+    CHECK_NEAR(settings_get(SET_SUPPLY_V_START), 5.0f, 1e-4f);
+    CHECK(settings_dirty());
+    CHECK(!settings_save_asked());
+    CHECK_EQ(settings_discard(), 0);
+    CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 21.0f, 1e-4f);
+    CHECK_NEAR(settings_get(SET_SUPPLY_V_START), 6.0f, 1e-4f);
+    CHECK(!settings_save_asked());
+}
+
 int main(void)
 {
     RUN(every_supply_keypad_takes_ok_and_refuses_and_cancels);
     RUN(every_supply_number_has_a_keypad_row);
+    RUN(a_cap_under_the_start_value_waits_for_save);
     return test_summary("keypad_rows_supply");
 }

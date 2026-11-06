@@ -225,20 +225,22 @@ static void row_range(setting_id_t id, float *min, float *max)
 }
 
 /**
- * @brief A change: the limits and the sliders follow the settings.
+ * @brief A change: the limits and the sliders follow the settings.  A start
+ *        value the change corrects stays unsaved with the change, so
+ *        DISCARD takes both back.
  * @param id The setting; SETTING_COUNT for several.
  */
 static void row_changed(setting_id_t id)
 {
     (void)id;
-    sup_refresh_limits();
+    sup_refresh_limits(false);
 }
 
 /** @brief RESET SUPPLY: the limits' rows, and the wiring's while they take
  *         a press. */
 static void list_reset(void)
 {
-    setting_id_t ids[ROW_COUNT];
+    setting_id_t ids[ROW_COUNT] = { 0 };
     int n = 0;
     const bool pd_free = sup_pd_lock() == SUP_PD_FREE;
     for (int i = 0; i < ROW_COUNT; ++i) {
@@ -248,7 +250,7 @@ static void list_reset(void)
         }
     }
     settings_reset_rows(ids, n);
-    sup_refresh_limits();
+    sup_refresh_limits(false);
 }
 
 /** @brief The list's look changed. */

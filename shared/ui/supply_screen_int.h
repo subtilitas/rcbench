@@ -444,8 +444,11 @@ gfx_rect_t sup_overlay_area(void);
 /**
  * @brief Re-reads the operator's limits from the settings and narrows the
  *        caps.
+ * @param persist true asks for a save when a start value is corrected (a
+ *                restart or a reload); false leaves the correction for the
+ *                SETTINGS list's SAVE or DISCARD.
  */
-void sup_refresh_limits(void);
+void sup_refresh_limits(bool persist);
 /**
  * @brief Clears the owner and any owed OFF once the output is off with no ON
  *        asked.

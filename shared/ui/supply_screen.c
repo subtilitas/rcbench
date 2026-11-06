@@ -197,14 +197,15 @@ static supply_limits_t limits_from_settings(void)
 }
 
 /* The limits as the settings hold them now, applied to the sliders. */
-void sup_refresh_limits(void)
+void sup_refresh_limits(bool persist)
 {
     s.lim = limits_from_settings();
     s.eff = supply_caps_limited(&s.caps, &s.lim);
     /* A start value over a cap that was lowered under it comes down with
      * it, so the overlay never shows one the restart would not use -- and
      * is kept, or a pair read back that way (a save that reached one key
-     * and not the other) would be corrected again at every restart. */
+     * and not the other) would be corrected again at every restart.  An
+     * edit in the SETTINGS list keeps it pending with the edit itself. */
     bool corrected = false;
     if (settings_get(SET_SUPPLY_V_START) > s.eff.v_max) {
         settings_set(SET_SUPPLY_V_START, s.eff.v_max);
@@ -214,7 +215,7 @@ void sup_refresh_limits(void)
         settings_set(SET_SUPPLY_I_START, s.eff.i_max);
         corrected = true;
     }
-    if (corrected) {
+    if (corrected && persist) {
         settings_request_save();
     }
     apply_caps();
@@ -460,7 +461,7 @@ float supply_screen_set_i(void) { return s.ci; }
 
 void supply_screen_settings_loaded(void)
 {
-    sup_refresh_limits();
+    sup_refresh_limits(true);
     s.cv = supply_snap(settings_get(SET_SUPPLY_V_START), s.eff.v_min,
                        s.eff.v_max, s.eff.v_step);
     s.ci = supply_snap(settings_get(SET_SUPPLY_I_START), s.eff.i_min,
@@ -863,7 +864,7 @@ bool supply_screen_output_held(void)
 
 void supply_screen_limits_changed(void)
 {
-    sup_refresh_limits();
+    sup_refresh_limits(true);
 }
 
 void supply_screen_set_on_coming(bool coming)
