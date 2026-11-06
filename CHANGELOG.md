@@ -109,7 +109,9 @@ history is in git.
   SENSORS > IMU show STARTING BLUETOOTH, NO BLUETOOTH ON C6, C6 FAILED:
   RESTART, CONNECTING and the errors of the link, of a refused command
   write and of the scan, and the C6's version in place of the HC-05's.
-  CONNECT TO ANY SENSOR is gone. The panel no longer builds
+  A failed command write, IMU OFF with one in flight among them, drops the
+  rest of its group; a calibration's exit, a RATE or an ALGORITHM in it
+  goes again at the next connection. CONNECT TO ANY SENSOR is gone. The panel no longer builds
   `protocols/hc05`; IO4, IO5 and IO29 of header P3 are free. The `imu`
   task's stack is 4,096 bytes.
 - The panel's link to the ESP32-C6 is the component `c6_link`, one mutex

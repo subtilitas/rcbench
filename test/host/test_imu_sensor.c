@@ -7,7 +7,8 @@
  * that ends a ms early or late, or not at all across the 32-bit wrap; a
  * RATE written while the sensor is not connected, or twice; a write group
  * cut by a full outbox; a stale stretch of exactly 300ms not counted; an
- * IMU OFF that leaves the sensor in CALSW 1 or keeps an old zero.
+ * IMU OFF that leaves the sensor in CALSW 1 or keeps an old zero; a
+ * failed write that loses the calibration's exit or a RATE for good.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -288,6 +289,79 @@ TEST_CASE(imu_off_fails_the_calibration_and_counts_a_kept_zero)
     CHECK_EQ(s.zero_gen, 3u);
 }
 
+/* Take every command the outbox lets go at @p t, 50ms apart from @p t on;
+ * @return how many went, the last into @p last. */
+static unsigned drain(imu_sensor_t *s, uint32_t t, uint8_t last[WIT_CMD_LEN])
+{
+    unsigned n = 0u;
+    while (imu_sensor_next(s, t + n * IMU_CMD_GAP_MS, last)) {
+        ++n;
+    }
+    return n;
+}
+
+/* A write that fails drops its group, and what the group was for is due
+ * again: the calibration's exit and a RATE, held while the stream flows on
+ * (no retry on the same connection) and queued when it flows again.  The
+ * exit waits for 3 free slots, not 2.  A dropped CALSW 1 arms nothing. */
+TEST_CASE(a_failed_write_brings_back_its_group_at_the_next_connection)
+{
+    imu_sensor_t s;
+    imu_sensor_init(&s);
+    imu_sensor_values(&s, WIT_RATE_10HZ, true, false);
+    frame_at(&s, 100u, true);
+    CHECK(imu_sensor_calibrate(&s, true, 100u));
+    uint8_t c[WIT_CMD_LEN];
+    CHECK_EQ(drain(&s, 100u, c), 2u);                 /* unlock, CALSW 1 */
+    imu_sensor_flush(&s);                             /* CALSW 1 failed */
+    CHECK(!s.exit_due);
+    CHECK(!s.held);
+    imu_sensor_off(&s);                               /* the exit queued */
+    CHECK_EQ(s.out_n, 3u);
+    CHECK(imu_sensor_next(&s, 1000u, c));             /* its unlock goes */
+    imu_sensor_values(&s, WIT_RATE_20HZ, true, true); /* RATE due */
+    imu_sensor_flush(&s);                             /* the unlock failed */
+    CHECK_EQ(s.out_n, 0u);
+    CHECK(s.exit_due);
+    CHECK(s.rate_due);
+    CHECK(s.held);
+    /* The stream flows on: nothing comes back on this connection. */
+    frame_at(&s, 2000u, true);
+    frame_at(&s, 2020u, true);
+    CHECK_EQ(s.out_n, 0u);
+    /* It stops, and flows again with 2 slots free: RATE waits for the
+     * exit, which waits for room. */
+    imu_sensor_tick(&s, 2040u, false);
+    s.out_n = IMU_OUTBOX - 2u;
+    frame_at(&s, 2060u, true);
+    CHECK(!s.held);
+    CHECK(s.exit_due);
+    CHECK_EQ(s.out_n, IMU_OUTBOX - 2u);
+    s.out_n = 0u;
+    s.out_head = 0u;
+    frame_at(&s, 2080u, true);
+    CHECK(!s.exit_due);
+    CHECK(!s.rate_due);
+    CHECK_EQ(s.out_n, 6u);              /* exit, then unlock RATE SAVE */
+    CHECK(imu_sensor_next(&s, 3000u, c));
+    CHECK(is_unlock(c));
+    CHECK(imu_sensor_next(&s, 3050u, c));
+    CHECK(is_cmd(c, WIT_REG_CALSW, 0u));
+    CHECK(imu_sensor_next(&s, 3100u, c));
+    CHECK(is_cmd(c, WIT_REG_SAVE, 0u));
+    CHECK(imu_sensor_next(&s, 3150u, c));
+    CHECK(is_unlock(c));
+    CHECK(imu_sensor_next(&s, 3200u, c));
+    CHECK(is_cmd(c, WIT_REG_RATE, WIT_RATE_20HZ));
+    CHECK(imu_sensor_next(&s, 3250u, c));
+    CHECK(is_cmd(c, WIT_REG_SAVE, 0u));
+    /* All of it taken: a failure now brings back the RATE group only. */
+    imu_sensor_flush(&s);
+    CHECK(!s.exit_due);
+    CHECK(s.rate_due);
+    CHECK(!s.algo_due);
+}
+
 /* BOUND before the first frame, CONNECTED with a valid reading, NO FRAMES
  * once it is stale, BOUND again after another sensor is bound; quiet only
  * with no calibration and nothing held. */
@@ -324,6 +398,7 @@ int main(void)
     RUN(the_write_group_waits_for_room_and_for_the_calibration);
     RUN(a_frame_300ms_after_the_last_counts_a_gap_and_299ms_does_not);
     RUN(imu_off_fails_the_calibration_and_counts_a_kept_zero);
+    RUN(a_failed_write_brings_back_its_group_at_the_next_connection);
     RUN(the_link_state_runs_bound_connected_no_frames);
     return test_summary("imu_sensor");
 }

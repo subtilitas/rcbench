@@ -137,7 +137,11 @@ Commands go on 8841, 50ms apart, one write in flight, each answered
 within 1,000ms. With WRITE in 8841's properties the panel writes with a
 response; with WRITE NO RESPONSE only, without. A write that is refused or
 not answered drops the rest of its group and shows `THE SENSOR DID NOT
-TAKE THE COMMAND`. A RATE or ALGORITHM change made while the sensor is not
+TAKE THE COMMAND`. What the group was for is due again at the next
+connection: a calibration's exit (unlock, CALSW 0, SAVE), a RATE or an
+ALGORITHM, with the SETUP values of then. IMU OFF fails a write in flight
+the same way, so a calibration ended by IMU OFF still sends CALSW 0 and
+SAVE once the sensor is connected again. A RATE or ALGORITHM change made while the sensor is not
 connected waits until its frames arrive. A change made during calibration
 waits until after CALSW 0 and SAVE. Unlock, the writes and SAVE are queued
 together only when all fit in the 8 command slots. Until then, the change

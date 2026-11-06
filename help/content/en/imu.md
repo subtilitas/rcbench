@@ -45,7 +45,7 @@ A scan takes 10s. It lists the devices that advertise the WitMotion sensor's ser
 |---|---|
 | `NO CONNECTION: SENSOR ON, IN RANGE, NO PHONE ON IT?` | a connect, its set-up or the link failed; the panel tries again every 1s. A phone connected to the sensor keeps the panel out |
 | `NOT A WITMOTION SENSOR: NO ISSC UART SERVICE` | the bound device lacks the sensor's service; no new try until another bind |
-| `THE SENSOR DID NOT TAKE THE COMMAND` | a write of a command was refused or not answered within 1s; the rest of its group was dropped |
+| `THE SENSOR DID NOT TAKE THE COMMAND` | a write of a command was refused or not answered within 1s; the rest of its group was dropped and goes again at the next connection |
 | `NO SENSOR FOUND: IS IT ON, NO PHONE ON IT?` | the scan listed no sensor |
 | `THE SCAN DID NOT START: CODE <n>` | Bluetooth refused the scan with that code |
 

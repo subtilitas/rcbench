@@ -660,6 +660,71 @@ TEST_CASE(a_rate_change_in_a_calibration_waits_for_its_end)
     CHECK(rig_sent_is(&r, at + 7u, WIT_REG_SAVE, 0u, 0u));
 }
 
+/* Stream until sensor command @p n has gone, @p max ms at most. */
+static void stream_until_sent(rig_t *r, unsigned n, uint32_t max)
+{
+    for (uint32_t k = 0; k < max && r->nsent < n; ++k) {
+        rig_stream(r, 1u, 20u, 0.0f, 0.0f, 0.0f);
+    }
+}
+
+/* IMU OFF while CALSW 1's answer is on its way (GATT answers 100ms late):
+ * the link fails the write in flight, and the calibration's exit queued at
+ * OFF is due again.  Unlock, CALSW 0 and SAVE go at the next connection. */
+TEST_CASE(imu_off_with_calsw_1_unanswered_sends_the_exit_at_the_next_connection)
+{
+    rig_t r;
+    connected(&r);
+    r.sim.lat = 100u;
+    const unsigned at = r.nsent;
+    const imu_cmd_t cal = { IMU_CMD_CALIBRATE, 0u };
+    CHECK(imu_ctl_command(&r.c, &cal, r.t));
+    stream_until_sent(&r, at + 2u, 1000u);
+    CHECK(rig_sent_is(&r, at + 1u, WIT_REG_CALSW, 1u, 0u));
+    rig_run(&r, 10u);                       /* the answer is 90ms away */
+    rig_cfg(&r, false, RIG_ADDR, 2, true);
+    rig_run(&r, 300u);
+    CHECK_EQ(r.nsent, at + 2u);
+    imu_view_t v;
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.cal, IMU_CAL_FAILED);
+    rig_cfg(&r, true, RIG_ADDR, 2, true);
+    (void)rig_settle(&r, 3000u);
+    rig_stream(&r, 1000u, 20u, 0.0f, 0.0f, 0.0f);
+    CHECK_EQ(r.nsent, at + 5u);
+    CHECK(rig_sent_unlock(&r, at + 2u));
+    CHECK(rig_sent_is(&r, at + 3u, WIT_REG_CALSW, 0u, 0u));
+    CHECK(rig_sent_is(&r, at + 4u, WIT_REG_SAVE, 0u, 0u));
+    rig_stream(&r, 1000u, 20u, 0.0f, 0.0f, 0.0f);
+    CHECK_EQ(r.nsent, at + 5u);              /* once */
+}
+
+/* IMU OFF while the unlock of a RATE and ALGORITHM change waits for its
+ * answer: the write fails, and both writes are due again.  Unlock, RATE,
+ * AXIS6 and SAVE go at the next connection, with SETUP's values. */
+TEST_CASE(imu_off_in_a_rate_write_sends_it_again_at_the_next_connection)
+{
+    rig_t r;
+    connected(&r);
+    r.sim.lat = 100u;
+    const unsigned at = r.nsent;
+    rig_cfg(&r, true, RIG_ADDR, 4, false);           /* 200Hz, 9-AXIS */
+    stream_until_sent(&r, at + 1u, 1000u);
+    CHECK(rig_sent_unlock(&r, at));
+    rig_run(&r, 10u);
+    rig_cfg(&r, false, RIG_ADDR, 4, false);
+    rig_run(&r, 300u);
+    CHECK_EQ(r.nsent, at + 1u);
+    rig_cfg(&r, true, RIG_ADDR, 4, false);
+    (void)rig_settle(&r, 3000u);
+    rig_stream(&r, 1000u, 20u, 0.0f, 0.0f, 0.0f);
+    CHECK_EQ(r.nsent, at + 5u);
+    CHECK(rig_sent_unlock(&r, at + 1u));
+    CHECK(rig_sent_is(&r, at + 2u, WIT_REG_RATE, WIT_RATE_200HZ, 0u));
+    CHECK(rig_sent_is(&r, at + 3u, WIT_REG_AXIS6, 0u, 0u));
+    CHECK(rig_sent_is(&r, at + 4u, WIT_REG_SAVE, 0u, 0u));
+}
+
 /* What goes on to SERVO: each frame once, a stale reading once, after a
  * reset (ANGLE SOURCE turned to IMU) the next reading whatever went before,
  * and a stale stretch that frames ended before SERVO looked as a stale
@@ -791,6 +856,8 @@ int main(void)
     RUN(commands_are_refused_when_they_cannot_run);
     RUN(no_bind_while_a_scan_runs_and_a_rebind_keeps_the_link);
     RUN(a_rate_change_in_a_calibration_waits_for_its_end);
+    RUN(imu_off_with_calsw_1_unanswered_sends_the_exit_at_the_next_connection);
+    RUN(imu_off_in_a_rate_write_sends_it_again_at_the_next_connection);
     RUN(the_handout_gives_each_frame_once_and_again_after_a_reset);
     RUN(a_frame_after_the_stale_point_counts_a_gap);
     RUN(the_rate_options_are_the_wit_codes_and_null_does_nothing);

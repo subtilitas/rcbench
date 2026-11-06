@@ -45,7 +45,7 @@ Eine Suche dauert 10s. Sie listet die Geräte, die den Dienst des WitMotion-Sens
 |---|---|
 | `KEINE VERBINDUNG: SENSOR AN, NAH, KEIN HANDY DRAN?` | ein Verbindungsaufbau, seine Einrichtung oder die Verbindung schlug fehl; das Panel versucht es jede 1s erneut. Ein mit dem Sensor verbundenes Handy sperrt das Panel aus |
 | `KEIN WITMOTION-SENSOR: KEIN ISSC-UART-DIENST` | dem gebundenen Gerät fehlt der Dienst des Sensors; kein neuer Versuch bis zum nächsten Binden |
-| `DER SENSOR HAT DEN BEFEHL NICHT ANGENOMMEN` | das Schreiben eines Befehls wurde abgelehnt oder nicht binnen 1s beantwortet; der Rest seiner Gruppe entfällt |
+| `DER SENSOR HAT DEN BEFEHL NICHT ANGENOMMEN` | das Schreiben eines Befehls wurde abgelehnt oder nicht binnen 1s beantwortet; der Rest seiner Gruppe entfällt und geht bei der nächsten Verbindung erneut |
 | `KEIN SENSOR GEFUNDEN: IST ER AN, KEIN HANDY DRAN?` | die Suche listete keinen Sensor |
 | `DIE SUCHE STARTETE NICHT: CODE <n>` | Bluetooth lehnte die Suche mit diesem Code ab |
 

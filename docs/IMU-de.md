@@ -148,7 +148,12 @@ Die Befehle gehen auf 8841, im Abstand von 50ms, einer zur Zeit, jeder
 binnen 1 000ms beantwortet. Hat 8841 WRITE, schreibt das Panel mit
 Antwort; hat es nur WRITE NO RESPONSE, ohne. Ein abgelehntes oder
 unbeantwortetes Schreiben verwirft den Rest seiner Gruppe und zeigt `DER
-SENSOR HAT DEN BEFEHL NICHT ANGENOMMEN`. Eine Änderung von RATE oder
+SENSOR HAT DEN BEFEHL NICHT ANGENOMMEN`. Wofür die Gruppe war, steht
+bei der nächsten Verbindung wieder an: der Ausstieg aus einer
+Kalibrierung (Unlock, CALSW 0, SAVE), eine RATE oder ein ALGORITHMUS,
+mit den dann aktuellen Werten aus SETUP. IMU AUS lässt ein laufendes
+Schreiben genauso scheitern; eine durch IMU AUS beendete Kalibrierung
+sendet CALSW 0 und SAVE also, sobald der Sensor wieder verbunden ist. Eine Änderung von RATE oder
 ALGORITHMUS bei nicht verbundenem Sensor wartet, bis dessen Frames
 eintreffen. Eine Änderung während der Kalibrierung wartet bis nach CALSW 0
 und SAVE. Unlock, die Schreibbefehle und SAVE werden erst gemeinsam

@@ -43,6 +43,14 @@ extern "C" {
 /** @brief Sensor commands held to send at most. */
 #define IMU_OUTBOX         8u
 
+/** @name What a held command is for, as bits: a group a failed write
+ *  drops is due again at the next connection.
+ *  @{ */
+#define IMU_OUT_EXIT  0x01u  /**< the calibration's exit */
+#define IMU_OUT_RATE  0x02u  /**< a RATE write */
+#define IMU_OUT_ALGO  0x04u  /**< an ALGORITHM write */
+/** @} */
+
 /** @brief The sensor side.  Its members are private but for the tests. */
 typedef struct {
     imu_t        m;              /**< the reading */
@@ -63,6 +71,11 @@ typedef struct {
     uint8_t      out_head;       /**< the oldest's index */
     uint32_t     out_ms;         /**< when the last command went */
     bool         out_sent;       /**< out_ms holds a time */
+    uint8_t      out_for[IMU_OUTBOX]; /**< IMU_OUT_* of each held command */
+    uint8_t      sent_for;       /**< IMU_OUT_* of the last command sent */
+    bool         exit_due;       /**< the calibration's exit to queue again */
+    bool         held;           /**< a write failed: what it dropped waits
+                                      for the next connection */
     bool         angle_seen;     /**< an angle frame since IMU ON */
     uint32_t     gaps;           /**< angle frames that came after the
                                       reading went stale, counted */
@@ -171,7 +184,11 @@ bool imu_sensor_quiet(const imu_sensor_t *s);
 
 /**
  * @brief Drop the commands held: the link did not take one, and the rest
- *        of its group (unlock, register, SAVE) must not go alone.  A
+ *        of its group (unlock, register, SAVE) must not go alone.  What
+ *        the dropped commands and the failed one were for is due again:
+ *        the calibration's exit (unlock, CALSW 0, SAVE), a RATE, an
+ *        ALGORITHM.  It is queued at the next connection (imu_sensor_tick()
+ *        with the stream flowing again), with SETUP's values then.  A
  *        running calibration goes on and queues its exit at its end.
  * @param s The sensor, not NULL.
  */

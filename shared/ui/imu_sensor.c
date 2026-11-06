@@ -28,36 +28,50 @@ void imu_sensor_filter(imu_sensor_t *s, int32_t filter)
  * @param s   The sensor.
  * @param cmd WIT_CMD_LEN bytes.
  * @param len Their count from the encoder: 0 queues nothing.
+ * @param why IMU_OUT_* bits: what its group is for.
  */
-static void queue(imu_sensor_t *s, const uint8_t cmd[WIT_CMD_LEN], size_t len)
+static void queue(imu_sensor_t *s, const uint8_t cmd[WIT_CMD_LEN], size_t len,
+                  uint8_t why)
 {
     if (len != WIT_CMD_LEN || s->out_n >= IMU_OUTBOX) {
         return;
     }
     const uint8_t at = (uint8_t)((s->out_head + s->out_n) % IMU_OUTBOX);
     memcpy(s->out[at], cmd, WIT_CMD_LEN);
+    s->out_for[at] = why;
     ++s->out_n;
 }
 
-/** @brief Queue the unlock. @param s The sensor. */
-static void queue_unlock(imu_sensor_t *s)
+/** @brief Queue the unlock. @param s The sensor. @param why IMU_OUT_*. */
+static void queue_unlock(imu_sensor_t *s, uint8_t why)
 {
     uint8_t b[WIT_CMD_LEN] = { 0 };
-    queue(s, b, wit_cmd_unlock(b));
+    queue(s, b, wit_cmd_unlock(b), why);
 }
 
-/** @brief Queue SAVE. @param s The sensor. */
-static void queue_save(imu_sensor_t *s)
+/** @brief Queue SAVE. @param s The sensor. @param why IMU_OUT_*. */
+static void queue_save(imu_sensor_t *s, uint8_t why)
 {
     uint8_t b[WIT_CMD_LEN] = { 0 };
-    queue(s, b, wit_cmd_save(b));
+    queue(s, b, wit_cmd_save(b), why);
 }
 
-/** @brief Queue CALSW @p mode. @param s The sensor. @param mode wit_cal_t. */
-static void queue_calsw(imu_sensor_t *s, uint8_t mode)
+/** @brief Queue CALSW @p mode. @param s The sensor. @param mode wit_cal_t.
+ *  @param why IMU_OUT_*. */
+static void queue_calsw(imu_sensor_t *s, uint8_t mode, uint8_t why)
 {
     uint8_t b[WIT_CMD_LEN] = { 0 };
-    queue(s, b, wit_cmd_calsw(b, mode));
+    queue(s, b, wit_cmd_calsw(b, mode), why);
+}
+
+/** @brief Queue the calibration's exit: unlock, CALSW 0, SAVE.
+ *  @param s The sensor. */
+static void queue_exit(imu_sensor_t *s)
+{
+    queue_unlock(s, IMU_OUT_EXIT);
+    queue_calsw(s, WIT_CAL_EXIT, IMU_OUT_EXIT);
+    queue_save(s, IMU_OUT_EXIT);
+    s->exit_due = false;
 }
 
 /**
@@ -67,9 +81,7 @@ static void queue_calsw(imu_sensor_t *s, uint8_t mode)
  */
 static void cal_end(imu_sensor_t *s, bool ok)
 {
-    queue_unlock(s);
-    queue_calsw(s, WIT_CAL_EXIT);
-    queue_save(s);
+    queue_exit(s);
     s->cal = ok ? IMU_CAL_DONE : IMU_CAL_FAILED;
     s->cal_left_ms = 0u;
 }
@@ -130,6 +142,7 @@ void imu_sensor_tick(imu_sensor_t *s, uint32_t now_ms, bool link_up)
 {
     if (link_up && !s->link_was_up) {
         imu_reseed(&s->m);
+        s->held = false;    /* what a failed write dropped goes now */
     }
     s->link_was_up = link_up;
     imu_tick(&s->m, now_ms);
@@ -147,22 +160,28 @@ void imu_sensor_tick(imu_sensor_t *s, uint32_t now_ms, bool link_up)
             s->cal_left_ms = IMU_CAL_MS - held;
         }
     }
+    /* A calibration's exit a failed write dropped, ahead of the rest. */
+    if (link_up && s->exit_due && !s->held && IMU_OUTBOX - s->out_n >= 3u) {
+        queue_exit(s);
+    }
     /* Unlock, the writes due and SAVE go as one sequence, once all of it
      * fits: a change that comes while the outbox is full waits, and the
      * write that goes carries SETUP's latest value. */
     const unsigned need = 2u + (s->rate_due ? 1u : 0u) + (s->algo_due ? 1u : 0u);
     /* Not while the calibration runs: its CALSW 0 and SAVE go first. */
-    if (link_up && s->m.r.valid && (s->rate_due || s->algo_due)
+    if (link_up && s->m.r.valid && (s->rate_due || s->algo_due) && !s->held
         && s->cal != IMU_CAL_RUNNING && IMU_OUTBOX - s->out_n >= need) {
         uint8_t b[WIT_CMD_LEN] = { 0 };
-        queue_unlock(s);
+        const uint8_t why = (uint8_t)((s->rate_due ? IMU_OUT_RATE : 0u)
+                                      | (s->algo_due ? IMU_OUT_ALGO : 0u));
+        queue_unlock(s, why);
         if (s->rate_due) {
-            queue(s, b, wit_cmd_rate(b, s->rate_code));
+            queue(s, b, wit_cmd_rate(b, s->rate_code), why);
         }
         if (s->algo_due) {
-            queue(s, b, wit_cmd_axis6(b, s->six));
+            queue(s, b, wit_cmd_axis6(b, s->six), why);
         }
-        queue_save(s);
+        queue_save(s, why);
         s->rate_due = false;
         s->algo_due = false;
     }
@@ -176,6 +195,7 @@ bool imu_sensor_next(imu_sensor_t *s, uint32_t now_ms,
         return false;
     }
     memcpy(out, s->out[s->out_head], WIT_CMD_LEN);
+    s->sent_for = s->out_for[s->out_head];
     s->out_head = (uint8_t)((s->out_head + 1u) % IMU_OUTBOX);
     --s->out_n;
     s->out_ms = now_ms;
@@ -188,8 +208,8 @@ bool imu_sensor_calibrate(imu_sensor_t *s, bool link_up, uint32_t now_ms)
     if (!link_up || !s->m.r.valid || s->cal == IMU_CAL_RUNNING) {
         return false;
     }
-    queue_unlock(s);
-    queue_calsw(s, WIT_CAL_ACC);
+    queue_unlock(s, 0u);
+    queue_calsw(s, WIT_CAL_ACC, 0u);
     s->cal = IMU_CAL_RUNNING;
     s->cal_from_ms = now_ms;
     s->cal_lost = false;
@@ -219,8 +239,20 @@ bool imu_sensor_quiet(const imu_sensor_t *s)
 
 void imu_sensor_flush(imu_sensor_t *s)
 {
+    uint8_t why = s->sent_for;          /* the write that failed */
+    for (uint8_t i = 0u; i < s->out_n; ++i) {
+        why |= s->out_for[(s->out_head + i) % IMU_OUTBOX];
+    }
     s->out_n = 0u;
     s->out_head = 0u;
+    s->sent_for = 0u;
+    if (why == 0u) {
+        return;
+    }
+    s->exit_due = s->exit_due || (why & IMU_OUT_EXIT) != 0u;
+    s->rate_due = s->rate_due || (why & IMU_OUT_RATE) != 0u;
+    s->algo_due = s->algo_due || (why & IMU_OUT_ALGO) != 0u;
+    s->held = true;
 }
 
 imu_link_t imu_sensor_link(const imu_sensor_t *s)
