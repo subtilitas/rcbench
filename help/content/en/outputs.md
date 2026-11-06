@@ -141,6 +141,7 @@ The IOmcu stores each port's pin and function in flash alongside the output bind
 | `THE SERVO TESTER REQUIRES FUNCTION SERVO PWM` | the port is NONE or DShot |
 | `IOMCU OLDER THAN 0.22.0: SERVO PWM ONLY` | the IOmcu has no FUNCTION |
 | `PORT PWM NEEDS PROG PORT AS THE TESTER'S TARGET` | PORT PWM on a port that is not the tester's target |
+| `PORT PWM ON: PULSES START WITH PROG 5V ON SERVO` | the rbmod carrier, PORT PWM on and the PROG 5V box off: the pulse waits for the box, which is on SERVO |
 
 Opening a port entry writes nothing, and the entry does not show LAST WRITE. The two tester settings are stored on the panel and sent to the IOmcu when the bench is at rest. When multiple ports are available, entries are named `PROG PORT 1` to `PROG PORT 4`.
 
@@ -181,7 +182,7 @@ PWM02 and PWM03 are one PWM slice and run at one frame rate. A surface protocol 
 
 PROG PORT entries show their fixed connector and pin, for example `PROGP01 ON GPIO 13`. PIN and FUNCTION cannot be edited directly. FUNCTION shows SERVO PWM when the port serves the tester, otherwise PROGRAMMING.
 
-With IOmcu protocol 4.36 or later, SERVO TESTER and PORT PWM are available. Selecting a port requests its servo-pulse function. A conflicting PWM output on the same slice blocks the choice, and PORT PWM ON also requires the programming ports' 5V supply to be switched on in the PROG 5V box. Older protocols hide the tester rows and show `PIN FIXED. THE TESTER NEEDS IOMCU PROTOCOL 4.36`.
+With IOmcu protocol 4.36 or later, SERVO TESTER and PORT PWM are available. Selecting a port requests its servo-pulse function. A conflicting PWM output on the same slice blocks the choice. PORT PWM ON is taken with the PROG 5V box off; the pulse starts once the box on SERVO reads ON. Leaving SERVO switches off a PROG 5V that SERVO's box switched on, so switch it on after returning to SERVO. Older protocols hide the tester rows and show `PIN FIXED. THE TESTER NEEDS IOMCU PROTOCOL 4.36`.
 
 ## The overview: OFF
 

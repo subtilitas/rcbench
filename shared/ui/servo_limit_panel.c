@@ -108,10 +108,20 @@ const char *lim_meter_why(void)
 const char *lim_pwm_why(void)
 {
     /* A programmer holding the port renders no pulse either: that is no
-     * wait for SAFE. */
-    const bool waits = prog_choice_carrier() && prog_choice_want_pwm()
-                       && !prog_reg_servo_holds();
-    return waits ? TR(SV_LIM_PWM_SAFE) : TR(SV_LIM_PWM_OFF);
+     * PORT PWM to switch and no wait for SAFE. */
+    if (prog_reg_servo_holds()) {
+        return TR(OUT_PORT_HELD);
+    }
+    if (settings_get_bool(SET_SERVO_PORT_PWM)) {
+        /* On the carrier the pulse waits for the PROG 5V as well. */
+        return prog_choice_needs_5v() ? ui_servo_str(SERVO_STR_START_PROG_5V)
+                                      : TR(SV_LIM_PWM_SAFE);
+    }
+    /* Off: TARGET opens the port's entry on OUTPUTS, which switches it
+     * on, and takes the tap only on a bench that is not ARMED
+     * (target_locked_for()). */
+    return (s.gate.armed || s.bench_armed) ? TR(SV_LIM_PWM_OFF_ARMED)
+                                           : TR(SV_LIM_PWM_OFF);
 }
 
 /* Why a limit run cannot start now, before any hold, or NULL. */
@@ -154,7 +164,9 @@ const char *lim_blocked(void)
     if (!s.win.voltage || s.win.mean_mv < SERVO_LIMRUN_RAIL_MIN_MV) {
         return TR(SV_LIM_RAIL_LOW);
     }
-    if (s.drive_target != 0u && !s.drive_pwm) {
+    /* A programmer holding the port before PORT PWM: its session is why
+     * no pulse runs, whatever the setting says. */
+    if (s.drive_target != 0u && (!s.drive_pwm || prog_reg_servo_holds())) {
         return lim_pwm_why();
     }
     if (!(s.min_us < s.centre_us && s.centre_us < s.max_us)) {
