@@ -432,8 +432,8 @@ compare register. The second of a pair is refused rather than muxed onto the
 first one's pulse width. The OUTPUTS page carries no bit saying "bound", so
 the screen goes on looking configured while the lead produces no pulse.
 
-On the panel: **SETUP → OUTPUTS**, choose `SERVO PWM`, tick one pin. Or
-**SETUP → OUTPUTS**, choose `SERVO PWM` in its list and tap one key on the
+On the panel: **SETUP > OUTPUTS**, choose `SERVO PWM`, tick one pin. Or
+**SETUP > OUTPUTS**, choose `SERVO PWM` in its list and tap one key on the
 board drawing — grounds are marked `G`, rails carry their voltage.
 
 **Scope the pin before connecting the servo.**
@@ -494,7 +494,7 @@ are open and the address floats between 0x40 and 0x41), two
 a servo, and the ESC and motor or a resistive load on a current-limited
 supply.
 
-**Set it up on the panel.** SETUP → SENSORS: `INA228` ON; SETUP →
+**Set it up on the panel.** SETUP > SENSORS: `INA228` ON; SETUP >
 SENSORS: `0x40 fitted` ON. The other sensor settings default to the modules
 above: INA228 at 0x45 with 200µΩ, the INA3221 at 0x40 with 0.1Ω on each
 channel and CH1 watching OUT 1, SDA on GPIO 16 and SCL on GPIO 17. Without a panel, the build option `IOMCU_SENSE_BRINGUP=ON` enables both
@@ -681,7 +681,7 @@ trace's end, with or without a record kept after it. A sample dropped
 while a set-up record waits for room is counted after that record, so a
 trace that ends at the set-up change does not count it. The additional time spent by core 0 on writing the lines is not measured.
 
-**The lines** (`shared/sense/sense_trace.h` has every field):
+**The lines** (`shared/sense/include/sense_trace.h` has every field):
 
 ```text
 $T v=3 n=2 trig=cmd t=220200 ms=22020 len=4000
@@ -756,7 +756,7 @@ pressed, with no Enter.
 2. Flash `firmware/iomcu/build-trace/rcbench-iomcu.uf2`: hold BOOTSEL,
    plug the module into the PC, copy the file to its drive.
 3. Open the port in PuTTY with logging on. Within 3s it prints a line
-   starting `rcbench-iomcu:`. On the panel, SETUP → SENSORS: `0x40
+   starting `rcbench-iomcu:`. On the panel, SETUP > SENSORS: `0x40
    fitted` ON.
 4. Noise, no servo: with no servo connected and the supply's output on at
    6.00V, press `t`. 10s later the console prints a line starting `$Z`.
@@ -884,7 +884,7 @@ answer whether an arrival is the horn's.
 
 **Part B: with the AS5600.** The same moves with the encoder on the shaft.
 
-1. SETUP → SENSORS: `AS5600` ON, with the bank SAFE. On the SERVO
+1. SETUP > SENSORS: `AS5600` ON, with the bank SAFE. On the SERVO
    screen's SETTINGS > DUT, with the servo at its neutral, tap ENC CENTRE.
 2. Repeat part A's steps 5 to 7.
 3. Keep each log together with its test's `ATESTnnn.CSV` from the SD card's

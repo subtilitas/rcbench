@@ -14,7 +14,7 @@ dass der vorherige bestanden ist.
 
 ## 0. Vor dem Einschalten
 
-**Bereitlegen:** ein Oszilloskop, ein Servo, einen ESC, der bidirektionales
+**Bereitlegen:** ein Oszilloskop, ein Servo, ein ESC, der bidirektionales
 DShot spricht, ein Labornetzteil mit Strombegrenzung und das USB-Kabel für
 jede Platine.
 
@@ -28,7 +28,7 @@ Ausgang die Begrenzung auslöst, bevor eine Leiterbahn verbrennt.
 > ### Die Konsole des Panels und seine USB-C-Buchsen
 >
 > Die Konsole des Panels ist UART0, mit USB-Serial-JTAG (der eingebauten
-> USB-Seriell- und Debug-Brücke des ESP32-P4) als zweiter Konsole. Das
+> USB-Seriell- und Debug-Brücke des ESP32-P4) als zweiter Konsole. Die
 > 7-Zoll-Platine mit ESP32-P4 hat zwei USB-C-Buchsen. Welche davon UART0
 > erreicht und welche USB-Serial-JTAG, ist nicht nachverfolgt
 > ([Inbetriebnahme](Bringup-de.md#panel)). `esptool.py` flasht die Platine
@@ -251,8 +251,8 @@ Mit der Tabelle geht `rcbench-iomcu.uf2` allein in den Slot, der nicht läuft.
 Welchen Slot ein Einschalten startet, wenn beide Slots ein Image derselben
 Version halten, sagt das Datenblatt des RP2350 nicht. Das Image, das
 startet, löscht den ersten Sektor des anderen Slots, die Wahl bleibt also,
-und der andere Build ist weg. Um nach einem Entwicklungs-Laden sicher zu
-wissen, welcher Build läuft, zuerst den anderen Slot löschen:
+und der andere Build ist weg. Lösche nach einem Entwicklungs-Laden zuerst den anderen Slot, um sicher
+zu wissen, welcher Build läuft:
 
 ```bash
 picotool erase -p 1
@@ -338,7 +338,7 @@ zu welcher führt, ist nicht verfolgt:
 |---|---|
 | Panel-Seite | **GPIO28**, IO28 des 12-poligen Headers P3 des 7-Zoll-ESP32-P4-Boards (`PANEL_HEARTBEAT_PIN` in `board_pins.h`). |
 | IOmcu-Seite | **GPIO 3** |
-| Dazwischen | das retriggerbare Monoflop, sobald es eines gibt. Es ist auf keiner Platine, der Aufbau-Prüfstand fährt daher eine direkte Leitung und hat keine Hardware-Rückfallebene. Die Leitung deckt ein Panel ab, das keinen Heartbeat mehr sendet, solange der IOmcu fehlerfrei läuft: Er schaltet nach 150ms Stille auf SAFE. Unabgedeckt bleibt ein Panel, das keinen Heartbeat mehr sendet, während der IOmcu nicht reagieren kann: dann nimmt nichts die Ausgänge weg, und genau das täte das Monoflop ohne jede Firmware |
+| Dazwischen | das retriggerbare Monoflop, sobald es eines gibt. Es ist auf keiner Platine, der Bring-up-Prüfstand fährt daher eine direkte Leitung und hat keine Hardware-Rückfallebene. Die Leitung deckt ein Panel ab, das keinen Heartbeat mehr sendet, solange der IOmcu fehlerfrei läuft: Er schaltet nach 150ms Stille auf SAFE. Unabgedeckt bleibt ein Panel, das keinen Heartbeat mehr sendet, während der IOmcu nicht reagieren kann: dann nimmt nichts die Ausgänge weg, und genau das täte das Monoflop ohne jede Firmware |
 
 Ohne diesen Draht verweigert der IOmcu jedes Schalten auf ARMED, und das ist die
 Verriegelung, die arbeitet — kein Fehler.
@@ -450,7 +450,7 @@ abgelehnt, bis der Pin des Ports verlegt ist
 und GPIO 29 (vom Modul belegt, nicht auf der Stiftleiste) und GPIO 30 aufwärts (nicht
 im Bauteil).
 **Als zweiter PWM-Pin verweigert:** ein Pin, dessen PWM-Compare-Register schon
-von einem gebundenen Pin belegt ist. Auf dem RP2350 ist die Slice unterhalb
+von einem gebundenen Pin belegt ist. Auf dem RP2350 ist der Slice unterhalb
 von GPIO 32 `(Pin / 2) modulo 8` und der Kanal das niedrigste Bit des Pins, also
 teilen sich GPIO 0 und GPIO 16, GPIO 1 und GPIO 17, GPIO 2 und GPIO 18, GPIO 4 und GPIO 20, GPIO 5 und
 GPIO 21, GPIO 6 und GPIO 22 je ein Compare-Register. Der zweite eines Paares wird
@@ -458,7 +458,7 @@ verweigert, statt auf die Pulsbreite des ersten gemuxt zu werden. Die
 OUTPUTS-Seite führt kein Bit mit, das „gebunden“ sagt, der Bildschirm sieht
 also weiter konfiguriert aus, während die Leitung keinen Impuls liefert.
 
-Öffne am Panel **SETUP → OUTPUTS**, wähle `SERVO PWM` und markiere einen
+Öffne am Panel **SETUP > OUTPUTS**, wähle `SERVO PWM` und markiere einen
 Pin. Alternativ wählst du dort `SERVO PWM` in der Liste und tippst eine
 Taste auf der Platinenzeichnung an. Masseanschlüsse sind mit `G` markiert,
 Versorgungspins mit ihrer Spannung.
@@ -527,7 +527,7 @@ Widerstände 2,2kΩ, ein Multimeter, ein Oszilloskop oder Logikanalysator mit
 I2C-Dekodierung, ein Servo, und der ESC mit Motor oder eine ohmsche Last an
 einem Netzteil mit Strombegrenzung.
 
-**Am Panel einrichten.** SETUP → SENSORS: `INA228` auf ON; SETUP →
+**Am Panel einrichten.** SETUP > SENSORS: `INA228` auf ON; SETUP >
 SENSORS: `0x40 bestückt` auf ON. Die übrigen Sensoreinstellungen passen in
 der Vorgabe zu den Modulen oben: INA228 auf 0x45 mit 200µΩ, der INA3221 auf
 0x40 mit 0,1Ω je Kanal und CH1, der AUSGANG 1 misst, SDA an GPIO 16 und SCL an
@@ -716,7 +716,7 @@ einen Trace; eine Triggerzeile, deren Zeit auf dem Stopp oder danach
 liegt, entfällt. Jeder Trace enthält auch die Samples von bis zu 64ms vor
 seinem Trigger.
 
-**Was es kostet.** Core 1 liest CH1 jede 1ms wie im veröffentlichten
+**Was es kostet.** Core 1 liest CH1 alle 1ms wie im veröffentlichten
 Image und kopiert das Sample in einen Ring aus 4096 Einträgen (49.152
 Bytes; 3,9s bei 1000 Samples und 50 Busspannungen je Sekunde). Der Tick
 bekommt keine Bus-Transaktion dazu. Eine Änderung der Konfiguration oder
@@ -734,7 +734,7 @@ endet, zählt es nicht. Um wie
 viel ein Durchlauf von Core 0 durch das Schreiben der Zeilen länger wird,
 ist nicht gemessen.
 
-**Die Zeilen** (`shared/sense/sense_trace.h` nennt jedes Feld):
+**Die Zeilen** (`shared/sense/include/sense_trace.h` nennt jedes Feld):
 
 ```text
 $T v=3 n=2 trig=cmd t=220200 ms=22020 len=4000
@@ -815,7 +815,7 @@ Bewegung dieses Trace nach. Eine Taste wird beim Drücken gesendet, ohne Enter.
 2. Flashe `firmware/iomcu/build-trace/rcbench-iomcu.uf2`: Halte BOOTSEL,
    stecke das Modul an den PC und kopiere die Datei auf sein Laufwerk.
 3. Öffne den Port in PuTTY mit aktiviertem Mitschnitt. Innerhalb von 3s kommt eine
-   Zeile, die mit `rcbench-iomcu:` beginnt. Am Panel SETUP → SENSORS:
+   Zeile, die mit `rcbench-iomcu:` beginnt. Am Panel SETUP > SENSORS:
    `0x40 bestückt` auf ON.
 4. Rauschen ohne Servo: Lasse das Servo abgesteckt und schalte den
    Netzteil-Ausgang bei 6,00V ein. Drücke `t`. Nach 10s gibt die Konsole
@@ -958,7 +958,7 @@ Ankunft des Servohebels übereinstimmt, beantwortet er nicht.
 **Teil B: mit dem AS5600.** Dieselben Bewegungen mit dem Encoder auf der
 Welle.
 
-1. Schalte bei einem Prüfstand in SAFE unter SETUP → SENSORS `AS5600` ein.
+1. Schalte bei einem Prüfstand in SAFE unter SETUP > SENSORS `AS5600` ein.
    Stelle das Servo auf Neutral und tippe auf der Seite PRÜFLING von SERVO
    auf SENSOR-MITTE.
 2. Wiederhole die Schritte 5 bis 7 von Teil A.
