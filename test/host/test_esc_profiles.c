@@ -93,6 +93,7 @@ static void same(const esc_profile_t *a, const esc_profile_t *b)
     CHECK_STR_EQ(a->id, b->id);
     CHECK_STR_EQ(a->brand, b->brand);
     CHECK_STR_EQ(a->family, b->family);
+    CHECK_STR_EQ(a->family_de, b->family_de);
     CHECK_EQ(a->scheme, b->scheme);
     CHECK_EQ(a->encoding, b->encoding);
     CHECK_EQ(a->announce, b->announce);

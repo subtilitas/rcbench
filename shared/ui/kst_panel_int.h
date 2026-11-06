@@ -39,7 +39,8 @@
  * @brief The overlay's layout, in pixels from the area's top left.  Every
  *        width that is not a control's own comes from the area's width.
  *
- * On SERVO's left card of 620px: five tabs of 95px and CLOSE of 120px
+ * On SERVO's left card of 620px: five tabs of 95px (four with KST EXPERT
+ * MODE OFF) and CLOSE of 120px
  * in one row 48px tall, rows 48px tall at a 56px pitch, two columns of
  * 295px, a value of 150px (15 cells of KP_FONT), a wide row's of 260px
  * with minus and plus keys of 56px.  Every control ends at kpn_foot().
@@ -167,7 +168,12 @@ typedef struct {
     uint8_t    note_page;               /**< notes page shown, when the notes take more than one */
     /** @brief Signature of the notes' places and rows the page is of */
     uint32_t   note_sig;
-    ui_tabs_t  tabs;                    /**< the five page tabs */
+    ui_tabs_t  tabs;                    /**< the page tabs shown: five, four with KST EXPERT MODE OFF */
+    /** @brief Whether KST EXPERT MODE is ON, as kpn_mode_sync() last read
+     *         SET_KST_EXPERT */
+    bool       expert;
+    uint8_t    tab_count;               /**< the tabs shown; 0 before the first kpn_mode_sync() */
+    uint8_t    tab_page[PG_COUNT];      /**< the page, PG_*, each tab shown is of */
     bool       hv;                      /**< HV SERVO: above KST_PANEL_STD_MV may be set */
     bool       loaded;                  /**< whether the options were read from the settings */
     bool       card_look;               /**< whether the card in the slot is asked for */
@@ -373,13 +379,15 @@ int kpn_foot(void);
  */
 int kpn_notes_foot(void);
 /**
- * @brief Row @p r, its label and its control.
+ * @brief Row @p r, its label and its control, at its place on the page as
+ *        it shows (rows closed up with KST EXPERT MODE OFF).
  * @param r the row
- * @return the rectangle
+ * @return the rectangle; empty for a row hidden (kpn_row_shown())
  */
 gfx_rect_t kpn_row_rect(const row_t *r);
 /**
- * @brief Row @p r's value, between its keys where it has them.
+ * @brief Row @p r's value, between its keys where it has them.  For a row
+ *        that shows: the callers ask of none other.
  * @param r the row
  * @return the rectangle
  */
@@ -399,6 +407,40 @@ gfx_rect_t kpn_step_rect(const row_t *r, bool up);
  * @return the row, or NULL
  */
 const row_t *kpn_row_at(int page, int row, int col);
+/**
+ * @brief Whether KST EXPERT MODE is ON, as kpn_mode_sync() last read it.
+ * @return true while the expert rows and actions show
+ */
+bool kpn_expert(void);
+/**
+ * @brief Follows SET_KST_EXPERT: on a change every editor closes, the
+ *        press ends and the tab strip is built again from the pages that
+ *        keep a row, the page shown kept where it is still there and SERVO
+ *        otherwise.  The first call builds the strip.
+ */
+void kpn_mode_sync(void);
+/**
+ * @brief The page shown, PG_*: the page of the tab selected.
+ * @return the page
+ */
+int kpn_page(void);
+/**
+ * @brief Whether row @p r shows: every row with KST EXPERT MODE ON; with
+ *        it OFF neither DEAD BAND, BOOST and STRETCH nor a row of the
+ *        LOCKED tab.
+ * @param r the row
+ * @return true when the row is drawn and takes a press
+ */
+bool kpn_row_shown(const row_t *r);
+/**
+ * @brief Whether field @p id is out of sight: KST EXPERT MODE OFF and the
+ *        field's row hidden, or the pairing value (register 1D), which the
+ *        LOCKED tab shows.  A page that changes such a field names it.
+ * @param id the field id
+ * @return true when the field is hidden
+ */
+bool kpn_field_hidden(unsigned id);
+
 /** @brief A file name as a line shows it: whole up to
  *         KST_PANEL_NAME_TYPED characters, else its start and "..".
  * @param name the file name

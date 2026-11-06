@@ -2,6 +2,7 @@
   "id": "hacker-master-gen3",
   "brand": "Hacker",
   "family": "Master (third generation: Flight, F5, Acro, Heli, Navy, Car; OPTO, BEC, S-BEC)",
+  "family_de": "Master (dritte Generation: Flight, F5, Acro, Heli, Navy, Car; OPTO, BEC, S-BEC)",
   "models": [
     {
       "name": "Master 4-B-Flight",

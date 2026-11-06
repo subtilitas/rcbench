@@ -355,6 +355,41 @@ TEST_CASE(each_framebuffer_is_updated_independently)
     CHECK_EQ(memcmp(fb, fb2, (size_t)W * H * sizeof(gfx_color_t)), 0);
 }
 
+/* A sample repaints the plot and the cards, not PLOT | TABLE or the
+ * heading row: a pixel marked on the PLOT tab and one at the heading row's
+ * right end survive samples drawn into both buffers.  The supply falling
+ * silent is the heading's to say, and repaints it. */
+TEST_CASE(a_sample_leaves_the_tabs_and_the_heading_row_alone)
+{
+    fresh();
+    b_output_on();
+    scr->render(&cv, 0);
+    scr->render(&cv2, 1);
+    static const int k_mark[2][2] = { { PLOT_TAB_X, TABLE_Y }, { W - 12, 4 } };
+    for (int m = 0; m < 2; ++m) {
+        fb[(size_t)k_mark[m][1] * W + k_mark[m][0]]  = GFX_MAGENTA;
+        fb2[(size_t)k_mark[m][1] * W + k_mark[m][0]] = GFX_MAGENTA;
+    }
+    for (int k = 0; k < 6; ++k) {
+        supply_state_t st = reading(5.95f, 1.70f + 0.01f * (float)k);
+        st.output = true;
+        supply_screen_push(&st);
+        scr->render(&cv, 0);
+        scr->render(&cv2, 1);
+    }
+    for (int m = 0; m < 2; ++m) {
+        CHECK_EQ(fb[(size_t)k_mark[m][1] * W + k_mark[m][0]], GFX_MAGENTA);
+        CHECK_EQ(fb2[(size_t)k_mark[m][1] * W + k_mark[m][0]], GFX_MAGENTA);
+    }
+    supply_state_t st = reading(5.95f, 1.70f);
+    st.online = false;
+    supply_screen_push(&st);
+    scr->render(&cv, 0);
+    scr->render(&cv2, 1);
+    CHECK(fb[(size_t)4 * W + W - 12] != GFX_MAGENTA);
+    CHECK(fb2[(size_t)4 * W + W - 12] != GFX_MAGENTA);
+}
+
 TEST_CASE(a_screen_without_a_sample_draws)
 {
     /* No sample yet, no caps from a driver: the screen draws the model's
@@ -766,6 +801,7 @@ int main(void)
     RUN(a_redraw_leaves_no_stale_pixels);
     RUN(each_framebuffer_is_updated_independently);
     RUN(a_set_point_moved_offline_repaints_the_cards_in_both_buffers);
+    RUN(a_sample_leaves_the_tabs_and_the_heading_row_alone);
     RUN(a_screen_without_a_sample_draws);
     RUN(an_on_reported_during_a_second_hold_is_not_an_off);
     RUN(a_question_for_an_on_that_was_dropped_goes);

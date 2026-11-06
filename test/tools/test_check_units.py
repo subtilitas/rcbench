@@ -160,7 +160,8 @@ def test_every_text_the_generator_compiles_is_held():
         held = {text[a:b] for where, a, b in cu.json_strings(text)
                 if where in cu.PROFILE_TEXTS}
         p = gen.check(path)
-        compiled = [p["brand"], p["family"], p["note"], *p["steps"],
+        compiled = [p["brand"], p["family"], p["family_de"], p["note"],
+                    *p["steps"],
                     *(m["name"] for m in p["models"]),
                     *(m[k] for m in p["manual"] for k in ("action", "de")),
                     *(it[k] for it in p["items"] for k in ("name", "when")),

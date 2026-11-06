@@ -8,8 +8,8 @@ Bedienung, Anzeigen und Menümarkierungen auf jeder Seite.
 
 Das Statusband ist auf allen Seiten gleich. Von rechts nach links zeigt es
 STOP, "?" auf einer Seite mit [Hilfe](#die-bildschirmhilfe), die Laufzeituhr
-(in ARMED oder nach einem Lauf), den Arm-Chip, einen gemeldeten FEHLER-Code,
-den Modus und VERBINDUNG oder KEINE VERBINDUNG.
+(in ARMED oder nach einem Lauf), den Arm-Chip, einen gemeldeten FEHLER-Code
+oder [HWSTOP](#hwstop), den Modus und VERBINDUNG oder KEINE VERBINDUNG.
 
 BENCH bedeutet: Die Verbindung steht und das Panel steuert die Ausgänge
 des IOmcu. In SIM antwortet kein IOmcu; das Panel berechnet eigene Modelle.
@@ -89,14 +89,14 @@ selbst bei der breitesten Reihe bleiben 2px Abstand zum Verbindungschip.
 ### Hilfe zu den Chips
 
 Tippe auf einen Status-Chip, um sein Hilfefeld zu öffnen: VERBINDUNG oder
-KEINE VERBINDUNG, Modus, FEHLER, Arm-Chip oder Laufzeituhr. Das Feld erklärt
+KEINE VERBINDUNG, Modus, FEHLER, HWSTOP, Arm-Chip oder Laufzeituhr. Das Feld erklärt
 den aktuellen Zustand und was du tun kannst. Es beginnt 4px unter dem Band
 an der linken Kante des Chips. Falls nötig, wird es nach links verschoben,
 damit es mindestens 8px vom Panelrand entfernt bleibt.
 
 Das Feld ist 640px breit und fasst 60 Zeichen pro Zeile in der Schrift
-10 x 20px bei 21px Zeilenabstand. Das FEHLER-Feld ist 1008px breit und
-fasst 97 Zeichen pro Zeile, mit einem Absatz je gesetztem Bit. Kein Feld
+10 x 20px bei 21px Zeilenabstand. Die Felder von FEHLER und HWSTOP sind
+1008px breit und fassen 97 Zeichen pro Zeile, mit einem Absatz je gesetztem Bit. Kein Feld
 überlappt das Statusband oder das Alarmband; STOP bleibt sichtbar.
 
 - Drücke auf einen Chip und hebe den Finger dort ab, um sein Hilfefeld zu
@@ -105,7 +105,8 @@ fasst 97 Zeichen pro Zeile, mit einem Absatz je gesetztem Bit. Kein Feld
   gelöschte verschwinden. Verschiebt die Laufzeituhr die Chips, folgt das
   Hilfefeld seinem Chip.
 - Verschwindet ein Chip, schließt sich auch sein Feld: etwa FEHLER nach dem
-  Löschen aller Fehler oder die ausgeblendete Laufzeituhr.
+  Löschen aller Fehler, HWSTOP nach dem Löschen des Heartbeat-Bits oder die
+  ausgeblendete Laufzeituhr.
 - Ein Tipp auf einen anderen Chip wechselt zu dessen Hilfefeld. Gleitest
   du vor dem Loslassen von diesem Chip, schließt sich nur das offene Feld.
 - Jeder andere Tipp schließt das Feld ohne weitere Wirkung: auf seinen
@@ -155,6 +156,31 @@ zu flashen.
 ![Der Kasten von SAFE](img/de/band-safe.png)
 
 ![Der Kasten von ARMED MOTOR](img/de/band-armed.png)
+
+### HWSTOP
+
+![HWSTOP an der Stelle von FEHLER und sein Kasten](img/de/band-hwstop.png)
+
+Mit SETUP > PANEL > Hardware-STOP auf EIN zeigt das Band das Heartbeat-Bit
+(10) als roten Chip HWSTOP an der Stelle von FEHLER, für einen Prüfstand mit
+STOP-Taster in der Heartbeat-Leitung ([STOP-Taster am
+Prüfstand](Safety-de.md#stop-taster-am-prüfstand)). Ein gedrückter Taster
+und ein unterbrochenes Kabel zeigen beide HWSTOP. Die Einstellung ist
+standardmäßig AUS, und mit AUS zeigt das Band FEHLER 10.
+
+- HWSTOP nimmt den Platz von FEHLER ein, die Chipreihe wird also nicht
+  breiter: HWSTOP hat 6 Zeichen, `FEHLER 7F` 9. Weitere gleichzeitig
+  gesetzte Bits stehen im Kasten von HWSTOP nach dessen zwei Absätzen und
+  erscheinen wieder als FEHLER-Code, sobald HWSTOP verschwindet.
+- Der Chip hat das Rot des Badges eines eingerasteten STOP, seine Schrift
+  die dunkle Farbe der hellen Flächen.
+- Solange er steht, liest das Panel STATUS bei jeder 50ms-Abfrage statt
+  alle 500ms. Er verschwindet mit dem ersten Band, das aus einem STATUS ohne
+  das Bit gezeichnet wird, 80 bis etwa 180ms nachdem die Leitung schließt,
+  ohne ARM.
+- Solange der eigene STOP des Panels eingerastet ist, während sein Lösen
+  läuft und 1000ms danach lässt das Band Bit 10 weg, als HWSTOP und als
+  FEHLER 10.
 
 ## Die Bildschirmhilfe
 
@@ -2201,6 +2227,7 @@ Die 56px hohen Tasten 2s HALTEN ZUM ÜBERNEHMEN und ABBRECHEN enden 4px
 | OPTIONEN > PRÜFLING | NAME | der Prüfling, bis 23 Zeichen, für den Bericht |
 | OPTIONEN > PRÜFLING | BERICHT | ein Textbericht neben der Aufzeichnung jedes Tests |
 | OPTIONEN > PRÜFLING | SENSOR-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert seit dem aktuellen Verbindungsaufbau (keinen nach einem Verbindungsverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, SENSORS, AS5600-Mitte |
+| OPTIONEN > PRÜFLING | KST EXPERT MODE | ob der [Programmierer für KST- und Chaservo-Servos](ServoProgrammer-de.md#expertenmodus) DEAD BAND, BOOST, STRETCH, PAIRING LÖSEN und den Reiter GESPERRT zeigt; standardmäßig AUS, EIN nach 2s Halten (ein kürzerer Druck zeigt den Hinweis auf dem Band), AUS mit einem Tipp. Bleibt über einen Neustart erhalten |
 
 TRIMMUNG ist das einzige Tastenfeld mit Vorzeichen. `+/-` zwischen Punkt
 und OK setzt oder entfernt ein führendes Minus, vor oder nach der
@@ -4787,7 +4814,11 @@ standardmäßig aus; Einzelheiten stehen unter [Logs](#logs). Tastaturtransparen
 Texts durch die Tastatur des Texteditors scheint: AUS, 25% oder 50%,
 standardmäßig AUS; beschrieben unter [Der Texteditor](#der-texteditor).
 Demo-Modus blendet das Wasserzeichen SIMULATION aus und lässt den SIM-Chip des
-Bands stehen ([Das Statusband](#das-statusband)).
+Bands stehen ([Das Statusband](#das-statusband)). Hardware-STOP, die letzte
+Zeile und standardmäßig AUS, zeigt den Heartbeat-Fehler als HWSTOP statt
+FEHLER 10 ([HWSTOP](#hwstop)).
+
+![PANEL bis Hardware-STOP gescrollt, gespeichert EIN](img/de/setup-hw-stop.png)
 
 Acht Einstellungen werden gespeichert, ohne den Firmwarebetrieb zu
 beeinflussen. Einheiten und Dimmen nach erscheinen unter PANEL; Zellen,

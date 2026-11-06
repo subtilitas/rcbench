@@ -1506,7 +1506,10 @@ The count is a 32-bit unsigned integer. It is 0 at power-up and at every
 restart of the IOmcu, nothing over the link clears it, and it wraps
 from 4,294,967,295 to 0.
 
-The panel reads STATUS every 500ms. It asks a 4.21 IOmcu for 10
+The panel reads STATUS every 500ms, and at every 50ms poll while the band
+shows HWSTOP (`status_poll.h`, [Hardware stop button](Safety.md#hardware-stop-button)).
+A read of 10 registers is one request and 3 replies, so the fast reads add
+18 reads, 72 frames a second, while HWSTOP stands. It asks a 4.21 IOmcu for 10
 registers and an older one for the 8 its page has: a 4.20 page refuses a
 10-register read with BAD_RANGE, which would prevent reading any STATUS counter. The
 panel clears its local count at each link-up and fills it from the first

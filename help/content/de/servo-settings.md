@@ -123,12 +123,14 @@ Der erste Hinweis auf AUSGANG nennt den für SERVO-TESTER gewählten Port: `SERV
 
 ![NAME auf der Tastatur](view:servo-name)
 ![Die Seite PRÜFLING mit eingeschaltetem Winkelsensor](view:servo-encoder)
+![KST EXPERT MODE EIN](view:servo-dut-expert)
 
 | Option | Wirkung |
 |---|---|
 | NAME | Prüflingsname mit bis zu 23 Zeichen; steht über jedem Bericht. |
 | BERICHT | Speichert neben jeder Testaufzeichnung einen Textbericht `ATESTnnn.TXT`, solange Testaufzeichnungen unter SETUP > SD CARD EIN ist. |
 | SENSOR-MITTE | Übernimmt per Tipp den aktuellen AS5600-Zählwert von 0 bis 4095 als Mitte, während das Servo neutral steht. Bei WINKELQUELLE IMU ohne Wirkung. |
+| KST EXPERT MODE | Ob der [Programmierer für KST- und Chaservo-Servos](servo-programmer.md#kst-expert-mode) DEAD BAND, BOOST, STRETCH, PAIRING LÖSEN und den Reiter GESPERRT zeigt; standardmäßig AUS, EIN nach 2s Halten, AUS mit einem Tipp. |
 
 WINKELQUELLE im IMU-Eintrag von [Sensoren](setup-sensors.md) wählt AS5600 oder IMU für die Laufwinkel. IMU-Winkel werden in AS5600-Zählschritten von 0,088° verwendet. Die Test-CSV nennt die Quelle in ihrer letzten Spalte `angle source`, beide Berichte in der Zeile `Winkelquelle:`.
 
@@ -158,4 +160,4 @@ Die Zeile folgt dem aktiven Ziel des IOmcu, nicht dem Einstellwert. Eine Änderu
 
 ## Die Werte behalten
 
-AUSGANG, HV-SERVO, ENDLAGENLAUF, SERVO und SERVOPULSE gelten nur für die Sitzung. SWEEP, Optionen des automatischen Tests, PRÜFLING und ZIEL werden im NVS (nichtflüchtiger Speicher) gespeichert. Wie bei den Netzteiloptionen erfolgt das Schreiben im nächsten Frame bei SAFE und ausgeschaltetem Netzteilausgang.
+AUSGANG, HV-SERVO, ENDLAGENLAUF, SERVO und SERVOPULSE gelten nur für die Sitzung. SWEEP, Optionen des automatischen Tests, PRÜFLING samt KST EXPERT MODE und ZIEL werden im NVS (nichtflüchtiger Speicher) gespeichert. Wie bei den Netzteiloptionen erfolgt das Schreiben im nächsten Frame bei SAFE und ausgeschaltetem Netzteilausgang.

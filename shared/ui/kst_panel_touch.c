@@ -95,7 +95,7 @@ static void down(const touch_event_t *evt)
     for (int i = 0; i < ROW_COUNT; ++i) {
         const row_t *r = &kpn_rows[i];
 
-        if (r->page != k.tabs.selected || !kpn_row_live(r)) {
+        if (r->page != kpn_page() || !kpn_row_live(r)) {
             continue;
         }
         if (r->kind == K_STEP) {
@@ -322,6 +322,7 @@ void kpn_supply_sync(void)
 
 void kst_panel_event(const touch_event_t *evt)
 {
+    kpn_mode_sync();
     if (evt == NULL || !k.open) {
         return;
     }
@@ -356,6 +357,8 @@ void kst_panel_leave(void)
 
 void kst_panel_tick(float dt_s)
 {
+    /* SERVO > SETTINGS may have turned KST EXPERT MODE on or off. */
+    kpn_mode_sync();
     if (k.warn.open && k.warn.down) {
         if (ui_hold_tick(&k.warn.hold, dt_s)) {
             kpn_warn_apply();

@@ -896,6 +896,14 @@ static void decode(dec_t *d, esc_profile_t *p)
     }
     p->brand  = get_str(d, root, "brand", "", false, false);
     p->family = get_str(d, root, "family", "", false, false);
+    /* The German beside it: absent or null, none; else 1 to
+     * ESC_FAMILY_DE_MAX bytes. */
+    p->family_de = get_str(d, root, "family_de", "", false, true);
+    const int64_t fv = member(d, root, "family_de");
+    if (!d->failed && fv >= 0 && d->t[fv].type == T_STR
+        && decoded_len(d, (uint32_t)fv) > ESC_FAMILY_DE_MAX) {
+        FAIL(d, "family_de: longer than %u bytes", (unsigned)ESC_FAMILY_DE_MAX);
+    }
     p->verified = get_bool(d, root, "verified", "", false);
     const int a = get_enum(d, root, "automatable", "", k_auto, COUNT(k_auto));
     p->automatable = (esc_auto_t)(a < 0 ? 0 : a);

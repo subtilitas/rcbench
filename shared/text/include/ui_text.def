@@ -149,6 +149,11 @@ UI_TEXT(BAND_SAFE, 0,
 UI_TEXT(BAND_FAULT, 12,
     "FAULT %02X",
     "FEHLER %02X")
+/* LINK_FAULT_HEARTBEAT's chip while SETUP > PANEL > Hardware stop is ON
+ * (ui_band_hwstop()): a name, the same in every language. */
+UI_TEXT(BAND_HWSTOP, 0,
+    "HWSTOP",
+    "HWSTOP")
 UI_TEXT(BAND_NO_LINK, 16,
     "NO LINK",
     "KEINE VERBINDUNG")
@@ -235,6 +240,14 @@ UI_TEXT(BH_F_STALL, 0,
 UI_TEXT(BH_F_HEARTBEAT, 0,
     "The IOmcu receives no safety signal, although the panel sends it: the emergency stop is pressed or the heartbeat wire is open. A latched STOP shows STOP here instead. The IOmcu is SAFE and blocks ARMED. The PD mini output is off. Release the emergency stop or check the wire, then hold ARM.",
     "Das Sicherheitssignal vom Panel zum IOmcu ist ausgefallen, obwohl das Panel es sendet: Der Not-Aus ist gedrückt oder die Heartbeat-Leitung unterbrochen. Ein gesetzter STOP zeigt hier stattdessen STOP. Der IOmcu ist SAFE und sperrt ARMED. Der PD-mini-Ausgang ist aus. Löse den Not-Aus oder prüfe die Leitung und halte danach ARM.")
+/* HWSTOP's box: what it is, then how it clears; the other bits follow
+ * as in FAULT's. */
+UI_TEXT(BH_HWSTOP, 0,
+    "The bench's stop button is pressed, or its cable is broken. The IOmcu receives no heartbeat, is SAFE and refuses ARM. Motor and servo outputs and the PD mini output are off.",
+    "Der STOP-Taster des Prüfstands ist gedrückt oder sein Kabel unterbrochen. Der IOmcu empfängt keinen Heartbeat, ist SAFE und sperrt ARM. Motor-, Servo- und PD-mini-Ausgang sind aus.")
+UI_TEXT(BH_HWSTOP_CLEAR, 0,
+    "Release the button or repair the cable. HWSTOP goes 80 to 180ms after the line closes. The bench stays SAFE: hold ARM for 2s to switch the outputs on again.",
+    "Löse den Taster oder repariere das Kabel. HWSTOP verschwindet 80 bis 180ms danach. Der Prüfstand bleibt SAFE: Halte ARM 2s, um die Ausgänge einzuschalten.")
 UI_TEXT(BH_F_VERSION, 0,
     "The versions on the two devices do not match.",
     "Die Versionen der beiden Geräte passen nicht zusammen.")
@@ -4779,6 +4792,9 @@ UI_TEXT(SV_ROW_REPORT, 16,
 UI_TEXT(SV_ROW_ENC_CENTRE, 16,
     "ENC CENTRE",
     "SENSOR-MITTE")
+UI_TEXT(SV_ROW_KST_EXPERT, 0,
+    "KST EXPERT MODE",
+    "KST EXPERT MODE")
 UI_TEXT(SV_SERVO_TYPE, 30,
     "SERVO TYPE",
     "SERVOTYP")
@@ -4992,6 +5008,9 @@ UI_TEXT(SV_LIM_INA_NO_WIN, 58,
 UI_TEXT(SV_LIM_PWM_OFF, 58,
     "PORT PWM OFF. NO PULSES ON THIS PORT.",
     "PORT-PWM AUS. KEINE PULSE AN DIESEM PORT.")
+UI_TEXT(SV_LIM_PWM_SAFE, 58,
+    "PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM",
+    "PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM")
 UI_TEXT(SV_LIM_RAIL_LOW, 58,
     "SERVO SUPPLY BELOW 3.0V OR NOT READ",
     "SERVOVERSORGUNG UNTER 3.0V ODER OHNE MESSWERT")
@@ -5818,6 +5837,9 @@ UI_TEXT(HOLD_HINT_UNBIND, 94,
 UI_TEXT(HOLD_HINT_OVERWRITE, 94,
     "Hold 2s to overwrite.",
     "Halte 2s, um zu überschreiben.")
+UI_TEXT(HOLD_HINT_KST_EXPERT, 94,
+    "Hold 2s to switch KST EXPERT MODE on.",
+    "Halte 2s, um KST EXPERT MODE einzuschalten.")
 
 UI_TEXT(SHOT_TAKEN, 94,
     "Screenshot taken.",
@@ -6113,6 +6135,12 @@ UI_TEXT(KP_CHECK_1, 116,
 UI_TEXT(KP_VALUES_MORE, 116,
     "and %u more",
     "und %u weitere")
+UI_TEXT(KP_HIDDEN_VALUE, 116,
+    "%s (KST EXPERT MODE): %s -> %s",
+    "%s (KST EXPERT MODE): %s -> %s")
+UI_TEXT(KP_HIDDEN_UNKNOWN, 116,
+    "Also restored (KST EXPERT MODE): DEAD BAND, BOOST, STRETCH, LOCKED, Pairing.",
+    "Auch zurückgespielt (KST EXPERT MODE): DEAD BAND, BOOST, STRETCH, GESPERRT, Pairing.")
 UI_TEXT(KP_WRITING, 116,
     "Writing. Do not disconnect.",
     "Schreibvorgang läuft. Trenne die Verbindung nicht.")
@@ -8161,6 +8189,12 @@ UI_SETTING_LABEL(SET_DEMO_MODE,
 UI_SETTING_HELP(SET_DEMO_MODE,
     "Hides the SIMULATION watermark. The band still says SIM.",
     "Blendet SIMULATION aus; das Band zeigt weiter SIM.")
+UI_SETTING_LABEL(SET_HW_STOP,
+    "Hardware stop",
+    "Hardware-STOP")
+UI_SETTING_HELP(SET_HW_STOP,
+    "Band shows HWSTOP in red, not FAULT 10",
+    "Band zeigt HWSTOP in Rot statt FEHLER 10")
 /* --- interfaces ---------------------------------------------------- */
 UI_SETTING_LABEL(SET_INA228_EN,
     "INA228",
@@ -8772,6 +8806,12 @@ UI_SETTING_LABEL(SET_SERVO_PORT_PWM,
 UI_SETTING_HELP(SET_SERVO_PORT_PWM,
     "PWM output when the programming port is the target",
     "PWM am Programmierport, wenn er das Ziel ist")
+UI_SETTING_LABEL(SET_KST_EXPERT,
+    "KST EXPERT MODE",
+    "KST EXPERT MODE")
+UI_SETTING_HELP(SET_KST_EXPERT,
+    "Shows DEAD BAND, BOOST, STRETCH, RELEASE PAIRING and LOCKED",
+    "Zeigt DEAD BAND, BOOST, STRETCH, PAIRING LÖSEN und GESPERRT")
 UI_SETTING_LABEL(SET_HITEC_SERIES,
     "Hitec series",
     "Hitec-Serie")

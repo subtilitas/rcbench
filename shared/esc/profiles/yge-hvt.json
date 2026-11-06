@@ -2,6 +2,7 @@
   "id": "yge-hvt",
   "brand": "YGE",
   "family": "HVT (6-mode setup: 90HVT/120HVT Opto, 165HVT, 205HVT, 325HVT, 205HVT BEC)",
+  "family_de": "HVT (Setup mit 6 Modi: 90HVT/120HVT Opto, 165HVT, 205HVT, 325HVT, 205HVT BEC)",
   "models": [
     {
       "name": "90HVT Opto",

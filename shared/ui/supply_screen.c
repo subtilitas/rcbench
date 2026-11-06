@@ -62,6 +62,7 @@ static void forget_drawn(void)
         s.drawn_strip[b] = UINT32_MAX;
         s.drawn_p5[b]    = UINT32_MAX;
         s.drawn_title[b] = 0xFFu;
+        s.drawn_online[b] = 0xFFu;
         s.drawn_save[b]  = 0xFFu;
     }
 }

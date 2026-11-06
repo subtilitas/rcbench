@@ -15,7 +15,7 @@ SAVE stores the choice in NVS (non-volatile storage), like other settings.
 | --- | --- |
 | labels, setting names and their help, alerts in the band, warning panels, refusal notes, the splash's details | the terms listed under [Terms that stay English](#terms-that-stay-english) |
 | the servo test's TXT (plain text) report, in the language selected when the run starts | the servo test's CSV (comma-separated values) file: its header and the words in its rows (`test`, `phase`, `mode`), so tools read every run alike |
-| the stick programmer's notes and refusals, and an ESC profile's manual steps where the profile gives them in German (`action_de`) | the ESC (electronic speed controller) profile names, items and values as given in the manuals |
+| the stick programmer's notes and refusals, and an ESC profile's family and manual steps where the profile gives them in German (`family_de`, `action_de`) | the ESC (electronic speed controller) profile names, items and values as given in the manuals |
 | | firmware parameter names and values, as shown in the corresponding configurators |
 | | the console log |
 
@@ -315,7 +315,7 @@ lines is left with conflict markers.
 python3 tools/render_ui.py --fit
 ```
 
-builds the renderer with `GFX_TEXT_TRACE`, draws all 587 views in English and
+builds the renderer with `GFX_TEXT_TRACE`, draws all 595 views in English and
 in German, and fails when a string in either language
 
 - is wider than the box `gfx_text_in()` was given,
@@ -363,7 +363,7 @@ pages, supply commands and board markings that share a word with a label.
 
 ## Adding a language
 
-A language is one more column in every entry of the table: 3,319 entries
+A language is one more column in every entry of the table: 3,331 entries
 with an ID and 102 options, 10 of them with an empty English.
 
 1. Add the column to every entry of `shared/text/include/ui_text.def`, and
@@ -391,5 +391,6 @@ Two readers take the German column by position: `TABLE_ENTRY` in
 `tools/check_docs.py` and the servo controls' check in
 `configurator/core/test/help.test.ts`. The Wi-Fi page chooses its language
 by a flag, `wifi_access_set_german()`, and an ESC profile carries its
-manual steps in English and in German (`action`, `action_de`); neither
-takes a third language without a change of its own.
+family and manual steps in English and in German (`family`, `family_de`,
+`action`, `action_de`); neither takes a third language without a change of
+its own.

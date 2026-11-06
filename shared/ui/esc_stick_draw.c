@@ -257,7 +257,7 @@ static DRAWER void sp_draw_model(gfx_canvas_t *c, gfx_rect_t r,
         (void)sp_draw_tag(c, r.x + col.rx - 4, r.y);
     }
     if (col.fam > 0) {
-        sp_text(c, r.x + SP_FAMILY_X, r.y + SP_ROW_TY, p->family, col.fam,
+        sp_text(c, r.x + SP_FAMILY_X, r.y + SP_ROW_TY, esc_stick_panel_family_text(p), col.fam,
                 ui_theme_color(UI_C_TEXT_FAINT));
     }
     gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + col.rx),
@@ -735,10 +735,11 @@ static DRAWER void sp_draw_crumb(gfx_canvas_t *c)
     char line[128];
     if (t->model >= 0 && (unsigned)t->model < p->model_count) {
         snprintf(line, sizeof(line), "ESC STICK  >  %s  >  %s  (%s)",
-                 p->brand, p->models[t->model].name, p->family);
+                 p->brand, p->models[t->model].name,
+                 esc_stick_panel_family_text(p));
     } else {
         snprintf(line, sizeof(line), "ESC STICK  >  %s %s", p->brand,
-                 p->family);
+                 esc_stick_panel_family_text(p));
     }
     ui_button_font(c, pg.back, TR(LOG_BACK), ui_theme_color(UI_C_PANEL_HI),
                    false, !esc_stick_running(&t->run), SP_FONT);

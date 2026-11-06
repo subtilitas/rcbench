@@ -2,6 +2,7 @@
   "id": "hobbywing-flyfun-v5",
   "brand": "Hobbywing",
   "family": "FlyFun V5 60A-160A, 12-item menu",
+  "family_de": "FlyFun V5 60A-160A, Menü mit 12 Punkten",
   "models": [
     {
       "name": "FLYFUN 60A V5",

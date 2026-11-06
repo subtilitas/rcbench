@@ -91,6 +91,14 @@ is 0 (`test_outputs_hw_ports`). Every error, a lost heartbeat and a silent
 link also switch GPIO 21 off. A PROG 5V OFF by hand stops the pulse as
 well: the panel asks for the pulse only while the box reads ON.
 
+The panel switches the port's pulse on only while the bench is SAFE, as
+on every board; it switches it off at once. Switch PROG 5V on first, then
+ARM. A PROG 5V switched on while ARMED leaves the pulse off until the next
+SAFE: AUTO on RUDDER and the limit run then read
+`PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM`. While SAFE with the box
+off both read `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` before
+`ARM FIRST`.
+
 ## Power
 
 | Part | Input | Output | Switched by |
@@ -253,6 +261,11 @@ SETUP > SENSORS shows these rows without editing keys:
   PWM: CH2 for GPIO 1 or GPIO 2, CH1 for GPIO 4 or GPIO 5. With SERVO PWM
   on both rails it reads only the rail of the lowest GPIO. With a
   programming port as the tester's target it is CH3.
+- With TARGET on the bench's outputs and no output bound as SERVO PWM no
+  channel watches the target, and none is read at 1kHz. The limit run
+  then reads `NO SERVO PWM PIN` and AUTO on RUDDER
+  `AUTO PROGRAMS A SERVO ON THE PROG PORT`, each before any line about the
+  INA3221 ([Servo](Servo.md#auto-end-points)).
 - SERVO and the limit run name the meter by its rail: `INA RAIL A` over
   the plot, `INA3221 RAIL A` on the TEST card. The band names the rail of
   a channel over its limit:

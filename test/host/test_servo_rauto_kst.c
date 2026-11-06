@@ -25,6 +25,9 @@
  * - another_angle_source_drops_the_zero_and_ends_auto
  * - the_knob_moves_nothing_while_auto_runs
  * - a_stop_during_the_pulse_write_offers_restore_and_names_the_backup
+ * - on_the_carrier_auto_off_the_port_names_the_port
+ * - on_the_carrier_the_lines_lead_to_a_start_from_safe
+ * - on_the_carrier_the_lines_lead_to_a_start_from_armed
  *
  * SPDX-License-Identifier: MIT
  */
@@ -35,7 +38,10 @@
 #include "log_name.h"
 #include "servo_rudder_auto.h"
 #include "servo_rudder_auto_int.h"
+#include "prog5v_box.h"
+#include "prog_choice.h"
 #include "settings_sensors.h"
+#include "ui_board.h"
 #include "wit_frame.h"
 
 /** @brief The AS5600's centre count. */
@@ -62,6 +68,12 @@ static struct {
     int last_raw;
     uint32_t still_from;
     bool enc;               /* readings arrive */
+    /* The rbmod carrier's port pulse as the panel's link holds it
+     * (servo_link_prog_service(), prog_link_next()): off at once while the
+     * panel does not ask for it (prog_choice_want_pwm()), on only while
+     * SAFE. */
+    bool port_rule;
+    bool port_pwm;
     /* The IMU on the surface in the AS5600's place, through its filter. */
     bool imu;
     imu_t m;
@@ -220,9 +232,15 @@ static void ra_ms(uint32_t ms)
         }
         if (g_rig.ms % 20u == 0u) {
             servo_screen_clock(g_rig.ms);
+            if (!prog_choice_want_pwm()) {
+                ra.port_pwm = false;
+            } else if (!ra.armed) {
+                ra.port_pwm = true;
+            }
             servo_screen_set_drive(1u + RIG_PORT, RIG_PIN,
                                    kst_prog_state(M) == KST_PROG_PWM
-                                       && !kst_panel_holds_port());
+                                       && !kst_panel_holds_port()
+                                       && (!ra.port_rule || ra.port_pwm));
             ra_commands();
             scr->tick(0.02f);
             servo_screen_service();
@@ -720,6 +738,158 @@ TEST_CASE(a_stop_during_the_pulse_write_offers_restore_and_names_the_backup)
     CHECK(rig_settle());
 }
 
+/* On the rbmod carrier: the servo on PROGP01 reads CH3, PROG 5V, and AUTO
+ * may start.  TARGET on the bench's outputs with no output bound as SERVO
+ * PWM leaves no channel watching the target; the line names the
+ * programming port AUTO needs, not an INA3221 that is not set up. */
+TEST_CASE(on_the_carrier_auto_off_the_port_names_the_port)
+{
+    ra_setup(false, true);
+    g_rig.fixed = true;
+    ui_board_set(OUTBIND_BOARD_RBMOD);
+    (void)ui_board_apply_pins(NULL);
+    prog_choice_set_far_minor(LINK_MINOR_CARRIER_PWM);
+    prog5v_box_publish(3u, 21u, PROG5V_HELD_NONE);
+    settings_set(SET_SERVO_TARGET, (float)(1u + RIG_PORT));
+    ra_ms(200u);
+    CHECK_EQ(settings_sensors_fast(), 2u);
+    CHECK(rauto_blocked() == NULL);
+    /* The bench's outputs, none bound: what the panel does with the
+     * binding read (panel_frame.c). */
+    settings_set(SET_SERVO_TARGET, 0.0f);
+    servo_screen_set_drive(0u, SERVO_SCREEN_NO_PIN, true);
+    servo_screen_set_pins(0u, true);
+    (void)settings_sensors_set_tester_rail(ui_board_tester_rail(0u));
+    CHECK_EQ(settings_sensors_fast(), LINK_SM_FAST_NONE);
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        CHECK_STR_EQ(rauto_blocked(), TR(RA_PROG_PORT));
+    }
+    ui_text_set_language(UI_LANG_EN);
+    g_rig.fixed = false;
+    prog5v_box_reset();
+    prog_choice_reset();
+    ui_board_set(OUTBIND_BOARD_PICO_HEADER);
+    (void)ui_board_apply_pins(NULL);
+}
+
+/**
+ * @brief The rbmod carrier, TARGET on PROGP01 with PORT PWM on, the PROG 5V
+ *        box off and the port's pulse as the panel's link holds it.
+ * @param armed the bench ARMED at the start, else SAFE
+ */
+static void carrier_port(bool armed)
+{
+    ra_setup(false, true);
+    g_rig.fixed = true;
+    ra.port_rule = true;
+    ui_board_set(OUTBIND_BOARD_RBMOD);
+    (void)ui_board_apply_pins(NULL);
+    prog_choice_set_far_minor(LINK_MINOR_CARRIER_PWM);
+    prog5v_box_publish(2u, 21u, PROG5V_HELD_NONE);
+    settings_set(SET_SERVO_TARGET, (float)(1u + RIG_PORT));
+    settings_set(SET_SERVO_PORT_PWM, 1.0f);
+    ra.armed = armed;
+    servo_screen_set_armed(armed);
+    ra_ms(200u);
+}
+
+/**
+ * @brief Does what AUTO's first line asks, up to 6 times, until START is
+ *        free: ARM, the PROG 5V box ON, a DISARM; what the IOmcu reports
+ *        after each.
+ * @param seen receives the lines in their order, '|' between two
+ * @param n its size
+ * @return false on a line that asks for none of those
+ */
+static bool follow_the_lines(char *seen, size_t n)
+{
+    seen[0] = '\0';
+    for (int k = 0; k < 6 && rauto_blocked() != NULL; ++k) {
+        const char *why = rauto_blocked();
+        const size_t at = strlen(seen);
+        snprintf(seen + at, n - at, "%s%s", at > 0u ? "|" : "", why);
+        if (why == ui_servo_str(SERVO_STR_START_NOT_ARMED)) {
+            ra.armed = true;
+        } else if (why == ui_servo_str(SERVO_STR_START_PROG_5V)) {
+            prog5v_box_publish(3u, 21u, PROG5V_HELD_NONE);
+        } else if (why == TR(SV_LIM_PWM_SAFE)) {
+            ra.armed = false;
+        } else {
+            return false;
+        }
+        servo_screen_set_armed(ra.armed);
+        ra_ms(200u);
+    }
+    return rauto_blocked() == NULL;
+}
+
+/** @brief The board and the port as the other cases take them. */
+static void carrier_done(void)
+{
+    g_rig.fixed = false;
+    ra.port_rule = false;
+    prog5v_box_reset();
+    prog_choice_reset();
+    settings_set(SET_SERVO_PORT_PWM, 1.0f);
+    ui_board_set(OUTBIND_BOARD_PICO_HEADER);
+    (void)ui_board_apply_pins(NULL);
+}
+
+/* On the rbmod carrier the port's pulse needs the PROG 5V and comes on
+ * only while SAFE.  From SAFE with the box off the first line asks for the
+ * PROG 5V before ARM; the pulse comes on in SAFE, ARM follows, and a hold
+ * on START at its centre starts AUTO. */
+TEST_CASE(on_the_carrier_the_lines_lead_to_a_start_from_safe)
+{
+    char seen[256];
+    carrier_port(false);
+    CHECK(follow_the_lines(seen, sizeof(seen)));
+    char want[256];
+    snprintf(want, sizeof(want), "%s|%s",
+             ui_servo_str(SERVO_STR_START_PROG_5V),
+             ui_servo_str(SERVO_STR_START_NOT_ARMED));
+    CHECK_STR_EQ(seen, want);
+    const gfx_rect_t r = rauto_rect(RA_C_START);
+    /* The hold lands on START's middle row, inside it. */
+    CHECK(gfx_rect_contains(r, SV_RUD_LEN_X, SV_RA_ROW_Y(2)));
+    CHECK_EQ(r.y + r.h / 2, SV_RA_ROW_Y(2));
+    ra_hold_start();
+    CHECK(servo_screen_rauto_running());
+    rauto_end_now(SERVO_TEST_AB_OPERATOR);
+    ra_ms(2000u);
+    carrier_done();
+}
+
+/* ARMED before the PROG 5V: the box switched on leaves the port's pulse
+ * off until SAFE.  The line names PORT PWM ON and the DISARM it waits for
+ * (EN and DE), not PORT PWM OFF; DISARM, ARM and a hold on START start
+ * AUTO. */
+TEST_CASE(on_the_carrier_the_lines_lead_to_a_start_from_armed)
+{
+    char seen[256];
+    carrier_port(true);
+    CHECK_STR_EQ(rauto_blocked(), ui_servo_str(SERVO_STR_START_PROG_5V));
+    prog5v_box_publish(3u, 21u, PROG5V_HELD_NONE);
+    ra_ms(200u);
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        CHECK_STR_EQ(rauto_blocked(), TR(SV_LIM_PWM_SAFE));
+        CHECK(strcmp(rauto_blocked(), TR(SV_LIM_PWM_OFF)) != 0);
+    }
+    ui_text_set_language(UI_LANG_EN);
+    CHECK(follow_the_lines(seen, sizeof(seen)));
+    char want[256];
+    snprintf(want, sizeof(want), "%s|%s", TR(SV_LIM_PWM_SAFE),
+             ui_servo_str(SERVO_STR_START_NOT_ARMED));
+    CHECK_STR_EQ(seen, want);
+    ra_hold_start();
+    CHECK(servo_screen_rauto_running());
+    rauto_end_now(SERVO_TEST_AB_OPERATOR);
+    ra_ms(2000u);
+    carrier_done();
+}
+
 int main(void)
 {
     RUN(auto_programs_both_end_points_to_the_goal_and_ends_safe);
@@ -733,5 +903,8 @@ int main(void)
     RUN(another_angle_source_drops_the_zero_and_ends_auto);
     RUN(the_knob_moves_nothing_while_auto_runs);
     RUN(a_stop_during_the_pulse_write_offers_restore_and_names_the_backup);
+    RUN(on_the_carrier_auto_off_the_port_names_the_port);
+    RUN(on_the_carrier_the_lines_lead_to_a_start_from_safe);
+    RUN(on_the_carrier_the_lines_lead_to_a_start_from_armed);
     return test_summary("servo_rauto_kst");
 }

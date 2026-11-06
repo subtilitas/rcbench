@@ -21,6 +21,7 @@
 #include "settings_sensors.h"
 #include "supply_screen.h"
 #include "ui_screen.h"
+#include "ui_board.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 
@@ -133,9 +134,11 @@ TEST_CASE(a_limit_run_starts_only_armed_on_the_ina3221)
 {
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
-        /* The INA3221 off in SETUP. */
+        /* The INA3221 off in SETUP, with a SERVO PWM output bound: the
+         * TARGET row's words come before the meter's. */
         bench_fresh();
         bench.out = true;
+        servo_screen_set_pins(PIN(2), true);
         lim_page();
         CHECK(lim_line_reads(1, TR(SV_LIM_INA_SETUP), UI_C_WARN));
         close_settings();
@@ -285,6 +288,47 @@ TEST_CASE(a_limit_run_needs_a_powered_rail_and_a_bound_output)
         lim_hold(2.3f);
         CHECK(servo_screen_limit_running());
         servo_screen_set_armed(false);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/* On the rbmod carrier a channel watches a rail, and the bench's outputs
+ * are on a rail once one is bound as SERVO PWM: with none bound no channel
+ * watches the target, and the line names the TARGET row's words, not an
+ * INA3221 that is not set up.  Bound on PWM01 (GPIO 2) the run reads CH2,
+ * RAIL A, and starts. */
+TEST_CASE(on_the_carrier_no_servo_pwm_output_is_named_as_such)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        lim_bench();
+        ui_board_set(OUTBIND_BOARD_RBMOD);
+        (void)ui_board_apply_pins(NULL);
+        settings_set(SET_SERVO_TARGET, 0.0f);
+        /* What the panel does with each binding read (panel_frame.c). */
+        servo_screen_set_pins(0u, true);
+        (void)settings_sensors_set_tester_rail(ui_board_tester_rail(0u));
+        CHECK_EQ(settings_sensors_fast(), LINK_SM_FAST_NONE);
+        bench_frames(100u);
+        lim_page();
+        CHECK(lim_line_reads(1, TR(SV_TARGET_NONE), UI_C_WARN));
+        close_settings();
+        lim_hold(2.3f);
+        CHECK(!servo_screen_limit_running());
+        close_settings();
+        servo_screen_set_pins(PIN(2), true);
+        (void)settings_sensors_set_tester_rail(ui_board_tester_rail(PIN(2)));
+        CHECK_EQ(settings_sensors_fast(), 1u);
+        bench_frames(100u);
+        lim_page();
+        CHECK(lim_line_reads(1, TR(SV_HOLD_START), UI_C_TEXT_FAINT));
+        close_settings();
+        lim_hold(2.3f);
+        CHECK(servo_screen_limit_running());
+        servo_screen_set_armed(false);
+        (void)settings_sensors_set_tester_rail(LINK_SM_WATCH_NONE);
+        ui_board_set(OUTBIND_BOARD_PICO_HEADER);
+        (void)ui_board_apply_pins(NULL);
     }
     ui_text_set_language(UI_LANG_EN);
 }
@@ -693,6 +737,7 @@ int main(void)
 {
     RUN(a_limit_run_starts_only_armed_on_the_ina3221);
     RUN(a_limit_run_needs_a_powered_rail_and_a_bound_output);
+    RUN(on_the_carrier_no_servo_pwm_output_is_named_as_such);
     RUN(programming_is_not_offered_off_the_programming_port);
     RUN(stop_run_is_named_to_the_router_while_the_run_is_under_way);
     RUN(the_limit_runs_stops_are_tap_targets_above_the_alert_band);

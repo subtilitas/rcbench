@@ -93,6 +93,7 @@ typedef enum {
     SET_KNOB_SCALE,
     SET_KB_SEE,
     SET_DEMO_MODE,
+    SET_HW_STOP,
     /* --- interfaces ---------------------------------------------------- */
     SET_INA228_EN,
     SET_INA228_ADDR,
@@ -181,6 +182,7 @@ typedef enum {
     SET_SERVO_PROG_WAIT,
     SET_SERVO_TARGET,
     SET_SERVO_PORT_PWM,
+    SET_KST_EXPERT,
     SET_HITEC_SERIES,
     SET_ESCW_BY_HAND,
     /* --- stick programming ---------------------------------------------- */

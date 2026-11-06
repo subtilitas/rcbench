@@ -80,13 +80,15 @@ static inline void canvas(void)
     ui_text_set_language(UI_LANG_EN);
 }
 
-/* The overlay alone, open, the link down. */
+/* The overlay alone, open, the link down.  KST EXPERT MODE ON: every row
+ * and action shows (test_kst_panel_expert.c covers it OFF). */
 static inline void fresh(void)
 {
     canvas();
     scr = NULL;
     settings_set_store(NULL);
     settings_init();
+    settings_set(SET_KST_EXPERT, 1.0f);
     rig_fresh();
     kst_panel_init(AREA);
     kst_panel_open();
@@ -98,6 +100,7 @@ static inline void fresh_screen(void)
     canvas();
     settings_set_store(NULL);
     settings_init();
+    settings_set(SET_KST_EXPERT, 1.0f);
     supply_screen()->reset();
     supply_screen_settings_loaded();
     scr = servo_screen();

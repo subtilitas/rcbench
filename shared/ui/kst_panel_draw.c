@@ -174,7 +174,7 @@ static int message_shown(char text[KST_PANEL_MSG_LINES][KST_PANEL_LINE])
     const char *st[2];
     bool warn;
 
-    if (n > 0 && k.tabs.selected == PG_SERVO && standing(st, &warn) > 0
+    if (n > 0 && kpn_page() == PG_SERVO && standing(st, &warn) > 0
         && strcmp(text[0], st[0]) == 0) {
         return 0;
     }
@@ -369,7 +369,7 @@ static int page_notes(note_t *n)
     const char *second;
     int i = 0;
 
-    switch (k.tabs.selected) {
+    switch (kpn_page()) {
     case PG_SERVO:
         state_line(buf[0], sizeof(buf[0]));
         i = note(n, i, 0, buf[0], ui_theme_color(UI_C_TEXT));
@@ -558,7 +558,7 @@ static void plan_notes(notes_plan_t *p)
     /* Another set of notes starts on its first page. */
     sig = (sig ^ (uint32_t)p->count) * 16777619u;
     sig = (sig ^ (uint32_t)p->msg_rows) * 16777619u;
-    sig = (sig ^ (uint32_t)k.tabs.selected) * 16777619u;
+    sig = (sig ^ (uint32_t)kpn_page()) * 16777619u;
     if (sig != k.note_sig) {
         k.note_sig = sig;
         k.note_page = 0;
@@ -575,7 +575,7 @@ static int rows_foot(void)
     int y = k.area.y;
 
     for (int i = 0; i < ROW_COUNT; ++i) {
-        if (kpn_rows[i].page == k.tabs.selected) {
+        if (kpn_rows[i].page == kpn_page() && kpn_row_shown(&kpn_rows[i])) {
             const gfx_rect_t r = kpn_row_rect(&kpn_rows[i]);
 
             y = r.y + r.h + 4 > y ? r.y + r.h + 4 : y;
@@ -902,7 +902,7 @@ static void draw_page(gfx_canvas_t *c)
               k.have && k.pressed == P_CLOSE,
               !kst_panel_holds_port() || kpn_programming());
     for (int i = 0; i < ROW_COUNT; ++i) {
-        if (kpn_rows[i].page == k.tabs.selected) {
+        if (kpn_rows[i].page == kpn_page() && kpn_row_shown(&kpn_rows[i])) {
             draw_row(c, i);
         }
     }
@@ -986,6 +986,8 @@ static void draw_warning(gfx_canvas_t *c)
 void kst_panel_render(gfx_canvas_t *c)
 {
     const gfx_rect_t a = k.area;
+
+    kpn_mode_sync();
 
     if (k.kp.open) {
         ui_keypad_render(&k.kp, c);

@@ -192,6 +192,10 @@ typedef enum {
  */
 #define ESC_MANUAL_ACTION_MAX 120u
 /**
+ * @brief The longest German family text (family_de), in bytes.
+ */
+#define ESC_FAMILY_DE_MAX 120u
+/**
  * @brief The most manual steps one profile holds.
  */
 #define ESC_MANUAL_MAX 4u
@@ -234,6 +238,11 @@ typedef struct {
     const char        *id;      /**< the file name without .json            */
     const char        *brand;           /**< the brand, as the file names it */
     const char        *family;          /**< the product family the profile covers */
+    /**
+     * @brief The family in German, shown when the interface is; "" or NULL
+     *        where the profile gives none, and the English is shown.
+     */
+    const char        *family_de;
     esc_scheme_t       scheme;          /**< how the menu as a whole is driven */
     esc_encoding_t     encoding;        /**< how one number is sounded */
     esc_announce_t     announce;        /**< what the ESC announces before a selection */

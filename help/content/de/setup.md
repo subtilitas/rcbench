@@ -118,6 +118,7 @@ Die Warnung entfällt, wenn keine ungespeicherten Werte vorliegen, bereits eine 
 | Drehknopfbereich | 90 bis 720°, Schritte von 10 | 270 | der Knopfwinkel, der den Regler über seinen ganzen Weg bewegt |
 | Tastaturtransparenz | AUS, 25%, 50% | AUS | wie viel des Texts durch die Tastatur des Texteditors auf [Files](files.md#der-texteditor) scheint; andere Tastaturen bleiben deckend |
 | Demo-Modus | EIN, AUS | AUS | blendet das Wasserzeichen SIMULATION ab dem nächsten Bild aus; das Band zeigt weiter SIM, und die Kacheln zeigen weiter SIMULIERT. Das Panel zeichnet das Wasserzeichen nur, solange kein IOmcu antwortet, die Einstellung ändert also nichts an einem Prüfstand mit IOmcu |
+| Hardware-STOP | EIN, AUS | AUS | für einen Prüfstand mit STOP-Taster in der Heartbeat-Leitung: Das Band zeigt den Heartbeat-Fehler als roten Chip HWSTOP statt FEHLER 10 ([HWSTOP](band.md#hwstop)). Ein unterbrochenes Kabel zeigt ebenfalls HWSTOP. Was der Prüfstand bei dem Fehler tut, bleibt gleich |
 
 Die Hintergrundbeleuchtung ist an, solange das Panel läuft. Keine Einstellung schaltet sie.
 

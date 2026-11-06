@@ -1008,6 +1008,7 @@ void svs_render(gfx_canvas_t *c, int buffer_index)
         s.drawn_warn[buf]  = s.warn.rev;
         s.drawn_ask[buf]   = s.ask.rev;
         s.drawn_test[buf]  = s.test_rev;
+        s.drawn_kx[buf]    = s.kx_rev;
         s.drawn_save[buf]  = save_state();
         s.drawn_pulse[buf] = (int)(s.pulse * 8.0f);
         s.drawn_kst[buf]   = (ps != NULL) ? prog_ps_revision(ps) : 0u;
@@ -1078,6 +1079,13 @@ void svs_render(gfx_canvas_t *c, int buffer_index)
         if (s.drawn_save[buf] != save_state()) {
             s.drawn_save[buf] = save_state();
             clipped(c, save_line_rect(), draw_save_line);
+        }
+        /* KST EXPERT MODE's hold on DUT: its value alone. */
+        if (s.drawn_kx[buf] != s.kx_rev) {
+            s.drawn_kx[buf] = s.kx_rev;
+            if (rows_page() == PG_DUT) {
+                clipped(c, kx_value_rect(), draw_kx_value);
+            }
         }
         return;
     }

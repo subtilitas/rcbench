@@ -68,7 +68,9 @@ servo-grip                     521      65 KiB
 servo-current                3,189     399 KiB
 servo-rudder                 4,030     504 KiB
 servo-test                       0       0 KiB
-supply                       9,871    1234 KiB
+servo-kst                        0       0 KiB
+servo-hitec                      0       0 KiB
+supply                       8,138    1017 KiB
 supply-chrome               48,048    6006 KiB
 analyser                         0       0 KiB
 logs                             0       0 KiB
@@ -95,6 +97,9 @@ picker-chrome               41,559    5195 KiB
 wifi                             0       0 KiB
 wifi-chrome                 22,447    2806 KiB
 wifi-keys                   36,970    4621 KiB
+wifi-idle                        0       0 KiB
+imu                            101      13 KiB
+imu-hold                       690      86 KiB
 clear                       19,206    2401 KiB
 vlines                      10,204    1276 KiB
 hlines                         180      22 KiB
@@ -118,11 +123,16 @@ est. ms and est. fps: not measured
 | `servo-current` | as `servo-grip`, with the INA3221 as the servo rail's meter and a window in every frame whose current differs in the digits shown: the grip, the CURRENT row's value, the line and the plot repainted, each clipped to itself |
 | `servo-rudder` | SERVO > RUDDER with an AS5600 reading in every frame, 0.26° from the one before: the readout, the state lines and the side view's flap repainted, each clipped to itself |
 | `servo-test` | SERVO > TEST with the arm moved and an AS5600 reading in every frame, as an automatic test or a limit run gives: the page shows neither, so nothing is repainted |
-| `supply` | the supply screen with its output on, a sample landing every frame |
+| `servo-kst` | SERVO > PROGRAM's KST session on a port in PWM, the PD mini's reading 3mV and 1mA off the one before in every frame: there the state line shows the set point, so nothing is repainted |
+| `servo-hitec` | the same on the Hitec session |
+| `supply` | the supply screen with its output on, a sample landing every frame: the plot, the readings and the totals repainted; the PLOT and TABLE tabs and the heading row only when the supply starts or stops answering |
 | `motor-wire-hold` | the ESC signal wire session on LEAVE's page, a finger on its 2s hold |
 | `analyser`, `logs`, `settings`, `battery`, `balance`, `motor-stick`, `motor-wire`, `picker`, `wifi` | one steady frame of that screen, chrome cached; `settings` is SETUP's tiles, `motor-stick` ESC STICK open on MOTOR & ESC > PROGRAM |
 | `settings-list` | SETUP with PANEL's list open, chrome cached |
 | `wifi-keys` | WI-FI with the Wi-Fi keyboard open, a key typed every frame |
+| `wifi-idle` | WI-FI with the access point up, the idle time 1s shorter in every frame: the page shows it in whole minutes, so nothing is repainted |
+| `imu` | the IMU screen with an angle frame in every frame, X 0.1° from the one before: the X line repainted, clipped to itself |
+| `imu-hold` | the IMU screen, a finger on HOLD 2s: CALIBRATE ACCELEROMETER: the button and the age on the RATE line repainted, each clipped to itself |
 | `<screen>-sim` | the same screen with the SIMULATION watermark |
 | `<screen>-chrome` | the same screen invalidated on every frame |
 | `clear` | a full-screen clear |
@@ -242,6 +252,7 @@ increased drawing work in the model; it does not detect a missed display deadlin
 | `servo-current` | 4,000 | a changed digit of the current that repaints the whole card |
 | `servo-rudder` | 4,600 | a new angle on RUDDER that repaints more than the readout, the state lines and the flap's two boxes |
 | `servo-test` | 1,000 | a moving arm or a new reading that repaints the TEST page |
+| `servo-kst`, `servo-hitec`, `wifi-idle`, `imu`, `imu-hold` | 1,000 | a PD mini reading the state line does not show that repaints the session, an idle second inside the minute shown that repaints WI-FI, or a reading or the hold's fill that repaints the IMU screen whole |
 | `motor-stick` | 2,000 | a growing steady frame of ESC STICK, 1,713 fills in the table above |
 | the three `-sim` modes | 3,600 | a watermark that has grown past the full canvas |
 | the eleven `-chrome` modes | 72,000 | a growing full repaint |

@@ -100,6 +100,9 @@ SCREENS = {
     # A latched STOP: the button red in its yellow frame, the chip STOP,
     # and the chip's box.
     "band-stop":  ("band-stop.png",  "overview", "dark"),
+    # SETUP > PANEL > Hardware stop ON and the heartbeat bit: the red
+    # HWSTOP chip in FAULT's place, and its box.
+    "band-hwstop": ("band-hwstop.png", "overview", "dark"),
     # An alert across the bottom of the menu, with its x.
     "overview-alert": ("overview-alert.png", "overview", "dark"),
     # The screen guide over the menu at page 1: the dock on the right, the
@@ -166,6 +169,8 @@ SCREENS = {
     # The DUT page with the output encoder on, and its angle in the
     # MEASURED row.
     "servo-encoder":  ("servo-encoder.png",  "servo", "dark"),
+    # DUT with KST EXPERT MODE ON; servo-encoder shows it OFF.
+    "servo-dut-expert": ("servo-dut-expert.png", "servo", "dark"),
     "servo-hv":       ("servo-hv.png",       "servo", "dark"),
     "servo-run":      ("servo-run.png",      "servo", "dark"),
     "servo-result":   ("servo-result.png",   "servo", "dark"),
@@ -341,6 +346,14 @@ SCREENS = {
     "servo-kst-soft": ("servo-kst-soft.png", "servo", "dark"),
     "servo-kst-hard": ("servo-kst-hard.png", "servo", "dark"),
     "servo-kst-tune": ("servo-kst-tune.png", "servo", "dark"),
+    # KST EXPERT MODE OFF: TUNE closed up, MORE without RELEASE PAIRING,
+    # and the write page that names the hidden values the draft changes.
+    "servo-kst-tune-expert-off": ("servo-kst-tune-expert-off.png", "servo",
+                                  "dark"),
+    "servo-kst-more-expert-off": ("servo-kst-more-expert-off.png", "servo",
+                                  "dark"),
+    "servo-kst-write-expert-off": ("servo-kst-write-expert-off.png",
+                                   "servo", "dark"),
     "servo-kst-pulse": ("servo-kst-pulse.png", "servo", "dark"),
     "servo-kst-files": ("servo-kst-files.png", "servo", "dark"),
     "servo-kst-files-none": ("servo-kst-files-none.png", "servo", "dark"),
@@ -565,6 +578,8 @@ SCREENS = {
     # PANEL scrolled to Time zone, stored at LOS ANGELES, its longest
     # option.
     "setup-time-zone": ("setup-time-zone.png", "setup", "dark"),
+    # PANEL scrolled to its end: Hardware stop stored ON.
+    "setup-hw-stop": ("setup-hw-stop.png", "setup", "dark"),
     # SD CARD: AUTO LOGS and USER LOGS, AUTO LOG FOLDER and USER LOG
     # FOLDER; the folder keyboard with a folder refused.
     "setup-card": ("setup-card.png", "setup", "dark"),
@@ -820,6 +835,9 @@ FIT_ONLY = {
     "help-overview-3": (None, "overview", "dark"),
     "help-overview-4": (None, "overview", "dark"),
     "help-band-worst": (None, "motor", "dark"),
+    # AUTO's box on the rbmod carrier: SAFE, TARGET on PROG PORT 1, the PROG
+    # 5V box off.
+    "servo-rudder-auto-rbmod": (None, "servo", "dark"),
     # The other pages of SETUP's, OUTPUTS', LOGS' and FILES' guides, in
     # each state that has its own: a list, SENSORS, the carrier's tiles, a
     # PROG PORT entry, the grid view, the carrier, a paged list, the import
@@ -883,6 +901,7 @@ FIT_ONLY = {
     "supply-pdmini-on": (None, "supply", "dark"),
     "supply-pdmini-same": (None, "supply", "dark"),
     "band-fault-all":   (None, "overview", "dark"),
+    "band-hwstop-all":  (None, "overview", "dark"),
     # SERVO > PROGRAM with a table of 12 rows: SEARCH, the page keys, two
     # group headings and a row dimmed with its reason.
     "servo-program-many": (None, "servo", "dark"),

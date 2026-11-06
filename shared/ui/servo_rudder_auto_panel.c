@@ -183,7 +183,10 @@ static void ra_cfg(servo_rauto_cfg_t *c)
 const char *rauto_blocked(void)
 {
     if (!value_live()) {
-        return ui_servo_str(SERVO_STR_START_NOT_ARMED);
+        /* The rbmod carrier's port: the PROG 5V before ARM, as the port's
+         * pulse comes on only with it and only in SAFE (lim_pwm_why()). */
+        return ui_servo_str(prog_choice_needs_5v() ? SERVO_STR_START_PROG_5V
+                                                   : SERVO_STR_START_NOT_ARMED);
     }
     if (servo_test_running(&s.test)) {
         return ui_servo_str(SERVO_STR_START_TEST_RUNS);
@@ -194,6 +197,12 @@ const char *rauto_blocked(void)
     if (!servo_test_drained(&s.test) || !servo_limrun_drained(&s.lim)
         || !servo_rauto_drained(&s.ra.run) || s.logger_busy) {
         return ui_servo_str(SERVO_STR_START_BUSY);
+    }
+    /* The programming port before the meter: the meter is the channel
+     * watching the target, and on the rbmod carrier the bench's outputs
+     * have none until one is bound as SERVO PWM. */
+    if (s.drive_target == 0u) {
+        return TR(RA_PROG_PORT);
     }
     const char *meter = lim_meter_why();
     if (meter != NULL) {
@@ -206,7 +215,7 @@ const char *rauto_blocked(void)
         return ui_servo_str(SERVO_STR_START_PROG_5V);
     }
     if (!s.drive_pwm) {
-        return TR(SV_LIM_PWM_OFF);
+        return lim_pwm_why();
     }
     /* The end pulses lie inside the bench's own range. */
     if (s.min_us > 1000u || s.max_us < 2000u
