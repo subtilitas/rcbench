@@ -1,5 +1,7 @@
-/*
- * The screen a bad CAN (Controller Area Network) bus gets at start-up.
+/**
+ * @file
+ * @brief The screen a bad CAN (Controller Area Network) bus gets at start-up,
+ *        and a link that stops.
  *
  * The panel runs the echo self-test once, before the bench is usable, and
  * shows this instead of the menu when the test does not pass.  It exists
@@ -13,7 +15,10 @@
  *
  * Leaving it takes a two-second hold, the ARM gesture: this is the one screen
  * that says the bench cannot be trusted, and an acknowledgement given by
- * brushing the panel is not one.
+ * brushing the panel is not one.  While the link is silent the hold is the
+ * acknowledgement, and the bench runs in simulation.  Once the link has
+ * answered for BUSFAULT_BACK_MS without a break the hold is RECONNECT: the
+ * menu, on the live bench, SAFE.  A drop takes RECONNECT back.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -95,20 +100,77 @@ typedef struct {
     uint16_t remote_overflows;
 } busfault_report_t;
 
-/** Hand the screen what to show. A NULL report clears it. */
+/** @brief The time the link answers without a break before RECONNECT is
+ *         offered: 1000ms of the band's LINK. */
+#define BUSFAULT_BACK_MS 1000u
+
+/** @brief Which hold left the screen. */
+typedef enum {
+    BUSFAULT_EXIT_NONE = 0,    /**< none has completed since the last read */
+    BUSFAULT_EXIT_SIMULATION,  /**< the acknowledgement, the link silent   */
+    BUSFAULT_EXIT_RECONNECT,   /**< RECONNECT, the link answering          */
+} busfault_exit_t;
+
+/**
+ * @brief Hand the screen what to show.  The hold, the hint and the link's
+ *        record start again: a new report is a new fault.
+ * @param r The report, or NULL to clear it.
+ */
 void busfault_screen_set(const busfault_report_t *r);
+
+/**
+ * @brief Newer numbers for the report showing, every frame: the counters
+ *        move on the glass instead of freezing.  The hold in progress, the
+ *        hint and the link's record stay.
+ *
+ * A report of another kind than the one showing, or none showing, is
+ * ignored: the start-up test's numbers are a verdict and do not move.
+ * @param r The numbers, as link_lost_report() reads them.
+ */
+void busfault_screen_refresh(const busfault_report_t *r);
+
+/**
+ * @brief Whether the link answers, every frame the screen shows.
+ *
+ * RECONNECT is offered once @p up has held for BUSFAULT_BACK_MS, measured
+ * on @p now_ms with a wrap-safe 32-bit difference.  A frame with @p up
+ * false withdraws it at once and starts the count again.  The offer
+ * arriving or going abandons a hold in progress: the control changed under
+ * the finger, and the finger lifts before a new hold begins.
+ * @param up     The band's LINK: the IOmcu answered the last poll.
+ * @param now_ms The panel's clock, ms.
+ */
+void busfault_screen_link(bool up, uint32_t now_ms);
+
+/** @brief Whether RECONNECT is offered.
+ *  @return true once the link has answered for BUSFAULT_BACK_MS. */
+bool busfault_screen_link_back(void);
+
+/**
+ * @brief The hold that completed, and clears when read.
+ *
+ * Neither exit changes the bench: no latch, STOP or fault code is cleared
+ * here or by the application on the way out.  Where it leads is the
+ * application's business; both lead to the menu.
+ * @return The exit, BUSFAULT_EXIT_NONE when none completed.
+ */
+busfault_exit_t busfault_screen_take_exit(void);
 
 /** What was handed in, for the application deciding whether to show it. */
 const busfault_report_t *busfault_screen_report(void);
 
 /**
- * True once the acknowledgement hold has completed, and clears when read.
+ * @brief True once either hold has completed, and clears when read: the
+ *        same latch busfault_screen_take_exit() reads.
  *
  * A latch rather than a jump: which screen an acknowledged fault leads to is
  * the application's business, not the screen's.
+ * @return Whether a hold completed since the last read.
  */
 bool busfault_screen_take_ack(void);
 
+/** @brief Paint the whole screen again in both framebuffers at the next
+ *         frames. */
 void busfault_screen_invalidate(void);
 
 /**
@@ -117,6 +179,8 @@ void busfault_screen_invalidate(void);
  */
 const char *busfault_verdict_text(can_selftest_verdict_t v);
 
+/** @brief The screen, for the router.
+ *  @return Its table of handlers. */
 const ui_screen_t *busfault_screen(void);
 
 #ifdef __cplusplus

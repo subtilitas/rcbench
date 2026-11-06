@@ -1228,7 +1228,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 461 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 462 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1282,7 +1282,7 @@ The host suite is 461 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_outputs_screen_off`, `test_outputs_screen_port`, `test_outputs_screen_carrier`,
 `test_prog_choice`, `test_layout_screen`, `test_outputs_layout`, `test_outputs_view`,
 `test_picker_screen`, `test_picker_screen_hold`, `test_picker_screen_table`,
-`test_picker_layout`, `test_picker_cat`, `test_board_drawing`, `test_busfault_screen`,
+`test_picker_layout`, `test_picker_cat`, `test_board_drawing`, `test_busfault_screen`, `test_busfault_reconnect`,
 `test_coproc_update_screen`, `test_upd_coproc`, `test_upd_layout`, `test_text`,
 `test_openyge_frame`, `test_openyge_status`, `test_openyge_params`, `test_esc_profiles`,
 `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`,
@@ -1749,8 +1749,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 852 committed screenshots to the current render,
-426 in English and the same 426 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` holds 854 committed screenshots to the current render,
+427 in English and the same 427 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -2518,7 +2518,7 @@ checked afterwards with the ESC's program card.
 
 ### The German interface
 
-The tables, the fonts and the fit check are built and tested on the host, and the 426 German
+The tables, the fonts and the fit check are built and tested on the host, and the 427 German
 screenshots are rendered by the panel's code. An alert already on the band, and the title of
 a keypad or choice already open, keep the language they were raised in until replaced.
 

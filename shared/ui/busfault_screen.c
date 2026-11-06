@@ -117,26 +117,61 @@ _Static_assert(COLS_Y + 3 * NUM_HEAD + 10 * NUM_PITCH + 2 * NUM_GAP + 20
                    <= RULE_Y,
                "the fullest number column ends above the rule");
 
-static struct {
-    busfault_report_t r;
-    bool              have;
+/** @brief What the link column shows, compared per framebuffer: a column
+ *         whose numbers moved is painted again, and nothing else is. */
+typedef struct {
+    uint32_t first;       /**< down_s, or the seconds the link answered */
+    uint32_t polls;       /**< requests sent                            */
+    uint32_t timeouts;    /**< requests unanswered                      */
+    uint32_t tx_errors;   /**< the controller's counters                */
+    uint32_t rx_errors;   /**< the receive error counter                */
+    uint32_t bus_errors;  /**< the bus error count                      */
+    uint32_t recoveries;  /**< rejoins of this outage                   */
+} col_key_t;  /* A new controller state or the offer paints the whole
+               * screen, the column with it. */
 
-    float    held_s;      /**< how long the acknowledgement has been held */
+/** @brief How long a hold's hint shows: the band's notice time, 4s. */
+#define HINT_S UI_NOTICE_SHOW_S
+
+static struct {
+    busfault_report_t r;    /**< the report showing           */
+    bool              have; /**< a report was handed in       */
+
+    float    held_s;      /**< how long the hold has been held            */
     bool     fired;       /**< the hold completed; do not repeat it       */
     int      flash_ms;    /**< ms of the flash still to run               */
-    bool     ack;         /**< latched for the application                */
+    busfault_exit_t exit; /**< latched for the application                */
     bool     pressed;     /**< the contact is on the button            */
     uint8_t  press_id;    /**< the contact that owns the press         */
     bool     have_press;  /**< a contact owns the press                */
 
-    unsigned drawn_mask;  /**< the static half, per framebuffer */
-} s;  /**< the report and the hold */
+    bool     up_known;    /**< the link answered at the last frame told */
+    uint32_t up_since_ms; /**< the first frame of that run of answers   */
+    uint32_t now_ms;      /**< the last frame's clock                   */
+    bool     back;        /**< RECONNECT is offered                     */
 
-void busfault_screen_invalidate(void) { s.drawn_mask = 0; }
+    float    hint_s;      /**< s of the hint still to show, 0 for none   */
+    int      hint_id;     /**< ui_text_id_t of the hint showing          */
 
+    unsigned  drawn_mask; /**< the static half, per framebuffer          */
+    unsigned  col_mask;   /**< the link column, per framebuffer          */
+    col_key_t col[2];     /**< what the link column shows, per buffer    */
+} s;  /**< the report, the hold, the link and the hint */
+
+void busfault_screen_invalidate(void) { s.drawn_mask = 0; s.col_mask = 0; }
+
+/** @brief The screen as at power-on: no report, no hold, no link. */
 static void reset(void)
 {
     memset(&s, 0, sizeof(s));
+}
+
+/** @brief Drop a hold in progress, its contact kept: its release consumes
+ *         the press and shows no hint, and a new press starts a new hold. */
+static void drop_hold(void)
+{
+    s.pressed = false;
+    s.held_s  = 0.0f;
 }
 
 void busfault_screen_set(const busfault_report_t *r)
@@ -151,19 +186,76 @@ void busfault_screen_set(const busfault_report_t *r)
     s.held_s = 0.0f;
     s.fired = false;
     s.flash_ms = 0;
-    s.drawn_mask = 0;
+    s.up_known = false;
+    s.back = false;
+    s.hint_s = 0.0f;
+    busfault_screen_invalidate();
+}
+
+void busfault_screen_refresh(const busfault_report_t *r)
+{
+    if (r == NULL || !s.have || r->kind != s.r.kind
+        || s.r.kind != BUSFAULT_LINK_LOST) {
+        return;
+    }
+    /* The heading, the meaning and the list follow the controller's
+     * state: a new state paints the whole screen, new numbers the
+     * column. */
+    if (r->bus != s.r.bus) {
+        s.drawn_mask = 0;
+    }
+    s.r = *r;
+}
+
+/** @brief The offer arrived or went: the foot, the heading and the list
+ *         change, a hold in progress and a hint showing go. */
+static void set_back(bool back)
+{
+    if (back == s.back) {
+        return;
+    }
+    s.back = back;
+    drop_hold();
+    s.hint_s = 0.0f;
+    busfault_screen_invalidate();
+}
+
+void busfault_screen_link(bool up, uint32_t now_ms)
+{
+    s.now_ms = now_ms;
+    if (!up) {
+        s.up_known = false;
+        set_back(false);
+        return;
+    }
+    if (!s.up_known) {
+        s.up_known = true;
+        s.up_since_ms = now_ms;
+    }
+    /* Wrap-safe: the difference of two 32-bit clocks is the time between
+     * them across the 49.7-day wrap. */
+    if ((uint32_t)(now_ms - s.up_since_ms) >= BUSFAULT_BACK_MS) {
+        set_back(true);
+    }
+}
+
+bool busfault_screen_link_back(void) { return s.back; }
+
+busfault_exit_t busfault_screen_take_exit(void)
+{
+    const busfault_exit_t was = s.exit;
+    s.exit = BUSFAULT_EXIT_NONE;
+    return was;
+}
+
+bool busfault_screen_take_ack(void)
+{
+    return busfault_screen_take_exit() != BUSFAULT_EXIT_NONE;
 }
 
 const busfault_report_t *busfault_screen_report(void)
 {
     return s.have ? &s.r : NULL;
-}
-
-bool busfault_screen_take_ack(void)
-{
-    const bool was = s.ack;
-    s.ack = false;
-    return was;
 }
 
 /* ------------------------------------------------------------ what to say */
@@ -308,11 +400,40 @@ const char *busfault_verdict_text(can_selftest_verdict_t v)
 
 /* ------------------------------------------------------------------ input */
 
+/**
+ * @brief Whether a point is on the hold button.
+ * @param x The point's x, panel coordinates.
+ * @param y Its y.
+ * @return true on the button.
+ */
 static bool in_ack(int16_t x, int16_t y)
 {
     return gfx_rect_contains(gfx_rect_make(ACK_X, ACK_Y, ACK_W, ACK_H), x, y);
 }
 
+/**
+ * @brief The hint a release before UI_HOLD_S shows: what the hold does.
+ *
+ * The band's hint (ui_hold_end()), drawn by this screen in the bar's place
+ * because the screen has no band: amber with dark text, for HINT_S.
+ * @param up The release.
+ */
+static void hint_on_release(const touch_event_t *up)
+{
+    if (s.pressed && !s.fired && touch_event_is_tap_up(up)
+        && in_ack(up->point.x, up->point.y)) {
+        s.hint_id = s.back ? (int)TX_HOLD_HINT_RECONNECT
+                           : (int)TX_HOLD_HINT_ACKNOWLEDGE;
+        s.hint_s  = HINT_S;
+        s.drawn_mask = 0;
+    }
+}
+
+/**
+ * @brief One touch event: a press on the button starts the hold, a press
+ *        on the hint closes it.
+ * @param evt The event, panel coordinates.
+ */
 static void event(const touch_event_t *evt)
 {
     if (evt == NULL) {
@@ -320,6 +441,11 @@ static void event(const touch_event_t *evt)
     }
     switch (evt->type) {
     case TOUCH_EVENT_DOWN:
+        if (s.hint_s > 0.0f && evt->point.y < BAR_H) {
+            /* A tap on the hint closes it, as on the band. */
+            s.hint_s = 0.0f;
+            s.drawn_mask = 0;
+        }
         if (!s.have_press && in_ack(evt->point.x, evt->point.y)) {
             s.have_press = true;
             s.press_id   = evt->point.id;
@@ -344,6 +470,7 @@ static void event(const touch_event_t *evt)
     case TOUCH_EVENT_UP:
     default:
         if (s.have_press && evt->point.id == s.press_id) {
+            hint_on_release(evt);
             s.have_press = false;
             s.pressed    = false;
             s.held_s     = 0.0f;
@@ -359,6 +486,12 @@ static void event(const touch_event_t *evt)
 static void tick(float dt_s)
 {
     s.flash_ms = ui_hold_flash_left(s.flash_ms, dt_s);
+    if (s.hint_s > 0.0f) {
+        s.hint_s -= dt_s;
+        if (s.hint_s <= 0.0f) {
+            s.drawn_mask = 0;   /* the bar comes back */
+        }
+    }
     if (s.pressed && !s.fired) {
         s.held_s += ui_hold_credit(dt_s);
         if (s.held_s >= UI_HOLD_S) {
@@ -368,7 +501,8 @@ static void tick(float dt_s)
              */
             s.held_s     = UI_HOLD_S;
             s.fired      = true;
-            s.ack        = true;
+            s.exit       = s.back ? BUSFAULT_EXIT_RECONNECT
+                                  : BUSFAULT_EXIT_SIMULATION;
             s.flash_ms   = UI_HOLD_FLASH_MS;
         }
     }
@@ -441,12 +575,37 @@ static gfx_color_t ack_fill(void)
                         ui_theme_color(UI_C_OK), s.held_s);
 }
 
+/** @brief The seconds the link has answered, 0 while it does not.
+ *  @return Whole seconds since the run of answers began. */
+static uint32_t back_s(void)
+{
+    return s.up_known ? (uint32_t)(s.now_ms - s.up_since_ms) / 1000u : 0u;
+}
+
+/** @brief What the link column shows now.
+ *  @return The key, every byte set. */
+static col_key_t col_key(void)
+{
+    col_key_t k;
+    memset(&k, 0, sizeof(k));
+    k.first      = s.back ? back_s() : s.r.down_s;
+    k.polls      = s.r.polls;
+    k.timeouts   = s.r.timeouts;
+    k.tx_errors  = s.r.tx_errors;
+    k.rx_errors  = s.r.rx_errors;
+    k.bus_errors = s.r.bus_errors;
+    k.recoveries = s.r.recoveries;
+    return k;
+}
+
 /**
  * @brief The right-hand column for a link that dropped: this end's
- *        controller, and how long it has been quiet.
+ *        controller, and how long it has been quiet or has answered.
  *
  * Different numbers from the start-up test's -- there was no echo run, so
- * there is nothing to count probes against.
+ * there is nothing to count probes against.  Painted over its own
+ * background, from COLS_Y to the first note, so a column whose numbers
+ * moved is painted again without the rest of the screen.
  * @param c Canvas, the whole panel.
  */
 static void draw_link_numbers(gfx_canvas_t *c)
@@ -454,12 +613,22 @@ static void draw_link_numbers(gfx_canvas_t *c)
     int y = COLS_Y;
     char line[48];
 
+    gfx_fill_rect(c, NUM_X, COLS_Y, NUM_W, NOTE_Y - COLS_Y,
+                  ui_theme_color(UI_C_BG));
     gfx_text(c, NUM_X, y, TR(BF_THIS_PANEL), BF_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
     y += NUM_HEAD;
 
-    snprintf(line, sizeof(line), TR(BF_DOWN), (unsigned long)s.r.down_s);
-    gfx_text(c, NUM_X, y, line, BF_FONT_LABEL, ui_theme_color(UI_C_WARN), 1);
+    if (s.back) {
+        snprintf(line, sizeof(line), TR(BF_BACK_FOR),
+                 (unsigned long)back_s());
+        gfx_text(c, NUM_X, y, line, BF_FONT_LABEL, ui_theme_color(UI_C_OK),
+                 1);
+    } else {
+        snprintf(line, sizeof(line), TR(BF_DOWN), (unsigned long)s.r.down_s);
+        gfx_text(c, NUM_X, y, line, BF_FONT_LABEL, ui_theme_color(UI_C_WARN),
+                 1);
+    }
     y += NUM_PITCH;
     snprintf(line, sizeof(line), TR(BF_REQUESTS), (unsigned long)s.r.polls);
     gfx_text(c, NUM_X, y, line, BF_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
@@ -576,6 +745,48 @@ static void draw_numbers(gfx_canvas_t *c)
 }
 
 /**
+ * @brief The bar across the top.
+ *
+ * The danger colour with the fault's name: this is the one screen that says
+ * the bench is not usable as it stands.  The OK green with LINK BACK once
+ * the link answers again.  While a hint shows, the hint in its place, amber
+ * with dark text as on the band.
+ * @param c    Canvas, the whole panel.
+ * @param lost The screen reports a link that stopped.
+ */
+static void draw_bar(gfx_canvas_t *c, bool lost)
+{
+    if (s.hint_s > 0.0f) {
+        gfx_fill_rect(c, 0, 0, W, BAR_H, ui_theme_color(UI_C_WARN));
+        const int th = gfx_text_height(BF_FONT_BODY, 1);
+        gfx_text(c, COL_X, (BAR_H - th) / 2, ui_tr((ui_text_id_t)s.hint_id),
+                 BF_FONT_BODY, ui_theme_color(UI_C_TEXT_ON_LIGHT), 1);
+        return;
+    }
+    gfx_fill_rect(c, 0, 0, W, BAR_H,
+                  ui_theme_color(s.back ? UI_C_OK : UI_C_DANGER));
+    const int hh = gfx_text_height(BF_FONT_HEAD, 1);
+    gfx_text(c, COL_X, (BAR_H - hh) / 2,
+             s.back ? TR(BF_TITLE_BACK)
+             : lost ? "LINK LOST" : "CAN BUS FAULT",
+             BF_FONT_HEAD,
+             s.back ? ui_theme_color(UI_C_TEXT_ON_LIGHT) : GFX_WHITE, 1);
+}
+
+/**
+ * @brief What a link that answers again means for the bench, for the list.
+ * @param out The list, LIST_MAX entries.
+ * @return The entries written.
+ */
+static int back_checks(const char *out[LIST_MAX])
+{
+    out[0] = TR(BF_BACK_1);
+    out[1] = TR(BF_BACK_2);
+    out[2] = TR(BF_BACK_3);
+    return 3;
+}
+
+/**
  * @brief The screen: the bar, the verdict, both columns and the notes once
  *        per framebuffer, the acknowledgement every frame.
  * @param c            Canvas, the whole panel.
@@ -588,32 +799,33 @@ static void render(gfx_canvas_t *c, int buffer_index)
     if ((s.drawn_mask & bit) == 0) {
         gfx_clear(c, ui_theme_color(UI_C_BG));
 
-        /* The heading, on the danger colour: this is the one screen that
-         * says the bench is not usable as it stands. */
         const bool lost = (s.r.kind == BUSFAULT_LINK_LOST);
-
-        gfx_fill_rect(c, 0, 0, W, BAR_H, ui_theme_color(UI_C_DANGER));
-        const int hh = gfx_text_height(BF_FONT_HEAD, 1);
-        gfx_text(c, COL_X, (BAR_H - hh) / 2,
-                 lost ? "LINK LOST" : "CAN BUS FAULT", BF_FONT_HEAD,
-                 GFX_WHITE, 1);
+        draw_bar(c, lost);
 
         /* The verdict is the heading of the page, not a caption: it is what
-         * the operator repeats when they ask somebody about it. */
+         * the operator repeats when they ask somebody about it.  A link
+         * that answers again says so in place of the verdict, whichever
+         * fault opened the screen. */
         gfx_text(c, COL_X, VERDICT_Y,
-                 lost ? bus_text(s.r.bus) : busfault_verdict_text(s.r.verdict),
-                 BF_FONT_HEAD, ui_theme_color(UI_C_TEXT), 1);
+                 s.back ? TR(BF_BACK_TEXT)
+                 : lost ? bus_text(s.r.bus)
+                        : busfault_verdict_text(s.r.verdict),
+                 BF_FONT_HEAD,
+                 ui_theme_color(s.back ? UI_C_OK : UI_C_TEXT), 1);
         (void)wrap_text(c, COL_X, COLS_Y,
-                        lost ? bus_meaning(s.r.bus) : meaning_of(s.r.verdict),
+                        s.back ? TR(BF_BACK_MEANS)
+                        : lost ? bus_meaning(s.r.bus)
+                               : meaning_of(s.r.verdict),
                         COL_CELLS, ui_theme_color(UI_C_TEXT_DIM));
 
         gfx_text(c, COL_X, HEAD_Y,
-                 lost ? TR(BF_HEAD_MEANS) : TR(BF_HEAD_CHECK),
+                 (lost || s.back) ? TR(BF_HEAD_MEANS) : TR(BF_HEAD_CHECK),
                  BF_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1);
 
         const char *checks[LIST_MAX] = { 0 };
-        const int n = lost ? bus_checks(s.r.bus, checks)
-                           : checks_for(s.r.verdict, checks);
+        const int n = s.back ? back_checks(checks)
+                      : lost ? bus_checks(s.r.bus, checks)
+                             : checks_for(s.r.verdict, checks);
         int y = LIST_Y;
         for (int i = 0; i < n; ++i) {
             /* A continuation line is indented and carries no bullet: it is
@@ -636,11 +848,12 @@ static void render(gfx_canvas_t *c, int buffer_index)
          * dismissal: the bench is still on a bus that does not work.
          */
         const int lh = gfx_text_height(BF_FONT_BODY, 1);
-        gfx_text_in(c, gfx_rect_make(COL_X, NOTE_Y, ACK_W, lh), TR(BF_NOTE_1),
+        gfx_text_in(c, gfx_rect_make(COL_X, NOTE_Y, ACK_W, lh),
+                    s.back ? TR(BF_BACK_NOTE_1) : TR(BF_NOTE_1),
                     BF_FONT_BODY, ui_theme_color(UI_C_TEXT_DIM), 1,
                     GFX_ALIGN_LEFT);
         gfx_text_in(c, gfx_rect_make(COL_X, NOTE_Y + WRAP_PITCH, ACK_W, lh),
-                    TR(BF_NOTE_2), BF_FONT_BODY,
+                    s.back ? TR(BF_BACK_NOTE_2) : TR(BF_NOTE_2), BF_FONT_BODY,
                     ui_theme_color(UI_C_TEXT_DIM), 1, GFX_ALIGN_LEFT);
         /* The last note may run under the number column: the link's
          * column ends higher, and the test's last note is shorter. */
@@ -650,12 +863,24 @@ static void render(gfx_canvas_t *c, int buffer_index)
                     ui_theme_color(UI_C_TEXT_FAINT), 1, GFX_ALIGN_LEFT);
 
         ui_rule(c, COL_X, RULE_Y, ACK_W, ui_theme_color(UI_C_EDGE));
-        if (lost) {
-            draw_link_numbers(c);
-        } else {
+        if (!lost) {
             draw_numbers(c);
         }
         s.drawn_mask |= bit;
+        s.col_mask &= ~bit;
+    }
+
+    /* The link's column moves with its counters, and only it is painted
+     * again when they do. */
+    if (s.r.kind == BUSFAULT_LINK_LOST) {
+        const unsigned b = (unsigned)buffer_index & 1u;
+        const col_key_t k = col_key();
+        if ((s.col_mask & bit) == 0
+            || memcmp(&k, &s.col[b], sizeof(k)) != 0) {
+            draw_link_numbers(c);
+            s.col[b] = k;
+            s.col_mask |= bit;
+        }
     }
 
     /*
@@ -664,7 +889,10 @@ static void render(gfx_canvas_t *c, int buffer_index)
      * would be a step in the fade.
      */
     ui_button_font(c, gfx_rect_make(ACK_X, ACK_Y, ACK_W, ACK_H),
-                   s.fired ? TR(BF_ACKNOWLEDGED) : TR(BF_HOLD), ack_fill(),
+                   s.fired  ? TR(BF_ACKNOWLEDGED)
+                   : s.back ? TR(BF_HOLD_RECONNECT)
+                            : TR(BF_HOLD),
+                   ack_fill(),
                    false, true, BF_FONT_LABEL);
 }
 

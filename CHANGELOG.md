@@ -45,6 +45,18 @@ history is in git.
   timeout. The console report and the card's log line count the recovered
   answers as `retried`. An IOmcu older than 4.37 gets unnumbered requests
   and no repeat.
+- The bus-fault screen follows the link while it shows. Its counters move
+  instead of freezing at the moment it opened. Once the IOmcu has answered
+  every poll for 1000ms, the bar reads `LINK BACK` and the hold reads
+  `HOLD 2s TO RECONNECT`: it opens the menu on the live bench, SAFE. One poll
+  without an answer withdraws it, and the hold is the acknowledgement into
+  simulation again. The start-up test's screen offers RECONNECT on the same
+  condition. RECONNECT clears no STOP and no fault code; FAULT 01 clears at
+  the next ARM. On the station, an IOmcu back from a 12 to 16s BOOTSEL stay
+  left the screen showing a frozen snapshot until a panel restart.
+- The bus-fault screen's holds show their hint on a release before 2s:
+  `Hold 2s to acknowledge.` or `Hold 2s to reconnect.`, amber in place of
+  the bar for 4s. The screen has no band to show it on.
 
 ### Fixed
 
