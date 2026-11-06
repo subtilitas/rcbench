@@ -25,7 +25,7 @@ Tipp auf die Zahl öffnet das Tastenfeld über beiden Karten: 1008 x 428px,
 mit Tasten von 242 x 72px und einer Unterkante 4px über dem Alarmband. OK
 übernimmt Werte von 2 bis 6. Bei jeder anderen Zahl bleibt das Tastenfeld
 offen und zeigt den gültigen Bereich in der Warnfarbe. ABBRECHEN, OK ohne
-Eingabe, das Home-Tag und ein Reiter schließen es ohne Änderung.
+Eingabe, das Home-Feld und ein Reiter schließen es ohne Änderung.
 
 ![Das Tastenfeld der Blattzahl](img/de/balance-keypad.png)
 

@@ -412,7 +412,7 @@ balance leaves a third value there. RESTORE writes the values before the
 write back as a write of its own, with the switch, the hold page `RESTORE`
 and its read-back; the record stays until that ends verified. `Discard the
 record of the interrupted write.` removes it without a write. While a
-record stands WRITE n VALUES and REPAIR CHECKSUM are refused: `An interrupted write blocks writing and REPAIR CHECKSUM. Use RESTORE to restore or discard its record.` The file
+record stands WRITE n VALUES and REPAIR CHECKSUM are refused: `Writing and REPAIR CHECKSUM are blocked. Under RESTORE, restore the saved values or discard the record.` The file
 manager shows `HITEC.TXT` and `HITEC.NEW` with INFO only: a hand edit could
 send wrong values to a servo.
 
