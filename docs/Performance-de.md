@@ -269,9 +269,7 @@ im Modell. Sie erkennt nicht, ob ein Frame den nächsten Anzeigezeitpunkt verpas
 | `servo-current` | 4 000 | eine geänderte Ziffer des Stroms, die die ganze Karte neu zeichnet |
 | `servo-rudder` | 4 600 | ein neuer Winkel auf RUDER, der mehr als die Anzeige, die Zustandszeilen und die beiden Boxen des Ruders neu zeichnet |
 | `servo-test` | 1 000 | einen bewegten Arm oder einen neuen Messwert, der die TEST-Seite neu zeichnet |
-| `servo-kst`, `servo-hitec` | 1 000 | einen Messwert des PD mini, den die Zustandszeile nicht zeigt und der die Sitzung neu zeichnet |
-| `wifi-idle` | 1 000 | eine Sekunde Leerlauf innerhalb der gezeigten Minute, die WI-FI neu zeichnet |
-| `imu`, `imu-hold` | 1 000 | einen Messwert oder die Füllung des Holds, die den IMU-Bildschirm ganz neu zeichnen |
+| `servo-kst`, `servo-hitec`, `wifi-idle`, `imu`, `imu-hold` | 1 000 | einen Messwert des PD mini, den die Zustandszeile nicht zeigt und der die Sitzung neu zeichnet, eine Sekunde Leerlauf innerhalb der gezeigten Minute, die WI-FI neu zeichnet, oder einen Messwert oder die Füllung des Holds, die den IMU-Bildschirm ganz neu zeichnen |
 | `motor-stick` | 2 000 | ein Wachsen des ruhigen Frames von ESC STICK, 1 713 Fills in der Tabelle oben |
 | die drei `-sim`-Modi | 3 600 | ein Watermark, das über die volle Canvas hinauswächst |
 | die elf `-chrome`-Modi | 72 000 | ein wachsendes vollständiges Neuzeichnen |

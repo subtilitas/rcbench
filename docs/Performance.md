@@ -252,9 +252,7 @@ increased drawing work in the model; it does not detect a missed display deadlin
 | `servo-current` | 4,000 | a changed digit of the current that repaints the whole card |
 | `servo-rudder` | 4,600 | a new angle on RUDDER that repaints more than the readout, the state lines and the flap's two boxes |
 | `servo-test` | 1,000 | a moving arm or a new reading that repaints the TEST page |
-| `servo-kst`, `servo-hitec` | 1,000 | a PD mini reading the state line does not show that repaints the session |
-| `wifi-idle` | 1,000 | an idle second inside the minute shown that repaints WI-FI |
-| `imu`, `imu-hold` | 1,000 | a reading or the hold's fill that repaints the IMU screen whole |
+| `servo-kst`, `servo-hitec`, `wifi-idle`, `imu`, `imu-hold` | 1,000 | a PD mini reading the state line does not show that repaints the session, an idle second inside the minute shown that repaints WI-FI, or a reading or the hold's fill that repaints the IMU screen whole |
 | `motor-stick` | 2,000 | a growing steady frame of ESC STICK, 1,713 fills in the table above |
 | the three `-sim` modes | 3,600 | a watermark that has grown past the full canvas |
 | the eleven `-chrome` modes | 72,000 | a growing full repaint |
