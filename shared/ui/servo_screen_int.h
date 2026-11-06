@@ -1044,14 +1044,16 @@ const char *lim_prog_why(void);
  */
 const char *lim_write_why(void);
 /**
- * @brief Why the target's pulse is off on an ARMED bench: PORT PWM off, or
- *        on the rbmod carrier PORT PWM on and the pulse waiting for SAFE.
- *        A pulse comes on only on a bench at rest
- *        (servo_link_prog_service()); the carrier's panel asks for it only
- *        with the PROG 5V on, so a PROG 5V switched on while ARMED leaves
- *        it off until a DISARM.
- * @return SV_LIM_PWM_SAFE's line on the carrier while the pulse is asked
- *         and no programmer holds the port, else SV_LIM_PWM_OFF's
+ * @brief Why the target's pulse is off: a programmer session holding the
+ *        port, PORT PWM off, or PORT PWM on and the pulse waiting.  A pulse
+ *        comes on only on a bench at rest (servo_link_prog_service()); the
+ *        carrier's panel asks for it only with the PROG 5V on, so a PROG
+ *        5V switched on while ARMED leaves it off until a DISARM.
+ * @return OUT_PORT_HELD's line while a programmer holds the port;
+ *         with PORT PWM on, SERVO_STR_START_PROG_5V's while the carrier's
+ *         PROG 5V box is off, else SV_LIM_PWM_SAFE's; with PORT PWM off,
+ *         SV_LIM_PWM_OFF_ARMED's while ARMED (TARGET is locked), else
+ *         SV_LIM_PWM_OFF's: TARGET opens the OUTPUTS entry that switches it
  */
 const char *lim_pwm_why(void);
 /**

@@ -76,7 +76,7 @@ Eine Sollwertänderung bei eingeschaltetem Ausgang öffnet eine Rückfrage mit d
 
 ## AUSGANG EIN und AUS
 
-Halte AUSGANG EIN 2s. Die Taste zeigt denselben Farbverlauf wie ARM. Früheres Loslassen schaltet nichts und zeigt `Halte 2s, um den Ausgang einzuschalten.` im Hinweisband. AUSGANG AUS wirkt per Tipp. In folgenden Fällen schaltet der Ausgang ab und bleibt bis zum nächsten Halten aus:
+Halte AUSGANG EIN 2s. Die Taste zeigt denselben Farbverlauf wie ARM. Früheres Loslassen schaltet nichts und zeigt `Halte 2s, um den Ausgang einzuschalten.` im Alarmband. AUSGANG AUS wirkt per Tipp. In folgenden Fällen schaltet der Ausgang ab und bleibt bis zum nächsten Halten aus:
 
 - STOP auf jeder Seite;
 - Verlassen von SUPPLY, wenn diese Seite den Ausgang eingeschaltet hat;

@@ -94,8 +94,9 @@ static void render_question(gfx_canvas_t *c)
 
     ui_button_font(c, DQ_CANCEL, TR(CANCEL), UI_PANEL_HI, s.press_btn == 0,
                    true, LV_FONT_LABEL);
-    ui_button_font(c, DQ_DELETE, TR(LOG_DELETE), UI_DANGER, s.press_btn == 1,
-                   true, LV_FONT_LABEL);
+    /* Neutral, its label in the danger colour: it drives no output. */
+    ui_button_ink(c, DQ_DELETE, TR(LOG_DELETE), UI_PANEL_HI, UI_DANGER,
+                  s.press_btn == 1, true, LV_FONT_LABEL);
 }
 
 /**
@@ -263,11 +264,12 @@ static void render_browse(gfx_canvas_t *c)
                    true, LV_FONT_LABEL);
     int msg_end = BR_OPEN.x;
     if (s.n_files > 0) {
-        ui_button_font(c, BR_OPEN, TR(LOG_OPEN), UI_ACCENT, s.press_btn == 1,
-                       s.sel >= 0, LV_FONT_LABEL);
+        ui_button_font(c, BR_OPEN, TR(LOG_OPEN), UI_PANEL_HI,
+                       s.press_btn == 1, s.sel >= 0, LV_FONT_LABEL);
         if (s.io.remove != NULL) {
-            ui_button_font(c, BR_DELETE, TR(LOG_DELETE), UI_DANGER,
-                           s.press_btn == 2, lv_can_delete(), LV_FONT_LABEL);
+            ui_button_ink(c, BR_DELETE, TR(LOG_DELETE), UI_PANEL_HI,
+                          UI_DANGER, s.press_btn == 2, lv_can_delete(),
+                          LV_FONT_LABEL);
             msg_end = BR_DELETE.x;
         }
     }
@@ -535,7 +537,7 @@ static void render_import(gfx_canvas_t *c)
     ui_button_font(c, IM_BTN(2), TR(LOG_BACK), UI_PANEL_HI, s.press_btn == 2,
                    true, LV_FONT_LABEL);
 
-    ui_button_font(c, IM_BTN(3), TR(LOG_PLOT), UI_ACCENT, s.press_btn == 3,
+    ui_button_font(c, IM_BTN(3), TR(LOG_PLOT), UI_PANEL_HI, s.press_btn == 3,
                    s.have_analysis && s.n_picked > 0, LV_FONT_LABEL);
 }
 

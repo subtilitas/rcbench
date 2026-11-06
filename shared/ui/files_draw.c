@@ -396,8 +396,9 @@ static void draw_question(gfx_canvas_t *c)
              UI_TEXT_DIM, 1);
     ui_button_font(c, FS_Q_CANCEL, TR(CANCEL), UI_PANEL_HI,
                    s.press == FS_HIT_Q_CANCEL, true, FS_FONT_LABEL);
-    ui_button_font(c, FS_Q_DELETE, TR(LOG_DELETE), UI_DANGER,
-                   s.press == FS_HIT_Q_DELETE, true, FS_FONT_LABEL);
+    /* Neutral, its label in the danger colour: it drives no output. */
+    ui_button_ink(c, FS_Q_DELETE, TR(LOG_DELETE), UI_PANEL_HI, UI_DANGER,
+                  s.press == FS_HIT_Q_DELETE, true, FS_FONT_LABEL);
 }
 
 /**

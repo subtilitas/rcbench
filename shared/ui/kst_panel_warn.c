@@ -33,7 +33,11 @@
 static void warn_open(int kind, bool danger, const char *title,
                       const char *apply, int hint)
 {
+    /* A page the last one's hold opens keeps that hold's flash. */
+    ui_hold_t hold = k.warn.hold;
+    ui_hold_spend(&hold);
     memset(&k.warn, 0, sizeof(k.warn));
+    k.warn.hold = hold;
     k.warn.open = true;
     k.warn.kind = kind;
     k.warn.danger = danger;
@@ -547,7 +551,7 @@ void kpn_warn_apply(void)
 
     k.warn.open = false;
     k.warn.down = false;
-    ui_hold_reset(&k.warn.hold);
+    ui_hold_spend(&k.warn.hold);       /* its flash runs on */
     k.pressed = P_NONE;
     switch (kind) {
     case W_SOFT:

@@ -864,26 +864,26 @@ static int arm_first_px(void)
 }
 
 /* CENTRE is dimmed with SWEEP while the bench is disarmed, the horn is
- * drawn dimmed and the left card says ARM FIRST; armed, CENTRE and the horn
- * are the accent and the line is gone. */
+ * drawn dimmed and the left card says ARM FIRST; armed, CENTRE is the OK
+ * green, the horn the accent, and the line is gone. */
 TEST_CASE(centre_and_the_horn_are_dimmed_while_disarmed)
 {
     fresh();
     picture(fb);
     const gfx_color_t accent = ui_theme_color(UI_C_ACCENT);
     /* Inside CENTRE, clear of its label; and on the horn's boss. */
-    CHECK(px(CENTRE_X - 36, BTN_Y - 10) != accent);
+    CHECK(px(CENTRE_X - 36, BTN_Y - 10) != ui_theme_color(UI_C_OK));
     CHECK(px(SHAFT_X + 22, SHAFT_Y) != accent);
     CHECK(arm_first_px() > 0);
     CHECK(arm());
     frames(UI_HOLD_FLASH_MS / 10);
     picture(fb);
-    CHECK_EQ(px(CENTRE_X - 36, BTN_Y - 10), accent);
+    CHECK_EQ(px(CENTRE_X - 36, BTN_Y - 10), ui_theme_color(UI_C_OK));
     CHECK_EQ(px(SHAFT_X + 22, SHAFT_Y), accent);
     CHECK_EQ(arm_first_px(), 0);
     CHECK(disarm());
     picture(fb);
-    CHECK(px(CENTRE_X - 36, BTN_Y - 10) != accent);
+    CHECK(px(CENTRE_X - 36, BTN_Y - 10) != ui_theme_color(UI_C_OK));
     CHECK(px(SHAFT_X + 22, SHAFT_Y) != accent);
     CHECK(arm_first_px() > 0);
 }
@@ -904,18 +904,18 @@ TEST_CASE(centre_and_the_horn_are_dimmed_from_the_disarm_tap_to_its_answer)
         }
         ui_router_tick(0.026f);
         ui_router_render(&cv, 0);
-        CHECK(px(CENTRE_X - 36, BTN_Y - 10) != accent);
+        CHECK(px(CENTRE_X - 36, BTN_Y - 10) != ui_theme_color(UI_C_OK));
         CHECK(px(SHAFT_X + 22, SHAFT_Y) != accent);
         CHECK(arm_first_px() > 0);
         picture(fb);
-        CHECK(px(CENTRE_X - 36, BTN_Y - 10) != accent);
+        CHECK(px(CENTRE_X - 36, BTN_Y - 10) != ui_theme_color(UI_C_OK));
         CHECK(arm_first_px() > 0);
     }
     servo_screen_set_armed(false);
     CHECK(arm());
     frames(UI_HOLD_FLASH_MS / 10);
     picture(fb);
-    CHECK_EQ(px(CENTRE_X - 36, BTN_Y - 10), accent);
+    CHECK_EQ(px(CENTRE_X - 36, BTN_Y - 10), ui_theme_color(UI_C_OK));
     CHECK_EQ(arm_first_px(), 0);
 }
 

@@ -8,6 +8,26 @@ history is in git.
 
 ### Changed
 
+- Every 2s hold flashes on the frame it completes, 300ms in phases of 50ms:
+  white, black, then the button's new colour, twice. The flash starts in
+  `ui_hold_tick()`, so START TEST, START LIMIT RUN, START on AUTO, the
+  warnings' and programmer pages' holds, KST EXPERT MODE, HOLD 2s TO RUN,
+  the ESC wire holds, UNBIND ALL PINS and OVERWRITE flash as ARM does. A
+  button that goes as its hold fires flashes where it was drawn.
+  `tools/check_holds.py --check` holds every `ui_hold_begin()` to its draw
+  and its step in CI (continuous integration).
+- Buttons take their colour from what a press does to an output: green
+  available, red while it drives an output, amber while it waits, grey
+  refused. CENTRE, SWEEP, the rudder's 1000us, CENTRE, 2000us and ZERO and
+  the KST and Hitec programmers' CONNECT, ENABLE WRITE TO SERVO, WRITE n
+  VALUES and MOVE SERVO follow it; PAUSE is red while a sweep drives.
+  RESET CATEGORY, DISCARD and READ AGAIN are neutral, SAVE on SETUP green
+  while values are unsaved and its NOT SAVED a red label on a neutral
+  button, LOGS' OPEN and PLOT neutral, DELETE on FILES and LOGS neutral
+  with a red label (docs/Screens.md, "Button colours").
+- A tap on a grey START TEST, START LIMIT RUN or HOLD 2s TO START on AUTO
+  puts its reason in the alert band for 4s, as a hold's hint.
+
 - The panel sets the Bluetooth IMU's output content register RSW (0x02) to
   0x0C: angle (0x53) and angular rate with the battery (0x52), 2 frames a
   sample in place of the 4 of the sensor's default 0x1E. It writes unlock,
@@ -27,6 +47,25 @@ history is in git.
 - A servo report's current cells print the whole mA as an int. gcc 14.2 on
   aarch64 failed `tools/render_ui.py`'s `-Werror` build with a
   format-truncation warning on the `%ld` text.
+- On the rbmod carrier PORT PWM ON on OUTPUTS > PROG PORT n is taken while
+  the PROG 5V box reads OFF. The tap did nothing, and leaving SERVO
+  switches off a PROG 5V that SERVO's box switched on, so PORT PWM could
+  not be switched on at all. The pulse still waits for the box to read ON
+  and comes on only while SAFE. The line under the rows reads
+  `PORT PWM ON: PULSES START WITH PROG 5V ON SERVO`.
+- AUTO on RUDDER and START LIMIT RUN with PORT PWM off say what to do:
+  `PORT PWM OFF: TAP TARGET AND SWITCH IT ON` while SAFE and
+  `PORT PWM OFF: DISARM, TAP TARGET, SWITCH IT ON` while ARMED, where
+  TARGET takes no tap. TARGET opens the port's entry on OUTPUTS. The line
+  read `PORT PWM OFF. NO PULSES ON THIS PORT.`, also with PORT PWM on and
+  the pulse waiting: that case reads
+  `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` on every board, or
+  `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` on the carrier with the
+  box off.
+- AUTO on RUDDER and START LIMIT RUN name a programmer session that holds
+  the port, `LOCKED: SERVO PROGRAMMING USES THE PORT`, before PORT PWM.
+  They read `PORT PWM OFF. NO PULSES ON THIS PORT.` while the session held
+  it.
 
 ## 0.23.9 - 2026-11-06
 

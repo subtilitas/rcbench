@@ -84,7 +84,7 @@ BEARBEITEN im Textbetrachter öffnet den Editor und seine Tastatur. Der Text än
 - SPEICHERN überschreibt nur die Dateiversion, die der Editor geöffnet hat. Wurde sie auf der Karte durch den WLAN-Editor oder einen Upload verändert, erscheint `<Name> wurde seit dem Lesen auf der Karte geändert.` BLEIBEN behält den bearbeiteten Text. NEU LESEN verwirft ihn und liest die Datei von der Karte. Halte ÜBERSCHREIBEN 2s, um die beim abgelehnten Speicherversuch gefundene Version zu ersetzen. Ändert sich die Datei erneut, wird das Schreiben wieder abgelehnt. Fehlt sie, bleibt ÜBERSCHREIBEN gedimmt.
 - VERWERFEN setzt den Text auf den Karteninhalt zurück und fragt vorher nach. Das Home-Feld fragt bei ungespeicherten Änderungen ebenfalls: BLEIBEN behält den Text, VERWERFEN verwirft die Änderungen.
 - Der Text darf bis zu 1MiB und 65.536 Zeilenenden enthalten. Die Tastatur gibt ASCII ein; einzelne Tasteneingaben lassen sich nicht rückgängig machen.
-- SETUP → PANEL → Tastaturtransparenz auf 25% oder 50% lässt den übrigen Text durch die Tastatur scheinen. Der Cursor bleibt in den 8 Zeilen darüber.
+- SETUP > PANEL > Tastaturtransparenz auf 25% oder 50% lässt den übrigen Text durch die Tastatur scheinen. Der Cursor bleibt in den 8 Zeilen darüber.
 
 ![Eine KST-Datei mit einem Kommentar gespeichert](view:files-edit-kst)
 ![Die Frage vor ungespeicherten Änderungen](view:files-edit-unsaved)

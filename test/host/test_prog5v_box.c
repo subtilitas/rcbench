@@ -106,12 +106,13 @@ TEST_CASE(on_is_a_hold_of_2000ms_not_1999ms)
     /* 1ms more: 2,000ms, ON once. */
     prog5v_box_tick(&b, 0.001f);
     CHECK(asked_on());
+    CHECK(b.hold.flash_ms > 0);               /* fired: the flash */
     tick_n(8, 0.25f);
     CHECK(!prog5v_box_poll_cmd(NULL));
     /* The release of the press that fired asks nothing, ON read or not. */
     prog5v_box_publish(ST_ON, 21u, (uint8_t)PROG5V_HELD_NONE);
     prog5v_box_tick(&b, 0.02f);
-    CHECK(b.hold.flash_ms > 0);               /* reached: the flash */
+    CHECK_EQ(b.hold.flash_ms, 0);             /* reached: no second one */
     lift(&b, bx(), by_(), true);
     CHECK(!prog5v_box_poll_cmd(NULL));
     /* A frame counts 250ms at most: one long frame is no hold. */

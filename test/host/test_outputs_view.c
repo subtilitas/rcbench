@@ -36,6 +36,7 @@
 #include "servo_screen.h"
 #include "ui_board.h"
 #include "ui_cats.h"
+#include "hold_flash.h"
 
 static int s_asks;
 static uint8_t s_ask_port;
@@ -480,6 +481,7 @@ TEST_CASE(the_column_holds_every_reason_and_meets_no_key)
         TX_OUT_PORT_WAIT_READ, TX_OUT_PORT_WAIT_KST, TX_OUT_PORT_WAIT_HITEC,
         TX_OUT_PORT_WAIT_ESC, TX_OUT_PORT_WAIT_SAFE, TX_OUT_PORT_WAIT_TEST,
         TX_OUT_PORT_TESTER_ON, TX_PK_PORT_SLICE_WHY, TX_OUT_COMPARE_WHY,
+        TX_PC_PWM_WAITS_5V,
     };
     const gfx_rect_t first = gfx_rect_make(OB_COL_X, OB_WHY_Y, OB_COL_W, 16);
     for (int lang = 0; lang < 2; ++lang) {
@@ -716,6 +718,29 @@ TEST_CASE(the_unbind_key_holds_to_write_no_pin_in_the_board_view)
     CHECK(!outputs_unbind_offered());
 }
 
+/* The hold flash walk's case for UNBIND ALL PINS: the binding with no pin
+ * is written as the hold fires, and the key flashes, its label in black
+ * on the white phase and in white on the black one. */
+static void ov_frame(float dt_s) { view()->tick(dt_s); }
+
+TEST_CASE(the_unbind_key_flashes_as_it_fires)
+{
+    visit_bench();
+    read_odd();
+    CHECK(outputs_unbind_offered());
+    const gfx_rect_t k = gfx_rect_make(OB_CLR_X, OB_CLR_Y, OB_CLR_W, OB_CLR_H);
+    const gfx_rect_t r = { (int16_t)(k.x + 16), (int16_t)(k.y + 4),
+                           (int16_t)(k.w - 32), 4 };
+    const hold_flash_rig_t rig = { ov_frame, frame, s_px, SCREEN_W };
+    char seen[64];
+    send(TOUCH_EVENT_DOWN, k.x + 10, k.y + 10);
+    if (!hold_flash_walk(&rig, r, 2.6f, seen, sizeof(seen))) {
+        T_FAIL("UNBIND ALL PINS drew %s, no flash", seen);
+    }
+    send(TOUCH_EVENT_UP, k.x + 10, k.y + 10);
+    CHECK_EQ(s_applied, 1);
+}
+
 TEST_CASE(the_in_use_table_ends_above_the_unbind_key)
 {
     visit_bench();
@@ -941,6 +966,7 @@ int main(void)
     RUN(last_write_shows_the_result_and_leaves_both_cat_spots_free);
     RUN(a_board_with_a_key_there_has_last_write_at_the_foot);
     RUN(the_unbind_key_holds_to_write_no_pin_in_the_board_view);
+    RUN(the_unbind_key_flashes_as_it_fires);
     RUN(the_in_use_table_ends_above_the_unbind_key);
     RUN(a_cat_is_drawn_in_a_protocols_view_and_a_ports_in_both_languages);
     RUN(a_cat_moves_when_the_entrys_column_covers_it_and_stays_when_it_fits);

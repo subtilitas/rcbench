@@ -329,8 +329,9 @@ TEST_CASE(speed_says_when_it_limits_the_sweep)
 
 /*
  * PAUSE pauses a running sweep with the link's HOLD and reads PAUSED, filled
- * in the warning colour rather than the accent; a second tap starts the
- * curve again, from its beginning, as the IOmcu does.  In both themes.
+ * in the warning colour rather than the red of a running sweep; a second
+ * tap starts the curve again, from its beginning, as the IOmcu does.  In
+ * both themes.
  */
 TEST_CASE(pause_holds_the_sweep_and_a_second_tap_resumes_it)
 {
@@ -341,14 +342,14 @@ TEST_CASE(pause_holds_the_sweep_and_a_second_tap_resumes_it)
         servo_screen_set_armed(true);
         servo_screen_set_sweep(true);
         scr->render(&cv, 0);
-        CHECK_EQ(sweep_btn_pixels(ui_theme_color(UI_C_ACCENT)), 0);
+        CHECK_EQ(sweep_btn_pixels(ui_theme_color(UI_C_DANGER)), 0);
         CHECK_EQ(sweep_btn_pixels(ui_theme_color(UI_C_WARN)), 0);
 
         tap(SWEEP_X, BTN_Y);                   /* SWEEP */
         CHECK_EQ(last_cmd().kind, SERVO_CMD_SWEEP);
         frames(0.3f);
         scr->render(&cv, 0);
-        CHECK(sweep_btn_pixels(ui_theme_color(UI_C_ACCENT)) > 1000);
+        CHECK(sweep_btn_pixels(ui_theme_color(UI_C_DANGER)) > 1000);
         CHECK_EQ(sweep_btn_pixels(ui_theme_color(UI_C_WARN)), 0);
 
         tap(SWEEP_X, BTN_Y);                   /* PAUSE */
@@ -360,7 +361,7 @@ TEST_CASE(pause_holds_the_sweep_and_a_second_tap_resumes_it)
         CHECK_EQ(servo_screen_commanded(), at);
         scr->render(&cv, 0);
         CHECK(sweep_btn_pixels(ui_theme_color(UI_C_WARN)) > 1000);
-        CHECK_EQ(sweep_btn_pixels(ui_theme_color(UI_C_ACCENT)), 0);
+        CHECK_EQ(sweep_btn_pixels(ui_theme_color(UI_C_DANGER)), 0);
 
         /* SPEED changed while paused keeps the pause, and the resume
          * carries the new rate. */
@@ -378,7 +379,7 @@ TEST_CASE(pause_holds_the_sweep_and_a_second_tap_resumes_it)
         CHECK(servo_screen_sweeping());
         CHECK(!servo_screen_paused());
         scr->render(&cv, 0);
-        CHECK(sweep_btn_pixels(ui_theme_color(UI_C_ACCENT)) > 1000);
+        CHECK(sweep_btn_pixels(ui_theme_color(UI_C_DANGER)) > 1000);
         CHECK_EQ(sweep_btn_pixels(ui_theme_color(UI_C_WARN)), 0);
     }
     ui_theme_set(UI_THEME_DARK);

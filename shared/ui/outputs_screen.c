@@ -553,11 +553,17 @@ static void unbind_all(void)
 static void tick(float dt_s)
 {
     outputs_port_tick();
+    if (ui_hold_flashing(&s.clear)) {
+        ui_hold_flash_step(&s.clear, dt_s);
+        touched();      /* the flash's frames */
+    }
     if (s.hit_kind != HIT_CLEAR) {
         return;
     }
     if (!clear_offered()) {
-        drop_clear_hold();
+        /* The key went: the press with it, a flash under way runs on. */
+        ui_hold_spend(&s.clear);
+        s.hit_kind = HIT_NONE;
         touched();
         return;
     }
@@ -938,13 +944,16 @@ outputs_cell_t outputs_screen_cell(uint8_t index, char *label, size_t cap)
 
 void outputs_unbind_draw(gfx_canvas_t *c)
 {
-    if (!clear_offered()) {
+    /* The key goes once the binding it clears is written; its flash shows
+     * where it was. */
+    if (!clear_offered() && !ui_hold_flashing(&s.clear)) {
         return;
     }
     /* Danger red as it is held, as the other held controls fade to the
      * colour of what they are about to do. */
     const gfx_rect_t k = clear_rect();
-    const gfx_color_t fill = ui_hold_fill(UI_PANEL, UI_DANGER, s.clear.held_s);
+    const gfx_color_t fill = ui_hold_button_fill(UI_PANEL, UI_DANGER,
+                                                 &s.clear);
     gfx_fill_chamfer_rect_ex(c, k.x, k.y, k.w, k.h, 10, 0, 10, 0, fill);
     gfx_draw_chamfer_rect_ex(c, k.x, k.y, k.w, k.h, 10, 0, 10, 0, UI_DANGER);
     /* Centred, 10px in from either end: on the grid in the label face, two
@@ -955,13 +964,15 @@ void outputs_unbind_draw(gfx_canvas_t *c)
     const int most = s_board_view ? 4 : 2;
     const int h = gfx_text_height(font, 1);
     const gfx_rect_t in = gfx_rect_make(k.x + 10, k.y, k.w - 20, h);
-    const int lines = outputs_wrap(NULL, in, pitch, label, most, font, UI_TEXT,
+    const gfx_color_t ink = !ui_hold_flashing(&s.clear) ? UI_TEXT
+                            : ui_is_light(fill) ? GFX_BLACK : GFX_WHITE;
+    const int lines = outputs_wrap(NULL, in, pitch, label, most, font, ink,
                                    true);
     (void)outputs_wrap(c,
                        gfx_rect_make(in.x, k.y + (k.h - h) / 2
                                                - (lines - 1) * pitch / 2,
                                      in.w, h),
-                       pitch, label, most, font, UI_TEXT, true);
+                       pitch, label, most, font, ink, true);
 }
 
 static void draw_left(gfx_canvas_t *c)

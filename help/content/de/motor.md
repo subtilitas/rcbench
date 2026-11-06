@@ -79,7 +79,7 @@ ARM schaltet die gesamte Gruppe der Gasausgänge auf ARMED, auch Pins, die hier 
 
 ![Ein Lauf bei ARMED ohne IOmcu: SIM und das Wasserzeichen SIMULATION](view:motor)
 
-1. Halte ARM 2s. Die Füllung geht von Grün nach Rot über. Am Ende des Übergangs schaltet der Prüfstand auf ARMED. Lässt du früher los, ändert sich der Zustand nicht, und das Hinweisband zeigt `Halte 2s, um auf ARMED zu schalten.`.
+1. Halte ARM 2s. Die Füllung geht von Grün nach Rot über. Am Ende des Übergangs schaltet der Prüfstand auf ARMED. Lässt du früher los, ändert sich der Zustand nicht, und das Alarmband zeigt `Halte 2s, um auf ARMED zu schalten.`.
 2. Ziehe den Gasregler. Er folgt dem Weg des Fingers und springt nicht zur Stelle, an der du aufsetzt. `-1` und `+1` ändern den Wert um einen Prozentpunkt.
 3. Tippe auf DISARM oder drücke STOP, um den Lauf zu beenden. Beide stoppen den Ausgang sofort, ohne Rampe, und setzen Gas auf 0%.
 

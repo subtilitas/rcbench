@@ -227,9 +227,7 @@ void upd_c6_render(gfx_canvas_t *c)
     upd_c6_label(&s_v, line, sizeof(line));
     gfx_color_t fill = UI_PANEL_HI;
     if (live()) {
-        fill = (s.hold.flash_ms > 0)
-                   ? ui_hold_flash(UI_OK, s.hold.flash_ms)
-                   : ui_hold_fill(UI_PANEL_HI, UI_OK, s.hold.held_s);
+        fill = ui_hold_button_fill(UI_PANEL_HI, UI_OK, &s.hold);
     }
     ui_button_font(c, upd_c6_rect(), line, fill, false, live(), C6_FONT);
 }

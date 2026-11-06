@@ -63,7 +63,19 @@ static void htap(gfx_rect_t r)
 }
 
 /**
- * @brief The hold page's button held 2.1s, the bench running meanwhile.
+ * @brief The 300ms flash of a hold that fired run out, in frames of 20ms
+ *        with the bench still, so a view shows the page after it.
+ */
+static void hflash_out(void)
+{
+    for (int i = 0; i < 24; ++i) {
+        ui_router_tick(0.02f);
+    }
+}
+
+/**
+ * @brief The hold page's button held 2.1s, the bench running meanwhile,
+ *        and its flash.
  */
 static void hhold(void)
 {
@@ -82,6 +94,7 @@ static void hhold(void)
     }
     e.type = TOUCH_EVENT_UP;
     ui_router_event(&e);
+    hflash_out();
 }
 
 /**
@@ -247,6 +260,7 @@ static bool write_view(const char *v)
             }
             e.type = TOUCH_EVENT_UP;
             ui_router_event(&e);
+            hflash_out();
             hwait(HITEC_PROG_WRITING);
             prun(40u);
             ui_router_tick(0.02f);

@@ -28,11 +28,11 @@
  *        waiting for a moment to write it in (WHEN IDLE), and an attempt the
  *        store refused (NOT SAVED).  WHEN IDLE is seen only while the bench
  *        is armed or a transfer is running; disarmed, the write is taken on
- *        the next frame.  SAVE takes the accent rather than the warning
- *        colour: RESET sits beside it and two amber buttons in a row read as
- *        one control.  NOT SAVED takes the danger colour, because the values
- *        on this screen are not the values the next boot will load and
- *        nothing else on the panel says so.  The same button on SETUP's
+ *        the next frame.  SAVE is green while a press writes, WHEN IDLE
+ *        amber, SAVED neutral; RESET beside it is neutral, an edit.  NOT
+ *        SAVED has its label in the danger colour, because the values on
+ *        this screen are not the values the next boot will load and nothing
+ *        else on the panel says so.  The same button on SETUP's
  *        tiles and on every list: the values are one set.
  */
 void ui_setlist_draw_save(ui_setlist_t *sl, gfx_canvas_t *c)
@@ -46,9 +46,16 @@ void ui_setlist_draw_save(ui_setlist_t *sl, gfx_canvas_t *c)
     const char *label = !dirty ? TR(SET_SAVED)
                         : asked ? TR(SET_WHEN_IDLE)
                         : failed ? TR(SET_NOT_SAVED) : TR(SET_SAVE);
+    /* Green while a press saves, amber while it waits for a SAFE bench,
+     * the label red on a neutral button after a failed write. */
+    if (dirty && failed && !asked) {
+        ui_button_ink(c, ui_setlist_strip_rect(2), label, UI_PANEL_HI,
+                      UI_DANGER, sl->hit_kind == UI_SL_HIT_SAVE,
+                      ui_setlist_save_offered(), SL_F_LABEL);
+        return;
+    }
     ui_button_font(c, ui_setlist_strip_rect(2), label,
-                   dirty ? (asked ? UI_WARN : failed ? UI_DANGER : UI_ACCENT)
-                         : UI_PANEL_HI,
+                   dirty ? (asked ? UI_WARN : UI_OK) : UI_PANEL_HI,
                    sl->hit_kind == UI_SL_HIT_SAVE, ui_setlist_save_offered(),
                    SL_F_LABEL);
 }
@@ -380,7 +387,7 @@ void ui_setlist_draw_strip(ui_setlist_t *sl, gfx_canvas_t *c)
     } else {
         snprintf(reset, sizeof(reset), TR(SET_RESET_ONE), name);
     }
-    ui_button_font(c, ui_setlist_strip_rect(1), reset, UI_WARN,
+    ui_button_font(c, ui_setlist_strip_rect(1), reset, UI_PANEL_HI,
                    sl->hit_kind == UI_SL_HIT_RESET, true, SL_F_LABEL);
 }
 
@@ -450,9 +457,9 @@ void ui_setlist_draw_warning(ui_setlist_t *sl, gfx_canvas_t *c)
 
     ui_button_font(c, ui_setlist_strip_rect(0), TR(SET_STAY), UI_PANEL_HI,
                    sl->hit_kind == UI_SL_HIT_STAY, true, SL_F_LABEL);
-    ui_button_font(c, ui_setlist_strip_rect(1), TR(SET_DISCARD), UI_WARN,
+    ui_button_font(c, ui_setlist_strip_rect(1), TR(SET_DISCARD), UI_PANEL_HI,
                    sl->hit_kind == UI_SL_HIT_DISCARD, !armed, SL_F_LABEL);
-    ui_button_font(c, ui_setlist_strip_rect(2), TR(SET_SAVE), UI_ACCENT,
+    ui_button_font(c, ui_setlist_strip_rect(2), TR(SET_SAVE), UI_OK,
                    sl->hit_kind == UI_SL_HIT_LEAVE_SAVE, true, SL_F_LABEL);
 }
 

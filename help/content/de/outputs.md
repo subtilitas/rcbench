@@ -141,6 +141,7 @@ Der IOmcu speichert Pin und Funktion jedes Ports zusammen mit den Ausgangszuordn
 | `DER SERVO-TESTER BRAUCHT DIE FUNKTION SERVO PWM` | der Port ist KEINE oder DShot |
 | `IOMCU ÄLTER ALS 0.22.0: NUR SERVO PWM` | der IOmcu hat keine FUNKTION |
 | `PORT-PWM BRAUCHT PROG-PORT ALS ZIEL DES TESTERS` | PORT-PWM auf einem Port, der nicht das Ziel des Testers ist |
+| `PORT-PWM EIN: PULSE STARTEN MIT PROG 5V AUF SERVO` | der rbmod-Carrier, PORT-PWM ein und das Feld PROG 5V aus: der Puls wartet auf das Feld, das auf SERVO liegt |
 
 Das Öffnen eines Port-Eintrags schreibt nichts und zeigt keinen LETZTEN SCHREIBVORGANG. Die beiden Tester-Einstellungen bleiben im Panel gespeichert und werden bei ruhendem Prüfstand an den IOmcu gesendet. Bei mehreren Ports heißen die Einträge `PROG-PORT 1` bis `PROG-PORT 4`.
 
@@ -181,7 +182,7 @@ PWM02 und PWM03 teilen sich einen PWM-Slice und damit eine Pulsrate. SERVO PWM u
 
 PROG-PORT-Einträge nennen den festen Stecker und Pin, etwa `PROGP01 AUF GPIO 13`. PIN und FUNKTION lassen sich nicht direkt ändern. FUNKTION zeigt SERVO PWM, wenn der Port den Tester bedient, sonst PROGRAMMIERUNG.
 
-Ab IOmcu-Protokoll 4.36 sind SERVO-TESTER und PORT-PWM verfügbar. Die Portwahl fordert die Servopulsfunktion an. Ein PWM-Ausgang auf demselben Slice sperrt die Wahl. PORT-PWM EIN benötigt außerdem die über das Feld PROG 5V eingeschaltete Portversorgung. Ältere Protokolle blenden die Testerzeilen aus und zeigen `PIN FEST. DER TESTER BRAUCHT IOMCU-PROTOKOLL 4.36`.
+Ab IOmcu-Protokoll 4.36 sind SERVO-TESTER und PORT-PWM verfügbar. Die Portwahl fordert die Servopulsfunktion an. Ein PWM-Ausgang auf demselben Slice sperrt die Wahl. PORT-PWM EIN wird auch bei ausgeschaltetem Feld PROG 5V angenommen; der Puls startet, sobald das Feld auf SERVO EIN zeigt. Das Verlassen von SERVO schaltet ein dort eingeschaltetes PROG 5V aus, schalte es also nach der Rückkehr zu SERVO ein. Ältere Protokolle blenden die Testerzeilen aus und zeigen `PIN FEST. DER TESTER BRAUCHT IOMCU-PROTOKOLL 4.36`.
 
 ## Die Übersicht: AUS
 

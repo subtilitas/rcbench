@@ -3555,9 +3555,7 @@ shared/ui/include/ui_widgets.h: warning: parameters of member ui_hold_credit are
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_hold_fill are not documented
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_hold_leave are not documented
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_hold_left are not documented
-shared/ui/include/ui_widgets.h: warning: parameters of member ui_hold_reached are not documented
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_hold_reset are not documented
-shared/ui/include/ui_widgets.h: warning: parameters of member ui_hold_tick are not documented
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_is_light are not documented
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_panel are not documented
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_panel_header are not documented
@@ -3567,7 +3565,6 @@ shared/ui/include/ui_widgets.h: warning: return type of member ui_hold_credit is
 shared/ui/include/ui_widgets.h: warning: return type of member ui_hold_fill is not documented
 shared/ui/include/ui_widgets.h: warning: return type of member ui_hold_leave is not documented
 shared/ui/include/ui_widgets.h: warning: return type of member ui_hold_left is not documented
-shared/ui/include/ui_widgets.h: warning: return type of member ui_hold_tick is not documented
 shared/ui/include/ui_widgets.h: warning: return type of member ui_is_light is not documented
 shared/ui/include/ui_widgets.h: warning: return type of member ui_text_wrap is not documented
 shared/ui/include/ui_workbench.h: warning: Compound ui_wb_strip_t is not documented.

@@ -55,11 +55,9 @@ void draw_kx_value(gfx_canvas_t *c)
     const gfx_color_t danger = ui_theme_color(UI_C_DANGER);
     const bool pressed = s.ov_have && s.ov_pressed == OP_KST_EXPERT;
 
-    ui_button_font(c, kx_value_rect(), ui_on_off(on),
-                   on ? danger : s.kx_down ? ui_hold_fill(sunk, danger,
-                                                          s.kx_hold.held_s)
-                                           : sunk,
-                   pressed && !s.kx_down, true, SV_FONT_LABEL);
+    ui_hold_button(c, kx_value_rect(), ui_on_off(on), on ? danger : sunk,
+                   danger, &s.kx_hold, pressed && !s.kx_down, true,
+                   SV_FONT_LABEL);
 }
 
 /**
@@ -476,22 +474,17 @@ static void draw_choice(gfx_canvas_t *c)
                    SV_FONT_LABEL);
 }
 
-/** @brief HOLD TO APPLY's fill: sunk, fading to the danger red across its
- *         hold.  @return the fill */
-static gfx_color_t warn_fill(void)
-{
-    return ui_hold_fill(ui_theme_color(UI_C_PANEL_SUNK),
-                        ui_theme_color(UI_C_DANGER), s.warn.hold.held_s);
-}
-
 /**
- * @brief The profile warning's HOLD TO APPLY.
+ * @brief The profile warning's HOLD TO APPLY: sunk, fading to the danger
+ *        red across its hold.
  * @param c the canvas
  */
 void draw_warn_apply(gfx_canvas_t *c)
 {
-    ui_button_font(c, warn_apply_rect(), TR(SV_HOLD_TO_APPLY), warn_fill(),
-                   s.warn.down, true, SV_FONT_LABEL);
+    ui_hold_button(c, warn_apply_rect(), TR(SV_HOLD_TO_APPLY),
+                   ui_theme_color(UI_C_PANEL_SUNK),
+                   ui_theme_color(UI_C_DANGER), &s.warn.hold, s.warn.down,
+                   true, SV_FONT_LABEL);
 }
 
 /** @brief A line of a warning: the left column less 20px left and 12px
@@ -562,11 +555,10 @@ static void draw_warning(gfx_canvas_t *c)
  */
 void draw_ask_apply(gfx_canvas_t *c)
 {
-    ui_button_font(c, warn_apply_rect(), TR(SV_HOLD_TO_APPLY),
-                   ui_hold_fill(ui_theme_color(UI_C_PANEL_SUNK),
-                                ui_theme_color(UI_C_DANGER),
-                                s.ask.hold.held_s),
-                   s.ask.down, true, SV_FONT_LABEL);
+    ui_hold_button(c, warn_apply_rect(), TR(SV_HOLD_TO_APPLY),
+                   ui_theme_color(UI_C_PANEL_SUNK),
+                   ui_theme_color(UI_C_DANGER), &s.ask.hold, s.ask.down,
+                   true, SV_FONT_LABEL);
 }
 
 /**

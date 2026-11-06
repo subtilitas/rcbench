@@ -548,6 +548,53 @@ ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | 2s HALTEN ZUM BESTÄTIGEN auf der Busfehler-Seite | `Halte 2s, um zu bestätigen.` |
 | 2s HALTEN ZUM NEUVERBINDEN auf der Busfehler-Seite | `Halte 2s, um neu zu verbinden.` |
 
+### Das Aufblitzen
+
+Jede Halte-Taste blitzt in dem Frame auf, in dem ihr Halten vollständig
+ist: die ganze Taste weiß, schwarz, dann in ihrer neuen Farbe, zweimal,
+50ms je Phase (`UI_HOLD_FLASH_PHASE_MS`), 300ms insgesamt
+(`UI_HOLD_FLASH_MS`). Bei 60 Frames pro Sekunde dauert eine Phase 3 Frames.
+Ein langsamerer Frame beendet nur die Phase, in die er fällt; so wird
+jede Phase bei jeder Bildrate gezeichnet. Die neue Farbe ist die,
+zu der das Halten überblendet: Gefahrenrot bei ARM, AUSGANG EIN, PROG 5V
+EIN, TEST STARTEN, ENDLAGENLAUF STARTEN und 2s HALTEN: START bei AUTO.
+
+- Das Aufblitzen beginnt mit dem Halten, nicht mit der Antwort. ARMED, der
+  Ausgang oder der Lauf, die innerhalb der 300ms eintreffen, starten es
+  nicht neu; ein Druck blitzt einmal.
+- Eine Taste, die mit ihrem Halten verschwindet, etwa 2s HALTEN ZUM
+  ÜBERNEHMEN einer Warnung, die Halte-Taste einer Programmier-Seite, 2s
+  HALTEN ZUM STARTEN eines Stick-Laufs, ÜBERSCHREIBEN und START im
+  Bestätigungsdialog des IOmcu-Updates, blitzt dort, wo sie gezeichnet war.
+  Danach wird die Seite darunter neu gezeichnet.
+- Ein Zustand, der ohne Druck eintrifft, etwa ARMED von einer anderen
+  Seite, lässt die Taste einmal aufblitzen.
+- Das Halten zum Zurücksetzen von STOP blitzt ebenso, im gelben Rahmen von
+  STOP.
+- Die Bildrate auf dem Panel während des Aufblitzens ist nicht gemessen.
+
+### Tastenfarben
+
+Die Füllung einer Taste sagt, was ein Druck mit einem Ausgang macht.
+
+| Klasse | Tasten | Verfügbar | Aktiv | Wartend | Abgelehnt |
+| --- | --- | --- | --- | --- | --- |
+| Ausgangsaktion: schaltet einen Ausgang ein, schaltet auf ARMED, startet einen Lauf, schreibt ein Servo | ARM, AUSGANG EIN, PROG 5V EIN, TEST STARTEN, ENDLAGENLAUF STARTEN, 2s HALTEN: START bei AUTO, ZENTRIEREN und SWEEP auf LIVE, 1000us, ZENTRIEREN, 2000us und NULLPUNKT auf RUDDER, VERBINDEN, SCHREIBEN INS SERVO FREIGEBEN, n WERTE SCHREIBEN und SERVO BEWEGEN der Programmierungen | grün (`UI_C_OK`) | rot (`UI_C_DANGER`): ein Ausgang ist ein, ARMED, ein Schreiben läuft, das Servo wird angesteuert; die Beschriftung sagt, was ein Druck anhält (DISARM, AUSGANG AUS, LAUF BEENDEN, PAUSE, VERLASSEN, ABBRECHEN, EIN) | bernstein (`UI_C_WARN`): PAUSIERT, WARTEN | grau (`ui_button_off_fill()`), blasse Beschriftung |
+| Notfall | STOP | rot | rot, blitzt beim Druck | - | nie |
+| Bearbeiten | `-` `+`, Wertfelder, MAX LÖSCHEN, KATEGORIE ZURÜCKSETZEN auf SETUP, VERWERFEN, NEU LESEN | neutral (`UI_C_PANEL_HI`) | - | - | grau |
+| SPEICHERN auf SETUP | SPEICHERN, GESPEICHERT, BEI STILLSTAND, NICHT GESPEICHERT | grün, solange etwas ungespeichert ist (SPEICHERN) | - | bernstein (BEI STILLSTAND) | neutral mit roter Beschriftung (NICHT GESPEICHERT); GESPEICHERT ist neutral |
+| Navigation | Kacheln, Reiter, ÖFFNEN, GRAFIK, SCHLIESSEN, Öffner | neutral; ein gewählter Reiter cyan (`UI_C_ACCENT`) | - | - | grau |
+| Löschen | LÖSCHEN auf FILES und LOGS | neutral, die Beschriftung rot | - | - | grau |
+
+Beide Themen nutzen dieselben Rollen; das helle Thema hat sein eigenes
+Grün, Rot und Bernstein (`shared/ui/ui_theme.c`). Die Überblendung beim
+Halten läuft vom verfügbaren Grün zur Farbe, die die Taste danach hält.
+
+Ein Tipp auf ein graues TEST STARTEN, ENDLAGENLAUF STARTEN oder START bei
+AUTO zeigt den Grund im Alarmband als Mitteilung, 4s in Bernstein, wie der
+Hinweis einer Halte-Taste. Die Zeile unter der Taste sagt dasselbe und
+bleibt.
+
 ## Marken im Menü
 
 ![Das Funktionsmenü](img/de/overview.png)
@@ -898,8 +945,8 @@ Wechsel auf SAFE beendet auch eine noch gehaltene Berührung. So kann die
 zum Anhalten verwendete Berührung den Prüfstand nicht 2s später erneut
 auf ARMED schalten.
 
-Beim Wechsel auf ARMED blinkt die ganze Taste zweimal in der Folge Weiß,
-Schwarz, Rot, jeweils einen gezeichneten Frame pro Farbe. In ARMED bleibt
+Sobald das Halten vollständig ist, blitzt die ganze Taste zweimal in der
+Folge Weiß, Schwarz, Rot auf, 50ms je Farbe ([Das Aufblitzen](#das-aufblitzen)). In ARMED bleibt
 sie gefahrenrot und dient als DISARM. DISARM wirkt sofort beim Aufsetzen,
 ohne Halten oder Warten auf das Loslassen. DISARM und STOP halten den
 Ausgang ohne Rampe an. SPITZENWERTE ZURÜCKSETZEN löscht die Spitzenmarken
@@ -1802,7 +1849,7 @@ sich auf, wenn der erste Befehl noch nicht gesendet wurde. Es wird nichts
 gesendet; der vorherige Sweep-Zustand bleibt bestehen.
 
 **PAUSE hält die aktuelle Ausgangsposition.** Während eines Sweeps zeigt
-die Taste PAUSE in Akzentfarbe. Ein Tipp hält den Ausgang dort, wo er
+die Taste PAUSE in Rot: der Sweep steuert den Ausgang. Ein Tipp hält den Ausgang dort, wo er
 angekommen ist; durch TEMPO kann er hinter der Kurve liegen. Die Taste
 zeigt anschließend PAUSIERT mit Füllung in Warnfarbe. Der IOmcu hält die
 Position (HOLD des Links, SWEEP-Register 4), weil nur er sie genau kennt.
@@ -5767,7 +5814,7 @@ steht auf `GESPEICHERT`. In ARMED steht die
 Anforderung als `BEI STILLSTAND`, bis der Prüfstand auf SAFE schaltet.
 
 Bei einem abgelehnten Schreibzugriff bleibt `NICHT GESPEICHERT` in der
-Gefahrenfarbe stehen, bis das Speichern gelingt oder eine weitere Änderung
+Gefahrenfarbe auf einer neutralen Taste stehen, bis das Speichern gelingt oder eine weitere Änderung
 vorgenommen wird. Eine Ablehnung nimmt bereits geschriebene Werte nicht zurück. Die
 Schlüssel werden einzeln gesetzt; scheitert ein späterer, bleiben die
 vorherigen gespeichert. Das Medium kann daher neue und alte Werte enthalten.
@@ -6786,10 +6833,12 @@ IDENTITY-Register 5 am Link des IOmcu (Board 2).
   lautet `PROGP04 TEILT PWM-SLICE 0 MIT PWM04 (GPIO 1)`. Die Bindungen von PWM01 bis PWM04 werden für einen Programmierport nicht
   geändert. Ein PWM-Protokoll auf PWM04 setzt PROGP04 auf FUNC NONE zurück.
 - Die Ports nutzen die festen 5V von M7, geschaltet über GPIO 21.
-  PORT-PWM EIN wird nur angenommen, wenn das Feld PROG 5V EIN zeigt.
-  Andernfalls lautet die Zeile
-  `PROG 5V AUS: SCHALTE ES IM FELD PROG 5V EIN`, und es geht kein Puls
-  hinaus. Der Puls endet, wenn PROG 5V ausgeht.
+  PORT-PWM EIN wird bei ausgeschaltetem Feld PROG 5V angenommen. Das Feld
+  liegt auf SERVO und SUPPLY, nicht hier, und das Verlassen von SERVO
+  schaltet ein dort eingeschaltetes PROG 5V aus. Die Zeile lautet dann
+  `PORT-PWM EIN: PULSE STARTEN MIT PROG 5V AUF SERVO`, und es geht kein
+  Puls hinaus, bis das Feld EIN zeigt. Der Puls endet, wenn PROG 5V
+  ausgeht.
 - Mit einem IOmcu vor 4.36 werden SERVO-TESTER und PORT-PWM nicht
   gezeichnet, und die Zeile lautet
   `PIN FEST. DER TESTER BRAUCHT IOMCU-PROTOKOLL 4.36`.

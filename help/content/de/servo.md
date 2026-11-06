@@ -156,7 +156,7 @@ Der Endlagenlauf sucht mechanische Anschläge an beiden Enden des eingebauten Se
 1. Tippe auf OPTIONEN und wähle unter ENDLAGENLAUF NUR SUCHE oder SUCHEN + PROGRAMMIEREN.
 2. Wähle bei ZIEL PROG-PORT unter SERVO KST/CHASERVO oder HITEC. Die Vorgabe folgt der zuletzt unter PROGRAMMIEREN geöffneten Servoprogrammierung. Bei KST/CHASERVO kannst du unter SERVOPULSE BEHALTEN oder 1000-2000 wählen; die Vorgabe ist BEHALTEN.
 3. Tippe auf das Home-Feld, um zu den Karten zurückzukehren.
-4. Halte ENDLAGENLAUF STARTEN bei ARMED 2s. Ein Tipp oder kürzeres Halten startet nichts und zeigt `Halte 2s, um den Endlagenlauf zu starten.` im Hinweisband.
+4. Halte ENDLAGENLAUF STARTEN bei ARMED 2s. Ein Tipp oder kürzeres Halten startet nichts und zeigt `Halte 2s, um den Endlagenlauf zu starten.` im Alarmband.
 5. TEST bleibt sichtbar. Das Feld auf der linken LIVE-Karte zeigt Phase, Seite, Puls und angesteuerten Ausgang.
 
 Die Zeile unter der Taste nennt die ganze Zeit Ausgang und Messgerät: `AUSGANG PROG-PORT 1 GPIO 13, STROM INA3221 0x41 CH2` oder `AUSGANG SERVO PWM GPIO 2, STROM INA3221 0x40 CH1`. Die Zeile ZIEL bleibt ebenfalls sichtbar.
@@ -172,8 +172,10 @@ Der Lauf verwendet ausschließlich den INA3221-Kanal für das Testerziel. Mit PD
 | `INA3221 NICHT ERREICHBAR` | keine Verbindung, oder der INA3221 antwortet nicht |
 | `NOCH KEINE INA3221-MESSFENSTER` | der INA3221 ist noch nicht das Messgerät |
 | `SERVOVERSORGUNG UNTER 3.0V ODER OHNE MESSWERT` | das letzte INA3221-Fenster hat keine Schienenspannung oder weniger als 3,0V: ein ausgeschalteter Ausgang liest 0V |
-| `PORT-PWM AUS. KEINE PULSE AN DIESEM PORT.` | ZIEL ist PROG-PORT und PORT-PWM ist aus |
-| `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` | auf dem rbmod-Carrier ist ZIEL ein Programmierport mit PORT-PWM ein, und sein Puls ist noch aus, etwa nach einem bei ARMED eingeschalteten PROG 5V: der Puls kommt nur bei SAFE |
+| `GESPERRT: SERVOPROGRAMMIERUNG BELEGT DEN PORT` | ZIEL ist PROG-PORT, und eine Sitzung eines Programmers hält den Port; vor PORT-PWM genannt |
+| `PORT-PWM AUS: DISARM, TIPPE AUF ZIEL, SCHALTE ES EIN` | ZIEL ist PROG-PORT mit PORT-PWM aus, der Prüfstand ARMED: ZIEL nimmt bei ARMED kein Tippen an |
+| `PORT-PWM AUS: TIPPE AUF ZIEL UND SCHALTE ES EIN` | dasselbe bei SAFE: ZIEL öffnet den Eintrag des Ports auf OUTPUTS, wo PORT-PWM liegt |
+| `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` | ZIEL ist PROG-PORT mit PORT-PWM ein, und sein Puls ist noch aus, etwa nach einem bei ARMED eingeschalteten PROG 5V auf dem rbmod-Carrier: der Puls kommt nur bei SAFE |
 | `MITTE MUSS ZWISCHEN PULS MIN UND PULS MAX LIEGEN` | der Pulsbereich enthält PULS MITTE nicht |
 | `BERICHT WIRD NOCH GESCHRIEBEN` | ein Test oder ein Lauf ist im Gang, oder sein Bericht geht noch auf die Karte |
 

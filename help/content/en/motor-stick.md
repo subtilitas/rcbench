@@ -121,7 +121,7 @@ Steps due after programming open when the run is over.
 
 ![The run waiting for the ESC's confirmation](view:motor-stick-hand-end)
 
-A Kontronik ESC confirms a stored mode with tones. Removing power before confirmation ends locks the ESC. After storing, the run keeps the ESC powered and the stick at its storage position until DONE.
+A Kontronik ESC confirms a stored mode with tones. Removing power before the confirmation has ended locks the ESC. After storing, the run keeps the ESC powered and the stick at its storage position until DONE.
 
 ![NOT CONFIRMED: the ESC may be locked](view:motor-stick-hand-locked)
 

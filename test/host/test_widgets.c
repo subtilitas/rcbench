@@ -1049,6 +1049,7 @@ TEST_CASE(a_state_that_goes_away_under_a_press_ends_the_gesture)
     ui_hold_begin(&h, TX_HOLD_HINT_ARM);
     CHECK(hold_advance(&h, UI_HOLD_S));
     ui_hold_reached(&h);
+    /* The firing started the flash; reaching it restarts nothing. */
     CHECK_EQ(h.flash_ms, UI_HOLD_FLASH_MS);
     /* Reaching it keeps the firing: the finger is still down on the press
      * that fired, and its release consumes it. */
@@ -1061,35 +1062,42 @@ TEST_CASE(a_state_that_goes_away_under_a_press_ends_the_gesture)
     /* And with no press down there is nothing to end. */
     CHECK(!ui_hold_left(&h));
 
-    /* The first step spends nothing; 12 more at 60Hz spend the flash. */
-    for (int i = 0; i < 13; ++i) { ui_hold_flash_step(&h, 1.0f / 60.0f); }
+    /* The first step spends nothing; 18 more at 60Hz spend the flash, 3 a
+     * phase. */
+    for (int i = 0; i < 18; ++i) { ui_hold_flash_step(&h, 1.0f / 60.0f); }
+    CHECK(h.flash_ms > 0);
+    ui_hold_flash_step(&h, 1.0f / 60.0f);
     CHECK_EQ(h.flash_ms, 0);
     ui_hold_flash_step(&h, 1.0f / 60.0f);
     CHECK_EQ(h.flash_ms, 0);
 }
 
-/* The flash runs by time: 25ms a phase, white, black, settled, twice,
- * 150ms in all, whatever the frame rate. */
+/* The flash runs by time: 50ms a phase, white, black, settled, twice,
+ * 300ms in all, whatever the frame rate. */
 TEST_CASE(the_flash_runs_by_time)
 {
     const gfx_color_t settled = ui_theme_color(UI_C_DANGER);
-    CHECK_EQ(UI_HOLD_FLASH_MS, 150);
+    CHECK_EQ(UI_HOLD_FLASH_PHASE_MS, 50);
+    CHECK_EQ(UI_HOLD_FLASH_MS, 300);
+    CHECK_EQ(ui_hold_flash(settled, 300), GFX_WHITE);
+    CHECK_EQ(ui_hold_flash(settled, 251), GFX_WHITE);
+    CHECK_EQ(ui_hold_flash(settled, 250), GFX_BLACK);
+    CHECK_EQ(ui_hold_flash(settled, 201), GFX_BLACK);
+    CHECK_EQ(ui_hold_flash(settled, 200), settled);
+    CHECK_EQ(ui_hold_flash(settled, 151), settled);
     CHECK_EQ(ui_hold_flash(settled, 150), GFX_WHITE);
-    CHECK_EQ(ui_hold_flash(settled, 126), GFX_WHITE);
-    CHECK_EQ(ui_hold_flash(settled, 125), GFX_BLACK);
-    CHECK_EQ(ui_hold_flash(settled, 101), GFX_BLACK);
-    CHECK_EQ(ui_hold_flash(settled, 100), settled);
-    CHECK_EQ(ui_hold_flash(settled, 75), GFX_WHITE);
-    CHECK_EQ(ui_hold_flash(settled, 50), GFX_BLACK);
-    CHECK_EQ(ui_hold_flash(settled, 25), settled);
+    CHECK_EQ(ui_hold_flash(settled, 101), GFX_WHITE);
+    CHECK_EQ(ui_hold_flash(settled, 100), GFX_BLACK);
+    CHECK_EQ(ui_hold_flash(settled, 51), GFX_BLACK);
+    CHECK_EQ(ui_hold_flash(settled, 50), settled);
     CHECK_EQ(ui_hold_flash(settled, 1), settled);
     /* Over, and outside the flash at either end. */
     CHECK_EQ(ui_hold_flash(settled, 0), settled);
     CHECK_EQ(ui_hold_flash(settled, -1), settled);
-    CHECK_EQ(ui_hold_flash(settled, 151), settled);
+    CHECK_EQ(ui_hold_flash(settled, 301), settled);
 
-    /* A step stops at the next phase: 12 frames at 60Hz spend it, 6 at
-     * 39Hz, and a late frame ends one phase. */
+    /* A step stops at the next phase: 18 frames at 60Hz spend it (3 a
+     * phase), 12 at 39Hz (2 a phase), and a late frame ends one phase. */
     int at60 = 0, at39 = 0;
     for (int ms = UI_HOLD_FLASH_MS; ms > 0; ++at60) {
         ms = ui_hold_flash_left(ms, 1.0f / 60.0f);
@@ -1097,10 +1105,10 @@ TEST_CASE(the_flash_runs_by_time)
     for (int ms = UI_HOLD_FLASH_MS; ms > 0; ++at39) {
         ms = ui_hold_flash_left(ms, 1.0f / 39.0f);
     }
-    CHECK_EQ(at60, 12);
-    CHECK_EQ(at39, 6);
-    CHECK_EQ(ui_hold_flash_left(UI_HOLD_FLASH_MS, 1.0f), 125);
-    CHECK_EQ(ui_hold_flash_left(25, 1.0f), 0);
+    CHECK_EQ(at60, 18);
+    CHECK_EQ(at39, 12);
+    CHECK_EQ(ui_hold_flash_left(UI_HOLD_FLASH_MS, 1.0f), 250);
+    CHECK_EQ(ui_hold_flash_left(50, 1.0f), 0);
     /* No time, a negative one or a NaN spends nothing; none is left of
      * none. */
     CHECK_EQ(ui_hold_flash_left(100, 0.0f), 100);
@@ -1151,6 +1159,7 @@ TEST_CASE(the_hold_refuses_a_null_rather_than_following_it)
     ui_hold_begin(NULL, TX_HOLD_HINT_ARM);
     ui_hold_reached(NULL);
     ui_hold_flash_step(NULL, 1.0f);
+    ui_hold_spend(NULL);
     CHECK(!ui_hold_leave(NULL));
     CHECK(!ui_hold_end(NULL, NULL, gfx_rect_make(0, 0, 1, 1)));
     CHECK(!ui_hold_tick(NULL, UI_HOLD_S));

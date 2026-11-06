@@ -237,25 +237,6 @@ void prog5v_box_tick(prog5v_box_t *b, float dt_s)
     }
 }
 
-/**
- * @brief The button's fill: OUTPUT ON's, the OK green when off fading to
- *        the danger red under the hold, red when on.
- * @param b the box
- * @return the colour
- */
-static gfx_color_t fill(const prog5v_box_t *b)
-{
-    const bool on = prog5v_box_on();
-    gfx_color_t f = on ? ui_theme_color(UI_C_DANGER) : ui_theme_color(UI_C_OK);
-    if (b->hold.flash_ms > 0) {
-        return ui_hold_flash(ui_theme_color(UI_C_DANGER), b->hold.flash_ms);
-    }
-    if (!on && b->hold.held_s > 0.0f) {
-        f = ui_hold_fill(f, ui_theme_color(UI_C_DANGER), b->hold.held_s);
-    }
-    return f;
-}
-
 const char *prog5v_box_text(int line, char *buf, size_t n)
 {
     if (buf == NULL || n == 0u) {
@@ -316,8 +297,15 @@ void prog5v_box_render(const prog5v_box_t *b, gfx_canvas_t *c)
              UI_FONT_FINE, (held() != PROG5V_HELD_NONE)
                                ? ui_theme_color(UI_C_WARN)
                                : ui_theme_color(UI_C_TEXT_DIM), 1);
-    ui_button_font(c, prog5v_box_button(b),
-                   (s == ST_ON) ? TR(P5_OFF) : TR(P5_ON), fill(b), b->pressed,
+    /* OUTPUT ON's colours: green when off, fading to the red of on under
+     * the hold.  The box stays where its host puts it, so a copy of the
+     * hold draws it: nothing is kept for a ghost. */
+    ui_hold_t hold = b->hold;
+    ui_hold_button(c, prog5v_box_button(b),
+                   (s == ST_ON) ? TR(P5_OFF) : TR(P5_ON),
+                   ui_action_fill(prog5v_box_on() ? UI_ACTION_ACTIVE
+                                                  : UI_ACTION_AVAILABLE),
+                   ui_action_fill(UI_ACTION_ACTIVE), &hold, b->pressed,
                    prog5v_box_live(), &gfx_font_10x20);
 }
 
