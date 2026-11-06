@@ -1059,6 +1059,8 @@ TEST_CASE(on_the_carrier_port_pwm_on_from_outputs_with_the_5v_off_leads_to_a_sta
     port_view_set(&v);
     outputs_screen_set_prog_ports(OUTPUTS_PORTS_UNKNOWN, NULL);
     carrier_done();
+}
+
 /* The hold flash walk's case for START on AUTO: the run starts as the
  * hold fires, the label turns to STOP RUN, and the button flashes. */
 static void ra_frame(float dt_s)
