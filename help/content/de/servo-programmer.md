@@ -234,6 +234,36 @@ IOmcu 0.21.1 und 0.21.2 (Protokoll 4.23) empfangen immer mit PULL-UP. Bei gewäh
 
 ![Die Liste von Hitec-D-Empfang](view:servo-hitec-rx)
 
+## Hitec: SERVO BEWEGEN
+
+SERVO BEWEGEN auf dem Reiter WEG der Hitec-Programmierung fährt das Ruderhorn eines Servos der D-Serie auf die bearbeitete Position, in der gehaltenen Sitzung, während der Prüfstand SAFE bleibt. Bis n WERTE SCHREIBEN wird nichts im Servo gespeichert.
+
+![Die Seite SERVO BEWEGEN](view:servo-hitec-move)
+![SERVO BEWEGEN an, ENDE LINKS verfolgt](view:servo-hitec-move-on)
+
+- Tippe auf AUS, lies die Seite und halte 2s HALTEN ZUM BEWEGEN 2s lang. Ein kürzerer Druck zeigt `Halte 2s, um das Servo zu bewegen.` und startet nichts.
+- Es braucht ein antwortendes PD mini mit eingeschaltetem Ausgang: STOP schaltet die Versorgung des Servos aus. Ohne, auch an den festen 5V des rbmod-Carriers, meldet es `Bewegen braucht ein PD mini mit eingeschaltetem Ausgang.`
+- DREHRICHTUNG ist im Servo und im Entwurf CW; die Abbildung bei CCW ist nicht gemessen.
+- NEUTRAL, ENDE LINKS und ENDE RECHTS bekommen Tasten `-` und `+` mit 8 Zählwerten, 0.11°, die beim Halten wiederholen. Das Ruderhorn folgt der zuletzt geänderten Zeile, ihr Name steht in der Akzentfarbe; es beginnt mit NEUTRAL. Ein Tippen auf den Wert öffnet das Tastenfeld.
+- Das Ruderhorn fährt höchstens 2.0° je Durchlauf und bleibt in der Reichweite der gespeicherten Endlagen, 2606 bis 13743 bei einem D485HW im Werkszustand.
+- Ein Ruderhorn, das 2 Durchläufe lang mehr als 2.0° nachhängt, ein Strom von 80% der Stromgrenze für 0.4s oder ein AS5600-Winkel, der nicht folgt, fährt das Ruderhorn 1.0° zurück und beendet die Schleife: `Servo bei 6000 blockiert. Zurück auf 6167 gefahren.`
+- Ein Tippen auf EIN, ein Reiterwechsel, SCHLIESSEN oder das Home-Tag beenden es: Ziel 3000, ein Neustart des Servos und ein Lesen, das mit dem Start verglichen wird, etwa 2.6s im Host-Modell. `SERVO BEWEGEN steht auf AUS. Die gespeicherten Werte sind unverändert zurückgelesen.`
+- STOP, ein Schalten auf SAFE am Prüfstand, eine verlorene Verbindung, eine ausgefallene Versorgung und ein gescheitertes Lesen beenden es sofort, mit allen Ausgängen aus.
+
+### ANSCHLAG SUCHEN
+
+Solange SERVO BEWEGEN an ist, steht ANSCHLAG SUCHEN in der Zeile von DREHRICHTUNG. Es sucht den mechanischen Anschlag einer Seite und setzt diese Endlage im Entwurf; es schreibt nichts.
+
+![ANSCHLAG SUCHEN links bei der Suche](view:servo-hitec-move-find)
+![Ein Anschlag links gefunden](view:servo-hitec-move-found)
+
+- Tippe auf ENDE LINKS oder ENDE RECHTS. Das Ruderhorn fährt auf NEUTRAL, dann alle 2 Durchläufe 0.5° nach außen, bis zum Rand der Reichweite.
+- Eine Blockierung setzt diese Endlage 1.0° vor den Anschlag, mit `*`: `Anschlag bei 4840. ENDE LINKS in den Änderungen auf 4915 gesetzt.` Das Ruderhorn folgt dann dieser Endlage.
+- Keine Blockierung bis zum Rand, 40s vorbei oder ein zweites Tippen auf die Taste: die Änderungen bleiben, wie sie waren.
+- n WERTE SCHREIBEN nach AUS schreibt die gefundene Endlage.
+
+Die Schwellen sind gewählt, nicht mit einem Ruderhorn an einem Anschlag gemessen. [SERVO BEWEGEN in der Hitec-Programmierung](https://github.com/subtilitas/rcbench/wiki/HitecMove-de) nennt jede Meldung und Grenze.
+
 ## Verwandte Seiten
 
 - [Servo](servo.md) und [Servo-Optionen](servo-settings.md)

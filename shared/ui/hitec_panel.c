@@ -14,10 +14,13 @@
  */
 #include "hitec_panel.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
+#include "hitec_move.h"
 #include "hitec_reg.h"
+#include "servo_screen.h"
 #include "settings.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
@@ -67,6 +70,11 @@ const hpn_row_t hpn_rows[] = {
       TX_HP_END_R, NULL },
     { HITEC_PANEL_TRAVEL, 3, 0, 1, K_SHOW, HITEC_P_D_DIRECTION, S_D,
       TX_HP_DIRECTION, NULL },
+    /* MOVE SERVO: the horn follows the position edited (hitec_move.h). */
+    { HITEC_PANEL_TRAVEL, 4, 0, 1, K_ACT, A_MOVE, S_D, TX_HP_MOVE, NULL },
+    /* FIND STOP: LEFT END and RIGHT END keys in DIRECTION's place while
+     * MOVE SERVO's loop runs, which holds DIRECTION at CW. */
+    { HITEC_PANEL_TRAVEL, 3, 0, 1, K_ACT, A_FIND, S_D, TX_HP_FIND, NULL },
     { HITEC_PANEL_TRAVEL, 0, 0, 1, K_SHOW, HITEC_P_C_CENTRE, S_C,
       TX_HP_CENTRE, NULL },
     { HITEC_PANEL_TRAVEL, 1, 0, 1, K_SHOW, HITEC_P_C_LEFT_END, S_C,
@@ -141,6 +149,12 @@ bool hpn_row_shown(const hpn_row_t *r)
     if (r->kind == K_ACT && (r->what == A_SERIES || r->what == A_FILES)) {
         return (r->what == A_FILES) == hp.prog.owned;
     }
+    if ((r->kind == K_ACT && r->what == A_FIND)
+        || (r->kind == K_SHOW && r->what == (uint8_t)HITEC_P_D_DIRECTION)) {
+        /* One of the two: FIND STOP while the loop runs. */
+        return (r->kind == K_ACT)
+               == (hitec_prog_move_phase(&hp.prog) != HITEC_MOVE_OFF);
+    }
     if (r->kind == K_SHOW && r->what < (uint8_t)HITEC_P_COUNT) {
         return hitec_param(hitec_prog_layout(&hp.prog), r->what) != NULL;
     }
@@ -200,10 +214,24 @@ gfx_rect_t hpn_row_rect(const hpn_row_t *r)
 gfx_rect_t hpn_value_rect(const hpn_row_t *r)
 {
     const gfx_rect_t rr = hpn_row_rect(r);
-    const int w = r->kind == K_ACT && r->what == A_WRITE ? HP_WRITE_W
-                : r->wide != 0u && r->kind == K_SHOW     ? HP_WIDE_W
-                                                         : HP_VAL_W;
+    int w = HP_VAL_W;
 
+    if (r->kind == K_ACT) {
+        if (r->what == A_WRITE) {
+            w = HP_WRITE_W;
+        } else if (r->what == A_FIND) {
+            w = HP_WIDE_W;
+        }
+    } else if (r->wide != 0u) {
+        w = HP_WIDE_W;
+    }
+
+    if (hpn_stepped(r)) {
+        /* Between its -/+ keys (hpn_step_rect()). */
+        return (gfx_rect_t){ (int16_t)(rr.x + rr.w - w + HP_STEP_W + 4),
+                             rr.y, (int16_t)(w - 2 * (HP_STEP_W + 4)),
+                             rr.h };
+    }
     return (gfx_rect_t){ (int16_t)(rr.x + rr.w - w), rr.y, (int16_t)w,
                          rr.h };
 }
@@ -443,6 +471,7 @@ static void options_fresh(void)
 
 void hitec_panel_screen_entry(void)
 {
+    hitec_prog_move_stop(&hp.prog);
     options_fresh();
     /* Writing is switched off at every entry of the screen. */
     (void)hitec_prog_write_enable(&hp.prog, false);
@@ -497,8 +526,9 @@ uint32_t hitec_panel_hold_revision(void)
 /**
  * @brief Everything of the model a render shows, as one number.  The PD
  *        mini's reading counts as the state line writes it: 10mV and 1mA
- *        while the port is held in mode, nothing in any other state, so a
- *        reading the page does not show repaints nothing.
+ *        while the port is held in mode, nothing in any other state, and
+ *        as MOVE SERVO's live line writes the current: 10mA while the loop
+ *        runs.  A reading the page does not show repaints nothing.
  * @return the number
  */
 static uint32_t signature(void)
@@ -528,7 +558,12 @@ static uint32_t signature(void)
         (uint32_t)hitec_prog_record_verdict(p), p->ses.step_index,
         p->must_read, p->f.card, p->ses.done, p->f.card_state, p->bk_saved,
         p->bk_no_file, p->have_bk, p->files_seq, hitec_prog_card_busy(p),
-        p->load_pend,
+        p->load_pend, p->mv.phase, p->mv.off, p->mv.follow, p->mv.pos,
+        p->mv.has_pos, p->f.has_angle ? p->f.angle : 0xFFFFu,
+        (uint32_t)hitec_prog_find_side(p), p->mv.find_go, p->mv.fs.p,
+        /* MOVE SERVO's live line writes the current in 10mA. */
+        hitec_prog_state(p) == HITEC_PROG_MOVING && p->f.supply_read
+            ? (p->f.out_ma + 5u) / 10u : 0u,
     };
     uint32_t sig = 2166136261u;
 
@@ -551,6 +586,7 @@ void hpn_moved(void)
         }
         hp.state_seen = st;
     }
+    hpn_move_follow();
     hpn_supply_sync();
     sig = signature();
     if (sig != hp.sig) {
@@ -561,7 +597,18 @@ void hpn_moved(void)
 
 void hitec_panel_feed(const hitec_prog_feed_t *f)
 {
-    hitec_prog_feed(&hp.prog, f);
+    hitec_prog_feed_t g = *f;
+    float deg = 0.0f;
+
+    /* The AS5600 on the horn as the SERVO screen shows it, for MOVE
+     * SERVO's judge, where the feed carries none. */
+    if (!g.has_angle && servo_screen_log_angle(&deg)) {
+        const long counts = lroundf(deg * 4096.0f / 360.0f) % 4096L;
+
+        g.has_angle = true;
+        g.angle = (uint16_t)(counts < 0 ? counts + 4096L : counts);
+    }
+    hitec_prog_feed(&hp.prog, &g);
     hpn_moved();
 }
 

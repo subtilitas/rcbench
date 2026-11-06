@@ -233,6 +233,18 @@ SCREENS = {
     "servo-hitec-classic-leave": ("servo-hitec-classic-leave.png", "servo",
                                   "dark"),
     "servo-hitec-nopd": ("servo-hitec-nopd.png", "servo", "dark"),
+    # MOVE SERVO on TRAVEL of the D485HW: its hold page, the loop on with
+    # LEFT END followed, a LEFT END beyond the reach, a horn held at a block
+    # and its line after the end, and the refusal with no PD mini.
+    "servo-hitec-move": ("servo-hitec-move.png", "servo", "dark"),
+    "servo-hitec-move-on": ("servo-hitec-move-on.png", "servo", "dark"),
+    "servo-hitec-move-reach": ("servo-hitec-move-reach.png", "servo", "dark"),
+    "servo-hitec-move-blocked": ("servo-hitec-move-blocked.png", "servo",
+                                 "dark"),
+    "servo-hitec-move-nopd": ("servo-hitec-move-nopd.png", "servo", "dark"),
+    "servo-hitec-move-find": ("servo-hitec-move-find.png", "servo", "dark"),
+    "servo-hitec-move-found": ("servo-hitec-move-found.png", "servo",
+                               "dark"),
     "servo-hitec-other": ("servo-hitec-other.png", "servo", "dark"),
     "servo-hitec-release": ("servo-hitec-release.png", "servo", "dark"),
     "servo-hitec-released": ("servo-hitec-released.png", "servo", "dark"),
@@ -308,6 +320,9 @@ SCREENS = {
     "servo-hitec-restore-backup": ("servo-hitec-restore-backup.png",
                                    "servo", "dark"),
     "servo-hitec-restore-page": ("servo-hitec-restore-page.png", "servo",
+                                 "dark"),
+    # RESTORE of a D485HW's session backup: no serial, the unit asked for.
+    "servo-hitec-restore-unit": ("servo-hitec-restore-unit.png", "servo",
                                  "dark"),
     "servo-hitec-classic-more-factory": (
         "servo-hitec-classic-more-factory.png", "servo", "dark"),

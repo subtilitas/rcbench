@@ -1132,7 +1132,7 @@ identification, write plans; `protocols/hitec/hitec_reg.c`) are host-tested agai
 reads and captured writes; the session state machine (entry of both families, reads, write
 plans with their read-back, moves, leave; `protocols/hitec/hitec_session.c`) is host-tested
 against a servo model; the live loop's core (`protocols/hitec/hitec_live.c`: target mapping,
-reach, slew, the judges of a pass, FIND STOP) is host-tested and called by nothing yet; the
+reach, slew, the judges of a pass, FIND STOP) is host-tested and drives MOVE SERVO; the
 panel's link half (`shared/bench/hitec_link.c`), which runs a session's steps on page 0x34,
 is host-tested against the page; the SERVO screen's Hitec programmer
 (`shared/bench/hitec_prog.c`, `shared/ui/hitec_panel*.c`,
@@ -1141,13 +1141,15 @@ a record of the values before each write (`shared/bench/hitec_prog_write.c`,
 `shared/bench/hitec_card.c`, `firmware/panel/main/hitec_record.c`), saves the session's
 backup before the first write, saves and loads servo files in `BENCH/HITEC/CONF`, reads what
 a write's plan depends on a second time and refuses the write where two reads differ,
-restores the session's backup, writes a classic servo's FACTORY DEFAULT
+restores the session's backup, with the unit confirmed by a 2s hold for a D series servo and
+a classic one without a serial (`shared/bench/hitec_prog_unit.c`), writes a classic servo's FACTORY DEFAULT
 (`shared/bench/hitec_prog_file.c`, `shared/bench/hitec_card_run.c`,
 `shared/logfile/servo_store.c`, `firmware/panel/main/hitec_files.c`) and leaves through
 them, and is host-tested against the page, the servo model and a card in memory
 (`test_hitec_prog`, `test_hitec_prog_safe`, `test_hitec_prog_codes`,
 `test_hitec_prog_write`, `test_hitec_prog_file`, `test_hitec_prog_backup`,
-`test_hitec_prog_chain`, `test_hitec_prog_reread`, `test_hitec_card`, `test_hitec_card_run`,
+`test_hitec_prog_chain`, `test_hitec_prog_unit`, `test_hitec_prog_reread`, `test_hitec_card`,
+`test_hitec_card_run`,
 `test_ew_a`, `test_ew_pio`, `test_ew_line`, `test_ew_id`, `test_ew_map`, `test_ew_guard`,
 `test_ew_session`, `test_ew_session_write`, `test_ew_text`, `test_ew_session_text`,
 `test_servo_store`, `test_hitec_panel`, `test_hitec_panel_states`, `test_hitec_panel_write`,
@@ -1163,7 +1165,15 @@ Hitec servo (`shared/bench/hitec_prog_run.c`, `shared/ui/hitec_panel_run.c`: LEF
 RIGHT END in travel units, the run's 2s start hold as the consent, the backup file before
 the run's first write) are host-tested against the same page and servo model
 (`test_hitec_prog_run`, `test_hitec_panel_run`) and used by LIMIT RUN and RUDDER AUTO
-through `servo_limit_seam.c`: [Runs](docs/HitecProgrammer.md#runs).
+through `servo_limit_seam.c`: [Runs](docs/HitecProgrammer.md#runs). MOVE SERVO on the D
+series TRAVEL tab (`shared/bench/hitec_move.c`, `shared/ui/hitec_panel_move.c`: the horn
+moved to the position edited while SAFE, `-`/`+` keys, the judges, the end with the servo's
+restart and a compare, every hard end an error) is host-tested against the page and a servo
+model whose horn follows its target (`test_hitec_move`, `test_hitec_panel_move`); its
+thresholds are not measured on a bench: [MOVE SERVO](docs/HitecMove.md). FIND STOP inside
+the same loop (the search from the neutral outward to a bind, the end point into the draft,
+nothing written) is host-tested against the same model with a horn held at a block
+(`test_hitec_find`, `test_hitec_panel_find`).
 
 ## The tree
 
@@ -1246,7 +1256,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 475 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 483 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1329,14 +1339,17 @@ The host suite is 475 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_kst_panel_texts`, `test_kst_panel_writepage`, `test_kst_panel_screen`,
 `test_kst_panel_notes`, `test_kst_panel_files`, `test_kst_panel_nocard`,
 `test_kst_panel_limrun`, `test_kst_panel_ports`, `test_kst_panel_layout`,
-`test_kst_panel_type`, `test_kst_panel_expert`, `test_hitec_wire`, `test_hitec_pio`, `test_hitec_pre`,
+`test_kst_panel_type`, `test_kst_panel_expert`, `test_hitec_wire`, `test_hitec_pio`,
+`test_hitec_pio_answer`, `test_hitec_line`, `test_hitec_pre`,
 `test_hitec_reg`, `test_hitec_reg_plan`, `test_hitec_session`, `test_hitec_session_write`,
-`test_hitec_session_move`, `test_hitec_live`, `test_hitec_port`, `test_hitec_port_stop`,
+`test_hitec_session_move`, `test_hitec_live`, `test_hitec_move`, `test_hitec_find`,
+`test_hitec_port`,
+`test_hitec_port_stop`,
 `test_hitec_port_hold`, `test_hitec_port_cut`, `test_hitec_port_rx`, `test_hitec_link`,
 `test_hitec_link_loss`, `test_hitec_link_run`, `test_hitec_prog`, `test_hitec_prog_safe`,
 `test_hitec_prog_codes`, `test_hitec_prog_write`, `test_hitec_prog_file`,
-`test_hitec_prog_backup`, `test_hitec_prog_chain`, `test_hitec_prog_reread`,
-`test_hitec_prog_reread`, `test_hitec_card`, `test_hitec_card_run`, `test_servo_store`,
+`test_hitec_prog_backup`, `test_hitec_prog_chain`, `test_hitec_prog_unit`,
+`test_hitec_prog_reread`, `test_hitec_panel_unit`, `test_hitec_card`, `test_hitec_card_run`, `test_servo_store`,
 `test_hitec_panel`, `test_hitec_panel_states`, `test_hitec_panel_write`,
 `test_hitec_panel_file`, `test_page_console`, `test_kst_card`, `test_prog_link`,
 `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`,
@@ -1351,9 +1364,9 @@ The host suite is 475 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_i2c_txq_wire`, `test_sense_txq`, `test_sense_txq_svc`, `test_fm_name`, `test_png_enc`,
 `test_shot_file`, `test_shot`, `test_shot_popup`, `test_wall_clock`, `test_witmotion`,
 `test_servo_angle`, `test_servo_source_angle`, `test_hitec_prog_run` and
-`test_hitec_panel_run`, `test_servo_rudder`, `test_servo_rudder_panel`,
-`test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`, `test_bleuart`,
-`test_bleuart_adv`, `test_bleuart_link`, `test_imu`, `test_imu_filter`,
+`test_hitec_panel_run`, `test_hitec_panel_move`, `test_hitec_panel_find`, `test_servo_rudder`,
+`test_servo_rudder_panel`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
+`test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_imu`, `test_imu_filter`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_kst`,
 `test_servo_rauto_panel`,
@@ -1521,7 +1534,13 @@ devices and the hidden count.
 families, the transactions and every refusal of the reply decoders, with frames and reply
 times read off bench captures. `test_hitec_pio` runs the pin driver's arithmetic and its PIO
 program in a model of the state machine, as `test_kst_pio` does; the IOmcu build fails when
-the assembled program differs from the words the test runs.
+the assembled program differs from the words the test runs. `test_hitec_pio_answer` holds
+the end of a LISTEN's answer in the same model: the receiver waits again 1 cycle after the
+answer's 10th bit time, and a start bit from 1 cycle to 6 bit times after the stop bit is
+taken. `test_hitec_line` runs the pin driver on a fake of the pico-sdk calls it makes: a
+transaction past its time and an abort stop the state machine, let the channel take the
+receive FIFO and count the bytes before the restart, the time at its limit and 1us before
+it and across the clock's wrap, the 64 reads of the FIFO's settle, and every abort path.
 
 No servo is connected. `test_hitec_pre` runs the precharge-and-sample receiver's core: the
 cycle counts at every clock from 48 to 250MHz, the sampler's program stepped instruction by
@@ -1557,7 +1576,26 @@ image only; the reach, the pulse width of a target and the 1000us share; the sle
 151 counts and over 2 passes; the current at the stall level for 399, 400 and 401ms; the
 AS5600 rule at half the change, at a commanded change of 3deg and with a command that turns
 back; FIND STOP to a block, to the reach edge, on the current, its abort, its 40s cap and
-the 32-bit millisecond wrap.
+the 32-bit millisecond wrap. `test_hitec_move` runs MOVE SERVO on the programmer's model
+over the page and a servo whose horn follows its target: the passes toward the followed
+position at 150 counts a pass at most, the reach edge, the end with one restart and no save,
+a bind by the lag, by the current (799mA for 3s, 800mA for 350ms, 800mA held to 400ms and
+across the 32-bit millisecond wrap) and by the AS5600, the hard ends (STOP, a switch to SAFE
+at the bench, a lost link, a step the link does not run, the supply off, the AS5600 gone, a
+failed read), each one fault at the gate, ABORT at the start, in the loop and in the end, a
+register changed during the loop, a start outside the reach at 51 and 50 counts, the edits
+with the hold's consent, and every refusal with nothing sent. `test_hitec_panel_move` runs
+its row, page, hint, `-`/`+` keys with their repeat at 0.40s and 1.0s, the keypad, the live
+lines naming the port and pin the loop drives, and every way off on the overlay.
+`test_hitec_find` runs FIND STOP on each side to a block (the stop within 37 counts of it, the
+end point 75 counts inside, nothing written or saved), the step of 37 counts every 2 passes,
+the reach's edge with no block, the 40s cap counted from the request, a stop too close to the
+neutral, the operator's end before and during the search, the refusals, no edit while it runs,
+a second search after a stop found, a bind on the way to the neutral, MOVE OFF, ABORT and STOP
+during the search.
+`test_hitec_panel_find` runs its row in DIRECTION's place, its keys of 48px and more, the tap
+that starts and the tap that ends it, the note, each end's line in both languages and a tab
+change during the search.
 
 `hitec_headers_cxx` calls the module through its 6 headers from C++11. `test_i2c_txq`,
 `test_i2c_txq_calls` and `test_i2c_txq_wire` run the core of `protocols/i2c_txq/` over a
@@ -1736,9 +1774,9 @@ of the millisecond clock, the backup in RAM without a card and saved when a card
 backup of another servo, saves by hand and their refusals, FILES' pages, the request id's
 wrap, a load into the draft with the switch off and on, the other series and layout, another
 model, a soft rule, a hand-edited file, values outside the editable ones counted, a raw
-value back by a load, the load's gates (ARMED, STOP, no read, a read owed), RESTORE of the
-backup with a raw value after a write and after a lost link, and FACTORY DEFAULT of a
-classic servo.
+value back by a load, the load's gates (ARMED, STOP, no read, a read owed), RESTORE of a
+D series backup with a raw value, the unit confirmed, after a write and after a lost link,
+and FACTORY DEFAULT of a classic servo.
 
 `test_hitec_prog_backup` runs the load of a backup file: FACTORY DEFAULT of an HS-7955TG
 undone after LEAVE and CONNECT, cell 0x22 included; a backup file of another servo, a save
@@ -1749,7 +1787,16 @@ series read to the read before it: a swap to a D485HW with other values (one reg
 count, is enough) and to one with the values of the last read (not told apart); a verified
 write of the ID; a write left unverified with the verdicts SAME, DONE, MIX and OTHER, and
 with its record discarded; LEAVE and CONNECT; a lost link; a classic servo of another
-serial; the message in both languages.
+serial; the message in both languages. `test_hitec_prog_unit` runs the unit a session's
+backup is of: a second unit of one model with another serial or ID takes its own backup;
+the same unit read again keeps it; RESTORE goes for a classic servo with one serial, and
+for a D series servo and a classic one without a serial only with the unit confirmed, the
+second read still run; the serial's limits, '0' to '9' and each cell read; the backup's age
+across the clock wrap; a swap with no read after it, ended by the second read; a READ ALL
+aborted after a swap; ABORT and STOP during RESTORE's second read. `test_hitec_panel_unit`
+runs the RESTORE page that asks for the unit: its lines, its hold, a short press and its
+hint, CANCEL, a tap elsewhere, a finger off the button, a cancelled touch, STOP during the
+hold, the age in seconds and minutes, and both languages without a card.
 
 `test_hitec_prog_reread` runs the second read before a write's plan (reads that agree or
 differ, ABORT, STOP, its time); `test_servo_restore` SERVO's question after a LEAVE ([Servo
@@ -1783,8 +1830,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 872 committed screenshots to the current render,
-436 in English and the same 436 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` holds 888 committed screenshots to the current render,
+444 in English and the same 444 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -1882,14 +1929,15 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/kst_panel_run.c` | 152 | 142 | 93.4% |
 | `shared/ui/kst_panel_draw.c` | 539 | 536 | 99.4% |
 | `shared/ui/esc_wire_panel.c` | 573 | 544 | 94.9% |
-| `shared/ui/hitec_panel.c` | 242 | 242 | 100.0% |
-| `shared/ui/hitec_panel_text.c` | 457 | 457 | 100.0% |
-| `shared/ui/hitec_panel_edit.c` | 384 | 383 | 99.7% |
-| `shared/ui/hitec_panel_page.c` | 231 | 231 | 100.0% |
-| `shared/ui/hitec_panel_touch.c` | 183 | 183 | 100.0% |
-| `shared/ui/hitec_panel_draw.c` | 239 | 239 | 100.0% |
-| `shared/ui/hitec_panel_file.c` | 208 | 208 | 100.0% |
+| `shared/ui/hitec_panel.c` | 267 | 267 | 100.0% |
+| `shared/ui/hitec_panel_text.c` | 474 | 469 | 99.0% |
+| `shared/ui/hitec_panel_edit.c` | 399 | 397 | 99.5% |
+| `shared/ui/hitec_panel_page.c` | 235 | 235 | 100.0% |
+| `shared/ui/hitec_panel_touch.c` | 210 | 209 | 99.5% |
+| `shared/ui/hitec_panel_draw.c` | 252 | 252 | 100.0% |
+| `shared/ui/hitec_panel_file.c` | 230 | 230 | 100.0% |
 | `shared/ui/hitec_panel_run.c` | 105 | 105 | 100.0% |
+| `shared/ui/hitec_panel_move.c` | 219 | 214 | 97.7% |
 | `shared/ui/analyser_screen.c` | 257 | 256 | 99.6% |
 | `shared/ui/balance_screen.c` | 382 | 382 | 100.0% |
 | `shared/ui/battery_screen.c` | 222 | 217 | 97.8% |
@@ -2061,10 +2109,12 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/esc_wire_text.c` | 233 | 229 | 98.3% |
 | `shared/ui/esc_wire_help.c` | 19 | 19 | 100.0% |
 | `shared/bench/hitec_link.c` | 529 | 529 | 100.0% |
-| `shared/bench/hitec_prog.c` | 671 | 671 | 100.0% |
-| `shared/bench/hitec_prog_write.c` | 559 | 558 | 99.8% |
-| `shared/bench/hitec_prog_file.c` | 454 | 451 | 99.3% |
+| `shared/bench/hitec_prog.c` | 677 | 677 | 100.0% |
+| `shared/bench/hitec_prog_write.c` | 568 | 567 | 99.8% |
+| `shared/bench/hitec_prog_file.c` | 455 | 452 | 99.3% |
 | `shared/bench/hitec_prog_run.c` | 111 | 104 | 93.7% |
+| `shared/bench/hitec_move.c` | 371 | 362 | 97.6% |
+| `shared/bench/hitec_prog_unit.c` | 27 | 27 | 100.0% |
 | `shared/bench/hitec_card.c` | 278 | 277 | 99.6% |
 | `shared/bench/hitec_card_run.c` | 113 | 113 | 100.0% |
 | `shared/bench/kst_prog.c` | 1390 | 1367 | 98.3% |
@@ -2170,7 +2220,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **83966** | **82409** | **98.1%** |
+| **total** | **84722** | **83144** | **98.1%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
