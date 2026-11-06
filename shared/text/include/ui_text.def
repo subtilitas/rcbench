@@ -1929,6 +1929,14 @@ UI_TEXT(SUP_NOT_ANSWERING, 26,
 UI_TEXT(FOOT_SETTINGS, 0,
     "SETTINGS",
     "OPTIONEN")
+/* The alert band on a tap on SETTINGS while the screen drives its output:
+ * the list would cover DISARM or OUTPUT OFF. */
+UI_TEXT(FOOT_SETTINGS_SAFE, 94,
+    "SETTINGS open on a SAFE bench only. Switch to SAFE first.",
+    "OPTIONEN nur bei SAFE. Schalte zuerst auf SAFE.")
+UI_TEXT(FOOT_SETTINGS_ON, 94,
+    "SETTINGS open with the output off only. Switch it off first.",
+    "OPTIONEN nur bei Ausgang aus. Schalte ihn zuerst aus.")
 UI_TEXT(SUP_SETTINGS, 0,
     "SETTINGS",
     "OPTIONEN")

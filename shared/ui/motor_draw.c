@@ -27,6 +27,8 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
+#include "ui_footer.h"
+
 #include "motor_live_int.h"
 
 /**
@@ -228,21 +230,21 @@ static void draw_derived(gfx_canvas_t *c)
 
 /*
  * The table, in the legend's and the plot's place: its heading, a rule,
- * the four channels 32px apart and, while the INA228 is BENCH's source,
- * the ESC's own figures in two rows 28px apart.  Each row's columns: the
+ * the four channels 21px apart and, while the INA228 is BENCH's source,
+ * the ESC's own figures in two rows 21px apart.  Each row's columns: the
  * name, the value from TBL_VAL_DX, its unit from TBL_UNIT_DX and the
  * extreme from TBL_PK_DX, where the heading's NOW and PEAK stand.
  */
 /** @brief Channel row @p i's top, px. */
-#define TABLE_ROW_Y(i) (LEG_Y + 30 + (i) * 32)
+#define TABLE_ROW_Y(i) (LEG_Y + 26 + (i) * 21)
 /** @brief The rule over the ESC's rows, px. */
-#define ESC_RULE_Y     (TABLE_ROW_Y(S_COUNT) - 6)
+#define ESC_RULE_Y     (TABLE_ROW_Y(S_COUNT) - 2)
 /** @brief The ESC's row @p i's top, px: 0 voltage, 1 current. */
-#define ESC_ROW_Y(i)   (ESC_RULE_Y + 8 + (i) * 28)
+#define ESC_ROW_Y(i)   (ESC_RULE_Y + 3 + (i) * 21)
 #define TBL_VAL_DX     150  /**< The value's column, from the left, px. */
 #define TBL_UNIT_DX    250  /**< The unit's column, px. */
 #define TBL_PK_DX      300  /**< The extreme's column, under PEAK, px. */
-_Static_assert(ESC_ROW_Y(1) + 20 <= UP_Y + UP_H - INNER,
+_Static_assert(ESC_ROW_Y(1) + 20 <= UP_Y + UP_H - 4,
                "the ESC's second row ends inside the telemetry card");
 
 /**
@@ -630,9 +632,45 @@ void mo_render(gfx_canvas_t *c, int buffer_index)
     }
     if (ps != NULL) {
         render_session(c, bit, buf, ps);
-    } else {
-        render_body(c, bit, buf);
+        return;
     }
+    /* The SETTINGS list covers the body; opening or closing it repaints
+     * the buffer whole. */
+    if (msp_shown() != s.drawn_list_shown[buf]) {
+        s.drawn_list_shown[buf] = msp_shown();
+        s.drawn_list[buf] = UINT32_MAX;
+        s.drawn_mask &= ~bit;
+        s.drawn_push[buf]  = UINT32_MAX;
+        s.drawn_ctrl[buf]  = UINT32_MAX;
+        s.drawn_thr[buf]   = UINT32_MAX;
+        s.drawn_arm[buf]   = UINT32_MAX;
+        s.drawn_plot[buf]  = UINT32_MAX;
+        s.drawn_title[buf] = 0xFFu;
+    }
+    if (msp_shown()) {
+        if (s.drawn_list[buf] != msp_revision()) {
+            s.drawn_list[buf] = msp_revision();
+            msp_render(c);
+        }
+        return;
+    }
+    render_body(c, bit, buf);
+}
+
+/**
+ * @brief The footer's name and line, and SETTINGS (ui_footer.h); ARM in the
+ *        middle slot is draw_arm()'s.
+ * @param c the canvas
+ */
+static void draw_footer(gfx_canvas_t *c)
+{
+    const gfx_rect_t n = ui_footer_rect(UI_FOOTER_NAME);
+    gfx_fill_rect(c, n.x, n.y, n.w, n.h, ui_theme_color(UI_C_BG));
+    char line[32];
+    bool warn = false;
+    (void)mo_target_line(line, sizeof(line), &warn);
+    ui_footer_name(c, n, "MOTOR & ESC", line, warn);
+    ui_footer_settings(c, s.pressed == 5, mo_endpoints_free());
 }
 
 /**
@@ -660,15 +698,15 @@ static void render_body(gfx_canvas_t *c, unsigned bit, int buf)
         }
         ui_panel(c, (gfx_rect_t){ RIGHT_X, CTL_Y, RIGHT_W, CTL_H },
                  TR(MO_CONTROL), ui_theme_color(UI_C_ACCENT));
+        ui_footer_clear(c);
         s.drawn_mask |= bit;
         s.drawn_title[buf] = tag;
         s.drawn_strip[buf] = UINT32_MAX;
         s.drawn_page[buf]  = UINT32_MAX;
     }
 
-    /* The strip, unless SETTINGS' keypad covers it. */
-    const bool strip_covered = !on_live && msp_modal();
-    if (!strip_covered && s.drawn_strip[buf] != mwb_revision()) {
+    /* The strip. */
+    if (s.drawn_strip[buf] != mwb_revision()) {
         s.drawn_strip[buf] = mwb_revision();
         mwb_render_strip(c);
     }
@@ -714,22 +752,6 @@ static void render_body(gfx_canvas_t *c, unsigned bit, int buf)
         if (s.drawn_page[buf] != mpp_revision()) {
             s.drawn_page[buf] = mpp_revision();
             mpp_render_page(c);
-        }
-    } else if (!on_live) {
-        /* SETTINGS' page, on its own counter: a press, the keypad, the
-         * store's state. */
-        if (s.drawn_page[buf] != msp_revision()) {
-            s.drawn_page[buf] = msp_revision();
-            msp_render(c, mo_endpoints_free());
-            /* The keypad covers the strip's row; with the page shown the
-             * row is cleared and the strip drawn again. */
-            s.drawn_strip[buf] = UINT32_MAX;
-            if (!msp_modal()) {
-                gfx_fill_rect(c, PAGE_X, 3, PAGE_W, PAGE_Y - 3,
-                              ui_theme_color(UI_C_BG));
-                s.drawn_strip[buf] = mwb_revision();
-                mwb_render_strip(c);
-            }
         }
     } else if (s.tabs.selected == MOTOR_PANE_PLOT) {
         if (s.drawn_plot[buf] != s.plot.revision) {
@@ -804,6 +826,7 @@ static void render_body(gfx_canvas_t *c, unsigned bit, int buf)
     if (!ctrl_moved) {
         return;
     }
+    draw_footer(c);
     /* How the throttle is moved; disarmed, why it is not, in the words
      * SERVO's dial uses. */
     if (on_live && mo_value_live()) {

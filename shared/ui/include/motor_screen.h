@@ -195,9 +195,8 @@ size_t motor_output_strip(char *out, size_t size, uint8_t proto,
                           uint64_t pins, bool known, bool armed, bool *warn);
 
 /**
- * The task shown, a ui_wb_task_t: LIVE, PROGRAM or SETTINGS.  A tile opens
- * LIVE; the home tag over SETTINGS' keypad closes the keypad, and in
- * PROGRAM's session climbs it one level (back()).
+ * The task shown, a ui_wb_task_t: LIVE or PROGRAM.  A tile opens LIVE; in
+ * PROGRAM's session the home tag climbs it one level (back()).
  */
 int motor_screen_task(void);
 
@@ -213,7 +212,11 @@ int motor_screen_pane(void);
  *  programmer holds its port. */
 bool motor_screen_target_locked(void);
 
-/** The setting SETTINGS' keypad types, or -1 while it is closed. */
+/** Whether the SETTINGS list the footer opens shows, over the body. */
+bool motor_screen_settings_shown(void);
+
+/** The setting the SETTINGS list's keypad types, or -1 while it is
+ *  closed. */
 int motor_screen_keypad_setting(void);
 
 /**
@@ -223,13 +226,20 @@ int motor_screen_keypad_setting(void);
  */
 const ui_keypad_t *motor_screen_keypad(void);
 
-/** SETTINGS' rows in their order, at most @p max into @p out (NULL counts
- *  them).  Returns how many there are. */
+/** The SETTINGS list's settings in their order, at most @p max into @p out
+ *  (NULL counts them).  Returns how many there are. */
 int motor_settings_rows(setting_id_t *out, int max);
-/** The heading row @p row sits under, a ui_text_id_t; -1 out of range. */
+/** The heading setting @p row sits under, a ui_text_id_t; -1 out of
+ *  range. */
 int motor_settings_heading(int row);
-/** Row @p row's value box, which a tap opens the keypad on. */
+/** Setting @p row's list row, headings counted; -1 out of range. */
+int motor_settings_list_row(int row);
+/** Setting @p row's value at the list's scroll, where a tap opens the
+ *  keypad (ui_setlist_row_part()). */
 gfx_rect_t motor_settings_box(int row);
+struct ui_setlist;
+/** The SETTINGS list, for a test to read its geometry and state. */
+const struct ui_setlist *motor_settings_list(void);
 
 /** What the alert band says for a switch to ARMED refused because the pair
  *  of Idle pulse and Full pulse is not in force at the IOmcu, by

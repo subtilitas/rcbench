@@ -4,8 +4,9 @@
  * and LIVE's page (with motor_events.c and motor_draw.c, which share its
  * state through motor_live_int.h), motor_workbench.c, its task strip and
  * the CONTROL card's TARGET row, motor_program_page.c, PROGRAM's list and
- * its sessions, and motor_settings_page.c, SETTINGS' page: the layout they
- * draw on and the functions each calls of the others.  Nothing outside
+ * its sessions, and motor_settings_page.c, the SETTINGS list the footer
+ * opens: the layout they draw on and the functions each calls of the
+ * others.  Nothing outside
  * shared/ui includes this header; the screen's interface is
  * motor_screen.h.
  *
@@ -19,11 +20,13 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include "gfx.h"
 #include "prog_registry.h"
 #include "touch_types.h"
+#include "ui_footer.h"
 #include "ui_screen.h"
 #include "ui_workbench.h"
 
@@ -56,7 +59,7 @@
 /**
  * @brief The task strip at the 1024 x 600 sizes, as SERVO's: tabs of 150 x
  *        40px, 4px apart, from y 8, and the page from y 56.  LIVE |
- *        PROGRAM | SETTINGS take 458px of the left column.  The shared
+ *        PROGRAM take 304px of the left column.  The shared
  *        UI_WB_ figures stay at their 24px strip for SUPPLY until it is
  *        laid out at the new sizes; these are MOTOR & ESC's own, the
  *        shared figures plus the difference.
@@ -69,10 +72,10 @@
 #define MO_PAGE_Y  (UI_WB_PAGE_Y + 18)  /**< The page's top: 56px. */
 
 /**
- * @brief The lowest row a control that stops what the bench drives, or a
- *        line of text, may reach: 4px above the alert band.
+ * @brief The lowest row the pages and the rail reach: 8px over the footer
+ *        (ui_footer.h), whose slots end 4px above the alert band.
  */
-#define STOP_FLOOR (UI_ALERT_Y - UI_BAND_H - 4)
+#define STOP_FLOOR UI_FOOTER_FLOOR
 
 /**
  * @brief The faces of the 1024 x 600 type scale this screen draws in.
@@ -94,9 +97,8 @@
 /*
  * The rail, top down: the temperatures over it on every task, four reading
  * cards, and the CONTROL card with its totals on the title line, the
- * TARGET row, RESET PEAKS and ARM.  The TARGET row, RESET PEAKS' row and
- * ARM are where SERVO's output card has its TARGET row, CENTRE / SWEEP /
- * RELEASE and ARM, so ARM and DISARM are in one place on both workbenches.
+ * TARGET row and RESET PEAKS.  ARM and DISARM are the footer's middle slot
+ * (ui_footer.h), the one place every screen has its primary hold.
  */
 #define HDR_Y     (PAD + 4)               /**< The temperatures' line, px. */
 #define HDR_H     20                      /**< Its height, px. */
@@ -105,19 +107,15 @@
 #define HERO_GAP  4                       /**< Between two of them, px. */
 /** @brief The CONTROL card's top: under the fourth reading card. */
 #define CTL_Y     (HERO_Y0 + 4 * HERO_H + 4 * HERO_GAP)
-#define CTL_H     (H - PAD - CTL_Y)       /**< To the body's margin. */
+#define CTL_H     (STOP_FLOOR - CTL_Y)    /**< To 8px over the footer. */
 #define BTN_H     UI_TAP_MIN              /**< RESET PEAKS' height, px. */
 #define TARGET_Y  (CTL_Y + TITLE_H + 8)   /**< The TARGET row, px. */
 #define TARGET_H  UI_TAP_MIN              /**< Its height, px. */
 #define RESET_Y   (TARGET_Y + TARGET_H + 10) /**< RESET PEAKS, px. */
-#define ARM_Y     (RESET_Y + BTN_H + 10)  /**< ARM and DISARM, px. */
-#define ARM_H     60                      /**< ARM's height: 9.0mm. */
-_Static_assert(ARM_Y + ARM_H <= STOP_FLOOR,
-               "DISARM ends above the alert band");
-_Static_assert(ARM_Y + ARM_H <= CTL_Y + CTL_H,
-               "ARM ends inside the CONTROL card");
-/* RESET PEAKS and TARGET are UI_TAP_MIN tall by their defines. */
-_Static_assert(ARM_H >= UI_TAP_MIN, "ARM is a finger tall");
+_Static_assert(RESET_Y + BTN_H + 4 <= CTL_Y + CTL_H,
+               "RESET PEAKS ends inside the CONTROL card");
+/* RESET PEAKS and TARGET are UI_TAP_MIN tall by their defines; ARM is the
+ * footer's 328 x 48px slot (ui_footer.h). */
 
 /*
  * The left column on LIVE: the telemetry card, with its tag and the
@@ -127,21 +125,20 @@ _Static_assert(ARM_H >= UI_TAP_MIN, "ARM is a finger tall");
  * the hint under them, above the alert band.
  */
 #define UP_Y      MO_PAGE_Y               /**< The telemetry card, px. */
-#define UP_H      288                     /**< Its height, px. */
-#define LO_Y      (UP_Y + UP_H + 8)       /**< The THROTTLE card, px. */
-#define LO_H      (H - PAD - LO_Y)        /**< To the body's margin. */
+#define UP_H      230                     /**< Its height, px. */
+#define LO_Y      (UP_Y + UP_H + 8)       /**< The THROTTLE card: y 294. */
+#define LO_H      (STOP_FLOOR - LO_Y)     /**< To 8px over the footer. */
 
 /*
- * SETTINGS' and PROGRAM's page: the left column under the strip, down to
- * the screen's margin.  SETTINGS' keypad covers the strip as well, so no
- * tab switches the task under an open keypad.
+ * PROGRAM's page: the left column under the strip, down to 8px over the
+ * footer.
  */
 #define PAGE_X    LEFT_X                  /**< The page's left edge. */
 #define PAGE_Y    MO_PAGE_Y               /**< Its top: 56px. */
 #define PAGE_W    LEFT_W                  /**< Its width: 620px. */
-#define PAGE_H    (H - PAGE_Y - PAD)      /**< Its height: 476px. */
+#define PAGE_H    (STOP_FLOOR - PAGE_Y)   /**< Its height: 380px. */
 
-_Static_assert(MO_STRIP_X + 3 * MO_TAB_W + 2 * MO_TAB_GAP + 3 <= RIGHT_X,
+_Static_assert(MO_STRIP_X + 2 * MO_TAB_W + MO_TAB_GAP + 3 <= RIGHT_X,
                "the strip ends left of the rail");
 _Static_assert(MO_STRIP_Y + MO_STRIP_H + 3 <= MO_PAGE_Y,
                "the strip ends above its page");
@@ -212,30 +209,70 @@ void mpp_render_strip(gfx_canvas_t *c, uint8_t proto, uint64_t pins,
 uint32_t mpp_strip_signature(uint8_t proto, uint64_t pins, bool known,
                              bool armed);
 
-/* --- motor_settings_page.c: SETTINGS' page -------------------------------- */
+/* --- motor_settings_page.c: the SETTINGS list ---------------------------- */
 
-/* Laid out (reset); the screen left; touch events lost. */
+/**
+ * @brief The list laid out, closed (the screen's reset).
+ */
 void msp_reset(void);
-void msp_leave(void);
+/**
+ * @brief The list opened at its top, from the footer's SETTINGS.
+ */
+void msp_open(void);
+/**
+ * @brief The list closed with what covers it; the values stay as they are,
+ *        unsaved where they are (the screen left, the bench left SAFE).
+ */
+void msp_close(void);
+/**
+ * @brief Whether the list shows: it covers the body.
+ * @return True while it does.
+ */
+bool msp_shown(void);
+/**
+ * @brief Touch events lost: the list's press drops.
+ */
 void msp_cancel(void);
-/* Whether the keypad is open over the page and the strip. */
-bool msp_modal(void);
-/* The home tag: the keypad closes, as its CANCEL does.  Whether it did. */
+/**
+ * @brief The home tag over the list: what covers it closes; else the leave
+ *        warning holds it while something is unsaved; else it closes.
+ * @return True when the list was shown: the tag stays on the screen.
+ */
 bool msp_back(void);
-/* A touch event on the page.  @p safe: the bench is SAFE, nothing asked of
- * it (ui_value_gate.h's OFF), and ARM is not held; the pulse rows take a
- * press, and their keypad's OK, only then. */
+/**
+ * @brief A touch event on the list.
+ * @param evt  The event.
+ * @param safe Whether the bench is SAFE, nothing asked of it
+ *             (ui_value_gate.h's OFF), and ARM is not held: the throttle's
+ *             endpoints take a press, and their keypad's OK, only then.
+ */
 void msp_event(const touch_event_t *evt, bool safe);
-/* Whether a press of the page's is under way. */
-bool msp_pressed(void);
-/* A frame: a keypad for a pulse row closes once @p safe is false, and the
- * save line follows the store. */
-void msp_tick(bool safe);
-/* Bumped when the page's look changes. */
+/**
+ * @brief A frame: the key repeat, SAVE's state, a keypad of an endpoint
+ *        closed once @p safe is false.
+ * @param dt_s The frame's time, s.
+ * @param safe As msp_event()'s.
+ */
+void msp_tick(float dt_s, bool safe);
+/**
+ * @brief Bumped when the list's look changes.
+ * @return The revision.
+ */
 uint32_t msp_revision(void);
 /**
- * @brief SETTINGS' page in its two columns, or the keypad over it.
- * @param c the canvas
- * @param safe whether the pulse rows take a press
+ * @brief The list over the body.
+ * @param c The canvas.
  */
-void msp_render(gfx_canvas_t *c, bool safe);
+void msp_render(gfx_canvas_t *c);
+
+/* --- motor_screen.c: what the list and the footer read -------------------- */
+
+/**
+ * @brief What the throttle drives, as the footer's and the list's line
+ *        under the name: `protocol pins`, 31 cells of the 10 x 20 face.
+ * @param out  Takes the text.
+ * @param n    Bytes at @p out.
+ * @param warn Takes whether it is the warning's: no pin, or not read.
+ * @return True: the line is always there.
+ */
+bool mo_target_line(char *out, size_t n, bool *warn);

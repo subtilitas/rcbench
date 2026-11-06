@@ -2653,8 +2653,7 @@ static void pose_motor_supply(ui_screen_id_t id, const char *view,
          * sample left it and the panel says it is holding one; SETTINGS'
          * views are of a SAFE bench after a run, but the one ARMED. */
         if (strcmp(view, "motor-held") == 0
-            || (strncmp(view, "motor-settings", 14) == 0
-                && strcmp(view, "motor-settings-armed") != 0)) {
+            || strncmp(view, "motor-settings", 14) == 0) {
             motor_screen_set_armed(false);
         }
     }
@@ -3982,11 +3981,11 @@ static void pose_shown_views(const char *view)
     if (strcmp(view, "motor-table") == 0) {
         tap(18 + 150, UI_BAND_H + 82 + 20);             /* TABLE */
     }
-    /* MOTOR & ESC > SETTINGS: the strip's third tab; the keypad of
-     * Capacity, the second row; ARMED, the pulse rows locked and a save
-     * asked for that waits for a SAFE bench. */
+    /* MOTOR & ESC's SETTINGS list: the footer's SETTINGS; the keypad of
+     * Capacity, the second setting; scrolled to its end with a change not
+     * saved; the leave warning over it. */
     if (strncmp(view, "motor-settings", 14) == 0) {
-        tap(9 + 2 * (150 + 4) + 75, UI_BAND_H + 8 + 20);    /* SETTINGS */
+        tap(686 + 164, UI_BAND_H + 444 + 24);              /* SETTINGS */
         if (strcmp(view, "motor-settings-keypad") == 0) {
             const gfx_rect_t box = motor_settings_box(1);
             tap(box.x + box.w / 2, UI_BAND_H + box.y + box.h / 2);
@@ -3998,6 +3997,7 @@ static void pose_shown_views(const char *view)
             const bool idle = strcmp(view, "motor-settings-gap-idle") == 0;
             settings_set(SET_OUT_MIN_US, idle ? 1000.0f : 1400.0f);
             settings_set(SET_OUT_MAX_US, idle ? 1650.0f : 2000.0f);
+            drag(300, UI_BAND_H + 400, UI_BAND_H + 100);
             setting_id_t ids[16];
             const int rows = motor_settings_rows(ids, 16);
             for (int r = 0; r < rows; ++r) {
@@ -4009,9 +4009,14 @@ static void pose_shown_views(const char *view)
             kp_type(motor_screen_keypad(), idle ? "1599" : "1450");
             ktap(ui_keypad_key_rect(motor_screen_keypad(), UI_KEY_OK));
         }
-        if (strcmp(view, "motor-settings-armed") == 0) {
+        if (strcmp(view, "motor-settings-end") == 0
+            || strcmp(view, "motor-settings-leave") == 0) {
             settings_set(SET_PACK_MAH, 2200.0f);
-            settings_request_save();
+            drag(300, UI_BAND_H + 400, UI_BAND_H + 100);
+        }
+        if (strcmp(view, "motor-settings-leave") == 0) {
+            const gfx_rect_t home = ui_home_tag_rect(ui_router_title(SCREEN_MOTOR));
+            tap(home.x + home.w / 2, home.y + home.h / 2);
         }
     }
 }
@@ -4338,8 +4343,7 @@ int main(int argc, char **argv)
                     && strcmp(view, "motor-idle") != 0
                     && strcmp(view, "motor-port") != 0
                     && !mo_prog
-                    && (strncmp(view, "motor-settings", 14) != 0
-                        || strcmp(view, "motor-settings-armed") == 0))
+                    && strncmp(view, "motor-settings", 14) != 0)
                    || strcmp(view, "servo-armed") == 0
                    || strcmp(view, "servo-run") == 0
                    || strcmp(view, "servo-result") == 0

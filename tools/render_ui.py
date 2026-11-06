@@ -136,8 +136,9 @@ SCREENS = {
     # An IOmcu that has refused link frames: the count after the
     # error count in the header strip, with the link up.
     "motor-refused": ("motor-refused.png", "motor", "dark"),
-    # SETTINGS: ESC / BENCH's rows under PACK, MOTOR and THROTTLE OUTPUT on
-    # a SAFE bench after a run, and the keypad of Capacity over them.
+    # SETTINGS: the list the footer opens, ESC / BENCH's rows under PACK,
+    # MOTOR and THROTTLE OUTPUT on a SAFE bench after a run, and the keypad
+    # of Capacity over it.
     "motor-settings": ("motor-settings.png", "motor", "dark"),
     "motor-settings-keypad": ("motor-settings-keypad.png", "motor", "dark"),
     "servo":      ("servo.png",      "servo",      "dark"),
@@ -911,8 +912,8 @@ FIT_ONLY = {
     # in the alert band.
     "hold-hint-arm":    (None, "motor", "dark"),
     "hold-hint-output": (None, "supply", "dark"),
-    # MOTOR & ESC > SETTINGS: a pulse typed less than 100us from the other
-    # one, refused with its reason.
+    # MOTOR & ESC's SETTINGS list: a pulse typed less than 100us from the
+    # other one, refused with its reason.
     "motor-settings-gap-idle": (None, "motor", "dark"),
     "motor-settings-gap-full": (None, "motor", "dark"),
     # Tap pin's keypad with GP23 typed: refused, with the pins it takes.
@@ -981,9 +982,10 @@ FIT_ONLY = {
     "upd-remind-blocked": (None, "upd-remind", "dark"),
     # The warning on leaving SETUP with a save refused and the bench ARMED.
     "setup-leave-armed": (None, "setup", "dark"),
-    # MOTOR & ESC > SETTINGS ARMED: the pulse rows locked with their reason,
-    # a save waiting for a SAFE bench.
-    "motor-settings-armed": (None, "motor", "dark"),
+    # MOTOR & ESC's SETTINGS list scrolled to its end with a change not
+    # saved, and the leave warning its home tag opens over it.
+    "motor-settings-end": (None, "motor", "dark"),
+    "motor-settings-leave": (None, "motor", "dark"),
     # The bus fault's other two verdicts and its other four controller
     # states, so every meaning and check is measured where it wraps.
     "busfault-lossy":   (None, "busfault", "dark"),
