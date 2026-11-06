@@ -178,6 +178,14 @@ static void fail(bleu_t *b, bleu_err_t err, uint16_t status, uint32_t now_ms)
     }
 }
 
+bool bleu_evt_admit(uint8_t kind, uint32_t free)
+{
+    if (kind == BLEU_EV_NOTIFY || kind == BLEU_EV_ADV) {
+        return free > BLEU_EVQ_RESERVE;
+    }
+    return free > 0u;
+}
+
 void bleu_init(bleu_t *b)
 {
     if (b != NULL) {

@@ -28,10 +28,14 @@
  * token of the action it answers.  A call NimBLE refuses is answered at
  * once with its status.  The events go through a FreeRTOS queue of
  * PANEL_BLE_QUEUE_LEN elements of 64 bytes (bleu_evt_t); a notification
- * longer than BLEU_EVT_DATA bytes comes as several, in order.  A full queue
- * drops the event and counts it (panel_ble_dropped()); a dropped
- * notification breaks a frame, which the WitMotion parser counts as bad
- * and resyncs.  One task reads the queue (panel_ble_get()).
+ * longer than BLEU_EVT_DATA bytes comes as several, in order.  A
+ * notification or an advertising report takes a slot only while more than
+ * BLEU_EVQ_RESERVE (8) are free, so the events a link's state hangs on
+ * find room (bleu_evt_admit()).  A full queue drops the event and counts
+ * it (panel_ble_dropped()); a dropped notification breaks a frame, which
+ * the WitMotion parser counts as bad and resyncs.  A dropped DISCONNECT is
+ * kept and handed out once the queue is empty, so the link still ends and
+ * reconnects.  One task reads the queue (panel_ble_get()).
  *
  * SPDX-License-Identifier: MIT
  */

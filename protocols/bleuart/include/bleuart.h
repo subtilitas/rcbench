@@ -318,6 +318,22 @@ typedef struct {
     uint8_t      q_n;       /**< private */
 } bleu_t;
 
+/** @brief Slots of an event queue kept for the events a link's state
+ *         hangs on: a notification or an advertising report takes a slot
+ *         only while more than this many are free. */
+#define BLEU_EVQ_RESERVE 8u
+
+/**
+ * @brief Whether an event of @p kind may take a slot of a queue with
+ *        @p free slots: a notification or an advertising report only while
+ *        more than BLEU_EVQ_RESERVE are free, every other kind while one
+ *        is, so a full stream never crowds out a DISCONNECT or an answer.
+ * @param kind bleu_ev_kind_t.
+ * @param free The queue's free slots.
+ * @return true when it may
+ */
+bool bleu_evt_admit(uint8_t kind, uint32_t free);
+
 /** @brief Clear to OFF, nothing bound. @param b The machine; NULL does
  *         nothing. */
 void bleu_init(bleu_t *b);

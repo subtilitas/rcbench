@@ -63,6 +63,14 @@ static atomic_int s_state = PANEL_BLE_OFF;
 static atomic_flag s_started = ATOMIC_FLAG_INIT;
 /** @brief Events dropped on a full queue. */
 static atomic_uint s_dropped;
+/** @brief A DISCONNECT the full queue dropped, handed out once the queue
+ *         is empty (panel_ble_get()). */
+static bleu_evt_t s_pend;
+/** @brief s_pend holds one. */
+static bool s_pend_set;
+/** @brief Guards s_pend and s_pend_set: written on nimble_host, read on
+ *         the IMU's task. */
+static portMUX_TYPE s_pend_lock = portMUX_INITIALIZER_UNLOCKED;
 /** @brief The address type the host uses, set at each sync. */
 static atomic_uint s_own_type;
 /** @brief When the host task started, esp_timer ms; 0 before. */
@@ -115,13 +123,26 @@ static uint32_t ble_now_ms(void)
 }
 
 /**
- * @brief Queue one event without waiting; a full queue counts the drop.
+ * @brief Queue one event without waiting.  A notification or a report
+ *        leaves BLEU_EVQ_RESERVE slots for the rest (bleu_evt_admit()).
+ *        A dropped event is counted; a dropped DISCONNECT is kept and
+ *        handed out after the queue, so the link still ends.
  * @param e The event.
  */
 static void post(const bleu_evt_t *e)
 {
-    if (s_queue == NULL || xQueueSend(s_queue, e, 0) != pdTRUE) {
-        atomic_fetch_add(&s_dropped, 1u);
+    if (s_queue != NULL
+        && bleu_evt_admit(e->kind,
+                          (uint32_t)uxQueueSpacesAvailable(s_queue))
+        && xQueueSend(s_queue, e, 0) == pdTRUE) {
+        return;
+    }
+    atomic_fetch_add(&s_dropped, 1u);
+    if (e->kind == BLEU_EV_DISCONNECT) {
+        portENTER_CRITICAL(&s_pend_lock);
+        s_pend = *e;
+        s_pend_set = true;
+        portEXIT_CRITICAL(&s_pend_lock);
     }
 }
 
@@ -806,8 +827,21 @@ panel_ble_state_t panel_ble_state(void)
 
 bool panel_ble_get(bleu_evt_t *out)
 {
-    return s_queue != NULL && out != NULL
-           && xQueueReceive(s_queue, out, 0) == pdTRUE;
+    if (s_queue == NULL || out == NULL) {
+        return false;
+    }
+    if (xQueueReceive(s_queue, out, 0) == pdTRUE) {
+        return true;
+    }
+    bool got = false;
+    portENTER_CRITICAL(&s_pend_lock);
+    if (s_pend_set) {
+        *out = s_pend;
+        s_pend_set = false;
+        got = true;
+    }
+    portEXIT_CRITICAL(&s_pend_lock);
+    return got;
 }
 
 uint32_t panel_ble_dropped(void)

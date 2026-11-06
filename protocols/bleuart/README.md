@@ -183,6 +183,12 @@ events in order. `bleu_event()` returns true for a notification on
 chunking is taken; the module cuts its notifications at its own UART
 chunks, not at the sensor's frames.
 
+A port that queues the events decides with `bleu_evt_admit(kind, free)`
+whether one may take a slot: a notification or an advertising report only
+while more than 8 slots are free (`BLEU_EVQ_RESERVE`), every other kind
+while one is. A full stream then never crowds out a DISCONNECT or an
+action's answer, which the link's state hangs on.
+
 Call `bleu_step()` until it returns false after each event and at least
 every 10ms. A wait counts from the call that queued its action. The queue
 holds 6 actions (`BLEU_ACT_QUEUE`); a full queue drops the action and

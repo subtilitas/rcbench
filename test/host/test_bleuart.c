@@ -45,6 +45,24 @@ static uint32_t run_to(bsim_t *s, bleu_t *b, uint32_t from, uint8_t kind)
     return l != NULL ? l->t : from;
 }
 
+/* A notification or a report takes one of the last BLEU_EVQ_RESERVE slots
+ * of the panel's queue never; a DISCONNECT, a CONNECT or an answer takes
+ * the last one. */
+TEST_CASE(the_stream_leaves_the_last_slots_to_the_link_events)
+{
+    CHECK(bleu_evt_admit(BLEU_EV_NOTIFY, BLEU_EVQ_RESERVE + 1u));
+    CHECK(!bleu_evt_admit(BLEU_EV_NOTIFY, BLEU_EVQ_RESERVE));
+    CHECK(!bleu_evt_admit(BLEU_EV_ADV, BLEU_EVQ_RESERVE));
+    CHECK(bleu_evt_admit(BLEU_EV_ADV, 32u));
+    const uint8_t link[] = { BLEU_EV_DISCONNECT, BLEU_EV_CONNECT,
+                             BLEU_EV_WRITE_DONE, BLEU_EV_SCAN_END,
+                             BLEU_EV_MTU, BLEU_EV_SVC_DONE };
+    for (size_t i = 0; i < sizeof(link); ++i) {
+        CHECK(bleu_evt_admit(link[i], 1u));
+        CHECK(!bleu_evt_admit(link[i], 0u));
+    }
+}
+
 TEST_CASE(a_bound_sensor_connects_discovers_subscribes_and_reads_6daa)
 {
     bsim_t s;
@@ -695,5 +713,6 @@ int main(void)
     RUN(a_failed_mtu_exchange_and_a_failed_6daa_read_go_on);
     RUN(a_6daa_without_read_is_not_read_and_the_link_takes_commands_at_once);
     RUN(a_parameter_update_is_kept);
+    RUN(the_stream_leaves_the_last_slots_to_the_link_events);
     return test_summary("bleuart");
 }
