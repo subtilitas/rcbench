@@ -49,6 +49,8 @@ extern "C" {
 #define IMU_OUT_EXIT  0x01u  /**< the calibration's exit */
 #define IMU_OUT_RATE  0x02u  /**< a RATE write */
 #define IMU_OUT_ALGO  0x04u  /**< an ALGORITHM write */
+#define IMU_OUT_CAL   0x08u  /**< the calibration's start: a failure
+                                  fails it, nothing comes back */
 /** @} */
 
 /** @brief The sensor side.  Its members are private but for the tests. */

@@ -160,7 +160,9 @@ bei der nächsten Verbindung wieder an: der Ausstieg aus einer
 Kalibrierung (Unlock, CALSW 0, SAVE), eine RATE oder ein ALGORITHMUS,
 mit den dann aktuellen Werten aus SETUP. IMU AUS lässt ein laufendes
 Schreiben genauso scheitern; eine durch IMU AUS beendete Kalibrierung
-sendet CALSW 0 und SAVE also, sobald der Sensor wieder verbunden ist. Eine Änderung von RATE oder
+sendet CALSW 0 und SAVE also, sobald der Sensor wieder verbunden ist. Ein
+abgelehntes Unlock oder CALSW 1 am Start der Kalibrierung lässt sie sofort
+scheitern, und ihr Ausstieg geht wie nach jedem Ende. Eine Änderung von RATE oder
 ALGORITHMUS bei nicht verbundenem Sensor wartet, bis dessen Frames
 eintreffen. Eine Änderung während der Kalibrierung wartet bis nach CALSW 0
 und SAVE. Unlock, die Schreibbefehle und SAVE werden erst gemeinsam

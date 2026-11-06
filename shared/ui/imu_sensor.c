@@ -208,8 +208,8 @@ bool imu_sensor_calibrate(imu_sensor_t *s, bool link_up, uint32_t now_ms)
     if (!link_up || !s->m.r.valid || s->cal == IMU_CAL_RUNNING) {
         return false;
     }
-    queue_unlock(s, 0u);
-    queue_calsw(s, WIT_CAL_ACC, 0u);
+    queue_unlock(s, IMU_OUT_CAL);
+    queue_calsw(s, WIT_CAL_ACC, IMU_OUT_CAL);
     s->cal = IMU_CAL_RUNNING;
     s->cal_from_ms = now_ms;
     s->cal_lost = false;
@@ -246,6 +246,12 @@ void imu_sensor_flush(imu_sensor_t *s)
     s->out_n = 0u;
     s->out_head = 0u;
     s->sent_for = 0u;
+    /* A start the sensor did not take never calibrated: the calibration
+     * fails now, and its exit goes as after any end. */
+    if ((why & IMU_OUT_CAL) != 0u && s->cal == IMU_CAL_RUNNING) {
+        cal_end(s, false);
+    }
+    why &= (uint8_t)~IMU_OUT_CAL;
     if (why == 0u) {
         return;
     }

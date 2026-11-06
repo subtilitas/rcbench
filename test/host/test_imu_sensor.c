@@ -300,10 +300,39 @@ static unsigned drain(imu_sensor_t *s, uint32_t t, uint8_t last[WIT_CMD_LEN])
     return n;
 }
 
+/* The sensor refuses the calibration's unlock while the stream flows on:
+ * CALSW 1 never goes, the calibration fails at once and does not end DONE
+ * 3000ms later, and its exit goes. */
+TEST_CASE(a_refused_calibration_start_fails_the_calibration)
+{
+    imu_sensor_t s;
+    imu_sensor_init(&s);
+    imu_sensor_values(&s, WIT_RATE_10HZ, true, false);
+    frame_at(&s, 100u, true);
+    CHECK(imu_sensor_calibrate(&s, true, 100u));
+    uint8_t c[WIT_CMD_LEN];
+    CHECK(imu_sensor_next(&s, 100u, c));
+    CHECK(is_unlock(c));
+    imu_sensor_flush(&s);                             /* the unlock refused */
+    CHECK_EQ(s.cal, IMU_CAL_FAILED);
+    for (uint32_t t = 200u; t <= 3400u; t += 100u) {
+        frame_at(&s, t, true);
+    }
+    CHECK_EQ(s.cal, IMU_CAL_FAILED);
+    CHECK(imu_sensor_next(&s, 3500u, c));
+    CHECK(is_unlock(c));
+    CHECK(imu_sensor_next(&s, 3550u, c));
+    CHECK(is_cmd(c, WIT_REG_CALSW, 0u));
+    CHECK(imu_sensor_next(&s, 3600u, c));
+    CHECK(is_cmd(c, WIT_REG_SAVE, 0u));
+    CHECK(!imu_sensor_next(&s, 3650u, c));
+}
+
 /* A write that fails drops its group, and what the group was for is due
  * again: the calibration's exit and a RATE, held while the stream flows on
  * (no retry on the same connection) and queued when it flows again.  The
- * exit waits for 3 free slots, not 2.  A dropped CALSW 1 arms nothing. */
+ * exit waits for 3 free slots, not 2.  A dropped CALSW 1 fails the
+ * calibration and queues its exit at once; it is not sent again. */
 TEST_CASE(a_failed_write_brings_back_its_group_at_the_next_connection)
 {
     imu_sensor_t s;
@@ -314,9 +343,11 @@ TEST_CASE(a_failed_write_brings_back_its_group_at_the_next_connection)
     uint8_t c[WIT_CMD_LEN];
     CHECK_EQ(drain(&s, 100u, c), 2u);                 /* unlock, CALSW 1 */
     imu_sensor_flush(&s);                             /* CALSW 1 failed */
+    CHECK_EQ(s.cal, IMU_CAL_FAILED);
     CHECK(!s.exit_due);
     CHECK(!s.held);
-    imu_sensor_off(&s);                               /* the exit queued */
+    CHECK_EQ(s.out_n, 3u);                            /* the exit queued */
+    imu_sensor_off(&s);                               /* nothing more */
     CHECK_EQ(s.out_n, 3u);
     CHECK(imu_sensor_next(&s, 1000u, c));             /* its unlock goes */
     imu_sensor_values(&s, WIT_RATE_20HZ, true, true); /* RATE due */
@@ -398,6 +429,7 @@ int main(void)
     RUN(the_write_group_waits_for_room_and_for_the_calibration);
     RUN(a_frame_300ms_after_the_last_counts_a_gap_and_299ms_does_not);
     RUN(imu_off_fails_the_calibration_and_counts_a_kept_zero);
+    RUN(a_refused_calibration_start_fails_the_calibration);
     RUN(a_failed_write_brings_back_its_group_at_the_next_connection);
     RUN(the_link_state_runs_bound_connected_no_frames);
     return test_summary("imu_sensor");
