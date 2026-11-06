@@ -340,7 +340,7 @@ TEST_CASE(a_lost_answer_is_recovered_by_one_repeat_with_no_error)
 {
     fresh(1000u, true);
     s_rules.lose_answer[0] = true;
-    link_msg_t got;
+    link_msg_t got = {0};
     uint32_t ended = 0u;
     CHECK(write_control(77u, &got, &ended));
     CHECK_EQ(got.op, LINK_OP_ACK);
@@ -363,7 +363,7 @@ TEST_CASE(an_unnumbered_request_is_never_repeated)
 {
     fresh(1000u, false);
     s_rules.lose_answer[0] = true;
-    link_msg_t got;
+    link_msg_t got = {0};
     uint32_t ended = 0u;
     CHECK(!write_control(77u, &got, &ended));
     CHECK_EQ(ended, 1000u + LINK_HOST_TIMEOUT_MS);
@@ -380,7 +380,7 @@ TEST_CASE(a_lost_repeat_ends_at_the_existing_timeout)
     fresh(1000u, true);
     s_rules.lose_answer[0] = true;
     s_rules.lose_answer[1] = true;
-    link_msg_t got;
+    link_msg_t got = {0};
     uint32_t ended = 0u;
     CHECK(!write_control(5u, &got, &ended));
     CHECK_EQ(ended, 1000u + LINK_HOST_TIMEOUT_MS);
@@ -397,7 +397,7 @@ TEST_CASE(a_repeat_of_a_request_that_never_arrived_acts_once)
 {
     fresh(1000u, true);
     s_rules.lose_request[0] = true;
-    link_msg_t got;
+    link_msg_t got = {0};
     uint32_t ended = 0u;
     CHECK(write_control(9u, &got, &ended));
     CHECK_EQ(got.regs[0], 9u);
@@ -419,7 +419,7 @@ TEST_CASE(a_late_first_answer_after_the_repeat_is_taken_once)
     s_rules.answer_ms[1] = 30u;                         /* at 80ms */
     link_msg_t req;
     CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0u, 4u, s_now, &req));
-    link_msg_t got;
+    link_msg_t got = {0};
     uint32_t ended = 0u;
     CHECK(wait_for(&req, &got, &ended));
     CHECK_EQ(ended, 1000u + 70u);
@@ -455,7 +455,7 @@ TEST_CASE(a_wide_write_repeated_is_not_written_again)
     link_msg_t req;
     CHECK(link_host_write(&host, LINK_PAGE_OUTPUTS, 0u, LINK_MAX_REGS, v,
                           s_now, &req));
-    link_msg_t got;
+    link_msg_t got = {0};
     uint32_t ended = 0u;
     CHECK(wait_for(&req, &got, &ended));
     CHECK_EQ(got.op, LINK_OP_ACK);
@@ -476,7 +476,7 @@ TEST_CASE(a_repeated_read_held_gets_the_data_it_was_answered_with)
     fresh(1000u, true);
     g.wide[20] = 4242u;
     link_msg_t req;
-    link_msg_t got;
+    link_msg_t got = {0};
     uint32_t ended = 0u;
     CHECK(link_host_read(&host, LINK_PAGE_OUTPUTS, 0u, LINK_READ_REGS_MAX,
                          s_now, &req));
@@ -501,7 +501,7 @@ TEST_CASE(an_activate_is_never_repeated)
     CHECK(link_host_write(&host, LINK_PAGE_UPDATE_CTL, LINK_UPD_CMD, 1u, &cmd,
                           s_now, &req));
     CHECK(req.seq != 0u);
-    link_msg_t got;
+    link_msg_t got = {0};
     uint32_t ended = 0u;
     CHECK(!wait_for(&req, &got, &ended));
     CHECK_EQ(ended, 1000u + LINK_HOST_TIMEOUT_MS);
@@ -530,7 +530,7 @@ TEST_CASE(a_cancelled_repeat_is_not_sent)
                           s_now, &req));
     link_host_retry_cancel(&host);
     link_host_retry_cancel(NULL);
-    link_msg_t got;
+    link_msg_t got = {0};
     uint32_t ended = 0u;
     CHECK(!wait_for(&req, &got, &ended));
     CHECK_EQ(ended, 1000u + LINK_HOST_TIMEOUT_MS);
@@ -577,7 +577,7 @@ TEST_CASE(the_repeat_and_the_timeout_hold_across_the_wrap)
     const uint32_t t0 = UINT32_MAX - 19u;
     fresh(t0, true);
     s_rules.lose_answer[0] = true;
-    link_msg_t got;
+    link_msg_t got = {0};
     uint32_t ended = 0u;
     CHECK(write_control(3u, &got, &ended));
     CHECK_EQ(ended, (uint32_t)(t0 + LINK_HOST_RETRY_MS + 1u));
