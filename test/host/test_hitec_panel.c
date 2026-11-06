@@ -296,7 +296,10 @@ TEST_CASE(connect_reads_the_d485hw_and_the_tabs_show_its_values)
     for (int row = 0; row < 4; ++row) {
         CHECK(hitec_panel_row_live(HITEC_PANEL_TRAVEL, row, 0));
     }
-    CHECK(!hitec_panel_row_live(HITEC_PANEL_TRAVEL, 4, 0));
+    /* Under them MOVE SERVO, which takes a tap once the servo is read. */
+    CHECK_STR_EQ(hitec_panel_label(HITEC_PANEL_TRAVEL, 4, 0), TR(HP_MOVE));
+    CHECK(hitec_panel_row_live(HITEC_PANEL_TRAVEL, 4, 0));
+    CHECK(!hitec_panel_row_live(HITEC_PANEL_TRAVEL, 5, 0));
     /* INFO's model is read only. */
     CHECK(!hitec_panel_row_live(HITEC_PANEL_INFO, 0, 0));
 }

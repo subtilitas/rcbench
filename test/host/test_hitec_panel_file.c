@@ -681,19 +681,19 @@ TEST_CASE(a_count_of_stored_values_stays_on_its_sentences_row)
 
 TEST_CASE(restore_writes_the_session_backup_back_from_its_page)
 {
-    d_open(UI_LANG_EN);
+    c_open();
     card_in();
     /* Nothing written: RESTORE has nothing to offer. */
     tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
     CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 4, 0));
-    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SOFT_START, 60),
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_C_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
     tap(val(HITEC_PANEL_SERVO, 4, 1));
     hold(2.1f);
     until(HITEC_PROG_HELD);
     show();
-    CHECK_EQ(g_drv.dreg[0x60], 6u);
+    CHECK(g_drv.eeprom[0x06] != fix_hs5645()[0x06]);
     CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 4, 0));
     tap(val(HITEC_PANEL_SERVO, 4, 0));
     CHECK_EQ(choices(), 1);
@@ -703,13 +703,14 @@ TEST_CASE(restore_writes_the_session_backup_back_from_its_page)
     CHECK_STR_EQ(hitec_panel_page_line(0), TR(KP_RESTORE_TITLE));
     CHECK(page_has(TR(KP_FROM_SESSION)));
     CHECK(page_has(TR(KP_RESTORE_UNCHECKED)));
-    CHECK(page_has("SOFT START: 60% -> 20%"));
+    /* The serial ties it to the backup: no question of the unit. */
+    CHECK(!page_has(TR(HP_UNIT_UNCHECKED)));
     CHECK(page_fits());
     hold(2.1f);
     until(HITEC_PROG_HELD);
     show();
     CHECK_STR_EQ(said(), TR(KP_M_RESTORED));
-    CHECK_EQ(g_drv.dreg[0x60], fix_d485()[0x60 / 2]);
+    CHECK_EQ(g_drv.eeprom[0x06], fix_hs5645()[0x06]);
     CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 4, 0));
 }
 
@@ -777,6 +778,7 @@ TEST_CASE(every_file_message_has_its_lines_in_both_languages)
         { HITEC_PROG_MSG_LOADED_RAW, 12, 99 },
         { HITEC_PROG_MSG_LOADED_RAW, 1, 1 },
         { HITEC_PROG_MSG_BACKUP_RESTORED, 0, 0 },
+        { HITEC_PROG_MSG_BACKUP_UNIT, 0, 0 },
         { HITEC_PROG_MSG_FACTORY_DONE, 0, 0 },
         { HITEC_PROG_MSG_LOAD_SAME, 0, 0 },
     };

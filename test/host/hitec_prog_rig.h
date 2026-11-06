@@ -66,6 +66,7 @@ static uint32_t             g_stops, g_stops_seen;
 /* The panel's facts. */
 static bool     g_stopped;              /* STOP latched                  */
 static bool     g_armed;                /* the outputs armed             */
+static bool     g_step_busy;            /* the link refuses each step    */
 static uint8_t  g_target;               /* 0 standard, 1 + n port n      */
 static bool     g_pin_known;            /* port CH names PIN             */
 static bool     g_fixed;                /* the supply is the ports' own
@@ -74,6 +75,10 @@ static uint8_t  g_rx_mark;              /* hitec_rx_link_mark_t          */
 static bool     g_link;                 /* the link is up                */
 static unsigned g_frame_ms = 16u;       /* the render loop's frame       */
 static unsigned g_arm_refused;          /* switches to ARMED refused     */
+static uint16_t g_out_ma = 41u;         /* the PD mini's current, mA     */
+static bool     g_angle_on;             /* an AS5600 reading in the feed */
+static bool     g_angle_follow;         /* it follows the servo's 0x0C   */
+static uint16_t g_angle;                /* else this one, 0 to 4095      */
 
 static hitec_prog_feed_t g_f;
 
@@ -299,7 +304,9 @@ static inline void carry_out(const hitec_prog_cmd_t *c)
                                       c->id);
         break;
     case HITEC_PROG_CMD_STEP:
-        a = hitec_link_step(&g_l, c->port, &c->step, c->mv, c->ma, c->id);
+        a = g_step_busy ? HITEC_LINK_START_BUSY
+                        : hitec_link_step(&g_l, c->port, &c->step, c->mv,
+                                          c->ma, c->id);
         break;
     case HITEC_PROG_CMD_CLEAR:
         a = hitec_link_clear(&g_l, c->port, c->id);
@@ -362,8 +369,14 @@ static inline void publish(hitec_prog_feed_t *f)
     f->supply_read = g_hw.has_supply && g_hw.v.online && g_hw.v.on;
     if (f->supply_read) {
         f->out_mv = g_hw.v.set_mv;
-        f->out_ma = 41u;
+        f->out_ma = g_out_ma;
     }
+    /* The AS5600 on the horn: 220deg over 16383 counts, 4096 a turn. */
+    f->has_angle = g_angle_on;
+    f->angle = g_angle_follow
+                   ? (uint16_t)((uint32_t)g_drv.dreg[HITEC_D_REG_POSITION]
+                                * 22000u / 16383u * 4096u / 36000u % 4096u)
+                   : g_angle;
     if (g_fixed) {
         f->fixed_on = f->supply_read;
         f->supply_read = false;
@@ -553,6 +566,11 @@ static inline void rig_from(uint32_t t0, supply_kind_t supply, bool panel)
     g_rx_mark = (uint8_t)HITEC_RX_LINK_HELD;
     g_frame_ms = 16u;
     g_arm_refused = 0;
+    g_out_ma = 41u;
+    g_step_busy = false;
+    g_angle_on = false;
+    g_angle_follow = false;
+    g_angle = 0u;
     g_card = false;
     g_card_fails = false;
     g_card_slow = false;

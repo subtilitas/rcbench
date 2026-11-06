@@ -471,7 +471,7 @@ hitec_line_err_t hitec_line_open_rx(hitec_line_t *line, unsigned pin,
                                           offset);
         return HITEC_LINE_ERR_DMA;
     }
-    /* The sampler after the line's own program, so the line's 29 words
+    /* The sampler after the line's own program, so the line's 30 words
      * find a block first. */
     line->dma_pre = -1;
     line->pre_pio = NULL;

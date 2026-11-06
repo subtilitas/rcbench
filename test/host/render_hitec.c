@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "hitec_card.h"
+#include "hitec_move.h"
 #include "servo_screen.h"
 #include "supply_screen.h"
 #include "servo_spots.h"
@@ -488,14 +489,18 @@ static bool files_view(const char *v)
         return true;
     }
     if (strcmp(v, "-backup-file") == 0 || strcmp(v, "-restore-backup") == 0
-        || strcmp(v, "-restore-page") == 0) {
+        || strcmp(v, "-restore-page") == 0
+        || strcmp(v, "-restore-unit") == 0) {
+        /* -restore-page on the classic HS-5645MG, its serial read; the
+         * D485HW of -restore-unit has none, and its page asks for the unit. */
         hwrite_page();
         hhold();
         hwait(HITEC_PROG_HELD);
         if (strcmp(v, "-backup-file") != 0) {
             htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 4, 0));
         }
-        if (strcmp(v, "-restore-page") == 0) {
+        if (strcmp(v, "-restore-page") == 0
+            || strcmp(v, "-restore-unit") == 0) {
             hpick(TR(KP_FROM_SESSION));
         }
         return true;
@@ -556,13 +561,75 @@ static bool files_view(const char *v)
 }
 
 /**
+ * @brief The views of MOVE SERVO on TRAVEL, from a servo read whose horn
+ *        follows its target: the page, the loop on with LEFT END stepped
+ *        once, LEFT END beyond the reach, a horn held at 6000 after the
+ *        end, the refusal with no PD mini, and FIND STOP on the left to a
+ *        block at 4840 searching and found.
+ * @param v the view's name past "servo-hitec"
+ * @return false for a view of another kind
+ */
+static bool move_view(const char *v)
+{
+    hitec_prog_t *p = hitec_panel_model();
+
+    if (strncmp(v, "-move", 5) != 0) {
+        return false;
+    }
+    htap(hitec_panel_tab_rect(HITEC_PANEL_TRAVEL));
+    htap(hitec_panel_value_rect(HITEC_PANEL_TRAVEL, 4, 0));
+    if (strcmp(v, "-move") == 0 || strcmp(v, "-move-nopd") == 0) {
+        return true;
+    }
+    hhold();
+    for (unsigned i = 0; i < 20000u
+                         && hitec_prog_move_phase(p) != HITEC_MOVE_RUN;
+         ++i) {
+        pms();
+    }
+    if (strcmp(v, "-move-blocked") == 0) {
+        g_drv.d_block_lo = 6000u;
+    }
+    if (strcmp(v, "-move-find") == 0 || strcmp(v, "-move-found") == 0) {
+        g_drv.d_block_lo = 4840u;
+        htap(hitec_panel_find_rect(false));
+        for (unsigned i = 0; i < 60000u && strcmp(v, "-move-found") == 0
+                             && hitec_prog_message(p)->id
+                                    != HITEC_PROG_MSG_FIND_FOUND_L;
+             ++i) {
+            pms();
+        }
+        prun(strcmp(v, "-move-find") == 0 ? 6000u : 3000u);
+        ui_router_tick(0.02f);
+        return true;
+    }
+    htap(hitec_panel_step_rect(HITEC_PANEL_TRAVEL, 1, false));
+    if (strcmp(v, "-move-reach") == 0) {
+        (void)hitec_prog_move_edit(p, HITEC_P_D_LEFT_END, 2000);
+    }
+    if (strcmp(v, "-move-blocked") == 0) {
+        for (unsigned i = 0; i < 60000u
+                             && hitec_prog_move_phase(p) != HITEC_MOVE_OFF;
+             ++i) {
+            pms();
+        }
+        hwait(HITEC_PROG_HELD);
+        return true;
+    }
+    prun(8000u);
+    ui_router_tick(0.02f);
+    return true;
+}
+
+/**
  * @brief Whether @p v is one of the views of the classic HS-5645MG.
  * @param v the view's name past "servo-hitec"
  * @return true for one
  */
 static bool classic_view(const char *v)
 {
-    return strncmp(v, "-classic", 8) == 0 || strcmp(v, "-nopd") == 0;
+    return strncmp(v, "-classic", 8) == 0 || strcmp(v, "-nopd") == 0
+           || strcmp(v, "-restore-page") == 0;
 }
 
 void render_hitec_view(const char *view)
@@ -570,11 +637,18 @@ void render_hitec_view(const char *view)
     const char *v = view + strlen("servo-hitec");
     const bool c_view = classic_view(v);
 
-    rig_at(strcmp(v, "-nopd") == 0 ? SUPPLY_NONE : SUPPLY_ON, true);
+    rig_at(strcmp(v, "-nopd") == 0 || strcmp(v, "-move-nopd") == 0
+               ? SUPPLY_NONE : SUPPLY_ON, true);
     if (c_view) {
         servo_hs5645();
     } else {
         servo_d485();
+    }
+    if (strncmp(v, "-move", 5) == 0) {
+        /* The horn where its target puts it: at the neutral. */
+        g_drv.d_follow = true;
+        g_drv.dreg[HITEC_D_REG_TARGET] = HITEC_LIVE_D_T_MID;
+        sim_d_follow();
     }
     if (strncmp(v, "-file-warnings", 14) == 0) {
         hitec_image_t sv;
@@ -672,7 +746,7 @@ void render_hitec_view(const char *view)
         || strcmp(v, "-classic-sum") == 0) {
         return;
     }
-    if (write_view(v)) {
+    if (write_view(v) || move_view(v)) {
         return;
     }
     /* The files' views: a card in. */

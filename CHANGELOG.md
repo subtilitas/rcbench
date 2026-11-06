@@ -82,6 +82,35 @@ The entries below cover the 13 pull requests merged since v0.23.8: #734 to
 - The screen guide covers LOGS and FILES: LOGS' file list and import view
   (2 pages each) and its plot (1 page), FILES' panes (3 pages). The DELETE
   question, a box, a keyboard and the text viewer have no guide.
+- MOVE SERVO on the Hitec programmer's TRAVEL tab moves a D series
+  servo's horn to the NEUTRAL, LEFT END or RIGHT END being edited, inside
+  the held session, while the bench stays SAFE. A 2s hold switches it on,
+  with a PD mini answering with its output on and DIRECTION CW; it is
+  refused on the rbmod carrier's fixed 5V. The three positions get `-`
+  and `+` keys of 8 counts with repeat. Each pass writes target 0x1E and
+  reads position 0x0C, 150 counts at most a pass, inside the reach of the
+  stored ends. A lag over 150 counts on 2 passes, 80% of the current
+  limit for 400ms or an AS5600 angle that does not follow moves the horn
+  back 75 counts. The end writes 0x1E = 3000, restarts the servo and
+  holds 16 registers against the start; nothing is saved. STOP, a switch
+  to SAFE at the bench, a lost link, the supply off and a failed read end
+  it at once with every output off. The thresholds and the target-to-pulse
+  model are not measured.
+- FIND STOP, in DIRECTION's row while MOVE SERVO runs, searches for the
+  mechanical stop of one side: the horn goes to NEUTRAL, then 37 counts
+  outward every 2 passes up to the reach's edge, for 40s at most. A bind
+  sets LEFT END or RIGHT END in the draft 75 counts inside the stop;
+  nothing is written. The search's step, cap and the stop found are not
+  measured.
+- Host tests of the Hitec line's RP2350 driver and of the end of a LISTEN's
+  answer. `test/host/test_hitec_line.c` (13 cases) runs
+  `protocols/hitec/rp2350/hitec_line.c` on a fake of the pico-sdk: a
+  transaction past its time and every abort stop the state machine, let the
+  receive channel take the FIFO and count the bytes before the restart, so a
+  byte pushed before the stop reaches the capture and none reaches the next
+  transaction. `test/host/test_hitec_pio_answer.c` (3 cases) holds the
+  receiver back 1 state machine cycle after the answer's 10th bit time, not
+  after the 16 bit times of the answer word.
 - KST EXPERT MODE, a row of SERVO > SETTINGS > DUT, OFF by default and kept
   across restarts: ON after a 2s hold, OFF with a tap. With it OFF the KST
   and Chaservo programmer hides DEAD BAND, BOOST and STRETCH on TUNE,
@@ -226,6 +255,18 @@ The entries below cover the 13 pull requests merged since v0.23.8: #734 to
   BOOTSEL until a USB load of the install UF2.
 - SETUP's lists clip their rows inside the clip they are drawn with. With
   the screen guide open on a list, the rows drew under the dock.
+- RESTORE of a Hitec session's backup asks the operator to confirm the
+  unit where the bench cannot check it. A second servo of one model, put
+  on the port without LEAVE or CONNECT, could get the first one's backup
+  when its registers held the first one's last-read values. A D series
+  servo has no serial register, and a classic one with a non-digit serial
+  cell holds none. For both the RESTORE page says `The bench cannot check
+  that this is the servo the backup came from. Hold only if it is.`, names
+  the model with its ID 0x32 or `no serial` and the backup's age, and its
+  2s hold confirms the unit. A classic servo with the backup's serial,
+  cells 0x80 to 0x86, restores as before. The write's second read reads
+  that serial again, 43 cells instead of 36, so a servo swapped after the
+  last READ ALL ends the write before a step.
 - A bidirectional DShot pin that sends no frames is driven low: from the
   bind to the first frame, and at SAFE, STOP, an error, a lost link and the
   failsafe edge until the next ARM. It rested high on its pull-up, the

@@ -534,6 +534,7 @@ ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | 2s HALTEN ZUM ZURÜCKSPIELEN | `Halte 2s, um zurückzuspielen.` |
 | 2s HALTEN ZUM FORTFAHREN | `Halte 2s, um fortzufahren.` |
 | 2s HALTEN ZUM VERLASSEN | `Halte 2s, um die Sitzung zu verlassen.` |
+| 2s HALTEN ZUM BEWEGEN auf der Seite SERVO BEWEGEN der Hitec-Programmierung | `Halte 2s, um das Servo zu bewegen.` |
 | 2s HALTEN ZUM LADEN | `Halte 2s, um zu laden.` |
 | 2s HALTEN ZUM FREIGEBEN auf PORT FREIGEBEN | `Halte 2s, um den Port freizugeben.` |
 | 2s HALTEN ZUM REPARIEREN | `Halte 2s, um zu reparieren.` |
@@ -2156,11 +2157,36 @@ Seite unter dem Speichereintrag. Ein neuer Name öffnet die Tastatur;
 Dateien für andere Modelle oder außerhalb weicher Regeln öffnen
 DIESE DATEI PRÜFEN.
 
-ZURÜCKSPIELEN schreibt das Sitzungsbackup zurück. WEITERES enthält für
+ZURÜCKSPIELEN schreibt das Sitzungsbackup zurück; wo der Prüfstand nicht
+prüfen kann, ob das Servo das des Backups ist, bestätigt sein 2s Halten das
+Exemplar. WEITERES enthält für
 klassische Servos WERKSEINSTELLUNG. Ein Port einer anderen HITEC-Sitzung
 öffnet mit PORT FREIGEBEN; 2s Halten gibt ihn bei unveränderter Versorgung
 an PWM zurück. [Servoprogrammierung für Hitec-Servos](HitecProgrammer-de.md)
 beschreibt Zeilen, Ablauf und Meldungen.
+
+SERVO BEWEGEN, die fünfte Zeile von WEG bei einem Servo der D-Serie,
+fährt das Ruderhorn auf die bearbeitete Position, während der Prüfstand
+SAFE bleibt ([SERVO BEWEGEN in der Hitec-Programmierung](HitecMove-de.md)). Ein
+Tippen auf AUS öffnet seine Seite; 2s HALTEN ZUM BEWEGEN schaltet es ein.
+Solange es an ist, zeigen NEUTRAL, ENDE LINKS und ENDE RECHTS Tasten `-`
+und `+` mit 56 x 48px um einen 148px breiten Wert; eine Taste ändert beim
+Drücken um 8 Zählwerte und wiederholt nach 0.45s mit 8Hz, ab 1.8s mit
+30Hz. Der Name der verfolgten Zeile steht in der Akzentfarbe. Die
+Hinweise zeigen Port und GPIO, `POSITION 3344 (-65.1°)` mit dem
+AS5600-Winkel und dem Versorgungsstrom, die Reichweite und den Hinweis zur
+Endlage. Ein Tippen auf EIN, ein Wechsel der Registerkarte, SCHLIESSEN und
+das Home-Tag schalten es aus; die Taste zeigt WARTEN, bis das Servo neu
+gestartet ist.
+
+Solange die Schleife läuft, steht ANSCHLAG SUCHEN in der Zeile von
+DREHRICHTUNG: zwei Tasten mit 126 x 48px, ENDE LINKS und ENDE RECHTS. Ein
+Tippen startet die Suche auf dieser Seite, die Taste wird in der
+Warnfarbe gezeichnet, und ein zweites Tippen beendet sie. Der Hinweis
+zeigt
+`ANSCHLAG SUCHEN Richtung ENDE LINKS: 37 Zählwerte alle 2 Durchläufe ab NEUTRAL, höchstens 40s. Tippe erneut zum Anhalten.`
+Ein gefundener Anschlag setzt diese Endlage im Entwurf:
+`Anschlag bei 4840. ENDE LINKS in den Änderungen auf 4915 gesetzt.`
 
 ![Die Hitec-Programmierung, der Tester hält den Port](img/de/servo-hitec.png)
 ![Ein D485HW gelesen](img/de/servo-hitec-read.png)
@@ -2168,6 +2194,10 @@ beschreibt Zeilen, Ablauf und Meldungen.
 ![Die Schreibseite](img/de/servo-hitec-write.png)
 ![Die Hitec-Dateien auf der Karte](img/de/servo-hitec-files.png)
 ![ZURÜCKSPIELEN des Backups der Sitzung](img/de/servo-hitec-restore-page.png)
+![Die Seite SERVO BEWEGEN](img/de/servo-hitec-move.png)
+![SERVO BEWEGEN an, ENDE LINKS verfolgt](img/de/servo-hitec-move-on.png)
+![ANSCHLAG SUCHEN links bei der Suche](img/de/servo-hitec-move-find.png)
+![Ein Anschlag links gefunden](img/de/servo-hitec-move-found.png)
 
 ### Einstellungen
 

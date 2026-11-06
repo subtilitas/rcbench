@@ -500,6 +500,7 @@ replaces a visible hint.
 | HOLD 2s TO RESTORE | `Hold 2s to restore.` |
 | HOLD 2s TO CONTINUE | `Hold 2s to continue.` |
 | HOLD 2s TO LEAVE | `Hold 2s to leave.` |
+| HOLD 2s TO MOVE on the Hitec programmer's MOVE SERVO page | `Hold 2s to move the servo.` |
 | HOLD 2s TO LOAD | `Hold 2s to load.` |
 | HOLD 2s TO RELEASE | `Hold 2s to release the port.` |
 | HOLD 2s TO REPAIR | `Hold 2s to repair.` |
@@ -1998,11 +1999,31 @@ FILES replaces SERIES and opens `BENCH/HITEC/CONF`, with 5 files per page
 below the save entry. A new name uses the keyboard; files for another
 model or beyond a soft rule open CHECK THIS FILE.
 
-RESTORE writes the session backup back. MORE offers FACTORY DEFAULT for
+RESTORE writes the session backup back; where the bench cannot check that
+the servo is the backup's, its 2s hold confirms the unit. MORE offers FACTORY DEFAULT for
 a classic servo. A port held by another HITEC session opens with RELEASE
 PORT, a 2s hold that returns the port to PWM without changing the supply.
 [Servo programmer for Hitec servos](HitecProgrammer.md) details the rows,
 workflow and messages.
+
+MOVE SERVO, the fifth row of a D series TRAVEL tab, moves the horn to the
+position being edited while the bench stays SAFE
+([MOVE SERVO on the Hitec programmer](HitecMove.md)). A tap on OFF opens its
+page; HOLD 2s TO MOVE switches it on. While it is on, NEUTRAL, LEFT END and
+RIGHT END show 56 x 48px `-` and `+` keys around a 148px value; a key steps
+8 counts on the press and repeats after 0.45s at 8Hz, at 30Hz from 1.8s.
+The label of the followed row is in the accent colour. The notes show the
+port and its GPIO, `POSITION 3344 (-65.1°)` with the AS5600 angle and the
+supply current, the reach and the end point's note. A tap on ON, a tab
+change, CLOSE and the home tag switch it off; the button reads WAIT until
+the servo has restarted.
+
+While the loop runs, FIND STOP takes DIRECTION's row: two keys of
+126 x 48px, LEFT END and RIGHT END. A tap starts the search on that side,
+the key turns the warning colour, and a second tap ends it. The note says
+`FIND STOP toward LEFT END: 37 counts every 2 passes from NEUTRAL, at most 40s. Tap it again to stop.`
+A stop found sets that end in the draft:
+`Stop at 4840. LEFT END set to 4915 in the edits.`
 
 ![The Hitec programmer, the tester holding the port](img/servo-hitec.png)
 ![A D485HW read](img/servo-hitec-read.png)
@@ -2010,6 +2031,10 @@ workflow and messages.
 ![The write page](img/servo-hitec-write.png)
 ![The Hitec files on the card](img/servo-hitec-files.png)
 ![RESTORE of the session's backup](img/servo-hitec-restore-page.png)
+![MOVE SERVO's page](img/servo-hitec-move.png)
+![MOVE SERVO on, LEFT END followed](img/servo-hitec-move-on.png)
+![FIND STOP searching on the left](img/servo-hitec-move-find.png)
+![A stop found on the left](img/servo-hitec-move-found.png)
 
 ### Settings
 

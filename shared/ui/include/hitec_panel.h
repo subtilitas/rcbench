@@ -237,6 +237,25 @@ gfx_rect_t hitec_panel_close_rect(void);
  */
 gfx_rect_t hitec_panel_value_rect(int page, int row, int col);
 /**
+ * @brief A -/+ key of a position row while MOVE SERVO is on.
+ * @param page the tab
+ * @param row  the row
+ * @param plus true for +
+ * @return its rectangle; empty for a row with no keys now
+ */
+gfx_rect_t hitec_panel_step_rect(int page, int row, bool plus);
+/**
+ * @brief A key of the FIND STOP row on TRAVEL.
+ * @param right true for RIGHT END's
+ * @return its rectangle; empty while the row is not shown
+ */
+gfx_rect_t hitec_panel_find_rect(bool right);
+/**
+ * @brief The band's hint the open hold page gives a release before 2s.
+ * @return its ui_text_id_t; -1 with no page open
+ */
+int hitec_panel_page_hint(void);
+/**
  * @brief The label of a row as it is drawn now.
  * @param page the tab
  * @param row  the row

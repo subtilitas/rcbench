@@ -154,6 +154,7 @@ static bool running(hitec_prog_state_t st)
     case HITEC_PROG_RECORDING:
     case HITEC_PROG_WRITING:
     case HITEC_PROG_BACKUP:
+    case HITEC_PROG_MOVING:
         return true;
     default:
         return false;
