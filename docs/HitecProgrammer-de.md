@@ -14,7 +14,7 @@ laden und das Backup der Sitzung zurückspielen.
 Öffne `Hitec-Servos` unter **PROGRAMMIEREN** auf der
 [Seite SERVO](Screens-de.md#servo). Die Servoprogrammierung öffnet sich eine
 Ebene tiefer und deckt die linke Spalte samt den Reitern der Leiste ab.
-**SCHLIESSEN** oder die Home-Markierung führt zur Liste von PROGRAMMIEREN
+**SCHLIESSEN** oder das Home-Feld führt zur Liste von PROGRAMMIEREN
 zurück, solange die Servoprogrammierung keinen Port hält. Die Zeile ist mit
 `IOMCU OHNE SERVO PWM` ausgegraut und lässt sich nicht öffnen, solange der
 IOmcu, die RP2350-Platine, kein Servo-PWM (Pulsweitenmodulation) meldet.
@@ -59,7 +59,7 @@ und von je 1 HS-5645MG, HS-7955TG und HS-5955TG (18.10. bis 20.10.2026)
   gesetzter STOP lehnt es ebenfalls ab: `Ein STOP ist gesetzt. Halte STOP 2s, um ihn zurückzusetzen.`
 - Ein klassisches Servo geht nur beim Einschalten in den Programmiermodus.
   Der Prüfstand muss seine Versorgung deshalb aus- und einschalten können.
-  VERBINDEN für KLASSISCH braucht entweder ein antwortendes PD mini oder
+  VERBINDEN für KLASSISCH braucht entweder einen antwortenden PD mini oder
   die schaltbare feste 5V-Versorgung des rbmod-Carriers. Ohne beides erscheint
   `Klassische Servos
   brauchen ein PD mini: Der Prüfstand schaltet die Versorgung.`
@@ -67,7 +67,7 @@ und von je 1 HS-5645MG, HS-7955TG und HS-5955TG (18.10. bis 20.10.2026)
   fest: PULL-UP oder PRECHARGE
   ([Empfangsmodus](LinkHitec-de.md#empfangsmodus)). VERBINDEN wartet, bis
   der IOmcu diesen Modus hält: `Empfangsart im IOmcu noch nicht gesetzt. Versuche es erneut.`
-- Wenn das PD mini das Servo versorgt, gilt die Programmierspannung der
+- Wenn der PD mini das Servo versorgt, gilt die Programmierspannung der
   KST-Servoprogrammierung (SET_SERVO_PROG_V, WEITERES >
   PROGRAMMIERSPANNUNG). Eine Hitec-Sitzung verwendet 4,8V bis 6,0V: Eine
   höhere Einstellung wird auf 6,0V begrenzt, und der Reiter SERVO sagt
@@ -136,7 +136,7 @@ Solange der Port gehalten ist:
   Alarmband, auf SERVO wie auf MOTOR & ESC. STOP wirkt. DISARM hat nichts
   zu beenden: der Prüfstand kann nicht ARMED sein, solange der Port
   gehalten ist.
-- Wenn das PD mini die Programmierports versorgt, sind seine Sollwerte und
+- Wenn der PD mini die Programmierports versorgt, sind seine Sollwerte und
   AUSGANG EIN in der Zeile SOLL und auf der Seite SUPPLY gesperrt. Ein Tipp
   darauf zeigt `Servoprogrammierung belegt das
   Netzteil: Sollwerte und EIN gesperrt.` AUSGANG AUS wirkt. Ab Protokoll
@@ -147,7 +147,7 @@ Solange der Port gehalten ist:
   Ausgang nach einem Verlassen, das ihn eingeschaltet lässt
   ([VERLASSEN](#verlassen);
   [Servoprogrammierung, Die Versorgung](ServoProgrammer-de.md#die-versorgung)).
-  Die feste 5V-Versorgung des Carriers sperrt das PD mini nicht.
+  Die feste 5V-Versorgung des Carriers sperrt den PD mini nicht.
 - Die Zeile für KST- und Chaservo-Servos und die Zeile ZIEL von MOTOR & ESC
   nehmen keinen Druck an, und ESC STICK startet keinen Lauf.
 
@@ -228,7 +228,7 @@ WEITERES stellt den Rohwert im Entwurf wieder her.
 Ein Wert, der eine Regel der folgenden Tabelle bricht, öffnet ÄNDERUNG PRÜFEN mit der Zeile
 des Felds, `TEMPO: 100% -> 20%`, der Wert des Servos zuerst, und einer
 Zeile je Regel. **2s HALTEN ZUM ÜBERNEHMEN** übernimmt ihn; **ABBRECHEN**
-oder die Home-Markierung lässt den Entwurf, wie er war.
+oder das Home-Feld lässt den Entwurf, wie er war.
 
 | Regel | Warnung |
 | --- | --- |
@@ -843,13 +843,13 @@ SCHREIBEN schreibt den Ausgleich mit den Änderungen) und keinen Vermerk.
 
 ## VERLASSEN
 
-SCHLIESSEN, die Home-Markierung oder VERLASSEN in der Zeile PORT öffnet
+SCHLIESSEN, das Home-Feld oder VERLASSEN in der Zeile PORT öffnet
 PROGRAMMIERMODUS VERLASSEN; 2s Halten auf `2s HALTEN ZUM VERLASSEN`
 verlässt ihn:
 
 - D-Serie: ein Neustart des Servos (Register 0x46 = 1), das danach 1s lang
   Signale ignoriert; die Versorgung bleibt unverändert.
-- Klassisch: Das PD mini oder die feste 5V-Versorgung des Carriers wird
+- Klassisch: Der PD mini oder die feste 5V-Versorgung des Carriers wird
   aus- und eingeschaltet. Die Auszeit von 500ms beginnt mit der Bestätigung,
   dass der Ausgang aus ist. Beim PD mini sendet der Treiber die
   bestätigende Leseanfrage 250ms nach dem Ausschalten (`PDMINI_CONFIRM_MS`).
@@ -866,7 +866,7 @@ lehnt ein gestoppter Port ab, das CLOSE wird immer angenommen.
 ![PROGRAMMIERMODUS VERLASSEN, D-Serie](img/de/servo-hitec-leave.png)
 ![PROGRAMMIERMODUS VERLASSEN, klassisch](img/de/servo-hitec-classic-leave.png)
 
-Wenn das PD mini das Servo versorgt, endet VERLASSEN bei beiden Serien
+Wenn der PD mini das Servo versorgt, endet VERLASSEN bei beiden Serien
 normalerweise mit eingeschaltetem Ausgang bei Programmierspannung und
 Strombegrenzung der Sitzung. Weichen die Sollwerte von vor VERBINDEN davon
 ab, fragt SERVO, sobald der Port wieder in PWM ist: `Netzteil-Sollwerte 5.50V 2.00A am eingeschalteten Ausgang wiederherstellen?`, unter AUSGANG IST

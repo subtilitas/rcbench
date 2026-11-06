@@ -531,7 +531,7 @@ verworfen, wartet die nächste Anfrage auf dessen Antwort.
 Zwischen den Anfragen werden die Register 0 bis 15 alle 100ms gelesen,
 solange die Page einen Port hält, und alle 500ms, solange sie keinen hält.
 Einem IOmcu unter 4.23 wird nichts gesendet. Die Kopie für den Bildschirm
-nennt den Zustand, den Port, die Flags (`STOPPED`, ein antwortendes PD
+nennt den Zustand, den Port, die Flags (`STOPPED`, ein antwortender PD
 mini, `PRECHARGE`), den Pin und die Leitung, und ob dieses Modul den
 gehaltenen Port geöffnet hat, seit der Link kam. Ein Port, der über einen
 Link-Verlust, einen Neustart des Panels oder nach dem Kommando eines
