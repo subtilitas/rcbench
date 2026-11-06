@@ -404,7 +404,7 @@ its stack less 1024 bytes.
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
 | `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,320 | 2,832 |
-| `control` | `control_task` | 6,144 | 3,472 | 1,632 |
+| `control` | `control_task` | 6,144 | 3,648 | 1,456 |
 | `runlog` | `log_task` | 6,656 | 3,824 | 1,792 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
 | `imu` | `imu_task`, the Bluetooth IMU's link: SETUP's values, the host stack's events and the actions to NimBLE (`panel_imu.c`) | 4,096 | 1,888 | 1,168 |
@@ -570,7 +570,7 @@ core's chain, one interrupt and a margin of 256 bytes exceed its stack.
 
 | Core | Entry | Stack (bytes) | Deepest chain (bytes) | One interrupt (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| core 0 | `main` | 4,096 | 1,492 | 528 | 1,820 |
+| core 0 | `main` | 4,096 | 1,508 | 528 | 1,804 |
 | core 1 | `core1_main` | 4,096 | 644 | 528 | 2,668 |
 
 Measured on the image CI builds, pico-sdk 2.3.0 with arm-none-eabi-gcc
@@ -583,7 +583,7 @@ the image with the runner's packaged one. The frames named below are those
 of the same build.
 
 Core 0's deepest chain is a request that binds an output and fails in the
-pico-sdk: `main` (256 bytes), `can_service` (344), `link_dev_dispatch`,
+pico-sdk: `main` (256 bytes), `can_service` (352), `link_dev_dispatch`,
 `slots_write`, `slots_take`, `ports_apply`, `slots_rerate`,
 `outputs_hw_apply_only`, `out_dshot_bind`, the
 pico-sdk's claim of a PIO (programmable input/output) state machine, and

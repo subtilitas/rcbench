@@ -2009,17 +2009,12 @@ shared/link/include/link_artxfer.h: warning: Member blocks (variable) of struct 
 shared/link/include/link_artxfer.h: warning: Member meta (variable) of struct link_artxfer_t is not documented.
 shared/link/include/link_bringup.h: warning: Member have_identity (variable) of struct link_bringup_t is not documented.
 shared/link/include/link_bringup.h: warning: Member have_status (variable) of struct link_bringup_t is not documented.
-shared/link/include/link_bringup.h: warning: Member nacks (variable) of struct link_bringup_t is not documented.
-shared/link/include/link_bringup.h: warning: Member polls (variable) of struct link_bringup_t is not documented.
 shared/link/include/link_bringup.h: warning: Member proto_major (variable) of struct link_bringup_t is not documented.
 shared/link/include/link_bringup.h: warning: Member proto_minor (variable) of struct link_bringup_t is not documented.
-shared/link/include/link_bringup.h: warning: Member replies (variable) of struct link_bringup_t is not documented.
 shared/link/include/link_bringup.h: warning: Member rt_max_us (variable) of struct link_bringup_t is not documented.
 shared/link/include/link_bringup.h: warning: Member rt_mean_us (variable) of struct link_bringup_t is not documented.
 shared/link/include/link_bringup.h: warning: Member rt_min_us (variable) of struct link_bringup_t is not documented.
 shared/link/include/link_bringup.h: warning: Member rt_samples (variable) of struct link_bringup_t is not documented.
-shared/link/include/link_bringup.h: warning: Member rx_resyncs (variable) of struct link_bringup_t is not documented.
-shared/link/include/link_bringup.h: warning: Member timeouts (variable) of struct link_bringup_t is not documented.
 shared/link/include/link_can.h: warning: Member LINK_CAN_COUNT_MASK (macro definition) of file link_can.h is not documented.
 shared/link/include/link_can.h: warning: Member LINK_CAN_COUNT_SHIFT (macro definition) of file link_can.h is not documented.
 shared/link/include/link_can.h: warning: Member LINK_CAN_OFFSET_MASK (macro definition) of file link_can.h is not documented.
@@ -2836,18 +2831,11 @@ shared/ui/busfault_screen.c: warning: Member bus_checks(busfault_bus_t b, const 
 shared/ui/busfault_screen.c: warning: Member bus_meaning(busfault_bus_t b) (function) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member bus_text(busfault_bus_t b) (function) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member bus_word(busfault_bus_t b) (function) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member busfault_screen(void) (function) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member busfault_screen_invalidate(void) (function) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member cancel(void) (function) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member checks_for(can_selftest_verdict_t v, const char *out[LIST_MAX]) (function) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member event(const touch_event_t *evt) (function) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member have (variable) of struct [struct].s is not documented.
-shared/ui/busfault_screen.c: warning: Member in_ack(int16_t x, int16_t y) (function) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member k_screen (variable) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member line_len(const char *at, int cells) (function) of file busfault_screen.c is not documented.
 shared/ui/busfault_screen.c: warning: Member meaning_of(can_selftest_verdict_t v) (function) of file busfault_screen.c is not documented.
-shared/ui/busfault_screen.c: warning: Member r (variable) of struct [struct].s is not documented.
-shared/ui/busfault_screen.c: warning: Member reset(void) (function) of file busfault_screen.c is not documented.
 shared/ui/coproc_update_screen.c: warning: Member block (variable) of struct [struct].s is not documented.
 shared/ui/coproc_update_screen.c: warning: Member blocks (variable) of struct [struct].s is not documented.
 shared/ui/coproc_update_screen.c: warning: Member button_at(int16_t x, int16_t y) (function) of file coproc_update_screen.c is not documented.
@@ -2948,7 +2936,6 @@ shared/ui/include/balance_screen.h: warning: return type of member balance_scree
 shared/ui/include/board_drawing.h: warning: parameters of member board_drawing_agrees are not documented
 shared/ui/include/board_drawing.h: warning: parameters of member board_drawing_render are not documented
 shared/ui/include/board_drawing.h: warning: return type of member board_drawing_agrees is not documented
-shared/ui/include/busfault_screen.h: file has no @file block
 shared/ui/include/busfault_screen.h: warning: Member bus_errors (variable) of struct busfault_report_t is not documented.
 shared/ui/include/busfault_screen.h: warning: Member bus_off (variable) of struct busfault_report_t is not documented.
 shared/ui/include/busfault_screen.h: warning: Member corrupt (variable) of struct busfault_report_t is not documented.
@@ -2962,10 +2949,8 @@ shared/ui/include/busfault_screen.h: warning: Member remote_tx_errors (variable)
 shared/ui/include/busfault_screen.h: warning: Member rx_errors (variable) of struct busfault_report_t is not documented.
 shared/ui/include/busfault_screen.h: warning: Member sent (variable) of struct busfault_report_t is not documented.
 shared/ui/include/busfault_screen.h: warning: Member verdict (variable) of struct busfault_report_t is not documented.
-shared/ui/include/busfault_screen.h: warning: parameters of member busfault_screen_set are not documented
 shared/ui/include/busfault_screen.h: warning: parameters of member busfault_verdict_text are not documented
 shared/ui/include/busfault_screen.h: warning: return type of member busfault_screen_report is not documented
-shared/ui/include/busfault_screen.h: warning: return type of member busfault_screen_take_ack is not documented
 shared/ui/include/busfault_screen.h: warning: return type of member busfault_verdict_text is not documented
 shared/ui/include/coproc_update_screen.h: warning: Member block (variable) of struct cu_feed_t is not documented.
 shared/ui/include/coproc_update_screen.h: warning: Member blocks (variable) of struct cu_feed_t is not documented.

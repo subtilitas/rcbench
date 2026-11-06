@@ -48,9 +48,21 @@ This screen does not open while the bench is ARMED, because it has no STOP contr
 
 The same counts are written to `BENCH/RCBENCH.LOG` on the SD (Secure Digital) card, one line per report while the link is down. The file is limited to 1MiB (1,048,576 bytes). Before a line would exceed that limit, the logger renames the file to `BENCH/RCBENCH.OLD`, replacing any existing file of that name, and starts a new `BENCH/RCBENCH.LOG`. These lines are written regardless of the Auto logs setting under [SETUP](setup.md#sd-card) > SD CARD.
 
+## A link that answers again
+
+![The link answers again](view:busfault-back)
+
+The counts on the right follow the link while the screen shows. Once the IOmcu has answered every request for 1s, the bar turns green and reads LINK BACK, and `back` counts the seconds since the first answer. The start-up test's screen does the same, with the test's counts kept on the right.
+
+- HOLD 2s TO RECONNECT replaces HOLD 2s TO ACKNOWLEDGE. It opens the menu on the live bench, SAFE.
+- One request without an answer takes RECONNECT back at once. The next 1s of answers offers it again.
+- RECONNECT clears nothing. A STOP that stands stays, and so does the FAULT chip. FAULT 01, the IOmcu's failsafe, clears at the next ARM.
+
 ## Leaving the screen
 
-HOLD 2s TO ACKNOWLEDGE closes the screen, using the same hold gesture and fade as ARM. Acknowledging does not repair the fault. The bench then runs in simulation without driving outputs. The self-test runs again at the next startup.
+HOLD 2s TO ACKNOWLEDGE closes the screen, using the same hold gesture and fade as ARM. Acknowledging does not repair the fault. The bench then runs in simulation without driving outputs. The self-test runs again at the next startup. Once the link answers again, HOLD 2s TO RECONNECT takes its place.
+
+A press released before 2s shows what the hold does in place of the red bar, amber, for 4s: `Hold 2s to acknowledge.` or `Hold 2s to reconnect.` A tap on the bar closes it.
 
 ## Related pages
 

@@ -422,6 +422,9 @@ static void link_came_up(const link_msg_t *reply)
     s_far_minor = reply->regs[LINK_ID_PROTOCOL_MINOR];
     /* From 4.35 a page wider than 16 registers is read in two exchanges. */
     s_host.held_reads = s_far_minor >= LINK_MINOR_READ_HELD;
+    /* From 4.37 requests are numbered and a lost answer's request is sent
+     * once more (link_host_retry()). */
+    s_host.numbered = s_far_minor >= LINK_MINOR_REPEAT;
     /* A refusal count is the IOmcu's that sent it: the band shows
      * none until this one's status page is read. */
     s_bring.have_refused = false;
@@ -662,6 +665,10 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
         } else if (*link_up) {
             /* The edge: it was up until this poll. */
             atomic_store(&s_link_lost_ms, now_ms());
+            /* The identity probes go unnumbered: whoever answers next may
+             * be an IOmcu older than 4.37, which refuses a numbered frame,
+             * or the image an update has just started. */
+            s_host.numbered = false;
             /*
              * An armed bench stops with the link, and so does an arm still
              * waiting for the line.  The far end has failed safe on its own

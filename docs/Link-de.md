@@ -29,6 +29,9 @@ Der IOmcu setzt nach 200ms ohne Anfrage die Failsafe-Werte; das Panel
 meldet nach 1s ohne Antwort einen Linkausfall. Das Failsafe bleibt gesetzt.
 Neue Anfragen stoppen den Stillezähler, heben das Failsafe aber nicht auf.
 Dazu muss 0x5AFE in das Register CLEAR der Control-Page geschrieben werden.
+Ab 4.37 sendet das Panel eine Anfrage, deren Antwort verloren geht, nach
+50ms ein zweites Mal; eine verlorene Antwort erreicht deshalb keine der
+beiden Grenzen ([Eine verlorene Antwort](#eine-verlorene-antwort)).
 
 Der IOmcu hat außerdem einen Arm-Latch. Er wird bei jedem Start gesetzt,
 beim Übergang in Link-Stille, bei einem nicht vertrauenswürdigen Heartbeat
@@ -37,6 +40,74 @@ von ARM mit NOT_ARMED abgewiesen. Dasselbe CLEAR hebt ihn auf. Der Arm-Latch
 ist vom Failsafe unabhängig: STATUS meldet ihn nicht, und ON der Versorgung
 prüft ihn nicht. Die Regeln stehen in
 [Sicherheit](Safety-de.md#arm-latch).
+
+### Eine verlorene Antwort
+
+Ab Protokoll 4.37 nummeriert das Panel seine Anfragen und sendet eine
+Anfrage ein zweites Mal, wenn ihre Antwort nicht innerhalb von 50ms kommt.
+Der IOmcu beantwortet die Wiederholung mit der Antwort, die er der Anfrage
+gegeben hat, und führt sie nicht noch einmal aus.
+
+| | |
+| --- | --- |
+| Austauschnummer | 1 bis 7, für jede Anfrage die nächste, in Bit 13 bis 11 des Identifiers ([Identifier](#identifier)); 0 ist eine Anfrage ohne Nummer. Die Antwort trägt die Nummer ihrer Anfrage |
+| Wiederholung | einmal, 50ms nach der Anfrage (`LINK_HOST_RETRY_MS`), und nie 200ms oder später danach (`LINK_HOST_RETRY_LAST_MS`) |
+| Timeout | unverändert: 1000ms ab der Anfrage. Geht auch die Wiederholung verloren, endet der Austausch dort wie eine Anfrage ohne Wiederholung |
+| IOmcu | hält die Nachrichten des letzten Austauschs mit ihren Antworten, bis zu 8 Nachrichten, 1000ms ab dessen erster Nachricht. Eine Anfrage mit der Nummer dieses Austauschs, die einer gehaltenen Nachricht gleicht, wird aus der Kopie beantwortet, und keine Page wird gelesen oder geschrieben. Eine neue Nummer oder eine Anfrage ohne Nummer verwirft die Kopie |
+| Zähler | `retried`: Anfragen, die nach ihrer Wiederholung beantwortet wurden, im Konsolenbericht und in der Logzeile auf der Karte ([Link-Bericht](Bringup-de.md#link-bericht)) |
+
+Die 50ms folgen aus den Antwortzeiten. Die längste Antwort, die der IOmcu
+planmäßig gibt, ist ein COMMIT oder ACTIVATE, der zuerst einen
+4-KiB-Sektor schreibt, etwa 19,2ms. Ein Speichern des Ausgangsspeichers
+verzögert eine Anfrage um dieselbe Zeit (19.178µs für Löschen und
+Programmieren, gemessen am Bring-up-Modul). Der Round Trip eines
+Austauschs liegt bei 334 bis 1400µs ([Den Link in Betrieb
+nehmen](Bringup-de.md)). Eine Antwort, die nach 50ms nicht da ist, ist
+verloren und nicht spät. Das Panel pollt alle 50ms, also hat der IOmcu
+höchstens 50ms vor der verlorenen eine Anfrage gehört, und die
+Wiederholung erreicht ihn etwa 100ms nach dieser Anfrage: die Hälfte
+seiner 200-ms-Stillegrenze. Eine beantwortete Wiederholung setzt deshalb
+kein `FEHLER 01` und baut keinen Link ab, und der Austausch dauert etwa
+50ms statt 1000ms. Heartbeat, das 200-ms-Failsafe und der 1000-ms-Timeout
+bleiben unverändert. Wie oft am Prüfstand eine Wiederholung nötig ist,
+ist nicht gemessen.
+
+| Anfrage | Wiederholt | Grund |
+| --- | --- | --- |
+| ein Lesen, READ_HELD eingeschlossen | ja | aus der Kopie beantwortet: ein Lesen, das die Page aus einer Warteschlange beantwortet, oder eines, das Register für READ_HELD hält, läuft einmal, und ein wiederholtes READ_HELD bekommt seine Daten, nicht BUSY |
+| ein Schreiben einer Einstellung: CHAN_CFG, OUTPUTS, BIND, SENSE_MAP, TONE und die anderen Einrichtungs-Pages | ja | aus der Kopie beantwortet; die Page wird einmal geschrieben |
+| CONTROL: ARM, THROTTLE, MOTOR_POLES, CLEAR | ja | aus der Kopie beantwortet: ARM schaltet einmal auf ARMED, CLEAR hebt das Failsafe einmal auf |
+| ein Schreiben, das stoppt: ARM 0, SUPPLY OFF, PROG_SUPPLY OFF | ja | wie jedes Schreiben. Der Stopp am Panel wartet nicht darauf: der Heartbeat endet im Durchlauf des STOP, worauf der Link auch wartet |
+| ein Schritt eines Programmierports: KST, HITEC, ESC_WIRE, ESC_DATA | ja | aus der Kopie beantwortet; Servo oder ESC (Electronic Speed Controller) bekommt den Schritt einmal |
+| UPDATE_CTL und UPDATE_DATA bei der Prüfung nach einem Link-up: HASH_RUNNING, BUY, ABORT | ja | aus der Kopie beantwortet |
+| das Update selbst, BEGIN bis FINISH | nein | das Update baut zuerst den Link ab und läuft ohne Nummern; ein erneut gesendeter COMMIT schadet nicht ([Die Übertragung](#die-übertragung)) |
+| ACTIVATE | nein | der IOmcu startet 20ms nach seiner Antwort neu, und eine Wiederholung könnte das neue Image als eigener Befehl erreichen |
+| eine Anfrage, während deren Wartezeit ein STOP kam oder ein Fehler oder ein Bildschirm ein Ausschalten anforderte | nein | die Anfrage kann das ARM sein, das der Stopp überholt hat; sie wartet die 1000ms ab. Das Schreiben des Ausschaltens selbst behält seine Wiederholung |
+| jede Anfrage an einen IOmcu älter als 4.37, und die Identity-Abfragen bei abgebautem Link | nein | ohne Nummer: ein älterer IOmcu weist einen nummerierten Frame als Fenster hinter dem Ende einer Page ab, und der IOmcu, der eine Abfrage beantwortet, kann ein älterer sein |
+
+Eine späte Antwort auf eine Anfrage, die schon nach ihrer Wiederholung
+beantwortet wurde, trägt die Nummer dieser Anfrage. Die nächste Anfrage
+hat eine andere Nummer, also wird die späte Antwort nicht genommen, auch
+nicht für dasselbe Fenster, und zählt als `stale`.
+
+| Panel | IOmcu | Verhalten |
+| --- | --- | --- |
+| 4.37 | 4.37 | nummeriert; eine verlorene Antwort kostet 50ms |
+| 4.37 | 4.36 oder älter | ohne Nummer; eine verlorene Antwort kostet den 1000-ms-Timeout, und der IOmcu setzt nach 200ms Stille `FEHLER 01` |
+| 4.36 oder älter | 4.37 | ohne Nummer; der IOmcu hält nichts und antwortet wie ein IOmcu mit 4.36 |
+
+`shared/link/link_host.c` enthält die Wiederholung und
+`shared/link/link_dev.c` die Kopie. `test_link_retry` lässt beide über
+einen modellierten Bus mit einer Millisekundenuhr laufen: eine verlorene
+und wiedergewonnene Antwort (kein Timeout, `retried` 1, der IOmcu nicht
+still), eine ebenfalls verlorene Wiederholung (der Timeout bei 1000ms),
+eine Anfrage, die vor dem IOmcu verloren geht (die Wiederholung wirkt
+einmal), eine erste Antwort, die nach der Wiederholung ankommt (einmal
+genommen, die Kopie von der nächsten Anfrage für dasselbe Fenster
+abgewiesen), ein Schreiben von 32 Registern, dessen letzte 2 Quittungen
+verloren gehen (8-mal geschrieben, nicht 16-mal), ein wiederholtes
+READ_HELD, ACTIVATE, eine zurückgenommene Wiederholung, das Fenster bei
+49ms, 50ms, 199ms und 200ms und den Überlauf der 32-Bit-ms-Uhr.
 
 ### Bus off
 
@@ -80,7 +151,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Das Protokoll verwendet Pages mit bis zu 32 Registern zu je sechzehn Bit.
 Gelesen und geschrieben wird in Registerfenstern. Der IOmcu sendet nur als Antwort auf eine Anfrage.
-Protokollversion 4.36. Die Major-Version ist Register 0 der Page 0. Die Major
+Protokollversion 4.37. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
@@ -199,7 +270,10 @@ höchstens 16 Registern](#lesen-von-höchstens-16-registern)); das Panel sendet
 sie keinem älteren IOmcu, der einen Frame mit einer unbekannten Op verwirft.
 Ab 4.36 nimmt der rbmod-Carrier FUNC SERVO PWM auf seinen Programmierports;
 ein älterer Carrier lehnt sie mit BAD_VALUE ab, und das Panel bietet ihm
-keine Wahl des Ports an.
+keine Wahl des Ports an. Ab 4.37 nimmt der IOmcu nummerierte Anfragen und
+beantwortet eine Wiederholung aus seiner Kopie ([Eine verlorene
+Antwort](#eine-verlorene-antwort)); das Panel nummeriert seine Anfragen nur
+an einen IOmcu ab 4.37, weil ein älterer einen nummerierten Frame abweist.
 Der IOmcu liest die Minor des Panels nicht. Ein älteres Panel schreibt
 keine Page, die es nicht kennt.
 
@@ -473,7 +547,10 @@ wartet also darauf. Die 200-ms-Stillegrenze des IOmcu zählt ab der
 letzten Anfrage, die er gehört hat, und jeder Austausch der Folge ist eine:
 die Folge erreicht diese Stillegrenze unabhängig von ihrer Gesamtdauer nicht,
 und ein einzelner Frame, den der IOmcu 200ms lang nicht annimmt, setzt
-`FEHLER 01` wie jede Anfrage. Ein Frame, der auf der Leitung verloren geht,
+`FEHLER 01` wie jede Anfrage. An einem IOmcu ab 4.37 wird ein Frame, dessen
+Antwort verloren geht, nach 50ms ein zweites Mal gesendet, und die Folge
+läuft weiter ([Eine verlorene Antwort](#eine-verlorene-antwort)). Ein Frame,
+der zweimal verloren geht oder an einem älteren IOmcu verloren geht,
 beendet die Folge nach den 1000ms seines eigenen Austauschs, der Link wird
 abgebaut, und die geltende Bindung bleibt unverändert.
 
@@ -1013,7 +1090,8 @@ READ_HELD ist deshalb ein Frame ohne Nutzdaten.
 | 28..26 | Priorität | 3 | 0 control (die Pages CONTROL, LIMITS, FAILSAFE und SUPPLY, ihre Quittungen eingeschlossen), 1 normal (darunter SENSE, SERVO_SENSE und TONE), 2 bulk (reserviert); niedriger gewinnt die Arbitrierung |
 | 25..22 | op | 4 | 1 READ, 2 WRITE, 3 DATA, 4 ACK (Acknowledge), 5 NACK (Negative Acknowledge), 6 READ_HELD (ab 4.35) |
 | 21..14 | page | 8 | Page Map unten |
-| 13..6 | offset | 8 | erstes Register in diesem Frame |
+| 13..11 | Austauschnummer | 3 | 0 ohne Nummer, 1 bis 7 ab 4.37 ([Eine verlorene Antwort](#eine-verlorene-antwort)); Bit 7 bis 5 des 8-Bit-Offset-Felds |
+| 10..6 | offset | 5 | erstes Register in diesem Frame, 0 bis 31 |
 | 5..0 | count | 6 | Register in diesem Frame, 0..32 |
 
 Die Priorität folgt aus der Page: die Pages CONTROL, LIMITS und FAILSAFE und
@@ -1863,7 +1941,8 @@ Device-Dispatcher laufen, über einen Bus, der Frames verwirft, verzögert und
 umsortiert: geteilte Antworten in umgekehrter Reihenfolge, abgewiesene
 Schreibzugriffe, verlorene Teilstücke, die eine Anfrage unbeantwortet lassen
 statt halb beantwortet, und der Watchdog des Geräts, der auf einem stillen
-Bus auslöst. `test_bind_link` lässt die Schreib- und Lesefolge einer Bindung
+Bus auslöst. `test_link_retry` lässt die Wiederholung einer verlorenen
+Antwort laufen ([Eine verlorene Antwort](#eine-verlorene-antwort)). `test_bind_link` lässt die Schreib- und Lesefolge einer Bindung
 gegen die Page-Regeln des IOmcu laufen, über einen Bus mit dem
 2-Frame-Puffer des XL2515: siehe [Eine Bindung als
 Ganzes](#eine-bindung-als-ganzes).

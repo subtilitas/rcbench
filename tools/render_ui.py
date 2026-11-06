@@ -678,6 +678,8 @@ SCREENS = {
     "supply-offline": ("supply-offline.png", "supply", "dark"),
     "busfault-silent": ("busfault-silent.png", "busfault", "dark"),
     "busfault-lost": ("busfault-lost.png", "busfault", "dark"),
+    # The link answering again for 3s: RECONNECT offered.
+    "busfault-back": ("busfault-back.png", "busfault", "dark"),
     # The IOmcu update: the question a link-up poses, the same with
     # an image older than the one running, and the progress half way.
     "coproc-update": ("coproc-update.png", "coproc-update", "dark"),
@@ -969,6 +971,8 @@ FIT_ONLY = {
     "busfault-lost-stopped": (None, "busfault", "dark"),
     "busfault-lost-running": (None, "busfault", "dark"),
     "busfault-lost-unknown": (None, "busfault", "dark"),
+    # RECONNECT offered over the start-up test's verdict.
+    "busfault-back-test": (None, "busfault", "dark"),
     # BATTERY's two other verdicts, whose reasons wrap in the right card.
     "battery-healthy":  (None, "battery", "dark"),
     "battery-replace":  (None, "battery", "dark"),

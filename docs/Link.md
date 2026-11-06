@@ -28,13 +28,76 @@ If frames do not reach the other board: [Bringing up the link](Bringup.md).
 The IOmcu applies failsafe values after 200ms without a request; the panel
 escalates after 1s without an answer. The failsafe latches. Resumed traffic
 stops the silence counter but does not clear the failsafe. Clearing it requires a
-write of 0x5AFE to the CLEAR register of the control page.
+write of 0x5AFE to the CLEAR register of the control page. From 4.37 a
+request whose answer is lost is sent once more after 50ms, so one lost
+answer reaches neither limit ([A lost answer](#a-lost-answer)).
 
 The IOmcu also has an arm latch. It is set at every start, when the link
 becomes silent, when the heartbeat stops being trusted and when an ARM
 request is refused. While it is set a write of ARM is refused with NOT_ARMED. The same
 CLEAR releases it. It is not the failsafe: STATUS does not report it, and the
 supply's ON does not read it. [Safety](Safety.md#arm-latch) has the rules.
+
+### A lost answer
+
+From protocol 4.37 the panel numbers its requests and sends a request once
+more when its answer has not come within 50ms. The IOmcu answers the repeat
+with the answer it gave the request and does not act on it again.
+
+| | |
+| --- | --- |
+| Exchange number | 1 to 7, the next one for each request, in bits 13 to 11 of the identifier ([Identifier](#identifier)); 0 is an unnumbered request. The answer carries the number of its request |
+| Repeat | once, 50ms after the request (`LINK_HOST_RETRY_MS`), and never 200ms or more after it (`LINK_HOST_RETRY_LAST_MS`) |
+| Timeout | unchanged: 1000ms from the request. A repeat that is lost as well ends there, as a request without a repeat does |
+| IOmcu | keeps the last exchange's messages with their answers, up to 8 messages, for 1000ms from its first message. A request with that exchange's number that equals a kept message is answered from the copy, and no page is read or written. A new number or an unnumbered request drops the copy |
+| Counter | `retried`: requests answered after their repeat, in the console report and the card's log line ([Link report](Bringup.md#link-report)) |
+
+The 50ms follows from the reply times. The longest answer the IOmcu gives
+by design is a COMMIT or ACTIVATE that writes a 4KiB sector first, about
+19.2ms. A save of the output store delays a request by the same time
+(19,178µs for erase and program, measured on the bring-up module). The
+round trip of one exchange is 334 to 1400µs ([Bringing up the
+link](Bringup.md)). An answer not in by 50ms is lost, not late. The panel
+polls every 50ms, so the IOmcu heard a request at most 50ms before the
+lost one, and the repeat reaches it about 100ms after that request: half
+its 200ms silence limit. A repeat that is answered therefore latches no
+`FAULT 01` and takes no link down, and the exchange takes about 50ms
+instead of 1000ms. The heartbeat, the 200ms failsafe and the 1000ms
+timeout are unchanged. How often a repeat is needed on the bench is not
+measured.
+
+| Request | Repeated | Why |
+| --- | --- | --- |
+| a read, READ_HELD included | yes | answered from the copy: a read the page answers by taking from a queue, or one that keeps registers for READ_HELD, runs once, and a repeated READ_HELD gets its data, not BUSY |
+| a write of a setting: CHAN_CFG, OUTPUTS, BIND, SENSE_MAP, TONE and the other set-up pages | yes | answered from the copy; the page is written once |
+| CONTROL: ARM, THROTTLE, MOTOR_POLES, CLEAR | yes | answered from the copy: ARM arms once, CLEAR lifts the failsafe once |
+| a write that stops: ARM 0, SUPPLY OFF, PROG_SUPPLY OFF | yes | as any write. The stop at the panel does not wait for it: the heartbeat stops in the pass of the STOP, whatever the link waits for |
+| a step of a programming port: KST, HITEC, ESC_WIRE, ESC_DATA | yes | answered from the copy; the servo or ESC (electronic speed controller) gets the step once |
+| UPDATE_CTL and UPDATE_DATA at the check after a link-up: HASH_RUNNING, BUY, ABORT | yes | answered from the copy |
+| the update itself, BEGIN to FINISH | no | the update takes the link down first and runs unnumbered; a COMMIT sent again is harmless ([The transfer](#the-transfer)) |
+| ACTIVATE | no | the IOmcu restarts 20ms after its answer, and a repeat could reach the new image as a command of its own |
+| a request whose wait saw a STOP, or a disarm an error or a screen posted | no | the request can be the ARM the stop overtook; it waits out the 1000ms. The disarm's own write keeps its repeat |
+| any request to an IOmcu older than 4.37, and the identity probes while the link is down | no | unnumbered: an older IOmcu refuses a numbered frame as a window past the end of a page, and the IOmcu that answers a probe may be an older one |
+
+A late answer to a request already answered after its repeat carries that
+request's number. The next request has another number, so the late answer
+is not taken, even for the same window, and counts as `stale`.
+
+| Panel | IOmcu | Behaviour |
+| --- | --- | --- |
+| 4.37 | 4.37 | numbered; a lost answer costs 50ms |
+| 4.37 | 4.36 or older | unnumbered; a lost answer costs the 1000ms timeout, and the IOmcu latches `FAULT 01` after 200ms of silence |
+| 4.36 or older | 4.37 | unnumbered; the IOmcu keeps nothing and answers as a 4.36 IOmcu does |
+
+`shared/link/link_host.c` holds the repeat and `shared/link/link_dev.c` the
+copy. `test_link_retry` runs both over a modelled bus with a millisecond
+clock: an answer lost and recovered (no timeout, `retried` 1, the IOmcu not
+silent), a repeat lost as well (the timeout at 1000ms), a request lost
+before the IOmcu (the repeat acts once), a first answer that arrives after
+the repeat (taken once, the copy refused by the next request for the same
+window), a 32-register write whose last 2 acknowledgements are lost
+(written 8 times, not 16), a repeated READ_HELD, ACTIVATE, a cancelled
+repeat, the window at 49ms, 50ms, 199ms and 200ms, and the 32-bit ms wrap.
 
 ### Bus off
 
@@ -73,7 +136,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 The protocol uses pages of up to 32 sixteen-bit registers, read and written in windows. The
-IOmcu transmits only in answer to a request. Protocol version 4.36. The
+IOmcu transmits only in answer to a request. Protocol version 4.37. The
 major version is register 0 of page 0. The major version changes when a register
 changes meaning or a page is renumbered. The minor version changes when a page or
 register is added at the end, where an older panel can ignore it.
@@ -183,8 +246,11 @@ both with BAD_PAGE ([The ESC settings pages](LinkEsc.md)). From
 the panel sends it to no older IOmcu, which drops a frame of an op it does
 not know. From 4.36 the rbmod carrier takes FUNC SERVO PWM on its
 programming ports; an older carrier refuses it with BAD_VALUE, and the
-panel offers no choice of port to it. The
-IOmcu never reads the panel's minor; a page
+panel offers no choice of port to it. From 4.37 the IOmcu takes numbered
+requests and answers a repeat from its copy
+([A lost answer](#a-lost-answer)); the panel numbers its requests to a
+4.37 or later IOmcu only, because an older one refuses a numbered frame.
+The IOmcu never reads the panel's minor; a page
 an older panel does not know is a page it never writes.
 
 | Panel | IOmcu | Link and switching to ARMED | SENSE (0x2B) and SERVO_SENSE (0x2C) |
@@ -435,9 +501,11 @@ is refused while the bench is ARMED, so a bench that is ARMED never waits on it.
 IOmcu's 200ms silence limit counts from the last request it heard,
 and every exchange of the sequence is one: the sequence cannot starve it
 however long it takes as a whole, and a single frame the IOmcu does
-not take for 200ms latches `FAULT 01` as any request does. A frame that is
-lost on the wire ends the sequence after the 1000ms of its own exchange,
-with the link taken down and the binding in force unchanged.
+not take for 200ms latches `FAULT 01` as any request does. On a 4.37
+IOmcu a frame whose answer is lost is sent once more after 50ms and the
+sequence goes on ([A lost answer](#a-lost-answer)). A frame lost twice, or
+lost on an older IOmcu, ends the sequence after the 1000ms of its own
+exchange, with the link taken down and the binding in force unchanged.
 
 `shared/outputs/out_stage.c` is the IOmcu's half and
 `shared/outputs/bind_link.c` the panel's, under `test_bind_link`: the
@@ -926,7 +994,8 @@ READ_HELD is a frame with no payload.
 | 28..26 | priority | 3 | 0 control (CONTROL, LIMITS, FAILSAFE and SUPPLY pages, their acknowledgements included), 1 normal (SENSE, SERVO_SENSE and TONE among them), 2 bulk (reserved); lower wins arbitration |
 | 25..22 | op | 4 | 1 READ, 2 WRITE, 3 DATA, 4 ACK (acknowledge), 5 NACK (negative acknowledge), 6 READ_HELD (from 4.35) |
 | 21..14 | page | 8 | page map below |
-| 13..6 | offset | 8 | first register in this frame |
+| 13..11 | exchange number | 3 | 0 unnumbered, 1 to 7 from 4.37 ([A lost answer](#a-lost-answer)); bits 7 to 5 of the 8-bit offset field |
+| 10..6 | offset | 5 | first register in this frame, 0 to 31 |
 | 5..0 | count | 6 | registers in this frame, 0..32 |
 
 Priority is derived from the page: the control, limits and failsafe pages and
@@ -1716,6 +1785,7 @@ solver is checked against hand-verified examples; `test_link_loopback` runs the 
 poller against the device dispatcher over a bus that drops, delays and reorders
 frames: split replies arriving in reverse, refused writes, lost pieces leaving
 a request unanswered rather than half-answered, and the device watchdog firing
-on a quiet bus. `test_bind_link` runs a binding's write and read sequences
+on a quiet bus. `test_link_retry` runs the repeat of a lost answer
+([A lost answer](#a-lost-answer)). `test_bind_link` runs a binding's write and read sequences
 against the IOmcu's page rules over a bus with the XL2515's 2-frame
 buffer: see [A binding taken whole](#a-binding-taken-whole).

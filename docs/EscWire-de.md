@@ -8,7 +8,6 @@ Dieser Code entstand aus einer Verhaltensspezifikation, ohne Zugriff auf die Fir
 
 ## Aktuelle Einschränkungen
 
-- Ein bidirektionaler DShot-Pin liegt bei SAFE auf high. Das ist die Eintrittsbedingung eines Bootloaders. Was beim nächsten ARM geschieht, ist nicht gemessen.
 - Nach `TORN` oder `LOST` gehen alle Ausgänge aus. Bei BLHeli_S und Bluejay verliert die Einstellungsseite dann ihre 48 Tag-Bytes und lässt sich nur noch auslesen. Ein AM32 bleibt gelöscht, bis du BACKUP ZURÜCKSPIELEN ausführst.
 - 10 fehlgeschlagene Leseversuche der Seite stoppen die Sitzung. Das entspricht beim Poll-Takt 50ms. Dies gilt auch während eines Schreibvorgangs: Er endet mit `NO_ANSWER`, einem Fehler und STOP.
 - Der Vermerk `ESCW.TXT` wird vor dem Schreiben gespeichert. Er bleibt auf der Karte, auch wenn der Schreibvorgang danach abgebrochen wird. Sein Ergebnis geht aus dem Vermerk nicht hervor.
