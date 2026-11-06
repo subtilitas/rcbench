@@ -585,8 +585,9 @@ bool ui_hold_flashing(const ui_hold_t *h);
 
 /**
  * @brief The fill of a hold button now: the fade from @p base to
- *        @p target across the hold, and the flash over it while it runs,
- *        settling on @p target.
+ *        @p target across the hold while a press holds it, and the flash
+ *        over it while it runs, settling on @p target.  With no press down
+ *        and no flash it is @p base, whatever time the hold kept.
  * @param base   The fill with nothing held: the button's state now.
  * @param target The fill the hold fades to and the flash settles on: the
  *               state the hold asks for.

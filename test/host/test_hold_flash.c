@@ -54,6 +54,15 @@
 #include "servo_rig.h"
 #include "hold_flash.h"
 
+/* A step the rest of a case cannot do without: names it and ends the case. */
+#define REQUIRE(cond)                                                         \
+    do {                                                                      \
+        if (!(cond)) {                                                        \
+            T_FAIL("expected %s", #cond);                                     \
+            return;                                                           \
+        }                                                                     \
+    } while (0)
+
 /* ------------------------------------------------------------------ SERVO */
 
 /* One frame of the bench: its clock, the supply's answers, the screen. */
@@ -176,6 +185,32 @@ TEST_CASE(kst_expert_flashes_as_it_fires)
     CHECK(settings_get_bool(SET_KST_EXPERT));
 }
 
+/* After the hold fired, the press dropped and a tap turned the mode OFF:
+ * the value box is the sunk OFF again, with no fade left from the hold
+ * that fired (the hold ended with the press, ui_hold_spend()). */
+TEST_CASE(kst_expert_off_after_its_hold_shows_no_fade)
+{
+    fresh();
+    settings_set(SET_KST_EXPERT, 0.0f);
+    open_settings();
+    tap(TAB_X(PAGE_DUT), TAB_Y);
+    scr->tick(0.02f);
+    const gfx_rect_t r = { 492, (int16_t)(SV_ROW_Y(1) - 22), 112, 6 };
+    CHECK(servo_walk(470, SV_ROW_Y(1), r, "KST EXPERT MODE"));
+    REQUIRE(settings_get_bool(SET_KST_EXPERT));
+    tap(470, SV_ROW_Y(1));
+    for (int i = 0; i < 4; ++i) {
+        scr->tick(0.02f);
+    }
+    CHECK(!settings_get_bool(SET_KST_EXPERT));
+    scr->render(&cv, 0);
+    const gfx_color_t px = fb[(size_t)(r.y + 2) * W + (size_t)(r.x + 50)];
+    if (px != ui_theme_color(UI_C_PANEL_SUNK)) {
+        T_FAIL("OFF drawn in %04x, not the sunk %04x", px,
+               ui_theme_color(UI_C_PANEL_SUNK));
+    }
+}
+
 /* ------------------------------------------- a tap on a refused button */
 
 /* START TEST and START LIMIT RUN grey on a bench that is not ARMED: a tap
@@ -288,6 +323,7 @@ int main(void)
     RUN(start_limit_run_flashes_as_it_fires);
     RUN(profile_apply_flashes_where_its_warning_was);
     RUN(kst_expert_flashes_as_it_fires);
+    RUN(kst_expert_off_after_its_hold_shows_no_fade);
     RUN(a_tap_on_a_grey_start_puts_its_reason_in_the_band);
     RUN(motor_arm_flashes_as_it_fires);
     RUN(supply_output_on_flashes_as_it_fires);

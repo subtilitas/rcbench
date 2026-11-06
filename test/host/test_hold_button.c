@@ -205,10 +205,39 @@ TEST_CASE(the_hold_button_fades_and_flashes_where_it_is_drawn)
     CHECK(!ui_hold_flashing(NULL));
 }
 
+/* A hold whose press is gone draws its base, whatever time it kept: a
+ * screen that drops the press after the firing leaves no fade behind
+ * (the KST EXPERT MODE value after an OFF tap). */
+TEST_CASE(a_hold_no_finger_holds_draws_its_base)
+{
+    ui_theme_set(UI_THEME_DARK);
+    const gfx_color_t base = UI_PANEL_SUNK, target = UI_DANGER;
+    ui_hold_t h;
+    ui_hold_reset(&h);
+    ui_hold_begin(&h, TX_HOLD_HINT_KST_EXPERT);
+    CHECK(hold_advance(&h, UI_HOLD_S));
+    CHECK_EQ(ui_hold_button_fill(base, target, &h), GFX_WHITE);
+    for (int i = 0; i < 40; ++i) {
+        ui_hold_flash_step(&h, 1.0f / 60.0f);
+    }
+    /* Still down, the fade is the press's: the target. */
+    CHECK_EQ(ui_hold_button_fill(base, target, &h), target);
+    /* Time kept with no press down: the base. */
+    h.down = false;
+    CHECK(h.held_s > 0.0f);
+    CHECK_EQ(ui_hold_button_fill(base, target, &h), base);
+    /* Spent: nothing kept either. */
+    h.down = true;
+    ui_hold_spend(&h);
+    CHECK(h.held_s == 0.0f);
+    CHECK_EQ(ui_hold_button_fill(base, target, &h), base);
+}
+
 int main(void)
 {
     RUN(every_hold_flashes_as_it_fires_without_a_reach);
     RUN(a_reach_flashes_once_a_press_and_restarts_nothing);
     RUN(the_hold_button_fades_and_flashes_where_it_is_drawn);
+    RUN(a_hold_no_finger_holds_draws_its_base);
     return test_summary("hold_button");
 }
