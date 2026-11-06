@@ -157,7 +157,7 @@ CONFIG_ESP_HOSTED_CP_TARGET_ESP32C6=y
 CONFIG_ESP_HOSTED_SDIO_HOST_INTERFACE=y
 #
 # The board's wiring is in components/board/include/board_pins.h
-# (BOARD_C6_*); wifi_radio.c fails the build when the values here differ.
+# (BOARD_C6_*); c6_link.c fails the build when the values here differ.
 # Espressif's ESP32-P4 Function EV Board uses the same pins; they are named
 # here rather than taken from that board's choice.
 CONFIG_ESP_HOSTED_P4_DEV_BOARD_NONE=y
@@ -176,14 +176,14 @@ CONFIG_ESP_HOSTED_SDIO_RESET_ACTIVE_HIGH=y
 # At the radio's first start after power-up esp_hosted resets the C6 (EN
 # low for 10 ms) and then waits a fixed 1,500 ms
 # (CONFIG_ESP_HOSTED_SDIO_RESET_DELAY_MS) before it starts the card.  A C6
-# that answers is reset once per start of the panel; wifi_radio.h gives the
+# that answers is reset once per start of the panel; c6_link.h gives the
 # resets and times of one that does not.
 CONFIG_ESP_HOSTED_SLAVE_RESET_ON_EVERY_HOST_BOOTUP=y
 #
 # A failed SDIO link does not restart the panel: esp_hosted's default would,
 # and a restart drops the link to the IOmcu and the heartbeat.  The failure
 # ends the Wi-Fi session instead, and Wi-Fi stays off until the next start
-# (components/wifi_access/wifi_radio.c).
+# (components/c6_link/c6_link.c).
 CONFIG_ESP_HOSTED_TRANSPORT_RESTART_ON_FAILURE=n
 #
 # Nothing the panel does not use: no memory monitor requests to the C6, no

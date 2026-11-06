@@ -537,7 +537,10 @@ layer security) laufen auf dem P4; der C6 betreibt das Funkteil.
 SDIO läuft mit 4 Bit Breite und 40MHz.
 `components/board/include/board_pins.h` nennt die Pins (`BOARD_C6_*`),
 `firmware/panel/sdkconfig.defaults` gibt sie an esp_hosted, und
-`wifi_radio.c` bricht den Build ab, wenn beide abweichen.
+`components/c6_link/c6_link.c` bricht den Build ab, wenn beide abweichen.
+`c6_link` bringt die Verbindung hinter einem Mutex hoch, sodass sich jeder
+Nutzer des C6 einen Reset und einen Start teilt; der Wi-Fi-Task ruft
+`c6_link_up()` vor `esp_wifi_init()` auf.
 
 ### Die managed components
 
@@ -578,11 +581,12 @@ SDIO-Karte und fragt alle 200ms nach seinem Start-Event. Danach schreibt
 das Panel die Version des C6 auf die Konsole:
 
 ```
-wifi: C6: esp_hosted firmware 2.13.0, host 2.13.0
+c6: C6: esp_hosted firmware 2.13.0, host 2.13.0
 ```
 
-Eine C6-Firmware ohne die Versionsabfrage antwortet nach bis zu 5s mit
-`wifi: C6: firmware version not reported, host 2.13.0`. esp_hosted meldet
+Eine C6-Firmware ohne die Versionsabfrage antwortet nach der Zeitgrenze von
+esp_hosted für die Anfrage, 1s, mit
+`c6: C6: firmware version not reported, host 2.13.0`. esp_hosted meldet
 außerdem `Version mismatch: Host [2.13.0] > Co-proc [x.y.z]`, wenn Haupt-
 oder Nebenversion abweichen. Laut Espressif kann ein Host mit einem älteren
 Co-Prozessor laufen; dabei sind Zeitüberschreitungen bei Anfragen möglich. Das
@@ -597,7 +601,8 @@ bestehende Verbindung ohne erneuten Reset.
 hochgekommen ist oder nicht (`esp_hosted_api.c` 177-192). Das Panel nimmt
 das Event `ESP_HOSTED_EVENT_TRANSPORT_UP` von esp_hosted als Antwort und
 wartet darauf höchstens 1 000ms, nachdem dieser Aufruf zurückgekehrt ist
-(`wifi_radio.c`).
+(`c6_link.c`). Ein zweiter Aufrufer wartet am Mutex, bis der erste Aufruf
+endet, und bekommt dann dessen Ergebnis.
 
 - Ein C6, der nicht als SDIO-Karte startet: esp_hosted gibt nach dem Start
   der Karte auf, mindestens 1 500ms nach dem Reset von 1 520ms; 1 Reset.
@@ -611,8 +616,8 @@ wartet darauf höchstens 1 000ms, nachdem dieser Aufruf zurückgekehrt ist
   eigenen Task.
 - Eine Verbindung, die während einer Sitzung ausfällt: esp_hosted sendet
   `ESP_HOSTED_EVENT_TRANSPORT_FAILURE`. Das Panel schreibt einmal
-  `wifi: C6 link failed: C6 held in reset, Wi-Fi is off until the panel
-  restarts`, hält den C6 im Reset, und die Sitzung endet als gescheiterter
+  `c6: C6 link failed: C6 held in reset, Wi-Fi and Bluetooth are off until
+  the panel restarts`, hält den C6 im Reset, und die Sitzung endet als gescheiterter
   Start. Mit dem C6 im Reset halten die 51-kΩ-Pull-ups seine SDIO-Leitungen
   auf High, sodass der Lese-Task von esp_hosted, Priorität 23 auf Kern 0,
   wartet, statt in einer Schleife zu scheitern; auf einem Board ist das
@@ -683,7 +688,7 @@ Auf dem ESP32-P4 läuft ein Task, der über `xTaskCreate()` oder
 `xTaskCreatePinnedToCore()` ohne Kern angelegt wird, auf Kern 0, und Kern 1
 gehört dem Control-Task und den dort festgelegten Tasks. Dafür linkt das
 Panel mit `--wrap=xTaskCreatePinnedToCore`
-(`components/wifi_access/wifi_radio.c`): esp_hosted legt 6 Tasks mit
+(`components/c6_link/c6_link.c`): esp_hosted legt 6 Tasks mit
 Priorität 23 an, ohne einen Kern zu nennen. `xTaskCreateStatic()` und die
 Aufrufe `xTaskCreate*WithCaps()` sind nicht umgeleitet; esp_hosted nutzt
 `xTaskCreateStatic()` nur mit `CONFIG_ESP_HOSTED_DFLT_TASK_FROM_SPIRAM`,

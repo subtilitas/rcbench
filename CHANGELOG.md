@@ -32,6 +32,15 @@ history is in git.
   (2 pages each) and its plot (1 page), FILES' panes (3 pages). The DELETE
   question, a box, a keyboard and the text viewer have no guide.
 
+### Changed
+
+- The panel's link to the ESP32-C6 is the component `c6_link`, one mutex
+  around its reset and start, for Wi-Fi and Bluetooth LE alike. Wi-Fi works
+  as before. Its console lines carry the tag `c6`: `c6: C6: esp_hosted
+  firmware ...`, `c6: C6: firmware version not reported ...` and `c6: C6
+  link failed: C6 held in reset, Wi-Fi and Bluetooth are off until the
+  panel restarts`.
+
 ### Fixed
 
 - The IOmcu's firmware update cannot erase or program flash below 0x2000,
