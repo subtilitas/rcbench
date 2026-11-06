@@ -147,7 +147,7 @@ gibt cachegrind die Geometrie aller drei Caches vor, sodass keiner von der CPU
 des Hosts übernommen wird, und der Test zeichnet mit einem Stack an fester
 Position innerhalb von 64KB, sodass argv, die Umgebungsvariablen und die Pfade sie
 nicht verschieben. `test_frame_cost.py` misst fünf Modi zweimal und schlägt
-bei einem Fill Unterschied fehl. Compiler, C-Bibliothek und valgrind prägen
+bei einem Unterschied von einem Fill fehl. Compiler, C-Bibliothek und valgrind prägen
 die Zahl weiterhin. Die Tabelle enthält die Zahlen des ubuntu-26.04-Runners
 der CI (Continuous Integration), und eine Maschine mit anderen Versionen misst
 andere Zahlen. Eine Änderung irgendwo in den gemessenen Quellen verschiebt die
@@ -166,7 +166,7 @@ Werkzeugs abweicht.
 **Zeichne zeilenweise.** Siebzehn senkrechte Linien über die volle Höhe
 kosten 10 204 Fills; dieselbe Pixelzahl als waagerechte Linien kostet 180,
 weil jede Line vom vorigen Pixel noch geladen ist. Die Oberfläche ist in
-waagerechte Bänder gegliedert, und eine senkrechte Trennlinie ist eine
+waagerechte Bänder gegliedert, und eine senkrechte Trennlinie ist ein
 bewusst gewählter Mehraufwand.
 
 **Cache das Chrome.** Alles neu zu zeichnen kostet 22 000 bis 64 000 Fills,
@@ -396,7 +396,7 @@ dienen zum Vergleich mit der Modellschätzung für diesen Modus.
 Eine auf einem Board erfasste Fensterzeile liegt nicht vor. Die Ratenzeile
 eines Laufs am Prüfplatz auf SERVO > LIVE, der Prüfstand ARMED, ergab:
 
-| Der Arm | Screen rotation | fps | DRAW (ms) | TURN (ms) |
+| Der Arm | Bilddrehung | fps | DRAW (ms) | TURN (ms) |
 | --- | --- | ---: | ---: | ---: |
 | in Ruhe | NORMAL | 60,4 | nicht gemessen | 0 |
 | in Ruhe | 180° | nicht gemessen | nicht gemessen | nicht gemessen |

@@ -463,3 +463,37 @@ def test_registry_components_are_not_held_to_the_licence_line(tree):
     problems = []
     cd.check_spdx(problems)
     assert problems == []
+
+
+def _render_ui_stub(tree, body):
+    tools = tree / "tools"
+    tools.mkdir()
+    (tools / "render_ui.py").write_text(body, encoding="utf-8")
+
+
+def test_views_built_by_code_are_counted(tree):
+    """FIT_ONLY.update() and a comprehension add views no literal key shows."""
+    _render_ui_stub(tree, (
+        'SCREENS = {"a": 1, "b": 2}\n'
+        'FIT_ONLY = {"c": 3}\n'
+        'FIT_ONLY.update({f"cat-{i}": 4 for i in range(1, 5)})\n'))
+    assert cd.render_ui_views() == 2 + 1 + 4
+
+
+def test_a_view_named_in_both_tables_counts_once(tree):
+    """--fit draws a name once even when SCREENS and FIT_ONLY both list it."""
+    _render_ui_stub(tree, 'SCREENS = {"a": 1, "b": 2}\nFIT_ONLY = {"b": 3}\n')
+    assert cd.render_ui_views() == 2
+
+
+def test_a_renderer_without_a_screens_table_has_no_count(tree):
+    _render_ui_stub(tree, "FIT_ONLY = {}\n")
+    assert cd.render_ui_views() == -1
+
+
+def test_the_view_count_is_what_the_renderer_draws():
+    """The count equals the tables render_ui.py --fit takes, cats included."""
+    import render_ui
+    literal = cd.render_ui_views()
+    assert literal == len({**render_ui.SCREENS, **render_ui.FIT_ONLY})
+    assert literal > 422 + 114

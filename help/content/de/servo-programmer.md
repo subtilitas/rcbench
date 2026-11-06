@@ -247,7 +247,7 @@ SERVO BEWEGEN auf dem Reiter WEG der Hitec-Programmierung fährt das Ruderhorn e
 - NEUTRAL, ENDE LINKS und ENDE RECHTS bekommen Tasten `-` und `+` mit 8 Zählwerten, 0.11°, die beim Halten wiederholen. Das Ruderhorn folgt der zuletzt geänderten Zeile, ihr Name steht in der Akzentfarbe; es beginnt mit NEUTRAL. Ein Tippen auf den Wert öffnet das Tastenfeld.
 - Das Ruderhorn fährt höchstens 2.0° je Durchlauf und bleibt in der Reichweite der gespeicherten Endlagen, 2606 bis 13743 bei einem D485HW im Werkszustand.
 - Ein Ruderhorn, das 2 Durchläufe lang mehr als 2.0° nachhängt, ein Strom von 80% der Stromgrenze für 0.4s oder ein AS5600-Winkel, der nicht folgt, fährt das Ruderhorn 1.0° zurück und beendet die Schleife: `Servo bei 6000 blockiert. Zurück auf 6167 gefahren.`
-- Ein Tippen auf EIN, ein Reiterwechsel, SCHLIESSEN oder das Home-Tag beenden es: Ziel 3000, ein Neustart des Servos und ein Lesen, das mit dem Start verglichen wird, etwa 2.6s im Host-Modell. `SERVO BEWEGEN steht auf AUS. Die gespeicherten Werte sind unverändert zurückgelesen.`
+- Ein Tippen auf EIN, ein Reiterwechsel, SCHLIESSEN oder das Home-Feld beenden es: Ziel 3000, ein Neustart des Servos und ein Lesen, das mit dem Start verglichen wird, etwa 2.6s im Host-Modell. `SERVO BEWEGEN steht auf AUS. Die gespeicherten Werte sind unverändert zurückgelesen.`
 - STOP, ein Schalten auf SAFE am Prüfstand, eine verlorene Verbindung, eine ausgefallene Versorgung und ein gescheitertes Lesen beenden es sofort, mit allen Ausgängen aus.
 
 ### ANSCHLAG SUCHEN

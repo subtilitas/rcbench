@@ -596,7 +596,7 @@ aktiviert ist. Jede Seite nennt die Quelle ihrer Messwerte.
 | SUPPLY | der PD mini auf der Registerkarte PD MINI auf SUPPLY eingeschaltet ist, unabhängig davon, was der IOmcu meldet; sonst rechnet das Panel mit seinem eigenen Netzteilmodell |
 | RECEIVER, BATTERY, BALANCE | in diesem Release nie: kein IOmcu meldet diese Fähigkeiten |
 
-Der IOmcu meldet seine Fähigkeitsbits beim Start. Antwortet kein IOmcu,
+Der IOmcu meldet seine Capability-Bits beim Start. Antwortet kein IOmcu,
 tragen MOTOR & ESC und SERVO ebenfalls die Markierung.
 
 Das Menü im hellen Design:
@@ -2176,7 +2176,7 @@ Drücken um 8 Zählwerte und wiederholt nach 0.45s mit 8Hz, ab 1.8s mit
 Hinweise zeigen Port und GPIO, `POSITION 3344 (-65.1°)` mit dem
 AS5600-Winkel und dem Versorgungsstrom, die Reichweite und den Hinweis zur
 Endlage. Ein Tippen auf EIN, ein Wechsel der Registerkarte, SCHLIESSEN und
-das Home-Tag schalten es aus; die Taste zeigt WARTEN, bis das Servo neu
+das Home-Feld schalten es aus; die Taste zeigt WARTEN, bis das Servo neu
 gestartet ist.
 
 Solange die Schleife läuft, steht ANSCHLAG SUCHEN in der Zeile von
@@ -5283,7 +5283,7 @@ Bereits übernommene Einstellungen werden daher nicht erneut geschrieben. Änder
 sind, werden zunächst beide auf der Page aus- und danach wieder eingeschaltet.
 So liegen die Bauteile auch während der Änderung nicht auf derselben Adresse. Einem IOmcu älter als 4.7 wird nichts
 gesendet. Nachdem ein Schreiben angenommen ist, liest das Panel die Identität
-des IOmcu erneut: die Fähigkeitsbits 3 und 4 folgen der Einstellung,
+des IOmcu erneut: die Capability-Bits 3 und 4 folgen der Einstellung,
 und mit eingeschaltetem INA228 verliert die Kachel MOTOR & ESC ihre Marke
 `SIMULIERT`.
 

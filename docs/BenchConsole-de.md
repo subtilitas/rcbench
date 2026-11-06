@@ -12,7 +12,7 @@ wenn das Panel keine eigene Seite dafür hat.
 
 Jede Anfrage durchläuft dieselben Page-Handler wie eine Anfrage über den
 Link. Es gelten dieselben Ablehnungen: ein Schreiben von ARM bei
-gesetzter Arm-Sperre, ein KST- oder HITEC-Kommando ohne Schreibschlüssel
+gesetztem Arm-Latch, ein KST- oder HITEC-Kommando ohne Schreibschlüssel
 oder mit falscher Prüfsumme, ein Einschalten von SUPPLY ohne Heartbeat
 und eine Transaktion nach einem Stopp. Die Konsole hat dieselben Rechte
 wie das Panel.
@@ -28,7 +28,7 @@ gestoppt, ebenso wie beim Ausfall des Panels.
 Die Konsole kann schreiben, was das Panel schreiben kann, CONTROL
 eingeschlossen. Ein Schreiben von ARM aus der Konsole schaltet die Bank auf
 ARMED, wenn jede Regel des Safety Gate es zulässt ([Sicherheit](Safety-de.md)).
-Ein CLEAR aus der Konsole löst die Arm-Sperre und den Failsafe wie das des
+Ein CLEAR aus der Konsole löst den Arm-Latch und den Failsafe wie das des
 Panels; der Link wird 200ms nach der letzten Anfrage des Panels wieder
 still. Benutze die Konsole wie bei jeder Arbeit am Prüfstand nur ohne
 Propeller und mit gesicherten Ausgängen.
@@ -379,16 +379,16 @@ Das Panel trägt dieses Image. Ein IOmcu mit einem anderen Build meldet bei der 
 | `console: link up t_ms=<ms>` | der Link kam, in der Zeit des Panels seit seinem Start |
 | `console: link down t_ms=<ms>` | der Link ging |
 | `console: the IOmcu has no console. Take the update UPDATES offers, or flash a build with IOMCU_CONSOLE=ON` | die Page antwortete `BAD_PAGE`; einmal gesagt, und das Panel schaut alle 5000ms wieder |
-| `console: the IOmcu's output restarted at <n>, expected <m>` | die Stelle der Ausgabe sprang: das IOmcu startete neu |
+| `console: the IOmcu's output restarted at <n>, expected <m>` | die Stelle der Ausgabe sprang: der IOmcu startete neu |
 | `console: no pass from t_ms=<a> to t_ms=<b>: the link was not followed` | 1500ms oder länger erreichte kein Control-Durchlauf das Relay, etwa während eines IOmcu-Updates: ein Link-Ausfall oder -Aufbau zwischen beiden Zeiten hat keine Zeile |
 | `err no link: line dropped` | eine Zeile bei getrenntem Link |
 | `err line lost: the link went down inside it` | der Link ging, während die Zeile unterwegs war |
-| `err line lost: the IOmcu restarted inside it` | das IOmcu startete neu, während die Zeile unterwegs war |
+| `err line lost: the IOmcu restarted inside it` | der IOmcu startete neu, während die Zeile unterwegs war |
 | `err no answer: line lost` | ein Stück der Zeile blieb ohne Antwort |
 | `err the IOmcu has no console` | eine Zeile, und keine Page dafür |
 | `err line longer than 160 characters` | die Zeile wird ganz abgelehnt |
 | `err line dropped: 8 lines wait` | eine Zeile, während 8 auf den Link warten |
-| `err panel buffer full, <n> bytes dropped` | der eigene Puffer des Panels von 4.096 Byte hatte keinen Platz, etwa wenn ein serieller Host das Lesen einstellt und das IOmcu neu startet |
+| `err panel buffer full, <n> bytes dropped` | der eigene Puffer des Panels von 4.096 Byte hatte keinen Platz, etwa wenn ein serieller Host das Lesen einstellt und der IOmcu neu startet |
 
 Die eigenen Zeilen des Relays landen nie in einer IOmcu-Zeile. Ein Fenster endet an beliebiger Stelle, also behält das Panel eine Zeile des IOmcu bis zu ihrem LF, bis zu 256 Byte, und die Zeile des Relays geht zuerst. Eine längere Zeile geht geschnitten weiter, und eine Relay-Zeile nach diesem Schnitt beginnt eine neue Zeile. Eine Zeile, die beim Neustart des IOmcu nicht beendet ist, geht mit einem eigenen LF hinaus, vor der Zeile `restarted`.
 

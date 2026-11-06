@@ -765,19 +765,28 @@ def check_screenshot_count(problems: list[str]) -> None:
 
 
 def render_ui_views() -> int:
-    """How many views tools/render_ui.py --fit draws: its SCREENS table and
-    its FIT_ONLY table, which has no committed images."""
-    import ast
-    tree = ast.parse(read(REPO / "tools" / "render_ui.py"))
-    found = {}
-    for node in tree.body:
-        if (isinstance(node, ast.Assign) and len(node.targets) == 1
-                and isinstance(node.targets[0], ast.Name)
-                and node.targets[0].id in ("SCREENS", "FIT_ONLY")
-                and isinstance(node.value, ast.Dict)):
-            found[node.targets[0].id] = len(node.value.keys)
-    return found["SCREENS"] + found.get("FIT_ONLY", 0) if "SCREENS" in found \
-        else -1
+    """How many views tools/render_ui.py --fit draws.
+
+    The SCREENS table and the FIT_ONLY table (which has no committed images)
+    are filled in part by code, not by literal keys: FIT_ONLY gains one view
+    per cat pose with update().  The module is run to build them, so the
+    count is the panel's: the views --fit takes from its two tables.
+    Returns -1 when the module has no SCREENS table.
+    """
+    import importlib.util
+    tools = REPO / "tools"
+    sys.path.insert(0, str(tools))
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "_render_ui_for_count", tools / "render_ui.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+    finally:
+        sys.path.pop(0)
+    screens = getattr(module, "SCREENS", None)
+    if screens is None:
+        return -1
+    return len({**screens, **getattr(module, "FIT_ONLY", {})})
 
 
 VERSION_H = REPO / "shared" / "link" / "include" / "rcbench_version.h"

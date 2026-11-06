@@ -294,7 +294,7 @@ und das Feld PROG 5V auf SERVO und SUPPLY schaltet sie von Hand
 nicht aus. Sein Sollwert führt weder unter 4,8V zu einer Ablehnung von
 VERBINDEN noch bestimmt er die Spannung beim Aus- und Einschalten. Die
 Grenzen auf SUPPLY gelten nur für die Servoschienen, nicht für VERBINDEN. Sind die
-5V als ein gelesen, schalten VERBINDEN und VERLASSEN nach einem Schreiben
+5V als an gelesen, schalten VERBINDEN und VERLASSEN nach einem Schreiben
 sie aus und wieder ein, wie den Ausgang des PD mini; sind sie aus,
 schaltet VERBINDEN das Servo ein. Die Page folgt den Regeln der Page SUPPLY für einen Port:
 
@@ -409,7 +409,7 @@ Frames ab. Das Fenster von 150ms liegt innerhalb des Link-Failsafes von
 200ms des IOmcu. Die Reserve gegenüber der Task-Periode fängt verspätete
 Durchläufe ab.
 
-Das Monoflop ist auf keiner Platine. Auf dem Aufbau-Prüfstand erreichen die
+Das Monoflop ist auf keiner Platine. Auf dem Bring-up-Prüfstand erreichen die
 Flanken über eine direkte Leitung vom Heartbeat-Pin des Panels den GPIO 3 des IOmcu, weshalb
 dieser Prüfstand auf ARMED schalten kann.
 
