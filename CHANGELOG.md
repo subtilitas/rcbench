@@ -110,9 +110,9 @@ history is in git.
 - The IMU controller is three parts. `shared/ui/imu_sensor.c` holds the
   sensor's side without a radio: the reading, the outbox of WitMotion
   commands, the calibration, the RATE and ALGORITHM writes, the gaps and the
-  handout to SERVO. `shared/ui/imu_hc05.c` holds the HC-05 link and converts
-  its devices, errors and version into the view's types (`imu_dev_t`,
-  `imu_err_t`). `shared/ui/imu_ctl.c` joins the two. The IMU screen, SETUP >
+  handout to SERVO. `shared/ui/imu_ble.c` holds the Bluetooth LE link and
+  converts its devices, errors and version into the view's types
+  (`imu_dev_t`, `imu_err_t`). `shared/ui/imu_ctl.c` joins the two. The IMU screen, SETUP >
   SENSORS > IMU and the servo runs behave as before. `test_imu_sensor` tests
   the sensor's side alone.
 
