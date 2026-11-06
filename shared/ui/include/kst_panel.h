@@ -55,9 +55,18 @@ extern "C" {
  *  longer name, up to 32 characters, is listed and loaded; a line that
  *  names it shows its first 14 characters and "..". */
 #define KST_PANEL_NAME_TYPED 16
-/** Lines a message takes at most, and the bytes of one. */
+/** @brief Lines a message takes at most. */
 #define KST_PANEL_MSG_LINES 3
-#define KST_PANEL_LINE      96
+/** @brief The cells a line of the overlay takes at most: two rows of the
+ *         card's 58 cells, the width ui_text.def gives every KP_ text. */
+#define KST_PANEL_LINE_CELLS 116
+/** @brief The bytes of a line, terminator included: KST_PANEL_LINE_CELLS
+ *         cells of 2 bytes each, the most a drawn cell takes in UTF-8 (the
+ *         degree sign and the German letters), and 1.  Every buffer of the
+ *         overlay a text is copied into, a title and a button label as
+ *         well, has this size, so no text that fits its cells is cut
+ *         (test_kst_panel_texts). */
+#define KST_PANEL_LINE       (2 * KST_PANEL_LINE_CELLS + 1)
 
 /** Start over: closed, no servo, nothing stored.  @p area is the overlay's. */
 void kst_panel_init(gfx_rect_t area);

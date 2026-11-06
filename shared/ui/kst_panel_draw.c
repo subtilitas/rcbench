@@ -819,7 +819,7 @@ static void act_value(const row_t *r, char *out, size_t n)
 
 const char *kst_panel_button(int page, int row, int col)
 {
-    static char buf[40];
+    static char buf[KST_PANEL_LINE];
     const row_t *r = kpn_row_at(page, row, col);
 
     if (r == NULL || r->kind != K_ACT) {
@@ -844,7 +844,7 @@ static void draw_row(gfx_canvas_t *c, int i)
     const bool live = kpn_row_live(r);
     const bool pressed = k.have && k.pressed == P_ROW && k.row == i;
     gfx_color_t fill = ui_theme_color(UI_C_PANEL_SUNK);
-    char v[40];
+    char v[KST_PANEL_LINE];
 
     gfx_text(c, rr.x, rr.y + (ROW_H - LINE_H) / 2, kpn_row_label(r), KP_FONT,
              live || r->kind == K_LOCKED ? ui_theme_color(UI_C_TEXT_DIM)

@@ -854,15 +854,17 @@ FIT_ONLY = {
     # 5V box off.
     "servo-rudder-auto-rbmod": (None, "servo", "dark"),
     # The other pages of SETUP's, OUTPUTS', LOGS' and FILES' guides, in
-    # each state that has its own: a list, SENSORS, the carrier's tiles, a
-    # PROG PORT entry, the grid view, the carrier, a paged list, the import
-    # view and the plot (render_help_base() names the view each opens over).
+    # each state that has its own: a list, SENSORS on its first entry and on
+    # the IMU, the carrier's tiles, a PROG PORT entry, the grid view, the
+    # carrier, a paged list, the import view and the plot
+    # (render_help_base() names the view each opens over).
     "help-setup-2": (None, "setup", "dark"),
     "help-setup-rbmod-2": (None, "setup", "dark"),
     "help-setup-list": (None, "setup", "dark"),
     "help-setup-list-2": (None, "setup", "dark"),
     "help-setup-sensors": (None, "setup", "dark"),
     "help-setup-sensors-2": (None, "setup", "dark"),
+    "help-setup-sensors-imu": (None, "setup", "dark"),
     "help-outputs-2": (None, "outputs", "dark"),
     "help-outputs-port": (None, "outputs", "dark"),
     "help-outputs-port-2": (None, "outputs", "dark"),
@@ -901,6 +903,10 @@ FIT_ONLY = {
     # ESC STICK > Great Planes: model rows with the MANUAL tag and the
     # longest reason beside their family.
     "motor-stick-greatplanes": (None, "motor", "dark"),
+    # ESC STICK > Sunrise > Sunrise PRO HV 180A OPTO: the longest crumb of
+    # a model that runs and its family, 97 cells in German, cut to whole
+    # words.
+    "motor-stick-crumb": (None, "motor", "dark"),
     # A tap on ARM and on OUTPUT ON, released before 2s: the button's hint
     # in the alert band.
     "hold-hint-arm":    (None, "motor", "dark"),

@@ -13,6 +13,7 @@
  * - the_supply_stays_on_until_done_after_the_store
  * - a_manual_step_shows_in_the_language_showing
  * - a_family_shows_in_the_language_showing
+ * - a_crumb_never_cuts_inside_a_word_of_the_family
  * - an_unsure_selection_is_not_counted_as_made
  *
  * SPDX-License-Identifier: MIT
@@ -332,6 +333,170 @@ TEST_CASE(a_family_shows_in_the_language_showing)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/*
+ * @p crumb against the rule of esc_stick_panel_crumb(): at most @p cells;
+ * the brand and model, then the family whole, its whole words and " ..",
+ * or none.  Names what is wrong, NULL for a crumb that keeps the rule.
+ */
+static const char *crumb_wrong(const esc_profile_t *p, int model, int cells,
+                               const char *crumb)
+{
+    char head[160];
+    const char *fam = esc_stick_panel_family_text(p);
+    const bool named = model >= 0;
+
+    if (gfx_text_cells(crumb) > cells) {
+        return "wider than its room";
+    }
+    if (named) {
+        snprintf(head, sizeof(head), "ESC STICK  >  %s  >  %s", p->brand,
+                 p->models[model].name);
+    } else {
+        snprintf(head, sizeof(head), "ESC STICK  >  %s", p->brand);
+    }
+    if (gfx_text_cells(head) > cells) {
+        /* The name cut: no family after it. */
+        const size_t at = gfx_text_prefix(head, cells - 2);
+        return (strlen(crumb) == at + 2u && strncmp(crumb, head, at) == 0
+                && strcmp(crumb + at, "..") == 0)
+                   ? NULL : "a cut name with more after it";
+    }
+    const size_t hn = strlen(head);
+    if (strncmp(crumb, head, hn) != 0) {
+        return "no brand and model at its start";
+    }
+    const char *rest = crumb + hn;
+    if (*rest == '\0') {
+        return NULL;
+    }
+    const char *open = named ? "  (" : " ";
+    const char *close = named ? ")" : "";
+    if (strncmp(rest, open, strlen(open)) != 0) {
+        return "no family opening after the model";
+    }
+    rest += strlen(open);
+    const size_t rn = strlen(rest);
+    if (rn < strlen(close) || strcmp(rest + rn - strlen(close), close) != 0) {
+        return "no family closing";
+    }
+    const size_t body = rn - strlen(close);
+    if (body == strlen(fam) && strncmp(rest, fam, body) == 0) {
+        return NULL;
+    }
+    /* The whole family fits: it shows whole. */
+    if (gfx_text_cells(head) + gfx_text_cells(open) + gfx_text_cells(fam)
+            + gfx_text_cells(close) <= cells) {
+        return "a family cut that fits whole";
+    }
+    /* Part of the family: whole words of it, then " ..". */
+    if (body < 4u || strncmp(rest + body - 3u, " ..", 3) != 0) {
+        return "part of the family without \" ..\"";
+    }
+    const size_t kept = body - 3u;
+    if (strncmp(rest, fam, kept) != 0) {
+        return "a family that is not the profile's";
+    }
+    const char next = fam[kept];
+    const bool mark = next == ',' || next == ';' || next == ':';
+    if (next != ' '
+        && !(mark && (fam[kept + 1u] == ' ' || fam[kept + 1u] == '\0'))) {
+        return "a family cut inside a word";
+    }
+    /* As many words as fit: the next one with " .." does not. */
+    size_t more = kept + 1u;
+    while (fam[more] == ' ') {
+        ++more;
+    }
+    while (fam[more] != '\0' && fam[more] != ' ') {
+        ++more;
+    }
+    size_t end = more;
+    while (end > kept && (fam[end - 1u] == ',' || fam[end - 1u] == ';'
+                          || fam[end - 1u] == ':')) {
+        --end;
+    }
+    char longer[400];
+    snprintf(longer, sizeof(longer), "%s%s%.*s ..%s", head, open, (int)end,
+             fam, close);
+    if (fam[more] != '\0' && end > kept && gfx_text_cells(longer) <= cells) {
+        return "fewer words than fit";
+    }
+    return NULL;
+}
+
+/*
+ * The 0.23.9 walk found the German crumb of XC-12-Lite cut inside its
+ * family ("XController Lit..").  Every profile, with each model and with
+ * none, in both languages, at every room from 20 to 80 cells: the family
+ * shows whole, as whole words and " ..", or not at all, and the crumb fits.
+ */
+TEST_CASE(a_crumb_never_cuts_inside_a_word_of_the_family)
+{
+    char crumb[160];
+
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        for (size_t i = 0; i < esc_profiles_count(); ++i) {
+            const esc_profile_t *p = esc_profiles_at(i);
+            for (int m = -1; m < (int)p->model_count; ++m) {
+                for (int cells = 20; cells <= 80; ++cells) {
+                    esc_stick_panel_crumb(p, m, cells, crumb, sizeof(crumb));
+                    const char *why = crumb_wrong(p, m, cells, crumb);
+                    if (why != NULL) {
+                        T_FAIL("%s model %d, language %d, %d cells: %s: "
+                               "\"%s\"", p->id, m, lang, cells, why, crumb);
+                        ui_text_set_language(UI_LANG_EN);
+                        return;
+                    }
+                }
+            }
+        }
+    }
+    /* The walk's crumb, at the profile page's 56 cells beside TIMING. */
+    const esc_profile_t *p = esc_profiles_find("dualsky-xcontroller-lite");
+    CHECK(p != NULL && p->model_count > 0u);
+    if (p == NULL || p->model_count == 0u) {
+        ui_text_set_language(UI_LANG_EN);
+        return;
+    }
+    ui_text_set_language(UI_LANG_DE);
+    esc_stick_panel_crumb(p, 0, 56, crumb, sizeof(crumb));
+    CHECK(strstr(crumb, "Lit..") == NULL);
+    CHECK(strstr(crumb, "  (XController") != NULL);
+    /* Room for all of it: the whole family. */
+    esc_stick_panel_crumb(p, 0, 200, crumb, sizeof(crumb));
+    CHECK(strstr(crumb, esc_stick_panel_family_text(p)) != NULL);
+    /* Too little room for the family's first word: none of it. */
+    esc_stick_panel_crumb(p, 0, 42, crumb, sizeof(crumb));
+    CHECK(strchr(crumb, '(') == NULL);
+    /* No profile, no buffer: nothing, and nothing written. */
+    esc_stick_panel_crumb(NULL, 0, 56, crumb, sizeof(crumb));
+    CHECK_STR_EQ(crumb, "");
+    esc_stick_panel_crumb(p, 0, 56, NULL, 0u);
+    crumb[0] = 'x';
+    esc_stick_panel_crumb(p, 0, 56, crumb, 1u);
+    CHECK_STR_EQ(crumb, "");
+    /* A model index past the last is no model. */
+    char none[160];
+    esc_stick_panel_crumb(p, -1, 200, none, sizeof(none));
+    esc_stick_panel_crumb(p, (int)p->model_count, 200, crumb, sizeof(crumb));
+    CHECK_STR_EQ(crumb, none);
+    /* A buffer one byte short of the whole crumb: the name alone, and not
+     * a byte past the buffer. */
+    char whole[160];
+    esc_stick_panel_crumb(p, 0, 200, whole, sizeof(whole));
+    char head[160];
+    snprintf(head, sizeof(head), "ESC STICK  >  %s  >  %s", p->brand,
+             p->models[0].name);
+    memset(crumb, '#', sizeof(crumb));
+    esc_stick_panel_crumb(p, 0, 200, crumb, strlen(whole));
+    CHECK_STR_EQ(crumb, head);
+    CHECK_EQ(crumb[strlen(whole)], '#');
+    esc_stick_panel_crumb(p, 0, 200, crumb, strlen(whole) + 1u);
+    CHECK_STR_EQ(crumb, whole);
+    ui_text_set_language(UI_LANG_EN);
+}
+
 /* KONTROL-X mode 2 to the step before the supply goes off: the button
  * pressed when asked, the ESC powered and the stick at MAX after the
  * store. */
@@ -565,6 +730,7 @@ int main(void)
     RUN(the_supply_stays_on_until_done_after_the_store);
     RUN(a_manual_step_shows_in_the_language_showing);
     RUN(a_family_shows_in_the_language_showing);
+    RUN(a_crumb_never_cuts_inside_a_word_of_the_family);
     RUN(an_unsure_selection_is_not_counted_as_made);
     return test_summary("esc_stick_panel_steps");
 }

@@ -87,7 +87,11 @@ Die Liste hat zwei Ebenen.
   führt zur zuvor geöffneten Seite der Herstellerliste.
 
 Ein Tipp auf ein Modell öffnet das Profil seiner Familie mit dem
-Modellnamen: `ESC STICK > Kontronik > JAZZ 55 LV (JAZZ / MINIJAZZ)`. Das
+Modellnamen: `ESC STICK > Kontronik > JAZZ 55 LV (JAZZ / MINIJAZZ)`. Ist die
+Familie breiter als der Platz des Pfads, 56 Zellen zu 12px neben TIMING und
+70 auf der Seite von TIMING, zeigt der Pfad ihre ganzen Wörter, die passen,
+und ` ..`, oder nichts, wenn schon ihr erstes Wort nicht passt; ein Wort wird
+nie abgeschnitten. Das
 Netzteil verwendet die niedrigste Zellenzahl dieses Modells, sofern sie
 angegeben ist, sonst die niedrigste der Familie. Ein Modell, dessen Profil der
 Prüfstand nicht ausführen kann, nennt den Grund in seiner Zeile und öffnet
