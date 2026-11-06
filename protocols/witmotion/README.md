@@ -52,8 +52,8 @@ encoded commands.
   refused and nothing is written.
 - CALSW modes are 0 (exit), 1 (accelerometer: keep the sensor still and
   level, about 3s) and 2 (magnetic). A mode above 2 is refused.
-- RSW is a bit mask of the frames the sensor sends. The default is 0x1E
-  (0x51 to 0x54).
+- RSW is a bit mask of the frames the sensor sends: bit n is type 0x50 + n
+  (`wit_rsw_bit()`). The default is 0x1E (0x51 to 0x54).
 - Values use `float`.
 - No function allocates, blocks or keeps a global.
 
@@ -75,6 +75,7 @@ size_t   wit_cmd_rate(uint8_t out[WIT_CMD_LEN], uint8_t code);
 size_t   wit_cmd_rsw(uint8_t out[WIT_CMD_LEN], uint16_t mask);
 size_t   wit_cmd_calsw(uint8_t out[WIT_CMD_LEN], uint8_t mode);
 size_t   wit_cmd_axis6(uint8_t out[WIT_CMD_LEN], bool six);
+uint16_t wit_rsw_bit(uint8_t type);
 uint16_t wit_rate_dhz(uint8_t code);
 ```
 

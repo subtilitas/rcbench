@@ -2,8 +2,8 @@
  * @file
  * @brief The sensor side of the Bluetooth IMU, whichever link carries it:
  *        the BWT901CL's reading (imu.h) from its stream, the outbox of its
- *        WitMotion commands, the calibration, the RATE and ALGORITHM writes
- *        due, the stale stretches counted, and the handout to SERVO.  Pure
+ *        WitMotion commands, the calibration, the RSW, RATE and ALGORITHM
+ *        writes due, the stale stretches counted, and the handout to SERVO.  Pure
  *        C, no radio: the controller (imu_ctl.h) joins it to a link.
  *
  * The link tells the sensor two things: whether the sensor's stream flows
@@ -15,7 +15,9 @@
  * The commands go each after the unlock, IMU_CMD_GAP_MS apart: CALIBRATE
  * is CALSW 1, IMU_CAL_MS, CALSW 0, SAVE; a RATE or ALGORITHM change is the
  * register and SAVE, queued while the sensor is connected or when it next
- * connects.
+ * connects.  RSW IMU_RSW and SAVE go once on a connection whose first
+ * IMU_RSW_FRAMES frames show other types than IMU_RSW's: the stream is
+ * the read-back, so a sensor that holds IMU_RSW gets no write.
  *
  * Every function of one sensor is called from one task.  Times are
  * unsigned differences of a free-running 32-bit ms clock.
@@ -42,6 +44,12 @@ extern "C" {
 #define IMU_CMD_GAP_MS     50u
 /** @brief Sensor commands held to send at most. */
 #define IMU_OUTBOX         8u
+/** @brief The frames the panel asks the sensor for (register RSW): 0x52
+ *         for the battery, 0x53 for the angles; 2 frames a sample. */
+#define IMU_RSW            (WIT_RSW_ANGLE | WIT_RSW_GYRO)
+/** @brief Good frames of a connection the RSW check waits for: 4 samples
+ *         at IMU_RSW, 2 at WIT_RSW_DEFAULT. */
+#define IMU_RSW_FRAMES     8u
 
 /** @name What a held command is for, as bits: a group a failed write
  *  drops is due again at the next connection.
@@ -51,6 +59,7 @@ extern "C" {
 #define IMU_OUT_ALGO  0x04u  /**< an ALGORITHM write */
 #define IMU_OUT_CAL   0x08u  /**< the calibration's start: a failure
                                   fails it, nothing comes back */
+#define IMU_OUT_RSW   0x10u  /**< an RSW write */
 /** @} */
 
 /** @brief The sensor side.  Its members are private but for the tests. */
@@ -68,6 +77,9 @@ typedef struct {
     uint32_t     cal_left_ms;    /**< as of the last tick */
     bool         rate_due;       /**< RATE to send once connected */
     bool         algo_due;       /**< ALGORITHM to send once connected */
+    bool         rsw_due;        /**< RSW IMU_RSW to send once connected */
+    bool         rsw_checked;    /**< this connection's frame types were
+                                      held against IMU_RSW */
     uint8_t      out[IMU_OUTBOX][WIT_CMD_LEN]; /**< sensor commands held */
     uint8_t      out_n;          /**< how many */
     uint8_t      out_head;       /**< the oldest's index */
@@ -119,8 +131,8 @@ void imu_sensor_values(imu_sensor_t *s, uint8_t rate_code, bool six,
 void imu_sensor_off(imu_sensor_t *s);
 
 /** @brief Another sensor is bound: NO FRAMES waits for its first valid
- *         reading, which seeds the filter.  @param s The sensor, not
- *         NULL. */
+ *         reading, which seeds the filter, and its frame types are held
+ *         against IMU_RSW again.  @param s The sensor, not NULL. */
 void imu_sensor_rebind(imu_sensor_t *s);
 
 /**
@@ -137,11 +149,12 @@ void imu_sensor_feed(imu_sensor_t *s, const uint8_t *b, size_t n,
 
 /**
  * @brief Age the reading, run the calibration's clock, and queue the
- *        RATE and ALGORITHM writes due on a connected sensor: unlock, the
- *        writes, SAVE, once all of them fit in the outbox and no
+ *        RSW, RATE and ALGORITHM writes due on a connected sensor: unlock,
+ *        the writes, SAVE, once all of them fit in the outbox and no
  *        calibration runs.  A stream that flows again after it stopped
  *        (a connect or a reconnect) seeds the filter with its next angle
- *        frame.
+ *        frame and counts its frame types again: once IMU_RSW_FRAMES good
+ *        frames came, types other than IMU_RSW's make RSW due.
  * @param s       The sensor, not NULL.
  * @param now_ms  The clock.
  * @param link_up The sensor's stream flows.
@@ -188,8 +201,8 @@ bool imu_sensor_quiet(const imu_sensor_t *s);
  * @brief Drop the commands held: the link did not take one, and the rest
  *        of its group (unlock, register, SAVE) must not go alone.  What
  *        the dropped commands and the failed one were for is due again:
- *        the calibration's exit (unlock, CALSW 0, SAVE), a RATE, an
- *        ALGORITHM.  It is queued at the next connection (imu_sensor_tick()
+ *        the calibration's exit (unlock, CALSW 0, SAVE), an RSW, a RATE,
+ *        an ALGORITHM.  It is queued at the next connection (imu_sensor_tick()
  *        with the stream flowing again), with SETUP's values then.  A
  *        running calibration goes on and queues its exit at its end.
  * @param s The sensor, not NULL.
