@@ -207,7 +207,8 @@ static float row_typed(setting_id_t id, float v)
  */
 static void row_range(setting_id_t id, float *min, float *max)
 {
-    float lo = *min, hi = *max;
+    float lo;
+    float hi;
     switch (id) {
     case SET_SUPPLY_V_MAX:   lo = s.caps.v_min; hi = s.caps.v_max; break;
     case SET_SUPPLY_I_MAX:   lo = s.caps.i_min; hi = s.caps.i_max; break;

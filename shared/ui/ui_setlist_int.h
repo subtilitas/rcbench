@@ -152,7 +152,7 @@ const char *sl_locked(const ui_setlist_t *sl, setting_id_t id);
  * @brief Whether the bench is ARMED: DISCARD changes nothing then.
  * @return True when ARMED.
  */
-bool sl_armed(void);
+bool sl_bench_armed(void);
 
 /**
  * @brief The rows' pitches added up, px: the scroll bar's content; one

@@ -418,7 +418,7 @@ void ui_setlist_draw_choices(ui_setlist_t *sl, gfx_canvas_t *c)
  */
 void ui_setlist_draw_warning(ui_setlist_t *sl, gfx_canvas_t *c)
 {
-    const bool armed = sl_armed();
+    const bool armed = sl_bench_armed();
     sl->drawn_armed  = armed;
     sl->drawn_dirty  = settings_dirty();
     sl->drawn_asked  = settings_save_asked();
@@ -473,7 +473,7 @@ void ui_setlist_render(ui_setlist_t *sl, gfx_canvas_t *c)
     sl->drawn_kp = sl->kp.open;
     /* A list draws a SAFE-only row without keys while ARMED
      * (settings_safe_only()), so an arm or a disarm redraws it. */
-    sl->drawn_armed = sl_armed();
+    sl->drawn_armed = sl_bench_armed();
     gfx_fill_rect(c, 0, 0, UI_PANEL_W, UI_BODY_H, UI_BG);
     if (sl->kp.open) {
         /* The keypad covers the list and the strip: nothing under it is

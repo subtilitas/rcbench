@@ -101,7 +101,7 @@ const char *sl_locked(const ui_setlist_t *sl, setting_id_t id)
     return (sl->host->locked != NULL) ? sl->host->locked(id) : NULL;
 }
 
-bool sl_armed(void)
+bool sl_bench_armed(void)
 {
     return ui_router_status()->armed;
 }
@@ -657,7 +657,7 @@ void ui_setlist_tick(ui_setlist_t *sl, float dt_s)
     if (sl->drawn_dirty != settings_dirty()
         || sl->drawn_asked != settings_save_asked()
         || sl->drawn_failed != settings_save_failed()
-        || ((sl->warn || sl->open) && sl->drawn_armed != sl_armed())) {
+        || ((sl->warn || sl->open) && sl->drawn_armed != sl_bench_armed())) {
         invalidate(sl);
     }
     /* A row held, derived or locked since its keypad opened takes no
@@ -734,7 +734,7 @@ static void press(ui_setlist_t *sl, const touch_event_t *evt, int x, int y)
             : gfx_rect_contains(ui_setlist_strip_rect(2), x, y)
                 ? UI_SL_HIT_LEAVE_SAVE
             : (gfx_rect_contains(ui_setlist_strip_rect(1), x, y)
-               && !sl_armed() && !jump)
+               && !sl_bench_armed() && !jump)
                 ? UI_SL_HIT_DISCARD
                 : UI_SL_HIT_NONE;
         if (sl->hit_kind != UI_SL_HIT_NONE) {
@@ -929,7 +929,7 @@ static void release(ui_setlist_t *sl, int kind, int index, bool repeated,
         if (sl->host->way_out != NULL) {
             sl->host->way_out();
         }
-    } else if (kind == UI_SL_HIT_DISCARD && sl->warn && !sl_armed()
+    } else if (kind == UI_SL_HIT_DISCARD && sl->warn && !sl_bench_armed()
                && gfx_rect_contains(ui_setlist_strip_rect(1), x, y)) {
         /*
          * Every changed value back to its stored one, each by the path an
