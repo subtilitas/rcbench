@@ -505,6 +505,51 @@ TEST_CASE(the_limit_runs_write_note_on_a_carrier_port_names_the_prog_5v)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* servo_limit_panel.c's start gate and its pulse line, declared in
+ * servo_screen_int.h. */
+const char *lim_blocked(void);
+const char *lim_pwm_why(void);
+
+/* On the carrier's programming port the LIMIT RUN asks for the PROG 5V
+ * before ARM: the port's pulse comes on only with it and only while SAFE.
+ * The pulse line names PORT PWM ON waiting for SAFE while the panel asks
+ * for the pulse, PORT PWM OFF where the setting is off. */
+TEST_CASE(the_limit_run_on_a_carrier_port_asks_the_prog_5v_before_arm)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        bench_fresh();
+        servo_screen_set_armed(false);
+        ui_board_set(OUTBIND_BOARD_RBMOD);
+        prog_choice_set_far_minor(LINK_MINOR_CARRIER_PWM);
+        settings_set(SET_SERVO_TARGET, 1.0f);
+        settings_set(SET_SERVO_PORT_PWM, 1.0f);
+        servo_screen_set_drive(1u, 13u, false);
+        prog5v_box_publish(2u, 21u, PROG5V_HELD_NONE);
+        bench_frames(100u);
+        CHECK_STR_EQ(lim_blocked(), ui_servo_str(SERVO_STR_START_PROG_5V));
+        CHECK_STR_EQ(lim_pwm_why(), TR(SV_LIM_PWM_OFF));
+        prog5v_box_publish(3u, 21u, PROG5V_HELD_NONE);
+        bench_frames(100u);
+        CHECK_STR_EQ(lim_blocked(),
+                     ui_servo_str(SERVO_STR_START_NOT_ARMED));
+        CHECK_STR_EQ(lim_pwm_why(), TR(SV_LIM_PWM_SAFE));
+        settings_set(SET_SERVO_PORT_PWM, 0.0f);
+        CHECK_STR_EQ(lim_pwm_why(), TR(SV_LIM_PWM_OFF));
+        settings_set(SET_SERVO_PORT_PWM, 1.0f);
+        prog5v_box_reset();
+        prog_choice_reset();
+        ui_board_set(OUTBIND_BOARD_PICO_HEADER);
+        settings_set(SET_SERVO_TARGET, 0.0f);
+        servo_screen_set_drive(0u, SERVO_SCREEN_NO_PIN, false);
+        /* Off the carrier the PROG 5V asks for nothing: ARM FIRST. */
+        bench_frames(100u);
+        CHECK_STR_EQ(lim_blocked(),
+                     ui_servo_str(SERVO_STR_START_NOT_ARMED));
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 /* ------------------------------------------------------- the read-only caps */
 
 /* Whether the caps button with its top at (@p x, @p y) reads SUPPLY's caps in
@@ -1136,6 +1181,7 @@ int main(void)
     RUN(the_run_cards_say_what_their_start_needs);
     RUN(the_test_card_on_a_carrier_port_names_the_prog_5v_and_the_steps);
     RUN(the_limit_runs_write_note_on_a_carrier_port_names_the_prog_5v);
+    RUN(the_limit_run_on_a_carrier_port_asks_the_prog_5v_before_arm);
     RUN(the_supply_caps_show_on_their_button);
     RUN(the_output_page_names_the_tester_port_read_only);
     RUN(the_as5600_lives_on_sensors);

@@ -91,6 +91,14 @@ is 0 (`test_outputs_hw_ports`). Every error, a lost heartbeat and a silent
 link also switch GPIO 21 off. A PROG 5V OFF by hand stops the pulse as
 well: the panel asks for the pulse only while the box reads ON.
 
+The panel switches the port's pulse on only while the bench is SAFE, as
+on every board; it switches it off at once. Switch PROG 5V on first, then
+ARM. A PROG 5V switched on while ARMED leaves the pulse off until the next
+SAFE: AUTO on RUDDER and the limit run then read
+`PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM`. While SAFE with the box
+off both read `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` before
+`ARM FIRST`.
+
 ## Power
 
 | Part | Input | Output | Switched by |

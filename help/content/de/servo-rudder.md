@@ -77,6 +77,8 @@ Setze zuerst NULLPUNKT bei neutraler Ruderfläche. Während des Laufs sind NULLP
 
 Der Lauf liest das Servo aus und setzt bei KST den Pulsbereich auf 1000 bis 2000us. Je Seite fährt er den Endpuls an, wartet auf einen 500ms lang ruhigen Winkel und schreibt einen neuen Endpunkt. Er schreibt höchstens 8-mal je Seite, jeweils in einer eigenen Programmiersitzung mit Aus- und Einschalten des Servos. Der Stromschutz des Endlagenlaufs bleibt durchgehend aktiv. Blockiert das Ruder vor dem Zielwert, endet der Lauf mit `Ruder klemmt bei x°`. Bei jedem Ende schaltet der Prüfstand auf SAFE und der Netzteilausgang aus.
 
+Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) mit ZIEL auf einem Programmierport schaltest du PROG 5V bei SAFE ein und erst dann ARM: der Puls des Ports kommt nur bei SAFE. Ein bei ARMED eingeschaltetes PROG 5V zeigt `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM`.
+
 Die erste Zeile zeigt den laufenden Schritt, die Zielwerte oder den Grund für einen abgelehnten START. Die zweite nennt das Ergebnis, die dritte den Bericht RUDDRnnn.TXT. Hat ein nicht bestandener Lauf Einstellungen geschrieben oder einen Schreibvorgang abgebrochen, steht dort stattdessen `ZURÜCKSPIELEN IN PROGRAMMIEREN`, bei Hitec `HITEC001 IN DATEIEN LADEN`.
 
 ## Was der Winkel ist

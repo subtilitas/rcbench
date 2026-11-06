@@ -59,6 +59,14 @@ history is in git.
 
 ### Fixed
 
+- On the rbmod carrier with TARGET on a programming port, START of AUTO
+  on RUDDER and START LIMIT RUN no longer stay grey after the lines are
+  followed in their order. The port's pulse needs the PROG 5V and comes on
+  only while SAFE. While SAFE with the PROG 5V box off both read
+  `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` before `ARM FIRST`. ARMED
+  with PORT PWM on and the pulse still off, as after a PROG 5V switched on
+  while ARMED, both read `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM`
+  in place of `PORT PWM OFF. NO PULSES ON THIS PORT.`
 - On the rbmod carrier, AUTO on RUDDER and the LIMIT RUN name the
   tester's target before the INA3221. With TARGET on the bench's outputs
   and no output bound as SERVO PWM no channel watches the target, since
