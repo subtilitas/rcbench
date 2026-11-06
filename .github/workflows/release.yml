@@ -140,9 +140,10 @@ jobs:
 
   # Carries the IOmcu images the iomcu job built from the same commit, the
   # module's and the rbmod carrier's, and offers each IOmcu the image of
-  # the board it reports when it runs another build.
+  # the board it reports when it runs another build; and the C6 radio's
+  # image the c6 job built, offered on SETUP > UPDATES.
   panel:
-    needs: [version, iomcu]
+    needs: [version, iomcu, c6]
     name: Panel image
     runs-on: ubuntu-26.04
     timeout-minutes: 45
@@ -163,6 +164,11 @@ jobs:
         with:
           name: iomcu-rbmod
           path: firmware/panel/iomcu-rbmod
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: c6
+          path: firmware/panel/c6
 
       # The managed components (firmware/panel/managed_components) come from
       # the ESP component registry at build time; the lock file pins their
@@ -189,6 +195,7 @@ jobs:
           command: >-
             idf.py -D RCBENCH_IOMCU_BIN=iomcu-image/rcbench-iomcu.bin
             -D RCBENCH_IOMCU_RBMOD_BIN=iomcu-rbmod/rcbench-iomcu-rbmod.bin
+            -D RCBENCH_C6_BIN=$(ls c6/rcbench-c6-[0-9]*.bin)
             -D RCBENCH_PERF_LOG=OFF build
             && idf.py merge-bin -o rcbench-panel-merged.bin
 
@@ -235,6 +242,13 @@ jobs:
             firmware/panel/build/ota_data_initial.bin
             firmware/panel/build/flash_args
           if-no-files-found: error
+
+  # The C6 radio's image from the pinned commit (c6.yml).
+  c6:
+    needs: [version]
+    uses: ./.github/workflows/c6.yml
+    with:
+      ref: ${{ needs.version.outputs.sha }}
 
   iomcu:
     name: IOmcu image
@@ -356,7 +370,7 @@ jobs:
 
   publish:
     name: Package and publish
-    needs: [version, panel, iomcu]
+    needs: [version, panel, iomcu, c6]
     runs-on: ubuntu-26.04
     timeout-minutes: 20
     # One publish at a time across every tag, so the latest mark is decided
@@ -421,6 +435,10 @@ jobs:
             }
           done
           cp artifacts/panel/rcbench-panel.bin "dist/rcbench-panel-p4-$TAG.bin"
+          # The C6 radio's firmware, named for its esp_hosted version: the
+          # application the panel carries, and the merged image for 0x0 over
+          # header H4 (docs/Building.md, the C6's firmware).
+          cp artifacts/c6/rcbench-c6-*.bin dist/
           (cd dist && sha256sum ./*.zip ./*.bin > SHA256SUMS)
           ls -l dist
 

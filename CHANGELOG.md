@@ -8,6 +8,34 @@ history is in git.
 
 ### Added
 
+- IMU filter (SETUP > SENSORS > IMU, key `imu_filter`): a low-pass on the
+  IMU's angle, per angle frame and axis, deg += (new - deg) / k with k 1 to
+  50, default 1 (no filtering). It covers 63% of a step in about k frames:
+  at 10Hz IMU filter 10 takes about 1s. The first frame after a connect, a
+  reconnect, a bind or a stale reading seeds it; the difference is wrapped
+  at ±180°. The IMU screen, RUDDER, AUTO and the servo runs read the
+  filtered angle. The IMU's still time reads 0 until the filtered angle
+  lies within 0.05° of the sensor's (`IMU_SETTLE_DEG`), and AUTO waits
+  3000ms plus the filter's longest settle (`imu_filter_settle_ms()`,
+  11,700ms for IMU filter 10 at 10Hz) before NOT STILL. Host-tested by
+  `test_imu_filter` and `test_servo_rauto_filter`.
+- Bluetooth LE host on the panel: NimBLE on the P4, the controller on the
+  ESP32-C6, HCI over the existing SDIO link (esp_hosted 2.13.0, VHCI).
+  `main/panel_ble.c` starts it on the task `blestart`: the C6's link, the
+  controller init and enable requests for a C6 that reports 2.5.2 or later
+  (the board's C6 reports none and runs its controller without them; it
+  gets them only after a missing sync), the host task `nimble_host` and the
+  wait of 3,000ms for its sync, logged as `ble: synced in <n>ms` or `ble: no sync within
+  3000ms`. Its events go to a queue of 32 x 64 bytes. The first IMU ON
+  starts it; the console build's `ble scan` starts it too and prints every
+  report of a 10,000ms scan.
+- `protocols/bleuart`: a BLE (Bluetooth Low Energy) central for the ISSC
+  Transparent UART service of the BWT901CL, without radio code. It parses
+  advertising reports into a scan list of 8 devices, connects to the bound
+  address, discovers the service, subscribes to 1E4D, reads 6DAA once,
+  writes commands on 8841 and reconnects 1000ms after a failure or drop.
+  Host-tested by `test_bleuart`, `test_bleuart_link` and
+  `test_bleuart_adv`.
 - Browser test of the Wi-Fi page's file manager. `test/host/wa_page_dump.c`
   writes the page `wa_page_main()` builds, and `test/host/wa_mock_server.py`
   serves it with a mock of the file API, its refusals and its request guard.
@@ -45,6 +73,18 @@ history is in git.
   panel reads STATUS at every 50ms poll, not every 500ms, so the chip goes
   80 to about 180ms after the line closes, with no ARM. What the bench does
   on the bit is unchanged; OFF, the band and the reads are as before.
+- The C6 radio's update. CI and the release build esp_hosted 2.13.0's
+  co-processor firmware for the board's ESP32-C6 from the component the
+  panel pins (`.github/workflows/c6.yml`, `tools/c6_image.py`,
+  `firmware/c6/dependencies.lock`); the release publishes
+  `rcbench-c6-2.13.0.bin` (1,283,616 bytes) and
+  `rcbench-c6-merged-2.13.0.bin` with SHA256SUMS lines, and the panel image
+  carries the first (`RCBENCH_C6_BIN`, 1,284,272 bytes of flash). SETUP >
+  UPDATES gets a C6 RADIO row: the C6's version or `not reported`, the
+  carried one, and a 2s hold that sends the image over SDIO at SAFE only,
+  with a limit on each step, the old firmware kept on every failure, and a
+  restart of the panel after a success. ARM is refused while it runs.
+  docs/Building.md gives the recovery over header H4.
 - SUPPLY and SERVO have screen guides. "?" in the band opens them, as on
   the menu. SERVO has a page or two for each task, LIVE, TEST, PROGRAM,
   RUDDER with and without AUTO's box and SETTINGS' OUTPUT, SWEEP and DUT,
@@ -67,6 +107,49 @@ history is in git.
   `sensorless`, `ESC`) has none. `tools/gen_esc_profiles.py` and the card
   reader accept 1 to 120 bytes of UTF-8, and `family_de` is held to the
   unit rule of `tools/check_units.py`.
+- The IMU's angles show two decimals: the IMU screen's X, Y and Z, RUDDER's
+  DEFLECTION and MAX with ANGLE SOURCE IMU, SERVO's MEASURED and AUTO's
+  `surface binds at x°`. The servo runs' reading carries the IMU's degrees
+  beside its AS5600 counts (`servo_test_enc_t` `exact` and `deg`), so
+  RUDDER, AUTO, the LIMIT RUN and MEASURED no longer read it in 0.088°
+  steps. RUDDER draws a reading of 100.00° or more in the 20 x 36 face.
+  The AS5600's readings stay in tenths.
+- The Bluetooth IMU reads the WitMotion BWT901CL over Bluetooth LE through
+  the board's ESP32-C6, in place of an HC-05 on UART1. The first IMU ON
+  starts Bluetooth LE. SCAN FOR SENSORS scans for 10s and lists the
+  devices that advertise 0x18F0 or the ISSC UART service, with name,
+  address and RSSI, and counts the others as hidden; a tap binds a sensor
+  without pairing, and the panel connects to it and again 1s after a drop.
+  A connect asks interval 30 to 50ms, latency 0 and supervision timeout
+  4s with a 30ms-in-60ms connect scan; a failed connect, HCI 0x3E among
+  them, is retried after 7s. Each try logs its values, the last report's
+  RSSI and NimBLE's connection record. The console build's `ble
+  controller` sends the C6's controller init and enable requests again.
+  SETUP keeps the address with its type under the new key `imu_ble`. An
+  HC-05 binding is not carried over; scan and bind once. The first start
+  erases the HC-05's key `imu_addr` from nvs. The IMU screen and SETUP >
+  SENSORS > IMU show STARTING BLUETOOTH, NO BLUETOOTH ON C6, C6 FAILED:
+  RESTART, CONNECTING and the errors of the link, of a refused command
+  write and of the scan, and the C6's version in place of the HC-05's.
+  A failed command write, IMU OFF with one in flight among them, drops the
+  rest of its group; a calibration's exit, a RATE or an ALGORITHM in it
+  goes again at the next connection. CONNECT TO ANY SENSOR is gone. The panel no longer builds
+  `protocols/hc05`; IO4, IO5 and IO29 of header P3 are free. The `imu`
+  task's stack is 4,096 bytes.
+- The panel's link to the ESP32-C6 is the component `c6_link`, one mutex
+  around its reset and start, for Wi-Fi and Bluetooth LE alike. Wi-Fi works
+  as before. Its console lines carry the tag `c6`: `c6: C6: esp_hosted
+  firmware ...`, `c6: C6: firmware version not reported ...` and `c6: C6
+  link failed: C6 held in reset, Wi-Fi and Bluetooth are off until the
+  panel restarts`.
+- The IMU controller is three parts. `shared/ui/imu_sensor.c` holds the
+  sensor's side without a radio: the reading, the outbox of WitMotion
+  commands, the calibration, the RATE and ALGORITHM writes, the gaps and the
+  handout to SERVO. `shared/ui/imu_ble.c` holds the Bluetooth LE link and
+  converts its devices, errors and version into the view's types
+  (`imu_dev_t`, `imu_err_t`). `shared/ui/imu_ctl.c` joins the two. The IMU screen, SETUP >
+  SENSORS > IMU and the servo runs behave as before. `test_imu_sensor` tests
+  the sensor's side alone.
 
 ### Fixed
 

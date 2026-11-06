@@ -4,7 +4,7 @@
  *        and a UDP (user datagram protocol) socket for the mDNS name.
  *
  * The radio under esp_wifi is the board's ESP32-C6 on SDIO, brought up by
- * wifi_radio.h.
+ * c6_link.h, whose link Bluetooth LE shares.
  *
  * Three tasks touch the session: the UI loop (start, close, tick), the event
  * loop (what the radio reports) and the HTTP server (requests).  Everything
@@ -34,6 +34,7 @@
 #include "esp_http_server.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
+#include "esp_mac.h"
 #include "esp_netif.h"
 #include "esp_random.h"
 #include "esp_timer.h"
@@ -41,6 +42,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
+#include "c6_link.h"
 #include "lwip/inet.h"
 #include "lwip/sockets.h"
 #include "nvs.h"
@@ -50,7 +52,6 @@
 #include "wa_send.h"
 #include "wifi_dns.h"
 #include "wifi_ntp.h"
-#include "wifi_radio.h"
 #include "wifi_req.h"
 #include "wifi_sock.h"
 #include "wa_text.h"
@@ -1628,7 +1629,7 @@ static void radio_down(void)
     /* Before the interface goes: SNTP sends through it. */
     wifi_ntp_stop();
     if (s.radio_up) {
-        if (!wifi_radio_failed()) {
+        if (!c6_link_failed()) {
             (void)esp_wifi_stop();
             (void)esp_wifi_deinit();
             drain();
@@ -1666,9 +1667,9 @@ static bool radio_bring_up(wa_mode_t mode, const wa_t *w, const wa_conf_t *c)
     if (!net_once()) {
         return false;
     }
-    esp_err_t e = wifi_radio_link();
+    esp_err_t e = c6_link_up();
     if (e != ESP_OK) {
-        start_failed("wifi_radio_link", e);
+        start_failed("c6_link_up", e);
         return false;
     }
     s.up_mode = mode;
@@ -1790,14 +1791,14 @@ static void worker(void *arg)
         /* The clock from the home network, once a join; this radio's
          * session only, and never past a failed C6 link. */
         const bool same = s.radio_up && gen == s.up_gen
-                          && !wifi_radio_failed();
+                          && !c6_link_failed();
         const bool held = wifi_ntp_poll(same && w.state == WA_ST_JOINED,
                                         same && wa_lingers(&w));
         wifi_dns_poll(s.netif, same && w.state == WA_ST_JOINED);
         if (s.radio_up || !atomic_load(&s.down)) {
             if (held) {
                 radio_hold();
-            } else if (!want || gen != s.up_gen || wifi_radio_failed()) {
+            } else if (!want || gen != s.up_gen || c6_link_failed()) {
                 radio_down();
                 ESP_LOGI(TAG, "radio off");
             }
@@ -1865,7 +1866,8 @@ esp_err_t wifi_access_init(uint32_t slot, const fw_image_info_t *running)
     fw_upload_init(&s.up, NULL, 0u, slot);
     wa_fetch_init(&s.f, running->version);
     uint8_t mac[6] = { 0 };
-    wifi_radio_mac(mac);
+    /* The P4's base MAC (media access control) address from eFuse. */
+    (void)esp_read_mac(mac, ESP_MAC_BASE);
     wa_name(mac, s.name);
     atomic_store(&s.down, true);
     return ESP_OK;

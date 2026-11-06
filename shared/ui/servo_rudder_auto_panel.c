@@ -329,6 +329,8 @@ static void ra_step(void)
             .angle_valid = have,
             .angle_deg   = deg,
             .still_ms    = have ? s.ra.still_ms : 0u,
+            .settle_ms   = (enc_src() == SERVO_ANGLE_IMU) ? s.imu_settle_ms
+                                                          : 0u,
         };
         servo_rauto_do_t d;
         servo_rauto_step(&s.ra.run, test_now(), &in, &d);
@@ -708,7 +710,9 @@ static void why_text(char *b, size_t n)
 {
     const servo_rauto_t *r = &s.ra.run;
     if (r->why == SERVO_RAUTO_WHY_BINDS) {
-        snprintf(b, n, TR(RA_BINDS_AT), (double)r->bind_deg);
+        char deg[12];
+        snprintf(b, n, TR(RA_BINDS_AT),
+                 svs_angle_text(deg, sizeof(deg), r->bind_deg, false));
     } else {
         snprintf(b, n, "%s", ui_servo_str(servo_rauto_why_str(r)));
     }

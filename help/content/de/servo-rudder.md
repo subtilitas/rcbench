@@ -14,7 +14,7 @@ RUDER in der Leiste von [SERVO](servo.md) steuert ein Servo und zeigt den Rudera
 
 | Teil | Anzeige |
 |---|---|
-| AUSSCHLAG | Winkel ab NULLPUNKT, -180,0 bis +179,9°. Vor dem Nullsetzen gilt SENSOR-MITTE des AS5600 oder Zählwert 0 der IMU als Bezug; ohne Messwert steht `---`. |
+| AUSSCHLAG | Winkel ab NULLPUNKT, -180,0 bis +179,9° vom AS5600, -180,00 bis +180,00° von der IMU, ab 100,00° in kleineren Ziffern. Vor dem Nullsetzen gilt SENSOR-MITTE des AS5600 oder Zählwert 0 der IMU als Bezug; ohne Messwert steht `---`. |
 | HINTERKANTE | L x sin(Ausschlag) bei LÄNGE L mm: der vorzeichenbehaftete Wert eines senkrecht an die Hinterkante gehaltenen Lineals. |
 | MAX | Größter Ausschlag je Seite seit NULLPUNKT oder MAX LÖSCHEN, in ° und mm. |
 
@@ -75,7 +75,7 @@ Der AUTO-Bereich ersetzt LÄNGE, Ansteuertasten und Statuszeilen; MANUELL stellt
 
 Setze zuerst NULLPUNKT bei neutraler Ruderfläche. Während des Laufs sind NULLPUNKT, MAX LÖSCHEN und MANUELL gesperrt. 2s HALTEN: START beginnt den Lauf. Danach heißt die Taste LAUF BEENDEN; ein Druck beendet ihn sofort.
 
-Der Lauf liest das Servo aus und setzt bei KST den Pulsbereich auf 1000 bis 2000us. Je Seite fährt er den Endpuls an, wartet auf einen 500ms lang ruhigen Winkel und schreibt einen neuen Endpunkt. Er schreibt höchstens 8-mal je Seite, jeweils in einer eigenen Programmiersitzung mit Aus- und Einschalten des Servos. Der Stromschutz des Endlagenlaufs bleibt durchgehend aktiv. Blockiert das Ruder vor dem Zielwert, endet der Lauf mit `Ruder klemmt bei x°`. Bei jedem Ende schaltet der Prüfstand auf SAFE und der Netzteilausgang aus.
+Der Lauf liest das Servo aus und setzt bei KST den Pulsbereich auf 1000 bis 2000us. Je Seite fährt er den Endpuls an, wartet auf einen 500ms lang ruhigen Winkel und schreibt einen neuen Endpunkt. Mit der IMU und einem [IMU-Filter](setup-sensors.md#die-imu) über 1 wartet er zusätzlich, bis der gefilterte Winkel eingeschwungen ist, bis zu 3000ms plus das längste Einschwingen des Filters, das der Bericht nennt. Er schreibt höchstens 8-mal je Seite, jeweils in einer eigenen Programmiersitzung mit Aus- und Einschalten des Servos. Der Stromschutz des Endlagenlaufs bleibt durchgehend aktiv. Blockiert das Ruder vor dem Zielwert, endet der Lauf mit `Ruder klemmt bei x°`. Bei jedem Ende schaltet der Prüfstand auf SAFE und der Netzteilausgang aus.
 
 Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) mit ZIEL auf einem Programmierport schaltest du PROG 5V bei SAFE ein und erst dann ARM: der Puls des Ports kommt nur bei SAFE. Ein bei ARMED eingeschaltetes PROG 5V zeigt `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM`.
 

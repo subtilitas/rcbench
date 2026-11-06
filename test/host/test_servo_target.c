@@ -31,7 +31,7 @@ TEST_CASE(the_encoders_angle_replaces_the_dashes_in_the_measured_row)
     gfx_color_t *none = malloc((size_t)W * H * sizeof(gfx_color_t));
     REQUIRE_ALLOC(none);
     memcpy(none, fb, (size_t)W * H * sizeof(gfx_color_t));
-    const servo_test_enc_t e = { true, 3100u, 0u, 1000u, false, false, false, false };
+    const servo_test_enc_t e = { true, 3100u, 0u, 1000u, false, false, false, false, false, 0.0f };
 
     /* AS5600 off in SETUP: the reading is ignored. */
     CHECK(!settings_get_bool(SET_ENC_EN));
@@ -51,7 +51,7 @@ TEST_CASE(the_encoders_angle_replaces_the_dashes_in_the_measured_row)
     memcpy(shown, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     /* Another count, another angle; the same count, the same picture. */
-    const servo_test_enc_t e2 = { true, 3200u, 0u, 1020u, false, false, false, false };
+    const servo_test_enc_t e2 = { true, 3200u, 0u, 1020u, false, false, false, false, false, 0.0f };
     servo_screen_encoder(&e2);
     scr->render(&cv, 0);
     CHECK(memcmp(shown, fb, (size_t)W * H * sizeof(gfx_color_t)) != 0);
@@ -60,7 +60,7 @@ TEST_CASE(the_encoders_angle_replaces_the_dashes_in_the_measured_row)
     CHECK_EQ(memcmp(shown, fb, (size_t)W * H * sizeof(gfx_color_t)), 0);
 
     /* A reading that is not valid is the dashes again. */
-    const servo_test_enc_t gone = { false, 0u, 0u, 1040u, false, false, false, false };
+    const servo_test_enc_t gone = { false, 0u, 0u, 1040u, false, false, false, false, false, 0.0f };
     servo_screen_encoder(&gone);
     scr->render(&cv, 0);
     CHECK_EQ(memcmp(none, fb, (size_t)W * H * sizeof(gfx_color_t)), 0);
@@ -112,7 +112,7 @@ TEST_CASE(an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedbac
     CHECK_EQ(memcmp(a, row_b, 20 * SV_RCARD_W * sizeof(gfx_color_t)), 0);
 
     /* A reading puts the encoder's angle there. */
-    const servo_test_enc_t e = { true, 3100u, 0u, 1000u, false, false, false, false };
+    const servo_test_enc_t e = { true, 3100u, 0u, 1000u, false, false, false, false, false, 0.0f };
     servo_screen_encoder(&e);
     scr->render(&cv, 0);
     measured_row(row_b);

@@ -1062,8 +1062,12 @@ gelten die oben beschriebenen Regeln auch für diese Quelle:
 count = round(angle x 4096 / 360) mod 4096     centre count 0
 ```
 
-Ein Zählschritt entspricht 0,088°. Der gemeldete Winkel ist auf diese
-Schrittweite gerastert. Die angegebene Sensorauflösung beträgt 0,05 bis
+Ein Zählschritt entspricht 0,088°. Der Servotest beurteilt und meldet den
+Winkel der IMU in dieser Schrittweite. Der Messwert trägt zudem die Grad
+der IMU, wie sie kommen: GEMESSEN, RUDER, AUTO, die Winkelzeilen des LIMIT
+RUN und das SERVO-Laufprotokoll nehmen diese, und die Bildschirme zeigen
+sie auf 0,01°. Der Winkel der IMU durchläuft zuerst ihren IMU-Filter
+([Die Bluetooth-IMU](IMU-de.md#der-filter)). Die angegebene Sensorauflösung beträgt 0,05 bis
 0,2° auf X und Y sowie 1° auf Z. Z benötigt das Magnetometer; dies ist
 am Prüfstand nicht gemessen. AS5600-Mitte gilt nicht für die IMU,
 und SENSOR-MITTE übernimmt keinen Zählerstand von ihr.
@@ -1422,7 +1426,7 @@ aus“ ohne Lineal am Modell. Die Geometrie steht in
 
 | Messwert | Auflösung | Bereich |
 | --- | --- | --- |
-| AUSSCHLAG | 0,1° angezeigt; 4096 Schritte je Umdrehung, 0,088°, bei beiden Quellen | -180,0 bis +179,9° |
+| AUSSCHLAG | AS5600: 0,1° angezeigt, 4096 Schritte je Umdrehung, 0,088°; IMU: 0,01° angezeigt, die Grad, wie sie kommen | AS5600: -180,0 bis +179,9°; IMU: -180,00 bis +180,00° |
 | HINTERKANTE | 0,1mm angezeigt | -500,0 bis +500,0mm |
 
 ### Grenzen
@@ -1448,7 +1452,10 @@ Seite eingegebenen Ausschlag erreichen, gemessen an der Winkelquelle. Es
 schließt den Regelkreis über den Winkel der Fläche statt über einen nach
 Augenmaß eingestellten Weg am Sender. Der Lauf steht in
 `shared/servo/servo_rudder_auto.c`, der Kasten in
-`shared/ui/servo_rudder_auto_panel.c`.
+`shared/ui/servo_rudder_auto_panel.c`. AUTO vertraut der Winkelquelle: Mit
+WINKELQUELLE IMU nimmt es die Winkel, die die Bluetooth-Verbindung liefert,
+und diese Verbindung ist nicht authentifiziert (`SECURITY.md`, die
+Bluetooth-IMU).
 
 ### Ablauf
 

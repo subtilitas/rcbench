@@ -19,11 +19,10 @@
 /*
  * The main view, in the body below the band, 1024 x 540px:
  * The controls on the left, 460 x 56px at a 64px pitch from y 16: SCAN FOR
- * SENSORS, CONNECT TO ANY SENSOR (only after the HC-05 refused a scan),
- * the calibration's hold, ZERO and CLEAR ZERO side by side, 222px each,
+ * SENSORS, a free slot, the calibration's hold, ZERO and CLEAR ZERO side by side, 222px each,
  * and IMU SETTINGS.  Under them the calibration's line and the last
  * operation's, in the label face, wrapped to 2 lines each.  The card on
- * the right, x 484 to 1016, y 16 to 488: the sensor, the HC-05, the state,
+ * the right, x 484 to 1016, y 16 to 488: the sensor, the C6, the state,
  * the angles in the head face, the rate, the age and the battery.
  */
 #define IMS_BX      16   /**< the controls' left edge, px */
@@ -44,8 +43,9 @@
 
 /*
  * The found list: the heading at y 12, then up to 8 rows of 640 x 48px at
- * a 52px pitch from y 44 on the choice list's ground; SCAN AGAIN and
- * CONNECT TO ANY SENSOR on the right, 328 x 56px, and CLOSE at the foot.
+ * a 52px pitch from y 44 on the choice list's ground; SCAN AGAIN on
+ * the right, 328 x 56px, under it the count of the devices the scan heard
+ * and did not list, and CLOSE at the foot.
  */
 #define IMS_LX      16   /**< the rows' left edge, px */
 #define IMS_LW      640  /**< a row's width, px */
@@ -55,19 +55,18 @@
 #define IMS_HEAD_Y  12   /**< the heading's top, px */
 #define IMS_SX      680  /**< the list's buttons' left edge, px */
 #define IMS_SW      328  /**< their width, px */
+#define IMS_HIDDEN_Y 116 /**< the hidden count's line, px */
 /** @brief The body row 4px above the alert band: every control ends over it. */
 #define IMS_FLOOR   (UI_ALERT_Y - UI_BAND_H - 4)
 
 /** @brief The left column's rows, imu_screen_row_rect()'s index. */
 enum {
     IMS_ROW_SCAN = 0,   /**< SCAN FOR SENSORS */
-    IMS_ROW_ANY,        /**< CONNECT TO ANY SENSOR */
     IMS_ROW_CAL,        /**< the calibration's hold */
     IMS_ROW_ZERO,       /**< ZERO */
     IMS_ROW_UNZERO,     /**< CLEAR ZERO, beside it */
     IMS_ROW_SETTINGS,   /**< IMU SETTINGS */
     IMS_ROW_RESCAN,     /**< the list's SCAN AGAIN */
-    IMS_ROW_LIST_ANY,   /**< the list's CONNECT TO ANY SENSOR */
     IMS_ROW_CLOSE,      /**< the list's CLOSE */
     IMS_ROW_COUNT
 };
@@ -79,7 +78,7 @@ enum { IMS_HIT_NONE = -1, IMS_HIT_DEV0 = 100 };
 enum {
     IMS_L_SENSOR = 0,   /**< SENSOR: the bound name */
     IMS_L_ADDR,         /**< its address */
-    IMS_L_HC05,         /**< HC-05: the version */
+    IMS_L_RADIO,        /**< C6: the version */
     IMS_L_STATE,        /**< the link state */
     IMS_L_X,            /**< the angles from the zero */
     IMS_L_Y,
@@ -89,6 +88,7 @@ enum {
     IMS_L_CAL,          /**< the calibration's line, left column */
     IMS_L_ERR,          /**< the last operation's line, left column */
     IMS_L_HEAD,         /**< the found list's heading */
+    IMS_L_HIDDEN,       /**< the devices the scan did not list */
     IMS_L_COUNT
 };
 

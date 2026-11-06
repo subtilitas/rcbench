@@ -130,7 +130,7 @@ gfx_rect_t imu_screen_line_rect(int i)
 }
 
 /**
- * @brief The card: the sensor, the HC-05, the state, the angles, the rate
+ * @brief The card: the sensor, the C6, the state, the angles, the rate
  *        and the battery.
  * @param c The canvas.
  */
@@ -191,22 +191,31 @@ static void draw_list(gfx_canvas_t *c)
         ui_choice_list(c, gfx_rect_make(IMS_LX - 4, IMS_LY - 4, IMS_LW + 8,
                                         (n - 1) * IMS_LP + IMS_LH + 8));
     }
-    for (int i = 0; i < n && i < (int)HC05_FOUND_MAX; ++i) {
+    for (int i = 0; i < n && i < (int)IMU_FOUND_MAX; ++i) {
         const gfx_rect_t r = imu_screen_choice_rect(i);
-        const hc05_dev_t *d = &ims.v.found[i];
+        const imu_dev_t *d = &ims.v.found[i];
         ui_choice_row(c, r, "", false,
                       ims.have_press && ims.hit == IMS_HIT_DEV0 + i);
-        /* A name of 31 bytes takes 372px of the body face, 12px in; the
-         * address 14 cells of the label face, 12px from the right. */
-        gfx_text_in(c, gfx_rect_make(r.x + 12, r.y, r.w - 176, r.h),
+        /* A name of 23 bytes takes 276px of the body face, 12px in; the
+         * address 17 cells of the label face, then the RSSI in 6 cells. */
+        gfx_text_in(c, gfx_rect_make(r.x + 12, r.y, r.w - 324, r.h),
                     d->name[0] != '\0' ? d->name : TR(IMU_NO_NAME),
                     UI_FONT_BODY, d->name[0] != '\0' ? UI_TEXT : UI_TEXT_DIM,
                     1, GFX_ALIGN_LEFT);
-        gfx_text_in(c, gfx_rect_make(r.x + r.w - 152, r.y, 140, r.h), d->addr,
+        gfx_text_in(c, gfx_rect_make(r.x + r.w - 300, r.y, 200, r.h), d->addr,
+                    IMS_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_RIGHT);
+        char dbm[12] = "";
+        if (d->rssi != 127) {
+            snprintf(dbm, sizeof(dbm), "%ddBm", (int)d->rssi);
+        }
+        gfx_text_in(c, gfx_rect_make(r.x + r.w - 92, r.y, 80, r.h), dbm,
                     IMS_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_RIGHT);
     }
     button(c, IMS_ROW_RESCAN, TR(IMU_RESCAN), UI_PANEL_HI);
-    button(c, IMS_ROW_LIST_ANY, TR(IMU_ANY), UI_PANEL_HI);
+    (void)ims_line(IMS_L_HIDDEN, buf, sizeof(buf), &ink);
+    (void)ui_text_wrap(c, gfx_rect_make(IMS_SX, IMS_HIDDEN_Y, IMS_SW,
+                                        gfx_text_height(IMS_FONT_LABEL, 1)),
+                       IMS_LPITCH, buf, IMS_FONT_LABEL, ink);
     button(c, IMS_ROW_CLOSE, TR(IMU_CLOSE), UI_PANEL_HI);
 }
 
@@ -221,7 +230,6 @@ static void draw_all(gfx_canvas_t *c)
         draw_list(c);
     } else {
         button(c, IMS_ROW_SCAN, TR(IMU_SCAN), UI_ACCENT);
-        button(c, IMS_ROW_ANY, TR(IMU_ANY), UI_PANEL_HI);
         const bool cal_on = ims_row_enabled(IMS_ROW_CAL);
         ui_button_font(c, imu_screen_hold_rect(), TR(IMU_CAL_HOLD),
                        cal_on ? hold_fill() : UI_PANEL_HI, false, cal_on,

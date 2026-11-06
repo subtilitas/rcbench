@@ -43,16 +43,17 @@ void imu_screen_invalidate(void) { touched(); }
 /* ------------------------------------------------------------ the model */
 
 /**
- * @brief The HC-05 answers and runs nothing: an AT operation may start.
- * @return Whether SCAN, a device and CONNECT TO ANY SENSOR take a press.
+ * @brief Bluetooth runs and no scan does: a scan or a bind may start.
+ * @return Whether SCAN and a device take a press.
  */
 static bool at_free(void)
 {
     if (ims.v.cal == IMU_CAL_RUNNING) {
-        return false;         /* the calibration keeps the UART */
+        return false;         /* the calibration keeps the sensor bound */
     }
     switch (ims.v.link) {
     case IMU_LINK_READY:
+    case IMU_LINK_CONNECTING:
     case IMU_LINK_BOUND:
     case IMU_LINK_CONNECTED:
     case IMU_LINK_NO_FRAMES:
@@ -68,12 +69,8 @@ bool ims_row_shown(int row)
     case IMS_ROW_SCAN: case IMS_ROW_CAL: case IMS_ROW_ZERO:
     case IMS_ROW_UNZERO: case IMS_ROW_SETTINGS:
         return !ims.list;
-    case IMS_ROW_ANY:
-        return !ims.list && ims.v.inq_refused;
     case IMS_ROW_RESCAN: case IMS_ROW_CLOSE:
         return ims.list;
-    case IMS_ROW_LIST_ANY:
-        return ims.list && ims.v.inq_refused;
     default:
         return false;
     }
@@ -86,7 +83,6 @@ bool ims_row_enabled(int row)
     }
     switch (row) {
     case IMS_ROW_SCAN: case IMS_ROW_RESCAN:
-    case IMS_ROW_ANY:  case IMS_ROW_LIST_ANY:
         return at_free();
     case IMS_ROW_CAL:
         return ims.v.link == IMU_LINK_CONNECTED
@@ -168,8 +164,10 @@ bool imu_screen_take(imu_cmd_t *out)
 gfx_rect_t imu_screen_row_rect(int row)
 {
     switch (row) {
-    case IMS_ROW_SCAN: case IMS_ROW_ANY: case IMS_ROW_CAL:
-        return gfx_rect_make(IMS_BX, IMS_RY + row * IMS_BPITCH, IMS_BW,
+    case IMS_ROW_SCAN:
+        return gfx_rect_make(IMS_BX, IMS_RY, IMS_BW, IMS_BH);
+    case IMS_ROW_CAL:
+        return gfx_rect_make(IMS_BX, IMS_RY + 2 * IMS_BPITCH, IMS_BW,
                              IMS_BH);
     case IMS_ROW_ZERO:
         return gfx_rect_make(IMS_BX, IMS_RY + 3 * IMS_BPITCH, IMS_HALF_W,
@@ -182,8 +180,6 @@ gfx_rect_t imu_screen_row_rect(int row)
                              IMS_BH);
     case IMS_ROW_RESCAN:
         return gfx_rect_make(IMS_SX, IMS_LY, IMS_SW, IMS_BH);
-    case IMS_ROW_LIST_ANY:
-        return gfx_rect_make(IMS_SX, IMS_LY + IMS_BPITCH, IMS_SW, IMS_BH);
     case IMS_ROW_CLOSE:
         return gfx_rect_make(IMS_SX, IMS_FLOOR - IMS_BH, IMS_SW, IMS_BH);
     default:
@@ -193,7 +189,7 @@ gfx_rect_t imu_screen_row_rect(int row)
 
 gfx_rect_t imu_screen_choice_rect(int i)
 {
-    if (i < 0 || i >= (int)HC05_FOUND_MAX) {
+    if (i < 0 || i >= (int)IMU_FOUND_MAX) {
         return gfx_rect_make(0, 0, 0, 0);
     }
     return gfx_rect_make(IMS_LX, IMS_LY + i * IMS_LP, IMS_LW, IMS_LH);
@@ -215,12 +211,12 @@ _Static_assert(IMS_RY + IMS_RH <= IMS_FLOOR, "the card ends over the band");
 _Static_assert(IMS_RX + IMS_RW <= UI_PANEL_W - UI_MARGIN,
                "the card keeps the margin");
 _Static_assert(IMS_BX + IMS_BW + 8 <= IMS_RX, "the controls end left of the card");
-_Static_assert(IMS_LY + (HC05_FOUND_MAX - 1) * IMS_LP + IMS_LH + 4 <= IMS_FLOOR,
+_Static_assert(IMS_LY + (IMU_FOUND_MAX - 1) * IMS_LP + IMS_LH + 4 <= IMS_FLOOR,
                "8 devices end over the band");
 _Static_assert(IMS_LX + IMS_LW + 4 + 16 <= IMS_SX,
                "the list's ground ends left of its buttons");
-_Static_assert(IMS_LY + 2 * IMS_BPITCH <= IMS_FLOOR - IMS_BH,
-               "CLOSE stands under CONNECT TO ANY SENSOR");
+_Static_assert(IMS_HIDDEN_Y + 2 * IMS_LPITCH <= IMS_FLOOR - IMS_BH,
+               "the hidden count's two lines end over CLOSE");
 _Static_assert(IMS_BH >= UI_TAP_MIN && IMS_LH >= UI_TAP_MIN,
                "every control is a finger tall");
 
@@ -235,28 +231,23 @@ _Static_assert(IMS_BH >= UI_TAP_MIN && IMS_LH >= UI_TAP_MIN,
 static const char *err_text(char *buf, size_t n)
 {
     switch (ims.v.err) {
-    case HC05_ERR_NO_AT:       snprintf(buf, n, "%s", TR(IMU_ERR_NO_AT)); break;
-    case HC05_ERR_TIMEOUT:     snprintf(buf, n, "%s", TR(IMU_ERR_TIMEOUT)); break;
-    case HC05_ERR_REFUSED:
-        if (ims.v.err_code == 0u) {
-            snprintf(buf, n, "%s", TR(IMU_ERR_FAIL));
-        } else {
-            snprintf(buf, n, TR(IMU_ERR_REFUSED), (unsigned)ims.v.err_code);
-        }
+    case IMU_ERR_CONNECT:    snprintf(buf, n, "%s", TR(IMU_ERR_CONNECT)); break;
+    case IMU_ERR_NOT_WIT:    snprintf(buf, n, "%s", TR(IMU_ERR_NOT_WIT)); break;
+    case IMU_ERR_WRITE:      snprintf(buf, n, "%s", TR(IMU_ERR_WRITE)); break;
+    case IMU_ERR_NONE_FOUND: snprintf(buf, n, "%s", TR(IMU_ERR_NONE_FOUND));
+                             break;
+    case IMU_ERR_SCAN:
+        snprintf(buf, n, TR(IMU_ERR_SCAN), (unsigned)ims.v.err_code);
         break;
-    case HC05_ERR_INQ_REFUSED: snprintf(buf, n, "%s", TR(IMU_ERR_INQ)); break;
-    case HC05_ERR_PAIR:        snprintf(buf, n, "%s", TR(IMU_ERR_PAIR)); break;
-    case HC05_ERR_NONE_FOUND:  snprintf(buf, n, "%s", TR(IMU_ERR_NONE_FOUND));
-                               break;
-    case HC05_ERR_ARG:         snprintf(buf, n, "%s", TR(IMU_ERR_ARG)); break;
-    case HC05_ERR_NONE:
-    default:                   buf[0] = '\0'; break;
+    case IMU_ERR_NONE:
+    default:                 buf[0] = '\0'; break;
     }
     return buf;
 }
 
 /**
- * @brief An angle line: the axis, its degrees from the zero or "---".
+ * @brief An angle line: the axis, its degrees from the zero in hundredths
+ *        or "---".
  * @param axis The axis.
  * @param buf  Takes the line.
  * @param n    Its size, bytes.
@@ -267,8 +258,10 @@ static void angle_line(imu_axis_t axis, char *buf, size_t n)
         snprintf(buf, n, "%s  ---", imu_axis_name(axis));
         return;
     }
-    snprintf(buf, n, "%s  %+.1f°", imu_axis_name(axis),
-             (double)imu_deg(&ims.v.r, axis, false));
+    char deg[12];
+    snprintf(buf, n, "%s  %s°", imu_axis_name(axis),
+             imu_deg_text(deg, sizeof(deg), imu_deg(&ims.v.r, axis, false),
+                          true));
 }
 
 /**
@@ -285,7 +278,7 @@ static void head_line(char *buf, size_t n, gfx_color_t *ink)
         snprintf(buf, n, "%s", TR(IMU_SCANNING));
     } else if (ims.v.found_n > 0u) {
         snprintf(buf, n, TR(IMU_FOUND), (unsigned)ims.v.found_n);
-    } else if (ims.v.err != HC05_ERR_NONE) {
+    } else if (ims.v.err != IMU_ERR_NONE) {
         (void)err_text(buf, n);
         *ink = UI_WARN;
     } else {
@@ -304,15 +297,12 @@ static void head_line(char *buf, size_t n, gfx_color_t *ink)
 static void sensor_line(int i, char *buf, size_t n, gfx_color_t *ink)
 {
     const char *addr = ims.v.bound_addr;
-    const bool any = strcmp(addr, "*") == 0;
     if (i == IMS_L_ADDR) {
-        snprintf(buf, n, "%s", any ? TR(IMU_ANY_HOW) : addr);
+        snprintf(buf, n, "%s", addr);
         *ink = UI_TEXT_DIM;
     } else if (addr[0] == '\0') {
         snprintf(buf, n, "%s", TR(IMU_NONE_BOUND));
         *ink = UI_TEXT_DIM;
-    } else if (any) {
-        snprintf(buf, n, "%s", TR(IMU_ANY_BOUND));
     } else {
         snprintf(buf, n, TR(IMU_SENSOR), ims.v.bound_name[0] != '\0'
                                              ? ims.v.bound_name
@@ -336,8 +326,8 @@ const char *ims_line(int i, char *buf, size_t n, gfx_color_t *ink)
     case IMS_L_SENSOR: case IMS_L_ADDR:
         sensor_line(i, buf, n, ink);
         break;
-    case IMS_L_HC05:
-        snprintf(buf, n, "HC-05: %s",
+    case IMS_L_RADIO:
+        snprintf(buf, n, "C6: %s",
                  ims.v.version[0] != '\0' ? ims.v.version : "---");
         break;
     case IMS_L_STATE:
@@ -385,6 +375,12 @@ const char *ims_line(int i, char *buf, size_t n, gfx_color_t *ink)
     case IMS_L_HEAD:
         head_line(buf, n, ink);
         break;
+    case IMS_L_HIDDEN:
+        if (ims.v.link != IMU_LINK_SCANNING && ims.v.hidden > 0u) {
+            snprintf(buf, n, TR(IMU_HIDDEN), (unsigned)ims.v.hidden);
+        }
+        *ink = UI_TEXT_DIM;
+        break;
     default:
         break;
     }
@@ -417,7 +413,7 @@ static int hit_at(int x, int y)
         }
     }
     if (ims.list && at_free()) {
-        for (int i = 0; i < (int)ims.v.found_n && i < (int)HC05_FOUND_MAX;
+        for (int i = 0; i < (int)ims.v.found_n && i < (int)IMU_FOUND_MAX;
              ++i) {
             if (gfx_rect_contains(imu_screen_choice_rect(i), x, y)) {
                 return IMS_HIT_DEV0 + i;
@@ -443,11 +439,6 @@ static void act(int hit)
     case IMS_ROW_RESCAN:
         post(IMU_CMD_SCAN, 0u);
         ims.list = true;
-        break;
-    case IMS_ROW_ANY:
-    case IMS_ROW_LIST_ANY:
-        post(IMU_CMD_ANY, 0u);
-        ims.list = false;
         break;
     case IMS_ROW_ZERO:   post(IMU_CMD_ZERO, 0u);   break;
     case IMS_ROW_UNZERO: post(IMU_CMD_UNZERO, 0u); break;

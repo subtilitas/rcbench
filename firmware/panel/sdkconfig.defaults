@@ -157,7 +157,7 @@ CONFIG_ESP_HOSTED_CP_TARGET_ESP32C6=y
 CONFIG_ESP_HOSTED_SDIO_HOST_INTERFACE=y
 #
 # The board's wiring is in components/board/include/board_pins.h
-# (BOARD_C6_*); wifi_radio.c fails the build when the values here differ.
+# (BOARD_C6_*); c6_link.c fails the build when the values here differ.
 # Espressif's ESP32-P4 Function EV Board uses the same pins; they are named
 # here rather than taken from that board's choice.
 CONFIG_ESP_HOSTED_P4_DEV_BOARD_NONE=y
@@ -176,14 +176,14 @@ CONFIG_ESP_HOSTED_SDIO_RESET_ACTIVE_HIGH=y
 # At the radio's first start after power-up esp_hosted resets the C6 (EN
 # low for 10 ms) and then waits a fixed 1,500 ms
 # (CONFIG_ESP_HOSTED_SDIO_RESET_DELAY_MS) before it starts the card.  A C6
-# that answers is reset once per start of the panel; wifi_radio.h gives the
+# that answers is reset once per start of the panel; c6_link.h gives the
 # resets and times of one that does not.
 CONFIG_ESP_HOSTED_SLAVE_RESET_ON_EVERY_HOST_BOOTUP=y
 #
 # A failed SDIO link does not restart the panel: esp_hosted's default would,
 # and a restart drops the link to the IOmcu and the heartbeat.  The failure
 # ends the Wi-Fi session instead, and Wi-Fi stays off until the next start
-# (components/wifi_access/wifi_radio.c).
+# (components/c6_link/c6_link.c).
 CONFIG_ESP_HOSTED_TRANSPORT_RESTART_ON_FAILURE=n
 #
 # Nothing the panel does not use: no memory monitor requests to the C6, no
@@ -197,6 +197,53 @@ CONFIG_ESP_WIFI_REMOTE_EAP_ENABLED=n
 # Nothing of the radio's is kept in the C6's NVS (non-volatile storage);
 # wifi_access.c also starts the driver with nvs_enable 0.
 CONFIG_WIFI_RMT_NVS_ENABLED=n
+
+# Bluetooth LE through the ESP32-C6 ------------------------------------------
+#
+# The C6 runs the BLE (Bluetooth Low Energy) controller; the P4 runs the
+# NimBLE host, and esp_hosted carries the HCI (host controller interface)
+# packets between them on the existing SDIO link, interface ESP_HCI_IF, as
+# VHCI (virtual HCI): no extra pins.  main/panel_ble.c starts the host.
+# The P4 has no controller of its own.
+CONFIG_BT_ENABLED=y
+CONFIG_BT_CONTROLLER_DISABLED=y
+CONFIG_BT_NIMBLE_ENABLED=y
+CONFIG_BT_NIMBLE_TRANSPORT_UART=n
+CONFIG_ESP_HOSTED_ENABLE_BT_NIMBLE=y
+CONFIG_ESP_HOSTED_NIMBLE_HCI_VHCI=y
+#
+# A central that scans and connects to one sensor: no advertising, no
+# GATT (generic attribute profile) server role toward a phone.
+CONFIG_BT_NIMBLE_ROLE_CENTRAL=y
+CONFIG_BT_NIMBLE_ROLE_OBSERVER=y
+CONFIG_BT_NIMBLE_ROLE_PERIPHERAL=n
+CONFIG_BT_NIMBLE_ROLE_BROADCASTER=n
+CONFIG_BT_NIMBLE_GATT_CLIENT=y
+CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1
+#
+# The sensor connects without pairing: no security manager.  Without it
+# NimBLE has no bond store, and nothing of Bluetooth's goes to NVS
+# (non-volatile storage).
+CONFIG_BT_NIMBLE_SECURITY_ENABLE=n
+#
+# The sensor advertises with legacy PDUs (protocol data units), so the
+# Bluetooth 5.0 features, extended advertising among them, stay off.
+CONFIG_BT_NIMBLE_50_FEATURE_SUPPORT=n
+#
+# The host's pools and buffers in PSRAM (CONFIG_SPIRAM_USE_MALLOC is on):
+# internal RAM keeps the host task's stack and esp_hosted's HCI buffers.
+CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL=y
+#
+# The host task nimble_host, priority 21 (configMAX_PRIORITIES - 4), on
+# core 0 with the UI; core 1 runs the control task.  Its stack is the
+# default, 4,096 bytes; tools/stack_check.py holds it.
+CONFIG_BT_NIMBLE_PINNED_TO_CORE_0=y
+CONFIG_BT_NIMBLE_HOST_TASK_STACK_SIZE=4096
+#
+# A full host queue drops advertising reports instead of blocking the
+# path from the C6; NimBLE logs warnings and errors only.
+CONFIG_BT_NIMBLE_HOST_QUEUE_CONG_CHECK=y
+CONFIG_BT_NIMBLE_LOG_LEVEL_WARNING=y
 
 # Network -------------------------------------------------------------------
 #

@@ -37,7 +37,8 @@ typedef struct {
  * @brief The IMU reading as a servo_test_enc_t: raw = lround(deg x
  *        SERVO_ANGLE_COUNTS / 360) mod SERVO_ANGLE_COUNTS, centre 0; not
  *        valid carries taken_ms and gap, no_magnet false, weak and strong
- *        false.
+ *        false.  A valid one also carries the degrees as they came,
+ *        wrapped to -180 to 180, in deg with exact set.
  * @param in  The IMU path's reading.
  * @param out Receives the reading in counts; cleared for a NULL @p in.
  * @return out->valid; false for NULL.

@@ -14,7 +14,7 @@ RUDDER on the [SERVO](servo.md) strip drives one servo and displays control-surf
 
 | Part | Shows |
 |---|---|
-| DEFLECTION | the angle from ZERO, -180.0 to +179.9°; before ZERO the angle from the AS5600's ENC CENTRE, or from the IMU's count 0; `---` without a reading |
+| DEFLECTION | the angle from ZERO, -180.0 to +179.9° from the AS5600, -180.00 to +180.00° from the IMU, from 100.00° on in smaller digits; before ZERO the angle from the AS5600's ENC CENTRE, or from the IMU's count 0; `---` without a reading |
 | TRAILING EDGE | L x sin(deflection) for a LENGTH of L mm: what a ruler held upright at the trailing edge reads, signed |
 | MAX | the largest deflection each side since ZERO or RESET MAX, in ° and in mm |
 
@@ -75,7 +75,7 @@ The AUTO box replaces LENGTH, the drive buttons and status lines; MANUAL restore
 
 First, use ZERO with the surface at neutral. During the run, ZERO, RESET MAX and MANUAL are locked. HOLD 2s TO START begins the run. The button then reads STOP RUN; pressing it ends the run immediately.
 
-The run reads the servo and, for KST, sets its pulse range to 1000 to 2000us. For each side it commands the end pulse, waits for the angle to remain still for 500ms, then writes a new end point. It makes at most 8 writes per side, each in a separate programmer session with the servo switched off and on. The limit run's current guard remains active throughout. A stall before the goal ends the run with `surface binds at x°`. Every end switches the bench to SAFE and the supply output off.
+The run reads the servo and, for KST, sets its pulse range to 1000 to 2000us. For each side it commands the end pulse, waits for the angle to remain still for 500ms, then writes a new end point. With the IMU and an [IMU filter](setup-sensors.md#the-imu) above 1 it waits until the filtered angle has settled too, up to 3000ms plus the filter's longest settle, which the report names. It makes at most 8 writes per side, each in a separate programmer session with the servo switched off and on. The limit run's current guard remains active throughout. A stall before the goal ends the run with `surface binds at x°`. Every end switches the bench to SAFE and the supply output off.
 
 On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) with TARGET on a programming port, switch PROG 5V on while SAFE, then ARM: the port's pulse comes on only while SAFE. A PROG 5V switched on while ARMED reads `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM`.
 

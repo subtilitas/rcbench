@@ -217,6 +217,7 @@ typedef enum {
     SET_IMU_SIGN,
     SET_IMU_RATE,
     SET_IMU_ALGO,
+    SET_IMU_FILTER,
     /* --- RUDDER's AUTO end points ---------------------------------------- */
     SET_RUDDER_DEFL_LO,
     SET_RUDDER_DEFL_HI,
@@ -259,8 +260,9 @@ typedef enum {
     SET_TEXT_DUT_NAME = 0,   /**< the device under test, for the report */
     SET_TEXT_LOG_AUTO_DIR,   /**< AUTO LOG FOLDER: the automatic logs'  */
     SET_TEXT_LOG_USER_DIR,   /**< USER LOG FOLDER: the tests' files     */
-    SET_TEXT_IMU_ADDR,       /**< the sensor the HC-05 is bound to, as
-                                  +INQ prints it; "*" any sensor          */
+    SET_TEXT_IMU_ADDR,       /**< the bound sensor's BLE address and its
+                                  type, "00:0C:BF:08:19:29 P"; key
+                                  imu_ble                                 */
     SET_TEXT_IMU_NAME,       /**< its name from the scan, 23 characters */
     SETTING_TEXT_COUNT
 } setting_text_id_t;
@@ -520,6 +522,30 @@ const char *settings_text(setting_text_id_t id);
 const char *settings_text_key(setting_text_id_t id);
 /** Set it, cut to SETTINGS_TEXT_MAX - 1 characters; an edit like any other. */
 void settings_set_text(setting_text_id_t id, const char *text);
+
+/**
+ * @brief Erases one key from the medium.
+ * @param key The key.
+ * @return Whether the medium held it and it is gone now.
+ */
+typedef bool (*settings_forget_fn)(const char *key);
+
+/**
+ * @brief Hand each retired key to @p forget: keys an earlier build wrote
+ *        and no build reads, such as `imu_addr`, the HC-05's address,
+ *        whose binding is not carried over to `imu_ble`.
+ *        The panel's NVS store does this at its first call.
+ * @param forget Erases one key; NULL erases none.
+ * @return The keys @p forget erased.
+ */
+int settings_forget_retired(settings_forget_fn forget);
+
+/**
+ * @brief A retired key by index.
+ * @param i The index, from 0.
+ * @return The key, NULL past the last.
+ */
+const char *settings_retired_key(int i);
 
 #ifdef ESP_PLATFORM
 /** NVS-backed store; pass to settings_set_store() before settings_init(). */

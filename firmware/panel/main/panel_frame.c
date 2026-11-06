@@ -758,6 +758,7 @@ void panel_frame_loop(void)
                     arm_wanted_now || armed_now || supply_now
                         || supplies_live_or_coming(),
                     stops_now, &cu);
+        c6_service(arm_wanted_now || armed_now);
 
         /*
          * The arm this frame began with, acknowledged -- only by a frame that

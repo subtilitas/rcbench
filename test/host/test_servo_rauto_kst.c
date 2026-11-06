@@ -15,6 +15,7 @@
  *
  * Cases:
  * - auto_programs_both_end_points_to_the_goal_and_ends_safe
+ * - auto_on_the_filtered_imu_waits_for_its_settle_and_passes
  * - a_stop_during_auto_ends_it_with_every_output_off
  * - auto_without_a_pd_mini_or_a_zero_is_refused_and_says_why
  * - a_tap_on_stop_run_ends_auto_at_once
@@ -33,6 +34,7 @@
 #include <math.h>
 
 #include "kst_panel_rig.h"
+#include "imu.h"
 #include "log_name.h"
 #include "servo_rudder_auto.h"
 #include "servo_rudder_auto_int.h"
@@ -40,6 +42,7 @@
 #include "prog_choice.h"
 #include "settings_sensors.h"
 #include "ui_board.h"
+#include "wit_frame.h"
 
 /** @brief The AS5600's centre count. */
 #define CENTRE_COUNT 2048
@@ -71,7 +74,15 @@ static struct {
      * SAFE. */
     bool port_rule;
     bool port_pwm;
+    /* The IMU on the surface in the AS5600's place, through its filter. */
+    bool imu;
+    imu_t m;
+    bool imu_ok;
+    uint32_t imu_taken;
 } ra;
+
+/** @brief IMU FILTER on the IMU of these cases. */
+#define RA_IMU_FILTER 10
 
 static void ra_drain(void)
 {
@@ -158,6 +169,37 @@ static void ra_encoder(void)
     servo_screen_encoder(&e);
 }
 
+/* The surface's angle as the IMU reads it at 10Hz through IMU FILTER
+ * RA_IMU_FILTER, handed on as the panel does: each frame once, a stale
+ * reading once, the settle allowance with it. */
+static void ra_imu(void)
+{
+    if (g_rig.ms % 100u == 0u) {
+        uint8_t b[WIT_FRAME_LEN];
+        wit_angle_frame(b, (ra.sv.position_us - 1500.0f) * DEG_PER_US, 0.0f,
+                        0.0f);
+        imu_feed(&ra.m, b, sizeof b, g_rig.ms);
+    }
+    imu_tick(&ra.m, g_rig.ms);
+    imu_reading_t r;
+    const bool ok = imu_reading(&ra.m, &r);
+    servo_screen_set_imu_settle(imu_filter_settle_ms(RA_IMU_FILTER,
+                                                     r.rate_dhz));
+    if (ok == ra.imu_ok && (!ok || r.taken_ms == ra.imu_taken)) {
+        return;
+    }
+    ra.imu_ok = ok;
+    ra.imu_taken = r.taken_ms;
+    const servo_angle_in_t in = {
+        .valid = ok, .deg = imu_deg(&r, IMU_AXIS_X, false),
+        .still_ms = ok ? r.still_ms : 0u,
+        .taken_ms = ok ? r.taken_ms : g_rig.ms,
+    };
+    servo_test_enc_t e;
+    (void)servo_angle_enc(&in, &e);
+    servo_screen_encoder(&e);
+}
+
 static void ra_ms(uint32_t ms)
 {
     for (uint32_t k = 0; k < ms; ++k) {
@@ -183,7 +225,9 @@ static void ra_ms(uint32_t ms)
             ra.n = 0u;
             servo_screen_window(&w, SERVO_SOURCE_INA3221, 2u);
         }
-        if (ra.enc && g_rig.ms % 40u == 0u) {
+        if (ra.imu) {
+            ra_imu();
+        } else if (ra.enc && g_rig.ms % 40u == 0u) {
             ra_encoder();
         }
         if (g_rig.ms % 20u == 0u) {
@@ -224,16 +268,24 @@ static void ra_pd_reading(bool on)
 
 /**
  * @brief The SERVO screen on the rig, armed, the INA3221 the rail's meter,
- *        the port in PWM with the servo on it, the AS5600 reading the
- *        surface; RUDDER with its zero taken and AUTO's box shown.
+ *        the port in PWM with the servo on it, the AS5600 or the IMU
+ *        reading the surface; RUDDER with its zero taken and AUTO's box
+ *        shown.
  * @param pd a PD mini answers with its output on behind the servo
  * @param zero ZERO tapped at the centre
+ * @param imu the IMU through IMU FILTER RA_IMU_FILTER is ANGLE SOURCE
  */
-static void ra_setup(bool pd, bool zero)
+static void ra_setup_on(bool pd, bool zero, bool imu)
 {
     servo_sim_cfg_t sc;
     fresh_screen();
     memset(&ra, 0, sizeof(ra));
+    ra.imu = imu;
+    imu_init(&ra.m);
+    imu_set_filter(&ra.m, RA_IMU_FILTER);
+    if (imu) {
+        settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_IMU);
+    }
     ra.last_raw = -100;
     memcpy(g_rig.sim.reg, rig_servo().r, sizeof(g_rig.sim.reg));
     servo_sim_defaults(&sc);
@@ -270,6 +322,16 @@ static void ra_setup(bool pd, bool zero)
     screen_tap(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);
     CHECK(rauto_shown());
     ra_ms(100u);
+}
+
+/**
+ * @brief ra_setup_on() with the AS5600.
+ * @param pd a PD mini answers with its output on behind the servo
+ * @param zero ZERO tapped at the centre
+ */
+static void ra_setup(bool pd, bool zero)
+{
+    ra_setup_on(pd, zero, false);
 }
 
 /* HOLD 2s TO START held for 2.3s. */
@@ -353,6 +415,38 @@ TEST_CASE(auto_programs_both_end_points_to_the_goal_and_ends_safe)
     servo_screen_set_armed(true);
     ra_ms(100u);
     CHECK(rauto_blocked() == NULL);
+}
+
+/* The same run on the IMU at 10Hz through IMU FILTER 10: AUTO waits for
+ * the filtered angle to settle, 3000ms plus the 78 frames at 150ms of the
+ * allowance at the rate measured, passes, and lands both end points on
+ * the 22° goal within the tolerance; the settle the IMU gives does not
+ * reach a run on the AS5600. */
+TEST_CASE(auto_on_the_filtered_imu_waits_for_its_settle_and_passes)
+{
+    ra_setup_on(true, true, true);
+    CHECK(rauto_blocked() == NULL);
+    ra_hold_start();
+    CHECK(servo_screen_rauto_running());
+    ra_run_out();
+    CHECK(!servo_screen_rauto_running());
+    CHECK(strstr(ra.report, "PASS") != NULL);
+    CHECK(strstr(ra.report, "IMU X+") != NULL);
+    char want[96];
+    snprintf(want, sizeof(want), "within %ums of the command",
+             (unsigned)(SERVO_RAUTO_MOVE_MS + 78u * 150u));
+    CHECK(strstr(ra.report, want) != NULL);
+    for (int k = 0; k < 2; ++k) {
+        const float horn = sim_horn_us(g_rig.sim.acting,
+                                       k == 0 ? 1000u : 2000u, 4.0f, false);
+        CHECK(fabsf(fabsf(horn - 1500.0f) * DEG_PER_US - 22.0f) <= 0.5f);
+    }
+    /* On the AS5600 the IMU's settle is no part of the wait. */
+    ra_setup(true, true);
+    servo_screen_set_imu_settle(7000u);
+    ra_hold_start();
+    ra_run_out();
+    CHECK(strstr(ra.report, "within 3000ms of the command") != NULL);
 }
 
 /* A STOP during AUTO (servo_screen_cancel_arm(), the panel's STOP stamp
@@ -799,6 +893,7 @@ TEST_CASE(on_the_carrier_the_lines_lead_to_a_start_from_armed)
 int main(void)
 {
     RUN(auto_programs_both_end_points_to_the_goal_and_ends_safe);
+    RUN(auto_on_the_filtered_imu_waits_for_its_settle_and_passes);
     RUN(a_stop_during_auto_ends_it_with_every_output_off);
     RUN(auto_without_a_pd_mini_or_a_zero_is_refused_and_says_why);
     RUN(a_tap_on_stop_run_ends_auto_at_once);

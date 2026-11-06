@@ -30,6 +30,7 @@
 #include "log_viewer_screen.h"
 #include "busfault_screen.h"
 #include "ui_textkey.h"
+#include "upd_c6.h"
 #include "upd_screen.h"
 #include "wifi_screen.h"
 #include "wifi_spots.h"
@@ -2432,6 +2433,29 @@ static void pose_upd(const char *view)
         cu.known = false;
     }
     upd_screen_set_coproc(&cu);
+
+    /* The C6 RADIO row: a C6 on the carried 2.13.0; updates-c6 the shipped
+     * C6, which reports no version, the hold live; updates-c6-* the other
+     * states the fit check measures. */
+    upd_c6_view_t c6 = {
+        .row = FW_C6_ROW_SAME, .known = true, .have_image = true,
+        .running = { 2u, 13u, 0u }, .carried = { 2u, 13u, 0u },
+    };
+    if (strcmp(view, "updates-c6") == 0) {
+        c6.row = FW_C6_ROW_READY;
+        c6.known = false;
+    } else if (strcmp(view, "updates-c6-progress") == 0) {
+        c6.row = FW_C6_ROW_UPDATING;
+        c6.known = false;
+        c6.percent = 37u;
+    } else if (strcmp(view, "updates-c6-noimage") == 0) {
+        c6.row = FW_C6_ROW_NO_IMAGE;
+        c6.have_image = false;
+    } else if (strcmp(view, "updates-c6-failed") == 0) {
+        c6.row = FW_C6_ROW_LINK_FAILED;
+        c6.known = false;
+    }
+    upd_c6_set(&c6);
 }
 
 /* The firmware write, at a point inside it, at its end, or failed; and the

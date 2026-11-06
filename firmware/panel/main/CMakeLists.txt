@@ -18,11 +18,12 @@ idf_component_register(
          "panel_render.c" "panel_art.c" "panel_update.c" "selftest.c"
          "knob_task.c" "kst_files.c" "hitec_record.c" "hitec_files.c" "panel_boot.c" "panel_settings.c"
          "panel_control.c" "panel_frame.c" "panel_files.c" "panel_shot.c" "panel_trial.c"
-         "panel_imu.c"
+         "panel_imu.c" "panel_ble.c" "panel_c6.c"
          ${rcbench_perf_src} ${rcbench_console_src}
     REQUIRES board display gt911 storage link can can_twai bench outputs safety servo ui gfx touch artwork esc
              settings settings_nvs art_flash esp_psram files
-             fwupdate webaccess fw_ota wifi_access clock witmotion hc05
+             fwupdate webaccess fw_ota wifi_access c6_link clock witmotion bleuart
+             bt espressif__esp_hosted
              esp_driver_gpio esp_driver_i2c esp_driver_tsens esp_driver_uart esp_timer
     LDFRAGMENTS "psram_bss.lf"
 )
@@ -73,4 +74,20 @@ if(RCBENCH_IOMCU_RBMOD_BIN)
                            RENAME_TO rcbench_iomcu_rbmod_bin)
     target_compile_definitions(${COMPONENT_LIB} PRIVATE
                                RCBENCH_IOMCU_RBMOD_IMAGE=1)
+endif()
+# The C6 radio's image of the same release, esp_hosted's co-processor
+# firmware built for the ESP32-C6 (tools/c6_image.py), carried so SETUP >
+# UPDATES moves the board's C6 to it over SDIO (main/panel_c6.c):
+#   idf.py -D RCBENCH_C6_BIN=<path>/rcbench-c6.bin build
+# A relative path is taken from firmware/panel.  A build without it carries
+# none and offers no C6 update.
+if(RCBENCH_C6_BIN)
+    get_filename_component(rcbench_c6_bin "${RCBENCH_C6_BIN}" ABSOLUTE
+                           BASE_DIR "${CMAKE_SOURCE_DIR}")
+    if(NOT EXISTS "${rcbench_c6_bin}")
+        message(FATAL_ERROR "RCBENCH_C6_BIN: ${rcbench_c6_bin} not found")
+    endif()
+    target_add_binary_data(${COMPONENT_LIB} "${rcbench_c6_bin}" BINARY
+                           RENAME_TO rcbench_c6_bin)
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE RCBENCH_C6_IMAGE=1)
 endif()

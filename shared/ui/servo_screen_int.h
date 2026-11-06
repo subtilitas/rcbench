@@ -412,7 +412,9 @@ typedef struct {
     bool     enc_valid;
     bool     enc_no_magnet; /**< not valid: the sensor sees no magnet     */
     uint16_t enc_raw;
-    int      shown_q_enc;  /**< the angle as drawn, in tenths             */
+    bool     enc_exact;    /**< enc_deg holds the IMU's degrees as read   */
+    float    enc_deg;      /**< those degrees, from count 0               */
+    int      shown_q_enc;  /**< the angle as drawn, in hundredths         */
 
     bool     dragging;
     int      drag_id;
@@ -733,6 +735,7 @@ typedef struct {
     uint8_t   imu_axis;      /**< the IMU's AXIS, 0 X (set_imu_axis)   */
     bool      imu_neg;       /**< its SIGN negative                     */
     uint32_t  imu_zero_gen;  /**< the IMU's zero generation (set_imu_zero) */
+    uint32_t  imu_settle_ms; /**< the IMU filter's settle, ms (set_imu_settle) */
     int       test_note;     /**< servo_str_t the engine refused a START
                                   with, 0 none; test_blocked() is live  */
     int       test_file;     /**< its files' number; 0 not yet, -1 none */
@@ -1498,13 +1501,45 @@ static inline uint16_t enc_centre(void)
                               (uint16_t)settings_get_int(SET_ENC_CENTRE));
 }
 
+/**
+ * @brief Whether the last reading's degrees are the IMU's as read: finer
+ *        than the 0.088° of its counts.  Its centre is count 0, so they are
+ *        from the centre as they are.
+ * @return Whether they are, with ANGLE SOURCE IMU.
+ */
+static inline bool enc_exact(void)
+{
+    return s.enc_exact && enc_src() == SERVO_ANGLE_IMU;
+}
+
+/**
+ * @brief The source's angle from its count 0, in its own sign.
+ * @return degrees, -180 up to 180
+ */
+static inline float enc_abs_now(void)
+{
+    return enc_exact() ? s.enc_deg : servo_test_enc_deg(s.enc_raw, 0u);
+}
+
 /* The encoder's angle from its centre, degrees, in the direction of the
  * commanded angle: negated with REVERSE on, as us_to_deg() is. */
 static inline float enc_deg_now(void)
 {
-    const float d = servo_test_enc_deg(s.enc_raw, enc_centre());
+    const float d = enc_exact() ? s.enc_deg
+                                : servo_test_enc_deg(s.enc_raw, enc_centre());
     return s.reverse ? -d : d;
 }
+
+/**
+ * @brief An angle of the source as the readouts show it: the IMU's in
+ *        hundredths (imu_deg_text()), the AS5600's in tenths.
+ * @param buf  Takes the text.
+ * @param n    Its size, bytes.
+ * @param deg  The angle, °.
+ * @param plus A '+' before a value that is not negative.
+ * @return @p buf.
+ */
+const char *svs_angle_text(char *buf, size_t n, float deg, bool plus);
 
 /* Armed, asked to arm, or a finger on ARM, or the bench armed for the
  * motor: the programmer takes no port. */

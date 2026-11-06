@@ -378,6 +378,40 @@ The panel detects the page by reading it. There is no capability bit or
 protocol minor version for this page. An IOmcu without it answers
 `BAD_PAGE`, as it does for any unsupported page.
 
+### Bluetooth LE: `ble scan`
+
+A line that starts with the word `ble` stays on the panel and does not go
+to the IOmcu. The panel holds each typed line until its end for this.
+`ble scan` starts Bluetooth LE when it has not started ([Building,
+Bluetooth LE through the ESP32-C6](Building.md#bluetooth-le-through-the-esp32-c6)),
+waits for the host's sync, and runs one active scan of 10,000ms with the
+controller's duplicate filter on: a device that advertises every 256ms
+appears once in the scan. Another `ble` line prints the commands.
+
+| Line | Means |
+| --- | --- |
+| `ble: starting Bluetooth LE; the scan follows the sync` | the first `ble scan` since the panel started |
+| `ble: scan for 10000ms` | the scan started |
+| `ble: adv <address> type <n> rssi <n>dBm evtype <n> data <hex>` | one device: its address with the most significant byte first, its address type (0 public, 1 random), the signal strength, the report's event type (0 connectable advertising, 4 scan response) and the advertising data in hexadecimal |
+| `ble: scan done: <n> reports, reason <n>, <n> events dropped since start-up` | the scan ended; reason 0 is its end after 10,000ms |
+| `ble: no scan: no link to the C6` | the C6's link failed |
+| `ble: no scan: no sync` | the host had no sync within 3,000ms; the host keeps trying, and a later `ble scan` scans once it has synced |
+| `ble: no scan: <error>` | NimBLE refused the scan; `ESP_ERR_INVALID_STATE` while the IMU scans or connects, as NimBLE runs one such procedure at a time |
+| `ble: a scan is under way` | a `ble scan` while one waits or runs |
+| `ble: commands: ble scan, ble controller` | any other line that starts with `ble` |
+
+`ble controller` sends the C6's controller init and enable requests again,
+on the console's task. Each is answered or ended by esp_hosted after
+5,000ms, so the console waits up to 10,000ms. The `ble` lines of the
+requests follow ([Building, Bluetooth LE through the
+ESP32-C6](Building.md#bluetooth-le-through-the-esp32-c6)).
+
+| Line | Means |
+| --- | --- |
+| `ble: the C6 controller init and enable requests, up to 10s` | the requests start |
+| `ble: controller requests: sent, see the ble lines` | both requests went |
+| `ble: controller requests: Bluetooth LE is not started or still starting` | before the first start, or while its start task runs; nothing is sent |
+
 ### Rates
 
 The relay performs at most one exchange per control pass, after the
