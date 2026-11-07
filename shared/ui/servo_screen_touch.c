@@ -38,11 +38,11 @@ bool svs_arm_locked(void)
 /*
  * The controls whose press stops what the bench drives, where svs_event_body()
  * hands a DOWN at (x, y) to them now: DISARM while the button reads DISARM,
- * OUTPUT OFF while the supply's output is on, PROG 5V OFF while the
- * ports' 5V reads ON, STOP TEST in TEST's result box while its run is
- * under way, ARM + START on RUDDER AUTO, TEST and LIMIT RUN while
- * its sequence or its run is under way (a tap there stops it), and the
- * supply row of KST's and HITEC's READY card while it reads ON.
+ * STOP TEST in TEST's result box while its run is under way, ARM + START
+ * on RUDDER AUTO, TEST and LIMIT RUN while its sequence or its run is
+ * under way (a tap there stops it), ARM on LIVE, SWEEP and RUDDER while
+ * its steps run, and the supply row of KST's and HITEC's READY card while
+ * it reads ON.
  * The router hands a press on one of them through the alert band and the
  * band's help bubble (ui_screen_t's safe_at); everything else under those
  * stays theirs, ARM included.  The order of the checks is svs_event_body()'s.
@@ -83,9 +83,6 @@ bool svs_safe_at(int x, int y)
         }
     }
     if (s.gate.armed && gfx_rect_contains(s.arm_btn, x, y)) {
-        return true;
-    }
-    if (supply_screen_output_on() && gfx_rect_contains(s.out_btn, x, y)) {
         return true;
     }
     if (prog_shown_set() != NULL || modal_open()) {
@@ -438,36 +435,6 @@ void svs_event_body(const touch_event_t *evt)
             }
             return;
         }
-        if (gfx_rect_contains(s.out_btn, px, py)) {
-            /* A programming port holds the supply: off is taken, on is
-             * not. */
-            if (!supply_screen_output_on() && supply_screen_port_held()) {
-                ui_router_set_alert(esc_wire_panel_holds_port() ? TR(SUP_HELD_REFUSED_ESC)
-                                                                   : TR(SUP_HELD_REFUSED));
-                return;
-            }
-            /* Off, with a set point past a standard servo's rating: the HV
-             * warning, whose hold switches it on.  One press in the
-             * overlay at a time. */
-            if (!s.out_down && !supply_screen_output_on()
-                && hv_set_point()) {
-                if (!s.ov_have) {
-                    ask_hv_on();
-                }
-                return;
-            }
-            /* One contact owns the switch, as on ARM. */
-            if (!s.out_down) {
-                s.out_down     = true;
-                s.out_id       = evt->point.id;
-                s.out_press_on = supply_screen_output_on();
-                if (!s.out_press_on) {
-                    ui_hold_begin(&s.out_hold, TX_HOLD_HINT_OUTPUT_ON);
-                }
-                ++s.sup_rev;
-            }
-            return;
-        }
         for (int k = 0; k < 2 && !drive_shown(); ++k) {
             if (gfx_rect_contains(sup_val_rect(k), px, py)) {
                 /* No set point moves under a programming port, and the
@@ -572,35 +539,6 @@ void svs_event_body(const touch_event_t *evt)
             prog5v_box_release(&s.p5, evt);
             s.p5_down = false;
             ++s.power_rev;
-            return;
-        }
-    }
-
-    if (s.out_down && evt->point.id == s.out_id) {
-        const bool on = supply_screen_output_on();
-        if (evt->type == TOUCH_EVENT_MOVE) {
-            /* Off the switch abandons the hold; a press that began on a
-             * live output is an OFF, whose release is checked against the
-             * switch. */
-            if (!s.out_press_on && !gfx_rect_contains(s.out_btn, px, py)
-                && ui_hold_leave(&s.out_hold)) {
-                s.out_down = false;
-                ++s.sup_rev;
-            }
-            return;
-        }
-        if (evt->type == TOUCH_EVENT_UP) {
-            const bool fired = ui_hold_end(&s.out_hold, evt, s.out_btn);
-            s.out_down = false;
-            ++s.sup_rev;
-            /* Off is a tap; on is a hold that has already asked by the time
-             * the finger lifts.  Which one is the press's: an earlier ON
-             * reported during a second hold does not make its release an
-             * OFF. */
-            if (s.out_press_on && on && !fired
-                && gfx_rect_contains(s.out_btn, px, py)) {
-                supply_screen_ask_off();
-            }
             return;
         }
     }

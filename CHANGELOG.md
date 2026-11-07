@@ -184,8 +184,7 @@ history is in git.
   read, with the rail line under them. A tap on PORT opens the PORT list,
   locked while the session holds the port; a tap on the supply row while
   it reads ON switches it off, as OUTPUT OFF does, also under a panel over
-  the left card; a tap on another row
-  not met names it in the alert band. The output card's SET row, SPEED,
+  the left card; a tap on another row not met names it in the alert band. The output card's SET row, SPEED,
   CENTRE, SWEEP, RELEASE and the PROG 5V box are gone from both screens.
   No SERVO function screen shows the output card.
 - The footer's middle slot on KST and HITEC is the session's WRITE n
