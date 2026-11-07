@@ -27,6 +27,13 @@ static void tap_tile(int i)
     tap(SV_HUB_TILE_X(i), UI_BAND_H + SV_HUB_TILE_Y(i));
 }
 
+/** @brief The alert band's text, "" for none. */
+static const char *alert(void)
+{
+    const char *a = ui_router_alert();
+    return a != NULL ? a : "";
+}
+
 /** @brief The hub on top, an IOmcu that reports SERVO PWM, nothing waiting. */
 static void on_hub(void)
 {
@@ -140,8 +147,8 @@ TEST_CASE(a_grey_tile_names_its_reason_and_opens_nothing)
     tap_tile(6);
     CHECK_EQ(ui_router_current(), SCREEN_SERVO);
     CHECK(!kst_panel_is_open());
-    CHECK(ui_router_alert() != NULL);
-    CHECK_STR_EQ(ui_router_alert(), why);
+    CHECK(alert()[0] != '\0');
+    CHECK_STR_EQ(alert(), why);
 }
 
 /* The hub's footer: SERVO with the port line, an empty middle slot, and

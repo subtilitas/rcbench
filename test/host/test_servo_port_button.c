@@ -37,6 +37,13 @@ static bool inside(gfx_rect_t r, gfx_rect_t a)
            && r.x + r.w <= a.x + a.w && r.y + r.h <= a.y + a.h;
 }
 
+/** @brief The alert band's text, "" for none. */
+static const char *alert(void)
+{
+    const char *a = ui_router_alert();
+    return a != NULL ? a : "";
+}
+
 static bool s_held;
 
 static bool hold_target(setting_id_t id)
@@ -120,8 +127,8 @@ TEST_CASE(under_the_target_lock_port_opens_nothing_and_says_why)
     CHECK(prog_choice_locked());
     tap_port();
     CHECK_EQ(servo_screen_port_choices(), -1);
-    CHECK(ui_router_alert() != NULL);
-    CHECK_STR_EQ(ui_router_alert(), TR(OUT_PORT_LOCKED));
+    CHECK(alert()[0] != '\0');
+    CHECK_STR_EQ(alert(), TR(OUT_PORT_LOCKED));
 
     /* ARM held until it posts, not yet answered. */
     fresh();
@@ -132,7 +139,7 @@ TEST_CASE(under_the_target_lock_port_opens_nothing_and_says_why)
     CHECK(servo_screen_arm_asked());
     tap_port();
     CHECK_EQ(servo_screen_port_choices(), -1);
-    CHECK_STR_EQ(ui_router_alert(), TR(OUT_PORT_LOCKED));
+    CHECK_STR_EQ(alert(), TR(OUT_PORT_LOCKED));
     servo_screen_cancel_arm();
 
     /* A programmer holds the port. */
@@ -143,7 +150,7 @@ TEST_CASE(under_the_target_lock_port_opens_nothing_and_says_why)
     CHECK(prog_choice_locked());
     tap_port();
     CHECK_EQ(servo_screen_port_choices(), -1);
-    CHECK_STR_EQ(ui_router_alert(), TR(OUT_PORT_HELD));
+    CHECK_STR_EQ(alert(), TR(OUT_PORT_HELD));
     s_held = false;
     settings_set_hold(NULL);
     CHECK(!prog_choice_locked());
