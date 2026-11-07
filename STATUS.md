@@ -1277,7 +1277,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 495 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 497 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1476,7 +1476,7 @@ It takes 6.2s on one x86-64 host, 8.1s in the sanitizer build, and ctest stops i
 120s. `tools/mutate.py --files shared/safety/heartbeat.c --max-mutants 0` makes 36 mutants
 and the suite fails on each. A defined test case that is never called fails the build
 (`-Werror=unused-function`). `tools/check_docs.py` holds this list to
-`test/host/CMakeLists.txt`. Of the 30 `test_kst_*` binaries, 29 run against the servo and
+`test/host/CMakeLists.txt`. Of the 31 `test_kst_*` binaries, 30 run against the servo and
 line model in `test/host/kst_sim.h`; no servo is connected. 5 run the core of
 `protocols/kst/`; `test_kst_file` is the one for the configuration file and reads 40000
 random texts from 1 fixed seed. `test_servo_store` runs the card layer for those files,

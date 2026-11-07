@@ -86,8 +86,9 @@ void kst_panel_open(void);
 bool kst_panel_is_open(void);
 
 /**
- * The session's way back: closes while the tester has the port, asks for the way back to
- * PWM while it is in programming mode, and does nothing while it moves.
+ * @brief The session's way back: closes while the tester has the port,
+ *        asks for the way back to PWM while it is in programming mode, and
+ *        does nothing while it moves.
  */
 void kst_panel_close(void);
 

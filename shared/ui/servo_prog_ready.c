@@ -48,11 +48,14 @@
  * included after it may meet. */
 #include "servo_screen_core_int.h"
 
-/** @brief The footer's WRITE: the contact on it, none while not pressed. */
-static struct {
+/** @brief The footer's WRITE as a press holds it. */
+typedef struct {
     bool    down;  /**< a contact is on it */
     uint8_t id;    /**< its track id       */
-} g_write;
+} write_press_t;
+
+/** @brief The contact on the footer's WRITE, none while not pressed. */
+static write_press_t g_write;
 
 /** @brief A why-text built from numbers, which the row points at. */
 static char g_why[96];

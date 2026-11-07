@@ -194,12 +194,12 @@ typedef struct {
 typedef struct {
     uint8_t                device;           /**< a prog_device_t        */
     uint8_t                task;             /**< a ui_wb_task_t         */
-    ui_text_id_t           name;
-    ui_text_id_t           group;
-    ui_text_id_t           transport;
+    ui_text_id_t           name;             /**< the row's name         */
+    ui_text_id_t           group;            /**< its group's name       */
+    ui_text_id_t           transport;        /**< how it reaches the servo */
     uint8_t                port;             /**< or PROG_REG_NO_PORT    */
     uint16_t               needs_capability; /**< link_cap_t bits        */
-    const prog_page_set_t *page_set;
+    const prog_page_set_t *page_set;         /**< its session            */
     /** The session takes the whole body, the output strip above it, in
      *  place of the left column beside the output card. */
     bool                   full_width;
