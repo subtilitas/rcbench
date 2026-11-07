@@ -143,9 +143,9 @@ static const servo_state_t k_servo[] = {
     { "SWEEP", SERVO_FN_SWEEP, false, 3, 0,
       { TX_HG_SV_TITLE_SWEEP, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
       { 3, 4, 4 } },
-    { "TEST", SERVO_FN_TEST, false, 3, 0,
-      { TX_HG_SV_TITLE_TEST, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
-      { 3, 4, 4 } },
+    { "TEST", SERVO_FN_TEST, false, 2, 0,
+      { TX_HG_SV_TITLE_TEST, TX_HG_SV_TITLE_READY },
+      { 3, 5 } },
     { "LIMIT RUN", SERVO_FN_LIMRUN, false, 2, 0,
       { TX_HG_SV_TITLE_LIMRUN, TX_HG_SV_TITLE_READY },
       { 2, 5 } },
@@ -373,8 +373,8 @@ TEST_CASE(a_run_takes_the_output_cards_pages_and_armed_leaves_none)
     CHECK(ui_help_count(scr, false) >= 2);
 }
 
-/* A keypad, a run's settings and the supply's question are levels the guide
- * does not explain: no page, so no "?". */
+/* A keypad and the supply's question are levels the guide does not
+ * explain: no page, so no "?".  A list's pages are the list's. */
 TEST_CASE(a_panel_or_a_question_takes_every_page)
 {
     fresh();
@@ -383,13 +383,15 @@ TEST_CASE(a_panel_or_a_question_takes_every_page)
     CHECK_EQ(scr->help_count(), 0);
     ui_help_page_t p;
     CHECK(!scr->help_page(0, &p));
-    fresh();
-    go(SERVO_FN_TEST);
-    tap(SV_RUN_SET_X, SV_RUN_SET_Y(0));
-    CHECK_EQ(scr->help_count(), 0);
-    tap(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y);
-    CHECK_EQ(scr->help_count(), 3);
-    CHECK(!scr->help_page(3, &p));
+    /* TEST's and LIMIT RUN's SETTINGS are lists: their pages are the
+     * list's. */
+    for (int k = 0; k < 2; ++k) {
+        fresh();
+        open_run_settings(k);
+        REQUIRE(servo_screen_list()->open);
+        CHECK_EQ(scr->help_count(),
+                 ui_setlist_help_count(servo_screen_list()));
+    }
     CHECK(!scr->help_page(-1, &p));
     CHECK(!scr->help_page(0, NULL));
 

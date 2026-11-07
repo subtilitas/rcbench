@@ -121,6 +121,8 @@ TRACKED = [
     "shared/ui/servo_settings_panel.c",
     "shared/ui/servo_settings_draw.c",
     "shared/ui/servo_test_panel.c",
+    "shared/ui/servo_test_ready.c",
+    "shared/ui/servo_test_list.c",
     "shared/ui/servo_limit_panel.c",
     "shared/ui/servo_limit_ready.c",
     "shared/ui/servo_limit_card.c",

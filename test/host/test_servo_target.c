@@ -611,14 +611,15 @@ TEST_CASE(the_port_pulse_is_not_switched_off_under_a_test_or_a_sweep)
     out_open_port();
     settings_set(SET_SERVO_TARGET, 1.0f);
     settings_set(SET_SERVO_PORT_PWM, 1.0f);
+    servo_screen_set_drive(1u, 13u, true);     /* the port's pulse read back */
     hold_start(2.3f);
     CHECK(servo_screen_testing());
     out_tap(OSEG_X(1), OSEG_PWM_Y);
     CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
     CHECK(servo_screen_testing());
-    /* The run over, armed still: the pulse goes off. */
+    /* The run over, SAFE: the pulse goes off. */
     open_test();
-    tap(START_X, START_Y);                     /* STOP */
+    tap(START_X, START_Y);                     /* STOP TEST */
     CHECK(!servo_screen_testing());
     out_tap(OSEG_X(1), OSEG_PWM_Y);
     CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));

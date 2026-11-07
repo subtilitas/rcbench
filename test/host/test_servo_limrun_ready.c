@@ -421,7 +421,7 @@ TEST_CASE(the_card_and_the_hold_take_the_footer_and_the_output_cards_place)
         CHECK(gfx_text_cells(TR(LR_HIGH_END)) * 10 <= 295 - 24);
     }
     ui_text_set_language(UI_LANG_EN);
-    go(SERVO_FN_TEST);
+    go(SERVO_FN_LIVE);
     CHECK(!ready_shown());
     go(SERVO_FN_LIMRUN);
     CHECK(ready_shown());

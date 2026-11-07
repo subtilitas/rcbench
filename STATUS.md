@@ -448,18 +448,22 @@ The PD mini's samples show when SETUP enables it, `supply_sim_t`'s with a SIMULA
 not. A current is signed and shown in hundredths of an amp, a window with a sample at an end
 of the range in the warning colour, a reading that did not arrive as dashes; the row's value
 is repainted by itself when its digits or colour change (`test_servo_meter`; host suite
-only). START TEST on its card on TEST runs the automatic test (`shared/servo/servo_test.c`):
+only). HOLD 2s: ARM + START in TEST's footer arms the bench and runs the automatic test
+(`shared/servo/servo_test.c`, the sequence `servo_test_ready.c` and `servo_start_seq.c`), the
+READY card naming each part that refuses it, every end of a run SAFE (`test_servo_test_ready`):
 the supply stepped through 4.8 and 6.0V, and 7.4 and 8.4V with HV SERVO on (session only,
 through the HV warning's 2s hold), idle, moving and holding current and the travel time at
 each, a brown-out walk from 5.0V, or the cap if lower, down by STEP to LOWEST VOLTAGE (0.1
-to 1.0V and 2.0 to 4.8V, 0.2V and 3.0V by default, up to 31 voltages; set on the page the
-automatic test's BROWN-OUT row opens and kept in NVS; `test_servo_brownout` at the ranges'
-ends, a floor off the grid, at or above the start and under the supply's lowest set point, a
-cap under 5.0V; `test_servo_brownout_page` for the page, its keypads, CLOSE and the home
-tag, the settings over a restart and a run started from the screen), and `ATESTnnn.CSV` and
-`ATESTnnn.TXT` written to `USER/LOGS` by the `runlog` task.
+to 1.0V and 2.0 to 4.8V, 0.2V and 3.0V by default, up to 31 voltages; set under BROWN-OUT
+on TEST's 17-row SETTINGS list and kept in NVS; `test_servo_brownout` at the ranges' ends, a
+floor off the grid, at or above the start and under the supply's lowest set point, a cap
+under 5.0V; `test_servo_brownout_page` for the list's rows, their keypads and the heading's
+walk line, the settings over a restart and a run started from the screen; `test_servo_test_list`
+for the three live heading lines, NO STEP CHOSEN and a step outside the supply's caps in the
+warning colour, the locked rows and the reason each gives, SAVE and DISCARD), and `ATESTnnn.CSV`
+and `ATESTnnn.TXT` written to `USER/LOGS` by the `runlog` task.
 
-A run reads one meter from its start to its end, the servo rail's at START TEST: the PD
+A run reads one meter from its start to its end, the servo rail's at that start: the PD
 mini's readings, or, while the INA3221 is the meter and the supply is the PD mini, CH1's
 50ms windows (mean current, the highest and lowest 1ms sample, the bus voltage at the load
 side of the shunt and its lowest sample), with the supply read for its state only
@@ -1277,7 +1281,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 499 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 501 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1929,28 +1933,30 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_pinlist.c` | 62 | 62 | 100.0% |
 | `shared/ui/ui_board.c` | 56 | 56 | 100.0% |
 | `shared/ui/servo_screen.c` | 380 | 371 | 97.6% |
-| `shared/ui/servo_screen_sweep.c` | 513 | 510 | 99.4% |
+| `shared/ui/servo_screen_sweep.c` | 506 | 503 | 99.4% |
 | `shared/ui/servo_screen_link.c` | 420 | 416 | 99.0% |
-| `shared/ui/servo_screen_touch.c` | 329 | 322 | 97.9% |
-| `shared/ui/servo_screen_draw.c` | 572 | 552 | 96.5% |
-| `shared/ui/servo_settings_panel.c` | 664 | 625 | 94.1% |
-| `shared/ui/servo_settings_draw.c` | 372 | 356 | 95.7% |
-| `shared/ui/servo_test_panel.c` | 478 | 468 | 97.9% |
+| `shared/ui/servo_screen_touch.c` | 323 | 316 | 97.8% |
+| `shared/ui/servo_screen_draw.c` | 571 | 552 | 96.7% |
+| `shared/ui/servo_settings_panel.c` | 653 | 590 | 90.3% |
+| `shared/ui/servo_settings_draw.c` | 341 | 304 | 89.2% |
+| `shared/ui/servo_test_panel.c` | 454 | 445 | 98.0% |
+| `shared/ui/servo_test_ready.c` | 320 | 314 | 98.1% |
+| `shared/ui/servo_test_list.c` | 43 | 43 | 100.0% |
 | `shared/ui/servo_limit_panel.c` | 327 | 316 | 96.6% |
 | `shared/ui/servo_limit_ready.c` | 278 | 255 | 91.7% |
 | `shared/ui/servo_limit_card.c` | 200 | 178 | 89.0% |
 | `shared/ui/servo_limit_seam.c` | 102 | 98 | 96.1% |
-| `shared/ui/servo_workbench.c` | 203 | 199 | 98.0% |
+| `shared/ui/servo_workbench.c` | 179 | 174 | 97.2% |
 | `shared/ui/servo_rudder_panel.c` | 402 | 399 | 99.2% |
 | `shared/ui/servo_rudder_auto_panel.c` | 564 | 510 | 90.4% |
 | `shared/ui/servo_rudder_auto_ready.c` | 273 | 269 | 98.5% |
-| `shared/ui/servo_ready.c` | 337 | 332 | 98.5% |
+| `shared/ui/servo_ready.c` | 357 | 345 | 96.6% |
 | `shared/ui/servo_rudder_flap.c` | 101 | 99 | 98.0% |
-| `shared/ui/servo_guide.c` | 154 | 151 | 98.0% |
+| `shared/ui/servo_guide.c` | 154 | 152 | 98.7% |
 | `shared/ui/servo_fn.c` | 82 | 81 | 98.8% |
 | `shared/ui/servo_hub.c` | 184 | 179 | 97.3% |
 | `shared/ui/servo_footer.c` | 133 | 130 | 97.7% |
-| `shared/ui/servo_lists.c` | 200 | 197 | 98.5% |
+| `shared/ui/servo_lists.c` | 201 | 200 | 99.5% |
 | `shared/ui/kst_panel.c` | 456 | 445 | 97.6% |
 | `shared/ui/kst_panel_text.c` | 168 | 168 | 100.0% |
 | `shared/ui/kst_panel_warn.c` | 309 | 306 | 99.0% |
@@ -1995,7 +2001,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/settings_screen.c` | 281 | 273 | 97.2% |
 | `shared/ui/settings_draw.c` | 66 | 66 | 100.0% |
 | `shared/ui/settings_rows.c` | 36 | 35 | 97.2% |
-| `shared/ui/ui_setlist.c` | 625 | 606 | 97.0% |
+| `shared/ui/ui_setlist.c` | 625 | 607 | 97.1% |
 | `shared/ui/ui_setlist_draw.c` | 283 | 264 | 93.3% |
 | `shared/ui/ui_footer.c` | 42 | 41 | 97.6% |
 | `shared/ui/sensors_pane.c` | 107 | 107 | 100.0% |
@@ -2256,7 +2262,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **86812** | **85149** | **98.1%** |
+| **total** | **87092** | **85376** | **98.0%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -2444,7 +2450,7 @@ The router gives each contact one owner from its press to its release, and a con
 leaves the screen body by the status band is released at its last point in the body; tested
 on the host through the tracker. That release, and the one the tracker makes for a contact
 more than 120px from its previous report, is marked (`TOUCH_FLAG_NO_TAP`) and activates no
-control except OUTPUT OFF and START TEST while a servo test runs. STOP and DISARM act on the
+control except OUTPUT OFF. STOP, DISARM and STOP TEST in TEST's footer act on the
 press; a press the router keeps from the screen (band, STOP, home tag, chip, alert band)
 releases the screen's contacts the same way, so a dial or slider drag ends at it and the
 dial's filter commands nothing after it (`test_nav_stop`).

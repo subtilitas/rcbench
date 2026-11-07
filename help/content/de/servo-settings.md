@@ -64,42 +64,37 @@ Die Kopfzeile von AUSGANG zeigt den Status der Pulsrate, in Warnfarbe, solange d
 
 ## Die Optionen des automatischen Tests
 
-![Die Optionen der Karte AUTOMATISCHER TEST](view:servo-test-settings)
+![Die Liste OPTIONEN von TEST](view:servo-test-settings)
 
-OPTIONEN auf TEST, in der Fußleiste oder auf der Karte, öffnet sie.
+OPTIONEN in der Fußleiste von TEST öffnet die Liste des automatischen Tests, nur bei SAFE. Sie hat 17 Zeilen unter vier Überschriften; die Zeile jeder Überschrift sagt, was ihre Zeilen gerade bewirken. SPEICHERN in der Leiste behält eine Änderung; wer mit einer Änderung geht, wird nach SPEICHERN oder VERWERFEN gefragt. TEST ZURÜCKSETZEN setzt jede Zeile auf ihre Vorgabe und HV-SERVO auf AUS. Die Liste schließt, sobald der Prüfstand ARMED schaltet oder ein Lauf startet.
 
-| Option | Bereich | Vorgabe | Was sie tut |
-|---|---|---|---|
-| TESTDAUER NACH | ZEIT, BEWEGUNGEN | ZEIT | wie jede Netzteilstufe bemessen wird |
-| TESTZEIT | 5 bis 3600s | 60s | die Dauer einer Stufe |
-| BEWEGUNGEN | 1 bis 1000 | 20 | die Bewegungen einer Stufe |
-| HALTEZEIT | 0 bis 5000ms | 200ms | an jedem Ende gehalten, im Test und bei SWEEP |
-| EINSCHWINGZEIT | 0 bis 10000ms | 500ms | Wartezeit nach einer Netzteilstufe vor dem Messen |
-| BLOCKIERT AB | 0,1 bis 5,0A | 2,00A | über diesem Strom gilt das Servo als blockiert |
-| RUHESTROM | 0 bis 5,00A | 0, nicht geprüft | nicht bestanden über diesem Wert in Ruhe |
-| HALTESTROM | 0 bis 5,00A | 0, nicht geprüft | nicht bestanden über diesem Wert beim Halten eines Endes |
-| STUFE 4.8V, STUFE 6.0V | EIN, AUS | EIN | die Netzteilstufen |
-| HV-SERVO | EIN, AUS | AUS | fügt STUFE 7.4V und STUFE 8.4V hinzu; bei jedem Neustart aus |
-| BROWN-OUT | EIN 3.0/0.2V, AUS | EIN | der Brown-out-Lauf: ein Tippen öffnet seine Seite |
-| STELLZEIT | 0 bis 5000ms | 0, nicht geprüft | nicht bestanden über diesem Wert von Ende zu Ende |
+| Überschrift | Option | Bereich | Vorgabe | Was sie tut |
+|---|---|---|---|---|
+| SPANNUNGSSTUFEN | Stufe 4.8V, Stufe 6.0V | EIN, AUS | EIN | die Netzteilstufen |
+| SPANNUNGSSTUFEN | HV-SERVO | EIN, AUS | AUS | fügt Stufe 7.4V und Stufe 8.4V hinzu; bei jedem Neustart aus |
+| SPANNUNGSSTUFEN | Stufe 7.4V, Stufe 8.4V | EIN, AUS | EIN | die HV-Stufen; ein Druck nur mit HV-SERVO EIN |
+| BROWN-OUT | Brown-out | EIN, AUS | EIN | führt den Lauf nach den Netzteilstufen aus |
+| BROWN-OUT | Brown-out Mindestspannung | 2.0 bis 4.8V | 3.0V | letzte Spannung des Laufs; ein höherer minimaler Netzteilsollwert beendet ihn bereits dort |
+| BROWN-OUT | Brown-out-Schritt | 0.1 bis 1.0V | 0.2V | Spannungsabnahme je Stufe; ein kürzerer letzter Schritt endet genau bei der Mindestspannung |
+| GRENZWERTE | Blockierschwelle | 0.1 bis 5.0A | 2.00A | über diesem Strom gilt das Servo als blockiert |
+| GRENZWERTE | Ruhestrom max | 0 bis 5.00A | 0, nicht geprüft | nicht bestanden über diesem Wert in Ruhe |
+| GRENZWERTE | Haltestrom max | 0 bis 5.00A | 0, nicht geprüft | nicht bestanden über diesem Wert beim Halten eines Endes |
+| GRENZWERTE | Stellzeit max | 0 bis 5000ms | 0, nicht geprüft | nicht bestanden über diesem Wert von Ende zu Ende |
+| DAUER UND ZEITEN | Länge nach | ZEIT, BEWEGUNGEN | ZEIT | wie jede Netzteilstufe bemessen wird |
+| DAUER UND ZEITEN | Testzeit | 5 bis 3600s | 60s | die Dauer einer Stufe; ein Druck nur bei Länge nach ZEIT |
+| DAUER UND ZEITEN | Bewegungen | 1 bis 1000 | 20 | die Bewegungen einer Stufe; ein Druck nur bei Länge nach BEWEGUNGEN |
+| DAUER UND ZEITEN | Haltezeit | 0 bis 5000ms | 200ms | an jedem Ende gehalten, im Test und bei SWEEP |
+| DAUER UND ZEITEN | Einschwingzeit | 0 bis 10000ms | 500ms | Wartezeit nach einer Netzteilstufe vor dem Messen |
 
 ![HV-SERVO eingeschaltet](view:servo-hv)
 
-Ist HV-SERVO eingeschaltet und eine Stufe über 6,0V gewählt, öffnet TEST STARTEN auf der Karte zuerst NUR HV-SERVOS und nennt die höchste Stufe.
+Ist HV-SERVO eingeschaltet und eine Stufe über 6.0V gewählt, ist 2s HALTEN: ARM + START ein Tipp, der zuerst NUR HV-SERVOS öffnet und die höchste Stufe nennt; dessen 2s HALTEN ZUM ÜBERNEHMEN schaltet ARMED und startet.
 
 ## Der Brown-out-Lauf
 
-![Die Seite des Brown-out-Laufs](view:servo-brownout)
+![Die Liste bei BROWN-OUT](view:servo-brownout)
 
-BROWN-OUT in den Optionen des automatischen Tests öffnet die Seite des Laufs; SCHLIESSEN führt zurück. Die Zeile fasst NIEDRIGSTE SPANNUNG und SCHRITT zusammen, etwa `EIN 3.0/0.2V`. Nach den Netzteilstufen beginnt der Lauf bei 5,0V oder der niedrigeren Spannungsgrenze. Er senkt die Spannung jeweils um SCHRITT bis zur NIEDRIGSTEN SPANNUNG und endet bei der ersten Spannung ohne Bewegung.
-
-| Option | Bereich | Vorgabe | Wirkung |
-|---|---|---|---|
-| BROWN-OUT | EIN, AUS | EIN | führt den Lauf nach den Netzteilstufen aus |
-| NIEDRIGSTE SPANNUNG | 2,0 bis 4,8V | 3,0V | letzte Spannung des Laufs; ein höherer minimaler Netzteilsollwert beendet ihn bereits dort |
-| SCHRITT | 0,1 bis 1,0V | 0,2V | Spannungsabnahme je Stufe; ein kürzerer letzter Schritt endet genau bei NIEDRIGSTE SPANNUNG |
-
-Der Hinweis darunter beschreibt den Lauf mit dem aktiven Netzteil und die Anzahl angeforderter Spannungen, höchstens 31. Liegt NIEDRIGSTE SPANNUNG bei oder über der Startspannung, wird nur die Startspannung geprüft.
+Nach den Netzteilstufen beginnt der Lauf bei 5.0V oder der niedrigeren Spannungsgrenze. Er senkt die Spannung jeweils um den Schritt bis zur Mindestspannung und endet bei der ersten Spannung ohne Bewegung. Die Zeile der Überschrift BROWN-OUT nennt den Lauf am geltenden Netzteil und die Zahl der Spannungen, höchstens 31: `Ab 5.00V abwärts in 0.20V-Schritten bis 3.30V, 10 Spannungen`. Liegt die Mindestspannung bei oder über der Startspannung, wird nur die Startspannung geprüft.
 
 ## Die Optionen des Endlagenlaufs
 

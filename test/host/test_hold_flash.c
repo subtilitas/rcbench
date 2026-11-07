@@ -124,7 +124,8 @@ TEST_CASE(servo_output_on_flashes_as_it_fires)
     CHECK(bench.out);
 }
 
-/* START TEST on TEST: the run starts as the hold fires. */
+/* ARM + START on TEST: on an ARMED bench the run starts as the hold
+ * fires. */
 TEST_CASE(start_test_flashes_as_it_fires)
 {
     bench_fresh();
@@ -132,7 +133,7 @@ TEST_CASE(start_test_flashes_as_it_fires)
     scr->tick(0.02f);
     const gfx_rect_t r = { (int16_t)(START_X - 138), (int16_t)(START_Y - 20),
                            276, 8 };
-    CHECK(servo_walk(START_X, START_Y, r, "START TEST"));
+    CHECK(servo_walk(START_X, START_Y, r, "ARM + START"));
     CHECK(servo_screen_testing());
 }
 
@@ -215,9 +216,10 @@ TEST_CASE(kst_expert_off_after_its_hold_shows_no_fade)
 
 /* ------------------------------------------- a tap on a refused button */
 
-/* START TEST grey on a bench that is not ARMED: a tap puts the reason in
- * the band as a notice, and the line under the button stays.  A tap on
- * LIMIT RUN's ARM + START puts a notice there too and starts nothing. */
+/* TEST's ARM + START grey with no PD mini answering: a tap puts the
+ * reason in the band as a notice, with the READY row it belongs to.  A tap
+ * on LIMIT RUN's grey ARM + START puts a notice there too and starts
+ * nothing. */
 TEST_CASE(a_tap_on_a_grey_start_puts_its_reason_in_the_band)
 {
     ui_router_init();
@@ -233,12 +235,14 @@ TEST_CASE(a_tap_on_a_grey_start_puts_its_reason_in_the_band)
     tap(START_X, START_Y);
     CHECK(!servo_screen_testing());
     if (ui_router_alert() == NULL) {
-        T_FAIL("a tap on the grey START TEST left the band empty");
+        T_FAIL("a tap on the grey ARM + START left the band empty");
         return;
     }
     CHECK(ui_router_alert_is_notice());
-    CHECK_STR_EQ(ui_router_alert(),
-                 ui_servo_str(SERVO_STR_START_NOT_ARMED));
+    char want[128];
+    snprintf(want, sizeof(want), TR(RDY_BAND), "PD MINI",
+             ui_servo_str(SERVO_STR_START_NO_SUPPLY));
+    CHECK_STR_EQ(ui_router_alert(), want);
     open_limrun();
     ui_router_set_alert(NULL);
     tap(LIM_START_X, LIM_START_Y);

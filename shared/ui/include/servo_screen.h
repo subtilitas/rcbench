@@ -624,8 +624,8 @@ gfx_rect_t servo_screen_port_choice_rect(int i);
 /**
  * @brief Which page of rows shows, one level down from its screen.  For
  *        tests.
- * @return 0 none, 1 the automatic test's settings, 2 the brown-out walk's,
- *         3 KST's EXPERT MODE
+ * @return 0 none, 1 KST's EXPERT MODE.  TEST's and LIMIT RUN's settings
+ *         are lists (servo_screen_list())
  */
 int servo_screen_run_settings(void);
 

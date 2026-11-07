@@ -904,16 +904,8 @@ void svs_tick_body(float dt_s)
     /* KST EXPERT MODE's hold on DUT: the mode turns ON when it completes. */
     kx_tick(dt_s);
 
-    /* START TEST's hold: the run starts when it completes. */
-    if (s.test_down) {
-        ++s.test_rev;
-        if (ui_hold_tick(&s.test_hold, dt_s)) {
-            s.test_down = false;
-            ov_let_go();
-            test_begin();
-        }
-    }
-    test_tick();
+    /* TEST's ARM + START: its hold, its steps, then the run. */
+    test_frame(dt_s);
 
     /* LIMIT RUN's ARM + START, then its sequence and the run. */
     if (s.lim_down) {
@@ -927,7 +919,6 @@ void svs_tick_body(float dt_s)
     lim_tick();
     /* The flashes of the holds that fired: the frames keep coming while
      * one runs. */
-    flash_frame(&s.test_hold, dt_s, &s.test_rev);
     flash_frame(&s.lim_hold, dt_s, &s.arm_rev);
     ghost_frame(&s.ask.hold, s.ask.open, dt_s, &s.ask.rev);
     ghost_frame(&s.warn.hold, s.warn.open, dt_s, &s.warn.rev);

@@ -758,10 +758,10 @@ reads the state and shows the alert, is not in the coverage figure.
   mark (`TOUCH_FLAG_NO_TAP`), and so does the release the tracker makes for a
   contact that is more than 120px from where the previous report had it.
   A marked release ends a press or a drag and activates no control: the
-  finger did not lift there. Two controls take it all the same, because
-  they stop something: OUTPUT OFF, and START TEST while a servo test runs.
-  STOP and DISARM on MOTOR & ESC and on SERVO have acted on the press
-  already, and their release does nothing. STOP and the home tag
+  finger did not lift there. One control takes it all the same, because
+  it stops something: OUTPUT OFF. STOP, DISARM on MOTOR & ESC and on SERVO,
+  and STOP TEST in TEST's footer have acted on the press already, and
+  their release does nothing. STOP and the home tag
   answer to a press that lands on them: a contact that slides onto STOP from
   the body presses nothing. A press the router keeps from the screen (on
   the band, STOP, the home tag, a chip or the alert band) releases the

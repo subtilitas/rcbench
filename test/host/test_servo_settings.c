@@ -325,10 +325,10 @@ TEST_CASE(reverse_and_the_pulse_widths_reshape_the_command)
     CHECK_EQ(c.min_us, 900);
 }
 
-/* SWEEP's rows and a run's own rows are kept and saved; SUPPLY's caps are
- * not edited here (their home is SUPPLY > SETTINGS), and the run's
- * settings close to TEST with the home tag.  The hub's list holds the
- * device under test's NAME and REPORT. */
+/* SWEEP's rows and TEST's rows are kept and saved by the list's SAVE;
+ * SUPPLY's caps are not edited here (their home is SUPPLY > SETTINGS),
+ * and TEST's list closes to TEST with the home tag.  The hub's list holds
+ * the device under test's NAME and REPORT. */
 TEST_CASE(the_sweep_and_run_settings_are_kept)
 {
     fresh();
@@ -343,19 +343,21 @@ TEST_CASE(the_sweep_and_run_settings_are_kept)
     CHECK_NEAR(settings_get(SET_SERVO_TEST_HZ), 1.25f, 1e-4f);
     CHECK(settings_dirty());                   /* until the list's SAVE */
 
-    open_run_settings(0);                      /* AUTOMATIC TEST's */
-    CHECK_EQ(servo_screen_run_settings(), 1);
-    tap(LROW_X(0), LROW_Y(0));                 /* STEP 4.8V: a switch */
+    open_run_settings(0);                      /* TEST's list */
+    CHECK(servo_screen_list()->open);
+    sl_step(TL_STEP_48, +1);                   /* STEP 4.8V: a switch */
     CHECK(!settings_get_bool(SET_SERVO_STEP_48));
-    tap(LROW_X(1), LROW_Y(1));                 /* IDLE CURRENT */
-    keys("0.3");
+    sl_part(TL_IDLE, UI_SL_PART_VALUE);        /* IDLE CURRENT */
+    sl_keys("0.3");
     CHECK_NEAR(settings_get(SET_SERVO_IDLE_MAX), 0.3f, 1e-4f);
-    tap(LROW_X(1), LROW_Y(0));                 /* STALL AT */
-    keys("1.5");
+    sl_part(TL_STALL, UI_SL_PART_VALUE);       /* STALL AT */
+    sl_keys("1.5");
     CHECK_NEAR(settings_get(SET_SERVO_STALL_A), 1.5f, 1e-4f);
     CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 21.0f, 1e-4f);
+    CHECK(settings_dirty());                   /* until the list's SAVE */
+    tap_settings();                            /* SAVE */
     CHECK(home_tag());
-    CHECK_EQ(servo_screen_run_settings(), 0);
+    CHECK(!servo_screen_list()->open);
     CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
     CHECK(!home_tag());                        /* TEST climbs no further */
 
