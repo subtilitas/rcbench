@@ -14,6 +14,7 @@
  * - a_rail_fed_from_elsewhere_keeps_the_pd_mini_off_and_arms_at_once
  * - a_window_the_ina3221_left_behind_is_no_fed_rail
  * - a_fed_rail_arms_whatever_the_pd_minis_set_point
+ * - a_rail_fed_after_the_hold_refuses_the_pd_minis_on
  * - a_tap_on_a_drive_row_names_why_or_opens_its_list
  * - past_6v_arm_is_refused_and_the_row_opens_the_hv_warning
  * - a_tap_on_arm_or_a_stop_during_the_steps_ends_them_all_off
@@ -280,6 +281,28 @@ TEST_CASE(a_tap_on_a_drive_row_names_why_or_opens_its_list)
     CHECK(servo_screen_port_choices() > 0);
 }
 
+/* The PD mini judged off-rail at the hold, then a window reads the rail
+ * fed from elsewhere before the steps ask its ON: the steps end refused,
+ * the PD mini never switched on and the bench never armed. */
+TEST_CASE(a_rail_fed_after_the_hold_refuses_the_pd_minis_on)
+{
+    pd_off_on_live();
+    CHECK(svs_seq_begin());
+    const sense_link_win_t w = {
+        .number = (uint16_t)++ra.win_no, .current = true, .voltage = true,
+        .mean_mv = 6000u, .min_mv = 6000u, .taken_ms = g_rig.ms,
+        .stamped = true,
+    };
+    servo_screen_window(&w, SERVO_SOURCE_INA3221, 2u);
+    ra.rail_fed = true;
+    ra_ms(300u);
+    CHECK(!svs_seq_busy());
+    CHECK_EQ(ra.pd_ons, 0u);
+    CHECK_EQ(ra.arms, 0u);
+    CHECK(!g_rig.sup_on);
+    ra.rail_fed = false;
+}
+
 /* A rail fed from elsewhere with the PD mini's set point past 6.0V: ARM
  * leaves the PD mini off, so the set point is never applied; the row reads
  * FED FROM ELSEWHERE in the warning colour and ARM arms at once, sending no
@@ -464,6 +487,7 @@ int main(void)
     RUN(a_rail_fed_from_elsewhere_keeps_the_pd_mini_off_and_arms_at_once);
     RUN(a_window_the_ina3221_left_behind_is_no_fed_rail);
     RUN(a_fed_rail_arms_whatever_the_pd_minis_set_point);
+    RUN(a_rail_fed_after_the_hold_refuses_the_pd_minis_on);
     RUN(a_tap_on_a_drive_row_names_why_or_opens_its_list);
     RUN(past_6v_arm_is_refused_and_the_row_opens_the_hv_warning);
     RUN(a_tap_on_arm_or_a_stop_during_the_steps_ends_them_all_off);
