@@ -17,7 +17,8 @@
  * - the_footers_write_is_the_sessions_from_any_tab
  * - the_footer_asks_no_arm_and_the_card_drives_nothing
  * - a_finger_on_the_card_or_write_keeps_settings_and_port_shut
- * - a_tap_on_the_supply_while_it_reads_on_switches_it_off
+ * - a_press_on_the_supply_while_it_reads_on_switches_it_off
+ * - a_third_finger_on_the_supply_switches_it_off
  *
  * SPDX-License-Identifier: MIT
  */
@@ -254,11 +255,11 @@ TEST_CASE(a_finger_on_the_card_or_write_keeps_settings_and_port_shut)
 }
 
 /* The PD mini's output on: the supply row's red dot reads ON, the router
- * hands a press there through the band, and a tap asks OFF, as OUTPUT OFF
- * does.  A finger that slides off the row before it lifts asks nothing.
- * The OFF is taken under a panel too: with the PORT list open over the
- * session, a tap on the row still asks it. */
-TEST_CASE(a_tap_on_the_supply_while_it_reads_on_switches_it_off)
+ * hands a press there through the band, and the press asks OFF, as a stop
+ * does, before the finger lifts or wherever it slides.  The OFF is taken
+ * under a panel too: with the PORT list open over the session, a press on
+ * the row still asks it. */
+TEST_CASE(a_press_on_the_supply_while_it_reads_on_switches_it_off)
 {
     supply_cmd_t sc;
 
@@ -277,21 +278,49 @@ TEST_CASE(a_tap_on_the_supply_while_it_reads_on_switches_it_off)
     CHECK(!scr->safe_at(a.x + a.w / 2, ready_row_rect(PRR_SERVO).y + 4));
     while (supply_screen_poll_cmd(&sc)) { }
     ev(a.x + a.w / 2, a.y + a.h / 2, TOUCH_EVENT_DOWN, 1);
+    CHECK(supply_screen_poll_cmd(&sc));
+    CHECK(sc.off && !sc.on);
     ev(a.x + a.w / 2, 100, TOUCH_EVENT_MOVE, 1);
     ev(a.x + a.w / 2, 100, TOUCH_EVENT_UP, 1);
     CHECK(!supply_screen_poll_cmd(&sc));
-    ev(a.x + a.w / 2, a.y + a.h / 2, TOUCH_EVENT_DOWN, 1);
-    ev(a.x + a.w / 2, a.y + a.h / 2, TOUCH_EVENT_UP, 1);
-    CHECK(supply_screen_poll_cmd(&sc));
-    CHECK(sc.off && !sc.on);
     /* Under the PORT list. */
     tap_row(PRR_PORT);
     CHECK(servo_screen_port_choices() > 0);
     while (supply_screen_poll_cmd(&sc)) { }
     ev(a.x + a.w / 2, a.y + a.h / 2, TOUCH_EVENT_DOWN, 1);
-    ev(a.x + a.w / 2, a.y + a.h / 2, TOUCH_EVENT_UP, 1);
     CHECK(supply_screen_poll_cmd(&sc));
     CHECK(sc.off && !sc.on);
+    ev(a.x + a.w / 2, a.y + a.h / 2, TOUCH_EVENT_UP, 1);
+}
+
+/* A stop counts whatever other fingers hold: with one finger on WRITE and
+ * one on a READY row, a third on the supply row that reads ON asks OFF on
+ * its press, and a fourth there asks it again. */
+TEST_CASE(a_third_finger_on_the_supply_switches_it_off)
+{
+    supply_cmd_t sc;
+
+    kst_on();
+    g_rig.rail = true;
+    kst_prog_feed_t f = M->f;
+    f.rd.flags |= LINK_KS_F_RAIL;
+    kst_panel_feed(&f);
+    supply_screen_set_output(true);
+    ticks(0.1f);
+    const gfx_rect_t a = ready_row_rect(PRR_SUPPLY);
+    const gfx_rect_t sv = ready_row_rect(PRR_SERVO);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    ev(sv.x + sv.w / 2, sv.y + sv.h / 2, TOUCH_EVENT_DOWN, 2);
+    while (supply_screen_poll_cmd(&sc)) { }
+    ev(a.x + a.w / 2, a.y + a.h / 2, TOUCH_EVENT_DOWN, 3);
+    CHECK(supply_screen_poll_cmd(&sc));
+    CHECK(sc.off && !sc.on);
+    ev(a.x + a.w / 3, a.y + a.h / 2, TOUCH_EVENT_DOWN, 4);
+    CHECK(supply_screen_poll_cmd(&sc));
+    CHECK(sc.off && !sc.on);
+    for (uint8_t id = 4; id >= 1; --id) {
+        ev(a.x + a.w / 2, 100, TOUCH_EVENT_UP, id);
+    }
 }
 
 int main(void)
@@ -303,6 +332,7 @@ int main(void)
     RUN(the_footers_write_is_the_sessions_from_any_tab);
     RUN(the_footer_asks_no_arm_and_the_card_drives_nothing);
     RUN(a_finger_on_the_card_or_write_keeps_settings_and_port_shut);
-    RUN(a_tap_on_the_supply_while_it_reads_on_switches_it_off);
+    RUN(a_press_on_the_supply_while_it_reads_on_switches_it_off);
+    RUN(a_third_finger_on_the_supply_switches_it_off);
     return test_summary("kst_panel_frame");
 }

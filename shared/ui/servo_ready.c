@@ -420,6 +420,14 @@ bool ready_down(const touch_event_t *evt)
                               evt->point.y)) {
         return false;
     }
+    /* A stop counts on the press, whatever other fingers hold: KST's and
+     * HITEC's supply row while it reads ON asks OFF at once. */
+    if (prog_ready_shown()
+        && prog_ready_stops_at(evt->point.x, evt->point.y)) {
+        prog_ready_tap((int)PRR_SUPPLY);
+        ++s.ctrl_rev;
+        return true;
+    }
     /* A row's fix opens a list, a warning or another screen: none under
      * a press held anywhere, whose release it would take. */
     if (s.rdy.pressed >= 0 || svs_press_held()) {
