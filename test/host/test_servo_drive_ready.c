@@ -12,6 +12,7 @@
  * - the_5v_read_back_has_1000ms_and_a_late_one_ends_all_off
  * - a_pd_mini_off_is_switched_on_by_arm_and_disarm_switches_it_off
  * - a_rail_fed_from_elsewhere_keeps_the_pd_mini_off_and_arms_at_once
+ * - a_window_the_ina3221_left_behind_is_no_fed_rail
  * - past_6v_arm_is_refused_and_the_row_opens_the_hv_warning
  * - a_tap_on_arm_or_a_stop_during_the_steps_ends_them_all_off
  * - the_5v_arm_switched_stays_across_servo_and_goes_with_the_last
@@ -231,6 +232,28 @@ TEST_CASE(a_rail_fed_from_elsewhere_keeps_the_pd_mini_off_and_arms_at_once)
     ra.rail_fed = false;
 }
 
+/* The INA3221 reads the rail fed, then stops being the rail's meter: the
+ * window it left behind reads nothing now, so ARM switches the PD mini on
+ * as on a bench without the INA3221. */
+TEST_CASE(a_window_the_ina3221_left_behind_is_no_fed_rail)
+{
+    pd_off_on_live();
+    ra.rail_fed = true;
+    ra_ms(200u);
+    CHECK_STR_EQ(drow(LV_SUPPLY).value, TR(RDY_FED));
+    /* The PD mini becomes the meter; the INA3221's windows of the older
+     * change count are not taken any more. */
+    servo_screen_source(SERVO_SOURCE_PDMINI, 3u);
+    ra.rail_fed = false;
+    ra_ms(100u);
+    CHECK(servo_screen_arm_switches());
+    arm_hold(2300u);
+    ra_ms(200u);
+    CHECK_EQ(ra.pd_ons, 1u);
+    CHECK(g_rig.sup_on);
+    CHECK(ra.armed);
+}
+
 /* The PD mini off with a set point past 6.0V: SUPPLY reads TAP: HV
  * WARNING in red, ARM takes no hold and names the row, and nothing is
  * switched on; a tap on the row opens OUTPUT ON's HV warning, whose own
@@ -390,6 +413,7 @@ int main(void)
     RUN(the_5v_read_back_has_1000ms_and_a_late_one_ends_all_off);
     RUN(a_pd_mini_off_is_switched_on_by_arm_and_disarm_switches_it_off);
     RUN(a_rail_fed_from_elsewhere_keeps_the_pd_mini_off_and_arms_at_once);
+    RUN(a_window_the_ina3221_left_behind_is_no_fed_rail);
     RUN(past_6v_arm_is_refused_and_the_row_opens_the_hv_warning);
     RUN(a_tap_on_arm_or_a_stop_during_the_steps_ends_them_all_off);
     RUN(the_5v_arm_switched_stays_across_servo_and_goes_with_the_last);

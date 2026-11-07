@@ -182,12 +182,14 @@ static bool pd_on(void)
 /**
  * @brief Whether the INA3221's last window reads the servo rail powered
  *        while the PD mini's output is off: at SERVO_LIMRUN_RAIL_MIN_MV
- *        (3.0V) or more, the rail is fed from elsewhere.
+ *        (3.0V) or more, the rail is fed from elsewhere.  Only while the
+ *        INA3221 is the rail's meter: a window it left behind is not.
  * @return true then; false without a window
  */
 static bool rail_fed(void)
 {
-    return !pd_on() && s.have_win && s.win.voltage
+    return !pd_on() && s.source == SERVO_SOURCE_INA3221 && s.have_win
+           && s.win.voltage
            && s.win.mean_mv >= (uint16_t)SERVO_LIMRUN_RAIL_MIN_MV;
 }
 
