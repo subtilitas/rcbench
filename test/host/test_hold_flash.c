@@ -11,12 +11,13 @@
  * (hold_flash.h).  ARMED, the output and the run are never confirmed
  * here: the flash does not wait for them.
  *
- * Here: ARM, OUTPUT ON, START TEST, START LIMIT RUN, HOLD TO APPLY on the
- * profile warning and KST EXPERT MODE on SERVO; ARM on MOTOR & ESC and
- * OUTPUT ON on SUPPLY through the router.  The holds of the other screens
- * have their *_flashes_as_it_fires case in their own suite, on their own
- * rig: test_servo_rauto_kst.c (START on AUTO), test_kst_panel_write.c
- * (a warning page's hold), test_hitec_panel_write.c (a hold page),
+ * Here: ARM, OUTPUT ON, START TEST, LIMIT RUN's ARM + START, HOLD TO
+ * APPLY on the profile warning and KST EXPERT MODE on SERVO; ARM on MOTOR
+ * & ESC and OUTPUT ON on SUPPLY through the router.  The holds of the
+ * other screens have their *_flashes_as_it_fires case in their own
+ * suite, on their own rig: test_servo_rauto_kst.c (START on AUTO),
+ * test_kst_panel_write.c (a warning page's hold), test_hitec_panel_write.c
+ * (a hold page),
  * test_esc_wire_press.c (CONNECT), test_esc_stick_panel_hold.c (HOLD 2s
  * TO RUN), test_outputs_view.c (UNBIND ALL PINS), test_files_changed.c
  * (OVERWRITE); test_prog5v_box.c and test_stop_hold.c hold PROG 5V ON and
@@ -214,9 +215,9 @@ TEST_CASE(kst_expert_off_after_its_hold_shows_no_fade)
 
 /* ------------------------------------------- a tap on a refused button */
 
-/* START TEST and START LIMIT RUN grey on a bench that is not ARMED: a tap
- * puts the reason in the band as a notice, and the line under the button
- * stays. */
+/* START TEST grey on a bench that is not ARMED: a tap puts the reason in
+ * the band as a notice, and the line under the button stays.  A tap on
+ * LIMIT RUN's ARM + START puts a notice there too and starts nothing. */
 TEST_CASE(a_tap_on_a_grey_start_puts_its_reason_in_the_band)
 {
     ui_router_init();

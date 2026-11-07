@@ -27,8 +27,8 @@
  * (servo_test.h): the screen hands it the supply's samples and the clock,
  * and does what it asks -- the servo's position, SUPPLY's set points and
  * output -- through the same paths a finger uses.  The run's code is
- * servo_test_panel.c.  START LIMIT RUN, on the LIMIT RUN card, runs the
- * limit run (servo_limrun.h) the same way; its code is
+ * servo_test_panel.c.  HOLD 2s: ARM + START, in LIMIT RUN's footer, runs
+ * the limit run (servo_limrun.h) the same way; its code is
  * servo_limit_panel.c.
  *
  * SPDX-License-Identifier: MIT

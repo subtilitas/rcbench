@@ -36,7 +36,7 @@ typedef struct {
     limrun_row_t row;   /**< its row                            */
 } gate_text_t;
 
-/** @brief Every fixed text servo_screen_limit_blocked() can return, listed here on its
+/** @brief Every fixed text lim_blocked() can return, listed here on its
  *         own, with the row it belongs to.  The Hitec range's text is
  *         formatted and is held apart (servo_limit_hitec's suite). */
 static const gate_text_t k_gate[] = {

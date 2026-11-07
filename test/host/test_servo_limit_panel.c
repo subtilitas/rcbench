@@ -1,6 +1,6 @@
 /*
- * What the SERVO screen's limit run decides: START LIMIT RUN on
- * TEST's LIMIT RUN card, what refuses it, its report, every source
+ * What the SERVO screen's limit run decides: ARM + START in LIMIT RUN's
+ * footer, what refuses it, its report, every source
  * that aborts it, and the knob moving nothing while it runs.
  *
  * The screen and its fixtures are servo_rig.h, the bench
@@ -519,7 +519,7 @@ TEST_CASE(no_run_starts_while_the_logger_holds_the_last_report)
     CHECK(servo_screen_testing());
 }
 
-/* While the automatic test runs, START LIMIT RUN is grey and the page names
+/* While the automatic test runs, ARM + START is grey and the card names
  * the test as the reason; only after the test has ended and the logger still
  * holds its report is the reason the report that is still writing. */
 TEST_CASE(a_running_automatic_test_is_the_reason_the_limit_run_cannot_start)

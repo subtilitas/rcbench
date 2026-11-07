@@ -557,7 +557,7 @@ TEST_CASE(a_tapped_row_is_a_finger_tall_and_its_gaps_take_nothing)
  * A second tap on the AUTOMATIC TEST card's SETTINGS lands on the run's
  * settings under it: the length rule tops that column, and its list opens.
  * No setting changes, as a step's switch under it would have changed one.
- * The LIMIT RUN card's lands on no row at all.
+ * LIMIT RUN has no run card on TEST.
  */
 TEST_CASE(a_second_tap_on_a_run_cards_settings_changes_no_setting)
 {

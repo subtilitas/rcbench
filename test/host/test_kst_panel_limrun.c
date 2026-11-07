@@ -271,7 +271,7 @@ static void lr_fresh_ext(bool reversion)
     memcpy(g_rig.sim.reg, img.r, sizeof(img.r));
 }
 
-/* LIMIT RUN, and START LIMIT RUN on its card held for 2.3s. */
+/* LIMIT RUN, and its footer's ARM + START held for 2.3s. */
 static void lr_run_list(void)
 {
     /* A save asked for first: the home tag then closes the list without
@@ -343,8 +343,9 @@ static void lr_run_out(void)
  * LOWER and PULSE UPPER at 1000.0 and 2000.0us, both ends found bound,
  * LEFT ANGLE and RIGHT ANGLE lowered so neither binds, the servo's full
  * travel inside both stops, the bench back to ARMED after every session
- * and SAFE after the run, one backup file, PASS in the report with the writes made, and RESTORE
- * putting the servo back as the run found it, 900.0 and 2100.0us. */
+ * and SAFE after the run, one backup file, PASS in the report with the
+ * writes made, and RESTORE putting the servo back as the run found it,
+ * 900.0 and 2100.0us. */
 TEST_CASE(a_limit_run_programs_the_servo_on_the_programming_port)
 {
     for (int rev = 0; rev < 2; ++rev) {

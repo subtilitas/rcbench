@@ -627,7 +627,7 @@ void lim_tick(void)
     lim_step();
     lim_ended();
     lim_safe_follow();
-    /* The box and the LIMIT RUN card, where they show. */
+    /* LIMIT RUN's left card and READY card, where they show. */
     const uint32_t sig = lim_signature();
     if (sig != s.lim_sig) {
         s.lim_sig = sig;
