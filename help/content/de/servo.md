@@ -18,7 +18,7 @@ Der Hub enthält acht Kacheln. Jede öffnet eine eigene Seite:
 |---|---|
 | LIVE | Hornwinkel, Zifferblatt und darunter SOLL-PULSBREITE, GEMESSEN und STROM |
 | SWEEP | Zifferblatt mit SWEEP; seine Liste stellt KURVE, TEMPO und BEREICH ein ([Servo-Optionen](servo-settings.md)) |
-| TEST | AUTOMATISCHER TEST mit OPTIONEN, Zusammenfassung, Start-Haltetaste, letztem Ergebnis und Datei; SUPPLY-Grenzen als Anzeige; die Laufanzeige unter der Karte |
+| TEST | AUTOMATISCHER TEST mit Zusammenfassung, letztem Ergebnis und Datei; SUPPLY-Grenzen als Anzeige; der Verlauf der Schiene und die Laufanzeige darunter; die Karte BEREIT und 2s HALTEN: ARM + START |
 | ENDLAGENLAUF | die Enden, die der letzte Lauf fand, seine Zustandszeilen, die Karte BEREIT und 2s HALTEN: ARM + START |
 | RUDER | Ausschlag in ° und mm, LÄNGE, 1000us, ZENTRIEREN, 2000us, NULLPUNKT und MAX LÖSCHEN ([Ruderausschlag](servo-rudder.md)) |
 | RUDER AUTO | das Feld AUTO; es programmiert KST-, Chaservo- oder Hitec-Endpunkte auf den vorgegebenen Ausschlag |

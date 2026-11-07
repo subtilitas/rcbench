@@ -171,7 +171,7 @@ SCREENS = {
     # LIMIT RUN's list on the bench's outputs: MODE, SERVO and SERVO
     # PULSES locked off a PROG PORT.
     "servo-limits":   ("servo-limits.png",   "servo", "dark"),
-    # The brown-out walk's page, from the AUTOMATIC TEST's BROWN-OUT row.
+    # TEST's list at its BROWN-OUT heading.
     "servo-brownout": ("servo-brownout.png", "servo", "dark"),
     "servo-warning":  ("servo-warning.png",  "servo", "dark"),
     "servo-name":     ("servo-name.png",     "servo", "dark"),

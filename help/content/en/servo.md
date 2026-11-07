@@ -18,7 +18,7 @@ The hub holds eight tiles, each opening a screen of its own:
 |---|---|
 | LIVE | the horn's angle, the dial, and the readings COMMANDED, MEASURED and CURRENT along its foot |
 | SWEEP | the dial with SWEEP; its list sets CURVE, SPEED and RANGE ([Servo settings](servo-settings.md)) |
-| TEST | the AUTOMATIC TEST card with its SETTINGS, a summary line, its start hold, the last result and its file; SUPPLY's caps, read-only; the run's box under the card |
+| TEST | the AUTOMATIC TEST card with a summary line, the last result and its file; SUPPLY's caps, read-only; the rail's plot and the run's box under them; the READY card and HOLD 2s: ARM + START |
 | LIMIT RUN | the ends the last run found, its state lines, the READY card and HOLD 2s: ARM + START |
 | RUDDER | the control surface's deflection in ° and mm, LENGTH, the buttons 1000us, CENTRE and 2000us, ZERO and RESET MAX ([Rudder deflection](servo-rudder.md)) |
 | RUDDER AUTO | AUTO's box, which programs KST, Chaservo or Hitec end points to the deflection entered |
