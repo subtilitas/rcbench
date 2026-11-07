@@ -76,8 +76,7 @@ run drives, the supply and the bench:
 
 A tap on a model opens its family's profile, named with the model:
 `ESC STICK > Kontronik > JAZZ 55 LV (JAZZ / MINIJAZZ)`. A family wider
-than the crumb's room, 56 cells of 12px beside TIMING and 70 on TIMING's
-page, shows its whole words that fit and ` ..`, or nothing where its first
+than the crumb's room, 70 cells of 12px, shows its whole words that fit and ` ..`, or nothing where its first
 word does not fit; a word is never cut. The supply takes the
 model's own lowest cell count where it states one, else the family's
 lowest. A model whose profile the bench cannot run names the reason on its
@@ -213,7 +212,7 @@ During the run the page shows the phase, the beeps in the group under way,
 the last group and whether it was in order, and the current against its
 floor. ABORT ends the run, and so do the band's home tag, STOP in the band
 and leaving the screen. The home tag ends it as ABORT does, and the result
-stays on the page. BACK and TIMING are not offered. The stack light beside the beep
+stays on the page. BACK and SETTINGS are not offered. The stack light beside the beep
 count is described [below](#the-stack-light).
 
 ![A run counting item groups, a beep under way](img/motor-stick-run.png)
@@ -236,7 +235,8 @@ run the reason. Past five changes the last line counts the rest.
 
 ![Ended by the supply: SUPPLY OFF, red lit](img/motor-stick-failed.png)
 
-TIMING opens the settings below. CLOSE asks for them to be saved; the save
+The footer's SETTINGS opens the settings below, on a SAFE bench with no
+run under way. SAVE in the list's strip asks for them to be saved; the save
 is taken while the bench is SAFE and the supply's output is off.
 
 ![The timing settings](img/motor-stick-timing.png)
@@ -528,8 +528,8 @@ own ON and OFF. Nothing bypasses STOP or the rules for switching to ARMED.
 
 ## The settings
 
-Open TIMING on a profile's page. These values are stored with the other
-settings. None is measured.
+Open SETTINGS in the footer of a profile's page. These values are stored
+with the other settings on SAVE. None is measured.
 
 | Setting | Default | Range | What it is |
 | --- | --- | --- | --- |

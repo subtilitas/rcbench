@@ -1294,13 +1294,13 @@ with its labels, rows and buttons in the 10 x 20 face:
 
 | Part | Place and size |
 | --- | --- |
-| crumb row | y 30 to 78: BACK 120 x 48px, the trail in the 12 x 24 face, and at the right the search field (260px, its X 48px), `^` and `v` (56px each) on the list or TIMING (168px) on a profile's page |
+| crumb row | y 30 to 78: BACK 120 x 48px, the trail in the 12 x 24 face, and at the right the search field (260px, its X 48px) and `^` and `v` (56px each) on the list |
 | list | 7 rows a page, 48px tall at a 56px pitch from y 84, 984px wide; a model's name in 30 characters; the footer line ends 4px above the alert band |
-| profile's page and TIMING | the parameter card on the left, 660px: 6 rows a page, 48px tall at a 56px pitch, each with its number, its name (up to 23 characters), its value in a 250px column and `-` and `+` of 48 x 48px, 8px between any two |
-| side column | 340px right of the parameter card: CHANGE (TIMING's title on TIMING), the rows shown and `^` and `v` of 48 x 48px; MANUAL INTERVENTION REQUIRED, 310 x 48px; then how the profile's menu works, the supply and the entry time, and the picked row's help, wrapped to 31 characters a line |
-| foot row | y 436 to 492, 4px above the alert band: the note at the left on up to 2 lines, DEFAULTS and RUN, ABORT, OK or CLOSE, 168 x 56px each |
-| run and result | the device card across the body from y 84 with its two lines, the run's card under it from y 136 with the stack light at its right, two help lines from y 390, and the foot row; a result's MANUAL INTERVENTION REQUIRED, 330 x 56px, left of OK |
-| warning, manual steps, prompt | a panel over the pages from y 28, its title in the 20 x 36 face, its lines at a 22px pitch, its buttons 48px tall ending 4px above the foot row, so a second tap on RUN's place lands on none of them |
+| profile's page | the parameter card on the left, 660px, y 84 to 388: 5 rows a page, 48px tall at a 56px pitch, each with its number, its name (up to 23 characters), its value in a 250px column and `-` and `+` of 48 x 48px, 8px between any two; the note across the body on up to 2 lines from y 396 |
+| side column | 340px right of the parameter card: CHANGE, the rows shown and `^` and `v` of 48 x 48px; MANUAL INTERVENTION REQUIRED, 310 x 48px; then how the profile's menu works, the supply and the entry time, and the picked row's help, wrapped to 31 characters a line |
+| footer | y 444 to 492, 4px above the alert band ([The footer and the settings list](#the-footer-and-the-settings-list)): `[ESC STICK] [RUN n / ABORT / OK] [SETTINGS]` on a profile's page, its run and its result |
+| run and result | the device card across the body from y 84 with its two lines, the run's card under it from y 136 to 388 with the stack light at its right, two help lines from y 394, and the footer; a result's MANUAL INTERVENTION REQUIRED, 330 x 48px, at the run card's foot on the right |
+| warning, manual steps, prompt | a panel over the pages and the footer from y 28, its title in the 20 x 36 face, its lines at a 22px pitch, its buttons 48px tall ending 4px above the footer, so a second tap on RUN's place lands on none of them |
 
 BACK and the home tag move up one level: from a stick profile to its list,
 from a manufacturer's models to the manufacturer list, then to PROGRAM.
@@ -1406,24 +1406,25 @@ DONE, a pressed STOP, ABORT, the home tag or leaving the screen
 
 ![Ended by the supply](img/motor-stick-failed.png)
 
-TIMING holds the beep timings and the supply settings. None of them is
-measured:
+The footer's SETTINGS opens the settings list
+([The footer and the settings list](#the-footer-and-the-settings-list)):
+Voltage and Current limit under SUPPLY, the beep timings under TIMING AND
+DETECTION. None of them is measured. SETTINGS takes a press on a SAFE
+bench with no run under way; otherwise it is grey and a tap puts
+`SETTINGS open on a SAFE bench only. Switch to SAFE first.` in the alert
+band. A bench that arms under the open list closes it.
 
-![Timing](img/motor-stick-timing.png)
+![The SETTINGS list](img/motor-stick-timing.png)
 
-Use a row's `-` and `+` buttons to change its value by one step, or tap the
-250px value column to open the keypad. The keypad covers the page from
-below the output strip to 4px above the alert band: 1008 x 464px, with
-242 x 81px keys. It shows the setting's name, range and unit. Decimal
+The list covers the whole body, the output strip included; its strip reads
+`[ESC STICK] [RESET ESC STICK] [SAVE]`. A tap on a number's value opens the
+keypad, 1004 x 482px. It shows the setting's name, range and unit. Decimal
 places follow the step size: one for Voltage's 0.1V, two for Current
-limit's 0.05A.
-
-OK rounds to the nearest step, as the step buttons do: 1.23A becomes 1.25A.
-CLOSE requests a save, as after a step-button change. An out-of-range value
-leaves the keypad open with the range in the warning colour. CANCEL,
-empty OK or the home tag closes it without changing the value; TIMING
-remains open. Controls behind the keypad receive no touches. Profile items
-use lists of the ESC's own values and do not open a keypad.
+limit's 0.05A. OK rounds to the nearest step, as the keys do: 1.23A
+becomes 1.25A. A change applies at once; SAVE keeps it. RESET ESC STICK
+sets the 14 settings to their defaults and no other. Voltage 0.0V takes
+the voltage from the profile's cell count. Profile items use lists of the
+ESC's own values and do not open a keypad.
 
 ![The keypad of Beep min](img/motor-stick-timing-keypad.png)
 

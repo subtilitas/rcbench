@@ -102,13 +102,13 @@ extern const uint32_t board_drawing_rp2350_can_bytes;
 #define H UI_PANEL_H
 
 /* The ESC STICK controls in body coordinates (stick_spots.h): the crumb
- * row's ^ and v, TIMING and the search field at the right edge, the foot
- * row's RUN, the panels' HOLD TO RUN and OK at their foot, and a parameter
- * row's + stepper. */
+ * row's ^ and v and the search field at the right edge, the footer's RUN
+ * and SETTINGS, the panels' HOLD TO RUN and OK at their foot, and a
+ * parameter row's + stepper. */
 #define RS_LIST_UP_X   ST_LIST_UP_X
 #define RS_LIST_DN_X   ST_LIST_DN_X
 #define RS_CRUMB_CY    ST_CRUMB_CY
-#define RS_TIMING_X    ST_TIMING_X
+#define RS_SET_X       ST_SET_X
 #define RS_FIND_X      ST_FIND_X
 #define RS_RUN_X       ST_WRITE_X
 #define RS_RUN_CY      ST_BTN_CY
@@ -3126,10 +3126,15 @@ static void pose_motor_tools(ui_screen_id_t id, const char *view)
         } else if (strcmp(view, "motor-stick") != 0) {
             stick_open("Hobbywing", "hobbywing-flyfun-8item");
             if (strncmp(view, "motor-stick-timing", 18) == 0) {
-                tap(RS_TIMING_X, UI_BAND_H + RS_CRUMB_CY);       /* TIMING */
+                /* The footer's SETTINGS: the 14 stick settings. */
+                tap(RS_SET_X, UI_BAND_H + RS_RUN_CY);
                 if (strcmp(view, "motor-stick-timing-keypad") == 0) {
-                    /* BEEP MIN's value, the third row, typed as 250. */
-                    tap(400 + 216 / 2, UI_BAND_H + RS_STEP_CY(2));
+                    /* BEEP MIN's value, typed as 250. */
+                    const gfx_rect_t v = ui_setlist_row_part(
+                        esc_stick_settings_list(),
+                        esc_stick_settings_row(SET_STICK_BEEP_MIN),
+                        UI_SL_PART_VALUE);
+                    tap(v.x + v.w / 2, UI_BAND_H + v.y + v.h / 2);
                     kp_type(esc_stick_panel_keypad(), "250");
                 }
             } else {

@@ -351,7 +351,7 @@ matches the arguments its call passes. The panel's firmware in
 `test_text` covers the rest: every ID has German, every German format
 converts what its English does, every string with a declared width fits it
 in every language, alerts and splash details fit their buffers, translated
-settings fit SETUP and the TIMING page, and the report's columns and labels
+settings fit SETUP and the settings lists, and the report's columns and labels
 line up.
 
 `tools/check_docs.py` fails when a German wiki page quotes in backticks the

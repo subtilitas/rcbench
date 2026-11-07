@@ -1,10 +1,10 @@
 /**
  * @file test_keypad_rows_stick.c
- * @brief Every row of ESC STICK's TIMING page held to keypad_rows_rig.h's
+ * @brief Every row of ESC STICK's SETTINGS list held to keypad_rows_rig.h's
  *        four rules: a tap on its value opens the keypad with the row's
  *        label, unit, range and its step's digits; a value past the range
  *        is refused and the row keeps its value; CANCEL keeps it; OK sets
- *        the value typed.  The page's rows are every number of the
+ *        the value typed.  The list's rows are every number of the
  *        schema's stick category.
  *
  * SPDX-License-Identifier: MIT
@@ -14,16 +14,22 @@
 
 #include "keypad_rows_rig.h"
 
-/** @brief TIMING's rows a page shows. */
-#define ROWS_SHOWN 6
-/** @brief The rows TIMING has: the stick category's 14 numbers. */
+/** @brief The rows the list has: the stick category's 14 numbers. */
 #define ROW_COUNT 14
+
+/** @brief The list's settings in their order, headings left out. */
+static const setting_id_t k_ids[ROW_COUNT] = {
+    SET_STICK_V, SET_STICK_I, SET_STICK_BEEP_MIN, SET_STICK_GAP_MIN,
+    SET_STICK_LONG, SET_STICK_LONG_MAX, SET_STICK_GROUP_GAP, SET_STICK_ENTRY,
+    SET_STICK_STORE, SET_STICK_OFF, SET_STICK_SILENCE, SET_STICK_TIMEOUT,
+    SET_STICK_THRESHOLD, SET_STICK_HYST,
+};
 
 /** @brief The keypad ESC STICK holds. */
 static const ui_keypad_t *kp(void) { return esc_stick_panel_keypad(); }
 
 /**
- * @brief A key of TIMING's keypad tapped, in the screen's coordinates.
+ * @brief A key of the list's keypad tapped, in the screen's coordinates.
  * @param k The key.
  */
 static void kkey(ui_key_t k)
@@ -33,32 +39,24 @@ static void kkey(ui_key_t k)
 }
 
 /**
- * @brief The keypad of TIMING's row @p row: the page at its top, then
- *        scrolled down a row a tap of "v" until @p row is the last row
- *        shown, where it lies below the first page.
- * @param row The row, 0 to 13.
+ * @brief The keypad of the list's row @p row: the row scrolled into sight
+ *        and its value tapped.
+ * @param row The row, 0 to 13, headings left out.
  */
 static void open_row(int row)
 {
-    for (int i = 0; i < ROW_COUNT; ++i) {
-        tap(PAGE_UP_X, PAGE_CY);             /* to the top */
-    }
-    const int down = (row >= ROWS_SHOWN) ? row - ROWS_SHOWN + 1 : 0;
-    for (int i = 0; i < down; ++i) {
-        tap(PAGE_DN_X, PAGE_CY);
-    }
-    tap(ST_VALUE_X, STEP_CY(row - down));
+    set_tap(k_ids[row], UI_SL_PART_VALUE);
 }
 
-/** @brief TIMING's keypad as keypad_rows_rig.h reaches it. */
+/** @brief The list's keypad as keypad_rows_rig.h reaches it. */
 static const kpr_screen_t k_timing = { kp, kkey, open_row };
 
-/** @brief TIMING on the HobbyWing profile, at the defaults. */
+/** @brief The SETTINGS list on the HobbyWing profile, at the defaults. */
 static void at_timing_page(void)
 {
     fresh();
     descend_to_hobbywing();
-    tap(TIMING_X, TIMING_Y);
+    open_settings();
 }
 
 /*

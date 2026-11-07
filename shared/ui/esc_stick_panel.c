@@ -59,17 +59,6 @@
  * may meet. */
 #include "esc_stick_panel_int.h"
 
-/* The settings the TIMING page shows, in its order. */
-const setting_id_t sp_settings_list[] = {
-    SET_STICK_V, SET_STICK_I, SET_STICK_BEEP_MIN, SET_STICK_GAP_MIN,
-    SET_STICK_LONG, SET_STICK_LONG_MAX, SET_STICK_GROUP_GAP, SET_STICK_ENTRY,
-    SET_STICK_STORE, SET_STICK_OFF, SET_STICK_SILENCE, SET_STICK_TIMEOUT,
-    SET_STICK_THRESHOLD, SET_STICK_HYST,
-};
-_Static_assert(sizeof(sp_settings_list) / sizeof(sp_settings_list[0])
-               == SP_SETTINGS,
-               "SP_SETTINGS (esc_stick_panel_int.h) counts sp_settings_list");
-
 /* --------------------------------------------------------------- the state */
 
 /* The state, its type in esc_stick_panel_int.h. */
@@ -98,14 +87,16 @@ void esc_stick_panel_reset(void)
     s.st.hand_btn   = (gfx_rect_t){ SIDE_IN, HAND_Y,
                                     (int16_t)(SIDE_CELLS * SP_CELL),
                                     UI_TAP_MIN };
-    /* On a result, in the foot row left of OK. */
-    s.st.hand_res   = (gfx_rect_t){ (int16_t)(W - PAD - 12 - FOOT_BTN_W - 8
-                                              - 330),
-                                    BTN_Y, 330, BTN_H };
-    /* In the profile page's crumb row, at its right, as tall as BACK. */
-    s.st.timing_btn = (gfx_rect_t){ (int16_t)(W - PAD - 12 - FOOT_BTN_W),
-                                    CRUMB_Y, FOOT_BTN_W, CRUMB_H };
-    s.st.kp.pressed = -1;
+    /* On a result, at the run card's foot, right. */
+    s.st.hand_res   = (gfx_rect_t){ (int16_t)(W - PAD - 12 - 330),
+                                    (int16_t)(RUN_Y + RUN_H - 8 - UI_TAP_MIN),
+                                    330, UI_TAP_MIN };
+    sp_set_reset();
+}
+
+bool sp_settings_free(void)
+{
+    return !esc_stick_running(&s.st.run) && !s.st.armed;
 }
 
 void esc_stick_panel_enter(void)
@@ -125,8 +116,7 @@ void esc_stick_panel_open(void)
     t->level = 0;
     t->maker = NULL;
     t->shown = false;
-    t->timing = false;
-    sp_kp_close();
+    sp_set_close();
     t->bscroll = 0;
     sp_build_list(false);
     ++pg.rev;
@@ -512,6 +502,10 @@ static uint32_t sp_signature(void)
 void esc_stick_panel_tick(float dt_s)
 {
     stick_t *t = &s.st;
+    if (sp_set_shown() && !sp_settings_free()) {
+        sp_set_close();          /* the bench armed under the list */
+    }
+    sp_set_tick(dt_s);
     if (pg.stage == STAGE_LIST && sp_list_key() != t->built_key) {
         sp_build_list(true);
         ++pg.rev;
@@ -613,13 +607,7 @@ void esc_stick_panel_leave(void)
     t->hand_open = false;
     sp_end_hold();
     sp_find_close();
-    sp_kp_close();
-    if (t->timing) {
-        t->timing = false;
-        if (settings_dirty()) {
-            settings_request_save();
-        }
-    }
+    sp_set_close();
 }
 
 /*
@@ -676,11 +664,7 @@ void esc_stick_panel_cancel(void)
         t->tk_rev = t->tk.revision;
         ++pg.rev;
     }
-    if (t->kp.open && t->kp.pressed >= 0) {
-        ui_keypad_cancel_press(&t->kp);
-        t->kp_rev = t->kp.revision;
-        ++pg.rev;
-    }
+    sp_set_cancel();
     bool queued = false;
     for (int i = 0; i < t->qn; ++i) {
         queued = queued || t->q[i].kind == MOTOR_CMD_ARM;

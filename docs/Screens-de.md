@@ -1396,13 +1396,13 @@ Beschriftungen, Zeilen und Schaltflächen verwenden die Schrift 10 x 20:
 
 | Teil | Ort und Größe |
 | --- | --- |
-| Pfadzeile | y 30 bis 78: ZURÜCK 120 x 48px, der Pfad in der Schrift 12 x 24 und rechts das Suchfeld (260px, sein X 48px), `^` und `v` (je 56px) auf der Liste oder TIMING (168px) auf der Seite eines Profils |
+| Pfadzeile | y 30 bis 78: ZURÜCK 120 x 48px, der Pfad in der Schrift 12 x 24 und rechts das Suchfeld (260px, sein X 48px) und `^` und `v` (je 56px) auf der Liste |
 | Liste | 7 Zeilen je Seite, 48px hoch im Abstand von 56px ab y 84, 984px breit; der Name eines Modells in 30 Zeichen; die Fußzeile endet 4px über dem Alarmband |
-| Seite eines Profils und TIMING | links die Parameterfläche, 660px: 6 Zeilen je Seite, 48px hoch im Abstand von 56px, jede mit ihrer Nummer, ihrem Namen (bis 23 Zeichen), ihrem Wert in einer 250px breiten Spalte und `-` und `+` von 48 x 48px, 8px zwischen je zweien |
-| Seitenspalte | 340px rechts der Parameterfläche: ÄNDERN (auf TIMING dessen Titel), die gezeigten Zeilen und `^` und `v` von 48 x 48px; MANUELLER EINGRIFF NÖTIG, 310 x 48px; darunter, wie das Menü des Profils arbeitet, Netzteil und Einstiegszeit und die Hilfe der gewählten Zeile, umbrochen auf 31 Zeichen je Zeile |
-| Fußzeile | y 436 bis 492, 4px über dem Alarmband: links der Hinweis auf bis zu 2 Zeilen, VORGABEN und START, ABBRECHEN, OK oder SCHLIESSEN, je 168 x 56px |
-| Lauf und Ergebnis | die Gerätekarte über die Breite ab y 84 mit ihren zwei Zeilen, darunter ab y 136 die Karte des Laufs mit der Signalsäule rechts, zwei Hilfezeilen ab y 390 und die Fußzeile; MANUELLER EINGRIFF NÖTIG eines Ergebnisses, 330 x 56px, links von OK |
-| Warnung, Handgriffe, Abfrage | ein Feld über den Seiten ab y 28, sein Titel in der Schrift 20 x 36, seine Zeilen im Abstand von 22px, seine Schaltflächen 48px hoch und 4px über der Fußzeile endend, sodass ein zweites Tippen auf die Stelle von START keine davon trifft |
+| Seite eines Profils | links die Parameterfläche, 660px, y 84 bis 388: 5 Zeilen je Seite, 48px hoch im Abstand von 56px, jede mit ihrer Nummer, ihrem Namen (bis 23 Zeichen), ihrem Wert in einer 250px breiten Spalte und `-` und `+` von 48 x 48px, 8px zwischen je zweien; der Hinweis über die Breite auf bis zu 2 Zeilen ab y 396 |
+| Seitenspalte | 340px rechts der Parameterfläche: ÄNDERN, die gezeigten Zeilen und `^` und `v` von 48 x 48px; MANUELLER EINGRIFF NÖTIG, 310 x 48px; darunter, wie das Menü des Profils arbeitet, Netzteil und Einstiegszeit und die Hilfe der gewählten Zeile, umbrochen auf 31 Zeichen je Zeile |
+| Fußleiste | y 444 bis 492, 4px über dem Alarmband ([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste)): `[ESC STICK] [START n / ABBRECHEN / OK] [OPTIONEN]` auf der Seite eines Profils, ihrem Lauf und ihrem Ergebnis |
+| Lauf und Ergebnis | die Gerätekarte über die Breite ab y 84 mit ihren zwei Zeilen, darunter von y 136 bis 388 die Karte des Laufs mit der Signalsäule rechts, zwei Hilfezeilen ab y 394 und die Fußleiste; MANUELLER EINGRIFF NÖTIG eines Ergebnisses, 330 x 48px, rechts am Fuß der Karte des Laufs |
+| Warnung, Handgriffe, Abfrage | ein Feld über den Seiten und der Fußleiste ab y 28, sein Titel in der Schrift 20 x 36, seine Zeilen im Abstand von 22px, seine Schaltflächen 48px hoch und 4px über der Fußleiste endend, sodass ein zweites Tippen auf die Stelle von START keine davon trifft |
 
 ZURÜCK und das Home-Feld führen jeweils eine Ebene zurück: vom
 Stick-Profil zur Modellliste, von dort zur Herstellerliste und weiter zu
@@ -1515,25 +1515,26 @@ bleibt sie aus
 
 ![Vom Netzteil beendet](img/de/motor-stick-failed.png)
 
-TIMING enthält die Zeiten der Pieptöne und die Netzteil-Einstellungen. Keine
-davon ist gemessen:
+OPTIONEN in der Fußleiste öffnet die Optionsliste
+([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste)):
+Spannung und Strombegrenzung unter NETZTEIL, die Zeiten der Pieptöne unter
+TIMING UND ERKENNUNG. Keine davon ist gemessen. OPTIONEN nimmt einen Druck
+bei SAFE und ohne laufenden Lauf an; sonst ist es grau, und ein Tippen
+zeigt `OPTIONEN nur bei SAFE. Schalte zuerst auf SAFE.` im Meldeband. Ein
+Prüfstand, der unter der offenen Liste scharf schaltet, schließt sie.
 
-![Timing](img/de/motor-stick-timing.png)
+![Die Optionsliste](img/de/motor-stick-timing.png)
 
-Ändere einen Wert mit `-` und `+` um einen Schritt, oder tippe auf die
-250px breite Wertespalte, um das Tastenfeld zu öffnen. Es bedeckt die Seite
-unter dem Ausgangsstreifen bis 4px über dem Alarmband: 1008 x 464px mit
-242 x 81px großen Tasten. Es zeigt Name, Bereich und Einheit. Die Zahl
-der Nachkommastellen folgt der Schrittweite: eine bei 0,1V für Spannung,
-zwei bei 0,05A für Strombegrenzung.
-
-OK rundet auf den nächsten Schritt, wie die Plus- und Minus-Tasten:
-1,23A wird 1,25A. SCHLIESSEN fordert wie nach einer Schrittänderung das
-Speichern an. Bei einem Wert außerhalb des Bereichs bleibt das Tastenfeld
-offen und zeigt den Bereich in der Warnfarbe. ABBRECHEN, OK ohne Eingabe
-oder das Home-Feld schließt es ohne Änderung; TIMING bleibt offen.
-Darunterliegende Bedienelemente reagieren nicht. Profilpunkte verwenden
-Listen mit ESC-Werten und öffnen kein Tastenfeld.
+Die Liste bedeckt den ganzen Körper samt Ausgangsstreifen; ihre Leiste
+lautet `[ESC STICK] [ESC STICK ZURÜCKSETZEN] [SPEICHERN]`. Ein Tippen auf
+den Wert einer Zahl öffnet das Tastenfeld, 1004 x 482px. Es zeigt Name,
+Bereich und Einheit. Die Zahl der Nachkommastellen folgt der Schrittweite:
+eine bei 0,1V für Spannung, zwei bei 0,05A für Strombegrenzung. OK rundet
+auf den nächsten Schritt, wie die Tasten: 1,23A wird 1,25A. Eine Änderung
+gilt sofort; SPEICHERN behält sie. ESC STICK ZURÜCKSETZEN setzt die 14
+Einstellungen auf ihre Vorgaben und keine anderen. Spannung 0,0V nimmt die
+Spannung aus der Zellenzahl des Profils. Profilpunkte verwenden Listen mit
+ESC-Werten und öffnen kein Tastenfeld.
 
 ![Das Tastenfeld von Piepton min](img/de/motor-stick-timing-keypad.png)
 

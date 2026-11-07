@@ -367,7 +367,7 @@ nicht abgedeckt.
 `test_text` deckt den Rest ab: jede ID hat Deutsch, jedes deutsche Format
 wandelt, was sein Englisch wandelt, jeder Text mit angegebener Breite passt
 in jeder Sprache hinein, Alarme und Splash-Details passen in ihre Puffer,
-übersetzte Einstellungen passen in SETUP und die TIMING-Seite, und Spalten
+übersetzte Einstellungen passen in SETUP und die Optionslisten, und Spalten
 und Beschriftungen des Berichts stehen bündig.
 
 `tools/check_docs.py` schlägt fehl, wenn eine deutsche Wiki-Seite in

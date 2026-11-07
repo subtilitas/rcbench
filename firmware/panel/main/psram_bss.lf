@@ -68,6 +68,7 @@ entries:
     esc_stick_list (rcbench_extram_bss)
     esc_stick_draw (rcbench_extram_bss)
     esc_stick_draw_run (rcbench_extram_bss)
+    esc_stick_settings (rcbench_extram_bss)
     kst_panel (rcbench_extram_bss)
     kst_panel_draw (rcbench_extram_bss)
     hitec_panel (rcbench_extram_bss)

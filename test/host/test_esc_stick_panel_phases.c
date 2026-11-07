@@ -1,15 +1,15 @@
 /**
  * @file test_esc_stick_panel_phases.c
- * @brief ESC STICK's timing page and the drawing of a run: every phase, every end
- * and every refusal, and what a stop or a lost touch takes away.
+ * @brief ESC STICK's SETTINGS list and the drawing of a run: every phase, every
+ * end and every refusal, and what a stop or a lost touch takes away.
  *
  * Cases:
- * - timing_steps_the_settings_and_closing_asks_for_a_save
+ * - the_settings_list_steps_the_stick_settings_and_save_writes_them
  * - an_item_steps_from_keep_and_stops_at_its_ends
  * - every_phase_of_a_run_draws
  * - every_end_draws_its_reason
  * - a_run_that_cannot_start_says_why
- * - pages_step_back_and_leaving_closes_timing
+ * - pages_step_back_and_leaving_closes_the_list
  * - a_stop_release_takes_the_hold_and_a_queued_arm_away
  * - a_stop_or_a_lost_touch_takes_a_queued_arm_away
  * - the_screen_passes_the_supplys_own_state
@@ -19,32 +19,36 @@
 
 #include "esc_stick_panel_rig.h"
 
-TEST_CASE(timing_steps_the_settings_and_closing_asks_for_a_save)
+TEST_CASE(the_settings_list_steps_the_stick_settings_and_save_writes_them)
 {
     fresh();
     descend_to_hobbywing();
-    tap(TIMING_X, TIMING_Y);
-    tap(STEP_UP_X, STEP_CY(2));              /* BEEP MIN */
+    open_settings();
+    CHECK(esc_stick_settings_list()->open);
+    set_step(SET_STICK_BEEP_MIN, +1);
     CHECK_EQ(settings_get_int(SET_STICK_BEEP_MIN), 210);
-    tap(STEP_UP_X, STEP_CY(0));              /* VOLTAGE off FROM PROFILE */
+    set_step(SET_STICK_V, +1);               /* VOLTAGE off the profile's */
     CHECK_NEAR(settings_get(SET_STICK_V), 0.1f, 0.001f);
-    for (int i = 0; i < 10; ++i) {
-        tap(PAGE_DN_X, PAGE_CY);
-    }
-    tap(STEP_DN_X, STEP_CY(ST_PARM_ROWS - 1)); /* the last: HYSTERESIS */
+    set_step(SET_STICK_HYST, -1);            /* the last row: HYSTERESIS */
     CHECK_EQ(settings_get_int(SET_STICK_HYST), 30);
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
     CHECK(lit() > 20000);
-    tap(READ_X, BTN_CY);                     /* DEFAULTS */
+    set_strip(1);                            /* RESET ESC STICK */
     CHECK_EQ(settings_get_int(SET_STICK_BEEP_MIN), 200);
     CHECK_EQ(settings_get_int(SET_STICK_HYST), 40);
     /* The defaults are the values loaded at start: nothing to write. */
     CHECK(!settings_dirty());
-    tap(STEP_DN_X, STEP_CY(ST_PARM_ROWS - 1)); /* HYSTERESIS again */
+    set_step(SET_STICK_HYST, -1);            /* HYSTERESIS again */
     CHECK_EQ(settings_get_int(SET_STICK_HYST), 30);
-    tap(WRITE_X, BTN_CY);                    /* CLOSE */
+    /* The list writes nothing by itself: SAVE asks for the write. */
+    CHECK(!settings_save_asked());
+    set_strip(2);
     CHECK(settings_save_asked());
+    /* The home tag closes the list, the profile's page under it. */
+    CHECK(scr->back());
+    CHECK(!esc_stick_settings_list()->open);
+    CHECK(esc_stick_panel_page() != NULL);
     settings_cancel_save();
 }
 
@@ -75,7 +79,8 @@ TEST_CASE(an_item_steps_from_keep_and_stops_at_its_ends)
     CHECK_EQ(esc_stick_panel_runs(), 0u);
     /* Paging reaches item 8, and BACK climbs to the list. */
     tap(PAGE_DN_X, PAGE_CY);
-    tap(PAGE_DN_X, PAGE_CY);                 /* items 3 to 8 */
+    tap(PAGE_DN_X, PAGE_CY);
+    tap(PAGE_DN_X, PAGE_CY);                 /* items 4 to 8 */
     tap(STEP_UP_X, STEP_CY(ST_PARM_ROWS - 1));
     tap(BACK_X, BACK_Y);
     tap(BACK_X, BACK_Y);
@@ -303,27 +308,25 @@ TEST_CASE(a_run_that_cannot_start_says_why)
     CHECK_EQ(esc_stick_panel_runs(), 0u);
 }
 
-/* The pages step back as well as forward, and leaving with TIMING open
- * closes it and asks for the save. */
-TEST_CASE(pages_step_back_and_leaving_closes_timing)
+/* The pages step back as well as forward, and leaving with the SETTINGS
+ * list open closes it, what it changed unsaved. */
+TEST_CASE(pages_step_back_and_leaving_closes_the_list)
 {
     fresh();
     descend_to_hobbywing();
     tap(PAGE_DN_X, PAGE_CY);
     tap(PAGE_UP_X, PAGE_CY);
-    tap(TIMING_X, TIMING_Y);
-    tap(PAGE_DN_X, PAGE_CY);
-    tap(PAGE_UP_X, PAGE_CY);
-    tap(80, STEP_CY(1));                     /* a row's name: its help */
-    tap(STEP_UP_X, STEP_CY(1));
+    open_settings();
+    set_step(SET_STICK_I, +1);
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
     CHECK(lit() > 20000);
     scr->leave();
-    CHECK(settings_save_asked());
-    settings_cancel_save();
+    CHECK(!esc_stick_settings_list()->open);
+    CHECK(!settings_save_asked());
+    CHECK(settings_dirty());
     /* Leaving closed the session; opened again it starts on the makers,
-     * and the profile's page comes back with TIMING closed. */
+     * and the profile's page comes back with the list closed. */
     CHECK_EQ(esc_stick_panel_stage(), 0);
     scr->enter();
     open_stick();
@@ -443,12 +446,12 @@ TEST_CASE(the_screen_passes_the_supplys_own_state)
 
 int main(void)
 {
-    RUN(timing_steps_the_settings_and_closing_asks_for_a_save);
+    RUN(the_settings_list_steps_the_stick_settings_and_save_writes_them);
     RUN(an_item_steps_from_keep_and_stops_at_its_ends);
     RUN(every_phase_of_a_run_draws);
     RUN(every_end_draws_its_reason);
     RUN(a_run_that_cannot_start_says_why);
-    RUN(pages_step_back_and_leaving_closes_timing);
+    RUN(pages_step_back_and_leaving_closes_the_list);
     RUN(a_stop_release_takes_the_hold_and_a_queued_arm_away);
     RUN(a_stop_or_a_lost_touch_takes_a_queued_arm_away);
     RUN(the_screen_passes_the_supplys_own_state);

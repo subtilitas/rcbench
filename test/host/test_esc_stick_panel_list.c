@@ -69,9 +69,10 @@ TEST_CASE(reset_and_exit_rows_offer_no_value)
     fresh();
     descend_to_hobbywing();
     tap(PAGE_DN_X, PAGE_CY);
-    tap(PAGE_DN_X, PAGE_CY);                 /* items 3 to 8 */
-    tap(STEP_UP_X, STEP_CY(4));              /* item 7: set all to default */
-    tap(STEP_UP_X, STEP_CY(5));              /* item 8: exit */
+    tap(PAGE_DN_X, PAGE_CY);
+    tap(PAGE_DN_X, PAGE_CY);                 /* items 4 to 8 */
+    tap(STEP_UP_X, STEP_CY(3));              /* item 7: set all to default */
+    tap(STEP_UP_X, STEP_CY(4));              /* item 8: exit */
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
     CHECK(lit() > 20000);
@@ -106,7 +107,7 @@ TEST_CASE(a_profile_over_the_supply_cap_is_refused_in_the_list)
     open_maker("Dualsky");
     open_model("dualsky-xcontroller", NULL);
     CHECK(esc_stick_panel_page() != NULL);
-    tap(TIMING_X, TIMING_Y);
+    open_settings();
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
     CHECK(lit() > 20000);

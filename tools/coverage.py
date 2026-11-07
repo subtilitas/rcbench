@@ -152,6 +152,7 @@ TRACKED = [
     "shared/ui/esc_stick_panel.c",
     "shared/ui/esc_stick_list.c",
     "shared/ui/esc_stick_touch.c",
+    "shared/ui/esc_stick_settings.c",
     "shared/ui/esc_stick_draw.c",
     "shared/ui/esc_stick_draw_run.c",
     "shared/ui/log_viewer_screen.c",
