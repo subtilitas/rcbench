@@ -525,10 +525,7 @@ static int para(gfx_canvas_t *c, int x, int y, int w, const char *t,
 
 static gfx_color_t hold_fill(const ui_hold_t *h)
 {
-    if (h->flash_ms > 0) {
-        return ui_hold_flash(UI_OK, h->flash_ms);
-    }
-    return ui_hold_fill(UI_PANEL_HI, UI_OK, h->held_s);
+    return ui_hold_button_fill(UI_PANEL_HI, UI_OK, h);
 }
 
 /**

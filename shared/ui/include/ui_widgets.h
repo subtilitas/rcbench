@@ -44,6 +44,23 @@ void ui_button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
                gfx_color_t fill, bool pressed, bool enabled);
 
 /**
+ * @brief ui_button_font() with its label in @p ink: a neutral button whose
+ *        label says what the press does, as NOT SAVED and DELETE in the
+ *        danger colour.
+ * @param c       Canvas.
+ * @param r       The button.
+ * @param label   Its label, centred, or NULL for none.
+ * @param fill    Its colour while enabled.
+ * @param ink     The label's colour while enabled; disabled it is faint.
+ * @param pressed Lightens the fill.
+ * @param enabled False dims it.
+ * @param f       The label's face.
+ */
+void ui_button_ink(gfx_canvas_t *c, gfx_rect_t r, const char *label,
+                   gfx_color_t fill, gfx_color_t ink, bool pressed,
+                   bool enabled, const gfx_font_t *f);
+
+/**
  * @brief The fill of a button that takes no press: the theme's ground
  *        (UI_BG), so with its faint label it reads dimmer than an enabled
  *        button in the dark theme and in the light one, and differs from
@@ -371,15 +388,16 @@ void ui_choice_row(gfx_canvas_t *c, gfx_rect_t r, const char *text,
 
 /**
  * @brief The flash as the command goes, by time: phases of
- *        UI_HOLD_FLASH_PHASE_MS (25ms) each, white, black, settled, the
- *        cycle twice, UI_HOLD_FLASH_MS (150ms) in all: 9 frames at 60Hz.
+ *        UI_HOLD_FLASH_PHASE_MS (50ms) each, white, black, settled, the
+ *        cycle twice, UI_HOLD_FLASH_MS (300ms) in all: 18 frames at 60Hz,
+ *        3 frames a phase.
  */
-#define UI_HOLD_FLASH_PHASE_MS 25
+#define UI_HOLD_FLASH_PHASE_MS 50
 /** @brief The phases of one cycle: white, black, settled. */
 #define UI_HOLD_FLASH_CYCLE    3
 /** @brief The cycles of one flash. */
 #define UI_HOLD_FLASH_TIMES    2
-/** @brief The whole flash: 150ms. */
+/** @brief The whole flash: 300ms. */
 #define UI_HOLD_FLASH_MS \
     (UI_HOLD_FLASH_PHASE_MS * UI_HOLD_FLASH_CYCLE * UI_HOLD_FLASH_TIMES)
 
@@ -393,9 +411,10 @@ gfx_color_t ui_hold_fill(gfx_color_t base, gfx_color_t target, float held_s);
 /**
  * @brief The fill while the flash runs.
  *
- * 150ms in all is short enough to read as a flash rather than an
- * animation.  The colour follows the time the flash has run, not the frames
- * drawn: a frame later than a phase (25ms) skips that phase.
+ * 300ms in all is short enough to read as a flash rather than an
+ * animation, and a phase of 50ms is 3 frames at 60Hz.  The colour follows
+ * the time the flash has run, not the frames drawn; ui_hold_flash_left()
+ * keeps a late frame from skipping a phase.
  * @param settled  What the fill returns to: the settled phase and the end.
  * @param ms_left  The flash's time still to run, counting down from
  *                 UI_HOLD_FLASH_MS; 0 or less is no flash.
@@ -419,6 +438,14 @@ typedef struct {
     bool  fired;       /**< the hold completed; it does not repeat     */
     int   flash_ms;    /**< ms of the flash still to run               */
     bool  flash_new;   /**< the flash started and no step has run yet  */
+    bool  flashed;     /**< this press, or the state it asked for, has
+                            had its flash                                */
+    /* The button as ui_hold_button() last drew it, for ui_hold_ghost(). */
+    gfx_rect_t        drawn_r;      /**< where                          */
+    gfx_color_t       drawn_target; /**< the fill the flash settles on  */
+    const gfx_font_t *drawn_f;      /**< the label's face; NULL: never
+                                         drawn                           */
+    char              drawn_label[40]; /**< the label, cut to fit       */
     int   hint;        /**< ui_text_id_t of the band's hint for a release
                             before UI_HOLD_S                              */
 } ui_hold_t;
@@ -471,19 +498,46 @@ bool ui_hold_end(ui_hold_t *h, const touch_event_t *up, gfx_rect_t rect);
  */
 float ui_hold_credit(float dt_s);
 
-/** Time passed. True on the one frame the hold completes, and never again
- *  until the press is lifted and made afresh. */
+/**
+ * @brief Time passed for the press.
+ *
+ * On the one frame the hold completes the flash starts, so every hold
+ * flashes as it fires, whatever the screen does with the firing: a button
+ * that changes its label or a page that closes on it still flashes where
+ * it was drawn (ui_hold_button()).  The screen steps the flash with
+ * ui_hold_flash_step() every frame.
+ * @param h     The hold.
+ * @param dt_s  The frame's time, in seconds, credited by ui_hold_credit().
+ * @return True on the one frame the hold completes, and never again until
+ *         the press is lifted and made afresh.
+ */
 bool ui_hold_tick(ui_hold_t *h, float dt_s);
 
 /**
- * What the hold asked for has arrived: flash, and stop filling.
+ * @brief What the hold asked for has arrived: stop filling, and flash
+ *        unless this press has had its flash (ui_hold_tick() starts it as
+ *        the hold fires).
+ *
+ * A flash that runs is not restarted, so an answer that arrives inside the
+ * 300ms does not flash twice; a state that arrives with no press, from
+ * another screen or after ui_hold_left(), flashes.
  *
  * `fired` is deliberately kept. It remembers that the press still under the
  * finger is the one that fired, and the application calls this between the
  * hold completing and the finger lifting; clearing it would make that
  * release look like a fresh press.
+ * @param h The hold.
  */
 void ui_hold_reached(ui_hold_t *h);
+
+/**
+ * @brief The press that fired is over without a release: a screen that
+ *        acts on the firing and drops the press (a page that closes, a run
+ *        that starts) ends it here.  Nothing is held and nothing has fired
+ *        afterwards; the flash runs on, so the firing shows.
+ * @param h The hold.
+ */
+void ui_hold_spend(ui_hold_t *h);
 
 /**
  * What the hold asked for has gone away -- a stop, a failsafe, or the far
@@ -521,6 +575,101 @@ void ui_hold_flash_step(ui_hold_t *h, float dt_s);
  * @return The time left, 0 at the least.
  */
 int ui_hold_flash_left(int ms_left, float dt_s);
+
+/**
+ * @brief Whether the hold's flash runs.
+ * @param h The hold; NULL has none.
+ * @return True while ui_hold_flash() draws anything but the settled fill.
+ */
+bool ui_hold_flashing(const ui_hold_t *h);
+
+/**
+ * @brief The fill of a hold button now: the fade from @p base to
+ *        @p target across the hold while a press holds it, and the flash
+ *        over it while it runs, settling on @p target.  With no press down
+ *        and no flash it is @p base, whatever time the hold kept.
+ * @param base   The fill with nothing held: the button's state now.
+ * @param target The fill the hold fades to and the flash settles on: the
+ *               state the hold asks for.
+ * @param h      The hold; NULL is @p base.
+ * @return The colour.
+ */
+gfx_color_t ui_hold_button_fill(gfx_color_t base, gfx_color_t target,
+                                const ui_hold_t *h);
+
+/**
+ * @brief A hold button: ui_button_font() in ui_hold_button_fill().
+ *
+ * The one draw of every 2s hold in the bench, so each one fades the same
+ * way and flashes as it fires.  While the flash runs the button is drawn
+ * enabled whatever @p enabled says: the press that fired it is what the
+ * flash shows, and the state it asked for can refuse the next one.
+ * @param c       Canvas.
+ * @param r       The button.
+ * @param label   Its label, centred, or NULL for none.
+ * @param base    The fill with nothing held.
+ * @param target  The fill the hold fades to and the flash settles on.
+ * @param h       The hold; it keeps where and how the button was drawn,
+ *                for ui_hold_ghost().
+ * @param pressed Lightens the fill, except while the flash runs.
+ * @param enabled False draws it as ui_button_font() does a disabled one.
+ * @param f       The label's face.
+ */
+void ui_hold_button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
+                    gfx_color_t base, gfx_color_t target, ui_hold_t *h,
+                    bool pressed, bool enabled, const gfx_font_t *f);
+
+/**
+ * @brief The flash of a hold whose button went as it fired -- a page or a
+ *        question that closes, a step that moves on -- drawn where
+ *        ui_hold_button() last drew it, with its label.
+ *
+ * A screen calls it last in its render while the button is not drawn
+ * otherwise, and repaints the place whole once the flash ends.  Nothing
+ * is drawn when no flash runs or the button was never drawn.
+ * @param c Canvas.
+ * @param h The hold.
+ */
+void ui_hold_ghost(gfx_canvas_t *c, const ui_hold_t *h);
+
+/* -------------------------------------------------------- button colours */
+
+/**
+ * @brief What a press on an output-action button does now: the four
+ *        states of the class (docs/Screens.md, "Button colours").
+ *
+ * An output action switches an output on, arms the bench, starts a run or
+ * writes a servo.  Edit and navigation controls are not output actions:
+ * they keep UI_C_PANEL_HI, a selected tab UI_C_ACCENT.
+ */
+typedef enum {
+    UI_ACTION_AVAILABLE = 0, /**< a press starts or switches on: green   */
+    UI_ACTION_ACTIVE,        /**< it drives an output now, holds ARMED or
+                                  writes; a press stops: red             */
+    UI_ACTION_WAITING,       /**< under way, nothing live yet, or paused:
+                                  amber                                  */
+    UI_ACTION_REFUSED,       /**< takes no press now: grey, its reason in
+                                  the alert band on a tap                */
+    UI_ACTION_COUNT
+} ui_action_t;
+
+/**
+ * @brief The fill of an output-action button in state @p a, in the theme
+ *        in force.
+ * @param a The state; a value outside the enum is UI_ACTION_REFUSED.
+ * @return UI_C_OK, UI_C_DANGER, UI_C_WARN or ui_button_off_fill().
+ */
+gfx_color_t ui_action_fill(ui_action_t a);
+
+/**
+ * @brief A tap on a refused output-action button: its reason in the alert
+ *        band as a notice (amber, UI_NOTICE_SHOW_S), as a hold's hint.
+ *        An alert showing keeps the band; a screen without the band shows
+ *        nothing.
+ * @param why The reason, as the screen says it; NULL or empty shows
+ *            nothing.
+ */
+void ui_action_refused(const char *why);
 
 #ifdef __cplusplus
 }

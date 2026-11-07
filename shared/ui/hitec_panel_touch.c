@@ -349,4 +349,11 @@ void hitec_panel_tick(float dt_s)
         }
         ++hp.hold_rev;
     }
+    if (ui_hold_flashing(&hp.page.hold)) {
+        ui_hold_flash_step(&hp.page.hold, dt_s);
+        ++hp.hold_rev;
+        if (!ui_hold_flashing(&hp.page.hold)) {
+            ++hp.rev;           /* the tab under the flash, whole */
+        }
+    }
 }

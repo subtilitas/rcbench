@@ -987,10 +987,7 @@ static int line_at(gfx_canvas_t *c, int y, const char *t, gfx_color_t col)
  */
 static gfx_color_t hold_fill(void)
 {
-    if (s.hold.flash_ms > 0) {
-        return ui_hold_flash(UI_OK, s.hold.flash_ms);
-    }
-    return ui_hold_fill(UI_PANEL_HI, UI_OK, s.hold.held_s);
+    return ui_hold_button_fill(UI_PANEL_HI, UI_OK, &s.hold);
 }
 
 void wifi_screen_writes_text(char *out, size_t n, unsigned written)

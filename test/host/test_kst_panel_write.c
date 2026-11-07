@@ -29,6 +29,7 @@
  */
 
 #include "kst_panel_screen_rig.h"
+#include "hold_flash.h"
 
 /* ------------------------------------------------------- the switch, a write */
 
@@ -57,6 +58,32 @@ TEST_CASE(enable_write_is_off_until_its_page_is_held)
     enable();
     rig_link_lost();
     CHECK(!kst_prog_write_enabled(M));
+}
+
+/* The hold flash walk's case for the warning pages: ENABLE WRITE's page
+ * closes as its hold fires, and its button flashes where it was. */
+static void kp_frame(float dt_s) { tick(dt_s); }
+
+TEST_CASE(a_warning_pages_hold_flashes_as_it_fires)
+{
+    fresh();
+    connected();
+    tap(val(PG_SERVO, 3, 0));
+    CHECK_EQ(kst_panel_editor(), 3);
+    const gfx_rect_t b = kst_panel_apply_rect();
+    const gfx_rect_t r = { (int16_t)(b.x + 12), (int16_t)(b.y + 4),
+                           (int16_t)(b.w - 24), 6 };
+    const hold_flash_rig_t rig = { kp_frame, show, fb, W };
+    char seen[64];
+    ev(cx(b), cy(b), TOUCH_EVENT_DOWN, 1);
+    if (!hold_flash_walk(&rig, r, 2.6f, seen, sizeof(seen))) {
+        T_FAIL("ENABLE WRITE's hold drew %s, no flash", seen);
+    }
+    ev(cx(b), cy(b), TOUCH_EVENT_UP, 1);
+    CHECK(kst_prog_write_enabled(M));
+    /* Over, the page under it drawn whole: no white left there. */
+    show();
+    CHECK_EQ(hold_flash_body(&rig, r), '.');
 }
 
 TEST_CASE(a_write_needs_changes_the_switch_and_a_hold)
@@ -707,5 +734,6 @@ int main(void)
     RUN(one_press_at_a_time_and_a_lost_touch_stream_drops_it);
     RUN(leaving_the_screen_closes_the_pages_and_keeps_the_port);
     RUN(the_revision_moves_with_what_is_shown_and_rests_with_it);
+    RUN(a_warning_pages_hold_flashes_as_it_fires);
     return test_summary("kst_panel_write");
 }

@@ -360,8 +360,9 @@ int test_blocked(void)
 void test_begin(void)
 {
     /* The hold that started it is spent, whatever comes of it: a press
-     * the overlay let go of never reaches ui_hold_end(). */
-    ui_hold_reset(&s.test_hold);
+     * the overlay let go of never reaches ui_hold_end().  Its flash runs
+     * on. */
+    ui_hold_spend(&s.test_hold);
     s.test_down = false;
     ++s.test_rev;
     s.test_note = 0;
@@ -644,15 +645,11 @@ void draw_test_box(gfx_canvas_t *c)
 void draw_test_start(gfx_canvas_t *c)
 {
     const bool running = servo_test_running(&s.test);
-    gfx_color_t fill = ui_theme_color(UI_C_OK);
-    if (running) {
-        fill = ui_theme_color(UI_C_DANGER);
-    } else if (s.test_hold.held_s > 0.0f) {
-        fill = ui_hold_fill(fill, ui_theme_color(UI_C_DANGER),
-                            s.test_hold.held_s);
-    }
-    ui_button_font(c, test_start_rect(),
-                   running ? TR(SV_STOP_TEST) : TR(SV_START_TEST), fill,
+    ui_hold_button(c, test_start_rect(),
+                   running ? TR(SV_STOP_TEST) : TR(SV_START_TEST),
+                   ui_action_fill(running ? UI_ACTION_ACTIVE
+                                          : UI_ACTION_AVAILABLE),
+                   ui_action_fill(UI_ACTION_ACTIVE), &s.test_hold,
                    s.ov_have && s.ov_pressed == OP_TEST_START,
                    running || test_blocked() == 0, SV_FONT_LABEL);
 }

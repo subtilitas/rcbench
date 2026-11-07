@@ -326,6 +326,9 @@ static void row_draw(gfx_canvas_t *c, int i, const char *name, const char *value
                    pressed(EWP_P_ROW, i) || pressed(EWP_P_CONNECT_ROW, i), live, EWP_FONT);
 }
 
+/** @brief The render under way drew the hold's button. */
+static bool s_hold_drawn;
+
 /**
  * @brief The 2s hold's button, its fill the time held.
  * @param c     The canvas.
@@ -336,10 +339,9 @@ static void hold_btn(gfx_canvas_t *c, const char *label)
     const gfx_rect_t r = esc_wire_panel_hold_rect();
     const gfx_color_t edge = ui_theme_color(UI_C_DANGER);
 
-    ui_button_font(c, r, label,
-                   ui_hold_fill(ui_theme_color(UI_C_PANEL_SUNK), edge,
-                                ewp_s.hold.held_s),
-                   false, true, EWP_FONT);
+    s_hold_drawn = true;
+    ui_hold_button(c, r, label, ui_theme_color(UI_C_PANEL_SUNK), edge,
+                   &ewp_s.hold, false, true, EWP_FONT);
     /* Red before the hold fills it. */
     gfx_draw_rect(c, r.x, r.y, r.w, r.h, edge);
     gfx_draw_rect(c, r.x + 1, r.y + 1, r.w - 2, r.h - 2, edge);
@@ -802,6 +804,7 @@ void ewp_render(gfx_canvas_t *c)
 {
     const ewp_stage_t st = ewp_stage();
 
+    s_hold_drawn = false;
     gfx_fill_rect(c, 0, PROG_FULL_Y, ewp_s.area.w, ewp_s.area.h,
                   ui_theme_color(UI_C_BG));
     if (ewp_s.kp.open) {
@@ -825,5 +828,9 @@ void ewp_render(gfx_canvas_t *c)
         draw_pin_held(c);
     } else {
         draw_held(c, st);
+    }
+    /* A hold whose page or step went as it fired flashes where it was. */
+    if (!s_hold_drawn) {
+        ui_hold_ghost(c, &ewp_s.hold);
     }
 }

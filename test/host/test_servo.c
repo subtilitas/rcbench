@@ -328,30 +328,34 @@ TEST_CASE(the_arm_button_fades_across_the_hold_and_flashes_when_it_lands)
     const gfx_color_t half = arm_px();
     CHECK(red_of(half) > red_of(idle));         /* on its way to red */
 
-    hold_for(UI_HOLD_S);
+    hold_for(UI_HOLD_S / 2.0f - 0.1f);
     scr->render(&cv, 0);
     const gfx_color_t full = arm_px();
     if (!(red_of(full) > red_of(half) && red_of(full) > green_of(full))) {
         T_FAIL("the hold went %04x -> %04x -> %04x, which is not a fade to "
                "red", idle, half, full);
     }
-    CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
 
-    /* Arriving flashes the whole button, its colour by the time the flash
-     * has run, 25ms a phase, and it settles on the danger red.  The finger comes off first: a press lerps
-     * the fill towards white, and what is under test here is the flash. */
-    servo_screen_set_armed(true);
-    arm_release();
+    /* Firing flashes the whole button, its colour by the time the flash
+     * has run, 50ms a phase, and it settles on the danger red.  ARMED
+     * arriving inside the flash restarts nothing. */
     bool saw_white = false, saw_black = false;
-    for (int i = 0; i < UI_HOLD_FLASH_MS / 25; ++i) {
+    bool armed = false;
+    for (int i = 0; i < UI_HOLD_FLASH_MS / 25 + 8; ++i) {
+        scr->tick(1.0f / 39.0f);
+        if (!armed && last_cmd().kind == SERVO_CMD_ARM) {
+            armed = true;
+            servo_screen_set_armed(true);
+        }
         scr->render(&cv, 0);
         const gfx_color_t px = arm_px();
         if (px == GFX_WHITE) { saw_white = true; }
         if (px == GFX_BLACK) { saw_black = true; }
-        scr->tick(1.0f / 39.0f);
     }
+    CHECK(armed);
     CHECK(saw_white);
     CHECK(saw_black);
+    arm_release();
     scr->render(&cv, 0);
     const gfx_color_t settled = arm_px();
     CHECK(red_of(settled) > green_of(settled));

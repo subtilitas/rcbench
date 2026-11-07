@@ -366,6 +366,13 @@ void kst_panel_tick(float dt_s)
         }
         ++k.hold_rev;
     }
+    if (ui_hold_flashing(&k.warn.hold)) {
+        ui_hold_flash_step(&k.warn.hold, dt_s);
+        ++k.hold_rev;
+        if (!ui_hold_flashing(&k.warn.hold)) {
+            ++k.rev;            /* the page under the flash, whole */
+        }
+    }
     if (k.have && (k.pressed == P_PLUS || k.pressed == P_MINUS)) {
         const float before = k.held_s;
         const float hz = before > REPEAT_DELAY_S + REPEAT_FAST_S

@@ -153,6 +153,21 @@ Eine Halte-Taste wirkt nach 2s Berührung. ARM, AUSGANG EIN, TEST STARTEN, ENDLA
 - Ein kurzer Tipp ist keine Störung. Deshalb ist der Hinweis eine Mitteilung und kein Alarm. Ein Tipp auf das Band löscht ihn vorzeitig. Ein bestehender Alarm verdeckt den Hinweis, und ein neu eintreffender Alarm ersetzt ihn.
 - STOP löscht den Hinweis sofort, ebenso ein neuer FEHLER-Code oder ein fehlerbedingter Wechsel von ARMED zu SAFE.
 - Die Hinweise stehen jeweils nach `Halte 2s, um`: `auf ARMED zu schalten.`, `den Ausgang einzuschalten.`, `zu übernehmen.`, `den Test zu starten.`, `den Endlagenlauf zu starten.`, `freizugeben.`, `zu schreiben.`, `zurückzuspielen.`, `fortzufahren.`, `zu verlassen.`, `zu laden.`, `den Port freizugeben.`, `zu reparieren.`, `zu starten.`, `zu installieren.`, `zu laden und zu installieren.`, `den IOmcu zu aktualisieren.`, `alle Pin-Zuordnungen zu löschen.` und `den STOP zu lösen.`
+- Jede Halte-Taste blitzt auf, sobald ihr Halten vollständig ist: die ganze Taste weiß, schwarz, dann in ihrer neuen Farbe, zweimal, 50ms je Farbe, 300ms insgesamt. Das Aufblitzen beginnt mit dem Halten, nicht mit der Antwort des Prüfstands. Eine Taste, die mit ihrem Halten verschwindet, etwa `2s HALTEN ZUM ÜBERNEHMEN` einer Warnung, blitzt dort, wo sie war.
+
+## Tastenfarben
+
+Die Füllung einer Taste sagt, was ein Druck mit einem Ausgang macht.
+
+| Füllung | Bedeutet | Tasten |
+|---|---|---|
+| grün | ein Druck schaltet einen Ausgang ein, schaltet auf ARMED, startet einen Lauf oder schreibt ein Servo | ARM, AUSGANG EIN, PROG 5V EIN, TEST STARTEN, ENDLAGENLAUF STARTEN, `2s HALTEN: START` bei AUTO, ZENTRIEREN und SWEEP, 1000us, ZENTRIEREN, 2000us und NULLPUNKT des Ruders, VERBINDEN, n WERTE SCHREIBEN; SPEICHERN auf SETUP, solange etwas ungespeichert ist |
+| rot | ein Ausgang ist ein, der Prüfstand ist ARMED oder ein Schreiben läuft; ein Druck hält es an | DISARM, AUSGANG AUS, LAUF BEENDEN, PAUSE während eines Sweeps, VERLASSEN, ABBRECHEN, ein Schreibschalter auf EIN; STOP immer |
+| bernstein | läuft oder wartet, noch nichts aktiv | PAUSIERT, WARTEN, `BEI STILLSTAND` |
+| grau, blasse Beschriftung | nimmt gerade keinen Druck an | ein Tipp auf ein graues TEST STARTEN, ENDLAGENLAUF STARTEN oder `2s HALTEN: START` zeigt den Grund 4s im Alarmband |
+| neutral | ändert einen Wert oder öffnet eine Seite | `-` `+`, Wertfelder, KATEGORIE ZURÜCKSETZEN, VERWERFEN, MAX LÖSCHEN, Kacheln, ÖFFNEN, SCHLIESSEN; ein gewählter Reiter ist cyan |
+
+LÖSCHEN auf FILES und LOGS und `NICHT GESPEICHERT` auf SETUP sind neutral mit roter Beschriftung.
 
 ## Berührungen nahe am Band
 

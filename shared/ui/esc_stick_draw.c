@@ -804,20 +804,18 @@ void esc_stick_panel_render(gfx_canvas_t *c)
 {
     if (s.st.hand_open && s.st.hand_p != NULL) {
         sp_draw_hand(c);
-        return;
-    }
-    if (pg.stage == STAGE_PAGE && s.st.p != NULL
-        && esc_stick_hand(&s.st.run) != NULL) {
+    } else if (pg.stage == STAGE_PAGE && s.st.p != NULL
+               && esc_stick_hand(&s.st.run) != NULL) {
         sp_draw_prompt(c);
-        return;
-    }
-    if (s.st.warn && s.st.p != NULL) {
+    } else if (s.st.warn && s.st.p != NULL) {
         sp_draw_warning(c);
         return;
-    }
-    if (pg.stage == STAGE_LIST || s.st.p == NULL) {
+    } else if (pg.stage == STAGE_LIST || s.st.p == NULL) {
         sp_draw_list(c);
-        return;
+    } else {
+        sp_draw_device(c);
     }
-    sp_draw_device(c);
+    /* The warning closes as HOLD TO RUN fires: the button flashes where
+     * it was. */
+    ui_hold_ghost(c, &s.st.hold);
 }

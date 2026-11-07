@@ -122,6 +122,17 @@ void ui_button_font(gfx_canvas_t *c, gfx_rect_t r, const char *label,
     }
 }
 
+void ui_button_ink(gfx_canvas_t *c, gfx_rect_t r, const char *label,
+                   gfx_color_t fill, gfx_color_t ink, bool pressed,
+                   bool enabled, const gfx_font_t *f)
+{
+    ui_button_font(c, r, NULL, fill, pressed, enabled, f);
+    if (label) {
+        gfx_text_in(c, r, label, f, enabled ? ink : UI_TEXT_FAINT, 1,
+                    GFX_ALIGN_CENTER);
+    }
+}
+
 gfx_color_t ui_button_off_fill(void)
 {
     return UI_BG;
@@ -513,6 +524,7 @@ void ui_hold_reset(ui_hold_t *h)
     h->fired = false;
     h->flash_ms = 0;
     h->flash_new = false;
+    h->flashed = false;
 }
 
 float ui_hold_credit(float dt_s)
@@ -545,6 +557,8 @@ void ui_hold_begin(ui_hold_t *h, int hint)
     h->down = true;
     h->held_s = 0.0f;
     h->hint = hint;
+    /* A fresh press is a fresh gesture: its firing flashes. */
+    h->flashed = false;
 }
 
 bool ui_hold_leave(ui_hold_t *h)
@@ -592,6 +606,10 @@ bool ui_hold_tick(ui_hold_t *h, float dt_s)
      * letting go early asks for nothing. */
     h->held_s = UI_HOLD_S;
     h->fired = true;
+    /* The flash starts with the firing, so no screen can leave it out. */
+    h->flash_ms = UI_HOLD_FLASH_MS;
+    h->flash_new = true;
+    h->flashed = true;
     return true;
 }
 
@@ -600,9 +618,23 @@ void ui_hold_reached(ui_hold_t *h)
     if (h == NULL) {
         return;
     }
+    h->held_s = 0.0f;
+    if (h->flash_ms > 0 || h->flashed) {
+        return;         /* this press has its flash, or has had it */
+    }
     h->flash_ms = UI_HOLD_FLASH_MS;
     h->flash_new = true;
+    h->flashed = true;
+}
+
+void ui_hold_spend(ui_hold_t *h)
+{
+    if (h == NULL) {
+        return;
+    }
+    h->down = false;
     h->held_s = 0.0f;
+    h->fired = false;
 }
 
 bool ui_hold_left(ui_hold_t *h)
@@ -611,6 +643,8 @@ bool ui_hold_left(ui_hold_t *h)
         return false;
     }
     h->held_s = 0.0f;
+    /* The state went away: its next arrival is a new one, and flashes. */
+    h->flashed = false;
     if (!h->down) {
         return false;
     }
@@ -660,5 +694,69 @@ gfx_color_t ui_hold_flash(gfx_color_t settled, int ms_left)
     case 0:  return GFX_WHITE;
     case 1:  return GFX_BLACK;
     default: return settled;
+    }
+}
+
+bool ui_hold_flashing(const ui_hold_t *h)
+{
+    return h != NULL && h->flash_ms > 0;
+}
+
+gfx_color_t ui_hold_button_fill(gfx_color_t base, gfx_color_t target,
+                                const ui_hold_t *h)
+{
+    if (h == NULL) {
+        return base;
+    }
+    if (h->flash_ms > 0) {
+        return ui_hold_flash(target, h->flash_ms);
+    }
+    /* The fade is the press's: a hold no finger holds draws its base. */
+    return h->down ? ui_hold_fill(base, target, h->held_s) : base;
+}
+
+void ui_hold_button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
+                    gfx_color_t base, gfx_color_t target, ui_hold_t *h,
+                    bool pressed, bool enabled, const gfx_font_t *f)
+{
+    const bool flashing = ui_hold_flashing(h);
+    if (h != NULL) {
+        h->drawn_r = r;
+        h->drawn_target = target;
+        h->drawn_f = f;
+        snprintf(h->drawn_label, sizeof(h->drawn_label), "%s",
+                 label != NULL ? label : "");
+    }
+    /* A lightened black is no black: the flash draws its phases as they
+     * are. */
+    ui_button_font(c, r, label, ui_hold_button_fill(base, target, h),
+                   pressed && !flashing, enabled || flashing, f);
+}
+
+void ui_action_refused(const char *why)
+{
+    /* As a hold's hint: a notice, on a screen with the band only. */
+    if (why != NULL && why[0] != '\0' && ui_router_stop_live()) {
+        ui_router_set_notice(why);
+    }
+}
+
+void ui_hold_ghost(gfx_canvas_t *c, const ui_hold_t *h)
+{
+    if (c == NULL || !ui_hold_flashing(h) || h->drawn_f == NULL) {
+        return;
+    }
+    ui_button_font(c, h->drawn_r, h->drawn_label,
+                   ui_hold_flash(h->drawn_target, h->flash_ms), false, true,
+                   h->drawn_f);
+}
+
+gfx_color_t ui_action_fill(ui_action_t a)
+{
+    switch (a) {
+    case UI_ACTION_AVAILABLE: return ui_theme_color(UI_C_OK);
+    case UI_ACTION_ACTIVE:    return ui_theme_color(UI_C_DANGER);
+    case UI_ACTION_WAITING:   return ui_theme_color(UI_C_WARN);
+    default:                  return ui_button_off_fill();
     }
 }

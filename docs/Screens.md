@@ -514,6 +514,49 @@ replaces a visible hint.
 | HOLD 2s TO ACKNOWLEDGE on the bus-fault screen | `Hold 2s to acknowledge.` |
 | HOLD 2s TO RECONNECT on the bus-fault screen | `Hold 2s to reconnect.` |
 
+### The flash
+
+Every hold button flashes on the frame its hold completes: the whole
+button white, black, then its settled colour, twice, 50ms a phase
+(`UI_HOLD_FLASH_PHASE_MS`), 300ms in all (`UI_HOLD_FLASH_MS`). At 60 frames
+a second a phase is 3 frames. A slower frame ends the phase it falls in and
+no more, so every phase is drawn at any frame rate. The settled colour is
+the one the hold fades to: the danger red for ARM, OUTPUT ON, PROG 5V ON,
+START TEST, START LIMIT RUN and HOLD 2s TO START on AUTO.
+
+- The flash starts with the hold, not with the answer. ARMED, the output
+  or the run arriving inside the 300ms restarts nothing; a press gets one
+  flash.
+- A button that goes as its hold fires, such as a warning's HOLD TO APPLY,
+  a programmer page's hold, HOLD 2s TO RUN of a stick run, OVERWRITE and
+  START on the IOmcu update's question, flashes where it was drawn. The
+  screen beneath is drawn again when the flash ends.
+- A state that arrives with no press, such as ARMED from another screen,
+  flashes the button once.
+- STOP's reset hold flashes in the same way, inside STOP's yellow frame.
+- The flash rate on the panel is not measured.
+
+### Button colours
+
+The fill of a button says what a press does to an output.
+
+| Class | Buttons | Available | Active | Waiting | Refused |
+| --- | --- | --- | --- | --- | --- |
+| Output action: switches an output on, arms, starts a run, writes a servo | ARM, OUTPUT ON, PROG 5V ON, START TEST, START LIMIT RUN, HOLD 2s TO START on AUTO, CENTRE and SWEEP on LIVE, 1000us, CENTRE, 2000us and ZERO on RUDDER, the programmers' CONNECT, ENABLE WRITE TO SERVO, WRITE n VALUES and MOVE SERVO | green (`UI_C_OK`) | red (`UI_C_DANGER`): an output is on, ARMED, a write runs, the servo is driven; the label says what a press stops (DISARM, OUTPUT OFF, STOP RUN, PAUSE, LEAVE, ABORT, ON) | amber (`UI_C_WARN`): PAUSED, WAIT | grey (`ui_button_off_fill()`), faint label |
+| Emergency | STOP | red | red, flashes on the press | - | never |
+| Edit | `-` `+`, value boxes, RESET MAX, RESET CATEGORY on SETUP, DISCARD, READ AGAIN | neutral (`UI_C_PANEL_HI`) | - | - | grey |
+| SAVE on SETUP | SAVE, SAVED, WHEN IDLE, NOT SAVED | green while something is unsaved (SAVE) | - | amber (WHEN IDLE) | neutral with the label in red (NOT SAVED); SAVED is neutral |
+| Navigation | tiles, tabs, OPEN, PLOT, CLOSE, openers | neutral; a selected tab cyan (`UI_C_ACCENT`) | - | - | grey |
+| Delete | DELETE on FILES and LOGS | neutral, the label in red | - | - | grey |
+
+Both themes use the same roles; the light theme's tokens are its own
+green, red and amber (`shared/ui/ui_theme.c`). A hold's fade runs from
+the available green to the colour the button holds next.
+
+A tap on a grey START TEST, START LIMIT RUN or HOLD 2s TO START on AUTO puts its
+reason in the alert band as a notice, amber for 4s, as a hold's hint. The
+line under the button says the same and stays.
+
 ## Menu marks
 
 ![The feature menu](img/overview.png)
@@ -835,8 +878,8 @@ gesture; sliding back does not resume it. Lift and press again to start a
 new hold. A switch to SAFE also cancels any hold still on the button,
 preventing that contact from arming the bench again 2s later.
 
-When the bench switches to ARMED, the whole button flashes white, black,
-red, then repeats the sequence, with one drawn frame per colour. While
+As the hold completes, the whole button flashes white, black, red, twice,
+50ms a colour ([The flash](#the-flash)). While
 ARMED, it stays danger red and acts as DISARM. DISARM responds immediately
 on contact, with no hold or wait for release. DISARM and STOP stop the
 output without a ramp. RESET PEAKS clears the peak markers while leaving
@@ -1671,7 +1714,7 @@ Two sweep-button taps in one frame cancel each other if the first command
 has not yet been sent. Nothing is sent and the sweep keeps its previous state.
 
 **PAUSE holds the current output position.** During a sweep the button
-reads PAUSE in the accent colour. Tap it to stop where the output has
+reads PAUSE in red: the sweep drives the output. Tap it to stop where the output has
 reached, which may lag behind the curve because of SPEED. The button
 changes to PAUSED with the warning-colour fill. The IOmcu holds the
 position (link HOLD, SWEEP register 4), because only it knows the exact
@@ -5329,7 +5372,7 @@ fetched or kept. On the settings screen that is the next frame, and
 the label goes to `SAVED` in that frame. While ARMED, the
 request stands as `WHEN IDLE` until the bench is SAFE.
 
-A failed write leaves the label at `NOT SAVED` in the danger colour
+A failed write leaves the label at `NOT SAVED`, in the danger colour on a neutral button,
 until the next successful write or the next edit. A refusal does not undo what
 was already written: the values are set key by key and a failure part way
 through leaves the earlier keys committed, so the medium can hold a mix of the
