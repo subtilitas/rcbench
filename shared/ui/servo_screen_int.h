@@ -74,7 +74,7 @@
 /** @brief The left card's top, px: the body's margin, level with the
  *         PORT button. */
 #define SV_PAGE_Y  PAD
-#define CARD_Y  SV_PAGE_Y
+#define CARD_Y  SV_PAGE_Y  /**< The left card's top, px: SV_PAGE_Y. */
 #define CARD_H  (CARD_FLOOR - CARD_Y) /**< The left card's height: 428px. */
 /**
  * @brief The PORT button over the output card (screen 636, 68, 380, 48):
@@ -528,33 +528,34 @@ typedef struct {
     /* Stops seen (servo_screen_cancel_arm()), for the question above. */
     uint32_t stops;
 
-    /*
-     * The function shown (servo_fn_t): the hub, or the function screen
-     * entered last.  The task under it (ui_workbench.h's strip, never
-     * drawn) is the one the function's panels draw on: LIVE for LIVE and
-     * SWEEP, TEST for TEST and LIMIT RUN, RUDDER for RUDDER and RUDDER
-     * AUTO, PROGRAM for KST and HITEC.
+    /**
+     * @brief The function shown (servo_fn_t): the hub, or the function
+     *        screen entered last.
+     *
+     * The task under it (ui_workbench.h's strip, never drawn) is the one
+     * the function's panels draw on: LIVE for LIVE and SWEEP, TEST for TEST
+     * and LIMIT RUN, RUDDER for RUDDER and RUDDER AUTO, PROGRAM for KST and
+     * HITEC.
      */
     uint8_t      fn;
     ui_wb_strip_t wb;
-    uint8_t      run_list;      /* RL_*: a page of rows open              */
+    uint8_t      run_list;      /**< RL_*: a page of rows open */
     /* Whether a panel or the programmer covered the left column when the
      * buffer was last drawn: a change repaints it whole. */
     bool         drawn_cover[2];
     /* The footer's and the PORT button's press, and the hub's tiles':
      * FP_*, the contact, and a count of their look. */
-    uint8_t      fp_pressed;
-    uint8_t      fp_id;
-    int16_t      fp_tile;
-    uint32_t     fp_rev;
-    uint32_t     drawn_fp[2];   /* foot_sig() as last drawn, per buffer */
+    uint8_t      fp_pressed;    /**< FP_*: what is pressed */
+    uint8_t      fp_id;         /**< the contact pressing it */
+    int16_t      fp_tile;       /**< the tile pressed, -1 for none */
+    uint32_t     fp_rev;        /**< a count of the presses' look */
+    uint32_t     drawn_fp[2];   /**< foot_sig() as last drawn, per buffer */
     /* The SETTINGS list open on the hub or a function screen
      * (ui_setlist.h), and its count of changes. */
-    ui_setlist_t sl;
-    uint32_t     sl_rev;
-    uint32_t     drawn_sl[2];
-    /* What the hub's buffers drew last, as one count. */
-    uint32_t     drawn_hub[2];
+    ui_setlist_t sl;            /**< the SETTINGS list (ui_setlist.h) */
+    uint32_t     sl_rev;        /**< a count of the list's changes */
+    uint32_t     drawn_sl[2];   /**< sl_rev as last drawn, per buffer */
+    uint32_t     drawn_hub[2];  /**< what the hub drew last, per buffer */
     /* The panels over the left column. */
     int          ov_pressed;
     int          ov_row;
@@ -569,7 +570,7 @@ typedef struct {
         int   target;
         setting_id_t id;
         char  title[48];
-        char  labels[CHOICE_MAX][64];
+        char  labels[CHOICE_MAX][64]; /**< each choice's text */
         int   values[CHOICE_MAX];
         int   count;
         int   pressed;
@@ -588,7 +589,7 @@ typedef struct {
     uint8_t  drawn_save[2];
 
     servo_rate_state_t rate_st;   /* what became of the rate rate_hz    */
-    uint16_t           rate_hz;
+    uint16_t           rate_hz;   /**< the rate asked for, Hz */
 
     /* The sweep: the same curve the IOmcu runs, on this screen's own
      * clock, to draw the horn by. */
@@ -962,11 +963,10 @@ void ov_row_value(const ov_row_t *r, char *buf, size_t n);
  */
 bool svs_rate_note(char *l1, char *l2, size_t n);
 /**
- * @brief The servo profile's rows, for the hub's list: @p kind R_TYPE to
- *        R_REVERSE or R_HV.  Its editor opened over the left column (the
- *        list, the keypad, the profile warning); one step of it, 10us for a
- *        pulse, 5us for TRIM, 5° for TRAVEL, a switch for REVERSE and HV
- *        SERVO; its value as text.
+ * @brief The servo profile's row @p kind's editor opened over the left
+ *        column, for the hub's list: the list, the keypad or the profile
+ *        warning.
+ * @param kind R_TYPE to R_REVERSE, or R_HV
  */
 void svs_profile_edit(int kind);
 /** @brief The choice list opened over the left column, empty, for
@@ -977,7 +977,19 @@ void open_choice(int target, setting_id_t id, const char *title);
 /** @brief Choice @p value added under @p label, CHOICE_MAX at most.
  *  @param label its text @param value what it takes */
 void choice_add(const char *label, int value);
+/**
+ * @brief One step of profile row @p kind: 10us for a pulse, 5us for TRIM,
+ *        5° for TRAVEL, a switch for REVERSE and HV SERVO.
+ * @param kind R_TYPE to R_REVERSE, or R_HV
+ * @param dir +1 up, -1 down
+ */
 void svs_profile_step(int kind, int dir);
+/**
+ * @brief Profile row @p kind's value as text.
+ * @param kind R_TYPE to R_REVERSE, or R_HV
+ * @param buf takes it
+ * @param n its size
+ */
 void svs_profile_value(int kind, char *buf, size_t n);
 /* The panel open over the left column, and the parts a frame repaints by
  * themselves. */
@@ -1578,10 +1590,15 @@ static inline bool bench_arming(void)
 /* servo_screen.c's: the state at its start, a screen entered and left,
  * touch events lost, a frame, an event. */
 void svs_reset(void);
+/** @brief A SERVO screen entered: the hub's or a function's. */
 void svs_enter(void);
+/** @brief A SERVO screen left: DISARM posted, the panels closed. */
 void svs_leave(void);
+/** @brief Touch events lost: every press and drag ends. */
 void svs_cancel(void);
+/** @brief A frame of @p dt_s seconds. @param dt_s the frame */
 void svs_tick(float dt_s);
+/** @brief A touch event on a SERVO screen. @param evt the event */
 void svs_event(const touch_event_t *evt);
 
 /** @brief Whether KST or HITEC shows no session, panel or page any more:
@@ -1621,7 +1638,7 @@ void svs_list_tick(float dt_s);
 /** @brief Function @p fn's name, in the footer and on its tile.
  *  @param fn the function @return the name */
 const char *svs_fn_name(servo_fn_t fn);
-/** @brief ARM or DISARM in the footer's middle slot. @param c the canvas */
+/* ARM or DISARM in the footer's middle slot (servo_screen_draw.c). */
 void draw_arm(gfx_canvas_t *c);
 /** @brief The PORT button. @return its rectangle, in the body */
 static inline gfx_rect_t port_rect(void)
@@ -1649,6 +1666,9 @@ bool svs_port_line(char *out, size_t n);
  *         of a press on either. @param evt the event
  *  @return whether it was theirs */
 bool foot_down(const touch_event_t *evt);
+/** @brief The rest of a press foot_down() took: a tap's UP opens the port
+ *         list or the screen's SETTINGS list. @param evt the event
+ *  @return whether it was theirs */
 bool foot_rest(const touch_event_t *evt);
 /** @brief The PORT button's choice list: OUTPUTS and PROG PORT 1 to 4,
  *         a refused port naming why; the TARGET lock names itself in the

@@ -41,7 +41,8 @@ void prog_leave(void);
 void prog_cancel(void);
 void prog_armed(bool armed);
 void prog_tick(float dt_s);
-/* A session holding its port and not shown shows again, on its screen. */
+/** @brief A session holding its port and not shown shows again, on its
+ *         own screen (KST's or HITEC's). */
 void prog_follow_hold(void);
 
 /* The page of rows shown, PG_*, or -1: on TEST and LIMIT RUN a run's

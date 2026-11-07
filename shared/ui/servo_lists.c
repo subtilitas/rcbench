@@ -100,42 +100,52 @@ TAP_OF(max_tap, R_MAX)
 TAP_OF(trim_tap, R_TRIM)
 TAP_OF(travel_tap, R_TRAVEL)
 
+/** @brief The OUTPUT heading: the rate line, warning while a fast rate is unconfirmed. */
 static const ui_setlist_custom_t k_out_line = {
     .label = TX_SV_PG_OUTPUT, .help = TX_COUNT, .value_text = rate_line,
     .locked = rate_warn,
 };
+/** @brief The TYPE row. */
 static const ui_setlist_custom_t k_type = {
     .label = TX_SV_ROW_TYPE, .help = TX_SVL_TYPE_HELP,
     .value_text = type_value, .tap = type_tap,
 };
+/** @brief The RATE row. */
 static const ui_setlist_custom_t k_rate = {
     .label = TX_SV_ROW_RATE, .help = TX_SVL_RATE_HELP,
     .value_text = rate_value, .tap = rate_tap,
 };
+/** @brief The PULSE MIN row. */
 static const ui_setlist_custom_t k_min = {
     .label = TX_SV_ROW_MIN, .help = TX_SVL_PULSE_HELP,
     .value_text = min_value, .step = min_step, .tap = min_tap,
 };
+/** @brief The PULSE CENTRE row. */
 static const ui_setlist_custom_t k_centre = {
     .label = TX_SV_ROW_CENTRE, .help = TX_SVL_PULSE_HELP,
     .value_text = centre_value, .step = centre_step, .tap = centre_tap,
 };
+/** @brief The PULSE MAX row. */
 static const ui_setlist_custom_t k_max = {
     .label = TX_SV_ROW_MAX, .help = TX_SVL_PULSE_HELP,
     .value_text = max_value, .step = max_step, .tap = max_tap,
 };
+/** @brief The TRIM row. */
 static const ui_setlist_custom_t k_trim = {
     .label = TX_SV_ROW_TRIM, .help = TX_SVL_TRIM_HELP,
     .value_text = trim_value, .step = trim_step, .tap = trim_tap,
 };
+/** @brief The TRAVEL row. */
 static const ui_setlist_custom_t k_travel = {
     .label = TX_SV_ROW_TRAVEL, .help = TX_SVL_TRAVEL_HELP,
     .value_text = travel_value, .step = travel_step, .tap = travel_tap,
 };
+/** @brief The REVERSE switch. */
 static const ui_setlist_custom_t k_reverse = {
     .label = TX_SV_ROW_REVERSE, .help = TX_SVL_REVERSE_HELP, .cycles = true,
     .value_text = reverse_value, .step = reverse_step,
 };
+/** @brief The HV SERVO switch. */
 static const ui_setlist_custom_t k_hv = {
     .label = TX_SV_ROW_HV, .help = TX_SVL_HV_HELP, .cycles = true,
     .value_text = hv_value, .step = hv_step,
@@ -252,34 +262,41 @@ static const char *pulses_locked(void)
     return lim_write_why();
 }
 
+/** @brief RUDDER's ENC CENTRE row: a tap takes the live count. */
 static const ui_setlist_custom_t k_enc = {
     .label = TX_SV_ROW_ENC_CENTRE, .help = TX_SVL_ENC_HELP,
     .value_text = enc_value, .tap = enc_tap, .locked = enc_locked,
 };
+/** @brief The ANGLE SOURCE row. */
 static const ui_setlist_custom_t k_src = {
     .label = TX_SVL_ANGLE_SOURCE, .help = TX_SVL_ANGLE_HELP,
     .value_text = src_value, .tap = src_tap,
 };
+/** @brief RUDDER AUTO's SERVO row: KST/CHASERVO or HITEC. */
 static const ui_setlist_custom_t k_fam = {
     .label = TX_SV_ROW_LIM_SERVO, .help = TX_SVL_FAMILY_HELP, .cycles = true,
     .value_text = fam_value, .step = fam_step, .locked = fam_locked,
 };
+/** @brief RUDDER AUTO's SERVO PULSES row. */
 static const ui_setlist_custom_t k_pulses = {
     .label = TX_SV_ROW_LIM_PULSES, .help = TX_SVL_PULSES_HELP,
     .cycles = true, .value_text = pulses_value, .step = pulses_step,
     .locked = pulses_locked,
 };
 
+/** @brief SWEEP's list: CURVE, SPEED and RANGE. */
 static const ui_setlist_row_t k_sweep_rows[] = {
     UI_SL_ROW_SETTING(SET_SERVO_CURVE),
     UI_SL_ROW_SETTING(SET_SERVO_TEST_HZ),
     UI_SL_ROW_SETTING(SET_SERVO_TEST_RANGE),
 };
+/** @brief RUDDER's list: LENGTH, ENC CENTRE and ANGLE SOURCE. */
 static const ui_setlist_row_t k_rudder_rows[] = {
     UI_SL_ROW_SETTING(SET_RUDDER_LEN_MM),
     UI_SL_ROW_CUSTOM(&k_enc),
     UI_SL_ROW_CUSTOM(&k_src),
 };
+/** @brief RUDDER AUTO's list: the targets, MARGIN, TOLERANCE, the servo, its pulses and ANGLE SOURCE. */
 static const ui_setlist_row_t k_rauto_rows[] = {
     UI_SL_ROW_SETTING(SET_RUDDER_DEFL_LO),
     UI_SL_ROW_SETTING(SET_RUDDER_DEFL_HI),
@@ -289,6 +306,7 @@ static const ui_setlist_row_t k_rauto_rows[] = {
     UI_SL_ROW_CUSTOM(&k_pulses),
     UI_SL_ROW_CUSTOM(&k_src),
 };
+/** @brief HITEC's list: SERIES and D receive. */
 static const ui_setlist_row_t k_hitec_rows[] = {
     UI_SL_ROW_SETTING(SET_HITEC_SERIES),
     UI_SL_ROW_SETTING(SET_HITEC_RX),
@@ -296,10 +314,11 @@ static const ui_setlist_row_t k_hitec_rows[] = {
 
 /** @brief A function's list: its rows and their count. */
 typedef struct {
-    const ui_setlist_row_t *rows;
-    int n;
+    const ui_setlist_row_t *rows; /**< the rows */
+    int n;                        /**< their count */
 } fn_rows_t;
 
+/** @brief A fn_rows_t of table @p a. */
 #define ROWS(a) { (a), (int)(sizeof(a) / sizeof((a)[0])) }
 
 /** @brief Each function's rows; none for LIVE and the pages' functions. */
@@ -319,8 +338,10 @@ static const fn_rows_t *rows_now(void)
     return &k_rows_of[(s.fn < SERVO_FN_COUNT) ? s.fn : SERVO_FN_HUB];
 }
 
+/** @brief The open list's row count. @return the count */
 static int list_count(void) { return rows_now()->n; }
 
+/** @brief The open list's row @p i. @param i the row @return the row */
 static ui_setlist_row_t list_row(int i)
 {
     return ui_setlist_table_row(rows_now()->rows, rows_now()->n, i);
@@ -363,6 +384,7 @@ static void list_reset(void)
     ++s.sl_rev;
 }
 
+/** @brief A change the list shows: its count moves. */
 static void list_invalidate(void)
 {
     ++s.sl_rev;
@@ -371,6 +393,7 @@ static void list_invalidate(void)
 /** @brief The leave warning's SAVE and DISCARD: the list closes. */
 static void list_way_out(void) { svs_list_close(); }
 
+/** @brief The SERVO lists' host (ui_setlist.h). */
 static const ui_setlist_host_t k_host = {
     .count      = list_count,
     .row        = list_row,

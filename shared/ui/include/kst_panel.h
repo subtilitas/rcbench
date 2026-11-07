@@ -417,8 +417,11 @@ int kst_panel_pack_notes(const int *rows, const bool *standing, int count,
  *  a tap on the notes shows the next. */
 int kst_panel_note_pages(void);
 
-/** The notes' area, a tap on which shows the next page; empty while the
- *  notes take one page or wait for the message. */
+/**
+ * @brief The notes' area, a tap on which shows the next page.
+ * @return the area; empty while the notes take one page or wait for the
+ *         message
+ */
 gfx_rect_t kst_panel_notes_rect(void);
 
 /** The notes' page shown, from 0. */

@@ -201,6 +201,7 @@ FN_ENTER(enter_hitec, SERVO_FN_HITEC)
  * function's name alone where it would not (test_nav_bubble and
  * test_servo_hub measure them).
  */
+/** @brief the hub's screen table. */
 static const ui_screen_t k_hub = {
     .covered = fn_covered,
     .title  = "SERVO",
@@ -217,6 +218,7 @@ static const ui_screen_t k_hub = {
     .help_page  = servo_help_page,
 };
 
+/** @brief LIVE's screen table. */
 static const ui_screen_t k_live = {
     .covered = fn_covered,
     .title  = "LIVE",
@@ -233,6 +235,7 @@ static const ui_screen_t k_live = {
     .help_page  = servo_help_page,
 };
 
+/** @brief SWEEP's screen table. */
 static const ui_screen_t k_sweep = {
     .covered = fn_covered,
     .title  = "SWEEP",
@@ -249,6 +252,7 @@ static const ui_screen_t k_sweep = {
     .help_page  = servo_help_page,
 };
 
+/** @brief TEST's screen table. */
 static const ui_screen_t k_test = {
     .covered = fn_covered,
     .title  = "TEST",
@@ -265,6 +269,7 @@ static const ui_screen_t k_test = {
     .help_page  = servo_help_page,
 };
 
+/** @brief LIMIT RUN's screen table. */
 static const ui_screen_t k_limrun = {
     .covered = fn_covered,
     .title  = "LIMIT RUN",
@@ -281,6 +286,7 @@ static const ui_screen_t k_limrun = {
     .help_page  = servo_help_page,
 };
 
+/** @brief RUDDER's screen table. */
 static const ui_screen_t k_rudder = {
     .covered = fn_covered,
     .title  = "RUDDER",
@@ -297,6 +303,7 @@ static const ui_screen_t k_rudder = {
     .help_page  = servo_help_page,
 };
 
+/** @brief RUDDER AUTO's screen table. */
 static const ui_screen_t k_rauto = {
     .covered = fn_covered,
     .title  = "RUDDER AUTO",
@@ -313,6 +320,7 @@ static const ui_screen_t k_rauto = {
     .help_page  = servo_help_page,
 };
 
+/** @brief KST's screen table. */
 static const ui_screen_t k_kst = {
     .covered = fn_covered,
     .title  = "SERVO > KST",
@@ -329,6 +337,7 @@ static const ui_screen_t k_kst = {
     .help_page  = servo_help_page,
 };
 
+/** @brief HITEC's screen table. */
 static const ui_screen_t k_hitec = {
     .covered = fn_covered,
     .title  = "HITEC",

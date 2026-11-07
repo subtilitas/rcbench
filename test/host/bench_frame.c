@@ -13,14 +13,14 @@
  *   overview  the menu, whose tiles are chrome and are never in a frame
  *   servo     the servo card, whose arm and grip are drawn from coverage
  *   servo-grip  the same, repainting only the breathing grip
- *   servo-rudder  SERVO's RUDDER task with an AS5600 reading every frame
+ *   servo-rudder  SERVO's RUDDER screen with an AS5600 reading every frame
  *             whose deflection differs in the tenths shown: the readout,
  *             the state lines and the side view of the surface, each
  *             clipped to itself
- *   servo-test  SERVO's TEST task with the arm moved and an AS5600 reading
+ *   servo-test  SERVO's TEST screen with the arm moved and an AS5600 reading
  *             in every frame, as an automatic test or a limit run gives:
  *             nothing on the page shows either, so nothing is repainted
- *   servo-kst  SERVO > PROGRAM's KST session on a port in PWM, the PD
+ *   servo-kst  SERVO > KST's session on a port in PWM, the PD
  *             mini's reading moving in every frame: the page does not show
  *             it there
  *   servo-hitec  the same on the Hitec session
@@ -233,7 +233,7 @@ static void rudder_reading(uint16_t raw, uint32_t at_ms)
 }
 
 /**
- * @brief SERVO's RUDDER task with the AS5600 on and linked, a reading on
+ * @brief SERVO's RUDDER screen with the AS5600 on and linked, a reading on
  *        show and the MAX of both sides taken.
  */
 static void rudder_open(void)
@@ -242,34 +242,23 @@ static void rudder_open(void)
     settings_set(SET_ENC_CENTRE, 2048.0f);
     settings_set(SET_RUDDER_LEN_MM, 120.0f);
     servo_screen_set_link(true);
-    const int16_t x = SV_TAB_RUDDER_X;
-    const int16_t y = (int16_t)(UI_BAND_H + SV_TAB_Y);
-    const touch_event_t tap[] = {
-        { .type = TOUCH_EVENT_DOWN, .point = { .id = 1, .x = x, .y = y } },
-        { .type = TOUCH_EVENT_UP,   .point = { .id = 1, .x = x, .y = y } },
-    };
-    ui_router_event(&tap[0]);
-    ui_router_event(&tap[1]);
+    /* The leave posts a DISARM; the bench's answer is ARMED still. */
+    ui_router_goto(SCREEN_SERVO_RUDDER);
+    servo_screen_set_armed(true);
     rudder_reading(2048u - 280u, 100u);
     rudder_reading(2048u + 290u, 140u);
     rudder_reading(2048u + 140u, 180u);
 }
 
 /**
- * @brief SERVO's TEST task with the AS5600 on and linked, from RUDDER's
+ * @brief SERVO's TEST screen with the AS5600 on and linked, from RUDDER's
  *        set-up: the page of the automatic test and the limit run.
  */
 static void test_open(void)
 {
     rudder_open();
-    const int16_t x = SV_TAB_TEST_X;
-    const int16_t y = (int16_t)(UI_BAND_H + SV_TAB_Y);
-    const touch_event_t tap[] = {
-        { .type = TOUCH_EVENT_DOWN, .point = { .id = 1, .x = x, .y = y } },
-        { .type = TOUCH_EVENT_UP,   .point = { .id = 1, .x = x, .y = y } },
-    };
-    ui_router_event(&tap[0]);
-    ui_router_event(&tap[1]);
+    ui_router_goto(SCREEN_SERVO_TEST);
+    servo_screen_set_armed(true);
 }
 
 /** @brief WI-FI's view in the wifi modes, as last handed over. */
@@ -284,21 +273,6 @@ static void wifi_idle(int i)
 {
     s_wifi.idle_left_s = (uint32_t)(599 - i);
     wifi_screen_set(&s_wifi);
-}
-
-/**
- * @brief A tap of contact 1 at (@p x, @p y) of the body, through the router.
- * @param x the column, px
- * @param y the row under the band, px
- */
-static void tap_body(int x, int y)
-{
-    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
-                        .point = { .id = 1, .x = (int16_t)x,
-                                   .y = (int16_t)(UI_BAND_H + y) } };
-    ui_router_event(&e);
-    e.type = TOUCH_EVENT_UP;
-    ui_router_event(&e);
 }
 
 /**
@@ -341,9 +315,8 @@ static void prog_frame(int i)
 }
 
 /**
- * @brief SERVO > PROGRAM's row @p row opened, the tester on PROG PORT 1:
- *        0 the KST session, 1 the Hitec one.
- * @param row the row
+ * @brief SERVO's KST or HITEC screen opened, the tester on PROG PORT 1.
+ * @param row 0 the KST session, 1 the Hitec one
  */
 static void prog_open(int row)
 {
@@ -355,8 +328,7 @@ static void prog_open(int row)
     prog_registry_set_ports(0u, 0u);
     servo_screen_set_drive(1u, 13u, true);
     prog_frame(0);
-    tap_body(SV_TAB_PROGRAM_X, SV_TAB_Y);
-    tap_body(SV_PROG_ROW_X, SV_PROG_ROW_Y(row));
+    ui_router_goto(row == 0 ? SCREEN_SERVO_KST : SCREEN_SERVO_HITEC);
 }
 
 /**

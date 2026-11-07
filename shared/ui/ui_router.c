@@ -55,9 +55,8 @@ static struct {
     /* The screen that opened the one on top through k_openers, for its home
      * tag; SCREEN_COUNT when it was entered any other way. */
     ui_screen_id_t    opener;
-    /* The screen ui_router_goto() enters, while the old one's leave() runs;
-     * SCREEN_COUNT otherwise. */
-    ui_screen_id_t    leaving_to;
+    ui_screen_id_t    leaving_to;     /**< what goto() enters, during the
+                                       *   old leave(); else SCREEN_COUNT */
     uint32_t          nav_count;      /**< navigations since init           */
     uint32_t          dispatched;     /**< events handed to a screen        */
     ui_bench_status_t status;
