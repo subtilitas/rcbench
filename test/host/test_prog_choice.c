@@ -378,9 +378,23 @@ static void sv_tap(const ui_screen_t *sv, int x, int y)
     sv->event(&u);
 }
 
+/** @brief Pixels of the warning colour in @p r of a panel-sized buffer.
+ *  @param px the buffer @param r the rectangle @return their count */
+static int warn_px_in(const gfx_color_t *px, gfx_rect_t r)
+{
+    int n = 0;
+    for (int y = r.y; y < r.y + r.h; ++y) {
+        for (int x = r.x; x < r.x + r.w; ++x) {
+            n += (px[(size_t)y * UI_PANEL_W + x] == ui_theme_color(UI_C_WARN));
+        }
+    }
+    return n;
+}
+
 /* SERVO's PORT button on the carrier: each port's entry as OUTPUTS names
  * it, PROGP04 beside a bound PWM04 with its refusal line and no pick, and
- * a free port picked through prog_choice_pick(). */
+ * a free port picked through prog_choice_pick().  The refused entry's
+ * line is drawn in the warning colour. */
 TEST_CASE(servos_port_button_offers_the_carriers_ports_and_their_refusals)
 {
     carrier(LINK_MINOR_CARRIER_PWM);
@@ -404,6 +418,15 @@ TEST_CASE(servos_port_button_offers_the_carriers_ports_and_their_refusals)
         CHECK_STR_EQ(servo_screen_port_choice(port, &refused), want);
         CHECK(!refused);
     }
+    /* Drawn: the refused entry's line in the warning colour, a free
+     * entry's without it. */
+    static gfx_color_t px[UI_PANEL_W * UI_PANEL_H];
+    gfx_canvas_t c;
+    gfx_canvas_init(&c, px, UI_PANEL_W, UI_PANEL_H, UI_PANEL_W);
+    sv->tick(0.025f);
+    sv->render(&c, 0);
+    CHECK(warn_px_in(px, servo_screen_port_choice_rect(4)) > 0);
+    CHECK_EQ(warn_px_in(px, servo_screen_port_choice_rect(1)), 0);
     /* The refused entry takes no pick and leaves the list open. */
     gfx_rect_t r = servo_screen_port_choice_rect(4);
     sv_tap(sv, r.x + r.w / 2, r.y + r.h / 2);

@@ -1088,6 +1088,87 @@ TEST_CASE(a_pd_mini_past_6_v_goes_on_only_through_the_hv_hold)
     CHECK(!servo_screen_output_held());
 }
 
+/* The HV warning in the left column, as servo_settings_draw.c places it:
+ * what it asks 76px under the panel's top, its prose from 120px, its
+ * buttons' top at y 372. */
+#define HV_WHAT_Y  (OV_Y0 + 76)
+#define HV_PROSE_Y (OV_Y0 + 120)
+#define HV_BTN_Y   (436 - 8 - 56)
+
+/** @brief Whether buffer 0 shows @p text at @p x, @p y in the body font
+ *         and the voltage's colour: the buffer held against itself with
+ *         the text drawn again over a fill of the ground beside it.
+ *  @param x its left edge @param y its top @param text the text
+ *  @return true when nothing differs */
+static bool volt_text_at(int x, int y, const char *text)
+{
+    static gfx_color_t *want;
+    if (want == NULL) {
+        want = calloc((size_t)W * H, sizeof(gfx_color_t));
+        if (want == NULL) {
+            return false;
+        }
+    }
+    memcpy(want, fb, FB_BYTES);
+    gfx_canvas_t wcv;
+    gfx_canvas_init(&wcv, want, W, H, W);
+    gfx_fill_rect(&wcv, x, y, gfx_text_width(UI_FONT_BODY, text, 1),
+                  UI_FONT_BODY->height, fb[(size_t)(y + 2) * W + x - 6]);
+    gfx_text(&wcv, x, y, text, UI_FONT_BODY, ui_theme_color(UI_C_VOLT), 1);
+    return memcmp(fb, want, FB_BYTES) == 0;
+}
+
+/** @brief Pixels of the warning colour in buffer 0 between the HV
+ *         warning's first line of prose and its buttons: its line about a
+ *         live output, and nothing else.  @return their count */
+static int warn_px_in_the_prose(void)
+{
+    int n = 0;
+    for (int y = HV_PROSE_Y; y < HV_BTN_Y; ++y) {
+        for (int x = OV_X0 + 4; x < OV_X0 + OV_W0 - 4; ++x) {
+            n += (fb[(size_t)y * W + x] == ui_theme_color(UI_C_WARN));
+        }
+    }
+    return n;
+}
+
+/* The HV warning the red PD MINI row opens names the voltage the output
+ * goes on at, in the danger frame, and has no line about a live output:
+ * it is off.  A finger that slides off APPLY abandons the hold: the rest
+ * of the two seconds switches nothing on, and the warning stands for a
+ * whole hold. */
+TEST_CASE(the_hv_warning_for_on_names_its_voltage_and_a_slid_off_hold_does_nothing)
+{
+    pd_on_live(7.4f, false);
+    tap(SV_RDY_X, SV_DRV_ROW_Y(1));             /* the PD MINI row */
+    CHECK(servo_screen_output_held());
+    scr->tick(0.025f);
+    scr->render(&cv, 0);
+    CHECK_EQ(fb[(size_t)OV_Y0 * W + OV_X0 + OV_W0 / 2],
+             ui_theme_color(UI_C_DANGER));
+    char what[64];
+    snprintf(what, sizeof(what), TR(SV_HV_ON_AT), 7.4);
+    CHECK(volt_text_at(OV_X0 + 20, HV_WHAT_Y, what));
+    CHECK_EQ(warn_px_in_the_prose(), 0);
+
+    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 20; ++i) {
+        scr->tick(1.0f / 40.0f);
+    }
+    ev(WARN_APPLY_X, 100, TOUCH_EVENT_MOVE, 1);  /* slid off: abandoned */
+    ev(WARN_APPLY_X, 100, TOUCH_EVENT_UP, 1);
+    for (int i = 0; i < 100; ++i) {
+        scr->tick(1.0f / 40.0f);
+    }
+    CHECK(!supply_cmd(NULL));
+    CHECK(servo_screen_output_held());          /* the warning stands */
+
+    hold_apply(2.3f);
+    supply_cmd_t c;
+    CHECK(supply_cmd(&c));
+    CHECK(c.on);
+}
+
 /* STOP ends the profile warning's hold as it ends ARM's: the rest of the
  * two seconds applies no profile. */
 TEST_CASE(stop_ends_the_warning_holds)
@@ -1135,6 +1216,7 @@ int main(void)
     RUN(drags_and_samples_leave_both_buffers_as_a_full_redraw_would);
     RUN(a_set_point_changed_on_supply_is_redrawn_here);
     RUN(a_pd_mini_past_6_v_goes_on_only_through_the_hv_hold);
+    RUN(the_hv_warning_for_on_names_its_voltage_and_a_slid_off_hold_does_nothing);
     RUN(stop_ends_the_warning_holds);
     return test_summary("servo_settings");
 }

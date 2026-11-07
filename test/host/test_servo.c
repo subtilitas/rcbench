@@ -14,6 +14,7 @@
  * - the_dial_reaches_184_px_from_the_shaft
  * - a_drag_keeps_commanding
  * - the_case_is_not_the_dial
+ * - past_the_sweeps_ends_is_not_the_dial
  * - the_travel_limit_clamps_rather_than_refuses
  * - centre_and_release_post_their_own_commands
  * - a_hold_on_arm_asks_to_arm_exactly_once
@@ -108,6 +109,23 @@ TEST_CASE(the_case_is_not_the_dial)
     /* Nor is the middle of the boss, which is not a direction. */
     tap(SHAFT_X, SHAFT_Y);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+}
+
+/* The sweep ends 104deg either side of straight out: a press just left of
+ * the shaft, 110deg up or down, is the case's on an armed bench, while
+ * one at 100deg points the horn. */
+TEST_CASE(past_the_sweeps_ends_is_not_the_dial)
+{
+    fresh_armed();
+    tap(SHAFT_X - 29, SHAFT_Y - 80);    /* 110deg, above the shaft */
+    tap(SHAFT_X - 29, SHAFT_Y + 80);    /* and below it */
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    CHECK_EQ(servo_screen_commanded(), 1500);
+
+    int x, y;
+    dial_at(100.0f, 85, &x, &y);
+    tap(x, y);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
 }
 
 /* The dial takes a press out to 184px from the shaft, ARC_R + 34: the
@@ -669,6 +687,7 @@ int main(void)
     RUN(a_touch_on_the_dial_points_the_horn_there);
     RUN(a_drag_keeps_commanding);
     RUN(the_case_is_not_the_dial);
+    RUN(past_the_sweeps_ends_is_not_the_dial);
     RUN(the_dial_reaches_184_px_from_the_shaft);
     RUN(the_travel_limit_clamps_rather_than_refuses);
     RUN(centre_and_release_post_their_own_commands);

@@ -21,6 +21,7 @@
  * - a_row_turning_red_under_the_hold_drops_it
  * - a_press_on_the_hold_during_the_steps_ends_them_all_off
  * - a_finger_on_arm_start_opens_nothing
+ * - a_finger_that_slides_off_arm_start_starts_nothing
  * - the_run_takes_the_settings_the_hold_fired_on
  * - a_rail_dead_after_the_5v_fails_naming_prog_5v
  * - the_runs_end_leaves_the_bench_safe_and_the_5v_on
@@ -360,6 +361,36 @@ TEST_CASE(a_finger_on_arm_start_opens_nothing)
     carrier_done();
 }
 
+/* A finger that slides off ARM + START abandons the hold: the rest of
+ * the two seconds and the lift start nothing, no output goes on, and a
+ * whole hold after it starts the run. */
+TEST_CASE(a_finger_that_slides_off_arm_start_starts_nothing)
+{
+    lim_carrier(40u);
+    ev(SV_HOLD_X, SV_HOLD_Y, TOUCH_EVENT_DOWN, 1);
+    ra_ms(1000u);
+    CHECK(servo_screen_arm_held());
+    ev(SV_HOLD_X, 100, TOUCH_EVENT_MOVE, 1);    /* off the hold */
+    CHECK(!servo_screen_arm_held());
+    ra_ms(2000u);
+    ev(SV_HOLD_X, 100, TOUCH_EVENT_UP, 1);
+    ra_ms(500u);
+    CHECK(!svs_seq_busy());
+    CHECK(!servo_screen_limit_running());
+    CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
+    CHECK(!prog5v_box_on());
+    CHECK_EQ(ra.arms, 0u);
+
+    lim_hold_for(2300u);
+    ra_ms(20u);
+    CHECK(servo_screen_limit_running());
+    lim_press(1);
+    CHECK(!servo_screen_limit_running());
+    ra_ms(2000u);
+    ra.p5_task = false;
+    carrier_done();
+}
+
 /* The device's name changed after the hold fired is not the run's: the
  * report names the one the hold fired on. */
 TEST_CASE(the_run_takes_the_settings_the_hold_fired_on)
@@ -444,6 +475,7 @@ int main(void)
     RUN(a_row_turning_red_under_the_hold_drops_it);
     RUN(a_press_on_the_hold_during_the_steps_ends_them_all_off);
     RUN(a_finger_on_arm_start_opens_nothing);
+    RUN(a_finger_that_slides_off_arm_start_starts_nothing);
     RUN(the_run_takes_the_settings_the_hold_fired_on);
     RUN(a_rail_dead_after_the_5v_fails_naming_prog_5v);
     RUN(the_runs_end_leaves_the_bench_safe_and_the_5v_on);
