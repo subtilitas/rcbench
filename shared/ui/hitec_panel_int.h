@@ -37,14 +37,13 @@
 
 /**
  * @brief The overlay's layout, in pixels from the area's top left, the KST
- *        overlay's: on SERVO's left card of 620px five tabs of 95px and
- *        CLOSE of 120px in one row 48px tall, rows 48px tall at a 56px
+ *        overlay's: on SERVO's left card of 620px five tabs of 120px in
+ *        one row 48px tall (the home tag is the way back), rows 48px tall at a 56px
  *        pitch, two columns of 295px, a button or value of 150px, a wide
  *        row's of 260px.  Every control ends at hpn_foot().
  */
-#define HP_TAB_Y   8            /**< the tabs' and CLOSE's top          */
+#define HP_TAB_Y   8            /**< the tabs' top                      */
 #define HP_TAB_H   UI_TAP_MIN   /**< their height, 48px                 */
-#define HP_CLOSE_W 120          /**< CLOSE's width                      */
 #define HP_ROW0    64           /**< the first row's top                */
 #define HP_PITCH   56           /**< a row's pitch: 8px between two     */
 #define HP_ROW_H   UI_TAP_MIN   /**< a row's height, 48px               */
@@ -108,7 +107,7 @@ extern const hpn_row_t hpn_rows[HP_ROW_COUNT];
 
 /** @brief What a press is on. */
 enum {
-    P_NONE = 0, P_TAB, P_CLOSE, P_ROW, P_KEYPAD, P_CHOICE, P_CHOICE_CANCEL,
+    P_NONE = 0, P_TAB, P_ROW, P_KEYPAD, P_CHOICE, P_CHOICE_CANCEL,
     P_APPLY, P_CANCEL, P_TEXTKEY, P_PORT, P_PLUS, P_MINUS
 };
 
@@ -572,7 +571,7 @@ void hpn_move_act(void);
 void hpn_page_move(void);
 /**
  * @brief MOVE SERVO off where the overlay no longer shows the TRAVEL tab:
- *        a tab change, CLOSE, the home tag, a screen change.
+ *        a tab change, the home tag, a screen change.
  */
 void hpn_move_follow(void);
 /**

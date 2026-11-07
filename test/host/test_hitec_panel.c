@@ -213,7 +213,8 @@ TEST_CASE(a_change_of_series_drops_what_the_other_series_read)
     servo_d485();
     tap_connect();
     CHECK(hitec_prog_model(model()) != NULL);
-    tap(hitec_panel_close_rect());
+    hitec_panel_back();
+    show();
     hold(2.1f);
     until(HITEC_PROG_PWM);
     show();
@@ -234,7 +235,8 @@ TEST_CASE(a_change_of_series_drops_what_the_other_series_read)
     tap_connect();
     CHECK(hitec_prog_model(model()) != NULL);
     CHECK_EQ(hitec_prog_layout(model()), HITEC_LAYOUT_HS5);
-    tap(hitec_panel_close_rect());
+    hitec_panel_back();
+    show();
     hold(2.1f);
     until(HITEC_PROG_PWM);
     show();
@@ -392,7 +394,8 @@ TEST_CASE(close_while_held_opens_leave_and_a_2s_hold_leaves)
     open_en();
     servo_d485();
     tap_connect();
-    tap(hitec_panel_close_rect());
+    hitec_panel_back();
+    show();
     CHECK(hitec_panel_is_open());
     CHECK(!shot_facts_now().no_session);
     CHECK_EQ(hitec_panel_editor(), 3);
@@ -409,7 +412,8 @@ TEST_CASE(close_while_held_opens_leave_and_a_2s_hold_leaves)
     CHECK_EQ(strcmp(said(), TR(KP_M_LEFT)), 0);
     CHECK(!hitec_panel_holds_port());
     /* Now CLOSE closes. */
-    tap(hitec_panel_close_rect());
+    hitec_panel_back();
+    show();
     CHECK(!hitec_panel_is_open());
 }
 
@@ -463,7 +467,8 @@ TEST_CASE(the_supply_is_locked_while_a_port_is_held)
     CHECK(!supply_screen_port_held());
     tap_connect();
     CHECK(supply_screen_port_held());
-    tap(hitec_panel_close_rect());
+    hitec_panel_back();
+    show();
     hold(2.1f);
     until(HITEC_PROG_PWM);
     prun(50u);
@@ -501,7 +506,8 @@ TEST_CASE(only_a_leave_offers_the_operators_set_points_back)
     float i = 0.0f;
 
     session_on_the_pd_mini();
-    tap(hitec_panel_close_rect());
+    hitec_panel_back();
+    show();
     hold(2.1f);
     until(HITEC_PROG_PWM);
     prun(50u);
@@ -611,7 +617,6 @@ static void check_layout(void)
         for (int t = 0; t < HITEC_PANEL_PAGES; ++t) {
             c[n++] = hitec_panel_tab_rect(t);
         }
-        c[n++] = hitec_panel_close_rect();
         for (int row = 0; row < 6; ++row) {
             for (int col = 0; col < 2; ++col) {
                 const gfx_rect_t v = val(page, row, col);

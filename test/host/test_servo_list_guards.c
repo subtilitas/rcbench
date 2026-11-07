@@ -98,7 +98,7 @@ TEST_CASE(a_finger_on_a_kst_control_keeps_the_port_list_shut)
     fresh();
     go(SERVO_FN_KST);
     CHECK(kst_panel_is_open());
-    const gfx_rect_t r = kst_panel_close_rect();
+    const gfx_rect_t r = kst_panel_tab_rect(0);
     ev(r.x + r.w / 2, r.y + r.h / 2, TOUCH_EVENT_DOWN, 1);
     CHECK(kst_panel_pressed());
     ui_router_set_alert(NULL);

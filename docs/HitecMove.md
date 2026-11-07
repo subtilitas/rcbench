@@ -74,7 +74,7 @@ error: the supply stays on.
 
 ![A horn held at a block](img/servo-hitec-move-blocked.png)
 
-The end, after a tap on ON, a tab change, CLOSE, the home tag, a change of
+The end, after a tap on ON, a tab change, the home tag, a change of
 screen, an ABORT or a bind: the pass under way ends, 0x1E = 3000, the
 servo restarts (0x46 = 1) with 1000ms, the 21 registers and 0x1E, 0x50,
 0x52 and 0x56 are read. The loop's set, 0x1E, 0x50, 0x52, 0x54, 0x56,
@@ -84,8 +84,7 @@ meanwhile; the end takes 2.6s at a frame of 16ms in the host model.
 Equal says `MOVE SERVO is OFF. The stored values read back unchanged.`
 A difference says `Servo values changed during MOVE SERVO. Tap READ ALL.`,
 switches ENABLE WRITE TO SERVO off and refuses a write until READ ALL.
-CLOSE and the home tag leave the programmer only after the end: tap them
-again.
+The home tag leaves the programmer only after the end: tap it again.
 
 A hard end has no end sequence. It switches ENABLE WRITE TO SERVO off,
 and SERVO says
@@ -144,7 +143,7 @@ with `-` and `+` does: the hold of MOVE SERVO confirmed it. WRITE n VALUES
 writes it after MOVE OFF.
 
 A bind on the way to NEUTRAL is MOVE SERVO's bind: the horn moves back and
-the loop ends. A tap on ON, a tab change, CLOSE, the home tag, a change of
+the loop ends. A tap on ON, a tab change, the home tag, a change of
 screen and an ABORT end the search with the loop's end. STOP, a switch to
 SAFE at the bench, the supply off and the other hard ends stay hard ends.
 A bind of the search is no error: the supply stays on.

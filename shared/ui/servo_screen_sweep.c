@@ -680,8 +680,8 @@ void svs_tick_body(float dt_s)
         s.kst_held = prog_holds();
         ++s.arm_rev;
     }
-    /* KST or HITEC whose session closed with its own CLOSE: the screen
-     * goes back to the hub, as its home tag does. */
+    /* KST or HITEC whose session closed under the screen: the screen goes
+     * back to the hub, as the home tag that closes it does. */
     if (svs_session_gone()
         && ui_router_current() == servo_fn_screen_id((servo_fn_t)s.fn)) {
         ui_router_goto(SCREEN_SERVO);

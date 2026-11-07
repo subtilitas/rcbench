@@ -331,7 +331,8 @@ TEST_CASE(close_switches_it_off_first_and_leaves_after_the_end)
 {
     travel();
     move_on();
-    tap(hitec_panel_close_rect());
+    hitec_panel_back();
+    show();
     CHECK(!hitec_prog_move_on(model()));
     CHECK(hitec_panel_is_open());
     CHECK_EQ(hitec_panel_editor(), 0);

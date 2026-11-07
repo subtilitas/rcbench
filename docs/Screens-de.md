@@ -1557,8 +1557,8 @@ der Reihenfolge der Nutzung.
 | ENDLAGENLAUF | ENDLAGENLAUF | das Feld ENDLAGENLAUF und das Feld des Laufs; OPTIONEN öffnet die Zeilen des Laufs |
 | RUDER | RUDER | Ausschlag in ° und mm, LÄNGE, 1000us, ZENTRIEREN, 2000us, NULLPUNKT und MAX LÖSCHEN ([Ruderausschlag](Servo-de.md#ruderausschlag)) |
 | RUDER AUTO | RUDER AUTO | das Feld von AUTO statt LÄNGE und der Fahrtasten, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste ([AUTO-Endpoints](Servo-de.md#auto-endpoints)) |
-| KST | SERVO > KST | die Programmierung für KST und Chaservo über dem linken Feld ([Programmierer](#programmierer)) |
-| HITEC | HITEC | die Programmierung für Hitec über dem linken Feld |
+| KST | SERVO > KST | die Programmierung für KST und Chaservo über dem linken Feld, die Karte BEREIT statt des Ausgangsfelds, WERTE SCHREIBEN in der Fußleiste ([Programmierer](#programmierer)) |
+| HITEC | HITEC | die Programmierung für Hitec über dem linken Feld, Karte und Fußleiste wie KST |
 
 Jede Kachel zeigt ihren Namen und eine Zeile von höchstens 31 Zeichen in
 10 x 20. Die Kacheln KST und HITEC sind grau, solange der IOmcu die
@@ -1576,8 +1576,9 @@ eines Funktionsbildschirms schaltet auf SAFE.
 
 Das Home-Feld führt eine Ebene hinauf: vom Funktionsbildschirm zum Hub,
 vom Hub ins Menü. Eine Liste, die Zeilen eines Laufs oder ein Feld darüber
-schließt zuerst. SCHLIESSEN von KST und HITEC beendet die Sitzung und
-führt zum Hub.
+schließt zuerst. Auf KST und HITEC ist das Home-Feld der Weg aus der
+Sitzung: es beendet eine Sitzung, die keinen Port hält, und führt zum Hub
+([Programmierer](#programmierer)).
 
 Jeder Funktionsbildschirm hat denselben Rahmen. Das linke Feld ist 620px
 breit und reicht von y 8 bis zum Feldboden bei y 436. Das Ausgangsfeld
@@ -1596,6 +1597,12 @@ Bezeichnung von 13 Zellen und Zustand von 20, und die Schienenzeile bei y
 und die Versorgung einschaltet, auf ihre Rückmeldung wartet, ARM schaltet
 und den Lauf in einem Halten startet ([Servo: AUTO-Endpoints](Servo-de.md#auto-endpoints)).
 Nichts vom Ausgangsfeld nimmt auf RUDER AUTO einen Druck an.
+
+KST und HITEC behalten die Taste PORT und zeigen an der Stelle des
+Ausgangsfelds eine Karte BEREIT mit drei Zeilen: PORT, die Versorgung, die
+VERBINDEN der Sitzung schaltet, und SERVO, das gelesene Servo. Die Mitte
+ihrer Fußleiste ist WERTE SCHREIBEN der Sitzung; keiner der beiden
+Bildschirme hat ARM ([Programmierer](#programmierer)).
 
 ![RUDER AUTO auf dem rbmod-Carrier, die Folge ARM + START wartet auf die Rückmeldung von PROG 5V](img/de/servo-rudder-auto-start-rbmod.png)
 
@@ -2184,9 +2191,30 @@ macht die Kachel HITEC selbst nicht grau: nachdem die Programmierung die
 Page gelesen hat, öffnet ein von einer anderen Sitzung gehaltener Port
 mit PORT FREIGEBEN.
 
-SCHLIESSEN beendet die Sitzung und führt zum Hub. In Tastenfeld, Liste,
-Warnung oder Tastatur einer Programmierung schließt das Home-Feld nur
-diese Ebene. Die Registry `shared/ui/prog_registry.c` liefert die
+Die Sitzungen haben kein SCHLIESSEN: das Home-Feld beendet eine Sitzung,
+die keinen Port hält, und führt zum Hub. In Tastenfeld, Liste, Warnung
+oder Tastatur einer Programmierung schließt das Home-Feld nur diese
+Ebene.
+
+Der Rahmen von KST und HITEC um die Sitzung:
+
+| Teil | Zeigt |
+| --- | --- |
+| Taste PORT | was der Tester ansteuert; ein Tippen öffnet die Liste PORT, gesperrt, solange die Sitzung den Port hält |
+| BEREIT, PORT | die Portzeile; rot mit `KEIN PROG-PORT` bei OUTPUTS, ein Tippen öffnet die Liste PORT; ein roter Punkt, solange die Sitzung den Port hält |
+| BEREIT, Versorgung | PROG 5V am rbmod-Carrier, PD MINI, wo einer antwortet, sonst VERSORGUNG. Gelb `EIN BEI VERBINDEN`, solange aus; ein roter Punkt und `EIN`, solange an, dann schaltet ein Tippen sie aus wie AUSGANG AUS (PROG 5V nicht, solange ein Port sie hält). KST ohne Versorgung, die der Prüfstand schaltet: gelb `AUS, EIN VON HAND`. Hitec D-Serie ohne: `UNVERÄNDERT` |
+| BEREIT, SERVO | grau `NICHT VERBUNDEN` vor VERBINDEN, gelb `LÄUFT`, solange ein Schritt läuft, gelb `NICHT GELESEN` bei gehaltenem Port ohne gelesenes Servo, nach dem Lesen das Modell (Hitec) oder der Typ (KST, `V6?` für die Vermutung aus 20k_sel) |
+| Schienenzeile | Volt und Ampere des Messgeräts, unter den Zeilen |
+| Fußleiste, Mitte | WERTE SCHREIBEN der Sitzung, von jeder Registerkarte aus: dasselbe Tippen wie auf die Taste der Sitzung, die bei ausgeschaltetem Schalter zuerst die Seite der Freigabe öffnet. Grau, ein Tippen nennt den Grund: vor VERBINDEN und Lesen, ohne geänderten Wert, solange ein Schritt läuft und solange eine Seite der Sitzung oder von SERVO offen ist |
+| Fußleiste, rechts | OPTIONEN: die Seite KST EXPERT MODE, bei HITEC Hitec-Serie und Hitec-D-Empfang; grau, solange die Sitzung den Port hält |
+
+Ein Tippen auf eine nicht erfüllte Zeile von BEREIT nennt sie im
+Alarmband, zum Beispiel `VERSORGUNG: Schalte die Servoversorgung aus und
+ein, tippe dann 1s später auf VERBINDEN.` Ein Finger auf einer Zeile von
+BEREIT oder auf WERTE SCHREIBEN hält OPTIONEN und die Liste PORT zu, wie
+jeder gehaltene Druck.
+
+![KST vor VERBINDEN](img/de/servo-kst.png) Die Registry `shared/ui/prog_registry.c` liefert die
 Programmierungen und ihre Regeln. Modellierte Protokolle ohne
 IOmcu-Transport haben keine Kachel.
 
@@ -2204,21 +2232,23 @@ sind fest: PROGP01 GPIO13, PROGP02 GPIO14, PROGP03 GPIO15, PROGP04 GPIO0.
 Die Wahl setzt SERVO-TESTER und fordert für diesen Port SERVO PWM, für
 die anderen drei KEINE an. Der Tester wartet auf die Auslesebestätigung.
 
-Solange ein Port gehalten wird, öffnen SCHLIESSEN und Home-Feld
+Solange ein Port gehalten wird, öffnet das Home-Feld
 PROGRAMMIERMODUS VERLASSEN. Während des Wechsels in den Programmiermodus
-oder zurück haben sie keine Wirkung. Das Verlassen von SERVO erhält den
+oder zurück hat es keine Wirkung. Das Verlassen von SERVO erhält den
 gehaltenen Port. Eine gehaltene Sitzung, die nicht sichtbar ist, öffnet
 auf ihrem eigenen Bildschirm wieder: von einem anderen
-SERVO-Funktionsbildschirm wechselt das Panel dorthin. ARM ist auf SERVO
-und MOTOR & ESC gesperrt.
+SERVO-Funktionsbildschirm wechselt das Panel dorthin. KST und HITEC haben
+kein ARM. Auf den anderen SERVO-Bildschirmen und auf MOTOR & ESC ist ARM
+gesperrt.
 Ein Druck zeigt `ARMED gesperrt: Die Servoprogrammierung belegt einen Port.`
-ZENTRIEREN, FREIGEBEN und STOP bleiben aktiv. SOLL-PULSBREITE zeigt `---`,
+STOP bleibt überall aktiv, ZENTRIEREN und FREIGEBEN auf LIVE. SOLL-PULSBREITE zeigt `---`,
 weil der Tester keine Pulse an den gehaltenen Port sendet.
 
 In PWM mit antwortendem PD mini nennt PORT die von VERBINDEN eingestellte
 Spannung und Strombegrenzung: `PORT  5.0V  1000mA`. Während der
-Portbelegung sind die Sollwerte und AUSGANG EIN auf SERVO und SUPPLY
-gesperrt; AUSGANG AUS bleibt aktiv. Am rbmod-Carrier haben die Ports
+Portbelegung sind die Sollwerte und AUSGANG EIN auf SUPPLY und den anderen
+SERVO-Bildschirmen gesperrt; AUSGANG AUS und ein Tippen auf die Zeile PD
+MINI von KST oder HITEC, solange sie EIN liest, bleiben aktiv. Am rbmod-Carrier haben die Ports
 eigene 5V, deshalb bleiben diese Netzteilbedienelemente aktiv
 ([Carrier, Versorgung](Carrier-de.md#versorgung)). Das Verlassen des
 Programmiermodus schaltet die Servoversorgung nicht aus und ein. Ob ein
@@ -2229,7 +2259,7 @@ Bedienelemente sind mindestens 48px hoch und enden 8px über dem Feldboden:
 
 | Teil | Größe |
 | --- | --- |
-| Registerkarten und SCHLIESSEN | eine Zeile oben, 48px hoch: fünf Registerkarten von 95px, SCHLIESSEN 120px |
+| Registerkarten | eine Zeile oben, 48px hoch: fünf Registerkarten von 120px, vier von 151px auf KST mit KST EXPERT MODE AUS |
 | Zeilen | 48px hoch im Abstand von 56px, bis zu 5 je Registerkarte, in zwei Spalten von 295px; eine breite Zeile nimmt beide |
 | Werte | 150px (15 Zeichen der Schrift 10 x 20); bei einer breiten Zeile 260px, darin ihre Tasten `-` und `+` von 56px |
 | Hinweise und Meldungen | unter der letzten Zeile, Schrift 10 x 20, 60 Zeichen je Zeile, 20px je Zeile, bis 6px über dem Feldboden: 4 Zeilen unter der Registerkarte SERVO |
@@ -2263,9 +2293,10 @@ beschreibt das Verfahren.
 
 #### Hitec-Programmierung
 
-Die Hitec-Programmierung öffnet sich über `Hitec-Servos` mit denselben
-Maßen: fünf Registerkarten (SERVO, BEWEGUNG, WEG, SCHUTZ, INFO) und
-SCHLIESSEN, 48px hohe Zeilen mit 56px Abstand, Wertefelder von 150px oder
+Die Hitec-Programmierung öffnet sich über die Kachel HITEC mit denselben
+Maßen und demselben Rahmen: fünf Registerkarten (SERVO, BEWEGUNG, WEG,
+SCHUTZ, INFO) von 120px, die Karte BEREIT und WERTE SCHREIBEN in der
+Fußleiste, 48px hohe Zeilen mit 56px Abstand, Wertefelder von 150px oder
 260px Breite sowie Hinweise in 10 x 20 bis 4px über dem Alarmband.
 Bestätigungsseiten haben eine 300 x 56px große Halte-Taste und
 ABBRECHEN mit 180 x 56px.
@@ -2304,8 +2335,8 @@ Drücken um 8 Zählwerte und wiederholt nach 0.45s mit 8Hz, ab 1.8s mit
 30Hz. Der Name der verfolgten Zeile steht in der Akzentfarbe. Die
 Hinweise zeigen Port und GPIO, `POSITION 3344 (-65.1°)` mit dem
 AS5600-Winkel und dem Versorgungsstrom, die Reichweite und den Hinweis zur
-Endlage. Ein Tippen auf EIN, ein Wechsel der Registerkarte, SCHLIESSEN und
-das Home-Feld schalten es aus; die Taste zeigt WARTEN, bis das Servo neu
+Endlage. Ein Tippen auf EIN, ein Wechsel der Registerkarte und das
+Home-Feld schalten es aus; die Taste zeigt WARTEN, bis das Servo neu
 gestartet ist.
 
 Solange die Schleife läuft, steht ANSCHLAG SUCHEN in der Zeile von

@@ -414,6 +414,10 @@ static void draw_left(gfx_canvas_t *c)
  */
 void draw_arm(gfx_canvas_t *c)
 {
+    if (prog_ready_shown()) {
+        prog_draw_write(c);         /* KST's and HITEC's WRITE n VALUES */
+        return;
+    }
     if (ready_shown()) {
         rauto_draw_hold(c);         /* RUDDER AUTO's ARM + START */
         return;

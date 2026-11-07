@@ -6,8 +6,11 @@ The programmer reads the 32 registers of a KST or Chaservo servo over its
 signal wire, shows them as settings, and writes changed settings back. The
 servos of the two brands share one protocol and one register set. It opens
 from the KST tile of the [SERVO hub](Screens.md#servo) on a screen of its
-own, SERVO > KST, and covers the left card. **CLOSE** or the home tag
-returns to the hub. Opening it ends a running automatic test as
+own, SERVO > KST, and covers the left card. The home tag returns to the
+hub; the session has no CLOSE. The right card is the READY card with
+PORT, the supply **CONNECT** switches and the servo read, and the footer's
+middle slot is the session's **WRITE n VALUES**; the KST screen has no
+**ARM** ([Screens: Programmer](Screens.md#programmer)). Opening it ends a running automatic test as
 `stopped by the operator`. The tile is grey with `IOMCU HAS NO SERVO PWM`
 and opens nothing while the IOmcu, the RP2350 board, reports no servo PWM,
 which includes no IOmcu answering. Servos by Hitec have a programmer of
@@ -35,8 +38,8 @@ before a write is relied on.
 
 - The IOmcu runs protocol 4.13 or later. With an older one the overlay
   says `Unavailable: the IOmcu has no programming port.` and
-  `Update the IOmcu to version 0.17.0 or later.`, and every control but
-  **CLOSE** is off.
+  `Update the IOmcu to version 0.17.0 or later.`, and every control is
+  off; the home tag returns to the hub.
 - **LEAVE** with its wait needs protocol 4.15 on the IOmcu. An older
   one is [named and handled without it](#an-iomcu-older-than-link-version-415).
 
@@ -61,7 +64,7 @@ before a write is relied on.
   is ARMED for any role, asked to arm or has a finger on **ARM** is refused with
   `Tap DISARM first. The port cannot be taken over while ARMED.` While the port
   is held, from **CONNECT** until it reports PWM, no screen switches the bench to ARMED:
-  **ARM** on SERVO and on MOTOR & ESC is drawn disabled; a press on it arms
+  **ARM** on SERVO's other screens and on MOTOR & ESC is drawn disabled; a press on it arms
   nothing and shows the alert
   `Cannot switch to ARMED: a port is in use by the servo programmer.`. A
   run of the ESC stick programmer does not start and says
@@ -147,7 +150,7 @@ GPIO 13 leaves the port none. The tester then keeps the standard outputs,
 whatever the row says.
 
 On boards without the carrier PORT chooser, selecting the standard outputs
-(SERVO TESTER on OUTPUTS) makes the programmer show `Use the programming port to program a servo.` and `Tap PORT and pick a PROG PORT.`, and every control but **CLOSE** is off. It connects on PORT 1, PORT 2, PORT 3 or PORT 4, the port SERVO TESTER names, with that port's pin.
+(SERVO TESTER on OUTPUTS) makes the programmer show `Use the programming port to program a servo.` and `Tap PORT and pick a PROG PORT.`, and every control is off; the home tag returns to the hub. It connects on PORT 1, PORT 2, PORT 3 or PORT 4, the port SERVO TESTER names, with that port's pin.
 
 ![The standard outputs are the target](img/servo-kst-target.png)
 
@@ -225,9 +228,8 @@ without a result.
 
 While the port is in programming the overlay stays open, and the tester's
 controls send nothing to the port.
-**CLOSE** and the home tag open LEAVE PROGRAMMING; over an open keypad,
-list, warning or keyboard the home tag closes that one first. **STOP** on
-the right card works. Leaving the KST screen leaves the port as it is;
+The home tag opens LEAVE PROGRAMMING; over an open keypad, list, warning
+or keyboard it closes that one first. **STOP** in the band works. Leaving the KST screen leaves the port as it is;
 every other SERVO screen opens KST again until **LEAVE**.
 
 | **CONNECT** ends with | Meaning |
@@ -355,15 +357,15 @@ operator raises it first. A PD mini whose input voltage is under 5.5V cannot giv
 On boards where the port uses the PD mini, its supply set points are
 reserved for the port while it is out of PWM. The
 IOmcu refuses every change of the voltage and of the current limit
-and every ON; it takes an OFF. The SUPPLY screen and the SET row of the
-right card show the same: the set points, the sliders, the steps and
-**OUTPUT ON** are dimmed and take no press, **OUTPUT OFF** and
-**RESET PEAKS** work, and the MODE card of the SUPPLY screen reads
+and every ON; it takes an OFF. The SUPPLY screen shows the same: the set
+points, the sliders, the steps and **OUTPUT ON** are dimmed and take no
+press, **OUTPUT OFF** and **RESET PEAKS** work, a tap on the READY card's
+PD MINI row while it reads ON switches the output off, and the MODE card of the SUPPLY screen reads
 `Servo programmer.`. The limits of the SUPPLY screen's settings stay
 editable; a limit lowered under a set point reaches the set point when the
 port is back in PWM.
 
-The port's set points stay on the SUPPLY screen and the SET row after the
+The port's set points stay on the SUPPLY screen after the
 port is back in PWM for as long as the output it left on stays on. The set
 points from before the session come back at the first read of the supply
 that shows no port holding it and the output off: at once where the session
@@ -439,8 +441,8 @@ the voltage it began with.
 
 With a PD mini answering, the state line names the values before
 **CONNECT** and the measured output voltage and current in programming
-mode. The SUPPLY screen and the supply rows of the right card follow what
-the port set.
+mode. The SUPPLY screen and the READY card's supply row follow what the
+port set.
 
 ![A PD mini answers](img/servo-kst-supply.png)
 ![The supply in programming mode](img/servo-kst-supplied.png)
@@ -1292,7 +1294,7 @@ programmer reads the servo and writes nothing to it.
 
 ## Leaving
 
-**LEAVE**, or **CLOSE** in programming mode, asks to end the session and
+**LEAVE**, or the home tag in programming mode, asks to end the session and
 to return the port to servo PWM. After a write, restore or pairing
 release, a controllable servo supply (PD mini or the carrier's fixed 5V)
 allows return through [the power cycle](#the-power-cycle): the output is

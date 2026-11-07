@@ -13,8 +13,12 @@ laden und das Backup der Sitzung zurückspielen.
 
 Tippe im [SERVO-Hub](Screens-de.md#servo) auf HITEC. Die
 Servoprogrammierung öffnet sich auf einer eigenen Seite und deckt die linke
-Karte ab. **SCHLIESSEN** oder das Home-Feld führt zum Hub zurück, solange
-die Servoprogrammierung keinen Port hält. Die Kachel ist mit
+Karte ab. Das Home-Feld führt zum Hub zurück, solange die
+Servoprogrammierung keinen Port hält; die Sitzung hat kein SCHLIESSEN. Die
+rechte Karte ist die Karte BEREIT mit PORT, der Versorgung, die
+**VERBINDEN** schaltet, und dem gelesenen Servo; die Mitte der Fußleiste
+ist **WERTE SCHREIBEN** der Sitzung. Die Seite hat kein **ARM**
+([Bildschirme: Programmierer](Screens-de.md#programmierer)). Die Kachel ist mit
 `IOMCU OHNE SERVO PWM` ausgegraut und lässt sich nicht öffnen, solange der
 IOmcu, die RP2350-Platine, kein Servo-PWM (Pulsweitenmodulation) meldet.
 Das gilt auch, wenn kein IOmcu antwortet.
@@ -132,13 +136,15 @@ Solange der Port gehalten ist:
 
 - ARM ist ausgegraut. Ein Druck darauf schaltet nichts und zeigt
   `ARMED gesperrt: Die Servoprogrammierung belegt einen Port.` im
-  Alarmband, auf SERVO wie auf MOTOR & ESC. STOP wirkt. DISARM hat nichts
+  Alarmband, auf den anderen SERVO-Seiten wie auf MOTOR & ESC; HITEC
+  selbst hat kein ARM. STOP wirkt. DISARM hat nichts
   zu beenden: der Prüfstand kann nicht ARMED sein, solange der Port
   gehalten ist.
 - Wenn der PD mini die Programmierports versorgt, sind seine Sollwerte und
-  AUSGANG EIN in der Zeile SOLL und auf der Seite SUPPLY gesperrt. Ein Tipp
+  AUSGANG EIN auf der Seite SUPPLY gesperrt. Ein Tipp
   darauf zeigt `Servoprogrammierung belegt das
-  Netzteil: Sollwerte und EIN gesperrt.` AUSGANG AUS wirkt. Ab Protokoll
+  Netzteil: Sollwerte und EIN gesperrt.` AUSGANG AUS wirkt, ebenso ein
+  Tippen auf die Zeile PD MINI der Karte BEREIT, solange sie EIN liest. Ab Protokoll
   4.29 hält der IOmcu seine SUPPLY-Page zusätzlich von OPEN bis CLOSE
   ([Die Versorgung, solange ein Port gehalten ist](LinkHitec-de.md#die-versorgung-solange-ein-port-gehalten-ist)).
   Die Sollwerte von vor VERBINDEN kommen nach dem Verlassen zurück, sobald
@@ -842,7 +848,7 @@ SCHREIBEN schreibt den Ausgleich mit den Änderungen) und keinen Vermerk.
 
 ## VERLASSEN
 
-SCHLIESSEN, das Home-Feld oder VERLASSEN in der Zeile PORT öffnet
+Das Home-Feld oder VERLASSEN in der Zeile PORT öffnet
 PROGRAMMIERMODUS VERLASSEN; 2s Halten auf `2s HALTEN ZUM VERLASSEN`
 verlässt ihn:
 

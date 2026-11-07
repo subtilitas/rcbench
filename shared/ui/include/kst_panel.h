@@ -23,8 +23,8 @@
  * each hidden value they change.  A change of the mode closes every editor.
  *
  * The overlay stays open while the port holds its pin: PWM and
- * programming are exclusive states of that pin, and CLOSE asks for the
- * way back first.
+ * programming are exclusive states of that pin, and the home tag asks for
+ * the way back first.
  *
  * The panel's control task owns the link.  It hands this a feed every frame
  * and takes the commands; the files go to the card through the caller.
@@ -86,8 +86,9 @@ void kst_panel_open(void);
 bool kst_panel_is_open(void);
 
 /**
- * CLOSE: closes while the tester has the port, asks for the way back to
- * PWM while it is in programming mode, and does nothing while it moves.
+ * @brief The session's way back: closes while the tester has the port,
+ *        asks for the way back to PWM while it is in programming mode, and
+ *        does nothing while it moves.
  */
 void kst_panel_close(void);
 
@@ -313,6 +314,22 @@ int kst_panel_text_rows(const char *s);
 /** The line a rule's refusal or warning shows. */
 const char *kst_panel_rule_text(unsigned rule);
 
+/**
+ * @brief The session as KST's screen shows it beside the session: the
+ *        supply CONNECT switches, the port held, the servo read, WRITE n
+ *        VALUES.
+ * @param out receives it
+ */
+void kst_panel_session(prog_session_t *out);
+
+/**
+ * @brief The footer's WRITE n VALUES: what a tap on the session's own does,
+ *        from any tab -- the write page, or ENABLE WRITE's while the switch
+ *        is off.  Nothing while an editor or a press is in the session.
+ * @return whether the tap was taken
+ */
+bool kst_panel_write_tap(void);
+
 /*
  * Where things are, for a test's taps.  Rows by page, row and column, as
  * each row sits with KST EXPERT MODE ON; with it OFF a page's rows close up
@@ -322,15 +339,12 @@ const char *kst_panel_rule_text(unsigned rule);
  * more and a control at the foot ends 4px above the alert band.
  */
 /**
- * @brief A tab, an equal share of the row left of CLOSE, 48px tall: a
+ * @brief A tab, an equal share of the row, 48px tall: a
  *        fifth, a quarter with KST EXPERT MODE OFF.
  * @param page the tab, PG_SERVO to PG_LOCKED; another is the first
  * @return its rectangle; empty for LOCKED with KST EXPERT MODE OFF
  */
 gfx_rect_t kst_panel_tab_rect(int page);
-/** @brief CLOSE, 120 x 48px at the top right.
- *  @return its rectangle */
-gfx_rect_t kst_panel_close_rect(void);
 /**
  * @brief A row's value: 150px, a wide row's 260px less its keys.
  * @param page the tab

@@ -155,12 +155,12 @@ static const servo_state_t k_servo[] = {
     { "RUDDER AUTO", SERVO_FN_RAUTO, false, 3, 0,
       { TX_HG_SV_TITLE_AUTO, TX_HG_SV_TITLE_RUD_READ, TX_HG_SV_TITLE_READY },
       { 3, 2, 5 } },
-    { "KST", SERVO_FN_KST, false, 2, 0,
-      { TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
-      { 4, 4 } },
-    { "HITEC", SERVO_FN_HITEC, false, 2, 0,
-      { TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
-      { 4, 4 } },
+    { "KST", SERVO_FN_KST, false, 1, 0,
+      { TX_HG_SV_TITLE_PRG },
+      { 5 } },
+    { "HITEC", SERVO_FN_HITEC, false, 1, 0,
+      { TX_HG_SV_TITLE_PRG },
+      { 5 } },
 };
 
 /** @brief The state pose_servo() puts SERVO in. */

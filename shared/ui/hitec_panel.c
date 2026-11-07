@@ -180,7 +180,7 @@ gfx_rect_t hpn_tabs_rect(void)
 {
     return (gfx_rect_t){ (int16_t)(hp.area.x + 8), (int16_t)(hp.area.y
                                                              + HP_TAB_Y),
-                         (int16_t)(hp.area.w - 16 - HP_CLOSE_W - 8),
+                         (int16_t)(hp.area.w - 16),
                          HP_TAB_H };
 }
 
@@ -308,13 +308,6 @@ int hpn_text_rows(gfx_canvas_t *c, int x, int y, const char *s,
 gfx_rect_t hitec_panel_tab_rect(int page)
 {
     return hp.tabs.rect[page >= 0 && page < HITEC_PANEL_PAGES ? page : 0];
-}
-
-gfx_rect_t hitec_panel_close_rect(void)
-{
-    return (gfx_rect_t){ (int16_t)(hp.area.x + hp.area.w - 8 - HP_CLOSE_W),
-                         (int16_t)(hp.area.y + HP_TAB_Y), HP_CLOSE_W,
-                         HP_TAB_H };
 }
 
 gfx_rect_t hitec_panel_value_rect(int page, int row, int col)
@@ -586,7 +579,7 @@ void hpn_moved(void)
     if (st != hp.state_seen) {
         /* An editor asks for something of the state it was opened in. */
         hpn_close_editors();
-        if (hp.pressed != P_TAB && hp.pressed != P_CLOSE) {
+        if (hp.pressed != P_TAB) {
             hp.pressed = P_NONE;
         }
         hp.state_seen = st;

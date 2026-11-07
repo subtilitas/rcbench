@@ -57,6 +57,9 @@ bool svs_safe_at(int x, int y)
         if (gfx_rect_contains(rauto_rect(RA_C_START), x, y)) {
             return servo_rauto_running(&s.ra.run) || svs_seq_busy();
         }
+        if (prog_ready_shown() && prog_ready_stops_at(x, y)) {
+            return true;        /* KST's and HITEC's supply OFF */
+        }
         if (gfx_rect_contains(ready_card_rect(), x, y)) {
             return false;
         }
@@ -334,6 +337,19 @@ void svs_event_body(const touch_event_t *evt)
         ui_slider_release(&s.speed);
         if (foot_down(evt)) {
             return;
+        }
+        /* KST and HITEC: WRITE in the footer's middle, no ARM, and the
+         * READY card in the output card's place. */
+        if (prog_ready_shown()) {
+            if (prog_write_down(evt)) {
+                return;
+            }
+            if (gfx_rect_contains(ready_card_rect(), px, py)) {
+                if (!modal_open()) {
+                    (void)ready_down(evt);
+                }
+                return;
+            }
         }
         /* RUDDER AUTO: the footer's ARM + START and the READY card in the
          * output card's place; nothing of the output card is there to

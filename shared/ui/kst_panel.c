@@ -349,9 +349,9 @@ int kpn_text_rows(gfx_canvas_t *c, int x, int y, const char *s,
 
 gfx_rect_t kpn_tabs_rect(void)
 {
-    /* The row less 8px each side, CLOSE and 8px before it. */
+    /* The row less 8px each side: the home tag is the way back. */
     return (gfx_rect_t){ (int16_t)(k.area.x + 8), (int16_t)(k.area.y + TAB_Y),
-                         (int16_t)(k.area.w - 16 - CLOSE_W - 8), TAB_H };
+                         (int16_t)(k.area.w - 16), TAB_H };
 }
 
 int kpn_foot(void)
@@ -492,12 +492,6 @@ gfx_rect_t kst_panel_tab_rect(int page)
         }
     }
     return (gfx_rect_t){ 0, 0, 0, 0 };
-}
-
-gfx_rect_t kst_panel_close_rect(void)
-{
-    return (gfx_rect_t){ (int16_t)(k.area.x + k.area.w - 8 - CLOSE_W),
-                         (int16_t)(k.area.y + TAB_Y), CLOSE_W, TAB_H };
 }
 
 gfx_rect_t kst_panel_value_rect(int page, int row, int col)
@@ -891,7 +885,7 @@ static void model_moved(void)
         /* An editor asks for something of the state it was opened in. */
         if (st != KST_PROG_PROGRAMMING) {
             kpn_close_editors();
-            if (k.pressed != P_TAB && k.pressed != P_CLOSE) {
+            if (k.pressed != P_TAB) {
                 k.pressed = P_NONE;
             }
         }

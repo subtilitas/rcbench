@@ -922,14 +922,10 @@ static void draw_row(gfx_canvas_t *c, int i)
     }
 }
 
-/** @brief Draws the page shown: the tabs, CLOSE, its rows and its notes. */
+/** @brief Draws the page shown: the tabs, its rows and its notes. */
 static void draw_page(gfx_canvas_t *c)
 {
     ui_tabs_render(&k.tabs, c);
-    kp_button(c, kst_panel_close_rect(), TR(SUP_CLOSE),
-              ui_theme_color(UI_C_PANEL_SUNK),
-              k.have && k.pressed == P_CLOSE,
-              !kst_panel_holds_port() || kpn_programming());
     for (int i = 0; i < ROW_COUNT; ++i) {
         if (kpn_rows[i].page == kpn_page() && kpn_row_shown(&kpn_rows[i])) {
             draw_row(c, i);

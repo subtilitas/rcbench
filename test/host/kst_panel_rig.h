@@ -379,10 +379,11 @@ static inline void program_open(void)
     scr->render(&cv, 0);
 }
 
-/* The session's CLOSE: back to the hub, or the question for LEAVE
- * while the port is in programming. */
+/* The home tag over the session: back to the hub, or the question for
+ * LEAVE while the port is in programming. */
 static inline void program_close(void)
 {
-    const gfx_rect_t r = kst_panel_close_rect();
-    screen_tap(r.x + r.w / 2, r.y + r.h / 2);
+    (void)scr->back();
+    scr->tick(0.02f);
+    scr->render(&cv, 0);
 }
