@@ -15,10 +15,12 @@
  * - a_tap_on_the_hold_during_the_sequence_ends_it_all_off
  * - a_finger_on_arm_start_locks_port_target_and_pwm
  * - settings_edited_after_entry_are_the_ones_the_run_takes
+ * - a_second_finger_opens_nothing_under_arm_start
  *
  * SPDX-License-Identifier: MIT
  */
 #include "servo_rauto_kst_rig.h"
+#include "ui_setlist.h"
 
 /* The owner's case on the rbmod carrier: SAFE, PORT PWM off, PROG 5V off.
  * READY reads PROG 5V and PORT PWM START SWITCHES IT ON and ARM START
@@ -261,6 +263,41 @@ TEST_CASE(settings_edited_after_entry_are_the_ones_the_run_takes)
     carrier_done();
 }
 
+/* A second finger on SETTINGS or on a READY row while ARM + START's 2s
+ * hold fills: nothing opens and the card takes no tap, so the hold's own release still ends it, and
+ * a finger lifted at 1s switches nothing, arms nothing and starts
+ * nothing. */
+TEST_CASE(a_second_finger_opens_nothing_under_arm_start)
+{
+    carrier_safe_off(40u);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 1);
+    ra_ms(500u);
+    CHECK(servo_screen_arm_held());
+    ev(SV_FOOT_SET_X, SV_FOOT_Y, TOUCH_EVENT_DOWN, 2);
+    ev(SV_FOOT_SET_X, SV_FOOT_Y, TOUCH_EVENT_UP, 2);
+    CHECK(!servo_screen_list()->open);
+    ui_router_set_alert(NULL);
+    for (int r = 0; r < (int)RAR_COUNT; ++r) {
+        ev(SV_RDY_X, SV_RDY_ROW_Y(r), TOUCH_EVENT_DOWN, 2);
+        ev(SV_RDY_X, SV_RDY_ROW_Y(r), TOUCH_EVENT_UP, 2);
+        CHECK(!servo_screen_list()->open);
+        CHECK_EQ(servo_screen_port_choices(), -1);
+        CHECK(servo_screen_arm_held());
+        CHECK(ui_router_alert() == NULL);   /* the card took no tap */
+    }
+    ra_ms(500u);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 1);
+    ra_ms(2000u);
+    CHECK(!servo_screen_arm_held());
+    CHECK(!svs_seq_busy());
+    CHECK(!servo_screen_rauto_running());
+    CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
+    CHECK(!prog5v_box_on());
+    CHECK_EQ(ra.arms, 0u);
+    ra.p5_task = false;
+    carrier_done();
+}
+
 int main(void)
 {
     RUN(on_the_carrier_one_hold_switches_port_pwm_and_5v_arms_and_starts);
@@ -270,5 +307,6 @@ int main(void)
     RUN(a_tap_on_the_hold_during_the_sequence_ends_it_all_off);
     RUN(a_finger_on_arm_start_locks_port_target_and_pwm);
     RUN(settings_edited_after_entry_are_the_ones_the_run_takes);
+    RUN(a_second_finger_opens_nothing_under_arm_start);
     return test_summary("servo_rauto_seq");
 }

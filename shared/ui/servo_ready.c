@@ -247,7 +247,9 @@ bool ready_down(const touch_event_t *evt)
                               evt->point.y)) {
         return false;
     }
-    if (s.rdy.pressed >= 0) {
+    /* A row's fix opens a list or leaves the screen: none under a hold's
+     * finger, whose release it would take. */
+    if (s.rdy.pressed >= 0 || svs_hold_down()) {
         return true;
     }
     for (int i = 0; i < ready_count(); ++i) {

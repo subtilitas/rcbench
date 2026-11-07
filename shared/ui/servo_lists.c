@@ -443,13 +443,13 @@ const char *svs_list_refused(void)
     /* A hold under way keeps its finger: the list would take every event,
      * the hold's release among them, and the hold would fire without the
      * finger on it. */
-    if (s.out_down || s.p5_down || s.arm_down || s.test_down || s.lim_down) {
+    if (svs_hold_down()) {
         return TR(FOOT_SETTINGS_SAFE);
     }
     if (s.fn == SERVO_FN_HUB) {
         return NULL;
     }
-    if (s.gate.armed || s.gate.arm_asked || s.sweeping || svs_start_pending()
+    if (s.gate.armed || s.gate.arm_asked || s.sweeping || svs_seq_busy()
         || servo_test_running(&s.test) || servo_limrun_running(&s.lim)
         || servo_rauto_running(&s.ra.run)) {
         return TR(FOOT_SETTINGS_SAFE);

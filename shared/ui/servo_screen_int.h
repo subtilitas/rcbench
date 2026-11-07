@@ -1591,6 +1591,20 @@ static inline bool svs_start_pending(void)
     return s.ra.down || svs_seq_busy();
 }
 
+/**
+ * @brief Whether a finger is on a hold that has not fired: OUTPUT ON,
+ *        PROG 5V ON, ARM, a test's or a limit run's, RUDDER AUTO's ARM +
+ *        START.  An overlay that takes every event opens on none of them:
+ *        it would take the hold's release, and the hold would fire without
+ *        its finger.
+ * @return true then
+ */
+static inline bool svs_hold_down(void)
+{
+    return s.out_down || s.p5_down || s.arm_down || s.test_down || s.lim_down
+           || s.ra.down;
+}
+
 /* Armed, asked to arm, or a finger on ARM, or the bench armed for the
  * motor: the programmer takes no port. */
 static inline bool bench_arming(void)

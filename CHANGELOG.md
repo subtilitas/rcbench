@@ -90,6 +90,8 @@ history is in git.
   steps ends them the same way. The START button on the left card is gone.
 - While a finger holds ARM + START, and while its steps run, PORT opens
   nothing and takes no pick, and TARGET, PORT PWM and SETTINGS are locked.
+  While any of SERVO's holds has its finger down, the READY card takes no
+  tap.
 
 - The panel sets the Bluetooth IMU's output content register RSW (0x02) to
   0x0C: angle (0x53) and angular rate with the battery (0x52), 2 frames a
