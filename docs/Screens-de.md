@@ -1586,8 +1586,8 @@ der Reihenfolge der Nutzung.
 | HITEC | HITEC | die Programmierung für Hitec über dem linken Feld, Karte und Fußleiste wie KST |
 
 Jede Kachel zeigt ihren Namen und eine Zeile von höchstens 31 Zeichen in
-10 x 20. Die Zeile von TEST nennt die Stufen, die ein jetzt gestarteter
-Lauf fährt, wie die Karte BEREIT von TEST: `4.8-6.0V, BROWN-OUT` mit HV
+10 x 20. Die Zeile von TEST nennt die Stufen, die der nächste Lauf von
+TEST fährt, wie die Karte BEREIT von TEST: `4.8-6.0V, BROWN-OUT` mit HV
 SERVO aus, `4.8-8.4V, BROWN-OUT` mit HV SERVO an, `KEINE STUFE GEWÄHLT`
 ohne Stufe und ohne BROWN-OUT. Die Kacheln KST und HITEC sind grau, solange der IOmcu die
 Fähigkeit ihres Ports nicht meldet oder eine andere Sitzung den Port hält;

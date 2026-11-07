@@ -4060,7 +4060,6 @@ shared/ui/servo_screen_int.h: warning: Member lim_leave_follow(void) (function) 
 shared/ui/servo_screen_int.h: warning: Member lim_meter_follow(servo_source_id_t id, uint32_t changes) (function) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member lim_prog_why(void) (function) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member lim_reads(void) (function) of file servo_screen_int.h is not documented.
-shared/ui/servo_screen_int.h: warning: Member lim_sig (variable) of struct servo_screen_state_t is not documented.
 shared/ui/servo_screen_int.h: warning: Member lim_signature(void) (function) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member lim_tick(void) (function) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member lineage (variable) of struct servo_screen_state_t is not documented.

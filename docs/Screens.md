@@ -1470,7 +1470,7 @@ SERVO opens on its hub: eight tiles of 328 x 130px in SETUP's grid, at x
 | HITEC | HITEC | the Hitec programmer over the left card ([Hitec programmer](#hitec-programmer)) |
 
 Each tile shows its name and a line of at most 31 cells of 10 x 20.
-TEST's line names the steps a run started now takes, as TEST's READY card
+TEST's line names the steps TEST's next run takes, as TEST's READY card
 does: `4.8-6.0V, BROWN-OUT` with HV SERVO off, `4.8-8.4V, BROWN-OUT` with
 it on, `NO STEP CHOSEN` with no step and no BROWN-OUT. KST's
 and HITEC's tiles are grey while the IOmcu does not report the capability

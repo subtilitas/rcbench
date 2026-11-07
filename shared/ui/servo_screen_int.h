@@ -770,7 +770,7 @@ typedef struct {
     bool      lim_off;       /**< USER LOGS was off at its start        */
     const char *lim_note;    /**< why the last START was refused, or NULL */
     uint32_t  lim_changes;   /**< the meter's change count at the start */
-    uint32_t  lim_sig;
+    uint32_t  lim_sig;       /**< lim_signature() as last drawn         */
     /* The outbox the logger last peeked, PEEK_*, and whose files' number
      * comes back (servo_screen_test_files()). */
     uint8_t   peek_from;     /**< the outbox last peeked, PEEK_*     */

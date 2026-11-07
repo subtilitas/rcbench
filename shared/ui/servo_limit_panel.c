@@ -376,10 +376,12 @@ static void lim_poll(void)
     ++s.ctrl_rev;
 }
 
-/* The programmer's run is over: its own supply values come back.  A run
- * that ended as FAIL switches the supplies off now, after its LEAVE gave
- * the port back: an error leaves no output on (an ABORTED run asked its
- * OFF at its end; PASS and FREE keep the supply as it is). */
+/**
+ * @brief The programmer's run is over: its own supply values come back.  A
+ *        run that ended as FAIL switches the supplies off, after its LEAVE
+ *        gave the port back: an error leaves no output on (an ABORTED run
+ *        asked its OFF at its end; PASS and FREE keep the supply as it is).
+ */
 static void lim_seam_ended(void)
 {
     lim_seam_end(s.lim.cfg.family);
