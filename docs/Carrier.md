@@ -95,25 +95,29 @@ link also switch GPIO 21 off. A PROG 5V OFF by hand stops the pulse as
 well: the panel asks for the pulse only while the box reads ON.
 
 The panel switches the port's pulse on only while the bench is SAFE, as
-on every board; it switches it off at once. Switch PROG 5V on first, then
-ARM. A PROG 5V switched on while ARMED leaves the pulse off until the next
-SAFE: RUDDER AUTO and the limit run then read
-`PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM`. While SAFE with the box
-off both read `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` before
-`ARM FIRST`.
+on every board; it switches it off at once. A PROG 5V switched on while
+ARMED leaves the pulse off until the next SAFE: the limit run then reads
+`PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM`.
 
 PORT PWM is on OUTPUTS, the PROG 5V box on SERVO and SUPPLY. A PROG 5V
-its box switched on stays on from one SERVO screen to another, the hub
-included. Leaving SERVO switches it off, so PORT PWM ON is taken with the
-box off and the pulse waits for it. With PORT PWM off, RUDDER AUTO and the
-limit run read `PORT PWM OFF: SWITCH IT ON IN OUTPUTS` while SAFE and
-`PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS` while ARMED. The way from
-PORT PWM off:
+switched on from SERVO stays on from one SERVO screen to another, the hub
+included. Leaving SERVO switches it off.
+
+RUDDER AUTO needs no step by hand: its HOLD 2s: ARM + START, from SAFE,
+switches PORT PWM ON, then PROG 5V ON, waits up to 1000ms for the PROG 5V,
+the port's PWM bit (set while SAFE) and an INA3221 window begun after both,
+arms, waits up to 500ms for ARMED and starts the run. The pulse runs from
+the ARM ([Servo: AUTO end points](Servo.md#auto-end-points)). Its READY
+card reads `START SWITCHES IT ON` on the PROG 5V and PORT PWM rows while
+SAFE. A step that fails names itself in the alert band and ends with the
+bench SAFE, PROG 5V off.
+
+The limit run's way from PORT PWM off, until it gets the same hold:
 
 1. SAFE: open SETUP > OUTPUTS on the port's entry.
 2. PORT PWM ON. The line reads `PORT PWM ON: PULSES START WITH PROG 5V ON SERVO`.
-3. Back to SERVO, hold PROG 5V ON for 2s. The pulse comes on while SAFE.
-4. ARM, then hold START.
+3. Back to SERVO, hold PROG 5V ON for 2s. The port's PWM bit comes on while SAFE; the pulse runs from the next ARM.
+4. ARM, then hold START LIMIT RUN.
 
 ## Power
 

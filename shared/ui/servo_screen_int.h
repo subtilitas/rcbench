@@ -33,6 +33,7 @@
 #include "servo_rudder_int.h"
 #include "servo_screen.h"
 #include "servo_rudder_auto_int.h"
+#include "servo_ready_int.h"
 #include "servo_sweep.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -808,6 +809,7 @@ typedef struct {
     svs_drag_filter_t df;    /**< the drag's filtered target, svs_drag_tick() */
     rudder_t rud;            /**< RUDDER's task (servo_rudder_int.h)     */
     rauto_ui_t ra;           /**< RUDDER AUTO (servo_rudder_auto_int.h) */
+    svs_ready_t rdy;         /**< READY and ARM + START (servo_ready_int.h) */
 } servo_screen_state_t;
 
 /* The state, in servo_screen.c. */
@@ -1577,6 +1579,31 @@ static inline float enc_deg_now(void)
  * @return @p buf.
  */
 const char *svs_angle_text(char *buf, size_t n, float deg, bool plus);
+
+/**
+ * @brief Whether a finger is on RUDDER AUTO's ARM + START before it fires,
+ *        or its sequence is under way: the output it arms is the one shown
+ *        when the hold began.
+ * @return true then
+ */
+static inline bool svs_start_pending(void)
+{
+    return s.ra.down || svs_seq_busy();
+}
+
+/**
+ * @brief Whether a finger is on a hold that has not fired: OUTPUT ON,
+ *        PROG 5V ON, ARM, a test's or a limit run's, RUDDER AUTO's ARM +
+ *        START.  An overlay that takes every event opens on none of them:
+ *        it would take the hold's release, and the hold would fire without
+ *        its finger.
+ * @return true then
+ */
+static inline bool svs_hold_down(void)
+{
+    return s.out_down || s.p5_down || s.arm_down || s.test_down || s.lim_down
+           || s.ra.down;
+}
 
 /* Armed, asked to arm, or a finger on ARM, or the bench armed for the
  * motor: the programmer takes no port. */

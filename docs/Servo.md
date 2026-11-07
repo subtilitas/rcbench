@@ -1416,58 +1416,126 @@ AUTO, on the RUDDER AUTO screen of its own, programs a KST, Chaservo or
 Hitec servo's end points so that 1000us and 2000us reach the deflection entered
 for each side, measured on the angle source. It closes the loop on the
 surface's angle in place of the throw a radio's end points are set to by
-eye. The run is `shared/servo/servo_rudder_auto.c`; the box is
-`shared/ui/servo_rudder_auto_panel.c`. AUTO trusts the angle source: with
+eye. The run is `shared/servo/servo_rudder_auto.c`; the screen is
+`shared/ui/servo_rudder_auto_panel.c`, its READY card
+`shared/ui/servo_rudder_auto_ready.c` and `shared/ui/servo_ready.c`. AUTO trusts the angle source: with
 ANGLE SOURCE IMU it takes the angles the Bluetooth link delivers, and that
 link is not authenticated (`SECURITY.md`, the Bluetooth IMU).
 
 ### Running it
 
-- RUDDER AUTO shows its box in the place of RUDDER's LENGTH, three drive
-  buttons and state lines; the readout, ZERO and RESET MAX, the side view
-  and the output card stay. The side view adds TARGET 1000us on the negative side and
-  TARGET 2000us on the positive one, each on the side the last run
-  measured it on.
-  While the run runs, ZERO and RESET MAX are refused and drawn dimmed, so the run measures from
-  the zero it started with, and the rotary knob moves nothing.
+![RUDDER AUTO on the rbmod carrier, SAFE: PROG 5V, PORT PWM and ARM amber, the hold offered](img/servo-rudder-auto-rbmod.png)
+
+- The left card holds the readout, TARGET 1000us and TARGET 2000us,
+  MARGIN and TOLERANCE, ZERO and RESET MAX, the side view and three state
+  lines. The side view adds TARGET 1000us on the negative side and TARGET
+  2000us on the positive one, each on the side the last run measured it
+  on. While the run runs, ZERO and RESET MAX are refused and drawn dimmed,
+  so the run measures from the zero it started with, and the rotary knob
+  moves nothing.
 - TARGET 1000us and TARGET 2000us: the deflection each side is to reach,
   0.5 to 90.0° in steps of 0.5°, 20.0° (settings `rud_defl_lo`,
   `rud_defl_hi`). With LENGTH set the row shows the trailing edge's mm
   beside the degrees. MARGIN: 0 to 50%, 10% (`rud_margin`). TOLERANCE:
-  0.1 to 5.0°, 0.5° (`rud_tol`). A tap opens the keypad.
+  0.1 to 5.0°, 0.5° (`rud_tol`). A tap opens the keypad. The same four,
+  SERVO and SERVO PULSES are in SETTINGS.
 - The goal of a side is its target x (1 + MARGIN): 20.0° at 10% is 22.0°.
-- HOLD 2s TO START starts the run after a 2s hold. While it runs the
-  button reads STOP RUN, and a press ends the run on the press.
-- The three lines under it: the step under way, as `SETTLE 2000us: WRITE
-  1/8, SESSIONS 2`, or why a START is refused, or the goals; the result,
-  `PASS: 150>92, 150>92` with each end point's value before and after, or
-  `FAIL: reason`; the servo the run programs, `SERVO KST/CHASERVO` or
-  `SERVO HITEC D SERIES`, while it runs and before the first run; then the
-  report's file, or `RESTORE IN KST` (a Hitec servo: `LOAD HITEC001 IN
-  FILES`) after a FAIL or an abort that wrote, or that cut off a write on
-  its way, which may have landed.
-- The servo is the LIMIT RUN settings' SERVO row: KST/CHASERVO, or HITEC
-  in the Hitec programmer's series. It takes the programmer opened last from
-  the hub. On a Hitec servo the end points are LEFT END and RIGHT END in
-  the units of [Hitec servos](#hitec-servos), the read session writes no
-  pulses, and a D series servo needs no PD mini.
+- The READY card in the output card's place, 380 x 374px: one row per
+  check of the start, 30px each, a dot, the label and the state. Green:
+  met. Red: refuses the hold, or an output is live through it (PROG 5V ON,
+  ARMED). Amber: the hold does it itself (`START SWITCHES IT ON`, `START
+  ARMS`). Grey: waits on the PORT row. A state longer than its 20 cells
+  is cut after a whole word. The rail line under the rows names the meter
+  the run reads with its volts and amps.
+- A tap on PORT opens the PORT choice; on SERVO the SETTINGS list on its
+  SERVO row; on a red ZERO with a reading it takes the zero; on a red
+  ANGLE or METER it opens SETUP > SENSORS on the AS5600, the IMU or the
+  INA3221. A tap on another red or grey row names it in the alert band,
+  `LABEL: reason`.
+- HOLD 2s: ARM + START in the footer's middle slot, 328 x 48px, green
+  while no row is red. It fires the start sequence
+  (`shared/servo/servo_start_seq.c`, shared with the limit run and the
+  automatic test). The hold fades from green to amber and flashes 300ms
+  as it fires.
+- The three lines: the sequence's step, as `START, STEP 3 OF 5:
+  READ-BACK`, or the run's step, as `SETTLE 2000us: WRITE 1/8, SESSIONS
+  2`, or the failure of the last sequence, or the first red row's reason,
+  or the goals; the result, `PASS: 150>92, 150>92` with each end point's
+  value before and after, or `FAIL: reason`; the servo the run programs,
+  `SERVO KST/CHASERVO` or `SERVO HITEC D SERIES`, while it runs and before
+  the first run; then the report's file, or `RESTORE IN KST` (a Hitec
+  servo: `LOAD HITEC001 IN FILES`) after a FAIL or an abort that wrote, or
+  that cut off a write on its way, which may have landed.
+- The servo is the SERVO row: KST/CHASERVO, or HITEC in the Hitec
+  programmer's series. It takes the programmer opened last from the hub.
+  On a Hitec servo the end points are LEFT END and RIGHT END in the units
+  of [Hitec servos](#hitec-servos), the read session writes no pulses, and
+  a D series servo needs no PD mini.
 
-A START is refused, the reason on the first line, while:
+The start sequence, each step a state line and the hold's label:
 
-| Condition | Line |
-| --- | --- |
-| SAFE on the rbmod carrier with PORT on a programming port and the PROG 5V box off | `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX`, before `ARM FIRST`: the port's pulse comes on only with the PROG 5V and only while SAFE |
-| the bench is SAFE | `ARM FIRST`, as on TEST |
-| another run runs, or a report is still being written | the run's line, as on TEST |
-| PORT is the bench's outputs, or the output is otherwise not the programming port | `AUTO PROGRAMS A SERVO ON THE PROG PORT`. PORT on the outputs is named before the meter: on the rbmod carrier the outputs have no channel watching them until one is bound as SERVO PWM |
-| the meter is not set up for the servo's current | the limit run's line |
-| ARMED on the rbmod carrier's port with the PROG 5V box off | `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` |
-| a programmer session holds the port | `LOCKED: SERVO PROGRAMMING USES THE PORT`, before the pulse's line: the session is why no pulse runs |
-| the port's pulse is off | `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS` with PORT PWM off; `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` with PORT PWM on, as after a PROG 5V switched on while ARMED |
-| PULSE MIN is above 1000us, PULSE MAX below 2000us, or PULSE CENTRE is not strictly between 1000us and 2000us | `PULSE MIN TO MAX MUST INCLUDE 1000 TO 2000us` |
-| the programmer is busy, or a KST/Chaservo or classic Hitec servo has neither a PD mini nor PROG 5V to cycle its supply | the limit run's line |
-| the angle source gives no reading | `ANGLE SOURCE: NO READING` |
-| ZERO is not taken | `SET ZERO WITH THE SURFACE AT NEUTRAL` |
+| Step | Does | Ends with |
+| --- | --- | --- |
+| 1 PORT PWM | PORT PWM ON, saved, where the target is a PROG PORT and the setting is OFF | at once |
+| 2 PROG 5V or PD MINI | PROG 5V ON on the rbmod carrier's port; the PD mini's OUTPUT ON where it feeds the servo, at SUPPLY's SET V and SET A | at once |
+| 3 READ-BACK | waits until PROG 5V or the PD mini's output reads back ON, then PORT PWM's bit on the IOmcu (the panel sets it only while SAFE; the pulse itself runs only while ARMED), then for an INA3221 window that began after both. The rows are judged on that window | 1000ms from step 2 for all three; a part that does not read back fails the step, and so does one that reads back only after the 1000ms |
+| 4 ARM | ARM, where the bench is SAFE | ARMED within 500ms; an ARMED read only after the 500ms fails the step |
+| 5 START | the run starts on the gate of the table below | at once |
+
+A part that reads ON already is not asked again: a bench set up by hand
+runs the same steps. A failed step names itself in the alert band and on
+the first line, `PROG 5V FAILED: NO READ-BACK IN 1000ms`, `ARM FAILED:
+NOT ARMED IN 500ms`, `<step> FAILED: <reason>` for a row that turns red on
+the way, `<step> FAILED: STOP` for a tap on the hold, a STOP or a touch
+loss. A red row names the step of its own part: a supply row names PROG
+5V or PD MINI, `PROG 5V FAILED: PROGRAMMING: SERVO RAIL BELOW 4.8V` for a
+rail that stays low after the 5V reads back ON; PORT PWM's row names PORT
+PWM; ARM's names ARM. Every failure asks DISARM, PROG 5V OFF and the PD mini's OUTPUT OFF:
+the bench ends SAFE with every output off. Leaving RUDDER AUTO during the
+sequence ends it as any leave does: SAFE, and the PROG 5V kept for another
+SERVO screen until SERVO is left. While the sequence runs the hold reads
+the step in amber, and a press on it stops them whatever is open over the
+screen; while the run runs it reads STOP RUN in red, and a press ends the
+run on the press. During the steps the left card's rows, SETTINGS, PORT and
+the READY card take no press. The run starts on the settings as they read
+when the hold fired. PORT PWM stays ON after a failure, and the IOmcu's bit
+with it: the bench ends SAFE, and the port sends no pulse until the next
+ARM. The 1000ms and 500ms are constants in `servo_start_seq.h`,
+host-tested at 900ms and 1100ms and at 400ms and 600ms
+(`test_servo_start_seq`). On the screen a PROG 5V read back at 800ms
+starts the run and one at 1100ms fails (`test_servo_rauto_seq`): a read-back
+at 900ms leaves too little of the 1000ms for the port's bit and a 50ms
+window after it.
+
+The rows are the checks of the start gate, `rauto_blocked()`
+(`shared/ui/servo_rudder_auto_ready.c`), in the gate's order; each text
+belongs to one row (`test_servo_ready`). A row is red, and the hold grey,
+while:
+
+| Row | Condition | Text |
+| --- | --- | --- |
+| PORT | PORT is the bench's outputs, or the output is otherwise not the programming port | `AUTO PROGRAMS A SERVO ON THE PROG PORT`. Named before the meter: on the rbmod carrier the outputs have no channel watching them until one is bound as SERVO PWM |
+| METER | the meter is not set up for the servo's current, offline or without windows | the limit run's line |
+| PROGRAMMER | a programmer session holds the port, or the programmer is not in PWM | `LOCKED: SERVO PROGRAMMING USES THE PORT`, `PROGRAMMING: PORT IS NOT IN PWM MODE` |
+| PROG 5V, PD MINI, SUPPLY | ARMED with the PROG 5V off, a port holding it; a set point under 4.8V; a rail under 4.8V without a PD mini; no PD mini or PROG 5V to cycle a KST/Chaservo or classic Hitec servo's supply; the PD mini's output off with a set point past 6.0V | the limit run's line; `TAP: HV WARNING` for the set point past 6.0V, where a tap on the row opens OUTPUT ON's HV warning and its own 2s hold switches the output on. The hold never does: a PD mini already on past 6.0V counts as met, as OUTPUT ON asks nothing of a live output. PROG 5V is a fixed 5V and has no set point |
+| PORT PWM | ARMED with the port's pulse off | `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS`, `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` |
+| RANGE | PULSE MIN is above 1000us, PULSE MAX below 2000us, or PULSE CENTRE is not strictly between 1000us and 2000us | `PULSE MIN TO MAX MUST INCLUDE 1000 TO 2000us` |
+| ANGLE | the angle source gives no reading | `ANGLE SOURCE: NO READING` |
+| ZERO | ZERO is not taken | `SET ZERO WITH THE SURFACE AT NEUTRAL` |
+| ARM | another run runs, or a report is still being written | the run's line, as on TEST |
+
+A row with a text that refuses reads red even when another of its texts
+is one the hold does: a report still being written shows on ARM in red,
+not `START ARMS`. A PD mini set under 4.8V shows red on PD MINI with its
+output off.
+
+Amber on a SAFE bench, done by the hold: `PROG 5V OFF: SWITCH IT ON IN THE
+PROG 5V BOX` (PROG 5V), `PROGRAMMING: PD MINI OUTPUT OFF` (PD MINI, only
+while the INA3221 reads the rail under 3.0V: a rail that reads more with
+the output off is fed from elsewhere, and the row is red),
+`PORT PWM OFF: SWITCH IT ON IN OUTPUTS` and `PORT PWM ON, WAITING FOR
+SAFE: DISARM, THEN ARM` (PORT PWM), and `ARM FIRST` (ARM, also while
+ARMED is asked).
 
 ### Method
 

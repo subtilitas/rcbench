@@ -331,6 +331,12 @@ static void act(rudder_ctl_t k)
     }
 }
 
+void rudder_zero(void)
+{
+    act(RUD_C_ZERO);
+    ++s.ctrl_rev;
+}
+
 void rudder_down(const touch_event_t *evt)
 {
     if (evt == NULL || !rudder_shown() || rauto_down(evt)) {

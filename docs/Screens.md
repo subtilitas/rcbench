@@ -278,7 +278,7 @@ on the left card decides the first pages:
 | SERVO TEST | START TEST, its SETTINGS and the caps (3) |
 | SERVO LIMIT RUN | START LIMIT RUN and its SETTINGS (2) |
 | SERVO RUDDER | LENGTH, the drive buttons, ZERO and RESET MAX (4); DEFLECTION, TRAILING EDGE and the state lines (3) |
-| SERVO RUDDER AUTO | the targets, MARGIN and TOLERANCE, ZERO and START (4); DEFLECTION and TRAILING EDGE (2) |
+| SERVO RUDDER AUTO | the targets, MARGIN and TOLERANCE, ZERO (3); DEFLECTION and TRAILING EDGE (2); PORT, READY, the rail line, ARM + START and SETTINGS (5) |
 | SERVO, every function screen, SAFE | the type, the plot or PROG 5V, SET and SPEED (4); PORT, CENTRE with SWEEP and RELEASE, ARM, SETTINGS, and on RUDDER the side view (4 or 5) |
 | SERVO's lists (the hub, SWEEP, RUDDER, RUDDER AUTO, HITEC) | as a settings list |
 | SUPPLY LIVE | PLOT and TABLE, VOLTAGE and CURRENT LIMIT (3) |
@@ -521,7 +521,8 @@ button white, black, then its settled colour, twice, 50ms a phase
 a second a phase is 3 frames. A slower frame ends the phase it falls in and
 no more, so every phase is drawn at any frame rate. The settled colour is
 the one the hold fades to: the danger red for ARM, OUTPUT ON, PROG 5V ON,
-START TEST, START LIMIT RUN and HOLD 2s TO START on AUTO.
+START TEST and START LIMIT RUN; amber for HOLD 2s: ARM + START on RUDDER
+AUTO, whose sequence waits for its read-back before ARM.
 
 - The flash starts with the hold, not with the answer. ARMED, the output
   or the run arriving inside the 300ms restarts nothing; a press gets one
@@ -541,7 +542,7 @@ The fill of a button says what a press does to an output.
 
 | Class | Buttons | Available | Active | Waiting | Refused |
 | --- | --- | --- | --- | --- | --- |
-| Output action: switches an output on, arms, starts a run, writes a servo | ARM, OUTPUT ON, PROG 5V ON, START TEST, START LIMIT RUN, HOLD 2s TO START on AUTO, CENTRE and SWEEP on LIVE, 1000us, CENTRE, 2000us and ZERO on RUDDER, the programmers' CONNECT, ENABLE WRITE TO SERVO, WRITE n VALUES and MOVE SERVO | green (`UI_C_OK`) | red (`UI_C_DANGER`): an output is on, ARMED, a write runs, the servo is driven; the label says what a press stops (DISARM, OUTPUT OFF, STOP RUN, PAUSE, LEAVE, ABORT, ON) | amber (`UI_C_WARN`): PAUSED, WAIT | grey (`ui_button_off_fill()`), faint label |
+| Output action: switches an output on, arms, starts a run, writes a servo | ARM, OUTPUT ON, PROG 5V ON, START TEST, START LIMIT RUN, HOLD 2s: ARM + START on RUDDER AUTO, CENTRE and SWEEP on LIVE, 1000us, CENTRE, 2000us and ZERO on RUDDER, the programmers' CONNECT, ENABLE WRITE TO SERVO, WRITE n VALUES and MOVE SERVO | green (`UI_C_OK`) | red (`UI_C_DANGER`): an output is on, ARMED, a write runs, the servo is driven; the label says what a press stops (DISARM, OUTPUT OFF, STOP RUN, PAUSE, LEAVE, ABORT, ON) | amber (`UI_C_WARN`): PAUSED, WAIT, the step of ARM + START | grey (`ui_button_off_fill()`), faint label |
 | Emergency | STOP | red | red, flashes on the press | - | never |
 | Edit | `-` `+`, value boxes, RESET MAX, RESET CATEGORY on SETUP, DISCARD, READ AGAIN | neutral (`UI_C_PANEL_HI`) | - | - | grey |
 | SAVE on SETUP | SAVE, SAVED, WHEN IDLE, NOT SAVED | green while something is unsaved (SAVE) | - | amber (WHEN IDLE) | neutral with the label in red (NOT SAVED); SAVED is neutral |
@@ -552,9 +553,11 @@ Both themes use the same roles; the light theme's tokens are its own
 green, red and amber (`shared/ui/ui_theme.c`). A hold's fade runs from
 the available green to the colour the button holds next.
 
-A tap on a grey START TEST, START LIMIT RUN or HOLD 2s TO START on AUTO puts its
-reason in the alert band as a notice, amber for 4s, as a hold's hint. The
-line under the button says the same and stays.
+A tap on a grey START TEST or START LIMIT RUN puts its reason in the alert
+band as a notice, amber for 4s, as a hold's hint. The line under the button
+says the same and stays. A tap on a grey HOLD 2s: ARM + START puts the
+first red row of RUDDER AUTO's READY card in the band, `PORT: AUTO
+PROGRAMS A SERVO ON THE PROG PORT`; the first state line says the same.
 
 ## Menu marks
 
@@ -1458,7 +1461,7 @@ SERVO opens on its hub: eight tiles of 328 x 130px in SETUP's grid, at x
 | TEST | TEST | the AUTOMATIC TEST card, SUPPLY's caps and the run's box; SETTINGS opens the run's page of rows |
 | LIMIT RUN | LIMIT RUN | the LIMIT RUN card and the run's box; SETTINGS opens the run's page of rows |
 | RUDDER | RUDDER | deflection in ° and mm, LENGTH, 1000us, CENTRE, 2000us, ZERO and RESET MAX ([Rudder deflection](Servo.md#rudder-deflection)) |
-| RUDDER AUTO | RUDDER AUTO | AUTO's box in place of LENGTH and the drive buttons ([AUTO end points](Servo.md#auto-end-points)) |
+| RUDDER AUTO | RUDDER AUTO | AUTO's box in place of LENGTH and the drive buttons, the READY card in place of the output card, HOLD 2s: ARM + START in the footer ([AUTO end points](Servo.md#auto-end-points)) |
 | KST | SERVO > KST | the KST and Chaservo programmer over the left card ([Programmer](#programmer)) |
 | HITEC | HITEC | the Hitec programmer over the left card ([Hitec programmer](#hitec-programmer)) |
 
@@ -1488,6 +1491,16 @@ to 492 holds three 328 x 48px slots: the function's name with the port
 line under it, ARM or DISARM, and SETTINGS. SETTINGS is grey while the
 bench is not SAFE, while a sweep or a run is under way, and names that in
 the alert band on a tap. LIVE has no SETTINGS.
+
+RUDDER AUTO keeps the PORT button and shows its READY card in the output
+card's place: ten rows of 30px from y 96, each a dot, a label of 13 cells
+and a state of 20, and the rail line at y 404. Its footer's middle slot is
+HOLD 2s: ARM + START, which switches PORT PWM and the supply on, waits for
+their read-back, arms and starts the run in one hold
+([Servo: AUTO end points](Servo.md#auto-end-points)). Nothing of the output
+card takes a press on RUDDER AUTO.
+
+![RUDDER AUTO on the rbmod carrier, the ARM + START sequence waiting for the PROG 5V's read-back](img/servo-rudder-auto-start-rbmod.png)
 
 The PROG 5V box the output card shows on the carrier stays on from one
 SERVO screen to another, the hub's included, and goes off when SERVO is

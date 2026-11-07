@@ -449,10 +449,10 @@ bool svs_list_offered(void)
  */
 bool svs_press_held(void)
 {
-    return s.out_down || s.p5_down || s.arm_down || s.test_down || s.lim_down
-           || s.kx_down || s.ra.down || s.ra.pressed != RA_C_NONE
+    return svs_hold_down() || s.kx_down || s.ra.pressed != RA_C_NONE
            || s.rud.pressed != RUD_C_NONE || s.ov_have || s.dragging
-           || s.speed.dragging || kst_panel_pressed() || hitec_panel_pressed();
+           || s.speed.dragging || kst_panel_pressed() || hitec_panel_pressed()
+           || s.rdy.pressed >= 0;
 }
 
 const char *svs_list_bench_why(void)
@@ -465,7 +465,7 @@ const char *svs_list_bench_why(void)
     if (s.fn == SERVO_FN_HUB) {
         return NULL;
     }
-    if (s.gate.armed || s.gate.arm_asked || s.sweeping
+    if (s.gate.armed || s.gate.arm_asked || s.sweeping || svs_seq_busy()
         || servo_test_running(&s.test) || servo_limrun_running(&s.lim)
         || servo_rauto_running(&s.ra.run)) {
         return TR(FOOT_SETTINGS_SAFE);

@@ -1,7 +1,9 @@
 /**
  * @file test_prog5v_servo.c
  * @brief The PROG 5V box on SERVO's output card: shown in the power plot's
- *        place, its hold, its lock, a stop and leaving the screen.
+ *        place, its hold, its lock, a stop and leaving the screen; the ON
+ *        RUDDER AUTO's ARM + START asks (prog5v_box_ask_on()), SERVO's
+ *        until SERVO is left.
  *
  * Cases:
  * - the_box_takes_the_plots_place_and_its_hold_asks_on_at_2000ms
@@ -9,6 +11,7 @@
  * - a_slide_off_a_stop_or_a_port_taking_it_ends_the_hold
  * - leaving_servo_switches_off_what_its_box_switched_on
  * - the_5v_stays_across_servos_screens_and_goes_with_the_last
+ * - the_5v_rudder_autos_hold_asks_is_servos_and_goes_with_the_hub
  * - the_hub_names_prog_5v_on_in_its_footer
  *
  * SPDX-License-Identifier: MIT
@@ -185,6 +188,35 @@ TEST_CASE(the_5v_stays_across_servos_screens_and_goes_with_the_last)
     CHECK(asked_off());
 }
 
+/* The ON ARM + START's sequence asks on RUDDER AUTO is SERVO's, as the
+ * box's hold: it stays from RUDDER AUTO to the hub and LIVE, and goes off
+ * when SERVO is left; an OFF asked in the same poll stands over it. */
+TEST_CASE(the_5v_rudder_autos_hold_asks_is_servos_and_goes_with_the_hub)
+{
+    fresh_p5(ST_OFF);
+    ui_router_goto(SCREEN_SERVO_RAUTO);
+    scr = servo_fn_screen(SERVO_FN_RAUTO);
+    prog5v_box_ask_on(PROG5V_BY_SERVO);
+    CHECK(asked_on());
+    prog5v_box_publish(ST_ON, 21u, (uint8_t)PROG5V_HELD_NONE);
+    scr->tick(0.02f);
+    static const ui_screen_id_t k_way[] = {
+        SCREEN_SERVO, SCREEN_SERVO_LIVE, SCREEN_SERVO, SCREEN_SERVO_RAUTO,
+    };
+    for (size_t i = 0; i < sizeof(k_way) / sizeof(k_way[0]); ++i) {
+        ui_router_goto(k_way[i]);
+        CHECK_EQ(ui_router_current(), k_way[i]);
+        CHECK(!prog5v_box_poll_cmd(NULL));
+    }
+    ui_router_goto(SCREEN_SERVO);
+    ui_router_goto(SCREEN_OVERVIEW);
+    CHECK(asked_off());
+    /* An OFF and an ON in one poll: the OFF. */
+    prog5v_box_ask_off(PROG5V_BY_SERVO);
+    prog5v_box_ask_on(PROG5V_BY_SERVO);
+    CHECK(asked_off());
+}
+
 /* The hub shows no PROG 5V box: while the ports' 5V reads ON, PROG 5V ON
  * stands in the footer's middle slot in the warning colour; OFF leaves the
  * slot empty. */
@@ -219,6 +251,7 @@ int main(void)
     RUN(a_slide_off_a_stop_or_a_port_taking_it_ends_the_hold);
     RUN(leaving_servo_switches_off_what_its_box_switched_on);
     RUN(the_5v_stays_across_servos_screens_and_goes_with_the_last);
+    RUN(the_5v_rudder_autos_hold_asks_is_servos_and_goes_with_the_hub);
     RUN(the_hub_names_prog_5v_on_in_its_footer);
     return test_summary("prog5v_servo");
 }

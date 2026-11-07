@@ -258,6 +258,16 @@ void prog5v_box_left(prog5v_by_t by);
 void prog5v_box_ask_off(prog5v_by_t by);
 
 /**
+ * @brief An ON asked by the bench, not by a box: ARM + START's step that
+ *        switches the ports' 5V on (servo_start_seq.h).  The supply is
+ *        then @p by's, as after its box's hold: leaving that screen
+ *        switches it off.  Taken under the cuts published now; an OFF
+ *        asked in the same poll stands over it.
+ * @param by the screen that asks
+ */
+void prog5v_box_ask_on(prog5v_by_t by);
+
+/**
  * @brief What the boxes asked, once.
  * @param out receives it; NULL drops it
  * @return true when there was something

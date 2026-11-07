@@ -58,8 +58,16 @@
 #define SV_RA_L_X          140
 #define SV_RA_R_X          395                /**< The right half. */
 /** @brief The box's row @p r: TARGET (0) at y 120 to 168, MARGIN and
- *         TOLERANCE (1) at 180 to 228; HOLD 2s TO START (2) at 300 to 348. */
-#define SV_RA_ROW_Y(r)     ((r) < 2 ? 144 + 60 * (r) : 324)
+ *         TOLERANCE (1) at 180 to 228. */
+#define SV_RA_ROW_Y(r)     (144 + 60 * (r))
+/** @brief RUDDER AUTO's HOLD 2s: ARM + START, the footer's middle slot:
+ *         its middle. */
+#define SV_RA_START_X      512
+#define SV_RA_START_Y      468                /**< Its row. */
+/** @brief RUDDER AUTO's READY card (servo_ready_int.h): row @p i, 30px
+ *         from y 96, its middle; the card's column x 648 to 1004. */
+#define SV_RDY_ROW_Y(i)    (96 + 30 * (i) + 15)
+#define SV_RDY_X           826                /**< The rows' middle. */
 /** @brief RUDDER's readings: the numerals' top, and the mm column's left
  *         edge (the degrees' is x 18). */
 #define SV_RUD_NUM_Y       38

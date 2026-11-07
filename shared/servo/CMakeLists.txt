@@ -11,7 +11,7 @@
 set(SRCS servo_limit.c servo_sync.c servo_sim.c servo_sweep.c servo_move.c
          servo_test.c servo_brownout.c servo_rudder.c servo_str.c servo_report.c servo_limrun.c servo_limrun_report.c
          servo_gap.c servo_angle.c servo_rudder_auto.c servo_rudder_auto_report.c
-         servo_limrun_family.c)
+         servo_limrun_family.c servo_start_seq.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include

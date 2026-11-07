@@ -160,10 +160,10 @@ The fill of a button says what a press does to an output.
 
 | Fill | Means | Buttons |
 |---|---|---|
-| green | a press switches an output on, arms, starts a run or writes a servo | ARM, OUTPUT ON, PROG 5V ON, START TEST, START LIMIT RUN, `HOLD 2s TO START` on AUTO, CENTRE and SWEEP, the rudder's 1000us, CENTRE, 2000us and ZERO, CONNECT, WRITE n VALUES; SAVE on SETUP while something is unsaved |
+| green | a press switches an output on, arms, starts a run or writes a servo | ARM, OUTPUT ON, PROG 5V ON, START TEST, START LIMIT RUN, `HOLD 2s: ARM + START` on RUDDER AUTO, CENTRE and SWEEP, the rudder's 1000us, CENTRE, 2000us and ZERO, CONNECT, WRITE n VALUES; SAVE on SETUP while something is unsaved |
 | red | an output is on, the bench is ARMED or a write runs; a press stops it | DISARM, OUTPUT OFF, STOP RUN, PAUSE while a sweep runs, LEAVE, ABORT, a write switch ON; STOP always |
 | amber | under way or waiting, nothing live yet | PAUSED, WAIT, `WHEN IDLE` |
-| grey, faint label | takes no press in this state | a tap on a grey START TEST, START LIMIT RUN or `HOLD 2s TO START` puts the reason in the alert band for 4s |
+| grey, faint label | takes no press in this state | a tap on a grey START TEST, START LIMIT RUN or `HOLD 2s: ARM + START` puts the reason in the alert band for 4s |
 | neutral | edits a value or opens a screen | `-` `+`, value boxes, RESET CATEGORY, DISCARD, RESET MAX, tiles, OPEN, CLOSE; a selected tab is cyan |
 
 DELETE on FILES and LOGS and `NOT SAVED` on SETUP are neutral with the label in red.

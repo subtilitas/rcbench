@@ -1037,14 +1037,18 @@ TEST_CASE(the_guide_marks_rudder_and_leaves_the_port_button_in_view)
     key(UI_KEY_CANCEL);
     CHECK_EQ(scr->help_count(), 4);
     /* RUDDER AUTO's box: its own page first, LENGTH and the drive
-     * buttons gone. */
+     * buttons gone; the READY card's page in the output card's. */
     go(SERVO_FN_RAUTO);
+    CHECK_EQ(scr->help_count(), 3);
     CHECK(scr->help_page(0, &p));
     CHECK_EQ(p.title, TX_HG_SV_TITLE_AUTO);
-    CHECK_EQ(p.count, 4);
+    CHECK_EQ(p.count, 3);
     CHECK(scr->help_page(1, &p));
     CHECK_EQ(p.title, TX_HG_SV_TITLE_RUD_READ);
     CHECK_EQ(p.count, 2);
+    CHECK(scr->help_page(2, &p));
+    CHECK_EQ(p.title, TX_HG_SV_TITLE_READY);
+    CHECK_EQ(p.count, 5);
     go(SERVO_FN_RUDDER);
     CHECK(scr->help_page(0, &p));
     CHECK_EQ(p.title, TX_HG_SV_TITLE_RUDDER);

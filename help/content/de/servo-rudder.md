@@ -60,11 +60,11 @@ LÄNGE ist der Abstand von der Scharnierlinie zur Hinterkante: 0 oder 10 bis 500
 
 ## RUDER AUTO
 
-RUDER AUTO, eine eigene Kachel im Hub, programmiert ein KST-, Chaservo- oder Hitec-Servo am Programmierport so, dass 1000us und 2000us den je Seite vorgegebenen Ausschlag erreichen. Die [Option SERVO des Endlagenlaufs](servo-settings.md#die-optionen-des-endlagenlaufs) übernimmt die zuletzt im Hub geöffnete Servoprogrammierung. Die dritte Zeile nennt sie, etwa `SERVO HITEC D-SERIE`.
+RUDER AUTO, eine eigene Kachel im Hub, programmiert ein KST-, Chaservo- oder Hitec-Servo am Programmierport so, dass 1000us und 2000us den je Seite vorgegebenen Ausschlag erreichen. Seine Option SERVO übernimmt die zuletzt im Hub geöffnete Servoprogrammierung. Die dritte Zeile nennt sie, etwa `SERVO HITEC D-SERIE`.
 
-Der AUTO-Bereich steht dort, wo RUDER LÄNGE, Ansteuertasten und Statuszeilen hat. Anzeige und Seitenansicht bleiben; die Seitenansicht ergänzt beide Sollwerte als bernsteinfarbene gestrichelte Linien. 1000us liegt auf der negativen, 2000us auf der positiven Seite, oder jeweils auf der vom letzten Lauf gemessenen Seite.
+Die linke Karte hält Anzeige, Sollwerte, RESERVE und TOLERANZ, NULLPUNKT und MAX LÖSCHEN, die Seitenansicht und die Statuszeilen. Die Seitenansicht zeigt beide Sollwerte als bernsteinfarbene gestrichelte Linien: 1000us auf der negativen, 2000us auf der positiven Seite, oder jeweils auf der vom letzten Lauf gemessenen Seite.
 
-![Der Kasten von AUTO, ARMED](view:servo-rudder-auto)
+![RUDER AUTO an den Ausgängen des Prüfstands: PORT rot, das Halten grau](view:servo-rudder-auto)
 
 | Zeile | Einstellung |
 |---|---|
@@ -72,13 +72,27 @@ Der AUTO-Bereich steht dort, wo RUDER LÄNGE, Ansteuertasten und Statuszeilen ha
 | RESERVE | Anteil über dem Soll-Ausschlag, 0 bis 50%, Vorgabe 10%: 20,0° bei 10% ergeben einen Zielwert von 22,0°. |
 | TOLERANZ | Zulässige Abweichung vom Zielwert, 0,1 bis 5,0°, Vorgabe 0,5°. |
 
-Setze zuerst NULLPUNKT bei neutraler Ruderfläche. Während des Laufs sind NULLPUNKT und MAX LÖSCHEN gesperrt. 2s HALTEN: START beginnt den Lauf. Danach heißt die Taste LAUF BEENDEN; ein Druck beendet ihn sofort.
+### BEREIT
 
-Der Lauf liest das Servo aus und setzt bei KST den Pulsbereich auf 1000 bis 2000us. Je Seite fährt er den Endpuls an, wartet auf einen 500ms lang ruhigen Winkel und schreibt einen neuen Endpunkt. Mit der IMU und einem [IMU-Filter](setup-sensors.md#die-imu) über 1 wartet er zusätzlich, bis der gefilterte Winkel eingeschwungen ist, bis zu 3000ms plus das längste Einschwingen des Filters, das der Bericht nennt. Er schreibt höchstens 8-mal je Seite, jeweils in einer eigenen Programmiersitzung mit Aus- und Einschalten des Servos. Der Stromschutz des Endlagenlaufs bleibt durchgehend aktiv. Blockiert das Ruder vor dem Zielwert, endet der Lauf mit `Ruder klemmt bei x°`. Bei jedem Ende schaltet der Prüfstand auf SAFE und der Netzteilausgang aus.
+Die Karte BEREIT rechts zeigt, was der Start braucht, eine Zeile je Punkt: PORT, SERVO, MESSGERÄT, WINKEL, NULLPUNKT, BEREICH, PROGRAMMIERER, die Versorgung (PROG 5V auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de), PD MINI, wo das PD mini das Servo speist), PORT-PWM und ARM. Ein grüner Punkt ist erfüllt. Ein roter Punkt sperrt das Halten oder zeigt einen über die Zeile aktiven Ausgang. Gelb zeigt `START SCHALTET EIN` oder `START SCHALTET ARMED`: das erledigt das Halten. Grau wartet auf PORT. Ein Tippen auf PORT öffnet die Port-Auswahl, auf SERVO die OPTIONEN, auf einen roten NULLPUNKT setzt es den Nullpunkt, auf einen roten WINKEL oder ein rotes MESSGERÄT öffnet es [Sensoren](setup-sensors.md). Ein Tippen auf eine andere rote Zeile nennt sie im Alarmband. Die Zeile unter den Zeilen ist das Messgerät des Laufs.
 
-Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) mit PORT auf einem Programmierport schaltest du PROG 5V bei SAFE ein und erst dann ARM: der Puls des Ports kommt nur bei SAFE. Ein bei ARMED eingeschaltetes PROG 5V zeigt `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM`. Mit PORT-PWM aus zeigt die Zeile bei ARMED `PORT-PWM AUS: DISARM, SCHALTE ES IN OUTPUTS EIN` und bei SAFE `PORT-PWM AUS: SCHALTE ES IN OUTPUTS EIN`: der Eintrag des Ports auf OUTPUTS enthält PORT-PWM. Dort wird PORT-PWM EIN auch bei ausgeschaltetem PROG 5V angenommen. Hält eine Sitzung eines Programmers den Port, zeigt sie `GESPERRT: SERVOPROGRAMMIERUNG BELEGT DEN PORT`.
+![Auf dem rbmod-Carrier, SAFE: PROG 5V, PORT-PWM und ARM gelb, das Halten grün](view:servo-rudder-auto-rbmod)
 
-Die erste Zeile zeigt den laufenden Schritt, die Zielwerte oder den Grund für einen abgelehnten START. Die zweite nennt das Ergebnis, die dritte den Bericht RUDDRnnn.TXT. Hat ein nicht bestandener Lauf Einstellungen geschrieben oder einen Schreibvorgang abgebrochen, steht dort stattdessen `ZURÜCKSPIELEN IN KST`, bei Hitec `HITEC001 IN DATEIEN LADEN`.
+### ARM + START
+
+Setze zuerst NULLPUNKT bei neutraler Ruderfläche. Halte dann 2s HALTEN: ARM + START in der Fußleiste. Das Halten schaltet PORT-PWM ein, dann PROG 5V oder den Ausgang des PD mini. Es wartet bis zu 1000ms auf deren Rückmeldung EIN und auf ein danach genommenes Messfenster, schaltet ARM, wartet bis zu 500ms auf ARMED und startet den Lauf. Der Puls läuft erst ab dem ARM. Die Taste zeigt den Schritt in Gelb, die erste Zeile `START, SCHRITT 3 VON 5: RÜCKMELDUNG`. Ein Tippen darauf stoppt die Folge. Während der Schritte nehmen die linke Karte, OPTIONEN und die Karte BEREIT keinen Druck an, und der Lauf startet mit den Einstellungen beim Auslösen des Haltens. Während des Laufs heißt sie LAUF BEENDEN; ein Druck beendet den Lauf sofort.
+
+![Die Folge wartet auf die Rückmeldung von PROG 5V](view:servo-rudder-auto-start-rbmod)
+
+Ein fehlgeschlagener Schritt nennt sich im Alarmband und in der ersten Zeile, etwa `PROG 5V FEHLGESCHLAGEN: KEINE RÜCKMELDUNG IN 1000ms`, und schaltet alle Ausgänge aus: der Prüfstand ist SAFE, PROG 5V und der Ausgang des PD mini sind aus.
+
+![PROG 5V ohne Rückmeldung in 1000ms](view:servo-rudder-auto-failed-rbmod)
+
+Der Lauf liest das Servo aus und setzt bei KST den Pulsbereich auf 1000 bis 2000us. Je Seite fährt er den Endpuls an, wartet auf einen 500ms lang ruhigen Winkel und schreibt einen neuen Endpunkt. Mit der IMU und einem [IMU-Filter](setup-sensors.md#die-imu) über 1 wartet er zusätzlich, bis der gefilterte Winkel eingeschwungen ist, bis zu 3000ms plus das längste Einschwingen des Filters, das der Bericht nennt. Er schreibt höchstens 8-mal je Seite, jeweils in einer eigenen Programmiersitzung mit Aus- und Einschalten des Servos. Der Stromschutz des Endlagenlaufs bleibt durchgehend aktiv. Blockiert das Ruder vor dem Zielwert, endet der Lauf mit `Ruder klemmt bei x°`. Bei jedem Ende schaltet der Prüfstand auf SAFE und der Netzteilausgang aus. Während des Laufs sind NULLPUNKT und MAX LÖSCHEN gesperrt.
+
+Die zweite Zeile nennt das Ergebnis, die dritte den Bericht RUDDRnnn.TXT. Hat ein nicht bestandener Lauf Einstellungen geschrieben oder einen Schreibvorgang abgebrochen, steht dort stattdessen `ZURÜCKSPIELEN IN KST`, bei Hitec `HITEC001 IN DATEIEN LADEN`.
+
+![Die OPTIONEN von RUDER AUTO](view:servo-rudder-auto-settings)
 
 ## Was der Winkel ist
 

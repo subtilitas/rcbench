@@ -4235,7 +4235,6 @@ shared/ui/servo_settings_panel.c: warning: Member open_keypad(int target, const 
 shared/ui/servo_settings_panel.c: warning: Member open_set_point(int target) (function) of file servo_settings_panel.c is not documented.
 shared/ui/servo_settings_panel.c: warning: Member ov_rest(const touch_event_t *evt) (function) of file servo_settings_panel.c is not documented.
 shared/ui/servo_settings_panel.c: warning: Member set_point_typed(int target, float typed) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member target_locked_for(setting_id_t id) (function) of file servo_settings_panel.c is not documented.
 shared/ui/servo_test_panel.c: warning: Member ask_hv_test(void) (function) of file servo_test_panel.c is not documented.
 shared/ui/servo_test_panel.c: warning: Member servo_screen_test_pop(void) (function) of file servo_test_panel.c is not documented.
 shared/ui/servo_test_panel.c: warning: Member test_apply(const servo_test_do_t *d) (function) of file servo_test_panel.c is not documented.
@@ -4284,7 +4283,6 @@ shared/ui/servo_workbench_int.h: warning: Member prog_shown(void) (function) of 
 shared/ui/servo_workbench_int.h: warning: Member prog_shown_set(void) (function) of file servo_workbench_int.h is not documented.
 shared/ui/servo_workbench_int.h: warning: Member prog_tick(float dt_s) (function) of file servo_workbench_int.h is not documented.
 shared/ui/servo_workbench_int.h: warning: Member rows_page(void) (function) of file servo_workbench_int.h is not documented.
-shared/ui/servo_workbench_int.h: warning: Member target_locked_for(setting_id_t id) (function) of file servo_workbench_int.h is not documented.
 shared/ui/servo_workbench_int.h: warning: Member test_page_down(const touch_event_t *evt) (function) of file servo_workbench_int.h is not documented.
 shared/ui/servo_workbench_int.h: warning: Member wb_back(void) (function) of file servo_workbench_int.h is not documented.
 shared/ui/servo_workbench_int.h: warning: Member wb_cancel(void) (function) of file servo_workbench_int.h is not documented.

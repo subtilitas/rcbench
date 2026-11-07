@@ -259,6 +259,13 @@ void wb_open_encoder(void)
     settings_screen_open_on(SET_CAT_SENSORS, e);
 }
 
+/** @brief SETUP > SENSORS on the INA3221's first entry. */
+void wb_open_meter(void)
+{
+    ui_router_goto(SCREEN_SETUP);
+    settings_screen_open_on(SET_CAT_SENSORS, SENS_ENTRY_INA3221_0);
+}
+
 /**
  * @brief The caps button's press, where @p r holds the point.  It opens
  *        another screen: leaving switches the bench to SAFE and ends a
@@ -291,7 +298,8 @@ void draw_run_set(gfx_canvas_t *c)
 
 bool wb_rest(const touch_event_t *evt)
 {
-    return rudder_rest(evt) || rauto_rest(evt) || foot_rest(evt);
+    return rudder_rest(evt) || rauto_rest(evt) || ready_rest(evt)
+           || foot_rest(evt);
 }
 
 /* A press on TEST's or LIMIT RUN's page: its card's SETTINGS, its START,
@@ -458,7 +466,7 @@ bool servo_screen_arm_asked(void)
 
 bool servo_screen_arm_held(void)
 {
-    return s.arm_down;
+    return s.arm_down || svs_start_pending();
 }
 
 bool servo_screen_target_locked(void)

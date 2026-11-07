@@ -5133,6 +5133,15 @@ UI_TEXT(HG_SV_TITLE_RUD_READ, 0,
 UI_TEXT(HG_SV_TITLE_AUTO, 0,
     "SERVO: RUDDER AUTO",
     "SERVO: RUDER AUTO")
+UI_TEXT(HG_SV_TITLE_READY, 0,
+    "SERVO: READY AND START",
+    "SERVO: BEREIT UND START")
+UI_TEXT(HG_SV_READY, 0,
+    "One row per check. Green met, amber done by the hold, red stops the hold; a tap fixes it or says why.",
+    "Eine Zeile je Prüfung. Grün erfüllt, gelb erledigt das Halten, rot sperrt es; Tippen behebt oder sagt warum.")
+UI_TEXT(HG_SV_RDY_RAIL, 0,
+    "The meter the run reads, its volts and amps now.",
+    "Das Messgerät des Laufs, seine Volt und Ampere jetzt.")
 UI_TEXT(HG_SV_TITLE_SWEEP, 0,
     "SERVO: SWEEP",
     "SERVO: SWEEP")
@@ -5215,8 +5224,8 @@ UI_TEXT(HG_SV_RA_MARGIN, 0,
     "MARGIN aims past the target, 0 to 50%. TOLERANCE: how near the goal a measure counts, 0.1 to 5.0°.",
     "RESERVE zielt über das Soll hinaus, 0 bis 50%. TOLERANZ: wie nah am Ziel ein Messwert zählt, 0.1 bis 5.0°.")
 UI_TEXT(HG_SV_RA_START, 0,
-    "Starts the run while ARMED; STOP RUN ends it. Take ZERO with the surface at neutral first.",
-    "Startet den Lauf bei ARMED; LAUF BEENDEN stoppt ihn. Setze vorher den NULLPUNKT in Neutrallage.")
+    "Hold 2s: PORT PWM and the supply on, read back in 1000ms, ARM, then the run. A tap stops it, all off.",
+    "Halte 2s: PORT-PWM, Versorgung, Rückmeldung in 1000ms, ARM, dann der Lauf. Tippen stoppt, alles aus.")
 UI_TEXT(HG_SV_TYPE, 0,
     "The servo type, frame rate and pulse range in force. SETTINGS sets them on OUTPUT.",
     "Aktiver Servotyp, Pulsrate und Pulsbereich. OPTIONEN stellt sie auf AUSGANG ein.")
@@ -10715,8 +10724,8 @@ UI_TEXT(RA_TOL, 0,
     "TOLERANCE %.1f°",
     "TOLERANZ %.1f°")
 UI_TEXT(RA_START, 0,
-    "HOLD 2s TO START",
-    "2s HALTEN: START")
+    "HOLD 2s: ARM + START",
+    "2s HALTEN: ARM + START")
 UI_TEXT(RA_GOALS, 50,
     "GOALS 1000us %.1f°, 2000us %.1f°",
     "SOLL 1000us %.1f°, 2000us %.1f°")
@@ -10751,8 +10760,70 @@ UI_TEXT(RA_REFUSED, 48,
     "TARGET, MARGIN OR TOLERANCE OUT OF RANGE",
     "SOLL, RESERVE ODER TOLERANZ UNZULÄSSIG")
 UI_TEXT(HOLD_HINT_RUDDER_AUTO, 94,
-    "Hold 2s to start AUTO.",
-    "Halte 2s, um AUTO zu starten.")
+    "Hold 2s: the port and its supply go on, ARM, then AUTO starts.",
+    "Halte 2s: Port und Versorgung gehen an, ARM, dann startet AUTO.")
+/* RUDDER AUTO's READY card (servo_ready.c, servo_rudder_auto_ready.c):
+ * its title, the row labels (13 cells), the states (20 cells), the band's
+ * line of a row, and ARM + START's steps and failures (servo_start_seq.h).
+ * PORT, SERVO, ARM, ARMED, PROG 5V and PD MINI are the bench's own words
+ * and stay English. */
+UI_TEXT(RDY_TITLE, 0,
+    "READY",
+    "BEREIT")
+UI_TEXT(RDY_METER, 0,
+    "METER",
+    "MESSGERÄT")
+UI_TEXT(RDY_ANGLE, 0,
+    "ANGLE",
+    "WINKEL")
+UI_TEXT(RDY_ZERO, 0,
+    "ZERO",
+    "NULLPUNKT")
+UI_TEXT(RDY_RANGE, 0,
+    "RANGE",
+    "BEREICH")
+UI_TEXT(RDY_PROG, 0,
+    "PROGRAMMER",
+    "PROGRAMMIERER")
+UI_TEXT(RDY_SUPPLY, 13,
+    "SUPPLY",
+    "VERSORGUNG")
+UI_TEXT(RDY_PWM, 0,
+    "PORT PWM",
+    "PORT-PWM")
+UI_TEXT(RDY_SET, 0,
+    "SET",
+    "GESETZT")
+UI_TEXT(RDY_FREE, 0,
+    "FREE",
+    "FREI")
+UI_TEXT(RDY_SEQ_ON, 0,
+    "START SWITCHES IT ON",
+    "START SCHALTET EIN")
+UI_TEXT(RDY_SEQ_ARM, 0,
+    "START ARMS",
+    "START SCHALTET ARMED")
+UI_TEXT(RDY_ARMING, 20,
+    "ARM ASKED",
+    "ARM ANGEFRAGT")
+UI_TEXT(RDY_BAND, 94,
+    "%s: %s",
+    "%s: %s")
+UI_TEXT(SQ_LINE, 0,
+    "START, STEP %u OF %u: %s",
+    "START, SCHRITT %u VON %u: %s")
+UI_TEXT(SQ_READBACK, 0,
+    "READ-BACK",
+    "RÜCKMELDUNG")
+UI_TEXT(SQ_FAILED, 94,
+    "%s FAILED: %s",
+    "%s FEHLGESCHLAGEN: %s")
+UI_TEXT(SQ_NO_READBACK, 60,
+    "NO READ-BACK IN %ums",
+    "KEINE RÜCKMELDUNG IN %ums")
+UI_TEXT(SQ_NOT_ARMED, 60,
+    "NOT ARMED IN %ums",
+    "NICHT ARMED IN %ums")
 UI_SETTING_LABEL(SET_RUDDER_DEFL_LO,
     "AUTO target at 1000us",
     "AUTO-Soll bei 1000us")

@@ -51,6 +51,16 @@ bool svs_safe_at(int x, int y)
     if (s.fn == SERVO_FN_HUB || svs_list_shown()) {
         return false;           /* the bench is SAFE under both */
     }
+    if (ready_shown()) {
+        /* ARM + START stops a sequence or a run on its press; the READY
+         * card drives nothing. */
+        if (gfx_rect_contains(rauto_rect(RA_C_START), x, y)) {
+            return servo_rauto_running(&s.ra.run) || svs_seq_busy();
+        }
+        if (gfx_rect_contains(ready_card_rect(), x, y)) {
+            return false;
+        }
+    }
     if (s.gate.armed && gfx_rect_contains(s.arm_btn, x, y)) {
         return true;
     }
@@ -67,10 +77,6 @@ bool svs_safe_at(int x, int y)
     if (run_box_shown() && gfx_rect_contains(test_btn_rect(), x, y)) {
         return (s.fn == SERVO_FN_LIMRUN) ? servo_limrun_running(&s.lim)
                                          : servo_test_running(&s.test);
-    }
-    if (rauto_shown() && !s.ov_have
-        && gfx_rect_contains(rauto_rect(RA_C_START), x, y)) {
-        return servo_rauto_running(&s.ra.run);
     }
     if (wb_task() == UI_WB_TEST && !s.ov_have && rows_page() < 0
         && gfx_rect_contains(page_area(), x, y)) {
@@ -327,6 +333,25 @@ void svs_event_body(const touch_event_t *evt)
         }
         ui_slider_release(&s.speed);
         if (foot_down(evt)) {
+            return;
+        }
+        /* RUDDER AUTO: the footer's ARM + START and the READY card in the
+         * output card's place; nothing of the output card is there to
+         * press. */
+        if (ready_shown()
+            && (gfx_rect_contains(rauto_rect(RA_C_START), px, py)
+                || gfx_rect_contains(ready_card_rect(), px, py))) {
+            /* A press on the hold during the steps or the run ends them,
+             * whatever is open over the screen. */
+            const bool stops =
+                gfx_rect_contains(rauto_rect(RA_C_START), px, py)
+                && (svs_seq_busy() || servo_screen_rauto_running());
+            if (stops) {
+                close_panels();
+                (void)rauto_down(evt);
+            } else if (!modal_open() && !rauto_down(evt)) {
+                (void)ready_down(evt);
+            }
             return;
         }
         if (modal_open() && gfx_rect_contains(overlay_area(), px, py)) {

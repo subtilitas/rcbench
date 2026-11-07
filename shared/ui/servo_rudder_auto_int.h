@@ -59,6 +59,8 @@ typedef enum {
 /** @brief The box's state, the member `ra` of the screen's state. */
 typedef struct {
     servo_rauto_t run;      /**< the run                                */
+    servo_rauto_cfg_t cfg;  /**< the run's settings as the hold fired:
+                                 what RUN starts with                  */
     bool      view;         /**< RUDDER shows the box                   */
     ui_hold_t hold;         /**< START's 2s hold                        */
     bool      down;         /**< START is held                          */
@@ -113,6 +115,11 @@ bool rauto_rest(const touch_event_t *evt);
 void rauto_cancel(void);
 /** @brief The box drawn into @p c.  @param c the canvas */
 void rauto_render(gfx_canvas_t *c);
+/** @brief HOLD 2s: ARM + START in the footer's middle slot: green while
+ *         no READY row refuses it, amber with the step while the sequence
+ *         runs, STOP RUN in red while the run does; grey otherwise.
+ *  @param c the canvas */
+void rauto_draw_hold(gfx_canvas_t *c);
 /**
  * @brief The face the box's lines are drawn in: the 10 x 20 face while
  *        the lines, each wrapped at a space to 400px and 4px apart, fit

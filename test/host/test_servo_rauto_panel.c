@@ -2,11 +2,12 @@
  * @file test_servo_rauto_panel.c
  * @brief RUDDER AUTO's box: RUDDER AUTO's screen shows it in place of
  *        LENGTH, the drive buttons and the state lines, RUDDER's shows
- *        those; the box's places; a START that cannot run says why and
- *        drives nothing; the rows show their settings; every string fits
- *        its field in both languages, the lines wrapped beside the side
- *        view; the targets the side view draws.  The run on a servo is
- *        test_servo_rauto_kst.c's.
+ *        those; the box's places, ARM + START in the footer's middle
+ *        slot; a hold that cannot begin says why and drives nothing; the
+ *        rows show their settings; every string fits its field in both
+ *        languages, the lines wrapped beside the side view, the
+ *        sequence's steps and failures among them; the targets the side
+ *        view draws.  The run on a servo is test_servo_rauto_kst.c's.
  *
  * Cases:
  * - rudder_auto_shows_the_box_and_rudder_the_manual_controls
@@ -22,6 +23,8 @@
 #include "servo_rudder_auto.h"
 #include "servo_rudder_auto_int.h"
 #include "servo_rudder_int.h"
+#include "servo_ready_int.h"
+#include "ui_footer.h"
 
 /** @brief The drawn controls' font, 10 x 20. */
 #define CELL 10
@@ -87,7 +90,12 @@ TEST_CASE(the_box_lies_in_the_left_column_clear_of_the_zero_row_and_the_stop_flo
     const gfx_rect_t keep[] = { rudder_rect(RUD_C_ZERO),
                                 rudder_rect(RUD_C_RESET),
                                 rudder_readout_rect() };
-    for (int k = RA_C_LO; k < RA_C_COUNT; ++k) {
+    /* ARM + START is the footer's middle slot. */
+    const gfx_rect_t st = rauto_rect(RA_C_START);
+    const gfx_rect_t hold = ui_footer_rect(UI_FOOTER_HOLD);
+    CHECK(st.x == hold.x && st.y == hold.y && st.w == hold.w
+          && st.h == hold.h);
+    for (int k = RA_C_LO; k < RA_C_START; ++k) {
         const gfx_rect_t r = rauto_rect((rauto_ctl_t)k);
         CHECK(r.x >= 18 && r.x + r.w <= 518);
         CHECK(r.h >= UI_TAP_MIN);
@@ -102,21 +110,21 @@ TEST_CASE(the_box_lies_in_the_left_column_clear_of_the_zero_row_and_the_stop_flo
     const gfx_rect_t l = rauto_lines_rect();
     CHECK(l.x >= 18 && l.x + l.w <= 518);
     CHECK(l.y + l.h <= UI_BODY_H);
-    /* START and the lines left of the side view, which no control of the
-     * box covers. */
+    /* The lines left of the side view, which no control of the box
+     * covers. */
     const gfx_rect_t fl = rudder_flap_rect();
-    CHECK(rauto_rect(RA_C_START).x + rauto_rect(RA_C_START).w < fl.x);
     CHECK(l.x + l.w < fl.x);
-    for (int k = RA_C_LO; k < RA_C_COUNT; ++k) {
+    for (int k = RA_C_LO; k < RA_C_START; ++k) {
         CHECK(!overlap(rauto_rect((rauto_ctl_t)k), fl));
     }
     CHECK_EQ(rauto_rect(RA_C_NONE).w, 0);
     CHECK_EQ(rauto_rect(RA_C_COUNT).w, 0);
 }
 
-/* START on a bench that is not ARMED, then on one ARMED without a KST
- * servo on the programming port: the tap names why on the first line, no
- * hold begins and nothing is driven, also after 2.5s held. */
+/* ARM + START on the rig's bench, SAFE and then ARMED, with no PROG PORT
+ * as the target: the first line names the first row that refuses the
+ * hold, PORT's; no hold begins, no sequence, nothing is driven, also
+ * after 2.5s held. */
 TEST_CASE(a_start_that_cannot_run_says_why_and_drives_nothing)
 {
     char b[96];
@@ -129,17 +137,20 @@ TEST_CASE(a_start_that_cannot_run_says_why_and_drives_nothing)
         scr->enter();
         to_auto();
         (void)taken_kind();
-        const char *why = rauto_blocked();
-        CHECK(why != NULL);
+        CHECK(rauto_blocked() != NULL);
         if (!armed) {
-            CHECK_STR_EQ(why, ui_servo_str(SERVO_STR_START_NOT_ARMED));
+            CHECK_STR_EQ(rauto_blocked(),
+                         ui_servo_str(SERVO_STR_START_NOT_ARMED));
         }
+        const char *why = rauto_hold_blocked(NULL);
+        CHECK_STR_EQ(why, TR(RA_PROG_PORT));
         const gfx_rect_t r = rauto_rect(RA_C_START);
         ev(r.x + r.w / 2, r.y + r.h / 2, TOUCH_EVENT_DOWN, 1);
         frames(2.5f);
         ev(r.x + r.w / 2, r.y + r.h / 2, TOUCH_EVENT_UP, 1);
         frames(0.1f);
         CHECK(!servo_screen_rauto_running());
+        CHECK(!svs_seq_busy());
         CHECK_STR_EQ(rauto_line(0, b, sizeof(b)), why);
         CHECK_STR_EQ(rauto_line(1, b, sizeof(b)), "");
         /* The servo a run started now programs. */
@@ -155,7 +166,7 @@ TEST_CASE(a_start_that_cannot_run_says_why_and_drives_nothing)
 }
 
 /** @brief The longest a candidate list below holds. */
-#define CAND_MAX 128
+#define CAND_MAX 192
 
 /** @brief Strings one of the box's lines can show, at their longest. */
 typedef struct {
@@ -216,6 +227,32 @@ static void first_lines(cands_t *c)
     };
     for (size_t k = 0; k < sizeof(k_start) / sizeof(k_start[0]); ++k) {
         cand(c, ui_servo_str(k_start[k]));
+    }
+    /* ARM + START's steps, and its failures: each step with a timeout,
+     * STOP and the longest refusal in each language. */
+    static const char *const k_step[] = { "PORT PWM", "PROG 5V", "PD MINI",
+                                          "ARM", "START" };
+    const char *names[5] = { TR(RDY_PWM), "PROG 5V", "PD MINI", "ARM",
+                             "START" };
+    (void)k_step;
+    snprintf(t, sizeof(t), TR(SQ_LINE), 5u, 5u, TR(SQ_READBACK));
+    cand(c, t);
+    const char *longest = "";
+    for (size_t k = 0; k < sizeof(k_why) / sizeof(k_why[0]); ++k) {
+        if (gfx_text_cells(ui_tr(k_why[k])) > gfx_text_cells(longest)) {
+            longest = ui_tr(k_why[k]);
+        }
+    }
+    for (int k = 0; k < 5; ++k) {
+        char cause[64];
+        snprintf(cause, sizeof(cause), TR(SQ_NO_READBACK), 1000u);
+        snprintf(t, sizeof(t), TR(SQ_FAILED), names[k], cause);
+        cand(c, t);
+        snprintf(cause, sizeof(cause), TR(SQ_NOT_ARMED), 500u);
+        snprintf(t, sizeof(t), TR(SQ_FAILED), names[k], cause);
+        cand(c, t);
+        snprintf(t, sizeof(t), TR(SQ_FAILED), names[k], longest);
+        cand(c, t);
     }
 }
 
@@ -296,6 +333,8 @@ TEST_CASE(every_string_fits)
         const gfx_rect_t st = rauto_rect(RA_C_START);
         CHECK(ui_text_fits(f, TR(RA_START), st.w, st.h, 8));
         CHECK(ui_text_fits(f, TR(SV_LIM_STOP), st.w, st.h, 8));
+        snprintf(t, sizeof(t), "%s ...", TR(SQ_READBACK));
+        CHECK(ui_text_fits(f, t, st.w, st.h, 8));
         memset(&l0, 0, sizeof(l0));
         memset(&l1, 0, sizeof(l1));
         memset(&l2, 0, sizeof(l2));
@@ -323,9 +362,9 @@ TEST_CASE(every_string_fits)
         }
     }
     ui_text_set_language(UI_LANG_EN);
-    /* The longest take the small face, the German Hitec refusal of 78
-     * cells among them. */
-    CHECK(small > 0);
+    /* The 136px the lines have since START went to the footer take
+     * every line in the label face. */
+    CHECK_EQ(small, 0);
     /* One short line alone takes the label face; NULL takes none. */
     const char *const one[RA_LINES] = { "ARM FIRST", "", "" };
     int pitch = 0;
@@ -334,13 +373,13 @@ TEST_CASE(every_string_fits)
     CHECK(rauto_lines_face(one, NULL) == &gfx_font_10x20);
     CHECK(rauto_lines_face(NULL, &pitch) == NULL);
     /* Lines past any room: none fits. */
-    static char big[RA_LINES][96];
+    static char big[RA_LINES][160];
     for (int i = 0; i < RA_LINES; ++i) {
-        memset(big[i], 'M', 95);
-        for (int k = 9; k < 95; k += 10) {
+        memset(big[i], 'M', 159);
+        for (int k = 9; k < 159; k += 10) {
             big[i][k] = ' ';
         }
-        big[i][95] = '\0';
+        big[i][159] = '\0';
     }
     const char *const huge[RA_LINES] = { big[0], big[1], big[2] };
     CHECK(rauto_lines_face(huge, &pitch) == NULL);

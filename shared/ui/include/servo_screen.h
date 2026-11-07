@@ -639,9 +639,10 @@ bool servo_screen_target_locked(void);
 bool servo_screen_arm_asked(void);
 
 /**
- * @brief Whether a finger holds ARM and its 2s hold has not fired yet: the
- *        output it will arm is the one shown when the hold began, so the
- *        PORT list takes no open and no pick meanwhile.
+ * @brief Whether a finger holds ARM, or RUDDER AUTO's ARM + START, and its
+ *        2s hold has not fired yet, or the ARM + START sequence is under
+ *        way: the output it will arm is the one shown when the hold began,
+ *        so the PORT list takes no open and no pick meanwhile.
  * @return true then
  */
 bool servo_screen_arm_held(void);

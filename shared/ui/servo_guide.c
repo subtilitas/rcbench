@@ -9,7 +9,7 @@
  * the live half, x 0 to 528; a control that runs past x 528 is marked up
  * to there, the part the screen shows (ui_help_add()).  The output card's
  * pages take the dock on the left, over the left card, and keep the PORT
- * button in view: they are the only ones on KST and HITEC, whose session
+ * button in view; on RUDDER AUTO the READY card's page takes their place: they are the only ones on KST and HITEC, whose session
  * fills the left card.  No page is offered while ARMED: either dock covers
  * part of DISARM in the footer's middle slot.  A page whose dock would cover a control that stops an output is
  * not offered while that control shows: a function's page while the
@@ -161,7 +161,7 @@ static void page_rudder_read(ui_help_page_t *p)
     }
 }
 
-/** @brief RUDDER AUTO: the targets, MARGIN and TOLERANCE, ZERO and START.
+/** @brief RUDDER AUTO: the targets, MARGIN and TOLERANCE and ZERO.
  *  @param p The page. */
 static void page_auto(ui_help_page_t *p)
 {
@@ -172,8 +172,25 @@ static void page_auto(ui_help_page_t *p)
                       both(rauto_rect(RA_C_MARGIN), rauto_rect(RA_C_TOL)));
     (void)ui_help_add(p, TR(RUD_ZERO), TX_HG_SV_RUD_ZERO,
                       rudder_rect(RUD_C_ZERO));
-    (void)ui_help_add(p, TR(RA_START), TX_HG_SV_RA_START,
+}
+
+/** @brief RUDDER AUTO's READY card, its rail line, ARM + START and
+ *         SETTINGS: the dock on the left, the PORT button kept in view.
+ *  @param p The page. */
+static void page_ready(ui_help_page_t *p)
+{
+    p->title = TX_HG_SV_TITLE_READY;
+    p->side = UI_HELP_DOCK_LEFT;
+    p->armed_ok = false;
+    p->must_show = port_rect();
+    (void)ui_help_add(p, TR(SVH_PORT), TX_HG_SV_TARGET, p->must_show);
+    (void)ui_help_add(p, TR(RDY_TITLE), TX_HG_SV_READY,
+                      both(ready_row_rect(0), ready_row_rect(RAR_COUNT - 1)));
+    (void)ui_help_add(p, TR(RDY_METER), TX_HG_SV_RDY_RAIL, ready_rail_rect());
+    (void)ui_help_add(p, "ARM + START", TX_HG_SV_RA_START,
                       rauto_rect(RA_C_START));
+    (void)ui_help_add(p, TR(FOOT_SETTINGS), TX_HG_SV_SETTINGS,
+                      ui_footer_rect(UI_FOOTER_SETTINGS));
 }
 
 /* ------------------------------------------------- the output card's pages */
@@ -244,6 +261,16 @@ static int pages_now(guide_fn out[GUIDE_MAX])
         return 0;
     }
     int n = 0;
+    /* RUDDER AUTO: its own pages, none while the hold stops a sequence or
+     * a run (either dock covers part of it). */
+    if (ready_shown()) {
+        if (!run_live() && !svs_seq_busy()) {
+            out[n++] = page_auto;
+            out[n++] = page_rudder_read;
+            out[n++] = page_ready;
+        }
+        return n;
+    }
     /* The function's pages dock on the right, over OUTPUT OFF and PROG 5V
      * OFF; KST's and HITEC's session has none of its own here. */
     if (!supply_screen_output_live()
@@ -261,10 +288,6 @@ static int pages_now(guide_fn out[GUIDE_MAX])
             break;
         case SERVO_FN_RUDDER:
             out[n++] = page_rudder;
-            out[n++] = page_rudder_read;
-            break;
-        case SERVO_FN_RAUTO:
-            out[n++] = page_auto;
             out[n++] = page_rudder_read;
             break;
         default:
