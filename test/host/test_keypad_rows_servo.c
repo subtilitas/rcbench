@@ -121,7 +121,7 @@ static void open_row(int row)
         }
         break;
     case AT_BROWNOUT:
-        if (servo_screen_run_settings() != 3) {
+        if (servo_screen_run_settings() != 2) {
             open_run_settings(0);
             tap(LROW_X(1), LROW_Y(4));     /* BROWN-OUT: its page */
         }

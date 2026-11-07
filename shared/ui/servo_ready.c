@@ -4,7 +4,8 @@
  *        sequence.  See servo_ready_int.h for the layout.
  *
  * The card draws the rows the function gives (RUDDER AUTO's:
- * servo_rudder_auto_ready.c) and takes their taps.  The sequence is
+ * servo_rudder_auto_ready.c, LIMIT RUN's: servo_limit_ready.c, through
+ * one table of each function's calls) and takes their taps.  The sequence is
  * servo_start_seq.h's steps done on the bench the way a finger does them:
  * PORT PWM on as OUTPUTS' segment sets it, PROG 5V on as its box's hold
  * asks it, the PD mini's output on as SUPPLY's OUTPUT ON, ARM as ARM's
@@ -23,7 +24,9 @@
 #include "prog_registry.h"
 #include "sensors_rows.h"
 #include "settings.h"
+#include "servo_limrun.h"
 #include "supply_screen.h"
+#include "ui_footer.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -55,14 +58,83 @@ void ready_init(void)
     s.rdy.pressed = -1;
 }
 
+/** @brief What the card asks of a function: its rows, its first refusal
+ *         and its row, a row's tap, what a text names when a step fails
+ *         on it, the hold's press and drawing. */
+typedef struct {
+    int count;                               /**< its rows            */
+    bool (*row)(int i, rdy_row_t *r);        /**< row @p i            */
+    const char *(*blocked)(int *row);        /**< the first refusal   */
+    void (*tap)(int i);                      /**< a tap on row @p i   */
+    rdy_kind_t (*kind)(const char *why);     /**< what @p why names   */
+    bool (*running)(void);                   /**< its run under way   */
+    bool (*hold_down)(const touch_event_t *evt); /**< a DOWN on the hold */
+    void (*draw_hold)(gfx_canvas_t *c);      /**< the hold drawn      */
+} rdy_fn_t;
+
+/** @brief RUDDER AUTO's first refusal, as rdy_fn_t asks it. */
+static const char *ra_blocked(int *row)
+{
+    rauto_row_t r = RAR_COUNT;
+    const char *why = rauto_hold_blocked(&r);
+    *row = (int)r;
+    return why;
+}
+
+/** @brief What a text of RUDDER AUTO's gate names. */
+static rdy_kind_t ra_kind(const char *why)
+{
+    switch (rauto_row_of(why)) {
+    case RAR_SUPPLY: return RDY_K_SUPPLY;
+    case RAR_PWM:    return RDY_K_PWM;
+    case RAR_ARM:    return RDY_K_ARM;
+    default:         return RDY_K_OTHER;
+    }
+}
+
+/** @brief LIMIT RUN's first refusal, as rdy_fn_t asks it. */
+static const char *lr_blocked(int *row)
+{
+    limrun_row_t r = LRR_COUNT;
+    const char *why = lim_hold_blocked(&r);
+    *row = (int)r;
+    return why;
+}
+
+/** @brief Whether RUDDER AUTO's run is under way. */
+static bool ra_running(void) { return servo_rauto_running(&s.ra.run); }
+/** @brief Whether the limit run is under way. */
+static bool lr_running(void) { return servo_limrun_running(&s.lim); }
+
+/** @brief RUDDER AUTO's calls. */
+static const rdy_fn_t k_rauto = {
+    (int)RAR_COUNT, rauto_ready_row, ra_blocked, rauto_ready_tap, ra_kind,
+    ra_running, rauto_down, rauto_draw_hold,
+};
+/** @brief LIMIT RUN's calls. */
+static const rdy_fn_t k_limrun = {
+    (int)LRR_COUNT, lim_ready_row, lr_blocked, lim_ready_tap, lim_kind_of,
+    lr_running, lim_hold_down, lim_draw_hold,
+};
+
+/** @brief The function shown's calls.  @return NULL without a card */
+static const rdy_fn_t *fn_now(void)
+{
+    switch ((servo_fn_t)s.fn) {
+    case SERVO_FN_RAUTO:  return &k_rauto;
+    case SERVO_FN_LIMRUN: return &k_limrun;
+    default:              return NULL;
+    }
+}
+
 bool ready_shown(void)
 {
-    return s.fn == SERVO_FN_RAUTO;
+    return fn_now() != NULL;
 }
 
 int ready_count(void)
 {
-    return ready_shown() ? (int)RAR_COUNT : 0;
+    return ready_shown() ? fn_now()->count : 0;
 }
 
 bool ready_row(int i, rdy_row_t *r)
@@ -70,7 +142,7 @@ bool ready_row(int i, rdy_row_t *r)
     if (!ready_shown()) {
         return false;
     }
-    return rauto_ready_row(i, r);
+    return fn_now()->row(i, r);
 }
 
 const char *ready_refusal(char *buf, size_t n)
@@ -78,15 +150,37 @@ const char *ready_refusal(char *buf, size_t n)
     if (buf == NULL || n == 0u || !ready_shown()) {
         return NULL;
     }
-    rauto_row_t row = RAR_COUNT;
-    const char *why = rauto_hold_blocked(&row);
+    int row = -1;
+    const char *why = fn_now()->blocked(&row);
     if (why == NULL) {
         return NULL;
     }
     rdy_row_t r;
-    const char *label = (rauto_ready_row((int)row, &r)) ? r.label : "";
+    const char *label = (ready_row(row, &r)) ? r.label : "";
     snprintf(buf, n, TR(RDY_BAND), label, why);
     return buf;
+}
+
+gfx_rect_t ready_hold_rect(void)
+{
+    return ui_footer_rect(UI_FOOTER_HOLD);
+}
+
+bool ready_hold_stops(void)
+{
+    return ready_shown() && (svs_seq_busy() || fn_now()->running());
+}
+
+bool ready_hold_down(const touch_event_t *evt)
+{
+    return ready_shown() && fn_now()->hold_down(evt);
+}
+
+void ready_draw_hold(gfx_canvas_t *c)
+{
+    if (ready_shown()) {
+        fn_now()->draw_hold(c);
+    }
 }
 
 gfx_rect_t ready_card_rect(void)
@@ -279,7 +373,7 @@ bool ready_rest(const touch_event_t *evt)
     if (touch_event_is_tap_up(evt) && ready_shown()
         && gfx_rect_contains(ready_row_rect(i), evt->point.x,
                              evt->point.y)) {
-        rauto_ready_tap(i);
+        fn_now()->tap(i);
     }
     return true;
 }
@@ -302,7 +396,14 @@ servo_seq_need_t svs_seq_need(void)
     n.port_pwm = target >= 1 && target <= (int)LINK_PG_PORTS_MAX;
     n.prog_5v  = prog_choice_carrier() && prog_choice_port() != 0u
                  && prog5v_box_shown();
-    n.pd_mini  = lim_pd_feeds();
+    /* The PD mini only where it is the rail's feed: on, or off on a rail
+     * that reads no 3.0V.  One off beside a rail fed from elsewhere stays
+     * off (on a PROG PORT the gate refuses it, SV_LIM_PROG_PD_OFF). */
+    const bool pd_on = s.have_sup && s.sup.online && s.sup.output;
+    const bool rail_live = s.have_win && s.win.voltage
+                           && s.win.mean_mv
+                                  >= (uint16_t)SERVO_LIMRUN_RAIL_MIN_MV;
+    n.pd_mini  = lim_pd_feeds() && (pd_on || !rail_live);
     /* A supply switched on: the INA3221's window under way still holds
      * the rail as it was, so the checks wait for one begun after it. */
     n.settle   = n.prog_5v || n.pd_mini;
@@ -317,17 +418,17 @@ servo_seq_need_t svs_seq_need(void)
  */
 static servo_seq_part_t part_of(const char *why)
 {
-    if (why == NULL || s.fn != SERVO_FN_RAUTO) {
+    if (why == NULL || !ready_shown()) {
         return SERVO_SEQ_PART_NONE;
     }
-    switch (rauto_row_of(why)) {
-    case RAR_SUPPLY:
+    switch (fn_now()->kind(why)) {
+    case RDY_K_SUPPLY:
         return s.rdy.need.prog_5v   ? SERVO_SEQ_PART_PROG_5V
                : s.rdy.need.pd_mini ? SERVO_SEQ_PART_PD_MINI
                                     : SERVO_SEQ_PART_NONE;
-    case RAR_PWM:
+    case RDY_K_PWM:
         return SERVO_SEQ_PART_PWM;
-    case RAR_ARM:
+    case RDY_K_ARM:
         return SERVO_SEQ_PART_ARM;
     default:
         return SERVO_SEQ_PART_NONE;

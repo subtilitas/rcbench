@@ -30,23 +30,29 @@ static const char *alert(void)
     return a != NULL ? a : "";
 }
 
-/* TEST's card SETTINGS on an armed bench opens no page and says why; on a
- * SAFE bench it opens the automatic test's rows.  LIMIT RUN's the same. */
+/* TEST's card SETTINGS on an armed bench opens no page; on a SAFE bench
+ * it opens the automatic test's rows.  LIMIT RUN's footer SETTINGS the
+ * same with its list. */
 TEST_CASE(the_run_cards_settings_open_nothing_while_armed)
 {
-    for (int k = 0; k < 2; ++k) {
-        fresh_armed();
-        go(k == 0 ? SERVO_FN_TEST : SERVO_FN_LIMRUN);
-        tap(SV_RUN_SET_X, SV_RUN_SET_Y(k));
-        CHECK_EQ(servo_screen_run_settings(), 0);
-        servo_screen_set_armed(false);
-        tap(SV_RUN_SET_X, SV_RUN_SET_Y(k));
-        CHECK_EQ(servo_screen_run_settings(), k == 0 ? 1 : 2);
-    }
+    fresh_armed();
+    go(SERVO_FN_TEST);
+    tap(SV_RUN_SET_X, SV_RUN_SET_Y(0));
+    CHECK_EQ(servo_screen_run_settings(), 0);
+    servo_screen_set_armed(false);
+    tap(SV_RUN_SET_X, SV_RUN_SET_Y(0));
+    CHECK_EQ(servo_screen_run_settings(), 1);
+    fresh_armed();
+    go(SERVO_FN_LIMRUN);
+    tap_settings();
+    CHECK(!servo_screen_list()->open);
+    servo_screen_set_armed(false);
+    tap_settings();
+    CHECK(servo_screen_list()->open);
 }
 
-/* A page of rows open on a SAFE bench closes in the frame after the bench
- * arms: TEST's, LIMIT RUN's and KST's EXPERT MODE page alike. */
+/* A page of rows or a list open on a SAFE bench closes in the frame after
+ * the bench arms: TEST's and KST's EXPERT MODE page, LIMIT RUN's list. */
 TEST_CASE(a_page_of_rows_closes_as_the_bench_arms)
 {
     static const servo_fn_t k_fn[] = {
@@ -56,10 +62,11 @@ TEST_CASE(a_page_of_rows_closes_as_the_bench_arms)
         fresh();
         go(k_fn[i]);
         tap_settings();
-        CHECK(servo_screen_run_settings() != 0);
+        CHECK(servo_screen_run_settings() != 0 || servo_screen_list()->open);
         servo_screen_set_armed(true);
         scr->tick(0.02f);
         CHECK_EQ(servo_screen_run_settings(), 0);
+        CHECK(!servo_screen_list()->open);
     }
 }
 

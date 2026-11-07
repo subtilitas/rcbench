@@ -50,7 +50,9 @@ static void enc_plug(uint32_t at)
 }
 
 /* START on card @p card held until the run starts, at most 3s, then let
- * go: the run's first frame is now. */
+ * go: the run's first frame is now.  LIMIT RUN's is the footer's ARM +
+ * START, whose read-back waits for an INA3221 window: the windows go on
+ * under the finger. */
 static void hold_until_running(int card)
 {
     if (card == 0) {
@@ -58,17 +60,22 @@ static void hold_until_running(int card)
     } else {
         open_limrun();
     }
-    const int y = SV_START_Y(card);
-    ev(START_X, y, TOUCH_EVENT_DOWN, 1);
+    const int x = (card == 0) ? START_X : SV_HOLD_X;
+    const int y = (card == 0) ? SV_START_Y(0) : SV_HOLD_Y;
+    ev(x, y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < 150; ++i) {
         if (servo_screen_testing() || servo_screen_limit_running()) {
             break;
+        }
+        if (bench.ina) {
+            bench_frames(20u);
+            continue;
         }
         bench.now += 20u;
         servo_screen_clock(bench.now);
         scr->tick(0.02f);
     }
-    ev(START_X, y, TOUCH_EVENT_UP, 1);
+    ev(x, y, TOUCH_EVENT_UP, 1);
 }
 
 /* The automatic test to its end, 120s at most. */

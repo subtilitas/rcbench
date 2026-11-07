@@ -62,22 +62,12 @@ void draw_kx_value(gfx_canvas_t *c)
 
 /**
  * @brief Whether a row is drawn faint: a test setting the length rule
- *        leaves unused, a setting under its lock, a limit run's row it
- *        cannot take now.
+ *        leaves unused, or a setting under its lock.
  * @param r the row
  * @return true to draw it faint
  */
 static bool row_unused(const ov_row_t *r)
 {
-    if (r->kind == R_LIM_MODE) {
-        return servo_limrun_running(&s.lim) || lim_mode_why() != NULL;
-    }
-    if (r->kind == R_LIM_PULSES) {
-        return servo_limrun_running(&s.lim) || lim_write_why() != NULL;
-    }
-    if (r->kind == R_LIM_SERVO) {
-        return servo_limrun_running(&s.lim);
-    }
     if (r->kind != R_SETTING) {
         return false;
     }
@@ -117,18 +107,6 @@ void ov_row_value(const ov_row_t *r, char *buf, size_t n)
         } else {
             snprintf(buf, n, "%s", ui_on_off(false));
         }
-        return;
-    case R_LIM_MODE:
-        snprintf(buf, n, "%s",
-                 lim_programs() ? TR(SV_LIM_PROGRAM) : TR(SV_LIM_SEARCH));
-        return;
-    case R_LIM_PULSES:
-        snprintf(buf, n, "%s",
-                 s.lim_pulses ? TR(SV_LIM_PULSES_STD) : TR(SV_LIM_PULSES_KEEP));
-        return;
-    case R_LIM_SERVO:
-        snprintf(buf, n, "%s",
-                 s.lim_hitec ? TR(SV_LIM_SERVO_HITEC) : TR(SV_LIM_SERVO_KST));
         return;
     default:
         break;
@@ -305,8 +283,7 @@ void draw_rows_page(gfx_canvas_t *c)
                   ui_theme_color(UI_C_PANEL));
     const char *name = (page == PG_AUTO)       ? TR(SV_AUTO_TEST)
                        : (page == PG_BROWNOUT) ? TR(SV_ROW_BROWNOUT)
-                       : (page == PG_KST)      ? "KST"
-                                               : TR(SV_ROW_LIM_MODE);
+                                               : "KST";
     gfx_text(c, OV_X + 10, CARD_Y + RUN_PAGE_NAME_DY, name, SV_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
     ui_button_font(c, run_close_rect(), TR(SUP_CLOSE),
@@ -315,7 +292,7 @@ void draw_rows_page(gfx_canvas_t *c)
                    SV_FONT_LABEL);
     for (int i = 0; i < k_row_count; ++i) {
         const ov_row_t *r = &k_rows[i];
-        if (r->page != page || row_hidden(r)) {
+        if (r->page != page) {
             continue;
         }
         const gfx_rect_t rr = row_rect(i);
@@ -347,8 +324,6 @@ void draw_rows_page(gfx_canvas_t *c)
     const int nx = OV_X + 10;
     if (page == PG_AUTO) {
         draw_test_stall(c, nx, RL_NOTE_Y);
-    } else if (page == PG_LIMRUN) {
-        draw_lim_mode_note(c, nx, RL_ROW0 + 2 * RL_PITCH + 6);
     } else if (page == PG_BROWNOUT) {
         draw_bo_note(c, nx, BO_NOTE_Y);
     } else if (page == PG_KST) {

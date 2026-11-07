@@ -2,12 +2,12 @@
  * @file
  * @brief The READY card of a SERVO function screen and its ARM + START
  *        sequence (servo_ready.c), the card's rows of RUDDER AUTO
- *        (servo_rudder_auto_ready.c): their state in the screen's one
- *        object, the card's places, and the calls the screen's files make
- *        of them.
+ *        (servo_rudder_auto_ready.c) and of LIMIT RUN
+ *        (servo_limit_ready.c): their state in the screen's one object,
+ *        the card's places, and the calls the screen's files make of them.
  *
- * The READY card takes the output card's place on RUDDER AUTO, in the
- * screen's coordinates x 636 to 1016, y 62 to 436:
+ * The READY card takes the output card's place on RUDDER AUTO and LIMIT
+ * RUN, in the screen's coordinates x 636 to 1016, y 62 to 436:
  *
  *   - READY, the card's title, y 70 to 90;
  *   - up to READY_ROWS_MAX rows of READY_ROW_H (30px) from y 96: a dot,
@@ -74,6 +74,15 @@ typedef enum {
     RDY_IDLE,   /**< waits on a row above it: grey                  */
 } rdy_state_t;
 
+/** @brief What a row's text names when a step of the sequence fails on
+ *         it: the supply, PORT PWM, ARM, or the step under way. */
+typedef enum {
+    RDY_K_OTHER = 0, /**< the step under way                        */
+    RDY_K_SUPPLY,    /**< PROG 5V or the PD mini, whichever the run needs */
+    RDY_K_PWM,       /**< PORT PWM                                  */
+    RDY_K_ARM,       /**< ARM                                       */
+} rdy_kind_t;
+
 /** @brief One row as the card draws it. */
 typedef struct {
     uint8_t     st;        /**< rdy_state_t                                */
@@ -100,7 +109,7 @@ typedef struct {
 /** @brief The card and the sequence at the screen's start. */
 void ready_init(void);
 /** @brief Whether the function shown has a READY card in the output
- *         card's place.  @return true on RUDDER AUTO */
+ *         card's place.  @return true on RUDDER AUTO and LIMIT RUN */
 bool ready_shown(void);
 /** @brief The card's rows now.  @return the count, at most
  *         READY_ROWS_MAX */
@@ -137,6 +146,19 @@ bool ready_down(const touch_event_t *evt);
 bool ready_rest(const touch_event_t *evt);
 /** @brief A press under way dropped. */
 void ready_cancel(void);
+/** @brief The function's one hold, the footer's middle slot.
+ *  @return its rectangle */
+gfx_rect_t ready_hold_rect(void);
+/** @brief Whether a press on the hold stops something now: the sequence
+ *         under way, or the function's run.  @return true then */
+bool ready_hold_stops(void);
+/** @brief A DOWN on the hold, the function's: it stops the sequence or the
+ *         run, or begins the hold.  @param evt the DOWN
+ *  @return whether it landed on the hold */
+bool ready_hold_down(const touch_event_t *evt);
+/** @brief The hold drawn: ARM + START, the step under way, or STOP RUN.
+ *  @param c the canvas */
+void ready_draw_hold(gfx_canvas_t *c);
 
 /* --- servo_ready.c: the sequence -------------------------------------------- */
 
@@ -213,6 +235,48 @@ const char *rauto_hold_blocked(rauto_row_t *row);
 /** @brief A tap on RUDDER AUTO's row @p i: its fix, or its reason in the
  *         alert band.  @param i the row */
 void rauto_ready_tap(int i);
+
+/* --- servo_limit_ready.c: LIMIT RUN's gate and rows ------------------------ */
+
+/** @brief LIMIT RUN's rows, in the card's order. */
+typedef enum {
+    LRR_PORT = 0,  /**< an output the tester drives                    */
+    LRR_SERVO,     /**< the family a run on a PROG PORT reads          */
+    LRR_METER,     /**< the INA3221 channel the run reads              */
+    LRR_RAIL,      /**< the servo rail, 3.0V or more                   */
+    LRR_RANGE,     /**< PULSE MIN, CENTRE and MAX                      */
+    LRR_PROG,      /**< the programmer free                            */
+    LRR_SUPPLY,    /**< PROG 5V, the PD mini or the rail               */
+    LRR_PWM,       /**< the port's pulse                               */
+    LRR_ARM,       /**< ARMED, or a run or a report in the way         */
+    LRR_COUNT      /**< the count                                      */
+} limrun_row_t;
+
+/** @brief LIMIT RUN's row @p i.  @param i the row @param r receives it
+ *  @return false past the last */
+bool lim_ready_row(int i, rdy_row_t *r);
+/** @brief The row of LIMIT RUN's card a gate text belongs to.
+ *  @param why a text lim_blocked() returns
+ *  @return the row; LRR_COUNT for a text of none */
+limrun_row_t lim_row_of(const char *why);
+/** @brief What a failed step names for @p why.  @param why a gate text
+ *  @return its kind */
+rdy_kind_t lim_kind_of(const char *why);
+/** @brief Whether the hold may fix @p why itself: RUDDER AUTO's parts, and
+ *         a dead rail the supply the hold switches feeds.
+ *  @param why a gate text @return true for amber */
+bool lim_seq_fixes(const char *why);
+/** @brief The first gate check that refuses the hold, as lim_blocked()
+ *         orders them, less those the hold does itself.
+ *  @param row receives its row; may be NULL
+ *  @return the text; NULL when the hold may begin */
+const char *lim_hold_blocked(limrun_row_t *row);
+/** @brief A tap on LIMIT RUN's row @p i: its fix, or its reason in the
+ *         alert band.  @param i the row */
+void lim_ready_tap(int i);
+/** @brief lim_write_why() less the PROG 5V the hold switches on: why a run
+ *         started by the hold writes nothing.  @return the line, or NULL */
+const char *lim_write_why_held(void);
 
 #ifdef __cplusplus
 }

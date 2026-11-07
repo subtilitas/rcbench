@@ -4911,9 +4911,6 @@ UI_TEXT(SV_LIM_PULSES_KEEP, 12,
 UI_TEXT(SV_LIM_PULSES_STD, 12,
     "1000-2000",
     "1000-2000")
-UI_TEXT(SV_LIM_START, 0,
-    "START LIMIT RUN",
-    "ENDLAGENLAUF STARTEN")
 UI_TEXT(SV_LIM_STOP, 15,
     "STOP RUN",
     "LAUF BEENDEN")
@@ -5180,9 +5177,6 @@ UI_TEXT(HG_SV_START, 0,
 UI_TEXT(HG_SV_RUN_SET, 0,
     "The run's steps, timing and limits, one level down. The home tag goes back to the card.",
     "Stufen, Zeiten und Grenzen des Laufs, eine Ebene tiefer. Das Home-Feld führt zurück zur Karte.")
-UI_TEXT(HG_SV_LIM, 0,
-    "Hold 2s to search the travel limits of the servo on PORT, while ARMED.",
-    "Halte 2s, um die Endlagen des Servos am PORT zu suchen, bei ARMED.")
 UI_TEXT(HG_SV_CAPS, 0,
     "SUPPLY's voltage and current caps, which the test's steps keep to. A tap opens SUPPLY.",
     "Spannungs- und Stromgrenze von SUPPLY, die die Teststufen einhalten. Tippen öffnet SUPPLY.")
@@ -5388,15 +5382,6 @@ UI_TEXT(SVL_PORT_ONLY, 60,
 UI_TEXT(SVL_KST_ONLY, 60,
     "KST and Chaservo servos only",
     "Nur KST- und Chaservo-Servos")
-UI_TEXT(SV_ROW_PROG_V, 0,
-    "PROG VOLTAGE",
-    "PROG-SPANNUNG")
-UI_TEXT(SV_ROW_PROG_I, 0,
-    "PROG CURRENT",
-    "PROG-STROM")
-UI_TEXT(SV_ROW_PROG_WAIT, 0,
-    "PROG WAIT",
-    "PROG-WARTEZEIT")
 UI_TEXT(SV_KST_EXPERT_NOTE, 0,
     "ON after a 2s hold, OFF with a tap. ON shows LOCKED.",
     "EIN nach 2s Halten, AUS per Tippen. EIN zeigt LOCKED.")
@@ -5792,8 +5777,8 @@ UI_TEXT(HOLD_HINT_TEST, 94,
     "Hold 2s to start the test.",
     "Halte 2s, um den Test zu starten.")
 UI_TEXT(HOLD_HINT_LIMIT_RUN, 94,
-    "Hold 2s to start the limit run.",
-    "Halte 2s, um den Endlagenlauf zu starten.")
+    "Hold 2s to switch the port and its supply on, ARM and start the limit run.",
+    "Halte 2s, um Port und Versorgung einzuschalten, ARM und den Endlagenlauf zu starten.")
 UI_TEXT(HOLD_HINT_ENABLE, 94,
     "Hold 2s to enable.",
     "Halte 2s, um freizugeben.")
@@ -10832,6 +10817,30 @@ UI_TEXT(SQ_NO_READBACK, 60,
 UI_TEXT(SQ_NOT_ARMED, 60,
     "NOT ARMED IN %ums",
     "NICHT ARMED IN %ums")
+/* LIMIT RUN's READY card and left card (servo_limit_ready.c,
+ * servo_limit_card.c): the rail row's label (13 cells), the two ends'
+ * names (27 cells of a 295px cell), the MODE row's help, the guide. */
+UI_TEXT(RDY_RAIL, 13,
+    "RAIL",
+    "SCHIENE")
+UI_TEXT(LR_LOW_END, 27,
+    "LOW END",
+    "UNTERES ENDE")
+UI_TEXT(LR_HIGH_END, 27,
+    "HIGH END",
+    "OBERES ENDE")
+UI_TEXT(SVL_MODE_HELP, 60,
+    "SEARCH + PROGRAM writes the ends found into the servo",
+    "SUCHEN + PROGRAMMIEREN schreibt die Endlagen ins Servo")
+UI_TEXT(HG_SV_LR_LINES_NAME, 0,
+    "STATE",
+    "ZUSTAND")
+UI_TEXT(HG_SV_LR_ENDS, 0,
+    "The ends the last run found, in us. FREE: no stop before PULSE MIN or MAX.",
+    "Die Endlagen des letzten Laufs in us. FREI: kein Anschlag vor PULS MIN oder MAX.")
+UI_TEXT(HG_SV_LR_LINES, 0,
+    "The step under way, why the hold is refused, the last result and its report.",
+    "Der laufende Schritt, warum das Halten gesperrt ist, das letzte Ergebnis und sein Bericht.")
 UI_SETTING_LABEL(SET_RUDDER_DEFL_LO,
     "AUTO target at 1000us",
     "AUTO-Soll bei 1000us")

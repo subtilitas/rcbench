@@ -225,18 +225,6 @@ bool wb_back(void)
 }
 
 /**
- * @brief START LIMIT RUN, on the LIMIT RUN card: START TEST's place on its
- *        own card.
- * @return the button
- */
-gfx_rect_t lim_start_rect(void)
-{
-    return (gfx_rect_t){ (int16_t)(RUN_CARD_X + 10),
-                         (int16_t)(RUN_CARD_Y + RUN_BTN_DY), RUN_BTN_W,
-                         RUN_BTN_H };
-}
-
-/**
  * @brief The caps button tapped: SUPPLY's LIMITS.  The router leaves this
  *        screen for it, and the home tag there comes back to TEST.
  */
@@ -302,10 +290,13 @@ bool wb_rest(const touch_event_t *evt)
            || foot_rest(evt);
 }
 
-/* A press on TEST's or LIMIT RUN's page: its card's SETTINGS, its START,
- * on TEST the caps. */
+/* A press on TEST's page: its card's SETTINGS, its START, the caps.
+ * LIMIT RUN's left card takes none: its hold is the footer's. */
 void test_page_down(const touch_event_t *evt)
 {
+    if (s.fn != SERVO_FN_TEST) {
+        return;
+    }
     const int x = evt->point.x, y = evt->point.y;
     const int k = run_card_shown();
     if (k == 0 && opener_down(evt, caps_open_rect(), OP_OPEN_CAPS)) {
@@ -329,17 +320,6 @@ void test_page_down(const touch_event_t *evt)
         ++s.test_rev;
         return;
     }
-    if (k == 1 && gfx_rect_contains(lim_start_rect(), x, y)) {
-        ov_take(evt, OP_LIM_START, -1);
-        /* A hold, unless the run is under way (a tap stops it) or it
-         * cannot run now (a tap says why). */
-        s.lim_note = NULL;
-        if (!servo_limrun_running(&s.lim) && lim_blocked() == NULL) {
-            s.lim_down = true;
-            ui_hold_begin(&s.lim_hold, TX_HOLD_HINT_LIMIT_RUN);
-        }
-        ++s.test_rev;
-    }
 }
 
 /* ----------------------------------------------------------------- drawing */
@@ -362,7 +342,7 @@ void draw_caps_button(gfx_canvas_t *c)
 }
 
 /**
- * @brief TEST's run card and the caps, or LIMIT RUN's run card.
+ * @brief TEST's run card and the caps.
  * @param c the canvas
  */
 void draw_test_page(gfx_canvas_t *c)
@@ -383,22 +363,13 @@ void draw_test_page(gfx_canvas_t *c)
                  SV_FONT_LABEL, ui_theme_color(UI_C_ACCENT), 1);
         draw_run_set(c);
     }
-    if (k == 0) {
-        draw_test_start(c);
-        draw_test_lines(c);
-        draw_caps_button(c);
-    } else {
-        draw_lim_start(c);
-        draw_lim_lines(c);
-    }
+    draw_test_start(c);
+    draw_test_lines(c);
+    draw_caps_button(c);
     /* The run's box under the card: its lines while it runs and its
      * verdict after, STOP or CLOSE. */
     if (run_box_shown()) {
-        if (k == 0) {
-            draw_test_box(c);
-        } else {
-            draw_lim_box(c);
-        }
+        draw_test_box(c);
     }
 }
 

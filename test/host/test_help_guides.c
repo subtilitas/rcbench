@@ -146,9 +146,9 @@ static const servo_state_t k_servo[] = {
     { "TEST", SERVO_FN_TEST, false, 3, 0,
       { TX_HG_SV_TITLE_TEST, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
       { 3, 4, 4 } },
-    { "LIMIT RUN", SERVO_FN_LIMRUN, false, 3, 0,
-      { TX_HG_SV_TITLE_LIMRUN, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
-      { 2, 4, 4 } },
+    { "LIMIT RUN", SERVO_FN_LIMRUN, false, 2, 0,
+      { TX_HG_SV_TITLE_LIMRUN, TX_HG_SV_TITLE_READY },
+      { 2, 5 } },
     { "RUDDER", SERVO_FN_RUDDER, false, 4, 0,
       { TX_HG_SV_TITLE_RUDDER, TX_HG_SV_TITLE_RUD_READ, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
       { 4, 3, 4, 5 } },
@@ -446,7 +446,7 @@ TEST_CASE(a_badge_at_the_right_sits_in_the_top_right_corner)
     memset(&p, 0, sizeof(p));
     p.side = UI_HELP_DOCK_RIGHT;
     p.count = 1;
-    p.item[0] = (ui_help_item_t){ "X", TX_HG_SV_LIM,
+    p.item[0] = (ui_help_item_t){ "X", TX_HG_SV_LR_ENDS,
                                   gfx_rect_make(100, 100, 200, 40),
                                   UI_HELP_AT_LEFT };
     const uint32_t left = ui_help_marks_key(&p);

@@ -55,6 +55,8 @@ set(SRCS
     servo_settings_draw.c
     servo_test_panel.c
     servo_limit_panel.c
+    servo_limit_ready.c
+    servo_limit_card.c
     servo_limit_seam.c
     servo_workbench.c
     servo_rudder_panel.c

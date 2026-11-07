@@ -67,13 +67,13 @@ TEST_CASE(each_function_screen_shows_its_task)
     CHECK(servo_screen_owns(SCREEN_SERVO));
     CHECK(!servo_screen_owns(SCREEN_OUTPUTS));
 
-    open_run_settings(1);
+    open_limrun_list();
     CHECK_EQ(servo_screen_fn(), SERVO_FN_LIMRUN);
-    CHECK_EQ(servo_screen_run_settings(), 2);
+    CHECK(servo_screen_list()->open);
     scr->leave();
     scr->enter();
     CHECK_EQ(servo_screen_fn(), SERVO_FN_LIMRUN);
-    CHECK_EQ(servo_screen_run_settings(), 0);
+    CHECK(!servo_screen_list()->open);
 
     scr->reset();
     CHECK_EQ(servo_screen_fn(), SERVO_FN_LIVE);
@@ -91,42 +91,41 @@ TEST_CASE(the_home_tag_closes_a_panel_climbs_from_a_runs_settings_and_leaves)
     CHECK(!home_tag());
     CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
 
-    for (int k = 0; k < 2; ++k) {
-        open_run_settings(k);
-        CHECK_EQ(servo_screen_run_settings(), k + 1);
-        CHECK(home_tag());
-        CHECK_EQ(servo_screen_run_settings(), 0);
-        CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
-        CHECK(!home_tag());
-    }
+    open_run_settings(0);
+    CHECK_EQ(servo_screen_run_settings(), 1);
+    CHECK(home_tag());
+    CHECK_EQ(servo_screen_run_settings(), 0);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
+    CHECK(!home_tag());
+    /* LIMIT RUN's list: the tag closes it, the next lets the screen go. */
+    open_limrun_list();
+    CHECK(servo_screen_list()->open);
+    CHECK(home_tag());
+    CHECK(!servo_screen_list()->open);
+    CHECK(!home_tag());
 
-    /* CLOSE on a run's settings climbs to the card, as the tag does; a
-     * press that slides off it closes nothing; the card's SETTINGS opens
-     * the page again, as the footer's SETTINGS does. */
-    for (int k = 0; k < 2; ++k) {
-        open_run_settings(k);
-        CHECK_EQ(servo_screen_run_settings(), k + 1);
-        tap(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y);
-        CHECK_EQ(servo_screen_run_settings(), 0);
-        CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
-        tap_settings();
-        CHECK_EQ(servo_screen_run_settings(), k + 1);
-        ev(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y, TOUCH_EVENT_DOWN, 1);
-        ev(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y + 120, TOUCH_EVENT_MOVE, 1);
-        ev(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y + 120, TOUCH_EVENT_UP, 1);
-        CHECK_EQ(servo_screen_run_settings(), k + 1);
-        /* A second tap on the card's SETTINGS spot stays on the page: on
-         * the AUTOMATIC TEST's it opens the length rule's list, which the
-         * home tag closes first. */
-        tap(SV_RUN_SET_X, SV_RUN_SET_Y(k));
-        CHECK_EQ(servo_screen_run_settings(), k + 1);
-        if (k == 0) {
-            CHECK(home_tag());
-            CHECK_EQ(servo_screen_run_settings(), 1);
-        }
-        CHECK(home_tag());
-        CHECK_EQ(servo_screen_run_settings(), 0);
-    }
+    /* CLOSE on the automatic test's settings climbs to the card, as the
+     * tag does; a press that slides off it closes nothing; the card's
+     * SETTINGS opens the page again, as the footer's SETTINGS does. */
+    open_run_settings(0);
+    CHECK_EQ(servo_screen_run_settings(), 1);
+    tap(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y);
+    CHECK_EQ(servo_screen_run_settings(), 0);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
+    tap_settings();
+    CHECK_EQ(servo_screen_run_settings(), 1);
+    ev(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y, TOUCH_EVENT_DOWN, 1);
+    ev(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y + 120, TOUCH_EVENT_MOVE, 1);
+    ev(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y + 120, TOUCH_EVENT_UP, 1);
+    CHECK_EQ(servo_screen_run_settings(), 1);
+    /* A second tap on the card's SETTINGS spot stays on the page: it opens
+     * the length rule's list, which the home tag closes first. */
+    tap(SV_RUN_SET_X, SV_RUN_SET_Y(0));
+    CHECK_EQ(servo_screen_run_settings(), 1);
+    CHECK(home_tag());
+    CHECK_EQ(servo_screen_run_settings(), 1);
+    CHECK(home_tag());
+    CHECK_EQ(servo_screen_run_settings(), 0);
 
     /* IDLE CURRENT's keypad over the list: the tag closes the keypad
      * without a value, and the list stays; the next tag climbs to TEST.
@@ -211,9 +210,9 @@ TEST_CASE(a_leave_drops_a_start_hold)
 
 /* ----------------------------------------------------------- the run cards */
 
-/* Each card's state line says ARM FIRST on a SAFE bench and HOLD 2s TO
- * START on an armed one; an HV step makes START TEST a tap that opens the
- * warning and the line says so. */
+/* The AUTOMATIC TEST card's state line says ARM FIRST on a SAFE bench and
+ * HOLD 2s TO START on an armed one; an HV step makes START TEST a tap that
+ * opens the warning and the line says so. */
 TEST_CASE(the_run_cards_say_what_their_start_needs)
 {
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
@@ -223,8 +222,6 @@ TEST_CASE(the_run_cards_say_what_their_start_needs)
         bench_frames(100u);
         open_test();
         CHECK(card_line_reads(0, 0, ui_servo_str(SERVO_STR_START_NOT_ARMED),
-                              UI_C_WARN));
-        CHECK(card_line_reads(1, 0, ui_servo_str(SERVO_STR_START_NOT_ARMED),
                               UI_C_WARN));
         servo_screen_set_armed(true);
         bench_frames(100u);

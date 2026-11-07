@@ -36,13 +36,9 @@
 #include "servo_source.h"
 #include "settings_sensors.h"
 
-/* The LIMIT RUN settings: LIMIT RUN across two columns, SERVO the left
- * column of row 1, SERVO PULSES the one right of it. */
-#define HL_MODE_X  LROW_X(0)
-#define HL_MODE_Y  LROW_Y(0)
-#define HL_SERVO_X LROW_X(0)
-#define HL_PULSE_X LROW_X(1)
-#define HL_ROW1_Y  LROW_Y(1)
+/* LIMIT RUN's list: one step of MODE, SERVO or SERVO PULSES (servo_rig.h's
+ * LL_* rows). */
+#define HL_STEP(row) sl_step((row), +1)
 
 static struct {
     servo_sim_t sv;
@@ -294,31 +290,31 @@ static inline void hl_classic_ccw(void)
     g_drv.eeprom[0x1C] = (uint8_t)(0u - sum);
 }
 
-/* TEST's LIMIT RUN settings, the rows tapped as asked, back to TEST. */
+/* LIMIT RUN's list, the rows stepped as asked, back to LIMIT RUN. */
 static inline void hl_settings(bool hitec, bool prog)
 {
-    open_run_settings(1);
+    open_limrun_list();
     if (hitec) {
-        tap(HL_SERVO_X, HL_ROW1_Y);
+        HL_STEP(LL_SERVO);
     }
     if (prog) {
-        tap(HL_MODE_X, HL_MODE_Y);
+        HL_STEP(LL_MODE);
     }
-    /* Back to the card: the page opened on a SAFE bench, and the home tag
-     * arms it again. */
+    /* Back to the screen: the list opened on a SAFE bench, and the home
+     * tag arms it again. */
     (void)home_tag();
     scr->tick(0.02f);
 }
 
-/* START LIMIT RUN on TEST held for 2.3s: from the run's settings, the
- * home tag climbs back to TEST's cards first. */
+/* LIMIT RUN's ARM + START held for 2.3s: from its list, the home tag
+ * climbs back to the screen first. */
 static inline void hl_hold_start(void)
 {
     (void)home_tag();
     open_limrun();
-    ev(SV_START_X, SV_START_Y(1), TOUCH_EVENT_DOWN, 1);
+    ev(SV_HOLD_X, SV_HOLD_Y, TOUCH_EVENT_DOWN, 1);
     hl_ms(2300u);
-    ev(SV_START_X, SV_START_Y(1), TOUCH_EVENT_UP, 1);
+    ev(SV_HOLD_X, SV_HOLD_Y, TOUCH_EVENT_UP, 1);
     hl_ms(20u);
 }
 
