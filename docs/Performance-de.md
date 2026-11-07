@@ -58,51 +58,51 @@ panel 60.4 Hz, 64-byte lines; effective bandwidth not measured
 
 mode                   lines/frame     traffic
 ----------------------------------------------
-frame                        8,303    1038 KiB
+frame                        8,342    1043 KiB
 frame-idle                       0       0 KiB
-held                         5,126     641 KiB
-sim                         11,995    1499 KiB
-throttle                    10,097    1262 KiB
-chrome                      48,267    6033 KiB
-overview                         1       0 KiB
-overview-guide                 360      45 KiB
-servo                        2,375     297 KiB
-servo-grip                     586      73 KiB
-servo-current                3,295     412 KiB
-servo-rudder                 4,042     505 KiB
+held                         5,155     644 KiB
+sim                         12,027    1503 KiB
+throttle                    10,126    1266 KiB
+chrome                      48,270    6034 KiB
+overview                         0       0 KiB
+overview-guide                 384      48 KiB
+servo                        2,291     286 KiB
+servo-grip                     570      71 KiB
+servo-current                3,261     408 KiB
+servo-rudder                 4,078     510 KiB
 servo-test                       0       0 KiB
 servo-kst                        0       0 KiB
 servo-hitec                      0       0 KiB
-supply                       7,188     898 KiB
-supply-chrome               45,701    5713 KiB
+supply                       7,245     906 KiB
+supply-chrome               45,742    5718 KiB
 analyser                         0       0 KiB
 logs                             0       0 KiB
 settings                         0       0 KiB
 settings-list                    0       0 KiB
 battery                          0       0 KiB
 balance                          0       0 KiB
-motor-stick                  1,654     207 KiB
+motor-stick                  1,613     202 KiB
 motor-wire                       0       0 KiB
-motor-wire-hold                267      33 KiB
-balance-sim                  3,313     414 KiB
-settings-sim                 3,421     428 KiB
-battery-sim                  3,338     417 KiB
-analyser-chrome             61,067    7633 KiB
-logs-chrome                 27,575    3447 KiB
-settings-chrome             33,888    4236 KiB
-settings-list-chrome        37,476    4684 KiB
-battery-chrome              58,069    7259 KiB
-balance-chrome              63,410    7926 KiB
-motor-stick-chrome          41,469    5184 KiB
-motor-wire-chrome           40,312    5039 KiB
+motor-wire-hold                233      29 KiB
+balance-sim                  3,278     410 KiB
+settings-sim                 3,318     415 KiB
+battery-sim                  3,264     408 KiB
+analyser-chrome             53,468    6684 KiB
+logs-chrome                 28,224    3528 KiB
+settings-chrome             33,880    4235 KiB
+settings-list-chrome        37,411    4676 KiB
+battery-chrome              54,629    6829 KiB
+balance-chrome              57,971    7246 KiB
+motor-stick-chrome          41,504    5188 KiB
+motor-wire-chrome           40,324    5040 KiB
 picker                           0       0 KiB
-picker-chrome               41,608    5201 KiB
+picker-chrome               41,592    5199 KiB
 wifi                             0       0 KiB
-wifi-chrome                 22,459    2807 KiB
-wifi-keys                   36,891    4611 KiB
+wifi-chrome                 22,484    2810 KiB
+wifi-keys                   36,966    4621 KiB
 wifi-idle                        0       0 KiB
-imu                            115      14 KiB
-imu-hold                       669      84 KiB
+imu                            131      16 KiB
+imu-hold                       642      80 KiB
 clear                       19,207    2401 KiB
 vlines                      10,201    1275 KiB
 hlines                         180      22 KiB
@@ -135,7 +135,7 @@ est. ms and est. fps: not measured
 | `wifi-keys` | WI-FI mit offener WLAN-Tastatur, in jedem Frame eine Taste getippt |
 | `wifi-idle` | WI-FI mit laufendem WLAN-Hotspot, die Leerlaufzeit in jedem Frame 1s kürzer: die Seite zeigt sie in ganzen Minuten, also wird nichts neu gezeichnet |
 | `imu` | der IMU-Bildschirm mit einem Winkelframe in jedem Frame, X 0.1° vom vorigen entfernt: die Zeile X neu gezeichnet, auf sich selbst beschnitten |
-| `imu-hold` | der IMU-Bildschirm, ein Finger auf 2s HALTEN: BESCHLEUNIGUNG KALIBRIEREN: der Knopf und das ALTER in der Zeile RATE neu gezeichnet, jedes auf sich selbst beschnitten |
+| `imu-hold` | der IMU-Bildschirm, ein Finger auf 2s HALTEN: KALIBRIEREN in der Fußleiste: der Knopf und das ALTER in der Zeile RATE neu gezeichnet, jedes auf sich selbst beschnitten |
 | `<screen>-sim` | derselbe Bildschirm mit dem SIMULATION-Watermark |
 | `<screen>-chrome` | derselbe Bildschirm, auf jedem Frame invalidiert |
 | `clear` | ein Löschen des ganzen Bildschirms |
@@ -430,7 +430,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 368 | 2 784 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 288 | 2 864 |
 | `control` | `control_task` | 6 144 | 3 648 | 1 456 |
 | `runlog` | `log_task` | 6 656 | 3 824 | 1 792 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
@@ -521,7 +521,7 @@ oben ist deshalb eine Untergrenze:
   Servodateien geschrieben werden, die es anhand ihrer Namen verfolgt
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `SERVO_STORE_CALLS`):
-  373
+  376
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Sprünge über ein Register: eine Sprungtabelle, die in ihrer Funktion

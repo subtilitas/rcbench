@@ -261,21 +261,18 @@ typedef struct {
 extern const servo_type_t k_types[TYPE_COUNT];
 
 /* The rows of the servo profile, which the hub's SETTINGS list edits
- * (PG_OUTPUT, no page of its own); the limit run's settings, opened from
- * its card's SETTINGS or the footer's on LIMIT RUN; KST's EXPERT MODE,
- * from the footer's SETTINGS on KST.  TEST's are a SETTINGS list
- * (servo_test_list.c). */
-enum { PG_OUTPUT = 0, PG_COUNT, PG_LIMRUN = PG_COUNT, PG_KST };
+ * (PG_OUTPUT, no page of its own) and KST's EXPERT MODE, from the
+ * footer's SETTINGS on KST.  TEST's and LIMIT RUN's settings are lists
+ * (servo_test_list.c, servo_lists.c). */
+enum { PG_OUTPUT = 0, PG_COUNT, PG_KST = PG_COUNT };
 
-/* Which page of rows shows, one level down from its screen: the limit
- * run's settings or KST's EXPERT MODE.  The numbers are the ones
- * servo_screen_run_settings() hands out. */
-enum { RL_NONE = 0, RL_LIMIT = 2, RL_KST = 4 };
+/* Which page of rows shows, one level down from its screen: KST's EXPERT
+ * MODE.  The numbers are the ones servo_screen_run_settings() hands out. */
+enum { RL_NONE = 0, RL_KST = 1 };
 
 /* What a settings row edits. */
 enum { R_TYPE = 0, R_RATE, R_MIN, R_CENTRE, R_MAX, R_TRIM, R_TRAVEL,
-       R_REVERSE, R_SETTING, R_TEXT, R_HV, R_ENC_CENTRE, R_LIM_MODE,
-       R_LIM_PULSES, R_LIM_SERVO, R_KST_EXPERT };
+       R_REVERSE, R_SETTING, R_TEXT, R_HV, R_ENC_CENTRE, R_KST_EXPERT };
 
 typedef struct {
     uint8_t      page;
@@ -290,7 +287,7 @@ typedef struct {
 enum { OP_NONE = 0, OP_ROW, OP_TRIM_DN, OP_TRIM_UP, OP_KEYPAD,
        OP_TEXT, OP_CHOICE, OP_CHOICE_CANCEL, OP_WARN_APPLY, OP_WARN_CANCEL,
        OP_SUP_V, OP_SUP_I, OP_ASK_APPLY, OP_ASK_CANCEL, OP_TEST_START,
-       OP_LIM_START, OP_RUN_SET, OP_RUN_CLOSE, OP_OPEN_CAPS,
+       OP_LIM_START, OP_RUN_CLOSE, OP_OPEN_CAPS,
        OP_KST_EXPERT };
 
 /* What the list chooses -- the PORT button's port among them -- and what
@@ -758,8 +755,8 @@ typedef struct {
      * The limit run (servo_limrun.h): the limit search on the INA3221's
      * windows, and with LIMIT RUN at SEARCH+PROG, LEFT ANGLE and RIGHT
      * ANGLE of a KST or Chaservo servo on the programming port lowered.
-     * Its START is the LIMIT RUN card's, held 2s; its box is the test's
-     * place on LIVE's card.  One of the two runs at a time.
+     * LIMIT RUN's ARM + START starts it; its left card shows it.  One of
+     * the runs at a time.
      */
     servo_limrun_t lim;
     bool      lim_prog;      /**< LIMIT RUN: SEARCH+PROG, for the session */
@@ -767,10 +764,14 @@ typedef struct {
     bool      lim_hitec;     /**< LIMIT RUN's SERVO row: HITEC, session */
     uint8_t   lim_open;      /**< the programmer open when last looked:
                                   LIM_OPEN_*, servo_limit_seam.c */
-    ui_hold_t lim_hold;
-    bool      lim_down;
-    bool      lim_box;       /**< the left card shows the limit run     */
+    ui_hold_t lim_hold;      /**< ARM + START on LIMIT RUN              */
+    bool      lim_down;      /**< a finger on it, the hold not fired    */
+    /** @brief The run the hold fired: the settings as they read then, the
+     *  mode and SERVO PULSES as chosen (lim_start() judges them). */
+    servo_limrun_cfg_t lim_cfg;
     bool      lim_seen;      /**< it was running when last looked       */
+    bool      lim_safe_due;  /**< it ended: SAFE once its last command
+                                  is taken (lim_safe_follow())           */
     /** The run ended in a session and its LEAVE is on its way: the box,
      *  not the programmer, stays on the left card, and the programmer's
      *  run ends once the LEAVE has (lim_end_due). */
@@ -1132,6 +1133,11 @@ const char *lim_pwm_why(void);
  * @return true on the carrier with a port as the drive's target
  */
 bool lim_fixed_supply(void);
+/**
+ * @brief Why a limit run cannot start now, before any hold: the first of
+ *        the gate's checks that is not met (servo_limit_ready.c).
+ * @return the text; NULL when every check is met
+ */
 const char *lim_blocked(void);
 /**
  * @brief Why the INA3221 is not the meter a run may start on.
@@ -1145,20 +1151,33 @@ const char *lim_meter_why(void);
  */
 bool lim_pd_feeds(void);
 void lim_end_now(servo_test_abort_t why);
-/* START LIMIT RUN's hold completed; the run every frame; the ended run's
+/* ARM + START's hold completed; the run every frame; the ended run's
  * LEAVE, whichever screen is up; the meter changed under the run. */
 void lim_begin(void);
 void lim_tick(void);
 void lim_leave_follow(void);
 void lim_meter_follow(servo_source_id_t id, uint32_t changes);
-/* What the box and the LIMIT RUN card show of the run, as one number. */
+/**
+ * @brief A DOWN on LIMIT RUN's ARM + START: STOP RUN and a sequence under
+ *        way stop on it, else the hold begins where no row refuses it.
+ * @param evt the DOWN
+ * @return whether it landed on the hold
+ */
+bool lim_hold_down(const touch_event_t *evt);
+/* What the left card shows of the run, as one number. */
 uint32_t lim_signature(void);
-/* The run's box on LIVE's card; START LIMIT RUN and its card's lines on
- * TEST; the mode's note on the run's settings at (@p x, @p y). */
-void draw_lim_box(gfx_canvas_t *c);
-void draw_lim_start(gfx_canvas_t *c);
-void draw_lim_lines(gfx_canvas_t *c);
-void draw_lim_mode_note(gfx_canvas_t *c, int x, int y);
+
+/* --- servo_limit_card.c: LIMIT RUN's left card and hold ------------------ */
+
+/** @brief LIMIT RUN's left card whole.  @param c the canvas */
+void lim_render(gfx_canvas_t *c);
+/** @brief ARM + START, the step under way, or STOP RUN in the footer.
+ *  @param c the canvas */
+void lim_draw_hold(gfx_canvas_t *c);
+/** @brief LOW END and HIGH END together.  @return their rectangle */
+gfx_rect_t lim_ends_rect(void);
+/** @brief The state lines' place.  @return its rectangle */
+gfx_rect_t lim_lines_rect(void);
 
 /* --- servo_limit_seam.c: the programmer a run's sessions go to ----------- */
 
@@ -1431,11 +1450,9 @@ static inline servo_test_abort_t test_abort_of(servo_source_why_t why)
 #define BOX_PITCH 24                       /**< Its line pitch, px. */
 #define BOX_BTN_DY 112                     /**< Its button's top, in it. */
 
-/** @brief The run's box under its card, the same y on TEST (under the
- *         caps button) and on LIMIT RUN (under the card), in the screen's
+/** @brief The run's box on TEST, under the caps button, in the screen's
  *         coordinates. */
 #define BOX_Y_TEST (CARD_Y + 196)
-#define BOX_Y_LIM  BOX_Y_TEST /**< On LIMIT RUN. */
 #define BOX_H      (BOX_BTN_DY + UI_TAP_MIN + 10) /**< Its height: 170px. */
 _Static_assert(BOX_Y_TEST + BOX_H <= CARD_FLOOR,
                "the run's box ends above the footer");
@@ -1478,39 +1495,6 @@ static inline bool lim_reads(void)
 static inline bool lim_hitec_now(void)
 {
     return lim_family() != 0u;
-}
-
-/* SERVO is there only for the programming port; SERVO PULSES too, and only
- * for a KST or Chaservo servo, which has PULSE LOWER and PULSE UPPER. */
-static inline bool row_hidden(const ov_row_t *r)
-{
-    return (r->kind == R_LIM_SERVO && !lim_reads())
-           || (r->kind == R_LIM_PULSES && (!lim_reads() || lim_hitec_now()));
-}
-
-/* SEARCH+PROG chosen and offered. */
-static inline bool lim_programs(void)
-{
-    return s.lim_prog && lim_prog_why() == NULL && lim_write_why() == NULL;
-}
-
-/**
- * @brief SERVO PULSES at 1000-2000 chosen and offered.
- * @return true where a run started now sets PULSE LOWER and PULSE UPPER
- */
-static inline bool lim_sets_pulses(void)
-{
-    return lim_reads() && !lim_hitec_now() && s.lim_pulses
-           && lim_write_why() == NULL;
-}
-
-/**
- * @brief Why SEARCH+PROG is not offered.
- * @return lim_prog_why()'s line, else lim_write_why()'s, or NULL
- */
-static inline const char *lim_mode_why(void)
-{
-    return lim_prog_why() != NULL ? lim_prog_why() : lim_write_why();
 }
 
 /* Whether the voltage set point in force is past a standard servo's
@@ -1617,14 +1601,14 @@ static inline float enc_deg_now(void)
 const char *svs_angle_text(char *buf, size_t n, float deg, bool plus);
 
 /**
- * @brief Whether a finger is on RUDDER AUTO's ARM + START before it fires,
- *        or its sequence is under way: the output it arms is the one shown
- *        when the hold began.
+ * @brief Whether a finger is on RUDDER AUTO's or LIMIT RUN's ARM + START
+ *        before it fires, or its sequence is under way: the output it arms
+ *        is the one shown when the hold began.
  * @return true then
  */
 static inline bool svs_start_pending(void)
 {
-    return s.ra.down || svs_seq_busy();
+    return s.ra.down || s.lim_down || svs_seq_busy();
 }
 
 /**

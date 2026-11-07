@@ -6,7 +6,7 @@ order: 21
 
 # Servo-Optionen
 
-OPTIONEN in der Fußleiste eines [SERVO](servo.md)-Bildschirms öffnet die Liste dieses Bildschirms. Die Liste des Hubs ist das Servoprofil aller Funktionen: AUSGANG und PRÜFLING. SWEEP, RUDER, RUDER AUTO und HITEC haben eigene Listen; TEST und ENDLAGENLAUF öffnen die Zeilen ihres Laufs, KST seine Seite EXPERT MODE; LIVE hat keine. SCHLIESSEN oben rechts in den Zeilen eines Laufs oder das Home-Feld führt zurück. Die Liste einer Funktion öffnet nur bei SAFE; wird der Prüfstand scharf, schließen sie und jede Seite mit Zeilen. Die des Hubs öffnet jederzeit. Keine Liste öffnet, solange eine Sitzung ihren Port hält oder ein Finger noch auf einem anderen Bedienelement liegt. Eine Änderung in einer Liste gilt bis SPEICHERN in der Leiste als nicht gespeichert. Tippe auf eine Zahl für das Tastenfeld, auf eine Auswahl für deren Liste, auf einen Schalter zum Umschalten oder auf NAME für die Tastatur.
+OPTIONEN in der Fußleiste eines [SERVO](servo.md)-Bildschirms öffnet die Liste dieses Bildschirms. Die Liste des Hubs ist das Servoprofil aller Funktionen: AUSGANG und PRÜFLING. SWEEP, RUDER, RUDER AUTO, ENDLAGENLAUF und HITEC haben eigene Listen; TEST öffnet die Zeilen seines Laufs, KST seine Seite EXPERT MODE; LIVE hat keine. SCHLIESSEN oben rechts in den Zeilen eines Laufs oder das Home-Feld führt zurück. Die Liste einer Funktion öffnet nur bei SAFE; wird der Prüfstand scharf, schließen sie und jede Seite mit Zeilen. Die des Hubs öffnet jederzeit. Keine Liste öffnet, solange eine Sitzung ihren Port hält oder ein Finger noch auf einem anderen Bedienelement liegt. Eine Änderung in einer Liste gilt bis SPEICHERN in der Leiste als nicht gespeichert. Tippe auf eine Zahl für das Tastenfeld, auf eine Auswahl für deren Liste, auf einen Schalter zum Umschalten oder auf NAME für die Tastatur.
 
 ## AUSGANG, in der Liste des Hubs
 
@@ -98,15 +98,18 @@ Nach den Netzteilstufen beginnt der Lauf bei 5.0V oder der niedrigeren Spannungs
 
 ## Die Optionen des Endlagenlaufs
 
-![Die Optionen der Karte ENDLAGENLAUF](view:servo-limits)
+![Die Liste von ENDLAGENLAUF an den Ausgängen des Prüfstands](view:servo-limits)
 
-OPTIONEN auf ENDLAGENLAUF, in der Fußleiste oder auf der Karte, öffnet sie.
+OPTIONEN in der Fußleiste von ENDLAGENLAUF öffnet die Liste. Außerhalb eines PROG-PORTs sind MODUS, SERVO und SERVOPULSE gesperrt mit `Nur an einem PROG-PORT: wähle einen mit PORT`.
 
 | Option | Bereich | Vorgabe | Wirkung |
 |---|---|---|---|
-| ENDLAGENLAUF | NUR SUCHE, SUCHEN + PROGRAMMIEREN | NUR SUCHE | ENDLAGENLAUF STARTEN sucht die Enden und programmiert optional LEFT ANGLE und RIGHT ANGLE. |
-| SERVO | KST/CHASERVO, HITEC | zuletzt geöffnete Servoprogrammierung, sonst KST/CHASERVO | Nur bei PORT auf PROG PORT sichtbar. Wählt die Servoprogrammierung für die Sitzungen des Laufs. HITEC verwendet die in SERIE gewählte Serie ([Hitec-Servos](servo.md#hitec-servos)). |
-| SERVOPULSE | BEHALTEN, 1000-2000 | BEHALTEN | Nur bei PORT auf PROG PORT und SERVO KST/CHASERVO sichtbar. 1000-2000 setzt PULSE LOWER und PULSE UPPER vor der Suche auf 1000,0 und 2000,0us. |
+| MODUS | NUR SUCHE, SUCHEN + PROGRAMMIEREN | NUR SUCHE | ARM + START sucht die Enden und programmiert optional LEFT ANGLE und RIGHT ANGLE. Ein Tippen schaltet um. |
+| SERVO | KST/CHASERVO, HITEC | zuletzt geöffnete Servoprogrammierung, sonst KST/CHASERVO | Nur bei PORT auf PROG PORT. Wählt die Servoprogrammierung für die Sitzungen des Laufs. HITEC verwendet die in SERIE gewählte Serie ([Hitec-Servos](servo.md#hitec-servos)). |
+| SERVOPULSE | BEHALTEN, 1000-2000 | BEHALTEN | Nur bei PORT auf PROG PORT und SERVO KST/CHASERVO. 1000-2000 setzt PULSE LOWER und PULSE UPPER vor der Suche auf 1000,0 und 2000,0us. |
+| Programmierspannung | 4,8 bis 8,4V | 5,0V | der Sollwert des PD mini, solange der Programmierer das Servo hält |
+| Programmierstrom | 0,05 bis 3,000A | 1,000A | die Strombegrenzung des PD mini beim Programmieren |
+| Warten vor PWM | 0 bis 10000ms | 100ms | vom Ende des Programmierens bis zum ersten Puls |
 
 ## Die Grenzen von SUPPLY
 
@@ -161,4 +164,4 @@ Die Taste folgt dem aktiven Ziel des IOmcu, nicht dem Einstellwert. Eine Änderu
 
 ## Die Werte behalten
 
-AUSGANG, HV-SERVO, ENDLAGENLAUF, SERVO und SERVOPULSE gelten nur für die Sitzung. SWEEP, Optionen des automatischen Tests, PRÜFLING samt KST EXPERT MODE und ZIEL werden im NVS (nichtflüchtiger Speicher) gespeichert. Wie bei den Netzteiloptionen erfolgt das Schreiben im nächsten Frame bei SAFE und ausgeschaltetem Netzteilausgang. Eine Änderung in einer Liste schreibt SPEICHERN in ihrer Leiste.
+AUSGANG, HV-SERVO, MODUS des Endlagenlaufs, SERVO und SERVOPULSE gelten nur für die Sitzung. SWEEP, Optionen des automatischen Tests, PRÜFLING samt KST EXPERT MODE und ZIEL werden im NVS (nichtflüchtiger Speicher) gespeichert. Wie bei den Netzteiloptionen erfolgt das Schreiben im nächsten Frame bei SAFE und ausgeschaltetem Netzteilausgang. Eine Änderung in einer Liste schreibt SPEICHERN in ihrer Leiste.

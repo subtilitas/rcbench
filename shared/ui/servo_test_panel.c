@@ -361,7 +361,6 @@ bool test_launch(const servo_test_cfg_t *c)
      * writes its files or none, never half of them. */
     s.test_off     = !settings_get_bool(SET_LOG_USER);
     s.test_box     = true;
-    s.lim_box      = false;
     close_panels();
     servo_invalidate();
     ++s.ctrl_rev;
@@ -701,7 +700,7 @@ static bool test_state_line(char *line, size_t n)
  */
 void draw_test_lines(gfx_canvas_t *c)
 {
-    const gfx_rect_t k = run_card_rect(0);
+    const gfx_rect_t k = test_card_rect();
     const int x = k.x + 10;
     char line[96];
     servo_screen_test_summary(line, sizeof(line));

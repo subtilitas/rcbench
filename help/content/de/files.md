@@ -45,6 +45,8 @@ Nicht verfügbare Tasten sind gedimmt. Tippe darauf, um den Grund über der Tast
 | INFO | Zeigt Name, Ordner, Art, Größe oder Anzahl der Einträge, Zeit und Regel. |
 | ÖFFNEN | Öffnet einen Ordner. CSV-Dateien in STAMM, USER oder BENCH öffnen auf [LOGS](logs.md), andere Dateien einschließlich Berichten im [Textbetrachter](#der-textbetrachter). Dateien über 1MiB bleiben hier: `Über 1MB: zu groß. Lade die Datei über WLAN herunter.` Dasselbe gilt für noch beschriebene Dateien: `ATEST012.TXT wird gerade geschrieben.` |
 
+Die Fußleiste unter den Spalten nennt den Bildschirm, FILES. OPTIONEN rechts öffnet die Liste SD CARD von [SETUP](setup.md#sd-card). Deren Home-Feld führt hierher zurück.
+
 Ein vorhandener Name wird nie überschrieben: `NOTES.TXT ist dort bereits vorhanden.` Eine Kopie wird als `NAME.NEW` geschrieben und umbenannt, wenn sie vollständig ist.
 
 ![Die Auswahl von NEU](view:files-new)

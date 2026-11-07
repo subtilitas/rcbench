@@ -160,7 +160,7 @@ The sensor is an MT6701 in its I2C mode, MODE pin high, at 0x06. Nothing else of
 
 - OFF writes no file and takes no number. No card alert of that kind of run shows.
 - Auto logs switched off during a run ends that run's file there; switched on during an ARMED or supply run, a file starts there.
-- User logs counts when a test starts, from TEST's `HOLD 2s: ARM + START` or START LIMIT RUN: a run keeps what it started with. With it off, the SERVO screen names `USER LOGS OFF` where the file would be.
+- User logs counts when TEST's or LIMIT RUN's `HOLD 2s: ARM + START` starts the run: a run keeps what it started with. With it off, the SERVO screen names `USER LOGS OFF` where the file would be.
 - REPORT under DUT on the SERVO hub's SETTINGS list decides, with User logs ON, whether `ATESTnnn.TXT` is written.
 - The fault log, `BENCH/RCBENCH.LOG`, is written whatever Auto logs says.
 - [Logs](logs.md#what-a-run-writes) lists the folders.

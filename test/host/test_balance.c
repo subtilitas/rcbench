@@ -105,7 +105,7 @@ TEST_CASE(no_guidance_runs_off_its_card)
 /*
  * The angle (265deg) and both masses (0.42g, 0.35g) are fixed values, so
  * the BALANCE pane carries the MODELLED pill under the readings: 88px by
- * 20px at y 378, its fill clear of the dot and the word, and the
+ * 20px at y 338, its fill clear of the dot and the word, and the
  * words "Not measured." beside it.  The other panes carry none.  In German
  * the pill and the words are the German ones, and both fit inside the card.
  */
@@ -133,7 +133,7 @@ TEST_CASE(the_readings_carry_the_modelled_mark)
             }
         }
         CHECK(dim > 20);
-        /* Under the rule at y 406. */
+        /* Under the rule at y 360. */
         CHECK_EQ(fb[(BL_NOTE_RULE_Y - 1) * W + MARK_X + 60],
                  ui_theme_color(UI_C_PANEL));
 

@@ -13,17 +13,20 @@
 #include <stdint.h>
 
 #include "imu_screen.h"
+#include "ui_footer.h"
 #include "ui_layout.h"
 #include "ui_widgets.h"
 
 /*
  * The main view, in the body below the band, 1024 x 540px:
  * The controls on the left, 460 x 56px at a 64px pitch from y 16: SCAN FOR
- * SENSORS, a free slot, the calibration's hold, ZERO and CLEAR ZERO side by side, 222px each,
- * and IMU SETTINGS.  Under them the calibration's line and the last
- * operation's, in the label face, wrapped to 2 lines each.  The card on
- * the right, x 484 to 1016, y 16 to 488: the sensor, the C6, the state,
- * the angles in the head face, the rate, the age and the battery.
+ * SENSORS, then ZERO and CLEAR ZERO side by side, 222px each.  Under them
+ * the calibration's line and the last operation's, in the label face,
+ * wrapped to 2 lines each.  The card on the right, x 484 to 1016, y 16 to
+ * 436: the sensor, the C6, the state, the angles in the head face, the
+ * rate, the age and the battery.  The footer (ui_footer.h) under both:
+ * IMU, the calibration's hold in the middle slot and SETTINGS, which opens
+ * SETUP > SENSORS on the IMU entry.
  */
 #define IMS_BX      16   /**< the controls' left edge, px */
 #define IMS_BW      460  /**< their width, px */
@@ -31,12 +34,12 @@
 #define IMS_BPITCH  64   /**< the step from one to the next, px */
 #define IMS_RY      16   /**< the first control's top and the card's, px */
 #define IMS_HALF_W  222  /**< ZERO's and CLEAR ZERO's width, px */
-#define IMS_LINE_Y  344  /**< the calibration's line, px */
-#define IMS_ERR_Y   404  /**< the last operation's line, px */
+#define IMS_LINE_Y  160  /**< the calibration's line, px */
+#define IMS_ERR_Y   220  /**< the last operation's line, px */
 #define IMS_LPITCH  24   /**< the label face's line pitch, px */
 #define IMS_RX      484  /**< the card's left edge, px */
 #define IMS_RW      532  /**< its width, px */
-#define IMS_RH      472  /**< its height, px */
+#define IMS_RH      (UI_FOOTER_FLOOR - IMS_RY) /**< its height: 420px */
 #define IMS_RPAD    16   /**< its inner padding, px */
 #define IMS_PITCH   28   /**< a body face line's pitch, px */
 #define IMS_APITCH  40   /**< an angle line's pitch, px */
@@ -62,10 +65,10 @@
 /** @brief The left column's rows, imu_screen_row_rect()'s index. */
 enum {
     IMS_ROW_SCAN = 0,   /**< SCAN FOR SENSORS */
-    IMS_ROW_CAL,        /**< the calibration's hold */
+    IMS_ROW_CAL,        /**< the calibration's hold, the footer's middle */
     IMS_ROW_ZERO,       /**< ZERO */
     IMS_ROW_UNZERO,     /**< CLEAR ZERO, beside it */
-    IMS_ROW_SETTINGS,   /**< IMU SETTINGS */
+    IMS_ROW_SETTINGS,   /**< the footer's SETTINGS */
     IMS_ROW_RESCAN,     /**< the list's SCAN AGAIN */
     IMS_ROW_CLOSE,      /**< the list's CLOSE */
     IMS_ROW_COUNT
@@ -106,7 +109,7 @@ typedef struct {
     bool       have_press;   /**< a contact pressed a control */
     uint8_t    press_id;     /**< that contact */
     int        hit;          /**< IMS_HIT_NONE, a row or IMS_HIT_DEV0 + i */
-    ui_hold_t  hold;         /**< CALIBRATE ACCELEROMETER */
+    ui_hold_t  hold;         /**< HOLD 2s: CALIBRATE */
     unsigned   drawn_mask;   /**< framebuffers drawn since the last change */
     uint32_t   read_rev;     /**< counts views that changed the reading alone */
     uint32_t   hold_rev;     /**< counts the frames the hold's fill moves in */

@@ -184,9 +184,9 @@ as the PROG PORT entries of **OUTPUTS**, and is kept over a restart.
   `PROG PORTS RUN AT 5V FIXED: NO STEPS`.
 - For the limit run the PROG 5V box stands for the PD mini: SEARCH + PROGRAM
   and SERVO PULSES are offered with the box ON, and the session's power
-  cycles switch GPIO 21. With the box OFF and either chosen, the LIMIT RUN
-  card says `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX`, not the PD mini
-  line. A PD mini on the servo rails is neither asked nor
+  cycles switch GPIO 21. With the box OFF, LIMIT RUN's READY card reads
+  `START SWITCHES IT ON` on its PROG 5V row while SAFE, and ARM + START
+  switches it on; the PD mini's line does not show. A PD mini on the servo rails is neither asked nor
   watched: switching it on or off during the run ends nothing. A run that
   aborts switches PROG 5V off, not the PD mini.
 
@@ -1195,7 +1195,7 @@ write does the same. On the rbmod carrier, the programming ports' fixed
 5V supply provides these cycles instead. The check after the write
 therefore searches the servo with the new values in effect. Without
 either controllable supply, SEARCH + PROGRAM and SERVO PULSES at
-1000-2000 are unavailable. The LIMIT RUN card says
+1000-2000 are unavailable. LIMIT RUN's left card says
 `PROGRAMMING: NO PD MINI TO SWITCH THE SERVO OFF AND ON`, and the run
 only reads the servo and searches. The report gives the value of 20k_sel
 as read; it does not identify the servo type.

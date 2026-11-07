@@ -139,12 +139,12 @@ TEST_CASE(a_change_of_meter_repaints_the_row_the_line_and_the_plot)
                      (from_ina != to_ina) ? 1 : 4);
         }
     }
-    /* With the limit run's settings open over the left card the output
-     * card's line follows the meter all the same, and LIVE's CURRENT
-     * reading shows the meter in force once LIVE is back. */
+    /* With RUDDER's page in the left card the output card's line follows
+     * the meter all the same, and LIVE's CURRENT reading shows the meter
+     * in force once LIVE is back. */
     fresh();
     two_buffers();
-    open_run_settings(1);
+    go(SERVO_FN_RUDDER);
     rail_supply(6.0f, 0.4f);
     CHECK(both_whole());
     meter(SERVO_SOURCE_INA3221);
@@ -154,7 +154,7 @@ TEST_CASE(a_change_of_meter_repaints_the_row_the_line_and_the_plot)
     meter(SERVO_SOURCE_PDMINI);
     CHECK(both_whole());
     CHECK(line_supply("6.00V", "0.40A", "2.4W"));
-    close_settings();
+    go(SERVO_FN_LIVE);
     CHECK(row_reads("0.40A", UI_C_TEXT));
 }
 

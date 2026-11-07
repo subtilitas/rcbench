@@ -993,7 +993,7 @@ TEST_CASE(a_stall_at_out_of_reach_is_said_under_start_test)
     /* The AUTOMATIC TEST card's lines, mirrored from servo_test_panel.c:
      * the card's state line SV_TEST_LINE_DY down and the note two lines of
      * 22px under that. */
-    const int y = SV_RUN_CARD_Y(0) + SV_TEST_LINE_DY + 44;
+    const int y = SV_RUN_CARD_Y + SV_TEST_LINE_DY + 44;
     /* As shipped: 2.00A at a limit of 2.00A. */
     CHECK(ink_in_row(y, UI_C_WARN) > 100u);
     /* One step of STALL AT's 0.05A under the limit. */

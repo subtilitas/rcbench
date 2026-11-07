@@ -49,17 +49,19 @@ SEARCH filters the level showing. Its keyboard docks on the right and every key 
 
 ![Two values picked: RUN 2](view:motor-stick-items)
 
-A profile page lists its menu items, initially set to KEEP so they remain unchanged. Use `-` and `+` to select values; they stop at either end of the list. ACTION, NOT A SETTING marks an action such as a reset. NO OPTIONS marks an item with only one value. Each page shows 6 items.
+A profile page lists its menu items, initially set to KEEP so they remain unchanged. Use `-` and `+` to select values; they stop at either end of the list. ACTION, NOT A SETTING marks an action such as a reset. NO OPTIONS marks an item with only one value. Each page shows 5 items.
 
 The right column contains CHANGE, the visible item range and the `^` and `v` scroll buttons. It also shows MANUAL INTERVENTION REQUIRED when applicable, the menu type, run voltage and current, entry time, and the selected item's values and default. RUN shows how many values you have selected.
 
-TIMING opens the beep timings and the supply settings, laid out the same way:
+The footer reads `[ESC STICK] [RUN n] [SETTINGS]`; during a run the middle reads ABORT, after it OK. A note above the footer says why RUN cannot start, or that the profile is not verified.
 
-![The timing settings](view:motor-stick-timing)
+SETTINGS opens the list of the supply settings and the beep timings. It takes a press on a SAFE bench with no run under way; an arm under the open list closes it.
 
-None of the timings is measured. CLOSE asks for them to be saved; the save waits for the bench SAFE and the supply output off.
+![The SETTINGS list](view:motor-stick-timing)
 
-Use `-` and `+` to adjust a setting, or tap its value to open the keypad. The keypad shows the name, range and unit, with decimal places matching the step size. OK rounds to the nearest step: 1.23A becomes 1.25A. An out-of-range value leaves the keypad open and highlights the range in the warning colour. CANCEL or the home tag discards the edit and leaves TIMING open.
+None of the timings is measured. Voltage 0.0V takes the voltage from the profile's cell count. A change applies at once; SAVE in the list's strip keeps it, and RESET ESC STICK sets the 14 settings to their defaults.
+
+Use `-` and `+` to adjust a setting, or tap its value to open the keypad. The keypad shows the name, range and unit, with decimal places matching the step size. OK rounds to the nearest step: 1.23A becomes 1.25A. An out-of-range value leaves the keypad open and highlights the range in the warning colour. CANCEL or the home tag discards the edit and leaves the list open. The home tag closes the list; with a change not saved it asks first.
 
 ![The keypad of Beep min, 250 typed](view:motor-stick-timing-keypad)
 

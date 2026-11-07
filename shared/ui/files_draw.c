@@ -324,7 +324,7 @@ static void draw_message(gfx_canvas_t *c)
 }
 
 /**
- * @brief The footer's buttons, each dimmed while it would be refused.
+ * @brief The row of buttons, each dimmed while it would be refused.
  * @param c  the canvas
  */
 static void draw_footer(gfx_canvas_t *c)
@@ -617,6 +617,11 @@ static void draw_body(gfx_canvas_t *c)
         draw_pane(c, 1);
         draw_message(c);
         draw_footer(c);
+        /* The screen's footer: FILES, and SETTINGS, the opener to SETUP >
+         * SD CARD. */
+        ui_footer_name(c, ui_footer_rect(UI_FOOTER_NAME), "FILES", NULL,
+                       false);
+        ui_footer_settings(c, s.press == FS_HIT_SETTINGS, true);
         if (s.view == FILES_VIEW_NEW) {
             draw_new(c);
         }

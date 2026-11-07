@@ -67,13 +67,13 @@ TEST_CASE(each_function_screen_shows_its_task)
     CHECK(servo_screen_owns(SCREEN_SERVO));
     CHECK(!servo_screen_owns(SCREEN_OUTPUTS));
 
-    open_run_settings(1);
+    open_limrun_list();
     CHECK_EQ(servo_screen_fn(), SERVO_FN_LIMRUN);
-    CHECK_EQ(servo_screen_run_settings(), 2);
+    CHECK(servo_screen_list()->open);
     scr->leave();
     scr->enter();
     CHECK_EQ(servo_screen_fn(), SERVO_FN_LIMRUN);
-    CHECK_EQ(servo_screen_run_settings(), 0);
+    CHECK(!servo_screen_list()->open);
 
     scr->reset();
     CHECK_EQ(servo_screen_fn(), SERVO_FN_LIVE);
@@ -98,32 +98,12 @@ TEST_CASE(the_home_tag_closes_a_panel_climbs_from_a_runs_settings_and_leaves)
     CHECK(!servo_screen_list()->open);
     CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
     CHECK(!home_tag());
-    open_run_settings(1);
-    CHECK_EQ(servo_screen_run_settings(), 2);
+    /* LIMIT RUN's list: the tag closes it, the next lets the screen go. */
+    open_limrun_list();
+    CHECK(servo_screen_list()->open);
     CHECK(home_tag());
-    CHECK_EQ(servo_screen_run_settings(), 0);
-    CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
+    CHECK(!servo_screen_list()->open);
     CHECK(!home_tag());
-
-    /* CLOSE on the limit run's settings climbs to the card, as the tag
-     * does; a press that slides off it closes nothing; the card's
-     * SETTINGS opens the page again, as the footer's SETTINGS does, and a
-     * second tap on its spot stays on the page. */
-    open_run_settings(1);
-    CHECK_EQ(servo_screen_run_settings(), 2);
-    tap(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y);
-    CHECK_EQ(servo_screen_run_settings(), 0);
-    CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
-    tap_settings();
-    CHECK_EQ(servo_screen_run_settings(), 2);
-    ev(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y, TOUCH_EVENT_DOWN, 1);
-    ev(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y + 120, TOUCH_EVENT_MOVE, 1);
-    ev(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y + 120, TOUCH_EVENT_UP, 1);
-    CHECK_EQ(servo_screen_run_settings(), 2);
-    tap(SV_RUN_SET_X, SV_RUN_SET_Y(1));
-    CHECK_EQ(servo_screen_run_settings(), 2);
-    CHECK(home_tag());
-    CHECK_EQ(servo_screen_run_settings(), 0);
 
     /* IDLE CURRENT's keypad over TEST's list: the tag closes the keypad
      * without a value, and the list stays; the next tag climbs to TEST. */
@@ -205,9 +185,8 @@ TEST_CASE(a_leave_drops_a_start_hold)
 /* ----------------------------------------------------------- the run cards */
 
 /* TEST's state line says HOLD 2s TO START on a SAFE bench, whose ARM its
- * hold does, and on an armed one; LIMIT RUN's says ARM FIRST on a SAFE
- * bench.  An HV step makes ARM + START a tap that opens the warning and
- * the line says so. */
+ * hold does, and on an armed one.  An HV step makes ARM + START a tap that
+ * opens the warning and the line says so. */
 TEST_CASE(the_run_cards_say_what_their_start_needs)
 {
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
@@ -216,15 +195,13 @@ TEST_CASE(the_run_cards_say_what_their_start_needs)
         servo_screen_set_armed(false);
         bench_frames(100u);
         open_test();
-        CHECK(card_line_reads(0, 0, TR(SV_HOLD_START), UI_C_TEXT_FAINT));
-        CHECK(card_line_reads(1, 0, ui_servo_str(SERVO_STR_START_NOT_ARMED),
-                              UI_C_WARN));
+        CHECK(card_line_reads(0, TR(SV_HOLD_START), UI_C_TEXT_FAINT));
         servo_screen_set_armed(true);
         bench_frames(100u);
-        CHECK(card_line_reads(0, 0, TR(SV_HOLD_START), UI_C_TEXT_FAINT));
+        CHECK(card_line_reads(0, TR(SV_HOLD_START), UI_C_TEXT_FAINT));
         settings_set(SET_SERVO_STEP_84, 1.0f);
         test_hv_on();                                    /* HV SERVO on */
-        CHECK(card_line_reads(0, 0, TR(SV_TAP_HV), UI_C_TEXT_FAINT));
+        CHECK(card_line_reads(0, TR(SV_TAP_HV), UI_C_TEXT_FAINT));
     }
     ui_text_set_language(UI_LANG_EN);
 }
@@ -241,11 +218,11 @@ TEST_CASE(the_test_card_on_a_carrier_port_names_the_steps)
     prog5v_box_publish(2u, 21u, PROG5V_HELD_NONE);
     bench_frames(100u);
     open_test();
-    CHECK(card_line_reads(0, 0, ui_servo_str(SERVO_STR_START_PROG_STEPS),
+    CHECK(card_line_reads(0, ui_servo_str(SERVO_STR_START_PROG_STEPS),
                           UI_C_WARN));
     prog5v_box_publish(3u, 21u, PROG5V_HELD_NONE);
     bench_frames(100u);
-    CHECK(card_line_reads(0, 0, ui_servo_str(SERVO_STR_START_PROG_STEPS),
+    CHECK(card_line_reads(0, ui_servo_str(SERVO_STR_START_PROG_STEPS),
                           UI_C_WARN));
     prog5v_box_reset();
     settings_set(SET_SERVO_TARGET, 0.0f);
@@ -524,23 +501,12 @@ static bool keypad_opened(void)
 }
 
 /*
- * The rows a finger taps are UI_TAP_MIN tall: a run's value takes a press
- * 1px inside each edge, the 10px between two of a run's columns take none,
- * and the SET row's values take one at their edges as well.  The lists'
- * rows are ui_setlist.h's.
+ * The rows a finger taps are UI_TAP_MIN tall: the SET row's values take a
+ * press 1px inside each edge.  The lists' rows are ui_setlist.h's.
  */
-TEST_CASE(a_tapped_row_is_a_finger_tall_and_its_gaps_take_nothing)
+TEST_CASE(a_set_value_is_a_finger_tall)
 {
     fresh();
-    open_run_settings(1);
-    tap(LROW_X(2), LROW_Y(4) - 23);            /* PROG WAIT's value */
-    CHECK(keypad_opened());
-    tap(LROW_X(2), LROW_Y(4) + 22);
-    CHECK(keypad_opened());
-    tap(LROW_X(0) + 102, LROW_Y(4));           /* between two columns */
-    CHECK(!keypad_opened());
-    CHECK(home_tag());
-
     tap(SUP_V_X, SUP_ROW_Y - 23);              /* SET's voltage */
     CHECK(keypad_opened());
     tap(SUP_V_X, SUP_ROW_Y + 22);
@@ -548,30 +514,27 @@ TEST_CASE(a_tapped_row_is_a_finger_tall_and_its_gaps_take_nothing)
 }
 
 /*
- * A second tap on the LIMIT RUN card's SETTINGS lands on no row of the
- * run's settings under it, and TEST's card, whose settings are the
- * footer's list, takes neither tap: no setting changes, no keypad opens.
+ * Two taps where a run card's SETTINGS sat on TEST land on no row: TEST's
+ * settings are the footer's list.  No setting changes, no keypad opens.
  */
 TEST_CASE(a_second_tap_on_a_run_cards_settings_changes_no_setting)
 {
     static float before[SETTING_COUNT];
-    for (int k = 0; k < 2; ++k) {
-        fresh();
-        go(k == 0 ? SERVO_FN_TEST : SERVO_FN_LIMRUN);
-        for (int id = 0; id < SETTING_COUNT; ++id) {
-            before[id] = settings_get((setting_id_t)id);
-        }
-        tap(SV_RUN_SET_X, SV_RUN_SET_Y(k));
-        tap(SV_RUN_SET_X, SV_RUN_SET_Y(k));
-        int changed = 0;
-        for (int id = 0; id < SETTING_COUNT; ++id) {
-            changed += settings_get((setting_id_t)id) != before[id];
-        }
-        CHECK_EQ(changed, 0);
-        CHECK(!servo_screen_keypad()->open);
-        CHECK(!servo_screen_list()->open);
-        CHECK_EQ(servo_screen_run_settings(), k == 0 ? 0 : 2);
+    fresh();
+    go(SERVO_FN_TEST);
+    for (int id = 0; id < SETTING_COUNT; ++id) {
+        before[id] = settings_get((setting_id_t)id);
     }
+    tap(SV_RUN_SET_X, SV_RUN_SET_Y);
+    tap(SV_RUN_SET_X, SV_RUN_SET_Y);
+    int changed = 0;
+    for (int id = 0; id < SETTING_COUNT; ++id) {
+        changed += settings_get((setting_id_t)id) != before[id];
+    }
+    CHECK_EQ(changed, 0);
+    CHECK(!servo_screen_keypad()->open);
+    CHECK(!servo_screen_list()->open);
+    CHECK_EQ(servo_screen_run_settings(), 0);
 }
 
 /* The rows of the body a stop at column @p x covers around row @p y:
@@ -664,10 +627,8 @@ TEST_CASE(no_text_lies_under_the_alert_band)
         CHECK(settings_dirty());
         open_test();
         CHECK_EQ(ink_under_the_alert_band(), 0);
-        open_run_settings(1);
+        open_limrun();
         CHECK_EQ(ink_under_the_alert_band(), 0);
-        CHECK(home_tag());
-        close_settings();
     }
     ui_text_set_language(UI_LANG_EN);
 }
@@ -727,7 +688,7 @@ TEST_CASE(arm_under_a_wire_session_says_the_esc_programmer_holds_it)
 
 int main(void)
 {
-    RUN(a_tapped_row_is_a_finger_tall_and_its_gaps_take_nothing);
+    RUN(a_set_value_is_a_finger_tall);
     RUN(a_runs_stops_are_a_finger_tall_and_clear_of_the_alert_band);
     RUN(a_second_tap_on_a_run_cards_settings_changes_no_setting);
     RUN(lives_readings_end_above_the_alert_band);

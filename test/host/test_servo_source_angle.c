@@ -458,7 +458,7 @@ TEST_CASE(an_imu_run_ended_on_a_gap_names_the_imu_on_the_card_and_report)
         char want[96];
         snprintf(want, sizeof(want), TR(SV_CARD_LAST_WHY),
                  ui_servo_str(SERVO_STR_ABORTED), k_silent[lang]);
-        CHECK(card_line_reads(0, 1, want, UI_C_WARN));
+        CHECK(card_line_reads(1, want, UI_C_WARN));
         /* The test, two gaps 2.3s apart. */
         bench_fresh();
         short_runs();
@@ -479,7 +479,7 @@ TEST_CASE(an_imu_run_ended_on_a_gap_names_the_imu_on_the_card_and_report)
         open_test();
         snprintf(want, sizeof(want), TR(SV_CARD_LAST_WHY),
                  ui_servo_str(SERVO_STR_ABORTED), k_gaps[lang]);
-        CHECK(card_line_reads(0, 1, want, UI_C_WARN));
+        CHECK(card_line_reads(1, want, UI_C_WARN));
         /* The limit run, silent 301ms. */
         lim_bench();
         imu_on(0u, false);

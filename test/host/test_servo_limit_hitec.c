@@ -11,32 +11,31 @@
 
 #include "ui_text.h"
 
-/* The settings' rows, and what the card says, on a bench where both
- * programmers can run: the SERVO row offered on the programming port,
- * SERVO PULSES gone with HITEC. */
+/* The list's rows on a bench where both programmers can run: the SERVO
+ * row offered on the programming port, SERVO PULSES locked with HITEC. */
 TEST_CASE(the_limit_run_card_offers_hitec_when_the_row_says_so_and_hides_servo_pulses)
 {
     hl_fresh(true);
-    open_run_settings(1);              /* the page, on a SAFE bench */
+    open_limrun_list();                /* the list, on a SAFE bench */
     scr->tick(0.02f);
-    /* KST/CHASERVO first: SERVO PULSES is there; HITEC takes it away, and a
-     * tap where it stood changes nothing. */
+    /* KST/CHASERVO first: SERVO PULSES steps; HITEC locks it, and a step
+     * changes nothing. */
     CHECK_EQ(servo_screen_limit_family(), SERVO_LIMRUN_FAM_KST);
-    tap(HL_SERVO_X, HL_ROW1_Y);
+    HL_STEP(LL_SERVO);
     CHECK_EQ(servo_screen_limit_family(), SERVO_LIMRUN_FAM_HITEC_D);
     CHECK(!servo_screen_limit_pulses());
-    tap(HL_PULSE_X, HL_ROW1_Y);
+    HL_STEP(LL_PULSES);
     CHECK(!servo_screen_limit_pulses());
     /* The series is the Hitec programmer's: CLASSIC there, CLASSIC here. */
     settings_set(SET_HITEC_SERIES, (float)HITEC_CLASSIC);
     CHECK_EQ(servo_screen_limit_family(), SERVO_LIMRUN_FAM_HITEC_C);
     settings_set(SET_HITEC_SERIES, (float)HITEC_D);
     /* Back to KST/CHASERVO: SERVO PULSES taps again. */
-    tap(HL_SERVO_X, HL_ROW1_Y);
+    HL_STEP(LL_SERVO);
     CHECK_EQ(servo_screen_limit_family(), SERVO_LIMRUN_FAM_KST);
-    tap(HL_PULSE_X, HL_ROW1_Y);
+    HL_STEP(LL_PULSES);
     CHECK(servo_screen_limit_pulses());
-    tap(HL_PULSE_X, HL_ROW1_Y);
+    HL_STEP(LL_PULSES);
     /* The programmer opened last takes the row with it: the Hitec one on
      * HITEC, then the KST one on KST. */
     go(SERVO_FN_HITEC);
@@ -149,9 +148,9 @@ TEST_CASE(a_d_series_limit_run_programs_0xb2_and_0xb0_through_the_seam)
     /* One backup file, the servo as the run found it. */
     CHECK_EQ(g_files_saves, 1u);
     CHECK(strstr(hl.report, "Backup:         HITEC001") != NULL);
-    /* The bench back to ARMED after every session; the run's end gave the
-     * write switch back. */
-    CHECK(hl.armed);
+    /* The bench back to ARMED after every session, SAFE after the run's
+     * end; the run's end gave the write switch back. */
+    CHECK(!hl.armed);
     CHECK(hl.arms >= 2u);
     CHECK(!hitec_prog_write_on(model()));
     CHECK_EQ(hitec_prog_state(model()), HITEC_PROG_PWM);

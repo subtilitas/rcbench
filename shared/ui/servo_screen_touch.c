@@ -39,9 +39,9 @@ bool svs_arm_locked(void)
  * The controls whose press stops what the bench drives, where svs_event_body()
  * hands a DOWN at (x, y) to them now: DISARM while the button reads DISARM,
  * OUTPUT OFF while the supply's output is on, PROG 5V OFF while the
- * ports' 5V reads ON, STOP RUN and STOP TEST in
- * LIVE's result box, and START TEST and START LIMIT RUN on TEST while their
- * run is under way (a tap there stops it).
+ * ports' 5V reads ON, STOP TEST in TEST's result box while its run is
+ * under way, and ARM + START on RUDDER AUTO, TEST and LIMIT RUN while
+ * its sequence or its run is under way (a tap there stops it).
  * The router hands a press on one of them through the alert band and the
  * band's help bubble (ui_screen_t's safe_at); everything else under those
  * stays theirs, ARM included.  The order of the checks is svs_event_body()'s.
@@ -54,7 +54,7 @@ bool svs_safe_at(int x, int y)
     if (ready_shown()) {
         /* ARM + START stops a sequence or a run on its press; the READY
          * card drives nothing. */
-        if (gfx_rect_contains(ui_footer_rect(UI_FOOTER_HOLD), x, y)) {
+        if (gfx_rect_contains(ready_hold_rect(), x, y)) {
             return ready_hold_stops();
         }
         if (gfx_rect_contains(ready_card_rect(), x, y)) {
@@ -75,20 +75,7 @@ bool svs_safe_at(int x, int y)
         return true;
     }
     if (run_box_shown() && gfx_rect_contains(test_btn_rect(), x, y)) {
-        return (s.fn == SERVO_FN_LIMRUN) ? servo_limrun_running(&s.lim)
-                                         : servo_test_running(&s.test);
-    }
-    if (wb_task() == UI_WB_TEST && !s.ov_have && rows_page() < 0
-        && gfx_rect_contains(page_area(), x, y)) {
-        const int k = run_card_shown();
-        if (gfx_rect_contains(run_set_rect(k), x, y)) {
-            return false;
-        }
-        if (k == 0) {
-            return false;       /* TEST's hold is the footer's */
-        }
-        return gfx_rect_contains(lim_start_rect(), x, y)
-               && servo_limrun_running(&s.lim);
+        return servo_test_running(&s.test);
     }
     return false;
 }
@@ -334,17 +321,17 @@ void svs_event_body(const touch_event_t *evt)
         if (foot_down(evt)) {
             return;
         }
-        /* RUDDER AUTO and TEST: the footer's ARM + START and the READY
-         * card in the output card's place; nothing of the output card is
-         * there to press. */
-        const gfx_rect_t hold = ui_footer_rect(UI_FOOTER_HOLD);
+        /* RUDDER AUTO, TEST and LIMIT RUN: the footer's ARM + START and
+         * the READY card in the output card's place; nothing of the
+         * output card is there to press. */
         if (ready_shown()
-            && (gfx_rect_contains(hold, px, py)
+            && (gfx_rect_contains(ready_hold_rect(), px, py)
                 || gfx_rect_contains(ready_card_rect(), px, py))) {
             /* A press on the hold during the steps or the run ends them,
              * whatever is open over the screen. */
-            const bool stops = gfx_rect_contains(hold, px, py)
-                               && ready_hold_stops();
+            const bool stops =
+                gfx_rect_contains(ready_hold_rect(), px, py)
+                && ready_hold_stops();
             if (stops) {
                 close_panels();
                 (void)ready_hold_down(evt);
@@ -366,21 +353,7 @@ void svs_event_body(const touch_event_t *evt)
             }
             return;
         }
-        if (run_box_shown() && s.fn == SERVO_FN_LIMRUN
-            && gfx_rect_contains(test_btn_rect(), px, py)) {
-            /* STOP RUN ends the limit run on the press; CLOSE puts the
-             * result away. */
-            if (servo_limrun_running(&s.lim)) {
-                lim_end_now(SERVO_TEST_AB_OPERATOR);
-            } else {
-                s.lim_box = false;
-            }
-            servo_invalidate();
-            ++s.ctrl_rev;
-            return;
-        }
-        if (run_box_shown() && s.fn == SERVO_FN_TEST
-            && gfx_rect_contains(test_btn_rect(), px, py)) {
+        if (run_box_shown() && gfx_rect_contains(test_btn_rect(), px, py)) {
             /* STOP TEST ends the run on the press, as a stop does; CLOSE
              * puts the result away. */
             if (servo_test_running(&s.test)) {

@@ -6,7 +6,7 @@ order: 21
 
 # Servo settings
 
-SETTINGS in the footer of a [SERVO](servo.md) screen opens that screen's list. The hub's list is the servo profile every function uses: OUTPUT and DUT (device under test). SWEEP, RUDDER, RUDDER AUTO and HITEC have lists of their own; TEST and LIMIT RUN open their run's page of rows, KST its EXPERT MODE page; LIVE has none. Use CLOSE at the top right of a run's page or the home tag to return. A function's list opens on a SAFE bench only, and a bench that goes live closes it and any page of rows; the hub's opens at any time. No list opens while a programmer session holds its port, or while a finger is still on another control. A change on a list stays marked unsaved until SAVE in the strip. Tap a number for the keypad, a choice for its list, a switch to toggle it, or NAME for the keyboard.
+SETTINGS in the footer of a [SERVO](servo.md) screen opens that screen's list. The hub's list is the servo profile every function uses: OUTPUT and DUT (device under test). SWEEP, RUDDER, RUDDER AUTO, LIMIT RUN and HITEC have lists of their own; TEST opens its run's page of rows, KST its EXPERT MODE page; LIVE has none. Use CLOSE at the top right of a run's page or the home tag to return. A function's list opens on a SAFE bench only, and a bench that goes live closes it and any page of rows; the hub's opens at any time. No list opens while a programmer session holds its port, or while a finger is still on another control. A change on a list stays marked unsaved until SAVE in the strip. Tap a number for the keypad, a choice for its list, a switch to toggle it, or NAME for the keyboard.
 
 ## OUTPUT, on the hub's list
 
@@ -98,15 +98,18 @@ After the supply steps, the walk starts at 5.0V or the voltage cap, whichever is
 
 ## The limit run's settings
 
-![The LIMIT RUN card's settings](view:servo-limits)
+![LIMIT RUN's list on the bench's outputs](view:servo-limits)
 
-SETTINGS on LIMIT RUN, in the footer or on the card, opens them.
+SETTINGS in LIMIT RUN's footer opens the list. Off a PROG PORT, MODE, SERVO and SERVO PULSES are locked with `On a PROG PORT only: choose one with PORT`.
 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
-| LIMIT RUN | SEARCH ONLY, SEARCH + PROGRAM | SEARCH ONLY | what START LIMIT RUN does: search the ends, or also program LEFT ANGLE and RIGHT ANGLE |
-| SERVO | KST/CHASERVO, HITEC | the programmer opened last, else KST/CHASERVO | shown with PORT on PROG PORT only: the programmer the run's sessions go to; HITEC in the series of the Hitec programmer's SERIES row ([Hitec servos](servo.md#hitec-servos)) |
-| SERVO PULSES | KEEP, 1000-2000 | KEEP | shown with PORT on PROG PORT and SERVO at KST/CHASERVO only: 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0us before the search |
+| MODE | SEARCH ONLY, SEARCH + PROGRAM | SEARCH ONLY | what ARM + START does: search the ends, or also program LEFT ANGLE and RIGHT ANGLE; a tap switches it |
+| SERVO | KST/CHASERVO, HITEC | the programmer opened last, else KST/CHASERVO | PORT on PROG PORT only: the programmer the run's sessions go to; HITEC in the series of the Hitec programmer's SERIES row ([Hitec servos](servo.md#hitec-servos)) |
+| SERVO PULSES | KEEP, 1000-2000 | KEEP | PORT on PROG PORT and SERVO at KST/CHASERVO only: 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0us before the search |
+| Programming voltage | 4.8 to 8.4V | 5.0V | the PD mini's set point while the programmer holds the servo |
+| Programming current | 0.05 to 3.000A | 1.000A | the PD mini's current limit while it programs |
+| Wait before PWM | 0 to 10000ms | 100ms | from the end of programming to the first pulse |
 
 ## SUPPLY's caps
 
@@ -161,4 +164,4 @@ The button follows the target the IOmcu holds, not the setting. A change of SERV
 
 ## Keeping the values
 
-OUTPUT, HV SERVO, LIMIT RUN, SERVO and SERVO PULSES are kept for the session. SWEEP, the automatic test's settings, DUT, KST EXPERT MODE included, and TARGET are kept in NVS (non-volatile storage) and written as the SUPPLY settings are: on the next frame with the bench SAFE and the supply output off. A change on a list is written by SAVE in its strip.
+OUTPUT, HV SERVO, LIMIT RUN's MODE, SERVO and SERVO PULSES are kept for the session. SWEEP, the automatic test's settings, DUT, KST EXPERT MODE included, and TARGET are kept in NVS (non-volatile storage) and written as the SUPPLY settings are: on the next frame with the bench SAFE and the supply output off. A change on a list is written by SAVE in its strip.

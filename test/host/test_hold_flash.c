@@ -11,12 +11,13 @@
  * (hold_flash.h).  ARMED, the output and the run are never confirmed
  * here: the flash does not wait for them.
  *
- * Here: ARM, OUTPUT ON, START TEST, START LIMIT RUN, HOLD TO APPLY on the
- * profile warning and KST EXPERT MODE on SERVO; ARM on MOTOR & ESC and
- * OUTPUT ON on SUPPLY through the router.  The holds of the other screens
- * have their *_flashes_as_it_fires case in their own suite, on their own
- * rig: test_servo_rauto_kst.c (START on AUTO), test_kst_panel_write.c
- * (a warning page's hold), test_hitec_panel_write.c (a hold page),
+ * Here: ARM, OUTPUT ON, START TEST, LIMIT RUN's ARM + START, HOLD TO
+ * APPLY on the profile warning and KST EXPERT MODE on SERVO; ARM on MOTOR
+ * & ESC and OUTPUT ON on SUPPLY through the router.  The holds of the
+ * other screens have their *_flashes_as_it_fires case in their own
+ * suite, on their own rig: test_servo_rauto_kst.c (START on AUTO),
+ * test_kst_panel_write.c (a warning page's hold), test_hitec_panel_write.c
+ * (a hold page),
  * test_esc_wire_press.c (CONNECT), test_esc_stick_panel_hold.c (HOLD 2s
  * TO RUN), test_outputs_view.c (UNBIND ALL PINS), test_files_changed.c
  * (OVERWRITE); test_prog5v_box.c and test_stop_hold.c hold PROG 5V ON and
@@ -136,8 +137,9 @@ TEST_CASE(start_test_flashes_as_it_fires)
     CHECK(servo_screen_testing());
 }
 
-/* START LIMIT RUN on LIMIT RUN: on the INA3221, a SERVO PWM output bound. */
-TEST_CASE(start_limit_run_flashes_as_it_fires)
+/* LIMIT RUN's ARM + START in the footer: on the INA3221, a SERVO PWM
+ * output bound. */
+TEST_CASE(limit_runs_arm_start_flashes_as_it_fires)
 {
     bench_on_ina();
     servo_sim_cfg_t sc;
@@ -148,9 +150,9 @@ TEST_CASE(start_limit_run_flashes_as_it_fires)
     servo_screen_set_pins(PIN(2), true);
     bench_frames(200u);
     open_limrun();
-    const gfx_rect_t r = { (int16_t)(LIM_START_X - 138),
-                           (int16_t)(LIM_START_Y - 20), 276, 8 };
-    CHECK(servo_walk(LIM_START_X, LIM_START_Y, r, "START LIMIT RUN"));
+    const gfx_rect_t r = { (int16_t)(SV_ARM_L + 12), (int16_t)(SV_ARM_Y + 4),
+                           (int16_t)(SV_ARM_W - 24), 8 };
+    CHECK(servo_walk(LIM_START_X, LIM_START_Y, r, "ARM + START"));
     CHECK(servo_screen_limit_running());
 }
 
@@ -214,10 +216,10 @@ TEST_CASE(kst_expert_off_after_its_hold_shows_no_fade)
 
 /* ------------------------------------------- a tap on a refused button */
 
-/* TEST's ARM + START grey with no PD mini answering, START LIMIT RUN grey
- * on a bench that is not ARMED: a tap puts the reason in the band as a
- * notice, on TEST with the READY row it belongs to, and the line under
- * the button stays. */
+/* TEST's ARM + START grey with no PD mini answering: a tap puts the
+ * reason in the band as a notice, with the READY row it belongs to.  A tap
+ * on LIMIT RUN's grey ARM + START puts a notice there too and starts
+ * nothing. */
 TEST_CASE(a_tap_on_a_grey_start_puts_its_reason_in_the_band)
 {
     ui_router_init();
@@ -325,7 +327,7 @@ int main(void)
     RUN(servo_arm_flashes_as_it_fires);
     RUN(servo_output_on_flashes_as_it_fires);
     RUN(start_test_flashes_as_it_fires);
-    RUN(start_limit_run_flashes_as_it_fires);
+    RUN(limit_runs_arm_start_flashes_as_it_fires);
     RUN(profile_apply_flashes_where_its_warning_was);
     RUN(kst_expert_flashes_as_it_fires);
     RUN(kst_expert_off_after_its_hold_shows_no_fade);

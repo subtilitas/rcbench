@@ -164,27 +164,42 @@ enum {
     TL_H_LENGTH, TL_LEN_BY, TL_LEN_S, TL_MOVES, TL_DWELL, TL_SETTLE,
 };
 
-/* A run's settings, one level down from its screen: 0 TEST's SETTINGS
- * list, 1 the limit run's page on LIMIT RUN.  Each opens on a SAFE bench
- * only: on an armed one the operator switches to SAFE first, and the home
- * tag that closes it arms the bench again. */
-static inline void open_run_settings(int k)
+
+/* LIMIT RUN's list, row by row (servo_lists.c). */
+enum { LL_MODE = 0, LL_SERVO, LL_PULSES, LL_PROG_V, LL_PROG_I, LL_WAIT };
+
+/* LIMIT RUN's list, from the footer's SETTINGS.  It opens on a SAFE bench
+ * only: on an armed one the rig switches to SAFE first, and the home tag
+ * that closes the list arms it again.  A save asked for first, so the home
+ * tag closes the list without the leave question. */
+static inline void open_limrun_list(void)
 {
-    go((k == 0) ? SERVO_FN_TEST : SERVO_FN_LIMRUN);
-    if (k == 0) {
-        tap_settings();
-        if (!servo_screen_list()->open) {
-            servo_screen_set_armed(false);
-            g_rig_rearm = true;
-            tap_settings();
-        }
-        return;
-    }
-    tap(SV_RUN_SET_X, SV_RUN_SET_Y(k));
-    if (servo_screen_run_settings() == 0) {
+    settings_request_save();
+    go(SERVO_FN_LIMRUN);
+    tap_settings();
+    if (!servo_screen_list()->open) {
         servo_screen_set_armed(false);
         g_rig_rearm = true;
-        tap(SV_RUN_SET_X, SV_RUN_SET_Y(k));
+        tap_settings();
+    }
+}
+
+/* A run's settings, one level down from its screen: 0 TEST's SETTINGS
+ * list, 1 LIMIT RUN's list.  Each opens on a SAFE bench only: on an armed
+ * one the operator switches to SAFE first, and the home tag that closes it
+ * arms the bench again. */
+static inline void open_run_settings(int k)
+{
+    if (k != 0) {
+        open_limrun_list();
+        return;
+    }
+    go(SERVO_FN_TEST);
+    tap_settings();
+    if (!servo_screen_list()->open) {
+        servo_screen_set_armed(false);
+        g_rig_rearm = true;
+        tap_settings();
     }
 }
 /* The home tag, as the router asks the screen: whether it climbed. */

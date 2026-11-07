@@ -7,127 +7,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-#include <stdio.h>
-#include <string.h>
-
-#include "greatest.h"
-#include "guard_canvas.h"
-
-#include "fw_release.h"
-#include "settings.h"
-#include "ui_screen.h"
-#include "ui_text.h"
-#include "ui_theme.h"
-#include "ui_widgets.h"
-#include "upd_c6.h"
-#include "upd_screen.h"
-#include "wa_fetch.h"
-#include "wifi_screen.h"
-
-/* Where a finger lands: UPDATES and the reminder in the body's
- * coordinates, PANEL UPDATE on the whole panel. */
-#include "upd_spots.h"
-
-#define TICK_S     (1.0f / 39.0f)
-#define HOLD_TICKS ((int)(UI_HOLD_S / TICK_S) + 5)
-
-/* ------------------------------------------------- a store that survives */
-
-static float g_kept[SETTING_COUNT];
-static bool  g_have_kept;
-static int   g_saves;
-
-static bool mem_load(float *values, int count)
-{
-    if (!g_have_kept) {
-        return false;
-    }
-    memcpy(values, g_kept, (size_t)count * sizeof(float));
-    return true;
-}
-
-static bool mem_save(const float *values, int count)
-{
-    memcpy(g_kept, values, (size_t)count * sizeof(float));
-    g_have_kept = true;
-    ++g_saves;
-    return true;
-}
-
-static const settings_store_t k_store = { mem_load, mem_save, NULL, NULL };
-
-/* ---------------------------------------------------------------- helpers */
-
-static const ui_screen_t *upd(void) { return upd_screen(); }
-static const ui_screen_t *rem(void) { return upd_remind_screen(); }
-
-static upd_view_t g_v;
-
-static void base_view(void)
-{
-    memset(&g_v, 0, sizeof(g_v));
-    g_v.have_net = true;
-    snprintf(g_v.net, sizeof(g_v.net), "%s", "workshop");
-    snprintf(g_v.running, sizeof(g_v.running), "%s", "0.19.0");
-}
-
-static void set_newer(void)
-{
-    g_v.job = UPD_JOB_CHECK;
-    g_v.phase = UPD_PH_ENDED;
-    g_v.got = UPD_GOT_NEWER;
-    snprintf(g_v.found, sizeof(g_v.found), "%s", "0.20.0");
-}
-
-static void push(void) { upd_screen_set(&g_v); }
-
-static void fresh(void)
-{
-    ui_theme_set(UI_THEME_DARK);
-    ui_text_set_language(UI_LANG_EN);
-    g_have_kept = false;
-    g_saves = 0;
-    settings_set_store(&k_store);
-    settings_init();
-    ui_router_init();
-    upd()->reset();
-    rem()->reset();
-    base_view();
-    push();
-    (void)upd_screen_take();
-}
-
-static void ev(const ui_screen_t *scr, touch_event_type_t type, uint8_t id,
-               int x, int y, uint8_t flags)
-{
-    touch_event_t e = { .type = type, .flags = flags,
-                        .point = { .id = id, .x = (int16_t)x,
-                                   .y = (int16_t)y, .strength = 40 } };
-    scr->event(&e);
-}
-
-static void tap(const ui_screen_t *scr, int x, int y)
-{
-    ev(scr, TOUCH_EVENT_DOWN, 1, x, y, 0);
-    ev(scr, TOUCH_EVENT_UP, 1, x, y, 0);
-}
-
-static void ticks(const ui_screen_t *scr, int n)
-{
-    for (int i = 0; i < n; ++i) {
-        scr->tick(TICK_S);
-    }
-}
-
-static void router_tap(int x, int y)
-{
-    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
-                        .point = { .id = 1, .x = (int16_t)x,
-                                   .y = (int16_t)y, .strength = 40 } };
-    ui_router_event(&e);
-    e.type = TOUCH_EVENT_UP;
-    ui_router_event(&e);
-}
+#include "upd_rig.h"
 
 /* ------------------------------------------------------------ the mirrors */
 
@@ -295,54 +175,13 @@ TEST_CASE(a_running_check_turns_the_button_into_cancel)
     CHECK(!upd_busy(NULL));
 }
 
-TEST_CASE(the_reminder_switch_flips_the_setting_and_asks_for_the_save)
-{
-    fresh();
-    CHECK(settings_get_bool(SET_UPD_REMIND));    /* on by default */
-    tap(upd(), UP_BTN_X, UP_REMIND_Y);
-    CHECK(!settings_get_bool(SET_UPD_REMIND));
-    CHECK(settings_save_asked());
-    CHECK(settings_save_tick(true));
-    tap(upd(), UP_BTN_X, UP_REMIND_Y);
-    CHECK(settings_get_bool(SET_UPD_REMIND));
-    CHECK(settings_save_tick(true));
-    /* It asks the application for nothing: the setting is the request. */
-    CHECK_EQ(upd_screen_take(), 0u);
-    /* And it works without a home network: turning reminders back on
-     * needs none. */
-    g_v.have_net = false;
-    push();
-    tap(upd(), UP_BTN_X, UP_REMIND_Y);
-    CHECK(!settings_get_bool(SET_UPD_REMIND));
-}
-
-TEST_CASE(the_releases_switch_flips_the_channel_and_asks_for_the_save)
-{
-    fresh();
-    CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 0);    /* STABLE */
-    tap(upd(), UP_BTN_X, UP_CHAN_Y);
-    CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 1);    /* TESTING */
-    CHECK(settings_save_asked());
-    CHECK(settings_save_tick(true));
-    tap(upd(), UP_BTN_X, UP_CHAN_Y);
-    CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 0);
-    CHECK(settings_save_tick(true));
-    /* Without a home network, and during a check, too. */
-    g_v.have_net = false;
-    g_v.phase = UPD_PH_ASKING;
-    push();
-    tap(upd(), UP_BTN_X, UP_CHAN_Y);
-    CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 1);
-    CHECK_EQ(upd_screen_take(), 0u);
-}
-
 TEST_CASE(the_download_hold_is_there_only_for_a_newer_release)
 {
     fresh();
     /* No result: the row is empty and holds nothing. */
-    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_DL_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS);
-    ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_UP, 1, UP_DL_X, UP_DL_Y, 0);
     CHECK_EQ(upd_screen_take(), 0u);
 
     /* Up to date: none either. */
@@ -350,28 +189,28 @@ TEST_CASE(the_download_hold_is_there_only_for_a_newer_release)
     g_v.phase = UPD_PH_ENDED;
     g_v.got = UPD_GOT_CURRENT;
     push();
-    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_DL_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS);
-    ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_UP, 1, UP_DL_X, UP_DL_Y, 0);
     CHECK_EQ(upd_screen_take(), 0u);
 
     /* Newer: the whole hold asks once; a tap or half of it nothing. */
     set_newer();
     push();
-    tap(upd(), UP_BTN_X, UP_DL_Y);
+    tap(upd(), UP_DL_X, UP_DL_Y);
     ticks(upd(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), 0u);
-    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_DL_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS / 2);
-    ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_UP, 1, UP_DL_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), 0u);
-    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_DL_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), UPD_REQ_DOWNLOAD);
     ticks(upd(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), 0u);
-    ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_UP, 1, UP_DL_X, UP_DL_Y, 0);
 }
 
 TEST_CASE(the_download_hold_ends_unfired_when_the_gate_closes_under_it)
@@ -384,7 +223,7 @@ TEST_CASE(the_download_hold_ends_unfired_when_the_gate_closes_under_it)
         fresh();
         set_newer();
         push();
-        ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
+        ev(upd(), TOUCH_EVENT_DOWN, 1, UP_DL_X, UP_DL_Y, 0);
         ticks(upd(), HOLD_TICKS / 2);
         g_v.dl_block = k_blocks[i];
         push();
@@ -393,21 +232,21 @@ TEST_CASE(the_download_hold_ends_unfired_when_the_gate_closes_under_it)
         g_v.dl_block = UPD_WHY_NONE;
         push();
         ticks(upd(), HOLD_TICKS);
-        ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_DL_Y, 0);
+        ev(upd(), TOUCH_EVENT_UP, 1, UP_DL_X, UP_DL_Y, 0);
         CHECK_EQ(upd_screen_take(), 0u);
     }
     /* Sliding off abandons it too; and a lost gesture. */
     fresh();
     set_newer();
     push();
-    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_DL_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS / 2);
-    ev(upd(), TOUCH_EVENT_MOVE, 1, UP_BTN_X, UP_DL_Y + 120, 0);
-    ev(upd(), TOUCH_EVENT_MOVE, 1, UP_BTN_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_MOVE, 1, UP_DL_X, UP_DL_Y + 120, 0);
+    ev(upd(), TOUCH_EVENT_MOVE, 1, UP_DL_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), 0u);
-    ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_DL_Y, 0);
-    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_UP, 1, UP_DL_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_DL_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS / 2);
     upd()->cancel();
     ticks(upd(), HOLD_TICKS);
@@ -756,8 +595,8 @@ TEST_CASE(never_remind_me_switches_it_off_across_a_restart)
     frame();
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 
-    /* SETUP > UPDATES turns it back on, and the start after that checks. */
-    tap(upd(), UP_BTN_X, UP_REMIND_Y);
+    /* UPDATES' list turns it back on, and the start after that checks. */
+    list_step(0, true);
     CHECK(settings_get_bool(SET_UPD_REMIND));
     CHECK(settings_save_tick(true));
     settings_init();
@@ -1127,8 +966,6 @@ int main(void)
     RUN(check_asks_once_with_a_home_network_and_the_gate_open);
     RUN(check_is_grey_without_a_network_wifi_or_the_gate);
     RUN(a_running_check_turns_the_button_into_cancel);
-    RUN(the_reminder_switch_flips_the_setting_and_asks_for_the_save);
-    RUN(the_releases_switch_flips_the_channel_and_asks_for_the_save);
     RUN(the_download_hold_is_there_only_for_a_newer_release);
     RUN(the_download_hold_ends_unfired_when_the_gate_closes_under_it);
     RUN(every_result_has_a_text_in_both_languages);

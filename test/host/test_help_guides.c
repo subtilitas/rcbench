@@ -146,9 +146,9 @@ static const servo_state_t k_servo[] = {
     { "TEST", SERVO_FN_TEST, false, 2, 0,
       { TX_HG_SV_TITLE_TEST, TX_HG_SV_TITLE_READY },
       { 3, 5 } },
-    { "LIMIT RUN", SERVO_FN_LIMRUN, false, 3, 0,
-      { TX_HG_SV_TITLE_LIMRUN, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
-      { 2, 4, 4 } },
+    { "LIMIT RUN", SERVO_FN_LIMRUN, false, 2, 0,
+      { TX_HG_SV_TITLE_LIMRUN, TX_HG_SV_TITLE_READY },
+      { 2, 5 } },
     { "RUDDER", SERVO_FN_RUDDER, false, 4, 0,
       { TX_HG_SV_TITLE_RUDDER, TX_HG_SV_TITLE_RUD_READ, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
       { 4, 3, 4, 5 } },
@@ -373,8 +373,8 @@ TEST_CASE(a_run_takes_the_output_cards_pages_and_armed_leaves_none)
     CHECK(ui_help_count(scr, false) >= 2);
 }
 
-/* A keypad, LIMIT RUN's page and the supply's question are levels the
- * guide does not explain: no page, so no "?". */
+/* A keypad and the supply's question are levels the guide does not
+ * explain: no page, so no "?".  A list's pages are the list's. */
 TEST_CASE(a_panel_or_a_question_takes_every_page)
 {
     fresh();
@@ -383,18 +383,15 @@ TEST_CASE(a_panel_or_a_question_takes_every_page)
     CHECK_EQ(scr->help_count(), 0);
     ui_help_page_t p;
     CHECK(!scr->help_page(0, &p));
-    fresh();
-    open_run_settings(1);                  /* LIMIT RUN's page */
-    REQUIRE(servo_screen_run_settings() != 0);
-    CHECK_EQ(scr->help_count(), 0);
-    tap(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y);
-    CHECK_EQ(scr->help_count(), 3);
-    CHECK(!scr->help_page(3, &p));
-    /* TEST's SETTINGS is a list: its pages are the list's. */
-    fresh();
-    open_run_settings(0);
-    REQUIRE(servo_screen_list()->open);
-    CHECK_EQ(scr->help_count(), ui_setlist_help_count(servo_screen_list()));
+    /* TEST's and LIMIT RUN's SETTINGS are lists: their pages are the
+     * list's. */
+    for (int k = 0; k < 2; ++k) {
+        fresh();
+        open_run_settings(k);
+        REQUIRE(servo_screen_list()->open);
+        CHECK_EQ(scr->help_count(),
+                 ui_setlist_help_count(servo_screen_list()));
+    }
     CHECK(!scr->help_page(-1, &p));
     CHECK(!scr->help_page(0, NULL));
 
@@ -451,7 +448,7 @@ TEST_CASE(a_badge_at_the_right_sits_in_the_top_right_corner)
     memset(&p, 0, sizeof(p));
     p.side = UI_HELP_DOCK_RIGHT;
     p.count = 1;
-    p.item[0] = (ui_help_item_t){ "X", TX_HG_SV_LIM,
+    p.item[0] = (ui_help_item_t){ "X", TX_HG_SV_LR_ENDS,
                                   gfx_rect_make(100, 100, 200, 40),
                                   UI_HELP_AT_LEFT };
     const uint32_t left = ui_help_marks_key(&p);

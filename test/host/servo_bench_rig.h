@@ -31,14 +31,14 @@
 #include "ui_widgets.h"
 
 /*
- * TEST's HOLD 2s: ARM + START in the footer's middle slot and START LIMIT
- * RUN on LIMIT RUN's card (servo_spots.h); the run's box and its button,
- * from servo_screen_int.h.
+ * TEST's and LIMIT RUN's HOLD 2s: ARM + START in the footer's middle slot
+ * (servo_spots.h); the run's box on TEST and its button, from
+ * servo_screen_int.h.
  */
 #define START_X  SV_TEST_HOLD_X
 #define START_Y  SV_TEST_HOLD_Y
-#define LIM_START_X SV_START_X
-#define LIM_START_Y SV_START_Y(1)
+#define LIM_START_X SV_HOLD_X
+#define LIM_START_Y SV_HOLD_Y
 #define BOXBTN_X SV_BOX_BTN_X
 #define BOXBTN_Y SV_BOX_BTN_Y
 
@@ -55,6 +55,7 @@ static struct {
     bool     released;
     unsigned disarms;          /* DISARMs posted                      */
     bool     no_arm;           /* the IOmcu leaves an ARM unanswered */
+    unsigned arms;             /* ARMs posted and answered ARMED      */
     bool     stepped;          /* a position went out with no slew   */
     float    set_v_max;        /* the highest set point while it ran */
     unsigned opens, opens_txt, csv, txt, ends;
@@ -191,7 +192,9 @@ static inline void bench_frames(uint32_t ms)
                     servo_screen_set_armed(false);
                 }
             } else if (sc.kind == SERVO_CMD_ARM && !bench.no_arm) {
-                servo_screen_set_armed(true);   /* and an ARM: ARMED */
+                /* And an ARM, as ARM + START's steps ask it: ARMED. */
+                ++bench.arms;
+                servo_screen_set_armed(true);
             }
         }
         if (servo_screen_testing() && supply_screen_set_v() > bench.set_v_max) {
@@ -315,12 +318,13 @@ static inline void bench_answer_arm(void)
     servo_cmd_t c;
     while (servo_screen_take(&c)) {
     }
+    ++bench.arms;
     servo_screen_set_armed(true);
 }
 
 /* Hold the run's start for @p secs on the screen of card @p card, 0 TEST
- * (its ARM + START) and 1 LIMIT RUN (START LIMIT RUN), which is shown
- * first. */
+ * and 1 LIMIT RUN, which is shown first: each one's HOLD 2s: ARM + START in
+ * the footer's middle slot. */
 static inline void hold_start_on(int card, float secs)
 {
     if (card == 0) {
@@ -430,22 +434,17 @@ static inline void bench_on_ina(void)
     bench_frames(200u);
 }
 
-/* Buffer 0 drawn, and whether line @p i of card @p k (its state line is
- * 0) reads @p text in @p col on the card's fill, and nothing else: the
- * AUTOMATIC TEST card's lines in the 10 x 20 face 22px apart, the LIMIT
- * RUN card's in the 8 x 16 face 18px apart under its output line. */
-static inline bool card_line_reads(int k, int i, const char *text,
-                                   ui_color_id_t col)
+/* Buffer 0 drawn, and whether line @p i of TEST's AUTOMATIC TEST card (its
+ * state line is 0) reads @p text in @p col on the card's fill, and nothing
+ * else: the lines in the 10 x 20 face 22px apart. */
+static inline bool card_line_reads(int i, const char *text, ui_color_id_t col)
 {
-    /* Each card on its own screen. */
-    if (servo_screen_fn() != ((k == 0) ? SERVO_FN_TEST : SERVO_FN_LIMRUN)) {
-        go((k == 0) ? SERVO_FN_TEST : SERVO_FN_LIMRUN);
+    if (servo_screen_fn() != SERVO_FN_TEST) {
+        go(SERVO_FN_TEST);
     }
     scr->render(&cv, 0);
     want_fresh();
-    const int y = SV_RUN_CARD_Y(k)
-                  + ((k == 0) ? SV_TEST_LINE_DY + 22 * i
-                              : SV_RUN_LINE_DY + 20 * i + 20 - 2);
+    const int y = SV_RUN_CARD_Y + SV_TEST_LINE_DY + 22 * i;
     const gfx_font_t *f = &gfx_font_10x20;
     const int h = f->height;
     const gfx_color_t bg = fb[(size_t)y * W + 20u];

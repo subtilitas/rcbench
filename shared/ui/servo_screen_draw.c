@@ -415,7 +415,7 @@ static void draw_left(gfx_canvas_t *c)
 void draw_arm(gfx_canvas_t *c)
 {
     if (ready_shown()) {
-        ready_draw_hold(c);         /* RUDDER AUTO's or TEST's ARM + START */
+        ready_draw_hold(c);     /* ARM + START of the function shown */
         return;
     }
     ui_hold_button(c, s.arm_btn, s.gate.armed ? "DISARM" : "ARM",
@@ -982,12 +982,14 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
                           ui_theme_color(UI_C_PANEL));
         } else if (wb_task() == UI_WB_RUDDER) {
             rudder_render(c, buf);
+        } else if (s.fn == SERVO_FN_LIMRUN) {
+            lim_render(c);
         } else {
             draw_test_page(c);
         }
         if (ready_shown()) {
-            /* RUDDER AUTO and TEST: the READY card in the output card's
-             * place. */
+            /* RUDDER AUTO, TEST and LIMIT RUN: the READY card in the
+             * output card's place. */
             ready_render(c);
             s.rdy.drawn[buf] = ready_sig();
         } else {
@@ -1083,15 +1085,9 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
         return;
     }
     if (wb_task() == UI_WB_TEST) {
-        /* START LIMIT RUN's fade on LIMIT RUN; TEST's hold is the
-         * footer's (s.arm_rev). */
-        if (s.drawn_test[buf] != s.test_rev) {
-            s.drawn_test[buf] = s.test_rev;
-            if (run_card_shown() == 1) {
-                clipped(c, lim_start_rect(), draw_lim_start);
-                clipped(c, run_set_rect(1), draw_run_set);
-            }
-        }
+        /* TEST's and LIMIT RUN's holds are the footer's (s.arm_rev):
+         * nothing of the left card fades on its own. */
+        s.drawn_test[buf] = s.test_rev;
         return;
     }
 

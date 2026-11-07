@@ -50,7 +50,9 @@ static void enc_plug(uint32_t at)
 }
 
 /* The run's start on card @p card held until the run starts, at most 3s,
- * then let go: the run's first frame is now.  On TEST ARM + START. */
+ * then let go: the run's first frame is now.  TEST's and LIMIT RUN's start
+ * is the footer's ARM + START; LIMIT RUN's read-back waits for an INA3221
+ * window: the windows go on under the finger. */
 static void hold_until_running(int card)
 {
     if (card == 0) {
@@ -64,6 +66,10 @@ static void hold_until_running(int card)
     for (int i = 0; i < 150; ++i) {
         if (servo_screen_testing() || servo_screen_limit_running()) {
             break;
+        }
+        if (bench.ina) {
+            bench_frames(20u);
+            continue;
         }
         bench.now += 20u;
         servo_screen_clock(bench.now);
@@ -113,7 +119,7 @@ TEST_CASE(an_encoder_pulled_and_plugged_back_within_300ms_rides)
     char want[64];
     snprintf(want, sizeof(want), TR(SV_CARD_LAST),
              ui_servo_str(SERVO_STR_PASS), "ATEST021.CSV + .TXT");
-    CHECK(card_line_reads(0, 1, want, UI_C_TEXT_DIM));
+    CHECK(card_line_reads(1, want, UI_C_TEXT_DIM));
 }
 
 /* Pulled for good: 320ms on, at the first frame past 300ms, the run ends
@@ -143,7 +149,7 @@ TEST_CASE(an_encoder_pulled_for_good_ends_the_test_as_an_error)
         snprintf(want, sizeof(want), TR(SV_CARD_LAST_WHY),
                  ui_servo_str(SERVO_STR_ABORTED),
                  ui_servo_str(SERVO_STR_AB_ENC_SILENT));
-        CHECK(card_line_reads(0, 1, want, UI_C_WARN));
+        CHECK(card_line_reads(1, want, UI_C_WARN));
         CHECK(strstr(bench.report, ui_servo_str(SERVO_STR_AB_ENC_SILENT))
               != NULL);
     }
