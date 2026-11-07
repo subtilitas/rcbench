@@ -13,6 +13,7 @@
  * - a_pd_mini_off_is_switched_on_by_arm_and_disarm_switches_it_off
  * - a_rail_fed_from_elsewhere_keeps_the_pd_mini_off_and_arms_at_once
  * - a_window_the_ina3221_left_behind_is_no_fed_rail
+ * - a_fed_rail_arms_whatever_the_pd_minis_set_point
  * - past_6v_arm_is_refused_and_the_row_opens_the_hv_warning
  * - a_tap_on_arm_or_a_stop_during_the_steps_ends_them_all_off
  * - the_5v_arm_switched_stays_across_servo_and_goes_with_the_last
@@ -256,6 +257,29 @@ TEST_CASE(a_window_the_ina3221_left_behind_is_no_fed_rail)
     CHECK(ra.armed);
 }
 
+/* A rail fed from elsewhere with the PD mini's set point past 6.0V: ARM
+ * leaves the PD mini off, so the set point is never applied; the row reads
+ * FED FROM ELSEWHERE in the warning colour and ARM arms at once, sending no
+ * ON. */
+TEST_CASE(a_fed_rail_arms_whatever_the_pd_minis_set_point)
+{
+    pd_off_on_live();
+    settings_set(SET_SUPPLY_V_START, 8.4f);
+    supply_screen_settings_loaded();
+    ra.rail_fed = true;
+    ra_ms(200u);
+    const rdy_row_t r = drow(LV_SUPPLY);
+    CHECK_EQ(r.st, (uint8_t)RDY_WARN);
+    CHECK_STR_EQ(r.value, TR(RDY_FED));
+    CHECK(drive_hold_blocked(NULL) == NULL);
+    arm_hold(2300u);
+    ra_ms(100u);
+    CHECK_EQ(ra.pd_ons, 0u);
+    CHECK(!g_rig.sup_on);
+    CHECK_EQ(ra.arms, 1u);
+    ra.rail_fed = false;
+}
+
 /* The PD mini off with a set point past 6.0V: SUPPLY reads TAP: HV
  * WARNING in red, ARM takes no hold and names the row, and nothing is
  * switched on; a tap on the row opens OUTPUT ON's HV warning, whose own
@@ -439,6 +463,7 @@ int main(void)
     RUN(a_pd_mini_off_is_switched_on_by_arm_and_disarm_switches_it_off);
     RUN(a_rail_fed_from_elsewhere_keeps_the_pd_mini_off_and_arms_at_once);
     RUN(a_window_the_ina3221_left_behind_is_no_fed_rail);
+    RUN(a_fed_rail_arms_whatever_the_pd_minis_set_point);
     RUN(past_6v_arm_is_refused_and_the_row_opens_the_hv_warning);
     RUN(a_tap_on_arm_or_a_stop_during_the_steps_ends_them_all_off);
     RUN(the_5v_arm_switched_stays_across_servo_and_goes_with_the_last);

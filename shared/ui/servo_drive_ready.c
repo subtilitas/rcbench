@@ -294,16 +294,18 @@ static void supply_row(rdy_row_t *r)
             r->st  = (uint8_t)RDY_WARN;
             r->why = esc_wire_panel_holds_port() ? TR(SUP_HELD_REFUSED_ESC)
                                                  : TR(SUP_HELD_REFUSED);
+        } else if (rail_fed()) {
+            /* Fed from elsewhere: ARM leaves the PD mini off, so its set
+             * point, past 6.0V or not, is never applied. */
+            r->st  = (uint8_t)RDY_WARN;
+            r->why = TR(RDY_FED_WHY);
+            snprintf(r->value, sizeof(r->value), "%s", TR(RDY_FED));
         } else if (hv_set_point()) {
             /* Past a standard servo's rating only OUTPUT ON's HV warning
              * switches it on; a tap on the row opens it. */
             r->st  = (uint8_t)RDY_BAD;
             r->why = TR(SV_TAP_HV);
             r->fix = true;
-        } else if (rail_fed()) {
-            r->st  = (uint8_t)RDY_WARN;
-            r->why = TR(RDY_FED_WHY);
-            snprintf(r->value, sizeof(r->value), "%s", TR(RDY_FED));
         } else if (safe_now()) {
             r->st  = (uint8_t)RDY_SEQ;
             r->why = TR(RDY_ARM_ON_WHY);
