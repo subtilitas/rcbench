@@ -915,9 +915,9 @@ void svs_tick_body(float dt_s)
     }
     test_tick();
 
-    /* START LIMIT RUN's hold, then the run. */
+    /* LIMIT RUN's ARM + START, then its sequence and the run. */
     if (s.lim_down) {
-        ++s.test_rev;
+        ++s.arm_rev;
         if (ui_hold_tick(&s.lim_hold, dt_s)) {
             s.lim_down = false;
             ov_let_go();
@@ -928,7 +928,7 @@ void svs_tick_body(float dt_s)
     /* The flashes of the holds that fired: the frames keep coming while
      * one runs. */
     flash_frame(&s.test_hold, dt_s, &s.test_rev);
-    flash_frame(&s.lim_hold, dt_s, &s.test_rev);
+    flash_frame(&s.lim_hold, dt_s, &s.arm_rev);
     ghost_frame(&s.ask.hold, s.ask.open, dt_s, &s.ask.rev);
     ghost_frame(&s.warn.hold, s.warn.open, dt_s, &s.warn.rev);
     flash_frame(&s.kx_hold, dt_s, &s.kx_rev);

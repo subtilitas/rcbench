@@ -55,51 +55,51 @@ panel 60.4 Hz, 64-byte lines; effective bandwidth not measured
 
 mode                   lines/frame     traffic
 ----------------------------------------------
-frame                        8,333    1042 KiB
+frame                        8,342    1043 KiB
 frame-idle                       0       0 KiB
-held                         5,112     639 KiB
-sim                         12,013    1502 KiB
-throttle                    10,107    1263 KiB
-chrome                      48,265    6033 KiB
+held                         5,155     644 KiB
+sim                         12,027    1503 KiB
+throttle                    10,126    1266 KiB
+chrome                      48,270    6034 KiB
 overview                         0       0 KiB
-overview-guide                 367      46 KiB
-servo                        2,307     288 KiB
-servo-grip                     558      70 KiB
-servo-current                3,246     406 KiB
-servo-rudder                 4,076     510 KiB
+overview-guide                 384      48 KiB
+servo                        2,291     286 KiB
+servo-grip                     570      71 KiB
+servo-current                3,261     408 KiB
+servo-rudder                 4,078     510 KiB
 servo-test                       0       0 KiB
 servo-kst                        0       0 KiB
 servo-hitec                      0       0 KiB
-supply                       7,268     908 KiB
-supply-chrome               45,753    5719 KiB
+supply                       7,245     906 KiB
+supply-chrome               45,742    5718 KiB
 analyser                         0       0 KiB
 logs                             0       0 KiB
 settings                         0       0 KiB
 settings-list                    0       0 KiB
 battery                          0       0 KiB
 balance                          0       0 KiB
-motor-stick                  1,644     206 KiB
+motor-stick                  1,613     202 KiB
 motor-wire                       0       0 KiB
-motor-wire-hold                240      30 KiB
-balance-sim                  3,315     414 KiB
-settings-sim                 3,395     424 KiB
-battery-sim                  3,308     414 KiB
-analyser-chrome             53,445    6681 KiB
-logs-chrome                 28,206    3526 KiB
-settings-chrome             33,857    4232 KiB
-settings-list-chrome        37,343    4668 KiB
-battery-chrome              54,619    6827 KiB
-balance-chrome              57,998    7250 KiB
-motor-stick-chrome          41,480    5185 KiB
-motor-wire-chrome           40,301    5038 KiB
+motor-wire-hold                233      29 KiB
+balance-sim                  3,278     410 KiB
+settings-sim                 3,318     415 KiB
+battery-sim                  3,264     408 KiB
+analyser-chrome             53,468    6684 KiB
+logs-chrome                 28,224    3528 KiB
+settings-chrome             33,880    4235 KiB
+settings-list-chrome        37,411    4676 KiB
+battery-chrome              54,629    6829 KiB
+balance-chrome              57,971    7246 KiB
+motor-stick-chrome          41,504    5188 KiB
+motor-wire-chrome           40,324    5040 KiB
 picker                           0       0 KiB
-picker-chrome               41,623    5203 KiB
+picker-chrome               41,592    5199 KiB
 wifi                             0       0 KiB
-wifi-chrome                 22,487    2811 KiB
-wifi-keys                   36,926    4616 KiB
+wifi-chrome                 22,484    2810 KiB
+wifi-keys                   36,966    4621 KiB
 wifi-idle                        0       0 KiB
-imu                            116      14 KiB
-imu-hold                       636      80 KiB
+imu                            131      16 KiB
+imu-hold                       642      80 KiB
 clear                       19,207    2401 KiB
 vlines                      10,201    1275 KiB
 hlines                         180      22 KiB
@@ -403,7 +403,7 @@ its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,400 | 2,752 |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,288 | 2,864 |
 | `control` | `control_task` | 6,144 | 3,648 | 1,456 |
 | `runlog` | `log_task` | 6,656 | 3,824 | 1,792 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
@@ -488,7 +488,7 @@ the tool cannot see, and each depth above is a lower bound for that reason:
   which it follows by name
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `SERVO_STORE_CALLS`):
-  373 such
+  376 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - jumps through a register: a switch table, which stays inside its

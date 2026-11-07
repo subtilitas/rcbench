@@ -31,14 +31,15 @@
 #include "ui_widgets.h"
 
 /*
- * START TEST on TEST's AUTOMATIC TEST card and START LIMIT RUN on the card
- * under it (servo_spots.h); the box on LIVE's card and its button, from
+ * START TEST on TEST's AUTOMATIC TEST card, LIMIT RUN's ARM + START in the
+ * footer (servo_spots.h); the box on TEST's card and its button, from
  * servo_screen_int.h; HV SERVO at the right column's row 2 of the AUTOMATIC
  * TEST card's settings, from servo_settings_panel.c.
  */
 #define START_X  SV_START_X
 #define START_Y  SV_START_Y(0)
-#define LIM_START_Y SV_START_Y(1)
+#define LIM_START_X SV_HOLD_X
+#define LIM_START_Y SV_HOLD_Y
 #define BOXBTN_X SV_BOX_BTN_X
 #define BOXBTN_Y SV_BOX_BTN_Y
 #define HV_ROW_X LROW_X(0)
@@ -56,6 +57,7 @@ static struct {
     uint16_t cmd;
     bool     released;
     unsigned disarms;          /* DISARMs posted                      */
+    unsigned arms;             /* ARMs posted, each answered ARMED    */
     bool     stepped;          /* a position went out with no slew   */
     float    set_v_max;        /* the highest set point while it ran */
     unsigned opens, opens_txt, csv, txt, ends;
@@ -187,6 +189,11 @@ static inline void bench_frames(uint32_t ms)
                 bench.cmd = 1500u;
                 bench.released = true;
                 bench.disarms += (sc.kind == SERVO_CMD_DISARM) ? 1u : 0u;
+            } else if (sc.kind == SERVO_CMD_ARM) {
+                /* The IOmcu answers an ARM, as ARM + START's steps ask
+                 * it. */
+                ++bench.arms;
+                servo_screen_set_armed(true);
             }
         }
         if (servo_screen_testing() && supply_screen_set_v() > bench.set_v_max) {
@@ -300,8 +307,9 @@ static inline bool both_whole_in(int x0, int y0, int w, int h)
     return true;
 }
 
-/* Hold the button at START TEST's place for @p secs on the screen of card
- * @p card, 0 TEST and 1 LIMIT RUN, which is shown first. */
+/* Hold START for @p secs on the screen of card @p card, which is shown
+ * first: 0 START TEST on TEST's AUTOMATIC TEST card, 1 LIMIT RUN's HOLD
+ * 2s: ARM + START in the footer's middle slot. */
 static inline void hold_start_on(int card, float secs)
 {
     if (card == 0) {
@@ -309,8 +317,9 @@ static inline void hold_start_on(int card, float secs)
     } else {
         open_limrun();
     }
-    const int y = SV_START_Y(card);
-    ev(START_X, y, TOUCH_EVENT_DOWN, 1);
+    const int x = (card == 0) ? START_X : SV_HOLD_X;
+    const int y = (card == 0) ? SV_START_Y(0) : SV_HOLD_Y;
+    ev(x, y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < (int)(secs * 50.0f + 0.5f); ++i) {
         if (bench.ina) {
             /* The INA3221's windows go on under the finger, as on the
@@ -323,7 +332,7 @@ static inline void hold_start_on(int card, float secs)
         servo_screen_clock(bench.now);
         scr->tick(0.02f);
     }
-    ev(START_X, y, TOUCH_EVENT_UP, 1);
+    ev(x, y, TOUCH_EVENT_UP, 1);
 }
 
 /* Hold START TEST for @p secs on TEST's AUTOMATIC TEST card, TEST shown

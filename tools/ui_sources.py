@@ -81,6 +81,8 @@ SOURCES = [
     "shared/ui/servo_settings_draw.c",
     "shared/ui/servo_test_panel.c",
     "shared/ui/servo_limit_panel.c",
+    "shared/ui/servo_limit_ready.c",
+    "shared/ui/servo_limit_card.c",
     "shared/ui/servo_limit_seam.c",
     "shared/ui/servo_workbench.c",
     "shared/ui/servo_rudder_panel.c",

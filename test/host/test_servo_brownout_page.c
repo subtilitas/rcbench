@@ -30,10 +30,10 @@
 #include "servo_bench_rig.h"
 #include "servo_rig.h"
 
-/** @brief servo_screen_run_settings()'s values: none, the AUTOMATIC
- *         TEST's, the LIMIT RUN's, the brown-out walk's. */
+/** @brief servo_screen_run_settings()'s values: the AUTOMATIC TEST's and
+ *         the brown-out walk's. */
 #define RL_AUTO_PAGE     1
-#define RL_BROWNOUT_PAGE 3
+#define RL_BROWNOUT_PAGE 2
 
 /** @brief A run page's row @p r of column @p c, its value: 193 x 48px under
  *         a 21px label, 70px apart from y 64, columns 203px apart from

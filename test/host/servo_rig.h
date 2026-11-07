@@ -155,25 +155,49 @@ static inline void close_kst(void)
     const gfx_rect_t r = kst_panel_close_rect();
     tap(r.x + r.w / 2, r.y + r.h / 2);
 }
+/* LIMIT RUN's list, row by row (servo_lists.c). */
+enum { LL_MODE = 0, LL_SERVO, LL_PULSES, LL_PROG_V, LL_PROG_I, LL_WAIT };
+
+/* LIMIT RUN's list, from the footer's SETTINGS.  It opens on a SAFE bench
+ * only: on an armed one the rig switches to SAFE first, and the home tag
+ * that closes the list arms it again.  A save asked for first, so the home
+ * tag closes the list without the leave question. */
+static inline void open_limrun_list(void)
+{
+    settings_request_save();
+    go(SERVO_FN_LIMRUN);
+    tap_settings();
+    if (!servo_screen_list()->open) {
+        servo_screen_set_armed(false);
+        g_rig_rearm = true;
+        tap_settings();
+    }
+}
+
 /* A run's settings, one level down from its card: 0 the automatic test on
- * TEST, 1 the limit run on LIMIT RUN.  The page opens on a SAFE bench only:
- * on an armed one the operator switches to SAFE first, and the home tag
- * that closes the page arms the bench again. */
+ * TEST; 1 LIMIT RUN's list.  The page opens on a SAFE bench only: on an
+ * armed one the operator switches to SAFE first, and the home tag that
+ * closes the page arms the bench again. */
 static inline void open_run_settings(int k)
 {
-    go((k == 0) ? SERVO_FN_TEST : SERVO_FN_LIMRUN);
-    tap(SV_RUN_SET_X, SV_RUN_SET_Y(k));
+    if (k != 0) {
+        open_limrun_list();
+        return;
+    }
+    go(SERVO_FN_TEST);
+    tap(SV_RUN_SET_X, SV_RUN_SET_Y(0));
     if (servo_screen_run_settings() == 0) {
         servo_screen_set_armed(false);
         g_rig_rearm = true;
-        tap(SV_RUN_SET_X, SV_RUN_SET_Y(k));
+        tap(SV_RUN_SET_X, SV_RUN_SET_Y(0));
     }
 }
 /* The home tag, as the router asks the screen: whether it climbed. */
 static inline bool home_tag(void)
 {
     const bool climbed = scr->back != NULL && scr->back();
-    if (g_rig_rearm && servo_screen_run_settings() == 0) {
+    if (g_rig_rearm && servo_screen_run_settings() == 0
+        && !servo_screen_list()->open) {
         g_rig_rearm = false;
         servo_screen_set_armed(true);
     }

@@ -106,22 +106,16 @@ PORT-PWM liegt auf OUTPUTS, das Feld PROG 5V auf SERVO und SUPPLY. Ein von
 SERVO eingeschaltetes PROG 5V bleibt von einer SERVO-Seite zur nächsten an,
 den Hub eingeschlossen. Das Verlassen von SERVO schaltet es aus.
 
-RUDER AUTO braucht keinen Schritt von Hand: sein 2s HALTEN: ARM + START
-schaltet bei SAFE PORT-PWM EIN, dann PROG 5V EIN, wartet bis zu 1000ms auf
-die Rückmeldung EIN von PROG 5V, das PWM-Bit des Ports (bei SAFE gesetzt)
-und ein INA3221-Messfenster, das nach beiden begann, schaltet ARM, wartet
-bis zu 500ms auf ARMED und startet den Lauf. Der Puls läuft ab dem ARM
-([Servo: AUTO-Endpoints](Servo-de.md#auto-endpoints)). Seine Karte BEREIT zeigt
-bei SAFE `START SCHALTET EIN` auf den Zeilen PROG 5V und PORT-PWM. Ein
+RUDER AUTO und ENDLAGENLAUF brauchen keinen Schritt von Hand: ihr 2s
+HALTEN: ARM + START schaltet bei SAFE PORT-PWM EIN, dann PROG 5V EIN,
+wartet bis zu 1000ms auf die Rückmeldung EIN von PROG 5V, das PWM-Bit des
+Ports (bei SAFE gesetzt) und ein INA3221-Messfenster, das nach beiden
+begann, schaltet ARM, wartet bis zu 500ms auf ARMED und startet den Lauf.
+Der Puls läuft ab dem ARM ([Servo: AUTO-Endpoints](Servo-de.md#auto-endpoints),
+[Servo: Starten](Servo-de.md#starten)). Ihre Karte BEREIT zeigt bei SAFE
+`START SCHALTET EIN` auf den Zeilen PROG 5V und PORT-PWM. Ein
 fehlgeschlagener Schritt nennt sich im Alarmband und endet mit dem
 Prüfstand SAFE, PROG 5V aus.
-
-Der Weg des Endlagenlaufs von PORT-PWM aus, bis er dasselbe Halten bekommt:
-
-1. SAFE: öffne SETUP > OUTPUTS auf dem Eintrag des Ports.
-2. PORT-PWM EIN. Die Zeile lautet `PORT-PWM EIN: PULSE STARTEN MIT PROG 5V AUF SERVO`.
-3. Zurück zu SERVO, halte PROG 5V EIN 2s lang. Das PWM-Bit des Ports kommt bei SAFE; der Puls läuft ab dem nächsten ARM.
-4. ARM, dann ENDLAGENLAUF STARTEN halten.
 
 ## Versorgung
 

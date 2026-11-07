@@ -46,8 +46,7 @@
  *        tops the right column, under the card's SETTINGS: a second tap
  *        there opens its list and changes nothing.  BROWN-OUT opens the
  *        brown-out walk's page: on or off, LOWEST VOLTAGE and STEP, one
- *        column.  The limit run's under its mode note: the programmer's
- *        supply, PROG V, PROG I and PROG WAIT.
+ *        column.
  */
 const ov_row_t k_rows[] = {
     { PG_OUTPUT, R_TYPE,    SETTING_COUNT, TX_SV_ROW_TYPE,  0, 0, true  },
@@ -76,13 +75,6 @@ const ov_row_t k_rows[] = {
     { PG_AUTO, R_SETTING, SET_SERVO_STEP_84,       TX_SV_ROW_STEP_84,  0, 4, false },
     { PG_AUTO, R_BROWNOUT, SETTING_COUNT,          TX_SV_ROW_BROWNOUT,  1, 4, false },
     { PG_AUTO, R_SETTING, SET_SERVO_TRAVEL_MAX_MS, TX_SV_ROW_TRAVEL_TIME,  1, 3, false },
-
-    { PG_LIMRUN, R_LIM_MODE,   SETTING_COUNT, TX_SV_ROW_LIM_MODE,  0, 0, true  },
-    { PG_LIMRUN, R_LIM_SERVO,  SETTING_COUNT, TX_SV_ROW_LIM_SERVO,  0, 1, false },
-    { PG_LIMRUN, R_LIM_PULSES, SETTING_COUNT, TX_SV_ROW_LIM_PULSES,  1, 1, false },
-    { PG_LIMRUN, R_SETTING, SET_SERVO_PROG_V,    TX_SV_ROW_PROG_V,     0, 4, false },
-    { PG_LIMRUN, R_SETTING, SET_SERVO_PROG_I,    TX_SV_ROW_PROG_I,     1, 4, false },
-    { PG_LIMRUN, R_SETTING, SET_SERVO_PROG_WAIT, TX_SV_ROW_PROG_WAIT,  2, 4, false },
 
     { PG_BROWNOUT, R_SETTING, SET_SERVO_BROWNOUT, TX_SV_ROW_BROWNOUT,  0, 0, false },
     { PG_BROWNOUT, R_SETTING, SET_SERVO_BO_FLOOR, TX_SV_ROW_BO_FLOOR,  0, 1, false },
@@ -527,31 +519,11 @@ static void edit_row(int i)
         /* For a run started after it; one under way keeps its steps. */
         s.test_hv = !s.test_hv;
         break;
-    case R_LIM_MODE:
-        /* For a run started after it, and only where it is offered. */
-        if (!servo_limrun_running(&s.lim) && lim_mode_why() == NULL) {
-            s.lim_prog = !s.lim_prog;
-        }
-        break;
     case R_BROWNOUT:
         /* The brown-out walk's page, one level under the automatic
          * test's; its CLOSE climbs back there. */
         s.run_list = RL_BROWNOUT;
         servo_invalidate();
-        break;
-    case R_LIM_SERVO:
-        /* The programmer a run started after it goes to: KST/CHASERVO or
-         * HITEC, on the programming port only. */
-        if (!servo_limrun_running(&s.lim) && lim_reads()) {
-            s.lim_hitec = !s.lim_hitec;
-        }
-        break;
-    case R_LIM_PULSES:
-        /* For a run started after it, on the programming port only. */
-        if (!servo_limrun_running(&s.lim) && lim_reads()
-            && lim_write_why() == NULL) {
-            s.lim_pulses = !s.lim_pulses;
-        }
         break;
     case R_SETTING: {
         const setting_def_t *d = settings_def(r->id);
@@ -816,7 +788,7 @@ void ov_down(const touch_event_t *evt)
         return;
     }
     for (int i = 0; i < ROW_COUNT; ++i) {
-        if (k_rows[i].page != page || row_hidden(&k_rows[i])) {
+        if (k_rows[i].page != page) {
             continue;
         }
         if (gfx_rect_contains(row_rect(i), x, y)) {
@@ -983,18 +955,19 @@ void ov_rest(const touch_event_t *evt)
             break;                      /* a tap: the release acts */
         }
         if (!up) {
-            /* A finger that leaves START LIMIT RUN abandons the hold. */
-            if (!gfx_rect_contains(lim_start_rect(), x, y)
+            /* A finger that leaves LIMIT RUN's ARM + START abandons the
+             * hold. */
+            if (!gfx_rect_contains(ready_hold_rect(), x, y)
                 && ui_hold_leave(&s.lim_hold)) {
                 s.lim_down = false;
-                ++s.test_rev;
+                ++s.arm_rev;
                 ov_let_go();
             }
             return;
         }
-        (void)ui_hold_end(&s.lim_hold, evt, lim_start_rect());
+        (void)ui_hold_end(&s.lim_hold, evt, ready_hold_rect());
         s.lim_down = false;
-        ++s.test_rev;
+        ++s.arm_rev;
         ov_let_go();
         return;
     case OP_WARN_APPLY:
@@ -1093,15 +1066,18 @@ void ov_rest(const touch_event_t *evt)
         }
         ++s.test_rev;
         break;
-    case OP_LIM_START:
-        if (gfx_rect_contains(lim_start_rect(), x, y)
-            && servo_limrun_running(&s.lim)) {
-            lim_end_now(SERVO_TEST_AB_OPERATOR);
-        } else if (gfx_rect_contains(lim_start_rect(), x, y)) {
-            ui_action_refused(lim_blocked());
+    case OP_LIM_START: {
+        /* A tap on the grey hold: the first row that refuses it, in the
+         * band. */
+        char why[128];
+        if (gfx_rect_contains(ready_hold_rect(), x, y)
+            && !servo_limrun_running(&s.lim)
+            && ready_refusal(why, sizeof(why)) != NULL) {
+            ui_action_refused(why);
         }
-        ++s.test_rev;
+        ++s.arm_rev;
         break;
+    }
     case OP_RUN_CLOSE:
         /* A page's CLOSE: up to its screen, as the home tag climbs from
          * here; the brown-out walk's up to the automatic test's. */
@@ -1127,7 +1103,7 @@ void ov_rest(const touch_event_t *evt)
             if (why != NULL) {
                 ui_action_refused(why);
             } else {
-                s.run_list = (which == 0) ? RL_AUTO : RL_LIMIT;
+                s.run_list = RL_AUTO;
                 servo_invalidate();
             }
         }

@@ -10,6 +10,7 @@
 
 #include "shot_facts_rig.h"
 #include "kst_panel_rig.h"
+#include "ui_setlist.h"
 #include "prog5v_box.h"
 #include "prog_choice.h"
 #include "settings_sensors.h"
@@ -32,17 +33,15 @@
  * the bench image's PULSE LOWER and UPPER 900 and 2100us: a run with
  * SERVO PULSES at KEEP is refused after the read, one at 1000-2000 runs.
  */
-#define LR_MODE_X  100          /* the LIMIT RUN settings' left column */
-#define LR_MODE_Y  SV_LIST_ROW_Y(0)   /* LIMIT RUN, across both columns */
-#define LR_PULSE_X SV_LIST_X(1)       /* SERVO PULSES, the middle column */
-#define LR_PULSE_Y SV_LIST_ROW_Y(1)   /* right of SERVO */
+#define LR_MODE    0            /* LIMIT RUN's list: MODE         */
+#define LR_PULSES  2            /* SERVO PULSES (servo_lists.c)   */
 
-/* Whether lr_run_list() switched the bench to SAFE for the page: the
+/* Whether lr_run_list() switched the bench to SAFE for the list: the
  * next START arms it again. */
 static bool lr_rearm;
 
-/* LIMIT RUN, and its card's own settings opened: on a SAFE bench only, so
- * an armed one is switched to SAFE first. */
+/* LIMIT RUN, and its list opened: on a SAFE bench only, so an armed one is
+ * switched to SAFE first. */
 static void lr_run_list(void);
 
 static struct {
@@ -272,17 +271,31 @@ static void lr_fresh_ext(bool reversion)
     memcpy(g_rig.sim.reg, img.r, sizeof(img.r));
 }
 
-/* LIMIT RUN, and START LIMIT RUN on its card held for 2.3s. */
+/* LIMIT RUN, and its footer's ARM + START held for 2.3s. */
 static void lr_run_list(void)
 {
+    /* A save asked for first: the home tag then closes the list without
+     * the leave question. */
+    settings_request_save();
     go(SERVO_FN_LIMRUN);
-    screen_tap(SV_RUN_SET_X, SV_RUN_SET_Y(1));
-    if (servo_screen_run_settings() == 0) {
+    screen_tap(SV_FOOT_SET_X, SV_FOOT_Y);
+    if (!servo_screen_list()->open) {
         lr.armed = false;
         servo_screen_set_armed(false);
         lr_rearm = true;
-        screen_tap(SV_RUN_SET_X, SV_RUN_SET_Y(1));
+        screen_tap(SV_FOOT_SET_X, SV_FOOT_Y);
     }
+}
+
+/* One step of row @p i of LIMIT RUN's list, on its ">" key; MODE takes a
+ * tap on its value. */
+static void lr_step(int i)
+{
+    ui_setlist_t *sl = (ui_setlist_t *)servo_screen_list();
+    ui_setlist_scroll_to(sl, i);
+    const gfx_rect_t r = ui_setlist_row_part(
+        sl, i, (i == LR_MODE) ? UI_SL_PART_VALUE : UI_SL_PART_PLUS);
+    screen_tap(r.x + r.w / 2, r.y + r.h / 2);
 }
 
 static void lr_hold_start(void)
@@ -293,21 +306,21 @@ static void lr_hold_start(void)
         servo_screen_set_armed(true);
     }
     go(SERVO_FN_LIMRUN);
-    ev(SV_START_X, SV_START_Y(1), TOUCH_EVENT_DOWN, 1);
+    ev(SV_HOLD_X, SV_HOLD_Y, TOUCH_EVENT_DOWN, 1);
     lr_ms(2300u);
-    ev(SV_START_X, SV_START_Y(1), TOUCH_EVENT_UP, 1);
+    ev(SV_HOLD_X, SV_HOLD_Y, TOUCH_EVENT_UP, 1);
     lr_ms(20u);
 }
 
-/* The LIMIT RUN settings: LIMIT RUN to SEARCH+PROG, SERVO PULSES to
- * 1000-2000 where @p pulses; the home tag back to LIMIT RUN, and START LIMIT
- * RUN held for 2.3s. */
+/* LIMIT RUN's list: MODE to SEARCH+PROG, SERVO PULSES to 1000-2000 where
+ * @p pulses; the home tag back to LIMIT RUN, and ARM + START held for
+ * 2.3s. */
 static void lr_start_with(bool pulses)
 {
     lr_run_list();
-    screen_tap(LR_MODE_X, LR_MODE_Y);
+    lr_step(LR_MODE);
     if (pulses) {
-        screen_tap(LR_PULSE_X, LR_PULSE_Y);
+        lr_step(LR_PULSES);
     }
     CHECK(scr->back());
     lr_hold_start();
@@ -329,9 +342,10 @@ static void lr_run_out(void)
 /* SEARCH+PROG with SERVO PULSES at 1000-2000, REVERSION off and on: PULSE
  * LOWER and PULSE UPPER at 1000.0 and 2000.0us, both ends found bound,
  * LEFT ANGLE and RIGHT ANGLE lowered so neither binds, the servo's full
- * travel inside both stops, the bench back to ARMED after every session,
- * one backup file, PASS in the report with the writes made, and RESTORE
- * putting the servo back as the run found it, 900.0 and 2100.0us. */
+ * travel inside both stops, the bench back to ARMED after every session
+ * and SAFE after the run, one backup file, PASS in the report with the
+ * writes made, and RESTORE putting the servo back as the run found it,
+ * 900.0 and 2100.0us. */
 TEST_CASE(a_limit_run_programs_the_servo_on_the_programming_port)
 {
     for (int rev = 0; rev < 2; ++rev) {
@@ -380,7 +394,7 @@ TEST_CASE(a_limit_run_programs_the_servo_on_the_programming_port)
         }
         CHECK(lr.disarms >= 1u);
         CHECK_EQ(lr.dropped, 0u);
-        CHECK(lr.armed);
+        CHECK(!lr.armed);               /* the run's end: SAFE */
         CHECK_EQ(g_rig.fc.saves, 1u);
         CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
         /* Each session entered from a power-up, the read's and the
@@ -769,8 +783,8 @@ TEST_CASE(without_a_pd_mini_a_limit_run_writes_nothing)
 
         ui_text_set_language((ui_lang_t)lang);
         lr_run_list();
-        screen_tap(LR_MODE_X, LR_MODE_Y);
-        screen_tap(LR_PULSE_X, LR_PULSE_Y);
+        lr_step(LR_MODE);
+        lr_step(LR_PULSES);
         CHECK(scr->back());
         lr_hold_start();
         CHECK(servo_screen_limit_running());
@@ -865,7 +879,7 @@ TEST_CASE(servo_pulses_is_not_offered_for_a_pwm_pin)
     settings_set(SET_SERVO_TARGET, 0.0f);
     lr_ms(40u);
     lr_run_list();
-    screen_tap(LR_PULSE_X, LR_PULSE_Y);      /* where SERVO PULSES would be */
+    lr_step(LR_PULSES);      /* SERVO PULSES, locked for a pin */
     CHECK(scr->back());
     lr_hold_start();
     CHECK(servo_screen_limit_running());
@@ -874,7 +888,7 @@ TEST_CASE(servo_pulses_is_not_offered_for_a_pwm_pin)
     CHECK(strstr(lr.report, "Pulse write") == NULL);
     CHECK(strstr(lr.report, "Searched:       from 1500us out to 1000us "
                             "and 2000us") != NULL);
-    CHECK_EQ(lr.disarms, 0u);
+    CHECK_EQ(lr.disarms, 1u);           /* the run's end alone */
     {
         kst_image_t was = sim_bench_image(), now = rig_servo();
 

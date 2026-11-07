@@ -64,7 +64,12 @@
  *         its middle. */
 #define SV_RA_START_X      512
 #define SV_RA_START_Y      468                /**< Its row. */
-/** @brief RUDDER AUTO's READY card (servo_ready_int.h): row @p i, 30px
+/** @brief The function's one hold, RUDDER AUTO's and LIMIT RUN's HOLD
+ *         2s: ARM + START, the footer's middle slot: its middle. */
+#define SV_HOLD_X          512
+#define SV_HOLD_Y          468                /**< Its row. */
+/** @brief RUDDER AUTO's and LIMIT RUN's READY card (servo_ready_int.h):
+ *         row @p i, 30px
  *         from y 96, its middle; the card's column x 648 to 1004. */
 #define SV_RDY_ROW_Y(i)    (96 + 30 * (i) + 15)
 #define SV_RDY_X           826                /**< The rows' middle. */

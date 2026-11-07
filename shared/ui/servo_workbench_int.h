@@ -45,14 +45,13 @@ void prog_tick(float dt_s);
  *         own screen (KST's or HITEC's). */
 void prog_follow_hold(void);
 
-/* The page of rows shown, PG_*, or -1: on TEST and LIMIT RUN a run's
+/* The page of rows shown, PG_*, or -1: on TEST the automatic test's
  * settings, on KST its EXPERT MODE row. */
 static inline int rows_page(void)
 {
     switch (wb_task()) {
     case UI_WB_TEST:
         return (s.run_list == RL_AUTO)       ? PG_AUTO
-               : (s.run_list == RL_LIMIT)    ? PG_LIMRUN
                : (s.run_list == RL_BROWNOUT) ? PG_BROWNOUT : -1;
     case UI_WB_PROGRAM:
         return (s.run_list == RL_KST) ? PG_KST : -1;
@@ -128,8 +127,6 @@ void draw_test_page(gfx_canvas_t *c);
  *         its page. @param c the canvas */
 void draw_run_set(gfx_canvas_t *c);
 void draw_caps_button(gfx_canvas_t *c);
-/* START LIMIT RUN on its card. */
-gfx_rect_t lim_start_rect(void);
 
 /* --- servo_guide.c: the screen guide's pages (ui_help.h) ---------------- */
 
@@ -266,17 +263,15 @@ static inline gfx_rect_t caps_open_rect(void)
 
 _Static_assert(BOX_Y_TEST >= RUN_CAPS_Y + UI_TAP_MIN + 4,
                "TEST's run box starts under the caps button");
-_Static_assert(BOX_Y_LIM >= RUN_CARD_Y + RUN_CARD_H + 4,
-               "LIMIT RUN's run box starts under its card");
 
 /** @brief Whether the run's box shows and takes presses: TEST's with the
- *         automatic test's, LIMIT RUN's with the limit run's, no page, panel
- *         or session over it.  @return true when it does */
+ *         automatic test's, no page, panel or session over it.
+ *  @return true when it does */
 static inline bool run_box_shown(void)
 {
     return wb_task() == UI_WB_TEST && rows_page() < 0 && !modal_open()
            && !prog_shown()
-           && ((s.fn == SERVO_FN_TEST) ? s.test_box : s.lim_box);
+           && s.fn == SERVO_FN_TEST && s.test_box;
 }
 
 /** @brief START TEST, on the AUTOMATIC TEST card. @return the button */

@@ -41,7 +41,7 @@ history is in git.
   `PD mini pins rejected. Check them in SUPPLY's SETTINGS.`
 - Every 2s hold flashes on the frame it completes, 300ms in phases of 50ms:
   white, black, then the button's new colour, twice. The flash starts in
-  `ui_hold_tick()`, so START TEST, START LIMIT RUN, START on AUTO, the
+  `ui_hold_tick()`, so START TEST, ARM + START, START on AUTO, the
   warnings' and programmer pages' holds, KST EXPERT MODE, HOLD 2s TO RUN,
   the ESC wire holds, UNBIND ALL PINS and OVERWRITE flash as ARM does. A
   button that goes as its hold fires flashes where it was drawn.
@@ -56,7 +56,7 @@ history is in git.
   while values are unsaved and its NOT SAVED a red label on a neutral
   button, LOGS' OPEN and PLOT neutral, DELETE on FILES and LOGS neutral
   with a red label (docs/Screens.md, "Button colours").
-- A tap on a grey START TEST, START LIMIT RUN or HOLD 2s TO START on AUTO
+- A tap on a grey START TEST, HOLD 2s: ARM + START or HOLD 2s TO START on AUTO
   puts its reason in the alert band for 4s, as a hold's hint.
 - SERVO opens on a hub of 8 tiles of 328 x 130px in SETUP's grid: LIVE,
   SWEEP, TEST, LIMIT RUN, RUDDER, RUDDER AUTO, KST and HITEC. Each opens a
@@ -120,6 +120,23 @@ history is in git.
   nothing and takes no pick, and TARGET, PORT PWM and SETTINGS are locked.
   While any of SERVO's holds has its finger down, the READY card takes no
   tap.
+- LIMIT RUN is on the function frame. The left card holds the mode line,
+  the output line, LOW END and HIGH END in 295 x 96px cells with the ends
+  the last run found first, and the state lines from y 178, 24px apart.
+  The READY card in the output card's place has nine rows from
+  `lim_blocked()`'s checks: PORT, SERVO, METER, RAIL, RANGE, PROGRAMMER,
+  the supply, PORT PWM and ARM, each text on exactly one row. A rail under
+  3.0V is amber while SAFE where the hold's supply feeds it.
+- LIMIT RUN's start is the footer's `HOLD 2s: ARM + START`, RUDDER AUTO's
+  start sequence: PORT PWM, PROG 5V or the PD mini, the read-back in
+  1000ms, ARM in 500ms, the run on the settings as they read when the hold
+  fired. A row that turns red under the finger drops the hold. After the
+  run's last command the bench switches to SAFE; the PROG 5V stays on.
+  START LIMIT RUN and the run's box under the card are gone.
+- LIMIT RUN's SETTINGS opens a list: MODE, SERVO, SERVO PULSES and the
+  programmer's Programming voltage, Programming current and Wait before
+  PWM. MODE, SERVO and SERVO PULSES are locked off a PROG PORT with
+  `On a PROG PORT only: choose one with PORT`.
 
 - The panel sets the Bluetooth IMU's output content register RSW (0x02) to
   0x0C: angle (0x53) and angular rate with the battery (0x52), 2 frames a

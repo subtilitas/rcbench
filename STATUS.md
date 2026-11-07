@@ -533,6 +533,9 @@ each check of the start gate one row, and the footer's HOLD 2s: ARM + START runs
 1000ms, ARM, ARMED within 500ms, the run; a failed step names itself in the alert band
 and switches every output off (`test_servo_start_seq`, `test_servo_ready`,
 `test_servo_rauto_seq`, `test_prog5v_servo`; host suite only).
+LIMIT RUN has the same READY card from `shared/ui/servo_limit_ready.c`, nine rows from
+`lim_blocked()`'s checks, and the same hold; the run ends SAFE, the PROG 5V kept
+(`test_servo_limrun_ready`, `test_servo_limrun_seq`; host suite only).
 
 AUTO and the LIMIT RUN program a Hitec servo through the Hitec programmer's run seam when
 the LIMIT RUN settings' SERVO row reads HITEC, LEFT END and RIGHT END in counts from 0xC2 on
@@ -1031,8 +1034,8 @@ Not started.
 
 ### Servo limit search
 
-Built; START LIMIT RUN on the SERVO screen's LIMIT RUN card on TEST, a 2s hold while ARMED,
-runs it (`shared/servo/servo_limrun.c`) in 10us steps on INA3221 CH1's 50ms windows, bound
+Built; HOLD 2s: ARM + START on the SERVO LIMIT RUN screen switches PORT PWM and the
+supply on, reads them back, arms and runs it (`shared/servo/servo_limrun.c`) in 10us steps on INA3221 CH1's 50ms windows, bound
 above 1.8 x the free current and +0.15A: on a SERVO PWM pin from PULSE CENTRE to PULSE MIN
 and PULSE MAX; on the programming port after a read session, from the servo's NEUTRAL to its
 own PULSE LOWER and PULSE UPPER, refused before any drive when those lie outside PULSE MIN
@@ -1041,7 +1044,7 @@ to PULSE MAX. SERVO PULSES at 1000-2000 writes PULSE LOWER and PULSE UPPER to 10
 
 It reads the INA3221 and nothing else: with the PD mini or the model as the servo rail's
 meter it is refused before anything is driven, as it is on a rail under 3.0V in the last
-window, on the programming port without a PD mini on a rail under 4.8V or with a PD mini
+window that the hold's supply does not feed, on the programming port without a PD mini on a rail under 4.8V or with a PD mini
 whose output is off, and, on the bench's outputs, with no output bound as SERVO PWM; a run
 whose meter changes or that gets no window for 200ms ends ABORTED with the output off. The
 search and the protections read the current's magnitude. A sample at 3.0A, a clipped one, a
@@ -1274,7 +1277,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 497 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 499 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1388,6 +1391,7 @@ The host suite is 497 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_kst`,
 `test_servo_rauto_panel`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_start_seq`,
+`test_servo_limrun_ready`, `test_servo_limrun_seq`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_rudder_flap`, `test_rudder_flap_view`.
 
@@ -1927,24 +1931,26 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_screen.c` | 380 | 371 | 97.6% |
 | `shared/ui/servo_screen_sweep.c` | 513 | 510 | 99.4% |
 | `shared/ui/servo_screen_link.c` | 420 | 416 | 99.0% |
-| `shared/ui/servo_screen_touch.c` | 343 | 330 | 96.2% |
-| `shared/ui/servo_screen_draw.c` | 572 | 543 | 94.9% |
-| `shared/ui/servo_settings_panel.c` | 678 | 639 | 94.2% |
-| `shared/ui/servo_settings_draw.c` | 393 | 377 | 95.9% |
-| `shared/ui/servo_test_panel.c` | 479 | 468 | 97.7% |
-| `shared/ui/servo_limit_panel.c` | 467 | 421 | 90.2% |
-| `shared/ui/servo_limit_seam.c` | 100 | 96 | 96.0% |
-| `shared/ui/servo_workbench.c` | 215 | 211 | 98.1% |
+| `shared/ui/servo_screen_touch.c` | 329 | 322 | 97.9% |
+| `shared/ui/servo_screen_draw.c` | 572 | 552 | 96.5% |
+| `shared/ui/servo_settings_panel.c` | 664 | 625 | 94.1% |
+| `shared/ui/servo_settings_draw.c` | 372 | 356 | 95.7% |
+| `shared/ui/servo_test_panel.c` | 478 | 468 | 97.9% |
+| `shared/ui/servo_limit_panel.c` | 327 | 316 | 96.6% |
+| `shared/ui/servo_limit_ready.c` | 278 | 255 | 91.7% |
+| `shared/ui/servo_limit_card.c` | 200 | 178 | 89.0% |
+| `shared/ui/servo_limit_seam.c` | 102 | 98 | 96.1% |
+| `shared/ui/servo_workbench.c` | 203 | 199 | 98.0% |
 | `shared/ui/servo_rudder_panel.c` | 402 | 399 | 99.2% |
 | `shared/ui/servo_rudder_auto_panel.c` | 564 | 510 | 90.4% |
 | `shared/ui/servo_rudder_auto_ready.c` | 273 | 269 | 98.5% |
-| `shared/ui/servo_ready.c` | 301 | 296 | 98.3% |
+| `shared/ui/servo_ready.c` | 337 | 332 | 98.5% |
 | `shared/ui/servo_rudder_flap.c` | 101 | 99 | 98.0% |
 | `shared/ui/servo_guide.c` | 154 | 151 | 98.0% |
 | `shared/ui/servo_fn.c` | 82 | 81 | 98.8% |
 | `shared/ui/servo_hub.c` | 184 | 179 | 97.3% |
 | `shared/ui/servo_footer.c` | 133 | 130 | 97.7% |
-| `shared/ui/servo_lists.c` | 190 | 187 | 98.4% |
+| `shared/ui/servo_lists.c` | 200 | 197 | 98.5% |
 | `shared/ui/kst_panel.c` | 456 | 445 | 97.6% |
 | `shared/ui/kst_panel_text.c` | 168 | 168 | 100.0% |
 | `shared/ui/kst_panel_warn.c` | 309 | 306 | 99.0% |
@@ -1990,7 +1996,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/settings_draw.c` | 66 | 66 | 100.0% |
 | `shared/ui/settings_rows.c` | 36 | 35 | 97.2% |
 | `shared/ui/ui_setlist.c` | 625 | 606 | 97.0% |
-| `shared/ui/ui_setlist_draw.c` | 283 | 263 | 92.9% |
+| `shared/ui/ui_setlist_draw.c` | 283 | 264 | 93.3% |
 | `shared/ui/ui_footer.c` | 42 | 41 | 97.6% |
 | `shared/ui/sensors_pane.c` | 107 | 107 | 100.0% |
 | `shared/ui/sensors_rows.c` | 250 | 250 | 100.0% |
@@ -2250,7 +2256,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **86488** | **84818** | **98.1%** |
+| **total** | **86812** | **85149** | **98.1%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

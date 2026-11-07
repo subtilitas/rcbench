@@ -1,16 +1,19 @@
 /**
  * @file servo_limit_panel.c
- * @brief The SERVO screen's limit run: its checks, its steps, the
- *        programmer's sessions it asks for, and its box, card and note.
+ * @brief The SERVO screen's limit run: the supply and the programmer it
+ *        reads, its start by ARM + START, its steps, and the programmer's
+ *        sessions it asks for.
  *
- * The SERVO screen's limit run (servo_limrun.h).  START LIMIT RUN, on
- * TEST's LIMIT RUN card, starts it.  This file holds what that button checks first,
- * the run's steps done the way a finger does them (the servo's position,
- * ARM and DISARM, SUPPLY's output), and the programmer's sessions with a
- * KST, Chaservo or Hitec servo on the programming port, through the seam
- * servo_limit_seam.c picks by the LIMIT RUN settings' SERVO row.  It also
- * draws the run's box on LIVE's card, its card's lines on TEST and its
- * settings' note.
+ * The SERVO screen's limit run (servo_limrun.h).  LIMIT RUN's footer hold,
+ * HOLD 2s: ARM + START, fires the start sequence (servo_ready.c): PORT PWM,
+ * PROG 5V or the PD mini, the read-back, ARM; the run starts on its last
+ * step, on the settings the hold fired on.  This file holds the checks the
+ * gate (servo_limit_ready.c) asks of the supply, the meter and the
+ * programmer, the run's steps done the way a finger does them (the servo's
+ * position, ARM and DISARM, SUPPLY's output), and the programmer's
+ * sessions with a KST, Chaservo or Hitec servo on the programming port,
+ * through the seam servo_limit_seam.c picks by the LIMIT RUN list's SERVO
+ * row.  The left card and the hold are servo_limit_card.c's.
  *
  * The screen is servo_screen.c; the state and the layout the files share
  * are servo_screen_int.h.
@@ -124,74 +127,6 @@ const char *lim_pwm_why(void)
                                            : TR(SV_LIM_PWM_OFF);
 }
 
-/* Why a limit run cannot start now, before any hold, or NULL. */
-const char *lim_blocked(void)
-{
-    if (!value_live()) {
-        /* The rbmod carrier's port: the PROG 5V before ARM, as the port's
-         * pulse comes on only with it and only in SAFE (lim_pwm_why()). */
-        return ui_servo_str(prog_choice_needs_5v() ? SERVO_STR_START_PROG_5V
-                                                   : SERVO_STR_START_NOT_ARMED);
-    }
-    if (servo_test_running(&s.test)) {
-        return ui_servo_str(SERVO_STR_START_TEST_RUNS);
-    }
-    if (servo_rauto_running(&s.ra.run)) {
-        return ui_servo_str(SERVO_STR_START_AUTO_RUNS);
-    }
-    if (!servo_test_drained(&s.test) || !servo_limrun_drained(&s.lim)
-        || !servo_rauto_drained(&s.ra.run) || s.logger_busy) {
-        return ui_servo_str(SERVO_STR_START_BUSY);
-    }
-    /* The bench's own outputs: a SERVO PWM output bound to carry the
-     * pulse, as the TARGET row names it.  Before the meter: on the rbmod
-     * carrier the channel read is the rail of that output, and no output
-     * is no channel watching the target. */
-    if (s.drive_target == 0u && (!s.pins_known || s.pins == 0u)) {
-        return s.pins_known ? TR(SV_TARGET_NONE) : TR(SV_TARGET_UNREAD);
-    }
-    const char *meter = lim_meter_why();
-    if (meter != NULL) {
-        return meter;
-    }
-    /* The rbmod carrier's programming port: its pulse needs the PROG 5V,
-     * which is also the rail the run reads. */
-    if (prog_choice_needs_5v()) {
-        return ui_servo_str(SERVO_STR_START_PROG_5V);
-    }
-    /* A powered rail: the window's voltage read, and at least
-     * SERVO_LIMRUN_RAIL_MIN_MV. */
-    if (!s.win.voltage || s.win.mean_mv < SERVO_LIMRUN_RAIL_MIN_MV) {
-        return TR(SV_LIM_RAIL_LOW);
-    }
-    /* A programmer holding the port before PORT PWM: its session is why
-     * no pulse runs, whatever the setting says. */
-    if (s.drive_target != 0u && (!s.drive_pwm || prog_reg_servo_holds())) {
-        return lim_pwm_why();
-    }
-    if (!(s.min_us < s.centre_us && s.centre_us < s.max_us)) {
-        return TR(SV_LIM_REFUSED);
-    }
-    /* A Hitec servo is searched out to its model's full travel: PULSE MIN
-     * and MAX must take it, or the read ends the run as RANGE. */
-    uint16_t p[3];
-    if (lim_reads() && servo_limrun_family_pulses(lim_family(), p)
-        && (s.min_us * 10u > p[SERVO_LIMRUN_P_LOWER]
-            || s.max_us * 10u < p[SERVO_LIMRUN_P_UPPER])) {
-        static char why[72];
-        snprintf(why, sizeof(why), TR(SV_LIM_HITEC_RANGE),
-                 (unsigned)(p[SERVO_LIMRUN_P_LOWER] / 10u),
-                 (unsigned)(p[SERVO_LIMRUN_P_UPPER] / 10u));
-        return why;
-    }
-    /* On the programming port every run reads the servo first: the
-     * programmer must be free to. */
-    if (lim_reads()) {
-        return lim_prog_why();
-    }
-    return NULL;
-}
-
 /* Why the programming is not offered, or NULL: only a servo on the
  * programming port, with the port in PWM, and a PD mini on and set where a
  * session can run, or without one a servo rail read at 4.8V or more.  On
@@ -269,8 +204,10 @@ const char *lim_write_why(void)
 }
 
 /**
- * @brief The configuration a run started now takes: SEARCH+PROG and SERVO
- *        PULSES only where they are offered.
+ * @brief The configuration of a run the hold fires now: the settings as
+ *        they read, the mode and SERVO PULSES as chosen.  What the bench
+ *        offers of them is judged at the start (lim_start()), after the
+ *        steps switched the supply on.
  * @param c receives it
  */
 static void lim_cfg(servo_limrun_cfg_t *c)
@@ -280,8 +217,9 @@ static void lim_cfg(servo_limrun_cfg_t *c)
     c->min_us    = s.min_us;
     c->max_us    = s.max_us;
     c->read       = lim_reads();
-    c->program    = c->read && lim_programs();
-    c->set_pulses = c->read && lim_sets_pulses();
+    c->program    = c->read && s.lim_prog;
+    c->set_pulses = c->read && s.lim_pulses
+                    && lim_family() == SERVO_LIMRUN_FAM_KST;
     c->family     = c->read ? lim_family() : (uint8_t)SERVO_LIMRUN_FAM_KST;
     snprintf(c->dut, sizeof(c->dut), "%s", settings_text(SET_TEXT_DUT_NAME));
     snprintf(c->type, sizeof(c->type), "%s", type()->name);
@@ -439,13 +377,15 @@ static void lim_poll(void)
 }
 
 /* A run that was running is over: the programmer's own supply values come
- * back, and the box says how it ended. */
+ * back, the left card says how it ended, and the bench goes SAFE once the
+ * run's last command is taken (lim_safe_follow()). */
 static void lim_ended(void)
 {
     if (!s.lim_seen || servo_limrun_running(&s.lim)) {
         return;
     }
     s.lim_seen = false;
+    s.lim_safe_due = true;
     /* A run ended with a write on its way: no answer handed the file over,
      * and the session's own backup, saved before that write, holds the
      * servo as the run found it. */
@@ -508,26 +448,51 @@ void lim_meter_follow(servo_source_id_t id, uint32_t changes)
     lim_end_now(why);
 }
 
-/* START LIMIT RUN's hold completed: the run starts.  A panel open closes;
- * TEST's card and LIVE's box show the run. */
+/* ARM + START's hold completed: the sequence begins, and the run on its
+ * last step (lim_start()).  The settings as they read now: the run starts
+ * on these whatever changes while the steps take their time. */
 void lim_begin(void)
 {
     ui_hold_spend(&s.lim_hold);         /* its flash runs on */
     s.lim_down = false;
-    ++s.test_rev;
     s.lim_note = NULL;
-    if (lim_blocked() != NULL) {
-        ++s.ctrl_rev;
+    ++s.test_rev;
+    ++s.ctrl_rev;
+    ++s.arm_rev;
+    if (lim_hold_blocked(NULL) != NULL) {
         return;
     }
-    servo_limrun_cfg_t c;
-    lim_cfg(&c);
+    lim_cfg(&s.lim_cfg);
+    (void)svs_seq_begin();
+}
+
+/**
+ * @brief The sequence's last step: the run starts on the bench it left,
+ *        ARMED, every part switched on.  SEARCH+PROG and SERVO PULSES as
+ *        chosen when the hold fired, where the bench offers them now.
+ * @return false when the gate or the run refused it
+ */
+static bool lim_start(void)
+{
+    s.lim_note = lim_blocked();
+    if (s.lim_note != NULL) {
+        return false;
+    }
+    servo_limrun_cfg_t c = s.lim_cfg;
+    const bool writes = c.read && lim_prog_why() == NULL
+                        && lim_write_why() == NULL;
+    c.program    = c.program && writes;
+    c.set_pulses = c.set_pulses && writes;
+    /* The output's line as it reads now, with the pulse the steps
+     * switched on. */
+    (void)servo_target_line(c.output, sizeof(c.output), s.drive_target,
+                            s.drive_pin, s.drive_pwm, s.pins, s.pins_known);
     if (!servo_limrun_start(&s.lim, &c, test_now())) {
         s.lim_note = TR(SV_LIM_REFUSED);
-        ++s.ctrl_rev;
-        return;
+        return false;
     }
     s.lim_changes = s.changes;
+    s.lim_safe_due = false;
     if (c.read) {
         lim_seam_begin(c.family);
     }
@@ -555,24 +520,80 @@ void lim_begin(void)
     s.lim_file   = 0;
     s.lim_report = false;
     s.lim_off    = !settings_get_bool(SET_LOG_USER);   /* USER LOGS */
-    s.lim_box    = true;
-    s.test_box   = false;
     close_panels();
     lim_seam_close_pages();
     servo_invalidate();
     ++s.ctrl_rev;
+    return true;
 }
 
-/* The run every frame: the programmer's answers, its timers, and what the
- * box shows. */
+/* A DOWN on ARM + START: STOP RUN and a sequence under way stop on it;
+ * else the hold begins where no row refuses it, and a tap on a grey one
+ * names the first that does on its release (ov_rest()). */
+bool lim_hold_down(const touch_event_t *evt)
+{
+    if (evt == NULL || s.fn != SERVO_FN_LIMRUN
+        || !gfx_rect_contains(ready_hold_rect(), evt->point.x,
+                              evt->point.y)) {
+        return false;
+    }
+    if (servo_limrun_running(&s.lim)) {
+        lim_end_now(SERVO_TEST_AB_OPERATOR);
+        return true;
+    }
+    if (svs_seq_busy()) {
+        svs_seq_end(SERVO_TEST_AB_OPERATOR);
+        return true;
+    }
+    if (s.ov_have) {
+        return true;                /* one press at a time */
+    }
+    ov_take(evt, OP_LIM_START, -1);
+    s.lim_note = NULL;
+    if (lim_hold_blocked(NULL) == NULL) {
+        s.lim_down = true;
+        ui_hold_begin(&s.lim_hold, TX_HOLD_HINT_LIMIT_RUN);
+    }
+    ++s.arm_rev;
+    return true;
+}
+
+/** @brief The hold under its finger and the sequence, each frame: a row
+ *         that turns red under the hold drops it; the run starts on the
+ *         sequence's last step. */
+static void lim_hold_frame(void)
+{
+    if (s.lim_down) {
+        ++s.arm_rev;
+        if (lim_hold_blocked(NULL) != NULL && ui_hold_leave(&s.lim_hold)) {
+            s.lim_down = false;
+            ov_let_go();
+        }
+    }
+    if (s.fn == SERVO_FN_LIMRUN && svs_seq_busy()
+        && svs_seq_frame(lim_hold_blocked(NULL))) {
+        const bool ok = lim_start();
+        svs_seq_started(ok, s.lim_note);
+    }
+}
+
+/* What the left card shows of the run and the gate, as one number. */
 uint32_t lim_signature(void)
 {
     const servo_limrun_t *r = &s.lim;
     const uint32_t f[] = {
         (uint32_t)r->state, (uint32_t)r->phase, (uint32_t)r->side,
         (uint32_t)r->cmd_us, (uint32_t)r->writes, (uint32_t)(s.lim_file + 2),
-        s.lim_report ? 1u : 0u, s.lim_off ? 1u : 0u, (uint32_t)(uintptr_t)lim_blocked(),
-        (uint32_t)(uintptr_t)lim_prog_why(), (uint32_t)(uintptr_t)s.lim_note,
+        s.lim_report ? 1u : 0u, s.lim_off ? 1u : 0u,
+        (uint32_t)(uintptr_t)lim_blocked(),
+        (uint32_t)(uintptr_t)lim_hold_blocked(NULL),
+        (uint32_t)(uintptr_t)lim_prog_why(),
+        (uint32_t)(uintptr_t)lim_write_why_held(),
+        (uint32_t)(uintptr_t)s.lim_note,
+        (uint32_t)(uintptr_t)svs_seq_failure(),
+        (uint32_t)servo_seq_step_now(&s.rdy.seq),
+        (s.lim_prog ? 1u : 0u) | (s.lim_pulses ? 2u : 0u)
+            | (s.lim_hitec ? 4u : 0u),
     };
     uint32_t h = 2166136261u;
     for (size_t k = 0; k < sizeof(f) / sizeof(f[0]); ++k) {
@@ -581,311 +602,38 @@ uint32_t lim_signature(void)
     return h;
 }
 
+/** @brief The run that ended leaves the bench SAFE: ARM + START armed it,
+ *         and the footer holds no DISARM.  After the run's own last
+ *         command (its RELEASE), which the one command slot would lose
+ *         under a DISARM; an end by STOP or DISARM is SAFE already. */
+static void lim_safe_follow(void)
+{
+    if (!s.lim_safe_due || servo_limrun_running(&s.lim)
+        || s.pending.kind != SERVO_CMD_NONE) {
+        return;
+    }
+    s.lim_safe_due = false;
+    if (value_live() || s.gate.arm_asked) {
+        svs_ask_disarm();
+        ++s.arm_rev;
+    }
+}
+
 void lim_tick(void)
 {
+    lim_hold_frame();
     lim_seam_follow();
     lim_poll();
     lim_step();
     lim_ended();
-    /* The box and the LIMIT RUN card, where they show. */
+    lim_safe_follow();
+    /* LIMIT RUN's left card and READY card, where they show. */
     const uint32_t sig = lim_signature();
     if (sig != s.lim_sig) {
         s.lim_sig = sig;
         ++s.test_rev;
-        if (s.lim_box || wb_task() == UI_WB_TEST) {
+        if (s.fn == SERVO_FN_LIMRUN) {
             ++s.ctrl_rev;
         }
-    }
-}
-
-/* ----------------------------------------------------------------- drawing */
-
-/* The limit run's report, as the box and the LIMIT RUN card name it. */
-static void lim_file_name(char *b, size_t n)
-{
-    if (s.lim_off) {
-        snprintf(b, n, "%s", TR(SV_USER_LOGS_OFF));
-    } else if (s.lim_file > 0) {
-        log_name_build(b, n, LOG_PREFIX_LIMIT, s.lim_file, true);
-    } else {
-        snprintf(b, n, "%s", (s.lim_file < 0) ? TR(SV_NOT_RECORDED)
-                                               : TR(SV_WRITING));
-    }
-}
-
-/* An end as the box gives it: its endpoint, or FREE. */
-static void lim_end_text(char *b, size_t n, const servo_limrun_side_t *e)
-{
-    if (!e->done) {
-        snprintf(b, n, "-");
-    } else if (e->bound) {
-        snprintf(b, n, "%uus", (unsigned)e->limit_us);
-    } else {
-        snprintf(b, n, "%s", ui_servo_str(SERVO_STR_L_FREE));
-    }
-}
-
-/**
- * @brief The limit run on the left card, in the automatic test's place:
- *        while it runs, the values written, the phase with the end and the
- *        pulse, and the output it drives; after it, the verdict, the ends
- *        or the values, and the report.  Its button is STOP RUN while it
- *        runs and CLOSE after.  The box, its lines and its button are the
- *        automatic test's (test_box_rect()).
- * @param c the canvas
- */
-void draw_lim_box(gfx_canvas_t *c)
-{
-    const gfx_rect_t b = test_box_rect();
-    const servo_limrun_t *r = &s.lim;
-    const bool running = servo_limrun_running(r);
-    gfx_fill_round_rect(c, b.x, b.y, b.w, b.h, 6,
-                        ui_theme_color(UI_C_PANEL_SUNK));
-    gfx_draw_round_rect(c, b.x, b.y, b.w, b.h, 6, ui_theme_color(UI_C_EDGE));
-    char l1[64], l2[64], l3[64];
-    gfx_color_t head = ui_theme_color(UI_C_ACCENT);
-    gfx_color_t col3 = ui_theme_color(UI_C_TEXT_DIM);
-    const char *right = "INA3221";
-    char f[LOG_RUN_NAME_MAX + 4] = "";
-    if (running) {
-        if (r->cfg.program) {
-            snprintf(l1, sizeof(l1), TR(SV_LIM_TITLE_PROG), r->writes,
-                     (unsigned)SERVO_LIMRUN_WRITES_MAX);
-        } else {
-            snprintf(l1, sizeof(l1), "%s", TR(SV_LIM_TITLE));
-        }
-        const char *ph = ui_servo_str(servo_limrun_phase_str(r->phase));
-        if (r->phase == SERVO_LIMRUN_PH_SEARCH
-            || r->phase == SERVO_LIMRUN_PH_PROBE
-            || r->phase == SERVO_LIMRUN_PH_CHECK) {
-            snprintf(l2, sizeof(l2), TR(SV_LIM_AT), ph,
-                     r->side == SERVO_LIMRUN_LO ? TR(SV_LIM_LOW)
-                                                : TR(SV_LIM_HIGH),
-                     (unsigned)r->cmd_us);
-        } else if (r->read_once) {
-            snprintf(l2, sizeof(l2), TR(SV_LIM_VALUES), ph,
-                     (unsigned)r->cur[SERVO_LIMRUN_LEFT],
-                     (unsigned)r->cur[SERVO_LIMRUN_RIGHT]);
-        } else {
-            snprintf(l2, sizeof(l2), "%s", ph);
-        }
-        /* What it drives, in sight the whole run. */
-        (void)servo_target_line(l3, sizeof(l3), s.drive_target, s.drive_pin,
-                                s.drive_pwm, s.pins, s.pins_known);
-    } else {
-        const servo_limrun_verdict_t v = r->verdict;
-        head = (v == SERVO_LIMRUN_PASS || v == SERVO_LIMRUN_FREE)
-                   ? ui_theme_color(UI_C_OK)
-               : (v == SERVO_LIMRUN_FAIL) ? ui_theme_color(UI_C_DANGER)
-               : (v == SERVO_LIMRUN_ABORTED) ? ui_theme_color(UI_C_WARN)
-                                             : ui_theme_color(UI_C_ACCENT);
-        snprintf(l1, sizeof(l1), TR(SV_LIM_VERDICT),
-                 ui_servo_str(servo_limrun_verdict_str(v)));
-        uint16_t lo = 0u, hi = 0u;
-        if (v == SERVO_LIMRUN_FAIL || v == SERVO_LIMRUN_ABORTED) {
-            snprintf(l2, sizeof(l2), "%s",
-                     ui_servo_str(servo_limrun_why_str(r)));
-        } else if (v == SERVO_LIMRUN_PASS
-                   && servo_limrun_original(r, &lo, &hi)) {
-            snprintf(l2, sizeof(l2), TR(SV_LIM_SET), (unsigned)lo,
-                     (unsigned)r->cur[SERVO_LIMRUN_LEFT], (unsigned)hi,
-                     (unsigned)r->cur[SERVO_LIMRUN_RIGHT]);
-        } else {
-            char a[24], z[24];
-            lim_end_text(a, sizeof(a), &r->first[SERVO_LIMRUN_LO]);
-            lim_end_text(z, sizeof(z), &r->first[SERVO_LIMRUN_HI]);
-            snprintf(l2, sizeof(l2), TR(SV_LIM_ENDS), a, z);
-        }
-        if (servo_limrun_restore(r)) {
-            /* The values last written stay in the servo; the programmer
-             * puts back the ones before the run: KST's RESTORE, the Hitec
-             * programmer's backup file. */
-            if (r->cfg.family == SERVO_LIMRUN_FAM_KST) {
-                snprintf(l3, sizeof(l3), TR(SV_LIM_RESTORE), TR(SVH_KST));
-            } else if (r->servo.backup[0] != '\0') {
-                snprintf(l3, sizeof(l3), TR(SV_LIM_RESTORE_HITEC),
-                         r->servo.backup);
-            } else {
-                snprintf(l3, sizeof(l3), "%s", TR(SV_LIM_NO_BACKUP));
-            }
-            col3 = ui_theme_color(UI_C_WARN);
-        } else if (r->why == SERVO_LIMRUN_WHY_RANGE) {
-            /* The servo's pulses and the bench's range, side by side. */
-            snprintf(l3, sizeof(l3), TR(SV_LIM_RANGE),
-                     (unsigned)(r->pulse_now[SERVO_LIMRUN_P_LOWER] / 10u),
-                     (unsigned)((r->pulse_now[SERVO_LIMRUN_P_UPPER] + 9u)
-                                / 10u),
-                     (unsigned)r->cfg.min_us, (unsigned)r->cfg.max_us);
-        } else if (v == SERVO_LIMRUN_FOUND || v == SERVO_LIMRUN_FREE) {
-            /* The ends are the line above: the output they were found on
-             * under them, as the run named it at its start -- not the
-             * target now, which may have changed since. */
-            snprintf(l3, sizeof(l3), "%s", r->cfg.output);
-        } else {
-            char a[24], z[24];
-            lim_end_text(a, sizeof(a), r->after[0].done ? &r->after[0]
-                                                        : &r->first[0]);
-            lim_end_text(z, sizeof(z), r->after[1].done ? &r->after[1]
-                                                        : &r->first[1]);
-            snprintf(l3, sizeof(l3), TR(SV_LIM_ENDS), a, z);
-        }
-        lim_file_name(f, sizeof(f));
-    }
-    /* The automatic test's box: four lines of BOX_CELLS cells, BOX_PITCH
-     * apart, over the button. */
-    gfx_text(c, b.x + 10, b.y + 10, l1, SV_FONT_LABEL, head, 1);
-    gfx_text(c, b.x + 10, b.y + 10 + BOX_PITCH, l2, SV_FONT_LABEL,
-             ui_theme_color(UI_C_TEXT), 1);
-    gfx_text(c, b.x + 10, b.y + 10 + 2 * BOX_PITCH, l3, SV_FONT_LABEL, col3,
-             1);
-    /* The report under the run's lines once it has ended. */
-    if (!running) {
-        gfx_text(c, b.x + 10, b.y + 10 + 3 * BOX_PITCH, f, SV_FONT_LABEL,
-                 ui_theme_color(UI_C_TEXT_DIM), 1);
-    }
-    ui_button_font(c, test_btn_rect(),
-                   running ? TR(SV_LIM_STOP) : TR(SUP_CLOSE),
-                   running ? ui_theme_color(UI_C_DANGER)
-                           : ui_theme_color(UI_C_PANEL_HI), false, true,
-                   SV_FONT_LABEL);
-    /* The meter it reads, beside the button, flush right. */
-    const gfx_rect_t btn = test_btn_rect();
-    const int mw = gfx_text_width(SV_FONT_LABEL, right, 1);
-    gfx_text(c, b.x + b.w - 10 - mw, btn.y + 14, right, SV_FONT_LABEL,
-             ui_theme_color(UI_C_TEXT_DIM), 1);
-}
-
-/**
- * @brief START LIMIT RUN, on the LIMIT RUN card under the AUTOMATIC TEST
- *        one: green, fading to the danger red across its hold; STOP RUN in
- *        red while the run is under way.
- * @param c the canvas
- */
-void draw_lim_start(gfx_canvas_t *c)
-{
-    const bool running = servo_limrun_running(&s.lim);
-    ui_hold_button(c, lim_start_rect(),
-                   running ? TR(SV_LIM_STOP) : TR(SV_LIM_START),
-                   ui_action_fill(running ? UI_ACTION_ACTIVE
-                                          : UI_ACTION_AVAILABLE),
-                   ui_action_fill(UI_ACTION_ACTIVE), &s.lim_hold,
-                   s.ov_have && s.ov_pressed == OP_LIM_START,
-                   running || lim_blocked() == NULL, SV_FONT_LABEL);
-}
-
-/**
- * @brief Why SEARCH+PROG is not offered, or what the mode does: the LIMIT
- *        RUN settings' note, one line of SV_FONT_LABEL.
- * @param c the canvas
- * @param x the line's left edge
- * @param y its top
- */
-void draw_lim_mode_note(gfx_canvas_t *c, int x, int y)
-{
-    const char *why = lim_mode_why();
-    const bool running = servo_limrun_running(&s.lim);
-    const bool prog = running ? s.lim.cfg.program : lim_programs();
-    if (why != NULL && !running) {
-        /* Why SEARCH+PROG is not offered: the run searches only. */
-        gfx_text(c, x, y, why, SV_FONT_LABEL,
-                 s.lim_prog || (s.lim_pulses && lim_write_why() != NULL)
-                     ? ui_theme_color(UI_C_WARN)
-                     : ui_theme_color(UI_C_TEXT_DIM), 1);
-        return;
-    }
-    const bool pulses = running ? s.lim.cfg.set_pulses : lim_sets_pulses();
-    const bool hitec = lim_family_now() != SERVO_LIMRUN_FAM_KST;
-    gfx_text(c, x, y,
-             prog && hitec ? TR(SV_LIM_PROG_NOTE_HITEC)
-             : prog   ? TR(SV_LIM_PROG_NOTE)
-             : pulses ? TR(SV_LIM_PULSES_NOTE)
-                      : TR(SV_LIM_SEARCH_NOTE),
-             SV_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1);
-}
-
-/**
- * @brief The LIMIT RUN card's first line, 2px under START LIMIT RUN: its
- *        four lines at LIM_LINE_P end 2px inside the card, which is the
- *        AUTOMATIC TEST card's size and holds three.
- */
-#define LIM_LINE_DY (RUN_BTN_DY + RUN_BTN_H + 2)
-/** @brief The pitch of those lines in SV_FONT_LABEL, px. */
-#define LIM_LINE_P  20
-_Static_assert(LIM_LINE_DY + 3 * LIM_LINE_P + 20 + 2 <= RUN_CARD_H,
-               "the LIMIT RUN card's four lines end inside it");
-
-/**
- * @brief The LIMIT RUN card's lines: over START LIMIT RUN the mode, and
- *        under it what the run drives and reads, why it cannot start or
- *        what it does now, the last result and its report, and the mode's
- *        note.
- * @param c the canvas
- */
-void draw_lim_lines(gfx_canvas_t *c)
-{
-    const gfx_rect_t k = run_card_rect(1);
-    const int x = k.x + 10;
-    const bool running = servo_limrun_running(&s.lim);
-    const bool prog = running ? s.lim.cfg.program : lim_programs();
-    const bool pulses = running ? s.lim.cfg.set_pulses : lim_sets_pulses();
-    char line[96];
-    const char *mode = prog ? TR(SV_LIM_PROGRAM) : TR(SV_LIM_SEARCH);
-    const uint8_t fam = lim_family_now();
-    if ((running ? s.lim.cfg.read : lim_reads())
-        && fam != SERVO_LIMRUN_FAM_KST) {
-        /* The Hitec programmer's series, which its SERVO tab sets. */
-        snprintf(line, sizeof(line), TR(SV_SUM_LIM_HITEC), mode,
-                 ui_setting_option(SET_HITEC_SERIES,
-                                   fam == SERVO_LIMRUN_FAM_HITEC_D ? 1 : 0));
-    } else if (running ? s.lim.cfg.read : lim_reads()) {
-        snprintf(line, sizeof(line), TR(SV_SUM_LIM), mode,
-                 pulses ? TR(SV_LIM_PULSES_STD) : TR(SV_LIM_PULSES_KEEP));
-    } else {
-        snprintf(line, sizeof(line), "%s", mode);
-    }
-    gfx_text(c, x, k.y + RUN_SUM_DY, line, SV_FONT_LABEL,
-             ui_theme_color(UI_C_TEXT_DIM), 1);
-
-    const int y = k.y + LIM_LINE_DY;
-    char out[32];
-    (void)servo_target_line(out, sizeof(out), s.drive_target, s.drive_pin,
-                            s.drive_pwm, s.pins, s.pins_known);
-    char meter[20];
-    snprintf(line, sizeof(line), TR(SV_LIM_LINE), out,
-             running ? s.lim.cfg.meter
-                     : sensors_rows_meter(meter, sizeof(meter)));
-    gfx_text(c, x, y, line, SV_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
-
-    gfx_color_t col = ui_theme_color(UI_C_TEXT_FAINT);
-    const char *blocked = running ? NULL : lim_blocked();
-    if (blocked != NULL || s.lim_note != NULL) {
-        snprintf(line, sizeof(line), "%s",
-                 blocked != NULL ? blocked : s.lim_note);
-        col = ui_theme_color(UI_C_WARN);
-    } else if (running) {
-        snprintf(line, sizeof(line), TR(SV_LIM_RUNNING),
-                 ui_servo_str(servo_limrun_phase_str(s.lim.phase)));
-    } else {
-        snprintf(line, sizeof(line), "%s", TR(SV_HOLD_START));
-    }
-    gfx_text(c, x, y + LIM_LINE_P, line, SV_FONT_LABEL, col, 1);
-
-    if (s.lim.state == SERVO_LIMRUN_DONE && !running) {
-        char f[LOG_RUN_NAME_MAX + 4];
-        lim_file_name(f, sizeof(f));
-        snprintf(line, sizeof(line), TR(SV_CARD_LAST),
-                 ui_servo_str(servo_limrun_verdict_str(s.lim.verdict)), f);
-        gfx_text(c, x, y + 2 * LIM_LINE_P, line, SV_FONT_LABEL,
-                 ui_theme_color(UI_C_TEXT_DIM), 1);
-    }
-    /* SEARCH+PROG or SERVO PULSES chosen and not offered: why, in the
-     * warning colour. */
-    if (!running && s.lim_prog && lim_mode_why() != NULL) {
-        gfx_text(c, x, y + 3 * LIM_LINE_P, lim_mode_why(), SV_FONT_LABEL,
-                 ui_theme_color(UI_C_WARN), 1);
-    } else if (!running && lim_reads() && s.lim_pulses
-               && lim_write_why() != NULL) {
-        gfx_text(c, x, y + 3 * LIM_LINE_P, lim_write_why(), SV_FONT_LABEL,
-                 ui_theme_color(UI_C_WARN), 1);
     }
 }

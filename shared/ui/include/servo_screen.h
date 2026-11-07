@@ -621,8 +621,12 @@ const char *servo_screen_port_choice(int i, bool *refused);
  */
 gfx_rect_t servo_screen_port_choice_rect(int i);
 
-/** Which run's settings TEST shows, one level down from its card: 0 none,
- *  1 the automatic test's, 2 the limit run's.  For tests. */
+/**
+ * @brief Which page of rows shows, one level down from its screen.  For
+ *        tests.
+ * @return 0 none, 1 the automatic test's settings, 2 the brown-out walk's,
+ *         3 KST's EXPERT MODE
+ */
 int servo_screen_run_settings(void);
 
 /**
@@ -776,9 +780,22 @@ int servo_screen_limit_family(void);
 /** @brief SERVO PULSES for the session, for the tests.
  *  @return true while it reads 1000-2000 */
 bool servo_screen_limit_pulses(void);
-/** @brief Why START LIMIT RUN cannot start now, for the tests.
- *  @return the card's line, or NULL */
+/** @brief Why a limit run cannot start now, ARM + START's steps aside:
+ *         the gate's first text, for the tests.
+ *  @return the text, or NULL */
 const char *servo_screen_limit_blocked(void);
+/** @brief SEARCH + PROGRAM chosen in LIMIT RUN's list, for the tests.
+ *  @return true while MODE reads SEARCH + PROGRAM */
+bool servo_screen_limit_prog(void);
+/**
+ * @brief LIMIT RUN's left card, its state line @p i as it reads now, for
+ *        the tests.
+ * @param i   the line, from 0
+ * @param buf takes it
+ * @param n   its size
+ * @return @p buf; "" past the last
+ */
+const char *servo_screen_limit_line(int i, char *buf, size_t n);
 
 /**
  * @brief The run's next item for the card, without taking it

@@ -414,7 +414,6 @@ void test_begin(void)
      * writes its files or none, never half of them. */
     s.test_off     = !settings_get_bool(SET_LOG_USER);
     s.test_box     = true;
-    s.lim_box      = false;
     close_panels();
     servo_invalidate();
     ++s.ctrl_rev;

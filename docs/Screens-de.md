@@ -116,8 +116,10 @@ Das Feld ist 640px breit und fasst 60 Zeichen pro Zeile in der Schrift
   Das Hilfefeld bleibt für die Aufnahme sichtbar und schließt sich danach.
 - STOP schließt das Feld und stoppt sofort, wie bei geschlossenem Hilfefeld.
 - Auch Bedienelemente zum Anhalten wirken mit demselben Druck: DISARM,
-  AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN, LAUF BEENDEN sowie
-  TEST STARTEN oder ENDLAGENLAUF STARTEN während ihres laufenden Tests.
+  AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN, LAUF BEENDEN,
+  TEST STARTEN während seines laufenden Tests sowie 2s HALTEN: ARM + START
+  auf RUDER AUTO und ENDLAGENLAUF während seiner Startschritte oder seines
+  Laufs.
   ARM und AUSGANG EIN schließen dagegen nur das Feld; die Haltegeste beginnt
   nicht.
 - Ein Seitenwechsel schließt das Hilfefeld.
@@ -297,7 +299,7 @@ Die Aufgabe auf der linken Karte bestimmt die ersten Hilfeseiten:
 | SERVO Hub | die Kacheln LIVE, ENDLAGENLAUF, RUDER und KST und die Portzeile (5); eine Kachel und OPTIONEN (2) |
 | SERVO LIVE und SWEEP | der Winkel des Ruderhorns, die Skala und die Messwerte (3) |
 | SERVO TEST | TEST STARTEN, seine OPTIONEN und die Grenzen (3) |
-| SERVO ENDLAGENLAUF | ENDLAGENLAUF STARTEN und seine OPTIONEN (2) |
+| SERVO ENDLAGENLAUF | UNTERES ENDE mit OBERES ENDE und die Zustandszeilen (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
 | SERVO RUDER | LÄNGE, die Fahrtasten, NULLPUNKT und MAX LÖSCHEN (4); AUSSCHLAG, HINTERKANTE und die Statuszeilen (3) |
 | SERVO RUDER AUTO | die Sollwerte, RESERVE und TOLERANZ, NULLPUNKT (3); AUSSCHLAG und HINTERKANTE (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
 | SERVO, jeder Funktionsbildschirm, SAFE | Typ, Grafik oder PROG 5V, SOLL und TEMPO (4); PORT, ZENTRIEREN mit SWEEP und FREIGEBEN, ARM, OPTIONEN, auf RUDER auch die Seitenansicht (4 oder 5) |
@@ -529,7 +531,7 @@ ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | PROG 5V EIN im Feld PROG 5V auf SERVO und SUPPLY, rbmod-Carrier | `Halte 2s, um die 5V der Programmierports einzuschalten.` |
 | ÜBERNEHMEN in den Warnungen zu HV, Pulsrate und weichen Grenzen von SERVO, KST und Chaservo und auf den Hitec-Seiten | `Halte 2s, um zu übernehmen.` |
 | TEST STARTEN | `Halte 2s, um den Test zu starten.` |
-| ENDLAGENLAUF STARTEN | `Halte 2s, um den Endlagenlauf zu starten.` |
+| 2s HALTEN: ARM + START auf ENDLAGENLAUF | `Halte 2s, um Port und Versorgung einzuschalten, ARM und den Endlagenlauf zu starten.` |
 | 2s HALTEN ZUM FREIGEBEN, außer auf PORT FREIGEBEN | `Halte 2s, um freizugeben.` |
 | 2s HALTEN ZUM SCHREIBEN | `Halte 2s, um zu schreiben.` |
 | 2s HALTEN ZUM ZURÜCKSPIELEN | `Halte 2s, um zurückzuspielen.` |
@@ -558,8 +560,8 @@ ist: die ganze Taste weiß, schwarz, dann in ihrer neuen Farbe, zweimal,
 Ein langsamerer Frame beendet nur die Phase, in die er fällt; so wird
 jede Phase bei jeder Bildrate gezeichnet. Die neue Farbe ist die,
 zu der das Halten überblendet: Gefahrenrot bei ARM, AUSGANG EIN, PROG 5V
-EIN, TEST STARTEN und ENDLAGENLAUF STARTEN; Bernstein bei 2s HALTEN: ARM
-+ START auf RUDER AUTO, dessen Folge vor ARM auf ihre Rückmeldung wartet.
+EIN und TEST STARTEN; Bernstein bei 2s HALTEN: ARM + START auf RUDER AUTO
+und ENDLAGENLAUF, deren Folge vor ARM auf ihre Rückmeldung wartet.
 
 - Das Aufblitzen beginnt mit dem Halten, nicht mit der Antwort. ARMED, der
   Ausgang oder der Lauf, die innerhalb der 300ms eintreffen, starten es
@@ -581,7 +583,7 @@ Die Füllung einer Taste sagt, was ein Druck mit einem Ausgang macht.
 
 | Klasse | Tasten | Verfügbar | Aktiv | Wartend | Abgelehnt |
 | --- | --- | --- | --- | --- | --- |
-| Ausgangsaktion: schaltet einen Ausgang ein, schaltet auf ARMED, startet einen Lauf, schreibt ein Servo | ARM, AUSGANG EIN, PROG 5V EIN, TEST STARTEN, ENDLAGENLAUF STARTEN, 2s HALTEN: ARM + START auf RUDER AUTO, ZENTRIEREN und SWEEP auf LIVE, 1000us, ZENTRIEREN, 2000us und NULLPUNKT auf RUDDER, VERBINDEN, SCHREIBEN INS SERVO FREIGEBEN, n WERTE SCHREIBEN und SERVO BEWEGEN der Programmierungen | grün (`UI_C_OK`) | rot (`UI_C_DANGER`): ein Ausgang ist ein, ARMED, ein Schreiben läuft, das Servo wird angesteuert; die Beschriftung sagt, was ein Druck anhält (DISARM, AUSGANG AUS, LAUF BEENDEN, PAUSE, VERLASSEN, ABBRECHEN, EIN) | bernstein (`UI_C_WARN`): PAUSIERT, WARTEN, der Schritt von ARM + START | grau (`ui_button_off_fill()`), blasse Beschriftung |
+| Ausgangsaktion: schaltet einen Ausgang ein, schaltet auf ARMED, startet einen Lauf, schreibt ein Servo | ARM, AUSGANG EIN, PROG 5V EIN, TEST STARTEN, 2s HALTEN: ARM + START auf RUDER AUTO und ENDLAGENLAUF, ZENTRIEREN und SWEEP auf LIVE, 1000us, ZENTRIEREN, 2000us und NULLPUNKT auf RUDDER, VERBINDEN, SCHREIBEN INS SERVO FREIGEBEN, n WERTE SCHREIBEN und SERVO BEWEGEN der Programmierungen | grün (`UI_C_OK`) | rot (`UI_C_DANGER`): ein Ausgang ist ein, ARMED, ein Schreiben läuft, das Servo wird angesteuert; die Beschriftung sagt, was ein Druck anhält (DISARM, AUSGANG AUS, LAUF BEENDEN, PAUSE, VERLASSEN, ABBRECHEN, EIN) | bernstein (`UI_C_WARN`): PAUSIERT, WARTEN, der Schritt von ARM + START | grau (`ui_button_off_fill()`), blasse Beschriftung |
 | Notfall | STOP | rot | rot, blitzt beim Druck | - | nie |
 | Bearbeiten | `-` `+`, Wertfelder, MAX LÖSCHEN, KATEGORIE ZURÜCKSETZEN auf SETUP, VERWERFEN, NEU LESEN | neutral (`UI_C_PANEL_HI`) | - | - | grau |
 | SPEICHERN auf SETUP | SPEICHERN, GESPEICHERT, BEI STILLSTAND, NICHT GESPEICHERT | grün, solange etwas ungespeichert ist (SPEICHERN) | - | bernstein (BEI STILLSTAND) | neutral mit roter Beschriftung (NICHT GESPEICHERT); GESPEICHERT ist neutral |
@@ -592,12 +594,13 @@ Beide Themen nutzen dieselben Rollen; das helle Thema hat sein eigenes
 Grün, Rot und Bernstein (`shared/ui/ui_theme.c`). Die Überblendung beim
 Halten läuft vom verfügbaren Grün zur Farbe, die die Taste danach hält.
 
-Ein Tipp auf ein graues TEST STARTEN oder ENDLAGENLAUF STARTEN zeigt den
-Grund im Alarmband als Mitteilung, 4s in Bernstein, wie der Hinweis einer
-Halte-Taste. Die Zeile unter der Taste sagt dasselbe und bleibt. Ein Tipp
-auf ein graues 2s HALTEN: ARM + START zeigt die erste rote Zeile der Karte
-BEREIT von RUDER AUTO im Band, `PORT: AUTO PROGRAMMIERT EIN SERVO AM
-PROG-PORT`; die erste Zustandszeile sagt dasselbe.
+Ein Tipp auf ein graues TEST STARTEN zeigt den Grund im Alarmband als
+Mitteilung, 4s in Bernstein, wie der Hinweis einer Halte-Taste. Die Zeile
+unter der Taste sagt dasselbe und bleibt. Ein Tipp auf ein graues 2s
+HALTEN: ARM + START zeigt die erste rote Zeile der Karte BEREIT im Band,
+auf RUDER AUTO `PORT: AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT`, auf
+ENDLAGENLAUF `MESSGERÄT: INA3221 NICHT ZUR SERVOSTROMMESSUNG
+EINGERICHTET`; die erste Zustandszeile sagt dasselbe.
 
 ## Marken im Menü
 
@@ -1573,7 +1576,7 @@ der Reihenfolge der Nutzung.
 | LIVE | LIVE | das Zifferblatt, den Drehknopf, die Anzeigen SOLL-PULSBREITE, GEMESSEN und STROM |
 | SWEEP | SWEEP | das Zifferblatt mit dem Sweep; OPTIONEN öffnet KURVE, TEMPO und BEREICH |
 | TEST | TEST | das Feld AUTOMATISCHER TEST, die Grenzen von SUPPLY und das Feld des Laufs; OPTIONEN öffnet die Zeilen des Laufs |
-| ENDLAGENLAUF | ENDLAGENLAUF | das Feld ENDLAGENLAUF und das Feld des Laufs; OPTIONEN öffnet die Zeilen des Laufs |
+| ENDLAGENLAUF | ENDLAGENLAUF | Modus- und Ausgangszeile, UNTERES ENDE und OBERES ENDE und die Zustandszeilen auf der linken Karte, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet MODUS, SERVO, SERVOPULSE und die Zeilen des Programmierers ([Starten](Servo-de.md#starten)) |
 | RUDER | RUDER | Ausschlag in ° und mm, LÄNGE, 1000us, ZENTRIEREN, 2000us, NULLPUNKT und MAX LÖSCHEN ([Ruderausschlag](Servo-de.md#ruderausschlag)) |
 | RUDER AUTO | RUDER AUTO | das Feld von AUTO statt LÄNGE und der Fahrtasten, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste ([AUTO-Endpoints](Servo-de.md#auto-endpoints)) |
 | KST | SERVO > KST | die Programmierung für KST und Chaservo über dem linken Feld ([Programmierer](#programmierer)) |
@@ -1608,13 +1611,16 @@ OPTIONEN ist grau, solange der Prüfstand nicht SAFE ist oder ein Sweep
 oder ein Lauf läuft, und nennt das beim Tippen im Alarmband. LIVE hat
 keine OPTIONEN.
 
-RUDER AUTO behält die Taste PORT und zeigt seine Karte BEREIT an der Stelle
-des Ausgangsfelds: zehn Zeilen von 30px ab y 96, jede mit Punkt,
-Bezeichnung von 13 Zellen und Zustand von 20, und die Schienenzeile bei y
-404. Die Mitte seiner Fußleiste ist 2s HALTEN: ARM + START, das PORT-PWM
-und die Versorgung einschaltet, auf ihre Rückmeldung wartet, ARM schaltet
-und den Lauf in einem Halten startet ([Servo: AUTO-Endpoints](Servo-de.md#auto-endpoints)).
-Nichts vom Ausgangsfeld nimmt auf RUDER AUTO einen Druck an.
+RUDER AUTO und ENDLAGENLAUF behalten die Taste PORT und zeigen eine Karte
+BEREIT an der Stelle des Ausgangsfelds: Zeilen von 30px ab y 96, zehn auf
+RUDER AUTO und neun auf ENDLAGENLAUF, jede mit Punkt, Bezeichnung von 13
+Zellen und Zustand von 20, und die Schienenzeile bei y 404. Die Mitte
+ihrer Fußleiste ist 2s HALTEN: ARM + START, das PORT-PWM und die
+Versorgung einschaltet, auf ihre Rückmeldung wartet, ARM schaltet und den
+Lauf in einem Halten startet
+([Servo: AUTO-Endpoints](Servo-de.md#auto-endpoints),
+[Servo: Starten](Servo-de.md#starten)). Nichts vom Ausgangsfeld nimmt auf
+einem der beiden Bildschirme einen Druck an.
 
 ![RUDER AUTO auf dem rbmod-Carrier, die Folge ARM + START wartet auf die Rückmeldung von PROG 5V](img/de/servo-rudder-auto-start-rbmod.png)
 
@@ -2091,8 +2097,8 @@ rbmod-Carriers sind keine Spannungsstufen möglich; seine Versorgung ist
 auf 5V festgelegt.
 
 TEST bleibt beim Start sichtbar; die Zustandszeile nennt die aktuelle
-Stufe. Ein 346px breites Lauffeld unter dem Feld, ab y 256 auf TEST und
-ab y 204 auf ENDLAGENLAUF, zeigt Stufe und Phase
+Stufe. Ein 346px breites Lauffeld unter dem Feld, ab y 256 auf TEST,
+zeigt Stufe und Phase
 sowie neben TEST BEENDEN das Messgerät: `PD mini`, einen INA3221-Kanal wie
 `INA 0x41 CH2` oder `SIMULATION`. Der Lauf verwendet bis zum Ende das bei
 TEST STARTEN gewählte Messgerät
@@ -2132,8 +2138,8 @@ in der Zeile über der Grafik:
 
 ![Ein Ergebnis am INA3221](img/de/servo-result-ina.png)
 
-**ENDLAGENLAUF STARTEN beginnt die Endlagensuche** im Feld ENDLAGENLAUF
-auf TEST. Das Servo fährt in 10us-Schritten nach außen, bis der Strom ein
+**2s HALTEN: ARM + START beginnt die Endlagensuche** auf ENDLAGENLAUF.
+Das Servo fährt in 10us-Schritten nach außen, bis der Strom ein
 blockiertes Gestänge erkennen lässt. SUCHEN + PROGRAMMIEREN verringert
 zusätzlich die Endwerte der gewählten Servofamilie, bis beide Enden frei
 sind: LEFT ANGLE und RIGHT ANGLE bei KST und Chaservo, LEFT END und
@@ -2146,30 +2152,33 @@ bei Hitec gilt das Pulsmodell der Familie.
 [Servoverfahren](Servo-de.md#eingebaute-mechanische-endlage) beschreibt
 Methode, Schutzfunktionen und Bericht.
 
-Halte ENDLAGENLAUF STARTEN 2s bei ARMED mit INA3221 als Messgerät der
-Servoschiene. Die Zusammenfassung zeigt `NUR SUCHE` oder
-`SUCHEN + PROGRAMMIEREN` und SERVOPULSE, während der Lauf den Port ausliest.
-Darunter nennt eine Zeile Ausgang und Messgerät, etwa
-`AUSGANG PROG-PORT 1 GPIO 13, STROM INA3221 0x41 CH2` oder
-`AUSGANG SERVO PWM GPIO 2, STROM INA3221 0x40 CH1`. Ohne überwachenden Kanal
-steht im Messgeräteteil `STROM INA3221`. Es folgen aktueller Vorgang oder
-Startverweigerung, letztes Ergebnis und Bericht. Diese vier Zeilen stehen
-in 10 x 20 bei 20px Abstand, beginnend 2px unter der Taste; die letzte
-endet 2px innerhalb des 188px hohen Felds.
+Die linke Karte, x 18 bis 618 des Inhalts:
 
-ENDLAGENLAUF bleibt beim Start sichtbar. Das Lauffeld unter dem Feld zeigt geschriebene
-Werte von 8, Phase, Seite, Puls und Ausgang sowie LAUF BEENDEN. Danach
-stehen dort bis SCHLIESSEN Urteil, Werte oder Endlagen und `LIMITnnn.TXT`,
-bei ausgeschalteten Testaufzeichnungen `TESTAUFZEICHNUNGEN AUS`. Für jedes
-Schreiben schaltet der Lauf selbst auf SAFE und zurück auf ARMED.
-STOP oder SAFE durch den Bediener sowie Abbruchgründe des automatischen
-Tests beenden ihn mit Ausgang aus.
+| Teil | Ort | Zeigt |
+| --- | --- | --- |
+| Moduszeile | y 16, 10 x 20 | `NUR SUCHE` oder `SUCHEN + PROGRAMMIEREN`, und SERVOPULSE, während der Lauf den Port ausliest |
+| Ausgangszeile | y 40, 10 x 20 | Ausgang und Messgerät, etwa `AUSGANG PROG-PORT 1 GPIO 13, STROM INA3221 0x41 CH2` oder `AUSGANG SERVO PWM GPIO 2, STROM INA3221 0x40 CH1`; `STROM INA3221` ohne überwachenden Kanal |
+| UNTERES ENDE, OBERES ENDE | zwei Felder von 295 x 96px ab y 70, 10px Abstand | das Ende, das der letzte Lauf zuerst fand, in Ziffern von 32 x 44 mit `us`; `FREI` in Grün; `-` vor einem Lauf |
+| Zustandszeilen | ab y 178, 24px Abstand, 10 x 20 | Titel und Schritt des Laufs; sonst die Startschritte, ein Fehler oder warum das Halten gesperrt ist; warum der Modus nicht angeboten wird; Urteil, Werte oder Grund, ZURÜCKSPIELEN, die Bereiche oder der Ausgang, die Datei des Berichts; der Hinweis des Modus |
+
+Die neun Zeilen der Karte BEREIT sind PORT, SERVO, MESSGERÄT, SCHIENE,
+BEREICH, PROGRAMMIERER, die Versorgung (PROG 5V, PD MINI oder
+VERSORGUNG), PORT-PWM und ARM. 2s HALTEN: ARM + START schaltet PORT-PWM
+und die Versorgung ein, liest sie zurück, schaltet ARM und startet den
+Lauf. Während des Laufs zeigt das Halten LAUF BEENDEN, und OPTIONEN ist
+grau. Für jedes Schreiben schaltet der Lauf selbst auf SAFE und zurück auf
+ARMED. Nach dem letzten Befehl des Laufs schaltet der Prüfstand auf SAFE.
+STOP, SAFE, Link-Verlust, das Verlassen des Bildschirms oder ein
+Abbruchgrund des automatischen Tests beenden den Lauf mit allen Ausgängen
+aus. Urteil, Werte oder Endlagen und `LIMITnnn.TXT`, bei ausgeschalteten
+Testaufzeichnungen `TESTAUFZEICHNUNGEN AUS`, bleiben bis zum nächsten Lauf
+auf den Zustandszeilen.
 
 Am Programmierport des rbmod-Carriers versorgt PROG 5V den Lauf und
-übernimmt das Aus- und Einschalten anstelle des PD mini. PROG 5V muss vor
-dem Start eingeschaltet sein. Der PD mini an der Servoschiene wird bei
-diesem Lauf weder verwendet noch überwacht; sein Umschalten beendet den
-Lauf nicht. Ein Abbruch schaltet PROG 5V aus.
+übernimmt das Aus- und Einschalten anstelle des PD mini. Das Halten
+schaltet es ein. Der PD mini an der Servoschiene wird bei diesem Lauf
+weder verwendet noch überwacht; sein Umschalten beendet den Lauf nicht.
+Ein Abbruch schaltet PROG 5V aus.
 
 ![Der Endlagenlauf, bereit](img/de/servo-limrun-ready.png)
 ![Der Endlagenlauf beim Programmieren](img/de/servo-limrun.png)
@@ -2360,7 +2369,7 @@ Eine Änderung gilt bis SPEICHERN als nicht gespeichert.
 | der Hub | das Servoprofil: AUSGANG mit TYP, PULSRATE, PULS MIN, PULS MITTE, PULS MAX, TRIMMUNG, WEG, UMKEHREN und HV-SERVO; PRÜFLING mit NAME und BERICHT |
 | SWEEP | KURVE, TEMPO und BEREICH |
 | TEST | die Zeilen des automatischen Tests, eine Ebene tiefer |
-| ENDLAGENLAUF | die Zeilen des Endlagenlaufs, eine Ebene tiefer |
+| ENDLAGENLAUF | MODUS, SERVO, SERVOPULSE, Programmierspannung, Programmierstrom und Warten vor PWM |
 | RUDER | LÄNGE, SENSOR-MITTE und WINKELQUELLE |
 | RUDER AUTO | die Ziele, MARGIN, TOLERANZ, SERVO, SERVOPULSE und WINKELQUELLE |
 | SERVO > KST | KST EXPERT MODE, eine Ebene tiefer |
@@ -2422,9 +2431,9 @@ Die 56px hohen Tasten 2s HALTEN ZUM ÜBERNEHMEN und ABBRECHEN enden 8px
 | AUTOMATISCHER TEST > OPTIONEN | HV-SERVO | nimmt die Stufen 7,4 und 8,4V hinzu, vorgegeben aus und nach jedem Neustart aus; ein Lauf mit ihnen startet nur über NUR HV-SERVOS |
 | AUTOMATISCHER TEST > OPTIONEN | BLOCKIERT AB | über diesem Strom gilt das Servo als blockiert |
 | AUTOMATISCHER TEST > OPTIONEN | RUHESTROM, HALTESTROM, STELLZEIT | Grenzen für bestanden/nicht bestanden; 0 wird nicht geprüft |
-| ENDLAGENLAUF > OPTIONEN | ENDLAGENLAUF | NUR SUCHE oder SUCHEN + PROGRAMMIEREN, ein Tippen schaltet um; SUCHEN + PROGRAMMIEREN wird nur für ein Servo am Programmierport angeboten, sonst lautet die Zeile NUR SUCHE mit dem Grund darunter. Für die Sitzung |
+| ENDLAGENLAUF > OPTIONEN | MODUS | NUR SUCHE oder SUCHEN + PROGRAMMIEREN; an den Ausgängen des Prüfstands gesperrt mit `Nur an einem PROG-PORT: wähle einen mit PORT`. Für die Sitzung |
 | ENDLAGENLAUF > OPTIONEN | SERVO | KST/CHASERVO oder HITEC; wählt die Servofamilie für SUCHEN + PROGRAMMIEREN |
-| ENDLAGENLAUF > OPTIONEN | SERVOPULSE | BEHALTEN oder 1000-2000, ein Tippen schaltet um; nur für KST/CHASERVO mit PORT auf PROG PORT angezeigt. 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos in der Lesesitzung des Laufs, vor der Suche, auf 1000,0 und 2000,0us. Vorgabe BEHALTEN; für die Sitzung |
+| ENDLAGENLAUF > OPTIONEN | SERVOPULSE | BEHALTEN oder 1000-2000; gesperrt, solange PORT nicht auf PROG-PORT oder SERVO auf HITEC steht. 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos in der Lesesitzung des Laufs, vor der Suche, auf 1000,0 und 2000,0us. Vorgabe BEHALTEN; für die Sitzung |
 | Liste des Hubs | NAME | der Prüfling, bis 23 Zeichen, für den Bericht |
 | Liste des Hubs | BERICHT | ein Textbericht neben der Aufzeichnung jedes Tests |
 | Liste von RUDER | SENSOR-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert seit dem aktuellen Verbindungsaufbau (keinen nach einem Verbindungsverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, SENSORS, AS5600-Mitte |
@@ -2593,7 +2602,7 @@ ist: `Pulsrate des Servos unbekannt. Halte ARM erneut.` Ein bei fehlender
 Verbindung angefordertes ARM erreicht den IOmcu erst nach erfolgreichem
 Zurücksetzen.
 
-AUSGANG-Einstellungen, HV-SERVO, ENDLAGENLAUF und SERVOPULSE gelten für
+AUSGANG-Einstellungen, HV-SERVO, MODUS und SERVOPULSE des Endlagenlaufs gelten für
 die Sitzung. SWEEP, automatischer Test, PRÜFLING und ZIEL werden im NVS
 gespeichert. Eine Änderung in einer OPTIONEN-Liste gilt bis SPEICHERN in
 der Leiste als nicht gespeichert. Eine Änderung in den Zeilen eines Laufs
@@ -5899,8 +5908,8 @@ Laufs ([Servoverfahren](Servo-de.md)).
   Schaltest du während eines Laufs auf AUS, wird seine Datei geschlossen.
   Schaltest du während eines ARMED- oder Netzteil-Laufs auf EIN, beginnt
   eine neue Datei.
-- Testaufzeichnungen wird bei TEST STARTEN und ENDLAGENLAUF STARTEN gelesen.
-  Der Test behält den Zustand vom Start. Bei AUS
+- Testaufzeichnungen wird bei TEST STARTEN gelesen und wenn ARM + START
+  auf ENDLAGENLAUF den Lauf startet. Der Test behält den Zustand vom Start. Bei AUS
   zeigen die Laufkarte und der Kasten auf LIVE `TESTAUFZEICHNUNGEN AUS` an der
   Stelle der Dateinamen.
 - BERICHT unter PRÜFLING in den OPTIONEN des SERVO-Hubs entscheidet bei Testaufzeichnungen EIN,
