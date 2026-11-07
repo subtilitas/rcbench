@@ -58,51 +58,51 @@ panel 60.4 Hz, 64-byte lines; effective bandwidth not measured
 
 mode                   lines/frame     traffic
 ----------------------------------------------
-frame                        8,333    1042 KiB
+frame                        8,342    1043 KiB
 frame-idle                       0       0 KiB
-held                         5,112     639 KiB
-sim                         12,013    1502 KiB
-throttle                    10,107    1263 KiB
-chrome                      48,265    6033 KiB
+held                         5,155     644 KiB
+sim                         12,027    1503 KiB
+throttle                    10,127    1266 KiB
+chrome                      48,268    6034 KiB
 overview                         0       0 KiB
-overview-guide                 367      46 KiB
-servo                        2,307     288 KiB
-servo-grip                     558      70 KiB
-servo-current                3,246     406 KiB
-servo-rudder                 4,076     510 KiB
+overview-guide                 378      47 KiB
+servo                        2,280     285 KiB
+servo-grip                     572      72 KiB
+servo-current                3,261     408 KiB
+servo-rudder                 4,079     510 KiB
 servo-test                       0       0 KiB
 servo-kst                        0       0 KiB
 servo-hitec                      0       0 KiB
-supply                       7,268     908 KiB
-supply-chrome               45,753    5719 KiB
+supply                       7,245     906 KiB
+supply-chrome               45,743    5718 KiB
 analyser                         0       0 KiB
 logs                             0       0 KiB
 settings                         0       0 KiB
 settings-list                    0       0 KiB
 battery                          0       0 KiB
 balance                          0       0 KiB
-motor-stick                  1,644     206 KiB
+motor-stick                  1,619     202 KiB
 motor-wire                       0       0 KiB
-motor-wire-hold                238      30 KiB
-balance-sim                  3,315     414 KiB
-settings-sim                 3,395     424 KiB
-battery-sim                  3,308     414 KiB
-analyser-chrome             53,445    6681 KiB
-logs-chrome                 28,206    3526 KiB
-settings-chrome             33,857    4232 KiB
-settings-list-chrome        37,343    4668 KiB
-battery-chrome              54,619    6827 KiB
-balance-chrome              57,998    7250 KiB
-motor-stick-chrome          41,480    5185 KiB
-motor-wire-chrome           40,301    5038 KiB
+motor-wire-hold                241      30 KiB
+balance-sim                  3,278     410 KiB
+settings-sim                 3,328     416 KiB
+battery-sim                  3,264     408 KiB
+analyser-chrome             53,468    6684 KiB
+logs-chrome                 28,225    3528 KiB
+settings-chrome             33,882    4235 KiB
+settings-list-chrome        37,416    4677 KiB
+battery-chrome              54,629    6829 KiB
+balance-chrome              57,971    7246 KiB
+motor-stick-chrome          41,504    5188 KiB
+motor-wire-chrome           40,323    5040 KiB
 picker                           0       0 KiB
-picker-chrome               41,623    5203 KiB
+picker-chrome               41,598    5200 KiB
 wifi                             0       0 KiB
-wifi-chrome                 22,487    2811 KiB
-wifi-keys                   36,926    4616 KiB
+wifi-chrome                 22,485    2811 KiB
+wifi-keys                   36,965    4621 KiB
 wifi-idle                        0       0 KiB
-imu                            116      14 KiB
-imu-hold                       636      80 KiB
+imu                            129      16 KiB
+imu-hold                       640      80 KiB
 clear                       19,207    2401 KiB
 vlines                      10,201    1275 KiB
 hlines                         180      22 KiB
@@ -521,7 +521,7 @@ oben ist deshalb eine Untergrenze:
   Servodateien geschrieben werden, die es anhand ihrer Namen verfolgt
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `SERVO_STORE_CALLS`):
-  373
+  376
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Sprünge über ein Register: eine Sprungtabelle, die in ihrer Funktion
