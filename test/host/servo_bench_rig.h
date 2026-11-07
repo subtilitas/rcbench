@@ -54,6 +54,7 @@ static struct {
     uint16_t cmd;
     bool     released;
     unsigned disarms;          /* DISARMs posted                      */
+    bool     no_arm;           /* the IOmcu leaves an ARM unanswered */
     bool     stepped;          /* a position went out with no slew   */
     float    set_v_max;        /* the highest set point while it ran */
     unsigned opens, opens_txt, csv, txt, ends;
@@ -189,7 +190,7 @@ static inline void bench_frames(uint32_t ms)
                 if (sc.kind == SERVO_CMD_DISARM) {
                     servo_screen_set_armed(false);
                 }
-            } else if (sc.kind == SERVO_CMD_ARM) {
+            } else if (sc.kind == SERVO_CMD_ARM && !bench.no_arm) {
                 servo_screen_set_armed(true);   /* and an ARM: ARMED */
             }
         }
@@ -308,7 +309,7 @@ static inline bool both_whole_in(int x0, int y0, int w, int h)
  * ask it: the command taken, then ARMED. */
 static inline void bench_answer_arm(void)
 {
-    if (!servo_screen_arm_asked()) {
+    if (!servo_screen_arm_asked() || bench.no_arm) {
         return;
     }
     servo_cmd_t c;
