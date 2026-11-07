@@ -107,19 +107,26 @@ _Static_assert(SP_FOOT_Y + 20 <= SP_FOOT, "the list's footer ends above "
 /** @brief What a result's lines under the stack light may take, from its
  *         seventh line on, in SP_CELL cells: 98. */
 #define SP_WIDE_CELLS  ((W - 2 * PAD - 24) / SP_CELL)
+/**
+ * @brief A result's MANUAL INTERVENTION REQUIRED: 330 x 48px left of the
+ *        stack light, from the second line under the result's head, body
+ *        x 614 to 944, y 244 to 292.  The change lines beside it end
+ *        12px left of it; the lines from the seventh on pass under it.
+ */
+#define SP_HAND_RES_W  330
+#define SP_HAND_RES_X  (SP_TOWER_X - 12 - SP_HAND_RES_W) /**< its left: 614 */
+#define SP_HAND_RES_Y  (RUN_L0 + LINE_P + 4)            /**< its top: 244  */
+/** @brief What a result's change lines may take beside that button, in
+ *         SP_CELL cells: 58. */
+#define SP_BESIDE_CELLS ((SP_HAND_RES_X - 12 - (PAD + 12)) / SP_CELL)
+_Static_assert(SP_HAND_RES_Y + UI_TAP_MIN <= RUN_L0 + 5 * LINE_P,
+               "the result's button ends above its sixth line");
+_Static_assert(SP_HAND_RES_Y >= RUN_L0 + LINE_P,
+               "the result's button starts under its head line");
 _Static_assert(SP_TOWER_Y + SP_TOWER_CAP + 2 * (SP_TOWER_LENS + SP_TOWER_RING)
                    + SP_TOWER_BASE + 4 <= RUN_L0 + 6 * LINE_P,
                "a result's lines from its seventh pass under the stack "
                "light");
-
-/** @brief The settings the TIMING page shows, in esc_stick_panel.c, and
- *         their count. */
-#define SP_SETTINGS 14
-/**
- * @brief The TIMING page's settings, SP_SETTINGS of them, in the order the
- *        page lists them.
- */
-extern const setting_id_t sp_settings_list[SP_SETTINGS];
 
 /**
  * @brief A maker on the list's first level.
@@ -184,16 +191,6 @@ typedef struct {
          warn_down;                         /**< whether the warning's hold button is down */
     uint8_t   warn_id;                  /**< id of the warning's hold */
     ui_hold_t hold;                     /**< hold counter of the warning's button */
-
-    bool timing;                        /**< whether the TIMING page shows */
-    int tscroll,                            /**< first TIMING row shown                   */
-        tpicked;                            /**< TIMING row picked, -1 for none           */
-    /* TIMING's keypad, the row of sp_settings_list it types, and its
-     * revision as the page last followed it. */
-    ui_keypad_t kp;             /**< TIMING's keypad                    */
-    int         kp_idx;         /**< the row of sp_settings_list it types */
-    uint32_t    kp_rev;         /**< its revision as the page last
-                                     followed it                        */
 
     /* The run, and whether its result is still on screen. */
     esc_stick_t run;                    /**< the engine's run */
@@ -271,11 +268,10 @@ typedef struct {
     gfx_rect_t hold_btn,                    /**< HOLD TO RUN                        */
                cancel_btn,                  /**< CANCEL                             */
                hand_btn,                    /**< MANUAL INTERVENTION REQUIRED       */
-               steps_btn,                   /**< manual steps                       */
-               timing_btn;                  /**< TIMING                             */
-    /** @brief MANUAL INTERVENTION REQUIRED on a run's result: in the
-     *         foot row, left of OK; hand_btn is its place on the
-     *         profile's page. */
+               steps_btn;                   /**< manual steps                       */
+    /** @brief MANUAL INTERVENTION REQUIRED on a run's result: at the run
+     *         card's foot, right; hand_btn is its place on the profile's
+     *         page. */
     gfx_rect_t hand_res;
 } stick_t;
 
@@ -517,8 +513,12 @@ int sp_rows_shown(int total, int scroll);
 gfx_rect_t sp_row(int i);
 /** @brief The keyboard closes; the search stays as typed. */
 void sp_find_close(void);
-/** @brief TIMING's keypad closes, with nothing typed taken. */
-void sp_kp_close(void);
+/**
+ * @brief Whether the footer's SETTINGS takes a press: no run under way and
+ *        the bench SAFE.
+ * @return True when it does.
+ */
+bool sp_settings_free(void);
 
 /* esc_stick_draw.c */
 

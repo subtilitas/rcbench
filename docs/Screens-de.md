@@ -50,9 +50,9 @@ begonnen hat. Das Statusband belegt die oberen 60px des Panels.
   im Band zählt nicht mit. Eine Haltegeste auf ARM oder AUSGANG EIN wird
   abgebrochen. Eine Schaltfläche, Taste, Kachel, Registerkarte oder
   Listenzeile unter der letzten Position reagiert nicht: Das Panel hat das
-  Loslassen ausgelöst, nicht der Finger. Drei Bedienelemente reagieren
-  dennoch, weil sie etwas anhalten: DISARM, AUSGANG AUS und TEST STARTEN
-  während eines laufenden Servotests. Die Berührung wird nicht wieder
+  Loslassen ausgelöst, nicht der Finger. Zwei Bedienelemente reagieren
+  dennoch, weil sie etwas anhalten: DISARM und AUSGANG AUS. TEST BEENDEN
+  in der Fußleiste von TEST wirkt schon beim Aufsetzen. Die Berührung wird nicht wieder
   aufgenommen, wenn der Finger in die Seite zurückgleitet. Hebe ihn ab und
   setze ihn erneut auf.
 - Liegt ein Kontakt mehr als 120px von der zuletzt gemeldeten Position
@@ -117,7 +117,8 @@ Das Feld ist 640px breit und fasst 60 Zeichen pro Zeile in der Schrift
 - STOP schließt das Feld und stoppt sofort, wie bei geschlossenem Hilfefeld.
 - Auch Bedienelemente zum Anhalten wirken mit demselben Druck: DISARM,
   AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN, LAUF BEENDEN sowie
-  TEST STARTEN oder ENDLAGENLAUF STARTEN während ihres laufenden Tests.
+  2s HALTEN: ARM + START auf RUDER AUTO, TEST und ENDLAGENLAUF während
+  seiner Startschritte oder seines Laufs.
   ARM und AUSGANG EIN schließen dagegen nur das Feld; die Haltegeste beginnt
   nicht.
 - Ein Seitenwechsel schließt das Hilfefeld.
@@ -296,12 +297,12 @@ Die Aufgabe auf der linken Karte bestimmt die ersten Hilfeseiten:
 | --- | --- |
 | SERVO Hub | die Kacheln LIVE, ENDLAGENLAUF, RUDER und KST und die Portzeile (5); eine Kachel und OPTIONEN (2) |
 | SERVO LIVE und SWEEP | der Winkel des Ruderhorns, die Skala und die Messwerte (3) |
-| SERVO TEST | TEST STARTEN, seine OPTIONEN und die Grenzen (3) |
-| SERVO ENDLAGENLAUF | ENDLAGENLAUF STARTEN und seine OPTIONEN (2) |
+| SERVO TEST | das Feld AUTOMATISCHER TEST, die Grenzen und der Verlauf (3); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
+| SERVO ENDLAGENLAUF | UNTERES ENDE mit OBERES ENDE und die Zustandszeilen (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
 | SERVO RUDER | LÄNGE, die Fahrtasten, NULLPUNKT und MAX LÖSCHEN (4); AUSSCHLAG, HINTERKANTE und die Statuszeilen (3) |
 | SERVO RUDER AUTO | die Sollwerte, RESERVE und TOLERANZ, NULLPUNKT (3); AUSSCHLAG und HINTERKANTE (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
 | SERVO LIVE, SWEEP und RUDER, SAFE | PORT, BEREIT, die Schienenzeile, ARM und auf SWEEP und RUDER OPTIONEN (4 oder 5); TEMPO, Typ und die Tasten auf LIVE und SWEEP (3), Typ und Seitenansicht auf RUDER (2) |
-| SERVO TEST, ENDLAGENLAUF, KST und HITEC, SAFE | Typ, Grafik oder PROG 5V, SOLL und TEMPO (4); PORT, ZENTRIEREN mit SWEEP und FREIGEBEN, ARM und OPTIONEN (4) |
+| SERVO KST und HITEC, SAFE | Typ, Grafik oder PROG 5V, SOLL und TEMPO (4); PORT, ZENTRIEREN mit SWEEP und FREIGEBEN, ARM und OPTIONEN (4) |
 | die Listen von SERVO (Hub, SWEEP, RUDER, RUDER AUTO, HITEC) | wie eine Optionsliste |
 | SUPPLY LIVE | GRAFIK und TABELLE, SPANNUNG und STROMBEGRENZUNG (3) |
 | SUPPLY LIVE, die rechte Spalte | der Bereich und die vier Messwertkarten (5); die Sollwerte, SPITZENWERTE ZURÜCKSETZEN, AUSGANG EIN und OPTIONEN (4) |
@@ -310,10 +311,9 @@ Die Aufgabe auf der linken Karte bestimmt die ersten Hilfeseiten:
 Eine Hilfeseite, deren Hilfefeld ein Bedienelement zum Anhalten eines
 Ausgangs verdecken würde, fehlt, solange dieses Element sichtbar ist:
 
-- Die Hilfeseiten zur linken Karte verdecken die SOLL-Zeile auf TEST,
-  ENDLAGENLAUF, KST und HITEC. Sie fehlen dort, solange der
-  Netzteilausgang an ist oder ein EIN unterwegs ist: AUSGANG AUS bleibt
-  sichtbar. LIVE, SWEEP und RUDER haben keine SOLL-Zeile und bieten ihre
+- Die SOLL-Zeile mit AUSGANG AUS liegt im Ausgangsfeld von KST und
+  HITEC, deren Hilfeseiten links andocken, neben der Zeile. LIVE, SWEEP
+  und RUDER haben keine SOLL-Zeile und bieten ihre
   Hilfeseiten auch bei eingeschaltetem Ausgang, aber keine, solange die
   Schritte von ARM laufen. AUSGANG AUS von SUPPLY, das mittlere Feld
   der Fußleiste, liegt unter jedem Hilfefeld; SUPPLY bietet dann keine
@@ -533,8 +533,8 @@ ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | AUSGANG EIN auf SUPPLY und im Versorgungsfeld von SERVO | `Halte 2s, um den Ausgang einzuschalten.` |
 | PROG 5V EIN im Feld PROG 5V auf SERVO und SUPPLY, rbmod-Carrier | `Halte 2s, um die 5V der Programmierports einzuschalten.` |
 | ÜBERNEHMEN in den Warnungen zu HV, Pulsrate und weichen Grenzen von SERVO, KST und Chaservo und auf den Hitec-Seiten | `Halte 2s, um zu übernehmen.` |
-| TEST STARTEN | `Halte 2s, um den Test zu starten.` |
-| ENDLAGENLAUF STARTEN | `Halte 2s, um den Endlagenlauf zu starten.` |
+| 2s HALTEN: ARM + START auf TEST | `Halte 2s, um auf ARMED zu schalten und den Test zu starten.` |
+| 2s HALTEN: ARM + START auf ENDLAGENLAUF | `Halte 2s, um Port und Versorgung einzuschalten, ARM und den Endlagenlauf zu starten.` |
 | 2s HALTEN ZUM FREIGEBEN, außer auf PORT FREIGEBEN | `Halte 2s, um freizugeben.` |
 | 2s HALTEN ZUM SCHREIBEN | `Halte 2s, um zu schreiben.` |
 | 2s HALTEN ZUM ZURÜCKSPIELEN | `Halte 2s, um zurückzuspielen.` |
@@ -546,7 +546,7 @@ ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | 2s HALTEN ZUM REPARIEREN | `Halte 2s, um zu reparieren.` |
 | 2s HALTEN ZUM STARTEN in der Warnung eines Stick-Laufs | `Halte 2s, um zu starten.` |
 | 2s HALTEN ZUM INSTALLIEREN auf WI-FI | `Halte 2s, um zu installieren.` |
-| 2s HALTEN ZUM LADEN & INSTALLIEREN auf UPDATES und in der Update-Erinnerung | `Halte 2s, um zu laden und zu installieren.` |
+| 2s HALTEN: LADEN & INSTALLIEREN auf UPDATES und in der Update-Erinnerung | `Halte 2s, um zu laden und zu installieren.` |
 | 2s HALTEN ZUM IOMCU-UPDATE auf UPDATES und START im Bestätigungsdialog des IOmcu-Updates | `Halte 2s, um den IOmcu zu aktualisieren.` |
 | 2s HALTEN ZUM C6-FUNK-UPDATE auf UPDATES | `Halte 2s, um den C6-Funk zu aktualisieren. Das WLAN bleibt bis zum Ende aus.` |
 | 2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN auf OUTPUTS | `Halte 2s, um alle Pin-Zuordnungen zu löschen.` |
@@ -562,9 +562,10 @@ ist: die ganze Taste weiß, schwarz, dann in ihrer neuen Farbe, zweimal,
 (`UI_HOLD_FLASH_MS`). Bei 60 Frames pro Sekunde dauert eine Phase 3 Frames.
 Ein langsamerer Frame beendet nur die Phase, in die er fällt; so wird
 jede Phase bei jeder Bildrate gezeichnet. Die neue Farbe ist die,
-zu der das Halten überblendet: Gefahrenrot bei ARM, AUSGANG EIN, PROG 5V
-EIN, TEST STARTEN und ENDLAGENLAUF STARTEN; Bernstein bei 2s HALTEN: ARM
-+ START auf RUDER AUTO, dessen Folge vor ARM auf ihre Rückmeldung wartet.
+zu der das Halten überblendet: Gefahrenrot bei ARM, AUSGANG EIN und PROG 5V
+EIN; Bernstein bei 2s HALTEN: ARM + START auf TEST, RUDER AUTO und
+ENDLAGENLAUF, deren Folge vor dem Lauf auf ARMED und ihre Rückmeldungen
+wartet.
 
 - Das Aufblitzen beginnt mit dem Halten, nicht mit der Antwort. ARMED, der
   Ausgang oder der Lauf, die innerhalb der 300ms eintreffen, starten es
@@ -586,7 +587,7 @@ Die Füllung einer Taste sagt, was ein Druck mit einem Ausgang macht.
 
 | Klasse | Tasten | Verfügbar | Aktiv | Wartend | Abgelehnt |
 | --- | --- | --- | --- | --- | --- |
-| Ausgangsaktion: schaltet einen Ausgang ein, schaltet auf ARMED, startet einen Lauf, schreibt ein Servo | ARM, AUSGANG EIN, PROG 5V EIN, TEST STARTEN, ENDLAGENLAUF STARTEN, 2s HALTEN: ARM + START auf RUDER AUTO, ZENTRIEREN auf LIVE, SWEEP auf SWEEP, 1000us, ZENTRIEREN, 2000us und NULLPUNKT auf RUDER, VERBINDEN, SCHREIBEN INS SERVO FREIGEBEN, n WERTE SCHREIBEN und SERVO BEWEGEN der Programmierungen | grün (`UI_C_OK`) | rot (`UI_C_DANGER`): ein Ausgang ist ein, ARMED, ein Schreiben läuft, das Servo wird angesteuert; die Beschriftung sagt, was ein Druck anhält (DISARM, AUSGANG AUS, LAUF BEENDEN, PAUSE, VERLASSEN, ABBRECHEN, EIN) | bernstein (`UI_C_WARN`): PAUSIERT, WARTEN, der Schritt von ARM + START und von ARM auf LIVE, SWEEP und RUDER | grau (`ui_button_off_fill()`), blasse Beschriftung |
+| Ausgangsaktion: schaltet einen Ausgang ein, schaltet auf ARMED, startet einen Lauf, schreibt ein Servo | ARM, AUSGANG EIN, PROG 5V EIN, 2s HALTEN: ARM + START auf TEST, RUDER AUTO und ENDLAGENLAUF, ZENTRIEREN auf LIVE, SWEEP auf SWEEP, 1000us, ZENTRIEREN, 2000us und NULLPUNKT auf RUDER, VERBINDEN, SCHREIBEN INS SERVO FREIGEBEN, n WERTE SCHREIBEN und SERVO BEWEGEN der Programmierungen | grün (`UI_C_OK`) | rot (`UI_C_DANGER`): ein Ausgang ist ein, ARMED, ein Schreiben läuft, das Servo wird angesteuert; die Beschriftung sagt, was ein Druck anhält (DISARM, AUSGANG AUS, LAUF BEENDEN, PAUSE, VERLASSEN, ABBRECHEN, EIN) | bernstein (`UI_C_WARN`): PAUSIERT, WARTEN, der Schritt von ARM + START und von ARM auf LIVE, SWEEP und RUDER | grau (`ui_button_off_fill()`), blasse Beschriftung |
 | Notfall | STOP | rot | rot, blitzt beim Druck | - | nie |
 | Bearbeiten | `-` `+`, Wertfelder, MAX LÖSCHEN, KATEGORIE ZURÜCKSETZEN auf SETUP, VERWERFEN, NEU LESEN | neutral (`UI_C_PANEL_HI`) | - | - | grau |
 | SPEICHERN auf SETUP | SPEICHERN, GESPEICHERT, BEI STILLSTAND, NICHT GESPEICHERT | grün, solange etwas ungespeichert ist (SPEICHERN) | - | bernstein (BEI STILLSTAND) | neutral mit roter Beschriftung (NICHT GESPEICHERT); GESPEICHERT ist neutral |
@@ -597,12 +598,12 @@ Beide Themen nutzen dieselben Rollen; das helle Thema hat sein eigenes
 Grün, Rot und Bernstein (`shared/ui/ui_theme.c`). Die Überblendung beim
 Halten läuft vom verfügbaren Grün zur Farbe, die die Taste danach hält.
 
-Ein Tipp auf ein graues TEST STARTEN oder ENDLAGENLAUF STARTEN zeigt den
-Grund im Alarmband als Mitteilung, 4s in Bernstein, wie der Hinweis einer
-Halte-Taste. Die Zeile unter der Taste sagt dasselbe und bleibt. Ein Tipp
-auf ein graues 2s HALTEN: ARM + START zeigt die erste rote Zeile der Karte
-BEREIT von RUDER AUTO im Band, `PORT: AUTO PROGRAMMIERT EIN SERVO AM
-PROG-PORT`; die erste Zustandszeile sagt dasselbe.
+Ein Tipp auf ein graues 2s HALTEN: ARM + START zeigt die erste rote Zeile
+der Karte BEREIT im Alarmband als Mitteilung, 4s in Bernstein, wie der
+Hinweis einer Halte-Taste: `PORT: AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT`
+auf RUDER AUTO, `STUFEN: KEINE STUFE GEWÄHLT` auf TEST, `MESSGERÄT: INA3221
+NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET` auf ENDLAGENLAUF; die
+Zustandszeile der Karte sagt dasselbe.
 
 ## Marken im Menü
 
@@ -741,11 +742,26 @@ MOTOR & ESC 145 x 89px und das Tastenfeld der Blattzahl auf BALANCE
 
 ## Die Fußleiste und die Optionsliste
 
-MOTOR & ESC und SUPPLY enden in derselben Fußleiste: drei Felder von
+Die Seiten unten enden in derselben Fußleiste: drei Felder von
 328 x 48px bei x 10, 348 und 686, y 444 bis 492 des Inhalts (y 504 bis
 552 des Panels), 4px über dem Alarmband bei y 556. Die Felder sind die
 Spalten der SETUP-Leiste. Eine Seite mit Fußleiste hält ihre eigenen
 Bedienelemente über y 436 des Inhalts.
+
+| Seite | Mittleres Feld | OPTIONEN öffnet |
+| --- | --- | --- |
+| MOTOR & ESC | ARM / DISARM | die Liste der 8 Einstellungen für Motor, Akku und Gasausgang |
+| SUPPLY | AUSGANG EIN / AUS | die Liste der Grenzen des Netzteils und der Anschlüsse des PD mini |
+| ESC STICK, auf der Seite eines Profils, seinem Lauf und seinem Ergebnis | START n / ABBRECHEN / OK | die Liste des Netzteils und der 12 Timing-Einstellungen |
+| IMU | 2s HALTEN: KALIBRIEREN | die Liste SENSORS von SETUP beim Eintrag IMU |
+| UPDATES | 2s HALTEN: LADEN & INSTALLIEREN, wenn eine neuere Version gefunden ist | die Liste mit Erinnerung und Versionen |
+| LOGS, auf der Dateiliste | leer | die Liste SD CARD von SETUP |
+| FILES, auf den Bereichen | leer | die Liste SD CARD von SETUP |
+| RECEIVER, BATTERY, BALANCE | leer | nichts: das Feld bleibt leer |
+
+Eine Liste aus SENSORS oder SD CARD von SETUP ist die von SETUP; ihr
+Home-Feld führt zur Seite zurück, die sie geöffnet hat. WI-FI und
+OUTPUTS haben keine Fußleiste.
 
 | Feld | Inhalt |
 | --- | --- |
@@ -756,9 +772,12 @@ Bedienelemente über y 436 des Inhalts.
 OPTIONEN öffnet die Optionsliste der Seite über dem ganzen Inhalt. Sie
 öffnet nur, solange die Seite nichts ansteuert. MOTOR & ESC braucht einen
 Prüfstand in SAFE ohne gehaltenes ARM, SUPPLY einen ausgeschalteten Ausgang
-ohne unterwegs befindliches EIN. Sonst ist die Taste grau, und ein Tippen
-zeigt `OPTIONEN nur bei SAFE. Schalte zuerst auf SAFE.` oder
-`OPTIONEN nur bei Ausgang aus. Schalte ihn zuerst aus.` im Alarmband.
+ohne unterwegs befindliches EIN, ESC STICK einen Prüfstand in SAFE ohne
+Lauf, UPDATES keine laufende Suche und keinen laufenden Download. Sonst
+ist die Taste grau, und ein Tippen zeigt
+`OPTIONEN nur bei SAFE. Schalte zuerst auf SAFE.`,
+`OPTIONEN nur bei Ausgang aus. Schalte ihn zuerst aus.` oder
+`OPTIONEN nur ohne laufende Suche oder Download.` im Alarmband.
 Wird ein Ausgang unter der offenen Liste aktiv, schließt sie.
 
 Die Liste ist die Kategorieliste von SETUP ([Tasten und Liste](#tasten-und-liste)):
@@ -1404,13 +1423,13 @@ Beschriftungen, Zeilen und Schaltflächen verwenden die Schrift 10 x 20:
 
 | Teil | Ort und Größe |
 | --- | --- |
-| Pfadzeile | y 30 bis 78: ZURÜCK 120 x 48px, der Pfad in der Schrift 12 x 24 und rechts das Suchfeld (260px, sein X 48px), `^` und `v` (je 56px) auf der Liste oder TIMING (168px) auf der Seite eines Profils |
+| Pfadzeile | y 30 bis 78: ZURÜCK 120 x 48px, der Pfad in der Schrift 12 x 24 und rechts das Suchfeld (260px, sein X 48px) und `^` und `v` (je 56px) auf der Liste |
 | Liste | 7 Zeilen je Seite, 48px hoch im Abstand von 56px ab y 84, 984px breit; der Name eines Modells in 30 Zeichen; die Fußzeile endet 4px über dem Alarmband |
-| Seite eines Profils und TIMING | links die Parameterfläche, 660px: 6 Zeilen je Seite, 48px hoch im Abstand von 56px, jede mit ihrer Nummer, ihrem Namen (bis 23 Zeichen), ihrem Wert in einer 250px breiten Spalte und `-` und `+` von 48 x 48px, 8px zwischen je zweien |
-| Seitenspalte | 340px rechts der Parameterfläche: ÄNDERN (auf TIMING dessen Titel), die gezeigten Zeilen und `^` und `v` von 48 x 48px; MANUELLER EINGRIFF NÖTIG, 310 x 48px; darunter, wie das Menü des Profils arbeitet, Netzteil und Einstiegszeit und die Hilfe der gewählten Zeile, umbrochen auf 31 Zeichen je Zeile |
-| Fußzeile | y 436 bis 492, 4px über dem Alarmband: links der Hinweis auf bis zu 2 Zeilen, VORGABEN und START, ABBRECHEN, OK oder SCHLIESSEN, je 168 x 56px |
-| Lauf und Ergebnis | die Gerätekarte über die Breite ab y 84 mit ihren zwei Zeilen, darunter ab y 136 die Karte des Laufs mit der Signalsäule rechts, zwei Hilfezeilen ab y 390 und die Fußzeile; MANUELLER EINGRIFF NÖTIG eines Ergebnisses, 330 x 56px, links von OK |
-| Warnung, Handgriffe, Abfrage | ein Feld über den Seiten ab y 28, sein Titel in der Schrift 20 x 36, seine Zeilen im Abstand von 22px, seine Schaltflächen 48px hoch und 4px über der Fußzeile endend, sodass ein zweites Tippen auf die Stelle von START keine davon trifft |
+| Seite eines Profils | links die Parameterfläche, 660px, y 84 bis 388: 5 Zeilen je Seite, 48px hoch im Abstand von 56px, jede mit ihrer Nummer, ihrem Namen (bis 23 Zeichen), ihrem Wert in einer 250px breiten Spalte und `-` und `+` von 48 x 48px, 8px zwischen je zweien; der Hinweis über die Breite auf bis zu 2 Zeilen ab y 396 |
+| Seitenspalte | 340px rechts der Parameterfläche: ÄNDERN, die gezeigten Zeilen und `^` und `v` von 48 x 48px; MANUELLER EINGRIFF NÖTIG, 310 x 48px; darunter, wie das Menü des Profils arbeitet, Netzteil und Einstiegszeit und die Hilfe der gewählten Zeile, umbrochen auf 31 Zeichen je Zeile |
+| Fußleiste | y 444 bis 492, 4px über dem Alarmband ([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste)): `[ESC STICK] [START n / ABBRECHEN / OK] [OPTIONEN]` auf der Seite eines Profils, ihrem Lauf und ihrem Ergebnis |
+| Lauf und Ergebnis | die Gerätekarte über die Breite ab y 84 mit ihren zwei Zeilen, darunter von y 136 bis 388 die Karte des Laufs mit der Signalsäule rechts, zwei Hilfezeilen ab y 394 und die Fußleiste; MANUELLER EINGRIFF NÖTIG eines Ergebnisses, 330 x 48px, links der Signalsäule bei x 614 bis 944, y 244 bis 292; die Änderungszeilen daneben enden 12px links davon, die Zeilen ab der siebten laufen darunter |
+| Warnung, Handgriffe, Abfrage | ein Feld über den Seiten und der Fußleiste ab y 28, sein Titel in der Schrift 20 x 36, seine Zeilen im Abstand von 22px, seine Schaltflächen 48px hoch und 4px über der Fußleiste endend, sodass ein zweites Tippen auf die Stelle von START keine davon trifft |
 
 ZURÜCK und das Home-Feld führen jeweils eine Ebene zurück: vom
 Stick-Profil zur Modellliste, von dort zur Herstellerliste und weiter zu
@@ -1523,25 +1542,26 @@ bleibt sie aus
 
 ![Vom Netzteil beendet](img/de/motor-stick-failed.png)
 
-TIMING enthält die Zeiten der Pieptöne und die Netzteil-Einstellungen. Keine
-davon ist gemessen:
+OPTIONEN in der Fußleiste öffnet die Optionsliste
+([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste)):
+Spannung und Strombegrenzung unter NETZTEIL, die Zeiten der Pieptöne unter
+TIMING UND ERKENNUNG. Keine davon ist gemessen. OPTIONEN nimmt einen Druck
+bei SAFE und ohne laufenden Lauf an; sonst ist es grau, und ein Tippen
+zeigt `OPTIONEN nur bei SAFE. Schalte zuerst auf SAFE.` im Meldeband. Ein
+Prüfstand, der unter der offenen Liste scharf schaltet, schließt sie.
 
-![Timing](img/de/motor-stick-timing.png)
+![Die Optionsliste](img/de/motor-stick-timing.png)
 
-Ändere einen Wert mit `-` und `+` um einen Schritt, oder tippe auf die
-250px breite Wertespalte, um das Tastenfeld zu öffnen. Es bedeckt die Seite
-unter dem Ausgangsstreifen bis 4px über dem Alarmband: 1008 x 464px mit
-242 x 81px großen Tasten. Es zeigt Name, Bereich und Einheit. Die Zahl
-der Nachkommastellen folgt der Schrittweite: eine bei 0,1V für Spannung,
-zwei bei 0,05A für Strombegrenzung.
-
-OK rundet auf den nächsten Schritt, wie die Plus- und Minus-Tasten:
-1,23A wird 1,25A. SCHLIESSEN fordert wie nach einer Schrittänderung das
-Speichern an. Bei einem Wert außerhalb des Bereichs bleibt das Tastenfeld
-offen und zeigt den Bereich in der Warnfarbe. ABBRECHEN, OK ohne Eingabe
-oder das Home-Feld schließt es ohne Änderung; TIMING bleibt offen.
-Darunterliegende Bedienelemente reagieren nicht. Profilpunkte verwenden
-Listen mit ESC-Werten und öffnen kein Tastenfeld.
+Die Liste bedeckt den ganzen Körper samt Ausgangsstreifen; ihre Leiste
+lautet `[ESC STICK] [ESC STICK ZURÜCKSETZEN] [SPEICHERN]`. Ein Tippen auf
+den Wert einer Zahl öffnet das Tastenfeld, 1004 x 482px. Es zeigt Name,
+Bereich und Einheit. Die Zahl der Nachkommastellen folgt der Schrittweite:
+eine bei 0,1V für Spannung, zwei bei 0,05A für Strombegrenzung. OK rundet
+auf den nächsten Schritt, wie die Tasten: 1,23A wird 1,25A. Eine Änderung
+gilt sofort; SPEICHERN behält sie. ESC STICK ZURÜCKSETZEN setzt die 14
+Einstellungen auf ihre Vorgaben und keine anderen. Spannung 0,0V nimmt die
+Spannung aus der Zellenzahl des Profils. Profilpunkte verwenden Listen mit
+ESC-Werten und öffnen kein Tastenfeld.
 
 ![Das Tastenfeld von Piepton min](img/de/motor-stick-timing-keypad.png)
 
@@ -1558,8 +1578,8 @@ der Reihenfolge der Nutzung.
 | --- | --- | --- |
 | LIVE | LIVE | das Zifferblatt, den Drehknopf, die Anzeigen SOLL-PULSBREITE, GEMESSEN und STROM |
 | SWEEP | SWEEP | das Zifferblatt mit dem Sweep; OPTIONEN öffnet KURVE, TEMPO und BEREICH |
-| TEST | TEST | das Feld AUTOMATISCHER TEST, die Grenzen von SUPPLY und das Feld des Laufs; OPTIONEN öffnet die Zeilen des Laufs |
-| ENDLAGENLAUF | ENDLAGENLAUF | das Feld ENDLAGENLAUF und das Feld des Laufs; OPTIONEN öffnet die Zeilen des Laufs |
+| TEST | TEST | das Feld AUTOMATISCHER TEST, die Grenzen von SUPPLY, der Verlauf und das Feld des Laufs, die Karte BEREIT an der Stelle des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet die Liste des automatischen Tests |
+| ENDLAGENLAUF | ENDLAGENLAUF | Modus- und Ausgangszeile, UNTERES ENDE und OBERES ENDE und die Zustandszeilen auf der linken Karte, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet MODUS, SERVO, SERVOPULSE und die Zeilen des Programmierers ([Starten](Servo-de.md#starten)) |
 | RUDER | RUDER | Ausschlag in ° und mm, LÄNGE, 1000us, ZENTRIEREN, 2000us, NULLPUNKT und MAX LÖSCHEN ([Ruderausschlag](Servo-de.md#ruderausschlag)) |
 | RUDER AUTO | RUDER AUTO | das Feld von AUTO statt LÄNGE und der Fahrtasten, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste ([AUTO-Endpoints](Servo-de.md#auto-endpoints)) |
 | KST | SERVO > KST | die Programmierung für KST und Chaservo über dem linken Feld ([Programmierer](#programmierer)) |
@@ -1586,11 +1606,11 @@ führt zum Hub.
 
 Jeder Funktionsbildschirm hat denselben Rahmen. Das linke Feld ist 620px
 breit und reicht von y 8 bis zum Feldboden bei y 436. Das rechte Feld, x
-636 bis 1016, beginnt mit der Taste PORT (y 8 bis 56). Auf TEST,
-ENDLAGENLAUF, KST und HITEC ist es das Ausgangsfeld: Messzeile und Grafik,
-SOLL, TEMPO, die Typzeile, ZENTRIEREN, SWEEP und FREIGEBEN. Auf LIVE,
-SWEEP und RUDER trägt es die Zeilen von BEREIT und die Bedienelemente
-darunter. Die
+636 bis 1016, beginnt mit der Taste PORT (y 8 bis 56). Auf KST und HITEC
+ist es das Ausgangsfeld: Messzeile und Grafik, SOLL, TEMPO, die Typzeile,
+ZENTRIEREN, SWEEP und FREIGEBEN. Auf LIVE, SWEEP und RUDER trägt es die
+Zeilen von BEREIT und die Bedienelemente darunter, auf TEST, ENDLAGENLAUF
+und RUDER AUTO die Karte BEREIT. Die
 Fußleiste bei y 444 bis 492 hat drei Plätze von 328 x 48px: den Namen der
 Funktion mit der Portzeile darunter, ARM oder DISARM und OPTIONEN.
 OPTIONEN ist grau, solange der Prüfstand nicht SAFE ist oder ein Sweep
@@ -1628,13 +1648,25 @@ der Prüfstand nicht SAFE ist.
 
 ![LIVE auf dem rbmod-Carrier: PORT-PWM und PROG 5V gelb, ARM schaltet sie ein](img/de/servo-rbmod.png)
 
-RUDER AUTO behält die Taste PORT und zeigt seine Karte BEREIT an der Stelle
-des Ausgangsfelds: zehn Zeilen von 30px ab y 96, jede mit Punkt,
-Bezeichnung von 13 Zellen und Zustand von 20, und die Schienenzeile bei y
-404. Die Mitte seiner Fußleiste ist 2s HALTEN: ARM + START, das PORT-PWM
-und die Versorgung einschaltet, auf ihre Rückmeldung wartet, ARM schaltet
-und den Lauf in einem Halten startet ([Servo: AUTO-Endpoints](Servo-de.md#auto-endpoints)).
-Nichts vom Ausgangsfeld nimmt auf RUDER AUTO einen Druck an.
+RUDER AUTO und ENDLAGENLAUF behalten die Taste PORT und zeigen eine Karte
+BEREIT an der Stelle des Ausgangsfelds: Zeilen von 30px ab y 96, zehn auf
+RUDER AUTO und neun auf ENDLAGENLAUF, jede mit Punkt, Bezeichnung von 13
+Zellen und Zustand von 20, und die Schienenzeile bei y 404. Die Mitte
+ihrer Fußleiste ist 2s HALTEN: ARM + START, das PORT-PWM und die
+Versorgung einschaltet, auf ihre Rückmeldung wartet, ARM schaltet und den
+Lauf in einem Halten startet
+([Servo: AUTO-Endpoints](Servo-de.md#auto-endpoints),
+[Servo: Starten](Servo-de.md#starten)). Nichts vom Ausgangsfeld nimmt auf
+einem der beiden Bildschirme einen Druck an.
+
+TEST zeigt an derselben Stelle eine Karte BEREIT: sechs Zeilen ab y 96,
+PORT, MESSGERÄT, PD MINI, STUFEN, BEREICH und ARM, und die Schienenzeile
+bei y 404. Die Mitte seiner Fußleiste ist 2s HALTEN: ARM + START, das
+PORT-PWM einschaltet, wo der Port es braucht, ARM schaltet und den
+automatischen Test in einem Halten startet; die Stufen des Laufs schalten
+den PD mini bei der Spannung jeder Stufe. Während des Laufs lautet die
+Taste TEST BEENDEN und beendet den Lauf beim Drücken. Der Verlauf der
+Servoschiene steht im linken Feld unter den Grenzen von SUPPLY.
 
 ![RUDER AUTO auf dem rbmod-Carrier, die Folge ARM + START wartet auf die Rückmeldung von PROG 5V](img/de/servo-rudder-auto-start-rbmod.png)
 
@@ -1776,9 +1808,9 @@ Die Bedienelemente verhalten sich je nach Zustand so:
 | TEMPO | wird gesetzt; sendet nichts | wird gesetzt; eine gehaltene Stellung wird mit der neuen Rate erneut gesendet |
 | Die Liste des Hubs: TYP, PULSRATE, PULS MIN, MITTE und MAX, TRIMMUNG, WEG, UMKEHREN | werden auf dem Hub gesetzt, wo der Prüfstand SAFE ist; das nächste ARM ruht unter ihnen | nicht erreichbar: das Verlassen eines Funktionsbildschirms zum Hub schaltet auf SAFE |
 | PORT | ein Tippen öffnet die Liste mit OUTPUTS und den 4 Programmierports | gesperrt; nennt die Sperre im Alarmband |
-| SOLL, AUSGANG EIN, AUSGANG AUS auf TEST, ENDLAGENLAUF, KST und HITEC | wie auf SUPPLY | wie auf SUPPLY |
+| SOLL, AUSGANG EIN, AUSGANG AUS auf KST und HITEC | wie auf SUPPLY | wie auf SUPPLY |
 | Die Zeilen von BEREIT auf LIVE, SWEEP und RUDER | ein Tippen behebt die Zeile oder nennt ihren Zustand | kein Druck |
-| TEST STARTEN | abgelehnt: `ZUERST ARM` | startet den Lauf nach der Haltegeste |
+| 2s HALTEN: ARM + START auf TEST | schaltet ARMED und startet den Lauf nach der Haltegeste | startet den Lauf nach der Haltegeste |
 
 In SAFE ist das Ruderhorn abgeblendet und LIVE zeigt `ZUERST ARM`.
 Ruderhorn und SOLL-PULSBREITE behalten die zuletzt angesteuerte Position,
@@ -1856,8 +1888,8 @@ das CH1 des einzelnen über SENSE ausgelesenen Bausteins.
 ![Das Modell des Panels als Netzteil](img/de/servo-model.png)
 
 Auf dem [rbmod-Carrier](Carrier-de.md#versorgung) ersetzt das 48px hohe
-Feld PROG 5V die Grafik unter den Messwerten auf TEST, ENDLAGENLAUF, KST
-und HITEC; auf LIVE, SWEEP und RUDER steht die Zeile VERSORGUNG dafür. Es steuert die getrennten
+Feld PROG 5V die Grafik unter den Messwerten auf KST und HITEC; auf
+LIVE, SWEEP und RUDER steht die Zeile VERSORGUNG dafür. Es steuert die getrennten
 5V der Programmierports. Die erste Zeile nennt Pin und Zustand:
 `PROG-PORTS 5V, GPIO 21: AUS`. Die zweite zeigt das letzte 50ms-Fenster
 von INA3221 0x40 CH3, der diese 5V überwacht: `5.02V  0.120A`, ohne
@@ -1917,7 +1949,7 @@ ab der ersten Abfrage, in der eine Bedingung entfällt.
 - Ändern sich Ziffern oder Farbe von STROM auf LIVE, wird nur diese
   Zahlenanzeige neu gezeichnet.
 
-Der automatische Test verwendet das bei TEST STARTEN ausgewählte
+Der automatische Test verwendet das beim Start des Laufs ausgewählte
 Messgerät der Servoschiene: den INA3221-Kanal, wenn dieser die Schiene
 misst und der PD mini das Netzteil ist; sonst den PD mini oder, bei
 simuliertem Netzteil, das Modell
@@ -2101,25 +2133,34 @@ ab TEMPO 63%, beim Dreieck ab 40%.
 
 ![TEMPO begrenzt einen Sweep](img/de/servo-sweep.png)
 
-**TEST STARTEN beginnt den automatischen Test** im Feld AUTOMATISCHER TEST
-auf TEST. Er fährt das Servo bei den gewählten Netzteilspannungen, misst
-Strom in Ruhe, Bewegung und Halten sowie die Stellzeit und sucht die
-Spannung, bei der die Bewegung endet.
+**2s HALTEN: ARM + START beginnt den automatischen Test** in der
+Fußleiste von TEST. Er fährt das Servo bei den gewählten
+Netzteilspannungen, misst Strom in Ruhe, Bewegung und Halten sowie die
+Stellzeit und sucht die Spannung, bei der die Bewegung endet.
 [Servoverfahren](Servo-de.md#automatischer-test) beschreibt Methode und Dateien.
 
-Das 600 x 188px große Feld enthält Laufname, eine Zusammenfassung wie
-`4.8V, 6.0V, BROWN-OUT, JE 60s` oder `..., JE 20 BEWEGUNGEN`, TEST STARTEN
-(300 x 48px) neben OPTIONEN (160 x 48px), Zustandszeile, letztes Ergebnis
-mit Dateien und dem Hinweis zu BLOCKIERT AB. Ein Ergebnis lautet etwa
+Das 600 x 136px große Feld AUTOMATISCHER TEST enthält Laufname, eine
+Zusammenfassung wie `4.8V, 6.0V, BROWN-OUT, JE 60s` oder
+`..., JE 20 BEWEGUNGEN`, Zustandszeile, letztes Ergebnis mit Dateien und
+den Hinweis zu BLOCKIERT AB. Ein Ergebnis lautet etwa
 `ZULETZT: BESTANDEN ATEST004.CSV + .TXT`; ein Abbruch zeigt den Grund in
 Warnfarbe, etwa `ZULETZT: ABGEBROCHEN - Verbindung verloren`.
 
-Der Start benötigt ARMED und ein antwortendes Netzteil. Die Zustandszeile
-folgt Prüfstand und Einstellungen: ZUERST ARM, KEINE STUFE GEWÄHLT,
-NETZTEIL ANTWORTET NICHT, BEREICH ZU KLEIN (BEREICH und WEG legen beide
-Enden auf PULS MITTE), STUFE AUSSERHALB DER GRENZEN (eine Stufe überschreitet
-die Spannungsgrenze, vor jeder Warnung geprüft) oder BERICHT WIRD NOCH
-GESCHRIEBEN.
+Die Karte BEREIT nennt, was das Halten braucht, eine Zeile je Teil:
+
+| Zeile | Grün | Bernstein: das Halten erledigt es | Rot: das Halten wird abgelehnt |
+| --- | --- | --- | --- |
+| PORT | der Port, der das Servo ansteuert | PORT-PWM aus bei SAFE | ein Port, den eine Programmierung hält; PORT-PWM aus bei ARMED; ein Programmierport des rbmod-Carriers mit festen 5V: `PROG-PORTS LAUFEN MIT FESTEN 5V: KEINE STUFEN` |
+| MESSGERÄT | das Messgerät der Servoschiene | - | - |
+| PD MINI | die Versorgung ein | der PD mini aus: die Stufen des Laufs schalten ihn ein | kein Netzteil antwortet; der PD mini aus, während der INA3221 3.0V oder mehr auf der Schiene misst: `SCHIENE UNTER SPANNUNG BEI PD MINI AUS: FREMD GESPEIST` |
+| STUFEN | die Stufen, `4.8-6.0V, BROWN-OUT` | eine Stufe über 6.0V: ein Tipp öffnet NUR HV-SERVOS | keine Stufe gewählt; eine Stufe außerhalb der Spannungsgrenzen von SUPPLY |
+| BEREICH | die beiden Enden in us | - | BEREICH und WEG legen beide Enden auf PULS MITTE |
+| ARM | ARMED | SAFE: das Halten schaltet ARMED | ein Endlagenlauf oder RUDER AUTO läuft; ein Bericht wird noch geschrieben |
+
+Eine Zeile ist rot, sobald einer ihrer Texte das Halten ablehnt; das
+Halten ist dann grau. Ein Tipp auf PORT öffnet die Portliste, ein Tipp auf
+STUFEN die Liste des automatischen Tests oder bei einer Stufe über 6.0V
+NUR HV-SERVOS.
 
 Der Hinweis zu BLOCKIERT AB nennt unerreichbare Schwellen:
 `BLOCKIERT AB 2.00A unerreichbar: Strombegrenzung 2.00A`, wenn BLOCKIERT AB
@@ -2127,28 +2168,31 @@ mindestens so hoch wie die Strombegrenzung unter SOLL ist. Andernfalls,
 bei INA3221 als Messgerät und einer Schwelle mindestens in Höhe seines
 Messbereichs, erscheint
 `BLOCKIERT AB 2.00A unerreichbar: INA3221-Bereich 1.638A`.
-Der Hinweis sperrt TEST STARTEN nicht; siehe
+Der Hinweis lehnt das Halten nicht ab; siehe
 [Blockieren und Konstantstrom](Servo-de.md#blockieren-und-konstantstrom).
 
-TEST STARTEN benötigt 2s Halten, weil der Lauf das Netzteil einschaltet und
-das Servo bewegt. Bei eingeschaltetem HV-SERVO und einer Stufe über 6,0V
-öffnet ein Tipp stattdessen NUR HV-SERVOS mit der höchsten Stufe. Der Lauf
-beginnt erst nach vollständigem Halten von 2s HALTEN ZUM ÜBERNEHMEN.
-Jeder Neustart schaltet HV-SERVO aus. An einem Programmierport des
-rbmod-Carriers sind keine Spannungsstufen möglich; seine Versorgung ist
-auf 5V festgelegt.
+Das Halten dauert 2s, weil es auf ARMED schaltet, das Netzteil einschaltet
+und das Servo bewegt. Die Einstellungen werden gelesen, wenn das Halten
+auslöst; eine Änderung danach gilt für den nächsten Lauf. Der Prüfstand hat
+500ms, um ARMED zu melden; danach scheitert die Folge als `ARM: ...`, alle
+Ausgänge aus und der Prüfstand SAFE. Bei eingeschaltetem HV-SERVO und einer
+Stufe über 6.0V öffnet ein Tipp stattdessen NUR HV-SERVOS mit der höchsten
+Stufe; dessen 2s HALTEN ZUM ÜBERNEHMEN schaltet ARMED und startet. Jeder
+Neustart schaltet HV-SERVO aus.
 
 TEST bleibt beim Start sichtbar; die Zustandszeile nennt die aktuelle
-Stufe. Ein 346px breites Lauffeld unter dem Feld, ab y 256 auf TEST und
-ab y 204 auf ENDLAGENLAUF, zeigt Stufe und Phase
-sowie neben TEST BEENDEN das Messgerät: `PD mini`, einen INA3221-Kanal wie
-`INA 0x41 CH2` oder `SIMULATION`. Der Lauf verwendet bis zum Ende das bei
-TEST STARTEN gewählte Messgerät
+Stufe. Ein 346px breites Lauffeld unter dem Feld, ab y 204, zeigt Stufe
+und Phase sowie neben TEST BEENDEN das Messgerät: `PD mini`, einen
+INA3221-Kanal wie `INA 0x41 CH2` oder `SIMULATION`. Der Lauf verwendet bis
+zum Ende das beim Start gewählte Messgerät
 ([Der Strommesser des Laufs](Servo-de.md#der-strommesser-des-laufs)) und
 steuert Servo, Sollwerte und Schalter von SUPPLY.
 
-Der Lauf endet vorzeitig mit Ausgang aus und zur Mitte freigegebenem
-Servo bei TEST BEENDEN (in beiden Feldern), STOP, SAFE, Verbindungsverlust,
+Jedes Ende des Laufs, BESTANDEN und TEST BEENDEN eingeschlossen, schaltet
+den Prüfstand auf SAFE; der nächste Lauf schaltet mit seinem Halten wieder
+ARMED. Der Lauf endet vorzeitig mit Ausgang aus und zur Mitte
+freigegebenem Servo bei TEST BEENDEN (in der Fußleiste oder im Lauffeld),
+STOP, SAFE, Verbindungsverlust,
 Verlassen von SERVO, Berühren des Zifferblatts, ZENTRIEREN, SWEEP,
 FREIGEBEN, Antippen eines Sollwerts, Änderungen von Typ, Pulsen, TRIMMUNG,
 WEG, UMKEHREN oder TEMPO, verlorenen Touch-Ereignissen oder den
@@ -2180,8 +2224,8 @@ in der Zeile über der Grafik:
 
 ![Ein Ergebnis am INA3221](img/de/servo-result-ina.png)
 
-**ENDLAGENLAUF STARTEN beginnt die Endlagensuche** im Feld ENDLAGENLAUF
-auf TEST. Das Servo fährt in 10us-Schritten nach außen, bis der Strom ein
+**2s HALTEN: ARM + START beginnt die Endlagensuche** auf ENDLAGENLAUF.
+Das Servo fährt in 10us-Schritten nach außen, bis der Strom ein
 blockiertes Gestänge erkennen lässt. SUCHEN + PROGRAMMIEREN verringert
 zusätzlich die Endwerte der gewählten Servofamilie, bis beide Enden frei
 sind: LEFT ANGLE und RIGHT ANGLE bei KST und Chaservo, LEFT END und
@@ -2194,30 +2238,33 @@ bei Hitec gilt das Pulsmodell der Familie.
 [Servoverfahren](Servo-de.md#eingebaute-mechanische-endlage) beschreibt
 Methode, Schutzfunktionen und Bericht.
 
-Halte ENDLAGENLAUF STARTEN 2s bei ARMED mit INA3221 als Messgerät der
-Servoschiene. Die Zusammenfassung zeigt `NUR SUCHE` oder
-`SUCHEN + PROGRAMMIEREN` und SERVOPULSE, während der Lauf den Port ausliest.
-Darunter nennt eine Zeile Ausgang und Messgerät, etwa
-`AUSGANG PROG-PORT 1 GPIO 13, STROM INA3221 0x41 CH2` oder
-`AUSGANG SERVO PWM GPIO 2, STROM INA3221 0x40 CH1`. Ohne überwachenden Kanal
-steht im Messgeräteteil `STROM INA3221`. Es folgen aktueller Vorgang oder
-Startverweigerung, letztes Ergebnis und Bericht. Diese vier Zeilen stehen
-in 10 x 20 bei 20px Abstand, beginnend 2px unter der Taste; die letzte
-endet 2px innerhalb des 188px hohen Felds.
+Die linke Karte, x 18 bis 618 des Inhalts:
 
-ENDLAGENLAUF bleibt beim Start sichtbar. Das Lauffeld unter dem Feld zeigt geschriebene
-Werte von 8, Phase, Seite, Puls und Ausgang sowie LAUF BEENDEN. Danach
-stehen dort bis SCHLIESSEN Urteil, Werte oder Endlagen und `LIMITnnn.TXT`,
-bei ausgeschalteten Testaufzeichnungen `TESTAUFZEICHNUNGEN AUS`. Für jedes
-Schreiben schaltet der Lauf selbst auf SAFE und zurück auf ARMED.
-STOP oder SAFE durch den Bediener sowie Abbruchgründe des automatischen
-Tests beenden ihn mit Ausgang aus.
+| Teil | Ort | Zeigt |
+| --- | --- | --- |
+| Moduszeile | y 16, 10 x 20 | `NUR SUCHE` oder `SUCHEN + PROGRAMMIEREN`, und SERVOPULSE, während der Lauf den Port ausliest |
+| Ausgangszeile | y 40, 10 x 20 | Ausgang und Messgerät, etwa `AUSGANG PROG-PORT 1 GPIO 13, STROM INA3221 0x41 CH2` oder `AUSGANG SERVO PWM GPIO 2, STROM INA3221 0x40 CH1`; `STROM INA3221` ohne überwachenden Kanal |
+| UNTERES ENDE, OBERES ENDE | zwei Felder von 295 x 96px ab y 70, 10px Abstand | das Ende, das der letzte Lauf zuerst fand, in Ziffern von 32 x 44 mit `us`; `FREI` in Grün; `-` vor einem Lauf |
+| Zustandszeilen | ab y 178, 24px Abstand, 10 x 20 | Titel und Schritt des Laufs; sonst die Startschritte, ein Fehler oder warum das Halten gesperrt ist; warum der Modus nicht angeboten wird; Urteil, Werte oder Grund, ZURÜCKSPIELEN, die Bereiche oder der Ausgang, die Datei des Berichts; der Hinweis des Modus |
+
+Die neun Zeilen der Karte BEREIT sind PORT, SERVO, MESSGERÄT, SCHIENE,
+BEREICH, PROGRAMMIERER, die Versorgung (PROG 5V, PD MINI oder
+VERSORGUNG), PORT-PWM und ARM. 2s HALTEN: ARM + START schaltet PORT-PWM
+und die Versorgung ein, liest sie zurück, schaltet ARM und startet den
+Lauf. Während des Laufs zeigt das Halten LAUF BEENDEN, und OPTIONEN ist
+grau. Für jedes Schreiben schaltet der Lauf selbst auf SAFE und zurück auf
+ARMED. Nach dem letzten Befehl des Laufs schaltet der Prüfstand auf SAFE.
+STOP, SAFE, Link-Verlust, das Verlassen des Bildschirms oder ein
+Abbruchgrund des automatischen Tests beenden den Lauf mit allen Ausgängen
+aus. Urteil, Werte oder Endlagen und `LIMITnnn.TXT`, bei ausgeschalteten
+Testaufzeichnungen `TESTAUFZEICHNUNGEN AUS`, bleiben bis zum nächsten Lauf
+auf den Zustandszeilen.
 
 Am Programmierport des rbmod-Carriers versorgt PROG 5V den Lauf und
-übernimmt das Aus- und Einschalten anstelle des PD mini. PROG 5V muss vor
-dem Start eingeschaltet sein. Der PD mini an der Servoschiene wird bei
-diesem Lauf weder verwendet noch überwacht; sein Umschalten beendet den
-Lauf nicht. Ein Abbruch schaltet PROG 5V aus.
+übernimmt das Aus- und Einschalten anstelle des PD mini. Das Halten
+schaltet es ein. Der PD mini an der Servoschiene wird bei diesem Lauf
+weder verwendet noch überwacht; sein Umschalten beendet den Lauf nicht.
+Ein Abbruch schaltet PROG 5V aus.
 
 ![Der Endlagenlauf, bereit](img/de/servo-limrun-ready.png)
 ![Der Endlagenlauf beim Programmieren](img/de/servo-limrun.png)
@@ -2407,8 +2454,8 @@ Eine Änderung gilt bis SPEICHERN als nicht gespeichert.
 | --- | --- |
 | der Hub | das Servoprofil: AUSGANG mit TYP, PULSRATE, PULS MIN, PULS MITTE, PULS MAX, TRIMMUNG, WEG, UMKEHREN und HV-SERVO; PRÜFLING mit NAME und BERICHT |
 | SWEEP | KURVE, TEMPO und BEREICH |
-| TEST | die Zeilen des automatischen Tests, eine Ebene tiefer |
-| ENDLAGENLAUF | die Zeilen des Endlagenlaufs, eine Ebene tiefer |
+| TEST | SPANNUNGSSTUFEN: Stufe 4.8V, Stufe 6.0V, HV-SERVO, Stufe 7.4V, Stufe 8.4V; BROWN-OUT: Brown-out, Brown-out Mindestspannung, Brown-out-Schritt; GRENZWERTE: Blockierschwelle, Ruhestrom max, Haltestrom max, Stellzeit max; DAUER UND ZEITEN: Länge nach, Testzeit, Bewegungen, Haltezeit, Einschwingzeit |
+| ENDLAGENLAUF | MODUS, SERVO, SERVOPULSE, Programmierspannung, Programmierstrom und Warten vor PWM |
 | RUDER | LÄNGE, SENSOR-MITTE und WINKELQUELLE |
 | RUDER AUTO | die Ziele, MARGIN, TOLERANZ, SERVO, SERVOPULSE und WINKELQUELLE |
 | SERVO > KST | KST EXPERT MODE, eine Ebene tiefer |
@@ -2437,13 +2484,26 @@ Warnfarbe, wenn nicht. WINKELQUELLE ist nur lesbar; ein Tippen öffnet
 SETUP > SENSORS dort, und dessen Home-Feld führt zur Liste von RUDER
 zurück.
 
-Die Zeilen eines Laufs und die Seite KST EXPERT MODE behalten ihr Layout:
-drei 193px breite Spalten, jede Zeile ihr Name über einem 48px hohen
-Wertefeld im Abstand von 70px ab y 64. Die 15 Zeilen des automatischen
-Tests verteilen sich zu fünf pro Spalte: Spannungsstufen mit HV-SERVO,
-Grenzwerte mit BROWN-OUT sowie Dauer und Zeiten. Hinweise, Speicherstatus
-und BLOCKIERT AB enden 2px über dem Feldboden. SCHLIESSEN oben rechts
-neben dem Laufnamen oder das Home-Feld führt zum Feld des Laufs zurück.
+Die Zeilen des Endlagenlaufs und die Seite KST EXPERT MODE behalten ihr
+Layout: drei 193px breite Spalten, jede Zeile ihr Name über einem 48px
+hohen Wertefeld im Abstand von 70px ab y 64. Hinweise und Speicherstatus
+enden 2px über dem Feldboden. SCHLIESSEN oben rechts neben dem Laufnamen
+oder das Home-Feld führt zum Feld des Laufs zurück.
+
+Die Liste des automatischen Tests hat 17 Zeilen unter vier Überschriften.
+Die Zeile jeder Überschrift sagt, was ihre Zeilen gerade bewirken:
+SPANNUNGSSTUFEN die Stufen eines Laufs oder `KEINE STUFE GEWÄHLT` in
+Warnfarbe; BROWN-OUT den Lauf am geltenden Netzteil,
+`Ab 5.00V abwärts in 0.20V-Schritten bis 3.30V, 10 Spannungen`; GRENZWERTE
+ein BLOCKIERT AB, das kein Messwert erreicht, in Warnfarbe. Stufe 7.4V und
+Stufe 8.4V nehmen bei HV-SERVO AUS keinen Druck an, Testzeit keinen bei
+Länge nach BEWEGUNGEN, Bewegungen keinen bei ZEIT; jede nennt den Grund an
+Stelle ihrer Hilfezeile, `Nur mit HV-SERVO EIN`. TEST ZURÜCKSETZEN setzt
+jede Zeile auf ihre Vorgabe und HV-SERVO auf AUS. Die Liste öffnet nur bei
+SAFE und schließt, sobald der Prüfstand ARMED schaltet oder ein Lauf
+startet.
+
+![Die Liste des automatischen Tests bei BROWN-OUT und GRENZWERTE](img/de/servo-brownout.png)
 
 Auswahllisten haben zwei Spalten mit je fünf 48px hohen Einträgen bei
 56px Abstand. Warnungen verwenden 12 x 24px mit 49 Zeichen pro Zeile.
@@ -2462,17 +2522,16 @@ Die 56px hohen Tasten 2s HALTEN ZUM ÜBERNEHMEN und ABBRECHEN enden 8px
 | Liste des Hubs | WEG | wie weit der Arm in jede Richtung darf, 10 bis 90° |
 | Liste des Hubs | UMKEHREN | die Richtung, in der der Winkel auf den Impuls abgebildet wird |
 | Liste von SWEEP | KURVE, TEMPO, BEREICH | die Bewegung von SWEEP: Rechteck, Sinus oder Dreieck, 0,05 bis 5Hz, 10 bis 100% des Wegs. Der automatische Test springt zwischen den Enden, die BEREICH ergibt |
-| AUTOMATISCHER TEST > OPTIONEN | TESTDAUER NACH, TESTZEIT, BEWEGUNGEN | wie lange jede Spannungsstufe läuft: eine Zeit oder eine Zahl von Bewegungen |
-| AUTOMATISCHER TEST > OPTIONEN | HALTEZEIT, EINSCHWINGZEIT | Haltezeit an jedem Ende, im Test und bei SWEEP; Wartezeit nach einer Spannungsstufe vor dem Messen |
-| AUTOMATISCHER TEST > OPTIONEN | STUFE 4.8 / 6.0 / 7.4 / 8.4V | die Spannungsstufen; 7,4 und 8,4V laufen nur mit HV-SERVO an |
-| AUTOMATISCHER TEST > OPTIONEN | BROWN-OUT | zeigt `EIN 3.0/0.2V` (NIEDRIGSTE SPANNUNG und SCHRITT) oder `AUS`; ein Tippen öffnet die Seite des Brown-out-Laufs, deren SCHLIESSEN und Home-Feld zurückführen |
-| AUTOMATISCHER TEST > BROWN-OUT | BROWN-OUT, NIEDRIGSTE SPANNUNG, SCHRITT | der Lauf ab 5,0V abwärts, an oder aus; seine Untergrenze, 2,0 bis 4,8V, vorgegeben 3,0V; sein Schritt, 0,1 bis 1,0V, vorgegeben 0,2V. Der Hinweis darunter nennt den Lauf am geltenden Netzteil und wie viele Spannungen er verlangt |
-| AUTOMATISCHER TEST > OPTIONEN | HV-SERVO | nimmt die Stufen 7,4 und 8,4V hinzu, vorgegeben aus und nach jedem Neustart aus; ein Lauf mit ihnen startet nur über NUR HV-SERVOS |
-| AUTOMATISCHER TEST > OPTIONEN | BLOCKIERT AB | über diesem Strom gilt das Servo als blockiert |
-| AUTOMATISCHER TEST > OPTIONEN | RUHESTROM, HALTESTROM, STELLZEIT | Grenzen für bestanden/nicht bestanden; 0 wird nicht geprüft |
-| ENDLAGENLAUF > OPTIONEN | ENDLAGENLAUF | NUR SUCHE oder SUCHEN + PROGRAMMIEREN, ein Tippen schaltet um; SUCHEN + PROGRAMMIEREN wird nur für ein Servo am Programmierport angeboten, sonst lautet die Zeile NUR SUCHE mit dem Grund darunter. Für die Sitzung |
+| Liste von TEST, SPANNUNGSSTUFEN | Stufe 4.8V, Stufe 6.0V, Stufe 7.4V, Stufe 8.4V | die Spannungsstufen; 7.4V und 8.4V nehmen nur mit HV-SERVO EIN einen Druck an |
+| Liste von TEST, SPANNUNGSSTUFEN | HV-SERVO | nimmt die Stufen 7.4V und 8.4V hinzu, vorgegeben aus und nach jedem Neustart aus; ein Lauf mit ihnen startet nur über NUR HV-SERVOS |
+| Liste von TEST, BROWN-OUT | Brown-out, Brown-out Mindestspannung, Brown-out-Schritt | der Lauf ab 5.0V abwärts, an oder aus; seine Untergrenze, 2.0 bis 4.8V, vorgegeben 3.0V; sein Schritt, 0.1 bis 1.0V, vorgegeben 0.2V. Die Zeile der Überschrift nennt den Lauf am geltenden Netzteil und wie viele Spannungen er verlangt |
+| Liste von TEST, GRENZWERTE | Blockierschwelle | über diesem Strom gilt das Servo als blockiert |
+| Liste von TEST, GRENZWERTE | Ruhestrom max, Haltestrom max, Stellzeit max | Grenzen für bestanden/nicht bestanden; 0 wird nicht geprüft |
+| Liste von TEST, DAUER UND ZEITEN | Länge nach, Testzeit, Bewegungen | wie lange jede Spannungsstufe läuft: eine Zeit oder eine Zahl von Bewegungen; Testzeit nimmt nur bei ZEIT einen Druck an, Bewegungen nur bei BEWEGUNGEN |
+| Liste von TEST, DAUER UND ZEITEN | Haltezeit, Einschwingzeit | Haltezeit an jedem Ende, im Test und bei SWEEP; Wartezeit nach einer Spannungsstufe vor dem Messen |
+| ENDLAGENLAUF > OPTIONEN | MODUS | NUR SUCHE oder SUCHEN + PROGRAMMIEREN; an den Ausgängen des Prüfstands gesperrt mit `Nur an einem PROG-PORT: wähle einen mit PORT`. Für die Sitzung |
 | ENDLAGENLAUF > OPTIONEN | SERVO | KST/CHASERVO oder HITEC; wählt die Servofamilie für SUCHEN + PROGRAMMIEREN |
-| ENDLAGENLAUF > OPTIONEN | SERVOPULSE | BEHALTEN oder 1000-2000, ein Tippen schaltet um; nur für KST/CHASERVO mit PORT auf PROG PORT angezeigt. 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos in der Lesesitzung des Laufs, vor der Suche, auf 1000,0 und 2000,0us. Vorgabe BEHALTEN; für die Sitzung |
+| ENDLAGENLAUF > OPTIONEN | SERVOPULSE | BEHALTEN oder 1000-2000; gesperrt, solange PORT nicht auf PROG-PORT oder SERVO auf HITEC steht. 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos in der Lesesitzung des Laufs, vor der Suche, auf 1000,0 und 2000,0us. Vorgabe BEHALTEN; für die Sitzung |
 | Liste des Hubs | NAME | der Prüfling, bis 23 Zeichen, für den Bericht |
 | Liste des Hubs | BERICHT | ein Textbericht neben der Aufzeichnung jedes Tests |
 | Liste von RUDER | SENSOR-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert seit dem aktuellen Verbindungsaufbau (keinen nach einem Verbindungsverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, SENSORS, AS5600-Mitte |
@@ -2641,20 +2700,19 @@ ist: `Pulsrate des Servos unbekannt. Halte ARM erneut.` Ein bei fehlender
 Verbindung angefordertes ARM erreicht den IOmcu erst nach erfolgreichem
 Zurücksetzen.
 
-AUSGANG-Einstellungen, HV-SERVO, ENDLAGENLAUF und SERVOPULSE gelten für
+AUSGANG-Einstellungen, HV-SERVO, MODUS und SERVOPULSE des Endlagenlaufs gelten für
 die Sitzung. SWEEP, automatischer Test, PRÜFLING und ZIEL werden im NVS
 gespeichert. Eine Änderung in einer OPTIONEN-Liste gilt bis SPEICHERN in
-der Leiste als nicht gespeichert. Eine Änderung in den Zeilen eines Laufs
-und eine Wahl unter PORT fordern das Schreiben sofort an; es erfolgt im
+der Leiste als nicht gespeichert. Eine Änderung in den Zeilen des
+Endlagenlaufs und eine Wahl unter PORT fordern das Schreiben sofort an; es erfolgt im
 ersten Frame bei ruhendem Prüfstand ([Werte behalten](#werte-behalten)).
-Die Zeilen eines Laufs zeigen `GESPEICHERT`, `SPEICHERN AUSSTEHEND`,
+Die Zeilen des Endlagenlaufs zeigen `GESPEICHERT`, `SPEICHERN AUSSTEHEND`,
 `NICHT GESPEICHERT` oder `ÄNDERUNGEN IN SETUP NICHT GESPEICHERT` unter dem
 Laufnamen.
 
 ![Das Feld von TEST](img/de/servo-test.png)
-![Die Einstellungen des automatischen Tests](img/de/servo-test-settings.png)
+![Die Liste des automatischen Tests](img/de/servo-test-settings.png)
 ![Die Einstellungen des Endlagenlaufs](img/de/servo-limits.png)
-![Die Einstellungen des Brown-out-Laufs](img/de/servo-brownout.png)
 ![Der Name](img/de/servo-name.png)
 
 Aktuelle Einschränkungen:
@@ -3101,7 +3159,7 @@ eingeschaltetem Ausgang öffnet die Liste nicht.
 
 ![Receiver](img/de/analyser.png)
 
-RECEIVER zeigt sechzehn Kanäle in zwei Spalten mit je acht 52px hohen
+RECEIVER zeigt sechzehn Kanäle in zwei Spalten mit je acht 44px hohen
 Spuren. Jede enthält Kanalname in 10 x 20, Verlauf, einen 56px breiten
 Balken für den aktuellen Wert und Mikrosekunden in 8 x 16. Der Verlauf
 fasst 200 Werte, einen pro Pixel: etwa 2,8s bei 71 Frames pro Sekunde,
@@ -3111,10 +3169,11 @@ zeitgleiche Kerbe durch alle sechzehn.
 
 Das 260px breite Zustandsfeld rechts zeigt den Zustand in 20 x 36 und
 bis zu drei Erklärungszeilen in 12 x 24. BUS, RATE, FRAMES, RESYNC und
-BAD TAIL stehen in 32px hohen Zeilen. Die 44px hohen Leuchten für CH17
+BAD TAIL stehen in 26px hohen Zeilen. Die 36px hohen Leuchten für CH17
 und CH18 zeigen gesetzte Digitalkanäle und sind nicht antippbar. KANÄLE
 und ROHDATEN sind 150 x 48px große Registerkarten. ROHDATEN zeigt die
 Bytes des letzten Frames, acht pro Zeile, sowie Decoderzähler in 8 x 16.
+Die Felder enden bei Körper-y 436 auf der Fußleiste; sie nennt den Bildschirm und hat weder Halte-Taste noch OPTIONEN ([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste)).
 
 Keine Firmware liefert Daten an RECEIVER (siehe
 [Empfängerbusse](Receivers-de.md)); die Seite zeigt KEIN SIGNAL.
@@ -3139,11 +3198,11 @@ Zellen: GUT unter 30mV, BEOBACHTEN ab 30mV, ERSETZEN ab 60mV. Die Skala
 passt sich an, mit mindestens 12mV, und steht neben der Grafik.
 
 Das Grafikfeld ist 640px breit, das rechte Feld 360px. Ein Balken ist
-höchstens 48px breit und reicht 164px zu jeder Seite des Mittelwerts. Unter
+höchstens 48px breit und reicht 148px zu jeder Seite des Mittelwerts. Unter
 jedem Balken stehen Nummer und Spannung der Zelle in 12 x 24 bis 11 Zellen und
 in 10 x 20 von 12 bis 14. Das Urteil steht in 20 x 36, seine Zeile in bis zu
-zwei Zeilen 12 x 24, die sechs Zeilen sind je 36px hoch, der Hinweis in
-10 x 20.
+zwei Zeilen 12 x 24, die sechs Zeilen sind je 28px hoch, der Hinweis in
+10 x 20. Die Felder enden bei Körper-y 436 auf der Fußleiste; sie nennt den Bildschirm und hat weder Halte-Taste noch OPTIONEN ([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste)).
 
 Miss unter Last. Im Ruhezustand kann eine schwache Zelle dieselbe
 Spannung wie die übrigen zeigen.
@@ -3183,7 +3242,7 @@ Die Dateiliste hat vier Bereiche. Oben öffnet die gemeinsame Leiste
 BENCH (je 110 x 40px), Ordner- und Kartenname sowie VORIGE und NÄCHSTE
 (140 x 48px) bei mehreren Seiten.
 
-Die 1008px breite Liste zeigt sechs 44px hohe Zeilen bei 48px Abstand.
+Die 1008px breite Liste zeigt fünf 44px hohe Zeilen bei 48px Abstand.
 Jede reagiert über die vollen 48px. Name, Änderungsdatum und rechtsbündige
 Größe stehen in 10 x 20. Namen verwenden bis zu 60 Zeichen, sonst die
 ersten 58 und `..`. Die 160px breite Datumsspalte zeigt die auf der Karte
@@ -3193,12 +3252,20 @@ dem Datum einer ungestellten Uhr, bleibt sie leer
 ([PANEL: Zeitzone und Uhr](#panel-zeitzone-und-uhr)). Die Größe belegt
 100px am Zeilenende. Dateityp und Laufdauer erscheinen nicht.
 
-Die Fußzeile von y 440 bis 492 endet 4px über dem Alarmband. Links stehen
-AKTUALISIEREN (140 x 52px) und WI-FI (100 x 52px), rechts LÖSCHEN und
-ÖFFNEN (140 x 52px). WI-FI öffnet [WLAN](#wlan) aus jedem Listenzustand;
-dessen Home-Feld führt hierher zurück. In der LÖSCHEN-Rückfrage und in
-Dateiansichten fehlt WI-FI. Dateimeldungen nutzen zwischen WI-FI und
-LÖSCHEN bis zu zwei Zeilen mit 37 Zeichen.
+Die Tastenzeile von y 388 bis 436 endet auf der Fußleiste des
+Bildschirms. Links stehen AKTUALISIEREN (140 x 48px) und WI-FI
+(100 x 48px), rechts LÖSCHEN und ÖFFNEN (140 x 48px). WI-FI öffnet
+[WLAN](#wlan) aus jedem Listenzustand; dessen Home-Feld führt hierher
+zurück. In der LÖSCHEN-Rückfrage und in Dateiansichten fehlt WI-FI.
+Dateimeldungen nutzen zwischen WI-FI und LÖSCHEN bis zu zwei Zeilen mit
+37 Zeichen.
+
+Unter der Dateiliste steht die Fußleiste `[LOGS] [ ] [OPTIONEN]`
+([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste)).
+LOGS hat keine Halte-Taste in der Mitte. OPTIONEN öffnet die Liste
+SD CARD von [Setup](#setup) mit den Aufzeichnungsschaltern und Ordnern;
+deren Home-Feld führt hierher zurück. Importansicht, Grafik, Bericht und
+LÖSCHEN-Rückfrage nutzen den ganzen Körper und zeigen keine Fußleiste.
 
 Die Importansicht zeigt ERKANNT (400px) neben der Spaltenliste (600px,
 7 Zeilen bei 48px Abstand), darunter vier Tasten von 246 x 52px.
@@ -3637,7 +3704,7 @@ Einträge, etwa `+ 1 NICHT GELISTET`: Namen mit einem Punkt am Anfang
 mit ausschließlich ausgeblendeten Einträgen ist nicht leer; LÖSCHEN lehnt
 ihn daher ab.
 
-Die Liste zeigt 5 Zeilen mit je 44px Höhe im Abstand von 48px. Ziehe an
+Die Liste zeigt 4 Zeilen mit je 44px Höhe im Abstand von 48px. Ziehe an
 der Liste oder ihrem 56px breiten Rollbalken, um zu scrollen. Zuerst
 stehen Ordner, dann Dateien; beide Gruppen sind nach Namen sortiert.
 Jede Zeile zeigt ein Symbol, den Namen und rechtsbündig die Größe
@@ -3671,16 +3738,22 @@ Backups der ESC-Signaldraht-Sitzung in `BENCH/ESCW/CONF` heißen etwa
 davon löschen. Die eigene DATEIEN-Liste der Programmiersitzung schützt
 Backups, die während dieser Sitzung gespeichert wurden.
 
-Die Fußzeile liegt bei Körper-y 440 bis 492 und endet 4px über dem
-Alarmband. Links steht AKTUALISIEREN (140 x 52px), wie auf [Logs](#logs).
-Darauf folgen KOPIEREN, VERSCHIEBEN, UMBENENNEN, LÖSCHEN, NEU, INFO und
-ÖFFNEN mit je 118 x 52px. ÖFFNEN steht am rechten Rand; zwischen den
-Tasten liegen 6px.
+Die Tastenzeile liegt bei Körper-y 388 bis 436 und endet auf der
+Fußleiste des Bildschirms. Links steht AKTUALISIEREN (140 x 48px), wie auf
+[Logs](#logs). Darauf folgen KOPIEREN, VERSCHIEBEN, UMBENENNEN, LÖSCHEN,
+NEU, INFO und ÖFFNEN mit je 118 x 48px. ÖFFNEN steht am rechten Rand;
+zwischen den Tasten liegen 6px.
+
+Unter den Bereichen steht die Fußleiste `[FILES] [ ] [OPTIONEN]`
+([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste)).
+OPTIONEN öffnet die Liste SD CARD von [Setup](#setup); deren Home-Feld
+führt hierher zurück. Textbetrachter, Editor, Tastatur, INFO und die
+Rückfragen nutzen den ganzen Körper und zeigen keine Fußleiste.
 
 Die Beschriftungen verwenden die Schrift 10 x 20 mit mindestens 4px Rand
 je Seite. AKTUALISIEREN belegt 130px, VERSCHIEBEN 110px. Nicht verfügbare
 Tasten sind gedimmt. Ein Tipp darauf nennt den Grund im zweizeiligen
-Meldungsfeld über der Fußzeile, in der Schrift 12 x 24.
+Meldungsfeld über der Tastenzeile, in der Schrift 12 x 24.
 
 | Taste | Funktion |
 |---|---|
@@ -4030,7 +4103,7 @@ Jeder behält seine Position:
   der Seite; sie beginnt beim nächsten Eintrag. Bleibt ab dieser Stelle
   nichts übrig, erscheint die letzte Ordnerseite.
 - Hat eine Seite weniger Zeilen als zuvor, zeigt sie ihre letzten
-  5 Zeilen ohne leere Zeile darunter.
+  4 Zeilen ohne leere Zeile darunter.
 - Ein am Computer entfernter Ordner zeigt
   `Dieser Ordner ist nicht auf der Karte.` ohne Zeilen. Die Pfadtaste
   führt aus ihm heraus.
@@ -5894,9 +5967,12 @@ startet Bluetooth LE. Seine Einstellungen
 stehen im IMU-Eintrag unter SENSORS: IMU EIN oder AUS, ACHSE (X, Y, Z), VORZEICHEN (+, -), RATE (10, 20,
 50, 100 oder 200Hz, ab Werk 50Hz), ALGORITHMUS (6-AXIS oder 9-AXIS) und
 WINKELQUELLE. Die Bedienelemente links, 460 x 56px im Abstand von 64px ab
-Body-y 16: SENSOREN SUCHEN, ein freier Platz, `2s HALTEN: BESCHLEUNIGUNG KALIBRIEREN`, NULLPUNKT und NULLPUNKT LÖSCHEN nebeneinander, und
-IMU-OPTIONEN, das SENSORS auf dem IMU-Eintrag öffnet; dessen Home-Feld
-führt zurück. Die Karte rechts, x 484 bis 1016, nennt den gebundenen Sensor
+Body-y 16: SENSOREN SUCHEN, dann NULLPUNKT und NULLPUNKT LÖSCHEN
+nebeneinander. Die Fußleiste
+([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste))
+lautet `[IMU] [2s HALTEN: KALIBRIEREN] [OPTIONEN]`; OPTIONEN öffnet SENSORS
+auf dem IMU-Eintrag, dessen Home-Feld führt zurück. Die Karte rechts, x 484
+bis 1016, Body-y 16 bis 436, nennt den gebundenen Sensor
 und seine Adresse mit ihrem Typ, die Firmware des C6, den Zustand, die Winkel X, Y und Z
 relativ zum Nullpunkt in der Schrift 16 x 28px (die von den Läufen
 verwendete Achse in der Akzentfarbe), die Rate der Winkel-Frames, das Alter des neuesten und den Akku
@@ -5929,7 +6005,8 @@ Laufs ([Servoverfahren](Servo-de.md)).
   Schaltest du während eines Laufs auf AUS, wird seine Datei geschlossen.
   Schaltest du während eines ARMED- oder Netzteil-Laufs auf EIN, beginnt
   eine neue Datei.
-- Testaufzeichnungen wird bei TEST STARTEN und ENDLAGENLAUF STARTEN gelesen.
+- Testaufzeichnungen wird gelesen, wenn 2s HALTEN: ARM + START auf TEST
+  oder ENDLAGENLAUF den Lauf startet.
   Der Test behält den Zustand vom Start. Bei AUS
   zeigen die Laufkarte und der Kasten auf LIVE `TESTAUFZEICHNUNGEN AUS` an der
   Stelle der Dateinamen.
@@ -6309,23 +6386,36 @@ dem ESP32-P4-Panel wird jedes neuere Release angeboten
 
 ![UPDATES](img/de/updates.png)
 
-Die Tasten sind 460 x 56px, 64px auseinander, links. Die Karte rechts ist
-532px breit, von y 16 bis 384 im Körper; ihr Text läuft in Zeilen von 41
-Zeichen der Schrift 12 x 24px, 28px auseinander. Reicht ein Ergebnis bis in
-die letzten drei Zeilen der Karte, entfallen diese Zeilen. Unter den Tasten
-stehen die Zeilen des IOmcu-Abschnitts in der Schrift 10 x 20px, und sein
-Halten ist eine fünfte Taste derselben Größe, ab y 428 im Körper. Unter der
-Karte steht die Zeile C6 RADIO: eine Zeile bei y 396 im Körper und ihr
-Halten, 532 x 56px, neben dem des IOmcu ([Der C6-Funk](#der-c6-funk)).
+NACH UPDATES SUCHEN ist 460 x 56px bei y 16 im Körper, links. Die Karte
+rechts ist 532px breit, von y 16 bis 336 im Körper; ihr Text läuft in
+Zeilen von 41 Zeichen der Schrift 12 x 24px, 28px auseinander. Reicht ein
+Ergebnis bis in die letzten drei Zeilen der Karte, entfallen diese Zeilen.
+Unter NACH UPDATES SUCHEN stehen die Zeilen des IOmcu-Abschnitts in der
+Schrift 10 x 20px, und sein Halten ist eine Taste derselben Größe, ab y 380
+im Körper. Unter der Karte steht die Zeile C6 RADIO: eine Zeile bei y 348
+im Körper und ihr Halten, 532 x 56px, neben dem des IOmcu
+([Der C6-Funk](#der-c6-funk)). Die Fußleiste
+([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste))
+lautet `[UPDATES] [2s HALTEN: LADEN & INSTALLIEREN] [OPTIONEN]`; der
+mittlere Platz bleibt leer, bis eine Suche ein neueres Release findet.
 
 | Bedienelement | Wirkung |
 | --- | --- |
 | `NACH UPDATES SUCHEN` | Fragt GitHub einmal. `ABBRECHEN` auf derselben Taste, solange die Suche läuft. |
-| `ERINNERUNG BEIM START: EIN` / `AUS` | Schaltet die Suche beim Start und ihre Erinnerung. Gespeichert mit SPEICHERN auf SETUP, wie jede Einstellung. Ab Werk an. |
-| `RELEASES: STABLE` / `TESTING` | Legt fest, welche Releases eine Suche liest ([Die Suche](#die-suche)). Gespeichert mit SPEICHERN auf SETUP. Ab Werk `STABLE`. Ein Wechsel blendet das Ergebnis der letzten Suche aus: ein Release, das mit der anderen Einstellung gefunden wurde, wird nicht angeboten. |
-| `2s HALTEN ZUM LADEN & INSTALLIEREN` | Erscheint, sobald eine Suche ein neueres Release gefunden hat. Lädt es, prüft es und installiert es. |
+| `2s HALTEN: LADEN & INSTALLIEREN` | In der Mitte der Fußleiste, sobald eine Suche ein neueres Release gefunden hat. Lädt es, prüft es und installiert es. |
+| `OPTIONEN` | Öffnet die Liste mit Erinnerung beim Start und Releases. Grau, solange eine Suche oder ein Download läuft oder ein Finger den Download hält; ein Tippen zeigt dann `OPTIONEN nur ohne laufende Suche oder Download.` im Meldeband. Eine Suche, die unter der offenen Liste startet, schließt sie. |
 | `2s HALTEN ZUM IOMCU-UPDATE` | Startet das Update des IOmcu aus dem Image, das dieses Panel mitbringt ([Der IOmcu](#der-iomcu)). |
 | `2s HALTEN ZUM C6-FUNK-UPDATE` | Sendet das Image des C6-Funks, das dieses Panel mitbringt, an den ESP32-C6 des Boards ([Der C6-Funk](#der-c6-funk)). |
+
+![Die OPTIONEN von UPDATES](img/de/updates-settings.png)
+
+| Einstellung | Werte | Vorgabe | Wirkung |
+| --- | --- | --- | --- |
+| Erinnerung beim Start | AUS, EIN | EIN | die Suche beim Start und ihre Erinnerung |
+| Releases | STABLE, TESTING | STABLE | welche Releases eine Suche liest ([Die Suche](#die-suche)); ein Wechsel blendet das Ergebnis der letzten Suche aus, und ein mit der anderen Einstellung gefundenes Release wird nicht angeboten |
+
+Eine Änderung gilt sofort; SPEICHERN in der Leiste der Liste behält sie, wie
+auf SETUP ([Werte behalten](#werte-behalten)).
 
 Die Karte nennt die laufende Version und das gespeicherte Heimnetz. Suche
 und Download brauchen:
@@ -6597,7 +6687,7 @@ Die Erinnerung ist ein Kasten von 860 x 480px mit ihren Zeilen in der
 Schrift 12 x 24px. JETZT NICHT und NICHT MEHR ERINNERN sind 398 x 56px
 nebeneinander; das Halten ist 812 x 64px darunter.
 
-Mit ERINNERUNG BEIM START an und einem gespeicherten Heimnetz sucht das
+Mit Erinnerung beim Start an und einem gespeicherten Heimnetz sucht das
 Panel einmal nach jedem Start. Die Suche wartet auf einen Moment, den der
 Prüfstand erlaubt: Splash vorbei, Prüfstand SAFE, Netzteilausgang aus, kein
 offener Aufzeichnungslauf, WI-FI geschlossen und kein Update des
@@ -6613,8 +6703,8 @@ entfallen und das Menü zu sehen ist, öffnet sie sich.
 | Bedienelement | Wirkung |
 | --- | --- |
 | `JETZT NICHT` | Schließt die Erinnerung bis zum nächsten Start des Panels. Verlassen über das Home-Feld wirkt genauso. |
-| `NICHT MEHR ERINNERN` | Schaltet ERINNERUNG BEIM START aus und fordert das Speichern an, das im nächsten Moment geschieht, in dem die Einstellungen geschrieben werden dürfen ([Werte behalten](#werte-behalten)). SETUP > UPDATES schaltet sie wieder ein. |
-| `2s HALTEN ZUM LADEN & INSTALLIEREN` | Dasselbe Halten wie auf UPDATES. |
+| `NICHT MEHR ERINNERN` | Schaltet Erinnerung beim Start aus und fordert das Speichern an, das im nächsten Moment geschieht, in dem die Einstellungen geschrieben werden dürfen ([Werte behalten](#werte-behalten)). Die OPTIONEN von UPDATES schalten sie wieder ein. |
+| `2s HALTEN: LADEN & INSTALLIEREN` | Dasselbe Halten wie auf UPDATES. |
 
 Findet die Suche beim Start kein neueres Release oder scheitert sie, zeigt
 sie nichts. Ihr Ergebnis steht auf UPDATES.
@@ -7415,12 +7505,13 @@ Die Marke SIMULIERT und der Text „Nicht gemessen.“ stehen unter den Werten,
 Platzierungshilfen und tragen keine Marke.
 
 WUCHTEN, PRÜFGESTELL und FLUGMODELL sind Registerkarten von 150 x 48px. Die
-Rotorkarte ist 640px breit, ihre Scheibe hat 160px Radius; die rechte Karte
+Rotorkarte ist 640px breit, ihre Scheibe hat 128px Radius; die rechte Karte
 ist 360px breit. PROPELLER und EDF sind 162 x 48px groß, `-` und `+` der
 Blattzahl 56 x 48px, die Tippfläche der Zahl 114 x 48px, die vier Werte
-Zeilen von 36px. Die Hinweise und die zwei Zeilen der Regeln stehen in
+Zeilen von 28px. Die Hinweise und die zwei Zeilen der Regeln stehen in
 8 x 16; die Köpfe der Regeln und die Beschriftungen, auch die der
-Zeichnungen, in 10 x 20.
+Zeichnungen, in 10 x 20. Die Regeln stehen 55px auseinander. Die Felder enden bei Körper-y 436 auf der Fußleiste; sie nennt den Bildschirm und hat weder Halte-Taste noch OPTIONEN ([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste)). Das
+Tastenfeld der Blattzahl deckt beide Felder und die Fußleiste ab.
 
 ## Unbekannte Bildschirm-IDs
 

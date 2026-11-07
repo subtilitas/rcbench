@@ -5,8 +5,9 @@
  * loss, the INA3221's silence or a stalled servo ends posts one DISARM
  * besides the output off, and no release ahead of it; a run the operator
  * ends -- OUTPUT OFF, the dial, a profile changed, STOP TEST, a touch loss
- * -- posts no DISARM and lets the servo go to the rest on an ARMED bench;
- * a run a disarm ended posts nothing more.
+ * -- posts one DISARM too: TEST's ARM + START armed the bench for the
+ * run, and every end of it switches the bench to SAFE; a run a disarm
+ * ended posts nothing more.
  *
  * The screen and its fixtures are servo_rig.h, the bench
  * servo_bench_rig.h.
@@ -104,16 +105,14 @@ TEST_CASE(a_stalled_servo_ends_a_run_with_the_bench_safe)
                                "for 1s\n") != NULL);
 }
 
-/* The operator's ends: the servo let go at the rest, the bench left ARMED,
- * no DISARM posted. */
-TEST_CASE(the_operators_end_leaves_the_bench_armed)
+/* The operator's ends: one DISARM posted, the bench to SAFE, as every end
+ * of a run that ARM + START armed the bench for.  OUTPUT OFF is none of
+ * them: no SERVO screen shows it while TEST runs. */
+TEST_CASE(the_operators_end_switches_the_bench_to_safe)
 {
-    for (int way = 0; way < 5; ++way) {
+    for (int way = 1; way < 5; ++way) {
         run_under_way(false);
         switch (way) {
-        case 0:                                     /* OUTPUT OFF */
-            tap(SUP_OUT_X, SUP_ROW_Y);
-            break;
         case 1: {                                   /* the dial */
             close_settings();
             int x, y;
@@ -134,8 +133,8 @@ TEST_CASE(the_operators_end_leaves_the_bench_armed)
         bench_frames(2000u);
         CHECK(!servo_screen_testing());
         CHECK(!bench.out);
-        CHECK_EQ(bench.disarms, 0u);
-        CHECK(bench.released || way == 1);
+        CHECK_EQ(bench.disarms, 1u);
+        CHECK(bench.released);
     }
 }
 
@@ -156,7 +155,7 @@ int main(void)
     RUN(the_supply_lost_ends_a_run_with_the_bench_safe);
     RUN(the_meters_silence_ends_a_run_with_the_bench_safe);
     RUN(a_stalled_servo_ends_a_run_with_the_bench_safe);
-    RUN(the_operators_end_leaves_the_bench_armed);
+    RUN(the_operators_end_switches_the_bench_to_safe);
     RUN(a_run_a_disarm_ended_posts_no_disarm);
     return test_summary("servo_error_safe");
 }

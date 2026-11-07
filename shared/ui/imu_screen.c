@@ -7,8 +7,9 @@
  * panel hands to the IMU's task (imu_ctl.h), and the panel hands back
  * what to show each frame (imu_screen_set()).  SCAN opens the found list
  * at once; it shows the scan under way, then the devices, and a tap on one
- * binds it and closes the list.  CALIBRATE ACCELEROMETER is a 2s hold with
- * the band's hint on a short press (UI_HOLD_S).
+ * binds it and closes the list.  CALIBRATE in the footer's middle slot is
+ * a 2s hold with the band's hint on a short press (UI_HOLD_S); SETTINGS in
+ * its right slot opens SETUP > SENSORS on the IMU entry.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -92,7 +93,7 @@ bool ims_row_enabled(int row)
     case IMS_ROW_UNZERO:
         return ims.v.r.zeroed;
     default:
-        return true;          /* IMU SETTINGS and CLOSE */
+        return true;          /* SETTINGS and CLOSE */
     }
 }
 
@@ -167,17 +168,15 @@ gfx_rect_t imu_screen_row_rect(int row)
     case IMS_ROW_SCAN:
         return gfx_rect_make(IMS_BX, IMS_RY, IMS_BW, IMS_BH);
     case IMS_ROW_CAL:
-        return gfx_rect_make(IMS_BX, IMS_RY + 2 * IMS_BPITCH, IMS_BW,
-                             IMS_BH);
+        return ui_footer_rect(UI_FOOTER_HOLD);
     case IMS_ROW_ZERO:
-        return gfx_rect_make(IMS_BX, IMS_RY + 3 * IMS_BPITCH, IMS_HALF_W,
+        return gfx_rect_make(IMS_BX, IMS_RY + IMS_BPITCH, IMS_HALF_W,
                              IMS_BH);
     case IMS_ROW_UNZERO:
         return gfx_rect_make(IMS_BX + IMS_BW - IMS_HALF_W,
-                             IMS_RY + 3 * IMS_BPITCH, IMS_HALF_W, IMS_BH);
+                             IMS_RY + IMS_BPITCH, IMS_HALF_W, IMS_BH);
     case IMS_ROW_SETTINGS:
-        return gfx_rect_make(IMS_BX, IMS_RY + 4 * IMS_BPITCH, IMS_BW,
-                             IMS_BH);
+        return ui_footer_rect(UI_FOOTER_SETTINGS);
     case IMS_ROW_RESCAN:
         return gfx_rect_make(IMS_SX, IMS_LY, IMS_SW, IMS_BH);
     case IMS_ROW_CLOSE:
@@ -201,13 +200,14 @@ gfx_rect_t imu_screen_hold_rect(void)
     return imu_screen_row_rect(IMS_ROW_CAL);
 }
 
-_Static_assert(IMS_RY + 4 * IMS_BPITCH + IMS_BH + 16 <= IMS_LINE_Y,
-               "the calibration's line starts under IMU SETTINGS");
+_Static_assert(IMS_RY + IMS_BPITCH + IMS_BH + 16 <= IMS_LINE_Y,
+               "the calibration's line starts under ZERO");
 _Static_assert(IMS_LINE_Y + 2 * IMS_LPITCH + 12 <= IMS_ERR_Y,
                "two lines of the calibration end over the operation's line");
-_Static_assert(IMS_ERR_Y + 2 * IMS_LPITCH + 20 <= IMS_FLOOR,
-               "two lines of the operation end over the alert band");
-_Static_assert(IMS_RY + IMS_RH <= IMS_FLOOR, "the card ends over the band");
+_Static_assert(IMS_ERR_Y + 2 * IMS_LPITCH + 20 <= UI_FOOTER_FLOOR,
+               "two lines of the operation end over the footer");
+_Static_assert(IMS_RY + IMS_RH <= UI_FOOTER_FLOOR,
+               "the card ends over the footer");
 _Static_assert(IMS_RX + IMS_RW <= UI_PANEL_W - UI_MARGIN,
                "the card keeps the margin");
 _Static_assert(IMS_BX + IMS_BW + 8 <= IMS_RX, "the controls end left of the card");

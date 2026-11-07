@@ -16,9 +16,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-/* TEST's screen: its output card keeps the SET row and OUTPUT ON, which
+/* KST's screen: its output card keeps the SET row and OUTPUT ON, which
  * LIVE, SWEEP and RUDDER show as their READY rows' SUPPLY. */
-#define SERVO_RIG_FN SERVO_FN_TEST
+#define SERVO_RIG_FN SERVO_FN_KST
 #include "servo_screen_rig.h"
 #include "supply_spots.h"
 
@@ -71,9 +71,10 @@ static void bench_frames_on(uint32_t ms, bool accept_on, float *on_v_max)
 
 /*
  * 8.4V set on SUPPLY with the output off; a run without HV steps starts
- * and asks 4.8V and its ON, which does not land.  OUTPUT ON held on SERVO
- * at 4.8V while the run ends (no ON in 3s): the set points do not go back
- * under the hold, and no ON is ever asked above 6.0V.
+ * and asks 4.8V and its ON, which does not land.  KST's screen, the one
+ * with OUTPUT ON, ends the run as its session opens; OUTPUT ON held there
+ * at 4.8V: the set points do not go back under the hold, and no ON is
+ * ever asked above 6.0V.
  */
 TEST_CASE(a_run_ending_under_output_ons_hold_switches_nothing_on_past_6_v)
 {
@@ -86,6 +87,8 @@ TEST_CASE(a_run_ending_under_output_ons_hold_switches_nothing_on_past_6_v)
     float on_v = 0.0f;
     bench_frames_on(1500u, false, &on_v);          /* the ON does not land */
     on_v = 0.0f;
+    close_settings();                  /* OUTPUT ON's hold, on KST's card */
+    CHECK(!servo_screen_testing());    /* KST's session ends the run */
     ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
     bench_frames_on(2800u, true, &on_v);
     ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);

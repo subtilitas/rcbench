@@ -46,10 +46,7 @@ static void esc_stick_ps_init(gfx_rect_t area)
     pg.stage = STAGE_CLOSED;
     pg.back      = (gfx_rect_t){ (int16_t)(PAD + 12), CRUMB_Y, BACK_W,
                                  CRUMB_H };
-    pg.read_btn  = (gfx_rect_t){ (int16_t)(W - PAD - 12 - 2 * FOOT_BTN_W - 8),
-                                 (int16_t)BTN_Y, FOOT_BTN_W, BTN_H };
-    pg.write_btn = (gfx_rect_t){ (int16_t)(W - PAD - 12 - FOOT_BTN_W),
-                                 (int16_t)BTN_Y, FOOT_BTN_W, BTN_H };
+    pg.write_btn = ui_footer_rect(UI_FOOTER_HOLD);
     pg.page_dn   = (gfx_rect_t){ (int16_t)(W - PAD - 12 - PAGE_KEY_W), PAGE_Y,
                                  PAGE_KEY_W, UI_TAP_MIN };
     pg.page_up   = (gfx_rect_t){ (int16_t)(pg.page_dn.x - 8 - PAGE_KEY_W),
@@ -118,6 +115,13 @@ static void tap_follow(const touch_event_t *evt)
 static void esc_stick_ps_event(const touch_event_t *evt)
 {
     if (evt == NULL || pg.stage == STAGE_CLOSED) {
+        return;
+    }
+    if (sp_set_shown()) {
+        /* The SETTINGS list covers the session and follows its own
+         * presses. */
+        pg.tap.live = false;
+        sp_set_event(evt);
         return;
     }
     if (evt->type != TOUCH_EVENT_DOWN) {
@@ -194,12 +198,18 @@ static void esc_stick_ps_tick(float dt_s)
 
 static bool esc_stick_ps_has_press(uint8_t id)
 {
-    return (pg.tap.live && pg.tap.id == id) || esc_stick_panel_holds_press(id);
+    return (pg.tap.live && pg.tap.id == id) || esc_stick_panel_holds_press(id)
+           || sp_set_holds(id);
 }
 
-/* The body under the output strip, cleared, then the page. */
+/* The body under the output strip, cleared, then the page; the SETTINGS
+ * list over the whole body. */
 static void esc_stick_ps_render(gfx_canvas_t *c)
 {
+    if (pg.stage != STAGE_CLOSED && sp_set_shown()) {
+        sp_set_render(c);
+        return;
+    }
     gfx_fill_rect(c, 0, PROG_FULL_Y, W, H - PROG_FULL_Y,
                   ui_theme_color(UI_C_BG));
     if (pg.stage != STAGE_CLOSED) {

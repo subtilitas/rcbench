@@ -69,8 +69,10 @@ TEST_CASE(a_result_of_many_changes_counts_the_rest)
     /* hobbywing-flyfun-v5: twelve items. */
     open_profile("hobbywing-flyfun-v5");
     for (int i = 0; i < ST_PARM_ROWS; ++i) {
-        tap(STEP_UP_X, STEP_CY(i));          /* items 1 to 6 */
+        tap(STEP_UP_X, STEP_CY(i));          /* items 1 to 5 */
     }
+    tap(PAGE_DN_X, PAGE_CY);
+    tap(STEP_UP_X, STEP_CY(ST_PARM_ROWS - 1)); /* item 6 */
     tap(PAGE_DN_X, PAGE_CY);
     tap(STEP_UP_X, STEP_CY(ST_PARM_ROWS - 1)); /* item 7 */
     tap(WRITE_X, BTN_CY);
@@ -636,7 +638,12 @@ TEST_CASE(an_unsure_selection_is_not_counted_as_made)
         tap(CANCEL_X, HOLD_Y);               /* the first opening */
         const int picks = (pass == 0) ? 6 : 1;
         for (int i = 0; i < picks; ++i) {
-            tap(STEP_UP_X, STEP_CY(i));
+            if (i < ST_PARM_ROWS) {
+                tap(STEP_UP_X, STEP_CY(i));
+            } else {
+                tap(PAGE_DN_X, PAGE_CY);     /* item 6 on the last row */
+                tap(STEP_UP_X, STEP_CY(ST_PARM_ROWS - 1));
+            }
         }
         tap(WRITE_X, BTN_CY);
         hold_for(2.25f);

@@ -1,13 +1,13 @@
 /**
  * @file
- * @brief The SERVO screen's automatic test: START TEST, on TEST's AUTOMATIC TEST
- * card, runs it (servo_test.h).  This file hands the run the steps, the
- * servo's profile and ends, the meter and the supply's caps; does what the
- * run asks -- the servo's position, SUPPLY's set points and output --
- * through the same paths a finger uses; puts SUPPLY's set points back after
- * it; and draws its box on LIVE's card and its button and lines on the
- * AUTOMATIC TEST card.  It also serves the card writer the outbox of both runs, the
- * automatic test's first, then the limit run's.
+ * @brief The SERVO screen's automatic test (servo_test.h), which TEST's
+ * HOLD 2s: ARM + START starts (servo_test_ready.c).  This file hands the
+ * run the steps, the servo's profile and ends, the meter and the supply's
+ * caps; does what the run asks -- the servo's position, SUPPLY's set
+ * points and output -- through the same paths a finger uses; puts SUPPLY's
+ * set points back after it; and draws its box and the lines of the
+ * AUTOMATIC TEST card.  It also serves the card writer the outbox of the
+ * runs, the automatic test's first, then the limit run's.
  *
  * The screen is servo_screen.c; the state and the layout both share are
  * servo_screen_int.h.
@@ -16,6 +16,7 @@
  */
 
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -72,7 +73,7 @@ void test_meter_follow(servo_source_id_t id, uint32_t changes)
 
 /* The steps the run's settings name: 7.4 and 8.4V only while HV SERVO is
  * on. */
-static uint8_t test_steps(float *v)
+uint8_t test_steps(float *v)
 {
     static const struct { setting_id_t id; float v; bool hv; } k[] = {
         { SET_SERVO_STEP_48, 4.8f, false },
@@ -110,7 +111,7 @@ float test_top_v(void)
 
 /* What the run is told: its settings and SWEEP's, the servo's profile, and
  * its ends -- the sweep's, RANGE of the travel either side of PULSE CENTRE. */
-static void test_ends(uint16_t *end_lo, uint16_t *end_hi)
+void test_ends(uint16_t *end_lo, uint16_t *end_hi)
 {
     const sweep_cfg_t sw = sweep_cfg_now();
     uint16_t lo, hi;
@@ -125,7 +126,7 @@ static void test_ends(uint16_t *end_lo, uint16_t *end_hi)
 
 /* Whether a run started now reads the INA3221: it is the rail's meter,
  * and the supply it measures is not the panel's model. */
-static bool test_on_ina_now(void)
+bool test_on_ina_now(void)
 {
     return s.link_up && s.source == SERVO_SOURCE_INA3221
            && !supply_screen_model();
@@ -145,7 +146,7 @@ static servo_test_ina_t test_ina_why(void)
     }
 }
 
-static void test_cfg(servo_test_cfg_t *c)
+void test_cfg(servo_test_cfg_t *c)
 {
     memset(c, 0, sizeof(*c));
     c->step_count = test_steps(c->steps_v);
@@ -179,6 +180,13 @@ static void test_cfg(servo_test_cfg_t *c)
     c->reverse    = s.reverse;
     c->travel_deg = (uint8_t)s.travel_deg;
     c->range_pct  = (uint8_t)settings_get_int(SET_SERVO_TEST_RANGE);
+    c->enc_cmd_deg[0] = us_to_deg(c->end_lo_us);
+    c->enc_cmd_deg[1] = us_to_deg(c->end_hi_us);
+    test_cfg_bench(c);
+}
+
+void test_cfg_bench(servo_test_cfg_t *c)
+{
     c->model      = supply_screen_model();
     /* Only an AS5600 the IOmcu holds on reads angles: a set-up it has
      * not taken -- written only while SAFE -- gives a run none.  The IMU
@@ -187,8 +195,9 @@ static void test_cfg(servo_test_cfg_t *c)
     c->enc_centre = enc_centre();
     (void)enc_name(c->enc_source, sizeof(c->enc_source));
     c->enc_imu    = (enc_src() == SERVO_ANGLE_IMU);
-    c->enc_cmd_deg[0] = us_to_deg(c->end_lo_us);
-    c->enc_cmd_deg[1] = us_to_deg(c->end_hi_us);
+    memset(&c->meter, 0, sizeof(c->meter));
+    c->meter_changes = 0u;
+    c->ina_why = 0u;
     /* The meter the run reads to its end: the servo rail's as the panel
      * last said it.  The INA3221 channel's windows while it is the meter of a
      * measured supply; else the PD mini's own readings, whose travel times
@@ -236,13 +245,13 @@ static void test_apply(const servo_test_do_t *d)
     if (d->off) {
         supply_screen_ask_off();
     }
-    if (d->disarm && value_live()) {
-        /* An error ended the run: the bench to SAFE, as DISARM does it.
-         * The disarm lets go of the output, so no release goes before it. */
+    if ((d->disarm || d->release) && value_live()) {
+        /* The run ended, however: the bench to SAFE, as DISARM does it,
+         * and as RUDDER AUTO's run ends; ARM + START armed it for the run.
+         * The disarm lets go of the output, so no release goes before it,
+         * and the value stays where the run last drove the servo. */
         svs_ask_disarm();
     } else if (d->release) {
-        /* The value goes to the rest only where the pin follows: a run a
-         * disarm ended leaves it where the run last drove it. */
         release();
     }
 }
@@ -308,71 +317,9 @@ void test_end_now(servo_test_abort_t why)
     test_ended();
 }
 
-/* Why a START cannot run now, before any hold: SERVO_STR_*, or 0. */
-int test_blocked(void)
+bool test_launch(const servo_test_cfg_t *c)
 {
-    if (!value_live()) {
-        return SERVO_STR_START_NOT_ARMED;
-    }
-    if (servo_limrun_running(&s.lim)) {
-        return SERVO_STR_START_LIMIT_RUNS;
-    }
-    if (servo_rauto_running(&s.ra.run)) {
-        return SERVO_STR_START_AUTO_RUNS;
-    }
-    /* The rbmod carrier's programming port: its pulse needs the PROG 5V,
-     * and the steps' voltages reach the servo rails, not the port. */
-    if (prog_choice_carrier() && prog_choice_port() != 0u) {
-        return prog_choice_needs_5v() ? SERVO_STR_START_PROG_5V
-                                      : SERVO_STR_START_PROG_STEPS;
-    }
-    if (!servo_test_drained(&s.test) || !servo_limrun_drained(&s.lim)
-        || !servo_rauto_drained(&s.ra.run) || s.logger_busy) {
-        return SERVO_STR_START_BUSY;
-    }
-    /* What the engine would refuse, said live: a refusal stays on the
-     * line only while it holds, and goes with the edit that answers it. */
-    float v[SERVO_TEST_STEPS_MAX];
-    const uint8_t n = test_steps(v);
-    if (n == 0u && !settings_get_bool(SET_SERVO_BROWNOUT)) {
-        return SERVO_STR_START_NO_STEPS;
-    }
-    if (!s.have_sup || !s.sup.online) {
-        return SERVO_STR_START_NO_SUPPLY;
-    }
-    uint16_t lo, hi;
-    test_ends(&lo, &hi);
-    if (!(lo < s.centre_us && s.centre_us < hi)) {
-        return SERVO_STR_START_BAD_ENDS;
-    }
-    /* A step the supply's caps do not reach: refused here, before a
-     * warning names a voltage the run would not use. */
-    const supply_caps_t caps = supply_screen_caps();
-    for (uint8_t k = 0; k < n; ++k) {
-        if (v[k] > caps.v_max + 0.001f || v[k] < caps.v_min - 0.001f) {
-            return SERVO_STR_START_ABOVE_CAP;
-        }
-    }
-    return 0;
-}
-
-/* START TEST's hold, or the HV warning's, completed: the run starts.  A
- * panel open closes; TEST's card and LIVE's box show the run. */
-void test_begin(void)
-{
-    /* The hold that started it is spent, whatever comes of it: a press
-     * the overlay let go of never reaches ui_hold_end().  Its flash runs
-     * on. */
-    ui_hold_spend(&s.test_hold);
-    s.test_down = false;
-    ++s.test_rev;
     s.test_note = 0;
-    if (test_blocked() != 0) {
-        ++s.ctrl_rev;                   /* the line under it says why */
-        return;
-    }
-    servo_test_cfg_t c;
-    test_cfg(&c);
     servo_test_reading_t last;
     memset(&last, 0, sizeof(last));
     if (s.have_sup) {
@@ -382,12 +329,12 @@ void test_begin(void)
     const float v0 = supply_screen_set_v();
     const float i0 = supply_screen_set_i();
     const servo_test_start_t why = servo_test_start(
-        &s.test, &c, test_now(), &last, caps.v_min, caps.v_max);
+        &s.test, c, test_now(), &last, caps.v_min, caps.v_max);
     test_tell();
     if (why != SERVO_TEST_START_OK) {
         s.test_note = (int)SERVO_STR_START_OK + (int)why;
         ++s.ctrl_rev;
-        return;
+        return false;
     }
     /* "No magnet" arrives once, when it begins: a run that starts in it is
      * told so, and its report gives the reason for its missing angles. */
@@ -407,17 +354,17 @@ void test_begin(void)
     s.test_i0      = i0;
     s.test_restore = false;
     s.test_seen    = true;
-    s.test_on_ina  = c.meter.kind == (uint8_t)SERVO_TEST_METER_INA3221;
+    s.test_on_ina  = c->meter.kind == (uint8_t)SERVO_TEST_METER_INA3221;
     s.test_file    = 0;
     s.test_report  = false;
     /* USER LOGS on SETUP > SD CARD, as it stands at the start: the run
      * writes its files or none, never half of them. */
     s.test_off     = !settings_get_bool(SET_LOG_USER);
     s.test_box     = true;
-    s.lim_box      = false;
     close_panels();
     servo_invalidate();
     ++s.ctrl_rev;
+    return true;
 }
 
 /* The HV warning, for a run with a step past a standard servo's rating. */
@@ -638,23 +585,6 @@ void draw_test_box(gfx_canvas_t *c)
              ui_theme_color(UI_C_TEXT_DIM), 1);
 }
 
-/**
- * @brief START TEST: green, fading to the danger red across its hold, as
- *        ARM; STOP TEST in red while a run is under way.
- * @param c the canvas
- */
-void draw_test_start(gfx_canvas_t *c)
-{
-    const bool running = servo_test_running(&s.test);
-    ui_hold_button(c, test_start_rect(),
-                   running ? TR(SV_STOP_TEST) : TR(SV_START_TEST),
-                   ui_action_fill(running ? UI_ACTION_ACTIVE
-                                          : UI_ACTION_AVAILABLE),
-                   ui_action_fill(UI_ACTION_ACTIVE), &s.test_hold,
-                   s.ov_have && s.ov_pressed == OP_TEST_START,
-                   running || test_blocked() == 0, SV_FONT_LABEL);
-}
-
 void servo_screen_plan_text(char *out, size_t size, const float *v,
                             uint8_t n, bool brownout)
 {
@@ -727,38 +657,60 @@ void draw_test_stall(gfx_canvas_t *c, int x, int y)
 }
 
 /**
- * @brief The AUTOMATIC TEST card's lines: over START TEST the steps and
- *        the length of each, and under it why a run cannot start or what it
- *        does now, the last result and its file or, for an aborted run, its
- *        reason, and a STALL AT no reading can pass.
+ * @brief The AUTOMATIC TEST card's first line: what the run does now, the
+ *        step ARM + START is at, the last start's failure, why the hold is
+ *        refused, or how to start.
+ * @param line takes it
+ * @param n    its size
+ * @return true for the warning colour
+ */
+static bool test_state_line(char *line, size_t n)
+{
+    if (servo_test_running(&s.test)) {
+        snprintf(line, n, TR(SV_RUNNING), servo_test_step_now(&s.test),
+                 servo_test_steps_planned(&s.test));
+        return false;
+    }
+    if (svs_seq_busy()) {
+        (void)svs_seq_line(line, n);
+        return false;
+    }
+    const char *why = svs_seq_failure();
+    if (why == NULL && s.test_note != 0) {
+        why = ui_servo_str((servo_str_t)s.test_note);
+    }
+    if (why == NULL) {
+        why = test_hold_blocked(NULL);
+    }
+    if (why != NULL) {
+        snprintf(line, n, "%s", why);
+        return true;
+    }
+    snprintf(line, n, "%s", test_needs_hv() ? TR(SV_TAP_HV)
+                                            : TR(SV_HOLD_START));
+    return false;
+}
+
+/**
+ * @brief The AUTOMATIC TEST card's lines: the steps and the length of
+ *        each, then what the run does now or why it cannot start, the last
+ *        result and its file or, for an aborted run, its reason, and a
+ *        STALL AT no reading can pass.
  * @param c the canvas
  */
 void draw_test_lines(gfx_canvas_t *c)
 {
-    const gfx_rect_t k = run_card_rect(0);
+    const gfx_rect_t k = test_card_rect();
     const int x = k.x + 10;
     char line[96];
     servo_screen_test_summary(line, sizeof(line));
     gfx_text(c, x, k.y + RUN_SUM_DY, line, SV_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
 
-    const int y = k.y + RUN_LINE_DY;
-    gfx_color_t col = ui_theme_color(UI_C_TEXT_FAINT);
-    const int blocked = servo_test_running(&s.test) ? 0 : test_blocked();
-    if (blocked != 0 || s.test_note != 0) {
-        snprintf(line, sizeof(line), "%s",
-                 ui_servo_str((servo_str_t)((blocked != 0) ? blocked
-                                                           : s.test_note)));
-        col = ui_theme_color(UI_C_WARN);
-    } else if (servo_test_running(&s.test)) {
-        snprintf(line, sizeof(line), TR(SV_RUNNING),
-                 servo_test_step_now(&s.test),
-                 servo_test_steps_planned(&s.test));
-    } else {
-        snprintf(line, sizeof(line), "%s",
-                 test_needs_hv() ? TR(SV_TAP_HV) : TR(SV_HOLD_START));
-    }
-    gfx_text(c, x, y, line, SV_FONT_LABEL, col, 1);
+    const int y = k.y + TEST_LINE_DY;
+    const bool warn = test_state_line(line, sizeof(line));
+    gfx_text(c, x, y, line, SV_FONT_LABEL,
+             ui_theme_color(warn ? UI_C_WARN : UI_C_TEXT_FAINT), 1);
 
     if (s.test.state == SERVO_TEST_DONE && !servo_test_running(&s.test)) {
         const servo_test_verdict_t v = servo_test_verdict(&s.test);
@@ -792,8 +744,9 @@ uint32_t test_signature(void)
         (uint32_t)t->state, (uint32_t)t->phase, (uint32_t)t->step,
         (uint32_t)t->moves_done, (uint32_t)(s.test_file + 2),
         s.test_report ? 1u : 0u, s.test_off ? 1u : 0u,
-        (uint32_t)test_blocked(),
-        (uint32_t)s.test_note,
+        (uint32_t)(uintptr_t)test_hold_blocked(NULL),
+        (uint32_t)(uintptr_t)svs_seq_failure(),
+        (uint32_t)s.test_note, test_needs_hv() ? 1u : 0u,
     };
     uint32_t h = 2166136261u;           /* FNV-1a over the fields */
     for (size_t k = 0; k < sizeof(f) / sizeof(f[0]); ++k) {
@@ -819,7 +772,7 @@ void test_tick(void)
     /* A refusal the engine gave goes once what it was about changes: the
      * bench armed or disarmed, a report taken, a cap moved, the supply
      * answering or not. */
-    const int blocked = test_blocked();
+    const char *blocked = test_why();
     const bool online = s.have_sup && s.sup.online;
     if (blocked != s.test_blocked_seen || online != s.test_online_seen) {
         s.test_blocked_seen = blocked;

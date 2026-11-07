@@ -24,6 +24,7 @@
 #include "gfx.h"
 #include "prog_registry.h"
 #include "touch_types.h"
+#include "ui_footer.h"
 #include "ui_layout.h"
 #include "ui_screen.h"
 #include "ui_text.h"
@@ -56,23 +57,27 @@
  *        MOTOR & ESC draws the output strip's line above PROG_FULL_Y and
  *        the pages lay out under it.
  *
- * From the top: the crumb row (BACK 120 x 48, the trail, SEARCH or
- * TIMING) from CRUMB_Y, the cards from CARD_Y to CARD_B, and the foot row
- * of buttons UI_BTN_H_TALL tall from BTN_Y, which ends SP_FOOT, 4px above
- * the alert band (UI_ALERT_H): RUN, ABORT and OK are body y 436 to 491,
- * and an alert covers none of them.
+ * From the top: the crumb row (BACK 120 x 48, the trail, SEARCH) from
+ * CRUMB_Y, the cards from CARD_Y to CARD_B, the page's note in two lines
+ * from NOTE_Y, and on a profile's page the footer (ui_footer.h) from
+ * BTN_Y, which ends SP_FOOT, 4px above the alert band (UI_ALERT_H): ESC
+ * STICK, then RUN, ABORT or OK in the middle slot and SETTINGS, body y 444
+ * to 491, and an alert covers none of them.
  */
 #define PAD       UI_MARGIN                      /**< the outer margin     */
 #define SP_FOOT   (H - UI_ALERT_H - 4)           /**< 492: controls end    */
 #define CRUMB_Y   (PROG_FULL_Y + 2)              /**< the crumb row's top  */
 #define CRUMB_H   UI_TAP_MIN                     /**< its height, 48px     */
 #define BACK_W    120                            /**< BACK's width         */
-#define BTN_H     UI_BTN_H_TALL                  /**< the foot row, 56px   */
-/** @brief The foot row's top: 4px over the alert band, BTN_H tall. */
-#define BTN_Y     (SP_FOOT - BTN_H)
+#define BTN_H     UI_FOOTER_H                    /**< the footer, 48px     */
+/** @brief The footer's top: 4px over the alert band, BTN_H tall. */
+#define BTN_Y     UI_FOOTER_Y
 #define FOOT_BTN_W 168                           /**< a foot button's width */
 #define CARD_Y    (CRUMB_Y + CRUMB_H + 6)        /**< 84: the cards' top    */
-#define CARD_B    (BTN_Y - 8)                    /**< 428: their foot       */
+/** @brief The page's note: two lines of LINE_P that end on the floor
+ *         over the footer. */
+#define NOTE_Y    (UI_FOOTER_FLOOR - 2 * LINE_P) /**< 396                  */
+#define CARD_B    (NOTE_Y - 8)                   /**< 388: the cards' foot */
 
 /**
  * @brief A profile's page and TIMING: the parameter card on the left,
@@ -90,7 +95,7 @@
 #define ROW_Y0    (CARD_Y + 8)                   /**< the first row's top  */
 #define ROW_H     UI_TAP_MIN                     /**< a row, 48px          */
 #define ROW_P     56                             /**< its pitch            */
-#define ROWS_MAX  6                              /**< the rows a page holds */
+#define ROWS_MAX  5                              /**< the rows a page holds */
 #define ROW_X     (PAD + 8)                      /**< a row's left         */
 #define ROW_TY    ((ROW_H - 20) / 2)             /**< its text, from its top */
 #define NAME_X    (PAD + 46)                     /**< a row's name         */
@@ -117,8 +122,8 @@
 #define DEV_H     48                             /**< its two lines        */
 #define RUN_Y     (DEV_Y + DEV_H + 4)            /**< 136: the run's card  */
 #define HELP_P    22                             /**< the help lines' pitch */
-#define HELP_Y    (BTN_Y - 4 - 20 - HELP_P)      /**< 390                  */
-#define RUN_H     (HELP_Y - 6 - RUN_Y)           /**< 248px                */
+#define HELP_Y    (UI_FOOTER_FLOOR - 20 - HELP_P) /**< 394                 */
+#define RUN_H     (HELP_Y - 6 - RUN_Y)           /**< 252px                */
 #define RUN_L0    (RUN_Y + 84)                   /**< its first line       */
 #define RUN_LINES 8                              /**< the lines it holds   */
 
@@ -137,10 +142,12 @@ _Static_assert(ROW_Y0 + (ROWS_MAX - 1) * ROW_P + ROW_H <= CARD_B - 4,
                "ROWS_MAX rows fit the parameter card");
 _Static_assert(RUN_L0 + (RUN_LINES - 1) * LINE_P + 20 <= RUN_Y + RUN_H - 2,
                "a run's lines fit its card");
-_Static_assert(HELP_Y + HELP_P + 20 <= BTN_Y, "the help lines end above the "
-               "foot row");
+_Static_assert(HELP_Y + HELP_P + 20 <= UI_FOOTER_FLOOR,
+               "the help lines end over the footer");
+_Static_assert(NOTE_Y + 2 * LINE_P <= UI_FOOTER_FLOOR,
+               "the note's two lines end over the footer");
 _Static_assert(BTN_Y + BTN_H + 4 == UI_ALERT_Y - UI_BAND_H,
-               "the foot row ends 4px above the alert band");
+               "the footer ends 4px above the alert band");
 
 /*
  * Each page's drawer is its own function, so the main task's stack holds
@@ -184,13 +191,14 @@ enum { PASS_PRESS = 0, PASS_TAP };
 
 /* The state both files read and write.  The panel moves between the
  * stages and bumps the revision a render follows; it draws and takes the
- * session's controls in their places: BACK in the crumb row, READ and
- * WRITE at the foot (DEFAULTS and RUN, CLOSE and OK), the page keys, and
- * the rows with their steppers. */
+ * session's controls in their places: BACK in the crumb row, WRITE in the
+ * footer's middle slot (RUN, ABORT and OK), the page keys, and the rows
+ * with their steppers. */
 typedef struct {
     prog_stage_t stage;
 
-    gfx_rect_t back, read_btn, write_btn;
+    gfx_rect_t back;      /**< BACK in the crumb row */
+    gfx_rect_t write_btn; /**< RUN, ABORT or OK in the footer's middle slot */
     gfx_rect_t page_up, page_dn;
     gfx_rect_t row[ROWS_MAX], down[ROWS_MAX], up[ROWS_MAX];
 
@@ -378,9 +386,9 @@ static inline int sp_wrap_lines(const char *text, int cells, int max_lines)
 }
 
 /**
- * @brief A note at the foot of a page, from @p x to @p right, left of the
- *        buttons there: on one line level with their labels, or where it
- *        needs more, on two at LINE_P from 6px under their top.
+ * @brief A note at the foot of a page, from @p x to @p right, over the
+ *        footer: on the lower of its two lines, or where it needs more, on
+ *        both from NOTE_Y.
  * @param c The canvas.
  * @param x Its left.
  * @param right Where it ends.
@@ -391,16 +399,47 @@ SP_SHARED void sp_note(gfx_canvas_t *c, int x, int right, const char *text,
                     gfx_color_t ink)
 {
     const int cells = (right - x) / SP_CELL;
-    const int y = (sp_wrap_lines(text, cells, 2) > 1) ? BTN_Y + 6
-                                                      : BTN_Y + (BTN_H - 20) / 2;
+    const int y = (sp_wrap_lines(text, cells, 2) > 1) ? NOTE_Y
+                                                      : NOTE_Y + LINE_P;
     (void)sp_wrap(c, x, y, LINE_P, text, cells, 2, ink);
 }
+
+/* --- the SETTINGS list, in esc_stick_settings.c ------------------------ */
+
+/** @brief The list closed, at its top, no press. */
+void sp_set_reset(void);
+/** @brief The list shown at its top over the session. */
+void sp_set_open(void);
+/** @brief The list closed; what is unsaved stays unsaved. */
+void sp_set_close(void);
+/** @brief Whether the list shows. @return True while it does. */
+bool sp_set_shown(void);
+/**
+ * @brief The home tag over the list: its keypad, a choice list or the leave
+ *        warning first, else the list closes.
+ * @return True while the list was shown.
+ */
+bool sp_set_back(void);
+/** @brief Every touch event while the list shows. @param evt The event. */
+void sp_set_event(const touch_event_t *evt);
+/** @brief Touch events were lost: the list's press drops. */
+void sp_set_cancel(void);
+/** @brief A frame of the list. @param dt_s The frame's time, s. */
+void sp_set_tick(float dt_s);
+/** @brief The list over the whole body. @param c The canvas. */
+void sp_set_render(gfx_canvas_t *c);
+/**
+ * @brief Whether contact @p id holds a press of the list.
+ * @param id The contact.
+ * @return True when it does.
+ */
+bool sp_set_holds(uint8_t id);
 
 /* --- the panel's side, in esc_stick_panel.c ----------------------------- */
 
 /**
  * @brief The page set's init: the panel's state cleared and its controls
- *        laid out, TIMING's keypad closed.
+ *        laid out, the SETTINGS list closed.
  */
 void esc_stick_panel_reset(void);
 
@@ -408,8 +447,7 @@ void esc_stick_panel_reset(void);
 void esc_stick_panel_enter(void);
 /**
  * @brief The host is left: a run ends, the warning, the search's keyboard
- *        and TIMING's keypad close, and TIMING asks for a save of what it
- *        changed.
+ *        and the SETTINGS list close; what the list changed stays unsaved.
  */
 void esc_stick_panel_leave(void);
 /**
@@ -425,8 +463,7 @@ void esc_stick_panel_tick(float dt_s);
 void esc_stick_panel_cancel(void);
 
 /**
- * @brief A DOWN on the session's pages, in the walk of hit().  TIMING's
- *        keypad, while open, takes the DOWN and nothing under it does.
+ * @brief A DOWN on the session's pages, in the walk of hit().
  * @param evt The DOWN, or the press a tap replays.
  * @return True: the pages take every DOWN.
  */
@@ -437,24 +474,24 @@ bool esc_stick_panel_down(const touch_event_t *evt);
 bool esc_stick_panel_safe_at(int px, int py);
 
 /**
- * @brief The home tag in the session: TIMING's keypad closes as CANCEL
- *        does; otherwise what covers the page closes, a run ends or the
- *        session climbs a level, as BACK does; from the makers it closes
- *        the session (STAGE_CLOSED).
+ * @brief The home tag in the session: the SETTINGS list's own level
+ *        first (sp_set_back()); otherwise what covers the page closes, a
+ *        run ends or the session climbs a level, as BACK does; from the
+ *        makers it closes the session (STAGE_CLOSED).
  * @return True: it always acts.
  */
 bool esc_stick_panel_back(void);
 
 /**
- * @brief A MOVE or an UP: the search's keys, TIMING's keypad and the
- *        warning's hold follow it.
+ * @brief A MOVE or an UP: the search's keys and the warning's hold
+ *        follow it.
  * @param evt The event.
  */
 void esc_stick_panel_follow(const touch_event_t *evt);
 
 /**
- * @brief Whether contact @p id holds the warning's hold, a key of the
- *        search's keyboard or a key of TIMING's keypad.
+ * @brief Whether contact @p id holds the warning's hold or a key of the
+ *        search's keyboard.
  * @param id The contact.
  * @return True when it does.
  */
@@ -462,14 +499,14 @@ bool esc_stick_panel_holds_press(uint8_t id);
 
 /**
  * @brief The session opens on the makers, from the top, the search as
- *        typed; TIMING and its keypad closed.
+ *        typed; the SETTINGS list closed.
  */
 void esc_stick_panel_open(void);
 
 /**
  * @brief The panel's part of what decides which control lies under a
- *        point: the level, the pages' scrolls, what covers the page, the
- *        keyboard and TIMING's keypad.
+ *        point: the level, the pages' scrolls, what covers the page and
+ *        the keyboard.
  * @param h The hash so far.
  * @return @p h hashed on with the panel's part.
  */

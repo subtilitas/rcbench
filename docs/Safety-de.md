@@ -835,10 +835,10 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   der Tracker für einen Kontakt erzeugt, der mehr als 120px von der Stelle
   des vorigen Reports entfernt liegt. Ein markiertes Release beendet einen
   Druck oder einen Drag und löst kein Bedienelement aus: Der Finger hat dort
-  nicht abgehoben. Zwei Bedienelemente nehmen es trotzdem an, weil sie etwas
-  anhalten: AUSGANG AUS und START TEST, solange ein Servotest läuft. STOP
-  und DISARM auf MOTOR & ESC und auf SERVO haben schon beim Aufsetzen
-  gewirkt, und ihr Release tut nichts.
+  nicht abgehoben. Ein Bedienelement nimmt es trotzdem an, weil es etwas
+  anhält: AUSGANG AUS. STOP, DISARM auf MOTOR & ESC und auf SERVO und TEST
+  BEENDEN in der Fußleiste von TEST haben schon beim Aufsetzen gewirkt, und
+  ihr Release tut nichts.
   STOP und das Home-Feld reagieren auf einen Druck, der auf ihnen aufsetzt:
   Ein Kontakt, der vom Bildschirm auf STOP rutscht, drückt nichts. Ein Druck,
   den der Router der Seite vorenthält (auf dem Band, auf STOP, dem Home-Feld,

@@ -27,6 +27,7 @@
 #include "esc_stick.h"
 #include "motor_screen.h"
 #include "prog_registry.h"
+#include "settings.h"
 #include "supply.h"
 #include "tone_link.h"
 #include "ui_keypad.h"
@@ -101,17 +102,47 @@ const char *esc_stick_panel_search(void);
 bool esc_stick_panel_typing(void);
 
 /**
- * @brief TIMING's keypad, which a tap on a row's value opens over the
- *        session's pages; for tests and the renderer.
+ * @brief The SETTINGS list's keypad, which a tap on a row's value opens
+ *        over the list; for tests and the renderer.
  * @return The keypad, open or closed.
  */
 const ui_keypad_t *esc_stick_panel_keypad(void);
 
 /**
- * @brief The setting TIMING's open keypad types; for tests.
+ * @brief The setting the SETTINGS list's open keypad types; for tests.
  * @return Its setting_id_t, or -1 while the keypad is closed.
  */
 int esc_stick_panel_keypad_setting(void);
+
+struct ui_setlist;
+/**
+ * @brief The SETTINGS list the footer opens on a profile's page: the 14
+ *        settings of SET_CAT_STICK (esc_stick_settings.c); for tests and
+ *        the renderer.
+ * @return The list, open or closed.
+ */
+const struct ui_setlist *esc_stick_settings_list(void);
+
+/**
+ * @brief The SETTINGS list covers the body, MOTOR & ESC's output strip
+ *        included; MOTOR & ESC draws no strip under it.
+ * @return Whether the list is open.
+ */
+bool esc_stick_settings_shown(void);
+
+/**
+ * @brief The list's row of setting @p id; for tests.
+ * @param id The setting.
+ * @return The row, from 0, headings counted; -1 for a setting not listed.
+ */
+int esc_stick_settings_row(setting_id_t id);
+
+/**
+ * @brief The list scrolled so setting @p id's row shows whole; for tests
+ *        and the renderer.
+ * @param id The setting; one not listed leaves the scroll.
+ */
+void esc_stick_settings_show(setting_id_t id);
 
 /** How many profiles the list holds under the search, and the index in it
  *  of the top row shown; for tests. */

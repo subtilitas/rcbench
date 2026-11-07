@@ -415,7 +415,7 @@ static void draw_left(gfx_canvas_t *c)
 void draw_arm(gfx_canvas_t *c)
 {
     if (ready_shown()) {
-        rauto_draw_hold(c);         /* RUDDER AUTO's ARM + START */
+        ready_draw_hold(c);     /* ARM + START of the function shown */
         return;
     }
     if (drive_shown()) {
@@ -978,11 +978,14 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
                           ui_theme_color(UI_C_PANEL));
         } else if (wb_task() == UI_WB_RUDDER) {
             rudder_render(c, buf);
+        } else if (s.fn == SERVO_FN_LIMRUN) {
+            lim_render(c);
         } else {
             draw_test_page(c);
         }
         if (ready_shown()) {
-            /* RUDDER AUTO: the READY card in the output card's place. */
+            /* RUDDER AUTO, TEST and LIMIT RUN: the READY card in the
+             * output card's place. */
             ready_render(c);
             s.rdy.drawn[buf] = ready_sig();
         } else if (drive_shown()) {
@@ -1016,18 +1019,24 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
     }
     if (ready_shown() || drive_shown()) {
         /* The READY card's rows when one changed, its rail line as the
-         * meter's readings move: on RUDDER AUTO the card draws the line
-         * with its rows, on LIVE, SWEEP and RUDDER it does not. */
+         * meter's readings move: on RUDDER AUTO, TEST and LIMIT RUN the
+         * card draws the line with its rows, on LIVE, SWEEP and RUDDER it
+         * does not.  On TEST the rail's plot moves with the line, where
+         * nothing covers the left card. */
         const uint32_t rsig = ready_sig();
+        const bool power = s.drawn_power[buf] != s.power_rev;
         const bool rows = s.rdy.drawn[buf] != rsig;
+        s.drawn_power[buf] = s.power_rev;
         if (rows) {
             s.rdy.drawn[buf] = rsig;
             clipped(c, ready_card_rect(), ready_render);
         }
-        if (s.drawn_power[buf] != s.power_rev && (!rows || drive_shown())) {
+        if (power && (!rows || drive_shown())) {
             clipped(c, ready_rail_rect(), ready_render_rail);
         }
-        s.drawn_power[buf] = s.power_rev;
+        if (power && s.fn == SERVO_FN_TEST && !cover && rows_page() < 0) {
+            clipped(c, test_plot_rect(), test_draw_plot);
+        }
         s.drawn_sup[buf] = s.sup_rev;
     }
     if (s.drawn_power[buf] != s.power_rev) {
@@ -1080,17 +1089,9 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
         return;
     }
     if (wb_task() == UI_WB_TEST) {
-        /* START TEST's fade on TEST, START LIMIT RUN's on LIMIT RUN: the
-         * two share the card's place. */
-        if (s.drawn_test[buf] != s.test_rev) {
-            s.drawn_test[buf] = s.test_rev;
-            if (run_card_shown() == 1) {
-                clipped(c, lim_start_rect(), draw_lim_start);
-            } else {
-                clipped(c, test_start_rect(), draw_test_start);
-            }
-            clipped(c, run_set_rect(run_card_shown()), draw_run_set);
-        }
+        /* TEST's and LIMIT RUN's holds are the footer's (s.arm_rev):
+         * nothing of the left card fades on its own. */
+        s.drawn_test[buf] = s.test_rev;
         return;
     }
 

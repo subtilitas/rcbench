@@ -541,7 +541,7 @@ void sp_pick_profile(const esc_profile_t *p)
     t->iscroll = 0;
     t->picked = 0;
     t->shown = false;
-    t->timing = false;
+    sp_set_close();
     t->warn = false;
     t->warn_down = false;
     ui_hold_reset(&t->hold);

@@ -18,8 +18,8 @@ The hub holds eight tiles, each opening a screen of its own:
 |---|---|
 | LIVE | the horn's angle, the dial, and the readings COMMANDED, MEASURED and CURRENT along its foot |
 | SWEEP | the dial with SWEEP; its list sets CURVE, SPEED and RANGE ([Servo settings](servo-settings.md)) |
-| TEST | the AUTOMATIC TEST card with its SETTINGS, a summary line, its start hold, the last result and its file; SUPPLY's caps, read-only; the run's box under the card |
-| LIMIT RUN | the LIMIT RUN card, the same way |
+| TEST | the AUTOMATIC TEST card with a summary line, the last result and its file; SUPPLY's caps, read-only; the rail's plot and the run's box under them; the READY card and HOLD 2s: ARM + START |
+| LIMIT RUN | the ends the last run found, its state lines, the READY card and HOLD 2s: ARM + START |
 | RUDDER | the control surface's deflection in ° and mm, LENGTH, the buttons 1000us, CENTRE and 2000us, ZERO and RESET MAX ([Rudder deflection](servo-rudder.md)) |
 | RUDDER AUTO | AUTO's box, which programs KST, Chaservo or Hitec end points to the deflection entered |
 | KST, HITEC | the programmer for that make, over the left card ([Servo programmer](servo-programmer.md)) |
@@ -28,7 +28,7 @@ KST and HITEC are grey while the IOmcu lacks their capability or another session
 
 The home tag goes from a function screen to the hub, and from the hub to the menu. Leaving a function screen switches the bench to SAFE. The PROG 5V on the carrier stays on from one SERVO screen to another and goes off when SERVO is left; on the hub the footer reads `PROG 5V ON` in the warning colour while it is on.
 
-LIVE, SWEEP and RUDDER show the PORT button and READY's rows on the right, with the controls under them. TEST, LIMIT RUN, KST and HITEC show the output card there: the PORT button, the meter line and plot, the supply line, SPEED, the type, CENTRE, SWEEP and RELEASE. The footer holds the function's name with the port line, ARM, and SETTINGS for the screen's list; LIVE has no list. Every control is 48px (7.2mm) tall or taller. The rotary knob moves the horn on LIVE, SWEEP, RUDDER and RUDDER AUTO only.
+LIVE, SWEEP and RUDDER show the PORT button and READY's rows on the right, with the controls under them. TEST, LIMIT RUN and RUDDER AUTO show the PORT button and the READY card. KST and HITEC show the output card there: the PORT button, the meter line and plot, the supply line, SPEED, the type, CENTRE, SWEEP and RELEASE. The footer holds the function's name with the port line, ARM (HOLD 2s: ARM + START on TEST, LIMIT RUN and RUDDER AUTO), and SETTINGS for the screen's list; LIVE has no list. Every control is 48px (7.2mm) tall or taller. The rotary knob moves the horn on LIVE, SWEEP, RUDDER and RUDDER AUTO only.
 
 ## At rest
 
@@ -88,7 +88,7 @@ ARMED SERVO drives the servo outputs and a pulsing PROG PORT. Throttle outputs g
 | SWEEP, PAUSE, PAUSED | refused; drawn dimmed | starts, pauses and resumes the sweep |
 | RELEASE | sends the release | returns the surfaces to their rest: 1500us for STANDARD PWM, 760us for NARROW 760 |
 | SPEED | set | set; a held position is sent again at the new rate |
-| START TEST | refused: `ARM FIRST` | starts the automatic test after its hold |
+| HOLD 2s: ARM + START on TEST | arms the bench and starts the automatic test after its hold | starts the automatic test after its hold |
 
 Switching to ARMED sets the commanded position to the midpoint between the channel's end points, without TRIM. The first drag or knob turn starts there. SWEEP is grey without an assigned surface, an active link or IOmcu 0.10.0 or later.
 
@@ -114,14 +114,14 @@ A reading that did not arrive is `---` in LIVE's CURRENT, `--` on the line and a
 
 ## The supply on SERVO
 
-LIVE, SWEEP and RUDDER have the SUPPLY row and no SET line: ARM switches the supply on, DISARM switches it off. On TEST, LIMIT RUN, KST and HITEC the SET line holds the SUPPLY screen's two set points and its output switch. A change on either screen is the change on both.
+LIVE, SWEEP and RUDDER have the SUPPLY row and no SET line: ARM switches the supply on, DISARM switches it off. TEST, LIMIT RUN and RUDDER AUTO switch it through their hold and their run. On KST and HITEC the SET line holds the SUPPLY screen's two set points and its output switch. A change on either screen is the change on both.
 
 - A tap on a set point opens the keypad over the left card.
 - OUTPUT ON is a 2s hold, OUTPUT OFF a tap.
 - Leaving SERVO switches off an output SERVO switched on.
 - After a programmer's LEAVE that leaves the output on, SERVO asks whether the set points from before the session go back onto it ([Servo programmer](servo-programmer.md)). No other end of a port's hold asks: RELEASE PORT, a STOP, an error, a lost link or a restart leaves the session's set points until the next OFF.
 
-On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), the PROG 5V box replaces the plot below PD MINI on TEST, LIMIT RUN, KST and HITEC; on LIVE, SWEEP and RUDDER the SUPPLY row reads PROG 5V and ARM switches it. It controls the programming ports' separate 5V rail at GPIO 21, while SAFE or ARMED. Hold PROG 5V ON for 2s to switch it on; tap PROG 5V OFF to switch it off. The second line shows the latest INA3221 window from 0x40 CH3, for example `5.02V  0.120A`.
+On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), the PROG 5V box replaces the plot below PD MINI on KST and HITEC; on LIVE, SWEEP and RUDDER the SUPPLY row reads PROG 5V and ARM switches it, on LIMIT RUN and RUDDER AUTO the hold. It controls the programming ports' separate 5V rail at GPIO 21, while SAFE or ARMED. Hold PROG 5V ON for 2s to switch it on; tap PROG 5V OFF to switch it off. The second line shows the latest INA3221 window from 0x40 CH3, for example `5.02V  0.120A`.
 
 During a programming session it instead reads `HELD BY PROG PORT n` and accepts no press. Leaving SERVO switches off a rail switched on here or by ARM unless a port holds it. SUPPLY shows the same control.
 
@@ -147,19 +147,19 @@ A finger on the dial, CENTRE, RELEASE, STOP, a switch to SAFE and leaving the sc
 
 ## The automatic test
 
-Hold START TEST on TEST's AUTOMATIC TEST card for 2s to run the selected supply-voltage steps. Each step measures current at rest, moving and holding, and times travel. The brown-out walk finds the voltage at which movement stops.
+Hold HOLD 2s: ARM + START in TEST's footer for 2s to run the selected supply-voltage steps. From SAFE the hold switches PORT PWM on where the port needs it, arms the bench and starts the run; the run's steps switch the PD mini on at each step's voltage. Every end of a run, PASS included, switches the bench to SAFE. Each step measures current at rest, moving and holding, and times travel. The brown-out walk finds the voltage at which movement stops.
 
-The test requires ARMED and a responding supply. The status line explains any refusal: `ARM FIRST`, `NO STEP CHOSEN`, `SUPPLY NOT ANSWERING`, `RANGE TOO SMALL`, `STEP OUTSIDE VOLTAGE LIMITS` or `REPORT STILL BEING WRITTEN`. Carrier programming ports have fixed 5V power, so supply steps cannot reach them: `PROG PORTS RUN AT 5V FIXED: NO STEPS`.
+The READY card in place of the output card names what the hold needs: PORT, METER, PD MINI, STEPS, RANGE and ARM. Green is met, amber is done by the hold, red refuses it and greys the hold. A tap on the grey hold names the first red row in the alert band, for example `STEPS: NO STEP CHOSEN`. Red reasons include `SUPPLY NOT ANSWERING`, `RANGE TOO SMALL`, `STEP OUTSIDE VOLTAGE LIMITS`, `REPORT STILL BEING WRITTEN` and `RAIL LIVE WITH THE PD MINI OFF: FED FROM ELSEWHERE`: the INA3221 reads 3.0V or more on the rail with the PD mini's output off. Carrier programming ports have fixed 5V power, so supply steps cannot reach them: `PROG PORTS RUN AT 5V FIXED: NO STEPS`. The bench has 500ms to report ARMED; past that the sequence fails as `ARM: ...` with every output off.
 
 ![TEST and its run card](view:servo-test)
 
-The summary line shows the voltage steps and duration, such as `4.8V, 6.0V, BROWN-OUT, 60s EACH`. Below START TEST are status, last result and files, for example `LAST: PASS ATEST004.CSV + .TXT`. An aborted run shows its reason instead: `LAST: ABORTED - link lost`.
+The summary line shows the voltage steps and duration, such as `4.8V, 6.0V, BROWN-OUT, 60s EACH`. Below it are status, last result and files, for example `LAST: PASS ATEST004.CSV + .TXT`. An aborted run shows its reason instead: `LAST: ABORTED - link lost`.
 
 ![A test run](view:servo-run)
 
 TEST remains visible when the run begins, with the current step on its status line. A box under the card shows step and phase. Beside its STOP TEST it identifies the meter: `PD mini`, an INA channel such as `INA 0x41 CH2`, or `SIMULATION`.
 
-The run ends early with the output off and servo released on STOP TEST, STOP, SAFE, link loss, leaving the screen, touching the dial, CENTRE, SWEEP, RELEASE, tapping a set point or changing servo settings. An INA3221 run also ends if that sensor ceases to be the meter or no window containing both current and voltage arrives for 200ms (4 windows of 50ms): `no INA3221 window for 0.2s`. Those windows supply the STALL AT protection, so the run cannot continue through that gap.
+The run ends early with the output off and servo released on STOP TEST (the footer's slot during the run, or the run's box), STOP, SAFE, link loss, leaving the screen, touching the dial, CENTRE, SWEEP, RELEASE, tapping a set point or changing servo settings. An INA3221 run also ends if that sensor ceases to be the meter or no window containing both current and voltage arrives for 200ms (4 windows of 50ms): `no INA3221 window for 0.2s`. Those windows supply the STALL AT protection, so the run cannot continue through that gap.
 
 When the AS5600 is used from the start, the run tolerates one encoder outage of up to 300ms within 10s. High-current motor or ESC runs, or plugging a part in during a run, can disturb the sensor bus. Angles are not evaluated during the gap. The report records it, for example `AS5600 gaps: 1, longest 120ms. ...`, and the CSV column `angle gap (ms)` gives its duration.
 
@@ -172,35 +172,38 @@ The box keeps the result until CLOSE; the card keeps its LAST line until the nex
 
 ## The limit run
 
-The limit run searches for mechanical binding at each end of an installed servo's travel. It can then reduce the servo's LEFT ANGLE and RIGHT ANGLE so it stops before binding. The LIMIT RUN tile on the hub opens its card; the card's SETTINGS opens the [run settings](servo-settings.md#the-limit-run-s-settings).
+The limit run searches for mechanical binding at each end of an installed servo's travel. It can then reduce the servo's LEFT ANGLE and RIGHT ANGLE so it stops before binding. The LIMIT RUN tile on the hub opens its screen; SETTINGS in the footer opens the [run's list](servo-settings.md#the-limit-run-s-settings).
 
 ![The limit run, ready](view:servo-limrun-ready)
 
-1. Tap SETTINGS on the card, then LIMIT RUN to choose SEARCH ONLY or SEARCH + PROGRAM.
-2. With PORT on PROG PORT, tap SERVO to choose KST/CHASERVO or HITEC, the programmer the run's sessions go to; it takes the programmer opened last from the hub. With KST/CHASERVO, tap SERVO PULSES to choose KEEP or 1000-2000. It starts at KEEP.
-3. Tap the home tag to go back to the card.
-4. Hold START LIMIT RUN for 2s while the bench is ARMED. A tap or a shorter hold starts nothing and shows `Hold 2s to start the limit run.` in the alert band.
-5. LIMIT RUN stays shown. A box under the card shows the phase, the side and the pulse, and the output it drives.
+1. Tap SETTINGS in the footer, then MODE to choose SEARCH ONLY or SEARCH + PROGRAM.
+2. With PORT on PROG PORT, tap SERVO to choose KST/CHASERVO or HITEC, the programmer the run's sessions go to; it takes the programmer opened last from the hub. With KST/CHASERVO, set SERVO PULSES to KEEP or 1000-2000. It starts at KEEP.
+3. Tap the home tag to go back to LIMIT RUN.
+4. Hold HOLD 2s: ARM + START in the footer. From SAFE it switches PORT PWM on, then PROG 5V or the PD mini's output, waits up to 1000ms for them to read back ON, arms, waits up to 500ms for ARMED, and starts the run. A tap or a shorter hold starts nothing and shows `Hold 2s to switch the port and its supply on, ARM and start the limit run.` in the alert band.
+5. While the run runs, the hold reads STOP RUN. The state lines show the phase, the side and the pulse. After the run's last command the bench is SAFE again; PROG 5V stays on.
 
-The line under the button names the output and the meter, the whole time: `OUTPUT PROG PORT 1 GPIO 13, CURRENT INA3221 0x41 CH2` or `OUTPUT SERVO PWM GPIO 2, CURRENT INA3221 0x40 CH1`. The PORT button stays in sight as well.
+The left card shows the mode, then the output and the meter: `OUTPUT PROG PORT 1 GPIO 13, CURRENT INA3221 0x41 CH2` or `OUTPUT SERVO PWM GPIO 2, CURRENT INA3221 0x40 CH1`. LOW END and HIGH END hold the ends the last run found, in us, or `FREE`. The state lines under them name the step under way, why the hold is refused, and the last result with its file.
 
-The run reads only the INA3221 channel that watches the tester's target. With the PD mini or the model as the servo rail's meter, START LIMIT RUN stays grey and the line says why:
+The READY card on the right lists what the start needs, one row each: PORT, SERVO, METER, RAIL, RANGE, PROGRAMMER, the supply (PROG 5V on the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), PD MINI where the PD mini feeds the servo), PORT PWM and ARM. A green dot is met. A red dot refuses the hold, or marks an output live through the row. Amber reads `START SWITCHES IT ON` or `START ARMS`: the hold does it. Grey waits on PORT. A tap on PORT opens the port choice, on SERVO the SETTINGS list, on a red METER [Sensors](setup-sensors.md), on a red PD MINI with `TAP: HV WARNING` OUTPUT ON's HV warning. A tap on another red row, or on the grey hold, names it in the alert band.
 
-| Line | Condition |
-|---|---|
-| `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` | SAFE on the rbmod carrier with PORT on a programming port and the PROG 5V box off; named before `ARM FIRST`, as the port's pulse comes on only while SAFE |
-| `ARM FIRST` | the bench is SAFE |
-| `NO SERVO PWM PIN`, `PINS NOT READ` | PORT is the bench's outputs, and no output is bound as SERVO PWM, or the binding is not read yet |
-| `INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT` | no channel of a fitted INA3221 watches the tester's target in SETUP > SENSORS |
-| `INA3221 OFFLINE` | no link, or the INA3221 does not answer |
-| `NO INA3221 MEASUREMENT WINDOWS YET` | the INA3221 is not the meter yet |
-| `SERVO SUPPLY BELOW 3.0V OR NOT READ` | the last INA3221 window has no rail voltage, or less than 3.0V: an output that is off reads 0V |
-| `LOCKED: SERVO PROGRAMMING USES THE PORT` | PORT is PROG PORT and a programmer session holds the port; named before PORT PWM |
-| `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS` | PORT is PROG PORT with PORT PWM off, the bench ARMED |
-| `PORT PWM OFF: SWITCH IT ON IN OUTPUTS` | the same while SAFE: the port's entry on OUTPUTS holds PORT PWM |
-| `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` | PORT is PROG PORT with PORT PWM on and its pulse still off, as after a PROG 5V switched on while ARMED on the rbmod carrier: the pulse comes on only while SAFE |
-| `CENTRE MUST BE BETWEEN PULSE MIN AND MAX` | the pulse range does not hold PULSE CENTRE |
-| `REPORT STILL BEING WRITTEN` | a test or a run is under way, or its report is still going to the card |
+The run reads only the INA3221 channel that watches the tester's target. While one of these holds, its row is red, the hold is grey and the first state line says why:
+
+| Row | Line | Condition |
+|---|---|---|
+| PROG 5V | `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` | SAFE on the rbmod carrier with PORT on a programming port and the PROG 5V box off. Amber: the hold switches it on |
+| ARM | `ARM FIRST` | the bench is SAFE. Amber: the hold arms |
+| PORT | `NO SERVO PWM PIN`, `PINS NOT READ` | PORT is the bench's outputs, and no output is bound as SERVO PWM, or the binding is not read yet |
+| METER | `INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT` | no channel of a fitted INA3221 watches the tester's target in SETUP > SENSORS |
+| METER | `INA3221 OFFLINE` | no link, or the INA3221 does not answer |
+| METER | `NO INA3221 MEASUREMENT WINDOWS YET` | the INA3221 is not the meter yet |
+| PD MINI | `TAP: HV WARNING` | the PD mini's output off with a set point past 6.0V: only OUTPUT ON's HV warning switches it on |
+| RAIL | `SERVO SUPPLY BELOW 3.0V OR NOT READ` | the last INA3221 window has no rail voltage, or less than 3.0V: an output that is off reads 0V. Amber while SAFE where the hold's supply feeds the rail |
+| PROGRAMMER | `LOCKED: SERVO PROGRAMMING USES THE PORT` | PORT is PROG PORT and a programmer session holds the port; named before PORT PWM |
+| PORT PWM | `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS` | PORT is PROG PORT with PORT PWM off, the bench ARMED |
+| PORT PWM | `PORT PWM OFF: SWITCH IT ON IN OUTPUTS` | the same while SAFE. Amber: the hold switches it on |
+| PORT PWM | `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` | PORT is PROG PORT with PORT PWM on and its pulse still off. Amber while SAFE: the read-back waits for it |
+| RANGE | `CENTRE MUST BE BETWEEN PULSE MIN AND MAX` | the pulse range does not hold PULSE CENTRE |
+| ARM | `REPORT STILL BEING WRITTEN` | a test or a run is under way, or its report is still going to the card |
 
 ### The search
 
@@ -215,7 +218,7 @@ For a programming-port search, the read session holds PULSE CENTRE, switches to 
 
 - no KST or Chaservo servo is read (`no KST or Chaservo servo read`): search a servo that is no KST or Chaservo on a SERVO PWM pin;
 - NEUTRAL is not between PULSE LOWER and PULSE UPPER (`NEUTRAL outside LOWER/UPPER`);
-- PULSE LOWER to PULSE UPPER is not inside PULSE MIN to PULSE MAX (`servo pulses outside MIN/MAX`). The bench stays SAFE, and the box names both ranges.
+- PULSE LOWER to PULSE UPPER is not inside PULSE MIN to PULSE MAX (`servo pulses outside MIN/MAX`). The bench is SAFE again, and the left card names both ranges.
 
 A first CONNECT that fails for another reason, or a read that does not complete, ends the run as ABORTED with `programming port session failed`.
 
@@ -229,11 +232,11 @@ SERVO PULSES at 1000-2000 writes PULSE LOWER 1000.0us and PULSE UPPER 2000.0us i
 
 For KST/Chaservo, SEARCH + PROGRAM requires PORT on PROG PORT with PWM active and a way to power-cycle the servo. On a manually wired bench, this means a PD mini with output on and a set point of at least 4.8V. Written settings take effect only after power cycling.
 
-Without a PD mini, SEARCH + PROGRAM and SERVO PULSES 1000-2000 are unavailable. The card shows `PROGRAMMING: NO PD MINI TO SWITCH THE SERVO OFF AND ON`. SEARCH ONLY can run if the INA3221's latest rail voltage is at least 4.8V. With a PD mini present, its output must be on; a non-PWM port or voltage below 4.8V also blocks SEARCH ONLY.
+Without a PD mini, SEARCH + PROGRAM and SERVO PULSES 1000-2000 are unavailable. The left card shows `PROGRAMMING: NO PD MINI TO SWITCH THE SERVO OFF AND ON`. SEARCH ONLY can run if the INA3221's latest rail voltage is at least 4.8V. With a PD mini present, its output must be on; a non-PWM port or voltage below 4.8V also blocks SEARCH ONLY.
 
-On the rbmod carrier, PROG 5V supplies the programming port and replaces the PD mini for these power cycles. With it on, SEARCH + PROGRAM and SERVO PULSES are available. With it off, the card shows `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX`. The PD mini on the servo rails is not used or monitored by this port run.
+On the rbmod carrier, PROG 5V supplies the programming port and replaces the PD mini for these power cycles. With it on, SEARCH + PROGRAM and SERVO PULSES are available. With it off, the PROG 5V row reads `START SWITCHES IT ON` while SAFE: the hold switches it on. The PD mini on the servo rails is not used or monitored by this port run.
 
-At the bench's standard outputs, LIMIT RUN is SEARCH ONLY and the settings explain why. Every KST/Chaservo run on PROG PORT, including SEARCH ONLY, first reads the servo. Failure to identify one ends with `no KST or Chaservo servo read`. Hitec requirements are described below.
+At the bench's standard outputs, LIMIT RUN is SEARCH ONLY: MODE is locked in the list with `On a PROG PORT only: choose one with PORT`. Every KST/Chaservo run on PROG PORT, including SEARCH ONLY, first reads the servo. Failure to identify one ends with `no KST or Chaservo servo read`. Hitec requirements are described below.
 
 ![No PD mini: the run writes nothing](view:servo-limrun-nopd)
 
@@ -267,13 +270,13 @@ Finally, both ends are searched again. Both free means PASS; either binding mean
 
 With SERVO set to HITEC, sessions use the [Hitec programmer](servo-programmer.md) and its SERIES selection. LEFT END and RIGHT END map to 0xB2 and 0xB0 on D-series servos, in counts relative to NEUTRAL 0xC2. Classic servos use raw cells 0x14 and 0x13, swapped for CCW.
 
-Hitec has no pulse registers, so SERVO PULSES is hidden. The run uses an unmeasured pulse model: NEUTRAL 1500.0us, full travel at 850.0us and 2150.0us for D series, or 900.0us and 2100.0us for classic. PULSE MIN and MAX must cover the range, otherwise the card shows `HITEC: PULSE MIN/MAX MUST COVER 850-2150us`. TYPE WIDE, 800 to 2200us, covers both.
+Hitec has no pulse registers, so SERVO PULSES is locked. The run uses an unmeasured pulse model: NEUTRAL 1500.0us, full travel at 850.0us and 2150.0us for D series, or 900.0us and 2100.0us for classic. PULSE MIN and MAX must cover the range, otherwise RANGE is red with `HITEC: PULSE MIN/MAX MUST COVER 850-2150us`. TYPE WIDE, 800 to 2200us, covers both.
 
 - A D series write saves and restarts the servo inside its session: no PD mini is needed.
 - A classic servo needs a PD mini, or PROG 5V on the rbmod carrier, for every session, the read included: `Classic servos need a PD mini: the bench cycles the supply.`
-- The 2s start hold is the consent CHECK THIS CHANGE asks for; each write switches ENABLE WRITE TO SERVO on for itself and off at its end.
+- The 2s ARM + START hold is the consent CHECK THIS CHANGE asks for; each write switches ENABLE WRITE TO SERVO on for itself and off at its end.
 - No servo answering the first CONNECT ends the run with `no Hitec servo read`.
-- The backup file HITEC001 to HITEC999 is saved before the first write. To restore, load it on FILES of the Hitec programmer and write it: the box says `LOAD HITEC001 IN FILES`.
+- The backup file HITEC001 to HITEC999 is saved before the first write. To restore, load it on FILES of the Hitec programmer and write it: the left card says `LOAD HITEC001 IN FILES`.
 
 ### What ends a limit run
 
@@ -292,13 +295,13 @@ A run that ends while it waits for ARMED also switches the bench to SAFE.
 
 ![A run stopped after a write](view:servo-limrun-stopped)
 
-Written settings remain in the servo after the run. The box shows `RESTORE IN KST`. For KST/Chaservo, use CONNECT and READ ALL in the programmer, then choose `Settings before the limit run.` under RESTORE. A later session creates its own backup on its first write.
+Written settings remain in the servo after the run. The left card shows `RESTORE IN KST`. For KST/Chaservo, use CONNECT and READ ALL in the programmer, then choose `Settings before the limit run.` under RESTORE. A later session creates its own backup on its first write.
 
 ![RESTORE after a limit run](view:servo-limrun-restore)
 
 ### The result
 
-The box under the card stays until CLOSE, and the card's LAST line until the next run. The box shows the verdict, the reason or the values, and the report's file name.
+The state lines keep the result until the next run: the verdict, the reason or the values, and the report's file name. LOW END and HIGH END show the ends the run found first.
 
 | Verdict | Meaning |
 |---|---|

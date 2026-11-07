@@ -178,17 +178,17 @@ static inline bool row_reads(const char *text, ui_color_id_t col)
 }
 
 /**
- * @brief The output card with the meter's line and plot in view: TEST's,
- *        the line's own screen while LIVE, SWEEP and RUDDER show the READY
- *        rows in its place.  Shown without a leave, as go() shows it.
+ * @brief The output card with the meter's line and plot in view: KST's,
+ *        the line's own screen while LIVE, SWEEP, RUDDER, TEST, LIMIT RUN
+ *        and RUDDER AUTO show READY rows in its place.  Shown without a
+ *        leave, as go() shows it.
  * @return the function shown before, for card_back()
  */
 static inline servo_fn_t card_on(void)
 {
     const servo_fn_t was = servo_screen_fn();
-    if (was == SERVO_FN_LIVE || was == SERVO_FN_SWEEP
-        || was == SERVO_FN_RUDDER) {
-        go(SERVO_FN_TEST);
+    if (was != SERVO_FN_KST && was != SERVO_FN_HITEC) {
+        go(SERVO_FN_KST);
     }
     return was;
 }
@@ -203,7 +203,7 @@ static inline void card_back(servo_fn_t was)
 
 /** @brief Buffer 0 drawn, and whether the line over the plot reads the name
  * @p label, @p lab_w px wide, and the three readings, the current in
- * @p a_col: on TEST's output card (card_on()). */
+ * @p a_col: on KST's output card (card_on()). */
 static inline bool line_reads(const char *label, int lab_w, const char *v,
                        const char *a, ui_color_id_t a_col, const char *w)
 {

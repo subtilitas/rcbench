@@ -6,7 +6,10 @@
  *        state the gate's text is on its row and no row shows another
  *        row's; the hold refuses on the first red row and names it in the
  *        alert band; the rows ARM + START does itself read amber; a tap on
- *        PORT opens the port list; every label and state fits its column.
+ *        PORT opens the port list; every label and state fits its column;
+ *        a press on a row ends on its release or a cancel; a tap on a red
+ *        ZERO row names itself; the sequence's calls name each step and each
+ *        failure and switch every output off.
  *
  * Cases:
  * - every_gate_text_belongs_to_exactly_one_row
@@ -17,11 +20,21 @@
  * - every_label_and_state_fits_its_column
  * - the_card_takes_the_output_cards_place_on_rudder_auto_only
  * - a_refused_hold_has_a_red_row_naming_it
+ * - a_press_on_a_row_ends_on_its_release_or_a_cancel
+ * - a_tap_on_a_red_zero_row_without_a_reading_names_it
+ * - a_tap_on_servo_opens_its_row_of_the_list_unless_armed
+ * - servo_reads_the_family_the_run_programs
+ * - the_sequence_names_its_steps_and_a_start_the_run_refuses
+ * - a_refusal_names_its_part_and_switches_every_output_off
+ * - a_read_back_that_runs_out_names_its_part_and_switches_off
+ * - a_stop_or_a_leave_ends_the_sequence_as_each_must
+ * - a_finger_on_a_ready_row_keeps_the_list_shut
  *
  * SPDX-License-Identifier: MIT
  */
 #include "servo_screen_rig.h"
 
+#include "hitec_wire.h"
 #include "servo_rudder_auto_int.h"
 #include "servo_ready_int.h"
 #include "servo_rudder_int.h"
@@ -90,6 +103,20 @@ static const char *alert(void)
 {
     const char *a = ui_router_alert();
     return a != NULL ? a : "";
+}
+
+/** @brief Row @p i of the card as it reads now. */
+static rdy_row_t row_of(int i)
+{
+    rdy_row_t r;
+    CHECK(rauto_ready_row(i, &r));
+    return r;
+}
+
+/** @brief Row @p i's state, an rdy_state_t. */
+static uint8_t row_state(int i)
+{
+    return row_of(i).st;
 }
 
 /**
@@ -335,7 +362,7 @@ TEST_CASE(every_label_and_state_fits_its_column)
 
 /* RUDDER AUTO shows the card in the whole output card's place and its
  * count of rows; RUDDER and LIVE show their rows over the output card's
- * controls (servo_drive_ready.c); TEST has none. */
+ * controls (servo_drive_ready.c); KST keeps the output card. */
 TEST_CASE(the_card_takes_the_output_cards_place_on_rudder_auto_only)
 {
     to_auto(false);
@@ -351,7 +378,8 @@ TEST_CASE(the_card_takes_the_output_cards_place_on_rudder_auto_only)
     go(SERVO_FN_LIVE);
     CHECK(!ready_shown());
     CHECK_EQ(ready_count(), 3);
-    go(SERVO_FN_TEST);
+    go(SERVO_FN_KST);
+    CHECK(!ready_shown());
     CHECK(!drive_shown());
     CHECK_EQ(ready_count(), 0);
     CHECK(!ready_row(0, &r));
@@ -395,6 +423,395 @@ TEST_CASE(a_refused_hold_has_a_red_row_naming_it)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/** @brief A touch event at (@p x, @p y). */
+static touch_event_t event_at(touch_event_type_t t, int x, int y, uint8_t id)
+{
+    touch_event_t e;
+    memset(&e, 0, sizeof(e));
+    e.type = t;
+    e.point.id = id;
+    e.point.x = (int16_t)x;
+    e.point.y = (int16_t)y;
+    return e;
+}
+
+/**
+ * @brief Whether a DISARM command is waiting for the panel; every command
+ *        waiting is taken.
+ * @return true when one was
+ */
+static bool disarm_posted(void)
+{
+    bool found = false;
+    servo_cmd_t c;
+    while (servo_screen_take(&c)) {
+        found = found || c.kind == SERVO_CMD_DISARM;
+    }
+    return found;
+}
+
+/** @brief A PD mini that answers with its output off, read now. */
+static void pd_answers_off(void)
+{
+    rail_supply(5.0f, 0.0f);
+}
+
+/* A press on a row is the card's, whatever its finger does: a second
+ * finger and a move change nothing, a cancel drops it with no tap, an UP
+ * the tracker marked NO_TAP takes none, and a clean release names the
+ * row.  A DOWN off the card, or on a screen without it, is not the
+ * card's. */
+TEST_CASE(a_press_on_a_row_ends_on_its_release_or_a_cancel)
+{
+    to_auto(false);
+    const int x = SV_RDY_X, y = SV_RDY_ROW_Y(RAR_PWM);
+    const uint32_t base = ready_sig();
+    char want[128];
+    rdy_row_t r;
+    CHECK(rauto_ready_row(RAR_PWM, &r));
+    CHECK(r.why != NULL);
+    snprintf(want, sizeof(want), TR(RDY_BAND), TR(RDY_PWM), r.why);
+
+    const touch_event_t off = event_at(TOUCH_EVENT_DOWN, 20, 200, 3);
+    CHECK(!ready_down(NULL));
+    CHECK(!ready_down(&off));
+    CHECK_EQ(ready_sig(), base);
+
+    const touch_event_t down = event_at(TOUCH_EVENT_DOWN, x, y, 3);
+    CHECK(ready_down(&down));
+    const uint32_t pressed = ready_sig();
+    CHECK(pressed != base);
+    /* A second finger on another row takes nothing. */
+    const touch_event_t second = event_at(TOUCH_EVENT_DOWN, x,
+                                          SV_RDY_ROW_Y(RAR_ARM), 4);
+    CHECK(ready_down(&second));
+    CHECK_EQ(ready_sig(), pressed);
+    /* A move of the press's finger is the press's; another's is not. */
+    const touch_event_t move = event_at(TOUCH_EVENT_MOVE, x, y, 3);
+    const touch_event_t other = event_at(TOUCH_EVENT_MOVE, x, y, 9);
+    CHECK(ready_rest(&move));
+    CHECK(!ready_rest(&other));
+    CHECK_EQ(ready_sig(), pressed);
+    /* A cancel puts the row back and the release after it taps nothing. */
+    ready_cancel();
+    CHECK_EQ(ready_sig(), base);
+    ready_cancel();
+    CHECK_EQ(ready_sig(), base);
+    const touch_event_t up = event_at(TOUCH_EVENT_UP, x, y, 3);
+    CHECK(!ready_rest(&up));
+    CHECK_STR_EQ(alert(), "");
+    /* An UP marked NO_TAP ends the press and names nothing. */
+    CHECK(ready_down(&down));
+    touch_event_t no_tap = up;
+    no_tap.flags = TOUCH_FLAG_NO_TAP;
+    CHECK(ready_rest(&no_tap));
+    CHECK_EQ(ready_sig(), base);
+    CHECK_STR_EQ(alert(), "");
+    /* A clean release over the row names it. */
+    CHECK(ready_down(&down));
+    CHECK(ready_rest(&move));
+    CHECK(ready_rest(&up));
+    CHECK_EQ(ready_sig(), base);
+    CHECK_STR_EQ(alert(), want);
+    /* No card on RUDDER: the DOWN is the screen's. */
+    go(SERVO_FN_RUDDER);
+    CHECK(!ready_down(&down));
+}
+
+/* A red ZERO row with no angle reading takes no ZERO: its tap names the
+ * row in the band and the row stays red.  (ANGLE's and METER's taps leave
+ * the screen: test_menu_openers.) */
+TEST_CASE(a_tap_on_a_red_zero_row_without_a_reading_names_it)
+{
+    char want[128];
+    rdy_row_t r;
+    to_auto(false);
+    CHECK_EQ(row_state(RAR_ZERO), (uint8_t)RDY_BAD);
+    CHECK(rauto_ready_row(RAR_ZERO, &r));
+    CHECK_STR_EQ(r.why, TR(RA_NO_ZERO));
+    CHECK(r.fix);
+    snprintf(want, sizeof(want), TR(RDY_BAND), TR(RDY_ZERO), TR(RA_NO_ZERO));
+    tap(SV_RDY_X, SV_RDY_ROW_Y(RAR_ZERO));
+    CHECK_STR_EQ(alert(), want);
+    CHECK_EQ(row_state(RAR_ZERO), (uint8_t)RDY_BAD);
+}
+
+/* A tap on SERVO opens the SETTINGS list scrolled to the SERVO row.  On an
+ * ARMED bench the list stays shut (the band's notice: test_menu_openers). */
+TEST_CASE(a_tap_on_servo_opens_its_row_of_the_list_unless_armed)
+{
+    to_auto(false);
+    CHECK(!servo_screen_list()->open);
+    tap(SV_RDY_X, SV_RDY_ROW_Y(RAR_SERVO));
+    const ui_setlist_t *sl = servo_screen_list();
+    CHECK(sl->open);
+    const gfx_rect_t pane = ui_setlist_pane(sl);
+    const gfx_rect_t row = ui_setlist_row_rect(sl, 4);
+    CHECK(row.y >= pane.y && row.y + row.h <= pane.y + pane.h);
+    CHECK(sl->scroll > 0);
+
+    to_auto(true);
+    ui_router_set_alert(NULL);
+    tap(SV_RDY_X, SV_RDY_ROW_Y(RAR_SERVO));
+    CHECK(!servo_screen_list()->open);
+}
+
+/* On a PROG PORT the SERVO row reads KST/CHASERVO, then HITEC with the
+ * series once SERVO is stepped, CLASSIC or D SERIES. */
+TEST_CASE(servo_reads_the_family_the_run_programs)
+{
+    enum { FAM = 4 };
+    to_auto(false);
+    settings_set(SET_SERVO_TARGET, 1.0f);
+    servo_screen_set_drive(1u, 13u, true);
+    rdy_row_t r = row_of(RAR_SERVO);
+    CHECK_EQ(r.st, (uint8_t)RDY_OK);
+    CHECK_STR_EQ(r.label, TR(SVH_SERVO));
+    CHECK_STR_EQ(r.value, TR(SV_LIM_SERVO_KST));
+    CHECK(r.fix);
+    tap_settings();
+    sl_step(FAM, +1);
+    settings_set(SET_HITEC_SERIES, (float)HITEC_CLASSIC);
+    r = row_of(RAR_SERVO);
+    CHECK_STR_EQ(r.value, "HITEC CLASSIC");
+    settings_set(SET_HITEC_SERIES, (float)HITEC_D);
+    r = row_of(RAR_SERVO);
+    CHECK_STR_EQ(r.value, "HITEC D SERIES");
+    CHECK_EQ(r.st, (uint8_t)RDY_OK);
+    sl_step(FAM, +1);
+    CHECK_STR_EQ(row_of(RAR_SERVO).value, TR(SV_LIM_SERVO_KST));
+    settings_set(SET_HITEC_SERIES, (float)HITEC_CLASSIC);
+}
+
+/* A sequence on a PROG PORT: PORT PWM asked and read back, ARM asked,
+ * ARMED read, START handed to the caller, which refuses it.  Each step
+ * is named in the state line and the hold's label, in its number of the
+ * four steps; the refusal fails at START with the run's text, in the band,
+ * and the bench is asked to DISARM.  An idle sequence has no line, no
+ * label and takes no frame; a second begin changes nothing. */
+TEST_CASE(the_sequence_names_its_steps_and_a_start_the_run_refuses)
+{
+    char b[96], want[128], text[96];
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        to_auto(false);
+        settings_set(SET_SERVO_TARGET, 1.0f);
+        settings_set(SET_SERVO_PORT_PWM, 0.0f);
+        servo_screen_set_drive(1u, 13u, false);
+        servo_screen_clock(1000u);
+        CHECK(!svs_seq_frame(NULL));
+        CHECK_STR_EQ(svs_seq_line(b, sizeof(b)), "");
+        CHECK_STR_EQ(svs_seq_label(b, sizeof(b)), "");
+        CHECK_STR_EQ(svs_seq_line(NULL, sizeof(b)), "");
+        CHECK_STR_EQ(svs_seq_label(b, 0u), "");
+        CHECK(svs_seq_failure() == NULL);
+
+        CHECK(svs_seq_begin());
+        CHECK(!svs_seq_begin());
+        CHECK(svs_seq_busy());
+        snprintf(want, sizeof(want), TR(SQ_LINE), 1u, 4u, TR(RDY_PWM));
+        CHECK_STR_EQ(svs_seq_line(b, sizeof(b)), want);
+        snprintf(want, sizeof(want), "%s ...", TR(RDY_PWM));
+        CHECK_STR_EQ(svs_seq_label(b, sizeof(b)), want);
+
+        /* PORT PWM goes on and is saved; the pulse is not read back yet. */
+        CHECK(!svs_seq_frame(NULL));
+        CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
+        snprintf(want, sizeof(want), TR(SQ_LINE), 2u, 4u, TR(SQ_READBACK));
+        CHECK_STR_EQ(svs_seq_line(b, sizeof(b)), want);
+        snprintf(want, sizeof(want), "%s ...", TR(SQ_READBACK));
+        CHECK_STR_EQ(svs_seq_label(b, sizeof(b)), want);
+        CHECK(!svs_seq_frame(NULL));
+        CHECK(svs_seq_busy());
+        /* The pulse reads back: ARM is asked, once. */
+        servo_screen_set_drive(1u, 13u, true);
+        CHECK(!svs_seq_frame(NULL));
+        snprintf(want, sizeof(want), TR(SQ_LINE), 3u, 4u, "ARM");
+        CHECK_STR_EQ(svs_seq_line(b, sizeof(b)), want);
+        CHECK_STR_EQ(svs_seq_label(b, sizeof(b)), "ARM ...");
+        servo_cmd_t c;
+        bool arm = false;
+        while (servo_screen_take(&c)) {
+            arm = arm || c.kind == SERVO_CMD_ARM;
+        }
+        CHECK(arm);
+        /* ARMED reads: the caller is told to start. */
+        servo_screen_set_armed(true);
+        CHECK(svs_seq_frame(NULL));
+        snprintf(want, sizeof(want), TR(SQ_LINE), 4u, 4u, "START");
+        CHECK_STR_EQ(svs_seq_line(b, sizeof(b)), want);
+        CHECK_STR_EQ(svs_seq_label(b, sizeof(b)), "START ...");
+        /* The run refuses its start: no text of its own, then its text. */
+        svs_seq_started(false, NULL);
+        CHECK(!svs_seq_busy());
+        snprintf(text, sizeof(text), TR(SQ_FAILED), "START", TR(RA_REFUSED));
+        CHECK_STR_EQ(svs_seq_failure(), text);
+        CHECK_STR_EQ(alert(), text);
+        CHECK(disarm_posted());
+        CHECK_STR_EQ(svs_seq_line(b, sizeof(b)), "");
+
+        servo_screen_set_armed(false);
+        CHECK(svs_seq_begin());
+        CHECK(svs_seq_failure() == NULL);
+        CHECK(!svs_seq_frame(NULL));
+        servo_screen_set_drive(1u, 13u, true);
+        (void)svs_seq_frame(NULL);
+        servo_screen_set_armed(true);
+        CHECK(svs_seq_frame(NULL));
+        svs_seq_started(false, TR(RA_NO_ZERO));
+        snprintf(text, sizeof(text), TR(SQ_FAILED), "START", TR(RA_NO_ZERO));
+        CHECK_STR_EQ(svs_seq_failure(), text);
+        CHECK(disarm_posted());
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/* A check of the gate that refuses on the way fails the step with the part
+ * its row names: PORT PWM's row PORT PWM, ARM's row ARM, the supply row the
+ * PD mini where it feeds the servo; a row no part belongs to names the step
+ * under way.  Each failure's line carries the refusal, and DISARM goes out
+ * and, with a PD mini fed, its output off. */
+TEST_CASE(a_refusal_names_its_part_and_switches_every_output_off)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        const struct {
+            const char *why;
+            const char *part;
+            bool        pd;
+        } k_case[] = {
+            { TR(SV_LIM_PWM_OFF_ARMED), TR(RDY_PWM), false },
+            { ui_servo_str(SERVO_STR_START_BUSY), "ARM", false },
+            { TR(RA_NO_ZERO), TR(RDY_PWM), false },
+            { TR(SV_LIM_PROG_PD_OFF), "PD MINI", true },
+        };
+        for (size_t k = 0; k < sizeof(k_case) / sizeof(k_case[0]); ++k) {
+            char want[128];
+            to_auto(false);
+            settings_set(SET_SERVO_TARGET, 1.0f);
+            servo_screen_set_drive(1u, 13u, false);
+            servo_screen_clock(500u);
+            if (k_case[k].pd) {
+                pd_answers_off();
+            }
+            CHECK(svs_seq_begin());
+            CHECK_EQ(svs_seq_need().pd_mini, k_case[k].pd);
+            CHECK(!svs_seq_frame(k_case[k].why));
+            CHECK(!svs_seq_busy());
+            snprintf(want, sizeof(want), TR(SQ_FAILED), k_case[k].part,
+                     k_case[k].why);
+            CHECK_STR_EQ(svs_seq_failure(), want);
+            CHECK_STR_EQ(alert(), want);
+            CHECK(disarm_posted());
+            supply_cmd_t sc;
+            const bool off = supply_cmd(&sc) && sc.off;
+            CHECK_EQ(off, k_case[k].pd);
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/* A read-back is judged at 1000ms: at 999ms it waits, at 1000ms it fails
+ * naming the part that did not read back, PORT PWM or the PD mini, with the
+ * cause NO READ-BACK IN 1000ms and DISARM out; the PD mini's ON is asked
+ * once and its OFF with the failure. */
+TEST_CASE(a_read_back_that_runs_out_names_its_part_and_switches_off)
+{
+    char want[128], cause[64];
+    snprintf(cause, sizeof(cause), TR(SQ_NO_READBACK), 1000u);
+
+    to_auto(false);
+    settings_set(SET_SERVO_TARGET, 1.0f);
+    servo_screen_set_drive(1u, 13u, false);
+    servo_screen_clock(2000u);
+    CHECK(svs_seq_begin());
+    CHECK(!svs_seq_frame(NULL));
+    servo_screen_clock(2999u);
+    CHECK(!svs_seq_frame(NULL));
+    CHECK(svs_seq_busy());
+    CHECK(svs_seq_failure() == NULL);
+    servo_screen_clock(3000u);
+    CHECK(!svs_seq_frame(NULL));
+    CHECK(!svs_seq_busy());
+    snprintf(want, sizeof(want), TR(SQ_FAILED), TR(RDY_PWM), cause);
+    CHECK_STR_EQ(svs_seq_failure(), want);
+    CHECK_STR_EQ(alert(), want);
+    CHECK(disarm_posted());
+
+    to_auto(false);
+    servo_screen_set_drive(0u, SERVO_SCREEN_NO_PIN, false);
+    pd_answers_off();
+    servo_screen_clock(5000u);
+    CHECK(svs_seq_begin());
+    CHECK(svs_seq_need().pd_mini);
+    CHECK(!svs_seq_frame(NULL));
+    supply_cmd_t sc;
+    CHECK(supply_cmd(&sc));
+    CHECK(sc.on);
+    servo_screen_clock(5999u);
+    CHECK(!svs_seq_frame(NULL));
+    CHECK(svs_seq_busy());
+    servo_screen_clock(6000u);
+    CHECK(!svs_seq_frame(NULL));
+    CHECK(!svs_seq_busy());
+    snprintf(want, sizeof(want), TR(SQ_FAILED), "PD MINI", cause);
+    CHECK_STR_EQ(svs_seq_failure(), want);
+    CHECK(disarm_posted());
+    CHECK(supply_cmd(&sc));
+    CHECK(sc.off);
+}
+
+/* An end by STOP or the operator fails the step under way as STOP with
+ * DISARM out; a leave ends the sequence and leaves the outputs to the
+ * leave, naming nothing.  An end with none under way keeps the last
+ * failure, except a leave, which clears it for the screen entered again. */
+TEST_CASE(a_stop_or_a_leave_ends_the_sequence_as_each_must)
+{
+    char want[128];
+    to_auto(false);
+    settings_set(SET_SERVO_TARGET, 1.0f);
+    servo_screen_set_drive(1u, 13u, false);
+    servo_screen_clock(100u);
+    CHECK(svs_seq_begin());
+    svs_seq_end(SERVO_TEST_AB_OPERATOR);
+    CHECK(!svs_seq_busy());
+    snprintf(want, sizeof(want), TR(SQ_FAILED), TR(RDY_PWM), "STOP");
+    CHECK_STR_EQ(svs_seq_failure(), want);
+    CHECK_STR_EQ(alert(), want);
+    CHECK(disarm_posted());
+    /* Nothing under way: the failure stays for the operator to read. */
+    svs_seq_end(SERVO_TEST_AB_OPERATOR);
+    CHECK_STR_EQ(svs_seq_failure(), want);
+    /* A leave clears it, with or without a sequence. */
+    svs_seq_end(SERVO_TEST_AB_LEFT);
+    CHECK(svs_seq_failure() == NULL);
+
+    CHECK(svs_seq_begin());
+    (void)svs_seq_frame(NULL);
+    svs_seq_end(SERVO_TEST_AB_LEFT);
+    CHECK(!svs_seq_busy());
+    CHECK(svs_seq_failure() == NULL);
+    CHECK(!disarm_posted());
+    CHECK(svs_seq_begin());
+    CHECK(svs_seq_failure() == NULL);
+}
+
+/* A finger on a READY row holds SERVO's lists shut: SETTINGS tapped with a
+ * second finger opens none, and the row's release still reaches the card.
+ * Once it is up, SETTINGS opens the list. */
+TEST_CASE(a_finger_on_a_ready_row_keeps_the_list_shut)
+{
+    to_auto(false);
+    const int x = SV_RDY_X, y = SV_RDY_ROW_Y(RAR_PWM);
+    ev(x, y, TOUCH_EVENT_DOWN, 3);
+    ev(SV_FOOT_SET_X, SV_FOOT_Y, TOUCH_EVENT_DOWN, 4);
+    ev(SV_FOOT_SET_X, SV_FOOT_Y, TOUCH_EVENT_UP, 4);
+    CHECK(!servo_screen_list()->open);
+    ev(x, y, TOUCH_EVENT_UP, 3);
+    tap_settings();
+    CHECK(servo_screen_list()->open);
+}
+
 int main(void)
 {
     RUN(every_gate_text_belongs_to_exactly_one_row);
@@ -405,5 +822,14 @@ int main(void)
     RUN(every_label_and_state_fits_its_column);
     RUN(the_card_takes_the_output_cards_place_on_rudder_auto_only);
     RUN(a_refused_hold_has_a_red_row_naming_it);
+    RUN(a_press_on_a_row_ends_on_its_release_or_a_cancel);
+    RUN(a_tap_on_a_red_zero_row_without_a_reading_names_it);
+    RUN(a_tap_on_servo_opens_its_row_of_the_list_unless_armed);
+    RUN(servo_reads_the_family_the_run_programs);
+    RUN(the_sequence_names_its_steps_and_a_start_the_run_refuses);
+    RUN(a_refusal_names_its_part_and_switches_every_output_off);
+    RUN(a_read_back_that_runs_out_names_its_part_and_switches_off);
+    RUN(a_stop_or_a_leave_ends_the_sequence_as_each_must);
+    RUN(a_finger_on_a_ready_row_keeps_the_list_shut);
     return test_summary("servo_ready");
 }

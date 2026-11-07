@@ -26,9 +26,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-/* TEST's screen: its output card keeps the SET row and OUTPUT ON, which
+/* KST's screen: its output card keeps the SET row and OUTPUT ON, which
  * LIVE, SWEEP and RUDDER show as their READY rows' SUPPLY. */
-#define SERVO_RIG_FN SERVO_FN_TEST
+#define SERVO_RIG_FN SERVO_FN_KST
 #include "servo_screen_rig.h"
 
 /* ---------------------------------------------------------------- helpers */

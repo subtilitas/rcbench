@@ -290,8 +290,8 @@ TEST_CASE(a_second_finger_on_the_strip_ends_no_press_of_the_first)
     /* A tab held: another contact's tab and row press nothing, and the first
      * contact's lift is the tap. */
     body(TOUCH_EVENT_DOWN, 1, TAB_CX(TAB_FILES), TAB_CY);
-    body(TOUCH_EVENT_DOWN, 2, LV_WIFI_CX, LV_FOOT_CY);
-    body(TOUCH_EVENT_UP, 2, LV_WIFI_CX, LV_FOOT_CY);
+    body(TOUCH_EVENT_DOWN, 2, LV_WIFI_CX, LV_BR_FOOT_CY);
+    body(TOUCH_EVENT_UP, 2, LV_WIFI_CX, LV_BR_FOOT_CY);
     body(TOUCH_EVENT_DOWN, 2, LV_ROW_CX, LV_ROW_CY(1));
     body(TOUCH_EVENT_UP, 2, LV_ROW_CX, LV_ROW_CY(1));
     CHECK_EQ(ui_router_navigations(), nav);
@@ -350,7 +350,7 @@ TEST_CASE(logs_takes_no_tab_over_a_file_or_the_delete_question)
     const uint32_t nav = ui_router_navigations();
     /* BENCH's rows: the report, chosen as the newest, then the CSV. */
     btap(LV_ROW_CX, LV_ROW_CY(1));
-    btap(LV_OPEN_CX, LV_FOOT_CY);
+    btap(LV_OPEN_CX, LV_BR_FOOT_CY);
     CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
     tab(TAB_FILES);
     CHECK_EQ(ui_router_navigations(), nav);
@@ -358,7 +358,7 @@ TEST_CASE(logs_takes_no_tab_over_a_file_or_the_delete_question)
     tag();
     CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
     CHECK_EQ(ui_router_current(), SCREEN_LOGS);
-    btap(LV_DELETE_CX, LV_FOOT_CY);
+    btap(LV_DELETE_CX, LV_BR_FOOT_CY);
     tab(TAB_FILES);
     CHECK_EQ(ui_router_current(), SCREEN_LOGS);
     tag();
@@ -526,7 +526,7 @@ TEST_CASE(the_strip_fits_in_both_languages_and_stands_above_each_first_row)
 TEST_CASE(the_wifi_button_opens_wifi_and_the_tag_returns_to_logs)
 {
     fresh_strip();
-    btap(LV_WIFI_CX, LV_FOOT_CY);
+    btap(LV_WIFI_CX, LV_BR_FOOT_CY);
     CHECK_EQ(ui_router_current(), SCREEN_WIFI);
     CHECK_EQ(ui_router_parent(SCREEN_WIFI), SCREEN_LOGS);
     CHECK_EQ(wifi_screen_take(), 0u);       /* opening starts no radio */
@@ -552,7 +552,7 @@ TEST_CASE(the_wifi_button_opens_wifi_and_the_tag_returns_to_logs)
 TEST_CASE(wifi_levels_from_logs_climb_before_the_tag_returns_to_logs)
 {
     fresh_strip();
-    btap(LV_WIFI_CX, LV_FOOT_CY);
+    btap(LV_WIFI_CX, LV_BR_FOOT_CY);
     btap(WF_BTN_CX(2), WF_BTN_CY(2));
     const uint32_t nav = ui_router_navigations();
     tag();
@@ -577,7 +577,7 @@ TEST_CASE(armed_the_wifi_button_opens_wifi_and_its_buttons_refuse)
     fresh_strip();
     const ui_bench_status_t armed = { .link_up = true, .armed = true };
     ui_router_set_status(&armed);
-    btap(LV_WIFI_CX, LV_FOOT_CY);
+    btap(LV_WIFI_CX, LV_BR_FOOT_CY);
     CHECK_EQ(ui_router_current(), SCREEN_WIFI);
     wifi_view_t v;
     memset(&v, 0, sizeof(v));
@@ -600,21 +600,21 @@ TEST_CASE(a_press_that_slid_off_the_wifi_button_or_was_lost_opens_nothing)
     fresh_strip();
     const uint32_t nav = ui_router_navigations();
     /* Slid onto RESCAN. */
-    body(TOUCH_EVENT_DOWN, 1, LV_WIFI_CX, LV_FOOT_CY);
-    body(TOUCH_EVENT_MOVE, 1, LV_RESCAN_CX, LV_FOOT_CY);
-    body(TOUCH_EVENT_UP, 1, LV_RESCAN_CX, LV_FOOT_CY);
+    body(TOUCH_EVENT_DOWN, 1, LV_WIFI_CX, LV_BR_FOOT_CY);
+    body(TOUCH_EVENT_MOVE, 1, LV_RESCAN_CX, LV_BR_FOOT_CY);
+    body(TOUCH_EVENT_UP, 1, LV_RESCAN_CX, LV_BR_FOOT_CY);
     CHECK_EQ(ui_router_navigations(), nav);
     /* A row held: another contact on the button presses nothing. */
     body(TOUCH_EVENT_DOWN, 1, LV_ROW_CX, LV_ROW_CY(1));
-    body(TOUCH_EVENT_DOWN, 2, LV_WIFI_CX, LV_FOOT_CY);
-    body(TOUCH_EVENT_UP, 2, LV_WIFI_CX, LV_FOOT_CY);
+    body(TOUCH_EVENT_DOWN, 2, LV_WIFI_CX, LV_BR_FOOT_CY);
+    body(TOUCH_EVENT_UP, 2, LV_WIFI_CX, LV_BR_FOOT_CY);
     CHECK_EQ(ui_router_navigations(), nav);
     body(TOUCH_EVENT_UP, 1, LV_ROW_CX, LV_ROW_CY(1));
     /* The stream broke: the release of a reused track id is no tap. */
-    body(TOUCH_EVENT_DOWN, 1, LV_WIFI_CX, LV_FOOT_CY);
+    body(TOUCH_EVENT_DOWN, 1, LV_WIFI_CX, LV_BR_FOOT_CY);
     log_viewer_screen()->cancel();
     touch_event_t e = { .type = TOUCH_EVENT_UP,
-                        .point = { .id = 1, .x = LV_WIFI_CX, .y = LV_FOOT_CY,
+                        .point = { .id = 1, .x = LV_WIFI_CX, .y = LV_BR_FOOT_CY,
                                    .strength = 40 } };
     log_viewer_screen()->event(&e);
     CHECK_EQ(ui_router_navigations(), nav);
@@ -626,13 +626,13 @@ TEST_CASE(the_wifi_button_takes_no_press_under_a_question_or_a_file)
 {
     fresh_strip();
     const uint32_t nav = ui_router_navigations();
-    btap(LV_DELETE_CX, LV_FOOT_CY);
-    btap(LV_WIFI_CX, LV_FOOT_CY);
+    btap(LV_DELETE_CX, LV_BR_FOOT_CY);
+    btap(LV_WIFI_CX, LV_BR_FOOT_CY);
     CHECK_EQ(ui_router_navigations(), nav);
     tag();                              /* CANCEL */
     /* The CSV's import view: the spot is its first footer button. */
     btap(LV_ROW_CX, LV_ROW_CY(1));
-    btap(LV_OPEN_CX, LV_FOOT_CY);
+    btap(LV_OPEN_CX, LV_BR_FOOT_CY);
     CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
     btap(LV_WIFI_CX, LV_FOOT_CY);
     CHECK_EQ(ui_router_navigations(), nav);
@@ -640,7 +640,7 @@ TEST_CASE(the_wifi_button_takes_no_press_under_a_question_or_a_file)
     tag();
     CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
     /* And back on the list it works. */
-    btap(LV_WIFI_CX, LV_FOOT_CY);
+    btap(LV_WIFI_CX, LV_BR_FOOT_CY);
     CHECK_EQ(ui_router_current(), SCREEN_WIFI);
 }
 
@@ -652,13 +652,13 @@ TEST_CASE(the_wifi_button_shows_with_nothing_listed_and_files_has_none)
     log_viewer_set_io(&none);
     log_viewer_refresh();
     settle();
-    btap(LV_WIFI_CX, LV_FOOT_CY);
+    btap(LV_WIFI_CX, LV_BR_FOOT_CY);
     CHECK_EQ(ui_router_current(), SCREEN_WIFI);
     /* FILES has no such button: the spot is RESCAN's or nothing there. */
     fresh_strip();
     tab(TAB_FILES);
     const uint32_t nav = ui_router_navigations();
-    btap(LV_WIFI_CX, LV_FOOT_CY);
+    btap(LV_WIFI_CX, LV_BR_FOOT_CY);
     CHECK_EQ(ui_router_navigations(), nav);
     CHECK_EQ(ui_router_current(), SCREEN_FILES);
 }

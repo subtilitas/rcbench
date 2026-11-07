@@ -7,10 +7,12 @@
  * Each function screen fixes one task of the strip, which is never drawn
  * (servo_fn.c): LIVE (the dial) for LIVE and SWEEP, TEST (the run card)
  * for TEST and LIMIT RUN, RUDDER for RUDDER and RUDDER AUTO, PROGRAM for
- * KST and HITEC, whose session shows over the left column.  A run card's
- * SETTINGS opens that run's settings in the page area, one level down: the
- * home tag (wb_back()) and the page's CLOSE climb from there back to the
- * card.  A session whose port is in programming asks for LEAVE first.
+ * KST and HITEC, whose session shows over the left column.  TEST's card
+ * has the run's lines, the caps button, the box and the rail's plot;
+ * LIMIT RUN's left card is servo_limit_card.c's.  Both runs' holds and
+ * lists are the footer's.  KST's SETTINGS opens EXPERT MODE's page, one
+ * level down: the home tag (wb_back()) and the page's CLOSE climb from
+ * there.  A session whose port is in programming asks for LEAVE first.
  *
  * The screen is servo_screen.c; the state and the layout the files share
  * are servo_screen_int.h.
@@ -208,13 +210,12 @@ bool svs_covered(void)
 bool wb_back(void)
 {
     /* Over a panel the tag closes the panel, as its CANCEL does, and the
-     * page under it stays.  From a run's settings it climbs to the run's
-     * card, from the brown-out walk's to the automatic test's, from KST's
-     * EXPERT MODE to the session. */
+     * page under it stays.  From KST's EXPERT MODE it climbs to the
+     * session. */
     if (modal_open()) {
         close_panels();
     } else if (s.run_list != RL_NONE) {
-        s.run_list = (s.run_list == RL_BROWNOUT) ? RL_AUTO : RL_NONE;
+        s.run_list = RL_NONE;
     } else {
         return false;
     }
@@ -222,18 +223,6 @@ bool wb_back(void)
     servo_invalidate();
     ++s.ctrl_rev;
     return true;
-}
-
-/**
- * @brief START LIMIT RUN, on the LIMIT RUN card: START TEST's place on its
- *        own card.
- * @return the button
- */
-gfx_rect_t lim_start_rect(void)
-{
-    return (gfx_rect_t){ (int16_t)(RUN_CARD_X + 10),
-                         (int16_t)(RUN_CARD_Y + RUN_BTN_DY), RUN_BTN_W,
-                         RUN_BTN_H };
 }
 
 /**
@@ -287,59 +276,20 @@ bool opener_down(const touch_event_t *evt, gfx_rect_t r, int code)
     return true;
 }
 
-void draw_run_set(gfx_canvas_t *c)
-{
-    const int k = run_card_shown();
-    ui_button_font(c, run_set_rect(k), TR(SUP_SETTINGS),
-                   ui_theme_color(UI_C_PANEL_HI),
-                   s.ov_have && s.ov_pressed == OP_RUN_SET && s.ov_row == k,
-                   svs_list_bench_why() == NULL, SV_FONT_LABEL);
-}
-
 bool wb_rest(const touch_event_t *evt)
 {
     return rudder_rest(evt) || rauto_rest(evt) || ready_rest(evt)
            || foot_rest(evt);
 }
 
-/* A press on TEST's or LIMIT RUN's page: its card's SETTINGS, its START,
- * on TEST the caps. */
+/* A press on TEST's page: the caps.  TEST's hold is the footer's; LIMIT
+ * RUN's left card takes none. */
 void test_page_down(const touch_event_t *evt)
 {
-    const int x = evt->point.x, y = evt->point.y;
-    const int k = run_card_shown();
-    if (k == 0 && opener_down(evt, caps_open_rect(), OP_OPEN_CAPS)) {
+    if (s.fn != SERVO_FN_TEST) {
         return;
     }
-    if (gfx_rect_contains(run_set_rect(k), x, y)) {
-        ov_take(evt, OP_RUN_SET, k);
-        return;
-    }
-    if (k == 0 && gfx_rect_contains(test_start_rect(), x, y)) {
-        ov_take(evt, OP_TEST_START, -1);
-        /* A hold, unless a run is under way (a tap stops it), a step is
-         * past 6.0V (a tap opens the HV warning, whose hold starts it), or
-         * it cannot run now (a tap says why). */
-        s.test_note = 0;
-        if (!servo_test_running(&s.test) && test_blocked() == 0
-            && !test_needs_hv()) {
-            s.test_down = true;
-            ui_hold_begin(&s.test_hold, TX_HOLD_HINT_TEST);
-        }
-        ++s.test_rev;
-        return;
-    }
-    if (k == 1 && gfx_rect_contains(lim_start_rect(), x, y)) {
-        ov_take(evt, OP_LIM_START, -1);
-        /* A hold, unless the run is under way (a tap stops it) or it
-         * cannot run now (a tap says why). */
-        s.lim_note = NULL;
-        if (!servo_limrun_running(&s.lim) && lim_blocked() == NULL) {
-            s.lim_down = true;
-            ui_hold_begin(&s.lim_hold, TX_HOLD_HINT_LIMIT_RUN);
-        }
-        ++s.test_rev;
-    }
+    (void)opener_down(evt, caps_open_rect(), OP_OPEN_CAPS);
 }
 
 /* ----------------------------------------------------------------- drawing */
@@ -362,7 +312,7 @@ void draw_caps_button(gfx_canvas_t *c)
 }
 
 /**
- * @brief TEST's run card and the caps, or LIMIT RUN's run card.
+ * @brief TEST's run card, the caps and the rail's plot.
  * @param c the canvas
  */
 void draw_test_page(gfx_canvas_t *c)
@@ -370,35 +320,22 @@ void draw_test_page(gfx_canvas_t *c)
     const gfx_rect_t a = page_area();
     gfx_fill_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2,
                   ui_theme_color(UI_C_PANEL));
-    static const ui_text_id_t k_title[2] = { TX_SV_AUTO_TEST,
-                                             TX_SV_ROW_LIM_MODE };
-    const int k = run_card_shown();
     {
-        const gfx_rect_t r = run_card_rect(k);
+        const gfx_rect_t r = test_card_rect();
         gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, 6,
                             ui_theme_color(UI_C_PANEL_SUNK));
         gfx_draw_round_rect(c, r.x, r.y, r.w, r.h, 6,
                             ui_theme_color(UI_C_EDGE));
-        gfx_text(c, r.x + 10, r.y + RUN_NAME_DY, ui_tr(k_title[k]),
+        gfx_text(c, r.x + 10, r.y + RUN_NAME_DY, TR(SV_AUTO_TEST),
                  SV_FONT_LABEL, ui_theme_color(UI_C_ACCENT), 1);
-        draw_run_set(c);
     }
-    if (k == 0) {
-        draw_test_start(c);
-        draw_test_lines(c);
-        draw_caps_button(c);
-    } else {
-        draw_lim_start(c);
-        draw_lim_lines(c);
-    }
+    draw_test_lines(c);
+    draw_caps_button(c);
+    test_draw_plot(c);
     /* The run's box under the card: its lines while it runs and its
      * verdict after, STOP or CLOSE. */
     if (run_box_shown()) {
-        if (k == 0) {
-            draw_test_box(c);
-        } else {
-            draw_lim_box(c);
-        }
+        draw_test_box(c);
     }
 }
 

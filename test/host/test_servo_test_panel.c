@@ -1,5 +1,5 @@
 /*
- * What the SERVO screen's automatic test decides: START TEST's
+ * What the SERVO screen's automatic test decides: TEST's ARM + START
  * hold, the ways a run ends, its faces, and a run on the servo
  * rail's meter.
  *
@@ -29,16 +29,16 @@
 
 /* ------------------------------------------------ the automatic test */
 
-/* START TEST on TEST's AUTOMATIC TEST card runs only from a two-second
- * hold on an armed bench: the run asks the first set point and the output
- * on and steps the servo to its centre with no slew, and the workbench
- * stays on TEST. */
+/* TEST's ARM + START, the footer's middle slot, runs only from a
+ * two-second hold: the run asks the first set point and the output on and
+ * steps the servo to its centre with no slew, and the workbench stays on
+ * TEST.  No PD mini answering refuses it. */
 TEST_CASE(start_test_is_a_two_second_hold_on_an_armed_bench)
 {
     fresh();
     memset(&bench, 0, sizeof(bench));
     hold_start(2.3f);
-    CHECK(!servo_screen_testing());               /* not armed */
+    CHECK(!servo_screen_testing());               /* no PD mini */
     scr->render(&cv, 0);
 
     bench_fresh();
@@ -46,13 +46,6 @@ TEST_CASE(start_test_is_a_two_second_hold_on_an_armed_bench)
     tap(START_X, START_Y);                        /* a tap is not the hold */
     CHECK(!servo_screen_testing());
     hold_start(1.0f);
-    CHECK(!servo_screen_testing());
-    close_settings();                             /* a switch drops a hold */
-    ev(START_X, START_Y, TOUCH_EVENT_DOWN, 1);    /* LIVE: not START */
-    for (int i = 0; i < 120; ++i) {
-        scr->tick(0.02f);
-    }
-    ev(START_X, START_Y, TOUCH_EVENT_UP, 1);
     CHECK(!servo_screen_testing());
     hold_start(2.3f);
     CHECK(servo_screen_testing());
@@ -67,9 +60,9 @@ TEST_CASE(start_test_is_a_two_second_hold_on_an_armed_bench)
     CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
 }
 
-/* START TEST reads STOP while a run is under way, and a release ends the
- * run however it came about: here the tracker's, for a contact that
- * jumps. */
+/* ARM + START reads STOP TEST while a run is under way, and its press
+ * ends the run: the release the tracker makes for a contact that jumps
+ * starts nothing after it. */
 TEST_CASE(a_run_stops_on_a_release_the_tracker_makes_for_a_jump)
 {
     bench_fresh();
@@ -78,22 +71,26 @@ TEST_CASE(a_run_stops_on_a_release_the_tracker_makes_for_a_jump)
     feed_reset();
     feed_to_screen(scr);
     finger(FEED_LONE, START_X, START_Y + UI_BAND_H);
-    CHECK(servo_screen_testing());
+    CHECK(!servo_screen_testing());               /* STOP TEST, pressed */
     finger(FEED_LONE, START_X, START_Y + UI_BAND_H - 200);
     CHECK_EQ(feed_ups, 1);
-    CHECK(!servo_screen_testing());
     lift(FEED_LONE);
+    for (int i = 0; i < 120; ++i) {
+        scr->tick(0.02f);
+    }
+    CHECK(!servo_screen_testing());
 }
 
 /*
- * What the screen names to the router as a press that stops a run: START
- * TEST's place on TEST while its run is under way (a tap there is STOP),
- * and STOP TEST in the result box under the card.  Not the box once the
- * run has ended, where its button is CLOSE, and not START TEST.
+ * What the screen names to the router as a press that stops a run: ARM +
+ * START on TEST while its run is under way (its press is STOP TEST), and
+ * STOP TEST in the result box under the card.  Not the box once the run
+ * has ended, where its button is CLOSE, and not ARM + START.
  */
 TEST_CASE(stop_test_is_named_to_the_router_while_a_run_is_under_way)
 {
     bench_fresh();
+    open_test();
     CHECK(!scr->safe_at(START_X, START_Y));
     hold_start(2.3f);
     CHECK(servo_screen_testing());
@@ -166,9 +163,7 @@ TEST_CASE(a_run_above_6_v_starts_through_the_hv_hold)
 {
     bench_fresh();
     short_runs();
-    open_run_settings(0);
-    tap(HV_ROW_X, HV_ROW_Y);                       /* HV SERVO on */
-    CHECK(home_tag());                            /* back to the cards */
+    test_hv_on();                                 /* HV SERVO on */
     ev(START_X, START_Y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < 120; ++i) {
         scr->tick(0.02f);
@@ -190,10 +185,12 @@ TEST_CASE(a_run_above_6_v_starts_through_the_hv_hold)
 }
 
 /* Every way out of a run ends it: the output asked off, the servo let go,
- * and the report says ABORTED. */
+ * and the report says ABORTED.  No SERVO screen shows OUTPUT OFF while
+ * TEST runs: LIVE, SWEEP and RUDDER show READY rows, and KST and HITEC end
+ * the run as they open. */
 TEST_CASE(every_way_out_of_a_run_switches_off_and_lets_go)
 {
-    for (int way = 0; way < 11; ++way) {
+    for (int way = 0; way < 10; ++way) {
         bench_fresh();
         servo_screen_set_link(true);
         hold_start(2.3f);
@@ -217,7 +214,7 @@ TEST_CASE(every_way_out_of_a_run_switches_off_and_lets_go)
         case 6:                                     /* the box's STOP TEST */
             tap(BOXBTN_X, BOXBTN_Y);
             break;
-        case 7:                                     /* the card's STOP TEST */
+        case 7:                                     /* ARM + START: STOP TEST */
             open_test();
             tap(START_X, START_Y);
             break;
@@ -225,10 +222,7 @@ TEST_CASE(every_way_out_of_a_run_switches_off_and_lets_go)
             open_settings();
             sl_step(HL_REVERSE, +1);               /* REVERSE */
             break;
-        case 9: bench.online = false; break;            /* the supply is gone */
-        default:                                    /* OUTPUT OFF */
-            tap(SUP_OUT_X, SUP_ROW_Y);
-            break;
+        default: bench.online = false; break;           /* the supply is gone */
         }
         bench_frames(2000u);
         CHECK(!servo_screen_testing());
@@ -351,8 +345,9 @@ TEST_CASE(a_disarm_tap_ends_a_run_at_the_tap)
 /*
  * The run's row of the value-state table (test_value_state.c).
  *
- * A run starts only in LIVE: START TEST's hold starts nothing on a bench
- * that is OFF, ARMING, or LEAVING by a DISARM waiting, a DISARM taken or a
+ * A run starts only in LIVE, which TEST's ARM + START reaches itself from
+ * OFF and from ARMING: its steps ask ARM and wait for ARMED.  It starts
+ * nothing on a bench LEAVING by a DISARM waiting, a DISARM taken or a
  * STOP.  A run under way ends on every edge out of LIVE -- the DISARM tap,
  * a STOP, the bench's report, leaving -- at the edge and not at the bench's
  * answer: no step is posted after it, the release it ends with moves no
@@ -370,7 +365,7 @@ TEST_CASE(a_run_follows_the_value_state_at_every_edge)
             break;
         case 1:                                  /* ARMING */
             servo_screen_set_armed(false);
-            open_test();                         /* TEST's ARM: ARM alone */
+            go(SERVO_FN_KST);                    /* KST's ARM: ARM alone */
             arm_press();
             hold_for(2.3f);
             arm_release();
@@ -390,7 +385,9 @@ TEST_CASE(a_run_follows_the_value_state_at_every_edge)
             break;
         }
         hold_start(2.3f);
-        CHECK(!servo_screen_testing());
+        /* The steps arm an OFF bench and one asked to arm, which the
+         * bench answers; a DISARM on its way or a STOP keeps it SAFE. */
+        CHECK_EQ(servo_screen_testing(), st <= 1);
         close_settings();
     }
 
@@ -449,12 +446,13 @@ TEST_CASE(a_run_ended_by_a_disarm_leaves_no_position_to_send)
 }
 
 /*
- * A run that ends on an armed bench releases the servo, and the value shown
- * is the rest the pins go to: 1500us for STANDARD PWM whatever the trim,
- * 760us for NARROW 760.  Ended by its last step, or by STOP TEST on the
- * left card while it is driven off the centre.
+ * A run's end switches the bench to SAFE, as ARM + START armed it for the
+ * run: one DISARM, and the value shown stays where the run last drove the
+ * servo until the next ARM puts it at the rest the pins go to: 1500us for
+ * STANDARD PWM whatever the trim, 760us for NARROW 760.  Ended by its last
+ * step, or by STOP TEST in the box while it is driven off the centre.
  */
-static void a_run_ends_armed(int profile, bool by_operator)
+static void a_run_ends_safe(int profile, bool by_operator)
 {
     bench_fresh();
     short_runs();
@@ -483,26 +481,28 @@ static void a_run_ends_armed(int profile, bool by_operator)
             bench_frames(20u);
         }
         CHECK(bench.cmd != first);
-        CHECK_EQ(servo_screen_commanded(), bench.cmd);
+        const uint16_t driven = servo_screen_commanded();
+        CHECK_EQ(driven, bench.cmd);
         tap(BOXBTN_X, BOXBTN_Y);        /* the box's STOP TEST */
         CHECK(!servo_screen_testing());
-        CHECK_EQ(servo_screen_commanded(), rest);
-        CHECK_EQ(last_cmd().kind, SERVO_CMD_RELEASE);
+        CHECK_EQ(servo_screen_commanded(), driven);
+        CHECK_EQ(last_cmd().kind, SERVO_CMD_DISARM);
+        servo_screen_set_armed(false);  /* the bench answers */
     } else {
         for (int i = 0; i < 120 && servo_screen_testing(); ++i) {
             bench_frames(500u);
         }
         CHECK(!servo_screen_testing());
-        CHECK(bench.released);
-        CHECK_EQ(servo_screen_commanded(), rest);
+        CHECK_EQ(bench.disarms, 1u);
     }
     bench_frames(200u);
+    CHECK(!servo_screen_arm_asked());
+    /* The next ARM: the rest, and the first 1% of the knob goes on from
+     * it on LIVE, where the knob moves the servo. */
+    servo_screen_set_armed(true);
     CHECK_EQ(servo_screen_commanded(), rest);
-    CHECK_EQ(servo_screen_drawn(), rest);
-    /* The first 1% of the knob goes on from the rest, on LIVE: a run
-     * that ends by itself leaves the workbench on TEST, where the knob
-     * does not move the servo. */
     close_settings();
+    (void)last_cmd();
     servo_screen_knob_frame();
     servo_screen_knob(0.01f);
     const servo_cmd_t c = last_cmd();
@@ -510,13 +510,13 @@ static void a_run_ends_armed(int profile, bool by_operator)
     CHECK_EQ(c.value_us, (profile == 1) ? 762u : 1510u);
 }
 
-TEST_CASE(a_run_that_ends_on_an_armed_bench_leaves_the_value_at_the_rest)
+TEST_CASE(a_runs_end_switches_to_safe_and_the_next_arm_rests)
 {
     for (int profile = 0; profile < 3; ++profile) {
-        a_run_ends_armed(profile, true);
+        a_run_ends_safe(profile, true);
     }
-    a_run_ends_armed(0, false);
-    a_run_ends_armed(2, false);
+    a_run_ends_safe(0, false);
+    a_run_ends_safe(2, false);
 }
 
 /* START TEST's hold repaints only its button, a finger that leaves it or a
@@ -981,17 +981,18 @@ TEST_CASE(a_stalled_servo_at_the_shipped_limits_ends_the_run)
     }
 }
 
-/* Under START TEST: a STALL AT that no reading can pass is said, in the
- * warning colour, and START TEST stays open.  It goes with the edit that
- * answers it and comes with the meter whose range is under STALL AT. */
+/* On the AUTOMATIC TEST card: a STALL AT that no reading can pass is
+ * said, in the warning colour, and ARM + START stays open.  It goes with
+ * the edit that answers it and comes with the meter whose range is under
+ * STALL AT. */
 TEST_CASE(a_stall_at_out_of_reach_is_said_under_start_test)
 {
     bench_fresh();
     open_test();
     /* The AUTOMATIC TEST card's lines, mirrored from servo_test_panel.c:
-     * the card's state line SV_RUN_LINE_DY down and the note two lines of
+     * the card's state line SV_TEST_LINE_DY down and the note two lines of
      * 22px under that. */
-    const int y = SV_RUN_CARD_Y(0) + SV_RUN_LINE_DY + 44;
+    const int y = SV_RUN_CARD_Y + SV_TEST_LINE_DY + 44;
     /* As shipped: 2.00A at a limit of 2.00A. */
     CHECK(ink_in_row(y, UI_C_WARN) > 100u);
     /* One step of STALL AT's 0.05A under the limit. */
@@ -1274,7 +1275,7 @@ int main(void)
     RUN(a_disarm_tap_ends_a_run_at_the_tap);
     RUN(a_run_follows_the_value_state_at_every_edge);
     RUN(a_run_ended_by_a_disarm_leaves_no_position_to_send);
-    RUN(a_run_that_ends_on_an_armed_bench_leaves_the_value_at_the_rest);
+    RUN(a_runs_end_switches_to_safe_and_the_next_arm_rests);
     RUN(the_runs_faces_draw_as_a_full_redraw_would);
     RUN(a_refused_start_says_why);
     RUN(a_run_started_under_the_ina3221_reads_its_windows);

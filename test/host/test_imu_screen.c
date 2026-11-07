@@ -1,6 +1,7 @@
 /*
  * The IMU screen (imu_screen.h): SETUP's IMU tile, the found list, the
- * calibration's hold, ZERO, IMU SETTINGS and the lines of its card.
+ * calibration's hold and SETTINGS in the footer, ZERO and the lines of its
+ * card.
  *
  * The failures this is about: a scan whose list never opens, a tap on a
  * device that binds another one, a calibration started by a brush of the
@@ -102,7 +103,8 @@ TEST_CASE(the_tile_opens_the_screen_and_home_returns_to_setup)
      * return is no opening. */
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
-    /* IMU SETTINGS opens SENSORS on the IMU entry; its home tag comes back. */
+    /* The footer's SETTINGS opens SENSORS on the IMU entry; its home tag
+     * comes back. */
     on_imu(&v);
     tap_rect(imu_screen_row_rect(IMS_ROW_SETTINGS));
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
@@ -114,6 +116,42 @@ TEST_CASE(the_tile_opens_the_screen_and_home_returns_to_setup)
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+}
+
+/* The footer: the calibration's hold in the middle slot, SETTINGS on the
+ * right; every other control and the card end over the footer, so nothing
+ * of the main view lies under a slot. */
+TEST_CASE(the_hold_and_settings_sit_in_the_footer_over_nothing_else)
+{
+    imu_view_t v = view_connected();
+    on_imu(&v);
+    const gfx_rect_t hold = ui_footer_rect(UI_FOOTER_HOLD);
+    const gfx_rect_t set = ui_footer_rect(UI_FOOTER_SETTINGS);
+    const gfx_rect_t h_r = imu_screen_hold_rect();
+    CHECK_EQ(h_r.x, hold.x);
+    CHECK_EQ(h_r.y, hold.y);
+    CHECK_EQ(h_r.w, hold.w);
+    CHECK_EQ(h_r.h, hold.h);
+    const gfx_rect_t s_r = imu_screen_row_rect(IMS_ROW_SETTINGS);
+    CHECK_EQ(s_r.x, set.x);
+    CHECK_EQ(s_r.y, set.y);
+    CHECK_EQ(s_r.w, set.w);
+    CHECK_EQ(s_r.h, set.h);
+    static const int k_main[] = { IMS_ROW_SCAN, IMS_ROW_ZERO, IMS_ROW_UNZERO };
+    for (size_t i = 0; i < sizeof k_main / sizeof k_main[0]; ++i) {
+        const gfx_rect_t r = imu_screen_row_rect(k_main[i]);
+        CHECK(r.y + r.h <= UI_FOOTER_FLOOR);
+    }
+    for (int i = 0; i < IMS_CARD_LINES; ++i) {
+        const gfx_rect_t r = imu_screen_line_rect(i);
+        CHECK(r.y + r.h <= UI_FOOTER_FLOOR);
+    }
+    CHECK(IMS_RY + IMS_RH <= UI_FOOTER_FLOOR);
+    CHECK(IMS_ERR_Y + 2 * IMS_LPITCH <= UI_FOOTER_FLOOR);
+    /* A tap on the footer's name does nothing. */
+    tap_rect(ui_footer_rect(UI_FOOTER_NAME));
+    CHECK_EQ(ui_router_current(), SCREEN_IMU);
+    CHECK_EQ(took().kind, IMU_CMD_NONE);
 }
 
 TEST_CASE(scan_posts_the_command_and_the_list_shows_the_found_devices)
@@ -417,12 +455,12 @@ TEST_CASE(zero_posts_zero_and_the_lines_show_the_zeroed_angles)
 TEST_CASE(the_state_line_names_every_link_state)
 {
     static const char *const en[] = {
-        "IMU OFF IN IMU SETTINGS", "STARTING BLUETOOTH",
+        "IMU OFF: SEE SETTINGS", "STARTING BLUETOOTH",
         "NO BLUETOOTH ON C6", "C6 FAILED: RESTART", "NO SENSOR BOUND",
         "SCANNING", "CONNECTING", "BOUND", "CONNECTED 50Hz", "NO FRAMES",
     };
     static const char *const de[] = {
-        "IMU AUS IN IMU-OPTIONEN", "BLUETOOTH STARTET",
+        "IMU AUS: SIEHE OPTIONEN", "BLUETOOTH STARTET",
         "KEIN BLUETOOTH AM C6", "C6 AUSGEFALLEN: NEUSTART",
         "KEIN SENSOR GEBUNDEN", "SUCHE LÄUFT", "VERBINDE", "GEBUNDEN",
         "VERBUNDEN 50Hz", "KEINE FRAMES",
@@ -478,9 +516,7 @@ TEST_CASE(every_string_fits_its_field)
     imu_view_t v = view_connected();
     on_imu(&v);
     const gfx_font_t *label = &gfx_font_10x20, *body = &gfx_font_12x24;
-    static const ui_text_id_t k_buttons[] = {
-        TX_IMU_SCAN, TX_IMU_CAL_HOLD, TX_IMU_SETTINGS,
-    };
+    static const ui_text_id_t k_buttons[] = { TX_IMU_SCAN };
     static const ui_text_id_t k_half[] = { TX_IMU_ZERO, TX_IMU_UNZERO };
     static const ui_text_id_t k_list[] = { TX_IMU_RESCAN, TX_IMU_CLOSE };
     for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
@@ -493,6 +529,8 @@ TEST_CASE(every_string_fits_its_field)
             CHECK(gfx_text_width(label, ui_tr(k_half[i]), 1)
                   <= IMS_HALF_W - 24);
         }
+        CHECK(gfx_text_width(label, ui_tr(TX_IMU_CAL_HOLD), 1)
+              <= UI_FOOTER_W - 24);
         for (size_t i = 0; i < sizeof k_list / sizeof k_list[0]; ++i) {
             CHECK(gfx_text_width(label, ui_tr(k_list[i]), 1) <= IMS_SW - 24);
         }
@@ -569,6 +607,7 @@ int main(void)
 {
     RUN(the_cards_lines_stand_where_the_card_draws_them);
     RUN(the_tile_opens_the_screen_and_home_returns_to_setup);
+    RUN(the_hold_and_settings_sit_in_the_footer_over_nothing_else);
     RUN(scan_posts_the_command_and_the_list_shows_the_found_devices);
     RUN(a_tap_on_a_device_posts_bind_with_its_index);
     RUN(a_scan_error_reads_in_the_list_and_on_the_main_view);

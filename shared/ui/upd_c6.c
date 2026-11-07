@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "ui_footer.h"
 #include "ui_layout.h"
 #include "ui_screen.h"
 #include "ui_text.h"
@@ -23,8 +24,8 @@
 _Static_assert(UPD_C6_BTN_H >= UI_TAP_MIN, "the C6 hold is a finger tall");
 _Static_assert(UPD_C6_LINE_Y + 20 + 8 <= UPD_C6_BTN_Y,
                "the versions' line ends over the hold");
-_Static_assert(UPD_C6_BTN_Y + UPD_C6_BTN_H <= UI_ALERT_Y - UI_BAND_H - 4,
-               "the C6 hold ends over the alert band");
+_Static_assert(UPD_C6_BTN_Y + UPD_C6_BTN_H <= UI_FOOTER_FLOOR,
+               "the C6 hold ends over the footer");
 _Static_assert(UPD_C6_X + UPD_C6_W <= UI_PANEL_W - UI_MARGIN,
                "the C6 row keeps the margin");
 

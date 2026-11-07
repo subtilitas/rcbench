@@ -107,7 +107,7 @@ TEST_CASE(each_screen_names_its_rows_and_shows_no_supply_box)
     CHECK_EQ(drow(RD_ANGLE).st, (uint8_t)RDY_OK);
     CHECK_STR_EQ(drow(RD_ANGLE).value, "AS5600");
     CHECK_EQ(drow(RD_ZERO).st, (uint8_t)RDY_OK);
-    go(SERVO_FN_TEST);
+    go(SERVO_FN_KST);
     CHECK(!drive_shown());
     CHECK_EQ(ready_count(), 0);
     CHECK(!servo_screen_arm_switches());

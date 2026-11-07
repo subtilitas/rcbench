@@ -100,7 +100,7 @@ ARMED leaves the pulse off until the next SAFE: the limit run then reads
 `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM`.
 
 PORT PWM is on OUTPUTS. The PROG 5V box is on SUPPLY and on SERVO's
-TEST, LIMIT RUN, KST and HITEC. A PROG 5V switched on from SERVO stays on
+KST and HITEC. A PROG 5V switched on from SERVO stays on
 from one SERVO screen to another, the hub included. Leaving SERVO switches
 it off.
 
@@ -112,21 +112,15 @@ fails names itself in the alert band and switches every output off. DISARM
 switches the bench to SAFE and PROG 5V off
 ([Servo: ARM switches the supply](Servo.md#arm-switches-the-supply-on-live-sweep-and-rudder)).
 
-RUDDER AUTO needs no step by hand: its HOLD 2s: ARM + START, from SAFE,
-switches PORT PWM ON, then PROG 5V ON, waits up to 1000ms for the PROG 5V,
-the port's PWM bit (set while SAFE) and an INA3221 window begun after both,
-arms, waits up to 500ms for ARMED and starts the run. The pulse runs from
-the ARM ([Servo: AUTO end points](Servo.md#auto-end-points)). Its READY
-card reads `START SWITCHES IT ON` on the PROG 5V and PORT PWM rows while
-SAFE. A step that fails names itself in the alert band and ends with the
-bench SAFE, PROG 5V off.
-
-The limit run's way from PORT PWM off, until it gets the same hold:
-
-1. SAFE: open SETUP > OUTPUTS on the port's entry.
-2. PORT PWM ON. The line reads `PORT PWM ON: PULSES START WITH PROG 5V ON SERVO`.
-3. Back to SERVO, hold PROG 5V ON for 2s. The port's PWM bit comes on while SAFE; the pulse runs from the next ARM.
-4. ARM, then hold START LIMIT RUN.
+RUDDER AUTO and LIMIT RUN need no step by hand: their HOLD 2s: ARM +
+START, from SAFE, switches PORT PWM ON, then PROG 5V ON, waits up to 1000ms
+for the PROG 5V, the port's PWM bit (set while SAFE) and an INA3221 window
+begun after both, arms, waits up to 500ms for ARMED and starts the run. The
+pulse runs from the ARM ([Servo: AUTO end points](Servo.md#auto-end-points),
+[Servo: Running it](Servo.md#running-it)). Their READY card reads `START
+SWITCHES IT ON` on the PROG 5V and PORT PWM rows while SAFE. A step that
+fails names itself in the alert band and ends with the bench SAFE, PROG 5V
+off.
 
 ## Power
 

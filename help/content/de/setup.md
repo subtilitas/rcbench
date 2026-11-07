@@ -160,7 +160,7 @@ Der MT6701 arbeitet im I2C-Modus mit MODE auf High unter Adresse 0x06. Sein Bus 
 
 - AUS erzeugt keine Datei, vergibt keine Nummer und unterdrückt Kartenmeldungen für diese Aufzeichnungsart.
 - Wird Auto-Aufzeichnungen während eines Laufs ausgeschaltet, endet dessen Datei an dieser Stelle. Einschalten während ARMED oder eines Netzteillaufs beginnt dort eine Datei.
-- Testaufzeichnungen wird bei TEST STARTEN und ENDLAGENLAUF STARTEN ausgewertet. Diese Wahl gilt bis zum Laufende. Bei AUS zeigt SERVO statt des Dateinamens `TESTAUFZEICHNUNGEN AUS`.
+- Testaufzeichnungen wird ausgewertet, wenn `2s HALTEN: ARM + START` auf TEST oder ENDLAGENLAUF den Lauf startet. Diese Wahl gilt bis zum Laufende. Bei AUS zeigt SERVO statt des Dateinamens `TESTAUFZEICHNUNGEN AUS`.
 - Bei Testaufzeichnungen EIN entscheidet BERICHT unter PRÜFLING in den OPTIONEN des SERVO-Hubs, ob `ATESTnnn.TXT` geschrieben wird.
 - Das Fehlerprotokoll `BENCH/RCBENCH.LOG` wird unabhängig von Auto-Aufzeichnungen geschrieben.
 - [Logs](logs.md#was-ein-lauf-schreibt) beschreibt die Ordner.

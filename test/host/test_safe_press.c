@@ -352,10 +352,10 @@ TEST_CASE(servo_names_disarm_and_not_arm)
     supply_screen_set_output(true);
     CHECK(!scr->safe_at(SV_SUP_OUT_X, SV_SUP_Y));
     supply_screen_set_output(false);
-    /* TEST's output card: OUTPUT OFF while the output is on; OUTPUT ON is
+    /* KST's output card: OUTPUT OFF while the output is on; OUTPUT ON is
      * none. */
-    const ui_screen_t *test = servo_fn_screen(SERVO_FN_TEST);
-    servo_screen_show_fn(SERVO_FN_TEST);
+    const ui_screen_t *test = servo_fn_screen(SERVO_FN_KST);
+    servo_screen_show_fn(SERVO_FN_KST);
     CHECK(!test->safe_at(SV_SUP_OUT_X, SV_SUP_Y));
     supply_screen_set_output(true);
     CHECK(test->safe_at(SV_SUP_OUT_X, SV_SUP_Y));
