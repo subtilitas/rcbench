@@ -26,6 +26,12 @@
 enum { LV_PORT = 0, LV_SUPPLY, LV_ARM };
 enum { RD_PORT = 0, RD_ANGLE, RD_ZERO, RD_SUPPLY, RD_ARM };
 
+/** @brief @p s, or "(null)": a check that fails prints, not crashes. */
+static const char *nn(const char *s)
+{
+    return s != NULL ? s : "(null)";
+}
+
 /** @brief Card row @p i as drawn now. */
 static rdy_row_t drow(int i)
 {
@@ -86,6 +92,9 @@ TEST_CASE(each_screen_names_its_rows_and_shows_no_supply_box)
     scr->render(&cv, 0);
     CHECK(gfx_pixel_get(&cv, SV_SUP_OUT_X, SV_SUP_Y)
           != ui_theme_color(UI_C_OK));
+    /* SUPPLY's dot, amber: the rows are drawn, not the output card. */
+    CHECK(gfx_pixel_get(&cv, SV_RC_X + 5, SV_DRV_ROW_Y(LV_SUPPLY))
+          == ui_theme_color(UI_C_WARN));
     go(SERVO_FN_SWEEP);
     CHECK_EQ(ready_count(), 3);
     go(SERVO_FN_RUDDER);
@@ -166,8 +175,8 @@ TEST_CASE(the_5v_read_back_has_1000ms_and_a_late_one_ends_all_off)
             CHECK_EQ(ra.arms, 0u);
             snprintf(cause, sizeof(cause), TR(SQ_NO_READBACK), 1000u);
             snprintf(want, sizeof(want), TR(SQ_FAILED), "PROG 5V", cause);
-            CHECK_STR_EQ(svs_seq_failure(), want);
-            CHECK_STR_EQ(ui_router_alert(), want);
+            CHECK_STR_EQ(nn(svs_seq_failure()), want);
+            CHECK_STR_EQ(nn(ui_router_alert()), want);
             CHECK(ra.p5_offs >= 1u);
             CHECK(!prog5v_box_on());
             CHECK(!ra.armed);
@@ -236,10 +245,10 @@ TEST_CASE(past_6v_arm_is_refused_and_the_row_opens_the_hv_warning)
     ra_ms(200u);
     const rdy_row_t r = drow(LV_SUPPLY);
     CHECK_EQ(r.st, (uint8_t)RDY_BAD);
-    CHECK_STR_EQ(r.why, TR(SV_TAP_HV));
+    CHECK_STR_EQ(nn(r.why), TR(SV_TAP_HV));
     CHECK(r.fix);
     snprintf(want, sizeof(want), TR(RDY_BAND), "PD MINI", TR(SV_TAP_HV));
-    CHECK_STR_EQ(ready_refusal(got, sizeof(got)), want);
+    CHECK_STR_EQ(nn(ready_refusal(got, sizeof(got))), want);
     arm_hold(2300u);
     ra_ms(200u);
     CHECK(!svs_seq_busy());
@@ -275,7 +284,7 @@ TEST_CASE(a_tap_on_arm_or_a_stop_during_the_steps_ends_them_all_off)
         }
         CHECK(!svs_seq_busy());
         snprintf(want, sizeof(want), TR(SQ_FAILED), "PROG 5V", "STOP");
-        CHECK_STR_EQ(svs_seq_failure(), want);
+        CHECK_STR_EQ(nn(svs_seq_failure()), want);
         ra_ms(1500u);
         CHECK(!prog5v_box_on());
         CHECK_EQ(ra.arms, 0u);
@@ -341,6 +350,39 @@ TEST_CASE(a_finger_on_arm_opens_no_row_fix)
     CHECK(servo_screen_port_choices() > 0);
 }
 
+/* RUDDER's ZERO row takes the zero on a tap; with a finger on ARM it
+ * takes nothing, and the hold still fires. */
+TEST_CASE(a_finger_on_arm_takes_no_zero)
+{
+    ra_setup(true, false);
+    ra.armed = false;
+    servo_screen_set_armed(false);
+    g_rig.sup_on = false;
+    ra_pd_reading(false);
+    go(SERVO_FN_RUDDER);
+    ra_ms(200u);
+    CHECK_EQ(drow(RD_ZERO).st, (uint8_t)RDY_WARN);
+    CHECK(drow(RD_ZERO).fix);
+    ev(SV_ARM_X, SV_FOOT_Y, TOUCH_EVENT_DOWN, 1);
+    ra_ms(500u);
+    ev(SV_RDY_X, SV_DRV_ROW_Y(RD_ZERO), TOUCH_EVENT_DOWN, 2);
+    ev(SV_RDY_X, SV_DRV_ROW_Y(RD_ZERO), TOUCH_EVENT_UP, 2);
+    ra_ms(20u);
+    CHECK_EQ(drow(RD_ZERO).st, (uint8_t)RDY_WARN);
+    ra_ms(1800u);
+    ev(SV_ARM_X, SV_FOOT_Y, TOUCH_EVENT_UP, 1);
+    ra_ms(200u);
+    CHECK_EQ(ra.arms, 1u);
+    arm_tap(2);
+    ra_ms(200u);
+    CHECK(!ra.armed);
+    /* Lifted and SAFE, the row takes the zero. */
+    ev(SV_RDY_X, SV_DRV_ROW_Y(RD_ZERO), TOUCH_EVENT_DOWN, 2);
+    ev(SV_RDY_X, SV_DRV_ROW_Y(RD_ZERO), TOUCH_EVENT_UP, 2);
+    ra_ms(20u);
+    CHECK_EQ(drow(RD_ZERO).st, (uint8_t)RDY_OK);
+}
+
 int main(void)
 {
     RUN(each_screen_names_its_rows_and_shows_no_supply_box);
@@ -352,5 +394,6 @@ int main(void)
     RUN(a_tap_on_arm_or_a_stop_during_the_steps_ends_them_all_off);
     RUN(the_5v_arm_switched_stays_across_servo_and_goes_with_the_last);
     RUN(a_finger_on_arm_opens_no_row_fix);
+    RUN(a_finger_on_arm_takes_no_zero);
     return test_summary("servo_drive_ready");
 }
