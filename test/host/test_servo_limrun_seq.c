@@ -6,7 +6,8 @@
  * 1000ms and ARMED's 500ms, each failure with every output off and its
  * part named; the PD mini switched on where it feeds a dead rail, refused
  * where the rail is fed from elsewhere or its set point is past 6.0V; a
- * press on the hold that stops the steps; a finger on the hold that opens
+ * row turning red under the hold that drops it; a press on the hold that
+ * stops the steps; a finger on the hold that opens
  * nothing; the settings the hold fired on; the run's end SAFE with the
  * ports' 5V kept.  The rig is servo_rauto_kst_rig.h.
  *
@@ -17,6 +18,7 @@
  * - a_pd_mini_off_on_a_dead_rail_is_switched_on_by_the_hold
  * - a_pd_mini_off_on_a_rail_fed_from_elsewhere_refuses_the_hold
  * - a_pd_mini_off_past_6v_goes_on_only_through_the_hv_warning
+ * - a_row_turning_red_under_the_hold_drops_it
  * - a_press_on_the_hold_during_the_steps_ends_them_all_off
  * - a_finger_on_arm_start_opens_nothing
  * - the_run_takes_the_settings_the_hold_fired_on
@@ -34,6 +36,14 @@ static rdy_row_t lim_row(int i)
     rdy_row_t r;
     CHECK(lim_ready_row(i, &r));
     return r;
+}
+
+/** @brief A text the screen may hand as NULL, "(none)" then, so a check
+ *         on it fails instead of crashing.  @param t the text
+ *  @return @p t or "(none)" */
+static const char *txt(const char *t)
+{
+    return t != NULL ? t : "(none)";
 }
 
 /** @brief LIMIT RUN on the rbmod carrier from SAFE, PORT PWM and PROG 5V
@@ -144,9 +154,9 @@ TEST_CASE(the_5v_read_back_has_1000ms_and_a_late_one_ends_all_off)
             CHECK_EQ(ra.arms, 0u);
             snprintf(cause, sizeof(cause), TR(SQ_NO_READBACK), 1000u);
             snprintf(want, sizeof(want), TR(SQ_FAILED), "PROG 5V", cause);
-            CHECK_STR_EQ(svs_seq_failure(), want);
+            CHECK_STR_EQ(txt(svs_seq_failure()), want);
             CHECK_STR_EQ(servo_screen_limit_line(0, b, sizeof(b)), want);
-            CHECK_STR_EQ(ui_router_alert(), want);
+            CHECK_STR_EQ(txt(ui_router_alert()), want);
             CHECK(ra.p5_offs >= 1u);
             CHECK(!prog5v_box_on());
             CHECK(!ra.armed);
@@ -175,7 +185,7 @@ TEST_CASE(armed_has_500ms_and_a_refused_arm_ends_all_off)
     CHECK(!servo_screen_limit_running());
     snprintf(cause, sizeof(cause), TR(SQ_NOT_ARMED), 500u);
     snprintf(want, sizeof(want), TR(SQ_FAILED), "ARM", cause);
-    CHECK_STR_EQ(svs_seq_failure(), want);
+    CHECK_STR_EQ(txt(svs_seq_failure()), want);
     ra_ms(100u);
     CHECK(ra.offs > offs);
     CHECK(!g_rig.sup_on);
@@ -216,7 +226,7 @@ TEST_CASE(a_pd_mini_off_on_a_rail_fed_from_elsewhere_refuses_the_hold)
     CHECK_EQ(r.st, (uint8_t)RDY_BAD);
     CHECK_STR_EQ(r.why, TR(SV_LIM_PROG_PD_OFF));
     limrun_row_t row = LRR_COUNT;
-    CHECK_STR_EQ(lim_hold_blocked(&row), TR(SV_LIM_PROG_PD_OFF));
+    CHECK_STR_EQ(txt(lim_hold_blocked(&row)), TR(SV_LIM_PROG_PD_OFF));
     CHECK_EQ(row, LRR_SUPPLY);
     lim_hold_for(2300u);
     ra_ms(20u);
@@ -244,7 +254,7 @@ TEST_CASE(a_pd_mini_off_past_6v_goes_on_only_through_the_hv_warning)
     CHECK_EQ(r.st, (uint8_t)RDY_BAD);
     CHECK_STR_EQ(r.why, TR(SV_TAP_HV));
     CHECK(r.fix);
-    CHECK_STR_EQ(lim_hold_blocked(NULL), TR(SV_TAP_HV));
+    CHECK_STR_EQ(txt(lim_hold_blocked(NULL)), TR(SV_TAP_HV));
     snprintf(want, sizeof(want), TR(RDY_BAND), "PD MINI", TR(SV_TAP_HV));
     CHECK_STR_EQ(ready_refusal(got, sizeof(got)), want);
     lim_hold_for(2300u);
@@ -263,6 +273,32 @@ TEST_CASE(a_pd_mini_off_past_6v_goes_on_only_through_the_hv_warning)
     supply_screen_settings_loaded();
 }
 
+/* A row that turns red under the 2s hold drops it: the PD mini off on a
+ * dead rail, the hold pressed, and at 1s the rail reads 6.0V from
+ * elsewhere.  The hold lets go under the finger and fires nothing at
+ * 2.3s: no ON, no ARM, no steps. */
+TEST_CASE(a_row_turning_red_under_the_hold_drops_it)
+{
+    lim_pd(false);
+    CHECK(lim_hold_blocked(NULL) == NULL);
+    ev(SV_HOLD_X, SV_HOLD_Y, TOUCH_EVENT_DOWN, 1);
+    ra_ms(1000u);
+    CHECK(servo_screen_arm_held());
+    ra.rail_fed = true;
+    ra_ms(300u);
+    CHECK_STR_EQ(txt(lim_hold_blocked(NULL)), TR(SV_LIM_PROG_PD_OFF));
+    /* Dropped under the finger: the hold no longer locks the screen. */
+    CHECK(!servo_screen_arm_held());
+    ra_ms(1000u);
+    ev(SV_HOLD_X, SV_HOLD_Y, TOUCH_EVENT_UP, 1);
+    ra_ms(20u);
+    CHECK(!svs_seq_busy());
+    CHECK(!servo_screen_limit_running());
+    CHECK_EQ(ra.pd_ons, 0u);
+    CHECK_EQ(ra.arms, 0u);
+    ra.rail_fed = false;
+}
+
 /* A press on the hold while the steps wait for the read-back ends them as
  * STOP, every output off, no ARM, no run. */
 TEST_CASE(a_press_on_the_hold_during_the_steps_ends_them_all_off)
@@ -276,7 +312,7 @@ TEST_CASE(a_press_on_the_hold_during_the_steps_ends_them_all_off)
     ev(SV_HOLD_X, SV_HOLD_Y, TOUCH_EVENT_UP, 2);
     char want[128];
     snprintf(want, sizeof(want), TR(SQ_FAILED), "PROG 5V", "STOP");
-    CHECK_STR_EQ(svs_seq_failure(), want);
+    CHECK_STR_EQ(txt(svs_seq_failure()), want);
     ra_ms(1500u);
     CHECK(!servo_screen_limit_running());
     CHECK(!prog5v_box_on());
@@ -358,7 +394,7 @@ TEST_CASE(a_rail_dead_after_the_5v_fails_naming_prog_5v)
     CHECK_EQ(ra.arms, 0u);
     snprintf(want, sizeof(want), TR(SQ_FAILED), "PROG 5V",
              TR(SV_LIM_RAIL_LOW));
-    CHECK_STR_EQ(svs_seq_failure(), want);
+    CHECK_STR_EQ(txt(svs_seq_failure()), want);
     ra_ms(500u);
     CHECK(!prog5v_box_on());
     ra.rail_dead = false;
@@ -405,6 +441,7 @@ int main(void)
     RUN(a_pd_mini_off_on_a_dead_rail_is_switched_on_by_the_hold);
     RUN(a_pd_mini_off_on_a_rail_fed_from_elsewhere_refuses_the_hold);
     RUN(a_pd_mini_off_past_6v_goes_on_only_through_the_hv_warning);
+    RUN(a_row_turning_red_under_the_hold_drops_it);
     RUN(a_press_on_the_hold_during_the_steps_ends_them_all_off);
     RUN(a_finger_on_arm_start_opens_nothing);
     RUN(the_run_takes_the_settings_the_hold_fired_on);
