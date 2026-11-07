@@ -1526,6 +1526,13 @@ supply.`, unless the tap fixes it. PORT opens the port list. No row takes a
 press while another press is held, while ARM's steps run, or while the
 bench is not SAFE.
 
+ARM's steps judge the rail again on every frame until they ask the PD
+mini's ON. A rail fed from elsewhere by then ends them refused, every
+output off. Current limitation: from the PD mini's ON to its read-back, up
+to 1000ms, the INA3221 cannot tell a supply connected to the rail from the
+PD mini's own output. A supply connected in that time feeds the rail beside
+the PD mini, and the steps arm.
+
 ![LIVE on the rbmod carrier: PORT PWM and PROG 5V amber, ARM switches them on](img/servo-rbmod.png)
 
 RUDDER AUTO and LIMIT RUN keep the PORT button and show a READY card in
@@ -6580,11 +6587,11 @@ on the IOmcu's link (board 2).
   to PWM04 is never changed for a programming port: a PWM protocol given
   to PWM04 sets PROGP04 back to FUNC NONE.
 - The ports run from M7's fixed 5V on GPIO 21. PORT PWM ON is taken with
-  the PROG 5V box off. The box is on SERVO and SUPPLY, not here, and
-  leaving SERVO switches off a PROG 5V its box switched on. The line then
-  reads `PORT PWM ON: PULSES START WITH PROG 5V ON SERVO`, and no pulse
-  goes out until the box reads ON. The pulse stops when PROG 5V goes
-  off.
+  PROG 5V off. The PROG 5V box is on SUPPLY, not here. On SERVO, ARM and
+  ARM + START switch the 5V on, and leaving SERVO switches off a PROG 5V
+  SERVO switched on. The line then reads
+  `PORT PWM ON: PULSES START WITH PROG 5V ON SERVO`, and no pulse goes
+  out until PROG 5V is on. The pulse stops when PROG 5V goes off.
 - With an IOmcu older than 4.36, SERVO TESTER and PORT PWM are not drawn,
   and the line reads `PIN FIXED. THE TESTER NEEDS IOMCU PROTOCOL 4.36`.
 - WATCHED BY names the carrier's INA3221 channel on the ports' 5V,

@@ -102,8 +102,9 @@ Board; aus schaltet es ihn sofort. Ein bei ARMED eingeschaltetes PROG 5V
 lässt den Puls bis zum nächsten SAFE aus: der Endlagenlauf zeigt dann
 `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM`.
 
-PORT-PWM liegt auf OUTPUTS. Das Feld PROG 5V liegt auf SUPPLY und auf
-KST und HITEC von SERVO. Ein von SERVO eingeschaltetes
+PORT-PWM liegt auf OUTPUTS. Das Feld PROG 5V liegt auf SUPPLY; SERVO
+schaltet die 5V über ARM und ARM + START
+([Das Feld PROG 5V](#das-feld-prog-5v)). Ein von SERVO eingeschaltetes
 PROG 5V bleibt von einer SERVO-Seite zur nächsten an, den Hub
 eingeschlossen. Das Verlassen von SERVO schaltet es aus.
 

@@ -202,9 +202,8 @@ void servo_screen_cancel_arm(void)
         ++s.sup_rev;
     }
     /* And PROG 5V ON's: the stop cuts the ports' 5V as well. */
-    if (s.p5_down || s.p5.hold.held_s > 0.0f) {
+    if (s.p5.hold.held_s > 0.0f) {
         prog5v_box_cancel(&s.p5);
-        s.p5_down = false;
         ++s.power_rev;
     }
     /* And the two warnings' holds: a voltage past a standard servo's rating

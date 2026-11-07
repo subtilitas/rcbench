@@ -1647,6 +1647,15 @@ behebt ihn. PORT öffnet die Portliste. Keine Zeile nimmt einen Druck an,
 solange ein anderer Druck gehalten wird, die Schritte von ARM laufen oder
 der Prüfstand nicht SAFE ist.
 
+Die Schritte von ARM prüfen die Schiene in jedem Frame neu, bis sie das
+EIN des PD mini anfordern. Eine Schiene, die bis dahin von anderswo
+gespeist wird, beendet sie abgelehnt, alle Ausgänge aus. Aktuelle
+Einschränkung: vom EIN des PD mini bis zu seiner Rückmeldung, bis zu
+1000ms, kann der INA3221 eine an die Schiene angeschlossene Versorgung
+nicht vom Ausgang des PD mini unterscheiden. Eine in dieser Zeit
+angeschlossene Versorgung speist die Schiene neben dem PD mini, und die
+Schritte schalten ARMED.
+
 ![LIVE auf dem rbmod-Carrier: PORT-PWM und PROG 5V gelb, ARM schaltet sie ein](img/de/servo-rbmod.png)
 
 RUDER AUTO und ENDLAGENLAUF behalten die Taste PORT und zeigen eine Karte
@@ -7129,11 +7138,12 @@ IDENTITY-Register 5 am Link des IOmcu (Board 2).
   lautet `PROGP04 TEILT PWM-SLICE 0 MIT PWM04 (GPIO 1)`. Die Bindungen von PWM01 bis PWM04 werden für einen Programmierport nicht
   geändert. Ein PWM-Protokoll auf PWM04 setzt PROGP04 auf FUNC NONE zurück.
 - Die Ports nutzen die festen 5V von M7, geschaltet über GPIO 21.
-  PORT-PWM EIN wird bei ausgeschaltetem Feld PROG 5V angenommen. Das Feld
-  liegt auf SERVO und SUPPLY, nicht hier, und das Verlassen von SERVO
-  schaltet ein dort eingeschaltetes PROG 5V aus. Die Zeile lautet dann
+  PORT-PWM EIN wird bei ausgeschaltetem PROG 5V angenommen. Das Feld
+  PROG 5V liegt auf SUPPLY, nicht hier. Auf SERVO schalten ARM und
+  ARM + START die 5V ein, und das Verlassen von SERVO schaltet ein dort
+  eingeschaltetes PROG 5V aus. Die Zeile lautet dann
   `PORT-PWM EIN: PULSE STARTEN MIT PROG 5V AUF SERVO`, und es geht kein
-  Puls hinaus, bis das Feld EIN zeigt. Der Puls endet, wenn PROG 5V
+  Puls hinaus, bis PROG 5V an ist. Der Puls endet, wenn PROG 5V
   ausgeht.
 - Mit einem IOmcu vor 4.36 werden SERVO-TESTER und PORT-PWM nicht
   gezeichnet, und die Zeile lautet

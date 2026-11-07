@@ -99,8 +99,9 @@ on every board; it switches it off at once. A PROG 5V switched on while
 ARMED leaves the pulse off until the next SAFE: the limit run then reads
 `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM`.
 
-PORT PWM is on OUTPUTS. The PROG 5V box is on SUPPLY and on SERVO's
-KST and HITEC. A PROG 5V switched on from SERVO stays on
+PORT PWM is on OUTPUTS. The PROG 5V box is on SUPPLY; SERVO switches
+the 5V through ARM and ARM + START ([The PROG 5V box](#the-prog-5v-box)).
+A PROG 5V switched on from SERVO stays on
 from one SERVO screen to another, the hub included. Leaving SERVO switches
 it off.
 

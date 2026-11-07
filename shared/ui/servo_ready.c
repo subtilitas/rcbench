@@ -670,6 +670,14 @@ bool svs_seq_frame(const char *refused)
     if (!svs_seq_busy()) {
         return false;
     }
+    /* The PD mini was judged at the hold.  Until the steps ask its ON, a
+     * rail fed from elsewhere since then refuses them, so the PD mini is
+     * never switched on beside another supply. */
+    if (refused == NULL && s.rdy.need.pd_mini
+        && servo_seq_step_now(&s.rdy.seq) < SERVO_SEQ_READBACK
+        && !(drive_shown() ? drive_seq_need() : svs_seq_need()).pd_mini) {
+        refused = TR(RDY_FED_WHY);
+    }
     const servo_seq_in_t in = {
         .pwm_set = settings_get_bool(SET_SERVO_PORT_PWM),
         .pwm_on  = s.drive_pwm && !prog_reg_servo_holds(),

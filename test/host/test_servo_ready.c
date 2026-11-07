@@ -19,6 +19,7 @@
  * - a_tap_on_port_opens_the_port_list
  * - every_label_and_state_fits_its_column
  * - the_card_takes_the_output_cards_place_on_every_function
+ * - every_function_screen_gives_the_footers_middle_button_one_owner
  * - a_refused_hold_has_a_red_row_naming_it
  * - a_press_on_a_row_ends_on_its_release_or_a_cancel
  * - a_tap_on_a_red_zero_row_without_a_reading_names_it
@@ -389,6 +390,24 @@ TEST_CASE(the_card_takes_the_output_cards_place_on_every_function)
     CHECK(!ready_row((int)PRR_COUNT, &r));
     char b[64];
     CHECK(ready_refusal(b, sizeof(b)) == NULL);
+}
+
+/* Every function screen gives the footer's middle button, where ARM sits,
+ * to exactly one owner: ARM on LIVE, SWEEP and RUDDER (servo_drive_ready.c),
+ * WRITE on KST and HITEC (servo_prog_ready.c), and ARM + START on RUDDER
+ * AUTO, TEST and LIMIT RUN, whose hold is that button.  No press on it is
+ * left to the screen's own ARM. */
+TEST_CASE(every_function_screen_gives_the_footers_middle_button_one_owner)
+{
+    for (int fn = SERVO_FN_LIVE; fn < SERVO_FN_COUNT; ++fn) {
+        fresh();
+        go((servo_fn_t)fn);
+        const int owners = (drive_shown() ? 1 : 0)
+                           + (prog_ready_shown() ? 1 : 0)
+                           + (ready_shown() ? 1 : 0);
+        CHECK_EQ(owners, 1);
+        CHECK(gfx_rect_contains(ready_hold_rect(), SV_ARM_X, SV_FOOT_Y));
+    }
 }
 
 /* On every bench of the cases above, and with a report still on its way
@@ -825,6 +844,7 @@ int main(void)
     RUN(a_tap_on_port_opens_the_port_list);
     RUN(every_label_and_state_fits_its_column);
     RUN(the_card_takes_the_output_cards_place_on_every_function);
+    RUN(every_function_screen_gives_the_footers_middle_button_one_owner);
     RUN(a_refused_hold_has_a_red_row_naming_it);
     RUN(a_press_on_a_row_ends_on_its_release_or_a_cancel);
     RUN(a_tap_on_a_red_zero_row_without_a_reading_names_it);

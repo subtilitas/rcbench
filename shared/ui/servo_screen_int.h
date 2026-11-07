@@ -109,8 +109,8 @@ _Static_assert(PORT_X == RCARD_X && PORT_W == RCARD_W,
 
 /*
  * The output card, top to bottom: the servo rail's live power and its
- * plot, the supply's set points and output switch, SPEED, the type and
- * frame rate in force, and CENTRE / SWEEP / RELEASE.  Every row tapped is
+ * plot, SPEED, the type and frame rate in force, and CENTRE / SWEEP /
+ * RELEASE.  Every row tapped is
  * UI_TAP_MIN or taller.  No function screen draws it: LIVE, SWEEP and
  * RUDDER show READY rows in its place (servo_drive_ready.c), RUDDER AUTO,
  * TEST, LIMIT RUN, KST and HITEC their READY card (servo_ready.c,
@@ -135,21 +135,8 @@ _Static_assert(PORT_X == RCARD_X && PORT_W == RCARD_W,
 _Static_assert(P5_Y + PROG5V_BOX_H + 20 <= PWR_Y + PWR_H,
                "the PROG 5V box and the pill fit the plot's place");
 _Static_assert(RC_W >= PROG5V_BOX_MIN_W, "the PROG 5V box fits the card");
-/**
- * @brief The supply's set points, each a value the keypad opens on, and
- *        OUTPUT ON and OFF: the same set points and switch as SUPPLY's,
- *        not a copy.  SET (SOLL) takes the first 48px, each value 84px,
- *        8px apart, and the switch the rest, 124px: AUSGANG AUS is 11
- *        cells.
- */
-#define SUP_Y     (PWR_Y + PWR_H + 8)
-#define SUP_H     UI_TAP_MIN           /**< The SET row's height, px. */
-#define SUP_VAL_X (RC_X + 48)          /**< The voltage's value box, px. */
-#define SUP_VAL_W 84                   /**< A set point's box, px. */
-#define SUP_GAP   8                    /**< Between the SET row's boxes. */
-/** @brief OUTPUT ON and OFF, after the two set points. */
-#define SUP_OUT_X (SUP_VAL_X + 2 * (SUP_VAL_W + SUP_GAP))
-#define SPEED_Y   (SUP_Y + SUP_H + 10) /**< SPEED's label row, px. */
+/** @brief SPEED's label row, px: UI_TAP_MIN + 18px under the plot. */
+#define SPEED_Y   (PWR_Y + PWR_H + UI_TAP_MIN + 18)
 #define SLIDER_Y  (SPEED_Y + 24)       /**< SPEED's track, px. */
 #define SLIDER_H  40                   /**< SPEED's track's height, px. */
 /**
@@ -166,8 +153,6 @@ _Static_assert(RC_W >= PROG5V_BOX_MIN_W, "the PROG 5V box fits the card");
 #define ARM_H     UI_FOOTER_H          /**< ARM's height, px: 7.2mm. */
 _Static_assert(ARM_Y + ARM_H <= STOP_FLOOR,
                "DISARM ends above the alert band");
-_Static_assert(SUP_Y + SUP_H <= STOP_FLOOR,
-               "OUTPUT OFF ends above the alert band");
 _Static_assert(BTN_Y + BTN_H + 8 <= CARD_FLOOR,
                "CENTRE, SWEEP and RELEASE end inside the output card");
 
@@ -289,7 +274,7 @@ typedef struct {
 /* What a press is on, in the pages and the panels they open. */
 enum { OP_NONE = 0, OP_ROW, OP_TRIM_DN, OP_TRIM_UP, OP_KEYPAD,
        OP_TEXT, OP_CHOICE, OP_CHOICE_CANCEL, OP_WARN_APPLY, OP_WARN_CANCEL,
-       OP_SUP_V, OP_SUP_I, OP_ASK_APPLY, OP_ASK_CANCEL, OP_TEST_START,
+       OP_ASK_APPLY, OP_ASK_CANCEL, OP_TEST_START,
        OP_LIM_START, OP_RUN_CLOSE, OP_OPEN_CAPS,
        OP_KST_EXPERT };
 
@@ -297,13 +282,13 @@ enum { OP_NONE = 0, OP_ROW, OP_TRIM_DN, OP_TRIM_UP, OP_KEYPAD,
  * the keypad types. */
 enum { CH_NONE = 0, CH_TYPE, CH_RATE, CH_ENUM, CH_PORT };
 enum { KT_NONE = 0, KT_MIN, KT_CENTRE, KT_MAX, KT_TRAVEL, KT_RATE,
-       KT_SETTING, KT_SUP_V, KT_SUP_I, KT_TRIM };
+       KT_SETTING, KT_TRIM };
 
-/* What the question or the HV warning applies: a typed set point, the
- * supply's output switched on, the automatic test started with steps
- * above 6.0V, or the operator's set points back onto the live output a
- * programming port left on (both set points). */
-enum { ASK_SET = 0, ASK_ON, ASK_TEST, ASK_RESTORE };
+/* What the question or the HV warning applies: the supply's output
+ * switched on, the automatic test started with steps above 6.0V, or the
+ * operator's set points back onto the live output a programming port left
+ * on (both set points). */
+enum { ASK_ON = 0, ASK_TEST, ASK_RESTORE };
 
 #define CHOICE_MAX 10
 
@@ -503,19 +488,16 @@ typedef struct {
      *  (the rbmod carrier): the PROG 5V box in the power plot's place
      *  (prog5v_box.h). */
     prog5v_box_t p5;
-    /** @brief A contact is down on the box's button. */
-    bool         p5_down;
-    /** @brief That contact's id: one contact at a time. */
-    int          p5_id;
-    /* A set point waiting for APPLY: typed while the output is live, or a
-     * voltage raised past a standard servo's rating (hv), which takes the
-     * two-second hold the profile warning takes.  OUTPUT ON with a set
-     * point past that rating waits on the same hold (ASK_ON). */
+    /* The question or the HV warning waiting for its answer: OUTPUT ON
+     * with a set point past a standard servo's rating (ASK_ON) and TEST's
+     * steps past it (ASK_TEST), each on the HV warning's two-second hold
+     * (hv), the hold the profile warning takes; or the restore question,
+     * YES or NO, and the HV warning after a YES past that rating
+     * (ASK_RESTORE). */
     struct {
         bool      open;
         bool      hv;
-        int       purpose;   /**< ASK_SET, ASK_ON or ASK_TEST          */
-        int       target;    /**< KT_SUP_V or KT_SUP_I: what was typed */
+        int       purpose;   /**< ASK_ON, ASK_TEST or ASK_RESTORE      */
         uint32_t  off_count; /**< supply_screen_off_count() at asking  */
         uint32_t  stops;     /**< the screen's stop count at asking     */
         uint32_t  off_asks;  /**< supply_screen_off_asks() at asking    */
@@ -1391,17 +1373,6 @@ static inline gfx_rect_t overlay_area(void)
     return (gfx_rect_t){ OV_X, OV_Y, OV_W, OV_H };
 }
 
-/**
- * @brief The voltage's value or the current limit's on the SET row.
- * @param k 0 the voltage, 1 the current limit
- * @return the box a tap opens the keypad from
- */
-static inline gfx_rect_t sup_val_rect(int k)
-{
-    return (gfx_rect_t){ (int16_t)(SUP_VAL_X + k * (SUP_VAL_W + SUP_GAP)),
-                         SUP_Y, SUP_VAL_W, SUP_H };
-}
-
 /** @brief The bottom row of a warning or the question: its buttons' top,
  *         so they end 8px inside the left column, over the footer. */
 #define WARN_BTN_Y (CARD_FLOOR - 8 - 56)
@@ -1624,7 +1595,7 @@ static inline bool svs_start_pending(void)
  */
 static inline bool svs_hold_down(void)
 {
-    return s.out_down || s.p5_down || s.arm_down || s.test_down || s.lim_down
+    return s.out_down || s.arm_down || s.test_down || s.lim_down
            || s.ra.down;
 }
 

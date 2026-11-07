@@ -126,60 +126,6 @@ static uint16_t max_pulse_for_rate(void)
     return (uint16_t)top;
 }
 
-/* A set point tapped: the keypad, over the left card as the settings' is. */
-static void open_set_point(int target)
-{
-    close_panels();
-    const supply_caps_t caps = supply_screen_caps();
-    if (target == KT_SUP_V) {
-        ui_keypad_open(&s.kp, overlay_area(), TR(SUP_VOLTAGE), "V",
-                       supply_screen_set_v(), caps.v_min, caps.v_max, 2);
-    } else {
-        ui_keypad_open(&s.kp, overlay_area(), TR(SUP_CURRENT_LIMIT), "A",
-                       supply_screen_set_i(), caps.i_min, caps.i_max, 2);
-    }
-    s.kp_target = target;
-    servo_invalidate();
-}
-
-/* A set point typed: to the supply, or held for the question SUPPLY asks
- * before a live output changes. */
-static void set_point_typed(int target, float typed)
-{
-    const supply_caps_t caps = supply_screen_caps();
-    float v = supply_screen_set_v();
-    float i = supply_screen_set_i();
-    if (target == KT_SUP_V) {
-        v = supply_snap(typed, caps.v_min, caps.v_max, caps.v_step);
-    } else {
-        i = supply_snap(typed, caps.i_min, caps.i_max, caps.i_step);
-    }
-    if (v == supply_screen_set_v() && i == supply_screen_set_i()) {
-        close_alone();
-        return;
-    }
-    /* Raised past a standard servo's rating, from at or under it: the HV
-     * warning, which stands in for the live output's question too. */
-    const bool hv = v > STD_SERVO_V_MAX + 0.001f
-                    && supply_screen_set_v() <= STD_SERVO_V_MAX + 0.001f;
-    if (hv || supply_screen_typed_asks()) {
-        s.ask.open      = true;
-        s.ask.hv        = hv;
-        s.ask.purpose   = ASK_SET;
-        s.ask.target    = target;
-        s.ask.off_count = supply_screen_off_count();
-        s.ask.stops     = s.stops;
-        s.ask.v      = v;
-        s.ask.i      = i;
-        s.ask.down = false;
-        ui_hold_reset(&s.ask.hold);
-        servo_invalidate();
-        return;
-    }
-    supply_screen_put(v, i);
-    close_alone();
-}
-
 /* ------------------------------------------------------------- the editors */
 
 /*
@@ -194,7 +140,6 @@ void ask_hv_on(void)
     s.ask.open      = true;
     s.ask.hv        = true;
     s.ask.purpose   = ASK_ON;
-    s.ask.target    = KT_NONE;
     s.ask.off_count = supply_screen_off_count();
     s.ask.stops     = s.stops;
     s.ask.v         = supply_screen_set_v();
@@ -215,7 +160,6 @@ static void ask_restore(float v, float i)
     s.ask.open      = true;
     s.ask.hv        = false;
     s.ask.purpose   = ASK_RESTORE;
-    s.ask.target    = KT_NONE;
     s.ask.off_count = supply_screen_off_count();
     s.ask.stops     = s.stops;
     s.ask.off_asks  = supply_screen_off_asks();
@@ -299,19 +243,12 @@ void ask_apply(void)
     }
     s.ask.open = false;
     s.ask.down = false;
-    /* Only the set point that was typed: the other may have moved while
-     * the question stood -- a cap that follows the PD mini's input -- and
-     * the value it had then is not one anybody asked for now. */
     if (s.ask.purpose == ASK_TEST) {
         test_hold_fired();      /* ARM + START, as TEST's hold */
     } else if (s.ask.purpose == ASK_ON) {
         supply_screen_ask_on(SUPPLY_BY_SERVO);
-    } else if (s.ask.purpose == ASK_RESTORE) {
-        supply_screen_put(s.ask.v, s.ask.i);
-    } else if (s.ask.target == KT_SUP_V) {
-        supply_screen_put(s.ask.v, supply_screen_set_i());
     } else {
-        supply_screen_put(supply_screen_set_v(), s.ask.i);
+        supply_screen_put(s.ask.v, s.ask.i);   /* the restore's YES */
     }
     close_alone();
     servo_invalidate();
@@ -647,15 +584,6 @@ static void keypad_done(ui_keypad_result_t r, float v)
     }
     const int target = s.kp_target;
     s.kp_target = KT_NONE;
-    if (target == KT_SUP_V || target == KT_SUP_I) {
-        if (r == UI_KEYPAD_OK) {
-            set_point_typed(target, v);
-        } else {
-            close_alone();
-        }
-        ++s.ctrl_rev;
-        return;
-    }
     if (r == UI_KEYPAD_OK) {
         const uint16_t us = (uint16_t)lroundf(v);
         switch (target) {
@@ -1000,14 +928,6 @@ void ov_rest(const touch_event_t *evt)
             s.warn.open = false;
         }
         break;
-    case OP_SUP_V:
-    case OP_SUP_I: {
-        const int k = (was == OP_SUP_V) ? 0 : 1;
-        if (gfx_rect_contains(sup_val_rect(k), x, y)) {
-            open_set_point((k == 0) ? KT_SUP_V : KT_SUP_I);
-        }
-        break;
-    }
     case OP_ASK_APPLY:
         /* Only while the question still stands: a release drained in the
          * frame that took the live output away must not apply it. */
