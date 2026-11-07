@@ -451,7 +451,8 @@ bool svs_press_held(void)
 {
     return svs_hold_down() || s.kx_down || s.ra.pressed != RA_C_NONE
            || s.rud.pressed != RUD_C_NONE || s.ov_have || s.dragging
-           || s.speed.dragging || kst_panel_pressed() || hitec_panel_pressed();
+           || s.speed.dragging || kst_panel_pressed() || hitec_panel_pressed()
+           || s.rdy.pressed >= 0;
 }
 
 const char *svs_list_bench_why(void)

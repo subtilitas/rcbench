@@ -28,6 +28,7 @@
  * - a_refusal_names_its_part_and_switches_every_output_off
  * - a_read_back_that_runs_out_names_its_part_and_switches_off
  * - a_stop_or_a_leave_ends_the_sequence_as_each_must
+ * - a_finger_on_a_ready_row_keeps_the_list_shut
  *
  * SPDX-License-Identifier: MIT
  */
@@ -787,6 +788,22 @@ TEST_CASE(a_stop_or_a_leave_ends_the_sequence_as_each_must)
     CHECK(svs_seq_failure() == NULL);
 }
 
+/* A finger on a READY row holds SERVO's lists shut: SETTINGS tapped with a
+ * second finger opens none, and the row's release still reaches the card.
+ * Once it is up, SETTINGS opens the list. */
+TEST_CASE(a_finger_on_a_ready_row_keeps_the_list_shut)
+{
+    to_auto(false);
+    const int x = SV_RDY_X, y = SV_RDY_ROW_Y(RAR_PWM);
+    ev(x, y, TOUCH_EVENT_DOWN, 3);
+    ev(SV_FOOT_SET_X, SV_FOOT_Y, TOUCH_EVENT_DOWN, 4);
+    ev(SV_FOOT_SET_X, SV_FOOT_Y, TOUCH_EVENT_UP, 4);
+    CHECK(!servo_screen_list()->open);
+    ev(x, y, TOUCH_EVENT_UP, 3);
+    tap_settings();
+    CHECK(servo_screen_list()->open);
+}
+
 int main(void)
 {
     RUN(every_gate_text_belongs_to_exactly_one_row);
@@ -805,5 +822,6 @@ int main(void)
     RUN(a_refusal_names_its_part_and_switches_every_output_off);
     RUN(a_read_back_that_runs_out_names_its_part_and_switches_off);
     RUN(a_stop_or_a_leave_ends_the_sequence_as_each_must);
+    RUN(a_finger_on_a_ready_row_keeps_the_list_shut);
     return test_summary("servo_ready");
 }
