@@ -2990,7 +2990,7 @@ eingeschaltetem Ausgang öffnet die Liste nicht.
 
 ![Receiver](img/de/analyser.png)
 
-RECEIVER zeigt sechzehn Kanäle in zwei Spalten mit je acht 52px hohen
+RECEIVER zeigt sechzehn Kanäle in zwei Spalten mit je acht 44px hohen
 Spuren. Jede enthält Kanalname in 10 x 20, Verlauf, einen 56px breiten
 Balken für den aktuellen Wert und Mikrosekunden in 8 x 16. Der Verlauf
 fasst 200 Werte, einen pro Pixel: etwa 2,8s bei 71 Frames pro Sekunde,
@@ -3000,10 +3000,11 @@ zeitgleiche Kerbe durch alle sechzehn.
 
 Das 260px breite Zustandsfeld rechts zeigt den Zustand in 20 x 36 und
 bis zu drei Erklärungszeilen in 12 x 24. BUS, RATE, FRAMES, RESYNC und
-BAD TAIL stehen in 32px hohen Zeilen. Die 44px hohen Leuchten für CH17
+BAD TAIL stehen in 26px hohen Zeilen. Die 36px hohen Leuchten für CH17
 und CH18 zeigen gesetzte Digitalkanäle und sind nicht antippbar. KANÄLE
 und ROHDATEN sind 150 x 48px große Registerkarten. ROHDATEN zeigt die
 Bytes des letzten Frames, acht pro Zeile, sowie Decoderzähler in 8 x 16.
+Die Felder enden bei Körper-y 436 auf der Fußleiste; sie nennt den Bildschirm und hat weder Halte-Taste noch OPTIONEN ([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste)).
 
 Keine Firmware liefert Daten an RECEIVER (siehe
 [Empfängerbusse](Receivers-de.md)); die Seite zeigt KEIN SIGNAL.
@@ -3028,11 +3029,11 @@ Zellen: GUT unter 30mV, BEOBACHTEN ab 30mV, ERSETZEN ab 60mV. Die Skala
 passt sich an, mit mindestens 12mV, und steht neben der Grafik.
 
 Das Grafikfeld ist 640px breit, das rechte Feld 360px. Ein Balken ist
-höchstens 48px breit und reicht 164px zu jeder Seite des Mittelwerts. Unter
+höchstens 48px breit und reicht 148px zu jeder Seite des Mittelwerts. Unter
 jedem Balken stehen Nummer und Spannung der Zelle in 12 x 24 bis 11 Zellen und
 in 10 x 20 von 12 bis 14. Das Urteil steht in 20 x 36, seine Zeile in bis zu
-zwei Zeilen 12 x 24, die sechs Zeilen sind je 36px hoch, der Hinweis in
-10 x 20.
+zwei Zeilen 12 x 24, die sechs Zeilen sind je 28px hoch, der Hinweis in
+10 x 20. Die Felder enden bei Körper-y 436 auf der Fußleiste; sie nennt den Bildschirm und hat weder Halte-Taste noch OPTIONEN ([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste)).
 
 Miss unter Last. Im Ruhezustand kann eine schwache Zelle dieselbe
 Spannung wie die übrigen zeigen.
@@ -7335,12 +7336,13 @@ Die Marke SIMULIERT und der Text „Nicht gemessen.“ stehen unter den Werten,
 Platzierungshilfen und tragen keine Marke.
 
 WUCHTEN, PRÜFGESTELL und FLUGMODELL sind Registerkarten von 150 x 48px. Die
-Rotorkarte ist 640px breit, ihre Scheibe hat 160px Radius; die rechte Karte
+Rotorkarte ist 640px breit, ihre Scheibe hat 128px Radius; die rechte Karte
 ist 360px breit. PROPELLER und EDF sind 162 x 48px groß, `-` und `+` der
 Blattzahl 56 x 48px, die Tippfläche der Zahl 114 x 48px, die vier Werte
-Zeilen von 36px. Die Hinweise und die zwei Zeilen der Regeln stehen in
+Zeilen von 28px. Die Hinweise und die zwei Zeilen der Regeln stehen in
 8 x 16; die Köpfe der Regeln und die Beschriftungen, auch die der
-Zeichnungen, in 10 x 20.
+Zeichnungen, in 10 x 20. Die Regeln stehen 55px auseinander. Die Felder enden bei Körper-y 436 auf der Fußleiste; sie nennt den Bildschirm und hat weder Halte-Taste noch OPTIONEN ([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste)). Das
+Tastenfeld der Blattzahl deckt beide Felder und die Fußleiste ab.
 
 ## Unbekannte Bildschirm-IDs
 

@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "ui_footer.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
 #include "ui_theme.h"
@@ -37,10 +38,12 @@
 #define LCARD_Y 64                      /**< The left card's top, px. */
 
 /**
- * @brief The lowest row a line of text or a lane may reach: 4px above the
- *        alert band, body y 492.
+ * @brief The cards' foot, on the screen's footer (ui_footer.h), and the
+ *        lowest row a line of text or a lane may reach, 8px above it:
+ *        body y 428.
  */
-#define TEXT_FLOOR (UI_ALERT_Y - UI_BAND_H - 4)
+#define CARD_B     UI_FOOTER_FLOOR
+#define TEXT_FLOOR (CARD_B - 8)
 
 /**
  * @brief The state card's width, px: the word KEIN SIGNAL in the 20 x 36
@@ -50,7 +53,7 @@
 #define RCARD_W 260
 #define RCARD_X (W - PAD - RCARD_W)            /**< x 756. */
 #define LCARD_W (RCARD_X - 8 - PAD)            /**< 740px. */
-#define LCARD_H (H - PAD - LCARD_Y)            /**< 468px, to y 532. */
+#define LCARD_H (CARD_B - LCARD_Y)             /**< 372px, to y 436. */
 
 /**
  * @brief The faces of the 1024 x 600 type scale this screen draws in:
@@ -83,7 +86,7 @@
 #define COLS      2                  /**< Lane columns. */
 #define ROWS      8                  /**< Lanes a column. */
 #define COL_W     ((LCARD_W - 16) / COLS)  /**< A column's pitch: 362px. */
-#define LANE_H    52                 /**< A lane's height, px. */
+#define LANE_H    44                 /**< A lane's height, px. */
 #define LANE_TOP  (LCARD_Y + 8)      /**< The first lane's top: y 72. */
 
 #define LAB_W     48   /**< The channel's name, CH01 at 10 x 20, and a gap. */
@@ -97,32 +100,32 @@
 
 _Static_assert(LANE_W + 12 <= COL_W, "a lane leaves 12px to the next column");
 _Static_assert(LANE_TOP + ROWS * LANE_H <= TEXT_FLOOR,
-               "the last lane ends above the alert band");
+               "the last lane ends above the cards' foot");
 _Static_assert(TAB_H >= UI_TAP_MIN, "a tab is a finger tall");
 _Static_assert(TAB_X + TAB_ROW_W + 3 <= RCARD_X, "the tabs end left of the state card");
 _Static_assert(TAB_Y + TAB_H + 3 < LCARD_Y, "the tabs end above the lanes' card");
 
 /*
  * The state card, top down: the state word in its box, its line in up to
- * three wrapped lines, the counters in rows of 32px, and the two digital
+ * three wrapped lines, the counters in rows of 26px, and the two digital
  * channels.
  */
 #define BADGE_Y   20                  /**< The state box's top, px. */
-#define BADGE_H   64                  /**< Its height, px. */
-#define WHY_Y     (BADGE_Y + BADGE_H + 8)   /**< The state's line: y 92. */
+#define BADGE_H   56                  /**< Its height, px. */
+#define WHY_Y     (BADGE_Y + BADGE_H + 8)   /**< The state's line: y 84. */
 #define WHY_PITCH 26                  /**< A wrapped line under the last. */
 #define WHY_LINES 3                   /**< The most lines it takes. */
-#define RULE1_Y   (WHY_Y + WHY_LINES * WHY_PITCH + 4)  /**< y 174. */
-#define ROW_Y0    (RULE1_Y + 8)       /**< The first counter row: y 182. */
-#define ROW_H     32                  /**< A counter row, px. */
-#define RULE2_Y   (ROW_Y0 + 5 * ROW_H + 4)              /**< y 346. */
-#define DIG_Y     (RULE2_Y + 10)      /**< DIGITAL's line: y 356. */
-#define CHN_Y     (DIG_Y + 28)        /**< CH17's top: y 384. */
-#define CHN_H     44                  /**< CH17 and CH18, px. */
-#define CHN_GAP   8                   /**< Between them, px. */
+#define RULE1_Y   (WHY_Y + WHY_LINES * WHY_PITCH + 4)  /**< y 166. */
+#define ROW_Y0    (RULE1_Y + 8)       /**< The first counter row: y 174. */
+#define ROW_H     26                  /**< A counter row, px. */
+#define RULE2_Y   (ROW_Y0 + 5 * ROW_H + 4)              /**< y 308. */
+#define DIG_Y     (RULE2_Y + 10)      /**< DIGITAL's line: y 318. */
+#define CHN_Y     (DIG_Y + 28)        /**< CH17's top: y 346. */
+#define CHN_H     36                  /**< CH17 and CH18, px. */
+#define CHN_GAP   6                   /**< Between them, px. */
 #define CHN_INSET 40                  /**< A lamp's label from its left, px. */
 _Static_assert(CHN_Y + 2 * CHN_H + CHN_GAP <= TEXT_FLOOR,
-               "CH18 ends above the alert band");
+               "CH18 ends above the cards' foot");
 
 /** @brief RAW DATA's bytes: the first row's top, px. */
 #define RAW_Y       (LCARD_Y + 48)
@@ -571,7 +574,7 @@ static void stat_row(gfx_canvas_t *c, int i, const char *label,
  */
 static void draw_right(gfx_canvas_t *c)
 {
-    gfx_fill_rect(c, RCARD_X + 1, PAD + 1, RCARD_W - 2, H - 2 * PAD - 2,
+    gfx_fill_rect(c, RCARD_X + 1, PAD + 1, RCARD_W - 2, CARD_B - PAD - 2,
                   ui_theme_color(UI_C_PANEL));
     draw_state(c);
 
@@ -625,8 +628,12 @@ static void render(gfx_canvas_t *c, int buffer_index)
         ui_card(c, (gfx_rect_t){ PAD, LCARD_Y, LCARD_W, LCARD_H },
                 ui_theme_color(UI_C_PANEL));
         ui_card(c, (gfx_rect_t){ RCARD_X, PAD, RCARD_W,
-                                 (int16_t)(H - 2 * PAD) },
+                                 (int16_t)(CARD_B - PAD) },
                 ui_theme_color(UI_C_PANEL));
+        /* The footer: the screen's name; RECEIVER has no hold and no
+         * list. */
+        ui_footer_name(c, ui_footer_rect(UI_FOOTER_NAME), "RECEIVER", NULL,
+                       false);
         s.drawn_mask |= bit;
     }
 

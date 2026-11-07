@@ -2772,7 +2772,7 @@ must be answered first; with the output on the list does not open.
 
 ![Receiver](img/analyser.png)
 
-RECEIVER has sixteen channels in two columns of eight 52px lanes. Each
+RECEIVER has sixteen channels in two columns of eight 44px lanes. Each
 lane shows its channel name in 10 x 20, history, a 56px bar for the current
 value and microseconds in 8 x 16. History contains 200 samples, one pixel
 each: about 2.8s at 71 frames per second (one S.BUS frame every 14ms).
@@ -2781,10 +2781,10 @@ lane; a dropout as a simultaneous notch across all sixteen.
 
 The 260px state card on the right shows the state in 20 x 36, followed
 by up to three lines of 12 x 24 explanation. BUS, RATE, FRAMES, RESYNC
-and BAD TAIL use 32px rows. CH17 and CH18 have 44px lamps that light when
+and BAD TAIL use 26px rows. CH17 and CH18 have 36px lamps that light when
 the channel is set; they are not interactive. CHANNELS and RAW DATA are
 150 x 48px tabs. RAW DATA shows the last frame's bytes, eight per row,
-and decoder counts in 8 x 16.
+and decoder counts in 8 x 16. The cards end at body y 436 on the footer, which names the screen and holds no hold and no SETTINGS ([The footer and the settings list](#the-footer-and-the-settings-list)).
 
 No firmware feeds RECEIVER (see [Receiver buses](Receivers.md)); the
 screen shows NO SIGNAL.
@@ -2808,10 +2808,10 @@ the largest difference between two cells: HEALTHY below 30mV, WATCH from
 of 12mV and is printed beside the plot.
 
 The plot card is 640px wide, the right card 360px. A bar is at most 48px
-wide and reaches 164px either side of the mean. Under each bar the cell's
+wide and reaches 148px either side of the mean. Under each bar the cell's
 number and its voltage are in 12 x 24 up to 11 cells and in 10 x 20 from 12 to
 14. The verdict is in 20 x 36, its line in up to two lines of 12 x 24, the six
-rows 36px each, the note in 10 x 20.
+rows 28px each, the note in 10 x 20. The cards end at body y 436 on the footer, which names the screen and holds no hold and no SETTINGS ([The footer and the settings list](#the-footer-and-the-settings-list)).
 
 Measure under load. At rest a weak cell reads like the others.
 
@@ -6803,11 +6803,12 @@ the words "Not measured." stand under the readings, 20px high and 88px wide.
 The TEST RIG and AIRCRAFT panes show placement guides and carry no mark.
 
 BALANCE, TEST RIG and AIRCRAFT are tabs of 150 x 48px. The rotor's card is
-640px wide, its disc 160px in radius; the right card is 360px wide.
+640px wide, its disc 128px in radius; the right card is 360px wide.
 PROPELLER and EDF are 162 x 48px, the blade count's `-` and `+` 56 x 48px,
-the count's tap area 114 x 48px, the four readings rows of 36px. The notes
+the count's tap area 114 x 48px, the four readings rows of 28px. The notes
 and the rules' two lines are in 8 x 16; the rules' heads, the labels and the
-drawings' callouts in 10 x 20.
+drawings' callouts in 10 x 20. The rules stand 55px apart. The cards end at body y 436 on the footer, which names the screen and holds no hold and no SETTINGS ([The footer and the settings list](#the-footer-and-the-settings-list)). The
+blade count's keypad covers both cards and the footer.
 
 ## Unknown screen ids
 

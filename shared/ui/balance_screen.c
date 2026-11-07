@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "ui_keypad.h"
+#include "ui_footer.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
 #include "ui_theme.h"
@@ -44,16 +45,18 @@
 #define CARD_Y  64                      /**< Both cards' top, px. */
 
 /**
- * @brief The lowest row a control or a line of text may reach: 4px above
- *        the alert band, body y 492.
+ * @brief The cards' foot, on the screen's footer (ui_footer.h), and the
+ *        lowest row a control or a line of text may reach, 8px above it:
+ *        body y 428.
  */
-#define TEXT_FLOOR (UI_ALERT_Y - UI_BAND_H - 4)
+#define CARD_B     UI_FOOTER_FLOOR
+#define TEXT_FLOOR (CARD_B - 8)
 
 /** @brief The rotor's card: 640px, the right card 360. */
 #define LCARD_W 640
 #define RCARD_X (PAD + LCARD_W + 8)            /**< x 656. */
 #define RCARD_W (W - RCARD_X - PAD)            /**< 360px. */
-#define CARD_H  (H - PAD - CARD_Y)             /**< 468px, to y 532. */
+#define CARD_H  (CARD_B - CARD_Y)              /**< 372px, to y 436. */
 #define RC_X    (RCARD_X + 14)                 /**< The right column: x 670. */
 #define RC_W    (RCARD_W - 28)                 /**< Its width: 332px. */
 
@@ -70,28 +73,31 @@
 /*
  * The BALANCE pane's right column, top down: ROTOR and its two buttons,
  * BLADES with its count and its "-" and "+" keys, the four readings in
- * rows of 36px, the SIMULATED pill and the note.
+ * rows of 28px, the SIMULATED pill and the note.
  */
 #define ROTOR_Y   (CARD_Y + 38)   /**< PROPELLER and EDF: y 102. */
 #define ROTOR_H   UI_TAP_MIN      /**< Their height: 48px. */
 #define BLADES_Y  (ROTOR_Y + ROTOR_H + 10)  /**< The BLADES row: y 160. */
 #define STEP_W    56              /**< The "-" and "+" keys' width, px. */
 #define STEP_H    UI_TAP_MIN      /**< Their height: 48px. */
-#define READ_Y    (BLADES_Y + STEP_H + 18)  /**< The first reading: y 226. */
-#define READ_H    36              /**< A reading's row, px. */
+#define READ_Y    (BLADES_Y + STEP_H + 10)  /**< The first reading: y 218. */
+#define READ_H    28              /**< A reading's row, px. */
 /** @brief The SIMULATED pill under the readings, 20px high. */
-#define MARK_Y    (READ_Y + 4 * READ_H + 8)  /**< y 378. */
-#define NOTE_Y    (MARK_Y + 38)   /**< The note's first line: y 416. */
+#define MARK_Y    (READ_Y + 4 * READ_H + 8)  /**< y 338. */
+#define NOTE_Y    (MARK_Y + 32)   /**< The note's first line: y 370. */
 _Static_assert(NOTE_Y + 42 + 16 <= TEXT_FLOOR,
-               "the note's last line ends above the alert band");
+               "the note's last line ends above the cards' foot");
 _Static_assert(ROTOR_H >= UI_TAP_MIN && STEP_H >= UI_TAP_MIN
                && STEP_W >= UI_TAP_MIN, "every key is a finger tall");
 
-/** @brief The rules' first row, TEST RIG and AIRCRAFT, px: y 104. */
-#define RULE_Y0   (CARD_Y + 40)
-#define RULE_PITCH 64             /**< A rule under the one before, px. */
-_Static_assert(RULE_Y0 + 5 * RULE_PITCH + 58 <= TEXT_FLOOR,
-               "the sixth rule ends above the alert band");
+/** @brief The rules' first row, TEST RIG and AIRCRAFT, px: y 98. */
+#define RULE_Y0   (CARD_Y + 34)
+#define RULE_PITCH 55             /**< A rule under the one before, px. */
+#define RULE_L1   22              /**< A rule's first line under its head. */
+#define RULE_L2   39              /**< Its second line, 16px tall. */
+_Static_assert(RULE_L2 + 16 <= RULE_PITCH, "a rule ends above the next");
+_Static_assert(RULE_Y0 + 5 * RULE_PITCH + RULE_L2 + 16 <= TEXT_FLOOR,
+               "the sixth rule ends above the cards' foot");
 
 /*
  * The placement drawings of TEST RIG and AIRCRAFT keep their 450px card's
@@ -101,12 +107,12 @@ _Static_assert(RULE_Y0 + 5 * RULE_PITCH + 58 <= TEXT_FLOOR,
 #define FIG_X     ((LCARD_W - 450) / 2)              /**< x 95. */
 #define FIG_Y     (CARD_Y - 40)                      /**< y 24. */
 
-/* The blade count's keypad: over both cards, from the cards' top to 4px
- * above the alert band, 1008 x 428px. */
+/* The blade count's keypad: over both cards and the footer, from the
+ * cards' top to 4px above the alert band, 1008 x 428px. */
 /** @brief The keypad's top, px. */
 #define KP_Y    CARD_Y
 /** @brief The keypad's height, px: 428. */
-#define KP_H    (TEXT_FLOOR - KP_Y)
+#define KP_H    (UI_ALERT_Y - UI_BAND_H - 4 - KP_Y)
 /** @brief The fewest blades the count takes. */
 #define BLADES_MIN 2
 /** @brief The most blades the count takes. */
@@ -135,13 +141,13 @@ static const ui_text_id_t k_tabs[] = { TX_BAL_TAB_BALANCE, TX_BAL_TAB_RIG,
  * actionable only relative to a blade.
  */
 #define DISC_CX  (PAD + LCARD_W / 2)            /**< x 328. */
-#define DISC_CY  ((CARD_Y + TEXT_FLOOR) / 2)     /**< y 278. */
+#define DISC_CY  ((CARD_Y + TEXT_FLOOR) / 2)     /**< y 246. */
 /** @brief The disc's radius, px: a ducted fan's numbers at DISC_R + 38
- *         and 10px tall end inside the card and above the alert band. */
-#define DISC_R   160
+ *         and 10px tall end inside the card and above its foot. */
+#define DISC_R   128
 #define HUB_R    32                              /**< The hub's, px. */
 _Static_assert(DISC_CY + DISC_R + 38 + 10 <= TEXT_FLOOR,
-               "a blade number ends above the alert band");
+               "a blade number ends above the cards' foot");
 _Static_assert(DISC_CY - DISC_R - 38 - 10 >= CARD_Y + 6,
                "a blade number begins inside the card");
 
@@ -824,7 +830,7 @@ static void draw_readings(gfx_canvas_t *c)
 static void draw_rules(gfx_canvas_t *c, const rule_t *rules, int count)
 {
     const int x = RC_X;
-    gfx_text(c, x, CARD_Y + 12, TR(BAL_WRONG), BL_FONT_LABEL,
+    gfx_text(c, x, CARD_Y + 10, TR(BAL_WRONG), BL_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
 
     for (int i = 0; i < count; ++i) {
@@ -840,9 +846,9 @@ static void draw_rules(gfx_canvas_t *c, const rule_t *rules, int count)
                     GFX_ALIGN_CENTER);
         gfx_text(c, x + 32, y, ui_tr(rules[i].head), BL_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT), 1);
-        gfx_text(c, x + 32, y + 24, ui_tr(rules[i].line1), BL_FONT_FINE,
-                 ui_theme_color(UI_C_TEXT_DIM), 1);
-        gfx_text(c, x + 32, y + 42, ui_tr(rules[i].line2), BL_FONT_FINE,
+        gfx_text(c, x + 32, y + RULE_L1, ui_tr(rules[i].line1),
+                 BL_FONT_FINE, ui_theme_color(UI_C_TEXT_DIM), 1);
+        gfx_text(c, x + 32, y + RULE_L2, ui_tr(rules[i].line2), BL_FONT_FINE,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
     }
 }
@@ -879,6 +885,8 @@ static void render(gfx_canvas_t *c, int buffer_index)
             ui_theme_color(UI_C_PANEL));
     ui_card(c, (gfx_rect_t){ RCARD_X, CARD_Y, RCARD_W, CARD_H },
             ui_theme_color(UI_C_PANEL));
+    /* The footer: the screen's name; BALANCE has no hold and no list. */
+    ui_footer_name(c, ui_footer_rect(UI_FOOTER_NAME), "BALANCE", NULL, false);
 
     if (s.tabs.selected == BALANCE_PANE_MEASURE) {
         draw_measure(c);
