@@ -67,6 +67,16 @@ typedef enum {
     /* IMU, from SETUP's IMU tile: the Bluetooth IMU's BLE link, the scan
      * and the bind, the calibration, ZERO and the live angles (imu_screen.h). */
     SCREEN_IMU,
+    /* SERVO's function screens, each from a tile of the SERVO hub
+     * (SCREEN_SERVO, servo_screen.h); their home tag returns to the hub. */
+    SCREEN_SERVO_LIVE,
+    SCREEN_SERVO_SWEEP,
+    SCREEN_SERVO_TEST,
+    SCREEN_SERVO_LIMRUN,
+    SCREEN_SERVO_RUDDER,
+    SCREEN_SERVO_RAUTO,
+    SCREEN_SERVO_KST,
+    SCREEN_SERVO_HITEC,
     SCREEN_COUNT
 } ui_screen_id_t;
 
@@ -177,6 +187,14 @@ void ui_router_init(void);
 void ui_router_goto(ui_screen_id_t id);
 
 ui_screen_id_t ui_router_current(void);
+
+/**
+ * @brief The screen ui_router_goto() is switching to, while the old
+ *        screen's leave() runs; SCREEN_COUNT at any other time.  A screen
+ *        whose leave keeps something on for a sibling reads it there.
+ * @return The screen being entered, or SCREEN_COUNT.
+ */
+ui_screen_id_t ui_router_leaving_to(void);
 
 /**
  * @brief Where the home tag of screen @p id leads when it leaves the

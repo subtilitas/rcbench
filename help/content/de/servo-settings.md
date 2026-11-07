@@ -6,11 +6,11 @@ order: 21
 
 # Servo-Optionen
 
-OPTIONEN in der Leiste von [SERVO](servo.md) enthält drei Seiten: AUSGANG, SWEEP und PRÜFLING. Jeder Lauf hat eigene Optionen. Öffne OPTIONEN auf seiner TEST-Karte für die Liste; SCHLIESSEN oben rechts oder das Home-Feld führt zurück. Die Ausgangskarte bleibt rechts sichtbar und bedienbar. Tippe auf eine Zahl für das Tastenfeld, auf eine Auswahl für deren Liste, auf einen Schalter zum Umschalten oder auf NAME für die Tastatur.
+OPTIONEN in der Fußleiste eines [SERVO](servo.md)-Bildschirms öffnet die Liste dieses Bildschirms. Die Liste des Hubs ist das Servoprofil aller Funktionen: AUSGANG und PRÜFLING. SWEEP, RUDER, RUDER AUTO und HITEC haben eigene Listen; TEST und ENDLAGENLAUF öffnen die Zeilen ihres Laufs, KST seine Seite EXPERT MODE; LIVE hat keine. SCHLIESSEN oben rechts in den Zeilen eines Laufs oder das Home-Feld führt zurück. Die Liste einer Funktion öffnet nur bei SAFE; wird der Prüfstand scharf, schließen sie und jede Seite mit Zeilen. Die des Hubs öffnet jederzeit. Keine Liste öffnet, solange eine Sitzung ihren Port hält oder ein Finger noch auf einem anderen Bedienelement liegt. Eine Änderung in einer Liste gilt bis SPEICHERN in der Leiste als nicht gespeichert. Tippe auf eine Zahl für das Tastenfeld, auf eine Auswahl für deren Liste, auf einen Schalter zum Umschalten oder auf NAME für die Tastatur.
 
-## AUSGANG
+## AUSGANG, in der Liste des Hubs
 
-![Die Seite AUSGANG](view:servo-settings)
+![Die Liste des Hubs](view:servo-settings)
 
 | Option | Bereich | Wirkung |
 |---|---|---|
@@ -43,7 +43,7 @@ Das Tastenfeld für TRIMMUNG hat zwischen Dezimalpunkt und OK die Taste `+/-`. S
 
 Ein Heli-Typ oder eine Pulsrate über 60Hz kann ein ungeeignetes Servo zerstören. Die Auswahl öffnet eine Warnung in der Gefahrfarbe und nennt den gewählten Typ oder die Rate. Halte 2s HALTEN ZUM ÜBERNEHMEN, um die Wahl anzuwenden. ABBRECHEN, Abrutschen mit dem Finger oder Verlassen der Seite verwirft sie. Ein aktiver gefährlicher Typ oder eine solche Rate bleibt auf der rechten Karte rot.
 
-AUSGANG zeigt den Status der Pulsrate:
+Die Kopfzeile von AUSGANG zeigt den Status der Pulsrate, in Warnfarbe, solange die Rate die Pins nicht erreicht hat:
 
 | Hinweis | Bedeutung |
 |---|---|
@@ -52,9 +52,9 @@ AUSGANG zeigt den Status der Pulsrate:
 | `ABGELEHNT: ...` | Ein Puls ist länger als der Frame, oder ein Pin teilt einen PWM-Slice mit anderer Rate. Die Pins behalten ihre Rate. |
 | `Keine Verbindung. Die aktive Pulsrate ist unbekannt.` | Kein IOmcu antwortet. |
 
-## SWEEP
+## Die Liste von SWEEP
 
-![Die Seite SWEEP](view:servo-sweep-page)
+![Die Liste von SWEEP](view:servo-sweep-page)
 
 | Option | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
@@ -66,7 +66,7 @@ AUSGANG zeigt den Status der Pulsrate:
 
 ![Die Optionen der Karte AUTOMATISCHER TEST](view:servo-test-settings)
 
-OPTIONEN auf der Karte AUTOMATISCHER TEST öffnet sie.
+OPTIONEN auf TEST, in der Fußleiste oder auf der Karte, öffnet sie.
 
 | Option | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
@@ -105,44 +105,50 @@ Der Hinweis darunter beschreibt den Lauf mit dem aktiven Netzteil und die Anzahl
 
 ![Die Optionen der Karte ENDLAGENLAUF](view:servo-limits)
 
-OPTIONEN auf der Karte ENDLAGENLAUF öffnet sie.
+OPTIONEN auf ENDLAGENLAUF, in der Fußleiste oder auf der Karte, öffnet sie.
 
 | Option | Bereich | Vorgabe | Wirkung |
 |---|---|---|---|
 | ENDLAGENLAUF | NUR SUCHE, SUCHEN + PROGRAMMIEREN | NUR SUCHE | ENDLAGENLAUF STARTEN sucht die Enden und programmiert optional LEFT ANGLE und RIGHT ANGLE. |
-| SERVO | KST/CHASERVO, HITEC | zuletzt unter PROGRAMMIEREN geöffnete Servoprogrammierung, sonst KST/CHASERVO | Nur bei ZIEL PROG-PORT sichtbar. Wählt die Servoprogrammierung für die Sitzungen des Laufs. HITEC verwendet die in SERIE gewählte Serie ([Hitec-Servos](servo.md#hitec-servos)). |
-| SERVOPULSE | BEHALTEN, 1000-2000 | BEHALTEN | Nur bei ZIEL PROG-PORT und SERVO KST/CHASERVO sichtbar. 1000-2000 setzt PULSE LOWER und PULSE UPPER vor der Suche auf 1000,0 und 2000,0us. |
+| SERVO | KST/CHASERVO, HITEC | zuletzt geöffnete Servoprogrammierung, sonst KST/CHASERVO | Nur bei PORT auf PROG PORT sichtbar. Wählt die Servoprogrammierung für die Sitzungen des Laufs. HITEC verwendet die in SERIE gewählte Serie ([Hitec-Servos](servo.md#hitec-servos)). |
+| SERVOPULSE | BEHALTEN, 1000-2000 | BEHALTEN | Nur bei PORT auf PROG PORT und SERVO KST/CHASERVO sichtbar. 1000-2000 setzt PULSE LOWER und PULSE UPPER vor der Suche auf 1000,0 und 2000,0us. |
 
 ## Die Grenzen von SUPPLY
 
-Die aktiven Spannungs- und Stromgrenzen begrenzen Sollwerte und Laufstufen. Sie stehen unter den TEST-Karten und auf PRÜFLING in einer Taste wie `GRENZEN 21.00V 5.00A: SUPPLY ÖFFNEN`. Tippe darauf, um sie unter der Optionsliste von [SUPPLY](supply.md) einzustellen. Das Home-Feld führt zurück. Bei gesperrtem ZIEL ist die Taste grau, weil das Verlassen von SERVO den Prüfstand auf SAFE schalten würde.
+Die aktiven Spannungs- und Stromgrenzen begrenzen Sollwerte und Laufstufen. Sie stehen unter der Karte von TEST in einer Taste wie `GRENZEN 21.00V 5.00A: SUPPLY ÖFFNEN`. Tippe darauf, um sie unter der Optionsliste von [SUPPLY](supply.md) einzustellen. Das Home-Feld führt zurück. Bei gesperrter Taste PORT ist die Taste grau, weil das Verlassen von SERVO den Prüfstand auf SAFE schalten würde.
 
-Der erste Hinweis auf AUSGANG nennt den für SERVO-TESTER gewählten Port: `SERVO-TESTER: PORT 1. Wähle ihn auf OUTPUTS.` Er ist nicht antippbar. Ändere die Auswahl unter [Ausgänge](outputs.md#der-eintrag-prog-port).
-
-## PRÜFLING
+## PRÜFLING, in der Liste des Hubs
 
 ![NAME auf der Tastatur](view:servo-name)
-![Die Seite PRÜFLING mit eingeschaltetem Winkelsensor](view:servo-encoder)
-![KST EXPERT MODE EIN](view:servo-dut-expert)
 
 | Option | Wirkung |
 |---|---|
 | NAME | Prüflingsname mit bis zu 23 Zeichen; steht über jedem Bericht. |
 | BERICHT | Speichert neben jeder Testaufzeichnung einen Textbericht `ATESTnnn.TXT`, solange Testaufzeichnungen unter SETUP > SD CARD EIN ist. |
-| SENSOR-MITTE | Übernimmt per Tipp den aktuellen AS5600-Zählwert von 0 bis 4095 als Mitte, während das Servo neutral steht. Bei WINKELQUELLE IMU ohne Wirkung. |
-| KST EXPERT MODE | Ob der [Programmierer für KST- und Chaservo-Servos](servo-programmer.md#kst-expert-mode) DEAD BAND, BOOST, STRETCH, PAIRING LÖSEN und den Reiter GESPERRT zeigt; standardmäßig AUS, EIN nach 2s Halten, AUS mit einem Tipp. |
 
-WINKELQUELLE im IMU-Eintrag von [Sensoren](setup-sensors.md) wählt AS5600 oder IMU für die Laufwinkel. IMU-Winkel werden in AS5600-Zählschritten von 0,088° verwendet. Die Test-CSV nennt die Quelle in ihrer letzten Spalte `angle source`, beide Berichte in der Zeile `Winkelquelle:`.
+## Die Liste von RUDER und die Seite von KST
 
-Schalte den AS5600 an der Hornwelle unter [Sensoren](setup-sensors.md) ein oder aus. Die Taste `AS5600 EIN ODER AUS: SENSORS ÖFFNEN` auf PRÜFLING öffnet diesen Eintrag; das Home-Feld führt zurück. PORT-PWM, der Puls am Programmierport, wird ausschließlich im Eintrag PROG-PORT unter [Ausgänge](outputs.md#der-eintrag-prog-port) eingestellt.
+![Die Liste von RUDER mit eingeschaltetem Winkelsensor](view:servo-encoder)
+![KST EXPERT MODE EIN](view:servo-dut-expert)
 
-## Die Zeile ZIEL
+| Option | Ort | Wirkung |
+|---|---|---|
+| SENSOR-MITTE | Liste von RUDER | Übernimmt per Tipp den aktuellen AS5600-Zählwert von 0 bis 4095 als Mitte, während das Servo neutral steht. Bei WINKELQUELLE IMU ohne Wirkung. |
+| WINKELQUELLE | Listen von RUDER und RUDER AUTO | Nur lesbar; ein Tippen öffnet den IMU-Eintrag von [Sensoren](setup-sensors.md), wo sie eingestellt wird. |
+| KST EXPERT MODE | OPTIONEN auf SERVO > KST | Ob der [Programmierer für KST- und Chaservo-Servos](servo-programmer.md#kst-expert-mode) DEAD BAND, BOOST, STRETCH, PAIRING LÖSEN und den Reiter GESPERRT zeigt; standardmäßig AUS, EIN nach 2s Halten, AUS mit einem Tipp. |
 
-![Die Zeile ZIEL mit PROG-PORT](view:servo-target)
+WINKELQUELLE wählt AS5600 oder IMU für die Laufwinkel. IMU-Winkel werden in AS5600-Zählschritten von 0,088° verwendet. Die Test-CSV nennt die Quelle in ihrer letzten Spalte `angle source`, beide Berichte in der Zeile `Winkelquelle:`.
 
-ZIEL auf der Ausgangskarte nennt die angesteuerten Ausgänge als `Protokoll Pins`. Tippe darauf, um [OUTPUTS](outputs.md#der-eintrag-prog-port) zu öffnen: PROG-PORT, wenn der IOmcu den Programmierport ansteuert, SERVO PWM bei den Ausgängen oder die Übersicht bei unbekanntem Ziel. Dort wählt SERVO-TESTER zwischen OUTPUTS (als SERVO PWM zugeordnete Pins) und PROG-PORT (Programmierport des IOmcu).
+Schalte den AS5600 an der Hornwelle unter [Sensoren](setup-sensors.md) ein oder aus. PORT-PWM, der Puls am Programmierport, wird ausschließlich im Eintrag PROG-PORT unter [Ausgänge](outputs.md#der-eintrag-prog-port) eingestellt.
 
-Das Verlassen von SERVO schaltet den Prüfstand auf SAFE und beendet Sweep oder Test. Das Home-Feld auf OUTPUTS führt zur selben SERVO-Aufgabe zurück. ZIEL bleibt unter den Seiten und der Servoprogrammierung bei jeder Aufgabe sichtbar. Bei ARMED, während Sweep, automatischem Test oder Endlagenlauf und bei belegtem Programmierport ist die Zeile gesperrt.
+## Die Taste PORT
+
+![Die Taste PORT mit PROG-PORT](view:servo-target)
+![Die Liste von PORT](view:servo-port)
+
+Die Taste PORT über der Ausgangskarte nennt die angesteuerten Ausgänge als `Protokoll Pins`; die Portzeile der Fußleiste wiederholt sie. Tippe darauf für die Liste OUTPUTS (als SERVO PWM zugeordnete Pins) und PROG-PORT 1 bis PROG-PORT 4. Eine Wahl setzt SERVO-TESTER wie der Eintrag PROG-PORT unter [Ausgänge](outputs.md#der-eintrag-prog-port) und wird gespeichert. Auf dem rbmod-Carrier nennt ein abgelehnter Port den Grund und nimmt keine Wahl an.
+
+Bei ARMED oder angefordertem ARM, während Sweep, automatischem Test oder Endlagenlauf und bei belegtem Programmierport ist die Taste grau und gesperrt; ein Tippen nennt die Sperre im Alarmband. Sie bleibt neben Listen, Seiten und Servoprogrammierung sichtbar.
 
 ![Der Eintrag PROG-PORT von OUTPUTS](view:outputs-port)
 
@@ -156,8 +162,8 @@ Das Verlassen von SERVO schaltet den Prüfstand auf SAFE und beendet Sweep oder 
 | `UNBEKANNT` | Programmierport-Page des IOmcu noch nicht ausgelesen. |
 | `KEINE VERBINDUNG` | Kein IOmcu antwortet; der Tester sendet nichts. |
 
-Die Zeile folgt dem aktiven Ziel des IOmcu, nicht dem Einstellwert. Eine Änderung von ZIEL wartet auf einen ruhenden Prüfstand.
+Die Taste folgt dem aktiven Ziel des IOmcu, nicht dem Einstellwert. Eine Änderung von SERVO-TESTER wartet auf einen ruhenden Prüfstand.
 
 ## Die Werte behalten
 
-AUSGANG, HV-SERVO, ENDLAGENLAUF, SERVO und SERVOPULSE gelten nur für die Sitzung. SWEEP, Optionen des automatischen Tests, PRÜFLING samt KST EXPERT MODE und ZIEL werden im NVS (nichtflüchtiger Speicher) gespeichert. Wie bei den Netzteiloptionen erfolgt das Schreiben im nächsten Frame bei SAFE und ausgeschaltetem Netzteilausgang.
+AUSGANG, HV-SERVO, ENDLAGENLAUF, SERVO und SERVOPULSE gelten nur für die Sitzung. SWEEP, Optionen des automatischen Tests, PRÜFLING samt KST EXPERT MODE und ZIEL werden im NVS (nichtflüchtiger Speicher) gespeichert. Wie bei den Netzteiloptionen erfolgt das Schreiben im nächsten Frame bei SAFE und ausgeschaltetem Netzteilausgang. Eine Änderung in einer Liste schreibt SPEICHERN in ihrer Leiste.

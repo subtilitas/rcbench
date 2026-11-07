@@ -57,6 +57,8 @@
 #define DEG_PER_US 0.06f
 /** @brief RUDDER's ZERO, AUTO and START (servo_spots.h). */
 #define ZERO_X 98
+/* RESET MAX, right of ZERO on its row (servo_rudder_int.h). */
+#define RESET_X 268
 
 static struct {
     servo_sim_t sv;
@@ -322,11 +324,10 @@ static void ra_setup_on(bool pd, bool zero, bool imu)
         ra_pd_reading(true);
     }
     ra_ms(400u);
-    screen_tap(SV_TAB_RUDDER_X, SV_TAB_Y);
+    go(SERVO_FN_RAUTO);
     if (zero) {
         screen_tap(ZERO_X, SV_RUD_ZERO_Y);
     }
-    screen_tap(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);
     CHECK(rauto_shown());
     ra_ms(100u);
 }
@@ -561,8 +562,7 @@ TEST_CASE(zero_and_reset_max_are_refused_while_auto_runs)
     }
     CHECK(there);
     screen_tap(ZERO_X, SV_RUD_ZERO_Y);
-    screen_tap(SV_RUD_AUTO_X - 170, SV_RUD_ZERO_Y);      /* RESET MAX */
-    screen_tap(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);            /* MANUAL */
+    screen_tap(RESET_X, SV_RUD_ZERO_Y);                  /* RESET MAX */
     CHECK(rauto_shown());
     CHECK(servo_screen_rauto_running());
     ra_run_out();
@@ -571,9 +571,9 @@ TEST_CASE(zero_and_reset_max_are_refused_while_auto_runs)
     const unsigned hi = servo(KST_F_RIGHT_ANGLE);
     CHECK(lo >= 90u && lo <= 94u);
     CHECK(hi >= 90u && hi <= 94u);
-    /* Idle again: MANUAL is taken. */
+    /* Idle again: RUDDER shows its drive buttons. */
     ra_ms(100u);
-    screen_tap(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);
+    go(SERVO_FN_RUDDER);
     CHECK(!rauto_shown());
 }
 
@@ -739,7 +739,7 @@ TEST_CASE(a_stop_during_the_pulse_write_offers_restore_and_names_the_backup)
     CHECK(strstr(ra.report, "Backup:         KST") != NULL);
     CHECK(strstr(ra.report, "Restore:        RESTORE") != NULL);
     char b[96], want[96];
-    snprintf(want, sizeof(want), TR(SV_LIM_RESTORE), TR(KP_PROGRAM));
+    snprintf(want, sizeof(want), TR(SV_LIM_RESTORE), TR(SVH_KST));
     CHECK_STR_EQ(rauto_line(2, b, sizeof(b)), want);
     rig_stop(false);
     CHECK(rig_settle());
@@ -982,11 +982,11 @@ static void prog5v_on_from_servo(void)
 }
 
 /* The owner's way on the rbmod carrier: PORT PWM off, the PROG 5V box
- * switched on on SERVO.  ARMED, AUTO says DISARM and TARGET; SAFE, it says
- * TARGET.  TARGET opens the port's entry on OUTPUTS; leaving SERVO
- * switches the PROG 5V off.  There PORT PWM ON is taken and saved with the
- * box off, and the line says the pulse waits for the box on SERVO; no
- * pulse is asked.  Back on SERVO, PROG 5V ON, the pulse comes on in SAFE,
+ * switched on on SERVO.  ARMED, AUTO says DISARM and OUTPUTS; SAFE, it
+ * says OUTPUTS.  OUTPUTS opens on the port's entry; leaving SERVO switches
+ * the PROG 5V off.  There PORT PWM ON is taken and saved with the box off,
+ * and the line says the pulse waits for the box on SERVO; no pulse is
+ * asked.  Back on RUDDER AUTO, PROG 5V ON, the pulse comes on in SAFE,
  * ARM, and a hold on START starts AUTO. */
 TEST_CASE(on_the_carrier_port_pwm_on_from_outputs_with_the_5v_off_leads_to_a_start)
 {
@@ -1004,10 +1004,11 @@ TEST_CASE(on_the_carrier_port_pwm_on_from_outputs_with_the_5v_off_leads_to_a_sta
     ra_ms(200u);
     CHECK_STR_EQ(rauto_blocked(), ui_servo_str(SERVO_STR_START_NOT_ARMED));
     CHECK_STR_EQ(lim_pwm_why(), TR(SV_LIM_PWM_OFF));
-    /* TARGET: the router opens the port's entry on OUTPUTS.  The rig
-     * drives SERVO by hand, so the router leaves the overview and SERVO's
-     * leave is called here: it switches the PROG 5V off. */
-    screen_tap(SV_TARGET_X, SV_TARGET_Y);
+    /* SETUP > OUTPUTS on the port's entry.  The rig drives SERVO by hand,
+     * so the router leaves the overview and SERVO's leave is called here:
+     * it switches the PROG 5V off. */
+    outputs_screen_open_on_port((uint8_t)RIG_PORT);
+    ui_router_goto(SCREEN_OUTPUTS);
     CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
     CHECK_EQ(outputs_screen_port_shown(), (int)RIG_PORT);
     scr->leave();
@@ -1030,16 +1031,12 @@ TEST_CASE(on_the_carrier_port_pwm_on_from_outputs_with_the_5v_off_leads_to_a_sta
     CHECK(outputs_screen_port_reason(line, sizeof(line)));
     CHECK_STR_EQ(line, TR(PC_PWM_WAITS_5V));
     CHECK(!prog_choice_want_pwm());
-    /* SERVO again, as the home tag goes: RUDDER, AUTO, the box, ARM,
-     * START. */
-    ui_router_goto(SCREEN_SERVO);
-    CHECK_EQ(ui_router_current(), SCREEN_SERVO);
+    /* RUDDER AUTO again: the box, PROG 5V, ARM, START. */
+    ui_router_goto(SCREEN_SERVO_RAUTO);
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO_RAUTO);
+    scr = servo_fn_screen(SERVO_FN_RAUTO);
     ra_ms(200u);
     CHECK(!prog_choice_want_pwm());
-    screen_tap(SV_TAB_RUDDER_X, SV_TAB_Y);
-    if (!rauto_shown()) {
-        screen_tap(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);   /* the task kept it */
-    }
     CHECK(rauto_shown());
     CHECK_STR_EQ(rauto_blocked(), ui_servo_str(SERVO_STR_START_PROG_5V));
     prog5v_on_from_servo();

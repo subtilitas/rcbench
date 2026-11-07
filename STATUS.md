@@ -421,20 +421,24 @@ speaking 4.2, which PAUSE holds (the button then reads PAUSED) and a tap on PAUS
 on from the phase it was held at on an IOmcu speaking 4.6 (`LINK_SV_RESUME`), and starts
 over from the curve's beginning, with an alert, on an older one or one that refuses; SPEED's
 row reads SPEED LIMITS THE SWEEP while SPEED is slower than the curve's fastest change. The
-screen is a workbench (`ui_workbench.h`, `servo_workbench.c`): a strip with LIVE, TEST,
-PROGRAM, RUDDER and SETTINGS, a tile opening LIVE, each task keeping its page for the
-session, PROGRAM listing the programmers from one table (`prog_registry.h`: a row each,
-dimmed with its reason when the IOmcu does not report its capability, two rows on one port
-exclusive, SEARCH over 9 rows and headings over 8 shown; `test_prog_registry`) whose KST and
-Chaservo row opens that programmer one level down, and an output card on every task whose
-TARGET row (`ui_target_row.h`) names the target as `protocol pins` and opens the choice
-OUTPUTS / PROG PORT, locked while ARMED, during a sweep or a run, and while the programmer
-holds the port (`test_workbench`, `test_servo_workbench`).
+screen is a hub (`servo_hub.c`) of 8 tiles, LIVE, SWEEP, TEST, LIMIT RUN, RUDDER, RUDDER
+AUTO, KST and HITEC, each opening a function screen of its own (`servo_fn.c`); the home tag
+goes from a function screen to the hub and from the hub to the menu, and the hub drives
+nothing (`test_servo_hub`). KST and HITEC are grey with their reason while the IOmcu does
+not report the capability or another session holds the port, from one table
+(`prog_registry.h`, `test_prog_registry`). Every function screen has the footer name and
+port line, ARM and SETTINGS, and an output card whose PORT button names the target as
+`protocol pins` and opens the choice of OUTPUTS and the 4 programming ports, locked while ARMED or ARM
+is asked, and while the programmer holds the port (`test_servo_port_button`,
+`test_servo_workbench`). No list, page of rows or PORT list opens while a finger holds
+another press on the screen or a session holds its port, and a page closes as the bench
+goes live (`test_servo_list_guards`, `test_servo_settings_holds`). The lists' rows
+read and step their values and name why a row takes no press (`test_servo_lists_rows`).
 
-SETTINGS sets the type (STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI TAIL 760), the
-frame rate, the pulse widths, trim, travel and reverse for the session on its OUTPUT page,
-and SWEEP's curve and the device under test in NVS; each run's settings open from its card
-on TEST, and SUPPLY's caps show there read-only; a heli type or a rate above 60Hz is applied
+The hub's SETTINGS list sets the type (STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI
+TAIL 760), the frame rate, the pulse widths, trim, travel and reverse for the session under
+OUTPUT, and the device under test in NVS; SWEEP's list sets its curve; each run's settings
+open from its card on TEST and LIMIT RUN, and SUPPLY's caps show there read-only; a heli type or a rate above 60Hz is applied
 only through a warning held for 2s, and every restart is STANDARD PWM at 50Hz. The right
 card shows the servo rail as its meter reads it (`servo_source.h`), in the CURRENT row, on
 the line over the plot and in the plot: CH1's 50ms windows under the name `INA3221 CH1`
@@ -502,7 +506,7 @@ RUDDER (`shared/ui/servo_rudder_panel.c`, `shared/servo/servo_rudder.c`) shows t
 source's angle, the AS5600's or the IMU's, as a control surface's deflection from ZERO in
 0.1°, with LENGTH (0 or 10 to 500mm, `rud_len_mm`) the trailing edge's travel L x sin in
 0.1mm, the largest deflection each side until ZERO or RESET MAX, and drives 1000us, CENTRE
-and 2000us and takes the knob only while ARMED, its TARGET row the output card's
+and 2000us and takes the knob only while ARMED, its PORT button the output card's
 (`test_servo_rudder`, `test_servo_rudder_panel`, `test_rudder_layout`; host suite only). Its
 side view draws the surface at the deflection shown, -90 to +90° with a fixed flap of 62px,
 beyond that at ±90°, dim on the neutral line without a reading, with the MAX and, in AUTO's
@@ -511,7 +515,7 @@ box, the targets dashed (`shared/ui/servo_rudder_flap.c`; `test_servo_rudder_fla
 
 ANGLE SOURCE sets where the servo test, the LIMIT RUN and the run log take the angle from,
 the AS5600 or the IMU in AS5600 counts from count 0 (`shared/servo/servo_angle.c`,
-`test_servo_angle`, `test_servo_source_angle`). AUTO on RUDDER
+`test_servo_angle`, `test_servo_source_angle`). RUDDER AUTO
 (`shared/servo/servo_rudder_auto.c`, `shared/ui/servo_rudder_auto_panel.c`) programs a KST
 or Chaservo servo's LEFT ANGLE and RIGHT ANGLE on the programming port until 1000us and
 2000us reach the target deflection x (1 + MARGIN) within TOLERANCE on the angle source: the
@@ -1264,7 +1268,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 489 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 494 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1838,8 +1842,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 890 committed screenshots to the current render,
-445 in English and the same 445 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` holds 896 committed screenshots to the current render,
+448 in English and the same 448 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -1887,7 +1891,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_target_row.c` | 93 | 92 | 98.9% |
 | `shared/ui/prog_registry.c` | 423 | 422 | 99.8% |
 | `shared/ui/ui_text.c` | 140 | 139 | 99.3% |
-| `shared/ui/ui_router.c` | 637 | 626 | 98.3% |
+| `shared/ui/ui_router.c` | 651 | 640 | 98.3% |
 | `shared/ui/ui_alert_slot.c` | 39 | 39 | 100.0% |
 | `shared/ui/ui_value_ask.c` | 8 | 8 | 100.0% |
 | `shared/ui/splash_screen.c` | 72 | 69 | 95.8% |
@@ -1904,7 +1908,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/supply_settings.c` | 154 | 147 | 95.5% |
 | `shared/ui/supply_guide.c` | 79 | 79 | 100.0% |
 | `shared/ui/prog5v_box.c` | 190 | 190 | 100.0% |
-| `shared/ui/prog_choice.c` | 126 | 125 | 99.2% |
+| `shared/ui/prog_choice.c` | 127 | 126 | 99.2% |
 | `shared/ui/ui_keypad.c` | 290 | 288 | 99.3% |
 | `shared/ui/ui_setting_keypad.c` | 118 | 115 | 97.5% |
 | `shared/ui/ui_textkey.c` | 523 | 509 | 97.3% |
@@ -1915,34 +1919,38 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_pinlist.c` | 62 | 62 | 100.0% |
 | `shared/ui/ui_board.c` | 56 | 56 | 100.0% |
 | `shared/ui/servo_screen.c` | 380 | 371 | 97.6% |
-| `shared/ui/servo_screen_sweep.c` | 509 | 506 | 99.4% |
-| `shared/ui/servo_screen_link.c` | 421 | 417 | 99.0% |
-| `shared/ui/servo_screen_touch.c` | 322 | 308 | 95.7% |
-| `shared/ui/servo_screen_draw.c` | 548 | 538 | 98.2% |
-| `shared/ui/servo_settings_panel.c` | 643 | 630 | 98.0% |
-| `shared/ui/servo_settings_draw.c` | 433 | 426 | 98.4% |
-| `shared/ui/servo_test_panel.c` | 478 | 464 | 97.1% |
-| `shared/ui/servo_limit_panel.c` | 467 | 422 | 90.4% |
+| `shared/ui/servo_screen_sweep.c` | 513 | 510 | 99.4% |
+| `shared/ui/servo_screen_link.c` | 420 | 416 | 99.0% |
+| `shared/ui/servo_screen_touch.c` | 329 | 316 | 96.0% |
+| `shared/ui/servo_screen_draw.c` | 557 | 531 | 95.3% |
+| `shared/ui/servo_settings_panel.c` | 674 | 635 | 94.2% |
+| `shared/ui/servo_settings_draw.c` | 393 | 377 | 95.9% |
+| `shared/ui/servo_test_panel.c` | 478 | 467 | 97.7% |
+| `shared/ui/servo_limit_panel.c` | 467 | 421 | 90.2% |
 | `shared/ui/servo_limit_seam.c` | 100 | 96 | 96.0% |
-| `shared/ui/servo_workbench.c` | 371 | 369 | 99.5% |
-| `shared/ui/servo_rudder_panel.c` | 405 | 402 | 99.3% |
+| `shared/ui/servo_workbench.c` | 210 | 206 | 98.1% |
+| `shared/ui/servo_rudder_panel.c` | 398 | 395 | 99.2% |
 | `shared/ui/servo_rudder_auto_panel.c` | 554 | 499 | 90.1% |
 | `shared/ui/servo_rudder_flap.c` | 101 | 99 | 98.0% |
-| `shared/ui/servo_guide.c` | 186 | 182 | 97.8% |
-| `shared/ui/kst_panel.c` | 432 | 424 | 98.2% |
+| `shared/ui/servo_guide.c` | 142 | 139 | 97.9% |
+| `shared/ui/servo_fn.c` | 82 | 81 | 98.8% |
+| `shared/ui/servo_hub.c` | 184 | 179 | 97.3% |
+| `shared/ui/servo_footer.c` | 133 | 130 | 97.7% |
+| `shared/ui/servo_lists.c` | 190 | 187 | 98.4% |
+| `shared/ui/kst_panel.c` | 456 | 445 | 97.6% |
 | `shared/ui/kst_panel_text.c` | 168 | 168 | 100.0% |
 | `shared/ui/kst_panel_warn.c` | 309 | 306 | 99.0% |
 | `shared/ui/kst_panel_edit.c` | 385 | 377 | 97.9% |
-| `shared/ui/kst_panel_touch.c` | 237 | 234 | 98.7% |
-| `shared/ui/kst_panel_run.c` | 152 | 142 | 93.4% |
-| `shared/ui/kst_panel_draw.c` | 557 | 554 | 99.5% |
+| `shared/ui/kst_panel_touch.c` | 239 | 236 | 98.7% |
+| `shared/ui/kst_panel_run.c` | 154 | 144 | 93.5% |
+| `shared/ui/kst_panel_draw.c` | 563 | 561 | 99.6% |
 | `shared/ui/esc_wire_panel.c` | 573 | 544 | 94.9% |
-| `shared/ui/hitec_panel.c` | 267 | 267 | 100.0% |
+| `shared/ui/hitec_panel.c` | 270 | 270 | 100.0% |
 | `shared/ui/hitec_panel_text.c` | 474 | 469 | 99.0% |
 | `shared/ui/hitec_panel_edit.c` | 399 | 397 | 99.5% |
 | `shared/ui/hitec_panel_page.c` | 235 | 235 | 100.0% |
-| `shared/ui/hitec_panel_touch.c` | 215 | 214 | 99.5% |
-| `shared/ui/hitec_panel_draw.c` | 278 | 278 | 100.0% |
+| `shared/ui/hitec_panel_touch.c` | 217 | 216 | 99.5% |
+| `shared/ui/hitec_panel_draw.c` | 285 | 284 | 99.7% |
 | `shared/ui/hitec_panel_file.c` | 230 | 230 | 100.0% |
 | `shared/ui/hitec_panel_run.c` | 105 | 105 | 100.0% |
 | `shared/ui/hitec_panel_move.c` | 219 | 214 | 97.7% |
@@ -1973,8 +1981,8 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/settings_screen.c` | 281 | 273 | 97.2% |
 | `shared/ui/settings_draw.c` | 66 | 66 | 100.0% |
 | `shared/ui/settings_rows.c` | 36 | 35 | 97.2% |
-| `shared/ui/ui_setlist.c` | 623 | 603 | 96.8% |
-| `shared/ui/ui_setlist_draw.c` | 280 | 257 | 91.8% |
+| `shared/ui/ui_setlist.c` | 625 | 606 | 97.0% |
+| `shared/ui/ui_setlist_draw.c` | 283 | 263 | 92.9% |
 | `shared/ui/ui_footer.c` | 42 | 41 | 97.6% |
 | `shared/ui/sensors_pane.c` | 107 | 107 | 100.0% |
 | `shared/ui/sensors_rows.c` | 250 | 250 | 100.0% |
@@ -2233,7 +2241,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **85225** | **83632** | **98.1%** |
+| **total** | **85678** | **84025** | **98.1%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -2293,14 +2301,14 @@ sixteen saves, the heartbeat after a window, and a power cut mid-save.
 ### A held programming port is named on SERVO and SUPPLY only
 
 The rule is in [CONTRIBUTING.md](CONTRIBUTING.md#the-active-output). SERVO names its target on
-every task and under the pages, their keypads and the programmers (the TARGET row, `PROG PORT n
-GPIO m`). MOTOR & ESC names its throttle pins. The KST and Hitec programmers and the ESC wire
+every function screen and under the pages, their keypads and the programmers (the PORT
+button and the footer's port line, `PROG PORT n GPIO m`). MOTOR & ESC names its throttle pins. The KST and Hitec programmers and the ESC wire
 screens name their port and pin. ARM names the roles it drives
 ([Safety](docs/Safety.md#deliberate-behaviours)). One case does not meet the rule. Leaving SERVO
 while a programmer holds a port leaves the output SERVO switched on running
 ([Screens, SERVO](docs/Screens.md#servo)). On the rbmod carrier the PROG 5V box on SERVO and
 SUPPLY then reads `HELD BY PROG PORT n`. The status band and every other screen do not name the
-held port. On a board without the PROG 5V box only the TARGET row on SERVO names it.
+held port. On a board without the PROG 5V box only the PORT button and the port line on SERVO name it.
 
 **Next evidence or work:** the held port named in the status band.
 

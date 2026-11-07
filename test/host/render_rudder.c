@@ -8,13 +8,15 @@
  * and comes back to +12.3°.  LENGTH is 120mm, or not set in
  * servo-rudder-nolength.  servo-rudder-armed is ARMED with 2000us tapped.
  * servo-rudder-85 then goes to -85.0°, which MAX takes as its negative side.
- * servo-rudder-auto is ARMED with AUTO's box shown: no KST servo on the
- * programming port, which its first line names.  servo-rudder-auto-safe is
- * AUTO's box while SAFE, the view help-servo-rudder-auto opens SERVO's
- * guide over (render_help.c); help-servo-rudder opens it over servo-rudder.
- * servo-rudder-auto-rbmod is AUTO's box on the rbmod carrier, SAFE, TARGET
- * on PROG PORT 1 (GPIO 13) and the PROG 5V box off: its first line asks for
- * the PROG 5V before ARM.
+ * The servo-rudder views are on RUDDER's screen, the servo-rudder-auto
+ * views on RUDDER AUTO's (render_screen.c shows it).  servo-rudder-auto is
+ * ARMED: no KST servo on the programming port, which AUTO's first line
+ * names.  servo-rudder-auto-safe is the same SAFE, the view
+ * help-servo-rudder-auto opens SERVO's guide over (render_help.c);
+ * help-servo-rudder opens it over servo-rudder.  servo-rudder-auto-rbmod
+ * is RUDDER AUTO on the rbmod carrier, SAFE, the target PROG PORT 1 (GPIO
+ * 13) and the PROG 5V box off: its first line asks for the PROG 5V before
+ * ARM.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -79,9 +81,10 @@ void render_rudder_pose(const char *view)
     settings_set(SET_RUDDER_LEN_MM,
                  strcmp(view, "servo-rudder-nolength") == 0 ? 0.0f : 120.0f);
     servo_screen_set_link(true);
-    tap_body(SV_TAB_RUDDER_X, SV_TAB_Y);
+    /* RUDDER's screen or RUDDER AUTO's, as the view's screen
+     * (render_screen.c) has it shown. */
     reading(2048u, 1000u);
-    tap_body(140, 312);                     /* ZERO */
+    tap_body(140, SV_RUD_ZERO_Y);           /* ZERO */
     reading(2048u - 280u, 1040u);           /* -24.6deg */
     reading(2048u + 290u, 1080u);           /* +25.5deg */
     reading(2048u + 140u, 1120u);           /* +12.3deg */
@@ -90,19 +93,14 @@ void render_rudder_pose(const char *view)
     }
     if (strcmp(view, "servo-rudder-armed") == 0) {
         servo_screen_set_armed(true);
-        tap_body(438, 252);                 /* 2000us */
+        tap_body(438, 204);                 /* 2000us */
     }
     if (strcmp(view, "servo-rudder-auto") == 0) {
         servo_screen_set_armed(true);
-        tap_body(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);   /* AUTO */
-    }
-    if (strcmp(view, "servo-rudder-auto-safe") == 0) {
-        tap_body(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);   /* AUTO, SAFE */
     }
     if (strcmp(view, "servo-rudder-auto-rbmod") == 0) {
         settings_set(SET_SERVO_TARGET, 1.0f);
         servo_screen_set_drive(1u, 13u, false);
-        tap_body(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);   /* AUTO */
     }
     servo_cmd_t c;
     while (servo_screen_take(&c)) { }

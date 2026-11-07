@@ -286,6 +286,11 @@ bool hitec_panel_has_press(uint8_t id)
     return hp.have && hp.id == id;
 }
 
+bool hitec_panel_pressed(void)
+{
+    return hp.have;
+}
+
 void hpn_supply_sync(void)
 {
     const hitec_prog_t *p = &hp.prog;

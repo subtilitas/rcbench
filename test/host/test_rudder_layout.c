@@ -19,11 +19,12 @@
 #include "ui_text.h"
 #include "ui_workbench.h"
 
-/** @brief The page area under SERVO's strip: x 8 to 628, y 56 to 532. */
-static const gfx_rect_t k_page = { UI_MARGIN, 56, 620, UI_BODY_H - 56 - 8 };
+/** @brief RUDDER's card: x 8 to 628, y 8 to 436. */
+static const gfx_rect_t k_page = { UI_MARGIN, UI_MARGIN, 620, 436 - 8 };
 
-/** @brief The lowest row a control may reach: 4px above the alert band. */
-#define FLOOR_Y (UI_ALERT_Y - UI_BAND_H - 4)
+/** @brief The lowest row a control may reach: the card's floor, 8px over
+ *         the footer. */
+#define FLOOR_Y 436
 
 /** @brief The guide's live half beside a dock on the right, panel x 0 to
  *         528. */
@@ -88,40 +89,24 @@ TEST_CASE(every_control_is_a_finger_tall_inside_the_card_and_apart)
     CHECK_EQ(rudder_rect(RUD_C_ZERO).y, rudder_rect(RUD_C_RESET).y);
 }
 
-/* LIVE, TEST, PROGRAM, RUDDER and SETTINGS, 120px each and 4px apart from
- * x 9, end left of the output card; a tap past the last tab changes
- * nothing. */
-TEST_CASE(the_five_tabs_end_left_of_the_output_card)
-{
-    fresh();
-    scr->enter();
-    CHECK(9 + 5 * 120 + 4 * 4 + 3 <= SV_RCARD_X);
-    for (int t = 0; t < (int)UI_WB_TASKS; ++t) {
-        tap(9 + 124 * t + 60, SV_TAB_Y);
-        CHECK_EQ(servo_screen_task(), t);
-    }
-    tap(9 + 5 * 124 + 2, SV_TAB_Y);
-    CHECK_EQ(servo_screen_task(), (int)UI_WB_SETTINGS);
-}
-
 /**
- * @brief Pixels under the alert band in the left card that are not its
- *        fill.
+ * @brief Pixels between the card's floor and the footer, over the left
+ *        card's width, that are not the background.
  * @return the count
  */
 static int ink_under_the_band(void)
 {
     int n = 0;
-    for (int y = FLOOR_Y; y < UI_BODY_H - UI_MARGIN - 2; ++y) {
-        for (int x = UI_MARGIN + 2; x < UI_MARGIN + 618; ++x) {
-            n += fb[(size_t)y * W + x] != ui_theme_color(UI_C_PANEL);
+    for (int y = FLOOR_Y; y < FLOOR_Y + 8; ++y) {
+        for (int x = UI_MARGIN; x < UI_MARGIN + 620; ++x) {
+            n += fb[(size_t)y * W + x] != ui_theme_color(UI_C_BG);
         }
     }
     return n;
 }
 
 /* The card in English and German, SAFE and ARMED, with a reading, LENGTH
- * and the source off: ink above the alert band only. */
+ * and the source off: ink over the card's floor only. */
 TEST_CASE(no_text_lies_under_the_alert_band_in_either_language)
 {
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
@@ -131,7 +116,7 @@ TEST_CASE(no_text_lies_under_the_alert_band_in_either_language)
             if (armed) {
                 servo_screen_set_armed(true);
             }
-            tap(SV_TAB_RUDDER_X, SV_TAB_Y);
+            go(SERVO_FN_RUDDER);
             scr->render(&cv, 0);
             CHECK_EQ(ink_under_the_band(), 0);
             settings_set(SET_ENC_EN, 1.0f);
@@ -150,7 +135,6 @@ TEST_CASE(no_text_lies_under_the_alert_band_in_either_language)
 int main(void)
 {
     RUN(every_control_is_a_finger_tall_inside_the_card_and_apart);
-    RUN(the_five_tabs_end_left_of_the_output_card);
     RUN(no_text_lies_under_the_alert_band_in_either_language);
     return test_summary("rudder_layout");
 }

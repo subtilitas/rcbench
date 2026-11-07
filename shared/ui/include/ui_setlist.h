@@ -89,7 +89,8 @@ typedef enum {
  * of that many rows over the list, choice() names one, chosen() is the one
  * in force and pick() takes a tap on one.  locked() names why the row takes
  * no press now; its help line shows it in the warning colour.  On a
- * heading only value_text() is read: the line beside its name.
+ * heading only value_text() and locked() are read: the line beside its
+ * name, in the warning colour while locked() names something.
  */
 typedef struct ui_setlist_custom {
     ui_text_id_t label;                 /**< the row's name                   */

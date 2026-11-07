@@ -974,53 +974,35 @@ static bool kst_file_view(const char *v)
 }
 
 /*
- * SERVO > PROGRAM's list: the registry's KST and Hitec rows on the
- * tester's PROG PORT 1, live with the pin the feed carries
- * (servo-program); dimmed PORT IN USE while the programming ports' page
- * says the HITEC page holds port 1 and the Hitec programmer has not read
- * that page yet (servo-program-busy; once it has, its overlay opens with
- * RELEASE PORT, servo-hitec-other); with no IOmcu answering, dimmed with
- * their reason (servo-program-nocap).
+ * The SERVO hub: its tiles with the registry's KST and HITEC rows on the
+ * tester's PROG PORT 1, live with the pin the feed carries (servo-hub);
+ * KST's and HITEC's tiles grey with PORT IN USE while the programming
+ * ports' page says the HITEC page holds port 1 and the Hitec programmer
+ * has not read that page yet (servo-hub-busy; once it has, HITEC's screen
+ * opens with RELEASE PORT, servo-hitec-other); with no IOmcu answering,
+ * grey with their reason (servo-hub-nocap).
  */
-static void program_view(const char *view)
+static void hub_view(const char *view)
 {
     rig_fresh();
     prog_registry_set_ports(
-        strcmp(view, "servo-program-nocap") == 0 ? PROG_REG_NO_PORT : 0u,
-        strcmp(view, "servo-program-busy") == 0 ? 0x1u : 0u);
-    if (strcmp(view, "servo-program-many") == 0) {
-        /* The fit check only: a table of 12 rows under two headings,
-         * SEARCH and the page keys over them, one row dimmed. */
-        static prog_reg_row_t many[12];
-        for (int i = 0; i < 12; ++i) {
-            many[i] = (prog_reg_row_t){
-                PROG_DEV_SERVO, UI_WB_PROGRAM, TX_PL_KST,
-                (i >= 3) ? TX_SV_TARGET_PORT : TX_PL_GRP_PROG_PORT,
-                TX_SV_TARGET_PORT, 0u,
-                (i == 1) ? (uint16_t)LINK_CAP_CELLS
-                         : (uint16_t)LINK_CAP_SERVO_PWM,
-                &kst_panel_pages, false };
-        }
-        prog_registry_use(many, 12);
-    }
-    if (strcmp(view, "servo-program") == 0
-        || strcmp(view, "servo-program-busy") == 0
-        || strcmp(view, "servo-program-many") == 0) {
+        strcmp(view, "servo-hub-nocap") == 0 ? PROG_REG_NO_PORT : 0u,
+        strcmp(view, "servo-hub-busy") == 0 ? 0x1u : 0u);
+    if (strcmp(view, "servo-hub-nocap") != 0) {
         (void)rig_link_up(LINK_PROTOCOL_MINOR);
         render_hitec_feed(false);
     }
     ui_router_goto(SCREEN_SERVO);
-    if (strcmp(view, "servo-program-nocap") != 0) {
+    if (strcmp(view, "servo-hub-nocap") != 0) {
         servo_screen_set_drive(1u, 13u, true);    /* the tester on PORT 1 */
     }
-    tap(SV_TAB_PROGRAM_X, UI_BAND_H + SV_TAB_Y);
     ui_router_tick(0.02f);
 }
 
 /*
  * The programmer on SERVO, driven by taps against the simulated servo of
- * kst_sim.h on programming port 1.  Geometry from kst_panel.h: PROGRAM in
- * the strip, then its KST row on the list.
+ * kst_sim.h on programming port 1, on KST's screen, which opens the
+ * session.  Geometry from kst_panel.h.
  */
 static void kst_view(const char *view)
 {
@@ -1075,7 +1057,14 @@ static void kst_view(const char *view)
     }
     (void)rig_link_up(nopage ? (uint16_t)(LINK_MINOR_KST - 1u)
                              : LINK_PROTOCOL_MINOR);
-    ui_router_goto(SCREEN_SERVO);
+    if (strcmp(v, "-hv") == 0) {
+        /* HV SERVO in the AUTOMATIC TEST's settings on TEST, which the
+         * programmer's voltage follows. */
+        ui_router_goto(SCREEN_SERVO_TEST);
+        tap(SV_RUN_SET_X, UI_BAND_H + SV_RUN_SET_Y(0));
+        tap(SV_LIST_X(0), UI_BAND_H + SV_LIST_ROW_Y(2)); /* HV SERVO */
+    }
+    ui_router_goto(SCREEN_SERVO_KST);
     /* The tester's drive as the control task reports it: PORT 1 on GP13
      * when SERVO's target is the programmer's port, as program_view() sets
      * it; no pin when the generator has none for the port.  With the target
@@ -1085,16 +1074,6 @@ static void kst_view(const char *view)
                                g_rig.no_pin ? SERVO_SCREEN_NO_PIN : RIG_PIN,
                                true);
     }
-    if (strcmp(v, "-hv") == 0) {
-        /* HV SERVO in the AUTOMATIC TEST card's settings on TEST, which
-         * the programmer's voltage follows. */
-        tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y);
-        tap(SV_RUN_SET_X, UI_BAND_H + SV_RUN_SET_Y(0));
-        tap(SV_LIST_X(0), UI_BAND_H + SV_LIST_ROW_Y(2)); /* HV SERVO */
-        tap(SV_TAB_LIVE_X, UI_BAND_H + SV_TAB_Y);
-    }
-    tap(SV_TAB_PROGRAM_X, UI_BAND_H + SV_TAB_Y);    /* PROGRAM */
-    tap(SV_PROG_ROW_X, UI_BAND_H + SV_PROG_ROW_Y(0)); /* KST row */
     ui_router_tick(0.02f);
     if (v[0] == '\0' || nopage || strcmp(v, "-target") == 0
         || strcmp(v, "-supply") == 0 || strcmp(v, "-supply-on") == 0) {
@@ -1370,7 +1349,7 @@ static void servo_run_view(bool to_the_end, bool ina)
         servo_screen_source(SERVO_SOURCE_INA3221, 2u);
     }
     uint16_t win_number = 0u;
-    tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y);       /* TEST */
+    /* On TEST's screen, as the view's screen shows it. */
     touch_event_t e = { .type = TOUCH_EVENT_DOWN,
                         .point = { .id = 1, .x = SV_START_X,
                                    .y = (int16_t)(UI_BAND_H + SV_START_Y(0)),
@@ -1402,8 +1381,7 @@ static void servo_run_view(bool to_the_end, bool ina)
     }
     e.type = TOUCH_EVENT_UP;
     ui_router_event(&e);
-    /* LIVE: the run's box over the dial. */
-    tap(SV_TAB_LIVE_X, UI_BAND_H + SV_TAB_Y);
+    /* The run's box under the card. */
     const int frames = to_the_end ? 4000 : 660;
     int after = 50;               /* frames once it is over: the OFF lands */
     for (int i = 0; i < frames; ++i) {
@@ -1622,7 +1600,7 @@ static void limrun_view(const char *view)
     servo_sim_init(&s_lr.sv, &cfg);
     s_lr.sv.position_us = 1500.0f;
     s_lr.cmd = 1500u;
-    s_lr.armed = true;
+    s_lr.armed = false;                 /* its settings first, SAFE */
     s_lr.out = true;
     settings_set_text(SET_TEXT_DUT_NAME, "DS3218 #2");
     settings_set(SET_INA_FIT(0), 1.0f);
@@ -1636,12 +1614,10 @@ static void limrun_view(const char *view)
     servo_screen_set_pins((uint64_t)1u << 2, true);
     servo_screen_source(SERVO_SOURCE_PDMINI, 1u);
     servo_screen_source(SERVO_SOURCE_INA3221, 2u);
-    servo_screen_set_armed(true);
+    ui_router_goto(SCREEN_SERVO_LIMRUN);
     servo_screen_feedback(0u, 0.0f, false);
-    ui_router_goto(SCREEN_SERVO);
     s_lr.win_end = g_rig.ms + 50u;
     limrun_ms(400u);
-    tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y);   /* TEST */
     tap(SV_RUN_SET_X, UI_BAND_H + SV_RUN_SET_Y(1));     /* its SETTINGS */
     if (strcmp(v, "-hitec") == 0) {
         /* The Hitec programmer's model in PWM, its series D SERIES; SERVO
@@ -1662,15 +1638,18 @@ static void limrun_view(const char *view)
         }
     }
     {
-        /* The home tag: back to TEST's cards. */
-        const gfx_rect_t home = ui_home_tag_rect(ui_router_title(SCREEN_SERVO));
+        /* The home tag: back to LIMIT RUN's card. */
+        const gfx_rect_t home =
+            ui_home_tag_rect(ui_router_title(SCREEN_SERVO_LIMRUN));
         if (strcmp(v, "-settings") == 0) {
             limrun_ms(100u);                    /* the list, left open */
             return;
         }
         tap(home.x + home.w / 2, home.y + home.h / 2);
     }
-    limrun_ms(100u);
+    /* ARMED, as the views of the run show it, past ARM's flash. */
+    s_lr.armed = true;
+    limrun_ms(400u);
     if (strcmp(v, "-nopd") == 0) {
         /* The PD mini no longer answers: its readings say so. */
         s_lr.nopd = true;
@@ -1688,8 +1667,7 @@ static void limrun_view(const char *view)
     limrun_ms(2300u);
     e.type = TOUCH_EVENT_UP;
     ui_router_event(&e);
-    /* LIVE: the run's box over the dial. */
-    tap(SV_TAB_LIVE_X, UI_BAND_H + SV_TAB_Y);
+    /* The run's box under the card. */
     if (v[0] == '\0') {
         /* A probe of the third writing session, partway out. */
         unsigned sessions = 0u;
@@ -1758,9 +1736,6 @@ static void limrun_view(const char *view)
         return;
     }
     limrun_ms(20u);
-    if (strcmp(v, "-card") == 0) {
-        tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y);   /* TEST: the card */
-    }
 }
 
 /*
@@ -1773,7 +1748,7 @@ static void limrun_view(const char *view)
  */
 static void servo_sweep_view(bool pause)
 {
-    ui_router_goto(SCREEN_SERVO);
+    ui_router_goto(SCREEN_SERVO_SWEEP);
     servo_screen_set_armed(true);
     servo_screen_set_sweep(true);
     /* Nothing measures the horn on this bench: it is drawn chasing the
@@ -3690,16 +3665,15 @@ static void pose_outputs_views(ui_screen_id_t id, const char *view)
                                         board_drawing_rp2350_can_bytes, NULL);
     }
     if (strcmp(view, "outputs-port") == 0) {
-        /* From SERVO's TARGET row with the IOmcu driving the port: on the
-         * PROG PORT entry, 0x41 CH2 watching the port. */
+        /* On the PROG PORT entry of the port the IOmcu drives, 0x41 CH2
+         * watching the port. */
         settings_set(SET_INA_FIT(1), 1.0f);
         settings_set(SET_INA_W(4), (float)SENS_W_PORT_1);
         sensors_rows_publish_watch();
         settings_set(SET_SERVO_TARGET, 1.0f);
         settings_set(SET_SERVO_PORT_PWM, 1.0f);
         servo_screen_set_drive(1u, 13u, true);
-        ui_router_goto(SCREEN_SERVO);
-        tap(SV_TARGET_X, UI_BAND_H + SV_TARGET_Y);
+        outputs_screen_open_on_port(0u);
     } else if (strcmp(view, "outputs-port2") == 0) {
         /* PROG PORT 2 from the list, SERVO PWM asked of it: the ask waits
          * for a bench at rest. */
@@ -3765,12 +3739,71 @@ static void pose_outputs_views(ui_screen_id_t id, const char *view)
  * @param id   The screen of the shot.
  * @param view The golden's name.
  */
+/**
+ * @brief A tap on row @p i of the open SERVO list, scrolled into view: on
+ *        @p part of it.
+ * @param i    the row
+ * @param part the part tapped
+ */
+static void servo_list_tap(int i, ui_sl_part_t part)
+{
+    ui_setlist_t *sl = (ui_setlist_t *)servo_screen_list();
+    ui_setlist_scroll_to(sl, i);
+    const gfx_rect_t r = ui_setlist_row_part(sl, i, part);
+    tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
+}
+
+/**
+ * @brief The SERVO screen a view shows: the hub for the hub's and its
+ *        list's, else the function's screen.
+ * @param view The golden's name.
+ * @return the screen
+ */
+static ui_screen_id_t servo_view_screen(const char *view)
+{
+    static const struct {
+        const char *prefix; /**< the view, or the start of its name */
+        bool        whole;  /**< the name in full, not its start    */
+        servo_fn_t  fn;     /**< the function shown                 */
+    } k[] = {
+        { "servo-hub", false, SERVO_FN_HUB },
+        { "servo-settings", true, SERVO_FN_HUB },
+        { "servo-rate-", false, SERVO_FN_HUB },
+        { "servo-warning", true, SERVO_FN_HUB },
+        { "servo-name", true, SERVO_FN_HUB },
+        { "servo-trim-keypad", true, SERVO_FN_HUB },
+        { "servo-sweep", false, SERVO_FN_SWEEP },
+        { "servo-paused", true, SERVO_FN_SWEEP },
+        { "servo-test", false, SERVO_FN_TEST },
+        { "servo-brownout", true, SERVO_FN_TEST },
+        { "servo-run", true, SERVO_FN_TEST },
+        { "servo-result", false, SERVO_FN_TEST },
+        { "servo-limits", true, SERVO_FN_LIMRUN },
+        { "servo-limcard", true, SERVO_FN_LIMRUN },
+        { "servo-limrun", false, SERVO_FN_LIMRUN },
+        { "servo-rudder-auto", false, SERVO_FN_RAUTO },
+        { "servo-rudder", false, SERVO_FN_RUDDER },
+        { "servo-encoder", true, SERVO_FN_RUDDER },
+        { "servo-kst", false, SERVO_FN_KST },
+        { "servo-dut-expert", true, SERVO_FN_KST },
+        { "servo-hitec", false, SERVO_FN_HITEC },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        const size_t n = strlen(k[i].prefix);
+        if (k[i].whole ? strcmp(view, k[i].prefix) == 0
+                       : strncmp(view, k[i].prefix, n) == 0) {
+            return servo_fn_screen_id(k[i].fn);
+        }
+    }
+    return SCREEN_SERVO_LIVE;
+}
+
 static void pose_servo_views(ui_screen_id_t id, const char *view)
 {
-    if (id == SCREEN_SERVO) {
-        /* What the IOmcu reports (its output drivers'), so PROGRAM's KST row
-         * is live; none with no IOmcu answering. */
-        s_caps = (strcmp(view, "servo-program-nocap") == 0)
+    if (servo_screen_owns(id)) {
+        /* What the IOmcu reports (its output drivers'), so the hub's KST
+         * and HITEC tiles are live; none with no IOmcu answering. */
+        s_caps = (strcmp(view, "servo-hub-nocap") == 0)
                      ? 0u
                      : (uint16_t)(LINK_CAP_SERVO_PWM | LINK_CAP_ESC_DRIVE
                                   | LINK_CAP_ESC_TELEM);
@@ -3890,8 +3923,10 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
         }
         if (strncmp(view, "servo-limrun", 12) == 0) {
             limrun_view(view);
-        } else if (strncmp(view, "servo-program", 13) == 0) {
-            program_view(view);
+        } else if (strcmp(view, "servo-hub") == 0
+                   || strcmp(view, "servo-hub-nocap") == 0
+                   || strcmp(view, "servo-hub-busy") == 0) {
+            hub_view(view);
         } else if (strncmp(view, "servo-hitec", 11) == 0) {
             render_hitec_view(view);
         } else if (strncmp(view, "servo-kst", 9) == 0) {
@@ -3916,7 +3951,7 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
             if (strcmp(view, "servo-hv-live") == 0) {
                 supply_screen_set_output(true);
             }
-            ui_router_goto(SCREEN_SERVO);
+            ui_router_goto(id);
             tap(SV_SUP_V_X, UI_BAND_H + SV_SUP_Y);
             ui_keypad_t kp;
             memset(&kp, 0, sizeof(kp));
@@ -3930,58 +3965,48 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
         } else if (strcmp(view, "servo-sweep") == 0
                    || strcmp(view, "servo-paused") == 0) {
             servo_sweep_view(strcmp(view, "servo-paused") == 0);
-        } else if (strcmp(view, "servo") != 0
-                   && strcmp(view, "servo-armed") != 0
-                   && strcmp(view, "servo-ina") != 0
-                   && strcmp(view, "servo-target") != 0
-                   && strcmp(view, "servo-model") != 0
-                   && strcmp(view, "servo-clipped") != 0) {
-            ui_router_goto(SCREEN_SERVO);
-        }
-        /* The strip's tabs, a run card's SETTINGS, SETTINGS' own page tabs
-         * and rows, and the TARGET row: SV_* in servo_rig.h's terms. */
-        const bool on_settings = strcmp(view, "servo-settings") == 0
-                                 || strcmp(view, "servo-sweep-page") == 0
-                                 || strcmp(view, "servo-warning") == 0
-                                 || strcmp(view, "servo-encoder") == 0
-                                 || strcmp(view, "servo-dut-expert") == 0
-                                 || strcmp(view, "servo-name") == 0
-                                 || strcmp(view, "servo-trim-keypad") == 0
-                                 || strncmp(view, "servo-rate-", 11) == 0;
-        if (on_settings) {
-            tap(SV_TAB_SETTINGS_X, UI_BAND_H + SV_TAB_Y);
-        }
-        if (strcmp(view, "servo-test") == 0) {
-            tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y);
-        } else if (strcmp(view, "servo-test-settings") == 0
-                   || strcmp(view, "servo-limits") == 0
-                   || strcmp(view, "servo-brownout") == 0) {
-            tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y);
-            tap(SV_RUN_SET_X,
-                UI_BAND_H + SV_RUN_SET_Y(strcmp(view, "servo-limits") == 0));
-            if (strcmp(view, "servo-brownout") == 0) {
-                /* BROWN-OUT, the middle column's last row: its page. */
-                tap(SV_LIST_X(1), UI_BAND_H + SV_LIST_ROW_Y(4));
-            }
-        } else if (strcmp(view, "servo-warning") == 0) {
-            tap(100, UI_BAND_H + SV_ROW_Y(0));        /* TYPE */
-            tap(165, UI_BAND_H + 256);                /* HELI CYCLIC */
-        } else if (strcmp(view, "servo-sweep-page") == 0) {
-            tap(SV_PAGE_X(1), UI_BAND_H + SV_PAGE_TAB_Y); /* SWEEP */
-        } else if (strcmp(view, "servo-encoder") == 0
-                   || strcmp(view, "servo-dut-expert") == 0) {
+        } else {
             if (strcmp(view, "servo-dut-expert") == 0) {
                 settings_set(SET_KST_EXPERT, 1.0f); /* after the 2s hold */
             }
-            tap(SV_PAGE_X(2), UI_BAND_H + SV_PAGE_TAB_Y); /* DUT */
+            ui_router_goto(id);
+        }
+        /* The footer's SETTINGS: the hub's list, a function's list, TEST's
+         * and LIMIT RUN's page of rows, KST's EXPERT MODE page. */
+        const bool on_list = strcmp(view, "servo-settings") == 0
+                             || strcmp(view, "servo-sweep-page") == 0
+                             || strcmp(view, "servo-warning") == 0
+                             || strcmp(view, "servo-encoder") == 0
+                             || strcmp(view, "servo-dut-expert") == 0
+                             || strcmp(view, "servo-name") == 0
+                             || strcmp(view, "servo-trim-keypad") == 0
+                             || strncmp(view, "servo-rate-", 11) == 0
+                             || strcmp(view, "servo-test-settings") == 0
+                             || strcmp(view, "servo-limits") == 0
+                             || strcmp(view, "servo-brownout") == 0;
+        if (on_list) {
+            tap(SV_FOOT_SET_X, UI_BAND_H + SV_FOOT_Y);
+        }
+        if (strcmp(view, "servo-brownout") == 0) {
+            /* BROWN-OUT, the middle column's last row: its page. */
+            tap(SV_LIST_X(1), UI_BAND_H + SV_LIST_ROW_Y(4));
+        } else if (strcmp(view, "servo-warning") == 0) {
+            servo_list_tap(1, UI_SL_PART_VALUE);      /* TYPE */
+            tap(165, UI_BAND_H + 256);                /* HELI CYCLIC */
         } else if (strcmp(view, "servo-trim-keypad") == 0) {
             /* TRIM's value, between its steps: the signed keypad, -25us
              * typed. */
-            tap((526 + 570) / 2, UI_BAND_H + SV_ROW_Y(3));
+            servo_list_tap(6, UI_SL_PART_VALUE);
             kp_type(servo_screen_keypad(), "-25");
         } else if (strcmp(view, "servo-name") == 0) {
-            tap(SV_PAGE_X(2), UI_BAND_H + SV_PAGE_TAB_Y);
-            tap(100, UI_BAND_H + SV_ROW_Y(0));        /* NAME */
+            servo_list_tap(11, UI_SL_PART_VALUE);     /* NAME */
+        } else if (strncmp(view, "servo-port", 10) == 0) {
+            /* PORT's list; on the carrier of 4.36 PROGP04 refused beside
+             * the servo output bound on PWM04. */
+            if (strcmp(view, "servo-port-rbmod") == 0) {
+                prog_choice_set_far_minor(LINK_MINOR_CARRIER_PWM);
+            }
+            tap(SV_PORT_X, UI_BAND_H + SV_PORT_Y);
         } else if (strcmp(view, "servo-run") == 0
                    || strcmp(view, "servo-result") == 0
                    || strcmp(view, "servo-result-ina") == 0) {
@@ -3990,7 +4015,6 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
         } else if (strcmp(view, "servo-test-done") == 0) {
             settings_set(SET_SERVO_LEN_BY, 1.0f);     /* by movements */
             servo_run_view(true, false);
-            tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y); /* TEST: the cards */
         }
     }
 }
@@ -4295,13 +4319,17 @@ int main(int argc, char **argv)
                         "[en|de] [TRACE]\n");
         return 2;
     }
-    const ui_screen_id_t id = id_of(argv[2]);
+    ui_screen_id_t id = id_of(argv[2]);
     const bool light = (argc > 3 && strcmp(argv[3], "light") == 0);
     /* argv[4] is the golden's name; several share one screen.  A guide's
      * view is posed as the view it opens over (render_help_base()). */
     const char *const shot_view = (argc > 4) ? argv[4] : argv[2];
     const char *view = render_help_base(shot_view);
     const bool sim   = (argc > 3 && strcmp(argv[3], "sim") == 0);
+    /* SERVO's views name their screen: the hub or a function's. */
+    if (id == SCREEN_SERVO) {
+        id = servo_view_screen(view);
+    }
     s_lang = (argc > 5 && strcmp(argv[5], "de") == 0) ? UI_LANG_DE
                                                        : UI_LANG_EN;
     s_monitors_on = strncmp(view, "setup-sensors", 13) == 0
@@ -4391,7 +4419,9 @@ int main(int argc, char **argv)
                    || (strncmp(view, "servo-limrun", 12) == 0
                        && strcmp(view, "servo-limrun-restore") != 0
                        && strcmp(view, "servo-limrun-stopped") != 0
-                       && strcmp(view, "servo-limrun-range") != 0)
+                       && strcmp(view, "servo-limrun-range") != 0
+                       && strcmp(view, "servo-limrun-hitec") != 0
+                       && strcmp(view, "servo-limrun-settings") != 0)
                    || strcmp(view, "setup-leave-armed") == 0
                    || render_files_armed(view)
                    || render_rudder_armed(view)
@@ -4421,7 +4451,11 @@ int main(int argc, char **argv)
     if (id == SCREEN_FILES) {
         render_files_prepare(view);
     }
-    ui_router_goto(id);
+    /* A SERVO view posed on its screen stays where its poses took it:
+     * a programmer's session that holds its port opens on its own. */
+    if (!servo_screen_owns(id) || !servo_screen_owns(ui_router_current())) {
+        ui_router_goto(id);
+    }
     if (id == SCREEN_FILES) {
         render_files_pose(view);
     }
@@ -4473,7 +4507,7 @@ int main(int argc, char **argv)
                               || strcmp(view, "servo-paused") == 0
                               || strncmp(view, "servo-limrun", 12) == 0;
     if (id == SCREEN_MOTOR || id == SCREEN_SUPPLY
-        || (id == SCREEN_SERVO && !servo_moving)) {
+        || (servo_screen_owns(id) && !servo_moving)) {
         for (int f = 0; f < 10; ++f) {
             ui_router_tick(0.05f);
             ui_router_render(&c, 0);

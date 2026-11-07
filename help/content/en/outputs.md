@@ -8,7 +8,7 @@ order: 62
 
 OUTPUTS assigns IOmcu pins to output protocols, defining which pins drive servos or ESCs (electronic speed controllers) and which signal they use. From [SETUP](setup.md), it opens the [overview](#the-overview-off), with OFF selected and every assigned pin labelled by protocol.
 
-From TARGET on [MOTOR & ESC](motor.md#target), it opens the throttle protocol, or the overview for mixed or unknown protocols. From [SERVO](servo-settings.md#the-target-row), it follows TARGET: [PROG PORT](#the-prog-port-entry) for a programming port, SERVO PWM for outputs, or the overview for an unknown target. The home tag returns to the originating screen. If the protocol list is open, home first closes it without selecting anything.
+From TARGET on [MOTOR & ESC](motor.md#target), it opens the throttle protocol, or the overview for mixed or unknown protocols. SERVO's [PORT button](servo-settings.md#the-port-button) picks the tester's port in a list of its own and does not open this screen. The home tag returns to the originating screen. If the protocol list is open, home first closes it without selecting anything.
 
 A board with a drawing or shape shows [pin keys](#the-board-and-its-keys). The list identifies each GPIO (general-purpose input/output); the drawing shows where to connect the lead. Boards without either description, and the rbmod carrier, use a [pin grid](#the-grid-view).
 
@@ -120,7 +120,7 @@ The open protocol list has a second column with one PROG PORT entry for each rep
 | PIN | `PIN GPIO 13` with its pad, `SET A PIN`, `PIN GPIO 14 REFUSED` or `NO PIN KNOWN`. The keys on the board set it: a free key asks the IOmcu for that pin, the port's own accented key asks for none |
 | FUNCTION | what the pin carries while no programming session holds it; a tap on its face opens the list over the column. SERVO PWM is the servo pulse on a PWM pin; NONE leaves the pin an input with its pull-down, on any free pin; DSHOT150, DSHOT300 and DSHOT600 (IOmcu 0.22.0 or later) send DShot from MOTOR & ESC's throttle, a frame every 1ms while ARMED for the throttle, on any free pin |
 | WATCHED BY | the INA3221 channel that watches the port in SETUP > SENSORS, `WATCHED BY INA3221 0x41 CH2`; `WATCHED BY NO CURRENT CHANNEL` while none does |
-| SERVO TESTER | OUTPUTS or PORT n: what the [SERVO](servo.md) tester drives. SERVO's TARGET row opens OUTPUTS here while the IOmcu drives the port |
+| SERVO TESTER | OUTPUTS or PORT n: what the [SERVO](servo.md) tester drives. SERVO's PORT button sets the same value |
 | PORT PWM | ON or OFF: the pulse of the port that is the tester's target |
 
 The IOmcu stores each port's pin and function in flash alongside the output bindings, so they stay with the board. Port 1 defaults to SERVO PWM on GPIO 13; ports 2 to 4 default to NONE with no pin. Selecting a FUNCTION or pin requests a change. The panel writes it when the bench is at rest, and the amber line reports its status.
@@ -233,4 +233,4 @@ The IOmcu stores the binding in its own flash and restores it at boot; the panel
 
 - [Setup](setup.md)
 - [Motor and ESC](motor.md#target): the pins the throttle drives.
-- [Servo settings](servo-settings.md#the-target-row): the pins the servo tester drives.
+- [Servo settings](servo-settings.md#the-port-button): the pins the servo tester drives.

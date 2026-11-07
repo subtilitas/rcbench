@@ -48,6 +48,9 @@ bool svs_arm_locked(void)
  */
 bool svs_safe_at(int x, int y)
 {
+    if (s.fn == SERVO_FN_HUB || svs_list_shown()) {
+        return false;           /* the bench is SAFE under both */
+    }
     if (s.gate.armed && gfx_rect_contains(s.arm_btn, x, y)) {
         return true;
     }
@@ -61,11 +64,9 @@ bool svs_safe_at(int x, int y)
         && gfx_rect_contains(prog5v_box_button(&s.p5), x, y)) {
         return true;
     }
-    if (live_shown() && gfx_rect_contains(test_btn_rect(), x, y)) {
-        if (s.lim_box) {
-            return servo_limrun_running(&s.lim);
-        }
-        return s.test_box && servo_test_running(&s.test);
+    if (run_box_shown() && gfx_rect_contains(test_btn_rect(), x, y)) {
+        return (s.fn == SERVO_FN_LIMRUN) ? servo_limrun_running(&s.lim)
+                                         : servo_test_running(&s.test);
     }
     if (rauto_shown() && !s.ov_have
         && gfx_rect_contains(rauto_rect(RA_C_START), x, y)) {
@@ -73,13 +74,13 @@ bool svs_safe_at(int x, int y)
     }
     if (wb_task() == UI_WB_TEST && !s.ov_have && rows_page() < 0
         && gfx_rect_contains(page_area(), x, y)) {
-        for (int k = 0; k < 2; ++k) {
-            if (gfx_rect_contains(run_set_rect(k), x, y)) {
-                return false;
-            }
+        const int k = run_card_shown();
+        if (gfx_rect_contains(run_set_rect(k), x, y)) {
+            return false;
         }
-        if (gfx_rect_contains(test_start_rect(), x, y)) {
-            return servo_test_running(&s.test);
+        if (k == 0) {
+            return gfx_rect_contains(test_start_rect(), x, y)
+                   && servo_test_running(&s.test);
         }
         return gfx_rect_contains(lim_start_rect(), x, y)
                && servo_limrun_running(&s.lim);
@@ -278,11 +279,22 @@ void svs_event_body(const touch_event_t *evt)
         return;
     }
     prog_armed(bench_arming());
+    if (s.fn == SERVO_FN_HUB) {
+        hub_event(evt);
+        return;
+    }
     const int px = evt->point.x, py = evt->point.y;
-    const prog_page_set_t *ps = prog_shown_set();
+    /* A page of rows covers the session on KST. */
+    const prog_page_set_t *ps = (rows_page() < 0) ? prog_shown_set() : NULL;
 
-    /* The strip's, the TARGET row's and PROGRAM's list's own presses, the
-     * session's, then the pages' and the panels'. */
+    /* The SETTINGS list takes every event while it shows; a panel it
+     * opened takes them over it. */
+    if (svs_list_shown() && !modal_open()) {
+        ui_setlist_event(&s.sl, evt);
+        return;
+    }
+    /* RUDDER's, AUTO's, the footer's and the PORT button's own presses,
+     * the session's, then the pages' and the panels'. */
     if (evt->type != TOUCH_EVENT_DOWN && wb_rest(evt)) {
         return;
     }
@@ -314,7 +326,7 @@ void svs_event_body(const touch_event_t *evt)
             svs_drag_end();
         }
         ui_slider_release(&s.speed);
-        if (wb_down(evt)) {
+        if (foot_down(evt)) {
             return;
         }
         if (modal_open() && gfx_rect_contains(overlay_area(), px, py)) {
@@ -330,13 +342,38 @@ void svs_event_body(const touch_event_t *evt)
             }
             return;
         }
+        if (run_box_shown() && s.fn == SERVO_FN_LIMRUN
+            && gfx_rect_contains(test_btn_rect(), px, py)) {
+            /* STOP RUN ends the limit run on the press; CLOSE puts the
+             * result away. */
+            if (servo_limrun_running(&s.lim)) {
+                lim_end_now(SERVO_TEST_AB_OPERATOR);
+            } else {
+                s.lim_box = false;
+            }
+            servo_invalidate();
+            ++s.ctrl_rev;
+            return;
+        }
+        if (run_box_shown() && s.fn == SERVO_FN_TEST
+            && gfx_rect_contains(test_btn_rect(), px, py)) {
+            /* STOP TEST ends the run on the press, as a stop does; CLOSE
+             * puts the result away. */
+            if (servo_test_running(&s.test)) {
+                test_end_now(SERVO_TEST_AB_OPERATOR);
+            } else {
+                s.test_box = false;
+            }
+            ++s.ctrl_rev;
+            return;
+        }
         if (ps == NULL && wb_task() != UI_WB_LIVE
             && gfx_rect_contains(page_area(), px, py)) {
             if (!s.ov_have) {
                 if (rows_page() >= 0) {
                     ov_down(evt);
                 } else if (wb_task() == UI_WB_PROGRAM) {
-                    prog_page_down(evt);
+                    /* KST or HITEC whose session closed: nothing here. */
                 } else if (wb_task() == UI_WB_RUDDER) {
                     rudder_down(evt);
                 } else {
@@ -406,31 +443,6 @@ void svs_event_body(const touch_event_t *evt)
                 }
                 return;
             }
-        }
-        if (s.lim_box && live_shown()
-            && gfx_rect_contains(test_btn_rect(), px, py)) {
-            /* STOP RUN ends the limit run on the press; CLOSE puts the
-             * result away. */
-            if (servo_limrun_running(&s.lim)) {
-                lim_end_now(SERVO_TEST_AB_OPERATOR);
-            } else {
-                s.lim_box = false;
-            }
-            servo_invalidate();
-            ++s.ctrl_rev;
-            return;
-        }
-        if (s.test_box && live_shown()
-            && gfx_rect_contains(test_btn_rect(), px, py)) {
-            /* STOP TEST ends the run on the press, as a stop does; CLOSE
-             * puts the result away. */
-            if (servo_test_running(&s.test)) {
-                test_end_now(SERVO_TEST_AB_OPERATOR);
-            } else {
-                s.test_box = false;
-            }
-            ++s.ctrl_rev;
-            return;
         }
         float deg;
         if (live_shown() && on_the_dial(px, py, &deg)) {

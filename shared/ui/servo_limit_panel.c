@@ -701,7 +701,7 @@ void draw_lim_box(gfx_canvas_t *c)
              * puts back the ones before the run: KST's RESTORE, the Hitec
              * programmer's backup file. */
             if (r->cfg.family == SERVO_LIMRUN_FAM_KST) {
-                snprintf(l3, sizeof(l3), TR(SV_LIM_RESTORE), TR(KP_PROGRAM));
+                snprintf(l3, sizeof(l3), TR(SV_LIM_RESTORE), TR(SVH_KST));
             } else if (r->servo.backup[0] != '\0') {
                 snprintf(l3, sizeof(l3), TR(SV_LIM_RESTORE_HITEC),
                          r->servo.backup);

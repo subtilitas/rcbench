@@ -345,13 +345,13 @@ TEST_CASE(the_mode_kept_by_the_settings_shows_after_a_restart)
     settings_init();
 }
 
-/* ------------------------------------------------- SERVO > SETTINGS > DUT */
+/* ------------------------------------------------ SERVO > KST > SETTINGS */
 
-/* The KST EXPERT MODE row: DUT's right column, its second row. */
-#define KX_X 470
-#define KX_Y SV_ROW_Y(1)
+/* The KST EXPERT MODE row: the page's first row, its value. */
+#define KX_X SV_LIST_X(0)
+#define KX_Y SV_LIST_ROW_Y(0)
 
-/** @brief The SERVO screen with the router on it, SETTINGS > DUT shown,
+/** @brief KST's screen with the router on it, its SETTINGS page shown,
  *         the mode OFF. */
 static void on_dut(void)
 {
@@ -361,12 +361,12 @@ static void on_dut(void)
         splash_screen_set((splash_step_t)i, SPLASH_OK, "");
     }
     ui_router_tick(2.0f);
-    ui_router_goto(SCREEN_SERVO);
+    ui_router_goto(SCREEN_SERVO_KST);
     fresh_screen();
     settings_set(SET_KST_EXPERT, 0.0f);
     ui_router_set_alert(NULL);
+    program_open();
     screen_tap(SETB_X, BTN_Y);
-    screen_tap(SV_PAGE_X(2), SV_PAGE_TAB_Y);
 }
 
 /** @brief A press on the row held @p secs and let go on it. */
@@ -399,17 +399,18 @@ TEST_CASE(the_settings_row_turns_on_after_a_2s_hold_and_off_with_a_tap)
     /* A tap on OFF is a short press: it stays OFF. */
     screen_tap(KX_X, KX_Y);
     CHECK(!settings_get_bool(SET_KST_EXPERT));
-    /* The overlay follows: four tabs on PROGRAM. */
-    screen_tap(PROG_X, BTN_Y);
+    /* The session follows: four tabs once it opens again. */
+    screen_tap(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y);
+    program_close();
+    CHECK(!kst_panel_is_open());
     program_open();
     CHECK(kst_panel_is_open());
     CHECK_EQ(tabs(), 4);
-    program_close();
-    CHECK(!kst_panel_is_open());
     screen_tap(SETB_X, BTN_Y);
-    screen_tap(SV_PAGE_X(2), SV_PAGE_TAB_Y);
     kx_hold(2.1f);
     CHECK(settings_get_bool(SET_KST_EXPERT));
+    screen_tap(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y);
+    program_close();
     program_open();
     CHECK(kst_panel_is_open());
     CHECK_EQ(tabs(), 5);
@@ -451,11 +452,11 @@ TEST_CASE(a_hold_that_leaves_the_row_or_loses_its_press_changes_nothing)
     scr->cancel();
     ticks(1.5f);
     CHECK(!settings_get_bool(SET_KST_EXPERT));
-    /* A task left under the hold. */
+    /* A screen left under the hold. */
     ev(KX_X, KX_Y, TOUCH_EVENT_DOWN, 1);
     ticks(1.0f);
     ev(KX_X, KX_Y, TOUCH_EVENT_UP, 1);
-    screen_tap(LIVE_X, BTN_Y);
+    go(SERVO_FN_LIVE);
     ticks(1.5f);
     CHECK(!settings_get_bool(SET_KST_EXPERT));
 }
@@ -823,6 +824,30 @@ TEST_CASE(the_active_output_and_the_write_switch_are_the_same_in_both_modes)
     CHECK_STR_EQ(enable_label[0], enable_label[1]);
 }
 
+/* A finger on a KST control and a second on SETTINGS: the page does not
+ * cover the session, so the first finger's release still reaches KST and
+ * no warning hold runs on without it. */
+TEST_CASE(settings_waits_for_a_press_on_the_session)
+{
+    ui_router_init();
+    for (int i = 0; i < SPLASH_STEP_COUNT; ++i) {
+        splash_screen_set((splash_step_t)i, SPLASH_OK, "");
+    }
+    ui_router_tick(2.0f);
+    ui_router_goto(SCREEN_SERVO_KST);
+    fresh_screen();
+    program_open();
+    CHECK(kst_panel_is_open());
+    const gfx_rect_t r = kst_panel_tab_rect(PG_SERVO);
+    ev(cx(r), cy(r), TOUCH_EVENT_DOWN, 1);
+    CHECK(kst_panel_has_press(1));
+    ev(SETB_X, BTN_Y, TOUCH_EVENT_DOWN, 2);
+    ev(SETB_X, BTN_Y, TOUCH_EVENT_UP, 2);
+    ev(cx(r), cy(r), TOUCH_EVENT_UP, 1);
+    CHECK(!kst_panel_has_press(1));
+    CHECK(!kst_panel_pressed());
+}
+
 int main(void)
 {
     RUN(a_fresh_panel_starts_with_the_mode_off_and_the_expert_rows_absent);
@@ -844,5 +869,6 @@ int main(void)
     RUN(a_step_key_held_as_the_mode_turns_off_stops_its_repeat);
     RUN(the_fullest_pages_with_the_mode_off_end_above_their_buttons);
     RUN(the_active_output_and_the_write_switch_are_the_same_in_both_modes);
+    RUN(settings_waits_for_a_press_on_the_session);
     return test_summary("kst_panel_expert");
 }

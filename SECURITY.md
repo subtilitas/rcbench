@@ -159,7 +159,7 @@ identifiers). The trigger is a BLE device in range that wins the
 connection to the stored address, by advertising it while the sensor is
 off or out of range, and serves the ISSC service: it can send
 checksum-valid 0x53 angle frames, which the panel takes as the sensor's
-angle. With ANGLE SOURCE IMU, RUDDER's AUTO run measures on those angles
+angle. With ANGLE SOURCE IMU, RUDDER AUTO's run measures on those angles
 and writes the servo's end points, which the servo keeps. What limits it:
 AUTO runs only ARMED, starts only after its 2s hold at the bench, keeps
 the current and stall guards of every servo run, and ends on STOP. A

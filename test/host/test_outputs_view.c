@@ -286,8 +286,8 @@ TEST_CASE(a_view_changed_during_a_visit_drops_the_press_and_keeps_the_selection)
 
 TEST_CASE(a_target_opens_the_board_view_on_its_entry_and_home_returns_to_it)
 {
-    static const ui_screen_id_t k_from[] = { SCREEN_MOTOR, SCREEN_SERVO };
-    for (unsigned f = 0; f < 2u; ++f) {
+    static const ui_screen_id_t k_from[] = { SCREEN_MOTOR };
+    for (unsigned f = 0; f < sizeof(k_from) / sizeof(k_from[0]); ++f) {
         ui_router_init();
         fresh_view();
         ui_router_goto(SCREEN_OVERVIEW);

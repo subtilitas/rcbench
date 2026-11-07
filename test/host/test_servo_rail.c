@@ -26,7 +26,7 @@
  * is 32 of the 35 cells the 356px pill holds.  A typed end reaches the row
  * at once.
  */
-#define TAG_BOX_Y 20
+#define TAG_BOX_Y SV_TAG_Y
 
 #define TAG_BOX_H 44
 
@@ -62,7 +62,7 @@ TEST_CASE(the_tag_row_carries_the_pulse_range)
     /* PULSE MAX typed: the row follows without another tap. */
     choose_type(0);
     open_settings();
-    tap(ROW_L_X, ROW_Y(3));                    /* PULSE MAX */
+    sl_tap(HL_MAX);                    /* PULSE MAX */
     keys("2100");
     close_settings();
     CHECK(tag_reads("STANDARD PWM  50Hz  1000-2100", false));

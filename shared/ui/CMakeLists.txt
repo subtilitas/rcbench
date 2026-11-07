@@ -61,6 +61,10 @@ set(SRCS
     servo_rudder_auto_panel.c
     servo_rudder_flap.c
     servo_guide.c
+    servo_fn.c
+    servo_hub.c
+    servo_footer.c
+    servo_lists.c
     kst_panel.c
     kst_panel_text.c
     kst_panel_warn.c

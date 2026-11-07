@@ -6,21 +6,29 @@ order: 20
 
 # Servo
 
-SERVO drives a servo, measures its current on the servo rail, runs an automatic test across supply voltages and searches the travel limits of the installed servo. It opens from the SERVO tile on the [menu](overview.md), on LIVE.
+SERVO drives a servo, measures its current on the servo rail, runs an automatic test across supply voltages and searches the travel limits of the installed servo. It opens from the SERVO tile on the [menu](overview.md), on its hub.
 
-## The workbench
+## The hub
 
-The strip below the band contains LIVE, TEST, PROGRAM, RUDDER and SETTINGS. Each task retains its page and selection until restart. Switching tabs adds no navigation level: home returns to the menu from any task. Within run settings it returns to TEST; within a programmer it returns to the PROGRAM list. Leaving SERVO switches the bench to SAFE.
+![The SERVO hub](view:servo-hub)
 
-| Task | Left card |
+The hub holds eight tiles, each opening a screen of its own:
+
+| Tile | Screen |
 |---|---|
-| LIVE | the horn's angle, the dial, the readings COMMANDED, MEASURED and CURRENT along its foot, and a run's box left of the dial |
-| TEST | the AUTOMATIC TEST and LIMIT RUN cards, each with its SETTINGS, a summary line, its start hold, the last result and its file; SUPPLY's caps, read-only |
-| PROGRAM | the list of programmers; a row opens its programmer over the left column ([Servo programmer](servo-programmer.md)) |
-| RUDDER | the control surface's deflection in ° and mm, LENGTH, the buttons 1000us, CENTRE and 2000us, ZERO, RESET MAX and AUTO, which programs KST, Chaservo or Hitec end points to the deflection entered ([Rudder deflection](servo-rudder.md)) |
-| SETTINGS | the pages OUTPUT, SWEEP and DUT ([Servo settings](servo-settings.md)) |
+| LIVE | the horn's angle, the dial, and the readings COMMANDED, MEASURED and CURRENT along its foot |
+| SWEEP | the dial with SWEEP; its list sets CURVE, SPEED and RANGE ([Servo settings](servo-settings.md)) |
+| TEST | the AUTOMATIC TEST card with its SETTINGS, a summary line, its start hold, the last result and its file; SUPPLY's caps, read-only; the run's box under the card |
+| LIMIT RUN | the LIMIT RUN card, the same way |
+| RUDDER | the control surface's deflection in ° and mm, LENGTH, the buttons 1000us, CENTRE and 2000us, ZERO and RESET MAX ([Rudder deflection](servo-rudder.md)) |
+| RUDDER AUTO | AUTO's box, which programs KST, Chaservo or Hitec end points to the deflection entered |
+| KST, HITEC | the programmer for that make, over the left card ([Servo programmer](servo-programmer.md)) |
 
-The right card is the output card, the same on every task: the type row, the meter line and plot, the supply line, SPEED, the TARGET row, CENTRE, SWEEP, RELEASE and ARM. Every row tapped there is 48px (7.2mm) tall or taller, and ARM is 60px. The rotary knob moves the horn on LIVE and RUDDER only.
+KST and HITEC are grey while the IOmcu lacks their capability or another session holds the port; a tap names the reason. The hub's footer shows SERVO with the port line and SETTINGS, which opens the servo profile every function uses ([Servo settings](servo-settings.md)). The hub drives nothing: the bench is SAFE there.
+
+The home tag goes from a function screen to the hub, and from the hub to the menu. Leaving a function screen switches the bench to SAFE. The PROG 5V on the carrier stays on from one SERVO screen to another and goes off when SERVO is left; on the hub the footer reads `PROG 5V ON` in the warning colour while it is on.
+
+Every function screen shows the output card on the right, the same on every screen: the PORT button, the meter line and plot, the supply line, SPEED, the type, CENTRE, SWEEP and RELEASE. The footer holds the function's name with the port line, ARM, and SETTINGS for the screen's list; LIVE has no list. Every control is 48px (7.2mm) tall or taller. The rotary knob moves the horn on LIVE, SWEEP, RUDDER and RUDDER AUTO only.
 
 ## At rest
 
@@ -40,11 +48,11 @@ The right card, from the top:
 
 | Row | Shows |
 |---|---|
+| PORT | what the tester drives, `protocol pins`: `SERVO PWM GPIO 2`, `PROG PORT 1 GPIO 13`, or a warning; a tap opens the list where it is picked ([the PORT button](servo-settings.md#the-port-button)) |
 | type row | the servo type, frame rate and pulse range in force: `STANDARD PWM  50Hz  1000-2000` |
 | meter line and plot | voltage, current and power of the rail, plotted over the last 17.8s |
 | SET | the supply's voltage and current limit, and its output switch |
 | SPEED | the rate the bench may move the output, 100% passes the command straight through |
-| TARGET | what the tester drives, `protocol pins`: `SERVO PWM GPIO 2`, `PROG PORT 1 GPIO 13`, or a warning; a tap opens Outputs, where it is picked ([the TARGET row](servo-settings.md#the-target-row)) |
 
 ## ARMED
 
@@ -112,7 +120,7 @@ Standard servos are rated for 4.8 to 6.0V. A voltage raised from 6.0V or below t
 
 ## SWEEP and PAUSE
 
-SWEEP follows SETTINGS > SWEEP's CURVE (square, sine or triangle), at SPEED from 0.05 to 5Hz and RANGE from 10 to 100% of travel. The IOmcu times the curve independently of link timing. During motion the button reads PAUSE. Tap it to hold the current position; it then reads PAUSED. Tap again to resume from that point.
+SWEEP follows the CURVE on the SWEEP screen's SETTINGS list (square, sine or triangle), at SPEED from 0.05 to 5Hz and RANGE from 10 to 100% of travel. The IOmcu times the curve independently of link timing. During motion the button reads PAUSE. Tap it to hold the current position; it then reads PAUSED. Tap again to resume from that point.
 
 ![A paused sweep](view:servo-paused)
 
@@ -128,13 +136,13 @@ Hold START TEST on TEST's AUTOMATIC TEST card for 2s to run the selected supply-
 
 The test requires ARMED and a responding supply. The status line explains any refusal: `ARM FIRST`, `NO STEP CHOSEN`, `SUPPLY NOT ANSWERING`, `RANGE TOO SMALL`, `STEP OUTSIDE VOLTAGE LIMITS` or `REPORT STILL BEING WRITTEN`. Carrier programming ports have fixed 5V power, so supply steps cannot reach them: `PROG PORTS RUN AT 5V FIXED: NO STEPS`.
 
-![TEST and its two run cards](view:servo-test)
+![TEST and its run card](view:servo-test)
 
 The summary line shows the voltage steps and duration, such as `4.8V, 6.0V, BROWN-OUT, 60s EACH`. Below START TEST are status, last result and files, for example `LAST: PASS ATEST004.CSV + .TXT`. An aborted run shows its reason instead: `LAST: ABORTED - link lost`.
 
 ![A test run](view:servo-run)
 
-TEST remains visible when the run begins, with the current step on its status line. LIVE shows step and phase in a box to the left of the dial, below `ARM FIRST`. Beside STOP TEST it identifies the meter: `PD mini`, an INA channel such as `INA 0x41 CH2`, or `SIMULATION`.
+TEST remains visible when the run begins, with the current step on its status line. A box under the card shows step and phase. Beside its STOP TEST it identifies the meter: `PD mini`, an INA channel such as `INA 0x41 CH2`, or `SIMULATION`.
 
 The run ends early with the output off and servo released on STOP TEST, STOP, SAFE, link loss, leaving the screen, touching the dial, CENTRE, SWEEP, RELEASE, tapping a set point or changing servo settings. An INA3221 run also ends if that sensor ceases to be the meter or no window containing both current and voltage arrives for 200ms (4 windows of 50ms): `no INA3221 window for 0.2s`. Those windows supply the STALL AT protection, so the run cannot continue through that gap.
 
@@ -145,37 +153,37 @@ A longer outage ends the run with `AS5600 not answering`; a second within 10s en
 ![A result](view:servo-result)
 ![A result read from the INA3221](view:servo-result-ina)
 
-LIVE keeps the result box until CLOSE; TEST keeps its LAST line until the next run. The result includes PASS, FAIL or ABORTED with a reason, longest travel time, highest holding current and recorded files. These are `ATESTnnn.CSV` and, when written, `+ .TXT` for its report in `USER/LOGS`. With User logs OFF under [SETUP](setup.md#sd-card) > SD CARD, the line reads `USER LOGS OFF` and no file is written.
+The box keeps the result until CLOSE; the card keeps its LAST line until the next run. The result includes PASS, FAIL or ABORTED with a reason, longest travel time, highest holding current and recorded files. These are `ATESTnnn.CSV` and, when written, `+ .TXT` for its report in `USER/LOGS`. With User logs OFF under [SETUP](setup.md#sd-card) > SD CARD, the line reads `USER LOGS OFF` and no file is written.
 
 ## The limit run
 
-The limit run searches for mechanical binding at each end of an installed servo's travel. It can then reduce the servo's LEFT ANGLE and RIGHT ANGLE so it stops before binding. Open TEST's LIMIT RUN card; its SETTINGS opens the [run settings](servo-settings.md#the-limit-run-s-settings).
+The limit run searches for mechanical binding at each end of an installed servo's travel. It can then reduce the servo's LEFT ANGLE and RIGHT ANGLE so it stops before binding. The LIMIT RUN tile on the hub opens its card; the card's SETTINGS opens the [run settings](servo-settings.md#the-limit-run-s-settings).
 
 ![The limit run, ready](view:servo-limrun-ready)
 
 1. Tap SETTINGS on the card, then LIMIT RUN to choose SEARCH ONLY or SEARCH + PROGRAM.
-2. With TARGET on PROG PORT, tap SERVO to choose KST/CHASERVO or HITEC, the programmer the run's sessions go to; it takes the programmer opened last on PROGRAM. With KST/CHASERVO, tap SERVO PULSES to choose KEEP or 1000-2000. It starts at KEEP.
-3. Tap the home tag to go back to the cards.
+2. With PORT on PROG PORT, tap SERVO to choose KST/CHASERVO or HITEC, the programmer the run's sessions go to; it takes the programmer opened last from the hub. With KST/CHASERVO, tap SERVO PULSES to choose KEEP or 1000-2000. It starts at KEEP.
+3. Tap the home tag to go back to the card.
 4. Hold START LIMIT RUN for 2s while the bench is ARMED. A tap or a shorter hold starts nothing and shows `Hold 2s to start the limit run.` in the alert band.
-5. TEST stays shown. The box on LIVE's left card shows the phase, the side and the pulse, and the output it drives.
+5. LIMIT RUN stays shown. A box under the card shows the phase, the side and the pulse, and the output it drives.
 
-The line under the button names the output and the meter, the whole time: `OUTPUT PROG PORT 1 GPIO 13, CURRENT INA3221 0x41 CH2` or `OUTPUT SERVO PWM GPIO 2, CURRENT INA3221 0x40 CH1`. The TARGET row stays in sight as well.
+The line under the button names the output and the meter, the whole time: `OUTPUT PROG PORT 1 GPIO 13, CURRENT INA3221 0x41 CH2` or `OUTPUT SERVO PWM GPIO 2, CURRENT INA3221 0x40 CH1`. The PORT button stays in sight as well.
 
 The run reads only the INA3221 channel that watches the tester's target. With the PD mini or the model as the servo rail's meter, START LIMIT RUN stays grey and the line says why:
 
 | Line | Condition |
 |---|---|
-| `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` | SAFE on the rbmod carrier with TARGET on a programming port and the PROG 5V box off; named before `ARM FIRST`, as the port's pulse comes on only while SAFE |
+| `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` | SAFE on the rbmod carrier with PORT on a programming port and the PROG 5V box off; named before `ARM FIRST`, as the port's pulse comes on only while SAFE |
 | `ARM FIRST` | the bench is SAFE |
-| `NO SERVO PWM PIN`, `PINS NOT READ` | TARGET is the bench's outputs, and no output is bound as SERVO PWM, or the binding is not read yet |
+| `NO SERVO PWM PIN`, `PINS NOT READ` | PORT is the bench's outputs, and no output is bound as SERVO PWM, or the binding is not read yet |
 | `INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT` | no channel of a fitted INA3221 watches the tester's target in SETUP > SENSORS |
 | `INA3221 OFFLINE` | no link, or the INA3221 does not answer |
 | `NO INA3221 MEASUREMENT WINDOWS YET` | the INA3221 is not the meter yet |
 | `SERVO SUPPLY BELOW 3.0V OR NOT READ` | the last INA3221 window has no rail voltage, or less than 3.0V: an output that is off reads 0V |
-| `LOCKED: SERVO PROGRAMMING USES THE PORT` | TARGET is PROG PORT and a programmer session holds the port; named before PORT PWM |
-| `PORT PWM OFF: DISARM, TAP TARGET, SWITCH IT ON` | TARGET is PROG PORT with PORT PWM off, the bench ARMED: TARGET takes no tap while ARMED |
-| `PORT PWM OFF: TAP TARGET AND SWITCH IT ON` | the same while SAFE: TARGET opens the port's entry on OUTPUTS, where PORT PWM is |
-| `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` | TARGET is PROG PORT with PORT PWM on and its pulse still off, as after a PROG 5V switched on while ARMED on the rbmod carrier: the pulse comes on only while SAFE |
+| `LOCKED: SERVO PROGRAMMING USES THE PORT` | PORT is PROG PORT and a programmer session holds the port; named before PORT PWM |
+| `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS` | PORT is PROG PORT with PORT PWM off, the bench ARMED |
+| `PORT PWM OFF: SWITCH IT ON IN OUTPUTS` | the same while SAFE: the port's entry on OUTPUTS holds PORT PWM |
+| `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` | PORT is PROG PORT with PORT PWM on and its pulse still off, as after a PROG 5V switched on while ARMED on the rbmod carrier: the pulse comes on only while SAFE |
 | `CENTRE MUST BE BETWEEN PULSE MIN AND MAX` | the pulse range does not hold PULSE CENTRE |
 | `REPORT STILL BEING WRITTEN` | a test or a run is under way, or its report is still going to the card |
 
@@ -183,7 +191,7 @@ The run reads only the INA3221 channel that watches the tester's target. With th
 
 The search moves outward from centre, low side first, in 10us steps. Each position lasts 250ms: 120ms settling time, followed by averaging the next windows. Binding is detected when current is both above 1.8 times the free-running current and at least 0.15A higher. The reported end point is 25us before that position. The bench's PULSE MIN and PULSE MAX remain unchanged.
 
-| TARGET | Search |
+| PORT | Search |
 |---|---|
 | a SERVO PWM pin | from PULSE CENTRE out to PULSE MIN and PULSE MAX; nothing is read or written |
 | PROG PORT | a read session first, then from the servo's NEUTRAL out to its own PULSE LOWER and PULSE UPPER, never past them |
@@ -204,7 +212,7 @@ SERVO PULSES at 1000-2000 writes PULSE LOWER 1000.0us and PULSE UPPER 2000.0us i
 
 ### Programming LEFT ANGLE and RIGHT ANGLE
 
-For KST/Chaservo, SEARCH + PROGRAM requires TARGET PROG PORT with PWM active and a way to power-cycle the servo. On a manually wired bench, this means a PD mini with output on and a set point of at least 4.8V. Written settings take effect only after power cycling.
+For KST/Chaservo, SEARCH + PROGRAM requires PORT on PROG PORT with PWM active and a way to power-cycle the servo. On a manually wired bench, this means a PD mini with output on and a set point of at least 4.8V. Written settings take effect only after power cycling.
 
 Without a PD mini, SEARCH + PROGRAM and SERVO PULSES 1000-2000 are unavailable. The card shows `PROGRAMMING: NO PD MINI TO SWITCH THE SERVO OFF AND ON`. SEARCH ONLY can run if the INA3221's latest rail voltage is at least 4.8V. With a PD mini present, its output must be on; a non-PWM port or voltage below 4.8V also blocks SEARCH ONLY.
 
@@ -269,13 +277,13 @@ A run that ends while it waits for ARMED also switches the bench to SAFE.
 
 ![A run stopped after a write](view:servo-limrun-stopped)
 
-Written settings remain in the servo after the run. The box shows `RESTORE IN PROGRAM.` For KST/Chaservo, use CONNECT and READ ALL in the programmer, then choose `Settings before the limit run.` under RESTORE. A later session creates its own backup on its first write.
+Written settings remain in the servo after the run. The box shows `RESTORE IN KST`. For KST/Chaservo, use CONNECT and READ ALL in the programmer, then choose `Settings before the limit run.` under RESTORE. A later session creates its own backup on its first write.
 
 ![RESTORE after a limit run](view:servo-limrun-restore)
 
 ### The result
 
-The box on LIVE stays until CLOSE, and the card's LAST line until the next run. The box shows the verdict, the reason or the values, and the report's file name.
+The box under the card stays until CLOSE, and the card's LAST line until the next run. The box shows the verdict, the reason or the values, and the report's file name.
 
 | Verdict | Meaning |
 |---|---|
@@ -298,7 +306,7 @@ The run writes `LIMITnnn.TXT` in `USER/LOGS` regardless of REPORT, unless User l
 
 ## Related pages
 
-- [Servo settings](servo-settings.md): type, frame rate, pulses, the sweep, each run's settings and the target.
-- [Servo programmer](servo-programmer.md): PROGRAM's row for KST and Chaservo servos.
+- [Servo settings](servo-settings.md): type, frame rate, pulses, the sweep, each run's settings and the PORT button.
+- [Servo programmer](servo-programmer.md): the KST and HITEC tiles.
 - [Supply](supply.md): the PD mini.
 - [Sensors](setup-sensors.md): the INA3221 and the AS5600.

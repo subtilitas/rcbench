@@ -128,6 +128,13 @@ void kst_panel_tick(float dt_s);
 /** True while a press that began in the overlay is on the glass. */
 bool kst_panel_has_press(uint8_t id);
 
+/**
+ * @brief Whether any finger holds a press on the KST session now: a
+ *        page that covers the session waits for its release.
+ * @return true while a press is held
+ */
+bool kst_panel_pressed(void);
+
 /** A press in the overlay's area, or the rest of one it owns. */
 void kst_panel_event(const touch_event_t *evt);
 
@@ -341,9 +348,11 @@ gfx_rect_t kst_panel_value_rect(int page, int row, int col);
  */
 gfx_rect_t kst_panel_step_rect(int page, int row, bool up);
 /**
- * @brief A list's entry, 48px tall at a 56px pitch under the title.
+ * @brief A list's entry, 48px tall at a 56px pitch under the title; two
+ *        to a row, in order, when one column above CANCEL does not hold
+ *        the list, an entry wider than a column on a row of its own.
  * @param i the entry, from 0
- * @return its rectangle
+ * @return its rectangle; empty for no such entry
  */
 gfx_rect_t kst_panel_choice_rect(int i);
 /** @brief A list's CANCEL, 150 x 48px at the foot's right.
@@ -415,8 +424,11 @@ int kst_panel_pack_notes(const int *rows, const bool *standing, int count,
  *  a tap on the notes shows the next. */
 int kst_panel_note_pages(void);
 
-/** The notes' area, a tap on which shows the next page; empty while the
- *  notes take one page. */
+/**
+ * @brief The notes' area, a tap on which shows the next page.
+ * @return the area; empty while the notes take one page or wait for the
+ *         message
+ */
 gfx_rect_t kst_panel_notes_rect(void);
 
 /** The notes' page shown, from 0. */

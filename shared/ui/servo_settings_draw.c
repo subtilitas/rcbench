@@ -69,9 +69,6 @@ void draw_kx_value(gfx_canvas_t *c)
  */
 static bool row_unused(const ov_row_t *r)
 {
-    if (r->kind == R_ENC_CENTRE) {
-        return !settings_get_bool(SET_ENC_EN);
-    }
     if (r->kind == R_LIM_MODE) {
         return servo_limrun_running(&s.lim) || lim_mode_why() != NULL;
     }
@@ -94,13 +91,7 @@ static bool row_unused(const ov_row_t *r)
                && !s.test_hv);
 }
 
-/**
- * @brief A row's value as text.
- * @param r the row
- * @param buf the text
- * @param n its size
- */
-static void row_value(const ov_row_t *r, char *buf, size_t n)
+void ov_row_value(const ov_row_t *r, char *buf, size_t n)
 {
     switch (r->kind) {
     case R_TYPE:    snprintf(buf, n, "%s", type()->name); return;
@@ -138,9 +129,6 @@ static void row_value(const ov_row_t *r, char *buf, size_t n)
     case R_LIM_SERVO:
         snprintf(buf, n, "%s",
                  s.lim_hitec ? TR(SV_LIM_SERVO_HITEC) : TR(SV_LIM_SERVO_KST));
-        return;
-    case R_ENC_CENTRE:
-        snprintf(buf, n, "%d", settings_get_int(SET_ENC_CENTRE));
         return;
     default:
         break;
@@ -181,7 +169,7 @@ static void draw_note(gfx_canvas_t *c, int x, int y, const char *const *lines,
 
 /** @brief The brown-out walk's note, 6px under its three rows. */
 #define BO_NOTE_Y (RL_ROW0 + 3 * RL_PITCH + 6)
-_Static_assert(BO_NOTE_Y + 2 * NOTE_PITCH <= STOP_FLOOR,
+_Static_assert(BO_NOTE_Y + 2 * NOTE_PITCH <= CARD_FLOOR,
                "the brown-out walk's note ends above the alert band");
 
 /**
@@ -259,92 +247,54 @@ bool servo_in_force_note(char *l1, char *l2, size_t size, uint16_t hz,
     return warn;
 }
 
-/** @brief A line of a page's note: the page less 10px each side, 60
- *         cells. */
-#define NOTE_CELLS ((OV_W - 20) / SV_CELL)
-
-/**
- * @brief Whether the frame rate reached the pins, in two lines or more.
- * @param c the canvas
- * @param x the note's left edge, px
- * @param y its first line's top, px
- */
-static void draw_rate_note(gfx_canvas_t *c, int x, int y)
+bool svs_rate_note(char *l1, char *l2, size_t n)
 {
     const servo_rate_state_t st = (s.rate_hz == s.frame_hz
                                    || s.rate_st == SERVO_RATE_UNSUPPORTED)
                                       ? s.rate_st
                                       : SERVO_RATE_UNSENT;
-    char l1[96], l2[96];
     bool warn = true;
     switch (st) {
     case SERVO_RATE_IN_FORCE:
-        warn = servo_in_force_note(l1, l2, sizeof(l1), s.frame_hz,
-                                   s.drive_target, s.drive_pin, s.drive_pwm,
+        warn = servo_in_force_note(l1, l2, n, s.frame_hz, s.drive_target,
+                                   s.drive_pin, s.drive_pwm,
                                    settings_get_int(SET_SERVO_TARGET));
         break;
     case SERVO_RATE_IN_FORCE_SURFACES:
         /* With no link the same "not known" line as from 4.19. */
         if (s.drive_target == SERVO_SCREEN_TARGET_NO_LINK) {
-            warn = servo_in_force_note(l1, l2, sizeof(l1), s.frame_hz,
+            warn = servo_in_force_note(l1, l2, n, s.frame_hz,
                                        s.drive_target, s.drive_pin,
                                        s.drive_pwm,
                                        settings_get_int(SET_SERVO_TARGET));
             break;
         }
-        snprintf(l1, sizeof(l1), TR(SV_IN_FORCE_SURFACES_1),
-                 (unsigned)s.frame_hz);
-        snprintf(l2, sizeof(l2), "%s", TR(SV_IN_FORCE_2));
+        snprintf(l1, n, TR(SV_IN_FORCE_SURFACES_1), (unsigned)s.frame_hz);
+        snprintf(l2, n, "%s", TR(SV_IN_FORCE_2));
         warn = false;
         break;
     case SERVO_RATE_REFUSED:
-        snprintf(l1, sizeof(l1), "%s", TR(SV_REFUSED_1));
-        snprintf(l2, sizeof(l2), "%s", TR(SV_REFUSED_2));
+        snprintf(l1, n, "%s", TR(SV_REFUSED_1));
+        snprintf(l2, n, "%s", TR(SV_REFUSED_2));
         break;
     case SERVO_RATE_UNSUPPORTED:
-        snprintf(l1, sizeof(l1), "%s", TR(SV_UNSUPPORTED_1));
-        snprintf(l2, sizeof(l2), "%s", TR(SV_UNSUPPORTED_2));
+        snprintf(l1, n, "%s", TR(SV_UNSUPPORTED_1));
+        snprintf(l2, n, "%s", TR(SV_UNSUPPORTED_2));
         break;
     case SERVO_RATE_UNSENT:
     default:
-        snprintf(l1, sizeof(l1), "%s", TR(SV_UNSENT_1));
-        snprintf(l2, sizeof(l2), "%s", TR(SV_UNSENT_2));
+        snprintf(l1, n, "%s", TR(SV_UNSENT_1));
+        snprintf(l2, n, "%s", TR(SV_UNSENT_2));
         warn = false;
         break;
     }
-    const gfx_color_t col = warn ? ui_theme_color(UI_C_WARN)
-                                 : ui_theme_color(UI_C_TEXT_FAINT);
-    /* Each line wraps onto the next where it is longer than the page's
-     * 60 cells. */
-    const int n1 = wrap_text(c, x, y, NOTE_PITCH, l1, NOTE_CELLS, col,
-                             SV_FONT_LABEL);
-    (void)wrap_text(c, x, y + NOTE_PITCH * n1, NOTE_PITCH, l2, NOTE_CELLS,
-                    col, SV_FONT_LABEL);
+    return warn;
 }
 
 /**
- * @brief OUTPUT's read-only line: the port SERVO TESTER names, and that its
- *        home is OUTPUTS.  It reads the setting, what the TARGET row reads
- *        being what is driven.
- * @param out takes the line
- * @param n   the size of @p out, bytes
- */
-static void tester_note(char *out, size_t n)
-{
-    const int port = settings_get_int(SET_SERVO_TARGET);
-    char what[16];
-    if (port == 0) {
-        snprintf(what, sizeof(what), "%s", TR(OUT_TESTER_OUTPUTS));
-    } else {
-        snprintf(what, sizeof(what), TR(OUT_TESTER_PORT), (unsigned)port);
-    }
-    snprintf(out, n, TR(SV_TESTER_HOME), what);
-}
-
-/**
- * @brief A page of rows in the page area: SETTINGS' page under its tabs,
- *        or a run's settings under the run's name.  Its notes, and the
- *        save line.
+ * @brief A page of rows in the page area, under its name: a run's
+ *        settings, the brown-out walk's, KST's EXPERT MODE.  Its notes,
+ *        and the save line.
  * @param c the canvas
  */
 void draw_rows_page(gfx_canvas_t *c)
@@ -353,51 +303,32 @@ void draw_rows_page(gfx_canvas_t *c)
     const gfx_rect_t a = page_area();
     gfx_fill_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2,
                   ui_theme_color(UI_C_PANEL));
-    if (page < PG_COUNT) {
-        ui_tabs_render(&s.tabs, c);
-    } else {
-        const char *name = (page == PG_AUTO)       ? TR(SV_AUTO_TEST)
-                           : (page == PG_BROWNOUT) ? TR(SV_ROW_BROWNOUT)
-                                                   : TR(SV_ROW_LIM_MODE);
-        gfx_text(c, OV_X + 10, CARD_Y + RUN_PAGE_NAME_DY, name,
-                 SV_FONT_LABEL, ui_theme_color(UI_C_ACCENT), 1);
-        ui_button_font(c, run_close_rect(), TR(SUP_CLOSE),
-                       ui_theme_color(UI_C_PANEL_HI),
-                       s.ov_have && s.ov_pressed == OP_RUN_CLOSE, true,
-                       SV_FONT_LABEL);
-    }
+    const char *name = (page == PG_AUTO)       ? TR(SV_AUTO_TEST)
+                       : (page == PG_BROWNOUT) ? TR(SV_ROW_BROWNOUT)
+                       : (page == PG_KST)      ? "KST"
+                                               : TR(SV_ROW_LIM_MODE);
+    gfx_text(c, OV_X + 10, CARD_Y + RUN_PAGE_NAME_DY, name, SV_FONT_LABEL,
+             ui_theme_color(UI_C_ACCENT), 1);
+    ui_button_font(c, run_close_rect(), TR(SUP_CLOSE),
+                   ui_theme_color(UI_C_PANEL_HI),
+                   s.ov_have && s.ov_pressed == OP_RUN_CLOSE, true,
+                   SV_FONT_LABEL);
     for (int i = 0; i < k_row_count; ++i) {
         const ov_row_t *r = &k_rows[i];
         if (r->page != page || row_hidden(r)) {
             continue;
         }
         const gfx_rect_t rr = row_rect(i);
-        const gfx_rect_t vr = value_rect(i);
         const bool faint = row_unused(r);
-        /* The label left in its row, or over its value on a run's page. */
-        gfx_text(c, rr.x, (vr.y == rr.y) ? rr.y + 14 : rr.y,
-                 ui_tr(r->label), SV_FONT_LABEL,
+        /* The label over its value. */
+        gfx_text(c, rr.x, rr.y, ui_tr(r->label), SV_FONT_LABEL,
                  faint ? ui_theme_color(UI_C_TEXT_FAINT)
                        : ui_theme_color(UI_C_TEXT_DIM), 1);
+        const gfx_rect_t vr = value_rect(i);
         char v[32];
-        row_value(r, v, sizeof(v));
+        ov_row_value(r, v, sizeof(v));
         const bool pressed = s.ov_have && s.ov_pressed == OP_ROW
                              && s.ov_row == i;
-        if (r->kind == R_TRIM) {
-            gfx_fill_round_rect(c, vr.x, vr.y, vr.w, vr.h, UI_R_CTL,
-                                ui_theme_color(UI_C_PANEL_SUNK));
-            gfx_text_in(c, vr, v, SV_FONT_LABEL, ui_theme_color(UI_C_TEXT),
-                        1, GFX_ALIGN_CENTER);
-            ui_button_font(c, trim_rect(i, false), "-",
-                           ui_theme_color(UI_C_PANEL_HI),
-                           s.ov_have && s.ov_pressed == OP_TRIM_DN, true,
-                           SV_FONT_LABEL);
-            ui_button_font(c, trim_rect(i, true), "+",
-                           ui_theme_color(UI_C_PANEL_HI),
-                           s.ov_have && s.ov_pressed == OP_TRIM_UP, true,
-                           SV_FONT_LABEL);
-            continue;
-        }
         if (r->kind == R_KST_EXPERT) {
             draw_kx_value(c);
             continue;
@@ -414,31 +345,15 @@ void draw_rows_page(gfx_canvas_t *c)
     }
 
     const int nx = OV_X + 10;
-    if (page == PG_OUTPUT) {
-        char l1[96], l2[96];
-        snprintf(l1, sizeof(l1), TR(SV_FASTEST),
-                 (unsigned)max_rate_for(s.type, cmd_top()),
-                 type()->heli ? "0.5ms" : "1ms");
-        snprintf(l2, sizeof(l2), "%s", TR(SV_AT_START));
-        char l3[96];
-        tester_note(l3, sizeof(l3));
-        const char *const lines[] = { l3, l1, l2 };
-        draw_note(c, nx, OV_NOTE_Y, lines, 3);
-        draw_rate_note(c, nx, OV_NOTE_Y + 3 * NOTE_PITCH);
-    } else if (page == PG_AUTO) {
+    if (page == PG_AUTO) {
         draw_test_stall(c, nx, RL_NOTE_Y);
     } else if (page == PG_LIMRUN) {
         draw_lim_mode_note(c, nx, RL_ROW0 + 2 * RL_PITCH + 6);
     } else if (page == PG_BROWNOUT) {
         draw_bo_note(c, nx, BO_NOTE_Y);
-    } else if (page == PG_DUT) {
-        const char *const lines[] = { TR(SV_DUT_NOTE), TR(SV_ENC_NOTE_2) };
-        draw_note(c, nx, DUT_NOTE_Y, lines, 2);
-        ui_button_font(c, enc_open_rect(), TR(SV_ENC_NOTE_1),
-                       ui_theme_color(UI_C_PANEL_HI),
-                       s.ov_have && s.ov_pressed == OP_OPEN_ENC,
-                       !target_locked_for(SET_SERVO_TARGET), SV_FONT_LABEL);
-        draw_caps_button(c);
+    } else if (page == PG_KST) {
+        const char *const lines[] = { TR(SV_KST_EXPERT_NOTE) };
+        draw_note(c, nx, RL_ROW0 + RL_PITCH + 6, lines, 1);
     }
     draw_save_line(c);
 }
@@ -460,13 +375,25 @@ static void draw_choice(gfx_canvas_t *c)
             current = (s.ch.values[k] == (int)s.frame_hz);
         } else if (s.ch.target == CH_ENUM) {
             current = (s.ch.values[k] == settings_get_int(s.ch.id));
+        } else if (s.ch.target == CH_PORT) {
+            current = (s.ch.values[k] == settings_get_int(SET_SERVO_TARGET));
+        }
+        const bool refused = (s.ch.refused & (1u << k)) != 0u;
+        const bool down = s.ov_have && s.ov_pressed == OP_CHOICE
+                          && s.ov_row == k;
+        if (refused) {
+            /* Its reason in the warning colour on a grey key: a tap
+             * repeats it in the band. */
+            ui_button_ink(c, choice_rect(k), s.ch.labels[k],
+                          ui_theme_color(UI_C_PANEL_SUNK),
+                          ui_theme_color(UI_C_WARN), down, true,
+                          SV_FONT_LABEL);
+            continue;
         }
         ui_button_font(c, choice_rect(k), s.ch.labels[k],
                        current ? ui_theme_color(UI_C_ACCENT)
                                : ui_theme_color(UI_C_PANEL_SUNK),
-                       s.ov_have && s.ov_pressed == OP_CHOICE
-                           && s.ov_row == k,
-                       true, SV_FONT_LABEL);
+                       down, true, SV_FONT_LABEL);
     }
     ui_button_font(c, choice_cancel_rect(), TR(CANCEL),
                    ui_theme_color(UI_C_PANEL_SUNK),
@@ -637,7 +564,7 @@ static int draw_changes(gfx_canvas_t *c, int x, int y)
         snprintf(line, sizeof(line), "%.2f -> %.2f%s", (double)k[i].was,
                  (double)k[i].now, k[i].unit);
         gfx_text(c, x + 180, y, line, SV_FONT_HEAD, k[i].col, 1);
-        y += 56;
+        y += 44;
     }
     return y;
 }
@@ -661,8 +588,7 @@ static void draw_restore(gfx_canvas_t *c)
     int y = a.y + WARN_WHAT_DY;
     y += WARN_PITCH * wrap_text(c, a.x + 20, y, WARN_PITCH, what, WARN_CELLS,
                                 ui_theme_color(UI_C_TEXT), SV_FONT_BODY);
-    y = draw_changes(c, a.x + 20, y + 16);
-    y += 8;
+    y = draw_changes(c, a.x + 20, y + 8);
     y += WARN_PITCH * wrap_text(c, a.x + 20, y, WARN_PITCH, TR(SUP_ASK_WHY),
                                 WARN_CELLS, ui_theme_color(UI_C_TEXT_DIM),
                                 SV_FONT_BODY);

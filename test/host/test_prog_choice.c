@@ -9,6 +9,7 @@
  * - an_older_iomcu_and_a_board_whose_pins_are_chosen_are_unchanged
  * - the_funcs_follow_the_choice_one_ask_at_a_time
  * - progp04_beside_a_bound_pwm04_is_refused_by_name
+ * - servos_port_button_offers_the_carriers_ports_and_their_refusals
  * - no_pulse_without_the_prog_5v
  * - the_edges_take_no_buffer_and_ask_nothing_unread
  *
@@ -23,6 +24,7 @@
 
 #include "prog5v_box.h"
 #include "prog_choice.h"
+#include "servo_spots.h"
 #include "prog_link.h"
 #include "ui_board.h"
 
@@ -364,6 +366,56 @@ TEST_CASE(progp04_beside_a_bound_pwm04_is_refused_by_name)
     done();
 }
 
+/* A touch on SERVO's LIVE screen, in its own coordinates. */
+static void sv_tap(const ui_screen_t *sv, int x, int y)
+{
+    const touch_event_t d = { .type = TOUCH_EVENT_DOWN,
+                              .point = { .id = 1, .x = (int16_t)x,
+                                         .y = (int16_t)y, .strength = 40 } };
+    touch_event_t u = d;
+    u.type = TOUCH_EVENT_UP;
+    sv->event(&d);
+    sv->event(&u);
+}
+
+/* SERVO's PORT button on the carrier: each port's entry as OUTPUTS names
+ * it, PROGP04 beside a bound PWM04 with its refusal line and no pick, and
+ * a free port picked through prog_choice_pick(). */
+TEST_CASE(servos_port_button_offers_the_carriers_ports_and_their_refusals)
+{
+    carrier(LINK_MINOR_CARRIER_PWM);
+    choose_named("SERVO PWM");
+    const int pos = 3;                       /* PWM04 (PWM01 is 0) */
+    tap(GRID_X + (pos / GRID_ROWS) * (CELL_W + CELL_GAP) + CELL_W / 2,
+        GRID_Y + (pos % GRID_ROWS) * (CELL_H + ROW_GAP) + CELL_H / 2);
+    CHECK_EQ(s_applied, 1);
+    const ui_screen_t *sv = servo_fn_screen(SERVO_FN_LIVE);
+    sv->reset();
+    servo_screen_show_fn(SERVO_FN_LIVE);
+    sv_tap(sv, SV_PORT_X, SV_PORT_Y);
+    CHECK_EQ(servo_screen_port_choices(), 5);
+    char want[64];
+    bool refused = false;
+    CHECK(prog_choice_refusal(4u, want, sizeof(want)));
+    CHECK_STR_EQ(servo_screen_port_choice(4, &refused), want);
+    CHECK(refused);
+    for (uint8_t port = 1u; port <= 3u; ++port) {
+        prog_choice_entry(port, want, sizeof(want));
+        CHECK_STR_EQ(servo_screen_port_choice(port, &refused), want);
+        CHECK(!refused);
+    }
+    /* The refused entry takes no pick and leaves the list open. */
+    gfx_rect_t r = servo_screen_port_choice_rect(4);
+    sv_tap(sv, r.x + r.w / 2, r.y + r.h / 2);
+    CHECK_EQ(prog_choice_port(), 0u);
+    CHECK_EQ(servo_screen_port_choices(), 5);
+    r = servo_screen_port_choice_rect(2);
+    sv_tap(sv, r.x + r.w / 2, r.y + r.h / 2);
+    CHECK_EQ(prog_choice_port(), 2u);
+    CHECK_EQ(servo_screen_port_choices(), -1);
+    done();
+}
+
 TEST_CASE(no_pulse_without_the_prog_5v)
 {
     static const uint8_t on2[4] = { LINK_PG_FN_NONE, LINK_PG_FN_SERVO_PWM,
@@ -472,6 +524,7 @@ int main(void)
     RUN(an_older_iomcu_and_a_board_whose_pins_are_chosen_are_unchanged);
     RUN(the_funcs_follow_the_choice_one_ask_at_a_time);
     RUN(progp04_beside_a_bound_pwm04_is_refused_by_name);
+    RUN(servos_port_button_offers_the_carriers_ports_and_their_refusals);
     RUN(no_pulse_without_the_prog_5v);
     RUN(the_edges_take_no_buffer_and_ask_nothing_unread);
     return test_summary("prog_choice");

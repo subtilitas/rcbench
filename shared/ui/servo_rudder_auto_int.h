@@ -1,10 +1,10 @@
 /**
  * @file
- * @brief RUDDER's AUTO box (servo_rudder_auto_panel.c): its state in the
+ * @brief RUDDER AUTO's box (servo_rudder_auto_panel.c): its state in the
  *        screen's one object, its controls' places, and the calls the
  *        screen's files make of it.
  *
- * AUTO on RUDDER runs servo_rudder_auto.h on the servo the output card
+ * RUDDER AUTO runs servo_rudder_auto.h on the servo the output card
  * names.  The box takes the place of LENGTH, the drive buttons and the
  * state lines; the readout, the ZERO row, RUDDER's side view of the
  * surface and the output card stay.  The box, in the screen's

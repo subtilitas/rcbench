@@ -358,6 +358,11 @@ hitec_prog_t *hitec_panel_model(void)
     return &hp.prog;
 }
 
+void hitec_panel_settings_changed(void)
+{
+    hpn_options_load();
+}
+
 ui_keypad_t *hitec_panel_keypad(void)
 {
     return &hp.kp;

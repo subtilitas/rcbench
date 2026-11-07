@@ -32,7 +32,7 @@
 #define SHAFT_P_Y (UI_BAND_H + SV_SHAFT_Y)
 
 /** @brief SERVO's ARM / DISARM in panel coordinates. */
-#define SV_ARM_P_X (SV_RC_X + SV_RC_W / 2)
+#define SV_ARM_P_X SV_ARM_X
 #define SV_ARM_P_Y (UI_BAND_H + SV_ARM_Y + SV_ARM_H / 2)
 
 /** @brief MOTOR & ESC's ARM / DISARM in panel coordinates. */
@@ -90,7 +90,7 @@ static void frames_moving(float s, uint8_t id, float *deg)
  *         Returns the angle contact a is at. */
 static float servo_drag_under_way(uint8_t a)
 {
-    on_screen(SCREEN_SERVO);
+    on_screen(SCREEN_SERVO_LIVE);
     servo_screen_set_armed(true);
     drain_servo();
     float deg = 30.0f;
@@ -125,7 +125,7 @@ TEST_CASE(a_stop_press_stops_at_the_press_with_no_drag)
 {
     for (int p = 0; p < 2; ++p) {
         for (int h = 0; h < 2; ++h) {
-            on_screen(SCREEN_SERVO);
+            on_screen(SCREEN_SERVO_LIVE);
             servo_screen_set_armed(true);
             int sx, sy;
             stop_at(&sx, &sy);
@@ -180,15 +180,16 @@ TEST_CASE(a_band_press_ends_a_dial_drag_at_the_press)
         lift(a);
 
         /* The home tag, pressed and held: the drag ends at the press, and
-         * the tap leaves the screen at the lift. */
+         * the tap leaves for the hub at the lift. */
         deg = servo_drag_under_way(a);
         held = servo_screen_commanded();
-        const gfx_rect_t home = ui_home_tag_rect(ui_router_title(SCREEN_SERVO));
+        const gfx_rect_t home =
+            ui_home_tag_rect(ui_router_title(SCREEN_SERVO_LIVE));
         finger(b, home.x + home.w / 2, home.y + home.h / 2);
         CHECK(servo_quiet_for(0.6f, a, &deg, held));
-        CHECK_EQ(ui_router_current(), SCREEN_SERVO);
+        CHECK_EQ(ui_router_current(), SCREEN_SERVO_LIVE);
         lift(b);
-        CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+        CHECK_EQ(ui_router_current(), SCREEN_SERVO);
         lift(a);
     }
 }
@@ -228,7 +229,7 @@ TEST_CASE(a_servo_disarm_press_switches_to_safe_at_the_press)
     }
     /* A finger left on the button after the disarm arms nothing when it
      * reads ARM again: the press took no hold. */
-    on_screen(SCREEN_SERVO);
+    on_screen(SCREEN_SERVO_LIVE);
     servo_screen_set_armed(true);
     drain_servo();
     finger(FEED_LONE, SV_ARM_P_X, SV_ARM_P_Y);
@@ -345,7 +346,7 @@ static bool arm_posts_after(float s, int x, int y, bool servo)
 
 TEST_CASE(arm_is_still_a_hold_of_2s)
 {
-    on_screen(SCREEN_SERVO);
+    on_screen(SCREEN_SERVO_LIVE);
     CHECK(!arm_posts_after(0.0f, SV_ARM_P_X, SV_ARM_P_Y, true));
     CHECK(!arm_posts_after(UI_HOLD_S - 0.1f, SV_ARM_P_X, SV_ARM_P_Y, true));
     CHECK(arm_posts_after(UI_HOLD_S + 0.2f, SV_ARM_P_X, SV_ARM_P_Y, true));
@@ -370,28 +371,28 @@ static uint16_t servo_last_position(void)
 }
 
 /*
- * The station's plain drag: one contact down the dial from (495, 244) to
- * (495, 354), a report every 10ms and a frame every 16.6ms, then the lift.
+ * The station's plain drag: one contact down the dial from (495, 188) to
+ * (495, 298), a report every 10ms and a frame every 16.6ms, then the lift.
  * The last command, and the horn drawn, is the pulse a tap at the lift's
  * point commands: the filter lands on it and stops nowhere short.
  */
 TEST_CASE(a_plain_drag_settles_on_the_fingers_pulse)
 {
-    on_screen(SCREEN_SERVO);
+    on_screen(SCREEN_SERVO_LIVE);
     servo_screen_set_armed(true);
     drain_servo();
-    feed_tap(FEED_LONE, 495, 354);
+    feed_tap(FEED_LONE, 495, 298);
     const uint16_t want = servo_last_position();
     /* 95px right of the shaft and 55px under it: -30.07deg, 1333us on
      * STANDARD PWM (1500us + deg * 500us / 90deg, rounded). */
     CHECK_EQ(want, 1333u);
 
-    on_screen(SCREEN_SERVO);
+    on_screen(SCREEN_SERVO_LIVE);
     servo_screen_set_armed(true);
     drain_servo();
     float t_frame = 0.0f;
-    finger(FEED_LONE, 495, 244);
-    for (int y = 245; y <= 354; ++y) {
+    finger(FEED_LONE, 495, 188);
+    for (int y = 189; y <= 298; ++y) {
         finger(FEED_LONE, 495, y);
         t_frame += 0.010f;
         while (t_frame >= FRAME_S) {

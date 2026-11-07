@@ -6,7 +6,7 @@ order: 23
 
 # Ruderausschlag
 
-RUDER in der Leiste von [SERVO](servo.md) steuert ein Servo und zeigt den Ruderausschlag. Die Anzeige nennt Grad ab einem Nullpunkt und bei eingegebener Ruderflächentiefe auch Millimeter an der Hinterkante. WINKELQUELLE unter [Sensoren](setup-sensors.md) wählt den AS5600-Ausgangsencoder oder die IMU. Wie bei GEMESSEN auf LIVE folgt das Vorzeichen der Richtung des Sollwinkels. Die Ausgangskarte bleibt rechts sichtbar: ZIEL nennt den angesteuerten Ausgang, und ARM entscheidet, ob er sich bewegen kann.
+RUDER im Hub von [SERVO](servo.md) steuert ein Servo und zeigt den Ruderausschlag. Die Anzeige nennt Grad ab einem Nullpunkt und bei eingegebener Ruderflächentiefe auch Millimeter an der Hinterkante. WINKELQUELLE unter [Sensoren](setup-sensors.md) wählt den AS5600-Ausgangsencoder oder die IMU. Wie bei GEMESSEN auf LIVE folgt das Vorzeichen der Richtung des Sollwinkels. Die Ausgangskarte bleibt rechts sichtbar: PORT nennt den angesteuerten Ausgang. ARM in der Fußleiste entscheidet, ob er sich bewegen kann.
 
 ![RUDER bei SAFE](view:servo-rudder)
 
@@ -43,9 +43,8 @@ LÄNGE ist der Abstand von der Scharnierlinie zur Hinterkante: 0 oder 10 bis 500
 | Drehknopf | gesperrt; Drehungen werden verworfen | bewegt das Horn ausgehend vom Sollwert, wie auf LIVE; bei laufendem AUTO gesperrt |
 | NULLPUNKT | setzt den aktuellen Winkel als Neutrallage und löscht MAX; ohne Messwert grau. Änderungen an WINKELQUELLE, IMU-Achse oder IMU-Vorzeichen sowie NULLPUNKT oder NULLPUNKT LÖSCHEN auf der IMU-Seite verwerfen Nullpunkt und MAX. | ebenso; bei laufendem AUTO gesperrt |
 | MAX LÖSCHEN | löscht MAX und behält den Nullpunkt | ebenso; bei laufendem AUTO gesperrt |
-| AUTO | öffnet den [AUTO-Bereich](#auto) | ebenso |
 
-1000us, ZENTRIEREN und 2000us wirken beim Drücken. LÄNGE, NULLPUNKT, MAX LÖSCHEN und AUTO wirken, wenn du einen Tipp darauf loslässt. PULS unter den Tasten zeigt den Sollpuls. Beim Reiterwechsel bleibt das Servo an seiner Position. DISARM, STOP oder das Verlassen von SERVO schaltet den Prüfstand auf SAFE.
+1000us, ZENTRIEREN und 2000us wirken beim Drücken. LÄNGE, NULLPUNKT und MAX LÖSCHEN wirken, wenn du einen Tipp darauf loslässt. PULS unter den Tasten zeigt den Sollpuls. DISARM, STOP oder das Verlassen der Seite schaltet den Prüfstand auf SAFE. [RUDER AUTO](#ruder-auto) programmiert die Endpunkte auf einer eigenen Seite.
 
 ## Die Statuszeilen
 
@@ -59,11 +58,11 @@ LÄNGE ist der Abstand von der Scharnierlinie zur Hinterkante: 0 oder 10 bis 500
 | `KEIN NULLPUNKT: AB SENSORMITTE` | NULLPUNKT noch nicht gesetzt. |
 | `ZUERST ARM` | Prüfstand ist SAFE. |
 
-## AUTO
+## RUDER AUTO
 
-AUTO programmiert ein KST-, Chaservo- oder Hitec-Servo am Programmierport so, dass 1000us und 2000us den je Seite vorgegebenen Ausschlag erreichen. Die [Option SERVO des Endlagenlaufs](servo-settings.md#die-optionen-des-endlagenlaufs) übernimmt die zuletzt unter PROGRAMMIEREN geöffnete Servoprogrammierung. Die dritte Zeile nennt sie, etwa `SERVO HITEC D-SERIE`.
+RUDER AUTO, eine eigene Kachel im Hub, programmiert ein KST-, Chaservo- oder Hitec-Servo am Programmierport so, dass 1000us und 2000us den je Seite vorgegebenen Ausschlag erreichen. Die [Option SERVO des Endlagenlaufs](servo-settings.md#die-optionen-des-endlagenlaufs) übernimmt die zuletzt im Hub geöffnete Servoprogrammierung. Die dritte Zeile nennt sie, etwa `SERVO HITEC D-SERIE`.
 
-Der AUTO-Bereich ersetzt LÄNGE, Ansteuertasten und Statuszeilen; MANUELL stellt sie wieder her. Die Seitenansicht bleibt sichtbar und ergänzt beide Sollwerte als bernsteinfarbene gestrichelte Linien. 1000us liegt auf der negativen, 2000us auf der positiven Seite, oder jeweils auf der vom letzten Lauf gemessenen Seite.
+Der AUTO-Bereich steht dort, wo RUDER LÄNGE, Ansteuertasten und Statuszeilen hat. Anzeige und Seitenansicht bleiben; die Seitenansicht ergänzt beide Sollwerte als bernsteinfarbene gestrichelte Linien. 1000us liegt auf der negativen, 2000us auf der positiven Seite, oder jeweils auf der vom letzten Lauf gemessenen Seite.
 
 ![Der Kasten von AUTO, ARMED](view:servo-rudder-auto)
 
@@ -73,13 +72,13 @@ Der AUTO-Bereich ersetzt LÄNGE, Ansteuertasten und Statuszeilen; MANUELL stellt
 | RESERVE | Anteil über dem Soll-Ausschlag, 0 bis 50%, Vorgabe 10%: 20,0° bei 10% ergeben einen Zielwert von 22,0°. |
 | TOLERANZ | Zulässige Abweichung vom Zielwert, 0,1 bis 5,0°, Vorgabe 0,5°. |
 
-Setze zuerst NULLPUNKT bei neutraler Ruderfläche. Während des Laufs sind NULLPUNKT, MAX LÖSCHEN und MANUELL gesperrt. 2s HALTEN: START beginnt den Lauf. Danach heißt die Taste LAUF BEENDEN; ein Druck beendet ihn sofort.
+Setze zuerst NULLPUNKT bei neutraler Ruderfläche. Während des Laufs sind NULLPUNKT und MAX LÖSCHEN gesperrt. 2s HALTEN: START beginnt den Lauf. Danach heißt die Taste LAUF BEENDEN; ein Druck beendet ihn sofort.
 
 Der Lauf liest das Servo aus und setzt bei KST den Pulsbereich auf 1000 bis 2000us. Je Seite fährt er den Endpuls an, wartet auf einen 500ms lang ruhigen Winkel und schreibt einen neuen Endpunkt. Mit der IMU und einem [IMU-Filter](setup-sensors.md#die-imu) über 1 wartet er zusätzlich, bis der gefilterte Winkel eingeschwungen ist, bis zu 3000ms plus das längste Einschwingen des Filters, das der Bericht nennt. Er schreibt höchstens 8-mal je Seite, jeweils in einer eigenen Programmiersitzung mit Aus- und Einschalten des Servos. Der Stromschutz des Endlagenlaufs bleibt durchgehend aktiv. Blockiert das Ruder vor dem Zielwert, endet der Lauf mit `Ruder klemmt bei x°`. Bei jedem Ende schaltet der Prüfstand auf SAFE und der Netzteilausgang aus.
 
-Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) mit ZIEL auf einem Programmierport schaltest du PROG 5V bei SAFE ein und erst dann ARM: der Puls des Ports kommt nur bei SAFE. Ein bei ARMED eingeschaltetes PROG 5V zeigt `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM`. Mit PORT-PWM aus zeigt die Zeile bei ARMED `PORT-PWM AUS: DISARM, TIPPE AUF ZIEL, SCHALTE ES EIN` und bei SAFE `PORT-PWM AUS: TIPPE AUF ZIEL UND SCHALTE ES EIN`: ZIEL öffnet den Eintrag des Ports auf OUTPUTS. Dort wird PORT-PWM EIN auch bei ausgeschaltetem PROG 5V angenommen. Hält eine Sitzung eines Programmers den Port, zeigt sie `GESPERRT: SERVOPROGRAMMIERUNG BELEGT DEN PORT`.
+Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) mit PORT auf einem Programmierport schaltest du PROG 5V bei SAFE ein und erst dann ARM: der Puls des Ports kommt nur bei SAFE. Ein bei ARMED eingeschaltetes PROG 5V zeigt `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM`. Mit PORT-PWM aus zeigt die Zeile bei ARMED `PORT-PWM AUS: DISARM, SCHALTE ES IN OUTPUTS EIN` und bei SAFE `PORT-PWM AUS: SCHALTE ES IN OUTPUTS EIN`: der Eintrag des Ports auf OUTPUTS enthält PORT-PWM. Dort wird PORT-PWM EIN auch bei ausgeschaltetem PROG 5V angenommen. Hält eine Sitzung eines Programmers den Port, zeigt sie `GESPERRT: SERVOPROGRAMMIERUNG BELEGT DEN PORT`.
 
-Die erste Zeile zeigt den laufenden Schritt, die Zielwerte oder den Grund für einen abgelehnten START. Die zweite nennt das Ergebnis, die dritte den Bericht RUDDRnnn.TXT. Hat ein nicht bestandener Lauf Einstellungen geschrieben oder einen Schreibvorgang abgebrochen, steht dort stattdessen `ZURÜCKSPIELEN IN PROGRAMMIEREN`, bei Hitec `HITEC001 IN DATEIEN LADEN`.
+Die erste Zeile zeigt den laufenden Schritt, die Zielwerte oder den Grund für einen abgelehnten START. Die zweite nennt das Ergebnis, die dritte den Bericht RUDDRnnn.TXT. Hat ein nicht bestandener Lauf Einstellungen geschrieben oder einen Schreibvorgang abgebrochen, steht dort stattdessen `ZURÜCKSPIELEN IN KST`, bei Hitec `HITEC001 IN DATEIEN LADEN`.
 
 ## Was der Winkel ist
 

@@ -141,7 +141,13 @@ SCREENS = {
     # of Capacity over it.
     "motor-settings": ("motor-settings.png", "motor", "dark"),
     "motor-settings-keypad": ("motor-settings-keypad.png", "motor", "dark"),
+    # The SERVO hub: eight tiles, the footer with SETTINGS.  LIVE's
+    # screen: the dial, the output card, the footer with ARM.
+    "servo-hub":  ("servo-hub.png",  "servo",      "dark"),
     "servo":      ("servo.png",      "servo",      "dark"),
+    # The PORT button's list over the left card: OUTPUTS and PROG PORT 1
+    # to 4.
+    "servo-port": ("servo-port.png", "servo",      "dark"),
     # The same bench ARMED: DISARM, the dial live.
     "servo-armed": ("servo-armed.png", "servo", "dark"),
     # The INA3221 as the servo rail's meter: its name over the plot and
@@ -149,13 +155,13 @@ SCREENS = {
     # with the last window clipped, its current in the warning colour.
     "servo-ina":      ("servo-ina.png",      "servo", "dark"),
     "servo-clipped":  ("servo-clipped.png",  "servo", "dark"),
-    # The programming port as the target: the TARGET row in the warning
-    # colour.
+    # The programming port as the target: the PORT button's line in the
+    # warning colour.
     "servo-target":   ("servo-target.png",   "servo", "dark"),
     # The panel's model as the supply: the MODELLED pill on the plot.
     "servo-model":    ("servo-model.png",    "servo", "dark"),
-    # SETTINGS' OUTPUT and SWEEP pages; TEST's run cards; the AUTOMATIC
-    # TEST card's settings and the LIMIT RUN card's, one level down.
+    # The hub's list, the servo profile; SWEEP's list; TEST's and LIMIT
+    # RUN's cards and their pages of rows, one level down.
     "servo-settings": ("servo-settings.png", "servo", "dark"),
     # TRIM's keypad, signed: the +/- key, -25us typed.
     "servo-trim-keypad": ("servo-trim-keypad.png", "servo", "dark"),
@@ -167,10 +173,10 @@ SCREENS = {
     "servo-brownout": ("servo-brownout.png", "servo", "dark"),
     "servo-warning":  ("servo-warning.png",  "servo", "dark"),
     "servo-name":     ("servo-name.png",     "servo", "dark"),
-    # The DUT page with the output encoder on, and its angle in the
-    # MEASURED row.
+    # RUDDER's list with the output encoder on: ENC CENTRE from its
+    # reading.
     "servo-encoder":  ("servo-encoder.png",  "servo", "dark"),
-    # DUT with KST EXPERT MODE ON; servo-encoder shows it OFF.
+    # KST's EXPERT MODE page, ON.
     "servo-dut-expert": ("servo-dut-expert.png", "servo", "dark"),
     "servo-hv":       ("servo-hv.png",       "servo", "dark"),
     "servo-run":      ("servo-run.png",      "servo", "dark"),
@@ -202,11 +208,11 @@ SCREENS = {
     # The programmer for KST and Chaservo servos over the left card: each
     # tab, each list and each page that asks for a hold, against the
     # simulated servo.
-    # SERVO > PROGRAM: the registry's list, the KST and Chaservo row live
-    # with the port's pin; with no IOmcu answering, dimmed with its reason.
-    "servo-program": ("servo-program.png", "servo", "dark"),
-    "servo-program-nocap": ("servo-program-nocap.png", "servo", "sim"),
-    "servo-program-busy": ("servo-program-busy.png", "servo", "dark"),
+    # The hub's KST and HITEC tiles: live with the port's pin; grey with
+    # PORT IN USE while another page holds the port; grey with their
+    # reason with no IOmcu answering.
+    "servo-hub-nocap": ("servo-hub-nocap.png", "servo", "sim"),
+    "servo-hub-busy": ("servo-hub-busy.png", "servo", "dark"),
     # The programmer for Hitec servos over the left card, against the
     # simulated D485HW and HS-5645MG on PROG PORT 1: the SERIES list and
     # MORE before CONNECT, a read under way, each tab of both series, a
@@ -613,6 +619,10 @@ SCREENS = {
     # The PROG 5V box on SERVO's output card, and on the KST programmer
     # while a session holds the ports' 5V.
     "servo-rbmod": ("servo-rbmod.png", "servo", "dark"),
+    # The hub on the carrier, and PORT's list there: PROGP04 refused
+    # beside the servo output bound on PWM04.
+    "servo-hub-rbmod": ("servo-hub-rbmod.png", "servo", "dark"),
+    "servo-port-rbmod": ("servo-port-rbmod.png", "servo", "dark"),
     "servo-kst-rbmod": ("servo-kst-rbmod.png", "servo", "dark"),
     # SENSORS: 0x40 and 0x41 fitted, on 0x40 online; and on 0x41, marked as an
     # IOmcu older than 4.25 leaves its rows.
@@ -888,7 +898,13 @@ FIT_ONLY = {
     "help-servo-2":            (None, "servo", "dark"),
     "help-servo-3":            (None, "servo", "dark"),
     "help-servo-test":         (None, "servo", "dark"),
-    "help-servo-program":      (None, "servo", "dark"),
+    "help-servo-hub":          (None, "servo", "dark"),
+    # SWEEP's and LIMIT RUN's screens SAFE, and the guide over each.
+    "servo-sweep-safe":        (None, "servo", "dark"),
+    "servo-limcard":           (None, "servo", "dark"),
+    "help-servo-sweepfn":      (None, "servo", "dark"),
+    "help-servo-limrun":       (None, "servo", "dark"),
+    "help-servo-hub-2":        (None, "servo", "dark"),
     "help-servo-rudder":       (None, "servo", "dark"),
     "help-servo-rudder-2":     (None, "servo", "dark"),
     "help-servo-rudder-4":     (None, "servo", "dark"),
@@ -930,9 +946,6 @@ FIT_ONLY = {
     "supply-pdmini-same": (None, "supply", "dark"),
     "band-fault-all":   (None, "overview", "dark"),
     "band-hwstop-all":  (None, "overview", "dark"),
-    # SERVO > PROGRAM with a table of 12 rows: SEARCH, the page keys, two
-    # group headings and a row dimmed with its reason.
-    "servo-program-many": (None, "servo", "dark"),
     "band-nolink":      (None, "overview", "sim"),
     "band-bench":       (None, "overview", "dark"),
     "band-sim":         (None, "overview", "sim"),
@@ -1096,7 +1109,7 @@ FIT_ONLY.update({f"outputs-cat-{i}": (None, "outputs", "dark")
 # by design, so a fill drawn over a string is not a finding there.
 OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot",
                  "overview-alert", "hold-hint-arm", "hold-hint-output",
-                 "setup-folder", "files-new",
+                 "setup-folder", "servo-name", "files-new",
                  "files-edit-unsaved", "files-edit-revert",
                  "files-edit-open", "files-edit-changed", "files-edit-see25",
                  "files-edit-see50"} | {

@@ -516,11 +516,46 @@ gfx_rect_t kst_panel_step_rect(int page, int row, bool up)
 
 gfx_rect_t kst_panel_choice_rect(int i)
 {
-    /* Under the title, 48px tall at a 56px pitch: the 7 entries of the
-     * fullest list, FILES, end 8px above CANCEL. */
-    return (gfx_rect_t){ (int16_t)(k.area.x + 10),
-                         (int16_t)(k.area.y + 44 + i * PITCH),
-                         (int16_t)(k.area.w - 20), ROW_H };
+    /* Under the title, 48px tall at a 56px pitch, ending 8px above
+     * CANCEL.  When one column does not hold them all -- the 7 entries of
+     * the fullest list, FILES, in an area 428px tall -- two to a row in
+     * columns 10px apart, in their order, and an entry whose label is
+     * wider than a column on a row of its own. */
+    const int top = k.area.y + 44;
+    const int fit = (kst_panel_choice_cancel_rect().y - 8 - top + 8) / PITCH;
+    const int per = (fit < 1) ? 1 : fit;
+    const int16_t fx = (int16_t)(k.area.x + 10);
+    const int16_t fw = (int16_t)(k.area.w - 20);
+    if (i < 0 || i >= k.ch.count) {
+        return (gfx_rect_t){ 0, 0, 0, 0 };
+    }
+    if (k.ch.count <= per) {
+        return (gfx_rect_t){ fx, (int16_t)(top + i * PITCH), fw, ROW_H };
+    }
+    const int cw = (k.area.w - 30) / 2;
+    int row = 0, col = 0;
+    for (int j = 0; j <= i; ++j) {
+        const bool wide =
+            gfx_text_width(KP_FONT, k.ch.labels[j], 1) > cw - 20;
+        if (wide && col != 0) {
+            ++row;              /* a wide entry starts a row of its own */
+            col = 0;
+        }
+        if (j == i) {
+            return wide ? (gfx_rect_t){ fx, (int16_t)(top + row * PITCH), fw,
+                                        ROW_H }
+                        : (gfx_rect_t){ (int16_t)(fx + col * (cw + 10)),
+                                        (int16_t)(top + row * PITCH),
+                                        (int16_t)cw, ROW_H };
+        }
+        if (wide || col == 1) {
+            ++row;
+            col = 0;
+        } else {
+            col = 1;
+        }
+    }
+    return (gfx_rect_t){ 0, 0, 0, 0 };
 }
 
 gfx_rect_t kst_panel_choice_cancel_rect(void)

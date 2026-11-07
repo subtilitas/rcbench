@@ -5,16 +5,15 @@
 The programmer reads the 32 registers of a KST or Chaservo servo over its
 signal wire, shows them as settings, and writes changed settings back. The
 servos of the two brands share one protocol and one register set. It opens
-from its row `KST and Chaservo servos` on **PROGRAM** of the
-[SERVO screen](Screens.md#servo), one level down, and covers the left
-column, the strip's tabs with it. **CLOSE** or the home tag returns to
-PROGRAM's list. Opening it ends a running automatic test as
-`stopped by the operator`. The row is dimmed with `IOMCU HAS NO SERVO PWM`
+from the KST tile of the [SERVO hub](Screens.md#servo) on a screen of its
+own, SERVO > KST, and covers the left card. **CLOSE** or the home tag
+returns to the hub. Opening it ends a running automatic test as
+`stopped by the operator`. The tile is grey with `IOMCU HAS NO SERVO PWM`
 and opens nothing while the IOmcu, the RP2350 board, reports no servo PWM,
 which includes no IOmcu answering. Servos by Hitec have a programmer of
-their own on the same list and port
+their own on the HITEC tile and the same port
 ([Servo programmer for Hitec servos](HitecProgrammer.md)); while it holds
-the port, this row is dimmed with `PORT IN USE`, and ARM and the supply
+the port, this tile is grey with `PORT IN USE`, and ARM and the supply
 stay locked as under this one.
 
 KST and Chaservo are names or trademarks of their respective owners. rcbench
@@ -101,17 +100,15 @@ PORT entry of **SETUP** > **OUTPUTS**:
 | SERVO TESTER | **OUTPUTS**, **PORT n** (the entry's port) | what the sweep, **CENTRE**, **RELEASE**, the hold of a position and the automatic test drive |
 | PORT PWM | **ON**, **OFF** | whether the programming port renders the tester's pulse while it is the target |
 
-A tap on the TARGET row of the right card opens **OUTPUTS** on the PROG
-PORT entry while the IOmcu drives the port, on SERVO PWM while it drives
-the outputs, and on the overview while the target is not known. The
-home tag there goes back to SERVO on the task the row was tapped on.
-Leaving SERVO switches the bench to SAFE and ends a sweep or a test, as
+The PORT button on the right card of every SERVO function screen sets
+SERVO TESTER as well: a tap opens a list over the
+left card with OUTPUTS and PROG PORT 1, PROG PORT 2, PROG PORT 3 and PROG PORT 4. Leaving SERVO switches the bench to SAFE and ends a sweep or a test, as
 every way out of the screen does.
 
 ![The PROG PORT entry of OUTPUTS](img/outputs-port.png)
 
 Both are kept with the SERVO settings, SERVO TESTER as OUTPUTS, PORT 1,
-PORT 2, PORT 3 or PORT 4. The TARGET row names the active
+PORT 2, PORT 3 or PORT 4. The PORT button names the active
 target with its protocol and pins: `PROG PORT 1 GPIO 13` in the warning
 colour, or `SERVO PWM GPIO 4` for the pins bound as SERVO PWM. A port whose
 FUNCTION is NONE is no target: its entry locks **PORT n** and says
@@ -133,12 +130,13 @@ the accent, and the line under the two names the reason:
 | `SERVO TESTER DRIVES PROG PORT 3` | another port's entry: the tester drives port 3 |
 | `PORT PWM NEEDS PROG PORT AS THE TESTER'S TARGET` | **PORT PWM** on an entry whose port is not the target |
 
-The TARGET row on the right card takes no tap while the bench is ARMED, a
-sweep or a test runs, or the programmer has the port.
+The PORT button on the right card opens no list while the bench is ARMED
+or asked to arm, or the programmer has the port; the alert band names the
+lock.
 
 While the programmer has the port neither row changes: from **CONNECT** to
 the port back in PWM after **LEAVE**, during every operation, and for as
-long as the IOmcu reports the port out of PWM. The TARGET row and both
+long as the IOmcu reports the port out of PWM. The PORT button and both
 segments are drawn locked, a reset of the settings leaves the two values, the panel writes
 nothing to the IOmcu's page of the port, and the tester sends the
 port no command and no release. A release owed to the port goes out once
@@ -149,7 +147,7 @@ GPIO 13 leaves the port none. The tester then keeps the standard outputs,
 whatever the row says.
 
 On boards without the carrier PORT chooser, selecting the standard outputs
-(SERVO TESTER on OUTPUTS) makes the programmer show `Use the programming port to program a servo.` and `Tap TARGET and select one of PORT 1 to PORT 4 for SERVO TESTER.`, and every control but **CLOSE** is off. It connects on PORT 1, PORT 2, PORT 3 or PORT 4, the port SERVO TESTER names, with that port's pin.
+(SERVO TESTER on OUTPUTS) makes the programmer show `Use the programming port to program a servo.` and `Tap PORT and pick a PROG PORT.`, and every control but **CLOSE** is off. It connects on PORT 1, PORT 2, PORT 3 or PORT 4, the port SERVO TESTER names, with that port's pin.
 
 ![The standard outputs are the target](img/servo-kst-target.png)
 
@@ -163,7 +161,7 @@ protocol 4.36 or later, the PORT row chooses the port as well. Before
 as the PROG PORT entries of **OUTPUTS**, and is kept over a restart.
 
 - The panel asks the IOmcu for FUNC SERVO PWM on the chosen port and NONE
-  on the other three. The IOmcu's TARGET, the PROGRAM list's port and
+  on the other three. The IOmcu's TARGET, the hub's port line and
   the KST limit search follow once the port reads SERVO PWM. Until then
   the tester sends no command: nothing reaches the servo outputs in the
   port's place.
@@ -225,12 +223,12 @@ without a result.
 
 ![A write running](img/servo-kst-writing.png)
 
-While the port is in programming the overlay stays open, the strip's tabs
-under it take no press, and the tester's controls send nothing to the port.
+While the port is in programming the overlay stays open, and the tester's
+controls send nothing to the port.
 **CLOSE** and the home tag open LEAVE PROGRAMMING; over an open keypad,
 list, warning or keyboard the home tag closes that one first. **STOP** on
-the right card works. Leaving the SERVO screen leaves the port as it is;
-the overlay is open again on PROGRAM at the next entry.
+the right card works. Leaving the KST screen leaves the port as it is;
+every other SERVO screen opens KST again until **LEAVE**.
 
 | **CONNECT** ends with | Meaning |
 | --- | --- |
@@ -634,12 +632,12 @@ known.
 ## Expert mode
 
 KST EXPERT MODE decides which settings and actions the programmer shows.
-It is a row of SERVO > SETTINGS > DUT, OFF by default, and the panel keeps
+It is the row SETTINGS opens on the KST screen, kept with DUT, OFF by default, and the panel keeps
 it across restarts. OFF to ON takes a 2s hold of the row; a shorter press
 shows `Hold 2s to switch KST EXPERT MODE on.` on the alert band and changes
 nothing. A tap turns it OFF. ON is drawn in the danger colour.
 
-![KST EXPERT MODE ON on DUT](img/servo-dut-expert.png)
+![KST EXPERT MODE ON, on the KST screen's SETTINGS page](img/servo-dut-expert.png)
 
 With the mode OFF these items are hidden. The reason is the warning the
 [soft limits](#a-value-that-needs-a-second-look) give, or what is not
@@ -1188,7 +1186,7 @@ operator's: its first write saves its own backup file, as every session's
 first write does. The panel keeps the run's initial read in memory
 until the next run's first write or a panel restart, and RESTORE offers it as
 `Settings before the limit run.`. While the run holds the port, the screen's
-TARGET row and the run's box name it: `PROG PORT 1 GPIO 13`.
+PORT button and the run's box name it: `PROG PORT 1 GPIO 13`.
 
 Each session of the run follows the programmer's
 [power-cycle procedure](#the-power-cycle). With the PD mini output on,
@@ -1457,7 +1455,7 @@ line. [The link page](LinkKST.md) lists the codes.
 - On boards without the carrier's fixed 5V, selecting the simulated
   supply (no PD mini wired) dims the same controls. The programmer cannot
   change the external supply that actually powers the servo.
-- The TARGET row and the segments **SERVO TESTER** and **PORT PWM** follow the port's state one
+- The PORT button and the segments **SERVO TESTER** and **PORT PWM** follow the port's state one
   frame of the screen after the control task does. The control task holds
   the page of the port and the tester's commands from its own reading of
   the port.

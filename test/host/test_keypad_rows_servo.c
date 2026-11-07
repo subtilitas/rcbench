@@ -1,10 +1,11 @@
 /**
  * @file test_keypad_rows_servo.c
  * @brief SERVO's keypads held to keypad_rows_rig.h's four rules: the
- *        OUTPUT page's pulse widths, TRIM, TRAVEL and a CUSTOM frame rate,
- *        the SWEEP page's numbers, the AUTOMATIC TEST's numbers, its
- *        brown-out walk's LOWEST VOLTAGE and STEP, RUDDER's LENGTH, and
- *        the SET line's two set points.  A tap opens the keypad with the row's
+ *        hub list's pulse widths, TRIM, TRAVEL and a CUSTOM frame rate,
+ *        the AUTOMATIC TEST's numbers, its brown-out walk's LOWEST VOLTAGE
+ *        and STEP, RUDDER's LENGTH, RUDDER AUTO's box, and the SET line's
+ *        two set points.  SWEEP's numbers are rows of its list, whose
+ *        keypad is ui_setlist.h's.  A tap opens the keypad with the row's
  *        title, unit, range and digits; a value past the range is refused
  *        and the row keeps its value; CANCEL keeps it; OK sets the value
  *        typed.
@@ -27,13 +28,12 @@ static const supply_caps_t k_caps = { 4.0f, 8.4f, 0.02f, 0.5f, 3.0f, 0.05f };
 
 /** @brief Where a row's keypad is opened from. */
 typedef enum {
-    AT_OUTPUT = 0,  /**< SETTINGS > OUTPUT          */
-    AT_RATE,        /**< OUTPUT's FRAME RATE > CUSTOM */
-    AT_SWEEP,       /**< SETTINGS > SWEEP           */
-    AT_AUTO,        /**< TEST > AUTOMATIC TEST's SETTINGS */
+    AT_OUTPUT = 0,  /**< the hub's list; y is the row */
+    AT_RATE,        /**< its FRAME RATE > CUSTOM    */
+    AT_AUTO,        /**< TEST > SETTINGS            */
     AT_BROWNOUT,    /**< ... > its BROWN-OUT row's page */
     AT_RUDDER,      /**< RUDDER's LENGTH row        */
-    AT_RAUTO,       /**< RUDDER's AUTO box          */
+    AT_RAUTO,       /**< RUDDER AUTO's box          */
     AT_SET,         /**< LIVE's SET line            */
 } at_t;
 
@@ -43,21 +43,17 @@ typedef struct {
     int  x, y;
 } where_t;
 
-/** @brief The middle of TRIM's value, between its two steps. */
-#define TRIM_X ((TRIM_DN_X + TRIM_UP_X) / 2)
 /** @brief CUSTOM, the list's entry after STANDARD PWM's eight rates. */
 #define CUSTOM 8
 
 /** @brief The rows, in the order of the table in the case. */
 static const where_t k_where[] = {
-    { AT_OUTPUT, ROW_L_X, ROW_Y(2) },      /* PULSE MIN     */
-    { AT_OUTPUT, ROW_R_X, ROW_Y(2) },      /* PULSE CENTRE  */
-    { AT_OUTPUT, ROW_L_X, ROW_Y(3) },      /* PULSE MAX     */
-    { AT_OUTPUT, TRIM_X,  ROW_Y(3) },      /* TRIM          */
-    { AT_OUTPUT, ROW_L_X, ROW_Y(4) },      /* TRAVEL        */
+    { AT_OUTPUT, 0, HL_MIN },              /* PULSE MIN     */
+    { AT_OUTPUT, 0, HL_CENTRE },           /* PULSE CENTRE  */
+    { AT_OUTPUT, 0, HL_MAX },              /* PULSE MAX     */
+    { AT_OUTPUT, 0, HL_TRIM },             /* TRIM          */
+    { AT_OUTPUT, 0, HL_TRAVEL },           /* TRAVEL        */
     { AT_RATE,   CH_X(CUSTOM), CH_Y(CUSTOM) },  /* FRAME RATE */
-    { AT_SWEEP,  ROW_L_X, ROW_Y(1) },      /* SPEED         */
-    { AT_SWEEP,  ROW_L_X, ROW_Y(2) },      /* RANGE         */
     { AT_AUTO,   LROW_X(2), LROW_Y(1) },   /* LENGTH        */
     { AT_AUTO,   LROW_X(2), LROW_Y(2) },   /* MOVES         */
     { AT_AUTO,   LROW_X(2), LROW_Y(3) },   /* DWELL         */
@@ -78,10 +74,10 @@ static const where_t k_where[] = {
 };
 #define ROW_COUNT ((int)(sizeof(k_where) / sizeof(k_where[0])))
 
-/** @brief The settings the rows of the AUTOMATIC TEST and SWEEP set, in
- *         the order of k_where from SPEED on. */
+/** @brief The settings the rows of the AUTOMATIC TEST, RUDDER and RUDDER
+ *         AUTO set, in the order of k_where from LENGTH on. */
 static const setting_id_t k_ids[] = {
-    SET_SERVO_TEST_HZ, SET_SERVO_TEST_RANGE, SET_SERVO_LEN_S,
+    SET_SERVO_LEN_S,
     SET_SERVO_LEN_MOVES, SET_SERVO_DWELL_MS, SET_SERVO_SETTLE_MS,
     SET_SERVO_STALL_A, SET_SERVO_IDLE_MAX, SET_SERVO_HOLD_MAX,
     SET_SERVO_TRAVEL_MAX_MS, SET_SERVO_BO_FLOOR, SET_SERVO_BO_STEP,
@@ -113,16 +109,11 @@ static void open_row(int row)
     switch (w->at) {
     case AT_OUTPUT:
         open_settings();
-        tap(TAB_X(PAGE_OUTPUT), TAB_Y);
-        break;
+        sl_tap(w->y);
+        return;
     case AT_RATE:
         open_settings();
-        tap(TAB_X(PAGE_OUTPUT), TAB_Y);
-        tap(ROW_L_X, ROW_Y(1));            /* FRAME RATE: the list */
-        break;
-    case AT_SWEEP:
-        open_settings();
-        tap(TAB_X(PAGE_SWEEP), TAB_Y);
+        sl_tap(HL_RATE);                   /* FRAME RATE: the list */
         break;
     case AT_AUTO:
         if (servo_screen_run_settings() != 1) {
@@ -136,16 +127,10 @@ static void open_row(int row)
         }
         break;
     case AT_RUDDER:
-        tap(SV_TAB_RUDDER_X, SV_TAB_Y);
-        if (rauto_shown()) {
-            tap(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);     /* MANUAL */
-        }
+        go(SERVO_FN_RUDDER);
         break;
     case AT_RAUTO:
-        tap(SV_TAB_RUDDER_X, SV_TAB_Y);
-        if (!rauto_shown()) {
-            tap(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);     /* AUTO */
-        }
+        go(SERVO_FN_RAUTO);
         break;
     case AT_SET:
         close_settings();
@@ -173,12 +158,12 @@ TEST_CASE(every_servo_keypad_takes_ok_and_refuses_and_cancels)
         { "travel", TR(SV_ROW_TRAVEL), "deg", 10.0f, 90.0f, 0, 60.0f },
         { "rate", TR(SV_ROW_RATE), "Hz", 50.0f, 333.0f, 0, 60.0f },
         { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 },
-        { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 },
+        { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 },
         { "set V", TR(SUP_VOLTAGE), "V", 4.0f, 8.4f, 2, 5.5f },
         { "set I", TR(SUP_CURRENT_LIMIT), "A", 0.5f, 3.0f, 2, 1.25f },
     };
     static const ui_text_id_t k_labels[] = {
-        TX_SV_ROW_SPEED, TX_SV_ROW_RANGE, TX_SV_ROW_LEN_S, TX_SV_ROW_MOVES,
+        TX_SV_ROW_LEN_S, TX_SV_ROW_MOVES,
         TX_SV_ROW_DWELL, TX_SV_ROW_SETTLE, TX_SV_ROW_STALL, TX_SV_ROW_IDLE,
         TX_SV_ROW_HOLD, TX_SV_ROW_TRAVEL_TIME, TX_SV_ROW_BO_FLOOR,
         TX_SV_ROW_BO_STEP, TX_RUD_LENGTH,
@@ -200,9 +185,9 @@ TEST_CASE(every_servo_keypad_takes_ok_and_refuses_and_cancels)
     fresh();
     supply_screen_set_caps(&k_caps);
     open_row(FIRST_SETTING);
-    kpr_type(&k_servo, "1.25");
+    kpr_type(&k_servo, "125");
     kkey(UI_KEY_OK);
-    CHECK_NEAR(settings_get(SET_SERVO_TEST_HZ), 1.25f, 1e-4f);
+    CHECK_EQ(settings_get_int(SET_SERVO_LEN_S), 125);
     open_row(ROW_COUNT - 2);
     kpr_type(&k_servo, "5.5");
     kkey(UI_KEY_OK);
@@ -215,13 +200,15 @@ TEST_CASE(every_servo_keypad_takes_ok_and_refuses_and_cancels)
 
 /*
  * Every number of the schema's servo category has a keypad: on SERVO's
- * pages above, or among the programmer's options (voltage, current, PWM
- * wait: test_keypad_rows_kst).
+ * pages above, on SWEEP's list (ui_setlist.h's keypad), or among the
+ * programmer's options (voltage, current, PWM wait: test_keypad_rows_kst,
+ * and LIMIT RUN's page).
  */
 TEST_CASE(every_servo_number_has_a_keypad_row)
 {
     static const setting_id_t k_prog[] = {
         SET_SERVO_PROG_V, SET_SERVO_PROG_I, SET_SERVO_PROG_WAIT,
+        SET_SERVO_TEST_HZ, SET_SERVO_TEST_RANGE,
     };
     setting_id_t cat[64];
     const int n = settings_in_category(SET_CAT_SERVO, cat, 64);

@@ -268,34 +268,33 @@ TEST_CASE(a_refusal_goes_with_the_edit_that_answers_it)
     free(want);
 }
 
-/* ENC CENTRE on SETTINGS' DUT page, row 2: the AS5600 is switched on
- * SETUP > SENSORS, its one home, and the DUT page holds no AS5600 row. */
-TEST_CASE(the_dut_page_sets_the_encoders_centre_from_the_live_count)
+/* ENC CENTRE on RUDDER's list, its second row: the AS5600 is switched on
+ * SETUP > SENSORS, its one home. */
+#define ENC_ROW 1
+
+TEST_CASE(rudders_list_sets_the_encoders_centre_from_the_live_count)
 {
     fresh();
-    open_settings();
-    tap(TAB_X(PAGE_DUT), TAB_Y);               /* DUT */
-    /* Where AS5600 was, nothing: the encoder stays off. */
-    tap(ROW_L_X, ROW_Y(3));
-    CHECK(!settings_get_bool(SET_ENC_EN));
+    go(SERVO_FN_RUDDER);
+    tap_settings();
     settings_set(SET_ENC_EN, 1.0f);            /* SETUP > SENSORS */
 
     /* No reading yet: the tap sets nothing. */
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 0);
-    tap(ROW_L_X, ROW_Y(2));                    /* ENC CENTRE */
+    sl_tap(ENC_ROW);                           /* ENC CENTRE */
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 0);
 
     /* A live count is the centre. */
     const servo_test_enc_t e = { true, 2871u, 0u, 5000u, false, false, false, false, false, 0.0f };
     servo_screen_encoder(&e);
-    tap(ROW_L_X, ROW_Y(2));
+    sl_tap(ENC_ROW);
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 2871);
 
     /* A sensor that answers and sees no magnet has no live count. */
     const servo_test_enc_t dark = { .valid = false, .raw = 777u,
                                     .taken_ms = 5020u, .no_magnet = true };
     servo_screen_encoder(&dark);
-    tap(ROW_L_X, ROW_Y(2));
+    sl_tap(ENC_ROW);
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 2871);
 
     /* A reading that has gone sets nothing; with the encoder off in SETUP
@@ -303,15 +302,15 @@ TEST_CASE(the_dut_page_sets_the_encoders_centre_from_the_live_count)
     const servo_test_enc_t e2 = { true, 100u, 0u, 5040u, false, false, false, false, false, 0.0f };
     servo_screen_encoder(&e2);
     settings_set(SET_ENC_EN, 0.0f);
-    tap(ROW_L_X, ROW_Y(2));
+    sl_tap(ENC_ROW);
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 2871);
 }
 
 TEST_CASE(a_link_that_goes_down_takes_the_encoders_angle_with_it)
 {
     fresh();
-    open_settings();
-    tap(TAB_X(PAGE_DUT), TAB_Y);               /* DUT */
+    go(SERVO_FN_RUDDER);
+    tap_settings();
     settings_set(SET_ENC_EN, 1.0f);            /* SETUP > SENSORS */
     settings_set(SET_ENC_CENTRE, 1000.0f);
     const servo_test_enc_t e = { true, 2871u, 0u, 5000u, false, false, false, false, false, 0.0f };
@@ -319,23 +318,23 @@ TEST_CASE(a_link_that_goes_down_takes_the_encoders_angle_with_it)
 
     /* The link drops: ENC CENTRE takes nothing from the last count. */
     servo_screen_set_link(false);
-    tap(ROW_L_X, ROW_Y(2));
+    sl_tap(ENC_ROW);
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 1000);
 
     /* A reading queued before the drop and drained after it is not used
      * either. */
     servo_screen_encoder(&e);
-    tap(ROW_L_X, ROW_Y(2));
+    sl_tap(ENC_ROW);
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 1000);
 
     /* The link back and no reading yet: still nothing; a reading that
      * arrives with the link is the live count. */
     servo_screen_set_link(true);
-    tap(ROW_L_X, ROW_Y(2));
+    sl_tap(ENC_ROW);
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 1000);
     const servo_test_enc_t f = { true, 1500u, 0u, 6000u, false, false, false, false, false, 0.0f };
     servo_screen_encoder(&f);
-    tap(ROW_L_X, ROW_Y(2));
+    sl_tap(ENC_ROW);
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 1500);
 }
 
@@ -500,7 +499,7 @@ int main(void)
 {
     RUN(an_encoder_the_coprocessor_does_not_hold_gives_the_run_no_angle_columns);
     RUN(an_aborted_run_names_its_reason_on_the_card);
-    RUN(the_dut_page_sets_the_encoders_centre_from_the_live_count);
+    RUN(rudders_list_sets_the_encoders_centre_from_the_live_count);
     RUN(a_link_that_goes_down_takes_the_encoders_angle_with_it);
     RUN(a_run_with_the_encoder_on_writes_the_angle_columns);
     RUN(a_run_started_without_a_magnet_says_so_in_its_report);

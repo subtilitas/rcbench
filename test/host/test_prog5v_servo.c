@@ -8,6 +8,8 @@
  * - a_press_while_a_port_holds_the_5v_says_why
  * - a_slide_off_a_stop_or_a_port_taking_it_ends_the_hold
  * - leaving_servo_switches_off_what_its_box_switched_on
+ * - the_5v_stays_across_servos_screens_and_goes_with_the_last
+ * - the_hub_names_prog_5v_on_in_its_footer
  *
  * SPDX-License-Identifier: MIT
  */
@@ -15,6 +17,7 @@
 #include "servo_screen_rig.h"
 
 #include "prog5v_box.h"
+#include "ui_footer.h"
 
 /* PROG 5V's button, mirrored from servo_screen_int.h: the box spans the
  * output card's inner column from P5_Y = UI_MARGIN + 90 (the type pill's
@@ -156,11 +159,66 @@ TEST_CASE(leaving_servo_switches_off_what_its_box_switched_on)
     CHECK(!prog5v_box_poll_cmd(NULL));
 }
 
+/* The ports' 5V the box switched on stays on from one SERVO screen to
+ * another, the hub's included, and goes off when SERVO is left for any
+ * other screen. */
+TEST_CASE(the_5v_stays_across_servos_screens_and_goes_with_the_last)
+{
+    fresh_p5(ST_OFF);
+    ui_router_goto(SCREEN_SERVO_LIVE);
+    scr = servo_fn_screen(SERVO_FN_LIVE);
+    ev(p5x(), p5y(), TOUCH_EVENT_DOWN, 1);
+    ticks(8, 0.25f);
+    CHECK(asked_on());
+    ev(p5x(), p5y(), TOUCH_EVENT_UP, 1);
+    prog5v_box_publish(ST_ON, 21u, (uint8_t)PROG5V_HELD_NONE);
+    scr->tick(0.02f);
+    static const ui_screen_id_t k_way[] = {
+        SCREEN_SERVO_TEST, SCREEN_SERVO, SCREEN_SERVO_RUDDER, SCREEN_SERVO,
+    };
+    for (size_t i = 0; i < sizeof(k_way) / sizeof(k_way[0]); ++i) {
+        ui_router_goto(k_way[i]);
+        CHECK_EQ(ui_router_current(), k_way[i]);
+        CHECK(!prog5v_box_poll_cmd(NULL));
+    }
+    ui_router_goto(SCREEN_OVERVIEW);
+    CHECK(asked_off());
+}
+
+/* The hub shows no PROG 5V box: while the ports' 5V reads ON, PROG 5V ON
+ * stands in the footer's middle slot in the warning colour; OFF leaves the
+ * slot empty. */
+static int hold_slot_warn_pixels(void)
+{
+    const gfx_rect_t r = ui_footer_rect(UI_FOOTER_HOLD);
+    int n = 0;
+    for (int y = r.y; y < r.y + r.h; ++y) {
+        for (int x = r.x; x < r.x + r.w; ++x) {
+            n += gfx_pixel_get(&cv, x, y) == ui_theme_color(UI_C_WARN);
+        }
+    }
+    return n;
+}
+
+TEST_CASE(the_hub_names_prog_5v_on_in_its_footer)
+{
+    fresh_p5(ST_ON);
+    go(SERVO_FN_HUB);
+    scr->render(&cv, 0);
+    CHECK(hold_slot_warn_pixels() > 100);
+    prog5v_box_publish(ST_OFF, 21u, (uint8_t)PROG5V_HELD_NONE);
+    scr->tick(0.02f);
+    scr->render(&cv, 0);
+    CHECK_EQ(hold_slot_warn_pixels(), 0);
+}
+
 int main(void)
 {
     RUN(the_box_takes_the_plots_place_and_its_hold_asks_on_at_2000ms);
     RUN(a_press_while_a_port_holds_the_5v_says_why);
     RUN(a_slide_off_a_stop_or_a_port_taking_it_ends_the_hold);
     RUN(leaving_servo_switches_off_what_its_box_switched_on);
+    RUN(the_5v_stays_across_servos_screens_and_goes_with_the_last);
+    RUN(the_hub_names_prog_5v_on_in_its_footer);
     return test_summary("prog5v_servo");
 }

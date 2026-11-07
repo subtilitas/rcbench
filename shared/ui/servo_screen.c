@@ -6,12 +6,13 @@
  * the arm is drawn at the measured position, so a servo that is slow, stuck
  * or fighting a linkage lags the finger by that much.
  *
- * A workbench (ui_workbench.h): the strip under the band shows LIVE, the
- * dial; TEST, the run cards; SETTINGS, the servo's type, frame rate and
- * pulse widths, the sweep and the device under test.  The right card is
- * the output card on every task.  The strip, the TEST page and the TARGET
- * row are servo_workbench.c; the pages of rows and the panels they open
- * are servo_settings_panel.c; the state and the layout the files share are
+ * The SERVO hub and its function screens share this state and these hooks
+ * (servo_screen.h); servo_fn.c is their ui_screen_t tables, servo_hub.c the
+ * hub's tiles, servo_footer.c the footer and the PORT button, and
+ * servo_lists.c the SETTINGS lists.  The function screens draw on the
+ * workbench's tasks (ui_workbench.h, the strip never drawn): the TEST page
+ * is servo_workbench.c; the pages of rows and the panels they open are
+ * servo_settings_panel.c; the state and the layout the files share are
  * servo_screen_int.h.  This file is the state, the profiles, the command
  * and the screen's hooks; the sweep and the frame step are
  * servo_screen_sweep.c, what the panel reports servo_screen_link.c, the
@@ -78,11 +79,6 @@ const servo_type_t k_types[] = {
 };
 _Static_assert(sizeof(k_types) / sizeof(k_types[0]) == TYPE_COUNT,
                "TYPE_COUNT in servo_screen_int.h counts k_types");
-
-/* SETTINGS' pages' names. */
-static const ui_text_id_t k_pages[PG_COUNT] = {
-    TX_SV_PG_OUTPUT, TX_SV_PG_SWEEP, TX_SV_PG_DUT,
-};
 
 /* The power plot's series (PS_*, servo_screen_core_int.h). */
 static const ui_plot_series_t k_power[PS_COUNT] = {
@@ -507,6 +503,7 @@ void servo_invalidate(void)
         s.drawn_warn[b]  = UINT32_MAX;
         s.drawn_ask[b]   = UINT32_MAX;
         s.drawn_test[b]  = UINT32_MAX;
+        s.drawn_hub[b]   = UINT32_MAX;
         s.drawn_save[b]  = 0xFFu;
         /* No step the arm can be drawn at, so the next frame draws it. */
         s.drawn_pulse[b] = -1;
@@ -515,10 +512,10 @@ void servo_invalidate(void)
 
 /**
  * @brief The screen at its start: the state cleared, STANDARD PWM at 50Hz,
- *        and the output card's controls, the strip, the sessions, the plot
- *        and SETTINGS' tabs laid out.
+ *        LIVE the function shown, and the output card's controls, the
+ *        footer's ARM, the sessions and the plot laid out.
  */
-static void reset(void)
+void svs_reset(void)
 {
     if (s.lim_end_due) {
         kst_panel_run_end();
@@ -563,9 +560,9 @@ static void reset(void)
     s.release_btn = (gfx_rect_t){ (int16_t)(RC_X + 2 * (bw + BTN_GAP)), BTN_Y,
                                   (int16_t)(RC_W - 2 * (bw + BTN_GAP)),
                                   BTN_H };
-    /* Full width and last, under the three that only shape what is commanded:
-     * this is the one that decides whether anything is driven at all. */
-    s.arm_btn     = (gfx_rect_t){ RC_X, ARM_Y, RC_W, ARM_H };
+    /* The footer's middle slot: the one control that decides whether
+     * anything is driven at all, on every function screen. */
+    s.arm_btn     = ui_footer_rect(UI_FOOTER_HOLD);
     s.out_btn     = (gfx_rect_t){ SUP_OUT_X, SUP_Y,
                                   (int16_t)(RC_X + RC_W - SUP_OUT_X), SUP_H };
     wb_init();
@@ -575,9 +572,10 @@ static void reset(void)
     rauto_init();
 
     ui_plot_init(&s.power, k_power, PS_COUNT, (float)RC_W / SAMPLE_HZ);
-    ui_tabs_init_text(&s.tabs, k_pages, PG_COUNT,
-                 (gfx_rect_t){ (int16_t)(OV_X + 10), OV_TAB_Y, OV_TAB_W,
-                               OV_TAB_H });
+    svs_lists_init();
+    s.fn = (uint8_t)SERVO_FN_LIVE;
+    (void)ui_wb_strip_select(&s.wb, UI_WB_LIVE);
+    s.fp_tile = -1;
     s.kp.pressed = -1;
     s.tk.pressed = -1;
     s.ch.pressed = -1;
@@ -645,9 +643,11 @@ void servo_screen_clock(uint32_t now_ms)
  * The overlay closes with it, and a warning not held is a profile not
  * applied.  A supply this screen switched on -- OUTPUT ON, a test, the
  * programmer's CONNECT -- goes off with it; the programmer's overlay, the
- * keypads and the questions are this screen's own and are no leave.
+ * keypads and the questions are this screen's own and are no leave.  The
+ * ports' 5V this screen switched on stays on for the hub and its function
+ * screens and goes off for any other (ui_router_leaving_to()).
  */
-static void leave(void)
+void svs_leave(void)
 {
     /* No release arrives for a finger on the speed slider or on the dial as
      * the screen changes, and a latched drag outlives the gesture. */
@@ -677,11 +677,14 @@ static void leave(void)
     ui_hold_reset(&s.out_hold);
     s.out_down = false;
     ++s.sup_rev;
-    /* The ports' 5V this screen switched on goes with it, as SUPPLY's
-     * output goes with SUPPLY; a hold on PROG 5V ON is dropped. */
+    /* The ports' 5V this screen switched on goes with it when the screen
+     * entered is none of SERVO's, as SUPPLY's output goes with SUPPLY; a
+     * hold on PROG 5V ON is dropped. */
     prog5v_box_cancel(&s.p5);
     s.p5_down = false;
-    prog5v_box_left(PROG5V_BY_SERVO);
+    if (!servo_screen_owns(ui_router_leaving_to())) {
+        prog5v_box_left(PROG5V_BY_SERVO);
+    }
     ++s.power_rev;
     /* The sweep and everything kept about it: a reopened screen draws no
      * curve, drain or acknowledgement of this one. */
@@ -691,7 +694,7 @@ static void leave(void)
     s.sw.running  = false;
     s.sw.paused   = false;
     close_panels();
-    ui_tabs_cancel(&s.tabs);
+    svs_list_close();
     wb_leave();
     s.ov_have = false;
     s.ov_pressed = OP_NONE;
@@ -709,7 +712,7 @@ static void leave(void)
 /* ENABLE WRITE TO SERVO goes off whenever the screen is entered, and an
  * OFF owed for leaving with the port held is dropped: the supply is this
  * screen's again. */
-static void enter(void)
+void svs_enter(void)
 {
     wb_enter();
     prog_entry();
@@ -723,7 +726,7 @@ static void enter(void)
  * Nothing is commanded here: a gesture abandoned part way asks for nothing,
  * which is what letting go early already does.
  */
-static void cancel(void)
+void svs_cancel(void)
 {
     /* DISARM acts on its press and takes no hold.  A press of ARM still
      * down on a bench that reads armed without its hold having fired is a
@@ -784,7 +787,7 @@ static void cancel(void)
     prog_cancel();
     ui_keypad_cancel_press(&s.kp);
     ui_textkey_cancel_press(&s.tk);
-    ui_tabs_cancel(&s.tabs);
+    ui_setlist_cancel(&s.sl);
     wb_cancel();
     ui_hold_reset(&s.warn.hold);
     s.warn.down = false;
@@ -800,45 +803,14 @@ static void cancel(void)
 
 /* The owners the knob yields to can end inside a frame: each tick and each
  * event latches them, so a turn applied after the frame sees them. */
-static void tick(float dt_s)
+void svs_tick(float dt_s)
 {
     svs_tick_body(dt_s);
     svs_knob_note_owner();
 }
 
-static void event(const touch_event_t *evt)
+void svs_event(const touch_event_t *evt)
 {
     svs_event_body(evt);
     svs_knob_note_owner();
 }
-
-/* The home tag: over a panel it closes the panel, from a run's settings it
- * climbs to TEST; otherwise it leaves, switching to SAFE. */
-static bool back(void)
-{
-    return wb_back();
-}
-
-/**
- * @brief ui_screen_t's covered: a panel or a programming page.
- * @return true while one is up
- */
-static bool covered(void) { return svs_covered(); }
-
-static const ui_screen_t k_screen = {
-    .covered = covered,
-    .title  = "SERVO",
-    .reset  = reset,
-    .enter  = enter,
-    .leave  = leave,
-    .tick   = tick,
-    .event  = event,
-    .cancel = cancel,
-    .render = svs_render,
-    .back   = back,
-    .safe_at = svs_safe_at,
-    .help_count = servo_help_count,
-    .help_page  = servo_help_page,
-};
-
-const ui_screen_t *servo_screen(void) { return &k_screen; }

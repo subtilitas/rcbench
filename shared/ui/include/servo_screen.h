@@ -3,18 +3,24 @@
  * @brief The servo bench: the outputs the binding marks as surfaces, commanded
  * together by dragging one horn.
  *
- * A workbench (ui_workbench.h): the strip under the band shows LIVE (the
- * dial, SWEEP, CENTRE, RELEASE), TEST (the AUTOMATIC TEST and LIMIT RUN
- * cards, each opening its run's settings one level down) and SETTINGS
- * (OUTPUT, SWEEP, DUT).  The output card on the right -- the readings, the
- * TARGET row, ARM -- is the same on every task.  A tile opens LIVE; leaving
- * the screen switches it to SAFE, whichever task is shown.
+ * SCREEN_SERVO is the SERVO hub: SETUP's grid of 328 x 130px tiles, one
+ * tile for each function screen (LIVE, SWEEP, TEST, LIMIT RUN, RUDDER,
+ * RUDDER AUTO, KST, HITEC), and the footer with the servo profile's
+ * SETTINGS list, which every function shares.  Each function screen
+ * (SCREEN_SERVO_LIVE to SCREEN_SERVO_HITEC) shows one function on the left
+ * card, the PORT button and the output card on the right, and the footer:
+ * the function's name and port line, ARM / DISARM, SETTINGS.  The function
+ * screens share one state: the screens differ in what they show, not in
+ * what they keep.  Leaving a function screen switches the bench to SAFE
+ * and ends a sweep or a run; PROG 5V stays on between function screens
+ * through the hub and goes off when the hub is left for any other screen.
  *
  * SPDX-License-Identifier: MIT
  */
 
 #pragma once
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -29,7 +35,95 @@
 /** Drop the cached chrome, so the next frame repaints it. */
 void servo_invalidate(void);
 
+/** @brief The SERVO hub and its function screens, one per tile. */
+typedef enum {
+    SERVO_FN_HUB = 0, /**< the hub, SCREEN_SERVO                  */
+    SERVO_FN_LIVE,    /**< the dial, CENTRE, RELEASE              */
+    SERVO_FN_SWEEP,   /**< the curve, SWEEP / PAUSE, RELEASE      */
+    SERVO_FN_TEST,    /**< the automatic test                     */
+    SERVO_FN_LIMRUN,  /**< the limit run                          */
+    SERVO_FN_RUDDER,  /**< a control surface's deflection         */
+    SERVO_FN_RAUTO,   /**< RUDDER AUTO: end points to a deflection */
+    SERVO_FN_KST,     /**< the KST and Chaservo programmer        */
+    SERVO_FN_HITEC,   /**< the Hitec programmer                   */
+    SERVO_FN_COUNT
+} servo_fn_t;
+
+/** @brief The SERVO hub, SCREEN_SERVO. @return its screen */
 const ui_screen_t *servo_screen(void);
+
+/**
+ * @brief The screen of function @p fn: the hub for SERVO_FN_HUB or a value
+ *        out of range.
+ * @param fn The function.
+ * @return Its screen.
+ */
+const ui_screen_t *servo_fn_screen(servo_fn_t fn);
+
+/**
+ * @brief The function a router screen shows.
+ * @param id The screen.
+ * @return Its function; SERVO_FN_HUB for SCREEN_SERVO and for every screen
+ *         that is not a SERVO function screen.
+ */
+servo_fn_t servo_fn_of_screen(ui_screen_id_t id);
+
+/**
+ * @brief Whether a router screen is one of SERVO's: the hub or a function
+ *        screen.  Leaving one for another keeps the ports' 5V on.
+ * @param id The screen.
+ * @return True for SCREEN_SERVO and SCREEN_SERVO_LIVE to SCREEN_SERVO_HITEC.
+ */
+bool servo_screen_owns(ui_screen_id_t id);
+
+/**
+ * @brief The router screen of function @p fn.
+ * @param fn The function.
+ * @return Its screen id; SCREEN_SERVO for SERVO_FN_HUB.
+ */
+ui_screen_id_t servo_fn_screen_id(servo_fn_t fn);
+
+/**
+ * @brief The function shown now: the one whose screen was entered last,
+ *        SERVO_FN_LIVE after a reset until one is.
+ * @return The function.
+ */
+servo_fn_t servo_screen_fn(void);
+
+struct ui_setlist;
+/** @brief The SETTINGS list of the hub and the function screens, for the
+ *         tests. @return the list */
+const struct ui_setlist *servo_screen_list(void);
+
+/**
+ * @brief Function @p fn shown as its screen's enter() shows it, without
+ *        leaving the one shown before: the bench, a run and the panels stay.
+ *        The function screens' enter() and the host tests use it.
+ * @param fn The function.
+ */
+void servo_screen_show_fn(servo_fn_t fn);
+
+/** @brief The hub's tiles: LIVE, SWEEP, TEST, LIMIT RUN, RUDDER, RUDDER
+ *         AUTO, KST, HITEC, each a function after SERVO_FN_HUB. */
+#define SERVO_HUB_TILES 8
+
+/**
+ * @brief Hub tile @p i's rectangle in the body, SETUP's geometry: 328 x
+ *        130px at x 10, 348 and 686, y 10, 150 and 290.
+ * @param i The tile, 0 for LIVE.
+ * @return Its rectangle; an empty one past the last.
+ */
+gfx_rect_t servo_hub_tile_rect(int i);
+
+/**
+ * @brief Whether hub tile @p i is grey: KST and HITEC while the registry
+ *        row of their programmer is not live.
+ * @param i   The tile, 0 for LIVE.
+ * @param why Takes the reason, "" for none; may be NULL.
+ * @param n   Its size.
+ * @return True while the tile takes no tap.
+ */
+bool servo_hub_tile_refused(int i, char *why, size_t n);
 
 /**
  * Move the horn by @p span_fraction of its travel (-travel to +travel),
@@ -357,7 +451,7 @@ float servo_screen_power_sample(int series, int back);
  * "In force: PROG PORT GPIO 13 runs at 560Hz.", the port without a known pin,
  * or the target not known (the page not known).  With no link it names no
  * rate: "No link: the rate in force is not known.".  The second line
- * says "The TARGET chosen is not active." while the setting and the
+ * says "The PORT chosen is not active." while the setting and the
  * drive differ, "PORT PWM is OFF" while the port renders no pulse, else
  * that a PPM output keeps its own frame.  Returns whether the note takes
  * the warning colour: the setting and the drive differ, no link, the
@@ -485,8 +579,47 @@ bool servo_target_line(char *out, size_t size, uint8_t target, uint8_t gpio,
 /** The task the strip shows, a ui_wb_task_t.  For tests. */
 int servo_screen_task(void);
 
-/** The page SETTINGS shows: 0 OUTPUT, 1 SWEEP, 2 DUT.  For tests. */
-int servo_screen_settings_page(void);
+/**
+ * @brief The PORT button's line, for tests: what the function screens
+ *        drive, as servo_target_line() words it for the screen's drive.
+ * @param out  Takes the line.
+ * @param n    Its size.
+ * @return Whether it takes the warning colour.
+ */
+bool servo_screen_port_line(char *out, size_t n);
+
+/**
+ * @brief The frame rate's note, for tests: whether the rate reached the
+ *        pins, what the IOmcu runs at it, in two lines.  The hub list's
+ *        OUTPUT heading shows one of them.
+ * @param l1 Takes the first line.
+ * @param l2 Takes the second.
+ * @param n  The size of each.
+ * @return Whether it takes the warning colour.
+ */
+bool servo_screen_rate_note(char *l1, char *l2, size_t n);
+
+/**
+ * @brief The PORT button's choice, for tests.
+ * @return Its entries' count while it shows (OUTPUTS, then PROG PORT 1 to
+ *         4), -1 while it does not.
+ */
+int servo_screen_port_choices(void);
+
+/**
+ * @brief Entry @p i of the PORT button's choice, for tests.
+ * @param i       The entry, 0 for OUTPUTS.
+ * @param refused Takes whether the carrier refuses it; may be NULL.
+ * @return Its label, the refusal line on a refused one; "" past the last.
+ */
+const char *servo_screen_port_choice(int i, bool *refused);
+
+/**
+ * @brief Entry @p i's rectangle in the body, for tests.
+ * @param i The entry.
+ * @return Its rectangle.
+ */
+gfx_rect_t servo_screen_port_choice_rect(int i);
 
 /** Which run's settings TEST shows, one level down from its card: 0 none,
  *  1 the automatic test's, 2 the limit run's.  For tests. */
@@ -504,6 +637,14 @@ bool servo_screen_target_locked(void);
  * @return true then
  */
 bool servo_screen_arm_asked(void);
+
+/**
+ * @brief Whether a finger holds ARM and its 2s hold has not fired yet: the
+ *        output it will arm is the one shown when the hold began, so the
+ *        PORT list takes no open and no pick meanwhile.
+ * @return true then
+ */
+bool servo_screen_arm_held(void);
 
 /**
  * Whether OUTPUTS' SERVO TESTER segment (the TARGET setting) takes no

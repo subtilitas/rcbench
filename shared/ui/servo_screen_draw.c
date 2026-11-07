@@ -404,20 +404,15 @@ static void draw_left(gfx_canvas_t *c)
                  ui_theme_color(UI_C_WARN), 1);
     }
     draw_readings(c);
-    if (s.test_box) {
-        draw_test_box(c);
-    } else if (s.lim_box) {
-        draw_lim_box(c);
-    }
 }
 
 /**
- * @brief ARM, or DISARM while armed, across the column: MOTOR & ESC's
- *        hold button, green fading to the red of ARMED, flashing as it
- *        fires.
+ * @brief ARM, or DISARM while armed, in the footer's middle slot: MOTOR &
+ *        ESC's hold button, green fading to the red of ARMED, flashing as
+ *        it fires.
  * @param c the canvas
  */
-static void draw_arm(gfx_canvas_t *c)
+void draw_arm(gfx_canvas_t *c)
 {
     ui_hold_button(c, s.arm_btn, s.gate.armed ? "DISARM" : "ARM",
                    ui_action_fill(s.gate.armed ? UI_ACTION_ACTIVE
@@ -732,7 +727,8 @@ static void draw_right(gfx_canvas_t *c, bool power)
         gfx_fill_rect(c, RCARD_X + 1, RCARD_Y + 1, RCARD_W - 2,
                       pr.y - RCARD_Y - 1, ui_theme_color(UI_C_PANEL));
         gfx_fill_rect(c, RCARD_X + 1, pr.y + pr.h, RCARD_W - 2,
-                      H - PAD - 1 - (pr.y + pr.h), ui_theme_color(UI_C_PANEL));
+                      RCARD_Y + RCARD_H - 1 - (pr.y + pr.h),
+                      ui_theme_color(UI_C_PANEL));
         gfx_fill_rect(c, RCARD_X + 1, pr.y, pr.x - RCARD_X - 1, pr.h,
                       ui_theme_color(UI_C_PANEL));
         gfx_fill_rect(c, pr.x + pr.w, pr.y, RCARD_X + RCARD_W - 1 - (pr.x + pr.w),
@@ -759,8 +755,6 @@ static void draw_right(gfx_canvas_t *c, bool power)
     s.speed.color = ui_theme_color(UI_C_ACCENT);
     ui_slider_render(&s.speed, c);
 
-    draw_target(c);
-
     /* CENTRE sets a position, so it is dimmed with SWEEP while the bench
      * is disarmed: green, a press drives the servo. */
     ui_button_font(c, s.centre_btn, TR(SV_CENTRE_BTN),
@@ -782,7 +776,6 @@ static void draw_right(gfx_canvas_t *c, bool power)
                    SV_FONT_LABEL);
     ui_button_font(c, s.release_btn, TR(SV_RELEASE),
                    ui_theme_color(UI_C_PANEL_HI), false, true, SV_FONT_LABEL);
-    draw_arm(c);
 }
 
 /** @brief Draw @p fn clipped to @p box inside the clip in force: the
@@ -877,21 +870,6 @@ static gfx_rect_t angle_box(float deg)
 }
 
 /**
- * @brief Whether the dial's changes repaint the buffer whole: LIVE's card
- *        shown with the box of a run or a limit run over it, which the
- *        dial's boxes would cut.  LIVE's card with nothing over it repaints
- *        them on its own; no other page and no cover shows the dial, so
- *        there a reading or a moving horn repaints nothing.
- * @param cover a panel or a session is over the left column
- * @return true when they do
- */
-static bool dial_repaints_whole(bool cover)
-{
-    return !cover && wb_task() == UI_WB_LIVE && rows_page() < 0
-           && (s.test_box || s.lim_box);
-}
-
-/**
  * @brief Note what buffer @p buf now shows of the dial.
  * @param buf the buffer, 0 or 1
  */
@@ -956,18 +934,10 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
         ui_card(c, page_area(), ui_theme_color(UI_C_PANEL));
         ui_card(c, (gfx_rect_t){ RCARD_X, RCARD_Y, RCARD_W, RCARD_H },
                 ui_theme_color(UI_C_PANEL));
-        if (!cover) {               /* under a cover, the cover's */
-            draw_strip(c);
-        }
-        s.drawn_mask |= bit;
+        s.drawn_mask = (s.drawn_mask | bit) & ~(4u << buf);
         s.drawn_cover[buf] = cover;
-        s.drawn_strip[buf] = s.strip_rev;
         s.drawn_ctrl[buf]  = UINT32_MAX;
         s.drawn_power[buf] = UINT32_MAX;
-    }
-    if (!cover && s.drawn_strip[buf] != s.strip_rev) {
-        s.drawn_strip[buf] = s.strip_rev;
-        clipped(c, strip_area(), draw_strip);
     }
 
     /* The keypad and the keyboard keep their own counts of what changed;
@@ -975,9 +945,7 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
     const uint32_t ov_rev = s.ctrl_rev + s.kp.revision + s.tk.revision;
     /* RUDDER repaints its readout on its own (rudder_render_part()). */
     const bool rudder_alone = !cover && wb_task() == UI_WB_RUDDER;
-    const bool dial_whole = dial_repaints_whole(cover)
-                            && s.drawn_dial[buf] != s.dial_rev;
-    if (s.drawn_ctrl[buf] != ov_rev || dial_whole) {
+    if (s.drawn_ctrl[buf] != ov_rev) {
         /* The plot when it moved or this buffer has never had it. */
         const bool power = (s.drawn_power[buf] != s.power_rev);
         s.drawn_ctrl[buf]  = ov_rev;
@@ -996,20 +964,26 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
         dial_drawn(buf);
         if (modal_open()) {
             draw_overlay(c);
+        } else if (rows_page() >= 0) {
+            draw_rows_page(c);
         } else if (ps != NULL) {
             prog_ps_render(ps, c);
         } else if (wb_task() == UI_WB_LIVE) {
             draw_left(c);
-        } else if (rows_page() >= 0) {
-            draw_rows_page(c);
         } else if (wb_task() == UI_WB_PROGRAM) {
-            draw_prog_page(c);
+            /* KST or HITEC whose session closed: the screen goes back to
+             * the hub on the next frame (svs_session_gone()). */
+            const gfx_rect_t a = page_area();
+            gfx_fill_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2,
+                          ui_theme_color(UI_C_PANEL));
         } else if (wb_task() == UI_WB_RUDDER) {
             rudder_render(c, buf);
         } else {
             draw_test_page(c);
         }
         draw_right(c, power);
+        s.drawn_fp[buf] = foot_sig();
+        draw_footer(c);
         return;
     }
 
@@ -1020,6 +994,12 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
      * the fades run for two seconds: asking for whole cards every frame
      * would spend most of the panel's bandwidth on a button.
      */
+    const uint32_t fsig = foot_sig();
+    if (s.drawn_fp[buf] != fsig) {
+        s.drawn_fp[buf] = fsig;
+        s.drawn_arm[buf] = s.arm_rev;
+        draw_footer(c);
+    }
     if (s.drawn_arm[buf] != s.arm_rev) {
         s.drawn_arm[buf] = s.arm_rev;
         clipped(c, s.arm_btn, draw_arm);
@@ -1043,7 +1023,7 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
         }
         return;
     }
-    if (ps != NULL) {
+    if (ps != NULL && rows_page() < 0) {
         /* The session, when it changed; of a hold only its button. */
         if (s.drawn_kst[buf] != prog_ps_revision(ps)) {
             s.drawn_kst[buf] = prog_ps_revision(ps);
@@ -1060,10 +1040,10 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
             s.drawn_save[buf] = save_state();
             clipped(c, save_line_rect(), draw_save_line);
         }
-        /* KST EXPERT MODE's hold on DUT: its value alone. */
+        /* KST EXPERT MODE's hold on KST's page: its value alone. */
         if (s.drawn_kx[buf] != s.kx_rev) {
             s.drawn_kx[buf] = s.kx_rev;
-            if (rows_page() == PG_DUT) {
+            if (rows_page() == PG_KST) {
                 clipped(c, kx_value_rect(), draw_kx_value);
             }
         }
@@ -1074,11 +1054,16 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
         return;
     }
     if (wb_task() == UI_WB_TEST) {
-        /* START TEST's and START LIMIT RUN's fades. */
+        /* START TEST's fade on TEST, START LIMIT RUN's on LIMIT RUN: the
+         * two share the card's place. */
         if (s.drawn_test[buf] != s.test_rev) {
             s.drawn_test[buf] = s.test_rev;
-            clipped(c, test_start_rect(), draw_test_start);
-            clipped(c, lim_start_rect(), draw_lim_start);
+            if (run_card_shown() == 1) {
+                clipped(c, lim_start_rect(), draw_lim_start);
+            } else {
+                clipped(c, test_start_rect(), draw_test_start);
+            }
+            clipped(c, run_set_rect(run_card_shown()), draw_run_set);
         }
         return;
     }
@@ -1124,8 +1109,37 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
     clipped(c, box, draw_left);
 }
 
+/**
+ * @brief A function screen's SETTINGS list over the body, when its look or
+ *        its keypad's or keyboard's changed or the buffer has not drawn it.
+ * @param c the canvas
+ * @param buf the buffer, 0 or 1
+ */
+static void render_list(gfx_canvas_t *c, int buf)
+{
+    /* Bits 2 and 3 of drawn_mask: the list is what the buffer holds. */
+    const unsigned list_bit = 4u << buf;
+    const uint32_t rev = s.sl_rev + s.sl.kp.revision + s.sl.tk.revision;
+    if ((s.drawn_mask & list_bit) != 0 && s.drawn_sl[buf] == rev) {
+        return;
+    }
+    s.drawn_sl[buf] = rev;
+    ui_setlist_render(&s.sl, c);
+    /* The cards repaint whole when the list closes. */
+    s.drawn_mask = (s.drawn_mask & ~(1u << buf)) | list_bit;
+}
+
 void svs_render(gfx_canvas_t *c, int buffer_index)
 {
+    const int buf = buffer_index & 1;
+    if (s.fn == SERVO_FN_HUB) {
+        hub_render(c, buf);
+        return;
+    }
+    if (svs_list_shown() && !modal_open()) {
+        render_list(c, buf);
+        return;
+    }
     render_body(c, buffer_index);
     /* A warning closes as its hold fires: its HOLD TO APPLY flashes where
      * it was, over what the close uncovered, until the flash ends and the

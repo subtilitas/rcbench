@@ -273,18 +273,17 @@ on the left card decides the first pages:
 
 | Screen and task | Pages, items |
 | --- | --- |
-| SERVO LIVE | the strip, the horn's angle, the dial and the readings (4) |
-| SERVO TEST | START TEST, a run card's SETTINGS, START LIMIT RUN and the caps (4) |
-| SERVO PROGRAM | the programmers' list, and SEARCH when the list shows its bar (1 or 2) |
-| SERVO RUDDER | LENGTH, the drive buttons, ZERO, RESET MAX and AUTO (5); DEFLECTION, TRAILING EDGE and the state lines (3) |
-| SERVO RUDDER with AUTO's box | the targets, MARGIN and TOLERANCE, START and MANUAL (4); DEFLECTION and TRAILING EDGE (2) |
-| SERVO SETTINGS > OUTPUT | the page tabs, TYPE, FRAME RATE, PULSE MIN and PULSE MAX (5); PULSE CENTRE, TRIM, TRAVEL and REVERSE (4) |
-| SERVO SETTINGS > SWEEP | CURVE, SPEED and RANGE (3) |
-| SERVO SETTINGS > DUT | NAME, REPORT, ENC CENTRE, the AS5600 button and the caps (5) |
-| SERVO, every task | the type, the plot or PROG 5V, SET and SPEED (4); TARGET, CENTRE with SWEEP and RELEASE, ARM, and on RUDDER the side view (3 or 4) |
+| SERVO hub | LIVE, LIMIT RUN, RUDDER and KST's tiles and the port line (5); a tile and SETTINGS (2) |
+| SERVO LIVE and SWEEP | the horn's angle, the dial and the readings (3) |
+| SERVO TEST | START TEST, its SETTINGS and the caps (3) |
+| SERVO LIMIT RUN | START LIMIT RUN and its SETTINGS (2) |
+| SERVO RUDDER | LENGTH, the drive buttons, ZERO and RESET MAX (4); DEFLECTION, TRAILING EDGE and the state lines (3) |
+| SERVO RUDDER AUTO | the targets, MARGIN and TOLERANCE, ZERO and START (4); DEFLECTION and TRAILING EDGE (2) |
+| SERVO, every function screen, SAFE | the type, the plot or PROG 5V, SET and SPEED (4); PORT, CENTRE with SWEEP and RELEASE, ARM, SETTINGS, and on RUDDER the side view (4 or 5) |
+| SERVO's lists (the hub, SWEEP, RUDDER, RUDDER AUTO, HITEC) | as a settings list |
 | SUPPLY LIVE | PLOT and TABLE, VOLTAGE and CURRENT LIMIT (3) |
 | SUPPLY LIVE, the rail | the range and the four reading cards (5); the set points' values, RESET PEAKS, OUTPUT ON and SETTINGS (4) |
-| a settings list (MOTOR & ESC, SUPPLY) | a row, the strip's name and RESET name (3); a row's `-`, value and `+`, and SAVE (4) |
+| a settings list (MOTOR & ESC, SUPPLY, SERVO) | a row, the strip's name and RESET name (3); a row's `-`, value and `+`, and SAVE (4) |
 
 A page whose dock would cover a control that stops an output is left out
 while that control shows:
@@ -293,13 +292,13 @@ while that control shows:
   offered while the supply's output is on or an ON is on its way: OUTPUT
   OFF stays in view. SUPPLY's OUTPUT OFF, the footer's middle slot, lies
   under either dock, so SUPPLY offers no page then.
-- SERVO's output card pages cover the left card, so they are not offered
-  while the automatic test, a limit run or AUTO runs: STOP TEST or STOP
-  RUN stays in view. Such a run is ARMED, so SERVO then offers no page and
-  the band shows no "?".
-- SERVO offers no page over a keypad, a keyboard, a list, a warning, a
-  question, a programmer or a run's settings; SUPPLY none over its keypad
-  or the question about a live output.
+- SERVO's function screens offer no page while ARMED: either dock covers
+  part of DISARM in the footer's middle slot. A run of the automatic
+  test, a limit run or AUTO is ARMED, so the band then shows no "?".
+- SERVO offers no page over a keypad, a keyboard, a warning, a question,
+  a programmer or a run's settings; over a list it offers the settings
+  list's pages. SUPPLY offers none over its keypad or the question about
+  a live output.
 
 ## Screenshot
 
@@ -1446,49 +1445,68 @@ ESC's own values and do not open a keypad.
 
 ## Servo
 
-![Servo](img/servo.png)
+![The SERVO hub](img/servo-hub.png)
+![LIVE](img/servo.png)
 
-SERVO has five tasks below the status band: **LIVE**, **TEST**, **PROGRAM**,
-**RUDDER** and **SETTINGS** (German `LIVE`, `TEST`, `PROGRAMMIEREN`, `RUDER`,
-`OPTIONEN`). Tabs are 120 x 40px with 4px gaps, starting at y 8 below the
-band. English labels use the 10 x 20 font; German uses 8 x 16 because
-`PROGRAMMIEREN` has 13 cells and a 120px tab fits only 10 of the larger font.
+SERVO opens on its hub: eight tiles of 328 x 130px in SETUP's grid, at x
+10, 348 and 686 and y 10, 150 and 290 of the body, in the order of use.
 
-The menu tile opens LIVE. Switching tabs adds no navigation level: the
-home tag returns to the menu from every task. From run settings it first
-returns to TEST, and from a programmer to the PROGRAM list. Each task
-retains its page and selection until the panel restarts. Leaving SERVO
-from any task switches the bench to SAFE.
+| Tile | Screen | Shows |
+| --- | --- | --- |
+| LIVE | LIVE | the dial, the knob, the readings COMMANDED, MEASURED and CURRENT |
+| SWEEP | SWEEP | the dial with the sweep; SETTINGS opens CURVE, SPEED and RANGE |
+| TEST | TEST | the AUTOMATIC TEST card, SUPPLY's caps and the run's box; SETTINGS opens the run's page of rows |
+| LIMIT RUN | LIMIT RUN | the LIMIT RUN card and the run's box; SETTINGS opens the run's page of rows |
+| RUDDER | RUDDER | deflection in ° and mm, LENGTH, 1000us, CENTRE, 2000us, ZERO and RESET MAX ([Rudder deflection](Servo.md#rudder-deflection)) |
+| RUDDER AUTO | RUDDER AUTO | AUTO's box in place of LENGTH and the drive buttons ([AUTO end points](Servo.md#auto-end-points)) |
+| KST | SERVO > KST | the KST and Chaservo programmer over the left card ([Programmer](#programmer)) |
+| HITEC | HITEC | the Hitec programmer over the left card ([Hitec programmer](#hitec-programmer)) |
 
-| Task | Left card, the page area |
-| --- | --- |
-| LIVE | the dial, and a run's box over it while a run is under way or its result is shown |
-| TEST | the AUTOMATIC TEST and LIMIT RUN cards, and SUPPLY's caps, read-only |
-| PROGRAM | the list of programmers, one row each; a row opens its programmer over the left column |
-| RUDDER | a control surface's deflection in ° and mm, LENGTH, 1000us, CENTRE and 2000us, ZERO, RESET MAX and AUTO ([Rudder deflection](Servo.md#rudder-deflection), [AUTO end points](Servo.md#auto-end-points)) |
-| SETTINGS | the pages OUTPUT, SWEEP and DUT |
+Each tile shows its name and a line of at most 31 cells of 10 x 20. KST's
+and HITEC's tiles are grey while the IOmcu does not report the capability
+their port needs or another session holds the port; a tap on a grey tile
+names the reason in the alert band and opens nothing. The ninth slot
+stays free.
 
-The 620px left card begins below the task strip at y 56. The 380px output
-card on the right extends from the top to the bottom margin, beside the
-strip, and stays the same on every task. It shows the active type, servo
-rail readings and plot, SET, SPEED, TARGET, CENTRE, SWEEP, RELEASE and ARM.
-Touchable rows are at least 48px tall. ARM is 60px tall and ends 4px above
-the alert band, as does OUTPUT OFF.
+The hub drives nothing. Its footer holds SERVO with the port line under
+it, an empty middle slot and SETTINGS, which opens the servo profile's
+list ([Settings](#settings)). While the programming ports' 5V reads ON,
+the middle slot reads `PROG 5V ON` in the warning colour: the PROG 5V box
+is on the function screens only, and the 5V stays on from one SERVO screen
+to the next. The bench is SAFE on the hub: every leave of
+a function screen switches it to SAFE.
 
-A keypad, keyboard, list, warning, confirmation dialog or programmer covers
-the whole left column, including the tabs. Answer or close it before
-switching tasks.
+The home tag climbs one level: from a function screen to the hub, from the
+hub to the menu. A list, a run's page or a panel closes first. KST's and
+HITEC's CLOSE ends the session and returns to the hub.
+
+Every function screen has the same frame. The 620px left card runs from y
+8 to the card floor at y 436 of the body. The output card on the right,
+x 636 to 1016, holds the PORT button (y 8 to 56), the meter line and plot,
+SET, SPEED, the type pill, CENTRE, SWEEP and RELEASE. The footer at y 444
+to 492 holds three 328 x 48px slots: the function's name with the port
+line under it, ARM or DISARM, and SETTINGS. SETTINGS is grey while the
+bench is not SAFE, while a sweep or a run is under way, and names that in
+the alert band on a tap. LIVE has no SETTINGS.
+
+The PROG 5V box the output card shows on the carrier stays on from one
+SERVO screen to another, the hub's included, and goes off when SERVO is
+left for any other screen.
+
+A keypad, keyboard, list, warning, confirmation dialog or programmer
+covers the left card down to the card floor. The output card, the PORT
+button and the footer stay in view.
 
 LIVE shows the horn angle at the top left, with `ARM FIRST` below it while
 SAFE, and the servo dial with a 150px radius. Three readouts span the foot
 of the card in equal columns: COMMANDED in microseconds, MEASURED in
 degrees and CURRENT in amps. Labels and units sit above 44px numerals,
-ending 4px above the alert band. The +90 and -90 labels sit left of their
+ending 8px above the card floor. The +90 and -90 labels sit left of their
 dial ticks.
 
 Numerals wider than their 198px column use a smaller font, for example a
-current held at `-1000000.00`. These readouts appear only on LIVE; other
-tasks show current on the line above the plot.
+current held at `-1000000.00`. These readouts appear only on LIVE; the
+other screens show current on the line above the plot.
 
 The horn is drawn at subpixel positions. Its tip is 98px from the shaft,
 moves 1.7px per degree and stays within 0.1px of its calculated angle.
@@ -1507,9 +1525,10 @@ of their travel but leaves the pins assigned and pulsing. Switching to
 SAFE stops the pulse edges; leaving SERVO also switches to SAFE.
 
 When enabled, the rotary knob moves the horn from its current position
-on LIVE and RUDDER ([the knob](#panel-the-rotary-knob)). It has no effect
-on TEST, PROGRAM, SETTINGS or beneath an open panel or programmer. A turn
-in the frame when LIVE reappears is ignored; the next turn works.
+on LIVE, SWEEP, RUDDER and RUDDER AUTO ([the knob](#panel-the-rotary-knob)).
+It has no effect on the hub, TEST, LIMIT RUN, KST, HITEC, a list or
+beneath an open panel. A turn in the frame when a screen reappears is
+ignored; the next turn works.
 
 Only one finger drags the dial. A second press anywhere on the screen
 ends that drag, as it does for SPEED. The drag filter stops at the angle
@@ -1569,8 +1588,8 @@ What each control does while the bench is SAFE:
 | SWEEP, PAUSE, PAUSED | refused; drawn dimmed | starts, pauses and resumes the sweep |
 | RELEASE | sends the release; the value shown stays | centres the surfaces; the value shown becomes the rest |
 | SPEED | set; sends nothing | set; a held position is sent again at the new rate |
-| SETTINGS > OUTPUT: TYPE, FRAME RATE, PULSE MIN, CENTRE and MAX, TRIM, TRAVEL, REVERSE | set; send nothing | set; a held position or the rest is sent again under them |
-| TARGET | a tap opens SETUP > OUTPUTS | locked; names the target |
+| The hub's list: TYPE, FRAME RATE, PULSE MIN, CENTRE and MAX, TRIM, TRAVEL, REVERSE | set on the hub, where the bench is SAFE; the next ARM rests under them | not reachable: the hub's leave of a function screen switches to SAFE |
+| PORT | a tap opens the list of OUTPUTS and the 4 programming ports | locked; names the lock in the alert band |
 | SET, OUTPUT ON, OUTPUT OFF | as on SUPPLY | as on SUPPLY |
 | START TEST | refused: `ARM FIRST` | starts the run after its hold |
 
@@ -1768,7 +1787,7 @@ screens use the same values; changing either screen updates the other.
   is still sent.
 
 **SWEEP runs a curve on the IOmcu**, keeping its timing independent of the
-link. SETTINGS > SWEEP sets CURVE (square, sine or triangle) and SPEED
+link. SWEEP's list sets CURVE (square, sine or triangle) and SPEED
 (0.05 to 5 cycles per second). The automatic test's DWELL TIME sets the
 hold at each end. The curve is centred on PULSE CENTRE. RANGE is a share
 of the permitted travel, limited by TRAVEL and the nearer of PULSE MIN
@@ -1809,7 +1828,7 @@ to the held position, and resume continues from there.
 
 The IOmcu retains phase through HOLD and resumes with `LINK_SV_RESUME`
 (protocol 4.6). The output approaches the curve at SPEED, immediately at
-100%; normally it is already there. Changing CURVE under SETTINGS > SWEEP
+100%; normally it is already there. Changing CURVE on SWEEP's list
 while paused starts a new sweep instead.
 
 An IOmcu before protocol 4.6, or one whose hold has ended and therefore
@@ -1863,7 +1882,7 @@ for. SPEED then shapes the motion instead of CURVE: a square, a sine and a
 triangle all move as ramps at SPEED's rate and look alike, and the output
 can turn back before it reaches an end. The line follows the settings, so it
 shows before SWEEP is pressed as well as while a sweep runs. Raise SPEED, or
-lower SETTINGS > SWEEP's SPEED (the rate in Hz) or RANGE, to clear it. A square
+lower SPEED on SWEEP's list (the rate in Hz) or RANGE, to clear it. A square
 jumps between its ends, so it shows at every SPEED below 100%. With the
 SWEEP page's defaults (sine, 0.5Hz, RANGE 80%) and TRAVEL +/-90° it
 clears at SPEED 63%, and for a triangle at 40%.
@@ -1906,8 +1925,8 @@ On an rbmod carrier programming port, voltage steps cannot run: the port
 has a fixed 5V supply.
 
 TEST remains visible at startup, with the current step on its state line.
-LIVE shows a 346px run box at the left, below `ARM FIRST`, clear of the
-horn at every angle. It shows step and phase, with the meter beside STOP
+A 346px run box under the card, from y 256 on TEST and y 204 on LIMIT RUN,
+shows step and phase, with the meter beside STOP
 TEST: `PD mini`, an INA3221 channel such as `INA 0x41 CH2`, or `SIMULATION`.
 The run uses the meter selected at START TEST until it ends
 ([The meter](Servo.md#the-meter)). It controls the servo and SUPPLY's set
@@ -1929,7 +1948,7 @@ left unchanged.
 
 ![A run](img/servo-run.png)
 
-The result remains in LIVE's box until CLOSE and on the card's LAST line
+The result remains in the run's box until CLOSE and on the card's LAST line
 until the next run. It shows PASS, FAIL or ABORTED with a reason, the
 longest travel time, highest holding current and files saved in `USER/LOGS`:
 `ATESTnnn.CSV`, followed by `+ .TXT` once the complete report reaches the
@@ -1966,7 +1985,7 @@ shows the current action or start refusal, followed by the last result
 and report. These four lines use 10 x 20 at 20px spacing, starting 2px
 below the button and ending 2px inside the 188px card.
 
-TEST stays visible when the run begins. LIVE's run box shows values written
+LIMIT RUN stays visible when the run begins. The run's box under the card shows values written
 out of 8, phase, side, pulse and output, with STOP RUN. Afterward it shows
 the verdict, values or endpoints and `LIMITnnn.TXT` until CLOSE, or
 `USER LOGS OFF` when User logs is OFF. Each write switches the bench to
@@ -1985,61 +2004,43 @@ it does not end the run; an abort switches PROG 5V off.
 
 ### Programmer
 
-![PROGRAM's list](img/servo-program.png)
-![A row the IOmcu lacks the capability for](img/servo-program-nocap.png)
-![A row whose port a console Hitec session holds](img/servo-program-busy.png)
+![KST's and HITEC's tiles live](img/servo-hub.png)
+![The tiles on the rbmod carrier](img/servo-hub-rbmod.png)
+![The tiles grey: the IOmcu lacks the capability](img/servo-hub-nocap.png)
+![The tiles grey: a console Hitec session holds the port](img/servo-hub-busy.png)
 
-PROGRAM lists programmers in the task area. Each row shows its name on
-the left and target port and pin on the right, such as `PROG PORT 1 GPIO 13`,
-followed by `>`. KST and Chaservo use the port chosen by SERVO TESTER:
-PORT 1, PORT 2, PORT 3 or PORT 4. With SERVO TESTER set to OUTPUTS, the row shows
-`PROG PORT` and its pin.
+The hub's KST and HITEC tiles open the programmers, each on its own
+screen: SERVO > KST and HITEC. The screen opens the session at once over
+the left card; this ends any automatic test. The KST and Chaservo
+programmer's tile reads `KST AND CHASERVO SERVOS`, the Hitec programmer's
+`HITEC D AND CLASSIC`.
 
-A row is dimmed with `PORT IN USE` if another session holds its port,
-including a session from another row or a HITEC session opened by the
-bench console. The panel polls the HITEC page's STATE every 500ms. A
-HITEC session does not dim the Hitec row itself: after the programmer reads
-the page, a port held by another session opens with RELEASE PORT
-([A port another session holds](HitecProgrammer.md#a-port-another-session-holds)).
-
-The list has two rows: `KST and Chaservo servos` (German
-`KST- und Chaservo-Servos`) and `Hitec servos` (`Hitec-Servos`). Tap an
-active row to open its programmer one level down over the left column and
-tabs; this ends any automatic test. CLOSE or the home tag returns to the
-list, then the home tag returns to the menu. Inside a programmer's keypad,
-list, warning or keyboard, the home tag closes only that overlay.
-
-A row is drawn dimmed, with its reason in place of its port, and a tap on
-it opens nothing:
+A tile is grey, with its reason in place of its line, and a tap on it
+names the reason in the alert band and opens nothing:
 
 | Reason | When |
 | --- | --- |
-| `IOMCU HAS NO SERVO PWM` | the IOmcu, the RP2350 board, does not report the capability the row needs; with no IOmcu answering it reports none. The capability's name is the link's, the same in German |
-| `PORT IN USE` | another row's programmer holds the same programming port |
+| `IOMCU HAS NO SERVO PWM` | the IOmcu, the RP2350 board, does not report the capability the programmer needs; with no IOmcu answering it reports none. The capability's name is the link's, the same in German |
+| `PORT IN USE` | another programmer's session holds the same programming port, including a HITEC session opened by the bench console |
 
-The firmware registry `shared/ui/prog_registry.c` supplies the rows. A new
-servo manufacturer adds a registry row and its programmer, with no tile
-or tab. More than 9 rows adds SEARCH and its keyboard, where `*` matches
-any text. More than 8 rows shows group headings. A list exceeding the
-page height pages with `^` and `v`; it holds at most 48 rows. None of these
-controls appears for two rows. Modelled protocols without an IOmcu
-transport have no row ([PROGRAM](#program) on MOTOR & ESC).
+The panel polls the HITEC page's STATE every 500ms. A HITEC session does
+not grey the HITEC tile itself: after the programmer reads the page, a
+port held by another session opens with RELEASE PORT
+([A port another session holds](HitecProgrammer.md#a-port-another-session-holds)).
 
-A row is 48px tall with 8px under it, a heading 28px with 4px under
-it, both in the 10 x 20 face. The bar over a paged list is 48px tall:
-SEARCH 260px wide on the left, `^` and `v` 56px each on the right.
-Every entry ends 4px above the alert band: on SERVO's left card 7 rows
-fit without the bar, 6 under it. MOTOR & ESC's list is the same list.
+CLOSE ends the session and returns to the hub. Inside a programmer's
+keypad, list, warning or keyboard, the home tag closes only that overlay.
+The firmware registry `shared/ui/prog_registry.c` supplies the
+programmers and their capability rules. Modelled protocols without an
+IOmcu transport have no tile ([PROGRAM](#program) on MOTOR & ESC).
 
 The KST and Chaservo programmer takes the tester's programming port out
 of PWM (pulse-width modulation) and reads or writes settings over the
 servo's signal wire. PROG PORT 1 defaults to GPIO 13, pad 17. Connecting
-requires SERVO TESTER to select PORT 1, PORT 2, PORT 3 or PORT 4 under SETUP > OUTPUTS.
-With OUTPUTS selected, CONNECT is locked and the page says
+requires the PORT button over the output card to name PROG PORT 1, PROG PORT 2, PROG PORT 3 and
+PROG PORT 4. With OUTPUTS picked, CONNECT is locked and the page says
 `Use the programming port to program a servo.` and
-`Tap TARGET and select one of PORT 1 to PORT 4 for SERVO TESTER.` TARGET
-opens PROG PORT 1's OUTPUTS entry containing SERVO TESTER; its home tag
-returns to the programmer.
+`Tap PORT and pick a PROG PORT.`
 
 On an rbmod carrier with IOmcu protocol 4.36 or later, tap the programmer's
 PORT label before CONNECT to choose a programming port. The fixed pins
@@ -2049,8 +2050,9 @@ for the other three. The tester waits for readback confirmation.
 
 While the programmer holds a port, CLOSE or the home tag opens LEAVE
 PROGRAMMING. During transitions into or out of programming they do nothing.
-Leaving SERVO preserves the held port; returning reopens the programmer
-on PROGRAM. ARM is disabled on SERVO and MOTOR & ESC; pressing it shows
+Leaving SERVO preserves the held port. A held session that is not shown
+opens again on its own screen: from another SERVO function screen the
+panel goes there. ARM is disabled on SERVO and MOTOR & ESC; pressing it shows
 `Cannot switch to ARMED: a port is in use by the servo programmer.`
 CENTRE, RELEASE and STOP remain active. COMMANDED shows `---`, because
 the tester sends no pulse to the held port.
@@ -2064,27 +2066,35 @@ separate 5V and those supply controls remain active
 the servo's power. Whether a KST servo follows PWM while in programming
 mode is not measured.
 
-The programmer's layout on the 620px left card, every control 48px tall
-or more and ending 4px above the alert band:
+The programmer's layout on the 620 x 428px left card, every control 48px
+tall or more and ending 8px above the card floor:
 
 | Part | Size |
 | --- | --- |
 | tabs and CLOSE | one row at the top, 48px tall: five tabs of 95px, CLOSE 120px |
 | rows | 48px tall at a 56px pitch, up to 5 a tab, in two columns of 295px; a wide row spans both |
 | values | 150px (15 cells of the 10 x 20 face); a wide row's 260px, with its `-` and `+` keys of 56px inside it |
-| notes and messages | under the last row, 10 x 20 face, 60 cells a row, 20px a row, to 4px above the alert band: 7 rows under the SERVO tab |
+| notes and messages | under the last row, 10 x 20 face, 60 cells a row, 20px a row, to 6px above the card floor: 4 rows under the SERVO tab |
 | lists (FILES, RESTORE, MORE, a factor) | a title, then up to 7 entries 48px tall at a 56px pitch, CANCEL 150 x 48px at the foot |
 | warning pages | the title in the 20 x 36 face, up to 16 rows of lines in the 10 x 20 face (fewer in a shorter area: the rows that fit 8px above the buttons), the hold button 300 x 56px and CANCEL 180 x 56px at the foot |
 
 The tabs' labels are in the 10 x 20 face when every label fits its 95px
 tab, as in English, and in the 8 x 16 face when one does not, as German
-`ABSTIMMEN` does. No note, message or control lies under the alert band.
-Every line of a message is drawn: the longest takes 5 of the 7 rows under
-the SERVO tab. Where the two standing lines leave no row beside the
-message for a page count, they yield to it: they page with the other
-notes, first, and a line taller than a page waits for the message to go.
-In German the tallest pair (4 rows) and the tallest message (5 rows) need
-9 rows; there the pair waits.
+`ABSTIMMEN` does. No note, message or control lies over the footer. A
+list of choices takes one column of 48px rows at a 56px pitch above
+CANCEL. When more choices come than one column holds, they take two to a
+row in columns of 295px, and an entry wider than a column takes a row of
+its own. Where the two standing lines leave no row beside the message for a
+page count, they yield to it: they page with the other notes, first, and
+a line taller than a page waits for the message to go. Where the message
+leaves no row for a note, every note waits for it to go. Neither a note
+nor the message rises over the SERVO tab's last row.
+
+Current limitation: a message taller than the 4 rows under the SERVO tab
+shows its first lines only. The longest messages take 5 rows. In German
+messages 137 and 143 do, and 44 and 45 with a 5-digit count; each loses
+its last line. A long file name in a message can add a row; that case is
+not measured.
 
 [Servo programmer for KST and Chaservo servos](ServoProgrammer.md)
 describes it.
@@ -2150,60 +2160,57 @@ A stop found sets that end in the draft:
 
 ### Settings
 
-SETTINGS contains three pages: OUTPUT, SWEEP and DUT (German `AUSGANG`,
-`SWEEP`, `PRÜFLING`). Run-specific settings open from SETTINGS on the
-relevant TEST card, one navigation level down. CLOSE at the upper right,
-beside the run name, or the home tag returns to the cards. Switching to
-another task hides this list; returning to TEST restores it. The output
-card remains visible and active.
+The footer's SETTINGS opens the list of the screen it sits on, in
+SETUP's list form ([the footer and the settings list](#the-footer-and-the-settings-list)): 48px rows, `-`
+and `+` keys where a value steps, a `>` where a tap opens a choice, the
+strip with the screen's name, RESET and SAVE. A change is marked unsaved
+until SAVE.
 
-Tap a numeric value for the keypad, a choice for its list, a switch to
-toggle it or the name for the keyboard.
+| Screen | SETTINGS opens |
+| --- | --- |
+| the hub | the servo profile: OUTPUT with TYPE, FRAME RATE, PULSE MIN, PULSE CENTRE, PULSE MAX, TRIM, TRAVEL, REVERSE and HV SERVO; DUT with NAME and REPORT |
+| SWEEP | CURVE, SPEED and RANGE |
+| TEST | the automatic test's page of rows, one level down |
+| LIMIT RUN | the limit run's page of rows, one level down |
+| RUDDER | LENGTH, ENC CENTRE and ANGLE SOURCE |
+| RUDDER AUTO | the targets, MARGIN, TOLERANCE, SERVO, SERVO PULSES and ANGLE SOURCE |
+| SERVO > KST | KST EXPERT MODE, one level down |
+| HITEC | SERIES and RECEIVE |
+| LIVE | no list |
 
-SETTINGS page tabs span the card at 197 x 40px each. Rows occupy two
-295px columns, with 48px height and 52px pitch. Labels are on the left;
-values use 140px on the right. TYPE, FRAME RATE and NAME span both columns.
-OUTPUT notes use 60-character lines at 21px spacing.
+A function's list opens on a SAFE bench only, with no sweep and no run;
+a bench that goes live under it closes it, and so does a run's or KST's
+page of rows. The run card's own SETTINGS follows the same rule and is
+grey while it refuses. The hub's list opens at any time: the hub drives
+nothing. No list opens while a programmer session holds its port
+(`LOCKED: SERVO PROGRAMMING USES THE PORT`), or while a finger is still
+on another control of the screen: a hold, a tap's button, the dial,
+SPEED or the session (`A finger is still on another control. Lift it
+first.`). The PORT list follows the second rule as well, for its open and
+for its pick. The profile is for the session: STANDARD
+PWM at 50Hz at every restart. A tap on TYPE or FRAME RATE opens the
+choice over the left part of the list; a type or a rate that can destroy
+a servo not made for it goes into force only after its warning is held
+for 2s. A tap on a pulse, TRIM or TRAVEL opens the keypad there.
 
-Run settings use three 193px columns. Each row has its label above a
-48px value field at 71px pitch. The automatic test has 15 rows, five per
-column: voltage steps with HV SERVO, limits with BROWN-OUT, and duration
-with timing. TEST LENGTH BY is at the top right below the card's SETTINGS
-button, so a second tap there opens its list without changing a setting.
-Notes, save status, STALL AT and the caps line end at least 4px above the
-alert band.
+OUTPUT's heading line says whether the frame rate reached the pins, in
+the warning colour when it did not (below).
+ANGLE SOURCE is read-only; a tap opens SETUP > SENSORS on it, and its
+home tag returns to RUDDER's list.
+
+A run's page of rows and KST's EXPERT MODE page keep their layout: three
+193px columns, each row its label over a 48px value at a 70px pitch from
+y 64. The automatic test has 15 rows, five per column: voltage steps with
+HV SERVO, limits with BROWN-OUT, and duration with timing. Notes, save
+status and STALL AT end 2px above the card floor. CLOSE at the upper
+right, beside the run's name, or the home tag returns to the card.
 
 Choice lists have two columns of five 48px entries at 56px pitch. Warnings
 use 12 x 24px letters, 49 characters per line, with 56px high HOLD 2s TO
-APPLY and CANCEL buttons ending 4px above the alert band.
+APPLY and CANCEL buttons ending 8px above the card floor.
 
-![The servo's settings](img/servo-settings.png)
-![The SWEEP page](img/servo-sweep-page.png)
-
-| Where | Setting | What it does |
-| --- | --- | --- |
-| SETTINGS > OUTPUT | TYPE | the servo profile: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC or HELI TAIL 760 |
-| SETTINGS > OUTPUT | FRAME RATE | how often a pulse is sent; the type's list, or CUSTOM on the keypad |
-| SETTINGS > OUTPUT | PULSE MIN, CENTRE, MAX | the pulse widths the travel maps onto, 400 to 2500us: -90° is MIN, 0 is CENTRE, +90° is MAX, and RELEASE rests at CENTRE. An end lies no further from CENTRE than CENTRE lies from 400us or 2500us |
-| SETTINGS > OUTPUT | TRIM | added to the centre, 5us a step, up to 200us either way; `-` and `+` step it, a tap on the value opens the signed keypad |
-| SETTINGS > OUTPUT | TRAVEL | how far the horn may go each way, 10 to 90° |
-| SETTINGS > OUTPUT | REVERSE | the direction the horn's angle maps onto the pulse |
-| SETTINGS > SWEEP | CURVE, SPEED, RANGE | the movement of SWEEP: square, sine or triangle, 0.05 to 5Hz, 10 to 100% of the travel. The automatic test moves in steps between the ends RANGE gives |
-| AUTOMATIC TEST > SETTINGS | TEST LENGTH BY, TEST TIME, MOVEMENTS | how long each supply step runs: a time, or a number of movements |
-| AUTOMATIC TEST > SETTINGS | DWELL TIME, SETTLING TIME | held at each end, by the test and by SWEEP; waited after a supply step before measuring |
-| AUTOMATIC TEST > SETTINGS | STEP 4.8 / 6.0 / 7.4 / 8.4V | the supply steps; 7.4 and 8.4V run only with HV SERVO on |
-| AUTOMATIC TEST > SETTINGS | BROWN-OUT | reads `ON 3.0/0.2V` (LOWEST VOLTAGE and STEP) or `OFF`; a tap opens the brown-out walk's page, whose CLOSE and home tag come back |
-| AUTOMATIC TEST > BROWN-OUT | BROWN-OUT, LOWEST VOLTAGE, STEP | the walk from 5.0V down, on or off; its floor, 2.0 to 4.8V, 3.0V by default; its step, 0.1 to 1.0V, 0.2V by default. The note under them names the walk on the supply in force and how many voltages it asks for |
-| AUTOMATIC TEST > SETTINGS | HV SERVO | adds the 7.4 and 8.4V steps, off by default and at every restart; a run with them starts only through HV SERVOS ONLY |
-| AUTOMATIC TEST > SETTINGS | STALL AT | above this current the servo counts as stalled |
-| AUTOMATIC TEST > SETTINGS | IDLE CURRENT, HOLDING CURRENT, TRAVEL TIME | pass/fail limits; 0 is not checked |
-| LIMIT RUN > SETTINGS | LIMIT RUN | SEARCH ONLY or SEARCH + PROGRAM, a tap switches; SEARCH + PROGRAM is offered for a servo on the programming port only, and the row reads SEARCH ONLY with the reason under it otherwise. For the session |
-| LIMIT RUN > SETTINGS | SERVO | KST/CHASERVO or HITEC; selects the programmer family used by SEARCH + PROGRAM |
-| LIMIT RUN > SETTINGS | SERVO PULSES | KEEP or 1000-2000, a tap switches; shown only for KST/CHASERVO with TARGET on PROG PORT. 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0us in the run's read session, before the search. KEEP by default; for the session |
-| SETTINGS > DUT | NAME | the device under test, up to 23 characters, for the report |
-| SETTINGS > DUT | REPORT | a text report beside each test's log |
-| SETTINGS > DUT | ENC CENTRE | a tap takes the live count as the centre, with the servo at its neutral, and sets nothing without a reading from the current link (none after a link loss until a new one arrives) or while the sensor reports no magnet; the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, SENSORS, AS5600 centre |
-| SETTINGS > DUT | KST EXPERT MODE | whether the [KST and Chaservo programmer](ServoProgrammer.md#expert-mode) shows DEAD BAND, BOOST, STRETCH, RELEASE PAIRING and the LOCKED tab; OFF by default, ON after a 2s hold (a shorter press shows the hint on the band), OFF with a tap. Kept across restarts |
+![The hub's list, the servo profile](img/servo-settings.png)
+![SWEEP's list](img/servo-sweep-page.png)
 
 TRIM is the only keypad accepting a sign. Its `+/-` key, between the
 point and OK, adds or removes a leading minus before or after digits are
@@ -2216,53 +2223,47 @@ their usual key positions.
 ![TRIM's keypad, -25us typed](img/servo-trim-keypad.png)
 
 AS5600, the output encoder, is switched on and off on SETUP > SENSORS
-alone ([the output encoder](#sensors-the-output-encoder)). DUT's button
-`AS5600 ON OR OFF: OPEN SENSORS`, 600 x 48px, opens SENSORS on the AS5600
-entry. It adds the horn's angle to the MEASURED row and to a run's CSV
-and report ([Servo](Servo.md#the-output-encoder)).
+alone ([the output encoder](#sensors-the-output-encoder)). It adds the
+horn's angle to the MEASURED row and to a run's CSV and report
+([Servo](Servo.md#the-output-encoder)). ENC CENTRE on RUDDER's list takes
+the live count as the centre, with the servo at its neutral; without a
+reading its line says `No AS5600 reading: set it up on SENSORS`.
+
+![RUDDER's list with the output encoder on](img/servo-encoder.png)
 
 SUPPLY's voltage and current caps limit both set points and test steps.
-They appear below the TEST cards and on a 600 x 48px DUT button:
+They appear on a 600 x 48px button under TEST's card:
 `CAPS 21.00V 5.00A: OPEN SUPPLY` (German
 `GRENZEN 21.00V 5.00A: SUPPLY ÖFFNEN`). Tap it to open SUPPLY's settings
 list at its top, where the caps are set; with the supply's output on the
 list stays closed and the band says why. The first home tag closes the
-list, the next returns to SERVO.
+list, the next returns to TEST. Leaving SERVO switches to SAFE, ends a
+sweep or test and turns off a supply switched on by SERVO, so the button
+shares the PORT button's lock: ARMED, a sweep, a run or a programmer
+holding the port.
 
-Both buttons open another screen like TARGET. The destination's home tag
-returns to the task and page where the button was tapped. Leaving SERVO
-switches to SAFE, ends a sweep or test and turns off a supply switched on
-by SERVO. The buttons therefore share TARGET's lock: ARMED, a sweep, a
-run or a programmer holding the port. They are dimmed and inactive in
-these states. Leaving SENSORS with unsaved changes passes through
-[the leave warning](#keeping-the-values).
+![PORT's list](img/servo-port.png)
+![PORT's list on the carrier, PROGP04 refused](img/servo-port-rbmod.png)
 
-OUTPUT's first note reads what SERVO TESTER is set to, OUTPUTS, PORT 1, PORT 2,
-PORT 3 or PORT 4, and that it is set on OUTPUTS:
-`SERVO TESTER: PORT 1. Set it on OUTPUTS.` It takes no tap.
+The PORT button, x 636 to 1016 and y 8 to 56 over the output card, names
+the driven protocol and pins. A tap opens the list of OUTPUTS and PROG
+PORT 1, PROG PORT 2, PROG PORT 3 and PROG PORT 4 over the left card; a pick sets SERVO TESTER, the
+TARGET setting saved in NVS (non-volatile storage), as OUTPUTS' SERVO
+TESTER rows set it, and asks for a save. On the rbmod carrier the entries
+name each port's GPIO, and a port the carrier refuses shows its refusal
+line and takes no pick. The button follows the actual target even while a
+TARGET write is pending or a requested programming port has no pin.
 
-![The DUT page with the output encoder on](img/servo-encoder.png)
-
-TARGET, between SPEED and CENTRE on the output card, names the driven
-protocol and pins, centred in its value box. Tap it to open SETUP > OUTPUTS
-at the active output: the PROG PORT entry for a driven port, SERVO PWM
-for standard outputs, or the overview if the target is unknown or no
-IOmcu answers ([OUTPUTS](#outputs)). It follows the actual target even
-while a TARGET write is pending or a requested programming port has no pin.
-
-On OUTPUTS, SERVO TESTER chooses OUTPUTS or a programming port through the
-TARGET setting; PORT PWM controls the port's pulse. Both are saved in
-NVS (non-volatile storage). Leaving SERVO switches to SAFE and ends a sweep
-or test. The OUTPUTS home tag returns to the task where TARGET was tapped.
-
-TARGET is outlined, dimmed and locked while ARMED, during a running or
-paused sweep, automatic test or limit run, and while a programmer holds
-the port. Its target remains visible. The output card stays in view beside
-pages, keypads and the programmer, so TARGET keeps naming the pin while
-they cover the left column.
+The PORT button is dimmed and locked while ARMED or ARM is asked, during
+a running or paused sweep, automatic test or limit run, and while a
+programmer holds the port; a tap names the lock in the alert band and
+opens nothing. Its target remains visible. The output card stays in view
+beside pages, keypads and the programmer, so the button keeps naming the
+pin while they cover the left card. The footer's port line repeats it on
+every SERVO screen.
 
 SERVO TESTER selects OUTPUTS or PORT 1, PORT 2, PORT 3 or PORT 4. With OUTPUTS,
-TARGET names the GPIOs assigned to SERVO PWM in the active binding:
+the PORT button names the GPIOs assigned to SERVO PWM in the active binding:
 `SERVO PWM GPIO 4` or `SERVO PWM GPIO 2 GPIO 4`. It fills the 25-character
 value field and counts remaining pins as `+N`: 8 pins from GPIO 40 give
 `SERVO PWM GPIO 40 +7`. Both label and value use the warning colour when
@@ -2279,25 +2280,25 @@ colour. This includes no pin, a pin refused at startup, FUNCTION NONE or
 a port absent from the IOmcu. The IOmcu then keeps standard outputs as its
 target, but the tester sends them only release. SWEEP stays dimmed until
 the port has a SERVO PWM pin or SERVO TESTER selects standard outputs. With PORT
-PWM off, the port sends no pulse. TARGET reads `PORT 1 GPIO 13 PWM OFF`
+PWM off, the port sends no pulse, and the PORT button reads `PORT 1 GPIO 13 PWM OFF`
 (22 characters with a two-digit pin) or `PROG PORT 1 PWM OFF`.
 
 Two warning states name no target and send no tester commands: `NO LINK`
 when no IOmcu answers, and `UNKNOWN` when the programming-port page has
 not been read since link-up, a write was not acknowledged or a read went
-unanswered. While a programmer holds the port, TARGET continues naming
+unanswered. While a programmer holds the port, the PORT button continues naming
 the IOmcu's target, whether port or outputs. The programmer controls the
 port and the tester sends nothing.
 
 The page is read every 500ms. An IOmcu before protocol 4.13 lacks it and
-uses standard outputs. TARGET follows the IOmcu's confirmed state, not
+uses standard outputs. The PORT button follows the IOmcu's confirmed state, not
 the requested setting. A SERVO TESTER change waits for an idle bench and
 appears after the IOmcu accepts it. The IOmcu starts with standard outputs
 and reverts to them if a programming session leaves its port without a
 pin. While SAFE, the panel restores the configured port within one page
 read, 500ms, without waiting for ARM.
 
-![The TARGET row with PROG PORT](img/servo-target.png)
+![The PORT button with PROG PORT](img/servo-target.png)
 
 | Type | Centre | Travel | Frame rates |
 | --- | --- | --- | --- |
@@ -2352,7 +2353,7 @@ OUTPUT reports the result:
 
 | Note | Meaning |
 | --- | --- |
-| In force | the rate runs on the target the IOmcu holds, named from its PROG page: `Active: OUTPUTS run at 330Hz.` or `Active: PROG PORT 1 GPIO 13 runs at 330Hz.`, the port numbered as TARGET names it: PORT 1, PORT 2, PORT 3 or PORT 4. The note is in the warning colour while that target differs from the TARGET chosen (second line `The TARGET chosen is not active.`; PROG PORT with no pin bound to the port leaves OUTPUTS the target), while the port target has no pin, while PORT PWM is OFF (`PORT PWM is OFF. The port sends no pulses.`) and while the target is not known. Against an IOmcu before protocol 4.19 the note reads "every PWM surface runs at": such an IOmcu runs every PWM surface at the rate, whatever the TARGET. With no link both read `No link. The active frame rate is unknown.` in the warning colour: an IOmcu restarted while the link is down runs every pin at its own rate again |
+| In force | the rate runs on the target the IOmcu holds, named from its PROG page: `Active: OUTPUTS run at 330Hz.` or `Active: PROG PORT 1 GPIO 13 runs at 330Hz.`, the port numbered as TARGET names it: PORT 1, PORT 2, PORT 3 or PORT 4. The note is in the warning colour while that target differs from the TARGET chosen (second line `The PORT chosen is not active.`; PROG PORT with no pin bound to the port leaves OUTPUTS the target), while the port target has no pin, while PORT PWM is OFF (`PORT PWM is OFF. The port sends no pulses.`) and while the target is not known. Against an IOmcu before protocol 4.19 the note reads "every PWM surface runs at": such an IOmcu runs every PWM surface at the rate, whatever the TARGET. With no link both read `No link. The active frame rate is unknown.` in the warning colour: an IOmcu restarted while the link is down runs every pin at its own rate again |
 | The rate goes with the next position | not written yet |
 | REFUSED | a pulse of the target (a surface, or the programming port while its pulse is on) is longer than the frame at that rate, or a target pin shares a PWM slice with an output at another rate; the pins keep the rate they had |
 | This IOmcu takes no frame rate | protocol 4.0: every PWM output runs at its binding's 50Hz |
@@ -2367,13 +2368,14 @@ ARM is blocked on every screen while TARGET's rate is unknown:
 link was down reaches the IOmcu only after the reset succeeds.
 
 OUTPUT settings, HV SERVO, LIMIT RUN and SERVO PULSES last for the session.
-SWEEP, automatic-test and DUT settings, plus TARGET, are saved in NVS.
-Each change requests a write immediately; it runs on the first idle frame
-([Keeping the values](#keeping-the-values)). Each SETTINGS page shows
-`SAVED`, `SAVE PENDING`, `NOT SAVED` or `SETUP CHANGES NOT SAVED` at its
-foot. Run settings show the same status below the run name.
+SWEEP, automatic-test and DUT settings, plus TARGET, are saved in NVS. A
+change on a SETTINGS list is marked unsaved until the strip's SAVE. A
+change on a run's page and a PORT pick request a write at once; it runs
+on the first idle frame ([Keeping the values](#keeping-the-values)). A
+run's page shows `SAVED`, `SAVE PENDING`, `NOT SAVED` or
+`SETUP CHANGES NOT SAVED` below the run's name.
 
-![TEST and its two run cards](img/servo-test.png)
+![TEST's card](img/servo-test.png)
 ![The automatic test's settings](img/servo-test-settings.png)
 ![The limit run's settings](img/servo-limits.png)
 ![The brown-out walk's settings](img/servo-brownout.png)
@@ -5406,9 +5408,9 @@ a run ([Servo procedures](Servo.md)).
   a run it ends that run's file, switched ON during an ARMED or supply run
   it starts one.
 - User logs is read at START TEST and START LIMIT RUN: a test keeps the
-  state it started with. With it OFF, the run card and LIVE's box read
+  state it started with. With it OFF, the run card and the run's box read
   `USER LOGS OFF` where the files would be named.
-- REPORT on SERVO > SETTINGS > DUT decides, with User logs ON, whether
+- REPORT under DUT on the SERVO hub's SETTINGS list decides, with User logs ON, whether
   `ATESTnnn.TXT` is written.
 - The fault log, `BENCH/RCBENCH.LOG`, is written whatever the two say.
 - [Logs](#logs) gives the names and the numbering.
@@ -6127,8 +6129,8 @@ Current limitations:
 
 ## Outputs
 
-Open OUTPUTS from its SETUP tile or the TARGET rows on MOTOR & ESC and
-SERVO. Its home tag returns to the screen that opened it. Over the
+Open OUTPUTS from its SETUP tile or the TARGET row on MOTOR & ESC. Its
+home tag returns to the screen that opened it. Over the
 open protocol list the home tag closes the list, choosing nothing, and the
 screen stays. The screen shows the protocols assigned to IOmcu pins, the pins each
 protocol drives, and the programming ports. From SETUP it opens on the
@@ -6140,7 +6142,6 @@ it opens on what that workbench drives:
 | --- | --- |
 | SETUP's OUTPUTS tile | the overview, OFF |
 | MOTOR & ESC's TARGET row | the protocol the throttle's pins are bound as; the PROG PORT entry of a DShot port with no pin beside it; the overview while they are bound as several (`MIXED`), two ports drive the throttle, or none is known |
-| SERVO's TARGET row | what the row shows: the PROG PORT entry while the IOmcu drives the port, SERVO PWM while it drives the outputs, the overview while the target is not known |
 
 ![Outputs](img/outputs.png)
 

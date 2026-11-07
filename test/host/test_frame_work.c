@@ -339,7 +339,7 @@ TEST_CASE(armed_at_rest_draws_what_safe_at_rest_draws)
         const char *name;
         ui_screen_id_t id;
     } k_screens[] = {
-        { "SERVO LIVE", SCREEN_SERVO },
+        { "SERVO LIVE", SCREEN_SERVO_LIVE },
         { "OVERVIEW", SCREEN_OVERVIEW },
     };
     for (size_t k = 0; k < sizeof(k_screens) / sizeof(k_screens[0]); ++k) {
@@ -367,8 +367,8 @@ TEST_CASE(armed_at_rest_draws_what_safe_at_rest_draws)
  * six layers deep, and not the card it lies on. */
 TEST_CASE(a_held_position_draws_the_grip_alone)
 {
-    const run_t safe = { SCREEN_SERVO, false, MO_REST, PANEL_HZ };
-    const run_t held = { SCREEN_SERVO, true, MO_HELD, PANEL_HZ };
+    const run_t safe = { SCREEN_SERVO_LIVE, false, MO_REST, PANEL_HZ };
+    const run_t held = { SCREEN_SERVO_LIVE, true, MO_HELD, PANEL_HZ };
     const work_t s = measured("SERVO LIVE SAFE", &safe);
     const work_t h = measured("SERVO LIVE ARMED HELD", &held);
     const unsigned long grip = 6ul * GRIP_SIDE * GRIP_SIDE;
@@ -382,8 +382,8 @@ TEST_CASE(a_held_position_draws_the_grip_alone)
  * numerals that follow it, within MOVING_BUDGET. */
 TEST_CASE(a_moving_arm_stays_within_its_budget)
 {
-    const run_t sweep = { SCREEN_SERVO, true, MO_SWEEP, PANEL_HZ };
-    const run_t drag  = { SCREEN_SERVO, true, MO_DRAG, PANEL_HZ };
+    const run_t sweep = { SCREEN_SERVO_LIVE, true, MO_SWEEP, PANEL_HZ };
+    const run_t drag  = { SCREEN_SERVO_LIVE, true, MO_DRAG, PANEL_HZ };
     const work_t s = measured("SERVO LIVE ARMED SWEEP", &sweep);
     const work_t d = measured("SERVO LIVE ARMED DRAG", &drag);
     if (s.mean > MOVING_BUDGET || d.mean > MOVING_BUDGET) {
@@ -413,12 +413,12 @@ TEST_CASE(motor_armed_at_rest_stays_within_its_budget)
 TEST_CASE(every_frame_is_the_frame_drawn_whole)
 {
     static const run_t k_runs[] = {
-        { SCREEN_SERVO, false, MO_REST, PANEL_HZ },
-        { SCREEN_SERVO, true, MO_REST, PANEL_HZ },
-        { SCREEN_SERVO, true, MO_HELD, 25.0f },
-        { SCREEN_SERVO, true, MO_SWEEP, PANEL_HZ },
-        { SCREEN_SERVO, true, MO_DRAG, PANEL_HZ },
-        { SCREEN_SERVO, true, MO_BAND, PANEL_HZ },
+        { SCREEN_SERVO_LIVE, false, MO_REST, PANEL_HZ },
+        { SCREEN_SERVO_LIVE, true, MO_REST, PANEL_HZ },
+        { SCREEN_SERVO_LIVE, true, MO_HELD, 25.0f },
+        { SCREEN_SERVO_LIVE, true, MO_SWEEP, PANEL_HZ },
+        { SCREEN_SERVO_LIVE, true, MO_DRAG, PANEL_HZ },
+        { SCREEN_SERVO_LIVE, true, MO_BAND, PANEL_HZ },
         { SCREEN_OVERVIEW, true, MO_BAND, PANEL_HZ },
         { SCREEN_MOTOR, true, MO_REST, PANEL_HZ },
     };
@@ -431,7 +431,7 @@ TEST_CASE(every_frame_is_the_frame_drawn_whole)
  * with the run's clock beside it, three seconds into a run at rest. */
 TEST_CASE(the_band_says_armed_in_both_buffers)
 {
-    const run_t armed = { SCREEN_SERVO, true, MO_REST, PANEL_HZ };
+    const run_t armed = { SCREEN_SERVO_LIVE, true, MO_REST, PANEL_HZ };
     (void)run(&armed, false);
     gfx_rect_t chip;
     CHECK(ui_band_chip_rect(ui_router_status(), UI_BAND_CHIP_ARMED, &chip));

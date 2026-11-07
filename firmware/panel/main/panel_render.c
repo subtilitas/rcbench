@@ -416,10 +416,12 @@ void knob_apply(const knob_turn_t *turn, bool frame_lost)
     }
     const float span =
         knob_span_fraction(turn->steps, settings_get_int(SET_KNOB_SCALE));
-    switch (turn->route) {
-    case SCREEN_MOTOR: motor_screen_knob(span); break;
-    case SCREEN_SERVO: servo_screen_knob(span); break;
-    default: break;
+    /* Every SERVO screen takes the turn; the shared code moves the horn on
+     * LIVE, SWEEP, RUDDER and RUDDER AUTO only. */
+    if (turn->route == SCREEN_MOTOR) {
+        motor_screen_knob(span);
+    } else if (servo_screen_owns(turn->route)) {
+        servo_screen_knob(span);
     }
 }
 

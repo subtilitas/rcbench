@@ -2,7 +2,7 @@
  * @file
  * @brief The SERVO workbench's internals, which servo_screen_int.h takes in at its
  * end: which task and which panel hold the left column, servo_workbench.c's
- * side (the strip, the TARGET row, TEST's page), and the page area and the
+ * side (the tasks, TEST's and LIMIT RUN's page), and the page area and the
  * run cards' geometry.  It reads the screen's one state `s` and the layout
  * of servo_screen_int.h and is not to be included alone.
  *
@@ -22,10 +22,10 @@ static inline bool modal_open(void)
 static inline ui_wb_task_t wb_task(void) { return ui_wb_strip_task(&s.wb); }
 
 /*
- * PROGRAM's sessions, the registry's SERVO rows (prog_registry.h), as the
- * screen drives them: each distinct page set once.  A session is shown
- * over the left column, the strip with it, one level down from PROGRAM's
- * list; while it holds its port it stays shown.
+ * The programmers' sessions, the registry's SERVO rows (prog_registry.h),
+ * as the screen drives them: each distinct page set once.  KST's and
+ * HITEC's screens show their session over the left column; while it holds
+ * its port it stays shown there.
  */
 /* A page set's hooks are called through prog_ps_*() (prog_registry.h). */
 /* The session shown, or NULL. */
@@ -41,22 +41,21 @@ void prog_leave(void);
 void prog_cancel(void);
 void prog_armed(bool armed);
 void prog_tick(float dt_s);
-/* A session holding its port and not shown shows again, on PROGRAM. */
+/** @brief A session holding its port and not shown shows again, on its
+ *         own screen (KST's or HITEC's). */
 void prog_follow_hold(void);
-/* PROGRAM's rows changed what they show (a capability, a pin, a port
- * taken): the page repaints. */
-void prog_page_follow(void);
 
-/* The page of rows shown, PG_*, or -1: SETTINGS' page, or on TEST a run's
- * settings. */
+/* The page of rows shown, PG_*, or -1: on TEST and LIMIT RUN a run's
+ * settings, on KST its EXPERT MODE row. */
 static inline int rows_page(void)
 {
     switch (wb_task()) {
-    case UI_WB_SETTINGS: return s.tabs.selected;
     case UI_WB_TEST:
         return (s.run_list == RL_AUTO)       ? PG_AUTO
                : (s.run_list == RL_LIMIT)    ? PG_LIMRUN
                : (s.run_list == RL_BROWNOUT) ? PG_BROWNOUT : -1;
+    case UI_WB_PROGRAM:
+        return (s.run_list == RL_KST) ? PG_KST : -1;
     default:             return -1;
     }
 }
@@ -68,11 +67,12 @@ static inline bool ov_shown(void)
     return modal_open() || rows_page() >= 0;
 }
 
-/* Whether LIVE's dial is in sight and takes presses: LIVE, no panel, no
- * session. */
+/* Whether LIVE's dial is in sight and takes presses: LIVE or SWEEP, no
+ * panel, no session.  The hub shows no dial. */
 static inline bool live_shown(void)
 {
-    return wb_task() == UI_WB_LIVE && !modal_open() && !prog_shown();
+    return s.fn != SERVO_FN_HUB && wb_task() == UI_WB_LIVE && !modal_open()
+           && !prog_shown();
 }
 
 /* --- servo_settings_panel.c's side, which the workbench calls ----------- */
@@ -87,46 +87,37 @@ void draw_rows_page(gfx_canvas_t *c);
 /* --- servo_workbench.c's side, which the screen calls -------------------- */
 
 /* A press on an opener's button, under the TARGET setting's lock; SUPPLY's
- * LIMITS and SENSORS' AS5600 entry opened, the home tag there coming back
- * to the task they were opened from. */
+ * LIMITS and SENSORS' angle source entry opened, the home tag there coming
+ * back to the screen they were opened from. */
 bool opener_down(const touch_event_t *evt, gfx_rect_t r, int code);
 void wb_open_caps(void);
 void wb_open_encoder(void);
 
-/* The strip, the TARGET row and PROGRAM's list laid out (reset); a tile's
- * entry (LIVE); leaving (the run's settings close); touch events lost. */
+/* The task strip at its start (reset); a screen entered; leaving (a page
+ * of rows closes); touch events lost. */
 void wb_init(void);
 void wb_enter(void);
 void wb_leave(void);
 void wb_cancel(void);
-/* The home tag: a panel closes; in a session, the session's back()
- * (an editor closes, the session closes to PROGRAM's list, or a port in
- * programming asks for LEAVE); a run's settings close to TEST.  Whether
- * it did one; false lets the screen go. */
+/* The home tag: a panel closes; a page of rows closes to its screen, the
+ * brown-out walk's to the automatic test's.  Whether it did one; false
+ * lets the screen go. */
 bool wb_back(void);
 /** @brief A panel or a programming page covers the screen.
  *  @return true while one does */
 bool svs_covered(void);
-/* A DOWN on the strip or the TARGET row, and the rest of a press on
- * either: whether it was theirs. */
-bool wb_down(const touch_event_t *evt);
+/* The rest of a press on RUDDER's card, AUTO's box, the footer or the PORT
+ * button: whether it was theirs. */
 bool wb_rest(const touch_event_t *evt);
-/* A DOWN on TEST's page, its run cards; on PROGRAM's list. */
+/* A DOWN on TEST's or LIMIT RUN's page: its run card. */
 void test_page_down(const touch_event_t *evt);
-void prog_page_down(const touch_event_t *evt);
-/* The search typed on the keyboard opened from PROGRAM's list. */
-void prog_search_done(const char *text);
-/* PROGRAM's list as it stands: SERVO's PROGRAM rows, the search applied. */
-void prog_list_now(prog_list_t *l);
-/* The strip; TEST's page; the TARGET row on the right card; SUPPLY's caps,
- * read-only, at (@p x, @p y). */
-void draw_strip(gfx_canvas_t *c);
+/* TEST's or LIMIT RUN's page; SUPPLY's caps, read-only. */
 void draw_test_page(gfx_canvas_t *c);
-void draw_prog_page(gfx_canvas_t *c);
-void draw_target(gfx_canvas_t *c);
+/** @brief The run card's SETTINGS, grey while svs_list_bench_why() refuses
+ *         its page. @param c the canvas */
+void draw_run_set(gfx_canvas_t *c);
 void draw_caps_button(gfx_canvas_t *c);
-/* The strip's row, and START LIMIT RUN on its card. */
-gfx_rect_t strip_area(void);
+/* START LIMIT RUN on its card. */
 gfx_rect_t lim_start_rect(void);
 
 /* --- servo_guide.c: the screen guide's pages (ui_help.h) ---------------- */
@@ -151,24 +142,25 @@ bool servo_help_page(int i, struct ui_help_page *out);
 
 /* --- the page area and TEST's run cards --------------------------------- */
 
-/* The page area: the left card under the strip. */
+/* The page area: the left card, down to the card's floor over the footer. */
 static inline gfx_rect_t page_area(void)
 {
     return (gfx_rect_t){ PAD, CARD_Y, LCARD_W, CARD_H };
 }
 
 /*
- * TEST's two run cards, AUTOMATIC TEST over LIMIT RUN, across the page
- * area: each its name and a summary line, its START hold with SETTINGS
- * beside it, and the lines under them.  The caps line follows the second
- * card.
+ * The run card, AUTOMATIC TEST on TEST and LIMIT RUN on LIMIT RUN, at the
+ * top of the page area: its name and a summary line, its START hold with
+ * SETTINGS beside it, and the lines under them.  On TEST the caps line
+ * follows the card.
  */
 #define RUN_CARD_X  (PAD + 10)     /**< The run cards' left edge, px. */
 #define RUN_CARD_W  (LCARD_W - 20) /**< Their width: 600px. */
 #define RUN_CARD_H  188            /**< A run card's height, px. */
 #define RUN_CARD_GAP 4             /**< Above and between the cards, px. */
-/** @brief Run card @p k's top (0 AUTOMATIC TEST, 1 LIMIT RUN). */
-#define RUN_CARD_Y(k) (CARD_Y + RUN_CARD_GAP + (k) * (RUN_CARD_H + RUN_CARD_GAP))
+/** @brief A run card's top, AUTOMATIC TEST's and LIMIT RUN's alike: each
+ *         on its own screen, at the page area's top. */
+#define RUN_CARD_Y  (CARD_Y + RUN_CARD_GAP)
 #define RUN_NAME_DY 8              /**< A card's name, from its top. */
 #define RUN_SUM_DY  32             /**< A card's summary line, in it. */
 #define RUN_BTN_DY  56             /**< Its START's top, in it. */
@@ -177,12 +169,19 @@ static inline gfx_rect_t page_area(void)
 #define RUN_LINE_DY 108            /**< The lines under START, in it. */
 #define RUN_LINE_P  22             /**< Their pitch in SV_FONT_LABEL. */
 #define RUN_SET_W   160            /**< A card's SETTINGS, px. */
-/** @brief The caps button under the two cards. */
-#define RUN_CAPS_Y  (RUN_CARD_Y(1) + RUN_CARD_H + RUN_CARD_GAP)
-_Static_assert(RUN_CAPS_Y + UI_TAP_MIN <= STOP_FLOOR,
-               "the caps button ends above the alert band");
+/** @brief The caps button under TEST's card. */
+#define RUN_CAPS_Y  (RUN_CARD_Y + RUN_CARD_H + RUN_CARD_GAP)
+_Static_assert(RUN_CAPS_Y + UI_TAP_MIN <= CARD_FLOOR,
+               "the caps button ends above the footer");
 _Static_assert(RUN_LINE_DY + 2 * RUN_LINE_P + 20 <= RUN_CARD_H,
                "a card's three lines under START end inside it");
+
+/** @brief The run card the function shows: 0 AUTOMATIC TEST on TEST, 1
+ *         LIMIT RUN on LIMIT RUN. @return the card */
+static inline int run_card_shown(void)
+{
+    return (s.fn == SERVO_FN_LIMRUN) ? 1 : 0;
+}
 
 /**
  * @brief Run card @p k.
@@ -191,7 +190,8 @@ _Static_assert(RUN_LINE_DY + 2 * RUN_LINE_P + 20 <= RUN_CARD_H,
  */
 static inline gfx_rect_t run_card_rect(int k)
 {
-    return (gfx_rect_t){ RUN_CARD_X, (int16_t)RUN_CARD_Y(k), RUN_CARD_W,
+    (void)k;
+    return (gfx_rect_t){ RUN_CARD_X, (int16_t)RUN_CARD_Y, RUN_CARD_W,
                          RUN_CARD_H };
 }
 
@@ -204,8 +204,9 @@ static inline gfx_rect_t run_card_rect(int k)
  */
 static inline gfx_rect_t run_set_rect(int k)
 {
+    (void)k;
     return (gfx_rect_t){ (int16_t)(RUN_CARD_X + RUN_CARD_W - 10 - RUN_SET_W),
-                         (int16_t)(RUN_CARD_Y(k) + RUN_BTN_DY
+                         (int16_t)(RUN_CARD_Y + RUN_BTN_DY
                                    + (RUN_BTN_H - UI_TAP_MIN) / 2),
                          RUN_SET_W, UI_TAP_MIN };
 }
@@ -227,61 +228,50 @@ static inline gfx_rect_t run_close_rect(void)
 #define RUN_PAGE_SAVE_DY 28
 
 /**
- * @brief The save line of a page of rows, 20px tall.  On SETTINGS' pages
- *        along the bottom, under the notes; on a run's settings under the
- *        run's name, left of CLOSE, as the rows and the STALL AT note fill
- *        the page down to the alert band.  The German "not saved" line is
+ * @brief The save line of a page of rows, 20px tall, under the run's
+ *        name, left of CLOSE, as the rows and the STALL AT note fill the
+ *        page down to the card's floor.  The German "not saved" line is
  *        37 cells, 370px.
  * @return the line
  */
 static inline gfx_rect_t save_line_rect(void)
 {
-    if (rows_page() >= PG_COUNT) {
-        const int x = OV_X + 10;
-        return (gfx_rect_t){ (int16_t)x, (int16_t)(CARD_Y + RUN_PAGE_SAVE_DY),
-                             (int16_t)(run_close_rect().x - 10 - x), 20 };
-    }
-    return (gfx_rect_t){ (int16_t)(OV_X + 10), OV_SAVE_Y,
-                         (int16_t)(OV_W - 20), 20 };
+    const int x = OV_X + 10;
+    return (gfx_rect_t){ (int16_t)x, (int16_t)(CARD_Y + RUN_PAGE_SAVE_DY),
+                         (int16_t)(run_close_rect().x - 10 - x), 20 };
 }
 _Static_assert(CARD_Y + RUN_PAGE_SAVE_DY + 20 <= RL_ROW0 - 4,
                "a run's save line ends over its first row");
 
-/** @brief DUT's notes, under its three rows. */
-#define DUT_NOTE_Y (OV_ROW0 + 3 * OV_PITCH + 6)
-/** @brief DUT's AS5600 button, under its two lines of notes. */
-#define DUT_ENC_Y  (DUT_NOTE_Y + 2 * NOTE_PITCH + 6)
-/** @brief DUT's caps button, under the AS5600 button. */
-#define DUT_CAPS_Y (DUT_ENC_Y + UI_TAP_MIN + 8)
-_Static_assert(DUT_CAPS_Y + UI_TAP_MIN + 4 <= OV_SAVE_Y,
-               "DUT's buttons end above the save line");
-
 /**
- * @brief The caps button, which opens SUPPLY's LIMITS: under TEST's cards,
- *        or on SETTINGS' DUT page.
+ * @brief The caps button under TEST's card, which opens SUPPLY's LIMITS.
  * @return the button, 600 x UI_TAP_MIN px
  */
 static inline gfx_rect_t caps_open_rect(void)
 {
-    return (gfx_rect_t){ RUN_CARD_X,
-                         (int16_t)((wb_task() == UI_WB_TEST) ? RUN_CAPS_Y
-                                                             : DUT_CAPS_Y),
-                         RUN_CARD_W, UI_TAP_MIN };
+    return (gfx_rect_t){ RUN_CARD_X, (int16_t)RUN_CAPS_Y, RUN_CARD_W,
+                         UI_TAP_MIN };
 }
 
-/**
- * @brief DUT's AS5600 button, which opens SENSORS on the AS5600 entry.
- * @return the button, 600 x UI_TAP_MIN px
- */
-static inline gfx_rect_t enc_open_rect(void)
+_Static_assert(BOX_Y_TEST >= RUN_CAPS_Y + UI_TAP_MIN + 4,
+               "TEST's run box starts under the caps button");
+_Static_assert(BOX_Y_LIM >= RUN_CARD_Y + RUN_CARD_H + 4,
+               "LIMIT RUN's run box starts under its card");
+
+/** @brief Whether the run's box shows and takes presses: TEST's with the
+ *         automatic test's, LIMIT RUN's with the limit run's, no page, panel
+ *         or session over it.  @return true when it does */
+static inline bool run_box_shown(void)
 {
-    return (gfx_rect_t){ RUN_CARD_X, DUT_ENC_Y, RUN_CARD_W, UI_TAP_MIN };
+    return wb_task() == UI_WB_TEST && rows_page() < 0 && !modal_open()
+           && !prog_shown()
+           && ((s.fn == SERVO_FN_TEST) ? s.test_box : s.lim_box);
 }
 
 /** @brief START TEST, on the AUTOMATIC TEST card. @return the button */
 static inline gfx_rect_t test_start_rect(void)
 {
     return (gfx_rect_t){ (int16_t)(RUN_CARD_X + 10),
-                         (int16_t)(RUN_CARD_Y(0) + RUN_BTN_DY), RUN_BTN_W,
+                         (int16_t)(RUN_CARD_Y + RUN_BTN_DY), RUN_BTN_W,
                          RUN_BTN_H };
 }

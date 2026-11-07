@@ -36,12 +36,12 @@
 #define RL_BROWNOUT_PAGE 3
 
 /** @brief A run page's row @p r of column @p c, its value: 193 x 48px under
- *         a 21px label, 71px apart from y 112, columns 203px apart from
+ *         a 21px label, 70px apart from y 64, columns 203px apart from
  *         x 18 (servo_screen_int.h's RL_*). */
 static gfx_rect_t value_at(int c, int r)
 {
     return (gfx_rect_t){ (int16_t)(UI_MARGIN + 10 + 203 * c),
-                         (int16_t)(112 + 71 * r + 21), 193, 48 };
+                         (int16_t)(64 + 70 * r + 21), 193, 48 };
 }
 
 /**
@@ -75,7 +75,7 @@ static bool note_reads(int i, const char *text)
 {
     scr->render(&cv, 0);
     want_fresh();
-    const int y = 112 + 3 * 71 + 6 + 21 * i;
+    const int y = 64 + 3 * 70 + 6 + 21 * i;
     const int h = gfx_font_10x20.height;
     gfx_fill_rect(&want_cv, UI_MARGIN + 10, (int16_t)y, 600, (int16_t)h,
                   ui_theme_color(UI_C_PANEL));
@@ -146,13 +146,12 @@ TEST_CASE(the_brownout_row_opens_its_page_and_close_climbs_back)
     CHECK_EQ(servo_screen_run_settings(), 0);
     CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
 
-    /* LIVE and back: TEST shows the walk's page again, as it does the
-     * AUTOMATIC TEST's. */
+    /* LIVE and back: TEST shows its card again, the pages closed. */
     open_run_settings(0);
     tap_brownout_row();
     close_settings();
     open_test();
-    CHECK_EQ(servo_screen_run_settings(), RL_BROWNOUT_PAGE);
+    CHECK_EQ(servo_screen_run_settings(), 0);
 }
 
 /* The row says the walk: "ON 3.0/0.2V" at the defaults, the two settings

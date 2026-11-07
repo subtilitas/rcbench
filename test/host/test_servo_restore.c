@@ -98,7 +98,7 @@ static void left_on(bool kst)
 /* The question's frame, title and buttons, as servo_settings_draw.c places
  * them: the left column's panel, the title 20px in and 20px down, YES
  * bottom left, 240 x 56px, NO bottom right, 180 x 56px. */
-#define Q_BTN_Y   (UI_ALERT_Y - UI_BAND_H - 4 - 56)
+#define Q_BTN_Y   (436 - 8 - 56)
 #define Q_TITLE_Y (OV_Y0 + 20)
 
 /* Buffer 0 drawn, and whether the question shows OUTPUT IS ON over a

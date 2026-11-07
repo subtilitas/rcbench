@@ -11,8 +11,8 @@ current of two outputs. That sensor is not fitted, so the synchroniser
 runs only against a simulated servo.
 Their defaults are from `servo_limit_defaults()` and `servo_sync_defaults()`
 in `shared/servo/`. The third, the [automatic test](#automatic-test), reads
-the current of the supply that feeds the servo. RUDDER, a task of the SERVO
-workbench, reads a control surface's deflection in ° and mm
+the current of the supply that feeds the servo. RUDDER, a function screen of
+SERVO, reads a control surface's deflection in ° and mm
 ([Rudder deflection](#rudder-deflection)).
 
 ## Installed mechanical limit
@@ -36,7 +36,7 @@ width, backed off by another 25µs toward centre, as the endpoint.
 On the bench the limit run (`shared/servo/servo_limrun.c`) searches the low
 side first, then the high side. Where depends on the target:
 
-| TARGET | Read first | Search |
+| PORT | Read first | Search |
 | --- | --- | --- |
 | a SERVO PWM pin on OUTPUTS | nothing | PULSE CENTRE out to PULSE MIN and PULSE MAX |
 | PROG PORT, KST/CHASERVO | a read session of the [programmer](ServoProgrammer.md) | the servo's NEUTRAL out to its own PULSE LOWER and PULSE UPPER, never past them |
@@ -52,13 +52,13 @@ Duration: the host test holds a full search against the modelled servo to under
 
 ### Running it
 
-The LIMIT RUN card on the SERVO screen's TEST task holds the run; its
+The LIMIT RUN card on SERVO's LIMIT RUN screen holds the run; its
 **SETTINGS** opens the run's settings one level down. There **LIMIT RUN**
 chooses SEARCH ONLY or SEARCH + PROGRAM with a tap. **SERVO**, shown with
-TARGET on PROG PORT only, chooses KST/CHASERVO or HITEC with a tap: the
+PORT on PROG PORT only, chooses KST/CHASERVO or HITEC with a tap: the
 programmer the run's sessions go to ([Hitec servos](#hitec-servos)). It
-starts at KST/CHASERVO and takes the programmer opened last on PROGRAM.
-**SERVO PULSES**, shown with TARGET on PROG PORT and SERVO at KST/CHASERVO
+starts at KST/CHASERVO and takes the programmer opened last from the hub.
+**SERVO PULSES**, shown with PORT on PROG PORT and SERVO at KST/CHASERVO
 only, chooses KEEP or 1000-2000 with a tap; it starts at KEEP. The home
 tag goes back to the card. **START LIMIT RUN** on
 the card starts the run with a 2s hold, as START TEST does; a tap or a
@@ -71,8 +71,8 @@ time: `OUTPUT PROG PORT 1 GPIO 13, CURRENT INA3221 0x41 CH2`, or
 `OUTPUT SERVO PWM GPIO 2, CURRENT INA3221 0x40 CH1` while the tester drives the standard outputs.
 The channel is the one watching the tester's target in SETUP > SENSORS,
 the lowest with a shunt on a fitted part; `CURRENT INA3221` while none does. While
-the run goes on, LIVE's left card shows its box: the phase, the side and the pulse commanded, and the output
-again on its third line. The output card's TARGET row stays in sight as well.
+the run goes on, a box under the card shows: the phase, the side and the pulse commanded, and the output
+again on its third line. The output card's PORT button stays in sight as well.
 
 ![The limit run, programming](img/servo-limrun.png)
 
@@ -82,23 +82,23 @@ and the line under it says why.
 
 | Line | Condition |
 | --- | --- |
-| `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` | SAFE on the rbmod carrier with TARGET on a programming port and the PROG 5V box off. Named before `ARM FIRST`: the port's pulse needs the PROG 5V and comes on only while SAFE ([Carrier](Carrier.md#the-programming-port)) |
+| `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` | SAFE on the rbmod carrier with PORT on a programming port and the PROG 5V box off. Named before `ARM FIRST`: the port's pulse needs the PROG 5V and comes on only while SAFE ([Carrier](Carrier.md#the-programming-port)) |
 | `ARM FIRST` | the bench is SAFE |
 | `REPORT STILL BEING WRITTEN` | an automatic test or a limit run is under way, or its report is still going to the card |
-| `NO SERVO PWM PIN`, `PINS NOT READ` | TARGET on the bench's outputs with no output bound as SERVO PWM, or the binding not read yet: the TARGET row's own words. Named before the meter: on the rbmod carrier a channel watches a rail, and the outputs are on a rail only once one is bound ([Carrier: The current monitor](Carrier.md#the-current-monitor)) |
+| `NO SERVO PWM PIN`, `PINS NOT READ` | PORT on the bench's outputs with no output bound as SERVO PWM, or the binding not read yet: the PORT button's own words. Named before the meter: on the rbmod carrier a channel watches a rail, and the outputs are on a rail only once one is bound ([Carrier: The current monitor](Carrier.md#the-current-monitor)) |
 | `INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT` | no channel of a fitted INA3221 watches the tester's target in SETUP > SENSORS, CH2 or CH3 watches it on an IOmcu older than 4.25, an IOmcu older than protocol 4.11, or a SENSE page that does not hold the set-up |
 | `INA3221 OFFLINE` | no link, the part not answering, or its reset count moved |
 | `NO INA3221 MEASUREMENT WINDOWS YET` | the INA3221 is not the servo rail's meter yet: its set-up held for less than 1000ms, or no window with current in the last 200ms |
 | `SERVO SUPPLY BELOW 3.0V OR NOT READ` | the last INA3221 window holds no rail voltage, or its mean is under 3.0V (`SERVO_LIMRUN_RAIL_MIN_MV`). An output that is off reads 0V, and a search there would find two free ends on a servo that never moved. 3.0V lies under the 4.8V servos are commonly specified from, so a single lithium cell's rail still starts; the voltage a given servo stops moving at is not measured |
-| `LOCKED: SERVO PROGRAMMING USES THE PORT` | TARGET on PROG PORT and a programmer session holds the port. Named before PORT PWM: the session is why no pulse runs, whatever PORT PWM says |
-| `PORT PWM OFF: DISARM, TAP TARGET, SWITCH IT ON` | TARGET on PROG PORT with PORT PWM off, the bench ARMED. TARGET takes no tap while ARMED |
-| `PORT PWM OFF: TAP TARGET AND SWITCH IT ON` | the same while SAFE, as the line reads after a DISARM. TARGET opens the port's entry on OUTPUTS, where PORT PWM is |
-| `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` | TARGET on PROG PORT with PORT PWM on, no programmer holding the port, and its pulse still off. A pulse comes on only while SAFE, and the rbmod carrier's panel asks for it only with the PROG 5V on: a PROG 5V switched on while ARMED waits for the next SAFE |
+| `LOCKED: SERVO PROGRAMMING USES THE PORT` | PORT on PROG PORT and a programmer session holds the port. Named before PORT PWM: the session is why no pulse runs, whatever PORT PWM says |
+| `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS` | PORT on PROG PORT with PORT PWM off, the bench ARMED |
+| `PORT PWM OFF: SWITCH IT ON IN OUTPUTS` | the same while SAFE, as the line reads after a DISARM. The port's entry on OUTPUTS holds PORT PWM |
+| `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` | PORT on PROG PORT with PORT PWM on, no programmer holding the port, and its pulse still off. A pulse comes on only while SAFE, and the rbmod carrier's panel asks for it only with the PROG 5V on: a PROG 5V switched on while ARMED waits for the next SAFE |
 | `CENTRE MUST BE BETWEEN PULSE MIN AND MAX` | PULSE CENTRE is not between PULSE MIN and PULSE MAX |
 
 ### Programming the servo's travel limits
 
-SEARCH + PROGRAM is offered for a servo on the programming port: TARGET on
+SEARCH + PROGRAM is offered for a servo on the programming port: PORT on
 PROG PORT, the port in PWM, and a supply of 4.8V or more. On boards where a PD mini feeds the port, its output must be on and its
 set point is checked. Without that supply, the check uses the servo rail's
 mean voltage in the INA3221's last window. On the rbmod carrier, PROG 5V
@@ -145,7 +145,7 @@ switches the bench to ARMED. Nothing is driven before that.
   values the hard rules do not take; ABORTED, `programming port session
   failed`, where the first CONNECT fails for another reason or its read
   does not complete. A servo that is no KST or Chaservo is searched with
-  TARGET on a SERVO PWM pin. Any later CONNECT, a LEAVE or a step that
+  PORT on a SERVO PWM pin. Any later CONNECT, a LEAVE or a step that
   does not complete ends the run as ABORTED with the same reason.
 - NEUTRAL not between PULSE LOWER and PULSE UPPER ends it as FAIL,
   `NEUTRAL outside LOWER/UPPER`.
@@ -381,7 +381,7 @@ it asked that the bench has not taken yet does not arm the bench after the
 end. A start of the panel clears the run without a report.
 
 The values last written stay in the servo. A run that wrote and did not
-pass says `RESTORE IN PROGRAM` on its box, on a Hitec servo `LOAD HITEC001
+pass says `RESTORE IN KST` on its box, on a Hitec servo `LOAD HITEC001
 IN FILES` ([Hitec servos](#hitec-servos)). A write that fails once sent,
 with no answer or an answer the programmer does not take, counts as
 written: part of it may have landed. So does a write handed to the
@@ -545,7 +545,7 @@ at START TEST and the supply is the PD mini, the run reads the INA3221
 channel that watches the tester's target instead, in 50ms windows: see
 [The meter](#the-meter).
 
-START TEST on the AUTOMATIC TEST card of the SERVO screen's TEST task starts it:
+START TEST on the AUTOMATIC TEST card of SERVO's TEST screen starts it:
 [Screens](Screens.md#servo) describes the controls. The engine is
 `shared/servo/servo_test.c`; the constants below are in `servo_test.h`.
 
@@ -842,7 +842,7 @@ IOmcu holds AS5600 on: AS5600 switched on while ARMED gives a run
 without angle columns until the set-up has been taken in a SAFE state.
 
 The angle is the sensor's 12-bit count less the centre count (AS5600 centre,
-or ENC CENTRE on SETTINGS > DUT, which takes the live count with the servo at
+or ENC CENTRE on RUDDER's SETTINGS list, which takes the live count with the servo at
 its neutral), in degrees from -180 to just under 180. The sensor counts up in
 the direction its DIR pin is strapped for; the test assumes the angle rises
 with the pulse width, so a DIR strap that runs the other way shows as an
@@ -1049,7 +1049,7 @@ left as they are.
 | `bench SAFE` | DISARM, or anything else that switched the bench to SAFE |
 | `link lost` | the link to the IOmcu went down during the run |
 | `SERVO screen left` | another screen opened |
-| `stopped by the operator` | STOP TEST, a finger on the dial, CENTRE, SWEEP, RELEASE, a tap on a set point, a programmer opened from PROGRAM's list |
+| `stopped by the operator` | STOP TEST, a finger on the dial, CENTRE, SWEEP, RELEASE, a tap on a set point, a programmer opened from the hub |
 | `servo settings changed` | the type, frame rate, pulses, trim, travel, reverse or SPEED changed |
 | `touch events lost` | events went missing between two frames |
 | `supply not answering` | a reading marked not answering |
@@ -1356,7 +1356,7 @@ RUDDER drives one servo and shows how far the surface it moves is
 deflected: in degrees from a zero and, with the surface's length entered,
 in mm at the trailing edge. It answers "how many mm does this rudder throw"
 without a ruler at the model. The geometry is `shared/servo/servo_rudder.c`;
-the task is `shared/ui/servo_rudder_panel.c`.
+the screen is `shared/ui/servo_rudder_panel.c`.
 
 ### Method
 
@@ -1368,7 +1368,7 @@ the task is `shared/ui/servo_rudder_panel.c`.
 - ZERO stores its reference relative to the source's raw count 0. Changing
   ENC CENTRE afterwards therefore leaves the measured deflection unchanged. Another ANGLE SOURCE, the IMU's other AXIS or
   SIGN, or a ZERO or CLEAR ZERO on the IMU screen, drops the zero and MAX:
-  the task reads as before ZERO.
+  the screen reads as before ZERO.
 - ZERO takes the current angle as the surface's neutral. The deflection is the
   angle from it, wrapped to -180 up to 180°. Before ZERO the deflection is
   the angle itself.
@@ -1378,7 +1378,7 @@ the task is `shared/ui/servo_rudder_panel.c`.
   what a ruler held upright at the trailing edge reads. At 30° a 100mm
   surface reads 50.0mm; the arc L x deflection would read 52.4mm.
 - MAX holds the largest deflection each side, from every reading on show,
-  on every task. ZERO and RESET MAX clear it.
+  on RUDDER and RUDDER AUTO. ZERO and RESET MAX clear it.
 - The side view right of the state lines draws the surface in section,
   leading edge on the left: a grey fixed surface, the hinge, and the flap
   as a cyan wedge at the deflection shown. Positive deflection draws the
@@ -1391,7 +1391,7 @@ the task is `shared/ui/servo_rudder_panel.c`.
 - 1000us and 2000us command those pulses as angles of the type in force,
   held to TRAVEL and the type's pulse range; CENTRE commands PULSE CENTRE
   plus TRIM. All three and the rotary knob act only while the bench is
-  ARMED. The output card's TARGET row names the pin they drive.
+  ARMED. The output card's PORT button names the pin they drive.
 
 | Reading | Resolution | Range |
 | --- | --- | --- |
@@ -1412,7 +1412,7 @@ the task is `shared/ui/servo_rudder_panel.c`.
 
 ### Purpose
 
-AUTO, the third button of RUDDER's ZERO row, programs a KST, Chaservo or
+AUTO, on the RUDDER AUTO screen of its own, programs a KST, Chaservo or
 Hitec servo's end points so that 1000us and 2000us reach the deflection entered
 for each side, measured on the angle source. It closes the loop on the
 surface's angle in place of the throw a radio's end points are set to by
@@ -1423,13 +1423,12 @@ link is not authenticated (`SECURITY.md`, the Bluetooth IMU).
 
 ### Running it
 
-- AUTO shows its box in the place of LENGTH, the three drive buttons and
-  the state lines; the readout, the ZERO row, the side view and the output
-  card stay. The side view adds TARGET 1000us on the negative side and
+- RUDDER AUTO shows its box in the place of RUDDER's LENGTH, three drive
+  buttons and state lines; the readout, ZERO and RESET MAX, the side view
+  and the output card stay. The side view adds TARGET 1000us on the negative side and
   TARGET 2000us on the positive one, each on the side the last run
   measured it on.
-  MANUAL, in AUTO's place, brings them back. While the run runs, MANUAL,
-  ZERO and RESET MAX are refused and drawn dimmed, so the run measures from
+  While the run runs, ZERO and RESET MAX are refused and drawn dimmed, so the run measures from
   the zero it started with, and the rotary knob moves nothing.
 - TARGET 1000us and TARGET 2000us: the deflection each side is to reach,
   0.5 to 90.0° in steps of 0.5°, 20.0° (settings `rud_defl_lo`,
@@ -1444,12 +1443,12 @@ link is not authenticated (`SECURITY.md`, the Bluetooth IMU).
   `PASS: 150>92, 150>92` with each end point's value before and after, or
   `FAIL: reason`; the servo the run programs, `SERVO KST/CHASERVO` or
   `SERVO HITEC D SERIES`, while it runs and before the first run; then the
-  report's file, or `RESTORE IN PROGRAM` (a Hitec servo: `LOAD HITEC001 IN
+  report's file, or `RESTORE IN KST` (a Hitec servo: `LOAD HITEC001 IN
   FILES`) after a FAIL or an abort that wrote, or that cut off a write on
   its way, which may have landed.
 - The servo is the LIMIT RUN settings' SERVO row: KST/CHASERVO, or HITEC
-  in the Hitec programmer's series. It takes the programmer opened last on
-  PROGRAM. On a Hitec servo the end points are LEFT END and RIGHT END in
+  in the Hitec programmer's series. It takes the programmer opened last from
+  the hub. On a Hitec servo the end points are LEFT END and RIGHT END in
   the units of [Hitec servos](#hitec-servos), the read session writes no
   pulses, and a D series servo needs no PD mini.
 
@@ -1457,14 +1456,14 @@ A START is refused, the reason on the first line, while:
 
 | Condition | Line |
 | --- | --- |
-| SAFE on the rbmod carrier with TARGET on a programming port and the PROG 5V box off | `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX`, before `ARM FIRST`: the port's pulse comes on only with the PROG 5V and only while SAFE |
+| SAFE on the rbmod carrier with PORT on a programming port and the PROG 5V box off | `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX`, before `ARM FIRST`: the port's pulse comes on only with the PROG 5V and only while SAFE |
 | the bench is SAFE | `ARM FIRST`, as on TEST |
 | another run runs, or a report is still being written | the run's line, as on TEST |
-| TARGET is the bench's outputs, or the output is otherwise not the programming port | `AUTO PROGRAMS A SERVO ON THE PROG PORT`. TARGET on the outputs is named before the meter: on the rbmod carrier the outputs have no channel watching them until one is bound as SERVO PWM |
+| PORT is the bench's outputs, or the output is otherwise not the programming port | `AUTO PROGRAMS A SERVO ON THE PROG PORT`. PORT on the outputs is named before the meter: on the rbmod carrier the outputs have no channel watching them until one is bound as SERVO PWM |
 | the meter is not set up for the servo's current | the limit run's line |
 | ARMED on the rbmod carrier's port with the PROG 5V box off | `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` |
 | a programmer session holds the port | `LOCKED: SERVO PROGRAMMING USES THE PORT`, before the pulse's line: the session is why no pulse runs |
-| the port's pulse is off | `PORT PWM OFF: DISARM, TAP TARGET, SWITCH IT ON` with PORT PWM off, as TARGET takes no tap while ARMED; `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` with PORT PWM on, as after a PROG 5V switched on while ARMED |
+| the port's pulse is off | `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS` with PORT PWM off; `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` with PORT PWM on, as after a PROG 5V switched on while ARMED |
 | PULSE MIN is above 1000us, PULSE MAX below 2000us, or PULSE CENTRE is not strictly between 1000us and 2000us | `PULSE MIN TO MAX MUST INCLUDE 1000 TO 2000us` |
 | the programmer is busy, or a KST/Chaservo or classic Hitec servo has neither a PD mini nor PROG 5V to cycle its supply | the limit run's line |
 | the angle source gives no reading | `ANGLE SOURCE: NO READING` |
@@ -1538,7 +1537,7 @@ measure with its value, its angle and whether it lies within.
 
 ## Sweep and SPEED
 
-SWEEP on the SERVO screen drives the servo through SETTINGS > SWEEP's curve.
+SWEEP on SERVO's SWEEP screen drives the servo through its SETTINGS list's curve.
 SPEED on the right card limits how fast the output may move. When SPEED is
 slower than the fastest change the curve asks for, SPEED shapes the motion
 instead of the curve, and SPEED's row reads SPEED LIMITS THE SWEEP in the

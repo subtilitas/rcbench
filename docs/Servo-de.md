@@ -12,7 +12,7 @@ zweier Ausgänge. Dieser Sensor ist nicht bestückt; der Abgleich läuft
 deshalb nur mit einem simulierten Servo. Ihre Vorgabewerte stammen aus
 `servo_limit_defaults()` und `servo_sync_defaults()` in `shared/servo/`. Das
 dritte, der [automatische Test](#automatischer-test), liest den Strom des
-Netzteils, das das Servo versorgt. RUDER, eine Aufgabe der SERVO-Werkbank,
+Netzteils, das das Servo versorgt. RUDER, eine Funktionsseite von SERVO,
 liest den Ausschlag einer Ruderfläche in ° und mm
 ([Ruderausschlag](#ruderausschlag)).
 
@@ -40,7 +40,7 @@ die letzte freie Pulsweite, um weitere 25µs zur Mitte zurückgenommen.
 Am Prüfstand sucht der Endlagenlauf (`shared/servo/servo_limrun.c`) zuerst
 die untere Seite, dann die obere. Wo, hängt vom Ziel ab:
 
-| ZIEL | Zuerst gelesen | Suche |
+| PORT | Zuerst gelesen | Suche |
 | --- | --- | --- |
 | ein SERVO-PWM-Pin auf OUTPUTS | nichts | PULS MITTE bis PULS MIN und PULS MAX |
 | PROG-PORT, KST/CHASERVO | eine Lesesitzung der [Servoprogrammierung](ServoProgrammer-de.md) | NEUTRAL des Servos bis zu seinem eigenen PULSE LOWER und PULSE UPPER, nie darüber hinaus |
@@ -56,13 +56,13 @@ Servo auf unter 12s. Ein Lauf am Prüfstand ist nicht gemessen.
 
 ### Starten
 
-Öffne die Karte ENDLAGENLAUF unter TEST auf SERVO. **OPTIONEN** öffnet
+Die Seite ENDLAGENLAUF von SERVO trägt die Karte des Laufs. **OPTIONEN** öffnet
 die Einstellungen des Laufs eine Ebene tiefer. Dort wählt **ENDLAGENLAUF** mit einem Tippen NUR SUCHE oder SUCHEN +
-PROGRAMMIEREN. **SERVO** erscheint nur, wenn ZIEL auf PROG-PORT steht. Wähle dort mit
+PROGRAMMIEREN. **SERVO** erscheint nur, wenn PORT auf PROG-PORT steht. Wähle dort mit
 einem Tippen KST/CHASERVO oder HITEC; diese Servoprogrammierung übernimmt
 die Sitzungen des Laufs ([Hitec-Servos](#hitec-servos)). Es beginnt bei
-KST/CHASERVO und übernimmt den Programmierer, der unter PROGRAMMIEREN
-zuletzt geöffnet wurde. **SERVOPULSE**, nur mit ZIEL auf PROG-PORT und
+KST/CHASERVO und übernimmt den Programmierer, der im Hub
+zuletzt geöffnet wurde. **SERVOPULSE**, nur mit PORT auf PROG-PORT und
 SERVO auf KST/CHASERVO angezeigt, wählt mit einem Tippen BEHALTEN oder
 1000-2000; es beginnt bei BEHALTEN. Das Home-Feld führt zurück zur Karte. **ENDLAGENLAUF STARTEN** auf der Karte
 startet den Lauf nach 2s Halten, wie TEST STARTEN; ein Tippen oder ein
@@ -71,9 +71,9 @@ kürzeres Halten startet nichts.
 ![Der Endlagenlauf, bereit](img/de/servo-limrun-ready.png)
 
 Die Zeile unter der Schaltfläche zeigt während des gesamten Laufs den
-angesteuerten Ausgang und den verwendeten Strommesskanal: `AUSGANG PROG-PORT 1 GPIO 13, STROM INA3221 0x41 CH2`, oder, solange der Tester die Standardausgänge treibt, `AUSGANG SERVO PWM GPIO 2, STROM INA3221 0x40 CH1`. Der Kanal ist der, der in SETUP > SENSORS das Ziel des Testers überwacht, der niedrigste mit Shunt auf einem bestückten Baustein; `STROM INA3221`, solange keiner es tut. Während des Laufs zeigt die linke Karte von LIVE die Phase, die Seite
+angesteuerten Ausgang und den verwendeten Strommesskanal: `AUSGANG PROG-PORT 1 GPIO 13, STROM INA3221 0x41 CH2`, oder, solange der Tester die Standardausgänge treibt, `AUSGANG SERVO PWM GPIO 2, STROM INA3221 0x40 CH1`. Der Kanal ist der, der in SETUP > SENSORS das Ziel des Testers überwacht, der niedrigste mit Shunt auf einem bestückten Baustein; `STROM INA3221`, solange keiner es tut. Während des Laufs zeigt ein Feld unter der Karte die Phase, die Seite
 und die angeforderte Pulsweite sowie den Ausgang erneut in der dritten
-Zeile. Die Zeile ZIEL der
+Zeile. Die Taste PORT der
 Ausgangskarte bleibt ebenfalls sichtbar.
 
 ![Der Endlagenlauf beim Programmieren](img/de/servo-limrun.png)
@@ -84,23 +84,23 @@ Schaltfläche bleibt grau, und die Zeile darunter sagt warum.
 
 | Zeile | Bedingung |
 | --- | --- |
-| `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN` | SAFE auf dem rbmod-Carrier mit ZIEL auf einem Programmierport und dem Feld PROG 5V aus. Vor `ZUERST ARM` genannt: der Puls des Ports braucht PROG 5V und kommt nur bei SAFE ([Carrier](Carrier-de.md#der-programmierport)) |
+| `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN` | SAFE auf dem rbmod-Carrier mit PORT auf einem Programmierport und dem Feld PROG 5V aus. Vor `ZUERST ARM` genannt: der Puls des Ports braucht PROG 5V und kommt nur bei SAFE ([Carrier](Carrier-de.md#der-programmierport)) |
 | `ZUERST ARM` | der Prüfstand ist SAFE |
 | `BERICHT WIRD NOCH GESCHRIEBEN` | ein automatischer Test oder ein Endlagenlauf läuft, oder sein Bericht geht noch auf die Karte |
-| `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | ZIEL auf den Ausgängen des Prüfstands, ohne einen SERVO PWM zugeordneten Ausgang oder mit noch nicht ausgelesener Zuordnung: die Worte der Zeile ZIEL. Vor dem Messgerät genannt: auf dem rbmod-Carrier überwacht ein Kanal eine Schiene, und die Ausgänge liegen erst auf einer Schiene, wenn einer zugeordnet ist ([Carrier: Der Strommonitor](Carrier-de.md#der-strommonitor)) |
+| `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | PORT auf den Ausgängen des Prüfstands, ohne einen SERVO PWM zugeordneten Ausgang oder mit noch nicht ausgelesener Zuordnung: die Worte der Taste PORT. Vor dem Messgerät genannt: auf dem rbmod-Carrier überwacht ein Kanal eine Schiene, und die Ausgänge liegen erst auf einer Schiene, wenn einer zugeordnet ist ([Carrier: Der Strommonitor](Carrier-de.md#der-strommonitor)) |
 | `INA3221 NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET` | kein Kanal eines bestückten INA3221 überwacht in SETUP > SENSORS das Ziel des Testers, an einem IOmcu älter als 4.25 überwacht CH2 oder CH3 es, ein IOmcu älter als Protokoll 4.11, oder eine SENSE-Page, die die Einrichtung nicht hält |
 | `INA3221 NICHT ERREICHBAR` | kein Link, das Bauteil antwortet nicht, oder sein Reset-Zähler hat sich geändert |
 | `NOCH KEINE INA3221-MESSFENSTER` | der INA3221 ist noch nicht das Messgerät der Servoschiene: seine Einrichtung ist seit weniger als 1000ms bestätigt, oder kein Fenster mit Strom in den letzten 200ms |
 | `SERVOVERSORGUNG UNTER 3.0V ODER OHNE MESSWERT` | das letzte INA3221-Fenster enthält keine Schienenspannung, oder ihr Mittel liegt unter 3,0V (`SERVO_LIMRUN_RAIL_MIN_MV`). An einem ausgeschalteten Ausgang werden 0V gemessen, und eine Suche dort fände zwei freie Enden an einem Servo, das sich nie bewegt hat. 3,0V liegen unter den 4,8V, für die Servos üblicherweise angegeben sind, so dass die Schiene einer einzelnen Lithiumzelle noch startet; die Spannung, bei der ein bestimmtes Servo stehen bleibt, ist nicht gemessen |
-| `GESPERRT: SERVOPROGRAMMIERUNG BELEGT DEN PORT` | ZIEL auf PROG-PORT, und eine Sitzung eines Programmers hält den Port. Vor PORT-PWM genannt: die Sitzung ist der Grund, dass kein Puls läuft, gleich was PORT-PWM sagt |
-| `PORT-PWM AUS: DISARM, TIPPE AUF ZIEL, SCHALTE ES EIN` | ZIEL auf PROG-PORT mit PORT-PWM aus, der Prüfstand ARMED. ZIEL nimmt bei ARMED kein Tippen an |
-| `PORT-PWM AUS: TIPPE AUF ZIEL UND SCHALTE ES EIN` | dasselbe bei SAFE, wie die Zeile nach einem DISARM lautet. ZIEL öffnet den Eintrag des Ports auf OUTPUTS, wo PORT-PWM liegt |
-| `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` | ZIEL auf PROG-PORT mit PORT-PWM ein, kein Programmer hält den Port, und sein Puls ist noch aus. Ein Puls kommt nur bei SAFE, und das Panel des rbmod-Carriers fordert ihn nur mit PROG 5V ein an: ein bei ARMED eingeschaltetes PROG 5V wartet auf das nächste SAFE |
+| `GESPERRT: SERVOPROGRAMMIERUNG BELEGT DEN PORT` | PORT auf PROG-PORT, und eine Sitzung eines Programmers hält den Port. Vor PORT-PWM genannt: die Sitzung ist der Grund, dass kein Puls läuft, gleich was PORT-PWM sagt |
+| `PORT-PWM AUS: DISARM, SCHALTE ES IN OUTPUTS EIN` | PORT auf PROG-PORT mit PORT-PWM aus, der Prüfstand ARMED |
+| `PORT-PWM AUS: SCHALTE ES IN OUTPUTS EIN` | dasselbe bei SAFE, wie die Zeile nach einem DISARM lautet. Der Eintrag des Ports auf OUTPUTS enthält PORT-PWM |
+| `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` | PORT auf PROG-PORT mit PORT-PWM ein, kein Programmer hält den Port, und sein Puls ist noch aus. Ein Puls kommt nur bei SAFE, und das Panel des rbmod-Carriers fordert ihn nur mit PROG 5V ein an: ein bei ARMED eingeschaltetes PROG 5V wartet auf das nächste SAFE |
 | `MITTE MUSS ZWISCHEN PULS MIN UND PULS MAX LIEGEN` | PULS MITTE liegt nicht zwischen PULS MIN und PULS MAX |
 
 ### Die Weggrenzen des Servos programmieren
 
-SUCHEN + PROGRAMMIEREN wird für ein Servo am Programmierport angeboten: ZIEL auf
+SUCHEN + PROGRAMMIEREN wird für ein Servo am Programmierport angeboten: PORT auf
 PROG-PORT, der Port in PWM und eine Versorgung von 4,8V oder mehr. Versorgt ein PD mini den Port, muss sein Ausgang eingeschaltet sein;
 geprüft wird sein Sollwert. Ohne diese Versorgung zählt die mittlere
 Schienenspannung im letzten INA3221-Fenster. Auf dem rbmod-Carrier muss
@@ -153,7 +153,7 @@ schaltet den Prüfstand auf ARMED. Vorher wird nichts angesteuert.
   Regeln nicht annehmen; ABGEBROCHEN, `PROG-PORT-Sitzung gescheitert`, wenn
   das erste VERBINDEN aus einem anderen Grund scheitert oder sein Lesen
   nicht abschließt. Ein Servo, das kein KST oder Chaservo ist, wird mit
-  ZIEL auf einem SERVO-PWM-Pin gesucht. Jedes spätere VERBINDEN, ein
+  PORT auf einem SERVO-PWM-Pin gesucht. Jedes spätere VERBINDEN, ein
   VERLASSEN oder ein Schritt, der nicht abschließt, beendet den Lauf als
   ABGEBROCHEN mit demselben Grund.
 - NEUTRAL nicht zwischen PULSE LOWER und PULSE UPPER beendet ihn als NICHT
@@ -411,7 +411,7 @@ Prüfstand nach dem Ende nicht auf ARMED. Ein Start des Panels löscht den
 Lauf ohne Bericht.
 
 Die zuletzt geschriebenen Werte bleiben im Servo. Ein Lauf, der schrieb und
-nicht bestand, zeigt in seinem Feld `ZURÜCKSPIELEN IN PROGRAMMIEREN`, an
+nicht bestand, zeigt in seinem Feld `ZURÜCKSPIELEN IN KST`, an
 einem Hitec-Servo `HITEC001 IN DATEIEN LADEN` ([Hitec-Servos](#hitec-servos)). Ein
 Schreiben, das nach dem Senden scheitert, ohne Antwort oder mit einer
 Antwort, die der Programmierer nicht annimmt, gilt als geschrieben: ein Teil
@@ -912,7 +912,7 @@ Schaltest du AS5600 in ARMED ein, fehlen deshalb die Winkelspalten,
 bis die Einstellung in SAFE übernommen wurde.
 
 Der Winkel ist der 12-Bit-Zählerstand des Sensors minus der Mitte (AS5600-Mitte
-oder SENSOR-MITTE auf OPTIONEN > PRÜFLING, die den aktuellen Zählerstand nimmt,
+oder SENSOR-MITTE in den OPTIONEN von RUDER, die den aktuellen Zählerstand nimmt,
 wenn das Servo in Neutral steht), in Grad von -180 bis knapp unter 180. Der
 Sensor zählt in der Richtung hoch, auf die sein DIR-Pin gelegt ist; der Test
 nimmt an, dass der Winkel mit der Pulsbreite steigt, eine DIR-Beschaltung in
@@ -1132,7 +1132,7 @@ wird. Sollwerte, die du nach dem Lauf geändert hast, bleiben erhalten.
 | `Prüfstand SAFE` | DISARM oder alles andere, was den Prüfstand auf SAFE geschaltet hat |
 | `Verbindung verloren` | der Link zum IOmcu ging während des Laufs verloren |
 | `Seite SERVO verlassen` | eine andere Seite wurde geöffnet |
-| `vom Bediener gestoppt` | TEST BEENDEN, ein Finger auf der Skala, ZENTRIEREN, SWEEP, FREIGEBEN, ein Tippen auf einen Sollwert, ein Programmierer, geöffnet aus der Liste von PROGRAMMIEREN |
+| `vom Bediener gestoppt` | TEST BEENDEN, ein Finger auf der Skala, ZENTRIEREN, SWEEP, FREIGEBEN, ein Tippen auf einen Sollwert, ein Programmierer, geöffnet aus dem Hub |
 | `Servo-Optionen geändert` | Typ, Pulsrate, Pulse, Trimmung, Weg, Umkehrung oder TEMPO geändert |
 | `Touch-Ereignisse verloren` | zwischen zwei Frames gingen Ereignisse verloren |
 | `Netzteil antwortet nicht` | ein Messwert als nicht antwortend markiert |
@@ -1384,7 +1384,7 @@ RUDER steuert ein Servo und zeigt, wie weit die Fläche ausschlägt, die es
 bewegt: in Grad ab einem Nullpunkt und, mit eingegebener Länge der Fläche,
 in mm an der Hinterkante. Es beantwortet „wie viele mm schlägt dieses Ruder
 aus“ ohne Lineal am Modell. Die Geometrie steht in
-`shared/servo/servo_rudder.c`, die Aufgabe in
+`shared/servo/servo_rudder.c`, die Seite in
 `shared/ui/servo_rudder_panel.c`.
 
 ### Verfahren
@@ -1410,7 +1410,7 @@ aus“ ohne Lineal am Modell. Die Geometrie steht in
   eine Fläche von 100mm einen Weg von 50,0mm; der Bogen L x Ausschlag
   ergäbe 52,4mm.
 - MAX hält den größten Ausschlag je Seite, aus jedem angezeigten Messwert,
-  auf jeder Aufgabe. NULLPUNKT und MAX LÖSCHEN löschen ihn.
+  auf RUDER und RUDER AUTO. NULLPUNKT und MAX LÖSCHEN löschen ihn.
 - Die Seitenansicht rechts der Zustandszeilen zeichnet die Fläche im
   Schnitt, die Nasenkante links: eine graue feste Fläche, das Scharnier
   und das Ruder als cyanfarbener Keil im angezeigten Ausschlag. Positiver
@@ -1424,7 +1424,7 @@ aus“ ohne Lineal am Modell. Die Geometrie steht in
 - 1000us und 2000us befehlen diese Pulse als Winkel des eingestellten Typs,
   begrenzt auf WEG und den Pulsbereich des Typs; ZENTRIEREN befiehlt PULS
   MITTE plus TRIMMUNG. Alle drei und der Drehknopf wirken nur, solange der
-  Prüfstand ARMED ist. Die Zeile ZIEL der Ausgangskarte nennt den Pin, den
+  Prüfstand ARMED ist. Die Taste PORT der Ausgangskarte nennt den Pin, den
   sie ansteuern.
 
 | Messwert | Auflösung | Bereich |
@@ -1449,7 +1449,7 @@ aus“ ohne Lineal am Modell. Die Geometrie steht in
 
 ### Zweck
 
-AUTO, die dritte Taste in der Zeile NULLPUNKT von RUDER, programmiert die
+AUTO, auf der eigenen Seite RUDER AUTO, programmiert die
 Endpoints eines KST-, Chaservo- oder Hitec-Servos so, dass 1000us und 2000us den je
 Seite eingegebenen Ausschlag erreichen, gemessen an der Winkelquelle. Es
 schließt den Regelkreis über den Winkel der Fläche statt über einen nach
@@ -1462,13 +1462,12 @@ Bluetooth-IMU).
 
 ### Ablauf
 
-- AUTO zeigt seinen Kasten an der Stelle von LÄNGE, den drei Tasten zum
-  Ansteuern und den Zustandszeilen; die Anzeige, die Zeile NULLPUNKT, die
-  Seitenansicht und die Ausgangskarte bleiben. Die Seitenansicht zeigt
+- RUDER AUTO zeigt seinen Kasten an der Stelle, an der RUDER LÄNGE, drei
+  Tasten zum Ansteuern und Zustandszeilen hat; die Anzeige, NULLPUNKT und
+  MAX LÖSCHEN, die Seitenansicht und die Ausgangskarte bleiben. Die Seitenansicht zeigt
   zusätzlich das Soll bei 1000us auf der negativen und das bei 2000us auf
   der positiven Seite, jedes auf der Seite, auf der der letzte Lauf es
-  gemessen hat. MANUELL an der Stelle von AUTO bringt sie
-  zurück. Solange der Lauf läuft, sind MANUELL, NULLPUNKT und MAX LÖSCHEN
+  gemessen hat. Solange der Lauf läuft, sind NULLPUNKT und MAX LÖSCHEN
   abgelehnt und gedimmt, damit der Lauf ab dem Nullpunkt misst, mit dem er
   begann, und der Drehknopf bewegt nichts.
 - Soll bei 1000us und bei 2000us: der Ausschlag, den jede Seite erreichen
@@ -1487,13 +1486,13 @@ Bluetooth-IMU).
   jedes Endpoints davor und danach, oder `NICHT BESTANDEN: Grund`; das
   Servo, das der Lauf programmiert, `SERVO KST/CHASERVO` oder `SERVO HITEC
   D-SERIE`, während er läuft und vor dem ersten Lauf; danach die Datei des
-  Berichts, oder `ZURÜCKSPIELEN IN PROGRAMMIEREN` (an einem Hitec-Servo
+  Berichts, oder `ZURÜCKSPIELEN IN KST` (an einem Hitec-Servo
   `HITEC001 IN DATEIEN LADEN`) nach einem NICHT BESTANDEN oder einem
   Abbruch, der geschrieben hat oder ein Schreiben unterwegs abbrach, das
   angekommen sein kann.
 - Das Servo ist die Zeile SERVO der Einstellungen des ENDLAGENLAUFS:
   KST/CHASERVO, oder HITEC in der Serie des Hitec-Programmierers. Es
-  übernimmt den Programmierer, der unter PROGRAMMIEREN zuletzt geöffnet
+  übernimmt den Programmierer, der im Hub zuletzt geöffnet
   wurde. An einem Hitec-Servo sind die Endpoints LEFT END und RIGHT END in
   den Einheiten aus [Hitec-Servos](#hitec-servos), die Lesesitzung schreibt
   keine Pulse, und ein Servo der D-Serie braucht kein PD mini.
@@ -1502,14 +1501,14 @@ Ein START wird abgelehnt, der Grund in der ersten Zeile, solange:
 
 | Bedingung | Zeile |
 | --- | --- |
-| der Prüfstand SAFE ist, auf dem rbmod-Carrier mit ZIEL auf einem Programmierport und dem Feld PROG 5V aus | `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN`, vor `ZUERST ARM`: der Puls des Ports kommt nur mit PROG 5V und nur bei SAFE |
+| der Prüfstand SAFE ist, auf dem rbmod-Carrier mit PORT auf einem Programmierport und dem Feld PROG 5V aus | `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN`, vor `ZUERST ARM`: der Puls des Ports kommt nur mit PROG 5V und nur bei SAFE |
 | der Prüfstand SAFE ist | `ZUERST ARM`, wie auf TEST |
 | ein anderer Lauf läuft oder ein Bericht noch geschrieben wird | die Zeile des Laufs, wie auf TEST |
-| ZIEL die Ausgänge des Prüfstands sind oder der Ausgang sonst nicht der Programmierport ist | `AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT`. ZIEL auf den Ausgängen wird vor dem Messgerät genannt: auf dem rbmod-Carrier überwacht kein Kanal die Ausgänge, bis einer als SERVO PWM zugeordnet ist |
+| PORT die Ausgänge des Prüfstands sind oder der Ausgang sonst nicht der Programmierport ist | `AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT`. PORT auf den Ausgängen wird vor dem Messgerät genannt: auf dem rbmod-Carrier überwacht kein Kanal die Ausgänge, bis einer als SERVO PWM zugeordnet ist |
 | das Messgerät nicht für den Servostrom eingerichtet ist | die Zeile des Endlagenlaufs |
 | ARMED am Port des rbmod-Carriers mit dem Feld PROG 5V aus | `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN` |
 | eine Sitzung eines Programmers den Port hält | `GESPERRT: SERVOPROGRAMMIERUNG BELEGT DEN PORT`, vor der Zeile zum Puls: die Sitzung ist der Grund, dass kein Puls läuft |
-| der Puls des Ports aus ist | `PORT-PWM AUS: DISARM, TIPPE AUF ZIEL, SCHALTE ES EIN` mit PORT-PWM aus, da ZIEL bei ARMED kein Tippen annimmt; `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` mit PORT-PWM ein, etwa nach einem bei ARMED eingeschalteten PROG 5V |
+| der Puls des Ports aus ist | `PORT-PWM AUS: DISARM, SCHALTE ES IN OUTPUTS EIN` mit PORT-PWM aus; `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` mit PORT-PWM ein, etwa nach einem bei ARMED eingeschalteten PROG 5V |
 | PULS MIN über 1000us, PULS MAX unter 2000us oder PULS MITTE nicht strikt zwischen 1000us und 2000us liegt | `PULS MIN BIS MAX MUSS 1000 BIS 2000us ABDECKEN` |
 | die Servoprogrammierung belegt ist oder bei KST/Chaservo und klassischen Hitec-Servos weder PD mini noch PROG 5V die Versorgung schalten kann | die Zeile des Endlagenlaufs |
 | die Winkelquelle keinen Messwert gibt | `WINKELQUELLE: KEIN MESSWERT` |
@@ -1588,7 +1587,7 @@ Angabe, ob sie innerhalb der Toleranz liegt.
 
 ## Sweep und TEMPO
 
-SWEEP auf der Seite SERVO fährt das Servo die Kurve von OPTIONEN > SWEEP ab.
+SWEEP auf der Seite SWEEP von SERVO fährt das Servo die Kurve aus deren OPTIONEN ab.
 TEMPO auf der rechten Karte begrenzt, wie schnell sich der Ausgang bewegen
 darf. Ist TEMPO langsamer als die schnellste Änderung, die die Kurve
 verlangt, bestimmt TEMPO die Bewegung statt der Kurve, und die Zeile von

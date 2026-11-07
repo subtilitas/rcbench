@@ -1,6 +1,6 @@
 /**
  * @file test_servo_trim_keypad.c
- * @brief SERVO > SETTINGS > OUTPUT > TRIM's keypad: a tap on TRIM's value
+ * @brief SERVO > SETTINGS > TRIM's keypad, on the hub's list: a tap on TRIM
  *        opens a signed keypad of -200 to +200us; OK puts the value on the
  *        5us steps of "-" and "+" and sends the pulse at once, as a step
  *        does, with the dial untouched; a value past
@@ -11,9 +11,6 @@
  */
 #include "servo_rig.h"
 
-/* The middle of TRIM's value, between its two steps. */
-#define TRIM_X ((TRIM_DN_X + TRIM_UP_X) / 2)
-#define TRIM_Y ROW_Y(3)
 
 /**
  * @brief A key of the keypad SERVO has open.
@@ -61,7 +58,7 @@ TEST_CASE(a_tap_on_trim_opens_a_signed_keypad)
 {
     fresh_armed();
     open_settings();
-    tap(TRIM_X, TRIM_Y);
+    sl_tap(HL_TRIM);
     const ui_keypad_t *k = servo_screen_keypad();
     CHECK(k->open);
     CHECK(k->sign);
@@ -73,7 +70,7 @@ TEST_CASE(a_tap_on_trim_opens_a_signed_keypad)
     CHECK(ui_keypad_key_rect(k, UI_KEY_SIGN).w > 0);
     /* Every other keypad on SERVO stays unsigned: TRAVEL's. */
     kkey(UI_KEY_CANCEL);
-    tap(ROW_L_X, ROW_Y(4));
+    sl_tap(HL_TRAVEL);
     CHECK(servo_screen_keypad()->open);
     CHECK(!servo_screen_keypad()->sign);
     kkey(UI_KEY_CANCEL);
@@ -85,14 +82,14 @@ TEST_CASE(minus_200_is_what_40_steps_send_and_minus_201_is_refused)
     fresh_armed();
     open_settings();
     const int zero = centre_us();
-    tap(TRIM_X, TRIM_Y);
+    sl_tap(HL_TRIM);
     ktype("-201");
     kkey(UI_KEY_OK);
     CHECK(servo_screen_keypad()->open);
     CHECK(servo_screen_keypad()->refused);
     kkey(UI_KEY_CANCEL);
     CHECK_EQ(centre_us(), zero);
-    tap(TRIM_X, TRIM_Y);
+    sl_tap(HL_TRIM);
     ktype("-200");
     kkey(UI_KEY_OK);
     CHECK(!servo_screen_keypad()->open);
@@ -102,11 +99,11 @@ TEST_CASE(minus_200_is_what_40_steps_send_and_minus_201_is_refused)
     fresh_armed();
     open_settings();
     for (int i = 0; i < 40; ++i) {
-        tap(TRIM_DN_X, TRIM_Y);
+        sl_step(HL_TRIM, -1);
     }
     CHECK_EQ(centre_us(), typed);
     /* +200, and past it. */
-    tap(TRIM_X, TRIM_Y);
+    sl_tap(HL_TRIM);
     ktype("201");
     kkey(UI_KEY_OK);
     CHECK(servo_screen_keypad()->refused);
@@ -124,14 +121,14 @@ TEST_CASE(ok_on_trim_sends_the_pulse_at_once)
     fresh_armed();
     open_settings();
     const int zero = centre_us();             /* the dial at the centre */
-    tap(TRIM_X, TRIM_Y);
+    sl_tap(HL_TRIM);
     ktype("-35");
     kkey(UI_KEY_OK);
     CHECK(!servo_screen_keypad()->open);
     CHECK_EQ((int)last_cmd().value_us, zero - 35);
-    tap(TRIM_DN_X, TRIM_Y);                   /* one "-" step */
+    sl_step(HL_TRIM, -1);                   /* one "-" step */
     CHECK_EQ((int)last_cmd().value_us, zero - 40);
-    tap(TRIM_X, TRIM_Y);
+    sl_tap(HL_TRIM);
     ktype("60");
     kkey(UI_KEY_OK);
     CHECK_EQ((int)last_cmd().value_us, zero + 60);
@@ -148,13 +145,13 @@ TEST_CASE(a_typed_trim_lands_on_the_steps)
         { "-0", 0 }, { "7", 5 },
     };
     for (size_t i = 0; i < sizeof(k_cases) / sizeof(k_cases[0]); ++i) {
-        tap(TRIM_X, TRIM_Y);
+        sl_tap(HL_TRIM);
         ktype(k_cases[i].typed);
         kkey(UI_KEY_OK);
         CHECK_EQ(centre_us() - zero, k_cases[i].us);
     }
     /* The sign alone is nothing typed. */
-    tap(TRIM_X, TRIM_Y);
+    sl_tap(HL_TRIM);
     ktype("-");
     kkey(UI_KEY_OK);
     CHECK(!servo_screen_keypad()->open);
@@ -168,15 +165,15 @@ TEST_CASE(cancel_home_and_stop_change_nothing)
     fresh_armed();
     open_settings();
     const int zero = centre_us();
-    tap(TRIM_X, TRIM_Y);
+    sl_tap(HL_TRIM);
     ktype("-50");
     kkey(UI_KEY_CANCEL);
     CHECK_EQ(centre_us(), zero);
-    tap(TRIM_X, TRIM_Y);
+    sl_tap(HL_TRIM);
     ktype("-50");
     CHECK(scr->back());
     CHECK(!servo_screen_keypad()->open);
-    tap(TRIM_X, TRIM_Y);
+    sl_tap(HL_TRIM);
     ktype("-50");
     servo_screen_cancel_arm();                 /* STOP */
     scr->tick(0.02f);

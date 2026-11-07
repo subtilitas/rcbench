@@ -16,10 +16,10 @@
  */
 #include "kst_panel_rig.h"
 
-/* The alert band's top in body pixels, and the 4px a control at the foot
- * keeps above it. */
+/* The alert band's top in body pixels, and the foot every control ends
+ * at: 8px above the area's bottom, the left card's floor at y 436. */
 #define BAND_TOP (UI_ALERT_Y - UI_BAND_H)
-#define FOOT     (BAND_TOP - 4)
+#define FOOT     (AREA.y + AREA.h - 8)
 
 /* A warning page's first line under the area's top, and a row's pitch:
  * WARN_TOP and LINE_H in kst_panel_int.h. */
@@ -119,8 +119,8 @@ TEST_CASE(no_two_controls_of_a_page_overlap)
 }
 
 /* FILES with more files than a list holds: the entry that saves, five
- * files and the entry for the next, each a tap target 8px apart, the last
- * 8px above CANCEL. */
+ * files and the entry for the next, each a tap target 8px apart in two
+ * columns, every one 8px above CANCEL or more. */
 TEST_CASE(the_fullest_list_ends_above_cancel)
 {
     const kst_image_t sv = sim_bench_image();
@@ -140,18 +140,21 @@ TEST_CASE(the_fullest_list_ends_above_cancel)
         const gfx_rect_t r = kst_panel_choice_rect(i);
 
         target(r);
+        CHECK(r.y + r.h + 8 <= kst_panel_choice_cancel_rect().y);
         if (i > 0) {
             const gfx_rect_t up = kst_panel_choice_rect(i - 1);
 
-            CHECK_EQ(r.y - (up.y + up.h), 8);
+            if (up.x == r.x) {
+                CHECK_EQ(r.y - (up.y + up.h), 8);
+            } else {
+                CHECK(!overlap(r, up));
+            }
         }
     }
     {
-        const gfx_rect_t last = kst_panel_choice_rect(choices() - 1);
         const gfx_rect_t cancel = kst_panel_choice_cancel_rect();
 
         target(cancel);
-        CHECK(last.y + last.h + 8 <= cancel.y);
         CHECK_EQ(cancel.y + cancel.h, FOOT);
     }
     show();
@@ -169,10 +172,9 @@ TEST_CASE(the_stretch_list_holds_every_factor_above_cancel)
     CHECK_EQ(choices(), (int)KST_STRETCH_INDEX_MAX + 1);
     for (int i = 0; i < choices(); ++i) {
         target(kst_panel_choice_rect(i));
+        CHECK(kst_panel_choice_rect(i).y + kst_panel_choice_rect(i).h + 8
+              <= kst_panel_choice_cancel_rect().y);
     }
-    CHECK(kst_panel_choice_rect(choices() - 1).y
-              + kst_panel_choice_rect(choices() - 1).h + 8
-          <= kst_panel_choice_cancel_rect().y);
 }
 
 /* The rows of the open warning page's lines. */
@@ -262,53 +264,75 @@ TEST_CASE(a_short_area_keeps_its_buttons_inside_it)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* An area 524px tall, a left card down to the body's foot: 7 rows under
+ * the SERVO tab's last row, where every message is drawn whole. */
+static const gfx_rect_t k_tall = { UI_MARGIN, UI_MARGIN, 620,
+                                   UI_BODY_H - 2 * UI_MARGIN };
+
 /* Every message the model writes, with arguments of 1 to 5 digits, on the
  * SERVO tab of a connected servo and of a servo in doubt with its two
  * standing lines (the tallest pair in German, 4 rows), in English and
- * German: every line of the message is drawn, and the notes and the
- * message end 4px above the alert band and under the tab's last row. */
+ * German: the notes and the message end 6px above the area's foot and
+ * under the tab's last row.  In the 524px area every line of the message
+ * is drawn.  In KST's 428px left card, 4 rows under the last row, a
+ * message of up to 4 rows is drawn whole and a taller one its first lines
+ * (docs/Servo.md, a current limitation). */
 TEST_CASE(no_note_or_message_lies_under_the_alert_band)
 {
     static const unsigned args[] = { 0u, 9u, 255u, 0xFFFFu };
+    const size_t n_args = sizeof(args) / sizeof(args[0]);
 
-    for (int doubt = 0; doubt < 2; ++doubt) {
-        for (int lang = 0; lang < 2; ++lang) {
-            fresh();
-            ui_text_set_language(lang != 0 ? UI_LANG_DE : UI_LANG_EN);
-            g_rig.card = true;
-            if (doubt != 0) {
-                cut_write();
-                come_back();
-                tap(kst_panel_tab_rect(PG_SERVO));
-                tap(val(PG_SERVO, 1, 0));      /* READ ALL */
-                settle();
-                CHECK(kst_panel_standing_line(1) != NULL);
-            } else {
-                connected();
-            }
-            for (unsigned id = 1u; id < 256u; ++id) {
-                for (size_t a = 0; a < sizeof(args) / sizeof(args[0]); ++a) {
-                    const gfx_rect_t last = val(PG_SERVO, 4, 1);
-                    char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
-                    gfx_rect_t drawn;
-                    bool repeat;
-                    int n;
+    for (int tall = 0; tall < 2; ++tall) {
+        for (int doubt = 0; doubt < 2; ++doubt) {
+            const gfx_rect_t area = tall != 0 ? k_tall : AREA;
+            for (int lang = 0; lang < 2; ++lang) {
+                fresh();
+                kst_panel_init(area);
+                kst_panel_open();
+                ui_text_set_language(lang != 0 ? UI_LANG_DE : UI_LANG_EN);
+                g_rig.card = true;
+                if (doubt != 0) {
+                    cut_write();
+                    come_back();
+                    tap(kst_panel_tab_rect(PG_SERVO));
+                    tap(val(PG_SERVO, 1, 0));      /* READ ALL */
+                    settle();
+                    CHECK(kst_panel_standing_line(1) != NULL);
+                } else {
+                    connected();
+                }
+                for (unsigned id = 1u; id < 256u; ++id) {
+                    for (size_t a = 0; a < n_args; ++a) {
+                        const gfx_rect_t last = val(PG_SERVO, 4, 1);
+                        char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
+                        gfx_rect_t drawn;
+                        bool repeat;
+                        int n;
 
-                    M->msg = (kst_prog_msg_t){ .id = (uint8_t)id,
-                                               .level = KST_PROG_WARN,
-                                               .reg = 0x10u,
-                                               .arg = (uint16_t)args[a],
-                                               .seq = M->msg.seq + 1u };
-                    n = kst_panel_message_lines(kst_prog_message(M), t);
-                    /* A message that repeats the first standing line is
-                     * left out; every other one is drawn whole. */
-                    repeat = n > 0 && kst_panel_standing_line(0) != NULL
-                             && strcmp(t[0], kst_panel_standing_line(0)) == 0;
-                    drawn = kst_panel_notes_drawn();
-                    CHECK_EQ(kst_panel_shown_message_lines(),
-                             repeat ? 0 : n);
-                    CHECK(drawn.y + drawn.h <= FOOT);
-                    CHECK(drawn.h == 0 || drawn.y >= last.y + last.h);
+                        M->msg = (kst_prog_msg_t){ .id = (uint8_t)id,
+                                                   .level = KST_PROG_WARN,
+                                                   .reg = 0x10u,
+                                                   .arg = (uint16_t)args[a],
+                                                   .seq = M->msg.seq + 1u };
+                        n = kst_panel_message_lines(kst_prog_message(M), t);
+                        /* A message that repeats the first standing line is
+                         * left out; every other one is drawn whole. */
+                        const char *st0 = kst_panel_standing_line(0);
+                        repeat = n > 0 && st0 != NULL && strcmp(t[0], st0) == 0;
+                        drawn = kst_panel_notes_drawn();
+                        int rows = 0;
+                        for (int i = 0; i < n; ++i) {
+                            rows += kst_panel_text_rows(t[i]);
+                        }
+                        if (tall != 0 || rows <= 4 || repeat) {
+                            CHECK_EQ(kst_panel_shown_message_lines(),
+                                     repeat ? 0 : n);
+                        } else {
+                            CHECK(kst_panel_shown_message_lines() >= 1);
+                        }
+                        CHECK(drawn.y + drawn.h <= area.y + area.h - 6);
+                        CHECK(drawn.h == 0 || drawn.y >= last.y + last.h);
+                    }
                 }
             }
         }

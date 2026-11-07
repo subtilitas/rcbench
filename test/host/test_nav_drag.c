@@ -167,7 +167,7 @@ TEST_CASE(a_touch_loss_ends_a_throttle_drag) { a_throttle_drag_then(END_LOSS); }
  */
 TEST_CASE(a_dial_drag_that_leaves_by_the_band_ends_at_the_edge)
 {
-    on_screen(SCREEN_SERVO);
+    on_screen(SCREEN_SERVO_LIVE);
     servo_screen_set_armed(true);
     drain_servo();
 
@@ -201,7 +201,7 @@ TEST_CASE(a_dial_drag_that_leaves_by_the_band_ends_at_the_edge)
 /* The same press and slide with no drag before it, for comparison. */
 TEST_CASE(a_slide_onto_the_dial_commands_nothing)
 {
-    on_screen(SCREEN_SERVO);
+    on_screen(SCREEN_SERVO_LIVE);
     servo_screen_set_armed(true);
     drain_servo();
     finger(FEED_LONE, SV_SHAFT_P_X + 190, SV_SHAFT_P_Y);
@@ -218,7 +218,7 @@ TEST_CASE(a_slide_onto_the_dial_commands_nothing)
  */
 TEST_CASE(a_speed_drag_that_leaves_by_the_band_ends_at_the_edge)
 {
-    on_screen(SCREEN_SERVO);
+    on_screen(SCREEN_SERVO_LIVE);
     servo_screen_set_armed(true);
     drain_servo();
     int x, y;
@@ -253,7 +253,7 @@ static bool servo_arm_by_touch(uint8_t id)
 {
     for (int yy = UI_BAND_H + SV_ARM_Y + 4;
          yy < UI_BAND_H + SV_ARM_Y + SV_ARM_H; yy += 8) {
-        finger(id, SV_RC_X + 40, yy);
+        finger(id, SV_ARM_X, yy);
         for (int i = 0; i < 50; ++i) {
             ui_router_tick(0.05f);
         }
@@ -268,27 +268,28 @@ static bool servo_arm_by_touch(uint8_t id)
 
 /*
  * Finger 0 on the dial, finger 1 taps the home tag, finger 0 lifts on the
- * overview.  SERVO again, armed by a hold on ARM with a lone finger, every
+ * hub.  SERVO again, armed by a hold on ARM with a lone finger, every
  * event of which reaches the screen; then a press beside the dial slides
  * onto it.  The drag ended when the screen was left.
  */
 TEST_CASE(home_under_a_dial_drag_ends_the_drag)
 {
-    on_screen(SCREEN_SERVO);
+    on_screen(SCREEN_SERVO_LIVE);
     servo_screen_set_armed(true);
     drain_servo();
 
     int x, y;
     dial_at(40.0f, 110, &x, &y);
     finger(0, x, y);
-    const gfx_rect_t home = ui_home_tag_rect(ui_router_title(SCREEN_SERVO));
+    const gfx_rect_t home =
+        ui_home_tag_rect(ui_router_title(SCREEN_SERVO_LIVE));
     feed_tap(1, home.x + 10, home.y + 10);
-    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO);
     lift(0);
     drain_servo();
     servo_screen_set_armed(false);
 
-    ui_router_goto(SCREEN_SERVO);
+    ui_router_goto(SCREEN_SERVO_LIVE);
     drain_servo();
     CHECK(servo_arm_by_touch(FEED_LONE));
     servo_screen_set_armed(true);
@@ -310,7 +311,7 @@ TEST_CASE(home_under_a_dial_drag_ends_the_drag)
  * nothing more, and the knob has the horn. */
 TEST_CASE(a_touch_loss_ends_a_dial_drag)
 {
-    on_screen(SCREEN_SERVO);
+    on_screen(SCREEN_SERVO_LIVE);
     servo_screen_set_armed(true);
     drain_servo();
     int x, y, x2, y2;
@@ -574,34 +575,25 @@ TEST_CASE(reset_peaks_needs_the_fingers_release_and_disarm_does_not)
     motor_screen_set_armed(false);
 }
 
-/* SERVO: the strip's SETTINGS and LIVE tabs lie 18px under the band.
- * Carried into it, they are released for the screen where they were
- * pressed, and neither switches the task. */
-TEST_CASE(servo_strip_tabs_carried_into_the_band_do_nothing)
+/* SERVO: the PORT button lies 8px under the band.  Carried into it, it is
+ * released for the screen where it was pressed and opens nothing; a tap
+ * opens the port's choice, and its CANCEL closes it. */
+TEST_CASE(servo_port_button_carried_into_the_band_does_nothing)
 {
-    /* Mirrored from ui_workbench.h (servo_spots.h). */
-    const int set_x = SV_TAB_SETTINGS_X, set_y = UI_BAND_H + SV_TAB_Y;
-    const int close_x = SV_TAB_LIVE_X, close_y = UI_BAND_H + SV_TAB_Y;
+    const int port_x = SV_PORT_X, port_y = UI_BAND_H + SV_PORT_Y;
     fresh();
     to_overview();
-    ui_router_goto(SCREEN_SERVO);
+    ui_router_goto(SCREEN_SERVO_LIVE);
     feed_reset();
     const uint32_t shut = panel_look();
 
-    finger(FEED_LONE, set_x, set_y);
-    finger(FEED_LONE, set_x, UI_BAND_H - 8);
+    finger(FEED_LONE, port_x, port_y);
+    finger(FEED_LONE, port_x, UI_BAND_H - 8);
     lift(FEED_LONE);
     CHECK_EQ(panel_look(), shut);
-    feed_tap(FEED_LONE, set_x, set_y);
-    const uint32_t open = panel_look();
-    CHECK(open != shut);
-
-    finger(FEED_LONE, close_x, close_y);
-    finger(FEED_LONE, close_x, UI_BAND_H - 8);
-    lift(FEED_LONE);
-    CHECK_EQ(panel_look(), open);
-    feed_tap(FEED_LONE, close_x, close_y);
-    CHECK_EQ(panel_look(), shut);
+    feed_tap(FEED_LONE, port_x, port_y);
+    CHECK(panel_look() != shut);
+    CHECK_EQ(servo_screen_port_choices(), 5);
 }
 
 int main(void)
@@ -623,6 +615,6 @@ int main(void)
     RUN(leaving_or_a_touch_loss_ends_a_set_point_drag);
     RUN(a_release_made_for_the_finger_activates_nothing_but_stop);
     RUN(reset_peaks_needs_the_fingers_release_and_disarm_does_not);
-    RUN(servo_strip_tabs_carried_into_the_band_do_nothing);
+    RUN(servo_port_button_carried_into_the_band_does_nothing);
     return test_summary("nav_drag");
 }

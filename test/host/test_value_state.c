@@ -505,7 +505,7 @@ TEST_CASE(motor_a_late_callback_changes_nothing)
 #define SWEEP_X     SV_SWEEP_X
 #define RELEASE_X   SV_RELEASE_X
 #define BTN_Y       P(SV_BTN_Y)
-#define S_ARM_X     (SV_RC_X + SV_RC_W / 2)
+#define S_ARM_X     SV_ARM_X
 #define S_ARM_Y     P(SV_ARM_Y + SV_ARM_H / 2)
 #define SPEED_Y     P(SV_SPEED_Y)
 /* ARM FIRST, under the horn's angle at the top of the left card. */
@@ -579,7 +579,7 @@ static bool s_arm(void)
  * 40 degrees and the position taken. */
 static bool s_enter(int st)
 {
-    router_up(SCREEN_SERVO);
+    router_up(SCREEN_SERVO_LIVE);
     servo_screen_feedback(0u, 0.0f, false);
     servo_screen_set_sweep(true);
     servo_screen_set_armed(false);
@@ -807,7 +807,7 @@ TEST_CASE(servo_the_edge_out_of_live_ends_every_owner)
                 break;
             default:
                 ui_router_goto(SCREEN_OVERVIEW);
-                ui_router_goto(SCREEN_SERVO);
+                ui_router_goto(SCREEN_SERVO_LIVE);
                 want = S_BIT(SERVO_CMD_DISARM);
                 break;
             }
@@ -940,7 +940,7 @@ TEST_CASE(servo_a_late_callback_changes_no_value_outside_live)
         case EDGE_REPORT_OFF: servo_screen_set_armed(false); break;
         default:
             ui_router_goto(SCREEN_OVERVIEW);
-            ui_router_goto(SCREEN_SERVO);
+            ui_router_goto(SCREEN_SERVO_LIVE);
             break;
         }
         servo_screen_released(pause_seq);

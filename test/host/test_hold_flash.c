@@ -106,9 +106,9 @@ TEST_CASE(servo_arm_flashes_as_it_fires)
     bench_fresh();
     servo_screen_set_armed(false);
     scr->tick(0.02f);
-    const gfx_rect_t r = { (int16_t)(SV_RC_X + 12), (int16_t)(SV_ARM_Y + 4),
-                           (int16_t)(SV_RC_W - 24), 8 };
-    CHECK(servo_walk(SV_RC_X + 40, SV_ARM_Y + 16, r, "ARM"));
+    const gfx_rect_t r = { (int16_t)(SV_ARM_L + 12), (int16_t)(SV_ARM_Y + 4),
+                           (int16_t)(SV_ARM_W - 24), 8 };
+    CHECK(servo_walk(SV_ARM_X, SV_ARM_Y + 16, r, "ARM"));
 }
 
 /* OUTPUT ON in the supply box: the bench switches the output on. */
@@ -135,7 +135,7 @@ TEST_CASE(start_test_flashes_as_it_fires)
     CHECK(servo_screen_testing());
 }
 
-/* START LIMIT RUN on TEST: on the INA3221, a SERVO PWM output bound. */
+/* START LIMIT RUN on LIMIT RUN: on the INA3221, a SERVO PWM output bound. */
 TEST_CASE(start_limit_run_flashes_as_it_fires)
 {
     bench_on_ina();
@@ -146,7 +146,7 @@ TEST_CASE(start_limit_run_flashes_as_it_fires)
     bench.out = true;
     servo_screen_set_pins(PIN(2), true);
     bench_frames(200u);
-    open_test();
+    open_limrun();
     const gfx_rect_t r = { (int16_t)(START_X - 138),
                            (int16_t)(LIM_START_Y - 20), 276, 8 };
     CHECK(servo_walk(START_X, LIM_START_Y, r, "START LIMIT RUN"));
@@ -159,7 +159,7 @@ TEST_CASE(profile_apply_flashes_where_its_warning_was)
 {
     fresh();
     open_settings();
-    tap(ROW_L_X, ROW_Y(0));
+    sl_tap(HL_TYPE);
     tap(CH_X(3), CH_Y(3));
     const gfx_rect_t r = { (int16_t)(WARN_APPLY_X - 108),
                            (int16_t)(WARN_Y - 24), 216, 8 };
@@ -170,18 +170,18 @@ TEST_CASE(profile_apply_flashes_where_its_warning_was)
     CHECK_EQ(hold_flash_body(&rig, r), '.');
 }
 
-/* KST EXPERT MODE on SETTINGS > DUT: its value box, OFF to ON. */
+/* KST EXPERT MODE on KST > SETTINGS: its value box, OFF to ON. */
 TEST_CASE(kst_expert_flashes_as_it_fires)
 {
     fresh();
     settings_set(SET_KST_EXPERT, 0.0f);
-    open_settings();
-    tap(TAB_X(PAGE_DUT), TAB_Y);
+    open_kst();
+    tap_settings();
     scr->tick(0.02f);
-    /* The row's value box, x 480 to 616 at the row's right end; the top
-     * of its body, clear of the label. */
-    const gfx_rect_t r = { 492, (int16_t)(SV_ROW_Y(1) - 22), 112, 6 };
-    CHECK(servo_walk(470, SV_ROW_Y(1), r, "KST EXPERT MODE"));
+    /* The row's value box, x 18 to 211 under its label; the top of its
+     * body. */
+    const gfx_rect_t r = { 34, (int16_t)(SV_LIST_ROW_Y(0) - 22), 160, 6 };
+    CHECK(servo_walk(SV_LIST_X(0), SV_LIST_ROW_Y(0), r, "KST EXPERT MODE"));
     CHECK(settings_get_bool(SET_KST_EXPERT));
 }
 
@@ -192,13 +192,13 @@ TEST_CASE(kst_expert_off_after_its_hold_shows_no_fade)
 {
     fresh();
     settings_set(SET_KST_EXPERT, 0.0f);
-    open_settings();
-    tap(TAB_X(PAGE_DUT), TAB_Y);
+    open_kst();
+    tap_settings();
     scr->tick(0.02f);
-    const gfx_rect_t r = { 492, (int16_t)(SV_ROW_Y(1) - 22), 112, 6 };
-    CHECK(servo_walk(470, SV_ROW_Y(1), r, "KST EXPERT MODE"));
+    const gfx_rect_t r = { 34, (int16_t)(SV_LIST_ROW_Y(0) - 22), 160, 6 };
+    CHECK(servo_walk(SV_LIST_X(0), SV_LIST_ROW_Y(0), r, "KST EXPERT MODE"));
     REQUIRE(settings_get_bool(SET_KST_EXPERT));
-    tap(470, SV_ROW_Y(1));
+    tap(SV_LIST_X(0), SV_LIST_ROW_Y(0));
     for (int i = 0; i < 4; ++i) {
         scr->tick(0.02f);
     }
@@ -223,7 +223,7 @@ TEST_CASE(a_tap_on_a_grey_start_puts_its_reason_in_the_band)
         splash_screen_set((splash_step_t)i, SPLASH_OK, "");
     }
     ui_router_tick(2.0f);
-    ui_router_goto(SCREEN_SERVO);
+    ui_router_goto(SCREEN_SERVO_LIVE);
     fresh();
     servo_screen_set_armed(false);
     open_test();
@@ -237,6 +237,7 @@ TEST_CASE(a_tap_on_a_grey_start_puts_its_reason_in_the_band)
     CHECK(ui_router_alert_is_notice());
     CHECK_STR_EQ(ui_router_alert(),
                  ui_servo_str(SERVO_STR_START_NOT_ARMED));
+    open_limrun();
     ui_router_set_alert(NULL);
     tap(START_X, LIM_START_Y);
     CHECK(!servo_screen_limit_running());

@@ -123,11 +123,10 @@ TEST_CASE(the_operators_end_leaves_the_bench_armed)
         }
         case 2:                                     /* the profile changed */
             open_settings();
-            tap(TAB_X(0), TAB_Y);
-            tap(ROW_R_X, ROW_Y(4));                 /* REVERSE */
+            sl_step(HL_REVERSE, +1);               /* REVERSE */
             break;
-        case 3:                                     /* LIVE's STOP TEST */
-            close_settings();
+        case 3:                                     /* the box's STOP TEST */
+            open_test();
             tap(BOXBTN_X, BOXBTN_Y);
             break;
         default: scr->cancel(); break;              /* touch events lost */

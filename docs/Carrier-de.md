@@ -72,6 +72,9 @@ dieser Stellen:
 - in der Zeile PORT der Programmer, vor VERBINDEN: ein Tipp auf die
   Beschriftung der Zeile öffnet PROGP01 bis PROGP04 mit ihrem GPIO
   ([Servo-Programmer: Der Port auf dem rbmod-Carrier](ServoProgrammer-de.md#der-port-auf-dem-rbmod-carrier));
+- mit der Taste PORT auf jeder Funktionsseite von SERVO: ein Tipp öffnet
+  OUTPUTS und PROG-PORT 1, PROG-PORT 2, PROG-PORT 3 und PROG-PORT 4 über der linken Karte
+  ([Bildschirme: SERVO](Screens-de.md#servo));
 - in einem Eintrag PROG PORT auf SETUP > OUTPUTS, SERVO-TESTER PORT n
   ([Bildschirme: Auf dem rbmod-Carrier](Screens-de.md#auf-dem-rbmod-carrier)).
 
@@ -97,20 +100,20 @@ Puls nur an, solange das Feld EIN zeigt.
 Das Panel schaltet den Puls des Ports nur bei SAFE ein, wie auf jedem
 Board; aus schaltet es ihn sofort. Zuerst PROG 5V einschalten, dann ARM.
 Ein bei ARMED eingeschaltetes PROG 5V lässt den Puls bis zum nächsten SAFE
-aus: AUTO auf RUDDER und der Endlagenlauf zeigen dann
+aus: RUDER AUTO und der Endlagenlauf zeigen dann
 `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM`. Bei SAFE mit dem Feld
 aus zeigen beide `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN` vor
 `ZUERST ARM`.
 
-PORT-PWM liegt auf OUTPUTS, das Feld PROG 5V auf SERVO und SUPPLY. Das
-Verlassen von SERVO schaltet ein dort eingeschaltetes PROG 5V aus, daher
+PORT-PWM liegt auf OUTPUTS, das Feld PROG 5V auf SERVO und SUPPLY. Ein
+dort eingeschaltetes PROG 5V bleibt von einer SERVO-Seite zur nächsten an,
+den Hub eingeschlossen. Das Verlassen von SERVO schaltet es aus, daher
 wird PORT-PWM EIN bei ausgeschaltetem Feld angenommen, und der Puls
-wartet darauf. Mit PORT-PWM aus zeigen AUTO und der Endlagenlauf bei SAFE
-`PORT-PWM AUS: TIPPE AUF ZIEL UND SCHALTE ES EIN` und bei ARMED
-`PORT-PWM AUS: DISARM, TIPPE AUF ZIEL, SCHALTE ES EIN`. ZIEL öffnet den
-Eintrag des Ports auf OUTPUTS. Der Weg von PORT-PWM aus:
+wartet darauf. Mit PORT-PWM aus zeigen RUDER AUTO und der Endlagenlauf bei SAFE
+`PORT-PWM AUS: SCHALTE ES IN OUTPUTS EIN` und bei ARMED
+`PORT-PWM AUS: DISARM, SCHALTE ES IN OUTPUTS EIN`. Der Weg von PORT-PWM aus:
 
-1. SAFE: tippe auf SERVO auf ZIEL. OUTPUTS öffnet den Eintrag des Ports.
+1. SAFE: öffne SETUP > OUTPUTS auf dem Eintrag des Ports.
 2. PORT-PWM EIN. Die Zeile lautet `PORT-PWM EIN: PULSE STARTEN MIT PROG 5V AUF SERVO`.
 3. Zurück zu SERVO, halte PROG 5V EIN 2s lang. Der Puls kommt bei SAFE.
 4. ARM, dann START halten.
@@ -286,10 +289,10 @@ SETUP > SENSORS zeigt diese Zeilen ohne Tasten zum Bearbeiten:
   GPIO 4 oder GPIO 5. Mit SERVO PWM auf beiden Schienen liest er nur die
   Schiene des niedrigsten GPIO. Mit einem Programmierport als Ziel des
   Testers ist es CH3.
-- Mit ZIEL auf den Ausgängen des Prüfstands und keinem als SERVO PWM
+- Mit PORT auf den Ausgängen des Prüfstands und keinem als SERVO PWM
   zugeordneten Ausgang überwacht kein Kanal das Ziel, und keiner wird mit
-  1kHz gelesen. Der Endlagenlauf meldet dann `KEIN SERVO-PWM-PIN` und AUTO
-  auf RUDER `AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT`, jeweils vor jeder
+  1kHz gelesen. Der Endlagenlauf meldet dann `KEIN SERVO-PWM-PIN` und RUDER
+  AUTO `AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT`, jeweils vor jeder
   Zeile zum INA3221 ([Servo](Servo-de.md#auto-endpoints)).
 - SERVO und der Endlagenlauf benennen das Messgerät nach seiner Schiene:
   `INA SCHIENE A` über dem Plot, `INA3221 SCHIENE A` auf der Karte TEST.

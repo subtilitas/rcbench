@@ -9,10 +9,9 @@ backup file if a card is mounted. Before every write, it records the
 servo's current values. You can also save settings to a file, load a file
 into the draft and restore the session's backup.
 
-Open `Hitec servos` on **PROGRAM** of the [SERVO screen](Screens.md#servo).
-The programmer opens one level down and covers the left column, including
-the strip's tabs. **CLOSE** or the home tag returns to PROGRAM's list while
-the programmer holds no port. The row is dimmed with `IOMCU HAS NO SERVO PWM`
+Tap HITEC on the [SERVO hub](Screens.md#servo). The programmer opens on a
+screen of its own and covers the left card. **CLOSE** or the home tag
+returns to the hub while the programmer holds no port. The tile is grey with `IOMCU HAS NO SERVO PWM`
 and cannot be opened while the IOmcu, the RP2350 board, reports no servo PWM
 (pulse-width modulation), including when the IOmcu does not answer.
 
@@ -137,7 +136,7 @@ While the port is held:
   that leaves it on ([LEAVE](#leave);
   [Servo programmer, The supply](ServoProgrammer.md#the-supply)). The
   carrier's fixed 5V supply does not lock the PD mini.
-- The KST and Chaservo row and MOTOR & ESC's TARGET row take no press, and
+- The KST tile and MOTOR & ESC's TARGET row take no press, and
   ESC STICK does not start a run.
 
 ## The value tabs
@@ -937,7 +936,7 @@ operator confirmation page for each write, as in the KST limit run
 The programmer provides an interface for Hitec runs
 (`shared/bench/include/hitec_prog_run.h`,
 `shared/ui/include/hitec_panel_run.h`). The SERVO screen's LIMIT RUN with
-SERVO at HITEC and AUTO on RUDDER start runs through it
+SERVO at HITEC and RUDDER AUTO start runs through it
 ([Servo: Hitec servos](Servo.md#hitec-servos)).
 
 A run writes LEFT END and RIGHT END and nothing else, in travel units:

@@ -1,19 +1,22 @@
 /**
  * @file
- * @brief The SERVO screen's guide pages (ui_help.h): a page or two for the
- *        task on the left card, then the output card's two pages.
+ * @brief The SERVO screens' guide pages (ui_help.h): the hub's (servo_hub.c),
+ *        a SETTINGS list's (ui_setlist.h), or on a function screen a page or
+ *        two for its function on the left card, then the output card's two
+ *        pages.
  *
- * A task's page takes the dock on the right and marks the left card in the
- * live half, x 0 to 528; a control that runs past x 528 is marked up to
- * there, the part the screen shows (ui_help_add()).  The output card's
- * pages take the dock on the left, over the left card, and keep the TARGET
- * row and ARM or DISARM in view: they are the pages offered while ARMED.  A
- * page whose dock would cover a control that stops an output is not
- * offered while that control shows: a task's page while the supply's
- * output is on (OUTPUT OFF on the SET row), the output card's while a run,
- * a limit run or AUTO runs (its STOP on the left card).  A keypad, a
- * keyboard, a list, a warning, a question, a programmer and a run's
- * settings take the guide away: none of them has pages.
+ * A function's page takes the dock on the right and marks the left card in
+ * the live half, x 0 to 528; a control that runs past x 528 is marked up
+ * to there, the part the screen shows (ui_help_add()).  The output card's
+ * pages take the dock on the left, over the left card, and keep the PORT
+ * button in view: they are the only ones on KST and HITEC, whose session
+ * fills the left card.  No page is offered while ARMED: either dock covers
+ * part of DISARM in the footer's middle slot.  A page whose dock would cover a control that stops an output is
+ * not offered while that control shows: a function's page while the
+ * supply's output is on (OUTPUT OFF on the SET row), the output card's
+ * while a run, a limit run or AUTO runs (its STOP on the left card).  A
+ * keypad, a keyboard, a choice list, a warning, a question and a page of
+ * rows take the guide away: none of them has pages.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -21,6 +24,7 @@
 #include <string.h>
 
 #include "settings.h"
+#include "ui_footer.h"
 #include "ui_help.h"
 #include "ui_text.h"
 #include "ui_theme.h"
@@ -53,26 +57,6 @@ static gfx_rect_t both(gfx_rect_t a, gfx_rect_t b)
 }
 
 /**
- * @brief The row of k_rows on SETTINGS' page @p page that edits @p kind,
- *        and for R_SETTING @p id.
- * @param page PG_*.
- * @param kind R_*.
- * @param id   The setting, for R_SETTING.
- * @return Its rect, empty when the page has no such row shown.
- */
-static gfx_rect_t row_at(int page, int kind, setting_id_t id)
-{
-    for (int i = 0; i < k_row_count; ++i) {
-        const ov_row_t *r = &k_rows[i];
-        if (r->page == page && r->kind == kind
-            && (kind != R_SETTING || r->id == id) && !row_hidden(r)) {
-            return row_rect(i);
-        }
-    }
-    return (gfx_rect_t){ 0, 0, 0, 0 };
-}
-
-/**
  * @brief Whether a run, a limit run or AUTO runs: its STOP is on the left
  *        card, where the output card's pages put the dock.
  * @return True while one runs.
@@ -94,12 +78,12 @@ static void task_page(ui_help_page_t *p, ui_text_id_t title)
     p->armed_ok = false;
 }
 
-/** @brief LIVE: the strip, the horn's angle, the dial and the readings.
+/** @brief LIVE and SWEEP: the horn's angle, the dial and the readings.
  *  @param p The page. */
 static void page_live(ui_help_page_t *p)
 {
-    task_page(p, TX_HG_SV_TITLE_LIVE);
-    (void)ui_help_add(p, TR(HG_SV_TASKS_NAME), TX_HG_SV_TASKS, strip_area());
+    task_page(p, (s.fn == SERVO_FN_SWEEP) ? TX_HG_SV_TITLE_SWEEP
+                                          : TX_HG_SV_TITLE_LIVE);
     /* The angle's box at its widest, -888.8, and a badge's width more,
      * so the badge at its right end clears "deg". */
     const gfx_seg_style_t seg = ui_seg_hero();
@@ -121,47 +105,26 @@ static void page_live(ui_help_page_t *p)
                                         + 34 });
 }
 
-/** @brief TEST: the two run cards' STARTs and SETTINGS, and the caps.
+/** @brief TEST: the run card's START and SETTINGS, and the caps.
  *  @param p The page. */
 static void page_test(ui_help_page_t *p)
 {
     task_page(p, TX_HG_SV_TITLE_TEST);
     (void)ui_help_add(p, TR(SV_START_TEST), TX_HG_SV_START, test_start_rect());
     (void)ui_help_add(p, TR(SUP_SETTINGS), TX_HG_SV_RUN_SET, run_set_rect(0));
-    (void)ui_help_add(p, TR(SV_LIM_START), TX_HG_SV_LIM, lim_start_rect());
     (void)ui_help_add(p, TR(HG_SV_CAPS_NAME), TX_HG_SV_CAPS, caps_open_rect());
 }
 
-/** @brief PROGRAM: the list of programmers, and SEARCH on its bar.
+/** @brief LIMIT RUN: the run card's START and SETTINGS.
  *  @param p The page. */
-static void page_prog(ui_help_page_t *p)
+static void page_limrun(ui_help_page_t *p)
 {
-    task_page(p, TX_HG_SV_TITLE_PROG);
-    prog_list_t l;
-    prog_list_now(&l);
-    const int shown = prog_view_shown(&s.prog_view, &l);
-    gfx_rect_t rows = { 0, 0, 0, 0 };
-    for (int k = 0; k < shown; ++k) {
-        const gfx_rect_t r =
-            prog_view_entry_rect(&s.prog_view, &l, s.prog_view.top + k);
-        if (r.w > 0) {
-            rows = (rows.w > 0) ? both(rows, r) : r;
-        }
-    }
-    /* The rows' names, to x 380: the badge at their top right, between a
-     * name and the port its row names at the right end. */
-    if (rows.w > 0) {
-        rows.w = (int16_t)(380 - rows.x);
-    }
-    (void)ui_help_add_at(p, TR(HG_SV_PROG_NAME), TX_HG_SV_PROG, rows,
-                         UI_HELP_AT_RIGHT);
-    if (prog_view_has_bar(&s.prog_view, &l)) {
-        (void)ui_help_add(p, TR(SP_FIND), TX_HG_SV_FIND,
-                          prog_view_search_rect(&s.prog_view, &l));
-    }
+    task_page(p, TX_HG_SV_TITLE_LIMRUN);
+    (void)ui_help_add(p, TR(SV_LIM_START), TX_HG_SV_LIM, lim_start_rect());
+    (void)ui_help_add(p, TR(SUP_SETTINGS), TX_HG_SV_RUN_SET, run_set_rect(1));
 }
 
-/** @brief RUDDER: LENGTH, the drive buttons, ZERO, RESET MAX and AUTO.
+/** @brief RUDDER: LENGTH, the drive buttons, ZERO and RESET MAX.
  *  @param p The page. */
 static void page_rudder(ui_help_page_t *p)
 {
@@ -174,8 +137,6 @@ static void page_rudder(ui_help_page_t *p)
                       rudder_rect(RUD_C_ZERO));
     (void)ui_help_add(p, TR(RUD_RESET_MAX), TX_HG_SV_RUD_RESET,
                       rudder_rect(RUD_C_RESET));
-    (void)ui_help_add(p, TR(RA_AUTO), TX_HG_SV_RUD_AUTO,
-                      rudder_rect(RUD_C_AUTO));
 }
 
 /** @brief RUDDER's readings: DEFLECTION, TRAILING EDGE and the state
@@ -200,8 +161,7 @@ static void page_rudder_read(ui_help_page_t *p)
     }
 }
 
-/** @brief RUDDER with AUTO's box: the targets, MARGIN and TOLERANCE,
- *         START and MANUAL.
+/** @brief RUDDER AUTO: the targets, MARGIN and TOLERANCE, ZERO and START.
  *  @param p The page. */
 static void page_auto(ui_help_page_t *p)
 {
@@ -210,97 +170,24 @@ static void page_auto(ui_help_page_t *p)
     (void)ui_help_add(p, "2000us", TX_HG_SV_RA_TARGET, rauto_rect(RA_C_HI));
     (void)ui_help_add(p, TR(HG_SV_MARGIN_NAME), TX_HG_SV_RA_MARGIN,
                       both(rauto_rect(RA_C_MARGIN), rauto_rect(RA_C_TOL)));
+    (void)ui_help_add(p, TR(RUD_ZERO), TX_HG_SV_RUD_ZERO,
+                      rudder_rect(RUD_C_ZERO));
     (void)ui_help_add(p, TR(RA_START), TX_HG_SV_RA_START,
                       rauto_rect(RA_C_START));
-    (void)ui_help_add(p, TR(RA_MANUAL), TX_HG_SV_RA_MANUAL,
-                      rudder_rect(RUD_C_AUTO));
-}
-
-/** @brief SETTINGS > OUTPUT: the pages' tabs, TYPE, FRAME RATE and the
- *         ends of the pulse.
- *  @param p The page. */
-static void page_output(ui_help_page_t *p)
-{
-    task_page(p, TX_HG_SV_TITLE_OUTPUT);
-    (void)ui_help_add(p, TR(HG_SV_PAGES_NAME), TX_HG_SV_PAGES,
-                      (gfx_rect_t){ OV_X + 10, OV_TAB_Y, OV_TAB_W, OV_TAB_H });
-    (void)ui_help_add_at(p, TR(SV_ROW_TYPE), TX_HG_SV_ROW_TYPE,
-                         row_at(PG_OUTPUT, R_TYPE, SETTING_COUNT),
-                         UI_HELP_AT_RIGHT);
-    (void)ui_help_add_at(p, TR(SV_ROW_RATE), TX_HG_SV_ROW_RATE,
-                         row_at(PG_OUTPUT, R_RATE, SETTING_COUNT),
-                         UI_HELP_AT_RIGHT);
-    (void)ui_help_add_at(p, TR(SV_ROW_MIN), TX_HG_SV_ROW_MIN,
-                         row_at(PG_OUTPUT, R_MIN, SETTING_COUNT),
-                         UI_HELP_AT_RIGHT);
-    (void)ui_help_add_at(p, TR(SV_ROW_MAX), TX_HG_SV_ROW_MAX,
-                         row_at(PG_OUTPUT, R_MAX, SETTING_COUNT),
-                         UI_HELP_AT_RIGHT);
-}
-
-/** @brief SETTINGS > OUTPUT's other rows: PULSE CENTRE, TRIM, TRAVEL and
- *         REVERSE.
- *  @param p The page. */
-static void page_output_2(ui_help_page_t *p)
-{
-    task_page(p, TX_HG_SV_TITLE_OUTPUT_2);
-    (void)ui_help_add(p, TR(SV_ROW_CENTRE), TX_HG_SV_ROW_CENTRE,
-                      row_at(PG_OUTPUT, R_CENTRE, SETTING_COUNT));
-    (void)ui_help_add(p, TR(SV_ROW_TRIM), TX_HG_SV_ROW_TRIM,
-                      row_at(PG_OUTPUT, R_TRIM, SETTING_COUNT));
-    (void)ui_help_add_at(p, TR(SV_ROW_TRAVEL), TX_HG_SV_ROW_TRAVEL,
-                         row_at(PG_OUTPUT, R_TRAVEL, SETTING_COUNT),
-                         UI_HELP_AT_RIGHT);
-    (void)ui_help_add_at(p, TR(SV_ROW_REVERSE), TX_HG_SV_ROW_REVERSE,
-                         row_at(PG_OUTPUT, R_REVERSE, SETTING_COUNT),
-                         UI_HELP_AT_RIGHT);
-}
-
-/** @brief SETTINGS > SWEEP: CURVE, SPEED and RANGE.
- *  @param p The page. */
-static void page_sweep(ui_help_page_t *p)
-{
-    task_page(p, TX_HG_SV_TITLE_SWEEP);
-    (void)ui_help_add_at(p, TR(SV_ROW_CURVE), TX_HG_SV_ROW_CURVE,
-                         row_at(PG_SWEEP, R_SETTING, SET_SERVO_CURVE),
-                         UI_HELP_AT_RIGHT);
-    (void)ui_help_add_at(p, TR(SV_ROW_SPEED), TX_HG_SV_ROW_SPEED,
-                         row_at(PG_SWEEP, R_SETTING, SET_SERVO_TEST_HZ),
-                         UI_HELP_AT_RIGHT);
-    (void)ui_help_add_at(p, TR(SV_ROW_RANGE), TX_HG_SV_ROW_RANGE,
-                         row_at(PG_SWEEP, R_SETTING, SET_SERVO_TEST_RANGE),
-                         UI_HELP_AT_RIGHT);
-}
-
-/** @brief SETTINGS > DUT: NAME, REPORT, ENC CENTRE and the two openers.
- *  @param p The page. */
-static void page_dut(ui_help_page_t *p)
-{
-    task_page(p, TX_HG_SV_TITLE_DUT);
-    (void)ui_help_add_at(p, TR(SV_ROW_NAME), TX_HG_SV_ROW_NAME,
-                         row_at(PG_DUT, R_TEXT, SETTING_COUNT),
-                         UI_HELP_AT_RIGHT);
-    (void)ui_help_add_at(p, TR(SV_ROW_REPORT), TX_HG_SV_ROW_REPORT,
-                         row_at(PG_DUT, R_SETTING, SET_SERVO_REPORT),
-                         UI_HELP_AT_RIGHT);
-    (void)ui_help_add_at(p, TR(SV_ROW_ENC_CENTRE), TX_HG_SV_ROW_ENC,
-                         row_at(PG_DUT, R_ENC_CENTRE, SETTING_COUNT),
-                         UI_HELP_AT_RIGHT);
-    (void)ui_help_add(p, "AS5600", TX_HG_SV_OPEN_ENC, enc_open_rect());
-    (void)ui_help_add(p, TR(HG_SV_CAPS_NAME), TX_HG_SV_CAPS, caps_open_rect());
 }
 
 /* ------------------------------------------------- the output card's pages */
 
-/** @brief An output card's page: the dock on the left, for ARMED too,
- *         the TARGET row kept in view.
+/** @brief An output card's page: the dock on the left, the PORT button
+ *         kept in view.  Not while ARMED: either dock covers part of
+ *         DISARM in the footer's middle slot.
  *  @param p The page. @param title Its title. */
 static void card_page(ui_help_page_t *p, ui_text_id_t title)
 {
     p->title = title;
     p->side = UI_HELP_DOCK_LEFT;
-    p->armed_ok = true;
-    p->must_show = (gfx_rect_t){ RC_X, TARGET_Y, RC_W, TARGET_H };
+    p->armed_ok = false;
+    p->must_show = port_rect();
 }
 
 /** @brief The output card's top: the type, the plot or PROG 5V, SET and
@@ -323,18 +210,21 @@ static void page_card(ui_help_page_t *p)
                       (gfx_rect_t){ RC_X, SLIDER_Y, RC_W, SLIDER_H });
 }
 
-/** @brief The output card's foot: TARGET, CENTRE, SWEEP and RELEASE, and
- *         ARM or DISARM; on RUDDER also the side view, which the live half
- *         on this side shows from x 496.
+/** @brief The PORT button, CENTRE, SWEEP and RELEASE, ARM in the
+ *         footer and SETTINGS; on RUDDER also the side view, which the
+ *         live half on this side shows from x 496.
  *  @param p The page. */
 static void page_drive(ui_help_page_t *p)
 {
     card_page(p, TX_HG_SV_TITLE_DRIVE);
-    (void)ui_help_add(p, TR(SV_TARGET), TX_HG_SV_TARGET, p->must_show);
+    (void)ui_help_add(p, TR(SVH_PORT), TX_HG_SV_TARGET, p->must_show);
     (void)ui_help_add(p, TR(SV_CENTRE_BTN), TX_HG_SV_BUTTONS,
                       both(s.centre_btn, s.release_btn));
-    (void)ui_help_add(p, s.gate.armed ? "DISARM" : "ARM", TX_HG_SV_ARM,
-                      s.arm_btn);
+    (void)ui_help_add(p, "ARM", TX_HG_SV_ARM, s.arm_btn);
+    if (svs_list_offered()) {
+        (void)ui_help_add(p, TR(FOOT_SETTINGS), TX_HG_SV_SETTINGS,
+                          ui_footer_rect(UI_FOOTER_SETTINGS));
+    }
     if (rudder_shown()) {
         (void)ui_help_add(p, TR(HG_SV_SIDE_NAME), TX_HG_SV_RUD_SIDE,
                           rudder_flap_rect());
@@ -350,36 +240,32 @@ static void page_drive(ui_help_page_t *p)
  */
 static int pages_now(guide_fn out[GUIDE_MAX])
 {
-    if (modal_open() || prog_shown() || rows_page() >= PG_COUNT) {
+    if (modal_open() || rows_page() >= PG_COUNT) {
         return 0;
     }
     int n = 0;
-    /* The task pages dock on the right, over OUTPUT OFF and PROG 5V OFF. */
+    /* The function's pages dock on the right, over OUTPUT OFF and PROG 5V
+     * OFF; KST's and HITEC's session has none of its own here. */
     if (!supply_screen_output_live()
-        && !(prog5v_box_shown() && prog5v_box_on())) {
-        switch (wb_task()) {
-        case UI_WB_LIVE:
+        && !(prog5v_box_shown() && prog5v_box_on()) && !prog_shown()) {
+        switch ((servo_fn_t)s.fn) {
+        case SERVO_FN_LIVE:
+        case SERVO_FN_SWEEP:
             out[n++] = page_live;
             break;
-        case UI_WB_TEST:
+        case SERVO_FN_TEST:
             out[n++] = page_test;
             break;
-        case UI_WB_PROGRAM:
-            out[n++] = page_prog;
+        case SERVO_FN_LIMRUN:
+            out[n++] = page_limrun;
             break;
-        case UI_WB_RUDDER:
-            out[n++] = rauto_shown() ? page_auto : page_rudder;
+        case SERVO_FN_RUDDER:
+            out[n++] = page_rudder;
             out[n++] = page_rudder_read;
             break;
-        case UI_WB_SETTINGS:
-            if (s.tabs.selected == PG_OUTPUT) {
-                out[n++] = page_output;
-                out[n++] = page_output_2;
-            } else if (s.tabs.selected == PG_SWEEP) {
-                out[n++] = page_sweep;
-            } else {
-                out[n++] = page_dut;
-            }
+        case SERVO_FN_RAUTO:
+            out[n++] = page_auto;
+            out[n++] = page_rudder_read;
             break;
         default:
             break;
@@ -394,12 +280,24 @@ static int pages_now(guide_fn out[GUIDE_MAX])
 
 int servo_help_count(void)
 {
+    if (s.fn == SERVO_FN_HUB) {
+        return hub_help_count();
+    }
+    if (svs_list_shown()) {
+        return ui_setlist_help_count(&s.sl);
+    }
     guide_fn f[GUIDE_MAX];
     return pages_now(f);
 }
 
 bool servo_help_page(int i, ui_help_page_t *out)
 {
+    if (s.fn == SERVO_FN_HUB) {
+        return hub_help_page(i, out);
+    }
+    if (svs_list_shown()) {
+        return ui_setlist_help_page(&s.sl, i, out);
+    }
     guide_fn f[GUIDE_MAX];
     const int n = pages_now(f);
     if (out == NULL || i < 0 || i >= n) {

@@ -485,7 +485,9 @@ static void open_keypad(ui_setlist_t *sl, int index)
 
 /**
  * @brief A tap on the row of string @p id: its keyboard, on the text in
- *        force.  The log folders take the folder mode (ui_textkey.h).
+ *        force.  The log folders take the folder mode (ui_textkey.h); the
+ *        DUT name the name keyboard, spaces and up to UI_TEXTKEY_MAX
+ *        characters.
  * @param sl The list.
  * @param id The string.
  */
@@ -494,8 +496,13 @@ static void open_text(ui_setlist_t *sl, setting_text_id_t id)
     if ((int)id < 0 || id >= SETTING_TEXT_COUNT) {
         return;
     }
-    ui_textkey_open_folder(&sl->tk, TK_AREA, ui_tr(k_text_ui[id].label),
-                           settings_text(id));
+    if (id == SET_TEXT_DUT_NAME) {
+        ui_textkey_open(&sl->tk, TK_AREA, ui_tr(k_text_ui[id].label),
+                        settings_text(id), UI_TEXTKEY_MAX);
+    } else {
+        ui_textkey_open_folder(&sl->tk, TK_AREA, ui_tr(k_text_ui[id].label),
+                               settings_text(id));
+    }
     sl->tk_text = id;
     invalidate(sl);
 }

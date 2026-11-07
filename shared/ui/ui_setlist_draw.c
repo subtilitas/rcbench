@@ -247,8 +247,10 @@ static void draw_custom_row(const ui_setlist_t *sl, gfx_canvas_t *c,
         cu->value_text(value, sizeof(value));
     }
     /* With keys the value sits between them, as a setting's; without, at
-     * the row's right edge, a ">" after it where a tap acts. */
-    const int chev_w = taps ? gfx_text_width(SL_F_BODY, ">", 1) + 8 : 0;
+     * the row's right edge, a ">" after it where a tap acts and no key
+     * does. */
+    const bool chev = taps && !keys;
+    const int chev_w = chev ? gfx_text_width(SL_F_BODY, ">", 1) + 8 : 0;
     const int right = keys ? VALUE_R : PLUS_X + BTN_W - chev_w;
     const gfx_font_t *vf = SL_F_BODY;
     int vw = gfx_text_width(vf, value, 1);
@@ -273,7 +275,7 @@ static void draw_custom_row(const ui_setlist_t *sl, gfx_canvas_t *c,
     c->clip = saved;
     gfx_text(c, vx, r.y + (ROW_H - gfx_text_height(vf, 1)) / 2, value, vf,
              UI_ACCENT, 1);
-    if (taps) {
+    if (chev) {
         gfx_text(c, PLUS_X + BTN_W - chev_w + 8,
                  r.y + (ROW_H - gfx_text_height(SL_F_BODY, 1)) / 2, ">",
                  SL_F_BODY, UI_TEXT_DIM, 1);
@@ -299,10 +301,14 @@ static void draw_heading(gfx_canvas_t *c, gfx_rect_t r,
     if (e->custom != NULL && e->custom->value_text != NULL) {
         e->custom->value_text(line, sizeof(line));
     }
+    /* A heading whose locked() names something draws its line in the
+     * warning colour. */
+    const bool warn = e->custom != NULL && e->custom->locked != NULL
+                      && e->custom->locked() != NULL;
     if (line[0] != '\0') {
         const int lx = r.x + 16 + gfx_text_width(SL_F_BODY, name, 1) + 24;
         gfx_text(c, lx, r.y + HEAD_NAME_DY + 3, line, SL_F_LABEL,
-                 UI_TEXT_DIM, 1);
+                 warn ? UI_WARN : UI_TEXT_DIM, 1);
     }
     ui_rule(c, r.x + 16, r.y + r.h - 3, r.w - 32, UI_EDGE);
 }

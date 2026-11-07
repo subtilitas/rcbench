@@ -15,7 +15,7 @@
  * - the_home_tiles_carry_the_planned_names_and_lines
  * - the_setup_hub_names_its_first_category_panel_in_both_languages
  * - the_home_tag_on_servo_closes_a_panel_climbs_and_leaves
- * - the_home_tag_climbs_from_the_programmer_to_its_list_to_the_menu
+ * - the_home_tag_climbs_from_the_programmer_to_the_hub_to_the_menu
  * - the_home_tag_climbs_from_a_setup_list_to_the_tiles_to_the_menu
  * - the_home_tag_closes_what_a_tool_screen_opened_first
  * - the_home_tag_leaves_supply_under_a_drag
@@ -187,7 +187,8 @@ TEST_CASE(wifi_returns_to_setup_over_stop_and_link_loss)
 
 /*
  * The home tag climbs one level from the first level of every screen that
- * has one: a screen a SETUP tile opens to SETUP, the rest to the menu.  None skips to the menu past a level.
+ * has one: a screen a SETUP tile opens to SETUP, a SERVO function's to
+ * the hub, the rest to the menu.  None skips to the menu past a level.
  */
 TEST_CASE(the_home_tag_climbs_one_level_from_every_screen)
 {
@@ -201,9 +202,13 @@ TEST_CASE(the_home_tag_climbs_one_level_from_every_screen)
         ui_router_goto(settings_screen_opens((ui_screen_id_t)id)
                            ? SCREEN_SETUP : SCREEN_OVERVIEW);
         ui_router_goto((ui_screen_id_t)id);
+        /* A SERVO function's screen climbs to the hub. */
+        const bool fn = id != SCREEN_SERVO
+                        && servo_screen_owns((ui_screen_id_t)id);
         const ui_screen_id_t want =
-            settings_screen_opens((ui_screen_id_t)id) ? SCREEN_SETUP
-                                                      : SCREEN_OVERVIEW;
+            fn ? SCREEN_SERVO
+            : settings_screen_opens((ui_screen_id_t)id) ? SCREEN_SETUP
+                                                        : SCREEN_OVERVIEW;
         CHECK_EQ(ui_router_parent((ui_screen_id_t)id), want);
         tap_home();
         if (ui_router_current() != want) {
@@ -301,45 +306,55 @@ TEST_CASE(the_home_tag_climbs_the_stick_session_one_level_at_a_time)
 }
 
 /*
- * SERVO through the router's home tag: over a list it closes the list and
- * SERVO stays on SETTINGS; from a run's settings it climbs to TEST; from a
- * task it goes to the menu, and the tile opens LIVE again.
+ * SERVO through the router's home tag: over the hub's list a panel closes
+ * first, then the list, then the hub goes to the menu; a function screen
+ * goes to the hub, and a run's settings climb to the run's card first.
  */
 TEST_CASE(the_home_tag_on_servo_closes_a_panel_climbs_and_leaves)
 {
     fresh();
     to_overview();
     ui_router_goto(SCREEN_SERVO);
-    tap(SV_TAB_SETTINGS_X, UI_BAND_H + SV_TAB_Y);
-    tap(100, UI_BAND_H + SV_ROW_Y(0));                 /* TYPE's list */
+    CHECK_EQ(servo_screen_fn(), SERVO_FN_HUB);
+    tap(SV_FOOT_SET_X, UI_BAND_H + SV_FOOT_Y);
+    const ui_setlist_t *sl = servo_screen_list();
+    CHECK(sl->open);
+    const gfx_rect_t type = ui_setlist_row_rect(sl, 1);
+    tap(type.x + 60, UI_BAND_H + type.y + type.h / 2);  /* TYPE's list */
     const uint32_t nav = ui_router_navigations();
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_SERVO);
-    CHECK_EQ(servo_screen_task(), (int)UI_WB_SETTINGS);
+    CHECK(sl->open);
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO);
+    CHECK(!sl->open);
     CHECK_EQ(ui_router_navigations(), nav);
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 
+    /* TEST's tile, its run's settings, the card, the hub, the menu. */
     ui_router_goto(SCREEN_SERVO);
-    CHECK_EQ(servo_screen_task(), (int)UI_WB_LIVE);
-    tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y);
+    tap(SV_HUB_TILE_X(2), UI_BAND_H + SV_HUB_TILE_Y(2));
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO_TEST);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
     tap(SV_RUN_SET_X, UI_BAND_H + SV_RUN_SET_Y(0));
     CHECK_EQ(servo_screen_run_settings(), 1);
     tap_home();
-    CHECK_EQ(ui_router_current(), SCREEN_SERVO);
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO_TEST);
     CHECK_EQ(servo_screen_run_settings(), 0);
-    CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO);
+    CHECK_EQ(servo_screen_fn(), SERVO_FN_HUB);
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 }
 
 /*
- * SERVO > PROGRAM through the router: the tab shows the list, its row the
- * programmer one level down; the home tag climbs from the programmer to
- * the list, from the list to the menu, one level a tap.  With SERVO PWM
- * not reported the row is dimmed and the tag climbs from the list.
+ * SERVO > KST through the router: the tile opens the session at once; the
+ * home tag closes it and the screen goes to the hub, then to the menu.
+ * With SERVO PWM not reported the tile is grey and names why on a tap.
  */
-TEST_CASE(the_home_tag_climbs_from_the_programmer_to_its_list_to_the_menu)
+TEST_CASE(the_home_tag_climbs_from_the_programmer_to_the_hub_to_the_menu)
 {
     fresh();
     to_overview();
@@ -347,29 +362,24 @@ TEST_CASE(the_home_tag_climbs_from_the_programmer_to_its_list_to_the_menu)
     st.capabilities = LINK_CAP_SERVO_PWM;
     ui_router_set_status(&st);
     ui_router_goto(SCREEN_SERVO);
-    tap(SV_TAB_PROGRAM_X, UI_BAND_H + SV_TAB_Y);
+    tap(SV_HUB_TILE_X(6), UI_BAND_H + SV_HUB_TILE_Y(6));
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO_KST);
     CHECK_EQ(servo_screen_task(), (int)UI_WB_PROGRAM);
-    CHECK(!kst_panel_is_open());
-    tap(SV_PROG_ROW_X, UI_BAND_H + SV_PROG_ROW_Y(0));
     CHECK(kst_panel_is_open());
-    const uint32_t nav = ui_router_navigations();
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_SERVO);
     CHECK(!kst_panel_is_open());
-    CHECK_EQ(servo_screen_task(), (int)UI_WB_PROGRAM);
-    CHECK_EQ(ui_router_navigations(), nav);
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 
-    /* The tile opens LIVE again; with no SERVO PWM the row opens
-     * nothing. */
     st.capabilities = 0u;
     ui_router_set_status(&st);
     ui_router_goto(SCREEN_SERVO);
-    CHECK_EQ(servo_screen_task(), (int)UI_WB_LIVE);
-    tap(SV_TAB_PROGRAM_X, UI_BAND_H + SV_TAB_Y);
-    tap(SV_PROG_ROW_X, UI_BAND_H + SV_PROG_ROW_Y(0));
+    ui_router_set_alert(NULL);
+    tap(SV_HUB_TILE_X(6), UI_BAND_H + SV_HUB_TILE_Y(6));
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO);
     CHECK(!kst_panel_is_open());
+    CHECK(ui_router_alert() != NULL);
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 }
@@ -500,8 +510,8 @@ TEST_CASE(the_home_tag_leaves_supply_under_a_drag)
  * SUPPLY, WI-FI and OUTPUTS in both views through the router's home tag:
  * over what the screen opened the tag closes it, one level a tap, and the
  * screen stays; with nothing open it goes to the screen's parent, for
- * OUTPUTS the workbench whose TARGET row opened it.  SUPPLY's SETTINGS
- * list is a level, as MOTOR & ESC's.
+ * OUTPUTS the workbench whose TARGET row opened it or SETUP.  SUPPLY's
+ * SETTINGS list is a level, as MOTOR & ESC's.
  */
 TEST_CASE(the_home_tag_closes_what_a_tool_screen_opened_first)
 {
@@ -518,8 +528,7 @@ TEST_CASE(the_home_tag_closes_what_a_tool_screen_opened_first)
         { SCREEN_WIFI,    SCREEN_SETUP,    open_wifi_keyboard,   2 },
         { SCREEN_OUTPUTS, SCREEN_SETUP,    open_outputs_list,    1 },
         { SCREEN_OUTPUTS, SCREEN_MOTOR,    open_outputs_list,    1 },
-        { SCREEN_OUTPUTS, SCREEN_SERVO,    open_outputs_list,    1 },
-        { SCREEN_OUTPUTS, SCREEN_SERVO,    open_outputs_list_on_port, 1 },
+        { SCREEN_OUTPUTS, SCREEN_SETUP,    open_outputs_list_on_port, 1 },
         { SCREEN_OUTPUTS, SCREEN_SETUP,    open_picker_list,     1 },
     };
     for (size_t k = 0; k < sizeof(k_cases) / sizeof(k_cases[0]); ++k) {
@@ -913,7 +922,7 @@ int main(void)
     RUN(every_menu_mark_and_label_ends_above_the_alert_band);
     RUN(the_setup_hub_names_its_first_category_panel_in_both_languages);
     RUN(the_home_tag_on_servo_closes_a_panel_climbs_and_leaves);
-    RUN(the_home_tag_climbs_from_the_programmer_to_its_list_to_the_menu);
+    RUN(the_home_tag_climbs_from_the_programmer_to_the_hub_to_the_menu);
     RUN(the_home_tag_climbs_from_a_setup_list_to_the_tiles_to_the_menu);
     RUN(the_home_tag_closes_what_a_tool_screen_opened_first);
     RUN(the_home_tag_leaves_supply_under_a_drag);

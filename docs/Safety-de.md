@@ -815,7 +815,9 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   bei ARMED, jede Seite weg, deren Dock AUSGANG AUS verdecken würde,
   solange der Netzteilausgang an ist, oder PROG 5V AUS, solange die 5V der
   Ports EIN lesen, und SERVO jede Seite, deren Dock die
-  linke Karte verdeckt, solange ein Test, ein Endlagenlauf oder AUTO läuft;
+  linke Karte verdeckt, solange ein Test, ein Endlagenlauf oder AUTO läuft.
+  SERVO bietet bei ARMED keine Seite an: jedes Dock verdeckt einen Teil von
+  DISARM in der Fußleiste;
   `test_help_guides` prüft jede angebotene Seite. Ein Kontakt, der beim Bildschirmwechsel
   oder beim Verlust von Touch-Events auf dem Glas lag, gehört niemandem, bis
   er abhebt und neu aufsetzt. Ein Kontakt der Seite, der das Statusband

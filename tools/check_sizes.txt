@@ -38,6 +38,7 @@ firmware/panel/components/wifi_access/wifi_access.c | 1643 +-100 | one state str
 # Tools left whole.
 tools/check_docs.py | none | one tool
 tools/sense_trace.py | none | one tool
+tools/render_ui.py | none | one tool: the view table holds a line per committed view
 test/host/test_sense_trace_tool.py | none | the cases of one tool
 test/tools/test_check_protocols.py | none | the cases of one tool
 test/host/render_screen.c | none | F11: one view table
@@ -86,5 +87,6 @@ test/host/test_outbind.c | none | row 18 moves the board suite out with out_boar
 # Tests the plan's rows cut that stay over 1,000 code lines.
 test/host/test_servo_settings.c | none | row 9: the settings overlay's 48 cases
 test/host/test_servo_test_panel.c | none | row 9: the servo test panel's cases
+test/host/test_servo_arm.c | none | one rig: 36 cases share its arm, drag, knob and list helpers
 test/host/test_kst_prog.c | none | row 12: 122 cases stay; the card cases moved out
 test/host/test_kst_prog_card.c | none | row 12: the card's 32 cases

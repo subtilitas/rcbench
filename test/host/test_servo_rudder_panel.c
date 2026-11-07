@@ -48,10 +48,7 @@
 #define NUM_H 44
 /** @brief The degrees' column's left edge, px. */
 #define DEG_X 18
-/** @brief The TARGET row's top on the output card, y 308 to 356. */
-#define TARGET_ROW_Y 308
 /** @brief Tab @p t's last column: tabs are 120px from x 9, 124px apart. */
-#define TAB_LAST_X(t) (9 + 124 * (t) + 119)
 
 /** @brief The AS5600 on, its centre at CENTRE_COUNT. */
 static void encoder_on(void)
@@ -76,7 +73,7 @@ static void reading(int counts)
 }
 
 /** @brief A tap on RUDDER's tab. */
-static void to_rudder(void) { tap(SV_TAB_RUDDER_X, SV_TAB_Y); }
+static void to_rudder(void) { go(SERVO_FN_RUDDER); }
 
 /**
  * @brief A tap at the middle of control @p k.
@@ -114,37 +111,26 @@ static bool box_same(int x, int y, int w, int h)
     return true;
 }
 
-/* ------------------------------------------------------------- the tab */
+/* ---------------------------------------------------------- the screen */
 
-/* Five tabs, RUDDER the fourth: each tap selects its own; RUDDER shows its
- * card and takes presses; a tile's entry opens LIVE again. */
-TEST_CASE(the_strip_has_five_tabs_and_rudder_opens)
+/* RUDDER and RUDDER AUTO show the rudder's card and every other function
+ * does not; RUDDER's screen entered again shows it again. */
+TEST_CASE(the_rudder_screens_show_the_rudder_card)
 {
     fresh();
     scr->enter();
-    static const struct { int x; ui_wb_task_t task; } k[] = {
-        { SV_TAB_RUDDER_X, UI_WB_RUDDER }, { SV_TAB_LIVE_X, UI_WB_LIVE },
-        { SV_TAB_TEST_X, UI_WB_TEST }, { SV_TAB_PROGRAM_X, UI_WB_PROGRAM },
-        { SV_TAB_SETTINGS_X, UI_WB_SETTINGS }, { SV_TAB_RUDDER_X, UI_WB_RUDDER },
-    };
-    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
-        tap(k[i].x, SV_TAB_Y);
-        CHECK_EQ(servo_screen_task(), (int)k[i].task);
-        CHECK_EQ(rudder_shown(), k[i].task == UI_WB_RUDDER);
-    }
-    /* The tabs' edges: x 9 + 124k to 128 + 124k. */
-    for (int t = 0; t < (int)UI_WB_TASKS; ++t) {
-        tap(9 + 124 * t + 1, SV_TAB_Y);
-        CHECK_EQ(servo_screen_task(), t);
-        tap(TAB_LAST_X(t), SV_TAB_Y);
-        CHECK_EQ(servo_screen_task(), t);
+    for (int f = SERVO_FN_LIVE; f < SERVO_FN_COUNT; ++f) {
+        go((servo_fn_t)f);
+        const bool rud = f == SERVO_FN_RUDDER || f == SERVO_FN_RAUTO;
+        CHECK_EQ(rudder_shown(), rud);
+        CHECK_EQ(servo_screen_task() == (int)UI_WB_RUDDER, rud);
     }
     to_rudder();
     scr->render(&cv, 0);
     scr->leave();
     scr->enter();
-    CHECK_EQ(servo_screen_task(), (int)UI_WB_LIVE);
-    CHECK(!rudder_shown());
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_RUDDER);
+    CHECK(rudder_shown());
 }
 
 /* ---------------------------------------------------------- the readout */
@@ -225,8 +211,7 @@ TEST_CASE(reverse_flips_the_readout_and_keeps_the_zero)
     CHECK_NEAR(d, 22.5f, 1e-3f);
     CHECK(rudder_geo()->have[1] && !rudder_geo()->have[0]);
     open_settings();
-    tap(TAB_X(PAGE_OUTPUT), TAB_Y);
-    tap(ROW_R_X, ROW_Y(4));                     /* REVERSE */
+    sl_step(HL_REVERSE, +1);               /* REVERSE */
     to_rudder();
     CHECK(rudder_defl(&d));
     CHECK_NEAR(d, -22.5f, 1e-3f);
@@ -300,7 +285,7 @@ TEST_CASE(zero_takes_the_current_angle_and_reset_clears_the_max)
     CHECK(rudder_defl(&d));
     CHECK_NEAR(d, 0.0f, 1e-4f);
     reading(156);                               /* +4.92deg */
-    tap(SV_TAB_LIVE_X, SV_TAB_Y);
+    go(SERVO_FN_LIVE);
     reading(-100);                              /* -17.58deg, on LIVE */
     to_rudder();
     CHECK(rudder_geo()->have[0] && rudder_geo()->have[1]);
@@ -420,11 +405,12 @@ TEST_CASE(a_tap_that_slides_off_or_loses_its_release_does_nothing)
     ev(z.x + 10, z.y + 10, TOUCH_EVENT_UP, 1);
     CHECK(rudder_geo()->zeroed);
 
-    /* A press that the task switch takes with it. */
+    /* A press that the leave takes with it. */
     servo_rudder_reset_max((servo_rudder_t *)rudder_geo());
     reading(300);
     ev(r.x + 10, r.y + 10, TOUCH_EVENT_DOWN, 1);
-    tap(SV_TAB_LIVE_X, SV_TAB_Y);
+    scr->leave();
+    go(SERVO_FN_LIVE);
     to_rudder();
     ev(r.x + 10, r.y + 10, TOUCH_EVENT_UP, 1);
     CHECK(rudder_geo()->have[1]);
@@ -595,7 +581,7 @@ TEST_CASE(the_imu_reads_in_hundredths_on_the_readout_and_the_max_line)
     const int wm = gfx_text_width(&gfx_font_num_32x44, "+21.4", 1);
     numerals_ref(SV_RUD_MM_X, "+21.4", acc);
     CHECK(box_same(SV_RUD_MM_X, SV_RUD_NUM_Y, wm, NUM_H));
-    static const int max_y = 138;
+    static const int max_y = 90;
     gfx_fill_rect(&cref, DEG_X, max_y, 240, 20, ui_theme_color(UI_C_PANEL));
     gfx_text(&cref, DEG_X, max_y, "MAX ---  +12.35°", &gfx_font_10x20,
              ui_theme_color(UI_C_TEXT), 1);
@@ -762,10 +748,10 @@ TEST_CASE(leaving_servo_from_rudder_disarms)
     CHECK_EQ(taken().kind, SERVO_CMD_NONE);
 }
 
-/* The TARGET row on RUDDER names what the drive path reports the
+/* The PORT button's line on RUDDER names what the drive path reports the
  * tester's commands go to, and the buttons' command is posted for it:
  * the outputs' pin, a port with its pin, no link. */
-TEST_CASE(the_target_row_names_the_pin_the_buttons_drive)
+TEST_CASE(the_port_line_names_the_pin_the_buttons_drive)
 {
     static const struct {
         uint64_t pins;
@@ -777,31 +763,14 @@ TEST_CASE(the_target_row_names_the_pin_the_buttons_drive)
         { 1ull << 4, 1u, 13u, "PROG PORT 1 GPIO 13", true },
         { 1ull << 4, SERVO_SCREEN_TARGET_NO_LINK, 13u, "NO LINK", true },
     };
-    static gfx_color_t want[SV_RC_W * 48], got[SV_RC_W * 48];
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         fresh_armed();
         servo_screen_set_pins(k[i].pins, true);
         servo_screen_set_drive(k[i].drive, k[i].pin, true);
         to_rudder();
-        scr->render(&cv, 0);
-        for (int y = 0; y < 48; ++y) {
-            memcpy(got + y * SV_RC_W, fb + (size_t)(TARGET_ROW_Y + y) * W
-                                          + SV_RC_X,
-                   SV_RC_W * sizeof(gfx_color_t));
-        }
-        gfx_fill_rect(&cv, SV_RC_X, TARGET_ROW_Y, SV_RC_W, 48,
-                      ui_theme_color(UI_C_PANEL));
-        ui_target_row_t row;
-        ui_target_row_init(&row, (gfx_rect_t){ SV_RC_X, TARGET_ROW_Y,
-                                               SV_RC_W, 48 });
-        ui_target_row_render(&row, &cv, "TARGET", k[i].text, k[i].warn,
-                             true);
-        for (int y = 0; y < 48; ++y) {
-            memcpy(want + y * SV_RC_W, fb + (size_t)(TARGET_ROW_Y + y) * W
-                                           + SV_RC_X,
-                   SV_RC_W * sizeof(gfx_color_t));
-        }
-        CHECK_EQ(memcmp(want, got, sizeof(want)), 0);
+        char port[48];
+        CHECK_EQ(servo_screen_port_line(port, sizeof(port)), k[i].warn);
+        CHECK_STR_EQ(port, k[i].text);
         char line[32];
         CHECK_EQ(servo_target_line(line, sizeof(line), k[i].drive, k[i].pin,
                                    true, k[i].pins, true),
@@ -952,7 +921,7 @@ TEST_CASE(the_max_lines_the_state_colours_and_a_press_are_drawn)
     scr->render(&cv, 0);
     char want[64];
     const float lo = 280.0f * 360.0f / 4096.0f, hi = 290.0f * 360.0f / 4096.0f;
-    static const int max_y = 138;
+    static const int max_y = 90;
     snprintf(want, sizeof(want), "MAX -%.1f°  +%.1f°", (double)lo, (double)hi);
     gfx_fill_rect(&cref, DEG_X, max_y, 240, 20, ui_theme_color(UI_C_PANEL));
     gfx_text(&cref, DEG_X, max_y, want, &gfx_font_10x20,
@@ -1001,37 +970,36 @@ TEST_CASE(the_max_lines_the_state_colours_and_a_press_are_drawn)
 /* ------------------------------------------------------------ the guide */
 
 /* RUDDER's two pages, the dock on the right over the output card, and the
- * output card's two, the dock on the left over RUDDER's card, the TARGET
- * row and DISARM in view: four SAFE, the output card's two ARMED.  Every
- * item in the live half, at most 3 rows, in both languages.  AUTO's box
- * has its own first page; no page under a panel. */
-TEST_CASE(the_guide_marks_rudder_and_leaves_the_target_row_in_view)
+ * output card's two, the dock on the left over RUDDER's card, the PORT
+ * button in view: four SAFE, none ARMED, where either dock covers part of
+ * DISARM.  Every item in the live half, at most 3 rows, in both languages.
+ * RUDDER AUTO's box has its own first page; no page under a panel. */
+TEST_CASE(the_guide_marks_rudder_and_leaves_the_port_button_in_view)
 {
     fresh();
     to_rudder();
     CHECK_EQ(scr->help_count(), 4);
     CHECK_EQ(ui_help_count(scr, false), 4);
-    CHECK_EQ(ui_help_count(scr, true), 2);
-    CHECK(ui_help_armed_note(scr, true));
+    CHECK_EQ(ui_help_count(scr, true), 0);
     ui_help_page_t p;
     CHECK(ui_help_page(scr, false, 0, &p));
     CHECK_EQ(p.title, TX_HG_SV_TITLE_RUDDER);
     CHECK_EQ(p.side, UI_HELP_DOCK_RIGHT);
     CHECK(!p.armed_ok);
-    CHECK_EQ(p.count, 5);
+    CHECK_EQ(p.count, 4);
     CHECK(ui_help_page(scr, false, 1, &p));
     CHECK_EQ(p.title, TX_HG_SV_TITLE_RUD_READ);
     CHECK_EQ(p.count, 3);
-    CHECK(ui_help_page(scr, true, 0, &p));
-    CHECK(p.armed_ok);
+    CHECK(ui_help_page(scr, false, 2, &p));
+    CHECK(!p.armed_ok);
     CHECK_EQ(p.title, TX_HG_SV_TITLE_CARD);
-    CHECK(ui_help_page(scr, true, 1, &p));
+    CHECK(ui_help_page(scr, false, 3, &p));
     CHECK_EQ(p.title, TX_HG_SV_TITLE_DRIVE);
-    /* TARGET, the buttons, ARM and the side view. */
-    CHECK_EQ(p.count, 4);
-    CHECK_EQ(p.must_show.x, SV_RC_X);
-    CHECK_EQ(p.must_show.y, TARGET_ROW_Y);
-    CHECK_EQ(p.must_show.w, SV_RC_W);
+    /* PORT, the buttons, ARM, SETTINGS and the side view. */
+    CHECK_EQ(p.count, 5);
+    CHECK_EQ(p.must_show.x, SV_PORT_X - 190);
+    CHECK_EQ(p.must_show.y, SV_PORT_Y - 24);
+    CHECK_EQ(p.must_show.w, 380);
     CHECK_EQ(p.must_show.h, 48);
     const gfx_rect_t m = { p.must_show.x,
                            (int16_t)(p.must_show.y + UI_BAND_H),
@@ -1039,8 +1007,6 @@ TEST_CASE(the_guide_marks_rudder_and_leaves_the_target_row_in_view)
     const gfx_rect_t dock = ui_help_dock_rect(p.side);
     CHECK(m.x >= dock.x + dock.w || m.x + m.w <= dock.x);
     CHECK(m.y >= dock.y && m.y + m.h <= dock.y + dock.h);
-    /* DISARM out from under the dock. */
-    CHECK(p.item[2].rect.x >= dock.x + dock.w);
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
         for (int i = 0; i < 4; ++i) {
@@ -1060,9 +1026,6 @@ TEST_CASE(the_guide_marks_rudder_and_leaves_the_target_row_in_view)
             }
             CHECK(ui_help_text_bottom(&p, false) <= ui_help_text_limit());
         }
-        /* The ARMED note over the first page ARMED offers. */
-        CHECK(ui_help_page(scr, true, 0, &p));
-        CHECK(ui_help_text_bottom(&p, true) <= ui_help_text_limit());
     }
     ui_text_set_language(UI_LANG_EN);
     CHECK(!scr->help_page(4, &p));
@@ -1073,18 +1036,19 @@ TEST_CASE(the_guide_marks_rudder_and_leaves_the_target_row_in_view)
     CHECK(!scr->help_page(0, &p));
     key(UI_KEY_CANCEL);
     CHECK_EQ(scr->help_count(), 4);
-    /* AUTO's box: its own page first, LENGTH and the drive buttons gone. */
-    press(RUD_C_AUTO);
+    /* RUDDER AUTO's box: its own page first, LENGTH and the drive
+     * buttons gone. */
+    go(SERVO_FN_RAUTO);
     CHECK(scr->help_page(0, &p));
     CHECK_EQ(p.title, TX_HG_SV_TITLE_AUTO);
     CHECK_EQ(p.count, 4);
     CHECK(scr->help_page(1, &p));
     CHECK_EQ(p.title, TX_HG_SV_TITLE_RUD_READ);
     CHECK_EQ(p.count, 2);
-    press(RUD_C_AUTO);
+    go(SERVO_FN_RUDDER);
     CHECK(scr->help_page(0, &p));
     CHECK_EQ(p.title, TX_HG_SV_TITLE_RUDDER);
-    tap(SV_TAB_LIVE_X, SV_TAB_Y);
+    go(SERVO_FN_LIVE);
     CHECK_EQ(scr->help_count(), 3);
     CHECK(scr->help_page(0, &p));
     CHECK_EQ(p.title, TX_HG_SV_TITLE_LIVE);
@@ -1103,12 +1067,10 @@ TEST_CASE(every_string_fits)
         ui_text_set_language((ui_lang_t)lang);
         CHECK(ui_text_fits(f, TR(WB_RUDDER), 120, 40, 6));
         static const ui_text_id_t k_btn[] = { TX_SV_CENTRE_BTN, TX_RUD_ZERO,
-                                              TX_RUD_RESET_MAX, TX_RA_AUTO,
-                                              TX_RA_MANUAL };
+                                              TX_RUD_RESET_MAX };
         static const rudder_ctl_t k_ctl[] = { RUD_C_CENTRE, RUD_C_ZERO,
-                                              RUD_C_RESET, RUD_C_AUTO,
-                                              RUD_C_AUTO };
-        for (int i = 0; i < 5; ++i) {
+                                              RUD_C_RESET };
+        for (int i = 0; i < 3; ++i) {
             const gfx_rect_t r = rudder_rect(k_ctl[i]);
             CHECK(ui_text_fits(f, ui_tr(k_btn[i]), r.w, r.h, 8));
         }
@@ -1165,7 +1127,7 @@ TEST_CASE(every_string_fits)
 
 int main(void)
 {
-    RUN(the_strip_has_five_tabs_and_rudder_opens);
+    RUN(the_rudder_screens_show_the_rudder_card);
     RUN(the_readout_shows_degrees_and_mm_with_a_length_and_degrees_alone_without);
     RUN(reverse_flips_the_readout_and_keeps_the_zero);
     RUN(the_buttons_drive_1000_1500_2000us_only_while_armed);
@@ -1182,12 +1144,12 @@ int main(void)
     RUN(another_imu_sign_drops_the_zero_and_the_max);
     RUN(a_new_imu_zero_drops_the_zero_and_the_max);
     RUN(leaving_servo_from_rudder_disarms);
-    RUN(the_target_row_names_the_pin_the_buttons_drive);
+    RUN(the_port_line_names_the_pin_the_buttons_drive);
     RUN(the_knob_moves_the_horn_on_rudder_while_armed);
     RUN(a_reading_repaints_the_readout_alone_and_as_a_whole_frame_would);
     RUN(a_new_max_in_mm_alone_repaints_the_readout);
     RUN(the_max_lines_the_state_colours_and_a_press_are_drawn);
-    RUN(the_guide_marks_rudder_and_leaves_the_target_row_in_view);
+    RUN(the_guide_marks_rudder_and_leaves_the_port_button_in_view);
     RUN(every_string_fits);
     return test_summary("servo_rudder_panel");
 }

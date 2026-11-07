@@ -37,10 +37,10 @@
 #define H UI_PANEL_H
 #define P(y) (UI_BAND_H + (y))
 
-/* SERVO's ARM / DISARM in panel coordinates, mirrored from servo_screen.c:
- * the output card's column (servo_spots.h), body y 424 to 483. */
-#define SV_ARM_L   SV_RC_X
-#define SV_ARM_R   (SV_RC_X + SV_RC_W - 1)
+/* SERVO's ARM / DISARM in panel coordinates: the footer's middle slot
+ * (servo_spots.h), body y 444 to 491. */
+#undef SV_ARM_X
+#define SV_ARM_R   (SV_ARM_L + SV_ARM_W - 1)
 #define SV_ARM_T   P(SV_ARM_Y)
 #define SV_ARM_B   P(SV_ARM_Y + SV_ARM_H - 1)
 #define SV_ARM_X   ((SV_ARM_L + SV_ARM_R) / 2)
@@ -99,7 +99,7 @@ static void sv_drain(void)
 /* SERVO on a disarmed bench, nothing on the glass. */
 static void sv_fresh(void)
 {
-    up_on(SCREEN_SERVO);
+    up_on(SCREEN_SERVO_LIVE);
     servo_screen_feedback(0u, 0.0f, false);
     servo_screen_set_armed(false);
     sv_drain();
@@ -334,7 +334,7 @@ TEST_CASE(the_help_bubble_takes_no_disarm_and_starts_no_arm)
  * DISARM, and nothing on ARM, on CENTRE, or on the dial. */
 TEST_CASE(servo_names_disarm_and_not_arm)
 {
-    const ui_screen_t *scr = servo_screen();
+    const ui_screen_t *scr = servo_fn_screen(SERVO_FN_LIVE);
     if (scr->safe_at == NULL) {
         T_FAIL("SERVO names no control to the router");
         return;
@@ -474,8 +474,9 @@ TEST_CASE(no_stop_control_lies_under_the_alert_band)
 {
     CHECK(sv_armed());
     supply_screen_set_output(true);
-    CHECK(servo_screen()->safe_at(SV_ARM_X, SV_ARM_MY - UI_BAND_H));
-    CHECK_EQ(stops_under_the_band(servo_screen()), 0);
+    const ui_screen_t *live = servo_fn_screen(SERVO_FN_LIVE);
+    CHECK(live->safe_at(SV_ARM_X, SV_ARM_MY - UI_BAND_H));
+    CHECK_EQ(stops_under_the_band(live), 0);
     supply_screen_set_output(false);
 
     CHECK(mo_armed());

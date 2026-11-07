@@ -88,8 +88,8 @@ TEST_CASE(a_run_stops_on_a_release_the_tracker_makes_for_a_jump)
 /*
  * What the screen names to the router as a press that stops a run: START
  * TEST's place on TEST while its run is under way (a tap there is STOP),
- * and STOP TEST in LIVE's result box.  Not START LIMIT RUN, whose run is
- * not under way, and nothing once the run has ended.
+ * and STOP TEST in the result box under the card.  Not the box once the
+ * run has ended, where its button is CLOSE, and not START TEST.
  */
 TEST_CASE(stop_test_is_named_to_the_router_while_a_run_is_under_way)
 {
@@ -98,28 +98,22 @@ TEST_CASE(stop_test_is_named_to_the_router_while_a_run_is_under_way)
     hold_start(2.3f);
     CHECK(servo_screen_testing());
     CHECK(scr->safe_at(START_X, START_Y));
-    CHECK(!scr->safe_at(START_X, LIM_START_Y));
-    close_settings();                             /* LIVE: the result box */
-    CHECK(servo_screen_testing());
     CHECK(scr->safe_at(BOXBTN_X, BOXBTN_Y));                 /* STOP TEST */
     tap(BOXBTN_X, BOXBTN_Y);
     CHECK(!servo_screen_testing());
     CHECK(!scr->safe_at(BOXBTN_X, BOXBTN_Y));                /* CLOSE */
-    open_test();
     CHECK(!scr->safe_at(START_X, START_Y));
 }
 
-/* Opening the programmer from PROGRAM's list ends a run: a run left
- * going would step the rail and the position of the port that CONNECT
- * takes out of PWM.  The tab alone ends nothing. */
+/* Opening the programmer on KST's screen ends a run: a run left going
+ * would step the rail and the position of the port that CONNECT takes out
+ * of PWM. */
 TEST_CASE(program_ends_a_run)
 {
     bench_fresh();
     hold_start(2.3f);
     CHECK(servo_screen_testing());
-    open_program();
-    CHECK(servo_screen_testing());
-    tap(SV_PROG_ROW_X, SV_PROG_ROW_Y(0));         /* KST and Chaservo */
+    open_kst();
     CHECK(!servo_screen_testing());
     CHECK(kst_panel_is_open());
     close_kst();
@@ -160,9 +154,7 @@ TEST_CASE(a_run_through_the_screen_ends_and_restores_the_set_points)
     CHECK(both_whole());
     servo_screen_test_files(-1, false);
     CHECK(both_whole());
-    /* CLOSE on LIVE's box puts it away. */
-    close_settings();
-    CHECK(both_whole());
+    /* CLOSE on the box puts it away. */
     tap(BOXBTN_X, BOXBTN_Y);
     CHECK(both_whole());
 }
@@ -222,8 +214,7 @@ TEST_CASE(every_way_out_of_a_run_switches_off_and_lets_go)
             tap(x, y);
             break;
         }
-        case 6:                                     /* LIVE's STOP TEST */
-            close_settings();
+        case 6:                                     /* the box's STOP TEST */
             tap(BOXBTN_X, BOXBTN_Y);
             break;
         case 7:                                     /* the card's STOP TEST */
@@ -232,8 +223,7 @@ TEST_CASE(every_way_out_of_a_run_switches_off_and_lets_go)
             break;
         case 8:                                     /* the profile changed */
             open_settings();
-            tap(TAB_X(0), TAB_Y);
-            tap(ROW_R_X, ROW_Y(4));                 /* REVERSE */
+            sl_step(HL_REVERSE, +1);               /* REVERSE */
             break;
         case 9: bench.online = false; break;            /* the supply is gone */
         default:                                    /* OUTPUT OFF */
@@ -478,7 +468,7 @@ static void a_run_ends_armed(int profile, bool by_operator)
     } else if (profile == 2) {
         open_settings();
         for (int i = 0; i < 4; ++i) {
-            tap(TRIM_UP_X, ROW_Y(3));   /* +20us */
+            sl_step(HL_TRIM, +1);   /* +20us */
         }
         close_settings();
     }
@@ -493,8 +483,7 @@ static void a_run_ends_armed(int profile, bool by_operator)
         }
         CHECK(bench.cmd != first);
         CHECK_EQ(servo_screen_commanded(), bench.cmd);
-        close_settings();
-        tap(BOXBTN_X, BOXBTN_Y);        /* LIVE's STOP TEST */
+        tap(BOXBTN_X, BOXBTN_Y);        /* the box's STOP TEST */
         CHECK(!servo_screen_testing());
         CHECK_EQ(servo_screen_commanded(), rest);
         CHECK_EQ(last_cmd().kind, SERVO_CMD_RELEASE);
@@ -553,16 +542,13 @@ TEST_CASE(the_runs_faces_draw_as_a_full_redraw_would)
     CHECK(!servo_screen_testing());
     CHECK(both_whole());
 
-    /* Running, phase by phase: on TEST's card and on LIVE's box. */
+    /* Running, phase by phase: on TEST's card and its box. */
     hold_start(2.3f);
     CHECK(servo_screen_testing());
     for (int i = 0; i < 12; ++i) {
-        if (i == 6) {
-            close_settings();
-        }
         bench_frames(700u);
         settle_drawn();
-        CHECK(both_whole_in(16, 48, 270, 132));           /* the box */
+        CHECK(both_whole_in(SV_BOX_X, SV_BOX_Y, SV_BOX_W, 170));  /* the box */
         CHECK(both_whole_in(496, 0, W - 496, H));          /* the right card */
         CHECK(both_whole());
     }
@@ -648,11 +634,11 @@ static unsigned ink_in_row(int y0, ui_color_id_t col)
     return n;
 }
 
-/* The meter beside the box's button on LIVE: @p text flush right at the
+/* The meter beside the box's button on TEST: @p text flush right at the
  * box's right edge less 10px, on the box's fill. */
 static bool box_meter_reads(const char *text)
 {
-    close_settings();
+    open_test();
     scr->render(&cv, 0);
     want_fresh();
     const int y = SV_BOX_Y + 112 + 14;
@@ -1141,11 +1127,11 @@ TEST_CASE(a_runs_start_and_end_are_told_where_they_happen)
 }
 
 
-/* Line @p i of the run's box on LIVE's left card: its text at the box's
+/* Line @p i of the run's box under TEST's card: its text at the box's
  * left edge on the box's own fill, compared across the box. */
 static bool test_box_reads(int i, const char *text, ui_color_id_t col)
 {
-    close_settings();
+    open_test();
     scr->render(&cv, 0);
     want_fresh();
     const int y = SV_BOX_LINE_Y(i);

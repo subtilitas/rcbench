@@ -39,7 +39,7 @@ TEST_CASE(a_refused_sweep_leaves_nothing_driven)
     CHECK_EQ(last_cmd().kind, SERVO_CMD_SWEEP);
     servo_screen_sweep_refused();
     open_settings();
-    tap(TRIM_UP_X, ROW_Y(3));
+    sl_step(HL_TRIM, +1);
     CHECK(last_cmd().kind != SERVO_CMD_POSITION);
     close_settings();
 }
@@ -82,7 +82,7 @@ TEST_CASE(a_released_pause_says_no_drawn_angle)
     fresh();
     servo_screen_set_armed(true);
     servo_screen_set_sweep(true);
-    tap(ARM_X + 1, SPEED_Y);                   /* SPEED's slowest */
+    tap(COL_X + 1, SPEED_Y);                   /* SPEED's slowest */
     sweep_go();
     frames(0.3f);
     (void)pause_go();
@@ -90,12 +90,12 @@ TEST_CASE(a_released_pause_says_no_drawn_angle)
     servo_screen_released(g_hold_seq);
     CHECK(!servo_screen_paused());
     open_settings();
-    tap(TRIM_UP_X, ROW_Y(3));
+    sl_step(HL_TRIM, +1);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_RELEASE);
     close_settings();
     frames(0.6f);                              /* no drain left */
     open_settings();
-    tap(TRIM_DN_X, ROW_Y(3));
+    sl_step(HL_TRIM, -1);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_RELEASE);
 }
 
@@ -145,11 +145,11 @@ TEST_CASE(a_start_acknowledgement_applies_to_its_own_command)
     fresh();
     servo_screen_set_armed(true);
     servo_screen_set_sweep(true);
-    tap(ARM_X + 1, SPEED_Y);                   /* SPEED's slowest */
+    tap(COL_X + 1, SPEED_Y);                   /* SPEED's slowest */
     tap(SWEEP_X, BTN_Y);
     const servo_cmd_t start = last_cmd();
     CHECK_EQ(start.kind, SERVO_CMD_SWEEP);
-    tap(ARM_X + ARM_W - 1, SPEED_Y);           /* SPEED 100% */
+    tap(COL_X + COL_W - 1, SPEED_Y);           /* SPEED 100% */
     const servo_cmd_t repeat = last_cmd();
     CHECK_EQ(repeat.kind, SERVO_CMD_SWEEP);
     CHECK(repeat.start_seq != start.start_seq);
@@ -192,10 +192,10 @@ TEST_CASE(a_later_repeat_acknowledged_ends_the_wait)
     fresh();
     servo_screen_set_armed(true);
     servo_screen_set_sweep(true);
-    tap(ARM_X + 1, SPEED_Y);                   /* SPEED's slowest */
+    tap(COL_X + 1, SPEED_Y);                   /* SPEED's slowest */
     tap(SWEEP_X, BTN_Y);
     const servo_cmd_t start = last_cmd();
-    tap(ARM_X + ARM_W - 1, SPEED_Y);           /* SPEED 100% */
+    tap(COL_X + COL_W - 1, SPEED_Y);           /* SPEED 100% */
     const servo_cmd_t repeat = last_cmd();
     CHECK_EQ(repeat.kind, SERVO_CMD_SWEEP);
     frames(0.3f);
@@ -220,7 +220,7 @@ TEST_CASE(a_later_repeat_acknowledged_ends_the_wait)
     tap(SWEEP_X, BTN_Y);                       /* PAUSED */
     const servo_cmd_t resume = last_cmd();
     CHECK(resume.resume);
-    tap(ARM_X + 1, SPEED_Y);                   /* SPEED moved */
+    tap(COL_X + 1, SPEED_Y);                   /* SPEED moved */
     const servo_cmd_t again = last_cmd();
     CHECK_EQ(again.kind, SERVO_CMD_SWEEP);
     CHECK(!again.resume);
@@ -247,7 +247,7 @@ TEST_CASE(a_restart_drains_the_old_curve_in_its_old_mapping)
     sweep_go();
     frames(0.4f);
     open_settings();
-    tap(ROW_L_X, ROW_Y(4));                    /* TRAVEL */
+    sl_tap(HL_TRAVEL);                    /* TRAVEL */
     keys("45");
     const servo_cmd_t c = last_cmd();
     CHECK_EQ(c.kind, SERVO_CMD_SWEEP);
@@ -324,7 +324,7 @@ TEST_CASE(speed_100_is_immediate_in_the_drawing_and_the_replay)
     CHECK_EQ(servo_screen_drawn(), 1100u);
     CHECK_EQ(servo_screen_commanded(), 1100u);
     open_settings();
-    tap(TRIM_UP_X, ROW_Y(3));
+    sl_step(HL_TRIM, +1);
     const servo_cmd_t c = last_cmd();
     CHECK_EQ(c.kind, SERVO_CMD_POSITION);
     CHECK_EQ(c.value_us, 1105u);
@@ -349,7 +349,7 @@ TEST_CASE(a_resume_is_drawn_from_its_acknowledgement)
     fresh();
     servo_screen_set_armed(true);
     servo_screen_set_sweep(true);
-    tap(ARM_X + 1, SPEED_Y);                   /* SPEED's slowest */
+    tap(COL_X + 1, SPEED_Y);                   /* SPEED's slowest */
     sweep_go();
     frames(0.3f);
     const servo_cmd_t hold = pause_go();
@@ -426,12 +426,12 @@ static void paused_sweep(void)
 TEST_CASE(a_pause_ends_where_a_hold_ended)
 {
     paused_sweep();
-    tap(ARM_X + 40, BTN_Y);                    /* CENTRE */
+    tap(COL_X + 40, BTN_Y);                    /* CENTRE */
     CHECK(!servo_screen_paused());
     CHECK_EQ(last_cmd().kind, SERVO_CMD_CENTRE);
 
     paused_sweep();
-    tap(ARM_X + ARM_W - 40, BTN_Y);            /* RELEASE */
+    tap(COL_X + COL_W - 40, BTN_Y);            /* RELEASE */
     CHECK(!servo_screen_paused());
     CHECK_EQ(last_cmd().kind, SERVO_CMD_RELEASE);
 
@@ -487,12 +487,12 @@ TEST_CASE(hold_without_feedback_matches_the_far_ends_slew)
     servo_screen_set_armed(true);
     servo_screen_set_sweep(true);
     open_settings();
-    tap(ROW_R_X, ROW_Y(2));                    /* PULSE CENTRE */
+    sl_tap(HL_CENTRE);                    /* PULSE CENTRE */
     keys("1520");
-    tap(ROW_L_X, ROW_Y(2));                    /* PULSE MIN */
+    sl_tap(HL_MIN);                    /* PULSE MIN */
     keys("900");
     close_settings();
-    tap(ARM_X + 1, SPEED_Y);                   /* SPEED 10% */
+    tap(COL_X + 1, SPEED_Y);                   /* SPEED 10% */
     (void)last_cmd();
     tap(SWEEP_X, BTN_Y);
     servo_cmd_t c = last_cmd();
@@ -537,7 +537,7 @@ TEST_CASE(the_drawn_output_starts_where_the_far_ends_output_starts)
     fresh();
     servo_screen_set_armed(true);
     servo_screen_set_sweep(true);
-    tap(ARM_X + 1, SPEED_Y);                   /* SPEED 12% */
+    tap(COL_X + 1, SPEED_Y);                   /* SPEED 12% */
     tap(SWEEP_X, BTN_Y);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_SWEEP);
     frames(0.3f);                              /* not acknowledged */
@@ -549,7 +549,7 @@ TEST_CASE(the_drawn_output_starts_where_the_far_ends_output_starts)
     fresh();
     servo_screen_set_armed(true);
     servo_screen_set_sweep(true);
-    tap(ARM_X + 1, SPEED_Y);
+    tap(COL_X + 1, SPEED_Y);
     sweep_go();
     frames(0.3f);
     const uint16_t at_once = servo_screen_drawn();
@@ -559,7 +559,7 @@ TEST_CASE(the_drawn_output_starts_where_the_far_ends_output_starts)
     fresh();
     servo_screen_set_armed(true);
     servo_screen_set_sweep(true);
-    tap(ARM_X + 1, SPEED_Y);
+    tap(COL_X + 1, SPEED_Y);
     sweep_go();
     frames(0.2f);
     const uint16_t at_02 = servo_screen_drawn();
@@ -611,9 +611,9 @@ TEST_CASE(trim_shifts_the_pulse_and_not_the_angle)
     CHECK_EQ(servo_screen_commanded(), 1500);
 
     open_settings();
-    tap(TRIM_UP_X, ROW_Y(3));           /* trim up, five microseconds */
+    sl_step(HL_TRIM, +1);           /* trim up, five microseconds */
     CHECK_EQ(servo_screen_commanded(), 1505);
-    tap(TRIM_DN_X, ROW_Y(3));
+    sl_step(HL_TRIM, -1);
     CHECK_EQ(servo_screen_commanded(), 1500);
 }
 

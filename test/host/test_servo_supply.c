@@ -11,6 +11,7 @@
  * - the_set_points_wait_for_a_sample_after_the_off
  * - a_supply_reading_stamped_on_tick_zero_keeps_its_stamp
  * - a_hold_on_supplys_output_on_holds_the_restore_back
+ * - settings_opens_nothing_under_output_ons_hold
  *
  * SPDX-License-Identifier: MIT
  */
@@ -380,6 +381,35 @@ TEST_CASE(a_hold_on_supplys_output_on_holds_the_restore_back)
     CHECK_EQ(on_v, 0.0f);
 }
 
+/* A second finger on SETTINGS while OUTPUT ON's 2s hold fills: the list
+ * stays shut, so the hold's own release still ends it and the output
+ * stays off when the finger lifts early. */
+TEST_CASE(settings_opens_nothing_under_output_ons_hold)
+{
+    fresh();
+    go(SERVO_FN_SWEEP);
+    supply_screen_put(5.0f, 1.0f);
+    scr->tick(0.025f);
+    supply_cmd_t c;
+    while (supply_cmd(&c)) { }
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 20; ++i) {
+        scr->tick(0.025f);                      /* 0.5s held */
+    }
+    ev(SV_FOOT_SET_X, SV_FOOT_Y, TOUCH_EVENT_DOWN, 2);
+    ev(SV_FOOT_SET_X, SV_FOOT_Y, TOUCH_EVENT_UP, 2);
+    CHECK(!servo_screen_list()->open);
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
+    for (int i = 0; i < 100; ++i) {
+        scr->tick(0.025f);                      /* 2.5s more */
+    }
+    bool on = false;
+    while (supply_cmd(&c)) {
+        on = on || c.on;
+    }
+    CHECK(!on);
+}
+
 int main(void)
 {
     RUN(leaving_servo_switches_off_an_on_a_run_or_the_hv_hold_asked);
@@ -389,5 +419,6 @@ int main(void)
     RUN(the_set_points_wait_for_a_sample_after_the_off);
     RUN(a_supply_reading_stamped_on_tick_zero_keeps_its_stamp);
     RUN(a_hold_on_supplys_output_on_holds_the_restore_back);
+    RUN(settings_opens_nothing_under_output_ons_hold);
     return test_summary("servo_supply");
 }

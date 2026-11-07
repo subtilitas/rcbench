@@ -53,7 +53,11 @@ static void enc_plug(uint32_t at)
  * go: the run's first frame is now. */
 static void hold_until_running(int card)
 {
-    open_test();
+    if (card == 0) {
+        open_test();
+    } else {
+        open_limrun();
+    }
     const int y = SV_START_Y(card);
     ev(START_X, y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < 150; ++i) {

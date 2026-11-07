@@ -8,17 +8,17 @@ order: 22
 
 Die Servoprogrammierung liest die 32 Register eines KST- oder Chaservo-Servos über dessen Signalleitung und zeigt sie als Einstellungen. Beide Marken verwenden dasselbe Protokoll und denselben Registersatz. Änderungen werden erst auf Anforderung zurückgeschrieben.
 
-Öffne PROGRAMMIEREN auf [SERVO](servo.md) und wähle `KST- und Chaservo-Servos`. Die Sitzung liegt eine Ebene unter der Liste und verdeckt die linke Spalte und die Aufgabenreiter. SCHLIESSEN oder das Home-Feld führt zur Liste zurück. Das Öffnen beendet einen laufenden automatischen Test.
+Tippe im Hub von [SERVO](servo.md) auf KST. Die Seite KST öffnet die Sitzung über der linken Karte. SCHLIESSEN oder das Home-Feld führt zum Hub zurück. Das Öffnen beendet einen laufenden automatischen Test.
 
-![Die Liste von PROGRAMMIEREN](view:servo-program)
+![Der SERVO-Hub](view:servo-hub)
 
-Die Zeile nennt den SERVO-TESTER-Port und seinen Pin, etwa `PROG-PORT 1 GPIO 13`. Meldet der IOmcu, die RP2350-Platine, keine Servo-PWM-Unterstützung, ist sie gedimmt und gesperrt. Das gilt auch ohne IOmcu-Antwort. Dann steht dort `IOMCU OHNE SERVO PWM`.
+Die Fußleiste des Hubs nennt den SERVO-TESTER-Port und seinen Pin, etwa `PROG-PORT 1 GPIO 13`. Meldet der IOmcu, die RP2350-Platine, keine Servo-PWM-Unterstützung, sind die Kacheln KST und HITEC grau und gesperrt. Das gilt auch ohne IOmcu-Antwort. Dann steht dort `IOMCU OHNE SERVO PWM`; ein Tippen nennt es im Alarmband.
 
-![Die Zeile gedimmt](view:servo-program-nocap)
+![Die Kacheln grau](view:servo-hub-nocap)
 
-Belegt eine über die Prüfstandskonsole geöffnete Hitec-Sitzung denselben Port, ist die Zeile mit `PORT BELEGT` gesperrt.
+Belegt eine über die Prüfstandskonsole geöffnete Hitec-Sitzung denselben Port, sind die Kacheln mit `PORT BELEGT` gesperrt.
 
-![Der Port belegt](view:servo-program-busy)
+![Der Port belegt](view:servo-hub-busy)
 
 KST und Chaservo sind Namen oder Marken ihrer jeweiligen Inhaber. rcbench steht mit ihnen in keiner Verbindung und wird von ihnen weder empfohlen noch finanziell unterstützt. Die Namen kennzeichnen die unterstützten Servos.
 
@@ -30,7 +30,7 @@ Registerbelegung und Timing wurden an 1 KST Tool Card #2 und 1 Chaservo-Servo er
 
 - IOmcu 0.17.0 oder neuer, mit Protokoll 4.15 einschließlich LEAVE.
 - Ein Servo an einem IOmcu-Programmierport, PROG-PORT 1 bis 4, mit Pin und FUNKTION SERVO PWM. Bei manueller Verdrahtung verwendet Port 1 standardmäßig GPIO 13, Pad 17. Andere Pins werden im jeweiligen PROG-PORT-Eintrag auf Ausgänge gewählt. Carrier-Pins sind fest; siehe [Der Port und die Versorgung](#der-port-und-die-versorgung).
-- SERVO-TESTER auf diesem Port: PORT 1, PORT 2, PORT 3 oder PORT 4. Die [Zeile ZIEL](servo-settings.md#die-zeile-ziel) öffnet den zugehörigen Eintrag auf Ausgänge. Ab Carrier-Protokoll 4.36 kannst du den Port auch über die PORT-Zeile der Servoprogrammierung wählen.
+- SERVO-TESTER auf diesem Port: PORT 1, PORT 2, PORT 3 oder PORT 4. Die [Taste PORT](servo-settings.md#die-taste-port) der anderen Funktionsseiten wählt ihn. Ab Carrier-Protokoll 4.36 kannst du den Port auch über die PORT-Zeile der Servoprogrammierung wählen.
 - Prüfstand in SAFE. Bei ARMED wird VERBINDEN mit `Tippe zuerst auf DISARM. Bei ARMED kann der Port nicht übernommen werden.` abgelehnt. Solange der Port belegt ist, kann keine Seite auf ARMED schalten.
 
 ![Ein IOmcu ohne Programmierport](view:servo-kst-nopage)
@@ -147,7 +147,7 @@ Ein Wert innerhalb der harten Grenzen, aber außerhalb einer weichen Grenze, öf
 
 ## KST EXPERT MODE
 
-KST EXPERT MODE auf [Servo-Optionen](servo-settings.md#prüfling) > PRÜFLING legt fest, was der Programmierer zeigt. Er ist standardmäßig AUS und bleibt über einen Neustart erhalten. Halte die Zeile 2s, um ihn einzuschalten; ein kürzerer Druck zeigt `Halte 2s, um KST EXPERT MODE einzuschalten.` auf dem Band. Tippe, um ihn auszuschalten.
+KST EXPERT MODE auf der Seite von KST in den [Servo-Optionen](servo-settings.md#die-liste-von-ruder-und-die-seite-von-kst) legt fest, was der Programmierer zeigt. Er ist standardmäßig AUS und bleibt über einen Neustart erhalten. Halte die Zeile 2s, um ihn einzuschalten; ein kürzerer Druck zeigt `Halte 2s, um KST EXPERT MODE einzuschalten.` auf dem Band. Tippe, um ihn auszuschalten.
 
 Bei AUS verschwinden DEAD BAND, BOOST und STRETCH von ABSTIMMEN, PAIRING LÖSEN aus WEITERES und der Reiter GESPERRT aus der Leiste. ABSTIMMEN rückt zusammen, und die Leiste hält 4 Reiter. DEAD BAND und BOOST können Pendeln, Brummen und Erwärmung verursachen, STRETCH Schwingungen; was PAIRING LÖSEN im Servo bewirkt und was die gesperrten Werte bedeuten, ist nicht bekannt.
 
@@ -222,7 +222,7 @@ Bei Verbindungsverlust, Platinenneustart, ABBRECHEN, Stopp oder ausbleibendem Er
 
 VERLASSEN, SCHLIESSEN oder das Home-Feld im Programmiermodus öffnet PROGRAMMIERMODUS VERLASSEN. Bei Rückkehr zu Servo-PWM kann sich das Servo bewegen. Nach einem Schreibvorgang mit PD mini kündigt die Seite zuerst einen Versorgungszyklus mit 1s Aus-Zeit an. Ohne PD mini nennt sie den nötigen manuellen Versorgungszyklus. Ohne Schreibvorgang bleibt die Versorgung unverändert.
 
-Halte 2s HALTEN ZUM VERLASSEN für 2s. Der Port hält die Leitung für WARTEZEIT VOR PWM auf Low und gibt den Pin dann an den Tester zurück. Das Verlassen der SERVO-Seite führt diesen Vorgang nicht aus: Die Sitzung behält den Port und öffnet beim nächsten Besuch wieder auf PROGRAMMIEREN. Innerhalb der Servoprogrammierung schließt Home zuerst offene Tastenfelder, Listen, Warnungen oder Tastaturen.
+Halte 2s HALTEN ZUM VERLASSEN für 2s. Der Port hält die Leitung für WARTEZEIT VOR PWM auf Low und gibt den Pin dann an den Tester zurück. Das Verlassen der Seite KST führt diesen Vorgang nicht aus: Die Sitzung behält den Port, und jede andere SERVO-Seite öffnet bis VERLASSEN wieder KST. Innerhalb der Servoprogrammierung schließt Home zuerst offene Tastenfelder, Listen, Warnungen oder Tastaturen.
 
 ## Hitec-D-Empfang
 

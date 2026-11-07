@@ -4,30 +4,30 @@
  *        state in the screen's one object, its controls' places, and the
  *        calls the screen's files make of it.
  *
- * RUDDER drives the servo the output card names and shows the control
+ * RUDDER drives the servo the PORT button names and shows the control
  * surface's deflection on the angle the screen takes in
  * (servo_screen_encoder()): degrees from ZERO and, with LENGTH set, the
  * trailing edge's travel in mm (servo_rudder.h).  Its buttons drive
  * 1000us, CENTRE and 2000us, and the knob moves the horn as on LIVE; both
- * only while the value is live (ARMED).  The output card, its TARGET row
- * and ARM stay where they are on every task.
+ * only while the value is live (ARMED).  The output card, the PORT button
+ * and the footer's ARM stay where they are on every function screen.
  *
  * The left card, top to bottom, in the screen's coordinates, every control
  * inside x 18 to 518 so the guide's dock on the right leaves it in view:
  *
- *   - the readout, y 62 to 162: DEFLECTION and TRAILING EDGE over their
+ *   - the readout, y 14 to 114: DEFLECTION and TRAILING EDGE over their
  *     numerals in the 32 x 44 face, the MAX of each side under them;
- *   - LENGTH's row, y 168 to 216, a tap opens the keypad;
- *   - 1000us, CENTRE and 2000us, y 228 to 276, 160px each, 10px apart;
- *   - ZERO, RESET MAX and AUTO, y 288 to 336, 160px each;
- *   - the state lines, x 18 to 418, y 346 to 444: the angle source, the
+ *   - LENGTH's row, y 120 to 168, a tap opens the keypad;
+ *   - 1000us, CENTRE and 2000us, y 180 to 228, 160px each, 10px apart;
+ *   - ZERO and RESET MAX, y 240 to 288, 160px each;
+ *   - the state lines, x 18 to 418, y 300 to 396: the angle source, the
  *     pulse, the zero and ARM FIRST;
  *   - beside them the side view of the surface (servo_rudder_flap.h),
- *     x 428 to 618, y 340 to 492: no control, and no touch on it.
+ *     x 428 to 618, y 292 to 436: no control, and no touch on it.
  *
- * AUTO shows AUTO's box (servo_rudder_auto_int.h) in the place of LENGTH,
- * the three drive buttons and the state lines; the button then reads
- * MANUAL and brings them back.  The readout, the ZERO row and the side
+ * RUDDER AUTO, a screen of its own, shows AUTO's box
+ * (servo_rudder_auto_int.h) in the place of LENGTH, the three drive
+ * buttons and the state lines.  The readout, the ZERO row and the side
  * view stay.
  *
  * Every control is UI_TAP_MIN tall.  The header holds no helper that reads
@@ -58,7 +58,6 @@ typedef enum {
     RUD_C_2000,      /**< 2000us                                      */
     RUD_C_ZERO,      /**< ZERO: the angle now is the neutral          */
     RUD_C_RESET,     /**< RESET MAX                                   */
-    RUD_C_AUTO,      /**< AUTO, MANUAL with AUTO's box shown          */
     RUD_C_COUNT      /**< the count, RUD_C_NONE included              */
 } rudder_ctl_t;
 

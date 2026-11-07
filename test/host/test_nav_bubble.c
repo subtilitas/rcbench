@@ -484,8 +484,9 @@ TEST_CASE(the_widest_chip_row_clears_the_home_tag)
             }
         }
     }
-    /* MOTOR & ESC's tag is the widest; every other ends at x 248 or
-     * less.  The widest row starts at x 270. */
+    /* MOTOR & ESC's tag is the widest, with RUDDER AUTO's and SERVO >
+     * KST's as wide; every other ends at x 248 or less.  The widest row
+     * starts at x 270. */
     CHECK_EQ(widest, 268);
     CHECK_EQ(least, 270);
     CHECK_EQ(widest, ui_home_tag_rect(ui_router_title(SCREEN_MOTOR)).x
@@ -496,7 +497,9 @@ TEST_CASE(the_widest_chip_row_clears_the_home_tag)
         }
         const gfx_rect_t tag = ui_home_tag_rect(
             ui_router_title((ui_screen_id_t)id));
-        if (tag.x + tag.w > 248) {
+        const int most = (id == SCREEN_SERVO_RAUTO || id == SCREEN_SERVO_KST)
+                             ? widest : 248;
+        if (tag.x + tag.w > most) {
             T_FAIL("screen %d: its tag ends at x %d", id, tag.x + tag.w);
         }
     }
@@ -825,7 +828,7 @@ TEST_CASE(leaving_the_screen_closes_the_bubble)
     ui_router_set_status(&k_all_chips);
     tap_chip(&k_all_chips, UI_BAND_CHIP_FAULT);
     CHECK_EQ(ui_router_help(), UI_BAND_CHIP_FAULT);
-    ui_router_goto(SCREEN_SERVO);
+    ui_router_goto(SCREEN_SERVO_LIVE);
     CHECK_EQ(ui_router_help(), UI_BAND_CHIP_NONE);
     gfx_rect_t r;
     CHECK(!ui_router_help_rect(&r));

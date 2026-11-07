@@ -76,7 +76,7 @@ static void measured_row(gfx_color_t *out)
 {
     for (int y = 0; y < 20; ++y) {
         memcpy(out + y * SV_RCARD_W,
-               fb + (size_t)(448 + 12 + y) * W + UI_MARGIN + 12 + 198,
+               fb + (size_t)(384 + 12 + y) * W + UI_MARGIN + 12 + 198,
                SV_RCARD_W * sizeof(gfx_color_t));
     }
 }
@@ -159,15 +159,11 @@ static void out_open_port(void)
 
 /* What the tester drives is set on OUTPUTS' PROG PORT entry, on a bench at
  * rest: SERVO TESTER, the TARGET setting, and PORT PWM, which has no port
- * to switch while the tester drives the outputs.  SETTINGS' DUT page holds
- * no PORT PWM row: its right column's row 1 takes no tap. */
+ * to switch while the tester drives the outputs. */
 TEST_CASE(outputs_prog_port_entry_sets_what_the_tester_drives_at_rest)
 {
     fresh();
     out_open_port();
-    open_settings();
-    tap(TAB_X(PAGE_DUT), TAB_Y);               /* DUT */
-    tap(ROW_R_X, ROW_Y(1));                    /* where PORT PWM was */
     CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
     CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 0);
     /* With the outputs as target PORT PWM has no port to switch. */
@@ -223,21 +219,18 @@ TEST_CASE(outputs_prog_port_entry_sets_what_the_tester_drives_at_rest)
     CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
 }
 
-#define TGT_Y 308
-
-#define TGT_H 48
-
-/* The target line's box at the foot of the left card before the TARGET
- * row: left 6 + 200, top (H - UI_BAND_H) - 6 - 36, 278 x 26px. */
-#define OLD_TGT_X 206
-
-#define OLD_TGT_Y ((H - UI_BAND_H) - 6 - 36)
+/* The PORT button over the output card (servo_spots.h): x 636 to 1016,
+ * y 8 to 56. */
+#define PB_X SV_RCARD_X
+#define PB_Y 8
+#define PB_W SV_RCARD_W
+#define PB_H 48
 
 static void target_box(gfx_color_t *out)
 {
-    for (int y = 0; y < TGT_H; ++y) {
-        memcpy(out + y * TGT_W, fb + (TGT_Y + y) * W + TGT_X,
-               TGT_W * sizeof(gfx_color_t));
+    for (int y = 0; y < PB_H; ++y) {
+        memcpy(out + y * PB_W, fb + (PB_Y + y) * W + PB_X,
+               PB_W * sizeof(gfx_color_t));
     }
 }
 
@@ -312,48 +305,27 @@ static const char *const k_tgt_txt[2][TGT_N] = {
       "KEINE VERBINDUNG" },
 };
 
-/* The row a label and a value give, drawn over the screen's by the row
- * widget (ui_target_row.h, whose own pixels test_widgets holds) at the
- * row's place: the label at SV_RC_X, the value in the box 64px further, in
- * the warning colour for @p warn, the box drawn locked for @p locked. */
-static void target_reference_as(gfx_color_t *out, const char *label,
-                                const char *text, bool warn, bool locked)
-{
-    gfx_fill_rect(&cv, TGT_X, TGT_Y, TGT_W, TGT_H,
-                  ui_theme_color(UI_C_PANEL));
-    ui_target_row_t row;
-    ui_target_row_init(&row, (gfx_rect_t){ TGT_X, TGT_Y, TGT_W, TGT_H });
-    ui_target_row_render(&row, &cv, label, text, warn, locked);
-    target_box(out);
-}
-
-static void target_reference(gfx_color_t *out, const char *label,
-                             const char *text, bool warn)
-{
-    target_reference_as(out, label, text, warn, false);
-}
-
 static int warn_pixels(const gfx_color_t *bx)
 {
     int n = 0;
-    for (int i = 0; i < TGT_W * TGT_H; ++i) {
+    for (int i = 0; i < PB_W * PB_H; ++i) {
         n += (bx[i] == ui_theme_color(UI_C_WARN)) ? 1 : 0;
     }
     return n;
 }
 
-/* The active PWM target is on the SERVO screen's right card in both
- * languages: the pins bound as SERVO PWM for OUTPUTS, the programming port
- * with its pin, and the warning colour for the port, for no pin, for a
- * binding not read, for a target not known and for no link.  Every state
- * reads differently, and no value runs out of its box: the longest are the
- * protocol with two one-digit pins, 23 of the 25 cells, and the port on a
- * two-digit pin with its pulse off, 22. */
+/* The active PWM target is on the PORT button in both languages: the pins
+ * bound as SERVO PWM for OUTPUTS, the programming port with its pin, and
+ * the warning colour for the port, for no pin, for a binding not read, for
+ * a target not known and for no link.  Every state reads differently, and
+ * no value runs out of the button: the longest are the protocol with two
+ * one-digit pins, 23 cells, and the port on a two-digit pin with its pulse
+ * off, 22, of the 28 right of PORT. */
 TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
 {
     gfx_color_t *box[2 * TGT_N];
     for (int i = 0; i < 2 * TGT_N; ++i) {
-        box[i] = malloc(TGT_W * TGT_H * sizeof(gfx_color_t));
+        box[i] = malloc(PB_W * PB_H * sizeof(gfx_color_t));
         REQUIRE_ALLOC(box[i]);
     }
     for (int lang = 0; lang < 2; ++lang) {
@@ -368,25 +340,21 @@ TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
             gfx_color_t *bx = box[lang * TGT_N + i];
             target_box(bx);
             CHECK_EQ(warn_pixels(bx) > 0, st->warn);
-            /* The pixels of the label and the value the state must give. */
-            static gfx_color_t want_box[TGT_W * TGT_H];
-            target_reference(want_box, lang == 0 ? "TARGET" : "ZIEL",
-                             k_tgt_txt[lang][i], st->warn);
-            CHECK_EQ(memcmp(want_box, bx, sizeof(want_box)), 0);
-            /* The value fits the 25 cells of its box. */
-            CHECK(gfx_text_cells(k_tgt_txt[lang][i]) <= 25);
-            /* The foot of the left card carries no second target line. */
-            CHECK_EQ(fb[(OLD_TGT_Y + 2) * W + OLD_TGT_X + 4],
-                     ui_theme_color(UI_C_PANEL));
+            /* The line the state must give. */
+            char line[48];
+            CHECK_EQ(servo_screen_port_line(line, sizeof(line)), st->warn);
+            CHECK_STR_EQ(line, k_tgt_txt[lang][i]);
+            /* The value fits the 28 cells right of PORT. */
+            CHECK(gfx_text_cells(k_tgt_txt[lang][i]) <= 28);
         }
     }
     ui_text_set_language(UI_LANG_EN);
-    for (int i = 0; i < 2 * TGT_N; ++i) {
-        for (int j = i + 1; j < 2 * TGT_N; ++j) {
-            /* The pin lists read the same in both languages; only the
-             * label tells them apart. */
-            CHECK(memcmp(box[i], box[j], TGT_W * TGT_H
-                                         * sizeof(gfx_color_t)) != 0);
+    for (int lang = 0; lang < 2; ++lang) {
+        for (int i = 0; i < TGT_N; ++i) {
+            for (int j = i + 1; j < TGT_N; ++j) {
+                CHECK(memcmp(box[lang * TGT_N + i], box[lang * TGT_N + j],
+                             PB_W * PB_H * sizeof(gfx_color_t)) != 0);
+            }
         }
     }
 
@@ -394,32 +362,32 @@ TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
     fresh();
     servo_screen_set_pins(PIN(2), true);
     scr->render(&cv, 0);
-    static gfx_color_t a[TGT_W * TGT_H];
+    static gfx_color_t a[PB_W * PB_H];
     target_box(a);
     servo_screen_set_pins(PIN(4), true);
     scr->render(&cv, 0);
     target_box(box[0]);
-    CHECK(memcmp(a, box[0], TGT_W * TGT_H * sizeof(gfx_color_t)) != 0);
+    CHECK(memcmp(a, box[0], PB_W * PB_H * sizeof(gfx_color_t)) != 0);
     servo_screen_set_pins(PIN(2), true);
     scr->render(&cv, 0);
     target_box(box[0]);
-    CHECK_EQ(memcmp(a, box[0], TGT_W * TGT_H * sizeof(gfx_color_t)), 0);
+    CHECK_EQ(memcmp(a, box[0], PB_W * PB_H * sizeof(gfx_color_t)), 0);
 
     /* The row follows the drive, not the setting.  PROG PORT chosen while
      * the drive still uses the outputs shows the pins the outputs carry, as
      * GPIO 2 does; with no such pin it is the warning, as no pin does. */
-    static gfx_color_t d[TGT_W * TGT_H];
+    static gfx_color_t d[PB_W * PB_H];
     fresh();
     settings_set(SET_SERVO_TARGET, 1.0f);
     servo_screen_set_pins(PIN(2), true);
     servo_screen_set_drive(0u, 13u, true);
     scr->render(&cv, 0);
     target_box(d);
-    CHECK_EQ(memcmp(d, box[0], TGT_W * TGT_H * sizeof(gfx_color_t)), 0);
+    CHECK_EQ(memcmp(d, box[0], PB_W * PB_H * sizeof(gfx_color_t)), 0);
     servo_screen_set_pins(0u, true);
     scr->render(&cv, 0);
     target_box(d);
-    CHECK_EQ(memcmp(d, box[TGT_NONE], TGT_W * TGT_H * sizeof(gfx_color_t)),
+    CHECK_EQ(memcmp(d, box[TGT_NONE], PB_W * PB_H * sizeof(gfx_color_t)),
              0);
     /* The port driven while the setting still reads OUTPUTS. */
     fresh();
@@ -428,7 +396,7 @@ TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
     servo_screen_set_drive(1u, 13u, true);
     scr->render(&cv, 0);
     target_box(d);
-    CHECK_EQ(memcmp(d, box[TGT_PORT_PIN], TGT_W * TGT_H * sizeof(gfx_color_t)),
+    CHECK_EQ(memcmp(d, box[TGT_PORT_PIN], PB_W * PB_H * sizeof(gfx_color_t)),
              0);
     /* Only the port's pulse turned off: the row follows, without a tap. */
     servo_screen_set_drive(1u, 63u, true);
@@ -436,26 +404,26 @@ TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
     servo_screen_set_drive(1u, 63u, false);
     scr->render(&cv, 0);
     target_box(d);
-    CHECK_EQ(memcmp(d, box[TGT_PORT_OFF], TGT_W * TGT_H * sizeof(gfx_color_t)),
+    CHECK_EQ(memcmp(d, box[TGT_PORT_OFF], PB_W * PB_H * sizeof(gfx_color_t)),
              0);
     /* The port driven with no pin known (none, refused, or a port the page
      * does not have): still the port, not the GPIO 2 the outputs carry. */
     servo_screen_set_drive(1u, SERVO_SCREEN_NO_PIN, true);
     scr->render(&cv, 0);
     target_box(d);
-    CHECK_EQ(memcmp(d, box[TGT_PORT], TGT_W * TGT_H * sizeof(gfx_color_t)),
+    CHECK_EQ(memcmp(d, box[TGT_PORT], PB_W * PB_H * sizeof(gfx_color_t)),
              0);
-    CHECK(memcmp(d, box[0], TGT_W * TGT_H * sizeof(gfx_color_t)) != 0);
+    CHECK(memcmp(d, box[0], PB_W * PB_H * sizeof(gfx_color_t)) != 0);
     /* Only the pin changed, port and pulse kept: the row follows. */
     servo_screen_set_drive(1u, 13u, true);
     scr->render(&cv, 0);
     target_box(d);
-    CHECK_EQ(memcmp(d, box[TGT_PORT_PIN], TGT_W * TGT_H * sizeof(gfx_color_t)),
+    CHECK_EQ(memcmp(d, box[TGT_PORT_PIN], PB_W * PB_H * sizeof(gfx_color_t)),
              0);
     servo_screen_set_drive(1u, 14u, true);
     scr->render(&cv, 0);
     target_box(d);
-    CHECK(memcmp(d, box[TGT_PORT_PIN], TGT_W * TGT_H * sizeof(gfx_color_t))
+    CHECK(memcmp(d, box[TGT_PORT_PIN], PB_W * PB_H * sizeof(gfx_color_t))
           != 0);
     /* The link lost with the binding still held: no link, not the GPIO 2 the
      * outputs carry; then the page not known after the link comes back;
@@ -463,60 +431,50 @@ TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
     servo_screen_set_drive(SERVO_SCREEN_TARGET_NO_LINK, 13u, true);
     scr->render(&cv, 0);
     target_box(d);
-    CHECK_EQ(memcmp(d, box[TGT_NO_LINK], TGT_W * TGT_H * sizeof(gfx_color_t)),
+    CHECK_EQ(memcmp(d, box[TGT_NO_LINK], PB_W * PB_H * sizeof(gfx_color_t)),
              0);
     servo_screen_set_drive(SERVO_SCREEN_TARGET_UNKNOWN, 13u, true);
     scr->render(&cv, 0);
     target_box(d);
-    CHECK_EQ(memcmp(d, box[TGT_UNKNOWN], TGT_W * TGT_H * sizeof(gfx_color_t)),
+    CHECK_EQ(memcmp(d, box[TGT_UNKNOWN], PB_W * PB_H * sizeof(gfx_color_t)),
              0);
     servo_screen_set_drive(0u, SERVO_SCREEN_NO_PIN, false);
     scr->render(&cv, 0);
     target_box(d);
-    CHECK_EQ(memcmp(d, box[0], TGT_W * TGT_H * sizeof(gfx_color_t)), 0);
+    CHECK_EQ(memcmp(d, box[0], PB_W * PB_H * sizeof(gfx_color_t)), 0);
     for (int i = 0; i < 2 * TGT_N; ++i) {
         free(box[i]);
     }
 }
 
 /*
- * The row is on the right card, which the settings, the keypads they open
- * and the servo programmer leave uncovered: while they cover the left card
- * the row still names the pin, and a change of the drive under them still
- * reaches it.
+ * The PORT button is over the output card, which a keypad over the left
+ * card leaves uncovered: while the voltage's keypad shows the button still
+ * names the pin, and a change of the drive under it still reaches it.
  */
-TEST_CASE(the_target_row_stays_in_sight_under_the_settings_and_a_keypad)
+TEST_CASE(the_port_button_stays_in_sight_under_a_keypad)
 {
-    static gfx_color_t want[TGT_W * TGT_H], got[TGT_W * TGT_H];
+    static gfx_color_t want[PB_W * PB_H], got[PB_W * PB_H];
     fresh();
     servo_screen_set_pins(PIN(4), true);
     scr->render(&cv, 0);
     target_box(want);
-    target_reference(got, "TARGET", "SERVO PWM GPIO 4", false);
-    CHECK_EQ(memcmp(want, got, sizeof(want)), 0);
-
-    open_settings();
+    tap(SUP_V_X, SUP_ROW_Y);                   /* the voltage's keypad */
+    CHECK(scr->covered != NULL && scr->covered());
     scr->render(&cv, 0);
     target_box(got);
     CHECK_EQ(memcmp(want, got, sizeof(want)), 0);
-    /* The drive moves to the port while the settings are open. */
+    /* The drive moves to the port while the keypad is open. */
     servo_screen_set_drive(1u, 13u, true);
     scr->render(&cv, 0);
     target_box(got);
-    static gfx_color_t port[TGT_W * TGT_H];
-    target_reference(port, "TARGET", "PROG PORT 1 GPIO 13", true);
-    scr->render(&cv, 0);
-    target_box(got);
-    CHECK_EQ(memcmp(port, got, sizeof(port)), 0);
+    CHECK(memcmp(want, got, sizeof(want)) != 0);
+    CHECK(warn_pixels(got) > 0);
     servo_screen_set_drive(0u, SERVO_SCREEN_NO_PIN, false);
-
-    /* PULSE MIN's keypad over the left card. */
-    tap(ROW_L_X, ROW_Y(2));
     scr->render(&cv, 0);
     target_box(got);
     CHECK_EQ(memcmp(want, got, sizeof(want)), 0);
     key(UI_KEY_CANCEL);
-    close_settings();
 }
 
 /* One value of the target row and its colour for a drive and a set of
@@ -679,7 +637,7 @@ static bool port_hold(setting_id_t id)
 /* While the programmer has the port, neither OUTPUTS' SERVO TESTER nor its
  * PORT PWM changes what the tester drives or the port's pulse -- the pulse
  * is not switched off either -- and a press begun before the hold takes no
- * choice on its release.  The TARGET row opens nothing. */
+ * choice on its release.  The PORT button opens nothing. */
 TEST_CASE(the_tester_target_and_pulse_stay_while_the_port_is_held)
 {
     for (int pwm = 0; pwm < 2; ++pwm) {
@@ -729,7 +687,7 @@ int main(void)
     RUN(outputs_prog_port_entry_sets_what_the_tester_drives_at_rest);
     RUN(the_servo_screen_names_the_pins_the_tester_drives);
     RUN(the_target_line_lists_the_pins_that_fit_and_counts_the_rest);
-    RUN(the_target_row_stays_in_sight_under_the_settings_and_a_keypad);
+    RUN(the_port_button_stays_in_sight_under_a_keypad);
     RUN(the_port_pulse_is_not_switched_off_under_a_test_or_a_sweep);
     RUN(the_tester_target_and_pulse_stay_while_the_port_is_held);
     return test_summary("servo_target");
