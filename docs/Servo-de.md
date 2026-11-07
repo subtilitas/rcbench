@@ -65,7 +65,7 @@ KST/CHASERVO und übernimmt den Programmierer, der im Hub
 zuletzt geöffnet wurde. **SERVOPULSE**, nur mit PORT auf PROG-PORT und
 SERVO auf KST/CHASERVO angezeigt, wählt mit einem Tippen BEHALTEN oder
 1000-2000; es beginnt bei BEHALTEN. Das Home-Feld führt zurück zur Karte. **ENDLAGENLAUF STARTEN** auf der Karte
-startet den Lauf nach 2s Halten, wie TEST STARTEN; ein Tippen oder ein
+startet den Lauf nach 2s Halten, wie ARM + START auf TEST; ein Tippen oder ein
 kürzeres Halten startet nichts.
 
 ![Der Endlagenlauf, bereit](img/de/servo-limrun-ready.png)
@@ -581,19 +581,23 @@ Bewegung mehr erkennbar ist (Brown-out). Ohne eingeschaltete Winkelquelle
 des Netzteils abgeleitet, das das Servo versorgt: am PD mini (WeAct PD
 Power Mini V1), wenn der Abschnitt PD MINI der SUPPLY-Optionen ihn freigibt, sonst am Netzteilmodell
 des Panels. Ein Lauf am Modell ist im Bericht als Simulation gekennzeichnet; seine
-Messwerte sind simuliert. Ist der INA3221 bei TEST STARTEN das Messgerät der
+Messwerte sind simuliert. Ist der INA3221 beim Start des Laufs das Messgerät der
 Servo-Schiene und das Netzteil der PD mini, liest der Lauf stattdessen den
 INA3221-Kanal, der das Ziel des Testers überwacht, in 50-ms-Fenstern: siehe
 [Der Strommesser des Laufs](#der-strommesser-des-laufs).
 
-Starte den Test mit TEST STARTEN auf der Karte AUTOMATISCHER TEST unter
-TEST auf SERVO. Die [Bildschirmbeschreibung](Screens-de.md#servo) erklärt
-die Bedienung. Der Ablauf ist in `shared/servo/servo_test.c` implementiert;
+Starte den Test mit 2s HALTEN: ARM + START in der Fußleiste von TEST auf
+SERVO: Bei SAFE schaltet das Halten PORT-PWM ein, wo der Port es braucht,
+fordert ARM an, wartet bis zu 500ms auf ARMED und startet den Lauf mit den
+Einstellungen, die es beim Auslösen gelesen hat. Jedes Ende eines Laufs,
+BESTANDEN eingeschlossen, schaltet den Prüfstand auf SAFE. Die
+[Bildschirmbeschreibung](Screens-de.md#servo) erklärt die Bedienung und
+die Karte BEREIT. Der Ablauf ist in `shared/servo/servo_test.c` implementiert;
 die unten genannten Konstanten stehen in `servo_test.h`.
 
 ### Verfahren
 
-Die Spannungsstufen sind STUFE 4.8V und STUFE 6.0V des Laufs (OPTIONEN der Karte), und mit HV-SERVO an STUFE 7.4V und STUFE 8.4V. HV-SERVO ist nach jedem Neustart aus. Ein
+Die Spannungsstufen sind Stufe 4.8V und Stufe 6.0V des Laufs (Liste OPTIONEN von TEST), und mit HV-SERVO an Stufe 7.4V und Stufe 8.4V. HV-SERVO ist nach jedem Neustart aus. Ein
 Lauf mit einer Stufe über 6,0V startet nur über die Warnung NUR HV-SERVOS,
 2s gehalten. Die Strombegrenzung im Lauf ist die der Zeile SOLL.
 
@@ -697,9 +701,10 @@ die niedriger ist, in Schritten von SCHRITT abwärts bis NIEDRIGSTE
 SPANNUNG, der Untergrenze, oder bis zum kleinsten Sollwert des Netzteils,
 wenn der höher liegt. SCHRITT ist 0,1 bis 1,0V, vorgegeben 0,20V
 (`SERVO_TEST_BROWNOUT_STEP_V`); NIEDRIGSTE SPANNUNG ist 2,0 bis 4,8V,
-vorgegeben 3,00V (`SERVO_TEST_BROWNOUT_FLOOR_V`). Beide werden auf der
-Seite des Brown-out-Laufs gesetzt, die die Zeile BROWN-OUT der Optionen des
-automatischen Tests öffnet, und im NVS (nichtflüchtiger Speicher) gehalten.
+vorgegeben 3,00V (`SERVO_TEST_BROWNOUT_FLOOR_V`). Beide werden unter
+BROWN-OUT in der Liste OPTIONEN von TEST gesetzt, deren Überschriftzeile
+den Lauf am geltenden Netzteil nennt, und im NVS (nichtflüchtiger
+Speicher) gehalten.
 Die k-te Spannung ist der Start abzüglich k Schritten, auf 0,01V. Die
 geltende Grenze ist die niedrigste aus SPANNUNG MAX, dem Höchstwert des
 Netzteils und beim PD mini seiner Eingangsspannung abzüglich 0,7V. Liegt die Untergrenze zwischen zwei regulären Stufen, wird sie als letzte
@@ -802,13 +807,13 @@ Lauf und in der CSV also 50ms auseinander, wie die, die einzeln ankommen.
 
 ### Der Strommesser des Laufs
 
-Ein Lauf liest von TEST STARTEN bis zu seinem Ende ein Messgerät: das
+Ein Lauf liest von seinem Start bis zu seinem Ende ein Messgerät: das
 Messgerät der Servo-Schiene, wie das Panel es beim Start des Laufs nennt
 ([Link](Link-de.md#der-fenster-ring)).
 
 | | PD mini | der INA3221-Kanal |
 | --- | --- | --- |
-| Der Lauf liest es, wenn | der INA3221 bei TEST STARTEN nicht das Messgerät der Schiene ist oder das Netzteil das Modell des Panels ist | der INA3221 bei TEST STARTEN das Messgerät der Schiene ist und das Netzteil der PD mini |
+| Der Lauf liest es, wenn | der INA3221 beim Start des Laufs nicht das Messgerät der Schiene ist oder das Netzteil das Modell des Panels ist | der INA3221 beim Start des Laufs das Messgerät der Schiene ist und das Netzteil der PD mini |
 | Ein Messwert | ein Messwert des Netzteils, alle 102 bis 106ms | ein 50-ms-Fenster des Kanals, der das Ziel des Testers überwacht, 20 je Sekunde |
 | Strom | der Messwert | das Mittel des Fensters. Die Spitze ist der höchste oder der tiefste 1-ms-Messwert des Fensters, je nachdem, welcher weiter von null liegt |
 | Spannung | der Messwert am Ausgang des Netzteils | die Busspannung des Kanals an der Lastseite des Shunts: das Mittel des Fensters in `Ist V`, sein tiefster Messwert in `V min` |
@@ -867,8 +872,8 @@ PWM-Frame misst, verwendet der Lauf nicht.
 | 1s über BLOCKIERT AB | Messwerte über BLOCKIERT AB über 1000ms (`SERVO_TEST_STALL_ABORT_MS`) ohne einen bei oder unter dem Wert, in jeder Phase und im Brown-out-Lauf | der Lauf endet, `1s über BLOCKIERT AB` |
 | 1s Konstantstrom | das Netzteil meldet in jedem Messwert Konstantstrom (CC, constant current), 1000ms (`SERVO_TEST_CC_ABORT_MS`) ab dem ersten | der Lauf endet, `1s im Konstantstrom`, gleich wie BLOCKIERT AB steht |
 | Konstantstrom unter 1s | | nichts endet und nichts fällt durch; die Berichtszeile `Konstantstrom` nennt die Zahl solcher Messwerte und die längste Folge vom ersten bis zum letzten |
-| BLOCKIERT AB bei oder über der Strombegrenzung | bei TEST STARTEN | der Lauf startet. Die Karte AUTOMATISCHER TEST und der Bericht sagen `BLOCKIERT AB 3.00A unerreichbar: Strombegrenzung 2.00A` |
-| BLOCKIERT AB bei oder über dem Bereich des INA3221 | bei TEST STARTEN mit dem INA3221 als Messgerät | der Lauf startet. Die Karte AUTOMATISCHER TEST und der Bericht sagen `BLOCKIERT AB 2.00A unerreichbar: INA3221-Bereich 1.638A` |
+| BLOCKIERT AB bei oder über der Strombegrenzung | beim Start des Laufs | der Lauf startet. Die Karte AUTOMATISCHER TEST und der Bericht sagen `BLOCKIERT AB 3.00A unerreichbar: Strombegrenzung 2.00A` |
+| BLOCKIERT AB bei oder über dem Bereich des INA3221 | beim Start des Laufs mit dem INA3221 als Messgerät | der Lauf startet. Die Karte AUTOMATISCHER TEST und der Bericht sagen `BLOCKIERT AB 2.00A unerreichbar: INA3221-Bereich 1.638A` |
 
 - Jeder Vergleich eines Stroms mit RUHESTROM, HALTESTROM und BLOCKIERT AB
   geschieht in ganzen mA, im Urteil wie im Bericht: ein Messwert von 0,050A
@@ -1209,7 +1214,7 @@ Zeile je Messwert des Messgeräts des Laufs, und mit BERICHT an (OPTIONEN >
 PRÜFLING) `ATESTnnn.TXT`. Die Nummer gehört zu einer Reihe mit den
 `LIMITnnn.TXT` der Endlagenläufe in diesem Ordner
 ([Logs](Screens-de.md#logs)). Mit Testaufzeichnungen AUS unter SETUP > SD CARD,
-gelesen bei TEST STARTEN, schreibt der Lauf keine Datei, und das Ergebnis
+gelesen beim Start des Laufs, schreibt der Lauf keine Datei, und das Ergebnis
 nennt `TESTAUFZEICHNUNGEN AUS`. Ein Lauf ist eine CSV: das eigene
 Laufaufzeichnung des Prüfstands in ARMED schreibt keine Zeile, solange ein Lauf
 läuft. Seine Zeitspalte springt über den Lauf, und seine Zeilen beginnen

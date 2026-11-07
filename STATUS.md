@@ -447,18 +447,20 @@ The PD mini's samples show when SETUP enables it, `supply_sim_t`'s with a SIMULA
 not. A current is signed and shown in hundredths of an amp, a window with a sample at an end
 of the range in the warning colour, a reading that did not arrive as dashes; the row's value
 is repainted by itself when its digits or colour change (`test_servo_meter`; host suite
-only). START TEST on its card on TEST runs the automatic test (`shared/servo/servo_test.c`):
+only). HOLD 2s: ARM + START in TEST's footer arms the bench and runs the automatic test
+(`shared/servo/servo_test.c`, the sequence `servo_test_ready.c` and `servo_start_seq.c`), the
+READY card naming each part that refuses it, every end of a run SAFE (`test_servo_test_ready`):
 the supply stepped through 4.8 and 6.0V, and 7.4 and 8.4V with HV SERVO on (session only,
 through the HV warning's 2s hold), idle, moving and holding current and the travel time at
 each, a brown-out walk from 5.0V, or the cap if lower, down by STEP to LOWEST VOLTAGE (0.1
-to 1.0V and 2.0 to 4.8V, 0.2V and 3.0V by default, up to 31 voltages; set on the page the
-automatic test's BROWN-OUT row opens and kept in NVS; `test_servo_brownout` at the ranges'
-ends, a floor off the grid, at or above the start and under the supply's lowest set point, a
-cap under 5.0V; `test_servo_brownout_page` for the page, its keypads, CLOSE and the home
-tag, the settings over a restart and a run started from the screen), and `ATESTnnn.CSV` and
+to 1.0V and 2.0 to 4.8V, 0.2V and 3.0V by default, up to 31 voltages; set under BROWN-OUT
+on TEST's 17-row SETTINGS list and kept in NVS; `test_servo_brownout` at the ranges' ends, a
+floor off the grid, at or above the start and under the supply's lowest set point, a cap
+under 5.0V; `test_servo_brownout_page` for the list's rows, their keypads and the heading's
+walk line, the settings over a restart and a run started from the screen), and `ATESTnnn.CSV` and
 `ATESTnnn.TXT` written to `USER/LOGS` by the `runlog` task.
 
-A run reads one meter from its start to its end, the servo rail's at START TEST: the PD
+A run reads one meter from its start to its end, the servo rail's at that start: the PD
 mini's readings, or, while the INA3221 is the meter and the supply is the PD mini, CH1's
 50ms windows (mean current, the highest and lowest 1ms sample, the bus voltage at the load
 side of the shunt and its lowest sample), with the supply read for its state only
@@ -1273,7 +1275,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 495 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 496 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -2432,7 +2434,7 @@ The router gives each contact one owner from its press to its release, and a con
 leaves the screen body by the status band is released at its last point in the body; tested
 on the host through the tracker. That release, and the one the tracker makes for a contact
 more than 120px from its previous report, is marked (`TOUCH_FLAG_NO_TAP`) and activates no
-control except OUTPUT OFF and START TEST while a servo test runs. STOP and DISARM act on the
+control except OUTPUT OFF. STOP, DISARM and STOP TEST in TEST's footer act on the
 press; a press the router keeps from the screen (band, STOP, home tag, chip, alert band)
 releases the screen's contacts the same way, so a dial or slider drag ends at it and the
 dial's filter commands nothing after it (`test_nav_stop`).

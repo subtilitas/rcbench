@@ -1057,11 +1057,14 @@ static void kst_view(const char *view)
     (void)rig_link_up(nopage ? (uint16_t)(LINK_MINOR_KST - 1u)
                              : LINK_PROTOCOL_MINOR);
     if (strcmp(v, "-hv") == 0) {
-        /* HV SERVO in the AUTOMATIC TEST's settings on TEST, which the
+        /* HV SERVO on TEST's SETTINGS list, its fourth row, which the
          * programmer's voltage follows. */
         ui_router_goto(SCREEN_SERVO_TEST);
-        tap(SV_RUN_SET_X, UI_BAND_H + SV_RUN_SET_Y(0));
-        tap(SV_LIST_X(0), UI_BAND_H + SV_LIST_ROW_Y(2)); /* HV SERVO */
+        tap(SV_FOOT_SET_X, UI_BAND_H + SV_FOOT_Y);
+        ui_setlist_t *sl = (ui_setlist_t *)servo_screen_list();
+        ui_setlist_scroll_to(sl, 3);
+        const gfx_rect_t r = ui_setlist_row_part(sl, 3, UI_SL_PART_PLUS);
+        tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);   /* HV SERVO */
     }
     ui_router_goto(SCREEN_SERVO_KST);
     /* The tester's drive as the control task reports it: PORT 1 on GP13
@@ -1350,10 +1353,10 @@ static void servo_run_view(bool to_the_end, bool ina)
     uint16_t win_number = 0u;
     /* On TEST's screen, as the view's screen shows it. */
     touch_event_t e = { .type = TOUCH_EVENT_DOWN,
-                        .point = { .id = 1, .x = SV_START_X,
-                                   .y = (int16_t)(UI_BAND_H + SV_START_Y(0)),
+                        .point = { .id = 1, .x = SV_TEST_HOLD_X,
+                                   .y = (int16_t)(UI_BAND_H + SV_TEST_HOLD_Y),
                                    .strength = 40 } };
-    ui_router_event(&e);                            /* START TEST, held */
+    ui_router_event(&e);                            /* ARM + START, held */
     for (int i = 0; i < 115; ++i) {
         now += 20u;
         servo_screen_clock(now);
@@ -1397,6 +1400,9 @@ static void servo_run_view(bool to_the_end, bool ina)
                 cmd = sc.value_us;
             } else if (sc.kind == SERVO_CMD_RELEASE) {
                 cmd = 1500u;
+            } else if (sc.kind == SERVO_CMD_DISARM) {
+                cmd = 1500u;                    /* the IOmcu: SAFE */
+                servo_screen_set_armed(false);
             }
         }
         const float a = out ? servo_sim_step(&sv, cmd, now) : 0.0f;
@@ -4017,8 +4023,8 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
             }
             ui_router_goto(id);
         }
-        /* The footer's SETTINGS: the hub's list, a function's list, TEST's
-         * and LIMIT RUN's page of rows, KST's EXPERT MODE page. */
+        /* The footer's SETTINGS: the hub's list, a function's list (TEST's
+         * among them), LIMIT RUN's page of rows, KST's EXPERT MODE page. */
         const bool on_list = strcmp(view, "servo-settings") == 0
                              || strcmp(view, "servo-sweep-page") == 0
                              || strcmp(view, "servo-warning") == 0
@@ -4027,15 +4033,18 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
                              || strcmp(view, "servo-name") == 0
                              || strcmp(view, "servo-trim-keypad") == 0
                              || strncmp(view, "servo-rate-", 11) == 0
-                             || strcmp(view, "servo-test-settings") == 0
+                             || strncmp(view, "servo-test-settings", 19) == 0
                              || strcmp(view, "servo-limits") == 0
                              || strcmp(view, "servo-brownout") == 0;
         if (on_list) {
             tap(SV_FOOT_SET_X, UI_BAND_H + SV_FOOT_Y);
         }
         if (strcmp(view, "servo-brownout") == 0) {
-            /* BROWN-OUT, the middle column's last row: its page. */
-            tap(SV_LIST_X(1), UI_BAND_H + SV_LIST_ROW_Y(4));
+            /* TEST's list scrolled to its BROWN-OUT heading, row 6. */
+            ui_setlist_scroll_to((ui_setlist_t *)servo_screen_list(), 6);
+        } else if (strcmp(view, "servo-test-settings-end") == 0) {
+            /* ... and to its last row, SETTLING TIME. */
+            ui_setlist_scroll_to((ui_setlist_t *)servo_screen_list(), 20);
         } else if (strcmp(view, "servo-warning") == 0) {
             servo_list_tap(1, UI_SL_PART_VALUE);      /* TYPE */
             tap(165, UI_BAND_H + 256);                /* HELI CYCLIC */

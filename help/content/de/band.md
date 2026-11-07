@@ -146,7 +146,7 @@ Eine Störung, die die geöffnete Seite nicht anzeigt, erscheint in einem roten,
 
 ## Halte-Tasten
 
-Eine Halte-Taste wirkt nach 2s Berührung. ARM, AUSGANG EIN, TEST STARTEN, ENDLAGENLAUF STARTEN, ÜBERNEHMEN und jede Taste mit der Beschriftung `2s HALTEN ZUM ...` verwenden diese Geste. Loslassen vor 2s sendet keinen Befehl. Stattdessen erscheint der Hinweis 4s lang in Bernsteinfarbe im Alarmband, etwa `Halte 2s, um auf ARMED zu schalten.`.
+Eine Halte-Taste wirkt nach 2s Berührung. ARM, AUSGANG EIN, ENDLAGENLAUF STARTEN, `2s HALTEN: ARM + START`, ÜBERNEHMEN und jede Taste mit der Beschriftung `2s HALTEN ZUM ...` verwenden diese Geste. Loslassen vor 2s sendet keinen Befehl. Stattdessen erscheint der Hinweis 4s lang in Bernsteinfarbe im Alarmband, etwa `Halte 2s, um auf ARMED zu schalten.`.
 
 - Der Hinweis erscheint nur, wenn du den Finger auf der Taste loslässt. Er erscheint nicht nach dem Herausrutschen, bei verlorenem Touch, bei einer Berührung mit einem zweiten Finger oder auf einer Seite ohne Statusband.
 - Nach 2s oder länger ist die Aktion bereits ausgelöst; beim Loslassen erscheint kein Hinweis.
@@ -161,10 +161,10 @@ Die Füllung einer Taste sagt, was ein Druck mit einem Ausgang macht.
 
 | Füllung | Bedeutet | Tasten |
 |---|---|---|
-| grün | ein Druck schaltet einen Ausgang ein, schaltet auf ARMED, startet einen Lauf oder schreibt ein Servo | ARM, AUSGANG EIN, PROG 5V EIN, TEST STARTEN, ENDLAGENLAUF STARTEN, `2s HALTEN: ARM + START` auf RUDER AUTO, ZENTRIEREN und SWEEP, 1000us, ZENTRIEREN, 2000us und NULLPUNKT des Ruders, VERBINDEN, n WERTE SCHREIBEN; SPEICHERN auf SETUP, solange etwas ungespeichert ist |
+| grün | ein Druck schaltet einen Ausgang ein, schaltet auf ARMED, startet einen Lauf oder schreibt ein Servo | ARM, AUSGANG EIN, PROG 5V EIN, ENDLAGENLAUF STARTEN, `2s HALTEN: ARM + START` auf TEST und RUDER AUTO, ZENTRIEREN und SWEEP, 1000us, ZENTRIEREN, 2000us und NULLPUNKT des Ruders, VERBINDEN, n WERTE SCHREIBEN; SPEICHERN auf SETUP, solange etwas ungespeichert ist |
 | rot | ein Ausgang ist ein, der Prüfstand ist ARMED oder ein Schreiben läuft; ein Druck hält es an | DISARM, AUSGANG AUS, LAUF BEENDEN, PAUSE während eines Sweeps, VERLASSEN, ABBRECHEN, ein Schreibschalter auf EIN; STOP immer |
 | bernstein | läuft oder wartet, noch nichts aktiv | PAUSIERT, WARTEN, `BEI STILLSTAND` |
-| grau, blasse Beschriftung | nimmt gerade keinen Druck an | ein Tipp auf ein graues TEST STARTEN, ENDLAGENLAUF STARTEN oder `2s HALTEN: ARM + START` zeigt den Grund 4s im Alarmband |
+| grau, blasse Beschriftung | nimmt gerade keinen Druck an | ein Tipp auf ein graues ENDLAGENLAUF STARTEN oder `2s HALTEN: ARM + START` zeigt den Grund 4s im Alarmband |
 | neutral | ändert einen Wert oder öffnet eine Seite | `-` `+`, Wertfelder, KATEGORIE ZURÜCKSETZEN, VERWERFEN, MAX LÖSCHEN, Kacheln, ÖFFNEN, SCHLIESSEN; ein gewählter Reiter ist cyan |
 
 LÖSCHEN auf FILES und LOGS und `NICHT GESPEICHERT` auf SETUP sind neutral mit roter Beschriftung.
@@ -173,5 +173,5 @@ LÖSCHEN auf FILES und LOGS und `NICHT GESPEICHERT` auf SETUP sind neutral mit r
 
 - Eine auf dem Band begonnene Berührung bleibt dem Band zugeordnet. Ziehst du den Finger in die Seite darunter, bewegt er dort nichts.
 - Ziehst du eine auf der Seite begonnene Berührung nach oben ins Band, gilt sie an der letzten Position innerhalb der Seite als losgelassen. Ein Schieberegler oder das SERVO-Drehrad behält den dortigen Wert. Eine Haltegeste auf ARM oder AUSGANG EIN wird abgebrochen.
-- AUSGANG AUS und TEST STARTEN während eines laufenden Servotests reagieren auf dieses Loslassen, da sie den Ausgang beziehungsweise Test anhalten. DISARM wirkt bereits beim Aufsetzen.
+- AUSGANG AUS reagiert auf dieses Loslassen, da es den Ausgang anhält. DISARM und TEST BEENDEN in der Fußleiste von TEST wirken bereits beim Aufsetzen.
 - Ein Druck auf das Statusband, STOP oder Alarmband beendet die Ziehbewegung eines anderen Fingers an einem Schieberegler oder am SERVO-Drehrad.

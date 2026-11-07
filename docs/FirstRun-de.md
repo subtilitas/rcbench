@@ -848,10 +848,11 @@ Bewegung dieses Trace nach. Eine Taste wird beim Drücken gesendet, ohne Enter.
 5. Servo in Ruhe: Beginne eine neue Mitschnittdatei. Schließe das Servo an,
    schalte auf ARMED und lasse es in der Mitte, bei eingeschaltetem
    Netzteil mit 4,80V. Drücke `t` und warte auf die Zeile `$Z`.
-6. Bewegungen im selben Mitschnitt: Öffne auf SERVO die Aufgabe TEST und
-   die OPTIONEN der Karte AUTOMATISCHER TEST. Setze TESTDAUER NACH auf
-   BEWEGUNGEN, BEWEGUNGEN auf 20 und HALTEZEIT auf 1000ms. Schalte STUFE
-   4.8V ein, alle anderen Stufen und BROWN-OUT aus. Tippe TEST STARTEN.
+6. Bewegungen im selben Mitschnitt: Öffne auf SERVO die Aufgabe TEST,
+   schalte auf SAFE und öffne OPTIONEN. Setze Länge nach auf BEWEGUNGEN,
+   Bewegungen auf 20 und Haltezeit auf 1000ms. Schalte Stufe 4.8V ein, alle
+   anderen Stufen und Brown-out aus, und tippe SPEICHERN. Halte 2s HALTEN:
+   ARM + START.
    Der Trace läuft von der ersten Bewegung bis 4s nach der letzten. Warte
    auf seine Zeile `$Z` und schließe dann PuTTY.
 7. Wiederhole die Schritte 5 und 6 bei 6,00V mit STUFE 6.0V und anschließend

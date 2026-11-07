@@ -4662,60 +4662,15 @@ UI_TEXT(SV_ROW_TRAVEL, 0,
 UI_TEXT(SV_ROW_REVERSE, 0,
     "REVERSE",
     "UMKEHREN")
-UI_TEXT(SV_ROW_LEN_BY, 0,
-    "TEST LENGTH BY",
-    "TESTDAUER NACH")
-UI_TEXT(SV_ROW_LEN_S, 0,
-    "TEST TIME",
-    "TESTZEIT")
-UI_TEXT(SV_ROW_MOVES, 0,
-    "MOVEMENTS",
-    "BEWEGUNGEN")
-UI_TEXT(SV_ROW_DWELL, 0,
-    "DWELL TIME",
-    "HALTEZEIT")
-UI_TEXT(SV_ROW_SETTLE, 0,
-    "SETTLING TIME",
-    "EINSCHWINGZEIT")
-UI_TEXT(SV_ROW_STEP_48, 0,
-    "STEP 4.8V",
-    "STUFE 4.8V")
-UI_TEXT(SV_ROW_STEP_60, 0,
-    "STEP 6.0V",
-    "STUFE 6.0V")
 UI_TEXT(SV_ROW_HV, 0,
     "HV SERVO",
     "HV-SERVO")
-UI_TEXT(SV_ROW_STEP_74, 0,
-    "STEP 7.4V",
-    "STUFE 7.4V")
-UI_TEXT(SV_ROW_STEP_84, 0,
-    "STEP 8.4V",
-    "STUFE 8.4V")
 UI_TEXT(SV_ROW_BROWNOUT, 0,
     "BROWN-OUT",
     "BROWN-OUT")
-UI_TEXT(SV_ROW_STALL, 0,
-    "STALL AT",
-    "BLOCKIERT AB")
-UI_TEXT(SV_ROW_IDLE, 0,
-    "IDLE CURRENT",
-    "RUHESTROM")
-UI_TEXT(SV_ROW_HOLD, 0,
-    "HOLDING CURRENT",
-    "HALTESTROM")
-UI_TEXT(SV_ROW_TRAVEL_TIME, 0,
-    "TRAVEL TIME",
-    "STELLZEIT")
-UI_TEXT(SV_ROW_BO_FLOOR, 0,
-    "LOWEST VOLTAGE",
-    "NIEDRIGSTE SPANNUNG")
-UI_TEXT(SV_ROW_BO_STEP, 0,
-    "STEP",
-    "SCHRITT")
 UI_TEXT(SV_BO_NOTE_WALK, 0,
     "From %.2fV down in %.2fV steps to %.2fV, %u voltages",
-    "Ab %.2fV abwärts in Schritten von %.2fV bis %.2fV, %u Spannungen")
+    "Ab %.2fV abwärts in %.2fV-Schritten bis %.2fV, %u Spannungen")
 UI_TEXT(SV_ROW_NAME, 16,
     "NAME",
     "NAME")
@@ -4762,9 +4717,6 @@ UI_TEXT(SV_TRAVEL_HOLD, 0,
 UI_TEXT(SV_STOP_TEST, 15,
     "STOP TEST",
     "TEST BEENDEN")
-UI_TEXT(SV_START_TEST, 0,
-    "START TEST",
-    "TEST STARTEN")
 UI_TEXT(SV_COMMANDED, 0,
     "COMMANDED",
     "SOLL-PULSBREITE")
@@ -5173,7 +5125,7 @@ UI_TEXT(HG_SV_READ, 0,
     "SOLL-PULSBREITE: Puls in us. GEMESSEN: Winkel der Winkelquelle. STROM: Servoschiene in A.")
 UI_TEXT(HG_SV_START, 0,
     "The steps, what the run does or why it cannot start, the last result and its file.",
-    "Die Stufen, was der Lauf tut oder warum er nicht startet, das letzte Ergebnis.")
+    "Die Stufen, was der Lauf tut oder warum er nicht startet, das letzte Ergebnis und seine Datei.")
 UI_TEXT(HG_SV_RUN_SET, 0,
     "The run's steps, timing and limits, one level down. The home tag goes back to the card.",
     "Stufen, Zeiten und Grenzen des Laufs, eine Ebene tiefer. Das Home-Feld führt zurück zur Karte.")

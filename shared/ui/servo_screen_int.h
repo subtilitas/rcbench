@@ -1067,6 +1067,8 @@ void test_cfg_bench(servo_test_cfg_t *c);
  */
 bool test_launch(const servo_test_cfg_t *c);
 void test_end_now(servo_test_abort_t why);
+/** @brief HV SERVOS ONLY opened for a run with a step past 6.0V, naming
+ *         the highest: its 2s hold arms and starts (test_hold_fired()). */
 void ask_hv_test(void);
 void draw_test_lines(gfx_canvas_t *c);
 /* A STALL AT no reading can pass, at (@p x, @p y), or nothing. */
@@ -1429,10 +1431,11 @@ static inline servo_test_abort_t test_abort_of(servo_source_why_t why)
 #define BOX_PITCH 24                       /**< Its line pitch, px. */
 #define BOX_BTN_DY 112                     /**< Its button's top, in it. */
 
-/** @brief The run's box under its card: on TEST under the caps button, on
- *         LIMIT RUN under the card, in the screen's coordinates. */
+/** @brief The run's box under its card, the same y on TEST (under the
+ *         caps button) and on LIMIT RUN (under the card), in the screen's
+ *         coordinates. */
 #define BOX_Y_TEST (CARD_Y + 196)
-#define BOX_Y_LIM  (CARD_Y + 196) /**< On LIMIT RUN. */
+#define BOX_Y_LIM  BOX_Y_TEST /**< On LIMIT RUN. */
 #define BOX_H      (BOX_BTN_DY + UI_TAP_MIN + 10) /**< Its height: 170px. */
 _Static_assert(BOX_Y_TEST + BOX_H <= CARD_FLOOR,
                "the run's box ends above the footer");
@@ -1440,10 +1443,7 @@ _Static_assert(BOX_Y_TEST + BOX_H <= CARD_FLOOR,
 /** @brief The run's box. @return the box, in the screen's coordinates */
 static inline gfx_rect_t test_box_rect(void)
 {
-    return (gfx_rect_t){ PAD + 10,
-                         (int16_t)((s.fn == SERVO_FN_LIMRUN) ? BOX_Y_LIM
-                                                             : BOX_Y_TEST),
-                         BOX_W, BOX_H };
+    return (gfx_rect_t){ PAD + 10, (int16_t)BOX_Y_TEST, BOX_W, BOX_H };
 }
 
 /** @brief The box's button. @return STOP TEST or CLOSE, 150 x 48px */

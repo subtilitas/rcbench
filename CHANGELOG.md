@@ -108,6 +108,27 @@ history is in git.
   nothing and takes no pick, and TARGET, PORT PWM and SETTINGS are locked.
   While any of SERVO's holds has its finger down, the READY card takes no
   tap.
+- TEST starts from the footer's `HOLD 2s: ARM + START` on the same
+  sequence: from SAFE it switches PORT PWM on where the port needs it, arms,
+  waits up to 500ms for ARMED and starts the automatic test on the settings
+  as they read when the hold fired. The run's steps switch the PD mini at
+  each step's voltage. During the run the slot reads STOP TEST and ends the
+  run on its press. Every end of a run, PASS included, switches the bench to
+  SAFE. START TEST and SETTINGS on the left card are gone; the plot moves
+  to the left card under SUPPLY's caps.
+- TEST has a READY card in the output card's place: PORT, METER, PD MINI,
+  STEPS, RANGE and ARM. A PD mini off while the INA3221 reads 3.0V or more
+  on the rail refuses the hold, `RAIL LIVE WITH THE PD MINI OFF: FED FROM
+  ELSEWHERE`. A step past 6.0V turns the hold into a tap that opens HV
+  SERVOS ONLY, whose 2s hold arms and starts.
+- TEST's SETTINGS is one list of 17 rows under four headings, VOLTAGE
+  STEPS, BROWN-OUT, PASS/FAIL LIMITS and LENGTH AND TIMING, in place of the
+  automatic test's page of rows and the brown-out walk's page. Each
+  heading's line names what its rows give; the BROWN-OUT line names the
+  walk with its count, `From 5.00V down in 0.20V steps to 3.30V, 10
+  voltages`. Step 7.4V and Step 8.4V take no press with HV SERVO off, Test
+  time none by MOVES, Movements none by TIME. The list writes only on SAVE;
+  DISCARD puts the stored values back.
 
 - The panel sets the Bluetooth IMU's output content register RSW (0x02) to
   0x0C: angle (0x53) and angular rate with the battery (0x52), 2 frames a

@@ -145,7 +145,7 @@ A fault the open screen does not show appears in a red band, 44px high, across t
 
 ## Hold buttons
 
-A hold button acts after 2s of contact. ARM, OUTPUT ON, START TEST, START LIMIT RUN, APPLY and every button labelled `HOLD 2s TO ...` use this gesture. Releasing before 2s sends no command. Instead, the alert band shows an amber hint for 4s, for example `Hold 2s to switch to ARMED.`
+A hold button acts after 2s of contact. ARM, OUTPUT ON, START LIMIT RUN, `HOLD 2s: ARM + START`, APPLY and every button labelled `HOLD 2s TO ...` use this gesture. Releasing before 2s sends no command. Instead, the alert band shows an amber hint for 4s, for example `Hold 2s to switch to ARMED.`
 
 - The hint shows only for a release the finger made on the button. It does not show when the finger slid off the button first, when the touch was lost, for a second finger's contact, or on a screen without the status band.
 - A release at 2s or later has acted and shows no hint.
@@ -160,10 +160,10 @@ The fill of a button says what a press does to an output.
 
 | Fill | Means | Buttons |
 |---|---|---|
-| green | a press switches an output on, arms, starts a run or writes a servo | ARM, OUTPUT ON, PROG 5V ON, START TEST, START LIMIT RUN, `HOLD 2s: ARM + START` on RUDDER AUTO, CENTRE and SWEEP, the rudder's 1000us, CENTRE, 2000us and ZERO, CONNECT, WRITE n VALUES; SAVE on SETUP while something is unsaved |
+| green | a press switches an output on, arms, starts a run or writes a servo | ARM, OUTPUT ON, PROG 5V ON, START LIMIT RUN, `HOLD 2s: ARM + START` on TEST and RUDDER AUTO, CENTRE and SWEEP, the rudder's 1000us, CENTRE, 2000us and ZERO, CONNECT, WRITE n VALUES; SAVE on SETUP while something is unsaved |
 | red | an output is on, the bench is ARMED or a write runs; a press stops it | DISARM, OUTPUT OFF, STOP RUN, PAUSE while a sweep runs, LEAVE, ABORT, a write switch ON; STOP always |
 | amber | under way or waiting, nothing live yet | PAUSED, WAIT, `WHEN IDLE` |
-| grey, faint label | takes no press in this state | a tap on a grey START TEST, START LIMIT RUN or `HOLD 2s: ARM + START` puts the reason in the alert band for 4s |
+| grey, faint label | takes no press in this state | a tap on a grey START LIMIT RUN or `HOLD 2s: ARM + START` puts the reason in the alert band for 4s |
 | neutral | edits a value or opens a screen | `-` `+`, value boxes, RESET CATEGORY, DISCARD, RESET MAX, tiles, OPEN, CLOSE; a selected tab is cyan |
 
 DELETE on FILES and LOGS and `NOT SAVED` on SETUP are neutral with the label in red.
@@ -172,5 +172,5 @@ DELETE on FILES and LOGS and `NOT SAVED` on SETUP are neutral with the label in 
 
 - A touch that comes down on the band stays the band's. Sliding it into the screen moves nothing there.
 - A touch that comes down on the screen and slides up into the band is released at its last point on the screen. A slider or the SERVO dial keeps the value it had there. A hold on ARM or OUTPUT ON is abandoned.
-- OUTPUT OFF and START TEST while a servo test runs still act on such a release, because they stop something. DISARM has acted on its press already.
+- OUTPUT OFF still acts on such a release, because it stops something. DISARM and STOP TEST in TEST's footer have acted on their press already.
 - A press on the band, on STOP or on the alert band ends a drag another finger makes on a slider or the SERVO dial.

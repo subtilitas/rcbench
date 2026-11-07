@@ -168,7 +168,8 @@ TEST_CASE(armed_has_500ms_and_a_refused_arm_ends_all_off)
     CHECK(!servo_screen_testing());
     snprintf(cause, sizeof(cause), TR(SQ_NOT_ARMED), 500u);
     snprintf(want, sizeof(want), TR(SQ_FAILED), "ARM", cause);
-    CHECK_STR_EQ(svs_seq_failure(), want);
+    const char *failed = svs_seq_failure();
+    CHECK_STR_EQ(failed != NULL ? failed : "", want);
     CHECK_STR_EQ(alert(), want);
     bench_frames(200u);
     CHECK(!bench.out);
@@ -248,7 +249,7 @@ TEST_CASE(a_refused_hold_names_its_row)
     bench_frames(40u);
     test_row_t row = TRR_COUNT;
     const char *why = test_hold_blocked(&row);
-    CHECK_STR_EQ(why, ui_servo_str(SERVO_STR_START_NO_STEPS));
+    CHECK(why == ui_servo_str(SERVO_STR_START_NO_STEPS));
     CHECK_EQ(row, TRR_STEPS);
     rdy_row_t r;
     CHECK(test_ready_row(TRR_STEPS, &r));
@@ -262,7 +263,8 @@ TEST_CASE(a_refused_hold_names_its_row)
      * its reason, to the band as a notice (ui_action_refused()). */
     char got[160];
     snprintf(want, sizeof(want), TR(RDY_BAND), TR(TST_STEPS), why);
-    CHECK_STR_EQ(ready_refusal(got, sizeof(got)), want);
+    const char *line = ready_refusal(got, sizeof(got));
+    CHECK_STR_EQ(line != NULL ? line : "", want);
     tap(START_X, START_Y);
     CHECK(!svs_seq_busy());
 }

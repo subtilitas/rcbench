@@ -44,9 +44,9 @@ The status band occupies the top 60px of the panel.
   the SERVO dial ends with the value it had at that point, and the distance
   travelled on the band is not added. A hold on ARM or OUTPUT ON is abandoned.
   A button, a key, a tile, a tab or a list row under that point is not
-  pressed: the release is the panel's and not the finger's. Three controls
-  take it, because they stop something: DISARM, OUTPUT OFF and START TEST
-  while a servo test runs. The touch is not picked up again when the finger
+  pressed: the release is the panel's and not the finger's. Two controls
+  take it, because they stop something: DISARM and OUTPUT OFF. STOP TEST
+  in TEST's footer acts on its press already. The touch is not picked up again when the finger
   comes back down onto the screen; lift and press again.
 - A contact that is more than 120px (the x and the y distance added) from
   where the previous report had it is taken as a lift there and a new press
@@ -105,8 +105,8 @@ or the alert band, so STOP remains visible.
 - STOP is the exception: a press on STOP closes the box and stops at once,
   as with no box.
 - So is a control that stops what the bench drives: DISARM, OUTPUT OFF, a
-  stick run's ABORT, STOP TEST and STOP RUN, and START TEST or START LIMIT
-  RUN while their run is under way. A press on one closes the box and acts,
+  stick run's ABORT, STOP TEST and STOP RUN, and START LIMIT RUN while its
+  run is under way. A press on one closes the box and acts,
   as with no box. ARM and OUTPUT ON are not among them: a press there closes
   the box and starts no hold.
 - Leaving the screen closes it.
@@ -275,7 +275,7 @@ on the left card decides the first pages:
 | --- | --- |
 | SERVO hub | LIVE, LIMIT RUN, RUDDER and KST's tiles and the port line (5); a tile and SETTINGS (2) |
 | SERVO LIVE and SWEEP | the horn's angle, the dial and the readings (3) |
-| SERVO TEST | START TEST, its SETTINGS and the caps (3) |
+| SERVO TEST | the AUTOMATIC TEST card, the caps and the plot (3); PORT, READY, the rail line, ARM + START and SETTINGS (5) |
 | SERVO LIMIT RUN | START LIMIT RUN and its SETTINGS (2) |
 | SERVO RUDDER | LENGTH, the drive buttons, ZERO and RESET MAX (4); DEFLECTION, TRAILING EDGE and the state lines (3) |
 | SERVO RUDDER AUTO | the targets, MARGIN and TOLERANCE, ZERO (3); DEFLECTION and TRAILING EDGE (2); PORT, READY, the rail line, ARM + START and SETTINGS (5) |
@@ -492,7 +492,7 @@ replaces a visible hint.
 | OUTPUT ON on SUPPLY and in SERVO's supply box | `Hold 2s to switch the output on.` |
 | PROG 5V ON in the PROG 5V box on SERVO and SUPPLY, rbmod carrier | `Hold 2s to switch the programming ports' 5V on.` |
 | APPLY on the HV, frame rate and soft limit warnings of SERVO, KST and Chaservo, and on Hitec pages | `Hold 2s to apply.` |
-| START TEST | `Hold 2s to start the test.` |
+| HOLD 2s: ARM + START on TEST | `Hold 2s to arm and start the test.` |
 | START LIMIT RUN | `Hold 2s to start the limit run.` |
 | HOLD 2s TO ENABLE | `Hold 2s to enable.` |
 | HOLD 2s TO WRITE | `Hold 2s to write.` |
@@ -520,9 +520,9 @@ button white, black, then its settled colour, twice, 50ms a phase
 (`UI_HOLD_FLASH_PHASE_MS`), 300ms in all (`UI_HOLD_FLASH_MS`). At 60 frames
 a second a phase is 3 frames. A slower frame ends the phase it falls in and
 no more, so every phase is drawn at any frame rate. The settled colour is
-the one the hold fades to: the danger red for ARM, OUTPUT ON, PROG 5V ON,
-START TEST and START LIMIT RUN; amber for HOLD 2s: ARM + START on RUDDER
-AUTO, whose sequence waits for its read-back before ARM.
+the one the hold fades to: the danger red for ARM, OUTPUT ON, PROG 5V ON
+and START LIMIT RUN; amber for HOLD 2s: ARM + START on TEST and RUDDER
+AUTO, whose sequence waits for ARMED and its read-backs before the run.
 
 - The flash starts with the hold, not with the answer. ARMED, the output
   or the run arriving inside the 300ms restarts nothing; a press gets one
@@ -542,7 +542,7 @@ The fill of a button says what a press does to an output.
 
 | Class | Buttons | Available | Active | Waiting | Refused |
 | --- | --- | --- | --- | --- | --- |
-| Output action: switches an output on, arms, starts a run, writes a servo | ARM, OUTPUT ON, PROG 5V ON, START TEST, START LIMIT RUN, HOLD 2s: ARM + START on RUDDER AUTO, CENTRE and SWEEP on LIVE, 1000us, CENTRE, 2000us and ZERO on RUDDER, the programmers' CONNECT, ENABLE WRITE TO SERVO, WRITE n VALUES and MOVE SERVO | green (`UI_C_OK`) | red (`UI_C_DANGER`): an output is on, ARMED, a write runs, the servo is driven; the label says what a press stops (DISARM, OUTPUT OFF, STOP RUN, PAUSE, LEAVE, ABORT, ON) | amber (`UI_C_WARN`): PAUSED, WAIT, the step of ARM + START | grey (`ui_button_off_fill()`), faint label |
+| Output action: switches an output on, arms, starts a run, writes a servo | ARM, OUTPUT ON, PROG 5V ON, START LIMIT RUN, HOLD 2s: ARM + START on TEST and RUDDER AUTO, CENTRE and SWEEP on LIVE, 1000us, CENTRE, 2000us and ZERO on RUDDER, the programmers' CONNECT, ENABLE WRITE TO SERVO, WRITE n VALUES and MOVE SERVO | green (`UI_C_OK`) | red (`UI_C_DANGER`): an output is on, ARMED, a write runs, the servo is driven; the label says what a press stops (DISARM, OUTPUT OFF, STOP RUN, PAUSE, LEAVE, ABORT, ON) | amber (`UI_C_WARN`): PAUSED, WAIT, the step of ARM + START | grey (`ui_button_off_fill()`), faint label |
 | Emergency | STOP | red | red, flashes on the press | - | never |
 | Edit | `-` `+`, value boxes, RESET MAX, RESET CATEGORY on SETUP, DISCARD, READ AGAIN | neutral (`UI_C_PANEL_HI`) | - | - | grey |
 | SAVE on SETUP | SAVE, SAVED, WHEN IDLE, NOT SAVED | green while something is unsaved (SAVE) | - | amber (WHEN IDLE) | neutral with the label in red (NOT SAVED); SAVED is neutral |
@@ -553,11 +553,12 @@ Both themes use the same roles; the light theme's tokens are its own
 green, red and amber (`shared/ui/ui_theme.c`). A hold's fade runs from
 the available green to the colour the button holds next.
 
-A tap on a grey START TEST or START LIMIT RUN puts its reason in the alert
-band as a notice, amber for 4s, as a hold's hint. The line under the button
-says the same and stays. A tap on a grey HOLD 2s: ARM + START puts the
-first red row of RUDDER AUTO's READY card in the band, `PORT: AUTO
-PROGRAMS A SERVO ON THE PROG PORT`; the first state line says the same.
+A tap on a grey START LIMIT RUN puts its reason in the alert band as a
+notice, amber for 4s, as a hold's hint. The line under the button says the
+same and stays. A tap on a grey HOLD 2s: ARM + START puts the first red row
+of the READY card in the band: `PORT: AUTO PROGRAMS A SERVO ON THE PROG
+PORT` on RUDDER AUTO, `STEPS: NO STEP CHOSEN` on TEST; the card's state
+line says the same.
 
 ## Menu marks
 
@@ -1441,7 +1442,7 @@ SERVO opens on its hub: eight tiles of 328 x 130px in SETUP's grid, at x
 | --- | --- | --- |
 | LIVE | LIVE | the dial, the knob, the readings COMMANDED, MEASURED and CURRENT |
 | SWEEP | SWEEP | the dial with the sweep; SETTINGS opens CURVE, SPEED and RANGE |
-| TEST | TEST | the AUTOMATIC TEST card, SUPPLY's caps and the run's box; SETTINGS opens the run's page of rows |
+| TEST | TEST | the AUTOMATIC TEST card, SUPPLY's caps, the plot and the run's box, the READY card in place of the output card, HOLD 2s: ARM + START in the footer; SETTINGS opens the automatic test's list |
 | LIMIT RUN | LIMIT RUN | the LIMIT RUN card and the run's box; SETTINGS opens the run's page of rows |
 | RUDDER | RUDDER | deflection in ° and mm, LENGTH, 1000us, CENTRE, 2000us, ZERO and RESET MAX ([Rudder deflection](Servo.md#rudder-deflection)) |
 | RUDDER AUTO | RUDDER AUTO | AUTO's box in place of LENGTH and the drive buttons, the READY card in place of the output card, HOLD 2s: ARM + START in the footer ([AUTO end points](Servo.md#auto-end-points)) |
@@ -1482,6 +1483,14 @@ HOLD 2s: ARM + START, which switches PORT PWM and the supply on, waits for
 their read-back, arms and starts the run in one hold
 ([Servo: AUTO end points](Servo.md#auto-end-points)). Nothing of the output
 card takes a press on RUDDER AUTO.
+
+TEST shows a READY card in the same place: six rows from y 96, PORT,
+METER, PD MINI, STEPS, RANGE and ARM, and the rail line at y 404. Its
+footer's middle slot is HOLD 2s: ARM + START, which switches PORT PWM on
+where the port needs it, arms and starts the automatic test in one hold;
+the run's steps switch the PD mini at each step's voltage. During the run
+the slot reads STOP TEST, which ends the run on its press. The plot of the
+servo rail moves to the left card, under SUPPLY's caps.
 
 ![RUDDER AUTO on the rbmod carrier, the ARM + START sequence waiting for the PROG 5V's read-back](img/servo-rudder-auto-start-rbmod.png)
 
@@ -1587,7 +1596,7 @@ What each control does while the bench is SAFE:
 | The hub's list: TYPE, FRAME RATE, PULSE MIN, CENTRE and MAX, TRIM, TRAVEL, REVERSE | set on the hub, where the bench is SAFE; the next ARM rests under them | not reachable: the hub's leave of a function screen switches to SAFE |
 | PORT | a tap opens the list of OUTPUTS and the 4 programming ports | locked; names the lock in the alert band |
 | SET, OUTPUT ON, OUTPUT OFF | as on SUPPLY | as on SUPPLY |
-| START TEST | refused: `ARM FIRST` | starts the run after its hold |
+| HOLD 2s: ARM + START on TEST | arms the bench and starts the run after its hold | starts the run after its hold |
 
 While SAFE, the horn is dimmed and LIVE shows `ARM FIRST`. The horn and
 COMMANDED retain the last driven position, or PULSE CENTRE after restart.
@@ -1717,8 +1726,8 @@ on the first poll where any condition fails.
   starts at 0, so negative current is drawn along the lower edge.
 - LIVE redraws the CURRENT numerals alone when their digits or colour change.
 
-The automatic test reads the servo rail's meter as the panel names it at
-START TEST: the INA3221 channel while the INA3221 is that meter and the
+The automatic test reads the servo rail's meter as the panel names it when
+the run starts: the INA3221 channel while the INA3221 is that meter and the
 supply is the PD mini, the PD mini's readings otherwise, and the model's
 with the supply modelled ([The meter](Servo.md#the-meter)).
 
@@ -1886,50 +1895,62 @@ clears at SPEED 63%, and for a triangle at 40%.
 
 ![SPEED limiting a sweep](img/servo-sweep.png)
 
-**START TEST begins the automatic test** from TEST's AUTOMATIC TEST card.
+**HOLD 2s: ARM + START begins the automatic test** from TEST's footer.
 It runs the servo at the selected supply voltages, measures current at
 rest, moving and holding, measures travel time, and finds the voltage at
 which movement stops. [Servo procedures](Servo.md#automatic-test) describes
 the method and files.
 
-The 600 x 188px card contains the run name; a summary such as
-`4.8V, 6.0V, BROWN-OUT, 60s EACH` or `..., 20 MOVEMENTS EACH`; START TEST
-(300 x 48px) beside SETTINGS (160 x 48px); the state line; the last result
-and files, such as `LAST: PASS ATEST004.CSV + .TXT`; and the STALL AT note.
-An aborted result shows its reason in the warning colour, for example
+The 600 x 136px AUTOMATIC TEST card contains the run name; a summary such
+as `4.8V, 6.0V, BROWN-OUT, 60s EACH` or `..., 20 MOVEMENTS EACH`; the
+state line; the last result and files, such as
+`LAST: PASS ATEST004.CSV + .TXT`; and the STALL AT note. An aborted
+result shows its reason in the warning colour, for example
 `LAST: ABORTED - link lost`.
 
-Starting requires ARMED and a responding supply. The state line follows
-the bench and settings: ARM FIRST, NO STEP CHOSEN, SUPPLY NOT ANSWERING,
-RANGE TOO SMALL (RANGE and TRAVEL place both ends at PULSE CENTRE),
-STEP OUTSIDE VOLTAGE LIMITS (a step exceeds the voltage cap, checked before
-any warning opens), or REPORT STILL BEING WRITTEN.
+The READY card names what the hold needs, one row each:
+
+| Row | Green | Amber: the hold does it | Red: the hold is refused |
+| --- | --- | --- | --- |
+| PORT | the port that drives the servo | PORT PWM off on a SAFE bench | a port held by a programmer; PORT PWM off while ARMED; a programming port of the rbmod carrier, whose 5V is fixed: `PROG PORTS RUN AT 5V FIXED: NO STEPS` |
+| METER | the servo rail's meter | - | - |
+| PD MINI | the supply on | the PD mini off: the run's steps switch it on | no supply answering; the PD mini off with the INA3221 reading 3.0V or more on the rail: `RAIL LIVE WITH THE PD MINI OFF: FED FROM ELSEWHERE` |
+| STEPS | the steps, `4.8-6.0V, BROWN-OUT` | a step above 6.0V: a tap opens HV SERVOS ONLY | no step chosen; a step outside SUPPLY's voltage caps |
+| RANGE | the two ends in us | - | RANGE and TRAVEL place both ends at PULSE CENTRE |
+| ARM | ARMED | SAFE: the hold arms | a limit run or RUDDER AUTO runs; a report still being written |
+
+A row reads red whenever one of its texts refuses the hold, and the hold is
+then grey. A tap on PORT opens the port list; a tap on STEPS opens the
+automatic test's list, or HV SERVOS ONLY for a step above 6.0V.
 
 The STALL AT note identifies thresholds no reading can exceed. It shows
 `STALL AT 2.00A cannot be reached: current limit 2.00A` when STALL AT is at
 or above the SET current limit. Otherwise, with the INA3221 as meter and
 STALL AT at or above its range, it shows
 `STALL AT 2.00A cannot be reached: INA3221 range 1.638A`. The note does not
-disable START TEST; see
+refuse the hold; see
 [Stall and constant current](Servo.md#stall-and-constant-current).
 
-START TEST requires a 2s hold because it switches on the supply and moves
-the servo. With HV SERVO enabled and a step above 6.0V selected, a tap
-instead opens HV SERVOS ONLY with the highest step. The run starts only
-after HOLD 2s TO APPLY completes. HV SERVO is reset to off on every restart.
-On an rbmod carrier programming port, voltage steps cannot run: the port
-has a fixed 5V supply.
+The hold takes 2s because it arms the bench, switches the supply on and
+moves the servo. The settings are read when the hold fires; a change after
+that reaches the next run. The bench has 500ms to report ARMED; past that
+the sequence fails as `ARM: ...`, every output off and the bench SAFE.
+With HV SERVO on and a step above 6.0V chosen, a tap opens HV SERVOS ONLY
+with the highest step instead, and its HOLD 2s TO APPLY arms and starts.
+HV SERVO is reset to off on every restart.
 
 TEST remains visible at startup, with the current step on its state line.
-A 346px run box under the card, from y 256 on TEST and y 204 on LIMIT RUN,
-shows step and phase, with the meter beside STOP
-TEST: `PD mini`, an INA3221 channel such as `INA 0x41 CH2`, or `SIMULATION`.
-The run uses the meter selected at START TEST until it ends
+A 346px run box under the card, from y 204, shows step and phase, with the
+meter beside STOP TEST: `PD mini`, an INA3221 channel such as
+`INA 0x41 CH2`, or `SIMULATION`. The run uses the meter selected when it
+starts until it ends
 ([The meter](Servo.md#the-meter)). It controls the servo and SUPPLY's set
 points and switch throughout.
 
-The run ends early with the output off and servo released to centre on
-STOP TEST (on either card), STOP, SAFE, link loss, leaving SERVO, touching
+Every end of the run, PASS and STOP TEST included, switches the bench to
+SAFE; the next run arms again with its hold. The run ends early with the
+output off and servo released to centre on STOP TEST (in the footer or the
+run's box), STOP, SAFE, link loss, leaving SERVO, touching
 the dial, CENTRE, SWEEP, RELEASE, tapping a set point, changing type,
 pulses, trim, travel, reverse or SPEED, missing touch events, or the supply
 conditions in [the list](Servo.md#what-ends-a-run).
@@ -2166,7 +2187,7 @@ until SAVE.
 | --- | --- |
 | the hub | the servo profile: OUTPUT with TYPE, FRAME RATE, PULSE MIN, PULSE CENTRE, PULSE MAX, TRIM, TRAVEL, REVERSE and HV SERVO; DUT with NAME and REPORT |
 | SWEEP | CURVE, SPEED and RANGE |
-| TEST | the automatic test's page of rows, one level down |
+| TEST | VOLTAGE STEPS: Step 4.8V, Step 6.0V, HV SERVO, Step 7.4V, Step 8.4V; BROWN-OUT: Brown-out, Brown-out minimum voltage, Brown-out step; PASS/FAIL LIMITS: Stall threshold, Idle current max, Holding current max, Travel time max; LENGTH AND TIMING: Length by, Test time, Movements, Dwell time, Settling time |
 | LIMIT RUN | the limit run's page of rows, one level down |
 | RUDDER | LENGTH, ENC CENTRE and ANGLE SOURCE |
 | RUDDER AUTO | the targets, MARGIN, TOLERANCE, SERVO, SERVO PULSES and ANGLE SOURCE |
@@ -2194,12 +2215,24 @@ the warning colour when it did not (below).
 ANGLE SOURCE is read-only; a tap opens SETUP > SENSORS on it, and its
 home tag returns to RUDDER's list.
 
-A run's page of rows and KST's EXPERT MODE page keep their layout: three
-193px columns, each row its label over a 48px value at a 70px pitch from
-y 64. The automatic test has 15 rows, five per column: voltage steps with
-HV SERVO, limits with BROWN-OUT, and duration with timing. Notes, save
-status and STALL AT end 2px above the card floor. CLOSE at the upper
-right, beside the run's name, or the home tag returns to the card.
+LIMIT RUN's page of rows and KST's EXPERT MODE page keep their layout:
+three 193px columns, each row its label over a 48px value at a 70px pitch
+from y 64. Notes and save status end 2px above the card floor. CLOSE at
+the upper right, beside the run's name, or the home tag returns to the
+card.
+
+The automatic test's list has 17 rows under four headings. Each heading's
+line names what its rows give: VOLTAGE STEPS the steps a run takes, or
+`NO STEP CHOSEN` in the warning colour; BROWN-OUT the walk on the supply
+in force, `From 5.00V down in 0.20V steps to 3.30V, 10 voltages`;
+PASS/FAIL LIMITS a STALL AT no reading can pass, in the warning colour.
+Step 7.4V and Step 8.4V take no press with HV SERVO off, Test time none
+while Length by is MOVES, Movements none while it is TIME; each names why
+in place of its help line, `With HV SERVO on only`. RESET TEST puts every row to its default
+and HV SERVO off. The list opens on a SAFE bench only and closes as the
+bench arms or a run starts.
+
+![The automatic test's list at BROWN-OUT and PASS/FAIL LIMITS](img/servo-brownout.png)
 
 Choice lists have two columns of five 48px entries at 56px pitch. Warnings
 use 12 x 24px letters, 49 characters per line, with 56px high HOLD 2s TO
@@ -2366,15 +2399,14 @@ link was down reaches the IOmcu only after the reset succeeds.
 OUTPUT settings, HV SERVO, LIMIT RUN and SERVO PULSES last for the session.
 SWEEP, automatic-test and DUT settings, plus TARGET, are saved in NVS. A
 change on a SETTINGS list is marked unsaved until the strip's SAVE. A
-change on a run's page and a PORT pick request a write at once; it runs
-on the first idle frame ([Keeping the values](#keeping-the-values)). A
-run's page shows `SAVED`, `SAVE PENDING`, `NOT SAVED` or
+change on LIMIT RUN's page and a PORT pick request a write at once; it runs
+on the first idle frame ([Keeping the values](#keeping-the-values)).
+LIMIT RUN's page shows `SAVED`, `SAVE PENDING`, `NOT SAVED` or
 `SETUP CHANGES NOT SAVED` below the run's name.
 
 ![TEST's card](img/servo-test.png)
-![The automatic test's settings](img/servo-test-settings.png)
+![The automatic test's list](img/servo-test-settings.png)
 ![The limit run's settings](img/servo-limits.png)
-![The brown-out walk's settings](img/servo-brownout.png)
 ![The name](img/servo-name.png)
 
 Current limitations:
@@ -5388,7 +5420,8 @@ a run ([Servo procedures](Servo.md)).
 - Auto logs is read on every pass of the control task: switched OFF during
   a run it ends that run's file, switched ON during an ARMED or supply run
   it starts one.
-- User logs is read at START TEST and START LIMIT RUN: a test keeps the
+- User logs is read when a test starts, from TEST's HOLD 2s: ARM + START or
+  START LIMIT RUN: a test keeps the
   state it started with. With it OFF, the run card and the run's box read
   `USER LOGS OFF` where the files would be named.
 - REPORT under DUT on the SERVO hub's SETTINGS list decides, with User logs ON, whether

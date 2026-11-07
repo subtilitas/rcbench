@@ -73,7 +73,7 @@ ARMED SERVO steuert Servoausgänge und einen pulsenden PROG-PORT an. Gasausgäng
 | SWEEP, PAUSE, PAUSIERT | gesperrt und gedimmt | startet, pausiert und setzt den Sweep fort |
 | FREIGEBEN | sendet die Freigabe | stellt Ruder auf ihre Ruheposition: 1500us bei STANDARD PWM, 760us bei NARROW 760 |
 | TEMPO | einstellbar | einstellbar; gehaltene Position wird mit neuer Rate erneut gesendet |
-| TEST STARTEN | gesperrt: `ZUERST ARM` | startet nach dem Halten den automatischen Test |
+| 2s HALTEN: ARM + START auf TEST | schaltet ARMED und startet nach dem Halten den automatischen Test | startet nach dem Halten den automatischen Test |
 
 Beim Schalten auf ARMED wird die Mitte zwischen den Kanalendpunkten ohne TRIMMUNG vorgegeben. Das erste Ziehen oder Drehen beginnt dort. SWEEP bleibt grau, wenn kein Ruder zugeordnet ist, die Verbindung fehlt oder der IOmcu älter als 0.10.0 ist.
 
@@ -132,13 +132,13 @@ Berühren des Zifferblatts, ZENTRIEREN, FREIGEBEN, STOP, SAFE oder Verlassen der
 
 ## Der automatische Test
 
-Halte TEST STARTEN auf der Karte AUTOMATISCHER TEST unter TEST 2s, um die gewählten Spannungsstufen auszuführen. Jede Stufe misst den Strom in Ruhe, Bewegung und Halten sowie die Stellzeit. Der Brown-out-Lauf sucht die Spannung, bei der die Bewegung aussetzt.
+Halte 2s HALTEN: ARM + START in der Fußleiste von TEST 2s, um die gewählten Spannungsstufen auszuführen. Bei SAFE schaltet das Halten PORT-PWM ein, wo der Port es braucht, schaltet ARMED und startet den Lauf; die Stufen des Laufs schalten den PD mini bei der Spannung jeder Stufe ein. Jedes Ende eines Laufs, BESTANDEN eingeschlossen, schaltet den Prüfstand auf SAFE. Jede Stufe misst den Strom in Ruhe, Bewegung und Halten sowie die Stellzeit. Der Brown-out-Lauf sucht die Spannung, bei der die Bewegung aussetzt.
 
-Erforderlich sind ARMED und ein antwortendes Netzteil. Die Statuszeile nennt Ablehnungsgründe: `ZUERST ARM`, `KEINE STUFE GEWÄHLT`, `NETZTEIL ANTWORTET NICHT`, `BEREICH ZU KLEIN`, `STUFE AUSSERHALB DER GRENZEN` oder `BERICHT WIRD NOCH GESCHRIEBEN`. Carrier-Programmierports haben feste 5V; Netzteilstufen erreichen sie nicht.
+Die Karte BEREIT an der Stelle des Ausgangsfelds nennt, was das Halten braucht: PORT, MESSGERÄT, PD MINI, STUFEN, BEREICH und ARM. Grün ist erfüllt, Bernstein erledigt das Halten, Rot lehnt es ab und macht das Halten grau. Ein Tipp auf das graue Halten nennt die erste rote Zeile im Alarmband, etwa `STUFEN: KEINE STUFE GEWÄHLT`. Rote Gründe sind unter anderem `NETZTEIL ANTWORTET NICHT`, `BEREICH ZU KLEIN`, `STUFE AUSSERHALB DER GRENZEN`, `BERICHT WIRD NOCH GESCHRIEBEN` und `SCHIENE UNTER SPANNUNG BEI PD MINI AUS: FREMD GESPEIST`: Der INA3221 misst 3.0V oder mehr auf der Schiene bei ausgeschaltetem PD mini. Carrier-Programmierports haben feste 5V; Netzteilstufen erreichen sie nicht: `PROG-PORTS LAUFEN MIT FESTEN 5V: KEINE STUFEN`. Der Prüfstand hat 500ms, um ARMED zu melden; danach scheitert die Folge als `ARM: ...`, alle Ausgänge aus.
 
 ![TEST mit seiner Laufkarte](view:servo-test)
 
-Die Zusammenfassung nennt Stufen und Dauer, etwa `4.8V, 6.0V, BROWN-OUT, JE 60s`. Unter TEST STARTEN folgen Status, letztes Ergebnis und Dateien, etwa `ZULETZT: BESTANDEN ATEST004.CSV + .TXT`. Bei Abbruch steht dort stattdessen der Grund, etwa `ZULETZT: ABGEBROCHEN - Verbindung verloren`.
+Die Zusammenfassung nennt Stufen und Dauer, etwa `4.8V, 6.0V, BROWN-OUT, JE 60s`. Darunter folgen Status, letztes Ergebnis und Dateien, etwa `ZULETZT: BESTANDEN ATEST004.CSV + .TXT`. Bei Abbruch steht dort stattdessen der Grund, etwa `ZULETZT: ABGEBROCHEN - Verbindung verloren`.
 
 ![Ein Testlauf](view:servo-run)
 
