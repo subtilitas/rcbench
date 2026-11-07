@@ -1753,7 +1753,8 @@ nachdem dessen Abheben verloren ging, oder das Hineingleiten des ziehenden
 Fingers ins Statusband. Ein zweiter Finger an anderer Stelle der Seite lässt
 die Ziehbewegung weiterlaufen: Auf SPEED ändert er die Rate, und die
 laufende Bewegung übernimmt sie. Ein zweiter Finger auf dem Zifferblatt
-nimmt dem ersten nichts. Der Filter stoppt am erreichten Winkel
+nimmt dem ersten nichts; ZENTRIEREN, SWEEP und FREIGEBEN unter einem
+zweiten Finger beenden die Ziehbewegung und übernehmen das Ruderhorn. Der Filter stoppt am erreichten Winkel
 und sendet keine weiteren Befehle. In SAFE bewegt er nichts. Das nächste
 ARM beginnt in Ruhelage ohne verbleibende Zieheingabe.
 

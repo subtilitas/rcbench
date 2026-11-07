@@ -283,6 +283,20 @@ void servo_screen_knob(float span_fraction)
     }
 }
 
+/**
+ * @brief Ends a drag on the dial that is still running.  Its filter ends
+ *        with it, where it has got to: no command follows (svs_drag_tick()).
+ *        A finger that was on the dial still owned it in this frame, so the
+ *        knob stays out of the frame.
+ */
+static void end_dial_drag(void)
+{
+    if (s.dragging) {
+        s.knob_finger = true;
+        svs_drag_end();
+    }
+}
+
 void svs_event_body(const touch_event_t *evt)
 {
     if (evt == NULL) {
@@ -326,16 +340,12 @@ void svs_event_body(const touch_event_t *evt)
          * still latched ends it, wherever the press lands;
          * ui_slider_event() gives the reason.  A release can go missing, and
          * a later contact reusing the track id would command a position, or
-         * a rate, with no press on the control.  A finger that was on the
-         * dial still owned it in this frame, so the knob stays out of the
-         * frame.  A press of another contact is a second finger and leaves
-         * both drags running: one finger on the dial, another on SPEED.
+         * a rate, with no press on the control.  A press of another
+         * contact is a second finger and leaves both drags running: one
+         * finger on the dial, another on SPEED.
          */
         if (s.dragging && evt->point.id == s.drag_id) {
-            s.knob_finger = true;
-            /* The drag's filter ends with it, where it has got to: no
-             * command follows the press (svs_drag_tick()). */
-            svs_drag_end();
+            end_dial_drag();
         }
         ui_slider_release_contact(&s.speed, evt->point.id);
         if (foot_down(evt)) {
@@ -488,12 +498,16 @@ void svs_event_body(const touch_event_t *evt)
             if (!value_live()) {
                 return;
             }
+            /* CENTRE takes the horn from a drag a second finger makes, as
+             * SWEEP and RELEASE do. */
+            end_dial_drag();
             test_end_now(SERVO_TEST_AB_OPERATOR);
             stop_sweep();
             s.commanded_deg = 0.0f;
             post(SERVO_CMD_CENTRE, svs_deg_to_us(0.0f));
             ++s.ctrl_rev;
         } else if (gfx_rect_contains(s.sweep_btn, px, py)) {
+            end_dial_drag();
             test_end_now(SERVO_TEST_AB_OPERATOR);
             svs_toggle_sweep();
         } else if (gfx_rect_contains(s.release_btn, px, py)) {

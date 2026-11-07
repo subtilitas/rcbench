@@ -1619,7 +1619,9 @@ finger on the status band, STOP or alert band, a press with the dragging
 finger's own track id after its release went missing, or the dragging
 finger moving into the status band. A second finger elsewhere on the screen
 leaves the drag running: on SPEED it changes the rate, and the move under
-way takes it. A second finger on the dial takes nothing from the first. The filter stops at its
+way takes it. A second finger on the dial takes nothing from the first;
+CENTRE, SWEEP and RELEASE under a second finger end the drag and take the
+horn. The filter stops at its
 current angle and sends no further commands. It cannot move anything while
 SAFE. The next ARM starts at rest, with no remaining drag input.
 
