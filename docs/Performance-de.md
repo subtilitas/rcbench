@@ -83,7 +83,7 @@ battery                          0       0 KiB
 balance                          0       0 KiB
 motor-stick                  1,644     206 KiB
 motor-wire                       0       0 KiB
-motor-wire-hold                238      30 KiB
+motor-wire-hold                240      30 KiB
 balance-sim                  3,315     414 KiB
 settings-sim                 3,395     424 KiB
 battery-sim                  3,308     414 KiB
