@@ -1526,6 +1526,13 @@ supply.`, unless the tap fixes it. PORT opens the port list. No row takes a
 press while another press is held, while ARM's steps run, or while the
 bench is not SAFE.
 
+ARM's steps judge the rail again on every frame until they ask the PD
+mini's ON. A rail fed from elsewhere by then ends them refused, every
+output off. Current limitation: from the PD mini's ON to its read-back, up
+to 1000ms, the INA3221 cannot tell a supply connected to the rail from the
+PD mini's own output. A supply connected in that time feeds the rail beside
+the PD mini, and the steps arm.
+
 ![LIVE on the rbmod carrier: PORT PWM and PROG 5V amber, ARM switches them on](img/servo-rbmod.png)
 
 RUDDER AUTO and LIMIT RUN keep the PORT button and show a READY card in
