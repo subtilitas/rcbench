@@ -353,3 +353,16 @@ void hitec_panel_tick(float dt_s)
         }
     }
 }
+
+bool hitec_panel_write_tap(void)
+{
+    const hpn_row_t *w = hpn_row_at(HITEC_PANEL_SERVO, 4, 1);
+
+    if (!hp.open || hp.have || hitec_panel_editor() != 0 || w == NULL
+        || !hpn_row_live(w)) {
+        return false;
+    }
+    hpn_act(w);
+    ++hp.rev;
+    return true;
+}

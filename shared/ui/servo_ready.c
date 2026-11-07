@@ -53,20 +53,27 @@ void ready_init(void)
     memset(&s.rdy, 0, sizeof(s.rdy));
     servo_seq_init(&s.rdy.seq);
     s.rdy.pressed = -1;
+    prog_ready_reset();
 }
 
 bool ready_shown(void)
 {
-    return s.fn == SERVO_FN_RAUTO;
+    return s.fn == SERVO_FN_RAUTO || prog_ready_shown();
 }
 
 int ready_count(void)
 {
+    if (prog_ready_shown()) {
+        return (int)PRR_COUNT;     /* KST's and HITEC's */
+    }
     return ready_shown() ? (int)RAR_COUNT : 0;
 }
 
 bool ready_row(int i, rdy_row_t *r)
 {
+    if (prog_ready_shown()) {
+        return prog_ready_row(i, r);
+    }
     if (!ready_shown()) {
         return false;
     }
@@ -75,7 +82,7 @@ bool ready_row(int i, rdy_row_t *r)
 
 const char *ready_refusal(char *buf, size_t n)
 {
-    if (buf == NULL || n == 0u || !ready_shown()) {
+    if (buf == NULL || n == 0u || s.fn != SERVO_FN_RAUTO) {
         return NULL;
     }
     rauto_row_t row = RAR_COUNT;
@@ -266,6 +273,9 @@ bool ready_down(const touch_event_t *evt)
 
 bool ready_rest(const touch_event_t *evt)
 {
+    if (prog_write_rest(evt)) {
+        return true;            /* KST's and HITEC's WRITE */
+    }
     if (evt == NULL || s.rdy.pressed < 0
         || evt->point.id != s.rdy.press_id) {
         return false;
@@ -279,13 +289,18 @@ bool ready_rest(const touch_event_t *evt)
     if (touch_event_is_tap_up(evt) && ready_shown()
         && gfx_rect_contains(ready_row_rect(i), evt->point.x,
                              evt->point.y)) {
-        rauto_ready_tap(i);
+        if (prog_ready_shown()) {
+            prog_ready_tap(i);
+        } else {
+            rauto_ready_tap(i);
+        }
     }
     return true;
 }
 
 void ready_cancel(void)
 {
+    prog_ready_reset();
     if (s.rdy.pressed >= 0) {
         s.rdy.pressed = -1;
         ++s.ctrl_rev;

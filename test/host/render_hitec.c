@@ -31,6 +31,7 @@
 #include "ui_layout.h"
 #include "ui_screen.h"
 #include "ui_textkey.h"
+#include "ui_widgets.h"
 
 /**
  * @brief A tap at (@p x, @p y), panel pixels.

@@ -89,6 +89,7 @@ uint32_t foot_sig(void)
     }
     h = (h ^ s.fp_rev) * 16777619u;
     h = (h ^ (uint32_t)s.fn) * 16777619u;
+    h = (h ^ prog_write_sig()) * 16777619u;
     h = (h ^ ((warn ? 1u : 0u) | (prog_choice_locked() ? 2u : 0u)
               | (svs_list_refused() != NULL ? 4u : 0u)
               | (svs_list_offered() ? 8u : 0u)

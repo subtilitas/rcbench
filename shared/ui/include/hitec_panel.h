@@ -232,6 +232,22 @@ hitec_prog_t *hitec_panel_model(void);
  *        that holds the port keeps its series (hitec_prog_series_set()).
  */
 void hitec_panel_settings_changed(void);
+
+/**
+ * @brief The session as HITEC's screen shows it beside the session: the
+ *        supply CONNECT switches, the port held, the servo read, WRITE n
+ *        VALUES.
+ * @param out receives it
+ */
+void hitec_panel_session(prog_session_t *out);
+
+/**
+ * @brief The footer's WRITE n VALUES: what a tap on the session's own does,
+ *        from any tab.  Nothing while an editor or a press is in the
+ *        session.
+ * @return whether the tap was taken
+ */
+bool hitec_panel_write_tap(void);
 /**
  * @brief A tab, one fifth of the row, 48px tall.
  * @param page hitec_panel_page_t

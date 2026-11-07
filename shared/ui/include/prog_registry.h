@@ -165,6 +165,32 @@ typedef struct {
     bool       (*safe_at)(int x, int y);
 } prog_page_set_t;
 
+/** @brief How a programmer's CONNECT supplies the servo. */
+typedef enum {
+    PROG_SES_AS_IS = 0, /**< no supply the bench switches: as it is  */
+    PROG_SES_PD_MINI,   /**< the PD mini, set to mv and ma            */
+    PROG_SES_5V,        /**< the rbmod carrier's PROG 5V              */
+} prog_ses_supply_t;
+
+/**
+ * @brief A session as its SERVO screen's READY card and footer show it
+ *        (kst_panel_session(), hitec_panel_session()).
+ */
+typedef struct {
+    uint8_t  supply;     /**< prog_ses_supply_t                                 */
+    bool     by_hand;    /**< AS_IS: the servo's supply goes off and on by
+                              hand before CONNECT                          */
+    uint16_t mv;         /**< PD_MINI: the voltage CONNECT sets, mV         */
+    uint16_t ma;         /**< PD_MINI: the limit CONNECT sets, mA           */
+    bool     held;       /**< the session holds its port                    */
+    bool     busy;       /**< CONNECT, a read, a write or LEAVE on its way  */
+    bool     read;       /**< a servo is read                               */
+    char     servo[24];  /**< its model or type; "" where none is known     */
+    char     write[32];  /**< WRITE n VALUES, as the session's button reads */
+    bool     write_live; /**< a tap on it writes, or asks for ENABLE WRITE
+                              first                                        */
+} prog_session_t;
+
 typedef struct {
     uint8_t                device;           /**< a prog_device_t        */
     uint8_t                task;             /**< a ui_wb_task_t         */

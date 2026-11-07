@@ -335,6 +335,19 @@ void svs_event_body(const touch_event_t *evt)
         if (foot_down(evt)) {
             return;
         }
+        /* KST and HITEC: WRITE in the footer's middle, no ARM, and the
+         * READY card in the output card's place. */
+        if (prog_ready_shown()) {
+            if (prog_write_down(evt)) {
+                return;
+            }
+            if (gfx_rect_contains(ready_card_rect(), px, py)) {
+                if (!modal_open()) {
+                    (void)ready_down(evt);
+                }
+                return;
+            }
+        }
         /* RUDDER AUTO: the footer's ARM + START and the READY card in the
          * output card's place; nothing of the output card is there to
          * press. */

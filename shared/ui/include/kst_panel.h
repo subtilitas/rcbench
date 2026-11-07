@@ -313,6 +313,22 @@ int kst_panel_text_rows(const char *s);
 /** The line a rule's refusal or warning shows. */
 const char *kst_panel_rule_text(unsigned rule);
 
+/**
+ * @brief The session as KST's screen shows it beside the session: the
+ *        supply CONNECT switches, the port held, the servo read, WRITE n
+ *        VALUES.
+ * @param out receives it
+ */
+void kst_panel_session(prog_session_t *out);
+
+/**
+ * @brief The footer's WRITE n VALUES: what a tap on the session's own does,
+ *        from any tab -- the write page, or ENABLE WRITE's while the switch
+ *        is off.  Nothing while an editor or a press is in the session.
+ * @return whether the tap was taken
+ */
+bool kst_panel_write_tap(void);
+
 /*
  * Where things are, for a test's taps.  Rows by page, row and column, as
  * each row sits with KST EXPERT MODE ON; with it OFF a page's rows close up

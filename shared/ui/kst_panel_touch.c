@@ -392,3 +392,16 @@ void kst_panel_tick(float dt_s)
         }
     }
 }
+
+bool kst_panel_write_tap(void)
+{
+    const row_t *w = kpn_row_at(PG_SERVO, 4, 1);
+
+    if (!k.open || k.have || kst_panel_editor() != 0 || w == NULL
+        || !kpn_row_live(w)) {
+        return false;
+    }
+    kpn_act(w);
+    ++k.rev;
+    return true;
+}

@@ -9,8 +9,9 @@
  * the live half, x 0 to 528; a control that runs past x 528 is marked up
  * to there, the part the screen shows (ui_help_add()).  The output card's
  * pages take the dock on the left, over the left card, and keep the PORT
- * button in view; on RUDDER AUTO the READY card's page takes their place: they are the only ones on KST and HITEC, whose session
- * fills the left card.  No page is offered while ARMED: either dock covers
+ * button in view.  On RUDDER AUTO the READY card's page takes their place;
+ * on KST and HITEC, whose session fills the left card, the READY card's
+ * page with WRITE n VALUES is the only one.  No page is offered while ARMED: either dock covers
  * part of DISARM in the footer's middle slot.  A page whose dock would cover a control that stops an output is
  * not offered while that control shows: a function's page while the
  * supply's output is on (OUTPUT OFF on the SET row), the output card's
@@ -193,6 +194,26 @@ static void page_ready(ui_help_page_t *p)
                       ui_footer_rect(UI_FOOTER_SETTINGS));
 }
 
+/** @brief KST's and HITEC's READY card, its rail line, the footer's
+ *         WRITE n VALUES and SETTINGS: the dock on the left, over the
+ *         session, the PORT button kept in view.
+ *  @param p The page. */
+static void page_prog(ui_help_page_t *p)
+{
+    p->title = TX_HG_SV_TITLE_PRG;
+    p->side = UI_HELP_DOCK_LEFT;
+    p->armed_ok = false;
+    p->must_show = port_rect();
+    (void)ui_help_add(p, TR(SVH_PORT), TX_HG_SV_TARGET, p->must_show);
+    (void)ui_help_add(p, TR(RDY_TITLE), TX_HG_SV_PRG_READY,
+                      both(ready_row_rect(0), ready_row_rect(PRR_COUNT - 1)));
+    (void)ui_help_add(p, TR(RDY_METER), TX_HG_SV_RDY_RAIL, ready_rail_rect());
+    (void)ui_help_add(p, TR(HG_SV_PRG_WRITE_NAME), TX_HG_SV_PRG_WRITE,
+                      s.arm_btn);
+    (void)ui_help_add(p, TR(FOOT_SETTINGS), TX_HG_SV_SETTINGS,
+                      ui_footer_rect(UI_FOOTER_SETTINGS));
+}
+
 /* ------------------------------------------------- the output card's pages */
 
 /** @brief An output card's page: the dock on the left, the PORT button
@@ -263,6 +284,10 @@ static int pages_now(guide_fn out[GUIDE_MAX])
     int n = 0;
     /* RUDDER AUTO: its own pages, none while the hold stops a sequence or
      * a run (either dock covers part of it). */
+    if (prog_ready_shown()) {
+        out[n++] = page_prog;   /* KST's and HITEC's card and WRITE */
+        return n;
+    }
     if (ready_shown()) {
         if (!run_live() && !svs_seq_busy()) {
             out[n++] = page_auto;

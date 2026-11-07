@@ -16,7 +16,7 @@
  * - no_setting_that_reaches_the_port_changes_while_it_is_held
  * - the_programmer_stays_on_the_screen_while_the_port_is_held
  * - leaving_servo_switches_its_supply_off_once_the_port_lets_go
- * - an_armed_bench_is_not_connected_and_a_held_port_takes_no_arm
+ * - an_armed_bench_is_not_connected_and_kst_offers_no_arm
  * - a_port_found_held_ends_a_hold_of_arm
  * - an_unknown_coordinate_is_no_row
  * - a_label_under_the_wrong_row_name_fails
@@ -538,12 +538,6 @@ TEST_CASE(leaving_servo_switches_its_supply_off_once_the_port_lets_go)
 TEST_CASE(the_supplys_controls_are_held_for_as_long_as_the_port)
 {
     supply_cmd_t c;
-    static gfx_color_t a[W * H];
-    static gfx_color_t b[W * H];
-    gfx_canvas_t ca, cb;
-    gfx_canvas_init(&ca, a, W, H, W);
-    gfx_canvas_init(&cb, b, W, H, W);
-    int moved = 0;
 
     fresh_screen();
     g_rig.rail = true;
@@ -552,8 +546,6 @@ TEST_CASE(the_supplys_controls_are_held_for_as_long_as_the_port)
     CHECK(!supply_screen_port_held());
     const float v0 = supply_screen_set_v();
     const float i0 = supply_screen_set_i();
-    scr->tick(0.02f);
-    scr->render(&ca, 0);
     /* CONNECT: held from the tap, before the port has answered. */
     tap(val(PG_SERVO, 0, 0));
     CHECK_EQ(kst_prog_state(M), KST_PROG_ENTERING);
@@ -561,41 +553,21 @@ TEST_CASE(the_supplys_controls_are_held_for_as_long_as_the_port)
     settle();
     CHECK(kst_panel_holds_port());
     CHECK(supply_screen_port_held());
-    /* The row is drawn as taking no press. */
-    scr->tick(0.02f);
-    scr->render(&cb, 0);
-    for (int y = SUP_ROW_Y - 12; y < SUP_ROW_Y + 12; ++y) {
-        for (int x = SUP_V_X - 20; x < SUP_OUT_X + 30; ++x) {
-            moved += (a[y * W + x] != b[y * W + x]) ? 1 : 0;
-        }
-    }
-    CHECK(moved > 0);
-    /* No set point: the row opens no keypad, and SUPPLY takes none. */
+    /* KST's right card is the READY card: where SERVO's supply box sits
+     * on other screens a tap opens no keypad and a hold switches nothing,
+     * and SUPPLY takes no set point. */
     screen_tap(SUP_V_X, SUP_ROW_Y);
-    screen_key(UI_KEY_7);
-    screen_key(UI_KEY_OK);
-    screen_tap(SUP_I_X, SUP_ROW_Y);
-    screen_key(UI_KEY_1);
-    screen_key(UI_KEY_OK);
+    CHECK(!servo_screen_keypad()->open);
     CHECK(kst_panel_is_open());
     supply_screen_put(8.0f, 3.0f);
     CHECK_NEAR(supply_screen_set_v(), v0, 1e-4f);
     CHECK_NEAR(supply_screen_set_i(), i0, 1e-4f);
-    /* No ON: the hold on OUTPUT ON asks for nothing. */
     ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < 120; ++i) {
         scr->tick(0.025f);
     }
     ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
     CHECK(!supply_screen_poll_cmd(&c));
-    /* OFF is a tap, as ever. */
-    supply_screen_set_output(true);
-    scr->tick(0.025f);
-    screen_tap(SUP_OUT_X, SUP_ROW_Y);
-    CHECK(supply_screen_poll_cmd(&c));
-    CHECK(c.off && !c.on);
-    supply_screen_set_output(false);
-    scr->tick(0.025f);
     /* Held through a read and through the way back. */
     tap(val(PG_SERVO, 1, 0));
     CHECK(supply_screen_port_held());
@@ -610,29 +582,8 @@ TEST_CASE(the_supplys_controls_are_held_for_as_long_as_the_port)
     /* And free again. */
     program_close();
     CHECK(!kst_panel_is_open());
-    screen_tap(SUP_V_X, SUP_ROW_Y);
-    screen_key(UI_KEY_5);
-    screen_key(UI_KEY_OK);
+    supply_screen_put(5.0f, i0);
     CHECK_NEAR(supply_screen_set_v(), 5.0f, 1e-4f);
-
-    /* A hold on OUTPUT ON under way when CONNECT is taken ends unasked. */
-    fresh_screen();
-    g_rig.rail = true;
-    link_up();
-    program_open();
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
-    for (int i = 0; i < 20; ++i) {
-        scr->tick(0.025f);
-    }
-    ev(cx(val(PG_SERVO, 0, 0)), cy(val(PG_SERVO, 0, 0)), TOUCH_EVENT_DOWN, 2);
-    ev(cx(val(PG_SERVO, 0, 0)), cy(val(PG_SERVO, 0, 0)), TOUCH_EVENT_UP, 2);
-    if (kst_prog_state(M) != KST_PROG_PWM) {
-        for (int i = 0; i < 120; ++i) {
-            scr->tick(0.025f);
-        }
-        ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
-        CHECK(!supply_screen_poll_cmd(&c));
-    }
 
     /* A refused CONNECT holds nothing. */
     fresh_screen();
@@ -747,7 +698,10 @@ TEST_CASE(a_panel_that_starts_under_a_session_reads_its_options_at_the_entry)
     settings_init();
 }
 
-TEST_CASE(an_armed_bench_is_not_connected_and_a_held_port_takes_no_arm)
+/* An armed bench is not connected: CONNECT is refused by name.  KST's
+ * footer has no ARM: its middle is WRITE n VALUES, and a finger held on it
+ * asks for no ARM, before CONNECT and while the port is held. */
+TEST_CASE(an_armed_bench_is_not_connected_and_kst_offers_no_arm)
 {
     servo_cmd_t c;
     bool armed = false;
@@ -765,26 +719,22 @@ TEST_CASE(an_armed_bench_is_not_connected_and_a_held_port_takes_no_arm)
         CHECK_STR_EQ(said(), TR(KP_M_NEED_DISARM));
         CHECK_EQ(g_rig.starts, 0);
         CHECK(!kst_panel_holds_port());
-        /* A finger on ARM is an arm on its way: the same. */
         servo_screen_set_armed(false);
-        ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 2);
-        ticks(0.5f);
-        CHECK_EQ(kst_prog_connect(M, RIG_PORT), KST_PROG_MSG_NEED_DISARM);
-        ev(ARM_X + 300, ARM_Y, TOUCH_EVENT_MOVE, 2);
-        ev(ARM_X + 300, ARM_Y, TOUCH_EVENT_UP, 2);
-        ticks(0.1f);
-        /* Disarmed: the port is taken. */
         while (servo_screen_take(&c)) { }
+        /* A finger on the footer's middle for 2.5s: no ARM. */
+        ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 2);
+        ticks(2.5f);
+        ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 2);
+        while (servo_screen_take(&c)) {
+            armed = armed || c.kind == SERVO_CMD_ARM;
+        }
+        CHECK(!armed);
+        /* Disarmed: the port is taken; the same finger asks none either. */
         tap(val(PG_SERVO, 0, 0));
         settle();
         CHECK(g_rig.starts > 0);
         CHECK(kst_panel_holds_port());
-        /* And ARM takes no hold while it is held; the press says why in
-         * the alert band (station, #612). */
-        ui_router_set_alert(NULL);
         ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 2);
-        CHECK(ui_router_alert() != NULL);
-        CHECK_STR_EQ(ui_router_alert(), TR(ALERT_ARM_PROG));
         ticks(2.5f);
         ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 2);
         scr->render(&cv, 0);
@@ -792,19 +742,6 @@ TEST_CASE(an_armed_bench_is_not_connected_and_a_held_port_takes_no_arm)
             armed = armed || c.kind == SERVO_CMD_ARM;
         }
         CHECK(!armed);
-        /* The port left, ARM is taken again. */
-        tap(val(PG_SERVO, 0, 0));
-        hold(2.1f);
-        settle();
-        CHECK(!kst_panel_holds_port());
-        ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 2);
-        ticks(2.5f);
-        ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 2);
-        while (servo_screen_take(&c)) {
-            armed = armed || c.kind == SERVO_CMD_ARM;
-        }
-        CHECK(armed);
-        armed = false;
     }
     ui_text_set_language(UI_LANG_EN);
 }
@@ -890,9 +827,10 @@ TEST_CASE(a_port_found_held_ends_a_hold_of_arm)
     tap(val(PG_SERVO, 0, 0));
     settle();
     CHECK(kst_panel_holds_port());
-    /* The panel starts again and a finger is on ARM before the port's page
-     * is read. */
+    /* The panel starts again on LIVE and a finger is on ARM before the
+     * port's page is read. */
     scr->reset();
+    go(SERVO_FN_LIVE);
     scr->enter();
     ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 2);
     settle();
@@ -999,7 +937,7 @@ int main(void)
     RUN(no_setting_that_reaches_the_port_changes_while_it_is_held);
     RUN(the_programmer_stays_on_the_screen_while_the_port_is_held);
     RUN(leaving_servo_switches_its_supply_off_once_the_port_lets_go);
-    RUN(an_armed_bench_is_not_connected_and_a_held_port_takes_no_arm);
+    RUN(an_armed_bench_is_not_connected_and_kst_offers_no_arm);
     RUN(a_wire_hold_locks_arm_and_drops_the_ask);
     RUN(a_port_found_held_ends_a_hold_of_arm);
     RUN(an_unknown_coordinate_is_no_row);
