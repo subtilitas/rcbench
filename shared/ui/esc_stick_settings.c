@@ -139,6 +139,8 @@ void sp_set_close(void)
 
 bool sp_set_shown(void) { return p.sl.open; }
 
+bool esc_stick_settings_shown(void) { return p.sl.open; }
+
 bool sp_set_back(void)
 {
     if (!p.sl.open) {

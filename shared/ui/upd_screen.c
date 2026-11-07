@@ -138,7 +138,7 @@ static struct {
     ui_hold_t hold;       /* DOWNLOAD & INSTALL */
     ui_hold_t cu_hold;    /* UPDATE IOMCU */
     unsigned  drawn_mask;
-    uint32_t  drawn_list[2]; /* the list's revision as each buffer drew it */
+    uint32_t  drawn_list[2]; /**< the list's revision as each buffer drew it */
 } s;
 
 /* The reminder. */

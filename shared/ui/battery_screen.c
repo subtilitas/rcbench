@@ -35,7 +35,7 @@
  *        lowest row a line of text may reach, 8px above it: body y 428.
  */
 #define CARD_B     UI_FOOTER_FLOOR
-#define TEXT_FLOOR (CARD_B - 8)
+#define TEXT_FLOOR (CARD_B - 8) /**< The text floor: body y 428. */
 
 /**
  * @brief The faces of the 1024 x 600 type scale this screen draws in:

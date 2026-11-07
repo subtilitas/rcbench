@@ -43,7 +43,7 @@
  *        body y 428.
  */
 #define CARD_B     UI_FOOTER_FLOOR
-#define TEXT_FLOOR (CARD_B - 8)
+#define TEXT_FLOOR (CARD_B - 8) /**< The text floor: body y 428. */
 
 /**
  * @brief The state card's width, px: the word KEIN SIGNAL in the 20 x 36

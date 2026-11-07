@@ -1,0 +1,77 @@
+/*
+ * UPDATES' settings list: the footer's SETTINGS opens it while no check or
+ * download runs, its rows switch the reminder and the releases, and only
+ * SAVE writes them.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+#include "upd_rig.h"
+
+TEST_CASE(the_reminder_row_switches_it_and_save_writes_it)
+{
+    fresh();
+    CHECK(settings_get_bool(SET_UPD_REMIND));    /* on by default */
+    list_step(0, false);
+    CHECK(!settings_get_bool(SET_UPD_REMIND));
+    /* The list writes nothing by itself: SAVE does. */
+    CHECK(!settings_save_asked());
+    const gfx_rect_t sv = ui_setlist_strip_rect(2);
+    tap(upd(), sv.x + sv.w / 2, sv.y + sv.h / 2);
+    CHECK(settings_save_asked());
+    CHECK(settings_save_tick(true));
+    list_step(0, true);
+    CHECK(settings_get_bool(SET_UPD_REMIND));
+    CHECK(settings_save_tick(true));
+    /* It asks the application for nothing: the setting is the request. */
+    CHECK_EQ(upd_screen_take(), 0u);
+    /* The home tag closes the list, the screen stays. */
+    list_back();
+    CHECK(!upd()->covered());
+    /* And it works without a home network: turning reminders back on
+     * needs none. */
+    g_v.have_net = false;
+    push();
+    list_step(0, true);
+    CHECK(!settings_get_bool(SET_UPD_REMIND));
+}
+
+TEST_CASE(the_releases_row_switches_the_channel_while_no_job_runs)
+{
+    fresh();
+    CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 0);    /* STABLE */
+    list_step(1, true);
+    CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 1);    /* TESTING */
+    CHECK(settings_save_tick(true));
+    list_step(1, true);
+    CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 0);
+    CHECK(settings_save_tick(true));
+    list_back();
+    /* During a check SETTINGS takes no press and says why. */
+    ui_router_set_alert(NULL);
+    g_v.have_net = false;
+    g_v.phase = UPD_PH_ASKING;
+    push();
+    tap(upd(), UP_SET_X, UP_SET_Y);
+    CHECK(!upd()->covered());
+    CHECK(ui_router_alert() != NULL
+          && strcmp(ui_router_alert(), TR(FOOT_SETTINGS_BUSY)) == 0);
+    CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 0);
+    /* A check that starts under the open list closes it. */
+    g_v.phase = UPD_PH_IDLE;
+    push();
+    tap(upd(), UP_SET_X, UP_SET_Y);
+    CHECK(upd()->covered());
+    g_v.phase = UPD_PH_ASKING;
+    push();
+    ticks(upd(), 1);
+    CHECK(!upd()->covered());
+    CHECK_EQ(upd_screen_take(), 0u);
+}
+
+int main(void)
+{
+    RUN(the_reminder_row_switches_it_and_save_writes_it);
+    RUN(the_releases_row_switches_the_channel_while_no_job_runs);
+    return test_summary("upd_settings");
+}

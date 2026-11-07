@@ -197,7 +197,8 @@ enum { PASS_PRESS = 0, PASS_TAP };
 typedef struct {
     prog_stage_t stage;
 
-    gfx_rect_t back, write_btn;
+    gfx_rect_t back;      /**< BACK in the crumb row */
+    gfx_rect_t write_btn; /**< RUN, ABORT or OK in the footer's middle slot */
     gfx_rect_t page_up, page_dn;
     gfx_rect_t row[ROWS_MAX], down[ROWS_MAX], up[ROWS_MAX];
 

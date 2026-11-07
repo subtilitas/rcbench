@@ -733,11 +733,26 @@ MOTOR & ESC 145 x 89px und das Tastenfeld der Blattzahl auf BALANCE
 
 ## Die Fußleiste und die Optionsliste
 
-MOTOR & ESC und SUPPLY enden in derselben Fußleiste: drei Felder von
+Die Seiten unten enden in derselben Fußleiste: drei Felder von
 328 x 48px bei x 10, 348 und 686, y 444 bis 492 des Inhalts (y 504 bis
 552 des Panels), 4px über dem Alarmband bei y 556. Die Felder sind die
 Spalten der SETUP-Leiste. Eine Seite mit Fußleiste hält ihre eigenen
 Bedienelemente über y 436 des Inhalts.
+
+| Seite | Mittleres Feld | OPTIONEN öffnet |
+| --- | --- | --- |
+| MOTOR & ESC | ARM / DISARM | die Liste der 8 Einstellungen für Motor, Akku und Gasausgang |
+| SUPPLY | AUSGANG EIN / AUS | die Liste der Grenzen des Netzteils und der Anschlüsse des PD mini |
+| ESC STICK, auf der Seite eines Profils, seinem Lauf und seinem Ergebnis | START n / ABBRECHEN / OK | die Liste des Netzteils und der 12 Timing-Einstellungen |
+| IMU | 2s HALTEN: KALIBRIEREN | die Liste SENSORS von SETUP beim Eintrag IMU |
+| UPDATES | 2s HALTEN: LADEN & INSTALLIEREN, wenn eine neuere Version gefunden ist | die Liste mit Erinnerung und Versionen |
+| LOGS, auf der Dateiliste | leer | die Liste SD CARD von SETUP |
+| FILES, auf den Bereichen | leer | die Liste SD CARD von SETUP |
+| RECEIVER, BATTERY, BALANCE | leer | nichts: das Feld bleibt leer |
+
+Eine Liste aus SENSORS oder SD CARD von SETUP ist die von SETUP; ihr
+Home-Feld führt zur Seite zurück, die sie geöffnet hat. WI-FI und
+OUTPUTS haben keine Fußleiste.
 
 | Feld | Inhalt |
 | --- | --- |
@@ -748,9 +763,12 @@ Bedienelemente über y 436 des Inhalts.
 OPTIONEN öffnet die Optionsliste der Seite über dem ganzen Inhalt. Sie
 öffnet nur, solange die Seite nichts ansteuert. MOTOR & ESC braucht einen
 Prüfstand in SAFE ohne gehaltenes ARM, SUPPLY einen ausgeschalteten Ausgang
-ohne unterwegs befindliches EIN. Sonst ist die Taste grau, und ein Tippen
-zeigt `OPTIONEN nur bei SAFE. Schalte zuerst auf SAFE.` oder
-`OPTIONEN nur bei Ausgang aus. Schalte ihn zuerst aus.` im Alarmband.
+ohne unterwegs befindliches EIN, ESC STICK einen Prüfstand in SAFE ohne
+Lauf, UPDATES keine laufende Suche und keinen laufenden Download. Sonst
+ist die Taste grau, und ein Tippen zeigt
+`OPTIONEN nur bei SAFE. Schalte zuerst auf SAFE.`,
+`OPTIONEN nur bei Ausgang aus. Schalte ihn zuerst aus.` oder
+`OPTIONEN nur ohne laufende Suche oder Download.` im Alarmband.
 Wird ein Ausgang unter der offenen Liste aktiv, schließt sie.
 
 Die Liste ist die Kategorieliste von SETUP ([Tasten und Liste](#tasten-und-liste)):

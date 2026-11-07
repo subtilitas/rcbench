@@ -50,7 +50,7 @@
  *        body y 428.
  */
 #define CARD_B     UI_FOOTER_FLOOR
-#define TEXT_FLOOR (CARD_B - 8)
+#define TEXT_FLOOR (CARD_B - 8) /**< The text floor: body y 428. */
 
 /** @brief The rotor's card: 640px, the right card 360. */
 #define LCARD_W 640

@@ -2862,7 +2862,6 @@ shared/ui/esc_stick_int.h: warning: Compound stick_shared_t is not documented.
 shared/ui/esc_stick_int.h: warning: Member DRAWER (macro definition) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member SP_SHARED (macro definition) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member TAP_SLOP (macro definition) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member back (variable) of struct stick_shared_t is not documented.
 shared/ui/esc_stick_int.h: warning: Member down[ROWS_MAX] (variable) of struct stick_shared_t is not documented.
 shared/ui/esc_stick_int.h: warning: Member found (variable) of struct stick_shared_t is not documented.
 shared/ui/esc_stick_int.h: warning: Member found_rect (variable) of struct stick_shared_t is not documented.
@@ -2874,7 +2873,6 @@ shared/ui/esc_stick_int.h: warning: Member page_up (variable) of struct stick_sh
 shared/ui/esc_stick_int.h: warning: Member pass (variable) of struct stick_shared_t is not documented.
 shared/ui/esc_stick_int.h: warning: Member pg (variable) of file esc_stick_int.h is not documented.
 shared/ui/esc_stick_int.h: warning: Member prog_stage_t (enumeration) of file esc_stick_int.h is not documented.
-shared/ui/esc_stick_int.h: warning: Member read_btn (variable) of struct stick_shared_t is not documented.
 shared/ui/esc_stick_int.h: warning: Member rect (variable) of struct stick_shared_t::[struct].tap is not documented.
 shared/ui/esc_stick_int.h: warning: Member rev (variable) of struct stick_shared_t is not documented.
 shared/ui/esc_stick_int.h: warning: Member row[ROWS_MAX] (variable) of struct stick_shared_t is not documented.
@@ -2887,7 +2885,6 @@ shared/ui/esc_stick_int.h: warning: Member sp_wrap_lines(const char *text, int c
 shared/ui/esc_stick_int.h: warning: Member stage (variable) of struct stick_shared_t is not documented.
 shared/ui/esc_stick_int.h: warning: Member tap (variable) of struct stick_shared_t is not documented.
 shared/ui/esc_stick_int.h: warning: Member up[ROWS_MAX] (variable) of struct stick_shared_t is not documented.
-shared/ui/esc_stick_int.h: warning: Member write_btn (variable) of struct stick_shared_t is not documented.
 shared/ui/esc_stick_int.h: warning: Member x (variable) of struct stick_shared_t::[struct].tap is not documented.
 shared/ui/esc_stick_int.h: warning: Member y (variable) of struct stick_shared_t::[struct].tap is not documented.
 shared/ui/esc_stick_int.h: warning: parameters of member esc_stick_panel_safe_at are not documented
@@ -4507,7 +4504,6 @@ shared/ui/upd_screen.c: warning: Member s_cu_req (variable) of file upd_screen.c
 shared/ui/upd_screen.c: warning: Member s_rem (variable) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member s_req (variable) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member s_v (variable) of file upd_screen.c is not documented.
-shared/ui/upd_screen.c: warning: Member testing_set(void) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member tick(float dt_s) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member touched(void) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member upd_remind_screen(void) (function) of file upd_screen.c is not documented.

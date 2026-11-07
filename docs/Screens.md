@@ -683,11 +683,26 @@ count's keypad's are 242 x 72px.
 
 ## The footer and the settings list
 
-MOTOR & ESC and SUPPLY end in the same footer: three slots of
+The screens below end in the same footer: three slots of
 328 x 48px at x 10, 348 and 686, body y 444 to 492 (panel y 504 to 552),
 4px above the alert band at panel y 556. The slots are SETUP's strip
 columns. A screen with the footer keeps its own controls above body
 y 436.
+
+| Screen | Middle slot | SETTINGS opens |
+| --- | --- | --- |
+| MOTOR & ESC | ARM / DISARM | the list of the 8 motor, pack and throttle-output settings |
+| SUPPLY | OUTPUT ON / OFF | the list of the supply's limits and the PD mini's wiring |
+| ESC STICK, on a profile's page, its run and its result | RUN n / ABORT / OK | the list of the supply and the 12 timing settings |
+| IMU | HOLD 2s: CALIBRATE | SETUP's SENSORS list at the IMU entry |
+| UPDATES | HOLD 2s TO DOWNLOAD & INSTALL, with a newer release found | the list of the reminder and the releases |
+| LOGS, on the file list | empty | SETUP's SD CARD list |
+| FILES, on the panes | empty | SETUP's SD CARD list |
+| RECEIVER, BATTERY, BALANCE | empty | nothing: the slot is empty |
+
+A list opened from SETUP's SENSORS or SD CARD is SETUP's own; its home
+tag returns to the screen that opened it. WI-FI and OUTPUTS have no
+footer.
 
 | Slot | What it holds |
 | --- | --- |
@@ -697,11 +712,12 @@ y 436.
 
 SETTINGS opens the screen's settings list over the whole body. It opens
 only while the screen drives nothing. MOTOR & ESC needs a SAFE bench with
-ARM not held; SUPPLY needs the output off and no ON on its way. Otherwise
-the button is grey and a tap puts
-`SETTINGS open on a SAFE bench only. Switch to SAFE first.` or
-`SETTINGS open with the output off only. Switch it off first.` in the
-alert band. An output that goes live under an open list closes it.
+ARM not held; SUPPLY needs the output off and no ON on its way; ESC STICK
+needs a SAFE bench and no run; UPDATES needs no check and no download
+running. Otherwise the button is grey and a tap puts
+`SETTINGS open on a SAFE bench only. Switch to SAFE first.`,
+`SETTINGS open with the output off only. Switch it off first.` or
+`SETTINGS open with no check or download running.` in the alert band. An output that goes live under an open list closes it.
 
 The list is SETUP's category list ([Keys and the list](#keys-and-the-list)):
 

@@ -124,6 +124,13 @@ struct ui_setlist;
 const struct ui_setlist *esc_stick_settings_list(void);
 
 /**
+ * @brief The SETTINGS list covers the body, MOTOR & ESC's output strip
+ *        included; MOTOR & ESC draws no strip under it.
+ * @return Whether the list is open.
+ */
+bool esc_stick_settings_shown(void);
+
+/**
  * @brief The list's row of setting @p id; for tests.
  * @param id The setting.
  * @return The row, from 0, headings counted; -1 for a setting not listed.
