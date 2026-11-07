@@ -683,11 +683,26 @@ count's keypad's are 242 x 72px.
 
 ## The footer and the settings list
 
-MOTOR & ESC and SUPPLY end in the same footer: three slots of
+The screens below end in the same footer: three slots of
 328 x 48px at x 10, 348 and 686, body y 444 to 492 (panel y 504 to 552),
 4px above the alert band at panel y 556. The slots are SETUP's strip
 columns. A screen with the footer keeps its own controls above body
 y 436.
+
+| Screen | Middle slot | SETTINGS opens |
+| --- | --- | --- |
+| MOTOR & ESC | ARM / DISARM | the list of the 8 motor, pack and throttle-output settings |
+| SUPPLY | OUTPUT ON / OFF | the list of the supply's limits and the PD mini's wiring |
+| ESC STICK, on a profile's page, its run and its result | RUN n / ABORT / OK | the list of the supply and the 12 timing settings |
+| IMU | HOLD 2s: CALIBRATE | SETUP's SENSORS list at the IMU entry |
+| UPDATES | HOLD 2s TO DOWNLOAD & INSTALL, with a newer release found | the list of the reminder and the releases |
+| LOGS, on the file list | empty | SETUP's SD CARD list |
+| FILES, on the panes | empty | SETUP's SD CARD list |
+| RECEIVER, BATTERY, BALANCE | empty | nothing: the slot is empty |
+
+A list opened from SETUP's SENSORS or SD CARD is SETUP's own; its home
+tag returns to the screen that opened it. WI-FI and OUTPUTS have no
+footer.
 
 | Slot | What it holds |
 | --- | --- |
@@ -697,11 +712,12 @@ y 436.
 
 SETTINGS opens the screen's settings list over the whole body. It opens
 only while the screen drives nothing. MOTOR & ESC needs a SAFE bench with
-ARM not held; SUPPLY needs the output off and no ON on its way. Otherwise
-the button is grey and a tap puts
-`SETTINGS open on a SAFE bench only. Switch to SAFE first.` or
-`SETTINGS open with the output off only. Switch it off first.` in the
-alert band. An output that goes live under an open list closes it.
+ARM not held; SUPPLY needs the output off and no ON on its way; ESC STICK
+needs a SAFE bench and no run; UPDATES needs no check and no download
+running. Otherwise the button is grey and a tap puts
+`SETTINGS open on a SAFE bench only. Switch to SAFE first.`,
+`SETTINGS open with the output off only. Switch it off first.` or
+`SETTINGS open with no check or download running.` in the alert band. An output that goes live under an open list closes it.
 
 The list is SETUP's category list ([Keys and the list](#keys-and-the-list)):
 
@@ -1294,13 +1310,13 @@ with its labels, rows and buttons in the 10 x 20 face:
 
 | Part | Place and size |
 | --- | --- |
-| crumb row | y 30 to 78: BACK 120 x 48px, the trail in the 12 x 24 face, and at the right the search field (260px, its X 48px), `^` and `v` (56px each) on the list or TIMING (168px) on a profile's page |
+| crumb row | y 30 to 78: BACK 120 x 48px, the trail in the 12 x 24 face, and at the right the search field (260px, its X 48px) and `^` and `v` (56px each) on the list |
 | list | 7 rows a page, 48px tall at a 56px pitch from y 84, 984px wide; a model's name in 30 characters; the footer line ends 4px above the alert band |
-| profile's page and TIMING | the parameter card on the left, 660px: 6 rows a page, 48px tall at a 56px pitch, each with its number, its name (up to 23 characters), its value in a 250px column and `-` and `+` of 48 x 48px, 8px between any two |
-| side column | 340px right of the parameter card: CHANGE (TIMING's title on TIMING), the rows shown and `^` and `v` of 48 x 48px; MANUAL INTERVENTION REQUIRED, 310 x 48px; then how the profile's menu works, the supply and the entry time, and the picked row's help, wrapped to 31 characters a line |
-| foot row | y 436 to 492, 4px above the alert band: the note at the left on up to 2 lines, DEFAULTS and RUN, ABORT, OK or CLOSE, 168 x 56px each |
-| run and result | the device card across the body from y 84 with its two lines, the run's card under it from y 136 with the stack light at its right, two help lines from y 390, and the foot row; a result's MANUAL INTERVENTION REQUIRED, 330 x 56px, left of OK |
-| warning, manual steps, prompt | a panel over the pages from y 28, its title in the 20 x 36 face, its lines at a 22px pitch, its buttons 48px tall ending 4px above the foot row, so a second tap on RUN's place lands on none of them |
+| profile's page | the parameter card on the left, 660px, y 84 to 388: 5 rows a page, 48px tall at a 56px pitch, each with its number, its name (up to 23 characters), its value in a 250px column and `-` and `+` of 48 x 48px, 8px between any two; the note across the body on up to 2 lines from y 396 |
+| side column | 340px right of the parameter card: CHANGE, the rows shown and `^` and `v` of 48 x 48px; MANUAL INTERVENTION REQUIRED, 310 x 48px; then how the profile's menu works, the supply and the entry time, and the picked row's help, wrapped to 31 characters a line |
+| footer | y 444 to 492, 4px above the alert band ([The footer and the settings list](#the-footer-and-the-settings-list)): `[ESC STICK] [RUN n / ABORT / OK] [SETTINGS]` on a profile's page, its run and its result |
+| run and result | the device card across the body from y 84 with its two lines, the run's card under it from y 136 to 388 with the stack light at its right, two help lines from y 394, and the footer; a result's MANUAL INTERVENTION REQUIRED, 330 x 48px, left of the stack light at x 614 to 944, y 244 to 292; the change lines beside it end 12px to its left, and the lines from the seventh on run under it |
+| warning, manual steps, prompt | a panel over the pages and the footer from y 28, its title in the 20 x 36 face, its lines at a 22px pitch, its buttons 48px tall ending 4px above the footer, so a second tap on RUN's place lands on none of them |
 
 BACK and the home tag move up one level: from a stick profile to its list,
 from a manufacturer's models to the manufacturer list, then to PROGRAM.
@@ -1406,24 +1422,25 @@ DONE, a pressed STOP, ABORT, the home tag or leaving the screen
 
 ![Ended by the supply](img/motor-stick-failed.png)
 
-TIMING holds the beep timings and the supply settings. None of them is
-measured:
+The footer's SETTINGS opens the settings list
+([The footer and the settings list](#the-footer-and-the-settings-list)):
+Voltage and Current limit under SUPPLY, the beep timings under TIMING AND
+DETECTION. None of them is measured. SETTINGS takes a press on a SAFE
+bench with no run under way; otherwise it is grey and a tap puts
+`SETTINGS open on a SAFE bench only. Switch to SAFE first.` in the alert
+band. A bench that arms under the open list closes it.
 
-![Timing](img/motor-stick-timing.png)
+![The SETTINGS list](img/motor-stick-timing.png)
 
-Use a row's `-` and `+` buttons to change its value by one step, or tap the
-250px value column to open the keypad. The keypad covers the page from
-below the output strip to 4px above the alert band: 1008 x 464px, with
-242 x 81px keys. It shows the setting's name, range and unit. Decimal
+The list covers the whole body, the output strip included; its strip reads
+`[ESC STICK] [RESET ESC STICK] [SAVE]`. A tap on a number's value opens the
+keypad, 1004 x 482px. It shows the setting's name, range and unit. Decimal
 places follow the step size: one for Voltage's 0.1V, two for Current
-limit's 0.05A.
-
-OK rounds to the nearest step, as the step buttons do: 1.23A becomes 1.25A.
-CLOSE requests a save, as after a step-button change. An out-of-range value
-leaves the keypad open with the range in the warning colour. CANCEL,
-empty OK or the home tag closes it without changing the value; TIMING
-remains open. Controls behind the keypad receive no touches. Profile items
-use lists of the ESC's own values and do not open a keypad.
+limit's 0.05A. OK rounds to the nearest step, as the keys do: 1.23A
+becomes 1.25A. A change applies at once; SAVE keeps it. RESET ESC STICK
+sets the 14 settings to their defaults and no other. Voltage 0.0V takes
+the voltage from the profile's cell count. Profile items use lists of the
+ESC's own values and do not open a keypad.
 
 ![The keypad of Beep min](img/motor-stick-timing-keypad.png)
 
@@ -2771,7 +2788,7 @@ must be answered first; with the output on the list does not open.
 
 ![Receiver](img/analyser.png)
 
-RECEIVER has sixteen channels in two columns of eight 52px lanes. Each
+RECEIVER has sixteen channels in two columns of eight 44px lanes. Each
 lane shows its channel name in 10 x 20, history, a 56px bar for the current
 value and microseconds in 8 x 16. History contains 200 samples, one pixel
 each: about 2.8s at 71 frames per second (one S.BUS frame every 14ms).
@@ -2780,10 +2797,10 @@ lane; a dropout as a simultaneous notch across all sixteen.
 
 The 260px state card on the right shows the state in 20 x 36, followed
 by up to three lines of 12 x 24 explanation. BUS, RATE, FRAMES, RESYNC
-and BAD TAIL use 32px rows. CH17 and CH18 have 44px lamps that light when
+and BAD TAIL use 26px rows. CH17 and CH18 have 36px lamps that light when
 the channel is set; they are not interactive. CHANNELS and RAW DATA are
 150 x 48px tabs. RAW DATA shows the last frame's bytes, eight per row,
-and decoder counts in 8 x 16.
+and decoder counts in 8 x 16. The cards end at body y 436 on the footer, which names the screen and holds no hold and no SETTINGS ([The footer and the settings list](#the-footer-and-the-settings-list)).
 
 No firmware feeds RECEIVER (see [Receiver buses](Receivers.md)); the
 screen shows NO SIGNAL.
@@ -2807,10 +2824,10 @@ the largest difference between two cells: HEALTHY below 30mV, WATCH from
 of 12mV and is printed beside the plot.
 
 The plot card is 640px wide, the right card 360px. A bar is at most 48px
-wide and reaches 164px either side of the mean. Under each bar the cell's
+wide and reaches 148px either side of the mean. Under each bar the cell's
 number and its voltage are in 12 x 24 up to 11 cells and in 10 x 20 from 12 to
 14. The verdict is in 20 x 36, its line in up to two lines of 12 x 24, the six
-rows 36px each, the note in 10 x 20.
+rows 28px each, the note in 10 x 20. The cards end at body y 436 on the footer, which names the screen and holds no hold and no SETTINGS ([The footer and the settings list](#the-footer-and-the-settings-list)).
 
 Measure under load. At rest a weak cell reads like the others.
 
@@ -2845,7 +2862,7 @@ The file list has four layout areas. At the top, the shared strip opens
 BENCH (110 x 40px each), folder and card names, and PREV/NEXT (140 x 48px)
 when the folder spans pages.
 
-The 1008px list shows six 44px rows at 48px pitch. Each row responds across
+The 1008px list shows five 44px rows at 48px pitch. Each row responds across
 its full 48px height. It shows name, modification date and right-aligned
 size in 10 x 20. Names use up to 60 characters, or the first 58 plus `..`.
 The 160px date column uses the card's modification time, as INFO in
@@ -2854,12 +2871,19 @@ Missing timestamps and dates in 1980, from an unset clock, leave it empty
 ([PANEL: Time zone and the clock](#panel-time-zone-and-the-clock)). Size
 uses 100px at the row's end; file type and run duration are not listed.
 
-The footer, body y 440 to 492, ends 4px above the alert band. RESCAN
-(140 x 52px) and WI-FI (100 x 52px) are on the left; DELETE and OPEN
-(140 x 52px) are on the right. WI-FI opens [Wi-Fi](#wi-fi) from any list
-state and its home tag returns here. WI-FI is absent during the DELETE
-dialog and file views. File messages occupy up to two 37-character lines
-between WI-FI and DELETE.
+The row of buttons, body y 388 to 436, ends on the screen's footer.
+RESCAN (140 x 48px) and WI-FI (100 x 48px) are on the left; DELETE and
+OPEN (140 x 48px) are on the right. WI-FI opens [Wi-Fi](#wi-fi) from any
+list state and its home tag returns here. WI-FI is absent during the
+DELETE dialog and file views. File messages occupy up to two 37-character
+lines between WI-FI and DELETE.
+
+The footer under the file list reads `[LOGS] [ ] [SETTINGS]`
+([The footer and the settings list](#the-footer-and-the-settings-list)).
+LOGS has no hold in the middle slot. SETTINGS opens the SD CARD list of
+[Setup](#setup), with the log switches and folders; its home tag returns
+here. The import view, the plot, the report and the DELETE dialog keep
+the full body and show no footer.
 
 The import view shows DETECTED (400px wide) beside the column list (600px,
 7 rows at a pitch of 48px), with four buttons of 246 x 52px under them.
@@ -3257,7 +3281,7 @@ such as `+ 1 NOT LISTED`: names beginning with a full stop (`.DS_Store`,
 `._RCBENCH.LOG`) and names longer than 63 bytes. A folder containing only
 excluded entries is not empty, so DELETE refuses it.
 
-The list shows 5 rows, each 44px tall at 48px pitch. Drag the list or its
+The list shows 4 rows, each 44px tall at 48px pitch. Drag the list or its
 56px scroll bar to scroll. Folders precede files, with each group sorted
 by name. Each row shows an icon, name and right-aligned size (`512B`,
 `14kB`, `7.0MB`, `8.00GB`; binary units, with 1kB equal to 1,024 bytes).
@@ -3290,15 +3314,21 @@ ESC signal-wire backups in `BENCH/ESCW/CONF` use names such as
 The programming session's own FILES list protects backups saved during
 that session.
 
-The footer spans body y 440 to 492, ending 4px above the alert band.
-RESCAN (140 x 52px) is at the left, as on [Logs](#logs), followed by COPY,
-MOVE, RENAME, DELETE, NEW, INFO and OPEN (118 x 52px each). OPEN is at the
-right margin; buttons are 6px apart.
+The row of buttons spans body y 388 to 436 and ends on the screen's
+footer. RESCAN (140 x 48px) is at the left, as on [Logs](#logs), followed
+by COPY, MOVE, RENAME, DELETE, NEW, INFO and OPEN (118 x 48px each). OPEN
+is at the right margin; buttons are 6px apart.
+
+The footer under the panes reads `[FILES] [ ] [SETTINGS]`
+([The footer and the settings list](#the-footer-and-the-settings-list)).
+SETTINGS opens the SD CARD list of [Setup](#setup); its home tag returns
+here. The text viewer, the editor, the keyboard, INFO and the questions
+keep the full body and show no footer.
 
 Labels use the 10 x 20 font with at least 4px on either side. German
 AKTUALISIEREN occupies 130px and VERSCHIEBEN 110px. Unavailable buttons
 are dimmed. Tapping one explains the refusal in the two-line message area
-above the footer, using the 12 x 24 font.
+above the row of buttons, using the 12 x 24 font.
 
 | Button | What it does |
 |---|---|
@@ -3609,7 +3639,7 @@ its position:
 - A removed page-start entry still defines that page's starting position;
   the page begins at the next entry. If nothing remains from that point,
   the pane shows the folder's last page.
-- A page with fewer rows than before shows its last 5 rows, with no empty
+- A page with fewer rows than before shows its last 4 rows, with no empty
   row below them.
 - A folder removed on a computer shows `This folder is not on the card.`
   with no rows. The path button leads out of it.
@@ -5340,9 +5370,11 @@ connected to the panel over Bluetooth LE through the board's ESP32-C6
 OFF, AXIS (X, Y, Z), SIGN (+, -), RATE (10, 20, 50, 100 or 200Hz, 50Hz by
 default), ALGORITHM (6-AXIS or 9-AXIS) and ANGLE SOURCE. The screen's
 controls, left, 460 x 56px at a 64px pitch from body y 16: SCAN FOR SENSORS,
-a free slot, `HOLD 2s: CALIBRATE ACCELEROMETER`, ZERO and CLEAR ZERO side
-by side, and IMU SETTINGS, which opens SENSORS on the IMU entry; its home tag
-comes back. The card on the right, x 484 to 1016, names the bound sensor and
+then ZERO and CLEAR ZERO side by side. The footer
+([The footer and the settings list](#the-footer-and-the-settings-list))
+reads `[IMU] [HOLD 2s: CALIBRATE] [SETTINGS]`; SETTINGS opens SENSORS on
+the IMU entry, and its home tag comes back. The card on the right, x 484 to
+1016, body y 16 to 436, names the bound sensor and
 its address with its type, the C6's firmware, the state, the angles X, Y and Z from the
 zero in the 16 x 28px face (the axis the runs read in the accent), the rate
 of angle frames, the age of the newest one and the sensor's battery. SCAN
@@ -5714,23 +5746,35 @@ release ([The release line](#the-release-line)).
 
 ![UPDATES](img/updates.png)
 
-The buttons are 460 x 56px, 64px apart, on the left. The card on the
-right is 532px wide, from body y 16 to 384; its text runs in lines of 41
+CHECK FOR UPDATES is 460 x 56px at body y 16 on the left. The card on the
+right is 532px wide, from body y 16 to 336; its text runs in lines of 41
 characters of the 12 x 24px face, 28px apart. When a result runs down to
-the card's last three lines, those lines are left out. Under the
-buttons the IOmcu section's lines are in the 10 x 20px face, and its
-hold is a fifth button of the same size, from body y 428. Under the card
-the C6 RADIO row: one line at body y 396 and its hold, 532 x 56px, beside
-the IOmcu's ([The C6 radio](#the-c6-radio)).
+the card's last three lines, those lines are left out. Under CHECK the
+IOmcu section's lines are in the 10 x 20px face, and its hold is a button
+of the same size, from body y 380. Under the card the C6 RADIO row: one
+line at body y 348 and its hold, 532 x 56px, beside the IOmcu's
+([The C6 radio](#the-c6-radio)). The footer
+([The footer and the settings list](#the-footer-and-the-settings-list))
+reads `[UPDATES] [HOLD 2s TO DOWNLOAD & INSTALL] [SETTINGS]`; the middle
+slot is empty until a check finds a newer release.
 
 | Control | Action |
 | --- | --- |
 | `CHECK FOR UPDATES` | Asks GitHub once. `CANCEL` on the same key while the check runs. |
-| `REMINDER AT START: ON` / `OFF` | Switches the start-up check and its reminder. Kept with SAVE on SETUP, as every setting. On by default. |
-| `RELEASES: STABLE` / `TESTING` | Sets which releases a check reads ([The check](#the-check)). Kept with SAVE on SETUP. `STABLE` by default. A switch hides the last check's result: a release found on the other setting is not offered. |
-| `HOLD 2s TO DOWNLOAD & INSTALL` | Shown once a check found a newer release. Downloads, checks and installs it. |
+| `HOLD 2s TO DOWNLOAD & INSTALL` | In the footer's middle slot once a check found a newer release. Downloads, checks and installs it. |
+| `SETTINGS` | Opens the list of Reminder at start and Releases. Grey while a check or a download runs or a finger holds the download; a tap then puts `SETTINGS open with no check or download running.` in the alert band. A check that starts under the open list closes it. |
 | `HOLD 2s TO UPDATE THE IOMCU` | Starts the IOmcu's update from the image this panel carries ([The IOmcu](#the-iomcu)). |
 | `HOLD 2s TO UPDATE THE C6 RADIO` | Sends the C6 radio's image this panel carries to the board's ESP32-C6 ([The C6 radio](#the-c6-radio)). |
+
+![UPDATES' SETTINGS list](img/updates-settings.png)
+
+| Setting | Values | Default | Effect |
+| --- | --- | --- | --- |
+| Reminder at start | OFF, ON | ON | the start-up check and its reminder |
+| Releases | STABLE, TESTING | STABLE | which releases a check reads ([The check](#the-check)); a change hides the last check's result, and a release found on the other setting is not offered |
+
+A change applies at once; SAVE in the list's strip keeps it, as on SETUP
+([Keeping the values](#keeping-the-values)).
 
 The card names the running version and the kept home network. Both the
 check and the download need:
@@ -6000,7 +6044,7 @@ The reminder is a box of 860 x 480px with its lines in the 12 x 24px
 face. NOT NOW and NEVER REMIND ME are 398 x 56px side by side; the hold is
 812 x 64px under them.
 
-With REMINDER AT START on and a home network kept, the panel runs the check
+With Reminder at start on and a home network kept, the panel runs the check
 once after each start. It waits for a moment the bench allows: the splash
 gone, the bench SAFE, the supply output off, no log run open, WI-FI closed
 and no IOmcu update offered or running. If these conditions are not met within 10min, the check is skipped for
@@ -6015,7 +6059,7 @@ gone and the menu shows.
 | Control | Action |
 | --- | --- |
 | `NOT NOW` | Closes the reminder until the next start of the panel. Leaving it by the HOME tag does the same. |
-| `NEVER REMIND ME` | Switches REMINDER AT START off and asks for the save, which happens at the next moment the settings may be written ([Keeping the values](#keeping-the-values)). SETUP > UPDATES switches it on again. |
+| `NEVER REMIND ME` | Switches Reminder at start off and asks for the save, which happens at the next moment the settings may be written ([Keeping the values](#keeping-the-values)). UPDATES' SETTINGS list switches it on again. |
 | `HOLD 2s TO DOWNLOAD & INSTALL` | The same hold as on UPDATES. |
 
 The start-up check shows nothing when it finds no newer release or fails.
@@ -6775,11 +6819,12 @@ the words "Not measured." stand under the readings, 20px high and 88px wide.
 The TEST RIG and AIRCRAFT panes show placement guides and carry no mark.
 
 BALANCE, TEST RIG and AIRCRAFT are tabs of 150 x 48px. The rotor's card is
-640px wide, its disc 160px in radius; the right card is 360px wide.
+640px wide, its disc 128px in radius; the right card is 360px wide.
 PROPELLER and EDF are 162 x 48px, the blade count's `-` and `+` 56 x 48px,
-the count's tap area 114 x 48px, the four readings rows of 36px. The notes
+the count's tap area 114 x 48px, the four readings rows of 28px. The notes
 and the rules' two lines are in 8 x 16; the rules' heads, the labels and the
-drawings' callouts in 10 x 20.
+drawings' callouts in 10 x 20. The rules stand 55px apart. The cards end at body y 436 on the footer, which names the screen and holds no hold and no SETTINGS ([The footer and the settings list](#the-footer-and-the-settings-list)). The
+blade count's keypad covers both cards and the footer.
 
 ## Unknown screen ids
 

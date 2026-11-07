@@ -77,6 +77,7 @@
 #include "servo_spots.h"
 #include "stick_spots.h"
 #include "supply_spots.h"
+#include "ui_footer.h"
 #include "ui_setlist.h"
 #include "logview_spots.h"
 #include "motor_spots.h"
@@ -101,13 +102,13 @@ extern const uint32_t board_drawing_rp2350_can_bytes;
 #define H UI_PANEL_H
 
 /* The ESC STICK controls in body coordinates (stick_spots.h): the crumb
- * row's ^ and v, TIMING and the search field at the right edge, the foot
- * row's RUN, the panels' HOLD TO RUN and OK at their foot, and a parameter
- * row's + stepper. */
+ * row's ^ and v and the search field at the right edge, the footer's RUN
+ * and SETTINGS, the panels' HOLD TO RUN and OK at their foot, and a
+ * parameter row's + stepper. */
 #define RS_LIST_UP_X   ST_LIST_UP_X
 #define RS_LIST_DN_X   ST_LIST_DN_X
 #define RS_CRUMB_CY    ST_CRUMB_CY
-#define RS_TIMING_X    ST_TIMING_X
+#define RS_SET_X       ST_SET_X
 #define RS_FIND_X      ST_FIND_X
 #define RS_RUN_X       ST_WRITE_X
 #define RS_RUN_CY      ST_BTN_CY
@@ -2358,7 +2359,8 @@ static void pose_upd(const char *view)
     v.job = UPD_JOB_CHECK;
     v.phase = UPD_PH_ENDED;
     v.budget_s = 30u;
-    if (strcmp(view, "updates") == 0) {
+    if (strcmp(view, "updates") == 0
+        || strcmp(view, "updates-settings") == 0) {
         v.phase = UPD_PH_IDLE;
     } else if (strcmp(view, "updates-checking") == 0) {
         v.phase = UPD_PH_ASKING;
@@ -2483,6 +2485,11 @@ static void pose_upd(const char *view)
         c6.known = false;
     }
     upd_c6_set(&c6);
+    if (strcmp(view, "updates-settings") == 0) {
+        /* The footer's SETTINGS: the list of the reminder and RELEASES. */
+        const gfx_rect_t r = ui_footer_rect(UI_FOOTER_SETTINGS);
+        tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
+    }
 }
 
 /* The firmware write, at a point inside it, at its end, or failed; and the
@@ -3119,10 +3126,15 @@ static void pose_motor_tools(ui_screen_id_t id, const char *view)
         } else if (strcmp(view, "motor-stick") != 0) {
             stick_open("Hobbywing", "hobbywing-flyfun-8item");
             if (strncmp(view, "motor-stick-timing", 18) == 0) {
-                tap(RS_TIMING_X, UI_BAND_H + RS_CRUMB_CY);       /* TIMING */
+                /* The footer's SETTINGS: the 14 stick settings. */
+                tap(RS_SET_X, UI_BAND_H + RS_RUN_CY);
                 if (strcmp(view, "motor-stick-timing-keypad") == 0) {
-                    /* BEEP MIN's value, the third row, typed as 250. */
-                    tap(400 + 216 / 2, UI_BAND_H + RS_STEP_CY(2));
+                    /* BEEP MIN's value, typed as 250. */
+                    const gfx_rect_t v = ui_setlist_row_part(
+                        esc_stick_settings_list(),
+                        esc_stick_settings_row(SET_STICK_BEEP_MIN),
+                        UI_SL_PART_VALUE);
+                    tap(v.x + v.w / 2, UI_BAND_H + v.y + v.h / 2);
                     kp_type(esc_stick_panel_keypad(), "250");
                 }
             } else {
@@ -4235,7 +4247,7 @@ static void pose_shown_tools(ui_screen_id_t id, const char *view)
             }
         } else if (strcmp(view, "logs-delete") == 0) {
             /* The newest run is chosen as the list opens. */
-            tap(LV_DELETE_CX, UI_BAND_H + LV_FOOT_CY);   /* DELETE */
+            tap(LV_DELETE_CX, UI_BAND_H + LV_BR_FOOT_CY);   /* DELETE */
         } else if (strcmp(view, "logs-root") == 0) {
             /* ROOT, the first tab at the header row's left. */
             tap(LV_TAB_CX(0), UI_BAND_H + LV_HEAD_CY);

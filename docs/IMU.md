@@ -139,7 +139,7 @@ reading valid.
 | --- | --- | --- |
 | unlock | `FF AA 69 88 B5` | before every other command; harmless on the older firmware (not measured on this sensor) |
 | RSW, SAVE | `FF AA 02 0C 00`, `FF AA 00 00 00` | once on a connection whose first 8 good frames show other types than 0x52 and 0x53 |
-| CALSW 1, 3s, CALSW 0, SAVE | `FF AA 01 01 00`, `FF AA 01 00 00`, `FF AA 00 00 00` | `HOLD 2s: CALIBRATE ACCELEROMETER`, connected |
+| CALSW 1, 3s, CALSW 0, SAVE | `FF AA 01 01 00`, `FF AA 01 00 00`, `FF AA 00 00 00` | `HOLD 2s: CALIBRATE`, connected |
 | RATE, SAVE | `FF AA 03 <code> 00`, `FF AA 00 00 00` | a change of IMU rate: 0x06 10Hz, 0x07 20Hz, 0x08 50Hz, 0x09 100Hz, 0x0B 200Hz |
 | AXIS6, SAVE | `FF AA 24 01 00` (6-AXIS) or `FF AA 24 00 00` (9-AXIS), `FF AA 00 00 00` | a change of IMU algorithm |
 

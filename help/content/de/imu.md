@@ -13,10 +13,10 @@ Die Seite IMU steuert eine Bluetooth-IMU (Inertial Measurement Unit): einen WitM
 | Bedienelement | Funktion |
 |---|---|
 | SENSOREN SUCHEN | öffnet die Sensorliste und startet eine Suche von 10s; verfügbar, solange Bluetooth läuft und keine Suche und keine Kalibrierung läuft |
-| 2s HALTEN: BESCHLEUNIGUNG KALIBRIEREN | startet bei bestehender Verbindung die Kalibrierung des Beschleunigungssensors; halte ihn während des Countdowns von 3s still und waagerecht |
+| 2s HALTEN: KALIBRIEREN | in der Mitte der Fußleiste; startet bei bestehender Verbindung die Kalibrierung des Beschleunigungssensors; halte ihn während des Countdowns von 3s still und waagerecht |
 | NULLPUNKT | übernimmt die aktuellen Winkel als Nullpunkt, wenn ein Messwert vorliegt; mit WINKELQUELLE IMU werden dabei der Nullpunkt und MAX auf RUDER gelöscht |
 | NULLPUNKT LÖSCHEN | zeigt die Winkel wieder relativ zum eigenen Nullpunkt des Sensors |
-| IMU-OPTIONEN | öffnet den IMU-Eintrag unter [Sensoren](setup-sensors.md#die-imu); dessen Home-Feld führt hierher zurück |
+| OPTIONEN | rechts in der Fußleiste; öffnet den IMU-Eintrag unter [Sensoren](setup-sensors.md#die-imu); dessen Home-Feld führt hierher zurück |
 
 Ein Druck von weniger als 2s startet keine Kalibrierung. Das Band zeigt `Halte 2s, um den Beschleunigungssensor zu kalibrieren.`.
 
@@ -28,7 +28,7 @@ Ein Druck von weniger als 2s startet keine Kalibrierung. Das Band zeigt `Halte 2
 |---|---|
 | `SENSOR: HC-06` | der bei der Suche ermittelte Name des gebundenen Sensors, `OHNE NAMEN` ohne Namen, oder `KEINER GEBUNDEN`; darunter stehen Adresse und Typ (`P` öffentlich, `R` zufällig) |
 | `C6: 2.13.0` | die Firmware-Version des C6, `---`, wenn der C6 keine meldet |
-| Zustand | `IMU AUS IN IMU-OPTIONEN`, `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN SENSOR GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN`, `VERBUNDEN 50Hz` oder `KEINE FRAMES` |
+| Zustand | `IMU AUS: SIEHE OPTIONEN`, `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN SENSOR GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN`, `VERBUNDEN 50Hz` oder `KEINE FRAMES` |
 | X, Y, Z | die Winkel relativ zum Nullpunkt durch den IMU-Filter, mit einer Auflösung von 0,01°, ohne Messwert `---`; die von Servoläufen verwendete Achse erscheint in der Akzentfarbe |
 | RATE, ALTER | die Zahl der Winkel-Frames in der letzten Sekunde und die Zeit seit dem jüngsten Frame auf der Seite |
 | AKKU | der Akkuwert des Sensors aus Frame 0x52; über 6,0V ausgeblendet |

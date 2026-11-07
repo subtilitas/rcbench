@@ -90,6 +90,7 @@ set(SRCS
     esc_stick_panel.c
     esc_stick_list.c
     esc_stick_touch.c
+    esc_stick_settings.c
     esc_stick_draw.c
     esc_stick_draw_run.c
     log_viewer_screen.c
@@ -129,6 +130,7 @@ set(SRCS
     update_screen.c
     coproc_update_screen.c
     upd_screen.c
+    upd_settings.c
     upd_c6.c
     files_screen.c
     layout_screen.c

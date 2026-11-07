@@ -88,8 +88,7 @@ Die Liste hat zwei Ebenen.
 
 Ein Tipp auf ein Modell öffnet das Profil seiner Familie mit dem
 Modellnamen: `ESC STICK > Kontronik > JAZZ 55 LV (JAZZ / MINIJAZZ)`. Ist die
-Familie breiter als der Platz des Pfads, 56 Zellen zu 12px neben TIMING und
-70 auf der Seite von TIMING, zeigt der Pfad ihre ganzen Wörter, die passen,
+Familie breiter als der Platz des Pfads, 70 Zellen zu 12px, zeigt der Pfad ihre ganzen Wörter, die passen,
 und ` ..`, oder nichts, wenn schon ihr erstes Wort nicht passt; ein Wort wird
 nie abgeschnitten. Das
 Netzteil verwendet die niedrigste Zellenzahl dieses Modells, sofern sie
@@ -243,7 +242,7 @@ Während des Laufs zeigt die Seite die Phase, die Pieptöne der laufenden
 Gruppe, die letzte Gruppe und ob sie in der Reihenfolge war, und den Strom
 im Vergleich zu seinem Grundwert. ABBRECHEN beendet den Lauf, ebenso das Home-Feld im
 Band, STOP im Band und das Verlassen des Bildschirms. Das Home-Feld beendet ihn
-wie ABBRECHEN, und das Ergebnis bleibt auf der Seite. ZURÜCK und TIMING sind
+wie ABBRECHEN, und das Ergebnis bleibt auf der Seite. ZURÜCK und OPTIONEN sind
 nicht verfügbar. Die
 Signalsäule neben der Pieptonzahl ist [unten](#die-signalsäule)
 beschrieben.
@@ -270,7 +269,8 @@ Zeile den Rest.
 
 ![Vom Netzteil beendet: NETZTEIL AUS, Rot an](img/de/motor-stick-failed.png)
 
-TIMING öffnet die Einstellungen unten. SCHLIESSEN fordert das Speichern an;
+OPTIONEN in der Fußleiste öffnet die Einstellungen unten, bei SAFE und ohne
+laufenden Lauf. SPEICHERN in der Leiste der Liste fordert das Speichern an;
 gespeichert wird, während der Prüfstand SAFE ist und der Ausgang des
 Netzteils aus ist.
 
@@ -595,8 +595,9 @@ Schalten auf ARMED.
 
 ## Die Einstellungen
 
-Öffne TIMING auf der Seite eines Profils. Diese Werte werden mit den
-anderen Einstellungen gespeichert. Keiner davon ist gemessen.
+Öffne OPTIONEN in der Fußleiste der Seite eines Profils. Diese Werte werden
+mit SPEICHERN mit den anderen Einstellungen gespeichert. Keiner davon ist
+gemessen.
 
 | Einstellung | Vorgabe | Bereich | Was sie ist |
 | --- | --- | --- | --- |

@@ -692,10 +692,16 @@ bool ui_setlist_warn_line(const ui_setlist_t *sl, int i, char *line,
 
 void ui_setlist_tick(ui_setlist_t *sl, float dt_s)
 {
-    if (sl->drawn_dirty != settings_dirty()
-        || sl->drawn_asked != settings_save_asked()
-        || sl->drawn_failed != settings_save_failed()
-        || ((sl->warn || sl->open) && sl->drawn_armed != sl_bench_armed())) {
+    /* Only a list on screen draws, and so only it brings its record of the
+     * SAVE state up to date: a closed one would ask its host to repaint
+     * every frame after a save that ended once it closed. */
+    const bool shown = sl->open || ui_setlist_covered(sl);
+    if (shown
+        && (sl->drawn_dirty != settings_dirty()
+            || sl->drawn_asked != settings_save_asked()
+            || sl->drawn_failed != settings_save_failed()
+            || ((sl->warn || sl->open)
+                && sl->drawn_armed != sl_bench_armed()))) {
         invalidate(sl);
     }
     /* A row held, derived or locked since its keypad opened takes no

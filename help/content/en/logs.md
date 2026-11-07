@@ -32,7 +32,7 @@ A card containing NTFS (New Technology File System), a GPT (GUID partition table
 
 ![The file list](view:logs)
 
-The header shows the selected folder, such as `BENCH/LOGS`, to the right of the tabs. At the far right it shows the volume label, such as `UNITEST`, or falls back to the card's reported name or `SD CARD`. The list shows 7 files with their sizes. Each row has a 48px (about 7.2mm) touch target.
+The header shows the selected folder, such as `BENCH/LOGS`, to the right of the tabs. At the far right it shows the volume label, such as `UNITEST`, or falls back to the card's reported name or `SD CARD`. The list shows 5 files with their sizes. Each row has a 48px (about 7.2mm) touch target.
 
 | Tab | Folder | Holds |
 |---|---|---|
@@ -44,7 +44,7 @@ LOGS opens on the tab containing the last file written by the panel. After start
 
 The top strip, LOGS | FILES, switches between the tile's two screens. Each screen's home tag returns to the menu. The strip appears only on the file list, not over an open file, question or box.
 
-WI-FI in the footer opens [Wi-Fi](wifi.md) for browser downloads; its home tag returns here. The button is hidden over the DELETE question or an open file. It can open Wi-Fi while ARMED, but Wi-Fi's own controls enforce their restrictions.
+WI-FI in the row of buttons opens [Wi-Fi](wifi.md) for browser downloads; its home tag returns here. The button is hidden over the DELETE question or an open file. It can open Wi-Fi while ARMED, but Wi-Fi's own controls enforce their restrictions.
 
 | Button | What it does |
 |---|---|
@@ -52,6 +52,8 @@ WI-FI in the footer opens [Wi-Fi](wifi.md) for browser downloads; its home tag r
 | PREV, NEXT | the page before and after; shown with more than 48 files on the card |
 | DELETE | asks, then removes the selected file; grey with nothing selected |
 | OPEN | opens the selected CSV file in the import view, a report in the text viewer; grey with nothing selected |
+
+The footer under the list names the screen, LOGS. SETTINGS at its right opens the SD CARD list of [SETUP](setup.md#sd-card): the log switches and the two log folders. Its home tag returns here.
 
 ![The fourth page of a full card](view:logs-pages)
 

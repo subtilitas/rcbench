@@ -86,7 +86,6 @@ TEST_CASE(the_home_tag_climbs_as_each_pages_way_back)
         { "typing",       at_typing,    BACK_X, BACK_Y },
         { "items",        at_items,     BACK_X, BACK_Y },
         { "picked",       at_picked,    BACK_X, BACK_Y },
-        { "timing",       at_timing,    BACK_X, BACK_Y },
         { "result",       at_result,    BACK_X, BACK_Y },
         { "warning",      at_warning,   CANCEL_X, HOLD_Y },
         { "manual steps", at_steps,     CANCEL_X, HOLD_Y },
@@ -117,8 +116,9 @@ TEST_CASE(the_home_tag_climbs_as_each_pages_way_back)
 
 /*
  * From a profile's page the home tag takes four steps to leave: the list
- * of the maker's models, the makers, the classes, then the router.  TIMING
- * adds one, and a save asked for what it changed.
+ * of the maker's models, the makers, the classes, then the router.  The
+ * SETTINGS list adds one, through its leave warning while a change is not
+ * saved: DISCARD brings the stored value back and closes the list.
  */
 TEST_CASE(the_home_tag_leaves_the_stick_class_one_level_at_a_time)
 {
@@ -135,12 +135,21 @@ TEST_CASE(the_home_tag_leaves_the_stick_class_one_level_at_a_time)
     at_timing();
     CHECK(settings_dirty());
     CHECK(!settings_save_asked());
+    CHECK(scr->back());                      /* the leave warning */
+    CHECK(esc_stick_settings_list()->open);
+    CHECK(esc_stick_settings_list()->warn);
+    CHECK(scr->back());                      /* as STAY */
+    CHECK(esc_stick_settings_list()->open);
+    CHECK(!esc_stick_settings_list()->warn);
     CHECK(scr->back());
-    CHECK(settings_save_asked());
+    set_strip(1);                            /* DISCARD */
+    CHECK(!esc_stick_settings_list()->open);
+    CHECK_EQ(settings_get_int(SET_STICK_BEEP_MIN), 200);
+    CHECK(!settings_dirty());
+    CHECK(!settings_save_asked());
     CHECK(esc_stick_panel_page() != NULL);
     CHECK(scr->back());
     CHECK(esc_stick_panel_page() == NULL);
-    settings_cancel_save();
 }
 
 /*

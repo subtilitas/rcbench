@@ -10,11 +10,13 @@
  * - every_step_after_programming_is_shown
  * - no_step_at_the_esc_while_the_supply_reads_live
  * - the_run_page_shows_the_phase_tap_while_it_is_enabled
+ * - no_result_line_reaches_the_manual_button
  *
  * SPDX-License-Identifier: MIT
  */
 
 #include "esc_stick_panel_rig.h"
+#include "ui_widgets.h"
 #include "hold_flash.h"
 
 /* SUN PLUS mode 4 waits 5s from power-on, the profile's entry 2s: the
@@ -525,6 +527,147 @@ static int tone_drawn(rig_t *r, const tone_readout_t *t, int buf)
 
 /* A run's page shows the phase tap while the tap is enabled on SETUP, in
  * each state it can be in, and nothing in its place while it is not. */
+/** @brief Profile @p id's run with rows 0 to @p picks - 1 stepped once,
+ *         aborted at once, its result with the supply reading live.
+ *  @param id    The profile.
+ *  @param picks The rows stepped. */
+static void result_of(const char *id, int picks)
+{
+    fresh();
+    open_profile(id);
+    if (esc_stick_panel_hand_shown()) {
+        tap(CANCEL_X, HOLD_Y);               /* the first opening */
+    }
+    for (int k = 0; k < picks; ++k) {
+        tap(STEP_UP_X, STEP_CY(k));
+    }
+    supply_reads_off();
+    tap(WRITE_X, BTN_CY);                    /* the warning */
+    hold_for(2.25f);
+    if (esc_stick_panel_runs() == 0u) {
+        tap(STEPS_X, HOLD_Y);                /* ALL STEPS read */
+        tap(CANCEL_X, HOLD_Y);
+        hold_for(2.25f);
+    }
+    CHECK_EQ(esc_stick_panel_runs(), 1u);
+    tap(WRITE_X, BTN_CY);                    /* ABORT: the result */
+    (void)drain_cmds(MOTOR_CMD_ARM);
+    supply_state_t st;                       /* the output still on */
+    memset(&st, 0, sizeof(st));
+    st.samples = 9u;
+    st.output = true;
+    st.mode = SUPPLY_MODE_CV;
+    st.online = true;
+    st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+    esc_stick_panel_supply(&st);
+    scr->tick(0.02f);
+    if (esc_stick_panel_hand_shown()) {
+        tap(CANCEL_X, HOLD_Y);               /* OK: the steps, by themselves */
+    }
+}
+
+/** @brief The pixels in the result's MANUAL INTERVENTION REQUIRED, 8px in
+ *         from its edges, that are not the button as it draws alone.
+ *  @return the count */
+static int foreign_in_manual_button(void)
+{
+    static gfx_color_t ref[W * H];
+    gfx_canvas_t rc;
+    gfx_canvas_init(&rc, ref, W, H, W);
+    const gfx_rect_t b = { ST_HAND_RES_L, ST_HAND_RES_T, ST_HAND_RES_W,
+                           UI_TAP_MIN };
+    ui_button_font(&rc, b, TR(SP_HAND_BTN), ui_theme_color(UI_C_DANGER),
+                   false, true, &gfx_font_10x20);
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    stick_invalidate();
+    scr->render(&cv, 0);
+    int n = 0;
+    for (int y = b.y + 8; y < b.y + b.h - 8; ++y) {
+        for (int x = b.x + 8; x < b.x + b.w - 8; ++x) {
+            n += fb[(size_t)y * W + x] != ref[(size_t)y * W + x];
+        }
+    }
+    return n;
+}
+
+/* A result of a profile with manual steps draws MANUAL INTERVENTION
+ * REQUIRED, and no line of the result reaches into it, in English and
+ * German: HELI JIVE's steps after programming, the supply-off warning and
+ * the undo reminder; and the fullest change lines, five changes of the
+ * 8-item menu with four long steps after programming.  The button is
+ * drawn before the lines, so a line in it would show. */
+TEST_CASE(no_result_line_reaches_the_manual_button)
+{
+    static const esc_manual_t k[] = {
+        { ESC_MANUAL_BEFORE_POWER,
+          "Fit the programming jumper on the two gold contacts beside the "
+          "motor leads, with the receiver lead plugged in first.", 0u,
+          NULL, false, false },
+        { ESC_MANUAL_AFTER_PROGRAMMING,
+          "Take the programming jumper off the two gold contacts and keep "
+          "it with the model for the next change of the menu.", 0u,
+          NULL, false, false },
+    };
+    for (int lang = 0; lang < 2; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        /* HELI JIVE's steps before power and after programming.  Its own
+         * counted-item menu takes no run, so they go on the 8-item menu
+         * that runs, without the jumper pulled to start HELI JIVE's menu. */
+        esc_profiles_clear_overrides();
+        const esc_profile_t *real = esc_profiles_find("kontronik-heli-jive");
+        CHECK(real != NULL && real->manual_count > 0u);
+        esc_profile_t heli = *esc_profiles_find("hobbywing-flyfun-8item");
+        heli.id = "card-heli-jive";
+        heli.automatable = real->automatable;
+        heli.automatable_note = real->automatable_note;
+        static esc_manual_t steps[ESC_MANUAL_MAX];
+        uint8_t n = 0u;
+        for (unsigned i = 0; i < real->manual_count && n < ESC_MANUAL_MAX;
+             ++i) {
+            if (real->manual[i].when != ESC_MANUAL_BEFORE_MENU) {
+                steps[n++] = real->manual[i];   /* the menu's own start: not
+                                                 * the 8-item menu's */
+            }
+        }
+        CHECK_EQ(n, 2);
+        heli.manual = steps;
+        heli.manual_count = n;
+        CHECK(esc_profiles_override(&heli, NULL));
+        result_of("card-heli-jive", 1);
+        const esc_profile_t *jive = esc_stick_panel_page();
+        CHECK(jive != NULL && strcmp(jive->id, "card-heli-jive") == 0
+              && jive->manual_count > 0u);
+        CHECK_EQ(esc_stick_panel_stick()->phase, ESC_STICK_ABORTED);
+        CHECK(!esc_stick_panel_supply_reads_off());
+        CHECK_EQ(foreign_in_manual_button(), 0);
+
+        esc_profiles_clear_overrides();
+        esc_profile_t card = *esc_profiles_find("hobbywing-flyfun-8item");
+        card.id = "card-fullest";
+        card.automatable = ESC_AUTO_ASSISTED;
+        card.automatable_note = "Steps before power and after.";
+        card.manual = k;
+        card.manual_count = 2;
+        /* Its first five items under HELI JIVE's longest item name: the
+         * change lines at their fullest. */
+        static esc_item_t items[16];
+        CHECK(card.item_count <= 16u);
+        for (unsigned i = 0; i < card.item_count && i < 16u; ++i) {
+            items[i] = card.items[i];
+            if (i < 5u) {
+                items[i].name = real->items[1].name;
+            }
+        }
+        card.items = items;
+        CHECK(esc_profiles_override(&card, NULL));
+        result_of("card-fullest", 5);
+        CHECK_EQ(esc_stick_panel_stick()->n, 5);
+        CHECK_EQ(foreign_in_manual_button(), 0);
+        esc_profiles_clear_overrides();
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 TEST_CASE(the_run_page_shows_the_phase_tap_while_it_is_enabled)
 {
     fresh();
@@ -680,5 +823,6 @@ int main(void)
     RUN(no_step_at_the_esc_while_the_supply_reads_live);
     RUN(the_run_page_shows_the_phase_tap_while_it_is_enabled);
     RUN(hold_to_run_flashes_as_it_fires);
+    RUN(no_result_line_reaches_the_manual_button);
     return test_summary("esc_stick_panel_hold");
 }

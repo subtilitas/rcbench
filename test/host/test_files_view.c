@@ -759,10 +759,10 @@ TEST_CASE(mixed_line_ends_are_shown_and_warned)
     CHECK_STR_EQ(row(0), "one");
     CHECK_STR_EQ(row(2), "three");
     CHECK_STR_EQ(row(3), "four");
-    CHECK(ink(wx, FS_SPOT_FOOT_Y, 550, 52, UI_WARN) > 0);
+    CHECK(ink(wx, FS_SPOT_TV_FOOT_Y, 550, FS_SPOT_TV_FOOT_H, UI_WARN) > 0);
     view_text("one\r\ntwo\r\n");
     CHECK_EQ(text_view_lines(), 2u);
-    CHECK_EQ(ink(wx, FS_SPOT_FOOT_Y, 550, 52, UI_WARN), 0);
+    CHECK_EQ(ink(wx, FS_SPOT_TV_FOOT_Y, 550, FS_SPOT_TV_FOOT_H, UI_WARN), 0);
     /* A BOM is no cell. */
     view_text("\xef\xbb\xbfRCBENCH\n");
     CHECK_STR_EQ(row(0), "RCBENCH");
