@@ -458,8 +458,10 @@ to 1.0V and 2.0 to 4.8V, 0.2V and 3.0V by default, up to 31 voltages; set under 
 on TEST's 17-row SETTINGS list and kept in NVS; `test_servo_brownout` at the ranges' ends, a
 floor off the grid, at or above the start and under the supply's lowest set point, a cap
 under 5.0V; `test_servo_brownout_page` for the list's rows, their keypads and the heading's
-walk line, the settings over a restart and a run started from the screen), and `ATESTnnn.CSV` and
-`ATESTnnn.TXT` written to `USER/LOGS` by the `runlog` task.
+walk line, the settings over a restart and a run started from the screen; `test_servo_test_list`
+for the three live heading lines, NO STEP CHOSEN and a step outside the supply's caps in the
+warning colour, the locked rows and the reason each gives, SAVE and DISCARD), and `ATESTnnn.CSV`
+and `ATESTnnn.TXT` written to `USER/LOGS` by the `runlog` task.
 
 A run reads one meter from its start to its end, the servo rail's at that start: the PD
 mini's readings, or, while the INA3221 is the meter and the supply is the PD mini, CH1's
@@ -1279,7 +1281,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 500 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 501 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
