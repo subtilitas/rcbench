@@ -231,9 +231,11 @@ static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
  * for a throttle is stopped, after OUT_DEFAULT_TIMEOUT_MS (500ms) without a
  * write, so the panel keeps writing while armed.  The write that arms is
  * the same window widened to three, taking MOTOR_POLES (register 2) with
- * it.  CLEAR (register 3) is written on its own and only on an explicit
- * arm: a write that touches it must carry LINK_CLEAR_MAGIC, and it lifts a
- * latched failsafe, which no other write may do.
+ * it.  CLEAR (register 3) is written on its own and only on an operator's
+ * hold -- an explicit arm, STOP's reset, ARM + START's FAILSAFE CLEAR
+ * (apply_clear_cmd()): a write that touches it must carry
+ * LINK_CLEAR_MAGIC, and it lifts a latched failsafe, which no other write
+ * may do.
  */
 
 /*

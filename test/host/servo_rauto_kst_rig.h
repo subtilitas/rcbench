@@ -83,7 +83,33 @@ static struct {
     uint32_t rail_from;
     bool rail_fed;          /* fed from elsewhere: on whatever is off */
     bool rail_dead;         /* a broken feed: off whatever is on */
+    /* The IOmcu's failsafe (safety_gate.h): latched (FAULT 01) and the
+     * heartbeat distrusted (FAULT 10) as the IOmcu holds them; STATUS
+     * shows them after ra_faults().  The supply's and PROG 5V's ON are
+     * refused in either; a CLEAR taken (servo_screen_take_clear()) and
+     * ARM's own CLEAR lift the latch unless clear_dead or line_out, and
+     * the panel reads STATUS after the CLEAR. */
+    bool latched, line_out, clear_dead;
+    uint16_t faults_more;   /* other STATUS bits shown with them */
+    unsigned clears, refused;
 } ra;
+
+/** @brief The IOmcu's STATUS faults, read now: the failsafe as the rig's
+ *         IOmcu holds it. */
+static inline void ra_faults(void)
+{
+    ui_bench_status_t st = *ui_router_status();
+    st.faults = (uint16_t)(ra.faults_more
+                           | (ra.latched ? LINK_FAULT_LINK_SILENT : 0u)
+                           | (ra.line_out ? LINK_FAULT_HEARTBEAT : 0u));
+    ui_router_set_status(&st);
+}
+
+/** @brief Whether the rig's IOmcu is in its failsafe: no supply ON. */
+static inline bool ra_failsafe(void)
+{
+    return ra.latched || ra.line_out;
+}
 
 /** @brief IMU FILTER on the IMU of these cases. */
 #define RA_IMU_FILTER 10
@@ -124,6 +150,13 @@ static inline void ra_pd_reading(bool on);
 /* What the panel does with the screen's commands. */
 static inline void ra_commands(void)
 {
+    if (servo_screen_take_clear()) {
+        ra.clears++;
+        if (!ra.clear_dead && !ra.line_out) {
+            ra.latched = false;
+        }
+        ra_faults();
+    }
     servo_cmd_t c;
     while (servo_screen_take(&c)) {
         if (c.kind == SERVO_CMD_POSITION) {
@@ -136,7 +169,11 @@ static inline void ra_commands(void)
             ra.armed = false;
             ra.cmd = 1500u;
         } else if (c.kind == SERVO_CMD_ARM) {
-            if (ra.no_arm || kst_panel_holds_port()
+            /* ARM writes its own CLEAR once the line is trusted. */
+            if (!ra.line_out && !ra.clear_dead) {
+                ra.latched = false;
+            }
+            if (ra.no_arm || ra_failsafe() || kst_panel_holds_port()
                 || kst_prog_state(M) != KST_PROG_PWM) {
                 ra.dropped++;
             } else {
@@ -152,6 +189,8 @@ static inline void ra_commands(void)
         if (sc.off) {
             ra.offs++;
             g_rig.sup_on = false;
+        } else if (sc.on && ra_failsafe()) {
+            ra.refused++;       /* the IOmcu refuses it: stays off */
         } else if (sc.on) {
             ra.pd_ons++;
             g_rig.sup_on = true;
@@ -169,7 +208,10 @@ static inline void ra_p5(void)
         ra.p5_pending = true;
         ra.p5_want = c.on;
         ra.p5_due = g_rig.ms + (c.on ? ra.p5_delay : 0u);
-        if (c.on) {
+        if (c.on && ra_failsafe()) {
+            ra.refused++;       /* the IOmcu refuses it: stays off */
+            ra.p5_pending = false;
+        } else if (c.on) {
             ra.p5_ons++;
         } else {
             ra.p5_offs++;
@@ -340,6 +382,7 @@ static inline void ra_setup_on(bool pd, bool zero, bool imu)
     servo_sim_cfg_t sc;
     fresh_screen();
     memset(&ra, 0, sizeof(ra));
+    ra_faults();                /* no failsafe from a case before */
     ra.imu = imu;
     imu_init(&ra.m);
     imu_set_filter(&ra.m, RA_IMU_FILTER);

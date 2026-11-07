@@ -476,8 +476,23 @@ holds.
 | A refused ARM | an ARM answered NOT_ARMED, so a CLEAR followed by a refused ARM leaves the latch set |
 
 One thing clears it: a write of 0x5AFE to CLEAR on the control page. The
-panel writes CLEAR in one place, the switch to ARMED an operator completes by holding
-ARM for 2s. The ARM the panel writes at every 50ms poll while the
+same write leaves the link failsafe (FAULT 01). It does not touch the
+heartbeat's fault (FAULT 10), which clears only when the line edges again.
+The panel writes CLEAR in three places, each an operator's 2s hold:
+
+| Writer | Condition |
+| --- | --- |
+| The switch to ARMED | ARM held 2s; CLEAR once the IOmcu trusts the heartbeat, then the frame that arms |
+| STOP's reset | the STOP latch released and the IOmcu reporting every output off ([STOP as an emergency stop](Stop.md)) |
+| FAILSAFE CLEAR, the first of ARM's steps on SERVO | ARM or ARM + START held 2s on a SAFE bench while STATUS shows FAULT 01 and not FAULT 10; not while a pressed STOP stands, a programmer holds a port or the link is down. FAULT 01 has to read clear within 500ms (`SERVO_SEQ_CLEAR_MS`), or the steps end with every output off |
+
+FAILSAFE CLEAR exists because the IOmcu refuses every supply's ON in its
+failsafe, and ARM's steps switch PROG 5V or the PD mini on before they arm.
+It writes no ARM. Each output still needs its own ON or ARM. Host-tested in
+`test_servo_start_seq`, `test_servo_drive_ready` and
+`test_servo_rauto_seq`; the panel's write of CLEAR is not host-tested.
+
+The ARM the panel writes at every 50ms poll while the
 bench is ARMED carries no CLEAR, so it never brings a latched IOmcu back.
 
 The latch is separate from the link failsafe. The supply's ON and the STATUS

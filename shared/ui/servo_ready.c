@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "link_pages.h"
 #include "prog5v_box.h"
 #include "prog_choice.h"
 #include "prog_registry.h"
@@ -28,6 +29,7 @@
 #include "servo_limrun.h"
 #include "supply_screen.h"
 #include "ui_footer.h"
+#include "ui_screen.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -577,6 +579,7 @@ void svs_all_off(void)
 static const char *part_name(servo_seq_part_t p)
 {
     switch (p) {
+    case SERVO_SEQ_PART_CLEAR:   return TR(SQ_CLEAR);
     case SERVO_SEQ_PART_PWM:     return TR(RDY_PWM);
     case SERVO_SEQ_PART_PROG_5V: return "PROG 5V";
     case SERVO_SEQ_PART_PD_MINI: return "PD MINI";
@@ -587,14 +590,30 @@ static const char *part_name(servo_seq_part_t p)
 
 /**
  * @brief The failure's line and the band: `PROG 5V FAILED: NO READ-BACK
- *        IN 1000ms`, the caller's refusal, or STOP.
+ *        IN 1000ms`, the caller's refusal, STOP, `FAILSAFE CLEAR FAILED:
+ *        STILL LATCHED AFTER 500ms`, or for a supply in the IOmcu's
+ *        failsafe the supply's own refusal text.
  * @param refused the caller's text that refused, or NULL
  */
 static void name_failure(const char *refused)
 {
     const servo_seq_part_t p = servo_seq_part(&s.rdy.seq);
     char cause[72];
+    if (servo_seq_why(&s.rdy.seq) == SERVO_SEQ_WHY_FAILSAFE
+        && p != SERVO_SEQ_PART_CLEAR) {
+        /* The words the control task gives the IOmcu's refusal of the
+         * supply's ON (supply_link_on_ended()). */
+        snprintf(s.rdy.fail_buf, sizeof(s.rdy.fail_buf), "%s",
+                 TR(ALERT_SUPPLY_REFUSED_FAILSAFE));
+        s.rdy.fail = s.rdy.fail_buf;
+        ui_router_set_alert(s.rdy.fail);
+        return;
+    }
     switch (servo_seq_why(&s.rdy.seq)) {
+    case SERVO_SEQ_WHY_FAILSAFE:
+        snprintf(cause, sizeof(cause), TR(SQ_STILL_LATCHED),
+                 (unsigned)SERVO_SEQ_CLEAR_MS);
+        break;
     case SERVO_SEQ_WHY_TIMEOUT:
         if (p == SERVO_SEQ_PART_ARM) {
             snprintf(cause, sizeof(cause), TR(SQ_NOT_ARMED),
@@ -625,6 +644,9 @@ static void name_failure(const char *refused)
  */
 static void apply(const servo_seq_do_t *d, const char *refused)
 {
+    if (d->clear) {
+        s.rdy.clear_owed = true;
+    }
     if (d->set_pwm && !target_locked_by_bench(SET_SERVO_PORT_PWM)) {
         settings_set(SET_SERVO_PORT_PWM, 1.0f);
         settings_request_save();
@@ -644,10 +666,40 @@ static void apply(const servo_seq_do_t *d, const char *refused)
         ++s.arm_rev;
     }
     if (d->all_off) {
+        s.rdy.clear_owed = false;
         svs_all_off();
         name_failure(refused);
     }
     ++s.ctrl_rev;
+}
+
+/**
+ * @brief Whether the IOmcu reports its failsafe latched: its STATUS bit
+ *        LINK_FAULT_LINK_SILENT, as the band's FAULT 01.
+ * @return true then
+ */
+static bool far_latched(void)
+{
+    return (ui_router_status()->faults & (uint16_t)LINK_FAULT_LINK_SILENT)
+           != 0u;
+}
+
+/**
+ * @brief Whether the IOmcu does not trust the heartbeat: its STATUS bit
+ *        LINK_FAULT_HEARTBEAT, as the band's FAULT 10.  No CLEAR lifts it.
+ * @return true then
+ */
+static bool far_line_out(void)
+{
+    return (ui_router_status()->faults & (uint16_t)LINK_FAULT_HEARTBEAT)
+           != 0u;
+}
+
+bool servo_screen_take_clear(void)
+{
+    const bool owed = s.rdy.clear_owed;
+    s.rdy.clear_owed = false;
+    return owed;
 }
 
 bool svs_seq_begin(void)
@@ -656,7 +708,13 @@ bool svs_seq_begin(void)
         return false;
     }
     s.rdy.need = drive_shown() ? drive_seq_need() : svs_seq_need();
+    /* The failsafe latched at the hold: the steps write CLEAR first, as
+     * ARM does.  Not while the heartbeat is distrusted: ARM writes its
+     * CLEAR only once the IOmcu trusts the line, and no CLEAR lifts that
+     * fault. */
+    s.rdy.need.clear = far_latched() && !far_line_out();
     s.rdy.fail = NULL;
+    s.rdy.clear_owed = false;
     if (!servo_seq_begin(&s.rdy.seq, &s.rdy.need, seq_now())) {
         return false;
     }
@@ -690,6 +748,8 @@ bool svs_seq_frame(const char *refused)
          * length. */
         .reading = s.have_win && s.win.stamped && s.win.voltage,
         .reading_from_ms = s.win.taken_ms - (uint32_t)SENSE_LINK_WINDOW_MS,
+        .latched = far_latched(),
+        .line_out = far_line_out(),
     };
     const servo_seq_step_t was = servo_seq_step_now(&s.rdy.seq);
     servo_seq_do_t d;
@@ -719,6 +779,7 @@ void svs_seq_end(servo_test_abort_t why)
     }
     servo_seq_do_t d;
     servo_seq_abort(&s.rdy.seq, SERVO_SEQ_WHY_STOP, &d);
+    s.rdy.clear_owed = false;
     if (why == SERVO_TEST_AB_LEFT) {
         /* The leave switches the outputs itself: SAFE, and the ports' 5V
          * kept for another SERVO screen. */
@@ -739,6 +800,8 @@ bool svs_seq_busy(void)
 static const char *step_name(servo_seq_step_t st)
 {
     switch (st) {
+    case SERVO_SEQ_CLEAR:
+        return TR(SQ_CLEAR);
     case SERVO_SEQ_PWM:
         return TR(RDY_PWM);
     case SERVO_SEQ_SUPPLY:

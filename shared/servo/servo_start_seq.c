@@ -25,7 +25,7 @@ bool servo_seq_begin(servo_seq_t *q, const servo_seq_need_t *need,
     }
     memset(q, 0, sizeof(*q));
     q->need    = *need;
-    q->step    = (uint8_t)SERVO_SEQ_PWM;
+    q->step    = (uint8_t)SERVO_SEQ_CLEAR;
     q->step_ms = now_ms;
     return true;
 }
@@ -37,7 +37,14 @@ bool servo_seq_busy(const servo_seq_t *q)
 
 servo_seq_step_t servo_seq_step_now(const servo_seq_t *q)
 {
-    return (q != NULL) ? (servo_seq_step_t)q->step : SERVO_SEQ_IDLE;
+    if (q == NULL) {
+        return SERVO_SEQ_IDLE;
+    }
+    /* Without a CLEAR the step is not shown: the first one is PORT PWM. */
+    if (q->step == (uint8_t)SERVO_SEQ_CLEAR && !q->need.clear) {
+        return SERVO_SEQ_PWM;
+    }
+    return (servo_seq_step_t)q->step;
 }
 
 servo_seq_part_t servo_seq_part(const servo_seq_t *q)
@@ -92,6 +99,9 @@ static servo_seq_part_t part_now(const servo_seq_t *q,
                                  const servo_seq_in_t *in)
 {
     switch ((servo_seq_step_t)q->step) {
+    case SERVO_SEQ_CLEAR:
+        /* Not shown without a CLEAR: the first step shown is PORT PWM. */
+        return q->need.clear ? SERVO_SEQ_PART_CLEAR : SERVO_SEQ_PART_PWM;
     case SERVO_SEQ_PWM:
         return SERVO_SEQ_PART_PWM;
     case SERVO_SEQ_SUPPLY: {
@@ -185,6 +195,58 @@ static bool settled(const servo_seq_t *q, const servo_seq_in_t *in)
 }
 
 /**
+ * @brief Whether the IOmcu reports its failsafe: latched, or the heartbeat
+ *        not trusted.  Either refuses every supply's ON and switches an
+ *        output on off (safety_gate_supply_ok()).
+ * @param in what the bench reads
+ * @return true then
+ */
+static bool failsafe(const servo_seq_in_t *in)
+{
+    return in->latched || in->line_out;
+}
+
+/**
+ * @brief Whether the run needs a supply the steps switch: PROG 5V or the
+ *        PD mini's output.
+ * @param n what the run needs
+ * @return true then
+ */
+static bool needs_supply(const servo_seq_need_t *n)
+{
+    return n->prog_5v || n->pd_mini;
+}
+
+/**
+ * @brief Step 0: CLEAR asked once where the run needs it, then the
+ *        failsafe and the heartbeat reading clear within
+ *        SERVO_SEQ_CLEAR_MS; the time first.
+ * @param q      the sequence
+ * @param now_ms the time, ms
+ * @param in     what the bench reads
+ * @param d      receives what to do
+ * @return true when the step is over and PORT PWM follows in this call
+ */
+static bool clear_step(servo_seq_t *q, uint32_t now_ms,
+                       const servo_seq_in_t *in, servo_seq_do_t *d)
+{
+    if (!q->need.clear) {
+        return true;
+    }
+    if (!q->clear_asked) {
+        d->clear       = true;
+        q->clear_asked = true;
+        q->step_ms     = now_ms;
+        return false;
+    }
+    if (up(now_ms, q->step_ms, SERVO_SEQ_CLEAR_MS)) {
+        fail(q, SERVO_SEQ_PART_CLEAR, SERVO_SEQ_WHY_FAILSAFE, d);
+        return false;
+    }
+    return !failsafe(in);
+}
+
+/**
  * @brief Step 3: every part ON, then the reading after it, then the
  *        caller's checks; the time first.
  * @param q      the sequence
@@ -205,6 +267,12 @@ static bool readback(servo_seq_t *q, uint32_t now_ms,
         } else {
             fail(q, settle_part(q), SERVO_SEQ_WHY_TIMEOUT, d);
         }
+        return false;
+    }
+    /* The IOmcu refuses the supply's ON in its failsafe, or switches it
+     * off: no read-back comes, and the failsafe is the reason. */
+    if (needs_supply(&q->need) && failsafe(in)) {
+        fail(q, supply_part(&q->need), SERVO_SEQ_WHY_FAILSAFE, d);
         return false;
     }
     if (miss != SERVO_SEQ_PART_NONE) {
@@ -243,7 +311,21 @@ void servo_seq_step(servo_seq_t *q, uint32_t now_ms,
         fail(q, refused_part(q, in), SERVO_SEQ_WHY_REFUSED, d);
         return;
     }
+    if (q->step == (uint8_t)SERVO_SEQ_CLEAR) {
+        if (!clear_step(q, now_ms, in, d)) {
+            return;
+        }
+        q->step = (uint8_t)SERVO_SEQ_PWM;
+    }
     if (q->step == (uint8_t)SERVO_SEQ_PWM) {
+        /* An ON the IOmcu refuses in its failsafe is not asked: the
+         * failsafe is named before anything is switched. */
+        if (failsafe(in)
+            && ((q->need.prog_5v && !in->p5_on)
+                || (q->need.pd_mini && !in->pd_on))) {
+            fail(q, supply_part(&q->need), SERVO_SEQ_WHY_FAILSAFE, d);
+            return;
+        }
         if (q->need.port_pwm && !in->pwm_set) {
             d->set_pwm = true;
         }
@@ -329,11 +411,12 @@ void servo_seq_abort(servo_seq_t *q, servo_seq_why_t why, servo_seq_do_t *d)
 int servo_seq_number(const servo_seq_need_t *need, servo_seq_step_t step,
                      int *count)
 {
-    /* Whether each step shows: PORT PWM and the supply where needed, the
-     * read-back where either is. */
+    /* Whether each step shows: FAILSAFE CLEAR, PORT PWM and the supply
+     * where needed, the read-back where either of the last two is. */
+    const bool clr = (need != NULL) && need->clear;
     const bool pwm = (need == NULL) || need->port_pwm;
     const bool sup = (need == NULL) || need->prog_5v || need->pd_mini;
-    const bool shows[SERVO_SEQ_STEPS] = { false, pwm, sup, pwm || sup,
+    const bool shows[SERVO_SEQ_STEPS] = { false, clr, pwm, sup, pwm || sup,
                                           true,  true };
     int n = 0, at = 0;
     for (int k = 1; k < (int)SERVO_SEQ_STEPS; ++k) {

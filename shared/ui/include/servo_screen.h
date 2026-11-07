@@ -170,6 +170,16 @@ void servo_screen_knob_cancel(void);
 bool servo_screen_take(servo_cmd_t *out);
 
 /**
+ * @brief Take the CLEAR ARM + START's steps ask (servo_start_seq.h, step
+ *        FAILSAFE CLEAR), once.  The application writes CLEAR to the
+ *        IOmcu's control page as ARM's own CLEAR, while SAFE, and reads
+ *        STATUS straight after it, so the steps see the failsafe go.  A
+ *        failure, a stop or a leave drops one not yet taken.
+ * @return true once per CLEAR asked
+ */
+bool servo_screen_take_clear(void);
+
+/**
  * @brief A reading of the angle source, each one once, in the order they arrive:
  * the AS5600 on the horn shaft, or with ANGLE SOURCE IMU the IMU's angle in
  * AS5600 counts from count 0 (servo_angle_enc()).  With AS5600 on in SETUP,

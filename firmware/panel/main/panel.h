@@ -1063,6 +1063,11 @@ void publish_snapshot(const bench_state_t *bench, bool link_up,
 /* The IOmcu's STATUS fault bitmap at its last read, LINK_FAULT_* bits.
  * Control task only. */
 uint16_t far_end_faults(void);
+/**
+ * @brief STATUS read now, outside the poll's 500ms period: after a CLEAR,
+ *        so the bitmap the screens see follows it.  Control task only.
+ */
+void far_end_status_now(void);
 
 /* ------------------------------------------------------- main.c, continued */
 
@@ -1081,9 +1086,12 @@ static inline uint16_t panel_throttle_ramp(void)
  */
 #define PANEL_SAMPLE_HZ   20.0f
 
+/* PANEL_CMD_CLEAR: ARM + START's FAILSAFE CLEAR (servo_screen_take_clear()),
+ * CLEAR on the control page while SAFE; see apply_clear_cmd(). */
 typedef enum { PANEL_CMD_MOTOR = 0, PANEL_CMD_SERVO,
                PANEL_CMD_STOP, PANEL_CMD_OUTPUTS,
-               PANEL_CMD_SUPPLY, PANEL_CMD_PROG5V } panel_cmd_kind_t;
+               PANEL_CMD_SUPPLY, PANEL_CMD_PROG5V,
+               PANEL_CMD_CLEAR } panel_cmd_kind_t;
 
 typedef struct {
     panel_cmd_kind_t kind;

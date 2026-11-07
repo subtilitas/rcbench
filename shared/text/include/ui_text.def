@@ -10842,6 +10842,12 @@ UI_TEXT(SQ_NO_READBACK, 60,
 UI_TEXT(SQ_NOT_ARMED, 60,
     "NOT ARMED IN %ums",
     "NICHT ARMED IN %ums")
+UI_TEXT(SQ_CLEAR, 20,
+    "FAILSAFE CLEAR",
+    "FAILSAFE LÖSEN")
+UI_TEXT(SQ_STILL_LATCHED, 60,
+    "STILL LATCHED AFTER %ums",
+    "NACH %ums NOCH AUSGELÖST")
 /* LIMIT RUN's READY card and left card (servo_limit_ready.c,
  * servo_limit_card.c): the rail row's label (13 cells), the two ends'
  * names (27 cells of a 295px cell), the MODE row's help, the guide. */

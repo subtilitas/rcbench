@@ -615,6 +615,56 @@ static void apply_motor_cmd(const motor_cmd_t *mc, bool link_up,
     }
 }
 
+/**
+ * @brief Whether a CLEAR asked by ARM + START still means what it meant:
+ *        no stop, disarm or STOP reset since it was asked, no pressed STOP
+ *        standing and no programmer holding a port.
+ * @param pc the CLEAR as queued
+ * @return true while it may be written
+ */
+static bool clear_still_current(const panel_cmd_t *pc)
+{
+    return pc->stops == arming_stop_count(&s_arm)
+           && pc->lets_go == atomic_load(&s_lets_go)
+           && pc->resets == atomic_load(&s_stop_resets)
+           && !arming_held(&s_arm) && !s_prog_taken;
+}
+
+/**
+ * @brief ARM + START's FAILSAFE CLEAR (servo_start_seq.h): CLEAR written once
+ *        while SAFE, the same write as ARM's own CLEAR (ARMING_HS_GO), so it
+ *        lifts what that lifts -- the IOmcu's link failsafe and its arm latch
+ *        (link_dev_clear_failsafe()) -- and nothing more.  It arms nothing:
+ *        ARM stays 0 and each output still needs its own ON or ARM.  Not
+ *        without a link, not while a pressed STOP stands or a programmer
+ *        holds a port (an ARM is refused then too), and not while the IOmcu
+ *        distrusts the heartbeat: ARM writes its CLEAR only once the line is
+ *        trusted, and a CLEAR does not lift FAULT 10.  STATUS is read
+ *        straight after, so the screens see the failsafe go within a frame
+ *        rather than at the next 500ms read.  A CLEAR not written leaves the
+ *        steps to fail at SERVO_SEQ_CLEAR_MS (500ms).
+ * @param pc      the CLEAR as queued, with the counts it was asked under
+ * @param link_up whether the link is up
+ */
+static void apply_clear_cmd(const panel_cmd_t *pc, bool link_up)
+{
+    if (!link_up || !clear_still_current(pc)) {
+        return;
+    }
+    bool answered = false;
+    const bool trusted = far_line_trusted(&answered);
+    /* The STATUS exchange can wait up to LINK_HOST_TIMEOUT_MS (1000ms) and
+     * the pump inside it applies a STOP: asked again before the write, as
+     * ARM's handshake asks before each of its writes. */
+    if (trusted && clear_still_current(pc)) {
+        link_msg_t ack = { 0 };
+        (void)control_clear_failsafe(&ack);
+    }
+    if (answered) {
+        far_end_status_now();
+    }
+}
+
 /*
  * What the screens asked for, in the order they asked it.
  *
@@ -662,9 +712,10 @@ void drain_commands(bool link_up, bench_state_t *bench)
          * Only what drives.  A disarm, a release or a binding asked for
          * before the stop still means what it meant.
          */
-        const bool drives = (pc.kind == PANEL_CMD_MOTOR
-                             && (pc.motor.kind == MOTOR_CMD_ARM
-                                 || pc.motor.kind == MOTOR_CMD_THROTTLE))
+        const bool drives = pc.kind == PANEL_CMD_CLEAR
+                            || (pc.kind == PANEL_CMD_MOTOR
+                                && (pc.motor.kind == MOTOR_CMD_ARM
+                                    || pc.motor.kind == MOTOR_CMD_THROTTLE))
                             || (pc.kind == PANEL_CMD_SERVO
                                 && (pc.servo.kind == SERVO_CMD_ARM
                                     || pc.servo.kind == SERVO_CMD_POSITION
@@ -734,6 +785,10 @@ void drain_commands(bool link_up, bench_state_t *bench)
             }
             s_arm_take_gen = pc.loss_gen;
             s_arm_take_drv = atomic_load(&s_drv_gaps);
+        }
+        if (pc.kind == PANEL_CMD_CLEAR) {
+            apply_clear_cmd(&pc, link_up);
+            continue;
         }
         if (pc.kind == PANEL_CMD_STOP) {
             stop_pressed_here();            /* a screen's STOP, pressed */

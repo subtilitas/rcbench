@@ -23,6 +23,10 @@
  * - a_leave_under_arms_hold_switches_nothing_on
  * - a_finger_on_arm_opens_no_row_fix
  * - a_finger_on_arm_takes_no_zero
+ * - a_latched_failsafe_is_cleared_and_arm_switches_the_pd_mini_on
+ * - a_clear_that_does_not_come_fails_at_500ms_naming_the_failsafe
+ * - a_failsafe_read_after_the_on_fails_at_once_not_at_1000ms
+ * - other_faults_take_no_clear_and_fault_10_refuses_at_once
  *
  * SPDX-License-Identifier: MIT
  */
@@ -526,6 +530,164 @@ TEST_CASE(a_finger_on_arm_takes_no_zero)
     CHECK_EQ(drow(RD_ZERO).st, (uint8_t)RDY_OK);
 }
 
+/** @brief ARM pressed and held until the steps begin, at most 3000ms;
+ *         the finger stays down.  @return whether they began */
+static bool arm_until_steps(void)
+{
+    ev(SV_ARM_X, SV_FOOT_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 150 && !svs_seq_busy(); ++i) {
+        ra_ms(20u);
+    }
+    return svs_seq_busy();
+}
+
+/** @brief The IOmcu's failsafe as the case leaves it for the next: none. */
+static void no_failsafe(void)
+{
+    ra.latched = ra.line_out = ra.clear_dead = false;
+    ra.faults_more = 0u;
+    ra_faults();
+}
+
+/* The station's case: a panel-only restart leaves the IOmcu's failsafe
+ * latched (FAULT 01), the PD mini online with its output off, LIVE on a
+ * SAFE bench.  ARM's one hold writes CLEAR first; the failsafe reads clear
+ * and the PD mini's ON is taken, read back, and the bench reaches ARMED.
+ * The PD mini's ON is never asked in the failsafe. */
+TEST_CASE(a_latched_failsafe_is_cleared_and_arm_switches_the_pd_mini_on)
+{
+    pd_off_on_live();
+    ra.latched = true;
+    ra_faults();
+    ra_ms(100u);
+    CHECK(drive_hold_blocked(NULL) == NULL);
+    CHECK(servo_screen_arm_switches());
+    CHECK(arm_until_steps());
+    char line[64];
+    CHECK_STR_EQ(svs_seq_line(line, sizeof(line)),
+                 "START, STEP 1 OF 5: FAILSAFE CLEAR");
+    ra_ms(300u);
+    ev(SV_ARM_X, SV_FOOT_Y, TOUCH_EVENT_UP, 1);
+    ra_ms(200u);
+    CHECK_EQ(ra.clears, 1u);
+    CHECK(!ra.latched);
+    CHECK_EQ(ui_router_status()->faults, 0u);
+    CHECK_EQ(ra.refused, 0u);
+    CHECK_EQ(ra.pd_ons, 1u);
+    CHECK(g_rig.sup_on);
+    CHECK_EQ(ra.arms, 1u);
+    CHECK(ra.armed);
+    CHECK(svs_seq_failure() == NULL);
+    arm_tap(2);
+    ra_ms(200u);
+    CHECK(!ra.armed);
+    CHECK(!g_rig.sup_on);
+    no_failsafe();
+}
+
+/* An IOmcu that does not take the CLEAR keeps FAULT 01: the steps wait
+ * 500ms for it to read clear, still wait at about 460ms, and fail by about
+ * 560ms naming FAILSAFE CLEAR in the alert band, every output off, no ON
+ * and no ARM asked. */
+TEST_CASE(a_clear_that_does_not_come_fails_at_500ms_naming_the_failsafe)
+{
+    char want[128], cause[64];
+    pd_off_on_live();
+    ra.latched = true;
+    ra.clear_dead = true;
+    ra_faults();
+    ra_ms(100u);
+    const unsigned offs = ra.offs;
+    CHECK(arm_until_steps());
+    ra_ms(460u);
+    CHECK(svs_seq_busy());
+    ra_ms(100u);
+    CHECK(!svs_seq_busy());
+    ev(SV_ARM_X, SV_FOOT_Y, TOUCH_EVENT_UP, 1);
+    ra_ms(100u);
+    CHECK_EQ(ra.clears, 1u);
+    CHECK_EQ(ra.pd_ons, 0u);
+    CHECK_EQ(ra.refused, 0u);
+    CHECK_EQ(ra.arms, 0u);
+    CHECK(!ra.armed);
+    snprintf(cause, sizeof(cause), TR(SQ_STILL_LATCHED), 500u);
+    snprintf(want, sizeof(want), TR(SQ_FAILED), TR(SQ_CLEAR), cause);
+    CHECK_STR_EQ(nn(svs_seq_failure()), want);
+    CHECK_STR_EQ(nn(ui_router_alert()), want);
+    CHECK(ra.offs > offs);
+    no_failsafe();
+}
+
+/* STATUS is read every 500ms: the IOmcu latched its failsafe after the
+ * last read, so the hold finds no FAULT 01 and asks the PD mini's ON,
+ * which the IOmcu refuses.  The read that shows FAULT 01 arrives about
+ * 400ms later; the steps fail on that frame, inside the read-back's
+ * 1000ms, with the supply's own failsafe text in the band: the reason,
+ * not a missing read-back.  The next hold clears it and arms. */
+TEST_CASE(a_failsafe_read_after_the_on_fails_at_once_not_at_1000ms)
+{
+    pd_off_on_live();
+    ra.latched = true;            /* STATUS not read since */
+    CHECK(arm_until_steps());
+    ra_ms(400u);
+    CHECK(svs_seq_busy());
+    CHECK_EQ(ra.refused, 1u);
+    ra_faults();
+    ra_ms(40u);
+    CHECK(!svs_seq_busy());
+    ev(SV_ARM_X, SV_FOOT_Y, TOUCH_EVENT_UP, 1);
+    CHECK_STR_EQ(nn(svs_seq_failure()), TR(ALERT_SUPPLY_REFUSED_FAILSAFE));
+    CHECK_STR_EQ(nn(ui_router_alert()), TR(ALERT_SUPPLY_REFUSED_FAILSAFE));
+    CHECK_EQ(ra.arms, 0u);
+    CHECK(!g_rig.sup_on);
+    ra_ms(200u);
+    arm_hold(2300u);
+    ra_ms(300u);
+    CHECK_EQ(ra.clears, 1u);
+    CHECK_EQ(ra.pd_ons, 1u);
+    CHECK(ra.armed);
+    arm_tap(2);
+    ra_ms(200u);
+    no_failsafe();
+}
+
+/* A fault that is not the failsafe (OVERCURRENT, 02) asks no CLEAR: the
+ * steps run as without it.  The heartbeat distrusted (FAULT 10, a pressed
+ * emergency stop or an open wire) asks no CLEAR either, which would not
+ * lift it: the steps fail at once naming the failsafe, the PD mini's ON
+ * never asked. */
+TEST_CASE(other_faults_take_no_clear_and_fault_10_refuses_at_once)
+{
+    pd_off_on_live();
+    ra.faults_more = (uint16_t)LINK_FAULT_OVERCURRENT;
+    ra_faults();
+    arm_hold(2300u);
+    ra_ms(200u);
+    CHECK_EQ(ra.clears, 0u);
+    CHECK_EQ(ra.pd_ons, 1u);
+    CHECK(ra.armed);
+    arm_tap(2);
+    ra_ms(200u);
+    no_failsafe();
+
+    pd_off_on_live();
+    ra.line_out = true;
+    ra.latched = true;
+    ra_faults();
+    ra_ms(100u);
+    CHECK(arm_until_steps());
+    ra_ms(40u);
+    CHECK(!svs_seq_busy());
+    ev(SV_ARM_X, SV_FOOT_Y, TOUCH_EVENT_UP, 1);
+    ra_ms(100u);
+    CHECK_EQ(ra.clears, 0u);
+    CHECK_EQ(ra.pd_ons, 0u);
+    CHECK_EQ(ra.refused, 0u);
+    CHECK_EQ(ra.arms, 0u);
+    CHECK_STR_EQ(nn(svs_seq_failure()), TR(ALERT_SUPPLY_REFUSED_FAILSAFE));
+    no_failsafe();
+}
+
 int main(void)
 {
     RUN(each_screen_names_its_rows_and_shows_no_supply_box);
@@ -544,5 +706,9 @@ int main(void)
     RUN(a_leave_under_arms_hold_switches_nothing_on);
     RUN(a_finger_on_arm_opens_no_row_fix);
     RUN(a_finger_on_arm_takes_no_zero);
+    RUN(a_latched_failsafe_is_cleared_and_arm_switches_the_pd_mini_on);
+    RUN(a_clear_that_does_not_come_fails_at_500ms_naming_the_failsafe);
+    RUN(a_failsafe_read_after_the_on_fails_at_once_not_at_1000ms);
+    RUN(other_faults_take_no_clear_and_fault_10_refuses_at_once);
     return test_summary("servo_drive_ready");
 }

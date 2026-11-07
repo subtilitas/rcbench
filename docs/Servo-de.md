@@ -1611,6 +1611,7 @@ Haltens:
 
 | Schritt | Tut | Endet mit |
 | --- | --- | --- |
+| FAILSAFE LÖSEN | CLEAR an den IOmcu, wenn STATUS beim Halten FEHLER 01 und nicht FEHLER 10 zeigt: das Schreiben, das ARM vor dem Schalten auf ARMED macht, bei SAFE ([Arm-Latch](Safety-de.md#arm-latch)). Nur dann als Schritt 1 gezeigt | FEHLER 01 erlischt innerhalb von 500ms; noch gesetzt nach 500ms lässt den Schritt fehlschlagen |
 | 1 PORT-PWM | PORT-PWM EIN, gespeichert, wenn das Ziel ein PROG-PORT ist und die Einstellung AUS | sofort |
 | 2 PROG 5V oder PD MINI | PROG 5V EIN am Port des rbmod-Carriers; AUSGANG EIN des PD mini, wo es das Servo speist, mit SOLL V und SOLL A von SUPPLY | sofort |
 | 3 RÜCKMELDUNG | wartet, bis PROG 5V oder der Ausgang des PD mini EIN zurückmeldet, dann das PORT-PWM-Bit des IOmcu (das Panel setzt es nur bei SAFE; der Puls selbst läuft nur bei ARMED), dann auf ein INA3221-Messfenster, das nach beiden begann. Die Zeilen werden an diesem Fenster geprüft | 1000ms ab Schritt 2 für alle drei; ein Teil ohne Rückmeldung lässt den Schritt fehlschlagen, ebenso eines, das erst nach den 1000ms zurückmeldet |
@@ -1621,7 +1622,10 @@ Ein Teil, das schon EIN meldet, wird nicht erneut angefragt: ein von Hand
 eingerichteter Prüfstand durchläuft dieselben Schritte. Ein fehlgeschlagener
 Schritt nennt sich im Alarmband und in der ersten Zeile, `PROG 5V
 FEHLGESCHLAGEN: KEINE RÜCKMELDUNG IN 1000ms`, `ARM FEHLGESCHLAGEN: NICHT
-ARMED IN 500ms`, `<Schritt> FEHLGESCHLAGEN: <Grund>` für eine Zeile, die
+ARMED IN 500ms`, `FAILSAFE LÖSEN FEHLGESCHLAGEN: NACH 500ms NOCH
+AUSGELÖST`, `Netzteil bleibt aus: IOmcu-Failsafe ausgelöst. Halte ARM,
+dann tippe DISARM.` sofort, wenn FEHLER 10 oder ein nach dem ON der
+Versorgung gelesenes FEHLER 01 PROG 5V oder den PD mini abweist, `<Schritt> FEHLGESCHLAGEN: <Grund>` für eine Zeile, die
 unterwegs rot wird, `<Schritt> FEHLGESCHLAGEN: STOP` für ein Tippen auf das
 Halten, ein STOP oder einen Touch-Verlust. Eine rote Zeile nennt den Schritt
 ihres Teils: eine Versorgungszeile nennt PROG 5V oder PD MINI, `PROG 5V
