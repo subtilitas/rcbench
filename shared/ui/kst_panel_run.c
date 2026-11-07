@@ -263,6 +263,11 @@ bool kst_panel_run_ready(void)
 
 void kst_panel_run_begin(void)
 {
+    /* PROG WAIT as the settings hold it now: an edit in LIMIT RUN's list
+     * since the screen opened is the wait the run's LEAVE and REBOOT
+     * send. */
+    (void)kst_prog_wait_set(&k.prog,
+                            (uint32_t)settings_get_int(SET_SERVO_PROG_WAIT));
     k.run.op = RUN_OP_NONE;
     k.run.writes = 0u;
     k.run.kept = false;
