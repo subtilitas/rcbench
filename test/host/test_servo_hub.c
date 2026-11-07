@@ -72,6 +72,8 @@ TEST_CASE(the_tiles_take_setups_grid_in_the_order_of_use)
         CHECK(gfx_rect_contains(r, SV_HUB_TILE_X(i), SV_HUB_TILE_Y(i)));
     }
     CHECK_EQ(servo_hub_tile_rect(SERVO_HUB_TILES).w, 0);
+    char b[48];
+    CHECK_STR_EQ(servo_hub_tile_line(SERVO_HUB_TILES, b, sizeof(b)), "");
     CHECK_EQ(servo_hub_tile_rect(-1).w, 0);
 }
 
@@ -83,16 +85,12 @@ TEST_CASE(every_tile_name_and_line_fits_31_cells_in_both_languages)
         TX_SVH_LIVE,   TX_SVH_SWEEP,  TX_SVH_TEST,  TX_SVH_LIMRUN,
         TX_SVH_RUDDER, TX_SVH_RAUTO, TX_SVH_KST,   TX_SVH_HITEC,
     };
-    static const ui_text_id_t k_line[SERVO_HUB_TILES] = {
-        TX_SVH_LIVE_LINE,   TX_SVH_SWEEP_LINE,  TX_SVH_TEST_LINE,
-        TX_SVH_LIMRUN_LINE, TX_SVH_RUDDER_LINE, TX_SVH_RAUTO_LINE,
-        TX_SVH_KST_LINE,    TX_SVH_HITEC_LINE,
-    };
+    char b[48];
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
         for (int i = 0; i < SERVO_HUB_TILES; ++i) {
             const char *name = ui_tr(k_name[i]);
-            const char *line = ui_tr(k_line[i]);
+            const char *line = servo_hub_tile_line(i, b, sizeof(b));
             CHECK(name[0] != '\0');
             CHECK(line[0] != '\0');
             CHECK(gfx_text_cells(name) <= 31);

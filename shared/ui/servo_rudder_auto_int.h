@@ -69,6 +69,7 @@ typedef struct {
     bool      seen;         /**< the run was running when last looked   */
     bool      leaving;      /**< the ended run's LEAVE is on its way    */
     bool      end_due;      /**< the programmer's run ends after it     */
+    bool      off_due;      /**< a FAIL: the supplies off after that    */
     int       file;         /**< the report's number; 0 not yet, -1 none */
     bool      report;       /**< the card took the report whole         */
     bool      off;          /**< USER LOGS was off at the start         */

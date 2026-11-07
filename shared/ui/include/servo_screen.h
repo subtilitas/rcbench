@@ -126,6 +126,18 @@ gfx_rect_t servo_hub_tile_rect(int i);
 bool servo_hub_tile_refused(int i, char *why, size_t n);
 
 /**
+ * @brief Hub tile @p i's line under its name.  TEST's names the steps a run
+ *        started now takes, as TEST's READY card does: `4.8-6.0V,
+ *        BROWN-OUT` with HV SERVO off, 7.4V and 8.4V only with it on, NO
+ *        STEP CHOSEN with none.
+ * @param i   The tile, 0 for LIVE.
+ * @param buf Takes TEST's line.
+ * @param n   Its size.
+ * @return The line, at most 31 cells; "" past the last tile.
+ */
+const char *servo_hub_tile_line(int i, char *buf, size_t n);
+
+/**
  * Move the horn by @p span_fraction of its travel (-travel to +travel),
  * from the rotary knob (knob.h).  Relative to the commanded angle.  Nothing
  * happens for a zero fraction, on a disarmed bench, under a disarm waiting

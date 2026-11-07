@@ -367,7 +367,11 @@ void sup_drop_press(void)
  * @brief A DOWN while another contact holds the press: OUTPUT OFF and
  *        PROG 5V OFF switch off at once, as a stop counts on the press
  *        whatever other fingers hold.  The press held stays its contact's,
- *        and any other DOWN takes nothing.
+ *        and any other DOWN takes nothing.  A drag on a V or A track under
+ *        OUTPUT OFF ends there, as sup_drop_press() ends one: the set point
+ *        keeps what the drag gave the supply live, and the drag's later
+ *        moves and its lift change nothing.  Its contact still holds the
+ *        press until it lifts.
  * @param evt the DOWN event
  */
 static void stop_down(const touch_event_t *evt)
@@ -376,6 +380,16 @@ static void stop_down(const touch_event_t *evt)
 
     if (s.on && gfx_rect_contains(s.out_rect, x, y)) {
         sup_post_off();
+        if (s.pressed == P_V_SLIDER || s.pressed == P_I_SLIDER) {
+            ui_slider_release(&s.v_slider);
+            ui_slider_release(&s.i_slider);
+            ui_slider_set(&s.v_slider, s.cv);
+            ui_slider_set(&s.i_slider, s.ci);
+            ++s.set_rev;
+            /* The contact keeps the press, as a press held does, so its
+             * moves and its release reach no control. */
+            s.pressed = P_NONE;
+        }
         ++s.out_rev;
         ++s.ctrl_rev;
     } else if (sup_p5_shown() && prog5v_box_live() && prog5v_box_on()

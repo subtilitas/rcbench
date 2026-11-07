@@ -1469,7 +1469,10 @@ SERVO opens on its hub: eight tiles of 328 x 130px in SETUP's grid, at x
 | KST | SERVO > KST | the KST and Chaservo programmer over the left card ([Programmer](#programmer)) |
 | HITEC | HITEC | the Hitec programmer over the left card ([Hitec programmer](#hitec-programmer)) |
 
-Each tile shows its name and a line of at most 31 cells of 10 x 20. KST's
+Each tile shows its name and a line of at most 31 cells of 10 x 20.
+TEST's line names the steps a run started now takes, as TEST's READY card
+does: `4.8-6.0V, BROWN-OUT` with HV SERVO off, `4.8-8.4V, BROWN-OUT` with
+it on, `NO STEP CHOSEN` with no step and no BROWN-OUT. KST's
 and HITEC's tiles are grey while the IOmcu does not report the capability
 their port needs or another session holds the port; a tap on a grey tile
 names the reason in the alert band and opens nothing. The ninth slot
@@ -1665,8 +1668,8 @@ PWM, the supply, their read-back within 1000ms, ARM, ARMED within 500ms.
 The button reads each step in amber, `START, STEP 3 OF 5: READ-BACK`; a
 tap on it ends them all off. A step that
 fails switches every output off and names itself in the alert band, for
-example `PROG 5V FAILED: NO READ-BACK IN 1000ms`. Where
-nothing reads off, the hold arms at once.
+example `PROG 5V FAILED: NO READ-BACK IN 1000ms`; the band goes when the
+screen is left. Where nothing reads off, the hold arms at once.
 
 The IOmcu refuses every supply's ON while its failsafe is latched (FAULT
 01, for example after a panel-only restart). Where the band shows FAULT
@@ -2107,9 +2110,11 @@ PROGRAMMER, the supply (PROG 5V, PD MINI or SUPPLY), PORT PWM and ARM.
 HOLD 2s: ARM + START switches PORT PWM and the supply on, reads them back,
 arms and starts the run. While the run runs the hold reads STOP RUN, and
 SETTINGS is grey. Each write switches the bench to SAFE and back to
-ARMED. After the run's last command the bench switches to SAFE. STOP,
-SAFE, link loss, leaving the screen, or an automatic-test abort condition,
-ends the run with every output off. The verdict, values or endpoints and
+ARMED; the ARM row reads SAFE while a session holds the bench SAFE.
+After the run's last command the bench switches to SAFE. STOP,
+SAFE, link loss, leaving the screen, an automatic-test abort condition or
+a FAIL ends the run with every output off; after a FAIL in a session the
+supply goes off once the LEAVE gave the port back. The verdict, values or endpoints and
 `LIMITnnn.TXT`, or `USER LOGS OFF` when User logs is OFF, stay on the
 state lines until the next run.
 

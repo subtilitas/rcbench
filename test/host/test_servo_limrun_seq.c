@@ -8,8 +8,10 @@
  * where the rail is fed from elsewhere or its set point is past 6.0V; a
  * row turning red under the hold that drops it; a press on the hold that
  * stops the steps; a finger on the hold that opens
- * nothing; the settings the hold fired on; the run's end SAFE with the
- * ports' 5V kept.  The rig is servo_rauto_kst_rig.h.
+ * nothing; the settings the hold fired on; a failed run's end SAFE with
+ * the ports' 5V and the PD mini off; the ARM row SAFE while a session
+ * holds the bench SAFE; the steps' failure band gone with its screen.  The
+ * rig is servo_rauto_kst_rig.h.
  *
  * Cases:
  * - on_the_carrier_one_hold_switches_port_pwm_and_5v_arms_and_starts
@@ -24,7 +26,10 @@
  * - a_finger_that_slides_off_arm_start_starts_nothing
  * - the_run_takes_the_settings_the_hold_fired_on
  * - a_rail_dead_after_the_5v_fails_naming_prog_5v
- * - the_runs_end_leaves_the_bench_safe_and_the_5v_on
+ * - a_failed_runs_end_leaves_the_bench_safe_and_the_5v_off
+ * - a_failed_run_behind_a_pd_mini_switches_it_off
+ * - the_arm_row_reads_safe_while_the_session_holds_the_bench_safe
+ * - the_steps_failure_band_goes_with_its_screen
  *
  * SPDX-License-Identifier: MIT
  */
@@ -433,33 +438,134 @@ TEST_CASE(a_rail_dead_after_the_5v_fails_naming_prog_5v)
     carrier_done();
 }
 
-/* The run's own end, here after the read finds the servo's pulses outside
- * the bench's range: the bench goes SAFE, so the footer reads ARM + START
- * again, and the ports' 5V stays on for the next SERVO screen. */
-TEST_CASE(the_runs_end_leaves_the_bench_safe_and_the_5v_on)
+/** @brief Whether the left card names the verdict LIMITS FAIL.
+ *  @return true then */
+static bool lim_failed(void)
+{
+    char b[96], want[64];
+    snprintf(want, sizeof(want), TR(SV_LIM_VERDICT),
+             ui_servo_str(SERVO_STR_FAIL));
+    for (int i = 0; i < 8; ++i) {
+        if (strcmp(servo_screen_limit_line(i, b, sizeof(b)), want) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/** @brief The run under way, to its end: at most 120s. */
+static void lim_run_out(void)
+{
+    for (int i = 0; i < 240 && servo_screen_limit_running(); ++i) {
+        ra_ms(500u);
+    }
+}
+
+/* The run's own end, here a FAIL after the read finds the servo's pulses
+ * outside the bench's range: an error leaves no output on.  The bench goes
+ * SAFE, so the footer reads ARM + START again, and the ports' 5V goes off
+ * once the LEAVE gave the port back. */
+TEST_CASE(a_failed_runs_end_leaves_the_bench_safe_and_the_5v_off)
 {
     lim_carrier(40u);
     lim_hold_for(2300u);
     ra_ms(20u);
     CHECK(servo_screen_limit_running());
-    for (int i = 0; i < 240 && servo_screen_limit_running(); ++i) {
-        ra_ms(500u);
-    }
+    const unsigned offs = ra.p5_offs;
+    lim_run_out();
     CHECK(!servo_screen_limit_running());
     ra_ms(500u);
     CHECK(!ra.armed);
     CHECK(ra.disarms >= 1u);
-    CHECK(prog5v_box_on());
+    CHECK(lim_failed());
+    CHECK(ra.p5_offs > offs);
+    CHECK(!prog5v_box_on());
     CHECK(!scr->safe_at(SV_HOLD_X, SV_HOLD_Y));
-    char b[96];
-    bool verdict = false;
-    for (int i = 0; i < 8; ++i) {
-        verdict = verdict
-                  || strncmp(servo_screen_limit_line(i, b, sizeof(b)),
-                             "LIMITS ", 7) == 0;
-    }
-    CHECK(verdict);
     scr->render(&cv, 0);
+    ra.p5_task = false;
+    carrier_done();
+}
+
+/* The station's case: the KST servo behind a PD mini, PULSE MIN and MAX at
+ * 1000-2000us, the servo's own pulses outside them.  The hold arms and the
+ * run reads the servo; its FAIL switches the PD mini off and leaves the
+ * bench SAFE, as TEST's end does. */
+TEST_CASE(a_failed_run_behind_a_pd_mini_switches_it_off)
+{
+    lim_pd(true);
+    lim_hold_for(2300u);
+    ra_ms(20u);
+    CHECK(servo_screen_limit_running());
+    CHECK(g_rig.sup_on);
+    const unsigned offs = ra.offs;
+    lim_run_out();
+    CHECK(!servo_screen_limit_running());
+    CHECK(lim_failed());
+    ra_ms(500u);
+    CHECK(ra.offs > offs);
+    CHECK(!g_rig.sup_on);
+    CHECK(!ra.armed);
+}
+
+/* The run goes SAFE for the programmer's session: while CONNECT reads the
+ * servo the band reads SAFE, and so does the ARM row, without the red dot
+ * of an output live through it. */
+TEST_CASE(the_arm_row_reads_safe_while_the_session_holds_the_bench_safe)
+{
+    lim_pd(true);
+    lim_hold_for(2300u);
+    ra_ms(20u);
+    CHECK(servo_screen_limit_running());
+    for (int i = 0; i < 400 && servo_screen_limit_running()
+                    && servo_screen_limit_phase()
+                           != (int)SERVO_LIMRUN_PH_CONNECT;
+         ++i) {
+        ra_ms(20u);
+    }
+    CHECK_EQ(servo_screen_limit_phase(), (int)SERVO_LIMRUN_PH_CONNECT);
+    ra_ms(100u);
+    CHECK(!ra.armed);
+    const rdy_row_t r = lim_row(LRR_ARM);
+    CHECK_STR_EQ(r.value, TR(BAND_SAFE));
+    CHECK_EQ(r.st, (uint8_t)RDY_OK);
+    lim_press(2);
+    ra_ms(2000u);
+    CHECK(!servo_screen_limit_running());
+}
+
+/* The steps stopped by a press on the hold name PROG 5V FAILED: STOP in
+ * the band.  The screen left takes the band with it: the next screen opens
+ * without it.  An alert set after it is not the steps' to take back. */
+TEST_CASE(the_steps_failure_band_goes_with_its_screen)
+{
+    lim_carrier(800u);
+    lim_hold_for(2100u);
+    CHECK(svs_seq_busy());
+    lim_press(2);
+    char want[128];
+    snprintf(want, sizeof(want), TR(SQ_FAILED), "PROG 5V", "STOP");
+    CHECK_STR_EQ(txt(ui_router_alert()), want);
+    ra_ms(200u);
+    scr->leave();
+    go(SERVO_FN_TEST);
+    scr->enter();
+    ra_ms(20u);
+    CHECK(ui_router_alert() == NULL);
+    CHECK(svs_seq_failure() == NULL);
+    go(SERVO_FN_LIMRUN);
+    scr->enter();
+    ra_ms(200u);
+    lim_hold_for(2100u);
+    CHECK(svs_seq_busy());
+    lim_press(3);
+    CHECK_STR_EQ(txt(ui_router_alert()), want);
+    ui_router_set_alert("OTHER");
+    scr->leave();
+    go(SERVO_FN_TEST);
+    scr->enter();
+    CHECK_STR_EQ(txt(ui_router_alert()), "OTHER");
+    ui_router_set_alert(NULL);
+    ra_ms(1500u);
     ra.p5_task = false;
     carrier_done();
 }
@@ -478,6 +584,9 @@ int main(void)
     RUN(a_finger_that_slides_off_arm_start_starts_nothing);
     RUN(the_run_takes_the_settings_the_hold_fired_on);
     RUN(a_rail_dead_after_the_5v_fails_naming_prog_5v);
-    RUN(the_runs_end_leaves_the_bench_safe_and_the_5v_on);
+    RUN(a_failed_runs_end_leaves_the_bench_safe_and_the_5v_off);
+    RUN(a_failed_run_behind_a_pd_mini_switches_it_off);
+    RUN(the_arm_row_reads_safe_while_the_session_holds_the_bench_safe);
+    RUN(the_steps_failure_band_goes_with_its_screen);
     return test_summary("servo_limrun_seq");
 }

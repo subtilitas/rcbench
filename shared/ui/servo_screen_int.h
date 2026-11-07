@@ -762,6 +762,9 @@ typedef struct {
      *  run ends once the LEAVE has (lim_end_due). */
     bool      lim_leaving;
     bool      lim_end_due;
+    /** It ended as FAIL: the supplies go off once the programmer's run
+     *  has ended (lim_seam_ended()), after a LEAVE on its way. */
+    bool      lim_off_due;
     int       lim_file;      /**< its report's number; 0 not yet, -1 none */
     bool      lim_report;    /**< the card took the report whole       */
     bool      lim_off;       /**< USER LOGS was off at its start        */
@@ -1026,6 +1029,16 @@ float test_top_v(void);
  *         SERVO on.  @param v receives their voltages; may be NULL
  *  @return their count */
 uint8_t test_steps(float *v);
+/**
+ * @brief The steps, short: `4.8-6.0V, BROWN-OUT`, `4.8V`, `BROWN-OUT`.
+ * @param b where it goes
+ * @param n its size
+ * @param v the steps' voltages
+ * @param count how many
+ * @param bo whether the brown-out walk follows
+ */
+void test_steps_text(char *b, size_t n, const float *v, uint8_t count,
+                     bool bo);
 /** @brief The run's ends: SWEEP's RANGE of the travel either side of
  *         PULSE CENTRE.  @param end_lo receives the low end, us
  *  @param end_hi receives the high end, us */
