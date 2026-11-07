@@ -33,6 +33,7 @@
 #include "servo_rudder_int.h"
 #include "servo_screen.h"
 #include "servo_rudder_auto_int.h"
+#include "servo_ready_int.h"
 #include "servo_sweep.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -808,6 +809,7 @@ typedef struct {
     svs_drag_filter_t df;    /**< the drag's filtered target, svs_drag_tick() */
     rudder_t rud;            /**< RUDDER's task (servo_rudder_int.h)     */
     rauto_ui_t ra;           /**< RUDDER AUTO (servo_rudder_auto_int.h) */
+    svs_ready_t rdy;         /**< READY and ARM + START (servo_ready_int.h) */
 } servo_screen_state_t;
 
 /* The state, in servo_screen.c. */

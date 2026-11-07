@@ -1,0 +1,219 @@
+/**
+ * @file
+ * @brief The READY card of a SERVO function screen and its ARM + START
+ *        sequence (servo_ready.c), the card's rows of RUDDER AUTO
+ *        (servo_rudder_auto_ready.c): their state in the screen's one
+ *        object, the card's places, and the calls the screen's files make
+ *        of them.
+ *
+ * The READY card takes the output card's place on RUDDER AUTO, in the
+ * screen's coordinates x 636 to 1016, y 62 to 436:
+ *
+ *   - READY, the card's title, y 70 to 90;
+ *   - up to READY_ROWS_MAX rows of READY_ROW_H (30px) from y 96: a dot,
+ *     the label and the state right.  The dot is green for a row met, red
+ *     for one that refuses the hold or drives an output now, amber for one
+ *     the hold does itself (`START SWITCHES IT ON`), grey for one that
+ *     waits on another;
+ *   - the rail line, y 404 to 424: the meter the function reads, its volts
+ *     and amps.
+ *
+ * A tap on a row with a fix takes the fix (the PORT choice list, the
+ * SETTINGS list on its row, ZERO, SETUP > SENSORS); a tap on any other row
+ * not met names it in the alert band.
+ *
+ * The footer's middle slot is the function's one hold, HOLD 2s: ARM +
+ * START.  It fires the sequence (servo_start_seq.h): PORT PWM, PROG 5V or
+ * the PD mini, the read-back within 1000ms, ARM, ARMED within 500ms, the
+ * run.  The svs_seq_* calls below are the screen's side of it, the same
+ * for every function that starts a run this way: what the run needs, the
+ * steps' asks done the way a finger does them, every output off on a
+ * failure, and the lines that name the step.
+ *
+ * The header holds no helper that reads the state: servo_screen_int.h
+ * includes it before the state is declared.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+#pragma once
+
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#include "gfx.h"
+#include "servo_start_seq.h"
+#include "servo_test.h"
+#include "touch_types.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/** @brief The rows a READY card holds at most. */
+#define READY_ROWS_MAX 10
+/** @brief A row's height and pitch, px. */
+#define READY_ROW_H 30
+/** @brief The card's title row, y in the body. */
+#define READY_TITLE_Y 70
+/** @brief The first row's top, y in the body. */
+#define READY_ROW_Y 96
+/** @brief The rail line's top, y in the body. */
+#define READY_RAIL_Y 404
+/** @brief The label's column, px: 13 cells of 10px. */
+#define READY_LABEL_W 130
+/** @brief The state's column, px: 20 cells of 10px. */
+#define READY_VALUE_W 204
+
+/** @brief A row's state, as its dot and its value's colour show it. */
+typedef enum {
+    RDY_OK = 0, /**< met: green                                     */
+    RDY_LIVE,   /**< met, and an output live through it: red dot    */
+    RDY_SEQ,    /**< the hold does it: amber                        */
+    RDY_BAD,    /**< refuses the hold: red                          */
+    RDY_IDLE,   /**< waits on a row above it: grey                  */
+} rdy_state_t;
+
+/** @brief One row as the card draws it. */
+typedef struct {
+    uint8_t     st;        /**< rdy_state_t                                */
+    const char *label;     /**< the label, in the language showing         */
+    const char *why;       /**< the gate's whole text for SEQ and BAD; NULL */
+    char        value[64]; /**< the state on the right                     */
+    bool        fix;       /**< a tap takes a fix                          */
+} rdy_row_t;
+
+/** @brief The card's and the sequence's state, the member `rdy` of the
+ *         screen's state. */
+typedef struct {
+    servo_seq_t seq;        /**< ARM + START's steps                     */
+    servo_seq_need_t need;  /**< what the sequence under way needs        */
+    int8_t      pressed;    /**< the row a tap is on, -1 for none        */
+    uint8_t     press_id;   /**< that contact's track id                 */
+    uint32_t    drawn[2];   /**< ready_sig() as each buffer drew it      */
+    const char *fail;       /**< the last failure's line, or NULL        */
+    char        fail_buf[96]; /**< its text                              */
+} svs_ready_t;
+
+/* --- servo_ready.c: the card ---------------------------------------------- */
+
+/** @brief The card and the sequence at the screen's start. */
+void ready_init(void);
+/** @brief Whether the function shown has a READY card in the output
+ *         card's place.  @return true on RUDDER AUTO */
+bool ready_shown(void);
+/** @brief The card's rows now.  @return the count, at most
+ *         READY_ROWS_MAX */
+int ready_count(void);
+/** @brief Row @p i as drawn now.  @param i the row @param r receives it
+ *  @return false past the last */
+bool ready_row(int i, rdy_row_t *r);
+/** @brief The first row, in the gate's order, that refuses the hold, and
+ *         its text for the alert band.
+ *  @param buf takes `LABEL: why` @param n its size
+ *  @return @p buf; NULL when no row refuses */
+const char *ready_refusal(char *buf, size_t n);
+/** @brief Row @p i's place.  @param i the row @return its rectangle;
+ *         empty past READY_ROWS_MAX */
+gfx_rect_t ready_row_rect(int i);
+/** @brief The card's place: the output card's.  @return its rectangle */
+gfx_rect_t ready_card_rect(void);
+/** @brief The rail line's place.  @return its rectangle */
+gfx_rect_t ready_rail_rect(void);
+/** @brief The card drawn whole into @p c.  @param c the canvas */
+void ready_render(gfx_canvas_t *c);
+/** @brief The rail line alone, as the meter's readings move.
+ *  @param c the canvas */
+void ready_render_rail(gfx_canvas_t *c);
+/** @brief One number for what the card shows but the rail line.
+ *  @return the number */
+uint32_t ready_sig(void);
+/** @brief A DOWN on the card: a row's tap on its release.  Every DOWN on
+ *         the card is the card's.  @param evt the DOWN
+ *  @return whether it landed on the card */
+bool ready_down(const touch_event_t *evt);
+/** @brief The rest of the press ready_down() took.  @param evt the event
+ *  @return whether it was that press's */
+bool ready_rest(const touch_event_t *evt);
+/** @brief A press under way dropped. */
+void ready_cancel(void);
+
+/* --- servo_ready.c: the sequence -------------------------------------------- */
+
+/** @brief What a run started now needs switched on: PORT PWM on a PROG
+ *         PORT, the carrier's PROG 5V on its port, the PD mini's output
+ *         where it feeds the servo.  @return the needs */
+servo_seq_need_t svs_seq_need(void);
+/** @brief The hold fired: the sequence begins.  @return false while one is
+ *         under way */
+bool svs_seq_begin(void);
+/**
+ * @brief The sequence's frame: what the bench reads in, the steps' asks
+ *        done.  A failure switches every output off and names the step in
+ *        the alert band.
+ * @param refused the caller's first check that refuses the run now, NULL
+ *        for none: a step fails on it
+ * @return true on the frame the caller starts its run; it answers with
+ *         svs_seq_started()
+ */
+bool svs_seq_frame(const char *refused);
+/** @brief The caller's answer to svs_seq_frame()'s start.
+ *  @param ok whether the run took it
+ *  @param why the run's refusal, for the failure's line; NULL with @p ok */
+void svs_seq_started(bool ok, const char *why);
+/** @brief End a sequence under way: the bench's reason, as test_end_now()
+ *         gets it.  A leave ends it as the leave switches the outputs.
+ *  @param why the reason */
+void svs_seq_end(servo_test_abort_t why);
+/** @brief Whether a sequence is under way.  @return true while it is */
+bool svs_seq_busy(void);
+/** @brief The step under way as the hold and the state line name it:
+ *         `START, STEP 3 OF 5: READ-BACK`.
+ *  @param buf takes it @param n its size  @return @p buf; "" when none */
+const char *svs_seq_line(char *buf, size_t n);
+/** @brief The step under way, short, for the hold: `READ-BACK ...`.
+ *  @param buf takes it @param n its size  @return @p buf; "" when none */
+const char *svs_seq_label(char *buf, size_t n);
+/** @brief The last failure's line, `PROG 5V FAILED: NO READ-BACK IN
+ *         1000ms`, until a hold begins a new one.  @return it, or NULL */
+const char *svs_seq_failure(void);
+
+/* --- servo_rudder_auto_ready.c: RUDDER AUTO's rows ------------------------- */
+
+/** @brief RUDDER AUTO's rows, in the card's order. */
+typedef enum {
+    RAR_PORT = 0,  /**< a PROG PORT the tester drives                  */
+    RAR_SERVO,     /**< the family the run programs                    */
+    RAR_METER,     /**< the INA3221 channel the run reads              */
+    RAR_ANGLE,     /**< the angle source                               */
+    RAR_ZERO,      /**< ZERO taken                                     */
+    RAR_RANGE,     /**< PULSE MIN to MAX hold 1000 to 2000us           */
+    RAR_PROG,      /**< the programmer free                            */
+    RAR_SUPPLY,    /**< PROG 5V, the PD mini or the rail               */
+    RAR_PWM,       /**< the port's pulse                               */
+    RAR_ARM,       /**< ARMED, or a run or a report in the way         */
+    RAR_COUNT      /**< the count                                      */
+} rauto_row_t;
+
+/** @brief RUDDER AUTO's row @p i.  @param i the row @param r receives it
+ *  @return false past the last */
+bool rauto_ready_row(int i, rdy_row_t *r);
+/** @brief The row of RUDDER AUTO's card a gate text belongs to.
+ *  @param why a text rauto_blocked() returns
+ *  @return the row; RAR_COUNT for a text of none */
+rauto_row_t rauto_row_of(const char *why);
+/** @brief Whether the hold may fix @p why itself: a SAFE bench and a part
+ *         it switches.  @param why a gate text @return true for amber */
+bool rauto_seq_fixes(const char *why);
+/** @brief The first gate check that refuses the hold, as rauto_blocked()
+ *         orders them, less those the hold does itself.
+ *  @param row receives its row; may be NULL
+ *  @return the text; NULL when the hold may begin */
+const char *rauto_hold_blocked(rauto_row_t *row);
+/** @brief A tap on RUDDER AUTO's row @p i: its fix, or its reason in the
+ *         alert band.  @param i the row */
+void rauto_ready_tap(int i);
+
+#ifdef __cplusplus
+}
+#endif

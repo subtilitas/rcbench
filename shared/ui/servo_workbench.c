@@ -259,6 +259,12 @@ void wb_open_encoder(void)
     settings_screen_open_on(SET_CAT_SENSORS, e);
 }
 
+void wb_open_meter(void)
+{
+    ui_router_goto(SCREEN_SETUP);
+    settings_screen_open_on(SET_CAT_SENSORS, SENS_ENTRY_INA3221_0);
+}
+
 /**
  * @brief The caps button's press, where @p r holds the point.  It opens
  *        another screen: leaving switches the bench to SAFE and ends a
@@ -282,7 +288,8 @@ bool opener_down(const touch_event_t *evt, gfx_rect_t r, int code)
 
 bool wb_rest(const touch_event_t *evt)
 {
-    return rudder_rest(evt) || rauto_rest(evt) || foot_rest(evt);
+    return rudder_rest(evt) || rauto_rest(evt) || ready_rest(evt)
+           || foot_rest(evt);
 }
 
 /* A press on TEST's or LIMIT RUN's page: its card's SETTINGS, its START,

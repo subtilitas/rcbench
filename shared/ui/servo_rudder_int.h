@@ -180,6 +180,10 @@ void rudder_down(const touch_event_t *evt);
  */
 bool rudder_rest(const touch_event_t *evt);
 
+/** @brief ZERO as its button takes it: the angle on show is the neutral;
+ *         nothing without a reading or while AUTO runs. */
+void rudder_zero(void);
+
 /** @brief A press under way dropped: the task left, the screen left,
  *         touch events lost. */
 void rudder_cancel(void);

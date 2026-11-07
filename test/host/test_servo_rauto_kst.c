@@ -29,7 +29,12 @@
  * - on_the_carrier_the_lines_lead_to_a_start_from_safe
  * - on_the_carrier_the_lines_lead_to_a_start_from_armed
  * - a_session_holding_the_port_is_named_before_port_pwm
- * - on_the_carrier_port_pwm_on_from_outputs_with_the_5v_off_leads_to_a_start
+ * - on_the_carrier_one_hold_switches_port_pwm_and_5v_arms_and_starts
+ * - the_5v_read_back_has_1000ms_and_a_late_one_ends_all_off
+ * - armed_has_500ms_and_a_refused_arm_ends_all_off
+ * - a_pd_mini_off_is_switched_on_by_the_hold
+ * - a_tap_on_the_hold_during_the_sequence_ends_it_all_off
+ * - auto_start_flashes_as_it_fires
  *
  * SPDX-License-Identifier: MIT
  */
@@ -41,6 +46,7 @@
 #include "log_name.h"
 #include "servo_rudder_auto.h"
 #include "servo_rudder_auto_int.h"
+#include "servo_ready_int.h"
 #include "outputs_screen.h"
 #include "outputs_spots.h"
 #include "port_view.h"
@@ -88,6 +94,16 @@ static struct {
     imu_t m;
     bool imu_ok;
     uint32_t imu_taken;
+    /* The control task's PROG_SUPPLY: an ON or OFF the boxes asked, read
+     * back p5_delay ms after it was taken (ON) or at once (OFF). */
+    bool p5_task;
+    uint32_t p5_delay;
+    bool p5_pending, p5_want;
+    uint32_t p5_due;
+    unsigned p5_ons, p5_offs;
+    /* ARM dropped by the bench, whatever asks it. */
+    bool no_arm;
+    unsigned pd_ons;        /* the supply's ON taken */
 } ra;
 
 /** @brief IMU FILTER on the IMU of these cases. */
@@ -124,6 +140,8 @@ static void ra_drain(void)
     }
 }
 
+static void ra_pd_reading(bool on);
+
 /* What the panel does with the screen's commands. */
 static void ra_commands(void)
 {
@@ -139,7 +157,7 @@ static void ra_commands(void)
             ra.armed = false;
             ra.cmd = 1500u;
         } else if (c.kind == SERVO_CMD_ARM) {
-            if (kst_panel_holds_port()
+            if (ra.no_arm || kst_panel_holds_port()
                 || kst_prog_state(M) != KST_PROG_PWM) {
                 ra.dropped++;
             } else {
@@ -155,7 +173,32 @@ static void ra_commands(void)
         if (sc.off) {
             ra.offs++;
             g_rig.sup_on = false;
+        } else if (sc.on) {
+            ra.pd_ons++;
+            g_rig.sup_on = true;
+            ra_pd_reading(true);
         }
+    }
+}
+
+/* The control task's side of PROG 5V: what the boxes and the bench
+ * asked, published as the PROG_SUPPLY page reads it back. */
+static void ra_p5(void)
+{
+    prog5v_cmd_t c;
+    if (ra.p5_task && prog5v_box_poll_cmd(&c)) {
+        ra.p5_pending = true;
+        ra.p5_want = c.on;
+        ra.p5_due = g_rig.ms + (c.on ? ra.p5_delay : 0u);
+        if (c.on) {
+            ra.p5_ons++;
+        } else {
+            ra.p5_offs++;
+        }
+    }
+    if (ra.p5_pending && (int32_t)(g_rig.ms - ra.p5_due) >= 0) {
+        ra.p5_pending = false;
+        prog5v_box_publish(ra.p5_want ? 3u : 2u, 21u, PROG5V_HELD_NONE);
     }
 }
 
@@ -241,6 +284,7 @@ static void ra_ms(uint32_t ms)
         }
         if (g_rig.ms % 20u == 0u) {
             servo_screen_clock(g_rig.ms);
+            ra_p5();
             if (!prog_choice_want_pwm()) {
                 ra.port_pwm = false;
             } else if (!ra.armed) {
@@ -345,9 +389,9 @@ static void ra_setup(bool pd, bool zero)
 /* HOLD 2s TO START held for 2.3s. */
 static void ra_hold_start(void)
 {
-    ev(SV_RUD_LEN_X, SV_RA_ROW_Y(2), TOUCH_EVENT_DOWN, 1);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 1);
     ra_ms(2300u);
-    ev(SV_RUD_LEN_X, SV_RA_ROW_Y(2), TOUCH_EVENT_UP, 1);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 1);
     ra_ms(20u);
 }
 
@@ -533,9 +577,9 @@ TEST_CASE(a_tap_on_stop_run_ends_auto_at_once)
     ra_hold_start();
     CHECK(servo_screen_rauto_running());
     ra_ms(200u);
-    ev(SV_RUD_LEN_X, SV_RA_ROW_Y(2), TOUCH_EVENT_DOWN, 1);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 1);
     CHECK(!servo_screen_rauto_running());
-    ev(SV_RUD_LEN_X, SV_RA_ROW_Y(2), TOUCH_EVENT_UP, 1);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 1);
     ra_ms(3000u);
     CHECK(!ra.armed);
     CHECK(!g_rig.sup_on);
@@ -859,8 +903,8 @@ TEST_CASE(on_the_carrier_the_lines_lead_to_a_start_from_safe)
     CHECK_STR_EQ(seen, want);
     const gfx_rect_t r = rauto_rect(RA_C_START);
     /* The hold lands on START's middle row, inside it. */
-    CHECK(gfx_rect_contains(r, SV_RUD_LEN_X, SV_RA_ROW_Y(2)));
-    CHECK_EQ(r.y + r.h / 2, SV_RA_ROW_Y(2));
+    CHECK(gfx_rect_contains(r, SV_RA_START_X, SV_RA_START_Y));
+    CHECK_EQ(r.y + r.h / 2, SV_RA_START_Y);
     ra_hold_start();
     CHECK(servo_screen_rauto_running());
     rauto_end_now(SERVO_TEST_AB_OPERATOR);
@@ -966,95 +1010,185 @@ static void carrier_ports(uint8_t port)
     outputs_screen_set_binding(&b);
 }
 
-/* PROG 5V ON's 2s hold on SERVO's box, switched on as the control task
- * does once the box asks. */
-static void prog5v_on_from_servo(void)
-{
-    const int x = SV_RC_X + SV_RC_W - PROG5V_BOX_BTN_W / 2;
-    const int y = UI_MARGIN + 90 + PROG5V_BOX_H / 2;
-    ev(x, y, TOUCH_EVENT_DOWN, 2);
-    ra_ms(2300u);
-    ev(x, y, TOUCH_EVENT_UP, 2);
-    prog5v_cmd_t c;
-    CHECK(prog5v_box_poll_cmd(&c) && c.on && c.by == PROG5V_BY_SERVO);
-    prog5v_box_publish(3u, 21u, PROG5V_HELD_NONE);
-    ra_ms(200u);
-}
-
-/* The owner's way on the rbmod carrier: PORT PWM off, the PROG 5V box
- * switched on on SERVO.  ARMED, AUTO says DISARM and OUTPUTS; SAFE, it
- * says OUTPUTS.  OUTPUTS opens on the port's entry; leaving SERVO switches
- * the PROG 5V off.  There PORT PWM ON is taken and saved with the box off,
- * and the line says the pulse waits for the box on SERVO; no pulse is
- * asked.  Back on RUDDER AUTO, PROG 5V ON, the pulse comes on in SAFE,
- * ARM, and a hold on START starts AUTO. */
-TEST_CASE(on_the_carrier_port_pwm_on_from_outputs_with_the_5v_off_leads_to_a_start)
+/**
+ * @brief The rbmod carrier from SAFE with PORT PWM off and the PROG 5V
+ *        off, the control task answering PROG 5V after @p delay_ms.
+ * @param delay_ms the read-back's delay, ms
+ */
+static void carrier_safe_off(uint32_t delay_ms)
 {
     carrier_port(false);
     carrier_ports(RIG_PORT);
     settings_set(SET_SERVO_PORT_PWM, 0.0f);
+    ra.p5_task = true;
+    ra.p5_delay = delay_ms;
     ra_ms(200u);
-    prog5v_on_from_servo();
-    ra.armed = true;
-    servo_screen_set_armed(true);
-    ra_ms(200u);
-    CHECK_STR_EQ(rauto_blocked(), TR(SV_LIM_PWM_OFF_ARMED));
-    ra.armed = false;
-    servo_screen_set_armed(false);
-    ra_ms(200u);
-    CHECK_STR_EQ(rauto_blocked(), ui_servo_str(SERVO_STR_START_NOT_ARMED));
-    CHECK_STR_EQ(lim_pwm_why(), TR(SV_LIM_PWM_OFF));
-    /* SETUP > OUTPUTS on the port's entry.  The rig drives SERVO by hand,
-     * so the router leaves the overview and SERVO's leave is called here:
-     * it switches the PROG 5V off. */
-    outputs_screen_open_on_port((uint8_t)RIG_PORT);
-    ui_router_goto(SCREEN_OUTPUTS);
-    CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
-    CHECK_EQ(outputs_screen_port_shown(), (int)RIG_PORT);
-    scr->leave();
-    prog5v_cmd_t c;
-    CHECK(prog5v_box_poll_cmd(&c) && c.off && !c.on);
-    prog5v_box_publish(2u, 21u, PROG5V_HELD_NONE);
-    const ui_screen_t *out = outputs_screen();
+}
+
+/** @brief READY row @p i of RUDDER AUTO's card, its state and value. */
+static rdy_row_t row_now(int i)
+{
+    rdy_row_t r;
+    CHECK(rauto_ready_row(i, &r));
+    return r;
+}
+
+/* The owner's case on the rbmod carrier: SAFE, PORT PWM off, PROG 5V off.
+ * READY reads PROG 5V and PORT PWM START SWITCHES IT ON and ARM START
+ * ARMS in amber, and the hold is offered.  One hold: PORT PWM on and
+ * saved, PROG 5V ON asked and read back, the pulse in SAFE, ARM, ARMED,
+ * the run.  STOP RUN ends it with the bench SAFE and the PROG 5V off. */
+TEST_CASE(on_the_carrier_one_hold_switches_port_pwm_and_5v_arms_and_starts)
+{
+    carrier_safe_off(40u);
+    CHECK(rauto_hold_blocked(NULL) == NULL);
+    CHECK_STR_EQ(rauto_blocked(), ui_servo_str(SERVO_STR_START_PROG_5V));
+    rdy_row_t r = row_now(RAR_SUPPLY);
+    CHECK_STR_EQ(r.label, "PROG 5V");
+    CHECK_EQ(r.st, (uint8_t)RDY_SEQ);
+    CHECK_STR_EQ(r.value, TR(RDY_SEQ_ON));
+    r = row_now(RAR_PWM);
+    CHECK_EQ(r.st, (uint8_t)RDY_SEQ);
+    r = row_now(RAR_ARM);
+    CHECK_EQ(r.st, (uint8_t)RDY_SEQ);
+    CHECK_STR_EQ(r.value, TR(RDY_SEQ_ARM));
+    CHECK_EQ(row_now(RAR_PORT).st, (uint8_t)RDY_OK);
+    CHECK_EQ(row_now(RAR_ZERO).st, (uint8_t)RDY_OK);
     (void)settings_save();
-    const touch_event_t d = { TOUCH_EVENT_DOWN,
-                              { 3, (int16_t)OU_SEG_X(0), (int16_t)OU_PWM_Y,
-                                40 }, 0u };
-    const touch_event_t u = { TOUCH_EVENT_UP,
-                              { 3, (int16_t)OU_SEG_X(0), (int16_t)OU_PWM_Y,
-                                40 }, 0u };
-    out->event(&d);
-    out->event(&u);
+    ra_hold_start();
+    CHECK(servo_screen_rauto_running());
     CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
     CHECK(settings_save_asked());
-    char line[96];
-    CHECK(outputs_screen_port_reason(line, sizeof(line)));
-    CHECK_STR_EQ(line, TR(PC_PWM_WAITS_5V));
-    CHECK(!prog_choice_want_pwm());
-    /* RUDDER AUTO again: the box, PROG 5V, ARM, START. */
-    ui_router_goto(SCREEN_SERVO_RAUTO);
-    CHECK_EQ(ui_router_current(), SCREEN_SERVO_RAUTO);
-    scr = servo_fn_screen(SERVO_FN_RAUTO);
+    CHECK(prog5v_box_on());
+    CHECK_EQ(ra.p5_ons, 1u);
+    CHECK_EQ(ra.arms, 1u);
+    CHECK(svs_seq_failure() == NULL);
+    CHECK_EQ(row_now(RAR_SUPPLY).st, (uint8_t)RDY_LIVE);
+    CHECK_EQ(row_now(RAR_ARM).st, (uint8_t)RDY_LIVE);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 1);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 1);
+    CHECK(!servo_screen_rauto_running());
+    ra_ms(2000u);
+    CHECK(!ra.armed);
+    CHECK(!prog5v_box_on());
+    CHECK(ra.p5_offs >= 1u);
+    ra.p5_task = false;
+    carrier_done();
+}
+
+/* The PROG 5V's read-back has 1000ms: read back at 900ms the run starts;
+ * at 1100ms the sequence fails as READ-BACK names PROG 5V, in the first
+ * line and in the alert band, with no ARM asked, the bench SAFE and the
+ * PROG 5V off. */
+TEST_CASE(the_5v_read_back_has_1000ms_and_a_late_one_ends_all_off)
+{
+    char b[128], want[128], cause[64];
+    for (int late = 0; late < 2; ++late) {
+        /* The ON is taken on the frame after the hold fires: 20ms of it
+         * come off the delay. */
+        carrier_safe_off(late ? 1100u - 20u : 900u - 20u);
+        ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 1);
+        ra_ms(2100u);
+        ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 1);
+        CHECK(svs_seq_busy());
+        CHECK_EQ(ra.arms, 0u);
+        ra_ms(1200u);
+        if (!late) {
+            CHECK(servo_screen_rauto_running());
+            CHECK_EQ(ra.arms, 1u);
+            rauto_end_now(SERVO_TEST_AB_OPERATOR);
+        } else {
+            CHECK(!servo_screen_rauto_running());
+            CHECK(!svs_seq_busy());
+            CHECK_EQ(ra.arms, 0u);
+            snprintf(cause, sizeof(cause), TR(SQ_NO_READBACK), 1000u);
+            snprintf(want, sizeof(want), TR(SQ_FAILED), "PROG 5V", cause);
+            CHECK_STR_EQ(svs_seq_failure(), want);
+            CHECK_STR_EQ(rauto_line(0, b, sizeof(b)), want);
+            CHECK_STR_EQ(ui_router_alert(), want);
+            CHECK(ra.p5_offs >= 1u);
+            CHECK(!prog5v_box_on());
+            CHECK(!ra.armed);
+        }
+        ra_ms(2000u);
+        ra.p5_task = false;
+        carrier_done();
+    }
+}
+
+/* ARMED has 500ms: an ARM the bench drops fails the sequence at ARM, the
+ * PD mini's output and every other output off, the bench SAFE. */
+TEST_CASE(armed_has_500ms_and_a_refused_arm_ends_all_off)
+{
+    char want[128], cause[64];
+    ra_setup(true, true);
+    ra.armed = false;
+    servo_screen_set_armed(false);
+    ra.no_arm = true;
+    ra_ms(100u);
+    CHECK(rauto_hold_blocked(NULL) == NULL);
+    const unsigned offs = ra.offs;
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 1);
+    ra_ms(2060u);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 1);
+    CHECK(svs_seq_busy());
+    ra_ms(400u);
+    CHECK(svs_seq_busy());
     ra_ms(200u);
-    CHECK(!prog_choice_want_pwm());
-    CHECK(rauto_shown());
-    CHECK_STR_EQ(rauto_blocked(), ui_servo_str(SERVO_STR_START_PROG_5V));
-    prog5v_on_from_servo();
-    CHECK(prog_choice_want_pwm());
-    CHECK_STR_EQ(rauto_blocked(), ui_servo_str(SERVO_STR_START_NOT_ARMED));
-    ra.armed = true;
-    servo_screen_set_armed(true);
-    ra_ms(200u);
-    CHECK(rauto_blocked() == NULL);
+    CHECK(!svs_seq_busy());
+    CHECK(!servo_screen_rauto_running());
+    snprintf(cause, sizeof(cause), TR(SQ_NOT_ARMED), 500u);
+    snprintf(want, sizeof(want), TR(SQ_FAILED), "ARM", cause);
+    CHECK_STR_EQ(svs_seq_failure(), want);
+    ra_ms(100u);
+    CHECK(ra.offs > offs);
+    CHECK(!g_rig.sup_on);
+    CHECK(ra.disarms >= 1u);
+    ra.no_arm = false;
+}
+
+/* Where the PD mini feeds the servo with its output off, PD MINI reads
+ * START SWITCHES IT ON and the hold switches it on before ARM. */
+TEST_CASE(a_pd_mini_off_is_switched_on_by_the_hold)
+{
+    ra_setup(true, true);
+    ra.armed = false;
+    servo_screen_set_armed(false);
+    g_rig.sup_on = false;
+    ra_pd_reading(false);
+    ra_ms(100u);
+    rdy_row_t r = row_now(RAR_SUPPLY);
+    CHECK_STR_EQ(r.label, "PD MINI");
+    CHECK_EQ(r.st, (uint8_t)RDY_SEQ);
+    CHECK(rauto_hold_blocked(NULL) == NULL);
     ra_hold_start();
+    CHECK_EQ(ra.pd_ons, 1u);
     CHECK(servo_screen_rauto_running());
     rauto_end_now(SERVO_TEST_AB_OPERATOR);
     ra_ms(2000u);
-    ui_router_goto(SCREEN_OVERVIEW);
-    port_view_t v;
-    port_view_unknown(&v);
-    port_view_set(&v);
-    outputs_screen_set_prog_ports(OUTPUTS_PORTS_UNKNOWN, NULL);
+    CHECK(!g_rig.sup_on);
+}
+
+/* A tap on the hold while the sequence waits for its read-back: the
+ * sequence ends as STOP, every output off. */
+TEST_CASE(a_tap_on_the_hold_during_the_sequence_ends_it_all_off)
+{
+    carrier_safe_off(800u);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 1);
+    ra_ms(2100u);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 1);
+    CHECK(svs_seq_busy());
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 2);
+    CHECK(!svs_seq_busy());
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 2);
+    char want[128];
+    snprintf(want, sizeof(want), TR(SQ_FAILED), "PROG 5V", "STOP");
+    CHECK_STR_EQ(svs_seq_failure(), want);
+    ra_ms(1500u);
+    CHECK(!servo_screen_rauto_running());
+    CHECK(!prog5v_box_on());
+    CHECK_EQ(ra.arms, 0u);
+    ra.p5_task = false;
     carrier_done();
 }
 
@@ -1078,11 +1212,11 @@ TEST_CASE(auto_start_flashes_as_it_fires)
     const hold_flash_rig_t rig = { ra_frame, ra_draw, fb, UI_PANEL_W };
     char seen[64];
     scr->render(&cv, 0);
-    ev(SV_RUD_LEN_X, SV_RA_ROW_Y(2), TOUCH_EVENT_DOWN, 1);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 1);
     if (!hold_flash_walk(&rig, r, 2.6f, seen, sizeof(seen))) {
         T_FAIL("START on AUTO drew %s, no flash", seen);
     }
-    ev(SV_RUD_LEN_X, SV_RA_ROW_Y(2), TOUCH_EVENT_UP, 1);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 1);
     CHECK(servo_screen_rauto_running());
     rauto_end_now(SERVO_TEST_AB_OPERATOR);
 }
@@ -1104,7 +1238,11 @@ int main(void)
     RUN(on_the_carrier_the_lines_lead_to_a_start_from_safe);
     RUN(on_the_carrier_the_lines_lead_to_a_start_from_armed);
     RUN(a_session_holding_the_port_is_named_before_port_pwm);
-    RUN(on_the_carrier_port_pwm_on_from_outputs_with_the_5v_off_leads_to_a_start);
+    RUN(on_the_carrier_one_hold_switches_port_pwm_and_5v_arms_and_starts);
+    RUN(the_5v_read_back_has_1000ms_and_a_late_one_ends_all_off);
+    RUN(armed_has_500ms_and_a_refused_arm_ends_all_off);
+    RUN(a_pd_mini_off_is_switched_on_by_the_hold);
+    RUN(a_tap_on_the_hold_during_the_sequence_ends_it_all_off);
     RUN(auto_start_flashes_as_it_fires);
     return test_summary("servo_rauto_kst");
 }

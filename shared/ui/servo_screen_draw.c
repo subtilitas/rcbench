@@ -414,6 +414,10 @@ static void draw_left(gfx_canvas_t *c)
  */
 void draw_arm(gfx_canvas_t *c)
 {
+    if (ready_shown()) {
+        rauto_draw_hold(c);         /* RUDDER AUTO's ARM + START */
+        return;
+    }
     ui_hold_button(c, s.arm_btn, s.gate.armed ? "DISARM" : "ARM",
                    ui_action_fill(s.gate.armed ? UI_ACTION_ACTIVE
                                                : UI_ACTION_AVAILABLE),
@@ -981,7 +985,13 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
         } else {
             draw_test_page(c);
         }
-        draw_right(c, power);
+        if (ready_shown()) {
+            /* RUDDER AUTO: the READY card in the output card's place. */
+            ready_render(c);
+            s.rdy.drawn[buf] = ready_sig();
+        } else {
+            draw_right(c, power);
+        }
         s.drawn_fp[buf] = foot_sig();
         draw_footer(c);
         return;
@@ -1003,6 +1013,20 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
     if (s.drawn_arm[buf] != s.arm_rev) {
         s.drawn_arm[buf] = s.arm_rev;
         clipped(c, s.arm_btn, draw_arm);
+    }
+    if (ready_shown()) {
+        /* The READY card's rows when one changed, its rail line as the
+         * meter's readings move. */
+        const uint32_t rsig = ready_sig();
+        if (s.rdy.drawn[buf] != rsig) {
+            s.rdy.drawn[buf] = rsig;
+            s.drawn_power[buf] = s.power_rev;
+            clipped(c, ready_card_rect(), ready_render);
+        } else if (s.drawn_power[buf] != s.power_rev) {
+            s.drawn_power[buf] = s.power_rev;
+            clipped(c, ready_rail_rect(), ready_render_rail);
+        }
+        s.drawn_sup[buf] = s.sup_rev;
     }
     if (s.drawn_power[buf] != s.power_rev) {
         s.drawn_power[buf] = s.power_rev;

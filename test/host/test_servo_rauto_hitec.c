@@ -64,9 +64,9 @@ static void ha_setup(bool classic)
 /* HOLD 2s TO START held for 2.3s. */
 static void ha_hold_start(void)
 {
-    ev(SV_RUD_LEN_X, SV_RA_ROW_Y(2), TOUCH_EVENT_DOWN, 1);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 1);
     hl_ms(2300u);
-    ev(SV_RUD_LEN_X, SV_RA_ROW_Y(2), TOUCH_EVENT_UP, 1);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 1);
     hl_ms(20u);
 }
 

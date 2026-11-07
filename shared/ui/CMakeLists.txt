@@ -59,6 +59,8 @@ set(SRCS
     servo_workbench.c
     servo_rudder_panel.c
     servo_rudder_auto_panel.c
+    servo_rudder_auto_ready.c
+    servo_ready.c
     servo_rudder_flap.c
     servo_guide.c
     servo_fn.c

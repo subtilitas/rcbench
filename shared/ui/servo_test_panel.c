@@ -293,6 +293,7 @@ void test_restore_service(void)
  * go -- before whatever ended it acts. */
 void test_end_now(servo_test_abort_t why)
 {
+    svs_seq_end(why);
     lim_end_now(why);
     rauto_end_now(why);
     if (!servo_test_running(&s.test)) {

@@ -1,12 +1,14 @@
 /**
  * @file
- * @brief RUDDER's AUTO box: TARGET 1000us and 2000us, MARGIN, TOLERANCE,
- *        START held 2s, the step, the last result and the report; and the
- *        run behind it (servo_rudder_auto.h) on a KST, Chaservo or Hitec
- *        servo on the programming port, its steps done the way a finger
- *        does them.
+ * @brief RUDDER AUTO's left card: TARGET 1000us and 2000us, MARGIN,
+ *        TOLERANCE, the step, the last result and the report; the
+ *        footer's HOLD 2s: ARM + START; and the run behind it
+ *        (servo_rudder_auto.h) on a KST, Chaservo or Hitec servo on the
+ *        programming port, its steps done the way a finger does them.
  *
- * See servo_rudder_auto_int.h for the layout.  The run takes the angle the
+ * See servo_rudder_auto_int.h for the layout.  The hold fires the ARM +
+ * START sequence (servo_ready.c); the run starts on its last step.  The
+ * gate and the READY card's rows are servo_rudder_auto_ready.c's.  The run takes the angle the
  * screen takes in (servo_screen_encoder()), as RUDDER's readout shows it:
  * the deflection from ZERO.  Its sessions with the programmer are the
  * limit run's, through the seam servo_limit_seam.c picks by the family:
@@ -45,17 +47,14 @@
 #define RA_GAP    10                     /**< Between two halves, px. */
 #define RA_ROW1_Y (CARD_Y + 112)         /**< TARGET 1000us and 2000us. */
 #define RA_ROW2_Y (CARD_Y + 172)         /**< MARGIN and TOLERANCE. */
-#define RA_START_Y (CARD_Y + 292)        /**< START. */
-#define RA_LINE_Y (CARD_Y + 348)         /**< The first line. */
+#define RA_LINE_Y (CARD_Y + 292)         /**< The first line. */
 #define RA_LINE_GAP 4                    /**< Between two lines, px. */
-/** @brief The room the lines take, down to the card's floor: 80px. */
+/** @brief The room the lines take, down to the card's floor: 136px. */
 #define RA_LINES_H (CARD_FLOOR - RA_LINE_Y)
 
 _Static_assert(2 * RA_HALF_W + RA_GAP == RA_W, "two halves fill the column");
 _Static_assert(RA_LINES_H >= RA_LINES * 20 + (RA_LINES - 1) * RA_LINE_GAP,
                "three lines of one row each fit above the footer");
-_Static_assert(RA_START_Y + UI_TAP_MIN + 8 <= RA_LINE_Y,
-               "START ends above the lines");
 
 /* The families are the limit run's, value for value: one SERVO row and one
  * seam serve both runs. */
@@ -71,6 +70,7 @@ _Static_assert((int)SERVO_RAUTO_FAM_KST == (int)SERVO_LIMRUN_FAM_KST
 void rauto_init(void)
 {
     servo_rauto_init(&s.ra.run);
+    ready_init();
 }
 
 bool rauto_shown(void)
@@ -104,7 +104,7 @@ gfx_rect_t rauto_rect(rauto_ctl_t k)
             (int16_t)(RA_X + ((k == RA_C_TOL) ? RA_HALF_W + RA_GAP : 0)),
             RA_ROW2_Y, RA_HALF_W, UI_TAP_MIN };
     case RA_C_START:
-        return (gfx_rect_t){ RA_X, RA_START_Y, RUD_SIDE_W, UI_TAP_MIN };
+        return ui_footer_rect(UI_FOOTER_HOLD);
     default:
         return (gfx_rect_t){ 0, 0, 0, 0 };
     }
@@ -179,70 +179,6 @@ static void ra_cfg(servo_rauto_cfg_t *c)
     (void)enc_name(c->source, sizeof(c->source));
     snprintf(c->firmware, sizeof(c->firmware), "%s", RCBENCH_VERSION_STRING);
     c->text = ui_servo_table();
-}
-
-const char *rauto_blocked(void)
-{
-    if (!value_live()) {
-        /* The rbmod carrier's port: the PROG 5V before ARM, as the port's
-         * pulse comes on only with it and only in SAFE (lim_pwm_why()). */
-        return ui_servo_str(prog_choice_needs_5v() ? SERVO_STR_START_PROG_5V
-                                                   : SERVO_STR_START_NOT_ARMED);
-    }
-    if (servo_test_running(&s.test)) {
-        return ui_servo_str(SERVO_STR_START_TEST_RUNS);
-    }
-    if (servo_limrun_running(&s.lim)) {
-        return ui_servo_str(SERVO_STR_START_LIMIT_RUNS);
-    }
-    if (!servo_test_drained(&s.test) || !servo_limrun_drained(&s.lim)
-        || !servo_rauto_drained(&s.ra.run) || s.logger_busy) {
-        return ui_servo_str(SERVO_STR_START_BUSY);
-    }
-    /* The programming port before the meter: the meter is the channel
-     * watching the target, and on the rbmod carrier the bench's outputs
-     * have none until one is bound as SERVO PWM. */
-    if (s.drive_target == 0u) {
-        return TR(RA_PROG_PORT);
-    }
-    const char *meter = lim_meter_why();
-    if (meter != NULL) {
-        return meter;
-    }
-    if (!lim_reads()) {
-        return TR(RA_PROG_PORT);
-    }
-    if (prog_choice_needs_5v()) {
-        return ui_servo_str(SERVO_STR_START_PROG_5V);
-    }
-    /* A programmer holding the port before PORT PWM: its session is why
-     * no pulse runs, whatever the setting says. */
-    if (!s.drive_pwm || prog_reg_servo_holds()) {
-        return lim_pwm_why();
-    }
-    /* The end pulses lie inside the bench's own range. */
-    if (s.min_us > 1000u || s.max_us < 2000u
-        || !(s.centre_us > 1000u && s.centre_us < 2000u)) {
-        return TR(RA_RANGE);
-    }
-    /* The programmer free, and a written value able to act: a PD mini, or
-     * the carrier's PROG 5V, switches the servo off and on. */
-    const char *prog = lim_prog_why();
-    if (prog != NULL) {
-        return prog;
-    }
-    const char *wr = lim_write_why();
-    if (wr != NULL) {
-        return wr;
-    }
-    float d = 0.0f;
-    if (!rudder_defl(&d)) {
-        return TR(RA_NO_ANGLE);
-    }
-    if (!s.rud.geo.zeroed) {
-        return TR(RA_NO_ZERO);
-    }
-    return NULL;
 }
 
 /* ----------------------------------------------------------- the run */
@@ -527,21 +463,37 @@ void rauto_supply(const servo_test_reading_t *r)
     }
 }
 
-/** @brief START's hold completed: the run starts. */
+/** @brief ARM + START's hold completed: the sequence begins, and the run
+ *         on its last step (ra_start()). */
 static void ra_begin(void)
 {
     ui_hold_spend(&s.ra.hold);          /* its flash runs on */
     s.ra.down = false;
     s.ra.note = NULL;
     ++s.ctrl_rev;
-    if (rauto_blocked() != NULL) {
+    ++s.arm_rev;
+    if (rauto_hold_blocked(NULL) != NULL) {
         return;
+    }
+    (void)svs_seq_begin();
+}
+
+/**
+ * @brief The sequence's last step: the run starts on the bench it left,
+ *        ARMED, every part switched on.
+ * @return false when the gate or the run refused it
+ */
+static bool ra_start(void)
+{
+    s.ra.note = rauto_blocked();
+    if (s.ra.note != NULL) {
+        return false;
     }
     servo_rauto_cfg_t c;
     ra_cfg(&c);
     if (!servo_rauto_start(&s.ra.run, &c, test_now())) {
         s.ra.note = TR(RA_REFUSED);
-        return;
+        return false;
     }
     s.ra.changes   = s.changes;
     s.ra.sup_watch = false;
@@ -563,19 +515,29 @@ static void ra_begin(void)
     close_panels();
     lim_seam_close_pages();
     servo_invalidate();
+    return true;
 }
 
 void rauto_frame(float dt_s)
 {
     if (s.ra.down) {
-        ++s.ctrl_rev;
-        if (ui_hold_tick(&s.ra.hold, dt_s)) {
+        ++s.arm_rev;
+        /* A row that turns red under the hold drops it: the hold fires
+         * only on a bench that may start. */
+        if (rauto_hold_blocked(NULL) != NULL && ui_hold_leave(&s.ra.hold)) {
+            s.ra.down = false;
+        } else if (ui_hold_tick(&s.ra.hold, dt_s)) {
             ra_begin();
         }
     }
     if (ui_hold_flashing(&s.ra.hold)) {
         ui_hold_flash_step(&s.ra.hold, dt_s);
-        ++s.ctrl_rev;                   /* the frames of the flash */
+        ++s.arm_rev;                    /* the frames of the flash */
+    }
+    if (s.fn == SERVO_FN_RAUTO && svs_seq_busy()
+        && svs_seq_frame(rauto_hold_blocked(NULL))) {
+        const bool ok = ra_start();
+        svs_seq_started(ok, s.ra.note);
     }
     ra_poll();
     ra_step();
@@ -620,6 +582,12 @@ bool rauto_down(const touch_event_t *evt)
             rauto_end_now(SERVO_TEST_AB_OPERATOR);
             return true;
         }
+        if (k == RA_C_START && svs_seq_busy()) {
+            /* The sequence under way stops on the press, every output
+             * off. */
+            svs_seq_end(SERVO_TEST_AB_OPERATOR);
+            return true;
+        }
         if (s.ra.pressed != RA_C_NONE) {
             return true;
         }
@@ -630,10 +598,11 @@ bool rauto_down(const touch_event_t *evt)
         s.ra.press_id = evt->point.id;
         if (k == RA_C_START) {
             s.ra.note = NULL;
-            if (rauto_blocked() == NULL) {
+            if (rauto_hold_blocked(NULL) == NULL) {
                 s.ra.down = true;
                 ui_hold_begin(&s.ra.hold, TX_HOLD_HINT_RUDDER_AUTO);
             }
+            ++s.arm_rev;
         }
         ++s.ctrl_rev;
         return true;
@@ -665,10 +634,15 @@ bool rauto_rest(const touch_event_t *evt)
             (void)ui_hold_end(&s.ra.hold, evt, r);
         } else if (over && touch_event_is_tap_up(evt)
                    && !servo_rauto_running(&s.ra.run)) {
-            /* A tap on the grey START: why, in the band. */
-            ui_action_refused(rauto_blocked());
+            /* A tap on the grey hold: the first row that refuses it, in
+             * the band. */
+            char why[128];
+            if (ready_refusal(why, sizeof(why)) != NULL) {
+                ui_action_refused(why);
+            }
         }
         s.ra.down = false;
+        ++s.arm_rev;
         return true;
     }
     if (touch_event_is_tap_up(evt) && rauto_shown() && over) {
@@ -685,7 +659,9 @@ void rauto_cancel(void)
         s.ra.down    = false;
         ui_hold_reset(&s.ra.hold);
         ++s.ctrl_rev;
+        ++s.arm_rev;
     }
+    ready_cancel();
 }
 
 /* ------------------------------------------------------------ the texts */
@@ -765,6 +741,20 @@ static void restore_text(char *b, size_t n, const servo_rauto_t *r)
     }
 }
 
+/**
+ * @brief Why no run is under way, as the first line gives it: the last
+ *        sequence's failure, a start the run refused, or the first row
+ *        that refuses the hold.
+ * @return the text; NULL when the hold may begin
+ */
+static const char *idle_why(void)
+{
+    if (svs_seq_failure() != NULL) {
+        return svs_seq_failure();
+    }
+    return (s.ra.note != NULL) ? s.ra.note : rauto_hold_blocked(NULL);
+}
+
 const char *rauto_line(int i, char *buf, size_t n)
 {
     if (buf == NULL || n == 0u) {
@@ -783,7 +773,11 @@ const char *rauto_line(int i, char *buf, size_t n)
                      (unsigned)SERVO_RAUTO_WRITES_MAX, r->sessions);
             break;
         }
-        const char *why = s.ra.note != NULL ? s.ra.note : rauto_blocked();
+        if (svs_seq_busy()) {
+            (void)svs_seq_line(buf, n);
+            break;
+        }
+        const char *why = idle_why();
         if (why != NULL) {
             snprintf(buf, n, "%s", why);
         } else {
@@ -872,13 +866,6 @@ void rauto_render(gfx_canvas_t *c)
         draw_row(c, (rauto_ctl_t)k);
     }
     const bool running = servo_rauto_running(&s.ra.run);
-    ui_hold_button(c, rauto_rect(RA_C_START),
-                   running ? TR(SV_LIM_STOP) : TR(RA_START),
-                   ui_action_fill(running ? UI_ACTION_ACTIVE
-                                          : UI_ACTION_AVAILABLE),
-                   ui_action_fill(UI_ACTION_ACTIVE), &s.ra.hold,
-                   s.ra.pressed == RA_C_START,
-                   running || rauto_blocked() == NULL, SV_FONT_LABEL);
     const gfx_rect_t lr = rauto_lines_rect();
     gfx_fill_rect(c, lr.x, lr.y, lr.w, lr.h, ui_theme_color(UI_C_PANEL));
     const servo_rauto_t *r = &s.ra.run;
@@ -903,8 +890,7 @@ void rauto_render(gfx_canvas_t *c)
             /* A refused START and RESTORE in the warning colour, the result
              * in its verdict's. */
             const bool warn =
-                (i == 0 && !running
-                 && (s.ra.note != NULL || rauto_blocked() != NULL))
+                (i == 0 && !running && !svs_seq_busy() && idle_why() != NULL)
                 || (i == 2 && servo_rauto_restore(r));
             gfx_color_t col = ui_theme_color(warn ? UI_C_WARN : UI_C_TEXT_DIM);
             if (i == 1) {
@@ -920,6 +906,30 @@ void rauto_render(gfx_canvas_t *c)
         }
     }
     c->clip = old;
+}
+
+void rauto_draw_hold(gfx_canvas_t *c)
+{
+    const bool running = servo_rauto_running(&s.ra.run);
+    const bool seq = svs_seq_busy();
+    char label[40];
+    ui_action_t now = UI_ACTION_AVAILABLE;
+    if (running) {
+        snprintf(label, sizeof(label), "%s", TR(SV_LIM_STOP));
+        now = UI_ACTION_ACTIVE;
+    } else if (seq) {
+        (void)svs_seq_label(label, sizeof(label));
+        now = UI_ACTION_WAITING;
+    } else {
+        snprintf(label, sizeof(label), "%s", TR(RA_START));
+    }
+    /* The fade runs from green to the amber of the sequence the hold
+     * starts. */
+    ui_hold_button(c, rauto_rect(RA_C_START), label, ui_action_fill(now),
+                   ui_action_fill(UI_ACTION_WAITING), &s.ra.hold,
+                   s.ra.pressed == RA_C_START,
+                   running || seq || rauto_hold_blocked(NULL) == NULL,
+                   SV_FONT_LABEL);
 }
 
 const gfx_font_t *rauto_lines_face(const char *const t[RA_LINES], int *pitch)
@@ -977,8 +987,10 @@ uint32_t rauto_sig(void)
         (uint32_t)r->side, (uint32_t)r->writes[0], (uint32_t)r->writes[1],
         r->sessions, (uint32_t)r->verdict, (uint32_t)r->why,
         (uint32_t)(s.ra.file + 2), s.ra.off ? 1u : 0u, s.ra.pressed,
-        (uint32_t)lroundf(s.ra.hold.held_s * 20.0f),
-        (uint32_t)(uintptr_t)rauto_blocked(), (uint32_t)(uintptr_t)s.ra.note,
+        (uint32_t)(uintptr_t)rauto_hold_blocked(NULL),
+        (uint32_t)(uintptr_t)s.ra.note,
+        (uint32_t)(uintptr_t)svs_seq_failure(),
+        (uint32_t)servo_seq_step_now(&s.rdy.seq),
         (uint32_t)lroundf(settings_get(SET_RUDDER_DEFL_LO) * 10.0f),
         (uint32_t)lroundf(settings_get(SET_RUDDER_DEFL_HI) * 10.0f),
         (uint32_t)settings_get_int(SET_RUDDER_MARGIN),
