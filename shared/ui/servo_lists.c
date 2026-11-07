@@ -439,15 +439,28 @@ bool svs_list_offered(void)
     }
 }
 
-const char *svs_list_refused(void)
+/*
+ * A press held anywhere on the screen keeps its finger: a list or the PORT
+ * list would take every event, the press's release among them.  A hold
+ * would then fire without its finger, a tap's control would stay latched,
+ * and a later contact that reuses the id would act on it.  A press on a
+ * programmer's session is one too: its warning holds confirm WRITE, ENABLE
+ * WRITE and RESTORE, and CONNECT takes the port the tester names.
+ */
+bool svs_press_held(void)
 {
-    /* A hold under way keeps its finger: the list would take every event,
-     * the hold's release among them, and the hold would fire without the
-     * finger on it.  A press on a programmer's session is one too: its
-     * warning holds confirm WRITE, ENABLE WRITE and RESTORE. */
-    if (s.out_down || s.p5_down || s.arm_down || s.test_down || s.lim_down
-        || kst_panel_pressed() || hitec_panel_pressed()) {
-        return TR(FOOT_SETTINGS_SAFE);
+    return s.out_down || s.p5_down || s.arm_down || s.test_down || s.lim_down
+           || s.kx_down || s.ra.down || s.ra.pressed != RA_C_NONE
+           || s.rud.pressed != RUD_C_NONE || s.ov_have || s.dragging
+           || s.speed.dragging || kst_panel_pressed() || hitec_panel_pressed();
+}
+
+const char *svs_list_bench_why(void)
+{
+    /* A session that holds its port owns its settings: HITEC's SERIES and
+     * KST's EXPERT MODE are the programmer's until LEAVE. */
+    if (prog_holds()) {
+        return TR(OUT_PORT_HELD);
     }
     if (s.fn == SERVO_FN_HUB) {
         return NULL;
@@ -458,6 +471,14 @@ const char *svs_list_refused(void)
         return TR(FOOT_SETTINGS_SAFE);
     }
     return NULL;
+}
+
+const char *svs_list_refused(void)
+{
+    if (svs_press_held()) {
+        return TR(FOOT_PRESS_HELD);
+    }
+    return svs_list_bench_why();
 }
 
 void svs_list_open(void)
@@ -512,16 +533,24 @@ bool svs_list_back(void)
 
 void svs_list_tick(float dt_s)
 {
-    if (!s.sl.open) {
-        return;
-    }
-    /* A function screen's list closes as the bench goes live under it:
-     * the screen's output shows again. */
-    if (svs_list_refused() != NULL) {
+    /* A list or a page of rows closes as the bench goes live under it, a
+     * run starts or a session takes its port: the screen's output shows
+     * again, and a press on a row is dropped with its page. */
+    if ((s.sl.open || ui_setlist_covered(&s.sl) || s.run_list != RL_NONE)
+        && svs_list_bench_why() != NULL) {
         svs_list_close();
+        if (s.run_list != RL_NONE) {
+            s.run_list = RL_NONE;
+            close_panels();
+            ov_let_go();
+            ++s.test_rev;
+            servo_invalidate();
+        }
         return;
     }
-    ui_setlist_tick(&s.sl, dt_s);
+    if (s.sl.open) {
+        ui_setlist_tick(&s.sl, dt_s);
+    }
 }
 
 /* ------------------------------------------------------------ for tests */

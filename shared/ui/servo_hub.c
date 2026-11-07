@@ -178,6 +178,7 @@ static uint32_t hub_sig(void)
     sig = sig * 31u + ui_router_status()->capabilities;
     sig = sig * 31u + (prog_reg_servo_holds() ? 1u : 0u);
     sig = sig * 31u + (s.pins_known ? 1u : 0u);
+    sig = sig * 31u + foot_sig();
     return sig;
 }
 

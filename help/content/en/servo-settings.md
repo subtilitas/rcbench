@@ -6,7 +6,7 @@ order: 21
 
 # Servo settings
 
-SETTINGS in the footer of a [SERVO](servo.md) screen opens that screen's list. The hub's list is the servo profile every function uses: OUTPUT and DUT (device under test). SWEEP, RUDDER, RUDDER AUTO and HITEC have lists of their own; TEST and LIMIT RUN open their run's page of rows, KST its EXPERT MODE page; LIVE has none. Use CLOSE at the top right of a run's page or the home tag to return. A function's list opens on a SAFE bench only; the hub's at any time. A change on a list stays marked unsaved until SAVE in the strip. Tap a number for the keypad, a choice for its list, a switch to toggle it, or NAME for the keyboard.
+SETTINGS in the footer of a [SERVO](servo.md) screen opens that screen's list. The hub's list is the servo profile every function uses: OUTPUT and DUT (device under test). SWEEP, RUDDER, RUDDER AUTO and HITEC have lists of their own; TEST and LIMIT RUN open their run's page of rows, KST its EXPERT MODE page; LIVE has none. Use CLOSE at the top right of a run's page or the home tag to return. A function's list opens on a SAFE bench only, and a bench that goes live closes it and any page of rows; the hub's opens at any time. No list opens while a programmer session holds its port, or while a finger is still on another control. A change on a list stays marked unsaved until SAVE in the strip. Tap a number for the keypad, a choice for its list, a switch to toggle it, or NAME for the keyboard.
 
 ## OUTPUT, on the hub's list
 

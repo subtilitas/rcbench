@@ -1063,6 +1063,7 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
             } else {
                 clipped(c, test_start_rect(), draw_test_start);
             }
+            clipped(c, run_set_rect(run_card_shown()), draw_run_set);
         }
         return;
     }

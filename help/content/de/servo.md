@@ -26,7 +26,7 @@ Der Hub enthält acht Kacheln. Jede öffnet eine eigene Seite:
 
 KST und HITEC sind grau, solange dem IOmcu die Fähigkeit fehlt oder eine andere Sitzung den Port hält. Ein Tipp nennt den Grund. Die Fußleiste des Hubs zeigt SERVO mit der Portzeile und OPTIONEN. OPTIONEN öffnet das Servoprofil, das jede Funktion nutzt ([Servo-Optionen](servo-settings.md)). Der Hub steuert nichts an: Der Prüfstand ist dort SAFE.
 
-Home führt von einer Funktionsseite zum Hub und vom Hub zum Menü. Das Verlassen einer Funktionsseite schaltet den Prüfstand auf SAFE. PROG 5V auf dem Carrier bleibt von einer SERVO-Seite zur nächsten an und geht aus, wenn SERVO verlassen wird.
+Home führt von einer Funktionsseite zum Hub und vom Hub zum Menü. Das Verlassen einer Funktionsseite schaltet den Prüfstand auf SAFE. PROG 5V auf dem Carrier bleibt von einer SERVO-Seite zur nächsten an und geht aus, wenn SERVO verlassen wird; auf dem Hub zeigt die Fußleiste dann `PROG 5V EIN` in der Warnfarbe.
 
 Jede Funktionsseite zeigt rechts dieselbe Ausgangskarte: die Taste PORT, Messzeile und Grafik, Netzteilzeile, TEMPO, Typzeile, ZENTRIEREN, SWEEP und FREIGEBEN. Die Fußleiste enthält den Namen der Funktion mit der Portzeile, ARM und OPTIONEN für die Liste der Seite; LIVE hat keine Liste. Jedes Bedienelement ist mindestens 48px (7,2mm) hoch. Der Drehknopf bewegt das Horn nur auf LIVE, SWEEP, RUDER und RUDER AUTO.
 

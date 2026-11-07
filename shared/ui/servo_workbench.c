@@ -280,6 +280,15 @@ bool opener_down(const touch_event_t *evt, gfx_rect_t r, int code)
     return true;
 }
 
+void draw_run_set(gfx_canvas_t *c)
+{
+    const int k = run_card_shown();
+    ui_button_font(c, run_set_rect(k), TR(SUP_SETTINGS),
+                   ui_theme_color(UI_C_PANEL_HI),
+                   s.ov_have && s.ov_pressed == OP_RUN_SET && s.ov_row == k,
+                   svs_list_bench_why() == NULL, SV_FONT_LABEL);
+}
+
 bool wb_rest(const touch_event_t *evt)
 {
     return rudder_rest(evt) || rauto_rest(evt) || foot_rest(evt);
@@ -364,11 +373,7 @@ void draw_test_page(gfx_canvas_t *c)
                             ui_theme_color(UI_C_EDGE));
         gfx_text(c, r.x + 10, r.y + RUN_NAME_DY, ui_tr(k_title[k]),
                  SV_FONT_LABEL, ui_theme_color(UI_C_ACCENT), 1);
-        ui_button_font(c, run_set_rect(k), TR(SUP_SETTINGS),
-                       ui_theme_color(UI_C_PANEL_HI),
-                       s.ov_have && s.ov_pressed == OP_RUN_SET
-                           && s.ov_row == k,
-                       true, SV_FONT_LABEL);
+        draw_run_set(c);
     }
     if (k == 0) {
         draw_test_start(c);

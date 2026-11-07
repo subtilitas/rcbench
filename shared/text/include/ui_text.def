@@ -1914,6 +1914,9 @@ UI_TEXT(FOOT_SETTINGS, 0,
 UI_TEXT(FOOT_SETTINGS_SAFE, 94,
     "SETTINGS open on a SAFE bench only. Switch to SAFE first.",
     "OPTIONEN nur bei SAFE. Schalte zuerst auf SAFE.")
+UI_TEXT(FOOT_PRESS_HELD, 60,
+    "A finger is still on another control. Lift it first.",
+    "Ein Finger hält noch ein anderes Element. Lass es erst los.")
 UI_TEXT(FOOT_SETTINGS_ON, 94,
     "SETTINGS open with the output off only. Switch it off first.",
     "OPTIONEN nur bei Ausgang aus. Schalte ihn zuerst aus.")

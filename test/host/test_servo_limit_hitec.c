@@ -17,7 +17,8 @@
 TEST_CASE(the_limit_run_card_offers_hitec_when_the_row_says_so_and_hides_servo_pulses)
 {
     hl_fresh(true);
-    hl_settings(false, false);
+    open_run_settings(1);              /* the page, on a SAFE bench */
+    scr->tick(0.02f);
     /* KST/CHASERVO first: SERVO PULSES is there; HITEC takes it away, and a
      * tap where it stood changes nothing. */
     CHECK_EQ(servo_screen_limit_family(), SERVO_LIMRUN_FAM_KST);

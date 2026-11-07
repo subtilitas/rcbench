@@ -91,9 +91,15 @@ uint32_t foot_sig(void)
     h = (h ^ (uint32_t)s.fn) * 16777619u;
     h = (h ^ ((warn ? 1u : 0u) | (prog_choice_locked() ? 2u : 0u)
               | (svs_list_refused() != NULL ? 4u : 0u)
-              | (svs_list_offered() ? 8u : 0u)))
+              | (svs_list_offered() ? 8u : 0u)
+              | (svs_hub_p5_on() ? 16u : 0u)))
         * 16777619u;
     return h;
+}
+
+bool svs_hub_p5_on(void)
+{
+    return s.fn == SERVO_FN_HUB && prog5v_box_shown() && prog5v_box_on();
 }
 
 void draw_footer(gfx_canvas_t *c)
@@ -106,6 +112,12 @@ void draw_footer(gfx_canvas_t *c)
     if (s.fn != SERVO_FN_HUB) {
         draw_arm(c);
         draw_port(c);
+    } else if (svs_hub_p5_on()) {
+        /* The ports' 5V stays on across SERVO's screens: the hub, which
+         * shows no PROG 5V box, names it in the middle slot. */
+        gfx_text_in(c, ui_footer_rect(UI_FOOTER_HOLD), TR(P5_ON),
+                    &gfx_font_12x24, ui_theme_color(UI_C_WARN), 1,
+                    GFX_ALIGN_CENTER);
     }
     if (svs_list_offered()) {
         ui_footer_settings(c, s.fp_pressed == FP_SETTINGS,
@@ -119,6 +131,10 @@ void port_list_open(void)
         char why[64];
         (void)prog_choice_lock_line(why, sizeof(why));
         ui_router_set_alert(why);
+        return;
+    }
+    if (svs_press_held()) {
+        ui_action_refused(TR(FOOT_PRESS_HELD));
         return;
     }
     close_panels();
@@ -146,7 +162,8 @@ void port_list_open(void)
 
 void port_list_pick(int value)
 {
-    if (value < 0 || value > (int)LINK_PG_PORTS_MAX || prog_choice_locked()) {
+    if (value < 0 || value > (int)LINK_PG_PORTS_MAX || prog_choice_locked()
+        || svs_press_held()) {
         return;
     }
     if (prog_choice_carrier()) {

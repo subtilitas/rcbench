@@ -1105,11 +1105,17 @@ void ov_rest(const touch_event_t *evt)
         }
         break;
     case OP_RUN_SET:
-        /* A run card's SETTINGS: that run's settings, one level down. */
+        /* A run card's SETTINGS: that run's settings, one level down, by
+         * the footer's SETTINGS rule. */
         if (which >= 0 && gfx_rect_contains(run_set_rect(which), x, y)
             && wb_task() == UI_WB_TEST) {
-            s.run_list = (which == 0) ? RL_AUTO : RL_LIMIT;
-            servo_invalidate();
+            const char *why = svs_list_refused();
+            if (why != NULL) {
+                ui_action_refused(why);
+            } else {
+                s.run_list = (which == 0) ? RL_AUTO : RL_LIMIT;
+                servo_invalidate();
+            }
         }
         break;
     default:

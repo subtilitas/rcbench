@@ -52,10 +52,14 @@ static const ui_screen_t *scr;
  * by servo_bench_rig.h's meter() and window(). */
 static servo_source_id_t meter_id = SERVO_SOURCE_MODEL;
 static uint32_t meter_changes __attribute__((unused));
+/* Whether open_run_settings() took the bench to SAFE for the page, and
+ * the home tag that closes it arms it again. */
+static bool g_rig_rearm __attribute__((unused));
 
 static inline void fresh(void)
 {
     meter_id = SERVO_SOURCE_MODEL;
+    g_rig_rearm = false;
     if (fb == NULL) {
         fb = calloc((size_t)W * H, sizeof(gfx_color_t));
         REQUIRE_ALLOC(fb);
@@ -152,14 +156,29 @@ static inline void close_kst(void)
     tap(r.x + r.w / 2, r.y + r.h / 2);
 }
 /* A run's settings, one level down from its card: 0 the automatic test on
- * TEST, 1 the limit run on LIMIT RUN. */
+ * TEST, 1 the limit run on LIMIT RUN.  The page opens on a SAFE bench only:
+ * on an armed one the operator switches to SAFE first, and the home tag
+ * that closes the page arms the bench again. */
 static inline void open_run_settings(int k)
 {
     go((k == 0) ? SERVO_FN_TEST : SERVO_FN_LIMRUN);
     tap(SV_RUN_SET_X, SV_RUN_SET_Y(k));
+    if (servo_screen_run_settings() == 0) {
+        servo_screen_set_armed(false);
+        g_rig_rearm = true;
+        tap(SV_RUN_SET_X, SV_RUN_SET_Y(k));
+    }
 }
 /* The home tag, as the router asks the screen: whether it climbed. */
-static inline bool home_tag(void) { return scr->back != NULL && scr->back(); }
+static inline bool home_tag(void)
+{
+    const bool climbed = scr->back != NULL && scr->back();
+    if (g_rig_rearm && servo_screen_run_settings() == 0) {
+        g_rig_rearm = false;
+        servo_screen_set_armed(true);
+    }
+    return climbed;
+}
 
 /* The open list's row @p i scrolled into view: its rectangle. */
 static inline gfx_rect_t sl_row(int i)

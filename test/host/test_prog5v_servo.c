@@ -9,6 +9,7 @@
  * - a_slide_off_a_stop_or_a_port_taking_it_ends_the_hold
  * - leaving_servo_switches_off_what_its_box_switched_on
  * - the_5v_stays_across_servos_screens_and_goes_with_the_last
+ * - the_hub_names_prog_5v_on_in_its_footer
  *
  * SPDX-License-Identifier: MIT
  */
@@ -16,6 +17,7 @@
 #include "servo_screen_rig.h"
 
 #include "prog5v_box.h"
+#include "ui_footer.h"
 
 /* PROG 5V's button, mirrored from servo_screen_int.h: the box spans the
  * output card's inner column from P5_Y = UI_MARGIN + 90 (the type pill's
@@ -183,6 +185,33 @@ TEST_CASE(the_5v_stays_across_servos_screens_and_goes_with_the_last)
     CHECK(asked_off());
 }
 
+/* The hub shows no PROG 5V box: while the ports' 5V reads ON, PROG 5V ON
+ * stands in the footer's middle slot in the warning colour; OFF leaves the
+ * slot empty. */
+static int hold_slot_warn_pixels(void)
+{
+    const gfx_rect_t r = ui_footer_rect(UI_FOOTER_HOLD);
+    int n = 0;
+    for (int y = r.y; y < r.y + r.h; ++y) {
+        for (int x = r.x; x < r.x + r.w; ++x) {
+            n += gfx_pixel_get(&cv, x, y) == ui_theme_color(UI_C_WARN);
+        }
+    }
+    return n;
+}
+
+TEST_CASE(the_hub_names_prog_5v_on_in_its_footer)
+{
+    fresh_p5(ST_ON);
+    go(SERVO_FN_HUB);
+    scr->render(&cv, 0);
+    CHECK(hold_slot_warn_pixels() > 100);
+    prog5v_box_publish(ST_OFF, 21u, (uint8_t)PROG5V_HELD_NONE);
+    scr->tick(0.02f);
+    scr->render(&cv, 0);
+    CHECK_EQ(hold_slot_warn_pixels(), 0);
+}
+
 int main(void)
 {
     RUN(the_box_takes_the_plots_place_and_its_hold_asks_on_at_2000ms);
@@ -190,5 +219,6 @@ int main(void)
     RUN(a_slide_off_a_stop_or_a_port_taking_it_ends_the_hold);
     RUN(leaving_servo_switches_off_what_its_box_switched_on);
     RUN(the_5v_stays_across_servos_screens_and_goes_with_the_last);
+    RUN(the_hub_names_prog_5v_on_in_its_footer);
     return test_summary("prog5v_servo");
 }

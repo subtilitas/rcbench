@@ -62,15 +62,22 @@ history is in git.
   ENC CENTRE, RUDDER AUTO's and HITEC's lists, KST's EXPERT MODE page.
   LIVE has no list.
 - The output card's TARGET row gives way to the PORT button, 380 x 48px at
-  the card's top: a tap opens OUTPUTS and PROG PORT 1, PROG PORT 2, PROG PORT 3
-  and PROG PORT 4 over
-  the left card, and a pick sets SERVO TESTER. It opens nothing while
+  the card's top: a tap opens OUTPUTS and PROG PORT 1, PROG PORT 2,
+  PROG PORT 3 and PROG PORT 4 over the left card, and a pick sets SERVO
+  TESTER. It opens nothing while
   ARMED, while ARM is asked, or while a programmer holds the port, and the
   alert band names the lock.
+- No SERVO list or page of rows opens while a programmer session holds its
+  port or a finger is still on another control of the screen
+  (`A finger is still on another control. Lift it first.`), and a page of
+  rows closes as the bench goes live. The run card's SETTINGS follows the
+  footer's rule and is grey while it refuses. The PORT list takes no open
+  and no pick while a finger holds another press.
 - A PROG 5V switched on in SERVO's box stays on from one SERVO screen to
-  another and goes off when SERVO is left. Every leave of a function screen
-  switches the bench to SAFE. SERVO offers no guide page while ARMED, as
-  either dock covers part of DISARM.
+  another and goes off when SERVO is left; the hub's footer reads
+  `PROG 5V ON` in the warning colour while it is on. Every leave of a
+  function screen switches the bench to SAFE. SERVO offers no guide page
+  while ARMED, as either dock covers part of DISARM.
 - A limit run or a RUDDER AUTO run that wrote names `RESTORE IN KST` in
   place of `RESTORE IN PROGRAM`. The KST programmer's hint on the standard
   outputs reads `Tap PORT and pick a PROG PORT.`
