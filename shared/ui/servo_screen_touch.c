@@ -39,8 +39,8 @@ bool svs_arm_locked(void)
  * The controls whose press stops what the bench drives, where svs_event_body()
  * hands a DOWN at (x, y) to them now: DISARM while the button reads DISARM,
  * OUTPUT OFF while the supply's output is on, PROG 5V OFF while the
- * ports' 5V reads ON, STOP TEST in TEST's result box and START TEST while
- * its run is under way, and ARM + START on RUDDER AUTO and LIMIT RUN while
+ * ports' 5V reads ON, STOP TEST in TEST's result box while its run is
+ * under way, and ARM + START on RUDDER AUTO, TEST and LIMIT RUN while
  * its sequence or its run is under way (a tap there stops it).
  * The router hands a press on one of them through the alert band and the
  * band's help bubble (ui_screen_t's safe_at); everything else under those
@@ -76,14 +76,6 @@ bool svs_safe_at(int x, int y)
     }
     if (run_box_shown() && gfx_rect_contains(test_btn_rect(), x, y)) {
         return servo_test_running(&s.test);
-    }
-    if (s.fn == SERVO_FN_TEST && !s.ov_have && rows_page() < 0
-        && gfx_rect_contains(page_area(), x, y)) {
-        if (gfx_rect_contains(run_set_rect(0), x, y)) {
-            return false;
-        }
-        return gfx_rect_contains(test_start_rect(), x, y)
-               && servo_test_running(&s.test);
     }
     return false;
 }
@@ -329,9 +321,9 @@ void svs_event_body(const touch_event_t *evt)
         if (foot_down(evt)) {
             return;
         }
-        /* RUDDER AUTO and LIMIT RUN: the footer's ARM + START and the
-         * READY card in the output card's place; nothing of the output
-         * card is there to press. */
+        /* RUDDER AUTO, TEST and LIMIT RUN: the footer's ARM + START and
+         * the READY card in the output card's place; nothing of the
+         * output card is there to press. */
         if (ready_shown()
             && (gfx_rect_contains(ready_hold_rect(), px, py)
                 || gfx_rect_contains(ready_card_rect(), px, py))) {

@@ -18,8 +18,9 @@
  * SENSORS on it); RUDDER AUTO's targets, MARGIN, TOLERANCE, SERVO, SERVO
  * PULSES and ANGLE SOURCE; LIMIT RUN's MODE, SERVO, SERVO PULSES and the
  * programmer's PROG VOLTAGE, PROG CURRENT and PROG WAIT; HITEC's SERIES
- * and RECEIVE.  TEST opens its run's page of rows, KST its EXPERT MODE
- * page, which keep their 2s holds; LIVE has no list.
+ * and RECEIVE; TEST's 17 rows of the automatic test (servo_test_list.c).
+ * KST opens its EXPERT MODE page, which keeps its 2s hold; LIVE has no
+ * list.
  *
  * A function's list opens on a SAFE bench only, with no sweep and no run;
  * a bench that goes live under it closes it.  The hub's opens at any time:
@@ -373,6 +374,7 @@ typedef struct {
 static const fn_rows_t k_rows_of[SERVO_FN_COUNT] = {
     [SERVO_FN_HUB]    = ROWS(k_hub_rows),
     [SERVO_FN_SWEEP]  = ROWS(k_sweep_rows),
+    [SERVO_FN_TEST]   = { svs_test_rows, SVS_TEST_ROWS },
     [SERVO_FN_RUDDER] = ROWS(k_rudder_rows),
     [SERVO_FN_LIMRUN] = ROWS(k_limrun_rows),
     [SERVO_FN_RAUTO]  = ROWS(k_rauto_rows),
@@ -421,19 +423,22 @@ static void list_changed(setting_id_t id)
 /**
  * @brief RESET: the list's own settings to their defaults; on the hub
  *        also the profile to STANDARD PWM at 50Hz, TRIM 0, TRAVEL 90°,
- *        REVERSE and HV SERVO off, as at a restart.
+ *        REVERSE and HV SERVO off, as at a restart; on TEST HV SERVO off.
  */
 static void list_reset(void)
 {
     const fn_rows_t *r = rows_now();
-    setting_id_t ids[16] = { 0 };
+    setting_id_t ids[24] = { 0 };
     int k = 0;
-    for (int i = 0; i < r->n && k < 16; ++i) {
+    for (int i = 0; i < r->n && k < 24; ++i) {
         if (r->rows[i].kind == UI_SL_SETTING) {
             ids[k++] = r->rows[i].id;
         }
     }
     settings_reset_rows(ids, k);
+    if (s.fn == SERVO_FN_TEST) {
+        s.test_hv = false;      /* TEST's HV SERVO row, off as at a restart */
+    }
     if (s.fn == SERVO_FN_HUB) {
         s.trim_us = 0;
         s.travel_deg = 90.0f;
@@ -444,6 +449,13 @@ static void list_reset(void)
     }
     list_changed((setting_id_t)SETTING_COUNT);
     ++s.sl_rev;
+}
+
+/** @brief Why a setting's row takes no press now: TEST's length and HV
+ *         steps.  @param id the setting @return the reason, or NULL */
+static const char *list_locked(setting_id_t id)
+{
+    return (s.fn == SERVO_FN_TEST) ? svs_test_locked(id) : NULL;
 }
 
 /** @brief A change the list shows: its count moves. */
@@ -464,6 +476,7 @@ static const ui_setlist_host_t k_host = {
     .name       = list_name,
     .name_line  = list_line,
     .reset      = list_reset,
+    .locked     = list_locked,
     .changed    = list_changed,
     .invalidate = list_invalidate,
     .way_out    = list_way_out,
@@ -477,7 +490,6 @@ void svs_lists_init(void)
 bool svs_list_offered(void)
 {
     switch ((servo_fn_t)s.fn) {
-    case SERVO_FN_TEST:
     case SERVO_FN_KST:
         return true;
     default:
@@ -534,9 +546,6 @@ void svs_list_open(void)
     }
     close_panels();
     switch ((servo_fn_t)s.fn) {
-    case SERVO_FN_TEST:
-        s.run_list = RL_AUTO;
-        break;
     case SERVO_FN_KST:
         s.run_list = RL_KST;
         break;

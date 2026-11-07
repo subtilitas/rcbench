@@ -332,16 +332,16 @@ TEST_CASE(the_home_tag_on_servo_closes_a_panel_climbs_and_leaves)
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 
-    /* TEST's tile, its run's settings, the card, the hub, the menu. */
+    /* TEST's tile, its SETTINGS list, the card, the hub, the menu. */
     ui_router_goto(SCREEN_SERVO);
     tap(SV_HUB_TILE_X(2), UI_BAND_H + SV_HUB_TILE_Y(2));
     CHECK_EQ(ui_router_current(), SCREEN_SERVO_TEST);
     CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
-    tap(SV_RUN_SET_X, UI_BAND_H + SV_RUN_SET_Y(0));
-    CHECK_EQ(servo_screen_run_settings(), 1);
+    tap(SV_FOOT_SET_X, UI_BAND_H + SV_FOOT_Y);
+    CHECK(sl->open);
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_SERVO_TEST);
-    CHECK_EQ(servo_screen_run_settings(), 0);
+    CHECK(!sl->open);
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_SERVO);
     CHECK_EQ(servo_screen_fn(), SERVO_FN_HUB);

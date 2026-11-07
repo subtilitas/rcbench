@@ -171,7 +171,7 @@ SCREENS = {
     # LIMIT RUN's list on the bench's outputs: MODE, SERVO and SERVO
     # PULSES locked off a PROG PORT.
     "servo-limits":   ("servo-limits.png",   "servo", "dark"),
-    # The brown-out walk's page, from the AUTOMATIC TEST's BROWN-OUT row.
+    # TEST's list at its BROWN-OUT heading.
     "servo-brownout": ("servo-brownout.png", "servo", "dark"),
     "servo-warning":  ("servo-warning.png",  "servo", "dark"),
     "servo-name":     ("servo-name.png",     "servo", "dark"),
@@ -1040,6 +1040,9 @@ FIT_ONLY = {
     "servo-rudder-auto-safe": (None, "servo", "dark"),
     # RUDDER AUTO's guide at its READY page.
     "help-servo-rudder-auto-3": (None, "servo", "dark"),
+    # TEST's guide at its READY page, and TEST's list at its end.
+    "help-servo-test-2": (None, "servo", "dark"),
+    "servo-test-settings-end": (None, "servo", "dark"),
     # SUPPLY's TABLE; LIVE with a programming port holding the supply; and
     # SETTINGS with the PD mini's RESET PD MINI and the longest save line.
     "supply-table":     (None, "supply", "dark"),

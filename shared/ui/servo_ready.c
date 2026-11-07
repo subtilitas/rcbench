@@ -4,8 +4,9 @@
  *        sequence.  See servo_ready_int.h for the layout.
  *
  * The card draws the rows the function gives (RUDDER AUTO's:
- * servo_rudder_auto_ready.c, LIMIT RUN's: servo_limit_ready.c, through
- * one table of each function's calls) and takes their taps.  The sequence is
+ * servo_rudder_auto_ready.c, TEST's: servo_test_ready.c, LIMIT RUN's:
+ * servo_limit_ready.c, through one table of each function's calls) and
+ * takes their taps.  The sequence is
  * servo_start_seq.h's steps done on the bench the way a finger does them:
  * PORT PWM on as OUTPUTS' segment sets it, PROG 5V on as its box's hold
  * asks it, the PD mini's output on as SUPPLY's OUTPUT ON, ARM as ARM's
@@ -101,15 +102,46 @@ static const char *lr_blocked(int *row)
     return why;
 }
 
+/** @brief TEST's first refusal, as rdy_fn_t asks it. */
+static const char *te_blocked(int *row)
+{
+    test_row_t r = TRR_COUNT;
+    const char *why = test_hold_blocked(&r);
+    *row = (int)r;
+    return why;
+}
+
+/** @brief What a text of TEST's gate names.  The steps switch the PD mini
+ *         themselves, so its row names it whatever the hold switches. */
+static rdy_kind_t te_kind(const char *why)
+{
+    switch (test_row_of(why)) {
+    case TRR_PORT:
+        /* The carrier's port is no part the steps switch. */
+        return (why == ui_servo_str(SERVO_STR_START_PROG_STEPS))
+                   ? RDY_K_OTHER : RDY_K_PWM;
+    case TRR_PD:  return RDY_K_PD_MINI;
+    case TRR_ARM: return RDY_K_ARM;
+    default:      return RDY_K_OTHER;
+    }
+}
+
 /** @brief Whether RUDDER AUTO's run is under way. */
 static bool ra_running(void) { return servo_rauto_running(&s.ra.run); }
 /** @brief Whether the limit run is under way. */
 static bool lr_running(void) { return servo_limrun_running(&s.lim); }
+/** @brief Whether TEST's run is under way. */
+static bool te_running(void) { return servo_test_running(&s.test); }
 
 /** @brief RUDDER AUTO's calls. */
 static const rdy_fn_t k_rauto = {
     (int)RAR_COUNT, rauto_ready_row, ra_blocked, rauto_ready_tap, ra_kind,
     ra_running, rauto_down, rauto_draw_hold,
+};
+/** @brief TEST's calls. */
+static const rdy_fn_t k_test = {
+    (int)TRR_COUNT, test_ready_row, te_blocked, test_ready_tap, te_kind,
+    te_running, test_hold_down, test_draw_hold,
 };
 /** @brief LIMIT RUN's calls. */
 static const rdy_fn_t k_limrun = {
@@ -122,6 +154,7 @@ static const rdy_fn_t *fn_now(void)
 {
     switch ((servo_fn_t)s.fn) {
     case SERVO_FN_RAUTO:  return &k_rauto;
+    case SERVO_FN_TEST:   return &k_test;
     case SERVO_FN_LIMRUN: return &k_limrun;
     default:              return NULL;
     }
@@ -404,6 +437,12 @@ servo_seq_need_t svs_seq_need(void)
                            && s.win.mean_mv
                                   >= (uint16_t)SERVO_LIMRUN_RAIL_MIN_MV;
     n.pd_mini  = lim_pd_feeds() && (pd_on || !rail_live);
+    /* TEST's steps set the PD mini and switch its output themselves, at
+     * each step's voltage: the hold switches only the port's pulse. */
+    if (s.fn == SERVO_FN_TEST) {
+        n.prog_5v = false;
+        n.pd_mini = false;
+    }
     /* A supply switched on: the INA3221's window under way still holds
      * the rail as it was, so the checks wait for one begun after it. */
     n.settle   = n.prog_5v || n.pd_mini;
@@ -426,6 +465,8 @@ static servo_seq_part_t part_of(const char *why)
         return s.rdy.need.prog_5v   ? SERVO_SEQ_PART_PROG_5V
                : s.rdy.need.pd_mini ? SERVO_SEQ_PART_PD_MINI
                                     : SERVO_SEQ_PART_NONE;
+    case RDY_K_PD_MINI:
+        return SERVO_SEQ_PART_PD_MINI;
     case RDY_K_PWM:
         return SERVO_SEQ_PART_PWM;
     case RDY_K_ARM:

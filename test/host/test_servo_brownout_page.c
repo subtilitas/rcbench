@@ -1,10 +1,9 @@
 /*
- * The brown-out walk's page on the SERVO screen: opened from the AUTOMATIC
- * TEST's BROWN-OUT row, its three rows -- BROWN-OUT on or off, LOWEST
- * VOLTAGE and STEP -- and CLOSE and the home tag back to the AUTOMATIC
- * TEST's page; the row's value, "ON 3.0/0.2V" or "OFF"; the keypads'
- * bounds; the settings kept over a restart; and a run started from the
- * screen that walks what they say.
+ * The brown-out walk's rows on TEST's SETTINGS list (servo_test_list.c):
+ * the BROWN-OUT heading and its line, the walk a run takes on the supply
+ * in force; its three rows -- BROWN-OUT on or off, LOWEST VOLTAGE and
+ * STEP -- with the keypads' bounds; the settings kept over a restart; and
+ * a run started from the screen that walks what they say.
  *
  * The screen and its fixtures are servo_rig.h, the bench
  * servo_bench_rig.h.
@@ -23,69 +22,34 @@
 #include "supply_screen.h"
 #include "ui_keypad.h"
 #include "ui_screen.h"
+#include "ui_setlist.h"
 #include "ui_text.h"
-#include "ui_theme.h"
-#include "ui_widgets.h"
 
 #include "servo_bench_rig.h"
 #include "servo_rig.h"
 
-/** @brief servo_screen_run_settings()'s values: the AUTOMATIC TEST's and
- *         the brown-out walk's. */
-#define RL_AUTO_PAGE     1
-#define RL_BROWNOUT_PAGE 2
-
-/** @brief A run page's row @p r of column @p c, its value: 193 x 48px under
- *         a 21px label, 70px apart from y 64, columns 203px apart from
- *         x 18 (servo_screen_int.h's RL_*). */
-static gfx_rect_t value_at(int c, int r)
+/** @brief The open list keypad's CANCEL. */
+static void kp_cancel(void)
 {
-    return (gfx_rect_t){ (int16_t)(UI_MARGIN + 10 + 203 * c),
-                         (int16_t)(64 + 70 * r + 21), 193, 48 };
+    const gfx_rect_t r =
+        ui_keypad_key_rect(&servo_screen_list()->kp, UI_KEY_CANCEL);
+    tap(r.x + r.w / 2, r.y + r.h / 2);
 }
 
 /**
- * @brief Buffer 0 drawn, and whether the value of row @p r in column @p c
- *        reads @p text, as an untouched row draws it.
- * @param c    Column, 0 to 2.
- * @param r    Row, 0 to 4.
- * @param text The value expected.
- * @return true when the value's pixels match.
+ * @brief The BROWN-OUT heading's line on the open list, as it draws it.
+ * @param out Takes it.
+ * @param n   Its size.
  */
-static bool value_reads(int c, int r, const char *text)
+static void walk_line(char *out, size_t n)
 {
-    scr->render(&cv, 0);
-    want_fresh();
-    const gfx_rect_t v = value_at(c, r);
-    gfx_fill_rect(&want_cv, v.x, v.y, v.w, v.h, ui_theme_color(UI_C_PANEL));
-    ui_button_font(&want_cv, v, text, ui_theme_color(UI_C_PANEL_SUNK), false,
-                   true, &gfx_font_10x20);
-    return same_in(fb, want_fb, v.x, v.y, v.w, v.h);
+    const ui_setlist_t *sl = servo_screen_list();
+    const ui_setlist_row_t r = sl->host->row(TL_H_BO);
+    out[0] = '\0';
+    if (r.custom != NULL && r.custom->value_text != NULL) {
+        r.custom->value_text(out, n);
+    }
 }
-
-/**
- * @brief Buffer 0 drawn, and whether line @p i of the walk's note reads
- *        @p text in the faint colour: 6px under the third row, 21px apart,
- *        from x 18.
- * @param i    The line, 0 or 1.
- * @param text The line expected.
- * @return true when the line's pixels match, 600px wide.
- */
-static bool note_reads(int i, const char *text)
-{
-    scr->render(&cv, 0);
-    want_fresh();
-    const int y = 64 + 3 * 70 + 6 + 21 * i;
-    const int h = gfx_font_10x20.height;
-    gfx_fill_rect(&want_cv, UI_MARGIN + 10, (int16_t)y, 600, (int16_t)h,
-                  ui_theme_color(UI_C_PANEL));
-    gfx_text(&want_cv, UI_MARGIN + 10, y, text, &gfx_font_10x20,
-             ui_theme_color(UI_C_TEXT_FAINT), 1);
-    return same_in(fb, want_fb, UI_MARGIN + 10, y, 600, h);
-}
-
-/** @brief The AUTOMATIC TEST's BROWN-OUT row: the middle column's last. */
-static void tap_brownout_row(void) { tap(LROW_X(1), LROW_Y(4)); }
 
 /* ------------------------------------------------------- memory store */
 
@@ -124,135 +88,102 @@ static const settings_store_t s_mem_store = { mem_load, mem_save, NULL, NULL };
 
 /* ------------------------------------------------------------------ tests */
 
-/* BROWN-OUT on the AUTOMATIC TEST's page opens the walk's page, one level
- * down; CLOSE and the home tag climb back to the AUTOMATIC TEST's page, and
- * from there to TEST's cards. */
-TEST_CASE(the_brownout_row_opens_its_page_and_close_climbs_back)
+/* The list carries the walk under its own heading: BROWN-OUT's heading,
+ * then BROWN-OUT, LOWEST VOLTAGE and STEP, each a setting's row. */
+TEST_CASE(the_list_carries_the_walk_under_its_heading)
 {
     fresh();
     open_run_settings(0);
-    CHECK_EQ(servo_screen_run_settings(), RL_AUTO_PAGE);
+    CHECK(servo_screen_list()->open);
+    const ui_setlist_t *sl = servo_screen_list();
+    const ui_setlist_row_t h = sl->host->row(TL_H_BO);
+    CHECK_EQ(h.kind, (uint8_t)UI_SL_HEADING);
+    CHECK_EQ(h.heading, TX_SV_ROW_BROWNOUT);
+    CHECK_EQ(sl->host->row(TL_BROWNOUT).id, SET_SERVO_BROWNOUT);
+    CHECK_EQ(sl->host->row(TL_BO_FLOOR).id, SET_SERVO_BO_FLOOR);
+    CHECK_EQ(sl->host->row(TL_BO_STEP).id, SET_SERVO_BO_STEP);
+}
+
+/* The rows: BROWN-OUT switches and writes nothing before SAVE; LOWEST
+ * VOLTAGE and STEP open the keypad with their titles, units and ranges; a
+ * value past the range is refused and the setting keeps its value; OK sets
+ * the value typed. */
+TEST_CASE(the_rows_switch_and_take_their_ranges)
+{
+    fresh();
+    open_run_settings(0);
     const bool on = settings_get_bool(SET_SERVO_BROWNOUT);
-    tap_brownout_row();
-    CHECK_EQ(servo_screen_run_settings(), RL_BROWNOUT_PAGE);
-    CHECK_EQ(settings_get_bool(SET_SERVO_BROWNOUT), on);  /* opened only */
-    tap(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y);
-    CHECK_EQ(servo_screen_run_settings(), RL_AUTO_PAGE);
-
-    tap_brownout_row();
-    CHECK(home_tag());
-    CHECK_EQ(servo_screen_run_settings(), RL_AUTO_PAGE);
-    CHECK(home_tag());
-    CHECK_EQ(servo_screen_run_settings(), 0);
-    CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
-
-    /* LIVE and back: TEST shows its card again, the pages closed. */
-    open_run_settings(0);
-    tap_brownout_row();
-    close_settings();
-    open_test();
-    CHECK_EQ(servo_screen_run_settings(), 0);
-}
-
-/* The row says the walk: "ON 3.0/0.2V" at the defaults, the two settings
- * as the walk's page sets them, and "OFF" alone with the walk off. */
-TEST_CASE(the_brownout_row_reads_on_with_floor_and_step_or_off)
-{
-    fresh();
-    open_run_settings(0);
-    CHECK(settings_get_bool(SET_SERVO_BROWNOUT));
-    CHECK(value_reads(1, 4, "ON 3.0/0.2V"));
-    tap_brownout_row();
-    tap(LROW_X(0), LROW_Y(1));                     /* LOWEST VOLTAGE */
-    keys("2");
-    tap(LROW_X(0), LROW_Y(2));                     /* STEP */
-    keys("1");
-    tap(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y);
-    CHECK(value_reads(1, 4, "ON 2.0/1.0V"));
-    tap_brownout_row();
-    tap(LROW_X(0), LROW_Y(0));                     /* BROWN-OUT: off */
-    tap(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y);
-    CHECK(value_reads(1, 4, "OFF"));
-}
-
-/* The page's rows: BROWN-OUT switches, LOWEST VOLTAGE and STEP open the
- * keypad with their titles, units and ranges; a value past the range is
- * refused and the setting keeps its value; OK sets the value typed. */
-TEST_CASE(the_pages_rows_switch_and_take_their_ranges)
-{
-    fresh();
-    open_run_settings(0);
-    tap_brownout_row();
-    tap(LROW_X(0), LROW_Y(0));                     /* BROWN-OUT */
-    CHECK(!settings_get_bool(SET_SERVO_BROWNOUT));
-    CHECK(settings_save_asked());
-    tap(LROW_X(0), LROW_Y(0));
-    CHECK(settings_get_bool(SET_SERVO_BROWNOUT));
+    sl_step(TL_BROWNOUT, +1);
+    CHECK(settings_get_bool(SET_SERVO_BROWNOUT) != on);
+    CHECK(!settings_save_asked());
+    sl_step(TL_BROWNOUT, +1);
+    CHECK(settings_get_bool(SET_SERVO_BROWNOUT) == on);
 
     static const struct {
         int row;
         setting_id_t id;
-        ui_text_id_t title;
         float lo, hi, typed;
+        const char *over, *under;
     } k[] = {
-        { 1, SET_SERVO_BO_FLOOR, TX_SV_ROW_BO_FLOOR, 2.0f, 4.8f, 4.8f },
-        { 2, SET_SERVO_BO_STEP,  TX_SV_ROW_BO_STEP,  0.1f, 1.0f, 0.1f },
+        { TL_BO_FLOOR, SET_SERVO_BO_FLOOR, 2.0f, 4.8f, 4.8f, "4.9", "1.9" },
+        { TL_BO_STEP,  SET_SERVO_BO_STEP,  0.1f, 1.0f, 0.1f, "1.1", "0.05" },
     };
+    const ui_keypad_t *kp = &servo_screen_list()->kp;
     for (size_t j = 0; j < sizeof(k) / sizeof(k[0]); ++j) {
         const float was = settings_get(k[j].id);
-        tap(LROW_X(0), LROW_Y(k[j].row));
-        const ui_keypad_t *kp = servo_screen_keypad();
+        sl_part(k[j].row, UI_SL_PART_VALUE);
         CHECK(kp->open);
-        CHECK_STR_EQ(kp->title, ui_tr(k[j].title));
+        CHECK_STR_EQ(kp->title, ui_setting_label(k[j].id));
         CHECK_STR_EQ(kp->unit, "V");
         CHECK_NEAR(kp->min, k[j].lo, 1e-6f);
         CHECK_NEAR(kp->max, k[j].hi, 1e-6f);
         /* Past the top: refused, the keypad stays and nothing is set. */
-        keys(k[j].row == 1 ? "4.9" : "1.1");
+        sl_keys(k[j].over);
         CHECK(kp->open);
         CHECK_NEAR(settings_get(k[j].id), was, 1e-6f);
-        key(UI_KEY_CANCEL);
+        kp_cancel();
         CHECK(!kp->open);
         /* Under the bottom: refused too. */
-        tap(LROW_X(0), LROW_Y(k[j].row));
-        keys(k[j].row == 1 ? "1.9" : "0.05");
+        sl_part(k[j].row, UI_SL_PART_VALUE);
+        sl_keys(k[j].under);
         CHECK(kp->open);
-        key(UI_KEY_CANCEL);
+        kp_cancel();
         CHECK_NEAR(settings_get(k[j].id), was, 1e-6f);
         /* Each end is taken. */
-        tap(LROW_X(0), LROW_Y(k[j].row));
+        sl_part(k[j].row, UI_SL_PART_VALUE);
         char text[8];
         snprintf(text, sizeof(text), "%.1f", (double)k[j].typed);
-        keys(text);
+        sl_keys(text);
+        CHECK(!kp->open);
         CHECK_NEAR(settings_get(k[j].id), k[j].typed, 1e-4f);
     }
     /* A value between the 0.1V steps lands on the nearer. */
-    tap(LROW_X(0), LROW_Y(1));
-    keys("3.04");
+    sl_part(TL_BO_FLOOR, UI_SL_PART_VALUE);
+    sl_keys("3.04");
     CHECK_NEAR(settings_get(SET_SERVO_BO_FLOOR), 3.0f, 1e-4f);
 }
 
-/* The note under the rows names the walk the supply in force allows: the
+/* The heading's line names the walk the supply in force allows: the
  * model's lowest set point, 3.3V, ends the default walk there, 10
  * voltages; caps of 4.0 to 8.4V with LOWEST VOLTAGE 2.0V in 0.5V steps
  * walk 5.0V down to 4.0V, 3 voltages. */
-TEST_CASE(the_note_names_the_walk_on_the_supply_in_force)
+TEST_CASE(the_heading_names_the_walk_on_the_supply_in_force)
 {
     fresh();
     open_run_settings(0);
-    tap_brownout_row();
-    CHECK(note_reads(0, "From 5.00V down in 0.20V steps to 3.30V"));
-    CHECK(note_reads(1, "10 voltages; it stops at the first without "
-                        "movement"));
+    char line[96];
+    walk_line(line, sizeof(line));
+    CHECK_STR_EQ(line, "From 5.00V down in 0.20V steps to 3.30V, "
+                       "10 voltages");
     const supply_caps_t caps = { 4.0f, 8.4f, 0.02f, 0.5f, 3.0f, 0.05f };
     supply_screen_set_caps(&caps);
-    tap(LROW_X(0), LROW_Y(1));                     /* LOWEST VOLTAGE */
-    keys("2");
-    tap(LROW_X(0), LROW_Y(2));                     /* STEP */
-    keys("0.5");
-    CHECK(note_reads(0, "From 5.00V down in 0.50V steps to 4.00V"));
-    CHECK(note_reads(1, "3 voltages; it stops at the first without "
-                        "movement"));
+    sl_part(TL_BO_FLOOR, UI_SL_PART_VALUE);
+    sl_keys("2");
+    sl_part(TL_BO_STEP, UI_SL_PART_VALUE);
+    sl_keys("0.5");
+    walk_line(line, sizeof(line));
+    CHECK_STR_EQ(line, "From 5.00V down in 0.50V steps to 4.00V, "
+                       "3 voltages");
 }
 
 /* LOWEST VOLTAGE and STEP are kept over a restart, and a stored value
@@ -320,10 +251,9 @@ TEST_CASE(a_run_from_the_screen_walks_the_settings)
 
 int main(void)
 {
-    RUN(the_brownout_row_opens_its_page_and_close_climbs_back);
-    RUN(the_brownout_row_reads_on_with_floor_and_step_or_off);
-    RUN(the_pages_rows_switch_and_take_their_ranges);
-    RUN(the_note_names_the_walk_on_the_supply_in_force);
+    RUN(the_list_carries_the_walk_under_its_heading);
+    RUN(the_rows_switch_and_take_their_ranges);
+    RUN(the_heading_names_the_walk_on_the_supply_in_force);
     RUN(floor_and_step_are_kept_over_a_restart);
     RUN(a_run_from_the_screen_walks_the_settings);
     return test_summary("servo_brownout_page");

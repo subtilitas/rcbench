@@ -18,7 +18,7 @@ The hub holds eight tiles, each opening a screen of its own:
 |---|---|
 | LIVE | the horn's angle, the dial, and the readings COMMANDED, MEASURED and CURRENT along its foot |
 | SWEEP | the dial with SWEEP; its list sets CURVE, SPEED and RANGE ([Servo settings](servo-settings.md)) |
-| TEST | the AUTOMATIC TEST card with its SETTINGS, a summary line, its start hold, the last result and its file; SUPPLY's caps, read-only; the run's box under the card |
+| TEST | the AUTOMATIC TEST card with a summary line, the last result and its file; SUPPLY's caps, read-only; the rail's plot and the run's box under them; the READY card and HOLD 2s: ARM + START |
 | LIMIT RUN | the ends the last run found, its state lines, the READY card and HOLD 2s: ARM + START |
 | RUDDER | the control surface's deflection in ° and mm, LENGTH, the buttons 1000us, CENTRE and 2000us, ZERO and RESET MAX ([Rudder deflection](servo-rudder.md)) |
 | RUDDER AUTO | AUTO's box, which programs KST, Chaservo or Hitec end points to the deflection entered |
@@ -73,7 +73,7 @@ ARMED SERVO drives the servo outputs and a pulsing PROG PORT. Throttle outputs g
 | SWEEP, PAUSE, PAUSED | refused; drawn dimmed | starts, pauses and resumes the sweep |
 | RELEASE | sends the release | returns the surfaces to their rest: 1500us for STANDARD PWM, 760us for NARROW 760 |
 | SPEED | set | set; a held position is sent again at the new rate |
-| START TEST | refused: `ARM FIRST` | starts the automatic test after its hold |
+| HOLD 2s: ARM + START on TEST | arms the bench and starts the automatic test after its hold | starts the automatic test after its hold |
 
 Switching to ARMED sets the commanded position to the midpoint between the channel's end points, without TRIM. The first drag or knob turn starts there. SWEEP is grey without an assigned surface, an active link or IOmcu 0.10.0 or later.
 
@@ -132,19 +132,19 @@ A finger on the dial, CENTRE, RELEASE, STOP, a switch to SAFE and leaving the sc
 
 ## The automatic test
 
-Hold START TEST on TEST's AUTOMATIC TEST card for 2s to run the selected supply-voltage steps. Each step measures current at rest, moving and holding, and times travel. The brown-out walk finds the voltage at which movement stops.
+Hold HOLD 2s: ARM + START in TEST's footer for 2s to run the selected supply-voltage steps. From SAFE the hold switches PORT PWM on where the port needs it, arms the bench and starts the run; the run's steps switch the PD mini on at each step's voltage. Every end of a run, PASS included, switches the bench to SAFE. Each step measures current at rest, moving and holding, and times travel. The brown-out walk finds the voltage at which movement stops.
 
-The test requires ARMED and a responding supply. The status line explains any refusal: `ARM FIRST`, `NO STEP CHOSEN`, `SUPPLY NOT ANSWERING`, `RANGE TOO SMALL`, `STEP OUTSIDE VOLTAGE LIMITS` or `REPORT STILL BEING WRITTEN`. Carrier programming ports have fixed 5V power, so supply steps cannot reach them: `PROG PORTS RUN AT 5V FIXED: NO STEPS`.
+The READY card in place of the output card names what the hold needs: PORT, METER, PD MINI, STEPS, RANGE and ARM. Green is met, amber is done by the hold, red refuses it and greys the hold. A tap on the grey hold names the first red row in the alert band, for example `STEPS: NO STEP CHOSEN`. Red reasons include `SUPPLY NOT ANSWERING`, `RANGE TOO SMALL`, `STEP OUTSIDE VOLTAGE LIMITS`, `REPORT STILL BEING WRITTEN` and `RAIL LIVE WITH THE PD MINI OFF: FED FROM ELSEWHERE`: the INA3221 reads 3.0V or more on the rail with the PD mini's output off. Carrier programming ports have fixed 5V power, so supply steps cannot reach them: `PROG PORTS RUN AT 5V FIXED: NO STEPS`. The bench has 500ms to report ARMED; past that the sequence fails as `ARM: ...` with every output off.
 
 ![TEST and its run card](view:servo-test)
 
-The summary line shows the voltage steps and duration, such as `4.8V, 6.0V, BROWN-OUT, 60s EACH`. Below START TEST are status, last result and files, for example `LAST: PASS ATEST004.CSV + .TXT`. An aborted run shows its reason instead: `LAST: ABORTED - link lost`.
+The summary line shows the voltage steps and duration, such as `4.8V, 6.0V, BROWN-OUT, 60s EACH`. Below it are status, last result and files, for example `LAST: PASS ATEST004.CSV + .TXT`. An aborted run shows its reason instead: `LAST: ABORTED - link lost`.
 
 ![A test run](view:servo-run)
 
 TEST remains visible when the run begins, with the current step on its status line. A box under the card shows step and phase. Beside its STOP TEST it identifies the meter: `PD mini`, an INA channel such as `INA 0x41 CH2`, or `SIMULATION`.
 
-The run ends early with the output off and servo released on STOP TEST, STOP, SAFE, link loss, leaving the screen, touching the dial, CENTRE, SWEEP, RELEASE, tapping a set point or changing servo settings. An INA3221 run also ends if that sensor ceases to be the meter or no window containing both current and voltage arrives for 200ms (4 windows of 50ms): `no INA3221 window for 0.2s`. Those windows supply the STALL AT protection, so the run cannot continue through that gap.
+The run ends early with the output off and servo released on STOP TEST (the footer's slot during the run, or the run's box), STOP, SAFE, link loss, leaving the screen, touching the dial, CENTRE, SWEEP, RELEASE, tapping a set point or changing servo settings. An INA3221 run also ends if that sensor ceases to be the meter or no window containing both current and voltage arrives for 200ms (4 windows of 50ms): `no INA3221 window for 0.2s`. Those windows supply the STALL AT protection, so the run cannot continue through that gap.
 
 When the AS5600 is used from the start, the run tolerates one encoder outage of up to 300ms within 10s. High-current motor or ESC runs, or plugging a part in during a run, can disturb the sensor bus. Angles are not evaluated during the gap. The report records it, for example `AS5600 gaps: 1, longest 120ms. ...`, and the CSV column `angle gap (ms)` gives its duration.
 

@@ -83,6 +83,7 @@ TEST_CASE(a_run_ending_under_output_ons_hold_switches_nothing_on_past_6_v)
     float on_v = 0.0f;
     bench_frames_on(1500u, false, &on_v);          /* the ON does not land */
     on_v = 0.0f;
+    close_settings();                  /* OUTPUT ON's hold, on LIVE's card */
     ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
     bench_frames_on(2800u, true, &on_v);
     ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
