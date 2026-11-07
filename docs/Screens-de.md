@@ -541,7 +541,7 @@ ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | 2s HALTEN ZUM REPARIEREN | `Halte 2s, um zu reparieren.` |
 | 2s HALTEN ZUM STARTEN in der Warnung eines Stick-Laufs | `Halte 2s, um zu starten.` |
 | 2s HALTEN ZUM INSTALLIEREN auf WI-FI | `Halte 2s, um zu installieren.` |
-| 2s HALTEN ZUM LADEN & INSTALLIEREN auf UPDATES und in der Update-Erinnerung | `Halte 2s, um zu laden und zu installieren.` |
+| 2s HALTEN: LADEN & INSTALLIEREN auf UPDATES und in der Update-Erinnerung | `Halte 2s, um zu laden und zu installieren.` |
 | 2s HALTEN ZUM IOMCU-UPDATE auf UPDATES und START im Bestätigungsdialog des IOmcu-Updates | `Halte 2s, um den IOmcu zu aktualisieren.` |
 | 2s HALTEN ZUM C6-FUNK-UPDATE auf UPDATES | `Halte 2s, um den C6-Funk zu aktualisieren. Das WLAN bleibt bis zum Ende aus.` |
 | 2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN auf OUTPUTS | `Halte 2s, um alle Pin-Zuordnungen zu löschen.` |
@@ -736,11 +736,26 @@ MOTOR & ESC 145 x 89px und das Tastenfeld der Blattzahl auf BALANCE
 
 ## Die Fußleiste und die Optionsliste
 
-MOTOR & ESC und SUPPLY enden in derselben Fußleiste: drei Felder von
+Die Seiten unten enden in derselben Fußleiste: drei Felder von
 328 x 48px bei x 10, 348 und 686, y 444 bis 492 des Inhalts (y 504 bis
 552 des Panels), 4px über dem Alarmband bei y 556. Die Felder sind die
 Spalten der SETUP-Leiste. Eine Seite mit Fußleiste hält ihre eigenen
 Bedienelemente über y 436 des Inhalts.
+
+| Seite | Mittleres Feld | OPTIONEN öffnet |
+| --- | --- | --- |
+| MOTOR & ESC | ARM / DISARM | die Liste der 8 Einstellungen für Motor, Akku und Gasausgang |
+| SUPPLY | AUSGANG EIN / AUS | die Liste der Grenzen des Netzteils und der Anschlüsse des PD mini |
+| ESC STICK, auf der Seite eines Profils, seinem Lauf und seinem Ergebnis | START n / ABBRECHEN / OK | die Liste des Netzteils und der 12 Timing-Einstellungen |
+| IMU | 2s HALTEN: KALIBRIEREN | die Liste SENSORS von SETUP beim Eintrag IMU |
+| UPDATES | 2s HALTEN: LADEN & INSTALLIEREN, wenn eine neuere Version gefunden ist | die Liste mit Erinnerung und Versionen |
+| LOGS, auf der Dateiliste | leer | die Liste SD CARD von SETUP |
+| FILES, auf den Bereichen | leer | die Liste SD CARD von SETUP |
+| RECEIVER, BATTERY, BALANCE | leer | nichts: das Feld bleibt leer |
+
+Eine Liste aus SENSORS oder SD CARD von SETUP ist die von SETUP; ihr
+Home-Feld führt zur Seite zurück, die sie geöffnet hat. WI-FI und
+OUTPUTS haben keine Fußleiste.
 
 | Feld | Inhalt |
 | --- | --- |
@@ -751,9 +766,12 @@ Bedienelemente über y 436 des Inhalts.
 OPTIONEN öffnet die Optionsliste der Seite über dem ganzen Inhalt. Sie
 öffnet nur, solange die Seite nichts ansteuert. MOTOR & ESC braucht einen
 Prüfstand in SAFE ohne gehaltenes ARM, SUPPLY einen ausgeschalteten Ausgang
-ohne unterwegs befindliches EIN. Sonst ist die Taste grau, und ein Tippen
-zeigt `OPTIONEN nur bei SAFE. Schalte zuerst auf SAFE.` oder
-`OPTIONEN nur bei Ausgang aus. Schalte ihn zuerst aus.` im Alarmband.
+ohne unterwegs befindliches EIN, ESC STICK einen Prüfstand in SAFE ohne
+Lauf, UPDATES keine laufende Suche und keinen laufenden Download. Sonst
+ist die Taste grau, und ein Tippen zeigt
+`OPTIONEN nur bei SAFE. Schalte zuerst auf SAFE.`,
+`OPTIONEN nur bei Ausgang aus. Schalte ihn zuerst aus.` oder
+`OPTIONEN nur ohne laufende Suche oder Download.` im Alarmband.
 Wird ein Ausgang unter der offenen Liste aktiv, schließt sie.
 
 Die Liste ist die Kategorieliste von SETUP ([Tasten und Liste](#tasten-und-liste)):
@@ -1399,13 +1417,13 @@ Beschriftungen, Zeilen und Schaltflächen verwenden die Schrift 10 x 20:
 
 | Teil | Ort und Größe |
 | --- | --- |
-| Pfadzeile | y 30 bis 78: ZURÜCK 120 x 48px, der Pfad in der Schrift 12 x 24 und rechts das Suchfeld (260px, sein X 48px), `^` und `v` (je 56px) auf der Liste oder TIMING (168px) auf der Seite eines Profils |
+| Pfadzeile | y 30 bis 78: ZURÜCK 120 x 48px, der Pfad in der Schrift 12 x 24 und rechts das Suchfeld (260px, sein X 48px) und `^` und `v` (je 56px) auf der Liste |
 | Liste | 7 Zeilen je Seite, 48px hoch im Abstand von 56px ab y 84, 984px breit; der Name eines Modells in 30 Zeichen; die Fußzeile endet 4px über dem Alarmband |
-| Seite eines Profils und TIMING | links die Parameterfläche, 660px: 6 Zeilen je Seite, 48px hoch im Abstand von 56px, jede mit ihrer Nummer, ihrem Namen (bis 23 Zeichen), ihrem Wert in einer 250px breiten Spalte und `-` und `+` von 48 x 48px, 8px zwischen je zweien |
-| Seitenspalte | 340px rechts der Parameterfläche: ÄNDERN (auf TIMING dessen Titel), die gezeigten Zeilen und `^` und `v` von 48 x 48px; MANUELLER EINGRIFF NÖTIG, 310 x 48px; darunter, wie das Menü des Profils arbeitet, Netzteil und Einstiegszeit und die Hilfe der gewählten Zeile, umbrochen auf 31 Zeichen je Zeile |
-| Fußzeile | y 436 bis 492, 4px über dem Alarmband: links der Hinweis auf bis zu 2 Zeilen, VORGABEN und START, ABBRECHEN, OK oder SCHLIESSEN, je 168 x 56px |
-| Lauf und Ergebnis | die Gerätekarte über die Breite ab y 84 mit ihren zwei Zeilen, darunter ab y 136 die Karte des Laufs mit der Signalsäule rechts, zwei Hilfezeilen ab y 390 und die Fußzeile; MANUELLER EINGRIFF NÖTIG eines Ergebnisses, 330 x 56px, links von OK |
-| Warnung, Handgriffe, Abfrage | ein Feld über den Seiten ab y 28, sein Titel in der Schrift 20 x 36, seine Zeilen im Abstand von 22px, seine Schaltflächen 48px hoch und 4px über der Fußzeile endend, sodass ein zweites Tippen auf die Stelle von START keine davon trifft |
+| Seite eines Profils | links die Parameterfläche, 660px, y 84 bis 388: 5 Zeilen je Seite, 48px hoch im Abstand von 56px, jede mit ihrer Nummer, ihrem Namen (bis 23 Zeichen), ihrem Wert in einer 250px breiten Spalte und `-` und `+` von 48 x 48px, 8px zwischen je zweien; der Hinweis über die Breite auf bis zu 2 Zeilen ab y 396 |
+| Seitenspalte | 340px rechts der Parameterfläche: ÄNDERN, die gezeigten Zeilen und `^` und `v` von 48 x 48px; MANUELLER EINGRIFF NÖTIG, 310 x 48px; darunter, wie das Menü des Profils arbeitet, Netzteil und Einstiegszeit und die Hilfe der gewählten Zeile, umbrochen auf 31 Zeichen je Zeile |
+| Fußleiste | y 444 bis 492, 4px über dem Alarmband ([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste)): `[ESC STICK] [START n / ABBRECHEN / OK] [OPTIONEN]` auf der Seite eines Profils, ihrem Lauf und ihrem Ergebnis |
+| Lauf und Ergebnis | die Gerätekarte über die Breite ab y 84 mit ihren zwei Zeilen, darunter von y 136 bis 388 die Karte des Laufs mit der Signalsäule rechts, zwei Hilfezeilen ab y 394 und die Fußleiste; MANUELLER EINGRIFF NÖTIG eines Ergebnisses, 330 x 48px, links der Signalsäule bei x 614 bis 944, y 244 bis 292; die Änderungszeilen daneben enden 12px links davon, die Zeilen ab der siebten laufen darunter |
+| Warnung, Handgriffe, Abfrage | ein Feld über den Seiten und der Fußleiste ab y 28, sein Titel in der Schrift 20 x 36, seine Zeilen im Abstand von 22px, seine Schaltflächen 48px hoch und 4px über der Fußleiste endend, sodass ein zweites Tippen auf die Stelle von START keine davon trifft |
 
 ZURÜCK und das Home-Feld führen jeweils eine Ebene zurück: vom
 Stick-Profil zur Modellliste, von dort zur Herstellerliste und weiter zu
@@ -1518,25 +1536,26 @@ bleibt sie aus
 
 ![Vom Netzteil beendet](img/de/motor-stick-failed.png)
 
-TIMING enthält die Zeiten der Pieptöne und die Netzteil-Einstellungen. Keine
-davon ist gemessen:
+OPTIONEN in der Fußleiste öffnet die Optionsliste
+([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste)):
+Spannung und Strombegrenzung unter NETZTEIL, die Zeiten der Pieptöne unter
+TIMING UND ERKENNUNG. Keine davon ist gemessen. OPTIONEN nimmt einen Druck
+bei SAFE und ohne laufenden Lauf an; sonst ist es grau, und ein Tippen
+zeigt `OPTIONEN nur bei SAFE. Schalte zuerst auf SAFE.` im Meldeband. Ein
+Prüfstand, der unter der offenen Liste scharf schaltet, schließt sie.
 
-![Timing](img/de/motor-stick-timing.png)
+![Die Optionsliste](img/de/motor-stick-timing.png)
 
-Ändere einen Wert mit `-` und `+` um einen Schritt, oder tippe auf die
-250px breite Wertespalte, um das Tastenfeld zu öffnen. Es bedeckt die Seite
-unter dem Ausgangsstreifen bis 4px über dem Alarmband: 1008 x 464px mit
-242 x 81px großen Tasten. Es zeigt Name, Bereich und Einheit. Die Zahl
-der Nachkommastellen folgt der Schrittweite: eine bei 0,1V für Spannung,
-zwei bei 0,05A für Strombegrenzung.
-
-OK rundet auf den nächsten Schritt, wie die Plus- und Minus-Tasten:
-1,23A wird 1,25A. SCHLIESSEN fordert wie nach einer Schrittänderung das
-Speichern an. Bei einem Wert außerhalb des Bereichs bleibt das Tastenfeld
-offen und zeigt den Bereich in der Warnfarbe. ABBRECHEN, OK ohne Eingabe
-oder das Home-Feld schließt es ohne Änderung; TIMING bleibt offen.
-Darunterliegende Bedienelemente reagieren nicht. Profilpunkte verwenden
-Listen mit ESC-Werten und öffnen kein Tastenfeld.
+Die Liste bedeckt den ganzen Körper samt Ausgangsstreifen; ihre Leiste
+lautet `[ESC STICK] [ESC STICK ZURÜCKSETZEN] [SPEICHERN]`. Ein Tippen auf
+den Wert einer Zahl öffnet das Tastenfeld, 1004 x 482px. Es zeigt Name,
+Bereich und Einheit. Die Zahl der Nachkommastellen folgt der Schrittweite:
+eine bei 0,1V für Spannung, zwei bei 0,05A für Strombegrenzung. OK rundet
+auf den nächsten Schritt, wie die Tasten: 1,23A wird 1,25A. Eine Änderung
+gilt sofort; SPEICHERN behält sie. ESC STICK ZURÜCKSETZEN setzt die 14
+Einstellungen auf ihre Vorgaben und keine anderen. Spannung 0,0V nimmt die
+Spannung aus der Zellenzahl des Profils. Profilpunkte verwenden Listen mit
+ESC-Werten und öffnen kein Tastenfeld.
 
 ![Das Tastenfeld von Piepton min](img/de/motor-stick-timing-keypad.png)
 
@@ -3034,7 +3053,7 @@ eingeschaltetem Ausgang öffnet die Liste nicht.
 
 ![Receiver](img/de/analyser.png)
 
-RECEIVER zeigt sechzehn Kanäle in zwei Spalten mit je acht 52px hohen
+RECEIVER zeigt sechzehn Kanäle in zwei Spalten mit je acht 44px hohen
 Spuren. Jede enthält Kanalname in 10 x 20, Verlauf, einen 56px breiten
 Balken für den aktuellen Wert und Mikrosekunden in 8 x 16. Der Verlauf
 fasst 200 Werte, einen pro Pixel: etwa 2,8s bei 71 Frames pro Sekunde,
@@ -3044,10 +3063,11 @@ zeitgleiche Kerbe durch alle sechzehn.
 
 Das 260px breite Zustandsfeld rechts zeigt den Zustand in 20 x 36 und
 bis zu drei Erklärungszeilen in 12 x 24. BUS, RATE, FRAMES, RESYNC und
-BAD TAIL stehen in 32px hohen Zeilen. Die 44px hohen Leuchten für CH17
+BAD TAIL stehen in 26px hohen Zeilen. Die 36px hohen Leuchten für CH17
 und CH18 zeigen gesetzte Digitalkanäle und sind nicht antippbar. KANÄLE
 und ROHDATEN sind 150 x 48px große Registerkarten. ROHDATEN zeigt die
 Bytes des letzten Frames, acht pro Zeile, sowie Decoderzähler in 8 x 16.
+Die Felder enden bei Körper-y 436 auf der Fußleiste; sie nennt den Bildschirm und hat weder Halte-Taste noch OPTIONEN ([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste)).
 
 Keine Firmware liefert Daten an RECEIVER (siehe
 [Empfängerbusse](Receivers-de.md)); die Seite zeigt KEIN SIGNAL.
@@ -3072,11 +3092,11 @@ Zellen: GUT unter 30mV, BEOBACHTEN ab 30mV, ERSETZEN ab 60mV. Die Skala
 passt sich an, mit mindestens 12mV, und steht neben der Grafik.
 
 Das Grafikfeld ist 640px breit, das rechte Feld 360px. Ein Balken ist
-höchstens 48px breit und reicht 164px zu jeder Seite des Mittelwerts. Unter
+höchstens 48px breit und reicht 148px zu jeder Seite des Mittelwerts. Unter
 jedem Balken stehen Nummer und Spannung der Zelle in 12 x 24 bis 11 Zellen und
 in 10 x 20 von 12 bis 14. Das Urteil steht in 20 x 36, seine Zeile in bis zu
-zwei Zeilen 12 x 24, die sechs Zeilen sind je 36px hoch, der Hinweis in
-10 x 20.
+zwei Zeilen 12 x 24, die sechs Zeilen sind je 28px hoch, der Hinweis in
+10 x 20. Die Felder enden bei Körper-y 436 auf der Fußleiste; sie nennt den Bildschirm und hat weder Halte-Taste noch OPTIONEN ([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste)).
 
 Miss unter Last. Im Ruhezustand kann eine schwache Zelle dieselbe
 Spannung wie die übrigen zeigen.
@@ -3116,7 +3136,7 @@ Die Dateiliste hat vier Bereiche. Oben öffnet die gemeinsame Leiste
 BENCH (je 110 x 40px), Ordner- und Kartenname sowie VORIGE und NÄCHSTE
 (140 x 48px) bei mehreren Seiten.
 
-Die 1008px breite Liste zeigt sechs 44px hohe Zeilen bei 48px Abstand.
+Die 1008px breite Liste zeigt fünf 44px hohe Zeilen bei 48px Abstand.
 Jede reagiert über die vollen 48px. Name, Änderungsdatum und rechtsbündige
 Größe stehen in 10 x 20. Namen verwenden bis zu 60 Zeichen, sonst die
 ersten 58 und `..`. Die 160px breite Datumsspalte zeigt die auf der Karte
@@ -3126,12 +3146,20 @@ dem Datum einer ungestellten Uhr, bleibt sie leer
 ([PANEL: Zeitzone und Uhr](#panel-zeitzone-und-uhr)). Die Größe belegt
 100px am Zeilenende. Dateityp und Laufdauer erscheinen nicht.
 
-Die Fußzeile von y 440 bis 492 endet 4px über dem Alarmband. Links stehen
-AKTUALISIEREN (140 x 52px) und WI-FI (100 x 52px), rechts LÖSCHEN und
-ÖFFNEN (140 x 52px). WI-FI öffnet [WLAN](#wlan) aus jedem Listenzustand;
-dessen Home-Feld führt hierher zurück. In der LÖSCHEN-Rückfrage und in
-Dateiansichten fehlt WI-FI. Dateimeldungen nutzen zwischen WI-FI und
-LÖSCHEN bis zu zwei Zeilen mit 37 Zeichen.
+Die Tastenzeile von y 388 bis 436 endet auf der Fußleiste des
+Bildschirms. Links stehen AKTUALISIEREN (140 x 48px) und WI-FI
+(100 x 48px), rechts LÖSCHEN und ÖFFNEN (140 x 48px). WI-FI öffnet
+[WLAN](#wlan) aus jedem Listenzustand; dessen Home-Feld führt hierher
+zurück. In der LÖSCHEN-Rückfrage und in Dateiansichten fehlt WI-FI.
+Dateimeldungen nutzen zwischen WI-FI und LÖSCHEN bis zu zwei Zeilen mit
+37 Zeichen.
+
+Unter der Dateiliste steht die Fußleiste `[LOGS] [ ] [OPTIONEN]`
+([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste)).
+LOGS hat keine Halte-Taste in der Mitte. OPTIONEN öffnet die Liste
+SD CARD von [Setup](#setup) mit den Aufzeichnungsschaltern und Ordnern;
+deren Home-Feld führt hierher zurück. Importansicht, Grafik, Bericht und
+LÖSCHEN-Rückfrage nutzen den ganzen Körper und zeigen keine Fußleiste.
 
 Die Importansicht zeigt ERKANNT (400px) neben der Spaltenliste (600px,
 7 Zeilen bei 48px Abstand), darunter vier Tasten von 246 x 52px.
@@ -3570,7 +3598,7 @@ Einträge, etwa `+ 1 NICHT GELISTET`: Namen mit einem Punkt am Anfang
 mit ausschließlich ausgeblendeten Einträgen ist nicht leer; LÖSCHEN lehnt
 ihn daher ab.
 
-Die Liste zeigt 5 Zeilen mit je 44px Höhe im Abstand von 48px. Ziehe an
+Die Liste zeigt 4 Zeilen mit je 44px Höhe im Abstand von 48px. Ziehe an
 der Liste oder ihrem 56px breiten Rollbalken, um zu scrollen. Zuerst
 stehen Ordner, dann Dateien; beide Gruppen sind nach Namen sortiert.
 Jede Zeile zeigt ein Symbol, den Namen und rechtsbündig die Größe
@@ -3604,16 +3632,22 @@ Backups der ESC-Signaldraht-Sitzung in `BENCH/ESCW/CONF` heißen etwa
 davon löschen. Die eigene DATEIEN-Liste der Programmiersitzung schützt
 Backups, die während dieser Sitzung gespeichert wurden.
 
-Die Fußzeile liegt bei Körper-y 440 bis 492 und endet 4px über dem
-Alarmband. Links steht AKTUALISIEREN (140 x 52px), wie auf [Logs](#logs).
-Darauf folgen KOPIEREN, VERSCHIEBEN, UMBENENNEN, LÖSCHEN, NEU, INFO und
-ÖFFNEN mit je 118 x 52px. ÖFFNEN steht am rechten Rand; zwischen den
-Tasten liegen 6px.
+Die Tastenzeile liegt bei Körper-y 388 bis 436 und endet auf der
+Fußleiste des Bildschirms. Links steht AKTUALISIEREN (140 x 48px), wie auf
+[Logs](#logs). Darauf folgen KOPIEREN, VERSCHIEBEN, UMBENENNEN, LÖSCHEN,
+NEU, INFO und ÖFFNEN mit je 118 x 48px. ÖFFNEN steht am rechten Rand;
+zwischen den Tasten liegen 6px.
+
+Unter den Bereichen steht die Fußleiste `[FILES] [ ] [OPTIONEN]`
+([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste)).
+OPTIONEN öffnet die Liste SD CARD von [Setup](#setup); deren Home-Feld
+führt hierher zurück. Textbetrachter, Editor, Tastatur, INFO und die
+Rückfragen nutzen den ganzen Körper und zeigen keine Fußleiste.
 
 Die Beschriftungen verwenden die Schrift 10 x 20 mit mindestens 4px Rand
 je Seite. AKTUALISIEREN belegt 130px, VERSCHIEBEN 110px. Nicht verfügbare
 Tasten sind gedimmt. Ein Tipp darauf nennt den Grund im zweizeiligen
-Meldungsfeld über der Fußzeile, in der Schrift 12 x 24.
+Meldungsfeld über der Tastenzeile, in der Schrift 12 x 24.
 
 | Taste | Funktion |
 |---|---|
@@ -3963,7 +3997,7 @@ Jeder behält seine Position:
   der Seite; sie beginnt beim nächsten Eintrag. Bleibt ab dieser Stelle
   nichts übrig, erscheint die letzte Ordnerseite.
 - Hat eine Seite weniger Zeilen als zuvor, zeigt sie ihre letzten
-  5 Zeilen ohne leere Zeile darunter.
+  4 Zeilen ohne leere Zeile darunter.
 - Ein am Computer entfernter Ordner zeigt
   `Dieser Ordner ist nicht auf der Karte.` ohne Zeilen. Die Pfadtaste
   führt aus ihm heraus.
@@ -5827,9 +5861,12 @@ startet Bluetooth LE. Seine Einstellungen
 stehen im IMU-Eintrag unter SENSORS: IMU EIN oder AUS, ACHSE (X, Y, Z), VORZEICHEN (+, -), RATE (10, 20,
 50, 100 oder 200Hz, ab Werk 50Hz), ALGORITHMUS (6-AXIS oder 9-AXIS) und
 WINKELQUELLE. Die Bedienelemente links, 460 x 56px im Abstand von 64px ab
-Body-y 16: SENSOREN SUCHEN, ein freier Platz, `2s HALTEN: BESCHLEUNIGUNG KALIBRIEREN`, NULLPUNKT und NULLPUNKT LÖSCHEN nebeneinander, und
-IMU-OPTIONEN, das SENSORS auf dem IMU-Eintrag öffnet; dessen Home-Feld
-führt zurück. Die Karte rechts, x 484 bis 1016, nennt den gebundenen Sensor
+Body-y 16: SENSOREN SUCHEN, dann NULLPUNKT und NULLPUNKT LÖSCHEN
+nebeneinander. Die Fußleiste
+([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste))
+lautet `[IMU] [2s HALTEN: KALIBRIEREN] [OPTIONEN]`; OPTIONEN öffnet SENSORS
+auf dem IMU-Eintrag, dessen Home-Feld führt zurück. Die Karte rechts, x 484
+bis 1016, Body-y 16 bis 436, nennt den gebundenen Sensor
 und seine Adresse mit ihrem Typ, die Firmware des C6, den Zustand, die Winkel X, Y und Z
 relativ zum Nullpunkt in der Schrift 16 x 28px (die von den Läufen
 verwendete Achse in der Akzentfarbe), die Rate der Winkel-Frames, das Alter des neuesten und den Akku
@@ -6242,23 +6279,36 @@ dem ESP32-P4-Panel wird jedes neuere Release angeboten
 
 ![UPDATES](img/de/updates.png)
 
-Die Tasten sind 460 x 56px, 64px auseinander, links. Die Karte rechts ist
-532px breit, von y 16 bis 384 im Körper; ihr Text läuft in Zeilen von 41
-Zeichen der Schrift 12 x 24px, 28px auseinander. Reicht ein Ergebnis bis in
-die letzten drei Zeilen der Karte, entfallen diese Zeilen. Unter den Tasten
-stehen die Zeilen des IOmcu-Abschnitts in der Schrift 10 x 20px, und sein
-Halten ist eine fünfte Taste derselben Größe, ab y 428 im Körper. Unter der
-Karte steht die Zeile C6 RADIO: eine Zeile bei y 396 im Körper und ihr
-Halten, 532 x 56px, neben dem des IOmcu ([Der C6-Funk](#der-c6-funk)).
+NACH UPDATES SUCHEN ist 460 x 56px bei y 16 im Körper, links. Die Karte
+rechts ist 532px breit, von y 16 bis 336 im Körper; ihr Text läuft in
+Zeilen von 41 Zeichen der Schrift 12 x 24px, 28px auseinander. Reicht ein
+Ergebnis bis in die letzten drei Zeilen der Karte, entfallen diese Zeilen.
+Unter NACH UPDATES SUCHEN stehen die Zeilen des IOmcu-Abschnitts in der
+Schrift 10 x 20px, und sein Halten ist eine Taste derselben Größe, ab y 380
+im Körper. Unter der Karte steht die Zeile C6 RADIO: eine Zeile bei y 348
+im Körper und ihr Halten, 532 x 56px, neben dem des IOmcu
+([Der C6-Funk](#der-c6-funk)). Die Fußleiste
+([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste))
+lautet `[UPDATES] [2s HALTEN: LADEN & INSTALLIEREN] [OPTIONEN]`; der
+mittlere Platz bleibt leer, bis eine Suche ein neueres Release findet.
 
 | Bedienelement | Wirkung |
 | --- | --- |
 | `NACH UPDATES SUCHEN` | Fragt GitHub einmal. `ABBRECHEN` auf derselben Taste, solange die Suche läuft. |
-| `ERINNERUNG BEIM START: EIN` / `AUS` | Schaltet die Suche beim Start und ihre Erinnerung. Gespeichert mit SPEICHERN auf SETUP, wie jede Einstellung. Ab Werk an. |
-| `RELEASES: STABLE` / `TESTING` | Legt fest, welche Releases eine Suche liest ([Die Suche](#die-suche)). Gespeichert mit SPEICHERN auf SETUP. Ab Werk `STABLE`. Ein Wechsel blendet das Ergebnis der letzten Suche aus: ein Release, das mit der anderen Einstellung gefunden wurde, wird nicht angeboten. |
-| `2s HALTEN ZUM LADEN & INSTALLIEREN` | Erscheint, sobald eine Suche ein neueres Release gefunden hat. Lädt es, prüft es und installiert es. |
+| `2s HALTEN: LADEN & INSTALLIEREN` | In der Mitte der Fußleiste, sobald eine Suche ein neueres Release gefunden hat. Lädt es, prüft es und installiert es. |
+| `OPTIONEN` | Öffnet die Liste mit Erinnerung beim Start und Releases. Grau, solange eine Suche oder ein Download läuft oder ein Finger den Download hält; ein Tippen zeigt dann `OPTIONEN nur ohne laufende Suche oder Download.` im Meldeband. Eine Suche, die unter der offenen Liste startet, schließt sie. |
 | `2s HALTEN ZUM IOMCU-UPDATE` | Startet das Update des IOmcu aus dem Image, das dieses Panel mitbringt ([Der IOmcu](#der-iomcu)). |
 | `2s HALTEN ZUM C6-FUNK-UPDATE` | Sendet das Image des C6-Funks, das dieses Panel mitbringt, an den ESP32-C6 des Boards ([Der C6-Funk](#der-c6-funk)). |
+
+![Die OPTIONEN von UPDATES](img/de/updates-settings.png)
+
+| Einstellung | Werte | Vorgabe | Wirkung |
+| --- | --- | --- | --- |
+| Erinnerung beim Start | AUS, EIN | EIN | die Suche beim Start und ihre Erinnerung |
+| Releases | STABLE, TESTING | STABLE | welche Releases eine Suche liest ([Die Suche](#die-suche)); ein Wechsel blendet das Ergebnis der letzten Suche aus, und ein mit der anderen Einstellung gefundenes Release wird nicht angeboten |
+
+Eine Änderung gilt sofort; SPEICHERN in der Leiste der Liste behält sie, wie
+auf SETUP ([Werte behalten](#werte-behalten)).
 
 Die Karte nennt die laufende Version und das gespeicherte Heimnetz. Suche
 und Download brauchen:
@@ -6530,7 +6580,7 @@ Die Erinnerung ist ein Kasten von 860 x 480px mit ihren Zeilen in der
 Schrift 12 x 24px. JETZT NICHT und NICHT MEHR ERINNERN sind 398 x 56px
 nebeneinander; das Halten ist 812 x 64px darunter.
 
-Mit ERINNERUNG BEIM START an und einem gespeicherten Heimnetz sucht das
+Mit Erinnerung beim Start an und einem gespeicherten Heimnetz sucht das
 Panel einmal nach jedem Start. Die Suche wartet auf einen Moment, den der
 Prüfstand erlaubt: Splash vorbei, Prüfstand SAFE, Netzteilausgang aus, kein
 offener Aufzeichnungslauf, WI-FI geschlossen und kein Update des
@@ -6546,8 +6596,8 @@ entfallen und das Menü zu sehen ist, öffnet sie sich.
 | Bedienelement | Wirkung |
 | --- | --- |
 | `JETZT NICHT` | Schließt die Erinnerung bis zum nächsten Start des Panels. Verlassen über das Home-Feld wirkt genauso. |
-| `NICHT MEHR ERINNERN` | Schaltet ERINNERUNG BEIM START aus und fordert das Speichern an, das im nächsten Moment geschieht, in dem die Einstellungen geschrieben werden dürfen ([Werte behalten](#werte-behalten)). SETUP > UPDATES schaltet sie wieder ein. |
-| `2s HALTEN ZUM LADEN & INSTALLIEREN` | Dasselbe Halten wie auf UPDATES. |
+| `NICHT MEHR ERINNERN` | Schaltet Erinnerung beim Start aus und fordert das Speichern an, das im nächsten Moment geschieht, in dem die Einstellungen geschrieben werden dürfen ([Werte behalten](#werte-behalten)). Die OPTIONEN von UPDATES schalten sie wieder ein. |
+| `2s HALTEN: LADEN & INSTALLIEREN` | Dasselbe Halten wie auf UPDATES. |
 
 Findet die Suche beim Start kein neueres Release oder scheitert sie, zeigt
 sie nichts. Ihr Ergebnis steht auf UPDATES.
@@ -7348,12 +7398,13 @@ Die Marke SIMULIERT und der Text „Nicht gemessen.“ stehen unter den Werten,
 Platzierungshilfen und tragen keine Marke.
 
 WUCHTEN, PRÜFGESTELL und FLUGMODELL sind Registerkarten von 150 x 48px. Die
-Rotorkarte ist 640px breit, ihre Scheibe hat 160px Radius; die rechte Karte
+Rotorkarte ist 640px breit, ihre Scheibe hat 128px Radius; die rechte Karte
 ist 360px breit. PROPELLER und EDF sind 162 x 48px groß, `-` und `+` der
 Blattzahl 56 x 48px, die Tippfläche der Zahl 114 x 48px, die vier Werte
-Zeilen von 36px. Die Hinweise und die zwei Zeilen der Regeln stehen in
+Zeilen von 28px. Die Hinweise und die zwei Zeilen der Regeln stehen in
 8 x 16; die Köpfe der Regeln und die Beschriftungen, auch die der
-Zeichnungen, in 10 x 20.
+Zeichnungen, in 10 x 20. Die Regeln stehen 55px auseinander. Die Felder enden bei Körper-y 436 auf der Fußleiste; sie nennt den Bildschirm und hat weder Halte-Taste noch OPTIONEN ([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste)). Das
+Tastenfeld der Blattzahl deckt beide Felder und die Fußleiste ab.
 
 ## Unbekannte Bildschirm-IDs
 

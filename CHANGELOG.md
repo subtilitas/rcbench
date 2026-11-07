@@ -24,6 +24,18 @@ history is in git.
   middle slot, x 348 to 676. SUPPLY's plot is 78px tall; its header row
   starts at x 18. SUPPLY offers no guide page while its output is on, as
   either dock covers OUTPUT OFF.
+- ESC STICK, IMU, UPDATES, LOGS, FILES, RECEIVER, BATTERY and BALANCE end
+  in the footer. ESC STICK's SETTINGS lists the supply and the 12 timing
+  settings in place of its TIMING page; IMU's middle slot is
+  HOLD 2s: CALIBRATE and its SETTINGS opens SETUP's SENSORS list at the
+  IMU entry; UPDATES' middle slot is the download's hold and its SETTINGS
+  lists the reminder and the releases; LOGS' and FILES' SETTINGS open
+  SETUP's SD CARD list, whose home tag returns to them. RECEIVER, BATTERY
+  and BALANCE show the name alone. UPDATES' and ESC STICK's settings write
+  on SAVE only.
+- LOGS shows 5 files and FILES 4 rows a pane; their rows of buttons are
+  48px tall at body y 388. RECEIVER's lanes are 44px, BATTERY's rows 28px,
+  BALANCE's disc 128px in radius.
 - A press on a locked row of a settings list names the lock in the alert
   band. The PD mini pins alert reads
   `PD mini pins rejected. Check them in SUPPLY's SETTINGS.`

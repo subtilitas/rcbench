@@ -6,15 +6,15 @@ order: 65
 
 # Release-Erinnerung
 
-Die Erinnerung meldet ein neueres Release der Panel-Firmware auf GitHub. Sie öffnet sich im [Menü](overview.md), wenn die Suche beim Start eines findet. Mit ERINNERUNG BEIM START unter [Updates](updates.md) schaltest du sie ein oder aus. Ab Werk ist sie eingeschaltet.
+Die Erinnerung meldet ein neueres Release der Panel-Firmware auf GitHub. Sie öffnet sich im [Menü](overview.md), wenn die Suche beim Start eines findet. Mit Erinnerung beim Start in den Optionen von [Updates](updates.md#optionen) schaltest du sie ein oder aus. Ab Werk ist sie eingeschaltet.
 
 ![Die Erinnerung](view:upd-remind)
 
 | Bedienelement | Funktion |
 |---|---|
 | JETZT NICHT | schließt die Erinnerung bis zum nächsten Start des Panels; das Home-Feld hat dieselbe Wirkung |
-| NICHT MEHR ERINNERN | schaltet ERINNERUNG BEIM START aus und fordert das Speichern an; unter SETUP > UPDATES kannst du die Erinnerung wieder einschalten |
-| 2s HALTEN ZUM LADEN & INSTALLIEREN | startet dieselbe Aktion wie unter [Updates](updates.md#der-download) |
+| NICHT MEHR ERINNERN | schaltet Erinnerung beim Start aus und fordert das Speichern an; in den Optionen von [Updates](updates.md#optionen) schaltest du sie wieder ein |
+| 2s HALTEN: LADEN & INSTALLIEREN | startet dieselbe Aktion wie unter [Updates](updates.md#der-download) |
 
 ## Wann die Suche läuft
 

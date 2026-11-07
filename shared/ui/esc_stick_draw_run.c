@@ -562,6 +562,16 @@ DRAWER void sp_draw_result(gfx_canvas_t *c)
     sp_result_head(e, line, sizeof(line));
     gfx_text(c, PAD + 12, y0, line, SP_FONT,
              ui_theme_color(UI_C_TEXT), 1);
+    /* MANUAL INTERVENTION REQUIRED beside the change lines, which end
+     * left of it, and drawn before every line, so a line that reached
+     * into it would show on it. */
+    const esc_profile_t *p = e->p;
+    const int cells = (p->manual_count > 0u) ? SP_BESIDE_CELLS
+                                              : SP_LINE_CELLS;
+    if (p->manual_count > 0u) {
+        ui_button_font(c, s.st.hand_res, TR(SP_HAND_BTN),
+                       ui_theme_color(UI_C_DANGER), false, true, SP_FONT);
+    }
     /* Five lines fit; past five, the fifth says how many more. */
     const unsigned shown = (e->n > 5u) ? 4u : e->n;
     for (unsigned i = 0; i < shown; ++i) {
@@ -570,8 +580,7 @@ DRAWER void sp_draw_result(gfx_canvas_t *c)
         snprintf(line, sizeof(line), "%s  %s",
                  esc_stick_unsure(e, i) ? TR(SP_MADE_CUT)
                  : e->done[i] ? TR(SP_MADE) : TR(SP_NOT_MADE), what);
-        sp_text(c, PAD + 12, y0 + (int)(i + 1u) * pitch, line,
-                SP_LINE_CELLS,
+        sp_text(c, PAD + 12, y0 + (int)(i + 1u) * pitch, line, cells,
                 e->done[i] ? ui_theme_color(UI_C_TEXT) : dim);
     }
     if (shown < e->n) {
@@ -583,11 +592,6 @@ DRAWER void sp_draw_result(gfx_canvas_t *c)
      * the power-up may still be there.  Steps that need more than the two
      * lines are counted there instead, and MANUAL INTERVENTION REQUIRED
      * above -- open by itself when the run ended -- lists every one. */
-    const esc_profile_t *p = e->p;
-    if (p->manual_count > 0u) {
-        ui_button_font(c, s.st.hand_res, TR(SP_HAND_BTN),
-                       ui_theme_color(UI_C_DANGER), false, true, SP_FONT);
-    }
     int y = y0 + 6 * pitch;
     int room = 2;
     int need = 0;

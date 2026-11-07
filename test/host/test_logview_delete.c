@@ -177,7 +177,7 @@ TEST_CASE(deleting_the_open_file_drops_what_was_read_from_it)
     open_file(0);
     tap(PLOT_X, IM_BTN_CY);
     CHECK(log_viewer_data() != NULL);
-    tap(80, FOOT_CY);                  /* FIELDS */
+    tap(80, FOOT_PLOT_CY);             /* FIELDS */
     tap(BACK_X, IM_BTN_CY);            /* the list, row 0 still chosen */
 
     tap(DELETE_X, FOOT_CY);

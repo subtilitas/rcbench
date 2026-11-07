@@ -161,6 +161,7 @@ SOURCES = [
     "shared/ui/esc_stick_panel.c",
     "shared/ui/esc_stick_list.c",
     "shared/ui/esc_stick_touch.c",
+    "shared/ui/esc_stick_settings.c",
     "shared/ui/esc_stick_draw.c",
     "shared/ui/esc_stick_draw_run.c",
     "shared/ui/outputs_screen.c",
@@ -183,6 +184,7 @@ SOURCES = [
     "shared/ui/update_screen.c",
     "shared/ui/coproc_update_screen.c",
     "shared/ui/upd_screen.c",
+    "shared/ui/upd_settings.c",
     "shared/ui/upd_c6.c",
     # IMU, its controller and the protocol cores they read.
     "shared/ui/imu_ctl.c",

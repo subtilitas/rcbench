@@ -6,14 +6,14 @@ order: 65
 
 # Release reminder
 
-The reminder announces a newer panel firmware release on GitHub. It opens on the [menu](overview.md) when the startup check finds one. REMINDER AT START on [Updates](updates.md) enables or disables it; it is enabled by default.
+The reminder announces a newer panel firmware release on GitHub. It opens on the [menu](overview.md) when the startup check finds one. Reminder at start in the settings of [Updates](updates.md#settings) enables or disables it; it is enabled by default.
 
 ![The reminder](view:upd-remind)
 
 | Control | What it does |
 |---|---|
 | NOT NOW | closes the reminder until the next start of the panel; leaving by the HOME tag does the same |
-| NEVER REMIND ME | switches REMINDER AT START off and asks for the save; SETUP > UPDATES switches it on again |
+| NEVER REMIND ME | switches Reminder at start off and asks for the save; the settings of [Updates](updates.md#settings) switch it on again |
 | HOLD 2s TO DOWNLOAD & INSTALL | the same hold as on [Updates](updates.md#the-download) |
 
 ## When the check runs

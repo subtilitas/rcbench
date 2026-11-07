@@ -40,8 +40,8 @@ extern "C" {
  *  @{ */
 #define UPD_C6_X      484   /**< left edge: the card's                    */
 #define UPD_C6_W      532   /**< width: the card's                        */
-#define UPD_C6_LINE_Y 396   /**< the versions' line                       */
-#define UPD_C6_BTN_Y  428   /**< the hold's top: the IOmcu hold's row     */
+#define UPD_C6_LINE_Y 348   /**< the versions' line                       */
+#define UPD_C6_BTN_Y  380   /**< the hold's top: the IOmcu hold's row     */
 #define UPD_C6_BTN_H  56    /**< the hold's height                        */
 /** @} */
 

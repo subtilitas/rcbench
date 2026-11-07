@@ -16,7 +16,6 @@
 
 #include "esc_profile.h"
 #include "settings.h"
-#include "ui_keypad.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
 #include "ui_theme.h"
@@ -434,69 +433,6 @@ static void sp_row_shade(gfx_canvas_t *c, int i)
                         ui_theme_color(UI_C_PANEL_SUNK));
 }
 
-/**
- * @brief Writes a setting's value with its unit into @p out; the voltage reads
- *        as the profile's own when set to 0.
- */
-static void sp_setting_text(setting_id_t id, char *out, size_t n)
-{
-    if (id == SET_STICK_V && !(settings_get(id) > 0.0f)) {
-        snprintf(out, n, "%s", TR(SP_FROM_PROFILE));
-        return;
-    }
-    char v[24];
-    ui_setting_value(id, v, sizeof(v));
-    snprintf(out, n, "%s%s", v, settings_def(id)->unit);
-}
-
-/**
- * @brief TIMING: the settings in the parameter card; in the side column the
- *        title and the page keys, the note that the values are defaults, and the
- *        picked setting's label and help; DEFAULTS and CLOSE at the foot.
- */
-static DRAWER void sp_draw_timing(gfx_canvas_t *c)
-{
-    const stick_t *t = &s.st;
-    const int max_scroll = SP_SETTINGS - ROWS_MAX;
-    sp_parm_card(c);
-    sp_side(c, TR(SP_TIMING_TITLE), NULL, t->tscroll > 0,
-            t->tscroll < max_scroll);
-    for (int i = 0; i < sp_rows_shown(SP_SETTINGS, t->tscroll); ++i) {
-        const int idx = t->tscroll + i;
-        const setting_id_t id = sp_settings_list[idx];
-        const setting_def_t *d = settings_def(id);
-        const int y = ROW_Y0 + i * ROW_P;
-        if (idx == t->tpicked) {
-            sp_row_shade(c, i);
-        }
-        sp_text(c, PAD + 12, y + ROW_TY, ui_setting_label(id),
-                (CTRL_X - 8 - PAD - 12) / SP_CELL,
-                ui_theme_color(UI_C_TEXT));
-        char v[40];
-        sp_setting_text(id, v, sizeof(v));
-        const bool moved = settings_get(id) != d->def;
-        widget_enum(c, y, v, moved ? ui_theme_color(UI_C_WARN)
-                                   : ui_theme_color(UI_C_ACCENT));
-        const float now = settings_get(id);
-        ui_button_font(c, pg.down[i], "-", ui_theme_color(UI_C_PANEL_HI),
-                       false, now > d->min, SP_FONT);
-        ui_button_font(c, pg.up[i], "+", ui_theme_color(UI_C_PANEL_HI),
-                       false, now < d->max, SP_FONT);
-    }
-    int y = HAND_Y + 2;
-    y += LINE_P * sp_wrap(c, SIDE_IN, y, LINE_P, TR(SP_TIMING_NOTE),
-                          SIDE_CELLS, 3, ui_theme_color(UI_C_WARN));
-    y += 10;
-    const setting_id_t picked = sp_settings_list[t->tpicked];
-    y += LINE_P * sp_wrap(c, SIDE_IN, y, LINE_P, ui_setting_label(picked),
-                          SIDE_CELLS, 1, ui_theme_color(UI_C_TEXT_DIM));
-    (void)sp_wrap(c, SIDE_IN, y, LINE_P, ui_setting_help(picked), SIDE_CELLS,
-                  sp_side_room(y), ui_theme_color(UI_C_TEXT_FAINT));
-    ui_button_font(c, pg.read_btn, TR(SP_DEFAULTS),
-                   ui_theme_color(UI_C_PANEL_HI), false, true, SP_FONT);
-    ui_button_font(c, pg.write_btn, TR(SUP_CLOSE),
-                   ui_theme_color(UI_C_PANEL_HI), false, true, SP_FONT);
-}
 
 /**
  * @brief How the profile's menu works and the supply and entry time a run
@@ -706,10 +642,10 @@ static DRAWER void sp_draw_items(gfx_canvas_t *c)
     (void)sp_changes(ch, &picked);
     const bool can = sp_can_run();
     if (t->note[0] != '\0') {
-        sp_note(c, PAD + 12, pg.write_btn.x - 8, t->note,
+        sp_note(c, PAD + 12, W - PAD - 12, t->note,
                 ui_theme_color(UI_C_WARN));
     } else {
-        sp_note(c, PAD + 12, pg.write_btn.x - 8,
+        sp_note(c, PAD + 12, W - PAD - 12,
                 (picked == 0u) ? TR(SP_PICK_VALUE) : TR(SP_UNVERIFIED),
                 ui_theme_color(UI_C_TEXT_FAINT));
     }
@@ -726,8 +662,7 @@ static DRAWER void sp_draw_items(gfx_canvas_t *c)
 
 /**
  * @brief The profile page's crumb: BACK and the profile's name in
- *        SP_FONT_CRUMB, up to TIMING where the page shows it
- *        (esc_stick_panel_crumb()).
+ *        SP_FONT_CRUMB, to the row's right margin (esc_stick_panel_crumb()).
  */
 static DRAWER void sp_draw_crumb(gfx_canvas_t *c)
 {
@@ -736,7 +671,7 @@ static DRAWER void sp_draw_crumb(gfx_canvas_t *c)
     ui_button_font(c, pg.back, TR(LOG_BACK), ui_theme_color(UI_C_PANEL_HI),
                    false, !esc_stick_running(&t->run), SP_FONT);
     const int x = pg.back.x + pg.back.w + 16;
-    const int right = t->timing ? W - PAD - 12 : t->timing_btn.x - 8;
+    const int right = W - PAD - 12;
     esc_stick_panel_crumb(t->p, t->model, (right - x) / SP_CRUMB_CELL, line,
                           sizeof(line));
     gfx_text(c, x, CRUMB_Y + (CRUMB_H - 24) / 2, line, SP_FONT_CRUMB,
@@ -746,42 +681,42 @@ static DRAWER void sp_draw_crumb(gfx_canvas_t *c)
 /**
  * @brief A run's and a result's two cards across the body: the device card
  *        with how the profile's menu works and the supply and entry time,
- *        and the run's card under it; TIMING in the crumb row, dark.
+ *        and the run's card under it.
  * @param c The canvas.
  */
 static DRAWER void sp_draw_run_cards(gfx_canvas_t *c)
 {
-    const stick_t *t = &s.st;
     ui_card(c, (gfx_rect_t){ PAD, DEV_Y, (int16_t)(W - 2 * PAD), DEV_H },
             ui_theme_color(UI_C_PANEL));
     ui_card(c, (gfx_rect_t){ PAD, RUN_Y, (int16_t)(W - 2 * PAD), RUN_H },
             ui_theme_color(UI_C_PANEL));
     (void)sp_device_lines(c, PAD + 12, DEV_Y + 4,
                           (W - 2 * PAD - 24) / SP_CELL, false);
-    ui_button_font(c, t->timing_btn, "TIMING", ui_theme_color(UI_C_PANEL_HI),
-                   false, false, SP_FONT);
 }
 
 /**
- * @brief The profile page, or TIMING, or TIMING's keypad alone while it is
- *        open.  Its parts are drawn one after another, so none of their
- *        buffers is on the stack below the stage drawn last.
+ * @brief The footer's name and SETTINGS (ui_footer.h), grey with a run
+ *        under way or the bench ARMED; the middle slot is the page's
+ *        WRITE button, its drawer's.
+ * @param c The canvas.
+ */
+static DRAWER void sp_draw_footer(gfx_canvas_t *c)
+{
+    ui_footer_name(c, ui_footer_rect(UI_FOOTER_NAME), "ESC STICK", NULL,
+                   false);
+    ui_footer_settings(c, false, sp_settings_free());
+}
+
+/**
+ * @brief The profile page, a run or its result, and the footer.  Its parts
+ *        are drawn one after another, so none of their buffers is on the
+ *        stack below the stage drawn last.
  * @param c The canvas.
  */
 static void sp_draw_device(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
-    if (t->timing && t->kp.open) {
-        /* A row's value typed: the keypad covers the page, and nothing
-         * under it is drawn, as nothing under it presses. */
-        ui_keypad_render(&t->kp, c);
-        return;
-    }
     sp_draw_crumb(c);
-    if (t->timing) {
-        sp_draw_timing(c);
-        return;
-    }
     if (esc_stick_running(&t->run)) {
         sp_draw_run_cards(c);
         sp_draw_progress(c);
@@ -789,10 +724,9 @@ static void sp_draw_device(gfx_canvas_t *c)
         sp_draw_run_cards(c);
         sp_draw_result(c);
     } else {
-        ui_button_font(c, t->timing_btn, "TIMING",
-                       ui_theme_color(UI_C_PANEL_HI), false, true, SP_FONT);
         sp_draw_items(c);
     }
+    sp_draw_footer(c);
 }
 
 /**
