@@ -797,7 +797,10 @@ reads the state and shows the alert, is not in the coverage figure.
   under way, ABORT, the KST and Hitec supply row while it reads ON, and on
   SUPPLY OUTPUT OFF and PROG 5V OFF, which a lone finger switches off with a
   tap. On the Hitec programmer's overlay MOVE SERVO's ON and the FIND STOP
-  key whose side searches end the loop or the search on such a press.
+  key whose side searches end the loop or the search on such a press. A
+  release never switches on what a stop switched off: a finger held on that
+  Hitec row loses its tap, and a hold on OUTPUT ON or PROG 5V ON ends when
+  the OFF reads back.
 - The control task tests STOP's rectangle on every press itself,
   independently of the screens and of the frame, and stops the bench at the
   press: the heartbeat drops in the same pass and the IOmcu fails safe within

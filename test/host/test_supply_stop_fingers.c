@@ -9,6 +9,8 @@
  * - output_off_under_two_other_contacts_switches_off
  * - output_off_under_three_other_contacts_switches_off
  * - prog5v_off_under_two_and_three_other_contacts_switches_off
+ * - a_held_output_on_switches_nothing_on_after_the_stop
+ * - a_held_prog5v_on_switches_nothing_on_after_the_stop
  *
  * SPDX-License-Identifier: MIT
  */
@@ -22,7 +24,7 @@
 #define P5_BTN_X (618 - PROG5V_BOX_BTN_W / 2)
 #define P5_BTN_Y (126 - PROG5V_BOX_H / 2)
 
-enum { ST_ON = 3 };
+enum { ST_OFF = 2, ST_ON = 3 };
 
 /** @brief SUPPLY fresh with its output reported on. */
 static void fresh_on(void)
@@ -111,10 +113,61 @@ TEST_CASE(prog5v_off_under_two_and_three_other_contacts_switches_off)
     }
 }
 
+/* Contact 1 holds OUTPUT ON; the output goes on from elsewhere before the
+ * hold completes, and contact 2 presses OUTPUT OFF.  The OFF is asked and
+ * reported, and contact 1, still down and then lifted, switches nothing
+ * back on. */
+TEST_CASE(a_held_output_on_switches_nothing_on_after_the_stop)
+{
+    fresh();
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS / 2);
+    supply_screen_set_output(true);
+    scr->tick(TICK_S);
+    drain();
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 2);
+    CHECK(asked_off());
+    supply_screen_set_output(false);
+    tick_for(2 * HOLD_TICKS);
+    CHECK(!supply_screen_poll_cmd(NULL));
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_UP, 2);
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_UP, 1);
+    tick_for(HOLD_TICKS);
+    CHECK(!supply_screen_poll_cmd(NULL));
+}
+
+/* The same for PROG 5V: contact 1 holds PROG 5V ON, the 5V goes on from
+ * elsewhere, contact 2 presses PROG 5V OFF.  After the OFF reads back,
+ * contact 1 asks no ON, held or lifted. */
+TEST_CASE(a_held_prog5v_on_switches_nothing_on_after_the_stop)
+{
+    prog5v_box_reset();
+    ui_text_set_language(UI_LANG_EN);
+    prog5v_box_publish(ST_OFF, 21u, (uint8_t)PROG5V_HELD_NONE);
+    fresh();
+    scr->tick(TICK_S);
+    ev(P5_BTN_X, P5_BTN_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS / 2);
+    prog5v_box_publish(ST_ON, 21u, (uint8_t)PROG5V_HELD_NONE);
+    scr->tick(TICK_S);
+    while (prog5v_box_poll_cmd(NULL)) { }
+    ev(P5_BTN_X, P5_BTN_Y, TOUCH_EVENT_DOWN, 2);
+    CHECK(p5_asked_off());
+    prog5v_box_publish(ST_OFF, 21u, (uint8_t)PROG5V_HELD_NONE);
+    tick_for(2 * HOLD_TICKS);
+    CHECK(!prog5v_box_poll_cmd(NULL));
+    ev(P5_BTN_X, P5_BTN_Y, TOUCH_EVENT_UP, 2);
+    ev(P5_BTN_X, P5_BTN_Y, TOUCH_EVENT_UP, 1);
+    tick_for(HOLD_TICKS);
+    CHECK(!prog5v_box_poll_cmd(NULL));
+}
+
 int main(void)
 {
     RUN(output_off_under_two_other_contacts_switches_off);
     RUN(output_off_under_three_other_contacts_switches_off);
     RUN(prog5v_off_under_two_and_three_other_contacts_switches_off);
+    RUN(a_held_output_on_switches_nothing_on_after_the_stop);
+    RUN(a_held_prog5v_on_switches_nothing_on_after_the_stop);
     return test_summary("supply_stop_fingers");
 }

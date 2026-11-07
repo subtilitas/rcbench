@@ -880,7 +880,10 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   PROG 5V AUS, die ein einzelner Finger mit einem Tippen ausschaltet. Im
   Overlay des Hitec-Programmers beenden EIN von SERVO BEWEGEN und die Taste
   von ANSCHLAG SUCHEN, deren Seite sucht, die Schleife oder die Suche bei
-  einem solchen Druck.
+  einem solchen Druck. Ein Abheben schaltet nie ein, was ein Stopp
+  ausgeschaltet hat: Ein Finger auf dieser Hitec-Zeile verliert sein
+  Tippen, und ein Halten auf AUSGANG EIN oder PROG 5V EIN endet, sobald das
+  AUS zurückgemeldet ist.
 - Die Control-Task prüft das Rechteck von STOP bei jedem Aufsetzen selbst,
   unabhängig von den Seiten und vom Frame, und stoppt den Prüfstand beim
   Aufsetzen: Der Heartbeat fällt im selben Durchlauf weg, und der IOmcu
