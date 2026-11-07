@@ -5,7 +5,8 @@
  * PROG 5V, reads them back, arms and starts; the read-back's 1000ms and
  * ARMED's 500ms on the screen, each failure with every output off and its
  * step named; the PD mini switched on where it feeds the servo; a tap
- * that stops the sequence.  The rig is servo_rauto_kst_rig.h.
+ * that stops the sequence; READY's rows where the rig's bench gives them
+ * a value or a fix.  The rig is servo_rauto_kst_rig.h.
  *
  * Cases:
  * - on_the_carrier_one_hold_switches_port_pwm_and_5v_arms_and_starts
@@ -23,6 +24,10 @@
  * - a_pd_mini_off_on_a_rail_fed_from_elsewhere_refuses_the_hold
  * - a_pd_mini_set_low_is_red_behind_its_amber_output
  * - a_pd_mini_off_past_6v_goes_on_only_through_the_hv_warning
+ * - a_tap_on_a_red_zero_row_takes_the_zero_while_the_encoder_reads
+ * - a_tap_on_a_met_row_opens_and_names_nothing
+ * - port_pwm_on_with_the_5v_off_reads_amber_with_no_text_of_its_own
+ * - a_run_under_way_keeps_the_angle_row_on_its_source_without_a_reading
  *
  * SPDX-License-Identifier: MIT
  */
@@ -498,6 +503,102 @@ TEST_CASE(a_pd_mini_off_past_6v_goes_on_only_through_the_hv_warning)
     supply_screen_settings_loaded();
 }
 
+/* ZERO is red until taken; with the encoder reading, a tap on its row
+ * takes ZERO as RUDDER's button does, and the row reads SET in green. */
+TEST_CASE(a_tap_on_a_red_zero_row_takes_the_zero_while_the_encoder_reads)
+{
+    ra_setup(false, false);
+    ra.armed = false;
+    servo_screen_set_armed(false);
+    ra_ms(200u);
+    rdy_row_t r = row_now(RAR_ZERO);
+    CHECK_EQ(r.st, (uint8_t)RDY_BAD);
+    CHECK_STR_EQ(r.why, TR(RA_NO_ZERO));
+    CHECK(r.fix);
+    ui_router_set_alert(NULL);
+    ev(SV_RDY_X, SV_RDY_ROW_Y(RAR_ZERO), TOUCH_EVENT_DOWN, 1);
+    ev(SV_RDY_X, SV_RDY_ROW_Y(RAR_ZERO), TOUCH_EVENT_UP, 1);
+    ra_ms(100u);
+    r = row_now(RAR_ZERO);
+    CHECK_EQ(r.st, (uint8_t)RDY_OK);
+    CHECK_STR_EQ(r.value, TR(RDY_SET));
+    CHECK(!r.fix);
+    CHECK(ui_router_alert() == NULL);
+}
+
+/* A met row has no fix and no text: a tap on METER, ANGLE, ZERO, RANGE,
+ * PROGRAMMER, SUPPLY, PORT PWM or ARM opens no list and no keypad, names
+ * nothing in the band and changes no row. */
+TEST_CASE(a_tap_on_a_met_row_opens_and_names_nothing)
+{
+    static const rauto_row_t k_rows[] = {
+        RAR_METER, RAR_ANGLE, RAR_ZERO, RAR_RANGE, RAR_PROG, RAR_SUPPLY,
+        RAR_PWM, RAR_ARM,
+    };
+    ra_setup(true, true);
+    ra_ms(200u);
+    for (size_t k = 0; k < sizeof(k_rows) / sizeof(k_rows[0]); ++k) {
+        const rdy_row_t before = row_now((int)k_rows[k]);
+        CHECK(before.st == (uint8_t)RDY_OK || before.st == (uint8_t)RDY_LIVE);
+        CHECK(before.why == NULL);
+        ui_router_set_alert(NULL);
+        ev(SV_RDY_X, SV_RDY_ROW_Y(k_rows[k]), TOUCH_EVENT_DOWN, 1);
+        ev(SV_RDY_X, SV_RDY_ROW_Y(k_rows[k]), TOUCH_EVENT_UP, 1);
+        CHECK(ui_router_alert() == NULL);
+        CHECK(!servo_screen_list()->open);
+        CHECK(!servo_screen_keypad()->open);
+        CHECK_EQ(servo_screen_port_choices(), -1);
+        const rdy_row_t after = row_now((int)k_rows[k]);
+        CHECK_EQ(after.st, before.st);
+        CHECK_STR_EQ(after.value, before.value);
+    }
+}
+
+/* On the carrier, SAFE, PORT PWM on and PROG 5V off: the pulse comes with
+ * the 5V the hold switches, so PORT PWM reads START SWITCHES IT ON in
+ * amber with no text of its own, and PROG 5V's row carries the gate's. */
+TEST_CASE(port_pwm_on_with_the_5v_off_reads_amber_with_no_text_of_its_own)
+{
+    carrier_safe_off(40u);
+    settings_set(SET_SERVO_PORT_PWM, 1.0f);
+    ra_ms(100u);
+    rdy_row_t r = row_now(RAR_PWM);
+    CHECK_STR_EQ(r.label, TR(RDY_PWM));
+    CHECK_EQ(r.st, (uint8_t)RDY_SEQ);
+    CHECK_STR_EQ(r.value, TR(RDY_SEQ_ON));
+    CHECK(r.why == NULL);
+    CHECK(!r.fix);
+    r = row_now(RAR_SUPPLY);
+    CHECK_EQ(r.st, (uint8_t)RDY_SEQ);
+    CHECK_STR_EQ(r.why, ui_servo_str(SERVO_STR_START_PROG_5V));
+    CHECK(rauto_hold_blocked(NULL) == NULL);
+    ra.p5_task = false;
+    carrier_done();
+}
+
+/* A reading that goes while the run is under way: the ANGLE row stays
+ * green on the source's name, with no degrees after it. */
+TEST_CASE(a_run_under_way_keeps_the_angle_row_on_its_source_without_a_reading)
+{
+    carrier_safe_off(40u);
+    ra_hold_start();
+    CHECK(servo_screen_rauto_running());
+    rdy_row_t r = row_now(RAR_ANGLE);
+    CHECK_EQ(r.st, (uint8_t)RDY_OK);
+    CHECK(strstr(r.value, "AS5600 ") == r.value);
+    CHECK(strstr(r.value, "\xC2\xB0") != NULL);
+    const servo_test_enc_t none = { .valid = false, .taken_ms = g_rig.ms };
+    servo_screen_encoder(&none);
+    CHECK(servo_screen_rauto_running());
+    r = row_now(RAR_ANGLE);
+    CHECK_EQ(r.st, (uint8_t)RDY_OK);
+    CHECK_STR_EQ(r.value, "AS5600");
+    rauto_end_now(SERVO_TEST_AB_OPERATOR);
+    ra_ms(2000u);
+    ra.p5_task = false;
+    carrier_done();
+}
+
 int main(void)
 {
     RUN(on_the_carrier_one_hold_switches_port_pwm_and_5v_arms_and_starts);
@@ -515,5 +616,9 @@ int main(void)
     RUN(a_pd_mini_off_on_a_rail_fed_from_elsewhere_refuses_the_hold);
     RUN(a_pd_mini_set_low_is_red_behind_its_amber_output);
     RUN(a_pd_mini_off_past_6v_goes_on_only_through_the_hv_warning);
+    RUN(a_tap_on_a_red_zero_row_takes_the_zero_while_the_encoder_reads);
+    RUN(a_tap_on_a_met_row_opens_and_names_nothing);
+    RUN(port_pwm_on_with_the_5v_off_reads_amber_with_no_text_of_its_own);
+    RUN(a_run_under_way_keeps_the_angle_row_on_its_source_without_a_reading);
     return test_summary("servo_rauto_seq");
 }
