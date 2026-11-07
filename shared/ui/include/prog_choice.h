@@ -83,7 +83,8 @@ bool prog_choice_refusal(uint8_t port, char *buf, size_t cap);
 /**
  * @brief Whether the choice is locked: the SERVO TARGET rules (ARMED or
  *        asked to arm, a test, a sweep or a limit run, a session holding a
- *        port), an ARM asked for included (servo_screen_arm_asked()).
+ *        port), an ARM asked for included (servo_screen_arm_asked()), and
+ *        a finger on ARM before its hold fires (servo_screen_arm_held()).
  * @return true while locked
  */
 bool prog_choice_locked(void);

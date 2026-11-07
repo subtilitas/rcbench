@@ -12,6 +12,7 @@
  * - a_pick_sets_the_target_asks_for_a_save_and_closes_the_list
  * - under_the_target_lock_port_opens_nothing_and_says_why
  * - a_lock_after_the_list_opened_takes_no_pick
+ * - a_finger_on_arm_locks_port_until_it_lifts
  *
  * SPDX-License-Identifier: MIT
  */
@@ -173,6 +174,38 @@ TEST_CASE(a_lock_after_the_list_opened_takes_no_pick)
     settings_set_hold(NULL);
 }
 
+/* A second finger while ARM is held and its hold has not fired: PORT
+ * opens nothing, and a list already open takes no pick, so the hold arms
+ * the output shown when it began.  With ARM let go both work again. */
+TEST_CASE(a_finger_on_arm_locks_port_until_it_lifts)
+{
+    fresh();
+    tap_port();
+    CHECK_EQ(servo_screen_port_choices(), 1 + (int)LINK_PG_PORTS_MAX);
+    arm_press();
+    hold_for(0.5f);
+    CHECK(servo_screen_arm_held());
+    CHECK(prog_choice_locked());
+    const gfx_rect_t r = servo_screen_port_choice_rect(3);
+    ev(r.x + r.w / 2, r.y + r.h / 2, TOUCH_EVENT_DOWN, 2);
+    ev(r.x + r.w / 2, r.y + r.h / 2, TOUCH_EVENT_UP, 2);
+    CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 0);
+    arm_release();
+    CHECK(!servo_screen_arm_held());
+
+    fresh();
+    ui_router_set_alert(NULL);
+    arm_press();
+    hold_for(0.5f);
+    ev(SV_PORT_X, SV_PORT_Y, TOUCH_EVENT_DOWN, 2);
+    ev(SV_PORT_X, SV_PORT_Y, TOUCH_EVENT_UP, 2);
+    CHECK_EQ(servo_screen_port_choices(), -1);
+    CHECK_STR_EQ(alert(), TR(OUT_PORT_LOCKED));
+    arm_release();
+    tap_port();
+    CHECK_EQ(servo_screen_port_choices(), 1 + (int)LINK_PG_PORTS_MAX);
+}
+
 int main(void)
 {
     RUN(port_opens_outputs_and_four_ports_over_the_left_card);
@@ -180,5 +213,6 @@ int main(void)
     RUN(a_pick_sets_the_target_asks_for_a_save_and_closes_the_list);
     RUN(under_the_target_lock_port_opens_nothing_and_says_why);
     RUN(a_lock_after_the_list_opened_takes_no_pick);
+    RUN(a_finger_on_arm_locks_port_until_it_lifts);
     return test_summary("servo_port_button");
 }
