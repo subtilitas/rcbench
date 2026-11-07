@@ -28,7 +28,7 @@ KST and HITEC are grey while the IOmcu lacks their capability or another session
 
 The home tag goes from a function screen to the hub, and from the hub to the menu. Leaving a function screen switches the bench to SAFE. The PROG 5V on the carrier stays on from one SERVO screen to another and goes off when SERVO is left; on the hub the footer reads `PROG 5V ON` in the warning colour while it is on.
 
-Every function screen shows the output card on the right, the same on every screen: the PORT button, the meter line and plot, the supply line, SPEED, the type, CENTRE, SWEEP and RELEASE. The footer holds the function's name with the port line, ARM, and SETTINGS for the screen's list; LIVE has no list. Every control is 48px (7.2mm) tall or taller. The rotary knob moves the horn on LIVE, SWEEP, RUDDER and RUDDER AUTO only.
+LIVE, SWEEP and RUDDER show the PORT button and READY's rows on the right, with the controls under them. TEST, LIMIT RUN, KST and HITEC show the output card there: the PORT button, the meter line and plot, the supply line, SPEED, the type, CENTRE, SWEEP and RELEASE. The footer holds the function's name with the port line, ARM, and SETTINGS for the screen's list; LIVE has no list. Every control is 48px (7.2mm) tall or taller. The rotary knob moves the horn on LIVE, SWEEP, RUDDER and RUDDER AUTO only.
 
 ## At rest
 
@@ -44,24 +44,39 @@ LIVE's readings, along the foot of the left card:
 | MEASURED | angle from the selected AS5600 or IMU source, -180.0 to +179.9°; the AS5600 must be enabled and see its magnet; `---` without a reading |
 | CURRENT | servo-rail current from the active meter, in hundredths of an amp |
 
-The right card, from the top:
+LIVE's right card, from the top:
 
 | Row | Shows |
 |---|---|
-| PORT | what the tester drives, `protocol pins`: `SERVO PWM GPIO 2`, `PROG PORT 1 GPIO 13`, or a warning; a tap opens the list where it is picked ([the PORT button](servo-settings.md#the-port-button)) |
-| type row | the servo type, frame rate and pulse range in force: `STANDARD PWM  50Hz  1000-2000` |
-| meter line and plot | voltage, current and power of the rail, plotted over the last 17.8s |
-| SET | the supply's voltage and current limit, and its output switch |
+| PORT button | what the tester drives, `protocol pins`: `SERVO PWM GPIO 2`, `PROG PORT 1 GPIO 13`, or a warning; a tap opens the list where it is picked ([the PORT button](servo-settings.md#the-port-button)) |
+| READY | one row per check: PORT, SUPPLY and ARM; RUDDER adds ANGLE and ZERO |
 | SPEED | the rate the bench may move the output, 100% passes the command straight through |
+| type pill | the servo type, frame rate and pulse range in force: `STANDARD PWM  50Hz  1000-2000` |
+| CENTRE, RELEASE | SWEEP shows SWEEP and RELEASE |
+| rail line | the servo rail's meter on the left, its volts and amps on the right: `6.00V  0.120A` |
+
+A READY row's dot and state are green when met, amber when ARM does it or it needs a look, and red when it refuses ARM. A tap fixes the row where it can, or names it in the alert band.
+
+| Row | Reads |
+|---|---|
+| PORT | the port line. On a programming port with PORT PWM off, amber: ARM switches PORT PWM on |
+| SUPPLY | what feeds the servo: PROG 5V on the carrier's programming port, PD MINI where a PD mini answers, SUPPLY where none does. `ARM SWITCHES IT ON` while SAFE and off; `ON` or `ON 6.00V` in red while it feeds the servo; `FED FROM ELSEWHERE` when the rail reads 3.0V or more with the PD mini off; `EXTERNAL` when no PD mini answers; `TAP: HV WARNING` past 6.0V |
+| ANGLE, RUDDER | the angle source; `ANGLE SOURCE: NO READING` opens its settings on a tap |
+| ZERO, RUDDER | `SET`; `SET ZERO WITH THE SURFACE AT NEUTRAL` takes the zero on a tap |
+| ARM | `HOLD 2s`, `ARM ASKED` while ARM's steps run, `ARMED` in red; red with the reason while a programmer or a run keeps ARM from the bench |
 
 ## ARMED
 
 ![SERVO while ARMED SERVO](view:servo-armed)
 
-1. Hold ARM for 2s. The band then shows ARMED SERVO, and the button reads DISARM.
+1. Hold ARM for 2s. On LIVE, SWEEP and RUDDER the hold first switches on what reads off: PORT PWM on a programming port, then PROG 5V or the PD mini's output. It waits up to 1000ms for them to read back, then up to 500ms for ARMED. The band then shows ARMED SERVO, and the button reads DISARM.
 2. On LIVE, drag anywhere on the sweep to command a position. The solid arm is the measured position, the faint arm the commanded one.
 3. Lifting the finger does not let go: the screen repeats the last position, so the servo stays where it was put.
-4. Tap DISARM, press STOP or leave the screen to switch to SAFE.
+4. Tap DISARM, press STOP or leave the screen to switch to SAFE. On LIVE, SWEEP and RUDDER, DISARM and STOP also switch PROG 5V and the PD mini's output off. A leave switches the PD mini off; PROG 5V stays on between SERVO screens.
+
+While ARM's steps run the button reads the step in amber, for example `START, STEP 3 OF 5: READ-BACK`. A tap on it stops them with every output off. A step that fails switches every output off and names itself in the band, for example `PROG 5V FAILED: NO READ-BACK IN 1000ms`.
+
+ARM never switches the PD mini on past 6.0V: the SUPPLY row then reads `TAP: HV WARNING` in red, and a tap opens HV SERVOS ONLY. ARM also leaves the PD mini off when an INA3221 reads the rail at 3.0V or more with the PD mini off. Without an INA3221 window on the rail nothing reads it, and ARM switches the PD mini on.
 
 ARMED SERVO drives the servo outputs and a pulsing PROG PORT. Throttle outputs get no pulse.
 
@@ -79,7 +94,7 @@ Switching to ARMED sets the commanded position to the midpoint between the chann
 
 ## The servo rail's meter
 
-The line over the plot names the meter of the servo rail:
+The rail line on LIVE, SWEEP and RUDDER, and the line over the plot on the other function screens, name the meter of the servo rail:
 
 | Name | Meter |
 |---|---|
@@ -93,30 +108,30 @@ The INA3221 becomes the meter after its requirements have held for 1000ms: a fit
 
 ![The panel's supply model as the meter, with the SIMULATED pill](view:servo-model)
 
-While the PD mini is disabled in SUPPLY's PD mini settings the supply is the panel's model, and a SIMULATED pill sits on the plot. Its readings are simulated, not measured.
+While the PD mini is disabled in SUPPLY's PD mini settings the supply is the panel's model: a SIMULATED pill sits on the plot, and SIMULATED follows the name on the rail line. Its readings are simulated, not measured.
 
 A reading that did not arrive is `---` in LIVE's CURRENT, `--` on the line and a gap in the plot.
 
 ## The supply on SERVO
 
-The SET line holds the SUPPLY screen's two set points and its output switch. A change on either screen is the change on both.
+LIVE, SWEEP and RUDDER have the SUPPLY row and no SET line: ARM switches the supply on, DISARM switches it off. On TEST, LIMIT RUN, KST and HITEC the SET line holds the SUPPLY screen's two set points and its output switch. A change on either screen is the change on both.
 
 - A tap on a set point opens the keypad over the left card.
 - OUTPUT ON is a 2s hold, OUTPUT OFF a tap.
 - Leaving SERVO switches off an output SERVO switched on.
 - After a programmer's LEAVE that leaves the output on, SERVO asks whether the set points from before the session go back onto it ([Servo programmer](servo-programmer.md)). No other end of a port's hold asks: RELEASE PORT, a STOP, an error, a lost link or a restart leaves the session's set points until the next OFF.
 
-On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), PROG 5V replaces the plot below PD MINI. It controls the programming ports' separate 5V rail at GPIO 21, while SAFE or ARMED. Hold PROG 5V ON for 2s to switch it on; tap PROG 5V OFF to switch it off. The second line shows the latest INA3221 window from 0x40 CH3, for example `5.02V  0.120A`.
+On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), the PROG 5V box replaces the plot below PD MINI on TEST, LIMIT RUN, KST and HITEC; on LIVE, SWEEP and RUDDER the SUPPLY row reads PROG 5V and ARM switches it. It controls the programming ports' separate 5V rail at GPIO 21, while SAFE or ARMED. Hold PROG 5V ON for 2s to switch it on; tap PROG 5V OFF to switch it off. The second line shows the latest INA3221 window from 0x40 CH3, for example `5.02V  0.120A`.
 
-During a programming session it instead reads `HELD BY PROG PORT n` and accepts no press. Leaving SERVO switches off a rail enabled here unless a port holds it. SUPPLY shows the same control.
+During a programming session it instead reads `HELD BY PROG PORT n` and accepts no press. Leaving SERVO switches off a rail switched on here or by ARM unless a port holds it. SUPPLY shows the same control.
 
 While the box is ON, two windows below 3000mV indicate a 5V failure. One possible cause is a braking servo feeding energy back until M7 latches off on overvoltage. The bench switches to SAFE, all outputs switch off, and the band shows `PROG 5V lost: INA3221 0x40 CH3 read 0.12V while ON. All outputs off.` Use PROG 5V ON to switch it on again. This monitoring is inactive without an INA3221 channel watching PROG 5V or while a programmer holds a port.
 
-![SERVO on the carrier](view:servo-rbmod)
+![LIVE on the carrier: ARM switches PORT PWM and PROG 5V on](view:servo-rbmod)
 
 ![HV SERVOS ONLY](view:servo-hv)
 
-Standard servos are rated for 4.8 to 6.0V. A voltage raised from 6.0V or below to above 6.0V opens HV SERVOS ONLY. The voltage is applied after HOLD 2s TO APPLY is held; CANCEL drops it. OUTPUT ON with a set point above 6.0V opens the same warning.
+Standard servos are rated for 4.8 to 6.0V. A voltage raised from 6.0V or below to above 6.0V opens HV SERVOS ONLY. The voltage is applied after HOLD 2s TO APPLY is held; CANCEL drops it. OUTPUT ON with a set point above 6.0V opens the same warning, and so does a tap on LIVE's red SUPPLY row.
 
 ## SWEEP and PAUSE
 

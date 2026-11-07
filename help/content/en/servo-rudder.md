@@ -6,7 +6,7 @@ order: 23
 
 # Rudder deflection
 
-RUDDER on the [SERVO](servo.md) hub drives one servo and displays control-surface deflection. It shows degrees from a zero point and, when the surface length is entered, millimetres at the trailing edge. ANGLE SOURCE on [Sensors](setup-sensors.md) selects the AS5600 output encoder or IMU. Like MEASURED on LIVE, the reading is signed in the direction of the commanded angle. The output card remains on the right: PORT identifies the driven output. ARM in the footer determines whether it can move.
+RUDDER on the [SERVO](servo.md) hub drives one servo and displays control-surface deflection. It shows degrees from a zero point and, when the surface length is entered, millimetres at the trailing edge. ANGLE SOURCE on [Sensors](setup-sensors.md) selects the AS5600 output encoder or IMU. Like MEASURED on LIVE, the reading is signed in the direction of the commanded angle. The right card shows the PORT button and READY's rows: PORT, ANGLE, ZERO, SUPPLY and ARM. ARM in the footer switches PORT PWM and the supply on where they read off, then arms ([SERVO, ARMED](servo.md#armed)).
 
 ![RUDDER while SAFE](view:servo-rudder)
 

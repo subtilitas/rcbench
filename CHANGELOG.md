@@ -108,6 +108,23 @@ history is in git.
   nothing and takes no pick, and TARGET, PORT PWM and SETTINGS are locked.
   While any of SERVO's holds has its finger down, the READY card takes no
   tap.
+- LIVE, SWEEP and RUDDER show READY rows in the output card's place:
+  PORT, SUPPLY and ARM, and on RUDDER ANGLE and ZERO between PORT and
+  SUPPLY. SPEED, the type pill and the buttons sit under the rows (CENTRE
+  and RELEASE on LIVE, SWEEP and RELEASE on SWEEP), the rail line with the
+  meter's volts and amps at y 404. The SET row, the plot and the PROG 5V
+  box leave these screens; TEST, LIMIT RUN, KST and HITEC keep them.
+- ARM on LIVE, SWEEP and RUDDER switches on what reads off before it arms:
+  PORT PWM on a programming port, then PROG 5V on the carrier or the PD
+  mini's output, through the steps of RUDDER AUTO's start (read-back
+  within 1000ms, ARMED within 500ms). Its hint reads
+  `Hold 2s: the port and its supply go on, then ARM.` and it flashes 300ms
+  as it fires. ARM leaves the PD mini off past 6.0V, where the red SUPPLY
+  row opens OUTPUT ON's HV warning on a tap, and beside a rail an INA3221
+  reads at 3.0V or more with the PD mini off. DISARM, STOP and a failed step
+  switch every output off; PROG 5V stays on between SERVO screens.
+- The rail line under a READY card reads SIMULATED after the meter's name
+  while the panel's model is the supply.
 
 - The panel sets the Bluetooth IMU's output content register RSW (0x02) to
   0x0C: angle (0x53) and angular rate with the battery (0x52), 2 frames a

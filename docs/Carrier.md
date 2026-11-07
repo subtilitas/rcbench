@@ -99,9 +99,18 @@ on every board; it switches it off at once. A PROG 5V switched on while
 ARMED leaves the pulse off until the next SAFE: the limit run then reads
 `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM`.
 
-PORT PWM is on OUTPUTS, the PROG 5V box on SERVO and SUPPLY. A PROG 5V
-switched on from SERVO stays on from one SERVO screen to another, the hub
-included. Leaving SERVO switches it off.
+PORT PWM is on OUTPUTS. The PROG 5V box is on SUPPLY and on SERVO's
+TEST, LIMIT RUN, KST and HITEC. A PROG 5V switched on from SERVO stays on
+from one SERVO screen to another, the hub included. Leaving SERVO switches
+it off.
+
+On LIVE, SWEEP and RUDDER the READY card's PORT and SUPPLY rows read
+`ARM SWITCHES IT ON` in amber while SAFE with PORT PWM or PROG 5V off.
+ARM's 2s hold then switches PORT PWM ON and PROG 5V ON, waits up to 1000ms
+for both to read back, arms and waits up to 500ms for ARMED. A step that
+fails names itself in the alert band and switches every output off. DISARM
+switches the bench to SAFE and PROG 5V off
+([Servo: ARM switches the supply](Servo.md#arm-switches-the-supply-on-live-sweep-and-rudder)).
 
 RUDDER AUTO needs no step by hand: its HOLD 2s: ARM + START, from SAFE,
 switches PORT PWM ON, then PROG 5V ON, waits up to 1000ms for the PROG 5V,
@@ -238,7 +247,7 @@ Current limitations:
 
 ![SUPPLY on the carrier](img/supply-rbmod.png)
 
-![SERVO on the carrier, the PROG 5V box under PD MINI](img/servo-rbmod.png)
+![LIVE on the carrier: PORT PWM and PROG 5V amber, ARM switches them on](img/servo-rbmod.png)
 
 ![The KST programmer holding the 5V](img/servo-kst-rbmod.png)
 
