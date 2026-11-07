@@ -19,6 +19,8 @@
  * - save_is_offered_for_a_change_and_asks_for_the_write
  * - the_warning_holds_an_unsaved_change_and_discard_restores_it
  * - a_locked_row_takes_no_press_and_says_why
+ * - a_discard_brings_supplys_limits_back_from_any_list
+ * - a_pulse_step_keeps_the_throttle_gap
  *
  * SPDX-License-Identifier: MIT
  */
@@ -28,7 +30,9 @@
 
 #include "greatest.h"
 
+#include "link_pages.h"
 #include "settings.h"
+#include "supply_screen.h"
 #include "ui_keypad.h"
 #include "ui_screen.h"
 #include "ui_setlist.h"
@@ -133,6 +137,10 @@ static void fresh(bool headings)
     ui_text_set_language(UI_LANG_EN);
     settings_set_store(NULL);
     settings_init();
+    /* SUPPLY's caps, so its limits take the settings as they are. */
+    const supply_caps_t caps = SUPPLY_CAPS_PPS_DEFAULT;
+    supply_screen_set_caps(&caps);
+    supply_screen_limits_changed();
     s_steps = 0;
     s_taps = 0;
     s_picked = -1;
@@ -388,6 +396,71 @@ TEST_CASE(the_warning_holds_an_unsaved_change_and_discard_restores_it)
     settings_cancel_save();
 }
 
+/*
+ * SUPPLY's cap edited and left unsaved, then DISCARD in another list:
+ * the store and SUPPLY's limits, which the control task's levels are
+ * published from, both go back to the stored 21.00V.
+ */
+TEST_CASE(a_discard_brings_supplys_limits_back_from_any_list)
+{
+    fresh(true);
+    supply_screen_limits_changed();
+    CHECK_NEAR(supply_screen_limits().v_max, 21.0f, 1e-4f);
+    settings_set(SET_SUPPLY_V_MAX, 10.0f);
+    supply_screen_limits_changed();
+    CHECK_NEAR(supply_screen_limits().v_max, 10.0f, 1e-4f);
+    CHECK(ui_setlist_warn(&sl));
+    tap_rect(ui_setlist_strip_rect(1));          /* DISCARD */
+    CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 21.0f, 1e-4f);
+    CHECK_NEAR(supply_screen_limits().v_max, 21.0f, 1e-4f);
+}
+
+/** The throttle pair's list: Idle pulse, then Full pulse. */
+static const ui_setlist_row_t k_pulse_rows[] = {
+    UI_SL_ROW_SETTING(SET_OUT_MIN_US),
+    UI_SL_ROW_SETTING(SET_OUT_MAX_US),
+};
+static int pulse_count(void) { return 2; }
+static ui_setlist_row_t pulse_row(int i)
+{
+    return ui_setlist_table_row(k_pulse_rows, 2, i);
+}
+
+/*
+ * At 1400/1500us a "+" on Idle pulse or a "-" on Full pulse would close
+ * the 100us gap the keypad and the IOmcu hold: the pair stays.  From
+ * 1380/1500us a held "+" on Idle pulse stops at 1400us.
+ */
+TEST_CASE(a_pulse_step_keeps_the_throttle_gap)
+{
+    fresh(false);
+    const ui_setlist_host_t host = {
+        .count = pulse_count, .row = pulse_row, .name = host_name,
+    };
+    ui_setlist_init(&sl, &host);
+    ui_setlist_open(&sl);
+    settings_set(SET_OUT_MAX_US, 1500.0f);
+    settings_set(SET_OUT_MIN_US, 1400.0f);
+    tap_part(0, UI_SL_PART_PLUS);
+    CHECK_EQ(settings_get_int(SET_OUT_MIN_US), 1400);
+    tap_part(1, UI_SL_PART_MINUS);
+    CHECK_EQ(settings_get_int(SET_OUT_MAX_US), 1500);
+    tap_part(1, UI_SL_PART_PLUS);
+    CHECK_EQ(settings_get_int(SET_OUT_MAX_US), 1510);
+    settings_set(SET_OUT_MAX_US, 1500.0f);
+    settings_set(SET_OUT_MIN_US, 1380.0f);
+    const gfx_rect_t p = ui_setlist_row_part(&sl, 0, UI_SL_PART_PLUS);
+    ev(p.x + p.w / 2, p.y + p.h / 2, TOUCH_EVENT_DOWN);
+    for (int k = 0; k < 40; ++k) {
+        ui_setlist_tick(&sl, 0.05f);
+    }
+    ev(p.x + p.w / 2, p.y + p.h / 2, TOUCH_EVENT_UP);
+    CHECK_EQ(settings_get_int(SET_OUT_MIN_US), 1400);
+    CHECK(settings_get_int(SET_OUT_MIN_US) + (int)LINK_CC_THROTTLE_GAP_US
+          <= settings_get_int(SET_OUT_MAX_US));
+    ui_setlist_init(&sl, &s_host);
+}
+
 TEST_CASE(a_locked_row_takes_no_press_and_says_why)
 {
     fresh(true);
@@ -423,5 +496,7 @@ int main(void)
     RUN(save_is_offered_for_a_change_and_asks_for_the_write);
     RUN(the_warning_holds_an_unsaved_change_and_discard_restores_it);
     RUN(a_locked_row_takes_no_press_and_says_why);
+    RUN(a_discard_brings_supplys_limits_back_from_any_list);
+    RUN(a_pulse_step_keeps_the_throttle_gap);
     return test_summary("setlist");
 }
