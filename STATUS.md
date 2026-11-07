@@ -524,6 +524,12 @@ SAFE with the supply's output off, a STOP through the screen's own path, and `RU
 and `RUDDRnnn.CSV` (`test_servo_rauto`, `test_servo_rauto_guard` on the core with a linear
 servo model, `test_servo_rauto_kst` through the screen and the programmer on the modelled
 KST servo, `test_servo_rauto_panel`; host suite only).
+Its READY card (`shared/ui/servo_rudder_auto_ready.c`, `shared/ui/servo_ready.c`) gives
+each check of the start gate one row, and the footer's HOLD 2s: ARM + START runs
+`shared/servo/servo_start_seq.c`: PORT PWM, PROG 5V or the PD mini, the read-back within
+1000ms, ARM, ARMED within 500ms, the run; a failed step names itself in the alert band
+and switches every output off (`test_servo_start_seq`, `test_servo_ready`,
+`test_servo_rauto_seq`, `test_prog5v_servo`; host suite only).
 
 AUTO and the LIMIT RUN program a Hitec servo through the Hitec programmer's run seam when
 the LIMIT RUN settings' SERVO row reads HITEC, LEFT END and RIGHT END in counts from 0xC2 on
@@ -1265,7 +1271,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 490 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 493 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1378,7 +1384,7 @@ The host suite is 490 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_imu`, `test_imu_filter`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_kst`,
-`test_servo_rauto_panel`,
+`test_servo_rauto_panel`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_start_seq`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_rudder_flap`, `test_rudder_flap_view`.
 

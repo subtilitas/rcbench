@@ -1591,7 +1591,7 @@ des Ausgangsfelds: zehn Zeilen von 30px ab y 96, jede mit Punkt,
 Bezeichnung von 13 Zellen und Zustand von 20, und die Schienenzeile bei y
 404. Die Mitte seiner Fußleiste ist 2s HALTEN: ARM + START, das PORT-PWM
 und die Versorgung einschaltet, auf ihre Rückmeldung wartet, ARM schaltet
-und den Lauf in einem Halten startet ([Servo: AUTO-Endpoints](Servo-de.md#ablauf)).
+und den Lauf in einem Halten startet ([Servo: AUTO-Endpoints](Servo-de.md#auto-endpoints)).
 Nichts vom Ausgangsfeld nimmt auf RUDER AUTO einen Druck an.
 
 ![RUDER AUTO auf dem rbmod-Carrier, die Folge ARM + START wartet auf die Rückmeldung von PROG 5V](img/de/servo-rudder-auto-start-rbmod.png)

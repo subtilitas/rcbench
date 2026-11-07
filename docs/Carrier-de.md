@@ -110,7 +110,7 @@ RUDER AUTO braucht keinen Schritt von Hand: sein 2s HALTEN: ARM + START
 schaltet bei SAFE PORT-PWM EIN, dann PROG 5V EIN, wartet bis zu 1000ms auf
 die Rückmeldung EIN von PROG 5V und dem Puls des Ports, schaltet ARM,
 wartet bis zu 500ms auf ARMED und startet den Lauf
-([Servo: AUTO-Endpoints](Servo-de.md#ablauf)). Seine Karte BEREIT zeigt
+([Servo: AUTO-Endpoints](Servo-de.md#auto-endpoints)). Seine Karte BEREIT zeigt
 bei SAFE `START SCHALTET EIN` auf den Zeilen PROG 5V und PORT-PWM. Ein
 fehlgeschlagener Schritt nennt sich im Alarmband und endet mit dem
 Prüfstand SAFE, PROG 5V aus.

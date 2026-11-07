@@ -1477,7 +1477,7 @@ card's place: ten rows of 30px from y 96, each a dot, a label of 13 cells
 and a state of 20, and the rail line at y 404. Its footer's middle slot is
 HOLD 2s: ARM + START, which switches PORT PWM and the supply on, waits for
 their read-back, arms and starts the run in one hold
-([Servo: AUTO end points](Servo.md#running-it-1)). Nothing of the output
+([Servo: AUTO end points](Servo.md#auto-end-points)). Nothing of the output
 card takes a press on RUDDER AUTO.
 
 ![RUDDER AUTO on the rbmod carrier, the ARM + START sequence waiting for the PROG 5V's read-back](img/servo-rudder-auto-start-rbmod.png)

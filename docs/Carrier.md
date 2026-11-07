@@ -106,7 +106,7 @@ included. Leaving SERVO switches it off.
 RUDDER AUTO needs no step by hand: its HOLD 2s: ARM + START, from SAFE,
 switches PORT PWM ON, then PROG 5V ON, waits up to 1000ms for the PROG 5V
 and the port's pulse to read back ON, arms, waits up to 500ms for ARMED and
-starts the run ([Servo: AUTO end points](Servo.md#running-it-1)). Its READY
+starts the run ([Servo: AUTO end points](Servo.md#auto-end-points)). Its READY
 card reads `START SWITCHES IT ON` on the PROG 5V and PORT PWM rows while
 SAFE. A step that fails names itself in the alert band and ends with the
 bench SAFE, PROG 5V off.
