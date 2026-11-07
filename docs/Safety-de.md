@@ -510,8 +510,26 @@ was immer im Register ARM steht.
 | Ein abgewiesenes ARM | ein ARM, das mit NOT_ARMED beantwortet wurde; ein CLEAR mit anschließend abgewiesenem ARM lässt den Latch also gesetzt |
 
 Eines löscht ihn: das Schreiben von 0x5AFE in CLEAR auf der Control-Page.
-Das Panel schreibt CLEAR an einer Stelle, beim Schalten auf ARMED, das eine Person
-durch 2s Halten von ARM vollendet. Das ARM, das das Panel bei jedem
+Dasselbe Schreiben verlässt den Link-Failsafe (FEHLER 01). Den Fehler des
+Heartbeat (FEHLER 10) berührt es nicht; der erlischt erst, wenn die Leitung
+wieder Flanken zeigt. Das Panel schreibt CLEAR an drei Stellen, jede ein
+2s-Halten einer Person:
+
+| Schreibt | Bedingung |
+| --- | --- |
+| Das Schalten auf ARMED | ARM 2s gehalten; CLEAR, sobald der IOmcu dem Heartbeat vertraut, dann der Frame, der scharf schaltet |
+| Das Zurücksetzen von STOP | der STOP-Latch gelöst und der IOmcu meldet alle Ausgänge aus ([STOP als Not-Aus](Stop-de.md)) |
+| FAILSAFE LÖSEN, der erste der Schritte von ARM auf SERVO | ARM oder ARM + START 2s gehalten bei SAFE, während STATUS FEHLER 01 und nicht FEHLER 10 zeigt; nicht bei gedrücktem STOP, bei einem Programmierer, der einen Port hält, und ohne Link. FEHLER 01 muss innerhalb von 500ms erlöschen (`SERVO_SEQ_CLEAR_MS`), sonst enden die Schritte mit allen Ausgängen aus |
+
+FAILSAFE LÖSEN gibt es, weil der IOmcu in seinem Failsafe jedes ON einer
+Versorgung abweist und die Schritte von ARM PROG 5V oder den PD mini
+einschalten, bevor sie scharf schalten. Es schreibt kein ARM. Jeder Ausgang
+braucht weiter sein eigenes ON oder ARM. Host-getestet in
+`test_servo_start_seq`, `test_servo_drive_ready` und
+`test_servo_rauto_seq`; das Schreiben von CLEAR im Panel ist nicht
+host-getestet.
+
+Das ARM, das das Panel bei jedem
 Poll alle 50ms einer Bank in ARMED schreibt, trägt kein CLEAR und bringt
 einen IOmcu mit gesetztem Latch daher nie zurück.
 

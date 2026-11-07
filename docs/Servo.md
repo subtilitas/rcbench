@@ -1550,6 +1550,7 @@ The start sequence, each step a state line and the hold's label:
 
 | Step | Does | Ends with |
 | --- | --- | --- |
+| FAILSAFE CLEAR | CLEAR to the IOmcu, where STATUS shows FAULT 01 and not FAULT 10 at the hold: the write ARM makes before it arms, with the bench SAFE ([Arm latch](Safety.md#arm-latch)). Shown as step 1 only then | FAULT 01 clear within 500ms; still set at 500ms fails the step |
 | 1 PORT PWM | PORT PWM ON, saved, where the target is a PROG PORT and the setting is OFF | at once |
 | 2 PROG 5V or PD MINI | PROG 5V ON on the rbmod carrier's port; the PD mini's OUTPUT ON where it feeds the servo, at SUPPLY's SET V and SET A | at once |
 | 3 READ-BACK | waits until PROG 5V or the PD mini's output reads back ON, then PORT PWM's bit on the IOmcu (the panel sets it only while SAFE; the pulse itself runs only while ARMED), then for an INA3221 window that began after both. The rows are judged on that window | 1000ms from step 2 for all three; a part that does not read back fails the step, and so does one that reads back only after the 1000ms |
@@ -1559,7 +1560,10 @@ The start sequence, each step a state line and the hold's label:
 A part that reads ON already is not asked again: a bench set up by hand
 runs the same steps. A failed step names itself in the alert band and on
 the first line, `PROG 5V FAILED: NO READ-BACK IN 1000ms`, `ARM FAILED:
-NOT ARMED IN 500ms`, `<step> FAILED: <reason>` for a row that turns red on
+NOT ARMED IN 500ms`, `FAILSAFE CLEAR FAILED: STILL LATCHED AFTER 500ms`,
+`Supply refused to switch on: IOmcu failsafe latched. Hold ARM, then
+DISARM.` at once where FAULT 10, or a FAULT 01 read after the supply's
+ON, refuses PROG 5V or the PD mini, `<step> FAILED: <reason>` for a row that turns red on
 the way, `<step> FAILED: STOP` for a tap on the hold, a STOP or a touch
 loss. A red row names the step of its own part: a supply row names PROG
 5V or PD MINI, `PROG 5V FAILED: PROGRAMMING: SERVO RAIL BELOW 4.8V` for a

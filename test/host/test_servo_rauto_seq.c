@@ -28,6 +28,7 @@
  * - a_tap_on_a_met_row_opens_and_names_nothing
  * - port_pwm_on_with_the_5v_off_reads_amber_with_no_text_of_its_own
  * - a_run_under_way_keeps_the_angle_row_on_its_source_without_a_reading
+ * - a_latched_failsafe_is_cleared_and_the_hold_reaches_the_run
  *
  * SPDX-License-Identifier: MIT
  */
@@ -599,6 +600,59 @@ TEST_CASE(a_run_under_way_keeps_the_angle_row_on_its_source_without_a_reading)
     carrier_done();
 }
 
+/* The station's case on the rbmod carrier: the IOmcu's failsafe latched
+ * (FAULT 01) after a panel-only restart, SAFE, PORT PWM and PROG 5V off.
+ * One hold: CLEAR, then PORT PWM, PROG 5V ON taken and read back, ARMED
+ * and the run.  The 5V's ON is never asked in the failsafe.  With an IOmcu
+ * that does not take the CLEAR the steps fail at FAILSAFE CLEAR instead,
+ * the 5V never asked, and the first line and the band name it. */
+TEST_CASE(a_latched_failsafe_is_cleared_and_the_hold_reaches_the_run)
+{
+    char b[128], want[128], cause[64];
+    for (int dead = 0; dead < 2; ++dead) {
+        carrier_safe_off(40u);
+        ra.latched = true;
+        ra.clear_dead = dead != 0;
+        ra_faults();
+        ra_ms(100u);
+        CHECK(rauto_hold_blocked(NULL) == NULL);
+        ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 1);
+        for (int i = 0; i < 150 && !svs_seq_busy(); ++i) {
+            ra_ms(20u);
+        }
+        CHECK(svs_seq_busy());
+        ra_ms(460u);
+        CHECK(dead == 0 || svs_seq_busy());   /* 500ms for the CLEAR */
+        ra_ms(140u);
+        ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 1);
+        ra_ms(20u);
+        CHECK_EQ(ra.clears, 1u);
+        CHECK_EQ(ra.refused, 0u);
+        if (!dead) {
+            CHECK(servo_screen_rauto_running());
+            CHECK(prog5v_box_on());
+            CHECK_EQ(ra.p5_ons, 1u);
+            CHECK_EQ(ra.arms, 1u);
+            CHECK(svs_seq_failure() == NULL);
+            rauto_end_now(SERVO_TEST_AB_OPERATOR);
+        } else {
+            CHECK(!servo_screen_rauto_running());
+            CHECK(!svs_seq_busy());
+            CHECK_EQ(ra.p5_ons, 0u);
+            CHECK_EQ(ra.arms, 0u);
+            snprintf(cause, sizeof(cause), TR(SQ_STILL_LATCHED), 500u);
+            snprintf(want, sizeof(want), TR(SQ_FAILED), TR(SQ_CLEAR), cause);
+            CHECK_STR_EQ(rauto_line(0, b, sizeof(b)), want);
+            CHECK_STR_EQ(ui_router_alert(), want);
+        }
+        ra_ms(2000u);
+        ra.latched = ra.clear_dead = false;
+        ra_faults();
+        ra.p5_task = false;
+        carrier_done();
+    }
+}
+
 int main(void)
 {
     RUN(on_the_carrier_one_hold_switches_port_pwm_and_5v_arms_and_starts);
@@ -620,5 +674,6 @@ int main(void)
     RUN(a_tap_on_a_met_row_opens_and_names_nothing);
     RUN(port_pwm_on_with_the_5v_off_reads_amber_with_no_text_of_its_own);
     RUN(a_run_under_way_keeps_the_angle_row_on_its_source_without_a_reading);
+    RUN(a_latched_failsafe_is_cleared_and_the_hold_reaches_the_run);
     return test_summary("servo_rauto_seq");
 }

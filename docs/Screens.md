@@ -124,7 +124,7 @@ The FAULT box names each bit, its code and what it means:
 
 | Code | Bit | Set by this release |
 | --- | --- | --- |
-| 01 | LINK_SILENT | the IOmcu heard no request for 200ms; stays until the next arm or the IOmcu's next start |
+| 01 | LINK_SILENT | the IOmcu heard no request for 200ms; stays until the next arm, ARM's or ARM + START's FAILSAFE CLEAR on SERVO, STOP's reset or the IOmcu's next start |
 | 02 | OVERCURRENT | never |
 | 04 | OVERTEMP | never |
 | 08 | STALL | never |
@@ -1667,6 +1667,18 @@ tap on it ends them all off. A step that
 fails switches every output off and names itself in the alert band, for
 example `PROG 5V FAILED: NO READ-BACK IN 1000ms`. Where
 nothing reads off, the hold arms at once.
+
+The IOmcu refuses every supply's ON while its failsafe is latched (FAULT
+01, for example after a panel-only restart). Where the band shows FAULT
+01 and no FAULT 10 at the hold, the steps begin with FAILSAFE CLEAR: the
+panel writes CLEAR, the write ARM makes before it arms, with the bench
+SAFE, and reads STATUS again. FAULT 01 has to read clear within 500ms;
+otherwise the steps end all off with `FAILSAFE CLEAR FAILED: STILL
+LATCHED AFTER 500ms`. FAILSAFE CLEAR lifts only what ARM's own CLEAR
+lifts. FAULT 10, a pressed STOP and a programmer that holds a port stay.
+With FAULT 10, or a FAULT 01 read after the supply's ON, the steps end at
+once with `Supply refused to switch on: IOmcu failsafe latched. Hold ARM,
+then DISARM.` and wait for no read-back.
 
 ARM leaves the PD mini off where its set point is past 6.0V: only OUTPUT
 ON's HV warning switches that on, and a tap on the red SUPPLY row opens
@@ -5800,7 +5812,8 @@ band's LINK), the screen offers RECONNECT:
   right column keeps the test's counts.
 - RECONNECT clears nothing. A STOP that stands stays, and so does the FAULT
   chip. FAULT 01 (`LINK_SILENT`: the IOmcu received no data for 200ms and
-  switched itself to SAFE) clears at the next ARM. After RECONNECT the band
+  switched itself to SAFE) clears at the next ARM, or at FAILSAFE CLEAR,
+  the first of ARM's steps on SERVO. After RECONNECT the band
   shows SAFE, LINK and BENCH, and STOP or FAULT 01 where either stands.
 - An acknowledgement while the link is silent ends the screen for that
   outage. The screen opens again only after the link has answered and then

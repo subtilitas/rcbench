@@ -616,6 +616,35 @@ static void apply_motor_cmd(const motor_cmd_t *mc, bool link_up,
 }
 
 /*
+ * ARM + START's FAILSAFE CLEAR (servo_start_seq.h): CLEAR written once
+ * while SAFE, the same write as ARM's own CLEAR (ARMING_HS_GO), so it lifts
+ * what that lifts -- the IOmcu's link failsafe and its arm latch
+ * (link_dev_clear_failsafe()) -- and nothing more.  It arms nothing: ARM
+ * stays 0 and each output still needs its own ON or ARM.  Not without a
+ * link, not while a pressed STOP stands or a programmer holds a port (an
+ * ARM is refused then too), and not while the IOmcu distrusts the
+ * heartbeat: ARM writes its CLEAR only once the line is trusted, and a
+ * CLEAR does not lift FAULT 10.  STATUS is read straight after, so the
+ * screens see the failsafe go within a frame rather than at the next 500ms
+ * read.  A CLEAR not written leaves the steps to fail at
+ * SERVO_SEQ_CLEAR_MS (500ms).
+ */
+static void apply_clear_cmd(bool link_up)
+{
+    if (!link_up || arming_held(&s_arm) || s_prog_taken) {
+        return;
+    }
+    bool answered = false;
+    if (far_line_trusted(&answered)) {
+        link_msg_t ack = { 0 };
+        (void)control_clear_failsafe(&ack);
+    }
+    if (answered) {
+        far_end_status_now();
+    }
+}
+
+/*
  * What the screens asked for, in the order they asked it.
  *
  * The screens run on app_main and the link belongs to this task, so a command
@@ -662,9 +691,10 @@ void drain_commands(bool link_up, bench_state_t *bench)
          * Only what drives.  A disarm, a release or a binding asked for
          * before the stop still means what it meant.
          */
-        const bool drives = (pc.kind == PANEL_CMD_MOTOR
-                             && (pc.motor.kind == MOTOR_CMD_ARM
-                                 || pc.motor.kind == MOTOR_CMD_THROTTLE))
+        const bool drives = pc.kind == PANEL_CMD_CLEAR
+                            || (pc.kind == PANEL_CMD_MOTOR
+                                && (pc.motor.kind == MOTOR_CMD_ARM
+                                    || pc.motor.kind == MOTOR_CMD_THROTTLE))
                             || (pc.kind == PANEL_CMD_SERVO
                                 && (pc.servo.kind == SERVO_CMD_ARM
                                     || pc.servo.kind == SERVO_CMD_POSITION
@@ -734,6 +764,10 @@ void drain_commands(bool link_up, bench_state_t *bench)
             }
             s_arm_take_gen = pc.loss_gen;
             s_arm_take_drv = atomic_load(&s_drv_gaps);
+        }
+        if (pc.kind == PANEL_CMD_CLEAR) {
+            apply_clear_cmd(link_up);
+            continue;
         }
         if (pc.kind == PANEL_CMD_STOP) {
             stop_pressed_here();            /* a screen's STOP, pressed */

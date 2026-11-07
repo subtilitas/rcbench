@@ -818,8 +818,10 @@ static void supply_link_alerts(void)
                | SUPPLY_LINK_EV_TRIPPED | SUPPLY_LINK_EV_SAGGED)) != 0u) {
         supply_page_off(ev);
     }
-    /* An ON refused in the IOmcu's failsafe names it and the way out: only
-     * the CLEAR an ARM writes lifts it (supply_link_on_ended()). */
+    /* An ON refused in the IOmcu's failsafe names it and the way out: a
+     * CLEAR lifts it, the one an ARM writes before it arms, or FAILSAFE
+     * CLEAR at the start of ARM's steps on SERVO (supply_link_on_ended(),
+     * servo_start_seq.h). */
     const supply_link_say_t say = supply_link_on_ended(ev, far_end_faults());
     if (say != SUPPLY_LINK_SAY_NONE) {
         control_alert((say == SUPPLY_LINK_SAY_TRIPPED)

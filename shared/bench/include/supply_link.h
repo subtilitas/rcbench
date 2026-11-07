@@ -434,7 +434,8 @@ typedef enum {
     SUPPLY_LINK_SAY_REFUSED,   /**< an ON refused                         */
     /** @brief An ON refused while the IOmcu reports its failsafe:
      *         LINK_FAULT_LINK_SILENT or LINK_FAULT_HEARTBEAT.  It takes no
-     *         ON until a CLEAR, which only an ARM writes. */
+     *         ON until a CLEAR: ARM's, STOP's reset's, or FAILSAFE CLEAR,
+     *         the first of ARM's steps on SERVO (servo_start_seq.h). */
     SUPPLY_LINK_SAY_FAILSAFE,
 } supply_link_say_t;
 

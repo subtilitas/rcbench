@@ -468,6 +468,17 @@ void flush_screen_commands(uint32_t stops_now)
                            .consumed_seq = consumed };
         send_cmd(&pc);
     }
+    /* ARM + START's FAILSAFE CLEAR, with the counts a drive carries: one
+     * asked before a stop, a disarm or a STOP's reset is not written. */
+    if (servo_screen_take_clear()) {
+        panel_cmd_t pc = { .kind = PANEL_CMD_CLEAR,
+                           .stops = stops_now,
+                           .lets_go = atomic_load(&s_lets_go),
+                           .resets = s_render_resets,
+                           .loss_gen = loss_gen,
+                           .consumed_seq = consumed };
+        send_cmd(&pc);
+    }
     /* On a board with the ports' own supply a programmer's port holds no
      * PD mini control (supply_link_session_blocks()). */
     supply_screen_set_ports_own(atomic_load(&s_psup_owns));

@@ -136,7 +136,7 @@ Das Hilfefeld von FEHLER nennt jedes Bit, seinen Code und seine Bedeutung:
 
 | Code | Bit | Von diesem Release gesetzt |
 | --- | --- | --- |
-| 01 | LINK_SILENT | der IOmcu hat 200ms keine Anfrage empfangen; bleibt bis zum nächsten ARM oder Start des IOmcu |
+| 01 | LINK_SILENT | der IOmcu hat 200ms keine Anfrage empfangen; bleibt bis zum nächsten ARM, bis FAILSAFE LÖSEN von ARM oder ARM + START auf SERVO, bis zum Zurücksetzen von STOP oder bis zum nächsten Start des IOmcu |
 | 02 | OVERCURRENT | nie |
 | 04 | OVERTEMP | nie |
 | 08 | STALL | nie |
@@ -1805,6 +1805,20 @@ sie mit allem aus. Ein Schritt, der scheitert, schaltet alle Ausgänge aus
 und nennt sich im Alarmband, zum Beispiel
 `PROG 5V FEHLGESCHLAGEN: KEINE RÜCKMELDUNG IN 1000ms`. Ist nichts aus,
 schaltet das Halten sofort auf ARMED.
+
+Der IOmcu weist jedes ON einer Versorgung ab, solange sein Failsafe
+ausgelöst ist (FEHLER 01, zum Beispiel nach einem Neustart nur des
+Panels). Zeigt das Band beim Halten FEHLER 01 und kein FEHLER 10, beginnen
+die Schritte mit FAILSAFE LÖSEN: Das Panel schreibt CLEAR, dasselbe
+Schreiben wie vor dem Schalten auf ARMED, bei SAFE, und liest STATUS erneut.
+FEHLER 01 muss innerhalb von 500ms erlöschen; sonst enden die Schritte mit
+allem aus und `FAILSAFE LÖSEN FEHLGESCHLAGEN: NACH 500ms NOCH AUSGELÖST`.
+FAILSAFE LÖSEN hebt nur auf, was das CLEAR von ARM aufhebt. FEHLER 10, ein
+gedrückter STOP und ein Programmierer, der einen Port hält, bleiben. Bei
+FEHLER 10 oder einem FEHLER 01, der erst nach dem ON der Versorgung gelesen
+wird, enden die Schritte sofort mit `Netzteil bleibt aus: IOmcu-Failsafe
+ausgelöst. Halte ARM, dann tippe DISARM.` und warten auf keine
+Rückmeldung.
 
 ARM lässt den PD mini aus, wenn sein Sollwert über 6.0V liegt: nur die
 HV-Warnung von AUSGANG EIN schaltet ihn dann ein, und ein Tippen auf die
@@ -6320,7 +6334,8 @@ LINK des Bands), bietet der Bildschirm NEUVERBINDEN an:
   Ihre rechte Spalte behält die Zähler des Tests.
 - NEUVERBINDEN löscht nichts. Ein bestehender STOP bleibt, ebenso der
   FEHLER-Chip. FEHLER 01 (`LINK_SILENT`: Der IOmcu hat 200ms keine Daten
-  empfangen und selbst auf SAFE geschaltet) erlischt beim nächsten ARM. Nach
+  empfangen und selbst auf SAFE geschaltet) erlischt beim nächsten ARM
+  oder bei FAILSAFE LÖSEN, dem ersten der Schritte von ARM auf SERVO. Nach
   NEUVERBINDEN zeigt das Band SAFE, LINK und BENCH, dazu STOP oder FEHLER 01,
   wo eines davon besteht.
 - Eine Bestätigung bei schweigender Verbindung beendet den Bildschirm für

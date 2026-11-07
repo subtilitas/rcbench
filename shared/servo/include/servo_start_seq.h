@@ -7,6 +7,14 @@
  *
  * The steps, in order:
  *
+ *   0. FAILSAFE CLEAR, where need.clear: the IOmcu reported its failsafe
+ *      latched at the hold (LINK_FAULT_LINK_SILENT) and trusts the
+ *      heartbeat.  The caller writes CLEAR once, the write ARM's own
+ *      CLEAR is, while SAFE; the failsafe and the heartbeat both read
+ *      clear within SERVO_SEQ_CLEAR_MS (500ms) of it.  The IOmcu refuses
+ *      every supply's ON while the failsafe stands, so without this step
+ *      the supply's ON is refused and ARM, whose CLEAR would lift it, is
+ *      never asked.
  *   1. PORT PWM: the port's pulse switched on, where the run drives a PROG
  *      PORT and the setting reads OFF.
  *   2. PROG 5V or PD MINI: the supply that feeds the servo switched on,
@@ -25,7 +33,12 @@
  *      (servo_seq_started()).
  *
  * A step that fails ends the sequence and names itself (servo_seq_part()):
- * a read-back missing at 1000ms names the part that did not read back, an
+ * a failsafe still read at 500ms names FAILSAFE CLEAR; a supply still to
+ * be switched on, or in its read-back, while the IOmcu reports its
+ * failsafe (in->latched or in->line_out) names the supply at once, as the
+ * IOmcu refuses its ON or switches it off, and no ON is asked (both
+ * SERVO_SEQ_WHY_FAILSAFE); a read-back missing at 1000ms names the part
+ * that did not read back, an
  * ARMED missing at 500ms names ARM, a check of the caller's that refuses
  * on the way (in->refused: a lost link, a part offline) names the part
  * the caller gives (in->refused_part), else the step under way, a STOP or
@@ -34,7 +47,9 @@
  * fails the step, however long the frame between took.  Every failure
  * asks all_off: DISARM, the supply off, the bench SAFE.
  *
- * Steps 1 and 2 take one call; the clock runs from step 2.  A part that
+ * Steps 0 to 2 take one call where no CLEAR is asked; a CLEAR is the
+ * call's only ask, and its clock runs from it.  The clock of steps 3 and 4
+ * runs from step 2.  A part that
  * reads ON already is not asked again, so a bench set up by hand runs the
  * same steps.  The caller calls servo_seq_step() once a frame while
  * servo_seq_busy().
@@ -58,10 +73,17 @@ extern "C" {
 #define SERVO_SEQ_READBACK_MS 1000u
 /** @brief ARMED's time from ARM asked, ms. */
 #define SERVO_SEQ_ARMED_MS 500u
+/**
+ * @brief The failsafe's time to read clear from the CLEAR asked, ms.  The
+ *        panel reads STATUS straight after the CLEAR's acknowledgement,
+ *        one exchange, about 1ms on a link that answers.
+ */
+#define SERVO_SEQ_CLEAR_MS 500u
 
 /** @brief The sequence's steps, in order. */
 typedef enum {
     SERVO_SEQ_IDLE = 0,  /**< not under way                        */
+    SERVO_SEQ_CLEAR,     /**< 0: FAILSAFE CLEAR                    */
     SERVO_SEQ_PWM,       /**< 1: PORT PWM                          */
     SERVO_SEQ_SUPPLY,    /**< 2: PROG 5V or the PD mini's output   */
     SERVO_SEQ_READBACK,  /**< 3: waiting for every part to read ON */
@@ -78,6 +100,7 @@ typedef enum {
     SERVO_SEQ_PART_PD_MINI,  /**< the PD mini's output             */
     SERVO_SEQ_PART_ARM,      /**< ARM: no ARMED                    */
     SERVO_SEQ_PART_RUN,      /**< the run refused its start        */
+    SERVO_SEQ_PART_CLEAR,    /**< FAILSAFE CLEAR: still latched    */
     SERVO_SEQ_PARTS          /**< the count                        */
 } servo_seq_part_t;
 
@@ -87,6 +110,7 @@ typedef enum {
     SERVO_SEQ_WHY_TIMEOUT,   /**< no read-back or no ARMED in its time */
     SERVO_SEQ_WHY_REFUSED,   /**< a check of the caller's refused      */
     SERVO_SEQ_WHY_STOP,      /**< STOP, a touch loss, an operator's tap */
+    SERVO_SEQ_WHY_FAILSAFE,  /**< the IOmcu's failsafe stands         */
 } servo_seq_why_t;
 
 /** @brief What the run needs switched on: fixed at the start. */
@@ -96,6 +120,9 @@ typedef struct {
     bool pd_mini;   /**< the PD mini's output feeds the servo             */
     bool settle;    /**< READ-BACK waits for a reading taken after every
                          part reads ON before it judges in->refused     */
+    bool clear;     /**< FAILSAFE CLEAR first: the IOmcu reported its
+                         failsafe latched and the heartbeat trusted at
+                         the hold                                      */
 } servo_seq_need_t;
 
 /** @brief What the bench reads now, each step. */
@@ -111,10 +138,16 @@ typedef struct {
     bool reading;   /**< a reading is in, reading_from_ms set             */
     uint32_t reading_from_ms; /**< when the latest reading began, ms, on
                                    now_ms's clock                       */
+    bool latched;   /**< the IOmcu reports its failsafe latched
+                         (LINK_FAULT_LINK_SILENT)                      */
+    bool line_out;  /**< the IOmcu does not trust the heartbeat
+                         (LINK_FAULT_HEARTBEAT)                        */
 } servo_seq_in_t;
 
 /** @brief What a step asks of the caller, once each. */
 typedef struct {
+    bool clear;     /**< write CLEAR once, while SAFE: the IOmcu's
+                         failsafe lifted as ARM's CLEAR lifts it         */
     bool set_pwm;   /**< switch PORT PWM on                               */
     bool p5_on;     /**< ask PROG 5V ON                                   */
     bool pd_on;     /**< ask the PD mini's output ON                      */
@@ -129,6 +162,7 @@ typedef struct {
     uint8_t  step;          /**< servo_seq_step_t                    */
     uint8_t  part;          /**< servo_seq_part_t of the failure     */
     uint8_t  why;           /**< servo_seq_why_t of the failure      */
+    bool     clear_asked;   /**< step 0 asked CLEAR                  */
     bool     arm_asked;     /**< step 4 asked ARM                    */
     bool     done;          /**< the last sequence started its run   */
     uint32_t step_ms;       /**< when the step under way began, ms   */
@@ -155,7 +189,8 @@ bool servo_seq_begin(servo_seq_t *q, const servo_seq_need_t *need,
 
 /**
  * @brief The step under way against the clock and what the bench reads:
- *        steps 1 and 2 in one call, then the waits.
+ *        FAILSAFE CLEAR's ask alone; else steps 1 and 2 in one call, then
+ *        the waits.
  * @param q      the sequence
  * @param now_ms the time, ms
  * @param in     what the bench reads
@@ -187,7 +222,9 @@ void servo_seq_abort(servo_seq_t *q, servo_seq_why_t why,
  *  @return true from servo_seq_begin() to its end */
 bool servo_seq_busy(const servo_seq_t *q);
 
-/** @brief The step under way.  @param q the sequence
+/** @brief The step under way, as shown: PORT PWM in FAILSAFE CLEAR's
+ *         place before the first call where no CLEAR is needed.
+ *  @param q the sequence
  *  @return servo_seq_step_t; IDLE when none */
 servo_seq_step_t servo_seq_step_now(const servo_seq_t *q);
 
@@ -201,8 +238,10 @@ servo_seq_why_t servo_seq_why(const servo_seq_t *q);
 
 /**
  * @brief The steps a sequence of @p need shows, and the number of @p step
- *        among them: PORT PWM and the supply only where needed.
- * @param need  what the run needs; NULL counts every step
+ *        among them: FAILSAFE CLEAR, PORT PWM and the supply only where
+ *        needed.
+ * @param need  what the run needs; NULL counts every step but FAILSAFE
+ *              CLEAR
  * @param step  a step
  * @param count receives the count of steps shown; may be NULL
  * @return the number of @p step, from 1; 0 for IDLE or a step not shown

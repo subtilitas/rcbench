@@ -112,6 +112,8 @@ typedef struct {
     uint32_t    drawn[2];   /**< ready_sig() as each buffer drew it      */
     const char *fail;       /**< the last failure's line, or NULL        */
     char        fail_buf[96]; /**< its text                              */
+    bool        clear_owed; /**< FAILSAFE CLEAR asked and not yet taken
+                                 (servo_screen_take_clear())              */
 } svs_ready_t;
 
 /* --- servo_ready.c: the card ---------------------------------------------- */

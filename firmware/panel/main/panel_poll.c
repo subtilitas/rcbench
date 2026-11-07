@@ -584,6 +584,11 @@ static void read_status_counters(void)
     }
 }
 
+void far_end_status_now(void)
+{
+    read_status_counters();
+}
+
 /*
  * The far end: one poll, and everything that hangs off whether it answered.
  *

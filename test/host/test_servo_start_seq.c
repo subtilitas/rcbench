@@ -5,7 +5,10 @@
  *        ARMED's 500ms either side of the limit; the part each failure
  *        names; a part already on not asked again; STOP; the step numbers;
  *        a step's time judged before what it reads; the checks judged on
- *        a reading after the parts; the part a refusal names.
+ *        a reading after the parts; the part a refusal names; FAILSAFE
+ *        CLEAR first where the IOmcu's failsafe is latched, its 500ms
+ *        either side of the limit, and a supply in the failsafe refused
+ *        at once.
  *
  * Cases:
  * - a_carrier_sequence_runs_its_steps_in_order
@@ -22,6 +25,10 @@
  * - a_part_or_armed_after_a_stall_past_its_time_fails
  * - the_checks_wait_for_a_reading_after_the_parts
  * - a_refusal_names_the_part_the_caller_gives
+ * - a_latched_failsafe_is_cleared_first_then_the_steps_run
+ * - the_clear_has_500ms_tested_at_499_and_500
+ * - a_supply_in_the_failsafe_fails_at_once_and_is_not_asked
+ * - without_a_supply_the_failsafe_is_left_to_arm
  *
  * SPDX-License-Identifier: MIT
  */
@@ -32,11 +39,12 @@
 #include "servo_start_seq.h"
 
 /** @brief The carrier's port: PORT PWM and PROG 5V. */
-static const servo_seq_need_t k_carrier = { true, true, false, false };
+static const servo_seq_need_t k_carrier = { true, true, false, false,
+                                            false };
 /** @brief A PROG PORT fed by the PD mini. */
-static const servo_seq_need_t k_pd = { true, false, true, false };
+static const servo_seq_need_t k_pd = { true, false, true, false, false };
 /** @brief The carrier's port with the rail's reading waited for. */
-static const servo_seq_need_t k_settle = { true, true, false, true };
+static const servo_seq_need_t k_settle = { true, true, false, true, false };
 
 /** @brief What the bench reads: nothing on, SAFE. */
 static servo_seq_in_t off(void)
@@ -49,8 +57,8 @@ static servo_seq_in_t off(void)
 /** @brief Whether @p d asks nothing at all. */
 static bool nothing(const servo_seq_do_t *d)
 {
-    return !d->set_pwm && !d->p5_on && !d->pd_on && !d->arm && !d->start
-           && !d->all_off;
+    return !d->clear && !d->set_pwm && !d->p5_on && !d->pd_on && !d->arm
+           && !d->start && !d->all_off;
 }
 
 /* From SAFE with everything off: the first step asks PORT PWM and PROG 5V
@@ -332,12 +340,12 @@ TEST_CASE(the_steps_are_numbered_by_what_the_run_needs)
     CHECK_EQ(n, 5);
     CHECK_EQ(servo_seq_number(&k_carrier, SERVO_SEQ_READBACK, NULL), 3);
     CHECK_EQ(servo_seq_number(&k_pd, SERVO_SEQ_RUN, &n), 5);
-    const servo_seq_need_t none = { false, false, false, false };
+    const servo_seq_need_t none = { false, false, false, false, false };
     CHECK_EQ(servo_seq_number(&none, SERVO_SEQ_PWM, &n), 0);
     CHECK_EQ(n, 2);
     CHECK_EQ(servo_seq_number(&none, SERVO_SEQ_ARM, NULL), 1);
     CHECK_EQ(servo_seq_number(&none, SERVO_SEQ_RUN, NULL), 2);
-    const servo_seq_need_t pd_only = { false, false, true, false };
+    const servo_seq_need_t pd_only = { false, false, true, false, false };
     CHECK_EQ(servo_seq_number(&pd_only, SERVO_SEQ_SUPPLY, &n), 1);
     CHECK_EQ(n, 4);
     CHECK_EQ(servo_seq_number(&k_carrier, SERVO_SEQ_IDLE, NULL), 0);
@@ -496,6 +504,185 @@ TEST_CASE(a_refusal_names_the_part_the_caller_gives)
     CHECK_EQ(servo_seq_part(&q), SERVO_SEQ_PART_ARM);
 }
 
+/** @brief A PROG PORT fed by the PD mini, the IOmcu's failsafe latched at
+ *         the hold: FAILSAFE CLEAR first. */
+static const servo_seq_need_t k_pd_clear = { true, false, true, false,
+                                             true };
+
+/* The failsafe latched at the hold (FAULT 01 after a panel restart): the
+ * first call asks CLEAR and nothing else; while the failsafe still reads,
+ * and while the heartbeat reads distrusted, nothing more; once both read
+ * clear, PORT PWM and the PD mini's ON in the same call, then the
+ * read-back, ARM once, ARMED and the start.  CLEAR shows as step 1 of 6. */
+TEST_CASE(a_latched_failsafe_is_cleared_first_then_the_steps_run)
+{
+    int n = 0;
+    CHECK_EQ(servo_seq_number(&k_pd_clear, SERVO_SEQ_CLEAR, &n), 1);
+    CHECK_EQ(n, 6);
+    CHECK_EQ(servo_seq_number(&k_pd_clear, SERVO_SEQ_READBACK, NULL), 4);
+    CHECK_EQ(servo_seq_number(&k_pd, SERVO_SEQ_CLEAR, &n), 0);
+    CHECK_EQ(n, 5);
+
+    servo_seq_t q;
+    servo_seq_do_t d;
+    servo_seq_init(&q);
+    CHECK(servo_seq_begin(&q, &k_pd_clear, 1000u));
+    CHECK_EQ(servo_seq_step_now(&q), SERVO_SEQ_CLEAR);
+    servo_seq_in_t in = off();
+    in.latched = true;
+    servo_seq_step(&q, 1000u, &in, &d);
+    CHECK(d.clear);
+    d.clear = false;
+    CHECK(nothing(&d));
+    CHECK_EQ(servo_seq_step_now(&q), SERVO_SEQ_CLEAR);
+    servo_seq_step(&q, 1100u, &in, &d);
+    CHECK(nothing(&d));                       /* CLEAR asked once */
+    in.latched = false;
+    in.line_out = true;
+    servo_seq_step(&q, 1150u, &in, &d);
+    CHECK(nothing(&d));                       /* the heartbeat too */
+    in.line_out = false;
+    servo_seq_step(&q, 1200u, &in, &d);
+    CHECK(!d.clear && d.set_pwm && d.pd_on && !d.arm && !d.all_off);
+    CHECK_EQ(servo_seq_step_now(&q), SERVO_SEQ_READBACK);
+    in.pwm_set = in.pd_on = in.pwm_on = true;
+    servo_seq_step(&q, 1300u, &in, &d);
+    CHECK(d.arm);
+    CHECK_EQ(q.readback_ms, 100u);
+    in.armed = true;
+    servo_seq_step(&q, 1320u, &in, &d);
+    CHECK(d.start);
+    servo_seq_started(&q, true, &d);
+    CHECK(!servo_seq_busy(&q) && q.done);
+    CHECK_EQ(servo_seq_why(&q), SERVO_SEQ_WHY_NONE);
+}
+
+/* The failsafe has SERVO_SEQ_CLEAR_MS from the CLEAR to read clear: clear
+ * at 499ms the steps go on; still latched at 499ms they wait, and at
+ * 500ms they fail at FAILSAFE CLEAR for the failsafe, all off, with no ON
+ * and no ARM ever asked.  A clear read only at the limit itself fails: the
+ * time first.  Across the clock's wrap the same. */
+TEST_CASE(the_clear_has_500ms_tested_at_499_and_500)
+{
+    CHECK_EQ(SERVO_SEQ_CLEAR_MS, 500u);
+    static const uint32_t t0s[2] = { 50u, 0xFFFFFF00u };
+    for (int w = 0; w < 2; ++w) {
+        const uint32_t t0 = t0s[w];
+        servo_seq_t q;
+        servo_seq_do_t d;
+        servo_seq_in_t in = off();
+        in.latched = true;
+
+        servo_seq_init(&q);
+        (void)servo_seq_begin(&q, &k_pd_clear, t0);
+        servo_seq_step(&q, t0, &in, &d);
+        CHECK(d.clear);
+        in.latched = false;
+        servo_seq_step(&q, t0 + 499u, &in, &d);
+        CHECK(d.pd_on && !d.all_off);
+
+        in = off();
+        in.latched = true;
+        servo_seq_init(&q);
+        (void)servo_seq_begin(&q, &k_pd_clear, t0);
+        servo_seq_step(&q, t0, &in, &d);
+        servo_seq_step(&q, t0 + 499u, &in, &d);
+        CHECK(nothing(&d));
+        CHECK(servo_seq_busy(&q));
+        servo_seq_step(&q, t0 + 500u, &in, &d);
+        CHECK(d.all_off && !d.pd_on && !d.set_pwm && !d.arm && !d.clear);
+        CHECK(!servo_seq_busy(&q));
+        CHECK_EQ(servo_seq_part(&q), SERVO_SEQ_PART_CLEAR);
+        CHECK_EQ(servo_seq_why(&q), SERVO_SEQ_WHY_FAILSAFE);
+
+        in = off();
+        in.latched = true;
+        servo_seq_init(&q);
+        (void)servo_seq_begin(&q, &k_pd_clear, t0);
+        servo_seq_step(&q, t0, &in, &d);
+        in.latched = false;
+        servo_seq_step(&q, t0 + 500u, &in, &d);
+        CHECK(d.all_off && !d.pd_on);
+        CHECK_EQ(servo_seq_part(&q), SERVO_SEQ_PART_CLEAR);
+    }
+}
+
+/* No CLEAR asked (the heartbeat distrusted at the hold, FAULT 10, or the
+ * failsafe latched since): a supply still to be switched on is named at
+ * once, for the failsafe, before anything is asked -- no PORT PWM, no ON,
+ * no CLEAR.  One that comes in the read-back, as the IOmcu's refusal of
+ * the ON does about 400ms after it, fails the step on that frame and not
+ * at 1000ms.  Other refusals stay as they were: a row of the caller's
+ * names its part, REFUSED. */
+TEST_CASE(a_supply_in_the_failsafe_fails_at_once_and_is_not_asked)
+{
+    servo_seq_t q;
+    servo_seq_do_t d;
+    for (int k = 0; k < 2; ++k) {
+        servo_seq_in_t in = off();
+        in.line_out = k == 0;
+        in.latched  = k == 1;
+        servo_seq_init(&q);
+        (void)servo_seq_begin(&q, &k_pd, 0u);
+        servo_seq_step(&q, 0u, &in, &d);
+        CHECK(d.all_off && !d.set_pwm && !d.pd_on && !d.clear && !d.arm);
+        CHECK_EQ(servo_seq_part(&q), SERVO_SEQ_PART_PD_MINI);
+        CHECK_EQ(servo_seq_why(&q), SERVO_SEQ_WHY_FAILSAFE);
+    }
+    /* The carrier's PROG 5V the same. */
+    servo_seq_in_t in = off();
+    in.latched = true;
+    servo_seq_init(&q);
+    (void)servo_seq_begin(&q, &k_carrier, 0u);
+    servo_seq_step(&q, 0u, &in, &d);
+    CHECK(d.all_off && !d.p5_on);
+    CHECK_EQ(servo_seq_part(&q), SERVO_SEQ_PART_PROG_5V);
+    CHECK_EQ(servo_seq_why(&q), SERVO_SEQ_WHY_FAILSAFE);
+
+    /* In the read-back, at 400ms. */
+    in = off();
+    servo_seq_init(&q);
+    (void)servo_seq_begin(&q, &k_pd, 0u);
+    servo_seq_step(&q, 0u, &in, &d);
+    CHECK(d.pd_on);
+    in.pwm_set = in.pwm_on = true;
+    servo_seq_step(&q, 380u, &in, &d);
+    CHECK(nothing(&d));
+    in.latched = true;
+    servo_seq_step(&q, 400u, &in, &d);
+    CHECK(d.all_off && !d.arm);
+    CHECK_EQ(servo_seq_part(&q), SERVO_SEQ_PART_PD_MINI);
+    CHECK_EQ(servo_seq_why(&q), SERVO_SEQ_WHY_FAILSAFE);
+
+    /* A refusal of the caller's is no failsafe. */
+    in = off();
+    in.refused = true;
+    servo_seq_init(&q);
+    (void)servo_seq_begin(&q, &k_pd, 0u);
+    servo_seq_step(&q, 0u, &in, &d);
+    CHECK(d.all_off && !d.clear);
+    CHECK_EQ(servo_seq_why(&q), SERVO_SEQ_WHY_REFUSED);
+}
+
+/* A run that switches no supply goes to ARM in the failsafe: ARM writes
+ * its own CLEAR before it arms, so the steps ask none and name nothing. */
+TEST_CASE(without_a_supply_the_failsafe_is_left_to_arm)
+{
+    static const servo_seq_need_t pwm_only = { true, false, false, false,
+                                               false };
+    servo_seq_t q;
+    servo_seq_do_t d;
+    servo_seq_in_t in = off();
+    in.latched = true;
+    servo_seq_init(&q);
+    (void)servo_seq_begin(&q, &pwm_only, 0u);
+    servo_seq_step(&q, 0u, &in, &d);
+    CHECK(d.set_pwm && !d.clear && !d.all_off);
+    in.pwm_set = in.pwm_on = true;
+    servo_seq_step(&q, 20u, &in, &d);
+    CHECK(d.arm && !d.all_off);
+}
+
 int main(void)
 {
     RUN(a_carrier_sequence_runs_its_steps_in_order);
@@ -512,5 +699,9 @@ int main(void)
     RUN(a_part_or_armed_after_a_stall_past_its_time_fails);
     RUN(the_checks_wait_for_a_reading_after_the_parts);
     RUN(a_refusal_names_the_part_the_caller_gives);
+    RUN(a_latched_failsafe_is_cleared_first_then_the_steps_run);
+    RUN(the_clear_has_500ms_tested_at_499_and_500);
+    RUN(a_supply_in_the_failsafe_fails_at_once_and_is_not_asked);
+    RUN(without_a_supply_the_failsafe_is_left_to_arm);
     return test_summary("servo_start_seq");
 }
