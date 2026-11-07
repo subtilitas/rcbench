@@ -166,7 +166,12 @@ void sp_set_cancel(void)
 
 void sp_set_tick(float dt_s)
 {
-    ui_setlist_tick(&p.sl, dt_s);
+    /* Only a list on screen ticks: a closed one draws nothing, so its
+     * SAVE state, which a write ending after the close changes, would ask
+     * for a repaint on every frame. */
+    if (p.sl.open || ui_setlist_covered(&p.sl)) {
+        ui_setlist_tick(&p.sl, dt_s);
+    }
 }
 
 void sp_set_render(gfx_canvas_t *c)

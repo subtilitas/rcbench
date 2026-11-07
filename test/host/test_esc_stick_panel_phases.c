@@ -13,6 +13,7 @@
  * - a_stop_release_takes_the_hold_and_a_queued_arm_away
  * - a_stop_or_a_lost_touch_takes_a_queued_arm_away
  * - the_screen_passes_the_supplys_own_state
+ * - a_save_ending_after_the_list_closed_leaves_the_session_still
  *
  * SPDX-License-Identifier: MIT
  */
@@ -50,6 +51,41 @@ TEST_CASE(the_settings_list_steps_the_stick_settings_and_save_writes_them)
     CHECK(!esc_stick_settings_list()->open);
     CHECK(esc_stick_panel_page() != NULL);
     settings_cancel_save();
+}
+
+/* A SAVE asked on the list and written after it closed, as a write that
+ * waits for the supply output to go off is: the closed list asks for no
+ * repaint, so the session's revision stays put from frame to frame. */
+/** @brief A store that takes every write.  @param v the values
+ *  @param n their count  @return true */
+static bool take_all(const float *v, int n)
+{
+    (void)v;
+    (void)n;
+    return true;
+}
+
+TEST_CASE(a_save_ending_after_the_list_closed_leaves_the_session_still)
+{
+    static const settings_store_t k_take = { NULL, take_all, NULL, NULL };
+    at_items();
+    settings_set_store(&k_take);
+    open_settings();
+    set_step(SET_STICK_BEEP_MIN, +1);
+    set_strip(2);                            /* SAVE: the write is asked */
+    CHECK(settings_save_asked());
+    draws();                                 /* the list shows WHEN IDLE */
+    CHECK(scr->back());                      /* the list closes */
+    CHECK(!esc_stick_settings_list()->open);
+    CHECK(settings_save_tick(true));         /* the write ends now */
+    CHECK(!settings_save_asked());
+    esc_stick_pages.tick(1.0f / 30.0f);      /* the frame that sees it */
+    const uint32_t rev = esc_stick_pages.revision();
+    for (int i = 0; i < 10; ++i) {
+        esc_stick_pages.tick(1.0f / 30.0f);
+    }
+    settings_set_store(NULL);
+    CHECK_EQ(esc_stick_pages.revision(), rev);
 }
 
 /* An item steps from KEEP through its values and stops at either end. */
@@ -455,5 +491,6 @@ int main(void)
     RUN(a_stop_release_takes_the_hold_and_a_queued_arm_away);
     RUN(a_stop_or_a_lost_touch_takes_a_queued_arm_away);
     RUN(the_screen_passes_the_supplys_own_state);
+    RUN(a_save_ending_after_the_list_closed_leaves_the_session_still);
     return test_summary("esc_stick_panel_phases");
 }
