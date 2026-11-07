@@ -50,10 +50,10 @@ TEST_CASE(a_card_of_20_runs_shows_six_rows_a_finger_tall)
 }
 
 /*
- * Each of the seven rows is drawn 44px tall in the sunk fill, the
+ * Each of the five rows is drawn 44px tall in the sunk fill, the
  * selected one raised, with 4px of the list's own fill under it.
  */
-TEST_CASE(the_list_draws_seven_rows_and_the_gaps_between_them)
+TEST_CASE(the_list_draws_five_rows_and_the_gaps_between_them)
 {
     runs_card(20);
     draw();
@@ -64,8 +64,10 @@ TEST_CASE(the_list_draws_seven_rows_and_the_gaps_between_them)
         CHECK_EQ(gfx_pixel_get(&s_c, x, ROW_TOP(r) + 42), fill);
         CHECK_EQ(gfx_pixel_get(&s_c, x, ROW_TOP(r) + 45), UI_PANEL);
     }
-    /* No eighth row: under the seventh the list's fill runs to its end. */
-    CHECK_EQ(gfx_pixel_get(&s_c, x, ROW_TOP(LV_ROWS) + 1), UI_PANEL);
+    /* No sixth row: the list's panel ends 2px under the fifth's gap, and
+     * the browse row of buttons starts 8px under it. */
+    CHECK(gfx_pixel_get(&s_c, x, ROW_TOP(LV_ROWS) + 1) != UI_PANEL_SUNK);
+    CHECK(ROW_TOP(LV_ROWS) + 2 + 8 <= LV_BR_FOOT_Y);
 }
 
 /*
@@ -190,7 +192,7 @@ TEST_CASE(nothing_is_drawn_under_the_alert_band)
 int main(void)
 {
     RUN(a_card_of_20_runs_shows_six_rows_a_finger_tall);
-    RUN(the_list_draws_seven_rows_and_the_gaps_between_them);
+    RUN(the_list_draws_five_rows_and_the_gaps_between_them);
     RUN(an_empty_folder_and_a_full_page_keep_to_the_list);
     RUN(nothing_is_drawn_under_the_alert_band);
     return test_summary("logview_layout");

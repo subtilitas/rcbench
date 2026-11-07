@@ -1096,7 +1096,7 @@ FIT_ONLY.update({f"outputs-cat-{i}": (None, "outputs", "dark")
 # by design, so a fill drawn over a string is not a finding there.
 OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot",
                  "overview-alert", "hold-hint-arm", "hold-hint-output",
-                 "setup-folder",
+                 "setup-folder", "files-new",
                  "files-edit-unsaved", "files-edit-revert",
                  "files-edit-open", "files-edit-changed", "files-edit-see25",
                  "files-edit-see50"} | {

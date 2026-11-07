@@ -47,7 +47,7 @@
 #define LV_LIST_X     8             /**< The list's left edge. */
 #define LV_LIST_Y     108           /**< Its top, where its tag starts. */
 #define LV_ROW_PITCH  48            /**< One row to the next. */
-#define LV_ROWS       6             /**< The rows it shows at once. */
+#define LV_ROWS       5             /**< The rows it shows at once. */
 /** @brief The middle of the list's row @p i on screen. */
 #define LV_ROW_CY(i)  (LV_LIST_Y + 30 + (i) * LV_ROW_PITCH + 22)
 #define LV_ROW_CX     400           /**< A point inside every row. */
@@ -59,6 +59,14 @@
 /** @brief The footer's top: 52px ending 4px above the alert band. */
 #define LV_FOOT_Y     (UI_BODY_H - UI_ALERT_H - 4 - 52)
 #define LV_FOOT_CY    (LV_FOOT_Y + 26)          /**< Its middle row. */
+/** @brief The browse view's row of buttons over the screen's footer: body
+ *         y 388 to 436, 48px tall. */
+#define LV_BR_FOOT_Y  (UI_BODY_H - UI_ALERT_H - 4 - 48 - 8 - 48)
+#define LV_BR_FOOT_CY (LV_BR_FOOT_Y + 24)       /**< Its middle row. */
+/** @brief The footer's SETTINGS (ui_footer.h): x 686 to 1014, body y 444
+ *         to 492. */
+#define LV_SET_CX     850
+#define LV_SET_CY     468
 #define LV_RESCAN_CX  78            /**< RESCAN. */
 #define LV_WIFI_CX    206           /**< WI-FI. */
 #define LV_DELETE_CX  798           /**< DELETE. */

@@ -4247,7 +4247,7 @@ static void pose_shown_tools(ui_screen_id_t id, const char *view)
             }
         } else if (strcmp(view, "logs-delete") == 0) {
             /* The newest run is chosen as the list opens. */
-            tap(LV_DELETE_CX, UI_BAND_H + LV_FOOT_CY);   /* DELETE */
+            tap(LV_DELETE_CX, UI_BAND_H + LV_BR_FOOT_CY);   /* DELETE */
         } else if (strcmp(view, "logs-root") == 0) {
             /* ROOT, the first tab at the header row's left. */
             tap(LV_TAB_CX(0), UI_BAND_H + LV_HEAD_CY);

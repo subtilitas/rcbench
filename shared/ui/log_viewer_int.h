@@ -24,6 +24,7 @@
 #include "log_viewer_screen.h"
 #include "logs_strip.h"
 #include "touch_types.h"
+#include "ui_footer.h"
 #include "ui_screen.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
@@ -107,20 +108,29 @@
 #define BR_HEAD_FAR LV_R                      /**< The row's right end. */
 
 /**
+ * @brief The browse view's row of buttons, BR_FOOT_H (48px) tall, ending
+ *        on UI_FOOTER_FLOOR (body y 436) over the screen's footer
+ *        (ui_footer.h): LOGS and SETTINGS, which opens SETUP > SD CARD.
+ */
+#define BR_FOOT_H UI_TAP_MIN
+/** @brief The browse view's row's top: body y 388. */
+#define BR_FOOT_Y (UI_FOOTER_FLOOR - BR_FOOT_H)
+
+/**
  * @brief The file list under the header row, BR_ROWS rows at a pitch of
  *        BR_ROW_H under its 30px heading.
  *
  * A row is drawn BR_ROW_H - 4 (44) px tall; the pitch, 48px, is what a
- * finger hits, UI_TAP_MIN.  The list is 324px tall: six rows under the
- * heading take 318px of it.  A row shows the file's name, its date and,
+ * finger hits, UI_TAP_MIN.  The list is 272px tall: five rows under the
+ * heading take 270px of it.  A row shows the file's name, its date and,
  * right-aligned, its size.
  */
 #define BR_LIST_Y 108
 /** @brief The list's panel. */
 #define BR_LIST   gfx_rect_make(LV_L, BR_LIST_Y, LV_W, \
-                                FOOT_Y - FOOT_GAP - BR_LIST_Y)
+                                BR_FOOT_Y - FOOT_GAP - BR_LIST_Y)
 #define BR_ROW_H  48  /**< A row's pitch, UI_TAP_MIN. */
-#define BR_ROWS   6        /**< The rows the list shows at once. */
+#define BR_ROWS   5        /**< The rows the list shows at once. */
 
 /**
  * @brief The scroll bar along the list's right edge, BR_BAR_W px wide:
@@ -152,20 +162,22 @@
 #define BR_DATE_IN (BR_SIZE_IN - 16 - BR_DATE_W)          /**< date's left */
 
 /**
- * @brief The footer's buttons, 52px tall, in the order browse_event()
- *        hit-tests them: RESCAN, DELETE and OPEN 140px wide, DELETE and
- *        OPEN under PREV and NEXT; WI-FI BR_WIFI_W (100px) wide after RESCAN.
+ * @brief The browse view's row's buttons, 48px tall, in the order
+ *        browse_event() hit-tests them: RESCAN, DELETE and OPEN 140px wide,
+ *        DELETE and OPEN under PREV and NEXT; WI-FI BR_WIFI_W (100px) wide
+ *        after RESCAN.
  */
-#define BR_RESCAN gfx_rect_make(LV_L, FOOT_Y, BR_PG_W, FOOT_H)
+#define BR_RESCAN gfx_rect_make(LV_L, BR_FOOT_Y, BR_PG_W, BR_FOOT_H)
 #define BR_WIFI_W 100  /**< WI-FI's width. */
 /** @brief WI-FI. */
-#define BR_WIFI   gfx_rect_make(LV_L + BR_PG_W + 8, FOOT_Y, BR_WIFI_W, FOOT_H)
+#define BR_WIFI   gfx_rect_make(LV_L + BR_PG_W + 8, BR_FOOT_Y, BR_WIFI_W, \
+                                BR_FOOT_H)
 /** @brief OPEN. */
-#define BR_OPEN   gfx_rect_make(LV_R - BR_PG_W, FOOT_Y, BR_PG_W, FOOT_H)
-#define BR_DELETE gfx_rect_make(LV_R - 2 * BR_PG_W - 8, FOOT_Y, BR_PG_W, \
-                                FOOT_H)  /**< DELETE. */
+#define BR_OPEN   gfx_rect_make(LV_R - BR_PG_W, BR_FOOT_Y, BR_PG_W, BR_FOOT_H)
+#define BR_DELETE gfx_rect_make(LV_R - 2 * BR_PG_W - 8, BR_FOOT_Y, BR_PG_W, \
+                                BR_FOOT_H)  /**< DELETE. */
 /**
- * @brief A message's left edge in the footer: two lines of 37 cells of the
+ * @brief A message's left edge in the row: two lines of 37 cells of the
  *        12 x 24 face from WI-FI to DELETE, room for the 28 a message about
  *        a file declares and the file's name.  BR_MSG_LH is a line's pitch.
  */
@@ -177,6 +189,10 @@
 #define BR_EMPTY  gfx_rect_make(104, 150, 816, 160)
 
 #define BR_BAR_MIN 32  /**< the scroll bar thumb's least height, px */
+
+/** @brief The browse view's press on the footer's SETTINGS: after RESCAN,
+ *         OPEN, DELETE, WI-FI, PREV and NEXT, 0 to 5. */
+#define LV_BTN_SETTINGS 6
 
 /**
  * @brief The DELETE question, drawn in place of the list and the footer:
@@ -292,8 +308,9 @@ _Static_assert(BR_NAME_IN + LOG_VIEWER_NAME_CELLS * 10 + 16 <= BR_DATE_IN,
                "a row's name ends 16px before its date");
 _Static_assert(LOG_VIEWER_NAME_CELLS < LOG_VIEWER_NAME_MAX,
                "a name of LOG_VIEWER_NAME_CELLS fits its array");
-_Static_assert((BR_ROWS * BR_ROW_H - 4) * BR_ROWS / LOG_VIEWER_MAX_FILES >= 32,
-               "the scroll bar's thumb is 32px or more on a full page");
+_Static_assert(BR_ROWS * BR_ROW_H - 4 - BR_BAR_MIN >= 4 * BR_ROW_H,
+               "a full page's thumb, held to BR_BAR_MIN, leaves the track "
+               "four rows of travel");
 _Static_assert(30 + IM_ROWS * IM_ROW_H <= FOOT_Y - FOOT_GAP - IM_TOP,
                "the column list's rows fit its panel");
 _Static_assert(PV_POS_Y + PV_POS_H <= PV_TOP + PV_PANEL_H,

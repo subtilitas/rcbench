@@ -2846,7 +2846,7 @@ The file list has four layout areas. At the top, the shared strip opens
 BENCH (110 x 40px each), folder and card names, and PREV/NEXT (140 x 48px)
 when the folder spans pages.
 
-The 1008px list shows six 44px rows at 48px pitch. Each row responds across
+The 1008px list shows five 44px rows at 48px pitch. Each row responds across
 its full 48px height. It shows name, modification date and right-aligned
 size in 10 x 20. Names use up to 60 characters, or the first 58 plus `..`.
 The 160px date column uses the card's modification time, as INFO in
@@ -2855,12 +2855,19 @@ Missing timestamps and dates in 1980, from an unset clock, leave it empty
 ([PANEL: Time zone and the clock](#panel-time-zone-and-the-clock)). Size
 uses 100px at the row's end; file type and run duration are not listed.
 
-The footer, body y 440 to 492, ends 4px above the alert band. RESCAN
-(140 x 52px) and WI-FI (100 x 52px) are on the left; DELETE and OPEN
-(140 x 52px) are on the right. WI-FI opens [Wi-Fi](#wi-fi) from any list
-state and its home tag returns here. WI-FI is absent during the DELETE
-dialog and file views. File messages occupy up to two 37-character lines
-between WI-FI and DELETE.
+The row of buttons, body y 388 to 436, ends on the screen's footer.
+RESCAN (140 x 48px) and WI-FI (100 x 48px) are on the left; DELETE and
+OPEN (140 x 48px) are on the right. WI-FI opens [Wi-Fi](#wi-fi) from any
+list state and its home tag returns here. WI-FI is absent during the
+DELETE dialog and file views. File messages occupy up to two 37-character
+lines between WI-FI and DELETE.
+
+The footer under the file list reads `[LOGS] [ ] [SETTINGS]`
+([The footer and the settings list](#the-footer-and-the-settings-list)).
+LOGS has no hold in the middle slot. SETTINGS opens the SD CARD list of
+[Setup](#setup), with the log switches and folders; its home tag returns
+here. The import view, the plot, the report and the DELETE dialog keep
+the full body and show no footer.
 
 The import view shows DETECTED (400px wide) beside the column list (600px,
 7 rows at a pitch of 48px), with four buttons of 246 x 52px under them.
@@ -3258,7 +3265,7 @@ such as `+ 1 NOT LISTED`: names beginning with a full stop (`.DS_Store`,
 `._RCBENCH.LOG`) and names longer than 63 bytes. A folder containing only
 excluded entries is not empty, so DELETE refuses it.
 
-The list shows 5 rows, each 44px tall at 48px pitch. Drag the list or its
+The list shows 4 rows, each 44px tall at 48px pitch. Drag the list or its
 56px scroll bar to scroll. Folders precede files, with each group sorted
 by name. Each row shows an icon, name and right-aligned size (`512B`,
 `14kB`, `7.0MB`, `8.00GB`; binary units, with 1kB equal to 1,024 bytes).
@@ -3291,15 +3298,21 @@ ESC signal-wire backups in `BENCH/ESCW/CONF` use names such as
 The programming session's own FILES list protects backups saved during
 that session.
 
-The footer spans body y 440 to 492, ending 4px above the alert band.
-RESCAN (140 x 52px) is at the left, as on [Logs](#logs), followed by COPY,
-MOVE, RENAME, DELETE, NEW, INFO and OPEN (118 x 52px each). OPEN is at the
-right margin; buttons are 6px apart.
+The row of buttons spans body y 388 to 436 and ends on the screen's
+footer. RESCAN (140 x 48px) is at the left, as on [Logs](#logs), followed
+by COPY, MOVE, RENAME, DELETE, NEW, INFO and OPEN (118 x 48px each). OPEN
+is at the right margin; buttons are 6px apart.
+
+The footer under the panes reads `[FILES] [ ] [SETTINGS]`
+([The footer and the settings list](#the-footer-and-the-settings-list)).
+SETTINGS opens the SD CARD list of [Setup](#setup); its home tag returns
+here. The text viewer, the editor, the keyboard, INFO and the questions
+keep the full body and show no footer.
 
 Labels use the 10 x 20 font with at least 4px on either side. German
 AKTUALISIEREN occupies 130px and VERSCHIEBEN 110px. Unavailable buttons
 are dimmed. Tapping one explains the refusal in the two-line message area
-above the footer, using the 12 x 24 font.
+above the row of buttons, using the 12 x 24 font.
 
 | Button | What it does |
 |---|---|
@@ -3610,7 +3623,7 @@ its position:
 - A removed page-start entry still defines that page's starting position;
   the page begins at the next entry. If nothing remains from that point,
   the pane shows the folder's last page.
-- A page with fewer rows than before shows its last 5 rows, with no empty
+- A page with fewer rows than before shows its last 4 rows, with no empty
   row below them.
 - A folder removed on a computer shows `This folder is not on the card.`
   with no rows. The path button leads out of it.

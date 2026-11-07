@@ -32,7 +32,7 @@ Eine Karte mit NTFS (New Technology File System), GPT (GUID-Partitionstabelle) o
 
 ![Die Dateiliste](view:logs)
 
-Die Kopfzeile zeigt rechts neben den Reitern den gewählten Ordner, etwa `BENCH/LOGS`. Ganz rechts steht die Datenträgerbezeichnung, etwa `UNITEST`, ersatzweise der von der Karte gemeldete Name oder `SD CARD`. Die Liste zeigt 7 Dateien mit ihren Größen. Jede Zeile bietet eine 48px (etwa 7,2mm) hohe Berührungsfläche.
+Die Kopfzeile zeigt rechts neben den Reitern den gewählten Ordner, etwa `BENCH/LOGS`. Ganz rechts steht die Datenträgerbezeichnung, etwa `UNITEST`, ersatzweise der von der Karte gemeldete Name oder `SD CARD`. Die Liste zeigt 5 Dateien mit ihren Größen. Jede Zeile bietet eine 48px (etwa 7,2mm) hohe Berührungsfläche.
 
 | Reiter | Ordner | Inhalt |
 |---|---|---|
@@ -44,7 +44,7 @@ LOGS öffnet den Reiter der zuletzt vom Panel geschriebenen Datei. Nach dem Star
 
 Die obere Leiste LOGS | FILES wechselt zwischen den beiden Seiten der Kachel. Das Home-Feld führt jeweils zum Menü. Die Leiste erscheint nur bei der Dateiliste, nicht über einer offenen Datei, Rückfrage oder einem Dialogfeld.
 
-WI-FI in der Fußzeile öffnet [WLAN](wifi.md) für Downloads im Browser. Das dortige Home-Feld führt hierher zurück. Über der Löschrückfrage oder einer offenen Datei fehlt die Taste. Auch bei ARMED lässt sich WI-FI öffnen; die Bedienelemente der WLAN-Seite prüfen ihre eigenen Sperrbedingungen.
+WI-FI in der Tastenzeile öffnet [WLAN](wifi.md) für Downloads im Browser. Das dortige Home-Feld führt hierher zurück. Über der Löschrückfrage oder einer offenen Datei fehlt die Taste. Auch bei ARMED lässt sich WI-FI öffnen; die Bedienelemente der WLAN-Seite prüfen ihre eigenen Sperrbedingungen.
 
 | Taste | Was sie tut |
 |---|---|
@@ -52,6 +52,8 @@ WI-FI in der Fußzeile öffnet [WLAN](wifi.md) für Downloads im Browser. Das do
 | VORIGE, NÄCHSTE | die Seite davor und danach; sichtbar mit mehr als 48 Dateien auf der Karte |
 | LÖSCHEN | fragt nach und entfernt dann die gewählte Datei; grau, solange nichts gewählt ist |
 | ÖFFNEN | öffnet die gewählte CSV-Datei in der Importansicht, einen Bericht im Textbetrachter; grau, solange nichts gewählt ist |
+
+Die Fußleiste unter der Liste nennt den Bildschirm, LOGS. OPTIONEN rechts öffnet die Liste SD CARD von [SETUP](setup.md#sd-card): die Aufzeichnungsschalter und die beiden Aufzeichnungsordner. Deren Home-Feld führt hierher zurück.
 
 ![Die vierte Seite einer vollen Karte](view:logs-pages)
 

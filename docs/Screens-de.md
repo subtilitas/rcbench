@@ -3072,7 +3072,7 @@ Die Dateiliste hat vier Bereiche. Oben öffnet die gemeinsame Leiste
 BENCH (je 110 x 40px), Ordner- und Kartenname sowie VORIGE und NÄCHSTE
 (140 x 48px) bei mehreren Seiten.
 
-Die 1008px breite Liste zeigt sechs 44px hohe Zeilen bei 48px Abstand.
+Die 1008px breite Liste zeigt fünf 44px hohe Zeilen bei 48px Abstand.
 Jede reagiert über die vollen 48px. Name, Änderungsdatum und rechtsbündige
 Größe stehen in 10 x 20. Namen verwenden bis zu 60 Zeichen, sonst die
 ersten 58 und `..`. Die 160px breite Datumsspalte zeigt die auf der Karte
@@ -3082,12 +3082,20 @@ dem Datum einer ungestellten Uhr, bleibt sie leer
 ([PANEL: Zeitzone und Uhr](#panel-zeitzone-und-uhr)). Die Größe belegt
 100px am Zeilenende. Dateityp und Laufdauer erscheinen nicht.
 
-Die Fußzeile von y 440 bis 492 endet 4px über dem Alarmband. Links stehen
-AKTUALISIEREN (140 x 52px) und WI-FI (100 x 52px), rechts LÖSCHEN und
-ÖFFNEN (140 x 52px). WI-FI öffnet [WLAN](#wlan) aus jedem Listenzustand;
-dessen Home-Feld führt hierher zurück. In der LÖSCHEN-Rückfrage und in
-Dateiansichten fehlt WI-FI. Dateimeldungen nutzen zwischen WI-FI und
-LÖSCHEN bis zu zwei Zeilen mit 37 Zeichen.
+Die Tastenzeile von y 388 bis 436 endet auf der Fußleiste des
+Bildschirms. Links stehen AKTUALISIEREN (140 x 48px) und WI-FI
+(100 x 48px), rechts LÖSCHEN und ÖFFNEN (140 x 48px). WI-FI öffnet
+[WLAN](#wlan) aus jedem Listenzustand; dessen Home-Feld führt hierher
+zurück. In der LÖSCHEN-Rückfrage und in Dateiansichten fehlt WI-FI.
+Dateimeldungen nutzen zwischen WI-FI und LÖSCHEN bis zu zwei Zeilen mit
+37 Zeichen.
+
+Unter der Dateiliste steht die Fußleiste `[LOGS] [ ] [OPTIONEN]`
+([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste)).
+LOGS hat keine Halte-Taste in der Mitte. OPTIONEN öffnet die Liste
+SD CARD von [Setup](#setup) mit den Aufzeichnungsschaltern und Ordnern;
+deren Home-Feld führt hierher zurück. Importansicht, Grafik, Bericht und
+LÖSCHEN-Rückfrage nutzen den ganzen Körper und zeigen keine Fußleiste.
 
 Die Importansicht zeigt ERKANNT (400px) neben der Spaltenliste (600px,
 7 Zeilen bei 48px Abstand), darunter vier Tasten von 246 x 52px.
@@ -3526,7 +3534,7 @@ Einträge, etwa `+ 1 NICHT GELISTET`: Namen mit einem Punkt am Anfang
 mit ausschließlich ausgeblendeten Einträgen ist nicht leer; LÖSCHEN lehnt
 ihn daher ab.
 
-Die Liste zeigt 5 Zeilen mit je 44px Höhe im Abstand von 48px. Ziehe an
+Die Liste zeigt 4 Zeilen mit je 44px Höhe im Abstand von 48px. Ziehe an
 der Liste oder ihrem 56px breiten Rollbalken, um zu scrollen. Zuerst
 stehen Ordner, dann Dateien; beide Gruppen sind nach Namen sortiert.
 Jede Zeile zeigt ein Symbol, den Namen und rechtsbündig die Größe
@@ -3560,16 +3568,22 @@ Backups der ESC-Signaldraht-Sitzung in `BENCH/ESCW/CONF` heißen etwa
 davon löschen. Die eigene DATEIEN-Liste der Programmiersitzung schützt
 Backups, die während dieser Sitzung gespeichert wurden.
 
-Die Fußzeile liegt bei Körper-y 440 bis 492 und endet 4px über dem
-Alarmband. Links steht AKTUALISIEREN (140 x 52px), wie auf [Logs](#logs).
-Darauf folgen KOPIEREN, VERSCHIEBEN, UMBENENNEN, LÖSCHEN, NEU, INFO und
-ÖFFNEN mit je 118 x 52px. ÖFFNEN steht am rechten Rand; zwischen den
-Tasten liegen 6px.
+Die Tastenzeile liegt bei Körper-y 388 bis 436 und endet auf der
+Fußleiste des Bildschirms. Links steht AKTUALISIEREN (140 x 48px), wie auf
+[Logs](#logs). Darauf folgen KOPIEREN, VERSCHIEBEN, UMBENENNEN, LÖSCHEN,
+NEU, INFO und ÖFFNEN mit je 118 x 48px. ÖFFNEN steht am rechten Rand;
+zwischen den Tasten liegen 6px.
+
+Unter den Bereichen steht die Fußleiste `[FILES] [ ] [OPTIONEN]`
+([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste)).
+OPTIONEN öffnet die Liste SD CARD von [Setup](#setup); deren Home-Feld
+führt hierher zurück. Textbetrachter, Editor, Tastatur, INFO und die
+Rückfragen nutzen den ganzen Körper und zeigen keine Fußleiste.
 
 Die Beschriftungen verwenden die Schrift 10 x 20 mit mindestens 4px Rand
 je Seite. AKTUALISIEREN belegt 130px, VERSCHIEBEN 110px. Nicht verfügbare
 Tasten sind gedimmt. Ein Tipp darauf nennt den Grund im zweizeiligen
-Meldungsfeld über der Fußzeile, in der Schrift 12 x 24.
+Meldungsfeld über der Tastenzeile, in der Schrift 12 x 24.
 
 | Taste | Funktion |
 |---|---|
@@ -3919,7 +3933,7 @@ Jeder behält seine Position:
   der Seite; sie beginnt beim nächsten Eintrag. Bleibt ab dieser Stelle
   nichts übrig, erscheint die letzte Ordnerseite.
 - Hat eine Seite weniger Zeilen als zuvor, zeigt sie ihre letzten
-  5 Zeilen ohne leere Zeile darunter.
+  4 Zeilen ohne leere Zeile darunter.
 - Ein am Computer entfernter Ordner zeigt
   `Dieser Ordner ist nicht auf der Karte.` ohne Zeilen. Die Pfadtaste
   führt aus ihm heraus.

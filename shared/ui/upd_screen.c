@@ -937,7 +937,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
             && !(s_v.got == UPD_GOT_BLOCKED && s_v.why == why)) {
             blocked_text(why, line, sizeof(line), second, sizeof(second));
             y = para(c, x, y, w, line, UI_WARN);
-            (void)para(c, x, y, w, second, UI_WARN);
+            y = para(c, x, y, w, second, UI_WARN) + 12;
         }
     }
 

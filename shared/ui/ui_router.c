@@ -159,6 +159,7 @@ static void guide_close(void);
  * another, whose home tag then returns to the opener.  OUTPUTS opens from the
  * TARGET rows of MOTOR & ESC and SERVO and from SETUP's OUTPUTS tile; SUPPLY
  * and SETUP from SERVO's caps and AS5600 buttons and from IMU's IMU SETTINGS;
+ * SETUP's SD CARD list from the footer's SETTINGS on LOGS and FILES;
  * WI-FI from UPDATES' button
  * and LOGS' WI-FI button.  SETUP's WI-FI tile needs no row: WI-FI's parent is
  * SETUP.
@@ -177,6 +178,8 @@ static const struct {
     { SCREEN_WIFI,    SCREEN_UPDATES },
     { SCREEN_WIFI,    SCREEN_LOGS },
     { SCREEN_SETUP,   SCREEN_IMU },
+    { SCREEN_SETUP,   SCREEN_LOGS },
+    { SCREEN_SETUP,   SCREEN_FILES },
 };
 
 static bool opens(ui_screen_id_t opener, ui_screen_id_t id)
