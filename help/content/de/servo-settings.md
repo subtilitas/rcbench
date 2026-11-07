@@ -115,7 +115,7 @@ OPTIONEN auf der Karte ENDLAGENLAUF öffnet sie.
 
 ## Die Grenzen von SUPPLY
 
-Die aktiven Spannungs- und Stromgrenzen begrenzen Sollwerte und Laufstufen. Sie stehen unter den TEST-Karten und auf PRÜFLING in einer Taste wie `GRENZEN 21.00V 5.00A: SUPPLY ÖFFNEN`. Tippe darauf, um sie unter [SUPPLY](supply.md) > OPTIONEN > GRENZEN einzustellen. Das Home-Feld führt zurück. Bei gesperrtem ZIEL ist die Taste grau, weil das Verlassen von SERVO den Prüfstand auf SAFE schalten würde.
+Die aktiven Spannungs- und Stromgrenzen begrenzen Sollwerte und Laufstufen. Sie stehen unter den TEST-Karten und auf PRÜFLING in einer Taste wie `GRENZEN 21.00V 5.00A: SUPPLY ÖFFNEN`. Tippe darauf, um sie unter der Optionsliste von [SUPPLY](supply.md) einzustellen. Das Home-Feld führt zurück. Bei gesperrtem ZIEL ist die Taste grau, weil das Verlassen von SERVO den Prüfstand auf SAFE schalten würde.
 
 Der erste Hinweis auf AUSGANG nennt den für SERVO-TESTER gewählten Port: `SERVO-TESTER: PORT 1. Wähle ihn auf OUTPUTS.` Er ist nicht antippbar. Ändere die Auswahl unter [Ausgänge](outputs.md#der-eintrag-prog-port).
 

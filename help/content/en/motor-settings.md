@@ -6,11 +6,13 @@ order: 11
 
 # Motor settings
 
-SETTINGS is the third tab on [MOTOR & ESC](motor.md). Its left pane contains the bench's 8 ESC (electronic speed controller) settings, arranged in two columns: PACK and MOTOR on the left, THROTTLE OUTPUT on the right. The main right column remains visible and usable, with its readouts, TARGET, ARM, totals and RESET PEAKS.
+SETTINGS in the footer of [MOTOR & ESC](motor.md) opens the bench's 8 ESC (electronic speed controller) settings as one list over the whole screen, under PACK, MOTOR and THROTTLE OUTPUT. It opens on a SAFE bench only; otherwise the band reads `SETTINGS open on a SAFE bench only. Switch to SAFE first.` The list closes when the bench leaves SAFE.
 
 ![SETTINGS](view:motor-settings)
 
-Each 48px row shows a setting, its value and unit, and a help line. Tap the value to open a keypad over the left pane and tab strip. The keypad shows the setting and its range. OK accepts an in-range value. An out-of-range value leaves the keypad open and highlights the range in the warning colour. CANCEL or the home tag closes the keypad without changes. Values are rounded to the setting's step: 4321mAh becomes 4300mAh.
+The list works as SETUP's: `-` and `+` step a value, held they repeat, and a drag scrolls. Tap a value to open the keypad over the screen. The keypad shows the setting and its range. OK accepts an in-range value. An out-of-range value leaves the keypad open and highlights the range in the warning colour. CANCEL or the home tag closes the keypad without changes. Values are rounded to the setting's step: 4321mAh becomes 4300mAh.
+
+The bottom strip reads `[MOTOR & ESC] [RESET MOTOR & ESC] [SAVE]`. Under MOTOR & ESC stays the protocol and pins the throttle drives. RESET MOTOR & ESC sets these 8 settings to their defaults and no other.
 
 ![The keypad for Capacity](view:motor-settings-keypad)
 
@@ -31,7 +33,7 @@ Idle pulse must be at least 100us below Full pulse. Otherwise, the keypad stays 
 
 Idle pulse and Full pulse are sent to the IOmcu at link-up and after each change. The IOmcu applies throttle commands immediately to bound pins, without a ramp.
 
-Idle pulse and Full pulse can be changed only on a SAFE bench. They are locked while the bench is ARMED, ARM is held, or an ARM or DISARM request awaits a response. Their help line then reads `Set on a SAFE bench only` in the warning colour. An open keypad for either setting closes when ARM is pressed or the bench leaves SAFE. The other 6 rows can be changed at any time.
+Idle pulse and Full pulse can be changed only on a SAFE bench. The list opens on a SAFE bench only and closes when it leaves SAFE, and an open keypad closes with it without taking its entry.
 
 A change to Idle pulse or Full pulse reaches the IOmcu on the first poll at least 300ms after the last edit. Until then, with the IOmcu connected, ARM is refused with `Pulse range not yet sent to the IOmcu. Hold ARM again.` and the bench stays SAFE. Hold ARM again: the 2s hold allows time for delivery.
 
@@ -48,16 +50,16 @@ Writing a binding on OUTPUTS or reconnecting the IOmcu also resends the pulse pa
 
 ## Keeping the values
 
-A changed value takes effect immediately and requests a save. The panel writes the settings on the first frame when the bench is SAFE, the supply output is off, and no board drawing is being fetched or saved. The write includes every unsaved setting, including changes made on SETUP. The footer shows the save status:
+A changed value takes effect immediately. SAVE asks for the write; the panel writes the settings on the first frame when the bench is SAFE, the supply output is off, and no board drawing is being fetched or saved. The write includes every unsaved setting, including changes made on SETUP.
 
-| Line | Meaning |
+| SAVE reads | Meaning |
 |---|---|
 | `SAVED` | all settings are saved |
-| `SAVE PENDING` | a save is requested and awaits a quiet bench |
+| `SAVE` | a change is unsaved; tap to save it |
+| `WHEN IDLE` | a save is requested and awaits a quiet bench |
 | `NOT SAVED` | the write failed; values remain in effect but unsaved |
-| `SETUP CHANGES NOT SAVED` | changes from SETUP or another screen are unsaved, with no save requested; the next change here saves them too |
 
-After a failed write, the values remain unsaved. The next change requests another write. Leaving SETUP also lists them in its [unsaved-values warning](setup.md#leaving-with-values-unsaved).
+With a change unsaved, the home tag first shows the [unsaved-values warning](setup.md#leaving-with-values-unsaved): STAY, DISCARD or SAVE.
 
 ## Related pages
 

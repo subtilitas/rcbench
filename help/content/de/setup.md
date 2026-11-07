@@ -186,7 +186,7 @@ SENSORS listet Sensorbus, INA228, vier INA3221, AS5600 und Phasenabgriff des IOm
 
 ## Verwandte Seiten
 
-- [Netzteil](supply.md): die Verdrahtung des PD mini, im Tab PD MINI.
+- [Netzteil](supply.md): die Verdrahtung des PD mini, in der Optionsliste von SUPPLY.
 - [Sensoren](setup-sensors.md)
 - [Ausgänge](outputs.md)
 - [Updates](updates.md)

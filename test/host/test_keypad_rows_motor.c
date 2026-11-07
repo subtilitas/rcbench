@@ -65,7 +65,7 @@ static void fresh(void)
     motor_screen_set_armed(false);
     ui_router_tick(0.026f);
     ui_router_render(&cv, 0);
-    feed_tap(FEED_LONE, MO_TAB_X(2), P(MO_TAB_Y));     /* SETTINGS */
+    feed_tap(FEED_LONE, MO_SETTINGS_X, P(MO_SETTINGS_Y)); /* SETTINGS */
 }
 
 /** @brief The keypad SETTINGS holds. */
@@ -82,12 +82,21 @@ static void kkey(ui_key_t k)
 }
 
 /**
- * @brief The keypad of SETTINGS' row @p row, by a tap on its value box.
+ * @brief The keypad of the list's setting @p row, by a tap on its value,
+ *        the list dragged to its end first for a row under the pane.
  * @param row The row.
  */
 static void open_row(int row)
 {
-    const gfx_rect_t b = motor_settings_box(row);
+    gfx_rect_t b = motor_settings_box(row);
+    if (b.y + b.h > 436) {
+        for (int k = 0; k < 2; ++k) {
+            finger(FEED_LONE, 300, P(400));
+            glide(FEED_LONE, 300, P(100), 6);
+            lift(FEED_LONE);
+        }
+        b = motor_settings_box(row);
+    }
     feed_tap(FEED_LONE, b.x + b.w / 2, P(b.y + b.h / 2));
 }
 

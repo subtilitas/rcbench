@@ -8,6 +8,25 @@ history is in git.
 
 ### Changed
 
+- MOTOR & ESC and SUPPLY end in a common footer of three 328 x 48px
+  slots at body y 444: the screen's name with the pins or source it drives
+  (warning colour with none), the 2s hold (ARM / DISARM, OUTPUT ON / OFF)
+  and SETTINGS. SETTINGS opens a settings list over the body, SETUP's
+  category list as a shared widget (`ui_setlist`), only while the screen
+  drives nothing, and the list closes when the screen goes live.
+- MOTOR & ESC's SETTINGS tab and SUPPLY's LIVE | SETTINGS strip with its
+  LIMITS | PD MINI tabs give way to the list: MOTOR & ESC lists the 8 ESC
+  settings, SUPPLY the 9 supply settings, the PD mini's wiring under its
+  heading and RESET PD MINI. A change applies at once; SAVE asks for the
+  write, as on SETUP, and the home tag shows the leave warning over an
+  unsaved change. RESET name resets the list's own settings only.
+- ARM and OUTPUT ON / OFF move from the CONTROL card to the footer's
+  middle slot, x 348 to 676. SUPPLY's plot is 78px tall; its header row
+  starts at x 18. SUPPLY offers no guide page while its output is on, as
+  either dock covers OUTPUT OFF.
+- A press on a locked row of a settings list names the lock in the alert
+  band. The PD mini pins alert reads
+  `PD mini pins rejected. Check them in SUPPLY's SETTINGS.`
 - Every 2s hold flashes on the frame it completes, 300ms in phases of 50ms:
   white, black, then the button's new colour, twice. The flash starts in
   `ui_hold_tick()`, so START TEST, START LIMIT RUN, START on AUTO, the

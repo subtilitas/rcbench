@@ -538,7 +538,7 @@ holding an end position. It estimates travel time at the servo's rated
 supply voltages and looks for the voltage at which movement becomes
 undetectable (brown-out). Without an enabled angle source (see below), it
 does not measure horn position. Movement is inferred from the current of
-the supply feeding the servo: the PD mini (WeAct PD Power Mini V1) when SUPPLY's PD MINI tab enables it,
+the supply feeding the servo: the PD mini (WeAct PD Power Mini V1) when SUPPLY's PD mini settings enables it,
 the panel's supply model otherwise. A run on the model says so in its report,
 and its numbers are simulated. While the INA3221 is the servo rail's meter
 at START TEST and the supply is the PD mini, the run reads the INA3221

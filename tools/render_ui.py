@@ -136,8 +136,9 @@ SCREENS = {
     # An IOmcu that has refused link frames: the count after the
     # error count in the header strip, with the link up.
     "motor-refused": ("motor-refused.png", "motor", "dark"),
-    # SETTINGS: ESC / BENCH's rows under PACK, MOTOR and THROTTLE OUTPUT on
-    # a SAFE bench after a run, and the keypad of Capacity over them.
+    # SETTINGS: the list the footer opens, ESC / BENCH's rows under PACK,
+    # MOTOR and THROTTLE OUTPUT on a SAFE bench after a run, and the keypad
+    # of Capacity over it.
     "motor-settings": ("motor-settings.png", "motor", "dark"),
     "motor-settings-keypad": ("motor-settings-keypad.png", "motor", "dark"),
     "servo":      ("servo.png",      "servo",      "dark"),
@@ -599,8 +600,9 @@ SCREENS = {
     # FOLDER; the folder keyboard with a folder refused.
     "setup-card": ("setup-card.png", "setup", "dark"),
     "setup-folder": ("setup-folder.png", "setup", "dark"),
-    # SUPPLY > SETTINGS' PD MINI tab: as wired, and on the carrier with TX and
-    # RX soldered.  Its keypad refusing the other pin's GPIO.
+    # SUPPLY's SETTINGS list at the PD mini's heading: as wired, and on the
+    # carrier with TX and RX soldered.  Its keypad refusing the other pin's
+    # GPIO.
     "supply-pdmini": ("supply-pdmini.png", "supply", "dark"),
     "supply-pdmini-rbmod": ("supply-pdmini-rbmod.png", "supply", "dark"),
     "supply-pdmini-why": ("supply-pdmini-why.png", "supply", "dark"),
@@ -893,13 +895,14 @@ FIT_ONLY = {
     "help-servo-output-2":     (None, "servo", "dark"),
     "help-servo-sweep":        (None, "servo", "dark"),
     "help-servo-dut":          (None, "servo", "dark"),
-    # SUPPLY's guide: the rail's two pages, SETTINGS' LIMITS and TRIPS and
-    # the PD MINI tab.
+    # SUPPLY's guide: the rail's two pages, and the SETTINGS list's two at
+    # its top and at the PD mini's heading.
     "help-supply-2":           (None, "supply", "dark"),
     "help-supply-3":           (None, "supply", "dark"),
-    "help-supply-limits":      (None, "supply", "dark"),
-    "help-supply-limits-2":    (None, "supply", "dark"),
+    "help-supply-settings":    (None, "supply", "dark"),
+    "help-supply-settings-2":  (None, "supply", "dark"),
     "help-supply-pdmini":      (None, "supply", "dark"),
+    "help-supply-pdmini-2":    (None, "supply", "dark"),
     # ESC STICK > Great Planes: model rows with the MANUAL tag and the
     # longest reason beside their family.
     "motor-stick-greatplanes": (None, "motor", "dark"),
@@ -911,15 +914,17 @@ FIT_ONLY = {
     # in the alert band.
     "hold-hint-arm":    (None, "motor", "dark"),
     "hold-hint-output": (None, "supply", "dark"),
-    # MOTOR & ESC > SETTINGS: a pulse typed less than 100us from the other
-    # one, refused with its reason.
+    # MOTOR & ESC's SETTINGS list: a pulse typed less than 100us from the
+    # other one, refused with its reason.
     "motor-settings-gap-idle": (None, "motor", "dark"),
     "motor-settings-gap-full": (None, "motor", "dark"),
     # Tap pin's keypad with GP23 typed: refused, with the pins it takes.
     "setup-tap-why": (None, "setup", "dark"),
-    # SUPPLY's PD MINI tab with the output on, the rows locked, and stored on
-    # one pin for both.
-    "supply-pdmini-on": (None, "supply", "dark"),
+    # SUPPLY's list at the PD mini with a programming port holding the
+    # supply, the rows locked, and stored on one pin for both.
+    "supply-pdmini-locked": (None, "supply", "dark"),
+    # SUPPLY's list dragged to its middle: the trips and the questions.
+    "supply-settings-mid": (None, "supply", "dark"),
     "supply-pdmini-same": (None, "supply", "dark"),
     "band-fault-all":   (None, "overview", "dark"),
     "band-hwstop-all":  (None, "overview", "dark"),
@@ -981,9 +986,10 @@ FIT_ONLY = {
     "upd-remind-blocked": (None, "upd-remind", "dark"),
     # The warning on leaving SETUP with a save refused and the bench ARMED.
     "setup-leave-armed": (None, "setup", "dark"),
-    # MOTOR & ESC > SETTINGS ARMED: the pulse rows locked with their reason,
-    # a save waiting for a SAFE bench.
-    "motor-settings-armed": (None, "motor", "dark"),
+    # MOTOR & ESC's SETTINGS list scrolled to its end with a change not
+    # saved, and the leave warning its home tag opens over it.
+    "motor-settings-end": (None, "motor", "dark"),
+    "motor-settings-leave": (None, "motor", "dark"),
     # The bus fault's other two verdicts and its other four controller
     # states, so every meaning and check is measured where it wraps.
     "busfault-lossy":   (None, "busfault", "dark"),

@@ -1,14 +1,15 @@
 /**
  * @file test_motor_layout.c
- * @brief MOTOR & ESC at the 1024 x 600 sizes: DISARM is a finger tall,
- *        acts where it is drawn and lies above the alert band, apart from
- *        the other controls; no text of LIVE, TABLE or SETTINGS reaches
+ * @brief MOTOR & ESC at the 1024 x 600 sizes: DISARM is the footer's middle
+ *        slot, a finger tall, acts where it is drawn and lies above the
+ *        alert band, apart from the other controls; the cards end 8px over
+ *        the footer and no text of LIVE, TABLE or the SETTINGS list reaches
  *        the alert band, in English or German at the longest texts.
  *
  * Cases:
  * - disarm_acts_where_it_is_drawn_and_is_a_finger_tall
  * - the_controls_stand_apart_and_above_the_alert_band
- * - a_finger_that_misses_disarm_to_the_left_moves_no_throttle
+ * - a_finger_that_misses_disarm_upwards_moves_no_throttle
  * - no_text_lies_under_the_alert_band
  *
  * SPDX-License-Identifier: MIT
@@ -17,10 +18,13 @@
 #include "motor_rig.h"
 
 #include "link_pages.h"
+#include "ui_footer.h"
 #include "ui_workbench.h"
 
 /** @brief The body row 4px over the alert band: no text reaches it. */
 #define TEXT_FLOOR (UI_ALERT_Y - UI_BAND_H - 4)
+/** @brief The body row 8px over the footer: the cards end there. */
+#define CARD_FLOOR UI_FOOTER_FLOOR
 
 /** @brief The rectangle of the body that safe_at() names as a stop,
  *         scanned every pixel; empty when none.
@@ -66,8 +70,9 @@ static void row_extent(int y, int xa, int xb, gfx_color_t col, int *lo,
 
 /*
  * Armed, DISARM is the one stop of the screen: UI_TAP_MIN or taller, where
- * its danger-red fill is drawn, at the CONTROL card's foot, and its bottom
- * row 4px or more above the alert band.  Disarmed, ARM is no stop.
+ * its danger-red fill is drawn, the footer's 328 x 48px middle slot, and
+ * its bottom row 4px or more above the alert band.  Disarmed, ARM is no
+ * stop.
  */
 TEST_CASE(disarm_acts_where_it_is_drawn_and_is_a_finger_tall)
 {
@@ -75,8 +80,8 @@ TEST_CASE(disarm_acts_where_it_is_drawn_and_is_a_finger_tall)
     CHECK_EQ(stop_bounds().w, 0);
     motor_screen_set_armed(true);
     const gfx_rect_t r = stop_bounds();
-    CHECK_EQ(r.x, MO_RC_X);
-    CHECK_EQ(r.w, MO_RC_W);
+    CHECK_EQ(r.x, 348);
+    CHECK_EQ(r.w, 328);
     CHECK_EQ(r.y, MO_ARM_T);
     CHECK_EQ(r.h, MO_ARM_H);
     CHECK(r.h >= UI_TAP_MIN && r.w >= UI_TAP_MIN);
@@ -119,53 +124,56 @@ TEST_CASE(the_controls_stand_apart_and_above_the_alert_band)
     CHECK(MO_RESET_Y + UI_TAP_MIN / 2 + 10 <= MO_ARM_T);
     tap(MO_RESET_X, MO_RESET_Y + UI_TAP_MIN / 2 - 1);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_RESET_PEAKS);
-    /* The step keys, the hint and the track end above the alert band. */
-    CHECK(MO_HINT_Y + 10 <= TEXT_FLOOR);
-    CHECK(MO_TRACK_Y + 28 <= TEXT_FLOOR);
+    /* The step keys, the hint and the track end 8px over the footer. */
+    CHECK(MO_HINT_Y + 10 <= CARD_FLOOR);
+    CHECK(MO_TRACK_Y + 24 <= CARD_FLOOR);
 }
 
 /*
- * Between +1 and DISARM lies a finger's width, UI_TAP_MIN, on the rows
- * they share: armed, a tap anywhere in it commands nothing and is no stop,
- * while +1's right column steps the throttle.
+ * Between the throttle and DISARM lies a finger's height, UI_TAP_MIN: the
+ * step keys and the track end at body y 396, DISARM starts at 444.  Armed,
+ * a tap anywhere between them commands nothing and is no stop, while +1's
+ * bottom row steps the throttle.
  */
-TEST_CASE(a_finger_that_misses_disarm_to_the_left_moves_no_throttle)
+TEST_CASE(a_finger_that_misses_disarm_upwards_moves_no_throttle)
 {
     fresh();
     motor_screen_set_armed(true);
     tick_for(10);
     (void)last_cmd();
-    const int y = MO_ARM_T + 10;                  /* +1's rows and DISARM's */
-    CHECK(y < MO_TRACK_Y + 28);
-    CHECK(MO_RC_X - (MO_UP_R + 1) >= UI_TAP_MIN);
-    CHECK(scr->safe_at(MO_RC_X, y));
-    CHECK(!scr->safe_at(MO_RC_X - 1, y));
-    for (int x = MO_UP_R + 1; x < MO_RC_X; ++x) {
-        tap(x, y);
-        CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+    const int keys_b = MO_TRACK_Y + UI_TAP_MIN / 2;        /* 396 */
+    CHECK(MO_ARM_T - keys_b >= UI_TAP_MIN);
+    CHECK(scr->safe_at(MO_ARM_X, MO_ARM_T));
+    CHECK(!scr->safe_at(MO_ARM_X, MO_ARM_T - 1));
+    for (int y = keys_b; y < MO_ARM_T; y += 3) {
+        for (int x = 348; x < 676; x += 41) {
+            tap(x, y);
+            CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+        }
     }
-    tap(MO_UP_R, y);
+    tap(MO_UP_X, keys_b - 1);
     const motor_cmd_t c = last_cmd();
     CHECK_EQ(c.kind, MOTOR_CMD_THROTTLE);
     CHECK_NEAR(c.value, 1.0f, 0.001f);
 }
 
-/** @brief The pixels of the cards from TEXT_FLOOR down to the bodies'
- *         foot, clear of the cards' edges and chamfers, that are not the
- *         cards' fill.  Buffer 0 drawn whole first.
+/** @brief The pixels from CARD_FLOOR down to the body's foot that are
+ *         not the background, outside the footer's three slots: the cards
+ *         end over the footer and nothing reaches the alert band.  Buffer
+ *         0 drawn whole first.
  *  @return the count */
 static int ink_under_the_alert_band(void)
 {
     motor_invalidate();
     scr->render(&cv, 0);
-    const gfx_color_t fill = ui_theme_color(UI_C_PANEL);
+    const gfx_color_t bg = ui_theme_color(UI_C_BG);
     int n = 0;
-    for (int y = TEXT_FLOOR; y < UI_BODY_H - UI_MARGIN - 12; ++y) {
-        for (int x = UI_MARGIN + 2; x < UI_MARGIN + 620 - 2; ++x) {
-            n += fb[(size_t)y * W + x] != fill;
-        }
-        for (int x = MO_RC_X - 10; x < MO_RC_X + MO_RC_W + 10; ++x) {
-            n += fb[(size_t)y * W + x] != fill;
+    for (int y = CARD_FLOOR; y < UI_BODY_H; ++y) {
+        for (int x = 0; x < W; ++x) {
+            if (ui_footer_hit(x, y) >= 0) {
+                continue;
+            }
+            n += fb[(size_t)y * W + x] != bg;
         }
     }
     return n;
@@ -191,10 +199,10 @@ static void push_sensed(void)
 }
 
 /*
- * In both languages nothing is drawn under the alert band: LIVE armed and
- * disarmed (the hint, or ARM FIRST), TABLE at its fullest (the INA228
- * clipping and the ESC's two rows), and SETTINGS armed with SETUP's change
- * not saved (the lock's reason and the longest save line).
+ * In both languages nothing is drawn under the cards' floor but the footer:
+ * LIVE armed and disarmed (the hint, or ARM FIRST), TABLE at its fullest
+ * (the INA228 clipping and the ESC's two rows), and the SETTINGS list with
+ * a change not saved, scrolled to its end.
  */
 TEST_CASE(no_text_lies_under_the_alert_band)
 {
@@ -209,20 +217,21 @@ TEST_CASE(no_text_lies_under_the_alert_band)
         CHECK_EQ(ink_under_the_alert_band(), 0);      /* the hint */
         tap(MO_TABLE_TAB_X, MO_PANE_Y);
         CHECK_EQ(ink_under_the_alert_band(), 0);
-        tap(MO_TAB_X(2), MO_TAB_Y);                   /* SETTINGS */
-        CHECK_EQ(motor_screen_task(), (int)UI_WB_SETTINGS);
+        motor_screen_set_armed(false);
+        tick_for(1);
+        tap(MO_SETTINGS_X, MO_SETTINGS_Y);            /* SETTINGS */
+        CHECK(motor_screen_settings_shown());
         settings_set(SET_PACK_MAH, mah + 100.0f);     /* not saved */
         CHECK(settings_dirty());
+        for (int k = 0; k < 2; ++k) {                 /* to its end */
+            ev(300, 400, TOUCH_EVENT_DOWN, 1);
+            for (int y = 400; y > 100; y -= 10) {
+                ev(300, y, TOUCH_EVENT_MOVE, 1);
+            }
+            ev(300, 100, TOUCH_EVENT_UP, 1);
+        }
         tick_for(1);
         CHECK_EQ(ink_under_the_alert_band(), 0);
-        /* The save line is there, above the band. */
-        int ink = 0;
-        for (int y = MO_SAVE_LINE_Y; y < MO_SAVE_LINE_Y + 20; ++y) {
-            for (int x = UI_MARGIN + 10; x < UI_MARGIN + 400; ++x) {
-                ink += fb[(size_t)y * W + x] != ui_theme_color(UI_C_PANEL);
-            }
-        }
-        CHECK(ink > 100);
         motor_screen_set_armed(false);
         settings_set(SET_PACK_MAH, mah);              /* as stored */
     }
@@ -233,7 +242,7 @@ int main(void)
 {
     RUN(disarm_acts_where_it_is_drawn_and_is_a_finger_tall);
     RUN(the_controls_stand_apart_and_above_the_alert_band);
-    RUN(a_finger_that_misses_disarm_to_the_left_moves_no_throttle);
+    RUN(a_finger_that_misses_disarm_upwards_moves_no_throttle);
     RUN(no_text_lies_under_the_alert_band);
     return test_summary("motor_layout");
 }

@@ -58,7 +58,7 @@
 #define READOUT_H 46                      /**< Its height, px. */
 #define READOUT_X (LEFT_X + LEFT_W - INNER - READOUT_W) /**< Its left. */
 #define NUDGE_W   72                      /**< A step key's width, px. */
-#define NUDGE_H   56                      /**< Its height, px. */
+#define NUDGE_H   UI_TAP_MIN              /**< Its height, px: 48. */
 #define CTRL_Y    (ROW_Y + READOUT_H + 4) /**< The step keys' top, px. */
 #define TRACK_H   48                      /**< The track's height, px. */
 #define TRACK_Y   (CTRL_Y + (NUDGE_H - TRACK_H) / 2) /**< Its top, px. */
@@ -77,6 +77,10 @@
 #define HINT_X    (LEFT_X + INNER)
 _Static_assert(TRACK_X + TRACK_W + 8 + NUDGE_W + UI_TAP_MIN <= RC_X,
                "+1 ends a finger's width left of DISARM");
+/* A finger that misses ARM or DISARM upwards lands on no throttle control:
+ * the step keys and the track end a finger's height over the footer. */
+_Static_assert(CTRL_Y + NUDGE_H + UI_TAP_MIN <= UI_FOOTER_Y,
+               "the throttle ends a finger's height over DISARM");
 _Static_assert(HINT_Y + 20 <= STOP_FLOOR,
                "the throttle's hint ends above the alert band");
 _Static_assert(ROW_Y + READOUT_H <= CTRL_Y,
@@ -195,6 +199,10 @@ typedef struct {
     uint32_t      drawn_strip[2];       /**< strip revision last painted into each frame buffer */
     /** @brief SETTINGS page revision last painted into each frame buffer */
     uint32_t      drawn_page[2];
+    /** @brief The SETTINGS list's revision each frame buffer last drew */
+    uint32_t      drawn_list[2];
+    /** @brief Whether each frame buffer last drew the SETTINGS list */
+    bool          drawn_list_shown[2];
     bool          target_locked;        /**< whether the TARGET row was drawn locked */
     /* PROGRAM's session as each framebuffer last had it: whether it was
      * shown, its revision, and the output strip's text (a signature). */

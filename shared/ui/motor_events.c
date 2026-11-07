@@ -20,6 +20,7 @@
 #include "prog_registry.h"
 #include "outputs_screen.h"
 #include "port_view.h"
+#include "ui_footer.h"
 #include "ui_widgets.h"
 
 #include "motor_live_int.h"
@@ -29,7 +30,7 @@
 /**
  * @brief Another task is shown.  A press on the page that went goes with it: a
  *        drag on the throttle, a step button, PLOT or TABLE half pressed, a value
- *        on SETTINGS.  ARM is on the rail, which stays, and keeps its press.  The
+ *        on PROGRAM.  ARM is in the footer, which stays, and keeps its press.  The
  *        page is repainted whole.
  */
 static void task_changed(void)
@@ -114,6 +115,9 @@ bool mo_safe_at(int x, int y)
     if (ps != NULL) {
         return prog_ps_safe_at(ps, x, y);
     }
+    if (msp_shown()) {
+        return false;           /* the list covers DISARM */
+    }
     return s.gate.armed && gfx_rect_contains(s.arm_rect, x, y);
 }
 
@@ -130,8 +134,19 @@ void mo_event(const touch_event_t *evt)
         prog_ps_event(ps, evt);
         return;
     }
+    /* The SETTINGS list covers the body: every press is the list's.  Its
+     * way out closes it, and the screen is painted whole again. */
+    if (msp_shown()) {
+        msp_event(evt, mo_endpoints_free());
+        if (!msp_shown()) {
+            motor_invalidate();
+            ++s.ctrl_rev;
+            ++s.arm_rev;
+        }
+        return;
+    }
     /* The strip and the TARGET row first: a press of theirs is theirs. */
-    const mwb_ev_t wb = mwb_event(evt, !msp_modal(), mo_target_locked());
+    const mwb_ev_t wb = mwb_event(evt, true, mo_target_locked());
     if (wb == MWB_TASK) {
         task_changed();
         return;
@@ -144,12 +159,10 @@ void mo_event(const touch_event_t *evt)
         ++s.ctrl_rev;           /* the TARGET row draws its press */
         return;
     }
-    /* SETTINGS' page or PROGRAM's list has the left column; the rail
-     * stays this file's.  A row's tap may open a session over all of it. */
+    /* PROGRAM's list has the left column; the rail and the footer stay
+     * this file's.  A row's tap may open a session over all of it. */
     const bool on_live = mwb_task() == UI_WB_LIVE;
-    if (mwb_task() == UI_WB_SETTINGS) {
-        msp_event(evt, mo_endpoints_free());
-    } else if (mwb_task() == UI_WB_PROGRAM && mpp_event(evt)) {
+    if (mwb_task() == UI_WB_PROGRAM && mpp_event(evt)) {
         if (mpp_shown() != NULL) {
             session_opened();
         }
@@ -167,7 +180,7 @@ void mo_event(const touch_event_t *evt)
     }
     /* Refused while the value is not live: the track takes no press, so a
      * bench armed under a finger resting on it moves nothing until the next
-     * press, and a drag under way ends.  Out of sight on SETTINGS, it takes
+     * press, and a drag under way ends.  Out of sight on PROGRAM, it takes
      * none either. */
     const bool live = mo_value_live();
     if (!live || !on_live) {
@@ -237,6 +250,16 @@ void mo_event(const touch_event_t *evt)
         } else if (gfx_rect_contains(s.reset_rect, x, y)) {
             s.have_press = true; s.press_id = evt->point.id; s.pressed = 2;
             ++s.ctrl_rev;
+        } else if (gfx_rect_contains(ui_footer_rect(UI_FOOTER_SETTINGS), x,
+                                     y)) {
+            /* The list covers DISARM and the throttle: it opens on a SAFE
+             * bench with ARM not held, and says why it does not. */
+            if (!mo_endpoints_free()) {
+                ui_router_set_alert(TR(FOOT_SETTINGS_SAFE));
+                return;
+            }
+            s.have_press = true; s.press_id = evt->point.id; s.pressed = 5;
+            ++s.ctrl_rev;
         }
         return;
     }
@@ -272,6 +295,17 @@ void mo_event(const touch_event_t *evt)
              * nothing.  DISARM acted on its press. */
             (void)ui_hold_end(&s.arm, evt, s.arm_rect);
             ++s.arm_rev;
+        }
+        if (was == 5 && touch_event_is_tap_up(evt)
+            && gfx_rect_contains(ui_footer_rect(UI_FOOTER_SETTINGS), x, y)
+            && mo_endpoints_free()) {
+            mo_end_drag();
+            ui_tabs_cancel(&s.tabs);
+            mwb_cancel();
+            msp_open();
+            motor_invalidate();
+            ++s.ctrl_rev;
+            return;
         }
         if (was == 2 && touch_event_is_tap_up(evt)
             && gfx_rect_contains(s.reset_rect, x, y)) {
@@ -349,7 +383,16 @@ void mo_tick(float dt_s)
         s.thr_ports_rev = port_view_revision();
         ++s.ctrl_rev;
     }
-    msp_tick(mo_endpoints_free());
+    msp_tick(dt_s, mo_endpoints_free());
+    /* The list hides DISARM: a bench that leaves SAFE under it, by a report
+     * or an ask from elsewhere, closes it, and the screen with DISARM shows
+     * again. */
+    if (msp_shown() && !mo_bench_safe()) {
+        msp_close();
+        motor_invalidate();
+        ++s.ctrl_rev;
+        ++s.arm_rev;
+    }
     mpp_armed(!mo_bench_safe());
     mpp_tick(dt_s);
 }

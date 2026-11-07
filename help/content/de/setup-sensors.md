@@ -226,6 +226,6 @@ IMU-Filter glättet den Winkel auf dem Panel, je Frame und Achse: der Winkel rü
 ## Verwandte Seiten
 
 - [Setup](setup.md)
-- [Netzteil](supply.md): die Verdrahtung des PD mini, im Tab PD MINI.
+- [Netzteil](supply.md): die Verdrahtung des PD mini, in der Optionsliste von SUPPLY.
 - [Servo](servo.md)
 - [IMU](imu.md)

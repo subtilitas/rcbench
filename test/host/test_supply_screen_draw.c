@@ -39,7 +39,6 @@
 
 #define TABLE_Y   SU_PANE_Y
 
-#define MODRESET_Y SU_MODRESET_Y /* RESET PD MINI, left column, SETTINGS */
 
 /* A whole frame drawn from nothing, so two screens can be compared by their
  * pixels: the trace, the readouts and the panel's title tag. */
@@ -234,7 +233,7 @@ static void b_table_then_set(void)
     drain();
 }
 
-static void b_settings(void) { tap(SET_TAB_X, STRIP_Y); }
+static void b_settings(void) { open_settings(); }
 
 static void b_keypad(void)   { tap(CARD_X, CARD_V_Y); key(UI_KEY_7); }
 
@@ -255,17 +254,24 @@ static void b_question_new_caps(void)
 
 static void b_closed(void)
 {
-    tap(SET_TAB_X, STRIP_Y);
+    open_settings();
     scr->render(&cv, 0);
-    tap(LIVE_TAB_X, STRIP_Y);
+    (void)scr->back();
 }
 
 static void b_settings_keypad(void)
 {
-    tap(SET_TAB_X, STRIP_Y);
+    open_settings();
     scr->render(&cv, 0);
-    tap(ROW_L_X, VMAX_Y);
-    key(UI_KEY_7);
+    tap_value(SET_SUPPLY_V_MAX);
+    list_key(UI_KEY_7);
+}
+
+static void b_settings_scrolled(void)
+{
+    open_settings();
+    scr->render(&cv, 0);
+    drag_list(-150);
 }
 
 static void b_keypad_to_settings(void)
@@ -273,16 +279,14 @@ static void b_keypad_to_settings(void)
     tap(CARD_X, CARD_V_Y);
     key(UI_KEY_7);
     scr->render(&cv, 0);
-    tap(SET_TAB_X, STRIP_Y);
+    open_settings();
 }
 
-static void b_settings_question(void)
+static void b_settings_refused(void)
 {
     supply_screen_set_output(true);
-    tap(SET_TAB_X, STRIP_Y);
     scr->render(&cv, 0);
-    tap(CARD_X, CARD_V_Y);
-    keys("7");
+    open_settings();
 }
 
 static void b_hold_half(void)
@@ -306,7 +310,8 @@ TEST_CASE(a_redraw_leaves_no_stale_pixels)
     check_redraw(b_closed);
     check_redraw(b_settings_keypad);
     check_redraw(b_keypad_to_settings);
-    check_redraw(b_settings_question);
+    check_redraw(b_settings_refused);
+    check_redraw(b_settings_scrolled);
     check_redraw(b_question_new_caps);
 }
 
@@ -401,22 +406,31 @@ TEST_CASE(a_screen_without_a_sample_draws)
     CHECK(!supply_screen_poll_cmd(NULL));
 }
 
-/* SETTINGS offers RESET PD MINI while the PD mini is the supply, and not
- * while the panel runs its model; it asks for the restart with the output
- * off. */
+/* The list offers RESET PD MINI, its last row, while the PD mini is the
+ * supply, and not while the panel runs its model; it asks for the restart
+ * with the output off. */
 TEST_CASE(reset_pd_mini_is_offered_only_for_the_module)
 {
     fresh();
     supply_screen_set_model(true);
-    tap(SET_TAB_X, STRIP_Y);
-    tap(ROW_L_X, MODRESET_Y);
+    open_settings();
+    CHECK_EQ(supply_settings_modreset_row(), -1);
+    const int last = ui_setlist_count(supply_settings_list()) - 1;
+    CHECK_EQ(supply_settings_row(SET_PDMINI_BAUD), last);
+    show_row(last);
+    gfx_rect_t r = ui_setlist_row_rect(supply_settings_list(), last);
+    tap(r.x + 40, r.y + r.h / 2);            /* the baud row's name */
     supply_cmd_t c;
     CHECK(!supply_screen_poll_cmd(&c));
-    tap(LIVE_TAB_X, STRIP_Y);                /* LIVE again */
+    CHECK(scr->back());                      /* LIVE again */
 
     supply_screen_set_model(false);
-    tap(SET_TAB_X, STRIP_Y);
-    tap(ROW_L_X, MODRESET_Y);
+    open_settings();
+    const int row = supply_settings_modreset_row();
+    CHECK_EQ(row, last + 1);
+    show_row(row);
+    r = ui_setlist_row_rect(supply_settings_list(), row);
+    tap(r.x + r.w / 2, r.y + r.h / 2);
     CHECK(supply_screen_poll_cmd(&c));
     CHECK(c.module_reset);
     CHECK(c.off);
@@ -657,8 +671,8 @@ TEST_CASE(a_release_the_tracker_makes_for_a_jump_presses_nothing_but_off)
     feed_tap(FEED_LONE, RESET_X, P(RESET_Y));
     CHECK(supply_screen_poll_cmd(&c) && c.reset);
 
-    /* SETTINGS: not switched to, so the plot's controls still answer. */
-    finger(FEED_LONE, SET_TAB_X, P(STRIP_Y));
+    /* SETTINGS: not opened, so the plot's controls still answer. */
+    finger(FEED_LONE, SETTINGS_X, P(SETTINGS_Y));
     finger(FEED_LONE, OFF_X, P(OFF_Y));
     lift(FEED_LONE);
     feed_tap(FEED_LONE, RESET_X, P(RESET_Y));
@@ -666,16 +680,21 @@ TEST_CASE(a_release_the_tracker_makes_for_a_jump_presses_nothing_but_off)
 
     /* A switch among the settings: not flipped by the tracker's release.
      * The contact is not lifted where it is next reported. */
-    feed_tap(FEED_LONE, SET_TAB_X, P(STRIP_Y));
+    feed_tap(FEED_LONE, SETTINGS_X, P(SETTINGS_Y));
+    const int slide = supply_settings_row(SET_SUPPLY_CONFIRM_SLIDE);
+    show_row(slide);
+    const gfx_rect_t plus = ui_setlist_row_part(supply_settings_list(), slide,
+                                                UI_SL_PART_PLUS);
+    const int px = plus.x + plus.w / 2, py = plus.y + plus.h / 2;
     const bool was = settings_get_bool(SET_SUPPLY_CONFIRM_SLIDE);
-    finger(FEED_LONE, ROW_R_X, P(CONF_SL_Y));
-    finger(FEED_LONE, ROW_R_X, P(CONF_SL_Y) - 200);
+    finger(FEED_LONE, px, P(py));
+    finger(FEED_LONE, px, P(py) - 200);
     CHECK_EQ(feed_ups, 8);                    /* the last, the tracker's */
     CHECK_EQ(settings_get_bool(SET_SUPPLY_CONFIRM_SLIDE), was);
     scr->cancel();
     feed_reset();
     feed_to_screen(scr);
-    feed_tap(FEED_LONE, ROW_R_X, P(CONF_SL_Y));
+    feed_tap(FEED_LONE, px, P(py));
     CHECK_EQ(settings_get_bool(SET_SUPPLY_CONFIRM_SLIDE), !was);
     settings_cancel_save();
 

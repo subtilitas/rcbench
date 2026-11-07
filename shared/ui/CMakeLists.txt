@@ -44,7 +44,7 @@ set(SRCS
     supply_screen.c
     supply_events.c
     supply_draw.c
-    supply_pdmini.c
+    supply_settings.c
     supply_guide.c
     servo_screen.c
     servo_screen_sweep.c
@@ -101,6 +101,9 @@ set(SRCS
     settings_screen.c
     settings_draw.c
     settings_rows.c
+    ui_setlist.c
+    ui_setlist_draw.c
+    ui_footer.c
     prog5v_box.c
     prog_choice.c
     sensors_pane.c

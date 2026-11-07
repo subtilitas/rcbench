@@ -226,6 +226,6 @@ RATE and ALGORITHM changes are sent with the sensor's SAVE command (`FF AA 00 00
 ## Related pages
 
 - [Setup](setup.md)
-- [Supply](supply.md): the PD mini's wiring, on the PD MINI tab.
+- [Supply](supply.md): the PD mini's wiring, in SUPPLY's settings list.
 - [Servo](servo.md)
 - [IMU](imu.md)

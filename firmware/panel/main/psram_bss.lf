@@ -58,6 +58,7 @@ entries:
     servo_screen_link (rcbench_extram_bss)
     ui_watermark (rcbench_extram_bss)
     supply_screen (rcbench_extram_bss)
+    supply_settings (rcbench_extram_bss)
     motor_screen (rcbench_extram_bss)
     motor_workbench (rcbench_extram_bss)
     motor_settings_page (rcbench_extram_bss)

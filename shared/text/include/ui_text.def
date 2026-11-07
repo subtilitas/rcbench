@@ -1850,33 +1850,6 @@ UI_TEXT(MO_RESET_PEAKS, 0,
     "SPITZENWERTE ZURÜCKSETZEN")
 
 /* -------------------------------------------------------------- SUPPLY */
-UI_TEXT(SUP_ROW_V_MAX, 0,
-    "VOLTAGE MAX",
-    "SPANNUNG MAX")
-UI_TEXT(SUP_ROW_I_MAX, 0,
-    "CURRENT MAX",
-    "STROM MAX")
-UI_TEXT(SUP_ROW_V_START, 0,
-    "START VOLTAGE",
-    "STARTSPANNUNG")
-UI_TEXT(SUP_ROW_I_START, 0,
-    "START CURRENT",
-    "STARTSTROM")
-UI_TEXT(SUP_ROW_TRIP_I, 0,
-    "CURRENT TRIP",
-    "ÜBERSTROM")
-UI_TEXT(SUP_ROW_TRIP_V, 0,
-    "VOLTAGE TRIP",
-    "ÜBERSPANNUNG")
-UI_TEXT(SUP_ROW_TRIP_MS, 0,
-    "TRIP TIME",
-    "ABSCHALTZEIT")
-UI_TEXT(SUP_ROW_CONFIRM_SLIDE, 0,
-    "SLIDER AND STEPS",
-    "REGLER UND STUFEN")
-UI_TEXT(SUP_ROW_CONFIRM_KEYS, 0,
-    "KEYPAD",
-    "TASTENFELD")
 UI_TEXT(SUP_VOLTAGE, 0,
     "VOLTAGE",
     "SPANNUNG")
@@ -1919,6 +1892,10 @@ UI_TEXT(SUP_MODEL, 33,
 UI_TEXT(SUP_PD_PINS, 29,
     "PD MINI TX GPIO %d RX GPIO %d",
     "PD MINI TX GPIO %d RX GPIO %d")
+/* The footer's line under SUPPLY on the panel's model supply. */
+UI_TEXT(SUP_SOURCE_SIM, 31,
+    "SIMULATED",
+    "SIMULIERT")
 UI_TEXT(SUP_PD_NO_PINS, 25,
     "PD MINI NO PINS",
     "PD MINI OHNE PINS")
@@ -1928,6 +1905,31 @@ UI_TEXT(SUP_ONLINE, 0,
 UI_TEXT(SUP_NOT_ANSWERING, 26,
     "NOT ANSWERING",
     "ANTWORTET NICHT")
+/* The footer's SETTINGS (ui_footer.h), on every screen that has a list. */
+UI_TEXT(FOOT_SETTINGS, 0,
+    "SETTINGS",
+    "OPTIONEN")
+/* The alert band on a tap on SETTINGS while the screen drives its output:
+ * the list would cover DISARM or OUTPUT OFF. */
+UI_TEXT(FOOT_SETTINGS_SAFE, 94,
+    "SETTINGS open on a SAFE bench only. Switch to SAFE first.",
+    "OPTIONEN nur bei SAFE. Schalte zuerst auf SAFE.")
+UI_TEXT(FOOT_SETTINGS_ON, 94,
+    "SETTINGS open with the output off only. Switch it off first.",
+    "OPTIONEN nur bei Ausgang aus. Schalte ihn zuerst aus.")
+/* The settings list's screen guide (ui_setlist.h). */
+UI_TEXT(HG_SL_TITLE_ROWS, 0,
+    "SETTINGS: ROWS",
+    "OPTIONEN: ZEILEN")
+UI_TEXT(HG_SL_TITLE_VALUES, 0,
+    "SETTINGS: VALUES",
+    "OPTIONEN: WERTE")
+UI_TEXT(HG_SL_HEAD, 0,
+    "The screen's name and what it drives. The home tag closes the list; with a change not saved it asks first.",
+    "Bildschirm und was er ansteuert. Das Home-Feld schließt die Liste, bei ungespeicherter Änderung mit Rückfrage.")
+UI_TEXT(HG_SL_RESET, 0,
+    "Sets this list's values to their defaults and no others. SAVE keeps them.",
+    "Setzt die Werte dieser Liste auf die Vorgaben, keine anderen. SPEICHERN behält sie.")
 UI_TEXT(SUP_SETTINGS, 0,
     "SETTINGS",
     "OPTIONEN")
@@ -1943,9 +1945,9 @@ UI_TEXT(SUP_CLOSE, 0,
 UI_TEXT(SUP_RESET_PDMINI, 0,
     "RESET PD MINI",
     "PD MINI ZURÜCKSETZEN")
-UI_TEXT(SUP_TAB_LIMITS, 0,
-    "LIMITS",
-    "GRENZEN")
+UI_TEXT(SUP_RESET_PDMINI_HELP, 0,
+    "Restarts the module; its output switches off first",
+    "Startet das Modul neu; sein Ausgang schaltet zuerst aus")
 UI_TEXT(SUP_TAB_PDMINI, 0,
     "PD MINI",
     "PD MINI")
@@ -1957,12 +1959,6 @@ UI_TEXT(SUP_PD_LOCK_ON, 44,
 UI_TEXT(SUP_PD_LOCK_PORT, 44,
     "A programming port reserves the supply",
     "Ein Programmierport belegt das Netzteil")
-UI_TEXT(SUP_PD_NOTE_1, 74,
-    "A change applies at once and is saved when the bench is idle.",
-    "Eine Änderung gilt sofort und wird gespeichert, wenn der Prüfstand ruht.")
-UI_TEXT(SUP_PD_NOTE_2, 74,
-    "No change while the output is on, a port holds it or the bench is ARMED.",
-    "Keine Änderung bei Ausgang EIN, belegtem Netzteil oder ARMED.")
 UI_TEXT(SUP_CAPS, 0,
     "OUTPUT LIMITS",
     "AUSGANGSGRENZEN")
@@ -1975,19 +1971,10 @@ UI_TEXT(SUP_TRIPS, 0,
 UI_TEXT(SUP_CONFIRM_ON, 0,
     "CONFIRM WHILE ON",
     "RÜCKFRAGE IM BETRIEB")
-UI_TEXT(SUP_HELP_1, 0,
-    "The output switches off if a reading",
-    "Der Ausgang schaltet aus, wenn")
-UI_TEXT(SUP_HELP_2, 0,
-    "stays above its trip limit for",
-    "ein Messwert für die Abschaltzeit")
-UI_TEXT(SUP_HELP_3, 0,
-    "the set trip time.",
-    "über seiner Abschaltgrenze liegt.")
 UI_TEXT(SUP_SAVED, 60,
     "SAVED",
     "GESPEICHERT")
-UI_TEXT(SUP_SAVE_WAITING, 0,
+UI_TEXT(SUP_SAVE_WAITING, 60,
     "SAVE PENDING",
     "SPEICHERN AUSSTEHEND")
 UI_TEXT(SUP_NOT_SAVED, 60,
@@ -2027,15 +2014,6 @@ UI_TEXT(SUP_NOT_ON_YET, 60,
 UI_TEXT(HG_SU_TITLE_LIVE, 0,
     "SUPPLY: LIVE",
     "SUPPLY: LIVE")
-UI_TEXT(HG_SU_TITLE_LIMITS, 0,
-    "SUPPLY SETTINGS: LIMITS",
-    "SUPPLY OPTIONEN: GRENZEN")
-UI_TEXT(HG_SU_TITLE_TRIPS, 0,
-    "SUPPLY SETTINGS: TRIPS",
-    "SUPPLY OPTIONEN: ABSCHALTUNGEN")
-UI_TEXT(HG_SU_TITLE_PDMINI, 0,
-    "SUPPLY SETTINGS: PD MINI",
-    "SUPPLY OPTIONEN: PD MINI")
 UI_TEXT(HG_SU_TITLE_READ, 0,
     "SUPPLY: READINGS",
     "SUPPLY: MESSWERTE")
@@ -2045,9 +2023,9 @@ UI_TEXT(HG_SU_TITLE_CONTROL, 0,
 UI_TEXT(HG_SU_RANGE_NAME, 0,
     "RANGE",
     "BEREICH")
-UI_TEXT(HG_SU_TASKS, 0,
-    "LIVE: the plot and the set points. SETTINGS: caps, trips, questions and the PD mini's wiring.",
-    "LIVE: Grafik und Sollwerte. OPTIONEN: Grenzen, Abschaltungen, Rückfragen und Anschlüsse des PD mini.")
+UI_TEXT(HG_SU_SETTINGS, 0,
+    "Opens the list of caps, trips, questions and the PD mini's wiring. Grey while the output is on.",
+    "Öffnet die Liste mit Grenzen, Abschaltungen, Rückfragen und Anschlüssen des PD mini. Grau bei Ausgang ein.")
 UI_TEXT(HG_SU_PLOT, 0,
     "Voltage, current and power over the last 30s, the set points dashed. TABLE lists the same values.",
     "Spannung, Strom und Leistung der letzten 30s, die Sollwerte gestrichelt. TABELLE zeigt dieselben Werte.")
@@ -2057,45 +2035,6 @@ UI_TEXT(HG_SU_VOLTAGE, 0,
 UI_TEXT(HG_SU_CURRENT, 0,
     "The supply holds the current at or under it; MODE then reads CC. The step keys move 0.1A.",
     "Das Netzteil hält den Strom darunter; MODUS zeigt dann CC. Die Stufentasten ändern um 0.1A.")
-UI_TEXT(HG_SU_TABS, 0,
-    "LIMITS: caps, start values, trips and questions. PD MINI: the module and its wiring.",
-    "GRENZEN: Obergrenzen, Startwerte, Abschaltungen und Rückfragen. PD MINI: Modul und Anschlüsse.")
-UI_TEXT(HG_SU_CAPS, 0,
-    "VOLTAGE MAX and CURRENT MAX: the highest set points. A cap under a set point brings it down.",
-    "SPANNUNG MAX und STROM MAX: die höchsten Sollwerte. Eine Grenze unter einem Sollwert senkt ihn.")
-UI_TEXT(HG_SU_START, 0,
-    "START VOLTAGE and START CURRENT: the set points after a restart. The output starts off.",
-    "STARTSPANNUNG und STARTSTROM: die Sollwerte nach dem Neustart. Der Ausgang startet aus.")
-UI_TEXT(HG_SU_RESET_PD, 101,
-    "Switches the output off and restarts the module, for a module that shows ERR.",
-    "Schaltet den Ausgang aus und startet das Modul neu, für ein Modul, das ERR zeigt.")
-UI_TEXT(HG_SU_TRIP_I, 0,
-    "The output switches off when the current stays over it for TRIP TIME. 0 is OFF.",
-    "Der Ausgang schaltet aus, wenn der Strom ABSCHALTZEIT lang darüber liegt. 0 ist AUS.")
-UI_TEXT(HG_SU_TRIP_V, 0,
-    "The output switches off when the voltage stays over it for TRIP TIME. 0 is OFF.",
-    "Der Ausgang schaltet aus, wenn die Spannung ABSCHALTZEIT lang darüber liegt. 0 ist AUS.")
-UI_TEXT(HG_SU_TRIP_MS, 0,
-    "How long a reading stays over a trip before it fires, 0 to 5000ms.",
-    "Dauer über einer Schwelle bis zur Abschaltung, 0 bis 5000ms.")
-UI_TEXT(HG_SU_ASK_SLIDE, 0,
-    "ON: the slider and the step keys ask before they change a live output.",
-    "EIN: Regler und Stufentasten fragen, bevor sie einen aktiven Ausgang ändern.")
-UI_TEXT(HG_SU_ASK_KEYS, 0,
-    "ON: the keypad asks before it changes a live output.",
-    "EIN: das Tastenfeld fragt, bevor es einen aktiven Ausgang ändert.")
-UI_TEXT(HG_SU_PD_EN, 0,
-    "ON drives the PD mini over the UART below. OFF runs the panel's supply model: SIMULATED.",
-    "EIN steuert den PD mini über den UART darunter. AUS nutzt das Netzteilmodell der Anzeige: SIMULIERT.")
-UI_TEXT(HG_SU_PD_TX, 0,
-    "The IOmcu pin that sends to the module's DM. - and + step it; a tap on the value types it.",
-    "Der IOmcu-Pin, der an DM des Moduls sendet. - und + stufen; Tippen auf den Wert öffnet das Tastenfeld.")
-UI_TEXT(HG_SU_PD_RX, 0,
-    "The IOmcu pin that reads the module's DP; -1 until it is wired.",
-    "Der IOmcu-Pin, der DP des Moduls liest; -1, solange nicht verdrahtet.")
-UI_TEXT(HG_SU_PD_BAUD, 0,
-    "The module's UART rate. AUTO finds it; the arrow keys step through the rates.",
-    "Die UART-Rate des Moduls. AUTO erkennt sie; die Pfeiltasten wählen eine Rate.")
 UI_TEXT(HG_SU_RANGE, 0,
     "The set point range in force: the supply's own, narrowed by the caps on LIMITS.",
     "Gültiger Sollwertbereich: der des Netzteils, eingeengt durch GRENZEN.")
@@ -5593,8 +5532,8 @@ UI_TEXT(ALERT_SUPPLY_REFUSED_FAILSAFE, 94,
     "Supply refused to switch on: IOmcu failsafe latched. Hold ARM, then DISARM.",
     "Netzteil bleibt aus: IOmcu-Failsafe ausgelöst. Halte ARM, dann tippe DISARM.")
 UI_TEXT(ALERT_PDMINI_PINS, 94,
-    "PD mini pins rejected. Check SUPPLY, tab PD MINI.",
-    "PD-mini-Pins abgelehnt. Prüfe SUPPLY, Tab PD MINI.")
+    "PD mini pins rejected. Check them in SUPPLY's SETTINGS.",
+    "PD-mini-Pins abgelehnt. Prüfe sie in den OPTIONEN von SUPPLY.")
 UI_TEXT(ALERT_PDMINI_SWITCH, 94,
     "PD mini output could not be switched.",
     "PD-mini-Ausgang ließ sich nicht schalten.")

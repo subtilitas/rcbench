@@ -173,7 +173,8 @@ static void pose_servo(void)
     servo_to(s_servo);
 }
 
-/** @brief The tabs pose_supply() taps: 0 LIVE, 1 SETTINGS, 2 PD MINI. */
+/** @brief What pose_supply() opens: 0 LIVE, 1 the SETTINGS list, 2 the list
+ *         at the PD mini's heading. */
 static int s_supply_tabs;
 
 /** @brief A tap of contact 1 at (@p x, @p y) of SUPPLY's body.
@@ -189,16 +190,16 @@ static void supply_tap(int x, int y)
     supply_screen()->event(&u);
 }
 
-/** @brief SUPPLY, fresh, on the task s_supply_tabs names. */
+/** @brief SUPPLY, fresh, showing what s_supply_tabs names. */
 static void pose_supply(void)
 {
     fresh();
     supply_screen()->enter();
-    if (s_supply_tabs > 0) {
-        supply_tap(SU_TAB_X(1), SU_TAB_Y);
+    if (s_supply_tabs == 1) {
+        supply_tap(SU_SETTINGS_X, SU_SETTINGS_Y);
     }
-    if (s_supply_tabs > 1) {
-        supply_tap(SU_OV_PDMINI_X, SU_OV_TAB_Y);
+    if (s_supply_tabs == 2) {
+        supply_screen_open_pdmini();
     }
 }
 
@@ -239,29 +240,25 @@ TEST_CASE(every_servo_page_fits_and_hides_no_stop)
     ui_theme_set(UI_THEME_DARK);
 }
 
-/* SUPPLY's LIVE, LIMITS and PD MINI with the output off, both languages and
- * themes, SAFE and ARMED, the link up and down: the task's page or pages,
- * then the rail's two. */
+/* SUPPLY's LIVE, and its SETTINGS list at the top and at the PD mini, with
+ * the output off, both languages and themes, SAFE and ARMED, the link up and
+ * down: LIVE's page, then the rail's two; over the list the list's two. */
 TEST_CASE(every_supply_page_fits_and_hides_no_stop)
 {
     const ui_screen_t *sup = supply_screen();
     static const struct {
         const char *what;
-        int tabs;           /* taps: 0 LIVE, 1 SETTINGS, 2 PD MINI */
+        int tabs;           /* 0 LIVE, 1 the list, 2 the list at PD MINI */
         int safe, armed;
         int titles[4], items[4];
     } k_states[] = {
         { "LIVE", 0, 3, 2,
           { TX_HG_SU_TITLE_LIVE, TX_HG_SU_TITLE_READ, TX_HG_SU_TITLE_CONTROL },
-          { 4, 5, 3 } },
-        { "LIMITS", 1, 4, 3,
-          { TX_HG_SU_TITLE_LIMITS, TX_HG_SU_TITLE_TRIPS, TX_HG_SU_TITLE_READ,
-            TX_HG_SU_TITLE_CONTROL },
-          { 4, 5, 5, 2 } },
-        { "PD MINI", 2, 3, 2,
-          { TX_HG_SU_TITLE_PDMINI, TX_HG_SU_TITLE_READ,
-            TX_HG_SU_TITLE_CONTROL },
-          { 4, 5, 2 } },
+          { 3, 5, 4 } },
+        { "SETTINGS", 1, 2, 2,
+          { TX_HG_SL_TITLE_ROWS, TX_HG_SL_TITLE_VALUES }, { 3, 4 } },
+        { "PD MINI", 2, 2, 2,
+          { TX_HG_SL_TITLE_ROWS, TX_HG_SL_TITLE_VALUES }, { 3, 4 } },
     };
     for (size_t k = 0; k < sizeof(k_states) / sizeof(k_states[0]); ++k) {
         s_supply_tabs = k_states[k].tabs;
@@ -287,9 +284,10 @@ TEST_CASE(every_supply_page_fits_and_hides_no_stop)
     ui_theme_set(UI_THEME_DARK);
 }
 
-/* OUTPUT OFF shows on SERVO's SET row and SUPPLY's rail while the output
- * is on or an ON is on its way: the pages with the dock on the right are
- * not offered then, and come back once it is off. */
+/* OUTPUT OFF shows on SERVO's SET row and in SUPPLY's footer while the
+ * output is on or an ON is on its way: SERVO's pages with the dock on the
+ * right and every SUPPLY page, either dock over the footer's middle slot,
+ * are not offered then, and come back once it is off. */
 TEST_CASE(a_live_supply_output_takes_the_pages_that_cover_output_off)
 {
     fresh();
@@ -303,11 +301,7 @@ TEST_CASE(a_live_supply_output_takes_the_pages_that_cover_output_off)
     CHECK_EQ(pages_checked(scr, false, "SERVO LIVE, output on"), 2);
     CHECK_EQ(title_of(scr, 0), TX_HG_SV_TITLE_CARD);
     const ui_screen_t *sup = supply_screen();
-    CHECK_EQ(pages_checked(sup, false, "SUPPLY LIVE, output on"), 2);
-    CHECK_EQ(title_of(sup, 0), TX_HG_SU_TITLE_READ);
-    ui_help_page_t p;
-    CHECK(ui_help_page(sup, false, 1, &p));
-    CHECK_STR_EQ(p.item[p.count - 1].label, TR(SUP_OUTPUT_OFF));
+    CHECK_EQ(sup->help_count(), 0);
     st.output = false;
     supply_screen_set_output(false);
     supply_screen_push(&st);
@@ -433,15 +427,16 @@ TEST_CASE(the_labels_follow_what_the_controls_read)
     const ui_screen_t *sup = supply_screen();
     sup->enter();
     REQUIRE(ui_help_page(sup, false, 2, &p));
-    CHECK_STR_EQ(p.item[p.count - 1].label, TR(SUP_OUTPUT_ON));
-    /* The PD mini as the supply: RESET PD MINI on LIMITS' page. */
+    CHECK_STR_EQ(p.item[p.count - 2].label, TR(SUP_OUTPUT_ON));
+    CHECK_STR_EQ(p.item[p.count - 1].label, TR(FOOT_SETTINGS));
+    /* The PD mini as the supply: the list's pages, its name SUPPLY. */
     supply_screen_set_model(false);
-    supply_tap(SU_TAB_X(1), SU_TAB_Y);
+    supply_tap(SU_SETTINGS_X, SU_SETTINGS_Y);
     REQUIRE(ui_help_page(sup, false, 0, &p));
-    CHECK_EQ(p.title, TX_HG_SU_TITLE_LIMITS);
-    CHECK_EQ(p.count, 4);
-    CHECK_EQ(p.item[3].text, TX_HG_SU_RESET_PD);
-    pages_checked(sup, false, "SUPPLY LIMITS, PD mini");
+    CHECK_EQ(p.title, TX_HG_SL_TITLE_ROWS);
+    CHECK_EQ(p.count, 3);
+    CHECK_STR_EQ(p.item[1].label, "SUPPLY");
+    pages_checked(sup, false, "SUPPLY SETTINGS, PD mini");
 }
 
 /* UI_HELP_AT_RIGHT: 4px inside the top-right corner at any size, and the

@@ -1,8 +1,8 @@
 /**
  * @file supply_events.c
- * @brief The SUPPLY screen's events: a touch on the strip, the set points, the
- *        rail and OUTPUT, SETTINGS' page, the keypad and the question, and the
- *        frame's tick.  supply_screen.c holds the state, the commands and the
+ * @brief The SUPPLY screen's events: a touch on the set points, the rail,
+ *        the footer's OUTPUT and SETTINGS, the SETTINGS list, the keypad and
+ *        the question, and the frame's tick.  supply_screen.c holds the state, the commands and the
  *        screen's interface (supply_screen.h); supply_screen_int.h is what it
  *        shares with this file and supply_draw.c.
  *
@@ -20,6 +20,7 @@
 #include "ui_slider.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
+#include "ui_footer.h"
 #include "ui_widgets.h"
 #include "ui_workbench.h"
 
@@ -27,48 +28,18 @@
 
 /* ------------------------------------------------------------------ keypad */
 
-/** @brief Opens the keypad for a set point or a setting. */
-static void open_keypad(int target, setting_id_t id)
+/** @brief Opens the keypad for a set point. */
+static void open_keypad(int target)
 {
     if (target == KP_SET_V) {
         ui_keypad_open(&s.kp, sup_overlay_area(), TR(SUP_VOLTAGE), "V", s.cv,
                        s.eff.v_min, s.eff.v_max, 2);
-    } else if (target == KP_SET_I) {
+    } else {
         ui_keypad_open(&s.kp, sup_overlay_area(), TR(SUP_CURRENT_LIMIT), "A",
                        s.ci,
                        s.eff.i_min, s.eff.i_max, 2);
-    } else {
-        const setting_def_t *d = settings_def(id);
-        float lo = d->min;
-        float hi = d->max;
-        /* A cap reaches what the supply can do; a start value what the caps
-         * allow.  A trip goes down to 0, which is off. */
-        if (id == SET_SUPPLY_V_MAX) {
-            lo = s.caps.v_min;
-            hi = s.caps.v_max;
-        } else if (id == SET_SUPPLY_I_MAX) {
-            lo = s.caps.i_min;
-            hi = s.caps.i_max;
-        } else if (id == SET_SUPPLY_V_START) {
-            lo = s.eff.v_min;
-            hi = s.eff.v_max;
-        } else if (id == SET_SUPPLY_I_START) {
-            lo = s.eff.i_min;
-            hi = s.eff.i_max;
-        }
-        const char *label = ui_setting_label(id);
-        int decimals = 2;
-        for (int i = 0; i < ROW_COUNT; ++i) {
-            if (k_rows[i].id == id) {
-                label    = ui_tr(k_rows[i].label);
-                decimals = k_rows[i].decimals;
-            }
-        }
-        ui_keypad_open(&s.kp, sup_overlay_area(), label, d->unit, settings_get(id),
-                       lo, hi, decimals);
     }
     s.kp_target  = target;
-    s.kp_setting = id;
     supply_invalidate();
 }
 
@@ -90,30 +61,6 @@ static void keypad_done(ui_keypad_result_t r, float v)
                                                    s.eff.i_step));
             s.kp_target = KP_NONE;
             sup_propose(FROM_KEYPAD);
-        } else if (s.kp_target == KP_PD) {
-            sup_pd_keypad_ok(v);
-            if (s.kp.open) {
-                return;                     /* refused: the keypad says why */
-            }
-        } else if (s.kp_target == KP_SETTING) {
-            /* Onto the setting's own step the safe way: a cap rounds down,
-             * so a typed 12.01V allows no more than 12.00V; a trip typed
-             * above 0 stays a trip, never rounded to off. */
-            const setting_def_t *d = settings_def(s.kp_setting);
-            if (d->step > 0.0f && (s.kp_setting == SET_SUPPLY_V_MAX
-                                   || s.kp_setting == SET_SUPPLY_I_MAX)) {
-                v = d->min + floorf((v - d->min) / d->step + 1e-3f) * d->step;
-            } else if (d->step > 0.0f && v > 0.0f && v < d->step
-                       && (s.kp_setting == SET_SUPPLY_TRIP_I
-                           || s.kp_setting == SET_SUPPLY_TRIP_V)) {
-                v = d->step;
-            }
-            /* Kept as soon as the bench allows a flash write; see
-             * settings_request_save().  An edit on SETUP that was not saved
-             * is written with it. */
-            settings_set(s.kp_setting, v);
-            sup_refresh_limits();
-            settings_request_save();
         }
     }
     s.kp_target = KP_NONE;
@@ -121,8 +68,6 @@ static void keypad_done(ui_keypad_result_t r, float v)
 }
 
 /* ------------------------------------------------------------------ events */
-
-static void task_changed(void);
 
 /**
  * @brief A set point moved by @p dv volts and @p di amps, snapped to the caps.
@@ -215,15 +160,17 @@ static void down(const touch_event_t *evt)
         }
         return;
     }
-    /* The strip, over the keypad too: a tap on the other task takes the
-     * keypad with it (task_changed()). */
-    if (gfx_rect_contains(sup_strip_area(), x, y)) {
-        sup_take(evt, P_STRIP);
-        (void)ui_wb_strip_event(&s.wb, evt);
-        ++s.strip_rev;
+    /* SETTINGS, over the keypad too: the list covers OUTPUT OFF, so it
+     * opens with the output off only, and the band says why it does not. */
+    if (gfx_rect_contains(ui_footer_rect(UI_FOOTER_SETTINGS), x, y)) {
+        if (supply_screen_output_live()) {
+            ui_router_set_alert(TR(FOOT_SETTINGS_ON));
+            return;
+        }
+        sup_take(evt, P_SETTINGS);
         return;
     }
-    /* The SIMULATED line, over the keypad too, as the strip: PD MINI. */
+    /* The SIMULATED line, over the keypad too: the list at PD MINI. */
     if (s.model && gfx_rect_contains(model_line_hit(), x, y)) {
         sup_take(evt, P_MODEL_LINE);
         return;
@@ -252,31 +199,6 @@ static void down(const touch_event_t *evt)
         }
         return;
     }
-    if (!sup_on_live()) {
-        if (gfx_rect_contains(s.ov_tabs.rect[0], x, y)
-            || gfx_rect_contains(s.ov_tabs.rect[1], x, y)) {
-            sup_take(evt, P_OV_TABS);
-            (void)ui_tabs_event(&s.ov_tabs, evt);
-            return;
-        }
-        if (sup_on_pdmini()) {
-            sup_pd_down(evt, x, y);
-            return;
-        }
-        if (!s.model && gfx_rect_contains(s.modreset_btn, x, y)) {
-            sup_take(evt, P_MODRESET);
-            return;
-        }
-        for (int i = 0; i < ROW_COUNT; ++i) {
-            if (gfx_rect_contains(sup_row_rect(i), x, y)) {
-                sup_take(evt, P_ROW);
-                s.press_row = i;
-                return;
-            }
-        }
-        return;
-    }
-
     /* LIVE, nothing over the left column: its own controls. */
     if (gfx_rect_contains((gfx_rect_t){ TAB_X, TAB_Y, TAB_W, TAB_H }, x, y)) {
         sup_take(evt, P_TABS);
@@ -333,7 +255,7 @@ static void down(const touch_event_t *evt)
 }
 
 /** @brief The release of the press, over the control it began on. */
-static void released(int was, int row, int x, int y)
+static void released(int was, int x, int y)
 {
     switch (was) {
     case P_RESET:
@@ -343,52 +265,38 @@ static void released(int was, int row, int x, int y)
         break;
     case P_CARD_V:
         if (gfx_rect_contains(sup_card_rect(0), x, y)) {
-            open_keypad(KP_SET_V, SETTING_COUNT);
+            open_keypad(KP_SET_V);
         }
         break;
     case P_CARD_I:
         if (gfx_rect_contains(sup_card_rect(1), x, y)) {
-            open_keypad(KP_SET_I, SETTING_COUNT);
+            open_keypad(KP_SET_I);
         }
         break;
     case P_VALUE_V:
         if (gfx_rect_contains(sup_set_value_rect(0), x, y)) {
-            open_keypad(KP_SET_V, SETTING_COUNT);
+            open_keypad(KP_SET_V);
         }
         break;
     case P_VALUE_I:
         if (gfx_rect_contains(sup_set_value_rect(1), x, y)) {
-            open_keypad(KP_SET_I, SETTING_COUNT);
+            open_keypad(KP_SET_I);
         }
         break;
-    case P_MODRESET:
-        /* The module restarted: its output goes off first. */
-        if (gfx_rect_contains(s.modreset_btn, x, y)) {
-            s.pending.module_reset = true;
-            s.pending.off          = true;
+    case P_SETTINGS:
+        if (gfx_rect_contains(ui_footer_rect(UI_FOOTER_SETTINGS), x, y)
+            && !supply_screen_output_live()) {
+            ui_keypad_close(&s.kp);
+            s.kp_target = KP_NONE;
+            ui_tabs_cancel(&s.tabs);
+            sup_list_open(false);
         }
-        break;
-    case P_ROW:
-        if (row >= 0 && row < ROW_COUNT && gfx_rect_contains(sup_row_rect(row), x, y)) {
-            const setting_id_t id = k_rows[row].id;
-            if (settings_def(id)->type == SET_TYPE_BOOL) {
-                /* A switch flips on the tap; it has nothing to type. */
-                settings_set(id, settings_get_bool(id) ? 0.0f : 1.0f);
-                sup_refresh_limits();
-                settings_request_save();
-            } else {
-                open_keypad(KP_SETTING, id);
-            }
-        }
-        break;
-    case P_PD_VALUE:
-    case P_PD_MINUS:
-    case P_PD_PLUS:
-        sup_pd_released(was, row, x, y);
         break;
     case P_MODEL_LINE:
         if (gfx_rect_contains(model_line_hit(), x, y)) {
-            task_changed();
+            ui_keypad_close(&s.kp);
+            s.kp_target = KP_NONE;
+            ui_tabs_cancel(&s.tabs);
             supply_screen_open_pdmini();
         }
         break;
@@ -444,28 +352,10 @@ void sup_drop_press(void)
     ui_hold_reset(&s.hold);
     prog5v_box_cancel(&s.p5);
     ui_tabs_cancel(&s.tabs);
-    ui_tabs_cancel(&s.ov_tabs);
-    ui_wb_strip_cancel(&s.wb);
-    ++s.strip_rev;
     ui_keypad_cancel_press(&s.kp);
     sup_let_go();
     ++s.ctrl_rev;
     ++s.out_rev;
-}
-
-/**
- * @brief The strip switched the task.  A keypad open goes with the task it was
- *        opened on, typed or not, as its CANCEL does; PLOT | TABLE and the set
- *        points keep what they were.  A tab switch is no navigation level.
- */
-static void task_changed(void)
-{
-    ui_keypad_close(&s.kp);
-    s.kp_target = KP_NONE;
-    ui_tabs_cancel(&s.tabs);
-    ++s.set_rev;
-    ++s.ov_rev;
-    supply_invalidate();
 }
 
 /* OUTPUT OFF and PROG 5V OFF, the controls here whose press stops what
@@ -484,6 +374,14 @@ bool sup_safe_at(int x, int y)
 void sup_event(const touch_event_t *evt)
 {
     if (evt == NULL) {
+        return;
+    }
+    /* The SETTINGS list covers the body: every press is the list's. */
+    if (sup_list_shown()) {
+        sup_list_event(evt);
+        if (!sup_list_shown()) {
+            supply_invalidate();
+        }
         return;
     }
     /*
@@ -558,26 +456,9 @@ void sup_event(const touch_event_t *evt)
         prog5v_box_release(&s.p5, evt);
         sup_let_go();
         return;
-    case P_STRIP:
-        if (up) {
-            sup_let_go();
-            if (ui_wb_strip_event(&s.wb, evt)) {
-                task_changed();
-            }
-            ++s.strip_rev;
-        }
-        return;
     case P_TABS:
         if (ui_tabs_event(&s.tabs, evt)) {
             supply_invalidate();
-        }
-        if (up) {
-            sup_let_go();
-        }
-        return;
-    case P_OV_TABS:
-        if (ui_tabs_event(&s.ov_tabs, evt)) {
-            ++s.ov_rev;
         }
         if (up) {
             sup_let_go();
@@ -610,12 +491,11 @@ void sup_event(const touch_event_t *evt)
     default:
         if (up) {
             const int was = s.pressed;
-            const int row = s.press_row;
             sup_let_go();
             /* A release the finger did not make ends the press and
              * activates nothing. */
             if (touch_event_is_tap_up(evt)) {
-                released(was, row, x, y);
+                released(was, x, y);
             }
         }
         return;
@@ -625,6 +505,12 @@ void sup_event(const touch_event_t *evt)
 void sup_tick(float dt_s)
 {
     sup_pd_tick();
+    sup_list_tick(dt_s);
+    /* The list hides OUTPUT OFF: an output that goes on under it, from a
+     * programming port or the link, closes it, and OUTPUT OFF shows. */
+    if (sup_list_shown() && supply_screen_output_live()) {
+        sup_list_close();
+    }
     /* A question about a live output goes once there is none: off, and no
      * ON on its way -- a STOP or a lost touch can drop one that was -- or
      * once a stop has come since it was asked. */

@@ -8,21 +8,21 @@
  * the screen's suites, test_safe_press.c, test_nav_drag.c and
  * render_screen.c.
  *
- *   - the strip: LIVE and SETTINGS from x 9, 150px each, 4px apart,
- *     y 8 to 48; the header right of it from x 328;
+ *   - the header from x 18, y 8 to 48: SIMULATED's button on the model;
  *   - LIVE's output card from y 56: PLOT | TABLE from x 18, 200px for the
- *     two, y 82 to 122; the plot y 150 to 286;
- *   - SET POINTS from y 304: each row's step keys 72 x 48px at x 18 and
+ *     two, y 82 to 122; the plot y 150 to 228;
+ *   - SET POINTS from y 246: each row's step keys 72 x 48px at x 18 and
  *     418, the track x 98 to 410, the value's box x 498 to 618; the
- *     voltage's controls y 354 to 402, the current limit's y 436 to 484;
+ *     voltage's controls y 296 to 344, the current limit's y 378 to 426;
  *   - the rail from x 636, 380px: the cards 64px tall from y 56, 68px
- *     apart; the CONTROL card from y 332: RESET PEAKS y 366 to 414 and
- *     OUTPUT ON / OFF y 424 to 484, both x 648 to 1004;
- *   - SETTINGS' page and the keypad over the left column, x 8 to 628,
- *     y 56 to 532; LIMITS | PD MINI at its top, y 62 to 102; LIMITS'
- *     values 120 x 48px at x 158 (left column) and 498 (right), rows 52px
- *     apart; PD MINI's rows from y 110, 56px apart;
- *   - the question's APPLY and CANCEL, 240 x 60px from y 296.
+ *     apart; the CONTROL card from y 328: RESET PEAKS y 354 to 402;
+ *   - the footer (ui_footer.h), y 444 to 492: OUTPUT ON / OFF x 348 to
+ *     676 and SETTINGS x 686 to 1014;
+ *   - the keypad and the question over the left column, x 8 to 628,
+ *     y 56 to 436; the question's APPLY and CANCEL, 240 x 60px from
+ *     y 296;
+ *   - the SETTINGS list over the whole body (ui_setlist.h): its rows'
+ *     rects come from supply_settings_list() and ui_setlist_row_part().
  *
  * SPDX-License-Identifier: MIT
  */
@@ -31,10 +31,7 @@
 #include "gfx.h"
 #include "ui_layout.h"
 
-#define SU_TAB_Y          28            /**< The strip's tabs. */
-/** @brief The strip's tab @p i: 0 LIVE, 1 SETTINGS. */
-#define SU_TAB_X(i)       (9 + (i) * 154 + 75)
-#define SU_INFO_X         328           /**< The header's left edge. */
+#define SU_INFO_X         18            /**< The header's left edge. */
 #define SU_INFO_B         56            /**< The header's rows end here. */
 
 #define SU_TAG_Y          56            /**< The output card's title tag:
@@ -51,8 +48,8 @@
 #define SU_TRACK_W        312           /**< Their length, px. */
 #define SU_VAL_X          558           /**< The values' boxes. */
 #define SU_VAL_R          617           /**< Their right column. */
-#define SU_V_ROW_Y        378           /**< The voltage's middle row. */
-#define SU_I_ROW_Y        460           /**< The current limit's. */
+#define SU_V_ROW_Y        320           /**< The voltage's middle row. */
+#define SU_I_ROW_Y        402           /**< The current limit's. */
 #define SU_CTRL_H         48            /**< Keys, track and value, px. */
 
 #define SU_CARD_X         826           /**< The rail's cards. */
@@ -63,45 +60,37 @@
 #define SU_RC_X           648           /**< The CONTROL card's column. */
 #define SU_RC_W           356           /**< Its width, px. */
 #define SU_RESET_X        826           /**< RESET PEAKS. */
-#define SU_RESET_Y        390           /**< Its middle row. */
-#define SU_OUT_X          826           /**< OUTPUT ON / OFF. */
-#define SU_OUT_T          424           /**< Its top. */
-#define SU_OUT_H          60            /**< Its height, px. */
-#define SU_OUT_Y          454           /**< Its middle row. */
+#define SU_RESET_Y        378           /**< Its middle row. */
+#define SU_OUT_X          512           /**< OUTPUT ON / OFF: the footer's
+                                             middle slot. */
+#define SU_OUT_L          348           /**< Its left edge. */
+#define SU_OUT_W          328           /**< Its width, px. */
+#define SU_OUT_T          444           /**< Its top. */
+#define SU_OUT_H          48            /**< Its height, px. */
+#define SU_OUT_Y          468           /**< Its middle row. */
+#define SU_SETTINGS_X     850           /**< The footer's SETTINGS. */
+#define SU_SETTINGS_Y     468
 
-/** @brief The left column the keypad, the question and SETTINGS cover. */
-#define SU_OV_AREA \
-    ((gfx_rect_t){ UI_MARGIN, 56, 620, UI_BODY_H - 56 - UI_MARGIN })
-#define SU_ROW_L_X        218           /**< SETTINGS' left values. */
-#define SU_ROW_R_X        558           /**< Its right values. */
-#define SU_ROW_PITCH      52            /**< From row to row, px. */
-#define SU_VMAX_Y         158           /**< VOLTAGE MAX. */
-#define SU_VSTART_Y       292           /**< START VOLTAGE. */
-#define SU_ISTART_Y       344           /**< START CURRENT. */
-#define SU_TRIPI_Y        158           /**< CURRENT TRIP. */
-#define SU_CONF_SL_Y      392           /**< SLIDER AND STEPS. */
-#define SU_CONF_KP_Y      444           /**< KEYPAD. */
-#define SU_MODRESET_X     148           /**< RESET PD MINI. */
-#define SU_MODRESET_Y     404
-
-/** @brief SETTINGS' tabs, y 62 to 102: LIMITS and PD MINI. */
-#define SU_OV_TAB_Y       82
-#define SU_OV_LIMITS_X    168
-#define SU_OV_PDMINI_X    468
-/** @brief PD MINI's row @p i, its middle: enable, TX, RX, baud. */
-#define SU_PD_Y(i)        (134 + (i) * 56)
-#define SU_PD_MINUS_X     410           /**< A - key's middle: x 382 to 438. */
-#define SU_PD_VALUE_X     502           /**< A value's: x 442 to 562. */
-#define SU_PD_PLUS_X      594           /**< A + key's: x 566 to 622. */
-/** @brief The SIMULATED line's button, on the header's row: x 328 to 678 in
+/** @brief The left column the keypad and the question cover. */
+#define SU_OV_AREA        ((gfx_rect_t){ UI_MARGIN, 56, 620, 380 })
+/** @brief The SIMULATED line's button, on the header's row: x 18 to 368 in
  *         the wider of the two languages. */
-#define SU_MODEL_X        400
+#define SU_MODEL_X        100
 #define SU_MODEL_Y        28
+
+/** @brief The SETTINGS list's keypad: over the body down to the list's
+ *         strip (ui_setlist_int.h). */
+#define SU_LIST_KP_AREA   ((gfx_rect_t){ 10, 10, 1004, 482 })
+#define SU_LIST_RESET_X   512           /**< The list's RESET SUPPLY. */
+#define SU_LIST_SAVE_X    850           /**< Its SAVE. */
+#define SU_LIST_STRIP_Y   468           /**< The list's strip, the footer's
+                                             place. */
+#define SU_LIST_DRAG_X    300           /**< A drag on the list's rows. */
+#define SU_LIST_DRAG_Y    240
 
 #define SU_APPLY_X        168           /**< The question's APPLY. */
 #define SU_DISCARD_X      468           /**< Its CANCEL. */
-#define SU_ASK_Y          318           /**< Inside both, on no LIVE or
-                                             SETTINGS control. */
-
-/** @brief SETTINGS' save line, 4px above the alert band. */
-#define SU_SAVE_LINE_Y    (UI_ALERT_Y - UI_BAND_H - 4 - 20)
+#define SU_ASK_Y          352           /**< Inside both, on no LIVE
+                                             control: between the voltage's
+                                             controls and the current
+                                             limit's. */

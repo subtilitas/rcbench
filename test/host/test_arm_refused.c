@@ -50,15 +50,15 @@
 #define H UI_PANEL_H
 #define P(y) (UI_BAND_H + (y))
 
-/* MOTOR & ESC's ARM and its SETTINGS tab; SERVO's ARM. */
+/* MOTOR & ESC's ARM and the footer's SETTINGS; SERVO's ARM. */
 #define MO_ARM_PX   MO_ARM_X
 #define MO_ARM_PY   P(MO_ARM_Y)
-#define MO_SET_PX   MO_TAB_X(2)
-#define MO_SET_PY   P(MO_TAB_Y)
+#define MO_SET_PX   MO_SETTINGS_X
+#define MO_SET_PY   P(MO_SETTINGS_Y)
 #define SV_ARM_PX   (SV_RC_X + SV_RC_W / 2)
 #define SV_ARM_PY   P(SV_ARM_Y + SV_ARM_H / 2)
 /* The keypad's frame, as the workbench's tests probe it. */
-#define KP_AREA     ((gfx_rect_t){ UI_MARGIN, 3, 620, UI_BODY_H - 3 - UI_MARGIN })
+#define KP_AREA     ((gfx_rect_t){ 10, 10, 1004, 482 })
 
 #define SETTLE_MS HEARTBEAT_SETTLE_MS
 #define WAIT_MS   ARMING_LINE_WAIT_MS
@@ -217,7 +217,16 @@ static int row_of(setting_id_t id)
  *         again after. */
 static bool keypad_opens(setting_id_t id)
 {
-    const gfx_rect_t b = motor_settings_box(row_of(id));
+    gfx_rect_t b = motor_settings_box(row_of(id));
+    if (b.y + b.h > 436) {
+        /* Under the pane: the list dragged to its end. */
+        for (int k = 0; k < 2; ++k) {
+            finger(FEED_LONE, 300, P(400));
+            glide(FEED_LONE, 300, P(100), 6);
+            lift(FEED_LONE);
+        }
+        b = motor_settings_box(row_of(id));
+    }
     feed_tap(FEED_LONE, b.x + b.w / 2, P(b.y + b.h / 2));
     const bool open = motor_screen_keypad_setting() == (int)id;
     if (open) {
@@ -516,6 +525,7 @@ TEST_CASE(every_refusal_returns_motor_and_esc_to_safe_with_every_lock_lifted)
         if (!keypad_opens(SET_OUT_MIN_US) || !keypad_opens(SET_OUT_MAX_US)) {
             T_FAIL("%s: a pulse row stays locked", k_reason[r]);
         }
+        (void)motor_screen()->back();       /* the list closes: ARM shows */
         const uint32_t again = motor_hold();
         if (again == 0u || again == ask) {
             T_FAIL("%s: ARM takes no new hold", k_reason[r]);

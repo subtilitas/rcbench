@@ -148,7 +148,7 @@ stepped).
 Every keypad row is held to one check: its title, unit, range and digits as it opens, a
 value past the range refused with the row unchanged, CANCEL leaving it unchanged, and OK
 setting it; on SETUP the rows are read from the schema (38: PANEL 4, SENSORS 34), on TIMING
-(14), MOTOR & ESC > SETTINGS (8), SUPPLY (2 set points, 7 rows), SERVO (20) and the servo
+(14), MOTOR & ESC's settings list (8), SUPPLY (2 set points, 7 list rows), SERVO (20) and the servo
 programmer (11 fields, 3 MORE entries), and each suite checks that every number of its
 schema category has a row (`test_keypad_rows_setup`, `test_keypad_rows_stick`,
 `test_keypad_rows_motor`, `test_keypad_rows_supply`, `test_keypad_rows_servo`,
@@ -371,9 +371,11 @@ and every frame over a simulated bench (`ui_band_key()`, `test_frame_work`).
 Built and tested on the host (`shared/ui/ui_help.c`, the router's guide in `ui_router.c`;
 `test_help_router`, `test_help_pages`): "?" in the band opens numbered marks and a dock with
 up to 5 controls a page, 3 rows each. The menu has 4 pages. SERVO has 12 pages over its
-tasks and SETTINGS' pages with 47 items (`shared/ui/servo_guide.c`), SUPPLY 6 with 25 items
-(`shared/ui/supply_guide.c`); `test_help_guides` holds them. A page whose dock would cover
-OUTPUT OFF, STOP TEST or STOP RUN is not offered while that control shows. OUTPUTS, SETUP,
+tasks and SETTINGS' pages with 47 items (`shared/ui/servo_guide.c`), SUPPLY 3 with 12 items
+on LIVE and the settings list's 2 with 7 (`shared/ui/supply_guide.c`, `ui_setlist.c`);
+`test_help_guides` holds them. A page whose dock would cover OUTPUT OFF, STOP TEST or STOP
+RUN is not offered while that control shows; SUPPLY's OUTPUT OFF, in the footer's middle
+slot, lies under either dock, so SUPPLY offers no page while its output is on. OUTPUTS, SETUP,
 LOGS and FILES have 20 pages over 11 states (`help_outputs.c`, `help_setup.c`, `help_logs.c`,
 `help_files.c`; `test_help_outputs`, `test_help_setup`, `test_help_logs`, `test_help_files`).
 The other screens have none yet. PREV and NEXT stand in the band, in the home tag's place, the
@@ -403,6 +405,13 @@ SAFE, the slider, its `-1` and `+1` steps and the rotary knob are refused and th
 0%, which every switch to SAFE returns it to; both bench screens read the value's state
 (OFF, ARMING, LIVE, LEAVING) from `ui_value_gate.h` (`test_motor_arm`, `test_value_state`;
 host suite only).
+
+MOTOR & ESC and SUPPLY end in the common footer (`shared/ui/ui_footer.c`): the screen's name
+with what it drives, the 2s hold, and SETTINGS, which opens the settings list
+(`shared/ui/ui_setlist.c`, SETUP's category list as a widget) only while the screen drives
+nothing; the list closes when its screen goes live. SETUP draws its own list through the same
+widget (`test_footer`, `test_setlist`, `test_motor_workbench`, `test_supply_pdmini`; host
+suite only).
 
 ### Servo screen
 
@@ -526,8 +535,8 @@ only).
 ### Supply screen
 
 Built and tested on the host; the control task drives the PD mini through the SUPPLY page
-(`shared/bench/supply_link.c`) when SUPPLY's PD MINI tab enables it, and runs `supply_sim_t`
-otherwise. Set points shown beside their readings, a keypad, a SETTINGS overlay (caps, start
+(`shared/bench/supply_link.c`) when SUPPLY's settings list enables it, and runs `supply_sim_t`
+otherwise. Set points shown beside their readings, a keypad, a settings list (caps, start
 values, current and voltage trips, the confirmation for live changes) kept in NVS, and a
 question before a set point changes a live output. Every stop, a trip, a lost ON and a
 supply that stops answering switch the output off; the supply is stepped and logged from
@@ -1255,14 +1264,14 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 486 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 488 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
 `test_nav_tiles`, `test_menu_openers`, `test_nav_alert`, `test_nav_mark`,
 `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_band_hwstop`,
 `test_help_router`, `test_help_pages`, `test_help_guides`, `test_help_setup`,
-`test_help_outputs`, `test_help_logs`, `test_help_files`, `test_widgets`, `test_hold_hint`, `test_hold_flash`, `test_hold_button`, `test_action_fill`,
+`test_help_outputs`, `test_help_logs`, `test_help_files`, `test_widgets`, `test_footer`, `test_setlist`, `test_hold_hint`, `test_hold_flash`, `test_hold_button`, `test_action_fill`,
 `test_workbench`, `test_prog_registry`,
 `test_keypad`, `test_keypad_sign`, `test_keypad_rows_setup`, `test_keypad_rows_stick`,
 `test_keypad_rows_motor`, `test_keypad_rows_supply`, `test_keypad_rows_servo`,
@@ -1883,17 +1892,17 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_value_ask.c` | 8 | 8 | 100.0% |
 | `shared/ui/splash_screen.c` | 72 | 69 | 95.8% |
 | `shared/ui/overview_screen.c` | 147 | 142 | 96.6% |
-| `shared/ui/motor_screen.c` | 272 | 265 | 97.4% |
-| `shared/ui/motor_events.c` | 178 | 174 | 97.8% |
-| `shared/ui/motor_draw.c` | 360 | 348 | 96.7% |
+| `shared/ui/motor_screen.c` | 281 | 274 | 97.5% |
+| `shared/ui/motor_events.c` | 206 | 202 | 98.1% |
+| `shared/ui/motor_draw.c` | 378 | 366 | 96.8% |
 | `shared/ui/motor_workbench.c` | 172 | 165 | 95.9% |
-| `shared/ui/motor_settings_page.c` | 189 | 179 | 94.7% |
+| `shared/ui/motor_settings_page.c` | 87 | 87 | 100.0% |
 | `shared/ui/motor_program_page.c` | 174 | 169 | 97.1% |
-| `shared/ui/supply_screen.c` | 550 | 541 | 98.4% |
-| `shared/ui/supply_events.c` | 383 | 381 | 99.5% |
-| `shared/ui/supply_draw.c` | 429 | 411 | 95.8% |
-| `shared/ui/supply_pdmini.c` | 167 | 161 | 96.4% |
-| `shared/ui/supply_guide.c` | 119 | 118 | 99.2% |
+| `shared/ui/supply_screen.c` | 522 | 512 | 98.1% |
+| `shared/ui/supply_events.c` | 302 | 300 | 99.3% |
+| `shared/ui/supply_draw.c` | 403 | 387 | 96.0% |
+| `shared/ui/supply_settings.c` | 154 | 147 | 95.5% |
+| `shared/ui/supply_guide.c` | 79 | 79 | 100.0% |
 | `shared/ui/prog5v_box.c` | 190 | 190 | 100.0% |
 | `shared/ui/prog_choice.c` | 126 | 125 | 99.2% |
 | `shared/ui/ui_keypad.c` | 290 | 288 | 99.3% |
@@ -1960,9 +1969,12 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/text_view.c` | 385 | 378 | 98.2% |
 | `shared/ui/text_view_draw.c` | 270 | 253 | 93.7% |
 | `shared/ui/text_view_keys.c` | 489 | 471 | 96.3% |
-| `shared/ui/settings_screen.c` | 550 | 544 | 98.9% |
-| `shared/ui/settings_draw.c` | 232 | 226 | 97.4% |
+| `shared/ui/settings_screen.c` | 281 | 273 | 97.2% |
+| `shared/ui/settings_draw.c` | 66 | 66 | 100.0% |
 | `shared/ui/settings_rows.c` | 36 | 35 | 97.2% |
+| `shared/ui/ui_setlist.c` | 620 | 600 | 96.8% |
+| `shared/ui/ui_setlist_draw.c` | 280 | 257 | 91.8% |
+| `shared/ui/ui_footer.c` | 42 | 41 | 97.6% |
 | `shared/ui/sensors_pane.c` | 107 | 107 | 100.0% |
 | `shared/ui/sensors_rows.c` | 250 | 250 | 100.0% |
 | `shared/ui/outputs_screen.c` | 561 | 556 | 99.1% |
@@ -2219,7 +2231,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **84920** | **83357** | **98.2%** |
+| **total** | **85192** | **83600** | **98.1%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

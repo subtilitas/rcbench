@@ -42,9 +42,6 @@ const ui_plot_series_t sup_series[S_COUNT] = {
 
 static const ui_text_id_t k_tab_labels[] = { TX_MO_TAB_PLOT,
                                               TX_MO_TAB_TABLE };
-/** @brief SETTINGS' page tabs. */
-static const ui_text_id_t k_ov_labels[SUP_OV_COUNT] = { TX_SUP_TAB_LIMITS,
-                                                         TX_SUP_TAB_PDMINI };
 /* The screen's state; supply_screen_int.h names it s. */
 sup_state_t sup_s;
 
@@ -59,11 +56,10 @@ static void forget_drawn(void)
         s.drawn_out[b]   = UINT32_MAX;
         s.drawn_ov[b]    = UINT32_MAX;
         s.drawn_kp[b]    = UINT32_MAX;
-        s.drawn_strip[b] = UINT32_MAX;
+        s.drawn_list[b]  = UINT32_MAX;
         s.drawn_p5[b]    = UINT32_MAX;
         s.drawn_title[b] = 0xFFu;
         s.drawn_online[b] = 0xFFu;
-        s.drawn_save[b]  = 0xFFu;
     }
 }
 
@@ -139,45 +135,9 @@ gfx_rect_t sup_card_rect(int i)
                          RIGHT_W, CARD_H };
 }
 
-/**
- * @brief The strip's row with its trough's 3px around it.
- * @return the row, px
- */
-gfx_rect_t sup_strip_area(void)
-{
-    const gfx_rect_t r = ui_wb_strip_rect(&s.wb);
-    return (gfx_rect_t){ (int16_t)(r.x - 3), (int16_t)(r.y - 3),
-                         (int16_t)(r.w + 6), (int16_t)(r.h + 6) };
-}
-
-/**
- * @brief The strip's tabs laid out again at SUPPLY's sizes, SU_TAB_W x
- *        SU_STRIP_H from (SU_STRIP_X, SU_STRIP_Y): the tasks, their order
- *        and their labels as ui_wb_strip_init() set them.
- */
-static void strip_widen(void)
-{
-    ui_tabs_t *t = &s.wb.tabs;
-    const int n = t->count;
-    ui_text_id_t ids[UI_TABS_MAX] = { (ui_text_id_t)0 };
-    for (int i = 0; i < n; ++i) {
-        ids[i] = (ui_text_id_t)t->text[i];
-    }
-    ui_tabs_init_text(t, ids, n,
-                      (gfx_rect_t){ SU_STRIP_X, SU_STRIP_Y,
-                                    (int16_t)(n * SU_TAB_W
-                                              + (n - 1) * SU_TAB_GAP),
-                                    SU_STRIP_H });
-}
-
 bool sup_on_live(void)
 {
-    return ui_wb_strip_task(&s.wb) == UI_WB_LIVE;
-}
-
-bool sup_on_pdmini(void)
-{
-    return !sup_on_live() && s.ov_tabs.selected == SUP_OV_PDMINI;
+    return !sup_list_shown();
 }
 
 bool sup_p5_shown(void)
@@ -189,32 +149,6 @@ bool sup_p5_shown(void)
 gfx_rect_t sup_overlay_area(void)
 {
     return (gfx_rect_t){ OV_X, OV_Y, OV_W, OV_H };
-}
-
-/**
- * @brief SETTINGS' row @p i: its label and its value, in its column.
- * @param i the row, an index of k_rows
- * @return the row, px
- */
-gfx_rect_t sup_row_rect(int i)
-{
-    const bool left = (k_rows[i].col == 0);
-    return (gfx_rect_t){ (int16_t)(left ? OV_COL0_X : OV_COL1_X),
-                         (int16_t)(OV_Y + k_rows[i].y),
-                         (int16_t)(left ? OV_COL_W : OV_COL1_W), OV_ROW_H };
-}
-
-/**
- * @brief The value of SETTINGS' row @p i, at the row's right end: tapped,
- *        the keypad or a switch's flip.
- * @param i the row, an index of k_rows
- * @return the value's box, px
- */
-gfx_rect_t sup_row_value_rect(int i)
-{
-    const gfx_rect_t r = sup_row_rect(i);
-    return (gfx_rect_t){ (int16_t)(r.x + r.w - OV_VAL_W), r.y, OV_VAL_W,
-                         OV_ROW_H };
 }
 
 /* The sliders take the effective caps' ranges and steps; their values are
@@ -263,14 +197,15 @@ static supply_limits_t limits_from_settings(void)
 }
 
 /* The limits as the settings hold them now, applied to the sliders. */
-void sup_refresh_limits(void)
+void sup_refresh_limits(bool persist)
 {
     s.lim = limits_from_settings();
     s.eff = supply_caps_limited(&s.caps, &s.lim);
     /* A start value over a cap that was lowered under it comes down with
      * it, so the overlay never shows one the restart would not use -- and
      * is kept, or a pair read back that way (a save that reached one key
-     * and not the other) would be corrected again at every restart. */
+     * and not the other) would be corrected again at every restart.  An
+     * edit in the SETTINGS list keeps it pending with the edit itself. */
     bool corrected = false;
     if (settings_get(SET_SUPPLY_V_START) > s.eff.v_max) {
         settings_set(SET_SUPPLY_V_START, s.eff.v_max);
@@ -280,7 +215,7 @@ void sup_refresh_limits(void)
         settings_set(SET_SUPPLY_I_START, s.eff.i_max);
         corrected = true;
     }
-    if (corrected) {
+    if (corrected && persist) {
         settings_request_save();
     }
     apply_caps();
@@ -305,8 +240,7 @@ static void reset(void)
     s.eff = supply_caps_limited(&s.caps, &s.lim);
     ui_plot_init(&s.plot, sup_series, S_COUNT, (float)PLOT_W / SAMPLE_HZ);
     ui_plot_set_running(&s.plot, false);
-    ui_wb_strip_init(&s.wb, TASKS, SU_STRIP_X, SU_STRIP_Y);
-    strip_widen();
+    sup_list_reset();
     ui_tabs_init_text(&s.tabs, k_tab_labels, SUPPLY_PANE_COUNT,
                       (gfx_rect_t){ TAB_X, TAB_Y, TAB_W, TAB_H });
     /* Where the panel's model starts, so a screen and its model agree before
@@ -318,20 +252,14 @@ static void reset(void)
     s.v_up   = nudge_rect(0, true);
     s.i_down = nudge_rect(1, false);
     s.i_up   = nudge_rect(1, true);
-    s.out_rect   = (gfx_rect_t){ RC_X, OUT_Y, RC_W, OUT_H };
+    s.out_rect   = ui_footer_rect(UI_FOOTER_HOLD);
     s.reset_rect = (gfx_rect_t){ RC_X, RESET_Y, RC_W, BTN_H };
-    s.modreset_btn = (gfx_rect_t){ OV_COL0_X, (int16_t)(OV_Y + OV_MODRESET_DY),
-                                   OV_COL_W, OV_ROW_H };
     /* The question's buttons stand clear of its last lines, which end 4px
      * above the alert band. */
     s.apply_btn   = (gfx_rect_t){ (int16_t)(OV_X + 40), ASK_BTN_Y,
                                   ASK_BTN_W, ASK_BTN_H };
     s.discard_btn = (gfx_rect_t){ (int16_t)(OV_X + OV_W - 40 - ASK_BTN_W),
                                   ASK_BTN_Y, ASK_BTN_W, ASK_BTN_H };
-    ui_tabs_init_text(&s.ov_tabs, k_ov_labels, SUP_OV_COUNT,
-                      (gfx_rect_t){ (int16_t)(OV_X + INNER),
-                                    (int16_t)(OV_Y + OV_TAB_DY),
-                                    (int16_t)(OV_W - 2 * INNER), OV_TAB_H });
     s.pressed = P_NONE;
     s.kp.pressed = -1;
     sup_bind_colours();
@@ -533,7 +461,7 @@ float supply_screen_set_i(void) { return s.ci; }
 
 void supply_screen_settings_loaded(void)
 {
-    sup_refresh_limits();
+    sup_refresh_limits(true);
     s.cv = supply_snap(settings_get(SET_SUPPLY_V_START), s.eff.v_min,
                        s.eff.v_max, s.eff.v_step);
     s.ci = supply_snap(settings_get(SET_SUPPLY_I_START), s.eff.i_min,
@@ -936,7 +864,7 @@ bool supply_screen_output_held(void)
 
 void supply_screen_limits_changed(void)
 {
-    sup_refresh_limits();
+    sup_refresh_limits(false);
 }
 
 void supply_screen_set_on_coming(bool coming)
@@ -1012,9 +940,8 @@ static void leave(void)
     ui_slider_release(&s.i_slider);
     ui_hold_reset(&s.hold);
     ui_tabs_cancel(&s.tabs);
-    ui_tabs_cancel(&s.ov_tabs);
-    ui_wb_strip_cancel(&s.wb);
-    ++s.strip_rev;
+    /* The SETTINGS list closes, what its keypad held typed with it. */
+    sup_list_close();
     ui_keypad_close(&s.kp);
     s.kp_target     = KP_NONE;
     /* A change waiting for its question is dropped: nobody is there to
@@ -1033,13 +960,14 @@ static void leave(void)
  * whose output it is, no OFF is owed for the leave. */
 static void enter(void)
 {
-    ui_wb_strip_open(&s.wb);
-    ++s.strip_rev;
     supply_invalidate();
     supply_screen_entered(SUPPLY_BY_SUPPLY);
 }
 
-int supply_screen_task(void) { return (int)ui_wb_strip_task(&s.wb); }
+int supply_screen_task(void)
+{
+    return sup_list_shown() ? (int)UI_WB_SETTINGS : (int)UI_WB_LIVE;
+}
 
 /*
  * Touch events were lost.  The press is dropped as sup_drop_press() drops it:
@@ -1049,17 +977,22 @@ int supply_screen_task(void) { return (int)ui_wb_strip_task(&s.wb); }
 static void cancel(void)
 {
     sup_drop_press();
+    sup_list_cancel();
 }
 
 /*
- * The home tag climbs one level: the question first, answered CANCEL, then
- * a keypad, closed with nothing typed kept.  The tasks are siblings, not
- * levels, as on MOTOR & ESC and SERVO: with neither open the screen is
- * left, from LIVE and from SETTINGS alike.  Nothing here touches the
- * output.
+ * The home tag climbs one level: over the SETTINGS list what covers it,
+ * then the list, through the leave warning while something is unsaved;
+ * on LIVE the question first, answered CANCEL, then a keypad, closed with
+ * nothing typed kept; with neither open the screen is left.  Nothing here
+ * touches the output.
  */
 static bool back(void)
 {
+    if (sup_list_back()) {
+        supply_invalidate();
+        return true;
+    }
     if (s.confirm_open) {
         sup_confirm_close(false);
     } else if (s.kp.open) {
@@ -1073,10 +1006,13 @@ static bool back(void)
 }
 
 /**
- * @brief ui_screen_t's covered: the question or a keypad.
+ * @brief ui_screen_t's covered: the SETTINGS list, the question or a keypad.
  * @return true while one is up
  */
-static bool covered(void) { return s.confirm_open || s.kp.open; }
+static bool covered(void)
+{
+    return sup_list_shown() || s.confirm_open || s.kp.open;
+}
 
 static const ui_screen_t k_screen = {
     .covered = covered,

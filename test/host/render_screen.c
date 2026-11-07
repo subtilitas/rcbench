@@ -77,6 +77,7 @@
 #include "servo_spots.h"
 #include "stick_spots.h"
 #include "supply_spots.h"
+#include "ui_setlist.h"
 #include "logview_spots.h"
 #include "motor_spots.h"
 #include "ui_band.h"
@@ -123,9 +124,6 @@ extern const uint32_t board_drawing_rp2350_can_bytes;
 #define MO_TAB_PROGRAM_X 234
 #define MO_TAB_Y         28
 #define MO_STICK_ROW_X   279
-/* SUPPLY's SETTINGS tab, the second of its strip, LIVE | SETTINGS
- * (supply_spots.h, with SU_TAB_Y). */
-#define SU_TAB_SETTINGS_X SU_TAB_X(1)
 #define MO_STICK_ROW_Y   83
 
 static gfx_color_t fb[W * H];
@@ -2663,18 +2661,18 @@ static void pose_motor_supply(ui_screen_id_t id, const char *view,
          * sample left it and the panel says it is holding one; SETTINGS'
          * views are of a SAFE bench after a run, but the one ARMED. */
         if (strcmp(view, "motor-held") == 0
-            || (strncmp(view, "motor-settings", 14) == 0
-                && strcmp(view, "motor-settings-armed") != 0)) {
+            || strncmp(view, "motor-settings", 14) == 0) {
             motor_screen_set_armed(false);
         }
     }
 
     if (id == SCREEN_SUPPLY && strncmp(view, "supply-pdmini", 13) == 0) {
         /*
-         * The PD MINI tab with the module answering: as wired; with the keypad
-         * refusing RX's GPIO 9; with the output on and the rows locked; or
-         * stored on one pin for both.  The carrier's rows are soldered by its
-         * board (the -rbmod views).
+         * The SETTINGS list at the PD mini's heading with the module
+         * answering: as wired; with the keypad refusing RX's GPIO 9; with a
+         * programming port holding the supply and the rows locked; or stored
+         * on one pin for both.  The carrier's rows are soldered by its board
+         * (the -rbmod views).
          */
         const supply_caps_t caps = SUPPLY_CAPS_PDMINI;
         const bool why = strcmp(view, "supply-pdmini-why") == 0;
@@ -2683,7 +2681,7 @@ static void pose_motor_supply(ui_screen_id_t id, const char *view,
         settings_set(SET_PDMINI_TX, why ? -1.0f : 8.0f);
         settings_set(SET_PDMINI_RX,
                      strcmp(view, "supply-pdmini-same") == 0 ? 8.0f : 9.0f);
-        settings_request_save();        /* as the tab asks at a change */
+        settings_request_save();        /* as SAVE asks */
         supply_screen_set_caps(&caps);
         supply_screen_set_model(false);
         supply_screen_set_pins(rbmod ? 7 : why ? -1 : 8, rbmod ? 6 : 9);
@@ -2695,14 +2693,16 @@ static void pose_motor_supply(ui_screen_id_t id, const char *view,
         st.set_i = 2.0f;
         supply_screen_push(&st);
         ui_router_goto(SCREEN_SUPPLY);
-        tap(SU_TAB_SETTINGS_X, UI_BAND_H + SU_TAB_Y);
-        tap(SU_OV_PDMINI_X, UI_BAND_H + SU_OV_TAB_Y);
+        supply_screen_open_pdmini();
         if (why) {
-            tap(SU_PD_VALUE_X, UI_BAND_H + SU_PD_Y(1));
-            kp_type(supply_screen_keypad(), "9");
-            ktap(ui_keypad_key_rect(supply_screen_keypad(), UI_KEY_OK));
-        } else if (strcmp(view, "supply-pdmini-on") == 0) {
-            supply_screen_set_output(true);
+            const gfx_rect_t b = ui_setlist_row_part(
+                supply_settings_list(), supply_settings_row(SET_PDMINI_TX),
+                UI_SL_PART_VALUE);
+            tap(b.x + b.w / 2, UI_BAND_H + b.y + b.h / 2);
+            kp_type(supply_settings_keypad(), "9");
+            ktap(ui_keypad_key_rect(supply_settings_keypad(), UI_KEY_OK));
+        } else if (strcmp(view, "supply-pdmini-locked") == 0) {
+            supply_screen_set_port_held(true);
         }
     }
 
@@ -2724,12 +2724,15 @@ static void pose_motor_supply(ui_screen_id_t id, const char *view,
         st.online = false;
         supply_screen_push(&st);
         if (strcmp(view, "supply-offline-settings") == 0) {
-            /* The fit check's: SETTINGS with the PD mini, RESET PD MINI
-             * under the start values, and the longest save line, a change
-             * on SETUP nobody asked to keep. */
+            /* The fit check's: the SETTINGS list with the PD mini, scrolled
+             * to its end, RESET PD MINI, with a change nobody asked to
+             * keep: SAVE offered. */
             ui_router_goto(SCREEN_SUPPLY);
-            tap(SU_TAB_SETTINGS_X, UI_BAND_H + SU_TAB_Y);
+            tap(SU_SETTINGS_X, UI_BAND_H + SU_SETTINGS_Y);
             settings_set(SET_SUPPLY_TRIP_MS, 300.0f);
+            for (int k = 0; k < 6; ++k) {
+                drag(300, UI_BAND_H + 400, UI_BAND_H + 100);
+            }
         }
     } else if (id == SCREEN_SUPPLY
                && strncmp(view, "supply-pdmini", 13) != 0) {
@@ -2770,9 +2773,19 @@ static void pose_motor_supply(ui_screen_id_t id, const char *view,
          * a probe opened where the screen opens its own, over the left
          * column under the strip.
          */
-        if (strcmp(view, "supply-settings") == 0) {
+        if (strncmp(view, "supply-settings", 15) == 0
+            && strcmp(view, "supply-settings-off") != 0) {
+            /* The list opens with the output off: the run switched off.
+             * -mid: dragged 300px, the trips and the questions. */
+            st.output = false;
+            supply_screen_set_output(false);
+            supply_screen_push(&st);
             ui_router_goto(SCREEN_SUPPLY);
-            tap(SU_TAB_SETTINGS_X, UI_BAND_H + SU_TAB_Y);
+            tap(SU_SETTINGS_X, UI_BAND_H + SU_SETTINGS_Y);
+            if (strcmp(view, "supply-settings-mid") == 0) {
+                drag(300, UI_BAND_H + 400, UI_BAND_H + 250);
+                drag(300, UI_BAND_H + 400, UI_BAND_H + 250);
+            }
         } else if (strcmp(view, "supply-confirm") == 0) {
             /* +0.1V on a live output: the question, as the settings'
              * default asks it. */
@@ -2810,7 +2823,7 @@ static void pose_motor_supply(ui_screen_id_t id, const char *view,
             supply_screen_push(&st);
             if (strcmp(view, "supply-settings-off") == 0) {
                 ui_router_goto(SCREEN_SUPPLY);
-                tap(SU_TAB_SETTINGS_X, UI_BAND_H + SU_TAB_Y);
+                tap(SU_SETTINGS_X, UI_BAND_H + SU_SETTINGS_Y);
             }
         } else if (strcmp(view, "supply-port") == 0) {
             /* The fit check's: a servo programming port holds the
@@ -3436,7 +3449,8 @@ static void pose_analyser_views(ui_screen_id_t id, const char *view)
  *        on PWM01 and PWM02, DSHOT300 on PWM04, MOTOR PWM picked and PWM03
  *        tapped, refused for slice 2.  outputs-rbmod-port: PROG PORT 1 on
  *        GPIO 13, the tester's port, PORT PWM waiting for the PROG 5V.  setup-rbmod: the hub with LAYOUT as its last tile.
- *        supply-pdmini-rbmod: PD MINI with the PD mini's pins soldered.
+ *        supply-pdmini-rbmod: the SETTINGS list at the PD mini, its pins
+ *        soldered.
  *        layout-rbmod: LAYOUT with the same binding.  supply-rbmod:
  *        SUPPLY with the PROG PORTS 5V line and the PROG 5V box.
  *        servo-rbmod: SERVO's output card with the box.  servo-kst-rbmod:
@@ -3992,11 +4006,11 @@ static void pose_shown_views(const char *view)
     if (strcmp(view, "motor-table") == 0) {
         tap(18 + 150, UI_BAND_H + 82 + 20);             /* TABLE */
     }
-    /* MOTOR & ESC > SETTINGS: the strip's third tab; the keypad of
-     * Capacity, the second row; ARMED, the pulse rows locked and a save
-     * asked for that waits for a SAFE bench. */
+    /* MOTOR & ESC's SETTINGS list: the footer's SETTINGS; the keypad of
+     * Capacity, the second setting; scrolled to its end with a change not
+     * saved; the leave warning over it. */
     if (strncmp(view, "motor-settings", 14) == 0) {
-        tap(9 + 2 * (150 + 4) + 75, UI_BAND_H + 8 + 20);    /* SETTINGS */
+        tap(686 + 164, UI_BAND_H + 444 + 24);              /* SETTINGS */
         if (strcmp(view, "motor-settings-keypad") == 0) {
             const gfx_rect_t box = motor_settings_box(1);
             tap(box.x + box.w / 2, UI_BAND_H + box.y + box.h / 2);
@@ -4008,6 +4022,7 @@ static void pose_shown_views(const char *view)
             const bool idle = strcmp(view, "motor-settings-gap-idle") == 0;
             settings_set(SET_OUT_MIN_US, idle ? 1000.0f : 1400.0f);
             settings_set(SET_OUT_MAX_US, idle ? 1650.0f : 2000.0f);
+            drag(300, UI_BAND_H + 400, UI_BAND_H + 100);
             setting_id_t ids[16];
             const int rows = motor_settings_rows(ids, 16);
             for (int r = 0; r < rows; ++r) {
@@ -4019,9 +4034,14 @@ static void pose_shown_views(const char *view)
             kp_type(motor_screen_keypad(), idle ? "1599" : "1450");
             ktap(ui_keypad_key_rect(motor_screen_keypad(), UI_KEY_OK));
         }
-        if (strcmp(view, "motor-settings-armed") == 0) {
+        if (strcmp(view, "motor-settings-end") == 0
+            || strcmp(view, "motor-settings-leave") == 0) {
             settings_set(SET_PACK_MAH, 2200.0f);
-            settings_request_save();
+            drag(300, UI_BAND_H + 400, UI_BAND_H + 100);
+        }
+        if (strcmp(view, "motor-settings-leave") == 0) {
+            const gfx_rect_t home = ui_home_tag_rect(ui_router_title(SCREEN_MOTOR));
+            tap(home.x + home.w / 2, home.y + home.h / 2);
         }
     }
 }
@@ -4348,8 +4368,7 @@ int main(int argc, char **argv)
                     && strcmp(view, "motor-idle") != 0
                     && strcmp(view, "motor-port") != 0
                     && !mo_prog
-                    && (strncmp(view, "motor-settings", 14) != 0
-                        || strcmp(view, "motor-settings-armed") == 0))
+                    && strncmp(view, "motor-settings", 14) != 0)
                    || strcmp(view, "servo-armed") == 0
                    || strcmp(view, "servo-run") == 0
                    || strcmp(view, "servo-result") == 0

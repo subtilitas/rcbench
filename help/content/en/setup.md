@@ -186,7 +186,7 @@ SENSORS lists the IOmcu's sensor bus, INA228, four INA3221 monitors, AS5600 and 
 
 ## Related pages
 
-- [Supply](supply.md): the PD mini's wiring, on the PD MINI tab.
+- [Supply](supply.md): the PD mini's wiring, in SUPPLY's settings list.
 - [Sensors](setup-sensors.md)
 - [Outputs](outputs.md)
 - [Updates](updates.md)

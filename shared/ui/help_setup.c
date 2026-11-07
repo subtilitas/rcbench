@@ -34,7 +34,7 @@ static char s_entry[40];
 
 int stg_help_count(void)
 {
-    return (s.warn || s.tk.open || s.kp.open) ? 0 : 2;
+    return (s.sl.warn || s.sl.tk.open || s.sl.kp.open) ? 0 : 2;
 }
 
 /**
@@ -181,7 +181,7 @@ bool stg_help_page(int i, ui_help_page_t *out)
     memset(out, 0, sizeof(*out));
     out->armed_ok = true;
     out->side = (i == 0) ? UI_HELP_DOCK_RIGHT : UI_HELP_DOCK_LEFT;
-    if (s.list) {
+    if (s.sl.open) {
         if (i == 0) {
             list_rows(out);
         } else {

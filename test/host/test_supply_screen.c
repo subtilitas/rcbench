@@ -350,17 +350,18 @@ TEST_CASE(leaving_switches_off_the_output_this_screen_switched_on)
     CHECK(!supply_screen_poll_cmd(NULL));
 }
 
-/* The settings, the keypads and the question are this screen's own: an
- * output switched on here stays on under each of them. */
+/* The keypads and the question are this screen's own: an output switched
+ * on here stays on under each of them, and SETTINGS, refused on a live
+ * output, leaves it on too. */
 TEST_CASE(the_overlays_of_supply_are_no_leave)
 {
     fresh();
     hold_on();
     drain();
     supply_screen_set_output(true);
-    tap(SET_TAB_X, STRIP_Y);             /* SETTINGS */
+    open_settings();                     /* refused: the output is on */
     tick_for(4);
-    tap(LIVE_TAB_X, STRIP_Y);            /* and LIVE again */
+    CHECK(!supply_screen_settings_shown());
     tap(V_UP_X, V_ROW_Y);                /* a question on a live output */
     tick_for(4);
     tap(DISCARD_X, ASK_Y);               /* answered CANCEL */

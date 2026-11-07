@@ -27,6 +27,8 @@
 #include "ui_screen.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
+#include "ui_footer.h"
+#include "ui_setlist.h"
 
 /** @brief The screen's width, UI_PANEL_W px. */
 #define SCREEN_W UI_PANEL_W
@@ -65,39 +67,20 @@
 #define HUB_NAME_DY 60 /**< the name's top, px */
 #define HUB_LINE_DY 94 /**< the line's top, px */
 
-/** @brief The faces of the list and the strip: a row's name and a
- *         heading in the head face (20 x 36); a value and the warning's
- *         sentences in the body face (12 x 24); help lines, units, keys,
- *         buttons and the warning's change lines in the label face
- *         (10 x 20). */
-#define STG_F_HEAD (&gfx_font_20x36) /**< names and headings: 20 x 36 */
-#define STG_F_BODY (&gfx_font_12x24) /**< values and sentences: 12 x 24 */
-#define STG_F_LABEL (&gfx_font_10x20) /**< help, units, keys, buttons, change lines: 10 x 20 */
+/** @brief The faces of the hub and SENSORS' left list: a tile's name in
+ *         the body face (12 x 24), its line in the label face (10 x 20). */
+#define STG_F_BODY (&gfx_font_12x24) /**< tile names, entries: 12 x 24 */
+#define STG_F_LABEL (&gfx_font_10x20) /**< tile lines: 10 x 20 */
 
 /** @brief The strip under the grid and under the list: three columns,
- *         the hub's, UI_BTN_H (48px) tall. */
+ *         the hub's, UI_BTN_H (48px) tall; the list's (ui_setlist.h). */
 #define STRIP_H UI_BTN_H /**< the strip's height, px */
 #define STRIP_Y (SCREEN_H - UI_ALERT_H - 4 - STRIP_H) /**< the strip's top, px: 444 */
+_Static_assert(STRIP_Y == UI_FOOTER_Y && STRIP_H == UI_FOOTER_H,
+               "SETUP's strip is the footer's slots");
 
-/**
- * @brief The list: from the first column's left edge to the scroll bar,
- *        from under the band to 8px above the strip.  A row is 64px
- *        tall at a 70px pitch: 6 rows show whole.  The scroll bar is
- *        SCROLL_W px wide at the third column's right edge and takes no
- *        touch.
- */
-#define SCROLL_W 12 /**< the scroll bar's width, px */
-#define SCROLL_X (SCREEN_W - HUB_M - SCROLL_W) /**< the scroll bar's left edge, px: 1002 */
-#define LIST_R (SCROLL_X - 8) /**< the list's right edge, px: 994 */
-#define LIST_X stg_list_x() /**< the list's left edge, px: 10, on SENSORS 240 */
-#define LIST_W (LIST_R - LIST_X) /**< the list's width, px: 984, on SENSORS 754 */
-#define LIST_Y 8 /**< the list's top, px */
-#define LIST_H (STRIP_Y - 8 - LIST_Y) /**< the list's height, px: 428 */
-#define ROW_H 64 /**< a row's height, px */
-#define ROW_GAP 6 /**< the gap between two rows, px */
-#define ROW_PITCH (ROW_H + ROW_GAP) /**< a row's pitch, px: 70 */
-#define ROW_NAME_DY 3 /**< the name's top, px */
-#define ROW_HELP_DY 40 /**< the help line's top, px */
+/** @brief The list's top, px: the settings list's (ui_setlist.h). */
+#define LIST_Y UI_SL_LIST_Y
 
 /**
  * @brief SENSORS' left list: 9 entries of 220 x 48px at a 48px pitch, from
@@ -115,79 +98,13 @@
 #define ENTRY_STATE_DY 28 /**< the state's top, px */
 #define PANE_X (HUB_M + ENTRY_W + HUB_M) /**< the pane's left edge, px: 240 */
 
-/**
- * @brief A row's "-" and "+" keys: 56 x 48px (8.4 x 7.2mm), the "+" 12px
- *        in from the row's right edge, 166px between them: the value's
- *        150px and 8px on each side.
- */
-#define BTN_W 56 /**< a key's width, px */
-#define BTN_H UI_TAP_MIN /**< a key's height, px: 48 */
-_Static_assert(BTN_H <= ROW_H, "a row's buttons fit in the row");
-#define VALUE_FIELD 150 /**< the value's field, px */
-#define PLUS_X (LIST_R - 12 - BTN_W) /**< the "+" key's left edge, px: 926 */
-#define MINUS_X (PLUS_X - 8 - VALUE_FIELD - 8 - BTN_W) /**< the "-" key's left edge, px: 704 */
-#define VALUE_R (PLUS_X - 8) /**< the value's and its unit's right edge, px */
-/** @brief The left edge of a number's value, px: the 166px between its
- *         "-" and its "+" key, over the row's height, where a tap opens
- *         the keypad. */
-#define VALUE_X  (MINUS_X + BTN_W)
-/** @brief The width of a number's value, px: 166. */
-#define VALUE_W  (PLUS_X - VALUE_X)
-
-/*
- * A "-" or "+" key is a tap: the press arms it and the release steps it
- * once.  The release counts when the same contact makes it inside the key,
- * no further than DRAG_SLOP from the press in x and in y, with no scroll
- * and no repeat in between.  The list scrolls by a drag that starts
- * anywhere on it, the keys included, so a key that stepped on the press
- * would step under every scroll that starts on one.
- *
- * A key held repeats: a 0 to 30,000mAh range is 300 taps otherwise.  The
- * first step comes REPEAT_DELAY_S after the press, then REPEAT_SLOW_HZ, and
- * REPEAT_FAST_HZ once the key is held REPEAT_FAST_S longer.  The time runs
- * only while the contact stays on the key within the slop, and one frame
- * counts for at most UI_HOLD_MAX_CREDIT_S (0.25s); the release of a key
- * that has repeated adds no step.
- */
-#define REPEAT_DELAY_S 0.45f            /**< delay before the first repeat, 0.45s */
-#define REPEAT_SLOW_HZ 8.0f             /**< repeat rate after the delay, 8Hz */
-/** @brief Time from the first repeat until the fast rate, 1.8s */
-#define REPEAT_FAST_S  1.8f
-#define REPEAT_FAST_HZ 30.0f            /**< repeat rate once fast, 30Hz */
-
-/* A press that moves further than this is a scroll, not a tap. */
-/**
- * @brief A press that moves further than DRAG_SLOP px, 8px, is a scroll and no
- *        tap.
- */
+/** @brief A press that moves further than DRAG_SLOP px, 8px, is a scroll and
+ *         no tap: an entry of SENSORS' left list is given up. */
 #define DRAG_SLOP 8
 
-enum { HIT_NONE = 0, HIT_TILE, HIT_MINUS, HIT_PLUS, HIT_RESET, HIT_LIST,
-       HIT_SAVE, HIT_STAY, HIT_DISCARD, HIT_LEAVE_SAVE, HIT_TEXT,
-       HIT_VALUE, HIT_ENTRY };
-
-/**
- * @brief The warning that holds a way out: a card over the body down to
- *        the strip.
- *
- * Its title in the head face, up to two lines in the body face on what
- * unsaved means, then one line per change in the label face and up to two
- * notes in the body face under them.  STAY, DISCARD and SAVE take the
- * strip's three columns, SAVE where SAVE is on the tiles.
- * SETTINGS_WARN_LINES lines of WARN_PITCH px fit; more changes than that
- * leave the last line to their count.  Offsets are from WARN_Y.
- */
-#define WARN_X HUB_M /**< the card's left edge, px */
-#define WARN_Y HUB_M /**< the card's top, px */
-#define WARN_W (SCREEN_W - 2 * HUB_M) /**< the card's width, px: 1004 */
-#define WARN_H (STRIP_Y - HUB_M - WARN_Y) /**< the card's height, px: 424 */
-#define WARN_TITLE_Y 12 /**< the title's top */
-#define WARN_WHY_Y 56 /**< the first line on what unsaved means */
-#define WARN_WHY_PITCH 26 /**< those lines' pitch, px */
-#define WARN_LINE_Y 116 /**< the first change line */
-#define WARN_PITCH 24 /**< the change lines' pitch, px */
-#define WARN_NOTE_Y (WARN_LINE_Y + SETTINGS_WARN_LINES * WARN_PITCH + 4) /**< the first note */
-#define WARN_NOTE_PITCH 26 /**< the notes' pitch, px */
+/** @brief SETUP's own presses, past the list's (ui_setlist.h). */
+enum { HIT_TILE = UI_SL_HIT_HOST, /**< a hub tile                       */
+       HIT_ENTRY };               /**< an entry of SENSORS' left list   */
 
 /*
  * The hub's tiles, in their order on the grid, row by row.  A category's
@@ -244,7 +161,6 @@ _Static_assert(SETTINGS_HUB_SLOTS == HUB_COLS * HUB_ROWS,
                "the hub's slots are its grid");
 _Static_assert(HUB_M + HUB_ROWS * (HUB_TH + HUB_M) <= STRIP_Y,
                "the grid ends above the strip");
-_Static_assert(LIST_Y + LIST_H <= STRIP_Y, "the list ends above the strip");
 _Static_assert(LIST_Y + SENS_ENTRY_COUNT * ENTRY_PITCH <= STRIP_Y - 4,
                "SENSORS' left list ends 4px above the strip");
 _Static_assert(ENTRY_STATE_DY + 16 <= ENTRY_H - ENTRY_INSET,
@@ -252,117 +168,29 @@ _Static_assert(ENTRY_STATE_DY + 16 <= ENTRY_H - ENTRY_INSET,
 _Static_assert(ENTRY_H >= UI_TAP_MIN, "an entry is a tap target");
 _Static_assert(STRIP_Y + STRIP_H <= SCREEN_H - UI_ALERT_H,
                "the strip ends above the alert band");
-_Static_assert(WARN_WHY_Y + 2 * WARN_WHY_PITCH <= WARN_LINE_Y,
-               "the warning's two lines on unsaved end above the changes");
-_Static_assert(WARN_NOTE_Y + 2 * WARN_NOTE_PITCH <= WARN_H - 4,
-               "the warning's notes end inside its card");
 _Static_assert(HUB_ICON_DY + HUB_ICON <= HUB_NAME_DY
                && HUB_NAME_DY + 24 <= HUB_LINE_DY
                && HUB_LINE_DY + 20 <= HUB_TH,
                "a hub tile's icon, name and line stack inside it");
 
-/* The strings' names, for the warning, a row and its keyboard's title,
- * and the help line of a row; the DUT name has no row on SETUP. */
 /**
- * @var k_text_ui
- * @brief Per string setting: the name for the warning, a row and its
- *        keyboard's title, and the row's help line.  The DUT name has no
- *        row on SETUP.
- */
-static const struct {
-    ui_text_id_t label;  /**< the string's name for the warning, a row and its keyboard's title */
-    ui_text_id_t help;   /**< the row's help line, TX_COUNT for none */
-} k_text_ui[SETTING_TEXT_COUNT] = {
-    [SET_TEXT_DUT_NAME]     = { TX_SET_DUT_NAME, TX_COUNT },
-    [SET_TEXT_LOG_AUTO_DIR] = { TX_SET_AUTO_DIR, TX_SET_AUTO_DIR_HELP },
-    [SET_TEXT_LOG_USER_DIR] = { TX_SET_USER_DIR, TX_SET_USER_DIR_HELP },
-};
-
-/*
- * The keyboard a string's row opens: over the list and the strip, the
- * warning's card.  Nothing under it presses while it is open; OK and
- * CANCEL are its own, and the home tag closes it as CANCEL does.
- */
-/**
- * @brief Height of the keyboard's area, px: from the warning's top to the
- *        strip's foot.
- */
-#define TK_AREA_H (STRIP_Y + STRIP_H - WARN_Y)
-
-/**
- * @brief The keypad a number's value opens: the keyboard's area, 1004 x
- *        482px, its foot 4px above the alert band.  Nothing under it presses while it
- *        is open; OK, CANCEL and the home tag close it as they close the
- *        keyboard.
- */
-#define KP_AREA gfx_rect_make(WARN_X, WARN_Y, WARN_W, TK_AREA_H)
-
-/**
- * @brief SETUP's state: the open list and its scroll, the contact that
- *        holds the screen, the key repeat, the warning, the keyboard and
- *        the keypad, and what the last frame drew of each.
+ * @brief SETUP's state: the category list (the settings list widget, which
+ *        also holds the press, the warning, the keyboard and the keypad), the
+ *        category it shows, SENSORS' scrolls, and what the last frame drew.
  */
 typedef struct {
-    /* The list of cat is open; the hub shows while this is false. */
-    /** @brief Whether the list of cat is open; the hub shows while false */
-    bool     list;
+    /** @brief The list; its open is false while the hub shows */
+    ui_setlist_t  sl;
     setting_cat_t cat;                  /**< the category the list shows */
-    int      scroll;                    /**< list scroll, px */
     /** @brief The scroll each SENSORS entry had when last left, px */
     int      entry_scroll[SENS_ENTRY_COUNT];
     bool     opened;   /**< another screen opened the list: no tiles above it */
-    int      scroll_max;                /**< largest scroll, px */
-
-    /* One contact holds the screen from its DOWN to its UP; any other
-     * presses nothing and ends nothing. */
-    bool     have_press;                /**< whether a contact holds the screen */
-    uint8_t  press_id;                  /**< touch id of that contact */
-
-    int      hit_kind;                  /**< what the press hit, HIT_* */
-    int      hit_index;                 /**< tile index, or row index */
-    bool     dragging;                  /**< whether the press became a scroll */
-    int press_x,                            /**< x where the press began, px */
-        press_y;                            /**< y where the press began, px */
-    int      last_y;                    /**< y of the last move, px */
-
-    float    held_for;                  /**< seconds a key has been held within the slop */
-    bool     repeating;                 /**< whether the held key has begun to repeat */
+    ui_screen_id_t warn_to;             /**< screen the warning's way out leads to */
 
     bool     chrome_valid[MAX_FBS];     /**< per frame buffer: whether its chrome is current */
     bool     drawn_list;                /**< whether the list showed at the last draw */
     setting_cat_t drawn_cat;            /**< category the last draw showed */
-
-    /*
-     * The save button's three inputs as the last frame drew them.  The
-     * write is taken by settings_save_tick() outside this screen, so a
-     * pending write completing -- or being refused -- moves them with no
-     * touch to invalidate the cached framebuffers.  Without this, a
-     * refusal keeps drawing WHEN IDLE until something else repaints.
-     */
-    bool     drawn_dirty;               /**< whether the save button read dirty at the last draw */
-    bool     drawn_asked;               /**< whether it read save asked */
-    bool     drawn_failed;              /**< whether it read failed */
-
-    /* The warning is open and holds the way out to warn_to.  drawn_* are
-     * what the last frame drew of it. */
-    bool     warn;                      /**< whether the warning is open */
-    ui_screen_id_t warn_to;             /**< screen the warning's way out leads to */
     bool     drawn_warn;                /**< whether the warning was drawn */
-    bool     drawn_armed;    /**< ARMED at the last full draw: the
-                                  warning's DISCARD and a list's SAFE-only
-                                  rows */
-
-    /* The keyboard of string tk_text, and its revision as last drawn. */
-    ui_textkey_t tk;                    /**< the keyboard of string tk_text */
-    setting_text_id_t tk_text;          /**< string the keyboard types */
-    bool     drawn_tk;                  /**< whether the keyboard was open at the last draw */
-    uint32_t drawn_tk_rev;              /**< its revision at the last draw */
-
-    /* The keypad of number kp_id, and its revision as last drawn. */
-    ui_keypad_t  kp;            /**< the keypad a number's value opens */
-    setting_id_t kp_id;         /**< the number it types               */
-    bool     drawn_kp;          /**< whether it was open, as last drawn */
-    uint32_t drawn_kp_rev;      /**< its revision, as last drawn       */
 } stg_state_t;
 
 /* Defined in settings_screen.c. */

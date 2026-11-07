@@ -468,7 +468,7 @@ static int stops_under_the_band(const ui_screen_t *scr)
 
 /* Every stop control ends above the alert band, so an alert covers none:
  * SERVO's DISARM and OUTPUT OFF, MOTOR & ESC's DISARM on LIVE's PLOT and
- * TABLE and on SETTINGS, SUPPLY's OUTPUT OFF on LIVE and on SETTINGS.
+ * TABLE and on PROGRAM, SUPPLY's OUTPUT OFF on LIVE.
  * ESC STICK's ABORT is held in test_esc_stick_panel_touch. */
 TEST_CASE(no_stop_control_lies_under_the_alert_band)
 {
@@ -481,23 +481,26 @@ TEST_CASE(no_stop_control_lies_under_the_alert_band)
     CHECK(mo_armed());
     CHECK(motor_screen()->safe_at(MO_ARM_PX, MO_ARM_PY - UI_BAND_H));
     CHECK_EQ(stops_under_the_band(motor_screen()), 0);
-    /* The same DISARM on TABLE and on SETTINGS: the rail stays. */
+    /* The same DISARM on TABLE and on PROGRAM: the footer stays.  The
+     * SETTINGS list, which would cover it, does not open while ARMED. */
     feed_tap(FEED_LONE, MO_TABLE_TAB_X, P(MO_PANE_Y));
     CHECK(motor_screen()->safe_at(MO_ARM_PX, MO_ARM_PY - UI_BAND_H));
     CHECK_EQ(stops_under_the_band(motor_screen()), 0);
-    feed_tap(FEED_LONE, MO_TAB_X(2), P(MO_TAB_Y));
-    CHECK_EQ(motor_screen_task(), (int)UI_WB_SETTINGS);
+    feed_tap(FEED_LONE, MO_TAB_X(1), P(MO_TAB_Y));
+    CHECK_EQ(motor_screen_task(), (int)UI_WB_PROGRAM);
     CHECK(motor_screen()->safe_at(MO_ARM_PX, MO_ARM_PY - UI_BAND_H));
     CHECK_EQ(stops_under_the_band(motor_screen()), 0);
+    feed_tap(FEED_LONE, MO_SETTINGS_X, P(MO_SETTINGS_Y));
+    CHECK(!motor_screen_settings_shown());
 
     up_on(SCREEN_SUPPLY);
     supply_screen_settings_loaded();
     supply_screen_set_output(true);
     CHECK(supply_screen()->safe_at(SU_OUT_PX, SU_OUT_PY - UI_BAND_H));
     CHECK_EQ(stops_under_the_band(supply_screen()), 0);
-    /* The same OUTPUT OFF on SETTINGS: the rail stays. */
-    feed_tap(FEED_LONE, SU_TAB_X(1), P(SU_TAB_Y));
-    CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
+    /* SETTINGS refuses a live output: OUTPUT OFF stays in reach. */
+    feed_tap(FEED_LONE, SU_SETTINGS_X, P(SU_SETTINGS_Y));
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
     CHECK(supply_screen()->safe_at(SU_OUT_PX, SU_OUT_PY - UI_BAND_H));
     CHECK_EQ(stops_under_the_band(supply_screen()), 0);
     supply_screen_set_output(false);

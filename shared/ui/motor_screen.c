@@ -1,19 +1,21 @@
 /**
  * @file
  * @brief The motor and ESC (electronic speed controller) bench screen, a
- * workbench (ui_workbench.h) with the tasks LIVE, PROGRAM and SETTINGS.
+ * workbench (ui_workbench.h) with the tasks LIVE and PROGRAM, and the
+ * footer (ui_footer.h) [MOTOR & ESC] [ARM / DISARM] [SETTINGS].
  *
  * This file is the screen and LIVE's page: the plot or the table, the
  * throttle, the readouts and the CONTROL card on the right.  It holds their
  * state and commands; motor_events.c takes their touch events and frames,
  * motor_draw.c draws them, and motor_live_int.h is what the three share.
  * The strip and the CONTROL card's TARGET row are motor_workbench.c's,
- * PROGRAM's list and its sessions motor_program_page.c's, SETTINGS' page
- * motor_settings_page.c's; the layout they share is motor_screen_int.h.
- * The rail on the right, the readouts and the CONTROL card with TARGET,
- * ARM and RESET PEAKS, is the same on every task, until a session on
- * PROGRAM opens: a full-width session takes the whole body, and the strip
- * row shows the output strip in place of the tabs and the card.
+ * PROGRAM's list and its sessions motor_program_page.c's, the SETTINGS
+ * list the footer opens motor_settings_page.c's; the layout they share is
+ * motor_screen_int.h.  The rail on the right, the readouts and the CONTROL
+ * card with TARGET and RESET PEAKS, and the footer with ARM, are the same
+ * on both tasks, until a session on PROGRAM opens or the SETTINGS list:
+ * either takes the whole body.  A session's strip row shows the output
+ * strip; the list's strip names what the throttle drives under MOTOR & ESC.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -86,6 +88,8 @@ void motor_invalidate(void)
     s.drawn_strip[1] = UINT32_MAX;
     s.drawn_page[0]  = UINT32_MAX;
     s.drawn_page[1]  = UINT32_MAX;
+    s.drawn_list[0]  = UINT32_MAX;
+    s.drawn_list[1]  = UINT32_MAX;
     s.drawn_sess[0]  = UINT32_MAX;
     s.drawn_sess[1]  = UINT32_MAX;
     s.drawn_ostrip[0] = UINT32_MAX;
@@ -141,7 +145,7 @@ static void reset(void)
     s.up_rect   = (gfx_rect_t){ (int16_t)(TRACK_X + TRACK_W + 8), CTRL_Y,
                                 NUDGE_W, NUDGE_H };
 
-    s.arm_rect   = (gfx_rect_t){ RC_X, ARM_Y, RC_W, ARM_H };
+    s.arm_rect   = ui_footer_rect(UI_FOOTER_HOLD);
     s.reset_rect = (gfx_rect_t){ RC_X, RESET_Y, RC_W, BTN_H };
     mo_bind_colours();
 }
@@ -469,6 +473,20 @@ int motor_screen_task(void) { return (int)mwb_task(); }
 
 bool motor_screen_session_shown(void) { return mpp_shown() != NULL; }
 
+bool motor_screen_settings_shown(void) { return msp_shown(); }
+
+bool mo_target_line(char *out, size_t n, bool *warn)
+{
+    /* The footer's line: 31 cells of the 10 x 20 face from 16px into the
+     * 328px slot. */
+    const bool w = motor_throttle_target(out, n, s.thr_proto, s.thr_pins,
+                                         s.thr_pins_known, 31u);
+    if (warn != NULL) {
+        *warn = w;
+    }
+    return true;
+}
+
 int motor_screen_pane(void) { return s.tabs.selected; }
 
 float motor_screen_throttle(void) { return s.slider.value; }
@@ -508,7 +526,7 @@ void motor_screen_knob(float span_fraction)
      * On SETTINGS the throttle is out of sight, and the knob moves nothing.
      */
     if (span_fraction == 0.0f || s.slider.dragging || s.knob_finger
-        || mwb_task() != UI_WB_LIVE
+        || mwb_task() != UI_WB_LIVE || msp_shown()
         || (s.pending.kind != MOTOR_CMD_NONE
             && s.pending.kind != MOTOR_CMD_THROTTLE)) {
         return;
@@ -560,10 +578,10 @@ static void leave(void)
      */
     s.pressed    = 0;
     s.have_press = false;
-    /* SETTINGS' keypad closes, what it held typed with it; the task stays
-     * for a way back from OUTPUTS (mwb_enter()).  PROGRAM's session closes,
-     * a run in it ending. */
-    msp_leave();
+    /* The SETTINGS list closes, what its keypad held typed with it; the task
+     * stays for a way back from OUTPUTS (mwb_enter()).  PROGRAM's session
+     * closes, a run in it ending. */
+    msp_close();
     mpp_leave();
     mwb_cancel();
     ++s.ctrl_rev;
@@ -581,8 +599,9 @@ static void enter(void)
 }
 
 /*
- * The home tag: over SETTINGS' keypad it closes the keypad, as its CANCEL
- * does, and the page stays.  In PROGRAM's session it climbs one level: what
+ * The home tag: over the SETTINGS list it closes what covers the list, else
+ * the list, through the leave warning while something is unsaved
+ * (msp_back()).  In PROGRAM's session it climbs one level: what
  * covers the page closes, a run ends, the profile's page goes back to the
  * list, the models to the makers, the makers out of the session to
  * PROGRAM's list.  The tasks are siblings, not levels: otherwise the tag
@@ -640,8 +659,8 @@ static void cancel(void)
     /* And the tab row: a press it kept would take a later contact's release
      * for its own and switch the pane. */
     ui_tabs_cancel(&s.tabs);
-    /* And the strip's, the TARGET row's and SETTINGS' presses, for the
-     * same reason. */
+    /* And the strip's, the TARGET row's and the SETTINGS list's presses,
+     * for the same reason. */
     mwb_cancel();
     msp_cancel();
     mpp_cancel();
@@ -654,10 +673,10 @@ static void cancel(void)
 /* The title keeps its 11 characters, the one title over 10 (owner's
  * decision): its home tag ends at x 226, over the band's chip row. */
 /**
- * @brief ui_screen_t's covered: a keypad or a programming page.
+ * @brief ui_screen_t's covered: the SETTINGS list or a programming page.
  * @return true while one is up
  */
-static bool covered(void) { return msp_modal() || mpp_shown() != NULL; }
+static bool covered(void) { return msp_shown() || mpp_shown() != NULL; }
 
 static const ui_screen_t k_screen = {
     .covered = covered,

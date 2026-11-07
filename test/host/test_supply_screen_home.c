@@ -12,8 +12,7 @@
  * - leaving_drops_the_question_and_the_overlays
  * - the_home_tag_answers_supplys_question_cancel_first
  * - the_home_tag_closes_a_set_point_keypad_first
- * - the_home_tag_closes_a_settings_keypad_then_leaves_settings
- * - the_home_tag_closes_a_question_over_the_settings_first
+ * - the_home_tag_closes_a_settings_keypad_then_the_list
  * - a_drag_the_home_tag_releases_opens_no_question
  * - a_trip_shows_on_the_mode_card
  * - a_supply_held_by_a_port_takes_off_and_no_other_press
@@ -67,15 +66,15 @@ TEST_CASE(a_drag_moves_the_set_point_by_the_distance_dragged)
 TEST_CASE(a_typed_cap_rounds_down_and_a_typed_trip_stays_a_trip)
 {
     fresh();
-    tap(SET_TAB_X, STRIP_Y);
-    tap(ROW_L_X, VMAX_Y);
-    keys("12.01");
+    open_settings();
+    tap_value(SET_SUPPLY_V_MAX);
+    list_keys("12.01");
     CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 12.0f, 1e-4f);
-    tap(ROW_L_X, VMAX_Y + SU_ROW_PITCH); /* CURRENT MAX */
-    keys("1.03");
+    tap_value(SET_SUPPLY_I_MAX);
+    list_keys("1.03");
     CHECK_NEAR(settings_get(SET_SUPPLY_I_MAX), 1.0f, 1e-4f);
-    tap(ROW_R_X, TRIPI_Y);
-    keys("0.02");
+    tap_value(SET_SUPPLY_TRIP_I);
+    list_keys("0.02");
     CHECK_NEAR(settings_get(SET_SUPPLY_TRIP_I), 0.05f, 1e-4f);
     CHECK(supply_screen_limits().trip_i > 0.0f);
 }
@@ -122,21 +121,17 @@ TEST_CASE(the_output_switch_works_under_every_overlay)
     supply_cmd_t c;
     fresh();
     supply_screen_set_output(true);
-    tap(SET_TAB_X, STRIP_Y);             /* SETTINGS */
-    tap(OUT_X, OUT_Y);
-    CHECK(supply_screen_poll_cmd(&c) && c.off);
     tap(CARD_X, CARD_V_Y);               /* the keypad */
     tap(OUT_X, OUT_Y);
     CHECK(supply_screen_poll_cmd(&c) && c.off);
     key(UI_KEY_CANCEL);
-    tap(LIVE_TAB_X, STRIP_Y);
     tap(V_UP_X, V_ROW_Y);                /* the question */
     tap(OUT_X, OUT_Y);
     CHECK(supply_screen_poll_cmd(&c) && c.off);
     tap(RESET_X, RESET_Y);
     CHECK(supply_screen_poll_cmd(&c) && c.reset);
-    /* While a question is asked, the strip and the cards wait for it. */
-    tap(SET_TAB_X, STRIP_Y);
+    /* While a question is asked, SETTINGS and the cards wait for it. */
+    open_settings();
     CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
     tap(CARD_X, CARD_V_Y);
     tap(APPLY_X, ASK_Y);
@@ -165,7 +160,9 @@ TEST_CASE(leaving_drops_the_question_and_the_overlays)
     scr->leave();
     tap(APPLY_X, ASK_Y);
     CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
-    tap(SET_TAB_X, STRIP_Y);
+    supply_screen_set_output(false);
+    open_settings();
+    CHECK(supply_screen_settings_shown());
     scr->leave();
     scr->enter();                        /* a tile's entry: LIVE */
     CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
@@ -220,26 +217,34 @@ TEST_CASE(the_home_tag_closes_a_set_point_keypad_first)
 }
 
 /*
- * SETTINGS, and a keypad over its page: the keypad closes first, with the
- * setting typed into it unchanged, and SETTINGS stays.  The tasks are
- * siblings, not levels, as on MOTOR & ESC and SERVO: on SETTINGS with
- * nothing open the tag leaves the screen.
+ * SETTINGS' list, and a keypad over it: the keypad closes first, with the
+ * setting typed into it unchanged, and the list stays.  The list is a level
+ * of its own: with a change nobody asked to save, the tag shows the leave
+ * warning, the next tag closes the warning, and after SAVE the tag closes
+ * the list.  On LIVE with nothing open the tag leaves the screen.
  */
-TEST_CASE(the_home_tag_closes_a_settings_keypad_then_leaves_settings)
+TEST_CASE(the_home_tag_closes_a_settings_keypad_then_the_list)
 {
     fresh();
     const float vmax = settings_get(SET_SUPPLY_V_MAX);
-    tap(SET_TAB_X, STRIP_Y);                 /* SETTINGS */
-    tap(ROW_L_X, VMAX_Y);                    /* VOLTAGE MAX's keypad */
-    key(UI_KEY_8);
+    open_settings();
+    tap_value(SET_SUPPLY_V_MAX);             /* VOLTAGE MAX's keypad */
+    list_key(UI_KEY_8);
     CHECK(scr->back());
     CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), vmax, 1e-4f);
     CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
-    tap(ROW_L_X, VMAX_Y);                    /* the page again, no keypad */
-    keys("9");
+    tap_value(SET_SUPPLY_V_MAX);             /* the list again, no keypad */
+    list_keys("9");
     CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 9.0f, 1e-4f);
-    CHECK(!scr->back());                     /* SETTINGS is no level */
+    CHECK(scr->back());                      /* the leave warning */
+    CHECK(supply_settings_list()->warn);
+    CHECK(scr->back());                      /* the warning closes */
+    CHECK(!supply_settings_list()->warn);
     CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
+    list_save();
+    CHECK(scr->back());                      /* the list closes */
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
+    CHECK(!scr->back());                     /* LIVE: the tag leaves */
     CHECK(!supply_screen_poll_cmd(NULL));
     settings_cancel_save();
 }
@@ -280,28 +285,6 @@ TEST_CASE(a_drag_the_home_tag_releases_opens_no_question)
         CHECK_NEAR(supply_screen_set_v(), now, 1e-4f);
         settings_cancel_save();
     }
-}
-
-/* A question asked from a set point's keypad on SETTINGS: the question
- * goes first, and SETTINGS stays. */
-TEST_CASE(the_home_tag_closes_a_question_over_the_settings_first)
-{
-    fresh();
-    supply_screen_set_output(true);
-    tap(SET_TAB_X, STRIP_Y);                 /* SETTINGS */
-    tap(CARD_X, CARD_V_Y);                   /* a set point's keypad */
-    keys("7");                               /* the question */
-    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
-    CHECK(scr->back());
-    CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
-    tap(APPLY_X, ASK_Y);                     /* the change was dropped */
-    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
-    /* The strip answers again, and SETTINGS is no level of its own. */
-    CHECK(!scr->back());
-    tap(LIVE_TAB_X, STRIP_Y);
-    CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
-    CHECK(supply_screen_output_on());
-    CHECK(!supply_screen_poll_cmd(NULL));
 }
 
 /*
@@ -575,10 +558,10 @@ TEST_CASE(a_port_that_takes_the_supply_ends_what_was_under_way)
 
     /* A settings keypad is not the supply's command and stays. */
     fresh();
-    tap(SET_TAB_X, STRIP_Y);
-    tap(ROW_L_X, VMAX_Y);
+    open_settings();
+    tap_value(SET_SUPPLY_V_MAX);
     supply_screen_set_port_held(true);
-    keys("12");
+    list_keys("12");
     CHECK_NEAR(supply_screen_caps().v_max, 12.0f, 1e-4f);
 }
 
@@ -767,8 +750,7 @@ int main(void)
     RUN(leaving_drops_the_question_and_the_overlays);
     RUN(the_home_tag_answers_supplys_question_cancel_first);
     RUN(the_home_tag_closes_a_set_point_keypad_first);
-    RUN(the_home_tag_closes_a_settings_keypad_then_leaves_settings);
-    RUN(the_home_tag_closes_a_question_over_the_settings_first);
+    RUN(the_home_tag_closes_a_settings_keypad_then_the_list);
     RUN(a_drag_the_home_tag_releases_opens_no_question);
     RUN(a_trip_shows_on_the_mode_card);
     RUN(a_supply_held_by_a_port_takes_off_and_no_other_press);

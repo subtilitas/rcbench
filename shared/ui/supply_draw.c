@@ -1,8 +1,8 @@
 /**
  * @file supply_draw.c
- * @brief The SUPPLY screen's drawing: the strip row, the rail with the
+ * @brief The SUPPLY screen's drawing: the header row, the rail with the
  *        readings and the CONTROL card, LIVE's plot or table and set points,
- *        SETTINGS' page and the question.  supply_screen.c holds the state,
+ *        the question, the footer and the SETTINGS list over the body.  supply_screen.c holds the state,
  *        the commands and the screen's interface (supply_screen.h);
  *        supply_screen_int.h is what it shares with this file and
  *        supply_events.c.
@@ -26,6 +26,7 @@
 #include "ui_tabs.h"
 #include "ui_text.h"
 #include "ui_theme.h"
+#include "ui_footer.h"
 #include "ui_widgets.h"
 #include "ui_workbench.h"
 
@@ -121,7 +122,7 @@ gfx_rect_t sup_model_line_rect(void)
 }
 
 /**
- * @brief The row right of the strip: where the numbers come from, in the
+ * @brief The header row: where the numbers come from, in the
  *        label face, and at its right end the range the set points may
  *        take, in the fine face.  The longest,
  *        `PD MINI TX GPIO 12 RX GPIO 13   ANTWORTET NICHT`, is 47 cells of
@@ -160,14 +161,6 @@ static void draw_header(gfx_canvas_t *c)
                                  (int16_t)(x1 - x0), (int16_t)fh },
                 range, SU_FONT_FINE, ui_theme_color(UI_C_TEXT_DIM), 1,
                 GFX_ALIGN_RIGHT);
-}
-
-/** @brief Draws the task strip, LIVE | SETTINGS, on the background. */
-static void draw_strip(gfx_canvas_t *c)
-{
-    const gfx_rect_t a = sup_strip_area();
-    gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_BG));
-    ui_wb_strip_render(&s.wb, c);
 }
 
 /**
@@ -352,7 +345,7 @@ static void draw_table(gfx_canvas_t *c)
     const float now[S_READINGS] = { v_ok ? s.sup.v : NAN, i_ok ? s.sup.i : NAN,
                                     (v_ok && i_ok) ? s.sup.p : NAN };
     for (int i = 0; i < S_READINGS; ++i) {
-        const int y = LEG_Y + 34 + i * TBL_PITCH;
+        const int y = LEG_Y + TBL_ROW_DY + i * TBL_PITCH;
         char a[24], b[24];
         if (isfinite(set[i])) {
             ui_fmt(a, sizeof(a), set[i], sup_series[i].decimals);
@@ -462,105 +455,6 @@ static void draw_steps(gfx_canvas_t *c)
 }
 
 /**
- * @brief Whether the settings reached the medium: 0 saved, 1 waiting for a quiet
- *        moment, 2 refused, 3 changed on SETUP and not asked to be saved -- which
- *        nothing writes until SAVE there, or a change here, asks for it.
- */
-static uint8_t save_state(void)
-{
-    if (settings_save_failed()) {
-        return 2u;
-    }
-    if (settings_save_asked()) {
-        return 1u;
-    }
-    return settings_dirty() ? 3u : 0u;
-}
-
-/** @brief Writes the value of SETTINGS' row @p i with its unit. */
-static void row_value_text(int i, char *buf, size_t n)
-{
-    const setting_def_t *d = settings_def(k_rows[i].id);
-    const float v = settings_get(k_rows[i].id);
-    const bool trip = (k_rows[i].id == SET_SUPPLY_TRIP_I
-                       || k_rows[i].id == SET_SUPPLY_TRIP_V);
-    if (d->type == SET_TYPE_BOOL) {
-        snprintf(buf, n, "%s", ui_on_off(v != 0.0f));
-    } else if (trip && !(v > 0.0f)) {
-        snprintf(buf, n, "%s", TR(OFF));
-    } else {
-        snprintf(buf, n, "%.*f%s", k_rows[i].decimals, (double)v, d->unit);
-    }
-}
-
-/**
- * @brief SETTINGS' page in the left column under the strip: LIMITS | PD MINI
- *        at its top and the save line at its foot.  LIMITS: the caps and the
- *        start values on the left with RESET PD MINI under them, the trips,
- *        their help and the confirmations on the right.
- * @param c the canvas
- */
-static void draw_settings(gfx_canvas_t *c)
-{
-    const gfx_rect_t a = sup_overlay_area();
-    gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_PANEL));
-    gfx_draw_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_ACCENT));
-    ui_tabs_render(&s.ov_tabs, c);
-    const uint8_t st = save_state();
-    static const ui_text_id_t k_save[] = {
-        TX_SUP_SAVED, TX_SUP_SAVE_WAITING, TX_SUP_NOT_SAVED,
-        TX_SUP_SETUP_NOT_SAVED,
-    };
-    gfx_text(c, OV_COL0_X, OV_SAVE_Y, ui_tr(k_save[st]), SU_FONT_LABEL,
-             (st == 2u) ? ui_theme_color(UI_C_WARN)
-                        : ui_theme_color(UI_C_TEXT_DIM), 1);
-    if (sup_on_pdmini()) {
-        sup_pd_draw(c);
-        return;
-    }
-    if (!s.model) {
-        /* A module in ERR -- a set point over its input -- comes back only
-         * with a restart. */
-        ui_button_font(c, s.modreset_btn, TR(SUP_RESET_PDMINI),
-                       ui_theme_color(UI_C_PANEL_SUNK),
-                       s.pressed == P_MODRESET, true, SU_FONT_LABEL);
-    }
-
-    const int lx = OV_COL0_X;
-    const int rx = OV_COL1_X;
-    const int head = (OV_HEAD_H - LINE_H) / 2;
-    const gfx_color_t acc = ui_theme_color(UI_C_ACCENT);
-    gfx_text(c, lx, a.y + OV_CAPS_DY + head, TR(SUP_CAPS), SU_FONT_LABEL,
-             acc, 1);
-    gfx_text(c, lx, a.y + OV_RESTART_DY + head, TR(SUP_AFTER_RESTART),
-             SU_FONT_LABEL, acc, 1);
-    gfx_text(c, rx, a.y + OV_CAPS_DY + head, TR(SUP_TRIPS), SU_FONT_LABEL,
-             acc, 1);
-    gfx_text(c, rx, a.y + OV_CONFIRM_DY + head, TR(SUP_CONFIRM_ON),
-             SU_FONT_LABEL, acc, 1);
-    for (int i = 0; i < ROW_COUNT; ++i) {
-        const gfx_rect_t r = sup_row_rect(i);
-        gfx_text(c, r.x, r.y + (OV_ROW_H - LINE_H) / 2,
-                 ui_tr(k_rows[i].label), SU_FONT_LABEL,
-                 ui_theme_color(UI_C_TEXT_DIM), 1);
-        char v[32];
-        row_value_text(i, v, sizeof(v));
-        ui_button_font(c, sup_row_value_rect(i), v,
-                       ui_theme_color(UI_C_PANEL_SUNK),
-                       s.pressed == P_ROW && s.press_row == i, true,
-                       SU_FONT_LABEL);
-    }
-    static const ui_text_id_t help[] = {
-        TX_SUP_HELP_1, TX_SUP_HELP_2, TX_SUP_HELP_3,
-    };
-    for (size_t i = 0; i < sizeof(help) / sizeof(help[0]); ++i) {
-        gfx_text(c, rx, a.y + OV_HELP_DY + (int)i * OV_HELP_PITCH,
-                 ui_tr(help[i]), SU_FONT_FINE,
-                 ui_theme_color(UI_C_TEXT_FAINT), 1);
-    }
-}
-
-/**
  * @brief The question a change to a live output asks: what changes, from
  *        what to what, and APPLY or CANCEL; where to turn it off at its
  *        foot.  OUTPUT OFF and STOP stay where they are.
@@ -659,6 +553,41 @@ static void draw_prog_5v(gfx_canvas_t *c)
                         : ui_theme_color(UI_C_TEXT_FAINT), 1);
 }
 
+bool sup_source_line(char *out, size_t n, bool *warn)
+{
+    bool w = !s.sup.online;
+    if (s.model) {
+        snprintf(out, n, "%s", TR(SUP_SOURCE_SIM));
+    } else if (s.tx1 > 0 && s.rx1 > 0) {
+        snprintf(out, n, TR(SUP_PD_PINS), s.tx1 - 1, s.rx1 - 1);
+    } else {
+        snprintf(out, n, "%s", TR(SUP_PD_NO_PINS));
+        w = true;
+    }
+    if (warn != NULL) {
+        *warn = w;
+    }
+    return true;
+}
+
+/**
+ * @brief The footer's name and source line, and SETTINGS, grey while the
+ *        output is on (ui_footer.h); OUTPUT in the middle slot is
+ *        draw_out_button()'s.
+ * @param c the canvas
+ */
+static void draw_footer(gfx_canvas_t *c)
+{
+    const gfx_rect_t r = ui_footer_rect(UI_FOOTER_NAME);
+    gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_BG));
+    char line[48];
+    bool warn = false;
+    (void)sup_source_line(line, sizeof(line), &warn);
+    ui_footer_name(c, r, "SUPPLY", line, warn);
+    ui_footer_settings(c, s.pressed == P_SETTINGS,
+                       !supply_screen_output_live());
+}
+
 /**
  * @brief A frame: the chrome once per framebuffer, then each part on its
  *        own counter.
@@ -671,9 +600,39 @@ void sup_render(gfx_canvas_t *c, int buffer_index)
     const int buf = buffer_index & 1;
     sup_bind_colours();
 
+    /* The SETTINGS list covers the body; opening or closing it repaints
+     * the buffer whole. */
+    if (sup_list_shown() != s.drawn_list_shown[buf]) {
+        s.drawn_list_shown[buf] = sup_list_shown();
+        s.drawn_list[buf] = UINT32_MAX;
+        s.drawn_mask &= ~bit;
+        s.drawn_push[buf] = UINT32_MAX;
+        s.drawn_plot[buf] = UINT32_MAX;
+        s.drawn_ctrl[buf] = UINT32_MAX;
+        s.drawn_set[buf]  = UINT32_MAX;
+        s.drawn_out[buf]  = UINT32_MAX;
+        s.drawn_ov[buf]   = UINT32_MAX;
+        s.drawn_kp[buf]   = UINT32_MAX;
+        s.drawn_p5[buf]   = UINT32_MAX;
+        s.drawn_title[buf] = 0xFFu;
+    }
+    if (sup_list_shown()) {
+        if ((s.drawn_mask & bit) == 0) {
+            /* A whole repaint: the canvas cleared under the list. */
+            gfx_clear(c, ui_theme_color(UI_C_BG));
+            s.drawn_mask |= bit;
+            s.drawn_list[buf] = UINT32_MAX;
+        }
+        if (s.drawn_list[buf] != sup_list_revision()) {
+            s.drawn_list[buf] = sup_list_revision();
+            sup_list_render(c);
+        }
+        return;
+    }
+
     /* The left column shows LIVE's plot and set points unless the keypad
      * or the question covers it, or SETTINGS' page has it. */
-    const bool covered = s.kp.open || s.confirm_open || !sup_on_live();
+    const bool covered = s.kp.open || s.confirm_open;
     /* The ports' own supply moved: CONTROL repaints. */
     const uint32_t p5 = sup_prog_5v();
     if (p5 != s.prog_5v) {
@@ -696,11 +655,7 @@ void sup_render(gfx_canvas_t *c, int buffer_index)
                  TR(MO_CONTROL), ui_theme_color(UI_C_ACCENT));
         s.drawn_mask |= bit;
         s.drawn_title[buf] = tag;
-        s.drawn_strip[buf] = UINT32_MAX;
-    }
-    if (s.drawn_strip[buf] != s.strip_rev) {
-        s.drawn_strip[buf] = s.strip_rev;
-        draw_strip(c);
+        ui_footer_clear(c);
     }
     if (!covered && s.drawn_title[buf] != tag) {
         s.drawn_title[buf] = tag;
@@ -714,9 +669,9 @@ void sup_render(gfx_canvas_t *c, int buffer_index)
     const bool set_moved  = (s.drawn_set[buf] != s.set_rev);
     const bool out_moved  = (s.drawn_out[buf] != s.out_rev);
 
-    /* PLOT | TABLE and the heading's row show no reading: of a sample only
-     * whether the supply answers, so a sample repaints them only when that
-     * changes. */
+    /* PLOT | TABLE, the heading's row and the footer's source line show no
+     * reading: of a sample only whether the supply answers, so a sample
+     * repaints them only when that changes. */
     const uint8_t online = s.sup.online ? 1u : 0u;
     const bool head_moved = ctrl_moved || s.drawn_online[buf] != online;
     if (head_moved) {
@@ -725,6 +680,8 @@ void sup_render(gfx_canvas_t *c, int buffer_index)
             ui_tabs_render(&s.tabs, c);
         }
         draw_header(c);
+        /* The footer's source line names ONLINE's warning too. */
+        draw_footer(c);
     }
     /* The PROG 5V box in the output card's head, on its own revision. */
     if (sup_p5_shown() && (s.drawn_p5[buf] != s.p5.rev || head_moved)) {
@@ -741,13 +698,6 @@ void sup_render(gfx_canvas_t *c, int buffer_index)
         if (s.drawn_ov[buf] != s.ov_rev) {
             s.drawn_ov[buf] = s.ov_rev;
             draw_confirm(c);
-        }
-    } else if (!sup_on_live()) {
-        const uint8_t st = save_state();
-        if (s.drawn_ov[buf] != s.ov_rev || s.drawn_save[buf] != st) {
-            s.drawn_ov[buf]   = s.ov_rev;
-            s.drawn_save[buf] = st;
-            draw_settings(c);
         }
     } else if (s.tabs.selected == SUPPLY_PANE_PLOT) {
         if (s.drawn_plot[buf] != s.plot.revision) {
