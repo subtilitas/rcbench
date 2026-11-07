@@ -407,9 +407,12 @@ bool target_locked_by_bench(setting_id_t id)
            || prog_holds();
 }
 
-/*
- * A finger on a start hold before it fires, or the ARM + START sequence
- * under way, locks both too: the hold arms the output shown when it began.
+/**
+ * @brief target_locked_by_bench(), and while a finger is on a start hold
+ *        before it fires or the ARM + START sequence is under way: the hold
+ *        arms the output shown when it began.
+ * @param id SET_SERVO_TARGET or SET_SERVO_PORT_PWM; false for any other
+ * @return true while locked
  */
 bool target_locked_for(setting_id_t id)
 {

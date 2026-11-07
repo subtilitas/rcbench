@@ -100,7 +100,8 @@ void draw_rows_page(gfx_canvas_t *c);
 bool opener_down(const touch_event_t *evt, gfx_rect_t r, int code);
 void wb_open_caps(void);
 void wb_open_encoder(void);
-/* SETUP > SENSORS on the INA3221's entry, for RUDDER AUTO's METER row. */
+/** @brief SETUP > SENSORS on the INA3221's entry, for RUDDER AUTO's METER
+ *         row. */
 void wb_open_meter(void);
 
 /* The task strip at its start (reset); a screen entered; leaving (a page

@@ -88,7 +88,7 @@ typedef struct {
 typedef struct {
     servo_seq_t seq;        /**< ARM + START's steps                     */
     servo_seq_need_t need;  /**< what the sequence under way needs        */
-    int8_t      pressed;    /**< the row a tap is on, -1 for none        */
+    int         pressed;    /**< the row a tap is on, -1 for none        */
     uint8_t     press_id;   /**< that contact's track id                 */
     uint32_t    drawn[2];   /**< ready_sig() as each buffer drew it      */
     const char *fail;       /**< the last failure's line, or NULL        */

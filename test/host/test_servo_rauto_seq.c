@@ -14,6 +14,7 @@
  * - a_pd_mini_off_is_switched_on_by_the_hold
  * - a_tap_on_the_hold_during_the_sequence_ends_it_all_off
  * - a_finger_on_arm_start_locks_port_target_and_pwm
+ * - settings_edited_after_entry_are_the_ones_the_run_takes
  *
  * SPDX-License-Identifier: MIT
  */
@@ -235,6 +236,31 @@ TEST_CASE(a_finger_on_arm_start_locks_port_target_and_pwm)
     carrier_done();
 }
 
+/* The settings the start reads are read when the hold fires, not when the
+ * screen opened: targets and margin set on the screen shown are the
+ * report's, and PORT PWM switched off on it is what the sequence finds. */
+TEST_CASE(settings_edited_after_entry_are_the_ones_the_run_takes)
+{
+    char want[128];
+    carrier_safe_off(40u);
+    settings_set(SET_RUDDER_MARGIN, 0.0f);
+    settings_set(SET_RUDDER_DEFL_LO, 12.5f);
+    ra_hold_start();
+    CHECK(servo_screen_rauto_running());
+    CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 1);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 1);
+    ra_ms(2000u);
+    CHECK(!servo_screen_rauto_running());
+    snprintf(want, sizeof(want), ui_servo_str(SERVO_STR_RA_R_TARGETS), 12.5,
+             20.0, 0u);
+    CHECK(strstr(ra.report, want) != NULL);
+    settings_set(SET_RUDDER_MARGIN, 10.0f);
+    settings_set(SET_RUDDER_DEFL_LO, 20.0f);
+    ra.p5_task = false;
+    carrier_done();
+}
+
 int main(void)
 {
     RUN(on_the_carrier_one_hold_switches_port_pwm_and_5v_arms_and_starts);
@@ -243,5 +269,6 @@ int main(void)
     RUN(a_pd_mini_off_is_switched_on_by_the_hold);
     RUN(a_tap_on_the_hold_during_the_sequence_ends_it_all_off);
     RUN(a_finger_on_arm_start_locks_port_target_and_pwm);
+    RUN(settings_edited_after_entry_are_the_ones_the_run_takes);
     return test_summary("servo_rauto_seq");
 }

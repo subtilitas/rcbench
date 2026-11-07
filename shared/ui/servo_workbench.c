@@ -259,6 +259,7 @@ void wb_open_encoder(void)
     settings_screen_open_on(SET_CAT_SENSORS, e);
 }
 
+/** @brief SETUP > SENSORS on the INA3221's first entry. */
 void wb_open_meter(void)
 {
     ui_router_goto(SCREEN_SETUP);

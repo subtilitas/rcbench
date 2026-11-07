@@ -74,6 +74,22 @@ history is in git.
 - A limit run or a RUDDER AUTO run that wrote names `RESTORE IN KST` in
   place of `RESTORE IN PROGRAM`. The KST programmer's hint on the standard
   outputs reads `Tap PORT and pick a PROG PORT.`
+- RUDDER AUTO has a READY card in the output card's place, 380 x 374px:
+  one 30px row for each check of the start gate (PORT, SERVO, METER,
+  ANGLE, ZERO, RANGE, PROGRAMMER, the supply, PORT PWM, ARM) and the
+  meter's volts and amps under them. A row is green when met, amber when
+  the hold does it, red when it refuses the hold, grey while it waits on
+  PORT. A tap on PORT, SERVO, METER, ANGLE or ZERO takes its fix; a tap on
+  another red row names it in the alert band.
+- RUDDER AUTO's start is the footer's `HOLD 2s: ARM + START`. It switches
+  PORT PWM on, then PROG 5V on the carrier or the PD mini where it feeds
+  the servo, waits up to 1000ms for the read-back, arms, waits up to 500ms
+  for ARMED and starts the run (`shared/servo/servo_start_seq.c`). A failed
+  step switches every output off and the alert band names it, for example
+  `PROG 5V FAILED: NO READ-BACK IN 1000ms`. A tap on the hold during the
+  steps ends them the same way. The START button on the left card is gone.
+- While a finger holds ARM + START, and while its steps run, PORT opens
+  nothing and takes no pick, and TARGET, PORT PWM and SETTINGS are locked.
 
 - The panel sets the Bluetooth IMU's output content register RSW (0x02) to
   0x0C: angle (0x53) and angular rate with the battery (0x52), 2 frames a

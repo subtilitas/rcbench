@@ -35,9 +35,9 @@
 /** @brief The card's inner column. */
 #define RDY_X (RCARD_X + 12)
 #define RDY_W (RCARD_W - 24) /**< Its width: 356px. */
-/** @brief The dot's radius, px, and its centre's offset in the column. */
+/** @brief The dot's radius, px. */
 #define DOT_R  5
-#define DOT_DX 5
+#define DOT_DX 5 /**< The centre's offset, px. */
 
 _Static_assert(READY_ROW_Y + READY_ROWS_MAX * READY_ROW_H <= READY_RAIL_Y,
                "the rows end above the rail line");
@@ -253,7 +253,7 @@ bool ready_down(const touch_event_t *evt)
     for (int i = 0; i < ready_count(); ++i) {
         if (gfx_rect_contains(ready_row_rect(i), evt->point.x,
                               evt->point.y)) {
-            s.rdy.pressed  = (int8_t)i;
+            s.rdy.pressed  = i;
             s.rdy.press_id = evt->point.id;
             ++s.ctrl_rev;
             break;
