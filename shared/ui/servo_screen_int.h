@@ -545,7 +545,7 @@ typedef struct {
      * FP_*, the contact, and a count of their look. */
     uint8_t      fp_pressed;
     uint8_t      fp_id;
-    int8_t       fp_tile;
+    int16_t      fp_tile;
     uint32_t     fp_rev;
     uint32_t     drawn_fp[2];   /* foot_sig() as last drawn, per buffer */
     /* The SETTINGS list open on the hub or a function screen

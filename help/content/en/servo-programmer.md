@@ -147,7 +147,7 @@ A value within hard limits but outside a soft limit opens CHECK THIS CHANGE. It 
 
 ## KST EXPERT MODE
 
-KST EXPERT MODE on [SERVO settings](servo-settings.md#dut) > DUT decides what the programmer shows. It is OFF by default and kept across restarts. Hold the row 2s to turn it ON; a shorter press shows `Hold 2s to switch KST EXPERT MODE on.` on the band. Tap it to turn it OFF.
+KST EXPERT MODE on KST's page of [SERVO settings](servo-settings.md#rudder-s-list-and-kst-s-page) decides what the programmer shows. It is OFF by default and kept across restarts. Hold the row 2s to turn it ON; a shorter press shows `Hold 2s to switch KST EXPERT MODE on.` on the band. Tap it to turn it OFF.
 
 With the mode OFF, DEAD BAND, BOOST and STRETCH leave TUNE, RELEASE PAIRING leaves MORE, and the LOCKED tab leaves the strip. TUNE closes up and the strip holds 4 tabs. DEAD BAND and BOOST can cause back-and-forth movement, buzzing and heat, STRETCH oscillation; what RELEASE PAIRING does inside the servo and what the LOCKED values mean is not known.
 

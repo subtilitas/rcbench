@@ -52,6 +52,19 @@ LANG_DIR = {"en": "", "de": "de/"}
 # nothing to do.
 NO_PAGE = {"SCREEN_SPLASH"}
 
+# SERVO's function screens, which the hub opens: each is described on the
+# page named here (its id), not on a page of its own.
+COVERED_BY = {
+    "SCREEN_SERVO_LIVE": "servo",
+    "SCREEN_SERVO_SWEEP": "servo",
+    "SCREEN_SERVO_TEST": "servo",
+    "SCREEN_SERVO_LIMRUN": "servo",
+    "SCREEN_SERVO_RUDDER": "servo-rudder",
+    "SCREEN_SERVO_RAUTO": "servo-rudder",
+    "SCREEN_SERVO_KST": "servo-programmer",
+    "SCREEN_SERVO_HITEC": "servo-programmer",
+}
+
 HEADER_KEYS = ("screen", "title", "order")
 ORDER_MAX = 9999
 PAGE_ID = re.compile(r"[a-z0-9][a-z0-9_-]*")
@@ -905,6 +918,13 @@ def cross_check(pages: dict[str, dict[str, Page]], screens: list[str],
             by_screen.setdefault(name, page)
         for name in screens:
             if name in NO_PAGE:
+                continue
+            if name in COVERED_BY:
+                if COVERED_BY[name] not in pages[lang]:
+                    problems.add(CONTENT / lang / f"{COVERED_BY[name]}.md",
+                                 0, f"{name} is described on "
+                                    f"{COVERED_BY[name]}.md, which is "
+                                    f"missing in {lang}")
                 continue
             if name not in by_screen:
                 problems.add(CONTENT / lang / f"{screen_id(name)}.md", 0,

@@ -154,9 +154,9 @@ static inline gfx_rect_t page_area(void)
 #define RUN_CARD_W  (LCARD_W - 20) /**< Their width: 600px. */
 #define RUN_CARD_H  188            /**< A run card's height, px. */
 #define RUN_CARD_GAP 4             /**< Above and between the cards, px. */
-/** @brief Run card @p k's top (0 AUTOMATIC TEST, 1 LIMIT RUN): each on
- *         its own screen, at the page area's top. */
-#define RUN_CARD_Y(k) (CARD_Y + RUN_CARD_GAP + 0 * (k))
+/** @brief A run card's top, AUTOMATIC TEST's and LIMIT RUN's alike: each
+ *         on its own screen, at the page area's top. */
+#define RUN_CARD_Y  (CARD_Y + RUN_CARD_GAP)
 #define RUN_NAME_DY 8              /**< A card's name, from its top. */
 #define RUN_SUM_DY  32             /**< A card's summary line, in it. */
 #define RUN_BTN_DY  56             /**< Its START's top, in it. */
@@ -166,7 +166,7 @@ static inline gfx_rect_t page_area(void)
 #define RUN_LINE_P  22             /**< Their pitch in SV_FONT_LABEL. */
 #define RUN_SET_W   160            /**< A card's SETTINGS, px. */
 /** @brief The caps button under TEST's card. */
-#define RUN_CAPS_Y  (RUN_CARD_Y(0) + RUN_CARD_H + RUN_CARD_GAP)
+#define RUN_CAPS_Y  (RUN_CARD_Y + RUN_CARD_H + RUN_CARD_GAP)
 _Static_assert(RUN_CAPS_Y + UI_TAP_MIN <= CARD_FLOOR,
                "the caps button ends above the footer");
 _Static_assert(RUN_LINE_DY + 2 * RUN_LINE_P + 20 <= RUN_CARD_H,
@@ -186,7 +186,8 @@ static inline int run_card_shown(void)
  */
 static inline gfx_rect_t run_card_rect(int k)
 {
-    return (gfx_rect_t){ RUN_CARD_X, (int16_t)RUN_CARD_Y(k), RUN_CARD_W,
+    (void)k;
+    return (gfx_rect_t){ RUN_CARD_X, (int16_t)RUN_CARD_Y, RUN_CARD_W,
                          RUN_CARD_H };
 }
 
@@ -199,8 +200,9 @@ static inline gfx_rect_t run_card_rect(int k)
  */
 static inline gfx_rect_t run_set_rect(int k)
 {
+    (void)k;
     return (gfx_rect_t){ (int16_t)(RUN_CARD_X + RUN_CARD_W - 10 - RUN_SET_W),
-                         (int16_t)(RUN_CARD_Y(k) + RUN_BTN_DY
+                         (int16_t)(RUN_CARD_Y + RUN_BTN_DY
                                    + (RUN_BTN_H - UI_TAP_MIN) / 2),
                          RUN_SET_W, UI_TAP_MIN };
 }
@@ -249,7 +251,7 @@ static inline gfx_rect_t caps_open_rect(void)
 
 _Static_assert(BOX_Y_TEST >= RUN_CAPS_Y + UI_TAP_MIN + 4,
                "TEST's run box starts under the caps button");
-_Static_assert(BOX_Y_LIM >= RUN_CARD_Y(1) + RUN_CARD_H + 4,
+_Static_assert(BOX_Y_LIM >= RUN_CARD_Y + RUN_CARD_H + 4,
                "LIMIT RUN's run box starts under its card");
 
 /** @brief Whether the run's box shows and takes presses: TEST's with the
@@ -266,6 +268,6 @@ static inline bool run_box_shown(void)
 static inline gfx_rect_t test_start_rect(void)
 {
     return (gfx_rect_t){ (int16_t)(RUN_CARD_X + 10),
-                         (int16_t)(RUN_CARD_Y(0) + RUN_BTN_DY), RUN_BTN_W,
+                         (int16_t)(RUN_CARD_Y + RUN_BTN_DY), RUN_BTN_W,
                          RUN_BTN_H };
 }

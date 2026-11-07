@@ -71,7 +71,7 @@ outputs. Choose the port in either of these places:
   opens PROGP01 to PROGP04 with their GPIO
   ([Servo programmer: The port on the rbmod carrier](ServoProgrammer.md#the-port-on-the-rbmod-carrier));
 - the PORT button on every SERVO function screen: a tap opens OUTPUTS and
-  PROG PORT 1 to PROG PORT 4 over the left card
+  PROG PORT 1, PROG PORT 2, PROG PORT 3 and PROG PORT 4 over the left card
   ([Screens: SERVO](Screens.md#servo));
 - a PROG PORT entry on SETUP > OUTPUTS, SERVO TESTER PORT n
   ([Screens: On the rbmod carrier](Screens.md#on-the-rbmod-carrier)).

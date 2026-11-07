@@ -6252,8 +6252,8 @@ UI_TEXT(KP_NEED_TARGET, 116,
     "Use the programming port to program a servo.",
     "Zum Programmieren muss das Servo am Programmierport angeschlossen sein.")
 UI_TEXT(KP_NEED_TARGET_2, 116,
-    "Tap PORT and pick one of PROG PORT 1 to PROG PORT 4.",
-    "Tippe auf PORT und wähle einen von PROG-PORT 1 bis PROG-PORT 4.")
+    "Tap PORT and pick a PROG PORT.",
+    "Tippe auf PORT und wähle einen PROG-PORT.")
 UI_TEXT(KP_DOUBT, 116,
     "The settings currently in the servo are unknown.",
     "Die aktuellen Werte im Servo sind unbekannt.")

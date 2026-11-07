@@ -344,7 +344,7 @@ static bool list_line(char *out, size_t n, bool *warn)
 static void list_reset(void)
 {
     const fn_rows_t *r = rows_now();
-    setting_id_t ids[16];
+    setting_id_t ids[16] = { 0 };
     int k = 0;
     for (int i = 0; i < r->n && k < 16; ++i) {
         if (r->rows[i].kind == UI_SL_SETTING) {

@@ -73,7 +73,7 @@ dieser Stellen:
   Beschriftung der Zeile öffnet PROGP01 bis PROGP04 mit ihrem GPIO
   ([Servo-Programmer: Der Port auf dem rbmod-Carrier](ServoProgrammer-de.md#der-port-auf-dem-rbmod-carrier));
 - mit der Taste PORT auf jeder Funktionsseite von SERVO: ein Tipp öffnet
-  OUTPUTS und PROG-PORT 1 bis PROG-PORT 4 über der linken Karte
+  OUTPUTS und PROG-PORT 1, PROG-PORT 2, PROG-PORT 3 und PROG-PORT 4 über der linken Karte
   ([Bildschirme: SERVO](Screens-de.md#servo));
 - in einem Eintrag PROG PORT auf SETUP > OUTPUTS, SERVO-TESTER PORT n
   ([Bildschirme: Auf dem rbmod-Carrier](Screens-de.md#auf-dem-rbmod-carrier)).

@@ -282,7 +282,7 @@ void hub_event(const touch_event_t *evt)
         const int t = tile_at(x, y);
         if (t >= 0) {
             s.fp_pressed = FP_TILE;
-            s.fp_tile = (int8_t)t;
+            s.fp_tile = (int16_t)t;
         } else if (gfx_rect_contains(ui_footer_rect(UI_FOOTER_SETTINGS), x,
                                      y)) {
             s.fp_pressed = FP_SETTINGS;

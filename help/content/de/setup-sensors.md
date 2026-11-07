@@ -168,7 +168,7 @@ Bei Sensor-SDA, AS5600 und den Phasenabgriff-Einstellungen setzt diese Markierun
 | AS5600 | EIN, AUS | AUS | ein magnetischer Winkelsensor AS5600 an der Abtriebswelle des Servos, auf seiner festen Adresse 0x36 am Sensorbus |
 | AS5600-Mitte | 0 bis 4095 | 0 | der Zählwert mit dem Servo in Neutral; 4096 Zählwerte je Umdrehung, 0,0879° je Zählwert |
 
-Der AS5600 benötigt IOmcu 0.15.0 oder neuer. SENSOR-MITTE in den [Servo-Optionen](servo-settings.md#prüfling) übernimmt den aktuellen Messwert als Mitte. Bei fehlendem Magneten zeigt das Band `AS5600 erkennt keinen Magneten. Prüfe den Magneten an der Servoabtriebswelle.` Auch ein zu schwacher oder zu starker Magnet wird gemeldet. Jede Meldung erscheint einmal, solange der Magnetstatus unverändert bleibt. Eine andere Einstellung löst keine Wiederholung aus; Aus- und Einschalten des Sensors schon.
+Der AS5600 benötigt IOmcu 0.15.0 oder neuer. SENSOR-MITTE in der Liste von RUDER der [Servo-Optionen](servo-settings.md#die-liste-von-ruder-und-die-seite-von-kst) übernimmt den aktuellen Messwert als Mitte. Bei fehlendem Magneten zeigt das Band `AS5600 erkennt keinen Magneten. Prüfe den Magneten an der Servoabtriebswelle.` Auch ein zu schwacher oder zu starker Magnet wird gemeldet. Jede Meldung erscheint einmal, solange der Magnetstatus unverändert bleibt. Eine andere Einstellung löst keine Wiederholung aus; Aus- und Einschalten des Sensors schon.
 
 ## Der Phasenabgriff
 

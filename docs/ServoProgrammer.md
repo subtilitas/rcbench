@@ -102,7 +102,7 @@ PORT entry of **SETUP** > **OUTPUTS**:
 
 The PORT button on the right card of every SERVO function screen sets
 SERVO TESTER as well: a tap opens a list over the
-left card with OUTPUTS and PROG PORT 1 to PROG PORT 4. Leaving SERVO switches the bench to SAFE and ends a sweep or a test, as
+left card with OUTPUTS and PROG PORT 1, PROG PORT 2, PROG PORT 3 and PROG PORT 4. Leaving SERVO switches the bench to SAFE and ends a sweep or a test, as
 every way out of the screen does.
 
 ![The PROG PORT entry of OUTPUTS](img/outputs-port.png)
@@ -147,7 +147,7 @@ GPIO 13 leaves the port none. The tester then keeps the standard outputs,
 whatever the row says.
 
 On boards without the carrier PORT chooser, selecting the standard outputs
-(SERVO TESTER on OUTPUTS) makes the programmer show `Use the programming port to program a servo.` and `Tap PORT and pick one of PROG PORT 1 to PROG PORT 4.`, and every control but **CLOSE** is off. It connects on PORT 1, PORT 2, PORT 3 or PORT 4, the port SERVO TESTER names, with that port's pin.
+(SERVO TESTER on OUTPUTS) makes the programmer show `Use the programming port to program a servo.` and `Tap PORT and pick a PROG PORT.`, and every control but **CLOSE** is off. It connects on PORT 1, PORT 2, PORT 3 or PORT 4, the port SERVO TESTER names, with that port's pin.
 
 ![The standard outputs are the target](img/servo-kst-target.png)
 

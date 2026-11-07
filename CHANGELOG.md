@@ -62,7 +62,8 @@ history is in git.
   ENC CENTRE, RUDDER AUTO's and HITEC's lists, KST's EXPERT MODE page.
   LIVE has no list.
 - The output card's TARGET row gives way to the PORT button, 380 x 48px at
-  the card's top: a tap opens OUTPUTS and PROG PORT 1 to PROG PORT 4 over
+  the card's top: a tap opens OUTPUTS and PROG PORT 1, PROG PORT 2, PROG PORT 3
+  and PROG PORT 4 over
   the left card, and a pick sets SERVO TESTER. It opens nothing while
   ARMED, while ARM is asked, or while a programmer holds the port, and the
   alert band names the lock.
@@ -72,7 +73,7 @@ history is in git.
   either dock covers part of DISARM.
 - A limit run or a RUDDER AUTO run that wrote names `RESTORE IN KST` in
   place of `RESTORE IN PROGRAM`. The KST programmer's hint on the standard
-  outputs reads `Tap PORT and pick one of PROG PORT 1 to PROG PORT 4.`
+  outputs reads `Tap PORT and pick a PROG PORT.`
 
 - The panel sets the Bluetooth IMU's output content register RSW (0x02) to
   0x0C: angle (0x53) and angular rate with the battery (0x52), 2 frames a

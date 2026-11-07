@@ -1569,7 +1569,7 @@ What each control does while the bench is SAFE:
 | RELEASE | sends the release; the value shown stays | centres the surfaces; the value shown becomes the rest |
 | SPEED | set; sends nothing | set; a held position is sent again at the new rate |
 | The hub's list: TYPE, FRAME RATE, PULSE MIN, CENTRE and MAX, TRIM, TRAVEL, REVERSE | set on the hub, where the bench is SAFE; the next ARM rests under them | not reachable: the hub's leave of a function screen switches to SAFE |
-| PORT | a tap opens the list of OUTPUTS and PROG PORT 1 to 4 | locked; names the lock in the alert band |
+| PORT | a tap opens the list of OUTPUTS and the 4 programming ports | locked; names the lock in the alert band |
 | SET, OUTPUT ON, OUTPUT OFF | as on SUPPLY | as on SUPPLY |
 | START TEST | refused: `ARM FIRST` | starts the run after its hold |
 
@@ -1985,6 +1985,7 @@ it does not end the run; an abort switches PROG 5V off.
 ### Programmer
 
 ![KST's and HITEC's tiles live](img/servo-hub.png)
+![The tiles on the rbmod carrier](img/servo-hub-rbmod.png)
 ![The tiles grey: the IOmcu lacks the capability](img/servo-hub-nocap.png)
 ![The tiles grey: a console Hitec session holds the port](img/servo-hub-busy.png)
 
@@ -2016,10 +2017,10 @@ IOmcu transport have no tile ([PROGRAM](#program) on MOTOR & ESC).
 The KST and Chaservo programmer takes the tester's programming port out
 of PWM (pulse-width modulation) and reads or writes settings over the
 servo's signal wire. PROG PORT 1 defaults to GPIO 13, pad 17. Connecting
-requires the PORT button over the output card to name PROG PORT 1 to
+requires the PORT button over the output card to name PROG PORT 1, PROG PORT 2, PROG PORT 3 and
 PROG PORT 4. With OUTPUTS picked, CONNECT is locked and the page says
 `Use the programming port to program a servo.` and
-`Tap PORT and pick one of PROG PORT 1 to PROG PORT 4.`
+`Tap PORT and pick a PROG PORT.`
 
 On an rbmod carrier with IOmcu protocol 4.36 or later, tap the programmer's
 PORT label before CONNECT to choose a programming port. The fixed pins
@@ -2219,7 +2220,7 @@ holding the port.
 
 The PORT button, x 636 to 1016 and y 8 to 56 over the output card, names
 the driven protocol and pins. A tap opens the list of OUTPUTS and PROG
-PORT 1 to PROG PORT 4 over the left card; a pick sets SERVO TESTER, the
+PORT 1, PROG PORT 2, PROG PORT 3 and PROG PORT 4 over the left card; a pick sets SERVO TESTER, the
 TARGET setting saved in NVS (non-volatile storage), as OUTPUTS' SERVO
 TESTER rows set it, and asks for a save. On the rbmod carrier the entries
 name each port's GPIO, and a port the carrier refuses shows its refusal

@@ -428,7 +428,7 @@ nothing (`test_servo_hub`). KST and HITEC are grey with their reason while the I
 not report the capability or another session holds the port, from one table
 (`prog_registry.h`, `test_prog_registry`). Every function screen has the footer name and
 port line, ARM and SETTINGS, and an output card whose PORT button names the target as
-`protocol pins` and opens the choice OUTPUTS / PROG PORT 1 to 4, locked while ARMED or ARM
+`protocol pins` and opens the choice of OUTPUTS and the 4 programming ports, locked while ARMED or ARM
 is asked, and while the programmer holds the port (`test_servo_port_button`,
 `test_servo_workbench`).
 
@@ -1265,7 +1265,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 488 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 490 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1839,8 +1839,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 888 committed screenshots to the current render,
-444 in English and the same 444 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` holds 894 committed screenshots to the current render,
+447 in English and the same 447 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

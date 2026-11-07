@@ -1693,7 +1693,7 @@ Die Bedienelemente verhalten sich je nach Zustand so:
 | FREIGEBEN | sendet die Freigabe; der gezeigte Wert bleibt | zentriert die Ruderflächen; der gezeigte Wert wird zur Ruhelage |
 | TEMPO | wird gesetzt; sendet nichts | wird gesetzt; eine gehaltene Stellung wird mit der neuen Rate erneut gesendet |
 | Die Liste des Hubs: TYP, PULSRATE, PULS MIN, MITTE und MAX, TRIMMUNG, WEG, UMKEHREN | werden auf dem Hub gesetzt, wo der Prüfstand SAFE ist; das nächste ARM ruht unter ihnen | nicht erreichbar: das Verlassen eines Funktionsbildschirms zum Hub schaltet auf SAFE |
-| PORT | ein Tippen öffnet die Liste OUTPUTS und PROG PORT 1 bis 4 | gesperrt; nennt die Sperre im Alarmband |
+| PORT | ein Tippen öffnet die Liste mit OUTPUTS und den 4 Programmierports | gesperrt; nennt die Sperre im Alarmband |
 | SOLL, AUSGANG EIN, AUSGANG AUS | wie auf SUPPLY | wie auf SUPPLY |
 | TEST STARTEN | abgelehnt: `ZUERST ARM` | startet den Lauf nach der Haltegeste |
 
@@ -2144,6 +2144,7 @@ Lauf nicht. Ein Abbruch schaltet PROG 5V aus.
 ### Programmierer
 
 ![Die Kacheln KST und HITEC bereit](img/de/servo-hub.png)
+![Die Kacheln auf dem rbmod-Carrier](img/de/servo-hub-rbmod.png)
 ![Die Kacheln grau: dem IOmcu fehlt die Fähigkeit](img/de/servo-hub-nocap.png)
 ![Die Kacheln grau: eine Hitec-Sitzung der Konsole hält den Port](img/de/servo-hub-busy.png)
 
@@ -2176,10 +2177,10 @@ IOmcu-Transport haben keine Kachel.
 Die KST- und Chaservo-Programmierung schaltet den Programmierport des
 Testers von PWM (Pulsweitenmodulation) auf Lesen und Schreiben über die
 Servosignalleitung um. PROG-PORT 1 verwendet standardmäßig GPIO 13,
-Pad 17. Zum Verbinden muss die Taste PORT über dem Ausgangsfeld PROG-PORT 1
-bis PROG-PORT 4 nennen. Bei OUTPUTS bleibt VERBINDEN gesperrt; es erscheint
+Pad 17. Zum Verbinden muss die Taste PORT über dem Ausgangsfeld PROG-PORT 1, PROG-PORT 2,
+PROG-PORT 3 und PROG-PORT 4 nennen. Bei OUTPUTS bleibt VERBINDEN gesperrt; es erscheint
 `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.`
-und `Tippe auf PORT und wähle einen von PROG-PORT 1 bis PROG-PORT 4.`
+und `Tippe auf PORT und wähle einen PROG-PORT.`
 
 Am rbmod-Carrier mit IOmcu-Protokoll ab 4.36 kannst du vor VERBINDEN auf
 die Beschriftung PORT tippen und einen Programmierport wählen. Die Pins
@@ -2422,7 +2423,7 @@ Lauf oder eine Programmierung, die den Port hält.
 
 Die Taste PORT, x 636 bis 1016 und y 8 bis 56 über dem Ausgangsfeld, nennt
 das angesteuerte Protokoll mit Pins. Ein Tippen öffnet die Liste OUTPUTS
-und PROG-PORT 1 bis PROG-PORT 4 über dem linken Feld; eine Wahl setzt
+und PROG-PORT 1, PROG-PORT 2, PROG-PORT 3 und PROG-PORT 4 über dem linken Feld; eine Wahl setzt
 SERVO-TESTER, die im NVS (nichtflüchtiger Speicher) gespeicherte
 Einstellung ZIEL, wie es die Zeilen SERVO-TESTER von OUTPUTS tun, und
 fordert das Speichern an. Auf dem rbmod-Carrier nennen die Einträge den

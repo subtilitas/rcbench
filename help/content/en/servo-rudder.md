@@ -43,9 +43,8 @@ LENGTH is the distance from the hinge line to the trailing edge: 0 or 10 to 500m
 | Rotary knob | refused; the turn is not kept | moves the horn from the commanded value, as on LIVE; refused while AUTO runs |
 | ZERO | takes the current angle as the neutral and clears MAX; grey without a reading; another ANGLE SOURCE, the IMU's other AXIS or SIGN, or a ZERO or CLEAR ZERO on the IMU screen, drops the zero and MAX | the same; refused while AUTO runs |
 | RESET MAX | clears MAX; the zero stays | the same; refused while AUTO runs |
-| AUTO | shows AUTO's box ([AUTO](#auto)) | the same |
 
-1000us, CENTRE and 2000us act on press. LENGTH, ZERO, RESET MAX and AUTO act when you release a tap on them. PULSE below the buttons shows the commanded pulse. Switching tabs leaves the servo in position. DISARM, STOP or leaving SERVO switches the bench to SAFE.
+1000us, CENTRE and 2000us act on press. LENGTH, ZERO and RESET MAX act when you release a tap on them. PULSE below the buttons shows the commanded pulse. DISARM, STOP or leaving the screen switches the bench to SAFE. [RUDDER AUTO](#rudder-auto) programs the end points on a screen of its own.
 
 ## The state lines
 

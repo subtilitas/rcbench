@@ -232,7 +232,7 @@ bool wb_back(void)
 gfx_rect_t lim_start_rect(void)
 {
     return (gfx_rect_t){ (int16_t)(RUN_CARD_X + 10),
-                         (int16_t)(RUN_CARD_Y(1) + RUN_BTN_DY), RUN_BTN_W,
+                         (int16_t)(RUN_CARD_Y + RUN_BTN_DY), RUN_BTN_W,
                          RUN_BTN_H };
 }
 

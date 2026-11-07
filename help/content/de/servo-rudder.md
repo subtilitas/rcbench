@@ -43,9 +43,8 @@ LÄNGE ist der Abstand von der Scharnierlinie zur Hinterkante: 0 oder 10 bis 500
 | Drehknopf | gesperrt; Drehungen werden verworfen | bewegt das Horn ausgehend vom Sollwert, wie auf LIVE; bei laufendem AUTO gesperrt |
 | NULLPUNKT | setzt den aktuellen Winkel als Neutrallage und löscht MAX; ohne Messwert grau. Änderungen an WINKELQUELLE, IMU-Achse oder IMU-Vorzeichen sowie NULLPUNKT oder NULLPUNKT LÖSCHEN auf der IMU-Seite verwerfen Nullpunkt und MAX. | ebenso; bei laufendem AUTO gesperrt |
 | MAX LÖSCHEN | löscht MAX und behält den Nullpunkt | ebenso; bei laufendem AUTO gesperrt |
-| AUTO | öffnet den [AUTO-Bereich](#auto) | ebenso |
 
-1000us, ZENTRIEREN und 2000us wirken beim Drücken. LÄNGE, NULLPUNKT, MAX LÖSCHEN und AUTO wirken, wenn du einen Tipp darauf loslässt. PULS unter den Tasten zeigt den Sollpuls. Beim Reiterwechsel bleibt das Servo an seiner Position. DISARM, STOP oder das Verlassen von SERVO schaltet den Prüfstand auf SAFE.
+1000us, ZENTRIEREN und 2000us wirken beim Drücken. LÄNGE, NULLPUNKT und MAX LÖSCHEN wirken, wenn du einen Tipp darauf loslässt. PULS unter den Tasten zeigt den Sollpuls. DISARM, STOP oder das Verlassen der Seite schaltet den Prüfstand auf SAFE. [RUDER AUTO](#ruder-auto) programmiert die Endpunkte auf einer eigenen Seite.
 
 ## Die Statuszeilen
 

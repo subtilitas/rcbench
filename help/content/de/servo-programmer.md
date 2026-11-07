@@ -147,7 +147,7 @@ Ein Wert innerhalb der harten Grenzen, aber außerhalb einer weichen Grenze, öf
 
 ## KST EXPERT MODE
 
-KST EXPERT MODE auf [Servo-Optionen](servo-settings.md#prüfling) > PRÜFLING legt fest, was der Programmierer zeigt. Er ist standardmäßig AUS und bleibt über einen Neustart erhalten. Halte die Zeile 2s, um ihn einzuschalten; ein kürzerer Druck zeigt `Halte 2s, um KST EXPERT MODE einzuschalten.` auf dem Band. Tippe, um ihn auszuschalten.
+KST EXPERT MODE auf der Seite von KST in den [Servo-Optionen](servo-settings.md#die-liste-von-ruder-und-die-seite-von-kst) legt fest, was der Programmierer zeigt. Er ist standardmäßig AUS und bleibt über einen Neustart erhalten. Halte die Zeile 2s, um ihn einzuschalten; ein kürzerer Druck zeigt `Halte 2s, um KST EXPERT MODE einzuschalten.` auf dem Band. Tippe, um ihn auszuschalten.
 
 Bei AUS verschwinden DEAD BAND, BOOST und STRETCH von ABSTIMMEN, PAIRING LÖSEN aus WEITERES und der Reiter GESPERRT aus der Leiste. ABSTIMMEN rückt zusammen, und die Leiste hält 4 Reiter. DEAD BAND und BOOST können Pendeln, Brummen und Erwärmung verursachen, STRETCH Schwingungen; was PAIRING LÖSEN im Servo bewirkt und was die gesperrten Werte bedeuten, ist nicht bekannt.
 

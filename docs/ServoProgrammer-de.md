@@ -114,7 +114,7 @@ stehen dafür zwei Bedienelemente:
 
 Die Taste PORT auf der rechten Karte jeder Funktionsseite von SERVO setzt
 SERVO-TESTER ebenso: ein Tippen öffnet über der linken Karte eine Liste mit
-OUTPUTS und PROG-PORT 1 bis PROG-PORT 4. Das Verlassen von SERVO schaltet den Prüfstand auf SAFE
+OUTPUTS und PROG-PORT 1, PROG-PORT 2, PROG-PORT 3 und PROG-PORT 4. Das Verlassen von SERVO schaltet den Prüfstand auf SAFE
 und beendet einen Sweep oder einen Test, wie jeder Weg aus dem Bildschirm.
 
 ![Der Eintrag PROG-PORT von OUTPUTS](img/de/outputs-port.png)
@@ -162,7 +162,7 @@ was immer die Zeile sagt.
 Auf Platinen ohne die PORT-Auswahl des Carriers zeigt die Servoprogrammierung
 bei den Standardausgängen als Ziel (SERVO-TESTER auf OUTPUTS)
 `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und
-`Tippe auf PORT und wähle einen von PROG-PORT 1 bis PROG-PORT 4.`, und jedes
+`Tippe auf PORT und wähle einen PROG-PORT.`, und jedes
 Bedienelement außer **SCHLIESSEN** ist aus. Er verbindet auf PORT 1, PORT 2,
 PORT 3 oder PORT 4, dem Port, den SERVO-TESTER nennt, mit dessen Pin.
 
