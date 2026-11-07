@@ -516,11 +516,23 @@ gfx_rect_t kst_panel_step_rect(int page, int row, bool up)
 
 gfx_rect_t kst_panel_choice_rect(int i)
 {
-    /* Under the title, 48px tall at a 56px pitch: the 7 entries of the
-     * fullest list, FILES, end 8px above CANCEL. */
-    return (gfx_rect_t){ (int16_t)(k.area.x + 10),
-                         (int16_t)(k.area.y + 44 + i * PITCH),
-                         (int16_t)(k.area.w - 20), ROW_H };
+    /* Under the title, 48px tall at a 56px pitch, ending 8px above
+     * CANCEL; in two columns 10px apart when one does not hold them all:
+     * the 7 entries of the fullest list, FILES, in an area 428px tall. */
+    const int top = k.area.y + 44;
+    const int fit = (kst_panel_choice_cancel_rect().y - 8 - top + 8) / PITCH;
+    const int per = (fit < 1) ? 1 : fit;
+    if (k.ch.count <= per) {
+        return (gfx_rect_t){ (int16_t)(k.area.x + 10),
+                             (int16_t)(top + i * PITCH),
+                             (int16_t)(k.area.w - 20), ROW_H };
+    }
+    const int half = (k.ch.count + 1) / 2;
+    const int col = (i < half) ? 0 : 1;
+    const int cw = (k.area.w - 30) / 2;
+    return (gfx_rect_t){ (int16_t)(k.area.x + 10 + col * (cw + 10)),
+                         (int16_t)(top + (i - col * half) * PITCH),
+                         (int16_t)cw, ROW_H };
 }
 
 gfx_rect_t kst_panel_choice_cancel_rect(void)

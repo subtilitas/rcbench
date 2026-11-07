@@ -4953,11 +4953,11 @@ UI_TEXT(SV_LIM_INA_NO_WIN, 58,
 /* PORT PWM off: TARGET opens the port's entry on OUTPUTS, where it is
  * switched on; while ARMED TARGET takes no tap, so DISARM comes first. */
 UI_TEXT(SV_LIM_PWM_OFF, 58,
-    "PORT PWM OFF: TAP TARGET AND SWITCH IT ON",
-    "PORT-PWM AUS: TIPPE AUF ZIEL UND SCHALTE ES EIN")
+    "PORT PWM OFF: SWITCH IT ON IN OUTPUTS",
+    "PORT-PWM AUS: SCHALTE ES IN OUTPUTS EIN")
 UI_TEXT(SV_LIM_PWM_OFF_ARMED, 58,
-    "PORT PWM OFF: DISARM, TAP TARGET, SWITCH IT ON",
-    "PORT-PWM AUS: DISARM, TIPPE AUF ZIEL, SCHALTE ES EIN")
+    "PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS",
+    "PORT-PWM AUS: DISARM, SCHALTE ES IN OUTPUTS EIN")
 UI_TEXT(SV_LIM_PWM_SAFE, 58,
     "PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM",
     "PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM")
@@ -5157,8 +5157,8 @@ UI_TEXT(HG_SV_TITLE_OUTPUT_2, 0,
     "SERVO SETTINGS: TRIM AND TRAVEL",
     "SERVO OPTIONEN: TRIMMUNG UND WEG")
 UI_TEXT(HG_SV_TITLE_SWEEP, 0,
-    "SERVO SETTINGS: SWEEP",
-    "SERVO OPTIONEN: SWEEP")
+    "SERVO: SWEEP",
+    "SERVO: SWEEP")
 UI_TEXT(HG_SV_TITLE_DUT, 0,
     "SERVO SETTINGS: DUT",
     "SERVO OPTIONEN: PRÜFLING")
@@ -5211,11 +5211,11 @@ UI_TEXT(HG_SV_START, 0,
     "Hold 2s to run the automatic test at its supply voltages, while ARMED. The lines under it say why not.",
     "Halte 2s für den automatischen Test bei seinen Spannungen, bei ARMED. Darunter steht, warum nicht.")
 UI_TEXT(HG_SV_RUN_SET, 0,
-    "The run's steps, timing and limits, one level down. The home tag goes back to TEST.",
-    "Stufen, Zeiten und Grenzen des Laufs, eine Ebene tiefer. Das Home-Feld führt zurück zu TEST.")
+    "The run's steps, timing and limits, one level down. The home tag goes back to the card.",
+    "Stufen, Zeiten und Grenzen des Laufs, eine Ebene tiefer. Das Home-Feld führt zurück zur Karte.")
 UI_TEXT(HG_SV_LIM, 0,
-    "Hold 2s to search the travel limits of the servo on TARGET, while ARMED.",
-    "Halte 2s, um die Endlagen des Servos am ZIEL zu suchen, bei ARMED.")
+    "Hold 2s to search the travel limits of the servo on PORT, while ARMED.",
+    "Halte 2s, um die Endlagen des Servos am PORT zu suchen, bei ARMED.")
 UI_TEXT(HG_SV_CAPS, 0,
     "SUPPLY's voltage and current caps, which the test's steps keep to. A tap opens SUPPLY.",
     "Spannungs- und Stromgrenze von SUPPLY, die die Teststufen einhalten. Tippen öffnet SUPPLY.")
@@ -5328,14 +5328,168 @@ UI_TEXT(HG_SV_SPEED, 0,
     "How fast the bench may move the output. Each command passes straight through at 100%.",
     "Wie schnell der Prüfstand den Ausgang bewegen darf. Jeder Befehl geht direkt durch bei 100%.")
 UI_TEXT(HG_SV_TARGET, 0,
-    "What the buttons and the knob drive. A tap opens OUTPUTS while SAFE.",
-    "Was die Tasten und der Drehknopf ansteuern. Ein Tippen öffnet OUTPUTS, solange SAFE.")
+    "What the buttons and the knob drive. A tap chooses OUTPUTS or a PROG PORT while SAFE.",
+    "Was die Tasten und der Drehknopf ansteuern. Ein Tippen wählt OUTPUTS oder einen PROG-PORT, solange SAFE.")
 UI_TEXT(HG_SV_BUTTONS, 0,
     "While ARMED: CENTRE to PULSE CENTRE plus TRIM, SWEEP runs the curve. RELEASE goes back to rest.",
     "Bei ARMED: ZENTRIEREN auf PULS MITTE plus TRIMMUNG, SWEEP fährt die Kurve. FREIGEBEN geht in Ruhe.")
 UI_TEXT(HG_SV_ARM, 0,
-    "Hold 2s to ARM. DISARM, STOP or leaving SERVO switches to SAFE.",
-    "Halte 2s für ARM. DISARM, STOP oder Verlassen von SERVO schaltet auf SAFE.")
+    "Hold 2s to ARM. DISARM, STOP or leaving the screen switches to SAFE.",
+    "Halte 2s für ARM. DISARM, STOP oder Verlassen des Bildschirms schaltet auf SAFE.")
+UI_TEXT(HG_SV_SETTINGS, 0,
+    "How this screen runs its function. Opens on a SAFE bench only.",
+    "Wie dieser Bildschirm seine Funktion ausführt. Öffnet nur bei SAFE.")
+UI_TEXT(HG_SV_TITLE_LIMRUN, 0,
+    "SERVO: LIMIT RUN",
+    "SERVO: ENDLAGENLAUF")
+/* The SERVO hub (servo_hub.c): its tiles' names and lines, at most 31
+ * cells of 10 x 20, and its guide. */
+UI_TEXT(SVH_SERVO, 0,
+    "SERVO",
+    "SERVO")
+UI_TEXT(SVH_LIVE, 0,
+    "LIVE",
+    "LIVE")
+UI_TEXT(SVH_SWEEP, 0,
+    "SWEEP",
+    "SWEEP")
+UI_TEXT(SVH_TEST, 0,
+    "TEST",
+    "TEST")
+UI_TEXT(SVH_LIMRUN, 0,
+    "LIMIT RUN",
+    "ENDLAGENLAUF")
+UI_TEXT(SVH_RUDDER, 0,
+    "RUDDER",
+    "RUDER")
+UI_TEXT(SVH_RAUTO, 0,
+    "RUDDER AUTO",
+    "RUDER AUTO")
+UI_TEXT(SVH_KST, 0,
+    "KST",
+    "KST")
+UI_TEXT(SVH_HITEC, 0,
+    "HITEC",
+    "HITEC")
+UI_TEXT(SVH_LIVE_LINE, 0,
+    "DIAL, KNOB, CURRENT",
+    "SKALA, DREHKNOPF, STROM")
+UI_TEXT(SVH_SWEEP_LINE, 0,
+    "CURVE AT SPEED, PAUSE",
+    "KURVE MIT SPEED, PAUSE")
+UI_TEXT(SVH_TEST_LINE, 0,
+    "4.8V TO 8.4V, BROWN-OUT",
+    "4.8V BIS 8.4V, BROWN-OUT")
+UI_TEXT(SVH_LIMRUN_LINE, 0,
+    "FIND THE ENDS, PROGRAM THEM",
+    "ENDLAGEN SUCHEN, PROGRAMMIEREN")
+UI_TEXT(SVH_RUDDER_LINE, 0,
+    "DEFLECTION IN ° AND mm",
+    "AUSSCHLAG IN ° UND mm")
+UI_TEXT(SVH_RAUTO_LINE, 0,
+    "PROGRAM THE END POINTS",
+    "ENDPUNKTE PROGRAMMIEREN")
+UI_TEXT(SVH_KST_LINE, 0,
+    "KST AND CHASERVO SERVOS",
+    "KST- UND CHASERVO-SERVOS")
+UI_TEXT(SVH_HITEC_LINE, 0,
+    "HITEC D AND CLASSIC",
+    "HITEC D UND CLASSIC")
+UI_TEXT(SVH_PORT, 0,
+    "PORT",
+    "PORT")
+UI_TEXT(SVH_PORT_TITLE, 0,
+    "PORT: WHAT THE TESTER DRIVES",
+    "PORT: WAS DER TESTER ANSTEUERT")
+UI_TEXT(HG_SVH_TITLE_TILES, 0,
+    "SERVO: FUNCTIONS",
+    "SERVO: FUNKTIONEN")
+UI_TEXT(HG_SVH_TITLE_FOOTER, 0,
+    "SERVO: PORT AND SETTINGS",
+    "SERVO: PORT UND OPTIONEN")
+UI_TEXT(HG_SVH_DRIVE, 0,
+    "LIVE and SWEEP drive the servo by the dial, the knob and the curve.",
+    "LIVE und SWEEP steuern das Servo mit Skala, Drehknopf und Kurve.")
+UI_TEXT(HG_SVH_MEASURE, 0,
+    "TEST and LIMIT RUN measure the servo on the rail and find its ends.",
+    "TEST und ENDLAGENLAUF messen das Servo an der Schiene und finden seine Endlagen.")
+UI_TEXT(HG_SVH_SURFACE, 0,
+    "RUDDER and RUDDER AUTO read a control surface's deflection.",
+    "RUDER und RUDER AUTO lesen den Ausschlag eines Ruders.")
+UI_TEXT(HG_SVH_PROGRAM, 0,
+    "KST and HITEC program a servo on a PROG PORT.",
+    "KST und HITEC programmieren ein Servo an einem PROG-PORT.")
+UI_TEXT(HG_SVH_TILE_NAME, 0,
+    "TILE",
+    "KACHEL")
+UI_TEXT(HG_SVH_TILE, 0,
+    "Opens its screen. Grey: the IOmcu lacks it; a tap says why.",
+    "Öffnet seinen Bildschirm. Grau: dem IOmcu fehlt es; ein Tippen sagt warum.")
+UI_TEXT(HG_SVH_PORT, 0,
+    "What the tester drives. Each function screen's PORT button changes it.",
+    "Was der Tester ansteuert. Die PORT-Taste jedes Funktionsbildschirms ändert es.")
+UI_TEXT(HG_SVH_SETTINGS, 0,
+    "The servo profile every function uses: type, rate, pulses, name.",
+    "Das Servoprofil aller Funktionen: Typ, Pulsrate, Pulse, Name.")
+/* The SERVO screens' SETTINGS lists (servo_lists.c): the help lines of
+ * their custom rows. */
+UI_TEXT(SVL_TYPE_HELP, 0,
+    "Pulse range and frame rates. STANDARD PWM at every restart",
+    "Pulsbereich und Pulsraten. STANDARD PWM nach jedem Neustart")
+UI_TEXT(SVL_RATE_HELP, 0,
+    "Above 60Hz only after the 2s warning; 50Hz at every restart",
+    "Über 60Hz nur nach der 2s-Warnung; 50Hz nach jedem Neustart")
+UI_TEXT(SVL_PULSE_HELP, 0,
+    "Keys step 10us; a tap on the value opens the keypad",
+    "Tasten in 10us-Schritten; ein Tippen auf den Wert öffnet die Zahlentasten")
+UI_TEXT(SVL_TRIM_HELP, 0,
+    "Added to PULSE CENTRE, -200 to +200us in 5us steps",
+    "Zu PULS MITTE addiert, -200 bis +200us in 5us-Schritten")
+UI_TEXT(SVL_TRAVEL_HELP, 0,
+    "How far each way the horn goes, 10 to 90° in 5° steps",
+    "Wie weit das Horn je Seite fährt, 10 bis 90° in 5°-Schritten")
+UI_TEXT(SVL_REVERSE_HELP, 0,
+    "Turns the direction of every command",
+    "Kehrt die Richtung jedes Befehls um")
+UI_TEXT(SVL_HV_HELP, 0,
+    "The automatic test also runs 7.4V and 8.4V",
+    "Der automatische Test fährt auch 7.4V und 8.4V")
+UI_TEXT(SVL_ENC_HELP, 0,
+    "A tap at the servo's neutral takes the AS5600's count now",
+    "Ein Tippen in der Neutrallage des Servos übernimmt den AS5600-Wert")
+UI_TEXT(SVL_ENC_NO_READING, 0,
+    "No AS5600 reading: set it up on SENSORS",
+    "Kein AS5600-Wert: richte ihn unter SENSORS ein")
+UI_TEXT(SVL_ANGLE_SOURCE, 0,
+    "ANGLE SOURCE",
+    "WINKELQUELLE")
+UI_TEXT(SVL_ANGLE_HELP, 0,
+    "Set on SENSORS; a tap opens it there",
+    "Eingestellt unter SENSORS; ein Tippen öffnet es dort")
+UI_TEXT(SVL_FAMILY_HELP, 0,
+    "The programmer a run writes the end points with",
+    "Der Programmierer, mit dem ein Lauf die Endpunkte schreibt")
+UI_TEXT(SVL_PULSES_HELP, 0,
+    "SET: the servo's pulses to 1000-2000us first",
+    "SETZEN: die Pulse des Servos zuerst auf 1000-2000us")
+UI_TEXT(SVL_PORT_ONLY, 0,
+    "On a PROG PORT only: choose one with PORT",
+    "Nur an einem PROG-PORT: wähle einen mit PORT")
+UI_TEXT(SVL_KST_ONLY, 0,
+    "KST and Chaservo servos only",
+    "Nur KST- und Chaservo-Servos")
+UI_TEXT(SV_ROW_PROG_V, 0,
+    "PROG VOLTAGE",
+    "PROG-SPANNUNG")
+UI_TEXT(SV_ROW_PROG_I, 0,
+    "PROG CURRENT",
+    "PROG-STROM")
+UI_TEXT(SV_ROW_PROG_WAIT, 0,
+    "PROG WAIT",
+    "PROG-WARTEZEIT")
+UI_TEXT(SV_KST_EXPERT_NOTE, 0,
+    "ON after a 2s hold, OFF with a tap. ON shows the LOCKED page.",
+    "EIN nach 2s Halten, AUS mit einem Tippen. EIN zeigt die Seite LOCKED.")
 
 /* --------------- the alert band: the panel's control task raises these */
 UI_TEXT(ALERT_TOUCH_LOST_STOP, 94,

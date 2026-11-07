@@ -137,7 +137,7 @@ TEST_CASE(the_travel_limit_clamps_rather_than_refuses)
 {
     fresh_armed();
     open_settings();
-    tap(ROW_L_X, ROW_Y(4));             /* TRAVEL */
+    sl_tap(HL_TRAVEL);             /* TRAVEL */
     keys("50");
     close_settings();
     while (last_cmd().kind != SERVO_CMD_NONE) { }
@@ -434,7 +434,7 @@ TEST_CASE(the_trim_says_the_position_again_while_it_is_held)
     const uint16_t was = last_cmd().value_us;
 
     open_settings();
-    tap(TRIM_UP_X, ROW_Y(3));
+    sl_step(HL_TRIM, +1);
     const servo_cmd_t after = last_cmd();
     CHECK_EQ(after.kind, SERVO_CMD_POSITION);
     CHECK_EQ(after.value_us, was + 5);

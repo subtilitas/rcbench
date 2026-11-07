@@ -1,14 +1,15 @@
 /**
  * @file
- * @brief The SERVO screen's pages of rows and the panels they open.  SETTINGS, a
- * task of the strip, holds three pages under its own tabs -- OUTPUT, SWEEP
- * and DUT: the servo's type, frame rate and pulse widths, the sweep's
- * curve, and the device under test.  Each run card on TEST opens its run's
- * settings as one more page, one level down: the automatic test's steps,
- * length, timing and pass/fail limits, and the limit run's mode.  The rows
- * open the keypad, the keyboard, the list, the profile warning, the HV
- * warning and SUPPLY's question about a live output, all over the left
- * column.  The right card stays where it is and works.
+ * @brief The SERVO screens' pages of rows and the panels they open.  The run card
+ * on TEST and on LIMIT RUN opens its run's settings as a page, one level
+ * down: the automatic test's steps, length, timing and pass/fail limits,
+ * and the limit run's mode, servo, pulses and the programmer's supply.
+ * KST's SETTINGS opens EXPERT MODE's page.  The servo profile's rows --
+ * type, frame rate, pulse widths, trim, travel, reverse -- are edited from
+ * the hub's SETTINGS list (servo_lists.c) through svs_profile_edit() and
+ * svs_profile_step().  The rows open the keypad, the list, the profile
+ * warning, the HV warning and SUPPLY's question about a live output, all
+ * over the left column.  The right card stays where it is and works.
  *
  * The screen is servo_screen.c; the state and the layout both share are
  * servo_screen_int.h.
@@ -38,13 +39,15 @@
 #include "servo_screen_int.h"
 
 /**
- * @brief The settings rows, page by page.  SETTINGS' pages in two
- *        columns; the automatic test's in three of five rows: the steps,
- *        the pass/fail limits and the brown-out, the length and timing.
- *        The length rule tops the right column, under TEST's SETTINGS: a
- *        second tap there opens its list and changes nothing.  BROWN-OUT
- *        opens the brown-out walk's page: on or off, LOWEST VOLTAGE and
- *        STEP, one column.
+ * @brief The settings rows, page by page.  The profile's (PG_OUTPUT) have
+ *        no page: the hub's list edits them by kind.  The automatic
+ *        test's in three columns of five rows: the steps, the pass/fail
+ *        limits and the brown-out, the length and timing.  The length rule
+ *        tops the right column, under the card's SETTINGS: a second tap
+ *        there opens its list and changes nothing.  BROWN-OUT opens the
+ *        brown-out walk's page: on or off, LOWEST VOLTAGE and STEP, one
+ *        column.  The limit run's under its mode note: the programmer's
+ *        supply, PROG V, PROG I and PROG WAIT.
  */
 const ov_row_t k_rows[] = {
     { PG_OUTPUT, R_TYPE,    SETTING_COUNT, TX_SV_ROW_TYPE,  0, 0, true  },
@@ -56,14 +59,7 @@ const ov_row_t k_rows[] = {
     { PG_OUTPUT, R_TRAVEL,  SETTING_COUNT, TX_SV_ROW_TRAVEL,  0, 4, false },
     { PG_OUTPUT, R_REVERSE, SETTING_COUNT, TX_SV_ROW_REVERSE,  1, 4, false },
 
-    { PG_SWEEP, R_SETTING, SET_SERVO_CURVE,      TX_SV_ROW_CURVE,  0, 0, false },
-    { PG_SWEEP, R_SETTING, SET_SERVO_TEST_HZ,    TX_SV_ROW_SPEED,  0, 1, false },
-    { PG_SWEEP, R_SETTING, SET_SERVO_TEST_RANGE, TX_SV_ROW_RANGE,  0, 2, false },
-
-    { PG_DUT, R_TEXT,    SETTING_COUNT,    TX_SV_ROW_NAME,  0, 0, true  },
-    { PG_DUT, R_SETTING, SET_SERVO_REPORT, TX_SV_ROW_REPORT,  0, 1, false },
-    { PG_DUT, R_ENC_CENTRE, SETTING_COUNT, TX_SV_ROW_ENC_CENTRE,  0, 2, false },
-    { PG_DUT, R_KST_EXPERT, SETTING_COUNT, TX_SV_ROW_KST_EXPERT,  1, 1, false },
+    { PG_KST, R_KST_EXPERT, SETTING_COUNT, TX_SV_ROW_KST_EXPERT,  0, 0, false },
 
     { PG_AUTO, R_SETTING, SET_SERVO_LEN_BY,        TX_SV_ROW_LEN_BY,  2, 0, false },
     { PG_AUTO, R_SETTING, SET_SERVO_LEN_S,         TX_SV_ROW_LEN_S,  2, 1, false },
@@ -84,6 +80,9 @@ const ov_row_t k_rows[] = {
     { PG_LIMRUN, R_LIM_MODE,   SETTING_COUNT, TX_SV_ROW_LIM_MODE,  0, 0, true  },
     { PG_LIMRUN, R_LIM_SERVO,  SETTING_COUNT, TX_SV_ROW_LIM_SERVO,  0, 1, false },
     { PG_LIMRUN, R_LIM_PULSES, SETTING_COUNT, TX_SV_ROW_LIM_PULSES,  1, 1, false },
+    { PG_LIMRUN, R_SETTING, SET_SERVO_PROG_V,    TX_SV_ROW_PROG_V,     0, 4, false },
+    { PG_LIMRUN, R_SETTING, SET_SERVO_PROG_I,    TX_SV_ROW_PROG_I,     1, 4, false },
+    { PG_LIMRUN, R_SETTING, SET_SERVO_PROG_WAIT, TX_SV_ROW_PROG_WAIT,  2, 4, false },
 
     { PG_BROWNOUT, R_SETTING, SET_SERVO_BROWNOUT, TX_SV_ROW_BROWNOUT,  0, 0, false },
     { PG_BROWNOUT, R_SETTING, SET_SERVO_BO_FLOOR, TX_SV_ROW_BO_FLOOR,  0, 1, false },
@@ -98,37 +97,29 @@ const int k_row_count = ROW_COUNT;
 gfx_rect_t row_rect(int i)
 {
     const ov_row_t *r = &k_rows[i];
-    if (r->page >= PG_COUNT) {
-        const int w = r->wide ? 2 * RL_COL_W + 10 : RL_COL_W;
-        return (gfx_rect_t){ (int16_t)(OV_X + 10 + r->col * (RL_COL_W + 10)),
-                             (int16_t)(RL_ROW0 + r->row * RL_PITCH),
-                             (int16_t)w, RL_LBL_H + OV_ROW_H };
+    if (r->page < PG_COUNT) {
+        return (gfx_rect_t){ 0, 0, 0, 0 };   /* the hub's list's row */
     }
-    const int x = (r->col == 0) ? OV_X + 10 : OV_X + 20 + OV_COL_W;
-    const int w = r->wide ? OV_W - 20 : OV_COL_W;
-    return (gfx_rect_t){ (int16_t)x, (int16_t)(OV_ROW0 + r->row * OV_PITCH),
-                         (int16_t)w, OV_ROW_H };
+    const int w = r->wide ? 2 * RL_COL_W + 10 : RL_COL_W;
+    return (gfx_rect_t){ (int16_t)(OV_X + 10 + r->col * (RL_COL_W + 10)),
+                         (int16_t)(RL_ROW0 + r->row * RL_PITCH),
+                         (int16_t)w, RL_LBL_H + OV_ROW_H };
 }
 
 gfx_rect_t value_rect(int i)
 {
     const gfx_rect_t r = row_rect(i);
-    if (k_rows[i].page >= PG_COUNT) {
-        return (gfx_rect_t){ r.x, (int16_t)(r.y + RL_LBL_H), r.w, OV_ROW_H };
-    }
-    const int w = k_rows[i].wide ? r.w - 170 : OV_VAL_W;
-    return (gfx_rect_t){ (int16_t)(r.x + r.w - w), r.y, (int16_t)w, r.h };
-}
-
-gfx_rect_t trim_rect(int i, bool up)
-{
-    const gfx_rect_t v = value_rect(i);
-    return (gfx_rect_t){ (int16_t)(up ? v.x + v.w - UI_TAP_MIN : v.x), v.y,
-                         UI_TAP_MIN, v.h };
+    return (gfx_rect_t){ r.x, (int16_t)(r.y + RL_LBL_H), r.w, OV_ROW_H };
 }
 
 gfx_rect_t choice_rect(int i)
 {
+    /* The PORT list: one column, its entries and refusals 60 cells. */
+    if (s.ch.target == CH_PORT) {
+        return (gfx_rect_t){ (int16_t)(OV_X + 10),
+                             (int16_t)(OV_Y + 56 + i * 56),
+                             (int16_t)(OV_W - 20), UI_TAP_MIN };
+    }
     const int per_col = CHOICE_MAX / 2;
     const int col = i / per_col;
     const int line = i % per_col;
@@ -357,9 +348,10 @@ void ask_apply(void)
     servo_invalidate();
 }
 
-static void open_choice(int target, setting_id_t id, const char *title)
+void open_choice(int target, setting_id_t id, const char *title)
 {
     s.ch.open    = true;
+    s.ch.refused = 0u;
     s.ch.target  = target;
     s.ch.id      = id;
     s.ch.count   = 0;
@@ -367,7 +359,7 @@ static void open_choice(int target, setting_id_t id, const char *title)
     snprintf(s.ch.title, sizeof(s.ch.title), "%s", title);
 }
 
-static void choice_add(const char *label, int value)
+void choice_add(const char *label, int value)
 {
     if (s.ch.count < CHOICE_MAX) {
         snprintf(s.ch.labels[s.ch.count], sizeof(s.ch.labels[0]), "%s", label);
@@ -420,6 +412,40 @@ bool target_locked(const ov_row_t *r)
     return r->kind == R_SETTING && target_locked_for(r->id);
 }
 
+/**
+ * @brief The range PULSE MIN, PULSE CENTRE or PULSE MAX is typed and
+ *        stepped in.
+ *
+ * Each end at least 50us from the centre, and the range a command carries
+ * -- centred on CENTRE, out to the further end; see cmd_range() -- inside
+ * what the IOmcu takes and what the frame rate leaves a pause after
+ * (max_pulse_for_rate(), never above the ceiling).  So an end may lie no
+ * further from the centre than the centre lies from the floor or from that
+ * top.
+ * @param kind R_MIN, R_CENTRE or R_MAX
+ * @param lo   takes the lowest, us
+ * @param hi   takes the highest, us
+ */
+static void pulse_range(int kind, unsigned *lo, unsigned *hi)
+{
+    const unsigned c = s.centre_us;
+    if (kind == R_MIN) {
+        const unsigned top = max_pulse_for_rate();
+        *lo = (2u * c > top + OUT_FLOOR_US) ? 2u * c - top : OUT_FLOOR_US;
+        *hi = c - 50u;
+    } else if (kind == R_CENTRE) {
+        *lo = (s.max_us + OUT_FLOOR_US + 1u) / 2u;
+        *hi = (max_pulse_for_rate() + s.min_us) / 2u;
+        if (*lo < s.min_us + 50u) { *lo = s.min_us + 50u; }
+        if (*hi > s.max_us - 50u) { *hi = s.max_us - 50u; }
+    } else {
+        unsigned top = max_pulse_for_rate();
+        if (top > 2u * c - OUT_FLOOR_US) { top = 2u * c - OUT_FLOOR_US; }
+        *lo = c + 50u;
+        *hi = (top > c + 50u) ? top : c + 50u;
+    }
+}
+
 /** @brief A settings row tapped: the editor its kind takes; TRIM's keypad
  *         is signed.  @param i The row. */
 static void edit_row(int i)
@@ -448,39 +474,26 @@ static void edit_row(int i)
         choice_add(TR(SV_CUSTOM), -1);
         break;
     }
-    /*
-     * Each end at least 50us from the centre, and the range a command
-     * carries -- centred on CENTRE, out to the further end; see cmd_range()
-     * -- inside what the IOmcu takes and what the frame rate leaves
-     * a pause after (max_pulse_for_rate(), never above the ceiling).  So an
-     * end may lie no further from the centre than the centre lies from the
-     * floor or from that top.
-     */
+    /* The pulses within pulse_range(). */
     case R_MIN: {
-        const unsigned c = s.centre_us;
-        const unsigned top = max_pulse_for_rate();
-        const unsigned lo = (2u * c > top + OUT_FLOOR_US) ? 2u * c - top
-                                                          : OUT_FLOOR_US;
+        unsigned lo = 0u, hi = 0u;
+        pulse_range(R_MIN, &lo, &hi);
         open_keypad(KT_MIN, TR(SV_ROW_MIN), "us", (float)s.min_us, (float)lo,
-                    (float)(c - 50u), 0);
+                    (float)hi, 0);
         break;
     }
     case R_CENTRE: {
-        unsigned lo = (s.max_us + OUT_FLOOR_US + 1u) / 2u;
-        unsigned hi = (max_pulse_for_rate() + s.min_us) / 2u;
-        if (lo < s.min_us + 50u) { lo = s.min_us + 50u; }
-        if (hi > s.max_us - 50u) { hi = s.max_us - 50u; }
+        unsigned lo = 0u, hi = 0u;
+        pulse_range(R_CENTRE, &lo, &hi);
         open_keypad(KT_CENTRE, TR(SV_ROW_CENTRE), "us", (float)s.centre_us,
                     (float)lo, (float)hi, 0);
         break;
     }
     case R_MAX: {
-        const unsigned c = s.centre_us;
-        unsigned top = max_pulse_for_rate();
-        if (top > 2u * c - OUT_FLOOR_US) { top = 2u * c - OUT_FLOOR_US; }
+        unsigned lo = 0u, hi = 0u;
+        pulse_range(R_MAX, &lo, &hi);
         open_keypad(KT_MAX, TR(SV_ROW_MAX), "us", (float)s.max_us,
-                    (float)(c + 50u),
-                    (float)((top > c + 50u) ? top : c + 50u), 0);
+                    (float)lo, (float)hi, 0);
         break;
     }
     case R_TRAVEL:
@@ -526,18 +539,6 @@ static void edit_row(int i)
             s.lim_pulses = !s.lim_pulses;
         }
         break;
-    case R_ENC_CENTRE:
-        /* The servo is at its neutral: the live count is the centre.  An
-         * IMU's zero is taken on the IMU screen, not here. */
-        if (enc_shown() && enc_src() == SERVO_ANGLE_AS5600) {
-            settings_set(SET_ENC_CENTRE, (float)s.enc_raw);
-            settings_request_save();
-        }
-        break;
-    case R_TEXT:
-        ui_textkey_open(&s.tk, overlay_area(), TR(SV_DUT_TITLE),
-                        settings_text(SET_TEXT_DUT_NAME), UI_TEXTKEY_MAX);
-        break;
     case R_SETTING: {
         const setting_def_t *d = settings_def(r->id);
         if (d->type == SET_TYPE_BOOL) {
@@ -562,6 +563,99 @@ static void edit_row(int i)
     ++s.ctrl_rev;
 }
 
+/** @brief The profile's row of @p kind in k_rows. @param kind R_TYPE to
+ *         R_REVERSE, R_HV @return its index, -1 for none */
+static int profile_row(int kind)
+{
+    for (int i = 0; i < ROW_COUNT; ++i) {
+        if (k_rows[i].kind == kind
+            && (k_rows[i].page == PG_OUTPUT || kind == R_HV)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void svs_profile_edit(int kind)
+{
+    const int i = profile_row(kind);
+    if (i >= 0) {
+        edit_row(i);
+        servo_invalidate();
+    }
+}
+
+/**
+ * @brief @p v held to [@p lo, @p hi].
+ * @param v the value @param lo the lowest @param hi the highest
+ * @return the value held
+ */
+static int clamp_int(int v, int lo, int hi)
+{
+    return (v < lo) ? lo : (v > hi) ? hi : v;
+}
+
+void svs_profile_step(int kind, int dir)
+{
+    unsigned lo = 0u, hi = 0u;
+    dir = (dir < 0) ? -1 : 1;
+    switch (kind) {
+    case R_MIN:
+        pulse_range(R_MIN, &lo, &hi);
+        s.min_us = (uint16_t)clamp_int((int)s.min_us + 10 * dir, (int)lo,
+                                       (int)hi);
+        reissue();
+        break;
+    case R_CENTRE:
+        pulse_range(R_CENTRE, &lo, &hi);
+        s.centre_us = (uint16_t)clamp_int((int)s.centre_us + 10 * dir,
+                                          (int)lo, (int)hi);
+        reissue();
+        break;
+    case R_MAX:
+        pulse_range(R_MAX, &lo, &hi);
+        s.max_us = (uint16_t)clamp_int((int)s.max_us + 10 * dir, (int)lo,
+                                       (int)hi);
+        apply_profile(s.type, s.frame_hz);   /* a rate it no longer fits
+                                              * comes down; never up */
+        break;
+    case R_TRIM:
+        s.trim_us = (int16_t)clamp_int(s.trim_us + 5 * dir, -200, 200);
+        reissue();
+        break;
+    case R_TRAVEL:
+        s.travel_deg = (float)clamp_int((int)s.travel_deg + 5 * dir, 10, 90);
+        if (value_live()) {
+            s.commanded_deg = clamp_travel(s.commanded_deg);
+        }
+        reissue();
+        break;
+    case R_REVERSE:
+        s.reverse = !s.reverse;
+        reissue();
+        break;
+    case R_HV:
+        /* For a run started after it; one under way keeps its steps. */
+        s.test_hv = !s.test_hv;
+        break;
+    default:
+        break;
+    }
+    ++s.ctrl_rev;
+}
+
+void svs_profile_value(int kind, char *buf, size_t n)
+{
+    const int i = profile_row(kind);
+    if (buf == NULL || n == 0u) {
+        return;
+    }
+    buf[0] = '\0';
+    if (i >= 0) {
+        ov_row_value(&k_rows[i], buf, n);
+    }
+}
+
 static void choose(int k)
 {
     const int v = s.ch.values[k];
@@ -581,6 +675,8 @@ static void choose(int k)
     } else if (target == CH_ENUM) {
         settings_set(id, (float)v);
         settings_request_save();
+    } else if (target == CH_PORT) {
+        port_list_pick(v);
     }
     ++s.ctrl_rev;
 }
@@ -699,22 +795,8 @@ void ov_down(const touch_event_t *evt)
         }
         return;
     }
-    /* SETTINGS' page tabs; a run's settings have none. */
-    if (wb_task() == UI_WB_SETTINGS
-        && gfx_rect_contains((gfx_rect_t){ (int16_t)(OV_X + 10), OV_TAB_Y,
-                                           OV_TAB_W, OV_TAB_H }, x, y)) {
-        ov_take(evt, OP_TAB, -1);
-        (void)ui_tabs_event(&s.tabs, evt);
-        return;
-    }
     const int page = rows_page();
-    /* DUT's two buttons, which open their settings' homes. */
-    if (page == PG_DUT
-        && (opener_down(evt, enc_open_rect(), OP_OPEN_ENC)
-            || opener_down(evt, caps_open_rect(), OP_OPEN_CAPS))) {
-        return;
-    }
-    /* A run's settings: CLOSE, back to TEST's cards. */
+    /* A page of rows: CLOSE, back to its screen. */
     if (page >= PG_COUNT && gfx_rect_contains(run_close_rect(), x, y)) {
         ov_take(evt, OP_RUN_CLOSE, -1);
         return;
@@ -722,19 +804,6 @@ void ov_down(const touch_event_t *evt)
     for (int i = 0; i < ROW_COUNT; ++i) {
         if (k_rows[i].page != page || row_hidden(&k_rows[i])) {
             continue;
-        }
-        if (k_rows[i].kind == R_TRIM) {
-            /* The steps act on the press, as the old CENTRE buttons did:
-             * a fine step should feel immediate. */
-            const bool up = gfx_rect_contains(trim_rect(i, true), x, y);
-            if (up || gfx_rect_contains(trim_rect(i, false), x, y)) {
-                ov_take(evt, up ? OP_TRIM_UP : OP_TRIM_DN, i);
-                s.trim_us = (int16_t)(s.trim_us + (up ? 5 : -5));
-                if (s.trim_us > 200) { s.trim_us = 200; }
-                if (s.trim_us < -200) { s.trim_us = -200; }
-                reissue();
-                return;
-            }
         }
         if (gfx_rect_contains(row_rect(i), x, y)) {
             ov_take(evt, k_rows[i].kind == R_KST_EXPERT ? OP_KST_EXPERT
@@ -846,11 +915,7 @@ void ov_rest(const touch_event_t *evt)
         if (up) {
             ov_let_go();
         }
-        /* The keyboard covers the strip: on PROGRAM it types the list's
-         * search, on DUT the name. */
-        if (r == UI_TEXTKEY_OK && wb_task() == UI_WB_PROGRAM) {
-            prog_search_done(name);
-        } else if (r == UI_TEXTKEY_OK) {
+        if (r == UI_TEXTKEY_OK) {
             settings_set_text(SET_TEXT_DUT_NAME, name);
             settings_request_save();
         }
@@ -860,14 +925,6 @@ void ov_rest(const touch_event_t *evt)
     case OP_KST_EXPERT:
         kx_rest(evt, which);
         ++s.ctrl_rev;
-        return;
-    case OP_TAB:
-        if (ui_tabs_event(&s.tabs, evt)) {
-            ++s.ctrl_rev;
-        }
-        if (up) {
-            ov_let_go();
-        }
         return;
     case OP_ASK_APPLY:
         if (!s.ask.hv) {
@@ -966,7 +1023,12 @@ void ov_rest(const touch_event_t *evt)
     case OP_CHOICE:
         if (which >= 0 && which < s.ch.count
             && gfx_rect_contains(choice_rect(which), x, y)) {
-            choose(which);
+            if ((s.ch.refused & (1u << which)) != 0u) {
+                /* A refused port: its line, in the band too. */
+                ui_router_set_alert(s.ch.labels[which]);
+            } else {
+                choose(which);
+            }
         }
         break;
     case OP_CHOICE_CANCEL:
@@ -1027,11 +1089,10 @@ void ov_rest(const touch_event_t *evt)
         ++s.test_rev;
         break;
     case OP_RUN_CLOSE:
-        /* A run's settings' CLOSE: up to TEST's cards, as the home tag
-         * climbs from here; the brown-out walk's up to the automatic
-         * test's. */
+        /* A page's CLOSE: up to its screen, as the home tag climbs from
+         * here; the brown-out walk's up to the automatic test's. */
         if (gfx_rect_contains(run_close_rect(), x, y)
-            && wb_task() == UI_WB_TEST && s.run_list != RL_NONE) {
+            && s.run_list != RL_NONE) {
             s.run_list = (s.run_list == RL_BROWNOUT) ? RL_AUTO : RL_NONE;
             servo_invalidate();
         }
@@ -1041,12 +1102,6 @@ void ov_rest(const touch_event_t *evt)
         if (gfx_rect_contains(caps_open_rect(), x, y)
             && !target_locked_for(SET_SERVO_TARGET)) {
             wb_open_caps();
-        }
-        break;
-    case OP_OPEN_ENC:
-        if (gfx_rect_contains(enc_open_rect(), x, y)
-            && !target_locked_for(SET_SERVO_TARGET)) {
-            wb_open_encoder();
         }
         break;
     case OP_RUN_SET:

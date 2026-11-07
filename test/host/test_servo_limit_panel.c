@@ -32,7 +32,7 @@
 
 /*
  * The LIMIT RUN card, mirrored from servo_limit_panel.c and
- * servo_workbench_int.h: TEST's second card at y 264 (SV_RUN_CARD_Y(1)),
+ * servo_workbench_int.h: LIMIT RUN's card at y 12 (SV_RUN_CARD_Y(1)),
  * its lines from 116px down, 2px under START LIMIT RUN, 20px apart in
  * the 10 x 20 face, their text 10px into the card (x UI_MARGIN + 20); the
  * run's own settings list with LIMIT RUN across row 0 and the mode's note
@@ -42,8 +42,10 @@
 #define LIM_MODE_Y  LROW_Y(0)
 #define LIM_LINE_Y(i) (SV_RUN_CARD_Y(1) + SV_RUN_LINE_DY - 2 + 20 * (i))
 #define LIM_NOTE_Y  SV_LIM_NOTE_Y
+/* The limit run's box's button, under the card. */
+#define LIM_BOXBTN_Y SV_BOX_BTN_Y_LIM
 
-/* Buffer 0 drawn with TEST open, and whether the LIMIT RUN card's line
+/* Buffer 0 drawn with LIMIT RUN open, and whether its card's line
  * @p i reads @p text in @p col on the card's fill, and nothing else: from
  * the text's left edge to 10px inside the card's right, clear of its
  * rounded corners beside the last line. */
@@ -73,16 +75,15 @@ static bool lim_note_reads(const char *text, ui_color_id_t col)
     return same_in(fb, want_fb, UI_MARGIN + 4, y, 610, 20);
 }
 
-/* Line @p i of the limit run's box on LIVE's left card: its text at the
- * box's left edge on the box's own fill, compared across the box.  It
- * opens LIVE, where the box is; a run started stays on TEST. */
+/* Line @p i of the limit run's box under the LIMIT RUN card: its text at
+ * the box's left edge on the box's own fill, compared across the box. */
 #define LIM_BOX_X (UI_MARGIN + 10)
 static bool lim_box_reads(int i, const char *text, ui_color_id_t col)
 {
-    close_settings();
+    open_limrun();
     scr->render(&cv, 0);
     want_fresh();
-    const int y = SV_BOX_LINE_Y(i);
+    const int y = SV_BOX_LINE_Y_LIM(i);
     const gfx_color_t bg = fb[(size_t)y * W + LIM_BOX_X + 4];
     gfx_fill_rect(&want_cv, LIM_BOX_X + 2, (int16_t)y, SV_BOX_W - 4, 20, bg);
     gfx_text(&want_cv, LIM_BOX_X + 10, y, text, &gfx_font_10x20,
@@ -110,10 +111,10 @@ static void lim_hold(float secs)
     hold_start_on(LIM_CARD, secs);
 }
 
-/* TEST open, its LIMIT RUN card in sight. */
+/* LIMIT RUN's screen, its card in sight. */
 static void lim_page(void)
 {
-    open_test();
+    open_limrun();
 }
 
 /* The run to its end, 120s at most. */
@@ -350,7 +351,7 @@ TEST_CASE(programming_is_not_offered_off_the_programming_port)
         lim_bench();
         open_run_settings(LIM_CARD);
         CHECK(lim_note_reads(TR(SV_LIM_PROG_PORT), UI_C_TEXT_DIM));
-        tap(ROW_L_X, LIM_MODE_Y);
+        tap(SV_LIST_X(0), LIM_MODE_Y);
         CHECK(lim_note_reads(TR(SV_LIM_PROG_PORT), UI_C_TEXT_DIM));
         CHECK(home_tag());
         /* The card's state line, and no reason under it. */
@@ -362,24 +363,19 @@ TEST_CASE(programming_is_not_offered_off_the_programming_port)
 }
 
 /* What the screen names to the router as a press that stops the limit
- * run: STOP RUN in the box over the dial, and START LIMIT RUN's place on
- * TEST while the run is under way.  Not START TEST, and nothing once the
- * run has ended. */
+ * run: STOP RUN in the box under the card, and START LIMIT RUN's place on
+ * LIMIT RUN while the run is under way.  Nothing once the run has ended. */
 TEST_CASE(stop_run_is_named_to_the_router_while_the_run_is_under_way)
 {
     lim_bench();
     lim_hold(2.3f);
     CHECK(servo_screen_limit_running());
-    close_settings();
-    CHECK(scr->safe_at(BOXBTN_X, BOXBTN_Y));                 /* STOP RUN */
-    lim_page();
+    CHECK(scr->safe_at(BOXBTN_X, LIM_BOXBTN_Y));             /* STOP RUN */
     CHECK(scr->safe_at(START_X, LIM_START_Y));
-    CHECK(!scr->safe_at(START_X, START_Y));
     tap(START_X, LIM_START_Y);
     CHECK(!servo_screen_limit_running());
     CHECK(!scr->safe_at(START_X, LIM_START_Y));
-    close_settings();
-    CHECK(!scr->safe_at(BOXBTN_X, BOXBTN_Y));                /* CLOSE */
+    CHECK(!scr->safe_at(BOXBTN_X, LIM_BOXBTN_Y));            /* CLOSE */
 }
 
 /* The rows of the body at column @p x that the screen names as a stop. */
@@ -404,18 +400,16 @@ static int stops_under_the_band(void)
     return n;
 }
 
-/* While the run is under way, STOP RUN in LIVE's box and START LIMIT RUN's
- * place on TEST are each a tap target of UI_TAP_MIN rows or more, and
- * both end above the alert band, on LIVE and on TEST. */
+/* While the run is under way, STOP RUN in the box and START LIMIT RUN's
+ * place on the card are each a tap target of UI_TAP_MIN rows or more, and
+ * both end above the alert band. */
 TEST_CASE(the_limit_runs_stops_are_tap_targets_above_the_alert_band)
 {
     lim_bench();
     lim_hold(2.3f);
     CHECK(servo_screen_limit_running());
-    close_settings();
     CHECK(stop_rows_at(BOXBTN_X) >= UI_TAP_MIN);
     CHECK_EQ(stops_under_the_band(), 0);
-    lim_page();
     CHECK(stop_rows_at(START_X) >= UI_TAP_MIN);
     CHECK_EQ(stops_under_the_band(), 0);
     tap(START_X, LIM_START_Y);
@@ -540,7 +534,7 @@ TEST_CASE(a_running_automatic_test_is_the_reason_the_limit_run_cannot_start)
                              UI_C_WARN));
         CHECK(strcmp(ui_servo_str(SERVO_STR_START_TEST_RUNS),
                      ui_servo_str(SERVO_STR_START_BUSY)) != 0);
-        close_settings();
+        open_test();
         /* STOP TEST ends it; the logger still holds its report. */
         CHECK(scr->safe_at(BOXBTN_X, BOXBTN_Y));
         tap(BOXBTN_X, BOXBTN_Y);

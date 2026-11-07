@@ -680,7 +680,16 @@ void svs_tick_body(float dt_s)
         s.kst_held = prog_holds();
         ++s.arm_rev;
     }
-    prog_page_follow();
+    /* KST or HITEC whose session closed with its own CLOSE: the screen
+     * goes back to the hub, as its home tag does. */
+    if (svs_session_gone()
+        && ui_router_current() == servo_fn_screen_id((servo_fn_t)s.fn)) {
+        ui_router_goto(SCREEN_SERVO);
+        return;
+    }
+    /* The SETTINGS list: its keys' repeats, its SAVE; a bench that goes
+     * live under it closes it. */
+    svs_list_tick(dt_s);
     /* A PD mini the programmer's CONNECT switched on, through the
      * IOmcu rather than through SUPPLY, is this screen's. */
     if (supply_screen_port_held()) {

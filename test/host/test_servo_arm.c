@@ -26,6 +26,7 @@
 #include "splash_screen.h"
 #include "supply_screen.h"
 #include "ui_band.h"
+#include "ui_setlist.h"
 #include "ui_screen.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -48,16 +49,11 @@
 #define SWEEP_X     SV_SWEEP_X
 #define RELEASE_X   SV_RELEASE_X
 #define BTN_Y       P(SV_BTN_Y)
-#define ARM_X       (SV_RC_X + SV_RC_W / 2)
+#define ARM_X       SV_ARM_X
 #define ARM_Y       P(SV_ARM_Y + SV_ARM_H / 2)
 #define SPEED_Y     P(SV_SPEED_Y)
-#define SETB_X      SV_TAB_SETTINGS_X
-#define SETB_Y      P(SV_TAB_Y)
-#define CLOSE_X     SV_TAB_LIVE_X
-#define CLOSE_Y     P(SV_TAB_Y)
-#define ROW_L_X     100
-#define ROW_Y(r)    P(SV_ROW_Y(r))
-#define TRIM_UP_X   594
+#define SETB_X      SV_FOOT_SET_X
+#define SETB_Y      P(SV_FOOT_Y)
 #define CH_X(i)     (165 + 305 * ((i) / 5))
 #define CH_Y(i)     P(UI_MARGIN + 56 + 24 + 56 * ((i) % 5))
 
@@ -94,7 +90,7 @@ static void fresh(void)
     }
     ui_router_tick(2.0f);
     ui_router_goto(SCREEN_OVERVIEW);
-    ui_router_goto(SCREEN_SERVO);
+    ui_router_goto(SCREEN_SERVO_LIVE);
     feed_reset();
     /* Nothing measures the horn: it is drawn from the command. */
     servo_screen_feedback(0u, 0.0f, false);
@@ -215,14 +211,40 @@ static uint16_t rest_us(void)
     return outputs_pulse_us(&o, 0u);
 }
 
-static void open_settings(void)  { feed_tap(FEED_LONE, SETB_X, SETB_Y); }
-static void close_settings(void) { feed_tap(FEED_LONE, CLOSE_X, CLOSE_Y); }
+/* The hub's list, the servo profile: the router leaves LIVE for the hub,
+ * which switches the bench to SAFE. */
+static void open_settings(void)
+{
+    ui_router_goto(SCREEN_SERVO);
+    drain();                            /* the leave's DISARM */
+    servo_screen_set_armed(false);      /* and the bench's answer */
+    feed_tap(FEED_LONE, SETB_X, SETB_Y);
+}
+static void close_settings(void)
+{
+    ui_router_goto(SCREEN_SERVO_LIVE);
+    drain();
+}
 
-/* NARROW 760 chosen on the OUTPUT page: 660 to 860us. */
+/* A tap on the hub list's row @p i, at @p x in it (-1: on its name). */
+static void list_tap(int i, ui_sl_part_t part, bool on_name)
+{
+    ui_setlist_t *sl = (ui_setlist_t *)servo_screen_list();
+    ui_setlist_scroll_to(sl, i);
+    const gfx_rect_t r = on_name ? ui_setlist_row_rect(sl, i)
+                                 : ui_setlist_row_part(sl, i, part);
+    feed_tap(FEED_LONE, on_name ? r.x + 60 : r.x + r.w / 2,
+             P(r.y + r.h / 2));
+}
+
+/* TRIM's "+" on the hub's list: 5us. */
+static void trim_up(void) { list_tap(6, UI_SL_PART_PLUS, false); }
+
+/* NARROW 760 chosen on the hub's list: 660 to 860us. */
 static void choose_narrow(void)
 {
     open_settings();
-    feed_tap(FEED_LONE, ROW_L_X, ROW_Y(0));
+    list_tap(1, UI_SL_PART_VALUE, true);
     feed_tap(FEED_LONE, CH_X(1), CH_Y(1));
     close_settings();
 }
@@ -505,7 +527,7 @@ TEST_CASE(an_arm_sets_the_rest_and_not_the_trimmed_centre)
     fresh();
     open_settings();
     for (int i = 0; i < 4; ++i) {
-        feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));       /* +20us */
+        trim_up();       /* +20us */
     }
     close_settings();
     CHECK(arm());
@@ -517,31 +539,34 @@ TEST_CASE(an_arm_sets_the_rest_and_not_the_trimmed_centre)
     CHECK_EQ(took().value_us, 1520);
 }
 
-/* A profile changed on a resting armed bench moves the rest, and the
- * value with it: the release it posts puts the pin there. */
-TEST_CASE(the_value_follows_the_rest_through_a_change_of_type)
+/* A profile changes on the hub's list, so on a SAFE bench: the next arm
+ * rests at the new type's rest, which TRIM does not move, and a position
+ * carries the trim. */
+TEST_CASE(an_arm_after_a_change_of_type_rests_at_the_new_rest)
 {
     fresh();
     open_settings();
     for (int i = 0; i < 4; ++i) {
-        feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));       /* +20us */
+        trim_up();       /* +20us */
     }
     close_settings();
     CHECK(arm());
     CHECK_EQ(servo_screen_commanded(), 1500);
     choose_narrow();
-    CHECK_EQ(took().kind, SERVO_CMD_RELEASE);
+    CHECK(arm());
     CHECK_EQ(servo_screen_commanded(), 760);
-    /* Once something is commanded the value is that command's. */
     int x, y;
     dial_at(0.0f, &x, &y);
     feed_tap(FEED_LONE, x, y);
     CHECK_EQ(took().value_us, 780);
     open_settings();
-    feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));           /* +25us */
+    trim_up();           /* +25us */
     close_settings();
+    CHECK_EQ(took().kind, SERVO_CMD_NONE);
+    CHECK(arm());
+    CHECK_EQ(servo_screen_commanded(), 760);
+    feed_tap(FEED_LONE, x, y);
     CHECK_EQ(took().value_us, 785);
-    CHECK_EQ(servo_screen_commanded(), 785);
 }
 
 /* The first 1% turn of the knob after an arm posts the rest plus 1%:
@@ -678,7 +703,7 @@ TEST_CASE(disarm_stop_link_loss_and_leaving_each_end_at_the_rest_on_rearm)
             CHECK_EQ(took().kind, SERVO_CMD_DISARM);
             servo_screen_set_armed(true);
             servo_screen_set_armed(false);
-            ui_router_goto(SCREEN_SERVO);
+            ui_router_goto(SCREEN_SERVO_LIVE);
             break;
         }
         CHECK_EQ(took().kind, SERVO_CMD_NONE);
@@ -808,7 +833,7 @@ TEST_CASE(a_disarm_tap_ends_a_sweep_and_a_pause_at_the_tap)
         feed_tap(FEED_LONE, SV_RC_X + 5, SPEED_Y);
         seen |= kinds_over(4);
         open_settings();
-        feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));
+        trim_up();
         close_settings();
         seen |= kinds_over(4);
         /* The panel letting go of the pause it held: no value moves. */
@@ -838,7 +863,7 @@ TEST_CASE(a_held_position_is_not_said_again_after_a_disarm_tap)
     feed_tap(FEED_LONE, SV_RC_X + 5, SPEED_Y);
     unsigned seen = kinds_over(4);
     open_settings();
-    feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));
+    trim_up();
     close_settings();
     seen |= kinds_over(4);
     CHECK_EQ(seen & DRIVES, 0u);
@@ -966,7 +991,7 @@ static void choose_profile(int profile)
     } else if (profile == PROFILE_TRIMMED) {
         open_settings();
         for (int i = 0; i < 4; ++i) {
-            feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));   /* +20us */
+            trim_up();   /* +20us */
         }
         close_settings();
     }
@@ -1127,11 +1152,6 @@ TEST_CASE(a_position_after_a_release_in_one_frame_sends_the_position)
     CHECK(c.value_us < 1400);
     CHECK_EQ(servo_screen_commanded(), c.value_us);
     CHECK_EQ(took().kind, SERVO_CMD_NONE);
-    /* Commanded, so no longer the rest: a trim says the position again. */
-    open_settings();
-    feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));           /* +5us */
-    close_settings();
-    CHECK_EQ(took().value_us, c.value_us + 5);
 
     feed_tap(FEED_LONE, RELEASE_X, BTN_Y);
     knob(0.2f);
@@ -1140,15 +1160,17 @@ TEST_CASE(a_position_after_a_release_in_one_frame_sends_the_position)
     CHECK_EQ(servo_screen_commanded(), 1500);
 }
 
-/* After a RELEASE the value follows the rest through a change of type, as
- * after an arm: the release the change posts puts the pin there. */
-TEST_CASE(the_value_follows_the_rest_through_a_change_of_type_after_a_release)
+/* A change of type after a RELEASE: the hub's list leaves the bench SAFE,
+ * so nothing is said under the new type until the next arm, which rests at
+ * its rest. */
+TEST_CASE(a_change_of_type_after_a_release_waits_for_the_next_arm)
 {
     CHECK(armed_and_driven(PROFILE_STANDARD) != 0u);
     feed_tap(FEED_LONE, RELEASE_X, BTN_Y);
     CHECK_EQ(took().kind, SERVO_CMD_RELEASE);
     choose_narrow();
-    CHECK_EQ(took().kind, SERVO_CMD_RELEASE);
+    CHECK_EQ(took().kind, SERVO_CMD_NONE);
+    CHECK(arm());
     CHECK_EQ(servo_screen_commanded(), 760);
     knob(0.01f);
     CHECK_EQ(took().value_us, 762);
@@ -1225,7 +1247,7 @@ int main(void)
     RUN(an_arm_sets_the_value_to_the_channels_rest);
     RUN(an_arm_on_a_narrow_servo_sets_the_value_to_760_us);
     RUN(an_arm_sets_the_rest_and_not_the_trimmed_centre);
-    RUN(the_value_follows_the_rest_through_a_change_of_type);
+    RUN(an_arm_after_a_change_of_type_rests_at_the_new_rest);
     RUN(the_first_knob_turn_after_an_arm_starts_from_the_rest);
     RUN(the_first_dial_drag_after_an_arm_starts_from_the_rest);
     RUN(knob_turns_on_a_disarmed_bench_are_not_accumulated);
@@ -1246,7 +1268,7 @@ int main(void)
     RUN(a_release_ends_a_drag_under_way);
     RUN(a_release_after_a_position_in_one_frame_sends_the_release);
     RUN(a_position_after_a_release_in_one_frame_sends_the_position);
-    RUN(the_value_follows_the_rest_through_a_change_of_type_after_a_release);
+    RUN(a_change_of_type_after_a_release_waits_for_the_next_arm);
     RUN(release_moves_no_value_on_a_bench_that_is_not_armed);
     RUN(a_press_on_the_dial_drives_a_released_servo_again);
     RUN(the_programmer_sees_an_arm_for_the_motor);

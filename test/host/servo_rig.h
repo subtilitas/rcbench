@@ -1,7 +1,7 @@
 /*
- * The SERVO screen as the servo suites drive it: the screen on one canvas
- * in the body's coordinates, a touch handed to its event hook, and the
- * places of the dial, the SETTINGS overlay, ARM and SPEED and the supply's
+ * The SERVO screens as the servo suites drive them: a function's screen on
+ * one canvas in the body's coordinates, a touch handed to its event hook,
+ * and the places of the dial, the lists, ARM and SPEED and the supply's
  * SET row mirrored from servo_screen.c.  Taken by the suites of
  * servo_screen_rig.h, test_servo_settings.c, test_servo_test_panel.c and
  * test_servo_limit_panel.c.
@@ -27,6 +27,7 @@
 #include "settings.h"
 #include "supply_screen.h"
 #include "ui_keypad.h"
+#include "ui_setlist.h"
 #include "ui_screen.h"
 #include "ui_theme.h"
 
@@ -66,9 +67,10 @@ static inline void fresh(void)
     settings_init();
     supply_screen()->reset();
     supply_screen_settings_loaded();
-    scr = servo_screen();
+    scr = servo_fn_screen(SERVO_FN_LIVE);
     scr->reset();
-    /* An IOmcu that reports its servo PWM bank: PROGRAM's KST row is
+    servo_screen_show_fn(SERVO_FN_LIVE);
+    /* An IOmcu that reports its servo PWM bank: the KST tile is
      * live. */
     ui_bench_status_t st = *ui_router_status();
     st.capabilities = LINK_CAP_SERVO_PWM;
@@ -98,63 +100,115 @@ static inline void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
                                        ev(x, y, TOUCH_EVENT_UP, 1); }
 
 /*
- * The workbench, from servo_spots.h: the strip's tabs, SETTINGS' page tabs
- * and rows (left column at x 18, right at x 323, 56px apart from y 112),
- * TEST's run cards and a run's settings' rows (three columns, from y 116);
- * then the panels over the left column, mirrored from
- * servo_settings_panel.c: the list a row opens (two columns of five, 56px
- * apart from y 64) and the warning's HOLD TO APPLY and CANCEL.
+ * The function screens, from servo_spots.h: the run's settings' rows (three
+ * columns, 70px apart from y 64); then the panels over the left column,
+ * mirrored from servo_settings_panel.c: the list a row opens (two columns
+ * of five, 56px apart from y 64) and the warning's HOLD TO APPLY and
+ * CANCEL, at the left column's floor at y 436.
  */
-#define TAB_X(i) SV_PAGE_X(i)
-#define TAB_Y    SV_PAGE_TAB_Y
-#define ROW_L_X  100
-#define ROW_R_X  330
-#define ROW_Y(r) SV_ROW_Y(r)
 #define LROW_X(c) SV_LIST_X(c)
 #define LROW_Y(r) SV_LIST_ROW_Y(r)
-#define TRIM_DN_X 502
-#define TRIM_UP_X 594
 /* OV_X, OV_Y, OV_W and OV_H of servo_screen_int.h: the left column. */
 #define OV_X0    UI_MARGIN
 #define OV_Y0    UI_MARGIN
 #define OV_W0    620
-#define OV_H0    (UI_BODY_H - 2 * UI_MARGIN)
+#define OV_H0    (436 - UI_MARGIN)
 #define CH_X(i)  (165 + 305 * ((i) / 5))
 #define CH_Y(i)  (OV_Y0 + 56 + 24 + 56 * ((i) % 5))
 #define CH_CANCEL_X (OV_X0 + OV_W0 - 10 - 80)
-#define CH_CANCEL_Y (UI_ALERT_Y - UI_BAND_H - 4 - 56 + 8 + 24)
+#define CH_CANCEL_Y (436 - 8 - 56 + 8 + 24)
 #define WARN_APPLY_X  (OV_X0 + 20 + 120)
 #define WARN_CANCEL_X (OV_X0 + OV_W0 - 20 - 90)
-#define WARN_Y        (UI_ALERT_Y - UI_BAND_H - 4 - 56 + 28)
-/* SETTINGS' pages. */
-#define PAGE_OUTPUT 0
-#define PAGE_SWEEP  1
-#define PAGE_DUT    2
+#define WARN_Y        (436 - 8 - 56 + 28)
 
-/* The strip: SETTINGS, LIVE, TEST. */
-static inline void open_settings(void)  { tap(SV_TAB_SETTINGS_X, SV_TAB_Y); }
-static inline void close_settings(void) { tap(SV_TAB_LIVE_X, SV_TAB_Y); }
-static inline void open_test(void)      { tap(SV_TAB_TEST_X, SV_TAB_Y); }
-static inline void open_program(void)   { tap(SV_TAB_PROGRAM_X, SV_TAB_Y); }
-/* PROGRAM's KST and Chaservo row, and the session's CLOSE. */
-static inline void open_kst(void)
+/* The hub's list, row by row: the profile under OUTPUT, then the device
+ * under test. */
+enum {
+    HL_OUTPUT = 0, HL_TYPE, HL_RATE, HL_MIN, HL_CENTRE, HL_MAX, HL_TRIM,
+    HL_TRAVEL, HL_REVERSE, HL_HV, HL_DUT, HL_NAME, HL_REPORT,
+};
+
+/* Function @p fn's screen shown, as its enter() shows it, without a leave
+ * of the one before: the bench, a run and the session stay. */
+static inline void go(servo_fn_t fn)
 {
-    open_program();
-    tap(SV_PROG_ROW_X, SV_PROG_ROW_Y(0));
+    servo_screen_show_fn(fn);
+    scr = servo_fn_screen(fn);
 }
+
+/* The footer's SETTINGS: the function's list or run page. */
+static inline void tap_settings(void) { tap(SV_FOOT_SET_X, SV_FOOT_Y); }
+/* The hub's SETTINGS list, the servo profile. */
+static inline void open_settings(void)  { go(SERVO_FN_HUB); tap_settings(); }
+static inline void close_settings(void) { go(SERVO_FN_LIVE); }
+static inline void open_test(void)      { go(SERVO_FN_TEST); }
+static inline void open_limrun(void)    { go(SERVO_FN_LIMRUN); }
+static inline void open_sweep(void)     { go(SERVO_FN_SWEEP); }
+/* KST's session, and its CLOSE. */
+static inline void open_kst(void)       { go(SERVO_FN_KST); }
 static inline void close_kst(void)
 {
     const gfx_rect_t r = kst_panel_close_rect();
     tap(r.x + r.w / 2, r.y + r.h / 2);
 }
-/* A run card's SETTINGS on TEST: the run's settings, one level down. */
+/* A run's settings, one level down from its card: 0 the automatic test on
+ * TEST, 1 the limit run on LIMIT RUN. */
 static inline void open_run_settings(int k)
 {
-    open_test();
+    go((k == 0) ? SERVO_FN_TEST : SERVO_FN_LIMRUN);
     tap(SV_RUN_SET_X, SV_RUN_SET_Y(k));
 }
 /* The home tag, as the router asks the screen: whether it climbed. */
 static inline bool home_tag(void) { return scr->back != NULL && scr->back(); }
+
+/* The open list's row @p i scrolled into view: its rectangle. */
+static inline gfx_rect_t sl_row(int i)
+{
+    ui_setlist_t *sl = (ui_setlist_t *)servo_screen_list();
+    ui_setlist_scroll_to(sl, i);
+    return ui_setlist_row_rect(sl, i);
+}
+/* A tap on the open list's row @p i, on its name: its tap or its choice. */
+static inline void sl_tap(int i)
+{
+    const gfx_rect_t r = sl_row(i);
+    tap(r.x + 60, r.y + r.h / 2);
+}
+/* A tap on a part of the open list's row @p i: a key or the value. */
+static inline void sl_part(int i, ui_sl_part_t part)
+{
+    (void)sl_row(i);
+    const gfx_rect_t r = ui_setlist_row_part(servo_screen_list(), i, part);
+    tap(r.x + r.w / 2, r.y + r.h / 2);
+}
+/* One step of the open list's row @p i, @p dir -1 or +1. */
+static inline void sl_step(int i, int dir)
+{
+    sl_part(i, (dir < 0) ? UI_SL_PART_MINUS : UI_SL_PART_PLUS);
+}
+
+/* @p text typed on the open list's keypad, then OK. */
+static inline void sl_keys(const char *text)
+{
+    static const ui_key_t digit[10] = {
+        UI_KEY_0, UI_KEY_1, UI_KEY_2, UI_KEY_3, UI_KEY_4,
+        UI_KEY_5, UI_KEY_6, UI_KEY_7, UI_KEY_8, UI_KEY_9,
+    };
+    const ui_keypad_t *k = &servo_screen_list()->kp;
+    for (const char *p = text; *p != '\0'; ++p) {
+        const gfx_rect_t r = ui_keypad_key_rect(
+            k, (*p == '.') ? UI_KEY_DOT : digit[*p - '0']);
+        tap(r.x + r.w / 2, r.y + r.h / 2);
+    }
+    const gfx_rect_t ok = ui_keypad_key_rect(k, UI_KEY_OK);
+    tap(ok.x + ok.w / 2, ok.y + ok.h / 2);
+}
+/* Key @p k of the open list's keyboard. */
+static inline void sl_text_key(int k)
+{
+    const gfx_rect_t r = ui_textkey_key_rect(&servo_screen_list()->tk, k);
+    tap(r.x + r.w / 2, r.y + r.h / 2);
+}
 
 /* Hold the warning's HOLD TO APPLY for @p s seconds and let go. */
 static inline void hold_apply(float secs)
@@ -166,13 +220,13 @@ static inline void hold_apply(float secs)
     ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_UP, 1);
 }
 
-/* A type chosen from the list on OUTPUT: STANDARD PWM 0, NARROW 760 1,
- * WIDE 2, HELI CYCLIC 3, HELI TAIL 760 4.  A heli type is held through its
- * warning.  The overlay is closed again after. */
+/* A type chosen from the hub's list: STANDARD PWM 0, NARROW 760 1, WIDE 2,
+ * HELI CYCLIC 3, HELI TAIL 760 4.  A heli type is held through its
+ * warning.  LIVE shows again after. */
 static inline void choose_type(int t)
 {
     open_settings();
-    tap(ROW_L_X, ROW_Y(0));
+    sl_tap(HL_TYPE);
     tap(CH_X(t), CH_Y(t));
     if (t >= 3) {
         hold_apply(2.3f);
@@ -238,13 +292,15 @@ static inline void acked(uint32_t age_ms, servo_sweep_from_t from,
     servo_screen_sweep_started(g_sweep_seq, age_ms, from, since_ms);
 }
 
-/* The ARM button, mirrored from servo_screen.c: full width of the right
- * card's inner column, under CENTRE and RELEASE. */
+/* The output card's inner column: CENTRE, SWEEP and RELEASE, SPEED. */
+#define COL_X SV_RC_X
+#define COL_W SV_RC_W
+/* ARM and DISARM in the footer's middle slot. */
 /* The SPEED track, mirrored from the screen: x, w and y of the slider. */
 #define SPEED_X_HALF (SV_RC_X + SV_RC_W / 2)
 #define SPEED_Y SV_SPEED_Y
-#define ARM_X SV_RC_X
-#define ARM_W SV_RC_W
+#define ARM_X SV_ARM_L
+#define ARM_W SV_ARM_W
 #define ARM_Y SV_ARM_Y
 #define ARM_H SV_ARM_H
 static inline void arm_press(void)   { ev(ARM_X + 40, ARM_Y + 16, TOUCH_EVENT_DOWN, 1); }

@@ -109,10 +109,10 @@ static void check_marks(const ui_screen_t *sc, int n, const int *titles,
 /** @brief SERVO on a state of the table below, from a fresh screen. */
 typedef struct {
     const char *what;   /**< the state's name                            */
-    int tab_x;          /**< the strip's tab, 0 for LIVE                 */
-    int page_x;         /**< SETTINGS' page tab, 0 for none              */
-    bool autobox;       /**< RUDDER with AUTO's box                      */
+    servo_fn_t fn;      /**< the screen: the hub or a function's         */
+    bool list;          /**< its SETTINGS list open                      */
     int safe;           /**< the pages offered SAFE                      */
+    int armed;          /**< the pages offered ARMED                     */
     int titles[4];      /**< each SAFE page's title                      */
     int items[4];       /**< each SAFE page's item count                 */
 } servo_state_t;
@@ -125,43 +125,42 @@ static void servo_to(const servo_state_t *st)
 {
     fresh();
     servo_screen_set_armed(false);
-    if (st->tab_x > 0) {
-        tap(st->tab_x, SV_TAB_Y);
-    }
-    if (st->page_x > 0) {
-        tap(st->page_x, SV_PAGE_TAB_Y);
-    }
-    if (st->autobox) {
-        tap(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);
+    go(st->fn);
+    if (st->list) {
+        tap_settings();
     }
 }
 
-/** @brief SERVO's states with pages: each task and SETTINGS' pages. */
+/** @brief SERVO's states with pages: the hub, its list, and each function's
+ *         screen. */
 static const servo_state_t k_servo[] = {
-    { "LIVE", 0, 0, false, 3,
+    { "HUB", SERVO_FN_HUB, false, 2, 2,
+      { TX_HG_SVH_TITLE_TILES, TX_HG_SVH_TITLE_FOOTER },
+      { 4, 2 } },
+    { "LIVE", SERVO_FN_LIVE, false, 3, 0,
       { TX_HG_SV_TITLE_LIVE, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
-      { 4, 4, 3 } },
-    { "TEST", SV_TAB_TEST_X, 0, false, 3,
-      { TX_HG_SV_TITLE_TEST, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
-      { 4, 4, 3 } },
-    { "PROGRAM", SV_TAB_PROGRAM_X, 0, false, 3,
-      { TX_HG_SV_TITLE_PROG, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
-      { 1, 4, 3 } },
-    { "RUDDER", SV_TAB_RUDDER_X, 0, false, 4,
-      { TX_HG_SV_TITLE_RUDDER, TX_HG_SV_TITLE_RUD_READ, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
-      { 5, 3, 4, 4 } },
-    { "AUTO", SV_TAB_RUDDER_X, 0, true, 4,
-      { TX_HG_SV_TITLE_AUTO, TX_HG_SV_TITLE_RUD_READ, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
-      { 4, 2, 4, 4 } },
-    { "OUTPUT", SV_TAB_SETTINGS_X, 0, false, 4,
-      { TX_HG_SV_TITLE_OUTPUT, TX_HG_SV_TITLE_OUTPUT_2, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
-      { 5, 4, 4, 3 } },
-    { "SWEEP", SV_TAB_SETTINGS_X, SV_PAGE_X(1), false, 3,
-      { TX_HG_SV_TITLE_SWEEP, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
       { 3, 4, 3 } },
-    { "DUT", SV_TAB_SETTINGS_X, SV_PAGE_X(2), false, 3,
-      { TX_HG_SV_TITLE_DUT, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
-      { 5, 4, 3 } },
+    { "SWEEP", SERVO_FN_SWEEP, false, 3, 0,
+      { TX_HG_SV_TITLE_SWEEP, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
+      { 3, 4, 4 } },
+    { "TEST", SERVO_FN_TEST, false, 3, 0,
+      { TX_HG_SV_TITLE_TEST, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
+      { 3, 4, 4 } },
+    { "LIMIT RUN", SERVO_FN_LIMRUN, false, 3, 0,
+      { TX_HG_SV_TITLE_LIMRUN, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
+      { 2, 4, 4 } },
+    { "RUDDER", SERVO_FN_RUDDER, false, 4, 0,
+      { TX_HG_SV_TITLE_RUDDER, TX_HG_SV_TITLE_RUD_READ, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
+      { 4, 3, 4, 5 } },
+    { "RUDDER AUTO", SERVO_FN_RAUTO, false, 4, 0,
+      { TX_HG_SV_TITLE_AUTO, TX_HG_SV_TITLE_RUD_READ, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
+      { 4, 2, 4, 5 } },
+    { "KST", SERVO_FN_KST, false, 2, 0,
+      { TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
+      { 4, 4 } },
+    { "HITEC", SERVO_FN_HITEC, false, 2, 0,
+      { TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
+      { 4, 4 } },
 };
 
 /** @brief The state pose_servo() puts SERVO in. */
@@ -206,8 +205,9 @@ static void pose_supply(void)
 /* ----------------------------------------------------------------- cases */
 
 /* Each SERVO state in both languages and themes, SAFE and ARMED, the link
- * up and down: its own pages, then the output card's two; ARMED the output
- * card's two alone, with the note, DISARM named. */
+ * up and down: its own pages, then the output card's two.  ARMED a
+ * function screen offers none: either dock covers DISARM in the footer.
+ * The hub drives nothing and keeps its two. */
 TEST_CASE(every_servo_page_fits_and_hides_no_stop)
 {
     for (size_t k = 0; k < sizeof(k_servo) / sizeof(k_servo[0]); ++k) {
@@ -215,7 +215,8 @@ TEST_CASE(every_servo_page_fits_and_hides_no_stop)
         s_servo = st;
         char name[32];
         snprintf(name, sizeof(name), "SERVO %s", st->what);
-        CHECK_EQ(check_every_state(servo_screen(), pose_servo, name),
+        CHECK_EQ(check_every_state(servo_fn_screen(st->fn), pose_servo,
+                                   name),
                  st->safe);
         for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
             for (int th = 0; th < (int)UI_THEME_COUNT; ++th) {
@@ -228,11 +229,7 @@ TEST_CASE(every_servo_page_fits_and_hides_no_stop)
                          lang, th);
                 check_marks(scr, st->safe, st->titles, st->items, what);
                 servo_screen_set_armed(true);
-                CHECK_EQ(pages_checked(scr, true, what), 2);
-                CHECK(ui_help_armed_note(scr, true));
-                ui_help_page_t p;
-                CHECK(ui_help_page(scr, true, 1, &p));
-                CHECK_STR_EQ(p.item[2].label, "DISARM");
+                CHECK_EQ(pages_checked(scr, true, what), st->armed);
             }
         }
     }
@@ -356,12 +353,14 @@ TEST_CASE(prog_5v_on_takes_the_pages_that_cover_prog_5v_off)
 
 /* A run's STOP TEST is on the left card, under the output card's dock: the
  * run offers no such page, and as it runs ARMED with the supply on, no
- * page at all, so the band shows no "?".  After it, they come back. */
+ * page at all, so the band shows no "?".  ARMED a function screen offers
+ * none in any case: either dock covers DISARM in the footer.  After the
+ * run, the SAFE pages come back. */
 TEST_CASE(a_run_takes_the_output_cards_pages_and_armed_leaves_none)
 {
     bench_fresh();
     short_runs();
-    CHECK_EQ(ui_help_count(scr, true), 2);
+    CHECK_EQ(ui_help_count(scr, true), 0);
     hold_start(2.3f);
     REQUIRE(servo_screen_testing());
     CHECK_EQ(ui_help_count(scr, true), 0);
@@ -385,7 +384,7 @@ TEST_CASE(a_panel_or_a_question_takes_every_page)
     ui_help_page_t p;
     CHECK(!scr->help_page(0, &p));
     fresh();
-    tap(SV_TAB_TEST_X, SV_TAB_Y);
+    go(SERVO_FN_TEST);
     tap(SV_RUN_SET_X, SV_RUN_SET_Y(0));
     CHECK_EQ(scr->help_count(), 0);
     tap(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y);

@@ -597,7 +597,7 @@ TEST_CASE(a_knob_command_withdrawn_after_a_stop_leaves_nothing_held)
     }
     ui_router_tick(2.0f);
     ui_router_goto(SCREEN_OVERVIEW);
-    ui_router_goto(SCREEN_SERVO);
+    ui_router_goto(SCREEN_SERVO_LIVE);
     feed_reset();
     servo_screen_set_armed(true);
     while (servo_took().kind != SERVO_CMD_NONE) { }

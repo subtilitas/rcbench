@@ -594,10 +594,13 @@ static int rows_foot(void)
  *        message leave no row for the count, the other notes wait for the message
  *        to go.  Where the standing notes leave no row for the count beside the
  *        message, they yield to it: they page with the others, first, and one
- *        taller than a page waits for the message to go.  Every line of the
- *        message is drawn: the longest takes 5 rows of the 7 under the SERVO
- *        tab's last row on SERVO's left card, which end 4px above the alert band
- *        (kpn_notes_foot()).  No note rises above 4px under the tab's last row.
+ *        taller than a page waits for the message to go, as every note does
+ *        where the message leaves no row for a note and the count.  The
+ *        longest message takes 5 rows.  KST's screen hands the session the
+ *        left card, 428px, with 4 rows under the SERVO tab's last row
+ *        (kpn_notes_foot()): a message taller than that shows its first
+ *        lines.  Neither a note nor the message rises above 4px under the
+ *        tab's last row.
  */
 static void layout_notes(notes_plan_t *p)
 {
@@ -627,6 +630,12 @@ static void layout_notes(notes_plan_t *p)
             p->y[i] = y;
             y += p->rows[i] * LINE_H;
         }
+    } else if (p->room < 1) {
+        /* The message leaves no row for a note and the count: the notes
+         * wait for it to go. */
+        for (int i = 0; i < p->count; ++i) {
+            p->y[i] = -1;
+        }
     } else {
         y = p->top;
         for (int i = 0; i < p->count; ++i) {
@@ -643,8 +652,12 @@ static void layout_notes(notes_plan_t *p)
         const int at = p->bottom - (p->msg_rows > KST_PANEL_MSG_LINES
                                         ? p->msg_rows : KST_PANEL_MSG_LINES)
                                    * LINE_H;
+        const int foot = rows_foot();
 
         y = y > at ? y : at;
+        /* Never over the tab's rows: a message taller than the rows under
+         * them shows its first lines. */
+        y = y > foot ? y : foot;
     }
     p->msg_y = y;
     p->msg_shown = 0;
@@ -694,7 +707,7 @@ static void draw_notes(gfx_canvas_t *c)
 static gfx_rect_t notes_rect(const notes_plan_t *p)
 {
     return (gfx_rect_t){ k.area.x, (int16_t)p->top, k.area.w,
-                         (int16_t)(p->room * LINE_H) };
+                         (int16_t)((p->room > 0 ? p->room : 0) * LINE_H) };
 }
 
 /* Whether (x, y) is on notes that take more than one page. */

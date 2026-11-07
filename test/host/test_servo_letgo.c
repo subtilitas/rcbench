@@ -161,7 +161,7 @@ TEST_CASE(commands_from_a_let_go_pause_are_stale)
     CHECK_EQ(hold.from_pause, 0u);
     ack_hold(&hold);
     open_settings();
-    tap(TRIM_UP_X, ROW_Y(3));                  /* while paused */
+    sl_step(HL_TRIM, +1);                  /* while paused */
     const servo_cmd_t pos = last_cmd();
     CHECK_EQ(pos.kind, SERVO_CMD_POSITION);
     CHECK_EQ(pos.from_pause, hold.pause_seq);
@@ -175,7 +175,7 @@ TEST_CASE(commands_from_a_let_go_pause_are_stale)
     CHECK(!servo_cmd_stale(&ended, &disarm));
     CHECK(ended.on);                           /* not a drive command */
     servo_screen_released(g_hold_seq);
-    tap(ARM_X + 40, BTN_Y);                    /* CENTRE, after the pause */
+    tap(COL_X + 40, BTN_Y);                    /* CENTRE, after the pause */
     const servo_cmd_t centre = last_cmd();
     CHECK_EQ(centre.kind, SERVO_CMD_CENTRE);
     CHECK_EQ(centre.from_pause, 0u);
@@ -209,7 +209,7 @@ TEST_CASE(a_resume_said_again_keeps_its_pause)
     servo_cmd_t hold;
     paused_on_n(&hold);
     tap(SWEEP_X, BTN_Y);                       /* PAUSED ... */
-    tap(ARM_X + 1, SPEED_Y);                   /* ... SPEED, same pass */
+    tap(COL_X + 1, SPEED_Y);                   /* ... SPEED, same pass */
     const servo_cmd_t c = last_cmd();
     CHECK_EQ(c.kind, SERVO_CMD_SWEEP);
     CHECK(c.resume);
@@ -239,7 +239,7 @@ TEST_CASE(a_drag_after_pause_outlives_the_let_go)
     servo_screen_released(hold.pause_seq);
     CHECK_EQ(servo_screen_commanded(), at);    /* still driven there */
     open_settings();
-    tap(TRIM_UP_X, ROW_Y(3));
+    sl_step(HL_TRIM, +1);
     const servo_cmd_t again = last_cmd();
     CHECK_EQ(again.kind, SERVO_CMD_POSITION);  /* the drag, said again */
     CHECK_EQ(again.value_us, at + 5u);
@@ -247,7 +247,7 @@ TEST_CASE(a_drag_after_pause_outlives_the_let_go)
 
     /* CENTRE the same way. */
     paused_on_n(&hold);
-    tap(ARM_X + 40, BTN_Y);
+    tap(COL_X + 40, BTN_Y);
     const servo_cmd_t centre = last_cmd();
     CHECK_EQ(centre.kind, SERVO_CMD_CENTRE);
     CHECK_EQ(centre.from_pause, 0u);
@@ -263,7 +263,7 @@ TEST_CASE(a_resume_and_its_repeat_go_with_the_let_go)
     paused_on_n(&hold);
     tap(SWEEP_X, BTN_Y);                       /* PAUSED */
     const servo_cmd_t resume = last_cmd();
-    tap(ARM_X + 1, SPEED_Y);                   /* SPEED, after it was taken */
+    tap(COL_X + 1, SPEED_Y);                   /* SPEED, after it was taken */
     const servo_cmd_t repeat = last_cmd();
     CHECK_EQ(repeat.kind, SERVO_CMD_SWEEP);
     CHECK_EQ(resume.from_pause, hold.pause_seq);
@@ -333,7 +333,7 @@ TEST_CASE(a_late_chained_hold_ends_its_root)
     servo_pause_end_t ended = { true, root };
     CHECK(servo_cmd_stale(&ended, &r1));
     open_settings();
-    tap(TRIM_UP_X, ROW_Y(3));                  /* a position from the chain */
+    sl_step(HL_TRIM, +1);                  /* a position from the chain */
     const servo_cmd_t pos = last_cmd();
     close_settings();
     CHECK(servo_cmd_stale(&ended, &pos));

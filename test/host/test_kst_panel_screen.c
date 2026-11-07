@@ -91,45 +91,30 @@ TEST_CASE(commanded_shows_no_pulse_while_the_programmer_holds_the_port)
     CHECK(strstr(servo_screen_commanded_text(), "us") != NULL);
 }
 
-TEST_CASE(program_lists_the_programmer_and_its_row_opens_it_a_level_down)
+TEST_CASE(kst_opens_its_session_and_close_ends_it)
 {
     fresh_screen();
     link_up();
     CHECK(!kst_panel_is_open());
-    /* PROGRAM is a tab: its list, no session yet. */
-    screen_tap(PROG_X, BTN_Y);
+    /* KST's screen opens the session over the left column, and the
+     * session takes the taps there. */
+    program_open();
     CHECK_EQ(servo_screen_task(), (int)UI_WB_PROGRAM);
-    CHECK(!kst_panel_is_open());
-    /* The row opens the session over the left column, and the session
-     * takes the taps there. */
-    screen_tap(SV_PROG_ROW_X, SV_PROG_ROW_Y(0));
     CHECK(kst_panel_is_open());
     tap(val(PG_SERVO, 2, 1));
     CHECK_EQ(kst_panel_editor(), 2);
     tap(kst_panel_choice_cancel_rect());
     CHECK_EQ(kst_panel_editor(), 0);
-    /* CLOSE climbs to the list. */
+    /* CLOSE ends the session; the router takes the screen to the hub
+     * (test_servo_hub.c). */
     program_close();
     CHECK(!kst_panel_is_open());
-    CHECK_EQ(servo_screen_task(), (int)UI_WB_PROGRAM);
-    /* The session covers the strip: a tap where LIVE is goes to the
-     * session (its own page tabs), and the task stays. */
-    screen_tap(SV_PROG_ROW_X, SV_PROG_ROW_Y(0));
+    /* Shown again, the screen opens it again; LIVE closes it. */
+    program_open();
     CHECK(kst_panel_is_open());
-    screen_tap(LIVE_X, BTN_Y);
-    CHECK(kst_panel_is_open());
-    CHECK_EQ(servo_screen_task(), (int)UI_WB_PROGRAM);
-    program_close();
+    go(SERVO_FN_LIVE);
     CHECK(!kst_panel_is_open());
-    /* Under the one row the list opens nothing. */
-    screen_tap(SV_PROG_ROW_X, SV_PROG_ROW_Y(3));
-    CHECK(!kst_panel_is_open());
-    /* Another task and back: the list, not a session. */
-    screen_tap(SETB_X, BTN_Y);
-    CHECK_EQ(servo_screen_task(), (int)UI_WB_SETTINGS);
-    screen_tap(PROG_X, BTN_Y);
-    CHECK_EQ(servo_screen_task(), (int)UI_WB_PROGRAM);
-    CHECK(!kst_panel_is_open());
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_LIVE);
 }
 
 /*
@@ -137,7 +122,7 @@ TEST_CASE(program_lists_the_programmer_and_its_row_opens_it_a_level_down)
  * an editor it closes the editor; while the port moves it does nothing;
  * with the port in programming it asks for LEAVE and the session stays,
  * and over that question it closes the question; once the port is back in
- * PWM it climbs to PROGRAM's list, and the next one lets the screen go.
+ * PWM it closes the session and lets the screen go to the hub.
  */
 TEST_CASE(the_home_tag_in_a_held_session_asks_for_leave_then_climbs)
 {
@@ -176,11 +161,9 @@ TEST_CASE(the_home_tag_in_a_held_session_asks_for_leave_then_climbs)
     settle();
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
     CHECK(!kst_panel_holds_port());
-    /* Now the tag climbs to the list, then lets the screen go. */
-    CHECK(scr->back());
-    CHECK(!kst_panel_is_open());
-    CHECK_EQ(servo_screen_task(), (int)UI_WB_PROGRAM);
+    /* Now the tag closes the session and lets the screen go to the hub. */
     CHECK(!scr->back());
+    CHECK(!kst_panel_is_open());
 }
 
 /* PROGRAM's row names the pin of the port the session works on (the
@@ -385,11 +368,6 @@ TEST_CASE(the_programmer_stays_on_the_screen_while_the_port_is_held)
     tap(val(PG_SERVO, 0, 0));
     settle();
     CHECK(kst_panel_holds_port());
-    /* A tap where the strip's LIVE is does not uncover it. */
-    ev(LIVE_X, BTN_Y, TOUCH_EVENT_DOWN, 1);
-    ev(LIVE_X, BTN_Y, TOUCH_EVENT_UP, 1);
-    CHECK(kst_panel_is_open());
-    CHECK_EQ(servo_screen_task(), (int)UI_WB_PROGRAM);
     /* CLOSE asks for the way back and closes nothing. */
     program_close();
     CHECK(kst_panel_is_open());
@@ -403,9 +381,8 @@ TEST_CASE(the_programmer_stays_on_the_screen_while_the_port_is_held)
     CHECK(kst_prog_write_enabled(M));
     scr->enter();
     CHECK(!kst_prog_write_enabled(M));
-    CHECK_EQ(servo_screen_task(), (int)UI_WB_LIVE);
     scr->tick(0.02f);
-    /* On PROGRAM, one level down, as the port is held. */
+    /* On KST's screen, as the port is held. */
     CHECK(kst_panel_is_open());
     CHECK_EQ(servo_screen_task(), (int)UI_WB_PROGRAM);
     scr->render(&cv, 0);
@@ -418,12 +395,10 @@ TEST_CASE(the_programmer_stays_on_the_screen_while_the_port_is_held)
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
     program_close();
     CHECK(!kst_panel_is_open());
-    /* The tester's controls answer: the strip switches tasks. */
+    /* The tester's screens answer: LIVE shows, no session over it. */
     while (servo_screen_take(&junk)) { }
-    screen_tap(SETB_X, BTN_Y);
-    CHECK_EQ(servo_screen_task(), (int)UI_WB_SETTINGS);
+    go(SERVO_FN_LIVE);
     scr->render(&cv, 0);
-    screen_tap(LIVE_X, BTN_Y);
     CHECK_EQ(servo_screen_task(), (int)UI_WB_LIVE);
     CHECK(!kst_panel_is_open());
 }
@@ -1018,7 +993,7 @@ int main(void)
     RUN(a_panel_that_starts_under_a_session_reads_its_options_at_the_entry);
     RUN(the_port_row_names_the_programming_voltage_and_current);
     RUN(commanded_shows_no_pulse_while_the_programmer_holds_the_port);
-    RUN(program_lists_the_programmer_and_its_row_opens_it_a_level_down);
+    RUN(kst_opens_its_session_and_close_ends_it);
     RUN(the_home_tag_in_a_held_session_asks_for_leave_then_climbs);
     RUN(the_kst_row_names_the_ports_pin_from_the_feed);
     RUN(no_setting_that_reaches_the_port_changes_while_it_is_held);

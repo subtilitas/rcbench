@@ -42,7 +42,8 @@
 #include "ui_slider.h"
 #include "ui_tabs.h"
 #include "ui_textkey.h"
-#include "ui_target_row.h"
+#include "ui_footer.h"
+#include "ui_setlist.h"
 #include "ui_value_gate.h"
 #include "ui_widgets.h"
 #include "ui_workbench.h"
@@ -52,48 +53,43 @@
 
 #define PAD    UI_MARGIN /**< The screen's outer margin, px. */
 /**
- * @brief The left card's width, px: the page area under the strip, where
- *        the dial, TEST's run cards, SETTINGS' pages and PROGRAM's list
- *        are, and the panels and the programmer's sessions over them.
+ * @brief The left card's width, px: the page area where the dial, TEST's
+ *        and LIMIT RUN's run card, RUDDER's readout and a run's settings
+ *        are, and the panels and the programmers' sessions over them.
  */
 #define LCARD_W 620
 #define RCARD_X (PAD + LCARD_W + 8) /**< The output card's left edge, px. */
 #define RCARD_W (W - RCARD_X - PAD) /**< The output card's width: 380px. */
 /**
- * @brief SERVO's task strip at the 1024 x 600 sizes: five tabs of 120 x
- *        40px, 4px apart, from y 8, and the page from y 56.
- *
- * A tab of 120px holds a label of 10 cells of 10 x 20 within
- * UI_TABS_PAD: every English one.  The German row draws in the 8 x 16
- * face: PROGRAMMIEREN is 13 cells, and ui_tabs_font() takes one face for
- * the row.
- *
- * The shared UI_WB_ figures stay at their 24px strip for MOTOR & ESC and
- * SUPPLY until those are laid out at the new sizes; these are SERVO's own,
- * the shared figures plus the difference.  SV_PAGE_Y is the top of the
- * page area a task and PROGRAM's sessions draw in.
- */
-#define SV_STRIP_X UI_WB_STRIP_X
-#define SV_STRIP_Y (UI_WB_STRIP_Y + 2)  /**< The strip's top: 8px. */
-#define SV_STRIP_H (UI_WB_STRIP_H + 16) /**< A tab's height: 40px. */
-#define SV_TAB_W   (UI_WB_TAB_W + 8)    /**< A tab's width: 120px. */
-#define SV_TAB_GAP UI_WB_TAB_GAP        /**< Between two tabs: 4px. */
-#define SV_PAGE_Y  (UI_WB_PAGE_Y + 18)  /**< The page's top: 56px. */
-/** @brief The left card's top: the page area under SERVO's strip. */
-#define CARD_Y  SV_PAGE_Y
-#define CARD_H  (H - CARD_Y - PAD) /**< The left card's height, px. */
-/**
- * @brief The output card's top: the body's margin.  The strip spans the
- *        left card only, so the output card, the same on every task, runs
- *        from the top margin to the bottom one beside it.
- */
-#define RCARD_Y PAD
-#define RCARD_H (H - 2 * PAD) /**< The output card's height, px. */
-/**
  * @brief The lowest row a control that stops what the bench drives may
  *        reach, in the screen's coordinates: 4px above the alert band.
  */
 #define STOP_FLOOR (UI_ALERT_Y - UI_BAND_H - 4)
+/**
+ * @brief The lowest row the cards reach: 8px over the footer
+ *        (ui_footer.h), body y 436.  The footer holds the function's name
+ *        and port line, ARM / DISARM and SETTINGS at body y 444 to 492.
+ */
+#define CARD_FLOOR UI_FOOTER_FLOOR
+/** @brief The left card's top, px: the body's margin, level with the
+ *         PORT button. */
+#define SV_PAGE_Y  PAD
+#define CARD_Y  SV_PAGE_Y
+#define CARD_H  (CARD_FLOOR - CARD_Y) /**< The left card's height: 428px. */
+/**
+ * @brief The PORT button over the output card (screen 636, 68, 380, 48):
+ *        PORT and the target the tester drives; a tap opens the choice of
+ *        OUTPUTS and the programming ports.
+ */
+#define PORT_X  636
+#define PORT_Y  CARD_Y              /**< Its top, px: body 8. */
+#define PORT_W  380                 /**< Its width, px. */
+#define PORT_H  UI_TAP_MIN          /**< Its height, px: 48. */
+/** @brief The output card's top: 6px under the PORT button. */
+#define RCARD_Y (PORT_Y + PORT_H + 6)
+#define RCARD_H (CARD_FLOOR - RCARD_Y) /**< The output card's height, px. */
+_Static_assert(PORT_X == RCARD_X && PORT_W == RCARD_W,
+               "the PORT button spans the output card");
 
 /**
  * @brief The faces of the 1024 x 600 type scale this screen draws in.
@@ -111,17 +107,15 @@
 #define SV_CELL       10 /**< SV_FONT_LABEL's cell width, px. */
 
 /*
- * The output card, top to bottom: the type and frame rate in force, the
- * servo rail's live power and its plot, the supply's set points and output
- * switch, SPEED, the TARGET row, CENTRE / SWEEP / RELEASE and ARM.  Every
- * row tapped is UI_TAP_MIN or taller; ARM ends above the alert band.
+ * The output card, top to bottom: the servo rail's live power and its
+ * plot, the supply's set points and output switch, SPEED, the type and
+ * frame rate in force, and CENTRE / SWEEP / RELEASE.  Every row tapped is
+ * UI_TAP_MIN or taller.  ARM is the footer's middle slot.
  */
 #define RC_X      (RCARD_X + 12) /**< The output card's inner column, px. */
 #define RC_W      (RCARD_W - 24) /**< Its width: 356px. */
-#define TAG_Y     (RCARD_Y + 12) /**< The type pill's top, px. */
-#define TAG_H     44             /**< The type pill's height, px. */
 /** @brief The line over the plot: the meter's name and three readings. */
-#define PWR_TXT_Y (TAG_Y + TAG_H + 8)
+#define PWR_TXT_Y (RCARD_Y + 10)
 /**
  * @brief The meter's name before the readings (k_line_w): 90px for PD
  *        MINI, 134px for "INA 0x41 CH2", 12 cells of 10px and a gap.
@@ -155,27 +149,23 @@ _Static_assert(RC_W >= PROG5V_BOX_MIN_W, "the PROG 5V box fits the card");
 #define SLIDER_Y  (SPEED_Y + 24)       /**< SPEED's track, px. */
 #define SLIDER_H  40                   /**< SPEED's track's height, px. */
 /**
- * @brief The TARGET row, what the tester drives and the control that
- *        picks it, clear of SPEED's thumb and its shadow, which paint
- *        UI_SLIDER_OVERHANG + 2px below the track.
+ * @brief The type pill, the profile in force, clear of SPEED's thumb and
+ *        its shadow, which paint UI_SLIDER_OVERHANG + 2px below the track.
  */
-#define TARGET_Y  (SLIDER_Y + SLIDER_H + UI_SLIDER_OVERHANG + 7)
-#define TARGET_H  UI_TAP_MIN           /**< The TARGET row's height, px. */
-#define BTN_Y     (TARGET_Y + TARGET_H + 10) /**< CENTRE, SWEEP, RELEASE. */
+#define TAG_Y     (SLIDER_Y + SLIDER_H + UI_SLIDER_OVERHANG + 9)
+#define TAG_H     44             /**< The type pill's height, px. */
+#define BTN_Y     (TAG_Y + TAG_H + 12) /**< CENTRE, SWEEP, RELEASE. */
 #define BTN_H     UI_TAP_MIN           /**< Their height, px. */
 #define BTN_GAP   8                    /**< Between two of them, px. */
-#define ARM_Y     (BTN_Y + BTN_H + 10) /**< ARM and DISARM, px. */
-#define ARM_H     60                   /**< ARM's height, px: 9.0mm. */
-_Static_assert(SV_STRIP_X + 5 * SV_TAB_W + 4 * SV_TAB_GAP + 3 <= RCARD_X,
-               "SERVO's strip ends left of the output card");
-_Static_assert(SV_STRIP_Y + SV_STRIP_H + 3 <= SV_PAGE_Y,
-               "SERVO's strip ends above its page");
+/** @brief ARM and DISARM: the footer's middle slot, 328 x 48px. */
+#define ARM_Y     UI_FOOTER_Y
+#define ARM_H     UI_FOOTER_H          /**< ARM's height, px: 7.2mm. */
 _Static_assert(ARM_Y + ARM_H <= STOP_FLOOR,
                "DISARM ends above the alert band");
 _Static_assert(SUP_Y + SUP_H <= STOP_FLOOR,
                "OUTPUT OFF ends above the alert band");
-_Static_assert(ARM_Y + ARM_H <= RCARD_Y + RCARD_H,
-               "ARM ends inside the output card");
+_Static_assert(BTN_Y + BTN_H + 8 <= CARD_FLOOR,
+               "CENTRE, SWEEP and RELEASE end inside the output card");
 
 /*
  * LIVE's card: the horn's angle in the bench's numerals top left, ARM
@@ -197,9 +187,9 @@ _Static_assert(ARM_Y + ARM_H <= RCARD_Y + RCARD_H,
 _Static_assert(6 * 32 + 24 <= READ_W1,
                "-180.0 in SV_FONT_NUM ends 24px before CURRENT");
 #define READ_NUM_H 44                    /**< A reading's numerals, px. */
-/** @brief Their top, px: they end 4px above the alert band, which shows over
- *         the card's foot. */
-#define READ_NUM_Y (UI_ALERT_Y - UI_BAND_H - 4 - READ_NUM_H)
+/** @brief Their top, px: they end 8px over the card's floor, 16px over
+ *         the footer. */
+#define READ_NUM_Y (CARD_FLOOR - 8 - READ_NUM_H)
 #define READ_LBL_Y (READ_NUM_Y - 26)     /**< The label and unit row. */
 #define SEG_X      (PAD + 16)            /**< The horn's angle, top left. */
 #define SEG_Y      (CARD_Y + 14)         /**< Its top, px. */
@@ -213,48 +203,33 @@ _Static_assert(KST_PANEL_STD_MV == 6000,
 
 /*
  * The panels: the keypad, keyboard, list, warnings, question and the servo
- * programmer cover the whole left column, the strip's tabs with it, so a
- * panel is answered before the task changes.  The output card -- ARM,
- * CENTRE, RELEASE and the readings -- stays where it is and works.
+ * programmer cover the whole left column down to the card's floor.  The
+ * output card -- CENTRE, RELEASE and the readings -- and the footer's ARM
+ * stay where they are and work.
  */
 #define OV_X      PAD             /**< The left column's panels, px. */
 #define OV_Y      PAD             /**< Their top, px. */
 #define OV_W      LCARD_W         /**< Their width, px. */
-#define OV_H      (H - 2 * PAD)   /**< Their height, px. */
+#define OV_H      (CARD_FLOOR - OV_Y) /**< Their height, px: to the floor. */
 /*
- * The pages of rows, in the page area under the strip.  SETTINGS' pages
- * under their own tabs (OUTPUT, SWEEP, DUT): two columns, each row its
- * label on the left and its value on the right.  A run's settings, one
- * level down from its card on TEST, under the run's name: three columns,
- * each row its label over its value, so the automatic test's 15 rows fit
- * in 5 rows of UI_TAP_MIN.
+ * The pages of rows, in the page area: a run's settings, one level down
+ * from its card on TEST or LIMIT RUN, and KST's EXPERT MODE, under the
+ * page's name: three columns, each row its label over its value, so the
+ * automatic test's 15 rows fit in 5 rows of UI_TAP_MIN.
  */
-#define OV_TAB_Y  (CARD_Y + 8)    /**< SETTINGS' page tabs, px. */
-#define OV_TAB_H  40              /**< Their height, px. */
-#define OV_TAB_W  (OV_W - 20)     /**< Their row: three of 200px. */
-#define OV_ROW0   (CARD_Y + 52)   /**< SETTINGS' first row, px. */
-#define OV_PITCH  52              /**< From row to row, px. */
-#define OV_ROW_H  UI_TAP_MIN      /**< A row's height, px. */
-#define OV_COL_W  ((OV_W - 30) / 2) /**< A column of SETTINGS: 295px. */
-#define OV_VAL_W  140             /**< A row's value, px. */
-/** @brief The OUTPUT page's notes, 2px under its fifth row. */
-#define OV_NOTE_Y (OV_ROW0 + 4 * OV_PITCH + OV_ROW_H + 2)
+#define OV_ROW_H  UI_TAP_MIN      /**< A row's value's height, px. */
+#define OV_COL_W  ((OV_W - 30) / 2) /**< A column of the choice list: 295px. */
 #define NOTE_PITCH 21             /**< A note's line pitch, px. */
 #define RL_ROW0   (CARD_Y + 56)   /**< A run's first row, px. */
-#define RL_PITCH  71              /**< From row to row: label and value. */
+#define RL_PITCH  70              /**< From row to row: label and value. */
 #define RL_LBL_H  21              /**< A run's row's label over its value. */
 #define RL_COL_W  ((OV_W - 40) / 3) /**< A column of a run's: 193px. */
 #define RL_ROWS   5               /**< The rows a column holds. */
 /** @brief A run's note under its rows: the automatic test's stall note,
  *         4px under the last value. */
 #define RL_NOTE_Y (RL_ROW0 + RL_ROWS * RL_PITCH + 2)
-/** @brief The save line under SETTINGS' rows and notes, 20px tall,
- *         ending 4px above the alert band. */
-#define OV_SAVE_Y (STOP_FLOOR - 20)
-_Static_assert(OV_NOTE_Y + 4 * NOTE_PITCH + 20 <= OV_SAVE_Y,
-               "the OUTPUT page's five note lines end above the save line");
-_Static_assert(RL_NOTE_Y + 20 <= STOP_FLOOR,
-               "a run's note ends above the alert band");
+_Static_assert(RL_NOTE_Y + 20 <= CARD_FLOOR,
+               "a run's note ends above the footer");
 
 /*
  * A pulse needs a pause before the next frame.  STANDARD PWM, WIDE and
@@ -284,15 +259,18 @@ typedef struct {
 #define TYPE_COUNT 5
 extern const servo_type_t k_types[TYPE_COUNT];
 
-/* SETTINGS' pages, under its own tabs, and the two runs' settings, each
- * opened from its card's SETTINGS on TEST; the brown-out walk's, opened
- * from the automatic test's BROWN-OUT row. */
-enum { PG_OUTPUT = 0, PG_SWEEP, PG_DUT, PG_COUNT,
-       PG_AUTO = PG_COUNT, PG_LIMRUN, PG_BROWNOUT };
+/* The rows of the servo profile, which the hub's SETTINGS list edits
+ * (PG_OUTPUT, no page of its own); the two runs' settings, each opened
+ * from its card's SETTINGS or the footer's on TEST and LIMIT RUN; the
+ * brown-out walk's, opened from the automatic test's BROWN-OUT row; KST's
+ * EXPERT MODE, from the footer's SETTINGS on KST. */
+enum { PG_OUTPUT = 0, PG_COUNT, PG_AUTO = PG_COUNT, PG_LIMRUN, PG_BROWNOUT,
+       PG_KST };
 
-/* Which run's settings TEST shows, one level down from its card, or the
- * brown-out walk's, one further down from the automatic test's. */
-enum { RL_NONE = 0, RL_AUTO, RL_LIMIT, RL_BROWNOUT };
+/* Which page of rows shows, one level down from its screen: a run's
+ * settings, the brown-out walk's, one further down from the automatic
+ * test's, or KST's EXPERT MODE. */
+enum { RL_NONE = 0, RL_AUTO, RL_LIMIT, RL_BROWNOUT, RL_KST };
 
 /* What a settings row edits. */
 enum { R_TYPE = 0, R_RATE, R_MIN, R_CENTRE, R_MAX, R_TRIM, R_TRAVEL,
@@ -309,14 +287,15 @@ typedef struct {
 } ov_row_t;
 
 /* What a press is on, in the pages and the panels they open. */
-enum { OP_NONE = 0, OP_TAB, OP_ROW, OP_TRIM_DN, OP_TRIM_UP, OP_KEYPAD,
+enum { OP_NONE = 0, OP_ROW, OP_TRIM_DN, OP_TRIM_UP, OP_KEYPAD,
        OP_TEXT, OP_CHOICE, OP_CHOICE_CANCEL, OP_WARN_APPLY, OP_WARN_CANCEL,
        OP_SUP_V, OP_SUP_I, OP_ASK_APPLY, OP_ASK_CANCEL, OP_TEST_START,
-       OP_LIM_START, OP_RUN_SET, OP_RUN_CLOSE, OP_OPEN_CAPS, OP_OPEN_ENC,
+       OP_LIM_START, OP_RUN_SET, OP_RUN_CLOSE, OP_OPEN_CAPS,
        OP_KST_EXPERT };
 
-/* What the list chooses, and what the keypad types. */
-enum { CH_NONE = 0, CH_TYPE, CH_RATE, CH_ENUM };
+/* What the list chooses -- the PORT button's port among them -- and what
+ * the keypad types. */
+enum { CH_NONE = 0, CH_TYPE, CH_RATE, CH_ENUM, CH_PORT };
 enum { KT_NONE = 0, KT_MIN, KT_CENTRE, KT_MAX, KT_TRAVEL, KT_RATE,
        KT_SETTING, KT_SUP_V, KT_SUP_I, KT_TRIM };
 
@@ -550,26 +529,33 @@ typedef struct {
     uint32_t stops;
 
     /*
-     * The task strip (ui_workbench.h): LIVE, TEST, PROGRAM, SETTINGS.  A
-     * tile opens LIVE; each task keeps its state for the session: SETTINGS
-     * its page (tabs), TEST the run whose settings are open (run_list),
-     * PROGRAM its list.  The strip's count of changes repaints it.
+     * The function shown (servo_fn_t): the hub, or the function screen
+     * entered last.  The task under it (ui_workbench.h's strip, never
+     * drawn) is the one the function's panels draw on: LIVE for LIVE and
+     * SWEEP, TEST for TEST and LIMIT RUN, RUDDER for RUDDER and RUDDER
+     * AUTO, PROGRAM for KST and HITEC.
      */
+    uint8_t      fn;
     ui_wb_strip_t wb;
-    uint8_t      run_list;      /* RL_*: a run's settings open on TEST    */
-    uint32_t     strip_rev;
-    uint32_t     drawn_strip[2];
-    /* PROGRAM's list (prog_registry.h): its view, and the rows last drawn. */
-    prog_view_t  prog_view;
-    uint32_t     prog_sig;
+    uint8_t      run_list;      /* RL_*: a page of rows open              */
     /* Whether a panel or the programmer covered the left column when the
      * buffer was last drawn: a change repaints it whole. */
     bool         drawn_cover[2];
-    /* The TARGET row on the right card: what the tester drives, and the
-     * control that opens the choice of target. */
-    ui_target_row_t trow;
-    /* SETTINGS' pages and the panels they open. */
-    ui_tabs_t    tabs;
+    /* The footer's and the PORT button's press, and the hub's tiles':
+     * FP_*, the contact, and a count of their look. */
+    uint8_t      fp_pressed;
+    uint8_t      fp_id;
+    int8_t       fp_tile;
+    uint32_t     fp_rev;
+    uint32_t     drawn_fp[2];   /* foot_sig() as last drawn, per buffer */
+    /* The SETTINGS list open on the hub or a function screen
+     * (ui_setlist.h), and its count of changes. */
+    ui_setlist_t sl;
+    uint32_t     sl_rev;
+    uint32_t     drawn_sl[2];
+    /* What the hub's buffers drew last, as one count. */
+    uint32_t     drawn_hub[2];
+    /* The panels over the left column. */
     int          ov_pressed;
     int          ov_row;
     uint8_t      ov_id;
@@ -583,10 +569,12 @@ typedef struct {
         int   target;
         setting_id_t id;
         char  title[48];
-        char  labels[CHOICE_MAX][32];
+        char  labels[CHOICE_MAX][64];
         int   values[CHOICE_MAX];
         int   count;
         int   pressed;
+        /** @brief Bit k: choice k is refused, its label the reason. */
+        uint16_t refused;
     } ch;
     struct {
         bool      open;
@@ -962,6 +950,35 @@ void ask_restore_follow(void);
 /* A press on a page or a panel: its DOWN, and its moves and its release. */
 void ov_down(const touch_event_t *evt);
 void ov_rest(const touch_event_t *evt);
+/**
+ * @brief Row @p r's value as text.
+ * @param r the row @param buf takes the text @param n its size
+ */
+void ov_row_value(const ov_row_t *r, char *buf, size_t n);
+/**
+ * @brief Whether the frame rate reached the pins, in two lines.
+ * @param l1 takes the first @param l2 the second @param n each one's size
+ * @return true in the warning colour
+ */
+bool svs_rate_note(char *l1, char *l2, size_t n);
+/**
+ * @brief The servo profile's rows, for the hub's list: @p kind R_TYPE to
+ *        R_REVERSE or R_HV.  Its editor opened over the left column (the
+ *        list, the keypad, the profile warning); one step of it, 10us for a
+ *        pulse, 5us for TRIM, 5° for TRAVEL, a switch for REVERSE and HV
+ *        SERVO; its value as text.
+ */
+void svs_profile_edit(int kind);
+/** @brief The choice list opened over the left column, empty, for
+ *  @p target (CH_*), @p id with CH_ENUM, under @p title.
+ *  @param target what it chooses @param id the setting @param title its
+ *  title */
+void open_choice(int target, setting_id_t id, const char *title);
+/** @brief Choice @p value added under @p label, CHOICE_MAX at most.
+ *  @param label its text @param value what it takes */
+void choice_add(const char *label, int value);
+void svs_profile_step(int kind, int dir);
+void svs_profile_value(int kind, char *buf, size_t n);
 /* The panel open over the left column, and the parts a frame repaints by
  * themselves. */
 void draw_overlay(gfx_canvas_t *c);
@@ -1312,8 +1329,8 @@ static inline gfx_rect_t sup_val_rect(int k)
 }
 
 /** @brief The bottom row of a warning or the question: its buttons' top,
- *         so they end with ARM above the alert band. */
-#define WARN_BTN_Y (STOP_FLOOR - 56)
+ *         so they end 8px inside the left column, over the footer. */
+#define WARN_BTN_Y (CARD_FLOOR - 8 - 56)
 
 /**
  * @brief HOLD TO APPLY, or APPLY, bottom left of a warning or the question.
@@ -1362,16 +1379,22 @@ static inline servo_test_abort_t test_abort_of(servo_source_why_t why)
 #define BOX_PITCH 24                       /**< Its line pitch, px. */
 #define BOX_BTN_DY 112                     /**< Its button's top, in it. */
 
+/** @brief The run's box under its card: on TEST under the caps button, on
+ *         LIMIT RUN under the card, in the screen's coordinates. */
+#define BOX_Y_TEST (CARD_Y + 248)
+#define BOX_Y_LIM  (CARD_Y + 196) /**< On LIMIT RUN. */
+#define BOX_H      (BOX_BTN_DY + UI_TAP_MIN + 10) /**< Its height: 170px. */
+_Static_assert(BOX_Y_TEST + BOX_H <= CARD_FLOOR,
+               "the run's box ends above the footer");
+
 /** @brief The run's box. @return the box, in the screen's coordinates */
 static inline gfx_rect_t test_box_rect(void)
 {
-    return (gfx_rect_t){ PAD + 10, ARM_NOTE_Y + 28, BOX_W,
-                         BOX_BTN_DY + UI_TAP_MIN + 10 };
+    return (gfx_rect_t){ PAD + 10,
+                         (int16_t)((s.fn == SERVO_FN_LIMRUN) ? BOX_Y_LIM
+                                                             : BOX_Y_TEST),
+                         BOX_W, BOX_H };
 }
-
-_Static_assert(ARM_NOTE_Y + 28 + BOX_BTN_DY + UI_TAP_MIN + 10
-                   <= READ_LBL_Y - 8,
-               "the run's box ends above LIVE's readings");
 
 /** @brief The box's button. @return STOP TEST or CLOSE, 150 x 48px */
 static inline gfx_rect_t test_btn_rect(void)
@@ -1549,6 +1572,106 @@ static inline bool bench_arming(void)
 {
     return s.gate.armed || s.gate.arm_asked || s.arm_down || s.bench_armed;
 }
+
+/* --- the hooks the hub and the function screens share (servo_fn.c) ----- */
+
+/* servo_screen.c's: the state at its start, a screen entered and left,
+ * touch events lost, a frame, an event. */
+void svs_reset(void);
+void svs_enter(void);
+void svs_leave(void);
+void svs_cancel(void);
+void svs_tick(float dt_s);
+void svs_event(const touch_event_t *evt);
+
+/** @brief Whether KST or HITEC shows no session, panel or page any more:
+ *         its own CLOSE closed it, and the screen goes to the hub.
+ *  @return true when it does (servo_fn.c) */
+bool svs_session_gone(void);
+
+/** @brief The footer's and the PORT button's presses (FP_*). */
+enum { FP_NONE = 0, FP_PORT, FP_SETTINGS, FP_TILE };
+
+/* --- servo_lists.c: the SETTINGS lists (ui_setlist.h) -------------------- */
+
+/** @brief The list at its start: closed, the hub's host. */
+void svs_lists_init(void);
+/** @brief Whether the function shown has a SETTINGS list of its own, a page
+ *         of rows or none.  @return true when SETTINGS takes a press */
+bool svs_list_offered(void);
+/** @brief Why SETTINGS takes no press now, NULL while it takes one: a
+ *         bench that is not SAFE, a run, a sweep.  @return the reason */
+const char *svs_list_refused(void);
+/** @brief SETTINGS tapped: the function's list, or its page of rows. */
+void svs_list_open(void);
+/** @brief The list closed, nothing typed taken. */
+void svs_list_close(void);
+/** @brief Whether the list shows. @return true while open */
+bool svs_list_shown(void);
+/** @brief The home tag over the list: a keypad, a choice list or the leave
+ *         warning closes; with nothing over it the list closes, through the
+ *         leave warning over an unsaved change.  @return true when it
+ *         took the tag */
+bool svs_list_back(void);
+/** @brief A frame of the list, @p dt_s seconds. @param dt_s the frame */
+void svs_list_tick(float dt_s);
+
+/* --- servo_footer.c: the footer and the PORT button --------------------- */
+
+/** @brief Function @p fn's name, in the footer and on its tile.
+ *  @param fn the function @return the name */
+const char *svs_fn_name(servo_fn_t fn);
+/** @brief ARM or DISARM in the footer's middle slot. @param c the canvas */
+void draw_arm(gfx_canvas_t *c);
+/** @brief The PORT button. @return its rectangle, in the body */
+static inline gfx_rect_t port_rect(void)
+{
+    return (gfx_rect_t){ PORT_X, PORT_Y, PORT_W, PORT_H };
+}
+/**
+ * @brief What the footer and the PORT button show, as one number: a change
+ *        of it repaints them.
+ * @return the signature
+ */
+uint32_t foot_sig(void);
+/** @brief The footer's name, port line and SETTINGS, and the PORT button,
+ *         on a function screen. @param c the canvas */
+void draw_footer(gfx_canvas_t *c);
+/** @brief The PORT button: PORT and the port line. @param c the canvas */
+void draw_port(gfx_canvas_t *c);
+/** @brief The port line: what the tester drives, servo_target_line()'s
+ *         words, `SERVO PWM GPIO 2` or `PROG PORT 1 GPIO 13`, `NO SERVO
+ *         PWM PIN` with none.
+ * @param out takes it @param n its size
+ * @return true in the warning colour: a port, no pin, no link */
+bool svs_port_line(char *out, size_t n);
+/** @brief A DOWN on the PORT button or the footer's SETTINGS, and the rest
+ *         of a press on either. @param evt the event
+ *  @return whether it was theirs */
+bool foot_down(const touch_event_t *evt);
+bool foot_rest(const touch_event_t *evt);
+/** @brief The PORT button's choice list: OUTPUTS and PROG PORT 1 to 4,
+ *         a refused port naming why; the TARGET lock names itself in the
+ *         alert band. */
+void port_list_open(void);
+/** @brief Choice @p value of the PORT list taken: 0 OUTPUTS, 1 to 4 a
+ *         port. @param value the choice */
+void port_list_pick(int value);
+
+/* --- servo_hub.c: the hub's tiles ---------------------------------------- */
+
+struct ui_help_page;
+
+/** @brief The hub drawn: its tiles and footer, the list, or a panel over
+ *         the list. @param c the canvas @param buf the buffer */
+void hub_render(gfx_canvas_t *c, int buf);
+/** @brief An event on the hub. @param evt the event */
+void hub_event(const touch_event_t *evt);
+/** @brief The guide's pages on the hub. @return the count */
+int hub_help_count(void);
+/** @brief Page @p i of the hub's guide. @param i the page
+ *  @param out the page @return false past the last */
+bool hub_help_page(int i, struct ui_help_page *out);
 
 /* The workbench's own: the strip, the TARGET row, TEST's run cards. */
 #include "servo_workbench_int.h"

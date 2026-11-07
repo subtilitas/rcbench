@@ -299,10 +299,14 @@ static void draw_heading(gfx_canvas_t *c, gfx_rect_t r,
     if (e->custom != NULL && e->custom->value_text != NULL) {
         e->custom->value_text(line, sizeof(line));
     }
+    /* A heading whose locked() names something draws its line in the
+     * warning colour. */
+    const bool warn = e->custom != NULL && e->custom->locked != NULL
+                      && e->custom->locked() != NULL;
     if (line[0] != '\0') {
         const int lx = r.x + 16 + gfx_text_width(SL_F_BODY, name, 1) + 24;
         gfx_text(c, lx, r.y + HEAD_NAME_DY + 3, line, SL_F_LABEL,
-                 UI_TEXT_DIM, 1);
+                 warn ? UI_WARN : UI_TEXT_DIM, 1);
     }
     ui_rule(c, r.x + 16, r.y + r.h - 3, r.w - 32, UI_EDGE);
 }

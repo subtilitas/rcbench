@@ -55,7 +55,7 @@
 #define MO_ARM_PY   P(MO_ARM_Y)
 #define MO_SET_PX   MO_SETTINGS_X
 #define MO_SET_PY   P(MO_SETTINGS_Y)
-#define SV_ARM_PX   (SV_RC_X + SV_RC_W / 2)
+#define SV_ARM_PX   SV_ARM_X
 #define SV_ARM_PY   P(SV_ARM_Y + SV_ARM_H / 2)
 /* The keypad's frame, as the workbench's tests probe it. */
 #define KP_AREA     ((gfx_rect_t){ 10, 10, 1004, 482 })
@@ -538,7 +538,7 @@ TEST_CASE(every_refusal_returns_motor_and_esc_to_safe_with_every_lock_lifted)
 TEST_CASE(every_refusal_returns_servo_to_safe)
 {
     for (int r = 0; r < R_COUNT; ++r) {
-        fresh(SCREEN_SERVO);
+        fresh(SCREEN_SERVO_LIVE);
         const uint32_t ask = servo_hold();
         if (ask == 0u || !servo_screen_arm_asked()) {
             T_FAIL("%s: no ARM waiting", k_reason[r]);
@@ -585,7 +585,7 @@ TEST_CASE(a_refusal_under_a_finger_on_arm_ends_the_hold)
     feed_tap(FEED_LONE, MO_SET_PX, MO_SET_PY);
     CHECK(keypad_opens(SET_OUT_MIN_US));
 
-    fresh(SCREEN_SERVO);
+    fresh(SCREEN_SERVO_LIVE);
     finger(FEED_LONE, SV_ARM_PX, SV_ARM_PY);
     frames(HOLD_FRAMES);
     servo_cmd_t s = { .kind = SERVO_CMD_NONE };
@@ -627,7 +627,7 @@ TEST_CASE(a_refusal_after_a_disarm_changes_nothing)
     lift(FEED_LONE);
     CHECK(motor_screen_target_locked());              /* the new one waits */
 
-    fresh(SCREEN_SERVO);
+    fresh(SCREEN_SERVO_LIVE);
     const uint32_t sask = servo_hold();
     CHECK(sask != 0u);
     arming_init(&a, 0u, SETTLE_MS);
@@ -638,7 +638,7 @@ TEST_CASE(a_refusal_after_a_disarm_changes_nothing)
     CHECK(servo_screen_take(&s));
     CHECK_EQ(s.kind, SERVO_CMD_DISARM);
     CHECK_EQ(s.ask, 0u);                              /* stamps an ARM only */
-    ui_router_goto(SCREEN_SERVO);
+    ui_router_goto(SCREEN_SERVO_LIVE);
     arming_hs_facts_t f = { .link_up = true, .rate_settled = true,
                             .disarm_asked = true };
     CHECK_EQ(arming_handshake_step(&a, ARMING_HS_CLEARED, &f, 0u),
@@ -715,7 +715,7 @@ TEST_CASE(a_late_refusal_of_an_older_ask_leaves_the_newer_one_waiting)
     frame_after(third);
     CHECK(!motor_screen_target_locked());
 
-    fresh(SCREEN_SERVO);
+    fresh(SCREEN_SERVO_LIVE);
     const uint32_t s1 = servo_hold();
     const uint32_t s2 = servo_hold();
     CHECK(s2 != s1);
@@ -733,7 +733,7 @@ TEST_CASE(a_refusal_of_another_screens_ask_changes_nothing)
     fresh(SCREEN_MOTOR);
     const uint32_t motor_ask = motor_hold();
     ui_router_goto(SCREEN_OVERVIEW);
-    ui_router_goto(SCREEN_SERVO);
+    ui_router_goto(SCREEN_SERVO_LIVE);
     const uint32_t servo_ask = servo_hold();
     CHECK(motor_ask != 0u && servo_ask != 0u && motor_ask != servo_ask);
     frame_after(motor_ask);

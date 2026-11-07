@@ -341,7 +341,8 @@ gfx_rect_t kst_panel_value_rect(int page, int row, int col);
  */
 gfx_rect_t kst_panel_step_rect(int page, int row, bool up);
 /**
- * @brief A list's entry, 48px tall at a 56px pitch under the title.
+ * @brief A list's entry, 48px tall at a 56px pitch under the title, in two
+ *        columns when one column above CANCEL does not hold the list.
  * @param i the entry, from 0
  * @return its rectangle
  */

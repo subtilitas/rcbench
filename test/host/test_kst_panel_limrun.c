@@ -37,10 +37,10 @@
 #define LR_PULSE_X SV_LIST_X(1)       /* SERVO PULSES, the middle column */
 #define LR_PULSE_Y SV_LIST_ROW_Y(1)   /* right of SERVO */
 
-/* TEST, and the LIMIT RUN card's own settings opened. */
+/* LIMIT RUN, and its card's own settings opened. */
 static void lr_run_list(void)
 {
-    screen_tap(SV_TAB_TEST_X, BTN_Y);
+    go(SERVO_FN_LIMRUN);
     screen_tap(SV_RUN_SET_X, SV_RUN_SET_Y(1));
 }
 
@@ -270,10 +270,10 @@ static void lr_fresh_ext(bool reversion)
     memcpy(g_rig.sim.reg, img.r, sizeof(img.r));
 }
 
-/* TEST, and START LIMIT RUN on its card held for 2.3s. */
+/* LIMIT RUN, and START LIMIT RUN on its card held for 2.3s. */
 static void lr_hold_start(void)
 {
-    screen_tap(SV_TAB_TEST_X, BTN_Y);
+    go(SERVO_FN_LIMRUN);
     ev(SV_START_X, SV_START_Y(1), TOUCH_EVENT_DOWN, 1);
     lr_ms(2300u);
     ev(SV_START_X, SV_START_Y(1), TOUCH_EVENT_UP, 1);
@@ -281,7 +281,7 @@ static void lr_hold_start(void)
 }
 
 /* The LIMIT RUN settings: LIMIT RUN to SEARCH+PROG, SERVO PULSES to
- * 1000-2000 where @p pulses; the home tag back to TEST, and START LIMIT
+ * 1000-2000 where @p pulses; the home tag back to LIMIT RUN, and START LIMIT
  * RUN held for 2.3s. */
 static void lr_start_with(bool pulses)
 {
@@ -601,7 +601,8 @@ TEST_CASE(a_run_ended_in_a_session_ends_the_programmers_run_after_its_leave)
                             "MIN/MAX\n") != NULL);
 
     /* A LEAVE the control task never takes: the port stays in programming
-     * mode, the programmer's run ends, and the programmer opens. */
+     * mode, the programmer's run ends, and the programmer opens on KST's
+     * screen, where the router takes the bench (test_servo_hub.c). */
     lr_fresh(false);
     lr_start_with(false);
     for (int i = 0; i < 200000 && servo_screen_limit_running(); ++i) {
@@ -616,6 +617,8 @@ TEST_CASE(a_run_ended_in_a_session_ends_the_programmers_run_after_its_leave)
     CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
     lr_ms(40u);
     CHECK_EQ(kst_panel_run_poll(), KST_PANEL_RUN_NONE);
+    go(SERVO_FN_KST);
+    lr_ms(40u);
     CHECK(kst_panel_is_open());
     g_rig.deaf = false;
 }

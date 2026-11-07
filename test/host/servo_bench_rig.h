@@ -300,11 +300,15 @@ static inline bool both_whole_in(int x0, int y0, int w, int h)
     return true;
 }
 
-/* Hold the button at START TEST's place for @p secs on the page @p tab,
- * which is opened first. */
+/* Hold the button at START TEST's place for @p secs on the screen of card
+ * @p card, 0 TEST and 1 LIMIT RUN, which is shown first. */
 static inline void hold_start_on(int card, float secs)
 {
-    open_test();
+    if (card == 0) {
+        open_test();
+    } else {
+        open_limrun();
+    }
     const int y = SV_START_Y(card);
     ev(START_X, y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < (int)(secs * 50.0f + 0.5f); ++i) {
@@ -413,6 +417,10 @@ static inline void bench_on_ina(void)
 static inline bool card_line_reads(int k, int i, const char *text,
                                    ui_color_id_t col)
 {
+    /* Each card on its own screen. */
+    if (servo_screen_fn() != ((k == 0) ? SERVO_FN_TEST : SERVO_FN_LIMRUN)) {
+        go((k == 0) ? SERVO_FN_TEST : SERVO_FN_LIMRUN);
+    }
     scr->render(&cv, 0);
     want_fresh();
     const int y = SV_RUN_CARD_Y(k) + SV_RUN_LINE_DY

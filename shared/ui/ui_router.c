@@ -55,6 +55,9 @@ static struct {
     /* The screen that opened the one on top through k_openers, for its home
      * tag; SCREEN_COUNT when it was entered any other way. */
     ui_screen_id_t    opener;
+    /* The screen ui_router_goto() enters, while the old one's leave() runs;
+     * SCREEN_COUNT otherwise. */
+    ui_screen_id_t    leaving_to;
     uint32_t          nav_count;      /**< navigations since init           */
     uint32_t          dispatched;     /**< events handed to a screen        */
     ui_bench_status_t status;
@@ -157,23 +160,24 @@ static void guide_close(void);
 /*
  * The openers, each on a row of its own: a control on one screen that opens
  * another, whose home tag then returns to the opener.  OUTPUTS opens from the
- * TARGET rows of MOTOR & ESC and SERVO and from SETUP's OUTPUTS tile; SUPPLY
- * and SETUP from SERVO's caps and AS5600 buttons and from IMU's IMU SETTINGS;
- * WI-FI from UPDATES' button
- * and LOGS' WI-FI button.  SETUP's WI-FI tile needs no row: WI-FI's parent is
- * SETUP.
+ * TARGET row of MOTOR & ESC and from SETUP's OUTPUTS tile; SUPPLY from the
+ * caps button of SERVO's TEST; SETUP from the ANGLE SOURCE row of RUDDER's
+ * and RUDDER AUTO's settings lists and from IMU's IMU SETTINGS; WI-FI from
+ * UPDATES' button and LOGS' WI-FI button.  SETUP's WI-FI tile needs no row:
+ * WI-FI's parent is SETUP.
  * A screen with no row here, or entered from a screen not on its row, leaves
- * to its tile's parent (ui_router_parent()).
+ * to its tile's parent (ui_router_parent()): a SERVO function screen to the
+ * SERVO hub.
  */
 static const struct {
     ui_screen_id_t screen;
     ui_screen_id_t opener;
 } k_openers[] = {
     { SCREEN_OUTPUTS, SCREEN_MOTOR },
-    { SCREEN_OUTPUTS, SCREEN_SERVO },
     { SCREEN_OUTPUTS, SCREEN_SETUP },
-    { SCREEN_SUPPLY,  SCREEN_SERVO },
-    { SCREEN_SETUP,   SCREEN_SERVO },
+    { SCREEN_SUPPLY,  SCREEN_SERVO_TEST },
+    { SCREEN_SETUP,   SCREEN_SERVO_RUDDER },
+    { SCREEN_SETUP,   SCREEN_SERVO_RAUTO },
     { SCREEN_WIFI,    SCREEN_UPDATES },
     { SCREEN_WIFI,    SCREEN_LOGS },
     { SCREEN_SETUP,   SCREEN_IMU },
@@ -212,6 +216,14 @@ static const ui_screen_t *screen_for(ui_screen_id_t id)
     case SCREEN_FILES:    return files_screen();
     case SCREEN_LAYOUT:   return layout_screen();
     case SCREEN_IMU:      return imu_screen();
+    case SCREEN_SERVO_LIVE:   return servo_fn_screen(SERVO_FN_LIVE);
+    case SCREEN_SERVO_SWEEP:  return servo_fn_screen(SERVO_FN_SWEEP);
+    case SCREEN_SERVO_TEST:   return servo_fn_screen(SERVO_FN_TEST);
+    case SCREEN_SERVO_LIMRUN: return servo_fn_screen(SERVO_FN_LIMRUN);
+    case SCREEN_SERVO_RUDDER: return servo_fn_screen(SERVO_FN_RUDDER);
+    case SCREEN_SERVO_RAUTO:  return servo_fn_screen(SERVO_FN_RAUTO);
+    case SCREEN_SERVO_KST:    return servo_fn_screen(SERVO_FN_KST);
+    case SCREEN_SERVO_HITEC:  return servo_fn_screen(SERVO_FN_HITEC);
     default:              return overview_screen();
     }
 }
@@ -226,6 +238,7 @@ void ui_router_init(void)
 {
     memset(&s, 0, sizeof(s));
     s.opener = SCREEN_COUNT;
+    s.leaving_to = SCREEN_COUNT;
     for (int id = 0; id < SCREEN_COUNT; ++id) {
         const ui_screen_t *scr = screen_for((ui_screen_id_t)id);
         if (scr != NULL && scr->reset != NULL) {
@@ -249,9 +262,11 @@ void ui_router_goto(ui_screen_id_t id)
         return;
     }
     const ui_screen_t *old = screen_for(s.current);
+    s.leaving_to = id;
     if (old != NULL && old->leave != NULL) {
         old->leave();
     }
+    s.leaving_to = SCREEN_COUNT;
     /* Holds for this one entry: a tile, a strip's tab or a route of the
      * application that enters the screen later finds no opener. */
     s.opener = opens(s.current, id) ? s.current : SCREEN_COUNT;
@@ -278,12 +293,17 @@ void ui_router_goto(ui_screen_id_t id)
 
 ui_screen_id_t ui_router_current(void) { return s.current; }
 
+ui_screen_id_t ui_router_leaving_to(void) { return s.leaving_to; }
+
 bool ui_screen_not_covered(void) { return false; }
 
 ui_screen_id_t ui_router_parent(ui_screen_id_t id)
 {
     if (s.opener != SCREEN_COUNT && opens(s.opener, id)) {
         return s.opener;
+    }
+    if (servo_fn_of_screen(id) != SERVO_FN_HUB) {
+        return SCREEN_SERVO;
     }
     return settings_screen_opens(id) ? SCREEN_SETUP : SCREEN_OVERVIEW;
 }

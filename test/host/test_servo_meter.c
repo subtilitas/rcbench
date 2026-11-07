@@ -30,13 +30,13 @@ static bool marked(int x, int y)
 }
 
 /* Marks in LIVE's CURRENT reading, the line, the plot, and around them on
- * both cards: the MEASURED reading, the tag, the SET line, SPEED's row and
- * the left card away from the grip. */
+ * both cards: the MEASURED reading, the type pill, the SET line, SPEED's
+ * row and the left card away from the grip. */
 enum { MK_ROW = 0, MK_LINE, MK_PLOT, MK_MEASURED, MK_TAG, MK_SET, MK_SPEED,
        MK_LEFT, MK_COUNT };
 
 static const struct { int x, y; } k_mark[MK_COUNT] = {
-    { 516, 468 }, { 950, 80 }, { 950, 130 }, { 318, 468 }, { 700, 40 },
+    { 516, 406 }, { 950, 80 }, { 950, 130 }, { 318, 406 }, { 700, 332 },
     { 700, 198 }, { 700, 240 }, { 40, 300 },
 };
 
@@ -122,12 +122,12 @@ TEST_CASE(a_change_of_meter_repaints_the_row_the_line_and_the_plot)
                      (from_ina != to_ina) ? 1 : 4);
         }
     }
-    /* With the settings open over the left card the output card's line
-     * follows the meter all the same, and LIVE's CURRENT reading shows the
-     * meter in force once LIVE is back. */
+    /* With a run's settings open over the left card the output card's
+     * line follows the meter all the same, and LIVE's CURRENT reading shows
+     * the meter in force once LIVE is back. */
     fresh();
     two_buffers();
-    open_settings();
+    open_run_settings(0);
     rail_supply(6.0f, 0.4f);
     CHECK(both_whole());
     meter(SERVO_SOURCE_INA3221);
@@ -490,7 +490,7 @@ TEST_CASE(the_current_row_repaints_on_a_changed_digit_and_alone)
 }
 
 /* LIVE's CURRENT reading is LIVE's: a changed current paints nothing at its
- * place on PROGRAM's page or TEST's, and LIVE shows it once it is back. */
+ * place on KST's screen or TEST's, and LIVE shows it once it is back. */
 TEST_CASE(the_current_reading_paints_on_live_only)
 {
     for (int task = 0; task < 2; ++task) {
@@ -498,7 +498,7 @@ TEST_CASE(the_current_reading_paints_on_live_only)
         meter(SERVO_SOURCE_PDMINI);
         rail_supply(6.0f, 0.402f);
         if (task == 0) {
-            open_program();
+            open_kst();
         } else {
             open_test();
         }

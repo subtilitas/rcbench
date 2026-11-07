@@ -125,8 +125,8 @@ TEST_CASE(a_sweep_ends_on_the_dial_centre_release_disarm_and_leave)
     dial_at(30.0f, ARC_R - 20, &x, &y);
     const struct { int px, py; servo_cmd_kind_t kind; } by[] = {
         { 0, 0, SERVO_CMD_POSITION },          /* the dial, below */
-        { ARM_X + 40, BTN_Y, SERVO_CMD_CENTRE },
-        { ARM_X + ARM_W - 40, BTN_Y, SERVO_CMD_RELEASE },
+        { COL_X + 40, BTN_Y, SERVO_CMD_CENTRE },
+        { COL_X + COL_W - 40, BTN_Y, SERVO_CMD_RELEASE },
     };
     for (int k = 0; k < 3; ++k) {
         fresh();
@@ -215,7 +215,7 @@ TEST_CASE(a_changed_setting_starts_the_sweep_over)
     CHECK_EQ(c.sweep_span, 250u);
     /* TRAVEL limits it too: half the travel is half the sweep. */
     open_settings();
-    tap(ROW_L_X, ROW_Y(4));                    /* TRAVEL */
+    sl_tap(HL_TRAVEL);                    /* TRAVEL */
     keys("45");
     close_settings();
     frames(0.05f);
@@ -254,7 +254,7 @@ TEST_CASE(a_range_changed_while_it_sweeps_goes_with_its_own_amplitude)
     frames(0.2f);
     (void)last_cmd();
     open_settings();
-    tap(ROW_L_X, ROW_Y(4));                    /* TRAVEL */
+    sl_tap(HL_TRAVEL);                    /* TRAVEL */
     keys("45");
     const servo_cmd_t c = last_cmd();          /* before any tick */
     CHECK_EQ(c.kind, SERVO_CMD_SWEEP);
@@ -269,7 +269,7 @@ TEST_CASE(hold_keeps_the_output_where_it_has_got_to)
     fresh();
     servo_screen_set_armed(true);
     servo_screen_set_sweep(true);
-    tap(ARM_X + 1, SPEED_Y);                   /* SPEED 12%: 43deg/s */
+    tap(COL_X + 1, SPEED_Y);                   /* SPEED 12%: 43deg/s */
     sweep_go();
     frames(0.3f);                              /* the curve is near 58deg */
     const servo_cmd_t hold = pause_go();
@@ -283,7 +283,7 @@ static int speed_row_pixels(gfx_color_t col)
 {
     int n = 0;
     for (int y = SV_SPEED_ROW_Y; y < SV_SPEED_ROW_Y + 20; ++y) {
-        for (int x = ARM_X; x < ARM_X + ARM_W; ++x) {
+        for (int x = COL_X; x < COL_X + COL_W; ++x) {
             n += (fb[(size_t)y * W + x] == col) ? 1 : 0;
         }
     }
@@ -304,25 +304,25 @@ TEST_CASE(speed_says_when_it_limits_the_sweep)
     scr->render(&cv, 0);
     CHECK_EQ(speed_row_pixels(ui_theme_color(UI_C_WARN)), 0);   /* 100% */
 
-    tap(ARM_X + 1, SPEED_Y);                   /* SPEED's slowest */
+    tap(COL_X + 1, SPEED_Y);                   /* SPEED's slowest */
     scr->render(&cv, 0);
     CHECK(speed_row_pixels(ui_theme_color(UI_C_WARN)) > 100);
     CHECK_EQ(speed_row_pixels(ui_theme_color(UI_C_DANGER)), 0);
 
-    open_settings();
-    tap(TAB_X(PAGE_SWEEP), TAB_Y);             /* SWEEP */
-    tap(ROW_L_X, ROW_Y(1));                    /* SPEED, the rate */
-    keys("0.05");
+    /* SWEEP's list: SPEED, the rate, at 0.05 and 0.5Hz. */
+    go(SERVO_FN_SWEEP);
+    settings_set(SET_SERVO_TEST_HZ, 0.05f);
+    servo_invalidate();
     scr->render(&cv, 0);
     CHECK_EQ(speed_row_pixels(ui_theme_color(UI_C_WARN)), 0);
 
-    tap(ROW_L_X, ROW_Y(1));
-    keys("0.5");
+    settings_set(SET_SERVO_TEST_HZ, 0.5f);
+    servo_invalidate();
     scr->render(&cv, 0);
     CHECK(speed_row_pixels(ui_theme_color(UI_C_WARN)) > 100);
     close_settings();
 
-    tap(ARM_X + ARM_W - 1, SPEED_Y);           /* SPEED 100%: no slew */
+    tap(COL_X + COL_W - 1, SPEED_Y);           /* SPEED 100%: no slew */
     scr->render(&cv, 0);
     CHECK_EQ(speed_row_pixels(ui_theme_color(UI_C_WARN)), 0);
 }
@@ -510,14 +510,14 @@ static uint16_t slow_pause_acknowledged(bool raise, uint16_t *at_tap)
     fresh();
     servo_screen_set_armed(true);
     servo_screen_set_sweep(true);
-    tap(ARM_X + 1, SPEED_Y);                   /* SPEED's slowest */
+    tap(COL_X + 1, SPEED_Y);                   /* SPEED's slowest */
     sweep_go();
     frames(0.3f);
     const servo_cmd_t hold = pause_go();
     *at_tap = servo_screen_drawn();
     frames(0.1f);
     if (raise) {
-        tap(ARM_X + ARM_W - 1, SPEED_Y);       /* 100%: nothing sent */
+        tap(COL_X + COL_W - 1, SPEED_Y);       /* 100%: nothing sent */
         CHECK(servo_screen_paused());
         CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
     }
@@ -556,7 +556,7 @@ TEST_CASE(a_pause_with_feedback_holds_the_angle_the_servo_reports)
     CHECK(servo_screen_paused());
 
     open_settings();
-    tap(TRIM_UP_X, ROW_Y(3));
+    sl_step(HL_TRIM, +1);
     const servo_cmd_t c = last_cmd();
     CHECK_EQ(c.kind, SERVO_CMD_POSITION);
     CHECK_EQ(c.value_us, 1725u);
@@ -573,7 +573,7 @@ TEST_CASE(a_pause_replays_from_the_tap_when_feedback_goes)
     fresh();
     servo_screen_set_armed(true);
     servo_screen_set_sweep(true);
-    tap(ARM_X + 1, SPEED_Y);                   /* SPEED's slowest */
+    tap(COL_X + 1, SPEED_Y);                   /* SPEED's slowest */
     servo_screen_feedback(1500u, 0.2f, true);
     sweep_go();
     frames(0.25f);
@@ -744,7 +744,7 @@ TEST_CASE(a_change_during_a_pause_drain_holds_the_drawn_angle)
         fresh();
         servo_screen_set_armed(true);
         servo_screen_set_sweep(true);
-        tap(ARM_X + 1, SPEED_Y);               /* SPEED's slowest */
+        tap(COL_X + 1, SPEED_Y);               /* SPEED's slowest */
         if (fb_pass) {
             servo_screen_feedback(1500u, 0.2f, true);
         }
@@ -763,12 +763,12 @@ TEST_CASE(a_change_during_a_pause_drain_holds_the_drawn_angle)
             CHECK_EQ(at, 1620u);
         }
         open_settings();
-        tap(TRIM_UP_X, ROW_Y(3));
+        sl_step(HL_TRIM, +1);
         servo_cmd_t c = last_cmd();
         CHECK_EQ(c.kind, SERVO_CMD_POSITION);
         CHECK_EQ(c.value_us, at + 5u);
         frames(0.3f);
-        tap(TRIM_UP_X, ROW_Y(3));
+        sl_step(HL_TRIM, +1);
         c = last_cmd();
         CHECK_EQ(c.kind, SERVO_CMD_POSITION);
         CHECK_EQ(c.value_us, at + 10u);

@@ -693,9 +693,7 @@ void servo_screen_rate(servo_rate_state_t st, uint16_t hz)
     }
     s.rate_st = st;
     s.rate_hz = hz;
-    if (wb_task() == UI_WB_SETTINGS) {
-        ++s.ctrl_rev;   /* the OUTPUT page's note says it */
-    }
+    ++s.sl_rev;         /* the hub list's OUTPUT heading says it */
 }
 
 void servo_screen_set_commanded(float deg)

@@ -87,6 +87,10 @@ SOURCES = [
     "shared/ui/servo_rudder_auto_panel.c",
     "shared/ui/servo_rudder_flap.c",
     "shared/ui/servo_guide.c",
+    "shared/ui/servo_fn.c",
+    "shared/ui/servo_hub.c",
+    "shared/ui/servo_footer.c",
+    "shared/ui/servo_lists.c",
     # The programmer for KST and Chaservo servos SERVO opens, and the
     # core its model takes fields and limits from.
     "shared/ui/kst_panel.c",

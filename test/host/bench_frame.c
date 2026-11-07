@@ -484,7 +484,7 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
         supply_screen_set_model(true);
         supply_screen_set_output(true);
     } else if (servo) {
-        start = SCREEN_SERVO;
+        start = SCREEN_SERVO_LIVE;
     }
     /* The screens that carry no mode of their own: what one steady frame of
      * each costs once both framebuffers hold its chrome. */

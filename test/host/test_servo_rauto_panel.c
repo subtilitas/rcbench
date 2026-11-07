@@ -26,12 +26,8 @@
 /** @brief The drawn controls' font, 10 x 20. */
 #define CELL 10
 
-/** @brief A tap on RUDDER's tab, then AUTO. */
-static void to_auto(void)
-{
-    tap(SV_TAB_RUDDER_X, SV_TAB_Y);
-    tap(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);
-}
+/** @brief RUDDER AUTO's screen shown. */
+static void to_auto(void) { go(SERVO_FN_RAUTO); }
 
 /** @brief Whether two rectangles share a pixel. */
 static bool overlap(gfx_rect_t a, gfx_rect_t b)
@@ -51,17 +47,17 @@ static servo_cmd_kind_t taken_kind(void)
     return c.kind;
 }
 
-/* AUTO shows the box: LENGTH and the three drive buttons have no place,
- * the box's rows do; the readout and the ZERO row stay.  MANUAL, in
- * AUTO's place, brings them back.  Another task and back keeps the view. */
-TEST_CASE(auto_swaps_the_manual_controls_for_the_box_and_manual_brings_them_back)
+/* RUDDER AUTO shows the box: LENGTH and the three drive buttons have no
+ * place, the box's rows do; the readout and the ZERO row stay.  RUDDER
+ * shows the drive buttons and no box. */
+TEST_CASE(rudder_auto_shows_the_box_and_rudder_the_manual_controls)
 {
     fresh();
     scr->enter();
-    tap(SV_TAB_RUDDER_X, SV_TAB_Y);
+    go(SERVO_FN_RUDDER);
     CHECK(!rauto_shown());
     CHECK(rudder_rect(RUD_C_LENGTH).w > 0);
-    tap(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);
+    go(SERVO_FN_RAUTO);
     CHECK(rauto_shown());
     for (int k = RUD_C_LENGTH; k <= RUD_C_2000; ++k) {
         CHECK_EQ(rudder_rect((rudder_ctl_t)k).w, 0);
@@ -72,11 +68,9 @@ TEST_CASE(auto_swaps_the_manual_controls_for_the_box_and_manual_brings_them_back
         CHECK(rauto_rect((rauto_ctl_t)k).w > 0);
     }
     scr->render(&cv, 0);
-    tap(SV_TAB_LIVE_X, SV_TAB_Y);
+    go(SERVO_FN_LIVE);
     CHECK(!rauto_shown());
-    tap(SV_TAB_RUDDER_X, SV_TAB_Y);
-    CHECK(rauto_shown());
-    tap(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);
+    go(SERVO_FN_RUDDER);
     CHECK(!rauto_shown());
     CHECK(rudder_rect(RUD_C_1000).w > 0);
     scr->render(&cv, 0);
@@ -92,7 +86,6 @@ TEST_CASE(the_box_lies_in_the_left_column_clear_of_the_zero_row_and_the_stop_flo
     to_auto();
     const gfx_rect_t keep[] = { rudder_rect(RUD_C_ZERO),
                                 rudder_rect(RUD_C_RESET),
-                                rudder_rect(RUD_C_AUTO),
                                 rudder_readout_rect() };
     for (int k = RA_C_LO; k < RA_C_COUNT; ++k) {
         const gfx_rect_t r = rauto_rect((rauto_ctl_t)k);
@@ -374,7 +367,7 @@ TEST_CASE(the_targets_take_the_direction_the_run_measured)
 
 int main(void)
 {
-    RUN(auto_swaps_the_manual_controls_for_the_box_and_manual_brings_them_back);
+    RUN(rudder_auto_shows_the_box_and_rudder_the_manual_controls);
     RUN(the_box_lies_in_the_left_column_clear_of_the_zero_row_and_the_stop_floor);
     RUN(a_start_that_cannot_run_says_why_and_drives_nothing);
     RUN(every_string_fits);

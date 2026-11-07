@@ -55,9 +55,8 @@ static void ha_setup(bool classic)
     hl_settings(true, false);                /* SERVO: HITEC */
     (void)home_tag();
     hl_ms(200u);
-    tap(SV_TAB_RUDDER_X, SV_TAB_Y);
+    go(SERVO_FN_RAUTO);
     tap(ZERO_X, SV_RUD_ZERO_Y);
-    tap(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);
     CHECK(rauto_shown());
     hl_ms(100u);
 }

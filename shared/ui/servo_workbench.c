@@ -1,29 +1,16 @@
 /**
  * @file
- * @brief The SERVO screen as a workbench (ui_workbench.h): the task strip under
- * the band, TEST's page of run cards, and the output card's TARGET row.
+ * @brief The SERVO function screens' workbench (ui_workbench.h): the task
+ * each function draws on, the programmers' sessions, TEST's run card and
+ * the caps opener.
  *
- * The strip shows LIVE (the dial, SWEEP, CENTRE, RELEASE), TEST (the
- * AUTOMATIC TEST and LIMIT RUN cards), PROGRAM (the registry's SERVO rows,
- * prog_registry.h), RUDDER (a control surface's deflection,
- * servo_rudder_panel.c) and SETTINGS (OUTPUT, SWEEP, DUT).  A tile opens LIVE;
- * each task keeps its own state for the session -- SETTINGS its page, TEST
- * the run whose settings are open, PROGRAM its list's page and search --
- * and a tab switch is no navigation level.  A run card's SETTINGS opens
- * that run's settings in the page area, one level down: the home tag
- * (wb_back()) and the page's CLOSE climb from there back to TEST, and the
- * home tag from TEST to the menu.
- * A live row on PROGRAM opens its session over the left column, one level
- * down: the home tag and the session's CLOSE climb back to the list, and
- * a session whose port is in programming asks for LEAVE first.
- *
- * The TARGET row reads what the tester drives as `protocol pins` and is
- * the control that picks it, as MOTOR & ESC's is: a tap opens SETUP >
- * OUTPUTS on what the tester drives -- the PROG PORT entry with the port
- * as the TARGET setting, SERVO PWM otherwise -- where SERVO TESTER and
- * PORT PWM are set.  The row takes no tap under the TARGET setting's lock,
- * and the home tag there comes back here on the task the row was tapped
- * on.
+ * Each function screen fixes one task of the strip, which is never drawn
+ * (servo_fn.c): LIVE (the dial) for LIVE and SWEEP, TEST (the run card)
+ * for TEST and LIMIT RUN, RUDDER for RUDDER and RUDDER AUTO, PROGRAM for
+ * KST and HITEC, whose session shows over the left column.  A run card's
+ * SETTINGS opens that run's settings in the page area, one level down: the
+ * home tag (wb_back()) and the page's CLOSE climb from there back to the
+ * card.  A session whose port is in programming asks for LEAVE first.
  *
  * The screen is servo_screen.c; the state and the layout the files share
  * are servo_screen_int.h.
@@ -35,6 +22,7 @@
 #include <string.h>
 
 #include "esc_wire_panel.h"
+#include "hitec_panel.h"
 #include "kst_panel.h"
 #include "outputs_screen.h"
 #include "servo_limrun.h"
@@ -54,10 +42,9 @@
  * included after it may meet. */
 #include "servo_screen_int.h"
 
-/* SERVO's tasks. */
+/* The tasks SERVO's function screens draw on. */
 #define SERVO_TASKS (UI_WB_HAS(UI_WB_LIVE) | UI_WB_HAS(UI_WB_TEST) \
-                     | UI_WB_HAS(UI_WB_PROGRAM) | UI_WB_HAS(UI_WB_RUDDER) \
-                     | UI_WB_HAS(UI_WB_SETTINGS))
+                     | UI_WB_HAS(UI_WB_PROGRAM) | UI_WB_HAS(UI_WB_RUDDER))
 
 /* ---------------------------------------------------- PROGRAM's sessions */
 
@@ -119,7 +106,6 @@ void prog_leave(void)
     for (int i = 0; i < k; ++i) {
         prog_ps_leave(set[i]);
     }
-    prog_view_cancel(&s.prog_view);
 }
 
 void prog_cancel(void)
@@ -129,7 +115,6 @@ void prog_cancel(void)
     for (int i = 0; i < k; ++i) {
         prog_ps_cancel(set[i]);
     }
-    prog_view_cancel(&s.prog_view);
 }
 
 void prog_armed(bool armed)
@@ -150,199 +135,49 @@ void prog_tick(float dt_s)
     }
 }
 
-/* The IOmcu's capabilities, which the rows' states follow. */
-static uint16_t caps_now(void)
-{
-    return ui_router_status()->capabilities;
-}
-
-/**
- * @brief PROGRAM's list as it stands: SERVO's PROGRAM rows, the search
- *        applied.
- * @param l the list, filled
- */
-void prog_list_now(prog_list_t *l)
-{
-    size_t n = 0;
-    const prog_reg_row_t *rows = prog_registry(&n);
-    prog_list_build(l, rows, n, PROG_DEV_SERVO, UI_WB_PROGRAM,
-                    s.prog_view.query);
-}
-
 /* A session that holds its port and is not shown, with no limit run of
- * the screen's owning it, shows again: on PROGRAM, over the list.  The
- * way back to PWM is asked there and nowhere else. */
+ * the screen's owning it, shows again on its own screen, KST's or
+ * HITEC's: on another SERVO screen the router goes there, as PROGRAM's
+ * task came up before.  The way back to PWM is asked there and nowhere
+ * else. */
 void prog_follow_hold(void)
 {
-    const prog_page_set_t *set[PROG_LIST_MAX];
-    const int k = servo_sets(set);
-    for (int i = 0; i < k; ++i) {
-        if (prog_ps_holds(set[i]) && !prog_ps_is_open(set[i])) {
-            if (ui_wb_strip_select(&s.wb, UI_WB_PROGRAM)) {
-                ++s.strip_rev;
-            }
-            prog_ps_open(set[i]);
+    static const struct {
+        const prog_page_set_t *set;
+        servo_fn_t fn;
+    } k_sets[] = {
+        { &kst_panel_pages, SERVO_FN_KST },
+        { &hitec_panel_pages, SERVO_FN_HITEC },
+    };
+    for (size_t i = 0; i < sizeof(k_sets) / sizeof(k_sets[0]); ++i) {
+        if (!prog_ps_holds(k_sets[i].set) || prog_ps_is_open(k_sets[i].set)) {
+            continue;
         }
-    }
-}
-
-/* What PROGRAM's rows show, as one number: a change repaints the page. */
-static uint32_t prog_signature(void)
-{
-    size_t n = 0;
-    const prog_reg_row_t *rows = prog_registry(&n);
-    const uint16_t caps = caps_now();
-    uint32_t sig = (uint32_t)caps * 2654435761u;
-    for (size_t i = 0; i < n; ++i) {
-        const uint8_t pin = (rows[i].page_set != NULL)
-                                ? prog_ps_pin(rows[i].page_set)
-                                : PROG_REG_NO_PIN;
-        /* The port too: a row's detail names it, and it can move with the
-         * pin and the state unchanged (OUTPUTS to PORT 1, both GP13). */
-        sig = sig * 31u + (uint32_t)prog_reg_state(rows, n, i, caps) * 257u
-              + pin + (uint32_t)prog_reg_port(&rows[i]) * 65537u;
-    }
-    return sig;
-}
-
-void prog_page_follow(void)
-{
-    if (wb_task() != UI_WB_PROGRAM || prog_shown()) {
+        if (s.fn == (uint8_t)k_sets[i].fn) {
+            prog_ps_open(k_sets[i].set);
+        } else if (servo_screen_owns(ui_router_current())
+                   && ui_router_current() == servo_fn_screen_id(
+                          (servo_fn_t)s.fn)) {
+            ui_router_goto(servo_fn_screen_id(k_sets[i].fn));
+        }
         return;
     }
-    const uint32_t sig = prog_signature();
-    if (sig != s.prog_sig) {
-        s.prog_sig = sig;
-        ++s.ctrl_rev;
-    }
 }
 
-/* Row @p i tapped: a live row's session opens over the left column, one
- * level down; a dimmed row opens nothing, its reason drawn beside it. */
-static void prog_row_open(uint8_t i)
-{
-    size_t n = 0;
-    const prog_reg_row_t *rows = prog_registry(&n);
-    if (i >= n || prog_reg_state(rows, n, i, caps_now()) != PROG_ROW_LIVE) {
-        return;
-    }
-    /* A run would go on behind the session, stepping the rail and the
-     * position of the port CONNECT takes. */
-    test_end_now(SERVO_TEST_AB_OPERATOR);
-    close_panels();
-    prog_ps_open(rows[i].page_set);
-    servo_invalidate();
-}
+/* ------------------------------------------------------------ the tasks */
 
-void prog_page_down(const touch_event_t *evt)
-{
-    prog_list_t l;
-    prog_list_now(&l);
-    (void)prog_view_event(&s.prog_view, &l, evt, NULL);
-    ++s.ctrl_rev;
-}
-
-/* The rest of a press on PROGRAM's list. */
-static bool prog_page_rest(const touch_event_t *evt)
-{
-    if (s.prog_view.pressed == PROG_VIEW_P_NONE
-        || evt->point.id != s.prog_view.id) {
-        return false;
-    }
-    prog_list_t l;
-    prog_list_now(&l);
-    uint8_t row = 0;
-    const prog_view_ev_t r = prog_view_event(&s.prog_view, &l, evt, &row);
-    if (r == PROG_VIEW_ROW && wb_task() == UI_WB_PROGRAM && !modal_open()
-        && !prog_shown()) {
-        prog_row_open(row);
-    } else if (r == PROG_VIEW_SEARCH && wb_task() == UI_WB_PROGRAM) {
-        ui_textkey_open_search(&s.tk, overlay_area(), TR(SP_FIND_TITLE),
-                               s.prog_view.query, PROG_LIST_QUERY_MAX);
-        servo_invalidate();
-    }
-    ++s.ctrl_rev;
-    return true;
-}
-
-void prog_search_done(const char *text)
-{
-    snprintf(s.prog_view.query, sizeof(s.prog_view.query), "%s",
-             (text != NULL) ? text : "");
-    prog_view_top(&s.prog_view);
-    servo_invalidate();
-}
-
-void draw_prog_page(gfx_canvas_t *c)
-{
-    const gfx_rect_t a = page_area();
-    gfx_fill_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2,
-                  ui_theme_color(UI_C_PANEL));
-    size_t n = 0;
-    const prog_reg_row_t *rows = prog_registry(&n);
-    prog_list_t l;
-    prog_list_now(&l);
-    prog_view_render(&s.prog_view, &l, rows, n, caps_now(),
-                     s.prog_view.query, c);
-}
-
-/* ------------------------------------------------------------ the strip */
-
-/**
- * @brief ui_router_navigations() just after the TARGET row or an opener's
- *        button left this screen, or 0: the entry one navigation later is the
- *        way back.
- */
-static uint32_t s_opened_nav;
-
-/**
- * @brief The strip's tabs laid out again at SERVO's sizes, SV_TAB_W x
- *        SV_STRIP_H from (SV_STRIP_X, SV_STRIP_Y): the tasks, their order
- *        and their labels as ui_wb_strip_init() set them.
- */
-static void strip_widen(void)
-{
-    ui_tabs_t *t = &s.wb.tabs;
-    const int n = t->count;
-    ui_text_id_t ids[UI_TABS_MAX] = { (ui_text_id_t)0 };
-    for (int i = 0; i < n; ++i) {
-        ids[i] = (ui_text_id_t)t->text[i];
-    }
-    ui_tabs_init_text(t, ids, n,
-                      (gfx_rect_t){ SV_STRIP_X, SV_STRIP_Y,
-                                    (int16_t)(n * SV_TAB_W
-                                              + (n - 1) * SV_TAB_GAP),
-                                    SV_STRIP_H });
-}
-
-/** @brief The strip, the TARGET row and PROGRAM's list laid out; LIVE. */
+/** @brief The task strip at its start, LIVE, never drawn: the function
+ *         screens fix its task (servo_screen_show_fn()). */
 void wb_init(void)
 {
-    s_opened_nav = 0u;
-    ui_wb_strip_init(&s.wb, SERVO_TASKS, SV_STRIP_X, SV_STRIP_Y);
-    strip_widen();
+    ui_wb_strip_init(&s.wb, SERVO_TASKS, UI_WB_STRIP_X, UI_WB_STRIP_Y);
     s.run_list = RL_NONE;
-    ++s.strip_rev;
-    ui_target_row_init(&s.trow, (gfx_rect_t){ RC_X, TARGET_Y, RC_W,
-                                              TARGET_H });
-    prog_view_init(&s.prog_view, page_area());
     rudder_init();
 }
 
 void wb_enter(void)
 {
-    /* Back from a screen this one opened (the TARGET row, the caps and
-     * AS5600 buttons), with no screen in between: the task it was opened
-     * from.  Any other entry is a tile's, which opens LIVE. */
-    const bool back = s_opened_nav != 0u
-                      && ui_router_navigations() == s_opened_nav + 1u;
-    s_opened_nav = 0u;
-    if (!back) {
-        ui_wb_strip_open(&s.wb);
-    }
     ui_wb_strip_cancel(&s.wb);
-    ui_target_row_cancel(&s.trow);
-    ++s.strip_rev;
     servo_invalidate();
 }
 
@@ -351,10 +186,9 @@ void wb_leave(void)
     s.run_list = RL_NONE;
     rudder_cancel();
     rauto_cancel();
-    prog_view_cancel(&s.prog_view);
     ui_wb_strip_cancel(&s.wb);
-    ui_target_row_cancel(&s.trow);
-    ++s.strip_rev;
+    s.fp_pressed = FP_NONE;
+    ++s.fp_rev;
 }
 
 void wb_cancel(void)
@@ -362,8 +196,8 @@ void wb_cancel(void)
     rudder_cancel();
     rauto_cancel();
     ui_wb_strip_cancel(&s.wb);
-    ui_target_row_cancel(&s.trow);
-    ++s.strip_rev;
+    s.fp_pressed = FP_NONE;
+    ++s.fp_rev;
 }
 
 bool svs_covered(void)
@@ -374,17 +208,12 @@ bool svs_covered(void)
 bool wb_back(void)
 {
     /* Over a panel the tag closes the panel, as its CANCEL does, and the
-     * page under it stays.  In a session it is the session's back: an
-     * editor closes, the session closes to PROGRAM's list, or a port in
-     * programming asks for LEAVE and the session stays.  From a run's
-     * settings it climbs to TEST, from the brown-out walk's to the
-     * automatic test's. */
-    const prog_page_set_t *ps = prog_shown_set();
+     * page under it stays.  From a run's settings it climbs to the run's
+     * card, from the brown-out walk's to the automatic test's, from KST's
+     * EXPERT MODE to the session. */
     if (modal_open()) {
         close_panels();
-    } else if (ps != NULL) {
-        prog_ps_back(ps);
-    } else if (wb_task() == UI_WB_TEST && s.run_list != RL_NONE) {
+    } else if (s.run_list != RL_NONE) {
         s.run_list = (s.run_list == RL_BROWNOUT) ? RL_AUTO : RL_NONE;
     } else {
         return false;
@@ -393,13 +222,6 @@ bool wb_back(void)
     servo_invalidate();
     ++s.ctrl_rev;
     return true;
-}
-
-gfx_rect_t strip_area(void)
-{
-    const gfx_rect_t r = ui_wb_strip_rect(&s.wb);
-    return (gfx_rect_t){ (int16_t)(r.x - 3), (int16_t)(r.y - 3),
-                         (int16_t)(r.w + 6), (int16_t)(r.h + 6) };
 }
 
 /**
@@ -414,89 +236,34 @@ gfx_rect_t lim_start_rect(void)
                          RUN_BTN_H };
 }
 
-/*
- * Another task is shown.  A press on the page that went goes with it:
- * START's hold above all, which must not complete on a page out of sight.
- * The page is repainted whole.
- */
-static void task_changed(void)
-{
-    ov_let_go();
-    rudder_cancel();
-    rauto_cancel();
-    prog_view_cancel(&s.prog_view);
-    ui_hold_reset(&s.test_hold);
-    s.test_down = false;
-    ui_hold_reset(&s.lim_hold);
-    s.lim_down = false;
-    ++s.test_rev;
-    servo_invalidate();
-    ++s.ctrl_rev;
-}
-
-/*
- * The TARGET row tapped: SETUP > OUTPUTS, on what the row shows -- where
- * the IOmcu sends the tester's commands now (s.drive_target), not the
- * TARGET setting, which a write still pending or a port without a pin
- * leaves apart from it.  Programming port n: its PROG PORT entry, the
- * overview where the list has no such entry.  The standard outputs: SERVO
- * PWM.  A target not known or no link: the overview, as the row names
- * none.  The router leaves this screen for it, which switches the bench to
- * SAFE and ends a sweep or a test as any way out does (leave()); the row
- * takes the tap only under the TARGET setting's lock.
- */
-static void open_outputs(void)
-{
-    const uint8_t target = s.drive_target;
-    if (target == SERVO_SCREEN_TARGET_UNKNOWN
-        || target == SERVO_SCREEN_TARGET_NO_LINK) {
-        outputs_screen_open_on(0u);
-    } else if (target != 0u) {
-        outputs_screen_open_on_port((uint8_t)(target - 1u));
-    } else if (prog_shown()) {
-        /* A programmer asks for a port: SERVO TESTER is on this entry. */
-        outputs_screen_open_on_port(0u);
-    } else {
-        const outbind_proto_t *p = outbind_protos();
-        for (uint8_t i = 0; i < OUTBIND_PROTOS; ++i) {
-            if (p[i].driver == OUT_DRIVER_PWM
-                && p[i].role == OUT_ROLE_SURFACE) {
-                outputs_screen_open_on(i);
-                break;
-            }
-        }
-    }
-    ui_router_goto(SCREEN_OUTPUTS);
-    s_opened_nav = ui_router_navigations();
-}
-
 /**
  * @brief The caps button tapped: SUPPLY's LIMITS.  The router leaves this
- *        screen for it, and the home tag there comes back to this task.
+ *        screen for it, and the home tag there comes back to TEST.
  */
 void wb_open_caps(void)
 {
     ui_router_goto(SCREEN_SUPPLY);
     supply_screen_open_limits();
-    s_opened_nav = ui_router_navigations();
 }
 
 /**
- * @brief DUT's AS5600 button tapped: SENSORS on the AS5600 entry.  The router
- *        leaves this screen for it, and the home tag there comes back to DUT.
+ * @brief ANGLE SOURCE tapped in RUDDER's or RUDDER AUTO's list: SENSORS on
+ *        the source's entry, the AS5600's or the IMU's.  The router leaves
+ *        this screen for it, and the home tag there comes back here.
  */
 void wb_open_encoder(void)
 {
+    const int e = (enc_src() == SERVO_ANGLE_IMU) ? SENS_ENTRY_IMU
+                                                          : SENS_ENTRY_AS5600;
     ui_router_goto(SCREEN_SETUP);
-    settings_screen_open_on(SET_CAT_SENSORS, SENS_ENTRY_AS5600);
-    s_opened_nav = ui_router_navigations();
+    settings_screen_open_on(SET_CAT_SENSORS, e);
 }
 
 /**
- * @brief The caps button's and DUT's AS5600 button's press, where @p r holds
- *        the point.  They open another screen, as TARGET does: leaving
- *        switches the bench to SAFE and ends a sweep or a test, so they take
- *        no press under the TARGET setting's lock.
+ * @brief The caps button's press, where @p r holds the point.  It opens
+ *        another screen: leaving switches the bench to SAFE and ends a
+ *        sweep or a test, so it takes no press under the TARGET setting's
+ *        lock.
  * @param evt  the DOWN
  * @param r    the button
  * @param code the press's OP_ code
@@ -513,68 +280,25 @@ bool opener_down(const touch_event_t *evt, gfx_rect_t r, int code)
     return true;
 }
 
-bool wb_down(const touch_event_t *evt)
-{
-    const int x = evt->point.x, y = evt->point.y;
-    /* The strip, unless a panel or a session covers it. */
-    if (!modal_open() && !prog_shown()
-        && gfx_rect_contains(strip_area(), x, y)) {
-        if (!ui_wb_strip_pressed(&s.wb)) {
-            (void)ui_wb_strip_event(&s.wb, evt);
-            ++s.strip_rev;
-        }
-        return true;
-    }
-    if (ui_target_row_event(&s.trow, evt, target_locked_for(SET_SERVO_TARGET))
-        != UI_TARGET_NONE) {
-        ++s.ctrl_rev;
-        return true;
-    }
-    return false;
-}
-
 bool wb_rest(const touch_event_t *evt)
 {
-    if (prog_page_rest(evt) || rudder_rest(evt) || rauto_rest(evt)) {
-        return true;
-    }
-    if (ui_wb_strip_pressed(&s.wb) && evt->point.id == s.wb.tabs.press_id) {
-        if (evt->type == TOUCH_EVENT_UP) {
-            const bool changed = ui_wb_strip_event(&s.wb, evt);
-            ++s.strip_rev;
-            if (changed) {
-                task_changed();
-            }
-        }
-        return true;
-    }
-    const ui_target_ev_t r = ui_target_row_event(
-        &s.trow, evt, target_locked_for(SET_SERVO_TARGET));
-    if (r == UI_TARGET_NONE) {
-        return false;
-    }
-    if (r == UI_TARGET_TAP) {
-        open_outputs();
-        return true;
-    }
-    ++s.ctrl_rev;
-    return true;
+    return rudder_rest(evt) || rauto_rest(evt) || foot_rest(evt);
 }
 
-/* A press on TEST's page: a card's SETTINGS, or a START. */
+/* A press on TEST's or LIMIT RUN's page: its card's SETTINGS, its START,
+ * on TEST the caps. */
 void test_page_down(const touch_event_t *evt)
 {
     const int x = evt->point.x, y = evt->point.y;
-    if (opener_down(evt, caps_open_rect(), OP_OPEN_CAPS)) {
+    const int k = run_card_shown();
+    if (k == 0 && opener_down(evt, caps_open_rect(), OP_OPEN_CAPS)) {
         return;
     }
-    for (int k = 0; k < 2; ++k) {
-        if (gfx_rect_contains(run_set_rect(k), x, y)) {
-            ov_take(evt, OP_RUN_SET, k);
-            return;
-        }
+    if (gfx_rect_contains(run_set_rect(k), x, y)) {
+        ov_take(evt, OP_RUN_SET, k);
+        return;
     }
-    if (gfx_rect_contains(test_start_rect(), x, y)) {
+    if (k == 0 && gfx_rect_contains(test_start_rect(), x, y)) {
         ov_take(evt, OP_TEST_START, -1);
         /* A hold, unless a run is under way (a tap stops it), a step is
          * past 6.0V (a tap opens the HV warning, whose hold starts it), or
@@ -588,7 +312,7 @@ void test_page_down(const touch_event_t *evt)
         ++s.test_rev;
         return;
     }
-    if (gfx_rect_contains(lim_start_rect(), x, y)) {
+    if (k == 1 && gfx_rect_contains(lim_start_rect(), x, y)) {
         ov_take(evt, OP_LIM_START, -1);
         /* A hold, unless the run is under way (a tap stops it) or it
          * cannot run now (a tap says why). */
@@ -602,13 +326,6 @@ void test_page_down(const touch_event_t *evt)
 }
 
 /* ----------------------------------------------------------------- drawing */
-
-void draw_strip(gfx_canvas_t *c)
-{
-    const gfx_rect_t a = strip_area();
-    gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_BG));
-    ui_wb_strip_render(&s.wb, c);
-}
 
 /**
  * @brief The caps button: SUPPLY's caps in force, which a run's steps and a
@@ -628,7 +345,7 @@ void draw_caps_button(gfx_canvas_t *c)
 }
 
 /**
- * @brief TEST: the two run cards, then the caps.
+ * @brief TEST's run card and the caps, or LIMIT RUN's run card.
  * @param c the canvas
  */
 void draw_test_page(gfx_canvas_t *c)
@@ -638,7 +355,8 @@ void draw_test_page(gfx_canvas_t *c)
                   ui_theme_color(UI_C_PANEL));
     static const ui_text_id_t k_title[2] = { TX_SV_AUTO_TEST,
                                              TX_SV_ROW_LIM_MODE };
-    for (int k = 0; k < 2; ++k) {
+    const int k = run_card_shown();
+    {
         const gfx_rect_t r = run_card_rect(k);
         gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, 6,
                             ui_theme_color(UI_C_PANEL_SUNK));
@@ -652,40 +370,31 @@ void draw_test_page(gfx_canvas_t *c)
                            && s.ov_row == k,
                        true, SV_FONT_LABEL);
     }
-    draw_test_start(c);
-    draw_test_lines(c);
-    draw_lim_start(c);
-    draw_lim_lines(c);
-    draw_caps_button(c);
-}
-
-/*
- * What the tester drives as `protocol pins`, on the output card, in sight
- * on every task and under every panel and the programmer.  The programming
- * port is the rare case and takes the warning colour: the tester's
- * commands then do not reach the SERVO PWM outputs, which an armed bank
- * holds at their rest.  No pin, a binding not read, a target not known and
- * no link take it too.
- */
-void draw_target(gfx_canvas_t *c)
-{
-    char line[32];
-    const bool warn = servo_target_line(line, sizeof(line), s.drive_target,
-                                        s.drive_pin, s.drive_pwm, s.pins,
-                                        s.pins_known);
-    ui_target_row_render(&s.trow, c, TR(SV_TARGET), line, warn,
-                         target_locked_for(SET_SERVO_TARGET));
+    if (k == 0) {
+        draw_test_start(c);
+        draw_test_lines(c);
+        draw_caps_button(c);
+    } else {
+        draw_lim_start(c);
+        draw_lim_lines(c);
+    }
+    /* The run's box under the card: its lines while it runs and its
+     * verdict after, STOP or CLOSE. */
+    if (run_box_shown()) {
+        if (k == 0) {
+            draw_test_box(c);
+        } else {
+            draw_lim_box(c);
+        }
+    }
 }
 
 /* The protocol the SERVO PWM outputs are bound as: a name, the same in
  * every language. */
 #define TARGET_PROTOCOL "SERVO PWM"
-/** @brief Characters the TARGET row's value holds in the 10 x 20 face
- *         ui_target_row draws a row UI_TARGET_TALL_H or taller in: the
- *         column less the label, 268px, less 8px each side, 25 cells. */
-#define TARGET_CELLS ((unsigned)((RC_W - UI_TARGET_LABEL_W_TALL - 16) / 10))
-_Static_assert(TARGET_H >= UI_TARGET_TALL_H,
-               "the TARGET row is tall enough for the 10 x 20 face");
+/** @brief Characters the target's line holds in the 10 x 20 face: 25, the
+ *         PORT button's value and the footer's line under the name. */
+#define TARGET_CELLS 25u
 
 bool servo_target_line(char *out, size_t size, uint8_t target, uint8_t gpio,
                        bool pwm, uint64_t pins, bool known)
@@ -734,8 +443,6 @@ bool servo_target_line(char *out, size_t size, uint8_t target, uint8_t gpio,
 /* ------------------------------------------------------------ for tests */
 
 int servo_screen_task(void) { return (int)wb_task(); }
-
-int servo_screen_settings_page(void) { return (int)s.tabs.selected; }
 
 int servo_screen_run_settings(void) { return (int)s.run_list; }
 

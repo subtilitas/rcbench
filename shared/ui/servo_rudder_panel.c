@@ -11,9 +11,12 @@
  * direction of the commanded angle as LIVE's MEASURED reading is; the zero
  * and the MAX are kept in the source's own sign, so REVERSE flips what is
  * shown and keeps the zero.  The zero is taken from the source's count 0,
- * not from ENC CENTRE, so a new ENC CENTRE moves no deflection after ZERO.  The buttons post as the output card's CENTRE
- * does, through the screen's own seam: the output, ARM and the TARGET row
- * that names it are the output card's, the same on every task.
+ * not from ENC CENTRE, so a new ENC CENTRE moves no deflection after ZERO.
+ * The buttons post as the output card's CENTRE does, through the screen's
+ * own seam: the output, the PORT button that names it and the footer's ARM
+ * are the same on every function screen.  RUDDER AUTO is this card with
+ * AUTO's box in the place of LENGTH and the drive buttons, on a screen of
+ * its own.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -54,18 +57,18 @@
 
 _Static_assert(3 * RUD_BTN_W + 2 * RUD_GAP == RUD_W,
                "the three buttons fill the column");
-_Static_assert(3 * RUD_ZERO_W + 2 * RUD_GAP == RUD_W,
-               "ZERO, RESET MAX and AUTO fill the column");
+_Static_assert(2 * RUD_ZERO_W + RUD_GAP < RUD_W,
+               "ZERO and RESET MAX fit the column");
 _Static_assert(RUD_X + RUD_W <= PAD + LCARD_W - 10,
                "the column ends inside the card");
-_Static_assert(RUD_ST_Y + RUD_LINES * RUD_ST_P <= STOP_FLOOR,
-               "the state lines end above the alert band");
+_Static_assert(RUD_ST_Y + RUD_LINES * RUD_ST_P <= CARD_FLOOR,
+               "the state lines end above the footer");
 _Static_assert(RUD_NUM_Y + READ_NUM_H <= RUD_MAX_Y - 4,
                "the numerals end above the MAX lines");
 _Static_assert(RUD_FLAP_AY >= RUD_ZERO_Y + UI_TAP_MIN + 4,
                "the side view starts under the ZERO row");
-_Static_assert(RUD_FLAP_AY < STOP_FLOOR - 100,
-               "the side view ends at the alert band, at least 100px tall");
+_Static_assert(RUD_FLAP_AY < CARD_FLOOR - 100,
+               "the side view ends at the card's floor, at least 100px tall");
 
 /* ------------------------------------------------------------ the state */
 
@@ -222,8 +225,7 @@ gfx_rect_t rudder_rect(rudder_ctl_t k)
                              RUD_BTN_Y, RUD_BTN_W, UI_TAP_MIN };
     }
     case RUD_C_ZERO:
-    case RUD_C_RESET:
-    case RUD_C_AUTO: {
+    case RUD_C_RESET: {
         const int i = (int)k - (int)RUD_C_ZERO;
         return (gfx_rect_t){ (int16_t)(RUD_X + i * (RUD_ZERO_W + RUD_GAP)),
                              RUD_ZERO_Y, RUD_ZERO_W, UI_TAP_MIN };
@@ -249,7 +251,7 @@ gfx_rect_t rudder_flap_rect(void)
 {
     return (gfx_rect_t){ RUD_FLAP_AX, RUD_FLAP_AY,
                          (int16_t)(PAD + LCARD_W - 10 - RUD_FLAP_AX),
-                         (int16_t)(STOP_FLOOR - RUD_FLAP_AY) };
+                         (int16_t)(CARD_FLOOR - RUD_FLAP_AY) };
 }
 
 gfx_rect_t rudder_len_value_rect(void)
@@ -309,7 +311,7 @@ static void act(rudder_ctl_t k)
     geo_follow_source();
     /* AUTO measures from the zero and LENGTH as they stood at its start:
      * neither changes, nor MAX, while it runs. */
-    if (servo_rauto_running(&s.ra.run) && k != RUD_C_AUTO) {
+    if (servo_rauto_running(&s.ra.run)) {
         return;
     }
     switch (k) {
@@ -323,9 +325,6 @@ static void act(rudder_ctl_t k)
         break;
     case RUD_C_RESET:
         servo_rudder_reset_max(&s.rud.geo);
-        break;
-    case RUD_C_AUTO:
-        rauto_view(!s.ra.view);
         break;
     default:
         break;
@@ -345,8 +344,7 @@ void rudder_down(const touch_event_t *evt)
         if (k == RUD_C_1000 || k == RUD_C_CENTRE || k == RUD_C_2000) {
             drive((rudder_ctl_t)k);
         } else if (s.rud.pressed == RUD_C_NONE
-                   && !(servo_rauto_running(&s.ra.run)
-                        && k != RUD_C_AUTO)) {
+                   && !servo_rauto_running(&s.ra.run)) {
             s.rud.pressed  = (uint8_t)k;
             s.rud.press_id = evt->point.id;
             ++s.ctrl_rev;
@@ -629,10 +627,6 @@ static void draw_buttons(gfx_canvas_t *c)
                    SV_FONT_LABEL);
     ui_button_font(c, rudder_rect(RUD_C_RESET), TR(RUD_RESET_MAX), fill,
                    s.rud.pressed == RUD_C_RESET, idle, SV_FONT_LABEL);
-    ui_button_font(c, rudder_rect(RUD_C_AUTO),
-                   s.ra.view ? TR(RA_MANUAL) : TR(RA_AUTO), fill,
-                   s.rud.pressed == RUD_C_AUTO,
-                   !servo_rauto_running(&s.ra.run), SV_FONT_LABEL);
 }
 
 /**

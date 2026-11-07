@@ -276,8 +276,8 @@ TEST_CASE(disarm_stop_and_safe_end_the_drag_at_once)
         const uint16_t part = servo_screen_commanded();
         CHECK(part > 1500 - 230 && part < 1500 + 220);
         if (way == OUT_DISARM) {
-            ev(SV_RC_X + 40, SV_ARM_Y + 16, TOUCH_EVENT_DOWN, 2);
-            ev(SV_RC_X + 40, SV_ARM_Y + 16, TOUCH_EVENT_UP, 2);
+            ev(SV_ARM_X, SV_ARM_Y + 16, TOUCH_EVENT_DOWN, 2);
+            ev(SV_ARM_X, SV_ARM_Y + 16, TOUCH_EVENT_UP, 2);
             CHECK_EQ(last_cmd().kind, SERVO_CMD_DISARM);
         } else if (way == OUT_STOP) {
             servo_screen_cancel_arm();

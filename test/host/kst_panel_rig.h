@@ -45,14 +45,12 @@
 
 /* The SERVO screen's left card, as servo_screen.c hands it over. */
 static const gfx_rect_t AREA = { UI_MARGIN, UI_MARGIN, 620,
-                                  UI_BODY_H - 2 * UI_MARGIN };
+                                  436 - UI_MARGIN };
 
-/* The strip's PROGRAM, LIVE and SETTINGS tabs (servo_spots.h). */
-#define PROG_X SV_TAB_PROGRAM_X
-#define SETB_X SV_TAB_SETTINGS_X
-#define LIVE_X SV_TAB_LIVE_X
-#define BTN_Y  SV_TAB_Y
-#define ARM_X  (SV_RC_X + SV_RC_W / 2)
+/* The footer's SETTINGS and ARM (servo_spots.h). */
+#define SETB_X SV_FOOT_SET_X
+#define BTN_Y  SV_FOOT_Y
+#define ARM_X  SV_ARM_X
 #define ARM_Y  (SV_ARM_Y + SV_ARM_H / 2)
 
 enum { PG_SERVO = 0, PG_TUNE, PG_PULSE, PG_FAILSAFE, PG_LOCKED };
@@ -103,15 +101,23 @@ static inline void fresh_screen(void)
     settings_set(SET_KST_EXPERT, 1.0f);
     supply_screen()->reset();
     supply_screen_settings_loaded();
-    scr = servo_screen();
+    scr = servo_fn_screen(SERVO_FN_LIVE);
     scr->reset();
     rig_fresh();
     /* An IOmcu that reports its servo PWM bank, which the programming
-     * port is a channel of: PROGRAM's KST row is live. */
+     * port is a channel of: the KST tile is live. */
     ui_bench_status_t st = *ui_router_status();
     st.capabilities = LINK_CAP_SERVO_PWM;
     ui_router_set_status(&st);
     scr->enter();
+}
+
+/* Function @p fn's screen shown, as its enter() shows it, without a leave
+ * of the one before: KST opens its session. */
+static inline void go(servo_fn_t fn)
+{
+    servo_screen_show_fn(fn);
+    scr = servo_fn_screen(fn);
 }
 
 static inline void ev(int x, int y, touch_event_type_t t, uint8_t id)
@@ -365,15 +371,15 @@ static inline void screen_tap(int x, int y)
     scr->render(&cv, 0);
 }
 
-/* PROGRAM, then its KST and Chaservo row: the session opens one level
- * down, over the left column. */
+/* KST's screen: the session opens over the left column. */
 static inline void program_open(void)
 {
-    screen_tap(PROG_X, BTN_Y);
-    screen_tap(SV_PROG_ROW_X, SV_PROG_ROW_Y(0));
+    go(SERVO_FN_KST);
+    scr->tick(0.02f);
+    scr->render(&cv, 0);
 }
 
-/* The session's CLOSE: back to PROGRAM's list, or the question for LEAVE
+/* The session's CLOSE: back to the hub, or the question for LEAVE
  * while the port is in programming. */
 static inline void program_close(void)
 {

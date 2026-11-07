@@ -20,8 +20,6 @@
 
 /* Panel coordinates of the controls, from the suites' spots. */
 #define CAPS_TEST  SV_CAPS_X, (UI_BAND_H + SV_CAPS_TEST_Y)
-#define CAPS_DUT   SV_CAPS_X, (UI_BAND_H + SV_CAPS_DUT_Y)
-#define ENC_DUT    SV_CAPS_X, (UI_BAND_H + SV_ENC_OPEN_Y)
 /** @brief UPDATES' button that opens WI-FI: on the card, under its two lines. */
 #define UPD_NET    750, (UI_BAND_H + 120)
 /** @brief LOGS' WI-FI button. */
@@ -89,19 +87,27 @@ static void start(void)
     drain_servo();
 }
 
-/** @brief SERVO on task @p tab's x, from the tile. */
-static void servo_on(int tab)
+/** @brief SERVO's function @p fn, from the menu's tile and the hub's. */
+static void servo_on(servo_fn_t fn)
 {
     ui_router_goto(SCREEN_SERVO);
-    tap(tab, UI_BAND_H + SV_TAB_Y);
+    tap(SV_HUB_TILE_X(fn - 1), UI_BAND_H + SV_HUB_TILE_Y(fn - 1));
+    CHECK_EQ(ui_router_current(), servo_fn_screen_id(fn));
 }
 
-/** @brief SERVO's SETTINGS on DUT. */
-static void servo_on_dut(void)
+/** @brief RUDDER's SETTINGS list, from the hub. */
+static void servo_on_rudder_list(void)
 {
-    servo_on(SV_TAB_SETTINGS_X);
-    tap(SV_PAGE_X(2), UI_BAND_H + SV_PAGE_TAB_Y);
-    CHECK_EQ(servo_screen_settings_page(), 2);
+    servo_on(SERVO_FN_RUDDER);
+    tap(SV_FOOT_SET_X, UI_BAND_H + SV_FOOT_Y);
+    CHECK(servo_screen_list()->open);
+}
+
+/** @brief A tap on ANGLE SOURCE, RUDDER's list's third row. */
+static void tap_angle_source(void)
+{
+    const gfx_rect_t r = ui_setlist_row_rect(servo_screen_list(), 2);
+    tap(r.x + 60, UI_BAND_H + r.y + r.h / 2);
 }
 
 /** @brief UPDATES with no network saved and nothing running. */
@@ -126,34 +132,19 @@ TEST_CASE(the_caps_button_opens_limits_and_the_tag_returns_to_test)
     CHECK_EQ(supply_screen_settings_tab(), 1);
     ui_router_goto(SCREEN_OVERVIEW);
 
-    servo_on(SV_TAB_TEST_X);
+    servo_on(SERVO_FN_TEST);
     CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
     tap(CAPS_TEST);
     CHECK_EQ(ui_router_current(), SCREEN_SUPPLY);
     CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
     CHECK_EQ(supply_screen_settings_tab(), 0);
-    CHECK_EQ(ui_router_parent(SCREEN_SUPPLY), SCREEN_SERVO);
+    CHECK_EQ(ui_router_parent(SCREEN_SUPPLY), SCREEN_SERVO_TEST);
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_SUPPLY);
     CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
     tap_home();
-    CHECK_EQ(ui_router_current(), SCREEN_SERVO);
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO_TEST);
     CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
-}
-
-/* The same button on DUT comes back to DUT, task and page, after the list. */
-TEST_CASE(the_caps_button_on_dut_returns_to_dut)
-{
-    start();
-    servo_on_dut();
-    tap(CAPS_DUT);
-    CHECK_EQ(ui_router_current(), SCREEN_SUPPLY);
-    CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
-    tap_home();                                 /* the list */
-    tap_home();
-    CHECK_EQ(ui_router_current(), SCREEN_SERVO);
-    CHECK_EQ(servo_screen_task(), (int)UI_WB_SETTINGS);
-    CHECK_EQ(servo_screen_settings_page(), 2);
 }
 
 /* ARMED: no press, the bench stays ARMED and no DISARM is sent.  A bench that
@@ -162,13 +153,13 @@ TEST_CASE(the_caps_button_on_dut_returns_to_dut)
 TEST_CASE(the_caps_button_refuses_while_armed_and_a_slid_off_release)
 {
     start();
-    servo_on(SV_TAB_TEST_X);
+    servo_on(SERVO_FN_TEST);
     set_armed(true);
     drain_servo();
     const uint32_t nav = ui_router_navigations();
     tap(CAPS_TEST);
     CHECK_EQ(ui_router_navigations(), nav);
-    CHECK_EQ(ui_router_current(), SCREEN_SERVO);
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO_TEST);
     CHECK_EQ(servo_took().kind, SERVO_CMD_NONE);
 
     set_armed(false);
@@ -199,7 +190,7 @@ TEST_CASE(the_caps_button_refuses_while_armed_and_a_slid_off_release)
 TEST_CASE(a_keypad_open_on_supply_closes_before_the_tag_returns)
 {
     start();
-    servo_on(SV_TAB_TEST_X);
+    servo_on(SERVO_FN_TEST);
     tap(CAPS_TEST);
     CHECK_EQ(ui_router_current(), SCREEN_SUPPLY);
     const gfx_rect_t v = ui_setlist_row_part(
@@ -213,19 +204,20 @@ TEST_CASE(a_keypad_open_on_supply_closes_before_the_tag_returns)
     tap_home();                                 /* the list */
     CHECK_EQ(ui_router_current(), SCREEN_SUPPLY);
     tap_home();
-    CHECK_EQ(ui_router_current(), SCREEN_SERVO);
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO_TEST);
     CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
 }
 
 /* The opener holds for its one entry: SUPPLY's tile later goes home, and
- * opens LIVE; SERVO's tile opens LIVE. */
+ * opens LIVE; SERVO's tile opens the hub. */
 TEST_CASE(a_later_tile_finds_no_opener)
 {
     start();
-    servo_on(SV_TAB_TEST_X);
+    servo_on(SERVO_FN_TEST);
     tap(CAPS_TEST);
     tap_home();                                 /* the list */
-    tap_home();
+    tap_home();                                 /* TEST */
+    tap_home();                                 /* the hub */
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 
@@ -235,27 +227,30 @@ TEST_CASE(a_later_tile_finds_no_opener)
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
     ui_router_goto(SCREEN_SERVO);
-    CHECK_EQ(servo_screen_task(), (int)UI_WB_LIVE);
+    CHECK_EQ(servo_screen_fn(), SERVO_FN_HUB);
 }
 
-/* ------------------------------------------------------- AS5600, SERVO > DUT */
+/* ---------------------------------------------- AS5600, RUDDER's list */
 
-/* DUT's button opens SENSORS on the AS5600 entry with no tiles above it; the
- * tag comes back to DUT.  SETUP's tile later shows the tiles and climbs. */
-TEST_CASE(the_as5600_button_opens_its_entry_and_the_tag_returns_to_dut)
+/* ANGLE SOURCE on RUDDER's list opens SENSORS on the AS5600 entry with no
+ * tiles above it; the tag comes back to RUDDER, the list closed.  SETUP's
+ * tile later shows the tiles and climbs. */
+TEST_CASE(the_angle_source_row_opens_its_entry_and_the_tag_returns_to_rudder)
 {
     start();
-    servo_on_dut();
-    tap(ENC_DUT);
+    servo_on_rudder_list();
+    tap_angle_source();
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
     CHECK_EQ(settings_screen_category(), (int)SET_CAT_SENSORS);
     CHECK_EQ(sensors_pane_selected(), SENS_ENTRY_AS5600);
-    CHECK_EQ(ui_router_parent(SCREEN_SETUP), SCREEN_SERVO);
+    CHECK_EQ(ui_router_parent(SCREEN_SETUP), SCREEN_SERVO_RUDDER);
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO_RUDDER);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_RUDDER);
+    CHECK(!servo_screen_list()->open);
+
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_SERVO);
-    CHECK_EQ(servo_screen_task(), (int)UI_WB_SETTINGS);
-    CHECK_EQ(servo_screen_settings_page(), 2);
-
     tap_home();
     ui_router_goto(SCREEN_SETUP);
     CHECK_EQ(settings_screen_category(), -1);
@@ -272,12 +267,12 @@ TEST_CASE(the_as5600_button_opens_its_entry_and_the_tag_returns_to_dut)
 }
 
 /* An unsaved edit: the tag asks, STAY keeps the list, DISCARD goes back to
- * DUT, as the leave warning does from a tile. */
-TEST_CASE(an_unsaved_edit_asks_before_the_tag_returns_to_dut)
+ * RUDDER, as the leave warning does from a tile. */
+TEST_CASE(an_unsaved_edit_asks_before_the_tag_returns_to_rudder)
 {
     start();
-    servo_on_dut();
-    tap(ENC_DUT);
+    servo_on_rudder_list();
+    tap_angle_source();
     settings_set(SET_ENC_CENTRE, settings_get(SET_ENC_CENTRE) + 1.0f);
     CHECK(settings_dirty());
     tap_home();
@@ -289,29 +284,31 @@ TEST_CASE(an_unsaved_edit_asks_before_the_tag_returns_to_dut)
     tap_home();
     CHECK(settings_screen_warning());
     tap(WARN_DROP_X, WARN_Y);
-    CHECK_EQ(ui_router_current(), SCREEN_SERVO);
-    CHECK_EQ(servo_screen_settings_page(), 2);
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO_RUDDER);
     CHECK(!settings_dirty());
 }
 
-/* ARMED: no press and no DISARM. */
-TEST_CASE(the_as5600_button_refuses_while_armed)
+/* ARMED: RUDDER's SETTINGS opens no list, sends no DISARM and names why;
+ * a bench that arms under an open list closes it. */
+TEST_CASE(rudders_list_refuses_while_armed)
 {
     start();
-    servo_on_dut();
+    servo_on(SERVO_FN_RUDDER);
     set_armed(true);
     drain_servo();
     const uint32_t nav = ui_router_navigations();
-    tap(ENC_DUT);
-    tap(CAPS_DUT);
+    ui_router_set_alert(NULL);
+    tap(SV_FOOT_SET_X, UI_BAND_H + SV_FOOT_Y);
+    CHECK(!servo_screen_list()->open);
+    CHECK(ui_router_alert() != NULL);
     CHECK_EQ(ui_router_navigations(), nav);
     CHECK_EQ(servo_took().kind, SERVO_CMD_NONE);
-
     set_armed(false);
-    touch(ENC_DUT, TOUCH_EVENT_DOWN, 1);
+    tap(SV_FOOT_SET_X, UI_BAND_H + SV_FOOT_Y);
+    CHECK(servo_screen_list()->open);
     set_armed(true);
-    touch(ENC_DUT, TOUCH_EVENT_UP, 1);
-    CHECK_EQ(ui_router_navigations(), nav);
+    ui_router_tick(0.02f);
+    CHECK(!servo_screen_list()->open);
     set_armed(false);
 }
 
@@ -545,39 +542,6 @@ TEST_CASE(the_way_back_from_a_failed_upload_is_what_opened_wifi)
     }
 }
 
-/* ---------------------------------------------------- TARGET, the programmer */
-
-/* A programmer asks for a port: TARGET is one tap to the entry that holds
- * SERVO TESTER, and the home tag comes back to the session. */
-TEST_CASE(target_opens_the_tester_entry_from_a_programmer_asking_for_a_port)
-{
-    start();
-    static const uint8_t ports[LINK_PG_PORTS_MAX] = { 13u, 26u, 27u, 28u };
-    outputs_screen_set_prog_ports(4u, ports);
-    ui_bench_status_t st = *ui_router_status();
-    st.capabilities = LINK_CAP_SERVO_PWM;
-    ui_router_set_status(&st);
-    servo_screen_set_drive(0u, 2u, true);
-    ui_router_goto(SCREEN_SERVO);
-    tap(SV_TAB_PROGRAM_X, UI_BAND_H + SV_TAB_Y);
-    tap(SV_PROG_ROW_X, UI_BAND_H + SV_PROG_ROW_Y(0));
-    CHECK(kst_panel_is_open());
-    tap(SV_TARGET_X, UI_BAND_H + SV_TARGET_Y);
-    CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
-    CHECK_EQ(outputs_screen_port_shown(), 0);
-    CHECK_EQ(ui_router_parent(SCREEN_OUTPUTS), SCREEN_SERVO);
-    tap_home();
-    CHECK_EQ(ui_router_current(), SCREEN_SERVO);
-    CHECK_EQ(servo_screen_task(), (int)UI_WB_PROGRAM);
-
-    /* With no session TARGET opens SERVO PWM's entry, as the row reads. */
-    ui_router_goto(SCREEN_OVERVIEW);
-    servo_on(SV_TAB_TEST_X);
-    tap(SV_TARGET_X, UI_BAND_H + SV_TARGET_Y);
-    CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
-    CHECK_EQ(outputs_screen_port_shown(), -1);
-}
-
 /* ------------------------------------------------------------- the text rule */
 
 /*
@@ -644,13 +608,12 @@ TEST_CASE(every_tile_line_names_content_and_no_count)
 int main(void)
 {
     RUN(the_caps_button_opens_limits_and_the_tag_returns_to_test);
-    RUN(the_caps_button_on_dut_returns_to_dut);
     RUN(the_caps_button_refuses_while_armed_and_a_slid_off_release);
     RUN(a_keypad_open_on_supply_closes_before_the_tag_returns);
     RUN(a_later_tile_finds_no_opener);
-    RUN(the_as5600_button_opens_its_entry_and_the_tag_returns_to_dut);
-    RUN(an_unsaved_edit_asks_before_the_tag_returns_to_dut);
-    RUN(the_as5600_button_refuses_while_armed);
+    RUN(the_angle_source_row_opens_its_entry_and_the_tag_returns_to_rudder);
+    RUN(an_unsaved_edit_asks_before_the_tag_returns_to_rudder);
+    RUN(rudders_list_refuses_while_armed);
     RUN(the_network_button_opens_wifi_and_the_tag_returns_to_updates);
     RUN(wifi_levels_and_a_staged_image_climb_before_the_tag_returns);
     RUN(the_network_button_shows_only_with_no_network_and_nothing_running);
@@ -659,7 +622,6 @@ int main(void)
     RUN(wifi_returns_to_what_opened_it_this_time);
     RUN(wifi_has_no_strip_and_its_rows_start_under_the_band);
     RUN(the_way_back_from_a_failed_upload_is_what_opened_wifi);
-    RUN(target_opens_the_tester_entry_from_a_programmer_asking_for_a_port);
     RUN(no_text_names_a_path_but_the_listed_ones);
     RUN(every_tile_line_names_content_and_no_count);
     return test_summary("menu_openers");

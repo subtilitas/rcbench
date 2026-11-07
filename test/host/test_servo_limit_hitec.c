@@ -37,9 +37,8 @@ TEST_CASE(the_limit_run_card_offers_hitec_when_the_row_says_so_and_hides_servo_p
     CHECK(servo_screen_limit_pulses());
     tap(HL_PULSE_X, HL_ROW1_Y);
     /* The programmer opened last takes the row with it: the Hitec one on
-     * PROGRAM, then the KST one. */
-    open_program();
-    tap(SV_PROG_ROW_X, SV_PROG_ROW_Y(1));
+     * HITEC, then the KST one on KST. */
+    go(SERVO_FN_HITEC);
     hl_ms(100u);
     CHECK(hitec_panel_is_open());
     CHECK_EQ(servo_screen_limit_family(), SERVO_LIMRUN_FAM_HITEC_D);
@@ -88,9 +87,9 @@ TEST_CASE(a_hitec_start_is_refused_before_a_drive_where_it_cannot_run)
 static void hl_pulses(const char *min, const char *max)
 {
     open_settings();
-    tap(ROW_L_X, ROW_Y(2));                  /* PULSE MIN */
+    sl_tap(HL_MIN);                  /* PULSE MIN */
     keys(min);
-    tap(ROW_L_X, ROW_Y(3));                  /* PULSE MAX */
+    sl_tap(HL_MAX);                  /* PULSE MAX */
     keys(max);
     close_settings();
     hl_ms(100u);

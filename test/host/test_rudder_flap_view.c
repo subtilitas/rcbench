@@ -23,6 +23,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "servo_screen_rig.h"
+#include "ui_footer.h"
 
 #include "servo_rudder_auto_int.h"
 #include "servo_rudder_flap.h"
@@ -57,7 +58,7 @@ static void reading(int counts)
 static void zeroed(void)
 {
     encoder_on();
-    tap(SV_TAB_RUDDER_X, SV_TAB_Y);
+    go(SERVO_FN_RUDDER);
     reading(0);
     const gfx_rect_t z = rudder_rect(RUD_C_ZERO);
     tap(z.x + z.w / 2, z.y + z.h / 2);
@@ -106,17 +107,18 @@ static bool overlap(gfx_rect_t a, gfx_rect_t b)
            && b.y < a.y + a.h;
 }
 
-/* x 428 to 618, y 340 to 492: under the ZERO row, right of the state
- * lines, inside the card and above the alert band, on no control. */
+/* x 428 to 618, y 292 to 436: under the ZERO row, right of the state
+ * lines, inside the card down to its floor over the footer, on no
+ * control. */
 TEST_CASE(the_side_view_lies_beside_the_state_lines_under_the_zero_row)
 {
     fresh();
-    tap(SV_TAB_RUDDER_X, SV_TAB_Y);
+    go(SERVO_FN_RUDDER);
     const gfx_rect_t a = rudder_flap_rect();
     CHECK_EQ(a.x, 428);
-    CHECK_EQ(a.y, 340);
+    CHECK_EQ(a.y, 292);
     CHECK_EQ(a.x + a.w, 618);
-    CHECK_EQ(a.y + a.h, UI_ALERT_Y - UI_BAND_H - 4);
+    CHECK_EQ(a.y + a.h, UI_FOOTER_FLOOR);
     CHECK(!overlap(a, rudder_state_rect()));
     CHECK(!overlap(a, rudder_readout_rect()));
     CHECK(rudder_state_rect().x + rudder_state_rect().w + 10 == a.x);
@@ -144,9 +146,8 @@ TEST_CASE(the_flap_follows_the_deflection_shown_and_reverse)
     CHECK_EQ(at(-22.5f, l * 0.5f), ui_theme_color(UI_C_PANEL));
     CHECK_EQ(at(22.5f, l - 2.0f), cyan);
     open_settings();
-    tap(TAB_X(PAGE_OUTPUT), TAB_Y);
-    tap(ROW_R_X, ROW_Y(4));                     /* REVERSE */
-    tap(SV_TAB_RUDDER_X, SV_TAB_Y);
+    sl_step(HL_REVERSE, +1);               /* REVERSE */
+    go(SERVO_FN_RUDDER);
     float d = 0.0f;
     CHECK(rudder_defl(&d));
     CHECK_NEAR(d, -22.5f, 1e-3f);
@@ -178,7 +179,7 @@ TEST_CASE(without_a_reading_the_flap_is_never_drawn_live)
     CHECK_EQ(in_view(ui_theme_color(UI_C_ACCENT)), 0);
     /* Never a reading at all. */
     fresh();
-    tap(SV_TAB_RUDDER_X, SV_TAB_Y);
+    go(SERVO_FN_RUDDER);
     scr->render(&cv, 0);
     CHECK_EQ(in_view(ui_theme_color(UI_C_ACCENT)), 0);
     CHECK_EQ(at(0.0f, flap_len() * 0.5f), ui_theme_color(UI_C_GRID_STRONG));
@@ -249,13 +250,13 @@ TEST_CASE(auto_s_view_adds_the_targets_in_amber)
     scr->render(&cv, 0);
     const gfx_color_t amber = ui_theme_color(UI_C_WARN);
     CHECK_EQ(in_view(amber), 0);
-    tap(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);
+    go(SERVO_FN_RAUTO);
     CHECK(rauto_shown());
     scr->render(&cv, 0);
     CHECK(on_ray(-15.0f, amber) > 10);
     CHECK(on_ray(30.0f, amber) > 10);
     CHECK_EQ(on_ray(-30.0f, amber), 0);
-    tap(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);
+    go(SERVO_FN_RUDDER);
     scr->render(&cv, 0);
     CHECK_EQ(in_view(amber), 0);
 }
@@ -335,8 +336,7 @@ static int ink_in(int y0, int h)
 TEST_CASE(auto_s_three_lines_are_drawn_beside_the_view)
 {
     fresh();
-    tap(SV_TAB_RUDDER_X, SV_TAB_Y);
-    tap(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);
+    go(SERVO_FN_RAUTO);
     scr->render(&cv, 0);
     char b[96];
     CHECK_STR_EQ(rauto_line(1, b, sizeof(b)), "");

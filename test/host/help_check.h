@@ -80,8 +80,13 @@ static bool __attribute__((unused)) same(gfx_rect_t a, gfx_rect_t b)
 static void __attribute__((unused))
 check_pages(const ui_screen_t *sc, const char *what)
 {
-    /* PREV and NEXT where page 1 has them, on every page. */
+    /* PREV and NEXT where page 1 has them, on every page.  A state that
+     * offers no page has the band show no "?": nothing to check (SERVO's
+     * function screens while ARMED, whose DISARM either dock covers). */
     const bool armed = ui_router_status()->armed;
+    if (ui_help_count(sc, armed) == 0) {
+        return;
+    }
     ui_help_page_t p0;
     if (!ui_help_page(sc, armed, 0, &p0)) {
         T_FAIL("%s: no page 1", what);

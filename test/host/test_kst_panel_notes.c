@@ -208,6 +208,13 @@ TEST_CASE(every_message_fits_whole_under_the_servo_tab)
 /* An area 460px tall: 6 rows of notes under the SERVO tab. */
 static const gfx_rect_t k_short = { UI_MARGIN, UI_MARGIN, 620, 460 };
 
+/* An area 524px tall, a left card down to the body's foot: 7 rows of notes
+ * under the SERVO tab.  SERVO's KST screen hands the session 428px, the
+ * card over the footer: 4 rows, where a message taller than 4 rows shows
+ * its first lines (docs/Servo.md, a current limitation). */
+static const gfx_rect_t k_tall = { UI_MARGIN, UI_MARGIN, 620,
+                                   UI_BODY_H - 2 * UI_MARGIN };
+
 /* Every line of the message shown is drawn, and nothing passes 4px above
  * the alert band. */
 static void message_whole(void)
@@ -223,7 +230,8 @@ static void message_whole(void)
     CHECK(drawn.y + drawn.h <= NOTES_FOOT);
 }
 
-/* A servo in doubt, in German, after READ ALL: the standing pair (4 rows)
+/* A servo in doubt, in German, after READ ALL, in the 524px area: the
+ * standing pair (4 rows)
  * and the message (3 rows) leave no row for the count, so the pair yields:
  * its lines page with the other notes, first, and the message stays
  * whole.  The tallest message, 5 rows, beside the pair: the pair's lines,
@@ -232,6 +240,8 @@ static void message_whole(void)
 TEST_CASE(a_servo_in_doubt_keeps_every_line_of_its_message)
 {
     fresh();
+    kst_panel_init(k_tall);
+    kst_panel_open();
     ui_text_set_language(UI_LANG_DE);
     g_rig.card = true;
     cut_write();

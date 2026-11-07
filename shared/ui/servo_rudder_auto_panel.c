@@ -48,12 +48,12 @@
 #define RA_START_Y (CARD_Y + 292)        /**< START. */
 #define RA_LINE_Y (CARD_Y + 348)         /**< The first line. */
 #define RA_LINE_GAP 4                    /**< Between two lines, px. */
-/** @brief The room the lines take, down to the alert band: 88px. */
-#define RA_LINES_H (STOP_FLOOR - RA_LINE_Y)
+/** @brief The room the lines take, down to the card's floor: 80px. */
+#define RA_LINES_H (CARD_FLOOR - RA_LINE_Y)
 
 _Static_assert(2 * RA_HALF_W + RA_GAP == RA_W, "two halves fill the column");
 _Static_assert(RA_LINES_H >= RA_LINES * 20 + (RA_LINES - 1) * RA_LINE_GAP,
-               "three lines of one row each fit above the alert band");
+               "three lines of one row each fit above the footer");
 _Static_assert(RA_START_Y + UI_TAP_MIN + 8 <= RA_LINE_Y,
                "START ends above the lines");
 
