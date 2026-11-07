@@ -51,6 +51,9 @@ enum {
     LK_BUSY,        /**< a report still on its way to the card         */
     LK_TARGET,      /**< OUTPUTS with no SERVO PWM output bound        */
     LK_METER,       /**< the INA3221 channel watching the target       */
+    LK_PD_HV,       /**< the PD mini off, set past 6.0V, and the hold
+                         to switch it on: only OUTPUT ON's HV warning
+                         does.  Before the rail, which it leaves dead   */
     LK_5V,          /**< the carrier's PROG 5V off                     */
     LK_RAIL,        /**< the servo rail under 3.0V or not read         */
     LK_PWM,         /**< the port's pulse off, or a session holding it */
@@ -59,9 +62,6 @@ enum {
     LK_PROG,        /**< the programmer, and the supply it switches    */
     LK_PD_LOW,      /**< the PD mini set under 4.8V: lim_prog_why()
                          names it only once its output is on            */
-    LK_PD_HV,       /**< the PD mini off, set past 6.0V, and the hold
-                         to switch it on: only OUTPUT ON's HV warning
-                         does                                           */
     LK_COUNT        /**< the count                                     */
 };
 
