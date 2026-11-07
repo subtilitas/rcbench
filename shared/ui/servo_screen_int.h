@@ -1580,6 +1580,13 @@ static inline float enc_deg_now(void)
  */
 const char *svs_angle_text(char *buf, size_t n, float deg, bool plus);
 
+/* A finger on RUDDER AUTO's ARM + START before it fires, or its sequence
+ * under way: the output it arms is the one shown when the hold began. */
+static inline bool svs_start_pending(void)
+{
+    return s.ra.down || svs_seq_busy();
+}
+
 /* Armed, asked to arm, or a finger on ARM, or the bench armed for the
  * motor: the programmer takes no port. */
 static inline bool bench_arming(void)

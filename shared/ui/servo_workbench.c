@@ -460,7 +460,7 @@ bool servo_screen_arm_asked(void)
 
 bool servo_screen_arm_held(void)
 {
-    return s.arm_down;
+    return s.arm_down || svs_start_pending();
 }
 
 bool servo_screen_target_locked(void)

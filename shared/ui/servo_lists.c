@@ -444,7 +444,7 @@ const char *svs_list_refused(void)
         return NULL;
     }
     if (s.gate.armed || s.gate.arm_asked || s.arm_down || s.sweeping
-        || servo_test_running(&s.test) || servo_limrun_running(&s.lim)
+        || svs_start_pending() || servo_test_running(&s.test) || servo_limrun_running(&s.lim)
         || servo_rauto_running(&s.ra.run)) {
         return TR(FOOT_SETTINGS_SAFE);
     }

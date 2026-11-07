@@ -78,9 +78,17 @@ static inline bool live_shown(void)
 /* --- servo_settings_panel.c's side, which the workbench calls ----------- */
 
 /* Whether the TARGET row and PORT PWM are locked: ARMED, a sweep, a run,
- * the programmer holding the port (servo_settings_panel.c).  @p id is
+ * the programmer holding the port, a finger on a start hold or the ARM +
+ * START sequence under way (servo_settings_panel.c).  @p id is
  * SET_SERVO_TARGET or SET_SERVO_PORT_PWM. */
 bool target_locked_for(setting_id_t id);
+/**
+ * @brief target_locked_for() less a start hold's finger and the ARM + START
+ *        sequence: what the sequence itself may switch.
+ * @param id SET_SERVO_TARGET or SET_SERVO_PORT_PWM; false for any other
+ * @return true while the bench locks it
+ */
+bool target_locked_by_bench(setting_id_t id);
 /* The pages of rows, their presses (ov_down()) included. */
 void draw_rows_page(gfx_canvas_t *c);
 

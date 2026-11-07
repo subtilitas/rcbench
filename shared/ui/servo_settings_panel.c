@@ -383,7 +383,7 @@ static void open_keypad(int target, const char *title, const char *unit,
  * test or a sweep: one that went on would step and record a servo that
  * gets no pulse.  STOP and DISARM end those.
  */
-bool target_locked_for(setting_id_t id)
+bool target_locked_by_bench(setting_id_t id)
 {
     if (id != SET_SERVO_TARGET && id != SET_SERVO_PORT_PWM) {
         return false;
@@ -405,6 +405,17 @@ bool target_locked_for(setting_id_t id)
     return s.gate.armed || s.sweeping || servo_test_running(&s.test)
            || servo_limrun_running(&s.lim) || servo_rauto_running(&s.ra.run)
            || prog_holds();
+}
+
+/*
+ * A finger on a start hold before it fires, or the ARM + START sequence
+ * under way, locks both too: the hold arms the output shown when it began.
+ */
+bool target_locked_for(setting_id_t id)
+{
+    return target_locked_by_bench(id)
+           || ((id == SET_SERVO_TARGET || id == SET_SERVO_PORT_PWM)
+               && svs_start_pending());
 }
 
 bool target_locked(const ov_row_t *r)

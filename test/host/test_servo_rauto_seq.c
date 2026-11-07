@@ -13,6 +13,7 @@
  * - armed_has_500ms_and_a_refused_arm_ends_all_off
  * - a_pd_mini_off_is_switched_on_by_the_hold
  * - a_tap_on_the_hold_during_the_sequence_ends_it_all_off
+ * - a_finger_on_arm_start_locks_port_target_and_pwm
  *
  * SPDX-License-Identifier: MIT
  */
@@ -177,6 +178,63 @@ TEST_CASE(a_tap_on_the_hold_during_the_sequence_ends_it_all_off)
     carrier_done();
 }
 
+/* A second finger while ARM + START is held, and while its sequence runs:
+ * PORT opens nothing, TARGET and PORT PWM read locked, so the hold arms
+ * the output shown when it began.  With the finger lifted, or the sequence
+ * ended, PORT opens again.  An open PORT list takes no START press. */
+TEST_CASE(a_finger_on_arm_start_locks_port_target_and_pwm)
+{
+    carrier_safe_off(600u);
+    const int all = 1 + (int)LINK_PG_PORTS_MAX;
+    CHECK(!servo_screen_arm_held());
+    CHECK(!servo_screen_port_pwm_locked());
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 1);
+    ra_ms(500u);
+    CHECK(servo_screen_arm_held());
+    CHECK(prog_choice_locked());
+    CHECK(servo_screen_target_locked());
+    CHECK(servo_screen_port_pwm_locked());
+    ev(SV_PORT_X, SV_PORT_Y, TOUCH_EVENT_DOWN, 2);
+    ev(SV_PORT_X, SV_PORT_Y, TOUCH_EVENT_UP, 2);
+    CHECK_EQ(servo_screen_port_choices(), -1);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 1);
+    ra_ms(100u);
+    CHECK(!servo_screen_arm_held());
+    CHECK(!servo_screen_port_pwm_locked());
+    ev(SV_PORT_X, SV_PORT_Y, TOUCH_EVENT_DOWN, 2);
+    ev(SV_PORT_X, SV_PORT_Y, TOUCH_EVENT_UP, 2);
+    CHECK_EQ(servo_screen_port_choices(), all);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 1);
+    ra_ms(500u);
+    CHECK(!servo_screen_arm_held());
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 1);
+
+    ra.p5_task = false;
+    carrier_done();
+    carrier_safe_off(600u);
+    CHECK_EQ(servo_screen_port_choices(), -1);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 1);
+    ra_ms(2100u);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 1);
+    CHECK(svs_seq_busy());
+    CHECK(servo_screen_arm_held());
+    CHECK(servo_screen_target_locked());
+    ev(SV_PORT_X, SV_PORT_Y, TOUCH_EVENT_DOWN, 2);
+    ev(SV_PORT_X, SV_PORT_Y, TOUCH_EVENT_UP, 2);
+    CHECK_EQ(servo_screen_port_choices(), -1);
+    CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 1 + (int)RIG_PORT);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 3);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 3);
+    ra_ms(1500u);
+    CHECK(!svs_seq_busy());
+    CHECK(!servo_screen_arm_held());
+    ev(SV_PORT_X, SV_PORT_Y, TOUCH_EVENT_DOWN, 2);
+    ev(SV_PORT_X, SV_PORT_Y, TOUCH_EVENT_UP, 2);
+    CHECK_EQ(servo_screen_port_choices(), all);
+    ra.p5_task = false;
+    carrier_done();
+}
+
 int main(void)
 {
     RUN(on_the_carrier_one_hold_switches_port_pwm_and_5v_arms_and_starts);
@@ -184,5 +242,6 @@ int main(void)
     RUN(armed_has_500ms_and_a_refused_arm_ends_all_off);
     RUN(a_pd_mini_off_is_switched_on_by_the_hold);
     RUN(a_tap_on_the_hold_during_the_sequence_ends_it_all_off);
+    RUN(a_finger_on_arm_start_locks_port_target_and_pwm);
     return test_summary("servo_rauto_seq");
 }

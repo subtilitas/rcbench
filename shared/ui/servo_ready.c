@@ -383,7 +383,7 @@ static void name_failure(const char *refused)
  */
 static void apply(const servo_seq_do_t *d, const char *refused)
 {
-    if (d->set_pwm && !target_locked_for(SET_SERVO_PORT_PWM)) {
+    if (d->set_pwm && !target_locked_by_bench(SET_SERVO_PORT_PWM)) {
         settings_set(SET_SERVO_PORT_PWM, 1.0f);
         settings_request_save();
     }

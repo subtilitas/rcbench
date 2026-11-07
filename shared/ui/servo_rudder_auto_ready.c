@@ -213,7 +213,7 @@ bool rauto_seq_fixes(const char *why)
         return prog5v_box_live();
     }
     if (why == TR(SV_LIM_PWM_OFF)) {
-        return !target_locked_for(SET_SERVO_PORT_PWM);
+        return !target_locked_by_bench(SET_SERVO_PORT_PWM);
     }
     /* The pulse comes on while SAFE once PROG 5V reads ON: the read-back
      * waits for it. */
