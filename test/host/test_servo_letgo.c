@@ -22,6 +22,8 @@
  * SPDX-License-Identifier: MIT
  */
 
+/* SWEEP's screen: its button is the one the cases press. */
+#define SERVO_RIG_FN SERVO_FN_SWEEP
 #include "servo_screen_rig.h"
 
 /*
@@ -175,6 +177,7 @@ TEST_CASE(commands_from_a_let_go_pause_are_stale)
     CHECK(!servo_cmd_stale(&ended, &disarm));
     CHECK(ended.on);                           /* not a drive command */
     servo_screen_released(g_hold_seq);
+    go(SERVO_FN_LIVE);                         /* CENTRE is LIVE's */
     tap(COL_X + 40, BTN_Y);                    /* CENTRE, after the pause */
     const servo_cmd_t centre = last_cmd();
     CHECK_EQ(centre.kind, SERVO_CMD_CENTRE);
@@ -247,6 +250,7 @@ TEST_CASE(a_drag_after_pause_outlives_the_let_go)
 
     /* CENTRE the same way. */
     paused_on_n(&hold);
+    go(SERVO_FN_LIVE);                         /* CENTRE is LIVE's */
     tap(COL_X + 40, BTN_Y);
     const servo_cmd_t centre = last_cmd();
     CHECK_EQ(centre.kind, SERVO_CMD_CENTRE);

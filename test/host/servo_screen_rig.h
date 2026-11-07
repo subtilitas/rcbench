@@ -162,6 +162,9 @@ static inline void hero_want(const char *t, gfx_color_t col)
  *  @p text, its unit left off, in @p col. */
 static inline bool row_reads(const char *text, ui_color_id_t col)
 {
+    if (servo_screen_fn() != SERVO_FN_LIVE) {
+        go(SERVO_FN_LIVE);          /* the reading is LIVE's */
+    }
     scr->render(&cv, 0);
     want_fresh();
     gfx_fill_rect(&want_cv, CUR_X, CUR_Y, CUR_W, CUR_H,
@@ -174,13 +177,39 @@ static inline bool row_reads(const char *text, ui_color_id_t col)
     return same_in(fb, want_fb, CUR_X, CUR_Y, CUR_W, CUR_H);
 }
 
+/**
+ * @brief The output card with the meter's line and plot in view: KST's,
+ *        the line's own screen while LIVE, SWEEP, RUDDER, TEST, LIMIT RUN
+ *        and RUDDER AUTO show READY rows in its place.  Shown without a
+ *        leave, as go() shows it.
+ * @return the function shown before, for card_back()
+ */
+static inline servo_fn_t card_on(void)
+{
+    const servo_fn_t was = servo_screen_fn();
+    if (was != SERVO_FN_KST && was != SERVO_FN_HITEC) {
+        go(SERVO_FN_KST);
+    }
+    return was;
+}
+
+/** @brief The function card_on() found shown, back. @param was it */
+static inline void card_back(servo_fn_t was)
+{
+    if (servo_screen_fn() != was) {
+        go(was);
+    }
+}
+
 /** @brief Buffer 0 drawn, and whether the line over the plot reads the name
  * @p label, @p lab_w px wide, and the three readings, the current in
- * @p a_col. */
+ * @p a_col: on KST's output card (card_on()). */
 static inline bool line_reads(const char *label, int lab_w, const char *v,
                        const char *a, ui_color_id_t a_col, const char *w)
 {
+    const servo_fn_t was = card_on();
     scr->render(&cv, 0);
+    card_back(was);
     want_fresh();
     gfx_fill_rect(&want_cv, RAIL_X, LINE_Y, RAIL_W, LINE_H,
                   ui_theme_color(UI_C_PANEL));

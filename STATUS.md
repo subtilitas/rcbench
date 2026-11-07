@@ -427,7 +427,7 @@ goes from a function screen to the hub and from the hub to the menu, and the hub
 nothing (`test_servo_hub`). KST and HITEC are grey with their reason while the IOmcu does
 not report the capability or another session holds the port, from one table
 (`prog_registry.h`, `test_prog_registry`). Every function screen has the footer name and
-port line, ARM and SETTINGS, and an output card whose PORT button names the target as
+port line, ARM and SETTINGS, and a PORT button over the right card that names the target as
 `protocol pins` and opens the choice of OUTPUTS and the 4 programming ports, locked while ARMED or ARM
 is asked, and while the programmer holds the port (`test_servo_port_button`,
 `test_servo_workbench`). No list, page of rows or PORT list opens while a finger holds
@@ -448,18 +448,20 @@ The PD mini's samples show when SETUP enables it, `supply_sim_t`'s with a SIMULA
 not. A current is signed and shown in hundredths of an amp, a window with a sample at an end
 of the range in the warning colour, a reading that did not arrive as dashes; the row's value
 is repainted by itself when its digits or colour change (`test_servo_meter`; host suite
-only). START TEST on its card on TEST runs the automatic test (`shared/servo/servo_test.c`):
+only). HOLD 2s: ARM + START in TEST's footer arms the bench and runs the automatic test
+(`shared/servo/servo_test.c`, the sequence `servo_test_ready.c` and `servo_start_seq.c`), the
+READY card naming each part that refuses it, every end of a run SAFE (`test_servo_test_ready`):
 the supply stepped through 4.8 and 6.0V, and 7.4 and 8.4V with HV SERVO on (session only,
 through the HV warning's 2s hold), idle, moving and holding current and the travel time at
 each, a brown-out walk from 5.0V, or the cap if lower, down by STEP to LOWEST VOLTAGE (0.1
-to 1.0V and 2.0 to 4.8V, 0.2V and 3.0V by default, up to 31 voltages; set on the page the
-automatic test's BROWN-OUT row opens and kept in NVS; `test_servo_brownout` at the ranges'
-ends, a floor off the grid, at or above the start and under the supply's lowest set point, a
-cap under 5.0V; `test_servo_brownout_page` for the page, its keypads, CLOSE and the home
-tag, the settings over a restart and a run started from the screen), and `ATESTnnn.CSV` and
+to 1.0V and 2.0 to 4.8V, 0.2V and 3.0V by default, up to 31 voltages; set under BROWN-OUT
+on TEST's 17-row SETTINGS list and kept in NVS; `test_servo_brownout` at the ranges' ends, a
+floor off the grid, at or above the start and under the supply's lowest set point, a cap
+under 5.0V; `test_servo_brownout_page` for the list's rows, their keypads and the heading's
+walk line, the settings over a restart and a run started from the screen), and `ATESTnnn.CSV` and
 `ATESTnnn.TXT` written to `USER/LOGS` by the `runlog` task.
 
-A run reads one meter from its start to its end, the servo rail's at START TEST: the PD
+A run reads one meter from its start to its end, the servo rail's at that start: the PD
 mini's readings, or, while the INA3221 is the meter and the supply is the PD mini, CH1's
 50ms windows (mean current, the highest and lowest 1ms sample, the bus voltage at the load
 side of the shunt and its lowest sample), with the supply read for its state only
@@ -506,7 +508,7 @@ RUDDER (`shared/ui/servo_rudder_panel.c`, `shared/servo/servo_rudder.c`) shows t
 source's angle, the AS5600's or the IMU's, as a control surface's deflection from ZERO in
 0.1°, with LENGTH (0 or 10 to 500mm, `rud_len_mm`) the trailing edge's travel L x sin in
 0.1mm, the largest deflection each side until ZERO or RESET MAX, and drives 1000us, CENTRE
-and 2000us and takes the knob only while ARMED, its PORT button the output card's
+and 2000us and takes the knob only while ARMED, its PORT button over the READY rows
 (`test_servo_rudder`, `test_servo_rudder_panel`, `test_rudder_layout`; host suite only). Its
 side view draws the surface at the deflection shown, -90 to +90° with a fixed flap of 62px,
 beyond that at ±90°, dim on the neutral line without a reading, with the MAX and, in AUTO's
@@ -536,6 +538,11 @@ and switches every output off (`test_servo_start_seq`, `test_servo_ready`,
 LIMIT RUN has the same READY card from `shared/ui/servo_limit_ready.c`, nine rows from
 `lim_blocked()`'s checks, and the same hold; the run ends SAFE, the PROG 5V kept
 (`test_servo_limrun_ready`, `test_servo_limrun_seq`; host suite only).
+LIVE, SWEEP and RUDDER show READY rows in the output card's place (PORT, SUPPLY, ARM; ANGLE
+and ZERO on RUDDER), and their ARM runs the same steps where PORT PWM, PROG 5V or the PD
+mini reads off: never the PD mini past 6.0V or beside a rail an INA3221 reads at 3.0V or
+more, DISARM and a failed step all off, PROG 5V kept between SERVO screens
+(`shared/ui/servo_drive_ready.c`, `test_servo_drive_ready`; host suite only).
 
 AUTO and the LIMIT RUN program a Hitec servo through the Hitec programmer's run seam when
 the LIMIT RUN settings' SERVO row reads HITEC, LEFT END and RIGHT END in counts from 0xC2 on
@@ -1277,7 +1284,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 499 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 501 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1390,7 +1397,7 @@ The host suite is 499 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_imu`, `test_imu_filter`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_kst`,
-`test_servo_rauto_panel`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_start_seq`,
+`test_servo_rauto_panel`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_drive_ready`, `test_servo_start_seq`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_rudder_flap`, `test_rudder_flap_view`.
@@ -2444,7 +2451,7 @@ The router gives each contact one owner from its press to its release, and a con
 leaves the screen body by the status band is released at its last point in the body; tested
 on the host through the tracker. That release, and the one the tracker makes for a contact
 more than 120px from its previous report, is marked (`TOUCH_FLAG_NO_TAP`) and activates no
-control except OUTPUT OFF and START TEST while a servo test runs. STOP and DISARM act on the
+control except OUTPUT OFF. STOP, DISARM and STOP TEST in TEST's footer act on the
 press; a press the router keeps from the screen (band, STOP, home tag, chip, alert band)
 releases the screen's contacts the same way, so a dial or slider drag ends at it and the
 dial's filter commands nothing after it (`test_nav_stop`).

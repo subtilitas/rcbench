@@ -136,6 +136,7 @@ wenn einer der beiden ausfällt.
 | Ein INA3221-Kanal über seiner Grenze | SAFE | die Versorgung des Ports aus, nach einem laufenden Schreiben | aus; die eines Ports nach seinem Schreiben, höchstens 10000ms | das Panel, beim Lesen von `OVER` alle 200ms, mit einer Konsolenzeile je Kanal ([Bildschirme](Screens-de.md#sensors-die-ina3221-bausteine)); der IOmcu für das Schreiben |
 | Die 5V der Programmierports auf dem Carrier fallen unter dem ON des Panels aus: 2 neue INA3221-Fenster unter 3000mV, 500ms oder mehr nach dem ON ([Carrier, PROG 5V ausgefallen](Carrier-de.md#prog-5v-ausgefallen)) | SAFE | keine offen: die 5V einer Sitzung werden nicht beobachtet | aus | das Panel, mit einer Warnung und einer Konsolenzeile; der IOmcu für das OFF von PROG_SUPPLY |
 | Eine Stromgrenze eines Laufs: BLOCKIERT AB, Konstantstrom, 3,0A, 1,0A für 400ms | SAFE | keine offen: eine Suche ist ARMED | aus | der SERVO-Bildschirm |
+| Ein Schritt der Startfolge von SERVO scheitert auf LIVE, SWEEP, RUDER oder RUDER AUTO: PORT-PWM, PROG 5V oder der PD mini ohne Rückmeldung in 1000ms, nicht ARMED in 500ms, ein Tippen auf das Halten, ein STOP ([Servo: AUTO-Endpoints](Servo-de.md#auto-endpoints)) | SAFE | keine offen: ARM ist gesperrt, solange eine Sitzung einen Port hält | aus; PROG 5V ebenfalls aus | der SERVO-Bildschirm (`svs_all_off()`) |
 | Der eigene Schutz des PD mini, sein absinkender Eingang, keine Antwort, kein Messwert, ein abgewiesenes oder losgelassenes ON, ein Ausgang oder Sollwert, der nicht übernommen wird, ein ON über verlorene Touch-Ereignisse hinweg | SAFE | die Versorgung des Ports aus, nach einem laufenden Schreiben | aus, wo er sich schalten lässt: der Schutz des Moduls und ein absinkender Eingang sofort, auch während eines Schreibens; der Rest nach dem Schreiben eines Ports, höchstens 10000ms | der Treiber des IOmcu für den Ausgang, das Panel für SAFE |
 | Ein KST- oder Hitec-Vorgang endet in einer Störung des Servos oder der Leitung (`kst_link_outcome_fault()`, `hitec_prog_ses_fault()`), oder die ESC_WIRE-Page meldet `FAULT` oder erreicht `NOT_BACK` (`esc_link_faults()`) | schon SAFE: eine Sitzung läuft auf einem Prüfstand in SAFE | die Versorgung des Ports aus; der Vorgang ist zu Ende | aus | das Panel (`prog_faults_follow()`) |
 
@@ -290,7 +291,9 @@ Programmierports am 5V-Abwärtswandler M7, geschaltet über GPIO 21 (Link
 4.32, die Page PROG_SUPPLY). Der PD mini speist nur die Servoschienen. Die
 Servoprogrammierungen für KST und Hitec schalten die 5V für eine Sitzung ein und aus,
 und das Feld PROG 5V auf SERVO und SUPPLY schaltet sie von Hand
-([Carrier, Das Feld PROG 5V](Carrier-de.md#das-feld-prog-5v)). Auf dem Carrier lesen die Servoprogrammierungen den PD mini
+([Carrier, Das Feld PROG 5V](Carrier-de.md#das-feld-prog-5v)). ARM auf
+LIVE, SWEEP und RUDER von SERVO schaltet sie ein, bevor der Prüfstand auf
+ARMED schaltet, und DISARM dort schaltet sie aus. Auf dem Carrier lesen die Servoprogrammierungen den PD mini
 nicht aus. Sein Sollwert führt weder unter 4,8V zu einer Ablehnung von
 VERBINDEN noch bestimmt er die Spannung beim Aus- und Einschalten. Die
 Grenzen auf SUPPLY gelten nur für die Servoschienen, nicht für VERBINDEN. Sind die
@@ -832,10 +835,10 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   der Tracker für einen Kontakt erzeugt, der mehr als 120px von der Stelle
   des vorigen Reports entfernt liegt. Ein markiertes Release beendet einen
   Druck oder einen Drag und löst kein Bedienelement aus: Der Finger hat dort
-  nicht abgehoben. Zwei Bedienelemente nehmen es trotzdem an, weil sie etwas
-  anhalten: AUSGANG AUS und START TEST, solange ein Servotest läuft. STOP
-  und DISARM auf MOTOR & ESC und auf SERVO haben schon beim Aufsetzen
-  gewirkt, und ihr Release tut nichts.
+  nicht abgehoben. Ein Bedienelement nimmt es trotzdem an, weil es etwas
+  anhält: AUSGANG AUS. STOP, DISARM auf MOTOR & ESC und auf SERVO und TEST
+  BEENDEN in der Fußleiste von TEST haben schon beim Aufsetzen gewirkt, und
+  ihr Release tut nichts.
   STOP und das Home-Feld reagieren auf einen Druck, der auf ihnen aufsetzt:
   Ein Kontakt, der vom Bildschirm auf STOP rutscht, drückt nichts. Ein Druck,
   den der Router der Seite vorenthält (auf dem Band, auf STOP, dem Home-Feld,

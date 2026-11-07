@@ -2,7 +2,7 @@
  * A bench for the SERVO screen's runs (servo_rig.h): the servo model on the
  * output, SUPPLY's switch and set points as the panel carries them, the
  * INA3221's CH1 windows under the servo rail's meter, the output encoder,
- * and the files a run writes.  START TEST's place, the meter and the
+ * and the files a run writes.  TEST's ARM + START, the meter and the
  * expected-picture buffer go with it.  Taken by the suites of
  * servo_screen_rig.h, test_servo_test_panel.c and test_servo_limit_panel.c.
  *
@@ -31,19 +31,16 @@
 #include "ui_widgets.h"
 
 /*
- * START TEST on TEST's AUTOMATIC TEST card, LIMIT RUN's ARM + START in the
- * footer (servo_spots.h); the box on TEST's card and its button, from
- * servo_screen_int.h; HV SERVO at the right column's row 2 of the AUTOMATIC
- * TEST card's settings, from servo_settings_panel.c.
+ * TEST's and LIMIT RUN's HOLD 2s: ARM + START in the footer's middle slot
+ * (servo_spots.h); the run's box on TEST and its button, from
+ * servo_screen_int.h.
  */
-#define START_X  SV_START_X
-#define START_Y  SV_START_Y(0)
+#define START_X  SV_TEST_HOLD_X
+#define START_Y  SV_TEST_HOLD_Y
 #define LIM_START_X SV_HOLD_X
 #define LIM_START_Y SV_HOLD_Y
 #define BOXBTN_X SV_BOX_BTN_X
 #define BOXBTN_Y SV_BOX_BTN_Y
-#define HV_ROW_X LROW_X(0)
-#define HV_ROW_Y LROW_Y(2)
 
 /* A bench for the screen's run: the servo model on the output, SUPPLY's
  * switch and set points as the panel would carry them, and a reading every
@@ -57,7 +54,8 @@ static struct {
     uint16_t cmd;
     bool     released;
     unsigned disarms;          /* DISARMs posted                      */
-    unsigned arms;             /* ARMs posted, each answered ARMED    */
+    bool     no_arm;           /* the IOmcu leaves an ARM unanswered */
+    unsigned arms;             /* ARMs posted and answered ARMED      */
     bool     stepped;          /* a position went out with no slew   */
     float    set_v_max;        /* the highest set point while it ran */
     unsigned opens, opens_txt, csv, txt, ends;
@@ -189,9 +187,12 @@ static inline void bench_frames(uint32_t ms)
                 bench.cmd = 1500u;
                 bench.released = true;
                 bench.disarms += (sc.kind == SERVO_CMD_DISARM) ? 1u : 0u;
-            } else if (sc.kind == SERVO_CMD_ARM) {
-                /* The IOmcu answers an ARM, as ARM + START's steps ask
-                 * it. */
+                /* The IOmcu answers a DISARM: SAFE. */
+                if (sc.kind == SERVO_CMD_DISARM) {
+                    servo_screen_set_armed(false);
+                }
+            } else if (sc.kind == SERVO_CMD_ARM && !bench.no_arm) {
+                /* And an ARM, as ARM + START's steps ask it: ARMED. */
                 ++bench.arms;
                 servo_screen_set_armed(true);
             }
@@ -307,9 +308,23 @@ static inline bool both_whole_in(int x0, int y0, int w, int h)
     return true;
 }
 
-/* Hold START for @p secs on the screen of card @p card, which is shown
- * first: 0 START TEST on TEST's AUTOMATIC TEST card, 1 LIMIT RUN's HOLD
- * 2s: ARM + START in the footer's middle slot. */
+/* The IOmcu's answer to an ARM the screen asked, as ARM + START's steps
+ * ask it: the command taken, then ARMED. */
+static inline void bench_answer_arm(void)
+{
+    if (!servo_screen_arm_asked() || bench.no_arm) {
+        return;
+    }
+    servo_cmd_t c;
+    while (servo_screen_take(&c)) {
+    }
+    ++bench.arms;
+    servo_screen_set_armed(true);
+}
+
+/* Hold the run's start for @p secs on the screen of card @p card, 0 TEST
+ * and 1 LIMIT RUN, which is shown first: each one's HOLD 2s: ARM + START in
+ * the footer's middle slot. */
 static inline void hold_start_on(int card, float secs)
 {
     if (card == 0) {
@@ -317,8 +332,8 @@ static inline void hold_start_on(int card, float secs)
     } else {
         open_limrun();
     }
-    const int x = (card == 0) ? START_X : SV_HOLD_X;
-    const int y = (card == 0) ? SV_START_Y(0) : SV_HOLD_Y;
+    const int x = (card == 0) ? START_X : LIM_START_X;
+    const int y = (card == 0) ? START_Y : LIM_START_Y;
     ev(x, y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < (int)(secs * 50.0f + 0.5f); ++i) {
         if (bench.ina) {
@@ -331,12 +346,12 @@ static inline void hold_start_on(int card, float secs)
         bench.now += 20u;
         servo_screen_clock(bench.now);
         scr->tick(0.02f);
+        bench_answer_arm();
     }
     ev(x, y, TOUCH_EVENT_UP, 1);
 }
 
-/* Hold START TEST for @p secs on TEST's AUTOMATIC TEST card, TEST shown
- * first. */
+/* Hold ARM + START for @p secs on TEST, TEST shown first. */
 static inline void hold_start(float secs)
 {
     hold_start_on(0, secs);
@@ -419,21 +434,17 @@ static inline void bench_on_ina(void)
     bench_frames(200u);
 }
 
-/* Buffer 0 drawn, and whether line @p i of card @p k (its state line is
- * 0) reads @p text in @p col on the card's fill, and nothing else: the
- * AUTOMATIC TEST card's lines in the 10 x 20 face 22px apart, the LIMIT
- * RUN card's in the 8 x 16 face 18px apart under its output line. */
-static inline bool card_line_reads(int k, int i, const char *text,
-                                   ui_color_id_t col)
+/* Buffer 0 drawn, and whether line @p i of TEST's AUTOMATIC TEST card (its
+ * state line is 0) reads @p text in @p col on the card's fill, and nothing
+ * else: the lines in the 10 x 20 face 22px apart. */
+static inline bool card_line_reads(int i, const char *text, ui_color_id_t col)
 {
-    /* Each card on its own screen. */
-    if (servo_screen_fn() != ((k == 0) ? SERVO_FN_TEST : SERVO_FN_LIMRUN)) {
-        go((k == 0) ? SERVO_FN_TEST : SERVO_FN_LIMRUN);
+    if (servo_screen_fn() != SERVO_FN_TEST) {
+        go(SERVO_FN_TEST);
     }
     scr->render(&cv, 0);
     want_fresh();
-    const int y = SV_RUN_CARD_Y(k) + SV_RUN_LINE_DY
-                  + ((k == 0) ? 22 * i : 20 * i + 20 - 2);
+    const int y = SV_RUN_CARD_Y + SV_TEST_LINE_DY + 22 * i;
     const gfx_font_t *f = &gfx_font_10x20;
     const int h = f->height;
     const gfx_color_t bg = fb[(size_t)y * W + 20u];

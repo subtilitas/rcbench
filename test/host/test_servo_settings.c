@@ -325,10 +325,10 @@ TEST_CASE(reverse_and_the_pulse_widths_reshape_the_command)
     CHECK_EQ(c.min_us, 900);
 }
 
-/* SWEEP's rows and a run's own rows are kept and saved; SUPPLY's caps are
- * not edited here (their home is SUPPLY > SETTINGS), and the run's
- * settings close to TEST with the home tag.  The hub's list holds the
- * device under test's NAME and REPORT. */
+/* SWEEP's rows and TEST's rows are kept and saved by the list's SAVE;
+ * SUPPLY's caps are not edited here (their home is SUPPLY > SETTINGS),
+ * and TEST's list closes to TEST with the home tag.  The hub's list holds
+ * the device under test's NAME and REPORT. */
 TEST_CASE(the_sweep_and_run_settings_are_kept)
 {
     fresh();
@@ -343,19 +343,21 @@ TEST_CASE(the_sweep_and_run_settings_are_kept)
     CHECK_NEAR(settings_get(SET_SERVO_TEST_HZ), 1.25f, 1e-4f);
     CHECK(settings_dirty());                   /* until the list's SAVE */
 
-    open_run_settings(0);                      /* AUTOMATIC TEST's */
-    CHECK_EQ(servo_screen_run_settings(), 1);
-    tap(LROW_X(0), LROW_Y(0));                 /* STEP 4.8V: a switch */
+    open_run_settings(0);                      /* TEST's list */
+    CHECK(servo_screen_list()->open);
+    sl_step(TL_STEP_48, +1);                   /* STEP 4.8V: a switch */
     CHECK(!settings_get_bool(SET_SERVO_STEP_48));
-    tap(LROW_X(1), LROW_Y(1));                 /* IDLE CURRENT */
-    keys("0.3");
+    sl_part(TL_IDLE, UI_SL_PART_VALUE);        /* IDLE CURRENT */
+    sl_keys("0.3");
     CHECK_NEAR(settings_get(SET_SERVO_IDLE_MAX), 0.3f, 1e-4f);
-    tap(LROW_X(1), LROW_Y(0));                 /* STALL AT */
-    keys("1.5");
+    sl_part(TL_STALL, UI_SL_PART_VALUE);       /* STALL AT */
+    sl_keys("1.5");
     CHECK_NEAR(settings_get(SET_SERVO_STALL_A), 1.5f, 1e-4f);
     CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 21.0f, 1e-4f);
+    CHECK(settings_dirty());                   /* until the list's SAVE */
+    tap_settings();                            /* SAVE */
     CHECK(home_tag());
-    CHECK_EQ(servo_screen_run_settings(), 0);
+    CHECK(!servo_screen_list()->open);
     CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
     CHECK(!home_tag());                        /* TEST climbs no further */
 
@@ -374,10 +376,10 @@ TEST_CASE(the_sweep_and_run_settings_are_kept)
 TEST_CASE(the_overlay_leaves_the_right_card_working)
 {
     /* ARM, CENTRE and RELEASE work beside a panel over the left column,
-     * the voltage's keypad; the dial under it does not.  CENTRE is a
-     * position, taken on an armed bench. */
+     * PORT's list; the dial under it does not.  CENTRE is a position,
+     * taken on an armed bench. */
     fresh();
-    tap(SUP_V_X, SUP_ROW_Y);
+    tap(SV_PORT_X, SV_PORT_Y);
     CHECK(scr->covered());
     arm_press();
     hold_for(2.2f);
@@ -391,7 +393,8 @@ TEST_CASE(the_overlay_leaves_the_right_card_working)
     tap(x, y);                                 /* on the keypad, not the dial */
     CHECK(servo_screen_commanded() == 1500);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
-    key(UI_KEY_CANCEL);
+    tap(CH_CANCEL_X, CH_CANCEL_Y);
+    CHECK(!scr->covered());
 }
 
 TEST_CASE(the_tag_is_red_while_a_dangerous_profile_is_in_force)
@@ -447,8 +450,8 @@ TEST_CASE(drags_and_samples_leave_both_buffers_as_a_full_redraw_would)
 }
 
 /* The supply is the servo rail's meter here: a sample whose current differs
- * in the digits shown repaints the line and the plot, and LIVE's CURRENT
- * reading at the foot of the left card, and nothing else. */
+ * in the digits shown repaints the rail line under LIVE's READY rows, and
+ * LIVE's CURRENT reading at the foot of the left card, and nothing else. */
 TEST_CASE(a_supply_sample_repaints_only_the_power_plot_and_the_current_row)
 {
     fresh();
@@ -475,7 +478,7 @@ TEST_CASE(a_supply_sample_repaints_only_the_power_plot_and_the_current_row)
                 continue;
             }
             const bool rc = x >= SV_RC_X && x < SV_RC_X + SV_RC_W;
-            const bool in = rc && y >= 70 && y < 166;
+            const bool in = rc && y >= 400 && y < 428;
             const bool row = x >= 416 && x < 610 && y >= 384 && y < 428;
             if (in) { ++inside; } else if (row) { ++in_row; } else { ++outside; }
         }
@@ -981,11 +984,27 @@ TEST_CASE(the_horn_travels_and_breathes_as_a_full_redraw_would)
 
 /* ------------------------------------------------- the supply, from SERVO */
 
-/* A set point typed on SERVO is SUPPLY's set point, and the keypad that
- * opened the overlay for it closes it again: the dial works at once. */
-TEST_CASE(a_set_point_typed_on_servo_is_the_supplys)
+/* The SET row and OUTPUT ON are on KST's and HITEC's output card; LIVE,
+ * SWEEP and RUDDER show READY rows in their place
+ * (test_servo_drive_ready), TEST, LIMIT RUN and RUDDER AUTO a READY card.
+ * These cases take KST's. */
+static void fresh_box(void)
+{
+    fresh();
+    go(SERVO_FN_KST);
+}
+
+static void fresh_armed_box(void)
 {
     fresh_armed();
+    go(SERVO_FN_KST);
+}
+
+/* A set point typed on SERVO is SUPPLY's set point, and the keypad that
+ * opened the overlay for it closes it again: LIVE's dial works at once. */
+TEST_CASE(a_set_point_typed_on_servo_is_the_supplys)
+{
+    fresh_armed_box();
     tap(SUP_V_X, SUP_ROW_Y);
     keys("5.5");
     CHECK(fabsf(supply_screen_set_v() - 5.5f) < 1e-4f);
@@ -994,11 +1013,13 @@ TEST_CASE(a_set_point_typed_on_servo_is_the_supplys)
     CHECK(fabsf(supply_screen_set_i() - 0.5f) < 1e-4f);
     CHECK(!supply_cmd(NULL));               /* a level, not a command */
 
+    go(SERVO_FN_LIVE);
     int x, y;
     dial_at(40.0f, ARC_R - 30, &x, &y);
     ev(x, y, TOUCH_EVENT_DOWN, 1);
     ev(x, y, TOUCH_EVENT_UP, 1);
     CHECK(servo_screen_commanded() != 1500);   /* no overlay in the way */
+    go(SERVO_FN_KST);
 
     /* CANCEL leaves the set point as it was. */
     tap(SUP_V_X, SUP_ROW_Y);
@@ -1009,7 +1030,7 @@ TEST_CASE(a_set_point_typed_on_servo_is_the_supplys)
 /* Typed outside the caps, it is snapped into them, as on SUPPLY. */
 TEST_CASE(a_set_point_typed_on_servo_keeps_to_the_caps)
 {
-    fresh();
+    fresh_box();
     settings_set(SET_SUPPLY_V_MAX, 8.4f);
     supply_screen_limits_changed();
     tap(SUP_V_X, SUP_ROW_Y);
@@ -1020,7 +1041,7 @@ TEST_CASE(a_set_point_typed_on_servo_keeps_to_the_caps)
 /* OUTPUT ON is SUPPLY's two-second hold; a short press asks for nothing. */
 TEST_CASE(output_on_from_servo_is_a_two_second_hold)
 {
-    fresh();
+    fresh_box();
     ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < 20; ++i) {
         scr->tick(1.0f / 40.0f);
@@ -1043,7 +1064,7 @@ TEST_CASE(output_on_from_servo_is_a_two_second_hold)
  * off it before lifting asks for nothing. */
 TEST_CASE(output_off_from_servo_is_a_tap)
 {
-    fresh();
+    fresh_box();
     supply_screen_set_output(true);
     scr->tick(0.025f);
     ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
@@ -1062,7 +1083,7 @@ TEST_CASE(output_off_from_servo_is_a_tap)
  * nothing on. */
 TEST_CASE(stop_ends_the_output_hold_on_servo)
 {
-    fresh();
+    fresh_box();
     ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < 40; ++i) {
         scr->tick(1.0f / 40.0f);
@@ -1079,7 +1100,7 @@ TEST_CASE(stop_ends_the_output_hold_on_servo)
  * APPLY gives it to the supply, CANCEL drops it. */
 TEST_CASE(a_set_point_for_a_live_output_waits_for_apply)
 {
-    fresh();
+    fresh_box();
     supply_screen_set_output(true);
     scr->tick(0.025f);
     const float was = supply_screen_set_v();
@@ -1106,7 +1127,7 @@ TEST_CASE(a_set_point_for_a_live_output_waits_for_apply)
  * unanswered, and the change it held with it. */
 TEST_CASE(the_question_goes_with_the_live_output)
 {
-    fresh();
+    fresh_box();
     supply_screen_set_output(true);
     scr->tick(0.025f);
     const float was = supply_screen_set_v();
@@ -1122,7 +1143,7 @@ TEST_CASE(the_question_goes_with_the_live_output)
  * the next frame, without a full repaint. */
 TEST_CASE(a_set_point_changed_on_supply_is_redrawn_here)
 {
-    fresh();
+    fresh_box();
     scr->render(&cv, 0);
     gfx_color_t *before = malloc((size_t)W * H * sizeof(gfx_color_t));
     REQUIRE_ALLOC(before);
@@ -1147,7 +1168,7 @@ TEST_CASE(a_set_point_changed_on_supply_is_redrawn_here)
  * warning's two-second hold: a tap does nothing, CANCEL drops it. */
 TEST_CASE(a_voltage_raised_past_6_v_takes_the_hv_hold)
 {
-    fresh();
+    fresh_box();
     supply_screen_put(5.0f, 1.0f);
     tap(SUP_V_X, SUP_ROW_Y);
     keys("6");                              /* at the rating: no warning */
@@ -1177,7 +1198,7 @@ TEST_CASE(a_voltage_raised_past_6_v_takes_the_hv_hold)
  * output going off does not drop it: it is about the servo. */
 TEST_CASE(the_hv_hold_stands_for_the_live_question)
 {
-    fresh();
+    fresh_box();
     supply_screen_put(5.0f, 1.0f);
     supply_screen_set_output(true);
     scr->tick(0.025f);
@@ -1195,7 +1216,7 @@ TEST_CASE(the_hv_hold_stands_for_the_live_question)
  * ends the hold, and only the two-second hold on APPLY sends the ON. */
 TEST_CASE(output_on_past_6_v_takes_the_hv_hold)
 {
-    fresh();
+    fresh_box();
     supply_screen_put(7.4f, 1.0f);              /* as if set on SUPPLY */
     scr->tick(0.025f);
     ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
@@ -1227,7 +1248,7 @@ TEST_CASE(output_on_past_6_v_takes_the_hv_hold)
     CHECK(fabsf(supply_screen_set_v() - 7.4f) < 1e-4f);
 
     /* CANCEL switches nothing on; the warning drawn says what is asked. */
-    fresh();
+    fresh_box();
     supply_screen_put(8.4f, 1.0f);
     scr->tick(0.025f);
     tap(SUP_OUT_X, SUP_ROW_Y);
@@ -1240,7 +1261,7 @@ TEST_CASE(output_on_past_6_v_takes_the_hv_hold)
     CHECK(!supply_cmd(NULL));
 
     /* At 6.0V it is the ordinary hold. */
-    fresh();
+    fresh_box();
     supply_screen_put(6.0f, 1.0f);
     scr->tick(0.025f);
     ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
@@ -1256,7 +1277,7 @@ TEST_CASE(output_on_past_6_v_takes_the_hv_hold)
  * reporting on during it does not make its release an OFF. */
 TEST_CASE(an_on_reported_during_a_second_servo_hold_is_not_an_off)
 {
-    fresh();
+    fresh_box();
     ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < 100; ++i) {
         scr->tick(1.0f / 40.0f);
@@ -1276,7 +1297,7 @@ TEST_CASE(an_on_reported_during_a_second_servo_hold_is_not_an_off)
  * ON, though the output never reported on. */
 TEST_CASE(a_servo_question_for_a_dropped_on_goes)
 {
-    fresh();
+    fresh_box();
     supply_screen_put(5.0f, 1.0f);
     ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < 100; ++i) {
@@ -1299,7 +1320,7 @@ TEST_CASE(a_servo_question_for_a_dropped_on_goes)
 TEST_CASE(an_apply_held_as_the_output_goes_off_applies_nothing)
 {
     for (int tick_first = 0; tick_first < 2; ++tick_first) {
-        fresh();
+        fresh_box();
         supply_screen_put(5.0f, 1.0f);
         supply_screen_set_output(true);
         scr->tick(0.025f);
@@ -1319,7 +1340,7 @@ TEST_CASE(an_apply_held_as_the_output_goes_off_applies_nothing)
  * other as it is now: a cap that moved it meanwhile is not undone. */
 TEST_CASE(apply_sets_only_the_set_point_that_was_typed)
 {
-    fresh();
+    fresh_box();
     supply_screen_put(5.0f, 1.0f);
     supply_screen_set_output(true);
     scr->tick(0.025f);
@@ -1337,7 +1358,7 @@ TEST_CASE(apply_sets_only_the_set_point_that_was_typed)
  * the OFF. */
 TEST_CASE(an_off_press_before_the_tick_is_still_an_off)
 {
-    fresh();
+    fresh_box();
     supply_screen_set_output(true);             /* no tick yet */
     ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
     scr->cancel();
@@ -1350,7 +1371,7 @@ TEST_CASE(an_off_press_before_the_tick_is_still_an_off)
  * that changes. */
 TEST_CASE(the_hv_warning_redraws_when_the_output_changes)
 {
-    fresh();
+    fresh_box();
     supply_screen_put(5.0f, 1.0f);
     tap(SUP_V_X, SUP_ROW_Y);
     keys("7.4");
@@ -1376,7 +1397,7 @@ TEST_CASE(the_hv_warning_redraws_when_the_output_changes)
  * opened afterwards stays open when a keypad from its own rows is done. */
 TEST_CASE(settings_shuts_a_set_points_keypad_cleanly)
 {
-    fresh();
+    fresh_box();
     tap(SUP_V_X, SUP_ROW_Y);                    /* the keypad, on its own */
     open_settings();                            /* shuts it */
     open_settings();                            /* the settings */
@@ -1393,7 +1414,7 @@ TEST_CASE(settings_shuts_a_set_points_keypad_cleanly)
  * with it; the cap recovering before APPLY does not bring it back. */
 TEST_CASE(a_cap_lowered_under_the_question_lowers_its_value)
 {
-    fresh();
+    fresh_box();
     supply_screen_put(9.0f, 1.0f);              /* past 6V already */
     supply_screen_set_output(true);
     scr->tick(0.025f);
@@ -1416,7 +1437,7 @@ TEST_CASE(a_cap_lowered_under_the_question_lowers_its_value)
  * OFF press the screen is left on. */
 TEST_CASE(the_set_lines_gestures_draw_and_end_as_they_should)
 {
-    fresh();
+    fresh_box();
     supply_screen_put(5.0f, 1.0f);
     tap(SUP_V_X, SUP_ROW_Y);
     keys("5");                                  /* the value it has */
@@ -1469,7 +1490,7 @@ TEST_CASE(the_set_lines_gestures_draw_and_end_as_they_should)
  * seconds applies neither the voltage nor the profile. */
 TEST_CASE(stop_ends_the_warning_holds)
 {
-    fresh();
+    fresh_box();
     supply_screen_put(5.0f, 1.0f);
     tap(SUP_V_X, SUP_ROW_Y);
     keys("7.4");
@@ -1504,7 +1525,7 @@ TEST_CASE(stop_ends_the_warning_holds)
  * finger lifts: the release applies nothing. */
 TEST_CASE(stop_lets_go_of_an_apply_press)
 {
-    fresh();
+    fresh_box();
     supply_screen_put(5.0f, 1.0f);
     supply_screen_set_output(true);
     scr->tick(0.025f);
@@ -1522,7 +1543,7 @@ TEST_CASE(stop_lets_go_of_an_apply_press)
  * The tap applies nothing, and the question has gone by the frame's tick. */
 TEST_CASE(stop_and_an_apply_tap_in_one_frame_apply_nothing)
 {
-    fresh();
+    fresh_box();
     supply_screen_put(5.0f, 1.0f);
     supply_screen_set_output(true);
     scr->tick(0.025f);
@@ -1542,7 +1563,7 @@ TEST_CASE(stop_and_an_apply_tap_in_one_frame_apply_nothing)
  * stop ended: APPLY applies it. */
 TEST_CASE(a_question_asked_after_a_stop_stands)
 {
-    fresh();
+    fresh_box();
     supply_screen_put(5.0f, 1.0f);
     supply_screen_set_output(true);
     scr->tick(0.025f);
@@ -1558,7 +1579,7 @@ TEST_CASE(a_question_asked_after_a_stop_stands)
  * was about the run that ended, and APPLY gives the new run nothing. */
 TEST_CASE(a_question_does_not_outlive_its_run)
 {
-    fresh();
+    fresh_box();
     supply_screen_put(5.0f, 1.0f);
     supply_screen_set_output(true);
     scr->tick(0.025f);

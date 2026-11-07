@@ -348,12 +348,20 @@ TEST_CASE(servo_names_disarm_and_not_arm)
     CHECK(!scr->safe_at(400, 216));               /* the dial */
     servo_screen_set_armed(false);
     CHECK(!scr->safe_at(SV_ARM_X, SV_ARM_MY - UI_BAND_H));
-    /* OUTPUT OFF while the output is on; OUTPUT ON is none. */
-    CHECK(!scr->safe_at(SV_SUP_OUT_X, SV_SUP_Y));
+    /* LIVE's READY rows drive nothing, its output on or off. */
     supply_screen_set_output(true);
-    CHECK(scr->safe_at(SV_SUP_OUT_X, SV_SUP_Y));
-    supply_screen_set_output(false);
     CHECK(!scr->safe_at(SV_SUP_OUT_X, SV_SUP_Y));
+    supply_screen_set_output(false);
+    /* KST's output card: OUTPUT OFF while the output is on; OUTPUT ON is
+     * none. */
+    const ui_screen_t *test = servo_fn_screen(SERVO_FN_KST);
+    servo_screen_show_fn(SERVO_FN_KST);
+    CHECK(!test->safe_at(SV_SUP_OUT_X, SV_SUP_Y));
+    supply_screen_set_output(true);
+    CHECK(test->safe_at(SV_SUP_OUT_X, SV_SUP_Y));
+    supply_screen_set_output(false);
+    CHECK(!test->safe_at(SV_SUP_OUT_X, SV_SUP_Y));
+    servo_screen_show_fn(SERVO_FN_LIVE);
 }
 
 /* ------------------------------------------------------------ MOTOR & ESC */

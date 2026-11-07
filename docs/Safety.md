@@ -126,6 +126,7 @@ either goes.
 | An INA3221 channel over its limit | SAFE | the port's supply off, after a write that runs | off; a port's after its write, 10000ms at most | the panel, at the 200ms read of `OVER`, with one console line a channel ([Screens](Screens.md#sensors-the-ina3221-parts)); the IOmcu for the write |
 | The carrier's programming-port 5V lost under the panel's ON: 2 new INA3221 windows under 3000mV, 500ms or more after the ON ([Carrier, PROG 5V lost](Carrier.md#prog-5v-lost)) | SAFE | none open: a session's 5V is not watched | off | the panel, with one alert and one console line; the IOmcu for the PROG_SUPPLY OFF |
 | A run's current limit: STALL AT, constant current, 3.0A, 1.0A for 400ms | SAFE | none open: a search is ARMED | off | the SERVO screen |
+| A step of SERVO's start sequence fails on LIVE, SWEEP, RUDDER or RUDDER AUTO: PORT PWM, PROG 5V or the PD mini not read back within 1000ms, not ARMED within 500ms, a tap on the hold, a STOP ([Servo: AUTO end points](Servo.md#auto-end-points)) | SAFE | none open: ARM is refused while a session holds a port | off; PROG 5V off as well | the SERVO screen (`svs_all_off()`) |
 | The PD mini's own protection, its input sagging, no answer, no reading, an ON refused or let go, an output or set point that would not take, an ON taken across lost touch events | SAFE | the port's supply off, after a write that runs | off where it can be switched: the module's protection and a sagging input at once, a write included; the rest after a port's write, 10000ms at most | the IOmcu's driver for the output, the panel for SAFE |
 | A KST or Hitec operation ends in a fault of the servo or the wire (`kst_link_outcome_fault()`, `hitec_prog_ses_fault()`), or the ESC_WIRE page reports `FAULT` or reaches `NOT_BACK` (`esc_link_faults()`) | SAFE already: a session runs on a SAFE bench | the port's supply off; the operation has ended | off | the panel (`prog_faults_follow()`) |
 
@@ -178,7 +179,7 @@ OFF for a write; its own port bit (`LINK_PS_PORT`) does not enter the rule.
 On the carrier a KST or Hitec session leaves the SUPPLY page's bit clear,
 since the ports run from the 5V and not from the PD mini
 (`ports_tell_supply()`). Such a session does not keep the operator off the
-PD mini either: SUPPLY and the SERVO screen's SET row take OUTPUT ON and set
+PD mini either: SUPPLY and SERVO's SET row take OUTPUT ON and set
 points through it (`supply_link_session_blocks()`), and the IOmcu takes them.
 An ESC session sets the bit on every board, the carrier too, since SWITCHED
 powers the ESC from the PD mini. SUPPLY then refuses set points and ON
@@ -265,7 +266,9 @@ On the [rbmod carrier](Carrier.md#power) the programming ports run from
 the 5V buck M7, switched by GPIO 21 (link 4.32, the PROG_SUPPLY page). The
 PD mini feeds the servo rails only. The KST and Hitec programmers switch
 the 5V on and off for a session, and the PROG 5V box on SERVO and SUPPLY
-switches it by hand ([Carrier, The PROG 5V box](Carrier.md#the-prog-5v-box)). The
+switches it by hand ([Carrier, The PROG 5V box](Carrier.md#the-prog-5v-box)).
+ARM on SERVO's LIVE, SWEEP and RUDDER switches it on before the bench
+arms, and DISARM there switches it off. The
 programmers take no reading of the PD mini on the carrier: its set point
 neither refuses a CONNECT under 4.8V nor sets the voltage of a power
 cycle, and the SUPPLY screen's limits bound the servo rails only, not a
@@ -758,10 +761,10 @@ reads the state and shows the alert, is not in the coverage figure.
   mark (`TOUCH_FLAG_NO_TAP`), and so does the release the tracker makes for a
   contact that is more than 120px from where the previous report had it.
   A marked release ends a press or a drag and activates no control: the
-  finger did not lift there. Two controls take it all the same, because
-  they stop something: OUTPUT OFF, and START TEST while a servo test runs.
-  STOP and DISARM on MOTOR & ESC and on SERVO have acted on the press
-  already, and their release does nothing. STOP and the home tag
+  finger did not lift there. One control takes it all the same, because
+  it stops something: OUTPUT OFF. STOP, DISARM on MOTOR & ESC and on SERVO,
+  and STOP TEST in TEST's footer have acted on the press already, and
+  their release does nothing. STOP and the home tag
   answer to a press that lands on them: a contact that slides onto STOP from
   the body presses nothing. A press the router keeps from the screen (on
   the band, STOP, the home tag, a chip or the alert band) releases the

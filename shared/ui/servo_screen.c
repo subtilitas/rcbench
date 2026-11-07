@@ -552,19 +552,9 @@ void svs_reset(void)
      * The throttle's rule is the throttle's. */
     ui_slider_set_tap_to_set(&s.speed, true);
 
-    /* CENTRE, SWEEP and RELEASE, a third of the column each. */
-    const int bw = (RC_W - 2 * BTN_GAP) / 3;
-    s.centre_btn  = (gfx_rect_t){ RC_X, BTN_Y, (int16_t)bw, BTN_H };
-    s.sweep_btn   = (gfx_rect_t){ (int16_t)(RC_X + bw + BTN_GAP), BTN_Y,
-                                  (int16_t)bw, BTN_H };
-    s.release_btn = (gfx_rect_t){ (int16_t)(RC_X + 2 * (bw + BTN_GAP)), BTN_Y,
-                                  (int16_t)(RC_W - 2 * (bw + BTN_GAP)),
-                                  BTN_H };
     /* The footer's middle slot: the one control that decides whether
      * anything is driven at all, on every function screen. */
     s.arm_btn     = ui_footer_rect(UI_FOOTER_HOLD);
-    s.out_btn     = (gfx_rect_t){ SUP_OUT_X, SUP_Y,
-                                  (int16_t)(RC_X + RC_W - SUP_OUT_X), SUP_H };
     wb_init();
     prog_init();
     servo_limrun_init(&s.lim);
@@ -575,6 +565,8 @@ void svs_reset(void)
     svs_lists_init();
     s.fn = (uint8_t)SERVO_FN_LIVE;
     (void)ui_wb_strip_select(&s.wb, UI_WB_LIVE);
+    /* CENTRE, SWEEP, RELEASE, SPEED and OUTPUT ON where LIVE has them. */
+    drive_layout();
     s.fp_tile = -1;
     s.kp.pressed = -1;
     s.tk.pressed = -1;

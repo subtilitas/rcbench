@@ -587,18 +587,21 @@ does not measure horn position. Movement is inferred from the current of
 the supply feeding the servo: the PD mini (WeAct PD Power Mini V1) when SUPPLY's PD mini settings enables it,
 the panel's supply model otherwise. A run on the model says so in its report,
 and its numbers are simulated. While the INA3221 is the servo rail's meter
-at START TEST and the supply is the PD mini, the run reads the INA3221
+when the run starts and the supply is the PD mini, the run reads the INA3221
 channel that watches the tester's target instead, in 50ms windows: see
 [The meter](#the-meter).
 
-START TEST on the AUTOMATIC TEST card of SERVO's TEST screen starts it:
-[Screens](Screens.md#servo) describes the controls. The engine is
+HOLD 2s: ARM + START in the footer of SERVO's TEST screen starts it: from
+SAFE the hold switches PORT PWM on where the port needs it, asks ARM, waits
+up to 500ms for ARMED and starts the run on the settings it read when it
+fired. Every end of a run, PASS included, switches the bench to SAFE.
+[Screens](Screens.md#servo) describes the controls and the READY card. The engine is
 `shared/servo/servo_test.c`; the constants below are in `servo_test.h`.
 
 ### Method
 
-The voltage steps are the run's STEP 4.8V and STEP 6.0V (the card's SETTINGS), and with HV
-SERVO on, STEP 7.4V and STEP 8.4V. HV SERVO is off at every restart. A run
+The voltage steps are the run's Step 4.8V and Step 6.0V (TEST's SETTINGS
+list), and with HV SERVO on, Step 7.4V and Step 8.4V. HV SERVO is off at every restart. A run
 with a step above 6.0V starts only through the HV SERVOS ONLY warning held for
 2s. The current limit through the run is the one on the SET line.
 
@@ -686,9 +689,9 @@ longer SETTLING TIME avoids it.
 in steps of STEP to LOWEST VOLTAGE, the floor, or the supply's lowest set
 point if that is higher. STEP is 0.1 to 1.0V, 0.20V by default
 (`SERVO_TEST_BROWNOUT_STEP_V`); LOWEST VOLTAGE is 2.0 to 4.8V, 3.00V by
-default (`SERVO_TEST_BROWNOUT_FLOOR_V`). Both are set on the brown-out
-walk's page, which the BROWN-OUT row of the AUTOMATIC TEST's settings
-opens, and kept in NVS (non-volatile storage). The k-th voltage is the start
+default (`SERVO_TEST_BROWNOUT_FLOOR_V`). Both are set under BROWN-OUT on
+TEST's SETTINGS list, whose heading line names the walk on the supply in
+force, and kept in NVS (non-volatile storage). The k-th voltage is the start
 less k steps, to 0.01V. The cap in force is the lowest of VOLTAGE MAX, the
 supply's own maximum, and for the PD mini its input voltage less 0.7V. A
 floor off the step's grid is the last step, shorter than STEP: LOWEST
@@ -785,13 +788,13 @@ one a read are.
 
 ### The meter
 
-A run reads one meter from START TEST to its end: the servo rail's meter as
+A run reads one meter from its start to its end: the servo rail's meter as
 the panel names it when the run starts
 ([Link](Link.md#the-window-ring)).
 
 | | PD mini | the INA3221 channel |
 | --- | --- | --- |
-| The run reads it when | the INA3221 is not the rail's meter at START TEST, or the supply is the panel's model | the INA3221 is the rail's meter at START TEST and the supply is the PD mini |
+| The run reads it when | the INA3221 is not the rail's meter at the run's start, or the supply is the panel's model | the INA3221 is the rail's meter at the run's start and the supply is the PD mini |
 | A reading | one reading of the supply, every 102 to 106ms | one 50ms window of the channel watching the tester's target, 20 a second |
 | Current | the reading | the window's mean. The peak is the window's highest or lowest 1ms sample, whichever lies further from zero |
 | Voltage | the reading at the supply's output | the channel's bus voltage at the load side of the shunt: the window's mean in `Meas V`, its lowest sample in `V min` |
@@ -847,8 +850,8 @@ the run.
 | STALL AT for 1s | readings above STALL AT for 1000ms (`SERVO_TEST_STALL_ABORT_MS`) without one at or under it, in any phase and in the brown-out walk | the run ends, `above STALL AT for 1s` |
 | Constant current for 1s | the supply reports constant current (CC) in every reading for 1000ms (`SERVO_TEST_CC_ABORT_MS`) from the first | the run ends, `constant current for 1s`, whatever STALL AT is |
 | Constant current for less than 1s | | nothing ends and nothing fails; the report's `Const. current` line gives the number of such readings and the longest stretch from a first to a last |
-| STALL AT at or above the current limit | at START TEST | the run starts. The AUTOMATIC TEST card and the report say `STALL AT 3.00A cannot be reached: current limit 2.00A` |
-| STALL AT at or above the INA3221's range | at START TEST with the INA3221 as the meter | the run starts. The AUTOMATIC TEST card and the report say `STALL AT 2.00A cannot be reached: INA3221 range 1.638A` |
+| STALL AT at or above the current limit | at the run's start | the run starts. The AUTOMATIC TEST card and the report say `STALL AT 3.00A cannot be reached: current limit 2.00A` |
+| STALL AT at or above the INA3221's range | at the run's start with the INA3221 as the meter | the run starts. The AUTOMATIC TEST card and the report say `STALL AT 2.00A cannot be reached: INA3221 range 1.638A` |
 
 - Every comparison of a current with IDLE CURRENT, HOLDING CURRENT and STALL AT
   is made in whole mA, in the verdict and in the report alike: a reading of
@@ -1166,7 +1169,7 @@ own task writes its files there: `ATESTnnn.CSV`, one row per reading of the
 run's meter, and with DUT's REPORT on, `ATESTnnn.TXT`. The number belongs to
 one series with the limit runs' `LIMITnnn.TXT` in that folder
 ([Logs](Screens.md#logs)). With User logs OFF on SETUP > SD CARD, read at
-START TEST, the run writes no file and the result names `USER LOGS OFF`. A run is
+the run's start, the run writes no file and the result names `USER LOGS OFF`. A run is
 one CSV: the run log of a bench in ARMED writes no row while a run is under
 way. Its time column steps over the run and its rows start again when the
 run ends. A number carried by a
@@ -1394,6 +1397,30 @@ The panel centres the surfaces before it switches to ARMED and the screen shows
 the rest when the bench reports ARMED; the time between the two on a bench
 is not measured.
 
+## ARM switches the supply on LIVE, SWEEP and RUDDER
+
+LIVE, SWEEP and RUDDER show READY rows in the output card's place: PORT,
+SUPPLY and ARM, and on RUDDER ANGLE and ZERO between PORT and SUPPLY
+([Screens](Screens.md#servo)). The rows are `shared/ui/servo_drive_ready.c`.
+ARM's 2s hold switches on what the servo needs and reads off, then arms,
+in steps 1 to 4 of the [start sequence](#auto-end-points):
+
+| Part | ARM switches it on where | ARM leaves it off where |
+| --- | --- | --- |
+| PORT PWM | the target is a PROG PORT and the setting is OFF | a programming port holds the port |
+| PROG 5V | the rbmod carrier's programming port is the target | a programming port holds the 5V, or the 5V is not read: the row is red |
+| PD mini's output | a PD mini answers and feeds the servo | its set point is past 6.0V: only OUTPUT ON's HV warning switches it on, and the red SUPPLY row opens that warning on a tap. An INA3221 reads the rail at 3.0V or more with the PD mini off: the rail is fed from elsewhere. A programming port holds the PD mini |
+
+Where every part reads on already, the hold arms at once. A failed step
+names itself in the alert band and switches every output off. On these
+screens DISARM, STOP, an error and a lost link switch the bench to SAFE,
+PROG 5V and the PD mini's output off. A leave switches to SAFE and the PD
+mini off; PROG 5V stays on between SERVO screens and goes off when SERVO
+is left.
+
+Without an INA3221 window on the rail nothing reads it: ARM switches the
+PD mini on beside a rail another supply feeds.
+
 ## Rudder deflection
 
 ### Purpose
@@ -1437,7 +1464,8 @@ the screen is `shared/ui/servo_rudder_panel.c`.
 - 1000us and 2000us command those pulses as angles of the type in force,
   held to TRAVEL and the type's pulse range; CENTRE commands PULSE CENTRE
   plus TRIM. All three and the rotary knob act only while the bench is
-  ARMED. The output card's PORT button names the pin they drive.
+  ARMED. The PORT button and the READY card's PORT row name the pin they
+  drive.
 
 | Reading | Resolution | Range |
 | --- | --- | --- |

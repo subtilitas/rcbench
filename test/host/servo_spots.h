@@ -14,15 +14,17 @@
  *     492: the name and port line, ARM / DISARM, SETTINGS;
  *   - the PORT button over the output card: x 636 to 1016, y 8 to 56;
  *   - the left card from y 8 to 436: LIVE's dial and readings, the run
- *     card of TEST and LIMIT RUN from y 12 with START and SETTINGS 56px
- *     down, TEST's caps button at y 204 to 252; a run's settings' rows in
- *     three columns of 193px from x 18, 203px apart, each its label over
- *     its 48px value, 70px apart from y 64; its CLOSE x 478 to 618, y 12
- *     to 60;
+ *     card of TEST and LIMIT RUN from y 12, LIMIT RUN's with START and
+ *     SETTINGS 56px down, TEST's 136px tall with its caps button at y 152
+ *     to 200; the limit run's settings' rows in three columns of 193px
+ *     from x 18, 203px apart, each its label over its 48px value, 70px
+ *     apart from y 64; its CLOSE x 478 to 618, y 12 to 60;
  *   - the output card from SV_RCARD_X, y 62 to 436, its inner column SV_RC_X
- *     and SV_RC_W; the SET row's values and OUTPUT ON at y 174 to 222;
- *     SPEED; the type pill at y 310 to 354; CENTRE, SWEEP and RELEASE a
- *     third of it each, y 366 to 414.
+ *     and SV_RC_W.  On LIVE, SWEEP and RUDDER: the READY rows, 30px from
+ *     y 96; on LIVE and SWEEP SPEED's track at y 220 to 260; the type pill
+ *     at y 274 to 318; CENTRE (LIVE) or SWEEP (SWEEP) and RELEASE, half of
+ *     it each, y 330 to 378; the rail line at y 404.  On TEST, LIMIT RUN,
+ *     KST and HITEC the SET row's values and OUTPUT ON at y 174 to 222.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -64,13 +66,13 @@
  *         its middle. */
 #define SV_RA_START_X      512
 #define SV_RA_START_Y      468                /**< Its row. */
-/** @brief The function's one hold, RUDDER AUTO's and LIMIT RUN's HOLD
- *         2s: ARM + START, the footer's middle slot: its middle. */
+/** @brief The function's one hold, RUDDER AUTO's, TEST's and LIMIT RUN's
+ *         HOLD 2s: ARM + START, the footer's middle slot: its middle. */
 #define SV_HOLD_X          512
 #define SV_HOLD_Y          468                /**< Its row. */
-/** @brief RUDDER AUTO's and LIMIT RUN's READY card (servo_ready_int.h):
- *         row @p i, 30px
- *         from y 96, its middle; the card's column x 648 to 1004. */
+/** @brief The READY card of RUDDER AUTO, TEST and LIMIT RUN
+ *         (servo_ready_int.h): row @p i, 30px from y 96, its middle; the
+ *         card's column x 648 to 1004. */
 #define SV_RDY_ROW_Y(i)    (96 + 30 * (i) + 15)
 #define SV_RDY_X           826                /**< The rows' middle. */
 /** @brief RUDDER's readings: the numerals' top, and the mm column's left
@@ -78,49 +80,44 @@
 #define SV_RUD_NUM_Y       38
 #define SV_RUD_MM_X        268                /**< The mm column. */
 
-#define SV_RUN_SET_X       528                /**< The run card's SETTINGS. */
-/** @brief Run card @p k's SETTINGS (0 AUTOMATIC TEST on TEST, 1 LIMIT RUN
- *         on LIMIT RUN): each card at the page's top. */
-#define SV_RUN_SET_Y(k)    (92 + 0 * (k))
-#define SV_RUN_CLOSE_X     548                /**< CLOSE on a run's page. */
+/** @brief Where TEST's run card once had its SETTINGS: no control. */
+#define SV_RUN_SET_X       528
+#define SV_RUN_SET_Y       92                 /**< Its row. */
+#define SV_RUN_CLOSE_X     548                /**< CLOSE on a page of rows. */
 #define SV_RUN_CLOSE_Y     36                 /**< Its row. */
-#define SV_START_X         178                /**< A run card's START. */
-/** @brief Run card @p k's START. */
-#define SV_START_Y(k)      (92 + 0 * (k))
-/** @brief Run card @p k's top (0 AUTOMATIC TEST, 1 LIMIT RUN). */
-#define SV_RUN_CARD_Y(k)   (12 + 0 * (k))
+/** @brief TEST's run card's top. */
+#define SV_RUN_CARD_Y      12
 /** @brief The caps button under TEST's card, 600 x 48px, its middle. */
 #define SV_CAPS_X          300
-#define SV_CAPS_TEST_Y     228                /**< Its middle row on TEST. */
-/** @brief The lines under a run card's START, from its top. */
-#define SV_RUN_LINE_DY     108
-/** @brief The run's box under the run card, left: 346px wide, its lines
- *         24px apart from 10px in, its button 150 x 48px 112px down; on
- *         TEST from y 256 under the caps button, on LIMIT RUN from y 204. */
+#define SV_CAPS_TEST_Y     176                /**< Its middle row on TEST. */
+/** @brief TEST's HOLD 2s: ARM + START, the footer's middle slot: its
+ *         middle. */
+#define SV_TEST_HOLD_X     512
+#define SV_TEST_HOLD_Y     468                /**< Its row. */
+/** @brief TEST's lines on its card, from the card's top. */
+#define SV_TEST_LINE_DY    56
+/** @brief TEST's run box, left: 346px wide, its lines 24px apart from
+ *         10px in, its button 150 x 48px 112px down, from y 204 under the
+ *         caps button. */
 #define SV_BOX_X           18
-#define SV_BOX_Y           256                /**< The box's top on TEST. */
-#define SV_BOX_Y_LIM       204                /**< On LIMIT RUN. */
+#define SV_BOX_Y           204                /**< The box's top. */
 #define SV_BOX_W           346                /**< Its width. */
 /** @brief The box's line @p i, in the 10 x 20 face, on TEST. */
 #define SV_BOX_LINE_Y(i)   (SV_BOX_Y + 10 + 24 * (i))
-/** @brief The same on LIMIT RUN. */
-#define SV_BOX_LINE_Y_LIM(i) (SV_BOX_Y_LIM + 10 + 24 * (i))
 #define SV_BOX_BTN_X       103                /**< STOP TEST or CLOSE. */
 #define SV_BOX_BTN_Y       (SV_BOX_Y + 112 + 24)     /**< Its row on TEST. */
-#define SV_BOX_BTN_Y_LIM   (SV_BOX_Y_LIM + 112 + 24) /**< On LIMIT RUN. */
-/** @brief The run's settings: the limit run's mode note, under row 1. */
-#define SV_LIM_NOTE_Y      210
-/** @brief A run's settings' column @p c, the middle of its value. */
+/** @brief A page of rows' column @p c, the middle of its value. */
 #define SV_LIST_X(c)       (114 + 203 * (c))
-/** @brief A run's settings' row @p r, the middle of its value. */
+/** @brief A page of rows' row @p r, the middle of its value. */
 #define SV_LIST_ROW_Y(r)   (109 + 70 * (r))
 
-/** @brief SPEED's label row over its track: y 232 to 252. */
-#define SV_SPEED_ROW_Y     232
-/** @brief SPEED's track, its middle row: y 256 to 296. */
-#define SV_SPEED_Y         276
-/** @brief The type pill, y 310 to 354, in the TARGET row's old place. */
-#define SV_TAG_Y           310
+/** @brief SPEED's label row over its track on LIVE and SWEEP: y 196 to
+ *         216. */
+#define SV_SPEED_ROW_Y     196
+/** @brief SPEED's track, its middle row: y 220 to 260. */
+#define SV_SPEED_Y         240
+/** @brief The type pill under the READY rows, y 274 to 318. */
+#define SV_TAG_Y           274
 
 /** @brief The left column the keypad, the keyboard and the programmer
  *         cover: OV_X, OV_Y, OV_W and OV_H of servo_screen_int.h, down to
@@ -133,13 +130,17 @@
 #define SV_RCARD_W         (UI_PANEL_W - SV_RCARD_X - UI_MARGIN) /**< 380. */
 #define SV_RC_X            (SV_RCARD_X + 12)  /**< The inner column. */
 #define SV_RC_W            (SV_RCARD_W - 24)  /**< Its width: 356. */
-/** @brief CENTRE, SWEEP and RELEASE (servo_screen.c), 113px each, 8px
- *         apart: their row and the middle of each.  CENTRE on every
- *         function screen but SWEEP's, SWEEP on SWEEP's alone. */
-#define SV_BTN_Y           (366 + 24)
-#define SV_CENTRE_X        (SV_RC_X + 56)            /**< CENTRE. */
-#define SV_SWEEP_X         (SV_RC_X + 121 + 56)      /**< SWEEP. */
-#define SV_RELEASE_X       (SV_RC_X + 242 + 57)      /**< RELEASE. */
+/** @brief CENTRE on LIVE, SWEEP on SWEEP, and RELEASE on both
+ *         (servo_drive_ready.c), 174px each, 8px apart: their row and the
+ *         middle of each. */
+#define SV_BTN_Y           (330 + 24)
+#define SV_CENTRE_X        (SV_RC_X + 87)            /**< CENTRE, LIVE. */
+#define SV_SWEEP_X         (SV_RC_X + 87)            /**< SWEEP, SWEEP. */
+#define SV_RELEASE_X       (SV_RC_X + 182 + 87)      /**< RELEASE. */
+/** @brief The READY rows on LIVE, SWEEP and RUDDER: card row @p i, 30px
+ *         from y 96, its middle.  LIVE and SWEEP: PORT 0, SUPPLY 1, ARM 2;
+ *         RUDDER: PORT 0, ANGLE 1, ZERO 2, SUPPLY 3, ARM 4. */
+#define SV_DRV_ROW_Y(i)    (96 + 30 * (i) + 15)
 /** @brief ARM FIRST on LIVE's card, under the horn's angle: its line. */
 #define SV_HINT_X          24
 #define SV_HINT_Y          66                 /**< Its top. */

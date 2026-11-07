@@ -1058,11 +1058,14 @@ static void kst_view(const char *view)
     (void)rig_link_up(nopage ? (uint16_t)(LINK_MINOR_KST - 1u)
                              : LINK_PROTOCOL_MINOR);
     if (strcmp(v, "-hv") == 0) {
-        /* HV SERVO in the AUTOMATIC TEST's settings on TEST, which the
+        /* HV SERVO on TEST's SETTINGS list, its fourth row, which the
          * programmer's voltage follows. */
         ui_router_goto(SCREEN_SERVO_TEST);
-        tap(SV_RUN_SET_X, UI_BAND_H + SV_RUN_SET_Y(0));
-        tap(SV_LIST_X(0), UI_BAND_H + SV_LIST_ROW_Y(2)); /* HV SERVO */
+        tap(SV_FOOT_SET_X, UI_BAND_H + SV_FOOT_Y);
+        ui_setlist_t *sl = (ui_setlist_t *)servo_screen_list();
+        ui_setlist_scroll_to(sl, 3);
+        const gfx_rect_t r = ui_setlist_row_part(sl, 3, UI_SL_PART_PLUS);
+        tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);   /* HV SERVO */
     }
     ui_router_goto(SCREEN_SERVO_KST);
     /* The tester's drive as the control task reports it: PORT 1 on GP13
@@ -1351,10 +1354,10 @@ static void servo_run_view(bool to_the_end, bool ina)
     uint16_t win_number = 0u;
     /* On TEST's screen, as the view's screen shows it. */
     touch_event_t e = { .type = TOUCH_EVENT_DOWN,
-                        .point = { .id = 1, .x = SV_START_X,
-                                   .y = (int16_t)(UI_BAND_H + SV_START_Y(0)),
+                        .point = { .id = 1, .x = SV_TEST_HOLD_X,
+                                   .y = (int16_t)(UI_BAND_H + SV_TEST_HOLD_Y),
                                    .strength = 40 } };
-    ui_router_event(&e);                            /* START TEST, held */
+    ui_router_event(&e);                            /* ARM + START, held */
     for (int i = 0; i < 115; ++i) {
         now += 20u;
         servo_screen_clock(now);
@@ -1398,6 +1401,9 @@ static void servo_run_view(bool to_the_end, bool ina)
                 cmd = sc.value_us;
             } else if (sc.kind == SERVO_CMD_RELEASE) {
                 cmd = 1500u;
+            } else if (sc.kind == SERVO_CMD_DISARM) {
+                cmd = 1500u;                    /* the IOmcu: SAFE */
+                servo_screen_set_armed(false);
             }
         }
         const float a = out ? servo_sim_step(&sv, cmd, now) : 0.0f;
@@ -3497,7 +3503,7 @@ static void pose_analyser_views(ui_screen_id_t id, const char *view)
  *        soldered.
  *        layout-rbmod: LAYOUT with the same binding.  supply-rbmod:
  *        SUPPLY with the PROG PORTS 5V line and the PROG 5V box.
- *        servo-rbmod: SERVO's output card with the box.  servo-kst-rbmod:
+ *        servo-rbmod: LIVE on PROG PORT 1, PROG 5V off.  servo-kst-rbmod:
  *        the KST programmer, the box held by PROG PORT 1.  setup-sensors-rbmod:
  *        SENSORS with 0x40 soldered and its channels on the rails.
  * @param id   The screen of the shot.
@@ -3824,6 +3830,7 @@ static ui_screen_id_t servo_view_screen(const char *view)
         servo_fn_t  fn;     /**< the function shown                 */
     } k[] = {
         { "servo-hub", false, SERVO_FN_HUB },
+        { "servo-hv-live", true, SERVO_FN_KST },
         { "servo-settings", true, SERVO_FN_HUB },
         { "servo-rate-", false, SERVO_FN_HUB },
         { "servo-warning", true, SERVO_FN_HUB },
@@ -3902,6 +3909,18 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
             supply_sim_step(&sm, 0.05f, &sst);
             servo_screen_supply(&sst);
         }
+        /* LIVE on a SAFE bench, and the HV view: the PD mini answers with
+         * its output off, so the SUPPLY row reads what ARM does with it. */
+        if (strcmp(view, "servo") == 0 || strcmp(view, "servo-hv") == 0) {
+            if (strcmp(view, "servo-hv") == 0) {
+                supply_screen_put(7.4f, 2.0f);
+            }
+            supply_sim_output(&sm, false);
+            for (int i = 0; i < 20; ++i) {
+                supply_sim_step(&sm, 0.05f, &sst);
+                servo_screen_supply(&sst);
+            }
+        }
         /*
          * The INA3221 as the servo rail's meter: 13s of CH1's windows from
          * a servo of the same model stepped between two positions every
@@ -3973,6 +3992,14 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
             settings_set(SET_SERVO_TARGET, 1.0f);
             servo_screen_set_drive(1u, 13u, true);
         }
+        if (strcmp(view, "servo-rbmod") == 0) {
+            /* The carrier's PROG PORT 1 on GPIO 13, PORT PWM and the PROG
+             * 5V off: ARM switches both on. */
+            prog_choice_set_far_minor(LINK_MINOR_CARRIER_PWM);
+            settings_set(SET_SERVO_TARGET, 1.0f);
+            settings_set(SET_SERVO_PORT_PWM, 0.0f);
+            servo_screen_set_drive(1u, 13u, false);
+        }
         if (strcmp(view, "servo-model") == 0) {
             /* No PD mini: the panel's model is the supply, and the line
              * over the plot carries the MODELLED pill. */
@@ -4002,15 +4029,19 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
             if (p2 && kst_panel_notes_rect().w > 0) {
                 ktap(kst_panel_notes_rect());
             }
-        } else if (strcmp(view, "servo-hv") == 0
-                   || strcmp(view, "servo-hv-live") == 0) {
-            /* The voltage on the SET line, typed past 6.0V: the HV
-             * warning, and in servo-hv-live with the output on.  The
-             * keypad's keys from a probe opened where the screen opens its
-             * own, over the left card. */
-            if (strcmp(view, "servo-hv-live") == 0) {
-                supply_screen_set_output(true);
-            }
+        } else if (strcmp(view, "servo-hv") == 0) {
+            /* LIVE with the PD mini off and set to 7.40V: SUPPLY reads TAP:
+             * HV WARNING in red, and a tap on it opens OUTPUT ON's HV
+             * warning. */
+            ui_router_goto(id);
+            ui_router_tick(0.02f);
+            tap(SV_RDY_X, UI_BAND_H + SV_DRV_ROW_Y(1));
+        } else if (strcmp(view, "servo-hv-live") == 0) {
+            /* The voltage on the SET line of KST's output card, typed
+             * past 6.0V with the output on: the HV warning.  The keypad's
+             * keys from a probe opened where the screen opens its own,
+             * over the left card. */
+            supply_screen_set_output(true);
             ui_router_goto(id);
             tap(SV_SUP_V_X, UI_BAND_H + SV_SUP_Y);
             ui_keypad_t kp;
@@ -4031,8 +4062,8 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
             }
             ui_router_goto(id);
         }
-        /* The footer's SETTINGS: the hub's list, a function's list, TEST's
-         * and LIMIT RUN's page of rows, KST's EXPERT MODE page. */
+        /* The footer's SETTINGS: the hub's list, a function's list (TEST's
+         * among them), LIMIT RUN's page of rows, KST's EXPERT MODE page. */
         const bool on_list = strcmp(view, "servo-settings") == 0
                              || strcmp(view, "servo-sweep-page") == 0
                              || strcmp(view, "servo-warning") == 0
@@ -4041,15 +4072,18 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
                              || strcmp(view, "servo-name") == 0
                              || strcmp(view, "servo-trim-keypad") == 0
                              || strncmp(view, "servo-rate-", 11) == 0
-                             || strcmp(view, "servo-test-settings") == 0
+                             || strncmp(view, "servo-test-settings", 19) == 0
                              || strcmp(view, "servo-limits") == 0
                              || strcmp(view, "servo-brownout") == 0;
         if (on_list) {
             tap(SV_FOOT_SET_X, UI_BAND_H + SV_FOOT_Y);
         }
         if (strcmp(view, "servo-brownout") == 0) {
-            /* BROWN-OUT, the middle column's last row: its page. */
-            tap(SV_LIST_X(1), UI_BAND_H + SV_LIST_ROW_Y(4));
+            /* TEST's list scrolled to its BROWN-OUT heading, row 6. */
+            ui_setlist_scroll_to((ui_setlist_t *)servo_screen_list(), 6);
+        } else if (strcmp(view, "servo-test-settings-end") == 0) {
+            /* ... and to its last row, SETTLING TIME. */
+            ui_setlist_scroll_to((ui_setlist_t *)servo_screen_list(), 20);
         } else if (strcmp(view, "servo-warning") == 0) {
             servo_list_tap(1, UI_SL_PART_VALUE);      /* TYPE */
             tap(165, UI_BAND_H + 256);                /* HELI CYCLIC */

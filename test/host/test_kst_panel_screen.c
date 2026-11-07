@@ -404,7 +404,7 @@ TEST_CASE(the_programmer_stays_on_the_screen_while_the_port_is_held)
 }
 
 /* The SET row of the SERVO screen's right card, as the screen lays it
- * out. */
+ * out on KST and HITEC. */
 #define SUP_ROW_Y SV_SUP_Y
 
 #define SUP_V_X   SV_SUP_V_X
@@ -425,11 +425,12 @@ static void screen_key(ui_key_t key_id)
     screen_tap(cx(r), cy(r));
 }
 
-/* OUTPUT ON held on the SERVO screen's SET row until it asks. */
+/* OUTPUT ON held on the SET row of KST's output card until it asks. */
 static void servo_output_on(void)
 {
     supply_cmd_t c;
 
+    go(SERVO_FN_KST);
     ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < 120; ++i) {
         scr->tick(0.025f);
@@ -476,6 +477,7 @@ TEST_CASE(leaving_servo_switches_its_supply_off_once_the_port_lets_go)
     CHECK(kst_panel_is_open());
     program_close();
     CHECK(!kst_panel_is_open());
+    go(SERVO_FN_KST);
     screen_tap(SUP_V_X, SUP_ROW_Y);
     screen_key(UI_KEY_CANCEL);
     CHECK(!supply_screen_poll_cmd(&c));

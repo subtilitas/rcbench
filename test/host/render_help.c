@@ -71,6 +71,7 @@ static const struct {
     { "help-servo-sweepfn", "servo-sweep-safe" },
     { "help-servo-limrun", "servo-limcard" },
     { "help-servo-dut", "servo-encoder" },
+    { "help-servo-kst", "servo-kst" },
     { "help-supply", "supply-off" },
     { "help-supply-settings", "supply-settings-off" },
     { "help-supply-pdmini", "supply-pdmini" },

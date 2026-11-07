@@ -54,6 +54,8 @@ set(SRCS
     servo_settings_panel.c
     servo_settings_draw.c
     servo_test_panel.c
+    servo_test_ready.c
+    servo_test_list.c
     servo_limit_panel.c
     servo_limit_ready.c
     servo_limit_card.c
@@ -63,6 +65,7 @@ set(SRCS
     servo_rudder_auto_panel.c
     servo_rudder_auto_ready.c
     servo_ready.c
+    servo_drive_ready.c
     servo_rudder_flap.c
     servo_guide.c
     servo_fn.c

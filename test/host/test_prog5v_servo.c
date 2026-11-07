@@ -17,6 +17,9 @@
  * SPDX-License-Identifier: MIT
  */
 
+/* KST's screen: its output card keeps the PROG 5V box, which LIVE, SWEEP
+ * and RUDDER show as their READY rows' SUPPLY. */
+#define SERVO_RIG_FN SERVO_FN_KST
 #include "servo_screen_rig.h"
 
 #include "prog5v_box.h"
@@ -168,8 +171,8 @@ TEST_CASE(leaving_servo_switches_off_what_its_box_switched_on)
 TEST_CASE(the_5v_stays_across_servos_screens_and_goes_with_the_last)
 {
     fresh_p5(ST_OFF);
-    ui_router_goto(SCREEN_SERVO_LIVE);
-    scr = servo_fn_screen(SERVO_FN_LIVE);
+    ui_router_goto(SCREEN_SERVO_KST);
+    scr = servo_fn_screen(SERVO_FN_KST);
     ev(p5x(), p5y(), TOUCH_EVENT_DOWN, 1);
     ticks(8, 0.25f);
     CHECK(asked_on());
@@ -177,7 +180,7 @@ TEST_CASE(the_5v_stays_across_servos_screens_and_goes_with_the_last)
     prog5v_box_publish(ST_ON, 21u, (uint8_t)PROG5V_HELD_NONE);
     scr->tick(0.02f);
     static const ui_screen_id_t k_way[] = {
-        SCREEN_SERVO_TEST, SCREEN_SERVO, SCREEN_SERVO_RUDDER, SCREEN_SERVO,
+        SCREEN_SERVO_LIVE, SCREEN_SERVO, SCREEN_SERVO_RUDDER, SCREEN_SERVO,
     };
     for (size_t i = 0; i < sizeof(k_way) / sizeof(k_way[0]); ++i) {
         ui_router_goto(k_way[i]);

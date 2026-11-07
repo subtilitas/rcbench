@@ -43,6 +43,12 @@
 #define SHAFT_Y SV_SHAFT_Y
 #define ARC_R   150
 
+/* The function screen fresh() opens: LIVE, or SWEEP for the suites of
+ * the sweep, which define it before they include the rig. */
+#ifndef SERVO_RIG_FN
+#define SERVO_RIG_FN SERVO_FN_LIVE
+#endif
+
 static gfx_color_t *fb;
 static gfx_canvas_t cv;
 static const ui_screen_t *scr;
@@ -71,9 +77,9 @@ static inline void fresh(void)
     settings_init();
     supply_screen()->reset();
     supply_screen_settings_loaded();
-    scr = servo_fn_screen(SERVO_FN_LIVE);
+    scr = servo_fn_screen(SERVO_RIG_FN);
     scr->reset();
-    servo_screen_show_fn(SERVO_FN_LIVE);
+    servo_screen_show_fn(SERVO_RIG_FN);
     /* An IOmcu that reports its servo PWM bank: the KST tile is
      * live. */
     ui_bench_status_t st = *ui_router_status();
@@ -144,7 +150,7 @@ static inline void go(servo_fn_t fn)
 static inline void tap_settings(void) { tap(SV_FOOT_SET_X, SV_FOOT_Y); }
 /* The hub's SETTINGS list, the servo profile. */
 static inline void open_settings(void)  { go(SERVO_FN_HUB); tap_settings(); }
-static inline void close_settings(void) { go(SERVO_FN_LIVE); }
+static inline void close_settings(void) { go(SERVO_RIG_FN); }
 static inline void open_test(void)      { go(SERVO_FN_TEST); }
 static inline void open_limrun(void)    { go(SERVO_FN_LIMRUN); }
 static inline void open_sweep(void)     { go(SERVO_FN_SWEEP); }
@@ -155,6 +161,16 @@ static inline void close_kst(void)
     const gfx_rect_t r = kst_panel_close_rect();
     tap(r.x + r.w / 2, r.y + r.h / 2);
 }
+/* TEST's SETTINGS list (servo_test_list.c), row by row: four headings
+ * and the automatic test's 17 rows. */
+enum {
+    TL_H_STEPS = 0, TL_STEP_48, TL_STEP_60, TL_HV, TL_STEP_74, TL_STEP_84,
+    TL_H_BO, TL_BROWNOUT, TL_BO_FLOOR, TL_BO_STEP,
+    TL_H_LIMITS, TL_STALL, TL_IDLE, TL_HOLD, TL_TRAVEL,
+    TL_H_LENGTH, TL_LEN_BY, TL_LEN_S, TL_MOVES, TL_DWELL, TL_SETTLE,
+};
+
+
 /* LIMIT RUN's list, row by row (servo_lists.c). */
 enum { LL_MODE = 0, LL_SERVO, LL_PULSES, LL_PROG_V, LL_PROG_I, LL_WAIT };
 
@@ -174,10 +190,10 @@ static inline void open_limrun_list(void)
     }
 }
 
-/* A run's settings, one level down from its card: 0 the automatic test on
- * TEST; 1 LIMIT RUN's list.  The page opens on a SAFE bench only: on an
- * armed one the operator switches to SAFE first, and the home tag that
- * closes the page arms the bench again. */
+/* A run's settings, one level down from its screen: 0 TEST's SETTINGS
+ * list, 1 LIMIT RUN's list.  Each opens on a SAFE bench only: on an armed
+ * one the operator switches to SAFE first, and the home tag that closes it
+ * arms the bench again. */
 static inline void open_run_settings(int k)
 {
     if (k != 0) {
@@ -185,11 +201,11 @@ static inline void open_run_settings(int k)
         return;
     }
     go(SERVO_FN_TEST);
-    tap(SV_RUN_SET_X, SV_RUN_SET_Y(0));
-    if (servo_screen_run_settings() == 0) {
+    tap_settings();
+    if (!servo_screen_list()->open) {
         servo_screen_set_armed(false);
         g_rig_rearm = true;
-        tap(SV_RUN_SET_X, SV_RUN_SET_Y(0));
+        tap_settings();
     }
 }
 /* The home tag, as the router asks the screen: whether it climbed. */
@@ -228,6 +244,20 @@ static inline void sl_part(int i, ui_sl_part_t part)
 static inline void sl_step(int i, int dir)
 {
     sl_part(i, (dir < 0) ? UI_SL_PART_MINUS : UI_SL_PART_PLUS);
+}
+
+/* HV SERVO on TEST's list switched, and the list closed as a new showing
+ * of TEST closes it, past the leave warning a change not saved would
+ * raise: TEST's card shows again, the bench as it was. */
+static inline void test_hv_on(void)
+{
+    open_run_settings(0);
+    sl_step(TL_HV, +1);
+    go(SERVO_FN_TEST);
+    if (g_rig_rearm) {
+        g_rig_rearm = false;
+        servo_screen_set_armed(true);
+    }
 }
 
 /* @p text typed on the open list's keypad, then OK. */
