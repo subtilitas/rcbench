@@ -630,9 +630,9 @@ static void layout_notes(notes_plan_t *p)
             p->y[i] = y;
             y += p->rows[i] * LINE_H;
         }
-    } else if (p->room < 1) {
-        /* The message leaves no row for a note and the count: the notes
-         * wait for it to go. */
+    } else if (p->room < 2) {
+        /* The message leaves no row for a note beside the count: the
+         * notes wait for it to go. */
         for (int i = 0; i < p->count; ++i) {
             p->y[i] = -1;
         }
@@ -707,7 +707,7 @@ static void draw_notes(gfx_canvas_t *c)
 static gfx_rect_t notes_rect(const notes_plan_t *p)
 {
     return (gfx_rect_t){ k.area.x, (int16_t)p->top, k.area.w,
-                         (int16_t)((p->room > 0 ? p->room : 0) * LINE_H) };
+                         (int16_t)((p->room > 1 ? p->room : 0) * LINE_H) };
 }
 
 /* Whether (x, y) is on notes that take more than one page. */
@@ -720,8 +720,10 @@ bool kpn_notes_paged_at(int x, int y)
 gfx_rect_t kst_panel_notes_rect(void)
 {
     plan_notes(&s_plan);
-    return s_plan.pages > 1 ? notes_rect(&s_plan)
-                            : (gfx_rect_t){ 0, 0, 0, 0 };
+    /* Notes that wait for the message take no tap. */
+    return (s_plan.pages > 1 && s_plan.room > 1)
+               ? notes_rect(&s_plan)
+               : (gfx_rect_t){ 0, 0, 0, 0 };
 }
 
 int kst_panel_note_pages(void)

@@ -136,7 +136,7 @@ static void servo_to(const servo_state_t *st)
 static const servo_state_t k_servo[] = {
     { "HUB", SERVO_FN_HUB, false, 2, 2,
       { TX_HG_SVH_TITLE_TILES, TX_HG_SVH_TITLE_FOOTER },
-      { 4, 2 } },
+      { 5, 2 } },
     { "LIVE", SERVO_FN_LIVE, false, 3, 0,
       { TX_HG_SV_TITLE_LIVE, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
       { 3, 4, 3 } },
@@ -446,7 +446,7 @@ TEST_CASE(a_badge_at_the_right_sits_in_the_top_right_corner)
     memset(&p, 0, sizeof(p));
     p.side = UI_HELP_DOCK_RIGHT;
     p.count = 1;
-    p.item[0] = (ui_help_item_t){ "X", TX_HG_SV_TASKS,
+    p.item[0] = (ui_help_item_t){ "X", TX_HG_SV_LIM,
                                   gfx_rect_make(100, 100, 200, 40),
                                   UI_HELP_AT_LEFT };
     const uint32_t left = ui_help_marks_key(&p);

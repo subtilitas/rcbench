@@ -152,7 +152,7 @@ void prog_choice_tick(void);
 
 /**
  * @brief A programmer's text as the board needs it: on the carrier
- *        TX_KP_NEED_TARGET_2 (`Tap TARGET and set SERVO TESTER ...`) is the
+ *        TX_KP_NEED_TARGET_2 (`Tap PORT and pick one of PROG PORT 1 ...`) is the
  *        PORT row's, or the IOmcu update an IOmcu older than 4.36 needs;
  *        every other text, and every text elsewhere, as it is.
  * @param id a TX_ ID, as a number

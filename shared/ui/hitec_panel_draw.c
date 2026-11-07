@@ -528,10 +528,21 @@ static void draw_hold(gfx_canvas_t *c)
     gfx_draw_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2, edge);
     gfx_draw_rect(c, a.x + 2, a.y + 2, a.w - 4, a.h - 4, edge);
     gfx_text(c, a.x + 12, a.y + 16, hp.page.title, HP_TITLE_FONT, edge, 1);
+    /* 8px between the lines, less where that would take them under the
+     * buttons: SERVO's left card is 428px tall. */
+    int rows = 0;
+    for (int i = 0; i < hp.page.count; ++i) {
+        rows += hitec_panel_text_rows(hp.page.lines[i]);
+    }
+    const int room = hitec_panel_apply_rect().y - 8 - y - rows * HP_LINE_H;
+    int gap = 8;
+    if (hp.page.count > 1 && room < 8 * (hp.page.count - 1)) {
+        gap = room > 0 ? room / (hp.page.count - 1) : 0;
+    }
     for (int i = 0; i < hp.page.count; ++i) {
         y = hpn_text_rows(c, a.x + 12, y, hp.page.lines[i],
                           level_color(hp.page.level[i]))
-            + 8;
+            + gap;
     }
     draw_apply(c);
     button(c, hitec_panel_cancel_rect(), TR(CANCEL),

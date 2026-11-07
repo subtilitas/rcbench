@@ -341,10 +341,11 @@ gfx_rect_t kst_panel_value_rect(int page, int row, int col);
  */
 gfx_rect_t kst_panel_step_rect(int page, int row, bool up);
 /**
- * @brief A list's entry, 48px tall at a 56px pitch under the title, in two
- *        columns when one column above CANCEL does not hold the list.
+ * @brief A list's entry, 48px tall at a 56px pitch under the title; two
+ *        to a row, in order, when one column above CANCEL does not hold
+ *        the list, an entry wider than a column on a row of its own.
  * @param i the entry, from 0
- * @return its rectangle
+ * @return its rectangle; empty for no such entry
  */
 gfx_rect_t kst_panel_choice_rect(int i);
 /** @brief A list's CANCEL, 150 x 48px at the foot's right.
@@ -417,7 +418,7 @@ int kst_panel_pack_notes(const int *rows, const bool *standing, int count,
 int kst_panel_note_pages(void);
 
 /** The notes' area, a tap on which shows the next page; empty while the
- *  notes take one page. */
+ *  notes take one page or wait for the message. */
 gfx_rect_t kst_panel_notes_rect(void);
 
 /** The notes' page shown, from 0. */

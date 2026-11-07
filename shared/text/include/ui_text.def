@@ -104,10 +104,10 @@ UI_TEXT(WB_LIVE, 0,
 /* A workbench's PROGRAM list (prog_registry.h): a row's name, its group's
  * heading, and the reason a dimmed row gives in place of its transport.
  * The capability's name is the link's, the same in every language. */
-UI_TEXT(PL_KST, 0,
+UI_TEXT(PL_KST, 31,
     "KST and Chaservo servos",
     "KST- und Chaservo-Servos")
-UI_TEXT(PL_HITEC, 0,
+UI_TEXT(PL_HITEC, 31,
     "Hitec servos",
     "Hitec-Servos")
 UI_TEXT(PL_GRP_PROG_PORT, 40,
@@ -4629,12 +4629,9 @@ UI_TEXT(ESC_WHY_AFTER_TWO, 146,
 UI_TEXT(SV_PG_OUTPUT, 0,
     "OUTPUT",
     "AUSGANG")
-UI_TEXT(SV_PG_TEST, 0,
+UI_TEXT(SV_PG_TEST, 12,
     "TEST",
     "TEST")
-UI_TEXT(SV_PG_SWEEP, 0,
-    "SWEEP",
-    "SWEEP")
 UI_TEXT(SV_PG_DUT, 0,
     "DUT",
     "PRÜFLING")
@@ -4662,15 +4659,6 @@ UI_TEXT(SV_ROW_TRAVEL, 0,
 UI_TEXT(SV_ROW_REVERSE, 0,
     "REVERSE",
     "UMKEHREN")
-UI_TEXT(SV_ROW_CURVE, 0,
-    "CURVE",
-    "KURVE")
-UI_TEXT(SV_ROW_SPEED, 0,
-    "SPEED",
-    "TEMPO")
-UI_TEXT(SV_ROW_RANGE, 0,
-    "RANGE",
-    "BEREICH")
 UI_TEXT(SV_ROW_LEN_BY, 0,
     "TEST LENGTH BY",
     "TESTDAUER NACH")
@@ -4746,9 +4734,6 @@ UI_TEXT(SV_SERVO_TYPE, 30,
 UI_TEXT(SV_CUSTOM, 28,
     "CUSTOM",
     "EIGENE EINSTELLUNG")
-UI_TEXT(SV_DUT_TITLE, 0,
-    "DEVICE UNDER TEST",
-    "PRÜFLING")
 UI_TEXT(SV_NOT_RECORDED, 31,
     "NOT RECORDED",
     "NICHT AUFGEZEICHNET")
@@ -4865,8 +4850,8 @@ UI_TEXT(SV_IN_FORCE_NO_LINK, 58,
     "No link. The active frame rate is unknown.",
     "Keine Verbindung. Die aktive Pulsrate ist unbekannt.")
 UI_TEXT(SV_IN_FORCE_NOT_SET, 58,
-    "The TARGET chosen is not active.",
-    "Das gewählte ZIEL ist nicht aktiv.")
+    "The PORT chosen is not active.",
+    "Der gewählte PORT ist nicht aktiv.")
 UI_TEXT(SV_IN_FORCE_PWM_OFF, 58,
     "PORT PWM is OFF. The port sends no pulses.",
     "PORT-PWM ist AUS. Der Port gibt keine Pulse aus.")
@@ -4903,12 +4888,6 @@ UI_TEXT(SV_TAP_HV, 29,
 UI_TEXT(SV_HOLD_START, 29,
     "HOLD 2s TO START",
     "2s HALTEN ZUM STARTEN")
-UI_TEXT(SV_FASTEST, 0,
-    "Highest rate with these pulses: %uHz (%s gap).",
-    "Höchste Pulsrate mit diesen Pulsen: %uHz (%s Pause).")
-UI_TEXT(SV_AT_START, 0,
-    "At startup, type and rate reset to STANDARD PWM 50Hz.",
-    "Beim Start gelten wieder STANDARD PWM und 50Hz.")
 /* The limit run on its card on TEST and in its box on the left card: a
  * line of the page holds 58 cells, a line of the box 31, its button 15. */
 UI_TEXT(SV_ROW_LIM_MODE, 0,
@@ -5138,9 +5117,6 @@ UI_TEXT(HG_SV_TITLE_LIVE, 0,
 UI_TEXT(HG_SV_TITLE_TEST, 0,
     "SERVO: TEST",
     "SERVO: TEST")
-UI_TEXT(HG_SV_TITLE_PROG, 0,
-    "SERVO: PROGRAM",
-    "SERVO: PROGRAMMIEREN")
 UI_TEXT(HG_SV_TITLE_RUDDER, 0,
     "SERVO: RUDDER",
     "SERVO: RUDER")
@@ -5150,27 +5126,15 @@ UI_TEXT(HG_SV_TITLE_RUD_READ, 0,
 UI_TEXT(HG_SV_TITLE_AUTO, 0,
     "SERVO: RUDDER AUTO",
     "SERVO: RUDER AUTO")
-UI_TEXT(HG_SV_TITLE_OUTPUT, 0,
-    "SERVO SETTINGS: OUTPUT",
-    "SERVO OPTIONEN: AUSGANG")
-UI_TEXT(HG_SV_TITLE_OUTPUT_2, 0,
-    "SERVO SETTINGS: TRIM AND TRAVEL",
-    "SERVO OPTIONEN: TRIMMUNG UND WEG")
 UI_TEXT(HG_SV_TITLE_SWEEP, 0,
     "SERVO: SWEEP",
     "SERVO: SWEEP")
-UI_TEXT(HG_SV_TITLE_DUT, 0,
-    "SERVO SETTINGS: DUT",
-    "SERVO OPTIONEN: PRÜFLING")
 UI_TEXT(HG_SV_TITLE_CARD, 0,
     "SERVO: OUTPUT CARD",
     "SERVO: AUSGANGSKARTE")
 UI_TEXT(HG_SV_TITLE_DRIVE, 0,
     "SERVO: WHAT IT DRIVES",
     "SERVO: WAS ES ANSTEUERT")
-UI_TEXT(HG_SV_TASKS_NAME, 0,
-    "TASKS",
-    "AUFGABEN")
 UI_TEXT(HG_SV_ANGLE_NAME, 0,
     "ANGLE",
     "WINKEL")
@@ -5183,21 +5147,12 @@ UI_TEXT(HG_SV_READ_NAME, 0,
 UI_TEXT(HG_SV_CAPS_NAME, 0,
     "CAPS",
     "GRENZEN")
-UI_TEXT(HG_SV_PROG_NAME, 0,
-    "PROGRAMMERS",
-    "PROGRAMMIERUNG")
 UI_TEXT(HG_SV_SIDE_NAME, 0,
     "SIDE VIEW",
     "SEITENANSICHT")
 UI_TEXT(HG_SV_MARGIN_NAME, 0,
     "MARGIN",
     "RESERVE")
-UI_TEXT(HG_SV_PAGES_NAME, 0,
-    "PAGES",
-    "SEITEN")
-UI_TEXT(HG_SV_TASKS, 0,
-    "Switch the left card between the tasks. The output card on the right stays the same.",
-    "Wechseln die linke Karte zwischen den Aufgaben. Die Ausgangskarte rechts bleibt gleich.")
 UI_TEXT(HG_SV_ANGLE, 0,
     "Where the horn is drawn: the measured angle with an angle source, else the commanded one.",
     "Wo das Ruderhorn steht: mit Winkelquelle der gemessene Winkel, sonst der Sollwinkel.")
@@ -5219,9 +5174,6 @@ UI_TEXT(HG_SV_LIM, 0,
 UI_TEXT(HG_SV_CAPS, 0,
     "SUPPLY's voltage and current caps, which the test's steps keep to. A tap opens SUPPLY.",
     "Spannungs- und Stromgrenze von SUPPLY, die die Teststufen einhalten. Tippen öffnet SUPPLY.")
-UI_TEXT(HG_SV_PROG, 0,
-    "A row opens its programmer over the left card. Its right end names the port and GPIO, or why it is grey.",
-    "Eine Zeile öffnet ihre Programmierung über der linken Karte, rechts mit Port und GPIO oder Sperrgrund.")
 UI_TEXT(HG_SV_FIND, 115,
     "Narrows the list to the names typed on the keyboard. ^ and v scroll it.",
     "Grenzt die Liste auf die eingetippten Namen ein. ^ und v blättern.")
@@ -5237,9 +5189,6 @@ UI_TEXT(HG_SV_RUD_ZERO, 0,
 UI_TEXT(HG_SV_RUD_RESET, 0,
     "Clears MAX, the largest deflection each way. The zero stays.",
     "Löscht MAX, den größten Ausschlag je Seite. Der Nullpunkt bleibt.")
-UI_TEXT(HG_SV_RUD_AUTO, 0,
-    "Shows AUTO: it programs the end points of a KST, Chaservo or Hitec servo to a deflection.",
-    "Zeigt AUTO: programmiert die Endpunkte eines KST-, Chaservo- oder Hitec-Servos auf einen Ausschlag.")
 UI_TEXT(HG_SV_RUD_DEFL, 0,
     "The angle from ZERO in °, signed in the commanded direction. MAX: the largest each way.",
     "Winkel ab NULLPUNKT in °, mit Vorzeichen in Sollrichtung. MAX: der größte je Seite.")
@@ -5261,57 +5210,6 @@ UI_TEXT(HG_SV_RA_MARGIN, 0,
 UI_TEXT(HG_SV_RA_START, 0,
     "Starts the run while ARMED; STOP RUN ends it. Take ZERO with the surface at neutral first.",
     "Startet den Lauf bei ARMED; LAUF BEENDEN stoppt ihn. Setze vorher den NULLPUNKT in Neutrallage.")
-UI_TEXT(HG_SV_RA_MANUAL, 0,
-    "Closes AUTO and shows LENGTH and the drive buttons again. Locked while the run runs.",
-    "Schließt AUTO und zeigt LÄNGE und die Fahrtasten wieder. Gesperrt, solange der Lauf läuft.")
-UI_TEXT(HG_SV_PAGES, 0,
-    "OUTPUT, SWEEP and DUT: the pages of SERVO's own settings. The bottom line says whether they are saved.",
-    "AUSGANG, SWEEP und PRÜFLING: die Seiten der Optionen von SERVO. Die Zeile unten sagt, ob gespeichert.")
-UI_TEXT(HG_SV_ROW_TYPE, 0,
-    "The servo profile: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC or HELI TAIL 760.",
-    "Das Servoprofil: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC oder HELI TAIL 760.")
-UI_TEXT(HG_SV_ROW_RATE, 0,
-    "How often a pulse is sent: the type's list, or CUSTOM on the keypad.",
-    "Wie oft ein Puls gesendet wird: die Liste des Typs oder CUSTOM per Tastenfeld.")
-UI_TEXT(HG_SV_ROW_MIN, 0,
-    "The pulse at -90°, 400 to 2500us, at least 50us from PULSE CENTRE.",
-    "Der Puls bei -90°, 400 bis 2500us, mindestens 50us von PULS MITTE.")
-UI_TEXT(HG_SV_ROW_MAX, 0,
-    "The pulse at +90°, 400 to 2500us, at least 50us from PULSE CENTRE.",
-    "Der Puls bei +90°, 400 bis 2500us, mindestens 50us von PULS MITTE.")
-UI_TEXT(HG_SV_ROW_CENTRE, 0,
-    "The pulse at 0°, 400 to 2500us.",
-    "Der Puls bei 0°, 400 bis 2500us.")
-UI_TEXT(HG_SV_ROW_TRIM, 0,
-    "Adds to the centre, -200 to +200us in 5us steps. - and + step it; a tap on the value types it.",
-    "-200 bis +200us in 5us-Stufen zur Mitte. - und + stufen; Tippen auf den Wert öffnet das Tastenfeld.")
-UI_TEXT(HG_SV_ROW_TRAVEL, 0,
-    "How far the horn may move each way, 10 to 90°.",
-    "Wie weit das Ruderhorn je Seite fahren darf, 10 bis 90°.")
-UI_TEXT(HG_SV_ROW_REVERSE, 0,
-    "ON swaps the ends: the angle maps to the pulse the other way round.",
-    "EIN tauscht die Enden: der Winkel ergibt den Puls in umgekehrter Richtung.")
-UI_TEXT(HG_SV_ROW_CURVE, 0,
-    "The curve of SWEEP and of the test's moves: SQUARE, SINE or TRIANGLE.",
-    "Die Kurve von SWEEP und der Testbewegungen: SQUARE, SINE oder TRIANGLE.")
-UI_TEXT(HG_SV_ROW_SPEED, 0,
-    "Curves a second, 0.05 to 5Hz.",
-    "Kurven pro Sekunde, 0.05 bis 5Hz.")
-UI_TEXT(HG_SV_ROW_RANGE, 0,
-    "The share of the travel a curve moves through, 10 to 100%.",
-    "Anteil des Wegs, den eine Kurve durchfährt, 10 bis 100%.")
-UI_TEXT(HG_SV_ROW_NAME, 0,
-    "The device under test, up to 23 characters. It heads each test report.",
-    "Der Prüfling, bis 23 Zeichen. Er steht oben in jedem Testbericht.")
-UI_TEXT(HG_SV_ROW_REPORT, 0,
-    "ON writes a TXT report beside each test's log while User logs is ON on SETUP.",
-    "EIN schreibt zu jedem Test einen TXT-Bericht, solange Testaufzeichnungen in SETUP EIN ist.")
-UI_TEXT(HG_SV_ROW_ENC, 0,
-    "A tap takes the AS5600's count now as the centre. Centre the servo first.",
-    "Tippen übernimmt den AS5600-Wert jetzt als Mitte. Stelle das Servo vorher auf Mitte.")
-UI_TEXT(HG_SV_OPEN_ENC, 0,
-    "Opens SENSORS on the AS5600 entry, where it is switched on or off.",
-    "Öffnet SENSORS beim Eintrag AS5600, wo er ein- oder ausgeschaltet wird.")
 UI_TEXT(HG_SV_TYPE, 0,
     "The servo type, frame rate and pulse range in force. SETTINGS sets them on OUTPUT.",
     "Aktiver Servotyp, Pulsrate und Pulsbereich. OPTIONEN stellt sie auf AUSGANG ein.")
@@ -5405,8 +5303,8 @@ UI_TEXT(HG_SVH_TITLE_TILES, 0,
     "SERVO: FUNCTIONS",
     "SERVO: FUNKTIONEN")
 UI_TEXT(HG_SVH_TITLE_FOOTER, 0,
-    "SERVO: PORT AND SETTINGS",
-    "SERVO: PORT UND OPTIONEN")
+    "SERVO: TILES AND SETTINGS",
+    "SERVO: KACHELN UND OPTIONEN")
 UI_TEXT(HG_SVH_DRIVE, 0,
     "LIVE and SWEEP drive the servo by the dial, the knob and the curve.",
     "LIVE und SWEEP steuern das Servo mit Skala, Drehknopf und Kurve.")
@@ -5441,7 +5339,7 @@ UI_TEXT(SVL_RATE_HELP, 0,
     "Über 60Hz nur nach der 2s-Warnung; 50Hz nach jedem Neustart")
 UI_TEXT(SVL_PULSE_HELP, 0,
     "Keys step 10us; a tap on the value opens the keypad",
-    "Tasten in 10us-Schritten; ein Tippen auf den Wert öffnet die Zahlentasten")
+    "10us je Taste; ein Tippen auf den Wert öffnet die Zahlentasten")
 UI_TEXT(SVL_TRIM_HELP, 0,
     "Added to PULSE CENTRE, -200 to +200us in 5us steps",
     "Zu PULS MITTE addiert, -200 bis +200us in 5us-Schritten")
@@ -5457,7 +5355,7 @@ UI_TEXT(SVL_HV_HELP, 0,
 UI_TEXT(SVL_ENC_HELP, 0,
     "A tap at the servo's neutral takes the AS5600's count now",
     "Ein Tippen in der Neutrallage des Servos übernimmt den AS5600-Wert")
-UI_TEXT(SVL_ENC_NO_READING, 0,
+UI_TEXT(SVL_ENC_NO_READING, 60,
     "No AS5600 reading: set it up on SENSORS",
     "Kein AS5600-Wert: richte ihn unter SENSORS ein")
 UI_TEXT(SVL_ANGLE_SOURCE, 0,
@@ -5466,16 +5364,16 @@ UI_TEXT(SVL_ANGLE_SOURCE, 0,
 UI_TEXT(SVL_ANGLE_HELP, 0,
     "Set on SENSORS; a tap opens it there",
     "Eingestellt unter SENSORS; ein Tippen öffnet es dort")
-UI_TEXT(SVL_FAMILY_HELP, 0,
+UI_TEXT(SVL_FAMILY_HELP, 60,
     "The programmer a run writes the end points with",
     "Der Programmierer, mit dem ein Lauf die Endpunkte schreibt")
-UI_TEXT(SVL_PULSES_HELP, 0,
+UI_TEXT(SVL_PULSES_HELP, 60,
     "SET: the servo's pulses to 1000-2000us first",
     "SETZEN: die Pulse des Servos zuerst auf 1000-2000us")
-UI_TEXT(SVL_PORT_ONLY, 0,
+UI_TEXT(SVL_PORT_ONLY, 60,
     "On a PROG PORT only: choose one with PORT",
     "Nur an einem PROG-PORT: wähle einen mit PORT")
-UI_TEXT(SVL_KST_ONLY, 0,
+UI_TEXT(SVL_KST_ONLY, 60,
     "KST and Chaservo servos only",
     "Nur KST- und Chaservo-Servos")
 UI_TEXT(SV_ROW_PROG_V, 0,
@@ -5488,8 +5386,8 @@ UI_TEXT(SV_ROW_PROG_WAIT, 0,
     "PROG WAIT",
     "PROG-WARTEZEIT")
 UI_TEXT(SV_KST_EXPERT_NOTE, 0,
-    "ON after a 2s hold, OFF with a tap. ON shows the LOCKED page.",
-    "EIN nach 2s Halten, AUS mit einem Tippen. EIN zeigt die Seite LOCKED.")
+    "ON after a 2s hold, OFF with a tap. ON shows LOCKED.",
+    "EIN nach 2s Halten, AUS per Tippen. EIN zeigt LOCKED.")
 
 /* --------------- the alert band: the panel's control task raises these */
 UI_TEXT(ALERT_TOUCH_LOST_STOP, 94,
@@ -6354,8 +6252,8 @@ UI_TEXT(KP_NEED_TARGET, 116,
     "Use the programming port to program a servo.",
     "Zum Programmieren muss das Servo am Programmierport angeschlossen sein.")
 UI_TEXT(KP_NEED_TARGET_2, 116,
-    "Tap TARGET and select one of PORT 1 to PORT 4 for SERVO TESTER.",
-    "Tippe auf ZIEL und wähle unter SERVO-TESTER einen der Ports PORT 1 bis PORT 4.")
+    "Tap PORT and pick one of PROG PORT 1 to PROG PORT 4.",
+    "Tippe auf PORT und wähle einen von PROG PORT 1 bis PROG PORT 4.")
 UI_TEXT(KP_DOUBT, 116,
     "The settings currently in the servo are unknown.",
     "Die aktuellen Werte im Servo sind unbekannt.")
@@ -10815,12 +10713,6 @@ UI_SERVO_TEXT(SERVO_STR_RA_R_MODEL,
 /* AUTO's box on RUDDER (servo_rudder_auto_panel.c): the button that
  * shows it and the one back, its rows, its START, its lines and why a
  * START is refused. */
-UI_TEXT(RA_AUTO, 0,
-    "AUTO",
-    "AUTO")
-UI_TEXT(RA_MANUAL, 0,
-    "MANUAL",
-    "MANUELL")
 UI_TEXT(RA_MARGIN, 0,
     "MARGIN %u%%",
     "RESERVE %u%%")
@@ -10896,7 +10788,7 @@ UI_SETTING_HELP(SET_RUDDER_TOL,
  * LENGTH, the buttons, the MAX of each side, the angle source's state lines
  * (40 cells of 10 x 20 a line beside the side view; a %s names the source,
  * AS5600 or IMU X+, 6 cells) and the page of its guide. */
-UI_TEXT(WB_RUDDER, 0,
+UI_TEXT(WB_RUDDER, 12,
     "RUDDER",
     "RUDER")
 UI_TEXT(RUD_DEFL, 0,
@@ -10949,7 +10841,7 @@ UI_SETTING_LABEL(SET_RUDDER_LEN_MM,
     "Ruderlänge")
 UI_SETTING_HELP(SET_RUDDER_LEN_MM,
     "Hinge line to trailing edge for the mm on RUDDER, 0 or 10 to 500mm",
-    "Scharnierlinie bis Hinterkante für die mm auf RUDER, 0 oder 10 bis 500mm")
+    "Scharnier bis Hinterkante für die mm, 0 oder 10 bis 500mm")
 
 /* --- slice 3: the Bluetooth IMU (imu_screen.c, sensors_rows.c) --------- */
 /* SETUP > SENSORS > IMU's rows and their option lists.  RATE's options are

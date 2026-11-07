@@ -564,7 +564,7 @@ static int draw_changes(gfx_canvas_t *c, int x, int y)
         snprintf(line, sizeof(line), "%.2f -> %.2f%s", (double)k[i].was,
                  (double)k[i].now, k[i].unit);
         gfx_text(c, x + 180, y, line, SV_FONT_HEAD, k[i].col, 1);
-        y += 56;
+        y += 44;
     }
     return y;
 }
@@ -588,8 +588,7 @@ static void draw_restore(gfx_canvas_t *c)
     int y = a.y + WARN_WHAT_DY;
     y += WARN_PITCH * wrap_text(c, a.x + 20, y, WARN_PITCH, what, WARN_CELLS,
                                 ui_theme_color(UI_C_TEXT), SV_FONT_BODY);
-    y = draw_changes(c, a.x + 20, y + 16);
-    y += 8;
+    y = draw_changes(c, a.x + 20, y + 8);
     y += WARN_PITCH * wrap_text(c, a.x + 20, y, WARN_PITCH, TR(SUP_ASK_WHY),
                                 WARN_CELLS, ui_theme_color(UI_C_TEXT_DIM),
                                 SV_FONT_BODY);

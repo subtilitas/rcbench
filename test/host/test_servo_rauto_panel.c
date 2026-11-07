@@ -1,15 +1,15 @@
 /**
  * @file test_servo_rauto_panel.c
- * @brief RUDDER's AUTO box: AUTO in the ZERO row swaps LENGTH, the drive
- *        buttons and the state lines for the box and MANUAL brings them
- *        back; the box's places; a START that cannot run says why and
+ * @brief RUDDER AUTO's box: RUDDER AUTO's screen shows it in place of
+ *        LENGTH, the drive buttons and the state lines, RUDDER's shows
+ *        those; the box's places; a START that cannot run says why and
  *        drives nothing; the rows show their settings; every string fits
  *        its field in both languages, the lines wrapped beside the side
  *        view; the targets the side view draws.  The run on a servo is
  *        test_servo_rauto_kst.c's.
  *
  * Cases:
- * - auto_swaps_the_manual_controls_for_the_box_and_manual_brings_them_back
+ * - rudder_auto_shows_the_box_and_rudder_the_manual_controls
  * - the_box_lies_in_the_left_column_clear_of_the_zero_row_and_the_stop_floor
  * - a_start_that_cannot_run_says_why_and_drives_nothing
  * - every_string_fits
@@ -276,7 +276,7 @@ static void third_lines(cands_t *c)
 }
 
 /* Every string the box draws, at its longest, in both languages: the rows
- * at their highest values, START and STOP RUN, AUTO and MANUAL; and every
+ * at their highest values, START and STOP RUN; and every
  * first line with every second and every third, wrapped beside the side
  * view, above the alert band in one face or the other. */
 TEST_CASE(every_string_fits)
@@ -296,8 +296,6 @@ TEST_CASE(every_string_fits)
         const gfx_rect_t st = rauto_rect(RA_C_START);
         CHECK(ui_text_fits(f, TR(RA_START), st.w, st.h, 8));
         CHECK(ui_text_fits(f, TR(SV_LIM_STOP), st.w, st.h, 8));
-        CHECK(ui_text_fits(f, TR(RA_AUTO), 160, 48, 8));
-        CHECK(ui_text_fits(f, TR(RA_MANUAL), 160, 48, 8));
         memset(&l0, 0, sizeof(l0));
         memset(&l1, 0, sizeof(l1));
         memset(&l2, 0, sizeof(l2));

@@ -316,7 +316,8 @@ void hub_event(const touch_event_t *evt)
 
 /* ------------------------------------------------------------ the guide */
 
-/** @brief The tiles' page: the dock on the right over the third column.
+/** @brief The tiles' page: the dock on the right over the third column,
+ *         the first column's tiles and the port line in view.
  *  @param p The page. */
 static void page_tiles(ui_help_page_t *p)
 {
@@ -325,15 +326,17 @@ static void page_tiles(ui_help_page_t *p)
     p->armed_ok = true;
     (void)ui_help_add(p, svs_fn_name(SERVO_FN_LIVE), TX_HG_SVH_DRIVE,
                       servo_hub_tile_rect(0));
-    (void)ui_help_add(p, svs_fn_name(SERVO_FN_TEST), TX_HG_SVH_MEASURE,
+    (void)ui_help_add(p, svs_fn_name(SERVO_FN_LIMRUN), TX_HG_SVH_MEASURE,
                       servo_hub_tile_rect(3));
     (void)ui_help_add(p, svs_fn_name(SERVO_FN_RUDDER), TX_HG_SVH_SURFACE,
                       servo_hub_tile_rect(4));
     (void)ui_help_add(p, svs_fn_name(SERVO_FN_KST), TX_HG_SVH_PROGRAM,
                       servo_hub_tile_rect(6));
+    (void)ui_help_add(p, "SERVO", TX_HG_SVH_PORT,
+                      ui_footer_rect(UI_FOOTER_NAME));
 }
 
-/** @brief The footer's page: the port line and SETTINGS, the dock on the
+/** @brief The second page: a tile's states and SETTINGS, the dock on the
  *         left.  @param p The page. */
 static void page_footer(ui_help_page_t *p)
 {
@@ -342,8 +345,6 @@ static void page_footer(ui_help_page_t *p)
     p->armed_ok = true;
     (void)ui_help_add(p, TR(HG_SVH_TILE_NAME), TX_HG_SVH_TILE,
                       servo_hub_tile_rect(5));
-    (void)ui_help_add(p, "SERVO", TX_HG_SVH_PORT,
-                      ui_footer_rect(UI_FOOTER_NAME));
     (void)ui_help_add(p, TR(FOOT_SETTINGS), TX_HG_SVH_SETTINGS,
                       ui_footer_rect(UI_FOOTER_SETTINGS));
 }

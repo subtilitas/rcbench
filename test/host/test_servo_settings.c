@@ -674,7 +674,7 @@ typedef struct {
 } note_state_t;
 
 #define PPM_LINE "PPM outputs keep their own frame rate."
-#define NOT_SET  "The TARGET chosen is not active."
+#define NOT_SET  "The PORT chosen is not active."
 static const note_state_t k_note[] = {
     { 0, 0u, SERVO_SCREEN_NO_PIN, false, "Active: OUTPUTS run at 50Hz.",
       PPM_LINE, false },
@@ -751,9 +751,9 @@ TEST_CASE(the_in_force_note_names_the_target_the_coprocessor_holds)
         { "Aktiv: PROG-PORT 1 GPIO 13 läuft mit 50Hz.",
           "PPM-Ausgänge behalten ihre eigene Pulsrate." },
         { "Aktiv: Ausgänge laufen mit 50Hz.",
-          "Das gewählte ZIEL ist nicht aktiv." },
+          "Der gewählte PORT ist nicht aktiv." },
         { "Aktiv: PROG-PORT 1 GPIO 13 läuft mit 50Hz.",
-          "Das gewählte ZIEL ist nicht aktiv." },
+          "Der gewählte PORT ist nicht aktiv." },
         { "Aktiv: 50Hz am PROG-PORT 1. Ihm ist kein Pin zugeordnet.",
           "PPM-Ausgänge behalten ihre eigene Pulsrate." },
         { "Aktiv: PROG-PORT 1 GPIO 63 läuft mit 50Hz.",

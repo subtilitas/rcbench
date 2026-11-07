@@ -674,11 +674,10 @@ void render_hitec_view(const char *view)
             g_drv.dreg[2u * i] = hitec_image_reg(&sv, (uint8_t)(2u * i));
         }
     }
-    ui_router_goto(SCREEN_SERVO);
+    /* HITEC's screen, which opens the session. */
+    ui_router_goto(SCREEN_SERVO_HITEC);
     /* The tester on PROG PORT 1 at GP13, as the control task reports it. */
     servo_screen_set_drive(1u, PIN, true);
-    htap_at(SV_TAB_PROGRAM_X, UI_BAND_H + SV_TAB_Y);
-    htap_at(SV_PROG_ROW_X, UI_BAND_H + SV_PROG_ROW_Y(1));
     prun(50u);
     ui_router_tick(0.02f);
     if (!hitec_panel_is_open()) {

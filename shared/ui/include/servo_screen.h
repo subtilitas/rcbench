@@ -451,7 +451,7 @@ float servo_screen_power_sample(int series, int back);
  * "In force: PROG PORT GPIO 13 runs at 560Hz.", the port without a known pin,
  * or the target not known (the page not known).  With no link it names no
  * rate: "No link: the rate in force is not known.".  The second line
- * says "The TARGET chosen is not active." while the setting and the
+ * says "The PORT chosen is not active." while the setting and the
  * drive differ, "PORT PWM is OFF" while the port renders no pulse, else
  * that a PPM output keeps its own frame.  Returns whether the note takes
  * the warning colour: the setting and the drive differ, no link, the
