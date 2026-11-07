@@ -615,6 +615,21 @@ static void apply_motor_cmd(const motor_cmd_t *mc, bool link_up,
     }
 }
 
+/**
+ * @brief Whether a CLEAR asked by ARM + START still means what it meant:
+ *        no stop, disarm or STOP reset since it was asked, no pressed STOP
+ *        standing and no programmer holding a port.
+ * @param pc the CLEAR as queued
+ * @return true while it may be written
+ */
+static bool clear_still_current(const panel_cmd_t *pc)
+{
+    return pc->stops == arming_stop_count(&s_arm)
+           && pc->lets_go == atomic_load(&s_lets_go)
+           && pc->resets == atomic_load(&s_stop_resets)
+           && !arming_held(&s_arm) && !s_prog_taken;
+}
+
 /*
  * ARM + START's FAILSAFE CLEAR (servo_start_seq.h): CLEAR written once
  * while SAFE, the same write as ARM's own CLEAR (ARMING_HS_GO), so it lifts
@@ -629,13 +644,17 @@ static void apply_motor_cmd(const motor_cmd_t *mc, bool link_up,
  * read.  A CLEAR not written leaves the steps to fail at
  * SERVO_SEQ_CLEAR_MS (500ms).
  */
-static void apply_clear_cmd(bool link_up)
+static void apply_clear_cmd(const panel_cmd_t *pc, bool link_up)
 {
-    if (!link_up || arming_held(&s_arm) || s_prog_taken) {
+    if (!link_up || !clear_still_current(pc)) {
         return;
     }
     bool answered = false;
-    if (far_line_trusted(&answered)) {
+    const bool trusted = far_line_trusted(&answered);
+    /* The STATUS exchange can wait up to LINK_HOST_TIMEOUT_MS (1000ms) and
+     * the pump inside it applies a STOP: asked again before the write, as
+     * ARM's handshake asks before each of its writes. */
+    if (trusted && clear_still_current(pc)) {
         link_msg_t ack = { 0 };
         (void)control_clear_failsafe(&ack);
     }
@@ -766,7 +785,7 @@ void drain_commands(bool link_up, bench_state_t *bench)
             s_arm_take_drv = atomic_load(&s_drv_gaps);
         }
         if (pc.kind == PANEL_CMD_CLEAR) {
-            apply_clear_cmd(link_up);
+            apply_clear_cmd(&pc, link_up);
             continue;
         }
         if (pc.kind == PANEL_CMD_STOP) {
