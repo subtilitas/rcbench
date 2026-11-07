@@ -8,7 +8,7 @@ order: 22
 
 Die Servoprogrammierung liest die 32 Register eines KST- oder Chaservo-Servos über dessen Signalleitung und zeigt sie als Einstellungen. Beide Marken verwenden dasselbe Protokoll und denselben Registersatz. Änderungen werden erst auf Anforderung zurückgeschrieben.
 
-Tippe im Hub von [SERVO](servo.md) auf KST. Die Seite KST öffnet die Sitzung über der linken Karte. SCHLIESSEN oder das Home-Feld führt zum Hub zurück. Das Öffnen beendet einen laufenden automatischen Test.
+Tippe im Hub von [SERVO](servo.md) auf KST. Die Seite KST öffnet die Sitzung über der linken Karte. Das Home-Feld führt zum Hub zurück; die Sitzung hat kein SCHLIESSEN. Das Öffnen beendet einen laufenden automatischen Test.
 
 ![Der SERVO-Hub](view:servo-hub)
 
@@ -24,6 +24,18 @@ KST und Chaservo sind Namen oder Marken ihrer jeweiligen Inhaber. rcbench steht 
 
 Registerbelegung und Timing wurden an 1 KST Tool Card #2 und 1 Chaservo-Servo ermittelt. Die Auswirkungen der Register auf die Bewegung wurden nicht gemessen. Namen, Einheiten und Grenzen entsprechen den Angaben und zulässigen Werten des Herstellerwerkzeugs.
 
+## Die Karte BEREIT und die Fußleiste
+
+![KST vor VERBINDEN](view:servo-kst)
+
+Die rechte Karte ist die Karte BEREIT mit drei Zeilen und der Schienenzeile:
+
+- PORT: der Port, an dem die Sitzung arbeitet. Rot mit `KEIN PROG-PORT`, solange der Tester OUTPUTS ansteuert. Ein Tippen öffnet die Liste PORT; hält die Sitzung den Port, bleibt die Liste zu und das Alarmband nennt die Sperre.
+- Die Versorgung, die VERBINDEN schaltet: PROG 5V am rbmod-Carrier, PD MINI, wo einer antwortet, sonst VERSORGUNG. Gelb `EIN BEI VERBINDEN`, solange aus. Ein roter Punkt und `EIN`, solange an; dann schaltet ein Tippen sie aus wie AUSGANG AUS. Ohne Versorgung, die der Prüfstand schaltet: gelb `AUS, EIN VON HAND`.
+- SERVO: `NICHT VERBUNDEN` vor VERBINDEN, `NICHT GELESEN` bei gehaltenem Port, danach der Typ des Servos, `V6?`, solange er die Vermutung aus 20k_sel ist.
+
+Ein Tippen auf eine nicht erfüllte Zeile nennt sie im Alarmband. Die Mitte der Fußleiste ist WERTE SCHREIBEN der Sitzung, von jeder Registerkarte aus, wie die Taste der Sitzung. Sie ist grau vor VERBINDEN und Lesen, ohne geänderten Wert und solange eine Seite offen ist; ein Tippen nennt den Grund. KST hat kein ARM. OPTIONEN öffnet die Seite KST EXPERT MODE; es ist grau, solange die Sitzung den Port hält.
+
 ## Was er braucht
 
 ![Der Programmierer, während der Tester den Port hält](view:servo-kst)
@@ -36,7 +48,7 @@ Registerbelegung und Timing wurden an 1 KST Tool Card #2 und 1 Chaservo-Servo er
 ![Ein IOmcu ohne Programmierport](view:servo-kst-nopage)
 ![Die Standardausgänge sind das Ziel](view:servo-kst-target)
 
-Fehlt eine Voraussetzung, sind alle Bedienelemente außer SCHLIESSEN gesperrt. Der Reiter nennt den Grund.
+Fehlt eine Voraussetzung, sind alle Bedienelemente gesperrt. Der Reiter nennt den Grund. Das Home-Feld führt weiter zum Hub.
 
 ## Der Port und die Versorgung
 
@@ -220,7 +232,7 @@ Bei Verbindungsverlust, Platinenneustart, ABBRECHEN, Stopp oder ausbleibendem Er
 ![PROGRAMMIERMODUS VERLASSEN](view:servo-kst-leave)
 ![VERLASSEN nach einem Schreiben mit PD mini](view:servo-kst-leave-cycle)
 
-VERLASSEN, SCHLIESSEN oder das Home-Feld im Programmiermodus öffnet PROGRAMMIERMODUS VERLASSEN. Bei Rückkehr zu Servo-PWM kann sich das Servo bewegen. Nach einem Schreibvorgang mit PD mini kündigt die Seite zuerst einen Versorgungszyklus mit 1s Aus-Zeit an. Ohne PD mini nennt sie den nötigen manuellen Versorgungszyklus. Ohne Schreibvorgang bleibt die Versorgung unverändert.
+VERLASSEN oder das Home-Feld im Programmiermodus öffnet PROGRAMMIERMODUS VERLASSEN. Bei Rückkehr zu Servo-PWM kann sich das Servo bewegen. Nach einem Schreibvorgang mit PD mini kündigt die Seite zuerst einen Versorgungszyklus mit 1s Aus-Zeit an. Ohne PD mini nennt sie den nötigen manuellen Versorgungszyklus. Ohne Schreibvorgang bleibt die Versorgung unverändert.
 
 Halte 2s HALTEN ZUM VERLASSEN für 2s. Der Port hält die Leitung für WARTEZEIT VOR PWM auf Low und gibt den Pin dann an den Tester zurück. Das Verlassen der Seite KST führt diesen Vorgang nicht aus: Die Sitzung behält den Port, und jede andere SERVO-Seite öffnet bis VERLASSEN wieder KST. Innerhalb der Servoprogrammierung schließt Home zuerst offene Tastenfelder, Listen, Warnungen oder Tastaturen.
 
@@ -247,7 +259,7 @@ SERVO BEWEGEN auf dem Reiter WEG der Hitec-Programmierung fährt das Ruderhorn e
 - NEUTRAL, ENDE LINKS und ENDE RECHTS bekommen Tasten `-` und `+` mit 8 Zählwerten, 0.11°, die beim Halten wiederholen. Das Ruderhorn folgt der zuletzt geänderten Zeile, ihr Name steht in der Akzentfarbe; es beginnt mit NEUTRAL. Ein Tippen auf den Wert öffnet das Tastenfeld.
 - Das Ruderhorn fährt höchstens 2.0° je Durchlauf und bleibt in der Reichweite der gespeicherten Endlagen, 2606 bis 13743 bei einem D485HW im Werkszustand.
 - Ein Ruderhorn, das 2 Durchläufe lang mehr als 2.0° nachhängt, ein Strom von 80% der Stromgrenze für 0.4s oder ein AS5600-Winkel, der nicht folgt, fährt das Ruderhorn 1.0° zurück und beendet die Schleife: `Servo bei 6000 blockiert. Zurück auf 6167 gefahren.`
-- Ein Tippen auf EIN, ein Reiterwechsel, SCHLIESSEN oder das Home-Feld beenden es: Ziel 3000, ein Neustart des Servos und ein Lesen, das mit dem Start verglichen wird, etwa 2.6s im Host-Modell. `SERVO BEWEGEN steht auf AUS. Die gespeicherten Werte sind unverändert zurückgelesen.`
+- Ein Tippen auf EIN, ein Reiterwechsel oder das Home-Feld beenden es: Ziel 3000, ein Neustart des Servos und ein Lesen, das mit dem Start verglichen wird, etwa 2.6s im Host-Modell. `SERVO BEWEGEN steht auf AUS. Die gespeicherten Werte sind unverändert zurückgelesen.`
 - STOP, ein Schalten auf SAFE am Prüfstand, eine verlorene Verbindung, eine ausgefallene Versorgung und ein gescheitertes Lesen beenden es sofort, mit allen Ausgängen aus.
 
 ### ANSCHLAG SUCHEN

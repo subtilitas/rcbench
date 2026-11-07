@@ -17,6 +17,7 @@
  * - the_footers_write_is_the_sessions_from_any_tab
  * - the_footer_asks_no_arm_and_the_card_drives_nothing
  * - a_finger_on_the_card_or_write_keeps_settings_and_port_shut
+ * - a_tap_on_the_supply_while_it_reads_on_switches_it_off
  *
  * SPDX-License-Identifier: MIT
  */
@@ -252,6 +253,33 @@ TEST_CASE(a_finger_on_the_card_or_write_keeps_settings_and_port_shut)
     }
 }
 
+/* The PD mini's output on: the supply row's red dot reads ON, the router
+ * hands a press there through the band, and a tap asks OFF, as OUTPUT OFF
+ * does. */
+TEST_CASE(a_tap_on_the_supply_while_it_reads_on_switches_it_off)
+{
+    supply_cmd_t sc;
+
+    kst_on();
+    g_rig.rail = true;
+    kst_prog_feed_t f = M->f;
+    f.rd.flags |= LINK_KS_F_RAIL;
+    kst_panel_feed(&f);
+    supply_screen_set_output(true);
+    ticks(0.1f);
+    rdy_row_t r = row(PRR_SUPPLY);
+    CHECK_STR_EQ(r.label, "PD MINI");
+    CHECK_EQ(r.st, (uint8_t)RDY_LIVE);
+    const gfx_rect_t a = ready_row_rect(PRR_SUPPLY);
+    CHECK(scr->safe_at(a.x + a.w / 2, a.y + a.h / 2));
+    CHECK(!scr->safe_at(a.x + a.w / 2, ready_row_rect(PRR_SERVO).y + 4));
+    while (supply_screen_poll_cmd(&sc)) { }
+    ev(a.x + a.w / 2, a.y + a.h / 2, TOUCH_EVENT_DOWN, 1);
+    ev(a.x + a.w / 2, a.y + a.h / 2, TOUCH_EVENT_UP, 1);
+    CHECK(supply_screen_poll_cmd(&sc));
+    CHECK(sc.off && !sc.on);
+}
+
 int main(void)
 {
     RUN(the_session_has_no_close_and_the_home_tag_closes_it);
@@ -261,5 +289,6 @@ int main(void)
     RUN(the_footers_write_is_the_sessions_from_any_tab);
     RUN(the_footer_asks_no_arm_and_the_card_drives_nothing);
     RUN(a_finger_on_the_card_or_write_keeps_settings_and_port_shut);
+    RUN(a_tap_on_the_supply_while_it_reads_on_switches_it_off);
     return test_summary("kst_panel_frame");
 }

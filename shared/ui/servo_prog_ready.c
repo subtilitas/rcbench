@@ -11,14 +11,16 @@
  *     band.
  *   - the supply the session's CONNECT switches: PROG 5V on the rbmod
  *     carrier, PD MINI where one answers, SUPPLY otherwise.  Amber `ON AT
- *     CONNECT` while it is off, a red dot `ON` while it is on; KST with no
- *     supply the bench switches reads `OFF, ON BY HAND` in amber.
+ *     CONNECT` while it is off, a red dot `ON` while it is on, and then a
+ *     tap switches it off as OUTPUT OFF and PROG 5V OFF do (the ports' 5V
+ *     not while a port holds it); KST with no supply the bench switches
+ *     reads `OFF, ON BY HAND` in amber.
  *   - SERVO: the servo read, its model or type; amber while the port is
  *     the session's and nothing is read, grey before CONNECT.
  *
- * Nothing on the card drives an output: the session over the left card
- * does, with its own CONNECT, LEAVE and holds.  A tap on a row that is not
- * met names it in the alert band.
+ * Nothing on the card switches an output on: the session over the left
+ * card does, with its own CONNECT, LEAVE and holds.  A tap on a row that
+ * is not met names it in the alert band.
  *
  * The footer's middle slot is the session's WRITE n VALUES: the same label
  * and the same tap as the session's own button, from any of its tabs.  Its
@@ -37,6 +39,7 @@
 #include "kst_panel.h"
 #include "prog5v_box.h"
 #include "prog_registry.h"
+#include "supply_screen.h"
 #include "ui_footer.h"
 #include "ui_text.h"
 #include "ui_widgets.h"
@@ -74,11 +77,11 @@ static void session_now(prog_session_t *out)
     }
 }
 
-/** @brief Whether the PD mini answers with its output on.
+/** @brief Whether the PD mini's output is on, as OUTPUT OFF reads it.
  *  @return true then */
 static bool pd_on(void)
 {
-    return s.have_sup && s.sup.online && s.sup.output;
+    return supply_screen_output_on();
 }
 
 /**
@@ -191,6 +194,21 @@ void prog_ready_tap(int i)
         port_list_open();
         return;
     }
+    if (i == (int)PRR_SUPPLY && r.st == (uint8_t)RDY_LIVE) {
+        /* A red dot is an output on: a tap switches it off, as OUTPUT OFF
+         * and PROG 5V OFF do; the ports' 5V not while a port holds it. */
+        prog_session_t ps;
+        session_now(&ps);
+        if (ps.supply != (uint8_t)PROG_SES_5V) {
+            supply_screen_ask_off();
+        } else if (prog5v_box_live()) {
+            prog5v_box_ask_off(PROG5V_BY_SERVO);
+        } else {
+            ui_router_set_alert(TR(P5_LOCKED));
+        }
+        ++s.power_rev;
+        return;
+    }
     if (r.st == (uint8_t)RDY_OK || r.st == (uint8_t)RDY_LIVE) {
         return;
     }
@@ -198,6 +216,13 @@ void prog_ready_tap(int i)
     snprintf(line, sizeof(line), TR(RDY_BAND), r.label,
              r.why != NULL ? r.why : r.value);
     ui_router_set_alert(line);
+}
+
+bool prog_ready_stops_at(int x, int y)
+{
+    rdy_row_t r;
+    return prog_ready_row((int)PRR_SUPPLY, &r) && r.st == (uint8_t)RDY_LIVE
+           && gfx_rect_contains(ready_row_rect((int)PRR_SUPPLY), x, y);
 }
 
 /* ---------------------------------------------------------- the footer */

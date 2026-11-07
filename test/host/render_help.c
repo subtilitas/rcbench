@@ -66,6 +66,8 @@ static const struct {
     { "help-servo-hub", "servo-hub" },
     { "help-servo-rudder", "servo-rudder" },
     { "help-servo-rudder-auto", "servo-rudder-auto-safe" },
+    { "help-servo-kst", "servo-kst" },
+    { "help-servo-hitec", "servo-hitec" },
     { "help-servo-output", "servo-settings" },
     { "help-servo-sweep", "servo-sweep-page" },
     { "help-servo-sweepfn", "servo-sweep-safe" },

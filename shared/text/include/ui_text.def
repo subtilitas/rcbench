@@ -6324,6 +6324,12 @@ UI_TEXT(PRR_W_NONE, 94,
 UI_TEXT(HG_SV_TITLE_PRG, 0,
     "SERVO: READY AND WRITE",
     "SERVO: BEREIT UND SCHREIBEN")
+UI_TEXT(HG_SV_PRG_PORT, 0,
+    "The port the session works on. A tap chooses one until CONNECT holds it.",
+    "Der Port, an dem die Sitzung arbeitet. Ein Tippen wählt ihn, bis VERBINDEN ihn hält.")
+UI_TEXT(HG_SV_PRG_RAIL, 0,
+    "The servo rail's volts and amps as the meter reads them now.",
+    "Volt und Ampere der Servoschiene, wie das Messgerät sie jetzt liest.")
 UI_TEXT(HG_SV_PRG_READY, 0,
     "PORT, the supply CONNECT switches, the servo read. A tap on a row says why it is not met.",
     "PORT, die Versorgung, die VERBINDEN schaltet, das gelesene Servo. Ein Tippen sagt, was fehlt.")

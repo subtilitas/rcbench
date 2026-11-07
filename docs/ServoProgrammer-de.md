@@ -7,8 +7,11 @@ Chaservo-Servos über dessen Signalleitung aus, zeigt sie als Einstellungen
 und schreibt geänderte Werte zurück. Die Servos beider Marken verwenden
 dasselbe Protokoll und denselben Registersatz. Die Kachel KST im
 [SERVO-Hub](Screens-de.md#servo) öffnet sie auf einer eigenen Seite,
-SERVO > KST, über der linken Karte. **SCHLIESSEN** oder das Home-Feld
-führt zurück zum Hub. Das Öffnen beendet einen laufenden
+SERVO > KST, über der linken Karte. Das Home-Feld führt zurück zum Hub;
+die Sitzung hat kein SCHLIESSEN. Die rechte Karte ist die Karte BEREIT
+mit PORT, der Versorgung, die **VERBINDEN** schaltet, und dem gelesenen
+Servo; die Mitte der Fußleiste ist **WERTE SCHREIBEN** der Sitzung. Die
+Seite KST hat kein **ARM** ([Bildschirme: Programmierer](Screens-de.md#programmierer)). Das Öffnen beendet einen laufenden
 automatischen Test als `vom Bediener gestoppt`. Die Kachel ist mit
 `IOMCU OHNE SERVO PWM` grau und öffnet nichts, solange der IOmcu, die
 RP2350-Platine, kein Servo-PWM meldet, auch wenn kein IOmcu antwortet.
@@ -38,7 +41,7 @@ bevor man sich auf ein Schreiben verlässt.
 - Der IOmcu spricht Protokoll 4.13 oder neuer. Mit einem älteren sagt
   das Overlay `Nicht verfügbar: Der IOmcu hat keinen Programmierport.` und
   `Aktualisiere den IOmcu auf Version 0.17.0 oder neuer.`, und jedes
-  Bedienelement außer **SCHLIESSEN** ist aus.
+  Bedienelement ist aus; das Home-Feld führt zurück zum Hub.
 - **VERLASSEN** mit seinem Warten braucht Protokoll 4.15 auf dem
   IOmcu. Ein älterer wird
   [benannt und ohne es behandelt](#ein-iomcu-vor-link-version-415).
@@ -67,7 +70,7 @@ bevor man sich auf ein Schreiben verlässt.
   `Tippe zuerst auf DISARM. Bei ARMED kann der Port nicht übernommen werden.`, wenn ARMED für
   irgendeine Rolle gilt, angefragt ist oder ein Finger auf **ARM** liegt. Solange der Port
   gehalten wird, von **VERBINDEN** bis er PWM meldet, setzt kein Bildschirm
-  den Prüfstand auf ARMED: **ARM** auf SERVO und auf MOTOR & ESC ist
+  den Prüfstand auf ARMED: **ARM** auf den anderen SERVO-Seiten und auf MOTOR & ESC ist
   gesperrt gezeichnet; ein Druck darauf schaltet nichts und zeigt den
   Hinweis `ARMED gesperrt: Die Servoprogrammierung belegt einen Port.` Ein
   Lauf des ESC-Stick-Programmierers startet nicht und meldet
@@ -163,7 +166,7 @@ Auf Platinen ohne die PORT-Auswahl des Carriers zeigt die Servoprogrammierung
 bei den Standardausgängen als Ziel (SERVO-TESTER auf OUTPUTS)
 `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und
 `Tippe auf PORT und wähle einen PROG-PORT.`, und jedes
-Bedienelement außer **SCHLIESSEN** ist aus. Er verbindet auf PORT 1, PORT 2,
+Bedienelement ist aus; das Home-Feld führt zurück zum Hub. Er verbindet auf PORT 1, PORT 2,
 PORT 3 oder PORT 4, dem Port, den SERVO-TESTER nennt, mit dessen Pin.
 
 ![Die Standardausgänge sind das Ziel](img/de/servo-kst-target.png)
@@ -249,10 +252,10 @@ das Schreiben ohne Ergebnis endet.
 ![Ein laufendes Schreiben](img/de/servo-kst-writing.png)
 
 Solange der Port im Programmiermodus ist, bleibt die Überlagerung offen, und die Bedienelemente des Testers senden nichts an
-den Port. **SCHLIESSEN** und das Home-Feld öffnen PROGRAMMIERMODUS
-VERLASSEN; über einem offenen Tastenfeld, einer Liste, einer Warnung oder
-der Buchstabentastatur schließt das Home-Feld zuerst dieses Feld. **STOP**
-auf der rechten Karte wirkt weiterhin. Das Verlassen der Seite KST lässt
+den Port. Das Home-Feld öffnet PROGRAMMIERMODUS VERLASSEN; über einem
+offenen Tastenfeld, einer Liste, einer Warnung oder der
+Buchstabentastatur schließt es zuerst dieses Feld. **STOP** im Band
+wirkt weiterhin. Das Verlassen der Seite KST lässt
 den Port, wie er ist; jede andere SERVO-Seite öffnet bis **VERLASSEN**
 wieder KST.
 
@@ -387,16 +390,18 @@ programmiert; der Ausgang bleibt unverändert. Erhöhe zuerst die Spannung. Ein 
 Auf Platinen, auf denen der Port den PD mini nutzt, bleiben dessen
 Sollwerte für den Port reserviert, solange dieser nicht in PWM ist. Der IOmcu lehnt jede Änderung der Spannung und der Stromgrenze
 und jedes Einschalten ab; ein Ausschalten nimmt er an. Der
-SUPPLY-Bildschirm und die Zeile SOLL der rechten Karte zeigen dasselbe: die
-Sollwerte, die Schieber, die Schritte und **AUSGANG EIN** sind gedimmt und
-nehmen keinen Druck, **AUSGANG AUS** und **SPITZENWERTE ZURÜCKSETZEN** arbeiten,
+SUPPLY-Bildschirm zeigt dasselbe: die Sollwerte, die Schieber, die
+Schritte und **AUSGANG EIN** sind gedimmt und nehmen keinen Druck,
+**AUSGANG AUS** und **SPITZENWERTE ZURÜCKSETZEN** arbeiten, ein Tippen auf
+die Zeile PD MINI der Karte BEREIT, solange sie EIN liest, schaltet den
+Ausgang aus,
 und die Karte MODUS des SUPPLY-Bildschirms zeigt `Servoprogrammierung.`. Die
 Grenzen in den Einstellungen des SUPPLY-Bildschirms bleiben editierbar;
 eine unter den Sollwert gesenkte Grenze begrenzt diesen erst wieder,
 wenn der Port in PWM ist.
 
-Nach der Rückkehr zu PWM bleiben die Sollwerte des Ports auf SUPPLY und
-in der Zeile SOLL wirksam, solange der Ausgang eingeschaltet bleibt. Die
+Nach der Rückkehr zu PWM bleiben die Sollwerte des Ports auf SUPPLY
+wirksam, solange der Ausgang eingeschaltet bleibt. Die
 vorherigen Sollwerte kehren zurück, sobald eine Netzteilabfrage sowohl den
 Port als freigegeben als auch den Ausgang als aus meldet. Endet die Sitzung
 mit ausgeschaltetem Ausgang, geschieht dies sofort; bleibt er nach
@@ -482,8 +487,8 @@ die ihren Port hält, behält die Spannung, mit der sie begonnen hat.
 
 Antwortet ein PD mini, nennt die Zustandszeile vor **VERBINDEN** die Werte
 und im Programmiermodus die gemessene Ausgangsspannung und den gemessenen
-Strom. Der SUPPLY-Bildschirm und die Netzteil-Zeilen der rechten Karte
-folgen dem, was der Port gestellt hat.
+Strom. Der SUPPLY-Bildschirm und die Zeile der Versorgung auf der Karte
+BEREIT folgen dem, was der Port gestellt hat.
 
 ![Ein PD mini antwortet](img/de/servo-kst-supply.png)
 ![Die Versorgung im Programmiermodus](img/de/servo-kst-supplied.png)
@@ -1420,7 +1425,7 @@ Servo dann auslesen, aber nichts darauf schreiben.
 
 ## Verlassen
 
-**VERLASSEN**, oder **SCHLIESSEN** im Programmiermodus, verlangt, die
+**VERLASSEN**, oder das Home-Feld im Programmiermodus, verlangt, die
 Sitzung zu beenden und den Port an Servo-PWM zurückzugeben. Nach einem Schreiben, Zurückspielen oder Lösen des Pairings führt der
 Weg bei schaltbarer Servoversorgung (PD mini oder feste 5V des Carriers)
 über [den Versorgungszyklus](#der-versorgungszyklus): Der Ausgang bleibt

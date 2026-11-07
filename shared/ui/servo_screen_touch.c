@@ -57,6 +57,9 @@ bool svs_safe_at(int x, int y)
         if (gfx_rect_contains(rauto_rect(RA_C_START), x, y)) {
             return servo_rauto_running(&s.ra.run) || svs_seq_busy();
         }
+        if (prog_ready_shown() && prog_ready_stops_at(x, y)) {
+            return true;        /* KST's and HITEC's supply OFF */
+        }
         if (gfx_rect_contains(ready_card_rect(), x, y)) {
             return false;
         }

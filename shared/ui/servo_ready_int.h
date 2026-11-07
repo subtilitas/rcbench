@@ -230,9 +230,14 @@ bool prog_ready_shown(void);
 /** @brief KST's or HITEC's row @p i.  @param i the row @param r receives
  *  it  @return false past the last or on another screen */
 bool prog_ready_row(int i, rdy_row_t *r);
-/** @brief A tap on row @p i: PORT's list, or the row's reason in the alert
- *         band.  @param i the row */
+/** @brief A tap on row @p i: PORT's list, the supply off while its row
+ *         reads ON, or the row's reason in the alert band.  @param i the
+ *         row */
 void prog_ready_tap(int i);
+/** @brief Whether a press at (@p x, @p y) lands on the supply row while it
+ *         reads ON: a tap there switches an output off (svs_safe_at()).
+ *  @param x the body's x @param y its y  @return true then */
+bool prog_ready_stops_at(int x, int y);
 /** @brief The footer's WRITE n VALUES in the middle slot.
  *  @param c the canvas */
 void prog_draw_write(gfx_canvas_t *c);

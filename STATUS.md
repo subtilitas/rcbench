@@ -432,7 +432,11 @@ port line, ARM and SETTINGS, and an output card whose PORT button names the targ
 is asked, and while the programmer holds the port (`test_servo_port_button`,
 `test_servo_workbench`). No list, page of rows or PORT list opens while a finger holds
 another press on the screen or a session holds its port, and a page closes as the bench
-goes live (`test_servo_list_guards`, `test_servo_settings_holds`).
+goes live (`test_servo_list_guards`, `test_servo_settings_holds`). KST and HITEC put a
+READY card of PORT, the supply CONNECT switches and the servo read in the output card's place
+and the session's WRITE n VALUES in the footer's middle slot in place of ARM; their sessions
+have no CLOSE, the home tag is the way back (`servo_prog_ready.c`, `test_kst_panel_frame`,
+`test_hitec_panel_frame`).
 
 The hub's SETTINGS list sets the type (STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI
 TAIL 760), the frame rate, the pulse widths, trim, travel and reverse for the session under

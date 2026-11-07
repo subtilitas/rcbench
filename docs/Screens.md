@@ -1463,8 +1463,9 @@ to the next. The bench is SAFE on the hub: every leave of
 a function screen switches it to SAFE.
 
 The home tag climbs one level: from a function screen to the hub, from the
-hub to the menu. A list, a run's page or a panel closes first. KST's and
-HITEC's CLOSE ends the session and returns to the hub.
+hub to the menu. A list, a run's page or a panel closes first. On KST and
+HITEC the home tag is the session's way back: it ends a session that
+holds no port and returns to the hub ([Programmer](#programmer)).
 
 Every function screen has the same frame. The 620px left card runs from y
 8 to the card floor at y 436 of the body. The output card on the right,
@@ -1482,6 +1483,11 @@ HOLD 2s: ARM + START, which switches PORT PWM and the supply on, waits for
 their read-back, arms and starts the run in one hold
 ([Servo: AUTO end points](Servo.md#auto-end-points)). Nothing of the output
 card takes a press on RUDDER AUTO.
+
+KST and HITEC keep the PORT button and show a READY card of three rows in
+the output card's place: PORT, the supply the session's CONNECT switches,
+and SERVO, the servo read. Their footer's middle slot is the session's
+WRITE n VALUES; neither screen has ARM ([Programmer](#programmer)).
 
 ![RUDDER AUTO on the rbmod carrier, the ARM + START sequence waiting for the PROG 5V's read-back](img/servo-rudder-auto-start-rbmod.png)
 
@@ -2024,8 +2030,28 @@ not grey the HITEC tile itself: after the programmer reads the page, a
 port held by another session opens with RELEASE PORT
 ([A port another session holds](HitecProgrammer.md#a-port-another-session-holds)).
 
-CLOSE ends the session and returns to the hub. Inside a programmer's
-keypad, list, warning or keyboard, the home tag closes only that overlay.
+The sessions have no CLOSE: the home tag ends a session that holds no
+port and returns to the hub. Inside a programmer's keypad, list, warning
+or keyboard, the home tag closes only that overlay.
+
+KST's and HITEC's frame around the session:
+
+| Part | Holds |
+| --- | --- |
+| PORT button | what the tester drives; a tap opens the PORT list, locked while the session holds the port |
+| READY card, PORT | the port line; red with `NO PROG PORT` on OUTPUTS, a tap opens the PORT list; a red dot while the session holds the port |
+| READY card, supply | PROG 5V on the rbmod carrier, PD MINI where one answers, SUPPLY otherwise. Amber `ON AT CONNECT` while off; a red dot and `ON` while on, and then a tap switches it off as OUTPUT OFF does (PROG 5V not while a port holds it). KST with no supply the bench switches: amber `OFF, ON BY HAND`. Hitec D series with none: `UNCHANGED` |
+| READY card, SERVO | grey `NOT CONNECTED` before CONNECT, amber `IN PROGRESS` while a step runs, amber `NOT READ` with the port held and no servo read, the servo's model (Hitec) or type (KST, `V6?` for 20k_sel's guess) once read |
+| rail line | the meter's volts and amps, under the rows |
+| footer, middle | the session's WRITE n VALUES, from any tab: the same tap as the session's own button, which opens ENABLE WRITE's page first while the switch is off. Grey, naming why on a tap, before CONNECT and the read, with no value changed, while a step runs, and while a page of the session or of SERVO is open |
+| footer, right | SETTINGS: KST's KST EXPERT MODE page, HITEC's Hitec series and Hitec D receive; grey while the session holds the port |
+
+A tap on a READY row that is not met names it in the alert band, for
+example `SUPPLY: Switch the servo supply off and on, then tap CONNECT 1s
+later.` A finger on a READY row or on WRITE keeps SETTINGS and the PORT
+list shut, as every held press does.
+
+![KST before CONNECT](img/servo-kst.png)
 The firmware registry `shared/ui/prog_registry.c` supplies the
 programmers and their capability rules. Modelled protocols without an
 IOmcu transport have no tile ([PROGRAM](#program) on MOTOR & ESC).
@@ -2044,19 +2070,21 @@ are PROGP01 GPIO13, PROGP02 GPIO14, PROGP03 GPIO15 and PROGP04 GPIO0. The
 choice sets SERVO TESTER and requests SERVO PWM for that port and NONE
 for the other three. The tester waits for readback confirmation.
 
-While the programmer holds a port, CLOSE or the home tag opens LEAVE
-PROGRAMMING. During transitions into or out of programming they do nothing.
+While the programmer holds a port, the home tag opens LEAVE
+PROGRAMMING. During transitions into or out of programming it does nothing.
 Leaving SERVO preserves the held port. A held session that is not shown
 opens again on its own screen: from another SERVO function screen the
-panel goes there. ARM is disabled on SERVO and MOTOR & ESC; pressing it shows
+panel goes there. KST and HITEC have no ARM. ARM is disabled on the
+other SERVO screens and on MOTOR & ESC; pressing it shows
 `Cannot switch to ARMED: a port is in use by the servo programmer.`
-CENTRE, RELEASE and STOP remain active. COMMANDED shows `---`, because
-the tester sends no pulse to the held port.
+STOP remains active everywhere, CENTRE and RELEASE on LIVE. COMMANDED
+shows `---`, because the tester sends no pulse to the held port.
 
 In PWM with a responding PD mini, the PORT row shows the voltage and
 current limit CONNECT will set: `PORT  5.0V  1000mA`. While the port is
-held, the SET row's set points and OUTPUT ON are locked on SERVO and
-SUPPLY; OUTPUT OFF still works. On the rbmod carrier, the ports have
+held, the set points and OUTPUT ON are locked on SUPPLY and on SERVO's
+other screens; OUTPUT OFF and a tap on KST's or HITEC's PD MINI row while
+it reads ON still work. On the rbmod carrier, the ports have
 separate 5V and those supply controls remain active
 ([Carrier, Power](Carrier.md#power)). Leaving programming does not cycle
 the servo's power. Whether a KST servo follows PWM while in programming
@@ -2067,7 +2095,7 @@ tall or more and ending 8px above the card floor:
 
 | Part | Size |
 | --- | --- |
-| tabs and CLOSE | one row at the top, 48px tall: five tabs of 95px, CLOSE 120px |
+| tabs | one row at the top, 48px tall: five tabs of 120px, four of 151px on KST with KST EXPERT MODE OFF |
 | rows | 48px tall at a 56px pitch, up to 5 a tab, in two columns of 295px; a wide row spans both |
 | values | 150px (15 cells of the 10 x 20 face); a wide row's 260px, with its `-` and `+` keys of 56px inside it |
 | notes and messages | under the last row, 10 x 20 face, 60 cells a row, 20px a row, to 6px above the card floor: 4 rows under the SERVO tab |
@@ -2097,8 +2125,9 @@ describes it.
 
 #### Hitec programmer
 
-The Hitec programmer opens from `Hitec servos` with the same layout:
-five tabs (SERVO, MOTION, TRAVEL, PROTECT, INFO) and CLOSE; 48px rows at
+The Hitec programmer opens from the HITEC tile with the same layout and
+the same frame: five tabs (SERVO, MOTION, TRAVEL, PROTECT, INFO) of
+120px, the READY card and WRITE n VALUES in the footer; 48px rows at
 56px pitch; 150px values and 260px wide values; notes in 10 x 20 ending
 4px above the alert band; and hold pages with a 300 x 56px hold button
 and 180 x 56px CANCEL.

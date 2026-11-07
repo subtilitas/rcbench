@@ -10,8 +10,12 @@ servo's current values. You can also save settings to a file, load a file
 into the draft and restore the session's backup.
 
 Tap HITEC on the [SERVO hub](Screens.md#servo). The programmer opens on a
-screen of its own and covers the left card. **CLOSE** or the home tag
-returns to the hub while the programmer holds no port. The tile is grey with `IOMCU HAS NO SERVO PWM`
+screen of its own and covers the left card. The home tag returns to the
+hub while the programmer holds no port; the session has no CLOSE. The
+right card is the READY card with PORT, the supply **CONNECT** switches
+and the servo read, and the footer's middle slot is the session's
+**WRITE n VALUES**; the screen has no **ARM**
+([Screens: Programmer](Screens.md#programmer)). The tile is grey with `IOMCU HAS NO SERVO PWM`
 and cannot be opened while the IOmcu, the RP2350 board, reports no servo PWM
 (pulse-width modulation), including when the IOmcu does not answer.
 
@@ -124,11 +128,13 @@ While the port is held:
 
 - ARM is drawn disabled. A press on it arms nothing and shows
   `Cannot switch to ARMED: a port is in use by the servo programmer.` in
-  the alert band, on SERVO and on MOTOR & ESC alike. STOP works. DISARM has
+  the alert band, on SERVO's other screens and on MOTOR & ESC alike; HITEC
+  itself has no ARM. STOP works. DISARM has
   nothing to end: the bench cannot be ARMED while the port is held.
 - When the PD mini supplies the programming ports, its set points and
-  OUTPUT ON on the SET row and the SUPPLY screen are locked. A press says `Servo programming holds the supply: set
-  points and ON are locked.` OUTPUT OFF works. From protocol 4.29 the IOmcu
+  OUTPUT ON on the SUPPLY screen are locked. A press says `Servo programming holds the supply: set
+  points and ON are locked.` OUTPUT OFF works, and so does a tap on the
+  READY card's PD MINI row while it reads ON. From protocol 4.29 the IOmcu
   holds its SUPPLY page from OPEN to CLOSE as well
   ([The supply while a port is held](LinkHitec.md#the-supply-while-a-port-is-held)).
   The set points from before CONNECT come back after LEAVE once the output
@@ -779,7 +785,7 @@ with the edits) and no record.
 
 ## LEAVE
 
-CLOSE, the home tag or LEAVE on the PORT row opens LEAVE PROGRAMMING; a
+The home tag or LEAVE on the PORT row opens LEAVE PROGRAMMING; a
 hold of 2s on `HOLD 2s TO LEAVE` leaves:
 
 - D series: a reboot of the servo (register 0x46 = 1), which then ignores

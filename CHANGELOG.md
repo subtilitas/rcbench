@@ -108,6 +108,22 @@ history is in git.
   nothing and takes no pick, and TARGET, PORT PWM and SETTINGS are locked.
   While any of SERVO's holds has its finger down, the READY card takes no
   tap.
+- The KST and HITEC sessions have no CLOSE; their tab row runs the session's
+  full width, five tabs of 120px. The home tag is the way back: an editor
+  closes first, a held port asks for LEAVE, and a session that holds no
+  port ends and the screen goes to the hub.
+- KST and HITEC show a READY card in the output card's place: PORT, the
+  supply CONNECT switches (PROG 5V, PD MINI or SUPPLY) and SERVO, the servo
+  read, with the rail line under them. A tap on PORT opens the PORT list,
+  locked while the session holds the port; a tap on the supply row while
+  it reads ON switches it off, as OUTPUT OFF does; a tap on another row
+  not met names it in the alert band. The output card's SET row, SPEED,
+  CENTRE, SWEEP and RELEASE are gone from both screens.
+- The footer's middle slot on KST and HITEC is the session's WRITE n
+  VALUES, from any tab, in place of ARM: the same tap as the session's own
+  button, grey and naming why before CONNECT and the read, with no value
+  changed, while a step runs and while a page is open. A finger on a READY
+  row or on WRITE keeps SETTINGS and the PORT list shut.
 
 - The panel sets the Bluetooth IMU's output content register RSW (0x02) to
   0x0C: angle (0x53) and angular rate with the battery (0x52), 2 frames a

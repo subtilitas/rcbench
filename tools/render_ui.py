@@ -1036,6 +1036,9 @@ FIT_ONLY = {
     "servo-rudder-auto-safe": (None, "servo", "dark"),
     # RUDDER AUTO's guide at its READY page.
     "help-servo-rudder-auto-3": (None, "servo", "dark"),
+    # KST's and HITEC's guide: the READY card and the footer's WRITE.
+    "help-servo-kst":   (None, "servo", "dark"),
+    "help-servo-hitec": (None, "servo", "dark"),
     # SUPPLY's TABLE; LIVE with a programming port holding the supply; and
     # SETTINGS with the PD mini's RESET PD MINI and the longest save line.
     "supply-table":     (None, "supply", "dark"),
