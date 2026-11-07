@@ -630,19 +630,21 @@ static bool clear_still_current(const panel_cmd_t *pc)
            && !arming_held(&s_arm) && !s_prog_taken;
 }
 
-/*
- * ARM + START's FAILSAFE CLEAR (servo_start_seq.h): CLEAR written once
- * while SAFE, the same write as ARM's own CLEAR (ARMING_HS_GO), so it lifts
- * what that lifts -- the IOmcu's link failsafe and its arm latch
- * (link_dev_clear_failsafe()) -- and nothing more.  It arms nothing: ARM
- * stays 0 and each output still needs its own ON or ARM.  Not without a
- * link, not while a pressed STOP stands or a programmer holds a port (an
- * ARM is refused then too), and not while the IOmcu distrusts the
- * heartbeat: ARM writes its CLEAR only once the line is trusted, and a
- * CLEAR does not lift FAULT 10.  STATUS is read straight after, so the
- * screens see the failsafe go within a frame rather than at the next 500ms
- * read.  A CLEAR not written leaves the steps to fail at
- * SERVO_SEQ_CLEAR_MS (500ms).
+/**
+ * @brief ARM + START's FAILSAFE CLEAR (servo_start_seq.h): CLEAR written once
+ *        while SAFE, the same write as ARM's own CLEAR (ARMING_HS_GO), so it
+ *        lifts what that lifts -- the IOmcu's link failsafe and its arm latch
+ *        (link_dev_clear_failsafe()) -- and nothing more.  It arms nothing:
+ *        ARM stays 0 and each output still needs its own ON or ARM.  Not
+ *        without a link, not while a pressed STOP stands or a programmer
+ *        holds a port (an ARM is refused then too), and not while the IOmcu
+ *        distrusts the heartbeat: ARM writes its CLEAR only once the line is
+ *        trusted, and a CLEAR does not lift FAULT 10.  STATUS is read
+ *        straight after, so the screens see the failsafe go within a frame
+ *        rather than at the next 500ms read.  A CLEAR not written leaves the
+ *        steps to fail at SERVO_SEQ_CLEAR_MS (500ms).
+ * @param pc      the CLEAR as queued, with the counts it was asked under
+ * @param link_up whether the link is up
  */
 static void apply_clear_cmd(const panel_cmd_t *pc, bool link_up)
 {

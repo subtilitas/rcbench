@@ -1063,8 +1063,10 @@ void publish_snapshot(const bench_state_t *bench, bool link_up,
 /* The IOmcu's STATUS fault bitmap at its last read, LINK_FAULT_* bits.
  * Control task only. */
 uint16_t far_end_faults(void);
-/* STATUS read now, outside the poll's 500ms period: after a CLEAR, so the
- * bitmap the screens see follows it.  Control task only. */
+/**
+ * @brief STATUS read now, outside the poll's 500ms period: after a CLEAR,
+ *        so the bitmap the screens see follows it.  Control task only.
+ */
 void far_end_status_now(void);
 
 /* ------------------------------------------------------- main.c, continued */
