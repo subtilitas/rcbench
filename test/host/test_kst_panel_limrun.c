@@ -1083,6 +1083,22 @@ TEST_CASE(a_limit_run_aborted_behind_its_arm_leaves_the_bench_safe)
     }
 }
 
+/* PROG WAIT edited after the screen opened: the run's start hands the
+ * new wait to the programmer, which its LEAVE and REBOOT send. */
+TEST_CASE(a_limit_run_takes_the_prog_wait_set_since_the_screen_opened)
+{
+    fresh();
+    link_up();
+    const uint16_t before = kst_prog_wait_ms(kst_panel_model());
+    const int wait = (before == 500u) ? 600 : 500;
+    settings_set(SET_SERVO_PROG_WAIT, (float)wait);
+    CHECK_EQ(kst_prog_wait_ms(kst_panel_model()), before);
+    kst_panel_run_begin();
+    CHECK_EQ(kst_prog_wait_ms(kst_panel_model()), (uint16_t)wait);
+    kst_panel_run_end();
+    settings_cancel_save();
+}
+
 int main(void)
 {
     RUN(a_limit_run_programs_the_servo_on_the_programming_port);
@@ -1103,5 +1119,6 @@ int main(void)
     RUN(a_session_after_a_limit_run_saves_its_own_backup);
     RUN(a_run_write_refused_before_it_is_sent_switches_write_enable_off);
     RUN(a_limit_run_aborted_behind_its_arm_leaves_the_bench_safe);
+    RUN(a_limit_run_takes_the_prog_wait_set_since_the_screen_opened);
     return test_summary("kst_panel_limrun");
 }
