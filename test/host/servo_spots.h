@@ -14,11 +14,11 @@
  *     492: the name and port line, ARM / DISARM, SETTINGS;
  *   - the PORT button over the output card: x 636 to 1016, y 8 to 56;
  *   - the left card from y 8 to 436: LIVE's dial and readings, the run
- *     card of TEST and LIMIT RUN from y 12 with START and SETTINGS 56px
- *     down, TEST's caps button at y 204 to 252; a run's settings' rows in
- *     three columns of 193px from x 18, 203px apart, each its label over
- *     its 48px value, 70px apart from y 64; its CLOSE x 478 to 618, y 12
- *     to 60;
+ *     card of TEST and LIMIT RUN from y 12, LIMIT RUN's with START and
+ *     SETTINGS 56px down, TEST's 136px tall with its caps button at y 152
+ *     to 200; the limit run's settings' rows in three columns of 193px
+ *     from x 18, 203px apart, each its label over its 48px value, 70px
+ *     apart from y 64; its CLOSE x 478 to 618, y 12 to 60;
  *   - the output card from SV_RCARD_X, y 62 to 436, its inner column SV_RC_X
  *     and SV_RC_W; the SET row's values and OUTPUT ON at y 174 to 222;
  *     SPEED; the type pill at y 310 to 354; CENTRE, SWEEP and RELEASE a
@@ -86,14 +86,21 @@
 #define SV_RUN_CARD_Y(k)   (12 + 0 * (k))
 /** @brief The caps button under TEST's card, 600 x 48px, its middle. */
 #define SV_CAPS_X          300
-#define SV_CAPS_TEST_Y     228                /**< Its middle row on TEST. */
+#define SV_CAPS_TEST_Y     176                /**< Its middle row on TEST. */
+/** @brief TEST's HOLD 2s: ARM + START, the footer's middle slot: its
+ *         middle. */
+#define SV_TEST_HOLD_X     512
+#define SV_TEST_HOLD_Y     468                /**< Its row. */
+/** @brief TEST's lines on its card, from the card's top. */
+#define SV_TEST_LINE_DY    56
 /** @brief The lines under a run card's START, from its top. */
 #define SV_RUN_LINE_DY     108
 /** @brief The run's box under the run card, left: 346px wide, its lines
  *         24px apart from 10px in, its button 150 x 48px 112px down; on
- *         TEST from y 256 under the caps button, on LIMIT RUN from y 204. */
+ *         TEST from y 204 under the caps button, on LIMIT RUN from y 204
+ *         under its card. */
 #define SV_BOX_X           18
-#define SV_BOX_Y           256                /**< The box's top on TEST. */
+#define SV_BOX_Y           204                /**< The box's top on TEST. */
 #define SV_BOX_Y_LIM       204                /**< On LIMIT RUN. */
 #define SV_BOX_W           346                /**< Its width. */
 /** @brief The box's line @p i, in the 10 x 20 face, on TEST. */

@@ -415,7 +415,7 @@ static void draw_left(gfx_canvas_t *c)
 void draw_arm(gfx_canvas_t *c)
 {
     if (ready_shown()) {
-        rauto_draw_hold(c);         /* RUDDER AUTO's ARM + START */
+        ready_draw_hold(c);         /* RUDDER AUTO's or TEST's ARM + START */
         return;
     }
     ui_hold_button(c, s.arm_btn, s.gate.armed ? "DISARM" : "ARM",
@@ -986,7 +986,8 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
             draw_test_page(c);
         }
         if (ready_shown()) {
-            /* RUDDER AUTO: the READY card in the output card's place. */
+            /* RUDDER AUTO and TEST: the READY card in the output card's
+             * place. */
             ready_render(c);
             s.rdy.drawn[buf] = ready_sig();
         } else {
@@ -1016,15 +1017,19 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
     }
     if (ready_shown()) {
         /* The READY card's rows when one changed, its rail line as the
-         * meter's readings move. */
+         * meter's readings move; on TEST the rail's plot with it, where
+         * nothing covers the left card. */
         const uint32_t rsig = ready_sig();
+        const bool power = s.drawn_power[buf] != s.power_rev;
+        s.drawn_power[buf] = s.power_rev;
         if (s.rdy.drawn[buf] != rsig) {
             s.rdy.drawn[buf] = rsig;
-            s.drawn_power[buf] = s.power_rev;
             clipped(c, ready_card_rect(), ready_render);
-        } else if (s.drawn_power[buf] != s.power_rev) {
-            s.drawn_power[buf] = s.power_rev;
+        } else if (power) {
             clipped(c, ready_rail_rect(), ready_render_rail);
+        }
+        if (power && s.fn == SERVO_FN_TEST && !cover && rows_page() < 0) {
+            clipped(c, test_plot_rect(), test_draw_plot);
         }
         s.drawn_sup[buf] = s.sup_rev;
     }
@@ -1078,16 +1083,14 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
         return;
     }
     if (wb_task() == UI_WB_TEST) {
-        /* START TEST's fade on TEST, START LIMIT RUN's on LIMIT RUN: the
-         * two share the card's place. */
+        /* START LIMIT RUN's fade on LIMIT RUN; TEST's hold is the
+         * footer's (s.arm_rev). */
         if (s.drawn_test[buf] != s.test_rev) {
             s.drawn_test[buf] = s.test_rev;
             if (run_card_shown() == 1) {
                 clipped(c, lim_start_rect(), draw_lim_start);
-            } else {
-                clipped(c, test_start_rect(), draw_test_start);
+                clipped(c, run_set_rect(1), draw_run_set);
             }
-            clipped(c, run_set_rect(run_card_shown()), draw_run_set);
         }
         return;
     }

@@ -138,9 +138,7 @@ TEST_CASE(a_run_outside_the_caps_is_refused_before_the_warning)
     short_runs();
     settings_set(SET_SUPPLY_V_MAX, 8.0f);
     supply_screen_limits_changed();
-    open_run_settings(0);
-    tap(HV_ROW_X, HV_ROW_Y);                      /* HV SERVO on */
-    CHECK(home_tag());                           /* back to the cards */
+    test_hv_on();                                 /* HV SERVO on */
     tap(START_X, START_Y);
     scr->tick(0.02f);
     scr->render(&cv, 0);
@@ -153,9 +151,7 @@ TEST_CASE(a_run_outside_the_caps_is_refused_before_the_warning)
      * while it stands: the hold starts nothing. */
     bench_fresh();
     short_runs();
-    open_run_settings(0);
-    tap(HV_ROW_X, HV_ROW_Y);
-    CHECK(home_tag());
+    test_hv_on();                                 /* HV SERVO on */
     tap(START_X, START_Y);
     scr->tick(0.02f);
     scr->render(&cv, 0);

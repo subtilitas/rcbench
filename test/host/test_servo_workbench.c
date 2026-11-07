@@ -80,8 +80,9 @@ TEST_CASE(each_function_screen_shows_its_task)
 }
 
 /* Over a panel the home tag closes the panel and the page under it stays;
- * from a run's settings it climbs to the run's card; on a function screen
- * with no panel it lets the screen go, which switches to SAFE. */
+ * from TEST's list and from the limit run's settings it climbs to the
+ * run's card; on a function screen with no panel it lets the screen go,
+ * which switches to SAFE. */
 TEST_CASE(the_home_tag_closes_a_panel_climbs_from_a_runs_settings_and_leaves)
 {
     fresh();
@@ -91,59 +92,51 @@ TEST_CASE(the_home_tag_closes_a_panel_climbs_from_a_runs_settings_and_leaves)
     CHECK(!home_tag());
     CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
 
-    for (int k = 0; k < 2; ++k) {
-        open_run_settings(k);
-        CHECK_EQ(servo_screen_run_settings(), k + 1);
-        CHECK(home_tag());
-        CHECK_EQ(servo_screen_run_settings(), 0);
-        CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
-        CHECK(!home_tag());
-    }
-
-    /* CLOSE on a run's settings climbs to the card, as the tag does; a
-     * press that slides off it closes nothing; the card's SETTINGS opens
-     * the page again, as the footer's SETTINGS does. */
-    for (int k = 0; k < 2; ++k) {
-        open_run_settings(k);
-        CHECK_EQ(servo_screen_run_settings(), k + 1);
-        tap(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y);
-        CHECK_EQ(servo_screen_run_settings(), 0);
-        CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
-        tap_settings();
-        CHECK_EQ(servo_screen_run_settings(), k + 1);
-        ev(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y, TOUCH_EVENT_DOWN, 1);
-        ev(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y + 120, TOUCH_EVENT_MOVE, 1);
-        ev(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y + 120, TOUCH_EVENT_UP, 1);
-        CHECK_EQ(servo_screen_run_settings(), k + 1);
-        /* A second tap on the card's SETTINGS spot stays on the page: on
-         * the AUTOMATIC TEST's it opens the length rule's list, which the
-         * home tag closes first. */
-        tap(SV_RUN_SET_X, SV_RUN_SET_Y(k));
-        CHECK_EQ(servo_screen_run_settings(), k + 1);
-        if (k == 0) {
-            CHECK(home_tag());
-            CHECK_EQ(servo_screen_run_settings(), 1);
-        }
-        CHECK(home_tag());
-        CHECK_EQ(servo_screen_run_settings(), 0);
-    }
-
-    /* IDLE CURRENT's keypad over the list: the tag closes the keypad
-     * without a value, and the list stays; the next tag climbs to TEST.
-     * The keypad's spots are the list's again: its keys over the rows
-     * would act on the rows. */
-    const float idle = settings_get(SET_SERVO_IDLE_MAX);
     open_run_settings(0);
-    tap(LROW_X(1), LROW_Y(1));
-    CHECK(servo_screen_keypad()->open);
-    CHECK(scr->covered());
+    CHECK(servo_screen_list()->open);
     CHECK(home_tag());
-    CHECK(!servo_screen_keypad()->open);
-    CHECK(!scr->covered());
-    CHECK_EQ(servo_screen_run_settings(), 1);
-    CHECK_NEAR(settings_get(SET_SERVO_IDLE_MAX), idle, 1e-6f);
+    CHECK(!servo_screen_list()->open);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
+    CHECK(!home_tag());
+    open_run_settings(1);
+    CHECK_EQ(servo_screen_run_settings(), 2);
     CHECK(home_tag());
     CHECK_EQ(servo_screen_run_settings(), 0);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
+    CHECK(!home_tag());
+
+    /* CLOSE on the limit run's settings climbs to the card, as the tag
+     * does; a press that slides off it closes nothing; the card's
+     * SETTINGS opens the page again, as the footer's SETTINGS does, and a
+     * second tap on its spot stays on the page. */
+    open_run_settings(1);
+    CHECK_EQ(servo_screen_run_settings(), 2);
+    tap(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y);
+    CHECK_EQ(servo_screen_run_settings(), 0);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
+    tap_settings();
+    CHECK_EQ(servo_screen_run_settings(), 2);
+    ev(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y, TOUCH_EVENT_DOWN, 1);
+    ev(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y + 120, TOUCH_EVENT_MOVE, 1);
+    ev(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y + 120, TOUCH_EVENT_UP, 1);
+    CHECK_EQ(servo_screen_run_settings(), 2);
+    tap(SV_RUN_SET_X, SV_RUN_SET_Y(1));
+    CHECK_EQ(servo_screen_run_settings(), 2);
+    CHECK(home_tag());
+    CHECK_EQ(servo_screen_run_settings(), 0);
+
+    /* IDLE CURRENT's keypad over TEST's list: the tag closes the keypad
+     * without a value, and the list stays; the next tag climbs to TEST. */
+    const float idle = settings_get(SET_SERVO_IDLE_MAX);
+    open_run_settings(0);
+    sl_part(TL_IDLE, UI_SL_PART_VALUE);
+    CHECK(servo_screen_list()->kp.open);
+    CHECK(home_tag());
+    CHECK(!servo_screen_list()->kp.open);
+    CHECK(servo_screen_list()->open);
+    CHECK_NEAR(settings_get(SET_SERVO_IDLE_MAX), idle, 1e-6f);
+    CHECK(home_tag());
+    CHECK(!servo_screen_list()->open);
     CHECK(!home_tag());
 
     /* TYPE's list over the hub's list: one tag closes it, nothing is
@@ -211,9 +204,10 @@ TEST_CASE(a_leave_drops_a_start_hold)
 
 /* ----------------------------------------------------------- the run cards */
 
-/* Each card's state line says ARM FIRST on a SAFE bench and HOLD 2s TO
- * START on an armed one; an HV step makes START TEST a tap that opens the
- * warning and the line says so. */
+/* TEST's state line says HOLD 2s TO START on a SAFE bench, whose ARM its
+ * hold does, and on an armed one; LIMIT RUN's says ARM FIRST on a SAFE
+ * bench.  An HV step makes ARM + START a tap that opens the warning and
+ * the line says so. */
 TEST_CASE(the_run_cards_say_what_their_start_needs)
 {
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
@@ -222,26 +216,23 @@ TEST_CASE(the_run_cards_say_what_their_start_needs)
         servo_screen_set_armed(false);
         bench_frames(100u);
         open_test();
-        CHECK(card_line_reads(0, 0, ui_servo_str(SERVO_STR_START_NOT_ARMED),
-                              UI_C_WARN));
+        CHECK(card_line_reads(0, 0, TR(SV_HOLD_START), UI_C_TEXT_FAINT));
         CHECK(card_line_reads(1, 0, ui_servo_str(SERVO_STR_START_NOT_ARMED),
                               UI_C_WARN));
         servo_screen_set_armed(true);
         bench_frames(100u);
         CHECK(card_line_reads(0, 0, TR(SV_HOLD_START), UI_C_TEXT_FAINT));
         settings_set(SET_SERVO_STEP_84, 1.0f);
-        open_run_settings(0);
-        tap(HV_ROW_X, HV_ROW_Y);                         /* HV SERVO on */
-        CHECK(home_tag());
+        test_hv_on();                                    /* HV SERVO on */
         CHECK(card_line_reads(0, 0, TR(SV_TAP_HV), UI_C_TEXT_FAINT));
     }
     ui_text_set_language(UI_LANG_EN);
 }
 
 /* On the rbmod carrier with a programming port chosen the AUTOMATIC TEST
- * card says what its start needs: the PROG 5V on, and no voltage steps,
- * which reach the servo rails and not the port. */
-TEST_CASE(the_test_card_on_a_carrier_port_names_the_prog_5v_and_the_steps)
+ * card says the run cannot take it, with its PROG 5V off or on: the
+ * voltage steps reach the servo rails and not the port. */
+TEST_CASE(the_test_card_on_a_carrier_port_names_the_steps)
 {
     bench_fresh();
     servo_screen_set_armed(true);
@@ -250,7 +241,7 @@ TEST_CASE(the_test_card_on_a_carrier_port_names_the_prog_5v_and_the_steps)
     prog5v_box_publish(2u, 21u, PROG5V_HELD_NONE);
     bench_frames(100u);
     open_test();
-    CHECK(card_line_reads(0, 0, ui_servo_str(SERVO_STR_START_PROG_5V),
+    CHECK(card_line_reads(0, 0, ui_servo_str(SERVO_STR_START_PROG_STEPS),
                           UI_C_WARN));
     prog5v_box_publish(3u, 21u, PROG5V_HELD_NONE);
     bench_frames(100u);
@@ -541,12 +532,12 @@ static bool keypad_opened(void)
 TEST_CASE(a_tapped_row_is_a_finger_tall_and_its_gaps_take_nothing)
 {
     fresh();
-    open_run_settings(0);
-    tap(LROW_X(2), LROW_Y(3) - 23);            /* DWELL TIME's value */
+    open_run_settings(1);
+    tap(LROW_X(2), LROW_Y(4) - 23);            /* PROG WAIT's value */
     CHECK(keypad_opened());
-    tap(LROW_X(2), LROW_Y(3) + 22);
+    tap(LROW_X(2), LROW_Y(4) + 22);
     CHECK(keypad_opened());
-    tap(LROW_X(0) + 102, LROW_Y(3));           /* between two columns */
+    tap(LROW_X(0) + 102, LROW_Y(4));           /* between two columns */
     CHECK(!keypad_opened());
     CHECK(home_tag());
 
@@ -557,17 +548,16 @@ TEST_CASE(a_tapped_row_is_a_finger_tall_and_its_gaps_take_nothing)
 }
 
 /*
- * A second tap on the AUTOMATIC TEST card's SETTINGS lands on the run's
- * settings under it: the length rule tops that column, and its list opens.
- * No setting changes, as a step's switch under it would have changed one.
- * The LIMIT RUN card's lands on no row at all.
+ * A second tap on the LIMIT RUN card's SETTINGS lands on no row of the
+ * run's settings under it, and TEST's card, whose settings are the
+ * footer's list, takes neither tap: no setting changes, no keypad opens.
  */
 TEST_CASE(a_second_tap_on_a_run_cards_settings_changes_no_setting)
 {
     static float before[SETTING_COUNT];
     for (int k = 0; k < 2; ++k) {
         fresh();
-        open_test();
+        go(k == 0 ? SERVO_FN_TEST : SERVO_FN_LIMRUN);
         for (int id = 0; id < SETTING_COUNT; ++id) {
             before[id] = settings_get((setting_id_t)id);
         }
@@ -579,7 +569,8 @@ TEST_CASE(a_second_tap_on_a_run_cards_settings_changes_no_setting)
         }
         CHECK_EQ(changed, 0);
         CHECK(!servo_screen_keypad()->open);
-        CHECK(home_tag());          /* the list, or the run's settings */
+        CHECK(!servo_screen_list()->open);
+        CHECK_EQ(servo_screen_run_settings(), k == 0 ? 0 : 2);
     }
 }
 
@@ -635,10 +626,10 @@ static int ink_under_the_alert_band(void)
 
 /*
  * In both languages the text at the foot of the left card ends above the
- * card's floor, so above the footer: TEST's caps line, the AUTOMATIC TEST's stall note on its
- * settings (said as shipped: 2.00A at a limit of 2.00A), the OUTPUT
- * page's notes at their longest, a refused or unsupported rate, and the
- * save line at its longest, SETUP's changes not saved.
+ * card's floor, so above the footer: TEST's card, its caps line and the
+ * rail's plot, the LIMIT RUN's settings, the OUTPUT page's notes at their
+ * longest, a refused or unsupported rate, and the save line at its
+ * longest, SETUP's changes not saved.
  */
 /*
  * LIVE's three readings end above the alert band in both languages, and the
@@ -673,15 +664,9 @@ TEST_CASE(no_text_lies_under_the_alert_band)
         CHECK(settings_dirty());
         open_test();
         CHECK_EQ(ink_under_the_alert_band(), 0);
-        open_run_settings(0);
+        open_run_settings(1);
         CHECK_EQ(ink_under_the_alert_band(), 0);
-        int warn = 0;
-        for (int x = UI_MARGIN; x < UI_MARGIN + 620; ++x) {
-            for (int y = TEXT_FLOOR - 20; y < TEXT_FLOOR; ++y) {
-                warn += fb[(size_t)y * W + x] == ui_theme_color(UI_C_WARN);
-            }
-        }
-        CHECK(warn > 100);          /* the stall note is there, above it */
+        CHECK(home_tag());
         close_settings();
     }
     ui_text_set_language(UI_LANG_EN);
@@ -752,7 +737,7 @@ int main(void)
     RUN(the_home_tag_closes_a_panel_climbs_from_a_runs_settings_and_leaves);
     RUN(a_leave_drops_a_start_hold);
     RUN(the_run_cards_say_what_their_start_needs);
-    RUN(the_test_card_on_a_carrier_port_names_the_prog_5v_and_the_steps);
+    RUN(the_test_card_on_a_carrier_port_names_the_steps);
     RUN(the_limit_runs_write_note_on_a_carrier_port_names_the_prog_5v);
     RUN(the_limit_run_on_a_carrier_port_asks_the_prog_5v_before_arm);
     RUN(port_pwm_off_says_how_to_switch_it_on_safe_and_armed);

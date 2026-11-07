@@ -146,7 +146,7 @@ TEST_CASE(the_automatic_test_judges_moves_on_imu_counts)
     hold_start(2.3f);
     CHECK(servo_screen_testing());
     test_run_out();
-    CHECK_EQ(bench.disarms, 0u);
+    CHECK_EQ(bench.disarms, 1u);              /* SAFE at the run's end */
     CHECK(strstr(bench.report, "Result:         PASS") != NULL);
     CHECK(strstr(bench.report, "Encoder:        IMU Y-, in AS5600 counts "
                                "(0.088° per count),")
@@ -377,7 +377,7 @@ TEST_CASE(an_imu_silent_300ms_is_a_gap_and_a_second_within_10s_ends_the_run)
     bench_frames(300u);
     imu_plug(t + 300u);
     test_run_out();
-    CHECK_EQ(bench.disarms, 0u);
+    CHECK_EQ(bench.disarms, 1u);              /* SAFE at the run's end */
     CHECK(strstr(bench.report, "Result:         PASS") != NULL);
     CHECK(strstr(bench.report, "IMU gaps: 1, longest 300ms.") != NULL);
 

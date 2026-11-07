@@ -4714,11 +4714,8 @@ UI_TEXT(SV_ROW_BO_STEP, 0,
     "STEP",
     "SCHRITT")
 UI_TEXT(SV_BO_NOTE_WALK, 0,
-    "From %.2fV down in %.2fV steps to %.2fV",
-    "Ab %.2fV abwärts in Schritten von %.2fV bis %.2fV")
-UI_TEXT(SV_BO_NOTE_COUNT, 0,
-    "%u voltages; it stops at the first without movement",
-    "%u Spannungen; Ende bei der ersten ohne Bewegung")
+    "From %.2fV down in %.2fV steps to %.2fV, %u voltages",
+    "Ab %.2fV abwärts in Schritten von %.2fV bis %.2fV, %u Spannungen")
 UI_TEXT(SV_ROW_NAME, 16,
     "NAME",
     "NAME")
@@ -5175,8 +5172,8 @@ UI_TEXT(HG_SV_READ, 0,
     "COMMANDED: the pulse in us. MEASURED: the angle source's angle. CURRENT: the servo rail in A.",
     "SOLL-PULSBREITE: Puls in us. GEMESSEN: Winkel der Winkelquelle. STROM: Servoschiene in A.")
 UI_TEXT(HG_SV_START, 0,
-    "Hold 2s to run the automatic test at its supply voltages, while ARMED. The lines under it say why not.",
-    "Halte 2s für den automatischen Test bei seinen Spannungen, bei ARMED. Darunter steht, warum nicht.")
+    "The steps, what the run does or why it cannot start, the last result and its file.",
+    "Die Stufen, was der Lauf tut oder warum er nicht startet, das letzte Ergebnis.")
 UI_TEXT(HG_SV_RUN_SET, 0,
     "The run's steps, timing and limits, one level down. The home tag goes back to the card.",
     "Stufen, Zeiten und Grenzen des Laufs, eine Ebene tiefer. Das Home-Feld führt zurück zur Karte.")
@@ -5388,6 +5385,37 @@ UI_TEXT(SVL_PORT_ONLY, 60,
 UI_TEXT(SVL_KST_ONLY, 60,
     "KST and Chaservo servos only",
     "Nur KST- und Chaservo-Servos")
+/* TEST's list (servo_test_list.c): its headings and why a row takes no
+ * press; its READY card (servo_test_ready.c): the STEPS row's label and
+ * the PD MINI row's refusal beside a rail fed from elsewhere (58 cells,
+ * the card's line). */
+UI_TEXT(SVL_HV_ONLY, 60,
+    "With HV SERVO on only",
+    "Nur mit HV-SERVO EIN")
+UI_TEXT(SVL_BY_TIME, 60,
+    "With Length by TIME only",
+    "Nur bei Länge nach ZEIT")
+UI_TEXT(SVL_BY_MOVES, 60,
+    "With Length by MOVES only",
+    "Nur bei Länge nach BEWEGUNGEN")
+UI_TEXT(TST_H_STEPS, 0,
+    "VOLTAGE STEPS",
+    "SPANNUNGSSTUFEN")
+UI_TEXT(TST_H_LIMITS, 0,
+    "PASS/FAIL LIMITS",
+    "GRENZWERTE")
+UI_TEXT(TST_H_LENGTH, 0,
+    "LENGTH AND TIMING",
+    "DAUER UND ZEITEN")
+UI_TEXT(TST_STEPS, 13,
+    "STEPS",
+    "STUFEN")
+UI_TEXT(TST_RAIL_FED, 58,
+    "RAIL LIVE WITH THE PD MINI OFF: FED FROM ELSEWHERE",
+    "SCHIENE UNTER SPANNUNG BEI PD MINI AUS: FREMD GESPEIST")
+UI_TEXT(HG_SV_TEST_START, 0,
+    "Hold 2s: PORT PWM on a port, ARM, then the run. Past 6.0V a tap opens the HV warning. A tap stops it.",
+    "Halte 2s: PORT-PWM am Port, ARM, dann der Lauf. Über 6.0V öffnet Tippen die HV-Warnung. Tippen stoppt.")
 UI_TEXT(SV_ROW_PROG_V, 0,
     "PROG VOLTAGE",
     "PROG-SPANNUNG")
@@ -5789,8 +5817,8 @@ UI_TEXT(HOLD_HINT_APPLY, 94,
     "Hold 2s to apply.",
     "Halte 2s, um zu übernehmen.")
 UI_TEXT(HOLD_HINT_TEST, 94,
-    "Hold 2s to start the test.",
-    "Halte 2s, um den Test zu starten.")
+    "Hold 2s to arm and start the test.",
+    "Halte 2s, um auf ARMED zu schalten und den Test zu starten.")
 UI_TEXT(HOLD_HINT_LIMIT_RUN, 94,
     "Hold 2s to start the limit run.",
     "Halte 2s, um den Endlagenlauf zu starten.")

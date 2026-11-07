@@ -4,7 +4,8 @@
  *        sequence.  See servo_ready_int.h for the layout.
  *
  * The card draws the rows the function gives (RUDDER AUTO's:
- * servo_rudder_auto_ready.c) and takes their taps.  The sequence is
+ * servo_rudder_auto_ready.c; TEST's: servo_test_ready.c) and takes their
+ * taps.  The sequence is
  * servo_start_seq.h's steps done on the bench the way a finger does them:
  * PORT PWM on as OUTPUTS' segment sets it, PROG 5V on as its box's hold
  * asks it, the PD mini's output on as SUPPLY's OUTPUT ON, ARM as ARM's
@@ -57,20 +58,25 @@ void ready_init(void)
 
 bool ready_shown(void)
 {
-    return s.fn == SERVO_FN_RAUTO;
+    return s.fn == SERVO_FN_RAUTO || s.fn == SERVO_FN_TEST;
 }
 
 int ready_count(void)
 {
-    return ready_shown() ? (int)RAR_COUNT : 0;
+    switch ((servo_fn_t)s.fn) {
+    case SERVO_FN_RAUTO: return (int)RAR_COUNT;
+    case SERVO_FN_TEST:  return (int)TRR_COUNT;
+    default:             return 0;
+    }
 }
 
 bool ready_row(int i, rdy_row_t *r)
 {
-    if (!ready_shown()) {
-        return false;
+    switch ((servo_fn_t)s.fn) {
+    case SERVO_FN_RAUTO: return rauto_ready_row(i, r);
+    case SERVO_FN_TEST:  return test_ready_row(i, r);
+    default:             return false;
     }
-    return rauto_ready_row(i, r);
 }
 
 const char *ready_refusal(char *buf, size_t n)
@@ -78,15 +84,45 @@ const char *ready_refusal(char *buf, size_t n)
     if (buf == NULL || n == 0u || !ready_shown()) {
         return NULL;
     }
-    rauto_row_t row = RAR_COUNT;
-    const char *why = rauto_hold_blocked(&row);
+    int row = -1;
+    const char *why = NULL;
+    if (s.fn == SERVO_FN_TEST) {
+        test_row_t tr = TRR_COUNT;
+        why = test_hold_blocked(&tr);
+        row = (int)tr;
+    } else {
+        rauto_row_t rr = RAR_COUNT;
+        why = rauto_hold_blocked(&rr);
+        row = (int)rr;
+    }
     if (why == NULL) {
         return NULL;
     }
     rdy_row_t r;
-    const char *label = (rauto_ready_row((int)row, &r)) ? r.label : "";
+    const char *label = ready_row(row, &r) ? r.label : "";
     snprintf(buf, n, TR(RDY_BAND), label, why);
     return buf;
+}
+
+bool ready_hold_down(const touch_event_t *evt)
+{
+    return (s.fn == SERVO_FN_TEST) ? test_hold_down(evt) : rauto_down(evt);
+}
+
+bool ready_hold_stops(void)
+{
+    return svs_seq_busy()
+           || ((s.fn == SERVO_FN_TEST) ? servo_test_running(&s.test)
+                                       : servo_rauto_running(&s.ra.run));
+}
+
+void ready_draw_hold(gfx_canvas_t *c)
+{
+    if (s.fn == SERVO_FN_TEST) {
+        test_draw_hold(c);
+    } else {
+        rauto_draw_hold(c);
+    }
 }
 
 gfx_rect_t ready_card_rect(void)
@@ -279,7 +315,11 @@ bool ready_rest(const touch_event_t *evt)
     if (touch_event_is_tap_up(evt) && ready_shown()
         && gfx_rect_contains(ready_row_rect(i), evt->point.x,
                              evt->point.y)) {
-        rauto_ready_tap(i);
+        if (s.fn == SERVO_FN_TEST) {
+            test_ready_tap(i);
+        } else {
+            rauto_ready_tap(i);
+        }
     }
     return true;
 }
@@ -303,6 +343,12 @@ servo_seq_need_t svs_seq_need(void)
     n.prog_5v  = prog_choice_carrier() && prog_choice_port() != 0u
                  && prog5v_box_shown();
     n.pd_mini  = lim_pd_feeds();
+    /* TEST's steps set the PD mini and switch its output themselves, at
+     * each step's voltage: the hold switches only the port's pulse. */
+    if (s.fn == SERVO_FN_TEST) {
+        n.prog_5v = false;
+        n.pd_mini = false;
+    }
     /* A supply switched on: the INA3221's window under way still holds
      * the rail as it was, so the checks wait for one begun after it. */
     n.settle   = n.prog_5v || n.pd_mini;
@@ -317,6 +363,17 @@ servo_seq_need_t svs_seq_need(void)
  */
 static servo_seq_part_t part_of(const char *why)
 {
+    if (why != NULL && s.fn == SERVO_FN_TEST) {
+        switch (test_row_of(why)) {
+        case TRR_PORT:
+            /* The carrier's port is no part the steps switch. */
+            return (why == ui_servo_str(SERVO_STR_START_PROG_STEPS))
+                       ? SERVO_SEQ_PART_NONE : SERVO_SEQ_PART_PWM;
+        case TRR_PD:   return SERVO_SEQ_PART_PD_MINI;
+        case TRR_ARM:  return SERVO_SEQ_PART_ARM;
+        default:       return SERVO_SEQ_PART_NONE;
+        }
+    }
     if (why == NULL || s.fn != SERVO_FN_RAUTO) {
         return SERVO_SEQ_PART_NONE;
     }

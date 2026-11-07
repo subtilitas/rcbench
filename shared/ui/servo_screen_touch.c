@@ -54,8 +54,8 @@ bool svs_safe_at(int x, int y)
     if (ready_shown()) {
         /* ARM + START stops a sequence or a run on its press; the READY
          * card drives nothing. */
-        if (gfx_rect_contains(rauto_rect(RA_C_START), x, y)) {
-            return servo_rauto_running(&s.ra.run) || svs_seq_busy();
+        if (gfx_rect_contains(ui_footer_rect(UI_FOOTER_HOLD), x, y)) {
+            return ready_hold_stops();
         }
         if (gfx_rect_contains(ready_card_rect(), x, y)) {
             return false;
@@ -85,8 +85,7 @@ bool svs_safe_at(int x, int y)
             return false;
         }
         if (k == 0) {
-            return gfx_rect_contains(test_start_rect(), x, y)
-                   && servo_test_running(&s.test);
+            return false;       /* TEST's hold is the footer's */
         }
         return gfx_rect_contains(lim_start_rect(), x, y)
                && servo_limrun_running(&s.lim);
@@ -335,21 +334,21 @@ void svs_event_body(const touch_event_t *evt)
         if (foot_down(evt)) {
             return;
         }
-        /* RUDDER AUTO: the footer's ARM + START and the READY card in the
-         * output card's place; nothing of the output card is there to
-         * press. */
+        /* RUDDER AUTO and TEST: the footer's ARM + START and the READY
+         * card in the output card's place; nothing of the output card is
+         * there to press. */
+        const gfx_rect_t hold = ui_footer_rect(UI_FOOTER_HOLD);
         if (ready_shown()
-            && (gfx_rect_contains(rauto_rect(RA_C_START), px, py)
+            && (gfx_rect_contains(hold, px, py)
                 || gfx_rect_contains(ready_card_rect(), px, py))) {
             /* A press on the hold during the steps or the run ends them,
              * whatever is open over the screen. */
-            const bool stops =
-                gfx_rect_contains(rauto_rect(RA_C_START), px, py)
-                && (svs_seq_busy() || servo_screen_rauto_running());
+            const bool stops = gfx_rect_contains(hold, px, py)
+                               && ready_hold_stops();
             if (stops) {
                 close_panels();
-                (void)rauto_down(evt);
-            } else if (!modal_open() && !rauto_down(evt)) {
+                (void)ready_hold_down(evt);
+            } else if (!modal_open() && !ready_hold_down(evt)) {
                 (void)ready_down(evt);
             }
             return;

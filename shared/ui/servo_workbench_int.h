@@ -45,15 +45,13 @@ void prog_tick(float dt_s);
  *         own screen (KST's or HITEC's). */
 void prog_follow_hold(void);
 
-/* The page of rows shown, PG_*, or -1: on TEST and LIMIT RUN a run's
- * settings, on KST its EXPERT MODE row. */
+/* The page of rows shown, PG_*, or -1: on LIMIT RUN its run's settings,
+ * on KST its EXPERT MODE row. */
 static inline int rows_page(void)
 {
     switch (wb_task()) {
     case UI_WB_TEST:
-        return (s.run_list == RL_AUTO)       ? PG_AUTO
-               : (s.run_list == RL_LIMIT)    ? PG_LIMRUN
-               : (s.run_list == RL_BROWNOUT) ? PG_BROWNOUT : -1;
+        return (s.run_list == RL_LIMIT) ? PG_LIMRUN : -1;
     case UI_WB_PROGRAM:
         return (s.run_list == RL_KST) ? PG_KST : -1;
     default:             return -1;
@@ -110,9 +108,8 @@ void wb_init(void);
 void wb_enter(void);
 void wb_leave(void);
 void wb_cancel(void);
-/* The home tag: a panel closes; a page of rows closes to its screen, the
- * brown-out walk's to the automatic test's.  Whether it did one; false
- * lets the screen go. */
+/* The home tag: a panel closes; a page of rows closes to its screen.
+ * Whether it did one; false lets the screen go. */
 bool wb_back(void);
 /** @brief A panel or a programming page covers the screen.
  *  @return true while one does */
@@ -161,9 +158,11 @@ static inline gfx_rect_t page_area(void)
 
 /*
  * The run card, AUTOMATIC TEST on TEST and LIMIT RUN on LIMIT RUN, at the
- * top of the page area: its name and a summary line, its START hold with
- * SETTINGS beside it, and the lines under them.  On TEST the caps line
- * follows the card.
+ * top of the page area: its name and a summary line, on LIMIT RUN its
+ * START hold with SETTINGS beside it, and the lines under them.  TEST's
+ * card is shorter: its hold is the footer's and its settings the footer's
+ * list, so its lines follow the summary (TEST_LINE_DY).  On TEST the caps
+ * button follows the card, the run's box and the rail's plot under it.
  */
 #define RUN_CARD_X  (PAD + 10)     /**< The run cards' left edge, px. */
 #define RUN_CARD_W  (LCARD_W - 20) /**< Their width: 600px. */
@@ -180,12 +179,16 @@ static inline gfx_rect_t page_area(void)
 #define RUN_LINE_DY 108            /**< The lines under START, in it. */
 #define RUN_LINE_P  22             /**< Their pitch in SV_FONT_LABEL. */
 #define RUN_SET_W   160            /**< A card's SETTINGS, px. */
+#define TEST_CARD_H 136            /**< TEST's card's height, px. */
+#define TEST_LINE_DY 56            /**< TEST's lines, in its card. */
 /** @brief The caps button under TEST's card. */
-#define RUN_CAPS_Y  (RUN_CARD_Y + RUN_CARD_H + RUN_CARD_GAP)
+#define RUN_CAPS_Y  (RUN_CARD_Y + TEST_CARD_H + RUN_CARD_GAP)
 _Static_assert(RUN_CAPS_Y + UI_TAP_MIN <= CARD_FLOOR,
                "the caps button ends above the footer");
 _Static_assert(RUN_LINE_DY + 2 * RUN_LINE_P + 20 <= RUN_CARD_H,
                "a card's three lines under START end inside it");
+_Static_assert(TEST_LINE_DY + 2 * RUN_LINE_P + 20 <= TEST_CARD_H,
+               "TEST's three lines end inside its card");
 
 /** @brief The run card the function shows: 0 AUTOMATIC TEST on TEST, 1
  *         LIMIT RUN on LIMIT RUN. @return the card */
@@ -201,9 +204,8 @@ static inline int run_card_shown(void)
  */
 static inline gfx_rect_t run_card_rect(int k)
 {
-    (void)k;
     return (gfx_rect_t){ RUN_CARD_X, (int16_t)RUN_CARD_Y, RUN_CARD_W,
-                         RUN_CARD_H };
+                         (int16_t)((k == 0) ? TEST_CARD_H : RUN_CARD_H) };
 }
 
 /**
@@ -279,10 +281,22 @@ static inline bool run_box_shown(void)
            && ((s.fn == SERVO_FN_TEST) ? s.test_box : s.lim_box);
 }
 
-/** @brief START TEST, on the AUTOMATIC TEST card. @return the button */
+/** @brief TEST's HOLD 2s: ARM + START, the footer's middle slot.
+ *  @return the button */
 static inline gfx_rect_t test_start_rect(void)
 {
-    return (gfx_rect_t){ (int16_t)(RUN_CARD_X + 10),
-                         (int16_t)(RUN_CARD_Y + RUN_BTN_DY), RUN_BTN_W,
-                         RUN_BTN_H };
+    return ui_footer_rect(UI_FOOTER_HOLD);
+}
+
+/**
+ * @brief The rail's plot on TEST, under the caps button: right of the
+ *        run's box while it shows, else across the card.  Its meter's
+ *        name on its first 24px.
+ * @return the plot's place, its name included
+ */
+static inline gfx_rect_t test_plot_rect(void)
+{
+    const int x = s.test_box ? RUN_CARD_X + BOX_W + 8 : RUN_CARD_X;
+    return (gfx_rect_t){ (int16_t)x, (int16_t)BOX_Y_TEST,
+                         (int16_t)(RUN_CARD_X + RUN_CARD_W - x), BOX_H };
 }

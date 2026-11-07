@@ -40,10 +40,27 @@ static const struct { int x, y; } k_mark[MK_COUNT] = {
     { 700, 198 }, { 700, 240 }, { 40, 300 },
 };
 
+/* What each mark covers, as the screen drew it. */
+static gfx_color_t s_under[MK_COUNT];
+
 static void mark_all(void)
 {
     for (int k = 0; k < MK_COUNT; ++k) {
+        if (!marked(k_mark[k].x, k_mark[k].y)) {
+            s_under[k] = fb[(size_t)k_mark[k].y * W + k_mark[k].x];
+        }
         mark(k_mark[k].x, k_mark[k].y);
+    }
+}
+
+/* The marks no render painted over taken away: buffer 0 as the screen
+ * last drew it, which a later comparison with a full redraw reads. */
+static void unmark_all(void)
+{
+    for (int k = 0; k < MK_COUNT; ++k) {
+        if (marked(k_mark[k].x, k_mark[k].y)) {
+            fb[(size_t)k_mark[k].y * W + k_mark[k].x] = s_under[k];
+        }
     }
 }
 
@@ -122,12 +139,12 @@ TEST_CASE(a_change_of_meter_repaints_the_row_the_line_and_the_plot)
                      (from_ina != to_ina) ? 1 : 4);
         }
     }
-    /* With a run's settings open over the left card the output card's
-     * line follows the meter all the same, and LIVE's CURRENT reading shows
-     * the meter in force once LIVE is back. */
+    /* With the limit run's settings open over the left card the output
+     * card's line follows the meter all the same, and LIVE's CURRENT
+     * reading shows the meter in force once LIVE is back. */
     fresh();
     two_buffers();
-    open_run_settings(0);
+    open_run_settings(1);
     rail_supply(6.0f, 0.4f);
     CHECK(both_whole());
     meter(SERVO_SOURCE_INA3221);
@@ -449,6 +466,7 @@ TEST_CASE(the_current_row_repaints_on_a_changed_digit_and_alone)
     CHECK(card_kept());
 
     /* The other buffer owes the row once and takes it once. */
+    unmark_all();
     settle_drawn();                 /* ARM's flash after the arm is over */
     rail_window(500, 5980u);
     CHECK(both_whole_in(SV_RCARD_X, 6, SV_RCARD_W, 400));

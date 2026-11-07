@@ -9,7 +9,7 @@
  * the live half, x 0 to 528; a control that runs past x 528 is marked up
  * to there, the part the screen shows (ui_help_add()).  The output card's
  * pages take the dock on the left, over the left card, and keep the PORT
- * button in view; on RUDDER AUTO the READY card's page takes their place: they are the only ones on KST and HITEC, whose session
+ * button in view; on RUDDER AUTO and TEST the READY card's page takes their place: they are the only ones on KST and HITEC, whose session
  * fills the left card.  No page is offered while ARMED: either dock covers
  * part of DISARM in the footer's middle slot.  A page whose dock would cover a control that stops an output is
  * not offered while that control shows: a function's page while the
@@ -105,14 +105,14 @@ static void page_live(ui_help_page_t *p)
                                         + 34 });
 }
 
-/** @brief TEST: the run card's START and SETTINGS, and the caps.
+/** @brief TEST: the run card's lines, the caps and the rail's plot.
  *  @param p The page. */
 static void page_test(ui_help_page_t *p)
 {
     task_page(p, TX_HG_SV_TITLE_TEST);
-    (void)ui_help_add(p, TR(SV_START_TEST), TX_HG_SV_START, test_start_rect());
-    (void)ui_help_add(p, TR(SUP_SETTINGS), TX_HG_SV_RUN_SET, run_set_rect(0));
+    (void)ui_help_add(p, TR(SV_AUTO_TEST), TX_HG_SV_START, run_card_rect(0));
     (void)ui_help_add(p, TR(HG_SV_CAPS_NAME), TX_HG_SV_CAPS, caps_open_rect());
+    (void)ui_help_add(p, TR(MO_TAB_PLOT), TX_HG_SV_PLOT, test_plot_rect());
 }
 
 /** @brief LIMIT RUN: the run card's START and SETTINGS.
@@ -174,8 +174,9 @@ static void page_auto(ui_help_page_t *p)
                       rudder_rect(RUD_C_ZERO));
 }
 
-/** @brief RUDDER AUTO's READY card, its rail line, ARM + START and
- *         SETTINGS: the dock on the left, the PORT button kept in view.
+/** @brief RUDDER AUTO's or TEST's READY card, its rail line, ARM + START
+ *         and SETTINGS: the dock on the left, the PORT button kept in
+ *         view.
  *  @param p The page. */
 static void page_ready(ui_help_page_t *p)
 {
@@ -185,10 +186,13 @@ static void page_ready(ui_help_page_t *p)
     p->must_show = port_rect();
     (void)ui_help_add(p, TR(SVH_PORT), TX_HG_SV_TARGET, p->must_show);
     (void)ui_help_add(p, TR(RDY_TITLE), TX_HG_SV_READY,
-                      both(ready_row_rect(0), ready_row_rect(RAR_COUNT - 1)));
+                      both(ready_row_rect(0),
+                           ready_row_rect(ready_count() - 1)));
     (void)ui_help_add(p, TR(RDY_METER), TX_HG_SV_RDY_RAIL, ready_rail_rect());
-    (void)ui_help_add(p, "ARM + START", TX_HG_SV_RA_START,
-                      rauto_rect(RA_C_START));
+    (void)ui_help_add(p, "ARM + START",
+                      (s.fn == SERVO_FN_TEST) ? TX_HG_SV_TEST_START
+                                              : TX_HG_SV_RA_START,
+                      ui_footer_rect(UI_FOOTER_HOLD));
     (void)ui_help_add(p, TR(FOOT_SETTINGS), TX_HG_SV_SETTINGS,
                       ui_footer_rect(UI_FOOTER_SETTINGS));
 }
@@ -261,12 +265,16 @@ static int pages_now(guide_fn out[GUIDE_MAX])
         return 0;
     }
     int n = 0;
-    /* RUDDER AUTO: its own pages, none while the hold stops a sequence or
-     * a run (either dock covers part of it). */
+    /* RUDDER AUTO and TEST: their own pages, none while the hold stops a
+     * sequence or a run (either dock covers part of it). */
     if (ready_shown()) {
         if (!run_live() && !svs_seq_busy()) {
-            out[n++] = page_auto;
-            out[n++] = page_rudder_read;
+            if (s.fn == SERVO_FN_TEST) {
+                out[n++] = page_test;
+            } else {
+                out[n++] = page_auto;
+                out[n++] = page_rudder_read;
+            }
             out[n++] = page_ready;
         }
         return n;
@@ -279,9 +287,6 @@ static int pages_now(guide_fn out[GUIDE_MAX])
         case SERVO_FN_LIVE:
         case SERVO_FN_SWEEP:
             out[n++] = page_live;
-            break;
-        case SERVO_FN_TEST:
-            out[n++] = page_test;
             break;
         case SERVO_FN_LIMRUN:
             out[n++] = page_limrun;

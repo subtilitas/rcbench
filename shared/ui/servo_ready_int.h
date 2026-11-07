@@ -6,8 +6,8 @@
  *        object, the card's places, and the calls the screen's files make
  *        of them.
  *
- * The READY card takes the output card's place on RUDDER AUTO, in the
- * screen's coordinates x 636 to 1016, y 62 to 436:
+ * The READY card takes the output card's place on RUDDER AUTO and TEST,
+ * in the screen's coordinates x 636 to 1016, y 62 to 436:
  *
  *   - READY, the card's title, y 70 to 90;
  *   - up to READY_ROWS_MAX rows of READY_ROW_H (30px) from y 96: a dot,
@@ -100,8 +100,17 @@ typedef struct {
 /** @brief The card and the sequence at the screen's start. */
 void ready_init(void);
 /** @brief Whether the function shown has a READY card in the output
- *         card's place.  @return true on RUDDER AUTO */
+ *         card's place.  @return true on RUDDER AUTO and TEST */
 bool ready_shown(void);
+/** @brief A DOWN on the footer's ARM + START, to the function shown.
+ *  @param evt the DOWN  @return whether the hold took it */
+bool ready_hold_down(const touch_event_t *evt);
+/** @brief Whether a press on ARM + START stops something now: the steps
+ *         or the function's run under way.  @return true then */
+bool ready_hold_stops(void);
+/** @brief The footer's ARM + START of the function shown.
+ *  @param c the canvas */
+void ready_draw_hold(gfx_canvas_t *c);
 /** @brief The card's rows now.  @return the count, at most
  *         READY_ROWS_MAX */
 int ready_count(void);
@@ -213,6 +222,47 @@ const char *rauto_hold_blocked(rauto_row_t *row);
 /** @brief A tap on RUDDER AUTO's row @p i: its fix, or its reason in the
  *         alert band.  @param i the row */
 void rauto_ready_tap(int i);
+
+/* --- servo_test_ready.c: TEST's rows and its hold ------------------------ */
+
+/** @brief TEST's rows, in the card's order. */
+typedef enum {
+    TRR_PORT = 0,  /**< OUTPUTS, or a PROG PORT off the carrier, its pulse */
+    TRR_METER,     /**< the meter the run reads                           */
+    TRR_PD,        /**< the PD mini the steps set                         */
+    TRR_STEPS,     /**< the steps chosen and inside the caps              */
+    TRR_RANGE,     /**< the ends either side of PULSE CENTRE              */
+    TRR_ARM,       /**< ARMED, or a run or a report in the way            */
+    TRR_COUNT      /**< the count                                         */
+} test_row_t;
+
+/** @brief TEST's row @p i.  @param i the row @param r receives it
+ *  @return false past the last */
+bool test_ready_row(int i, rdy_row_t *r);
+/** @brief The row of TEST's card a gate text belongs to.
+ *  @param why a text test_why() returns
+ *  @return the row; TRR_COUNT for a text of none */
+test_row_t test_row_of(const char *why);
+/** @brief The first gate check that refuses ARM + START, less those the
+ *         steps do themselves.  @param row receives its row; may be NULL
+ *  @return the text; NULL when the hold may begin */
+const char *test_hold_blocked(test_row_t *row);
+/** @brief A tap on TEST's row @p i: its fix, or its reason in the alert
+ *         band.  @param i the row */
+void test_ready_tap(int i);
+/** @brief A DOWN on TEST's ARM + START.  @param evt the DOWN
+ *  @return whether it was on the hold */
+bool test_hold_down(const touch_event_t *evt);
+/** @brief ARM + START's 2s completed, on the footer or on the HV warning:
+ *         the settings read, the steps begun. */
+void test_hold_fired(void);
+/** @brief TEST's frame: the hold, the steps, the run.
+ *  @param dt_s the frame's time, s */
+void test_frame(float dt_s);
+/** @brief TEST's ARM + START in the footer.  @param c the canvas */
+void test_draw_hold(gfx_canvas_t *c);
+/** @brief The rail's plot under TEST's caps button.  @param c the canvas */
+void test_draw_plot(gfx_canvas_t *c);
 
 #ifdef __cplusplus
 }

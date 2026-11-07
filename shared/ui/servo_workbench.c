@@ -7,10 +7,12 @@
  * Each function screen fixes one task of the strip, which is never drawn
  * (servo_fn.c): LIVE (the dial) for LIVE and SWEEP, TEST (the run card)
  * for TEST and LIMIT RUN, RUDDER for RUDDER and RUDDER AUTO, PROGRAM for
- * KST and HITEC, whose session shows over the left column.  A run card's
- * SETTINGS opens that run's settings in the page area, one level down: the
- * home tag (wb_back()) and the page's CLOSE climb from there back to the
- * card.  A session whose port is in programming asks for LEAVE first.
+ * KST and HITEC, whose session shows over the left column.  LIMIT RUN's
+ * run card's SETTINGS opens its run's settings in the page area, one level
+ * down: the home tag (wb_back()) and the page's CLOSE climb from there back
+ * to the card.  TEST's card has the run's lines, the caps button, the box
+ * and the rail's plot; its hold and its list are the footer's.  A session
+ * whose port is in programming asks for LEAVE first.
  *
  * The screen is servo_screen.c; the state and the layout the files share
  * are servo_screen_int.h.
@@ -209,12 +211,11 @@ bool wb_back(void)
 {
     /* Over a panel the tag closes the panel, as its CANCEL does, and the
      * page under it stays.  From a run's settings it climbs to the run's
-     * card, from the brown-out walk's to the automatic test's, from KST's
-     * EXPERT MODE to the session. */
+     * card, from KST's EXPERT MODE to the session. */
     if (modal_open()) {
         close_panels();
     } else if (s.run_list != RL_NONE) {
-        s.run_list = (s.run_list == RL_BROWNOUT) ? RL_AUTO : RL_NONE;
+        s.run_list = RL_NONE;
     } else {
         return false;
     }
@@ -302,31 +303,18 @@ bool wb_rest(const touch_event_t *evt)
            || foot_rest(evt);
 }
 
-/* A press on TEST's or LIMIT RUN's page: its card's SETTINGS, its START,
- * on TEST the caps. */
+/* A press on TEST's or LIMIT RUN's page: on TEST the caps, on LIMIT RUN
+ * its card's SETTINGS and its START. */
 void test_page_down(const touch_event_t *evt)
 {
     const int x = evt->point.x, y = evt->point.y;
     const int k = run_card_shown();
-    if (k == 0 && opener_down(evt, caps_open_rect(), OP_OPEN_CAPS)) {
+    if (k == 0) {
+        (void)opener_down(evt, caps_open_rect(), OP_OPEN_CAPS);
         return;
     }
     if (gfx_rect_contains(run_set_rect(k), x, y)) {
         ov_take(evt, OP_RUN_SET, k);
-        return;
-    }
-    if (k == 0 && gfx_rect_contains(test_start_rect(), x, y)) {
-        ov_take(evt, OP_TEST_START, -1);
-        /* A hold, unless a run is under way (a tap stops it), a step is
-         * past 6.0V (a tap opens the HV warning, whose hold starts it), or
-         * it cannot run now (a tap says why). */
-        s.test_note = 0;
-        if (!servo_test_running(&s.test) && test_blocked() == 0
-            && !test_needs_hv()) {
-            s.test_down = true;
-            ui_hold_begin(&s.test_hold, TX_HOLD_HINT_TEST);
-        }
-        ++s.test_rev;
         return;
     }
     if (k == 1 && gfx_rect_contains(lim_start_rect(), x, y)) {
@@ -362,7 +350,8 @@ void draw_caps_button(gfx_canvas_t *c)
 }
 
 /**
- * @brief TEST's run card and the caps, or LIMIT RUN's run card.
+ * @brief TEST's run card, the caps and the rail's plot, or LIMIT RUN's run
+ *        card.
  * @param c the canvas
  */
 void draw_test_page(gfx_canvas_t *c)
@@ -381,12 +370,14 @@ void draw_test_page(gfx_canvas_t *c)
                             ui_theme_color(UI_C_EDGE));
         gfx_text(c, r.x + 10, r.y + RUN_NAME_DY, ui_tr(k_title[k]),
                  SV_FONT_LABEL, ui_theme_color(UI_C_ACCENT), 1);
-        draw_run_set(c);
+        if (k == 1) {
+            draw_run_set(c);
+        }
     }
     if (k == 0) {
-        draw_test_start(c);
         draw_test_lines(c);
         draw_caps_button(c);
+        test_draw_plot(c);
     } else {
         draw_lim_start(c);
         draw_lim_lines(c);

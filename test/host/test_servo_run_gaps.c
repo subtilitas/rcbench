@@ -49,8 +49,8 @@ static void enc_plug(uint32_t at)
     bench.enc_next = bench.now + 40u;
 }
 
-/* START on card @p card held until the run starts, at most 3s, then let
- * go: the run's first frame is now. */
+/* The run's start on card @p card held until the run starts, at most 3s,
+ * then let go: the run's first frame is now.  On TEST ARM + START. */
 static void hold_until_running(int card)
 {
     if (card == 0) {
@@ -58,8 +58,9 @@ static void hold_until_running(int card)
     } else {
         open_limrun();
     }
-    const int y = SV_START_Y(card);
-    ev(START_X, y, TOUCH_EVENT_DOWN, 1);
+    const int x = (card == 0) ? START_X : LIM_START_X;
+    const int y = (card == 0) ? START_Y : LIM_START_Y;
+    ev(x, y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < 150; ++i) {
         if (servo_screen_testing() || servo_screen_limit_running()) {
             break;
@@ -67,8 +68,9 @@ static void hold_until_running(int card)
         bench.now += 20u;
         servo_screen_clock(bench.now);
         scr->tick(0.02f);
+        bench_answer_arm();
     }
-    ev(START_X, y, TOUCH_EVENT_UP, 1);
+    ev(x, y, TOUCH_EVENT_UP, 1);
 }
 
 /* The automatic test to its end, 120s at most. */
@@ -101,7 +103,7 @@ TEST_CASE(an_encoder_pulled_and_plugged_back_within_300ms_rides)
     bench_frames(2000u);
     CHECK(servo_screen_testing());
     test_run_out();
-    CHECK_EQ(bench.disarms, 0u);
+    CHECK_EQ(bench.disarms, 1u);              /* SAFE at the run's end */
     CHECK(strstr(bench.report, "Result:         PASS") != NULL);
     CHECK(strstr(bench.report, "AS5600 gaps: 1, longest 300ms.") != NULL);
     CHECK(strstr(bench.csv_head, ";travel angle (ms);angle gap (ms);meter;")

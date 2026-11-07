@@ -213,7 +213,7 @@ TEST_CASE(a_limit_run_starts_only_armed_on_the_ina3221)
         snprintf(meter_line, sizeof(meter_line), TR(SV_LIM_LINE),
                  "SERVO PWM GPIO 2", "INA3221 0x40 CH1");
         CHECK(lim_line_reads(0, meter_line, UI_C_TEXT_DIM));
-        tap(START_X, START_Y);
+        tap(LIM_START_X, LIM_START_Y);
         CHECK(!servo_screen_limit_running());
         close_settings();
         lim_hold(1.8f);
@@ -371,10 +371,10 @@ TEST_CASE(stop_run_is_named_to_the_router_while_the_run_is_under_way)
     lim_hold(2.3f);
     CHECK(servo_screen_limit_running());
     CHECK(scr->safe_at(BOXBTN_X, LIM_BOXBTN_Y));             /* STOP RUN */
-    CHECK(scr->safe_at(START_X, LIM_START_Y));
-    tap(START_X, LIM_START_Y);
+    CHECK(scr->safe_at(LIM_START_X, LIM_START_Y));
+    tap(LIM_START_X, LIM_START_Y);
     CHECK(!servo_screen_limit_running());
-    CHECK(!scr->safe_at(START_X, LIM_START_Y));
+    CHECK(!scr->safe_at(LIM_START_X, LIM_START_Y));
     CHECK(!scr->safe_at(BOXBTN_X, LIM_BOXBTN_Y));            /* CLOSE */
 }
 
@@ -410,9 +410,9 @@ TEST_CASE(the_limit_runs_stops_are_tap_targets_above_the_alert_band)
     CHECK(servo_screen_limit_running());
     CHECK(stop_rows_at(BOXBTN_X) >= UI_TAP_MIN);
     CHECK_EQ(stops_under_the_band(), 0);
-    CHECK(stop_rows_at(START_X) >= UI_TAP_MIN);
+    CHECK(stop_rows_at(LIM_START_X) >= UI_TAP_MIN);
     CHECK_EQ(stops_under_the_band(), 0);
-    tap(START_X, LIM_START_Y);
+    tap(LIM_START_X, LIM_START_Y);
     CHECK(!servo_screen_limit_running());
     close_settings();
 }
@@ -541,6 +541,8 @@ TEST_CASE(a_running_automatic_test_is_the_reason_the_limit_run_cannot_start)
         servo_screen_test_logger_busy(true);
         bench_frames(100u);
         CHECK(!servo_screen_testing());
+        servo_screen_set_armed(true);      /* the run's end left it SAFE */
+        bench_frames(100u);
         lim_page();
         CHECK(lim_line_reads(1, ui_servo_str(SERVO_STR_START_BUSY),
                              UI_C_WARN));
@@ -635,7 +637,7 @@ TEST_CASE(every_abort_source_ends_a_limit_run_with_the_output_off)
         }
         case 7:                         /* STOP RUN on the LIMIT RUN card */
             lim_page();
-            tap(START_X, LIM_START_Y);
+            tap(LIM_START_X, LIM_START_Y);
             close_settings();
             break;
         default:                        /* the screen reset under it */

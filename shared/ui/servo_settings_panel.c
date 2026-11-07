@@ -1,10 +1,10 @@
 /**
  * @file
  * @brief The SERVO screens' pages of rows and the panels they open.  The run card
- * on TEST and on LIMIT RUN opens its run's settings as a page, one level
- * down: the automatic test's steps, length, timing and pass/fail limits,
- * and the limit run's mode, servo, pulses and the programmer's supply.
- * KST's SETTINGS opens EXPERT MODE's page.  The servo profile's rows --
+ * on LIMIT RUN opens its run's settings as a page, one level down: the
+ * limit run's mode, servo, pulses and the programmer's supply.  KST's
+ * SETTINGS opens EXPERT MODE's page.  TEST's settings are a SETTINGS list
+ * (servo_test_list.c).  The servo profile's rows --
  * type, frame rate, pulse widths, trim, travel, reverse -- are edited from
  * the hub's SETTINGS list (servo_lists.c) through svs_profile_edit() and
  * svs_profile_step().  The rows open the keypad, the list, the profile
@@ -40,14 +40,9 @@
 
 /**
  * @brief The settings rows, page by page.  The profile's (PG_OUTPUT) have
- *        no page: the hub's list edits them by kind.  The automatic
- *        test's in three columns of five rows: the steps, the pass/fail
- *        limits and the brown-out, the length and timing.  The length rule
- *        tops the right column, under the card's SETTINGS: a second tap
- *        there opens its list and changes nothing.  BROWN-OUT opens the
- *        brown-out walk's page: on or off, LOWEST VOLTAGE and STEP, one
- *        column.  The limit run's under its mode note: the programmer's
- *        supply, PROG V, PROG I and PROG WAIT.
+ *        no page: the hub's list edits them by kind, HV SERVO among them,
+ *        which TEST's list shows too.  The limit run's under its mode
+ *        note: the programmer's supply, PROG V, PROG I and PROG WAIT.
  */
 const ov_row_t k_rows[] = {
     { PG_OUTPUT, R_TYPE,    SETTING_COUNT, TX_SV_ROW_TYPE,  0, 0, true  },
@@ -58,24 +53,9 @@ const ov_row_t k_rows[] = {
     { PG_OUTPUT, R_TRIM,    SETTING_COUNT, TX_SV_ROW_TRIM,  1, 3, false },
     { PG_OUTPUT, R_TRAVEL,  SETTING_COUNT, TX_SV_ROW_TRAVEL,  0, 4, false },
     { PG_OUTPUT, R_REVERSE, SETTING_COUNT, TX_SV_ROW_REVERSE,  1, 4, false },
+    { PG_OUTPUT, R_HV,      SETTING_COUNT, TX_SV_ROW_HV,  0, 5, false },
 
     { PG_KST, R_KST_EXPERT, SETTING_COUNT, TX_SV_ROW_KST_EXPERT,  0, 0, false },
-
-    { PG_AUTO, R_SETTING, SET_SERVO_LEN_BY,        TX_SV_ROW_LEN_BY,  2, 0, false },
-    { PG_AUTO, R_SETTING, SET_SERVO_LEN_S,         TX_SV_ROW_LEN_S,  2, 1, false },
-    { PG_AUTO, R_SETTING, SET_SERVO_LEN_MOVES,     TX_SV_ROW_MOVES,  2, 2, false },
-    { PG_AUTO, R_SETTING, SET_SERVO_DWELL_MS,      TX_SV_ROW_DWELL,  2, 3, false },
-    { PG_AUTO, R_SETTING, SET_SERVO_SETTLE_MS,     TX_SV_ROW_SETTLE,  2, 4, false },
-    { PG_AUTO, R_SETTING, SET_SERVO_STALL_A,       TX_SV_ROW_STALL,  1, 0, false },
-    { PG_AUTO, R_SETTING, SET_SERVO_IDLE_MAX,      TX_SV_ROW_IDLE,  1, 1, false },
-    { PG_AUTO, R_SETTING, SET_SERVO_HOLD_MAX,      TX_SV_ROW_HOLD,  1, 2, false },
-    { PG_AUTO, R_SETTING, SET_SERVO_STEP_48,       TX_SV_ROW_STEP_48,  0, 0, false },
-    { PG_AUTO, R_SETTING, SET_SERVO_STEP_60,       TX_SV_ROW_STEP_60,  0, 1, false },
-    { PG_AUTO, R_HV,      SETTING_COUNT,           TX_SV_ROW_HV,  0, 2, false },
-    { PG_AUTO, R_SETTING, SET_SERVO_STEP_74,       TX_SV_ROW_STEP_74,  0, 3, false },
-    { PG_AUTO, R_SETTING, SET_SERVO_STEP_84,       TX_SV_ROW_STEP_84,  0, 4, false },
-    { PG_AUTO, R_BROWNOUT, SETTING_COUNT,          TX_SV_ROW_BROWNOUT,  1, 4, false },
-    { PG_AUTO, R_SETTING, SET_SERVO_TRAVEL_MAX_MS, TX_SV_ROW_TRAVEL_TIME,  1, 3, false },
 
     { PG_LIMRUN, R_LIM_MODE,   SETTING_COUNT, TX_SV_ROW_LIM_MODE,  0, 0, true  },
     { PG_LIMRUN, R_LIM_SERVO,  SETTING_COUNT, TX_SV_ROW_LIM_SERVO,  0, 1, false },
@@ -83,10 +63,6 @@ const ov_row_t k_rows[] = {
     { PG_LIMRUN, R_SETTING, SET_SERVO_PROG_V,    TX_SV_ROW_PROG_V,     0, 4, false },
     { PG_LIMRUN, R_SETTING, SET_SERVO_PROG_I,    TX_SV_ROW_PROG_I,     1, 4, false },
     { PG_LIMRUN, R_SETTING, SET_SERVO_PROG_WAIT, TX_SV_ROW_PROG_WAIT,  2, 4, false },
-
-    { PG_BROWNOUT, R_SETTING, SET_SERVO_BROWNOUT, TX_SV_ROW_BROWNOUT,  0, 0, false },
-    { PG_BROWNOUT, R_SETTING, SET_SERVO_BO_FLOOR, TX_SV_ROW_BO_FLOOR,  0, 1, false },
-    { PG_BROWNOUT, R_SETTING, SET_SERVO_BO_STEP,  TX_SV_ROW_BO_STEP,  0, 2, false },
 };
 #define ROW_COUNT ((int)(sizeof(k_rows) / sizeof(k_rows[0])))
 /** @brief The rows k_rows holds. */
@@ -334,7 +310,7 @@ void ask_apply(void)
      * the question stood -- a cap that follows the PD mini's input -- and
      * the value it had then is not one anybody asked for now. */
     if (s.ask.purpose == ASK_TEST) {
-        test_begin();
+        test_hold_fired();      /* ARM + START, as TEST's hold */
     } else if (s.ask.purpose == ASK_ON) {
         supply_screen_ask_on(SUPPLY_BY_SERVO);
     } else if (s.ask.purpose == ASK_RESTORE) {
@@ -533,12 +509,6 @@ static void edit_row(int i)
             s.lim_prog = !s.lim_prog;
         }
         break;
-    case R_BROWNOUT:
-        /* The brown-out walk's page, one level under the automatic
-         * test's; its CLOSE climbs back there. */
-        s.run_list = RL_BROWNOUT;
-        servo_invalidate();
-        break;
     case R_LIM_SERVO:
         /* The programmer a run started after it goes to: KST/CHASERVO or
          * HITEC, on the programming port only. */
@@ -583,7 +553,7 @@ static int profile_row(int kind)
 {
     for (int i = 0; i < ROW_COUNT; ++i) {
         if (k_rows[i].kind == kind
-            && (k_rows[i].page == PG_OUTPUT || kind == R_HV)) {
+            && k_rows[i].page == PG_OUTPUT) {
             return i;
         }
     }
@@ -964,11 +934,12 @@ void ov_rest(const touch_event_t *evt)
             break;                      /* a tap: the release acts */
         }
         if (!up) {
-            /* A finger that leaves START TEST abandons the hold. */
+            /* A finger that leaves ARM + START abandons the hold. */
             if (!gfx_rect_contains(test_start_rect(), x, y)
                 && ui_hold_leave(&s.test_hold)) {
                 s.test_down = false;
                 ++s.test_rev;
+                ++s.arm_rev;
                 ov_let_go();
             }
             return;
@@ -976,6 +947,7 @@ void ov_rest(const touch_event_t *evt)
         (void)ui_hold_end(&s.test_hold, evt, test_start_rect());
         s.test_down = false;
         ++s.test_rev;
+        ++s.arm_rev;
         ov_let_go();
         return;
     case OP_LIM_START:
@@ -1023,7 +995,6 @@ void ov_rest(const touch_event_t *evt)
     /* A release the finger did not make activates nothing, except the tap
      * that stops a run. */
     if (!touch_event_is_tap_up(evt)
-        && !(was == OP_TEST_START && servo_test_running(&s.test))
         && !(was == OP_LIM_START && servo_limrun_running(&s.lim))) {
         ++s.ctrl_rev;
         return;
@@ -1078,21 +1049,27 @@ void ov_rest(const touch_event_t *evt)
             servo_invalidate();
         }
         break;
-    case OP_TEST_START:
+    case OP_TEST_START: {
         if (!gfx_rect_contains(test_start_rect(), x, y)) {
             break;
         }
-        if (servo_test_running(&s.test)) {
-            test_end_now(SERVO_TEST_AB_OPERATOR);
-        } else if (test_blocked() == 0 && test_needs_hv()) {
-            ask_hv_test();
-        } else if (test_blocked() != 0) {
-            /* A tap on the grey START TEST: why, in the band too. */
-            ui_action_refused(
-                ui_servo_str((servo_str_t)test_blocked()));
+        /* A tap on the grey ARM + START: the first row that refuses it,
+         * in the band; past 6.0V the HV warning, whose hold starts it. */
+        char why[128];
+        if (ready_refusal(why, sizeof(why)) != NULL) {
+            ui_action_refused(why);
+        } else if (test_needs_hv() && !servo_test_running(&s.test)
+                   && !svs_seq_busy()) {
+            if (svs_press_held()) {
+                ui_action_refused(TR(FOOT_PRESS_HELD));
+            } else {
+                ask_hv_test();
+            }
         }
         ++s.test_rev;
+        ++s.arm_rev;
         break;
+    }
     case OP_LIM_START:
         if (gfx_rect_contains(lim_start_rect(), x, y)
             && servo_limrun_running(&s.lim)) {
@@ -1104,10 +1081,10 @@ void ov_rest(const touch_event_t *evt)
         break;
     case OP_RUN_CLOSE:
         /* A page's CLOSE: up to its screen, as the home tag climbs from
-         * here; the brown-out walk's up to the automatic test's. */
+         * here. */
         if (gfx_rect_contains(run_close_rect(), x, y)
             && s.run_list != RL_NONE) {
-            s.run_list = (s.run_list == RL_BROWNOUT) ? RL_AUTO : RL_NONE;
+            s.run_list = RL_NONE;
             servo_invalidate();
         }
         break;
@@ -1127,7 +1104,7 @@ void ov_rest(const touch_event_t *evt)
             if (why != NULL) {
                 ui_action_refused(why);
             } else {
-                s.run_list = (which == 0) ? RL_AUTO : RL_LIMIT;
+                s.run_list = RL_LIMIT;
                 servo_invalidate();
             }
         }
