@@ -39,15 +39,14 @@
  * @brief The overlay's layout, in pixels from the area's top left.  Every
  *        width that is not a control's own comes from the area's width.
  *
- * On SERVO's left card of 620px: five tabs of 95px (four with KST EXPERT
- * MODE OFF) and CLOSE of 120px
- * in one row 48px tall, rows 48px tall at a 56px pitch, two columns of
+ * On SERVO's left card of 620px: five tabs of 120px (four of 151px with
+ * KST EXPERT MODE OFF) in one row 48px tall; the home tag is the way
+ * back.  Rows 48px tall at a 56px pitch, two columns of
  * 295px, a value of 150px (15 cells of KP_FONT), a wide row's of 260px
  * with minus and plus keys of 56px.  Every control ends at kpn_foot().
  */
-#define TAB_Y    8            /**< the tabs' and CLOSE's top */
+#define TAB_Y    8            /**< the tabs' top */
 #define TAB_H    UI_TAP_MIN   /**< their height, 48px, as every row's */
-#define CLOSE_W  120          /**< CLOSE's width */
 #define ROW0     64           /**< the first row's top: the tabs and 8px */
 #define PITCH    56           /**< a row's pitch: 8px between two */
 #define ROW_H    UI_TAP_MIN   /**< a row's height, 48px */
@@ -115,7 +114,7 @@ extern const int16_t kpn_rule[KST_RULE_COUNT];
 /* -------------------------------------------------------------------- state */
 
 enum {
-    P_NONE = 0, P_TAB, P_CLOSE, P_ROW, P_MINUS, P_PLUS, P_KEYPAD, P_CHOICE,
+    P_NONE = 0, P_TAB, P_ROW, P_MINUS, P_PLUS, P_KEYPAD, P_CHOICE,
     P_CHOICE_CANCEL, P_APPLY, P_CANCEL, P_TEXTKEY, P_NOTES, P_PORT
 };
 

@@ -387,7 +387,8 @@ TEST_CASE(the_home_tag_closes_an_editor_then_the_overlay)
     CHECK_EQ(strcmp(hitec_panel_page_line(0), TR(HP_RELEASE)), 0);
     hitec_panel_back();
     CHECK_EQ(hitec_panel_editor(), 0);
-    tap(hitec_panel_close_rect());
+    hitec_panel_back();
+    show();
     CHECK_EQ(hitec_panel_editor(), 3);
 }
 
@@ -609,7 +610,8 @@ TEST_CASE(the_registry_hooks_count_what_a_render_shows)
     tap(hitec_panel_choice_cancel_rect());
     /* A hold counts on its own revision. */
     tap_connect();
-    tap(hitec_panel_close_rect());
+    hitec_panel_back();
+    show();
     CHECK(hitec_panel_page_line(-1) == NULL);
     CHECK(hitec_panel_page_line(99) == NULL);
     hold_rev = hitec_panel_hold_revision();
@@ -625,7 +627,8 @@ TEST_CASE(the_state_line_names_a_d_series_leave)
     open_en();
     servo_d485();
     tap_connect();
-    tap(hitec_panel_close_rect());
+    hitec_panel_back();
+    show();
     r = hitec_panel_apply_rect();
     ev(cx(r), cy(r), TOUCH_EVENT_DOWN);
     for (int i = 0; i < 150 && pstate() == HITEC_PROG_HELD; ++i) {

@@ -1,7 +1,7 @@
 /**
  * @file hitec_panel_touch.c
  * @brief The presses on the Hitec programmer's overlay: a DOWN, its moves
- *        and its release, CLOSE and the home tag, each frame's hold, and the
+ *        and its release, the home tag, each frame's hold, and the
  *        supply's lock while a port is held.
  *
  * Hitec is a name or trademark of its owner; it is used here only to say
@@ -86,10 +86,6 @@ static void down(const touch_event_t *evt)
     if (gfx_rect_contains(hpn_tabs_rect(), x, y)) {
         take(evt, P_TAB, -1);
         (void)ui_tabs_event(&hp.tabs, evt);
-        return;
-    }
-    if (gfx_rect_contains(hitec_panel_close_rect(), x, y)) {
-        take(evt, P_CLOSE, -1);
         return;
     }
     for (int i = 0; i < HP_ROW_COUNT; ++i) {
@@ -234,11 +230,6 @@ static void rest(const touch_event_t *evt)
     }
     let_go();
     switch (was) {
-    case P_CLOSE:
-        if (gfx_rect_contains(hitec_panel_close_rect(), x, y)) {
-            hitec_panel_close();
-        }
-        break;
     case P_ROW:
         if (hpn_rows[which].what == A_FIND && hpn_rows[which].kind == K_ACT
             && !gfx_rect_contains(hpn_find_rect(&hpn_rows[which],

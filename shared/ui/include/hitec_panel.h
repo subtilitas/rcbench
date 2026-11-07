@@ -26,7 +26,7 @@
  *
  * The overlay stays open while the port is held, by this panel or by
  * another session: PWM and programming are exclusive states of the pin,
- * and CLOSE asks for LEAVE, or for RELEASE PORT, first.
+ * and the home tag asks for LEAVE, or for RELEASE PORT, first.
  *
  * The panel's control task owns the link.  It hands this a feed every frame
  * and takes the commands.
@@ -80,8 +80,9 @@ void hitec_panel_open(void);
  * @return true when open
  */
 bool hitec_panel_is_open(void);
-/** @brief CLOSE: closes while the port is not held; asks for LEAVE on this
- *         panel's port and for RELEASE PORT on another's. */
+/** @brief The session's way back: closes while the port is not held; asks
+ *         for LEAVE on this panel's port and for RELEASE PORT on
+ *         another's. */
 void hitec_panel_close(void);
 /** @brief The home tag or BACK: an editor closes as its CANCEL does,
  *         otherwise as hitec_panel_close(). */
@@ -232,16 +233,11 @@ hitec_prog_t *hitec_panel_model(void);
  */
 void hitec_panel_settings_changed(void);
 /**
- * @brief A tab, one fifth of the row left of CLOSE, 48px tall.
+ * @brief A tab, one fifth of the row, 48px tall.
  * @param page hitec_panel_page_t
  * @return its rectangle
  */
 gfx_rect_t hitec_panel_tab_rect(int page);
-/**
- * @brief CLOSE, 120 x 48px at the top right.
- * @return its rectangle
- */
-gfx_rect_t hitec_panel_close_rect(void);
 /**
  * @brief The control of a row: a button, or the box of a value.
  * @param page the tab

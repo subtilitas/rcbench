@@ -51,7 +51,8 @@ TEST_CASE(without_a_link_nothing_on_the_servo_tab_takes_a_tap)
     CHECK_EQ(g_rig.starts, 0);
     CHECK_EQ(msg(), KST_PROG_MSG_NONE);
     CHECK(!kst_panel_holds_port());
-    tap(kst_panel_close_rect());
+    kst_panel_back();
+    show();
     CHECK(!kst_panel_is_open());
 }
 
@@ -72,7 +73,8 @@ TEST_CASE(a_coprocessor_without_the_page_leaves_the_programmer_unavailable)
         tap(val(page, 1, 0));
         CHECK_EQ(kst_panel_editor(), 0);
     }
-    tap(kst_panel_close_rect());
+    kst_panel_back();
+    show();
     CHECK(!kst_panel_is_open());
 }
 
@@ -152,7 +154,8 @@ TEST_CASE(a_port_without_a_pin_is_refused_by_name)
         CHECK_STR_EQ(said(), TR(KP_R_NO_PIN));
         CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
         CHECK(!kst_panel_holds_port());
-        tap(kst_panel_close_rect());
+        kst_panel_back();
+        show();
         CHECK(!kst_panel_is_open());
     }
 }

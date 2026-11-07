@@ -246,7 +246,8 @@ TEST_CASE(the_tester_has_no_port_until_the_wait_ends_and_abort_keeps_it)
         CHECK_STR_EQ(status(0), TR(KP_STATE_LEAVING));
         CHECK_STR_EQ(kst_panel_button(PG_SERVO, 0, 0), TR(KP_ABORT));
         /* CLOSE does not give the screen back to the tester. */
-        tap(kst_panel_close_rect());
+        kst_panel_back();
+        show();
         CHECK(kst_panel_is_open());
         tap(val(PG_SERVO, 0, 0));
         settle();
@@ -477,7 +478,8 @@ TEST_CASE(connect_reads_the_servo_and_keeps_the_overlay_while_the_port_is_held)
     CHECK(!kst_prog_write_enabled(M));
     CHECK_STR_EQ(kst_panel_button(PG_SERVO, 0, 0), TR(KP_LEAVE));
     /* CLOSE asks for the way back to PWM; CANCEL stays. */
-    tap(kst_panel_close_rect());
+    kst_panel_back();
+    show();
     CHECK(kst_panel_is_open());
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK(warns(TR(KP_LEAVE_1)));

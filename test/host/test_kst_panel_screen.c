@@ -105,8 +105,8 @@ TEST_CASE(kst_opens_its_session_and_close_ends_it)
     CHECK_EQ(kst_panel_editor(), 2);
     tap(kst_panel_choice_cancel_rect());
     CHECK_EQ(kst_panel_editor(), 0);
-    /* CLOSE ends the session; the router takes the screen to the hub
-     * (test_servo_hub.c). */
+    /* The home tag ends the session; the router takes the screen to the
+     * hub (test_servo_hub.c). */
     program_close();
     CHECK(!kst_panel_is_open());
     /* Shown again, the screen opens it again; LIVE closes it. */

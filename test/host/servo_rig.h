@@ -148,13 +148,9 @@ static inline void close_settings(void) { go(SERVO_FN_LIVE); }
 static inline void open_test(void)      { go(SERVO_FN_TEST); }
 static inline void open_limrun(void)    { go(SERVO_FN_LIMRUN); }
 static inline void open_sweep(void)     { go(SERVO_FN_SWEEP); }
-/* KST's session, and its CLOSE. */
+/* KST's session, and the home tag over it: the session's way back. */
 static inline void open_kst(void)       { go(SERVO_FN_KST); }
-static inline void close_kst(void)
-{
-    const gfx_rect_t r = kst_panel_close_rect();
-    tap(r.x + r.w / 2, r.y + r.h / 2);
-}
+static inline void close_kst(void)      { (void)scr->back(); }
 /* A run's settings, one level down from its card: 0 the automatic test on
  * TEST, 1 the limit run on LIMIT RUN.  The page opens on a SAFE bench only:
  * on an armed one the operator switches to SAFE first, and the home tag

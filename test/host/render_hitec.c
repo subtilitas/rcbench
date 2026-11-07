@@ -53,6 +53,16 @@ static void htap_at(int x, int y)
  * @brief A tap on an overlay control, body pixels.
  * @param r the control; one of no size names none and ends the render
  */
+static void htap(gfx_rect_t r);
+
+/** @brief A tap on the home tag: the session's way back, LEAVE asked
+ *         while the port is in programming. */
+static void hhome(void)
+{
+    const gfx_rect_t r = ui_home_tag_rect(ui_router_title(SCREEN_SERVO_HITEC));
+    htap_at(r.x + r.w / 2, r.y + r.h / 2);
+}
+
 static void htap(gfx_rect_t r)
 {
     if (r.w <= 0 || r.h <= 0) {
@@ -775,7 +785,7 @@ void render_hitec_view(const char *view)
         return;
     }
     if (strcmp(v, "-leave") == 0 || strcmp(v, "-classic-leave") == 0) {
-        htap(hitec_panel_close_rect());
+        hhome();
         return;
     }
     if (strcmp(v, "-restore-ask") == 0 || strcmp(v, "-restore-hv") == 0) {
@@ -783,7 +793,7 @@ void render_hitec_view(const char *view)
          * points 5.5V 2.0A (7.4V for the HV warning) from before CONNECT;
          * LEAVE, and SERVO asks. */
         supply_screen_set_output(true);
-        htap(hitec_panel_close_rect());
+        hhome();
         hhold();
         hwait(HITEC_PROG_PWM);
         ui_router_tick(0.02f);

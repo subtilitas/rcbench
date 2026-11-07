@@ -339,7 +339,8 @@ TEST_CASE(port_is_abort_while_an_operation_runs)
           || kst_prog_state(M) == KST_PROG_WORKING);
     CHECK(kst_panel_holds_port());
     /* CLOSE does nothing while the port moves. */
-    tap(kst_panel_close_rect());
+    kst_panel_back();
+    show();
     CHECK(kst_panel_is_open());
     CHECK_EQ(kst_panel_editor(), 0);
     /* READ ALL takes no tap; PORT aborts. */
@@ -534,7 +535,8 @@ TEST_CASE(a_coprocessor_that_restarts_ends_the_session_and_says_so)
     CHECK(!kst_prog_write_enabled(M));
     CHECK(!kst_prog_have_servo(M));
     CHECK(!kst_panel_holds_port());
-    tap(kst_panel_close_rect());
+    kst_panel_back();
+    show();
     CHECK(!kst_panel_is_open());
 }
 
@@ -622,7 +624,8 @@ TEST_CASE(leave_with_changes_names_them_and_gives_the_port_back)
     CHECK(!kst_panel_holds_port());
     CHECK(!kst_prog_have_servo(M));
     CHECK_EQ(g_rig.sim.n_writes, 0);
-    tap(kst_panel_close_rect());
+    kst_panel_back();
+    show();
     CHECK(!kst_panel_is_open());
 }
 
@@ -657,7 +660,8 @@ TEST_CASE(one_press_at_a_time_and_a_lost_touch_stream_drops_it)
     ev(AREA.x + 4, AREA.y + AREA.h - 4, TOUCH_EVENT_DOWN, 1);
     CHECK(!kst_panel_has_press(1));
     /* A closed overlay takes nothing. */
-    tap(kst_panel_close_rect());
+    kst_panel_back();
+    show();
     CHECK(!kst_panel_is_open());
     tap(port);
     rig_frames(20);
