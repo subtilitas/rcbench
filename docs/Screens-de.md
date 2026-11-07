@@ -1647,6 +1647,15 @@ behebt ihn. PORT öffnet die Portliste. Keine Zeile nimmt einen Druck an,
 solange ein anderer Druck gehalten wird, die Schritte von ARM laufen oder
 der Prüfstand nicht SAFE ist.
 
+Die Schritte von ARM prüfen die Schiene in jedem Frame neu, bis sie das
+EIN des PD mini anfordern. Eine Schiene, die bis dahin von anderswo
+gespeist wird, beendet sie abgelehnt, alle Ausgänge aus. Aktuelle
+Einschränkung: vom EIN des PD mini bis zu seiner Rückmeldung, bis zu
+1000ms, kann der INA3221 eine an die Schiene angeschlossene Versorgung
+nicht vom Ausgang des PD mini unterscheiden. Eine in dieser Zeit
+angeschlossene Versorgung speist die Schiene neben dem PD mini, und die
+Schritte schalten ARMED.
+
 ![LIVE auf dem rbmod-Carrier: PORT-PWM und PROG 5V gelb, ARM schaltet sie ein](img/de/servo-rbmod.png)
 
 RUDER AUTO und ENDLAGENLAUF behalten die Taste PORT und zeigen eine Karte
