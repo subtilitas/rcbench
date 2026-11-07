@@ -168,6 +168,8 @@ SCREENS = {
     "servo-sweep-page": ("servo-sweep-page.png", "servo", "dark"),
     "servo-test":     ("servo-test.png",     "servo", "dark"),
     "servo-test-settings": ("servo-test-settings.png", "servo", "dark"),
+    # LIMIT RUN's list on the bench's outputs: MODE, SERVO and SERVO
+    # PULSES locked off a PROG PORT.
     "servo-limits":   ("servo-limits.png",   "servo", "dark"),
     # The brown-out walk's page, from the AUTOMATIC TEST's BROWN-OUT row.
     "servo-brownout": ("servo-brownout.png", "servo", "dark"),
@@ -185,15 +187,15 @@ SCREENS = {
     # result box, the line and the plot.
     "servo-result-ina": ("servo-result-ina.png", "servo", "dark"),
     "servo-sweep":    ("servo-sweep.png",    "servo", "dark"),
-    # The limit run from TEST's LIMIT RUN card (servo_limrun.h) against
-    # the simulated KST servo on the programming port: SEARCH+PROG chosen,
-    # a run partway, run
+    # The LIMIT RUN screen (servo_limrun.h) with its READY card and the
+    # footer's ARM + START, against the simulated KST servo on the
+    # programming port: SAFE with SEARCH+PROG chosen, a run partway, run
     # out to PASS, SEARCH ONLY on the bench's own output, STOP after a write
     # with RESTORE named, RESTORE's list in the programmer after a STOP in a
     # session, and SERVO PULSES at KEEP refused: the servo's 900-2100us
     # outside the bench's 1000-2000us.
     "servo-limrun-ready":   ("servo-limrun-ready.png",   "servo", "dark"),
-    # The same card with no PD mini answering: nothing is written.
+    # The same screen with no PD mini answering: nothing is written.
     "servo-limrun-nopd":    ("servo-limrun-nopd.png",    "servo", "dark"),
     "servo-limrun":         ("servo-limrun.png",         "servo", "dark"),
     "servo-limrun-pass":    ("servo-limrun-pass.png",    "servo", "dark"),
@@ -201,9 +203,9 @@ SCREENS = {
     "servo-limrun-stopped": ("servo-limrun-stopped.png", "servo", "dark"),
     "servo-limrun-restore": ("servo-limrun-restore.png", "servo", "dark"),
     "servo-limrun-range":   ("servo-limrun-range.png",   "servo", "dark"),
-    # The LIMIT RUN settings on PROG PORT with SERVO at HITEC and the Hitec
-    # programmer's series D SERIES: SERVO PULSES gone, the note for a Hitec
-    # servo.
+    # LIMIT RUN's list on PROG PORT with SERVO at HITEC and the Hitec
+    # programmer's series D SERIES: SERVO PULSES locked, KST and Chaservo
+    # only.
     "servo-limrun-hitec":   ("servo-limrun-hitec.png",   "servo", "dark"),
     # The programmer for KST and Chaservo servos over the left card: each
     # tab, each list and each page that asks for a hold, against the
@@ -1052,9 +1054,9 @@ FIT_ONLY = {
     "servo-rate-refused": (None, "servo", "dark"),
     "servo-rate-unsupported": (None, "servo", "dark"),
     "servo-hv-live":    (None, "servo", "dark"),
-    # TEST after a run by movements and after a limit run on PROG PORT:
-    # the cards' summaries and LAST lines; the limit run's settings on the
-    # port, SEARCH + PROGRAM and SERVO PULSES with their note.
+    # TEST after a run by movements and LIMIT RUN after a run on PROG
+    # PORT: the cards' summaries and state lines; LIMIT RUN's list on the
+    # port, SEARCH + PROGRAM and SERVO PULSES chosen.
     "servo-test-done":  (None, "servo", "dark"),
     "servo-limrun-card": (None, "servo", "dark"),
     "servo-limrun-settings": (None, "servo", "dark"),

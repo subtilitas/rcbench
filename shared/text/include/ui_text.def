@@ -4891,11 +4891,8 @@ UI_TEXT(SV_TAP_HV, 29,
 UI_TEXT(SV_HOLD_START, 29,
     "HOLD 2s TO START",
     "2s HALTEN ZUM STARTEN")
-/* The limit run on its card on TEST and in its box on the left card: a
- * line of the page holds 58 cells, a line of the box 31, its button 15. */
-UI_TEXT(SV_ROW_LIM_MODE, 0,
-    "LIMIT RUN",
-    "ENDLAGENLAUF")
+/* The limit run on its LIMIT RUN screen: a state line of the left card
+ * holds 58 cells, STOP RUN 15. */
 UI_TEXT(SV_LIM_SEARCH, 28,
     "SEARCH ONLY",
     "NUR SUCHE")
@@ -10833,8 +10830,8 @@ UI_TEXT(SVL_MODE_HELP, 60,
     "SEARCH + PROGRAM writes the ends found into the servo",
     "SUCHEN + PROGRAMMIEREN schreibt die Endlagen ins Servo")
 UI_TEXT(HG_SV_LR_LINES_NAME, 0,
-    "STATE",
-    "ZUSTAND")
+    "STATE LINES",
+    "ZUSTANDSZEILEN")
 UI_TEXT(HG_SV_LR_ENDS, 0,
     "The ends the last run found, in us. FREE: no stop before PULSE MIN or MAX.",
     "Die Endlagen des letzten Laufs in us. FREI: kein Anschlag vor PULS MIN oder MAX.")
@@ -11133,7 +11130,7 @@ UI_TEXT(SV_LIM_SERVO_KST, 12,
 UI_TEXT(SV_LIM_SERVO_HITEC, 12,
     "HITEC",
     "HITEC")
-UI_TEXT(SV_LIM_PROG_NOTE_HITEC, 0,
+UI_TEXT(SV_LIM_PROG_NOTE_HITEC, 58,
     "REDUCES LEFT/RIGHT END ON A HITEC SERVO",
     "VERRINGERT ENDE LINKS/RECHTS BEI HITEC-SERVOS")
 UI_TEXT(SV_LIM_HITEC_RANGE, 58,

@@ -354,7 +354,7 @@ TEST_CASE(programming_is_not_offered_off_the_programming_port)
         lim_bench();
         open_limrun_list();
         CHECK(servo_screen_list()->open);
-        sl_step(LL_MODE, +1);
+        sl_tap(LL_MODE);
         CHECK(!servo_screen_limit_prog());
         CHECK(home_tag());
         CHECK(lim_line_reads(1, TR(SV_LIM_SEARCH_NOTE), UI_C_TEXT_FAINT));

@@ -429,8 +429,8 @@ TEST_CASE(the_card_and_the_hold_take_the_footer_and_the_output_cards_place)
 
 /* LIMIT RUN's list: MODE, SERVO, SERVO PULSES, PROG VOLTAGE, PROG CURRENT
  * and PROG WAIT.  On OUTPUTS MODE, SERVO and SERVO PULSES are locked with
- * the reason; on a PROG PORT on the carrier with PROG 5V off, MODE steps
- * to SEARCH + PROGRAM: the hold switches the 5V on before the run. */
+ * the reason; on a PROG PORT behind a PD mini a tap on MODE switches it to
+ * SEARCH + PROGRAM. */
 TEST_CASE(the_list_holds_mode_servo_pulses_and_the_programmers_rows)
 {
     to_ready(false);
@@ -446,17 +446,17 @@ TEST_CASE(the_list_holds_mode_servo_pulses_and_the_programmers_rows)
     CHECK_EQ(sl->host->row(4).id, SET_SERVO_PROG_I);
     CHECK_EQ(sl->host->row(5).id, SET_SERVO_PROG_WAIT);
     CHECK_STR_EQ(sl->host->row(0).custom->locked(), TR(SVL_PORT_ONLY));
-    sl_step(LL_MODE, +1);
+    sl_tap(LL_MODE);
     CHECK(!servo_screen_limit_prog());
     scr->render(&cv, 0);
     CHECK(home_tag());
-    /* A PROG PORT behind a PD mini: MODE steps. */
+    /* A PROG PORT behind a PD mini: a tap on MODE switches it. */
     settings_set(SET_SERVO_TARGET, 1.0f);
     servo_screen_set_drive(1u, 13u, true);
     tap_settings();
     CHECK(servo_screen_list()->open);
     CHECK(sl->host->row(0).custom->locked() == NULL);
-    sl_step(LL_MODE, +1);
+    sl_tap(LL_MODE);
     CHECK(servo_screen_limit_prog());
     scr->render(&cv, 0);
     /* The list closes as the bench arms under it. */

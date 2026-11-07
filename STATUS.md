@@ -532,6 +532,9 @@ each check of the start gate one row, and the footer's HOLD 2s: ARM + START runs
 1000ms, ARM, ARMED within 500ms, the run; a failed step names itself in the alert band
 and switches every output off (`test_servo_start_seq`, `test_servo_ready`,
 `test_servo_rauto_seq`, `test_prog5v_servo`; host suite only).
+LIMIT RUN has the same READY card from `shared/ui/servo_limit_ready.c`, nine rows from
+`lim_blocked()`'s checks, and the same hold; the run ends SAFE, the PROG 5V kept
+(`test_servo_limrun_ready`, `test_servo_limrun_seq`; host suite only).
 
 AUTO and the LIMIT RUN program a Hitec servo through the Hitec programmer's run seam when
 the LIMIT RUN settings' SERVO row reads HITEC, LEFT END and RIGHT END in counts from 0xC2 on
@@ -1030,8 +1033,8 @@ Not started.
 
 ### Servo limit search
 
-Built; START LIMIT RUN on the SERVO screen's LIMIT RUN card on TEST, a 2s hold while ARMED,
-runs it (`shared/servo/servo_limrun.c`) in 10us steps on INA3221 CH1's 50ms windows, bound
+Built; HOLD 2s: ARM + START on the SERVO LIMIT RUN screen switches PORT PWM and the
+supply on, reads them back, arms and runs it (`shared/servo/servo_limrun.c`) in 10us steps on INA3221 CH1's 50ms windows, bound
 above 1.8 x the free current and +0.15A: on a SERVO PWM pin from PULSE CENTRE to PULSE MIN
 and PULSE MAX; on the programming port after a read session, from the servo's NEUTRAL to its
 own PULSE LOWER and PULSE UPPER, refused before any drive when those lie outside PULSE MIN
@@ -1040,7 +1043,7 @@ to PULSE MAX. SERVO PULSES at 1000-2000 writes PULSE LOWER and PULSE UPPER to 10
 
 It reads the INA3221 and nothing else: with the PD mini or the model as the servo rail's
 meter it is refused before anything is driven, as it is on a rail under 3.0V in the last
-window, on the programming port without a PD mini on a rail under 4.8V or with a PD mini
+window that the hold's supply does not feed, on the programming port without a PD mini on a rail under 4.8V or with a PD mini
 whose output is off, and, on the bench's outputs, with no output bound as SERVO PWM; a run
 whose meter changes or that gets no window for 200ms ends ABORTED with the output off. The
 search and the protections read the current's magnitude. A sample at 3.0A, a clipped one, a
@@ -1273,7 +1276,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 495 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 497 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1387,6 +1390,7 @@ The host suite is 495 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_kst`,
 `test_servo_rauto_panel`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_start_seq`,
+`test_servo_limrun_ready`, `test_servo_limrun_seq`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_rudder_flap`, `test_rudder_flap_view`.
 

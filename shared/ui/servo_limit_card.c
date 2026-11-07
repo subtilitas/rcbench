@@ -155,6 +155,10 @@ typedef struct {
     int         n;              /**< how many                    */
 } lc_lines_t;
 
+/** @brief The lines last built, 8 of 96 bytes, off the screen task's stack.
+ *  The card is drawn and read on that task alone. */
+static lc_lines_t s_lines;
+
 /**
  * @brief One line more, where there is room.
  * @param L the lines
@@ -382,17 +386,17 @@ void lim_render(gfx_canvas_t *c)
     draw_end(c, SERVO_LIMRUN_LO);
     draw_end(c, SERVO_LIMRUN_HI);
 
-    lc_lines_t L;
-    lines_now(&L);
+    lc_lines_t *const L = &s_lines;
+    lines_now(L);
     const gfx_rect_t lr = lim_lines_rect();
     const gfx_rect_t old = c->clip;
     if (gfx_clip_intersect(c, lr)) {
         int y = LC_LINE_Y;
-        for (int i = 0; i < L.n; ++i) {
+        for (int i = 0; i < L->n; ++i) {
             y += LC_LINE_P
                  * ui_text_wrap(c, gfx_rect_make(LC_X, y, LC_W, LC_LINE_P),
-                                LC_LINE_P, L.t[i], SV_FONT_LABEL,
-                                ui_theme_color(L.col[i]));
+                                LC_LINE_P, L->t[i], SV_FONT_LABEL,
+                                ui_theme_color(L->col[i]));
         }
     }
     c->clip = old;
@@ -403,9 +407,9 @@ const char *servo_screen_limit_line(int i, char *buf, size_t n)
     if (buf == NULL || n == 0u) {
         return "";
     }
-    lc_lines_t L;
-    lines_now(&L);
-    snprintf(buf, n, "%s", (i >= 0 && i < L.n) ? L.t[i] : "");
+    lines_now(&s_lines);
+    snprintf(buf, n, "%s",
+             (i >= 0 && i < s_lines.n) ? s_lines.t[i] : "");
     return buf;
 }
 

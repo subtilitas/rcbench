@@ -558,9 +558,9 @@ bool lim_hold_down(const touch_event_t *evt)
     return true;
 }
 
-/* The hold under its finger and the sequence, each frame: a row that turns
- * red under the hold drops it; the run starts on the sequence's last
- * step. */
+/** @brief The hold under its finger and the sequence, each frame: a row
+ *         that turns red under the hold drops it; the run starts on the
+ *         sequence's last step. */
 static void lim_hold_frame(void)
 {
     if (s.lim_down) {
@@ -602,10 +602,10 @@ uint32_t lim_signature(void)
     return h;
 }
 
-/* The run that ended leaves the bench SAFE: ARM + START armed it, and the
- * footer holds no DISARM.  After the run's own last command (its RELEASE),
- * which the one command slot would lose under a DISARM; an end by STOP or
- * DISARM is SAFE already. */
+/** @brief The run that ended leaves the bench SAFE: ARM + START armed it,
+ *         and the footer holds no DISARM.  After the run's own last
+ *         command (its RELEASE), which the one command slot would lose
+ *         under a DISARM; an end by STOP or DISARM is SAFE already. */
 static void lim_safe_follow(void)
 {
     if (!s.lim_safe_due || servo_limrun_running(&s.lim)

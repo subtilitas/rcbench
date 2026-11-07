@@ -298,7 +298,7 @@ static inline void hl_settings(bool hitec, bool prog)
         HL_STEP(LL_SERVO);
     }
     if (prog) {
-        HL_STEP(LL_MODE);
+        sl_tap(LL_MODE);
     }
     /* Back to the screen: the list opened on a SAFE bench, and the home
      * tag arms it again. */

@@ -287,12 +287,14 @@ static void lr_run_list(void)
     }
 }
 
-/* One step of row @p i of LIMIT RUN's list, on its ">" key. */
+/* One step of row @p i of LIMIT RUN's list, on its ">" key; MODE takes a
+ * tap on its value. */
 static void lr_step(int i)
 {
     ui_setlist_t *sl = (ui_setlist_t *)servo_screen_list();
     ui_setlist_scroll_to(sl, i);
-    const gfx_rect_t r = ui_setlist_row_part(sl, i, UI_SL_PART_PLUS);
+    const gfx_rect_t r = ui_setlist_row_part(
+        sl, i, (i == LR_MODE) ? UI_SL_PART_VALUE : UI_SL_PART_PLUS);
     screen_tap(r.x + r.w / 2, r.y + r.h / 2);
 }
 

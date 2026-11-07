@@ -1685,12 +1685,12 @@ static void limrun_view(const char *view)
         settings_set(SET_HITEC_SERIES, 1.0f);
         limrun_ms(40u);
         servo_list_tap(1, UI_SL_PART_PLUS);
-        servo_list_tap(0, UI_SL_PART_PLUS);
+        servo_list_tap(0, UI_SL_PART_VALUE);
         limrun_ms(100u);
         return;
     }
     if (s_lr.prog) {
-        servo_list_tap(0, UI_SL_PART_PLUS);     /* MODE: SEARCH+PROG */
+        servo_list_tap(0, UI_SL_PART_VALUE);     /* MODE: SEARCH+PROG */
         if (strcmp(v, "-range") != 0) {
             servo_list_tap(2, UI_SL_PART_PLUS); /* SERVO PULSES */
         }

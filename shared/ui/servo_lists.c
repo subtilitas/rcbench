@@ -275,10 +275,11 @@ static void mode_value(char *out, size_t n)
                                          : TR(SV_LIM_SEARCH));
 }
 
-/** @brief MODE stepped, for a run started after it. */
-static void mode_step(int dir)
+/** @brief A tap on MODE: the other mode, for a run started after it.
+ *  The row takes a tap, as ANGLE SOURCE does: SEARCH + PROGRAM in German
+ *  is 22 cells, more than the 16 between a stepped row's keys. */
+static void mode_tap(void)
 {
-    (void)dir;
     if (lim_reads() && lim_write_why_held() == NULL
         && !servo_limrun_running(&s.lim)) {
         s.lim_prog = !s.lim_prog;
@@ -317,8 +318,8 @@ static const ui_setlist_custom_t k_pulses = {
 
 /** @brief LIMIT RUN's MODE row: SEARCH ONLY or SEARCH + PROGRAM. */
 static const ui_setlist_custom_t k_mode = {
-    .label = TX_SUP_MODE, .help = TX_SVL_MODE_HELP, .cycles = true,
-    .value_text = mode_value, .step = mode_step, .locked = mode_locked,
+    .label = TX_SUP_MODE, .help = TX_SVL_MODE_HELP,
+    .value_text = mode_value, .tap = mode_tap, .locked = mode_locked,
 };
 
 /** @brief SWEEP's list: CURVE, SPEED and RANGE. */

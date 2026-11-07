@@ -621,9 +621,12 @@ const char *servo_screen_port_choice(int i, bool *refused);
  */
 gfx_rect_t servo_screen_port_choice_rect(int i);
 
-/** Which page of rows shows, one level down from its screen: 0 none, 1
- *  the automatic test's settings, 2 the brown-out walk's, 3 KST's EXPERT
- *  MODE.  For tests. */
+/**
+ * @brief Which page of rows shows, one level down from its screen.  For
+ *        tests.
+ * @return 0 none, 1 the automatic test's settings, 2 the brown-out walk's,
+ *         3 KST's EXPERT MODE
+ */
 int servo_screen_run_settings(void);
 
 /**

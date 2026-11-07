@@ -350,8 +350,6 @@ void draw_test_page(gfx_canvas_t *c)
     const gfx_rect_t a = page_area();
     gfx_fill_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2,
                   ui_theme_color(UI_C_PANEL));
-    static const ui_text_id_t k_title[2] = { TX_SV_AUTO_TEST,
-                                             TX_SV_ROW_LIM_MODE };
     const int k = run_card_shown();
     {
         const gfx_rect_t r = run_card_rect(k);
@@ -359,7 +357,7 @@ void draw_test_page(gfx_canvas_t *c)
                             ui_theme_color(UI_C_PANEL_SUNK));
         gfx_draw_round_rect(c, r.x, r.y, r.w, r.h, 6,
                             ui_theme_color(UI_C_EDGE));
-        gfx_text(c, r.x + 10, r.y + RUN_NAME_DY, ui_tr(k_title[k]),
+        gfx_text(c, r.x + 10, r.y + RUN_NAME_DY, TR(SV_AUTO_TEST),
                  SV_FONT_LABEL, ui_theme_color(UI_C_ACCENT), 1);
         draw_run_set(c);
     }

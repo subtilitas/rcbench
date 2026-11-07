@@ -763,8 +763,8 @@ typedef struct {
                                   LIM_OPEN_*, servo_limit_seam.c */
     ui_hold_t lim_hold;      /**< ARM + START on LIMIT RUN              */
     bool      lim_down;      /**< a finger on it, the hold not fired    */
-    /** The run the hold fired: the settings as they read then, the mode
-     *  and SERVO PULSES as chosen (lim_start() judges them). */
+    /** @brief The run the hold fired: the settings as they read then, the
+     *  mode and SERVO PULSES as chosen (lim_start() judges them). */
     servo_limrun_cfg_t lim_cfg;
     bool      lim_seen;      /**< it was running when last looked       */
     bool      lim_safe_due;  /**< it ended: SAFE once its last command
@@ -1097,6 +1097,11 @@ const char *lim_pwm_why(void);
  * @return true on the carrier with a port as the drive's target
  */
 bool lim_fixed_supply(void);
+/**
+ * @brief Why a limit run cannot start now, before any hold: the first of
+ *        the gate's checks that is not met (servo_limit_ready.c).
+ * @return the text; NULL when every check is met
+ */
 const char *lim_blocked(void);
 /**
  * @brief Why the INA3221 is not the meter a run may start on.
