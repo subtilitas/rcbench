@@ -584,6 +584,7 @@ static void read_status_counters(void)
     }
 }
 
+/** @brief STATUS and the counters read now (panel.h). */
 void far_end_status_now(void)
 {
     read_status_counters();
