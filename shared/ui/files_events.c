@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "files_screen.h"
+#include "settings_screen.h"
 #include "text_view.h"
 #include "ui_textkey.h"
 
@@ -119,6 +120,9 @@ static int hit_panes(int x, int y)
             return b;
         }
     }
+    if (gfx_rect_contains(ui_footer_rect(UI_FOOTER_SETTINGS), x, y)) {
+        return FS_HIT_SETTINGS;
+    }
     for (int i = 0; i < 2; ++i) {
         if (gfx_rect_contains(FS_UP(i), x, y)) {
             return FS_HIT_UP + i;
@@ -211,6 +215,12 @@ static void panes_up(const touch_event_t *e)
             if (hit == (int)b && tap_on(e, FS_FOOT(hit))) {
                 fs_foot(b);
             }
+        }
+    } else if (hit == FS_HIT_SETTINGS) {
+        if (tap_on(e, ui_footer_rect(UI_FOOTER_SETTINGS))) {
+            /* SETUP's SD CARD list: its home tag comes back here. */
+            ui_router_goto(SCREEN_SETUP);
+            settings_screen_open_on(SET_CAT_CARD, 0);
         }
     } else if (hit == FS_HIT_UP || hit == FS_HIT_UP + 1) {
         const int i = hit - FS_HIT_UP;

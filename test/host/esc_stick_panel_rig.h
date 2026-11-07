@@ -35,6 +35,7 @@
 #include "settings.h"
 #include "supply_screen.h"
 #include "ui_screen.h"
+#include "ui_setlist.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
 #include "ui_theme.h"
@@ -50,12 +51,40 @@
 #define LIST_UP_X    ST_LIST_UP_X
 #define LIST_DN_X    ST_LIST_DN_X
 #define LIST_CY      ST_CRUMB_CY
-#define TIMING_X     ST_TIMING_X
-#define TIMING_Y     ST_CRUMB_CY
+#define SET_X        ST_SET_X
+#define SET_Y        ST_BTN_CY
 #define HOLD_X       ST_HOLD_X
 #define HOLD_Y       ST_PBTN_CY
 #define CANCEL_X     ST_CANCEL_X
 #define HOLD_ID      7
+
+/** @brief The footer's SETTINGS tapped: on a profile's page the list of the
+ *         14 stick settings opens over the session. */
+static inline void open_settings(void) { tap(SET_X, SET_Y); }
+
+/** @brief Setting @p id's row of the open list scrolled into sight, and a
+ *         tap on its part @p part: a key or the value. */
+static inline void set_tap(setting_id_t id, ui_sl_part_t part)
+{
+    esc_stick_settings_show(id);
+    const gfx_rect_t r = ui_setlist_row_part(esc_stick_settings_list(),
+                                             esc_stick_settings_row(id), part);
+    tap(r.x + r.w / 2, r.y + r.h / 2);
+}
+
+/** @brief One step of setting @p id on the open list: "-" for @p dir < 0,
+ *         "+" else. */
+static inline void set_step(setting_id_t id, int dir)
+{
+    set_tap(id, dir < 0 ? UI_SL_PART_MINUS : UI_SL_PART_PLUS);
+}
+
+/** @brief The open list's strip column @p col tapped: 1 RESET, 2 SAVE. */
+static inline void set_strip(int col)
+{
+    const gfx_rect_t r = ui_setlist_strip_rect(col);
+    tap(r.x + r.w / 2, r.y + r.h / 2);
+}
 
 /** @brief Hands the screen one touch event of the hold's finger at (@p x, @p y). */
 static inline void press(touch_event_type_t type, int x, int y)
@@ -356,7 +385,7 @@ static inline int listed(void)
 #define HAND_X     ST_HAND_X
 #define HAND_Y     ST_HAND_Y
 #define HAND_RES_X ST_HAND_RES_X
-#define HAND_RES_Y ST_BTN_CY
+#define HAND_RES_Y ST_HAND_RES_CY
 
 /** @brief The stick class, page two, row five: kontronik-jazz, the fifth of the
  * Kontronik profiles that run. */
@@ -440,12 +469,13 @@ static inline void at_items(void)     { fresh(); descend_to_hobbywing(); }
 static inline void at_picked(void)    { at_items(); pick_cutoff(); }
 /** @brief As at_picked(), with WRITE tapped: the warning shows. */
 static inline void at_warning(void)   { at_picked(); tap(WRITE_X, BTN_CY); }
-/** @brief Opens the items page's timing page and steps BEEP MIN off its default. */
+/** @brief Opens the items page's SETTINGS list and steps BEEP MIN off its
+ *         default. */
 static inline void at_timing(void)
 {
     at_items();
-    tap(TIMING_X, TIMING_Y);
-    tap(STEP_UP_X, STEP_CY(2));              /* BEEP MIN off its default */
+    open_settings();
+    set_step(SET_STICK_BEEP_MIN, +1);        /* BEEP MIN off its default */
 }
 /** @brief Opens the session on the Jazz steps page. */
 static inline void at_steps(void)     { fresh(); descend_to_jazz(); }

@@ -62,22 +62,21 @@ static void target(gfx_rect_t r)
     CHECK(r.y + r.h <= FOOT);
 }
 
-/** @brief TIMING's value of row @p i, its keypad's tap: the value column
- *         over the row's height. */
+/** @brief The value of row @p i: the value column over the row's
+ *         height. */
 static gfx_rect_t value_rect(int i)
 {
     return (gfx_rect_t){ CTRL_X, (int16_t)(ROW_Y0 + i * ROW_P), CTRL_W,
                          ROW_H };
 }
 
-/** @brief A profile's page's and TIMING's controls into @p out: BACK,
- *         TIMING, the page keys, MANUAL INTERVENTION REQUIRED, every row
- *         with its value and keys, DEFAULTS and RUN.  Returns the count. */
+/** @brief A profile's page's controls into @p out: BACK, the page keys,
+ *         MANUAL INTERVENTION REQUIRED, every row with its value and keys,
+ *         and the footer's RUN and SETTINGS.  Returns the count. */
 static int page_controls(gfx_rect_t *out)
 {
     int n = 0;
     out[n++] = pg.back;
-    out[n++] = s.st.timing_btn;
     out[n++] = pg.page_up;
     out[n++] = pg.page_dn;
     out[n++] = s.st.hand_btn;
@@ -87,8 +86,8 @@ static int page_controls(gfx_rect_t *out)
         out[n++] = pg.down[i];
         out[n++] = pg.up[i];
     }
-    out[n++] = pg.read_btn;
     out[n++] = pg.write_btn;
+    out[n++] = ui_footer_rect(UI_FOOTER_SETTINGS);
     return n;
 }
 
@@ -124,11 +123,14 @@ TEST_CASE(every_control_is_a_tap_target_above_the_alert_band)
     target(s.st.hold_btn);
     target(s.st.steps_btn);
     target(s.st.cancel_btn);
-    /* RUN, ABORT and OK end 4px above the alert band; the panels' HOLD
-     * TO RUN, DONE, CANCEL and ABORT end 4px above the foot row, so a
-     * second tap on RUN's place lands on none of them. */
+    /* RUN, ABORT and OK are the footer's middle slot and end 4px above
+     * the alert band; the panels' HOLD TO RUN, DONE, CANCEL and ABORT end
+     * 4px above the footer, so a second tap on RUN's place lands on none
+     * of them. */
     CHECK_EQ(pg.write_btn.y + pg.write_btn.h, FOOT);
-    CHECK_EQ(pg.write_btn.h, UI_BTN_H_TALL);
+    CHECK_EQ(pg.write_btn.x, ui_footer_rect(UI_FOOTER_HOLD).x);
+    CHECK_EQ(pg.write_btn.w, ui_footer_rect(UI_FOOTER_HOLD).w);
+    CHECK_EQ(pg.write_btn.h, UI_FOOTER_H);
     CHECK_EQ(s.st.cancel_btn.y + s.st.cancel_btn.h + 4, pg.write_btn.y);
     CHECK_EQ(s.st.hold_btn.y, s.st.cancel_btn.y);
     CHECK(!overlap(s.st.cancel_btn, pg.write_btn));
@@ -155,16 +157,18 @@ TEST_CASE(no_two_controls_of_a_page_overlap)
     CHECK_EQ(s.st.find_clr.x + s.st.find_clr.w,
              s.st.find_box.x + s.st.find_box.w);
     CHECK_EQ(s.st.find_clr.y, s.st.find_box.y);
-    /* A result's foot row: its MANUAL INTERVENTION REQUIRED left of OK. */
+    /* A result's MANUAL INTERVENTION REQUIRED at the run card's foot,
+     * over the footer and inside the card. */
     CHECK(!overlap(s.st.hand_res, pg.write_btn));
-    CHECK(s.st.hand_res.x + s.st.hand_res.w + 8 <= pg.write_btn.x);
+    CHECK(s.st.hand_res.y + s.st.hand_res.h + 8 <= RUN_Y + RUN_H);
+    CHECK(s.st.hand_res.y + s.st.hand_res.h <= UI_FOOTER_FLOOR);
     /* The panels' three buttons. */
     CHECK(!overlap(s.st.hold_btn, s.st.steps_btn));
     CHECK(!overlap(s.st.steps_btn, s.st.cancel_btn));
 }
 
 /* Between two rows' keys, and between a row's name, value and keys, lie
- * 8px: six rows of 48px at a 56px pitch, the parameter card's header
+ * 8px: five rows of 48px at a 56px pitch, the parameter card's header
  * moved to the side column's page keys. */
 TEST_CASE(the_steppers_keep_a_finger_between_rows)
 {
@@ -201,7 +205,9 @@ TEST_CASE(the_fullest_pages_end_above_their_footers)
     CHECK(SP_FOOT_Y + 20 <= FOOT);
     CHECK(pg.row[ROWS_MAX - 1].y + ROW_H <= CARD_B - 4);
     CHECK(RUN_L0 + (RUN_LINES - 1) * LINE_P + 20 <= RUN_Y + RUN_H);
-    CHECK(HELP_Y + HELP_P + 20 <= BTN_Y);
+    CHECK(HELP_Y + HELP_P + 20 <= UI_FOOTER_FLOOR);
+    CHECK(NOTE_Y + 2 * LINE_P <= UI_FOOTER_FLOOR);
+    CHECK(CARD_B + 8 <= NOTE_Y);
     CHECK(RUN_Y + RUN_H <= HELP_Y);
     /* The side column holds MANUAL INTERVENTION REQUIRED and four lines
      * of the device and three of the help under it at the least. */
@@ -211,8 +217,7 @@ TEST_CASE(the_fullest_pages_end_above_their_footers)
 }
 
 /* The labels drawn in a control fit it with 4px a side in every
- * language: MANUAL INTERVENTION REQUIRED, TIMING's title beside the page
- * keys, CHANGE with the fullest count, the value column's longest word,
+ * language: MANUAL INTERVENTION REQUIRED, CHANGE with the fullest count, the value column's longest word,
  * BACK, and the foot row's buttons. */
 TEST_CASE(the_longest_labels_fit_their_controls_in_every_language)
 {
@@ -223,9 +228,6 @@ TEST_CASE(the_longest_labels_fit_their_controls_in_every_language)
               <= s.st.hand_btn.w - 8);
         CHECK(gfx_text_cells(ui_tr_in(lang, TX_SP_HAND_BTN)) * SP_CELL
               <= s.st.hand_res.w - 8);
-        CHECK(SIDE_IN + gfx_text_cells(ui_tr_in(lang, TX_SP_TIMING_TITLE))
-                            * SP_CELL
-              <= pg.page_up.x - 8);
         /* "10-15 of 15" beside CHANGE, 8px from either. */
         char count[40];
         snprintf(count, sizeof(count), ui_tr_in(lang, TX_PG_RANGE_OF), 10,
@@ -240,8 +242,6 @@ TEST_CASE(the_longest_labels_fit_their_controls_in_every_language)
               <= CTRL_W);
         CHECK(gfx_text_cells(ui_tr_in(lang, TX_LOG_BACK)) * SP_CELL
               <= pg.back.w - 8);
-        CHECK(gfx_text_cells(ui_tr_in(lang, TX_SP_DEFAULTS)) * SP_CELL
-              <= pg.read_btn.w - 8);
         CHECK(gfx_text_cells(ui_tr_in(lang, TX_SP_HOLD_TO_RUN)) * SP_CELL
               <= s.st.hold_btn.w - 8);
         CHECK(gfx_text_cells(ui_tr_in(lang, TX_SP_STEPS_BTN)) * SP_CELL
@@ -297,7 +297,8 @@ TEST_CASE(the_spots_the_suites_tap_lie_on_their_controls)
     CHECK(gfx_rect_contains(s.st.find_clr, ST_FIND_CLR_X, ST_CRUMB_CY));
     CHECK(gfx_rect_contains(s.st.list_up, ST_LIST_UP_X, ST_CRUMB_CY));
     CHECK(gfx_rect_contains(s.st.list_dn, ST_LIST_DN_X, ST_CRUMB_CY));
-    CHECK(gfx_rect_contains(s.st.timing_btn, ST_TIMING_X, ST_CRUMB_CY));
+    CHECK(gfx_rect_contains(ui_footer_rect(UI_FOOTER_SETTINGS), ST_SET_X,
+                            ST_BTN_CY));
     for (int i = 0; i < SP_ROWS; ++i) {
         CHECK(gfx_rect_contains(s.st.rows[i], 400, ST_ROW_CY(i)));
         CHECK(gfx_rect_contains(s.st.rows[i], 100, ST_ROW_CY(i)));
@@ -311,9 +312,8 @@ TEST_CASE(the_spots_the_suites_tap_lie_on_their_controls)
     CHECK(gfx_rect_contains(pg.page_up, ST_PAGE_UP_X, ST_PAGE_CY));
     CHECK(gfx_rect_contains(pg.page_dn, ST_PAGE_DN_X, ST_PAGE_CY));
     CHECK(gfx_rect_contains(s.st.hand_btn, ST_HAND_X, ST_HAND_Y));
-    CHECK(gfx_rect_contains(pg.read_btn, ST_READ_X, ST_BTN_CY));
     CHECK(gfx_rect_contains(pg.write_btn, ST_WRITE_X, ST_BTN_CY));
-    CHECK(gfx_rect_contains(s.st.hand_res, ST_HAND_RES_X, ST_BTN_CY));
+    CHECK(gfx_rect_contains(s.st.hand_res, ST_HAND_RES_X, ST_HAND_RES_CY));
     CHECK(gfx_rect_contains(s.st.hold_btn, ST_HOLD_X, ST_PBTN_CY));
     CHECK(gfx_rect_contains(s.st.steps_btn, ST_STEPS_X, ST_PBTN_CY));
     CHECK(gfx_rect_contains(s.st.cancel_btn, ST_CANCEL_X, ST_PBTN_CY));

@@ -27,6 +27,7 @@
 #include "logs_strip.h"
 #include "text_view.h"
 #include "touch_types.h"
+#include "ui_footer.h"
 #include "ui_layout.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
@@ -85,7 +86,7 @@
 #define FS_LIST_Y   108         /**< The list's panel's top. */
 #define FS_HEAD_H   30          /**< Its heading. */
 #define FS_ROW_H    48          /**< A row's pitch, UI_TAP_MIN. */
-#define FS_ROWS     5           /**< The rows a pane shows at once. */
+#define FS_ROWS     4           /**< The rows a pane shows at once. */
 /** @brief Pane @p i's list panel: its heading and its rows. */
 #define FS_LIST(i)  gfx_rect_make(FS_PANE_X(i), FS_LIST_Y, FS_PANE_W, \
                                   FS_HEAD_H + FS_ROWS * FS_ROW_H + 4)
@@ -103,22 +104,23 @@
 
 /**
  * @brief The message line under the panes: two lines of the 12 x 24 face,
- *        84 cells each, 24px apart, ending 4px above the footer.
+ *        84 cells each, 24px apart, ending 4px above the row of buttons.
  */
-#define FS_MSG_Y    388
+#define FS_MSG_Y    (FOOT_Y - 4 - 2 * FS_MSG_LH)  /**< y 336. */
 #define FS_MSG_LH   24          /**< A line's pitch. */
 
 /**
- * @brief The footer, body y 440 to 492, ending 4px above the router's
- *        alert band (y 496), in LOGS' order: RESCAN at the left, 140px for
- *        its German AKTUALISIEREN, then COPY, MOVE, RENAME, DELETE, NEW,
- *        INFO and OPEN at the right, 118px wide, 6px apart, 52px tall.
+ * @brief The row of buttons, body y 388 to 436, ending on UI_FOOTER_FLOOR
+ *        over the screen's footer (ui_footer.h: FILES and SETTINGS, which
+ *        opens SETUP > SD CARD), in LOGS' order: RESCAN at the left, 140px
+ *        for its German AKTUALISIEREN, then COPY, MOVE, RENAME, DELETE,
+ *        NEW, INFO and OPEN at the right, 118px wide, 6px apart, 48px tall.
  *
  * fs_foot_t is the one place that orders them: a button's number is its
  * place, so the drawing (FS_FOOT()) and the hit test take the same one.
  */
-#define FOOT_H       52
-#define FOOT_Y       (SCREEN_H - UI_ALERT_H - 4 - FOOT_H)  /**< y 440. */
+#define FOOT_H       UI_TAP_MIN
+#define FOOT_Y       (UI_FOOTER_FLOOR - FOOT_H)  /**< y 388. */
 #define FOOT_W       118        /**< A button's width but RESCAN's. */
 #define FOOT_W_FIRST 140        /**< RESCAN's width, the first button. */
 #define FOOT_GAP     6          /**< Between two buttons. */
@@ -201,10 +203,11 @@ _Static_assert(FS_OPEN == FOOT_N - 1, "OPEN is the last button");
                                     FS_NEW_W - 8, FS_NEW_ROW_H)
 
 /**
- * @brief The keyboard for a name: over the body from y 4 to the footer's
- *        foot, 1008px wide; its keys end at UI_KEYS_FOOT.
+ * @brief The keyboard for a name: over the body from y 4 to 4px above the
+ *        alert band, 1008 x 488px; its keys end at UI_KEYS_FOOT.
  */
-#define FS_TK_AREA gfx_rect_make(FS_L, 4, FS_W, FOOT_Y + FOOT_H - 4)
+#define FS_TK_AREA gfx_rect_make(FS_L, 4, FS_W, \
+                                 SCREEN_H - UI_ALERT_H - 4 - 4)
 
 /** @brief A single call's progress box waits this long, s: a rename that
  *         is done at once shows no box. */
@@ -234,11 +237,12 @@ typedef enum {
     FS_HIT_Q_DELETE,           /**< and DELETE                         */
     FS_HIT_INFO_CLOSE,         /**< INFO's CLOSE                       */
     FS_HIT_NEW_ROW,            /**< NEW's choice: + the row            */
-    FS_HIT_JOB_CANCEL = FS_HIT_NEW_ROW + 2  /**< the progress box's CANCEL */
+    FS_HIT_JOB_CANCEL = FS_HIT_NEW_ROW + 2, /**< the progress box's CANCEL */
+    FS_HIT_SETTINGS            /**< the footer's SETTINGS              */
 } fs_hit_t;
 
-_Static_assert(FOOT_Y + FOOT_H + 4 <= SCREEN_H - UI_ALERT_H,
-               "the footer ends 4px above the alert band");
+_Static_assert(FOOT_Y + FOOT_H <= UI_FOOTER_FLOOR,
+               "the row of buttons ends over the screen's footer");
 _Static_assert(FOOT_H >= UI_TAP_MIN, "the footer's buttons are a finger tall");
 _Static_assert(FS_FOOT_X(FOOT_N - 1) + FOOT_W == FS_R,
                "the footer's buttons end at the right margin");
@@ -250,8 +254,8 @@ _Static_assert(FS_UP_W + 8 <= FS_PANE_W - 2 * FS_PG_W - 4,
 _Static_assert(FS_PANE_X(1) + FS_PANE_W == FS_R, "the right pane ends at the margin");
 _Static_assert(FS_HDR_Y + FS_HDR_H + 8 <= FS_LIST_Y,
                "the header row ends 8px above the list");
-_Static_assert(FS_LIST_Y + FS_HEAD_H + FS_ROWS * FS_ROW_H + 4 + 6 <= FS_MSG_Y,
-               "the lists end above the message line");
+_Static_assert(FS_LIST_Y + FS_HEAD_H + FS_ROWS * FS_ROW_H + 4 + 2 <= FS_MSG_Y,
+               "the lists end 2px above the message line");
 _Static_assert(FS_MSG_Y + 2 * FS_MSG_LH + 4 <= FOOT_Y,
                "the message line's two lines end 4px above the footer");
 _Static_assert(FS_ICON + 8 + 28 * 10 + 8 + FS_SIZE_W + 8 <= FS_ROW_W,

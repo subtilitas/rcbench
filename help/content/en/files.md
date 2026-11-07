@@ -45,6 +45,8 @@ Unavailable buttons are dimmed. Tap one to see the reason above the button row.
 | INFO | name, folder, kind, size or entries, time and rule |
 | OPEN | enters a folder. A CSV file in ROOT, USER or BENCH opens on [LOGS](logs.md). Every other file, a report among them, opens in the [text viewer](#the-text-viewer). A file over 1MiB stays here, `Over 1MB: too large to open. Download it over Wi-Fi.`, and so does a file the bench is still writing, `ATEST012.TXT is being written.` |
 
+The footer under the panes names the screen, FILES. SETTINGS at its right opens the SD CARD list of [SETUP](setup.md#sd-card). Its home tag returns here.
+
 An existing name is never overwritten: `NOTES.TXT already exists there.` A copy is written as `NAME.NEW` and renamed when it is complete.
 
 ![NEW's choice](view:files-new)

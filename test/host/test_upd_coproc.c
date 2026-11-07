@@ -769,8 +769,8 @@ TEST_CASE(the_section_hold_slides_off_cancels_and_leaves_unfired)
     upd_fresh();
     upd_screen_set_coproc(&v);
     scr_ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_CU_Y, 0);
-    scr_ev(upd(), TOUCH_EVENT_DOWN, 2, UP_BTN_X, UP_REMIND_Y, 0);
-    scr_ev(upd(), TOUCH_EVENT_UP, 2, UP_BTN_X, UP_REMIND_Y, 0);
+    scr_ev(upd(), TOUCH_EVENT_DOWN, 2, UP_SET_X, UP_SET_Y, 0);
+    scr_ev(upd(), TOUCH_EVENT_UP, 2, UP_SET_X, UP_SET_Y, 0);
     scr_ticks(upd(), HOLD_TICKS);
     CHECK(upd_screen_take_coproc());
 }

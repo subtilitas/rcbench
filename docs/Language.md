@@ -315,7 +315,7 @@ lines is left with conflict markers.
 python3 tools/render_ui.py --fit
 ```
 
-builds the renderer with `GFX_TEXT_TRACE`, draws all 622 views in English and
+builds the renderer with `GFX_TEXT_TRACE`, draws all 623 views in English and
 in German, and fails when a string in either language
 
 - is wider than the box `gfx_text_in()` was given,
@@ -351,7 +351,7 @@ matches the arguments its call passes. The panel's firmware in
 `test_text` covers the rest: every ID has German, every German format
 converts what its English does, every string with a declared width fits it
 in every language, alerts and splash details fit their buffers, translated
-settings fit SETUP and the TIMING page, and the report's columns and labels
+settings fit SETUP and the settings lists, and the report's columns and labels
 line up.
 
 `tools/check_docs.py` fails when a German wiki page quotes in backticks the
@@ -363,7 +363,7 @@ pages, supply commands and board markings that share a word with a label.
 
 ## Adding a language
 
-A language is one more column in every entry of the table: 3,368 entries
+A language is one more column in every entry of the table: 3,363 entries
 with an ID and 102 options, 10 of them with an empty English.
 
 1. Add the column to every entry of `shared/text/include/ui_text.def`, and

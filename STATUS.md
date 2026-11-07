@@ -1267,7 +1267,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 492 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 493 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1367,7 +1367,7 @@ The host suite is 492 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_wifi_kept`, `test_wifi_layout`, `test_fw_image`, `test_fw_c6`, `test_fw_install`, `test_fw_trial`,
 `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_wa_session`,
 `test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_channel`, `test_wa_fetch_task`,
-`test_upd_screen`, `test_upd_c6`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`,
+`test_upd_screen`, `test_upd_settings`, `test_upd_c6`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`,
 `test_wa_page`, `test_wa_page_de`, `test_wa_hl`, `test_wa_edit`, `test_wa_mdns`,
 `test_wa_guard`, `test_wa_kept`, `test_wa_cookie`, `test_wa_api`, `test_wa_api_file`,
 `test_wa_api_write`, `test_sense_i2c`, `test_storage`, `test_storage_swap`, `test_text_buf`,
@@ -1841,8 +1841,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 894 committed screenshots to the current render,
-447 in English and the same 447 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` holds 896 committed screenshots to the current render,
+448 in English and the same 448 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -1953,25 +1953,26 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/hitec_panel_file.c` | 230 | 230 | 100.0% |
 | `shared/ui/hitec_panel_run.c` | 105 | 105 | 100.0% |
 | `shared/ui/hitec_panel_move.c` | 219 | 214 | 97.7% |
-| `shared/ui/analyser_screen.c` | 257 | 256 | 99.6% |
-| `shared/ui/balance_screen.c` | 382 | 382 | 100.0% |
-| `shared/ui/battery_screen.c` | 222 | 217 | 97.8% |
-| `shared/ui/esc_stick_pages.c` | 111 | 106 | 95.5% |
-| `shared/ui/esc_stick_panel.c` | 497 | 481 | 96.8% |
+| `shared/ui/analyser_screen.c` | 258 | 257 | 99.6% |
+| `shared/ui/balance_screen.c` | 383 | 383 | 100.0% |
+| `shared/ui/battery_screen.c` | 223 | 218 | 97.8% |
+| `shared/ui/esc_stick_pages.c` | 117 | 112 | 95.7% |
+| `shared/ui/esc_stick_panel.c` | 493 | 477 | 96.8% |
 | `shared/ui/esc_stick_list.c` | 299 | 283 | 94.7% |
-| `shared/ui/esc_stick_touch.c` | 359 | 357 | 99.4% |
-| `shared/ui/esc_stick_draw.c` | 466 | 454 | 97.4% |
-| `shared/ui/esc_stick_draw_run.c` | 573 | 518 | 90.4% |
-| `shared/ui/log_viewer_screen.c` | 325 | 315 | 96.9% |
+| `shared/ui/esc_stick_touch.c` | 276 | 274 | 99.3% |
+| `shared/ui/esc_stick_settings.c` | 71 | 69 | 97.2% |
+| `shared/ui/esc_stick_draw.c` | 418 | 406 | 97.1% |
+| `shared/ui/esc_stick_draw_run.c` | 575 | 529 | 92.0% |
+| `shared/ui/log_viewer_screen.c` | 325 | 316 | 97.2% |
 | `shared/ui/log_viewer_load.c` | 234 | 212 | 90.6% |
-| `shared/ui/log_viewer_draw.c` | 418 | 405 | 96.9% |
-| `shared/ui/log_viewer_events.c` | 443 | 431 | 97.3% |
+| `shared/ui/log_viewer_draw.c` | 420 | 407 | 96.9% |
+| `shared/ui/log_viewer_events.c` | 451 | 439 | 97.3% |
 | `shared/ui/logs_strip.c` | 40 | 37 | 92.5% |
 | `shared/ui/log_select.c` | 56 | 56 | 100.0% |
 | `shared/ui/files_screen.c` | 691 | 666 | 96.4% |
 | `shared/ui/layout_screen.c` | 141 | 140 | 99.3% |
-| `shared/ui/files_draw.c` | 339 | 328 | 96.8% |
-| `shared/ui/files_events.c` | 222 | 221 | 99.5% |
+| `shared/ui/files_draw.c` | 341 | 330 | 96.8% |
+| `shared/ui/files_events.c` | 228 | 227 | 99.6% |
 | `shared/ui/files_text.c` | 161 | 148 | 91.9% |
 | `shared/ui/text_view.c` | 385 | 378 | 98.2% |
 | `shared/ui/text_view_draw.c` | 270 | 253 | 93.7% |
@@ -1979,8 +1980,8 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/settings_screen.c` | 281 | 273 | 97.2% |
 | `shared/ui/settings_draw.c` | 66 | 66 | 100.0% |
 | `shared/ui/settings_rows.c` | 36 | 35 | 97.2% |
-| `shared/ui/ui_setlist.c` | 620 | 601 | 96.9% |
-| `shared/ui/ui_setlist_draw.c` | 283 | 263 | 92.9% |
+| `shared/ui/ui_setlist.c` | 623 | 603 | 96.8% |
+| `shared/ui/ui_setlist_draw.c` | 280 | 257 | 91.8% |
 | `shared/ui/ui_footer.c` | 42 | 41 | 97.6% |
 | `shared/ui/sensors_pane.c` | 107 | 107 | 100.0% |
 | `shared/ui/sensors_rows.c` | 250 | 250 | 100.0% |
@@ -2003,13 +2004,14 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/wifi_view.c` | 15 | 15 | 100.0% |
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
 | `shared/ui/coproc_update_screen.c` | 276 | 276 | 100.0% |
-| `shared/ui/upd_screen.c` | 641 | 619 | 96.6% |
+| `shared/ui/upd_screen.c` | 661 | 635 | 96.1% |
+| `shared/ui/upd_settings.c` | 43 | 38 | 88.4% |
 | `shared/ui/upd_c6.c` | 115 | 113 | 98.3% |
 | `shared/ui/imu_ctl.c` | 98 | 98 | 100.0% |
 | `shared/ui/imu_ble.c` | 134 | 133 | 99.2% |
 | `shared/ui/imu_sensor.c` | 202 | 202 | 100.0% |
 | `shared/ui/imu_screen.c` | 308 | 300 | 97.4% |
-| `shared/ui/imu_screen_draw.c` | 130 | 129 | 99.2% |
+| `shared/ui/imu_screen_draw.c` | 132 | 131 | 99.2% |
 | `shared/settings/settings.c` | 423 | 416 | 98.3% |
 | `shared/settings/settings_sensors.c` | 150 | 149 | 99.3% |
 | `shared/settings/settings_text.c` | 14 | 13 | 92.9% |
@@ -2238,7 +2240,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **85591** | **83867** | **98.0%** |
+| **total** | **85225** | **83632** | **98.1%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
