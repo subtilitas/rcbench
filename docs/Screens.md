@@ -5716,23 +5716,35 @@ release ([The release line](#the-release-line)).
 
 ![UPDATES](img/updates.png)
 
-The buttons are 460 x 56px, 64px apart, on the left. The card on the
-right is 532px wide, from body y 16 to 384; its text runs in lines of 41
+CHECK FOR UPDATES is 460 x 56px at body y 16 on the left. The card on the
+right is 532px wide, from body y 16 to 336; its text runs in lines of 41
 characters of the 12 x 24px face, 28px apart. When a result runs down to
-the card's last three lines, those lines are left out. Under the
-buttons the IOmcu section's lines are in the 10 x 20px face, and its
-hold is a fifth button of the same size, from body y 428. Under the card
-the C6 RADIO row: one line at body y 396 and its hold, 532 x 56px, beside
-the IOmcu's ([The C6 radio](#the-c6-radio)).
+the card's last three lines, those lines are left out. Under CHECK the
+IOmcu section's lines are in the 10 x 20px face, and its hold is a button
+of the same size, from body y 380. Under the card the C6 RADIO row: one
+line at body y 348 and its hold, 532 x 56px, beside the IOmcu's
+([The C6 radio](#the-c6-radio)). The footer
+([The footer and the settings list](#the-footer-and-the-settings-list))
+reads `[UPDATES] [HOLD 2s TO DOWNLOAD & INSTALL] [SETTINGS]`; the middle
+slot is empty until a check finds a newer release.
 
 | Control | Action |
 | --- | --- |
 | `CHECK FOR UPDATES` | Asks GitHub once. `CANCEL` on the same key while the check runs. |
-| `REMINDER AT START: ON` / `OFF` | Switches the start-up check and its reminder. Kept with SAVE on SETUP, as every setting. On by default. |
-| `RELEASES: STABLE` / `TESTING` | Sets which releases a check reads ([The check](#the-check)). Kept with SAVE on SETUP. `STABLE` by default. A switch hides the last check's result: a release found on the other setting is not offered. |
-| `HOLD 2s TO DOWNLOAD & INSTALL` | Shown once a check found a newer release. Downloads, checks and installs it. |
+| `HOLD 2s TO DOWNLOAD & INSTALL` | In the footer's middle slot once a check found a newer release. Downloads, checks and installs it. |
+| `SETTINGS` | Opens the list of Reminder at start and Releases. Grey while a check or a download runs or a finger holds the download; a tap then puts `SETTINGS open with no check or download running.` in the alert band. A check that starts under the open list closes it. |
 | `HOLD 2s TO UPDATE THE IOMCU` | Starts the IOmcu's update from the image this panel carries ([The IOmcu](#the-iomcu)). |
 | `HOLD 2s TO UPDATE THE C6 RADIO` | Sends the C6 radio's image this panel carries to the board's ESP32-C6 ([The C6 radio](#the-c6-radio)). |
+
+![UPDATES' SETTINGS list](img/updates-settings.png)
+
+| Setting | Values | Default | Effect |
+| --- | --- | --- | --- |
+| Reminder at start | OFF, ON | ON | the start-up check and its reminder |
+| Releases | STABLE, TESTING | STABLE | which releases a check reads ([The check](#the-check)); a change hides the last check's result, and a release found on the other setting is not offered |
+
+A change applies at once; SAVE in the list's strip keeps it, as on SETUP
+([Keeping the values](#keeping-the-values)).
 
 The card names the running version and the kept home network. Both the
 check and the download need:
@@ -6002,7 +6014,7 @@ The reminder is a box of 860 x 480px with its lines in the 12 x 24px
 face. NOT NOW and NEVER REMIND ME are 398 x 56px side by side; the hold is
 812 x 64px under them.
 
-With REMINDER AT START on and a home network kept, the panel runs the check
+With Reminder at start on and a home network kept, the panel runs the check
 once after each start. It waits for a moment the bench allows: the splash
 gone, the bench SAFE, the supply output off, no log run open, WI-FI closed
 and no IOmcu update offered or running. If these conditions are not met within 10min, the check is skipped for
@@ -6017,7 +6029,7 @@ gone and the menu shows.
 | Control | Action |
 | --- | --- |
 | `NOT NOW` | Closes the reminder until the next start of the panel. Leaving it by the HOME tag does the same. |
-| `NEVER REMIND ME` | Switches REMINDER AT START off and asks for the save, which happens at the next moment the settings may be written ([Keeping the values](#keeping-the-values)). SETUP > UPDATES switches it on again. |
+| `NEVER REMIND ME` | Switches Reminder at start off and asks for the save, which happens at the next moment the settings may be written ([Keeping the values](#keeping-the-values)). UPDATES' SETTINGS list switches it on again. |
 | `HOLD 2s TO DOWNLOAD & INSTALL` | The same hold as on UPDATES. |
 
 The start-up check shows nothing when it finds no newer release or fails.

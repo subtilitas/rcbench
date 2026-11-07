@@ -77,6 +77,7 @@
 #include "servo_spots.h"
 #include "stick_spots.h"
 #include "supply_spots.h"
+#include "ui_footer.h"
 #include "ui_setlist.h"
 #include "logview_spots.h"
 #include "motor_spots.h"
@@ -2358,7 +2359,8 @@ static void pose_upd(const char *view)
     v.job = UPD_JOB_CHECK;
     v.phase = UPD_PH_ENDED;
     v.budget_s = 30u;
-    if (strcmp(view, "updates") == 0) {
+    if (strcmp(view, "updates") == 0
+        || strcmp(view, "updates-settings") == 0) {
         v.phase = UPD_PH_IDLE;
     } else if (strcmp(view, "updates-checking") == 0) {
         v.phase = UPD_PH_ASKING;
@@ -2483,6 +2485,11 @@ static void pose_upd(const char *view)
         c6.known = false;
     }
     upd_c6_set(&c6);
+    if (strcmp(view, "updates-settings") == 0) {
+        /* The footer's SETTINGS: the list of the reminder and RELEASES. */
+        const gfx_rect_t r = ui_footer_rect(UI_FOOTER_SETTINGS);
+        tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
+    }
 }
 
 /* The firmware write, at a point inside it, at its end, or failed; and the

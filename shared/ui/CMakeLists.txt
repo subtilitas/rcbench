@@ -129,6 +129,7 @@ set(SRCS
     update_screen.c
     coproc_update_screen.c
     upd_screen.c
+    upd_settings.c
     upd_c6.c
     files_screen.c
     layout_screen.c

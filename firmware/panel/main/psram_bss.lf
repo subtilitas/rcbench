@@ -78,6 +78,7 @@ entries:
     text_view (rcbench_extram_bss)
     text_view_draw (rcbench_extram_bss)
     update_screen (rcbench_extram_bss)
+    upd_settings (rcbench_extram_bss)
     ui_band (rcbench_extram_bss)
     splash_screen (rcbench_extram_bss)
     ui_router (rcbench_extram_bss)

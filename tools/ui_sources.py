@@ -177,6 +177,7 @@ SOURCES = [
     "shared/ui/update_screen.c",
     "shared/ui/coproc_update_screen.c",
     "shared/ui/upd_screen.c",
+    "shared/ui/upd_settings.c",
     "shared/ui/upd_c6.c",
     # IMU, its controller and the protocol cores they read.
     "shared/ui/imu_ctl.c",

@@ -16,6 +16,7 @@
 #include "fw_release.h"
 #include "settings.h"
 #include "ui_screen.h"
+#include "ui_setlist.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -295,44 +296,87 @@ TEST_CASE(a_running_check_turns_the_button_into_cancel)
     CHECK(!upd_busy(NULL));
 }
 
-TEST_CASE(the_reminder_switch_flips_the_setting_and_asks_for_the_save)
+/* SETTINGS in the footer opens the list: row @p row's ">" key tapped,
+ * then the list closed by SAVE (@p save) or left open. */
+static void list_step(int row, bool save)
+{
+    if (!upd()->covered()) {
+        tap(upd(), UP_SET_X, UP_SET_Y);
+    }
+    CHECK(upd()->covered());
+    const ui_setlist_t *sl = upd_screen_settings_list();
+    const gfx_rect_t k = ui_setlist_row_part(sl, row, UI_SL_PART_PLUS);
+    tap(upd(), k.x + k.w / 2, k.y + k.h / 2);
+    if (save) {
+        const gfx_rect_t sv = ui_setlist_strip_rect(2);
+        tap(upd(), sv.x + sv.w / 2, sv.y + sv.h / 2);
+    }
+}
+
+/* The home tag over the list. */
+static void list_back(void)
+{
+    (void)upd()->back();
+}
+
+TEST_CASE(the_reminder_row_switches_it_and_save_writes_it)
 {
     fresh();
     CHECK(settings_get_bool(SET_UPD_REMIND));    /* on by default */
-    tap(upd(), UP_BTN_X, UP_REMIND_Y);
+    list_step(0, false);
     CHECK(!settings_get_bool(SET_UPD_REMIND));
+    /* The list writes nothing by itself: SAVE does. */
+    CHECK(!settings_save_asked());
+    const gfx_rect_t sv = ui_setlist_strip_rect(2);
+    tap(upd(), sv.x + sv.w / 2, sv.y + sv.h / 2);
     CHECK(settings_save_asked());
     CHECK(settings_save_tick(true));
-    tap(upd(), UP_BTN_X, UP_REMIND_Y);
+    list_step(0, true);
     CHECK(settings_get_bool(SET_UPD_REMIND));
     CHECK(settings_save_tick(true));
     /* It asks the application for nothing: the setting is the request. */
     CHECK_EQ(upd_screen_take(), 0u);
+    /* The home tag closes the list, the screen stays. */
+    list_back();
+    CHECK(!upd()->covered());
     /* And it works without a home network: turning reminders back on
      * needs none. */
     g_v.have_net = false;
     push();
-    tap(upd(), UP_BTN_X, UP_REMIND_Y);
+    list_step(0, true);
     CHECK(!settings_get_bool(SET_UPD_REMIND));
 }
 
-TEST_CASE(the_releases_switch_flips_the_channel_and_asks_for_the_save)
+TEST_CASE(the_releases_row_switches_the_channel_while_no_job_runs)
 {
     fresh();
     CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 0);    /* STABLE */
-    tap(upd(), UP_BTN_X, UP_CHAN_Y);
+    list_step(1, true);
     CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 1);    /* TESTING */
-    CHECK(settings_save_asked());
     CHECK(settings_save_tick(true));
-    tap(upd(), UP_BTN_X, UP_CHAN_Y);
+    list_step(1, true);
     CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 0);
     CHECK(settings_save_tick(true));
-    /* Without a home network, and during a check, too. */
+    list_back();
+    /* During a check SETTINGS takes no press and says why. */
+    ui_router_set_alert(NULL);
     g_v.have_net = false;
     g_v.phase = UPD_PH_ASKING;
     push();
-    tap(upd(), UP_BTN_X, UP_CHAN_Y);
-    CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 1);
+    tap(upd(), UP_SET_X, UP_SET_Y);
+    CHECK(!upd()->covered());
+    CHECK(ui_router_alert() != NULL
+          && strcmp(ui_router_alert(), TR(FOOT_SETTINGS_BUSY)) == 0);
+    CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 0);
+    /* A check that starts under the open list closes it. */
+    g_v.phase = UPD_PH_IDLE;
+    push();
+    tap(upd(), UP_SET_X, UP_SET_Y);
+    CHECK(upd()->covered());
+    g_v.phase = UPD_PH_ASKING;
+    push();
+    ticks(upd(), 1);
+    CHECK(!upd()->covered());
     CHECK_EQ(upd_screen_take(), 0u);
 }
 
@@ -340,9 +384,9 @@ TEST_CASE(the_download_hold_is_there_only_for_a_newer_release)
 {
     fresh();
     /* No result: the row is empty and holds nothing. */
-    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_DL_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS);
-    ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_UP, 1, UP_DL_X, UP_DL_Y, 0);
     CHECK_EQ(upd_screen_take(), 0u);
 
     /* Up to date: none either. */
@@ -350,28 +394,28 @@ TEST_CASE(the_download_hold_is_there_only_for_a_newer_release)
     g_v.phase = UPD_PH_ENDED;
     g_v.got = UPD_GOT_CURRENT;
     push();
-    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_DL_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS);
-    ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_UP, 1, UP_DL_X, UP_DL_Y, 0);
     CHECK_EQ(upd_screen_take(), 0u);
 
     /* Newer: the whole hold asks once; a tap or half of it nothing. */
     set_newer();
     push();
-    tap(upd(), UP_BTN_X, UP_DL_Y);
+    tap(upd(), UP_DL_X, UP_DL_Y);
     ticks(upd(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), 0u);
-    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_DL_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS / 2);
-    ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_UP, 1, UP_DL_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), 0u);
-    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_DL_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), UPD_REQ_DOWNLOAD);
     ticks(upd(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), 0u);
-    ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_UP, 1, UP_DL_X, UP_DL_Y, 0);
 }
 
 TEST_CASE(the_download_hold_ends_unfired_when_the_gate_closes_under_it)
@@ -384,7 +428,7 @@ TEST_CASE(the_download_hold_ends_unfired_when_the_gate_closes_under_it)
         fresh();
         set_newer();
         push();
-        ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
+        ev(upd(), TOUCH_EVENT_DOWN, 1, UP_DL_X, UP_DL_Y, 0);
         ticks(upd(), HOLD_TICKS / 2);
         g_v.dl_block = k_blocks[i];
         push();
@@ -393,21 +437,21 @@ TEST_CASE(the_download_hold_ends_unfired_when_the_gate_closes_under_it)
         g_v.dl_block = UPD_WHY_NONE;
         push();
         ticks(upd(), HOLD_TICKS);
-        ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_DL_Y, 0);
+        ev(upd(), TOUCH_EVENT_UP, 1, UP_DL_X, UP_DL_Y, 0);
         CHECK_EQ(upd_screen_take(), 0u);
     }
     /* Sliding off abandons it too; and a lost gesture. */
     fresh();
     set_newer();
     push();
-    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_DL_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS / 2);
-    ev(upd(), TOUCH_EVENT_MOVE, 1, UP_BTN_X, UP_DL_Y + 120, 0);
-    ev(upd(), TOUCH_EVENT_MOVE, 1, UP_BTN_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_MOVE, 1, UP_DL_X, UP_DL_Y + 120, 0);
+    ev(upd(), TOUCH_EVENT_MOVE, 1, UP_DL_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), 0u);
-    ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_DL_Y, 0);
-    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_UP, 1, UP_DL_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_DL_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS / 2);
     upd()->cancel();
     ticks(upd(), HOLD_TICKS);
@@ -756,8 +800,8 @@ TEST_CASE(never_remind_me_switches_it_off_across_a_restart)
     frame();
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 
-    /* SETUP > UPDATES turns it back on, and the start after that checks. */
-    tap(upd(), UP_BTN_X, UP_REMIND_Y);
+    /* UPDATES' list turns it back on, and the start after that checks. */
+    list_step(0, true);
     CHECK(settings_get_bool(SET_UPD_REMIND));
     CHECK(settings_save_tick(true));
     settings_init();
@@ -1127,8 +1171,8 @@ int main(void)
     RUN(check_asks_once_with_a_home_network_and_the_gate_open);
     RUN(check_is_grey_without_a_network_wifi_or_the_gate);
     RUN(a_running_check_turns_the_button_into_cancel);
-    RUN(the_reminder_switch_flips_the_setting_and_asks_for_the_save);
-    RUN(the_releases_switch_flips_the_channel_and_asks_for_the_save);
+    RUN(the_reminder_row_switches_it_and_save_writes_it);
+    RUN(the_releases_row_switches_the_channel_while_no_job_runs);
     RUN(the_download_hold_is_there_only_for_a_newer_release);
     RUN(the_download_hold_ends_unfired_when_the_gate_closes_under_it);
     RUN(every_result_has_a_text_in_both_languages);

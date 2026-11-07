@@ -28,6 +28,7 @@
 #include "coproc_update_screen.h"
 #include "settings.h"
 #include "splash_screen.h"
+#include "ui_footer.h"
 #include "ui_screen.h"
 #include "ui_text.h"
 #include "ui_theme.h"
@@ -160,44 +161,43 @@ static void upd_pose(upd_got_t got, bool capped, upd_why_t block)
 /* ------------------------------------------------------------- UPDATES */
 
 /*
- * The buttons are 460 x 56px at a 64px pitch: a press on the edge rows
- * and columns of REMINDER AT START and RELEASES acts; the 8px between
- * two rows and the column beside them do not.
+ * SETTINGS is the footer's right slot, 328 x 48px from x 686 at y 444: a
+ * tap on its edge rows and columns opens the list, a tap 1px outside it
+ * does not.  CHECK, and CANCEL in its place, is the top row.
  */
 TEST_CASE(updates_buttons_act_where_they_are_drawn)
 {
     fresh(UI_LANG_EN);
     upd_pose(UPD_GOT_CURRENT, false, UPD_WHY_NONE);
-    CHECK(UP_BTN_H >= UI_TAP_MIN);
     const ui_screen_t *u = upd_screen();
-    const int top = UP_REMIND_Y - UP_BTN_H / 2;
-    const bool was = settings_get_bool(SET_UPD_REMIND);
-    tap(u, UP_BTN_X, top);
-    CHECK(settings_get_bool(SET_UPD_REMIND) != was);
-    tap(u, UP_BTN_X, top + UP_BTN_H - 1);
-    CHECK(settings_get_bool(SET_UPD_REMIND) == was);
-    tap(u, UP_BTN_X - UP_BTN_W / 2, UP_REMIND_Y);           /* left column */
-    CHECK(settings_get_bool(SET_UPD_REMIND) != was);
-    tap(u, UP_BTN_X + UP_BTN_W / 2 - 1, UP_REMIND_Y);      /* right column */
-    CHECK(settings_get_bool(SET_UPD_REMIND) == was);
-    /* The gap under it, and the column beside it: nothing. */
-    const bool chan = settings_get_bool(SET_UPD_CHANNEL);
-    for (int y = top + UP_BTN_H; y < UP_CHAN_Y - UP_BTN_H / 2; ++y) {
-        tap(u, UP_BTN_X, y);
+    const gfx_rect_t r = ui_footer_rect(UI_FOOTER_SETTINGS);
+    CHECK(r.h >= UI_TAP_MIN);
+    CHECK(r.y + r.h <= UP_FLOOR);
+    CHECK_EQ(r.x + r.w / 2, UP_SET_X);
+    CHECK_EQ(r.y + r.h / 2, UP_SET_Y);
+    static const int k_in[][2] = { { 0, 0 }, { 327, 0 }, { 0, 47 },
+                                   { 327, 47 } };
+    for (size_t i = 0; i < sizeof k_in / sizeof k_in[0]; ++i) {
+        tap(u, r.x + k_in[i][0], r.y + k_in[i][1]);
+        CHECK(u->covered());
+        (void)u->back();
+        CHECK(!u->covered());
     }
-    tap(u, UP_BTN_X + UP_BTN_W / 2, UP_REMIND_Y);
-    tap(u, UP_BTN_X - UP_BTN_W / 2 - 1, UP_REMIND_Y);
-    CHECK(settings_get_bool(SET_UPD_REMIND) == was);
-    CHECK(settings_get_bool(SET_UPD_CHANNEL) == chan);
-    tap(u, UP_BTN_X, UP_CHAN_Y - UP_BTN_H / 2);
-    CHECK(settings_get_bool(SET_UPD_CHANNEL) != chan);
-    /* CHECK, and CANCEL in its place while a check runs, is the top row:
-     * far above the alert band. */
+    static const int k_out[][2] = { { -1, 20 }, { 328, 20 }, { 100, -1 },
+                                    { 100, 48 } };
+    for (size_t i = 0; i < sizeof k_out / sizeof k_out[0]; ++i) {
+        tap(u, r.x + k_out[i][0], r.y + k_out[i][1]);
+        CHECK(!u->covered());
+    }
+    /* Nothing of the body reaches the footer. */
+    CHECK(UP_CU_T + UP_BTN_H <= UI_FOOTER_FLOOR);
+    CHECK(UP_C6_T + UP_BTN_H <= UI_FOOTER_FLOOR);
+    CHECK(UP_CARD_B <= UI_FOOTER_FLOOR);
     CHECK(UP_CHECK_Y + UP_BTN_H / 2 <= UP_FLOOR);
 }
 
 /*
- * HOLD 2s: UPDATE IOMCU is 460 x 56px with its foot at body y 484: a
+ * HOLD 2s: UPDATE IOMCU is 460 x 56px with its foot at body y 436: a
  * hold on its bottom row completes, a hold one row under it starts
  * nothing, and the row lies 8px over the floor above the alert band.
  */

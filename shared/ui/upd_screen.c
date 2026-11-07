@@ -11,10 +11,12 @@
 #include <string.h>
 
 #include "settings.h"
+#include "ui_footer.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 #include "upd_c6.h"
+#include "upd_settings_int.h"
 
 /*
  * The faces of the type scale these screens draw in:
@@ -29,12 +31,13 @@
 
 /*
  * UPDATES, in the body below the band: 1024 x 540px:
- * The buttons on the left, 460 x 56px at a 64px pitch from y 16: CHECK,
- * the reminder, RELEASES, and the download's hold.  The card on the right,
- * x 484 to 1016, y 16 to 384: what is kept and what last happened, each
- * text broken into lines of its 500px column (41 cells of UPD_FONT_BODY),
- * 28px apart.  Under it the C6 RADIO row (upd_c6.h): its line at y 396,
- * its hold beside the IOmcu's at y 428.
+ * CHECK on the left, 460 x 56px at y 16.  The card on the right, x 484 to
+ * 1016, y 16 to 336: what is kept and what last happened, each text broken
+ * into lines of its 500px column (41 cells of UPD_FONT_BODY), 28px apart.
+ * Under it the C6 RADIO row (upd_c6.h): its line at y 348, its hold beside
+ * the IOmcu's at y 380.  The footer (ui_footer.h) under both: UPDATES,
+ * the download's hold in the middle slot while a newer release is found,
+ * and SETTINGS, the list of the reminder and RELEASES (upd_settings.c).
  */
 /** @brief The buttons' left edge. */
 #define BX      16
@@ -51,32 +54,31 @@
 /** @brief The card's width, px. */
 #define RW      532
 /** @brief The card's height, px: it ends 12px over the C6 row's line. */
-#define RH      368
+#define RH      320
 /** @brief The card's inner padding, px. */
 #define RPAD    16
 /** @brief A UPD_FONT_BODY line's pitch, px. */
 #define PITCH   28
-/** @brief The download's hold's row. */
-#define DL_ROW  3
-
 /*
- * The IOmcu section, in the left column under the fourth row:
+ * The IOmcu section, in the left column under CHECK:
  * Its heading, the two versions and up to two lines of state in
  * UPD_FONT_LABEL 24px apart, and the hold, 460 x 56px, whose foot is
- * body y 484, 12px above the alert band.
+ * body y 436, over the footer, beside the C6 RADIO's hold.
  */
 /** @brief The IOmcu section's heading. */
-#define CU_HEAD_Y  280
+#define CU_HEAD_Y  88
 /** @brief The version the IOmcu runs. */
-#define CU_RUN_Y   304
+#define CU_RUN_Y   112
 /** @brief The version this panel carries. */
-#define CU_CAR_Y   328
+#define CU_CAR_Y   136
 /** @brief The first line of state. */
-#define CU_LINE_Y  356
+#define CU_LINE_Y  164
 /** @brief The state's line pitch, px. */
 #define CU_PITCH   24
+/** @brief HOLD 2s: UPDATE IOMCU's top. */
+#define CU_BTN_Y   UPD_C6_BTN_Y
 /** @brief HOLD 2s: UPDATE IOMCU. */
-#define CU_BTN     gfx_rect_make(BX, 428, BW, BH)
+#define CU_BTN     gfx_rect_make(BX, CU_BTN_Y, BW, BH)
 
 /*
  * The reminder:
@@ -97,12 +99,13 @@
  *         it. */
 #define UPD_FLOOR (UI_ALERT_Y - UI_BAND_H - 4)
 _Static_assert(BH >= UI_TAP_MIN, "UPDATES' buttons are a finger tall");
-_Static_assert(16 + DL_ROW * BPITCH + BH + 16 <= CU_HEAD_Y,
-               "the IOmcu section starts under the fourth row");
-_Static_assert(CU_LINE_Y + 2 * CU_PITCH + 20 < 428,
+_Static_assert(RY + BH + 16 <= CU_HEAD_Y,
+               "the IOmcu section starts under CHECK");
+_Static_assert(CU_LINE_Y + 2 * CU_PITCH + 20 < CU_BTN_Y,
                "two lines of state end over the IOmcu's hold");
-_Static_assert(428 + BH <= UPD_FLOOR, "the IOmcu's hold ends over the band");
-_Static_assert(RY + RH <= UPD_FLOOR, "the card ends over the alert band");
+_Static_assert(CU_BTN_Y + BH <= UI_FOOTER_FLOOR,
+               "the IOmcu's hold ends over the footer");
+_Static_assert(RY + RH <= UI_FOOTER_FLOOR, "the card ends over the footer");
 _Static_assert(RY + RH + 12 <= UPD_C6_LINE_Y, "the card ends over the C6 row");
 _Static_assert(RX + RW <= UI_PANEL_W - UI_MARGIN, "the card keeps the margin");
 _Static_assert(8 + 480 <= UPD_FLOOR, "the reminder ends over the band");
@@ -111,8 +114,7 @@ _Static_assert(400 + 64 + 24 <= 8 + 480, "the hold ends inside the box");
 enum {
     HIT_NONE = 0,
     HIT_CHECK,          /* CHECK FOR UPDATES, or CANCEL while one runs */
-    HIT_REMIND,
-    HIT_CHANNEL,        /* RELEASES: STABLE | TESTING */
+    HIT_SETTINGS,       /* the footer's SETTINGS */
     HIT_DOWNLOAD,
     HIT_IGNORE,
     HIT_NEVER,
@@ -136,6 +138,7 @@ static struct {
     ui_hold_t hold;       /* DOWNLOAD & INSTALL */
     ui_hold_t cu_hold;    /* UPDATE IOMCU */
     unsigned  drawn_mask;
+    uint32_t  drawn_list[2]; /* the list's revision as each buffer drew it */
 } s;
 
 /* The reminder. */
@@ -546,16 +549,24 @@ static void button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
 /* ============================================================== UPDATES */
 
 /**
- * @brief UPDATES' button in row @p row.
- * @param row 0 CHECK, 1 the reminder, 2 RELEASES, DL_ROW the download.
+ * @brief CHECK FOR UPDATES, top left.
  * @return Its rectangle in the body.
  */
-static gfx_rect_t btn(int row)
+static gfx_rect_t check_rect(void)
 {
-    return gfx_rect_make(BX, RY + row * BPITCH, BW, BH);
+    return gfx_rect_make(BX, RY, BW, BH);
 }
 
-static bool testing_set(void) { return settings_get_int(SET_UPD_CHANNEL) == 1; }
+/**
+ * @brief The download's hold, in the footer's middle slot.
+ * @return Its rectangle in the body.
+ */
+static gfx_rect_t dl_rect(void) { return ui_footer_rect(UI_FOOTER_HOLD); }
+
+bool upd_settings_free(void)
+{
+    return !upd_busy(&s_v) && !(s.have_press && s.hit == HIT_DOWNLOAD);
+}
 
 /**
  * @brief The button that opens WI-FI shows: no home network, and Wi-Fi at
@@ -587,17 +598,14 @@ static int hit_at(int x, int y)
     if (net_shown() && !upd_busy(&s_v) && gfx_rect_contains(net_rect(), x, y)) {
         return HIT_NET;
     }
-    if (gfx_rect_contains(btn(0), x, y)
+    if (gfx_rect_contains(check_rect(), x, y)
         && (check_allowed() || cancel_allowed())) {
         return HIT_CHECK;
     }
-    if (gfx_rect_contains(btn(1), x, y)) {
-        return HIT_REMIND;
+    if (gfx_rect_contains(ui_footer_rect(UI_FOOTER_SETTINGS), x, y)) {
+        return HIT_SETTINGS;
     }
-    if (gfx_rect_contains(btn(2), x, y)) {
-        return HIT_CHANNEL;
-    }
-    if (download_allowed() && gfx_rect_contains(btn(DL_ROW), x, y)) {
+    if (download_allowed() && gfx_rect_contains(dl_rect(), x, y)) {
         return HIT_DOWNLOAD;
     }
     if (coproc_allowed() && gfx_rect_contains(CU_BTN, x, y)) {
@@ -612,16 +620,14 @@ static void act(int hit)
     case HIT_CHECK:
         s_req |= cancel_allowed() ? UPD_REQ_CANCEL : UPD_REQ_CHECK;
         break;
-    case HIT_REMIND:
-        /* The setting is the screen's own, as SETUP's are: set here, and
-         * kept when the application finds the bench idle. */
-        settings_set(SET_UPD_REMIND,
-                     settings_get_bool(SET_UPD_REMIND) ? 0.0f : 1.0f);
-        settings_request_save();
-        break;
-    case HIT_CHANNEL:
-        settings_set(SET_UPD_CHANNEL, testing_set() ? 0.0f : 1.0f);
-        settings_request_save();
+    case HIT_SETTINGS:
+        /* The list opens with no job under way, and says why it does
+         * not. */
+        if (upd_settings_free()) {
+            upd_list_open();
+        } else {
+            ui_router_set_alert(TR(FOOT_SETTINGS_BUSY));
+        }
         break;
     case HIT_NET:
         /* WI-FI's home tag comes back here (ui_router_parent()). */
@@ -640,11 +646,19 @@ static void reset(void)
     upd_c6_drop();
     memset(&s_cu, 0, sizeof(s_cu));
     s_cu_req = false;
+    upd_list_reset();
 }
 
 static void event(const touch_event_t *evt)
 {
     if (evt == NULL) {
+        return;
+    }
+    if (upd_list_shown()) {
+        upd_list_event(evt);
+        if (!upd_list_shown()) {
+            touched();
+        }
         return;
     }
     if (upd_c6_event(evt, s.have_press)) {
@@ -673,7 +687,7 @@ static void event(const touch_event_t *evt)
     }
     if (evt->type == TOUCH_EVENT_MOVE) {
         /* Sliding off the hold abandons it, as on every held control. */
-        if ((s.hit == HIT_DOWNLOAD && !gfx_rect_contains(btn(DL_ROW), x, y)
+        if ((s.hit == HIT_DOWNLOAD && !gfx_rect_contains(dl_rect(), x, y)
              && ui_hold_leave(&s.hold))
             || (s.hit == HIT_COPROC && !gfx_rect_contains(CU_BTN, x, y)
                 && ui_hold_leave(&s.cu_hold))) {
@@ -692,7 +706,7 @@ static void event(const touch_event_t *evt)
     touched();
     if (hit == HIT_DOWNLOAD) {
         /* The hold acts when it completes; the release only ends it. */
-        (void)ui_hold_end(&s.hold, evt, btn(DL_ROW));
+        (void)ui_hold_end(&s.hold, evt, dl_rect());
         return;
     }
     if (hit == HIT_COPROC) {
@@ -707,6 +721,11 @@ static void event(const touch_event_t *evt)
 static void tick(float dt_s)
 {
     drop_holds_if_gone();
+    if (upd_list_shown() && upd_busy(&s_v)) {
+        upd_list_close();      /* a job started under it: the card shows */
+        touched();
+    }
+    upd_list_tick(dt_s);
     if (upd_c6_tick(dt_s)) {
         touched();             /* the C6 row's fill follows its hold */
     }
@@ -730,6 +749,7 @@ static void tick(float dt_s)
 
 static void cancel(void)
 {
+    upd_list_cancel();
     upd_c6_drop();
     if (s.hit == HIT_DOWNLOAD) {
         (void)ui_hold_left(&s.hold);
@@ -743,6 +763,7 @@ static void cancel(void)
 
 static void enter(void)
 {
+    upd_list_close();
     upd_c6_drop();
     ui_hold_reset(&s.hold);
     ui_hold_reset(&s.cu_hold);
@@ -751,6 +772,7 @@ static void enter(void)
 
 static void leave(void)
 {
+    upd_list_close();
     upd_c6_drop();
     s.hit = HIT_NONE;
     s.have_press = false;
@@ -845,26 +867,33 @@ static void render_coproc(gfx_canvas_t *c)
 static void render(gfx_canvas_t *c, int buffer_index)
 {
     const unsigned bit = 1u << (buffer_index & 1);
+    const int b = buffer_index & 1;
+    if (upd_list_shown()) {
+        /* The list draws itself whole when its look changed. */
+        if ((s.drawn_mask & bit) == 0u || s.drawn_list[b] != upd_list_revision()) {
+            s.drawn_list[b] = upd_list_revision();
+            upd_list_render(c);
+            s.drawn_mask |= bit;
+        }
+        return;
+    }
     if ((s.drawn_mask & bit) != 0u) {
         return;            /* every event and every change clears the mask */
     }
     gfx_clear(c, UI_BG);
 
-    /* The buttons. */
+    /* CHECK, and the footer: the download's hold, SETTINGS. */
     const bool busy = cancel_allowed();
-    button(c, btn(0), busy ? TR(CANCEL) : TR(UPD_CHECK),
+    button(c, check_rect(), busy ? TR(CANCEL) : TR(UPD_CHECK),
            busy ? UI_PANEL_HI : UI_ACCENT,
            s.have_press && s.hit == HIT_CHECK, busy || check_allowed());
-    const bool on = settings_get_bool(SET_UPD_REMIND);
-    button(c, btn(1), on ? TR(UPD_REMIND_ON) : TR(UPD_REMIND_OFF),
-           UI_PANEL_HI, s.have_press && s.hit == HIT_REMIND, true);
-    button(c, btn(2),
-           testing_set() ? TR(UPD_CHAN_TESTING) : TR(UPD_CHAN_STABLE),
-           UI_PANEL_HI, s.have_press && s.hit == HIT_CHANNEL, true);
+    ui_footer_name(c, ui_footer_rect(UI_FOOTER_NAME), "UPDATES", NULL, false);
     if (have_newer()) {
-        button(c, btn(DL_ROW), TR(UPD_HOLD_DL), hold_fill(&s.hold), false,
-               download_allowed());
+        ui_hold_button(c, dl_rect(), TR(UPD_HOLD_DL), UI_PANEL_HI, UI_OK,
+                       &s.hold, false, download_allowed(), UPD_FONT_LABEL);
     }
+    ui_footer_settings(c, s.have_press && s.hit == HIT_SETTINGS,
+                       upd_settings_free());
     render_coproc(c);
     upd_c6_render(c);
 
@@ -946,9 +975,25 @@ static void render(gfx_canvas_t *c, int buffer_index)
     }
 }
 
+/** @brief The home tag closes the list first, through its leave warning.
+ *  @return Whether it went up a level. */
+static bool back(void)
+{
+    const bool was = upd_list_shown();
+    const bool climbed = upd_list_back();
+    if (was) {
+        touched();
+    }
+    return climbed;
+}
+
+/** @brief The list covers the screen. @return Whether it is open. */
+static bool covered(void) { return upd_list_shown(); }
+
 static const ui_screen_t k_screen = {
     .title  = "UPDATES",
-    .covered = ui_screen_not_covered,
+    .covered = covered,
+    .back   = back,
     .reset  = reset,
     .enter  = enter,
     .leave  = leave,

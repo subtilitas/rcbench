@@ -541,7 +541,7 @@ ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | 2s HALTEN ZUM REPARIEREN | `Halte 2s, um zu reparieren.` |
 | 2s HALTEN ZUM STARTEN in der Warnung eines Stick-Laufs | `Halte 2s, um zu starten.` |
 | 2s HALTEN ZUM INSTALLIEREN auf WI-FI | `Halte 2s, um zu installieren.` |
-| 2s HALTEN ZUM LADEN & INSTALLIEREN auf UPDATES und in der Update-Erinnerung | `Halte 2s, um zu laden und zu installieren.` |
+| 2s HALTEN: LADEN & INSTALLIEREN auf UPDATES und in der Update-Erinnerung | `Halte 2s, um zu laden und zu installieren.` |
 | 2s HALTEN ZUM IOMCU-UPDATE auf UPDATES und START im Bestätigungsdialog des IOmcu-Updates | `Halte 2s, um den IOmcu zu aktualisieren.` |
 | 2s HALTEN ZUM C6-FUNK-UPDATE auf UPDATES | `Halte 2s, um den C6-Funk zu aktualisieren. Das WLAN bleibt bis zum Ende aus.` |
 | 2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN auf OUTPUTS | `Halte 2s, um alle Pin-Zuordnungen zu löschen.` |
@@ -6200,23 +6200,36 @@ dem ESP32-P4-Panel wird jedes neuere Release angeboten
 
 ![UPDATES](img/de/updates.png)
 
-Die Tasten sind 460 x 56px, 64px auseinander, links. Die Karte rechts ist
-532px breit, von y 16 bis 384 im Körper; ihr Text läuft in Zeilen von 41
-Zeichen der Schrift 12 x 24px, 28px auseinander. Reicht ein Ergebnis bis in
-die letzten drei Zeilen der Karte, entfallen diese Zeilen. Unter den Tasten
-stehen die Zeilen des IOmcu-Abschnitts in der Schrift 10 x 20px, und sein
-Halten ist eine fünfte Taste derselben Größe, ab y 428 im Körper. Unter der
-Karte steht die Zeile C6 RADIO: eine Zeile bei y 396 im Körper und ihr
-Halten, 532 x 56px, neben dem des IOmcu ([Der C6-Funk](#der-c6-funk)).
+NACH UPDATES SUCHEN ist 460 x 56px bei y 16 im Körper, links. Die Karte
+rechts ist 532px breit, von y 16 bis 336 im Körper; ihr Text läuft in
+Zeilen von 41 Zeichen der Schrift 12 x 24px, 28px auseinander. Reicht ein
+Ergebnis bis in die letzten drei Zeilen der Karte, entfallen diese Zeilen.
+Unter NACH UPDATES SUCHEN stehen die Zeilen des IOmcu-Abschnitts in der
+Schrift 10 x 20px, und sein Halten ist eine Taste derselben Größe, ab y 380
+im Körper. Unter der Karte steht die Zeile C6 RADIO: eine Zeile bei y 348
+im Körper und ihr Halten, 532 x 56px, neben dem des IOmcu
+([Der C6-Funk](#der-c6-funk)). Die Fußleiste
+([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste))
+lautet `[UPDATES] [2s HALTEN: LADEN & INSTALLIEREN] [OPTIONEN]`; der
+mittlere Platz bleibt leer, bis eine Suche ein neueres Release findet.
 
 | Bedienelement | Wirkung |
 | --- | --- |
 | `NACH UPDATES SUCHEN` | Fragt GitHub einmal. `ABBRECHEN` auf derselben Taste, solange die Suche läuft. |
-| `ERINNERUNG BEIM START: EIN` / `AUS` | Schaltet die Suche beim Start und ihre Erinnerung. Gespeichert mit SPEICHERN auf SETUP, wie jede Einstellung. Ab Werk an. |
-| `RELEASES: STABLE` / `TESTING` | Legt fest, welche Releases eine Suche liest ([Die Suche](#die-suche)). Gespeichert mit SPEICHERN auf SETUP. Ab Werk `STABLE`. Ein Wechsel blendet das Ergebnis der letzten Suche aus: ein Release, das mit der anderen Einstellung gefunden wurde, wird nicht angeboten. |
-| `2s HALTEN ZUM LADEN & INSTALLIEREN` | Erscheint, sobald eine Suche ein neueres Release gefunden hat. Lädt es, prüft es und installiert es. |
+| `2s HALTEN: LADEN & INSTALLIEREN` | In der Mitte der Fußleiste, sobald eine Suche ein neueres Release gefunden hat. Lädt es, prüft es und installiert es. |
+| `OPTIONEN` | Öffnet die Liste mit Erinnerung beim Start und Releases. Grau, solange eine Suche oder ein Download läuft oder ein Finger den Download hält; ein Tippen zeigt dann `OPTIONEN nur ohne laufende Suche oder Download.` im Meldeband. Eine Suche, die unter der offenen Liste startet, schließt sie. |
 | `2s HALTEN ZUM IOMCU-UPDATE` | Startet das Update des IOmcu aus dem Image, das dieses Panel mitbringt ([Der IOmcu](#der-iomcu)). |
 | `2s HALTEN ZUM C6-FUNK-UPDATE` | Sendet das Image des C6-Funks, das dieses Panel mitbringt, an den ESP32-C6 des Boards ([Der C6-Funk](#der-c6-funk)). |
+
+![Die OPTIONEN von UPDATES](img/de/updates-settings.png)
+
+| Einstellung | Werte | Vorgabe | Wirkung |
+| --- | --- | --- | --- |
+| Erinnerung beim Start | AUS, EIN | EIN | die Suche beim Start und ihre Erinnerung |
+| Releases | STABLE, TESTING | STABLE | welche Releases eine Suche liest ([Die Suche](#die-suche)); ein Wechsel blendet das Ergebnis der letzten Suche aus, und ein mit der anderen Einstellung gefundenes Release wird nicht angeboten |
+
+Eine Änderung gilt sofort; SPEICHERN in der Leiste der Liste behält sie, wie
+auf SETUP ([Werte behalten](#werte-behalten)).
 
 Die Karte nennt die laufende Version und das gespeicherte Heimnetz. Suche
 und Download brauchen:
@@ -6488,7 +6501,7 @@ Die Erinnerung ist ein Kasten von 860 x 480px mit ihren Zeilen in der
 Schrift 12 x 24px. JETZT NICHT und NICHT MEHR ERINNERN sind 398 x 56px
 nebeneinander; das Halten ist 812 x 64px darunter.
 
-Mit ERINNERUNG BEIM START an und einem gespeicherten Heimnetz sucht das
+Mit Erinnerung beim Start an und einem gespeicherten Heimnetz sucht das
 Panel einmal nach jedem Start. Die Suche wartet auf einen Moment, den der
 Prüfstand erlaubt: Splash vorbei, Prüfstand SAFE, Netzteilausgang aus, kein
 offener Aufzeichnungslauf, WI-FI geschlossen und kein Update des
@@ -6504,8 +6517,8 @@ entfallen und das Menü zu sehen ist, öffnet sie sich.
 | Bedienelement | Wirkung |
 | --- | --- |
 | `JETZT NICHT` | Schließt die Erinnerung bis zum nächsten Start des Panels. Verlassen über das Home-Feld wirkt genauso. |
-| `NICHT MEHR ERINNERN` | Schaltet ERINNERUNG BEIM START aus und fordert das Speichern an, das im nächsten Moment geschieht, in dem die Einstellungen geschrieben werden dürfen ([Werte behalten](#werte-behalten)). SETUP > UPDATES schaltet sie wieder ein. |
-| `2s HALTEN ZUM LADEN & INSTALLIEREN` | Dasselbe Halten wie auf UPDATES. |
+| `NICHT MEHR ERINNERN` | Schaltet Erinnerung beim Start aus und fordert das Speichern an, das im nächsten Moment geschieht, in dem die Einstellungen geschrieben werden dürfen ([Werte behalten](#werte-behalten)). Die OPTIONEN von UPDATES schalten sie wieder ein. |
+| `2s HALTEN: LADEN & INSTALLIEREN` | Dasselbe Halten wie auf UPDATES. |
 
 Findet die Suche beim Start kein neueres Release oder scheitert sie, zeigt
 sie nichts. Ihr Ergebnis steht auf UPDATES.

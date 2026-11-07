@@ -196,6 +196,7 @@ TRACKED = [
     "shared/ui/update_screen.c",
     "shared/ui/coproc_update_screen.c",
     "shared/ui/upd_screen.c",
+    "shared/ui/upd_settings.c",
     "shared/ui/upd_c6.c",
     "shared/ui/imu_ctl.c",
     "shared/ui/imu_ble.c",

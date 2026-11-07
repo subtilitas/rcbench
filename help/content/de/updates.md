@@ -13,11 +13,21 @@ UPDATES sucht auf GitHub nach neuerer Panel-Firmware und bietet deren Installati
 | Bedienelement | Wirkung |
 |---|---|
 | NACH UPDATES SUCHEN | Fragt GitHub einmal ab. Während der Suche heißt die Taste ABBRECHEN. |
-| ERINNERUNG BEIM START: EIN / AUS | Aktiviert Startsuche und Erinnerung. Mit SPEICHERN unter [Setup](setup.md#die-werte-behalten) speichern; Vorgabe EIN. |
-| RELEASES: STABLE / TESTING | Wählt die geprüften Releases; siehe [Die Suche](#die-suche). Mit SPEICHERN unter [Setup](setup.md#die-werte-behalten) speichern; Vorgabe STABLE. Ein Wechsel verwirft die Ergebnisanzeige. Ein unter der anderen Einstellung gefundenes Release wird nicht angeboten. |
-| 2s HALTEN ZUM LADEN & INSTALLIEREN | Erscheint nach Fund eines neueren Releases und lädt, prüft und installiert es. |
+| 2s HALTEN: LADEN & INSTALLIEREN | In der Mitte der Fußleiste nach Fund eines neueren Releases; lädt, prüft und installiert es. |
+| OPTIONEN | Rechts in der Fußleiste; öffnet die Liste mit Erinnerung beim Start und Releases, siehe [Optionen](#optionen). Grau, solange eine Suche oder ein Download läuft. |
 | 2s HALTEN ZUM IOMCU-UPDATE | Startet das [IOmcu-Update](coproc_update.md) aus dem mitgelieferten Image, auch nach Ablehnung der Verbindungsrückfrage. |
 | 2s HALTEN ZUM C6-FUNK-UPDATE | Sendet das mitgelieferte Image des C6-Funks an den ESP32-C6 des Boards, siehe [Der C6-Funk](#der-c6-funk). |
+
+## Optionen
+
+![Die OPTIONEN von UPDATES](view:updates-settings)
+
+| Einstellung | Werte | Wirkung |
+|---|---|---|
+| Erinnerung beim Start | AUS, EIN; Vorgabe EIN | schaltet die Suche beim Start und ihre Erinnerung |
+| Releases | STABLE, TESTING; Vorgabe STABLE | wählt die geprüften Releases, siehe [Die Suche](#die-suche); ein Wechsel verwirft die Ergebnisanzeige, und ein unter der anderen Einstellung gefundenes Release wird nicht angeboten |
+
+Eine Änderung gilt sofort. SPEICHERN in der Leiste der Liste behält sie, wie unter [Setup](setup.md#die-werte-behalten). Das Home-Feld schließt die Liste, bei ungespeicherter Änderung mit Rückfrage.
 
 ## Was die Suche braucht
 
@@ -111,7 +121,7 @@ ABBRECHEN beendet den Download. Auch STOP, ARMED, ein eingeschalteter Netzteilau
 
 ![Ein anderer Build auf dem IOmcu](view:updates-coproc)
 
-Unter den Tasten nennt UPDATES die laufende IOmcu-Version (`Läuft: 0.21.2`) und das mitgelieferte Image (`Auf diesem Panel: 0.22.0`). 2s HALTEN ZUM IOMCU-UPDATE öffnet denselben Updateablauf mit Fortschrittsanzeige wie die Rückfrage beim Verbindungsaufbau. Nach Updateende oder Ablauf der START-Anfrage kehrt die Seite zu UPDATES zurück.
+Unter NACH UPDATES SUCHEN nennt UPDATES die laufende IOmcu-Version (`Läuft: 0.21.2`) und das mitgelieferte Image (`Auf diesem Panel: 0.22.0`). 2s HALTEN ZUM IOMCU-UPDATE öffnet denselben Updateablauf mit Fortschrittsanzeige wie die Rückfrage beim Verbindungsaufbau. Nach Updateende oder Ablauf der START-Anfrage kehrt die Seite zu UPDATES zurück.
 
 Für das Halten gelten dieselben Voraussetzungen wie für die Rückfrage: ein IOmcu mit abweichendem Build, SAFE, Netzteilausgang aus, WLAN vollständig aus und keine laufende Panel-Installation. Andernfalls ist die Taste grau. Darüber steht der erste zutreffende Grund:
 

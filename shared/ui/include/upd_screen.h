@@ -4,14 +4,15 @@
  *
  * UPDATES (SCREEN_UPDATES, from SETUP): CHECK FOR UPDATES asks GitHub once
  * which release is the newest, over the home network the panel keeps; the
- * answer stays on the screen.  REMINDER AT START switches the start-up
- * check on and off (SET_UPD_REMIND).  RELEASES switches between STABLE and
- * TESTING (SET_UPD_CHANNEL): which releases a check looks at; the
- * application drops a result found on the other channel from the view.
- * When a newer release was found, HOLD 2s: DOWNLOAD & INSTALL fetches and
- * installs it.
+ * answer stays on the screen.  The footer's SETTINGS opens the list of
+ * Reminder at start, which switches the start-up check on and off
+ * (SET_UPD_REMIND), and Releases, STABLE or TESTING (SET_UPD_CHANNEL):
+ * which releases a check looks at; the application drops a result found on
+ * the other channel from the view.  When a newer release was found, HOLD
+ * 2s TO DOWNLOAD & INSTALL in the footer's middle slot fetches and installs
+ * it.
  *
- * Its IOmcu section, under the buttons: the version the IOmcu
+ * Its IOmcu section, under CHECK: the version the IOmcu
  * runs, the version of the image this panel carries, and HOLD 2s: UPDATE
  * IOMCU, which starts the update the link-up's question starts, also
  * after that question was declined.  The hold is live only while
@@ -241,6 +242,14 @@ bool upd_result_said_above(const upd_view_t *v);
 
 /** Repaint on the next frame. */
 void upd_screen_invalidate(void);
+
+struct ui_setlist;
+/**
+ * @brief UPDATES' SETTINGS list, for the tests and the renderer: Reminder
+ *        at start and Releases (upd_settings.c).
+ * @return The list, open or closed.
+ */
+const struct ui_setlist *upd_screen_settings_list(void);
 
 const ui_screen_t *upd_screen(void);
 const ui_screen_t *upd_remind_screen(void);
