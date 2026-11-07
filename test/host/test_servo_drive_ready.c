@@ -14,6 +14,7 @@
  * - a_rail_fed_from_elsewhere_keeps_the_pd_mini_off_and_arms_at_once
  * - a_window_the_ina3221_left_behind_is_no_fed_rail
  * - a_fed_rail_arms_whatever_the_pd_minis_set_point
+ * - a_tap_on_a_drive_row_names_why_or_opens_its_list
  * - past_6v_arm_is_refused_and_the_row_opens_the_hv_warning
  * - a_tap_on_arm_or_a_stop_during_the_steps_ends_them_all_off
  * - the_5v_arm_switched_stays_across_servo_and_goes_with_the_last
@@ -255,6 +256,30 @@ TEST_CASE(a_window_the_ina3221_left_behind_is_no_fed_rail)
     CHECK(ra.armed);
 }
 
+/* A tap on a row that is not met names why in the band, as ARM's refusal
+ * does.  Before ARM's steps no supply is asked for, so SUPPLY's reason
+ * names no part, nor does a text no row reads.  A tap on PORT opens the
+ * port list. */
+TEST_CASE(a_tap_on_a_drive_row_names_why_or_opens_its_list)
+{
+    char want[128];
+    pd_off_on_live();
+    ui_router_set_alert(NULL);
+    const rdy_row_t r = drow(LV_SUPPLY);
+    CHECK(r.why != NULL);
+    ev(SV_RDY_X, SV_DRV_ROW_Y(LV_SUPPLY), TOUCH_EVENT_DOWN, 2);
+    ev(SV_RDY_X, SV_DRV_ROW_Y(LV_SUPPLY), TOUCH_EVENT_UP, 2);
+    snprintf(want, sizeof(want), TR(RDY_BAND), r.label, nn(r.why));
+    CHECK_STR_EQ(nn(ui_router_alert()), want);
+    CHECK_EQ(drive_part_of(r.why), SERVO_SEQ_PART_NONE);
+    CHECK_EQ(drive_part_of("no row reads this"), SERVO_SEQ_PART_NONE);
+    CHECK_EQ(drive_part_of(NULL), SERVO_SEQ_PART_NONE);
+    CHECK_EQ(servo_screen_port_choices(), -1);
+    ev(SV_RDY_X, SV_DRV_ROW_Y(LV_PORT), TOUCH_EVENT_DOWN, 2);
+    ev(SV_RDY_X, SV_DRV_ROW_Y(LV_PORT), TOUCH_EVENT_UP, 2);
+    CHECK(servo_screen_port_choices() > 0);
+}
+
 /* A rail fed from elsewhere with the PD mini's set point past 6.0V: ARM
  * leaves the PD mini off, so the set point is never applied; the row reads
  * FED FROM ELSEWHERE in the warning colour and ARM arms at once, sending no
@@ -439,6 +464,7 @@ int main(void)
     RUN(a_rail_fed_from_elsewhere_keeps_the_pd_mini_off_and_arms_at_once);
     RUN(a_window_the_ina3221_left_behind_is_no_fed_rail);
     RUN(a_fed_rail_arms_whatever_the_pd_minis_set_point);
+    RUN(a_tap_on_a_drive_row_names_why_or_opens_its_list);
     RUN(past_6v_arm_is_refused_and_the_row_opens_the_hv_warning);
     RUN(a_tap_on_arm_or_a_stop_during_the_steps_ends_them_all_off);
     RUN(the_5v_arm_switched_stays_across_servo_and_goes_with_the_last);
