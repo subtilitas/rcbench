@@ -21,6 +21,7 @@
  * - a_locked_row_takes_no_press_and_says_why
  * - a_discard_brings_supplys_limits_back_from_any_list
  * - a_pulse_step_keeps_the_throttle_gap
+ * - a_closed_list_asks_for_no_repaint
  *
  * SPDX-License-Identifier: MIT
  */
@@ -90,6 +91,7 @@ static bool s_headings = true;
 static int s_changed;
 static int s_changed_all;
 static int s_way_out;
+static int s_invalidated;
 static bool s_lock_cells;
 
 static int host_count(void) { return N_ROWS; }
@@ -104,6 +106,7 @@ static void host_changed(setting_id_t id)
     s_changed_all += (id == SETTING_COUNT) ? 1 : 0;
 }
 static void host_way_out(void) { ++s_way_out; }
+static void host_invalidate(void) { ++s_invalidated; }
 static const char *host_locked(setting_id_t id)
 {
     return (s_lock_cells && id == SET_PACK_CELLS) ? "CELLS LOCKED" : NULL;
@@ -126,6 +129,7 @@ static ui_setlist_host_t s_host = {
     .count = host_count, .row = host_row, .headings = true,
     .name = host_name, .changed = host_changed, .way_out = host_way_out,
     .locked = host_locked, .typed = host_typed, .range = host_range,
+    .invalidate = host_invalidate,
 };
 
 static ui_setlist_t sl;
@@ -147,6 +151,7 @@ static void fresh(bool headings)
     s_changed = 0;
     s_changed_all = 0;
     s_way_out = 0;
+    s_invalidated = 0;
     s_lock_cells = false;
     s_headings = headings;
     s_host.headings = headings;
@@ -461,6 +466,25 @@ TEST_CASE(a_pulse_step_keeps_the_throttle_gap)
     ui_setlist_init(&sl, &s_host);
 }
 
+/*
+ * A list closed with a change unsaved: a save asked for after the close,
+ * and frames after it, ask the host for no repaint -- nothing of the list
+ * is on screen to show it.
+ */
+TEST_CASE(a_closed_list_asks_for_no_repaint)
+{
+    fresh(true);
+    tap_part(1, UI_SL_PART_PLUS);
+    ui_setlist_close(&sl);
+    settings_request_save();
+    const int before = s_invalidated;
+    for (int k = 0; k < 10; ++k) {
+        ui_setlist_tick(&sl, 0.025f);
+    }
+    CHECK_EQ(s_invalidated, before);
+    settings_cancel_save();
+}
+
 TEST_CASE(a_locked_row_takes_no_press_and_says_why)
 {
     fresh(true);
@@ -498,5 +522,6 @@ int main(void)
     RUN(a_locked_row_takes_no_press_and_says_why);
     RUN(a_discard_brings_supplys_limits_back_from_any_list);
     RUN(a_pulse_step_keeps_the_throttle_gap);
+    RUN(a_closed_list_asks_for_no_repaint);
     return test_summary("setlist");
 }

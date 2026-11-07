@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "ui_footer.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -30,10 +31,11 @@
 #define RCARD_W (W - RCARD_X - PAD)            /**< 360px. */
 
 /**
- * @brief The lowest row a line of text may reach: 4px above the alert
- *        band, body y 492.
+ * @brief The cards' foot, on the screen's footer (ui_footer.h), and the
+ *        lowest row a line of text may reach, 8px above it: body y 428.
  */
-#define TEXT_FLOOR (UI_ALERT_Y - UI_BAND_H - 4)
+#define CARD_B     UI_FOOTER_FLOOR
+#define TEXT_FLOOR (CARD_B - 8) /**< The text floor: body y 428. */
 
 /**
  * @brief The faces of the 1024 x 600 type scale this screen draws in:
@@ -49,34 +51,34 @@
 
 #define PLOT_X  (PAD + 18)               /**< The plot's left edge: x 26. */
 #define PLOT_W  (LCARD_W - 36)           /**< Its width: 604px. */
-#define MEAN_Y  232                      /**< The mean's row, px. */
-#define REACH   164   /**< Pixels for the full divergence scale. */
-#define NUM_Y   (MEAN_Y + REACH + 14)    /**< The cell numbers' row: y 410. */
-#define VOLT_Y  (NUM_Y + 30)             /**< The voltages' row: y 440. */
+#define MEAN_Y  200                      /**< The mean's row, px. */
+#define REACH   148   /**< Pixels for the full divergence scale. */
+#define NUM_Y   (MEAN_Y + REACH + 14)    /**< The cell numbers' row: y 362. */
+#define VOLT_Y  (NUM_Y + 30)             /**< The voltages' row: y 392. */
 #define BAR_MAX 48                       /**< A bar's widest, px. */
 _Static_assert(VOLT_Y + 24 <= TEXT_FLOOR,
-               "the cells row ends above the alert band");
+               "the cells row ends above the cards' foot");
 _Static_assert(MEAN_Y - REACH - 4 >= 48, "the scale's top is under the title");
 
 /*
  * The right card, top down: the verdict box, its reason in up to two
- * wrapped lines of the 12 x 24 face (27 cells), six rows of 36px and the
+ * wrapped lines of the 12 x 24 face (27 cells), six rows of 28px and the
  * note in lines of the 10 x 20 face (33 cells).
  */
 #define VERDICT_Y 20                     /**< The verdict box's top, px. */
-#define VERDICT_H 64                     /**< Its height, px. */
-#define WHY_Y     (VERDICT_Y + VERDICT_H + 8)  /**< Its reason: y 92. */
+#define VERDICT_H 56                     /**< Its height, px. */
+#define WHY_Y     (VERDICT_Y + VERDICT_H + 8)  /**< Its reason: y 84. */
 #define WHY_PITCH 26                     /**< A wrapped line of the reason. */
 #define WHY_LINES 2                      /**< The lines the reason takes. */
-#define RULE1_Y   (WHY_Y + WHY_LINES * WHY_PITCH + 8)  /**< y 152. */
-#define ROW_Y     (RULE1_Y + 8)          /**< The first row: y 160. */
-#define ROW_PITCH 36                     /**< A row, px. */
-#define RULE2_Y   (ROW_Y + 6 * ROW_PITCH + 6)          /**< y 382. */
-#define NOTE_Y    (RULE2_Y + 10)         /**< The note: y 392. */
+#define RULE1_Y   (WHY_Y + WHY_LINES * WHY_PITCH + 8)  /**< y 144. */
+#define ROW_Y     (RULE1_Y + 8)          /**< The first row: y 152. */
+#define ROW_PITCH 28                     /**< A row, px. */
+#define RULE2_Y   (ROW_Y + 6 * ROW_PITCH + 6)          /**< y 326. */
+#define NOTE_Y    (RULE2_Y + 10)         /**< The note: y 336. */
 #define NOTE_PITCH 22                    /**< A wrapped line of the note. */
 #define NOTE_LINES 4                     /**< The lines the note takes. */
 _Static_assert(NOTE_Y + NOTE_LINES * NOTE_PITCH <= TEXT_FLOOR,
-               "the note ends above the alert band");
+               "the note ends above the cards' foot");
 /*
  * The scale floor, in millivolts at full deflection.
  *
@@ -505,11 +507,13 @@ static void render(gfx_canvas_t *c, int buffer_index)
     s.drawn[buf] = s.rev;
     gfx_clear(c, ui_theme_color(UI_C_BG));
 
-    ui_card(c, (gfx_rect_t){ PAD, PAD, LCARD_W, (int16_t)(H - 2 * PAD) },
+    ui_card(c, (gfx_rect_t){ PAD, PAD, LCARD_W, (int16_t)(CARD_B - PAD) },
             ui_theme_color(UI_C_PANEL));
     ui_card(c, (gfx_rect_t){ RCARD_X, PAD, RCARD_W,
-                             (int16_t)(H - 2 * PAD) },
+                             (int16_t)(CARD_B - PAD) },
             ui_theme_color(UI_C_PANEL));
+    /* The footer: the screen's name; BATTERY has no hold and no list. */
+    ui_footer_name(c, ui_footer_rect(UI_FOOTER_NAME), "BATTERY", NULL, false);
     gfx_text(c, PLOT_X, 20, TR(BAT_DIVERGENCE), BT_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
     draw_cells(c);

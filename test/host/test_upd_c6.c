@@ -226,20 +226,20 @@ TEST_CASE(sliding_off_and_leaving_abandon_the_hold)
 TEST_CASE(one_press_at_a_time_with_the_iomcu_hold)
 {
     on_updates();
-    /* A finger on REMINDER AT START first: the row takes no second one. */
-    ev(TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_REMIND_Y);
+    /* A finger on SETTINGS first: the row takes no second one. */
+    ev(TOUCH_EVENT_DOWN, 1, UP_SET_X, UP_SET_Y);
     ev(TOUCH_EVENT_DOWN, 2, UP_C6_X, UP_C6_Y);
     CHECK(!upd_c6_pressed());
     upd()->tick(3.0f);
     CHECK(!upd_c6_take());
-    ev(TOUCH_EVENT_UP, 1, UP_BTN_X, UP_REMIND_Y);
+    ev(TOUCH_EVENT_UP, 1, UP_SET_X, UP_SET_Y);
+    CHECK(upd()->covered());               /* that tap opened the list */
     /* And the row's press holds UPDATES' other buttons off. */
     on_updates();
     ev(TOUCH_EVENT_DOWN, 1, UP_C6_X, UP_C6_Y);
-    const bool remind = settings_get_bool(SET_UPD_REMIND);
-    ev(TOUCH_EVENT_DOWN, 2, UP_BTN_X, UP_REMIND_Y);
-    ev(TOUCH_EVENT_UP, 2, UP_BTN_X, UP_REMIND_Y);
-    CHECK_EQ(settings_get_bool(SET_UPD_REMIND), remind);
+    ev(TOUCH_EVENT_DOWN, 2, UP_SET_X, UP_SET_Y);
+    ev(TOUCH_EVENT_UP, 2, UP_SET_X, UP_SET_Y);
+    CHECK(!upd()->covered());
     CHECK(upd_c6_pressed());
 }
 

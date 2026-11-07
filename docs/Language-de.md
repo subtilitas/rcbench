@@ -328,7 +328,7 @@ Konfliktmarkierungen stehen.
 python3 tools/render_ui.py --fit
 ```
 
-baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 626 Ansichten auf
+baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 627 Ansichten auf
 Englisch und auf Deutsch und schlägt fehl, wenn ein Text in einer der beiden
 Sprachen
 
@@ -367,7 +367,7 @@ nicht abgedeckt.
 `test_text` deckt den Rest ab: jede ID hat Deutsch, jedes deutsche Format
 wandelt, was sein Englisch wandelt, jeder Text mit angegebener Breite passt
 in jeder Sprache hinein, Alarme und Splash-Details passen in ihre Puffer,
-übersetzte Einstellungen passen in SETUP und die TIMING-Seite, und Spalten
+übersetzte Einstellungen passen in SETUP und die Optionslisten, und Spalten
 und Beschriftungen des Berichts stehen bündig.
 
 `tools/check_docs.py` schlägt fehl, wenn eine deutsche Wiki-Seite in
@@ -381,7 +381,7 @@ ein Wort mit einer Beschriftung der Oberfläche teilen.
 
 ## Eine Sprache hinzufügen
 
-Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 3.391
+Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 3.386
 Einträge mit ID und 102 Optionen, 10 davon mit leerem Englisch.
 
 1. Ergänze die Spalte in jedem Eintrag von `shared/text/include/ui_text.def`

@@ -1920,6 +1920,11 @@ UI_TEXT(FOOT_PRESS_HELD, 60,
 UI_TEXT(FOOT_SETTINGS_ON, 94,
     "SETTINGS open with the output off only. Switch it off first.",
     "OPTIONEN nur bei Ausgang aus. Schalte ihn zuerst aus.")
+/* The alert band on a tap on UPDATES' SETTINGS while a check or a
+ * download runs, or a finger holds the download. */
+UI_TEXT(FOOT_SETTINGS_BUSY, 94,
+    "SETTINGS open with no check or download running.",
+    "OPTIONEN nur ohne laufende Suche oder Download.")
 /* The settings list's screen guide (ui_setlist.h). */
 UI_TEXT(HG_SL_TITLE_ROWS, 0,
     "SETTINGS: ROWS",
@@ -4283,18 +4288,17 @@ UI_TEXT(SP_TONES_2, 0,
 UI_TEXT(SP_SAFE_NOW, 0,
     "Throttle MIN, supply off, bench SAFE.",
     "Gas auf MIN, Netzteil aus, Prüfstand auf SAFE.")
-UI_TEXT(SP_FROM_PROFILE, 27,
-    "FROM PROFILE",
-    "AUS PROFIL")
+/* ESC STICK's SETTINGS list: the heading over the supply's two rows. */
+UI_TEXT(SP_SET_SUPPLY, 0,
+    "SUPPLY",
+    "NETZTEIL")
 UI_TEXT(SP_TIMING_TITLE, 0,
     "TIMING AND DETECTION",
     "TIMING UND ERKENNUNG")
+/* Beside TIMING AND DETECTION on ESC STICK's SETTINGS list. */
 UI_TEXT(SP_TIMING_NOTE, 0,
-    "No ESC recordings are available. All values are defaults, not measurements.",
-    "Es gibt keine ESC-Aufzeichnungen. Alle Werte sind Vorgaben, keine Messwerte.")
-UI_TEXT(SP_DEFAULTS, 0,
-    "DEFAULTS",
-    "VORGABEN")
+    "Defaults, not measured: no ESC recordings exist.",
+    "Vorgaben, keine Messwerte: keine ESC-Aufzeichnungen.")
 UI_TEXT(SP_CHANGE, 0,
     "CHANGE",
     "ÄNDERN")
@@ -7841,21 +7845,9 @@ UI_TEXT(UP_CLOSE, 0,
 UI_TEXT(UPD_CHECK, 0,
     "CHECK FOR UPDATES",
     "NACH UPDATES SUCHEN")
-UI_TEXT(UPD_REMIND_ON, 0,
-    "REMINDER AT START: ON",
-    "ERINNERUNG BEIM START: EIN")
-UI_TEXT(UPD_REMIND_OFF, 0,
-    "REMINDER AT START: OFF",
-    "ERINNERUNG BEIM START: AUS")
-UI_TEXT(UPD_CHAN_STABLE, 0,
-    "RELEASES: STABLE",
-    "RELEASES: STABLE")
-UI_TEXT(UPD_CHAN_TESTING, 0,
-    "RELEASES: TESTING",
-    "RELEASES: TESTING")
 UI_TEXT(UPD_HOLD_DL, 0,
     "HOLD 2s TO DOWNLOAD & INSTALL",
-    "2s HALTEN ZUM LADEN & INSTALLIEREN")
+    "2s HALTEN: LADEN & INSTALLIEREN")
 UI_TEXT(UPD_KEEP_NET, 0,
     "Save a network on WI-FI.",
     "Speichere ein Netzwerk unter WI-FI.")
@@ -11047,8 +11039,8 @@ UI_TEXT(IMU_CLOSE, 0,
     "CLOSE",
     "SCHLIESSEN")
 UI_TEXT(IMU_CAL_HOLD, 0,
-    "HOLD 2s: CALIBRATE ACCELEROMETER",
-    "2s HALTEN: BESCHLEUNIGUNG KALIBRIEREN")
+    "HOLD 2s: CALIBRATE",
+    "2s HALTEN: KALIBRIEREN")
 UI_TEXT(HOLD_HINT_IMU_CAL, 94,
     "Hold 2s to calibrate the accelerometer.",
     "Halte 2s, um den Beschleunigungssensor zu kalibrieren.")
@@ -11058,9 +11050,6 @@ UI_TEXT(IMU_ZERO, 0,
 UI_TEXT(IMU_UNZERO, 0,
     "CLEAR ZERO",
     "NULLPUNKT LÖSCHEN")
-UI_TEXT(IMU_SETTINGS, 0,
-    "IMU SETTINGS",
-    "IMU-OPTIONEN")
 UI_TEXT(IMU_CAL_STILL, 92,
     "KEEP IT STILL AND LEVEL FOR %us",
     "HALTE DEN SENSOR %us STILL UND WAAGERECHT")
@@ -11080,8 +11069,8 @@ UI_TEXT(IMU_NO_NAME, 0,
     "NO NAME",
     "OHNE NAMEN")
 UI_TEXT(IMU_OFF_LINE, 41,
-    "IMU OFF IN IMU SETTINGS",
-    "IMU AUS IN IMU-OPTIONEN")
+    "IMU OFF: SEE SETTINGS",
+    "IMU AUS: SIEHE OPTIONEN")
 UI_TEXT(IMU_RATE_AGE, 0,
     "RATE %.1fHz  AGE %ums",
     "RATE %.1fHz  ALTER %ums")

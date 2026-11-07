@@ -429,7 +429,7 @@ static inline void draw(void)
 #define NUM_X        LV_IM_BTN_CX(1)
 #define BACK_X       LV_IM_BTN_CX(2)
 #define PLOT_X       LV_IM_BTN_CX(3)
-#define FOOT_CY      LV_FOOT_CY
+#define FOOT_CY      LV_BR_FOOT_CY
 #define OPEN_X       LV_OPEN_CX
 #define DELETE_X     LV_DELETE_CX
 #define RESCAN_X     LV_RESCAN_CX
@@ -445,6 +445,15 @@ static inline void draw(void)
 /** @brief Selects row @p index of the file list with one tap and opens it with a second. */
 static inline void open_file(int index)
 {
+    if (index >= BR_ROWS_SEEN) {
+        /* Below the rows shown: the list dragged up until it is the last
+         * of them, a row's pitch a step. */
+        const int k = index - BR_ROWS_SEEN + 1;
+        send(TOUCH_EVENT_DOWN, 400, BR_ROW_Y(0));
+        send(TOUCH_EVENT_MOVE, 400, BR_ROW_Y(0) - k * LV_ROW_PITCH - 1);
+        send(TOUCH_EVENT_UP, 400, BR_ROW_Y(0) - k * LV_ROW_PITCH - 1);
+        index = BR_ROWS_SEEN - 1;
+    }
     tap(400, BR_ROW_Y(index)); /* select */
     tap(400, BR_ROW_Y(index)); /* open   */
 }

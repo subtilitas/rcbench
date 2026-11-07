@@ -263,7 +263,7 @@ static bool in_viewer(const char *name, const char *dir)
 /* Geometry mirrored from the screen (logview_spots.h), in its own
  * coordinates. */
 #define BR_ROW_Y(i) LV_ROW_CY(i)
-#define FOOT_CY     LV_FOOT_CY
+#define FOOT_CY     LV_BR_FOOT_CY
 #define OPEN_X      LV_OPEN_CX
 #define DELETE_X    LV_DELETE_CX
 #define DQ_CY       LV_DQ_CY

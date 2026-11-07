@@ -7,11 +7,12 @@
  *
  * If the layout moves these move with it.  Taken by the screens' suites.
  *
- *   - UPDATES, in the body under the band: the buttons 460 x 56px from
- *     x 16 at a 64px pitch from y 16 (CHECK, the reminder, RELEASES, the
- *     download's hold); the IOmcu's hold 460 x 56px at y 428; the card
- *     x 484 to 1016, y 16 to 384; the C6 RADIO hold 532 x 56px from x 484
- *     at y 428;
+ *   - UPDATES, in the body under the band: CHECK 460 x 56px from x 16 at
+ *     y 16; the IOmcu's hold 460 x 56px at y 380; the card x 484 to 1016,
+ *     y 16 to 336; the C6 RADIO hold 532 x 56px from x 484 at y 380; the
+ *     footer (ui_footer.h) at y 444, 48px tall: the download's hold in its
+ *     middle slot from x 348, SETTINGS in its right slot from x 686, each
+ *     328px wide;
  *   - the reminder, in the body: NOT NOW and NEVER REMIND ME 398 x 56px
  *     at y 328 from x 106 and 520, the hold 812 x 64px at y 400 from
  *     x 106;
@@ -29,19 +30,19 @@
 #define UP_BTN_X       246      /**< UPDATES' buttons' middle column. */
 #define UP_BTN_W       460      /**< Their width, px. */
 #define UP_BTN_H       56       /**< Their height, px. */
-/** @brief The middle row of UPDATES' button in row @p r: 0 CHECK, 1 the
- *         reminder, 2 RELEASES, 3 the download's hold. */
-#define UP_ROW_Y(r)    (16 + (r) * 64 + 28)
-#define UP_CHECK_Y     UP_ROW_Y(0)   /**< CHECK FOR UPDATES. */
-#define UP_REMIND_Y    UP_ROW_Y(1)   /**< REMINDER AT START. */
-#define UP_CHAN_Y      UP_ROW_Y(2)   /**< RELEASES. */
-#define UP_DL_Y        UP_ROW_Y(3)   /**< HOLD 2s: DOWNLOAD & INSTALL. */
-#define UP_CU_T        428      /**< HOLD 2s: UPDATE IOMCU's top. */
+#define UP_CHECK_Y     (16 + 28)     /**< CHECK FOR UPDATES' middle row. */
+#define UP_FOOT_T      444      /**< The footer's top. */
+#define UP_FOOT_Y      (UP_FOOT_T + 24)  /**< Its middle row. */
+#define UP_DL_X        512      /**< HOLD 2s TO DOWNLOAD & INSTALL's middle. */
+#define UP_DL_Y        UP_FOOT_Y     /**< Its middle row. */
+#define UP_SET_X       850      /**< SETTINGS' middle. */
+#define UP_SET_Y       UP_FOOT_Y     /**< Its middle row. */
+#define UP_CU_T        380      /**< HOLD 2s: UPDATE IOMCU's top. */
 #define UP_CU_Y        (UP_CU_T + 28)  /**< Its middle row. */
 #define UP_CARD_X      484      /**< The card's left edge. */
-#define UP_CARD_B      384      /**< The row under the card's foot. */
+#define UP_CARD_B      336      /**< The row under the card's foot. */
 #define UP_C6_X        750      /**< HOLD 2s TO UPDATE THE C6 RADIO's middle. */
-#define UP_C6_T        428      /**< Its top, the IOmcu hold's row. */
+#define UP_C6_T        380      /**< Its top, the IOmcu hold's row. */
 #define UP_C6_Y        (UP_C6_T + 28)  /**< Its middle row. */
 
 #define UP_R_IGNORE_X  305      /**< NOT NOW. */

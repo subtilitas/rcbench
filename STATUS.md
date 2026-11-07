@@ -432,7 +432,8 @@ port line, ARM and SETTINGS, and an output card whose PORT button names the targ
 is asked, and while the programmer holds the port (`test_servo_port_button`,
 `test_servo_workbench`). No list, page of rows or PORT list opens while a finger holds
 another press on the screen or a session holds its port, and a page closes as the bench
-goes live (`test_servo_list_guards`, `test_servo_settings_holds`).
+goes live (`test_servo_list_guards`, `test_servo_settings_holds`). The lists' rows
+read and step their values and name why a row takes no press (`test_servo_lists_rows`).
 
 The hub's SETTINGS list sets the type (STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI
 TAIL 760), the frame rate, the pulse widths, trim, travel and reverse for the session under
@@ -1276,7 +1277,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 497 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 499 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1376,7 +1377,7 @@ The host suite is 497 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_wifi_kept`, `test_wifi_layout`, `test_fw_image`, `test_fw_c6`, `test_fw_install`, `test_fw_trial`,
 `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_wa_session`,
 `test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_channel`, `test_wa_fetch_task`,
-`test_upd_screen`, `test_upd_c6`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`,
+`test_upd_screen`, `test_upd_settings`, `test_upd_c6`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`,
 `test_wa_page`, `test_wa_page_de`, `test_wa_hl`, `test_wa_edit`, `test_wa_mdns`,
 `test_wa_guard`, `test_wa_kept`, `test_wa_cookie`, `test_wa_api`, `test_wa_api_file`,
 `test_wa_api_write`, `test_sense_i2c`, `test_storage`, `test_storage_swap`, `test_text_buf`,
@@ -1851,8 +1852,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 902 committed screenshots to the current render,
-451 in English and the same 451 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` holds 904 committed screenshots to the current render,
+452 in English and the same 452 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -1916,8 +1917,8 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/supply_draw.c` | 403 | 387 | 96.0% |
 | `shared/ui/supply_settings.c` | 154 | 147 | 95.5% |
 | `shared/ui/supply_guide.c` | 79 | 79 | 100.0% |
-| `shared/ui/prog5v_box.c` | 190 | 190 | 100.0% |
-| `shared/ui/prog_choice.c` | 126 | 125 | 99.2% |
+| `shared/ui/prog5v_box.c` | 193 | 193 | 100.0% |
+| `shared/ui/prog_choice.c` | 127 | 126 | 99.2% |
 | `shared/ui/ui_keypad.c` | 290 | 288 | 99.3% |
 | `shared/ui/ui_setting_keypad.c` | 118 | 115 | 97.5% |
 | `shared/ui/ui_textkey.c` | 523 | 509 | 97.3% |
@@ -1930,58 +1931,61 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_screen.c` | 380 | 371 | 97.6% |
 | `shared/ui/servo_screen_sweep.c` | 513 | 510 | 99.4% |
 | `shared/ui/servo_screen_link.c` | 420 | 416 | 99.0% |
-| `shared/ui/servo_screen_touch.c` | 329 | 316 | 96.0% |
-| `shared/ui/servo_screen_draw.c` | 556 | 530 | 95.3% |
-| `shared/ui/servo_settings_panel.c` | 671 | 614 | 91.5% |
+| `shared/ui/servo_screen_touch.c` | 343 | 330 | 96.2% |
+| `shared/ui/servo_screen_draw.c` | 572 | 543 | 94.9% |
+| `shared/ui/servo_settings_panel.c` | 678 | 639 | 94.2% |
 | `shared/ui/servo_settings_draw.c` | 393 | 377 | 95.9% |
-| `shared/ui/servo_test_panel.c` | 478 | 467 | 97.7% |
+| `shared/ui/servo_test_panel.c` | 479 | 468 | 97.7% |
 | `shared/ui/servo_limit_panel.c` | 467 | 421 | 90.2% |
 | `shared/ui/servo_limit_seam.c` | 100 | 96 | 96.0% |
-| `shared/ui/servo_workbench.c` | 205 | 201 | 98.0% |
-| `shared/ui/servo_rudder_panel.c` | 398 | 395 | 99.2% |
-| `shared/ui/servo_rudder_auto_panel.c` | 554 | 499 | 90.1% |
+| `shared/ui/servo_workbench.c` | 215 | 207 | 96.3% |
+| `shared/ui/servo_rudder_panel.c` | 402 | 395 | 98.3% |
+| `shared/ui/servo_rudder_auto_panel.c` | 564 | 510 | 90.4% |
+| `shared/ui/servo_rudder_auto_ready.c` | 273 | 239 | 87.5% |
+| `shared/ui/servo_ready.c` | 301 | 268 | 89.0% |
 | `shared/ui/servo_rudder_flap.c` | 101 | 99 | 98.0% |
-| `shared/ui/servo_guide.c` | 142 | 139 | 97.9% |
+| `shared/ui/servo_guide.c` | 154 | 151 | 98.0% |
 | `shared/ui/servo_fn.c` | 82 | 81 | 98.8% |
-| `shared/ui/servo_hub.c` | 183 | 178 | 97.3% |
-| `shared/ui/servo_footer.c` | 123 | 120 | 97.6% |
-| `shared/ui/servo_lists.c` | 168 | 111 | 66.1% |
+| `shared/ui/servo_hub.c` | 184 | 179 | 97.3% |
+| `shared/ui/servo_footer.c` | 133 | 130 | 97.7% |
+| `shared/ui/servo_lists.c` | 189 | 186 | 98.4% |
 | `shared/ui/kst_panel.c` | 456 | 445 | 97.6% |
 | `shared/ui/kst_panel_text.c` | 168 | 168 | 100.0% |
 | `shared/ui/kst_panel_warn.c` | 309 | 306 | 99.0% |
 | `shared/ui/kst_panel_edit.c` | 385 | 377 | 97.9% |
-| `shared/ui/kst_panel_touch.c` | 237 | 234 | 98.7% |
-| `shared/ui/kst_panel_run.c` | 152 | 142 | 93.4% |
+| `shared/ui/kst_panel_touch.c` | 239 | 236 | 98.7% |
+| `shared/ui/kst_panel_run.c` | 154 | 144 | 93.5% |
 | `shared/ui/kst_panel_draw.c` | 563 | 561 | 99.6% |
 | `shared/ui/esc_wire_panel.c` | 573 | 544 | 94.9% |
-| `shared/ui/hitec_panel.c` | 267 | 267 | 100.0% |
+| `shared/ui/hitec_panel.c` | 270 | 270 | 100.0% |
 | `shared/ui/hitec_panel_text.c` | 474 | 469 | 99.0% |
 | `shared/ui/hitec_panel_edit.c` | 399 | 397 | 99.5% |
 | `shared/ui/hitec_panel_page.c` | 235 | 235 | 100.0% |
-| `shared/ui/hitec_panel_touch.c` | 215 | 214 | 99.5% |
+| `shared/ui/hitec_panel_touch.c` | 217 | 216 | 99.5% |
 | `shared/ui/hitec_panel_draw.c` | 285 | 284 | 99.7% |
 | `shared/ui/hitec_panel_file.c` | 230 | 230 | 100.0% |
 | `shared/ui/hitec_panel_run.c` | 105 | 105 | 100.0% |
 | `shared/ui/hitec_panel_move.c` | 219 | 214 | 97.7% |
-| `shared/ui/analyser_screen.c` | 257 | 256 | 99.6% |
-| `shared/ui/balance_screen.c` | 382 | 382 | 100.0% |
-| `shared/ui/battery_screen.c` | 222 | 217 | 97.8% |
-| `shared/ui/esc_stick_pages.c` | 111 | 106 | 95.5% |
-| `shared/ui/esc_stick_panel.c` | 497 | 481 | 96.8% |
+| `shared/ui/analyser_screen.c` | 258 | 257 | 99.6% |
+| `shared/ui/balance_screen.c` | 383 | 383 | 100.0% |
+| `shared/ui/battery_screen.c` | 223 | 218 | 97.8% |
+| `shared/ui/esc_stick_pages.c` | 117 | 112 | 95.7% |
+| `shared/ui/esc_stick_panel.c` | 493 | 477 | 96.8% |
 | `shared/ui/esc_stick_list.c` | 299 | 283 | 94.7% |
-| `shared/ui/esc_stick_touch.c` | 359 | 357 | 99.4% |
-| `shared/ui/esc_stick_draw.c` | 466 | 454 | 97.4% |
-| `shared/ui/esc_stick_draw_run.c` | 573 | 518 | 90.4% |
-| `shared/ui/log_viewer_screen.c` | 325 | 315 | 96.9% |
+| `shared/ui/esc_stick_touch.c` | 276 | 274 | 99.3% |
+| `shared/ui/esc_stick_settings.c` | 71 | 69 | 97.2% |
+| `shared/ui/esc_stick_draw.c` | 418 | 406 | 97.1% |
+| `shared/ui/esc_stick_draw_run.c` | 575 | 529 | 92.0% |
+| `shared/ui/log_viewer_screen.c` | 325 | 316 | 97.2% |
 | `shared/ui/log_viewer_load.c` | 234 | 212 | 90.6% |
-| `shared/ui/log_viewer_draw.c` | 418 | 405 | 96.9% |
-| `shared/ui/log_viewer_events.c` | 443 | 431 | 97.3% |
+| `shared/ui/log_viewer_draw.c` | 420 | 407 | 96.9% |
+| `shared/ui/log_viewer_events.c` | 451 | 439 | 97.3% |
 | `shared/ui/logs_strip.c` | 40 | 37 | 92.5% |
 | `shared/ui/log_select.c` | 56 | 56 | 100.0% |
 | `shared/ui/files_screen.c` | 691 | 666 | 96.4% |
 | `shared/ui/layout_screen.c` | 141 | 140 | 99.3% |
-| `shared/ui/files_draw.c` | 339 | 328 | 96.8% |
-| `shared/ui/files_events.c` | 222 | 221 | 99.5% |
+| `shared/ui/files_draw.c` | 341 | 330 | 96.8% |
+| `shared/ui/files_events.c` | 228 | 227 | 99.6% |
 | `shared/ui/files_text.c` | 161 | 148 | 91.9% |
 | `shared/ui/text_view.c` | 385 | 378 | 98.2% |
 | `shared/ui/text_view_draw.c` | 270 | 253 | 93.7% |
@@ -1989,7 +1993,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/settings_screen.c` | 281 | 273 | 97.2% |
 | `shared/ui/settings_draw.c` | 66 | 66 | 100.0% |
 | `shared/ui/settings_rows.c` | 36 | 35 | 97.2% |
-| `shared/ui/ui_setlist.c` | 620 | 601 | 96.9% |
+| `shared/ui/ui_setlist.c` | 625 | 606 | 97.0% |
 | `shared/ui/ui_setlist_draw.c` | 283 | 263 | 92.9% |
 | `shared/ui/ui_footer.c` | 42 | 41 | 97.6% |
 | `shared/ui/sensors_pane.c` | 107 | 107 | 100.0% |
@@ -2013,13 +2017,14 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/wifi_view.c` | 15 | 15 | 100.0% |
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
 | `shared/ui/coproc_update_screen.c` | 276 | 276 | 100.0% |
-| `shared/ui/upd_screen.c` | 641 | 619 | 96.6% |
+| `shared/ui/upd_screen.c` | 661 | 635 | 96.1% |
+| `shared/ui/upd_settings.c` | 43 | 38 | 88.4% |
 | `shared/ui/upd_c6.c` | 115 | 113 | 98.3% |
 | `shared/ui/imu_ctl.c` | 98 | 98 | 100.0% |
 | `shared/ui/imu_ble.c` | 134 | 133 | 99.2% |
 | `shared/ui/imu_sensor.c` | 202 | 202 | 100.0% |
 | `shared/ui/imu_screen.c` | 308 | 300 | 97.4% |
-| `shared/ui/imu_screen_draw.c` | 130 | 129 | 99.2% |
+| `shared/ui/imu_screen_draw.c` | 132 | 131 | 99.2% |
 | `shared/settings/settings.c` | 423 | 416 | 98.3% |
 | `shared/settings/settings_sensors.c` | 150 | 149 | 99.3% |
 | `shared/settings/settings_text.c` | 14 | 13 | 92.9% |
@@ -2070,6 +2075,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/servo/servo_rudder_auto.c` | 472 | 462 | 97.9% |
 | `shared/servo/servo_rudder_auto_report.c` | 244 | 244 | 100.0% |
 | `shared/servo/servo_limrun_family.c` | 29 | 29 | 100.0% |
+| `shared/servo/servo_start_seq.c` | 168 | 159 | 94.6% |
 | `protocols/openyge/openyge_frame.c` | 172 | 169 | 98.3% |
 | `protocols/openyge/openyge_status.c` | 39 | 39 | 100.0% |
 | `protocols/openyge/openyge_params.c` | 66 | 66 | 100.0% |
@@ -2248,7 +2254,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **85591** | **83867** | **98.0%** |
+| **total** | **86487** | **84748** | **98.0%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

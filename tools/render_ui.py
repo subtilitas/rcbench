@@ -785,6 +785,8 @@ SCREENS = {
     # Its C6 RADIO row with the C6 as shipped: no version reported, the
     # hold that updates it to the carried image.
     "updates-c6": ("updates-c6.png", "updates", "dark"),
+    # Its SETTINGS list: the reminder at start and RELEASES.
+    "updates-settings": ("updates-settings.png", "updates", "dark"),
     "upd-remind": ("upd-remind.png", "upd-remind", "dark"),
     "panel-download": ("panel-download.png", "panel-update", "dark"),
     "panel-download-failed": ("panel-download-failed.png", "panel-update",
@@ -1120,7 +1122,7 @@ FIT_ONLY.update({f"outputs-cat-{i}": (None, "outputs", "dark")
 # by design, so a fill drawn over a string is not a finding there.
 OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot",
                  "overview-alert", "hold-hint-arm", "hold-hint-output",
-                 "setup-folder", "servo-name",
+                 "setup-folder", "servo-name", "files-new",
                  "files-edit-unsaved", "files-edit-revert",
                  "files-edit-open", "files-edit-changed", "files-edit-see25",
                  "files-edit-see50"} | {

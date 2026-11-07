@@ -10,17 +10,18 @@
  *   - the LOGS tile's strip y 5 to 45, the trough to y 48;
  *   - a pane's header row y 52 to 100: UP 312px from the pane's left, PREV
  *     and NEXT 88 x 48px at its right end;
- *   - a pane's list from y 108: 5 rows under a 30px heading at a pitch of
+ *   - a pane's list from y 108: 4 rows under a 30px heading at a pitch of
  *     48px, 420px wide from 8px in; the scroll bar 56px wide, 8px
- *     in from the pane's right, from y 138, 236px tall;
- *   - the message line y 388 to 436;
- *   - the footer y 440 to 492: RESCAN 140px at x 8, then COPY, MOVE,
+ *     in from the pane's right, from y 138, 188px tall;
+ *   - the message line y 336 to 384;
+ *   - the row of buttons y 388 to 436: RESCAN 140px at x 8, then COPY, MOVE,
  *     RENAME, DELETE, NEW, INFO and OPEN 118px wide from x 154 at a pitch
  *     of 124px, OPEN at x 898;
  *   - the DELETE question's CANCEL x 186 and DELETE x 538, the progress
  *     box's CANCEL x 362, 300 x 56px from y 304; INFO's CLOSE x 362,
  *     300 x 56px from y 364;
- *   - NEW's choice from x 468, y 312: FOLDER and TEXT FILE, 56px rows;
+ *   - NEW's choice from x 468, y 260: FOLDER and TEXT FILE, 56px rows;
+ *   - the screen's footer y 444 to 492: SETTINGS x 686 to 1014;
  *   - the text viewer: its rows from x 32, y 66, 20px apart (16px with
  *     SMALL); its scroll bar 56px wide at x 956, from y 64, 364px tall;
  *     SMALL 140 x 52px at x 8, PAGE UP at x 730 and PAGE DOWN at x 876,
@@ -38,7 +39,7 @@
 #define FS_SPOT_ROW_CX(i)  (FS_SPOT_PANE_X(i) + 218)
 #define FS_SPOT_ROW_CY(r)  (108 + 30 + (r) * 48 + 22)
 #define FS_SPOT_ROW_TOP(r) (108 + 30 + (r) * 48)    /**< A row's top. */
-#define FS_SPOT_ROWS       5                       /**< Rows on screen. */
+#define FS_SPOT_ROWS       4                       /**< Rows on screen. */
 #define FS_SPOT_ROW_X0(i)  (FS_SPOT_PANE_X(i) + 8) /**< A row's left. */
 #define FS_SPOT_ROW_X1(i)  (FS_SPOT_PANE_X(i) + 427) /**< Its last column. */
 /** @brief The middle of pane @p i's UP, PREV and NEXT. */
@@ -50,12 +51,14 @@
  *         height. */
 #define FS_SPOT_BAR_CX(i)  (FS_SPOT_PANE_X(i) + 464)
 #define FS_SPOT_BAR_TOP    138
-#define FS_SPOT_BAR_H      236
+#define FS_SPOT_BAR_H      188
 /** @brief The middle of footer button @p b: 0 RESCAN to 7 OPEN. */
 #define FS_SPOT_FOOT_CX(b) (((b) == 0) ? 78 : 154 + ((b) - 1) * 124 + 59)
-#define FS_SPOT_FOOT_CY    466
-#define FS_SPOT_FOOT_Y     440                     /**< The footer's top. */
-#define FS_SPOT_FOOT_BOT   492                     /**< Its foot. */
+#define FS_SPOT_FOOT_CY    412
+#define FS_SPOT_FOOT_Y     388                     /**< The footer's top. */
+#define FS_SPOT_SET_CX     850                     /**< The screen footer's SETTINGS. */
+#define FS_SPOT_SET_CY     468                     /**< Its middle row. */
+#define FS_SPOT_FOOT_BOT   436                     /**< Its foot. */
 /** @brief The boxes' buttons. */
 #define FS_SPOT_BOX_CY     332
 #define FS_SPOT_Q_CANCEL_CX 336
@@ -65,9 +68,12 @@
 #define FS_SPOT_CLOSE_CY   392
 /** @brief NEW's rows: FOLDER, TEXT FILE. */
 #define FS_SPOT_NEW_CX     618
-#define FS_SPOT_NEW_CY(i)  (312 + 4 + (i) * 56 + 28)
+#define FS_SPOT_NEW_CY(i)  (260 + 4 + (i) * 56 + 28)
+/** @brief The text viewer's button row: its top and height. */
+#define FS_SPOT_TV_FOOT_Y  440
+#define FS_SPOT_TV_FOOT_H  52
 /** @brief The message line's top. */
-#define FS_SPOT_MSG_Y      388
+#define FS_SPOT_MSG_Y      336
 
 /** @brief The footer's buttons, as fs_foot_t numbers them. */
 enum {

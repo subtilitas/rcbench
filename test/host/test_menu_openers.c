@@ -4,7 +4,8 @@
  * LIMITS, DUT's AS5600 button to SENSORS, UPDATES' and LOGS' buttons to WI-FI
  * and the TARGET row from a programmer asking for a port.  Each one's way back by the
  * home tag, its refusal while the target refuses, a busy target, what a later
- * entry by a tile finds, and the rule that no text names a path.
+ * entry by a tile finds, LOGS' and FILES' SETTINGS to SD CARD, and the rule
+ * that no text names a path.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -23,7 +24,9 @@
 /** @brief UPDATES' button that opens WI-FI: on the card, under its two lines. */
 #define UPD_NET    750, (UI_BAND_H + 120)
 /** @brief LOGS' WI-FI button. */
-#define LOGS_WIFI  LV_WIFI_CX, (UI_BAND_H + LV_FOOT_CY)
+#define LOGS_WIFI  LV_WIFI_CX, (UI_BAND_H + LV_BR_FOOT_CY)
+/** @brief The footer's SETTINGS (ui_footer.h), as LOGS and FILES draw it. */
+#define FOOT_SET   850, (UI_BAND_H + 468)
 /** @brief SETUP's WI-FI tile, the 5th. */
 #define WIFI_TILE  4
 /** @brief The leave warning's buttons (test_settings_leave.c). */
@@ -486,6 +489,24 @@ TEST_CASE(wifi_returns_to_what_opened_it_this_time)
     CHECK_EQ(ui_router_current(), SCREEN_UPDATES);
 }
 
+/* LOGS' and FILES' SETTINGS open SETUP's SD CARD list, and the tag returns to
+ * the screen that opened it. */
+TEST_CASE(logs_and_files_settings_open_sd_card_and_the_tag_returns)
+{
+    static const ui_screen_id_t k_from[] = { SCREEN_LOGS, SCREEN_FILES };
+    start();
+    for (size_t i = 0u; i < sizeof(k_from) / sizeof(k_from[0]); ++i) {
+        ui_router_goto(SCREEN_OVERVIEW);
+        ui_router_goto(k_from[i]);
+        tap(FOOT_SET);
+        CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+        CHECK_EQ(settings_screen_category(), (int)SET_CAT_CARD);
+        CHECK_EQ(ui_router_parent(SCREEN_SETUP), k_from[i]);
+        tap_home();
+        CHECK_EQ(ui_router_current(), k_from[i]);
+    }
+}
+
 /* WI-FI draws no strip and takes no tab: where the tabs were is nothing, on the
  * start screen and with the radio up. */
 TEST_CASE(wifi_has_no_strip_and_its_rows_start_under_the_band)
@@ -620,6 +641,7 @@ int main(void)
     RUN(armed_the_network_button_opens_wifi_as_the_tile_does);
     RUN(the_wifi_tile_opens_wifi_and_the_tag_returns_to_setup);
     RUN(wifi_returns_to_what_opened_it_this_time);
+    RUN(logs_and_files_settings_open_sd_card_and_the_tag_returns);
     RUN(wifi_has_no_strip_and_its_rows_start_under_the_band);
     RUN(the_way_back_from_a_failed_upload_is_what_opened_wifi);
     RUN(no_text_names_a_path_but_the_listed_ones);

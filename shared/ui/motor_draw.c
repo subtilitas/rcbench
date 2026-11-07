@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#include "esc_stick_panel.h"
 #include "motor_screen.h"
 #include "ui_band.h"
 #include "ui_hero.h"
@@ -563,7 +564,8 @@ static void render_session(gfx_canvas_t *c, unsigned bit, int buf,
     }
     const uint32_t sig = mpp_strip_signature(s.thr_proto, s.thr_pins,
                                              s.thr_pins_known, s.gate.armed);
-    if (s.drawn_ostrip[buf] != sig) {
+    /* ESC STICK's SETTINGS list covers the strip row: no strip under it. */
+    if (s.drawn_ostrip[buf] != sig && !esc_stick_settings_shown()) {
         s.drawn_ostrip[buf] = sig;
         mpp_render_strip(c, s.thr_proto, s.thr_pins, s.thr_pins_known,
                          s.gate.armed);

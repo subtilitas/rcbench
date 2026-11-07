@@ -15,6 +15,7 @@
 
 #include "log_viewer_screen.h"
 #include "settings.h"
+#include "settings_screen.h"
 #include "ui_screen.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
@@ -259,9 +260,12 @@ static void browse_event(const touch_event_t *e)
         return;     /* the tab's own press */
     }
 
-    /* PREV and NEXT are buttons only while they show. */
-    const gfx_rect_t btns[6] = { BR_RESCAN, BR_OPEN, BR_DELETE, BR_WIFI,
-                                 BR_PREV, BR_NEXT };
+    /* PREV and NEXT are buttons only while they show; the footer's
+     * SETTINGS always. */
+    const gfx_rect_t btns[LV_BTN_SETTINGS + 1] = {
+        BR_RESCAN, BR_OPEN, BR_DELETE, BR_WIFI, BR_PREV, BR_NEXT,
+        ui_footer_rect(UI_FOOTER_SETTINGS),
+    };
     const int n_btns = lv_paged() ? 6 : 4;
 
     switch (e->type) {
@@ -270,6 +274,11 @@ static void browse_event(const touch_event_t *e)
             break;
         }
         s.press_btn = hit_button(btns, n_btns, e->point.x, e->point.y);
+        if (s.press_btn < 0
+            && gfx_rect_contains(btns[LV_BTN_SETTINGS], e->point.x,
+                                 e->point.y)) {
+            s.press_btn = LV_BTN_SETTINGS;
+        }
         s.press_row = -1;
         s.dragged = false;
         s.pressing = false;
@@ -343,6 +352,11 @@ static void browse_event(const touch_event_t *e)
         } else if (on && btn == 3) {
             /* WI-FI's home tag comes back here (ui_router_parent()). */
             ui_router_goto(SCREEN_WIFI);
+            return;
+        } else if (on && btn == LV_BTN_SETTINGS) {
+            /* SETUP's SD CARD list: its home tag comes back here. */
+            ui_router_goto(SCREEN_SETUP);
+            settings_screen_open_on(SET_CAT_CARD, 0);
             return;
         } else if (on && btn == 4) {
             if (lv_can_prev()) {
