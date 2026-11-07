@@ -824,6 +824,30 @@ TEST_CASE(the_active_output_and_the_write_switch_are_the_same_in_both_modes)
     CHECK_STR_EQ(enable_label[0], enable_label[1]);
 }
 
+/* A finger on a KST control and a second on SETTINGS: the page does not
+ * cover the session, so the first finger's release still reaches KST and
+ * no warning hold runs on without it. */
+TEST_CASE(settings_waits_for_a_press_on_the_session)
+{
+    ui_router_init();
+    for (int i = 0; i < SPLASH_STEP_COUNT; ++i) {
+        splash_screen_set((splash_step_t)i, SPLASH_OK, "");
+    }
+    ui_router_tick(2.0f);
+    ui_router_goto(SCREEN_SERVO_KST);
+    fresh_screen();
+    program_open();
+    CHECK(kst_panel_is_open());
+    const gfx_rect_t r = kst_panel_tab_rect(PG_SERVO);
+    ev(cx(r), cy(r), TOUCH_EVENT_DOWN, 1);
+    CHECK(kst_panel_has_press(1));
+    ev(SETB_X, BTN_Y, TOUCH_EVENT_DOWN, 2);
+    ev(SETB_X, BTN_Y, TOUCH_EVENT_UP, 2);
+    ev(cx(r), cy(r), TOUCH_EVENT_UP, 1);
+    CHECK(!kst_panel_has_press(1));
+    CHECK(!kst_panel_pressed());
+}
+
 int main(void)
 {
     RUN(a_fresh_panel_starts_with_the_mode_off_and_the_expert_rows_absent);
@@ -845,5 +869,6 @@ int main(void)
     RUN(a_step_key_held_as_the_mode_turns_off_stops_its_repeat);
     RUN(the_fullest_pages_with_the_mode_off_end_above_their_buttons);
     RUN(the_active_output_and_the_write_switch_are_the_same_in_both_modes);
+    RUN(settings_waits_for_a_press_on_the_session);
     return test_summary("kst_panel_expert");
 }

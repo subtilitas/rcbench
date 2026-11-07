@@ -123,6 +123,13 @@ void hitec_panel_tick(float dt_s);
  * @return true for the overlay's press
  */
 bool hitec_panel_has_press(uint8_t id);
+
+/**
+ * @brief Whether any finger holds a press on the HITEC session now: a
+ *        page that covers the session waits for its release.
+ * @return true while a press is held
+ */
+bool hitec_panel_pressed(void);
 /**
  * @brief A press in the overlay's area, or the rest of one it owns.
  * @param evt the event

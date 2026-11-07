@@ -304,6 +304,11 @@ bool kst_panel_has_press(uint8_t id)
     return k.have && k.id == id;
 }
 
+bool kst_panel_pressed(void)
+{
+    return k.have;
+}
+
 /* The supply's own controls follow the port: while one is out of PWM the
  * IOmcu takes an OFF and nothing else (supply_page.h), and SUPPLY and
  * the SERVO screen's SET row offer no more than that.  A LEAVE is told

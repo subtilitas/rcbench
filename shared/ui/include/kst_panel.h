@@ -128,6 +128,13 @@ void kst_panel_tick(float dt_s);
 /** True while a press that began in the overlay is on the glass. */
 bool kst_panel_has_press(uint8_t id);
 
+/**
+ * @brief Whether any finger holds a press on the KST session now: a
+ *        page that covers the session waits for its release.
+ * @return true while a press is held
+ */
+bool kst_panel_pressed(void);
+
 /** A press in the overlay's area, or the rest of one it owns. */
 void kst_panel_event(const touch_event_t *evt);
 
