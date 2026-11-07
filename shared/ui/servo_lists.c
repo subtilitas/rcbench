@@ -31,6 +31,7 @@
 #include <string.h>
 
 #include "hitec_panel.h"
+#include "kst_panel.h"
 #include "settings.h"
 #include "ui_setlist.h"
 #include "ui_text.h"
@@ -442,8 +443,10 @@ const char *svs_list_refused(void)
 {
     /* A hold under way keeps its finger: the list would take every event,
      * the hold's release among them, and the hold would fire without the
-     * finger on it. */
-    if (s.out_down || s.p5_down || s.arm_down || s.test_down || s.lim_down) {
+     * finger on it.  A press on a programmer's session is one too: its
+     * warning holds confirm WRITE, ENABLE WRITE and RESTORE. */
+    if (s.out_down || s.p5_down || s.arm_down || s.test_down || s.lim_down
+        || kst_panel_pressed() || hitec_panel_pressed()) {
         return TR(FOOT_SETTINGS_SAFE);
     }
     if (s.fn == SERVO_FN_HUB) {
