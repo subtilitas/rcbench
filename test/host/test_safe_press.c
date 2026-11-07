@@ -352,15 +352,16 @@ TEST_CASE(servo_names_disarm_and_not_arm)
     supply_screen_set_output(true);
     CHECK(!scr->safe_at(SV_SUP_OUT_X, SV_SUP_Y));
     supply_screen_set_output(false);
-    /* KST's output card: OUTPUT OFF while the output is on; OUTPUT ON is
-     * none. */
-    const ui_screen_t *test = servo_fn_screen(SERVO_FN_KST);
+    /* KST's READY card in the output card's place: no OUTPUT OFF there.
+     * Its supply row is a safe control only while the supply its session
+     * switches reads ON (test_kst_panel_frame); without a session's supply
+     * nothing on the card stops an output, the output on or off. */
+    const ui_screen_t *kst = servo_fn_screen(SERVO_FN_KST);
     servo_screen_show_fn(SERVO_FN_KST);
-    CHECK(!test->safe_at(SV_SUP_OUT_X, SV_SUP_Y));
+    CHECK(!kst->safe_at(SV_SUP_OUT_X, SV_SUP_Y));
     supply_screen_set_output(true);
-    CHECK(test->safe_at(SV_SUP_OUT_X, SV_SUP_Y));
+    CHECK(!kst->safe_at(SV_SUP_OUT_X, SV_SUP_Y));
     supply_screen_set_output(false);
-    CHECK(!test->safe_at(SV_SUP_OUT_X, SV_SUP_Y));
     servo_screen_show_fn(SERVO_FN_LIVE);
 }
 

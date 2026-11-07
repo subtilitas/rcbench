@@ -154,13 +154,9 @@ static inline void close_settings(void) { go(SERVO_RIG_FN); }
 static inline void open_test(void)      { go(SERVO_FN_TEST); }
 static inline void open_limrun(void)    { go(SERVO_FN_LIMRUN); }
 static inline void open_sweep(void)     { go(SERVO_FN_SWEEP); }
-/* KST's session, and its CLOSE. */
+/* KST's session, and the home tag over it: the session's way back. */
 static inline void open_kst(void)       { go(SERVO_FN_KST); }
-static inline void close_kst(void)
-{
-    const gfx_rect_t r = kst_panel_close_rect();
-    tap(r.x + r.w / 2, r.y + r.h / 2);
-}
+static inline void close_kst(void)      { (void)scr->back(); }
 /* TEST's SETTINGS list (servo_test_list.c), row by row: four headings
  * and the automatic test's 17 rows. */
 enum {

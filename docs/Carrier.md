@@ -99,8 +99,9 @@ on every board; it switches it off at once. A PROG 5V switched on while
 ARMED leaves the pulse off until the next SAFE: the limit run then reads
 `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM`.
 
-PORT PWM is on OUTPUTS. The PROG 5V box is on SUPPLY and on SERVO's
-KST and HITEC. A PROG 5V switched on from SERVO stays on
+PORT PWM is on OUTPUTS. The PROG 5V box is on SUPPLY; SERVO switches
+the 5V through ARM and ARM + START ([The PROG 5V box](#the-prog-5v-box)).
+A PROG 5V switched on from SERVO stays on
 from one SERVO screen to another, the hub included. Leaving SERVO switches
 it off.
 
@@ -133,16 +134,16 @@ off.
 
 M7's fixed 5V supplies the programming ports independently of the PD
 mini. During a KST or Hitec session, the operator retains control of the
-PD mini: SUPPLY and the SERVO screen's SET row accept OUTPUT ON and set
-points that they would refuse during a session on other boards. KST and
+PD mini: SUPPLY accepts OUTPUT ON and set
+points that it would refuse during a session on other boards. KST and
 Chaservo servos are programmed at 5V. On the carrier, the programmers
 cannot change the programming-port voltage. Their MORE list reads
 `PROGRAMMING VOLTAGE: 5V FIXED, GPIO 21` and offers no voltage or current
 setting.
 
 The KST and Hitec programmers switch GPIO 21 on and off for a session,
-through the PROG_SUPPLY page (link 4.32). The PROG 5V box on SERVO's
-output card and on SUPPLY's LIVE task switches it by hand: PROG 5V ON is a
+through the PROG_SUPPLY page (link 4.32). The PROG 5V box on SUPPLY's
+LIVE task switches it by hand: PROG 5V ON is a
 2s hold, PROG 5V OFF a tap, taken with the bench SAFE or ARMED, as the PD
 mini's OUTPUT ON is. The box names the pin, `PROG PORTS 5V, GPIO 21: OFF`,
 and shows the last 50ms window of 0x40 CH3, `5.02V  0.120A`
@@ -168,8 +169,10 @@ pull-down on EN holds M7 off.
 
 ### The PROG 5V box
 
-The PROG 5V box on SERVO and SUPPLY switches the 5V by hand: PROG 5V ON is
-a 2s hold, PROG 5V OFF a tap. The panel judges the ON as it judges the PD
+The PROG 5V box on SUPPLY switches the 5V by hand: PROG 5V ON is a 2s
+hold, PROG 5V OFF a tap. SERVO has no box: ARM on LIVE, SWEEP and RUDDER
+and ARM + START on LIMIT RUN and RUDDER AUTO switch the 5V on, and on KST
+and HITEC a tap on the READY card's supply row switches it off. The panel judges the ON as it judges the PD
 mini's OUTPUT ON:
 
 - It is taken with the bench SAFE or ARMED; no switch to ARMED is asked.

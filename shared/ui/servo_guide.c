@@ -2,23 +2,23 @@
  * @file
  * @brief The SERVO screens' guide pages (ui_help.h): the hub's (servo_hub.c),
  *        a SETTINGS list's (ui_setlist.h), or on a function screen a page or
- *        two for its function on the left card, then the output card's two
- *        pages.
+ *        two for its function on the left card, then its READY card's.
  *
  * A function's page takes the dock on the right and marks the left card in
  * the live half, x 0 to 528; a control that runs past x 528 is marked up
- * to there, the part the screen shows (ui_help_add()).  The output card's
+ * to there, the part the screen shows (ui_help_add()).  The right card's
  * pages take the dock on the left, over the left card, and keep the PORT
- * button in view; on RUDDER AUTO, TEST and LIMIT RUN the READY card's page
- * takes their place, on LIVE, SWEEP and RUDDER the READY rows' page and the
- * controls' page under them: they are the only ones on KST and HITEC, whose
- * session fills the left card.  No page is offered while ARMED: either dock covers
- * part of DISARM in the footer's middle slot.  A page whose dock would cover a control that stops an output is
- * not offered while that control shows: a function's page while the
- * supply's output is on (OUTPUT OFF on the SET row), the output card's
- * while a run, a limit run or AUTO runs (its STOP on the left card).  A
- * keypad, a keyboard, a choice list, a warning, a question and a page of
- * rows take the guide away: none of them has pages.
+ * button in view: on RUDDER AUTO, TEST and LIMIT RUN the READY card's
+ * page, on LIVE, SWEEP and RUDDER the READY rows' page and the controls'
+ * page under them.  On KST and HITEC, whose session fills the left card,
+ * the READY card's page with WRITE n VALUES is the only one.  No page is
+ * offered while ARMED: either dock covers part of DISARM in the footer's
+ * middle slot.  A page whose dock would cover a control that stops an
+ * output is not offered while that control shows: a READY card's page
+ * while a run, a limit run or AUTO runs, or while ARM's steps run (the
+ * footer's hold stops them).  A keypad, a keyboard, a choice list, a
+ * warning, a question and a page of rows take the guide away: none of
+ * them has pages.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -201,9 +201,29 @@ static void page_ready(ui_help_page_t *p)
                       ui_footer_rect(UI_FOOTER_SETTINGS));
 }
 
+/** @brief KST's and HITEC's READY card, its rail line, the footer's
+ *         WRITE n VALUES and SETTINGS: the dock on the left, over the
+ *         session, the PORT button kept in view.
+ *  @param p The page. */
+static void page_prog(ui_help_page_t *p)
+{
+    p->title = TX_HG_SV_TITLE_PRG;
+    p->side = UI_HELP_DOCK_LEFT;
+    p->armed_ok = false;
+    p->must_show = port_rect();
+    (void)ui_help_add(p, TR(SVH_PORT), TX_HG_SV_PRG_PORT, p->must_show);
+    (void)ui_help_add(p, TR(RDY_TITLE), TX_HG_SV_PRG_READY,
+                      both(ready_row_rect(0), ready_row_rect(PRR_COUNT - 1)));
+    (void)ui_help_add(p, TR(RDY_METER), TX_HG_SV_PRG_RAIL, ready_rail_rect());
+    (void)ui_help_add(p, TR(HG_SV_PRG_WRITE_NAME), TX_HG_SV_PRG_WRITE,
+                      s.arm_btn);
+    (void)ui_help_add(p, TR(FOOT_SETTINGS), TX_HG_SV_SETTINGS,
+                      ui_footer_rect(UI_FOOTER_SETTINGS));
+}
+
 /* ------------------------------------------------- the output card's pages */
 
-/** @brief An output card's page: the dock on the left, the PORT button
+/** @brief A right card's page: the dock on the left, the PORT button
  *         kept in view.  Not while ARMED: either dock covers part of
  *         DISARM in the footer's middle slot.
  *  @param p The page. @param title Its title. */
@@ -213,47 +233,6 @@ static void card_page(ui_help_page_t *p, ui_text_id_t title)
     p->side = UI_HELP_DOCK_LEFT;
     p->armed_ok = false;
     p->must_show = port_rect();
-}
-
-/** @brief The output card's top: the type, the plot or PROG 5V, SET and
- *         SPEED.
- *  @param p The page. */
-static void page_card(ui_help_page_t *p)
-{
-    card_page(p, TX_HG_SV_TITLE_CARD);
-    (void)ui_help_add(p, TR(SV_ROW_TYPE), TX_HG_SV_TYPE,
-                      (gfx_rect_t){ RC_X, TAG_Y, RC_W, TAG_H });
-    if (prog5v_box_shown()) {
-        (void)ui_help_add(p, "PROG 5V", TX_HG_SV_P5, s.p5.r);
-    } else {
-        (void)ui_help_add(p, TR(MO_TAB_PLOT), TX_HG_SV_PLOT,
-                          (gfx_rect_t){ RC_X, PWR_Y, RC_W, PWR_H });
-    }
-    (void)ui_help_add(p, TR(SV_SET), TX_HG_SV_SET,
-                      (gfx_rect_t){ RC_X, SUP_Y, RC_W, SUP_H });
-    (void)ui_help_add(p, TR(SV_SPEED), TX_HG_SV_SPEED,
-                      (gfx_rect_t){ RC_X, SLIDER_Y, RC_W, SLIDER_H });
-}
-
-/** @brief The PORT button, CENTRE, SWEEP and RELEASE, ARM in the
- *         footer and SETTINGS; on RUDDER also the side view, which the
- *         live half on this side shows from x 496.
- *  @param p The page. */
-static void page_drive(ui_help_page_t *p)
-{
-    card_page(p, TX_HG_SV_TITLE_DRIVE);
-    (void)ui_help_add(p, TR(SVH_PORT), TX_HG_SV_TARGET, p->must_show);
-    (void)ui_help_add(p, TR(SV_CENTRE_BTN), TX_HG_SV_BUTTONS,
-                      both(s.centre_btn, s.release_btn));
-    (void)ui_help_add(p, "ARM", TX_HG_SV_ARM, s.arm_btn);
-    if (svs_list_offered()) {
-        (void)ui_help_add(p, TR(FOOT_SETTINGS), TX_HG_SV_SETTINGS,
-                          ui_footer_rect(UI_FOOTER_SETTINGS));
-    }
-    if (rudder_shown()) {
-        (void)ui_help_add(p, TR(HG_SV_SIDE_NAME), TX_HG_SV_RUD_SIDE,
-                          rudder_flap_rect());
-    }
 }
 
 /** @brief LIVE's, SWEEP's and RUDDER's READY rows, the rail line, ARM
@@ -310,6 +289,11 @@ static int pages_now(guide_fn out[GUIDE_MAX])
         return 0;
     }
     int n = 0;
+    /* KST and HITEC: the READY card's page with WRITE n VALUES only. */
+    if (prog_ready_shown()) {
+        out[n++] = page_prog;
+        return n;
+    }
     /* RUDDER AUTO, TEST and LIMIT RUN: their own pages, none while the
      * hold stops a sequence or a run (either dock covers part of it). */
     if (ready_shown()) {
@@ -331,9 +315,8 @@ static int pages_now(guide_fn out[GUIDE_MAX])
     if (drive_shown() && svs_seq_busy()) {
         return 0;
     }
-    /* The function's pages dock on the right, over OUTPUT OFF and PROG 5V
-     * OFF where the output card has them; KST's and HITEC's session has
-     * none of its own here. */
+    /* The function's pages dock on the right, over the right card, which
+     * on LIVE, SWEEP and RUDDER stops no output. */
     if ((drive_shown() || (!supply_screen_output_live()
                            && !(prog5v_box_shown() && prog5v_box_on())))
         && !prog_shown()) {
@@ -353,9 +336,6 @@ static int pages_now(guide_fn out[GUIDE_MAX])
     if (drive_shown()) {
         out[n++] = page_drive_ready;
         out[n++] = page_drive_ctl;
-    } else if (!run_live()) {
-        out[n++] = page_card;
-        out[n++] = page_drive;
     }
     return n;
 }

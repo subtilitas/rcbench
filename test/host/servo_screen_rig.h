@@ -122,25 +122,21 @@ static inline int sweep_btn_pixels(gfx_color_t col)
 /* ------------------------------------------- the servo rail's meter */
 
 /*
- * Mirrored from servo_screen_draw.c and servo_screen_int.h: the output
- * card's column, the line over the power plot with its 90px name (PD
- * MINI) or 134px name (INA 0x40 CH1), the line and plot together
- * (power_rect()), and LIVE's CURRENT reading, the numerals of the third
- * column along the foot of the left card: right of COMMANDED's 192px and
- * MEASURED's 216px, 188px wide less 4px.
+ * Mirrored from servo_ready.c and servo_ready_int.h: the READY card's
+ * column and its rail line at y 404, 20px high in the 10 x 20 face over a
+ * 28px box from y 400: the meter's name, SIMULATED after it while the
+ * panel's model is the supply, and the volts and amps at its right end.
+ * LIVE's CURRENT reading, the numerals of the third column along the foot
+ * of the left card: right of COMMANDED's 192px and MEASURED's 216px,
+ * 188px wide less 4px.
  */
 #define RAIL_X     SV_RC_X
 #define RAIL_W     SV_RC_W
+#define RAIL_LINE_Y 404
 #define CUR_X      (UI_MARGIN + 12 + 192 + 216)
 #define CUR_Y      384
 #define CUR_W      184
 #define CUR_H      44
-#define LINE_Y     72
-#define LINE_H     20
-#define PWR_BOX_Y  70
-#define PWR_BOX_H  96
-#define LAB_SUPPLY 90
-#define LAB_INA    134
 
 /** @brief A reading's numerals as the screen draws them: in the 32 x 44
  *  numerals, or the 20 x 36 face, or the 10 x 20 one, the largest in which
@@ -178,16 +174,15 @@ static inline bool row_reads(const char *text, ui_color_id_t col)
 }
 
 /**
- * @brief The output card with the meter's line and plot in view: KST's,
- *        the line's own screen while LIVE, SWEEP, RUDDER, TEST, LIMIT RUN
- *        and RUDDER AUTO show READY rows in its place.  Shown without a
- *        leave, as go() shows it.
+ * @brief A function screen with the READY card's rail line in view: KST's,
+ *        unless one with a rail line shows.  Shown without a leave, as go()
+ *        shows it.
  * @return the function shown before, for card_back()
  */
 static inline servo_fn_t card_on(void)
 {
     const servo_fn_t was = servo_screen_fn();
-    if (was != SERVO_FN_KST && was != SERVO_FN_HITEC) {
+    if (was == SERVO_FN_HUB) {
         go(SERVO_FN_KST);
     }
     return was;
@@ -201,50 +196,48 @@ static inline void card_back(servo_fn_t was)
     }
 }
 
-/** @brief Buffer 0 drawn, and whether the line over the plot reads the name
- * @p label, @p lab_w px wide, and the three readings, the current in
- * @p a_col: on KST's output card (card_on()). */
-static inline bool line_reads(const char *label, int lab_w, const char *v,
-                       const char *a, ui_color_id_t a_col, const char *w)
+/** @brief Buffer 0 drawn, and whether the READY card's rail line reads the
+ *  meter's name @p label, @p word after it in the warning colour (NULL for
+ *  none), and the volts @p v and amps @p a at its right end
+ *  (ready_render_rail()). */
+static inline bool rail_line_reads(const char *label, const char *word,
+                                   const char *v, const char *a)
 {
     const servo_fn_t was = card_on();
     scr->render(&cv, 0);
     card_back(was);
     want_fresh();
-    gfx_fill_rect(&want_cv, RAIL_X, LINE_Y, RAIL_W, LINE_H,
+    const gfx_rect_t box = { RAIL_X, RAIL_LINE_Y - 4, RAIL_W, 28 };
+    gfx_fill_rect(&want_cv, box.x, box.y, box.w, box.h,
                   ui_theme_color(UI_C_PANEL));
-    gfx_text(&want_cv, RAIL_X, LINE_Y, label, &gfx_font_10x20,
+    gfx_text(&want_cv, RAIL_X, RAIL_LINE_Y, label, &gfx_font_10x20,
              ui_theme_color(UI_C_TEXT_DIM), 1);
-    const char *txt[3] = { v, a, w };
-    const ui_color_id_t col[3] = { UI_C_VOLT, a_col, UI_C_POWER };
-    /* 88, 88 and 90px beside PD MINI; 64, 84 and 74px beside a channel. */
-    static const int k_fw[2][3] = { { 88, 88, 90 }, { 64, 84, 74 } };
-    const int *fw = k_fw[lab_w == LAB_INA ? 1 : 0];
-    int x = RAIL_X + lab_w;
-    bool fits = true;
-    for (int k = 0; k < 3; ++k) {
-        /* A reading wider than its field is cut at the left, and a cut
-         * minus sign is a wrong reading. */
-        fits = fits && (int)strlen(txt[k]) * 10 <= fw[k];
-        gfx_text_in(&want_cv, (gfx_rect_t){ (int16_t)x, LINE_Y,
-                                            (int16_t)fw[k], 20 },
-                    txt[k], &gfx_font_10x20, ui_theme_color(col[k]), 1,
-                    GFX_ALIGN_RIGHT);
-        x += fw[k];
+    if (word != NULL) {
+        gfx_text(&want_cv,
+                 RAIL_X + gfx_text_width(&gfx_font_10x20, label, 1) + 10,
+                 RAIL_LINE_Y, word, &gfx_font_10x20,
+                 ui_theme_color(UI_C_WARN), 1);
     }
-    /* The name and the readings take the column's 356px. */
-    return fits && x == RAIL_X + RAIL_W
-           && same_in(fb, want_fb, RAIL_X, LINE_Y, RAIL_W, LINE_H);
+    char line[48];
+    snprintf(line, sizeof(line), "%s  %s", v, a);
+    gfx_text_in(&want_cv, (gfx_rect_t){ RAIL_X, RAIL_LINE_Y, RAIL_W, 20 },
+                line, &gfx_font_10x20, ui_theme_color(UI_C_TEXT), 1,
+                GFX_ALIGN_RIGHT);
+    return same_in(fb, want_fb, box.x, box.y, box.w, box.h);
 }
 
-/** @brief True when the rail line reads the PD mini's voltage, current and power as given. */
-static inline bool line_supply(const char *v, const char *a, const char *w)
+/** @brief True when the rail line reads the PD mini's voltage and current
+ *  as given, SIMULATED after the name while the panel's model is the
+ *  supply. */
+static inline bool line_supply(const char *v, const char *a)
 {
-    return line_reads("PD MINI", LAB_SUPPLY, v, a, UI_C_CURR, w);
+    return rail_line_reads("PD MINI",
+                           supply_screen_model() ? TR(SV_MODELLED) : NULL,
+                           v, a);
 }
 
-/** @brief The meter's name over the plot: the channel watching the tester's
- * target, "INA 0x40 CH1", or INA3221 with none fitted. */
+/** @brief The meter's name on the rail line: the channel watching the
+ * tester's target, "INA 0x40 CH1", or INA3221 with none fitted. */
 static inline const char *ina_label(void)
 {
     static char name[16];
@@ -257,10 +250,11 @@ static inline const char *ina_label(void)
     return name;
 }
 
-/** @brief True when the rail line reads the INA3221 window's voltage, current and power as given. */
-static inline bool line_ina(const char *v, const char *a, const char *w)
+/** @brief True when the rail line reads the INA3221 window's voltage and
+ *  current as given. */
+static inline bool line_ina(const char *v, const char *a)
 {
-    return line_reads(ina_label(), LAB_INA, v, a, UI_C_CURR, w);
+    return rail_line_reads(ina_label(), NULL, v, a);
 }
 
 /** @brief A supply sample that answers with both readings. */

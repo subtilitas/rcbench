@@ -29,30 +29,6 @@
  * (W, H, PAD), which no header included after it may meet. */
 #include "servo_screen_core_int.h"
 
-/**
- * @brief The widths of the three readings on the line over the plot, in px
- *        of 10px cells.
- *
- * Beside PD MINI 88, 88 and 90, the rest of the column.  Beside an INA3221
- * channel's 12-cell name, "INA 0x41 CH2", 64, 84 and 74, which hold the
- * widest reading of the part's registers: a voltage of 6 cells, `9.99V`
- * or `65.5V`, `-32.77A`, and a power of 7 cells, `-99.9W` or `-2147W`.
- */
-static const uint8_t k_line_w[2][PS_COUNT] = {
-    { 88, 88, 90 },
-    { 64, 84, 74 },
-};
-_Static_assert(PWR_LAB_W + 88 + 88 + 90 == RC_W,
-               "PD MINI's line spans the column");
-_Static_assert(PWR_LAB_W_INA + 64 + 84 + 74 == RC_W,
-               "an INA3221 channel's line spans the column");
-
-/** @brief Gives the rectangle of the supply row on the rail. */
-static gfx_rect_t sup_row_rect(void)
-{
-    return (gfx_rect_t){ RC_X, SUP_Y, RC_W, SUP_H };
-}
-
 /* ----------------------------------------------------------------- drawing */
 
 /**
@@ -414,6 +390,10 @@ static void draw_left(gfx_canvas_t *c)
  */
 void draw_arm(gfx_canvas_t *c)
 {
+    if (prog_ready_shown()) {
+        prog_draw_write(c);         /* KST's and HITEC's WRITE n VALUES */
+        return;
+    }
     if (ready_shown()) {
         ready_draw_hold(c);     /* ARM + START of the function shown */
         return;
@@ -427,13 +407,6 @@ void draw_arm(gfx_canvas_t *c)
                                                : UI_ACTION_AVAILABLE),
                    ui_action_fill(UI_ACTION_ACTIVE), &s.arm, s.arm_down,
                    !svs_arm_locked(), SV_FONT_LABEL);
-}
-
-/** @brief Gives the rectangle of the power readout on the rail. */
-static gfx_rect_t power_rect(void)
-{
-    return (gfx_rect_t){ RC_X, (int16_t)(PWR_TXT_Y - 2), RC_W,
-                         (int16_t)(PWR_Y + PWR_H - PWR_TXT_Y + 2) };
 }
 
 /**
@@ -454,91 +427,6 @@ static void fixed_text(char *out, size_t n, int32_t q, int places,
     snprintf(out, n, "%s%u.%0*u%s", (q < 0) ? "-" : "",
              (unsigned)(mag / (uint32_t)scale), places,
              (unsigned)(mag % (uint32_t)scale), unit);
-}
-
-/**
- * @brief The servo rail's voltage, current and power, read and plotted, under the
- *        name of its meter: the supply, or the INA3221 channel that watches the
- *        tester's target, "INA 0x41 CH2", while that is the meter.
- */
-static void draw_power(gfx_canvas_t *c)
-{
-    const gfx_rect_t r = power_rect();
-    gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL));
-    const bool ina = (s.source == SERVO_SOURCE_INA3221);
-    /* The supply is the PD mini, named so in both languages, also while
-     * the panel's model stands in for it; the model carries the pill
-     * below. */
-    char src[16];
-    (void)sensors_rows_short(src, sizeof(src));
-    gfx_text(c, RC_X, PWR_TXT_Y, ina ? src : "PD MINI",
-             SV_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
-    const rail_t m = svs_rail_now();
-    char v[20], a[20], w[20];
-    const uint8_t *fw = k_line_w[ina ? 1 : 0];
-    /* Hundredths of a volt, and tenths where those do not fit. */
-    if (m.v_ok) {
-        snprintf(v, sizeof(v), "%.2fV", (double)m.v);
-        if (gfx_text_width(SV_FONT_LABEL, v, 1) > fw[PS_V]) {
-            snprintf(v, sizeof(v), "%.1fV", (double)m.v);
-        }
-    } else {
-        snprintf(v, sizeof(v), "-- V");
-    }
-    if (m.i_ok) { fixed_text(a, sizeof(a), m.q_a, 2, "A"); }
-    else        { snprintf(a, sizeof(a), "-- A"); }
-    if (m.v_ok && m.i_ok) {
-        /* Tenths of a watt, and whole watts where those do not fit. */
-        const float p = isfinite(m.p) ? m.p : 0.0f;
-        fixed_text(w, sizeof(w), svs_fixed_of(p, 10.0f), 1, "W");
-        if (gfx_text_width(SV_FONT_LABEL, w, 1) > fw[PS_W]) {
-            snprintf(w, sizeof(w), "%ldW", (long)svs_fixed_of(p, 1.0f));
-        }
-    } else {
-        snprintf(w, sizeof(w), "-- W");
-    }
-    /* Each in its trace's colour, so the numbers name the lines; a current
-     * from a window with a sample at an end of the range in the warning
-     * colour. */
-    const gfx_color_t col[PS_COUNT] = { ui_theme_color(UI_C_VOLT),
-                                        ui_theme_color(UI_C_CURR),
-                                        ui_theme_color(UI_C_POWER) };
-    const char *txt[PS_COUNT] = { v, a, w };
-    int x = RC_X + (ina ? PWR_LAB_W_INA : PWR_LAB_W);
-    for (int k = 0; k < PS_COUNT; ++k) {
-        s.power.series[k].color = col[k];
-        const gfx_color_t tc = (k == PS_A && m.clipped)
-                                   ? ui_theme_color(UI_C_WARN) : col[k];
-        gfx_text_in(c, (gfx_rect_t){ (int16_t)x, PWR_TXT_Y, fw[k], 20 },
-                    txt[k], SV_FONT_LABEL, tc, 1, GFX_ALIGN_RIGHT);
-        x += fw[k];
-    }
-    /* On a board that switches the ports' own 5V the PROG 5V box takes the
-     * plot's place; the readings above it stay. */
-    const bool p5 = prog5v_box_shown();
-    if (p5) {
-        prog5v_box_render(&s.p5, c);
-    } else {
-        ui_plot_render(&s.power, c, (gfx_rect_t){ RC_X, PWR_Y, RC_W, PWR_H });
-    }
-    /*
-     * The readings of the panel's model are no measurement: the overview's
-     * pill, 110px or as wide as a longer word and 26px high, on the
-     * plot's top-left corner under the name, as the line beside the name
-     * is full.
-     */
-    if (!ina && supply_screen_model()) {
-        /* Under the box 20px are left: the pill in the 8 x 16 face. */
-        const gfx_font_t *pf = p5 ? UI_FONT_FINE : SV_FONT_LABEL;
-        int mw = 30 + gfx_text_width(pf, TR(SV_MODELLED), 1);
-        mw = (mw < 110) ? 110 : mw;
-        ui_pill_font(c, (gfx_rect_t){ RC_X + 2,
-                                      (int16_t)(p5 ? P5_Y + PROG5V_BOX_H + 2
-                                                   : PWR_Y + 2),
-                                      (int16_t)mw, (int16_t)(p5 ? 18 : 26) },
-                     TR(SV_MODELLED), ui_theme_color(UI_C_WARN),
-                     ui_theme_color(UI_C_PANEL_SUNK), 30, pf);
-    }
 }
 
 /**
@@ -650,49 +538,6 @@ static void draw_readings(gfx_canvas_t *c)
     cur_value(c);
 }
 
-/** @brief SET, the two set points, and the output switch. */
-static void draw_sup_row(gfx_canvas_t *c)
-{
-    const gfx_rect_t r = sup_row_rect();
-    gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL));
-    gfx_text(c, RC_X, SUP_Y + 14, TR(SV_SET), SV_FONT_LABEL,
-             ui_theme_color(UI_C_TEXT_DIM), 1);
-    char v[12], a[12];
-    snprintf(v, sizeof(v), "%.2fV", (double)supply_screen_set_v());
-    snprintf(a, sizeof(a), "%.2fA", (double)supply_screen_set_i());
-    /* Held by a programming port they take no press, and say so. */
-    const bool held = supply_screen_port_held();
-    const struct { const char *txt; gfx_color_t col; int op; } k[2] = {
-        { v, held ? ui_theme_color(UI_C_TEXT_FAINT)
-                  : ui_theme_color(UI_C_VOLT), OP_SUP_V },
-        { a, held ? ui_theme_color(UI_C_TEXT_FAINT)
-                  : ui_theme_color(UI_C_CURR), OP_SUP_I },
-    };
-    for (int i = 0; i < 2; ++i) {
-        const gfx_rect_t b = sup_val_rect(i);
-        const bool down = s.ov_have && s.ov_pressed == k[i].op;
-        gfx_fill_round_rect(c, b.x, b.y, b.w, b.h, UI_R_CTL,
-                            down ? ui_theme_color(UI_C_PANEL_HI)
-                                 : ui_theme_color(UI_C_PANEL_SUNK));
-        gfx_text_in(c, b, k[i].txt, SV_FONT_LABEL, k[i].col, 1,
-                    GFX_ALIGN_CENTER);
-    }
-    /* SUPPLY's colours: off is the green the hold fades from, on the red
-     * it fades to. */
-    ui_hold_button(c, s.out_btn,
-                   s.out_on ? TR(SUP_OUTPUT_OFF) : TR(SUP_OUTPUT_ON),
-                   ui_action_fill(s.out_on ? UI_ACTION_ACTIVE
-                                           : UI_ACTION_AVAILABLE),
-                   ui_action_fill(UI_ACTION_ACTIVE), &s.out_hold, s.out_down,
-                   s.out_on || !held, SV_FONT_LABEL);
-}
-
-/** @brief Gives the rectangle of the telemetry tag on the rail. */
-static gfx_rect_t tag_rect(void)
-{
-    return (gfx_rect_t){ RC_X, TAG_Y, RC_W, TAG_H };
-}
-
 /* The longest pill, a 13-character type, 560Hz and two 4-digit ends, is
  * 32 of its 35 cells. */
 void svs_draw_tag(gfx_canvas_t *c, gfx_rect_t r)
@@ -707,75 +552,6 @@ void svs_draw_tag(gfx_canvas_t *c, gfx_rect_t r)
     gfx_text_in(c, r, line, SV_FONT_LABEL,
                 danger ? GFX_WHITE : ui_theme_color(UI_C_TEXT), 1,
                 GFX_ALIGN_CENTER);
-}
-
-/**
- * @brief The output card.  The power plot only when @p power: a repaint
- *        for anything else leaves the plot, which its own samples repaint,
- *        clipped.
- * @param c the canvas
- * @param power whether the plot is drawn too
- */
-static void draw_right(gfx_canvas_t *c, bool power)
-{
-    const gfx_rect_t pr = power_rect();
-    if (power) {
-        gfx_fill_rect(c, RCARD_X + 1, RCARD_Y + 1, RCARD_W - 2, RCARD_H - 2,
-                      ui_theme_color(UI_C_PANEL));
-    } else {
-        /* Around the plot, which keeps what it shows. */
-        gfx_fill_rect(c, RCARD_X + 1, RCARD_Y + 1, RCARD_W - 2,
-                      pr.y - RCARD_Y - 1, ui_theme_color(UI_C_PANEL));
-        gfx_fill_rect(c, RCARD_X + 1, pr.y + pr.h, RCARD_W - 2,
-                      RCARD_Y + RCARD_H - 1 - (pr.y + pr.h),
-                      ui_theme_color(UI_C_PANEL));
-        gfx_fill_rect(c, RCARD_X + 1, pr.y, pr.x - RCARD_X - 1, pr.h,
-                      ui_theme_color(UI_C_PANEL));
-        gfx_fill_rect(c, pr.x + pr.w, pr.y, RCARD_X + RCARD_W - 1 - (pr.x + pr.w),
-                      pr.h, ui_theme_color(UI_C_PANEL));
-    }
-
-    svs_draw_tag(c, tag_rect());
-    if (power) {
-        draw_power(c);
-    }
-    draw_sup_row(c);
-
-    /* SPEED's row says when SPEED, not CURVE, decides how a sweep moves:
-     * the curves then look alike. */
-    char buf[24];
-    snprintf(buf, sizeof(buf), "%d%%", s.speed_pct);
-    const bool limits = svs_speed_limits_sweep();
-    gfx_text(c, RC_X, SPEED_Y, limits ? TR(SV_SPEED_LIMITS) : TR(SV_SPEED),
-             SV_FONT_LABEL, limits ? ui_theme_color(UI_C_WARN)
-                                   : ui_theme_color(UI_C_TEXT_DIM), 1);
-    gfx_text_in(c, (gfx_rect_t){ RC_X, SPEED_Y, RC_W, 20 }, buf,
-                SV_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1,
-                GFX_ALIGN_RIGHT);
-    s.speed.color = ui_theme_color(UI_C_ACCENT);
-    ui_slider_render(&s.speed, c);
-
-    /* CENTRE sets a position, so it is dimmed with SWEEP while the bench
-     * is disarmed: green, a press drives the servo. */
-    ui_button_font(c, s.centre_btn, TR(SV_CENTRE_BTN),
-                   ui_action_fill(UI_ACTION_AVAILABLE), false, value_live(),
-                   SV_FONT_LABEL);
-    /* SWEEP green; PAUSE in red while a sweep drives the servo; PAUSED
-     * (PAUSIERT) amber while it is paused, so the two read apart by fill
-     * as well as by the word. */
-    const gfx_color_t sweep_fill =
-        ui_action_fill(s.sweeping ? UI_ACTION_ACTIVE
-                       : s.paused ? UI_ACTION_WAITING : UI_ACTION_AVAILABLE);
-    ui_button_font(c, s.sweep_btn,
-                   s.paused     ? TR(SV_PAUSED)
-                   : s.sweeping ? TR(SV_PAUSE) : "SWEEP",
-                   sweep_fill, false,
-                   s.sweeping || s.paused
-                       || (value_live() && s.sweep_able && s.surfaces
-                           && s.link_up),
-                   SV_FONT_LABEL);
-    ui_button_font(c, s.release_btn, TR(SV_RELEASE),
-                   ui_theme_color(UI_C_PANEL_HI), false, true, SV_FONT_LABEL);
 }
 
 /** @brief Draw @p fn clipped to @p box inside the clip in force: the
@@ -946,8 +722,6 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
     /* RUDDER repaints its readout on its own (rudder_render_part()). */
     const bool rudder_alone = !cover && wb_task() == UI_WB_RUDDER;
     if (s.drawn_ctrl[buf] != ov_rev) {
-        /* The plot when it moved or this buffer has never had it. */
-        const bool power = (s.drawn_power[buf] != s.power_rev);
         s.drawn_ctrl[buf]  = ov_rev;
         s.drawn_arm[buf]   = s.arm_rev;
         s.drawn_sup[buf]   = s.sup_rev;
@@ -983,17 +757,15 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
         } else {
             draw_test_page(c);
         }
-        if (ready_shown()) {
-            /* RUDDER AUTO, TEST and LIMIT RUN: the READY card in the
-             * output card's place. */
+        if (ready_shown() || prog_ready_shown()) {
+            /* RUDDER AUTO, TEST, LIMIT RUN, KST and HITEC: the READY card
+             * in the output card's place. */
             ready_render(c);
             s.rdy.drawn[buf] = ready_sig();
         } else if (drive_shown()) {
             /* LIVE, SWEEP and RUDDER: the READY rows over their controls. */
             drive_render_card(c);
             s.rdy.drawn[buf] = ready_sig();
-        } else {
-            draw_right(c, power);
         }
         s.drawn_fp[buf] = foot_sig();
         draw_footer(c);
@@ -1002,7 +774,7 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
 
     /*
      * Otherwise only what moved on its own, each clipped to itself: ARM's
-     * fade, the warning's hold, the power plot, the CURRENT row, the save
+     * fade, the warning's hold, TEST's plot, the CURRENT row, the save
      * line, the START holds and the grip.  The right card is 292 x 388 and
      * the fades run for two seconds: asking for whole cards every frame
      * would spend most of the panel's bandwidth on a button.
@@ -1017,12 +789,12 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
         s.drawn_arm[buf] = s.arm_rev;
         clipped(c, s.arm_btn, draw_arm);
     }
-    if (ready_shown() || drive_shown()) {
+    if (ready_shown() || drive_shown() || prog_ready_shown()) {
         /* The READY card's rows when one changed, its rail line as the
-         * meter's readings move: on RUDDER AUTO, TEST and LIMIT RUN the
-         * card draws the line with its rows, on LIVE, SWEEP and RUDDER it
-         * does not.  On TEST the rail's plot moves with the line, where
-         * nothing covers the left card. */
+         * meter's readings move: on RUDDER AUTO, TEST, LIMIT RUN, KST and
+         * HITEC the card draws the line with its rows, on LIVE, SWEEP and
+         * RUDDER it does not.  On TEST the rail's plot moves with the
+         * line, where nothing covers the left card. */
         const uint32_t rsig = ready_sig();
         const bool power = s.drawn_power[buf] != s.power_rev;
         const bool rows = s.rdy.drawn[buf] != rsig;
@@ -1038,14 +810,6 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
             clipped(c, test_plot_rect(), test_draw_plot);
         }
         s.drawn_sup[buf] = s.sup_rev;
-    }
-    if (s.drawn_power[buf] != s.power_rev) {
-        s.drawn_power[buf] = s.power_rev;
-        clipped(c, power_rect(), draw_power);
-    }
-    if (s.drawn_sup[buf] != s.sup_rev) {
-        s.drawn_sup[buf] = s.sup_rev;
-        clipped(c, sup_row_rect(), draw_sup_row);
     }
     if (modal_open()) {
         if (s.warn.open && s.drawn_warn[buf] != s.warn.rev) {

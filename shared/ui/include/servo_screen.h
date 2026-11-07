@@ -680,9 +680,10 @@ void servo_screen_sweep_refused(void);
 bool servo_screen_sweeping(void);
 
 /**
- * @brief Whether OUTPUT ON of the SET row is being held, from an output that
- *        is off, or a question about the supply stands: the HV warning
- *        before an ON (ASK_ON) or a set point, a test's HV steps, or the
+ * @brief Whether OUTPUT ON of the output card's SET row, which no function
+ *        screen shows, is being held, from an output that is off, or a
+ *        question about the supply stands: the HV warning
+ *        before an ON (ASK_ON), a test's HV steps, or the
  *        restore of the operator's set points (servo_screen_asks_restore()).
  *        An ON either sends lands at the set points it was opened on.
  * @return true while the hold runs or the question stands

@@ -1,7 +1,7 @@
 /**
  * @file test_servo_rail.c
- * @brief The servo screen's tag row, rail line and current row under the supply
- * and the INA3221 as the meter.
+ * @brief The servo screen's tag row, the READY card's rail line and LIVE's
+ * current row under the supply and the INA3221 as the meter.
  *
  * Cases:
  * - the_tag_row_carries_the_pulse_range
@@ -80,47 +80,29 @@ TEST_CASE(the_tag_row_carries_the_pulse_range)
 }
 
 /*
- * The supply the rail's line names is the PD mini, or the panel's model of
- * it: then the SIMULATED (SIMULIERT) pill sits on the plot's top-left corner,
- * under the name, 110px or as wide as a longer word and 26px high.  A change of the model reaches it without a tap; with
+ * The supply the rail line names is the PD mini, or the panel's model of
+ * it: then SIMULATED (SIMULIERT) follows the name in the warning colour,
+ * one cell after it.  A change of the model reaches it without a tap; with
  * INA3221 CH1 as the meter it is not shown.
  */
-#define PILL_X (RAIL_X + 2)
+#define WORD_X (RAIL_X + 7 * 10 + 10)   /* after "PD MINI" and a cell */
 
-#define PILL_Y (96 + 2)
-
-static int pill_w(const char *word)
+/* Whether buffer 0, drawn, carries @p word after the name on the rail
+ * line: its box compared with the line as drawn and the word drawn there
+ * on the card's ground. */
+static bool word_reads(const char *word)
 {
-    const int w = 30 + gfx_text_width(&gfx_font_10x20, word, 1);
-    return w < 110 ? 110 : w;
-}
-
-/* Whether buffer 0, drawn, carries the pill reading @p word: the area around
- * it, one pixel wider on every side, compared with the plot as drawn
- * without the model and the overview's pill drawn on it.  The fill is the
- * plot's own colour, so the pill's width and height show where it covers a
- * grid line or the plot's edge. */
-static bool pill_reads(const char *word)
-{
-    const servo_fn_t was = card_on();       /* the plot is TEST's */
+    const servo_fn_t was = card_on();
     scr->render(&cv, 0);
-    const bool model = supply_screen_model();
-    static gfx_color_t seen[(size_t)W * H];
-    memcpy(seen, fb, sizeof(seen));
-    supply_screen_set_model(false);
-    scr->tick(1.0f / 39.0f);
-    scr->render(&cv, 0);
+    card_back(was);
     want_fresh();
     memcpy(want_fb, fb, (size_t)W * H * sizeof(gfx_color_t));
-    memcpy(fb, seen, sizeof(seen));
-    supply_screen_set_model(model);
-    scr->tick(1.0f / 39.0f);
-    card_back(was);
-    const int w = pill_w(word);
-    ui_pill_font(&want_cv, (gfx_rect_t){ PILL_X, PILL_Y, (int16_t)w, 26 },
-                 word, ui_theme_color(UI_C_WARN),
-                 ui_theme_color(UI_C_PANEL_SUNK), 30, &gfx_font_10x20);
-    return same_in(fb, want_fb, PILL_X - 1, PILL_Y - 1, w + 2, 28);
+    const int w = gfx_text_width(&gfx_font_10x20, word, 1);
+    gfx_fill_rect(&want_cv, WORD_X, RAIL_LINE_Y, (int16_t)w, 20,
+                  ui_theme_color(UI_C_PANEL));
+    gfx_text(&want_cv, WORD_X, RAIL_LINE_Y, word, &gfx_font_10x20,
+             ui_theme_color(UI_C_WARN), 1);
+    return same_in(fb, want_fb, WORD_X, RAIL_LINE_Y, w, 20);
 }
 
 TEST_CASE(the_rail_line_names_the_pd_mini_and_a_modelled_supply)
@@ -128,40 +110,40 @@ TEST_CASE(the_rail_line_names_the_pd_mini_and_a_modelled_supply)
     fresh();
     meter(SERVO_SOURCE_PDMINI);
     rail_supply(6.0f, 0.4f);
-    CHECK(line_supply("6.00V", "0.40A", "2.4W"));
-    CHECK(!pill_reads("SIMULATED"));
-    /* The model switched on: the pill, the name kept, no tap needed. */
+    CHECK(line_supply("6.00V", "0.400A"));
+    CHECK(!word_reads("SIMULATED"));
+    /* The model switched on: the word, the name kept, no tap needed. */
     supply_screen_set_model(true);
     scr->tick(1.0f / 39.0f);
-    CHECK(pill_reads("SIMULATED"));
-    CHECK(line_supply("6.00V", "0.40A", "2.4W"));
-    /* A new sample repaints the plot, and the pill with it. */
+    CHECK(word_reads("SIMULATED"));
+    CHECK(line_supply("6.00V", "0.400A"));
+    /* A new sample repaints the line, and the word with it. */
     rail_supply(6.0f, 0.5f);
-    CHECK(pill_reads("SIMULATED"));
+    CHECK(word_reads("SIMULATED"));
     /* No IOmcu: the supply's sample, still under PD MINI. */
     meter(SERVO_SOURCE_MODEL);
     scr->tick(1.0f / 39.0f);
-    CHECK(pill_reads("SIMULATED"));
-    CHECK(line_supply("6.00V", "0.50A", "3.0W"));
+    CHECK(word_reads("SIMULATED"));
+    CHECK(line_supply("6.00V", "0.500A"));
     /* In German the word is SIMULIERT; the name stays PD MINI. */
     ui_text_set_language(UI_LANG_DE);
     servo_invalidate();
-    CHECK(pill_reads("SIMULIERT"));
-    CHECK(line_supply("6.00V", "0.50A", "3.0W"));
+    CHECK(word_reads("SIMULIERT"));
+    CHECK(line_supply("6.00V", "0.500A"));
     ui_text_set_language(UI_LANG_EN);
     servo_invalidate();
-    /* INA3221 CH1 as the meter: its own name and no pill. */
+    /* INA3221 CH1 as the meter: its own name and no word. */
     meter(SERVO_SOURCE_INA3221);
     scr->tick(1.0f / 39.0f);
-    CHECK(!pill_reads("SIMULATED"));
+    CHECK(!word_reads("SIMULATED"));
     meter(SERVO_SOURCE_PDMINI);
     scr->tick(1.0f / 39.0f);
-    CHECK(pill_reads("SIMULATED"));
-    /* The model switched off: the pill goes, without a tap. */
+    CHECK(word_reads("SIMULATED"));
+    /* The model switched off: the word goes, without a tap. */
     supply_screen_set_model(false);
     scr->tick(1.0f / 39.0f);
-    CHECK(!pill_reads("SIMULATED"));
-    CHECK(line_supply("6.00V", "0.50A", "3.0W"));
+    CHECK(!word_reads("SIMULATED"));
+    CHECK(line_supply("6.00V", "0.500A"));
 }
 
 /* The supply is the meter until the panel names another, and as the PD
@@ -178,7 +160,7 @@ TEST_CASE(the_current_row_shows_the_supply_while_it_is_the_meter)
         }
         /* No sample: the dashes. */
         CHECK(row_reads("---", UI_C_TEXT));
-        CHECK(line_supply("-- V", "-- A", "-- W"));
+        CHECK(line_supply("--V", "--A"));
         CHECK_EQ(servo_screen_power_points(), 0);
         /* A feedback with a current puts nothing in the row. */
         servo_screen_feedback(1500u, 1.23f, true);
@@ -186,7 +168,7 @@ TEST_CASE(the_current_row_shows_the_supply_while_it_is_the_meter)
 
         rail_supply(6.0f, 0.4f);
         CHECK(row_reads("0.40A", UI_C_TEXT));
-        CHECK(line_supply("6.00V", "0.40A", "2.4W"));
+        CHECK(line_supply("6.00V", "0.400A"));
         CHECK_EQ(servo_screen_power_points(), 1);
         CHECK_NEAR(servo_screen_power_sample(1, 0), 0.4f, 1e-6f);
         servo_screen_feedback(1500u, 1.23f, true);
@@ -197,7 +179,7 @@ TEST_CASE(the_current_row_shows_the_supply_while_it_is_the_meter)
         /* A window of the INA3221 is not this meter's reading. */
         rail_window(1200, 5000u);
         CHECK(row_reads("0.40A", UI_C_TEXT));
-        CHECK(line_supply("6.00V", "0.40A", "2.4W"));
+        CHECK(line_supply("6.00V", "0.400A"));
         CHECK_EQ(servo_screen_power_points(), 1);
 
         /* A sample without a current reading, and a supply that does not
@@ -209,7 +191,7 @@ TEST_CASE(the_current_row_shows_the_supply_while_it_is_the_meter)
         st.v = 6.0f;
         servo_screen_supply(&st);
         CHECK(row_reads("---", UI_C_TEXT));
-        CHECK(line_supply("6.00V", "-- A", "-- W"));
+        CHECK(line_supply("6.00V", "--A"));
         CHECK_EQ(servo_screen_power_points(), 2);
         CHECK(isnan(servo_screen_power_sample(1, 0)));
         rail_supply(6.0f, 0.4f);
@@ -218,7 +200,7 @@ TEST_CASE(the_current_row_shows_the_supply_while_it_is_the_meter)
         st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
         servo_screen_supply(&st);
         CHECK(row_reads("---", UI_C_TEXT));
-        CHECK(line_supply("-- V", "-- A", "-- W"));
+        CHECK(line_supply("--V", "--A"));
         servo_screen_supply(NULL);
         CHECK(row_reads("---", UI_C_TEXT));
 
@@ -230,7 +212,7 @@ TEST_CASE(the_current_row_shows_the_supply_while_it_is_the_meter)
         st.p = NAN;
         servo_screen_supply(&st);
         CHECK(row_reads("---", UI_C_TEXT));
-        CHECK(line_supply("6.00V", "-- A", "-- W"));
+        CHECK(line_supply("6.00V", "--A"));
         st.i = INFINITY;
         servo_screen_supply(&st);
         CHECK(row_reads("---", UI_C_TEXT));
@@ -238,7 +220,7 @@ TEST_CASE(the_current_row_shows_the_supply_while_it_is_the_meter)
         st.i = 0.4f;
         servo_screen_supply(&st);
         CHECK(row_reads("0.40A", UI_C_TEXT));
-        CHECK(line_supply("-- V", "0.40A", "-- W"));
+        CHECK(line_supply("--V", "0.400A"));
         st.v = 6.0f;
         st.i = 3.0e9f;
         st.p = -3.0e12f;
@@ -259,12 +241,12 @@ TEST_CASE(the_current_row_shows_ch1s_window_while_the_ina3221_is_the_meter)
     meter(SERVO_SOURCE_INA3221);
     /* No window yet: the dashes, whatever the supply reads. */
     CHECK(row_reads("---", UI_C_TEXT));
-    CHECK(line_ina("-- V", "-- A", "-- W"));
+    CHECK(line_ina("--V", "--A"));
     CHECK_EQ(servo_screen_power_points(), 0);
 
     rail_window(412, 5980u);
     CHECK(row_reads("0.41A", UI_C_TEXT));
-    CHECK(line_ina("5.98V", "0.41A", "2.5W"));        /* 2.46W */
+    CHECK(line_ina("5.98V", "0.412A"));
     CHECK_EQ(servo_screen_power_points(), 1);
     CHECK_NEAR(servo_screen_power_sample(0, 0), 5.98f, 1e-5f);
     CHECK_NEAR(servo_screen_power_sample(1, 0), 0.412f, 1e-6f);
@@ -274,40 +256,40 @@ TEST_CASE(the_current_row_shows_ch1s_window_while_the_ina3221_is_the_meter)
     rail_supply(6.0f, 0.9f);
     servo_screen_feedback(1500u, 1.23f, true);
     CHECK(row_reads("0.41A", UI_C_TEXT));
-    CHECK(line_ina("5.98V", "0.41A", "2.5W"));
+    CHECK(line_ina("5.98V", "0.412A"));
     CHECK_EQ(servo_screen_power_points(), 1);
 
     /* The range of the registers: every reading whole on the line, with
-     * its sign, the voltage in hundredths and the power in tenths, or in
-     * whole watts where tenths do not fit. */
+     * its sign, the voltage in hundredths and the current in thousandths;
+     * the plot's points keep the power. */
     rail_window(32767, 26000u);
     CHECK(row_reads("32.77A", UI_C_TEXT));
-    CHECK(line_ina("26.00V", "32.77A", "851.9W"));
+    CHECK(line_ina("26.00V", "32.767A"));
     rail_window(-32768, 26000u);
     CHECK(row_reads("-32.77A", UI_C_TEXT));
-    CHECK(line_ina("26.00V", "-32.77A", "-852.0W"));
+    CHECK(line_ina("26.00V", "-32.768A"));
     rail_window(-32768, 65535u);
-    CHECK(line_ina("65.54V", "-32.77A", "-2147W"));
+    CHECK(line_ina("65.54V", "-32.768A"));
     rail_window(32767, 65535u);
-    CHECK(line_ina("65.54V", "32.77A", "2147.4W"));
-    /* Where the tenths stop fitting: 7 cells. */
+    CHECK(line_ina("65.54V", "32.767A"));
+    /* Across 10V and 10A. */
     rail_window(1000, 9994u);
-    CHECK(line_ina("9.99V", "1.00A", "10.0W"));
+    CHECK(line_ina("9.99V", "1.000A"));
     rail_window(-9990, 10000u);
-    CHECK(line_ina("10.00V", "-9.99A", "-99.9W"));
+    CHECK(line_ina("10.00V", "-9.990A"));
     rail_window(-10000, 10000u);
-    CHECK(line_ina("10.00V", "-10.00A", "-100.0W"));
+    CHECK(line_ina("10.00V", "-10.000A"));
     rail_window(9999, 10000u);
-    CHECK(line_ina("10.00V", "10.00A", "100.0W"));
+    CHECK(line_ina("10.00V", "9.999A"));
     rail_window(10000, 10005u);
-    CHECK(line_ina("10.01V", "10.00A", "100.1W"));
-    rail_window(-10005, 10000u);                  /* -100.05W */
-    CHECK(line_ina("10.00V", "-10.01A", "-100.1W"));
+    CHECK(line_ina("10.01V", "10.000A"));
+    rail_window(-10005, 10000u);
+    CHECK(line_ina("10.00V", "-10.005A"));
     rail_window(1637, 5000u);
     CHECK(row_reads("1.64A", UI_C_TEXT));
     rail_window(0, 0u);
     CHECK(row_reads("0.00A", UI_C_TEXT));
-    CHECK(line_ina("0.00V", "0.00A", "0.0W"));
+    CHECK(line_ina("0.00V", "0.000A"));
 
     /* A window without samples of one quantity: that one is dashes and a
      * gap, and the power with it. */
@@ -315,7 +297,7 @@ TEST_CASE(the_current_row_shows_ch1s_window_while_the_ina3221_is_the_meter)
     w.current = false;
     window(&w);
     CHECK(row_reads("---", UI_C_TEXT));
-    CHECK(line_ina("5.00V", "-- A", "-- W"));
+    CHECK(line_ina("5.00V", "--A"));
     CHECK(isnan(servo_screen_power_sample(1, 0)));
     CHECK(isnan(servo_screen_power_sample(2, 0)));
     CHECK_NEAR(servo_screen_power_sample(0, 0), 5.0f, 1e-6f);
@@ -323,7 +305,7 @@ TEST_CASE(the_current_row_shows_ch1s_window_while_the_ina3221_is_the_meter)
     w.voltage = false;
     window(&w);
     CHECK(row_reads("0.30A", UI_C_TEXT));
-    CHECK(line_ina("-- V", "0.30A", "-- W"));
+    CHECK(line_ina("--V", "0.300A"));
     CHECK(isnan(servo_screen_power_sample(0, 0)));
     servo_screen_window(NULL, meter_id, meter_changes);
     CHECK(row_reads("0.30A", UI_C_TEXT));
@@ -349,25 +331,25 @@ TEST_CASE(a_negative_current_is_shown_signed)
                    1e-6f);
     }
     rail_window(-20, 5000u);
-    CHECK(line_ina("5.00V", "-0.02A", "-0.1W"));
+    CHECK(line_ina("5.00V", "-0.020A"));
     rail_window(-1640, 5000u);
-    CHECK(line_ina("5.00V", "-1.64A", "-8.2W"));
+    CHECK(line_ina("5.00V", "-1.640A"));
     rail_window(-4, 5000u);
-    CHECK(line_ina("5.00V", "0.00A", "0.0W"));       /* -0.02W */
+    CHECK(line_ina("5.00V", "-0.004A"));
 
     /* The supply's reading keeps its sign as well. */
     meter(SERVO_SOURCE_PDMINI);
     rail_supply(5.0f, -0.02f);
     CHECK(row_reads("-0.02A", UI_C_TEXT));
-    CHECK(line_supply("5.00V", "-0.02A", "-0.1W"));
+    CHECK(line_supply("5.00V", "-0.020A"));
     rail_supply(5.0f, -1.64f);
     CHECK(row_reads("-1.64A", UI_C_TEXT));
     rail_supply(5.0f, -0.004f);
     CHECK(row_reads("0.00A", UI_C_TEXT));
 }
 
-/* A window with a sample at an end of the range shows the value it holds,
- * in the warning colour, in the row and on the line. */
+/* A window with a sample at an end of the range shows the value it holds:
+ * in the warning colour in LIVE's CURRENT row, and on the rail line. */
 TEST_CASE(a_clipped_window_draws_its_current_in_the_warning_colour)
 {
     fresh();
@@ -382,13 +364,12 @@ TEST_CASE(a_clipped_window_draws_its_current_in_the_warning_colour)
     window(&w);
     /* The same digits: the colour alone repaints the row. */
     CHECK(row_reads("1.59A", UI_C_WARN));
-    CHECK(line_reads(ina_label(), LAB_INA, "5.90V", "1.59A", UI_C_WARN,
-                     "9.4W"));
+    CHECK(line_ina("5.90V", "1.590A"));
     CHECK_NEAR(servo_screen_power_sample(1, 0), 1.59f, 1e-6f);
 
     rail_window(1590, 5900u);
     CHECK(row_reads("1.59A", UI_C_TEXT));
-    CHECK(line_ina("5.90V", "1.59A", "9.4W"));
+    CHECK(line_ina("5.90V", "1.590A"));
 
     /* The bottom of the range, with a negative mean. */
     w = rail_win(-1600, 5900u);
@@ -396,8 +377,7 @@ TEST_CASE(a_clipped_window_draws_its_current_in_the_warning_colour)
     w.clipped = 255u;
     window(&w);
     CHECK(row_reads("-1.60A", UI_C_WARN));
-    CHECK(line_reads(ina_label(), LAB_INA, "5.90V", "-1.60A", UI_C_WARN,
-                     "-9.4W"));
+    CHECK(line_ina("5.90V", "-1.600A"));
 
     /* The count of clipped samples alone marks nothing, and a clipped
      * window without current samples has no current to colour. */
@@ -410,7 +390,7 @@ TEST_CASE(a_clipped_window_draws_its_current_in_the_warning_colour)
     w.current = false;
     window(&w);
     CHECK(row_reads("---", UI_C_TEXT));
-    CHECK(line_ina("5.90V", "-- A", "-- W"));
+    CHECK(line_ina("5.90V", "--A"));
 
     /* The supply is never drawn clipped: the mark is the window's. */
     w = rail_win(1590, 5900u);
@@ -420,7 +400,7 @@ TEST_CASE(a_clipped_window_draws_its_current_in_the_warning_colour)
     meter(SERVO_SOURCE_PDMINI);
     rail_supply(6.0f, 1.59f);
     CHECK(row_reads("1.59A", UI_C_TEXT));
-    CHECK(line_supply("6.00V", "1.59A", "9.5W"));
+    CHECK(line_supply("6.00V", "1.590A"));
 }
 
 int main(void)

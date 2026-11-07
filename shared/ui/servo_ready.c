@@ -57,6 +57,7 @@ void ready_init(void)
     memset(&s.rdy, 0, sizeof(s.rdy));
     servo_seq_init(&s.rdy.seq);
     s.rdy.pressed = -1;
+    prog_ready_reset();
 }
 
 /** @brief What the card asks of a function: its rows, its first refusal
@@ -170,6 +171,9 @@ int ready_count(void)
     if (drive_shown()) {
         return drive_ready_count();
     }
+    if (prog_ready_shown()) {
+        return (int)PRR_COUNT;     /* KST's and HITEC's */
+    }
     return ready_shown() ? fn_now()->count : 0;
 }
 
@@ -177,6 +181,9 @@ bool ready_row(int i, rdy_row_t *r)
 {
     if (drive_shown()) {
         return drive_ready_row(i, r);
+    }
+    if (prog_ready_shown()) {
+        return prog_ready_row(i, r);
     }
     if (!ready_shown()) {
         return false;
@@ -407,10 +414,19 @@ uint32_t ready_sig(void)
 
 bool ready_down(const touch_event_t *evt)
 {
-    if (evt == NULL || !(ready_shown() || drive_shown())
+    if (evt == NULL
+        || !(ready_shown() || drive_shown() || prog_ready_shown())
         || !gfx_rect_contains(ready_card_rect(), evt->point.x,
                               evt->point.y)) {
         return false;
+    }
+    /* A stop counts on the press, whatever other fingers hold: KST's and
+     * HITEC's supply row while it reads ON asks OFF at once. */
+    if (prog_ready_shown()
+        && prog_ready_stops_at(evt->point.x, evt->point.y)) {
+        prog_ready_tap((int)PRR_SUPPLY);
+        ++s.ctrl_rev;
+        return true;
     }
     /* A row's fix opens a list, a warning or another screen: none under
      * a press held anywhere, whose release it would take. */
@@ -431,6 +447,9 @@ bool ready_down(const touch_event_t *evt)
 
 bool ready_rest(const touch_event_t *evt)
 {
+    if (prog_write_rest(evt)) {
+        return true;            /* KST's and HITEC's WRITE */
+    }
     if (evt == NULL || s.rdy.pressed < 0
         || evt->point.id != s.rdy.press_id) {
         return false;
@@ -452,6 +471,8 @@ bool ready_rest(const touch_event_t *evt)
         ui_action_refused(TR(FOOT_PRESS_HELD));
     } else if (drive_shown()) {
         drive_ready_tap(i);
+    } else if (prog_ready_shown()) {
+        prog_ready_tap(i);
     } else if (ready_shown()) {
         fn_now()->tap(i);
     }
@@ -460,6 +481,7 @@ bool ready_rest(const touch_event_t *evt)
 
 void ready_cancel(void)
 {
+    prog_ready_reset();
     if (s.rdy.pressed >= 0) {
         s.rdy.pressed = -1;
         ++s.ctrl_rev;

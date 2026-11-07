@@ -405,6 +405,49 @@ void svs_draw_tag(gfx_canvas_t *c, gfx_rect_t r);
  *         DISARM, the carrier's PROG 5V, the PD mini's output. */
 void svs_all_off(void);
 
+/* --- servo_prog_ready.c: KST's and HITEC's rows and WRITE ------------------ */
+
+/** @brief KST's and HITEC's rows, in the card's order. */
+typedef enum {
+    PRR_PORT = 0, /**< a PROG PORT the tester drives                  */
+    PRR_SUPPLY,   /**< the supply the session's CONNECT switches      */
+    PRR_SERVO,    /**< the servo read                                 */
+    PRR_COUNT     /**< the count                                      */
+} prog_ready_row_t;
+
+/** @brief Whether the screen shown is a programmer's, KST or HITEC.
+ *  @return true there */
+bool prog_ready_shown(void);
+/** @brief KST's or HITEC's row @p i.  @param i the row @param r receives
+ *  it  @return false past the last or on another screen */
+bool prog_ready_row(int i, rdy_row_t *r);
+/** @brief A tap on row @p i: PORT's list, the supply off while its row
+ *         reads ON, or the row's reason in the alert band.  @param i the
+ *         row */
+void prog_ready_tap(int i);
+/** @brief Whether a press at (@p x, @p y) lands on the supply row while it
+ *         reads ON: a tap there switches an output off (svs_safe_at()).
+ *  @param x the body's x @param y its y  @return true then */
+bool prog_ready_stops_at(int x, int y);
+/** @brief The footer's WRITE n VALUES in the middle slot.
+ *  @param c the canvas */
+void prog_draw_write(gfx_canvas_t *c);
+/** @brief One number for what the footer's WRITE shows.
+ *  @return the number; 0 on another screen */
+uint32_t prog_write_sig(void);
+/** @brief Whether a contact is on the footer's WRITE.
+ *  @return true then */
+bool prog_write_pressed(void);
+/** @brief A DOWN on the footer's middle slot on KST or HITEC.
+ *  @param evt the DOWN  @return whether it landed there */
+bool prog_write_down(const touch_event_t *evt);
+/** @brief The rest of the press prog_write_down() took; its tap UP writes
+ *         as the session's own WRITE n VALUES does.
+ *  @param evt the event  @return whether it was that press's */
+bool prog_write_rest(const touch_event_t *evt);
+/** @brief A press on WRITE dropped. */
+void prog_ready_reset(void);
+
 #ifdef __cplusplus
 }
 #endif

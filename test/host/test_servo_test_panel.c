@@ -364,8 +364,10 @@ TEST_CASE(a_run_follows_the_value_state_at_every_edge)
             servo_screen_set_armed(false);
             break;
         case 1:                                  /* ARMING */
+            bench.out = true;    /* the supply on: LIVE's ARM arms alone */
+            bench_frames(200u);
             servo_screen_set_armed(false);
-            go(SERVO_FN_KST);                    /* KST's ARM: ARM alone */
+            go(SERVO_FN_LIVE);
             arm_press();
             hold_for(2.3f);
             arm_release();

@@ -163,7 +163,7 @@ history is in git.
   SUPPLY. SPEED, the type pill and the buttons sit under the rows (CENTRE
   and RELEASE on LIVE, SWEEP and RELEASE on SWEEP), the rail line with the
   meter's volts and amps at y 404. The SET row, the plot and the PROG 5V
-  box leave these screens; KST and HITEC keep them.
+  box leave these screens.
 - ARM on LIVE, SWEEP and RUDDER switches on what reads off before it arms:
   PORT PWM on a programming port, then PROG 5V on the carrier or the PD
   mini's output, through the steps of RUDDER AUTO's start (read-back
@@ -175,6 +175,23 @@ history is in git.
   switch every output off; PROG 5V stays on between SERVO screens.
 - The rail line under a READY card reads SIMULATED after the meter's name
   while the panel's model is the supply.
+- The KST and HITEC sessions have no CLOSE; their tab row runs the session's
+  full width, five tabs of 120px. The home tag is the way back: an editor
+  closes first, a held port asks for LEAVE, and a session that holds no
+  port ends and the screen goes to the hub.
+- KST and HITEC show a READY card in the output card's place: PORT, the
+  supply CONNECT switches (PROG 5V, PD MINI or SUPPLY) and SERVO, the servo
+  read, with the rail line under them. A tap on PORT opens the PORT list,
+  locked while the session holds the port; a tap on the supply row while
+  it reads ON switches it off, as OUTPUT OFF does, also under a panel over
+  the left card; a tap on another row not met names it in the alert band. The output card's SET row, SPEED,
+  CENTRE, SWEEP, RELEASE and the PROG 5V box are gone from both screens.
+  No SERVO function screen shows the output card.
+- The footer's middle slot on KST and HITEC is the session's WRITE n
+  VALUES, from any tab, in place of ARM: the same tap as the session's own
+  button, grey and naming why before CONNECT and the read, with no value
+  changed, while a step runs and while a page is open. A finger on a READY
+  row or on WRITE keeps SETTINGS and the PORT list shut.
 
 - The panel sets the Bluetooth IMU's output content register RSW (0x02) to
   0x0C: angle (0x53) and angular rate with the battery (0x52), 2 frames a

@@ -10,9 +10,9 @@
  * - yes_applies_the_operators_set_points
  * - no_keeps_the_sessions_until_the_off
  * - yes_past_6_v_takes_the_hv_warning_and_its_hold
+ * - the_hv_warning_after_yes_names_the_change_and_the_live_output
  * - no_question_while_a_port_holds_the_supply
  * - the_question_waits_for_servos_own_panels
- * - the_question_waits_for_output_ons_hold
  * - no_question_after_an_off_an_error_or_a_stop
  * - an_off_asked_ends_the_question_before_the_output_reads_off
  * - no_question_when_nothing_differs_or_a_set_point_moved
@@ -26,8 +26,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-/* KST's screen: its output card keeps the SET row and OUTPUT ON, which
- * LIVE, SWEEP and RUDDER show as their READY rows' SUPPLY. */
+/* KST's screen, where a programmer's LEAVE leaves the output on. */
 #define SERVO_RIG_FN SERVO_FN_KST
 #include "servo_screen_rig.h"
 
@@ -239,6 +238,71 @@ TEST_CASE(yes_past_6_v_takes_the_hv_warning_and_its_hold)
     CHECK(set_at(6.0f, 1.5f));
 }
 
+/** @brief Pixels of colour @p col in buffer 0 inside the left column's
+ *         panel, over its buttons.  @param col the colour
+ *  @return their count */
+static int px_in_the_panel(ui_color_id_t col)
+{
+    int n = 0;
+    for (int y = OV_Y0 + 4; y < Q_BTN_Y; ++y) {
+        for (int x = OV_X0 + 4; x < OV_X0 + OV_W0 - 4; ++x) {
+            n += (fb[(size_t)y * W + x] == ui_theme_color(col));
+        }
+    }
+    return n;
+}
+
+/* The question draws a change row only for a set point that changes: the
+ * voltage's in its colour, and none for a current limit that is the
+ * port's own.  After YES past 6.0V the HV warning, in the danger frame,
+ * names the voltage from and to, and under its prose says in the warning
+ * colour that the output is on and the voltage changes at once. */
+TEST_CASE(the_hv_warning_after_yes_names_the_change_and_the_live_output)
+{
+    own(7.4f, 1.5f);                        /* both set points change */
+    left_on(false);
+    frame_tick();
+    scr->render(&cv, 0);
+    CHECK(px_in_the_panel(UI_C_VOLT) > 0);
+    CHECK(px_in_the_panel(UI_C_CURR) > 0);
+
+    own(7.4f, PORT_I);                      /* the voltage alone */
+    left_on(false);
+    frame_tick();
+    CHECK(servo_screen_asks_restore());
+    scr->render(&cv, 0);
+    CHECK(px_in_the_panel(UI_C_VOLT) > 0);
+    CHECK_EQ(px_in_the_panel(UI_C_CURR), 0);
+
+    tap(WARN_APPLY_X, WARN_Y);              /* YES: the HV warning */
+    CHECK(servo_screen_asks_restore());
+    frame_tick();
+    scr->render(&cv, 0);
+    CHECK_EQ(fb[(size_t)OV_Y0 * W + OV_X0 + OV_W0 / 2],
+             ui_theme_color(UI_C_DANGER));
+    char what[64];
+    snprintf(what, sizeof(what), TR(SV_HV_VOLTAGE), (double)PORT_V, 7.4);
+    const int wx = OV_X0 + 20, wy = OV_Y0 + 76;   /* what it asks */
+    want_fresh();
+    memcpy(want_fb, fb, (size_t)W * H * sizeof(gfx_color_t));
+    gfx_fill_rect(&want_cv, wx, wy,
+                  gfx_text_width(&gfx_font_12x24, what, 1), 24,
+                  fb[(size_t)(wy + 2) * W + wx - 6]);
+    gfx_text(&want_cv, wx, wy, what, &gfx_font_12x24,
+             ui_theme_color(UI_C_VOLT), 1);
+    CHECK(same_in(fb, want_fb, 0, 0, W, H));
+    /* The line about the live output: the only warning colour between
+     * the prose's first line and the buttons. */
+    int live = 0;
+    for (int y = OV_Y0 + 120; y < Q_BTN_Y; ++y) {
+        for (int x = OV_X0 + 4; x < OV_X0 + OV_W0 - 4; ++x) {
+            live += (fb[(size_t)y * W + x] == ui_theme_color(UI_C_WARN));
+        }
+    }
+    CHECK(live > 0);
+    CHECK(set_at(PORT_V, PORT_I));          /* nothing applied yet */
+}
+
 /* While a port holds the supply there is no question; a port that takes it
  * again before the next frame, or while the question stands, ends it. */
 TEST_CASE(no_question_while_a_port_holds_the_supply)
@@ -275,60 +339,20 @@ TEST_CASE(no_question_while_a_port_holds_the_supply)
     CHECK(!servo_screen_asks_restore());
 }
 
-/* A keypad of a set point and SERVO's own question about a live output
- * stand first: the question waits for them and follows once they close. */
+/* A panel of SERVO's own, RUDDER's LENGTH keypad, stands first: the
+ * question waits for it and follows once it closes. */
 TEST_CASE(the_question_waits_for_servos_own_panels)
 {
     own(5.5f, 1.5f);
+    go(SERVO_FN_RUDDER);
+    tap(SV_RUD_LEN_X, SV_RUD_LEN_Y);        /* LENGTH's keypad */
+    CHECK(servo_screen_keypad()->open);
     left_on(false);
-    tap(SUP_I_X, SUP_ROW_Y);                /* the current limit's keypad */
     frame_tick();
     CHECK(!servo_screen_asks_restore());
-    keys("0.8");                            /* asked about: output on */
-    frame_tick();
-    CHECK(servo_screen_output_held());
-    CHECK(!servo_screen_asks_restore());
-    tap(WARN_CANCEL_X, WARN_Y);             /* CANCEL: nothing changed */
+    key(UI_KEY_CANCEL);
+    CHECK(!servo_screen_keypad()->open);
     CHECK(set_at(PORT_V, PORT_I));
-    frame_tick();
-    CHECK(servo_screen_asks_restore());
-
-    /* Answered APPLY, the change stands: the offer is gone. */
-    own(5.5f, 1.5f);
-    left_on(false);
-    tap(SUP_I_X, SUP_ROW_Y);
-    keys("0.8");
-    tap(WARN_APPLY_X, WARN_Y);
-    CHECK(set_at(PORT_V, 0.8f));
-    for (int i = 0; i < 40; ++i) {
-        frame_tick();
-    }
-    CHECK(!servo_screen_asks_restore());
-}
-
-/* A finger on OUTPUT ON whose ON landed under it: the question waits for
- * the finger to let go. */
-TEST_CASE(the_question_waits_for_output_ons_hold)
-{
-    own(5.5f, 1.5f);
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
-    for (int i = 0; i < 100; ++i) {
-        frame_tick();
-    }
-    supply_cmd_t c;
-    CHECK(supply_cmd(&c) && c.on);
-    supply_screen_set_output(true);
-    frame_tick();
-    CHECK(servo_screen_output_held());
-    /* A port takes the supply and lets go of it between two frames. */
-    port_holds(false, true);
-    supply_screen_adopt(PORT_V, PORT_I);
-    port_leaves(false);
-    for (int i = 0; i < 10; ++i) {
-        frame_tick();
-    }
-    CHECK(!servo_screen_asks_restore());
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
     frame_tick();
     CHECK(servo_screen_asks_restore());
 }
@@ -375,9 +399,10 @@ TEST_CASE(no_question_after_an_off_an_error_or_a_stop)
     }
 }
 
-/* OUTPUT OFF tapped while the question or the HV warning after YES stands:
- * it goes at once, before the supply reports the output off, and nothing
- * is applied, in the same frame as the OFF or after it. */
+/* An OFF asked while the question or the HV warning after YES stands --
+ * SUPPLY's OUTPUT OFF, or KST's supply row (test_kst_panel_frame): it goes
+ * at once, before the supply reports the output off, and nothing is
+ * applied, in the same frame as the OFF or after it. */
 TEST_CASE(an_off_asked_ends_the_question_before_the_output_reads_off)
 {
     for (int same_frame = 0; same_frame < 2; ++same_frame) {
@@ -385,7 +410,7 @@ TEST_CASE(an_off_asked_ends_the_question_before_the_output_reads_off)
         left_on(false);
         frame_tick();
         CHECK(servo_screen_asks_restore());
-        tap(SUP_OUT_X, SUP_ROW_Y);              /* OUTPUT OFF */
+        supply_screen_ask_off();                /* OUTPUT OFF */
         supply_cmd_t c;
         CHECK(supply_cmd(&c) && c.off);         /* sent; still reads on */
         if (!same_frame) {
@@ -654,9 +679,9 @@ int main(void)
     RUN(yes_applies_the_operators_set_points);
     RUN(no_keeps_the_sessions_until_the_off);
     RUN(yes_past_6_v_takes_the_hv_warning_and_its_hold);
+    RUN(the_hv_warning_after_yes_names_the_change_and_the_live_output);
     RUN(no_question_while_a_port_holds_the_supply);
     RUN(the_question_waits_for_servos_own_panels);
-    RUN(the_question_waits_for_output_ons_hold);
     RUN(no_question_after_an_off_an_error_or_a_stop);
     RUN(an_off_asked_ends_the_question_before_the_output_reads_off);
     RUN(no_question_when_nothing_differs_or_a_set_point_moved);

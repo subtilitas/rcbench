@@ -18,8 +18,11 @@
  * - a_tap_on_a_drive_row_names_why_or_opens_its_list
  * - past_6v_arm_is_refused_and_the_row_opens_the_hv_warning
  * - a_tap_on_arm_or_a_stop_during_the_steps_ends_them_all_off
+ * - arm_is_a_stop_press_only_while_the_steps_run
  * - the_5v_arm_switched_stays_across_servo_and_goes_with_the_last
+ * - a_leave_under_arms_hold_switches_nothing_on
  * - a_finger_on_arm_opens_no_row_fix
+ * - a_finger_on_arm_takes_no_zero
  *
  * SPDX-License-Identifier: MIT
  */
@@ -75,7 +78,8 @@ static void pd_off_on_live(void)
 /* LIVE and SWEEP show PORT, SUPPLY and ARM, RUDDER PORT, ANGLE, ZERO,
  * SUPPLY and ARM, over the output card; the SET row and OUTPUT ON are not
  * there.  Off on a SAFE bench, the PD mini's row reads ARM SWITCHES IT ON
- * in amber and ARM HOLD 2s; TEST shows no rows. */
+ * in amber and ARM HOLD 2s; KST shows none of these rows and has no ARM
+ * that switches the supply. */
 TEST_CASE(each_screen_names_its_rows_and_shows_no_supply_box)
 {
     pd_off_on_live();
@@ -112,7 +116,7 @@ TEST_CASE(each_screen_names_its_rows_and_shows_no_supply_box)
     CHECK_EQ(drow(RD_ZERO).st, (uint8_t)RDY_OK);
     go(SERVO_FN_KST);
     CHECK(!drive_shown());
-    CHECK_EQ(ready_count(), 0);
+    CHECK_EQ(drive_ready_count(), 0);
     CHECK(!servo_screen_arm_switches());
 }
 
@@ -389,6 +393,27 @@ TEST_CASE(a_tap_on_arm_or_a_stop_during_the_steps_ends_them_all_off)
     }
 }
 
+/* While the steps run, ARM is a press that stops what the bench drives:
+ * the router hands it through the alert band (safe_at).  Before the hold
+ * and after the steps ended it is not, and the READY rows never are. */
+TEST_CASE(arm_is_a_stop_press_only_while_the_steps_run)
+{
+    carrier_safe_off(800u);
+    go(SERVO_FN_LIVE);
+    ra_ms(100u);
+    CHECK(!scr->safe_at(SV_ARM_X, SV_FOOT_Y));
+    arm_hold(2100u);
+    CHECK(svs_seq_busy());
+    CHECK(scr->safe_at(SV_ARM_X, SV_FOOT_Y));
+    CHECK(!scr->safe_at(SV_RDY_X, SV_DRV_ROW_Y(LV_SUPPLY)));
+    servo_screen_cancel_arm();
+    CHECK(!svs_seq_busy());
+    CHECK(!scr->safe_at(SV_ARM_X, SV_FOOT_Y));
+    ra_ms(1500u);
+    ra.p5_task = false;
+    carrier_done();
+}
+
 /* The 5V ARM switched on stays from LIVE to another SERVO screen, the
  * bench SAFE on each leave, and goes off when SERVO is left. */
 TEST_CASE(the_5v_arm_switched_stays_across_servo_and_goes_with_the_last)
@@ -413,6 +438,29 @@ TEST_CASE(the_5v_arm_switched_stays_across_servo_and_goes_with_the_last)
     ra_ms(200u);
     CHECK(ra.p5_offs > offs);
     CHECK(!prog5v_box_on());
+    ra.p5_task = false;
+    carrier_done();
+}
+
+/* ARM's hold under way as SERVO is left: the leave drops it before its
+ * 2s, so neither PORT PWM, PROG 5V nor ARM goes on. */
+TEST_CASE(a_leave_under_arms_hold_switches_nothing_on)
+{
+    carrier_safe_off(40u);
+    ui_router_goto(SCREEN_SERVO_LIVE);
+    scr = servo_fn_screen(SERVO_FN_LIVE);
+    ra_ms(100u);
+    CHECK(servo_screen_arm_switches());
+    ev(SV_ARM_X, SV_FOOT_Y, TOUCH_EVENT_DOWN, 1);
+    ra_ms(1000u);
+    CHECK(servo_screen_arm_held());
+    ui_router_goto(SCREEN_OVERVIEW);
+    ra_ms(2000u);
+    CHECK(!svs_seq_busy());
+    CHECK_EQ(ra.p5_ons, 0u);
+    CHECK_EQ(ra.arms, 0u);
+    CHECK(!prog5v_box_on());
+    CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
     ra.p5_task = false;
     carrier_done();
 }
@@ -491,7 +539,9 @@ int main(void)
     RUN(a_tap_on_a_drive_row_names_why_or_opens_its_list);
     RUN(past_6v_arm_is_refused_and_the_row_opens_the_hv_warning);
     RUN(a_tap_on_arm_or_a_stop_during_the_steps_ends_them_all_off);
+    RUN(arm_is_a_stop_press_only_while_the_steps_run);
     RUN(the_5v_arm_switched_stays_across_servo_and_goes_with_the_last);
+    RUN(a_leave_under_arms_hold_switches_nothing_on);
     RUN(a_finger_on_arm_opens_no_row_fix);
     RUN(a_finger_on_arm_takes_no_zero);
     return test_summary("servo_drive_ready");

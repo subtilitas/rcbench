@@ -10,16 +10,13 @@
  * SPDX-License-Identifier: MIT
  */
 #include "prog_registry.h"
-#include "esc_wire_panel.h"
 #include "servo_screen.h"
 
 #include <math.h>
 
 #include "servo_limrun.h"
-#include "supply_screen.h"
 #include "ui_screen.h"
 #include "ui_slider.h"
-#include "ui_text.h"
 #include "ui_widgets.h"
 
 /* Last: the layout macros of the headers it includes have short names
@@ -38,10 +35,11 @@ bool svs_arm_locked(void)
 /*
  * The controls whose press stops what the bench drives, where svs_event_body()
  * hands a DOWN at (x, y) to them now: DISARM while the button reads DISARM,
- * OUTPUT OFF while the supply's output is on, PROG 5V OFF while the
- * ports' 5V reads ON, STOP TEST in TEST's result box while its run is
- * under way, and ARM + START on RUDDER AUTO, TEST and LIMIT RUN while
- * its sequence or its run is under way (a tap there stops it).
+ * STOP TEST in TEST's result box while its run is under way, ARM + START
+ * on RUDDER AUTO, TEST and LIMIT RUN while its sequence or its run is
+ * under way (a tap there stops it), ARM on LIVE, SWEEP and RUDDER while
+ * its steps run, and the supply row of KST's and HITEC's READY card while
+ * it reads ON.
  * The router hands a press on one of them through the alert band and the
  * band's help bubble (ui_screen_t's safe_at); everything else under those
  * stays theirs, ARM included.  The order of the checks is svs_event_body()'s.
@@ -71,10 +69,17 @@ bool svs_safe_at(int x, int y)
             return false;
         }
     }
-    if (s.gate.armed && gfx_rect_contains(s.arm_btn, x, y)) {
-        return true;
+    if (prog_ready_shown()) {
+        /* KST's and HITEC's supply row while it reads ON switches it off;
+         * the rest of the card drives nothing. */
+        if (prog_ready_stops_at(x, y)) {
+            return true;
+        }
+        if (gfx_rect_contains(ready_card_rect(), x, y)) {
+            return false;
+        }
     }
-    if (supply_screen_output_on() && gfx_rect_contains(s.out_btn, x, y)) {
+    if (s.gate.armed && gfx_rect_contains(s.arm_btn, x, y)) {
         return true;
     }
     if (prog_shown_set() != NULL || modal_open()) {
@@ -331,6 +336,21 @@ void svs_event_body(const touch_event_t *evt)
         if (foot_down(evt)) {
             return;
         }
+        /* KST and HITEC: WRITE in the footer's middle, no ARM, and the
+         * READY card in the output card's place.  The supply row that
+         * reads ON stops an output: it takes its press under a panel too,
+         * as svs_safe_at() names it. */
+        if (prog_ready_shown()) {
+            if (prog_write_down(evt)) {
+                return;
+            }
+            if (gfx_rect_contains(ready_card_rect(), px, py)) {
+                if (!modal_open() || prog_ready_stops_at(px, py)) {
+                    (void)ready_down(evt);
+                }
+                return;
+            }
+        }
         /* RUDDER AUTO, TEST and LIMIT RUN: the footer's ARM + START and
          * the READY card in the output card's place; nothing of the
          * output card is there to press. */
@@ -397,68 +417,6 @@ void svs_event_body(const touch_event_t *evt)
             }
             return;
         }
-        if (!drive_shown() && prog5v_box_shown()
-            && gfx_rect_contains(prog5v_box_button(&s.p5), px, py)) {
-            /* One contact owns PROG 5V, as OUTPUT; a port holding the
-             * supply locks it, and the band says why. */
-            if (!s.p5_down) {
-                if (prog5v_box_press(&s.p5)) {
-                    s.p5_down = true;
-                    s.p5_id   = evt->point.id;
-                    ++s.power_rev;
-                } else if (!prog5v_box_live()) {
-                    ui_router_set_alert(TR(P5_LOCKED));
-                }
-            }
-            return;
-        }
-        if (gfx_rect_contains(s.out_btn, px, py)) {
-            /* A programming port holds the supply: off is taken, on is
-             * not. */
-            if (!supply_screen_output_on() && supply_screen_port_held()) {
-                ui_router_set_alert(esc_wire_panel_holds_port() ? TR(SUP_HELD_REFUSED_ESC)
-                                                                   : TR(SUP_HELD_REFUSED));
-                return;
-            }
-            /* Off, with a set point past a standard servo's rating: the HV
-             * warning, whose hold switches it on.  One press in the
-             * overlay at a time. */
-            if (!s.out_down && !supply_screen_output_on()
-                && hv_set_point()) {
-                if (!s.ov_have) {
-                    ask_hv_on();
-                }
-                return;
-            }
-            /* One contact owns the switch, as on ARM. */
-            if (!s.out_down) {
-                s.out_down     = true;
-                s.out_id       = evt->point.id;
-                s.out_press_on = supply_screen_output_on();
-                if (!s.out_press_on) {
-                    ui_hold_begin(&s.out_hold, TX_HOLD_HINT_OUTPUT_ON);
-                }
-                ++s.sup_rev;
-            }
-            return;
-        }
-        for (int k = 0; k < 2 && !drive_shown(); ++k) {
-            if (gfx_rect_contains(sup_val_rect(k), px, py)) {
-                /* No set point moves under a programming port, and the
-                 * band says why. */
-                if (supply_screen_port_held()) {
-                    ui_router_set_alert(esc_wire_panel_holds_port() ? TR(SUP_HELD_REFUSED_ESC)
-                                                                   : TR(SUP_HELD_REFUSED));
-                    return;
-                }
-                /* The run owns the set points while it runs. */
-                test_end_now(SERVO_TEST_AB_OPERATOR);
-                if (!s.ov_have) {
-                    ov_take(evt, (k == 0) ? OP_SUP_V : OP_SUP_I, -1);
-                }
-                return;
-            }
-        }
         float deg;
         if (live_shown() && on_the_dial(px, py, &deg)) {
             /* Refused while the value is not live: the press is the dial's
@@ -501,81 +459,10 @@ void svs_event_body(const touch_event_t *evt)
             stop_sweep();
             release();
         } else if (gfx_rect_contains(s.arm_btn, px, py)) {
-            if (drive_arm_press(evt)) {
-                return;             /* LIVE, SWEEP and RUDDER */
-            }
-            if (s.gate.armed) {
-                /* DISARM acts on the press: a stop never waits for a lift
-                 * that may not come.  The press takes no hold, so a finger
-                 * left on the button arms nothing when it reads ARM again. */
-                svs_ask_disarm();
-                ++s.arm_rev;
-                return;
-            }
-            if (svs_arm_locked()) {
-                /* Programming and an armed bench are exclusive: the
-                 * press arms nothing and says why in the alert band. */
-                if (prog_holds()) {
-                    ui_router_set_alert(prog_reg_hold_alert());
-                }
-                return;
-            }
-            if (s.arm_down) {
-                /* The gesture belongs to the contact that began it.  A second
-                 * finger, or a palm, taking it over would leave the first
-                 * one's release ignored and arm the bench from a contact
-                 * nobody made deliberately. */
-                return;
-            }
-            s.arm_down = true;
-            s.arm_id   = evt->point.id;
-            ui_hold_begin(&s.arm, TX_HOLD_HINT_ARM);
-            ++s.arm_rev;
-        }
-    }
-
-    if (s.p5_down && evt->point.id == s.p5_id) {
-        if (evt->type == TOUCH_EVENT_MOVE) {
-            if (prog5v_box_drag(&s.p5, px, py)) {
-                s.p5_down = false;
-                ++s.power_rev;
-            }
-            return;
-        }
-        if (evt->type == TOUCH_EVENT_UP) {
-            prog5v_box_release(&s.p5, evt);
-            s.p5_down = false;
-            ++s.power_rev;
-            return;
-        }
-    }
-
-    if (s.out_down && evt->point.id == s.out_id) {
-        const bool on = supply_screen_output_on();
-        if (evt->type == TOUCH_EVENT_MOVE) {
-            /* Off the switch abandons the hold; a press that began on a
-             * live output is an OFF, whose release is checked against the
-             * switch. */
-            if (!s.out_press_on && !gfx_rect_contains(s.out_btn, px, py)
-                && ui_hold_leave(&s.out_hold)) {
-                s.out_down = false;
-                ++s.sup_rev;
-            }
-            return;
-        }
-        if (evt->type == TOUCH_EVENT_UP) {
-            const bool fired = ui_hold_end(&s.out_hold, evt, s.out_btn);
-            s.out_down = false;
-            ++s.sup_rev;
-            /* Off is a tap; on is a hold that has already asked by the time
-             * the finger lifts.  Which one is the press's: an earlier ON
-             * reported during a second hold does not make its release an
-             * OFF. */
-            if (s.out_press_on && on && !fired
-                && gfx_rect_contains(s.out_btn, px, py)) {
-                supply_screen_ask_off();
-            }
-            return;
+            /* LIVE, SWEEP and RUDDER: KST's and HITEC's WRITE and the
+             * ARM + START of RUDDER AUTO, TEST and LIMIT RUN take their
+             * presses above. */
+            (void)drive_arm_press(evt);
         }
     }
 

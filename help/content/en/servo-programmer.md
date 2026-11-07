@@ -8,7 +8,7 @@ order: 22
 
 The servo programmer reads the 32 registers of a KST or Chaservo servo through its signal wire and displays them as settings. Both brands use the same protocol and register set. Changes are written back only when requested.
 
-Tap KST on the [SERVO](servo.md) hub. The KST screen opens the session over the left card. CLOSE or the home tag returns to the hub. Opening the programmer ends a running automatic test.
+Tap KST on the [SERVO](servo.md) hub. The KST screen opens the session over the left card. The home tag returns to the hub; the session has no CLOSE. Opening the programmer ends a running automatic test.
 
 ![The SERVO hub](view:servo-hub)
 
@@ -24,6 +24,18 @@ KST and Chaservo are names or trademarks of their respective owners. rcbench is 
 
 Register layout and timing were derived from 1 KST Tool Card #2 and 1 Chaservo servo. Register effects on motion have not been measured. Names, units and limits follow those displayed and accepted by the vendor tool.
 
+## The READY card and the footer
+
+![KST before CONNECT](view:servo-kst)
+
+The right card is the READY card, with three rows and the rail line:
+
+- PORT: the port the session works on. Red with `NO PROG PORT` while the tester drives OUTPUTS. A tap opens the PORT list; while the session holds the port, the list stays shut and the alert band names the lock.
+- The supply CONNECT switches: PROG 5V on the rbmod carrier, PD MINI where one answers, SUPPLY otherwise. Amber `ON AT CONNECT` while off. A red dot and `ON` while on; a tap then switches it off, as OUTPUT OFF does. Without a supply the bench switches: amber `OFF, ON BY HAND`.
+- SERVO: `NOT CONNECTED` before CONNECT, `NOT READ` with the port held, then the servo's type, `V6?` while it is 20k_sel's guess.
+
+A tap on a row that is not met names it in the alert band. The footer's middle slot is the session's WRITE n VALUES from any tab, the same as the session's own button. It is grey before CONNECT and the read, with no value changed and while a page is open; a tap names why. KST has no ARM. SETTINGS opens KST EXPERT MODE's page; it is grey while the session holds the port.
+
 ## What it needs
 
 ![The programmer with the tester holding the port](view:servo-kst)
@@ -36,7 +48,7 @@ Register layout and timing were derived from 1 KST Tool Card #2 and 1 Chaservo s
 ![An IOmcu without the programming port](view:servo-kst-nopage)
 ![The standard outputs are the target](view:servo-kst-target)
 
-If a requirement is unmet, all controls except CLOSE are disabled and the tab explains why.
+If a requirement is unmet, all controls are disabled and the tab explains why. The home tag still returns to the hub.
 
 ## The port and the supply
 
@@ -55,7 +67,7 @@ While the tester owns the port, MORE configures the values applied by CONNECT:
 ![A PD mini answers](view:servo-kst-supply)
 ![The supply in programming mode](view:servo-kst-supplied)
 
-While the port is in programming mode, it controls the supply set points. The SET row and SUPPLY screen reject changes and ON; OUTPUT OFF and STOP remain available. Without a PD mini, voltage and current limit are stored but not applied. After returning to PWM, the pre-session set points are restored once the output is off. If LEAVE keeps it on, restoration waits for the next OFF. Any set point changed in the meantime is retained.
+While the port is in programming mode, it controls the supply set points. KST's and HITEC's READY card and the SUPPLY screen reject changes and ON; OUTPUT OFF, the supply row's OFF and STOP remain available. Without a PD mini, voltage and current limit are stored but not applied. After returning to PWM, the pre-session set points are restored once the output is off. If LEAVE keeps it on, restoration waits for the next OFF. Any set point changed in the meantime is retained.
 
 ![The question after LEAVE](view:servo-hitec-restore-ask)
 
@@ -220,7 +232,7 @@ A write is considered interrupted after link loss, a board restart, ABORT or sto
 ![LEAVE PROGRAMMING](view:servo-kst-leave)
 ![LEAVE after a write with a PD mini](view:servo-kst-leave-cycle)
 
-LEAVE, CLOSE or the home tag in programming mode opens LEAVE PROGRAMMING. Returning to servo PWM may move the servo. After a write with a PD mini, the page explains that power will cycle off for 1s first. Without a PD mini, it explains that written values require a manual power cycle. If nothing was written, the supply stays unchanged.
+LEAVE or the home tag in programming mode opens LEAVE PROGRAMMING. Returning to servo PWM may move the servo. After a write with a PD mini, the page explains that power will cycle off for 1s first. Without a PD mini, it explains that written values require a manual power cycle. If nothing was written, the supply stays unchanged.
 
 Hold HOLD 2s TO LEAVE for 2s. The port holds its line low for WAIT BEFORE PWM, then returns the pin to the tester. Leaving the KST screen does not perform LEAVE: the session retains the port, and every other SERVO screen opens KST again until LEAVE. Within the programmer, home closes an open keypad, list, warning or keyboard first.
 
@@ -247,7 +259,7 @@ MOVE SERVO on the Hitec programmer's TRAVEL tab moves a D series servo's horn to
 - NEUTRAL, LEFT END and RIGHT END get `-` and `+` keys of 8 counts, 0.11°, repeating while held. The horn follows the row last stepped, its label in the accent colour; it starts on NEUTRAL. A tap on the value opens the keypad.
 - The horn moves 2.0° at most a pass and stays inside the reach of the stored end points, 2606 to 13743 on a factory D485HW.
 - A horn that lags more than 2.0° on 2 passes, a current at 80% of the current limit for 0.4s, or an AS5600 angle that does not follow moves the horn back 1.0° and ends the loop: `Servo blocked at 6000. Moved back to 6167.`
-- A tap on ON, a tab change, CLOSE or the home tag ends it: target 3000, a restart of the servo, and a read held against the start, about 2.6s in the host model. `MOVE SERVO is OFF. The stored values read back unchanged.`
+- A tap on ON, a tab change or the home tag ends it: target 3000, a restart of the servo, and a read held against the start, about 2.6s in the host model. `MOVE SERVO is OFF. The stored values read back unchanged.`
 - STOP, a switch to SAFE at the bench, a lost link, the supply going off and a failed read end it at once with every output off.
 
 ### FIND STOP

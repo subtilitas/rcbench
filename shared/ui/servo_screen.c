@@ -673,7 +673,6 @@ void svs_leave(void)
      * entered is none of SERVO's, as SUPPLY's output goes with SUPPLY; a
      * hold on PROG 5V ON is dropped. */
     prog5v_box_cancel(&s.p5);
-    s.p5_down = false;
     if (!servo_screen_owns(ui_router_leaving_to())) {
         prog5v_box_left(PROG5V_BY_SERVO);
     }
@@ -764,7 +763,6 @@ void svs_cancel(void)
     /* PROG 5V ON's hold the same; a lost release of PROG 5V OFF asks
      * nothing: the box's OFF is a tap that lifts on it. */
     prog5v_box_cancel(&s.p5);
-    s.p5_down = false;
     ++s.power_rev;
     /*
      * And the dial.  A drag left latched owns its track id, and the GT911

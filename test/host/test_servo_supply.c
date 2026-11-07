@@ -5,21 +5,22 @@
  *
  * Cases:
  * - leaving_servo_switches_off_an_on_a_run_or_the_hv_hold_asked
- * - a_run_ending_under_output_ons_hold_switches_nothing_on_past_6_v
- * - output_ons_hold_looks_at_the_set_point_again_as_it_completes
+ * - a_run_ending_under_arms_steps_switches_nothing_on_past_6_v
+ * - a_set_point_raised_past_6_v_under_arms_hold_switches_nothing_on
  * - the_set_points_go_back_whichever_screen_is_up
  * - the_set_points_wait_for_a_sample_after_the_off
  * - a_supply_reading_stamped_on_tick_zero_keeps_its_stamp
  * - a_hold_on_supplys_output_on_holds_the_restore_back
- * - settings_opens_nothing_under_output_ons_hold
+ * - settings_opens_nothing_under_arms_hold
  *
  * SPDX-License-Identifier: MIT
  */
 
-/* KST's screen: its output card keeps the SET row and OUTPUT ON, which
- * LIVE, SWEEP and RUDDER show as their READY rows' SUPPLY. */
-#define SERVO_RIG_FN SERVO_FN_KST
+/* LIVE's screen: no SET row and no OUTPUT ON; its READY rows' PD MINI is
+ * switched on by ARM's steps, or past 6.0V by the HV warning a tap on the
+ * row opens. */
 #include "servo_screen_rig.h"
+#include "servo_ready_int.h"
 #include "supply_spots.h"
 
 /* ------------------------------------------- the review's cases, as tests */
@@ -69,14 +70,24 @@ static void bench_frames_on(uint32_t ms, bool accept_on, float *on_v_max)
     }
 }
 
+/** @brief ARM on LIVE pressed, @p ms of bench frames under it with ONs let
+ *         through, and lifted. */
+static void arm_held_on(uint32_t ms, float *on_v)
+{
+    ev(SV_ARM_X, SV_FOOT_Y, TOUCH_EVENT_DOWN, 1);
+    bench_frames_on(ms, true, on_v);
+    ev(SV_ARM_X, SV_FOOT_Y, TOUCH_EVENT_UP, 1);
+}
+
 /*
  * 8.4V set on SUPPLY with the output off; a run without HV steps starts
- * and asks 4.8V and its ON, which does not land.  KST's screen, the one
- * with OUTPUT ON, ends the run as its session opens; OUTPUT ON held there
- * at 4.8V: the set points do not go back under the hold, and no ON is
- * ever asked above 6.0V.
+ * and asks 4.8V and its ON, which does not land.  The run ends as SERVO is
+ * left, and its set points go back to 8.4V once a sample shows the output
+ * off with no ON on its way.  LIVE shown again, ARM held there: the PD
+ * MINI row reads past 6.0V, so no ON is ever asked above 6.0V and the
+ * output is never on at a set point past 6.0V.
  */
-TEST_CASE(a_run_ending_under_output_ons_hold_switches_nothing_on_past_6_v)
+TEST_CASE(a_run_ending_under_arms_steps_switches_nothing_on_past_6_v)
 {
     bench_fresh();
     short_runs();
@@ -87,24 +98,27 @@ TEST_CASE(a_run_ending_under_output_ons_hold_switches_nothing_on_past_6_v)
     float on_v = 0.0f;
     bench_frames_on(1500u, false, &on_v);          /* the ON does not land */
     on_v = 0.0f;
-    close_settings();                  /* OUTPUT ON's hold, on KST's card */
-    CHECK(!servo_screen_testing());    /* KST's session ends the run */
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
-    bench_frames_on(2800u, true, &on_v);
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
+    scr->leave();                                  /* ends the run */
     CHECK(!servo_screen_testing());
+    go(SERVO_FN_LIVE);
+    scr->enter();
+    arm_held_on(2800u, &on_v);
     CHECK(on_v <= 6.0f + 1e-4f);
     CHECK(!(bench.out && supply_screen_set_v() > 6.0f + 1e-4f));
     bench_frames_on(2000u, true, &on_v);
     CHECK(on_v <= 6.0f + 1e-4f);
-    /* The output came on at 4.8V under the hold: the set points stay as
-     * they are while it is on. */
-    CHECK(fabsf(supply_screen_set_v() - 4.8f) < 1e-4f);
+    CHECK(!(bench.out && supply_screen_set_v() > 6.0f + 1e-4f));
+    CHECK(fabsf(supply_screen_set_v() - 8.4f) < 1e-4f);
+    char want[128], got[128];
+    snprintf(want, sizeof(want), TR(RDY_BAND), "PD MINI", TR(SV_TAP_HV));
+    const char *why = ready_refusal(got, sizeof(got));
+    CHECK_STR_EQ(why != NULL ? why : "(null)", want);
 }
 
 /*
- * The ON a run asks for, and the ON the HV warning's hold sends, belong to
- * SERVO as the switch's own hold does: leaving SERVO switches each off.
+ * The ON a run asks for, and the ON the HV warning's hold sends from LIVE's
+ * PD MINI row, belong to SERVO as ARM's steps' ON does: leaving SERVO
+ * switches each off.
  */
 TEST_CASE(leaving_servo_switches_off_an_on_a_run_or_the_hv_hold_asked)
 {
@@ -125,11 +139,14 @@ TEST_CASE(leaving_servo_switches_off_an_on_a_run_or_the_hv_hold_asked)
     CHECK(off);
     CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
 
-    /* The HV warning's ON. */
-    fresh();
+    /* The HV warning's ON, opened by a tap on the red PD MINI row. */
+    bench_fresh();
     supply_screen_put(7.4f, 1.0f);
-    scr->tick(0.025f);
-    tap(SUP_OUT_X, SUP_ROW_Y);
+    bench.out = false;
+    bench_frames(200u);
+    while (supply_cmd(&c)) { }
+    tap(SV_RDY_X, SV_DRV_ROW_Y(1));
+    CHECK(servo_screen_output_held());
     scr->tick(0.025f);
     hold_apply(2.3f);
     CHECK(supply_cmd(&c) && c.on);
@@ -140,19 +157,21 @@ TEST_CASE(leaving_servo_switches_off_an_on_a_run_or_the_hv_hold_asked)
     CHECK(c.off && !c.on);
 }
 
-/* A set point raised past 6.0V during OUTPUT ON's ordinary hold -- on
- * SUPPLY, or a run's end putting it back -- switches nothing on when the
- * hold completes: HV SERVOS ONLY opens instead. */
-TEST_CASE(output_ons_hold_looks_at_the_set_point_again_as_it_completes)
+/* A set point raised past 6.0V on SUPPLY during ARM's hold, with the PD
+ * mini off: the PD MINI row turns red under the finger, the hold is
+ * dropped, and nothing goes on when it would have completed; the row names
+ * the HV warning. */
+TEST_CASE(a_set_point_raised_past_6_v_under_arms_hold_switches_nothing_on)
 {
     bench_fresh();
     supply_screen_put(5.0f, 1.0f);
-    scr->tick(0.02f);
-    CHECK(!servo_screen_output_held());
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
-    /* The hold is told to the application: no set point given back under
-     * it (supply_screen_port_done()). */
-    CHECK(servo_screen_output_held());
+    bench.out = false;
+    bench_frames(200u);
+    servo_screen_set_armed(false);
+    supply_cmd_t c;
+    while (supply_cmd(&c)) { }
+    CHECK(servo_screen_arm_switches());
+    ev(SV_ARM_X, SV_FOOT_Y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < 40; ++i) {
         scr->tick(0.025f);
     }
@@ -160,17 +179,21 @@ TEST_CASE(output_ons_hold_looks_at_the_set_point_again_as_it_completes)
     for (int i = 0; i < 80; ++i) {
         scr->tick(0.025f);
     }
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
+    ev(SV_ARM_X, SV_FOOT_Y, TOUCH_EVENT_UP, 1);
+    for (int i = 0; i < 40; ++i) {
+        scr->tick(0.025f);
+    }
     CHECK(!supply_cmd(NULL));
-    scr->render(&cv, 0);
-    CHECK_EQ(fb[UI_MARGIN * W + UI_MARGIN], ui_theme_color(UI_C_DANGER));   /* the warning */
-    /* The HV warning before an ON counts as the hold does. */
-    CHECK(servo_screen_output_held());
-    hold_apply(2.3f);
-    CHECK(!servo_screen_output_held());
-    supply_cmd_t c;
-    CHECK(supply_cmd(&c));
-    CHECK(c.on);
+    servo_cmd_t sc;
+    bool armed = false;
+    while (servo_screen_take(&sc)) {
+        armed = armed || sc.kind == SERVO_CMD_ARM;
+    }
+    CHECK(!armed);
+    char want[128], got[128];
+    snprintf(want, sizeof(want), TR(RDY_BAND), "PD MINI", TR(SV_TAP_HV));
+    const char *why = ready_refusal(got, sizeof(got));
+    CHECK_STR_EQ(why != NULL ? why : "(null)", want);
 }
 
 /* A run ended by leaving SERVO puts the set points back from the per-frame
@@ -387,17 +410,22 @@ TEST_CASE(a_hold_on_supplys_output_on_holds_the_restore_back)
     CHECK_EQ(on_v, 0.0f);
 }
 
-/* A second finger on SETTINGS while OUTPUT ON's 2s hold fills: the list
- * stays shut, so the hold's own release still ends it and the output
- * stays off when the finger lifts early. */
-TEST_CASE(settings_opens_nothing_under_output_ons_hold)
+/* A second finger on SETTINGS while ARM's 2s hold fills on SWEEP, whose
+ * steps would switch the PD mini on: the list stays shut, so the hold's
+ * own release still ends it and nothing goes on when the finger lifts
+ * early. */
+TEST_CASE(settings_opens_nothing_under_arms_hold)
 {
-    fresh();
+    bench_fresh();
     supply_screen_put(5.0f, 1.0f);
+    bench.out = false;
+    bench_frames(200u);
+    servo_screen_set_armed(false);
+    go(SERVO_FN_SWEEP);
     scr->tick(0.025f);
     supply_cmd_t c;
     while (supply_cmd(&c)) { }
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    ev(SV_ARM_X, SV_FOOT_Y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < 20; ++i) {
         scr->tick(0.025f);                      /* 0.5s held */
     }
@@ -405,7 +433,7 @@ TEST_CASE(settings_opens_nothing_under_output_ons_hold)
     ev(SV_FOOT_SET_X, SV_FOOT_Y, TOUCH_EVENT_UP, 2);
     CHECK(!servo_screen_list()->open);
     CHECK_EQ(servo_screen_run_settings(), 0);
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
+    ev(SV_ARM_X, SV_FOOT_Y, TOUCH_EVENT_UP, 1);
     for (int i = 0; i < 100; ++i) {
         scr->tick(0.025f);                      /* 2.5s more */
     }
@@ -414,17 +442,23 @@ TEST_CASE(settings_opens_nothing_under_output_ons_hold)
         on = on || c.on;
     }
     CHECK(!on);
+    servo_cmd_t sc;
+    bool armed = false;
+    while (servo_screen_take(&sc)) {
+        armed = armed || sc.kind == SERVO_CMD_ARM;
+    }
+    CHECK(!armed);
 }
 
 int main(void)
 {
     RUN(leaving_servo_switches_off_an_on_a_run_or_the_hv_hold_asked);
-    RUN(a_run_ending_under_output_ons_hold_switches_nothing_on_past_6_v);
-    RUN(output_ons_hold_looks_at_the_set_point_again_as_it_completes);
+    RUN(a_run_ending_under_arms_steps_switches_nothing_on_past_6_v);
+    RUN(a_set_point_raised_past_6_v_under_arms_hold_switches_nothing_on);
     RUN(the_set_points_go_back_whichever_screen_is_up);
     RUN(the_set_points_wait_for_a_sample_after_the_off);
     RUN(a_supply_reading_stamped_on_tick_zero_keeps_its_stamp);
     RUN(a_hold_on_supplys_output_on_holds_the_restore_back);
-    RUN(settings_opens_nothing_under_output_ons_hold);
+    RUN(settings_opens_nothing_under_arms_hold);
     return test_summary("servo_supply");
 }

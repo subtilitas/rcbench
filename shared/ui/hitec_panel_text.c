@@ -923,3 +923,48 @@ int hitec_panel_message_lines(const hitec_prog_msg_t *m,
     }
     return n;
 }
+
+/* ------------------------------------------------------------ the screen */
+
+void hitec_panel_session(prog_session_t *out)
+{
+    const hitec_prog_t *p = &hp.prog;
+    const hitec_prog_state_t st = hitec_prog_state(p);
+    const hpn_row_t *w = hpn_row_at(HITEC_PANEL_SERVO, 4, 1);
+
+    memset(out, 0, sizeof(*out));
+    /* The supply the state line names before CONNECT (pwm_line()). */
+    if (ui_board_prog_5v_pin() >= 0) {
+        out->supply = (uint8_t)PROG_SES_5V;
+    } else if (hitec_prog_series(p) == (uint8_t)HITEC_CLASSIC
+               || hitec_prog_rail(p)) {
+        out->supply = (uint8_t)PROG_SES_PD_MINI;
+        out->mv = hitec_prog_mv(p);
+        out->ma = hitec_prog_ma(p);
+    } else {
+        out->supply = (uint8_t)PROG_SES_AS_IS;
+    }
+    out->held = hitec_panel_holds_port();
+    out->busy = st == HITEC_PROG_OPENING || st == HITEC_PROG_ENTERING
+                || st == HITEC_PROG_READING || st == HITEC_PROG_CLEARING
+                || st == HITEC_PROG_LEAVING || st == HITEC_PROG_RELEASING
+                || st == HITEC_PROG_RECORDING || st == HITEC_PROG_WRITING
+                || st == HITEC_PROG_BACKUP || st == HITEC_PROG_MOVING;
+    out->read = hitec_prog_model(p) != NULL;
+    if (out->read) {
+        /* The SERVO row's label names the servo read (hpn_label()). */
+        const hpn_row_t *r = hpn_row_at(HITEC_PANEL_SERVO, 1, 1);
+
+        snprintf(out->servo, sizeof(out->servo), "%s",
+                 r != NULL ? hpn_label(r) : "");
+    }
+    if (w != NULL) {
+        char v[HITEC_PANEL_LINE];
+        bool warn = false;
+
+        hpn_value_text(w, v, sizeof(v), &warn);
+        snprintf(out->write, sizeof(out->write), "%.*s",
+                 (int)(sizeof(out->write) - 1u), v);
+        out->write_live = hpn_row_live(w);
+    }
+}

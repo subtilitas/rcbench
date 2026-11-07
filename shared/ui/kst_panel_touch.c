@@ -3,8 +3,8 @@
  * @brief The presses on the programmer's overlay.
  *
  * The presses on the programmer's overlay for KST and Chaservo servos: a
- * DOWN, its moves and its release, the repeat of a held stepper, CLOSE and
- * the home tag, and each frame's hold and repeat.  The state and the seam
+ * DOWN, its moves and its release, the repeat of a held stepper, the home
+ * tag, and each frame's hold and repeat.  The state and the seam
  * are kst_panel_int.h.
  *
  * SPDX-License-Identifier: MIT
@@ -86,10 +86,6 @@ static void down(const touch_event_t *evt)
     if (gfx_rect_contains(kpn_tabs_rect(), x, y)) {
         take(evt, P_TAB, -1);
         (void)ui_tabs_event(&k.tabs, evt);
-        return;
-    }
-    if (gfx_rect_contains(kst_panel_close_rect(), x, y)) {
-        take(evt, P_CLOSE, -1);
         return;
     }
     for (int i = 0; i < ROW_COUNT; ++i) {
@@ -247,11 +243,6 @@ static void rest(const touch_event_t *evt)
     }
     let_go();
     switch (was) {
-    case P_CLOSE:
-        if (gfx_rect_contains(kst_panel_close_rect(), x, y)) {
-            kst_panel_close();
-        }
-        break;
     case P_ROW:
         if (gfx_rect_contains(kpn_value_rect(&kpn_rows[which]), x, y)
             && kpn_row_live(&kpn_rows[which])) {
@@ -400,4 +391,17 @@ void kst_panel_tick(float dt_s)
             ++k.rev;
         }
     }
+}
+
+bool kst_panel_write_tap(void)
+{
+    const row_t *w = kpn_row_at(PG_SERVO, 4, 1);
+
+    if (!k.open || k.have || kst_panel_editor() != 0 || w == NULL
+        || !kpn_row_live(w)) {
+        return false;
+    }
+    kpn_act(w);
+    ++k.rev;
+    return true;
 }

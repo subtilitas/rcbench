@@ -434,6 +434,10 @@ is asked, and while the programmer holds the port (`test_servo_port_button`,
 another press on the screen or a session holds its port, and a page closes as the bench
 goes live (`test_servo_list_guards`, `test_servo_settings_holds`). The lists' rows
 read and step their values and name why a row takes no press (`test_servo_lists_rows`).
+KST and HITEC put a READY card of PORT, the supply CONNECT switches and the servo read in
+the output card's place and the session's WRITE n VALUES in the footer's middle slot in
+place of ARM; their sessions have no CLOSE, the home tag is the way back
+(`servo_prog_ready.c`, `test_kst_panel_frame`, `test_hitec_panel_frame`).
 
 The hub's SETTINGS list sets the type (STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI
 TAIL 760), the frame rate, the pulse widths, trim, travel and reverse for the session under
@@ -1286,7 +1290,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 502 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 504 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1486,7 +1490,7 @@ It takes 6.2s on one x86-64 host, 8.1s in the sanitizer build, and ctest stops i
 120s. `tools/mutate.py --files shared/safety/heartbeat.c --max-mutants 0` makes 36 mutants
 and the suite fails on each. A defined test case that is never called fails the build
 (`-Werror=unused-function`). `tools/check_docs.py` holds this list to
-`test/host/CMakeLists.txt`. Of the 30 `test_kst_*` binaries, 29 run against the servo and
+`test/host/CMakeLists.txt`. Of the 31 `test_kst_*` binaries, 30 run against the servo and
 line model in `test/host/kst_sim.h`; no servo is connected. 5 run the core of
 `protocols/kst/`; `test_kst_file` is the one for the configuration file and reads 40000
 random texts from 1 fixed seed. `test_servo_store` runs the card layer for those files,
@@ -1921,7 +1925,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/motor_workbench.c` | 172 | 165 | 95.9% |
 | `shared/ui/motor_settings_page.c` | 87 | 87 | 100.0% |
 | `shared/ui/motor_program_page.c` | 174 | 169 | 97.1% |
-| `shared/ui/supply_screen.c` | 522 | 512 | 98.1% |
+| `shared/ui/supply_screen.c` | 521 | 511 | 98.1% |
 | `shared/ui/supply_events.c` | 302 | 300 | 99.3% |
 | `shared/ui/supply_draw.c` | 403 | 387 | 96.0% |
 | `shared/ui/supply_settings.c` | 154 | 147 | 95.5% |
@@ -1937,14 +1941,14 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/stop_hold.c` | 45 | 45 | 100.0% |
 | `shared/ui/ui_pinlist.c` | 62 | 62 | 100.0% |
 | `shared/ui/ui_board.c` | 56 | 56 | 100.0% |
-| `shared/ui/servo_screen.c` | 374 | 365 | 97.6% |
-| `shared/ui/servo_screen_sweep.c` | 507 | 504 | 99.4% |
-| `shared/ui/servo_screen_link.c` | 420 | 416 | 99.0% |
-| `shared/ui/servo_screen_touch.c` | 334 | 320 | 95.8% |
-| `shared/ui/servo_screen_draw.c` | 577 | 557 | 96.5% |
-| `shared/ui/servo_settings_panel.c` | 653 | 590 | 90.3% |
-| `shared/ui/servo_settings_draw.c` | 341 | 304 | 89.2% |
-| `shared/ui/servo_test_panel.c` | 454 | 445 | 98.0% |
+| `shared/ui/servo_screen.c` | 372 | 361 | 97.0% |
+| `shared/ui/servo_screen_sweep.c` | 505 | 482 | 95.5% |
+| `shared/ui/servo_screen_link.c` | 419 | 410 | 97.8% |
+| `shared/ui/servo_screen_touch.c` | 264 | 259 | 98.1% |
+| `shared/ui/servo_screen_draw.c` | 452 | 428 | 94.7% |
+| `shared/ui/servo_settings_panel.c` | 598 | 542 | 90.6% |
+| `shared/ui/servo_settings_draw.c` | 323 | 291 | 90.1% |
+| `shared/ui/servo_test_panel.c` | 453 | 444 | 98.0% |
 | `shared/ui/servo_test_ready.c` | 320 | 314 | 98.1% |
 | `shared/ui/servo_test_list.c` | 43 | 43 | 100.0% |
 | `shared/ui/servo_limit_panel.c` | 327 | 316 | 96.6% |
@@ -1955,28 +1959,29 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_rudder_panel.c` | 402 | 399 | 99.2% |
 | `shared/ui/servo_rudder_auto_panel.c` | 564 | 510 | 90.4% |
 | `shared/ui/servo_rudder_auto_ready.c` | 273 | 269 | 98.5% |
-| `shared/ui/servo_ready.c` | 393 | 377 | 95.9% |
-| `shared/ui/servo_drive_ready.c` | 360 | 338 | 93.9% |
+| `shared/ui/servo_ready.c` | 409 | 394 | 96.3% |
+| `shared/ui/servo_prog_ready.c` | 174 | 161 | 92.5% |
+| `shared/ui/servo_drive_ready.c` | 357 | 335 | 93.8% |
 | `shared/ui/servo_rudder_flap.c` | 101 | 99 | 98.0% |
-| `shared/ui/servo_guide.c` | 180 | 176 | 97.8% |
+| `shared/ui/servo_guide.c` | 168 | 164 | 97.6% |
 | `shared/ui/servo_fn.c` | 83 | 82 | 98.8% |
 | `shared/ui/servo_hub.c` | 184 | 179 | 97.3% |
-| `shared/ui/servo_footer.c` | 133 | 130 | 97.7% |
+| `shared/ui/servo_footer.c` | 134 | 131 | 97.8% |
 | `shared/ui/servo_lists.c` | 201 | 200 | 99.5% |
-| `shared/ui/kst_panel.c` | 456 | 445 | 97.6% |
-| `shared/ui/kst_panel_text.c` | 168 | 168 | 100.0% |
+| `shared/ui/kst_panel.c` | 453 | 442 | 97.6% |
+| `shared/ui/kst_panel_text.c` | 194 | 194 | 100.0% |
 | `shared/ui/kst_panel_warn.c` | 309 | 306 | 99.0% |
 | `shared/ui/kst_panel_edit.c` | 385 | 377 | 97.9% |
-| `shared/ui/kst_panel_touch.c` | 239 | 236 | 98.7% |
+| `shared/ui/kst_panel_touch.c` | 240 | 236 | 98.3% |
 | `shared/ui/kst_panel_run.c` | 154 | 144 | 93.5% |
-| `shared/ui/kst_panel_draw.c` | 563 | 561 | 99.6% |
+| `shared/ui/kst_panel_draw.c` | 559 | 557 | 99.6% |
 | `shared/ui/esc_wire_panel.c` | 573 | 544 | 94.9% |
-| `shared/ui/hitec_panel.c` | 270 | 270 | 100.0% |
-| `shared/ui/hitec_panel_text.c` | 474 | 469 | 99.0% |
+| `shared/ui/hitec_panel.c` | 267 | 267 | 100.0% |
+| `shared/ui/hitec_panel_text.c` | 504 | 495 | 98.2% |
 | `shared/ui/hitec_panel_edit.c` | 399 | 397 | 99.5% |
 | `shared/ui/hitec_panel_page.c` | 235 | 235 | 100.0% |
-| `shared/ui/hitec_panel_touch.c` | 217 | 216 | 99.5% |
-| `shared/ui/hitec_panel_draw.c` | 285 | 284 | 99.7% |
+| `shared/ui/hitec_panel_touch.c` | 218 | 209 | 95.9% |
+| `shared/ui/hitec_panel_draw.c` | 280 | 279 | 99.6% |
 | `shared/ui/hitec_panel_file.c` | 230 | 230 | 100.0% |
 | `shared/ui/hitec_panel_run.c` | 105 | 105 | 100.0% |
 | `shared/ui/hitec_panel_move.c` | 219 | 214 | 97.7% |
@@ -2268,7 +2273,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **87527** | **85775** | **98.0%** |
+| **total** | **87471** | **85684** | **98.0%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -2333,9 +2338,9 @@ button and the footer's port line, `PROG PORT n GPIO m`). MOTOR & ESC names its 
 screens name their port and pin. ARM names the roles it drives
 ([Safety](docs/Safety.md#deliberate-behaviours)). One case does not meet the rule. Leaving SERVO
 while a programmer holds a port leaves the output SERVO switched on running
-([Screens, SERVO](docs/Screens.md#servo)). On the rbmod carrier the PROG 5V box on SERVO and
-SUPPLY then reads `HELD BY PROG PORT n`. The status band and every other screen do not name the
-held port. On a board without the PROG 5V box only the PORT button and the port line on SERVO name it.
+([Screens, SERVO](docs/Screens.md#servo)). On the rbmod carrier the PROG 5V box on SUPPLY then
+reads `HELD BY PROG PORT n`. The status band and every other screen do not name the held port.
+On SERVO the PORT button, the port line and KST's and HITEC's PORT row name it.
 
 **Next evidence or work:** the held port named in the status band.
 

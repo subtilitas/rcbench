@@ -618,8 +618,8 @@ SCREENS = {
     "setup-rbmod": ("setup-rbmod.png", "setup", "dark"),
     "layout-rbmod": ("layout-rbmod.png", "layout", "dark"),
     "supply-rbmod": ("supply-rbmod.png", "supply", "dark"),
-    # The PROG 5V box on SERVO's output card, and on the KST programmer
-    # while a session holds the ports' 5V.
+    # LIVE on the carrier: PORT PWM and PROG 5V amber, ARM switches them
+    # on.
     "servo-rbmod": ("servo-rbmod.png", "servo", "dark"),
     # The hub on the carrier, and PORT's list there: PROGP04 refused
     # beside the servo output bound on PWM04.
@@ -904,12 +904,10 @@ FIT_ONLY = {
     "help-logs-plot": (None, "logs", "dark"),
     "help-files-2": (None, "files", "dark"),
     "help-files-3": (None, "files", "dark"),
-    # SERVO's guide: LIVE's READY and controls pages, KST's output card
-    # pages, each task's own pages, RUDDER's with AUTO's box too.
+    # SERVO's guide: LIVE's READY and controls pages, each task's own
+    # pages, RUDDER's with AUTO's box too.
     "help-servo-2":            (None, "servo", "dark"),
     "help-servo-3":            (None, "servo", "dark"),
-    "help-servo-kst":          (None, "servo", "dark"),
-    "help-servo-kst-2":        (None, "servo", "dark"),
     "help-servo-test":         (None, "servo", "dark"),
     "help-servo-hub":          (None, "servo", "dark"),
     # SWEEP's and LIMIT RUN's screens SAFE, and the guide over each.
@@ -1042,6 +1040,9 @@ FIT_ONLY = {
     "servo-rudder-auto-safe": (None, "servo", "dark"),
     # RUDDER AUTO's guide at its READY page.
     "help-servo-rudder-auto-3": (None, "servo", "dark"),
+    # KST's and HITEC's guide: the READY card and the footer's WRITE.
+    "help-servo-kst":   (None, "servo", "dark"),
+    "help-servo-hitec": (None, "servo", "dark"),
     # TEST's guide at its READY page, and TEST's list at its end.
     "help-servo-test-2": (None, "servo", "dark"),
     "servo-test-settings-end": (None, "servo", "dark"),

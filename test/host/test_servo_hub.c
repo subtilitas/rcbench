@@ -3,7 +3,7 @@
  * @brief The SERVO hub through the router: its eight tiles in SETUP's grid,
  * their names and lines in both languages, each tile's function screen, a
  * grey tile's reason, the footer with no ARM and the profile's list, the
- * hub as a SAFE bench, and a programmer's CLOSE back to the hub.
+ * hub as a SAFE bench, and a programmer's home tag back to the hub.
  *
  * Cases:
  * - the_tiles_take_setups_grid_in_the_order_of_use
@@ -12,7 +12,7 @@
  * - a_grey_tile_names_its_reason_and_opens_nothing
  * - the_hub_footer_holds_no_arm_and_settings_opens_the_profile
  * - the_hub_keeps_the_bench_safe
- * - a_programmers_close_goes_back_to_the_hub
+ * - a_programmers_home_tag_goes_back_to_the_hub
  * - hitecs_series_row_reaches_the_programmer
  * - the_angle_source_row_opens_the_sensors_setup
  *
@@ -207,16 +207,16 @@ TEST_CASE(the_hub_keeps_the_bench_safe)
     CHECK_EQ(servo_screen_fn(), SERVO_FN_HUB);
 }
 
-/* KST's CLOSE ends the session; the router then takes the screen to the
- * hub, not to the menu. */
-TEST_CASE(a_programmers_close_goes_back_to_the_hub)
+/* KST's session has no CLOSE: one tap on the home tag ends the session and
+ * the router takes the screen to the hub, not to the menu. */
+TEST_CASE(a_programmers_home_tag_goes_back_to_the_hub)
 {
     on_hub();
     tap_tile(6);
     CHECK_EQ(ui_router_current(), SCREEN_SERVO_KST);
     CHECK(kst_panel_is_open());
-    const gfx_rect_t r = kst_panel_close_rect();
-    tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
+    const gfx_rect_t r = ui_home_tag_rect(ui_router_title(SCREEN_SERVO_KST));
+    tap(r.x + r.w / 2, r.y + r.h / 2);
     CHECK(!kst_panel_is_open());
     ui_router_tick(0.026f);
     CHECK_EQ(ui_router_current(), SCREEN_SERVO);
@@ -270,7 +270,7 @@ int main(void)
     RUN(a_grey_tile_names_its_reason_and_opens_nothing);
     RUN(the_hub_footer_holds_no_arm_and_settings_opens_the_profile);
     RUN(the_hub_keeps_the_bench_safe);
-    RUN(a_programmers_close_goes_back_to_the_hub);
+    RUN(a_programmers_home_tag_goes_back_to_the_hub);
     RUN(hitecs_series_row_reaches_the_programmer);
     RUN(the_angle_source_row_opens_the_sensors_setup);
     return test_summary("servo_hub");

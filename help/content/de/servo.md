@@ -28,7 +28,7 @@ KST und HITEC sind grau, solange dem IOmcu die Fähigkeit fehlt oder eine andere
 
 Home führt von einer Funktionsseite zum Hub und vom Hub zum Menü. Das Verlassen einer Funktionsseite schaltet den Prüfstand auf SAFE. PROG 5V auf dem Carrier bleibt von einer SERVO-Seite zur nächsten an und geht aus, wenn SERVO verlassen wird; auf dem Hub zeigt die Fußleiste dann `PROG 5V EIN` in der Warnfarbe.
 
-LIVE, SWEEP und RUDER zeigen rechts die Taste PORT und die Zeilen von BEREIT, darunter die Bedienelemente. TEST, ENDLAGENLAUF und RUDER AUTO zeigen die Taste PORT und die Karte BEREIT. KST und HITEC zeigen dort die Ausgangskarte: die Taste PORT, Messzeile und Grafik, Netzteilzeile, TEMPO, Typzeile, ZENTRIEREN, SWEEP und FREIGEBEN. Die Fußleiste enthält den Namen der Funktion mit der Portzeile, ARM (2s HALTEN: ARM + START auf TEST, ENDLAGENLAUF und RUDER AUTO) und OPTIONEN für die Liste der Seite; LIVE hat keine Liste. Jedes Bedienelement ist mindestens 48px (7,2mm) hoch. Der Drehknopf bewegt das Horn nur auf LIVE, SWEEP, RUDER und RUDER AUTO.
+LIVE, SWEEP und RUDER zeigen rechts die Taste PORT und die Zeilen von BEREIT, darunter die Bedienelemente. TEST, ENDLAGENLAUF, RUDER AUTO, KST und HITEC zeigen die Taste PORT und die Karte BEREIT. Die Fußleiste enthält den Namen der Funktion mit der Portzeile, ARM (2s HALTEN: ARM + START auf TEST, ENDLAGENLAUF und RUDER AUTO, WERTE SCHREIBEN der Sitzung auf KST und HITEC) und OPTIONEN für die Liste der Seite; LIVE hat keine Liste. Jedes Bedienelement ist mindestens 48px (7,2mm) hoch. Der Drehknopf bewegt das Horn nur auf LIVE, SWEEP, RUDER und RUDER AUTO.
 
 ## In Ruhe
 
@@ -114,18 +114,18 @@ Fehlende Messwerte erscheinen als `---` bei STROM auf LIVE, als `--` in der Mess
 
 ## Das Netzteil auf SERVO
 
-LIVE, SWEEP und RUDER haben die Zeile VERSORGUNG und keine Zeile SOLL: ARM schaltet die Versorgung ein, DISARM schaltet sie aus. TEST, ENDLAGENLAUF und RUDER AUTO schalten sie über ihr Halten und ihren Lauf. Auf KST und HITEC enthält SOLL dieselben zwei Netzteilsollwerte und denselben Ausgangsschalter wie SUPPLY. Änderungen auf einer Seite gelten auf beiden.
+LIVE, SWEEP und RUDER haben die Zeile VERSORGUNG und keine Zeile SOLL: ARM schaltet die Versorgung ein, DISARM schaltet sie aus. TEST, ENDLAGENLAUF und RUDER AUTO schalten sie über ihr Halten und ihren Lauf. Auf KST und HITEC schaltet VERBINDEN der Sitzung sie ein, und ein Tippen auf die Zeile der Versorgung schaltet sie aus, solange sie EIN zeigt. Kein SERVO-Bildschirm hat eine Zeile SOLL: die Sollwerte und AUSGANG EIN liegen auf SUPPLY.
 
 - Tippe auf einen Sollwert, um das Tastenfeld über der linken Karte zu öffnen.
 - Halte AUSGANG EIN 2s oder tippe auf AUSGANG AUS.
 - Beim Verlassen schaltet SERVO einen von hier eingeschalteten Ausgang aus.
 - Lässt VERLASSEN einer Programmiersitzung den Ausgang eingeschaltet, fragt SERVO nach Wiederherstellung der vorherigen Sollwerte ([Servoprogrammierung](servo-programmer.md)). Bei PORT FREIGEBEN, STOP, Fehler, Verbindungsverlust oder Neustart entfällt die Frage. Die Sitzungswerte bleiben bis zum nächsten AUS.
 
-Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) ersetzt das Feld PROG 5V die Grafik unter PD MINI auf KST und HITEC; auf LIVE, SWEEP und RUDER zeigt die Zeile VERSORGUNG PROG 5V, und ARM schaltet es, auf ENDLAGENLAUF und RUDER AUTO das Halten. Das Feld schaltet die eigene 5V-Schiene der Programmierports an GPIO 21, bei SAFE und ARMED. Halte PROG 5V EIN 2s zum Einschalten und tippe auf PROG 5V AUS zum Ausschalten. Die zweite Zeile zeigt das letzte INA3221-Fenster von 0x40 CH3, etwa `5.02V  0.120A`.
+Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) haben die Programmierports eine eigene 5V-Schiene an GPIO 21. Kein SERVO-Bildschirm zeigt das Feld PROG 5V; SUPPLY zeigt es. Auf LIVE, SWEEP und RUDER zeigt die Zeile VERSORGUNG PROG 5V, und ARM schaltet sie ein, auf ENDLAGENLAUF und RUDER AUTO das Halten. Auf KST und HITEC zeigt die Zeile der Versorgung EIN, solange die 5V an sind; ein Tippen schaltet sie aus.
 
-Während einer Programmiersitzung steht dort `BELEGT VON PROG-PORT n`, und die Taste ist gesperrt. Beim Verlassen von SERVO schaltet eine hier oder von ARM aktivierte Schiene aus, außer ein Port belegt sie. SUPPLY bietet dasselbe Feld.
+Solange ein Programmierport die 5V hält, schaltet das Tippen nichts, und das Band nennt die Sperre. Beim Verlassen von SERVO schaltet eine von ARM oder vom Halten aktivierte Schiene aus, außer ein Port belegt sie.
 
-Bei eingeschaltetem Feld bedeuten zwei Fenster unter 3000mV einen Ausfall der 5V-Schiene. Ein möglicher Grund ist Rückspeisung eines bremsenden Servos, durch die M7 wegen Überspannung abschaltet. Der Prüfstand geht auf SAFE, alle Ausgänge schalten aus. Das Band zeigt `PROG 5V ausgefallen: INA3221 0x40 CH3 misst 0.12V trotz EIN. Alle Ausgänge aus.` Mit PROG 5V EIN kannst du erneut einschalten. Ohne überwachenden INA3221-Kanal oder während eine Servoprogrammierung einen Port belegt, ist diese Überwachung inaktiv.
+Bei eingeschaltetem PROG 5V bedeuten zwei Fenster unter 3000mV einen Ausfall der 5V-Schiene. Ein möglicher Grund ist Rückspeisung eines bremsenden Servos, durch die M7 wegen Überspannung abschaltet. Der Prüfstand geht auf SAFE, alle Ausgänge schalten aus. Das Band zeigt `PROG 5V ausgefallen: INA3221 0x40 CH3 misst 0.12V trotz EIN. Alle Ausgänge aus.` ARM, das Halten oder PROG 5V EIN auf SUPPLY schaltet sie erneut ein. Ohne überwachenden INA3221-Kanal oder während eine Servoprogrammierung einen Port belegt, ist diese Überwachung inaktiv.
 
 ![LIVE auf dem Carrier: ARM schaltet PORT-PWM und PROG 5V ein](view:servo-rbmod)
 

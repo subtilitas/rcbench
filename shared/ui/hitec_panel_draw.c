@@ -458,18 +458,12 @@ static void draw_row(gfx_canvas_t *c, int i)
 }
 
 /**
- * @brief Draws the tab shown: the tabs, CLOSE, its rows and its notes.
+ * @brief Draws the tab shown: the tabs, its rows and its notes.
  * @param c the canvas
  */
 static void draw_tab(gfx_canvas_t *c)
 {
-    const hitec_prog_state_t st = hitec_prog_state(&hp.prog);
-
     ui_tabs_render(&hp.tabs, c);
-    button(c, hitec_panel_close_rect(), TR(SUP_CLOSE),
-           ui_theme_color(UI_C_PANEL_SUNK), hp.have && hp.pressed == P_CLOSE,
-           !hitec_panel_holds_port() || st == HITEC_PROG_HELD
-               || st == HITEC_PROG_OTHER || hitec_prog_move_on(&hp.prog));
     for (int i = 0; i < HP_ROW_COUNT; ++i) {
         if (hpn_rows[i].page == hp.tabs.selected && hpn_row_shown(&hpn_rows[i])) {
             draw_row(c, i);

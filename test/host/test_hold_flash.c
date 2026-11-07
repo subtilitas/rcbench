@@ -11,8 +11,9 @@
  * (hold_flash.h).  ARMED, the output and the run are never confirmed
  * here: the flash does not wait for them.
  *
- * Here: ARM, OUTPUT ON, START TEST, LIMIT RUN's ARM + START, HOLD TO
- * APPLY on the profile warning and KST EXPERT MODE on SERVO; ARM on MOTOR
+ * Here: ARM, ARM that switches the supply, TEST's and LIMIT RUN's ARM +
+ * START, HOLD TO APPLY on the profile warning and KST EXPERT MODE on
+ * SERVO, which has no OUTPUT ON of its own; ARM on MOTOR
  * & ESC and OUTPUT ON on SUPPLY through the router.  The holds of the
  * other screens have their *_flashes_as_it_fires case in their own
  * suite, on their own rig: test_servo_rauto_kst.c (START on AUTO),
@@ -124,20 +125,6 @@ TEST_CASE(servo_arm_that_switches_the_supply_flashes_as_it_fires)
     const gfx_rect_t r = { (int16_t)(SV_ARM_L + 12), (int16_t)(SV_ARM_Y + 4),
                            (int16_t)(SV_ARM_W - 24), 8 };
     CHECK(servo_walk(SV_ARM_X, SV_ARM_Y + 16, r, "ARM"));
-}
-
-/* OUTPUT ON in the supply box on KST's output card: the bench switches
- * the output on. */
-TEST_CASE(servo_output_on_flashes_as_it_fires)
-{
-    bench_fresh();
-    go(SERVO_FN_KST);
-    bench.out = false;
-    bench_frames(200u);
-    const gfx_rect_t r = { (int16_t)(SV_RC_X + 244), (int16_t)(SV_SUP_Y - 20),
-                           (int16_t)(SV_RC_W - 256), 6 };
-    CHECK(servo_walk(SV_SUP_OUT_X, SV_SUP_Y, r, "OUTPUT ON"));
-    CHECK(bench.out);
 }
 
 /* ARM + START on TEST: on an ARMED bench the run starts as the hold
@@ -342,7 +329,6 @@ int main(void)
 {
     RUN(servo_arm_flashes_as_it_fires);
     RUN(servo_arm_that_switches_the_supply_flashes_as_it_fires);
-    RUN(servo_output_on_flashes_as_it_fires);
     RUN(start_test_flashes_as_it_fires);
     RUN(limit_runs_arm_start_flashes_as_it_fires);
     RUN(profile_apply_flashes_where_its_warning_was);

@@ -195,7 +195,7 @@ Die 5V der Programmierports auf dem Carrier haben keine solche Ausnahme. Ihre Pa
 4.32, und jeder IOmcu, der sie bedient, hält das OFF für ein Schreiben zurück; ihr eigenes Port-Bit
 (`LINK_PS_PORT`) geht nicht in die Regel ein. Auf dem Carrier lässt eine KST- oder Hitec-Sitzung das Bit der
 Page SUPPLY gelöscht, weil die Ports an den 5V hängen und nicht am PD mini (`ports_tell_supply()`). Während einer
-solchen Sitzung kannst du den PD mini weiter bedienen: SUPPLY und die Zeile SOLL auf SERVO nehmen
+solchen Sitzung kannst du den PD mini weiter bedienen: SUPPLY nimmt
 AUSGANG EIN und Sollwerte an (`supply_link_session_blocks()`), ebenso der IOmcu. Eine ESC-Sitzung setzt das Bit auf jeder Platine, auch auf dem Carrier, weil SWITCHED den ESC
 aus dem PD mini versorgt. SUPPLY lehnt dann Sollwerte und EIN ab und sagt, dass die ESC-Programmierung sie
 hält (`SUP_HELD_REFUSED_ESC`). Auf jeder anderen Platine sperrt eine Sitzung mit einem Port sowohl EIN als auch Sollwertänderungen
@@ -290,7 +290,7 @@ Auf dem [rbmod-Carrier](Carrier-de.md#versorgung) laufen die
 Programmierports am 5V-Abwärtswandler M7, geschaltet über GPIO 21 (Link
 4.32, die Page PROG_SUPPLY). Der PD mini speist nur die Servoschienen. Die
 Servoprogrammierungen für KST und Hitec schalten die 5V für eine Sitzung ein und aus,
-und das Feld PROG 5V auf SERVO und SUPPLY schaltet sie von Hand
+und das Feld PROG 5V auf SUPPLY schaltet sie von Hand
 ([Carrier, Das Feld PROG 5V](Carrier-de.md#das-feld-prog-5v)). ARM auf
 LIVE, SWEEP und RUDER von SERVO schaltet sie ein, bevor der Prüfstand auf
 ARMED schaltet, und DISARM dort schaltet sie aus. Auf dem Carrier lesen die Servoprogrammierungen den PD mini

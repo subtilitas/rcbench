@@ -53,9 +53,6 @@ static int controls(int page, gfx_rect_t *out, int max)
     for (int t = 0; t < 5 && n < max; ++t) {
         out[n++] = kst_panel_tab_rect(t);
     }
-    if (n < max) {
-        out[n++] = kst_panel_close_rect();
-    }
     for (int row = 0; row < 6; ++row) {
         for (int col = 0; col < 2; ++col) {
             const gfx_rect_t v = val(page, row, col);
@@ -84,15 +81,26 @@ TEST_CASE(every_control_of_every_page_is_a_tap_target_above_the_alert_band)
     for (int page = PG_SERVO; page <= PG_LOCKED; ++page) {
         const int n = controls(page, c, 32);
 
-        /* Five tabs, CLOSE and a row at least. */
-        CHECK(n > 6);
+        /* Five tabs and a row at least. */
+        CHECK(n > 5);
         for (int i = 0; i < n; ++i) {
             target(c[i]);
         }
     }
-    /* The tabs and CLOSE are one row under the area's top. */
-    CHECK_EQ(kst_panel_tab_rect(0).y, kst_panel_close_rect().y);
-    CHECK_EQ(kst_panel_tab_rect(0).h, kst_panel_close_rect().h);
+    /* The tabs are one row under the area's top, 8px in from each side
+     * of it: no CLOSE, the home tag is the way back. */
+    CHECK_EQ(kst_panel_tab_rect(0).y, AREA.y + 8);
+    CHECK_EQ(kst_panel_tab_rect(0).h, 48);
+    CHECK_EQ(kst_panel_tab_rect(0).x, AREA.x + 8);
+    int right = 0;
+    for (int t = PG_SERVO; t <= PG_LOCKED; ++t) {
+        const gfx_rect_t r = kst_panel_tab_rect(t);
+        if (r.w > 0 && r.x + r.w > right) {
+            right = r.x + r.w;
+        }
+    }
+    CHECK(right <= AREA.x + AREA.w - 8);
+    CHECK(right >= AREA.x + AREA.w - 8 - 4);
 }
 
 TEST_CASE(no_two_controls_of_a_page_overlap)

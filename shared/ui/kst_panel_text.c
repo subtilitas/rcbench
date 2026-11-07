@@ -11,12 +11,14 @@
 #include "kst_panel.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #include "kst_limits.h"
 #include "kst_port.h"
 #include "link_pages.h"
 #include "ui_card_text.h"
 #include "prog_choice.h"
+#include "ui_board.h"
 #include "ui_text.h"
 
 /* Last: its layout macros have short names (ROW0, PITCH, ROW_H) and k
@@ -516,4 +518,44 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
         }
     }
     return n;
+}
+
+/* ------------------------------------------------------------ the screen */
+
+void kst_panel_session(prog_session_t *out)
+{
+    const kst_prog_t *p = &k.prog;
+    const kst_prog_state_t st = kst_prog_state(p);
+    const row_t *w = kpn_row_at(PG_SERVO, 4, 1);
+
+    memset(out, 0, sizeof(*out));
+    /* The supply the state line names before CONNECT (kst_panel_draw.c). */
+    if (ui_board_prog_5v_pin() >= 0) {
+        out->supply = (uint8_t)PROG_SES_5V;
+    } else if (kpn_flag(LINK_KS_F_RAIL)) {
+        out->supply = (uint8_t)PROG_SES_PD_MINI;
+        out->mv = kst_prog_supply_mv(p);
+        out->ma = kst_prog_supply_ma(p);
+    } else {
+        out->supply = (uint8_t)PROG_SES_AS_IS;
+        out->by_hand = true;
+    }
+    out->held = kst_panel_holds_port();
+    out->busy = st == KST_PROG_ENTERING || st == KST_PROG_WORKING
+                || st == KST_PROG_LEAVING || kpn_leave_waits(p)
+                || kst_prog_card_busy(p);
+    out->read = st == KST_PROG_PROGRAMMING && kst_prog_have_servo(p);
+    if (out->read) {
+        /* The type the operator chose, or 20k_sel's guess with its mark. */
+        const char *t = kst_panel_button(PG_SERVO, 1, 1);
+
+        if (t != NULL && strcmp(t, "--") != 0) {
+            snprintf(out->servo, sizeof(out->servo), "%s", t);
+        }
+    }
+    if (w != NULL) {
+        snprintf(out->write, sizeof(out->write), "%s",
+                 kst_panel_button(PG_SERVO, 4, 1));
+        out->write_live = kpn_row_live(w);
+    }
 }

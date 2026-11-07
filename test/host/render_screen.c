@@ -4037,22 +4037,24 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
             ui_router_tick(0.02f);
             tap(SV_RDY_X, UI_BAND_H + SV_DRV_ROW_Y(1));
         } else if (strcmp(view, "servo-hv-live") == 0) {
-            /* The voltage on the SET line of KST's output card, typed
-             * past 6.0V with the output on: the HV warning.  The keypad's
-             * keys from a probe opened where the screen opens its own,
-             * over the left card. */
-            supply_screen_set_output(true);
+            /* The HV warning with the output on: KST's LEAVE left the
+             * output on at the session's 5.00V, SERVO offers the
+             * operator's 7.40V back, and YES asks for the warning's hold.
+             * YES sits where HOLD TO APPLY does, at the left column's
+             * floor. */
+            settings_set(SET_SUPPLY_V_MAX, 8.4f);
+            supply_screen_limits_changed();
+            supply_screen_put(7.4f, 1.5f);
             ui_router_goto(id);
-            tap(SV_SUP_V_X, UI_BAND_H + SV_SUP_Y);
-            ui_keypad_t kp;
-            memset(&kp, 0, sizeof(kp));
-            ui_keypad_open(&kp, SV_OV_AREA, "", "", 0.0f,
-                           0.0f, 1.0f, 2);
-            const ui_key_t k[] = { UI_KEY_7, UI_KEY_DOT, UI_KEY_4, UI_KEY_OK };
-            for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
-                const gfx_rect_t r = ui_keypad_key_rect(&kp, k[i]);
-                tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
-            }
+            ui_router_tick(0.02f);
+            supply_screen_set_port_held(true);
+            supply_screen_adopt(5.0f, 1.0f);
+            supply_screen_set_output(true);
+            ui_router_tick(0.02f);
+            supply_screen_kst_leave_done();
+            supply_screen_set_port_held(false);
+            ui_router_tick(0.02f);
+            tap(UI_MARGIN + 20 + 120, UI_BAND_H + 436 - 8 - 56 + 28);
         } else if (strcmp(view, "servo-sweep") == 0
                    || strcmp(view, "servo-paused") == 0) {
             servo_sweep_view(strcmp(view, "servo-paused") == 0);

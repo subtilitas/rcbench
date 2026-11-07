@@ -134,12 +134,13 @@ TEST_CASE(the_home_tag_closes_a_panel_climbs_from_a_runs_settings_and_leaves)
     CHECK_EQ(servo_screen_task(), (int)UI_WB_LIVE);
     CHECK(!home_tag());
 
-    /* A set point's keypad on an armed bench: closed, the bench stays
+    /* RUDDER's LENGTH keypad on an armed bench: closed, the bench stays
      * ARMED; the tag after it leaves, and leaving switches to SAFE. */
     fresh_armed();
-    go(SERVO_FN_KST);                          /* its SET row */
+    go(SERVO_FN_RUDDER);
     scr->enter();
-    tap(SUP_V_X, SUP_ROW_Y);
+    tap(SV_RUD_LEN_X, SV_RUD_LEN_Y);
+    CHECK(servo_screen_keypad()->open);
     CHECK(home_tag());
     servo_cmd_t c;
     bool disarm = false;
@@ -502,16 +503,17 @@ static bool keypad_opened(void)
 }
 
 /*
- * The rows a finger taps are UI_TAP_MIN tall: the SET row's values on KST's
- * output card take a press 1px inside each edge.  The lists' rows are ui_setlist.h's.
+ * The rows a finger taps are UI_TAP_MIN tall: RUDDER's LENGTH row, y 120
+ * to 168, takes a press 1px inside each edge.  The lists' rows are
+ * ui_setlist.h's.
  */
-TEST_CASE(a_set_value_is_a_finger_tall)
+TEST_CASE(a_value_row_is_a_finger_tall)
 {
     fresh();
-    go(SERVO_FN_KST);                          /* its SET row */
-    tap(SUP_V_X, SUP_ROW_Y - 23);              /* SET's voltage */
+    go(SERVO_FN_RUDDER);
+    tap(SV_RUD_LEN_X, SV_RUD_LEN_Y - 23);      /* LENGTH */
     CHECK(keypad_opened());
-    tap(SUP_V_X, SUP_ROW_Y + 22);
+    tap(SV_RUD_LEN_X, SV_RUD_LEN_Y + 22);
     CHECK(keypad_opened());
 }
 
@@ -690,7 +692,7 @@ TEST_CASE(arm_under_a_wire_session_says_the_esc_programmer_holds_it)
 
 int main(void)
 {
-    RUN(a_set_value_is_a_finger_tall);
+    RUN(a_value_row_is_a_finger_tall);
     RUN(a_runs_stops_are_a_finger_tall_and_clear_of_the_alert_band);
     RUN(a_second_tap_on_a_run_cards_settings_changes_no_setting);
     RUN(lives_readings_end_above_the_alert_band);

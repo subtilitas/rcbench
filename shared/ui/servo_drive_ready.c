@@ -124,21 +124,13 @@ void drive_layout(void)
 {
     const gfx_rect_t none = { 0, 0, 0, 0 };
     if (!drive_shown()) {
-        /* KST and HITEC: the output card as it was, with CENTRE, SWEEP
-         * and RELEASE a third of the column each under the SET row.  TEST,
-         * LIMIT RUN and RUDDER AUTO draw their READY card over it. */
-        const int bw = (RC_W - 2 * BTN_GAP) / 3;
-        s.centre_btn  = (gfx_rect_t){ RC_X, BTN_Y, (int16_t)bw, BTN_H };
-        s.sweep_btn   = (gfx_rect_t){ (int16_t)(RC_X + bw + BTN_GAP), BTN_Y,
-                                      (int16_t)bw, BTN_H };
-        s.release_btn = (gfx_rect_t){ (int16_t)(RC_X + 2 * (bw + BTN_GAP)),
-                                      BTN_Y,
-                                      (int16_t)(RC_W - 2 * (bw + BTN_GAP)),
-                                      BTN_H };
-        s.out_btn     = (gfx_rect_t){ SUP_OUT_X, SUP_Y,
-                                      (int16_t)(RC_X + RC_W - SUP_OUT_X),
-                                      SUP_H };
-        s.speed.track = (gfx_rect_t){ RC_X, SLIDER_Y, RC_W, SLIDER_H };
+        /* TEST, LIMIT RUN, RUDDER AUTO, KST and HITEC: a READY card in the
+         * output card's place, none of its controls. */
+        s.centre_btn  = none;
+        s.sweep_btn   = none;
+        s.release_btn = none;
+        s.out_btn     = none;
+        s.speed.track = none;
         return;
     }
     const gfx_rect_t left  = { RC_X, DRV_BTN_Y, DRV_BTN_W, BTN_H };

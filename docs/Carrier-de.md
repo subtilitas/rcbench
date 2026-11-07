@@ -102,8 +102,9 @@ Board; aus schaltet es ihn sofort. Ein bei ARMED eingeschaltetes PROG 5V
 lässt den Puls bis zum nächsten SAFE aus: der Endlagenlauf zeigt dann
 `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM`.
 
-PORT-PWM liegt auf OUTPUTS. Das Feld PROG 5V liegt auf SUPPLY und auf
-KST und HITEC von SERVO. Ein von SERVO eingeschaltetes
+PORT-PWM liegt auf OUTPUTS. Das Feld PROG 5V liegt auf SUPPLY; SERVO
+schaltet die 5V über ARM und ARM + START
+([Das Feld PROG 5V](#das-feld-prog-5v)). Ein von SERVO eingeschaltetes
 PROG 5V bleibt von einer SERVO-Seite zur nächsten an, den Hub
 eingeschlossen. Das Verlassen von SERVO schaltet es aus.
 
@@ -138,9 +139,9 @@ Prüfstand SAFE, PROG 5V aus.
 
 M7 versorgt die Programmierports mit festen 5V, unabhängig vom PD mini.
 Während einer KST- oder Hitec-Sitzung kannst du den PD mini weiter
-bedienen: SUPPLY und die Zeile SOLL auf SERVO nehmen AUSGANG EIN und
-Sollwerte an, die sie während einer Sitzung auf anderen Platinen
-ablehnen. KST- und Chaservo-Servos werden mit 5V programmiert. Auf dem
+bedienen: SUPPLY nimmt AUSGANG EIN und
+Sollwerte an, die es während einer Sitzung auf anderen Platinen
+ablehnt. KST- und Chaservo-Servos werden mit 5V programmiert. Auf dem
 Carrier kann die Servoprogrammierung die Spannung der Programmierports
 nicht ändern. Ihre Liste WEITERES zeigt
 `PROGRAMMIERSPANNUNG: 5V FEST, GPIO 21` und bietet keine Einstellung für
@@ -148,8 +149,7 @@ Spannung oder Strom an.
 
 Die Servoprogrammierung für KST und Hitec schaltet GPIO 21 während einer
 Sitzung über die Page PROG_SUPPLY ein und aus (Link 4.32). Manuell
-schaltest du sie im Feld PROG 5V auf der Ausgangskarte von SERVO oder
-unter LIVE auf SUPPLY: Halte PROG 5V EIN für 2s oder tippe auf
+schaltest du sie im Feld PROG 5V unter LIVE auf SUPPLY: Halte PROG 5V EIN für 2s oder tippe auf
 PROG 5V AUS. Das ist bei SAFE und ARMED möglich, wie AUSGANG EIN
 des PD mini. Das Feld nennt den Pin,
 `PROG-PORTS 5V, GPIO 21: AUS`, und zeigt das letzte Fenster von 50ms an
@@ -175,8 +175,11 @@ hält der Pull-down an EN M7 aus.
 
 ### Das Feld PROG 5V
 
-Das Feld PROG 5V auf SERVO und SUPPLY schaltet die 5V von Hand: PROG 5V
-EIN ist ein Halten von 2s, PROG 5V AUS ein Tipp. Das Panel beurteilt das ON,
+Das Feld PROG 5V auf SUPPLY schaltet die 5V von Hand: PROG 5V EIN ist ein
+Halten von 2s, PROG 5V AUS ein Tipp. SERVO hat kein Feld: ARM auf LIVE,
+SWEEP und RUDER und ARM + START auf ENDLAGENLAUF und RUDER AUTO schalten
+die 5V ein, und auf KST und HITEC schaltet ein Tippen auf die Zeile der
+Versorgung in der Karte BEREIT sie aus. Das Panel beurteilt das ON,
 wie es AUSGANG EIN des PD mini beurteilt:
 
 - Es gilt bei SAFE und bei ARMED; ein Wechsel nach ARMED wird nicht verlangt.

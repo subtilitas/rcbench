@@ -268,8 +268,7 @@ ARMED.
 ![SERVO's guide at page 1 on LIVE](img/help-servo.png)
 
 A page for the left card takes the dock on the right. The pages for the
-right card, SERVO's output card or READY card and SUPPLY's readings and
-CONTROL card,
+right card, SERVO's READY card and SUPPLY's readings and CONTROL card,
 take the dock on the left and are the pages offered while ARMED. The task
 on the left card decides the first pages:
 
@@ -282,7 +281,7 @@ on the left card decides the first pages:
 | SERVO RUDDER | LENGTH, the drive buttons, ZERO and RESET MAX (4); DEFLECTION, TRAILING EDGE and the state lines (3) |
 | SERVO RUDDER AUTO | the targets, MARGIN and TOLERANCE, ZERO (3); DEFLECTION and TRAILING EDGE (2); PORT, READY, the rail line, ARM + START and SETTINGS (5) |
 | SERVO LIVE, SWEEP and RUDDER, SAFE | PORT, READY, the rail line, ARM, and SETTINGS on SWEEP and RUDDER (4 or 5); SPEED, the type and the buttons on LIVE and SWEEP (3), the type and the side view on RUDDER (2) |
-| SERVO KST and HITEC, SAFE | the type, the plot or PROG 5V, SET and SPEED (4); PORT, CENTRE with SWEEP and RELEASE, ARM and SETTINGS (4) |
+| SERVO KST and HITEC, SAFE | PORT, READY, the rail line, WRITE and SETTINGS (5) |
 | SERVO's lists (the hub, SWEEP, RUDDER, RUDDER AUTO, HITEC) | as a settings list |
 | SUPPLY LIVE | PLOT and TABLE, VOLTAGE and CURRENT LIMIT (3) |
 | SUPPLY LIVE, the rail | the range and the four reading cards (5); the set points' values, RESET PEAKS, OUTPUT ON and SETTINGS (4) |
@@ -291,11 +290,11 @@ on the left card decides the first pages:
 A page whose dock would cover a control that stops an output is left out
 while that control shows:
 
-- The SET row with OUTPUT OFF is on KST's and HITEC's output card, whose
-  pages take the dock on the left, off the row. LIVE, SWEEP and RUDDER
-  have no SET row and offer their pages with the output on, but none
-  while ARM's steps run. SUPPLY's OUTPUT OFF, the footer's middle slot,
-  lies under either dock, so SUPPLY offers no page then.
+- SERVO has no OUTPUT OFF. On KST and HITEC the READY card's supply row
+  switches a live output off; their page takes the dock on the left, off
+  the card. LIVE, SWEEP and RUDDER offer their pages with the output on,
+  but none while ARM's steps run. SUPPLY's OUTPUT OFF, the footer's
+  middle slot, lies under either dock, so SUPPLY offers no page then.
 - SERVO's function screens offer no page while ARMED: either dock covers
   part of DISARM in the footer's middle slot. A run of the automatic
   test, a limit run or AUTO is ARMED, so the band then shows no "?".
@@ -495,7 +494,7 @@ replaces a visible hint.
 | ARM on MOTOR & ESC and SERVO | `Hold 2s to switch to ARMED.` |
 | ARM on LIVE, SWEEP and RUDDER while it switches PORT PWM or the supply on | `Hold 2s: the port and its supply go on, then ARM.` |
 | OUTPUT ON on SUPPLY and in SERVO's supply box | `Hold 2s to switch the output on.` |
-| PROG 5V ON in the PROG 5V box on SERVO and SUPPLY, rbmod carrier | `Hold 2s to switch the programming ports' 5V on.` |
+| PROG 5V ON in the PROG 5V box on SUPPLY, rbmod carrier | `Hold 2s to switch the programming ports' 5V on.` |
 | APPLY on the HV, frame rate and soft limit warnings of SERVO, KST and Chaservo, and on Hitec pages | `Hold 2s to apply.` |
 | HOLD 2s: ARM + START on TEST | `Hold 2s to arm and start the test.` |
 | HOLD 2s: ARM + START on LIMIT RUN | `Hold 2s to switch the port and its supply on, ARM and start the limit run.` |
@@ -1485,17 +1484,19 @@ screen to the next. The bench is SAFE on the hub: every leave of
 a function screen switches it to SAFE.
 
 The home tag climbs one level: from a function screen to the hub, from the
-hub to the menu. A list, a run's page or a panel closes first. KST's and
-HITEC's CLOSE ends the session and returns to the hub.
+hub to the menu. A list, a run's page or a panel closes first. On KST and
+HITEC the home tag is the session's way back: it ends a session that
+holds no port and returns to the hub ([Programmer](#programmer)).
 
 Every function screen has the same frame. The 620px left card runs from y
 8 to the card floor at y 436 of the body. The right card, x 636 to 1016,
-starts with the PORT button (y 8 to 56). On KST and HITEC it is the
-output card: the meter line and plot, SET, SPEED, the type pill, CENTRE,
-SWEEP and RELEASE. On LIVE, SWEEP and RUDDER it holds READY's rows and the
-controls under them; on TEST, LIMIT RUN and RUDDER AUTO the READY card. The footer at y 444
-to 492 holds three 328 x 48px slots: the function's name with the port
-line under it, ARM or DISARM, and SETTINGS. SETTINGS is grey while the
+starts with the PORT button (y 8 to 56). On LIVE, SWEEP and RUDDER it
+holds READY's rows and the controls under them; on TEST, LIMIT RUN, RUDDER
+AUTO, KST and HITEC the READY card. No function screen has a plot, a SET
+row or a PROG 5V box: the set points and OUTPUT ON are SUPPLY's. The
+footer at y 444 to 492 holds three 328 x 48px slots: the function's name
+with the port line under it, ARM or DISARM (WRITE n VALUES on KST and
+HITEC), and SETTINGS. SETTINGS is grey while the
 bench is not SAFE, while a sweep or a run is under way, and names that in
 the alert band on a tap. LIVE has no SETTINGS.
 
@@ -1507,8 +1508,7 @@ track at y 220 to 260. All three have the type pill at y 274 to 318. LIVE
 has CENTRE and RELEASE, SWEEP has SWEEP and RELEASE, each 174 x 48px at y
 330. The rail line at y 404 names the servo rail's meter and reads its
 volts and amps, `5.02V  0.120A`, or `--V  --A` without a reading; with the
-panel's model as the supply, SIMULATED follows the name. These screens
-have no plot, no SET row and no PROG 5V box.
+panel's model as the supply, SIMULATED follows the name.
 
 | Row | Green | Amber | Red |
 | --- | --- | --- | --- |
@@ -1553,11 +1553,18 @@ the run's steps switch the PD mini at each step's voltage. During the run
 the slot reads STOP TEST, which ends the run on its press. The plot of the
 servo rail moves to the left card, under SUPPLY's caps.
 
+KST and HITEC keep the PORT button and show a READY card of three rows in
+the output card's place: PORT, the supply the session's CONNECT switches,
+and SERVO, the servo read. While the supply reads ON, a tap on its row
+switches it off, also under a panel over the left card. Their footer's
+middle slot is the session's WRITE n VALUES; neither screen has ARM
+([Programmer](#programmer)).
+
 ![RUDDER AUTO on the rbmod carrier, the ARM + START sequence waiting for the PROG 5V's read-back](img/servo-rudder-auto-start-rbmod.png)
 
-PROG 5V, switched by the box on the output card or by ARM on LIVE, SWEEP
-or RUDDER, stays on from one SERVO screen to another, the hub's included,
-and goes off when SERVO is left for any other screen.
+PROG 5V, switched by ARM on LIVE, SWEEP or RUDDER or by ARM + START on
+LIMIT RUN and RUDDER AUTO, stays on from one SERVO screen to another, the
+hub's included, and goes off when SERVO is left for any other screen.
 
 A keypad, keyboard, list, warning, confirmation dialog or programmer
 covers the left card down to the card floor. The right card, the PORT
@@ -1720,19 +1727,23 @@ one command waits per frame. If a position and RELEASE occur in the same
 frame, the later command is sent and shown. A knob turn is discarded in
 a frame with RELEASE pending.
 
-The output card shows the type, frame rate and pulse range in force (in
-the danger colour while they are ones that can destroy a servo not made for
-them) and the servo rail as its meter reads it: voltage, current and power
-on the line over the plot, plotted over the last 17.8s (356px at 20
-points a second). On LIVE, SWEEP and RUDDER the type pill and the rail
-line show the same. LIVE's CURRENT reading shows the current again. The type
-row, 44px tall, reads `STANDARD PWM  50Hz  1000-2000`: the type, the
-frame rate and PULSE MIN to PULSE MAX in microseconds, two spaces apart.
-The longest, a 13-character type at 560Hz with two 4-digit ends, takes 32
-of the row's 35 characters, so the range carries no unit. A pulse width
-typed in the settings reaches the row at once.
+The type pill on LIVE, SWEEP and RUDDER shows the type, frame rate and
+pulse range in force, in the danger colour while they are ones that can
+destroy a servo not made for them. The pill, 44px tall, reads
+`STANDARD PWM  50Hz  1000-2000`: the type, the frame rate and PULSE MIN to
+PULSE MAX in microseconds, two spaces apart. The longest, a 13-character
+type at 560Hz with two 4-digit ends, takes 32 of the pill's 35
+characters, so the range carries no unit. A pulse width typed in the
+settings reaches the pill at once.
 
-| The servo rail's meter | Name on the line | LIVE's CURRENT, the line and the plot show |
+The READY card's rail line at y 404 shows the servo rail as its meter
+reads it: the meter's name, then the voltage in hundredths of a volt and
+the current in thousandths of an amp, `5.02V  0.120A`. LIVE's CURRENT
+reading shows the current again, in hundredths. TEST plots voltage,
+current and power under SUPPLY's caps. No SERVO
+screen shows the power as a number.
+
+| The servo rail's meter | Name on the line | LIVE's CURRENT, the line and TEST's plot show |
 | --- | --- | --- |
 | an INA3221 channel | `INA`, its part's address and channel: `INA 0x41 CH2` | the channel's last 50ms window: the mean current, the mean bus voltage at the load side of the shunt, and their product. One point of the plot per window, 20 a second |
 | the PD mini | `PD MINI` | the supply's last sample. One point per sample |
@@ -1741,36 +1752,28 @@ typed in the settings reaches the row at once.
 ![The INA3221 as the meter](img/servo-ina.png)
 
 The name stays `PD MINI` in both languages. With the PD mini disabled on
-SUPPLY's PD mini settings the panel uses its supply model. A SIMULATED pill
-(SIMULIERT in German) appears at the plot's upper-left corner below the
-name, leaving room for the three readings beside the name. It is 26px
-high, with a width of 30px plus the word, at least 110px; SIMULATED and
-SIMULIERT use 120px. It appears and disappears automatically with the model.
+SUPPLY's PD mini settings the panel uses its supply model. SIMULATED
+(SIMULIERT in German) then follows the name on the line in the warning
+colour, one character after it. It appears and disappears with the model.
 
 With an INA3221 meter, the line names its channel, `INA 0x40 CH1` through
-`INA 0x43 CH3`, and has no pill regardless of the supply model. This is
+`INA 0x43 CH3`, and shows no SIMULATED regardless of the supply model. This is
 the channel watching the servo tester's target
 ([SENSORS](#sensors-the-ina3221-parts)). Before IOmcu protocol 4.25, it is
 CH1 of the single part read through SENSE.
 
 ![The panel's model as the supply](img/servo-model.png)
 
-On the [rbmod carrier](Carrier.md#power), the 48px PROG 5V box replaces the
-plot below the readings on KST and HITEC; on LIVE, SWEEP and RUDDER the
-SUPPLY row stands for it. It controls the programming ports' separate 5V.
-The first line shows pin and state, `PROG PORTS 5V, GPIO 21: OFF`. The
-second shows the latest 50ms window from INA3221 0x40 CH3, which watches
-the 5V: `5.02V  0.120A`, or `--V  --A` without a window.
+On the [rbmod carrier](Carrier.md#power) no SERVO screen shows the PROG 5V
+box. On LIVE, SWEEP and RUDDER the SUPPLY row names PROG 5V and ARM
+switches it on; on LIMIT RUN and RUDDER AUTO ARM + START does. On KST and
+HITEC the supply row reads ON while the 5V is on, and a tap switches it
+off. While a programming port holds the 5V the tap switches nothing and
+the alert band reads `PROG ports 5V: held by a programming port, or not
+read.` Leaving SERVO turns off 5V switched on by ARM or ARM + START
+unless a port holds it.
 
-PROG 5V ON requires a 2s hold; PROG 5V OFF takes a tap, in SAFE or ARMED,
-like OUTPUT ON and OFF. If a programming port holds the 5V, the second
-line reads `HELD BY PROG PORT n` and the button is dimmed. Pressing it
-shows `PROG ports 5V: held by a programming port, or not read.` The box
-remains visible under the KST and Hitec programmers. Leaving SERVO turns
-off 5V switched on by its box or by ARM unless a port holds it. With the supply
-model active, SIMULATED appears below the box.
-
-SUPPLY has the same box ([Supply](#supply)); see
+SUPPLY has the PROG 5V box ([Supply](#supply)); see
 [Carrier, The PROG 5V box](Carrier.md#the-prog-5v-box) for its rules.
 Two windows below 3000mV while the box reports ON cause a fault: SAFE,
 all outputs off, and the band message
@@ -1784,22 +1787,17 @@ The meter is selected once per poll
 over after its conditions remain true for 1000ms. The PD mini takes over
 on the first poll where any condition fails.
 
-- A current is signed and shown in hundredths of an amp: `0.41A`,
-  `-0.02A`, `-1.64A`. A reading that rounds to zero is `0.00A`. The
-  power on the line is signed in tenths of a watt. Beside a channel's name the
-  three readings have 64, 84 and 74px, 6, 8 and 7 characters of 10px,
-  after the name's 134px; beside PD MINI 88, 88 and 90px after its 90px:
-  a voltage of 10V or more is shown in tenths, `26.0V`, and
-  a power of more than 7 characters in tenths, `-100.0W` and beyond or
-  `1000.0W` and beyond, in whole watts.
-- A reading that did not arrive is `---` in LIVE's CURRENT, `--` on the
-  line and a gap in the plot: no sample yet, a supply that does not answer,
-  no window since the link came up, a window without samples of that
-  quantity.
+- A current is signed. LIVE's CURRENT shows it in hundredths of an amp,
+  `0.41A`, `-0.02A`, `-1.64A`; a reading that rounds to zero is `0.00A`.
+  The rail line shows it in thousandths, `0.412A`, `-0.004A`.
+- A reading that did not arrive is `---` in LIVE's CURRENT, `--V` or `--A`
+  on the line and a gap in TEST's plot: no sample yet, a supply that does
+  not answer, no window since the link came up, a window without samples
+  of that quantity.
 - A window in which a sample read an end of the INA3221's range, 1.638A or
   -1.638A on a 0.1Ω shunt, shows its mean as it is, in the warning colour
-  in LIVE's CURRENT and on the line. The clipped samples count in that mean
-  at the end of the range.
+  in LIVE's CURRENT. The clipped samples count in that mean at the end of
+  the range.
 
   ![A clipped window](img/servo-clipped.png)
 
@@ -2134,8 +2132,28 @@ not grey the HITEC tile itself: after the programmer reads the page, a
 port held by another session opens with RELEASE PORT
 ([A port another session holds](HitecProgrammer.md#a-port-another-session-holds)).
 
-CLOSE ends the session and returns to the hub. Inside a programmer's
-keypad, list, warning or keyboard, the home tag closes only that overlay.
+The sessions have no CLOSE: the home tag ends a session that holds no
+port and returns to the hub. Inside a programmer's keypad, list, warning
+or keyboard, the home tag closes only that overlay.
+
+KST's and HITEC's frame around the session:
+
+| Part | Holds |
+| --- | --- |
+| PORT button | what the tester drives; a tap opens the PORT list, locked while the session holds the port |
+| READY card, PORT | the port line; red with `NO PROG PORT` on OUTPUTS, a tap opens the PORT list; a red dot while the session holds the port |
+| READY card, supply | PROG 5V on the rbmod carrier, PD MINI where one answers, SUPPLY otherwise. Amber `ON AT CONNECT` while off; a red dot and `ON` while on, and then a tap switches it off as OUTPUT OFF does (PROG 5V not while a port holds it). KST with no supply the bench switches: amber `OFF, ON BY HAND`. Hitec D series with none: `UNCHANGED` |
+| READY card, SERVO | grey `NOT CONNECTED` before CONNECT, amber `IN PROGRESS` while a step runs, amber `NOT READ` with the port held and no servo read, the servo's model (Hitec) or type (KST, `V6?` for 20k_sel's guess) once read |
+| rail line | the meter's volts and amps, under the rows |
+| footer, middle | the session's WRITE n VALUES, from any tab: the same tap as the session's own button, which opens ENABLE WRITE's page first while the switch is off. Grey, naming why on a tap, before CONNECT and the read, with no value changed, while a step runs, and while a page of the session or of SERVO is open |
+| footer, right | SETTINGS: KST's KST EXPERT MODE page, HITEC's Hitec series and Hitec D receive; grey while the session holds the port |
+
+A tap on a READY row that is not met names it in the alert band, for
+example `SUPPLY: Switch the servo supply off and on, then tap CONNECT 1s
+later.` A finger on a READY row or on WRITE keeps SETTINGS and the PORT
+list shut, as every held press does.
+
+![KST before CONNECT](img/servo-kst.png)
 The firmware registry `shared/ui/prog_registry.c` supplies the
 programmers and their capability rules. Modelled protocols without an
 IOmcu transport have no tile ([PROGRAM](#program) on MOTOR & ESC).
@@ -2154,19 +2172,21 @@ are PROGP01 GPIO13, PROGP02 GPIO14, PROGP03 GPIO15 and PROGP04 GPIO0. The
 choice sets SERVO TESTER and requests SERVO PWM for that port and NONE
 for the other three. The tester waits for readback confirmation.
 
-While the programmer holds a port, CLOSE or the home tag opens LEAVE
-PROGRAMMING. During transitions into or out of programming they do nothing.
+While the programmer holds a port, the home tag opens LEAVE
+PROGRAMMING. During transitions into or out of programming it does nothing.
 Leaving SERVO preserves the held port. A held session that is not shown
 opens again on its own screen: from another SERVO function screen the
-panel goes there. ARM is disabled on SERVO and MOTOR & ESC; pressing it shows
+panel goes there. KST and HITEC have no ARM. ARM is disabled on the
+other SERVO screens and on MOTOR & ESC; pressing it shows
 `Cannot switch to ARMED: a port is in use by the servo programmer.`
-CENTRE, RELEASE and STOP remain active. COMMANDED shows `---`, because
-the tester sends no pulse to the held port.
+STOP remains active everywhere, CENTRE and RELEASE on LIVE. COMMANDED
+shows `---`, because the tester sends no pulse to the held port.
 
 In PWM with a responding PD mini, the PORT row shows the voltage and
 current limit CONNECT will set: `PORT  5.0V  1000mA`. While the port is
-held, the SET row's set points and OUTPUT ON are locked on SERVO and
-SUPPLY; OUTPUT OFF still works. On the rbmod carrier, the ports have
+held, the set points and OUTPUT ON are locked on SUPPLY and on SERVO's
+other screens; OUTPUT OFF and a tap on KST's or HITEC's PD MINI row while
+it reads ON still work. On the rbmod carrier, the ports have
 separate 5V and those supply controls remain active
 ([Carrier, Power](Carrier.md#power)). Leaving programming does not cycle
 the servo's power. Whether a KST servo follows PWM while in programming
@@ -2177,7 +2197,7 @@ tall or more and ending 8px above the card floor:
 
 | Part | Size |
 | --- | --- |
-| tabs and CLOSE | one row at the top, 48px tall: five tabs of 95px, CLOSE 120px |
+| tabs | one row at the top, 48px tall: five tabs of 120px, four of 151px on KST with KST EXPERT MODE OFF |
 | rows | 48px tall at a 56px pitch, up to 5 a tab, in two columns of 295px; a wide row spans both |
 | values | 150px (15 cells of the 10 x 20 face); a wide row's 260px, with its `-` and `+` keys of 56px inside it |
 | notes and messages | under the last row, 10 x 20 face, 60 cells a row, 20px a row, to 6px above the card floor: 4 rows under the SERVO tab |
@@ -2207,8 +2227,9 @@ describes it.
 
 #### Hitec programmer
 
-The Hitec programmer opens from `Hitec servos` with the same layout:
-five tabs (SERVO, MOTION, TRAVEL, PROTECT, INFO) and CLOSE; 48px rows at
+The Hitec programmer opens from the HITEC tile with the same layout and
+the same frame: five tabs (SERVO, MOTION, TRAVEL, PROTECT, INFO) of
+120px, the READY card and WRITE n VALUES in the footer; 48px rows at
 56px pitch; 150px values and 260px wide values; notes in 10 x 20 ending
 4px above the alert band; and hold pages with a 300 x 56px hold button
 and 180 x 56px CANCEL.
@@ -6560,11 +6581,11 @@ on the IOmcu's link (board 2).
   to PWM04 is never changed for a programming port: a PWM protocol given
   to PWM04 sets PROGP04 back to FUNC NONE.
 - The ports run from M7's fixed 5V on GPIO 21. PORT PWM ON is taken with
-  the PROG 5V box off. The box is on SERVO and SUPPLY, not here, and
-  leaving SERVO switches off a PROG 5V its box switched on. The line then
-  reads `PORT PWM ON: PULSES START WITH PROG 5V ON SERVO`, and no pulse
-  goes out until the box reads ON. The pulse stops when PROG 5V goes
-  off.
+  PROG 5V off. The PROG 5V box is on SUPPLY, not here. On SERVO, ARM and
+  ARM + START switch the 5V on, and leaving SERVO switches off a PROG 5V
+  SERVO switched on. The line then reads
+  `PORT PWM ON: PULSES START WITH PROG 5V ON SERVO`, and no pulse goes
+  out until PROG 5V is on. The pulse stops when PROG 5V goes off.
 - With an IOmcu older than 4.36, SERVO TESTER and PORT PWM are not drawn,
   and the line reads `PIN FIXED. THE TESTER NEEDS IOMCU PROTOCOL 4.36`.
 - WATCHED BY names the carrier's INA3221 channel on the ports' 5V,

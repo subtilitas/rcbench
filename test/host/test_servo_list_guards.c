@@ -11,7 +11,7 @@
  * - a_press_held_on_rudder_keeps_settings_shut
  * - a_press_held_on_rudder_auto_keeps_settings_shut
  * - a_finger_on_a_kst_control_keeps_the_port_list_shut
- * - a_finger_on_output_takes_no_port_pick
+ * - a_finger_on_arm_takes_no_port_pick
  *
  * SPDX-License-Identifier: MIT
  */
@@ -106,7 +106,7 @@ TEST_CASE(a_finger_on_a_kst_control_keeps_the_port_list_shut)
     fresh();
     go(SERVO_FN_KST);
     CHECK(kst_panel_is_open());
-    const gfx_rect_t r = kst_panel_close_rect();
+    const gfx_rect_t r = kst_panel_tab_rect(0);
     ev(r.x + r.w / 2, r.y + r.h / 2, TOUCH_EVENT_DOWN, 1);
     CHECK(kst_panel_pressed());
     ui_router_set_alert(NULL);
@@ -117,21 +117,23 @@ TEST_CASE(a_finger_on_a_kst_control_keeps_the_port_list_shut)
     ev(r.x + r.w / 2, r.y + r.h / 2, TOUCH_EVENT_UP, 1);
 }
 
-/* The PORT list open, a finger on the supply's OUTPUT button (KST's
- * output card): a tap on a port picks nothing.  Lifted, the pick is
+/* The PORT list open, a finger on ARM, the hold that switches the supply
+ * on LIVE: a tap on a port picks nothing.  Lifted early, the pick is
  * taken. */
-TEST_CASE(a_finger_on_output_takes_no_port_pick)
+TEST_CASE(a_finger_on_arm_takes_no_port_pick)
 {
-    fresh();
-    go(SERVO_FN_KST);
+    bench_fresh();
+    servo_screen_set_armed(false);
+    scr->tick(0.02f);
     tap(SV_PORT_X, SV_PORT_Y);
     CHECK(servo_screen_port_choices() > 0);
-    ev(SV_SUP_OUT_X, SV_SUP_Y, TOUCH_EVENT_DOWN, 1);
+    ev(SV_ARM_X, SV_FOOT_Y, TOUCH_EVENT_DOWN, 1);
+    CHECK(servo_screen_arm_held());
     const gfx_rect_t c = servo_screen_port_choice_rect(2);
     ev(c.x + c.w / 2, c.y + c.h / 2, TOUCH_EVENT_DOWN, 2);
     ev(c.x + c.w / 2, c.y + c.h / 2, TOUCH_EVENT_UP, 2);
     CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 0);
-    ev(SV_SUP_OUT_X, SV_SUP_Y, TOUCH_EVENT_UP, 1);
+    ev(SV_ARM_X, SV_FOOT_Y, TOUCH_EVENT_UP, 1);
     if (servo_screen_port_choices() < 0) {
         tap(SV_PORT_X, SV_PORT_Y);
     }
@@ -147,6 +149,6 @@ int main(void)
     RUN(a_press_held_on_rudder_keeps_settings_shut);
     RUN(a_press_held_on_rudder_auto_keeps_settings_shut);
     RUN(a_finger_on_a_kst_control_keeps_the_port_list_shut);
-    RUN(a_finger_on_output_takes_no_port_pick);
+    RUN(a_finger_on_arm_takes_no_port_pick);
     return test_summary("servo_list_guards");
 }

@@ -84,7 +84,7 @@ an.
 
 ![Ein Ruderhorn an einem Anschlag](img/de/servo-hitec-move-blocked.png)
 
-Das Ende, nach einem Tippen auf EIN, einem Reiterwechsel, SCHLIESSEN, dem
+Das Ende, nach einem Tippen auf EIN, einem Reiterwechsel, dem
 Home-Feld, einem Bildschirmwechsel, einem ABBRECHEN oder einer Blockierung:
 der laufende Durchlauf endet, 0x1E = 3000, das Servo startet neu
 (0x46 = 1) mit 1000ms, die 21 Register und 0x1E, 0x50, 0x52 und 0x56
@@ -97,8 +97,8 @@ Gleich meldet
 Eine Abweichung meldet
 `Servowerte haben sich bei SERVO BEWEGEN geändert. Tippe auf ALLES AUSLESEN.`,
 schaltet SCHREIBEN INS SERVO FREIGEBEN aus und lehnt ein Schreiben bis
-ALLES AUSLESEN ab. SCHLIESSEN und das Home-Feld verlassen die
-Programmierung erst nach dem Ende: tippe sie erneut.
+ALLES AUSLESEN ab. Das Home-Feld verlässt die Programmierung erst nach
+dem Ende: tippe es erneut.
 
 Ein hartes Ende hat keine Endfolge. Es schaltet SCHREIBEN INS SERVO
 FREIGEBEN aus, und SERVO zeigt
@@ -162,7 +162,7 @@ bestätigt. n WERTE SCHREIBEN schreibt sie nach AUS.
 
 Eine Blockierung auf dem Weg zu NEUTRAL ist eine Blockierung von SERVO
 BEWEGEN: das Ruderhorn fährt zurück, und die Schleife endet. Ein Tippen
-auf EIN, ein Reiterwechsel, SCHLIESSEN, das Home-Feld, ein
+auf EIN, ein Reiterwechsel, das Home-Feld, ein
 Bildschirmwechsel und ein ABBRECHEN beenden die Suche mit dem Ende der
 Schleife. STOP, ein Schalten auf SAFE am Prüfstand, die Versorgung aus und
 die anderen harten Enden bleiben harte Enden. Eine Blockierung der Suche

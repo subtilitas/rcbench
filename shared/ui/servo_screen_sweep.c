@@ -680,8 +680,8 @@ void svs_tick_body(float dt_s)
         s.kst_held = prog_holds();
         ++s.arm_rev;
     }
-    /* KST or HITEC whose session closed with its own CLOSE: the screen
-     * goes back to the hub, as its home tag does. */
+    /* KST or HITEC whose session closed under the screen: the screen goes
+     * back to the hub, as the home tag that closes it does. */
     if (svs_session_gone()
         && ui_router_current() == servo_fn_screen_id((servo_fn_t)s.fn)) {
         ui_router_goto(SCREEN_SERVO);
@@ -863,14 +863,10 @@ void svs_tick_body(float dt_s)
         ui_hold_flash_step(&s.out_hold, dt_s);
         ++s.sup_rev;
     }
-    /* The PROG 5V box: its hold, and what it shows moving.  A press the
-     * box has dropped (a port took the supply) is over here too. */
+    /* The PROG 5V box: its hold, and what it shows moving. */
     {
         const uint32_t rev = s.p5.rev;
         prog5v_box_tick(&s.p5, dt_s);
-        if (s.p5_down && !s.p5.pressed) {
-            s.p5_down = false;
-        }
         if (s.p5.rev != rev) {
             ++s.power_rev;
         }

@@ -4737,9 +4737,6 @@ UI_TEXT(SV_MODELLED, 0,
 UI_TEXT(SV_METER_MODEL, 13,
     "SIMULATION",
     "SIMULATION")
-UI_TEXT(SV_SET, 0,
-    "SET",
-    "SOLL")
 UI_TEXT(SV_SPEED, 0,
     "SPEED",
     "TEMPO")
@@ -5092,9 +5089,6 @@ UI_TEXT(HG_SV_TITLE_SWEEP, 0,
 UI_TEXT(HG_SV_TITLE_CARD, 0,
     "SERVO: OUTPUT CARD",
     "SERVO: AUSGANGSKARTE")
-UI_TEXT(HG_SV_TITLE_DRIVE, 0,
-    "SERVO: WHAT IT DRIVES",
-    "SERVO: WAS ES ANSTEUERT")
 UI_TEXT(HG_SV_ANGLE_NAME, 0,
     "ANGLE",
     "WINKEL")
@@ -5170,12 +5164,6 @@ UI_TEXT(HG_SV_TYPE, 0,
 UI_TEXT(HG_SV_PLOT, 0,
     "Voltage, current and power of the servo rail over the last 17.8s. The line above names the meter.",
     "Spannung, Strom und Leistung der Servoschiene der letzten 17.8s. Die Zeile darüber nennt das Messgerät.")
-UI_TEXT(HG_SV_P5, 114,
-    "The programming ports' own 5V at GPIO 21: hold PROG 5V ON 2s, tap PROG 5V OFF.",
-    "Die eigene 5V der Programmierports an GPIO 21: halte PROG 5V EIN 2s, tippe PROG 5V AUS.")
-UI_TEXT(HG_SV_SET, 0,
-    "SUPPLY's voltage and current limit; a tap opens the keypad. OUTPUT ON is a 2s hold, OUTPUT OFF a tap.",
-    "Spannung und Strombegrenzung von SUPPLY; Tippen öffnet das Tastenfeld. AUSGANG EIN: 2s halten, AUS: tippen.")
 UI_TEXT(HG_SV_SPEED, 0,
     "How fast the bench may move the output. Each command passes straight through at 100%.",
     "Wie schnell der Prüfstand den Ausgang bewegen darf. Jeder Befehl geht direkt durch bei 100%.")
@@ -5185,9 +5173,6 @@ UI_TEXT(HG_SV_TARGET, 0,
 UI_TEXT(HG_SV_BUTTONS, 0,
     "While ARMED: CENTRE to PULSE CENTRE plus TRIM, SWEEP runs the curve. RELEASE goes back to rest.",
     "Bei ARMED: ZENTRIEREN auf PULS MITTE plus TRIMMUNG, SWEEP fährt die Kurve. FREIGEBEN geht in Ruhe.")
-UI_TEXT(HG_SV_ARM, 0,
-    "Hold 2s to ARM. DISARM, STOP or leaving the screen switches to SAFE.",
-    "Halte 2s für ARM. DISARM, STOP oder Verlassen des Bildschirms schaltet auf SAFE.")
 UI_TEXT(HG_SV_SETTINGS, 0,
     "How this screen runs its function. Opens on a SAFE bench only.",
     "Wie dieser Bildschirm seine Funktion ausführt. Öffnet nur bei SAFE.")
@@ -6230,6 +6215,79 @@ UI_TEXT(KP_NEED_TARGET, 116,
 UI_TEXT(KP_NEED_TARGET_2, 116,
     "Tap PORT and pick a PROG PORT.",
     "Tippe auf PORT und wähle einen PROG-PORT.")
+/* KST's and HITEC's READY card and the footer's WRITE (servo_prog_ready.c):
+ * the states (20 cells), the alert band's reasons (94 cells), the guide
+ * page.  CONNECT and READ ALL name the session's buttons as they read in
+ * each language. */
+UI_TEXT(PRR_NO_PORT, 0,
+    "NO PROG PORT",
+    "KEIN PROG-PORT")
+UI_TEXT(PRR_AT_CONNECT, 0,
+    "ON AT CONNECT",
+    "EIN BEI VERBINDEN")
+UI_TEXT(PRR_BY_HAND, 0,
+    "OFF, ON BY HAND",
+    "AUS, EIN VON HAND")
+UI_TEXT(PRR_AS_IS, 0,
+    "UNCHANGED",
+    "UNVERÄNDERT")
+UI_TEXT(PRR_READ, 20,
+    "READ BACK",
+    "AUSGELESEN")
+UI_TEXT(PRR_BUSY, 0,
+    "IN PROGRESS",
+    "LÄUFT")
+UI_TEXT(PRR_NOT_READ, 0,
+    "NOT READ",
+    "NICHT GELESEN")
+UI_TEXT(PRR_NOT_CONN, 0,
+    "NOT CONNECTED",
+    "NICHT VERBUNDEN")
+UI_TEXT(PRR_5V_WHY, 94,
+    "CONNECT switches the ports' 5V on.",
+    "VERBINDEN schaltet die 5V der Ports ein.")
+UI_TEXT(PRR_PD_WHY, 94,
+    "CONNECT sets %u.%uV and %umA and switches the output on.",
+    "VERBINDEN stellt %u.%uV und %umA ein und schaltet den Ausgang ein.")
+UI_TEXT(PRR_HAND_WHY, 94,
+    "Switch the servo supply off and on, then tap CONNECT 1s later.",
+    "Schalte die Servoversorgung aus und ein, tippe dann 1s später auf VERBINDEN.")
+UI_TEXT(PRR_READ_WHY, 94,
+    "Tap READ ALL in the session.",
+    "Tippe in der Sitzung auf ALLES AUSLESEN.")
+UI_TEXT(PRR_CONN_WHY, 94,
+    "Tap CONNECT in the session.",
+    "Tippe in der Sitzung auf VERBINDEN.")
+UI_TEXT(PRR_W_PAGE, 94,
+    "Close the page open on the left first.",
+    "Schließe zuerst die offene Seite links.")
+UI_TEXT(PRR_W_BUSY, 94,
+    "Wait: a step of the session is under way.",
+    "Warte: ein Schritt der Sitzung läuft.")
+UI_TEXT(PRR_W_CONNECT, 94,
+    "CONNECT and read the servo first.",
+    "Tippe auf VERBINDEN und lies zuerst das Servo aus.")
+UI_TEXT(PRR_W_NONE, 94,
+    "No value changed: edit one first.",
+    "Kein Wert geändert: ändere zuerst einen.")
+UI_TEXT(HG_SV_TITLE_PRG, 0,
+    "SERVO: READY AND WRITE",
+    "SERVO: BEREIT UND SCHREIBEN")
+UI_TEXT(HG_SV_PRG_PORT, 0,
+    "The port the session works on. A tap chooses one until CONNECT holds it.",
+    "Der Port, an dem die Sitzung arbeitet. Ein Tippen wählt ihn, bis VERBINDEN ihn hält.")
+UI_TEXT(HG_SV_PRG_RAIL, 0,
+    "The servo rail's volts and amps as the meter reads them now.",
+    "Volt und Ampere der Servoschiene, wie das Messgerät sie jetzt liest.")
+UI_TEXT(HG_SV_PRG_READY, 0,
+    "PORT, the supply CONNECT switches, the servo read. A tap on a row says why it is not met.",
+    "PORT, die Versorgung, die VERBINDEN schaltet, das gelesene Servo. Ein Tippen sagt, was fehlt.")
+UI_TEXT(HG_SV_PRG_WRITE_NAME, 0,
+    "WRITE",
+    "SCHREIBEN")
+UI_TEXT(HG_SV_PRG_WRITE, 0,
+    "The session's WRITE n VALUES from any tab. Its page asks for ENABLE WRITE and a 2s hold.",
+    "WERTE SCHREIBEN der Sitzung von jedem Reiter. Seine Seite fragt nach der Freigabe und 2s Halten.")
 UI_TEXT(KP_DOUBT, 116,
     "The settings currently in the servo are unknown.",
     "Die aktuellen Werte im Servo sind unbekannt.")

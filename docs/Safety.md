@@ -179,7 +179,7 @@ OFF for a write; its own port bit (`LINK_PS_PORT`) does not enter the rule.
 On the carrier a KST or Hitec session leaves the SUPPLY page's bit clear,
 since the ports run from the 5V and not from the PD mini
 (`ports_tell_supply()`). Such a session does not keep the operator off the
-PD mini either: SUPPLY and SERVO's SET row take OUTPUT ON and set
+PD mini either: SUPPLY takes OUTPUT ON and set
 points through it (`supply_link_session_blocks()`), and the IOmcu takes them.
 An ESC session sets the bit on every board, the carrier too, since SWITCHED
 powers the ESC from the PD mini. SUPPLY then refuses set points and ON
@@ -265,8 +265,8 @@ step cut by a stop or a lost link, which end the session themselves.
 On the [rbmod carrier](Carrier.md#power) the programming ports run from
 the 5V buck M7, switched by GPIO 21 (link 4.32, the PROG_SUPPLY page). The
 PD mini feeds the servo rails only. The KST and Hitec programmers switch
-the 5V on and off for a session, and the PROG 5V box on SERVO and SUPPLY
-switches it by hand ([Carrier, The PROG 5V box](Carrier.md#the-prog-5v-box)).
+the 5V on and off for a session, and the PROG 5V box on SUPPLY switches
+it by hand ([Carrier, The PROG 5V box](Carrier.md#the-prog-5v-box)).
 ARM on SERVO's LIVE, SWEEP and RUDDER switches it on before the bench
 arms, and DISARM there switches it off. The
 programmers take no reading of the PD mini on the carrier: its set point

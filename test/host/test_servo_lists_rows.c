@@ -1,12 +1,15 @@
 /**
  * @file test_servo_lists_rows.c
  * @brief The rows of SERVO's SETTINGS lists as the list reads them: the
- *        hub's profile keys, RESET, RUDDER's ENC CENTRE and ANGLE SOURCE,
- *        RUDDER AUTO's SERVO and SERVO PULSES with the reason each gives
- *        while it takes no press, and a list refused at the hub.
+ *        hub's profile keys and FRAME RATE's list, RESET, RUDDER's ENC
+ *        CENTRE and ANGLE SOURCE, RUDDER AUTO's SERVO and SERVO PULSES
+ *        with the reason each gives while it takes no press, and a list
+ *        refused at the hub.
  *
  * Cases:
  * - the_hubs_keys_step_centre_max_travel_and_hv
+ * - pulse_min_steps_10_us_and_stops_50_us_under_centre
+ * - the_rate_list_marks_the_rate_in_force
  * - reset_on_the_hub_puts_the_profile_back
  * - enc_centre_takes_the_live_count_of_an_as5600_only
  * - angle_source_names_the_source_in_force
@@ -77,6 +80,56 @@ TEST_CASE(the_hubs_keys_step_centre_max_travel_and_hv)
     sl_step(HL_HV, +1);
     CHECK_STR_EQ(value_of(HL_HV), hv0);
     settings_cancel_save();
+}
+
+/* PULSE MIN's key steps 10us either way and stops 50us under PULSE
+ * CENTRE, as its keypad's range does. */
+TEST_CASE(pulse_min_steps_10_us_and_stops_50_us_under_centre)
+{
+    fresh();
+    open_settings();
+    CHECK_STR_EQ(value_of(HL_MIN), "1000us");
+    sl_step(HL_MIN, -1);
+    CHECK_STR_EQ(value_of(HL_MIN), "990us");
+    sl_step(HL_MIN, +1);
+    sl_step(HL_MIN, +1);
+    CHECK_STR_EQ(value_of(HL_MIN), "1010us");
+    for (int i = 0; i < 60; ++i) {
+        sl_step(HL_MIN, +1);
+    }
+    CHECK_STR_EQ(value_of(HL_MIN), "1450us");
+    settings_cancel_save();
+}
+
+/** @brief The fill of list key @p i in buffer 0, left of its label.
+ *  @param i the key @return its colour */
+static gfx_color_t choice_fill(int i)
+{
+    scr->tick(0.025f);
+    scr->render(&cv, 0);
+    return fb[(size_t)CH_Y(i) * W + CH_X(i) - 120];
+}
+
+/* FRAME RATE's list draws the rate in force in the accent and the others
+ * on the sunk grey.  A key is taken on its release, a finger that moved
+ * on it included, and the accent moves to it. */
+TEST_CASE(the_rate_list_marks_the_rate_in_force)
+{
+    fresh();
+    open_settings();
+    sl_tap(HL_RATE);                           /* 50Hz in force */
+    CHECK_EQ(choice_fill(0), ui_theme_color(UI_C_ACCENT));
+    CHECK_EQ(choice_fill(1), ui_theme_color(UI_C_PANEL_SUNK));
+    ev(CH_X(1), CH_Y(1), TOUCH_EVENT_DOWN, 1);  /* 60Hz */
+    ev(CH_X(1) + 6, CH_Y(1), TOUCH_EVENT_MOVE, 1);
+    CHECK_EQ(servo_screen_frame_hz(), 50);      /* the release takes it */
+    ev(CH_X(1) + 6, CH_Y(1), TOUCH_EVENT_UP, 1);
+    CHECK_EQ(servo_screen_frame_hz(), 60);
+    sl_tap(HL_RATE);
+    CHECK_EQ(choice_fill(0), ui_theme_color(UI_C_PANEL_SUNK));
+    CHECK_EQ(choice_fill(1), ui_theme_color(UI_C_ACCENT));
+    tap(CH_CANCEL_X, CH_CANCEL_Y);
+    CHECK_EQ(servo_screen_frame_hz(), 60);
 }
 
 /* RESET on the hub's list sets the profile back to STANDARD PWM at 50Hz,
@@ -244,7 +297,7 @@ TEST_CASE(a_finger_on_a_programmer_control_keeps_the_hubs_list_shut)
 {
     fresh();
     go(SERVO_FN_KST);
-    const gfx_rect_t r = kst_panel_close_rect();
+    const gfx_rect_t r = kst_panel_tab_rect(0);
     ev(r.x + r.w / 2, r.y + r.h / 2, TOUCH_EVENT_DOWN, 1);
     CHECK(kst_panel_pressed());
     go(SERVO_FN_HUB);
@@ -279,6 +332,8 @@ TEST_CASE(the_servos_name_takes_the_name_keyboard)
 int main(void)
 {
     RUN(the_hubs_keys_step_centre_max_travel_and_hv);
+    RUN(pulse_min_steps_10_us_and_stops_50_us_under_centre);
+    RUN(the_rate_list_marks_the_rate_in_force);
     RUN(reset_on_the_hub_puts_the_profile_back);
     RUN(enc_centre_takes_the_live_count_of_an_as5600_only);
     RUN(angle_source_names_the_source_in_force);

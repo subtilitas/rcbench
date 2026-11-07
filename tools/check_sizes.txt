@@ -85,7 +85,6 @@ test/host/test_bind_link.c | none | F14: the panel sections use 30 symbols of th
 test/host/test_outbind.c | none | row 18 moves the board suite out with out_board.c; 1,457 lines stay
 
 # Tests the plan's rows cut that stay over 1,000 code lines.
-test/host/test_servo_settings.c | none | row 9: the settings overlay's 48 cases
 test/host/test_servo_test_panel.c | none | row 9: the servo test panel's cases
 test/host/test_servo_arm.c | none | one rig: 36 cases share its arm, drag, knob and list helpers
 test/host/test_kst_prog.c | none | row 12: 122 cases stay; the card cases moved out
