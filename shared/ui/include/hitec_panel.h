@@ -217,6 +217,13 @@ bool hitec_panel_file_load(const char *text, size_t len);
  * @return the programmer's state
  */
 hitec_prog_t *hitec_panel_model(void);
+
+/**
+ * @brief The HITEC settings changed elsewhere, such as in HITEC's SETTINGS
+ *        list: the next CONNECT takes their series and supply.  A session
+ *        that holds the port keeps its series (hitec_prog_series_set()).
+ */
+void hitec_panel_settings_changed(void);
 /**
  * @brief A tab, one fifth of the row left of CLOSE, 48px tall.
  * @param page hitec_panel_page_t
