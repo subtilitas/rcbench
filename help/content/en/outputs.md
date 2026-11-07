@@ -182,7 +182,7 @@ PWM02 and PWM03 are one PWM slice and run at one frame rate. A surface protocol 
 
 PROG PORT entries show their fixed connector and pin, for example `PROGP01 ON GPIO 13`. PIN and FUNCTION cannot be edited directly. FUNCTION shows SERVO PWM when the port serves the tester, otherwise PROGRAMMING.
 
-With IOmcu protocol 4.36 or later, SERVO TESTER and PORT PWM are available. Selecting a port requests its servo-pulse function. A conflicting PWM output on the same slice blocks the choice. PORT PWM ON is taken with the PROG 5V box off; the pulse starts once the box on SERVO reads ON. Leaving SERVO switches off a PROG 5V that SERVO's box switched on, so switch it on after returning to SERVO. Older protocols hide the tester rows and show `PIN FIXED. THE TESTER NEEDS IOMCU PROTOCOL 4.36`.
+With IOmcu protocol 4.36 or later, SERVO TESTER and PORT PWM are available. Selecting a port requests its servo-pulse function. A conflicting PWM output on the same slice blocks the choice. PORT PWM ON is taken with the PROG 5V box off; the pulse starts once PROG 5V on SERVO reads ON. ARM on SERVO's LIVE, SWEEP and RUDDER switches PROG 5V and PORT PWM on itself. Leaving SERVO switches off a PROG 5V that SERVO switched on. Older protocols hide the tester rows and show `PIN FIXED. THE TESTER NEEDS IOMCU PROTOCOL 4.36`.
 
 ## The overview: OFF
 

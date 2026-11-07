@@ -102,26 +102,30 @@ Board; aus schaltet es ihn sofort. Ein bei ARMED eingeschaltetes PROG 5V
 lässt den Puls bis zum nächsten SAFE aus: der Endlagenlauf zeigt dann
 `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM`.
 
-PORT-PWM liegt auf OUTPUTS, das Feld PROG 5V auf SERVO und SUPPLY. Ein von
-SERVO eingeschaltetes PROG 5V bleibt von einer SERVO-Seite zur nächsten an,
-den Hub eingeschlossen. Das Verlassen von SERVO schaltet es aus.
+PORT-PWM liegt auf OUTPUTS. Das Feld PROG 5V liegt auf SUPPLY und auf
+KST und HITEC von SERVO. Ein von SERVO eingeschaltetes
+PROG 5V bleibt von einer SERVO-Seite zur nächsten an, den Hub
+eingeschlossen. Das Verlassen von SERVO schaltet es aus.
 
-RUDER AUTO braucht keinen Schritt von Hand: sein 2s HALTEN: ARM + START
-schaltet bei SAFE PORT-PWM EIN, dann PROG 5V EIN, wartet bis zu 1000ms auf
-die Rückmeldung EIN von PROG 5V, das PWM-Bit des Ports (bei SAFE gesetzt)
-und ein INA3221-Messfenster, das nach beiden begann, schaltet ARM, wartet
-bis zu 500ms auf ARMED und startet den Lauf. Der Puls läuft ab dem ARM
-([Servo: AUTO-Endpoints](Servo-de.md#auto-endpoints)). Seine Karte BEREIT zeigt
-bei SAFE `START SCHALTET EIN` auf den Zeilen PROG 5V und PORT-PWM. Ein
+Auf LIVE, SWEEP und RUDER zeigen die Zeilen PORT und VERSORGUNG der
+Karte BEREIT bei SAFE mit PORT-PWM oder PROG 5V aus `ARM SCHALTET EIN` in
+Gelb. Das 2s-Halten von ARM schaltet dann PORT-PWM EIN und PROG 5V EIN,
+wartet bis zu 1000ms auf ihre Rückmeldung, schaltet auf ARMED und wartet
+bis zu 500ms auf ARMED. Ein Schritt, der scheitert, nennt sich im
+Alarmband und schaltet alle Ausgänge aus. DISARM schaltet den Prüfstand
+auf SAFE und PROG 5V aus
+([Servo: ARM schaltet die Versorgung](Servo-de.md#arm-schaltet-die-versorgung-auf-live-sweep-und-ruder)).
+
+RUDER AUTO und ENDLAGENLAUF brauchen keinen Schritt von Hand: ihr 2s
+HALTEN: ARM + START schaltet bei SAFE PORT-PWM EIN, dann PROG 5V EIN,
+wartet bis zu 1000ms auf die Rückmeldung EIN von PROG 5V, das PWM-Bit des
+Ports (bei SAFE gesetzt) und ein INA3221-Messfenster, das nach beiden
+begann, schaltet ARM, wartet bis zu 500ms auf ARMED und startet den Lauf.
+Der Puls läuft ab dem ARM ([Servo: AUTO-Endpoints](Servo-de.md#auto-endpoints),
+[Servo: Starten](Servo-de.md#starten)). Ihre Karte BEREIT zeigt bei SAFE
+`START SCHALTET EIN` auf den Zeilen PROG 5V und PORT-PWM. Ein
 fehlgeschlagener Schritt nennt sich im Alarmband und endet mit dem
 Prüfstand SAFE, PROG 5V aus.
-
-Der Weg des Endlagenlaufs von PORT-PWM aus, bis er dasselbe Halten bekommt:
-
-1. SAFE: öffne SETUP > OUTPUTS auf dem Eintrag des Ports.
-2. PORT-PWM EIN. Die Zeile lautet `PORT-PWM EIN: PULSE STARTEN MIT PROG 5V AUF SERVO`.
-3. Zurück zu SERVO, halte PROG 5V EIN 2s lang. Das PWM-Bit des Ports kommt bei SAFE; der Puls läuft ab dem nächsten ARM.
-4. ARM, dann ENDLAGENLAUF STARTEN halten.
 
 ## Versorgung
 
@@ -134,9 +138,9 @@ Der Weg des Endlagenlaufs von PORT-PWM aus, bis er dasselbe Halten bekommt:
 
 M7 versorgt die Programmierports mit festen 5V, unabhängig vom PD mini.
 Während einer KST- oder Hitec-Sitzung kannst du den PD mini weiter
-bedienen: SUPPLY und die Zeile SOLL auf SERVO nehmen AUSGANG EIN und
-Sollwerte an, die sie während einer Sitzung auf anderen Platinen
-ablehnen. KST- und Chaservo-Servos werden mit 5V programmiert. Auf dem
+bedienen: SUPPLY nimmt AUSGANG EIN und
+Sollwerte an, die es während einer Sitzung auf anderen Platinen
+ablehnt. KST- und Chaservo-Servos werden mit 5V programmiert. Auf dem
 Carrier kann die Servoprogrammierung die Spannung der Programmierports
 nicht ändern. Ihre Liste WEITERES zeigt
 `PROGRAMMIERSPANNUNG: 5V FEST, GPIO 21` und bietet keine Einstellung für
@@ -144,8 +148,7 @@ Spannung oder Strom an.
 
 Die Servoprogrammierung für KST und Hitec schaltet GPIO 21 während einer
 Sitzung über die Page PROG_SUPPLY ein und aus (Link 4.32). Manuell
-schaltest du sie im Feld PROG 5V auf der Ausgangskarte von SERVO oder
-unter LIVE auf SUPPLY: Halte PROG 5V EIN für 2s oder tippe auf
+schaltest du sie im Feld PROG 5V unter LIVE auf SUPPLY: Halte PROG 5V EIN für 2s oder tippe auf
 PROG 5V AUS. Das ist bei SAFE und ARMED möglich, wie AUSGANG EIN
 des PD mini. Das Feld nennt den Pin,
 `PROG-PORTS 5V, GPIO 21: AUS`, und zeigt das letzte Fenster von 50ms an
@@ -171,8 +174,11 @@ hält der Pull-down an EN M7 aus.
 
 ### Das Feld PROG 5V
 
-Das Feld PROG 5V auf SERVO und SUPPLY schaltet die 5V von Hand: PROG 5V
-EIN ist ein Halten von 2s, PROG 5V AUS ein Tipp. Das Panel beurteilt das ON,
+Das Feld PROG 5V auf SUPPLY schaltet die 5V von Hand: PROG 5V EIN ist ein
+Halten von 2s, PROG 5V AUS ein Tipp. SERVO hat kein Feld: ARM auf LIVE,
+SWEEP und RUDER und ARM + START auf ENDLAGENLAUF und RUDER AUTO schalten
+die 5V ein, und auf KST und HITEC schaltet ein Tippen auf die Zeile der
+Versorgung in der Karte BEREIT sie aus. Das Panel beurteilt das ON,
 wie es AUSGANG EIN des PD mini beurteilt:
 
 - Es gilt bei SAFE und bei ARMED; ein Wechsel nach ARMED wird nicht verlangt.
@@ -249,7 +255,7 @@ Aktuelle Einschränkungen:
 
 ![SUPPLY auf dem Carrier](img/de/supply-rbmod.png)
 
-![SERVO auf dem Carrier, das Feld PROG 5V unter PD MINI](img/de/servo-rbmod.png)
+![LIVE auf dem Carrier: PORT-PWM und PROG 5V gelb, ARM schaltet sie ein](img/de/servo-rbmod.png)
 
 ![Der KST-Programmer hält die 5V](img/de/servo-kst-rbmod.png)
 

@@ -61,34 +61,16 @@ void draw_kx_value(gfx_canvas_t *c)
 }
 
 /**
- * @brief Whether a row is drawn faint: a test setting the length rule
- *        leaves unused, a setting under its lock, a limit run's row it
- *        cannot take now.
+ * @brief Whether a row is drawn faint: a setting under its lock.
  * @param r the row
  * @return true to draw it faint
  */
 static bool row_unused(const ov_row_t *r)
 {
-    if (r->kind == R_LIM_MODE) {
-        return servo_limrun_running(&s.lim) || lim_mode_why() != NULL;
-    }
-    if (r->kind == R_LIM_PULSES) {
-        return servo_limrun_running(&s.lim) || lim_write_why() != NULL;
-    }
-    if (r->kind == R_LIM_SERVO) {
-        return servo_limrun_running(&s.lim);
-    }
     if (r->kind != R_SETTING) {
         return false;
     }
-    if (target_locked(r)) {
-        return true;
-    }
-    const int by = settings_get_int(SET_SERVO_LEN_BY);
-    return (r->id == SET_SERVO_LEN_S && by != 0)
-           || (r->id == SET_SERVO_LEN_MOVES && by == 0)
-           || ((r->id == SET_SERVO_STEP_74 || r->id == SET_SERVO_STEP_84)
-               && !s.test_hv);
+    return target_locked(r);
 }
 
 void ov_row_value(const ov_row_t *r, char *buf, size_t n)
@@ -107,28 +89,6 @@ void ov_row_value(const ov_row_t *r, char *buf, size_t n)
     case R_HV:      snprintf(buf, n, "%s", ui_on_off(s.test_hv)); return;
     case R_KST_EXPERT:
         snprintf(buf, n, "%s", ui_on_off(settings_get_bool(SET_KST_EXPERT)));
-        return;
-    case R_BROWNOUT:
-        /* ON 3.0/0.2V: LOWEST VOLTAGE and STEP; OFF alone. */
-        if (settings_get_bool(SET_SERVO_BROWNOUT)) {
-            snprintf(buf, n, "%s %.1f/%.1fV", ui_on_off(true),
-                     (double)settings_get(SET_SERVO_BO_FLOOR),
-                     (double)settings_get(SET_SERVO_BO_STEP));
-        } else {
-            snprintf(buf, n, "%s", ui_on_off(false));
-        }
-        return;
-    case R_LIM_MODE:
-        snprintf(buf, n, "%s",
-                 lim_programs() ? TR(SV_LIM_PROGRAM) : TR(SV_LIM_SEARCH));
-        return;
-    case R_LIM_PULSES:
-        snprintf(buf, n, "%s",
-                 s.lim_pulses ? TR(SV_LIM_PULSES_STD) : TR(SV_LIM_PULSES_KEEP));
-        return;
-    case R_LIM_SERVO:
-        snprintf(buf, n, "%s",
-                 s.lim_hitec ? TR(SV_LIM_SERVO_HITEC) : TR(SV_LIM_SERVO_KST));
         return;
     default:
         break;
@@ -165,35 +125,6 @@ static void draw_note(gfx_canvas_t *c, int x, int y, const char *const *lines,
         gfx_text(c, x, y + i * NOTE_PITCH, lines[i], SV_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_FAINT), 1);
     }
-}
-
-/** @brief The brown-out walk's note, 6px under its three rows. */
-#define BO_NOTE_Y (RL_ROW0 + 3 * RL_PITCH + 6)
-_Static_assert(BO_NOTE_Y + 2 * NOTE_PITCH <= CARD_FLOOR,
-               "the brown-out walk's note ends above the alert band");
-
-/**
- * @brief The brown-out walk a run started now would take with every
- *        voltage moving: its start, step and floor on this supply, and how
- *        many voltages; then where it stops.
- * @param c the canvas
- * @param x the lines' left edge, px
- * @param y the first line's top, px
- */
-static void draw_bo_note(gfx_canvas_t *c, int x, int y)
-{
-    const supply_caps_t caps = supply_screen_caps();
-    float start = 0.0f, floor_v = 0.0f, step = 0.0f;
-    servo_test_brownout_walk(settings_get(SET_SERVO_BO_FLOOR),
-                             settings_get(SET_SERVO_BO_STEP), caps.v_min,
-                             caps.v_max, &start, &floor_v, &step);
-    char l1[96], l2[96];
-    snprintf(l1, sizeof(l1), TR(SV_BO_NOTE_WALK), (double)start,
-             (double)step, (double)floor_v);
-    snprintf(l2, sizeof(l2), TR(SV_BO_NOTE_COUNT),
-             servo_test_brownout_count(start, floor_v, step));
-    const char *const lines[] = { l1, l2 };
-    draw_note(c, x, y, lines, 2);
 }
 
 bool servo_in_force_note(char *l1, char *l2, size_t size, uint16_t hz,
@@ -292,9 +223,8 @@ bool svs_rate_note(char *l1, char *l2, size_t n)
 }
 
 /**
- * @brief A page of rows in the page area, under its name: a run's
- *        settings, the brown-out walk's, KST's EXPERT MODE.  Its notes,
- *        and the save line.
+ * @brief A page of rows in the page area, under its name: KST's EXPERT
+ *        MODE.  Its note, and the save line.
  * @param c the canvas
  */
 void draw_rows_page(gfx_canvas_t *c)
@@ -303,11 +233,7 @@ void draw_rows_page(gfx_canvas_t *c)
     const gfx_rect_t a = page_area();
     gfx_fill_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2,
                   ui_theme_color(UI_C_PANEL));
-    const char *name = (page == PG_AUTO)       ? TR(SV_AUTO_TEST)
-                       : (page == PG_BROWNOUT) ? TR(SV_ROW_BROWNOUT)
-                       : (page == PG_KST)      ? "KST"
-                                               : TR(SV_ROW_LIM_MODE);
-    gfx_text(c, OV_X + 10, CARD_Y + RUN_PAGE_NAME_DY, name, SV_FONT_LABEL,
+    gfx_text(c, OV_X + 10, CARD_Y + RUN_PAGE_NAME_DY, "KST", SV_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
     ui_button_font(c, run_close_rect(), TR(SUP_CLOSE),
                    ui_theme_color(UI_C_PANEL_HI),
@@ -315,7 +241,7 @@ void draw_rows_page(gfx_canvas_t *c)
                    SV_FONT_LABEL);
     for (int i = 0; i < k_row_count; ++i) {
         const ov_row_t *r = &k_rows[i];
-        if (r->page != page || row_hidden(r)) {
+        if (r->page != page) {
             continue;
         }
         const gfx_rect_t rr = row_rect(i);
@@ -345,13 +271,7 @@ void draw_rows_page(gfx_canvas_t *c)
     }
 
     const int nx = OV_X + 10;
-    if (page == PG_AUTO) {
-        draw_test_stall(c, nx, RL_NOTE_Y);
-    } else if (page == PG_LIMRUN) {
-        draw_lim_mode_note(c, nx, RL_ROW0 + 2 * RL_PITCH + 6);
-    } else if (page == PG_BROWNOUT) {
-        draw_bo_note(c, nx, BO_NOTE_Y);
-    } else if (page == PG_KST) {
+    if (page == PG_KST) {
         const char *const lines[] = { TR(SV_KST_EXPERT_NOTE) };
         draw_note(c, nx, RL_ROW0 + RL_PITCH + 6, lines, 1);
     }

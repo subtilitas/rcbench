@@ -1,21 +1,21 @@
 /**
  * @file test_esc_stick_panel_keypad.c
- * @brief ESC STICK's TIMING keypad: a tap on a row's value opens it; OK sets
- * the value through settings_set(), the call a "-" or "+" step ends in, and
- * CLOSE asks for the save as it does after a step; a value outside the
- * range is refused with the keypad open; CANCEL and the home tag change
- * nothing.
+ * @brief ESC STICK's SETTINGS list and its keypad: the footer's SETTINGS
+ * opens the list on a SAFE bench; a tap on a row's value opens the keypad;
+ * OK sets the value through settings_set(), the call a "-" or "+" step ends
+ * in; a value outside the range is refused with the keypad open; CANCEL and
+ * the home tag change nothing; the list closes when the bench arms under it.
  *
  * Cases:
- * - a_tap_on_a_timing_value_opens_its_keypad
+ * - a_tap_on_a_settings_value_opens_its_keypad
  * - the_range_ends_are_taken_and_a_value_past_them_refused
  * - a_digit_past_the_steps_decimals_is_not_typed
  * - a_typed_value_is_the_value_the_steps_reach
  * - cancel_and_the_home_tag_change_nothing
  * - nothing_under_the_keypad_presses
- * - an_armed_bench_takes_the_keypad_as_it_takes_the_steps
+ * - an_armed_bench_closes_the_list_and_refuses_it
  * - a_lost_press_keeps_what_was_typed
- * - a_scrolled_page_opens_the_row_shown_and_takes_six_digits
+ * - a_scrolled_list_opens_the_row_shown_and_takes_six_digits
  * - a_stop_over_the_keypad_sets_nothing
  *
  * SPDX-License-Identifier: MIT
@@ -24,10 +24,6 @@
 #include "esc_stick_panel_rig.h"
 
 #include "ui_keypad.h"
-
-/* The middle of a TIMING row's value, from esc_stick_int.h: the control
- * column at x 400, 216px wide. */
-#define VALUE_X ST_VALUE_X
 
 /* The keypad's key @p key tapped, in the screen's coordinates. */
 static void key(ui_key_t key)
@@ -48,18 +44,22 @@ static void type(const char *text)
     }
 }
 
-/* TIMING on the HobbyWing profile, at the defaults. */
+/* The SETTINGS list on the HobbyWing profile, at the defaults. */
 static void at_timing_page(void)
 {
     fresh();
     descend_to_hobbywing();
-    tap(TIMING_X, TIMING_Y);
+    open_settings();
+    CHECK(esc_stick_settings_list()->open);
 }
 
-TEST_CASE(a_tap_on_a_timing_value_opens_its_keypad)
+/* A tap on setting @p id's value: its keypad. */
+static void value(setting_id_t id) { set_tap(id, UI_SL_PART_VALUE); }
+
+TEST_CASE(a_tap_on_a_settings_value_opens_its_keypad)
 {
     at_timing_page();
-    tap(VALUE_X, STEP_CY(2));                /* BEEP MIN */
+    value(SET_STICK_BEEP_MIN);
     const ui_keypad_t *k = esc_stick_panel_keypad();
     CHECK(k->open);
     CHECK_EQ(esc_stick_panel_keypad_setting(), (int)SET_STICK_BEEP_MIN);
@@ -68,8 +68,8 @@ TEST_CASE(a_tap_on_a_timing_value_opens_its_keypad)
     CHECK_NEAR(k->min, 20.0f, 1e-6f);
     CHECK_NEAR(k->max, 2000.0f, 1e-6f);
     CHECK_EQ(k->decimals, 0);
-    /* Under the output strip, above the alert band. */
-    CHECK_EQ(k->area.y, PROG_FULL_Y);
+    /* Over the body, above the alert band. */
+    CHECK(k->area.y >= 0);
     CHECK(k->area.y + k->area.h <= UI_BODY_H - UI_ALERT_H);
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     stick_invalidate();
@@ -79,7 +79,9 @@ TEST_CASE(a_tap_on_a_timing_value_opens_its_keypad)
              ui_theme_color(UI_C_ACCENT));
     /* The row's name opens nothing. */
     key(UI_KEY_CANCEL);
-    tap(120, STEP_CY(2));
+    const gfx_rect_t row = ui_setlist_row_rect(
+        esc_stick_settings_list(), esc_stick_settings_row(SET_STICK_BEEP_MIN));
+    tap(row.x + 60, row.y + row.h / 2);
     CHECK(!esc_stick_panel_keypad()->open);
     CHECK_EQ(esc_stick_panel_keypad_setting(), -1);
 }
@@ -87,16 +89,16 @@ TEST_CASE(a_tap_on_a_timing_value_opens_its_keypad)
 TEST_CASE(the_range_ends_are_taken_and_a_value_past_them_refused)
 {
     at_timing_page();
-    tap(VALUE_X, STEP_CY(2));
+    value(SET_STICK_BEEP_MIN);
     type("20");
     key(UI_KEY_OK);
     CHECK(!esc_stick_panel_keypad()->open);
     CHECK_EQ(settings_get_int(SET_STICK_BEEP_MIN), 20);
-    tap(VALUE_X, STEP_CY(2));
+    value(SET_STICK_BEEP_MIN);
     type("2000");
     key(UI_KEY_OK);
     CHECK_EQ(settings_get_int(SET_STICK_BEEP_MIN), 2000);
-    tap(VALUE_X, STEP_CY(2));
+    value(SET_STICK_BEEP_MIN);
     type("2001");
     key(UI_KEY_OK);
     CHECK(esc_stick_panel_keypad()->open);
@@ -113,12 +115,12 @@ TEST_CASE(the_range_ends_are_taken_and_a_value_past_them_refused)
 TEST_CASE(a_digit_past_the_steps_decimals_is_not_typed)
 {
     at_timing_page();
-    tap(VALUE_X, STEP_CY(0));                /* VOLTAGE, steps of 0.1V */
+    value(SET_STICK_V);                      /* VOLTAGE, steps of 0.1V */
     type("12.34");
     CHECK_STR_EQ(esc_stick_panel_keypad()->entry, "12.3");
     key(UI_KEY_OK);
     CHECK_NEAR(settings_get(SET_STICK_V), 12.3f, 1e-4f);
-    tap(VALUE_X, STEP_CY(1));                /* CURRENT, steps of 0.05A */
+    value(SET_STICK_I);                      /* CURRENT, steps of 0.05A */
     CHECK_EQ(esc_stick_panel_keypad()->decimals, 2);
     type("1.234");
     CHECK_STR_EQ(esc_stick_panel_keypad()->entry, "1.23");
@@ -126,53 +128,50 @@ TEST_CASE(a_digit_past_the_steps_decimals_is_not_typed)
     CHECK_NEAR(settings_get(SET_STICK_I), 1.25f, 1e-4f);   /* the nearer */
 }
 
-/* The value the keypad sets is the value the steps reach, and CLOSE asks
- * for its save either way. */
+/* The value the keypad sets is the value the steps reach. */
 TEST_CASE(a_typed_value_is_the_value_the_steps_reach)
 {
     at_timing_page();
-    tap(VALUE_X, STEP_CY(1));
+    value(SET_STICK_I);
     type("1.25");
     key(UI_KEY_OK);
     const float typed = settings_get(SET_STICK_I);
-    tap(WRITE_X, BTN_CY);                    /* CLOSE */
-    CHECK(settings_save_asked());
-    settings_cancel_save();
-
-    at_timing_page();
+    set_strip(1);                            /* RESET ESC STICK */
+    CHECK_NEAR(settings_get(SET_STICK_I), 1.0f, 1e-4f);
     for (int i = 0; i < 5; ++i) {
-        tap(STEP_UP_X, STEP_CY(1));          /* 1.00A + 5 x 0.05A */
+        set_step(SET_STICK_I, +1);           /* 1.00A + 5 x 0.05A */
     }
     const float stepped = settings_get(SET_STICK_I);
-    tap(WRITE_X, BTN_CY);
-    CHECK(settings_save_asked());
-    settings_cancel_save();
     CHECK(typed == stepped);
     CHECK_NEAR(typed, 1.25f, 1e-4f);
+    /* Neither asked for a write: SAVE does. */
+    CHECK(!settings_save_asked());
 }
 
 TEST_CASE(cancel_and_the_home_tag_change_nothing)
 {
     at_timing_page();
-    tap(VALUE_X, STEP_CY(3));                /* GAP MIN */
+    value(SET_STICK_GAP_MIN);
     type("555");
     key(UI_KEY_CANCEL);
     CHECK(!esc_stick_panel_keypad()->open);
     CHECK_EQ(settings_get_int(SET_STICK_GAP_MIN), 200);
     CHECK(!settings_dirty());
-    /* The home tag closes the keypad, and TIMING stays: its value opens
+    /* The home tag closes the keypad, and the list stays: its value opens
      * the keypad again. */
-    tap(VALUE_X, STEP_CY(3));
+    value(SET_STICK_GAP_MIN);
     type("555");
     CHECK(scr->back());
     CHECK(!esc_stick_panel_keypad()->open);
+    CHECK(esc_stick_settings_list()->open);
     CHECK_EQ(settings_get_int(SET_STICK_GAP_MIN), 200);
-    tap(VALUE_X, STEP_CY(3));
+    value(SET_STICK_GAP_MIN);
     CHECK(esc_stick_panel_keypad()->open);
     /* Leaving the screen takes it with it. */
     type("555");
     scr->leave();
     CHECK(!esc_stick_panel_keypad()->open);
+    CHECK(!esc_stick_settings_list()->open);
     CHECK_EQ(settings_get_int(SET_STICK_GAP_MIN), 200);
     CHECK(!settings_dirty());
 }
@@ -180,12 +179,11 @@ TEST_CASE(cancel_and_the_home_tag_change_nothing)
 TEST_CASE(nothing_under_the_keypad_presses)
 {
     at_timing_page();
-    tap(STEP_UP_X, STEP_CY(2));              /* BEEP MIN 210 */
-    tap(VALUE_X, STEP_CY(2));
-    /* DEFAULTS and CLOSE lie under the keypad, its keys over them; BACK
-     * lies under its top. */
-    CHECK(gfx_rect_contains(esc_stick_panel_keypad()->area, READ_X, BTN_CY));
-    CHECK(gfx_rect_contains(esc_stick_panel_keypad()->area, WRITE_X, BTN_CY));
+    set_step(SET_STICK_BEEP_MIN, +1);        /* BEEP MIN 210 */
+    value(SET_STICK_BEEP_MIN);
+    /* The footer and BACK's place lie under the keypad. */
+    CHECK(gfx_rect_contains(esc_stick_panel_keypad()->area, SET_X, SET_Y));
+    CHECK(gfx_rect_contains(esc_stick_panel_keypad()->area, BACK_X, BACK_Y));
     tap(BACK_X, BACK_Y);
     CHECK(esc_stick_panel_keypad()->open);
     CHECK_EQ(settings_get_int(SET_STICK_BEEP_MIN), 210);
@@ -193,27 +191,36 @@ TEST_CASE(nothing_under_the_keypad_presses)
     key(UI_KEY_CANCEL);
 }
 
-/* TIMING's steps are not refused while the bench is ARMED, and neither is
- * its keypad. */
-TEST_CASE(an_armed_bench_takes_the_keypad_as_it_takes_the_steps)
+/* The list opens on a SAFE bench only: an arm under it closes it, keypad
+ * and all, with nothing typed set; the footer then refuses it and says
+ * why. */
+TEST_CASE(an_armed_bench_closes_the_list_and_refuses_it)
 {
     at_timing_page();
+    set_step(SET_STICK_BEEP_MIN, +1);
+    CHECK_EQ(settings_get_int(SET_STICK_BEEP_MIN), 210);
+    value(SET_STICK_BEEP_MIN);
+    type("300");
     esc_stick_panel_bench(100u, true, 0u, 0u, true);
     scr->tick(0.02f);
-    tap(STEP_UP_X, STEP_CY(2));
+    CHECK(!esc_stick_settings_list()->open);
+    CHECK(!esc_stick_panel_keypad()->open);
     CHECK_EQ(settings_get_int(SET_STICK_BEEP_MIN), 210);
-    tap(VALUE_X, STEP_CY(2));
-    CHECK(esc_stick_panel_keypad()->open);
-    type("300");
-    key(UI_KEY_OK);
-    CHECK_EQ(settings_get_int(SET_STICK_BEEP_MIN), 300);
+    ui_router_set_alert(NULL);
+    open_settings();
+    CHECK(!esc_stick_settings_list()->open);
+    CHECK(ui_router_alert() != NULL
+          && strcmp(ui_router_alert(), TR(FOOT_SETTINGS_SAFE)) == 0);
     esc_stick_panel_bench(200u, false, 0u, 0u, true);
+    scr->tick(0.02f);
+    open_settings();
+    CHECK(esc_stick_settings_list()->open);
 }
 
 TEST_CASE(a_lost_press_keeps_what_was_typed)
 {
     at_timing_page();
-    tap(VALUE_X, STEP_CY(4));
+    value(SET_STICK_LONG);
     type("12");
     const gfx_rect_t r = ui_keypad_key_rect(esc_stick_panel_keypad(),
                                             UI_KEY_3);
@@ -231,16 +238,13 @@ TEST_CASE(a_lost_press_keeps_what_was_typed)
     CHECK_STR_EQ(esc_stick_panel_keypad()->entry, "12");
 }
 
-/* Paged down to the last rows, a value opens the keypad of the row drawn
- * there, not of the row at that place on the first page: Timeout, whose
- * 600000ms is a six-digit entry. */
-TEST_CASE(a_scrolled_page_opens_the_row_shown_and_takes_six_digits)
+/* Scrolled down to the last rows, a value opens the keypad of the row
+ * drawn there: Timeout, whose 600000ms is a six-digit entry. */
+TEST_CASE(a_scrolled_list_opens_the_row_shown_and_takes_six_digits)
 {
     at_timing_page();
-    for (int i = 0; i < 10; ++i) {
-        tap(PAGE_DN_X, PAGE_CY);             /* to the last page: 8 on */
-    }
-    tap(VALUE_X, STEP_CY(3));                /* 8 + 3: Timeout */
+    value(SET_STICK_TIMEOUT);
+    CHECK(esc_stick_settings_list()->scroll > 0);
     CHECK_EQ(esc_stick_panel_keypad_setting(), (int)SET_STICK_TIMEOUT);
     type("600001");
     key(UI_KEY_OK);
@@ -252,8 +256,8 @@ TEST_CASE(a_scrolled_page_opens_the_row_shown_and_takes_six_digits)
     key(UI_KEY_OK);
     CHECK(!esc_stick_panel_keypad()->open);
     CHECK_EQ(settings_get_int(SET_STICK_TIMEOUT), 600000);
-    /* The last row, Hysteresis, from the same page. */
-    tap(VALUE_X, STEP_CY(5));
+    /* The last row, Hysteresis. */
+    value(SET_STICK_HYST);
     CHECK_EQ(esc_stick_panel_keypad_setting(), (int)SET_STICK_HYST);
     key(UI_KEY_CANCEL);
 }
@@ -263,7 +267,7 @@ TEST_CASE(a_scrolled_page_opens_the_row_shown_and_takes_six_digits)
 TEST_CASE(a_stop_over_the_keypad_sets_nothing)
 {
     at_timing_page();
-    tap(VALUE_X, STEP_CY(2));
+    value(SET_STICK_BEEP_MIN);
     type("300");
     esc_stick_panel_bench(100u, false, 1u, 0u, true);    /* a STOP */
     scr->tick(0.02f);
@@ -276,15 +280,15 @@ TEST_CASE(a_stop_over_the_keypad_sets_nothing)
 
 int main(void)
 {
-    RUN(a_tap_on_a_timing_value_opens_its_keypad);
+    RUN(a_tap_on_a_settings_value_opens_its_keypad);
     RUN(the_range_ends_are_taken_and_a_value_past_them_refused);
     RUN(a_digit_past_the_steps_decimals_is_not_typed);
     RUN(a_typed_value_is_the_value_the_steps_reach);
     RUN(cancel_and_the_home_tag_change_nothing);
     RUN(nothing_under_the_keypad_presses);
-    RUN(an_armed_bench_takes_the_keypad_as_it_takes_the_steps);
+    RUN(an_armed_bench_closes_the_list_and_refuses_it);
     RUN(a_lost_press_keeps_what_was_typed);
-    RUN(a_scrolled_page_opens_the_row_shown_and_takes_six_digits);
+    RUN(a_scrolled_list_opens_the_row_shown_and_takes_six_digits);
     RUN(a_stop_over_the_keypad_sets_nothing);
     return test_summary("esc_stick_panel_keypad");
 }

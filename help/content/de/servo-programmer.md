@@ -67,7 +67,7 @@ Solange der Tester den Port verwendet, stellt WEITERES die bei VERBINDEN angewen
 ![Ein PD mini antwortet](view:servo-kst-supply)
 ![Die Versorgung im Programmiermodus](view:servo-kst-supplied)
 
-Im Programmiermodus kontrolliert der Port die Netzteilsollwerte. Die Zeile SOLL und SUPPLY lassen weder Änderungen noch EIN zu; AUSGANG AUS und STOP bleiben verfügbar. Ohne PD mini werden Spannung und Strombegrenzung gespeichert, aber nicht angewendet. Nach Rückkehr zu PWM werden die Sollwerte vor der Sitzung wiederhergestellt, sobald der Ausgang aus ist. Lässt VERLASSEN ihn eingeschaltet, wartet die Wiederherstellung auf das nächste AUS. Ein zwischenzeitlich geänderter Sollwert bleibt erhalten.
+Im Programmiermodus kontrolliert der Port die Netzteilsollwerte. Die Karte BEREIT von KST und HITEC und SUPPLY lassen weder Änderungen noch EIN zu; AUSGANG AUS, das AUS der Zeile der Versorgung und STOP bleiben verfügbar. Ohne PD mini werden Spannung und Strombegrenzung gespeichert, aber nicht angewendet. Nach Rückkehr zu PWM werden die Sollwerte vor der Sitzung wiederhergestellt, sobald der Ausgang aus ist. Lässt VERLASSEN ihn eingeschaltet, wartet die Wiederherstellung auf das nächste AUS. Ein zwischenzeitlich geänderter Sollwert bleibt erhalten.
 
 ![Die Frage nach dem Verlassen](view:servo-hitec-restore-ask)
 

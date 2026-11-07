@@ -256,7 +256,7 @@ static void render_browse(gfx_canvas_t *c)
     /* 6px each side of the label: a longer one takes the 8 x 16 face. */
     ui_button_font(c, BR_RESCAN, TR(LOG_RESCAN), UI_PANEL_HI,
                    s.press_btn == 0, true,
-                   ui_button_face(TR(LOG_RESCAN), BR_PG_W, FOOT_H, 6,
+                   ui_button_face(TR(LOG_RESCAN), BR_PG_W, BR_FOOT_H, 6,
                                   LV_FONT_LABEL, &gfx_font_8x16));
     /* WI-FI: the card's files to a browser, over the panel's Wi-Fi.  The
      * screen there says when Wi-Fi may not start. */
@@ -277,11 +277,11 @@ static void render_browse(gfx_canvas_t *c)
     const char *message = lv_message(msg, sizeof(msg));
     if (message[0] != '\0') {
         /* In the gap between the buttons, on two BR_MSG_LH px lines of the
-         * 52px footer when one is too short.  A message longer than two
-         * lines is one line clipped there: a long name runs out of room
-         * rather than over DELETE. */
+         * 48px row when one is too short.  A message longer than two lines
+         * is one line clipped there: a long name runs out of room rather
+         * than over DELETE. */
         const gfx_color_t col = s.message_ok ? UI_TEXT_DIM : UI_DANGER;
-        const gfx_rect_t two = gfx_rect_make(BR_MSG_X, FOOT_Y + 2,
+        const gfx_rect_t two = gfx_rect_make(BR_MSG_X, BR_FOOT_Y,
                                              msg_end - 8 - BR_MSG_X, BR_MSG_LH);
         const int n = ui_text_wrap(NULL, two, BR_MSG_LH, message,
                                    LV_FONT_BODY, col);
@@ -289,11 +289,14 @@ static void render_browse(gfx_canvas_t *c)
             (void)ui_text_wrap(c, two, BR_MSG_LH, message, LV_FONT_BODY,
                                col);
         } else {
-            gfx_text_in(c, gfx_rect_make(BR_MSG_X, FOOT_Y,
-                                         msg_end - 8 - BR_MSG_X, FOOT_H),
+            gfx_text_in(c, gfx_rect_make(BR_MSG_X, BR_FOOT_Y,
+                                         msg_end - 8 - BR_MSG_X, BR_FOOT_H),
                         message, LV_FONT_BODY, col, 1, GFX_ALIGN_LEFT);
         }
     }
+    /* The footer: LOGS, and SETTINGS, the opener to SETUP > SD CARD. */
+    ui_footer_name(c, ui_footer_rect(UI_FOOTER_NAME), "LOGS", NULL, false);
+    ui_footer_settings(c, s.press_btn == LV_BTN_SETTINGS, true);
 }
 
 /* -------------------------------------------------------------- import --- */

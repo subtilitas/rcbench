@@ -26,6 +26,8 @@
  * SPDX-License-Identifier: MIT
  */
 
+/* SWEEP's screen: its button is the one the cases press. */
+#define SERVO_RIG_FN SERVO_FN_SWEEP
 #include "servo_screen_rig.h"
 
 /* A refused sweep drives nothing: a change of profile after it says no
@@ -426,6 +428,7 @@ static void paused_sweep(void)
 TEST_CASE(a_pause_ends_where_a_hold_ended)
 {
     paused_sweep();
+    go(SERVO_FN_LIVE);                         /* CENTRE is LIVE's */
     tap(COL_X + 40, BTN_Y);                    /* CENTRE */
     CHECK(!servo_screen_paused());
     CHECK_EQ(last_cmd().kind, SERVO_CMD_CENTRE);

@@ -11,7 +11,7 @@
  * - a_press_held_on_rudder_keeps_settings_shut
  * - a_press_held_on_rudder_auto_keeps_settings_shut
  * - a_finger_on_a_kst_control_keeps_the_port_list_shut
- * - a_finger_on_output_takes_no_port_pick
+ * - a_finger_on_arm_takes_no_port_pick
  *
  * SPDX-License-Identifier: MIT
  */
@@ -30,23 +30,30 @@ static const char *alert(void)
     return a != NULL ? a : "";
 }
 
-/* TEST's card SETTINGS on an armed bench opens no page and says why; on a
- * SAFE bench it opens the automatic test's rows.  LIMIT RUN's the same. */
+/* TEST's and LIMIT RUN's SETTINGS in the footer on an armed bench open no
+ * list; on a SAFE bench each opens its own. */
 TEST_CASE(the_run_cards_settings_open_nothing_while_armed)
 {
-    for (int k = 0; k < 2; ++k) {
-        fresh_armed();
-        go(k == 0 ? SERVO_FN_TEST : SERVO_FN_LIMRUN);
-        tap(SV_RUN_SET_X, SV_RUN_SET_Y(k));
-        CHECK_EQ(servo_screen_run_settings(), 0);
-        servo_screen_set_armed(false);
-        tap(SV_RUN_SET_X, SV_RUN_SET_Y(k));
-        CHECK_EQ(servo_screen_run_settings(), k == 0 ? 1 : 2);
-    }
+    fresh_armed();
+    go(SERVO_FN_TEST);
+    tap_settings();
+    CHECK(!servo_screen_list()->open);
+    servo_screen_set_armed(false);
+    tap_settings();
+    CHECK(servo_screen_list()->open);
+
+    fresh_armed();
+    go(SERVO_FN_LIMRUN);
+    tap_settings();
+    CHECK(!servo_screen_list()->open);
+    servo_screen_set_armed(false);
+    tap_settings();
+    CHECK(servo_screen_list()->open);
 }
 
-/* A page of rows open on a SAFE bench closes in the frame after the bench
- * arms: TEST's, LIMIT RUN's and KST's EXPERT MODE page alike. */
+/* A list or a page of rows open on a SAFE bench closes in the frame after
+ * the bench arms: TEST's and LIMIT RUN's lists and KST's EXPERT MODE page
+ * alike. */
 TEST_CASE(a_page_of_rows_closes_as_the_bench_arms)
 {
     static const servo_fn_t k_fn[] = {
@@ -56,10 +63,11 @@ TEST_CASE(a_page_of_rows_closes_as_the_bench_arms)
         fresh();
         go(k_fn[i]);
         tap_settings();
-        CHECK(servo_screen_run_settings() != 0);
+        CHECK(servo_screen_run_settings() != 0 || servo_screen_list()->open);
         servo_screen_set_armed(true);
         scr->tick(0.02f);
         CHECK_EQ(servo_screen_run_settings(), 0);
+        CHECK(!servo_screen_list()->open);
     }
 }
 
@@ -109,20 +117,23 @@ TEST_CASE(a_finger_on_a_kst_control_keeps_the_port_list_shut)
     ev(r.x + r.w / 2, r.y + r.h / 2, TOUCH_EVENT_UP, 1);
 }
 
-/* The PORT list open, a finger on the supply's OUTPUT button: a tap on a
- * port picks nothing.  Lifted, the pick is taken. */
-TEST_CASE(a_finger_on_output_takes_no_port_pick)
+/* The PORT list open, a finger on ARM, the hold that switches the supply
+ * on LIVE: a tap on a port picks nothing.  Lifted early, the pick is
+ * taken. */
+TEST_CASE(a_finger_on_arm_takes_no_port_pick)
 {
-    fresh();
-    go(SERVO_FN_LIVE);
+    bench_fresh();
+    servo_screen_set_armed(false);
+    scr->tick(0.02f);
     tap(SV_PORT_X, SV_PORT_Y);
     CHECK(servo_screen_port_choices() > 0);
-    ev(SV_SUP_OUT_X, SV_SUP_Y, TOUCH_EVENT_DOWN, 1);
+    ev(SV_ARM_X, SV_FOOT_Y, TOUCH_EVENT_DOWN, 1);
+    CHECK(servo_screen_arm_held());
     const gfx_rect_t c = servo_screen_port_choice_rect(2);
     ev(c.x + c.w / 2, c.y + c.h / 2, TOUCH_EVENT_DOWN, 2);
     ev(c.x + c.w / 2, c.y + c.h / 2, TOUCH_EVENT_UP, 2);
     CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 0);
-    ev(SV_SUP_OUT_X, SV_SUP_Y, TOUCH_EVENT_UP, 1);
+    ev(SV_ARM_X, SV_FOOT_Y, TOUCH_EVENT_UP, 1);
     if (servo_screen_port_choices() < 0) {
         tap(SV_PORT_X, SV_PORT_Y);
     }
@@ -138,6 +149,6 @@ int main(void)
     RUN(a_press_held_on_rudder_keeps_settings_shut);
     RUN(a_press_held_on_rudder_auto_keeps_settings_shut);
     RUN(a_finger_on_a_kst_control_keeps_the_port_list_shut);
-    RUN(a_finger_on_output_takes_no_port_pick);
+    RUN(a_finger_on_arm_takes_no_port_pick);
     return test_summary("servo_list_guards");
 }

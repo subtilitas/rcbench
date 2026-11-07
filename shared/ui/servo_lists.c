@@ -16,9 +16,11 @@
  * CURVE, SPEED and RANGE; RUDDER's LENGTH, ENC CENTRE (taken from the
  * AS5600's reading) and ANGLE SOURCE (read-only, a tap opens SETUP >
  * SENSORS on it); RUDDER AUTO's targets, MARGIN, TOLERANCE, SERVO, SERVO
- * PULSES and ANGLE SOURCE; HITEC's SERIES and RECEIVE.  TEST and LIMIT
- * RUN open their run's page of rows, KST its EXPERT MODE page, which keep
- * their 2s holds; LIVE has no list.
+ * PULSES and ANGLE SOURCE; LIMIT RUN's MODE, SERVO, SERVO PULSES and the
+ * programmer's PROG VOLTAGE, PROG CURRENT and PROG WAIT; HITEC's SERIES
+ * and RECEIVE; TEST's 17 rows of the automatic test (servo_test_list.c).
+ * KST opens its EXPERT MODE page, which keeps its 2s hold; LIVE has no
+ * list.
  *
  * A function's list opens on a SAFE bench only, with no sweep and no run;
  * a bench that goes live under it closes it.  The hub's opens at any time:
@@ -246,7 +248,7 @@ static void pulses_value(char *out, size_t n)
 static void pulses_step(int dir)
 {
     (void)dir;
-    if (lim_reads() && !lim_hitec_now() && lim_write_why() == NULL) {
+    if (lim_reads() && !lim_hitec_now() && lim_write_why_held() == NULL) {
         s.lim_pulses = !s.lim_pulses;
         ++s.ctrl_rev;
     }
@@ -261,7 +263,36 @@ static const char *pulses_locked(void)
     if (lim_hitec_now()) {
         return TR(SVL_KST_ONLY);
     }
-    return lim_write_why();
+    /* The carrier's PROG 5V off takes nothing away: ARM + START switches
+     * it on before the run. */
+    return lim_write_why_held();
+}
+
+/** @brief LIMIT RUN's MODE: SEARCH ONLY or SEARCH + PROGRAM, as chosen. */
+static void mode_value(char *out, size_t n)
+{
+    snprintf(out, n, "%s",
+             (lim_reads() && s.lim_prog) ? TR(SV_LIM_PROGRAM)
+                                         : TR(SV_LIM_SEARCH));
+}
+
+/** @brief A tap on MODE: the other mode, for a run started after it.
+ *  The row takes a tap, as ANGLE SOURCE does: SEARCH + PROGRAM in German
+ *  is 22 cells, more than the 16 between a stepped row's keys. */
+static void mode_tap(void)
+{
+    if (lim_reads() && lim_write_why_held() == NULL
+        && !servo_limrun_running(&s.lim)) {
+        s.lim_prog = !s.lim_prog;
+        ++s.ctrl_rev;
+    }
+}
+
+/** @brief Why MODE takes no press: no PROG PORT, or nothing the run could
+ *         write with.  @return the reason, NULL while it takes one */
+static const char *mode_locked(void)
+{
+    return lim_reads() ? lim_write_why_held() : TR(SVL_PORT_ONLY);
 }
 
 /** @brief RUDDER's ENC CENTRE row: a tap takes the live count. */
@@ -286,6 +317,12 @@ static const ui_setlist_custom_t k_pulses = {
     .locked = pulses_locked,
 };
 
+/** @brief LIMIT RUN's MODE row: SEARCH ONLY or SEARCH + PROGRAM. */
+static const ui_setlist_custom_t k_mode = {
+    .label = TX_SUP_MODE, .help = TX_SVL_MODE_HELP,
+    .value_text = mode_value, .tap = mode_tap, .locked = mode_locked,
+};
+
 /** @brief SWEEP's list: CURVE, SPEED and RANGE. */
 static const ui_setlist_row_t k_sweep_rows[] = {
     UI_SL_ROW_SETTING(SET_SERVO_CURVE),
@@ -308,6 +345,16 @@ static const ui_setlist_row_t k_rauto_rows[] = {
     UI_SL_ROW_CUSTOM(&k_pulses),
     UI_SL_ROW_CUSTOM(&k_src),
 };
+/** @brief LIMIT RUN's list: MODE, the servo, its pulses and the
+ *         programmer's supply and wait. */
+static const ui_setlist_row_t k_limrun_rows[] = {
+    UI_SL_ROW_CUSTOM(&k_mode),
+    UI_SL_ROW_CUSTOM(&k_fam),
+    UI_SL_ROW_CUSTOM(&k_pulses),
+    UI_SL_ROW_SETTING(SET_SERVO_PROG_V),
+    UI_SL_ROW_SETTING(SET_SERVO_PROG_I),
+    UI_SL_ROW_SETTING(SET_SERVO_PROG_WAIT),
+};
 /** @brief HITEC's list: SERIES and D receive. */
 static const ui_setlist_row_t k_hitec_rows[] = {
     UI_SL_ROW_SETTING(SET_HITEC_SERIES),
@@ -327,7 +374,9 @@ typedef struct {
 static const fn_rows_t k_rows_of[SERVO_FN_COUNT] = {
     [SERVO_FN_HUB]    = ROWS(k_hub_rows),
     [SERVO_FN_SWEEP]  = ROWS(k_sweep_rows),
+    [SERVO_FN_TEST]   = { svs_test_rows, SVS_TEST_ROWS },
     [SERVO_FN_RUDDER] = ROWS(k_rudder_rows),
+    [SERVO_FN_LIMRUN] = ROWS(k_limrun_rows),
     [SERVO_FN_RAUTO]  = ROWS(k_rauto_rows),
     [SERVO_FN_HITEC]  = ROWS(k_hitec_rows),
 };
@@ -374,19 +423,22 @@ static void list_changed(setting_id_t id)
 /**
  * @brief RESET: the list's own settings to their defaults; on the hub
  *        also the profile to STANDARD PWM at 50Hz, TRIM 0, TRAVEL 90°,
- *        REVERSE and HV SERVO off, as at a restart.
+ *        REVERSE and HV SERVO off, as at a restart; on TEST HV SERVO off.
  */
 static void list_reset(void)
 {
     const fn_rows_t *r = rows_now();
-    setting_id_t ids[16] = { 0 };
+    setting_id_t ids[24] = { 0 };
     int k = 0;
-    for (int i = 0; i < r->n && k < 16; ++i) {
+    for (int i = 0; i < r->n && k < 24; ++i) {
         if (r->rows[i].kind == UI_SL_SETTING) {
             ids[k++] = r->rows[i].id;
         }
     }
     settings_reset_rows(ids, k);
+    if (s.fn == SERVO_FN_TEST) {
+        s.test_hv = false;      /* TEST's HV SERVO row, off as at a restart */
+    }
     if (s.fn == SERVO_FN_HUB) {
         s.trim_us = 0;
         s.travel_deg = 90.0f;
@@ -397,6 +449,13 @@ static void list_reset(void)
     }
     list_changed((setting_id_t)SETTING_COUNT);
     ++s.sl_rev;
+}
+
+/** @brief Why a setting's row takes no press now: TEST's length and HV
+ *         steps.  @param id the setting @return the reason, or NULL */
+static const char *list_locked(setting_id_t id)
+{
+    return (s.fn == SERVO_FN_TEST) ? svs_test_locked(id) : NULL;
 }
 
 /** @brief A change the list shows: its count moves. */
@@ -417,6 +476,7 @@ static const ui_setlist_host_t k_host = {
     .name       = list_name,
     .name_line  = list_line,
     .reset      = list_reset,
+    .locked     = list_locked,
     .changed    = list_changed,
     .invalidate = list_invalidate,
     .way_out    = list_way_out,
@@ -430,8 +490,6 @@ void svs_lists_init(void)
 bool svs_list_offered(void)
 {
     switch ((servo_fn_t)s.fn) {
-    case SERVO_FN_TEST:
-    case SERVO_FN_LIMRUN:
     case SERVO_FN_KST:
         return true;
     default:
@@ -488,12 +546,6 @@ void svs_list_open(void)
     }
     close_panels();
     switch ((servo_fn_t)s.fn) {
-    case SERVO_FN_TEST:
-        s.run_list = RL_AUTO;
-        break;
-    case SERVO_FN_LIMRUN:
-        s.run_list = RL_LIMIT;
-        break;
     case SERVO_FN_KST:
         s.run_list = RL_KST;
         break;

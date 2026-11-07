@@ -58,6 +58,9 @@ static void draw_run(run_t run, float hz, bool whole, uint64_t *hash,
                      bool *moved)
 {
     fresh_armed();
+    if (run == RUN_SWEEP) {
+        go(SERVO_FN_SWEEP);                 /* SWEEP's button */
+    }
     if (run == RUN_DRAG_SLOW) {
         tap(SPEED_X_HALF, SPEED_Y);
     }

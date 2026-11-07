@@ -767,6 +767,9 @@ void svs_tick_body(float dt_s)
         }
         ++s.dial_rev;
     }
+    /* LIVE, SWEEP and RUDDER: ARM's hold dropped by a red row, and the
+     * steps that switch the supply before ARM. */
+    drive_frame(dt_s);
     if (s.arm_down && svs_arm_locked() && ui_hold_leave(&s.arm)) {
         /* The port was found held under a hold of ARM: no arm is sent, and the
          * alert says why. */
@@ -778,7 +781,7 @@ void svs_tick_body(float dt_s)
     }
     if (s.arm_down && !s.gate.armed) {
         ++s.arm_rev;
-        if (ui_hold_tick(&s.arm, dt_s)) {
+        if (ui_hold_tick(&s.arm, dt_s) && !drive_arm_fired()) {
             post(SERVO_CMD_ARM, 0);
         }
     }
@@ -904,20 +907,12 @@ void svs_tick_body(float dt_s)
     /* KST EXPERT MODE's hold on DUT: the mode turns ON when it completes. */
     kx_tick(dt_s);
 
-    /* START TEST's hold: the run starts when it completes. */
-    if (s.test_down) {
-        ++s.test_rev;
-        if (ui_hold_tick(&s.test_hold, dt_s)) {
-            s.test_down = false;
-            ov_let_go();
-            test_begin();
-        }
-    }
-    test_tick();
+    /* TEST's ARM + START: its hold, its steps, then the run. */
+    test_frame(dt_s);
 
-    /* START LIMIT RUN's hold, then the run. */
+    /* LIMIT RUN's ARM + START, then its sequence and the run. */
     if (s.lim_down) {
-        ++s.test_rev;
+        ++s.arm_rev;
         if (ui_hold_tick(&s.lim_hold, dt_s)) {
             s.lim_down = false;
             ov_let_go();
@@ -927,8 +922,7 @@ void svs_tick_body(float dt_s)
     lim_tick();
     /* The flashes of the holds that fired: the frames keep coming while
      * one runs. */
-    flash_frame(&s.test_hold, dt_s, &s.test_rev);
-    flash_frame(&s.lim_hold, dt_s, &s.test_rev);
+    flash_frame(&s.lim_hold, dt_s, &s.arm_rev);
     ghost_frame(&s.ask.hold, s.ask.open, dt_s, &s.ask.rev);
     ghost_frame(&s.warn.hold, s.warn.open, dt_s, &s.warn.rev);
     flash_frame(&s.kx_hold, dt_s, &s.kx_rev);

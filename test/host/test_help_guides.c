@@ -138,20 +138,20 @@ static const servo_state_t k_servo[] = {
       { TX_HG_SVH_TITLE_TILES, TX_HG_SVH_TITLE_FOOTER },
       { 5, 2 } },
     { "LIVE", SERVO_FN_LIVE, false, 3, 0,
-      { TX_HG_SV_TITLE_LIVE, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
+      { TX_HG_SV_TITLE_LIVE, TX_HG_SV_TITLE_DRV_READY, TX_HG_SV_TITLE_CARD },
       { 3, 4, 3 } },
     { "SWEEP", SERVO_FN_SWEEP, false, 3, 0,
-      { TX_HG_SV_TITLE_SWEEP, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
-      { 3, 4, 4 } },
-    { "TEST", SERVO_FN_TEST, false, 3, 0,
-      { TX_HG_SV_TITLE_TEST, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
-      { 3, 4, 4 } },
-    { "LIMIT RUN", SERVO_FN_LIMRUN, false, 3, 0,
-      { TX_HG_SV_TITLE_LIMRUN, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
-      { 2, 4, 4 } },
+      { TX_HG_SV_TITLE_SWEEP, TX_HG_SV_TITLE_DRV_READY, TX_HG_SV_TITLE_CARD },
+      { 3, 5, 3 } },
+    { "TEST", SERVO_FN_TEST, false, 2, 0,
+      { TX_HG_SV_TITLE_TEST, TX_HG_SV_TITLE_READY },
+      { 3, 5 } },
+    { "LIMIT RUN", SERVO_FN_LIMRUN, false, 2, 0,
+      { TX_HG_SV_TITLE_LIMRUN, TX_HG_SV_TITLE_READY },
+      { 2, 5 } },
     { "RUDDER", SERVO_FN_RUDDER, false, 4, 0,
-      { TX_HG_SV_TITLE_RUDDER, TX_HG_SV_TITLE_RUD_READ, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
-      { 4, 3, 4, 5 } },
+      { TX_HG_SV_TITLE_RUDDER, TX_HG_SV_TITLE_RUD_READ, TX_HG_SV_TITLE_DRV_READY, TX_HG_SV_TITLE_CARD },
+      { 4, 3, 5, 2 } },
     { "RUDDER AUTO", SERVO_FN_RAUTO, false, 3, 0,
       { TX_HG_SV_TITLE_AUTO, TX_HG_SV_TITLE_RUD_READ, TX_HG_SV_TITLE_READY },
       { 3, 2, 5 } },
@@ -205,7 +205,7 @@ static void pose_supply(void)
 /* ----------------------------------------------------------------- cases */
 
 /* Each SERVO state in both languages and themes, SAFE and ARMED, the link
- * up and down: its own pages, then the output card's two.  ARMED a
+ * up and down: its own pages, then its READY card's.  ARMED a
  * function screen offers none: either dock covers DISARM in the footer.
  * The hub drives nothing and keeps its two. */
 TEST_CASE(every_servo_page_fits_and_hides_no_stop)
@@ -281,28 +281,35 @@ TEST_CASE(every_supply_page_fits_and_hides_no_stop)
     ui_theme_set(UI_THEME_DARK);
 }
 
-/* OUTPUT OFF shows on SERVO's SET row and in SUPPLY's footer while the
- * output is on or an ON is on its way: SERVO's pages with the dock on the
- * right and every SUPPLY page, either dock over the footer's middle slot,
- * are not offered then, and come back once it is off. */
+/* OUTPUT OFF shows in SUPPLY's footer while the output is on or an ON is
+ * on its way: every SUPPLY page, either dock over the footer's middle
+ * slot, is not offered then, and comes back once it is off.  SERVO shows
+ * no OUTPUT OFF: KST's page docks on the left, off its READY card and the
+ * supply row that switches the output off, and LIVE's READY rows drive
+ * nothing: their pages stay. */
 TEST_CASE(a_live_supply_output_takes_the_pages_that_cover_output_off)
 {
     fresh();
-    CHECK_EQ(scr->help_count(), 3);
+    go(SERVO_FN_KST);
+    CHECK_EQ(scr->help_count(), 1);
     supply_screen_set_output(true);
     supply_state_t st = *supply_screen_reading();
     st.online = true;
     st.output = true;
     supply_screen_push(&st);
     REQUIRE(supply_screen_output_on());
-    CHECK_EQ(pages_checked(scr, false, "SERVO LIVE, output on"), 2);
-    CHECK_EQ(title_of(scr, 0), TX_HG_SV_TITLE_CARD);
+    CHECK_EQ(pages_checked(scr, false, "SERVO KST, output on"), 1);
+    CHECK_EQ(title_of(scr, 0), TX_HG_SV_TITLE_PRG);
+    go(SERVO_FN_LIVE);
+    CHECK_EQ(pages_checked(scr, false, "SERVO LIVE, output on"), 3);
+    CHECK_EQ(title_of(scr, 0), TX_HG_SV_TITLE_LIVE);
+    go(SERVO_FN_KST);
     const ui_screen_t *sup = supply_screen();
     CHECK_EQ(sup->help_count(), 0);
     st.output = false;
     supply_screen_set_output(false);
     supply_screen_push(&st);
-    CHECK_EQ(scr->help_count(), 3);
+    CHECK_EQ(scr->help_count(), 1);
     CHECK_EQ(sup->help_count(), 3);
 }
 
@@ -323,18 +330,23 @@ static int safe_points(const ui_screen_t *sc)
 }
 
 /* PROG 5V OFF stops the ports' own supply, while SAFE as well and with the
- * output off: while the supply reads ON it is a safe control on SERVO and
- * SUPPLY, and the pages with the dock on the right over it are not
- * offered.  At OFF they come back and PROG 5V ON is no safe control. */
+ * output off: while the supply reads ON it is a safe control on SUPPLY,
+ * and the pages with the dock on the right over it are not offered.  At
+ * OFF they come back and PROG 5V ON is no safe control.  On SERVO, LIVE
+ * shows PROG 5V as a READY row, and KST's one page docks on the left, off
+ * its READY card. */
 TEST_CASE(prog_5v_on_takes_the_pages_that_cover_prog_5v_off)
 {
     prog5v_box_reset();
     prog5v_box_publish(P5_ON, 21u, (uint8_t)PROG5V_HELD_NONE);
     fresh();
     REQUIRE(!supply_screen_output_live());
-    CHECK(safe_points(scr) > 0);
-    CHECK_EQ(pages_checked(scr, false, "SERVO LIVE, PROG 5V on"), 2);
-    CHECK_EQ(title_of(scr, 0), TX_HG_SV_TITLE_CARD);
+    /* LIVE shows PROG 5V as a READY row, no PROG 5V OFF. */
+    CHECK_EQ(safe_points(scr), 0);
+    CHECK_EQ(pages_checked(scr, false, "SERVO LIVE, PROG 5V on"), 3);
+    go(SERVO_FN_KST);
+    CHECK_EQ(pages_checked(scr, false, "SERVO KST, PROG 5V on"), 1);
+    CHECK_EQ(title_of(scr, 0), TX_HG_SV_TITLE_PRG);
     const ui_screen_t *sup = supply_screen();
     sup->enter();
     CHECK(safe_points(sup) > 0);
@@ -373,23 +385,26 @@ TEST_CASE(a_run_takes_the_output_cards_pages_and_armed_leaves_none)
     CHECK(ui_help_count(scr, false) >= 2);
 }
 
-/* A keypad, a run's settings and the supply's question are levels the guide
- * does not explain: no page, so no "?". */
+/* A keypad and the supply's question are levels the guide does not
+ * explain: no page, so no "?".  A list's pages are the list's. */
 TEST_CASE(a_panel_or_a_question_takes_every_page)
 {
     fresh();
-    tap(SV_SUP_V_X, SV_SUP_Y);
+    go(SERVO_FN_RUDDER);                       /* LENGTH's keypad */
+    tap(SV_RUD_LEN_X, SV_RUD_LEN_Y);
     REQUIRE(servo_screen_keypad() != NULL && servo_screen_keypad()->open);
     CHECK_EQ(scr->help_count(), 0);
     ui_help_page_t p;
     CHECK(!scr->help_page(0, &p));
-    fresh();
-    go(SERVO_FN_TEST);
-    tap(SV_RUN_SET_X, SV_RUN_SET_Y(0));
-    CHECK_EQ(scr->help_count(), 0);
-    tap(SV_RUN_CLOSE_X, SV_RUN_CLOSE_Y);
-    CHECK_EQ(scr->help_count(), 3);
-    CHECK(!scr->help_page(3, &p));
+    /* TEST's and LIMIT RUN's SETTINGS are lists: their pages are the
+     * list's. */
+    for (int k = 0; k < 2; ++k) {
+        fresh();
+        open_run_settings(k);
+        REQUIRE(servo_screen_list()->open);
+        CHECK_EQ(scr->help_count(),
+                 ui_setlist_help_count(servo_screen_list()));
+    }
     CHECK(!scr->help_page(-1, &p));
     CHECK(!scr->help_page(0, NULL));
 
@@ -404,24 +419,23 @@ TEST_CASE(a_panel_or_a_question_takes_every_page)
     CHECK(!sup->help_page(0, NULL));
 }
 
-/* ARM reads DISARM while ARMED, OUTPUT ON OUTPUT OFF while on, and on a
- * board that switches the ports' 5V PROG 5V stands where the plot is. */
+/* LIVE names ARM on its READY page, KST the session's WRITE in the
+ * footer's middle slot on its one page; SUPPLY names OUTPUT ON and
+ * SETTINGS in its footer. */
 TEST_CASE(the_labels_follow_what_the_controls_read)
 {
     fresh();
     ui_help_page_t p;
-    REQUIRE(ui_help_page(scr, false, 2, &p));
-    CHECK_STR_EQ(p.item[2].label, "ARM");
     REQUIRE(ui_help_page(scr, false, 1, &p));
-    CHECK_EQ(p.item[1].text, TX_HG_SV_PLOT);
-    prog5v_box_reset();
-    prog5v_box_publish(P5_OFF, 21u, (uint8_t)PROG5V_HELD_NONE);
-    fresh();
-    REQUIRE(ui_help_page(scr, false, 1, &p));
-    CHECK_STR_EQ(p.item[1].label, "PROG 5V");
-    CHECK_EQ(p.item[1].text, TX_HG_SV_P5);
-    pages_checked(scr, false, "SERVO LIVE, PROG 5V");
-    prog5v_box_reset();
+    CHECK_EQ(p.title, TX_HG_SV_TITLE_DRV_READY);
+    CHECK_STR_EQ(p.item[3].label, "ARM");
+    CHECK_EQ(p.item[3].text, TX_HG_SV_DRV_ARM);
+    go(SERVO_FN_KST);
+    REQUIRE(ui_help_page(scr, false, 0, &p));
+    CHECK_EQ(p.title, TX_HG_SV_TITLE_PRG);
+    CHECK_STR_EQ(p.item[3].label, TR(HG_SV_PRG_WRITE_NAME));
+    CHECK_EQ(p.item[3].text, TX_HG_SV_PRG_WRITE);
+    CHECK(!ui_help_page(scr, false, 1, &p));
     fresh();
     const ui_screen_t *sup = supply_screen();
     sup->enter();
@@ -446,7 +460,7 @@ TEST_CASE(a_badge_at_the_right_sits_in_the_top_right_corner)
     memset(&p, 0, sizeof(p));
     p.side = UI_HELP_DOCK_RIGHT;
     p.count = 1;
-    p.item[0] = (ui_help_item_t){ "X", TX_HG_SV_LIM,
+    p.item[0] = (ui_help_item_t){ "X", TX_HG_SV_LR_ENDS,
                                   gfx_rect_make(100, 100, 200, 40),
                                   UI_HELP_AT_LEFT };
     const uint32_t left = ui_help_marks_key(&p);
@@ -466,7 +480,7 @@ TEST_CASE(a_badge_at_the_right_sits_in_the_top_right_corner)
 }
 
 /* The router narrows SERVO's clip to the live half: the parts SERVO
- * repaints on their own, the SET row and the rail's plot here, draw
+ * repaints on their own, the READY rows and the rail line here, draw
  * inside that clip, not over the dock beside it, frame after frame. */
 TEST_CASE(servo_repaints_nothing_under_a_dock)
 {

@@ -621,8 +621,12 @@ const char *servo_screen_port_choice(int i, bool *refused);
  */
 gfx_rect_t servo_screen_port_choice_rect(int i);
 
-/** Which run's settings TEST shows, one level down from its card: 0 none,
- *  1 the automatic test's, 2 the limit run's.  For tests. */
+/**
+ * @brief Which page of rows shows, one level down from its screen.  For
+ *        tests.
+ * @return 0 none, 1 KST's EXPERT MODE.  TEST's and LIMIT RUN's settings
+ *         are lists (servo_screen_list())
+ */
 int servo_screen_run_settings(void);
 
 /**
@@ -648,6 +652,14 @@ bool servo_screen_arm_asked(void);
 bool servo_screen_arm_held(void);
 
 /**
+ * @brief Whether ARM's hold on LIVE, SWEEP or RUDDER switches a part on
+ *        before it arms: PORT PWM on a PROG PORT, the carrier's PROG 5V,
+ *        the PD mini's output where it feeds the servo.
+ * @return true while one of them reads off; false on any other screen
+ */
+bool servo_screen_arm_switches(void);
+
+/**
  * Whether OUTPUTS' SERVO TESTER segment (the TARGET setting) takes no
  * press: servo_screen_target_locked(), or the bench ARMED for the motor.
  */
@@ -668,8 +680,9 @@ void servo_screen_sweep_refused(void);
 bool servo_screen_sweeping(void);
 
 /**
- * @brief Whether OUTPUT ON of the SET row is being held, from an output that
- *        is off, or a question about the supply stands: the HV warning
+ * @brief Whether OUTPUT ON of the output card's SET row, which no function
+ *        screen shows, is being held, from an output that is off, or a
+ *        question about the supply stands: the HV warning
  *        before an ON (ASK_ON) or a set point, a test's HV steps, or the
  *        restore of the operator's set points (servo_screen_asks_restore()).
  *        An ON either sends lands at the set points it was opened on.
@@ -776,9 +789,22 @@ int servo_screen_limit_family(void);
 /** @brief SERVO PULSES for the session, for the tests.
  *  @return true while it reads 1000-2000 */
 bool servo_screen_limit_pulses(void);
-/** @brief Why START LIMIT RUN cannot start now, for the tests.
- *  @return the card's line, or NULL */
+/** @brief Why a limit run cannot start now, ARM + START's steps aside:
+ *         the gate's first text, for the tests.
+ *  @return the text, or NULL */
 const char *servo_screen_limit_blocked(void);
+/** @brief SEARCH + PROGRAM chosen in LIMIT RUN's list, for the tests.
+ *  @return true while MODE reads SEARCH + PROGRAM */
+bool servo_screen_limit_prog(void);
+/**
+ * @brief LIMIT RUN's left card, its state line @p i as it reads now, for
+ *        the tests.
+ * @param i   the line, from 0
+ * @param buf takes it
+ * @param n   its size
+ * @return @p buf; "" past the last
+ */
+const char *servo_screen_limit_line(int i, char *buf, size_t n);
 
 /**
  * @brief The run's next item for the card, without taking it

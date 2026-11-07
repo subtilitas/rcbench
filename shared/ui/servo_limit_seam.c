@@ -231,3 +231,8 @@ const char *servo_screen_limit_blocked(void)
 {
     return lim_blocked();
 }
+
+bool servo_screen_limit_prog(void)
+{
+    return s.lim_prog;
+}

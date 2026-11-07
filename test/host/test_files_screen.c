@@ -201,9 +201,9 @@ TEST_CASE(a_list_scrolls_by_a_drag_and_by_its_bar)
     CHECK_EQ(files_screen_pane(0)->held, 20);
     CHECK_EQ(files_screen_scroll(0), 0);
     /* A drag up of 100px moves the list 2 rows, and selects nothing. */
-    send(TOUCH_EVENT_DOWN, FS_SPOT_ROW_CX(0), FS_SPOT_ROW_CY(4));
-    send(TOUCH_EVENT_MOVE, FS_SPOT_ROW_CX(0), FS_SPOT_ROW_CY(4) - 100);
-    send(TOUCH_EVENT_UP, FS_SPOT_ROW_CX(0), FS_SPOT_ROW_CY(4) - 100);
+    send(TOUCH_EVENT_DOWN, FS_SPOT_ROW_CX(0), FS_SPOT_ROW_CY(3));
+    send(TOUCH_EVENT_MOVE, FS_SPOT_ROW_CX(0), FS_SPOT_ROW_CY(3) - 100);
+    send(TOUCH_EVENT_UP, FS_SPOT_ROW_CX(0), FS_SPOT_ROW_CY(3) - 100);
     CHECK_EQ(files_screen_scroll(0), 2);
     CHECK_EQ(files_screen_pane(0)->selected, -1);
     /* The thumb taken and pulled to the track's foot: the last rows. */
@@ -219,8 +219,8 @@ TEST_CASE(a_list_scrolls_by_a_drag_and_by_its_bar)
     send(TOUCH_EVENT_UP, FS_SPOT_BAR_CX(0), FS_SPOT_BAR_TOP + 2);
     CHECK_EQ(files_screen_scroll(0), 0);
     /* A row tapped after a scroll is the row under the finger. */
-    send(TOUCH_EVENT_DOWN, FS_SPOT_BAR_CX(0), FS_SPOT_BAR_TOP + 200);
-    send(TOUCH_EVENT_UP, FS_SPOT_BAR_CX(0), FS_SPOT_BAR_TOP + 200);
+    send(TOUCH_EVENT_DOWN, FS_SPOT_BAR_CX(0), FS_SPOT_BAR_TOP + 150);
+    send(TOUCH_EVENT_UP, FS_SPOT_BAR_CX(0), FS_SPOT_BAR_TOP + 150);
     const int first = files_screen_scroll(0);
     CHECK(first > 0);
     tap_row(0, 1);
@@ -661,7 +661,7 @@ TEST_CASE(rescan_selects_none_when_the_selected_entry_is_gone)
     /* The other pane keeps its selection. */
     CHECK_STR_EQ(chosen(1), "ATEST006.CSV");
     /* The folder's last entry gone: nothing selected either. */
-    scroll_down(1, 4);
+    scroll_down(1, 5);
     tap_row(1, FS_SPOT_ROWS - 1);
     CHECK_STR_EQ(chosen(1), "ATEST012.CSV");
     gone("USER/LOGS/ATEST012.CSV");
@@ -704,7 +704,7 @@ TEST_CASE(rescan_selects_none_when_the_selection_leaves_the_page)
     screen()->enter();
     settle();
     CHECK(open_dir(0, "BIG"));
-    scroll_down(0, 43);
+    scroll_down(0, 44);
     tap_row(0, FS_SPOT_ROWS - 1);
     CHECK_STR_EQ(chosen(0), "F047.TXT");
     /* An entry new ahead of F047: the page fills up to F046, F047 stands

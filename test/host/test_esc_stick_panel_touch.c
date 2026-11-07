@@ -5,7 +5,6 @@
  *
  * Cases:
  * - a_control_acts_on_a_tap_and_on_nothing_less
- * - defaults_needs_a_tap
  * - a_second_finger_presses_nothing_on_the_programmer
  * - a_press_whose_control_changes_under_it_is_no_tap
  * - abort_acts_on_the_press
@@ -60,17 +59,10 @@ static const control_t k_controls[] = {
     { "item step down",        at_picked,    STEP_DN_X, STEP_CY(2) },
     { "item page down",        at_items,     PAGE_DN_X, PAGE_CY },
     { "item name",             at_items,     120, STEP_CY(3) },
-    { "TIMING",                at_items,     TIMING_X, TIMING_Y },
+    { "SETTINGS",              at_items,     SET_X, SET_Y },
     { "BACK, items",           at_items,     BACK_X, BACK_Y },
     { "RUN",                   at_picked,    WRITE_X, BTN_CY },
     { "CANCEL, warning",       at_warning,   CANCEL_X, HOLD_Y },
-    { "timing step up",        at_timing,    STEP_UP_X, STEP_CY(3) },
-    { "timing step down",      at_timing,    STEP_DN_X, STEP_CY(2) },
-    { "timing page down",      at_timing,    PAGE_DN_X, PAGE_CY },
-    { "timing name",           at_timing,    120, STEP_CY(4) },
-    { "DEFAULTS",              at_timing,    READ_X, BTN_CY },
-    { "CLOSE",                 at_timing,    WRITE_X, BTN_CY },
-    { "BACK, timing",          at_timing,    BACK_X, BACK_Y },
     { "OK, manual steps",      at_steps,     CANCEL_X, HOLD_Y },
     { "MANUAL INTERVENTION",   at_jazz,      HAND_X, HAND_Y },
     { "OK, result",            at_result,    WRITE_X, BTN_CY },
@@ -157,52 +149,25 @@ TEST_CASE(a_control_acts_on_a_tap_and_on_nothing_less)
     }
 }
 
-/* DEFAULTS resets a category of settings: it takes a tap. */
-TEST_CASE(defaults_needs_a_tap)
-{
-    at_timing();
-    on_screen();
-    CHECK_EQ(settings_get_int(SET_STICK_BEEP_MIN), 210);
-    f_at(READ_X, BTN_CY);                    /* pressed */
-    CHECK_EQ(settings_get_int(SET_STICK_BEEP_MIN), 210);
-    f_to(READ_X, BTN_CY - 40, 9);            /* and carried off */
-    f_lift();
-    CHECK_EQ(settings_get_int(SET_STICK_BEEP_MIN), 210);
-    f_at(READ_X, BTN_CY - 40);               /* a swipe that ends on it */
-    f_to(READ_X, BTN_CY, 9);
-    f_lift();
-    CHECK_EQ(settings_get_int(SET_STICK_BEEP_MIN), 210);
-    f_at(READ_X, BTN_CY);
-    f_lift();
-    CHECK_EQ(settings_get_int(SET_STICK_BEEP_MIN), 200);
-
-    /* A step key of the page, the same. */
-    f_at(STEP_UP_X, STEP_CY(2));
-    f_to(STEP_UP_X, STEP_CY(2) + 100, 9);
-    f_lift();
-    CHECK_EQ(settings_get_int(SET_STICK_BEEP_MIN), 200);
-    f_at(STEP_UP_X, STEP_CY(2));
-    f_lift();
-    CHECK_EQ(settings_get_int(SET_STICK_BEEP_MIN), 210);
-}
-
 /* One press at a time: a second finger arms nothing, and the first one's
  * release still acts. */
 TEST_CASE(a_second_finger_presses_nothing_on_the_programmer)
 {
-    at_timing();
+    at_items();
     on_screen();
-    finger(1, STEP_UP_X, STEP_CY(3) + UI_BAND_H);    /* rests on a key */
-    finger(2, READ_X, BTN_CY + UI_BAND_H);           /* DEFAULTS */
+    const uint32_t was = look();
+    finger(1, STEP_UP_X, STEP_CY(2) + UI_BAND_H);    /* rests on a key */
+    finger(2, SET_X, SET_Y + UI_BAND_H);             /* SETTINGS */
     lift(2);
-    CHECK_EQ(settings_get_int(SET_STICK_BEEP_MIN), 210);
-    const float gap = settings_get(SET_STICK_GAP_MIN);
+    CHECK(esc_stick_settings_list() != NULL
+          && !esc_stick_settings_list()->open);
+    CHECK_EQ(look(), was);
     lift(1);
-    CHECK(settings_get(SET_STICK_GAP_MIN) != gap);
+    CHECK(look() != was);                            /* the item stepped */
     /* The glass clear, the next tap is taken whichever id it has. */
-    finger(2, READ_X, BTN_CY + UI_BAND_H);
+    finger(2, SET_X, SET_Y + UI_BAND_H);
     lift(2);
-    CHECK_EQ(settings_get_int(SET_STICK_BEEP_MIN), 200);
+    CHECK(esc_stick_settings_list()->open);
 }
 
 /* A control that changes under the finger is not the one that was pressed:
@@ -505,7 +470,6 @@ TEST_CASE(a_stick_control_released_for_the_finger_is_not_pressed)
 int main(void)
 {
     RUN(a_control_acts_on_a_tap_and_on_nothing_less);
-    RUN(defaults_needs_a_tap);
     RUN(a_second_finger_presses_nothing_on_the_programmer);
     RUN(a_press_whose_control_changes_under_it_is_no_tap);
     RUN(abort_acts_on_the_press);

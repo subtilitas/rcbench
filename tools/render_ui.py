@@ -168,8 +168,10 @@ SCREENS = {
     "servo-sweep-page": ("servo-sweep-page.png", "servo", "dark"),
     "servo-test":     ("servo-test.png",     "servo", "dark"),
     "servo-test-settings": ("servo-test-settings.png", "servo", "dark"),
+    # LIMIT RUN's list on the bench's outputs: MODE, SERVO and SERVO
+    # PULSES locked off a PROG PORT.
     "servo-limits":   ("servo-limits.png",   "servo", "dark"),
-    # The brown-out walk's page, from the AUTOMATIC TEST's BROWN-OUT row.
+    # TEST's list at its BROWN-OUT heading.
     "servo-brownout": ("servo-brownout.png", "servo", "dark"),
     "servo-warning":  ("servo-warning.png",  "servo", "dark"),
     "servo-name":     ("servo-name.png",     "servo", "dark"),
@@ -185,15 +187,15 @@ SCREENS = {
     # result box, the line and the plot.
     "servo-result-ina": ("servo-result-ina.png", "servo", "dark"),
     "servo-sweep":    ("servo-sweep.png",    "servo", "dark"),
-    # The limit run from TEST's LIMIT RUN card (servo_limrun.h) against
-    # the simulated KST servo on the programming port: SEARCH+PROG chosen,
-    # a run partway, run
+    # The LIMIT RUN screen (servo_limrun.h) with its READY card and the
+    # footer's ARM + START, against the simulated KST servo on the
+    # programming port: SAFE with SEARCH+PROG chosen, a run partway, run
     # out to PASS, SEARCH ONLY on the bench's own output, STOP after a write
     # with RESTORE named, RESTORE's list in the programmer after a STOP in a
     # session, and SERVO PULSES at KEEP refused: the servo's 900-2100us
     # outside the bench's 1000-2000us.
     "servo-limrun-ready":   ("servo-limrun-ready.png",   "servo", "dark"),
-    # The same card with no PD mini answering: nothing is written.
+    # The same screen with no PD mini answering: nothing is written.
     "servo-limrun-nopd":    ("servo-limrun-nopd.png",    "servo", "dark"),
     "servo-limrun":         ("servo-limrun.png",         "servo", "dark"),
     "servo-limrun-pass":    ("servo-limrun-pass.png",    "servo", "dark"),
@@ -201,9 +203,9 @@ SCREENS = {
     "servo-limrun-stopped": ("servo-limrun-stopped.png", "servo", "dark"),
     "servo-limrun-restore": ("servo-limrun-restore.png", "servo", "dark"),
     "servo-limrun-range":   ("servo-limrun-range.png",   "servo", "dark"),
-    # The LIMIT RUN settings on PROG PORT with SERVO at HITEC and the Hitec
-    # programmer's series D SERIES: SERVO PULSES gone, the note for a Hitec
-    # servo.
+    # LIMIT RUN's list on PROG PORT with SERVO at HITEC and the Hitec
+    # programmer's series D SERIES: SERVO PULSES locked, KST and Chaservo
+    # only.
     "servo-limrun-hitec":   ("servo-limrun-hitec.png",   "servo", "dark"),
     # The programmer for KST and Chaservo servos over the left card: each
     # tab, each list and each page that asks for a hold, against the
@@ -616,8 +618,8 @@ SCREENS = {
     "setup-rbmod": ("setup-rbmod.png", "setup", "dark"),
     "layout-rbmod": ("layout-rbmod.png", "layout", "dark"),
     "supply-rbmod": ("supply-rbmod.png", "supply", "dark"),
-    # The PROG 5V box on SERVO's output card, and on the KST programmer
-    # while a session holds the ports' 5V.
+    # LIVE on the carrier: PORT PWM and PROG 5V amber, ARM switches them
+    # on.
     "servo-rbmod": ("servo-rbmod.png", "servo", "dark"),
     # The hub on the carrier, and PORT's list there: PROGP04 refused
     # beside the servo output bound on PWM04.
@@ -783,6 +785,8 @@ SCREENS = {
     # Its C6 RADIO row with the C6 as shipped: no version reported, the
     # hold that updates it to the carried image.
     "updates-c6": ("updates-c6.png", "updates", "dark"),
+    # Its SETTINGS list: the reminder at start and RELEASES.
+    "updates-settings": ("updates-settings.png", "updates", "dark"),
     "upd-remind": ("upd-remind.png", "upd-remind", "dark"),
     "panel-download": ("panel-download.png", "panel-update", "dark"),
     "panel-download-failed": ("panel-download-failed.png", "panel-update",
@@ -900,8 +904,8 @@ FIT_ONLY = {
     "help-logs-plot": (None, "logs", "dark"),
     "help-files-2": (None, "files", "dark"),
     "help-files-3": (None, "files", "dark"),
-    # SERVO's guide: the output card's two pages, each task's own pages,
-    # RUDDER's with AUTO's box too.
+    # SERVO's guide: LIVE's READY and controls pages, each task's own
+    # pages, RUDDER's with AUTO's box too.
     "help-servo-2":            (None, "servo", "dark"),
     "help-servo-3":            (None, "servo", "dark"),
     "help-servo-test":         (None, "servo", "dark"),
@@ -1039,6 +1043,9 @@ FIT_ONLY = {
     # KST's and HITEC's guide: the READY card and the footer's WRITE.
     "help-servo-kst":   (None, "servo", "dark"),
     "help-servo-hitec": (None, "servo", "dark"),
+    # TEST's guide at its READY page, and TEST's list at its end.
+    "help-servo-test-2": (None, "servo", "dark"),
+    "servo-test-settings-end": (None, "servo", "dark"),
     # SUPPLY's TABLE; LIVE with a programming port holding the supply; and
     # SETTINGS with the PD mini's RESET PD MINI and the longest save line.
     "supply-table":     (None, "supply", "dark"),
@@ -1055,9 +1062,9 @@ FIT_ONLY = {
     "servo-rate-refused": (None, "servo", "dark"),
     "servo-rate-unsupported": (None, "servo", "dark"),
     "servo-hv-live":    (None, "servo", "dark"),
-    # TEST after a run by movements and after a limit run on PROG PORT:
-    # the cards' summaries and LAST lines; the limit run's settings on the
-    # port, SEARCH + PROGRAM and SERVO PULSES with their note.
+    # TEST after a run by movements and LIMIT RUN after a run on PROG
+    # PORT: the cards' summaries and state lines; LIMIT RUN's list on the
+    # port, SEARCH + PROGRAM and SERVO PULSES chosen.
     "servo-test-done":  (None, "servo", "dark"),
     "servo-limrun-card": (None, "servo", "dark"),
     "servo-limrun-settings": (None, "servo", "dark"),
@@ -1121,7 +1128,7 @@ FIT_ONLY.update({f"outputs-cat-{i}": (None, "outputs", "dark")
 # by design, so a fill drawn over a string is not a finding there.
 OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot",
                  "overview-alert", "hold-hint-arm", "hold-hint-output",
-                 "setup-folder", "servo-name",
+                 "setup-folder", "servo-name", "files-new",
                  "files-edit-unsaved", "files-edit-revert",
                  "files-edit-open", "files-edit-changed", "files-edit-see25",
                  "files-edit-see50"} | {

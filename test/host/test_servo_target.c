@@ -449,17 +449,20 @@ TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
 
 /*
  * The PORT button is over the output card, which a keypad over the left
- * card leaves uncovered: while the voltage's keypad shows the button still
- * names the pin, and a change of the drive under it still reaches it.
+ * card leaves uncovered: while RUDDER's LENGTH keypad shows the button
+ * still names the pin, and a change of the drive under it still reaches
+ * it.
  */
 TEST_CASE(the_port_button_stays_in_sight_under_a_keypad)
 {
     static gfx_color_t want[PB_W * PB_H], got[PB_W * PB_H];
     fresh();
+    go(SERVO_FN_RUDDER);
     servo_screen_set_pins(PIN(4), true);
     scr->render(&cv, 0);
     target_box(want);
-    tap(SUP_V_X, SUP_ROW_Y);                   /* the voltage's keypad */
+    tap(SV_RUD_LEN_X, SV_RUD_LEN_Y);           /* LENGTH's keypad */
+    CHECK(servo_screen_keypad()->open);
     CHECK(scr->covered != NULL && scr->covered());
     scr->render(&cv, 0);
     target_box(got);
@@ -599,6 +602,7 @@ TEST_CASE(the_port_pulse_is_not_switched_off_under_a_test_or_a_sweep)
     settings_set(SET_SERVO_PORT_PWM, 1.0f);
     servo_screen_set_armed(true);
     servo_screen_set_sweep(true);
+    go(SERVO_FN_SWEEP);
     tap(SWEEP_X, BTN_Y);
     CHECK(servo_screen_sweeping());
     CHECK(servo_screen_port_pwm_locked());
@@ -611,14 +615,15 @@ TEST_CASE(the_port_pulse_is_not_switched_off_under_a_test_or_a_sweep)
     out_open_port();
     settings_set(SET_SERVO_TARGET, 1.0f);
     settings_set(SET_SERVO_PORT_PWM, 1.0f);
+    servo_screen_set_drive(1u, 13u, true);     /* the port's pulse read back */
     hold_start(2.3f);
     CHECK(servo_screen_testing());
     out_tap(OSEG_X(1), OSEG_PWM_Y);
     CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
     CHECK(servo_screen_testing());
-    /* The run over, armed still: the pulse goes off. */
+    /* The run over, SAFE: the pulse goes off. */
     open_test();
-    tap(START_X, START_Y);                     /* STOP */
+    tap(START_X, START_Y);                     /* STOP TEST */
     CHECK(!servo_screen_testing());
     out_tap(OSEG_X(1), OSEG_PWM_Y);
     CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));

@@ -14,6 +14,7 @@
  * - the_hub_keeps_the_bench_safe
  * - a_programmers_home_tag_goes_back_to_the_hub
  * - hitecs_series_row_reaches_the_programmer
+ * - the_angle_source_row_opens_the_sensors_setup
  *
  * SPDX-License-Identifier: MIT
  */
@@ -245,6 +246,22 @@ TEST_CASE(hitecs_series_row_reaches_the_programmer)
     settings_cancel_save();
 }
 
+/* A tap on RUDDER's ANGLE SOURCE row closes the list and opens SETUP on the
+ * sensor the source names: the IMU's entry while the IMU is the source. */
+TEST_CASE(the_angle_source_row_opens_the_sensors_setup)
+{
+    on_hub();
+    tap_tile(4);
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO_RUDDER);
+    tap(SV_FOOT_SET_X, UI_BAND_H + SV_FOOT_Y);
+    const ui_setlist_t *sl = servo_screen_list();
+    CHECK(sl->open);
+    const gfx_rect_t r = ui_setlist_row_rect(sl, 2);
+    tap(r.x + 60, UI_BAND_H + r.y + r.h / 2);
+    CHECK(!servo_screen_list()->open);
+    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+}
+
 int main(void)
 {
     RUN(the_tiles_take_setups_grid_in_the_order_of_use);
@@ -255,5 +272,6 @@ int main(void)
     RUN(the_hub_keeps_the_bench_safe);
     RUN(a_programmers_home_tag_goes_back_to_the_hub);
     RUN(hitecs_series_row_reaches_the_programmer);
+    RUN(the_angle_source_row_opens_the_sensors_setup);
     return test_summary("servo_hub");
 }

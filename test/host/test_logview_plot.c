@@ -113,7 +113,7 @@ TEST_CASE(tapping_a_column_toggles_it_and_the_time_axis_is_not_offered)
 
     /* Back to the picker: the time column must refuse to become a trace,
      * because plotting it against itself just draws a diagonal. */
-    tap(100, FOOT_CY);
+    tap(100, FOOT_PLOT_CY);
     CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
     tap(600, IM_ROW_Y(a->time_index));
     tap(PLOT_X, IM_BTN_CY);
@@ -261,11 +261,11 @@ TEST_CASE(the_cursor_follows_the_touch_and_stays_in_range)
 
     /* The step buttons walk it one sample at a time and stop at the ends. */
     for (int i = 0; i < 10; ++i) {
-        tap(236, FOOT_CY);
+        tap(236, FOOT_PLOT_CY);
     }
     screen()->render(&s_c, 0);
     for (int i = 0; i < 10; ++i) {
-        tap(324, FOOT_CY);
+        tap(324, FOOT_PLOT_CY);
     }
     screen()->render(&s_c, 0);
     CHECK(gfx_pixel_get(&s_c, 400, 240) != 0);
@@ -278,7 +278,7 @@ TEST_CASE(fields_returns_to_the_picker_and_keeps_the_selection)
     tap(PLOT_X, IM_BTN_CY);
     CHECK_EQ(log_viewer_view(), LOG_VIEW_PLOT);
 
-    tap(100, FOOT_CY);
+    tap(100, FOOT_PLOT_CY);
     CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
 
     tap(PLOT_X, IM_BTN_CY);

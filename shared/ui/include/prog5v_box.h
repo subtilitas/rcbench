@@ -4,9 +4,10 @@
  *        switches it (the rbmod carrier's GPIO 21), its state, its live
  *        volts and amps, and its switch.
  *
- * One box shape, drawn by the screens that show the ports' supply: SERVO's
- * output card (under the KST and Hitec programmers as well) and SUPPLY's
- * LIVE task.  It is made of the controls those screens have: two lines of
+ * One box shape, drawn by the screen that shows the ports' supply:
+ * SUPPLY's LIVE task.  SERVO's function screens show no box: their READY
+ * rows name PROG 5V, ARM and ARM + START switch it on, and KST's and
+ * HITEC's supply row switches it off.  It is made of the controls those screens have: two lines of
  * text and a button with OUTPUT ON's 2s hold.
  *
  *   PROG PORTS 5V, GPIO 21: OFF   [ PROG 5V ON  ]

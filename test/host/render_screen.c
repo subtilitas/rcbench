@@ -77,6 +77,7 @@
 #include "servo_spots.h"
 #include "stick_spots.h"
 #include "supply_spots.h"
+#include "ui_footer.h"
 #include "ui_setlist.h"
 #include "logview_spots.h"
 #include "motor_spots.h"
@@ -101,13 +102,13 @@ extern const uint32_t board_drawing_rp2350_can_bytes;
 #define H UI_PANEL_H
 
 /* The ESC STICK controls in body coordinates (stick_spots.h): the crumb
- * row's ^ and v, TIMING and the search field at the right edge, the foot
- * row's RUN, the panels' HOLD TO RUN and OK at their foot, and a parameter
- * row's + stepper. */
+ * row's ^ and v and the search field at the right edge, the footer's RUN
+ * and SETTINGS, the panels' HOLD TO RUN and OK at their foot, and a
+ * parameter row's + stepper. */
 #define RS_LIST_UP_X   ST_LIST_UP_X
 #define RS_LIST_DN_X   ST_LIST_DN_X
 #define RS_CRUMB_CY    ST_CRUMB_CY
-#define RS_TIMING_X    ST_TIMING_X
+#define RS_SET_X       ST_SET_X
 #define RS_FIND_X      ST_FIND_X
 #define RS_RUN_X       ST_WRITE_X
 #define RS_RUN_CY      ST_BTN_CY
@@ -1057,11 +1058,14 @@ static void kst_view(const char *view)
     (void)rig_link_up(nopage ? (uint16_t)(LINK_MINOR_KST - 1u)
                              : LINK_PROTOCOL_MINOR);
     if (strcmp(v, "-hv") == 0) {
-        /* HV SERVO in the AUTOMATIC TEST's settings on TEST, which the
+        /* HV SERVO on TEST's SETTINGS list, its fourth row, which the
          * programmer's voltage follows. */
         ui_router_goto(SCREEN_SERVO_TEST);
-        tap(SV_RUN_SET_X, UI_BAND_H + SV_RUN_SET_Y(0));
-        tap(SV_LIST_X(0), UI_BAND_H + SV_LIST_ROW_Y(2)); /* HV SERVO */
+        tap(SV_FOOT_SET_X, UI_BAND_H + SV_FOOT_Y);
+        ui_setlist_t *sl = (ui_setlist_t *)servo_screen_list();
+        ui_setlist_scroll_to(sl, 3);
+        const gfx_rect_t r = ui_setlist_row_part(sl, 3, UI_SL_PART_PLUS);
+        tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);   /* HV SERVO */
     }
     ui_router_goto(SCREEN_SERVO_KST);
     /* The tester's drive as the control task reports it: PORT 1 on GP13
@@ -1350,10 +1354,10 @@ static void servo_run_view(bool to_the_end, bool ina)
     uint16_t win_number = 0u;
     /* On TEST's screen, as the view's screen shows it. */
     touch_event_t e = { .type = TOUCH_EVENT_DOWN,
-                        .point = { .id = 1, .x = SV_START_X,
-                                   .y = (int16_t)(UI_BAND_H + SV_START_Y(0)),
+                        .point = { .id = 1, .x = SV_TEST_HOLD_X,
+                                   .y = (int16_t)(UI_BAND_H + SV_TEST_HOLD_Y),
                                    .strength = 40 } };
-    ui_router_event(&e);                            /* START TEST, held */
+    ui_router_event(&e);                            /* ARM + START, held */
     for (int i = 0; i < 115; ++i) {
         now += 20u;
         servo_screen_clock(now);
@@ -1397,6 +1401,9 @@ static void servo_run_view(bool to_the_end, bool ina)
                 cmd = sc.value_us;
             } else if (sc.kind == SERVO_CMD_RELEASE) {
                 cmd = 1500u;
+            } else if (sc.kind == SERVO_CMD_DISARM) {
+                cmd = 1500u;                    /* the IOmcu: SAFE */
+                servo_screen_set_armed(false);
             }
         }
         const float a = out ? servo_sim_step(&sv, cmd, now) : 0.0f;
@@ -1459,13 +1466,14 @@ static void servo_run_view(bool to_the_end, bool ina)
  * model, the horn where its NEUTRAL, PULSE LOWER, PULSE UPPER, LEFT ANGLE
  * and RIGHT ANGLE put it at 4us a count (kst_sim.h sim_horn_us()); its
  * stops at 1150 and 1880us; the INA3221's CH1 windows from it every 50
- * ms; a bench that goes SAFE and ARMED as the screen asks.  One frame of
+ * ms; a bench that goes SAFE and ARMED as the screen asks: ARM + START
+ * arms it, the run's end leaves it SAFE.  One frame of
  * the rig is 1ms.  The bench's PULSE MIN and MAX are STANDARD PWM's, 1000
  * and 2000us; the servo's PULSE LOWER and UPPER 900 and 2100us, so every
  * view but -range runs with SERVO PULSES at 1000-2000.
  *
- *   -ready    LIMITS with SEARCH+PROG and SERVO PULSES 1000-2000 chosen,
- *             before the hold
+ *   -ready    LIMIT RUN with SEARCH+PROG and SERVO PULSES 1000-2000
+ *             chosen, SAFE before ARM + START
  *   -range    SEARCH+PROG with SERVO PULSES at KEEP: FAIL after the read,
  *             the servo's pulses outside PULSE MIN and MAX
  *   (none)    running, a probe after the third session
@@ -1477,8 +1485,9 @@ static void servo_run_view(bool to_the_end, bool ina)
  *             and RESTORE's list: the servo as the run found it
  *   -nopd     -ready, and then no PD mini answers: SEARCH+PROG and SERVO
  *             PULSES chosen and not offered
- *   -hitec    the LIMIT RUN settings, SERVO at HITEC on the Hitec
- *             programmer's D SERIES and SEARCH+PROG: SERVO PULSES gone
+ *   -hitec    LIMIT RUN's list, SERVO at HITEC on the Hitec programmer's
+ *             D SERIES and SEARCH+PROG: SERVO PULSES locked
+ *   -settings LIMIT RUN's list with SEARCH+PROG and SERVO PULSES chosen
  */
 static struct {
     servo_sim_t sv;
@@ -1534,8 +1543,8 @@ static void limrun_ms(uint32_t ms)
         }
         supply_screen_set_output(s_lr.out);
         if (g_rig.ms % 100u == 0u) {
-            /* SUPPLY's own readings, for its OUTPUT button: the servo
-             * screen's run reads the INA3221 alone. */
+            /* SUPPLY's own readings, for its OUTPUT button and the READY
+             * card's PD MINI row: the run reads the INA3221 alone. */
             supply_state_t st;
             memset(&st, 0, sizeof(st));
             st.online   = !s_lr.nopd;
@@ -1548,9 +1557,7 @@ static void limrun_ms(uint32_t ms)
             st.taken_ms = g_rig.ms;
             st.stamped  = true;
             supply_screen_push(&st);
-            if (s_lr.nopd) {
-                servo_screen_supply(&st);
-            }
+            servo_screen_supply(&st);
         }
         if (s_lr.prog) {
             servo_screen_set_drive(
@@ -1640,6 +1647,8 @@ static void rauto_rbmod_hold(const char *view)
     limrun_ms(failed ? 1100u : 200u);
 }
 
+static void servo_list_tap(int i, ui_sl_part_t part);
+
 static void limrun_view(const char *view)
 {
     const char *v = view + strlen("servo-limrun");
@@ -1654,7 +1663,7 @@ static void limrun_view(const char *view)
     servo_sim_init(&s_lr.sv, &cfg);
     s_lr.sv.position_us = 1500.0f;
     s_lr.cmd = 1500u;
-    s_lr.armed = false;                 /* its settings first, SAFE */
+    s_lr.armed = false;                 /* its list first, SAFE */
     s_lr.out = true;
     settings_set_text(SET_TEXT_DUT_NAME, "DS3218 #2");
     settings_set(SET_INA_FIT(0), 1.0f);
@@ -1672,27 +1681,29 @@ static void limrun_view(const char *view)
     servo_screen_feedback(0u, 0.0f, false);
     s_lr.win_end = g_rig.ms + 50u;
     limrun_ms(400u);
-    tap(SV_RUN_SET_X, UI_BAND_H + SV_RUN_SET_Y(1));     /* its SETTINGS */
+    /* Its list from the footer's SETTINGS, a save asked first so the home
+     * tag closes it without the leave question. */
+    settings_request_save();
+    tap(SV_FOOT_SET_X, UI_BAND_H + SV_FOOT_Y);
     if (strcmp(v, "-hitec") == 0) {
         /* The Hitec programmer's model in PWM, its series D SERIES; SERVO
-         * to HITEC, then LIMIT RUN to SEARCH+PROG; the list left open. */
+         * to HITEC, then MODE to SEARCH+PROG; the list left open. */
         render_hitec_feed(false);
         settings_set(SET_HITEC_SERIES, 1.0f);
         limrun_ms(40u);
-        tap(100, UI_BAND_H + SV_LIST_ROW_Y(1));
-        tap(100, UI_BAND_H + SV_LIST_ROW_Y(0));
+        servo_list_tap(1, UI_SL_PART_PLUS);
+        servo_list_tap(0, UI_SL_PART_VALUE);
         limrun_ms(100u);
         return;
     }
     if (s_lr.prog) {
-        tap(100, UI_BAND_H + SV_LIST_ROW_Y(0)); /* LIMIT RUN: SEARCH+PROG */
+        servo_list_tap(0, UI_SL_PART_VALUE);     /* MODE: SEARCH+PROG */
         if (strcmp(v, "-range") != 0) {
-            /* SERVO PULSES, right of SERVO */
-            tap(SV_LIST_X(1), UI_BAND_H + SV_LIST_ROW_Y(1));
+            servo_list_tap(2, UI_SL_PART_PLUS); /* SERVO PULSES */
         }
     }
     {
-        /* The home tag: back to LIMIT RUN's card. */
+        /* The home tag: back to LIMIT RUN. */
         const gfx_rect_t home =
             ui_home_tag_rect(ui_router_title(SCREEN_SERVO_LIMRUN));
         if (strcmp(v, "-settings") == 0) {
@@ -1701,8 +1712,7 @@ static void limrun_view(const char *view)
         }
         tap(home.x + home.w / 2, home.y + home.h / 2);
     }
-    /* ARMED, as the views of the run show it, past ARM's flash. */
-    s_lr.armed = true;
+    /* SAFE: ARM + START switches what the run needs and arms. */
     limrun_ms(400u);
     if (strcmp(v, "-nopd") == 0) {
         /* The PD mini no longer answers: its readings say so. */
@@ -1714,14 +1724,13 @@ static void limrun_view(const char *view)
         return;
     }
     touch_event_t e = { .type = TOUCH_EVENT_DOWN,
-                        .point = { .id = 1, .x = SV_START_X,
-                                   .y = (int16_t)(UI_BAND_H + SV_START_Y(1)),
+                        .point = { .id = 1, .x = SV_HOLD_X,
+                                   .y = (int16_t)(UI_BAND_H + SV_HOLD_Y),
                                    .strength = 40 } };
-    ui_router_event(&e);                        /* START LIMIT RUN, held */
+    ui_router_event(&e);                        /* ARM + START, held */
     limrun_ms(2300u);
     e.type = TOUCH_EVENT_UP;
     ui_router_event(&e);
-    /* The run's box under the card. */
     if (v[0] == '\0') {
         /* A probe of the third writing session, partway out. */
         unsigned sessions = 0u;
@@ -2388,7 +2397,8 @@ static void pose_upd(const char *view)
     v.job = UPD_JOB_CHECK;
     v.phase = UPD_PH_ENDED;
     v.budget_s = 30u;
-    if (strcmp(view, "updates") == 0) {
+    if (strcmp(view, "updates") == 0
+        || strcmp(view, "updates-settings") == 0) {
         v.phase = UPD_PH_IDLE;
     } else if (strcmp(view, "updates-checking") == 0) {
         v.phase = UPD_PH_ASKING;
@@ -2513,6 +2523,11 @@ static void pose_upd(const char *view)
         c6.known = false;
     }
     upd_c6_set(&c6);
+    if (strcmp(view, "updates-settings") == 0) {
+        /* The footer's SETTINGS: the list of the reminder and RELEASES. */
+        const gfx_rect_t r = ui_footer_rect(UI_FOOTER_SETTINGS);
+        tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
+    }
 }
 
 /* The firmware write, at a point inside it, at its end, or failed; and the
@@ -3149,10 +3164,15 @@ static void pose_motor_tools(ui_screen_id_t id, const char *view)
         } else if (strcmp(view, "motor-stick") != 0) {
             stick_open("Hobbywing", "hobbywing-flyfun-8item");
             if (strncmp(view, "motor-stick-timing", 18) == 0) {
-                tap(RS_TIMING_X, UI_BAND_H + RS_CRUMB_CY);       /* TIMING */
+                /* The footer's SETTINGS: the 14 stick settings. */
+                tap(RS_SET_X, UI_BAND_H + RS_RUN_CY);
                 if (strcmp(view, "motor-stick-timing-keypad") == 0) {
-                    /* BEEP MIN's value, the third row, typed as 250. */
-                    tap(400 + 216 / 2, UI_BAND_H + RS_STEP_CY(2));
+                    /* BEEP MIN's value, typed as 250. */
+                    const gfx_rect_t v = ui_setlist_row_part(
+                        esc_stick_settings_list(),
+                        esc_stick_settings_row(SET_STICK_BEEP_MIN),
+                        UI_SL_PART_VALUE);
+                    tap(v.x + v.w / 2, UI_BAND_H + v.y + v.h / 2);
                     kp_type(esc_stick_panel_keypad(), "250");
                 }
             } else {
@@ -3483,7 +3503,7 @@ static void pose_analyser_views(ui_screen_id_t id, const char *view)
  *        soldered.
  *        layout-rbmod: LAYOUT with the same binding.  supply-rbmod:
  *        SUPPLY with the PROG PORTS 5V line and the PROG 5V box.
- *        servo-rbmod: SERVO's output card with the box.  servo-kst-rbmod:
+ *        servo-rbmod: LIVE on PROG PORT 1, PROG 5V off.  servo-kst-rbmod:
  *        the KST programmer, the box held by PROG PORT 1.  setup-sensors-rbmod:
  *        SENSORS with 0x40 soldered and its channels on the rails.
  * @param id   The screen of the shot.
@@ -3810,6 +3830,7 @@ static ui_screen_id_t servo_view_screen(const char *view)
         servo_fn_t  fn;     /**< the function shown                 */
     } k[] = {
         { "servo-hub", false, SERVO_FN_HUB },
+        { "servo-hv-live", true, SERVO_FN_KST },
         { "servo-settings", true, SERVO_FN_HUB },
         { "servo-rate-", false, SERVO_FN_HUB },
         { "servo-warning", true, SERVO_FN_HUB },
@@ -3888,6 +3909,18 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
             supply_sim_step(&sm, 0.05f, &sst);
             servo_screen_supply(&sst);
         }
+        /* LIVE on a SAFE bench, and the HV view: the PD mini answers with
+         * its output off, so the SUPPLY row reads what ARM does with it. */
+        if (strcmp(view, "servo") == 0 || strcmp(view, "servo-hv") == 0) {
+            if (strcmp(view, "servo-hv") == 0) {
+                supply_screen_put(7.4f, 2.0f);
+            }
+            supply_sim_output(&sm, false);
+            for (int i = 0; i < 20; ++i) {
+                supply_sim_step(&sm, 0.05f, &sst);
+                servo_screen_supply(&sst);
+            }
+        }
         /*
          * The INA3221 as the servo rail's meter: 13s of CH1's windows from
          * a servo of the same model stepped between two positions every
@@ -3959,6 +3992,14 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
             settings_set(SET_SERVO_TARGET, 1.0f);
             servo_screen_set_drive(1u, 13u, true);
         }
+        if (strcmp(view, "servo-rbmod") == 0) {
+            /* The carrier's PROG PORT 1 on GPIO 13, PORT PWM and the PROG
+             * 5V off: ARM switches both on. */
+            prog_choice_set_far_minor(LINK_MINOR_CARRIER_PWM);
+            settings_set(SET_SERVO_TARGET, 1.0f);
+            settings_set(SET_SERVO_PORT_PWM, 0.0f);
+            servo_screen_set_drive(1u, 13u, false);
+        }
         if (strcmp(view, "servo-model") == 0) {
             /* No PD mini: the panel's model is the supply, and the line
              * over the plot carries the MODELLED pill. */
@@ -3988,26 +4029,32 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
             if (p2 && kst_panel_notes_rect().w > 0) {
                 ktap(kst_panel_notes_rect());
             }
-        } else if (strcmp(view, "servo-hv") == 0
-                   || strcmp(view, "servo-hv-live") == 0) {
-            /* The voltage on the SET line, typed past 6.0V: the HV
-             * warning, and in servo-hv-live with the output on.  The
-             * keypad's keys from a probe opened where the screen opens its
-             * own, over the left card. */
-            if (strcmp(view, "servo-hv-live") == 0) {
-                supply_screen_set_output(true);
-            }
+        } else if (strcmp(view, "servo-hv") == 0) {
+            /* LIVE with the PD mini off and set to 7.40V: SUPPLY reads TAP:
+             * HV WARNING in red, and a tap on it opens OUTPUT ON's HV
+             * warning. */
             ui_router_goto(id);
-            tap(SV_SUP_V_X, UI_BAND_H + SV_SUP_Y);
-            ui_keypad_t kp;
-            memset(&kp, 0, sizeof(kp));
-            ui_keypad_open(&kp, SV_OV_AREA, "", "", 0.0f,
-                           0.0f, 1.0f, 2);
-            const ui_key_t k[] = { UI_KEY_7, UI_KEY_DOT, UI_KEY_4, UI_KEY_OK };
-            for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
-                const gfx_rect_t r = ui_keypad_key_rect(&kp, k[i]);
-                tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
-            }
+            ui_router_tick(0.02f);
+            tap(SV_RDY_X, UI_BAND_H + SV_DRV_ROW_Y(1));
+        } else if (strcmp(view, "servo-hv-live") == 0) {
+            /* The HV warning with the output on: KST's LEAVE left the
+             * output on at the session's 5.00V, SERVO offers the
+             * operator's 7.40V back, and YES asks for the warning's hold.
+             * YES sits where HOLD TO APPLY does, at the left column's
+             * floor. */
+            settings_set(SET_SUPPLY_V_MAX, 8.4f);
+            supply_screen_limits_changed();
+            supply_screen_put(7.4f, 1.5f);
+            ui_router_goto(id);
+            ui_router_tick(0.02f);
+            supply_screen_set_port_held(true);
+            supply_screen_adopt(5.0f, 1.0f);
+            supply_screen_set_output(true);
+            ui_router_tick(0.02f);
+            supply_screen_kst_leave_done();
+            supply_screen_set_port_held(false);
+            ui_router_tick(0.02f);
+            tap(UI_MARGIN + 20 + 120, UI_BAND_H + 436 - 8 - 56 + 28);
         } else if (strcmp(view, "servo-sweep") == 0
                    || strcmp(view, "servo-paused") == 0) {
             servo_sweep_view(strcmp(view, "servo-paused") == 0);
@@ -4017,8 +4064,8 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
             }
             ui_router_goto(id);
         }
-        /* The footer's SETTINGS: the hub's list, a function's list, TEST's
-         * and LIMIT RUN's page of rows, KST's EXPERT MODE page. */
+        /* The footer's SETTINGS: the hub's list, a function's list (TEST's
+         * among them), LIMIT RUN's page of rows, KST's EXPERT MODE page. */
         const bool on_list = strcmp(view, "servo-settings") == 0
                              || strcmp(view, "servo-sweep-page") == 0
                              || strcmp(view, "servo-warning") == 0
@@ -4027,15 +4074,18 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
                              || strcmp(view, "servo-name") == 0
                              || strcmp(view, "servo-trim-keypad") == 0
                              || strncmp(view, "servo-rate-", 11) == 0
-                             || strcmp(view, "servo-test-settings") == 0
+                             || strncmp(view, "servo-test-settings", 19) == 0
                              || strcmp(view, "servo-limits") == 0
                              || strcmp(view, "servo-brownout") == 0;
         if (on_list) {
             tap(SV_FOOT_SET_X, UI_BAND_H + SV_FOOT_Y);
         }
         if (strcmp(view, "servo-brownout") == 0) {
-            /* BROWN-OUT, the middle column's last row: its page. */
-            tap(SV_LIST_X(1), UI_BAND_H + SV_LIST_ROW_Y(4));
+            /* TEST's list scrolled to its BROWN-OUT heading, row 6. */
+            ui_setlist_scroll_to((ui_setlist_t *)servo_screen_list(), 6);
+        } else if (strcmp(view, "servo-test-settings-end") == 0) {
+            /* ... and to its last row, SETTLING TIME. */
+            ui_setlist_scroll_to((ui_setlist_t *)servo_screen_list(), 20);
         } else if (strcmp(view, "servo-warning") == 0) {
             servo_list_tap(1, UI_SL_PART_VALUE);      /* TYPE */
             tap(165, UI_BAND_H + 256);                /* HELI CYCLIC */
@@ -4317,7 +4367,7 @@ static void pose_shown_tools(ui_screen_id_t id, const char *view)
             }
         } else if (strcmp(view, "logs-delete") == 0) {
             /* The newest run is chosen as the list opens. */
-            tap(LV_DELETE_CX, UI_BAND_H + LV_FOOT_CY);   /* DELETE */
+            tap(LV_DELETE_CX, UI_BAND_H + LV_BR_FOOT_CY);   /* DELETE */
         } else if (strcmp(view, "logs-root") == 0) {
             /* ROOT, the first tab at the header row's left. */
             tap(LV_TAB_CX(0), UI_BAND_H + LV_HEAD_CY);
@@ -4462,12 +4512,7 @@ int main(int argc, char **argv)
                    || strcmp(view, "servo-test-done") == 0
                    || strcmp(view, "servo-sweep") == 0
                    || strcmp(view, "servo-paused") == 0
-                   || (strncmp(view, "servo-limrun", 12) == 0
-                       && strcmp(view, "servo-limrun-restore") != 0
-                       && strcmp(view, "servo-limrun-stopped") != 0
-                       && strcmp(view, "servo-limrun-range") != 0
-                       && strcmp(view, "servo-limrun-hitec") != 0
-                       && strcmp(view, "servo-limrun-settings") != 0)
+                   || strcmp(view, "servo-limrun") == 0
                    || strcmp(view, "setup-leave-armed") == 0
                    || render_files_armed(view)
                    || render_rudder_armed(view)

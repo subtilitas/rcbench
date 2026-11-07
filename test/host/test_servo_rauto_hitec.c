@@ -3,7 +3,8 @@
  * through servo_limit_seam.c and the Hitec run seam hitec_panel_run.h):
  * a D series servo landed within the tolerance, a classic servo's 8-bit
  * cells kept within what the servo takes, and the D series save and
- * reboot inside a write's session.  The bench is hitec_limit_panel_rig.h,
+ * reboot inside a write's session, and READY's SERVO and SUPPLY rows on
+ * both families.  The bench is hitec_limit_panel_rig.h,
  * the surface on the AS5600 at 0.06° a us of the horn, the stops at 700
  * and 2300us outside the travel; the targets 20° with a 10% margin, 22°
  * goals.
@@ -13,6 +14,7 @@
 #include "hitec_limit_panel_rig.h"
 
 #include "servo_rudder_auto.h"
+#include "servo_ready_int.h"
 #include "servo_rudder_auto_int.h"
 #include "servo_str.h"
 
@@ -248,6 +250,34 @@ TEST_CASE(a_stop_with_the_first_hitec_write_on_its_way_names_the_backup)
     CHECK(!hl.armed);
     CHECK(!hitec_prog_write_on(model()));
 }
+/* A D series servo needs no power cycle, so a rail fed from elsewhere
+ * passes the gate: READY reads SERVO as HITEC D SERIES, SUPPLY green with
+ * the 6.00V the INA3221 measures and nothing live through it, and the hold
+ * is offered with nothing for it to switch on.  On the classic servo's bench
+ * the PD mini feeds it: SERVO reads HITEC CLASSIC, SUPPLY PD MINI on, in
+ * red as an output that is live through it. */
+TEST_CASE(a_d_series_servo_on_an_external_rail_reads_the_rail_voltage)
+{
+    rdy_row_t r;
+    ha_setup(false);
+    CHECK(rauto_blocked() == NULL);
+    CHECK(rauto_ready_row(RAR_SERVO, &r));
+    CHECK_STR_EQ(r.value, "HITEC D SERIES");
+    CHECK(rauto_ready_row(RAR_SUPPLY, &r));
+    CHECK_STR_EQ(r.label, TR(RDY_SUPPLY));
+    CHECK_EQ(r.st, (uint8_t)RDY_OK);
+    CHECK_STR_EQ(r.value, "6.00V");
+    CHECK(r.why == NULL);
+    CHECK(rauto_hold_blocked(NULL) == NULL);
+
+    ha_setup(true);
+    CHECK(rauto_ready_row(RAR_SERVO, &r));
+    CHECK_STR_EQ(r.value, "HITEC CLASSIC");
+    CHECK(rauto_ready_row(RAR_SUPPLY, &r));
+    CHECK_STR_EQ(r.label, "PD MINI");
+    CHECK_EQ(r.st, (uint8_t)RDY_LIVE);
+    CHECK_STR_EQ(r.value, ui_on_off(1));
+}
 
 int main(void)
 {
@@ -256,5 +286,6 @@ int main(void)
     RUN(auto_on_a_classic_ccw_servo_writes_cell_0x13_for_the_short_pulses);
     RUN(a_d_series_write_counts_the_save_and_reboot_time_in_the_session_cap);
     RUN(a_stop_with_the_first_hitec_write_on_its_way_names_the_backup);
+    RUN(a_d_series_servo_on_an_external_rail_reads_the_rail_voltage);
     return test_summary("servo_rauto_hitec");
 }

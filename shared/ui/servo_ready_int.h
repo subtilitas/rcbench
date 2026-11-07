@@ -2,12 +2,12 @@
  * @file
  * @brief The READY card of a SERVO function screen and its ARM + START
  *        sequence (servo_ready.c), the card's rows of RUDDER AUTO
- *        (servo_rudder_auto_ready.c): their state in the screen's one
- *        object, the card's places, and the calls the screen's files make
- *        of them.
+ *        (servo_rudder_auto_ready.c) and of LIMIT RUN
+ *        (servo_limit_ready.c): their state in the screen's one object,
+ *        the card's places, and the calls the screen's files make of them.
  *
- * The READY card takes the output card's place on RUDDER AUTO, in the
- * screen's coordinates x 636 to 1016, y 62 to 436:
+ * The READY card takes the output card's place on RUDDER AUTO, TEST and
+ * LIMIT RUN, in the screen's coordinates x 636 to 1016, y 62 to 436:
  *
  *   - READY, the card's title, y 70 to 90;
  *   - up to READY_ROWS_MAX rows of READY_ROW_H (30px) from y 96: a dot,
@@ -21,6 +21,12 @@
  * A tap on a row with a fix takes the fix (the PORT choice list, the
  * SETTINGS list on its row, ZERO, SETUP > SENSORS); a tap on any other row
  * not met names it in the alert band.
+ *
+ * LIVE, SWEEP and RUDDER show their rows the same way over the output
+ * card's controls (servo_drive_ready.c): the title and 3 or 5 rows from
+ * y 96, SPEED, the type pill and the buttons under them, the rail line at
+ * y 404.  Their footer's middle slot is ARM, which switches the supply on
+ * first through the same sequence where a part reads off.
  *
  * The footer's middle slot is the function's one hold, HOLD 2s: ARM +
  * START.  It fires the sequence (servo_start_seq.h): PORT PWM, PROG 5V or
@@ -72,7 +78,20 @@ typedef enum {
     RDY_SEQ,    /**< the hold does it: amber                        */
     RDY_BAD,    /**< refuses the hold: red                          */
     RDY_IDLE,   /**< waits on a row above it: grey                  */
+    RDY_WARN,   /**< refuses nothing, the operator's to look at:
+                     amber dot and value (no pin, no reading)       */
 } rdy_state_t;
+
+/** @brief What a row's text names when a step of the sequence fails on
+ *         it: the supply, the PD mini, PORT PWM, ARM, or the step under
+ *         way. */
+typedef enum {
+    RDY_K_OTHER = 0, /**< the step under way                        */
+    RDY_K_SUPPLY,    /**< PROG 5V or the PD mini, whichever the run needs */
+    RDY_K_PD_MINI,   /**< the PD mini, whatever the hold switches   */
+    RDY_K_PWM,       /**< PORT PWM                                  */
+    RDY_K_ARM,       /**< ARM                                       */
+} rdy_kind_t;
 
 /** @brief One row as the card draws it. */
 typedef struct {
@@ -100,7 +119,7 @@ typedef struct {
 /** @brief The card and the sequence at the screen's start. */
 void ready_init(void);
 /** @brief Whether the function shown has a READY card in the output
- *         card's place.  @return true on RUDDER AUTO */
+ *         card's place.  @return true on RUDDER AUTO, TEST and LIMIT RUN */
 bool ready_shown(void);
 /** @brief The card's rows now.  @return the count, at most
  *         READY_ROWS_MAX */
@@ -137,6 +156,19 @@ bool ready_down(const touch_event_t *evt);
 bool ready_rest(const touch_event_t *evt);
 /** @brief A press under way dropped. */
 void ready_cancel(void);
+/** @brief The function's one hold, the footer's middle slot.
+ *  @return its rectangle */
+gfx_rect_t ready_hold_rect(void);
+/** @brief Whether a press on the hold stops something now: the sequence
+ *         under way, or the function's run.  @return true then */
+bool ready_hold_stops(void);
+/** @brief A DOWN on the hold, the function's: it stops the sequence or the
+ *         run, or begins the hold.  @param evt the DOWN
+ *  @return whether it landed on the hold */
+bool ready_hold_down(const touch_event_t *evt);
+/** @brief The hold drawn: ARM + START, the step under way, or STOP RUN.
+ *  @param c the canvas */
+void ready_draw_hold(gfx_canvas_t *c);
 
 /* --- servo_ready.c: the sequence -------------------------------------------- */
 
@@ -213,6 +245,165 @@ const char *rauto_hold_blocked(rauto_row_t *row);
 /** @brief A tap on RUDDER AUTO's row @p i: its fix, or its reason in the
  *         alert band.  @param i the row */
 void rauto_ready_tap(int i);
+
+/* --- servo_test_ready.c: TEST's rows and its hold ------------------------ */
+
+/** @brief TEST's rows, in the card's order. */
+typedef enum {
+    TRR_PORT = 0,  /**< OUTPUTS, or a PROG PORT off the carrier, its pulse */
+    TRR_METER,     /**< the meter the run reads                           */
+    TRR_PD,        /**< the PD mini the steps set                         */
+    TRR_STEPS,     /**< the steps chosen and inside the caps              */
+    TRR_RANGE,     /**< the ends either side of PULSE CENTRE              */
+    TRR_ARM,       /**< ARMED, or a run or a report in the way            */
+    TRR_COUNT      /**< the count                                         */
+} test_row_t;
+
+/** @brief TEST's row @p i.  @param i the row @param r receives it
+ *  @return false past the last */
+bool test_ready_row(int i, rdy_row_t *r);
+/** @brief The row of TEST's card a gate text belongs to.
+ *  @param why a text test_why() returns
+ *  @return the row; TRR_COUNT for a text of none */
+test_row_t test_row_of(const char *why);
+/** @brief The first gate check that refuses ARM + START, less those the
+ *         steps do themselves.  @param row receives its row; may be NULL
+ *  @return the text; NULL when the hold may begin */
+const char *test_hold_blocked(test_row_t *row);
+/** @brief A tap on TEST's row @p i: its fix, or its reason in the alert
+ *         band.  @param i the row */
+void test_ready_tap(int i);
+/** @brief A DOWN on TEST's ARM + START.  @param evt the DOWN
+ *  @return whether it was on the hold */
+bool test_hold_down(const touch_event_t *evt);
+/** @brief ARM + START's 2s completed, on the footer or on the HV warning:
+ *         the settings read, the steps begun. */
+void test_hold_fired(void);
+/** @brief TEST's frame: the hold, the steps, the run.
+ *  @param dt_s the frame's time, s */
+void test_frame(float dt_s);
+/** @brief TEST's ARM + START in the footer.  @param c the canvas */
+void test_draw_hold(gfx_canvas_t *c);
+/** @brief The rail's plot under TEST's caps button.  @param c the canvas */
+void test_draw_plot(gfx_canvas_t *c);
+
+/* --- servo_limit_ready.c: LIMIT RUN's gate and rows ------------------------ */
+
+/** @brief LIMIT RUN's rows, in the card's order. */
+typedef enum {
+    LRR_PORT = 0,  /**< an output the tester drives                    */
+    LRR_SERVO,     /**< the family a run on a PROG PORT reads          */
+    LRR_METER,     /**< the INA3221 channel the run reads              */
+    LRR_RAIL,      /**< the servo rail, 3.0V or more                   */
+    LRR_RANGE,     /**< PULSE MIN, CENTRE and MAX                      */
+    LRR_PROG,      /**< the programmer free                            */
+    LRR_SUPPLY,    /**< PROG 5V, the PD mini or the rail               */
+    LRR_PWM,       /**< the port's pulse                               */
+    LRR_ARM,       /**< ARMED, or a run or a report in the way         */
+    LRR_COUNT      /**< the count                                      */
+} limrun_row_t;
+
+/** @brief LIMIT RUN's row @p i.  @param i the row @param r receives it
+ *  @return false past the last */
+bool lim_ready_row(int i, rdy_row_t *r);
+/** @brief The row of LIMIT RUN's card a gate text belongs to.
+ *  @param why a text lim_blocked() returns
+ *  @return the row; LRR_COUNT for a text of none */
+limrun_row_t lim_row_of(const char *why);
+/** @brief What a failed step names for @p why.  @param why a gate text
+ *  @return its kind */
+rdy_kind_t lim_kind_of(const char *why);
+/** @brief Whether the hold may fix @p why itself: RUDDER AUTO's parts, and
+ *         a dead rail the supply the hold switches feeds.
+ *  @param why a gate text @return true for amber */
+bool lim_seq_fixes(const char *why);
+/** @brief The first gate check that refuses the hold, as lim_blocked()
+ *         orders them, less those the hold does itself.
+ *  @param row receives its row; may be NULL
+ *  @return the text; NULL when the hold may begin */
+const char *lim_hold_blocked(limrun_row_t *row);
+/** @brief A tap on LIMIT RUN's row @p i: its fix, or its reason in the
+ *         alert band.  @param i the row */
+void lim_ready_tap(int i);
+/** @brief lim_write_why() less the PROG 5V the hold switches on: why a run
+ *         started by the hold writes nothing.  @return the line, or NULL */
+const char *lim_write_why_held(void);
+
+/* --- servo_drive_ready.c: LIVE's, SWEEP's and RUDDER's rows -------------- */
+
+/** @brief The rows of LIVE, SWEEP and RUDDER; LIVE and SWEEP show PORT,
+ *         SUPPLY and ARM. */
+typedef enum {
+    DRR_PORT = 0, /**< what the tester drives                         */
+    DRR_ANGLE,    /**< the angle source: RUDDER only                  */
+    DRR_ZERO,     /**< ZERO taken: RUDDER only                        */
+    DRR_SUPPLY,   /**< PROG 5V, the PD mini or a supply off the bench */
+    DRR_ARM,      /**< ARMED, or what keeps ARM from the bench        */
+    DRR_COUNT     /**< the count                                      */
+} drive_row_t;
+
+/** @brief Whether the function shown is LIVE, SWEEP or RUDDER: the READY
+ *         rows over its output card and ARM that switches the supply.
+ *  @return true then */
+bool drive_shown(void);
+/** @brief The rows shown.  @return 3 on LIVE and SWEEP, 5 on RUDDER, 0
+ *         elsewhere */
+int drive_ready_count(void);
+/** @brief Card row @p i as drawn now.  @param i the row
+ *  @param r receives it  @return false past the last */
+bool drive_ready_row(int i, rdy_row_t *r);
+/** @brief The first row that refuses ARM, and its text.
+ *  @param row receives its card row; may be NULL
+ *  @return the text; NULL when ARM may be held */
+const char *drive_hold_blocked(int *row);
+/** @brief The step a refusal names, for the sequence's failure.
+ *  @param why a text drive_hold_blocked() returned
+ *  @return servo_seq_part_t: PROG 5V, PD MINI or ARM; NONE otherwise */
+servo_seq_part_t drive_part_of(const char *why);
+/** @brief What ARM switches on: PORT PWM on a PROG PORT, PROG 5V on the
+ *         carrier's port, the PD mini where it feeds the servo and the
+ *         rail does not read fed from elsewhere.  @return the needs */
+servo_seq_need_t drive_seq_need(void);
+/** @brief A tap on card row @p i: its fix, or its reason in the alert
+ *         band.  @param i the row */
+void drive_ready_tap(int i);
+/** @brief The output card's controls laid out for the function shown:
+ *         SPEED, CENTRE, SWEEP and RELEASE where it has them. */
+void drive_layout(void);
+/** @brief A DOWN on ARM or DISARM on LIVE, SWEEP or RUDDER: DISARM and
+ *         every output off, a stop of the steps, a refusal named, or the
+ *         hold begun.  @param evt the DOWN  @return false on any other
+ *         screen */
+bool drive_arm_press(const touch_event_t *evt);
+/** @brief ARM's hold fired on LIVE, SWEEP or RUDDER: the steps where a
+ *         part reads off, else ARM.  @return false on any other screen */
+bool drive_arm_fired(void);
+/** @brief The frame: a hold dropped as a row turns red, the steps.
+ *  @param dt_s the frame */
+void drive_frame(float dt_s);
+/** @brief Whether ARM's hold switches a part on first.  @return true
+ *         while a part ARM needs reads off */
+bool drive_switches(void);
+/** @brief The output card on LIVE, SWEEP and RUDDER: the READY rows,
+ *         SPEED, the type pill, the buttons and the rail line.
+ *  @param c the canvas */
+void drive_render_card(gfx_canvas_t *c);
+
+/** @brief ARM, DISARM or the step under way in the footer's middle slot
+ *         on LIVE, SWEEP and RUDDER.  @param c the canvas */
+void drive_draw_arm(gfx_canvas_t *c);
+/** @brief SPEED's track on LIVE and SWEEP.  @return it; empty elsewhere */
+gfx_rect_t drive_speed_rect(void);
+/** @brief The type pill under the rows.  @return its rectangle */
+gfx_rect_t drive_tag_rect(void);
+/** @brief The profile in force, its frame rate and pulse range, in the
+ *         danger colour for one that can destroy a servo not made for it
+ *         (servo_screen_draw.c).  @param c the canvas @param r the pill */
+void svs_draw_tag(gfx_canvas_t *c, gfx_rect_t r);
+
+/** @brief Every output the bench drives off and the bench to SAFE:
+ *         DISARM, the carrier's PROG 5V, the PD mini's output. */
+void svs_all_off(void);
 
 /* --- servo_prog_ready.c: KST's and HITEC's rows and WRITE ------------------ */
 

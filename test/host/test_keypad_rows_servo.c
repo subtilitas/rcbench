@@ -2,13 +2,13 @@
  * @file test_keypad_rows_servo.c
  * @brief SERVO's keypads held to keypad_rows_rig.h's four rules: the
  *        hub list's pulse widths, TRIM, TRAVEL and a CUSTOM frame rate,
- *        the AUTOMATIC TEST's numbers, its brown-out walk's LOWEST VOLTAGE
- *        and STEP, RUDDER's LENGTH, RUDDER AUTO's box, and the SET line's
- *        two set points.  SWEEP's numbers are rows of its list, whose
- *        keypad is ui_setlist.h's.  A tap opens the keypad with the row's
- *        title, unit, range and digits; a value past the range is refused
- *        and the row keeps its value; CANCEL keeps it; OK sets the value
- *        typed.
+ *        RUDDER's LENGTH and RUDDER AUTO's box.  The supply's set points
+ *        are SUPPLY's keypads (test_keypad_rows_supply).  SWEEP's and
+ *        TEST's numbers are rows of their lists, whose keypad is
+ *        ui_setlist.h's (test_servo_test_list).  A tap opens the keypad
+ *        with the row's title, unit, range and digits; a value past the
+ *        range is refused and the row keeps its value; CANCEL keeps it; OK
+ *        sets the value typed.
  *
  * STANDARD PWM at its defaults: 1000, 1500 and 2000us at 50Hz.  The
  * pulse rows' ranges follow from those (servo_settings_panel.c): an end
@@ -23,18 +23,12 @@
 #include "servo_rudder_auto_int.h"
 #include "ui_text.h"
 
-/** @brief The caps the supply reports: 4.00 to 8.40V, 0.50 to 3.00A. */
-static const supply_caps_t k_caps = { 4.0f, 8.4f, 0.02f, 0.5f, 3.0f, 0.05f };
-
 /** @brief Where a row's keypad is opened from. */
 typedef enum {
     AT_OUTPUT = 0,  /**< the hub's list; y is the row */
     AT_RATE,        /**< its FRAME RATE > CUSTOM    */
-    AT_AUTO,        /**< TEST > SETTINGS            */
-    AT_BROWNOUT,    /**< ... > its BROWN-OUT row's page */
     AT_RUDDER,      /**< RUDDER's LENGTH row        */
     AT_RAUTO,       /**< RUDDER AUTO's box          */
-    AT_SET,         /**< LIVE's SET line            */
 } at_t;
 
 /** @brief A row: where, and the tap on its value. */
@@ -54,37 +48,24 @@ static const where_t k_where[] = {
     { AT_OUTPUT, 0, HL_TRIM },             /* TRIM          */
     { AT_OUTPUT, 0, HL_TRAVEL },           /* TRAVEL        */
     { AT_RATE,   CH_X(CUSTOM), CH_Y(CUSTOM) },  /* FRAME RATE */
-    { AT_AUTO,   LROW_X(2), LROW_Y(1) },   /* LENGTH        */
-    { AT_AUTO,   LROW_X(2), LROW_Y(2) },   /* MOVES         */
-    { AT_AUTO,   LROW_X(2), LROW_Y(3) },   /* DWELL         */
-    { AT_AUTO,   LROW_X(2), LROW_Y(4) },   /* SETTLE        */
-    { AT_AUTO,   LROW_X(1), LROW_Y(0) },   /* STALL AT      */
-    { AT_AUTO,   LROW_X(1), LROW_Y(1) },   /* IDLE CURRENT  */
-    { AT_AUTO,   LROW_X(1), LROW_Y(2) },   /* HOLDING CURRENT  */
-    { AT_AUTO,   LROW_X(1), LROW_Y(3) },   /* TRAVEL TIME   */
-    { AT_BROWNOUT, LROW_X(0), LROW_Y(1) }, /* LOWEST VOLTAGE */
-    { AT_BROWNOUT, LROW_X(0), LROW_Y(2) }, /* STEP          */
     { AT_RUDDER, SV_RUD_LEN_X, SV_RUD_LEN_Y }, /* LENGTH     */
     { AT_RAUTO,  SV_RA_L_X, SV_RA_ROW_Y(0) },  /* TARGET 1000us */
     { AT_RAUTO,  SV_RA_R_X, SV_RA_ROW_Y(0) },  /* TARGET 2000us */
     { AT_RAUTO,  SV_RA_L_X, SV_RA_ROW_Y(1) },  /* MARGIN     */
     { AT_RAUTO,  SV_RA_R_X, SV_RA_ROW_Y(1) },  /* TOLERANCE  */
-    { AT_SET,    SUP_V_X, SUP_ROW_Y },     /* the voltage   */
-    { AT_SET,    SUP_I_X, SUP_ROW_Y },     /* the current   */
 };
 #define ROW_COUNT ((int)(sizeof(k_where) / sizeof(k_where[0])))
 
-/** @brief The settings the rows of the AUTOMATIC TEST, RUDDER and RUDDER
- *         AUTO set, in the order of k_where from LENGTH on. */
+/** @brief The settings the rows of RUDDER and RUDDER AUTO set, in the
+ *         order of k_where from LENGTH on. */
 static const setting_id_t k_ids[] = {
-    SET_SERVO_LEN_S,
-    SET_SERVO_LEN_MOVES, SET_SERVO_DWELL_MS, SET_SERVO_SETTLE_MS,
-    SET_SERVO_STALL_A, SET_SERVO_IDLE_MAX, SET_SERVO_HOLD_MAX,
-    SET_SERVO_TRAVEL_MAX_MS, SET_SERVO_BO_FLOOR, SET_SERVO_BO_STEP,
     SET_RUDDER_LEN_MM, SET_RUDDER_DEFL_LO, SET_RUDDER_DEFL_HI,
     SET_RUDDER_MARGIN, SET_RUDDER_TOL,
 };
 #define FIRST_SETTING 6
+_Static_assert(FIRST_SETTING + (int)(sizeof(k_ids) / sizeof(k_ids[0]))
+                   == (int)(sizeof(k_where) / sizeof(k_where[0])),
+               "the rows from LENGTH on are k_ids's settings");
 
 /** @brief The keypad SERVO holds. */
 static const ui_keypad_t *kp(void) { return servo_screen_keypad(); }
@@ -115,25 +96,11 @@ static void open_row(int row)
         open_settings();
         sl_tap(HL_RATE);                   /* FRAME RATE: the list */
         break;
-    case AT_AUTO:
-        if (servo_screen_run_settings() != 1) {
-            open_run_settings(0);
-        }
-        break;
-    case AT_BROWNOUT:
-        if (servo_screen_run_settings() != 3) {
-            open_run_settings(0);
-            tap(LROW_X(1), LROW_Y(4));     /* BROWN-OUT: its page */
-        }
-        break;
     case AT_RUDDER:
         go(SERVO_FN_RUDDER);
         break;
     case AT_RAUTO:
         go(SERVO_FN_RAUTO);
-        break;
-    case AT_SET:
-        close_settings();
         break;
     }
     tap(w->x, w->y);
@@ -145,8 +112,7 @@ static const kpr_screen_t k_servo = { kp, kkey, open_row };
 /*
  * Every keypad on SERVO opens with its title, unit, range and digits,
  * refuses a value past the range, keeps the row on CANCEL and sets the
- * value OK hands it.  A set point stays at or under 6.00V, a standard
- * servo's rating, where the HV warning does not stand in for OK.
+ * value OK hands it.
  */
 TEST_CASE(every_servo_keypad_takes_ok_and_refuses_and_cancels)
 {
@@ -157,41 +123,29 @@ TEST_CASE(every_servo_keypad_takes_ok_and_refuses_and_cancels)
         { "trim", TR(SV_ROW_TRIM), "us", -200.0f, 200.0f, 0, 35.0f },
         { "travel", TR(SV_ROW_TRAVEL), "deg", 10.0f, 90.0f, 0, 60.0f },
         { "rate", TR(SV_ROW_RATE), "Hz", 50.0f, 333.0f, 0, 60.0f },
-        { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 },
-        { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 },
-        { "set V", TR(SUP_VOLTAGE), "V", 4.0f, 8.4f, 2, 5.5f },
-        { "set I", TR(SUP_CURRENT_LIMIT), "A", 0.5f, 3.0f, 2, 1.25f },
+        { 0 }, { 0 }, { 0 }, { 0 }, { 0 },
     };
-    static const ui_text_id_t k_labels[] = {
-        TX_SV_ROW_LEN_S, TX_SV_ROW_MOVES,
-        TX_SV_ROW_DWELL, TX_SV_ROW_SETTLE, TX_SV_ROW_STALL, TX_SV_ROW_IDLE,
-        TX_SV_ROW_HOLD, TX_SV_ROW_TRAVEL_TIME, TX_SV_ROW_BO_FLOOR,
-        TX_SV_ROW_BO_STEP, TX_RUD_LENGTH,
-    };
+    static const ui_text_id_t k_labels[] = { TX_RUD_LENGTH };
     const int n_lbl = (int)(sizeof(k_labels) / sizeof(k_labels[0]));
     for (int r = 0; r < ROW_COUNT; ++r) {
         fresh();
-        supply_screen_set_caps(&k_caps);
+        /* From LENGTH on, the last rows of k_where, each a setting of
+         * k_ids; RUDDER AUTO's rows are titled with the setting's own
+         * label. */
         const int i = r - FIRST_SETTING;
-        if (i >= 0 && i < (int)(sizeof(k_ids) / sizeof(k_ids[0]))) {
-            /* AUTO's rows are titled with the setting's own label. */
+        if (i >= 0) {
             rows[r] = kpr_setting(k_ids[i], i < n_lbl
                                   ? ui_tr(k_labels[i])
                                   : ui_setting_label(k_ids[i]));
         }
         kpr_row(&k_servo, r, &rows[r]);
     }
-    /* What OK set reached the settings and the supply. */
+    /* What OK set reached the settings. */
     fresh();
-    supply_screen_set_caps(&k_caps);
     open_row(FIRST_SETTING);
     kpr_type(&k_servo, "125");
     kkey(UI_KEY_OK);
-    CHECK_EQ(settings_get_int(SET_SERVO_LEN_S), 125);
-    open_row(ROW_COUNT - 2);
-    kpr_type(&k_servo, "5.5");
-    kkey(UI_KEY_OK);
-    CHECK_NEAR(supply_screen_set_v(), 5.5f, 1e-4f);
+    CHECK_NEAR(settings_get(SET_RUDDER_LEN_MM), 125.0f, 1e-4f);
     open_row(5);
     kpr_type(&k_servo, "60");
     kkey(UI_KEY_OK);
@@ -200,7 +154,7 @@ TEST_CASE(every_servo_keypad_takes_ok_and_refuses_and_cancels)
 
 /*
  * Every number of the schema's servo category has a keypad: on SERVO's
- * pages above, on SWEEP's list (ui_setlist.h's keypad), or among the
+ * pages above, on TEST's list (ui_setlist.h's keypad), or among the
  * programmer's options (voltage, current, PWM wait: test_keypad_rows_kst,
  * and LIMIT RUN's page).
  */
@@ -209,6 +163,11 @@ TEST_CASE(every_servo_number_has_a_keypad_row)
     static const setting_id_t k_prog[] = {
         SET_SERVO_PROG_V, SET_SERVO_PROG_I, SET_SERVO_PROG_WAIT,
         SET_SERVO_TEST_HZ, SET_SERVO_TEST_RANGE,
+        /* TEST's list. */
+        SET_SERVO_LEN_S, SET_SERVO_LEN_MOVES, SET_SERVO_DWELL_MS,
+        SET_SERVO_SETTLE_MS, SET_SERVO_STALL_A, SET_SERVO_IDLE_MAX,
+        SET_SERVO_HOLD_MAX, SET_SERVO_TRAVEL_MAX_MS, SET_SERVO_BO_FLOOR,
+        SET_SERVO_BO_STEP,
     };
     setting_id_t cat[64];
     const int n = settings_in_category(SET_CAT_SERVO, cat, 64);

@@ -45,7 +45,6 @@ static const ui_screen_t *scr;
 #define STEP_DN_X  ST_STEP_DN_X
 #define STEP_UP_X  ST_STEP_UP_X
 #define STEP_CY(i) ST_STEP_CY(i)
-#define READ_X     ST_READ_X
 #define WRITE_X    ST_WRITE_X
 #define BTN_CY     ST_BTN_CY
 #define PAGE_UP_X  ST_PAGE_UP_X

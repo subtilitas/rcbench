@@ -8,13 +8,15 @@
  * If the layout moves these move with it.  Taken by the screens' suites
  * and render_screen.c.
  *
+ *   - every card ends on the screen's footer, body y 436; the footer
+ *     (ui_footer.h) names the screen and holds nothing else;
  *   - RECEIVER: CHANNELS | RAW DATA from x 11, 150px each, 4px apart,
  *     y 8 to 56; the lanes' card from y 64, x 8 to 748; eight lanes of
- *     52px from y 72 in two columns 362px apart from x 16; the state
- *     card x 756 to 1016, its counter rows 32px from y 182, CH17 and
- *     CH18 44px tall from y 384, 8px apart;
+ *     44px from y 72 in two columns 362px apart from x 16; the state
+ *     card x 756 to 1016, its counter rows 26px from y 174, CH17 and
+ *     CH18 36px tall from y 346, 6px apart;
  *   - BATTERY: the plot card x 8 to 648, the right card x 656 to 1016,
- *     the cells row's voltages from y 440;
+ *     the cells row's voltages from y 392;
  *   - BALANCE: BALANCE | TEST RIG | AIRCRAFT from x 11, 150px each, 4px
  *     apart, y 8 to 56; both cards from y 64, the right one x 656 to
  *     1016 with its column x 670 to 1002; PROPELLER and EDF 162 x 48px
@@ -27,9 +29,17 @@
 
 #include "ui_layout.h"
 
+/** @brief The cards' foot, on the screen's footer: body y 436. */
+#define IN_CARD_B          (UI_BODY_H - UI_ALERT_H - 4 - 48 - 8)
 /** @brief The lowest row a control or a line of text reaches on these
- *         screens: 4px above the alert band, body y 492. */
-#define IN_TEXT_FLOOR      (UI_ALERT_Y - UI_BAND_H - 4)
+ *         screens: 8px above the cards' foot, body y 428. */
+#define IN_TEXT_FLOOR      (IN_CARD_B - 8)
+/** @brief The lowest row the keypad reaches: 4px above the alert band,
+ *         body y 492. */
+#define IN_KEYS_FLOOR      (UI_ALERT_Y - UI_BAND_H - 4)
+/** @brief The footer's row: its top and its slots' left edges. */
+#define IN_FOOT_Y          (UI_BODY_H - UI_ALERT_H - 4 - 48)
+#define IN_FOOT_X(i)       (10 + (i) * 338)
 
 /** @brief The tabs' middle row, both screens. */
 #define IN_TAB_Y           32
@@ -43,19 +53,19 @@
 
 #define AN_CARD_Y          64            /**< The lanes' card's top. */
 #define AN_LANE_TOP        72            /**< The first lane's top. */
-#define AN_LANE_H          52            /**< A lane's height, px. */
+#define AN_LANE_H          44            /**< A lane's height, px. */
 #define AN_COL_X(i)        (16 + (i) * 362)  /**< Lane column @p i. */
 #define AN_LANE_W          350           /**< A lane's width, px. */
 #define AN_RCARD_X         756           /**< The state card's left edge. */
 #define AN_RCARD_W         260           /**< Its width, px. */
-#define AN_CH17_Y          384           /**< CH17's top. */
-#define AN_CHN_H           44            /**< CH17's and CH18's height. */
+#define AN_CH17_Y          346           /**< CH17's top. */
+#define AN_CHN_H           36            /**< CH17's and CH18's height. */
 
 #define BT_LCARD_W         640           /**< The plot card's width, px. */
 #define BT_RCARD_X         656           /**< The right card's left edge. */
 #define BT_PLOT_X          26            /**< The plot's left edge. */
 #define BT_PLOT_W          604           /**< Its width, px. */
-#define BT_VOLT_Y          440           /**< The voltages' row. */
+#define BT_VOLT_Y          392           /**< The voltages' row. */
 
 #define BL_CARD_Y          64            /**< Both cards' top. */
 #define BL_RCARD_X         656           /**< The right card's left edge. */
@@ -76,5 +86,5 @@
 #define BL_STEP_W          56            /**< A step key's width, px. */
 #define BL_KP_Y            64            /**< The keypad's top. */
 #define BL_KP_H            428           /**< Its height, px. */
-#define BL_MARK_Y          378           /**< The SIMULATED pill's top. */
-#define BL_NOTE_RULE_Y     406           /**< The rule over the note. */
+#define BL_MARK_Y          338           /**< The SIMULATED pill's top. */
+#define BL_NOTE_RULE_Y     360           /**< The rule over the note. */

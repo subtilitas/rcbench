@@ -13,11 +13,21 @@ UPDATES checks GitHub for newer panel firmware and offers to install it. Open it
 | Control | What it does |
 |---|---|
 | CHECK FOR UPDATES | asks GitHub once; the same key reads CANCEL while the check runs |
-| REMINDER AT START: ON / OFF | switches the check at start and its reminder; kept with SAVE on [Setup](setup.md#keeping-the-values); on by default |
-| RELEASES: STABLE / TESTING | sets which releases a check reads, see [The check](#the-check); kept with SAVE on [Setup](setup.md#keeping-the-values); STABLE by default; a switch hides the last result, and a release found on the other setting is not offered |
-| HOLD 2s TO DOWNLOAD & INSTALL | shown once a check found a newer release; downloads, checks and installs it |
+| HOLD 2s TO DOWNLOAD & INSTALL | in the footer's middle once a check found a newer release; downloads, checks and installs it |
+| SETTINGS | in the footer's right; opens the list of Reminder at start and Releases, see [Settings](#settings); grey while a check or a download runs |
 | HOLD 2s TO UPDATE THE IOMCU | starts the [IOmcu update](coproc_update.md) from the image this panel carries, also after its question was declined |
 | HOLD 2s TO UPDATE THE C6 RADIO | sends the C6 radio's image this panel carries to the board's ESP32-C6, see [The C6 radio](#the-c6-radio) |
+
+## Settings
+
+![UPDATES' SETTINGS list](view:updates-settings)
+
+| Setting | Values | What it does |
+|---|---|---|
+| Reminder at start | OFF, ON; ON by default | switches the check at start and its reminder |
+| Releases | STABLE, TESTING; STABLE by default | sets which releases a check reads, see [The check](#the-check); a change hides the last result, and a release found on the other setting is not offered |
+
+A change applies at once. SAVE in the list's strip keeps it, as on [Setup](setup.md#keeping-the-values). The home tag closes the list; with a change not saved it asks first.
 
 ## What the check needs
 
@@ -111,7 +121,7 @@ CANCEL ends the download. STOP, ARMED, supply output, an open log run or a board
 
 ![Another build on the IOmcu](view:updates-coproc)
 
-Below the buttons, UPDATES shows the running IOmcu version (`Running: 0.21.2`) and bundled image version (`Included: 0.22.0`). HOLD 2s TO UPDATE THE IOMCU starts the same update and progress screen as the prompt at link-up. The screen returns to UPDATES when the update ends or the START request expires.
+Below CHECK FOR UPDATES, UPDATES shows the running IOmcu version (`Running: 0.21.2`) and bundled image version (`Included: 0.22.0`). HOLD 2s TO UPDATE THE IOMCU starts the same update and progress screen as the prompt at link-up. The screen returns to UPDATES when the update ends or the START request expires.
 
 The hold has the same requirements as the prompt: an IOmcu running a different build, a SAFE bench, supply output off, Wi-Fi fully off and no panel installation. Otherwise it is grey. The line above it shows the first applicable reason:
 

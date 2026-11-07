@@ -1,7 +1,8 @@
 /**
  * @file
- * @brief The IMU screen's drawing (imu_screen.h): the controls and the
- *        card, or the found list.  imu_screen_int.h has the geometry.
+ * @brief The IMU screen's drawing (imu_screen.h): the controls, the card
+ *        and the footer, or the found list.  imu_screen_int.h has the
+ *        geometry.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -12,6 +13,7 @@
 #include "ui_text.h"
 #include "imu_screen_int.h"
 #include "settings.h"
+#include "ui_footer.h"
 #include "ui_theme.h"
 
 /** @brief The controls and the left column's lines: 10 x 20. */
@@ -54,13 +56,18 @@ static void button(gfx_canvas_t *c, int row, const char *label,
 }
 
 /**
- * @brief The calibration's hold: the fill follows the hold, the flash its
- *        end.
- * @return The fill.
+ * @brief The footer: IMU, the calibration's hold in the middle slot, whose
+ *        fill follows the hold and whose flash its end, and SETTINGS.
+ * @param c The canvas.
  */
-static gfx_color_t hold_fill(void)
+static void draw_footer(gfx_canvas_t *c)
 {
-    return ui_hold_button_fill(UI_PANEL_HI, UI_OK, &ims.hold);
+    ui_footer_name(c, ui_footer_rect(UI_FOOTER_NAME), "IMU", NULL, false);
+    ui_hold_button(c, imu_screen_hold_rect(), TR(IMU_CAL_HOLD), UI_PANEL_HI,
+                   UI_OK, &ims.hold, false, ims_row_enabled(IMS_ROW_CAL),
+                   IMS_FONT_LABEL);
+    ui_footer_settings(c, ims.have_press && ims.hit == IMS_ROW_SETTINGS,
+                       ims_row_enabled(IMS_ROW_SETTINGS));
 }
 
 /**
@@ -115,6 +122,11 @@ static void card_line(int i, card_line_t *out)
     out->box = gfx_rect_make(IMS_RX + IMS_RPAD, y, IMS_RW - 2 * IMS_RPAD,
                              gfx_text_height(out->face, 1));
 }
+
+_Static_assert(IMS_RY + IMS_RPAD + 4 * IMS_PITCH + 8 + 12 + 3 * IMS_APITCH
+                   + 12 + IMS_PITCH + 24 + IMS_RPAD
+               <= IMS_RY + IMS_RH,
+               "the battery's line ends inside the card");
 
 gfx_rect_t imu_screen_line_rect(int i)
 {
@@ -227,13 +239,9 @@ static void draw_all(gfx_canvas_t *c)
         draw_list(c);
     } else {
         button(c, IMS_ROW_SCAN, TR(IMU_SCAN), UI_ACCENT);
-        const bool cal_on = ims_row_enabled(IMS_ROW_CAL);
-        ui_button_font(c, imu_screen_hold_rect(), TR(IMU_CAL_HOLD),
-                       cal_on ? hold_fill() : UI_PANEL_HI, false, cal_on,
-                       IMS_FONT_LABEL);
         button(c, IMS_ROW_ZERO, TR(IMU_ZERO), UI_PANEL_HI);
         button(c, IMS_ROW_UNZERO, TR(IMU_UNZERO), UI_PANEL_HI);
-        button(c, IMS_ROW_SETTINGS, TR(IMU_SETTINGS), UI_PANEL_HI);
+        draw_footer(c);
         left_line(c, IMS_L_CAL, IMS_LINE_Y);
         left_line(c, IMS_L_ERR, IMS_ERR_Y);
         draw_card(c);

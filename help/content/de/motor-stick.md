@@ -49,17 +49,19 @@ SUCHE filtert die angezeigte Listenebene. Die Tastatur erscheint rechts; jede Ei
 
 ![Zwei Werte gewählt: START 2](view:motor-stick-items)
 
-Die Profilseite listet die Menüpunkte. Jeder beginnt mit BEHALTEN und bleibt damit unverändert. Wähle mit `-` und `+` einen Wert; die Tasten stoppen an beiden Enden der Liste. AKTION, KEINE EINSTELLUNG markiert Aktionen wie das Zurücksetzen. KEINE AUSWAHL steht bei einem Punkt mit nur einem Wert. Jede Seite zeigt 6 Punkte.
+Die Profilseite listet die Menüpunkte. Jeder beginnt mit BEHALTEN und bleibt damit unverändert. Wähle mit `-` und `+` einen Wert; die Tasten stoppen an beiden Enden der Liste. AKTION, KEINE EINSTELLUNG markiert Aktionen wie das Zurücksetzen. KEINE AUSWAHL steht bei einem Punkt mit nur einem Wert. Jede Seite zeigt 5 Punkte.
 
 Die rechte Spalte enthält ÄNDERN, den angezeigten Bereich und die Blättertasten `^` und `v`. Dazu kommen gegebenenfalls MANUELLER EINGRIFF NÖTIG, Menüart, Netzteilspannung und Strom für den Lauf, Einstiegszeit sowie Werte und Vorgabe des gewählten Punkts. START zeigt die Anzahl gewählter Werte.
 
-TIMING öffnet die Pieptonzeiten und die Netzteileinstellungen, ebenso angeordnet:
+Die Fußleiste lautet `[ESC STICK] [START n] [OPTIONEN]`; während eines Laufs steht in der Mitte ABBRECHEN, danach OK. Ein Hinweis über der Fußleiste sagt, warum START nicht starten kann, oder dass das Profil nicht geprüft ist.
 
-![Die Timing-Einstellungen](view:motor-stick-timing)
+OPTIONEN öffnet die Liste mit den Netzteileinstellungen und den Pieptonzeiten. Es nimmt einen Druck bei SAFE und ohne laufenden Lauf an; scharf schalten unter der offenen Liste schließt sie.
 
-Keine der Zeiten ist gemessen. SCHLIESSEN fordert das Speichern an. Es wartet, bis der Prüfstand SAFE und der Netzteilausgang ausgeschaltet ist.
+![Die Optionsliste](view:motor-stick-timing)
 
-Ändere eine Einstellung mit `-` und `+` oder tippe auf ihren Wert, um das Tastenfeld zu öffnen. Es zeigt Name, Bereich und Einheit; die Zahl der Nachkommastellen entspricht der Schrittweite. OK rundet auf den nächsten Schritt: Aus 1,23A werden 1,25A. Bei Werten außerhalb des Bereichs bleibt das Tastenfeld offen und hebt den Bereich in der Warnfarbe hervor. ABBRECHEN oder das Home-Feld verwirft die Eingabe; TIMING bleibt geöffnet.
+Keine der Zeiten ist gemessen. Spannung 0,0V nimmt die Spannung aus der Zellenzahl des Profils. Eine Änderung gilt sofort; SPEICHERN in der Leiste der Liste behält sie, und ESC STICK ZURÜCKSETZEN setzt die 14 Einstellungen auf ihre Vorgaben.
+
+Ändere eine Einstellung mit `-` und `+` oder tippe auf ihren Wert, um das Tastenfeld zu öffnen. Es zeigt Name, Bereich und Einheit; die Zahl der Nachkommastellen entspricht der Schrittweite. OK rundet auf den nächsten Schritt: Aus 1,23A werden 1,25A. Bei Werten außerhalb des Bereichs bleibt das Tastenfeld offen und hebt den Bereich in der Warnfarbe hervor. ABBRECHEN oder das Home-Feld verwirft die Eingabe; die Liste bleibt offen. Das Home-Feld schließt die Liste, bei ungespeicherter Änderung mit Rückfrage.
 
 ![Das Tastenfeld von Piepton min, 250 getippt](view:motor-stick-timing-keypad)
 

@@ -1920,6 +1920,11 @@ UI_TEXT(FOOT_PRESS_HELD, 60,
 UI_TEXT(FOOT_SETTINGS_ON, 94,
     "SETTINGS open with the output off only. Switch it off first.",
     "OPTIONEN nur bei Ausgang aus. Schalte ihn zuerst aus.")
+/* The alert band on a tap on UPDATES' SETTINGS while a check or a
+ * download runs, or a finger holds the download. */
+UI_TEXT(FOOT_SETTINGS_BUSY, 94,
+    "SETTINGS open with no check or download running.",
+    "OPTIONEN nur ohne laufende Suche oder Download.")
 /* The settings list's screen guide (ui_setlist.h). */
 UI_TEXT(HG_SL_TITLE_ROWS, 0,
     "SETTINGS: ROWS",
@@ -1933,7 +1938,8 @@ UI_TEXT(HG_SL_HEAD, 0,
 UI_TEXT(HG_SL_RESET, 0,
     "Sets this list's values to their defaults and no others. SAVE keeps them.",
     "Setzt die Werte dieser Liste auf die Vorgaben, keine anderen. SPEICHERN behält sie.")
-UI_TEXT(SUP_SETTINGS, 0,
+/* A workbench strip tab's label (ui_workbench.c), 112px. */
+UI_TEXT(SUP_SETTINGS, 11,
     "SETTINGS",
     "OPTIONEN")
 UI_TEXT(SUP_MODE, 0,
@@ -4283,18 +4289,17 @@ UI_TEXT(SP_TONES_2, 0,
 UI_TEXT(SP_SAFE_NOW, 0,
     "Throttle MIN, supply off, bench SAFE.",
     "Gas auf MIN, Netzteil aus, Prüfstand auf SAFE.")
-UI_TEXT(SP_FROM_PROFILE, 27,
-    "FROM PROFILE",
-    "AUS PROFIL")
+/* ESC STICK's SETTINGS list: the heading over the supply's two rows. */
+UI_TEXT(SP_SET_SUPPLY, 0,
+    "SUPPLY",
+    "NETZTEIL")
 UI_TEXT(SP_TIMING_TITLE, 0,
     "TIMING AND DETECTION",
     "TIMING UND ERKENNUNG")
+/* Beside TIMING AND DETECTION on ESC STICK's SETTINGS list. */
 UI_TEXT(SP_TIMING_NOTE, 0,
-    "No ESC recordings are available. All values are defaults, not measurements.",
-    "Es gibt keine ESC-Aufzeichnungen. Alle Werte sind Vorgaben, keine Messwerte.")
-UI_TEXT(SP_DEFAULTS, 0,
-    "DEFAULTS",
-    "VORGABEN")
+    "Defaults, not measured: no ESC recordings exist.",
+    "Vorgaben, keine Messwerte: keine ESC-Aufzeichnungen.")
 UI_TEXT(SP_CHANGE, 0,
     "CHANGE",
     "ÄNDERN")
@@ -4662,63 +4667,15 @@ UI_TEXT(SV_ROW_TRAVEL, 0,
 UI_TEXT(SV_ROW_REVERSE, 0,
     "REVERSE",
     "UMKEHREN")
-UI_TEXT(SV_ROW_LEN_BY, 0,
-    "TEST LENGTH BY",
-    "TESTDAUER NACH")
-UI_TEXT(SV_ROW_LEN_S, 0,
-    "TEST TIME",
-    "TESTZEIT")
-UI_TEXT(SV_ROW_MOVES, 0,
-    "MOVEMENTS",
-    "BEWEGUNGEN")
-UI_TEXT(SV_ROW_DWELL, 0,
-    "DWELL TIME",
-    "HALTEZEIT")
-UI_TEXT(SV_ROW_SETTLE, 0,
-    "SETTLING TIME",
-    "EINSCHWINGZEIT")
-UI_TEXT(SV_ROW_STEP_48, 0,
-    "STEP 4.8V",
-    "STUFE 4.8V")
-UI_TEXT(SV_ROW_STEP_60, 0,
-    "STEP 6.0V",
-    "STUFE 6.0V")
 UI_TEXT(SV_ROW_HV, 0,
     "HV SERVO",
     "HV-SERVO")
-UI_TEXT(SV_ROW_STEP_74, 0,
-    "STEP 7.4V",
-    "STUFE 7.4V")
-UI_TEXT(SV_ROW_STEP_84, 0,
-    "STEP 8.4V",
-    "STUFE 8.4V")
 UI_TEXT(SV_ROW_BROWNOUT, 0,
     "BROWN-OUT",
     "BROWN-OUT")
-UI_TEXT(SV_ROW_STALL, 0,
-    "STALL AT",
-    "BLOCKIERT AB")
-UI_TEXT(SV_ROW_IDLE, 0,
-    "IDLE CURRENT",
-    "RUHESTROM")
-UI_TEXT(SV_ROW_HOLD, 0,
-    "HOLDING CURRENT",
-    "HALTESTROM")
-UI_TEXT(SV_ROW_TRAVEL_TIME, 0,
-    "TRAVEL TIME",
-    "STELLZEIT")
-UI_TEXT(SV_ROW_BO_FLOOR, 0,
-    "LOWEST VOLTAGE",
-    "NIEDRIGSTE SPANNUNG")
-UI_TEXT(SV_ROW_BO_STEP, 0,
-    "STEP",
-    "SCHRITT")
 UI_TEXT(SV_BO_NOTE_WALK, 0,
-    "From %.2fV down in %.2fV steps to %.2fV",
-    "Ab %.2fV abwärts in Schritten von %.2fV bis %.2fV")
-UI_TEXT(SV_BO_NOTE_COUNT, 0,
-    "%u voltages; it stops at the first without movement",
-    "%u Spannungen; Ende bei der ersten ohne Bewegung")
+    "From %.2fV down in %.2fV steps to %.2fV, %u voltages",
+    "Ab %.2fV abwärts in %.2fV-Schritten bis %.2fV, %u Spannungen")
 UI_TEXT(SV_ROW_NAME, 16,
     "NAME",
     "NAME")
@@ -4765,9 +4722,6 @@ UI_TEXT(SV_TRAVEL_HOLD, 0,
 UI_TEXT(SV_STOP_TEST, 15,
     "STOP TEST",
     "TEST BEENDEN")
-UI_TEXT(SV_START_TEST, 0,
-    "START TEST",
-    "TEST STARTEN")
 UI_TEXT(SV_COMMANDED, 0,
     "COMMANDED",
     "SOLL-PULSBREITE")
@@ -4783,9 +4737,6 @@ UI_TEXT(SV_MODELLED, 0,
 UI_TEXT(SV_METER_MODEL, 13,
     "SIMULATION",
     "SIMULATION")
-UI_TEXT(SV_SET, 0,
-    "SET",
-    "SOLL")
 UI_TEXT(SV_SPEED, 0,
     "SPEED",
     "TEMPO")
@@ -4891,11 +4842,8 @@ UI_TEXT(SV_TAP_HV, 29,
 UI_TEXT(SV_HOLD_START, 29,
     "HOLD 2s TO START",
     "2s HALTEN ZUM STARTEN")
-/* The limit run on its card on TEST and in its box on the left card: a
- * line of the page holds 58 cells, a line of the box 31, its button 15. */
-UI_TEXT(SV_ROW_LIM_MODE, 0,
-    "LIMIT RUN",
-    "ENDLAGENLAUF")
+/* The limit run on its LIMIT RUN screen: a state line of the left card
+ * holds 58 cells, STOP RUN 15. */
 UI_TEXT(SV_LIM_SEARCH, 28,
     "SEARCH ONLY",
     "NUR SUCHE")
@@ -4911,9 +4859,6 @@ UI_TEXT(SV_LIM_PULSES_KEEP, 12,
 UI_TEXT(SV_LIM_PULSES_STD, 12,
     "1000-2000",
     "1000-2000")
-UI_TEXT(SV_LIM_START, 0,
-    "START LIMIT RUN",
-    "ENDLAGENLAUF STARTEN")
 UI_TEXT(SV_LIM_STOP, 15,
     "STOP RUN",
     "LAUF BEENDEN")
@@ -5144,9 +5089,6 @@ UI_TEXT(HG_SV_TITLE_SWEEP, 0,
 UI_TEXT(HG_SV_TITLE_CARD, 0,
     "SERVO: OUTPUT CARD",
     "SERVO: AUSGANGSKARTE")
-UI_TEXT(HG_SV_TITLE_DRIVE, 0,
-    "SERVO: WHAT IT DRIVES",
-    "SERVO: WAS ES ANSTEUERT")
 UI_TEXT(HG_SV_ANGLE_NAME, 0,
     "ANGLE",
     "WINKEL")
@@ -5175,14 +5117,8 @@ UI_TEXT(HG_SV_READ, 0,
     "COMMANDED: the pulse in us. MEASURED: the angle source's angle. CURRENT: the servo rail in A.",
     "SOLL-PULSBREITE: Puls in us. GEMESSEN: Winkel der Winkelquelle. STROM: Servoschiene in A.")
 UI_TEXT(HG_SV_START, 0,
-    "Hold 2s to run the automatic test at its supply voltages, while ARMED. The lines under it say why not.",
-    "Halte 2s für den automatischen Test bei seinen Spannungen, bei ARMED. Darunter steht, warum nicht.")
-UI_TEXT(HG_SV_RUN_SET, 0,
-    "The run's steps, timing and limits, one level down. The home tag goes back to the card.",
-    "Stufen, Zeiten und Grenzen des Laufs, eine Ebene tiefer. Das Home-Feld führt zurück zur Karte.")
-UI_TEXT(HG_SV_LIM, 0,
-    "Hold 2s to search the travel limits of the servo on PORT, while ARMED.",
-    "Halte 2s, um die Endlagen des Servos am PORT zu suchen, bei ARMED.")
+    "The steps, what the run does or why it cannot start, the last result and its file.",
+    "Die Stufen, was der Lauf tut oder warum er nicht startet, das letzte Ergebnis und seine Datei.")
 UI_TEXT(HG_SV_CAPS, 0,
     "SUPPLY's voltage and current caps, which the test's steps keep to. A tap opens SUPPLY.",
     "Spannungs- und Stromgrenze von SUPPLY, die die Teststufen einhalten. Tippen öffnet SUPPLY.")
@@ -5228,12 +5164,6 @@ UI_TEXT(HG_SV_TYPE, 0,
 UI_TEXT(HG_SV_PLOT, 0,
     "Voltage, current and power of the servo rail over the last 17.8s. The line above names the meter.",
     "Spannung, Strom und Leistung der Servoschiene der letzten 17.8s. Die Zeile darüber nennt das Messgerät.")
-UI_TEXT(HG_SV_P5, 114,
-    "The programming ports' own 5V at GPIO 21: hold PROG 5V ON 2s, tap PROG 5V OFF.",
-    "Die eigene 5V der Programmierports an GPIO 21: halte PROG 5V EIN 2s, tippe PROG 5V AUS.")
-UI_TEXT(HG_SV_SET, 0,
-    "SUPPLY's voltage and current limit; a tap opens the keypad. OUTPUT ON is a 2s hold, OUTPUT OFF a tap.",
-    "Spannung und Strombegrenzung von SUPPLY; Tippen öffnet das Tastenfeld. AUSGANG EIN: 2s halten, AUS: tippen.")
 UI_TEXT(HG_SV_SPEED, 0,
     "How fast the bench may move the output. Each command passes straight through at 100%.",
     "Wie schnell der Prüfstand den Ausgang bewegen darf. Jeder Befehl geht direkt durch bei 100%.")
@@ -5243,9 +5173,6 @@ UI_TEXT(HG_SV_TARGET, 0,
 UI_TEXT(HG_SV_BUTTONS, 0,
     "While ARMED: CENTRE to PULSE CENTRE plus TRIM, SWEEP runs the curve. RELEASE goes back to rest.",
     "Bei ARMED: ZENTRIEREN auf PULS MITTE plus TRIMMUNG, SWEEP fährt die Kurve. FREIGEBEN geht in Ruhe.")
-UI_TEXT(HG_SV_ARM, 0,
-    "Hold 2s to ARM. DISARM, STOP or leaving the screen switches to SAFE.",
-    "Halte 2s für ARM. DISARM, STOP oder Verlassen des Bildschirms schaltet auf SAFE.")
 UI_TEXT(HG_SV_SETTINGS, 0,
     "How this screen runs its function. Opens on a SAFE bench only.",
     "Wie dieser Bildschirm seine Funktion ausführt. Öffnet nur bei SAFE.")
@@ -5388,15 +5315,37 @@ UI_TEXT(SVL_PORT_ONLY, 60,
 UI_TEXT(SVL_KST_ONLY, 60,
     "KST and Chaservo servos only",
     "Nur KST- und Chaservo-Servos")
-UI_TEXT(SV_ROW_PROG_V, 0,
-    "PROG VOLTAGE",
-    "PROG-SPANNUNG")
-UI_TEXT(SV_ROW_PROG_I, 0,
-    "PROG CURRENT",
-    "PROG-STROM")
-UI_TEXT(SV_ROW_PROG_WAIT, 0,
-    "PROG WAIT",
-    "PROG-WARTEZEIT")
+/* TEST's list (servo_test_list.c): its headings and why a row takes no
+ * press; its READY card (servo_test_ready.c): the STEPS row's label and
+ * the PD MINI row's refusal beside a rail fed from elsewhere (58 cells,
+ * the card's line). */
+UI_TEXT(SVL_HV_ONLY, 60,
+    "With HV SERVO on only",
+    "Nur mit HV-SERVO EIN")
+UI_TEXT(SVL_BY_TIME, 60,
+    "With Length by TIME only",
+    "Nur bei Länge nach ZEIT")
+UI_TEXT(SVL_BY_MOVES, 60,
+    "With Length by MOVES only",
+    "Nur bei Länge nach BEWEGUNGEN")
+UI_TEXT(TST_H_STEPS, 0,
+    "VOLTAGE STEPS",
+    "SPANNUNGSSTUFEN")
+UI_TEXT(TST_H_LIMITS, 0,
+    "PASS/FAIL LIMITS",
+    "GRENZWERTE")
+UI_TEXT(TST_H_LENGTH, 0,
+    "LENGTH AND TIMING",
+    "DAUER UND ZEITEN")
+UI_TEXT(TST_STEPS, 13,
+    "STEPS",
+    "STUFEN")
+UI_TEXT(TST_RAIL_FED, 58,
+    "RAIL LIVE WITH THE PD MINI OFF: FED FROM ELSEWHERE",
+    "SCHIENE UNTER SPANNUNG BEI PD MINI AUS: FREMD GESPEIST")
+UI_TEXT(HG_SV_TEST_START, 0,
+    "Hold 2s: PORT PWM on a port, ARM, then the run. Past 6.0V a tap opens the HV warning. A tap stops it.",
+    "Halte 2s: PORT-PWM am Port, ARM, dann der Lauf. Über 6.0V öffnet Tippen die HV-Warnung. Tippen stoppt.")
 UI_TEXT(SV_KST_EXPERT_NOTE, 0,
     "ON after a 2s hold, OFF with a tap. ON shows LOCKED.",
     "EIN nach 2s Halten, AUS per Tippen. EIN zeigt LOCKED.")
@@ -5789,11 +5738,11 @@ UI_TEXT(HOLD_HINT_APPLY, 94,
     "Hold 2s to apply.",
     "Halte 2s, um zu übernehmen.")
 UI_TEXT(HOLD_HINT_TEST, 94,
-    "Hold 2s to start the test.",
-    "Halte 2s, um den Test zu starten.")
+    "Hold 2s to arm and start the test.",
+    "Halte 2s, um auf ARMED zu schalten und den Test zu starten.")
 UI_TEXT(HOLD_HINT_LIMIT_RUN, 94,
-    "Hold 2s to start the limit run.",
-    "Halte 2s, um den Endlagenlauf zu starten.")
+    "Hold 2s to switch the port and its supply on, ARM and start the limit run.",
+    "Halte 2s, um Port und Versorgung einzuschalten, ARM und den Endlagenlauf zu starten.")
 UI_TEXT(HOLD_HINT_ENABLE, 94,
     "Hold 2s to enable.",
     "Halte 2s, um freizugeben.")
@@ -7932,21 +7881,9 @@ UI_TEXT(UP_CLOSE, 0,
 UI_TEXT(UPD_CHECK, 0,
     "CHECK FOR UPDATES",
     "NACH UPDATES SUCHEN")
-UI_TEXT(UPD_REMIND_ON, 0,
-    "REMINDER AT START: ON",
-    "ERINNERUNG BEIM START: EIN")
-UI_TEXT(UPD_REMIND_OFF, 0,
-    "REMINDER AT START: OFF",
-    "ERINNERUNG BEIM START: AUS")
-UI_TEXT(UPD_CHAN_STABLE, 0,
-    "RELEASES: STABLE",
-    "RELEASES: STABLE")
-UI_TEXT(UPD_CHAN_TESTING, 0,
-    "RELEASES: TESTING",
-    "RELEASES: TESTING")
 UI_TEXT(UPD_HOLD_DL, 0,
     "HOLD 2s TO DOWNLOAD & INSTALL",
-    "2s HALTEN ZUM LADEN & INSTALLIEREN")
+    "2s HALTEN: LADEN & INSTALLIEREN")
 UI_TEXT(UPD_KEEP_NET, 0,
     "Save a network on WI-FI.",
     "Speichere ein Netzwerk unter WI-FI.")
@@ -10905,6 +10842,72 @@ UI_TEXT(SQ_NO_READBACK, 60,
 UI_TEXT(SQ_NOT_ARMED, 60,
     "NOT ARMED IN %ums",
     "NICHT ARMED IN %ums")
+/* LIMIT RUN's READY card and left card (servo_limit_ready.c,
+ * servo_limit_card.c): the rail row's label (13 cells), the two ends'
+ * names (27 cells of a 295px cell), the MODE row's help, the guide. */
+UI_TEXT(RDY_RAIL, 13,
+    "RAIL",
+    "SCHIENE")
+UI_TEXT(LR_LOW_END, 27,
+    "LOW END",
+    "UNTERES ENDE")
+UI_TEXT(LR_HIGH_END, 27,
+    "HIGH END",
+    "OBERES ENDE")
+UI_TEXT(SVL_MODE_HELP, 60,
+    "SEARCH + PROGRAM writes the ends found into the servo",
+    "SUCHEN + PROGRAMMIEREN schreibt die Endlagen ins Servo")
+UI_TEXT(HG_SV_LR_LINES_NAME, 0,
+    "STATE LINES",
+    "ZUSTANDSZEILEN")
+UI_TEXT(HG_SV_LR_ENDS, 0,
+    "The ends the last run found, in us. FREE: no stop before PULSE MIN or MAX.",
+    "Die Endlagen des letzten Laufs in us. FREI: kein Anschlag vor PULS MIN oder MAX.")
+UI_TEXT(HG_SV_LR_LINES, 0,
+    "The step under way, why the hold is refused, the last result and its report.",
+    "Der laufende Schritt, warum das Halten gesperrt ist, das letzte Ergebnis und sein Bericht.")
+/* LIVE's, SWEEP's and RUDDER's READY rows (servo_drive_ready.c): the
+ * states (20 cells), the band's lines (94 cells), ARM's hint when its hold
+ * switches the supply, and the rows' guide page. */
+UI_TEXT(RDY_ARM_ON, 0,
+    "ARM SWITCHES IT ON",
+    "ARM SCHALTET EIN")
+UI_TEXT(RDY_ARM_ON_WHY, 94,
+    "Hold ARM 2s: it goes on, then the bench switches to ARMED.",
+    "Halte ARM 2s: es geht an, dann schaltet der Prüfstand auf ARMED.")
+UI_TEXT(RDY_PWM_BY_ARM, 94,
+    "Hold ARM 2s: PORT PWM goes on, then the bench switches to ARMED.",
+    "Halte ARM 2s: PORT-PWM geht an, dann schaltet der Prüfstand auf ARMED.")
+UI_TEXT(RDY_ARM_HOLD, 0,
+    "HOLD 2s",
+    "2s HALTEN")
+UI_TEXT(RDY_EXTERNAL, 20,
+    "EXTERNAL",
+    "EXTERN")
+UI_TEXT(RDY_EXT_WHY, 94,
+    "No PD mini answers: the bench does not switch the servo's supply.",
+    "Kein PD mini antwortet: der Prüfstand schaltet die Servoversorgung nicht.")
+UI_TEXT(RDY_FED, 20,
+    "FED FROM ELSEWHERE",
+    "FREMD GESPEIST")
+UI_TEXT(RDY_FED_WHY, 94,
+    "The rail reads 3.0V or more with the PD mini off: ARM leaves it off.",
+    "Die Servoschiene hat 3.0V oder mehr bei PD mini aus: ARM lässt ihn aus.")
+UI_TEXT(HOLD_HINT_ARM_SUPPLY, 94,
+    "Hold 2s: the port and its supply go on, then ARM.",
+    "Halte 2s: Port und Versorgung gehen an, dann ARM.")
+UI_TEXT(HG_SV_TITLE_DRV_READY, 0,
+    "SERVO: READY AND ARM",
+    "SERVO: BEREIT UND ARM")
+UI_TEXT(HG_SV_DRV_READY, 0,
+    "One row per check. Green met, amber done by ARM or to check, red stops ARM; a tap fixes or says why.",
+    "Eine Zeile je Prüfung. Grün erfüllt, gelb macht ARM oder prüfen, rot sperrt ARM; Tippen behebt oder erklärt.")
+UI_TEXT(HG_SV_DRV_RAIL, 0,
+    "The servo rail's meter, its volts and amps now.",
+    "Das Messgerät der Servoschiene, seine Volt und Ampere jetzt.")
+UI_TEXT(HG_SV_DRV_ARM, 0,
+    "Hold 2s: PORT PWM and the supply on, then ARM. DISARM switches all off.",
+    "Halte 2s: PORT-PWM und Versorgung an, dann ARM. DISARM schaltet alles aus.")
 UI_SETTING_LABEL(SET_RUDDER_DEFL_LO,
     "AUTO target at 1000us",
     "AUTO-Soll bei 1000us")
@@ -11114,8 +11117,8 @@ UI_TEXT(IMU_CLOSE, 0,
     "CLOSE",
     "SCHLIESSEN")
 UI_TEXT(IMU_CAL_HOLD, 0,
-    "HOLD 2s: CALIBRATE ACCELEROMETER",
-    "2s HALTEN: BESCHLEUNIGUNG KALIBRIEREN")
+    "HOLD 2s: CALIBRATE",
+    "2s HALTEN: KALIBRIEREN")
 UI_TEXT(HOLD_HINT_IMU_CAL, 94,
     "Hold 2s to calibrate the accelerometer.",
     "Halte 2s, um den Beschleunigungssensor zu kalibrieren.")
@@ -11125,9 +11128,6 @@ UI_TEXT(IMU_ZERO, 0,
 UI_TEXT(IMU_UNZERO, 0,
     "CLEAR ZERO",
     "NULLPUNKT LÖSCHEN")
-UI_TEXT(IMU_SETTINGS, 0,
-    "IMU SETTINGS",
-    "IMU-OPTIONEN")
 UI_TEXT(IMU_CAL_STILL, 92,
     "KEEP IT STILL AND LEVEL FOR %us",
     "HALTE DEN SENSOR %us STILL UND WAAGERECHT")
@@ -11147,8 +11147,8 @@ UI_TEXT(IMU_NO_NAME, 0,
     "NO NAME",
     "OHNE NAMEN")
 UI_TEXT(IMU_OFF_LINE, 41,
-    "IMU OFF IN IMU SETTINGS",
-    "IMU AUS IN IMU-OPTIONEN")
+    "IMU OFF: SEE SETTINGS",
+    "IMU AUS: SIEHE OPTIONEN")
 UI_TEXT(IMU_RATE_AGE, 0,
     "RATE %.1fHz  AGE %ums",
     "RATE %.1fHz  ALTER %ums")
@@ -11197,7 +11197,7 @@ UI_TEXT(SV_LIM_SERVO_KST, 12,
 UI_TEXT(SV_LIM_SERVO_HITEC, 12,
     "HITEC",
     "HITEC")
-UI_TEXT(SV_LIM_PROG_NOTE_HITEC, 0,
+UI_TEXT(SV_LIM_PROG_NOTE_HITEC, 58,
     "REDUCES LEFT/RIGHT END ON A HITEC SERVO",
     "VERRINGERT ENDE LINKS/RECHTS BEI HITEC-SERVOS")
 UI_TEXT(SV_LIM_HITEC_RANGE, 58,

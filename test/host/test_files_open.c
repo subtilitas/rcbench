@@ -298,7 +298,7 @@ TEST_CASE(logs_own_list_holds_and_opens_the_same_reports)
     CHECK_STR_EQ(title, "FILES 1 TO 4 OF 4");
     for (int r = 0; r < n; ++r) {
         lv_tap(LV_ROW_CX, LV_ROW_CY(r));        /* select */
-        lv_tap(LV_OPEN_CX, LV_FOOT_CY);         /* OPEN */
+        lv_tap(LV_OPEN_CX, LV_BR_FOOT_CY);         /* OPEN */
         CHECK_STR_EQ(log_viewer_open_name(), want[r]);
         if (log_report_number(want[r]) < 0) {
             CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
@@ -320,14 +320,14 @@ TEST_CASE(logs_own_list_holds_and_opens_the_same_reports)
         CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
         CHECK_EQ(log_viewer_tab(), LOG_TAB_USER);
         /* LOGS chose the report again: OPEN opens it, not the newest. */
-        lv_tap(LV_OPEN_CX, LV_FOOT_CY);
+        lv_tap(LV_OPEN_CX, LV_BR_FOOT_CY);
         settle();
         CHECK_STR_EQ(text_view_name(), want[r]);
         ui_router_goto(SCREEN_LOGS);
     }
     /* Row n is past the list: nothing else is there. */
     lv_tap(LV_ROW_CX, LV_ROW_CY(n));
-    lv_tap(LV_OPEN_CX, LV_FOOT_CY);
+    lv_tap(LV_OPEN_CX, LV_BR_FOOT_CY);
     CHECK_STR_EQ(log_viewer_open_name(), want[n - 1]);
     log_viewer_set_io(NULL);
 }
@@ -374,7 +374,7 @@ TEST_CASE(a_report_finished_off_screen_opens_from_logs)
     ui_router_goto(SCREEN_LOGS);
     log_viewer_set_tab(LOG_TAB_USER);
     /* The newest, LIMIT013.TXT, is chosen on the way in. */
-    lv_tap(LV_OPEN_CX, LV_FOOT_CY);
+    lv_tap(LV_OPEN_CX, LV_BR_FOOT_CY);
     CHECK_STR_EQ(log_viewer_open_name(), "LIMIT013.TXT");
     settle();
     CHECK_EQ(ui_router_current(), SCREEN_FILES);

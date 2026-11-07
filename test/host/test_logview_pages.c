@@ -644,7 +644,7 @@ TEST_CASE(deleting_the_last_pages_only_file_shows_the_page_before)
 TEST_CASE(after_delete_nothing_is_selected_and_the_scroll_stays)
 {
     /*
-     * Page 2 of 150 runs, scrolled to its bottom: rows 60 to 55 show.  The
+     * Page 2 of 150 runs, scrolled to its bottom: rows 59 to 55 show.  The
      * page's newest run, BENCH102, is off screen above them.  DELETE of
      * BENCH055 leaves nothing selected, so DELETE and OPEN act on nothing
      * and the next deletion needs a row chosen in sight.
@@ -661,9 +661,9 @@ TEST_CASE(after_delete_nothing_is_selected_and_the_scroll_stays)
     CHECK_EQ(g_remove_calls, 1);
     CHECK(!g_run_gone[102]);
     /* The page is read again from BENCH102: 102 to 56, then 54.  The
-     * scroll is the one before, 42, so the top row is the 43rd: 60. */
+     * scroll is the one before, 43, so the top row is the 44th: 59. */
     check_tab(49, 96, 149);
-    CHECK_EQ(top_row_run(), 60);
+    CHECK_EQ(top_row_run(), 59);
 
     /* The first page: the same, the scroll at its top. */
     runs_card(60);
@@ -847,12 +847,14 @@ TEST_CASE(prev_and_next_draw_their_press)
 
 TEST_CASE(the_scroll_bar_jumps_drags_and_stays_on_its_page)
 {
-    /* 48 runs: rows are runs 48 to 1 top down, and 42 is the last scroll. */
+    /* 48 runs: rows are runs 48 to 1 top down, and 43 is the last scroll. */
     runs_card(48);
-    /* The thumb is the rows shown against the page: 284 * 6 / 48 = 35px,
-     * drawn 2px in from each end, at the top of the track. */
-    const int th = BAR_H * BR_ROWS_SEEN / 48;
-    CHECK_EQ(th, 35);
+    /* The thumb is the rows shown against the page, 236 * 5 / 48 = 24px,
+     * held to its least, 32px; drawn 2px in from each end, at the top of
+     * the track. */
+    const int th = (BAR_H * BR_ROWS_SEEN / 48 < 32) ? 32
+                                                    : BAR_H * BR_ROWS_SEEN / 48;
+    CHECK_EQ(th, 32);
     draw();
     CHECK_EQ(thumb_top(), BAR_TOP + 2);
     CHECK_EQ(thumb_len(), th - 4);
@@ -860,32 +862,32 @@ TEST_CASE(the_scroll_bar_jumps_drags_and_stays_on_its_page)
     tap(BAR_X, BAR_TOP + BAR_H - 2);
     draw();
     CHECK_EQ(thumb_top(), BAR_TOP + BAR_H - th + 2);
-    CHECK_EQ(top_row_run(), 6);
+    CHECK_EQ(top_row_run(), 5);
     /* And at the top, back. */
     tap(BAR_X, BAR_TOP + 1);
     CHECK_EQ(top_row_run(), 48);
 
     /* A tap off the thumb brings the thumb's middle to the finger: 200px
-     * down the track puts its top at 183 of 249px of travel, scroll
-     * (183 * 42 + 124) / 249 = 31, and the top row is run 48 - 31. */
+     * down the track puts its top at 184 of 204px of travel, scroll
+     * (184 * 43 + 102) / 204 = 39, and the top row is run 48 - 39. */
     tap(BAR_X, BAR_TOP + 200);
     draw();
-    CHECK_EQ(top_row_run(), 17);
-    CHECK_EQ(thumb_top(), BAR_TOP + (BAR_H - th) * 31 / 42 + 2);
+    CHECK_EQ(top_row_run(), 9);
+    CHECK_EQ(thumb_top(), BAR_TOP + (BAR_H - th) * 39 / 43 + 2);
     tap(BAR_X, BAR_TOP + 1);
 
-    /* Dragging the thumb (35px at the top) by half the travel scrolls half
+    /* Dragging the thumb (32px at the top) by half the travel scrolls half
      * the page; past the track's end it stops at the end, and on a 49th
      * row there is nothing to scroll to. */
     send(TOUCH_EVENT_DOWN, BAR_X, BAR_TOP + th / 2);
     send(TOUCH_EVENT_MOVE, BAR_X, BAR_TOP + th / 2 + (BAR_H - th) / 2);
     draw();
     send(TOUCH_EVENT_UP, BAR_X, BAR_TOP + th / 2 + (BAR_H - th) / 2);
-    CHECK_EQ(top_row_run(), 27);
+    CHECK_EQ(top_row_run(), 26);
     send(TOUCH_EVENT_DOWN, BAR_X, BAR_TOP + BAR_H / 2);
     send(TOUCH_EVENT_MOVE, BAR_X, 2000);
     send(TOUCH_EVENT_UP, BAR_X, 2000);
-    CHECK_EQ(top_row_run(), 6);
+    CHECK_EQ(top_row_run(), 5);
     send(TOUCH_EVENT_DOWN, BAR_X, BAR_TOP + BAR_H - 1);
     send(TOUCH_EVENT_MOVE, BAR_X, -2000);
     send(TOUCH_EVENT_UP, BAR_X, -2000);
@@ -918,7 +920,7 @@ TEST_CASE(the_scroll_bar_jumps_drags_and_stays_on_its_page)
     tap(BAR_X, BAR_TOP + 1);
     CHECK_EQ(top_row_run(), 49);
     tap(BAR_X, BAR_TOP + BAR_H - 2);
-    CHECK_EQ(top_row_run(), 7);
+    CHECK_EQ(top_row_run(), 6);             /* runs 6 to 2 show */
     check_tab(49, 96, 97);
 
     /* A touch loss ends a drag: the next move belongs to no press. */

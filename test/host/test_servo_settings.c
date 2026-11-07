@@ -2,7 +2,8 @@
  * What the SERVO screen's SETTINGS overlay decides: the profiles
  * and the warning that applies a heli type or a rate above 60Hz,
  * the note on the rate in force and the target, and the supply's
- * set points and output typed and switched from SERVO.
+ * PD MINI row on LIVE: its set point redrawn, its ON past 6.0V only
+ * through the HV warning.
  *
  * The screen and its fixtures are servo_rig.h.
  *
@@ -325,10 +326,10 @@ TEST_CASE(reverse_and_the_pulse_widths_reshape_the_command)
     CHECK_EQ(c.min_us, 900);
 }
 
-/* SWEEP's rows and a run's own rows are kept and saved; SUPPLY's caps are
- * not edited here (their home is SUPPLY > SETTINGS), and the run's
- * settings close to TEST with the home tag.  The hub's list holds the
- * device under test's NAME and REPORT. */
+/* SWEEP's rows and TEST's rows are kept and saved by the list's SAVE;
+ * SUPPLY's caps are not edited here (their home is SUPPLY > SETTINGS),
+ * and TEST's list closes to TEST with the home tag.  The hub's list holds
+ * the device under test's NAME and REPORT. */
 TEST_CASE(the_sweep_and_run_settings_are_kept)
 {
     fresh();
@@ -343,19 +344,21 @@ TEST_CASE(the_sweep_and_run_settings_are_kept)
     CHECK_NEAR(settings_get(SET_SERVO_TEST_HZ), 1.25f, 1e-4f);
     CHECK(settings_dirty());                   /* until the list's SAVE */
 
-    open_run_settings(0);                      /* AUTOMATIC TEST's */
-    CHECK_EQ(servo_screen_run_settings(), 1);
-    tap(LROW_X(0), LROW_Y(0));                 /* STEP 4.8V: a switch */
+    open_run_settings(0);                      /* TEST's list */
+    CHECK(servo_screen_list()->open);
+    sl_step(TL_STEP_48, +1);                   /* STEP 4.8V: a switch */
     CHECK(!settings_get_bool(SET_SERVO_STEP_48));
-    tap(LROW_X(1), LROW_Y(1));                 /* IDLE CURRENT */
-    keys("0.3");
+    sl_part(TL_IDLE, UI_SL_PART_VALUE);        /* IDLE CURRENT */
+    sl_keys("0.3");
     CHECK_NEAR(settings_get(SET_SERVO_IDLE_MAX), 0.3f, 1e-4f);
-    tap(LROW_X(1), LROW_Y(0));                 /* STALL AT */
-    keys("1.5");
+    sl_part(TL_STALL, UI_SL_PART_VALUE);       /* STALL AT */
+    sl_keys("1.5");
     CHECK_NEAR(settings_get(SET_SERVO_STALL_A), 1.5f, 1e-4f);
     CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 21.0f, 1e-4f);
+    CHECK(settings_dirty());                   /* until the list's SAVE */
+    tap_settings();                            /* SAVE */
     CHECK(home_tag());
-    CHECK_EQ(servo_screen_run_settings(), 0);
+    CHECK(!servo_screen_list()->open);
     CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
     CHECK(!home_tag());                        /* TEST climbs no further */
 
@@ -374,10 +377,10 @@ TEST_CASE(the_sweep_and_run_settings_are_kept)
 TEST_CASE(the_overlay_leaves_the_right_card_working)
 {
     /* ARM, CENTRE and RELEASE work beside a panel over the left column,
-     * the voltage's keypad; the dial under it does not.  CENTRE is a
-     * position, taken on an armed bench. */
+     * PORT's list; the dial under it does not.  CENTRE is a position,
+     * taken on an armed bench. */
     fresh();
-    tap(SUP_V_X, SUP_ROW_Y);
+    tap(SV_PORT_X, SV_PORT_Y);
     CHECK(scr->covered());
     arm_press();
     hold_for(2.2f);
@@ -391,7 +394,8 @@ TEST_CASE(the_overlay_leaves_the_right_card_working)
     tap(x, y);                                 /* on the keypad, not the dial */
     CHECK(servo_screen_commanded() == 1500);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
-    key(UI_KEY_CANCEL);
+    tap(CH_CANCEL_X, CH_CANCEL_Y);
+    CHECK(!scr->covered());
 }
 
 TEST_CASE(the_tag_is_red_while_a_dangerous_profile_is_in_force)
@@ -447,8 +451,8 @@ TEST_CASE(drags_and_samples_leave_both_buffers_as_a_full_redraw_would)
 }
 
 /* The supply is the servo rail's meter here: a sample whose current differs
- * in the digits shown repaints the line and the plot, and LIVE's CURRENT
- * reading at the foot of the left card, and nothing else. */
+ * in the digits shown repaints the rail line under LIVE's READY rows, and
+ * LIVE's CURRENT reading at the foot of the left card, and nothing else. */
 TEST_CASE(a_supply_sample_repaints_only_the_power_plot_and_the_current_row)
 {
     fresh();
@@ -475,7 +479,7 @@ TEST_CASE(a_supply_sample_repaints_only_the_power_plot_and_the_current_row)
                 continue;
             }
             const bool rc = x >= SV_RC_X && x < SV_RC_X + SV_RC_W;
-            const bool in = rc && y >= 70 && y < 166;
+            const bool in = rc && y >= 400 && y < 428;
             const bool row = x >= 416 && x < 610 && y >= 384 && y < 428;
             if (in) { ++inside; } else if (row) { ++in_row; } else { ++outside; }
         }
@@ -981,160 +985,51 @@ TEST_CASE(the_horn_travels_and_breathes_as_a_full_redraw_would)
 
 /* ------------------------------------------------- the supply, from SERVO */
 
-/* A set point typed on SERVO is SUPPLY's set point, and the keypad that
- * opened the overlay for it closes it again: the dial works at once. */
-TEST_CASE(a_set_point_typed_on_servo_is_the_supplys)
-{
-    fresh_armed();
-    tap(SUP_V_X, SUP_ROW_Y);
-    keys("5.5");
-    CHECK(fabsf(supply_screen_set_v() - 5.5f) < 1e-4f);
-    tap(SUP_I_X, SUP_ROW_Y);
-    keys("0.5");
-    CHECK(fabsf(supply_screen_set_i() - 0.5f) < 1e-4f);
-    CHECK(!supply_cmd(NULL));               /* a level, not a command */
+/* SERVO sets no set point and has no OUTPUT ON: SET V, SET A and OUTPUT
+ * ON / OFF are SUPPLY's (test_supply_*).  LIVE, SWEEP and RUDDER show the
+ * supply as a READY row whose ARM switches it on (test_servo_drive_ready),
+ * KST and HITEC as a row whose tap switches it off (test_kst_panel_frame).
+ * These cases take LIVE's PD MINI row. */
 
-    int x, y;
-    dial_at(40.0f, ARC_R - 30, &x, &y);
-    ev(x, y, TOUCH_EVENT_DOWN, 1);
-    ev(x, y, TOUCH_EVENT_UP, 1);
-    CHECK(servo_screen_commanded() != 1500);   /* no overlay in the way */
-
-    /* CANCEL leaves the set point as it was. */
-    tap(SUP_V_X, SUP_ROW_Y);
-    key(UI_KEY_CANCEL);
-    CHECK(fabsf(supply_screen_set_v() - 5.5f) < 1e-4f);
-}
-
-/* Typed outside the caps, it is snapped into them, as on SUPPLY. */
-TEST_CASE(a_set_point_typed_on_servo_keeps_to_the_caps)
+/** @brief LIVE, a PD mini answering at @p v and 1.0A, its output
+ *         @p on. */
+static void pd_on_live(float v, bool on)
 {
     fresh();
     settings_set(SET_SUPPLY_V_MAX, 8.4f);
     supply_screen_limits_changed();
-    tap(SUP_V_X, SUP_ROW_Y);
-    keys("12");                             /* past the keypad's range */
-    CHECK(supply_screen_set_v() <= 8.4f + 1e-4f);
-}
-
-/* OUTPUT ON is SUPPLY's two-second hold; a short press asks for nothing. */
-TEST_CASE(output_on_from_servo_is_a_two_second_hold)
-{
-    fresh();
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
-    for (int i = 0; i < 20; ++i) {
-        scr->tick(1.0f / 40.0f);
-    }
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
-    CHECK(!supply_cmd(NULL));
-
+    supply_screen_put(v, 1.0f);
+    supply_screen_set_output(on);
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    st.online = true;
+    st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+    st.output = on;
+    st.set_v = v;
+    st.set_i = 1.0f;
+    servo_screen_supply(&st);
+    scr->tick(0.025f);
     supply_cmd_t c;
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
-    for (int i = 0; i < 100; ++i) {
-        scr->tick(1.0f / 40.0f);
-    }
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
-    CHECK(supply_cmd(&c));
-    CHECK(c.on);
-    CHECK(!c.off);
+    while (supply_cmd(&c)) { }
 }
 
-/* On, the same switch is OUTPUT OFF and a tap: and a finger that slides
- * off it before lifting asks for nothing. */
-TEST_CASE(output_off_from_servo_is_a_tap)
-{
-    fresh();
-    supply_screen_set_output(true);
-    scr->tick(0.025f);
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
-    ev(SUP_OUT_X, 100, TOUCH_EVENT_MOVE, 1);
-    ev(SUP_OUT_X, 100, TOUCH_EVENT_UP, 1);
-    CHECK(!supply_cmd(NULL));
-
-    supply_cmd_t c;
-    tap(SUP_OUT_X, SUP_ROW_Y);
-    CHECK(supply_cmd(&c));
-    CHECK(c.off);
-    CHECK(!c.on);
-}
-
-/* STOP ends OUTPUT ON's hold here too: the rest of the two seconds switches
- * nothing on. */
-TEST_CASE(stop_ends_the_output_hold_on_servo)
-{
-    fresh();
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
-    for (int i = 0; i < 40; ++i) {
-        scr->tick(1.0f / 40.0f);
-    }
-    servo_screen_cancel_arm();
-    for (int i = 0; i < 80; ++i) {
-        scr->tick(1.0f / 40.0f);
-    }
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
-    CHECK(!supply_cmd(NULL));
-}
-
-/* With the output live, a typed set point waits for SUPPLY's question:
- * APPLY gives it to the supply, CANCEL drops it. */
-TEST_CASE(a_set_point_for_a_live_output_waits_for_apply)
-{
-    fresh();
-    supply_screen_set_output(true);
-    scr->tick(0.025f);
-    const float was = supply_screen_set_v();
-    tap(SUP_V_X, SUP_ROW_Y);
-    keys("5");
-    CHECK_EQ(supply_screen_set_v(), was);
-    tap(WARN_CANCEL_X, WARN_Y);
-    CHECK_EQ(supply_screen_set_v(), was);
-
-    tap(SUP_V_X, SUP_ROW_Y);
-    keys("5");
-    CHECK_EQ(supply_screen_set_v(), was);
-    tap(WARN_APPLY_X, WARN_Y);
-    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
-
-    /* Asked not to ask: it goes straight through. */
-    settings_set(SET_SUPPLY_CONFIRM_KEYS, 0.0f);
-    tap(SUP_I_X, SUP_ROW_Y);
-    keys("1");
-    CHECK(fabsf(supply_screen_set_i() - 1.0f) < 1e-4f);
-}
-
-/* The question is about a live output: once the output is off it goes,
- * unanswered, and the change it held with it. */
-TEST_CASE(the_question_goes_with_the_live_output)
-{
-    fresh();
-    supply_screen_set_output(true);
-    scr->tick(0.025f);
-    const float was = supply_screen_set_v();
-    tap(SUP_V_X, SUP_ROW_Y);
-    keys("5");
-    supply_screen_set_output(false);
-    scr->tick(0.025f);
-    tap(WARN_APPLY_X, WARN_Y);              /* nothing there to press */
-    CHECK_EQ(supply_screen_set_v(), was);
-}
-
-/* A set point changed on SUPPLY, or a cap that moved it, is drawn here on
- * the next frame, without a full repaint. */
+/* A set point changed on SUPPLY, or a cap that moved it, is drawn on
+ * LIVE's PD MINI row on the next frame, without a full repaint. */
 TEST_CASE(a_set_point_changed_on_supply_is_redrawn_here)
 {
-    fresh();
+    pd_on_live(5.0f, true);
     scr->render(&cv, 0);
     gfx_color_t *before = malloc((size_t)W * H * sizeof(gfx_color_t));
     REQUIRE_ALLOC(before);
     memcpy(before, fb, (size_t)W * H * sizeof(gfx_color_t));
-    supply_screen_put(9.0f, 1.0f);
+    supply_screen_put(5.5f, 1.0f);
     scr->tick(0.025f);
     scr->render(&cv, 0);
     int changed = 0;
     for (int y = 0; y < H; ++y) {
         for (int x = 0; x < W; ++x) {
             if (fb[(size_t)y * W + x] != before[(size_t)y * W + x]) {
-                CHECK(y >= SUP_ROW_Y - 13 && y < SUP_ROW_Y + 13);
+                CHECK(y >= SV_DRV_ROW_Y(1) - 15 && y < SV_DRV_ROW_Y(1) + 15);
                 ++changed;
             }
         }
@@ -1143,68 +1038,23 @@ TEST_CASE(a_set_point_changed_on_supply_is_redrawn_here)
     free(before);
 }
 
-/* A voltage raised past 6.0V, a standard servo's rating, waits for the HV
- * warning's two-second hold: a tap does nothing, CANCEL drops it. */
-TEST_CASE(a_voltage_raised_past_6_v_takes_the_hv_hold)
+/* A set point past 6.0V already in force -- made on SUPPLY, or before
+ * this screen was opened -- goes on only through the HV warning: ARM
+ * switches nothing on, a tap on the red PD MINI row opens the warning, a
+ * tap on APPLY does nothing, STOP ends the hold, CANCEL switches nothing
+ * on, and only the two-second hold on APPLY sends the ON. */
+TEST_CASE(a_pd_mini_past_6_v_goes_on_only_through_the_hv_hold)
 {
-    fresh();
-    supply_screen_put(5.0f, 1.0f);
-    tap(SUP_V_X, SUP_ROW_Y);
-    keys("6");                              /* at the rating: no warning */
-    CHECK(fabsf(supply_screen_set_v() - 6.0f) < 1e-4f);
-
-    tap(SUP_V_X, SUP_ROW_Y);
-    keys("7.4");
-    CHECK(fabsf(supply_screen_set_v() - 6.0f) < 1e-4f);
-    tap(WARN_APPLY_X, WARN_Y);              /* a tap is not the hold */
-    CHECK(fabsf(supply_screen_set_v() - 6.0f) < 1e-4f);
-    tap(WARN_CANCEL_X, WARN_Y);
-    CHECK(fabsf(supply_screen_set_v() - 6.0f) < 1e-4f);
-
-    tap(SUP_V_X, SUP_ROW_Y);
-    keys("7.4");
-    hold_apply(2.3f);
-    CHECK(fabsf(supply_screen_set_v() - 7.4f) < 1e-4f);
-
-    /* Already past it: the warning was given, and a further change is a
-     * plain set point again. */
-    tap(SUP_V_X, SUP_ROW_Y);
-    keys("8");
-    CHECK(fabsf(supply_screen_set_v() - 8.0f) < 1e-4f);
-}
-
-/* With the output on, the HV hold stands in for SUPPLY's question, and the
- * output going off does not drop it: it is about the servo. */
-TEST_CASE(the_hv_hold_stands_for_the_live_question)
-{
-    fresh();
-    supply_screen_put(5.0f, 1.0f);
-    supply_screen_set_output(true);
-    scr->tick(0.025f);
-    tap(SUP_V_X, SUP_ROW_Y);
-    keys("8.4");
-    supply_screen_set_output(false);
-    scr->tick(0.025f);
-    hold_apply(2.3f);
-    CHECK(fabsf(supply_screen_set_v() - 8.4f) < 1e-4f);
-}
-
-/* OUTPUT ON with a set point past 6.0V already in force -- made on SUPPLY,
- * or before this screen was opened -- goes through the HV warning: the
- * switch's own hold switches nothing on, a tap on APPLY does nothing, STOP
- * ends the hold, and only the two-second hold on APPLY sends the ON. */
-TEST_CASE(output_on_past_6_v_takes_the_hv_hold)
-{
-    fresh();
-    supply_screen_put(7.4f, 1.0f);              /* as if set on SUPPLY */
-    scr->tick(0.025f);
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    pd_on_live(7.4f, false);
+    ev(SV_ARM_X, SV_FOOT_Y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < 100; ++i) {
         scr->tick(1.0f / 40.0f);
     }
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
-    CHECK(!supply_cmd(NULL));                   /* the switch's hold: no */
+    ev(SV_ARM_X, SV_FOOT_Y, TOUCH_EVENT_UP, 1);
+    CHECK(!supply_cmd(NULL));                   /* ARM: refused */
 
+    tap(SV_RDY_X, SV_DRV_ROW_Y(1));             /* the PD MINI row */
+    CHECK(servo_screen_output_held());          /* the warning */
     tap(WARN_APPLY_X, WARN_Y);                  /* a tap is not the hold */
     CHECK(!supply_cmd(NULL));
 
@@ -1226,265 +1076,23 @@ TEST_CASE(output_on_past_6_v_takes_the_hv_hold)
     CHECK(!c.off);
     CHECK(fabsf(supply_screen_set_v() - 7.4f) < 1e-4f);
 
-    /* CANCEL switches nothing on; the warning drawn says what is asked. */
-    fresh();
-    supply_screen_put(8.4f, 1.0f);
-    scr->tick(0.025f);
-    tap(SUP_OUT_X, SUP_ROW_Y);
-    scr->tick(0.025f);
-    scr->render(&cv, 0);
+    /* CANCEL switches nothing on. */
+    pd_on_live(8.4f, false);
+    tap(SV_RDY_X, SV_DRV_ROW_Y(1));
+    CHECK(servo_screen_output_held());
     tap(WARN_CANCEL_X, WARN_Y);
     for (int i = 0; i < 100; ++i) {
         scr->tick(1.0f / 40.0f);
     }
     CHECK(!supply_cmd(NULL));
-
-    /* At 6.0V it is the ordinary hold. */
-    fresh();
-    supply_screen_put(6.0f, 1.0f);
-    scr->tick(0.025f);
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
-    for (int i = 0; i < 100; ++i) {
-        scr->tick(1.0f / 40.0f);
-    }
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
-    CHECK(supply_cmd(&c));
-    CHECK(c.on);
+    CHECK(!servo_screen_output_held());
 }
 
-/* A second hold on OUTPUT ON while the first ON is on its way: the output
- * reporting on during it does not make its release an OFF. */
-TEST_CASE(an_on_reported_during_a_second_servo_hold_is_not_an_off)
-{
-    fresh();
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
-    for (int i = 0; i < 100; ++i) {
-        scr->tick(1.0f / 40.0f);
-    }
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
-    CHECK(supply_cmd(NULL));                    /* the first ON */
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
-    scr->tick(1.0f / 40.0f);
-    supply_screen_set_output(true);
-    scr->tick(1.0f / 40.0f);
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
-    supply_cmd_t c;
-    CHECK(!supply_cmd(&c) || !c.off);
-}
-
-/* A question asked while an ON was on its way goes when STOP drops that
- * ON, though the output never reported on. */
-TEST_CASE(a_servo_question_for_a_dropped_on_goes)
-{
-    fresh();
-    supply_screen_put(5.0f, 1.0f);
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
-    for (int i = 0; i < 100; ++i) {
-        scr->tick(1.0f / 40.0f);
-    }
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
-    tap(SUP_V_X, SUP_ROW_Y);
-    keys("5.5");
-    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);   /* the question */
-    supply_screen_cancel_on();
-    servo_screen_cancel_arm();
-    scr->tick(1.0f / 40.0f);
-    tap(WARN_APPLY_X, WARN_Y);                  /* nothing there now */
-    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
-}
-
-/* APPLY pressed on the question, then the output goes off before the finger
- * lifts: the release applies nothing, whether the tick that drops the
- * question comes first or not. */
-TEST_CASE(an_apply_held_as_the_output_goes_off_applies_nothing)
-{
-    for (int tick_first = 0; tick_first < 2; ++tick_first) {
-        fresh();
-        supply_screen_put(5.0f, 1.0f);
-        supply_screen_set_output(true);
-        scr->tick(0.025f);
-        tap(SUP_V_X, SUP_ROW_Y);
-        keys("5.5");
-        ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_DOWN, 1);
-        supply_screen_set_output(false);
-        if (tick_first) {
-            scr->tick(0.025f);
-        }
-        ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_UP, 1);
-        CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
-    }
-}
-
-/* APPLY gives the supply the set point that was typed, and leaves the
- * other as it is now: a cap that moved it meanwhile is not undone. */
-TEST_CASE(apply_sets_only_the_set_point_that_was_typed)
-{
-    fresh();
-    supply_screen_put(5.0f, 1.0f);
-    supply_screen_set_output(true);
-    scr->tick(0.025f);
-    tap(SUP_I_X, SUP_ROW_Y);
-    keys("1.5");
-    supply_screen_put(4.0f, 1.0f);              /* the voltage moved */
-    scr->tick(0.025f);
-    tap(WARN_APPLY_X, WARN_Y);
-    CHECK(fabsf(supply_screen_set_i() - 1.5f) < 1e-4f);
-    CHECK(fabsf(supply_screen_set_v() - 4.0f) < 1e-4f);
-}
-
-/* A press on OUTPUT OFF in the frame the output was reported on: the
- * screen's drawn state has not caught up, and a lost release still sends
- * the OFF. */
-TEST_CASE(an_off_press_before_the_tick_is_still_an_off)
-{
-    fresh();
-    supply_screen_set_output(true);             /* no tick yet */
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
-    scr->cancel();
-    supply_cmd_t c;
-    CHECK(supply_cmd(&c));
-    CHECK(c.off);
-}
-
-/* The HV warning says whether the output is on, and says it again when
- * that changes. */
-TEST_CASE(the_hv_warning_redraws_when_the_output_changes)
-{
-    fresh();
-    supply_screen_put(5.0f, 1.0f);
-    tap(SUP_V_X, SUP_ROW_Y);
-    keys("7.4");
-    scr->tick(0.025f);
-    scr->render(&cv, 0);
-    gfx_color_t *before = malloc((size_t)W * H * sizeof(gfx_color_t));
-    REQUIRE_ALLOC(before);
-    memcpy(before, fb, (size_t)W * H * sizeof(gfx_color_t));
-    supply_screen_set_output(true);
-    scr->tick(0.025f);
-    scr->render(&cv, 0);
-    int changed = 0;
-    for (int y = 0; y < 430; ++y) {             /* the warning's text */
-        for (int x = 0; x < 628; ++x) {
-            changed += (fb[(size_t)y * W + x] != before[(size_t)y * W + x]);
-        }
-    }
-    CHECK(changed > 0);
-    free(before);
-}
-
-/* A set point's keypad shut by SETTINGS leaves nothing behind: SETTINGS
- * opened afterwards stays open when a keypad from its own rows is done. */
-TEST_CASE(settings_shuts_a_set_points_keypad_cleanly)
-{
-    fresh();
-    tap(SUP_V_X, SUP_ROW_Y);                    /* the keypad, on its own */
-    open_settings();                            /* shuts it */
-    open_settings();                            /* the settings */
-    tap(SUP_V_X, SUP_ROW_Y);                    /* a set point over them */
-    key(UI_KEY_CANCEL);                         /* back to the settings */
-    int x, y;
-    dial_at(40.0f, ARC_R - 30, &x, &y);
-    ev(x, y, TOUCH_EVENT_DOWN, 1);
-    ev(x, y, TOUCH_EVENT_UP, 1);
-    CHECK_EQ(servo_screen_commanded(), 1500);   /* the overlay is over it */
-}
-
-/* A cap that comes down while the question stands takes the waiting value
- * with it; the cap recovering before APPLY does not bring it back. */
-TEST_CASE(a_cap_lowered_under_the_question_lowers_its_value)
-{
-    fresh();
-    supply_screen_put(9.0f, 1.0f);              /* past 6V already */
-    supply_screen_set_output(true);
-    scr->tick(0.025f);
-    tap(SUP_V_X, SUP_ROW_Y);
-    keys("12");
-    settings_set(SET_SUPPLY_V_MAX, 10.0f);
-    supply_screen_limits_changed();
-    scr->tick(0.025f);
-    settings_set(SET_SUPPLY_V_MAX, 21.0f);
-    supply_screen_limits_changed();
-    scr->tick(0.025f);
-    tap(WARN_APPLY_X, WARN_Y);
-    CHECK(supply_screen_set_v() <= 10.0f + 1e-4f);
-    CHECK(supply_screen_set_v() > 9.0f);
-}
-
-/* The rest of the SET line's gestures, each drawn as it happens: a value
- * typed as it was, the question drawn, the HV hold slid off and drawn as it
- * fills, an ON hold under a finger as the output comes and goes, and an
- * OFF press the screen is left on. */
-TEST_CASE(the_set_lines_gestures_draw_and_end_as_they_should)
-{
-    fresh();
-    supply_screen_put(5.0f, 1.0f);
-    tap(SUP_V_X, SUP_ROW_Y);
-    keys("5");                                  /* the value it has */
-    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
-
-    supply_screen_set_output(true);
-    scr->tick(0.025f);
-    tap(SUP_V_X, SUP_ROW_Y);
-    keys("5.5");                                /* the question */
-    scr->render(&cv, 0);
-    CHECK_EQ(fb[UI_MARGIN * W + UI_MARGIN], ui_theme_color(UI_C_WARN));
-    tap(WARN_CANCEL_X, WARN_Y);
-
-    tap(SUP_V_X, SUP_ROW_Y);
-    supply_screen_set_output(false);
-    scr->tick(0.025f);
-    keys("7.4");                                /* the HV warning */
-    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_DOWN, 1);
-    for (int i = 0; i < 20; ++i) {
-        scr->tick(1.0f / 40.0f);
-        scr->render(&cv, 0);
-    }
-    ev(WARN_APPLY_X, 100, TOUCH_EVENT_MOVE, 1);  /* slid off: abandoned */
-    ev(WARN_APPLY_X, 100, TOUCH_EVENT_UP, 1);
-    for (int i = 0; i < 100; ++i) {
-        scr->tick(1.0f / 40.0f);
-    }
-    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
-    tap(WARN_CANCEL_X, WARN_Y);
-
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
-    scr->tick(1.0f / 40.0f);
-    supply_screen_set_output(true);
-    scr->tick(1.0f / 40.0f);
-    supply_screen_set_output(false);
-    scr->tick(1.0f / 40.0f);
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
-    CHECK(!supply_cmd(NULL));
-
-    supply_screen_set_output(true);
-    scr->tick(1.0f / 40.0f);
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
-    scr->leave();
-    supply_cmd_t c;
-    CHECK(supply_cmd(&c));
-    CHECK(c.off);
-}
-
-/* STOP ends the warnings' holds as it ends ARM's: the rest of the two
- * seconds applies neither the voltage nor the profile. */
+/* STOP ends the profile warning's hold as it ends ARM's: the rest of the
+ * two seconds applies no profile. */
 TEST_CASE(stop_ends_the_warning_holds)
 {
     fresh();
-    supply_screen_put(5.0f, 1.0f);
-    tap(SUP_V_X, SUP_ROW_Y);
-    keys("7.4");
-    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_DOWN, 1);
-    for (int i = 0; i < 40; ++i) {
-        scr->tick(1.0f / 40.0f);
-    }
-    servo_screen_cancel_arm();
-    for (int i = 0; i < 80; ++i) {
-        scr->tick(1.0f / 40.0f);
-    }
-    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_UP, 1);
-    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
-    tap(WARN_CANCEL_X, WARN_Y);
-
     open_settings();
     sl_tap(HL_TYPE);
     tap(CH_X(3), CH_Y(3));                      /* HELI CYCLIC: the warning */
@@ -1498,79 +1106,6 @@ TEST_CASE(stop_ends_the_warning_holds)
     }
     ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_UP, 1);
     CHECK_STR_EQ(servo_screen_type_name(), "STANDARD PWM");
-}
-
-/* APPLY tapped on the question while the output is on, and STOP before the
- * finger lifts: the release applies nothing. */
-TEST_CASE(stop_lets_go_of_an_apply_press)
-{
-    fresh();
-    supply_screen_put(5.0f, 1.0f);
-    supply_screen_set_output(true);
-    scr->tick(0.025f);
-    tap(SUP_V_X, SUP_ROW_Y);
-    keys("5.5");
-    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_DOWN, 1);
-    servo_screen_cancel_arm();
-    supply_screen_cancel_on();
-    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_UP, 1);
-    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
-}
-
-/* STOP and a whole APPLY tap in one frame: the stop is seen first, as the
- * render loop does, while the supply has not yet reported the output off.
- * The tap applies nothing, and the question has gone by the frame's tick. */
-TEST_CASE(stop_and_an_apply_tap_in_one_frame_apply_nothing)
-{
-    fresh();
-    supply_screen_put(5.0f, 1.0f);
-    supply_screen_set_output(true);
-    scr->tick(0.025f);
-    tap(SUP_V_X, SUP_ROW_Y);
-    keys("5.5");
-    servo_screen_cancel_arm();
-    supply_screen_cancel_on();
-    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_DOWN, 1);
-    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_UP, 1);
-    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
-    scr->tick(0.025f);
-    tap(WARN_APPLY_X, WARN_Y);                  /* nothing there now */
-    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
-}
-
-/* A question asked after a stop, on an output still on, is not the one the
- * stop ended: APPLY applies it. */
-TEST_CASE(a_question_asked_after_a_stop_stands)
-{
-    fresh();
-    supply_screen_put(5.0f, 1.0f);
-    supply_screen_set_output(true);
-    scr->tick(0.025f);
-    servo_screen_cancel_arm();
-    scr->tick(0.025f);
-    tap(SUP_V_X, SUP_ROW_Y);
-    keys("5.5");
-    tap(WARN_APPLY_X, WARN_Y);
-    CHECK(fabsf(supply_screen_set_v() - 5.5f) < 1e-4f);
-}
-
-/* The output reported off and on again between two frames: the question
- * was about the run that ended, and APPLY gives the new run nothing. */
-TEST_CASE(a_question_does_not_outlive_its_run)
-{
-    fresh();
-    supply_screen_put(5.0f, 1.0f);
-    supply_screen_set_output(true);
-    scr->tick(0.025f);
-    tap(SUP_V_X, SUP_ROW_Y);
-    keys("5.5");
-    supply_screen_set_output(false);           /* no tick between */
-    supply_screen_set_output(true);
-    tap(WARN_APPLY_X, WARN_Y);
-    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
-    scr->tick(0.025f);                          /* and the question is gone */
-    tap(WARN_APPLY_X, WARN_Y);
-    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
 }
 
 int main(void)
@@ -1598,30 +1133,8 @@ int main(void)
     RUN(the_in_force_note_follows_the_prog_page_not_the_setting);
     RUN(the_horn_travels_and_breathes_as_a_full_redraw_would);
     RUN(drags_and_samples_leave_both_buffers_as_a_full_redraw_would);
-    RUN(a_set_point_typed_on_servo_is_the_supplys);
-    RUN(a_set_point_typed_on_servo_keeps_to_the_caps);
-    RUN(output_on_from_servo_is_a_two_second_hold);
-    RUN(output_off_from_servo_is_a_tap);
-    RUN(stop_ends_the_output_hold_on_servo);
-    RUN(a_set_point_for_a_live_output_waits_for_apply);
-    RUN(the_question_goes_with_the_live_output);
     RUN(a_set_point_changed_on_supply_is_redrawn_here);
-    RUN(a_voltage_raised_past_6_v_takes_the_hv_hold);
-    RUN(the_hv_hold_stands_for_the_live_question);
-    RUN(output_on_past_6_v_takes_the_hv_hold);
-    RUN(an_on_reported_during_a_second_servo_hold_is_not_an_off);
-    RUN(a_servo_question_for_a_dropped_on_goes);
-    RUN(an_apply_held_as_the_output_goes_off_applies_nothing);
-    RUN(apply_sets_only_the_set_point_that_was_typed);
-    RUN(an_off_press_before_the_tick_is_still_an_off);
-    RUN(the_hv_warning_redraws_when_the_output_changes);
-    RUN(settings_shuts_a_set_points_keypad_cleanly);
-    RUN(a_cap_lowered_under_the_question_lowers_its_value);
-    RUN(the_set_lines_gestures_draw_and_end_as_they_should);
+    RUN(a_pd_mini_past_6_v_goes_on_only_through_the_hv_hold);
     RUN(stop_ends_the_warning_holds);
-    RUN(stop_lets_go_of_an_apply_press);
-    RUN(stop_and_an_apply_tap_in_one_frame_apply_nothing);
-    RUN(a_question_asked_after_a_stop_stands);
-    RUN(a_question_does_not_outlive_its_run);
     return test_summary("servo_settings");
 }

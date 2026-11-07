@@ -209,9 +209,10 @@ einen Neustart erhalten.
   ihm sagt `PROG-PORTS LAUFEN MIT FESTEN 5V: KEINE STUFEN`.
 - Für den Endlagenlauf steht das Feld PROG 5V für den PD mini: SUCHEN + PROGRAMMIEREN
   und SERVOPULSE werden mit dem Feld EIN angeboten, und die
-  Versorgungszyklen der Sitzung schalten GPIO 21. Mit dem Feld AUS und einem
-  der beiden gewählt zeigt die Karte ENDLAGENLAUF
-  `PROG 5V AUS: SCHALTE ES IM FELD PROG 5V EIN`, nicht die Zeile zum PD mini.
+  Versorgungszyklen der Sitzung schalten GPIO 21. Mit dem Feld AUS zeigt die
+  Karte BEREIT von ENDLAGENLAUF bei SAFE `START SCHALTET EIN` auf ihrer Zeile
+  PROG 5V, und ARM + START schaltet es ein; die Zeile zum PD mini erscheint
+  nicht.
   Ein PD mini an den
   Servoschienen wird weder gefragt noch beobachtet: ihn während des Laufs
   ein- oder auszuschalten beendet nichts. Ein abgebrochener Lauf schaltet
@@ -1318,7 +1319,7 @@ rbmod-Carrier übernimmt die feste 5V-Versorgung der Programmierports
 diese Zyklen. Die Prüfung nach dem Schreiben sucht deshalb mit den
 bereits wirksamen neuen Werten. Ohne eine dieser schaltbaren
 Versorgungen sind SUCHEN + PROGRAMMIEREN und SERVOPULSE auf 1000-2000
-nicht verfügbar. Die Karte ENDLAGENLAUF zeigt
+nicht verfügbar. Die linke Karte von ENDLAGENLAUF zeigt
 `PROGRAMMIEREN: KEIN PD MINI ZUM AUS- UND EINSCHALTEN`; der Lauf liest das
 Servo nur aus und sucht. Der Bericht nennt den ausgelesenen Wert von
 20k_sel; er bestimmt nicht den Servotyp.

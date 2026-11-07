@@ -14,6 +14,7 @@
  * - battery_draws_nothing_under_the_alert_band
  * - balance_draws_nothing_under_the_alert_band
  * - the_longest_lines_fit_their_cards
+ * - the_footer_names_each_screen_and_holds_nothing_else
  *
  * SPDX-License-Identifier: MIT
  */
@@ -105,7 +106,7 @@ static void push(uint32_t now, bool failsafe, bool lost)
     analyser_screen_push(&f, &d, raw, SBUS_FRAME_BYTES, now);
 }
 
-/** @brief The pixels from IN_TEXT_FLOOR to 12px above the cards' foot,
+/** @brief The pixels from IN_TEXT_FLOOR to 4px above the cards' foot,
  *         clear of their edges, that are not the cards' fill; the screen
  *         drawn whole first.
  *  @param scr  The screen.
@@ -119,7 +120,7 @@ static int ink_under_the_band(const ui_screen_t *scr, void (*inv)(void),
     scr->render(&cv, 0);
     const gfx_color_t fill = ui_theme_color(UI_C_PANEL);
     int n = 0;
-    for (int y = IN_TEXT_FLOOR; y < H - UI_MARGIN - 12; ++y) {
+    for (int y = IN_TEXT_FLOOR; y < IN_CARD_B - 4; ++y) {
         for (int k = 0; k < 4; k += 2) {
             for (int x = l[k] + 12; x < l[k] + l[k + 1] - 12; ++x) {
                 n += fb[(size_t)y * W + x] != fill;
@@ -226,14 +227,14 @@ TEST_CASE(balance_controls_are_a_finger_tall_and_act_to_their_edges)
     CHECK(k->open);
     CHECK_EQ(k->area.y, BL_KP_Y);
     CHECK_EQ(k->area.h, BL_KP_H);
-    CHECK(k->area.y + k->area.h <= IN_TEXT_FLOOR);
+    CHECK(k->area.y + k->area.h <= IN_KEYS_FLOOR);
     for (int key = 0; key < UI_KEY_COUNT; ++key) {
         const gfx_rect_t r = ui_keypad_key_rect(k, (ui_key_t)key);
         if (r.w == 0) {
             continue;                     /* +/-: not on an unsigned pad */
         }
         CHECK(r.w >= UI_TAP_MIN && r.h >= UI_TAP_MIN);
-        CHECK(r.y + r.h <= IN_TEXT_FLOOR);
+        CHECK(r.y + r.h <= IN_KEYS_FLOOR);
     }
     CHECK(bl->back());
     CHECK(!k->open);
@@ -375,7 +376,7 @@ TEST_CASE(balance_draws_nothing_under_the_alert_band)
         balance_invalidate();
         bl->render(&cv, 0);
         int n = 0;
-        for (int y = IN_TEXT_FLOOR; y < H; ++y) {
+        for (int y = IN_KEYS_FLOOR; y < H; ++y) {
             for (int x = 0; x < W; ++x) {
                 n += fb[(size_t)y * W + x] != ui_theme_color(UI_C_BG);
             }
@@ -421,6 +422,50 @@ TEST_CASE(the_longest_lines_fit_their_cards)
     CHECK_EQ(battery_screen_text_lines(NULL, true), 0);
 }
 
+/** @brief The pixels in a body rectangle that are not the ground.
+ *  @param x Left.  @param y Top.  @param w Width.  @param h Height.
+ *  @return the count */
+static int ink_in(int x, int y, int w, int h)
+{
+    const gfx_color_t bg = ui_theme_color(UI_C_BG);
+    int n = 0;
+    for (int r = y; r < y + h; ++r) {
+        for (int k = x; k < x + w; ++k) {
+            n += fb[(size_t)r * W + k] != bg;
+        }
+    }
+    return n;
+}
+
+/*
+ * RECEIVER, BATTERY and BALANCE end their cards on the footer: the rows
+ * between the cards' foot and the footer are the ground, the footer's left
+ * slot names the screen, and its middle and right slots are empty, as none
+ * of the three has a hold or a settings list.
+ */
+TEST_CASE(the_footer_names_each_screen_and_holds_nothing_else)
+{
+    static const struct {
+        const ui_screen_t *(*scr)(void);
+        void (*inv)(void);
+    } k[] = {
+        { analyser_screen, analyser_invalidate },
+        { battery_screen, battery_invalidate },
+        { balance_screen, balance_invalidate },
+    };
+    for (size_t i = 0u; i < sizeof(k) / sizeof(k[0]); ++i) {
+        const ui_screen_t *scr = k[i].scr();
+        fresh(scr);
+        memset(fb, 0xA5, (size_t)W * H * sizeof(gfx_color_t));
+        k[i].inv();
+        scr->render(&cv, 0);
+        CHECK_EQ(ink_in(0, IN_CARD_B, W, IN_FOOT_Y - IN_CARD_B), 0);
+        CHECK(ink_in(IN_FOOT_X(0), IN_FOOT_Y, 328, 48) > 200);
+        CHECK_EQ(ink_in(IN_FOOT_X(1), IN_FOOT_Y, 328, 48), 0);
+        CHECK_EQ(ink_in(IN_FOOT_X(2), IN_FOOT_Y, 328, 48), 0);
+    }
+}
+
 int main(void)
 {
     RUN(the_tabs_are_a_finger_tall_and_act_to_their_edges);
@@ -430,5 +475,6 @@ int main(void)
     RUN(battery_draws_nothing_under_the_alert_band);
     RUN(balance_draws_nothing_under_the_alert_band);
     RUN(the_longest_lines_fit_their_cards);
+    RUN(the_footer_names_each_screen_and_holds_nothing_else);
     return test_summary("instruments_layout");
 }

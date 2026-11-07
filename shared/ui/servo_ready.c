@@ -4,7 +4,9 @@
  *        sequence.  See servo_ready_int.h for the layout.
  *
  * The card draws the rows the function gives (RUDDER AUTO's:
- * servo_rudder_auto_ready.c) and takes their taps.  The sequence is
+ * servo_rudder_auto_ready.c, TEST's: servo_test_ready.c, LIMIT RUN's:
+ * servo_limit_ready.c, through one table of each function's calls) and
+ * takes their taps.  The sequence is
  * servo_start_seq.h's steps done on the bench the way a finger does them:
  * PORT PWM on as OUTPUTS' segment sets it, PROG 5V on as its box's hold
  * asks it, the PD mini's output on as SUPPLY's OUTPUT ON, ARM as ARM's
@@ -23,7 +25,9 @@
 #include "prog_registry.h"
 #include "sensors_rows.h"
 #include "settings.h"
+#include "servo_limrun.h"
 #include "supply_screen.h"
+#include "ui_footer.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -56,48 +60,197 @@ void ready_init(void)
     prog_ready_reset();
 }
 
+/** @brief What the card asks of a function: its rows, its first refusal
+ *         and its row, a row's tap, what a text names when a step fails
+ *         on it, the hold's press and drawing. */
+typedef struct {
+    int count;                               /**< its rows            */
+    bool (*row)(int i, rdy_row_t *r);        /**< row @p i            */
+    const char *(*blocked)(int *row);        /**< the first refusal   */
+    void (*tap)(int i);                      /**< a tap on row @p i   */
+    rdy_kind_t (*kind)(const char *why);     /**< what @p why names   */
+    bool (*running)(void);                   /**< its run under way   */
+    bool (*hold_down)(const touch_event_t *evt); /**< a DOWN on the hold */
+    void (*draw_hold)(gfx_canvas_t *c);      /**< the hold drawn      */
+} rdy_fn_t;
+
+/** @brief RUDDER AUTO's first refusal, as rdy_fn_t asks it. */
+static const char *ra_blocked(int *row)
+{
+    rauto_row_t r = RAR_COUNT;
+    const char *why = rauto_hold_blocked(&r);
+    *row = (int)r;
+    return why;
+}
+
+/** @brief What a text of RUDDER AUTO's gate names. */
+static rdy_kind_t ra_kind(const char *why)
+{
+    switch (rauto_row_of(why)) {
+    case RAR_SUPPLY: return RDY_K_SUPPLY;
+    case RAR_PWM:    return RDY_K_PWM;
+    case RAR_ARM:    return RDY_K_ARM;
+    default:         return RDY_K_OTHER;
+    }
+}
+
+/** @brief LIMIT RUN's first refusal, as rdy_fn_t asks it. */
+static const char *lr_blocked(int *row)
+{
+    limrun_row_t r = LRR_COUNT;
+    const char *why = lim_hold_blocked(&r);
+    *row = (int)r;
+    return why;
+}
+
+/** @brief TEST's first refusal, as rdy_fn_t asks it. */
+static const char *te_blocked(int *row)
+{
+    test_row_t r = TRR_COUNT;
+    const char *why = test_hold_blocked(&r);
+    *row = (int)r;
+    return why;
+}
+
+/** @brief What a text of TEST's gate names.  The steps switch the PD mini
+ *         themselves, so its row names it whatever the hold switches. */
+static rdy_kind_t te_kind(const char *why)
+{
+    switch (test_row_of(why)) {
+    case TRR_PORT:
+        /* The carrier's port is no part the steps switch. */
+        return (why == ui_servo_str(SERVO_STR_START_PROG_STEPS))
+                   ? RDY_K_OTHER : RDY_K_PWM;
+    case TRR_PD:  return RDY_K_PD_MINI;
+    case TRR_ARM: return RDY_K_ARM;
+    default:      return RDY_K_OTHER;
+    }
+}
+
+/** @brief Whether RUDDER AUTO's run is under way. */
+static bool ra_running(void) { return servo_rauto_running(&s.ra.run); }
+/** @brief Whether the limit run is under way. */
+static bool lr_running(void) { return servo_limrun_running(&s.lim); }
+/** @brief Whether TEST's run is under way. */
+static bool te_running(void) { return servo_test_running(&s.test); }
+
+/** @brief RUDDER AUTO's calls. */
+static const rdy_fn_t k_rauto = {
+    (int)RAR_COUNT, rauto_ready_row, ra_blocked, rauto_ready_tap, ra_kind,
+    ra_running, rauto_down, rauto_draw_hold,
+};
+/** @brief TEST's calls. */
+static const rdy_fn_t k_test = {
+    (int)TRR_COUNT, test_ready_row, te_blocked, test_ready_tap, te_kind,
+    te_running, test_hold_down, test_draw_hold,
+};
+/** @brief LIMIT RUN's calls. */
+static const rdy_fn_t k_limrun = {
+    (int)LRR_COUNT, lim_ready_row, lr_blocked, lim_ready_tap, lim_kind_of,
+    lr_running, lim_hold_down, lim_draw_hold,
+};
+
+/** @brief The function shown's calls.  @return NULL without a card */
+static const rdy_fn_t *fn_now(void)
+{
+    switch ((servo_fn_t)s.fn) {
+    case SERVO_FN_RAUTO:  return &k_rauto;
+    case SERVO_FN_TEST:   return &k_test;
+    case SERVO_FN_LIMRUN: return &k_limrun;
+    default:              return NULL;
+    }
+}
+
 bool ready_shown(void)
 {
-    return s.fn == SERVO_FN_RAUTO || prog_ready_shown();
+    return fn_now() != NULL;
 }
 
 int ready_count(void)
 {
+    if (drive_shown()) {
+        return drive_ready_count();
+    }
     if (prog_ready_shown()) {
         return (int)PRR_COUNT;     /* KST's and HITEC's */
     }
-    return ready_shown() ? (int)RAR_COUNT : 0;
+    return ready_shown() ? fn_now()->count : 0;
 }
 
 bool ready_row(int i, rdy_row_t *r)
 {
+    if (drive_shown()) {
+        return drive_ready_row(i, r);
+    }
     if (prog_ready_shown()) {
         return prog_ready_row(i, r);
     }
     if (!ready_shown()) {
         return false;
     }
-    return rauto_ready_row(i, r);
+    return fn_now()->row(i, r);
 }
 
 const char *ready_refusal(char *buf, size_t n)
 {
-    if (buf == NULL || n == 0u || s.fn != SERVO_FN_RAUTO) {
+    if (buf == NULL || n == 0u) {
         return NULL;
     }
-    rauto_row_t row = RAR_COUNT;
-    const char *why = rauto_hold_blocked(&row);
+    if (drive_shown()) {
+        int i = 0;
+        const char *why = drive_hold_blocked(&i);
+        rdy_row_t r;
+        if (why == NULL || !drive_ready_row(i, &r)) {
+            return NULL;
+        }
+        snprintf(buf, n, TR(RDY_BAND), r.label, why);
+        return buf;
+    }
+    if (!ready_shown()) {
+        return NULL;
+    }
+    int row = -1;
+    const char *why = fn_now()->blocked(&row);
     if (why == NULL) {
         return NULL;
     }
     rdy_row_t r;
-    const char *label = (rauto_ready_row((int)row, &r)) ? r.label : "";
+    const char *label = (ready_row(row, &r)) ? r.label : "";
     snprintf(buf, n, TR(RDY_BAND), label, why);
     return buf;
 }
 
+gfx_rect_t ready_hold_rect(void)
+{
+    return ui_footer_rect(UI_FOOTER_HOLD);
+}
+
+bool ready_hold_stops(void)
+{
+    return ready_shown() && (svs_seq_busy() || fn_now()->running());
+}
+
+bool ready_hold_down(const touch_event_t *evt)
+{
+    return ready_shown() && fn_now()->hold_down(evt);
+}
+
+void ready_draw_hold(gfx_canvas_t *c)
+{
+    if (ready_shown()) {
+        fn_now()->draw_hold(c);
+    }
+}
+
 gfx_rect_t ready_card_rect(void)
 {
+    /* LIVE, SWEEP and RUDDER: the title and the rows; their controls are
+     * under them. */
+    if (drive_shown()) {
+        return (gfx_rect_t){ RCARD_X, RCARD_Y, RCARD_W,
+                             (int16_t)(READY_ROW_Y + ready_count()
+                                       * READY_ROW_H + 4 - RCARD_Y) };
+    }
     return (gfx_rect_t){ RCARD_X, RCARD_Y, RCARD_W, RCARD_H };
 }
 
@@ -127,7 +280,8 @@ static gfx_color_t dot_color(uint8_t st)
     case RDY_OK:   return ui_theme_color(UI_C_OK);
     case RDY_LIVE:
     case RDY_BAD:  return ui_theme_color(UI_C_DANGER);
-    case RDY_SEQ:  return ui_theme_color(UI_C_WARN);
+    case RDY_SEQ:
+    case RDY_WARN: return ui_theme_color(UI_C_WARN);
     default:       return ui_theme_color(UI_C_TEXT_FAINT);
     }
 }
@@ -140,7 +294,8 @@ static gfx_color_t dot_color(uint8_t st)
 static gfx_color_t value_color(uint8_t st)
 {
     switch ((rdy_state_t)st) {
-    case RDY_SEQ:  return ui_theme_color(UI_C_WARN);
+    case RDY_SEQ:
+    case RDY_WARN: return ui_theme_color(UI_C_WARN);
     case RDY_BAD:  return ui_theme_color(UI_C_DANGER);
     case RDY_IDLE: return ui_theme_color(UI_C_TEXT_FAINT);
     default:       return ui_theme_color(UI_C_TEXT);
@@ -204,10 +359,16 @@ void ready_render_rail(gfx_canvas_t *c)
     } else {
         snprintf(i, sizeof(i), "--A");
     }
-    snprintf(line, sizeof(line), "%s", (s.source == SERVO_SOURCE_INA3221)
-                                           ? name : "PD MINI");
+    const bool ina = (s.source == SERVO_SOURCE_INA3221);
+    snprintf(line, sizeof(line), "%s", ina ? name : "PD MINI");
     gfx_text(c, RDY_X, READY_RAIL_Y, line, SV_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
+    /* The panel's model is no measurement: its word after the name. */
+    if (!ina && supply_screen_model()) {
+        gfx_text(c, RDY_X + gfx_text_width(SV_FONT_LABEL, line, 1) + SV_CELL,
+                 READY_RAIL_Y, TR(SV_MODELLED), SV_FONT_LABEL,
+                 ui_theme_color(UI_C_WARN), 1);
+    }
     snprintf(line, sizeof(line), "%s  %s", v, i);
     gfx_text_in(c, (gfx_rect_t){ RDY_X, READY_RAIL_Y, RDY_W, 20 }, line,
                 SV_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1,
@@ -224,7 +385,11 @@ void ready_render(gfx_canvas_t *c)
     for (int i = 0; i < ready_count(); ++i) {
         draw_row(c, i);
     }
-    ready_render_rail(c);
+    /* On LIVE, SWEEP and RUDDER the card's controls are under the rows
+     * and the rail line is drawn with them. */
+    if (!drive_shown()) {
+        ready_render_rail(c);
+    }
 }
 
 uint32_t ready_sig(void)
@@ -249,14 +414,15 @@ uint32_t ready_sig(void)
 
 bool ready_down(const touch_event_t *evt)
 {
-    if (evt == NULL || !ready_shown()
+    if (evt == NULL
+        || !(ready_shown() || drive_shown() || prog_ready_shown())
         || !gfx_rect_contains(ready_card_rect(), evt->point.x,
                               evt->point.y)) {
         return false;
     }
-    /* A row's fix opens a list or leaves the screen: none under a hold's
-     * finger, whose release it would take. */
-    if (s.rdy.pressed >= 0 || svs_hold_down()) {
+    /* A row's fix opens a list, a warning or another screen: none under
+     * a press held anywhere, whose release it would take. */
+    if (s.rdy.pressed >= 0 || svs_press_held()) {
         return true;
     }
     for (int i = 0; i < ready_count(); ++i) {
@@ -286,14 +452,21 @@ bool ready_rest(const touch_event_t *evt)
     const int i = s.rdy.pressed;
     s.rdy.pressed = -1;
     ++s.ctrl_rev;
-    if (touch_event_is_tap_up(evt) && ready_shown()
-        && gfx_rect_contains(ready_row_rect(i), evt->point.x,
-                             evt->point.y)) {
-        if (prog_ready_shown()) {
-            prog_ready_tap(i);
-        } else {
-            rauto_ready_tap(i);
-        }
+    if (!touch_event_is_tap_up(evt)
+        || !gfx_rect_contains(ready_row_rect(i), evt->point.x,
+                              evt->point.y)) {
+        return true;
+    }
+    /* A press that came down elsewhere while the finger was on the row
+     * keeps its release: the fix opens nothing over it. */
+    if (svs_press_held()) {
+        ui_action_refused(TR(FOOT_PRESS_HELD));
+    } else if (drive_shown()) {
+        drive_ready_tap(i);
+    } else if (prog_ready_shown()) {
+        prog_ready_tap(i);
+    } else if (ready_shown()) {
+        fn_now()->tap(i);
     }
     return true;
 }
@@ -317,7 +490,20 @@ servo_seq_need_t svs_seq_need(void)
     n.port_pwm = target >= 1 && target <= (int)LINK_PG_PORTS_MAX;
     n.prog_5v  = prog_choice_carrier() && prog_choice_port() != 0u
                  && prog5v_box_shown();
-    n.pd_mini  = lim_pd_feeds();
+    /* The PD mini only where it is the rail's feed: on, or off on a rail
+     * that reads no 3.0V.  One off beside a rail fed from elsewhere stays
+     * off (on a PROG PORT the gate refuses it, SV_LIM_PROG_PD_OFF). */
+    const bool pd_on = s.have_sup && s.sup.online && s.sup.output;
+    const bool rail_live = s.have_win && s.win.voltage
+                           && s.win.mean_mv
+                                  >= (uint16_t)SERVO_LIMRUN_RAIL_MIN_MV;
+    n.pd_mini  = lim_pd_feeds() && (pd_on || !rail_live);
+    /* TEST's steps set the PD mini and switch its output themselves, at
+     * each step's voltage: the hold switches only the port's pulse. */
+    if (s.fn == SERVO_FN_TEST) {
+        n.prog_5v = false;
+        n.pd_mini = false;
+    }
     /* A supply switched on: the INA3221's window under way still holds
      * the rail as it was, so the checks wait for one begun after it. */
     n.settle   = n.prog_5v || n.pd_mini;
@@ -332,17 +518,22 @@ servo_seq_need_t svs_seq_need(void)
  */
 static servo_seq_part_t part_of(const char *why)
 {
-    if (why == NULL || s.fn != SERVO_FN_RAUTO) {
+    if (why != NULL && drive_shown()) {
+        return drive_part_of(why);
+    }
+    if (why == NULL || !ready_shown()) {
         return SERVO_SEQ_PART_NONE;
     }
-    switch (rauto_row_of(why)) {
-    case RAR_SUPPLY:
+    switch (fn_now()->kind(why)) {
+    case RDY_K_SUPPLY:
         return s.rdy.need.prog_5v   ? SERVO_SEQ_PART_PROG_5V
                : s.rdy.need.pd_mini ? SERVO_SEQ_PART_PD_MINI
                                     : SERVO_SEQ_PART_NONE;
-    case RAR_PWM:
+    case RDY_K_PD_MINI:
+        return SERVO_SEQ_PART_PD_MINI;
+    case RDY_K_PWM:
         return SERVO_SEQ_PART_PWM;
-    case RAR_ARM:
+    case RDY_K_ARM:
         return SERVO_SEQ_PART_ARM;
     default:
         return SERVO_SEQ_PART_NONE;
@@ -355,11 +546,9 @@ static uint32_t seq_now(void)
     return s.now_ms;
 }
 
-/**
- * @brief Every output the sequence may have switched, off; the bench to
- *        SAFE.  The run's own end does the same (ra_apply()).
- */
-static void all_off(void)
+/* Every output the sequence may have switched, off; the bench to SAFE.
+ * The run's own end does the same (ra_apply()). */
+void svs_all_off(void)
 {
     if (s.gate.armed || s.gate.arm_asked || s.pending.kind == SERVO_CMD_ARM) {
         svs_ask_disarm();
@@ -447,7 +636,7 @@ static void apply(const servo_seq_do_t *d, const char *refused)
         ++s.arm_rev;
     }
     if (d->all_off) {
-        all_off();
+        svs_all_off();
         name_failure(refused);
     }
     ++s.ctrl_rev;
@@ -458,7 +647,7 @@ bool svs_seq_begin(void)
     if (svs_seq_busy()) {
         return false;
     }
-    s.rdy.need = svs_seq_need();
+    s.rdy.need = drive_shown() ? drive_seq_need() : svs_seq_need();
     s.rdy.fail = NULL;
     if (!servo_seq_begin(&s.rdy.seq, &s.rdy.need, seq_now())) {
         return false;

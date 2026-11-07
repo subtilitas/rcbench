@@ -39,9 +39,10 @@ bool svs_arm_locked(void)
  * The controls whose press stops what the bench drives, where svs_event_body()
  * hands a DOWN at (x, y) to them now: DISARM while the button reads DISARM,
  * OUTPUT OFF while the supply's output is on, PROG 5V OFF while the
- * ports' 5V reads ON, STOP RUN and STOP TEST in
- * LIVE's result box, and START TEST and START LIMIT RUN on TEST while their
- * run is under way (a tap there stops it).
+ * ports' 5V reads ON, STOP TEST in TEST's result box while its run is
+ * under way, ARM + START on RUDDER AUTO, TEST and LIMIT RUN while
+ * its sequence or its run is under way (a tap there stops it), and the
+ * supply row of KST's and HITEC's READY card while it reads ON.
  * The router hands a press on one of them through the alert band and the
  * band's help bubble (ui_screen_t's safe_at); everything else under those
  * stays theirs, ARM included.  The order of the checks is svs_event_body()'s.
@@ -54,11 +55,28 @@ bool svs_safe_at(int x, int y)
     if (ready_shown()) {
         /* ARM + START stops a sequence or a run on its press; the READY
          * card drives nothing. */
-        if (gfx_rect_contains(rauto_rect(RA_C_START), x, y)) {
-            return servo_rauto_running(&s.ra.run) || svs_seq_busy();
+        if (gfx_rect_contains(ready_hold_rect(), x, y)) {
+            return ready_hold_stops();
         }
-        if (prog_ready_shown() && prog_ready_stops_at(x, y)) {
-            return true;        /* KST's and HITEC's supply OFF */
+        if (gfx_rect_contains(ready_card_rect(), x, y)) {
+            return false;
+        }
+    }
+    if (drive_shown()) {
+        /* ARM's steps stop on a press of the button; the rows drive
+         * nothing. */
+        if (svs_seq_busy() && gfx_rect_contains(s.arm_btn, x, y)) {
+            return true;
+        }
+        if (gfx_rect_contains(ready_card_rect(), x, y)) {
+            return false;
+        }
+    }
+    if (prog_ready_shown()) {
+        /* KST's and HITEC's supply row while it reads ON switches it off;
+         * the rest of the card drives nothing. */
+        if (prog_ready_stops_at(x, y)) {
+            return true;
         }
         if (gfx_rect_contains(ready_card_rect(), x, y)) {
             return false;
@@ -73,26 +91,12 @@ bool svs_safe_at(int x, int y)
     if (prog_shown_set() != NULL || modal_open()) {
         return false;
     }
-    if (prog5v_box_shown() && prog5v_box_on()
+    if (!drive_shown() && prog5v_box_shown() && prog5v_box_on()
         && gfx_rect_contains(prog5v_box_button(&s.p5), x, y)) {
         return true;
     }
     if (run_box_shown() && gfx_rect_contains(test_btn_rect(), x, y)) {
-        return (s.fn == SERVO_FN_LIMRUN) ? servo_limrun_running(&s.lim)
-                                         : servo_test_running(&s.test);
-    }
-    if (wb_task() == UI_WB_TEST && !s.ov_have && rows_page() < 0
-        && gfx_rect_contains(page_area(), x, y)) {
-        const int k = run_card_shown();
-        if (gfx_rect_contains(run_set_rect(k), x, y)) {
-            return false;
-        }
-        if (k == 0) {
-            return gfx_rect_contains(test_start_rect(), x, y)
-                   && servo_test_running(&s.test);
-        }
-        return gfx_rect_contains(lim_start_rect(), x, y)
-               && servo_limrun_running(&s.lim);
+        return servo_test_running(&s.test);
     }
     return false;
 }
@@ -339,33 +343,43 @@ void svs_event_body(const touch_event_t *evt)
             return;
         }
         /* KST and HITEC: WRITE in the footer's middle, no ARM, and the
-         * READY card in the output card's place. */
+         * READY card in the output card's place.  The supply row that
+         * reads ON stops an output: it takes its press under a panel too,
+         * as svs_safe_at() names it. */
         if (prog_ready_shown()) {
             if (prog_write_down(evt)) {
                 return;
             }
             if (gfx_rect_contains(ready_card_rect(), px, py)) {
-                if (!modal_open()) {
+                if (!modal_open() || prog_ready_stops_at(px, py)) {
                     (void)ready_down(evt);
                 }
                 return;
             }
         }
-        /* RUDDER AUTO: the footer's ARM + START and the READY card in the
-         * output card's place; nothing of the output card is there to
-         * press. */
+        /* RUDDER AUTO, TEST and LIMIT RUN: the footer's ARM + START and
+         * the READY card in the output card's place; nothing of the
+         * output card is there to press. */
         if (ready_shown()
-            && (gfx_rect_contains(rauto_rect(RA_C_START), px, py)
+            && (gfx_rect_contains(ready_hold_rect(), px, py)
                 || gfx_rect_contains(ready_card_rect(), px, py))) {
             /* A press on the hold during the steps or the run ends them,
              * whatever is open over the screen. */
             const bool stops =
-                gfx_rect_contains(rauto_rect(RA_C_START), px, py)
-                && (svs_seq_busy() || servo_screen_rauto_running());
+                gfx_rect_contains(ready_hold_rect(), px, py)
+                && ready_hold_stops();
             if (stops) {
                 close_panels();
-                (void)rauto_down(evt);
-            } else if (!modal_open() && !rauto_down(evt)) {
+                (void)ready_hold_down(evt);
+            } else if (!modal_open() && !ready_hold_down(evt)) {
+                (void)ready_down(evt);
+            }
+            return;
+        }
+        /* LIVE, SWEEP and RUDDER: the READY rows over the output card's
+         * controls; a row's fix opens nothing over a panel. */
+        if (drive_shown() && gfx_rect_contains(ready_card_rect(), px, py)) {
+            if (!modal_open()) {
                 (void)ready_down(evt);
             }
             return;
@@ -383,21 +397,7 @@ void svs_event_body(const touch_event_t *evt)
             }
             return;
         }
-        if (run_box_shown() && s.fn == SERVO_FN_LIMRUN
-            && gfx_rect_contains(test_btn_rect(), px, py)) {
-            /* STOP RUN ends the limit run on the press; CLOSE puts the
-             * result away. */
-            if (servo_limrun_running(&s.lim)) {
-                lim_end_now(SERVO_TEST_AB_OPERATOR);
-            } else {
-                s.lim_box = false;
-            }
-            servo_invalidate();
-            ++s.ctrl_rev;
-            return;
-        }
-        if (run_box_shown() && s.fn == SERVO_FN_TEST
-            && gfx_rect_contains(test_btn_rect(), px, py)) {
+        if (run_box_shown() && gfx_rect_contains(test_btn_rect(), px, py)) {
             /* STOP TEST ends the run on the press, as a stop does; CLOSE
              * puts the result away. */
             if (servo_test_running(&s.test)) {
@@ -423,7 +423,7 @@ void svs_event_body(const touch_event_t *evt)
             }
             return;
         }
-        if (prog5v_box_shown()
+        if (!drive_shown() && prog5v_box_shown()
             && gfx_rect_contains(prog5v_box_button(&s.p5), px, py)) {
             /* One contact owns PROG 5V, as OUTPUT; a port holding the
              * supply locks it, and the band says why. */
@@ -468,7 +468,7 @@ void svs_event_body(const touch_event_t *evt)
             }
             return;
         }
-        for (int k = 0; k < 2; ++k) {
+        for (int k = 0; k < 2 && !drive_shown(); ++k) {
             if (gfx_rect_contains(sup_val_rect(k), px, py)) {
                 /* No set point moves under a programming port, and the
                  * band says why. */
@@ -527,6 +527,9 @@ void svs_event_body(const touch_event_t *evt)
             stop_sweep();
             release();
         } else if (gfx_rect_contains(s.arm_btn, px, py)) {
+            if (drive_arm_press(evt)) {
+                return;             /* LIVE, SWEEP and RUDDER */
+            }
             if (s.gate.armed) {
                 /* DISARM acts on the press: a stop never waits for a lift
                  * that may not come.  The press takes no hold, so a finger

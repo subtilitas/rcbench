@@ -350,8 +350,8 @@ TEST_CASE(the_footer_runs_rescan_to_open_as_logs_does)
     };
     for (int k = 0; k < FOOT_N; ++k) {
         const gfx_rect_t r = FS_FOOT(order[k]);
-        CHECK_EQ(r.y, 440);
-        CHECK_EQ(r.h, 52);
+        CHECK_EQ(r.y, FS_SPOT_FOOT_Y);
+        CHECK_EQ(r.h, FS_SPOT_FOOT_BOT - FS_SPOT_FOOT_Y);
         if (k > 0) {
             const gfx_rect_t l = FS_FOOT(order[k - 1]);
             CHECK_EQ(l.x + l.w + 6, r.x);

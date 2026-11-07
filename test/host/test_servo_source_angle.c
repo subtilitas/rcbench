@@ -146,7 +146,7 @@ TEST_CASE(the_automatic_test_judges_moves_on_imu_counts)
     hold_start(2.3f);
     CHECK(servo_screen_testing());
     test_run_out();
-    CHECK_EQ(bench.disarms, 0u);
+    CHECK_EQ(bench.disarms, 1u);              /* SAFE at the run's end */
     CHECK(strstr(bench.report, "Result:         PASS") != NULL);
     CHECK(strstr(bench.report, "Encoder:        IMU Y-, in AS5600 counts "
                                "(0.088° per count),")
@@ -377,7 +377,7 @@ TEST_CASE(an_imu_silent_300ms_is_a_gap_and_a_second_within_10s_ends_the_run)
     bench_frames(300u);
     imu_plug(t + 300u);
     test_run_out();
-    CHECK_EQ(bench.disarms, 0u);
+    CHECK_EQ(bench.disarms, 1u);              /* SAFE at the run's end */
     CHECK(strstr(bench.report, "Result:         PASS") != NULL);
     CHECK(strstr(bench.report, "IMU gaps: 1, longest 300ms.") != NULL);
 
@@ -458,7 +458,7 @@ TEST_CASE(an_imu_run_ended_on_a_gap_names_the_imu_on_the_card_and_report)
         char want[96];
         snprintf(want, sizeof(want), TR(SV_CARD_LAST_WHY),
                  ui_servo_str(SERVO_STR_ABORTED), k_silent[lang]);
-        CHECK(card_line_reads(0, 1, want, UI_C_WARN));
+        CHECK(card_line_reads(1, want, UI_C_WARN));
         /* The test, two gaps 2.3s apart. */
         bench_fresh();
         short_runs();
@@ -479,7 +479,7 @@ TEST_CASE(an_imu_run_ended_on_a_gap_names_the_imu_on_the_card_and_report)
         open_test();
         snprintf(want, sizeof(want), TR(SV_CARD_LAST_WHY),
                  ui_servo_str(SERVO_STR_ABORTED), k_gaps[lang]);
-        CHECK(card_line_reads(0, 1, want, UI_C_WARN));
+        CHECK(card_line_reads(1, want, UI_C_WARN));
         /* The limit run, silent 301ms. */
         lim_bench();
         imu_on(0u, false);

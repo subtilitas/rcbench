@@ -785,10 +785,10 @@ pressed, with no Enter.
    Close PuTTY; this log is `noise.log`.
 5. Servo at rest: new log file. Connect the servo, press ARM, leave it at the
    centre, supply on at 4.80V. Press `t` and wait for the `$Z` line.
-6. Moves, in the same log: on the SERVO screen's TEST task, in the
-   AUTOMATIC TEST card's SETTINGS, set TEST LENGTH BY
-   to MOVEMENTS, MOVEMENTS 20, DWELL TIME 1000ms, STEP 4.8V on and every
-   other step and BROWN-OUT off. START TEST. The trace runs from the first
+6. Moves, in the same log: on the SERVO screen's TEST task, switch to
+   SAFE and open SETTINGS. Set Length by to MOVES, Movements 20, Dwell time
+   1000ms, Step 4.8V on and every other step and Brown-out off, and SAVE.
+   Hold HOLD 2s: ARM + START. The trace runs from the first
    move to 4s after the last; wait for its `$Z` line, then close PuTTY.
 7. Repeat steps 5 and 6 at 6.00V with STEP 6.0V, and both for each
    servo: one log file per servo and voltage.

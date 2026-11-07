@@ -404,7 +404,7 @@ TEST_CASE(the_programmer_stays_on_the_screen_while_the_port_is_held)
 }
 
 /* The SET row of the SERVO screen's right card, as the screen lays it
- * out. */
+ * out on KST and HITEC. */
 #define SUP_ROW_Y SV_SUP_Y
 
 #define SUP_V_X   SV_SUP_V_X
@@ -412,34 +412,6 @@ TEST_CASE(the_programmer_stays_on_the_screen_while_the_port_is_held)
 #define SUP_I_X   SV_SUP_I_X
 
 #define SUP_OUT_X SV_SUP_OUT_X
-
-/* A key of the SERVO screen's own keypad, where the screen opens it. */
-static void screen_key(ui_key_t key_id)
-{
-    ui_keypad_t probe;
-    gfx_rect_t r;
-
-    memset(&probe, 0, sizeof(probe));
-    ui_keypad_open(&probe, AREA, "", "", 0.0f, 0.0f, 1.0f, 2);
-    r = ui_keypad_key_rect(&probe, key_id);
-    screen_tap(cx(r), cy(r));
-}
-
-/* OUTPUT ON held on the SERVO screen's SET row until it asks. */
-static void servo_output_on(void)
-{
-    supply_cmd_t c;
-
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
-    for (int i = 0; i < 120; ++i) {
-        scr->tick(0.025f);
-    }
-    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
-    CHECK(supply_screen_poll_cmd(&c));
-    CHECK(c.on);
-    supply_screen_set_output(true);         /* the supply reports it */
-    scr->tick(0.025f);
-}
 
 /* CONNECT, with the PD mini's output on behind it as the port reports. */
 static void connect_powered(void)
@@ -456,8 +428,9 @@ static void connect_powered(void)
 
 /*
  * A supply the SERVO screen switched on goes off when the screen is left:
- * by OUTPUT ON, or by the programmer's CONNECT.  The programmer's overlay
- * and the SET row's keypad are the screen's own and are no leave.  Left
+ * by ARM's steps on LIVE, SWEEP or RUDDER (the ON they ask as SERVO's), or
+ * by the programmer's CONNECT.  KST's screen shown and closed again is no
+ * leave.  Left
  * while the port holds the supply, the OFF waits for the port to let go:
  * an OFF now would end the session and cut a write on the wire.  Shown
  * again first, the OFF is dropped and the next leave owes it again.
@@ -466,18 +439,22 @@ TEST_CASE(leaving_servo_switches_its_supply_off_once_the_port_lets_go)
 {
     supply_cmd_t c;
 
-    /* OUTPUT ON, the overlay opened and closed, a keypad: still on. */
+    /* The ON ARM's steps ask on LIVE (apply() in servo_ready.c), KST
+     * shown and closed: still on. */
     fresh_screen();
     g_rig.rail = true;
     link_up();
-    servo_output_on();
+    go(SERVO_FN_LIVE);
+    supply_screen_ask_on(SUPPLY_BY_SERVO);
+    CHECK(supply_screen_poll_cmd(&c));
+    CHECK(c.on);
+    supply_screen_set_output(true);         /* the supply reports it */
+    scr->tick(0.025f);
     CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SERVO);
     program_open();
     CHECK(kst_panel_is_open());
     program_close();
     CHECK(!kst_panel_is_open());
-    screen_tap(SUP_V_X, SUP_ROW_Y);
-    screen_key(UI_KEY_CANCEL);
     CHECK(!supply_screen_poll_cmd(&c));
     scr->leave();
     CHECK(supply_screen_poll_cmd(&c));
@@ -533,8 +510,8 @@ TEST_CASE(leaving_servo_switches_its_supply_off_once_the_port_lets_go)
 }
 
 /* From CONNECT to the end of DISCONNECT the supply's own controls offer an
- * OFF and nothing else: the SET row of the SERVO screen and the SUPPLY
- * screen take no set point and no ON. */
+ * OFF and nothing else: KST's READY card and the SUPPLY screen take no set
+ * point and no ON. */
 TEST_CASE(the_supplys_controls_are_held_for_as_long_as_the_port)
 {
     supply_cmd_t c;

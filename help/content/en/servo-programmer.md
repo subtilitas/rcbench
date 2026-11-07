@@ -67,7 +67,7 @@ While the tester owns the port, MORE configures the values applied by CONNECT:
 ![A PD mini answers](view:servo-kst-supply)
 ![The supply in programming mode](view:servo-kst-supplied)
 
-While the port is in programming mode, it controls the supply set points. The SET row and SUPPLY screen reject changes and ON; OUTPUT OFF and STOP remain available. Without a PD mini, voltage and current limit are stored but not applied. After returning to PWM, the pre-session set points are restored once the output is off. If LEAVE keeps it on, restoration waits for the next OFF. Any set point changed in the meantime is retained.
+While the port is in programming mode, it controls the supply set points. KST's and HITEC's READY card and the SUPPLY screen reject changes and ON; OUTPUT OFF, the supply row's OFF and STOP remain available. Without a PD mini, voltage and current limit are stored but not applied. After returning to PWM, the pre-session set points are restored once the output is off. If LEAVE keeps it on, restoration waits for the next OFF. Any set point changed in the meantime is retained.
 
 ![The question after LEAVE](view:servo-hitec-restore-ask)
 

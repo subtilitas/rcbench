@@ -255,7 +255,9 @@ TEST_CASE(a_finger_on_the_card_or_write_keeps_settings_and_port_shut)
 
 /* The PD mini's output on: the supply row's red dot reads ON, the router
  * hands a press there through the band, and a tap asks OFF, as OUTPUT OFF
- * does. */
+ * does.  A finger that slides off the row before it lifts asks nothing.
+ * The OFF is taken under a panel too: with the PORT list open over the
+ * session, a tap on the row still asks it. */
 TEST_CASE(a_tap_on_the_supply_while_it_reads_on_switches_it_off)
 {
     supply_cmd_t sc;
@@ -273,6 +275,18 @@ TEST_CASE(a_tap_on_the_supply_while_it_reads_on_switches_it_off)
     const gfx_rect_t a = ready_row_rect(PRR_SUPPLY);
     CHECK(scr->safe_at(a.x + a.w / 2, a.y + a.h / 2));
     CHECK(!scr->safe_at(a.x + a.w / 2, ready_row_rect(PRR_SERVO).y + 4));
+    while (supply_screen_poll_cmd(&sc)) { }
+    ev(a.x + a.w / 2, a.y + a.h / 2, TOUCH_EVENT_DOWN, 1);
+    ev(a.x + a.w / 2, 100, TOUCH_EVENT_MOVE, 1);
+    ev(a.x + a.w / 2, 100, TOUCH_EVENT_UP, 1);
+    CHECK(!supply_screen_poll_cmd(&sc));
+    ev(a.x + a.w / 2, a.y + a.h / 2, TOUCH_EVENT_DOWN, 1);
+    ev(a.x + a.w / 2, a.y + a.h / 2, TOUCH_EVENT_UP, 1);
+    CHECK(supply_screen_poll_cmd(&sc));
+    CHECK(sc.off && !sc.on);
+    /* Under the PORT list. */
+    tap_row(PRR_PORT);
+    CHECK(servo_screen_port_choices() > 0);
     while (supply_screen_poll_cmd(&sc)) { }
     ev(a.x + a.w / 2, a.y + a.h / 2, TOUCH_EVENT_DOWN, 1);
     ev(a.x + a.w / 2, a.y + a.h / 2, TOUCH_EVENT_UP, 1);
