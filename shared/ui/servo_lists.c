@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "hitec_panel.h"
 #include "settings.h"
 #include "ui_setlist.h"
 #include "ui_text.h"
@@ -358,6 +359,18 @@ static bool list_line(char *out, size_t n, bool *warn)
 }
 
 /**
+ * @brief A row changed by a step, the keypad, RESET or DISCARD: HITEC's
+ *        SERIES reaches the programmer before its next CONNECT.
+ * @param id The setting that changed; SETTING_COUNT for several.
+ */
+static void list_changed(setting_id_t id)
+{
+    if (id == SET_HITEC_SERIES || (int)id == SETTING_COUNT) {
+        hitec_panel_settings_changed();
+    }
+}
+
+/**
  * @brief RESET: the list's own settings to their defaults; on the hub
  *        also the profile to STANDARD PWM at 50Hz, TRIM 0, TRAVEL 90°,
  *        REVERSE and HV SERVO off, as at a restart.
@@ -381,6 +394,7 @@ static void list_reset(void)
         s.type = -1;            /* the pulses go back with the type */
         apply_profile(0, k_types[0].default_hz);
     }
+    list_changed((setting_id_t)SETTING_COUNT);
     ++s.sl_rev;
 }
 
@@ -389,6 +403,7 @@ static void list_invalidate(void)
 {
     ++s.sl_rev;
 }
+
 
 /** @brief The leave warning's SAVE and DISCARD: the list closes. */
 static void list_way_out(void) { svs_list_close(); }
@@ -401,6 +416,7 @@ static const ui_setlist_host_t k_host = {
     .name       = list_name,
     .name_line  = list_line,
     .reset      = list_reset,
+    .changed    = list_changed,
     .invalidate = list_invalidate,
     .way_out    = list_way_out,
 };

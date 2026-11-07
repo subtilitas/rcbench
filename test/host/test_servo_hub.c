@@ -13,11 +13,14 @@
  * - the_hub_footer_holds_no_arm_and_settings_opens_the_profile
  * - the_hub_keeps_the_bench_safe
  * - a_programmers_close_goes_back_to_the_hub
+ * - hitecs_series_row_reaches_the_programmer
  *
  * SPDX-License-Identifier: MIT
  */
 
 #include "nav_rig.h"
+#include "hitec_panel.h"
+#include "hitec_prog.h"
 #include "ui_footer.h"
 #include "ui_setlist.h"
 
@@ -219,6 +222,29 @@ TEST_CASE(a_programmers_close_goes_back_to_the_hub)
     CHECK_EQ(servo_screen_fn(), SERVO_FN_HUB);
 }
 
+/* SERIES stepped in HITEC's SETTINGS list reaches the programmer at once:
+ * the next CONNECT uses CLASSIC, not the D series the screen opened
+ * with, and RESET puts D back. */
+TEST_CASE(hitecs_series_row_reaches_the_programmer)
+{
+    on_hub();
+    tap_tile(7);
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO_HITEC);
+    CHECK_EQ(hitec_prog_series(hitec_panel_model()), (uint8_t)HITEC_D);
+    tap(SV_FOOT_SET_X, UI_BAND_H + SV_FOOT_Y);
+    const ui_setlist_t *sl = servo_screen_list();
+    CHECK(sl->open);
+    const gfx_rect_t minus = ui_setlist_row_part(sl, 0, UI_SL_PART_MINUS);
+    tap(minus.x + minus.w / 2, UI_BAND_H + minus.y + minus.h / 2);
+    CHECK_EQ(settings_get_int(SET_HITEC_SERIES), (int)HITEC_CLASSIC);
+    CHECK_EQ(hitec_prog_series(hitec_panel_model()), (uint8_t)HITEC_CLASSIC);
+    const gfx_rect_t reset = ui_setlist_strip_rect(1);
+    tap(reset.x + reset.w / 2, UI_BAND_H + reset.y + reset.h / 2);
+    CHECK_EQ(settings_get_int(SET_HITEC_SERIES), (int)HITEC_D);
+    CHECK_EQ(hitec_prog_series(hitec_panel_model()), (uint8_t)HITEC_D);
+    settings_cancel_save();
+}
+
 int main(void)
 {
     RUN(the_tiles_take_setups_grid_in_the_order_of_use);
@@ -228,5 +254,6 @@ int main(void)
     RUN(the_hub_footer_holds_no_arm_and_settings_opens_the_profile);
     RUN(the_hub_keeps_the_bench_safe);
     RUN(a_programmers_close_goes_back_to_the_hub);
+    RUN(hitecs_series_row_reaches_the_programmer);
     return test_summary("servo_hub");
 }
