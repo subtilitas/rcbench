@@ -23,11 +23,14 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "kst_port.h"
 #include "prog5v_box.h"
 #include "prog_choice.h"
 #include "prog_registry.h"
 #include "sensors_rows.h"
+#include "servo_limrun.h"
 #include "settings.h"
+#include "supply_screen.h"
 #include "ui_setlist.h"
 #include "ui_text.h"
 
@@ -51,6 +54,8 @@ enum {
     CK_PWM,         /**< the port's pulse off, or a session holding it */
     CK_RANGE,       /**< PULSE MIN to MAX short of 1000 to 2000us      */
     CK_PROG,        /**< the programmer, and the supply it switches    */
+    CK_PD_LOW,      /**< the PD mini set under 4.8V: lim_prog_why()
+                         names it only once its output is on            */
     CK_WRITE,       /**< a write able to act                           */
     CK_ANGLE,       /**< a reading of the angle source                 */
     CK_ZERO,        /**< ZERO taken                                    */
@@ -109,6 +114,11 @@ static const char *check(int k)
         /* The programmer free, and a written value able to act: a PD
          * mini, or the carrier's PROG 5V, switches the servo off and on. */
         return lim_prog_why();
+    case CK_PD_LOW:
+        return (lim_pd_feeds()
+                && supply_screen_set_v() * 1000.0f
+                       < (float)KST_PORT_SUPPLY_MIN_MV - 0.5f)
+                   ? TR(SV_LIM_PROG_LOW) : NULL;
     case CK_WRITE:
         return lim_write_why();
     case CK_ANGLE: {
@@ -190,6 +200,19 @@ rauto_row_t rauto_row_of(const char *why)
     return RAR_COUNT;
 }
 
+/**
+ * @brief Whether the INA3221's last window reads the servo rail dead:
+ *        under SERVO_LIMRUN_RAIL_MIN_MV (3.0V), as an output that is off
+ *        reads.  A rail that reads more with the PD mini's output off is
+ *        fed from elsewhere.
+ * @return true then; false without a window
+ */
+static bool rail_dead(void)
+{
+    return s.have_win && s.win.voltage
+           && s.win.mean_mv < (uint16_t)SERVO_LIMRUN_RAIL_MIN_MV;
+}
+
 /** @brief Whether the bench is SAFE and nothing arms it: the steps the
  *         hold switches are taken only then. */
 static bool safe_now(void)
@@ -220,7 +243,9 @@ bool rauto_seq_fixes(const char *why)
     if (why == TR(SV_LIM_PWM_SAFE)) {
         return true;
     }
-    return why == TR(SV_LIM_PROG_PD_OFF);
+    /* The PD mini's output off: the hold switches it on only on a rail
+     * that reads dead.  One fed from elsewhere stays the operator's. */
+    return why == TR(SV_LIM_PROG_PD_OFF) && rail_dead();
 }
 
 /**
@@ -365,15 +390,25 @@ bool rauto_ready_row(int i, rdy_row_t *r)
     rauto_row_t row[CK_COUNT];
     checks_now(why, row);
     bool port_bad = false;
-    const char *mine = NULL;
+    /* The row's first text that refuses the hold, else its first the hold
+     * does: an amber text never hides a red one of the same row. */
+    const char *bad = NULL, *seq = NULL;
     for (int k = 0; k < CK_COUNT; ++k) {
         if (row[k] == RAR_PORT && why[k] != NULL) {
             port_bad = true;
         }
-        if (mine == NULL && row[k] == (rauto_row_t)i) {
-            mine = why[k];
+        if (why[k] == NULL || row[k] != (rauto_row_t)i) {
+            continue;
+        }
+        if (!rauto_seq_fixes(why[k])) {
+            if (bad == NULL) {
+                bad = why[k];
+            }
+        } else if (seq == NULL) {
+            seq = why[k];
         }
     }
+    const char *mine = (bad != NULL) ? bad : seq;
     /* A run under way: its rows as it started, the ARM row its own. */
     if (servo_rauto_running(&s.ra.run)) {
         mine = NULL;

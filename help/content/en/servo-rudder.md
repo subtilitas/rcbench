@@ -80,7 +80,7 @@ The READY card on the right lists what the start needs, one row each: PORT, SERV
 
 ### ARM + START
 
-First take ZERO with the surface at neutral. Then hold HOLD 2s: ARM + START in the footer. The hold switches PORT PWM on, then PROG 5V or the PD mini's output, waits up to 1000ms for both to read back ON, arms, waits up to 500ms for ARMED, and starts the run. The button shows the step in amber, the first line `START, STEP 3 OF 5: READ-BACK`. A tap on it stops the sequence. While the run runs it reads STOP RUN; a press ends the run at once.
+First take ZERO with the surface at neutral. Then hold HOLD 2s: ARM + START in the footer. The hold switches PORT PWM on, then PROG 5V or the PD mini's output. It waits up to 1000ms for both to read back ON and for a meter window taken after that, arms, waits up to 500ms for ARMED, and starts the run. The pulse runs only from the ARM. The button shows the step in amber, the first line `START, STEP 3 OF 5: READ-BACK`. A tap on it stops the sequence. During the steps the left card, SETTINGS and the READY card take no press, and the run starts on the settings the hold fired on. While the run runs it reads STOP RUN; a press ends the run at once.
 
 ![The sequence waiting for the PROG 5V's read-back](view:servo-rudder-auto-start-rbmod)
 

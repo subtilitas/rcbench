@@ -303,7 +303,35 @@ servo_seq_need_t svs_seq_need(void)
     n.prog_5v  = prog_choice_carrier() && prog_choice_port() != 0u
                  && prog5v_box_shown();
     n.pd_mini  = lim_pd_feeds();
+    /* A supply switched on: the INA3221's window under way still holds
+     * the rail as it was, so the checks wait for one begun after it. */
+    n.settle   = n.prog_5v || n.pd_mini;
     return n;
+}
+
+/**
+ * @brief The part a refusal of the function shown names: the supply for a
+ *        supply row's text, PORT PWM for its row's, ARM for ARM's.
+ * @param why the refusal, or NULL
+ * @return the part; SERVO_SEQ_PART_NONE for the step's own
+ */
+static servo_seq_part_t part_of(const char *why)
+{
+    if (why == NULL || s.fn != SERVO_FN_RAUTO) {
+        return SERVO_SEQ_PART_NONE;
+    }
+    switch (rauto_row_of(why)) {
+    case RAR_SUPPLY:
+        return s.rdy.need.prog_5v   ? SERVO_SEQ_PART_PROG_5V
+               : s.rdy.need.pd_mini ? SERVO_SEQ_PART_PD_MINI
+                                    : SERVO_SEQ_PART_NONE;
+    case RAR_PWM:
+        return SERVO_SEQ_PART_PWM;
+    case RAR_ARM:
+        return SERVO_SEQ_PART_ARM;
+    default:
+        return SERVO_SEQ_PART_NONE;
+    }
 }
 
 /** @brief The time the sequence runs on: the screen's clock. */
@@ -435,6 +463,11 @@ bool svs_seq_frame(const char *refused)
         .pd_on   = s.have_sup && s.sup.online && s.sup.output,
         .armed   = value_live(),
         .refused = refused != NULL,
+        .refused_part = (uint8_t)part_of(refused),
+        /* The latest window's start: the end it closed by, less its
+         * length. */
+        .reading = s.have_win && s.win.stamped && s.win.voltage,
+        .reading_from_ms = s.win.taken_ms - (uint32_t)SENSE_LINK_WINDOW_MS,
     };
     const servo_seq_step_t was = servo_seq_step_now(&s.rdy.seq);
     servo_seq_do_t d;

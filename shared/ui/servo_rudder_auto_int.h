@@ -59,6 +59,8 @@ typedef enum {
 /** @brief The box's state, the member `ra` of the screen's state. */
 typedef struct {
     servo_rauto_t run;      /**< the run                                */
+    servo_rauto_cfg_t cfg;  /**< the run's settings as the hold fired:
+                                 what RUN starts with                  */
     bool      view;         /**< RUDDER shows the box                   */
     ui_hold_t hold;         /**< START's 2s hold                        */
     bool      down;         /**< START is held                          */

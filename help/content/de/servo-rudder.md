@@ -80,7 +80,7 @@ Die Karte BEREIT rechts zeigt, was der Start braucht, eine Zeile je Punkt: PORT,
 
 ### ARM + START
 
-Setze zuerst NULLPUNKT bei neutraler Ruderfläche. Halte dann 2s HALTEN: ARM + START in der Fußleiste. Das Halten schaltet PORT-PWM ein, dann PROG 5V oder den Ausgang des PD mini, wartet bis zu 1000ms auf deren Rückmeldung EIN, schaltet ARM, wartet bis zu 500ms auf ARMED und startet den Lauf. Die Taste zeigt den Schritt in Gelb, die erste Zeile `START, SCHRITT 3 VON 5: RÜCKMELDUNG`. Ein Tippen darauf stoppt die Folge. Während des Laufs heißt sie LAUF BEENDEN; ein Druck beendet den Lauf sofort.
+Setze zuerst NULLPUNKT bei neutraler Ruderfläche. Halte dann 2s HALTEN: ARM + START in der Fußleiste. Das Halten schaltet PORT-PWM ein, dann PROG 5V oder den Ausgang des PD mini. Es wartet bis zu 1000ms auf deren Rückmeldung EIN und auf ein danach genommenes Messfenster, schaltet ARM, wartet bis zu 500ms auf ARMED und startet den Lauf. Der Puls läuft erst ab dem ARM. Die Taste zeigt den Schritt in Gelb, die erste Zeile `START, SCHRITT 3 VON 5: RÜCKMELDUNG`. Ein Tippen darauf stoppt die Folge. Während der Schritte nehmen die linke Karte, OPTIONEN und die Karte BEREIT keinen Druck an, und der Lauf startet mit den Einstellungen beim Auslösen des Haltens. Während des Laufs heißt sie LAUF BEENDEN; ein Druck beendet den Lauf sofort.
 
 ![Die Folge wartet auf die Rückmeldung von PROG 5V](view:servo-rudder-auto-start-rbmod)
 

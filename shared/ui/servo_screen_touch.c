@@ -341,7 +341,15 @@ void svs_event_body(const touch_event_t *evt)
         if (ready_shown()
             && (gfx_rect_contains(rauto_rect(RA_C_START), px, py)
                 || gfx_rect_contains(ready_card_rect(), px, py))) {
-            if (!modal_open() && !rauto_down(evt)) {
+            /* A press on the hold during the steps or the run ends them,
+             * whatever is open over the screen. */
+            const bool stops =
+                gfx_rect_contains(rauto_rect(RA_C_START), px, py)
+                && (svs_seq_busy() || servo_screen_rauto_running());
+            if (stops) {
+                close_panels();
+                (void)rauto_down(evt);
+            } else if (!modal_open() && !rauto_down(evt)) {
                 (void)ready_down(evt);
             }
             return;

@@ -12,8 +12,13 @@
  *   2. PROG 5V or PD MINI: the supply that feeds the servo switched on,
  *      where it reads OFF: the rbmod carrier's PROG 5V for a carrier port,
  *      the PD mini's output where it feeds the servo.
- *   3. READ-BACK: every part asked for reads back ON -- the supply, the
- *      port's pulse -- within SERVO_SEQ_READBACK_MS (1000ms) of step 2.
+ *   3. READ-BACK: every part asked for reads back ON -- the supply, and
+ *      PORT PWM's bit on the IOmcu, which the panel sets only while SAFE
+ *      (the pulse itself runs only while ARMED) -- and, where need.settle,
+ *      a reading taken wholly after that (in->reading_from_ms), all within
+ *      SERVO_SEQ_READBACK_MS (1000ms) of step 2.  The caller's checks are
+ *      judged on that reading: a rail the INA3221 measured with the supply
+ *      still off refuses nothing.
  *   4. ARM: ARM asked where the bench is not ARMED; ARMED within
  *      SERVO_SEQ_ARMED_MS (500ms).
  *   5. RUN: the caller starts its run and says whether it took it
@@ -22,9 +27,12 @@
  * A step that fails ends the sequence and names itself (servo_seq_part()):
  * a read-back missing at 1000ms names the part that did not read back, an
  * ARMED missing at 500ms names ARM, a check of the caller's that refuses
- * on the way (in->refused: a lost link, a part offline) names the step
- * under way, a STOP or a touch loss (servo_seq_abort()) the same.  Every
- * failure asks all_off: DISARM, the supply off, the bench SAFE.
+ * on the way (in->refused: a lost link, a part offline) names the part
+ * the caller gives (in->refused_part), else the step under way, a STOP or
+ * a touch loss (servo_seq_abort()) the step under way.  A step's time is
+ * judged before what it reads: a part that reads back only after its time
+ * fails the step, however long the frame between took.  Every failure
+ * asks all_off: DISARM, the supply off, the bench SAFE.
  *
  * Steps 1 and 2 take one call; the clock runs from step 2.  A part that
  * reads ON already is not asked again, so a bench set up by hand runs the
@@ -86,6 +94,8 @@ typedef struct {
     bool port_pwm;  /**< the run drives a PROG PORT: its pulse            */
     bool prog_5v;   /**< the rbmod carrier's PROG 5V feeds the servo      */
     bool pd_mini;   /**< the PD mini's output feeds the servo             */
+    bool settle;    /**< READ-BACK waits for a reading taken after every
+                         part reads ON before it judges in->refused     */
 } servo_seq_need_t;
 
 /** @brief What the bench reads now, each step. */
@@ -96,6 +106,11 @@ typedef struct {
     bool pd_on;     /**< the PD mini's output reads back ON               */
     bool armed;     /**< the bench reads ARMED                            */
     bool refused;   /**< a check of the caller's refuses the run now      */
+    uint8_t refused_part; /**< servo_seq_part_t the refusal names;
+                               SERVO_SEQ_PART_NONE for the step's own    */
+    bool reading;   /**< a reading is in, reading_from_ms set             */
+    uint32_t reading_from_ms; /**< when the latest reading began, ms, on
+                                   now_ms's clock                       */
 } servo_seq_in_t;
 
 /** @brief What a step asks of the caller, once each. */
@@ -118,6 +133,8 @@ typedef struct {
     bool     done;          /**< the last sequence started its run   */
     uint32_t step_ms;       /**< when the step under way began, ms   */
     uint32_t readback_ms;   /**< how long the read-back took, ms     */
+    bool     parts_on;      /**< READ-BACK: every part reads ON      */
+    uint32_t parts_ms;      /**< since when, ms                      */
 } servo_seq_t;
 
 /**

@@ -1478,8 +1478,8 @@ The start sequence, each step a state line and the hold's label:
 | --- | --- | --- |
 | 1 PORT PWM | PORT PWM ON, saved, where the target is a PROG PORT and the setting is OFF | at once |
 | 2 PROG 5V or PD MINI | PROG 5V ON on the rbmod carrier's port; the PD mini's OUTPUT ON where it feeds the servo, at SUPPLY's SET V and SET A | at once |
-| 3 READ-BACK | waits until PROG 5V or the PD mini's output and the port's pulse read back ON | 1000ms; a part that does not read back fails the step |
-| 4 ARM | ARM, where the bench is SAFE | ARMED within 500ms |
+| 3 READ-BACK | waits until PROG 5V or the PD mini's output reads back ON, then PORT PWM's bit on the IOmcu (the panel sets it only while SAFE; the pulse itself runs only while ARMED), then for an INA3221 window that began after both. The rows are judged on that window | 1000ms from step 2 for all three; a part that does not read back fails the step, and so does one that reads back only after the 1000ms |
+| 4 ARM | ARM, where the bench is SAFE | ARMED within 500ms; an ARMED read only after the 500ms fails the step |
 | 5 START | the run starts on the gate of the table below | at once |
 
 A part that reads ON already is not asked again: a bench set up by hand
@@ -1487,15 +1487,25 @@ runs the same steps. A failed step names itself in the alert band and on
 the first line, `PROG 5V FAILED: NO READ-BACK IN 1000ms`, `ARM FAILED:
 NOT ARMED IN 500ms`, `<step> FAILED: <reason>` for a row that turns red on
 the way, `<step> FAILED: STOP` for a tap on the hold, a STOP or a touch
-loss. Every failure asks DISARM, PROG 5V OFF and the PD mini's OUTPUT OFF:
+loss. A red row names the step of its own part: a supply row names PROG
+5V or PD MINI, `PROG 5V FAILED: PROGRAMMING: SERVO RAIL BELOW 4.8V` for a
+rail that stays low after the 5V reads back ON; PORT PWM's row names PORT
+PWM; ARM's names ARM. Every failure asks DISARM, PROG 5V OFF and the PD mini's OUTPUT OFF:
 the bench ends SAFE with every output off. Leaving RUDDER AUTO during the
 sequence ends it as any leave does: SAFE, and the PROG 5V kept for another
 SERVO screen until SERVO is left. While the sequence runs the hold reads
-the step in amber, and a tap stops it; while the run runs it reads STOP
-RUN in red, and a press ends the run on the press. PORT PWM stays ON after
-a failure: the port sends no pulse while SAFE. The 1000ms and 500ms are
-constants in `servo_start_seq.h`, host-tested at 900ms and 1100ms and at
-400ms and 600ms (`test_servo_start_seq`, `test_servo_rauto_kst`).
+the step in amber, and a press on it stops them whatever is open over the
+screen; while the run runs it reads STOP RUN in red, and a press ends the
+run on the press. During the steps the left card's rows, SETTINGS, PORT and
+the READY card take no press. The run starts on the settings as they read
+when the hold fired. PORT PWM stays ON after a failure, and the IOmcu's bit
+with it: the bench ends SAFE, and the port sends no pulse until the next
+ARM. The 1000ms and 500ms are constants in `servo_start_seq.h`,
+host-tested at 900ms and 1100ms and at 400ms and 600ms
+(`test_servo_start_seq`). On the screen a PROG 5V read back at 800ms
+starts the run and one at 1100ms fails (`test_servo_rauto_seq`): a read-back
+at 900ms leaves too little of the 1000ms for the port's bit and a 50ms
+window after it.
 
 The rows are the checks of the start gate, `rauto_blocked()`
 (`shared/ui/servo_rudder_auto_ready.c`), in the gate's order; each text
@@ -1514,8 +1524,15 @@ while:
 | ZERO | ZERO is not taken | `SET ZERO WITH THE SURFACE AT NEUTRAL` |
 | ARM | another run runs, or a report is still being written | the run's line, as on TEST |
 
+A row with a text that refuses reads red even when another of its texts
+is one the hold does: a report still being written shows on ARM in red,
+not `START ARMS`. A PD mini set under 4.8V shows red on PD MINI with its
+output off.
+
 Amber on a SAFE bench, done by the hold: `PROG 5V OFF: SWITCH IT ON IN THE
-PROG 5V BOX` (PROG 5V), `PROGRAMMING: PD MINI OUTPUT OFF` (PD MINI),
+PROG 5V BOX` (PROG 5V), `PROGRAMMING: PD MINI OUTPUT OFF` (PD MINI, only
+while the INA3221 reads the rail under 3.0V: a rail that reads more with
+the output off is fed from elsewhere, and the row is red),
 `PORT PWM OFF: SWITCH IT ON IN OUTPUTS` and `PORT PWM ON, WAITING FOR
 SAFE: DISARM, THEN ARM` (PORT PWM), and `ARM FIRST` (ARM, also while
 ARMED is asked).

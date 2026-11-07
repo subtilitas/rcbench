@@ -78,16 +78,22 @@ history is in git.
   one 30px row for each check of the start gate (PORT, SERVO, METER,
   ANGLE, ZERO, RANGE, PROGRAMMER, the supply, PORT PWM, ARM) and the
   meter's volts and amps under them. A row is green when met, amber when
-  the hold does it, red when it refuses the hold, grey while it waits on
-  PORT. A tap on PORT, SERVO, METER, ANGLE or ZERO takes its fix; a tap on
+  the hold does it, red when any of its texts refuses the hold, grey while
+  it waits on PORT. The PD mini's output off is amber only while the rail
+  reads under 3.0V; a rail fed from elsewhere keeps the row red. A tap on PORT, SERVO, METER, ANGLE or ZERO takes its fix; a tap on
   another red row names it in the alert band.
 - RUDDER AUTO's start is the footer's `HOLD 2s: ARM + START`. It switches
   PORT PWM on, then PROG 5V on the carrier or the PD mini where it feeds
-  the servo, waits up to 1000ms for the read-back, arms, waits up to 500ms
-  for ARMED and starts the run (`shared/servo/servo_start_seq.c`). A failed
-  step switches every output off and the alert band names it, for example
-  `PROG 5V FAILED: NO READ-BACK IN 1000ms`. A tap on the hold during the
-  steps ends them the same way. The START button on the left card is gone.
+  the servo, waits up to 1000ms for the read-back and an INA3221 window
+  begun after it, arms, waits up to 500ms for ARMED and starts the run on
+  the settings as they read when the hold fired
+  (`shared/servo/servo_start_seq.c`). A part or ARMED that reads back only
+  after its time fails the step. A failed step switches every output off
+  and the alert band names the step of the failing part, for example
+  `PROG 5V FAILED: NO READ-BACK IN 1000ms`. A press on the hold during the
+  steps ends them the same way, whatever is open over the screen; the left
+  card's rows take no press meanwhile. The START button on the left card is
+  gone.
 - While a finger holds ARM + START, and while its steps run, PORT opens
   nothing and takes no pick, and TARGET, PORT PWM and SETTINGS are locked.
   While any of SERVO's holds has its finger down, the READY card takes no

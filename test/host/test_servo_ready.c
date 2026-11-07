@@ -16,6 +16,7 @@
  * - a_tap_on_port_opens_the_port_list
  * - every_label_and_state_fits_its_column
  * - the_card_takes_the_output_cards_place_on_rudder_auto_only
+ * - a_refused_hold_has_a_red_row_naming_it
  *
  * SPDX-License-Identifier: MIT
  */
@@ -115,7 +116,44 @@ static bool card_holds_the_gate(void)
     for (int i = 0; i < (int)RAR_COUNT; ++i) {
         on += (r[i].why == g);
     }
-    return on == 1 && r[rauto_row_of(g)].why == g;
+    /* Its row shows it, or a text of the same row that refuses the hold
+     * where the gate's own is one the hold does. */
+    const rdy_row_t *mine = &r[rauto_row_of(g)];
+    if (mine->why == g) {
+        return on == 1;
+    }
+    return on == 0 && rauto_seq_fixes(g) && mine->st == (uint8_t)RDY_BAD;
+}
+
+/**
+ * @brief A hold refused is named on a red row: the row of
+ *        rauto_hold_blocked()'s text reads red with that text, and every
+ *        row with a text that refuses reads red, but the rows that wait on
+ *        a red PORT.
+ * @return false on a refusal no red row names
+ */
+static bool refusal_on_a_red_row(void)
+{
+    rauto_row_t row = RAR_COUNT;
+    const char *hb = rauto_hold_blocked(&row);
+    rdy_row_t r;
+    if (hb != NULL) {
+        if (!rauto_ready_row((int)row, &r) || r.st != (uint8_t)RDY_BAD
+            || r.why != hb) {
+            return false;
+        }
+    }
+    rdy_row_t port;
+    (void)rauto_ready_row(RAR_PORT, &port);
+    for (int i = 0; i < (int)RAR_COUNT; ++i) {
+        (void)rauto_ready_row(i, &r);
+        if (r.why != NULL && !rauto_seq_fixes(r.why)
+            && r.st != (uint8_t)RDY_BAD
+            && !(r.st == (uint8_t)RDY_IDLE && port.st == (uint8_t)RDY_BAD)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 /* Each of the gate's texts is one row's, the same row in English and in
@@ -212,10 +250,12 @@ TEST_CASE(the_hold_refuses_on_the_first_red_row_and_names_it)
 }
 
 /* NOT ARMED is the hold's on any bench; PORT PWM OFF and the PD mini off
- * only while SAFE: ARMED they refuse. */
+ * only while SAFE: ARMED they refuse.  The PD mini off is the hold's only
+ * on a rail the INA3221 reads dead (under 3.0V). */
 TEST_CASE(the_rows_the_hold_does_read_amber_only_while_safe)
 {
     to_auto(false);
+    rail_window(0, 0u);
     CHECK(rauto_seq_fixes(ui_servo_str(SERVO_STR_START_NOT_ARMED)));
     CHECK(rauto_seq_fixes(TR(SV_LIM_PROG_PD_OFF)));
     CHECK(rauto_seq_fixes(TR(SV_LIM_PWM_SAFE)));
@@ -311,6 +351,42 @@ TEST_CASE(the_card_takes_the_output_cards_place_on_rudder_auto_only)
     CHECK(!ready_shown());
 }
 
+/* On every bench of the cases above, and with a report still on its way
+ * behind an amber ARM, the hold refused is named on a red row: REPORT
+ * STILL BEING WRITTEN on ARM, red, not hidden behind START ARMS. */
+TEST_CASE(a_refused_hold_has_a_red_row_naming_it)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        to_auto(false);
+        CHECK(refusal_on_a_red_row());
+        to_auto(true);
+        CHECK(refusal_on_a_red_row());
+        to_auto(false);
+        settings_set(SET_SERVO_TARGET, 1.0f);
+        servo_screen_set_drive(1u, 13u, false);
+        CHECK(refusal_on_a_red_row());
+        servo_screen_set_drive(1u, 13u, true);
+        CHECK(refusal_on_a_red_row());
+        servo_screen_test_logger_busy(true);
+        CHECK_STR_EQ(rauto_hold_blocked(NULL),
+                     ui_servo_str(SERVO_STR_START_BUSY));
+        rdy_row_t r;
+        CHECK(rauto_ready_row(RAR_ARM, &r));
+        CHECK_EQ(r.st, (uint8_t)RDY_BAD);
+        CHECK_STR_EQ(r.why, ui_servo_str(SERVO_STR_START_BUSY));
+        CHECK(refusal_on_a_red_row());
+        CHECK(card_holds_the_gate());
+        servo_screen_test_logger_busy(false);
+        servo_screen_set_armed(true);
+        servo_screen_set_drive(1u, 13u, false);
+        CHECK(refusal_on_a_red_row());
+        servo_screen_set_link(false);
+        CHECK(refusal_on_a_red_row());
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 int main(void)
 {
     RUN(every_gate_text_belongs_to_exactly_one_row);
@@ -320,5 +396,6 @@ int main(void)
     RUN(a_tap_on_port_opens_the_port_list);
     RUN(every_label_and_state_fits_its_column);
     RUN(the_card_takes_the_output_cards_place_on_rudder_auto_only);
+    RUN(a_refused_hold_has_a_red_row_naming_it);
     return test_summary("servo_ready");
 }

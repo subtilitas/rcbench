@@ -75,6 +75,14 @@ static struct {
     /* ARM dropped by the bench, whatever asks it. */
     bool no_arm;
     unsigned pd_ons;        /* the supply's ON taken */
+    /* The servo rail as the INA3221 reads it: 6000mV while its supply is
+     * on, 0V while off -- the carrier's PROG 5V as the box reads it back,
+     * the PD mini's output where it feeds the rail -- and a window's mean
+     * the share of its 50ms the rail was on. */
+    bool rail_was;
+    uint32_t rail_from;
+    bool rail_fed;          /* fed from elsewhere: on whatever is off */
+    bool rail_dead;         /* a broken feed: off whatever is on */
 } ra;
 
 /** @brief IMU FILTER on the IMU of these cases. */
@@ -223,6 +231,28 @@ static inline void ra_imu(void)
     servo_screen_encoder(&e);
 }
 
+/** @brief Whether the servo rail is fed now. */
+static inline bool ra_rail_on(void)
+{
+    if (ra.rail_dead || ra.rail_fed) {
+        return ra.rail_fed;
+    }
+    if (g_rig.fixed) {
+        return prog5v_box_on();
+    }
+    return !g_rig.rail || g_rig.sup_on;
+}
+
+/** @brief The rail's mean over the window ending now, mV. */
+static inline uint16_t ra_rail_mv(void)
+{
+    if (!ra.rail_was) {
+        return 0u;
+    }
+    const uint32_t on = g_rig.ms - ra.rail_from;
+    return (uint16_t)(on >= 50u ? 6000u : 6000u * on / 50u);
+}
+
 static inline void ra_ms(uint32_t ms)
 {
     for (uint32_t k = 0; k < ms; ++k) {
@@ -234,13 +264,19 @@ static inline void ra_ms(uint32_t ms)
             g_rig.ms);
         ra.sum += amps;
         ra.n++;
+        const bool rail = ra_rail_on();
+        if (rail && !ra.rail_was) {
+            ra.rail_from = g_rig.ms;
+        }
+        ra.rail_was = rail;
         if ((int32_t)(g_rig.ms - ra.win_end) >= 0) {
+            const uint16_t mv = ra_rail_mv();
             const int ma = (int)(ra.sum / (float)ra.n * 1000.0f + 0.5f);
             const sense_link_win_t w = {
                 .number = (uint16_t)++ra.win_no, .current = true,
                 .voltage = true, .mean_ma = (int16_t)ma,
                 .max_ma = (int16_t)ma, .min_ma = (int16_t)ma,
-                .mean_mv = 6000u, .min_mv = 6000u,
+                .mean_mv = mv, .min_mv = mv,
                 .taken_ms = g_rig.ms, .stamped = true,
             };
             ra.win_end += 50u;

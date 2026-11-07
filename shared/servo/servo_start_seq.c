@@ -140,6 +140,92 @@ static bool up(uint32_t now_ms, uint32_t from_ms, uint32_t limit)
     return (uint32_t)(now_ms - from_ms) >= limit;
 }
 
+/**
+ * @brief The part a refusal names: the caller's, else the step's own.
+ * @param q the sequence
+ * @param in what the bench reads
+ * @return the part
+ */
+static servo_seq_part_t refused_part(const servo_seq_t *q,
+                                     const servo_seq_in_t *in)
+{
+    if (in->refused_part != (uint8_t)SERVO_SEQ_PART_NONE
+        && in->refused_part < (uint8_t)SERVO_SEQ_PARTS) {
+        return (servo_seq_part_t)in->refused_part;
+    }
+    return part_now(q, in);
+}
+
+/**
+ * @brief The part READ-BACK names when its time runs out with every part
+ *        ON: the reading it waited for belongs to the supply.
+ * @param q the sequence
+ * @return the part
+ */
+static servo_seq_part_t settle_part(const servo_seq_t *q)
+{
+    const servo_seq_part_t p = supply_part(&q->need);
+    return (p != SERVO_SEQ_PART_NONE) ? p : SERVO_SEQ_PART_PWM;
+}
+
+/**
+ * @brief Whether READ-BACK has the reading it waits for: one that began
+ *        when or after every part read ON, or none needed.
+ * @param q the sequence
+ * @param in what the bench reads
+ * @return true then
+ */
+static bool settled(const servo_seq_t *q, const servo_seq_in_t *in)
+{
+    if (!q->need.settle) {
+        return true;
+    }
+    return in->reading
+           && (int32_t)(in->reading_from_ms - q->parts_ms) >= 0;
+}
+
+/**
+ * @brief Step 3: every part ON, then the reading after it, then the
+ *        caller's checks; the time first.
+ * @param q      the sequence
+ * @param now_ms the time, ms
+ * @param in     what the bench reads
+ * @param d      receives what to do
+ * @return true when the step is over and ARM follows
+ */
+static bool readback(servo_seq_t *q, uint32_t now_ms,
+                     const servo_seq_in_t *in, servo_seq_do_t *d)
+{
+    const servo_seq_part_t miss = missing(&q->need, in);
+    if (up(now_ms, q->step_ms, SERVO_SEQ_READBACK_MS)) {
+        if (miss != SERVO_SEQ_PART_NONE) {
+            fail(q, miss, SERVO_SEQ_WHY_TIMEOUT, d);
+        } else if (in->refused) {
+            fail(q, refused_part(q, in), SERVO_SEQ_WHY_REFUSED, d);
+        } else {
+            fail(q, settle_part(q), SERVO_SEQ_WHY_TIMEOUT, d);
+        }
+        return false;
+    }
+    if (miss != SERVO_SEQ_PART_NONE) {
+        q->parts_on = false;
+        return false;
+    }
+    if (!q->parts_on) {
+        q->parts_on = true;
+        q->parts_ms = now_ms;
+    }
+    if (!settled(q, in)) {
+        return false;
+    }
+    if (in->refused) {
+        fail(q, refused_part(q, in), SERVO_SEQ_WHY_REFUSED, d);
+        return false;
+    }
+    q->readback_ms = now_ms - q->step_ms;
+    return true;
+}
+
 void servo_seq_step(servo_seq_t *q, uint32_t now_ms,
                     const servo_seq_in_t *in, servo_seq_do_t *d)
 {
@@ -150,8 +236,11 @@ void servo_seq_step(servo_seq_t *q, uint32_t now_ms,
     if (q == NULL || in == NULL || !servo_seq_busy(q)) {
         return;
     }
-    if (in->refused && q->step != (uint8_t)SERVO_SEQ_RUN) {
-        fail(q, part_now(q, in), SERVO_SEQ_WHY_REFUSED, d);
+    /* READ-BACK judges a refusal on the reading it waits for; every other
+     * step at once. */
+    if (in->refused && q->step != (uint8_t)SERVO_SEQ_RUN
+        && !(q->step == (uint8_t)SERVO_SEQ_READBACK && q->need.settle)) {
+        fail(q, refused_part(q, in), SERVO_SEQ_WHY_REFUSED, d);
         return;
     }
     if (q->step == (uint8_t)SERVO_SEQ_PWM) {
@@ -167,8 +256,9 @@ void servo_seq_step(servo_seq_t *q, uint32_t now_ms,
         if (q->need.pd_mini && !in->pd_on) {
             d->pd_on = true;
         }
-        q->step    = (uint8_t)SERVO_SEQ_READBACK;
-        q->step_ms = now_ms;
+        q->step     = (uint8_t)SERVO_SEQ_READBACK;
+        q->step_ms  = now_ms;
+        q->parts_on = false;
         /* The read-back's first look is the next call: an ON asked now has
          * not reached the bench yet. */
         if (d->set_pwm || d->p5_on || d->pd_on) {
@@ -176,14 +266,9 @@ void servo_seq_step(servo_seq_t *q, uint32_t now_ms,
         }
     }
     if (q->step == (uint8_t)SERVO_SEQ_READBACK) {
-        const servo_seq_part_t miss = missing(&q->need, in);
-        if (miss != SERVO_SEQ_PART_NONE) {
-            if (up(now_ms, q->step_ms, SERVO_SEQ_READBACK_MS)) {
-                fail(q, miss, SERVO_SEQ_WHY_TIMEOUT, d);
-            }
+        if (!readback(q, now_ms, in, d)) {
             return;
         }
-        q->readback_ms = now_ms - q->step_ms;
         q->step    = (uint8_t)SERVO_SEQ_ARM;
         q->step_ms = now_ms;
         if (!in->armed) {
@@ -193,10 +278,12 @@ void servo_seq_step(servo_seq_t *q, uint32_t now_ms,
         }
     }
     if (q->step == (uint8_t)SERVO_SEQ_ARM) {
+        /* The time first: an ARMED that came only after it fails. */
+        if (up(now_ms, q->step_ms, SERVO_SEQ_ARMED_MS)) {
+            fail(q, SERVO_SEQ_PART_ARM, SERVO_SEQ_WHY_TIMEOUT, d);
+            return;
+        }
         if (!in->armed) {
-            if (up(now_ms, q->step_ms, SERVO_SEQ_ARMED_MS)) {
-                fail(q, SERVO_SEQ_PART_ARM, SERVO_SEQ_WHY_TIMEOUT, d);
-            }
             return;
         }
         q->step    = (uint8_t)SERVO_SEQ_RUN;

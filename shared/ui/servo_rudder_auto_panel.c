@@ -475,6 +475,9 @@ static void ra_begin(void)
     if (rauto_hold_blocked(NULL) != NULL) {
         return;
     }
+    /* The settings as they read now: the run starts on these whatever
+     * changes while the steps take their time. */
+    ra_cfg(&s.ra.cfg);
     (void)svs_seq_begin();
 }
 
@@ -489,8 +492,11 @@ static bool ra_start(void)
     if (s.ra.note != NULL) {
         return false;
     }
-    servo_rauto_cfg_t c;
-    ra_cfg(&c);
+    /* The settings the hold fired on; the output's line as it reads now,
+     * with the port's pulse the steps switched on. */
+    servo_rauto_cfg_t c = s.ra.cfg;
+    (void)servo_target_line(c.output, sizeof(c.output), s.drive_target,
+                            s.drive_pin, s.drive_pwm, s.pins, s.pins_known);
     if (!servo_rauto_start(&s.ra.run, &c, test_now())) {
         s.ra.note = TR(RA_REFUSED);
         return false;
@@ -591,8 +597,9 @@ bool rauto_down(const touch_event_t *evt)
         if (s.ra.pressed != RA_C_NONE) {
             return true;
         }
-        if (k != RA_C_START && servo_rauto_running(&s.ra.run)) {
-            return true;            /* the rows wait for the run's end */
+        if (k != RA_C_START
+            && (servo_rauto_running(&s.ra.run) || svs_seq_busy())) {
+            return true;            /* the rows wait for the end */
         }
         s.ra.pressed  = (uint8_t)k;
         s.ra.press_id = evt->point.id;
@@ -645,7 +652,8 @@ bool rauto_rest(const touch_event_t *evt)
         ++s.arm_rev;
         return true;
     }
-    if (touch_event_is_tap_up(evt) && rauto_shown() && over) {
+    if (touch_event_is_tap_up(evt) && rauto_shown() && over
+        && !servo_rauto_running(&s.ra.run) && !svs_seq_busy()) {
         open_row(row_setting(k));
     }
     return true;

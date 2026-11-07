@@ -3,7 +3,9 @@
  * @brief ARM + START's steps (servo_start_seq.h): the order PORT PWM,
  *        supply, read-back, ARM, ARMED, run; the read-back's 1000ms and
  *        ARMED's 500ms either side of the limit; the part each failure
- *        names; a part already on not asked again; STOP; the step numbers.
+ *        names; a part already on not asked again; STOP; the step numbers;
+ *        a step's time judged before what it reads; the checks judged on
+ *        a reading after the parts; the part a refusal names.
  *
  * Cases:
  * - a_carrier_sequence_runs_its_steps_in_order
@@ -17,6 +19,9 @@
  * - a_run_that_refuses_its_start_fails_at_start
  * - the_steps_are_numbered_by_what_the_run_needs
  * - null_and_idle_take_nothing
+ * - a_part_or_armed_after_a_stall_past_its_time_fails
+ * - the_checks_wait_for_a_reading_after_the_parts
+ * - a_refusal_names_the_part_the_caller_gives
  *
  * SPDX-License-Identifier: MIT
  */
@@ -27,9 +32,11 @@
 #include "servo_start_seq.h"
 
 /** @brief The carrier's port: PORT PWM and PROG 5V. */
-static const servo_seq_need_t k_carrier = { true, true, false };
+static const servo_seq_need_t k_carrier = { true, true, false, false };
 /** @brief A PROG PORT fed by the PD mini. */
-static const servo_seq_need_t k_pd = { true, false, true };
+static const servo_seq_need_t k_pd = { true, false, true, false };
+/** @brief The carrier's port with the rail's reading waited for. */
+static const servo_seq_need_t k_settle = { true, true, false, true };
 
 /** @brief What the bench reads: nothing on, SAFE. */
 static servo_seq_in_t off(void)
@@ -325,12 +332,12 @@ TEST_CASE(the_steps_are_numbered_by_what_the_run_needs)
     CHECK_EQ(n, 5);
     CHECK_EQ(servo_seq_number(&k_carrier, SERVO_SEQ_READBACK, NULL), 3);
     CHECK_EQ(servo_seq_number(&k_pd, SERVO_SEQ_RUN, &n), 5);
-    const servo_seq_need_t none = { false, false, false };
+    const servo_seq_need_t none = { false, false, false, false };
     CHECK_EQ(servo_seq_number(&none, SERVO_SEQ_PWM, &n), 0);
     CHECK_EQ(n, 2);
     CHECK_EQ(servo_seq_number(&none, SERVO_SEQ_ARM, NULL), 1);
     CHECK_EQ(servo_seq_number(&none, SERVO_SEQ_RUN, NULL), 2);
-    const servo_seq_need_t pd_only = { false, false, true };
+    const servo_seq_need_t pd_only = { false, false, true, false };
     CHECK_EQ(servo_seq_number(&pd_only, SERVO_SEQ_SUPPLY, &n), 1);
     CHECK_EQ(n, 4);
     CHECK_EQ(servo_seq_number(&k_carrier, SERVO_SEQ_IDLE, NULL), 0);
@@ -374,6 +381,121 @@ TEST_CASE(null_and_idle_take_nothing)
     CHECK_EQ(servo_seq_why(NULL), SERVO_SEQ_WHY_NONE);
 }
 
+/* A frame that stalls 1500ms: the 5V and the pulse read ON on the next
+ * call, past the read-back's 1000ms, and the step fails all the same,
+ * named PROG 5V, timed out.  ARMED read only after a 600ms stall fails
+ * ARM. */
+TEST_CASE(a_part_or_armed_after_a_stall_past_its_time_fails)
+{
+    servo_seq_t q;
+    servo_seq_do_t d;
+    servo_seq_in_t in = off();
+    servo_seq_init(&q);
+    (void)servo_seq_begin(&q, &k_carrier, 0u);
+    servo_seq_step(&q, 0u, &in, &d);
+    in.pwm_set = in.p5_on = in.pwm_on = true;
+    servo_seq_step(&q, 1500u, &in, &d);
+    CHECK(d.all_off && !d.arm);
+    CHECK_EQ(servo_seq_part(&q), SERVO_SEQ_PART_PROG_5V);
+    CHECK_EQ(servo_seq_why(&q), SERVO_SEQ_WHY_TIMEOUT);
+
+    servo_seq_init(&q);
+    in.armed = false;
+    (void)servo_seq_begin(&q, &k_carrier, 0u);
+    servo_seq_step(&q, 0u, &in, &d);
+    CHECK(d.arm);
+    in.armed = true;
+    servo_seq_step(&q, 600u, &in, &d);
+    CHECK(d.all_off && !d.start);
+    CHECK_EQ(servo_seq_part(&q), SERVO_SEQ_PART_ARM);
+    CHECK_EQ(servo_seq_why(&q), SERVO_SEQ_WHY_TIMEOUT);
+}
+
+/* With settle, READ-BACK judges the caller's checks only on a reading
+ * that began once every part read ON: a refusal on the window measured
+ * before the 5V (from 80ms, the parts at 100ms) waits; on one from 120ms
+ * it fails, named by the caller's part; a good one from 120ms goes on to
+ * ARM; no such reading by 1000ms times out at PROG 5V. */
+TEST_CASE(the_checks_wait_for_a_reading_after_the_parts)
+{
+    servo_seq_t q;
+    servo_seq_do_t d;
+    servo_seq_in_t in = off();
+    servo_seq_init(&q);
+    (void)servo_seq_begin(&q, &k_settle, 0u);
+    servo_seq_step(&q, 0u, &in, &d);
+    CHECK(d.p5_on);
+    in.pwm_set = in.p5_on = in.pwm_on = true;
+    in.refused = true;
+    in.refused_part = (uint8_t)SERVO_SEQ_PART_PROG_5V;
+    in.reading = true;
+    in.reading_from_ms = 80u;
+    servo_seq_step(&q, 100u, &in, &d);
+    CHECK(nothing(&d));
+    CHECK(servo_seq_busy(&q));
+    servo_seq_step(&q, 150u, &in, &d);
+    CHECK(servo_seq_busy(&q));
+    in.reading_from_ms = 120u;
+    servo_seq_step(&q, 170u, &in, &d);
+    CHECK(d.all_off);
+    CHECK_EQ(servo_seq_part(&q), SERVO_SEQ_PART_PROG_5V);
+    CHECK_EQ(servo_seq_why(&q), SERVO_SEQ_WHY_REFUSED);
+
+    servo_seq_init(&q);
+    in = off();
+    (void)servo_seq_begin(&q, &k_settle, 0u);
+    servo_seq_step(&q, 0u, &in, &d);
+    in.pwm_set = in.p5_on = in.pwm_on = true;
+    in.reading = true;
+    in.reading_from_ms = 80u;
+    servo_seq_step(&q, 100u, &in, &d);
+    CHECK(nothing(&d));
+    in.reading_from_ms = 120u;
+    servo_seq_step(&q, 170u, &in, &d);
+    CHECK(d.arm);
+    CHECK_EQ(q.readback_ms, 170u);
+
+    servo_seq_init(&q);
+    in = off();
+    (void)servo_seq_begin(&q, &k_settle, 0u);
+    servo_seq_step(&q, 0u, &in, &d);
+    in.pwm_set = in.p5_on = in.pwm_on = true;
+    servo_seq_step(&q, 100u, &in, &d);
+    servo_seq_step(&q, 1000u, &in, &d);
+    CHECK(d.all_off);
+    CHECK_EQ(servo_seq_part(&q), SERVO_SEQ_PART_PROG_5V);
+    CHECK_EQ(servo_seq_why(&q), SERVO_SEQ_WHY_TIMEOUT);
+}
+
+/* A refusal names the caller's part where it gives one, in any step: the
+ * pulse's text in ARM names PORT PWM; an out-of-range part the step's
+ * own. */
+TEST_CASE(a_refusal_names_the_part_the_caller_gives)
+{
+    servo_seq_t q;
+    servo_seq_do_t d;
+    servo_seq_in_t in = off();
+    in.pwm_set = in.pwm_on = in.p5_on = true;
+    servo_seq_init(&q);
+    (void)servo_seq_begin(&q, &k_carrier, 0u);
+    servo_seq_step(&q, 0u, &in, &d);
+    CHECK(d.arm);
+    in.refused = true;
+    in.refused_part = (uint8_t)SERVO_SEQ_PART_PWM;
+    servo_seq_step(&q, 20u, &in, &d);
+    CHECK(d.all_off);
+    CHECK_EQ(servo_seq_part(&q), SERVO_SEQ_PART_PWM);
+
+    in.refused = false;
+    servo_seq_init(&q);
+    (void)servo_seq_begin(&q, &k_carrier, 0u);
+    servo_seq_step(&q, 0u, &in, &d);
+    in.refused = true;
+    in.refused_part = (uint8_t)SERVO_SEQ_PARTS;
+    servo_seq_step(&q, 20u, &in, &d);
+    CHECK_EQ(servo_seq_part(&q), SERVO_SEQ_PART_ARM);
+}
+
 int main(void)
 {
     RUN(a_carrier_sequence_runs_its_steps_in_order);
@@ -387,5 +509,8 @@ int main(void)
     RUN(a_run_that_refuses_its_start_fails_at_start);
     RUN(the_steps_are_numbered_by_what_the_run_needs);
     RUN(null_and_idle_take_nothing);
+    RUN(a_part_or_armed_after_a_stall_past_its_time_fails);
+    RUN(the_checks_wait_for_a_reading_after_the_parts);
+    RUN(a_refusal_names_the_part_the_caller_gives);
     return test_summary("servo_start_seq");
 }

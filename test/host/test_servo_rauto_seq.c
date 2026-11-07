@@ -16,6 +16,12 @@
  * - a_finger_on_arm_start_locks_port_target_and_pwm
  * - settings_edited_after_entry_are_the_ones_the_run_takes
  * - a_second_finger_opens_nothing_under_arm_start
+ * - a_row_during_the_steps_opens_no_keypad_and_the_hold_still_stops
+ * - the_run_takes_the_settings_the_hold_fired_on
+ * - a_window_measured_before_the_5v_refuses_nothing
+ * - a_rail_dead_after_the_5v_fails_naming_prog_5v
+ * - a_pd_mini_off_on_a_rail_fed_from_elsewhere_refuses_the_hold
+ * - a_pd_mini_set_low_is_red_behind_its_amber_output
  *
  * SPDX-License-Identifier: MIT
  */
@@ -65,17 +71,17 @@ TEST_CASE(on_the_carrier_one_hold_switches_port_pwm_and_5v_arms_and_starts)
     carrier_done();
 }
 
-/* The PROG 5V's read-back has 1000ms: read back at 900ms the run starts;
- * at 1100ms the sequence fails as READ-BACK names PROG 5V, in the first
- * line and in the alert band, with no ARM asked, the bench SAFE and the
- * PROG 5V off. */
+/* The PROG 5V's read-back has 1000ms, the port's bit and a window begun
+ * after both inside it: read back at 800ms the run starts; at 1100ms the
+ * sequence fails as READ-BACK names PROG 5V, in the first line and in the
+ * alert band, with no ARM asked, the bench SAFE and the PROG 5V off. */
 TEST_CASE(the_5v_read_back_has_1000ms_and_a_late_one_ends_all_off)
 {
     char b[128], want[128], cause[64];
     for (int late = 0; late < 2; ++late) {
         /* The ON is taken on the frame after the hold fires: 20ms of it
          * come off the delay. */
-        carrier_safe_off(late ? 1100u - 20u : 900u - 20u);
+        carrier_safe_off(late ? 1100u - 20u : 800u - 20u);
         ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 1);
         ra_ms(2100u);
         ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 1);
@@ -298,6 +304,143 @@ TEST_CASE(a_second_finger_opens_nothing_under_arm_start)
     carrier_done();
 }
 
+/* During the steps a tap on MARGIN opens no keypad, and a press on the
+ * hold still ends them: no ARM, no run, every output off. */
+TEST_CASE(a_row_during_the_steps_opens_no_keypad_and_the_hold_still_stops)
+{
+    carrier_safe_off(600u);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 1);
+    ra_ms(2100u);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 1);
+    CHECK(svs_seq_busy());
+    ev(SV_RA_L_X, SV_RA_ROW_Y(1), TOUCH_EVENT_DOWN, 2);
+    ev(SV_RA_L_X, SV_RA_ROW_Y(1), TOUCH_EVENT_UP, 2);
+    ra_ms(20u);
+    CHECK(!servo_screen_keypad()->open);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 3);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 3);
+    CHECK(!svs_seq_busy());
+    ra_ms(1500u);
+    CHECK(!servo_screen_rauto_running());
+    CHECK_EQ(ra.arms, 0u);
+    CHECK(!prog5v_box_on());
+    ra.p5_task = false;
+    carrier_done();
+}
+
+/* A setting changed after the hold fired is not the run's: MARGIN set to
+ * 25% during the steps, the report gives the 0% the hold fired on. */
+TEST_CASE(the_run_takes_the_settings_the_hold_fired_on)
+{
+    char want[128];
+    carrier_safe_off(300u);
+    settings_set(SET_RUDDER_MARGIN, 0.0f);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 1);
+    ra_ms(2100u);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 1);
+    CHECK(svs_seq_busy());
+    settings_set(SET_RUDDER_MARGIN, 25.0f);
+    ra_ms(1000u);
+    CHECK(servo_screen_rauto_running());
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 1);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 1);
+    ra_ms(2000u);
+    snprintf(want, sizeof(want), ui_servo_str(SERVO_STR_RA_R_TARGETS), 20.0,
+             20.0, 0u);
+    CHECK(strstr(ra.report, want) != NULL);
+    settings_set(SET_RUDDER_MARGIN, 10.0f);
+    ra.p5_task = false;
+    carrier_done();
+}
+
+/* The window under way when PROG 5V reads back ON was measured with the
+ * rail off (0V for its first part): the steps wait for one begun after
+ * the 5V, which reads 6.0V, and the run starts with no failure. */
+TEST_CASE(a_window_measured_before_the_5v_refuses_nothing)
+{
+    for (uint32_t delay = 20u; delay <= 100u; delay += 10u) {
+        carrier_safe_off(delay);
+        ra_hold_start();
+        CHECK(svs_seq_failure() == NULL);
+        CHECK(servo_screen_rauto_running());
+        CHECK_EQ(ra.arms, 1u);
+        rauto_end_now(SERVO_TEST_AB_OPERATOR);
+        ra_ms(2000u);
+        ra.p5_task = false;
+        carrier_done();
+    }
+}
+
+/* PROG 5V reads back ON and the rail stays at 0V: the window begun after
+ * it refuses, and the step that failed is PROG 5V's, its rail's line in
+ * the band, all off, no ARM. */
+TEST_CASE(a_rail_dead_after_the_5v_fails_naming_prog_5v)
+{
+    char want[128];
+    carrier_safe_off(40u);
+    ra.rail_dead = true;
+    ra_hold_start();
+    CHECK(!servo_screen_rauto_running());
+    CHECK_EQ(ra.arms, 0u);
+    snprintf(want, sizeof(want), TR(SQ_FAILED), "PROG 5V",
+             TR(SV_LIM_PROG_RAIL));
+    CHECK_STR_EQ(svs_seq_failure(), want);
+    ra_ms(500u);
+    CHECK(!prog5v_box_on());
+    ra.rail_dead = false;
+    ra.p5_task = false;
+    carrier_done();
+}
+
+/* The PD mini answers with its output off while the INA3221 reads the
+ * rail at 6.0V: fed from elsewhere, PD MINI's row is red with the PD-off
+ * text, and the hold refuses, switching nothing.  With the rail dead the
+ * same row is amber and the hold is offered. */
+TEST_CASE(a_pd_mini_off_on_a_rail_fed_from_elsewhere_refuses_the_hold)
+{
+    ra_setup(true, true);
+    ra.armed = false;
+    servo_screen_set_armed(false);
+    g_rig.sup_on = false;
+    ra_pd_reading(false);
+    ra.rail_fed = true;
+    ra_ms(200u);
+    rdy_row_t r = row_now(RAR_SUPPLY);
+    CHECK_EQ(r.st, (uint8_t)RDY_BAD);
+    CHECK_STR_EQ(r.why, TR(SV_LIM_PROG_PD_OFF));
+    rauto_row_t row = RAR_COUNT;
+    CHECK_STR_EQ(rauto_hold_blocked(&row), TR(SV_LIM_PROG_PD_OFF));
+    CHECK_EQ(row, RAR_SUPPLY);
+    ra_hold_start();
+    CHECK(!svs_seq_busy());
+    CHECK_EQ(ra.pd_ons, 0u);
+    CHECK_EQ(ra.arms, 0u);
+    ra.rail_fed = false;
+    ra_ms(200u);
+    CHECK_EQ(row_now(RAR_SUPPLY).st, (uint8_t)RDY_SEQ);
+    CHECK(rauto_hold_blocked(NULL) == NULL);
+}
+
+/* The PD mini off and set to 4.0V: its row is red with the low-voltage
+ * text, not amber with the output's, and the hold names it. */
+TEST_CASE(a_pd_mini_set_low_is_red_behind_its_amber_output)
+{
+    ra_setup(true, true);
+    ra.armed = false;
+    servo_screen_set_armed(false);
+    settings_set(SET_SUPPLY_V_START, 4.0f);
+    supply_screen_settings_loaded();
+    g_rig.sup_on = false;
+    ra_pd_reading(false);
+    ra_ms(200u);
+    rdy_row_t r = row_now(RAR_SUPPLY);
+    CHECK_EQ(r.st, (uint8_t)RDY_BAD);
+    CHECK_STR_EQ(r.why, TR(SV_LIM_PROG_LOW));
+    CHECK_STR_EQ(rauto_hold_blocked(NULL), TR(SV_LIM_PROG_LOW));
+    settings_set(SET_SUPPLY_V_START, settings_def(SET_SUPPLY_V_START)->def);
+    supply_screen_settings_loaded();
+}
+
 int main(void)
 {
     RUN(on_the_carrier_one_hold_switches_port_pwm_and_5v_arms_and_starts);
@@ -308,5 +451,11 @@ int main(void)
     RUN(a_finger_on_arm_start_locks_port_target_and_pwm);
     RUN(settings_edited_after_entry_are_the_ones_the_run_takes);
     RUN(a_second_finger_opens_nothing_under_arm_start);
+    RUN(a_row_during_the_steps_opens_no_keypad_and_the_hold_still_stops);
+    RUN(the_run_takes_the_settings_the_hold_fired_on);
+    RUN(a_window_measured_before_the_5v_refuses_nothing);
+    RUN(a_rail_dead_after_the_5v_fails_naming_prog_5v);
+    RUN(a_pd_mini_off_on_a_rail_fed_from_elsewhere_refuses_the_hold);
+    RUN(a_pd_mini_set_low_is_red_behind_its_amber_output);
     return test_summary("servo_rauto_seq");
 }

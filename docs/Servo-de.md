@@ -1525,8 +1525,8 @@ Haltens:
 | --- | --- | --- |
 | 1 PORT-PWM | PORT-PWM EIN, gespeichert, wenn das Ziel ein PROG-PORT ist und die Einstellung AUS | sofort |
 | 2 PROG 5V oder PD MINI | PROG 5V EIN am Port des rbmod-Carriers; AUSGANG EIN des PD mini, wo es das Servo speist, mit SOLL V und SOLL A von SUPPLY | sofort |
-| 3 RÜCKMELDUNG | wartet, bis PROG 5V oder der Ausgang des PD mini und der Puls des Ports EIN zurückmelden | 1000ms; ein Teil ohne Rückmeldung lässt den Schritt fehlschlagen |
-| 4 ARM | ARM, wenn der Prüfstand SAFE ist | ARMED innerhalb von 500ms |
+| 3 RÜCKMELDUNG | wartet, bis PROG 5V oder der Ausgang des PD mini EIN zurückmeldet, dann das PORT-PWM-Bit des IOmcu (das Panel setzt es nur bei SAFE; der Puls selbst läuft nur bei ARMED), dann auf ein INA3221-Messfenster, das nach beiden begann. Die Zeilen werden an diesem Fenster geprüft | 1000ms ab Schritt 2 für alle drei; ein Teil ohne Rückmeldung lässt den Schritt fehlschlagen, ebenso eines, das erst nach den 1000ms zurückmeldet |
+| 4 ARM | ARM, wenn der Prüfstand SAFE ist | ARMED innerhalb von 500ms; ein ARMED, das erst nach den 500ms kommt, lässt den Schritt fehlschlagen |
 | 5 START | der Lauf startet über die Prüfung der Tabelle unten | sofort |
 
 Ein Teil, das schon EIN meldet, wird nicht erneut angefragt: ein von Hand
@@ -1535,17 +1535,28 @@ Schritt nennt sich im Alarmband und in der ersten Zeile, `PROG 5V
 FEHLGESCHLAGEN: KEINE RÜCKMELDUNG IN 1000ms`, `ARM FEHLGESCHLAGEN: NICHT
 ARMED IN 500ms`, `<Schritt> FEHLGESCHLAGEN: <Grund>` für eine Zeile, die
 unterwegs rot wird, `<Schritt> FEHLGESCHLAGEN: STOP` für ein Tippen auf das
-Halten, ein STOP oder einen Touch-Verlust. Jeder Fehler fragt DISARM, PROG
+Halten, ein STOP oder einen Touch-Verlust. Eine rote Zeile nennt den Schritt
+ihres Teils: eine Versorgungszeile nennt PROG 5V oder PD MINI, `PROG 5V
+FEHLGESCHLAGEN: PROGRAMMIEREN: SERVOVERSORGUNG UNTER 4.8V` für eine
+Schiene, die nach der Rückmeldung von 5V EIN niedrig bleibt; die Zeile
+PORT-PWM nennt PORT PWM; die Zeile ARM nennt ARM. Jeder Fehler fragt DISARM, PROG
 5V AUS und AUSGANG AUS des PD mini an: der Prüfstand endet SAFE mit allen
 Ausgängen aus. Ein Verlassen von RUDER AUTO während der Startfolge beendet
 sie wie jedes Verlassen: SAFE, und PROG 5V bleibt für einen anderen
 SERVO-Bildschirm an, bis SERVO verlassen wird. Während der Startfolge zeigt
-das Halten den Schritt in Gelb, ein Tippen stoppt sie; während des Laufs
-zeigt es LAUF BEENDEN in Rot, ein Druck beendet den Lauf sofort. PORT-PWM
-bleibt nach einem Fehler EIN: der Port sendet bei SAFE keinen Puls. Die
-1000ms und 500ms sind Konstanten in `servo_start_seq.h`, auf dem Host bei
-900ms und 1100ms und bei 400ms und 600ms getestet (`test_servo_start_seq`,
-`test_servo_rauto_kst`).
+das Halten den Schritt in Gelb, ein Druck darauf stoppt sie, gleich was
+über dem Bildschirm offen ist; während des Laufs zeigt es LAUF BEENDEN in
+Rot, ein Druck beendet den Lauf sofort. Während der Startfolge nehmen die
+Zeilen der linken Karte, OPTIONEN, PORT und die Karte BEREIT keinen Druck
+an. Der Lauf startet mit den Einstellungen, wie sie beim Auslösen des
+Haltens standen. PORT-PWM bleibt nach einem Fehler EIN, und das Bit des
+IOmcu mit ihm: der Prüfstand endet SAFE, und der Port sendet bis zum
+nächsten ARM keinen Puls. Die 1000ms und 500ms sind Konstanten in
+`servo_start_seq.h`, auf dem Host bei 900ms und 1100ms und bei 400ms und
+600ms getestet (`test_servo_start_seq`). Auf dem Bildschirm startet ein bei
+800ms zurückgemeldetes PROG 5V den Lauf, eines bei 1100ms schlägt fehl
+(`test_servo_rauto_seq`): eine Rückmeldung bei 900ms lässt von den 1000ms
+zu wenig für das Bit des Ports und ein 50ms-Fenster danach.
 
 Die Zeilen sind die Prüfungen des Starts, `rauto_blocked()`
 (`shared/ui/servo_rudder_auto_ready.c`), in deren Reihenfolge; jeder Text
@@ -1564,8 +1575,17 @@ Halten grau, solange:
 | NULLPUNKT | kein Nullpunkt gesetzt ist | `SETZE DEN NULLPUNKT MIT DEM RUDER IN NEUTRALLAGE` |
 | ARM | ein anderer Lauf läuft oder ein Bericht noch geschrieben wird | die Zeile des Laufs, wie auf TEST |
 
+Eine Zeile mit einem Text, der das Halten sperrt, ist rot, auch wenn ein
+anderer ihrer Texte einer ist, den das Halten erledigt: ein Bericht, der
+noch geschrieben wird, steht rot auf ARM, nicht `START SCHALTET ARMED`. Ein
+PD mini mit Sollwert unter 4.8V steht bei ausgeschaltetem Ausgang rot auf
+PD MINI.
+
 Gelb bei SAFE, vom Halten erledigt: `PROG 5V AUS: IM PROG-5V-FELD
-EINSCHALTEN` (PROG 5V), `PROGRAMMIEREN: PD-MINI-AUSGANG AUS` (PD MINI),
+EINSCHALTEN` (PROG 5V), `PROGRAMMIEREN: PD-MINI-AUSGANG AUS` (PD MINI, nur
+solange der INA3221 die Schiene unter 3.0V misst: eine Schiene, die bei
+ausgeschaltetem Ausgang mehr misst, wird anderweitig versorgt, und die Zeile
+ist rot),
 `PORT-PWM AUS: SCHALTE ES IN OUTPUTS EIN` und `PORT-PWM EIN, WARTET AUF
 SAFE: DISARM, DANN ARM` (PORT-PWM), und `ZUERST ARM` (ARM, auch solange ARM
 angefragt ist).
