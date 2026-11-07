@@ -98,25 +98,29 @@ Ein PROG 5V AUS von Hand beendet den Puls ebenso: das Panel fordert den
 Puls nur an, solange das Feld EIN zeigt.
 
 Das Panel schaltet den Puls des Ports nur bei SAFE ein, wie auf jedem
-Board; aus schaltet es ihn sofort. Zuerst PROG 5V einschalten, dann ARM.
-Ein bei ARMED eingeschaltetes PROG 5V lässt den Puls bis zum nächsten SAFE
-aus: RUDER AUTO und der Endlagenlauf zeigen dann
-`PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM`. Bei SAFE mit dem Feld
-aus zeigen beide `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN` vor
-`ZUERST ARM`.
+Board; aus schaltet es ihn sofort. Ein bei ARMED eingeschaltetes PROG 5V
+lässt den Puls bis zum nächsten SAFE aus: der Endlagenlauf zeigt dann
+`PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM`.
 
-PORT-PWM liegt auf OUTPUTS, das Feld PROG 5V auf SERVO und SUPPLY. Ein
-dort eingeschaltetes PROG 5V bleibt von einer SERVO-Seite zur nächsten an,
-den Hub eingeschlossen. Das Verlassen von SERVO schaltet es aus, daher
-wird PORT-PWM EIN bei ausgeschaltetem Feld angenommen, und der Puls
-wartet darauf. Mit PORT-PWM aus zeigen RUDER AUTO und der Endlagenlauf bei SAFE
-`PORT-PWM AUS: SCHALTE ES IN OUTPUTS EIN` und bei ARMED
-`PORT-PWM AUS: DISARM, SCHALTE ES IN OUTPUTS EIN`. Der Weg von PORT-PWM aus:
+PORT-PWM liegt auf OUTPUTS, das Feld PROG 5V auf SERVO und SUPPLY. Ein von
+SERVO eingeschaltetes PROG 5V bleibt von einer SERVO-Seite zur nächsten an,
+den Hub eingeschlossen. Das Verlassen von SERVO schaltet es aus.
+
+RUDER AUTO braucht keinen Schritt von Hand: sein 2s HALTEN: ARM + START
+schaltet bei SAFE PORT-PWM EIN, dann PROG 5V EIN, wartet bis zu 1000ms auf
+die Rückmeldung EIN von PROG 5V und dem Puls des Ports, schaltet ARM,
+wartet bis zu 500ms auf ARMED und startet den Lauf
+([Servo: AUTO-Endpoints](Servo-de.md#ablauf)). Seine Karte BEREIT zeigt
+bei SAFE `START SCHALTET EIN` auf den Zeilen PROG 5V und PORT-PWM. Ein
+fehlgeschlagener Schritt nennt sich im Alarmband und endet mit dem
+Prüfstand SAFE, PROG 5V aus.
+
+Der Weg des Endlagenlaufs von PORT-PWM aus, bis er dasselbe Halten bekommt:
 
 1. SAFE: öffne SETUP > OUTPUTS auf dem Eintrag des Ports.
 2. PORT-PWM EIN. Die Zeile lautet `PORT-PWM EIN: PULSE STARTEN MIT PROG 5V AUF SERVO`.
 3. Zurück zu SERVO, halte PROG 5V EIN 2s lang. Der Puls kommt bei SAFE.
-4. ARM, dann START halten.
+4. ARM, dann ENDLAGENLAUF STARTEN halten.
 
 ## Versorgung
 

@@ -299,7 +299,7 @@ Die Aufgabe auf der linken Karte bestimmt die ersten Hilfeseiten:
 | SERVO TEST | TEST STARTEN, seine OPTIONEN und die Grenzen (3) |
 | SERVO ENDLAGENLAUF | ENDLAGENLAUF STARTEN und seine OPTIONEN (2) |
 | SERVO RUDER | LÄNGE, die Fahrtasten, NULLPUNKT und MAX LÖSCHEN (4); AUSSCHLAG, HINTERKANTE und die Statuszeilen (3) |
-| SERVO RUDER AUTO | die Sollwerte, RESERVE und TOLERANZ, NULLPUNKT und START (4); AUSSCHLAG und HINTERKANTE (2) |
+| SERVO RUDER AUTO | die Sollwerte, RESERVE und TOLERANZ, NULLPUNKT (3); AUSSCHLAG und HINTERKANTE (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
 | SERVO, jeder Funktionsbildschirm, SAFE | Typ, Grafik oder PROG 5V, SOLL und TEMPO (4); PORT, ZENTRIEREN mit SWEEP und FREIGEBEN, ARM, OPTIONEN, auf RUDER auch die Seitenansicht (4 oder 5) |
 | die Listen von SERVO (Hub, SWEEP, RUDER, RUDER AUTO, HITEC) | wie eine Optionsliste |
 | SUPPLY LIVE | GRAFIK und TABELLE, SPANNUNG und STROMBEGRENZUNG (3) |
@@ -558,7 +558,8 @@ ist: die ganze Taste weiß, schwarz, dann in ihrer neuen Farbe, zweimal,
 Ein langsamerer Frame beendet nur die Phase, in die er fällt; so wird
 jede Phase bei jeder Bildrate gezeichnet. Die neue Farbe ist die,
 zu der das Halten überblendet: Gefahrenrot bei ARM, AUSGANG EIN, PROG 5V
-EIN, TEST STARTEN, ENDLAGENLAUF STARTEN und 2s HALTEN: START bei AUTO.
+EIN, TEST STARTEN und ENDLAGENLAUF STARTEN; Bernstein bei 2s HALTEN: ARM
++ START auf RUDER AUTO, dessen Folge vor ARM auf ihre Rückmeldung wartet.
 
 - Das Aufblitzen beginnt mit dem Halten, nicht mit der Antwort. ARMED, der
   Ausgang oder der Lauf, die innerhalb der 300ms eintreffen, starten es
@@ -580,7 +581,7 @@ Die Füllung einer Taste sagt, was ein Druck mit einem Ausgang macht.
 
 | Klasse | Tasten | Verfügbar | Aktiv | Wartend | Abgelehnt |
 | --- | --- | --- | --- | --- | --- |
-| Ausgangsaktion: schaltet einen Ausgang ein, schaltet auf ARMED, startet einen Lauf, schreibt ein Servo | ARM, AUSGANG EIN, PROG 5V EIN, TEST STARTEN, ENDLAGENLAUF STARTEN, 2s HALTEN: START bei AUTO, ZENTRIEREN und SWEEP auf LIVE, 1000us, ZENTRIEREN, 2000us und NULLPUNKT auf RUDDER, VERBINDEN, SCHREIBEN INS SERVO FREIGEBEN, n WERTE SCHREIBEN und SERVO BEWEGEN der Programmierungen | grün (`UI_C_OK`) | rot (`UI_C_DANGER`): ein Ausgang ist ein, ARMED, ein Schreiben läuft, das Servo wird angesteuert; die Beschriftung sagt, was ein Druck anhält (DISARM, AUSGANG AUS, LAUF BEENDEN, PAUSE, VERLASSEN, ABBRECHEN, EIN) | bernstein (`UI_C_WARN`): PAUSIERT, WARTEN | grau (`ui_button_off_fill()`), blasse Beschriftung |
+| Ausgangsaktion: schaltet einen Ausgang ein, schaltet auf ARMED, startet einen Lauf, schreibt ein Servo | ARM, AUSGANG EIN, PROG 5V EIN, TEST STARTEN, ENDLAGENLAUF STARTEN, 2s HALTEN: ARM + START auf RUDER AUTO, ZENTRIEREN und SWEEP auf LIVE, 1000us, ZENTRIEREN, 2000us und NULLPUNKT auf RUDDER, VERBINDEN, SCHREIBEN INS SERVO FREIGEBEN, n WERTE SCHREIBEN und SERVO BEWEGEN der Programmierungen | grün (`UI_C_OK`) | rot (`UI_C_DANGER`): ein Ausgang ist ein, ARMED, ein Schreiben läuft, das Servo wird angesteuert; die Beschriftung sagt, was ein Druck anhält (DISARM, AUSGANG AUS, LAUF BEENDEN, PAUSE, VERLASSEN, ABBRECHEN, EIN) | bernstein (`UI_C_WARN`): PAUSIERT, WARTEN, der Schritt von ARM + START | grau (`ui_button_off_fill()`), blasse Beschriftung |
 | Notfall | STOP | rot | rot, blitzt beim Druck | - | nie |
 | Bearbeiten | `-` `+`, Wertfelder, MAX LÖSCHEN, KATEGORIE ZURÜCKSETZEN auf SETUP, VERWERFEN, NEU LESEN | neutral (`UI_C_PANEL_HI`) | - | - | grau |
 | SPEICHERN auf SETUP | SPEICHERN, GESPEICHERT, BEI STILLSTAND, NICHT GESPEICHERT | grün, solange etwas ungespeichert ist (SPEICHERN) | - | bernstein (BEI STILLSTAND) | neutral mit roter Beschriftung (NICHT GESPEICHERT); GESPEICHERT ist neutral |
@@ -591,10 +592,12 @@ Beide Themen nutzen dieselben Rollen; das helle Thema hat sein eigenes
 Grün, Rot und Bernstein (`shared/ui/ui_theme.c`). Die Überblendung beim
 Halten läuft vom verfügbaren Grün zur Farbe, die die Taste danach hält.
 
-Ein Tipp auf ein graues TEST STARTEN, ENDLAGENLAUF STARTEN oder START bei
-AUTO zeigt den Grund im Alarmband als Mitteilung, 4s in Bernstein, wie der
-Hinweis einer Halte-Taste. Die Zeile unter der Taste sagt dasselbe und
-bleibt.
+Ein Tipp auf ein graues TEST STARTEN oder ENDLAGENLAUF STARTEN zeigt den
+Grund im Alarmband als Mitteilung, 4s in Bernstein, wie der Hinweis einer
+Halte-Taste. Die Zeile unter der Taste sagt dasselbe und bleibt. Ein Tipp
+auf ein graues 2s HALTEN: ARM + START zeigt die erste rote Zeile der Karte
+BEREIT von RUDER AUTO im Band, `PORT: AUTO PROGRAMMIERT EIN SERVO AM
+PROG-PORT`; die erste Zustandszeile sagt dasselbe.
 
 ## Marken im Menü
 
@@ -1553,7 +1556,7 @@ der Reihenfolge der Nutzung.
 | TEST | TEST | das Feld AUTOMATISCHER TEST, die Grenzen von SUPPLY und das Feld des Laufs; OPTIONEN öffnet die Zeilen des Laufs |
 | ENDLAGENLAUF | ENDLAGENLAUF | das Feld ENDLAGENLAUF und das Feld des Laufs; OPTIONEN öffnet die Zeilen des Laufs |
 | RUDER | RUDER | Ausschlag in ° und mm, LÄNGE, 1000us, ZENTRIEREN, 2000us, NULLPUNKT und MAX LÖSCHEN ([Ruderausschlag](Servo-de.md#ruderausschlag)) |
-| RUDER AUTO | RUDER AUTO | das Feld von AUTO statt LÄNGE und der Fahrtasten ([AUTO-Endpoints](Servo-de.md#auto-endpoints)) |
+| RUDER AUTO | RUDER AUTO | das Feld von AUTO statt LÄNGE und der Fahrtasten, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste ([AUTO-Endpoints](Servo-de.md#auto-endpoints)) |
 | KST | SERVO > KST | die Programmierung für KST und Chaservo über dem linken Feld ([Programmierer](#programmierer)) |
 | HITEC | HITEC | die Programmierung für Hitec über dem linken Feld |
 
@@ -1582,6 +1585,16 @@ Funktion mit der Portzeile darunter, ARM oder DISARM und OPTIONEN.
 OPTIONEN ist grau, solange der Prüfstand nicht SAFE ist oder ein Sweep
 oder ein Lauf läuft, und nennt das beim Tippen im Alarmband. LIVE hat
 keine OPTIONEN.
+
+RUDER AUTO behält die Taste PORT und zeigt seine Karte BEREIT an der Stelle
+des Ausgangsfelds: zehn Zeilen von 30px ab y 96, jede mit Punkt,
+Bezeichnung von 13 Zellen und Zustand von 20, und die Schienenzeile bei y
+404. Die Mitte seiner Fußleiste ist 2s HALTEN: ARM + START, das PORT-PWM
+und die Versorgung einschaltet, auf ihre Rückmeldung wartet, ARM schaltet
+und den Lauf in einem Halten startet ([Servo: AUTO-Endpoints](Servo-de.md#ablauf)).
+Nichts vom Ausgangsfeld nimmt auf RUDER AUTO einen Druck an.
+
+![RUDER AUTO auf dem rbmod-Carrier, die Folge ARM + START wartet auf die Rückmeldung von PROG 5V](img/de/servo-rudder-auto-start-rbmod.png)
 
 Die PROG-5V-Box, die das Ausgangsfeld auf dem Carrier zeigt, bleibt von
 einem SERVO-Bildschirm zum nächsten eingeschaltet, auch auf dem Hub, und

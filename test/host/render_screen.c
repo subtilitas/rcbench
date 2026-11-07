@@ -1585,6 +1585,61 @@ static void limrun_ms(uint32_t ms)
     }
 }
 
+/*
+ * RUDDER AUTO on the rbmod carrier (render_rudder.c poses the angle, the
+ * zero, PROG PORT 1 and PORT PWM off): the programmer's model in PWM, the
+ * INA3221's windows, the port's pulse off as PORT PWM has it.  -start and
+ * -failed then hold ARM + START (rauto_rbmod_hold()); nothing reads the
+ * PROG 5V back, so the sequence waits at its READ-BACK, and 1100ms later
+ * has failed there.
+ */
+static void rauto_rbmod_view(void)
+{
+    servo_sim_cfg_t cfg;
+    memset(&s_lr, 0, sizeof(s_lr));
+    s_lr.prog = true;
+    rig_fresh();
+    g_rig.card = true;
+    (void)rig_link_up(LINK_PROTOCOL_MINOR);
+    servo_sim_defaults(&cfg);
+    servo_sim_init(&s_lr.sv, &cfg);
+    s_lr.sv.position_us = 1500.0f;
+    s_lr.cmd = 1500u;
+    s_lr.out = true;
+    settings_set(SET_INA_FIT(0), 1.0f);
+    servo_screen_source(SERVO_SOURCE_INA3221, 2u);
+    s_lr.win_end = g_rig.ms + 50u;
+    limrun_ms(400u);
+    s_lr.prog = false;              /* PORT PWM off: no pulse */
+    servo_screen_set_drive(1u, 13u, false);
+    limrun_ms(40u);
+}
+
+/*
+ * -start and -failed once render_rudder_pose() took the zero: ARM + START
+ * held 2.04s, then 200ms or 1100ms.
+ */
+static void rauto_rbmod_hold(const char *view)
+{
+    if (strncmp(view, "servo-rudder-auto", 17) != 0) {
+        return;
+    }
+    const bool start = strstr(view, "-start-") != NULL;
+    const bool failed = strstr(view, "-failed-") != NULL;
+    if (!start && !failed) {
+        return;
+    }
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = SV_RA_START_X,
+                                   .y = (int16_t)(UI_BAND_H + SV_RA_START_Y),
+                                   .strength = 40 } };
+    ui_router_event(&e);
+    limrun_ms(2040u);
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+    limrun_ms(failed ? 1100u : 200u);
+}
+
 static void limrun_view(const char *view)
 {
     const char *v = view + strlen("servo-limrun");
@@ -3911,6 +3966,9 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
         }
         if (strncmp(view, "servo-limrun", 12) == 0) {
             limrun_view(view);
+        } else if (strncmp(view, "servo-rudder-auto", 17) == 0
+                   && strstr(view, "-rbmod") != NULL) {
+            rauto_rbmod_view();
         } else if (strcmp(view, "servo-hub") == 0
                    || strcmp(view, "servo-hub-nocap") == 0
                    || strcmp(view, "servo-hub-busy") == 0) {
@@ -4448,6 +4506,7 @@ int main(int argc, char **argv)
         render_files_pose(view);
     }
     render_rudder_pose(view);
+    rauto_rbmod_hold(view);
     if (strncmp(view, "band-", 5) == 0) {
         band_view(view, &st);
     }

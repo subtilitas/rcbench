@@ -161,10 +161,10 @@ Die Füllung einer Taste sagt, was ein Druck mit einem Ausgang macht.
 
 | Füllung | Bedeutet | Tasten |
 |---|---|---|
-| grün | ein Druck schaltet einen Ausgang ein, schaltet auf ARMED, startet einen Lauf oder schreibt ein Servo | ARM, AUSGANG EIN, PROG 5V EIN, TEST STARTEN, ENDLAGENLAUF STARTEN, `2s HALTEN: START` bei AUTO, ZENTRIEREN und SWEEP, 1000us, ZENTRIEREN, 2000us und NULLPUNKT des Ruders, VERBINDEN, n WERTE SCHREIBEN; SPEICHERN auf SETUP, solange etwas ungespeichert ist |
+| grün | ein Druck schaltet einen Ausgang ein, schaltet auf ARMED, startet einen Lauf oder schreibt ein Servo | ARM, AUSGANG EIN, PROG 5V EIN, TEST STARTEN, ENDLAGENLAUF STARTEN, `2s HALTEN: ARM + START` auf RUDER AUTO, ZENTRIEREN und SWEEP, 1000us, ZENTRIEREN, 2000us und NULLPUNKT des Ruders, VERBINDEN, n WERTE SCHREIBEN; SPEICHERN auf SETUP, solange etwas ungespeichert ist |
 | rot | ein Ausgang ist ein, der Prüfstand ist ARMED oder ein Schreiben läuft; ein Druck hält es an | DISARM, AUSGANG AUS, LAUF BEENDEN, PAUSE während eines Sweeps, VERLASSEN, ABBRECHEN, ein Schreibschalter auf EIN; STOP immer |
 | bernstein | läuft oder wartet, noch nichts aktiv | PAUSIERT, WARTEN, `BEI STILLSTAND` |
-| grau, blasse Beschriftung | nimmt gerade keinen Druck an | ein Tipp auf ein graues TEST STARTEN, ENDLAGENLAUF STARTEN oder `2s HALTEN: START` zeigt den Grund 4s im Alarmband |
+| grau, blasse Beschriftung | nimmt gerade keinen Druck an | ein Tipp auf ein graues TEST STARTEN, ENDLAGENLAUF STARTEN oder `2s HALTEN: ARM + START` zeigt den Grund 4s im Alarmband |
 | neutral | ändert einen Wert oder öffnet eine Seite | `-` `+`, Wertfelder, KATEGORIE ZURÜCKSETZEN, VERWERFEN, MAX LÖSCHEN, Kacheln, ÖFFNEN, SCHLIESSEN; ein gewählter Reiter ist cyan |
 
 LÖSCHEN auf FILES und LOGS und `NICHT GESPEICHERT` auf SETUP sind neutral mit roter Beschriftung.

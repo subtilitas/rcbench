@@ -1454,65 +1454,121 @@ Endpoints eines KST-, Chaservo- oder Hitec-Servos so, dass 1000us und 2000us den
 Seite eingegebenen Ausschlag erreichen, gemessen an der Winkelquelle. Es
 schließt den Regelkreis über den Winkel der Fläche statt über einen nach
 Augenmaß eingestellten Weg am Sender. Der Lauf steht in
-`shared/servo/servo_rudder_auto.c`, der Kasten in
-`shared/ui/servo_rudder_auto_panel.c`. AUTO vertraut der Winkelquelle: Mit
+`shared/servo/servo_rudder_auto.c`, der Bildschirm in
+`shared/ui/servo_rudder_auto_panel.c`, seine Karte BEREIT in
+`shared/ui/servo_rudder_auto_ready.c` und `shared/ui/servo_ready.c`. AUTO vertraut der Winkelquelle: Mit
 WINKELQUELLE IMU nimmt es die Winkel, die die Bluetooth-Verbindung liefert,
 und diese Verbindung ist nicht authentifiziert (`SECURITY.md`, die
 Bluetooth-IMU).
 
 ### Ablauf
 
-- RUDER AUTO zeigt seinen Kasten an der Stelle, an der RUDER LÄNGE, drei
-  Tasten zum Ansteuern und Zustandszeilen hat; die Anzeige, NULLPUNKT und
-  MAX LÖSCHEN, die Seitenansicht und die Ausgangskarte bleiben. Die Seitenansicht zeigt
-  zusätzlich das Soll bei 1000us auf der negativen und das bei 2000us auf
-  der positiven Seite, jedes auf der Seite, auf der der letzte Lauf es
-  gemessen hat. Solange der Lauf läuft, sind NULLPUNKT und MAX LÖSCHEN
-  abgelehnt und gedimmt, damit der Lauf ab dem Nullpunkt misst, mit dem er
-  begann, und der Drehknopf bewegt nichts.
+![RUDER AUTO auf dem rbmod-Carrier, SAFE: PROG 5V, PORT-PWM und ARM gelb, das Halten angeboten](img/de/servo-rudder-auto-rbmod.png)
+
+- Die linke Karte hält die Anzeige, Soll bei 1000us und bei 2000us,
+  RESERVE und TOLERANZ, NULLPUNKT und MAX LÖSCHEN, die Seitenansicht und
+  drei Zustandszeilen. Die Seitenansicht zeigt zusätzlich das Soll bei
+  1000us auf der negativen und das bei 2000us auf der positiven Seite,
+  jedes auf der Seite, auf der der letzte Lauf es gemessen hat. Solange
+  der Lauf läuft, sind NULLPUNKT und MAX LÖSCHEN abgelehnt und gedimmt,
+  damit der Lauf ab dem Nullpunkt misst, mit dem er begann, und der
+  Drehknopf bewegt nichts.
 - Soll bei 1000us und bei 2000us: der Ausschlag, den jede Seite erreichen
-  soll, 0,5 bis 90,0° in Schritten von 0,5°, vorgegeben 20,0° (Einstellungen
-  `rud_defl_lo`, `rud_defl_hi`). Mit gesetzter LÄNGE zeigt die Zeile die mm
-  an der Hinterkante neben den Grad. RESERVE: 0 bis 50%, 10%
-  (`rud_margin`). TOLERANZ: 0,1 bis 5,0°, vorgegeben 0,5° (`rud_tol`). Ein Tippen
-  öffnet das Tastenfeld.
+  soll, 0,5 bis 90,0° in Schritten von 0,5°, vorgegeben 20,0°
+  (Einstellungen `rud_defl_lo`, `rud_defl_hi`). Mit gesetzter LÄNGE zeigt
+  die Zeile die mm an der Hinterkante neben den Grad. RESERVE: 0 bis 50%,
+  10% (`rud_margin`). TOLERANZ: 0,1 bis 5,0°, vorgegeben 0,5°
+  (`rud_tol`). Ein Tippen öffnet das Tastenfeld. Dieselben vier, SERVO und
+  SERVO-PULSE stehen in OPTIONEN.
 - Der Zielwert einer Seite ist der eingegebene Ausschlag x (1 + RESERVE):
   20,0° bei 10% ergeben 22,0°.
-- Halte 2s HALTEN: START für 2s gedrückt, um den Lauf zu starten. Während
-  des Laufs heißt die Taste LAUF BEENDEN; ein Druck beendet ihn sofort.
-- Die drei Zeilen darunter: der laufende Schritt, etwa `EINSCHWINGEN
-  2000us: SCHREIBEN 1/8, SITZUNGEN 2`, oder warum ein START abgelehnt ist,
-  oder die Sollwerte; das Ergebnis, `BESTANDEN: 150>92, 150>92` mit dem Wert
-  jedes Endpoints davor und danach, oder `NICHT BESTANDEN: Grund`; das
-  Servo, das der Lauf programmiert, `SERVO KST/CHASERVO` oder `SERVO HITEC
-  D-SERIE`, während er läuft und vor dem ersten Lauf; danach die Datei des
-  Berichts, oder `ZURÜCKSPIELEN IN KST` (an einem Hitec-Servo
-  `HITEC001 IN DATEIEN LADEN`) nach einem NICHT BESTANDEN oder einem
-  Abbruch, der geschrieben hat oder ein Schreiben unterwegs abbrach, das
-  angekommen sein kann.
-- Das Servo ist die Zeile SERVO der Einstellungen des ENDLAGENLAUFS:
-  KST/CHASERVO, oder HITEC in der Serie des Hitec-Programmierers. Es
-  übernimmt den Programmierer, der im Hub zuletzt geöffnet
-  wurde. An einem Hitec-Servo sind die Endpoints LEFT END und RIGHT END in
-  den Einheiten aus [Hitec-Servos](#hitec-servos), die Lesesitzung schreibt
-  keine Pulse, und ein Servo der D-Serie braucht kein PD mini.
+- Die Karte BEREIT an der Stelle der Ausgangskarte, 380 x 374px: eine
+  Zeile je Prüfung des Starts, je 30px, ein Punkt, die Bezeichnung und der
+  Zustand. Grün: erfüllt. Rot: sperrt das Halten, oder ein Ausgang ist
+  über sie aktiv (PROG 5V EIN, ARMED). Gelb: das Halten erledigt es selbst
+  (`START SCHALTET EIN`, `START SCHALTET ARMED`). Grau: wartet auf die
+  Zeile PORT. Ein Zustand länger als seine 20 Zellen endet nach dem
+  letzten ganzen Wort. Die Schienenzeile unter den Zeilen nennt das
+  Messgerät des Laufs mit Volt und Ampere.
+- Ein Tippen auf PORT öffnet die PORT-Auswahl; auf SERVO die OPTIONEN auf
+  der Zeile SERVO; auf einen roten NULLPUNKT mit Messwert setzt es den
+  Nullpunkt; auf einen roten WINKEL oder ein rotes MESSGERÄT öffnet es
+  SETUP > SENSORS am AS5600, an der IMU oder am INA3221. Ein Tippen auf eine
+  andere rote oder graue Zeile nennt sie im Alarmband, `ZEILE: Grund`.
+- 2s HALTEN: ARM + START in der Mitte der Fußleiste, 328 x 48px, grün,
+  solange keine Zeile rot ist. Es startet die Startfolge
+  (`shared/servo/servo_start_seq.c`, gemeinsam mit dem Endlagenlauf und
+  dem automatischen Test). Das Halten blendet von grün nach gelb über und
+  blinkt 300ms, wenn es auslöst.
+- Die drei Zeilen: der Schritt der Startfolge, etwa `START, SCHRITT 3 VON
+  5: RÜCKMELDUNG`, oder der Schritt des Laufs, etwa `EINSCHWINGEN 2000us:
+  SCHREIBEN 1/8, SITZUNGEN 2`, oder der Fehler der letzten Startfolge,
+  oder der Grund der ersten roten Zeile, oder die Sollwerte; das
+  Ergebnis, `BESTANDEN: 150>92, 150>92` mit dem Wert jedes Endpoints davor
+  und danach, oder `NICHT BESTANDEN: Grund`; das Servo, das der Lauf
+  programmiert, `SERVO KST/CHASERVO` oder `SERVO HITEC D-SERIE`, während
+  er läuft und vor dem ersten Lauf; danach die Datei des Berichts, oder
+  `ZURÜCKSPIELEN IN KST` (an einem Hitec-Servo `HITEC001 IN DATEIEN
+  LADEN`) nach einem NICHT BESTANDEN oder einem Abbruch, der geschrieben
+  hat oder ein Schreiben unterwegs abbrach, das angekommen sein kann.
+- Das Servo ist die Zeile SERVO: KST/CHASERVO, oder HITEC in der Serie des
+  Hitec-Programmierers. Es übernimmt den Programmierer, der im Hub zuletzt
+  geöffnet wurde. An einem Hitec-Servo sind die Endpoints LEFT END und
+  RIGHT END in den Einheiten aus [Hitec-Servos](#hitec-servos), die
+  Lesesitzung schreibt keine Pulse, und ein Servo der D-Serie braucht kein
+  PD mini.
 
-Ein START wird abgelehnt, der Grund in der ersten Zeile, solange:
+Die Startfolge, jeder Schritt eine Zustandszeile und die Beschriftung des
+Haltens:
 
-| Bedingung | Zeile |
-| --- | --- |
-| der Prüfstand SAFE ist, auf dem rbmod-Carrier mit PORT auf einem Programmierport und dem Feld PROG 5V aus | `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN`, vor `ZUERST ARM`: der Puls des Ports kommt nur mit PROG 5V und nur bei SAFE |
-| der Prüfstand SAFE ist | `ZUERST ARM`, wie auf TEST |
-| ein anderer Lauf läuft oder ein Bericht noch geschrieben wird | die Zeile des Laufs, wie auf TEST |
-| PORT die Ausgänge des Prüfstands sind oder der Ausgang sonst nicht der Programmierport ist | `AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT`. PORT auf den Ausgängen wird vor dem Messgerät genannt: auf dem rbmod-Carrier überwacht kein Kanal die Ausgänge, bis einer als SERVO PWM zugeordnet ist |
-| das Messgerät nicht für den Servostrom eingerichtet ist | die Zeile des Endlagenlaufs |
-| ARMED am Port des rbmod-Carriers mit dem Feld PROG 5V aus | `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN` |
-| eine Sitzung eines Programmers den Port hält | `GESPERRT: SERVOPROGRAMMIERUNG BELEGT DEN PORT`, vor der Zeile zum Puls: die Sitzung ist der Grund, dass kein Puls läuft |
-| der Puls des Ports aus ist | `PORT-PWM AUS: DISARM, SCHALTE ES IN OUTPUTS EIN` mit PORT-PWM aus; `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` mit PORT-PWM ein, etwa nach einem bei ARMED eingeschalteten PROG 5V |
-| PULS MIN über 1000us, PULS MAX unter 2000us oder PULS MITTE nicht strikt zwischen 1000us und 2000us liegt | `PULS MIN BIS MAX MUSS 1000 BIS 2000us ABDECKEN` |
-| die Servoprogrammierung belegt ist oder bei KST/Chaservo und klassischen Hitec-Servos weder PD mini noch PROG 5V die Versorgung schalten kann | die Zeile des Endlagenlaufs |
-| die Winkelquelle keinen Messwert gibt | `WINKELQUELLE: KEIN MESSWERT` |
-| NULLPUNKT nicht genommen ist | `SETZE DEN NULLPUNKT MIT DEM RUDER IN NEUTRALLAGE` |
+| Schritt | Tut | Endet mit |
+| --- | --- | --- |
+| 1 PORT-PWM | PORT-PWM EIN, gespeichert, wenn das Ziel ein PROG-PORT ist und die Einstellung AUS | sofort |
+| 2 PROG 5V oder PD MINI | PROG 5V EIN am Port des rbmod-Carriers; AUSGANG EIN des PD mini, wo es das Servo speist, mit SOLL V und SOLL A von SUPPLY | sofort |
+| 3 RÜCKMELDUNG | wartet, bis PROG 5V oder der Ausgang des PD mini und der Puls des Ports EIN zurückmelden | 1000ms; ein Teil ohne Rückmeldung lässt den Schritt fehlschlagen |
+| 4 ARM | ARM, wenn der Prüfstand SAFE ist | ARMED innerhalb von 500ms |
+| 5 START | der Lauf startet über die Prüfung der Tabelle unten | sofort |
+
+Ein Teil, das schon EIN meldet, wird nicht erneut angefragt: ein von Hand
+eingerichteter Prüfstand durchläuft dieselben Schritte. Ein fehlgeschlagener
+Schritt nennt sich im Alarmband und in der ersten Zeile, `PROG 5V
+FEHLGESCHLAGEN: KEINE RÜCKMELDUNG IN 1000ms`, `ARM FEHLGESCHLAGEN: NICHT
+ARMED IN 500ms`, `<Schritt> FEHLGESCHLAGEN: <Grund>` für eine Zeile, die
+unterwegs rot wird, `<Schritt> FEHLGESCHLAGEN: STOP` für ein Tippen auf das
+Halten, ein STOP oder einen Touch-Verlust. Jeder Fehler fragt DISARM, PROG
+5V AUS und AUSGANG AUS des PD mini an: der Prüfstand endet SAFE mit allen
+Ausgängen aus. Ein Verlassen von RUDER AUTO während der Startfolge beendet
+sie wie jedes Verlassen: SAFE, und PROG 5V bleibt für einen anderen
+SERVO-Bildschirm an, bis SERVO verlassen wird. Während der Startfolge zeigt
+das Halten den Schritt in Gelb, ein Tippen stoppt sie; während des Laufs
+zeigt es LAUF BEENDEN in Rot, ein Druck beendet den Lauf sofort. PORT-PWM
+bleibt nach einem Fehler EIN: der Port sendet bei SAFE keinen Puls. Die
+1000ms und 500ms sind Konstanten in `servo_start_seq.h`, auf dem Host bei
+900ms und 1100ms und bei 400ms und 600ms getestet (`test_servo_start_seq`,
+`test_servo_rauto_kst`).
+
+Die Zeilen sind die Prüfungen des Starts, `rauto_blocked()`
+(`shared/ui/servo_rudder_auto_ready.c`), in deren Reihenfolge; jeder Text
+gehört zu genau einer Zeile (`test_servo_ready`). Eine Zeile ist rot und das
+Halten grau, solange:
+
+| Zeile | Bedingung | Text |
+| --- | --- | --- |
+| PORT | PORT die Ausgänge des Prüfstands sind oder der Ausgang sonst nicht der Programmierport ist | `AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT`. Vor dem Messgerät genannt: auf dem rbmod-Carrier überwacht kein Kanal die Ausgänge, bis einer als SERVO PWM zugeordnet ist |
+| MESSGERÄT | das Messgerät nicht für den Servostrom eingerichtet, nicht erreichbar oder ohne Messfenster ist | die Zeile des Endlagenlaufs |
+| PROGRAMMIERER | eine Sitzung eines Programmierers den Port hält oder der Programmierer nicht im PWM-Modus ist | `GESPERRT: SERVOPROGRAMMIERUNG BELEGT DEN PORT`, `PROGRAMMIEREN: PORT IST NICHT IM PWM-MODUS` |
+| PROG 5V, PD MINI, VERSORGUNG | ARMED mit PROG 5V aus, ein Port hält es; ein Sollwert unter 4.8V; eine Schiene unter 4.8V ohne PD mini; kein PD mini und kein PROG 5V, um die Versorgung eines KST/Chaservo- oder klassischen Hitec-Servos aus- und einzuschalten | die Zeile des Endlagenlaufs |
+| PORT-PWM | ARMED mit dem Puls des Ports aus | `PORT-PWM AUS: DISARM, SCHALTE ES IN OUTPUTS EIN`, `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` |
+| BEREICH | PULS MIN über 1000us, PULS MAX unter 2000us oder PULS MITTE nicht strikt zwischen 1000us und 2000us liegt | `PULS MIN BIS MAX MUSS 1000 BIS 2000us ABDECKEN` |
+| WINKEL | die Winkelquelle keinen Messwert liefert | `WINKELQUELLE: KEIN MESSWERT` |
+| NULLPUNKT | kein Nullpunkt gesetzt ist | `SETZE DEN NULLPUNKT MIT DEM RUDER IN NEUTRALLAGE` |
+| ARM | ein anderer Lauf läuft oder ein Bericht noch geschrieben wird | die Zeile des Laufs, wie auf TEST |
+
+Gelb bei SAFE, vom Halten erledigt: `PROG 5V AUS: IM PROG-5V-FELD
+EINSCHALTEN` (PROG 5V), `PROGRAMMIEREN: PD-MINI-AUSGANG AUS` (PD MINI),
+`PORT-PWM AUS: SCHALTE ES IN OUTPUTS EIN` und `PORT-PWM EIN, WARTET AUF
+SAFE: DISARM, DANN ARM` (PORT-PWM), und `ZUERST ARM` (ARM, auch solange ARM
+angefragt ist).
 
 ### Verfahren
 

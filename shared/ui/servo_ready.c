@@ -161,9 +161,18 @@ static void draw_row(gfx_canvas_t *c, int i)
                     dot_color(r.st));
     gfx_text(c, RDY_X + 18, ty, r.label, SV_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
+    /* A text past the column is cut after its last whole word that
+     * fits; a tap on the row shows it whole. */
     char v[64];
     const int cells = READY_VALUE_W / SV_CELL;
-    const size_t cut = gfx_text_prefix(r.value, cells);
+    size_t cut = gfx_text_prefix(r.value, cells);
+    if (r.value[cut] != '\0') {
+        size_t sp = cut;
+        while (sp > 0u && r.value[sp] != ' ') {
+            --sp;
+        }
+        cut = (sp > 0u) ? sp : cut;
+    }
     snprintf(v, sizeof(v), "%.*s", (int)cut, r.value);
     gfx_text_in(c, (gfx_rect_t){ (int16_t)(RDY_X + RDY_W - READY_VALUE_W),
                                  (int16_t)ty, READY_VALUE_W, 20 },

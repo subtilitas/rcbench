@@ -5126,6 +5126,15 @@ UI_TEXT(HG_SV_TITLE_RUD_READ, 0,
 UI_TEXT(HG_SV_TITLE_AUTO, 0,
     "SERVO: RUDDER AUTO",
     "SERVO: RUDER AUTO")
+UI_TEXT(HG_SV_TITLE_READY, 0,
+    "SERVO: READY AND START",
+    "SERVO: BEREIT UND START")
+UI_TEXT(HG_SV_READY, 0,
+    "One row per check. Green met, amber done by the hold, red stops the hold; a tap fixes it or says why.",
+    "Eine Zeile je Prüfung. Grün erfüllt, gelb erledigt das Halten, rot sperrt es; Tippen behebt oder sagt warum.")
+UI_TEXT(HG_SV_RDY_RAIL, 0,
+    "The meter the run reads, its volts and amps now.",
+    "Das Messgerät des Laufs, seine Volt und Ampere jetzt.")
 UI_TEXT(HG_SV_TITLE_SWEEP, 0,
     "SERVO: SWEEP",
     "SERVO: SWEEP")
@@ -5208,8 +5217,8 @@ UI_TEXT(HG_SV_RA_MARGIN, 0,
     "MARGIN aims past the target, 0 to 50%. TOLERANCE: how near the goal a measure counts, 0.1 to 5.0°.",
     "RESERVE zielt über das Soll hinaus, 0 bis 50%. TOLERANZ: wie nah am Ziel ein Messwert zählt, 0.1 bis 5.0°.")
 UI_TEXT(HG_SV_RA_START, 0,
-    "Starts the run while ARMED; STOP RUN ends it. Take ZERO with the surface at neutral first.",
-    "Startet den Lauf bei ARMED; LAUF BEENDEN stoppt ihn. Setze vorher den NULLPUNKT in Neutrallage.")
+    "Hold 2s: PORT PWM and the supply on, read back in 1000ms, ARM, then the run. A tap stops it, all off.",
+    "Halte 2s: PORT-PWM, Versorgung, Rückmeldung in 1000ms, ARM, dann der Lauf. Tippen stoppt, alles aus.")
 UI_TEXT(HG_SV_TYPE, 0,
     "The servo type, frame rate and pulse range in force. SETTINGS sets them on OUTPUT.",
     "Aktiver Servotyp, Pulsrate und Pulsbereich. OPTIONEN stellt sie auf AUSGANG ein.")

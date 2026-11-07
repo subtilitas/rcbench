@@ -10,13 +10,17 @@
  * servo-rudder-85 then goes to -85.0°, which MAX takes as its negative side.
  * The servo-rudder views are on RUDDER's screen, the servo-rudder-auto
  * views on RUDDER AUTO's (render_screen.c shows it).  servo-rudder-auto is
- * ARMED: no KST servo on the programming port, which AUTO's first line
- * names.  servo-rudder-auto-safe is the same SAFE, the view
- * help-servo-rudder-auto opens SERVO's guide over (render_help.c);
- * help-servo-rudder opens it over servo-rudder.  servo-rudder-auto-rbmod
- * is RUDDER AUTO on the rbmod carrier, SAFE, the target PROG PORT 1 (GPIO
- * 13) and the PROG 5V box off: its first line asks for the PROG 5V before
- * ARM.
+ * SAFE on the bench's outputs: READY's PORT row red, the hold grey.
+ * servo-rudder-auto-safe is the same, the view help-servo-rudder-auto
+ * opens SERVO's guide over (render_help.c); help-servo-rudder opens it
+ * over servo-rudder.  servo-rudder-auto-settings is its SETTINGS list.
+ * The -rbmod views are on the rbmod carrier, the target PROG PORT 1 (GPIO
+ * 13), the INA3221 at 0x40 reading the ports' CH3, PORT PWM and the PROG
+ * 5V off: servo-rudder-auto-rbmod SAFE with the hold offered, PROG 5V,
+ * PORT PWM and ARM amber; servo-rudder-auto-start-rbmod after the hold,
+ * the sequence waiting for the PROG 5V's read-back; and
+ * servo-rudder-auto-failed-rbmod 1100ms later, the read-back failed, the
+ * bench SAFE.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -27,6 +31,8 @@
 #include "servo_screen.h"
 #include "servo_spots.h"
 #include "servo_test.h"
+#include "link_pages.h"
+#include "prog_choice.h"
 #include "settings.h"
 #include "ui_layout.h"
 #include "ui_screen.h"
@@ -67,8 +73,7 @@ bool render_rudder_view(const char *view)
 
 bool render_rudder_armed(const char *view)
 {
-    return strcmp(view, "servo-rudder-armed") == 0
-           || strcmp(view, "servo-rudder-auto") == 0;
+    return strcmp(view, "servo-rudder-armed") == 0;
 }
 
 void render_rudder_pose(const char *view)
@@ -95,12 +100,15 @@ void render_rudder_pose(const char *view)
         servo_screen_set_armed(true);
         tap_body(438, 204);                 /* 2000us */
     }
-    if (strcmp(view, "servo-rudder-auto") == 0) {
-        servo_screen_set_armed(true);
-    }
-    if (strcmp(view, "servo-rudder-auto-rbmod") == 0) {
+    if (strstr(view, "servo-rudder-auto") == view
+        && strstr(view, "-rbmod") != NULL) {
+        prog_choice_set_far_minor(LINK_MINOR_CARRIER_PWM);
         settings_set(SET_SERVO_TARGET, 1.0f);
+        settings_set(SET_SERVO_PORT_PWM, 0.0f);
         servo_screen_set_drive(1u, 13u, false);
+    }
+    if (strcmp(view, "servo-rudder-auto-settings") == 0) {
+        tap_body(SV_FOOT_SET_X, SV_FOOT_Y);
     }
     servo_cmd_t c;
     while (servo_screen_take(&c)) { }

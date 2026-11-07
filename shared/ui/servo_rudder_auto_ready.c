@@ -395,6 +395,11 @@ bool rauto_ready_row(int i, rdy_row_t *r)
         r->st  = (uint8_t)RDY_BAD;
         r->why = mine;
         snprintf(r->value, sizeof(r->value), "%s", mine);
+    } else if (i == RAR_PWM && !s.drive_pwm && safe_now()) {
+        /* PORT PWM on, the pulse not yet: it comes with the PROG 5V the
+         * hold switches, which the read-back waits for. */
+        r->st = (uint8_t)RDY_SEQ;
+        snprintf(r->value, sizeof(r->value), "%s", TR(RDY_SEQ_ON));
     } else {
         r->st = (uint8_t)RDY_OK;
         met_value(i, r->value, sizeof(r->value), &r->st);

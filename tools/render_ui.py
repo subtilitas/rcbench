@@ -802,7 +802,19 @@ SCREENS = {
     "imu-scan": ("imu-scan.png", "imu", "dark"),
     "imu-connected": ("imu-connected.png", "imu", "dark"),
     "setup-sensors-imu": ("setup-sensors-imu.png", "setup", "dark"),
+    # RUDDER AUTO: SAFE on the bench's outputs, READY's PORT row red; its
+    # SETTINGS list; on the rbmod carrier SAFE with the hold offered, the
+    # ARM + START sequence waiting for the PROG 5V, and its read-back
+    # failed at 1000ms.
     "servo-rudder-auto": ("servo-rudder-auto.png", "servo", "dark"),
+    "servo-rudder-auto-settings": ("servo-rudder-auto-settings.png", "servo",
+                                   "dark"),
+    "servo-rudder-auto-rbmod": ("servo-rudder-auto-rbmod.png", "servo",
+                                "dark"),
+    "servo-rudder-auto-start-rbmod": ("servo-rudder-auto-start-rbmod.png",
+                                      "servo", "dark"),
+    "servo-rudder-auto-failed-rbmod": ("servo-rudder-auto-failed-rbmod.png",
+                                       "servo", "dark"),
 }
 INCLUDES = ui_sources.INCLUDES
 
@@ -862,9 +874,6 @@ FIT_ONLY = {
     "help-overview-3": (None, "overview", "dark"),
     "help-overview-4": (None, "overview", "dark"),
     "help-band-worst": (None, "motor", "dark"),
-    # AUTO's box on the rbmod carrier: SAFE, TARGET on PROG PORT 1, the PROG
-    # 5V box off.
-    "servo-rudder-auto-rbmod": (None, "servo", "dark"),
     # The other pages of SETUP's, OUTPUTS', LOGS' and FILES' guides, in
     # each state that has its own: a list, SENSORS on its first entry and on
     # the IMU, the carrier's tiles, a PROG PORT entry, the grid view, the
