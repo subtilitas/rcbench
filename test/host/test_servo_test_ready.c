@@ -12,7 +12,15 @@
  *        past 6.0V starts from SAFE only through the HV warning; and
  *        TEST's SETTINGS list opens on SAFE only, closes as the bench
  *        arms, locks the rows that do not apply and puts the stored values
- *        back on DISCARD.  The bench is servo_bench_rig.h.
+ *        back on DISCARD.  A row outside the card has no state; the METER
+ *        and PD MINI rows name the panel's model; a port's PORT PWM off
+ *        reads amber on SAFE and red on ARMED; ARM reads ARMING while the
+ *        steps wait; a tap on a row takes its fix (the port list, the
+ *        list at STEPS, the HV warning) or names it in the band, and does
+ *        nothing under a run or the steps; a row that turns red under the
+ *        hold drops it and under the steps ends them, every output off; a
+ *        press outside the hold or beside another is not the hold's.  The
+ *        bench is servo_bench_rig.h.
  *
  * Cases:
  * - every_gate_text_belongs_to_exactly_one_row
@@ -27,6 +35,18 @@
  * - the_list_opens_on_safe_only_and_closes_as_the_bench_arms
  * - the_list_locks_the_rows_that_do_not_apply
  * - discard_puts_the_stored_values_back
+ * - a_row_outside_the_card_has_no_state
+ * - the_meter_and_pd_rows_name_the_modelled_supply
+ * - a_port_without_its_pulse_reads_amber_on_safe_and_red_armed
+ * - the_arm_row_reads_arming_while_the_steps_wait
+ * - a_tap_on_a_row_does_nothing_under_the_steps_or_a_run
+ * - a_tap_on_port_opens_the_port_list
+ * - a_tap_on_a_red_steps_row_opens_the_list_unless_it_is_refused
+ * - a_tap_on_an_amber_steps_row_opens_the_hv_warning
+ * - a_tap_on_a_red_row_names_it_and_on_an_amber_row_names_nothing
+ * - a_row_that_turns_red_under_the_hold_drops_it
+ * - a_row_that_turns_red_under_the_steps_ends_them_all_off
+ * - a_press_outside_the_hold_or_beside_another_is_not_the_holds
  *
  * SPDX-License-Identifier: MIT
  */
@@ -40,6 +60,7 @@
 #include "servo_screen.h"
 #include "settings.h"
 #include "supply_screen.h"
+#include "ui_footer.h"
 #include "ui_screen.h"
 #include "ui_setlist.h"
 #include "ui_text.h"
@@ -49,6 +70,11 @@
 #include "servo_rig.h"
 
 #include "servo_ready_int.h"
+
+/* servo_screen_int.h's press and list guards, which this suite does not
+ * take in whole. */
+bool svs_press_held(void);
+const char *svs_list_refused(void);
 
 /** @brief A text TEST's gate returns, and the row it belongs to. */
 typedef struct {
@@ -381,6 +407,329 @@ TEST_CASE(discard_puts_the_stored_values_back)
     CHECK(!settings_save_asked());
 }
 
+/* A tap on row @p i of the READY card, in the screen's coordinates. */
+static void tap_row(int i)
+{
+    tap(SV_RDY_X, SV_RDY_ROW_Y(i));
+}
+
+/* Rows outside the card have no state, and a tap on one does nothing. */
+TEST_CASE(a_row_outside_the_card_has_no_state)
+{
+    safe_test();
+    rdy_row_t r;
+    CHECK(!test_ready_row(-1, &r));
+    CHECK(!test_ready_row((int)TRR_COUNT, &r));
+    CHECK(!test_ready_row(TRR_PORT, NULL));
+    test_ready_tap(-1);
+    test_ready_tap((int)TRR_COUNT);
+    CHECK_STR_EQ(alert(), "");
+    CHECK_EQ(servo_screen_port_choices(), -1);
+    CHECK(!servo_screen_list()->open);
+    CHECK(!svs_seq_busy());
+}
+
+/* With the panel's model as the supply, METER and PD MINI read the model
+ * and are met; a run that began on it keeps METER on the model whatever
+ * the supply is switched to after. */
+TEST_CASE(the_meter_and_pd_rows_name_the_modelled_supply)
+{
+    bench_on_ina();
+    supply_screen_set_model(true);
+    open_test();
+    bench_frames(200u);
+    rdy_row_t r;
+    CHECK(test_ready_row(TRR_METER, &r));
+    CHECK_EQ(r.st, (uint8_t)RDY_OK);
+    CHECK_STR_EQ(r.value, TR(SV_METER_MODEL));
+    CHECK(test_ready_row(TRR_PD, &r));
+    CHECK_EQ(r.st, (uint8_t)RDY_OK);
+    CHECK_STR_EQ(r.value, TR(SV_METER_MODEL));
+    CHECK(test_hold_blocked(NULL) == NULL);
+    hold_fire();
+    bench_frames(100u);
+    CHECK(servo_screen_testing());
+    supply_screen_set_model(false);
+    CHECK(test_ready_row(TRR_METER, &r));
+    CHECK_STR_EQ(r.value, TR(SV_METER_MODEL));
+    tap(START_X, START_Y);                       /* STOP TEST */
+    bench_frames(500u);
+    CHECK(!servo_screen_testing());
+}
+
+/* A port whose pulse is not out: PORT reads amber, START SWITCHES IT ON,
+ * on a SAFE bench, whether PORT PWM waits for SAFE or is off; on an ARMED
+ * bench the same texts are red and refuse the hold on PORT. */
+TEST_CASE(a_port_without_its_pulse_reads_amber_on_safe_and_red_armed)
+{
+    safe_test();
+    settings_set(SET_SERVO_TARGET, 1.0f);
+    settings_set(SET_SERVO_PORT_PWM, 1.0f);
+    servo_screen_set_drive(1u, 13u, false);
+    bench_frames(100u);
+    rdy_row_t r;
+    CHECK(test_ready_row(TRR_PORT, &r));
+    CHECK_EQ(r.st, (uint8_t)RDY_SEQ);
+    CHECK(r.why == TR(SV_LIM_PWM_SAFE));
+    CHECK_STR_EQ(r.value, TR(RDY_SEQ_ON));
+    CHECK(r.fix);
+    CHECK(test_hold_blocked(NULL) == NULL);
+
+    settings_set(SET_SERVO_PORT_PWM, 0.0f);
+    CHECK(test_ready_row(TRR_PORT, &r));
+    CHECK_EQ(r.st, (uint8_t)RDY_SEQ);
+    CHECK(r.why == TR(SV_LIM_PWM_OFF));
+    CHECK_STR_EQ(r.value, TR(RDY_SEQ_ON));
+    CHECK(test_hold_blocked(NULL) == NULL);
+
+    servo_screen_set_armed(true);
+    bench_frames(40u);
+    test_row_t row = TRR_COUNT;
+    CHECK(test_ready_row(TRR_PORT, &r));
+    CHECK_EQ(r.st, (uint8_t)RDY_BAD);
+    CHECK(r.why == TR(SV_LIM_PWM_OFF_ARMED));
+    CHECK_STR_EQ(r.value, TR(SV_LIM_PWM_OFF_ARMED));
+    CHECK(test_hold_blocked(&row) == TR(SV_LIM_PWM_OFF_ARMED));
+    CHECK_EQ(row, TRR_PORT);
+
+    settings_set(SET_SERVO_PORT_PWM, 1.0f);
+    CHECK(test_ready_row(TRR_PORT, &r));
+    CHECK_EQ(r.st, (uint8_t)RDY_BAD);
+    CHECK(r.why == TR(SV_LIM_PWM_SAFE));
+    CHECK(test_hold_blocked(&row) == TR(SV_LIM_PWM_SAFE));
+    CHECK_EQ(row, TRR_PORT);
+    servo_screen_set_drive(0u, SERVO_SCREEN_NO_PIN, false);
+}
+
+/* The hold fired and ARM not answered: ARM reads ARMING, the hold's slot
+ * names the step in amber, and the hold's frame is not the idle one. */
+TEST_CASE(the_arm_row_reads_arming_while_the_steps_wait)
+{
+    safe_test();
+    rdy_row_t r;
+    CHECK(test_ready_row(TRR_ARM, &r));
+    CHECK_STR_EQ(r.value, TR(RDY_SEQ_ARM));
+    scr->render(&cv, 0);
+    const gfx_rect_t hold = ui_footer_rect(UI_FOOTER_HOLD);
+    const gfx_color_t idle = fb[(size_t)(hold.y + hold.h / 2) * W
+                                + (size_t)hold.x + 6u];
+    bench.no_arm = true;
+    hold_fire();
+    CHECK(svs_seq_busy());
+    CHECK(servo_screen_arm_asked());
+    CHECK(test_ready_row(TRR_ARM, &r));
+    CHECK_EQ(r.st, (uint8_t)RDY_SEQ);
+    CHECK_STR_EQ(r.value, TR(RDY_ARMING));
+    CHECK_STR_EQ(r.label, "ARM");
+    char label[40];
+    CHECK(strlen(svs_seq_label(label, sizeof(label))) > 0u);
+    scr->render(&cv, 0);
+    const gfx_color_t waiting = fb[(size_t)(hold.y + hold.h / 2) * W
+                                   + (size_t)hold.x + 6u];
+    CHECK(waiting != idle);
+    tap(START_X, START_Y);                       /* a press ends the steps */
+    CHECK(!svs_seq_busy());
+    CHECK(!servo_screen_arm_asked());
+}
+
+/* The rows as the steps or the run started: a tap on PORT opens no list
+ * and a tap on a red STEPS opens none, whichever of the two is under
+ * way. */
+TEST_CASE(a_tap_on_a_row_does_nothing_under_the_steps_or_a_run)
+{
+    safe_test();
+    bench.no_arm = true;
+    hold_fire();
+    CHECK(svs_seq_busy());
+    tap_row(TRR_PORT);
+    CHECK_EQ(servo_screen_port_choices(), -1);
+    tap_row(TRR_STEPS);
+    CHECK(!servo_screen_list()->open);
+    tap(START_X, START_Y);                       /* ends the steps */
+    CHECK(!svs_seq_busy());
+
+    bench.no_arm = false;
+    servo_screen_set_armed(true);
+    hold_fire();
+    bench_frames(100u);
+    CHECK(servo_screen_testing());
+    tap_row(TRR_PORT);
+    CHECK_EQ(servo_screen_port_choices(), -1);
+    CHECK(servo_screen_testing());
+    tap(START_X, START_Y);                       /* STOP TEST */
+    bench_frames(500u);
+    CHECK(!servo_screen_testing());
+}
+
+/* A tap on PORT opens the choice of OUTPUTS and the four PROG PORTs. */
+TEST_CASE(a_tap_on_port_opens_the_port_list)
+{
+    safe_test();
+    CHECK_EQ(servo_screen_port_choices(), -1);
+    tap_row(TRR_PORT);
+    CHECK_EQ(servo_screen_port_choices(), 5);
+}
+
+/* A tap on STEPS with no step chosen opens TEST's list at its steps; with
+ * a finger on the hold it names the held press, and on an ARMED bench it
+ * names the SAFE the list needs.  Neither opens the list. */
+TEST_CASE(a_tap_on_a_red_steps_row_opens_the_list_unless_it_is_refused)
+{
+    safe_test();
+    settings_set(SET_SERVO_BROWNOUT, 0.0f);
+    settings_set(SET_SERVO_STEP_48, 0.0f);
+    settings_set(SET_SERVO_STEP_60, 0.0f);
+    bench_frames(40u);
+    rdy_row_t r;
+    CHECK(test_ready_row(TRR_STEPS, &r));
+    CHECK_EQ(r.st, (uint8_t)RDY_BAD);
+    CHECK(r.fix);
+
+    /* A finger on the hold: nothing opens. */
+    ev(START_X, START_Y, TOUCH_EVENT_DOWN, 1);
+    test_ready_tap(TRR_STEPS);
+    CHECK(!servo_screen_list()->open);
+    CHECK(svs_press_held());
+    ev(START_X, START_Y, TOUCH_EVENT_UP, 1);
+
+    /* ARMED: the list is for SAFE. */
+    servo_screen_set_armed(true);
+    bench_frames(40u);
+    CHECK(svs_list_refused() == TR(FOOT_SETTINGS_SAFE));
+    tap_row(TRR_STEPS);
+    CHECK(!servo_screen_list()->open);
+
+    servo_screen_set_armed(false);
+    bench_frames(40u);
+    CHECK(svs_list_refused() == NULL);
+    tap_row(TRR_STEPS);
+    CHECK(servo_screen_list()->open);
+}
+
+/* A step past 6.0V turns STEPS amber, TAP: HV WARNING; a tap on it opens
+ * the warning, whose 2s hold arms the bench and starts the run. */
+TEST_CASE(a_tap_on_an_amber_steps_row_opens_the_hv_warning)
+{
+    safe_test();
+    test_hv_on();
+    servo_screen_set_armed(false);
+    bench_frames(100u);
+    rdy_row_t r;
+    CHECK(test_ready_row(TRR_STEPS, &r));
+    CHECK_EQ(r.st, (uint8_t)RDY_SEQ);
+    CHECK_STR_EQ(r.value, TR(SV_TAP_HV));
+    CHECK(r.fix);
+    tap_row(TRR_STEPS);
+    CHECK(!svs_seq_busy());
+    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_DOWN, 1);
+    bench_frames(2300u);
+    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_UP, 1);
+    bench_frames(100u);
+    CHECK(servo_screen_testing());
+    tap(START_X, START_Y);                       /* STOP TEST */
+}
+
+/* A tap on a red row that is not STEPS names the row and its reason in
+ * the band; a tap on a row the hold does itself names nothing. */
+TEST_CASE(a_tap_on_a_red_row_names_it_and_on_an_amber_row_names_nothing)
+{
+    char want[160];
+    bench_on_ina();
+    servo_screen_set_armed(false);
+    open_test();
+    bench.out = false;
+    bench.rail_set = true;
+    bench.rail_mv = 6000u;
+    bench_frames(400u);
+    ui_router_set_alert(NULL);
+    rdy_row_t r;
+    CHECK(test_ready_row(TRR_PD, &r));
+    CHECK_EQ(r.st, (uint8_t)RDY_BAD);
+    tap_row(TRR_PD);
+    snprintf(want, sizeof(want), TR(RDY_BAND), "PD MINI", TR(TST_RAIL_FED));
+    CHECK_STR_EQ(alert(), want);
+
+    ui_router_set_alert(NULL);
+    CHECK(test_ready_row(TRR_ARM, &r));
+    CHECK_EQ(r.st, (uint8_t)RDY_SEQ);
+    tap_row(TRR_ARM);
+    CHECK_STR_EQ(alert(), "");
+    tap_row(TRR_METER);                          /* met: nothing to name */
+    CHECK_STR_EQ(alert(), "");
+}
+
+/* A row that turns red while the finger holds ARM + START drops the hold:
+ * it does not fire, not at 2.1s either, and no ARM is asked. */
+TEST_CASE(a_row_that_turns_red_under_the_hold_drops_it)
+{
+    safe_test();
+    ev(START_X, START_Y, TOUCH_EVENT_DOWN, 1);
+    bench_frames(1000u);
+    CHECK(!svs_seq_busy());
+    settings_set(SET_SERVO_BROWNOUT, 0.0f);
+    settings_set(SET_SERVO_STEP_48, 0.0f);
+    settings_set(SET_SERVO_STEP_60, 0.0f);
+    bench_frames(1200u);
+    ev(START_X, START_Y, TOUCH_EVENT_UP, 1);
+    bench_frames(100u);
+    CHECK(!svs_seq_busy());
+    CHECK(!servo_screen_testing());
+    CHECK(!servo_screen_arm_asked());
+    CHECK_EQ(bench.arms, 0u);
+}
+
+/* A row that turns red while the steps wait for ARMED ends them: the
+ * failure names the reason in the band, the bench is SAFE and the
+ * supply's output is off. */
+TEST_CASE(a_row_that_turns_red_under_the_steps_ends_them_all_off)
+{
+    safe_test();
+    bench.no_arm = true;
+    bench.out = true;
+    supply_screen_set_output(true);
+    hold_fire();
+    CHECK(svs_seq_busy());
+    settings_set(SET_SERVO_BROWNOUT, 0.0f);
+    settings_set(SET_SERVO_STEP_48, 0.0f);
+    settings_set(SET_SERVO_STEP_60, 0.0f);
+    bench_frames(100u);
+    CHECK(!svs_seq_busy());
+    CHECK(!servo_screen_testing());
+    const char *failed = svs_seq_failure();
+    CHECK(failed != NULL
+          && strstr(failed, ui_servo_str(SERVO_STR_START_NO_STEPS)) != NULL);
+    CHECK_STR_EQ(alert(), failed != NULL ? failed : "");
+    bench_frames(200u);
+    CHECK(!bench.out);
+    CHECK(!servo_screen_arm_asked());
+}
+
+/* A press away from the hold is not the hold's, and a second finger on
+ * the hold while the first is down starts nothing of its own: the first
+ * finger's hold fires once. */
+TEST_CASE(a_press_outside_the_hold_or_beside_another_is_not_the_holds)
+{
+    safe_test();
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = 2, .y = 2, .strength = 40 } };
+    CHECK(!test_hold_down(NULL));
+    CHECK(!test_hold_down(&e));
+    CHECK(!svs_seq_busy());
+
+    ev(START_X, START_Y, TOUCH_EVENT_DOWN, 1);
+    bench_frames(400u);
+    e.point.id = 2;
+    e.point.x = START_X;
+    e.point.y = START_Y;
+    CHECK(test_hold_down(&e));
+    bench_frames(1700u);
+    ev(START_X, START_Y, TOUCH_EVENT_UP, 1);
+    bench_frames(100u);
+    CHECK(servo_screen_testing());
+    CHECK_EQ(bench.arms, 1u);
+    tap(START_X, START_Y);                       /* STOP TEST */
+}
+
 int main(void)
 {
     RUN(every_gate_text_belongs_to_exactly_one_row);
@@ -395,5 +744,17 @@ int main(void)
     RUN(the_list_opens_on_safe_only_and_closes_as_the_bench_arms);
     RUN(the_list_locks_the_rows_that_do_not_apply);
     RUN(discard_puts_the_stored_values_back);
+    RUN(a_row_outside_the_card_has_no_state);
+    RUN(the_meter_and_pd_rows_name_the_modelled_supply);
+    RUN(a_port_without_its_pulse_reads_amber_on_safe_and_red_armed);
+    RUN(the_arm_row_reads_arming_while_the_steps_wait);
+    RUN(a_tap_on_a_row_does_nothing_under_the_steps_or_a_run);
+    RUN(a_tap_on_port_opens_the_port_list);
+    RUN(a_tap_on_a_red_steps_row_opens_the_list_unless_it_is_refused);
+    RUN(a_tap_on_an_amber_steps_row_opens_the_hv_warning);
+    RUN(a_tap_on_a_red_row_names_it_and_on_an_amber_row_names_nothing);
+    RUN(a_row_that_turns_red_under_the_hold_drops_it);
+    RUN(a_row_that_turns_red_under_the_steps_ends_them_all_off);
+    RUN(a_press_outside_the_hold_or_beside_another_is_not_the_holds);
     return test_summary("servo_test_ready");
 }
