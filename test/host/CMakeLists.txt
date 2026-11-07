@@ -191,11 +191,12 @@ foreach(suite files_screen files_ops files_open files_layout files_view
         "${CMAKE_CURRENT_SOURCE_DIR}/../../shared/ui")
 endforeach()
 # RUDDER's suites reach the task's layout and state through
-# servo_rudder_int.h, AUTO's box through servo_rudder_auto_int.h.
+# servo_rudder_int.h, AUTO's box through servo_rudder_auto_int.h; the menu
+# openers' suite taps AUTO's READY rows by their enum (servo_ready_int.h).
 foreach(suite servo_rudder_panel rudder_layout keypad_rows_servo
         servo_rauto_kst servo_rauto_panel servo_rauto_hitec servo_rudder_flap
         rudder_flap_view servo_ready servo_rauto_seq servo_limrun_ready
-        servo_limrun_seq)
+        servo_limrun_seq menu_openers)
     target_include_directories(test_${suite} PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/../../shared/ui")
 endforeach()
