@@ -13,6 +13,7 @@
  * - servo_family_steps_on_the_programming_port_only
  * - servo_pulses_name_their_reason_until_a_pd_mini_feeds
  * - a_finger_on_a_programmer_control_keeps_the_hubs_list_shut
+ * - the_servos_name_takes_the_name_keyboard
  *
  * SPDX-License-Identifier: MIT
  */
@@ -258,6 +259,23 @@ TEST_CASE(a_finger_on_a_programmer_control_keeps_the_hubs_list_shut)
     CHECK(servo_screen_list()->open);
 }
 
+/* The servo's name types on the name keyboard, not the card folder's: a
+ * name with a space and more than eight characters is taken on OK. */
+TEST_CASE(the_servos_name_takes_the_name_keyboard)
+{
+    fresh();
+    settings_set_text(SET_TEXT_DUT_NAME, "MY SERVO 12");
+    open_settings();
+    sl_tap(HL_NAME);
+    const ui_setlist_t *sl = servo_screen_list();
+    CHECK(sl->tk.open);
+    CHECK(!sl->tk.folder);
+    const gfx_rect_t ok = ui_textkey_key_rect(&sl->tk, UI_TK_OK);
+    tap(ok.x + ok.w / 2, ok.y + ok.h / 2);
+    CHECK(!sl->tk.open);
+    CHECK_STR_EQ(settings_text(SET_TEXT_DUT_NAME), "MY SERVO 12");
+}
+
 int main(void)
 {
     RUN(the_hubs_keys_step_centre_max_travel_and_hv);
@@ -267,5 +285,6 @@ int main(void)
     RUN(servo_family_steps_on_the_programming_port_only);
     RUN(servo_pulses_name_their_reason_until_a_pd_mini_feeds);
     RUN(a_finger_on_a_programmer_control_keeps_the_hubs_list_shut);
+    RUN(the_servos_name_takes_the_name_keyboard);
     return test_summary("servo_lists_rows");
 }
