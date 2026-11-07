@@ -983,8 +983,8 @@ Ankunft des Servohebels übereinstimmt, beantwortet er nicht.
 Welle.
 
 1. Schalte bei einem Prüfstand in SAFE unter SETUP > SENSORS `AS5600` ein.
-   Stelle das Servo auf Neutral und tippe auf der Seite PRÜFLING von SERVO
-   auf SENSOR-MITTE.
+   Stelle das Servo auf Neutral und tippe in den OPTIONEN der Seite RUDER von
+   SERVO auf SENSOR-MITTE.
 2. Wiederhole die Schritte 5 bis 7 von Teil A.
 3. Bewahre jeden Mitschnitt zusammen mit der `ATESTnnn.CSV` seines Tests
    aus dem Ordner `USER/LOGS` der SD-Karte auf.

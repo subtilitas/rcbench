@@ -70,6 +70,9 @@ outputs. Choose the port in either of these places:
 - the programmers' PORT row, before CONNECT: a tap on the row's label
   opens PROGP01 to PROGP04 with their GPIO
   ([Servo programmer: The port on the rbmod carrier](ServoProgrammer.md#the-port-on-the-rbmod-carrier));
+- the PORT button on every SERVO function screen: a tap opens OUTPUTS and
+  PROG PORT 1 to PROG PORT 4 over the left card
+  ([Screens: SERVO](Screens.md#servo));
 - a PROG PORT entry on SETUP > OUTPUTS, SERVO TESTER PORT n
   ([Screens: On the rbmod carrier](Screens.md#on-the-rbmod-carrier)).
 
@@ -94,19 +97,20 @@ well: the panel asks for the pulse only while the box reads ON.
 The panel switches the port's pulse on only while the bench is SAFE, as
 on every board; it switches it off at once. Switch PROG 5V on first, then
 ARM. A PROG 5V switched on while ARMED leaves the pulse off until the next
-SAFE: AUTO on RUDDER and the limit run then read
+SAFE: RUDDER AUTO and the limit run then read
 `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM`. While SAFE with the box
 off both read `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` before
 `ARM FIRST`.
 
-PORT PWM is on OUTPUTS, the PROG 5V box on SERVO and SUPPLY. Leaving
-SERVO switches off a PROG 5V its box switched on, so PORT PWM ON is taken
-with the box off and the pulse waits for it. With PORT PWM off, AUTO and
-the limit run read `PORT PWM OFF: TAP TARGET AND SWITCH IT ON` while SAFE
-and `PORT PWM OFF: DISARM, TAP TARGET, SWITCH IT ON` while ARMED. TARGET
-opens the port's entry on OUTPUTS. The way from PORT PWM off:
+PORT PWM is on OUTPUTS, the PROG 5V box on SERVO and SUPPLY. A PROG 5V
+its box switched on stays on from one SERVO screen to another, the hub
+included. Leaving SERVO switches it off, so PORT PWM ON is taken with the
+box off and the pulse waits for it. With PORT PWM off, RUDDER AUTO and the
+limit run read `PORT PWM OFF: SWITCH IT ON IN OUTPUTS` while SAFE and
+`PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS` while ARMED. The way from
+PORT PWM off:
 
-1. SAFE: tap TARGET on SERVO. OUTPUTS opens on the port's entry.
+1. SAFE: open SETUP > OUTPUTS on the port's entry.
 2. PORT PWM ON. The line reads `PORT PWM ON: PULSES START WITH PROG 5V ON SERVO`.
 3. Back to SERVO, hold PROG 5V ON for 2s. The pulse comes on while SAFE.
 4. ARM, then hold START.
@@ -273,9 +277,9 @@ SETUP > SENSORS shows these rows without editing keys:
   PWM: CH2 for GPIO 1 or GPIO 2, CH1 for GPIO 4 or GPIO 5. With SERVO PWM
   on both rails it reads only the rail of the lowest GPIO. With a
   programming port as the tester's target it is CH3.
-- With TARGET on the bench's outputs and no output bound as SERVO PWM no
+- With PORT on the bench's outputs and no output bound as SERVO PWM no
   channel watches the target, and none is read at 1kHz. The limit run
-  then reads `NO SERVO PWM PIN` and AUTO on RUDDER
+  then reads `NO SERVO PWM PIN` and RUDDER AUTO
   `AUTO PROGRAMS A SERVO ON THE PROG PORT`, each before any line about the
   INA3221 ([Servo](Servo.md#auto-end-points)).
 - SERVO and the limit run name the meter by its rail: `INA RAIL A` over

@@ -294,18 +294,17 @@ Die Aufgabe auf der linken Karte bestimmt die ersten Hilfeseiten:
 
 | Seite und Aufgabe | Hilfeseiten, Einträge |
 | --- | --- |
-| SERVO LIVE | die Aufgabenleiste, der Winkel des Ruderhorns, die Skala und die Messwerte (4) |
-| SERVO TEST | TEST STARTEN, OPTIONEN einer Laufkarte, ENDLAGENLAUF STARTEN und die Grenzen (4) |
-| SERVO PROGRAMMIEREN | die Liste der Servoprogrammierungen, und SUCHE, wenn die Liste ihre Leiste zeigt (1 oder 2) |
-| SERVO RUDER | LÄNGE, die Fahrtasten, NULLPUNKT, MAX LÖSCHEN und AUTO (5); AUSSCHLAG, HINTERKANTE und die Statuszeilen (3) |
-| SERVO RUDER mit AUTO | die Sollwerte, RESERVE und TOLERANZ, START und MANUELL (4); AUSSCHLAG und HINTERKANTE (2) |
-| SERVO OPTIONEN > AUSGANG | die Tabs, TYP, PULSRATE, PULS MIN und PULS MAX (5); PULS MITTE, TRIMMUNG, WEG und UMKEHREN (4) |
-| SERVO OPTIONEN > SWEEP | KURVE, TEMPO und BEREICH (3) |
-| SERVO OPTIONEN > PRÜFLING | NAME, BERICHT, SENSOR-MITTE, die Taste AS5600 und die Grenzen (5) |
-| SERVO, jede Aufgabe | Typ, Grafik oder PROG 5V, SOLL und TEMPO (4); ZIEL, ZENTRIEREN mit SWEEP und FREIGEBEN, ARM, auf RUDER auch die Seitenansicht (3 oder 4) |
+| SERVO Hub | die Kacheln LIVE, ENDLAGENLAUF, RUDER und KST und die Portzeile (5); eine Kachel und OPTIONEN (2) |
+| SERVO LIVE und SWEEP | der Winkel des Ruderhorns, die Skala und die Messwerte (3) |
+| SERVO TEST | TEST STARTEN, seine OPTIONEN und die Grenzen (3) |
+| SERVO ENDLAGENLAUF | ENDLAGENLAUF STARTEN und seine OPTIONEN (2) |
+| SERVO RUDER | LÄNGE, die Fahrtasten, NULLPUNKT und MAX LÖSCHEN (4); AUSSCHLAG, HINTERKANTE und die Statuszeilen (3) |
+| SERVO RUDER AUTO | die Sollwerte, RESERVE und TOLERANZ, NULLPUNKT und START (4); AUSSCHLAG und HINTERKANTE (2) |
+| SERVO, jeder Funktionsbildschirm, SAFE | Typ, Grafik oder PROG 5V, SOLL und TEMPO (4); PORT, ZENTRIEREN mit SWEEP und FREIGEBEN, ARM, OPTIONEN, auf RUDER auch die Seitenansicht (4 oder 5) |
+| die Listen von SERVO (Hub, SWEEP, RUDER, RUDER AUTO, HITEC) | wie eine Optionsliste |
 | SUPPLY LIVE | GRAFIK und TABELLE, SPANNUNG und STROMBEGRENZUNG (3) |
 | SUPPLY LIVE, die rechte Spalte | der Bereich und die vier Messwertkarten (5); die Sollwerte, SPITZENWERTE ZURÜCKSETZEN, AUSGANG EIN und OPTIONEN (4) |
-| eine Optionsliste (MOTOR & ESC, SUPPLY) | eine Zeile, der Name der Leiste und Name ZURÜCKSETZEN (3); `-`, Wert und `+` einer Zeile und SPEICHERN (4) |
+| eine Optionsliste (MOTOR & ESC, SUPPLY, SERVO) | eine Zeile, der Name der Leiste und Name ZURÜCKSETZEN (3); `-`, Wert und `+` einer Zeile und SPEICHERN (4) |
 
 Eine Hilfeseite, deren Hilfefeld ein Bedienelement zum Anhalten eines
 Ausgangs verdecken würde, fehlt, solange dieses Element sichtbar ist:
@@ -315,14 +314,15 @@ Ausgangs verdecken würde, fehlt, solange dieses Element sichtbar ist:
   AUSGANG AUS bleibt sichtbar. AUSGANG AUS von SUPPLY, das mittlere Feld
   der Fußleiste, liegt unter jedem Hilfefeld; SUPPLY bietet dann keine
   Hilfeseite.
-- Die Hilfeseiten zur Ausgangskarte von SERVO verdecken die linke Karte. Sie
-  fehlen, solange der automatische Test, ein Endlagenlauf oder AUTO läuft:
-  TEST BEENDEN oder LAUF BEENDEN bleibt sichtbar. Ein solcher Lauf ist
-  ARMED; SERVO bietet dann keine Hilfeseite, und das Band zeigt kein "?".
+- Die Funktionsbildschirme von SERVO bieten bei ARMED keine Hilfeseite:
+  jedes Hilfefeld verdeckt einen Teil von DISARM im mittleren Feld der
+  Fußleiste. Ein Lauf des automatischen Tests, ein Endlagenlauf oder AUTO
+  ist ARMED; das Band zeigt dann kein "?".
 - SERVO bietet keine Hilfeseite über einem Tastenfeld, einer Tastatur,
-  einer Liste, einer Warnung, einer Rückfrage, einer Servoprogrammierung
-  oder den Optionen eines Laufs; SUPPLY keine über seinem Tastenfeld oder
-  der Rückfrage zu einem aktiven Ausgang.
+  einer Warnung, einer Rückfrage, einer Servoprogrammierung oder den
+  Optionen eines Laufs; über einer Liste bietet es die Seiten der
+  Optionsliste. SUPPLY bietet keine über seinem Tastenfeld oder der
+  Rückfrage zu einem aktiven Ausgang.
 
 ## Screenshot
 
@@ -1539,52 +1539,69 @@ Listen mit ESC-Werten und öffnen kein Tastenfeld.
 
 ## Servo
 
-![Servo](img/de/servo.png)
+![Der SERVO-Hub](img/de/servo-hub.png)
+![LIVE](img/de/servo.png)
 
-SERVO hat fünf Aufgaben unter dem Statusband: **LIVE**, **TEST**,
-**PROGRAMMIEREN**, **RUDER** und **OPTIONEN**. Die Registerkarten sind
-120 x 40px groß, mit 4px Abstand, ab y 8 unter dem Band. Englische
-Beschriftungen stehen in 10 x 20, deutsche in 8 x 16: `PROGRAMMIEREN`
-hat 13 Zeichen, während 120px nur 10 Zeichen der größeren Schrift fassen.
+SERVO öffnet auf seinem Hub: acht Kacheln von 328 x 130px im Raster von
+SETUP, bei x 10, 348 und 686 und y 10, 150 und 290 des Bildschirms, in
+der Reihenfolge der Nutzung.
 
-Die Menükachel öffnet LIVE. Ein Registerwechsel fügt keine
-Navigationsebene hinzu; das Home-Feld führt von jeder Aufgabe ins Menü.
-Aus Laufeinstellungen führt es zuerst zu TEST, aus einer
-Servoprogrammierung zur Liste von PROGRAMMIEREN. Jede Aufgabe behält
-Seite und Auswahl bis zum Panelneustart. Das Verlassen von SERVO schaltet
-von jeder Aufgabe auf SAFE.
+| Kachel | Bildschirm | Zeigt |
+| --- | --- | --- |
+| LIVE | LIVE | das Zifferblatt, den Drehknopf, die Anzeigen SOLL-PULSBREITE, GEMESSEN und STROM |
+| SWEEP | SWEEP | das Zifferblatt mit dem Sweep; OPTIONEN öffnet KURVE, TEMPO und BEREICH |
+| TEST | TEST | das Feld AUTOMATISCHER TEST, die Grenzen von SUPPLY und das Feld des Laufs; OPTIONEN öffnet die Zeilen des Laufs |
+| ENDLAGENLAUF | ENDLAGENLAUF | das Feld ENDLAGENLAUF und das Feld des Laufs; OPTIONEN öffnet die Zeilen des Laufs |
+| RUDER | RUDER | Ausschlag in ° und mm, LÄNGE, 1000us, ZENTRIEREN, 2000us, NULLPUNKT und MAX LÖSCHEN ([Ruderausschlag](Servo-de.md#ruderausschlag)) |
+| RUDER AUTO | RUDER AUTO | das Feld von AUTO statt LÄNGE und der Fahrtasten ([AUTO-Endpoints](Servo-de.md#auto-endpoints)) |
+| KST | SERVO > KST | die Programmierung für KST und Chaservo über dem linken Feld ([Programmierer](#programmierer)) |
+| HITEC | HITEC | die Programmierung für Hitec über dem linken Feld |
 
-| Aufgabe | Linkes Feld, der Seitenbereich |
-| --- | --- |
-| LIVE | das Zifferblatt, darüber das Feld eines Laufs, solange er läuft oder sein Ergebnis steht |
-| TEST | die Felder AUTOMATISCHER TEST und ENDLAGENLAUF und die Grenzen von SUPPLY, nur lesbar |
-| PROGRAMMIEREN | die Liste der Programmierverfahren; eine Zeile öffnet das Verfahren über der linken Spalte |
-| RUDER | der Ausschlag einer Ruderfläche in ° und mm, LÄNGE, 1000us, ZENTRIEREN und 2000us, NULLPUNKT, MAX LÖSCHEN und AUTO ([Ruderausschlag](Servo-de.md#ruderausschlag), [AUTO-Endpoints](Servo-de.md#auto-endpoints)) |
-| OPTIONEN | die Seiten AUSGANG, SWEEP und PRÜFLING |
+Jede Kachel zeigt ihren Namen und eine Zeile von höchstens 31 Zeichen in
+10 x 20. Die Kacheln KST und HITEC sind grau, solange der IOmcu die
+Fähigkeit ihres Ports nicht meldet oder eine andere Sitzung den Port hält;
+ein Tippen auf eine graue Kachel nennt den Grund im Alarmband und öffnet
+nichts. Der neunte Platz bleibt frei.
 
-Das linke Feld ist 620px breit und beginnt unter der Aufgabenleiste bei
-y 56. Rechts reicht das 380px breite Ausgangsfeld vom oberen bis zum
-unteren Rand neben der Leiste. Es bleibt bei jeder Aufgabe gleich und
-zeigt den aktiven Typ, Messzeile und Grafik der Servoschiene, SOLL, TEMPO,
-ZIEL, ZENTRIEREN, SWEEP, FREIGEBEN und ARM. Antippbare Zeilen sind
-mindestens 48px hoch. ARM ist 60px hoch und endet wie AUSGANG AUS 4px
-über dem Alarmband.
+Der Hub steuert nichts. Seine Fußleiste zeigt SERVO mit der Portzeile
+darunter, einen leeren mittleren Platz und OPTIONEN, das die Liste des
+Servoprofils öffnet. Auf dem Hub ist der Prüfstand SAFE: jedes Verlassen
+eines Funktionsbildschirms schaltet auf SAFE.
+
+Das Home-Feld führt eine Ebene hinauf: vom Funktionsbildschirm zum Hub,
+vom Hub ins Menü. Eine Liste, die Zeilen eines Laufs oder ein Feld darüber
+schließt zuerst. SCHLIESSEN von KST und HITEC beendet die Sitzung und
+führt zum Hub.
+
+Jeder Funktionsbildschirm hat denselben Rahmen. Das linke Feld ist 620px
+breit und reicht von y 8 bis zum Feldboden bei y 436. Das Ausgangsfeld
+rechts, x 636 bis 1016, trägt die Taste PORT (y 8 bis 56), Messzeile und
+Grafik, SOLL, TEMPO, die Typzeile, ZENTRIEREN, SWEEP und FREIGEBEN. Die
+Fußleiste bei y 444 bis 492 hat drei Plätze von 328 x 48px: den Namen der
+Funktion mit der Portzeile darunter, ARM oder DISARM und OPTIONEN.
+OPTIONEN ist grau, solange der Prüfstand nicht SAFE ist oder ein Sweep
+oder ein Lauf läuft, und nennt das beim Tippen im Alarmband. LIVE hat
+keine OPTIONEN.
+
+Die PROG-5V-Box, die das Ausgangsfeld auf dem Carrier zeigt, bleibt von
+einem SERVO-Bildschirm zum nächsten eingeschaltet, auch auf dem Hub, und
+schaltet aus, sobald SERVO zu einem anderen Bildschirm verlassen wird.
 
 Tastenfeld, Tastatur, Liste, Warnung, Bestätigungsdialog oder
-Servoprogrammierung verdecken die gesamte linke Spalte samt Registerkarten.
-Beantworte oder schließe sie, bevor du die Aufgabe wechselst.
+Servoprogrammierung verdecken das linke Feld bis zum Feldboden. Das
+Ausgangsfeld, die Taste PORT und die Fußleiste bleiben sichtbar.
 
 LIVE zeigt oben links den Winkel des Ruderhorns, darunter in SAFE
 `ZUERST ARM`, sowie das Servo-Zifferblatt mit 150px Radius. Am unteren
 Rand stehen drei gleich breite Anzeigen: SOLL-PULSBREITE in Mikrosekunden,
 GEMESSEN in Grad und STROM in Ampere. Name und Einheit stehen über 44px
-hohen Ziffern; die Anzeigen enden 4px über dem Alarmband. +90 und -90
+hohen Ziffern; die Anzeigen enden 8px über dem Feldboden. +90 und -90
 stehen links ihrer Skalenstriche.
 
 Zahlen, die nicht in ihre 198px breite Spalte passen, etwa ein auf
 `-1000000.00` begrenzter Strom, verwenden eine kleinere Schrift. Diese
-Anzeigen erscheinen nur auf LIVE; andere Aufgaben zeigen den Strom in
-der Zeile über der Grafik.
+Anzeigen erscheinen nur auf LIVE; die anderen Bildschirme zeigen den
+Strom in der Zeile über der Grafik.
 
 Das Ruderhorn wird mit Subpixelgenauigkeit gezeichnet. Seine Spitze liegt
 98px von der Welle entfernt, bewegt sich 1,7px pro Grad und bleibt bei
@@ -1605,11 +1622,12 @@ Mitte ihres Wegs zurück, lässt die Pins aber zugeordnet und pulsend.
 Erst SAFE beendet die Pulsflanken; das Verlassen von SERVO schaltet
 ebenfalls auf SAFE.
 
-Der eingeschaltete Drehknopf bewegt das Ruderhorn auf LIVE und RUDER von
-seiner aktuellen Position aus ([der Knopf](#panel-der-drehknopf)). Auf
-TEST, PROGRAMMIEREN, OPTIONEN und unter offenen Dialogen oder einer
-Servoprogrammierung hat er keine Wirkung. Auch eine Drehung im Frame,
-in dem LIVE wieder erscheint, wird ignoriert; die nächste wirkt.
+Der eingeschaltete Drehknopf bewegt das Ruderhorn auf LIVE, SWEEP, RUDER
+und RUDER AUTO von seiner aktuellen Position aus
+([der Knopf](#panel-der-drehknopf)). Auf dem Hub, TEST, ENDLAGENLAUF, KST,
+HITEC, in einer Liste und unter offenen Dialogen hat er keine Wirkung.
+Auch eine Drehung im Frame, in dem ein Bildschirm wieder erscheint, wird
+ignoriert; die nächste wirkt.
 
 Nur ein Finger zieht das Zifferblatt. Ein zweiter Druck irgendwo auf der
 Seite beendet die Ziehbewegung, ebenso wie bei TEMPO. Der Filter hält
@@ -1674,8 +1692,8 @@ Die Bedienelemente verhalten sich je nach Zustand so:
 | SWEEP, PAUSE, PAUSIERT | abgelehnt; gedimmt gezeichnet | startet, pausiert und setzt den Sweep fort |
 | FREIGEBEN | sendet die Freigabe; der gezeigte Wert bleibt | zentriert die Ruderflächen; der gezeigte Wert wird zur Ruhelage |
 | TEMPO | wird gesetzt; sendet nichts | wird gesetzt; eine gehaltene Stellung wird mit der neuen Rate erneut gesendet |
-| OPTIONEN > AUSGANG: TYP, PULSRATE, PULS MIN, MITTE und MAX, TRIMMUNG, WEG, UMKEHREN | werden gesetzt; senden nichts | werden gesetzt; eine gehaltene Stellung oder die Ruhelage wird mit diesen Einstellungen erneut gesendet |
-| ZIEL | ein Tippen öffnet SETUP > OUTPUTS | gesperrt; nennt das Ziel |
+| Die Liste des Hubs: TYP, PULSRATE, PULS MIN, MITTE und MAX, TRIMMUNG, WEG, UMKEHREN | werden auf dem Hub gesetzt, wo der Prüfstand SAFE ist; das nächste ARM ruht unter ihnen | nicht erreichbar: das Verlassen eines Funktionsbildschirms zum Hub schaltet auf SAFE |
+| PORT | ein Tippen öffnet die Liste OUTPUTS und PROG PORT 1 bis 4 | gesperrt; nennt die Sperre im Alarmband |
 | SOLL, AUSGANG EIN, AUSGANG AUS | wie auf SUPPLY | wie auf SUPPLY |
 | TEST STARTEN | abgelehnt: `ZUERST ARM` | startet den Lauf nach der Haltegeste |
 
@@ -1890,7 +1908,7 @@ sofort auf beiden.
   des Verlassens wird weiterhin gesendet.
 
 **SWEEP führt eine Kurve auf dem IOmcu aus.** Ihr Timing hängt damit nicht
-von der Verbindung ab. OPTIONEN > SWEEP bestimmt KURVE (Rechteck, Sinus
+von der Verbindung ab. Die Liste von SWEEP bestimmt KURVE (Rechteck, Sinus
 oder Dreieck) und TEMPO (0,05 bis 5 Zyklen pro Sekunde). HALTEZEIT des
 automatischen Tests bestimmt die Pause an jedem Ende. Die Kurve liegt
 um PULS MITTE. BEREICH ist ein Anteil des erlaubten Wegs, begrenzt durch
@@ -1933,8 +1951,8 @@ Ruderhorn weiterhin auf die gehaltene Position; von dort geht es weiter.
 
 Der IOmcu bewahrt die Phase beim Halten und setzt mit `LINK_SV_RESUME`
 (Protokoll 4.6) fort. Der Ausgang nähert sich der Kurve mit TEMPO, bei
-100% sofort; meist liegt er bereits darauf. Eine während der Pause unter
-OPTIONEN > SWEEP geänderte KURVE beginnt stattdessen einen neuen Sweep.
+100% sofort; meist liegt er bereits darauf. Eine während der Pause
+in der Liste von SWEEP geänderte KURVE beginnt stattdessen einen neuen Sweep.
 
 Ein IOmcu vor Protokoll 4.6 oder ein wegen beendeten Haltens abgelehntes
 Fortsetzen beginnt die Kurve neu: bei Sinus und Dreieck in der Mitte,
@@ -1991,7 +2009,7 @@ KURVE: Rechteck, Sinus und Dreieck laufen alle als Rampen mit der Rate von
 TEMPO und sehen gleich aus, und der Ausgang kann umkehren, bevor er ein Ende
 erreicht. Die Zeile folgt den Einstellungen; sie erscheint also schon vor
 dem Druck auf SWEEP und ebenso, während ein Sweep läuft. Erhöhe TEMPO im rechten Feld oder senke
-TEMPO (die Rate in Hz) oder BEREICH unter OPTIONEN > SWEEP, um die Meldung
+TEMPO (die Rate in Hz) oder BEREICH in der Liste von SWEEP, um die Meldung
 zu beseitigen. Ein Rechteck springt zwischen seinen Enden, daher erscheint
 sie dort bei jedem TEMPO unter 100%. Mit den Vorgaben der Seite SWEEP
 (Sinus, 0,5Hz, BEREICH 80%) und WEG +/-90° verschwindet sie
@@ -2038,8 +2056,8 @@ rbmod-Carriers sind keine Spannungsstufen möglich; seine Versorgung ist
 auf 5V festgelegt.
 
 TEST bleibt beim Start sichtbar; die Zustandszeile nennt die aktuelle
-Stufe. LIVE zeigt links unter `ZUERST ARM` ein 346px breites Lauffeld,
-das bei jedem Winkel Abstand zum Ruderhorn hält. Es zeigt Stufe und Phase
+Stufe. Ein 346px breites Lauffeld unter dem Feld, ab y 256 auf TEST und
+ab y 204 auf ENDLAGENLAUF, zeigt Stufe und Phase
 sowie neben TEST BEENDEN das Messgerät: `PD mini`, einen INA3221-Kanal wie
 `INA 0x41 CH2` oder `SIMULATION`. Der Lauf verwendet bis zum Ende das bei
 TEST STARTEN gewählte Messgerät
@@ -2064,7 +2082,7 @@ bleiben unverändert.
 
 ![Ein Lauf](img/de/servo-run.png)
 
-Das Ergebnis bleibt bis SCHLIESSEN im LIVE-Feld und bis zum nächsten Lauf
+Das Ergebnis bleibt bis SCHLIESSEN im Feld des Laufs und bis zum nächsten Lauf
 unter ZULETZT. Es zeigt BESTANDEN, NICHT BESTANDEN oder ABGEBROCHEN mit
 Grund, die längste Stellzeit, den höchsten Haltestrom und die in
 `USER/LOGS` gespeicherten Dateien: `ATESTnnn.CSV` und `+ .TXT`, sobald der
@@ -2104,7 +2122,7 @@ Startverweigerung, letztes Ergebnis und Bericht. Diese vier Zeilen stehen
 in 10 x 20 bei 20px Abstand, beginnend 2px unter der Taste; die letzte
 endet 2px innerhalb des 188px hohen Felds.
 
-TEST bleibt beim Start sichtbar. Das Lauffeld auf LIVE zeigt geschriebene
+ENDLAGENLAUF bleibt beim Start sichtbar. Das Lauffeld unter dem Feld zeigt geschriebene
 Werte von 8, Phase, Seite, Puls und Ausgang sowie LAUF BEENDEN. Danach
 stehen dort bis SCHLIESSEN Urteil, Werte oder Endlagen und `LIMITnnn.TXT`,
 bei ausgeschalteten Testaufzeichnungen `TESTAUFZEICHNUNGEN AUS`. Für jedes
@@ -2125,64 +2143,43 @@ Lauf nicht. Ein Abbruch schaltet PROG 5V aus.
 
 ### Programmierer
 
-![Die Liste von PROGRAMMIEREN](img/de/servo-program.png)
-![Eine Zeile, deren Fähigkeit der IOmcu fehlt](img/de/servo-program-nocap.png)
-![Eine Zeile, deren Port eine Hitec-Sitzung der Konsole hält](img/de/servo-program-busy.png)
+![Die Kacheln KST und HITEC bereit](img/de/servo-hub.png)
+![Die Kacheln grau: dem IOmcu fehlt die Fähigkeit](img/de/servo-hub-nocap.png)
+![Die Kacheln grau: eine Hitec-Sitzung der Konsole hält den Port](img/de/servo-hub-busy.png)
 
-PROGRAMMIEREN listet die Verfahren im Aufgabenbereich auf. Links steht
-der Name, rechts Zielport und Pin, etwa `PROG-PORT 1 GPIO 13`, gefolgt
-von `>`. KST und Chaservo verwenden den unter SERVO-TESTER gewählten
-Port, PORT 1, PORT 2, PORT 3 oder PORT 4. Bei SERVO-TESTER auf OUTPUTS zeigt die Zeile
-`PROG-PORT` mit Pin.
+Die Kacheln KST und HITEC des Hubs öffnen die Programmierungen, jede auf
+ihrem eigenen Bildschirm: SERVO > KST und HITEC. Der Bildschirm öffnet die
+Sitzung sofort über dem linken Feld; ein automatischer Test endet dabei.
+Die Kachel der KST- und Chaservo-Programmierung zeigt
+`KST- UND CHASERVO-SERVOS`, die der Hitec-Programmierung
+`HITEC D UND CLASSIC`.
 
-Hält eine andere Sitzung den Port, ist die Zeile mit `PORT BELEGT`
-abgeblendet. Dazu zählt auch eine HITEC-Sitzung der Prüfstandskonsole;
-das Panel fragt STATE der HITEC-Page alle 500ms ab. Die Hitec-Zeile selbst
-wird durch eine HITEC-Sitzung nicht abgeblendet. Nach dem Auslesen öffnet
-sie bei einem anderweitig gehaltenen Port mit PORT FREIGEBEN
-([Ein Port, den eine andere Sitzung hält](HitecProgrammer-de.md#ein-port-den-eine-andere-sitzung-hält)).
-
-Die Liste enthält `KST- und Chaservo-Servos` und `Hitec-Servos`. Tippe auf
-eine aktive Zeile, um ihre Servoprogrammierung eine Ebene tiefer über der
-linken Spalte samt Registerkarten zu öffnen. Ein automatischer Test endet
-dabei. SCHLIESSEN oder das Home-Feld führt zur Liste zurück, ein weiterer
-Druck auf das Home-Feld ins Menü. Innerhalb eines Tastenfelds, einer Liste,
-Warnung oder Tastatur schließt das Home-Feld nur diesen Dialog.
-
-Eine gesperrte Zeile erscheint abgeblendet und nennt anstelle des Ports
-den Grund. Antippen öffnet nichts:
+Eine Kachel ist grau, mit dem Grund statt ihrer Zeile; ein Tippen nennt
+den Grund im Alarmband und öffnet nichts:
 
 | Grund | Wann |
 | --- | --- |
-| `IOMCU OHNE SERVO PWM` | der IOmcu, die RP2350-Platine, meldet die Fähigkeit nicht, die die Zeile braucht; antwortet kein IOmcu, meldet er keine. Der Name der Fähigkeit ist der des Links und bleibt englisch |
-| `PORT BELEGT` | die Servoprogrammierung einer anderen Zeile hält denselben Programmierport |
+| `IOMCU OHNE SERVO PWM` | der IOmcu, die RP2350-Platine, meldet die nötige Fähigkeit nicht; ohne antwortenden IOmcu meldet er keine |
+| `PORT BELEGT` | die Sitzung einer anderen Programmierung hält denselben Programmierport, auch eine HITEC-Sitzung der Prüfstandskonsole |
 
-Die Zeilen stammen aus der Firmware-Tabelle `shared/ui/prog_registry.c`.
-Ein weiterer Servohersteller ergänzt eine Tabellenzeile und seine
-Servoprogrammierung, keine Kachel oder Registerkarte. Bei mehr als 9 Zeilen
-erscheint SUCHE mit Tastatur; `*` steht für beliebigen Text. Mehr als
-8 Zeilen zeigen Gruppenüberschriften. Übersteigt die Liste die Seitenhöhe,
-blätterst du mit `^` und `v`. Sie fasst höchstens 48 Zeilen. Bei zwei
-Zeilen erscheinen diese Bedienelemente nicht. Modellierte Protokolle ohne
-IOmcu-Transport haben keine Zeile
-([Programmieren](#programmieren) auf MOTOR & ESC).
+Das Panel fragt STATE der HITEC-Page alle 500ms ab. Eine HITEC-Sitzung
+macht die Kachel HITEC selbst nicht grau: nachdem die Programmierung die
+Page gelesen hat, öffnet ein von einer anderen Sitzung gehaltener Port
+mit PORT FREIGEBEN.
 
-Eine Zeile ist 48px hoch mit 8px darunter, eine Überschrift 28px mit
-4px darunter, beide in der Schrift 10 x 20. Die Leiste über einer
-blätternden Liste ist 48px hoch: SUCHE 260px breit links, `^` und `v` je
-56px rechts. Jeder Eintrag endet 4px über dem Alarmband: auf der linken
-Fläche von SERVO passen 7 Zeilen ohne die Leiste, 6 unter ihr. Die Liste
-von MOTOR & ESC ist dieselbe Liste.
+SCHLIESSEN beendet die Sitzung und führt zum Hub. In Tastenfeld, Liste,
+Warnung oder Tastatur einer Programmierung schließt das Home-Feld nur
+diese Ebene. Die Registry `shared/ui/prog_registry.c` liefert die
+Programmierungen und ihre Regeln. Modellierte Protokolle ohne
+IOmcu-Transport haben keine Kachel.
 
 Die KST- und Chaservo-Programmierung schaltet den Programmierport des
 Testers von PWM (Pulsweitenmodulation) auf Lesen und Schreiben über die
 Servosignalleitung um. PROG-PORT 1 verwendet standardmäßig GPIO 13,
-Pad 17. Zum Verbinden muss SERVO-TESTER unter SETUP > OUTPUTS einen der
-Ports PORT 1, PORT 2, PORT 3 oder PORT 4 wählen. Bei OUTPUTS bleibt VERBINDEN gesperrt;
-es erscheint `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.`
-und `Tippe auf ZIEL und wähle unter SERVO-TESTER einen der Ports PORT 1 bis PORT 4.`
-ZIEL öffnet den OUTPUTS-Eintrag von PROG-PORT 1 mit SERVO-TESTER. Dessen
-Home-Feld führt zur Servoprogrammierung zurück.
+Pad 17. Zum Verbinden muss die Taste PORT über dem Ausgangsfeld PROG-PORT 1
+bis PROG-PORT 4 nennen. Bei OUTPUTS bleibt VERBINDEN gesperrt; es erscheint
+`Zum Programmieren muss das Servo am Programmierport angeschlossen sein.`
+und `Tippe auf PORT und wähle einen von PROG-PORT 1 bis PROG-PORT 4.`
 
 Am rbmod-Carrier mit IOmcu-Protokoll ab 4.36 kannst du vor VERBINDEN auf
 die Beschriftung PORT tippen und einen Programmierport wählen. Die Pins
@@ -2193,8 +2190,10 @@ die anderen drei KEINE an. Der Tester wartet auf die Auslesebestätigung.
 Solange ein Port gehalten wird, öffnen SCHLIESSEN und Home-Feld
 PROGRAMMIERMODUS VERLASSEN. Während des Wechsels in den Programmiermodus
 oder zurück haben sie keine Wirkung. Das Verlassen von SERVO erhält den
-gehaltenen Port; beim Zurückkehren öffnet sich die Servoprogrammierung
-unter PROGRAMMIEREN wieder. ARM ist auf SERVO und MOTOR & ESC gesperrt.
+gehaltenen Port. Eine gehaltene Sitzung, die nicht sichtbar ist, öffnet
+auf ihrem eigenen Bildschirm wieder: von einem anderen
+SERVO-Funktionsbildschirm wechselt das Panel dorthin. ARM ist auf SERVO
+und MOTOR & ESC gesperrt.
 Ein Druck zeigt `ARMED gesperrt: Die Servoprogrammierung belegt einen Port.`
 ZENTRIEREN, FREIGEBEN und STOP bleiben aktiv. SOLL-PULSBREITE zeigt `---`,
 weil der Tester keine Pulse an den gehaltenen Port sendet.
@@ -2208,30 +2207,39 @@ eigene 5V, deshalb bleiben diese Netzteilbedienelemente aktiv
 Programmiermodus schaltet die Servoversorgung nicht aus und ein. Ob ein
 KST-Servo im Programmiermodus PWM folgt, ist nicht gemessen.
 
-Die Servoprogrammierung belegt das linke Feld von 620px. Bedienelemente
-sind mindestens 48px hoch und enden 4px über dem Alarmband:
+Die Servoprogrammierung belegt das linke Feld von 620 x 428px.
+Bedienelemente sind mindestens 48px hoch und enden 8px über dem Feldboden:
 
 | Teil | Größe |
 | --- | --- |
 | Registerkarten und SCHLIESSEN | eine Zeile oben, 48px hoch: fünf Registerkarten von 95px, SCHLIESSEN 120px |
 | Zeilen | 48px hoch im Abstand von 56px, bis zu 5 je Registerkarte, in zwei Spalten von 295px; eine breite Zeile nimmt beide |
 | Werte | 150px (15 Zeichen der Schrift 10 x 20); bei einer breiten Zeile 260px, darin ihre Tasten `-` und `+` von 56px |
-| Hinweise und Meldungen | unter der letzten Zeile, Schrift 10 x 20, 60 Zeichen je Zeile, 20px je Zeile, bis 4px über dem Alarmband: 7 Zeilen unter der Registerkarte SERVO |
+| Hinweise und Meldungen | unter der letzten Zeile, Schrift 10 x 20, 60 Zeichen je Zeile, 20px je Zeile, bis 6px über dem Feldboden: 4 Zeilen unter der Registerkarte SERVO |
 | Listen (DATEIEN, ZURÜCKSPIELEN, WEITERES, ein Faktor) | ein Titel, dann bis zu 7 Einträge, 48px hoch im Abstand von 56px, ABBRECHEN 150 x 48px am Fuß |
 | Warnseiten | der Titel in der Schrift 20 x 36, bis zu 16 Zeilen in der Schrift 10 x 20 (in einem niedrigeren Bereich weniger: die Zeilen, die 8px über den Tasten Platz haben), die Halte-Taste 300 x 56px und ABBRECHEN 180 x 56px am Fuß |
 
 Passen alle Beschriftungen in ihre 95px breiten Registerkarten, verwenden
 sie 10 x 20, wie im Englischen. Sonst verwenden sie 8 x 16, etwa für
 `ABSTIMMEN`. Kein Hinweis, keine Meldung und kein Bedienelement liegt
-unter dem Alarmband. Jede Meldungszeile erscheint; die längste Meldung
-belegt 5 der 7 Zeilen unter SERVO.
+über der Fußleiste. Eine Auswahlliste nimmt eine Spalte von 48px hohen
+Zeilen im Abstand von 56px über ABBRECHEN. Kommen mehr Einträge, als eine
+Spalte fasst, stehen je zwei in Spalten von 295px nebeneinander; ein
+Eintrag, der breiter als eine Spalte ist, nimmt eine eigene Zeile.
 
 Lassen die beiden festen Hinweiszeilen neben einer Meldung keinen Platz
 für eine Seitenzahl, werden sie zuerst mit den übrigen Hinweisen
 geblättert. Ein Hinweis, der höher als die verfügbare Seite ist, wartet
-auf das Ende der Meldung. Das längste deutsche Hinweispaar benötigt
-4 Zeilen, die längste Meldung 5. Zusammen wären es 9; deshalb wartet
-das Hinweispaar.
+auf das Ende der Meldung. Lässt die Meldung keine Zeile für einen
+Hinweis, warten alle Hinweise auf ihr Ende. Weder Hinweis noch Meldung
+reichen über die letzte Zeile der Registerkarte SERVO.
+
+Bekannte Einschränkung: eine Meldung, die höher als die 4 Zeilen unter
+der Registerkarte SERVO ist, zeigt nur ihre ersten Zeilen. Die längsten
+Meldungen belegen 5 Zeilen. Auf Deutsch gilt das für die Meldungen 137
+und 143, für 44 und 45 mit einer fünfstelligen Zahl; jede verliert ihre
+letzte Zeile. Ein langer Dateiname in einer Meldung kann eine Zeile
+hinzufügen; dieser Fall ist nicht gemessen.
 
 [Servoprogrammierung für KST- und Chaservo-Servos](ServoProgrammer-de.md)
 beschreibt das Verfahren.
@@ -2305,48 +2313,63 @@ Ein gefundener Anschlag setzt diese Endlage im Entwurf:
 
 ### Einstellungen
 
-OPTIONEN enthält die drei Seiten AUSGANG, SWEEP und PRÜFLING.
-Laufspezifische Einstellungen öffnest du über OPTIONEN im jeweiligen
-TEST-Feld, eine Navigationsebene tiefer. SCHLIESSEN oben rechts neben
-dem Laufnamen oder das Home-Feld führt zu den TEST-Feldern zurück.
-Eine andere Aufgabe blendet die Liste aus; beim Zurückkehren zu TEST
-erscheint sie wieder. Das Ausgangsfeld bleibt sichtbar und bedienbar.
+OPTIONEN in der Fußleiste öffnet die Liste des Bildschirms, auf dem es
+steht, in der Listenform von SETUP: 48px hohe Zeilen, die Tasten `-` und
+`+`, wo ein Wert schrittweise geht, ein `>`, wo ein Tippen eine Auswahl
+öffnet, die Leiste mit dem Namen des Bildschirms, RESET und SPEICHERN.
+Eine Änderung gilt bis SPEICHERN als nicht gespeichert.
 
-Tippe auf einen Zahlenwert für das Tastenfeld, eine Auswahl für ihre
-Liste, einen Schalter zum Umschalten oder den Namen für die Tastatur.
+| Bildschirm | OPTIONEN öffnet |
+| --- | --- |
+| der Hub | das Servoprofil: AUSGANG mit TYP, PULSRATE, PULS MIN, PULS MITTE, PULS MAX, TRIMMUNG, WEG, UMKEHREN und HV-SERVO; PRÜFLING mit NAME und BERICHT |
+| SWEEP | KURVE, TEMPO und BEREICH |
+| TEST | die Zeilen des automatischen Tests, eine Ebene tiefer |
+| ENDLAGENLAUF | die Zeilen des Endlagenlaufs, eine Ebene tiefer |
+| RUDER | LÄNGE, SENSOR-MITTE und WINKELQUELLE |
+| RUDER AUTO | die Ziele, MARGIN, TOLERANZ, SERVO, SERVOPULSE und WINKELQUELLE |
+| SERVO > KST | KST EXPERT MODE, eine Ebene tiefer |
+| HITEC | SERIE und EMPFANG |
+| LIVE | keine Liste |
 
-Die Registerkarten von OPTIONEN sind je 197 x 40px groß. Darunter stehen
-zwei 295px breite Spalten mit 48px hohen Zeilen bei 52px Abstand. Links
-steht die Beschriftung, rechts der Wert in 140px Breite. TYP, PULSRATE
-und NAME belegen beide Spalten. Hinweise auf AUSGANG verwenden
-60-Zeichen-Zeilen mit 21px Abstand.
+Die Liste einer Funktion öffnet nur bei SAFE, ohne Sweep und ohne Lauf;
+wird der Prüfstand darunter scharf, schließt sie. Die Liste des Hubs
+öffnet jederzeit: der Hub steuert nichts. Das Profil gilt für die
+Sitzung: bei jedem Neustart STANDARD PWM mit 50Hz. Ein Tippen auf TYP
+oder PULSRATE öffnet die Auswahl über dem linken Teil der Liste; ein Typ
+oder eine Rate, die ein nicht dafür gebautes Servo zerstören kann, gilt
+erst, nachdem ihre Warnung 2s gehalten wurde. Ein Tippen auf einen Puls,
+TRIMMUNG oder WEG öffnet dort das Tastenfeld.
 
-Laufeinstellungen stehen in drei 193px breiten Spalten. Jede Zeile zeigt
-ihren Namen über einem 48px hohen Wertefeld bei 71px Abstand. Die
-15 Zeilen des automatischen Tests verteilen sich zu fünf pro Spalte:
-Spannungsstufen mit HV-SERVO, Grenzwerte mit BROWN-OUT sowie Dauer und
-Zeiten. TESTDAUER NACH steht oben rechts unter OPTIONEN des TEST-Felds.
-Ein zweiter Tipp an dieser Stelle öffnet daher seine Liste, ohne einen
-Wert zu ändern. Hinweise, Speicherstatus, BLOCKIERT AB und Grenzen enden
-mindestens 4px über dem Alarmband.
+Die Kopfzeile von AUSGANG sagt, ob die Pulsrate die Pins erreicht hat, in
+Warnfarbe, wenn nicht. WINKELQUELLE ist nur lesbar; ein Tippen öffnet
+SETUP > SENSORS dort, und dessen Home-Feld führt zur Liste von RUDER
+zurück.
+
+Die Zeilen eines Laufs und die Seite KST EXPERT MODE behalten ihr Layout:
+drei 193px breite Spalten, jede Zeile ihr Name über einem 48px hohen
+Wertefeld im Abstand von 70px ab y 64. Die 15 Zeilen des automatischen
+Tests verteilen sich zu fünf pro Spalte: Spannungsstufen mit HV-SERVO,
+Grenzwerte mit BROWN-OUT sowie Dauer und Zeiten. Hinweise, Speicherstatus
+und BLOCKIERT AB enden 2px über dem Feldboden. SCHLIESSEN oben rechts
+neben dem Laufnamen oder das Home-Feld führt zum Feld des Laufs zurück.
 
 Auswahllisten haben zwei Spalten mit je fünf 48px hohen Einträgen bei
 56px Abstand. Warnungen verwenden 12 x 24px mit 49 Zeichen pro Zeile.
-Die 56px hohen Tasten 2s HALTEN ZUM ÜBERNEHMEN und ABBRECHEN enden 4px
-über dem Alarmband.
+Die 56px hohen Tasten 2s HALTEN ZUM ÜBERNEHMEN und ABBRECHEN enden 8px
+über dem Feldboden.
 
 ![Die Einstellungen des Servos](img/de/servo-settings.png)
 ![Die Seite SWEEP](img/de/servo-sweep-page.png)
 
 | Ort | Einstellung | Wirkung |
 | --- | --- | --- |
-| OPTIONEN > AUSGANG | TYP | das Servoprofil: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC oder HELI TAIL 760 |
-| OPTIONEN > AUSGANG | PULSRATE | wie oft ein Impuls gesendet wird; die Liste des Typs oder EIGENE EINSTELLUNG über das Tastenfeld |
-| OPTIONEN > AUSGANG | PULS MIN, PULS MITTE, PULS MAX | die Impulsbreiten, auf die der Weg abgebildet wird, 400 bis 2500us: -90° ist MIN, 0 ist MITTE, +90° ist MAX, und FREIGEBEN ruht auf MITTE. Ein Ende liegt nicht weiter von MITTE entfernt als MITTE von 400us oder 2500us |
-| OPTIONEN > AUSGANG | TRIMMUNG | zur Mitte addiert, 5us je Schritt, bis 200us in jede Richtung; `-` und `+` stellen sie, ein Tipp auf den Wert öffnet das Tastenfeld mit Vorzeichen |
-| OPTIONEN > AUSGANG | WEG | wie weit der Arm in jede Richtung darf, 10 bis 90° |
-| OPTIONEN > AUSGANG | UMKEHREN | die Richtung, in der der Winkel auf den Impuls abgebildet wird |
-| OPTIONEN > SWEEP | KURVE, TEMPO, BEREICH | die Bewegung von SWEEP: Rechteck, Sinus oder Dreieck, 0,05 bis 5Hz, 10 bis 100% des Wegs. Der automatische Test springt zwischen den Enden, die BEREICH ergibt |
+| Liste des Hubs | TYP | das Servoprofil: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC oder HELI TAIL 760 |
+| Liste des Hubs | PULSRATE | wie oft ein Impuls gesendet wird; die Liste des Typs oder EIGENE EINSTELLUNG über das Tastenfeld |
+| Liste des Hubs | PULS MIN, PULS MITTE, PULS MAX | die Impulsbreiten, auf die der Weg abgebildet wird, 400 bis 2500us: -90° ist MIN, 0 ist MITTE, +90° ist MAX, und FREIGEBEN ruht auf MITTE. Ein Ende liegt nicht weiter von MITTE entfernt als MITTE von 400us oder 2500us |
+| Liste des Hubs | TRIMMUNG | zur Mitte addiert, 5us je Schritt, bis 200us in jede Richtung; `-` und `+` stellen sie, ein Tipp auf den Wert öffnet das Tastenfeld mit Vorzeichen |
+| Liste des Hubs | WEG | wie weit der Arm in jede Richtung darf, 10 bis 90° |
+| Liste des Hubs | UMKEHREN | die Richtung, in der der Winkel auf den Impuls abgebildet wird |
+| Liste von SWEEP | KURVE, TEMPO, BEREICH | die Bewegung von SWEEP: Rechteck, Sinus oder Dreieck, 0,05 bis 5Hz, 10 bis 100% des Wegs. Der automatische Test springt zwischen den Enden, die BEREICH ergibt |
 | AUTOMATISCHER TEST > OPTIONEN | TESTDAUER NACH, TESTZEIT, BEWEGUNGEN | wie lange jede Spannungsstufe läuft: eine Zeit oder eine Zahl von Bewegungen |
 | AUTOMATISCHER TEST > OPTIONEN | HALTEZEIT, EINSCHWINGZEIT | Haltezeit an jedem Ende, im Test und bei SWEEP; Wartezeit nach einer Spannungsstufe vor dem Messen |
 | AUTOMATISCHER TEST > OPTIONEN | STUFE 4.8 / 6.0 / 7.4 / 8.4V | die Spannungsstufen; 7,4 und 8,4V laufen nur mit HV-SERVO an |
@@ -2357,11 +2380,11 @@ Die 56px hohen Tasten 2s HALTEN ZUM ÜBERNEHMEN und ABBRECHEN enden 4px
 | AUTOMATISCHER TEST > OPTIONEN | RUHESTROM, HALTESTROM, STELLZEIT | Grenzen für bestanden/nicht bestanden; 0 wird nicht geprüft |
 | ENDLAGENLAUF > OPTIONEN | ENDLAGENLAUF | NUR SUCHE oder SUCHEN + PROGRAMMIEREN, ein Tippen schaltet um; SUCHEN + PROGRAMMIEREN wird nur für ein Servo am Programmierport angeboten, sonst lautet die Zeile NUR SUCHE mit dem Grund darunter. Für die Sitzung |
 | ENDLAGENLAUF > OPTIONEN | SERVO | KST/CHASERVO oder HITEC; wählt die Servofamilie für SUCHEN + PROGRAMMIEREN |
-| ENDLAGENLAUF > OPTIONEN | SERVOPULSE | BEHALTEN oder 1000-2000, ein Tippen schaltet um; nur für KST/CHASERVO mit ZIEL auf PROG-PORT angezeigt. 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos in der Lesesitzung des Laufs, vor der Suche, auf 1000,0 und 2000,0us. Vorgabe BEHALTEN; für die Sitzung |
-| OPTIONEN > PRÜFLING | NAME | der Prüfling, bis 23 Zeichen, für den Bericht |
-| OPTIONEN > PRÜFLING | BERICHT | ein Textbericht neben der Aufzeichnung jedes Tests |
-| OPTIONEN > PRÜFLING | SENSOR-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert seit dem aktuellen Verbindungsaufbau (keinen nach einem Verbindungsverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, SENSORS, AS5600-Mitte |
-| OPTIONEN > PRÜFLING | KST EXPERT MODE | ob der [Programmierer für KST- und Chaservo-Servos](ServoProgrammer-de.md#expertenmodus) DEAD BAND, BOOST, STRETCH, PAIRING LÖSEN und den Reiter GESPERRT zeigt; standardmäßig AUS, EIN nach 2s Halten (ein kürzerer Druck zeigt den Hinweis auf dem Band), AUS mit einem Tipp. Bleibt über einen Neustart erhalten |
+| ENDLAGENLAUF > OPTIONEN | SERVOPULSE | BEHALTEN oder 1000-2000, ein Tippen schaltet um; nur für KST/CHASERVO mit PORT auf PROG PORT angezeigt. 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos in der Lesesitzung des Laufs, vor der Suche, auf 1000,0 und 2000,0us. Vorgabe BEHALTEN; für die Sitzung |
+| Liste des Hubs | NAME | der Prüfling, bis 23 Zeichen, für den Bericht |
+| Liste des Hubs | BERICHT | ein Textbericht neben der Aufzeichnung jedes Tests |
+| Liste von RUDER | SENSOR-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert seit dem aktuellen Verbindungsaufbau (keinen nach einem Verbindungsverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, SENSORS, AS5600-Mitte |
+| SERVO > KST > OPTIONEN | KST EXPERT MODE | ob der [Programmierer für KST- und Chaservo-Servos](ServoProgrammer-de.md#expertenmodus) DEAD BAND, BOOST, STRETCH, PAIRING LÖSEN und den Reiter GESPERRT zeigt; standardmäßig AUS, EIN nach 2s Halten (ein kürzerer Druck zeigt den Hinweis auf dem Band), AUS mit einem Tipp. Bleibt über einen Neustart erhalten |
 
 TRIMMUNG ist das einzige Tastenfeld mit Vorzeichen. `+/-` zwischen Punkt
 und OK setzt oder entfernt ein führendes Minus, vor oder nach der
@@ -2374,62 +2397,57 @@ behalten ihre Tastenpositionen.
 ![Das Tastenfeld der TRIMMUNG, -25us getippt](img/de/servo-trim-keypad.png)
 
 Der Ausgangsencoder AS5600 wird nur unter SETUP > SENSORS ein- und
-ausgeschaltet ([der Ausgangsencoder](#sensors-der-ausgangsencoder)).
-Die 600 x 48px große Taste `AS5600 EIN ODER AUS: SENSORS ÖFFNEN` auf
-PRÜFLING öffnet dort den AS5600-Eintrag. Der Sensor ergänzt den
-Ruderhornwinkel unter GEMESSEN sowie in CSV und Bericht eines Laufs
-([Servo](Servo-de.md#der-ausgangsencoder)).
+ausgeschaltet ([der Ausgangsencoder](#sensors-der-ausgangsencoder)). Der
+Sensor ergänzt den Ruderhornwinkel unter GEMESSEN sowie in CSV und Bericht
+eines Laufs ([Servo](Servo-de.md#der-ausgangsencoder)). SENSOR-MITTE in
+der Liste von RUDER übernimmt den aktuellen Zählerstand als Mitte, mit
+dem Servo in Neutral; ohne Messwert sagt die Zeile
+`Kein AS5600-Wert: richte ihn unter SENSORS ein`.
+
+![Die Liste von RUDER mit eingeschaltetem Ausgangsencoder](img/de/servo-encoder.png)
 
 Die Spannungs- und Stromgrenzen von SUPPLY begrenzen Sollwerte und
-Teststufen. Sie stehen unter den TEST-Feldern und auf PRÜFLING in einer
-600 x 48px großen Taste: `GRENZEN 21.00V 5.00A: SUPPLY ÖFFNEN`.
-Tippe darauf, um die Optionsliste von SUPPLY oben zu öffnen und sie
-einzustellen; bei eingeschaltetem Netzteilausgang bleibt die Liste zu, und
-das Band nennt den Grund. Das erste Home-Feld schließt die Liste, das
-nächste führt zu SERVO zurück.
+Teststufen. Sie stehen auf einer 600 x 48px großen Taste unter dem Feld
+von TEST: `GRENZEN 21.00V 5.00A: SUPPLY ÖFFNEN`. Tippe darauf, um die
+Optionsliste von SUPPLY oben zu öffnen und sie einzustellen; bei
+eingeschaltetem Netzteilausgang bleibt die Liste zu, und das Band nennt
+den Grund. Das erste Home-Feld schließt die Liste, das nächste führt zu
+TEST zurück. Das Verlassen von SERVO schaltet auf SAFE, beendet Sweep
+oder Test und schaltet eine von SERVO eingeschaltete Versorgung aus;
+daher teilt die Taste die Sperre der Taste PORT: ARMED, ein Sweep, ein
+Lauf oder eine Programmierung, die den Port hält.
 
-Beide Tasten öffnen wie ZIEL eine andere Seite. Deren Home-Feld führt zur
-ursprünglichen Aufgabe und Unterseite zurück. Das Verlassen von SERVO
-schaltet auf SAFE, beendet Sweep oder Test und schaltet eine von SERVO
-eingeschaltete Versorgung aus. Daher teilen die Tasten die ZIEL-Sperre:
-In ARMED, während Sweep oder Lauf und bei gehaltenem Programmierport
-sind sie abgeblendet und inaktiv. Beim Verlassen von SENSORS mit
-ungespeicherten Werten erscheint die entsprechende Warnung.
+![Die Liste von PORT](img/de/servo-port.png)
+![Die Liste von PORT auf dem Carrier, PROGP04 abgelehnt](img/de/servo-port-rbmod.png)
 
-Der erste Hinweis unter AUSGANG nennt die Auswahl von SERVO-TESTER:
-OUTPUTS oder PORT 1, PORT 2, PORT 3 oder PORT 4, sowie deren Einstellungsort:
-`SERVO-TESTER: PORT 1. Wähle ihn auf OUTPUTS.` Der Hinweis ist nicht antippbar.
+Die Taste PORT, x 636 bis 1016 und y 8 bis 56 über dem Ausgangsfeld, nennt
+das angesteuerte Protokoll mit Pins. Ein Tippen öffnet die Liste OUTPUTS
+und PROG-PORT 1 bis PROG-PORT 4 über dem linken Feld; eine Wahl setzt
+SERVO-TESTER, die im NVS (nichtflüchtiger Speicher) gespeicherte
+Einstellung ZIEL, wie es die Zeilen SERVO-TESTER von OUTPUTS tun, und
+fordert das Speichern an. Auf dem rbmod-Carrier nennen die Einträge den
+GPIO jedes Ports, und ein vom Carrier abgelehnter Port zeigt seine
+Ablehnung und nimmt keine Wahl an. Die Taste folgt dem wirklich
+angesteuerten Ziel, auch bei ausstehendem Schreibvorgang oder einem
+angeforderten Port ohne Pin.
 
-![Die Seite PRÜFLING mit eingeschaltetem Ausgangsencoder](img/de/servo-encoder.png)
+Die Taste PORT ist in ARMED oder bei angefordertem ARM, während
+laufendem oder pausiertem Sweep, automatischem Test oder Endlagenlauf
+und bei gehaltenem Programmierport gesperrt und abgeblendet; ein Tippen
+nennt die Sperre im Alarmband und öffnet nichts. Sie nennt weiterhin das
+Ziel. Das Ausgangsfeld bleibt neben Seiten, Tastenfeldern und
+Servoprogrammierung sichtbar und zeigt den Pin auch bei verdecktem
+linken Feld. Die Portzeile der Fußleiste wiederholt ihn auf jedem
+SERVO-Bildschirm.
 
-ZIEL steht zwischen TEMPO und ZENTRIEREN im Ausgangsfeld und nennt das
-aktive Protokoll mit Pins, mittig im Wertefeld. Tippe darauf, um SETUP >
-OUTPUTS beim aktiven Ausgang zu öffnen: PROG-PORT bei einem Port,
-SERVO PWM bei Standardausgängen oder die Übersicht bei unbekanntem Ziel
-oder fehlendem IOmcu ([Outputs](#outputs)). Auch bei ausstehendem
-ZIEL-Schreibvorgang oder angefordertem Port ohne Pin folgt es dem
-wirklich angesteuerten Ziel.
-
-Dort wählt SERVO-TESTER über die ZIEL-Einstellung OUTPUTS oder einen
-Programmierport; PORT-PWM steuert dessen Puls. Beides wird im NVS
-(nichtflüchtiger Speicher) gespeichert. Das Verlassen von SERVO schaltet
-auf SAFE und beendet Sweep oder Test. Das OUTPUTS-Home-Feld führt zur
-Aufgabe zurück, auf der ZIEL angetippt wurde.
-
-ZIEL ist in ARMED, während laufendem oder pausiertem Sweep, automatischem
-Test oder Endlagenlauf und bei gehaltenem Programmierport gesperrt:
-umrandet, abgeblendet und nicht antippbar. Es nennt weiterhin das Ziel.
-Das Ausgangsfeld bleibt neben Seiten, Tastenfeldern und Servoprogrammierung
-sichtbar und zeigt den Pin auch bei verdeckter linker Spalte.
-
-SERVO-TESTER wählt OUTPUTS oder PORT 1, PORT 2, PORT 3 oder PORT 4. Bei OUTPUTS nennt ZIEL
+SERVO-TESTER wählt OUTPUTS oder PORT 1, PORT 2, PORT 3 oder PORT 4. Bei OUTPUTS nennt die Taste PORT
 die der Rolle SERVO PWM zugeordneten GPIOs, etwa `SERVO PWM GPIO 4` oder
 `SERVO PWM GPIO 2 GPIO 4`. Es nutzt 25 Zeichen und zählt weitere Pins mit
 `+N`: 8 Pins ab GPIO 40 ergeben `SERVO PWM GPIO 40 +7`. Name und Wert
 stehen in Warnfarbe, wenn kein Pin zugeordnet ist (`KEIN SERVO-PWM-PIN`)
 oder keine Zuordnung ausgelesen wurde (`PINS NICHT AUSGELESEN`).
 
-Bei einem Programmierport nennt ZIEL in Warnfarbe dessen Nummer und den
+Bei einem Programmierport nennt die Taste PORT in Warnfarbe dessen Nummer und den
 vom IOmcu gemeldeten GPIO, etwa `PROG-PORT 1 GPIO 13`. Testerbefehle
 verändern dann die Standard-Servo-PWM-Ausgänge nicht. Diese halten bei
 ARMED ihre Ruhepulse in der Mitte zwischen den Endpunkten.
@@ -2440,26 +2458,26 @@ KEINE oder einem im IOmcu fehlenden Port. Der IOmcu behält dann die
 Standardausgänge als Ziel; der Tester sendet ihnen jedoch nur eine
 Freigabe. SWEEP bleibt abgeblendet, bis der Port einen SERVO-PWM-Pin hat
 oder SERVO-TESTER die Standardausgänge wählt. Bei PORT-PWM aus sendet der Port keinen
-Puls. ZIEL zeigt `PORT 1 GPIO 13 PWM AUS` (22 Zeichen bei zweistelligem
+Puls, und die Taste PORT zeigt `PORT 1 GPIO 13 PWM AUS` (22 Zeichen bei zweistelligem
 Pin) oder `PROG-PORT 1 PWM AUS`.
 
 Zwei Warnzustände nennen kein Ziel und senden keine Testerbefehle:
 `KEINE VERBINDUNG`, wenn kein IOmcu antwortet, und `UNBEKANNT`, wenn die
 Programmierport-Page seit dem Verbindungsaufbau nicht gelesen wurde,
 ein Schreiben unbestätigt blieb oder ein Lesen unbeantwortet war.
-Bei gehaltenem Programmierport nennt ZIEL weiterhin das IOmcu-Ziel,
+Bei gehaltenem Programmierport nennt die Taste PORT weiterhin das IOmcu-Ziel,
 Port oder Ausgänge. Die Servoprogrammierung steuert den Port; der Tester
 sendet nichts.
 
 Die Page wird alle 500ms gelesen. Ein IOmcu vor Protokoll 4.13 hat sie
-nicht und verwendet Standardausgänge. ZIEL folgt dem bestätigten Zustand
+nicht und verwendet Standardausgänge. Die Taste PORT folgt dem bestätigten Zustand
 des IOmcu. Änderungen von SERVO-TESTER warten auf einen ruhenden Prüfstand
 und erscheinen nach der Übernahme. Der IOmcu startet mit Standardausgängen
 und kehrt zu ihnen zurück, wenn eine Programmiersitzung ihren Port ohne
 Pin lässt. In SAFE stellt das Panel den gewählten Port innerhalb einer
 Page-Abfrage, 500ms, wieder her, ohne auf ARM zu warten.
 
-![Die Zeile ZIEL mit PROG-PORT](img/de/servo-target.png)
+![Die Taste PORT mit PROG-PORT](img/de/servo-target.png)
 
 | Typ | Mitte | Weg | Pulsraten |
 | --- | --- | --- | --- |
@@ -2515,7 +2533,7 @@ langsameren Profils kombiniert. AUSGANG meldet das Ergebnis:
 
 | Hinweis | Bedeutung |
 | --- | --- |
-| Aktiv | die Rate läuft auf dem Ziel, das der IOmcu hält, benannt nach seiner PROG-Page: `Aktiv: Ausgänge laufen mit 330Hz.` oder `Aktiv: PROG-PORT 1 GPIO 13 läuft mit 330Hz.`, der Port mit der Nummer, die ZIEL nennt: PORT 1, PORT 2, PORT 3 oder PORT 4. Der Hinweis steht in der Warnfarbe, solange dieses Ziel vom gewählten ZIEL abweicht (zweite Zeile `Das gewählte ZIEL ist nicht aktiv.`; PROG-PORT ohne an den Port zugeordneten Pin lässt OUTPUTS das Ziel), solange das Port-Ziel keinen Pin hat, solange PORT-PWM AUS ist (`PORT-PWM ist AUS. Der Port gibt keine Pulse aus.`) und solange das Ziel unbekannt ist. Mit einem IOmcu vor Protokoll 4.19 lautet der Hinweis "jedes PWM-Ruder läuft mit": ein solcher IOmcu fährt jede PWM-Ruder mit der Rate, gleich was ZIEL nennt. Ohne Verbindung lauten beide `Keine Verbindung. Die aktive Pulsrate ist unbekannt.` in der Warnfarbe: ein IOmcu, der bei unterbrochener Verbindung neu startet, fährt jeden Pin wieder mit seiner eigenen Rate |
+| Aktiv | die Rate läuft auf dem Ziel, das der IOmcu hält, benannt nach seiner PROG-Page: `Aktiv: Ausgänge laufen mit 330Hz.` oder `Aktiv: PROG-PORT 1 GPIO 13 läuft mit 330Hz.`, der Port mit der Nummer, die ZIEL nennt: PORT 1, PORT 2, PORT 3 oder PORT 4. Der Hinweis steht in der Warnfarbe, solange dieses Ziel vom gewählten ZIEL abweicht (zweite Zeile `Der gewählte PORT ist nicht aktiv.`; PROG-PORT ohne an den Port zugeordneten Pin lässt OUTPUTS das Ziel), solange das Port-Ziel keinen Pin hat, solange PORT-PWM AUS ist (`PORT-PWM ist AUS. Der Port gibt keine Pulse aus.`) und solange das Ziel unbekannt ist. Mit einem IOmcu vor Protokoll 4.19 lautet der Hinweis "jedes PWM-Ruder läuft mit": ein solcher IOmcu fährt jede PWM-Ruder mit der Rate, gleich was ZIEL nennt. Ohne Verbindung lauten beide `Keine Verbindung. Die aktive Pulsrate ist unbekannt.` in der Warnfarbe: ein IOmcu, der bei unterbrochener Verbindung neu startet, fährt jeden Pin wieder mit seiner eigenen Rate |
 | Die Pulsrate wird mit der nächsten Position | noch nicht geschrieben |
 | ABGELEHNT | ein Puls des Ziels (eines Ruders, oder des Programmierports, solange sein Puls eingeschaltet ist) ist länger als der Frame bei dieser Rate, oder ein Pin des Ziels teilt sich einen PWM-Slice mit einem Ausgang auf einer anderen Rate; die Pins behalten ihre Rate |
 | Dieser IOmcu nimmt keine Pulsrate | Protokoll 4.0: jeder PWM-Ausgang läuft mit den 50Hz seiner Zuordnung |
@@ -2533,13 +2551,15 @@ Zurücksetzen.
 
 AUSGANG-Einstellungen, HV-SERVO, ENDLAGENLAUF und SERVOPULSE gelten für
 die Sitzung. SWEEP, automatischer Test, PRÜFLING und ZIEL werden im NVS
-gespeichert. Jede Änderung fordert sofort das Schreiben an; es erfolgt
-im ersten Frame bei ruhendem Prüfstand ([Werte behalten](#werte-behalten)).
-Jede OPTIONEN-Seite zeigt unten `GESPEICHERT`, `SPEICHERN AUSSTEHEND`,
-`NICHT GESPEICHERT` oder `ÄNDERUNGEN IN SETUP NICHT GESPEICHERT`.
-Laufeinstellungen zeigen denselben Status unter dem Laufnamen.
+gespeichert. Eine Änderung in einer OPTIONEN-Liste gilt bis SPEICHERN in
+der Leiste als nicht gespeichert. Eine Änderung in den Zeilen eines Laufs
+und eine Wahl unter PORT fordern das Schreiben sofort an; es erfolgt im
+ersten Frame bei ruhendem Prüfstand ([Werte behalten](#werte-behalten)).
+Die Zeilen eines Laufs zeigen `GESPEICHERT`, `SPEICHERN AUSSTEHEND`,
+`NICHT GESPEICHERT` oder `ÄNDERUNGEN IN SETUP NICHT GESPEICHERT` unter dem
+Laufnamen.
 
-![TEST mit seinen zwei Laufkarten](img/de/servo-test.png)
+![Das Feld von TEST](img/de/servo-test.png)
 ![Die Einstellungen des automatischen Tests](img/de/servo-test-settings.png)
 ![Die Einstellungen des Endlagenlaufs](img/de/servo-limits.png)
 ![Die Einstellungen des Brown-out-Laufs](img/de/servo-brownout.png)
@@ -3135,7 +3155,7 @@ Ordner Auto-Aufzeichnungen und Ordner Testaufzeichnungen:
 | `BENCH/LOGS` | `SUPPLnnn.CSV` | ein Einschalten des SUPPLY-Ausgangs, solange der Prüfstand SAFE ist |
 | `USER/LOGS` | `ATESTnnn.CSV` | ein AUTOMATISCHER TEST; sein Bericht ist `ATESTnnn.TXT` |
 | `USER/LOGS` | `LIMITnnn.TXT` | der Bericht eines ENDLAGENLAUFS, ohne CSV daneben |
-| `USER/LOGS` | `RUDDRnnn.CSV` | ein Lauf von AUTO auf RUDER, eine Zeile je Messung; sein Bericht ist `RUDDRnnn.TXT` |
+| `USER/LOGS` | `RUDDRnnn.CSV` | ein Lauf von RUDER AUTO, eine Zeile je Messung; sein Bericht ist `RUDDRnnn.TXT` |
 
 Der Name folgt der Seite, die ARM angefordert hat: Gas-Ausgänge ergeben
 `MOTORnnn`, Ruder `SERVOnnn`. Ein IOmcu vor Protokoll 4.18 aktiviert bei
@@ -5821,7 +5841,7 @@ Laufs ([Servoverfahren](Servo-de.md)).
   Der Test behält den Zustand vom Start. Bei AUS
   zeigen die Laufkarte und der Kasten auf LIVE `TESTAUFZEICHNUNGEN AUS` an der
   Stelle der Dateinamen.
-- BERICHT unter SERVO > OPTIONEN > PRÜFLING entscheidet bei Testaufzeichnungen EIN,
+- BERICHT unter PRÜFLING in den OPTIONEN des SERVO-Hubs entscheidet bei Testaufzeichnungen EIN,
   ob `ATESTnnn.TXT` geschrieben wird.
 - Das Fehlerprotokoll, `BENCH/RCBENCH.LOG`, wird unabhängig von beiden
   geschrieben.
@@ -6571,7 +6591,7 @@ Aktuelle Einschränkungen:
 ## Outputs
 
 Öffne OUTPUTS über die Kachel unter SETUP oder die Zeile ZIEL auf
-MOTOR & ESC oder SERVO. Das Home-Feld führt zum Ausgangsbildschirm zurück.
+MOTOR & ESC. Das Home-Feld führt zum Ausgangsbildschirm zurück.
 Bei geöffneter Protokollliste schließt es zunächst die Liste ohne Auswahl;
 OUTPUTS bleibt geöffnet. Der Bildschirm zeigt die an IOmcu-Pins gebundenen
 Protokolle, ihre Pins und die Programmierports. Von SETUP aus öffnet der Bildschirm auf der
@@ -6583,7 +6603,6 @@ einer Zeile ZIEL aus zeigt er das von diesem Prüfstand angesteuerte Ziel:
 | --- | --- |
 | der Kachel OUTPUTS auf SETUP | der Übersicht, AUS |
 | der Zeile ZIEL von MOTOR & ESC | dem Protokoll, an das die Gas-Pins gebunden sind; dem Eintrag PROG-PORT eines DShot-Ports ohne Pin daneben; der Übersicht, solange sie an mehrere gebunden sind (`GEMISCHT`), zwei Ports das Gas treiben oder keines bekannt ist |
-| der Zeile ZIEL von SERVO | dem, was die Zeile zeigt: dem Eintrag PROG-PORT, solange der IOmcu den Port treibt, SERVO PWM, solange er die Ausgänge treibt, der Übersicht, solange das Ziel nicht bekannt ist |
 
 ![Outputs](img/de/outputs.png)
 

@@ -421,20 +421,21 @@ speaking 4.2, which PAUSE holds (the button then reads PAUSED) and a tap on PAUS
 on from the phase it was held at on an IOmcu speaking 4.6 (`LINK_SV_RESUME`), and starts
 over from the curve's beginning, with an alert, on an older one or one that refuses; SPEED's
 row reads SPEED LIMITS THE SWEEP while SPEED is slower than the curve's fastest change. The
-screen is a workbench (`ui_workbench.h`, `servo_workbench.c`): a strip with LIVE, TEST,
-PROGRAM, RUDDER and SETTINGS, a tile opening LIVE, each task keeping its page for the
-session, PROGRAM listing the programmers from one table (`prog_registry.h`: a row each,
-dimmed with its reason when the IOmcu does not report its capability, two rows on one port
-exclusive, SEARCH over 9 rows and headings over 8 shown; `test_prog_registry`) whose KST and
-Chaservo row opens that programmer one level down, and an output card on every task whose
-TARGET row (`ui_target_row.h`) names the target as `protocol pins` and opens the choice
-OUTPUTS / PROG PORT, locked while ARMED, during a sweep or a run, and while the programmer
-holds the port (`test_workbench`, `test_servo_workbench`).
+screen is a hub (`servo_hub.c`) of 8 tiles, LIVE, SWEEP, TEST, LIMIT RUN, RUDDER, RUDDER
+AUTO, KST and HITEC, each opening a function screen of its own (`servo_fn.c`); the home tag
+goes from a function screen to the hub and from the hub to the menu, and the hub drives
+nothing (`test_servo_hub`). KST and HITEC are grey with their reason while the IOmcu does
+not report the capability or another session holds the port, from one table
+(`prog_registry.h`, `test_prog_registry`). Every function screen has the footer name and
+port line, ARM and SETTINGS, and an output card whose PORT button names the target as
+`protocol pins` and opens the choice OUTPUTS / PROG PORT 1 to 4, locked while ARMED or ARM
+is asked, and while the programmer holds the port (`test_servo_port_button`,
+`test_servo_workbench`).
 
-SETTINGS sets the type (STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI TAIL 760), the
-frame rate, the pulse widths, trim, travel and reverse for the session on its OUTPUT page,
-and SWEEP's curve and the device under test in NVS; each run's settings open from its card
-on TEST, and SUPPLY's caps show there read-only; a heli type or a rate above 60Hz is applied
+The hub's SETTINGS list sets the type (STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI
+TAIL 760), the frame rate, the pulse widths, trim, travel and reverse for the session under
+OUTPUT, and the device under test in NVS; SWEEP's list sets its curve; each run's settings
+open from its card on TEST and LIMIT RUN, and SUPPLY's caps show there read-only; a heli type or a rate above 60Hz is applied
 only through a warning held for 2s, and every restart is STANDARD PWM at 50Hz. The right
 card shows the servo rail as its meter reads it (`servo_source.h`), in the CURRENT row, on
 the line over the plot and in the plot: CH1's 50ms windows under the name `INA3221 CH1`
@@ -502,7 +503,7 @@ RUDDER (`shared/ui/servo_rudder_panel.c`, `shared/servo/servo_rudder.c`) shows t
 source's angle, the AS5600's or the IMU's, as a control surface's deflection from ZERO in
 0.1°, with LENGTH (0 or 10 to 500mm, `rud_len_mm`) the trailing edge's travel L x sin in
 0.1mm, the largest deflection each side until ZERO or RESET MAX, and drives 1000us, CENTRE
-and 2000us and takes the knob only while ARMED, its TARGET row the output card's
+and 2000us and takes the knob only while ARMED, its PORT button the output card's
 (`test_servo_rudder`, `test_servo_rudder_panel`, `test_rudder_layout`; host suite only). Its
 side view draws the surface at the deflection shown, -90 to +90° with a fixed flap of 62px,
 beyond that at ±90°, dim on the neutral line without a reading, with the MAX and, in AUTO's
@@ -511,7 +512,7 @@ box, the targets dashed (`shared/ui/servo_rudder_flap.c`; `test_servo_rudder_fla
 
 ANGLE SOURCE sets where the servo test, the LIMIT RUN and the run log take the angle from,
 the AS5600 or the IMU in AS5600 counts from count 0 (`shared/servo/servo_angle.c`,
-`test_servo_angle`, `test_servo_source_angle`). AUTO on RUDDER
+`test_servo_angle`, `test_servo_source_angle`). RUDDER AUTO
 (`shared/servo/servo_rudder_auto.c`, `shared/ui/servo_rudder_auto_panel.c`) programs a KST
 or Chaservo servo's LEFT ANGLE and RIGHT ANGLE on the programming port until 1000us and
 2000us reach the target deflection x (1 + MARGIN) within TOLERANCE on the angle source: the
@@ -2288,14 +2289,14 @@ sixteen saves, the heartbeat after a window, and a power cut mid-save.
 ### A held programming port is named on SERVO and SUPPLY only
 
 The rule is in [CONTRIBUTING.md](CONTRIBUTING.md#the-active-output). SERVO names its target on
-every task and under the pages, their keypads and the programmers (the TARGET row, `PROG PORT n
-GPIO m`). MOTOR & ESC names its throttle pins. The KST and Hitec programmers and the ESC wire
+every function screen and under the pages, their keypads and the programmers (the PORT
+button and the footer's port line, `PROG PORT n GPIO m`). MOTOR & ESC names its throttle pins. The KST and Hitec programmers and the ESC wire
 screens name their port and pin. ARM names the roles it drives
 ([Safety](docs/Safety.md#deliberate-behaviours)). One case does not meet the rule. Leaving SERVO
 while a programmer holds a port leaves the output SERVO switched on running
 ([Screens, SERVO](docs/Screens.md#servo)). On the rbmod carrier the PROG 5V box on SERVO and
 SUPPLY then reads `HELD BY PROG PORT n`. The status band and every other screen do not name the
-held port. On a board without the PROG 5V box only the TARGET row on SERVO names it.
+held port. On a board without the PROG 5V box only the PORT button and the port line on SERVO name it.
 
 **Next evidence or work:** the held port named in the status band.
 

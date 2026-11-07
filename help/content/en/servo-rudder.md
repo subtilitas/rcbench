@@ -6,7 +6,7 @@ order: 23
 
 # Rudder deflection
 
-RUDDER on the [SERVO](servo.md) strip drives one servo and displays control-surface deflection. It shows degrees from a zero point and, when the surface length is entered, millimetres at the trailing edge. ANGLE SOURCE on [Sensors](setup-sensors.md) selects the AS5600 output encoder or IMU. Like MEASURED on LIVE, the reading is signed in the direction of the commanded angle. The output card remains on the right: TARGET identifies the driven output, and ARM determines whether it can move.
+RUDDER on the [SERVO](servo.md) hub drives one servo and displays control-surface deflection. It shows degrees from a zero point and, when the surface length is entered, millimetres at the trailing edge. ANGLE SOURCE on [Sensors](setup-sensors.md) selects the AS5600 output encoder or IMU. Like MEASURED on LIVE, the reading is signed in the direction of the commanded angle. The output card remains on the right: PORT identifies the driven output. ARM in the footer determines whether it can move.
 
 ![RUDDER while SAFE](view:servo-rudder)
 
@@ -59,11 +59,11 @@ LENGTH is the distance from the hinge line to the trailing edge: 0 or 10 to 500m
 | `NO ZERO: FROM THE SENSOR'S CENTRE` | ZERO not taken yet |
 | `ARM FIRST` | the bench is SAFE |
 
-## AUTO
+## RUDDER AUTO
 
-AUTO programs a KST, Chaservo or Hitec servo on the programming port so that 1000us and 2000us produce the deflection specified for each side. The [limit run's SERVO setting](servo-settings.md#the-limit-run-s-settings) selects the programmer last opened on PROGRAM. The third line identifies it, for example `SERVO HITEC D SERIES`.
+RUDDER AUTO, a tile of its own on the hub, programs a KST, Chaservo or Hitec servo on the programming port so that 1000us and 2000us produce the deflection specified for each side. The [limit run's SERVO setting](servo-settings.md#the-limit-run-s-settings) selects the programmer last opened from the hub. The third line identifies it, for example `SERVO HITEC D SERIES`.
 
-The AUTO box replaces LENGTH, the drive buttons and status lines; MANUAL restores them. The side view remains visible, with the two targets as amber dashed lines. It places 1000us on the negative side and 2000us on the positive side, or uses the sides measured by the last run.
+The AUTO box sits where RUDDER has LENGTH, the drive buttons and status lines. The readout and the side view stay, with the two targets as amber dashed lines. It places 1000us on the negative side and 2000us on the positive side, or uses the sides measured by the last run.
 
 ![AUTO's box, ARMED](view:servo-rudder-auto)
 
@@ -73,13 +73,13 @@ The AUTO box replaces LENGTH, the drive buttons and status lines; MANUAL restore
 | MARGIN | programmed past the target by this share, 0 to 50%, 10%: 20.0° at 10% is a goal of 22.0° |
 | TOLERANCE | how near the goal a measure has to be, 0.1 to 5.0°, 0.5° |
 
-First, use ZERO with the surface at neutral. During the run, ZERO, RESET MAX and MANUAL are locked. HOLD 2s TO START begins the run. The button then reads STOP RUN; pressing it ends the run immediately.
+First, use ZERO with the surface at neutral. During the run, ZERO and RESET MAX are locked. HOLD 2s TO START begins the run. The button then reads STOP RUN; pressing it ends the run immediately.
 
 The run reads the servo and, for KST, sets its pulse range to 1000 to 2000us. For each side it commands the end pulse, waits for the angle to remain still for 500ms, then writes a new end point. With the IMU and an [IMU filter](setup-sensors.md#the-imu) above 1 it waits until the filtered angle has settled too, up to 3000ms plus the filter's longest settle, which the report names. It makes at most 8 writes per side, each in a separate programmer session with the servo switched off and on. The limit run's current guard remains active throughout. A stall before the goal ends the run with `surface binds at x°`. Every end switches the bench to SAFE and the supply output off.
 
-On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) with TARGET on a programming port, switch PROG 5V on while SAFE, then ARM: the port's pulse comes on only while SAFE. A PROG 5V switched on while ARMED reads `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM`. With PORT PWM off the line reads `PORT PWM OFF: DISARM, TAP TARGET, SWITCH IT ON` while ARMED and `PORT PWM OFF: TAP TARGET AND SWITCH IT ON` while SAFE: TARGET opens the port's entry on OUTPUTS. PORT PWM ON is taken there with the PROG 5V off. A programmer session holding the port reads `LOCKED: SERVO PROGRAMMING USES THE PORT`.
+On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) with PORT on a programming port, switch PROG 5V on while SAFE, then ARM: the port's pulse comes on only while SAFE. A PROG 5V switched on while ARMED reads `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM`. With PORT PWM off the line reads `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS` while ARMED and `PORT PWM OFF: SWITCH IT ON IN OUTPUTS` while SAFE: the port's entry on OUTPUTS holds PORT PWM. PORT PWM ON is taken there with the PROG 5V off. A programmer session holding the port reads `LOCKED: SERVO PROGRAMMING USES THE PORT`.
 
-The first line shows the current step, goals or reason START is refused. The second shows the result. The third names the report, RUDDRnnn.TXT. If an unsuccessful run wrote settings or interrupted a write, it instead shows `RESTORE IN PROGRAM`, or `LOAD HITEC001 IN FILES` for a Hitec servo.
+The first line shows the current step, goals or reason START is refused. The second shows the result. The third names the report, RUDDRnnn.TXT. If an unsuccessful run wrote settings or interrupted a write, it instead shows `RESTORE IN KST`, or `LOAD HITEC001 IN FILES` for a Hitec servo.
 
 ## What the angle is
 

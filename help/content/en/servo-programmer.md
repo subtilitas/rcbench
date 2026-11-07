@@ -8,17 +8,17 @@ order: 22
 
 The servo programmer reads the 32 registers of a KST or Chaservo servo through its signal wire and displays them as settings. Both brands use the same protocol and register set. Changes are written back only when requested.
 
-Open PROGRAM on [SERVO](servo.md), then `KST and Chaservo servos`. The session covers the left column and task tabs, one level below the list. CLOSE or the home tag returns to the list. Opening the programmer ends a running automatic test.
+Tap KST on the [SERVO](servo.md) hub. The KST screen opens the session over the left card. CLOSE or the home tag returns to the hub. Opening the programmer ends a running automatic test.
 
-![PROGRAM's list](view:servo-program)
+![The SERVO hub](view:servo-hub)
 
-The row identifies the SERVO TESTER port and pin, for example `PROG PORT 1 GPIO 13`. It is dimmed and cannot open when the IOmcu, the RP2350 board, does not report servo-PWM support, including when no IOmcu responds. The row then shows `IOMCU HAS NO SERVO PWM`.
+The hub's footer names the SERVO TESTER port and pin, for example `PROG PORT 1 GPIO 13`. The KST and HITEC tiles are grey and cannot open when the IOmcu, the RP2350 board, does not report servo-PWM support, including when no IOmcu responds. The tiles then show `IOMCU HAS NO SERVO PWM`; a tap names it in the alert band.
 
-![The row dimmed](view:servo-program-nocap)
+![The tiles grey](view:servo-hub-nocap)
 
-It is dimmed with `PORT IN USE` while a Hitec session opened from the bench console holds that port.
+They are grey with `PORT IN USE` while a Hitec session opened from the bench console holds that port.
 
-![The port in use](view:servo-program-busy)
+![The port in use](view:servo-hub-busy)
 
 KST and Chaservo are names or trademarks of their respective owners. rcbench is not affiliated with, endorsed by or sponsored by them. The names say which servos the programmer works with.
 
@@ -30,7 +30,7 @@ Register layout and timing were derived from 1 KST Tool Card #2 and 1 Chaservo s
 
 - IOmcu 0.17.0 or later (protocol 4.15, including LEAVE).
 - A servo connected to an IOmcu programming port, PROG PORT 1 to 4, with a pin and FUNCTION SERVO PWM. On a manually wired board, port 1 defaults to GPIO 13, pad 17; set other pins in each PROG PORT entry on Outputs. Carrier pins are fixed; see [The port and the supply](#the-port-and-the-supply).
-- SERVO TESTER set to that port: PORT 1, PORT 2, PORT 3 or PORT 4. The [TARGET row](servo-settings.md#the-target-row) opens its Outputs entry. On a carrier with protocol 4.36 or later, you can also choose it from the programmer's PORT row.
+- SERVO TESTER set to that port: PORT 1, PORT 2, PORT 3 or PORT 4. The [PORT button](servo-settings.md#the-port-button) on the other function screens picks it. On a carrier with protocol 4.36 or later, you can also choose it from the programmer's PORT row.
 - A SAFE bench. While ARMED, CONNECT is refused with `Tap DISARM first. The port cannot be taken over while ARMED.` While the port is held, no screen can switch the bench to ARMED.
 
 ![An IOmcu without the programming port](view:servo-kst-nopage)
@@ -222,7 +222,7 @@ A write is considered interrupted after link loss, a board restart, ABORT or sto
 
 LEAVE, CLOSE or the home tag in programming mode opens LEAVE PROGRAMMING. Returning to servo PWM may move the servo. After a write with a PD mini, the page explains that power will cycle off for 1s first. Without a PD mini, it explains that written values require a manual power cycle. If nothing was written, the supply stays unchanged.
 
-Hold HOLD 2s TO LEAVE for 2s. The port holds its line low for WAIT BEFORE PWM, then returns the pin to the tester. Leaving the SERVO screen does not perform LEAVE: the session retains the port and reopens on PROGRAM when you return. Within the programmer, home closes an open keypad, list, warning or keyboard first.
+Hold HOLD 2s TO LEAVE for 2s. The port holds its line low for WAIT BEFORE PWM, then returns the pin to the tester. Leaving the KST screen does not perform LEAVE: the session retains the port, and every other SERVO screen opens KST again until LEAVE. Within the programmer, home closes an open keypad, list, warning or keyboard first.
 
 ## Hitec D receive
 

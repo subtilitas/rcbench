@@ -11,11 +11,10 @@ sie einen Vermerk mit den aktuellen Werten des Servos an. Du kannst
 Einstellungen auch in einer Datei speichern, eine Datei in den Entwurf
 laden und das Backup der Sitzung zurückspielen.
 
-Öffne `Hitec-Servos` unter **PROGRAMMIEREN** auf der
-[Seite SERVO](Screens-de.md#servo). Die Servoprogrammierung öffnet sich eine
-Ebene tiefer und deckt die linke Spalte samt den Reitern der Leiste ab.
-**SCHLIESSEN** oder das Home-Feld führt zur Liste von PROGRAMMIEREN
-zurück, solange die Servoprogrammierung keinen Port hält. Die Zeile ist mit
+Tippe im [SERVO-Hub](Screens-de.md#servo) auf HITEC. Die
+Servoprogrammierung öffnet sich auf einer eigenen Seite und deckt die linke
+Karte ab. **SCHLIESSEN** oder das Home-Feld führt zum Hub zurück, solange
+die Servoprogrammierung keinen Port hält. Die Kachel ist mit
 `IOMCU OHNE SERVO PWM` ausgegraut und lässt sich nicht öffnen, solange der
 IOmcu, die RP2350-Platine, kein Servo-PWM (Pulsweitenmodulation) meldet.
 Das gilt auch, wenn kein IOmcu antwortet.
@@ -148,7 +147,7 @@ Solange der Port gehalten ist:
   ([VERLASSEN](#verlassen);
   [Servoprogrammierung, Die Versorgung](ServoProgrammer-de.md#die-versorgung)).
   Die feste 5V-Versorgung des Carriers sperrt den PD mini nicht.
-- Die Zeile für KST- und Chaservo-Servos und die Zeile ZIEL von MOTOR & ESC
+- Die Kachel KST und die Zeile ZIEL von MOTOR & ESC
   nehmen keinen Druck an, und ESC STICK startet keinen Lauf.
 
 ## Die Wertereiter
@@ -1015,7 +1014,7 @@ Endlagenlauf eines KST-Servos
 Die Servoprogrammierung bietet dafür eine Schnittstelle für Hitec-Servos
 (`shared/bench/include/hitec_prog_run.h`,
 `shared/ui/include/hitec_panel_run.h`). Der ENDLAGENLAUF des
-SERVO-Bildschirms mit SERVO auf HITEC und AUTO auf RUDER starten Läufe
+SERVO-Bildschirms mit SERVO auf HITEC und RUDER AUTO starten Läufe
 über sie ([Servo: Hitec-Servos](Servo-de.md#hitec-servos)).
 
 Ein Lauf schreibt ENDE LINKS und ENDE RECHTS und sonst nichts, in

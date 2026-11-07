@@ -5,17 +5,16 @@
 Die Servoprogrammierung liest die 32 Register eines KST- oder
 Chaservo-Servos über dessen Signalleitung aus, zeigt sie als Einstellungen
 und schreibt geänderte Werte zurück. Die Servos beider Marken verwenden
-dasselbe Protokoll und denselben Registersatz. Öffne die Zeile `KST- und
-Chaservo-Servos` unter **PROGRAMMIEREN** auf der
-[SERVO-Seite](Screens-de.md#servo). Die Servoprogrammierung erscheint eine
-Ebene tiefer und bedeckt die linke Spalte samt den Reitern der Leiste. **SCHLIESSEN** oder das Home-Feld
-führt zurück zur Liste von PROGRAMMIEREN. Das Öffnen beendet einen laufenden
-automatischen Test als `vom Bediener gestoppt`. Die Zeile ist mit
-`IOMCU OHNE SERVO PWM` gedimmt und öffnet nichts, solange der IOmcu, die
+dasselbe Protokoll und denselben Registersatz. Die Kachel KST im
+[SERVO-Hub](Screens-de.md#servo) öffnet sie auf einer eigenen Seite,
+SERVO > KST, über der linken Karte. **SCHLIESSEN** oder das Home-Feld
+führt zurück zum Hub. Das Öffnen beendet einen laufenden
+automatischen Test als `vom Bediener gestoppt`. Die Kachel ist mit
+`IOMCU OHNE SERVO PWM` grau und öffnet nichts, solange der IOmcu, die
 RP2350-Platine, kein Servo-PWM meldet, auch wenn kein IOmcu antwortet.
-Servos von Hitec haben eine eigene Programmierung auf derselben Liste und
+Servos von Hitec haben eine eigene Programmierung auf der Kachel HITEC und
 demselben Port ([Servoprogrammierung für Hitec-Servos](HitecProgrammer-de.md));
-solange sie den Port hält, ist diese Zeile mit `PORT BELEGT` gedimmt, und
+solange sie den Port hält, ist diese Kachel mit `PORT BELEGT` grau, und
 ARM und das Netzteil bleiben gesperrt wie unter diesem Programmierer.
 
 KST und Chaservo sind Namen oder Marken ihrer jeweiligen Inhaber. rcbench
@@ -113,18 +112,15 @@ stehen dafür zwei Bedienelemente:
 | SERVO-TESTER | **OUTPUTS**, **PORT n** (der Port des Eintrags) | was der Sweep, **ZENTRIEREN**, **FREIGEBEN**, das Halten einer Stellung und der automatische Test treiben |
 | PORT-PWM | **EIN**, **AUS** | ob der Programmierport den Puls des Testers ausgibt, solange er das Ziel ist |
 
-Ein Tippen auf die Zeile ZIEL der rechten Karte öffnet **OUTPUTS** auf dem
-Eintrag PROG-PORT, solange der IOmcu den Port treibt, auf SERVO PWM, solange
-er die Ausgänge treibt, und auf der Übersicht, solange das Ziel nicht
-bekannt ist. Das
-Home-Feld dort führt zurück zu SERVO, auf die Aufgabe, auf der die Zeile
-angetippt wurde. Das Verlassen von SERVO schaltet den Prüfstand auf SAFE
+Die Taste PORT auf der rechten Karte jeder Funktionsseite von SERVO setzt
+SERVO-TESTER ebenso: ein Tippen öffnet über der linken Karte eine Liste mit
+OUTPUTS und PROG-PORT 1 bis PROG-PORT 4. Das Verlassen von SERVO schaltet den Prüfstand auf SAFE
 und beendet einen Sweep oder einen Test, wie jeder Weg aus dem Bildschirm.
 
 ![Der Eintrag PROG-PORT von OUTPUTS](img/de/outputs-port.png)
 
 Beide Werte werden mit den SERVO-Einstellungen gespeichert, SERVO-TESTER als
-OUTPUTS, PORT 1, PORT 2, PORT 3 oder PORT 4. Die Zeile ZIEL nennt das
+OUTPUTS, PORT 1, PORT 2, PORT 3 oder PORT 4. Die Taste PORT nennt das
 aktive Ziel mit Protokoll und Pins: `PROG-PORT 1 GPIO 13` in der Warnfarbe
 oder `SERVO PWM GPIO 4` für die als SERVO PWM gebundenen Pins. Ein Port mit
 FUNKTION KEINE ist kein Ziel: sein Eintrag sperrt **PORT n** und sagt
@@ -146,14 +142,14 @@ gezeichnet, und die Zeile darunter nennt den Grund:
 | `SERVO-TESTER STEUERT PROG-PORT 3` | der Eintrag eines anderen Ports: der Tester steuert Port 3 |
 | `PORT-PWM BRAUCHT PROG-PORT ALS ZIEL DES TESTERS` | **PORT-PWM** auf einem Eintrag, dessen Port nicht das Ziel ist |
 
-Die Zeile ZIEL auf der rechten Karte nimmt kein Tippen an, solange der
-Prüfstand ARMED ist, ein Sweep oder ein Test läuft oder der Programmierer
-den Port hat.
+Die Taste PORT auf der rechten Karte öffnet keine Liste, solange der
+Prüfstand ARMED ist oder ARM angefordert ist oder der Programmierer den
+Port hat; das Alarmband nennt die Sperre.
 
 Solange der Programmierer den Port hat, ändert sich keine der beiden
 Zeilen: von **VERBINDEN** bis der Port nach **VERLASSEN** wieder in PWM
 ist, während jedes Vorgangs und solange der IOmcu den Port außerhalb
-von PWM meldet. Die Zeile ZIEL und beide Segmente sind gesperrt gezeichnet, ein Zurücksetzen der
+von PWM meldet. Die Taste PORT und beide Segmente sind gesperrt gezeichnet, ein Zurücksetzen der
 Einstellungen lässt die zwei Werte stehen, das Panel schreibt nichts in die
 Seite des Ports im IOmcu, und der Tester sendet dem Port kein
 Kommando und keine Freigabe. Eine ausstehende Freigabe wird gesendet, sobald der Port wieder PWM
@@ -166,7 +162,7 @@ was immer die Zeile sagt.
 Auf Platinen ohne die PORT-Auswahl des Carriers zeigt die Servoprogrammierung
 bei den Standardausgängen als Ziel (SERVO-TESTER auf OUTPUTS)
 `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und
-`Tippe auf ZIEL und wähle unter SERVO-TESTER einen der Ports PORT 1 bis PORT 4.`, und jedes
+`Tippe auf PORT und wähle einen von PROG-PORT 1 bis PROG-PORT 4.`, und jedes
 Bedienelement außer **SCHLIESSEN** ist aus. Er verbindet auf PORT 1, PORT 2,
 PORT 3 oder PORT 4, dem Port, den SERVO-TESTER nennt, mit dessen Pin.
 
@@ -184,8 +180,8 @@ Einstellung wie die Einträge PROG PORT von **OUTPUTS**, und bleibt über
 einen Neustart erhalten.
 
 - Das Panel bittet den IOmcu um FUNC SERVO PWM auf dem gewählten Port und
-  NONE auf den anderen drei. Das TARGET des IOmcu, der Port der Liste
-  PROGRAMMIEREN und die Endlagensuche von KST folgen, sobald der Port
+  NONE auf den anderen drei. Das TARGET des IOmcu, die Portzeile des
+  Hubs und die Endlagensuche von KST folgen, sobald der Port
   beim Auslesen SERVO PWM meldet. Bis dahin sendet der Tester keinen Befehl: an Stelle
   des Ports erreicht nichts die Servoausgänge.
 - Die Zeile PORT nennt den Port, `PROGP02 GPIO 14  5V FEST` in der Zeile
@@ -252,14 +248,13 @@ das Schreiben ohne Ergebnis endet.
 
 ![Ein laufendes Schreiben](img/de/servo-kst-writing.png)
 
-Solange der Port im Programmiermodus ist, bleibt die Überlagerung offen, die
-Reiter der Leiste darunter nehmen keinen Druck, und die Bedienelemente des Testers senden nichts an
+Solange der Port im Programmiermodus ist, bleibt die Überlagerung offen, und die Bedienelemente des Testers senden nichts an
 den Port. **SCHLIESSEN** und das Home-Feld öffnen PROGRAMMIERMODUS
 VERLASSEN; über einem offenen Tastenfeld, einer Liste, einer Warnung oder
 der Buchstabentastatur schließt das Home-Feld zuerst dieses Feld. **STOP**
-auf der rechten Karte wirkt weiterhin. Das Verlassen des SERVO-Bildschirms lässt
-den Port, wie er ist; beim nächsten Aufruf ist das Overlay auf
-PROGRAMMIEREN wieder offen.
+auf der rechten Karte wirkt weiterhin. Das Verlassen der Seite KST lässt
+den Port, wie er ist; jede andere SERVO-Seite öffnet bis **VERLASSEN**
+wieder KST.
 
 | **VERBINDEN** endet mit | Bedeutung |
 | --- | --- |
@@ -693,13 +688,13 @@ nicht beschreiben: die Limits dieses Modus sind nicht bekannt.
 ## Expertenmodus
 
 KST EXPERT MODE legt fest, welche Einstellungen und Aktionen der
-Programmierer zeigt. Er ist eine Zeile auf SERVO > OPTIONEN > PRÜFLING,
+Programmierer zeigt. Er ist die Zeile, die OPTIONEN auf der Seite KST öffnet, gespeichert mit PRÜFLING,
 standardmäßig AUS, und das Panel behält ihn über einen Neustart. Von AUS
 auf EIN schaltest du mit 2s Halten der Zeile; ein kürzerer Druck zeigt
 `Halte 2s, um KST EXPERT MODE einzuschalten.` auf dem Alarmband und ändert
 nichts. Ein Tipp schaltet ihn AUS. EIN steht in der Gefahrenfarbe.
 
-![KST EXPERT MODE EIN auf PRÜFLING](img/de/servo-dut-expert.png)
+![KST EXPERT MODE EIN, auf der Optionsseite von KST](img/de/servo-dut-expert.png)
 
 Bei AUS sind diese Punkte verborgen. Der Grund ist die Warnung, die die
 [weichen Limits](#ein-wert-der-einen-zweiten-blick-braucht) geben, oder
@@ -1307,7 +1302,7 @@ UPPER unterscheidet, sichert
 keine Datei: die erste Datei hält das Servo, wie der Lauf es vorfand. Eine
 Sitzung nach dem Ende des Laufs gehört dem Bediener: ihr erstes Schreiben
 sichert eine eigene Backup-Datei, wie das erste Schreiben jeder Sitzung. Das Panel behält die zu Beginn des Laufs ausgelesenen Werte bis zum
-ersten Schreiben des nächsten Laufs oder bis zu einem Neustart im Speicher, und ZURÜCKSPIELEN bietet es als `Werte vor dem Endlagenlauf.` an. Solange der Lauf den Port hält, nennen die Zeile ZIEL
+ersten Schreiben des nächsten Laufs oder bis zu einem Neustart im Speicher, und ZURÜCKSPIELEN bietet es als `Werte vor dem Endlagenlauf.` an. Solange der Lauf den Port hält, nennen die Taste PORT
 und das Feld des Laufs ihn: `PROG-PORT 1 GPIO 13`.
 
 Jede Sitzung des Laufs folgt dem
@@ -1608,7 +1603,7 @@ Codes.
   (kein PD mini angeschlossen) dieselben Bedienelemente gedimmt. Die
   tatsächlich angeschlossene externe Servoversorgung lässt sich damit
   nicht steuern.
-- Die Zeile ZIEL und die Segmente **SERVO-TESTER** und **PORT-PWM** folgen dem Zustand des Ports
+- Die Taste PORT und die Segmente **SERVO-TESTER** und **PORT-PWM** folgen dem Zustand des Ports
   einen Frame des Bildschirms nach der Control-Task. Die Control-Task hält
   die Seite des Ports und die Kommandos des Testers nach ihrer eigenen
   Lesung des Ports.

@@ -744,7 +744,8 @@ reads the state and shows the alert, is not in the coverage figure.
   out, SAFE or ARMED, every page whose dock would cover OUTPUT OFF while the
   supply's output is on or PROG 5V OFF while the ports' 5V reads ON, and
   SERVO every page whose dock covers the left
-  card while a test, a limit run or AUTO runs; `test_help_guides` sweeps every offered
+  card while a test, a limit run or AUTO runs. SERVO offers no page while
+  ARMED: either dock covers part of DISARM in the footer; `test_help_guides` sweeps every offered
   page. A contact that was down when the screen changed or when touch
   events were lost is nobody's until it lifts and comes down again. A contact
   the screen owns that reaches the status band is released for the screen at

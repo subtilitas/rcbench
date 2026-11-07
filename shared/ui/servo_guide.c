@@ -9,9 +9,9 @@
  * the live half, x 0 to 528; a control that runs past x 528 is marked up
  * to there, the part the screen shows (ui_help_add()).  The output card's
  * pages take the dock on the left, over the left card, and keep the PORT
- * button and ARM or DISARM in view: they are the pages offered while
- * ARMED, and the only ones on KST and HITEC, whose session fills the left
- * card.  A page whose dock would cover a control that stops an output is
+ * button in view: they are the only ones on KST and HITEC, whose session
+ * fills the left card.  No page is offered while ARMED: either dock covers
+ * part of DISARM in the footer's middle slot.  A page whose dock would cover a control that stops an output is
  * not offered while that control shows: a function's page while the
  * supply's output is on (OUTPUT OFF on the SET row), the output card's
  * while a run, a limit run or AUTO runs (its STOP on the left card).  A

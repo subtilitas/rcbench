@@ -267,7 +267,7 @@ static void third_lines(cands_t *c)
     cand(c, t);
     snprintf(t, sizeof(t), TR(RA_FILE), TR(SV_NOT_RECORDED));
     cand(c, t);
-    snprintf(t, sizeof(t), TR(SV_LIM_RESTORE), TR(KP_PROGRAM));
+    snprintf(t, sizeof(t), TR(SV_LIM_RESTORE), TR(SVH_KST));
     cand(c, t);
     snprintf(t, sizeof(t), TR(SV_LIM_RESTORE_HITEC), "HITEC999.TXT");
     cand(c, t);

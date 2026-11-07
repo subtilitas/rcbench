@@ -8,7 +8,7 @@ order: 62
 
 OUTPUTS ordnet IOmcu-Pins Ausgangsprotokollen zu. Damit legst du fest, welche Pins Servos oder ESCs (Electronic Speed Controller) ansteuern und welches Signal sie verwenden. Von [SETUP](setup.md) aus öffnet sich die [Übersicht](#die-übersicht-aus) mit AUS. Jeder zugeordnete Pin trägt seinen Protokollnamen.
 
-Über ZIEL auf [MOTOR & ESC](motor.md#ziel) öffnet sich das Gasprotokoll, bei gemischten oder unbekannten Protokollen die Übersicht. Über [SERVO](servo-settings.md#die-zeile-ziel) folgt die Auswahl der ZIEL-Zeile: [PROG-PORT](#der-eintrag-prog-port) für den Programmierport, SERVO PWM für Ausgänge oder die Übersicht bei unbekanntem Ziel. Das Home-Feld führt zur aufrufenden Seite zurück. Eine offene Protokollliste schließt es zuerst ohne Auswahl.
+Über ZIEL auf [MOTOR & ESC](motor.md#ziel) öffnet sich das Gasprotokoll, bei gemischten oder unbekannten Protokollen die Übersicht. Die [Taste PORT](servo-settings.md#die-taste-port) auf SERVO wählt den Port des Testers in einer eigenen Liste und öffnet diese Seite nicht. Das Home-Feld führt zur aufrufenden Seite zurück. Eine offene Protokollliste schließt es zuerst ohne Auswahl.
 
 Für Platinen mit Zeichnung oder Formbeschreibung erscheinen [Pin-Tasten](#die-platine-und-ihre-tasten). Die Liste nennt den GPIO (General-Purpose Input/Output), die Zeichnung zeigt den Anschlussort. Ohne beide Beschreibungen und auf dem rbmod-Carrier erscheint ein [Pin-Raster](#die-rasteransicht).
 
@@ -120,7 +120,7 @@ Die offene Protokollliste enthält eine zweite Spalte mit einem PROG-PORT-Eintra
 | PIN | `PIN GPIO 13` mit Pad, `PIN WÄHLEN`, `PIN GPIO 14 ABGELEHNT` oder `KEIN PIN BEKANNT`. Eine freie Taste fordert den Pin beim IOmcu an; die hervorgehobene Port-Taste fordert dessen Freigabe an. |
 | FUNKTION | Signal außerhalb einer Programmiersitzung. Ein Tipp öffnet die Auswahl. SERVO PWM gibt Servopulse an einem PWM-Pin aus. KEINE setzt einen beliebigen freien Pin als Eingang mit Pull-down. DSHOT150, DSHOT300 und DSHOT600 ab IOmcu 0.22.0 senden Gas von MOTOR & ESC: alle 1ms ein Frame bei ARMED für Gas, an einem beliebigen freien Pin. |
 | ÜBERWACHT VON | INA3221-Kanal aus SETUP > SENSORS, etwa `ÜBERWACHT VON INA3221 0x41 CH2`, oder `VON KEINEM STROMKANAL ÜBERWACHT`. |
-| SERVO-TESTER | OUTPUTS oder PORT n als Ziel von [SERVO](servo.md). ZIEL auf SERVO öffnet diesen Eintrag, wenn der IOmcu den Port ansteuert. |
+| SERVO-TESTER | OUTPUTS oder PORT n als Ziel von [SERVO](servo.md). Die Taste PORT auf SERVO setzt denselben Wert. |
 | PORT-PWM | EIN oder AUS für den Puls am Testerziel-Port. |
 
 Der IOmcu speichert Pin und Funktion jedes Ports zusammen mit den Ausgangszuordnungen im Flash. Sie gehören damit zur Platine. Port 1 beginnt mit SERVO PWM auf GPIO 13, Ports 2 bis 4 mit KEINE ohne Pin. Die Wahl einer FUNKTION oder Pin-Taste fordert eine Änderung an. Das Panel schreibt sie bei ruhendem Prüfstand; die bernsteinfarbene Zeile zeigt ihren Status.
@@ -233,4 +233,4 @@ Der IOmcu speichert die Zuordnung in seinem eigenen Flash und stellt sie beim St
 
 - [Setup](setup.md)
 - [Motor und ESC](motor.md#ziel): Pins für die Gassteuerung.
-- [Servo-Optionen](servo-settings.md#die-zeile-ziel): Pins für den Servotester.
+- [Servo-Optionen](servo-settings.md#die-taste-port): Pins für den Servotester.

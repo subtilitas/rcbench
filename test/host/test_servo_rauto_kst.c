@@ -739,7 +739,7 @@ TEST_CASE(a_stop_during_the_pulse_write_offers_restore_and_names_the_backup)
     CHECK(strstr(ra.report, "Backup:         KST") != NULL);
     CHECK(strstr(ra.report, "Restore:        RESTORE") != NULL);
     char b[96], want[96];
-    snprintf(want, sizeof(want), TR(SV_LIM_RESTORE), TR(KP_PROGRAM));
+    snprintf(want, sizeof(want), TR(SV_LIM_RESTORE), TR(SVH_KST));
     CHECK_STR_EQ(rauto_line(2, b, sizeof(b)), want);
     rig_stop(false);
     CHECK(rig_settle());

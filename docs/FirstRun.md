@@ -906,8 +906,8 @@ answer whether an arrival is the horn's.
 
 **Part B: with the AS5600.** The same moves with the encoder on the shaft.
 
-1. SETUP > SENSORS: `AS5600` ON, with the bank SAFE. On the SERVO
-   screen's SETTINGS > DUT, with the servo at its neutral, tap ENC CENTRE.
+1. SETUP > SENSORS: `AS5600` ON, with the bank SAFE. On SERVO's
+   RUDDER screen, SETTINGS, with the servo at its neutral, tap ENC CENTRE.
 2. Repeat part A's steps 5 to 7.
 3. Keep each log together with its test's `ATESTnnn.CSV` from the SD card's
    `USER/LOGS` folder.

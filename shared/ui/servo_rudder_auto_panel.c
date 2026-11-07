@@ -757,7 +757,7 @@ static void servo_name(char *b, size_t n, uint8_t fam)
 static void restore_text(char *b, size_t n, const servo_rauto_t *r)
 {
     if (r->cfg.family == SERVO_RAUTO_FAM_KST) {
-        snprintf(b, n, TR(SV_LIM_RESTORE), TR(KP_PROGRAM));
+        snprintf(b, n, TR(SV_LIM_RESTORE), TR(SVH_KST));
     } else if (r->servo.backup[0] != '\0') {
         snprintf(b, n, TR(SV_LIM_RESTORE_HITEC), r->servo.backup);
     } else {

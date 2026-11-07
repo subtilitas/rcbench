@@ -806,7 +806,7 @@ typedef struct {
     bool     drawn_ghost[2]; /**< and whether that one was drawn         */
     svs_drag_filter_t df;    /**< the drag's filtered target, svs_drag_tick() */
     rudder_t rud;            /**< RUDDER's task (servo_rudder_int.h)     */
-    rauto_ui_t ra;           /**< RUDDER's AUTO (servo_rudder_auto_int.h) */
+    rauto_ui_t ra;           /**< RUDDER AUTO (servo_rudder_auto_int.h) */
 } servo_screen_state_t;
 
 /* The state, in servo_screen.c. */

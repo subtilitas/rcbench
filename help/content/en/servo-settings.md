@@ -6,11 +6,11 @@ order: 21
 
 # Servo settings
 
-SETTINGS on the [SERVO](servo.md) strip has three pages: OUTPUT, SWEEP and DUT (device under test). Each run has separate settings: open SETTINGS on its TEST card to see the list, then use CLOSE at the top right or the home tag to return. The output card stays visible and usable on the right. Tap a number for the keypad, a choice for its list, a switch to toggle it, or NAME for the keyboard.
+SETTINGS in the footer of a [SERVO](servo.md) screen opens that screen's list. The hub's list is the servo profile every function uses: OUTPUT and DUT (device under test). SWEEP, RUDDER, RUDDER AUTO and HITEC have lists of their own; TEST and LIMIT RUN open their run's page of rows, KST its EXPERT MODE page; LIVE has none. Use CLOSE at the top right of a run's page or the home tag to return. A function's list opens on a SAFE bench only; the hub's at any time. A change on a list stays marked unsaved until SAVE in the strip. Tap a number for the keypad, a choice for its list, a switch to toggle it, or NAME for the keyboard.
 
-## OUTPUT
+## OUTPUT, on the hub's list
 
-![The OUTPUT page](view:servo-settings)
+![The hub's list](view:servo-settings)
 
 | Setting | Range | What it does |
 |---|---|---|
@@ -43,7 +43,7 @@ TRIM's keypad has a `+/-` key between the decimal point and OK. It adds or remov
 
 A heli type or frame rate above 60Hz can destroy a servo not designed for it. Selecting either opens a warning in the danger colour, naming the choice. Hold HOLD 2s TO APPLY to apply it. CANCEL, sliding your finger off, or leaving the screen discards the choice. An active hazardous type or rate stays red on the right card.
 
-The OUTPUT page reports the rate status:
+OUTPUT's heading line reports the rate status, in the warning colour while the rate has not reached the pins:
 
 | Note | Meaning |
 |---|---|
@@ -52,9 +52,9 @@ The OUTPUT page reports the rate status:
 | `REFUSED: ...` | a pulse is longer than the frame, or a pin shares a PWM slice at another rate; the pins keep their rate |
 | `No link. The active frame rate is unknown.` | no IOmcu answers |
 
-## SWEEP
+## SWEEP's list
 
-![The SWEEP page](view:servo-sweep-page)
+![SWEEP's list](view:servo-sweep-page)
 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
@@ -66,7 +66,7 @@ The OUTPUT page reports the rate status:
 
 ![The AUTOMATIC TEST card's settings](view:servo-test-settings)
 
-SETTINGS on the AUTOMATIC TEST card opens them.
+SETTINGS on TEST, in the footer or on the card, opens them.
 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
@@ -105,44 +105,50 @@ The note below the rows describes the walk for the active supply and the number 
 
 ![The LIMIT RUN card's settings](view:servo-limits)
 
-SETTINGS on the LIMIT RUN card opens them.
+SETTINGS on LIMIT RUN, in the footer or on the card, opens them.
 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
 | LIMIT RUN | SEARCH ONLY, SEARCH + PROGRAM | SEARCH ONLY | what START LIMIT RUN does: search the ends, or also program LEFT ANGLE and RIGHT ANGLE |
-| SERVO | KST/CHASERVO, HITEC | the programmer opened last on PROGRAM, else KST/CHASERVO | shown with TARGET on PROG PORT only: the programmer the run's sessions go to; HITEC in the series of the Hitec programmer's SERIES row ([Hitec servos](servo.md#hitec-servos)) |
-| SERVO PULSES | KEEP, 1000-2000 | KEEP | shown with TARGET on PROG PORT and SERVO at KST/CHASERVO only: 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0us before the search |
+| SERVO | KST/CHASERVO, HITEC | the programmer opened last, else KST/CHASERVO | shown with PORT on PROG PORT only: the programmer the run's sessions go to; HITEC in the series of the Hitec programmer's SERIES row ([Hitec servos](servo.md#hitec-servos)) |
+| SERVO PULSES | KEEP, 1000-2000 | KEEP | shown with PORT on PROG PORT and SERVO at KST/CHASERVO only: 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0us before the search |
 
 ## SUPPLY's caps
 
-The active voltage and current caps constrain set points and run steps. They appear below the TEST cards and on DUT in a button such as `CAPS 21.00V 5.00A: OPEN SUPPLY`. Tap it to open [SUPPLY](supply.md) > SETTINGS > LIMITS, where you can set them. The home tag returns. The button is grey while TARGET is locked, because leaving SERVO would switch the bench to SAFE.
+The active voltage and current caps constrain set points and run steps. They appear below TEST's card in a button such as `CAPS 21.00V 5.00A: OPEN SUPPLY`. Tap it to open [SUPPLY](supply.md) > SETTINGS > LIMITS, where you can set them. The home tag returns. The button is grey while the PORT button is locked, because leaving SERVO would switch the bench to SAFE.
 
-OUTPUT's first note names the port SERVO TESTER is set to, `SERVO TESTER: PORT 1. Set it on OUTPUTS.` It takes no tap: the setting's home is [Outputs](outputs.md#the-prog-port-entry).
-
-## DUT
+## DUT, on the hub's list
 
 ![NAME on the keyboard](view:servo-name)
-![The DUT page with the output encoder on](view:servo-encoder)
-![KST EXPERT MODE ON](view:servo-dut-expert)
 
 | Setting | What it does |
 |---|---|
 | NAME | the device under test, up to 23 characters; it heads each report |
 | REPORT | a text report, `ATESTnnn.TXT`, beside each test's log, while User logs on SETUP > SD CARD is ON |
-| ENC CENTRE | a tap takes the live AS5600 count, 0 to 4095, as the centre, with the servo at neutral; with ANGLE SOURCE IMU it takes nothing |
-| KST EXPERT MODE | whether the [KST and Chaservo programmer](servo-programmer.md#kst-expert-mode) shows DEAD BAND, BOOST, STRETCH, RELEASE PAIRING and the LOCKED tab; OFF by default, ON after a 2s hold, OFF with a tap |
 
-ANGLE SOURCE in the IMU entry of [Sensors](setup-sensors.md) selects the AS5600 or IMU for run angles. IMU angles use AS5600 counts of 0.088°. The test CSV identifies the source in its last column, `angle source`; both reports use an `Angle source:` line.
+## RUDDER's list and KST's page
 
-Enable or disable the AS5600 output encoder on [Sensors](setup-sensors.md). DUT's `AS5600 ON OR OFF: OPEN SENSORS` button opens that entry, and its home tag returns. PORT PWM, the programming-port pulse, is set only in the PROG PORT entry of [Outputs](outputs.md#the-prog-port-entry).
+![RUDDER's list with the output encoder on](view:servo-encoder)
+![KST EXPERT MODE ON](view:servo-dut-expert)
 
-## The TARGET row
+| Setting | Where | What it does |
+|---|---|---|
+| ENC CENTRE | RUDDER's list | a tap takes the live AS5600 count, 0 to 4095, as the centre, with the servo at neutral; with ANGLE SOURCE IMU it takes nothing |
+| ANGLE SOURCE | RUDDER's and RUDDER AUTO's lists | read-only; a tap opens the IMU entry of [Sensors](setup-sensors.md), where it is set |
+| KST EXPERT MODE | SETTINGS on SERVO > KST | whether the [KST and Chaservo programmer](servo-programmer.md#kst-expert-mode) shows DEAD BAND, BOOST, STRETCH, RELEASE PAIRING and the LOCKED tab; OFF by default, ON after a 2s hold, OFF with a tap |
 
-![The TARGET row with PROG PORT](view:servo-target)
+ANGLE SOURCE selects the AS5600 or IMU for run angles. IMU angles use AS5600 counts of 0.088°. The test CSV identifies the source in its last column, `angle source`; both reports use an `Angle source:` line.
 
-TARGET on the output card identifies the driven outputs as `protocol pins`. Tap it to open [Outputs](outputs.md#the-prog-port-entry): PROG PORT when the IOmcu drives the programming port, SERVO PWM when it drives the outputs, or the overview when the target is unknown. There, SERVO TESTER selects OUTPUTS (pins bound as SERVO PWM) or PROG PORT (the IOmcu programming port).
+Enable or disable the AS5600 output encoder on [Sensors](setup-sensors.md). PORT PWM, the programming-port pulse, is set only in the PROG PORT entry of [Outputs](outputs.md#the-prog-port-entry).
 
-Leaving SERVO switches the bench to SAFE and ends any sweep or test. The home tag on OUTPUTS returns to the same SERVO task. TARGET remains visible below the pages and programmer on every task. It is locked while ARMED, during a sweep, automatic test or limit run, or while the servo programmer holds the port.
+## The PORT button
+
+![The PORT button with PROG PORT](view:servo-target)
+![PORT's list](view:servo-port)
+
+The PORT button over the output card identifies the driven outputs as `protocol pins`; the footer's port line repeats it. Tap it for the list of OUTPUTS (pins bound as SERVO PWM) and PROG PORT 1 to PROG PORT 4. A pick sets SERVO TESTER, as the PROG PORT entry of [Outputs](outputs.md#the-prog-port-entry) does, and is saved. On the rbmod carrier a port the carrier refuses shows why and takes no pick.
+
+The button is grey and locked while ARMED or ARM is asked, during a sweep, automatic test or limit run, or while the servo programmer holds the port; a tap names the lock in the alert band. It stays in view beside the lists, pages and programmer.
 
 ![The PROG PORT entry of OUTPUTS](view:outputs-port)
 
@@ -156,8 +162,8 @@ Leaving SERVO switches the bench to SAFE and ends any sweep or test. The home ta
 | `UNKNOWN` | the IOmcu's programming-port page is not read |
 | `NO LINK` | no IOmcu answers; the tester sends nothing |
 
-The row follows the target the IOmcu holds, not the setting. A TARGET change waits for a quiet bench.
+The button follows the target the IOmcu holds, not the setting. A change of SERVO TESTER waits for a quiet bench.
 
 ## Keeping the values
 
-OUTPUT, HV SERVO, LIMIT RUN, SERVO and SERVO PULSES are kept for the session. SWEEP, the automatic test's settings, DUT, KST EXPERT MODE included, and TARGET are kept in NVS (non-volatile storage) and written as the SUPPLY settings are: on the next frame with the bench SAFE and the supply output off.
+OUTPUT, HV SERVO, LIMIT RUN, SERVO and SERVO PULSES are kept for the session. SWEEP, the automatic test's settings, DUT, KST EXPERT MODE included, and TARGET are kept in NVS (non-volatile storage) and written as the SUPPLY settings are: on the next frame with the bench SAFE and the supply output off. A change on a list is written by SAVE in its strip.

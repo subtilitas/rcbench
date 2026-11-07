@@ -133,7 +133,7 @@ Die Verbindung ist nicht authentifiziert: Der ISSC-Dienst des Sensors
 bietet weder Pairing noch Bonding. Ein BLE-Gerät in Reichweite, das die
 Verbindung zur gespeicherten Adresse bekommt und den ISSC-Dienst anbietet,
 kann Winkel-Frames senden, die das Panel als die des Sensors nimmt. Der
-AUTO-Lauf von RUDER mit WINKELQUELLE IMU programmiert daraus Endpoints.
+Lauf von RUDER AUTO mit WINKELQUELLE IMU programmiert daraus Endpoints.
 `SECURITY.md` führt das als aktuelle Einschränkung.
 
 ## Der Sensor

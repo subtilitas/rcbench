@@ -1905,8 +1905,8 @@ On an rbmod carrier programming port, voltage steps cannot run: the port
 has a fixed 5V supply.
 
 TEST remains visible at startup, with the current step on its state line.
-LIVE shows a 346px run box at the left, below `ARM FIRST`, clear of the
-horn at every angle. It shows step and phase, with the meter beside STOP
+A 346px run box under the card, from y 256 on TEST and y 204 on LIMIT RUN,
+shows step and phase, with the meter beside STOP
 TEST: `PD mini`, an INA3221 channel such as `INA 0x41 CH2`, or `SIMULATION`.
 The run uses the meter selected at START TEST until it ends
 ([The meter](Servo.md#the-meter)). It controls the servo and SUPPLY's set
@@ -2061,8 +2061,9 @@ The tabs' labels are in the 10 x 20 face when every label fits its 95px
 tab, as in English, and in the 8 x 16 face when one does not, as German
 `ABSTIMMEN` does. No note, message or control lies over the footer. A
 list of choices takes one column of 48px rows at a 56px pitch above
-CANCEL, and two columns of 295px when more choices come than one column
-holds. Where the two standing lines leave no row beside the message for a
+CANCEL. When more choices come than one column holds, they take two to a
+row in columns of 295px, and an entry wider than a column takes a row of
+its own. Where the two standing lines leave no row beside the message for a
 page count, they yield to it: they page with the other notes, first, and
 a line taller than a page waits for the message to go. Where the message
 leaves no row for a note, every note waits for it to go. Neither a note
@@ -2324,7 +2325,7 @@ OUTPUT reports the result:
 
 | Note | Meaning |
 | --- | --- |
-| In force | the rate runs on the target the IOmcu holds, named from its PROG page: `Active: OUTPUTS run at 330Hz.` or `Active: PROG PORT 1 GPIO 13 runs at 330Hz.`, the port numbered as TARGET names it: PORT 1, PORT 2, PORT 3 or PORT 4. The note is in the warning colour while that target differs from the TARGET chosen (second line `The TARGET chosen is not active.`; PROG PORT with no pin bound to the port leaves OUTPUTS the target), while the port target has no pin, while PORT PWM is OFF (`PORT PWM is OFF. The port sends no pulses.`) and while the target is not known. Against an IOmcu before protocol 4.19 the note reads "every PWM surface runs at": such an IOmcu runs every PWM surface at the rate, whatever the TARGET. With no link both read `No link. The active frame rate is unknown.` in the warning colour: an IOmcu restarted while the link is down runs every pin at its own rate again |
+| In force | the rate runs on the target the IOmcu holds, named from its PROG page: `Active: OUTPUTS run at 330Hz.` or `Active: PROG PORT 1 GPIO 13 runs at 330Hz.`, the port numbered as TARGET names it: PORT 1, PORT 2, PORT 3 or PORT 4. The note is in the warning colour while that target differs from the TARGET chosen (second line `The PORT chosen is not active.`; PROG PORT with no pin bound to the port leaves OUTPUTS the target), while the port target has no pin, while PORT PWM is OFF (`PORT PWM is OFF. The port sends no pulses.`) and while the target is not known. Against an IOmcu before protocol 4.19 the note reads "every PWM surface runs at": such an IOmcu runs every PWM surface at the rate, whatever the TARGET. With no link both read `No link. The active frame rate is unknown.` in the warning colour: an IOmcu restarted while the link is down runs every pin at its own rate again |
 | The rate goes with the next position | not written yet |
 | REFUSED | a pulse of the target (a surface, or the programming port while its pulse is on) is longer than the frame at that rate, or a target pin shares a PWM slice with an output at another rate; the pins keep the rate they had |
 | This IOmcu takes no frame rate | protocol 4.0: every PWM output runs at its binding's 50Hz |
@@ -5366,7 +5367,7 @@ a run ([Servo procedures](Servo.md)).
 - User logs is read at START TEST and START LIMIT RUN: a test keeps the
   state it started with. With it OFF, the run card and the run's box read
   `USER LOGS OFF` where the files would be named.
-- REPORT on SERVO > SETTINGS > DUT decides, with User logs ON, whether
+- REPORT under DUT on the SERVO hub's SETTINGS list decides, with User logs ON, whether
   `ATESTnnn.TXT` is written.
 - The fault log, `BENCH/RCBENCH.LOG`, is written whatever the two say.
 - [Logs](#logs) gives the names and the numbering.
@@ -6073,8 +6074,8 @@ Current limitations:
 
 ## Outputs
 
-Open OUTPUTS from its SETUP tile or the TARGET rows on MOTOR & ESC and
-SERVO. Its home tag returns to the screen that opened it. Over the
+Open OUTPUTS from its SETUP tile or the TARGET row on MOTOR & ESC. Its
+home tag returns to the screen that opened it. Over the
 open protocol list the home tag closes the list, choosing nothing, and the
 screen stays. The screen shows the protocols assigned to IOmcu pins, the pins each
 protocol drives, and the programming ports. From SETUP it opens on the
@@ -6086,7 +6087,6 @@ it opens on what that workbench drives:
 | --- | --- |
 | SETUP's OUTPUTS tile | the overview, OFF |
 | MOTOR & ESC's TARGET row | the protocol the throttle's pins are bound as; the PROG PORT entry of a DShot port with no pin beside it; the overview while they are bound as several (`MIXED`), two ports drive the throttle, or none is known |
-| SERVO's TARGET row | what the row shows: the PROG PORT entry while the IOmcu drives the port, SERVO PWM while it drives the outputs, the overview while the target is not known |
 
 ![Outputs](img/outputs.png)
 

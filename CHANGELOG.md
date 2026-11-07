@@ -46,6 +46,33 @@ history is in git.
   with a red label (docs/Screens.md, "Button colours").
 - A tap on a grey START TEST, START LIMIT RUN or HOLD 2s TO START on AUTO
   puts its reason in the alert band for 4s, as a hold's hint.
+- SERVO opens on a hub of 8 tiles of 328 x 130px in SETUP's grid: LIVE,
+  SWEEP, TEST, LIMIT RUN, RUDDER, RUDDER AUTO, KST and HITEC. Each opens a
+  function screen of its own; KST and HITEC are grey with the reason while
+  the IOmcu lacks the capability or another session holds the port. The
+  strip LIVE | TEST | PROGRAM | RUDDER | SETTINGS, PROGRAM's list and
+  RUDDER's AUTO | MANUAL button give way to the tiles. The home tag goes
+  from a function screen to the hub and from the hub to the menu.
+- The hub's footer holds SERVO with the port line and SETTINGS, which opens
+  the servo profile every function uses: OUTPUT (type, rate, pulses, trim,
+  travel, reverse, HV) and DUT (name, report). It opens at any time. Each
+  function screen's footer holds its name with the port line, ARM / DISARM
+  and SETTINGS for that function's list, which opens only while SAFE:
+  SWEEP's curve, TEST's and LIMIT RUN's run settings, RUDDER's LENGTH and
+  ENC CENTRE, RUDDER AUTO's and HITEC's lists, KST's EXPERT MODE page.
+  LIVE has no list.
+- The output card's TARGET row gives way to the PORT button, 380 x 48px at
+  the card's top: a tap opens OUTPUTS and PROG PORT 1 to PROG PORT 4 over
+  the left card, and a pick sets SERVO TESTER. It opens nothing while
+  ARMED, while ARM is asked, or while a programmer holds the port, and the
+  alert band names the lock.
+- A PROG 5V switched on in SERVO's box stays on from one SERVO screen to
+  another and goes off when SERVO is left. Every leave of a function screen
+  switches the bench to SAFE. SERVO offers no guide page while ARMED, as
+  either dock covers part of DISARM.
+- A limit run or a RUDDER AUTO run that wrote names `RESTORE IN KST` in
+  place of `RESTORE IN PROGRAM`. The KST programmer's hint on the standard
+  outputs reads `Tap PORT and pick one of PROG PORT 1 to PROG PORT 4.`
 
 - The panel sets the Bluetooth IMU's output content register RSW (0x02) to
   0x0C: angle (0x53) and angular rate with the battery (0x52), 2 frames a
@@ -72,16 +99,15 @@ history is in git.
   not be switched on at all. The pulse still waits for the box to read ON
   and comes on only while SAFE. The line under the rows reads
   `PORT PWM ON: PULSES START WITH PROG 5V ON SERVO`.
-- AUTO on RUDDER and START LIMIT RUN with PORT PWM off say what to do:
-  `PORT PWM OFF: TAP TARGET AND SWITCH IT ON` while SAFE and
-  `PORT PWM OFF: DISARM, TAP TARGET, SWITCH IT ON` while ARMED, where
-  TARGET takes no tap. TARGET opens the port's entry on OUTPUTS. The line
+- RUDDER AUTO and START LIMIT RUN with PORT PWM off say what to do:
+  `PORT PWM OFF: SWITCH IT ON IN OUTPUTS` while SAFE and
+  `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS` while ARMED. The line
   read `PORT PWM OFF. NO PULSES ON THIS PORT.`, also with PORT PWM on and
   the pulse waiting: that case reads
   `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` on every board, or
   `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` on the carrier with the
   box off.
-- AUTO on RUDDER and START LIMIT RUN name a programmer session that holds
+- RUDDER AUTO and START LIMIT RUN name a programmer session that holds
   the port, `LOCKED: SERVO PROGRAMMING USES THE PORT`, before PORT PWM.
   They read `PORT PWM OFF. NO PULSES ON THIS PORT.` while the session held
   it.

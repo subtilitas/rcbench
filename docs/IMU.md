@@ -122,7 +122,7 @@ sensor; it has no pairing.
 The link is not authenticated: the sensor's ISSC service offers no
 pairing or bonding. A BLE device in range that wins the connection to the
 stored address and serves the ISSC service can send angle frames the panel
-takes as the sensor's. RUDDER's AUTO run with ANGLE SOURCE IMU programs end
+takes as the sensor's. RUDDER AUTO's run with ANGLE SOURCE IMU programs end
 points from them. `SECURITY.md` lists this as a current limitation.
 
 ## The sensor
@@ -240,7 +240,7 @@ works out that lag from the distance at the stretch's first frame, shrunk
 by (1 - 1/k) each frame. Once it is 0.05° or less, the still time counts
 from the sensor's stop. On every frame after that the still time also
 reads 0 while the filtered angle lies more than 0.05° from the frame's, so
-a drift inside the 0.5° holds it at 0 until the filter catches up. AUTO on RUDDER, which waits for 500ms of still
+a drift inside the 0.5° holds it at 0 until the filter catches up. RUDDER AUTO, which waits for 500ms of still
 time, then takes a settled angle, within 0.05° of the sensor's. AUTO waits
 up to 3,000ms after the command plus the filter's longest settle
 (`imu_filter_settle_ms()`): the frames a distance of 180° needs to come
