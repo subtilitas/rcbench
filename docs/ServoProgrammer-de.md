@@ -202,14 +202,14 @@ einen Neustart erhalten.
 - Solange PWM04 einen PWM-Ausgang trägt, lautet der Eintrag PROGP04
   `PROGP04 TEILT PWM-SLICE 0 MIT PWM04 (GPIO 1)` und lässt sich nicht auswählen.
 - Die Ports laufen an den festen 5V von M7 auf GPIO 21. Der Puls des
-  Testers geht nur hinaus, solange das Feld PROG 5V EIN zeigt; ein
+  Testers geht nur hinaus, solange PROG 5V EIN zeigt; ein
   Endlagenlauf und ein Servotest sagen
-  `PROG 5V AUS: SCHALTE ES IM FELD PROG 5V EIN`, solange es aus ist. Die
+  `PROG 5V AUS: START SCHALTET ES EIN`, solange es aus ist. Die
   Spannungsstufen eines Servotests erreichen den Port nicht: ein Test auf
   ihm sagt `PROG-PORTS LAUFEN MIT FESTEN 5V: KEINE STUFEN`.
-- Für den Endlagenlauf steht das Feld PROG 5V für den PD mini: SUCHEN + PROGRAMMIEREN
-  und SERVOPULSE werden mit dem Feld EIN angeboten, und die
-  Versorgungszyklen der Sitzung schalten GPIO 21. Mit dem Feld AUS zeigt die
+- Für den Endlagenlauf steht PROG 5V für den PD mini: SUCHEN + PROGRAMMIEREN
+  und SERVOPULSE werden mit PROG 5V EIN angeboten, und die
+  Versorgungszyklen der Sitzung schalten GPIO 21. Mit PROG 5V AUS zeigt die
   Karte BEREIT von ENDLAGENLAUF bei SAFE `START SCHALTET EIN` auf ihrer Zeile
   PROG 5V, und ARM + START schaltet es ein; die Zeile zum PD mini erscheint
   nicht.

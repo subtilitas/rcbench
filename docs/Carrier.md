@@ -84,7 +84,7 @@ outputs. Choose the port in either of these places:
 | FUNC at an IOmcu start | NONE on every port; the panel asks for SERVO PWM again |
 | Locked | ARMED or asked to arm, a test, a sweep or a limit run, a programmer holding a port |
 | PROGP04 | not offered while PWM04 carries a PWM output: `PROGP04 SHARES PWM SLICE 0 WITH PWM04 (GPIO 1)` |
-| Pulse | only while the PROG 5V box reads ON. PORT PWM ON is taken with the box off, and the line reads `PORT PWM ON: PULSES START WITH PROG 5V ON SERVO`; a servo test and a limit run are refused with `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` |
+| Pulse | only while PROG 5V reads ON. PORT PWM ON is taken with PROG 5V off, and OUTPUTS reads `PORT PWM ON: ARM ON SERVO SWITCHES PROG 5V AND PULSES ON`; OUTPUT in SERVO's settings reads `PROG 5V OFF: ARM SWITCHES IT ON`, and the READY card of a servo test, RUDDER AUTO and a limit run reads `PROG 5V OFF: START SWITCHES IT ON` |
 | Supply | M7's fixed 5V on GPIO 21; a servo test's voltage steps reach the servo rails, not the port, so a test there is refused with `PROG PORTS RUN AT 5V FIXED: NO STEPS` |
 | Current | INA3221 0x40 CH3 reads all four ports together |
 
@@ -350,11 +350,17 @@ a clamp implemented on the board.
 | --- | --- | --- | --- |
 | 1 | PROGP03 (J1 position 4, through R4) moves from GPIO 26 to GPIO 15: the trace is cut under the series resistor R4, and a bodge wire runs from R4 to GPIO 15. | GPIO 26 is an ADC pin and not 5V tolerant. A Hitec or KST pull-up puts the servo supply on the programming line. | PROG PORT 3 is GPIO 15 on every carrier. GPIO 26 stays unused. |
 | 2 | A pull-down of 2kΩ to 5kΩ from M7's EN (the GPIO 21 net) to GND. | The buck module's EN reads open as on. Without the pull-down the programming ports' 5V is on while the IOmcu is in reset, in BOOTSEL or unpowered. | The programming ports' supply is off whenever GPIO 21 is not driven high. |
-| 3 | A 5.6V 1W zener from M7's output (VCC_PROGPORT_DCDC) to GND, cathode at the rail. | A braking servo feeds energy back into PROG 5V. M7 cannot sink current and latches off when its output passes about 6.0V for 20us. The zener absorbs the feedback. | No. The PROG 5V lost error ([PROG 5V lost](#prog-5v-lost)) reports a latched M7 with or without the zener. |
+| 3 | A 5.6V zener of 2W or 5W from M7's output (VCC_PROGPORT_DCDC) to GND, cathode at the rail, for example SMBJ5339B-TP (5.6V 5W, SMB package). | A braking servo feeds energy back into PROG 5V. M7 cannot sink current and latches off when its output passes about 6.0V for 20us. The zener absorbs the feedback. | No. The PROG 5V lost error ([PROG 5V lost](#prog-5v-lost)) reports a latched M7 with or without the zener. |
 
 Item 3's limits:
 
 - M7's over-voltage threshold is 115% to 125% of the output, 5.75V to
   6.25V on 5.00V. A 5.6V zener of ±5% conducts at 5.32V to 5.88V.
-- Above a few hundred mA of feedback the clamp voltage rises past the
-  trip point, so a larger servo can still latch M7 (not measured).
+- The clamp voltage rises with the back-fed current by the zener's
+  dynamic impedance. Typical datasheet values at the test current are
+  about 1Ω for a 5W zener and about 5Ω for a 1W zener. Each 100mA above
+  the test current adds about 0.1V on the 5W zener and about 0.5V on the
+  1W zener, so the 5W zener's clamp stays lower at higher back-feed. A
+  2W zener's value depends on the part; no 2W part is named here.
+- Back-feed of several hundred mA is not measured. Whether a larger servo
+  still latches M7 with either zener is not measured.

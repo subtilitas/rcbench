@@ -203,6 +203,11 @@ history is in git.
   room for about 285Hz. The sensor stores RSW, so another device reading it
   afterwards gets 0x52 and 0x53 only until the sensor's app sets RSW back
   ([IMU](docs/IMU.md#the-sensor)).
+- Carrier rev 1 rework item 3 is a 5.6V zener of 2W or 5W, for example
+  SMBJ5339B-TP (5.6V 5W, SMB package), in place of a 1W one: its dynamic
+  impedance is about 1Ω against about 5Ω (typical datasheet values), so
+  its clamp stays lower at higher back-feed
+  ([Carrier, Rev 1 rework](docs/Carrier.md#rev-1-rework)).
 
 ### Fixed
 
@@ -213,23 +218,27 @@ history is in git.
   aarch64 failed `tools/render_ui.py`'s `-Werror` build with a
   format-truncation warning on the `%ld` text.
 - On the rbmod carrier PORT PWM ON on OUTPUTS > PROG PORT n is taken while
-  the PROG 5V box reads OFF. The tap did nothing, and leaving SERVO
-  switches off a PROG 5V that SERVO's box switched on, so PORT PWM could
-  not be switched on at all. The pulse still waits for the box to read ON
-  and comes on only while SAFE. The line under the rows reads
-  `PORT PWM ON: PULSES START WITH PROG 5V ON SERVO`.
+  PROG 5V reads OFF. The tap did nothing, and leaving SERVO switches off
+  a PROG 5V that SERVO switched on, so PORT PWM could not be switched on
+  at all. The pulse still waits for PROG 5V to read ON and comes on only
+  while SAFE. The line under the rows reads
+  `PORT PWM ON: ARM ON SERVO SWITCHES PROG 5V AND PULSES ON`.
 - RUDDER AUTO and START LIMIT RUN with PORT PWM off say what to do:
   `PORT PWM OFF: SWITCH IT ON IN OUTPUTS` while SAFE and
   `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS` while ARMED. The line
   read `PORT PWM OFF. NO PULSES ON THIS PORT.`, also with PORT PWM on and
   the pulse waiting: that case reads
   `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` on every board, or
-  `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` on the carrier with the
-  box off.
+  `PROG 5V OFF: START SWITCHES IT ON` on the carrier with PROG 5V off.
 - RUDDER AUTO and START LIMIT RUN name a programmer session that holds
   the port, `LOCKED: SERVO PROGRAMMING USES THE PORT`, before PORT PWM.
   They read `PORT PWM OFF. NO PULSES ON THIS PORT.` while the session held
   it.
+- On the rbmod carrier OUTPUT's note in SERVO's settings reads
+  `PROG 5V OFF: ARM SWITCHES IT ON` with PORT PWM on and PROG 5V off, and
+  the READY card of TEST, RUDDER AUTO and LIMIT RUN reads
+  `PROG 5V OFF: START SWITCHES IT ON`. Both named the PROG 5V box, which
+  only SUPPLY shows.
 
 ## 0.23.9 - 2026-11-06
 

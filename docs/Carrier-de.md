@@ -86,7 +86,7 @@ dieser Stellen:
 | FUNC beim Start des IOmcu | NONE auf jedem Port; das Panel bittet erneut um SERVO PWM |
 | Gesperrt | ARMED oder ARMED angefordert, ein Test, ein Sweep oder ein Endlagenlauf, ein Programmer, der einen Port hält |
 | PROGP04 | nicht angeboten, solange PWM04 einen PWM-Ausgang trägt: `PROGP04 TEILT PWM-SLICE 0 MIT PWM04 (GPIO 1)` |
-| Puls | nur solange das Feld PROG 5V EIN zeigt. PORT-PWM EIN wird bei ausgeschaltetem Feld angenommen, und die Zeile lautet `PORT-PWM EIN: PULSE STARTEN MIT PROG 5V AUF SERVO`; ein Servotest und ein Endlagenlauf werden mit `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN` abgelehnt |
+| Puls | nur solange PROG 5V EIN zeigt. PORT-PWM EIN wird bei ausgeschaltetem PROG 5V angenommen, und OUTPUTS zeigt `PORT-PWM EIN: ARM AUF SERVO SCHALTET PROG 5V UND PULSE EIN`; AUSGANG in den Einstellungen von SERVO zeigt `PROG 5V AUS: ARM SCHALTET ES EIN`, und die Karte BEREIT eines Servotests, von RUDER AUTO und eines Endlagenlaufs zeigt `PROG 5V AUS: START SCHALTET ES EIN` |
 | Versorgung | die festen 5V von M7 an GPIO 21; die Spannungsstufen eines Servotests erreichen die Servoschienen, nicht den Port, ein Test dort wird also mit `PROG-PORTS LAUFEN MIT FESTEN 5V: KEINE STUFEN` abgelehnt |
 | Strom | INA3221 0x40 CH3 misst alle vier Ports zusammen |
 
@@ -367,13 +367,20 @@ Klemmschaltung auf der Platine.
 | --- | --- | --- | --- |
 | 1 | PROGP03 (J1 Position 4, über R4) wechselt von GPIO 26 auf GPIO 15: die Leiterbahn wird unter dem Serienwiderstand R4 getrennt, und ein Fädeldraht läuft von R4 zu GPIO 15. | GPIO 26 ist ein ADC-Pin und nicht 5V-fest. Ein Pull-up von Hitec oder KST legt die Servoversorgung auf die Programmierleitung. | PROG PORT 3 ist auf jedem Carrier GPIO 15. GPIO 26 bleibt unbenutzt. |
 | 2 | Ein Pull-down von 2kΩ bis 5kΩ von EN an M7 (das Netz von GPIO 21) nach GND. | EN des Buck-Moduls liest offen als an. Ohne den Pull-down sind die 5V der Programmierports an, solange der IOmcu im Reset, im BOOTSEL oder ohne Versorgung ist. | Die Versorgung der Programmierports ist aus, solange GPIO 21 nicht high getrieben wird. |
-| 3 | Eine Z-Diode 5,6V 1W vom Ausgang von M7 (VCC_PROGPORT_DCDC) nach GND, Kathode an der Schiene. | Ein bremsendes Servo speist Energie in PROG 5V zurück. M7 kann keinen Strom aufnehmen und schaltet ab, wenn sein Ausgang etwa 6,0V für 20us überschreitet. Die Z-Diode nimmt die Rückspeisung auf. | Nein. Der Fehler PROG 5V ausgefallen ([PROG 5V ausgefallen](#prog-5v-ausgefallen)) meldet ein abgeschaltetes M7 mit oder ohne die Z-Diode. |
+| 3 | Eine Z-Diode 5,6V mit 2W oder 5W vom Ausgang von M7 (VCC_PROGPORT_DCDC) nach GND, Kathode an der Schiene, zum Beispiel SMBJ5339B-TP (5,6V 5W, Gehäuse SMB). | Ein bremsendes Servo speist Energie in PROG 5V zurück. M7 kann keinen Strom aufnehmen und schaltet ab, wenn sein Ausgang etwa 6,0V für 20us überschreitet. Die Z-Diode nimmt die Rückspeisung auf. | Nein. Der Fehler PROG 5V ausgefallen ([PROG 5V ausgefallen](#prog-5v-ausgefallen)) meldet ein abgeschaltetes M7 mit oder ohne die Z-Diode. |
 
 Grenzen von Punkt 3:
 
 - Die Überspannungsschwelle von M7 liegt bei 115% bis 125% des Ausgangs,
   5,75V bis 6,25V bei 5,00V. Eine Z-Diode 5,6V mit ±5% leitet bei 5,32V
   bis 5,88V.
-- Über einige hundert mA Rückspeisung steigt die Klemmspannung über die
-  Schwelle, also kann ein größeres Servo M7 weiter abschalten (nicht
-  gemessen).
+- Die Klemmspannung steigt mit dem rückgespeisten Strom um den
+  dynamischen Widerstand der Z-Diode. Typische Datenblattwerte beim
+  Prüfstrom sind etwa 1Ω für eine 5W-Z-Diode und etwa 5Ω für eine
+  1W-Z-Diode. Je 100mA über dem Prüfstrom kommen bei der 5W-Z-Diode etwa
+  0,1V hinzu, bei der 1W-Z-Diode etwa 0,5V; die Klemmspannung der
+  5W-Z-Diode bleibt also bei höherer Rückspeisung niedriger. Bei einer
+  2W-Z-Diode hängt der Wert vom Teil ab; hier ist kein 2W-Teil genannt.
+- Rückspeisung von mehreren hundert mA ist nicht gemessen. Ob ein
+  größeres Servo M7 mit einer der beiden Z-Dioden weiter abschaltet, ist
+  nicht gemessen.

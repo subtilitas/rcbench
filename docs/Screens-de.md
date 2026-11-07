@@ -2734,7 +2734,7 @@ langsameren Profils kombiniert. AUSGANG meldet das Ergebnis:
 
 | Hinweis | Bedeutung |
 | --- | --- |
-| Aktiv | die Rate läuft auf dem Ziel, das der IOmcu hält, benannt nach seiner PROG-Page: `Aktiv: Ausgänge laufen mit 330Hz.` oder `Aktiv: PROG-PORT 1 GPIO 13 läuft mit 330Hz.`, der Port mit der Nummer, die ZIEL nennt: PORT 1, PORT 2, PORT 3 oder PORT 4. Der Hinweis steht in der Warnfarbe, solange dieses Ziel vom gewählten ZIEL abweicht (zweite Zeile `Der gewählte PORT ist nicht aktiv.`; PROG-PORT ohne an den Port zugeordneten Pin lässt OUTPUTS das Ziel), solange das Port-Ziel keinen Pin hat, solange PORT-PWM AUS ist (`PORT-PWM ist AUS. Der Port gibt keine Pulse aus.`) und solange das Ziel unbekannt ist. Mit einem IOmcu vor Protokoll 4.19 lautet der Hinweis "jedes PWM-Ruder läuft mit": ein solcher IOmcu fährt jede PWM-Ruder mit der Rate, gleich was ZIEL nennt. Ohne Verbindung lauten beide `Keine Verbindung. Die aktive Pulsrate ist unbekannt.` in der Warnfarbe: ein IOmcu, der bei unterbrochener Verbindung neu startet, fährt jeden Pin wieder mit seiner eigenen Rate |
+| Aktiv | die Rate läuft auf dem Ziel, das der IOmcu hält, benannt nach seiner PROG-Page: `Aktiv: Ausgänge laufen mit 330Hz.` oder `Aktiv: PROG-PORT 1 GPIO 13 läuft mit 330Hz.`, der Port mit der Nummer, die ZIEL nennt: PORT 1, PORT 2, PORT 3 oder PORT 4. Der Hinweis steht in der Warnfarbe, solange dieses Ziel vom gewählten ZIEL abweicht (zweite Zeile `Der gewählte PORT ist nicht aktiv.`; PROG-PORT ohne an den Port zugeordneten Pin lässt OUTPUTS das Ziel), solange das Port-Ziel keinen Pin hat, solange PORT-PWM AUS ist (`PORT-PWM ist AUS. Der Port gibt keine Pulse aus.`; auf dem rbmod-Carrier mit PORT-PWM EIN und PROG 5V aus `PROG 5V AUS: ARM SCHALTET ES EIN`, als Überschrift von AUSGANG) und solange das Ziel unbekannt ist. Mit einem IOmcu vor Protokoll 4.19 lautet der Hinweis "jedes PWM-Ruder läuft mit": ein solcher IOmcu fährt jede PWM-Ruder mit der Rate, gleich was ZIEL nennt. Ohne Verbindung lauten beide `Keine Verbindung. Die aktive Pulsrate ist unbekannt.` in der Warnfarbe: ein IOmcu, der bei unterbrochener Verbindung neu startet, fährt jeden Pin wieder mit seiner eigenen Rate |
 | Die Pulsrate wird mit der nächsten Position | noch nicht geschrieben |
 | ABGELEHNT | ein Puls des Ziels (eines Ruders, oder des Programmierports, solange sein Puls eingeschaltet ist) ist länger als der Frame bei dieser Rate, oder ein Pin des Ziels teilt sich einen PWM-Slice mit einem Ausgang auf einer anderen Rate; die Pins behalten ihre Rate |
 | Dieser IOmcu nimmt keine Pulsrate | Protokoll 4.0: jeder PWM-Ausgang läuft mit den 50Hz seiner Zuordnung |
@@ -7157,7 +7157,7 @@ IDENTITY-Register 5 am Link des IOmcu (Board 2).
   PROG 5V liegt auf SUPPLY, nicht hier. Auf SERVO schalten ARM und
   ARM + START die 5V ein, und das Verlassen von SERVO schaltet ein dort
   eingeschaltetes PROG 5V aus. Die Zeile lautet dann
-  `PORT-PWM EIN: PULSE STARTEN MIT PROG 5V AUF SERVO`, und es geht kein
+  `PORT-PWM EIN: ARM AUF SERVO SCHALTET PROG 5V UND PULSE EIN`, und es geht kein
   Puls hinaus, bis PROG 5V an ist. Der Puls endet, wenn PROG 5V
   ausgeht.
 - Mit einem IOmcu vor 4.36 werden SERVO-TESTER und PORT-PWM nicht

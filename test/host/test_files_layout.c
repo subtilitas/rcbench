@@ -14,6 +14,7 @@
  * - the_name_keyboard_takes_a_name_by_the_cards_rules
  * - files_home_tag_goes_to_the_menu
  * - every_view_draws_in_both_languages_and_both_themes
+ * - delete_is_neutral_with_a_red_label_in_both_themes
  * - the_footer_runs_rescan_to_open_as_logs_does
  *
  * SPDX-License-Identifier: MIT
@@ -334,6 +335,54 @@ TEST_CASE(every_view_draws_in_both_languages_and_both_themes)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/**
+ * @brief The pixels of colour @p col inside @p r on the canvas.
+ * @param r   the rectangle, in body coordinates
+ * @param col the colour
+ * @return the count
+ */
+static int pixels_in(gfx_rect_t r, gfx_color_t col)
+{
+    int n = 0;
+    for (int y = r.y; y < r.y + r.h; ++y) {
+        for (int x = r.x; x < r.x + r.w; ++x) {
+            n += (s_fb[(size_t)y * W + (size_t)x] == col) ? 1 : 0;
+        }
+    }
+    return n;
+}
+
+TEST_CASE(delete_is_neutral_with_a_red_label_in_both_themes)
+{
+    for (int theme = 0; theme < 2; ++theme) {
+        fresh();
+        ui_theme_set(theme ? UI_THEME_LIGHT : UI_THEME_DARK);
+        CHECK(pick(1, "ATEST005.CSV"));
+        tap_foot(FS_SPOT_DELETE);
+        CHECK_EQ(files_screen_view(), FILES_VIEW_DELETE);
+        files_screen_invalidate();
+        draw();
+        const gfx_rect_t del = FS_Q_DELETE;
+        const gfx_rect_t cancel = FS_Q_CANCEL;
+        /* The fill is the neutral panel colour: left of the label, at
+         * half height, and over most of the button. */
+        CHECK_EQ(s_fb[(size_t)(del.y + del.h / 2) * W + (size_t)(del.x + 24)],
+                 UI_PANEL_HI);
+        CHECK(pixels_in(del, UI_PANEL_HI) > del.w * del.h * 3 / 4);
+        CHECK_EQ(pixels_in(del, UI_OK), 0);
+        /* The label is in the danger red, and nothing but the label. */
+        const int red = pixels_in(del, UI_DANGER);
+        CHECK(red > 0);
+        CHECK(red < del.w * del.h / 4);
+        CHECK_EQ(pixels_in(del, UI_TEXT), 0);
+        /* CANCEL beside it: the same fill, no red. */
+        CHECK(pixels_in(cancel, UI_PANEL_HI) > cancel.w * cancel.h * 3 / 4);
+        CHECK_EQ(pixels_in(cancel, UI_DANGER), 0);
+        CHECK(home());
+    }
+    ui_theme_set(UI_THEME_DARK);
+}
+
 TEST_CASE(the_footer_runs_rescan_to_open_as_logs_does)
 {
     fresh();
@@ -386,6 +435,7 @@ int main(void)
     RUN(the_name_keyboard_takes_a_name_by_the_cards_rules);
     RUN(files_home_tag_goes_to_the_menu);
     RUN(every_view_draws_in_both_languages_and_both_themes);
+    RUN(delete_is_neutral_with_a_red_label_in_both_themes);
     RUN(the_footer_runs_rescan_to_open_as_logs_does);
     fh_free(&g_h);
     free(s_fb);
