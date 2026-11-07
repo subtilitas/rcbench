@@ -170,28 +170,33 @@ TEST_CASE(a_held_tap_on_move_servo_starts_nothing_after_the_stop)
 }
 
 /* Contact 1 holds the FIND STOP key that searches, contact 2 presses it
- * too: the search ends on contact 2's press.  Contact 1's release after the
- * halt starts no new search: its tap went with the stop. */
+ * too: the search ends on contact 2's press.  Neither release after the
+ * halt starts a new search, in either order: contact 1's tap went with the
+ * stop. */
 TEST_CASE(a_held_tap_on_the_searching_key_starts_no_search_after_the_stop)
 {
-    moving();
-    const gfx_rect_t l = hitec_panel_find_rect(false);
+    for (int order = 0; order < 2; ++order) {
+        moving();
+        const gfx_rect_t l = hitec_panel_find_rect(false);
 
-    tap(l);
-    CHECK_EQ(hitec_prog_find_side(model()), (int)HITEC_FIND_LEFT);
-    prun(200u);
-    evi(cx(l), cy(l), TOUCH_EVENT_DOWN, 1);
-    evi(cx(l), cy(l), TOUCH_EVENT_DOWN, 2);
-    for (unsigned i = 0; i < 2000u && msg() != HITEC_PROG_MSG_FIND_HALT;
-         ++i) {
-        pms();
+        tap(l);
+        CHECK_EQ(hitec_prog_find_side(model()), (int)HITEC_FIND_LEFT);
+        prun(200u);
+        evi(cx(l), cy(l), TOUCH_EVENT_DOWN, 1);
+        evi(cx(l), cy(l), TOUCH_EVENT_DOWN, 2);
+        for (unsigned i = 0; i < 2000u && msg() != HITEC_PROG_MSG_FIND_HALT;
+             ++i) {
+            pms();
+        }
+        CHECK_EQ(msg(), HITEC_PROG_MSG_FIND_HALT);
+        evi(cx(l), cy(l), TOUCH_EVENT_UP, order == 0 ? 2 : 1);
+        prun(200u);
+        CHECK_EQ(hitec_prog_find_side(model()), -1);
+        evi(cx(l), cy(l), TOUCH_EVENT_UP, order == 0 ? 1 : 2);
+        prun(500u);
+        CHECK_EQ(hitec_prog_find_side(model()), -1);
+        CHECK(hitec_prog_move_on(model()));
     }
-    CHECK_EQ(msg(), HITEC_PROG_MSG_FIND_HALT);
-    evi(cx(l), cy(l), TOUCH_EVENT_UP, 2);
-    evi(cx(l), cy(l), TOUCH_EVENT_UP, 1);
-    prun(500u);
-    CHECK_EQ(hitec_prog_find_side(model()), -1);
-    CHECK(hitec_prog_move_on(model()));
 }
 
 int main(void)
