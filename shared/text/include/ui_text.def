@@ -5274,7 +5274,7 @@ UI_TEXT(SVH_LIVE_LINE, 0,
     "SKALA, DREHKNOPF, STROM")
 UI_TEXT(SVH_SWEEP_LINE, 0,
     "CURVE AT SPEED, PAUSE",
-    "KURVE MIT SPEED, PAUSE")
+    "KURVE MIT TEMPO, PAUSE")
 UI_TEXT(SVH_TEST_LINE, 0,
     "4.8V TO 8.4V, BROWN-OUT",
     "4.8V BIS 8.4V, BROWN-OUT")
@@ -5368,8 +5368,8 @@ UI_TEXT(SVL_FAMILY_HELP, 60,
     "The programmer a run writes the end points with",
     "Der Programmierer, mit dem ein Lauf die Endpunkte schreibt")
 UI_TEXT(SVL_PULSES_HELP, 60,
-    "SET: the servo's pulses to 1000-2000us first",
-    "SETZEN: die Pulse des Servos zuerst auf 1000-2000us")
+    "1000-2000: the servo's pulses set to that range first",
+    "1000-2000: die Pulse des Servos zuerst auf diesen Bereich")
 UI_TEXT(SVL_PORT_ONLY, 60,
     "On a PROG PORT only: choose one with PORT",
     "Nur an einem PROG-PORT: wähle einen mit PORT")
