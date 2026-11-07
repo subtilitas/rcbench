@@ -168,6 +168,13 @@ Schleife. STOP, ein Schalten auf SAFE am Prüfstand, die Versorgung aus und
 die anderen harten Enden bleiben harte Enden. Eine Blockierung der Suche
 ist kein Fehler: die Versorgung bleibt an.
 
+Ein Stopp zählt, was auch immer andere Finger halten. Hält ein Finger einen
+Druck im Overlay, eine Taste `-` oder `+` oder einen Reiter, beendet ein
+weiterer Finger auf EIN die Schleife und einer auf der Taste, deren Seite
+sucht, die Suche, jeweils beim Aufsetzen. Ein Finger, der auf einer der
+beiden Zeilen liegt, verliert mit diesem Stopp sein Tippen: Sein Abheben
+startet nichts wieder. Ein einzelner Finger beendet beide mit einem Tippen.
+
 ## Bekannte Grenzen
 
 - Die Strombeurteilung liest den Strom des PD mini, der etwa 0.3s

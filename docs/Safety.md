@@ -782,13 +782,25 @@ reads the state and shows the alert, is not in the coverage figure.
   DISARM included: stopping never waits for a lift that may not come. A
   press on DISARM takes no hold, so a finger left on the button arms nothing
   when it reads ARM again; ARM stays a 2s hold.
-- The screens do not rely on the router for it. Every press ends a drag on a
-  slider or on the SERVO dial that is still latched, wherever the press
-  lands, and leaving SERVO ends a dial drag. SUPPLY holds one press at a
-  time; a press with the track id of the one it holds says that contact has
-  gone, and the held press is dropped as a touch loss drops it. Not measured
-  on a panel: whether the GT911 gives a lone finger the same track id on
-  successive touches.
+- The screens do not rely on the router for it. A press with the track id
+  of a drag on a slider or on the SERVO dial that is still latched ends that
+  drag, wherever the press lands, and leaving SERVO ends a dial drag. A
+  press with another track id is a second finger and leaves the drag
+  running: one finger drags the SERVO dial while another drags SPEED. SUPPLY
+  holds one press at a time; a press with the track id of the one it holds
+  says that contact has gone, and the held press is dropped as a touch loss
+  drops it. Not measured on a panel: whether the GT911 gives a lone finger
+  the same track id on successive touches.
+- A stop counts whatever other fingers hold. A second, third or further
+  contact on a stop acts on its press while other contacts hold presses of
+  their own: DISARM, STOP TEST, ARM + START while a run or its steps are
+  under way, ABORT, the KST and Hitec supply row while it reads ON, and on
+  SUPPLY OUTPUT OFF and PROG 5V OFF, which a lone finger switches off with a
+  tap. On the Hitec programmer's overlay MOVE SERVO's ON and the FIND STOP
+  key whose side searches end the loop or the search on such a press. A
+  release never switches on what a stop switched off: a finger held on that
+  Hitec row loses its tap, and a hold on OUTPUT ON or PROG 5V ON ends when
+  the OFF reads back.
 - The control task tests STOP's rectangle on every press itself,
   independently of the screens and of the frame, and stops the bench at the
   press: the heartbeat drops in the same pass and the IOmcu fails safe within

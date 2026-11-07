@@ -795,9 +795,10 @@ static int owned_find(uint8_t id)
  *
  * Every DOWN the screen is not handed -- on the band, on STOP, on a chip,
  * on the alert band -- releases the contacts the screen owns as at the
- * band's edge.  A screen ends a latched drag at any press it is handed, and
- * the router does the same for the presses it keeps: a dial drag must not
- * go on commanding while another finger presses STOP.
+ * band's edge.  A screen ends a latched drag at a press with the drag's own
+ * track id, whose release went missing, and leaves it to a second finger's
+ * press; the router ends every drag at a press it keeps: a dial drag must
+ * not go on commanding while another finger presses STOP.
  *
  * A chip of the band opens its help bubble on a tap: a DOWN on it and a
  * release on the same chip.  While a bubble is open, a DOWN anywhere but on

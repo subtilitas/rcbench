@@ -1290,24 +1290,24 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 504 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 509 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
 `test_nav_tiles`, `test_menu_openers`, `test_nav_alert`, `test_nav_mark`,
 `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_band_hwstop`,
 `test_help_router`, `test_help_pages`, `test_help_guides`, `test_help_setup`,
-`test_help_outputs`, `test_help_logs`, `test_help_files`, `test_widgets`, `test_footer`, `test_setlist`, `test_hold_hint`, `test_hold_flash`, `test_hold_button`, `test_action_fill`,
+`test_help_outputs`, `test_help_logs`, `test_help_files`, `test_widgets`, `test_slider_fingers`, `test_footer`, `test_setlist`, `test_hold_hint`, `test_hold_flash`, `test_hold_button`, `test_action_fill`,
 `test_workbench`, `test_prog_registry`,
 `test_keypad`, `test_keypad_sign`, `test_keypad_rows_setup`, `test_keypad_rows_stick`,
 `test_keypad_rows_motor`, `test_keypad_rows_supply`, `test_keypad_rows_servo`,
-`test_keypad_rows_kst`, `test_pinlist`, `test_bench`, `test_supply`, `test_supply_screen`,
+`test_keypad_rows_kst`, `test_pinlist`, `test_bench`, `test_supply`, `test_supply_screen`, `test_supply_stop_fingers`,
 `test_supply_screen_tasks`, `test_supply_pdmini`, `test_supply_screen_home`,
 `test_supply_screen_draw`, `test_supply_layout`, `test_prog5v_box`, `test_prog5v_lost`,
 `test_prog5v_wire`, `test_prog5v_servo`, `test_prog5v_supply`, `test_pdmini`, `test_motor`,
 `test_motor_draw`, `test_motor_throttle`, `test_motor_arm`, `test_motor_workbench`,
 `test_motor_program`, `test_motor_layout`, `test_value_state`, `test_servo`,
-`test_servo_knob`, `test_servo_drag`, `test_servo_repaint`, `test_repaint_parts`,
+`test_servo_knob`, `test_servo_two_drags`, `test_servo_two_drags_sweep`, `test_servo_drag`, `test_servo_repaint`, `test_repaint_parts`,
 `test_frame_work`,
 `test_servo_dial_sweep`, `test_servo_letgo`, `test_servo_curve`, `test_servo_supply`,
 `test_servo_restore`, `test_servo_run`, `test_servo_run_gaps`, `test_servo_target`,
@@ -1384,7 +1384,7 @@ The host suite is 504 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_hitec_prog_codes`, `test_hitec_prog_write`, `test_hitec_prog_file`,
 `test_hitec_prog_backup`, `test_hitec_prog_chain`, `test_hitec_prog_unit`,
 `test_hitec_prog_reread`, `test_hitec_panel_unit`, `test_hitec_card`, `test_hitec_card_run`, `test_servo_store`,
-`test_hitec_panel`, `test_hitec_panel_states`, `test_hitec_panel_write`,
+`test_hitec_panel`, `test_hitec_panel_states`, `test_hitec_panel_stop_fingers`, `test_hitec_panel_write`,
 `test_hitec_panel_file`, `test_page_console`, `test_kst_card`, `test_prog_link`,
 `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`,
 `test_wifi_kept`, `test_wifi_layout`, `test_fw_image`, `test_fw_c6`, `test_fw_install`, `test_fw_trial`,
@@ -1908,7 +1908,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/help_files.c` | 24 | 23 | 95.8% |
 | `shared/ui/ui_watermark.c` | 44 | 42 | 95.5% |
 | `shared/ui/ui_plot.c` | 194 | 184 | 94.8% |
-| `shared/ui/ui_slider.c` | 163 | 154 | 94.5% |
+| `shared/ui/ui_slider.c` | 175 | 164 | 93.7% |
 | `shared/ui/ui_tabs.c` | 97 | 89 | 91.8% |
 | `shared/ui/ui_workbench.c` | 65 | 65 | 100.0% |
 | `shared/ui/ui_target_row.c` | 93 | 92 | 98.9% |
@@ -1925,8 +1925,8 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/motor_workbench.c` | 172 | 165 | 95.9% |
 | `shared/ui/motor_settings_page.c` | 87 | 87 | 100.0% |
 | `shared/ui/motor_program_page.c` | 174 | 169 | 97.1% |
-| `shared/ui/supply_screen.c` | 521 | 511 | 98.1% |
-| `shared/ui/supply_events.c` | 302 | 300 | 99.3% |
+| `shared/ui/supply_screen.c` | 521 | 512 | 98.3% |
+| `shared/ui/supply_events.c` | 316 | 314 | 99.4% |
 | `shared/ui/supply_draw.c` | 403 | 387 | 96.0% |
 | `shared/ui/supply_settings.c` | 154 | 147 | 95.5% |
 | `shared/ui/supply_guide.c` | 79 | 79 | 100.0% |
@@ -1944,7 +1944,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_screen.c` | 372 | 361 | 97.0% |
 | `shared/ui/servo_screen_sweep.c` | 505 | 482 | 95.5% |
 | `shared/ui/servo_screen_link.c` | 419 | 410 | 97.8% |
-| `shared/ui/servo_screen_touch.c` | 264 | 259 | 98.1% |
+| `shared/ui/servo_screen_touch.c` | 272 | 267 | 98.2% |
 | `shared/ui/servo_screen_draw.c` | 452 | 428 | 94.7% |
 | `shared/ui/servo_settings_panel.c` | 598 | 542 | 90.6% |
 | `shared/ui/servo_settings_draw.c` | 323 | 291 | 90.1% |
@@ -1980,7 +1980,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/hitec_panel_text.c` | 504 | 495 | 98.2% |
 | `shared/ui/hitec_panel_edit.c` | 399 | 397 | 99.5% |
 | `shared/ui/hitec_panel_page.c` | 235 | 235 | 100.0% |
-| `shared/ui/hitec_panel_touch.c` | 218 | 209 | 95.9% |
+| `shared/ui/hitec_panel_touch.c` | 247 | 238 | 96.4% |
 | `shared/ui/hitec_panel_draw.c` | 280 | 279 | 99.6% |
 | `shared/ui/hitec_panel_file.c` | 230 | 230 | 100.0% |
 | `shared/ui/hitec_panel_run.c` | 105 | 105 | 100.0% |
@@ -2166,7 +2166,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/bench/hitec_prog_write.c` | 568 | 567 | 99.8% |
 | `shared/bench/hitec_prog_file.c` | 455 | 452 | 99.3% |
 | `shared/bench/hitec_prog_run.c` | 111 | 104 | 93.7% |
-| `shared/bench/hitec_move.c` | 371 | 362 | 97.6% |
+| `shared/bench/hitec_move.c` | 371 | 363 | 97.8% |
 | `shared/bench/hitec_prog_unit.c` | 27 | 27 | 100.0% |
 | `shared/bench/hitec_card.c` | 278 | 277 | 99.6% |
 | `shared/bench/hitec_card_run.c` | 113 | 113 | 100.0% |
@@ -2273,7 +2273,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **87471** | **85684** | **98.0%** |
+| **total** | **87534** | **85747** | **98.0%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

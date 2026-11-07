@@ -13,6 +13,10 @@
  *   a press that starts anywhere else never becomes a drag, however far it
  *   travels across the track.
  *
+ * A drag is its contact's alone.  A second finger coming down, on the track
+ * or anywhere else, leaves it running; a DOWN with the drag's own track id
+ * ends it, since that contact's release went missing.
+ *
  * SPDX-License-Identifier: MIT
  */
 #pragma once
@@ -65,8 +69,10 @@ typedef struct {
 
     bool    dragging;
     uint8_t drag_id;
-    int16_t drag_x;       /**< where the finger went down                 */
-    float   drag_value;   /**< and the value it went down on              */
+    int16_t drag_x;       /**< where the drag measures from: the finger's
+                               x at the press or at the last outside set */
+    float   drag_value;   /**< and the value it measures from             */
+    int16_t last_x;       /**< the dragging finger's last x               */
     int     pressed_preset;   /**< index, or -1                           */
     uint8_t preset_id;
 } ui_slider_t;
@@ -98,6 +104,19 @@ void ui_slider_set_tap_to_set(ui_slider_t *s, bool on);
 
 /** Abandon a drag that will get no release, on leaving a screen. */
 void ui_slider_release(ui_slider_t *s);
+
+/**
+ * @brief Ends the drag or the preset press that contact @p id holds, and
+ *        nothing another contact holds.
+ *
+ * A DOWN with the id of a gesture held says that contact has gone and its
+ * release with it: the controller reuses track ids.  A DOWN of another
+ * contact is a second finger, which leaves the gesture to the first.
+ *
+ * @param s  the slider; NULL does nothing
+ * @param id the contact that came down
+ */
+void ui_slider_release_contact(ui_slider_t *s, uint8_t id);
 
 /** Returns true when the value changed as a result of this event. */
 bool ui_slider_event(ui_slider_t *s, const touch_event_t *evt);

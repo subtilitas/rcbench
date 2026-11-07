@@ -148,6 +148,12 @@ screen and an ABORT end the search with the loop's end. STOP, a switch to
 SAFE at the bench, the supply off and the other hard ends stay hard ends.
 A bind of the search is no error: the supply stays on.
 
+A stop counts whatever other fingers hold. While one finger holds a press
+on the overlay, a `-` or `+` key or a tab, a further finger on ON ends the
+loop, and one on the key whose side searches ends the search, on its press.
+A finger held on either row loses its tap with that stop: its release
+starts nothing again. A lone finger ends either with a tap.
+
 ## Current limitations
 
 - The current judge reads the PD mini's current, which lags about 0.3s

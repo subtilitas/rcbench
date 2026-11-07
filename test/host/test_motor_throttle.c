@@ -19,6 +19,7 @@
  * - an_armed_report_repeated_keeps_the_throttle
  * - a_press_on_the_disarmed_track_is_no_drag_after_the_arm
  * - a_drag_under_way_ends_at_the_disarm
+ * - a_second_finger_on_a_step_key_leaves_the_drag_running
  * - every_arm_starts_from_zero
  * - the_target_row_names_the_protocol_and_the_pins
  * - many_throttle_pins_end_in_a_count_within_the_box
@@ -345,6 +346,33 @@ TEST_CASE(a_drag_under_way_ends_at_the_disarm)
     lift(FEED_LONE);
     CHECK_EQ(motor_screen_throttle(), 0.0f);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+}
+
+/*
+ * A second finger on the +1% key while the first drags the throttle: the
+ * key steps the throttle, and the drag goes on from there by the first
+ * finger's travel after it, with no jump.
+ */
+TEST_CASE(a_second_finger_on_a_step_key_leaves_the_drag_running)
+{
+    fed();
+    motor_screen_set_armed(true);
+    finger(0, TRACK_X + 28, P(TRACK_Y));
+    glide(0, TRACK_X + 128, P(TRACK_Y), 8);
+    const float dragged = motor_screen_throttle();
+    CHECK_NEAR(dragged, 100.0f * 100.0f / (float)(MO_TRACK_W - 1), 0.01f);
+
+    finger(1, UP_X, P(TRACK_Y));
+    CHECK_NEAR(motor_screen_throttle(), dragged + 1.0f, 0.01f);
+    lift(1);
+    glide(0, TRACK_X + 168, P(TRACK_Y), 8);
+    CHECK_NEAR(motor_screen_throttle(),
+               dragged + 1.0f + 40.0f * 100.0f / (float)(MO_TRACK_W - 1),
+               0.01f);
+    const motor_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, MOTOR_CMD_THROTTLE);
+    CHECK_NEAR(c.value, motor_screen_throttle(), 0.01f);
+    lift(0);
 }
 
 /* Run after run: each arm starts from zero, and the disarmed bench between
@@ -707,6 +735,7 @@ int main(void)
     RUN(an_armed_report_repeated_keeps_the_throttle);
     RUN(a_press_on_the_disarmed_track_is_no_drag_after_the_arm);
     RUN(a_drag_under_way_ends_at_the_disarm);
+    RUN(a_second_finger_on_a_step_key_leaves_the_drag_running);
     RUN(every_arm_starts_from_zero);
     RUN(the_target_row_names_the_protocol_and_the_pins);
     RUN(many_throttle_pins_end_in_a_count_within_the_box);
