@@ -1586,7 +1586,10 @@ der Reihenfolge der Nutzung.
 | HITEC | HITEC | die Programmierung für Hitec über dem linken Feld, Karte und Fußleiste wie KST |
 
 Jede Kachel zeigt ihren Namen und eine Zeile von höchstens 31 Zeichen in
-10 x 20. Die Kacheln KST und HITEC sind grau, solange der IOmcu die
+10 x 20. Die Zeile von TEST nennt die Stufen, die der nächste Lauf von
+TEST fährt, wie die Karte BEREIT von TEST: `4.8-6.0V, BROWN-OUT` mit HV
+SERVO aus, `4.8-8.4V, BROWN-OUT` mit HV SERVO an, `KEINE STUFE GEWÄHLT`
+ohne Stufe und ohne BROWN-OUT. Die Kacheln KST und HITEC sind grau, solange der IOmcu die
 Fähigkeit ihres Ports nicht meldet oder eine andere Sitzung den Port hält;
 ein Tippen auf eine graue Kachel nennt den Grund im Alarmband und öffnet
 nichts. Der neunte Platz bleibt frei.
@@ -1803,7 +1806,8 @@ Rückmeldung in 1000ms, ARM, ARMED in 500ms. Die Taste zeigt jeden Schritt
 in Gelb, `START, SCHRITT 3 VON 5: RÜCKMELDUNG`; ein Tippen darauf beendet
 sie mit allem aus. Ein Schritt, der scheitert, schaltet alle Ausgänge aus
 und nennt sich im Alarmband, zum Beispiel
-`PROG 5V FEHLGESCHLAGEN: KEINE RÜCKMELDUNG IN 1000ms`. Ist nichts aus,
+`PROG 5V FEHLGESCHLAGEN: KEINE RÜCKMELDUNG IN 1000ms`; das Band geht, wenn
+der Bildschirm verlassen wird. Ist nichts aus,
 schaltet das Halten sofort auf ARMED.
 
 Der IOmcu weist jedes ON einer Versorgung ab, solange sein Failsafe
@@ -2279,10 +2283,12 @@ VERSORGUNG), PORT-PWM und ARM. 2s HALTEN: ARM + START schaltet PORT-PWM
 und die Versorgung ein, liest sie zurück, schaltet ARM und startet den
 Lauf. Während des Laufs zeigt das Halten LAUF BEENDEN, und OPTIONEN ist
 grau. Für jedes Schreiben schaltet der Lauf selbst auf SAFE und zurück auf
-ARMED. Nach dem letzten Befehl des Laufs schaltet der Prüfstand auf SAFE.
-STOP, SAFE, Link-Verlust, das Verlassen des Bildschirms oder ein
-Abbruchgrund des automatischen Tests beenden den Lauf mit allen Ausgängen
-aus. Urteil, Werte oder Endlagen und `LIMITnnn.TXT`, bei ausgeschalteten
+ARMED; die Zeile ARM zeigt SAFE, solange eine Sitzung den Prüfstand SAFE
+hält. Nach dem letzten Befehl des Laufs schaltet der Prüfstand auf SAFE.
+STOP, SAFE, Link-Verlust, das Verlassen des Bildschirms, ein Abbruchgrund
+des automatischen Tests oder ein NICHT BESTANDEN beenden den Lauf mit
+allen Ausgängen aus; nach einem NICHT BESTANDEN in einer Sitzung geht die
+Versorgung aus, sobald das LEAVE den Port zurückgegeben hat. Urteil, Werte oder Endlagen und `LIMITnnn.TXT`, bei ausgeschalteten
 Testaufzeichnungen `TESTAUFZEICHNUNGEN AUS`, bleiben bis zum nächsten Lauf
 auf den Zustandszeilen.
 

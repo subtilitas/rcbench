@@ -376,8 +376,14 @@ static void met_value(int i, char *b, size_t n, uint8_t *st)
         }
         break;
     case RAR_ARM:
-        snprintf(b, n, "ARMED");
-        *st = (uint8_t)RDY_LIVE;
+        /* The bench as it is: a run under way goes SAFE for each
+         * session of the programmer, and the band reads SAFE with it. */
+        if (value_live()) {
+            snprintf(b, n, "ARMED");
+            *st = (uint8_t)RDY_LIVE;
+        } else {
+            snprintf(b, n, "%s", TR(BAND_SAFE));
+        }
         break;
     default:
         break;

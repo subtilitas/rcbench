@@ -3,7 +3,8 @@
  * @brief SUPPLY's stops count whatever other fingers hold: OUTPUT OFF and
  *        PROG 5V OFF, pressed by a further contact while one contact holds
  *        the screen's press and others rest on the glass, switch off on
- *        that press.  The press held stays its contact's.
+ *        that press.  The press held stays its contact's; a drag on a
+ *        set point's track under OUTPUT OFF ends there.
  *
  * Cases:
  * - output_off_under_two_other_contacts_switches_off
@@ -11,6 +12,7 @@
  * - prog5v_off_under_two_and_three_other_contacts_switches_off
  * - a_held_output_on_switches_nothing_on_after_the_stop
  * - a_held_prog5v_on_switches_nothing_on_after_the_stop
+ * - a_drag_under_output_off_ends_and_its_lift_sets_nothing
  *
  * SPDX-License-Identifier: MIT
  */
@@ -162,6 +164,34 @@ TEST_CASE(a_held_prog5v_on_switches_nothing_on_after_the_stop)
     CHECK(!prog5v_box_poll_cmd(NULL));
 }
 
+/* Contact 1 drags the voltage's track; contact 2 presses OUTPUT OFF, which
+ * is asked on its press and reported.  The drag ends there: contact 1's
+ * later moves and its lift leave the set point where the drag had put it,
+ * and ask nothing of the supply. */
+TEST_CASE(a_drag_under_output_off_ends_and_its_lift_sets_nothing)
+{
+    fresh_on();
+    ev(TRACK_X + 60, V_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    ev(TRACK_X + 64, V_ROW_Y, TOUCH_EVENT_MOVE, 1);
+    scr->tick(TICK_S);
+    drain();
+    const float v0 = supply_screen_set_v();
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 2);
+    CHECK(asked_off());
+    supply_screen_set_output(false);
+    scr->tick(TICK_S);
+    drain();
+    ev(TRACK_X + TRACK_W - 20, V_ROW_Y, TOUCH_EVENT_MOVE, 1);
+    ev(TRACK_X + TRACK_W - 20, V_ROW_Y, TOUCH_EVENT_UP, 1);
+    scr->tick(TICK_S);
+    CHECK_NEAR(supply_screen_set_v(), v0, 0.0001f);
+    CHECK(!supply_screen_poll_cmd(NULL));
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_UP, 2);
+    scr->tick(TICK_S);
+    CHECK(!supply_screen_poll_cmd(NULL));
+    CHECK_NEAR(supply_screen_set_v(), v0, 0.0001f);
+}
+
 int main(void)
 {
     RUN(output_off_under_two_other_contacts_switches_off);
@@ -169,5 +199,6 @@ int main(void)
     RUN(prog5v_off_under_two_and_three_other_contacts_switches_off);
     RUN(a_held_output_on_switches_nothing_on_after_the_stop);
     RUN(a_held_prog5v_on_switches_nothing_on_after_the_stop);
+    RUN(a_drag_under_output_off_ends_and_its_lift_sets_nothing);
     return test_summary("supply_stop_fingers");
 }

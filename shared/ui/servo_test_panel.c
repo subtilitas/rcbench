@@ -93,6 +93,20 @@ uint8_t test_steps(float *v)
     return n;
 }
 
+void test_steps_text(char *b, size_t n, const float *v, uint8_t count,
+                     bool bo)
+{
+    char head[24] = "";
+    if (count == 1u) {
+        snprintf(head, sizeof(head), "%.1fV", (double)v[0]);
+    } else if (count > 1u) {
+        snprintf(head, sizeof(head), "%.1f-%.1fV", (double)v[0],
+                 (double)v[count - 1u]);
+    }
+    snprintf(b, n, "%s%s%s", head, (count > 0u && bo) ? ", " : "",
+             bo ? "BROWN-OUT" : "");
+}
+
 /* The highest voltage a run would ask for: its top step, or the brown-out's
  * start. */
 float test_top_v(void)

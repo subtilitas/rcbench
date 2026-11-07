@@ -351,6 +351,20 @@ static void ra_poll(void)
     ++s.ctrl_rev;
 }
 
+/** @brief The programmer's run is over: its own supply values come back.
+ *         A FAIL in the read session switches the supplies off now, after
+ *         its LEAVE gave the port back: an error leaves no output on. */
+static void ra_seam_ended(void)
+{
+    lim_seam_end(s.ra.run.cfg.family);
+    if (s.ra.off_due) {
+        s.ra.off_due = false;
+        svs_supplies_off();
+        ++s.sup_rev;
+        ++s.power_rev;
+    }
+}
+
 /** @brief A run that was running is over: the programmer's own supply
  *         values come back once its port is. */
 static void ra_ended(void)
@@ -359,6 +373,7 @@ static void ra_ended(void)
         return;
     }
     s.ra.seen = false;
+    s.ra.off_due = s.ra.run.verdict == SERVO_RAUTO_FAIL;
     /* A run ended with its first write on its way: no answer handed the
      * file over, and the session's own backup, saved before that write,
      * holds the servo as the run found it. */
@@ -369,7 +384,7 @@ static void ra_ended(void)
     if (s.ra.leaving) {
         s.ra.end_due = true;
     } else {
-        lim_seam_end(s.ra.run.cfg.family);
+        ra_seam_ended();
     }
     test_tell();
     ++s.ctrl_rev;
@@ -382,7 +397,7 @@ void rauto_leave_follow(void)
     }
     if (s.ra.end_due && !s.ra.leaving) {
         s.ra.end_due = false;
-        lim_seam_end(s.ra.run.cfg.family);
+        ra_seam_ended();
     }
 }
 

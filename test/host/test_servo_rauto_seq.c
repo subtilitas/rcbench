@@ -29,6 +29,8 @@
  * - port_pwm_on_with_the_5v_off_reads_amber_with_no_text_of_its_own
  * - a_run_under_way_keeps_the_angle_row_on_its_source_without_a_reading
  * - a_latched_failsafe_is_cleared_and_the_hold_reaches_the_run
+ * - a_read_that_finds_no_servo_ends_with_the_pd_mini_off
+ * - the_arm_row_reads_safe_while_the_read_session_holds_the_bench_safe
  *
  * SPDX-License-Identifier: MIT
  */
@@ -653,6 +655,52 @@ TEST_CASE(a_latched_failsafe_is_cleared_and_the_hold_reaches_the_run)
     }
 }
 
+/* The run's read finds no servo on the port: a FAIL in the read session,
+ * which gives the port back with a LEAVE.  An error leaves no output on:
+ * the PD mini goes off once the LEAVE is over, and the bench is SAFE. */
+TEST_CASE(a_read_that_finds_no_servo_ends_with_the_pd_mini_off)
+{
+    ra_setup(true, true);
+    CHECK(rauto_hold_blocked(NULL) == NULL);
+    sim_add_fault(&g_rig.sim, SIM_ANY, -1, 0, 100000u, SIM_F_DEAF, 0);
+    ra_hold_start();
+    CHECK(servo_screen_rauto_running());
+    CHECK(g_rig.sup_on);
+    const unsigned offs = ra.offs;
+    ra_run_out();
+    CHECK(!servo_screen_rauto_running());
+    CHECK(ra.offs > offs);
+    CHECK(!g_rig.sup_on);
+    CHECK(!ra.armed);
+    g_rig.sim.n_faults = 0u;
+}
+
+/* The run goes SAFE for the programmer's read session: the band reads
+ * SAFE, and so does the ARM row, without the red dot of an output live
+ * through it. */
+TEST_CASE(the_arm_row_reads_safe_while_the_read_session_holds_the_bench_safe)
+{
+    ra_setup(true, true);
+    ra_hold_start();
+    CHECK(servo_screen_rauto_running());
+    for (int i = 0; i < 400 && servo_screen_rauto_running()
+                    && !(servo_screen_rauto_phase()
+                             == (int)SERVO_RAUTO_PH_READ
+                         && !ra.armed);
+         ++i) {
+        ra_ms(20u);
+    }
+    CHECK_EQ(servo_screen_rauto_phase(), (int)SERVO_RAUTO_PH_READ);
+    ra_ms(40u);
+    CHECK(!ra.armed);
+    const rdy_row_t r = row_now(RAR_ARM);
+    CHECK_STR_EQ(r.value, TR(BAND_SAFE));
+    CHECK_EQ(r.st, (uint8_t)RDY_OK);
+    rauto_end_now(SERVO_TEST_AB_OPERATOR);
+    ra_ms(2000u);
+    CHECK(!servo_screen_rauto_running());
+}
+
 int main(void)
 {
     RUN(on_the_carrier_one_hold_switches_port_pwm_and_5v_arms_and_starts);
@@ -675,5 +723,7 @@ int main(void)
     RUN(port_pwm_on_with_the_5v_off_reads_amber_with_no_text_of_its_own);
     RUN(a_run_under_way_keeps_the_angle_row_on_its_source_without_a_reading);
     RUN(a_latched_failsafe_is_cleared_and_the_hold_reaches_the_run);
+    RUN(a_read_that_finds_no_servo_ends_with_the_pd_mini_off);
+    RUN(the_arm_row_reads_safe_while_the_read_session_holds_the_bench_safe);
     return test_summary("servo_rauto_seq");
 }

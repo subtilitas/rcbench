@@ -121,9 +121,15 @@ SERVO-Funktionsbildschirms. Der Bildschirm steht in
 - Der Lauf startet mit den Einstellungen, wie sie beim Auslösen des
   Haltens standen.
 - Nach dem letzten Befehl des Laufs schaltet der Prüfstand auf SAFE: die
-  Fußleiste hat kein DISARM. PROG 5V bleibt für den nächsten
-  SERVO-Bildschirm an, bis SERVO verlassen wird. Der Ausgang eines PD mini
-  bleibt, wie der Lauf ihn hinterlässt.
+  Fußleiste hat kein DISARM. Nach GEFUNDEN, FREI oder BESTANDEN bleibt
+  PROG 5V für den nächsten SERVO-Bildschirm an, bis SERVO verlassen wird,
+  und der Ausgang eines PD mini bleibt, wie der Lauf ihn hinterlässt. Ein
+  NICHT BESTANDEN schaltet beide aus, sobald das LEAVE des Programmierers
+  den Port zurückgegeben hat
+  ([Was einen Endlagenlauf beendet](#was-einen-endlagenlauf-beendet)).
+- Während des Laufs zeigt die Zeile ARM den Prüfstand, wie er ist: ARMED
+  mit dem roten Punkt, oder SAFE in Grün, solange eine Sitzung des
+  Programmierers den Prüfstand SAFE hält, wie das Band.
 
 ![Der Endlagenlauf beim Programmieren](img/de/servo-limrun.png)
 
@@ -213,9 +219,17 @@ schaltet den Prüfstand auf ARMED. Vorher wird nichts angesteuert.
   BESTANDEN, `NEUTRAL außerhalb LOWER/UPPER`.
 - PULSE LOWER bis PULSE UPPER nicht innerhalb von PULS MIN bis PULS MAX
   des Prüfstands beendet ihn als NICHT BESTANDEN, `Servopulse außerhalb
-  MIN/MAX`. Der Prüfstand bleibt SAFE, nichts wird angesteuert, und linke Karte
-  und Bericht nennen beide Bereiche, zum Beispiel `900-2100 NICHT IN
-  1000-2000us`.
+  MIN/MAX`. Der Prüfstand bleibt SAFE, nichts wird angesteuert, die
+  Versorgung geht nach dem LEAVE aus, und linke Karte und Bericht nennen
+  beide Bereiche, zum Beispiel `900-2100 NICHT IN 1000-2000us`.
+
+Den Bereich eines KST- oder Chaservo-Servos prüft der Lauf erst nach dem
+Lesen: PULSE LOWER und PULSE UPPER sind Register des Servos, und die
+Lesesitzung braucht die Versorgung eingeschaltet. Die Karte BEREIT kann
+ein solches Servo vor dem Halten nicht ablehnen, also schaltet ARM +
+START PORT-PWM, die Versorgung und ARM für einen Lauf, der beim Lesen
+endet. Der Bereich eines Hitec-Servos ist der seines Modells und wird vor
+dem Halten auf der Zeile BEREICH geprüft.
 
 Ein KST-Servo im Lieferzustand hält PULSE LOWER 900,0µs und PULSE UPPER
 2100,0µs. PULS MIN und PULS MAX des PWM-Typs STANDARD sind 1000µs und
@@ -464,6 +478,13 @@ während er auf ARMED wartet, fordert zudem SAFE an: ein ARM, das er
 anforderte und das der Prüfstand noch nicht übernommen hat, schaltet den
 Prüfstand nach dem Ende nicht auf ARMED. Ein Start des Panels löscht den
 Lauf ohne Bericht.
+
+Ein Lauf, der als NICHT BESTANDEN endet, schaltet den Prüfstand auf SAFE
+und die Versorgung des Servos aus: den Ausgang des PD mini und PROG 5V am
+Port des rbmod-Carriers. Ein NICHT BESTANDEN in einer Sitzung des
+Programmierers fordert zuerst LEAVE an, und die Versorgung geht aus,
+sobald der Port zurück ist. Ein Ende als GEFUNDEN, FREI oder BESTANDEN
+schaltet den Prüfstand auf SAFE und lässt die Versorgung an.
 
 Die zuletzt geschriebenen Werte bleiben im Servo. Ein Lauf, der schrieb und
 nicht bestand, zeigt auf der linken Karte `ZURÜCKSPIELEN IN KST`, an
@@ -1627,7 +1648,8 @@ AUSGELÖST`, `Netzteil bleibt aus: IOmcu-Failsafe ausgelöst. Halte ARM,
 dann tippe DISARM.` sofort, wenn FEHLER 10 oder ein nach dem ON der
 Versorgung gelesenes FEHLER 01 PROG 5V oder den PD mini abweist, `<Schritt> FEHLGESCHLAGEN: <Grund>` für eine Zeile, die
 unterwegs rot wird, `<Schritt> FEHLGESCHLAGEN: STOP` für ein Tippen auf das
-Halten, ein STOP oder einen Touch-Verlust. Eine rote Zeile nennt den Schritt
+Halten, ein STOP oder einen Touch-Verlust. Das Band des Fehlers geht,
+wenn der Bildschirm verlassen wird. Eine rote Zeile nennt den Schritt
 ihres Teils: eine Versorgungszeile nennt PROG 5V oder PD MINI, `PROG 5V
 FEHLGESCHLAGEN: PROGRAMMIEREN: SERVOVERSORGUNG UNTER 4.8V` für eine
 Schiene, die nach der Rückmeldung von 5V EIN niedrig bleibt; die Zeile
@@ -1726,7 +1748,10 @@ Der des Endlagenlaufs, in jeder Phase:
 
 Jedes Ende lässt das Servo los, fordert SAFE an und schaltet den Ausgang
 der Versorgung aus; ein Lesen in der ersten Sitzung, das kein Servo
-findet, fordert statt des AUS ein LEAVE an, damit der Port zurückkommt.
+findet, fordert zuerst ein LEAVE an, damit der Port zurückkommt, und
+schaltet die Versorgung aus, sobald das LEAVE vorbei ist. Während des
+Laufs zeigt die Zeile ARM ARMED, oder SAFE, solange eine Sitzung des
+Programmierers den Prüfstand SAFE hält.
 Die zuletzt geschriebenen Werte bleiben im Servo. Bei KST/Chaservo
 bietet ZURÜCKSPIELEN auf der Programmierseite die Werte vor dem Lauf an.
 Bei Hitec lädst du die Backup-Datei unter DATEIEN der

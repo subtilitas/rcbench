@@ -376,6 +376,23 @@ static void lim_poll(void)
     ++s.ctrl_rev;
 }
 
+/**
+ * @brief The programmer's run is over: its own supply values come back.  A
+ *        run that ended as FAIL switches the supplies off, after its LEAVE
+ *        gave the port back: an error leaves no output on (an ABORTED run
+ *        asked its OFF at its end; PASS and FREE keep the supply as it is).
+ */
+static void lim_seam_ended(void)
+{
+    lim_seam_end(s.lim.cfg.family);
+    if (s.lim_off_due) {
+        s.lim_off_due = false;
+        svs_supplies_off();
+        ++s.sup_rev;
+        ++s.power_rev;
+    }
+}
+
 /* A run that was running is over: the programmer's own supply values come
  * back, the left card says how it ended, and the bench goes SAFE once the
  * run's last command is taken (lim_safe_follow()). */
@@ -386,6 +403,7 @@ static void lim_ended(void)
     }
     s.lim_seen = false;
     s.lim_safe_due = true;
+    s.lim_off_due = s.lim.verdict == SERVO_LIMRUN_FAIL;
     /* A run ended with a write on its way: no answer handed the file over,
      * and the session's own backup, saved before that write, holds the
      * servo as the run found it. */
@@ -397,7 +415,7 @@ static void lim_ended(void)
     if (s.lim_leaving) {
         s.lim_end_due = true;
     } else {
-        lim_seam_end(s.lim.cfg.family);
+        lim_seam_ended();
     }
     test_tell();
     ++s.test_rev;
@@ -413,7 +431,7 @@ void lim_leave_follow(void)
     }
     if (s.lim_end_due && !s.lim_leaving) {
         s.lim_end_due = false;
-        lim_seam_end(s.lim.cfg.family);
+        lim_seam_ended();
     }
 }
 

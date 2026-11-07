@@ -23,6 +23,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -56,9 +57,10 @@ _Static_assert(3 * HUB_TW + 4 * HUB_M == W, "three tiles fill the width");
 _Static_assert(HUB_M + 3 * (HUB_TH + HUB_M) <= UI_FOOTER_Y,
                "the third row ends above the footer");
 
-/** @brief Each tile's line, LIVE first. */
+/** @brief Each tile's line, LIVE first; TEST's is its steps
+ *         (servo_hub_tile_line()). */
 static const ui_text_id_t k_line[HUB_TILES] = {
-    TX_SVH_LIVE_LINE,   TX_SVH_SWEEP_LINE,  TX_SVH_TEST_LINE,
+    TX_SVH_LIVE_LINE,   TX_SVH_SWEEP_LINE,  TX_COUNT,
     TX_SVH_LIMRUN_LINE, TX_SVH_RUDDER_LINE, TX_SVH_RAUTO_LINE,
     TX_SVH_KST_LINE,    TX_SVH_HITEC_LINE,
 };
@@ -126,6 +128,28 @@ bool servo_hub_tile_refused(int i, char *why, size_t n)
     return true;
 }
 
+const char *servo_hub_tile_line(int i, char *buf, size_t n)
+{
+    if (i < 0 || i >= HUB_TILES) {
+        return "";
+    }
+    if (i + 1 != (int)SERVO_FN_TEST) {
+        return ui_tr(k_line[i]);
+    }
+    if (buf == NULL || n == 0u) {
+        return "";
+    }
+    float v[SERVO_TEST_STEPS_MAX];
+    const uint8_t k = test_steps(v);
+    const bool bo = settings_get_bool(SET_SERVO_BROWNOUT);
+    if (k == 0u && !bo) {
+        snprintf(buf, n, "%s", ui_servo_str(SERVO_STR_START_NO_STEPS));
+    } else {
+        test_steps_text(buf, n, v, k, bo);
+    }
+    return buf;
+}
+
 /**
  * @brief Tile @p i: SETUP's look, grey with the reason as its line while
  *        its function is refused.
@@ -135,7 +159,7 @@ bool servo_hub_tile_refused(int i, char *why, size_t n)
 static void draw_tile(gfx_canvas_t *c, int i)
 {
     const gfx_rect_t r = servo_hub_tile_rect(i);
-    char why[64];
+    char why[64], line[48];
     const bool refused = servo_hub_tile_refused(i, why, sizeof(why));
     const bool down = s.fp_pressed == FP_TILE && s.fp_tile == i;
     gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, UI_R_CARD,
@@ -158,7 +182,8 @@ static void draw_tile(gfx_canvas_t *c, int i)
                         : ui_theme_color(UI_C_TEXT), 1, GFX_ALIGN_CENTER);
     gfx_text_in(c, (gfx_rect_t){ inner.x, (int16_t)(r.y + HUB_LINE_DY),
                                  inner.w, 20 },
-                refused ? why : ui_tr(k_line[i]), SV_FONT_LABEL,
+                refused ? why : servo_hub_tile_line(i, line, sizeof(line)),
+                SV_FONT_LABEL,
                 refused ? ui_theme_color(UI_C_WARN)
                         : ui_theme_color(UI_C_TEXT_DIM), 1,
                 GFX_ALIGN_CENTER);
@@ -179,6 +204,14 @@ static uint32_t hub_sig(void)
     sig = sig * 31u + (prog_reg_servo_holds() ? 1u : 0u);
     sig = sig * 31u + (s.pins_known ? 1u : 0u);
     sig = sig * 31u + foot_sig();
+    /* TEST's line: its steps, HV SERVO and BROWN-OUT. */
+    float v[SERVO_TEST_STEPS_MAX];
+    const uint8_t k = test_steps(v);
+    sig = sig * 31u + k + (s.test_hv ? 16u : 0u)
+          + (settings_get_bool(SET_SERVO_BROWNOUT) ? 32u : 0u);
+    for (uint8_t j = 0; j < k; ++j) {
+        sig = sig * 31u + (uint32_t)lroundf(v[j] * 10.0f);
+    }
     return sig;
 }
 

@@ -239,6 +239,22 @@ history is in git.
   the READY card of TEST, RUDDER AUTO and LIMIT RUN reads
   `PROG 5V OFF: START SWITCHES IT ON`. Both named the PROG 5V box, which
   only SUPPLY shows.
+- A limit run that ends as FAIL, `900-2100 NOT IN 1000-2000us` among
+  them, switches the PD mini's output and the rbmod carrier's PROG 5V off
+  once its LEAVE gave the port back, and leaves the bench SAFE. RUDDER
+  AUTO's read that finds no servo does the same. Both left the supply on.
+- LIMIT RUN's and RUDDER AUTO's ARM row reads SAFE while a session of the
+  programmer holds the bench SAFE, as the band does. It read ARMED for the
+  whole run.
+- The start steps' failure band, `PD MINI FAILED: STOP` among them, goes
+  when its SERVO screen is left. It stayed on the next screen for up to
+  30s.
+- The hub's TEST tile names the steps a run takes, `4.8-6.0V, BROWN-OUT`
+  with HV SERVO off. It read `4.8V TO 8.4V, BROWN-OUT` whatever the
+  settings.
+- On SUPPLY, OUTPUT OFF pressed by a second finger ends the first finger's
+  drag on a set point's track: its later moves and its lift change
+  nothing. The lift set the point after the output was off.
 
 ## 0.23.9 - 2026-11-06
 

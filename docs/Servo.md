@@ -110,8 +110,13 @@ screen. The screen is `shared/ui/servo_limit_panel.c`, its left card
   red under the finger drops the hold.
 - The run starts on the settings as they read when the hold fired.
 - After the run's last command the bench switches to SAFE: the footer
-  holds no DISARM. The PROG 5V stays on for the next SERVO screen until
-  SERVO is left. A PD mini's output stays as the run left it.
+  holds no DISARM. After FOUND, FREE or PASS the PROG 5V stays on for the
+  next SERVO screen until SERVO is left, and a PD mini's output stays as
+  the run left it. A FAIL switches both off once the programmer's LEAVE
+  gave the port back ([What ends a limit run](#what-ends-a-limit-run)).
+- While the run runs, the ARM row reads the bench as it is: ARMED with the
+  red dot, or SAFE in green while a session of the programmer holds the
+  bench SAFE, as the band does.
 
 ![The limit run, programming](img/servo-limrun.png)
 
@@ -194,8 +199,16 @@ switches the bench to ARMED. Nothing is driven before that.
   `NEUTRAL outside LOWER/UPPER`.
 - PULSE LOWER to PULSE UPPER not inside the bench's PULSE MIN to PULSE MAX
   ends it as FAIL, `servo pulses outside MIN/MAX`. The bench stays SAFE,
-  nothing is driven, and the left card and the report name both ranges, for
-  example `900-2100 NOT IN 1000-2000us`.
+  nothing is driven, the supply goes off after the LEAVE, and the left card
+  and the report name both ranges, for example `900-2100 NOT IN
+  1000-2000us`.
+
+The range of a KST or Chaservo servo is judged only after the read:
+PULSE LOWER and PULSE UPPER are registers of the servo, and the read
+session needs the supply on. The READY card cannot refuse such a servo
+before the hold, so ARM + START switches PORT PWM, the supply and ARM for
+a run that ends at the read. A Hitec servo's range is its model's and is
+judged before the hold, on the RANGE row.
 
 A KST servo as delivered holds PULSE LOWER 900.0µs and PULSE UPPER
 2100.0µs. The STANDARD PWM type's PULSE MIN and PULSE MAX are 1000µs and
@@ -424,6 +437,12 @@ that ends the run there asks no SAFE. A run that ends while it waits
 for ARMED also asks SAFE: an ARM
 it asked that the bench has not taken yet does not arm the bench after the
 end. A start of the panel clears the run without a report.
+
+A run that ends as FAIL switches the bench to SAFE and the supply that
+feeds the servo off: the PD mini's output, and the PROG 5V on the rbmod
+carrier's port. A FAIL in a session of the programmer asks LEAVE first,
+and the supply goes off once the port is back. An end as FOUND, FREE or
+PASS switches the bench to SAFE and leaves the supply on.
 
 The values last written stay in the servo. A run that wrote and did not
 pass says `RESTORE IN KST` on the left card, on a Hitec servo `LOAD HITEC001
@@ -1565,8 +1584,8 @@ NOT ARMED IN 500ms`, `FAILSAFE CLEAR FAILED: STILL LATCHED AFTER 500ms`,
 DISARM.` at once where FAULT 10, or a FAULT 01 read after the supply's
 ON, refuses PROG 5V or the PD mini, `<step> FAILED: <reason>` for a row that turns red on
 the way, `<step> FAILED: STOP` for a tap on the hold, a STOP or a touch
-loss. A red row names the step of its own part: a supply row names PROG
-5V or PD MINI, `PROG 5V FAILED: PROGRAMMING: SERVO RAIL BELOW 4.8V` for a
+loss. The failure's band goes when the screen is left. A red row names
+the step of its own part: a supply row names PROG 5V or PD MINI, `PROG 5V FAILED: PROGRAMMING: SERVO RAIL BELOW 4.8V` for a
 rail that stays low after the 5V reads back ON; PORT PWM's row names PORT
 PWM; ARM's names ARM. Every failure asks DISARM, PROG 5V OFF and the PD mini's OUTPUT OFF:
 the bench ends SAFE with every output off. Leaving RUDDER AUTO during the
@@ -1655,8 +1674,10 @@ The limit run's, in every phase:
 | STOP, DISARM, leaving SERVO, the meter or the supply changed | ABORTED |
 
 Every end lets the servo go, asks SAFE and switches the supply's output
-off; a read in the first session that finds no servo asks LEAVE in place
-of the OFF, so the port comes back. The last written values remain in the servo. For KST/Chaservo, RESTORE
+off; a read in the first session that finds no servo asks LEAVE first, so
+the port comes back, and switches the supply off once the LEAVE is over.
+While the run runs, the ARM row reads ARMED, or SAFE while a session of
+the programmer holds the bench SAFE. The last written values remain in the servo. For KST/Chaservo, RESTORE
 on the programming page offers the values from before the run. For Hitec,
 load the backup under FILES in the Hitec programmer and write it with
 WRITE n VALUES.

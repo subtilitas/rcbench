@@ -10,6 +10,7 @@
  * - no_step_chosen_is_said_and_warns
  * - a_step_outside_the_supply_caps_warns
  * - hv_servo_shows_its_state_and_adds_the_high_steps
+ * - the_hubs_test_tile_names_the_steps_test_takes
  * - the_stall_line_goes_with_the_edit_that_answers_it
  * - the_step_rows_lock_without_hv_servo_and_say_why
  * - the_length_rows_lock_by_the_length_mode_and_say_why
@@ -172,6 +173,38 @@ TEST_CASE(hv_servo_shows_its_state_and_adds_the_high_steps)
     CHECK_STR_EQ(line, "4.8V, 6.0V, BROWN-OUT");
 }
 
+/* The hub's TEST tile names the steps a run started now takes, as TEST's
+ * READY card does: 4.8-6.0V with HV SERVO off, up to 8.4V with it on, and
+ * NO STEP CHOSEN with none; in 31 cells in English and German. */
+TEST_CASE(the_hubs_test_tile_names_the_steps_test_takes)
+{
+    list_fresh();
+    char b[48];
+    const int tile = (int)SERVO_FN_TEST - 1;
+    CHECK_STR_EQ(servo_hub_tile_line(tile, b, sizeof(b)),
+                 "4.8-6.0V, BROWN-OUT");
+    sl_step(TL_HV, +1);
+    CHECK_STR_EQ(servo_hub_tile_line(tile, b, sizeof(b)),
+                 "4.8-8.4V, BROWN-OUT");
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        CHECK(gfx_text_cells(servo_hub_tile_line(tile, b, sizeof(b))) <= 31);
+    }
+    ui_text_set_language(UI_LANG_EN);
+    sl_step(TL_HV, -1);
+    sl_step(TL_STEP_60, -1);
+    CHECK_STR_EQ(servo_hub_tile_line(tile, b, sizeof(b)), "4.8V, BROWN-OUT");
+    sl_step(TL_STEP_48, -1);
+    sl_step(TL_BROWNOUT, -1);
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        CHECK_STR_EQ(servo_hub_tile_line(tile, b, sizeof(b)),
+                     ui_servo_str(SERVO_STR_START_NO_STEPS));
+        CHECK(gfx_text_cells(b) <= 31);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 /* STALL AT at 1.95A is under the 2.00A limit: the note and its colour go
  * and come back with the edit. */
 TEST_CASE(the_stall_line_goes_with_the_edit_that_answers_it)
@@ -276,6 +309,7 @@ int main(void)
     RUN(no_step_chosen_is_said_and_warns);
     RUN(a_step_outside_the_supply_caps_warns);
     RUN(hv_servo_shows_its_state_and_adds_the_high_steps);
+    RUN(the_hubs_test_tile_names_the_steps_test_takes);
     RUN(the_stall_line_goes_with_the_edit_that_answers_it);
     RUN(the_step_rows_lock_without_hv_servo_and_say_why);
     RUN(the_length_rows_lock_by_the_length_mode_and_say_why);

@@ -566,6 +566,13 @@ void svs_all_off(void)
         post(SERVO_CMD_DISARM, 0);
     }
     ++s.arm_rev;
+    svs_supplies_off();
+}
+
+/* The supplies the sequence may have switched on, off: the carrier's PROG
+ * 5V and the PD mini's output. */
+void svs_supplies_off(void)
+{
     if (prog5v_box_shown()
         && (prog5v_box_on() || s.rdy.need.prog_5v)) {
         prog5v_box_ask_off(PROG5V_BY_SERVO);
@@ -607,6 +614,7 @@ static void name_failure(const char *refused)
                  TR(ALERT_SUPPLY_REFUSED_FAILSAFE));
         s.rdy.fail = s.rdy.fail_buf;
         ui_router_set_alert(s.rdy.fail);
+        s.rdy.fail_alert = ui_router_alert_number();
         return;
     }
     switch (servo_seq_why(&s.rdy.seq)) {
@@ -635,6 +643,17 @@ static void name_failure(const char *refused)
              part_name(p), cause);
     s.rdy.fail = s.rdy.fail_buf;
     ui_router_set_alert(s.rdy.fail);
+    s.rdy.fail_alert = ui_router_alert_number();
+}
+
+/** @brief The failure's line and its band go: a screen left takes its
+ *         steps' failure with it, and the next screen opens clean.  A band
+ *         another alert replaced stays (ui_router_withdraw_alert()). */
+static void drop_failure(void)
+{
+    s.rdy.fail = NULL;
+    (void)ui_router_withdraw_alert(s.rdy.fail_alert);
+    s.rdy.fail_alert = 0u;
 }
 
 /**
@@ -773,7 +792,7 @@ void svs_seq_end(servo_test_abort_t why)
 {
     if (!svs_seq_busy()) {
         if (why == SERVO_TEST_AB_LEFT) {
-            s.rdy.fail = NULL;      /* a screen entered again starts clean */
+            drop_failure();         /* a screen entered again starts clean */
         }
         return;
     }
@@ -783,7 +802,7 @@ void svs_seq_end(servo_test_abort_t why)
     if (why == SERVO_TEST_AB_LEFT) {
         /* The leave switches the outputs itself: SAFE, and the ports' 5V
          * kept for another SERVO screen. */
-        s.rdy.fail = NULL;
+        drop_failure();
         ++s.arm_rev;
         return;
     }

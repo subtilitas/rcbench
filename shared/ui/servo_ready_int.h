@@ -112,6 +112,8 @@ typedef struct {
     uint32_t    drawn[2];   /**< ready_sig() as each buffer drew it      */
     const char *fail;       /**< the last failure's line, or NULL        */
     char        fail_buf[96]; /**< its text                              */
+    uint32_t    fail_alert; /**< its band's number (ui_router_alert_number()),
+                                 0 for none: a leave takes it back        */
     bool        clear_owed; /**< FAILSAFE CLEAR asked and not yet taken
                                  (servo_screen_take_clear())              */
 } svs_ready_t;
@@ -406,6 +408,10 @@ void svs_draw_tag(gfx_canvas_t *c, gfx_rect_t r);
 /** @brief Every output the bench drives off and the bench to SAFE:
  *         DISARM, the carrier's PROG 5V, the PD mini's output. */
 void svs_all_off(void);
+/** @brief svs_all_off() without the DISARM: the carrier's PROG 5V and the
+ *         PD mini's output off, for a run's failed end that leaves the
+ *         DISARM to its own step (lim_safe_follow()). */
+void svs_supplies_off(void);
 
 /* --- servo_prog_ready.c: KST's and HITEC's rows and WRITE ------------------ */
 

@@ -288,28 +288,6 @@ static const char *row_label(int i)
 }
 
 /**
- * @brief The steps, short: `4.8-6.0V, BROWN-OUT`, `4.8V`, `BROWN-OUT`.
- * @param b where it goes
- * @param n its size
- * @param v the steps' voltages
- * @param count how many
- * @param bo whether the brown-out walk follows
- */
-static void steps_text(char *b, size_t n, const float *v, uint8_t count,
-                       bool bo)
-{
-    char head[24] = "";
-    if (count == 1u) {
-        snprintf(head, sizeof(head), "%.1fV", (double)v[0]);
-    } else if (count > 1u) {
-        snprintf(head, sizeof(head), "%.1f-%.1fV", (double)v[0],
-                 (double)v[count - 1u]);
-    }
-    snprintf(b, n, "%s%s%s", head, (count > 0u && bo) ? ", " : "",
-             bo ? "BROWN-OUT" : "");
-}
-
-/**
  * @brief A met row's value: what it holds now, or as the run under way
  *        started.
  * @param i the row
@@ -352,11 +330,13 @@ static void met_value(int i, char *b, size_t n, uint8_t *st)
         break;
     case TRR_STEPS:
         if (running) {
-            steps_text(b, n, rc->steps_v, rc->step_count, rc->brownout);
+            test_steps_text(b, n, rc->steps_v, rc->step_count,
+                            rc->brownout);
         } else {
             float v[SERVO_TEST_STEPS_MAX];
             const uint8_t k = test_steps(v);
-            steps_text(b, n, v, k, settings_get_bool(SET_SERVO_BROWNOUT));
+            test_steps_text(b, n, v, k,
+                            settings_get_bool(SET_SERVO_BROWNOUT));
         }
         break;
     case TRR_RANGE: {
