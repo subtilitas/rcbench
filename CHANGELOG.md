@@ -60,6 +60,11 @@ history is in git.
 
 ### Fixed
 
+- The panel writes back and empties the L1 data cache at the app's first
+  reset-reason read, before .bss is cleared (`start_flush.c`). Without it,
+  release 0.23.9 faulted on 7 of 30 starts on the bench with a store or
+  load access fault in a fresh task stack or heap block; a faulted trial
+  start after an update rolls the update back.
 - UPDATES' release pane says `Waiting for the C6 radio update to finish.`
   while the C6 radio update runs. It said
   `Waiting for the IOmcu update to finish.` for both updates.

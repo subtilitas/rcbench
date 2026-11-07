@@ -18,7 +18,7 @@ idf_component_register(
          "panel_render.c" "panel_art.c" "panel_update.c" "selftest.c"
          "knob_task.c" "kst_files.c" "hitec_record.c" "hitec_files.c" "panel_boot.c" "panel_settings.c"
          "panel_control.c" "panel_frame.c" "panel_files.c" "panel_shot.c" "panel_trial.c"
-         "panel_imu.c" "panel_ble.c" "panel_c6.c"
+         "panel_imu.c" "panel_ble.c" "panel_c6.c" "start_flush.c"
          ${rcbench_perf_src} ${rcbench_console_src}
     REQUIRES board display gt911 storage link can can_twai bench outputs safety servo ui gfx touch artwork esc
              settings settings_nvs art_flash esp_psram files
@@ -27,6 +27,11 @@ idf_component_register(
              esp_driver_gpio esp_driver_i2c esp_driver_tsens esp_driver_uart esp_timer
     LDFRAGMENTS "psram_bss.lf"
 )
+# start_flush.c: call_start_cpu0()'s first reset-reason read flushes the L1
+# data cache before .bss is cleared (start_flush.c names the fault it meets).
+target_link_libraries(${COMPONENT_LIB} INTERFACE
+    "-Wl,--wrap=esp_rom_get_reset_reason")
+
 if(RCBENCH_PERF_LOG)
     target_compile_definitions(${COMPONENT_LIB} PRIVATE RCBENCH_PERF_LOG=1)
 else()
