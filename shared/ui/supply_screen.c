@@ -864,7 +864,7 @@ bool supply_screen_output_held(void)
 
 void supply_screen_limits_changed(void)
 {
-    sup_refresh_limits(true);
+    sup_refresh_limits(false);
 }
 
 void supply_screen_set_on_coming(bool coming)

@@ -31,6 +31,14 @@ extern "C" {
  */
 void settings_apply_ui(void);
 
+/**
+ * @brief Every screen's state that follows the settings, after a change no
+ *        single screen made (a list's DISCARD or RESET): the display
+ *        settings (settings_apply_ui()) and SUPPLY's limits, which the
+ *        control task's levels are published from.
+ */
+void settings_apply_all(void);
+
 const ui_screen_t *settings_screen(void);
 void settings_screen_invalidate(void);
 

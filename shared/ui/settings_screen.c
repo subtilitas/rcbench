@@ -36,6 +36,7 @@
 #include "sensors_pane.h"
 #include "sensors_rows.h"
 #include "settings.h"
+#include "supply_screen.h"
 #include "settings_rows_int.h"
 #include "settings_sensors.h"
 #include "tone_link.h"
@@ -77,6 +78,12 @@ void settings_apply_ui(void)
     ui_theme_set_brightness(settings_get_int(SET_BRIGHTNESS));
     ui_theme_set_contrast(settings_get_int(SET_CONTRAST));
     ui_router_invalidate();
+}
+
+void settings_apply_all(void)
+{
+    settings_apply_ui();
+    supply_screen_limits_changed();
 }
 
 void settings_screen_set_unheld(uint16_t sense_rows, uint8_t tone_rows)
@@ -404,7 +411,7 @@ static void host_reset(void)
     } else {
         settings_reset(s.cat);
     }
-    settings_apply_ui();
+    settings_apply_all();
 }
 
 /**
@@ -415,7 +422,7 @@ static void host_reset(void)
 static void host_changed(setting_id_t id)
 {
     if ((int)id == SETTING_COUNT) {
-        settings_apply_ui();
+        settings_apply_all();
         return;
     }
     const setting_def_t *d = settings_def(id);
