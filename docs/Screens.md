@@ -5340,9 +5340,11 @@ connected to the panel over Bluetooth LE through the board's ESP32-C6
 OFF, AXIS (X, Y, Z), SIGN (+, -), RATE (10, 20, 50, 100 or 200Hz, 50Hz by
 default), ALGORITHM (6-AXIS or 9-AXIS) and ANGLE SOURCE. The screen's
 controls, left, 460 x 56px at a 64px pitch from body y 16: SCAN FOR SENSORS,
-a free slot, `HOLD 2s: CALIBRATE ACCELEROMETER`, ZERO and CLEAR ZERO side
-by side, and IMU SETTINGS, which opens SENSORS on the IMU entry; its home tag
-comes back. The card on the right, x 484 to 1016, names the bound sensor and
+then ZERO and CLEAR ZERO side by side. The footer
+([The footer and the settings list](#the-footer-and-the-settings-list))
+reads `[IMU] [HOLD 2s: CALIBRATE] [SETTINGS]`; SETTINGS opens SENSORS on
+the IMU entry, and its home tag comes back. The card on the right, x 484 to
+1016, body y 16 to 436, names the bound sensor and
 its address with its type, the C6's firmware, the state, the angles X, Y and Z from the
 zero in the 16 x 28px face (the axis the runs read in the accent), the rate
 of angle frames, the age of the newest one and the sensor's battery. SCAN

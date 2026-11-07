@@ -150,7 +150,7 @@ Messwerts (°C x 100), die kein Bildschirm und keine Konsolenzeile zeigt;
 | --- | --- | --- |
 | Entsperren | `FF AA 69 88 B5` | vor jedem anderen Befehl; auf der älteren Firmware harmlos (an diesem Sensor nicht gemessen) |
 | RSW, SAVE | `FF AA 02 0C 00`, `FF AA 00 00 00` | einmal je Verbindung, wenn deren erste 8 gültige Frames andere Typen als 0x52 und 0x53 zeigen |
-| CALSW 1, 3s, CALSW 0, SAVE | `FF AA 01 01 00`, `FF AA 01 00 00`, `FF AA 00 00 00` | `2s HALTEN: BESCHLEUNIGUNG KALIBRIEREN`, verbunden |
+| CALSW 1, 3s, CALSW 0, SAVE | `FF AA 01 01 00`, `FF AA 01 00 00`, `FF AA 00 00 00` | `2s HALTEN: KALIBRIEREN`, verbunden |
 | RATE, SAVE | `FF AA 03 <code> 00`, `FF AA 00 00 00` | eine Änderung von IMU-Rate: 0x06 10Hz, 0x07 20Hz, 0x08 50Hz, 0x09 100Hz, 0x0B 200Hz |
 | AXIS6, SAVE | `FF AA 24 01 00` (6-AXIS) oder `FF AA 24 00 00` (9-AXIS), `FF AA 00 00 00` | eine Änderung von IMU-Algorithmus |
 

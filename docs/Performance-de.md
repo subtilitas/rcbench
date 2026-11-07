@@ -135,7 +135,7 @@ est. ms and est. fps: not measured
 | `wifi-keys` | WI-FI mit offener WLAN-Tastatur, in jedem Frame eine Taste getippt |
 | `wifi-idle` | WI-FI mit laufendem WLAN-Hotspot, die Leerlaufzeit in jedem Frame 1s kürzer: die Seite zeigt sie in ganzen Minuten, also wird nichts neu gezeichnet |
 | `imu` | der IMU-Bildschirm mit einem Winkelframe in jedem Frame, X 0.1° vom vorigen entfernt: die Zeile X neu gezeichnet, auf sich selbst beschnitten |
-| `imu-hold` | der IMU-Bildschirm, ein Finger auf 2s HALTEN: BESCHLEUNIGUNG KALIBRIEREN: der Knopf und das ALTER in der Zeile RATE neu gezeichnet, jedes auf sich selbst beschnitten |
+| `imu-hold` | der IMU-Bildschirm, ein Finger auf 2s HALTEN: KALIBRIEREN in der Fußleiste: der Knopf und das ALTER in der Zeile RATE neu gezeichnet, jedes auf sich selbst beschnitten |
 | `<screen>-sim` | derselbe Bildschirm mit dem SIMULATION-Watermark |
 | `<screen>-chrome` | derselbe Bildschirm, auf jedem Frame invalidiert |
 | `clear` | ein Löschen des ganzen Bildschirms |

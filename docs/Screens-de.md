@@ -5782,9 +5782,12 @@ startet Bluetooth LE. Seine Einstellungen
 stehen im IMU-Eintrag unter SENSORS: IMU EIN oder AUS, ACHSE (X, Y, Z), VORZEICHEN (+, -), RATE (10, 20,
 50, 100 oder 200Hz, ab Werk 50Hz), ALGORITHMUS (6-AXIS oder 9-AXIS) und
 WINKELQUELLE. Die Bedienelemente links, 460 x 56px im Abstand von 64px ab
-Body-y 16: SENSOREN SUCHEN, ein freier Platz, `2s HALTEN: BESCHLEUNIGUNG KALIBRIEREN`, NULLPUNKT und NULLPUNKT LÖSCHEN nebeneinander, und
-IMU-OPTIONEN, das SENSORS auf dem IMU-Eintrag öffnet; dessen Home-Feld
-führt zurück. Die Karte rechts, x 484 bis 1016, nennt den gebundenen Sensor
+Body-y 16: SENSOREN SUCHEN, dann NULLPUNKT und NULLPUNKT LÖSCHEN
+nebeneinander. Die Fußleiste
+([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste))
+lautet `[IMU] [2s HALTEN: KALIBRIEREN] [OPTIONEN]`; OPTIONEN öffnet SENSORS
+auf dem IMU-Eintrag, dessen Home-Feld führt zurück. Die Karte rechts, x 484
+bis 1016, Body-y 16 bis 436, nennt den gebundenen Sensor
 und seine Adresse mit ihrem Typ, die Firmware des C6, den Zustand, die Winkel X, Y und Z
 relativ zum Nullpunkt in der Schrift 16 x 28px (die von den Läufen
 verwendete Achse in der Akzentfarbe), die Rate der Winkel-Frames, das Alter des neuesten und den Akku

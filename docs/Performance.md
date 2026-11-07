@@ -132,7 +132,7 @@ est. ms and est. fps: not measured
 | `wifi-keys` | WI-FI with the Wi-Fi keyboard open, a key typed every frame |
 | `wifi-idle` | WI-FI with the access point up, the idle time 1s shorter in every frame: the page shows it in whole minutes, so nothing is repainted |
 | `imu` | the IMU screen with an angle frame in every frame, X 0.1° from the one before: the X line repainted, clipped to itself |
-| `imu-hold` | the IMU screen, a finger on HOLD 2s: CALIBRATE ACCELEROMETER: the button and the age on the RATE line repainted, each clipped to itself |
+| `imu-hold` | the IMU screen, a finger on HOLD 2s: CALIBRATE in the footer: the button and the age on the RATE line repainted, each clipped to itself |
 | `<screen>-sim` | the same screen with the SIMULATION watermark |
 | `<screen>-chrome` | the same screen invalidated on every frame |
 | `clear` | a full-screen clear |
