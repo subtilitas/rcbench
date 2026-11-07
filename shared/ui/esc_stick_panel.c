@@ -87,10 +87,9 @@ void esc_stick_panel_reset(void)
     s.st.hand_btn   = (gfx_rect_t){ SIDE_IN, HAND_Y,
                                     (int16_t)(SIDE_CELLS * SP_CELL),
                                     UI_TAP_MIN };
-    /* On a result, at the run card's foot, right. */
-    s.st.hand_res   = (gfx_rect_t){ (int16_t)(W - PAD - 12 - 330),
-                                    (int16_t)(RUN_Y + RUN_H - 8 - UI_TAP_MIN),
-                                    330, UI_TAP_MIN };
+    /* On a result, left of the stack light, beside the change lines. */
+    s.st.hand_res   = (gfx_rect_t){ SP_HAND_RES_X, SP_HAND_RES_Y,
+                                    SP_HAND_RES_W, UI_TAP_MIN };
     sp_set_reset();
 }
 

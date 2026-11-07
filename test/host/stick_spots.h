@@ -19,8 +19,8 @@
  *     INTERVENTION REQUIRED x 688 to 998 at y 148 to 196;
  *   - the footer y 444 to 492 (ui_footer.h): RUN / ABORT / OK x 348 to
  *     676, SETTINGS x 686 to 1014;
- *   - a result's MANUAL INTERVENTION REQUIRED x 674 to 1004 at y 332 to
- *     380, at the run card's foot;
+ *   - a result's MANUAL INTERVENTION REQUIRED x 614 to 944 at y 244 to
+ *     292, left of the stack light;
  *   - the panels' buttons y 392 to 440: HOLD TO RUN / DONE x 28 to 288,
  *     ALL STEPS x 312 to 578, CANCEL / OK / ABORT x 816 to 996.
  *
@@ -59,8 +59,11 @@
 
 #define ST_WRITE_X      512            /**< RUN, ABORT, OK          */
 #define ST_BTN_CY       468            /**< the footer's middle     */
-#define ST_HAND_RES_X   839            /**< a result's MANUAL ...   */
-#define ST_HAND_RES_CY  356            /**< its middle              */
+#define ST_HAND_RES_X   779            /**< a result's MANUAL ...   */
+#define ST_HAND_RES_CY  268            /**< its middle              */
+#define ST_HAND_RES_L   614            /**< its left edge           */
+#define ST_HAND_RES_T   244            /**< its top                 */
+#define ST_HAND_RES_W   330            /**< its width               */
 
 #define ST_HOLD_X       158            /**< HOLD TO RUN, DONE       */
 #define ST_STEPS_X      445            /**< ALL STEPS               */

@@ -107,6 +107,22 @@ _Static_assert(SP_FOOT_Y + 20 <= SP_FOOT, "the list's footer ends above "
 /** @brief What a result's lines under the stack light may take, from its
  *         seventh line on, in SP_CELL cells: 98. */
 #define SP_WIDE_CELLS  ((W - 2 * PAD - 24) / SP_CELL)
+/**
+ * @brief A result's MANUAL INTERVENTION REQUIRED: 330 x 48px left of the
+ *        stack light, from the second line under the result's head, body
+ *        x 614 to 944, y 244 to 292.  The change lines beside it end
+ *        12px left of it; the lines from the seventh on pass under it.
+ */
+#define SP_HAND_RES_W  330
+#define SP_HAND_RES_X  (SP_TOWER_X - 12 - SP_HAND_RES_W) /**< its left: 614 */
+#define SP_HAND_RES_Y  (RUN_L0 + LINE_P + 4)            /**< its top: 244  */
+/** @brief What a result's change lines may take beside that button, in
+ *         SP_CELL cells: 58. */
+#define SP_BESIDE_CELLS ((SP_HAND_RES_X - 12 - (PAD + 12)) / SP_CELL)
+_Static_assert(SP_HAND_RES_Y + UI_TAP_MIN <= RUN_L0 + 5 * LINE_P,
+               "the result's button ends above its sixth line");
+_Static_assert(SP_HAND_RES_Y >= RUN_L0 + LINE_P,
+               "the result's button starts under its head line");
 _Static_assert(SP_TOWER_Y + SP_TOWER_CAP + 2 * (SP_TOWER_LENS + SP_TOWER_RING)
                    + SP_TOWER_BASE + 4 <= RUN_L0 + 6 * LINE_P,
                "a result's lines from its seventh pass under the stack "
