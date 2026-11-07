@@ -430,7 +430,9 @@ not report the capability or another session holds the port, from one table
 port line, ARM and SETTINGS, and an output card whose PORT button names the target as
 `protocol pins` and opens the choice of OUTPUTS and the 4 programming ports, locked while ARMED or ARM
 is asked, and while the programmer holds the port (`test_servo_port_button`,
-`test_servo_workbench`).
+`test_servo_workbench`). No list, page of rows or PORT list opens while a finger holds
+another press on the screen or a session holds its port, and a page closes as the bench
+goes live (`test_servo_list_guards`, `test_servo_settings_holds`).
 
 The hub's SETTINGS list sets the type (STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI
 TAIL 760), the frame rate, the pulse widths, trim, travel and reverse for the session under
@@ -1271,7 +1273,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 493 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 495 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,

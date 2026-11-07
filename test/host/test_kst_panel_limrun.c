@@ -37,12 +37,13 @@
 #define LR_PULSE_X SV_LIST_X(1)       /* SERVO PULSES, the middle column */
 #define LR_PULSE_Y SV_LIST_ROW_Y(1)   /* right of SERVO */
 
-/* LIMIT RUN, and its card's own settings opened. */
-static void lr_run_list(void)
-{
-    go(SERVO_FN_LIMRUN);
-    screen_tap(SV_RUN_SET_X, SV_RUN_SET_Y(1));
-}
+/* Whether lr_run_list() switched the bench to SAFE for the page: the
+ * next START arms it again. */
+static bool lr_rearm;
+
+/* LIMIT RUN, and its card's own settings opened: on a SAFE bench only, so
+ * an armed one is switched to SAFE first. */
+static void lr_run_list(void);
 
 static struct {
     servo_sim_t sv;
@@ -210,6 +211,7 @@ static void lr_setup(bool reversion, bool pd)
     servo_sim_cfg_t sc;
     kst_image_t img;
 
+    lr_rearm = false;
     fresh_screen();
     memset(&lr, 0, sizeof(lr));
     img = rig_servo();
@@ -271,8 +273,25 @@ static void lr_fresh_ext(bool reversion)
 }
 
 /* LIMIT RUN, and START LIMIT RUN on its card held for 2.3s. */
+static void lr_run_list(void)
+{
+    go(SERVO_FN_LIMRUN);
+    screen_tap(SV_RUN_SET_X, SV_RUN_SET_Y(1));
+    if (servo_screen_run_settings() == 0) {
+        lr.armed = false;
+        servo_screen_set_armed(false);
+        lr_rearm = true;
+        screen_tap(SV_RUN_SET_X, SV_RUN_SET_Y(1));
+    }
+}
+
 static void lr_hold_start(void)
 {
+    if (lr_rearm) {
+        lr_rearm = false;
+        lr.armed = true;
+        servo_screen_set_armed(true);
+    }
     go(SERVO_FN_LIMRUN);
     ev(SV_START_X, SV_START_Y(1), TOUCH_EVENT_DOWN, 1);
     lr_ms(2300u);

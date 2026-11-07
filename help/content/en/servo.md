@@ -26,7 +26,7 @@ The hub holds eight tiles, each opening a screen of its own:
 
 KST and HITEC are grey while the IOmcu lacks their capability or another session holds the port; a tap names the reason. The hub's footer shows SERVO with the port line and SETTINGS, which opens the servo profile every function uses ([Servo settings](servo-settings.md)). The hub drives nothing: the bench is SAFE there.
 
-The home tag goes from a function screen to the hub, and from the hub to the menu. Leaving a function screen switches the bench to SAFE. The PROG 5V on the carrier stays on from one SERVO screen to another and goes off when SERVO is left.
+The home tag goes from a function screen to the hub, and from the hub to the menu. Leaving a function screen switches the bench to SAFE. The PROG 5V on the carrier stays on from one SERVO screen to another and goes off when SERVO is left; on the hub the footer reads `PROG 5V ON` in the warning colour while it is on.
 
 Every function screen shows the output card on the right, the same on every screen: the PORT button, the meter line and plot, the supply line, SPEED, the type, CENTRE, SWEEP and RELEASE. The footer holds the function's name with the port line, ARM, and SETTINGS for the screen's list; LIVE has no list. Every control is 48px (7.2mm) tall or taller. The rotary knob moves the horn on LIVE, SWEEP, RUDDER and RUDDER AUTO only.
 

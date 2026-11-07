@@ -304,6 +304,9 @@ static inline void hl_settings(bool hitec, bool prog)
     if (prog) {
         tap(HL_MODE_X, HL_MODE_Y);
     }
+    /* Back to the card: the page opened on a SAFE bench, and the home tag
+     * arms it again. */
+    (void)home_tag();
     scr->tick(0.02f);
 }
 

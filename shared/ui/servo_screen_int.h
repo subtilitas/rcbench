@@ -1644,8 +1644,17 @@ void svs_lists_init(void);
  *         of rows or none.  @return true when SETTINGS takes a press */
 bool svs_list_offered(void);
 /** @brief Why SETTINGS takes no press now, NULL while it takes one: a
- *         bench that is not SAFE, a run, a sweep.  @return the reason */
+ *         press held on the screen, or svs_list_bench_why().
+ *  @return the reason */
 const char *svs_list_refused(void);
+/** @brief Why no list or page of rows stays open: a session holding its
+ *         port, or on a function screen a bench that is not SAFE, a run, a
+ *         sweep.  @return the reason, NULL for none */
+const char *svs_list_bench_why(void);
+/** @brief Whether a finger holds a press anywhere on the screen: a hold,
+ *         a tap's control, a panel's press, the dial, SPEED or a
+ *         programmer's session.  @return true then */
+bool svs_press_held(void);
 /** @brief SETTINGS tapped: the function's list, or its page of rows. */
 void svs_list_open(void);
 /** @brief The list closed, nothing typed taken. */
@@ -1681,6 +1690,9 @@ uint32_t foot_sig(void);
 /** @brief The footer's name, port line and SETTINGS, and the PORT button,
  *         on a function screen. @param c the canvas */
 void draw_footer(gfx_canvas_t *c);
+/** @brief Whether the hub names PROG 5V ON in its footer's middle slot: the
+ *         ports' 5V reads ON while the hub shows.  @return true then */
+bool svs_hub_p5_on(void);
 /** @brief The PORT button: PORT and the port line. @param c the canvas */
 void draw_port(gfx_canvas_t *c);
 /** @brief The port line: what the tester drives, servo_target_line()'s

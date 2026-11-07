@@ -124,6 +124,9 @@ bool wb_rest(const touch_event_t *evt);
 void test_page_down(const touch_event_t *evt);
 /* TEST's or LIMIT RUN's page; SUPPLY's caps, read-only. */
 void draw_test_page(gfx_canvas_t *c);
+/** @brief The run card's SETTINGS, grey while svs_list_bench_why() refuses
+ *         its page. @param c the canvas */
+void draw_run_set(gfx_canvas_t *c);
 void draw_caps_button(gfx_canvas_t *c);
 /* START LIMIT RUN on its card. */
 gfx_rect_t lim_start_rect(void);

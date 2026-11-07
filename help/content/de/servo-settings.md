@@ -6,7 +6,7 @@ order: 21
 
 # Servo-Optionen
 
-OPTIONEN in der Fußleiste eines [SERVO](servo.md)-Bildschirms öffnet die Liste dieses Bildschirms. Die Liste des Hubs ist das Servoprofil aller Funktionen: AUSGANG und PRÜFLING. SWEEP, RUDER, RUDER AUTO und HITEC haben eigene Listen; TEST und ENDLAGENLAUF öffnen die Zeilen ihres Laufs, KST seine Seite EXPERT MODE; LIVE hat keine. SCHLIESSEN oben rechts in den Zeilen eines Laufs oder das Home-Feld führt zurück. Die Liste einer Funktion öffnet nur bei SAFE, die des Hubs jederzeit. Eine Änderung in einer Liste gilt bis SPEICHERN in der Leiste als nicht gespeichert. Tippe auf eine Zahl für das Tastenfeld, auf eine Auswahl für deren Liste, auf einen Schalter zum Umschalten oder auf NAME für die Tastatur.
+OPTIONEN in der Fußleiste eines [SERVO](servo.md)-Bildschirms öffnet die Liste dieses Bildschirms. Die Liste des Hubs ist das Servoprofil aller Funktionen: AUSGANG und PRÜFLING. SWEEP, RUDER, RUDER AUTO und HITEC haben eigene Listen; TEST und ENDLAGENLAUF öffnen die Zeilen ihres Laufs, KST seine Seite EXPERT MODE; LIVE hat keine. SCHLIESSEN oben rechts in den Zeilen eines Laufs oder das Home-Feld führt zurück. Die Liste einer Funktion öffnet nur bei SAFE; wird der Prüfstand scharf, schließen sie und jede Seite mit Zeilen. Die des Hubs öffnet jederzeit. Keine Liste öffnet, solange eine Sitzung ihren Port hält oder ein Finger noch auf einem anderen Bedienelement liegt. Eine Änderung in einer Liste gilt bis SPEICHERN in der Leiste als nicht gespeichert. Tippe auf eine Zahl für das Tastenfeld, auf eine Auswahl für deren Liste, auf einen Schalter zum Umschalten oder auf NAME für die Tastatur.
 
 ## AUSGANG, in der Liste des Hubs
 

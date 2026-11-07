@@ -1456,7 +1456,10 @@ stays free.
 
 The hub drives nothing. Its footer holds SERVO with the port line under
 it, an empty middle slot and SETTINGS, which opens the servo profile's
-list ([Settings](#settings)). The bench is SAFE on the hub: every leave of
+list ([Settings](#settings)). While the programming ports' 5V reads ON,
+the middle slot reads `PROG 5V ON` in the warning colour: the PROG 5V box
+is on the function screens only, and the 5V stays on from one SERVO screen
+to the next. The bench is SAFE on the hub: every leave of
 a function screen switches it to SAFE.
 
 The home tag climbs one level: from a function screen to the hub, from the
@@ -2172,8 +2175,15 @@ until SAVE.
 | LIVE | no list |
 
 A function's list opens on a SAFE bench only, with no sweep and no run;
-a bench that goes live under it closes it. The hub's list opens at any
-time: the hub drives nothing. The profile is for the session: STANDARD
+a bench that goes live under it closes it, and so does a run's or KST's
+page of rows. The run card's own SETTINGS follows the same rule and is
+grey while it refuses. The hub's list opens at any time: the hub drives
+nothing. No list opens while a programmer session holds its port
+(`LOCKED: SERVO PROGRAMMING USES THE PORT`), or while a finger is still
+on another control of the screen: a hold, a tap's button, the dial,
+SPEED or the session (`A finger is still on another control. Lift it
+first.`). The PORT list follows the second rule as well, for its open and
+for its pick. The profile is for the session: STANDARD
 PWM at 50Hz at every restart. A tap on TYPE or FRAME RATE opens the
 choice over the left part of the list; a type or a rate that can destroy
 a servo not made for it goes into force only after its warning is held

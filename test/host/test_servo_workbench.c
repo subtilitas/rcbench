@@ -472,6 +472,7 @@ TEST_CASE(the_knob_moves_the_horn_on_live_alone)
     CHECK(!knob_moves());
     key(UI_KEY_CANCEL);
     close_settings();
+    servo_screen_set_armed(true);       /* the run's page asked for SAFE */
     CHECK(knob_moves());
 
     /* The turn of the frame in which LIVE came back. */

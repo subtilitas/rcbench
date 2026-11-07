@@ -1568,7 +1568,10 @@ nichts. Der neunte Platz bleibt frei.
 
 Der Hub steuert nichts. Seine Fußleiste zeigt SERVO mit der Portzeile
 darunter, einen leeren mittleren Platz und OPTIONEN, das die Liste des
-Servoprofils öffnet. Auf dem Hub ist der Prüfstand SAFE: jedes Verlassen
+Servoprofils öffnet. Solange die 5V der Programmierports EIN lesen, steht
+im mittleren Platz `PROG 5V EIN` in der Warnfarbe: das Feld PROG 5V gibt
+es nur auf den Funktionsbildschirmen, und die 5V bleiben von einem
+SERVO-Bildschirm zum nächsten an. Auf dem Hub ist der Prüfstand SAFE: jedes Verlassen
 eines Funktionsbildschirms schaltet auf SAFE.
 
 Das Home-Feld führt eine Ebene hinauf: vom Funktionsbildschirm zum Hub,
@@ -2346,8 +2349,16 @@ Eine Änderung gilt bis SPEICHERN als nicht gespeichert.
 | LIVE | keine Liste |
 
 Die Liste einer Funktion öffnet nur bei SAFE, ohne Sweep und ohne Lauf;
-wird der Prüfstand darunter scharf, schließt sie. Die Liste des Hubs
-öffnet jederzeit: der Hub steuert nichts. Das Profil gilt für die
+wird der Prüfstand darunter scharf, schließt sie, ebenso die Zeilen eines
+Laufs oder von KST. Die eigene OPTIONEN-Taste der Laufkarte folgt
+derselben Regel und ist grau, solange sie ablehnt. Die Liste des Hubs
+öffnet jederzeit: der Hub steuert nichts. Keine Liste öffnet, solange
+eine Sitzung eines Programmers ihren Port hält
+(`GESPERRT: SERVOPROGRAMMIERUNG BELEGT DEN PORT`) oder ein Finger noch auf
+einem anderen Bedienelement des Bildschirms liegt: einem Halten, einer
+Taste, der Skala, TEMPO oder der Sitzung (`Ein Finger hält noch ein
+anderes Element. Lass es erst los.`). Die Liste von PORT folgt der
+zweiten Regel ebenso, beim Öffnen und bei der Wahl. Das Profil gilt für die
 Sitzung: bei jedem Neustart STANDARD PWM mit 50Hz. Ein Tippen auf TYP
 oder PULSRATE öffnet die Auswahl über dem linken Teil der Liste; ein Typ
 oder eine Rate, die ein nicht dafür gebautes Servo zerstören kann, gilt
