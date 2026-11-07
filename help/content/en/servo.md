@@ -190,7 +190,7 @@ The run reads only the INA3221 channel that watches the tester's target. While o
 
 | Row | Line | Condition |
 |---|---|---|
-| PROG 5V | `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` | SAFE on the rbmod carrier with PORT on a programming port and the PROG 5V box off. Amber: the hold switches it on |
+| PROG 5V | `PROG 5V OFF: START SWITCHES IT ON` | SAFE on the rbmod carrier with PORT on a programming port and PROG 5V off. Amber: the hold switches it on |
 | ARM | `ARM FIRST` | the bench is SAFE. Amber: the hold arms |
 | PORT | `NO SERVO PWM PIN`, `PINS NOT READ` | PORT is the bench's outputs, and no output is bound as SERVO PWM, or the binding is not read yet |
 | METER | `INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT` | no channel of a fitted INA3221 watches the tester's target in SETUP > SENSORS |

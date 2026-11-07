@@ -327,8 +327,8 @@ static void sync_tabs(void)
 /**
  * @brief The carrier's line under the tester's rows: who holds the port, the
  *        lock, a slice an output holds, PORT PWM ON waiting for the PROG 5V
- *        box on SERVO, the port the tester drives, or why PORT PWM is
- *        locked.
+ *        that ARM on SERVO switches on, the port the tester drives, or why
+ *        PORT PWM is locked.
  * @param buf takes the line, empty for none
  * @param cap its size
  */
@@ -344,8 +344,8 @@ static void carrier_reason(char *buf, size_t cap)
         /* The lock's line, or the output on the port's slice by name. */
     } else if (target() == port && prog_choice_needs_5v()
                && settings_get_bool(SET_SERVO_PORT_PWM)) {
-        /* The box is on SERVO and SUPPLY, not here; leaving SUPPLY
-         * switches off what it switched on, so SERVO is the one named. */
+        /* The box is on SUPPLY, not here, and leaving SUPPLY switches off
+         * what it switched on: ARM on SERVO is the switch named. */
         snprintf(buf, cap, "%s", TR(PC_PWM_WAITS_5V));
     } else if (target() > 0 && target() != port) {
         snprintf(buf, cap, TR(OUT_PORT_TESTER_ON), (unsigned)target());

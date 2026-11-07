@@ -136,7 +136,7 @@ Zeile und sperren nichts.
 
 | Zeile | Text | Bedingung |
 | --- | --- | --- |
-| PROG 5V | `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN` | SAFE auf dem rbmod-Carrier mit PORT auf einem Programmierport und dem Feld PROG 5V aus. Vor `ZUERST ARM` genannt: der Puls des Ports braucht PROG 5V und kommt nur bei SAFE ([Carrier](Carrier-de.md#der-programmierport)). Gelb: das Halten schaltet es ein |
+| PROG 5V | `PROG 5V AUS: START SCHALTET ES EIN` | SAFE auf dem rbmod-Carrier mit PORT auf einem Programmierport und PROG 5V aus. Vor `ZUERST ARM` genannt: der Puls des Ports braucht PROG 5V und kommt nur bei SAFE ([Carrier](Carrier-de.md#der-programmierport)). Gelb: das Halten schaltet es ein |
 | ARM | `ZUERST ARM` | der Prüfstand ist SAFE. Gelb: `START SCHALTET ARMED` |
 | ARM | `BERICHT WIRD NOCH GESCHRIEBEN` | ein automatischer Test oder ein Endlagenlauf läuft, oder sein Bericht geht noch auf die Karte |
 | PORT | `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | PORT auf den Ausgängen des Prüfstands, ohne einen SERVO PWM zugeordneten Ausgang oder mit noch nicht ausgelesener Zuordnung: die Worte der Taste PORT. Vor dem Messgerät genannt: auf dem rbmod-Carrier überwacht ein Kanal eine Schiene, und die Ausgänge liegen erst auf einer Schiene, wenn einer zugeordnet ist ([Carrier: Der Strommonitor](Carrier-de.md#der-strommonitor)) |
@@ -1669,8 +1669,8 @@ noch geschrieben wird, steht rot auf ARM, nicht `START SCHALTET ARMED`. Ein
 PD mini mit Sollwert unter 4.8V steht bei ausgeschaltetem Ausgang rot auf
 PD MINI.
 
-Gelb bei SAFE, vom Halten erledigt: `PROG 5V AUS: IM PROG-5V-FELD
-EINSCHALTEN` (PROG 5V), `PROGRAMMIEREN: PD-MINI-AUSGANG AUS` (PD MINI, nur
+Gelb bei SAFE, vom Halten erledigt: `PROG 5V AUS: START SCHALTET ES
+EIN` (PROG 5V), `PROGRAMMIEREN: PD-MINI-AUSGANG AUS` (PD MINI, nur
 solange der INA3221 die Schiene unter 3.0V misst: eine Schiene, die bei
 ausgeschaltetem Ausgang mehr misst, wird anderweitig versorgt, und die Zeile
 ist rot),

@@ -181,13 +181,13 @@ as the PROG PORT entries of **OUTPUTS**, and is kept over a restart.
 - While PWM04 carries a PWM output, the PROGP04 entry reads
   `PROGP04 SHARES PWM SLICE 0 WITH PWM04 (GPIO 1)` and is not taken.
 - The ports run from M7's fixed 5V on GPIO 21. The tester's pulse goes out
-  only while the PROG 5V box reads ON; a limit run and a servo test say
-  `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` while it is off. A servo
+  only while PROG 5V reads ON; a limit run and a servo test say
+  `PROG 5V OFF: START SWITCHES IT ON` while it is off. A servo
   test's voltage steps do not reach the port: a test on it says
   `PROG PORTS RUN AT 5V FIXED: NO STEPS`.
-- For the limit run the PROG 5V box stands for the PD mini: SEARCH + PROGRAM
-  and SERVO PULSES are offered with the box ON, and the session's power
-  cycles switch GPIO 21. With the box OFF, LIMIT RUN's READY card reads
+- For the limit run PROG 5V stands for the PD mini: SEARCH + PROGRAM
+  and SERVO PULSES are offered with PROG 5V ON, and the session's power
+  cycles switch GPIO 21. With PROG 5V OFF, LIMIT RUN's READY card reads
   `START SWITCHES IT ON` on its PROG 5V row while SAFE, and ARM + START
   switches it on; the PD mini's line does not show. A PD mini on the servo rails is neither asked nor
   watched: switching it on or off during the run ends nothing. A run that

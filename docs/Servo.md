@@ -123,7 +123,7 @@ the hold resolves itself read amber on their row and refuse nothing.
 
 | Row | Line | Condition |
 | --- | --- | --- |
-| PROG 5V | `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` | SAFE on the rbmod carrier with PORT on a programming port and the PROG 5V box off. Named before `ARM FIRST`: the port's pulse needs the PROG 5V and comes on only while SAFE ([Carrier](Carrier.md#the-programming-port)). Amber: the hold switches it on |
+| PROG 5V | `PROG 5V OFF: START SWITCHES IT ON` | SAFE on the rbmod carrier with PORT on a programming port and PROG 5V off. Named before `ARM FIRST`: the port's pulse needs the PROG 5V and comes on only while SAFE ([Carrier](Carrier.md#the-programming-port)). Amber: the hold switches it on |
 | ARM | `ARM FIRST` | the bench is SAFE. Amber: `START ARMS` |
 | ARM | `REPORT STILL BEING WRITTEN` | an automatic test or a limit run is under way, or its report is still going to the card |
 | PORT | `NO SERVO PWM PIN`, `PINS NOT READ` | PORT on the bench's outputs with no output bound as SERVO PWM, or the binding not read yet: the PORT button's own words. Named before the meter: on the rbmod carrier a channel watches a rail, and the outputs are on a rail only once one is bound ([Carrier: The current monitor](Carrier.md#the-current-monitor)) |
@@ -1603,8 +1603,8 @@ is one the hold does: a report still being written shows on ARM in red,
 not `START ARMS`. A PD mini set under 4.8V shows red on PD MINI with its
 output off.
 
-Amber on a SAFE bench, done by the hold: `PROG 5V OFF: SWITCH IT ON IN THE
-PROG 5V BOX` (PROG 5V), `PROGRAMMING: PD MINI OUTPUT OFF` (PD MINI, only
+Amber on a SAFE bench, done by the hold: `PROG 5V OFF: START SWITCHES IT
+ON` (PROG 5V), `PROGRAMMING: PD MINI OUTPUT OFF` (PD MINI, only
 while the INA3221 reads the rail under 3.0V: a rail that reads more with
 the output off is fed from elsewhere, and the row is red),
 `PORT PWM OFF: SWITCH IT ON IN OUTPUTS` and `PORT PWM ON, WAITING FOR

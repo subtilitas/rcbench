@@ -84,7 +84,7 @@ outputs. Choose the port in either of these places:
 | FUNC at an IOmcu start | NONE on every port; the panel asks for SERVO PWM again |
 | Locked | ARMED or asked to arm, a test, a sweep or a limit run, a programmer holding a port |
 | PROGP04 | not offered while PWM04 carries a PWM output: `PROGP04 SHARES PWM SLICE 0 WITH PWM04 (GPIO 1)` |
-| Pulse | only while the PROG 5V box reads ON. PORT PWM ON is taken with the box off, and the line reads `PORT PWM ON: PULSES START WITH PROG 5V ON SERVO`; a servo test and a limit run are refused with `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` |
+| Pulse | only while PROG 5V reads ON. PORT PWM ON is taken with PROG 5V off, and OUTPUTS reads `PORT PWM ON: ARM ON SERVO SWITCHES PROG 5V AND PULSES ON`; OUTPUT in SERVO's settings reads `PROG 5V OFF: ARM SWITCHES IT ON`, and the READY card of a servo test, RUDDER AUTO and a limit run reads `PROG 5V OFF: START SWITCHES IT ON` |
 | Supply | M7's fixed 5V on GPIO 21; a servo test's voltage steps reach the servo rails, not the port, so a test there is refused with `PROG PORTS RUN AT 5V FIXED: NO STEPS` |
 | Current | INA3221 0x40 CH3 reads all four ports together |
 

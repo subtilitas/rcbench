@@ -2497,7 +2497,7 @@ OUTPUT reports the result:
 
 | Note | Meaning |
 | --- | --- |
-| In force | the rate runs on the target the IOmcu holds, named from its PROG page: `Active: OUTPUTS run at 330Hz.` or `Active: PROG PORT 1 GPIO 13 runs at 330Hz.`, the port numbered as TARGET names it: PORT 1, PORT 2, PORT 3 or PORT 4. The note is in the warning colour while that target differs from the TARGET chosen (second line `The PORT chosen is not active.`; PROG PORT with no pin bound to the port leaves OUTPUTS the target), while the port target has no pin, while PORT PWM is OFF (`PORT PWM is OFF. The port sends no pulses.`) and while the target is not known. Against an IOmcu before protocol 4.19 the note reads "every PWM surface runs at": such an IOmcu runs every PWM surface at the rate, whatever the TARGET. With no link both read `No link. The active frame rate is unknown.` in the warning colour: an IOmcu restarted while the link is down runs every pin at its own rate again |
+| In force | the rate runs on the target the IOmcu holds, named from its PROG page: `Active: OUTPUTS run at 330Hz.` or `Active: PROG PORT 1 GPIO 13 runs at 330Hz.`, the port numbered as TARGET names it: PORT 1, PORT 2, PORT 3 or PORT 4. The note is in the warning colour while that target differs from the TARGET chosen (second line `The PORT chosen is not active.`; PROG PORT with no pin bound to the port leaves OUTPUTS the target), while the port target has no pin, while PORT PWM is OFF (`PORT PWM is OFF. The port sends no pulses.`; on the rbmod carrier with PORT PWM ON and PROG 5V off `PROG 5V OFF: ARM SWITCHES IT ON`, as OUTPUT's heading) and while the target is not known. Against an IOmcu before protocol 4.19 the note reads "every PWM surface runs at": such an IOmcu runs every PWM surface at the rate, whatever the TARGET. With no link both read `No link. The active frame rate is unknown.` in the warning colour: an IOmcu restarted while the link is down runs every pin at its own rate again |
 | The rate goes with the next position | not written yet |
 | REFUSED | a pulse of the target (a surface, or the programming port while its pulse is on) is longer than the frame at that rate, or a target pin shares a PWM slice with an output at another rate; the pins keep the rate they had |
 | This IOmcu takes no frame rate | protocol 4.0: every PWM output runs at its binding's 50Hz |
@@ -6590,7 +6590,7 @@ on the IOmcu's link (board 2).
   PROG 5V off. The PROG 5V box is on SUPPLY, not here. On SERVO, ARM and
   ARM + START switch the 5V on, and leaving SERVO switches off a PROG 5V
   SERVO switched on. The line then reads
-  `PORT PWM ON: PULSES START WITH PROG 5V ON SERVO`, and no pulse goes
+  `PORT PWM ON: ARM ON SERVO SWITCHES PROG 5V AND PULSES ON`, and no pulse goes
   out until PROG 5V is on. The pulse stops when PROG 5V goes off.
 - With an IOmcu older than 4.36, SERVO TESTER and PORT PWM are not drawn,
   and the line reads `PIN FIXED. THE TESTER NEEDS IOMCU PROTOCOL 4.36`.

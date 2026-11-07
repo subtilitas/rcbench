@@ -479,7 +479,8 @@ TEST_CASE(no_pulse_without_the_prog_5v)
         CHECK_STR_EQ(reason(), TR(PC_PWM_WAITS_5V));
     }
     ui_text_set_language(UI_LANG_EN);
-    CHECK_STR_EQ(reason(), "PORT PWM ON: PULSES START WITH PROG 5V ON SERVO");
+    CHECK_STR_EQ(reason(),
+                 "PORT PWM ON: ARM ON SERVO SWITCHES PROG 5V AND PULSES ON");
     CHECK(!prog_choice_want_pwm());
     /* The FUNC stays SERVO PWM: nothing is asked of the port. */
     const int asks = g_asks;
