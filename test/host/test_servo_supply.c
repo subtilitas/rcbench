@@ -16,6 +16,9 @@
  * SPDX-License-Identifier: MIT
  */
 
+/* TEST's screen: its output card keeps the SET row and OUTPUT ON, which
+ * LIVE, SWEEP and RUDDER show as their READY rows' SUPPLY. */
+#define SERVO_RIG_FN SERVO_FN_TEST
 #include "servo_screen_rig.h"
 #include "supply_spots.h"
 
@@ -387,7 +390,6 @@ TEST_CASE(a_hold_on_supplys_output_on_holds_the_restore_back)
 TEST_CASE(settings_opens_nothing_under_output_ons_hold)
 {
     fresh();
-    go(SERVO_FN_SWEEP);
     supply_screen_put(5.0f, 1.0f);
     scr->tick(0.025f);
     supply_cmd_t c;
@@ -399,6 +401,7 @@ TEST_CASE(settings_opens_nothing_under_output_ons_hold)
     ev(SV_FOOT_SET_X, SV_FOOT_Y, TOUCH_EVENT_DOWN, 2);
     ev(SV_FOOT_SET_X, SV_FOOT_Y, TOUCH_EVENT_UP, 2);
     CHECK(!servo_screen_list()->open);
+    CHECK_EQ(servo_screen_run_settings(), 0);
     ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
     for (int i = 0; i < 100; ++i) {
         scr->tick(0.025f);                      /* 2.5s more */

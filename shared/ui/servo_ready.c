@@ -62,11 +62,17 @@ bool ready_shown(void)
 
 int ready_count(void)
 {
+    if (drive_shown()) {
+        return drive_ready_count();
+    }
     return ready_shown() ? (int)RAR_COUNT : 0;
 }
 
 bool ready_row(int i, rdy_row_t *r)
 {
+    if (drive_shown()) {
+        return drive_ready_row(i, r);
+    }
     if (!ready_shown()) {
         return false;
     }
@@ -75,7 +81,20 @@ bool ready_row(int i, rdy_row_t *r)
 
 const char *ready_refusal(char *buf, size_t n)
 {
-    if (buf == NULL || n == 0u || !ready_shown()) {
+    if (buf == NULL || n == 0u) {
+        return NULL;
+    }
+    if (drive_shown()) {
+        int i = 0;
+        const char *why = drive_hold_blocked(&i);
+        rdy_row_t r;
+        if (why == NULL || !drive_ready_row(i, &r)) {
+            return NULL;
+        }
+        snprintf(buf, n, TR(RDY_BAND), r.label, why);
+        return buf;
+    }
+    if (!ready_shown()) {
         return NULL;
     }
     rauto_row_t row = RAR_COUNT;
@@ -91,6 +110,13 @@ const char *ready_refusal(char *buf, size_t n)
 
 gfx_rect_t ready_card_rect(void)
 {
+    /* LIVE, SWEEP and RUDDER: the title and the rows; their controls are
+     * under them. */
+    if (drive_shown()) {
+        return (gfx_rect_t){ RCARD_X, RCARD_Y, RCARD_W,
+                             (int16_t)(READY_ROW_Y + ready_count()
+                                       * READY_ROW_H + 4 - RCARD_Y) };
+    }
     return (gfx_rect_t){ RCARD_X, RCARD_Y, RCARD_W, RCARD_H };
 }
 
@@ -120,7 +146,8 @@ static gfx_color_t dot_color(uint8_t st)
     case RDY_OK:   return ui_theme_color(UI_C_OK);
     case RDY_LIVE:
     case RDY_BAD:  return ui_theme_color(UI_C_DANGER);
-    case RDY_SEQ:  return ui_theme_color(UI_C_WARN);
+    case RDY_SEQ:
+    case RDY_WARN: return ui_theme_color(UI_C_WARN);
     default:       return ui_theme_color(UI_C_TEXT_FAINT);
     }
 }
@@ -133,7 +160,8 @@ static gfx_color_t dot_color(uint8_t st)
 static gfx_color_t value_color(uint8_t st)
 {
     switch ((rdy_state_t)st) {
-    case RDY_SEQ:  return ui_theme_color(UI_C_WARN);
+    case RDY_SEQ:
+    case RDY_WARN: return ui_theme_color(UI_C_WARN);
     case RDY_BAD:  return ui_theme_color(UI_C_DANGER);
     case RDY_IDLE: return ui_theme_color(UI_C_TEXT_FAINT);
     default:       return ui_theme_color(UI_C_TEXT);
@@ -197,10 +225,16 @@ void ready_render_rail(gfx_canvas_t *c)
     } else {
         snprintf(i, sizeof(i), "--A");
     }
-    snprintf(line, sizeof(line), "%s", (s.source == SERVO_SOURCE_INA3221)
-                                           ? name : "PD MINI");
+    const bool ina = (s.source == SERVO_SOURCE_INA3221);
+    snprintf(line, sizeof(line), "%s", ina ? name : "PD MINI");
     gfx_text(c, RDY_X, READY_RAIL_Y, line, SV_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
+    /* The panel's model is no measurement: its word after the name. */
+    if (!ina && supply_screen_model()) {
+        gfx_text(c, RDY_X + gfx_text_width(SV_FONT_LABEL, line, 1) + SV_CELL,
+                 READY_RAIL_Y, TR(SV_MODELLED), SV_FONT_LABEL,
+                 ui_theme_color(UI_C_WARN), 1);
+    }
     snprintf(line, sizeof(line), "%s  %s", v, i);
     gfx_text_in(c, (gfx_rect_t){ RDY_X, READY_RAIL_Y, RDY_W, 20 }, line,
                 SV_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1,
@@ -217,7 +251,11 @@ void ready_render(gfx_canvas_t *c)
     for (int i = 0; i < ready_count(); ++i) {
         draw_row(c, i);
     }
-    ready_render_rail(c);
+    /* On LIVE, SWEEP and RUDDER the card's controls are under the rows
+     * and the rail line is drawn with them. */
+    if (!drive_shown()) {
+        ready_render_rail(c);
+    }
 }
 
 uint32_t ready_sig(void)
@@ -242,14 +280,14 @@ uint32_t ready_sig(void)
 
 bool ready_down(const touch_event_t *evt)
 {
-    if (evt == NULL || !ready_shown()
+    if (evt == NULL || !(ready_shown() || drive_shown())
         || !gfx_rect_contains(ready_card_rect(), evt->point.x,
                               evt->point.y)) {
         return false;
     }
-    /* A row's fix opens a list or leaves the screen: none under a hold's
-     * finger, whose release it would take. */
-    if (s.rdy.pressed >= 0 || svs_hold_down()) {
+    /* A row's fix opens a list, a warning or another screen: none under
+     * a press held anywhere, whose release it would take. */
+    if (s.rdy.pressed >= 0 || svs_press_held()) {
         return true;
     }
     for (int i = 0; i < ready_count(); ++i) {
@@ -276,9 +314,18 @@ bool ready_rest(const touch_event_t *evt)
     const int i = s.rdy.pressed;
     s.rdy.pressed = -1;
     ++s.ctrl_rev;
-    if (touch_event_is_tap_up(evt) && ready_shown()
-        && gfx_rect_contains(ready_row_rect(i), evt->point.x,
-                             evt->point.y)) {
+    if (!touch_event_is_tap_up(evt)
+        || !gfx_rect_contains(ready_row_rect(i), evt->point.x,
+                              evt->point.y)) {
+        return true;
+    }
+    /* A press that came down elsewhere while the finger was on the row
+     * keeps its release: the fix opens nothing over it. */
+    if (svs_press_held()) {
+        ui_action_refused(TR(FOOT_PRESS_HELD));
+    } else if (drive_shown()) {
+        drive_ready_tap(i);
+    } else if (ready_shown()) {
         rauto_ready_tap(i);
     }
     return true;
@@ -317,6 +364,9 @@ servo_seq_need_t svs_seq_need(void)
  */
 static servo_seq_part_t part_of(const char *why)
 {
+    if (why != NULL && drive_shown()) {
+        return drive_part_of(why);
+    }
     if (why == NULL || s.fn != SERVO_FN_RAUTO) {
         return SERVO_SEQ_PART_NONE;
     }
@@ -340,11 +390,9 @@ static uint32_t seq_now(void)
     return s.now_ms;
 }
 
-/**
- * @brief Every output the sequence may have switched, off; the bench to
- *        SAFE.  The run's own end does the same (ra_apply()).
- */
-static void all_off(void)
+/* Every output the sequence may have switched, off; the bench to SAFE.
+ * The run's own end does the same (ra_apply()). */
+void svs_all_off(void)
 {
     if (s.gate.armed || s.gate.arm_asked || s.pending.kind == SERVO_CMD_ARM) {
         svs_ask_disarm();
@@ -432,7 +480,7 @@ static void apply(const servo_seq_do_t *d, const char *refused)
         ++s.arm_rev;
     }
     if (d->all_off) {
-        all_off();
+        svs_all_off();
         name_failure(refused);
     }
     ++s.ctrl_rev;
@@ -443,7 +491,7 @@ bool svs_seq_begin(void)
     if (svs_seq_busy()) {
         return false;
     }
-    s.rdy.need = svs_seq_need();
+    s.rdy.need = drive_shown() ? drive_seq_need() : svs_seq_need();
     s.rdy.fail = NULL;
     if (!servo_seq_begin(&s.rdy.seq, &s.rdy.need, seq_now())) {
         return false;

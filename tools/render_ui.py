@@ -900,11 +900,13 @@ FIT_ONLY = {
     "help-logs-plot": (None, "logs", "dark"),
     "help-files-2": (None, "files", "dark"),
     "help-files-3": (None, "files", "dark"),
-    # SERVO's guide: the output card's two pages, each task's own pages,
-    # RUDDER's with AUTO's box too.
+    # SERVO's guide: LIVE's READY and controls pages, TEST's output card
+    # pages, each task's own pages, RUDDER's with AUTO's box too.
     "help-servo-2":            (None, "servo", "dark"),
     "help-servo-3":            (None, "servo", "dark"),
     "help-servo-test":         (None, "servo", "dark"),
+    "help-servo-test-2":       (None, "servo", "dark"),
+    "help-servo-test-3":       (None, "servo", "dark"),
     "help-servo-hub":          (None, "servo", "dark"),
     # SWEEP's and LIMIT RUN's screens SAFE, and the guide over each.
     "servo-sweep-safe":        (None, "servo", "dark"),

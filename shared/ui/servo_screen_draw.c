@@ -418,6 +418,10 @@ void draw_arm(gfx_canvas_t *c)
         rauto_draw_hold(c);         /* RUDDER AUTO's ARM + START */
         return;
     }
+    if (drive_shown()) {
+        drive_draw_arm(c);          /* ARM that switches the supply */
+        return;
+    }
     ui_hold_button(c, s.arm_btn, s.gate.armed ? "DISARM" : "ARM",
                    ui_action_fill(s.gate.armed ? UI_ACTION_ACTIVE
                                                : UI_ACTION_AVAILABLE),
@@ -689,18 +693,10 @@ static gfx_rect_t tag_rect(void)
     return (gfx_rect_t){ RC_X, TAG_Y, RC_W, TAG_H };
 }
 
-/**
- * @brief The profile in force, its frame rate and its pulse range in
- *        microseconds, in the danger colour when it is one that can
- *        destroy a servo not made for it.
- *
- * The longest, a 13-character type, 560Hz and two 4-digit ends, is 32
- * of the pill's 35 cells.
- * @param c the canvas
- */
-static void draw_tag(gfx_canvas_t *c)
+/* The longest pill, a 13-character type, 560Hz and two 4-digit ends, is
+ * 32 of its 35 cells. */
+void svs_draw_tag(gfx_canvas_t *c, gfx_rect_t r)
 {
-    const gfx_rect_t r = tag_rect();
     const bool danger = in_force_dangerous();
     const gfx_color_t fill = danger ? ui_theme_color(UI_C_DANGER)
                                     : ui_theme_color(UI_C_PANEL_SUNK);
@@ -739,7 +735,7 @@ static void draw_right(gfx_canvas_t *c, bool power)
                       pr.h, ui_theme_color(UI_C_PANEL));
     }
 
-    draw_tag(c);
+    svs_draw_tag(c, tag_rect());
     if (power) {
         draw_power(c);
     }
@@ -989,6 +985,10 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
             /* RUDDER AUTO: the READY card in the output card's place. */
             ready_render(c);
             s.rdy.drawn[buf] = ready_sig();
+        } else if (drive_shown()) {
+            /* LIVE, SWEEP and RUDDER: the READY rows over their controls. */
+            drive_render_card(c);
+            s.rdy.drawn[buf] = ready_sig();
         } else {
             draw_right(c, power);
         }
@@ -1014,18 +1014,20 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
         s.drawn_arm[buf] = s.arm_rev;
         clipped(c, s.arm_btn, draw_arm);
     }
-    if (ready_shown()) {
+    if (ready_shown() || drive_shown()) {
         /* The READY card's rows when one changed, its rail line as the
-         * meter's readings move. */
+         * meter's readings move: on RUDDER AUTO the card draws the line
+         * with its rows, on LIVE, SWEEP and RUDDER it does not. */
         const uint32_t rsig = ready_sig();
-        if (s.rdy.drawn[buf] != rsig) {
+        const bool rows = s.rdy.drawn[buf] != rsig;
+        if (rows) {
             s.rdy.drawn[buf] = rsig;
-            s.drawn_power[buf] = s.power_rev;
             clipped(c, ready_card_rect(), ready_render);
-        } else if (s.drawn_power[buf] != s.power_rev) {
-            s.drawn_power[buf] = s.power_rev;
+        }
+        if (s.drawn_power[buf] != s.power_rev && (!rows || drive_shown())) {
             clipped(c, ready_rail_rect(), ready_render_rail);
         }
+        s.drawn_power[buf] = s.power_rev;
         s.drawn_sup[buf] = s.sup_rev;
     }
     if (s.drawn_power[buf] != s.power_rev) {

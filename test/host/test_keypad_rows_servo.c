@@ -133,7 +133,7 @@ static void open_row(int row)
         go(SERVO_FN_RAUTO);
         break;
     case AT_SET:
-        close_settings();
+        go(SERVO_FN_TEST);              /* the SET row is TEST's */
         break;
     }
     tap(w->x, w->y);

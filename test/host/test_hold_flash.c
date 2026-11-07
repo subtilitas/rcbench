@@ -111,10 +111,26 @@ TEST_CASE(servo_arm_flashes_as_it_fires)
     CHECK(servo_walk(SV_ARM_X, SV_ARM_Y + 16, r, "ARM"));
 }
 
-/* OUTPUT ON in the supply box: the bench switches the output on. */
+/* ARM on LIVE with the PD mini's output off: the hold fires the steps
+ * that switch the supply on first, and flashes as it fires. */
+TEST_CASE(servo_arm_that_switches_the_supply_flashes_as_it_fires)
+{
+    bench_fresh();
+    bench.out = false;
+    bench_frames(200u);
+    servo_screen_set_armed(false);
+    CHECK(servo_screen_arm_switches());
+    const gfx_rect_t r = { (int16_t)(SV_ARM_L + 12), (int16_t)(SV_ARM_Y + 4),
+                           (int16_t)(SV_ARM_W - 24), 8 };
+    CHECK(servo_walk(SV_ARM_X, SV_ARM_Y + 16, r, "ARM"));
+}
+
+/* OUTPUT ON in the supply box on TEST's output card: the bench switches
+ * the output on. */
 TEST_CASE(servo_output_on_flashes_as_it_fires)
 {
     bench_fresh();
+    go(SERVO_FN_TEST);
     bench.out = false;
     bench_frames(200u);
     const gfx_rect_t r = { (int16_t)(SV_RC_X + 244), (int16_t)(SV_SUP_Y - 20),
@@ -319,6 +335,7 @@ TEST_CASE(supply_output_on_flashes_as_it_fires)
 int main(void)
 {
     RUN(servo_arm_flashes_as_it_fires);
+    RUN(servo_arm_that_switches_the_supply_flashes_as_it_fires);
     RUN(servo_output_on_flashes_as_it_fires);
     RUN(start_test_flashes_as_it_fires);
     RUN(start_limit_run_flashes_as_it_fires);

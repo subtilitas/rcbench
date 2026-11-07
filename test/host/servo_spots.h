@@ -20,9 +20,11 @@
  *     its 48px value, 70px apart from y 64; its CLOSE x 478 to 618, y 12
  *     to 60;
  *   - the output card from SV_RCARD_X, y 62 to 436, its inner column SV_RC_X
- *     and SV_RC_W; the SET row's values and OUTPUT ON at y 174 to 222;
- *     SPEED; the type pill at y 310 to 354; CENTRE, SWEEP and RELEASE a
- *     third of it each, y 366 to 414.
+ *     and SV_RC_W.  On LIVE, SWEEP and RUDDER: the READY rows, 30px from
+ *     y 96; on LIVE and SWEEP SPEED's track at y 220 to 260; the type pill
+ *     at y 274 to 318; CENTRE (LIVE) or SWEEP (SWEEP) and RELEASE, half of
+ *     it each, y 330 to 378; the rail line at y 404.  On TEST, LIMIT RUN,
+ *     KST and HITEC the SET row's values and OUTPUT ON at y 174 to 222.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -110,12 +112,13 @@
 /** @brief A run's settings' row @p r, the middle of its value. */
 #define SV_LIST_ROW_Y(r)   (109 + 70 * (r))
 
-/** @brief SPEED's label row over its track: y 232 to 252. */
-#define SV_SPEED_ROW_Y     232
-/** @brief SPEED's track, its middle row: y 256 to 296. */
-#define SV_SPEED_Y         276
-/** @brief The type pill, y 310 to 354, in the TARGET row's old place. */
-#define SV_TAG_Y           310
+/** @brief SPEED's label row over its track on LIVE and SWEEP: y 196 to
+ *         216. */
+#define SV_SPEED_ROW_Y     196
+/** @brief SPEED's track, its middle row: y 220 to 260. */
+#define SV_SPEED_Y         240
+/** @brief The type pill under the READY rows, y 274 to 318. */
+#define SV_TAG_Y           274
 
 /** @brief The left column the keypad, the keyboard and the programmer
  *         cover: OV_X, OV_Y, OV_W and OV_H of servo_screen_int.h, down to
@@ -128,13 +131,17 @@
 #define SV_RCARD_W         (UI_PANEL_W - SV_RCARD_X - UI_MARGIN) /**< 380. */
 #define SV_RC_X            (SV_RCARD_X + 12)  /**< The inner column. */
 #define SV_RC_W            (SV_RCARD_W - 24)  /**< Its width: 356. */
-/** @brief CENTRE, SWEEP and RELEASE (servo_screen.c), 113px each, 8px
- *         apart: their row and the middle of each.  CENTRE on every
- *         function screen but SWEEP's, SWEEP on SWEEP's alone. */
-#define SV_BTN_Y           (366 + 24)
-#define SV_CENTRE_X        (SV_RC_X + 56)            /**< CENTRE. */
-#define SV_SWEEP_X         (SV_RC_X + 121 + 56)      /**< SWEEP. */
-#define SV_RELEASE_X       (SV_RC_X + 242 + 57)      /**< RELEASE. */
+/** @brief CENTRE on LIVE, SWEEP on SWEEP, and RELEASE on both
+ *         (servo_drive_ready.c), 174px each, 8px apart: their row and the
+ *         middle of each. */
+#define SV_BTN_Y           (330 + 24)
+#define SV_CENTRE_X        (SV_RC_X + 87)            /**< CENTRE, LIVE. */
+#define SV_SWEEP_X         (SV_RC_X + 87)            /**< SWEEP, SWEEP. */
+#define SV_RELEASE_X       (SV_RC_X + 182 + 87)      /**< RELEASE. */
+/** @brief The READY rows on LIVE, SWEEP and RUDDER: card row @p i, 30px
+ *         from y 96, its middle.  LIVE and SWEEP: PORT 0, SUPPLY 1, ARM 2;
+ *         RUDDER: PORT 0, ANGLE 1, ZERO 2, SUPPLY 3, ARM 4. */
+#define SV_DRV_ROW_Y(i)    (96 + 30 * (i) + 15)
 /** @brief ARM FIRST on LIVE's card, under the horn's angle: its line. */
 #define SV_HINT_X          24
 #define SV_HINT_Y          66                 /**< Its top. */

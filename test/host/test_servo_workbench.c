@@ -164,6 +164,7 @@ TEST_CASE(the_home_tag_closes_a_panel_climbs_from_a_runs_settings_and_leaves)
     /* A set point's keypad on an armed bench: closed, the bench stays
      * ARMED; the tag after it leaves, and leaving switches to SAFE. */
     fresh_armed();
+    go(SERVO_FN_TEST);                         /* its SET row */
     scr->enter();
     tap(SUP_V_X, SUP_ROW_Y);
     CHECK(home_tag());

@@ -575,11 +575,14 @@ static bool s_arm(void)
     return true;
 }
 
+/* The SERVO screen s_enter() opens: LIVE, or SWEEP for its button. */
+static ui_screen_id_t s_screen = SCREEN_SERVO_LIVE;
+
 /* SERVO in state @p st.  Past OFF and ARMING the servo has been driven to
  * 40 degrees and the position taken. */
 static bool s_enter(int st)
 {
-    router_up(SCREEN_SERVO_LIVE);
+    router_up(s_screen);
     servo_screen_feedback(0u, 0.0f, false);
     servo_screen_set_sweep(true);
     servo_screen_set_armed(false);
@@ -640,11 +643,14 @@ static void s_input(int control)
 }
 
 /* The dimming as drawn: CENTRE in the accent and no ARM FIRST on the left
- * card, or CENTRE dimmed with the line. */
+ * card, or CENTRE dimmed with the line.  SWEEP's screen has SWEEP in
+ * CENTRE's place, red as PAUSE once it sweeps: its horn says it. */
 static bool s_drawn_live(void)
 {
     picture(fb);
-    return px(CENTRE_X - 36, BTN_Y - 10) == ui_theme_color(UI_C_OK)
+    return (s_screen == SCREEN_SERVO_SWEEP
+                ? px(SHAFT_X + 22, SHAFT_Y) == ui_theme_color(UI_C_ACCENT)
+                : px(CENTRE_X - 36, BTN_Y - 10) == ui_theme_color(UI_C_OK))
            && count_px(52, 200, S_HINT_Y, ui_theme_color(UI_C_WARN)) == 0;
 }
 
@@ -671,6 +677,8 @@ TEST_CASE(servo_an_input_is_taken_only_in_live)
     };
     for (int st = 0; st < ST_COUNT; ++st) {
         for (int control = 0; control < SC_COUNT; ++control) {
+            s_screen = (control == SC_SWEEP) ? SCREEN_SERVO_SWEEP
+                                             : SCREEN_SERVO_LIVE;
             CHECK(s_enter(st));
             settle();
             const uint16_t before = servo_screen_commanded();
@@ -790,6 +798,8 @@ TEST_CASE(servo_the_edge_out_of_live_ends_every_owner)
 {
     for (int edge = 0; edge < EDGE_COUNT; ++edge) {
         for (int owner = 0; owner < OWN_COUNT; ++owner) {
+            s_screen = (owner >= OWN_SWEEP_ASKED && owner <= OWN_PAUSE)
+                           ? SCREEN_SERVO_SWEEP : SCREEN_SERVO_LIVE;
             CHECK(s_enter(ST_LIVE));
             uint16_t pause_seq = 0u;
             const uint16_t left = s_activate(owner, &pause_seq);
@@ -920,6 +930,7 @@ TEST_CASE(servo_a_late_callback_changes_no_value_outside_live)
     }
 
     /* LIVE, paused, and the panel lets that pause go: the rest. */
+    s_screen = SCREEN_SERVO_SWEEP;
     CHECK(s_enter(ST_LIVE));
     uint16_t pause_seq = 0u;
     (void)s_activate(OWN_PAUSE, &pause_seq);
@@ -940,12 +951,13 @@ TEST_CASE(servo_a_late_callback_changes_no_value_outside_live)
         case EDGE_REPORT_OFF: servo_screen_set_armed(false); break;
         default:
             ui_router_goto(SCREEN_OVERVIEW);
-            ui_router_goto(SCREEN_SERVO_LIVE);
+            ui_router_goto(SCREEN_SERVO_SWEEP);
             break;
         }
         servo_screen_released(pause_seq);
         CHECK_EQ(servo_screen_commanded(), left);
     }
+    s_screen = SCREEN_SERVO_LIVE;
 }
 
 int main(void)

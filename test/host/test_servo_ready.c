@@ -333,8 +333,9 @@ TEST_CASE(every_label_and_state_fits_its_column)
     CHECK(rl.y + rl.h <= c.y + c.h);
 }
 
-/* RUDDER AUTO shows the card and its count of rows; RUDDER and LIVE have
- * none and keep the output card. */
+/* RUDDER AUTO shows the card in the whole output card's place and its
+ * count of rows; RUDDER and LIVE show their rows over the output card's
+ * controls (servo_drive_ready.c); TEST has none. */
 TEST_CASE(the_card_takes_the_output_cards_place_on_rudder_auto_only)
 {
     to_auto(false);
@@ -344,12 +345,18 @@ TEST_CASE(the_card_takes_the_output_cards_place_on_rudder_auto_only)
     CHECK(ready_row(0, &r));
     go(SERVO_FN_RUDDER);
     CHECK(!ready_shown());
+    CHECK(drive_shown());
+    CHECK_EQ(ready_count(), 5);
+    CHECK(ready_card_rect().h < 436 - 62);
+    go(SERVO_FN_LIVE);
+    CHECK(!ready_shown());
+    CHECK_EQ(ready_count(), 3);
+    go(SERVO_FN_TEST);
+    CHECK(!drive_shown());
     CHECK_EQ(ready_count(), 0);
     CHECK(!ready_row(0, &r));
     char b[64];
     CHECK(ready_refusal(b, sizeof(b)) == NULL);
-    go(SERVO_FN_LIVE);
-    CHECK(!ready_shown());
 }
 
 /* On every bench of the cases above, and with a report still on its way

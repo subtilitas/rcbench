@@ -370,6 +370,7 @@ TEST_CASE(a_run_follows_the_value_state_at_every_edge)
             break;
         case 1:                                  /* ARMING */
             servo_screen_set_armed(false);
+            open_test();                         /* TEST's ARM: ARM alone */
             arm_press();
             hold_for(2.3f);
             arm_release();

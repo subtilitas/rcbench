@@ -990,12 +990,14 @@ TEST_CASE(the_guide_marks_rudder_and_leaves_the_port_button_in_view)
     CHECK(ui_help_page(scr, false, 1, &p));
     CHECK_EQ(p.title, TX_HG_SV_TITLE_RUD_READ);
     CHECK_EQ(p.count, 3);
-    CHECK(ui_help_page(scr, false, 2, &p));
+    CHECK(ui_help_page(scr, false, 3, &p));
     CHECK(!p.armed_ok);
     CHECK_EQ(p.title, TX_HG_SV_TITLE_CARD);
-    CHECK(ui_help_page(scr, false, 3, &p));
-    CHECK_EQ(p.title, TX_HG_SV_TITLE_DRIVE);
-    /* PORT, the buttons, ARM, SETTINGS and the side view. */
+    /* The type pill and the side view. */
+    CHECK_EQ(p.count, 2);
+    CHECK(ui_help_page(scr, false, 2, &p));
+    CHECK_EQ(p.title, TX_HG_SV_TITLE_DRV_READY);
+    /* PORT, the READY rows, the rail line, ARM and SETTINGS. */
     CHECK_EQ(p.count, 5);
     CHECK_EQ(p.must_show.x, SV_PORT_X - 190);
     CHECK_EQ(p.must_show.y, SV_PORT_Y - 24);

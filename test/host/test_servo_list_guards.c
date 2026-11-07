@@ -109,12 +109,13 @@ TEST_CASE(a_finger_on_a_kst_control_keeps_the_port_list_shut)
     ev(r.x + r.w / 2, r.y + r.h / 2, TOUCH_EVENT_UP, 1);
 }
 
-/* The PORT list open, a finger on the supply's OUTPUT button: a tap on a
- * port picks nothing.  Lifted, the pick is taken. */
+/* The PORT list open, a finger on the supply's OUTPUT button (TEST's
+ * output card): a tap on a port picks nothing.  Lifted, the pick is
+ * taken. */
 TEST_CASE(a_finger_on_output_takes_no_port_pick)
 {
     fresh();
-    go(SERVO_FN_LIVE);
+    go(SERVO_FN_TEST);
     tap(SV_PORT_X, SV_PORT_Y);
     CHECK(servo_screen_port_choices() > 0);
     ev(SV_SUP_OUT_X, SV_SUP_Y, TOUCH_EVENT_DOWN, 1);
