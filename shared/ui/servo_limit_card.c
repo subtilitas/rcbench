@@ -9,8 +9,8 @@
  *
  *   - the mode line, y 16, and the output and meter line, y 40, 10 x 20;
  *   - LOW END and HIGH END, two cells of 295 x 96px from y 70: the end the
- *     run found in us, FREE where the servo met no stop, the pulse under
- *     way while the run searches that end, "-" before;
+ *     search found first in us, FREE where the servo met no stop, the
+ *     pulse under way while the run searches that end, "-" before;
  *   - the state lines from y 178, 24px apart, each wrapped across 600px:
  *     the step under way, the sequence's step or its failure, or why the
  *     hold is refused; the mode's warning; the last result, its values or
@@ -73,20 +73,24 @@ static void lim_file_name(char *b, size_t n)
 }
 
 /** @brief Whether the run under way, or one the hold fires now, programs
- *         the servo: as it started, else as chosen on a PROG PORT. */
+ *         the servo: as it started, else as chosen on a PROG PORT where
+ *         the run can write once the hold's steps are done. */
 static bool prog_now(void)
 {
-    return servo_limrun_running(&s.lim) ? s.lim.cfg.program
-                                        : (lim_reads() && s.lim_prog);
+    return servo_limrun_running(&s.lim)
+               ? s.lim.cfg.program
+               : (lim_reads() && s.lim_prog && lim_write_why_held() == NULL);
 }
 
 /** @brief Whether it sets SERVO PULSES: as it started, else as chosen for
- *         a KST or Chaservo servo on a PROG PORT. */
+ *         a KST or Chaservo servo on a PROG PORT where the run can
+ *         write. */
 static bool pulses_now(void)
 {
     return servo_limrun_running(&s.lim)
                ? s.lim.cfg.set_pulses
-               : (lim_reads() && !lim_hitec_now() && s.lim_pulses);
+               : (lim_reads() && !lim_hitec_now() && s.lim_pulses
+                  && lim_write_why_held() == NULL);
 }
 
 /**
@@ -275,7 +279,7 @@ static void lines_now(lc_lines_t *L)
     }
     /* SEARCH+PROG or SERVO PULSES chosen and not offered: why, in the
      * warning colour. */
-    if ((s.lim_prog || pulses_now()) && lim_reads()) {
+    if ((s.lim_prog || (s.lim_pulses && !lim_hitec_now())) && lim_reads()) {
         add(L, UI_C_WARN, lim_write_why_held());
     }
     if (s.lim.state == SERVO_LIMRUN_DONE) {
@@ -326,8 +330,9 @@ static void draw_end(gfx_canvas_t *c, int k)
     gfx_text(c, a.x + 12, a.y + 10,
              (k == SERVO_LIMRUN_LO) ? TR(LR_LOW_END) : TR(LR_HIGH_END),
              SV_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
-    const servo_limrun_side_t *e = r->after[k].done ? &r->after[k]
-                                                    : &r->first[k];
+    /* The end the search found first: the check after a write finds the
+     * servo short of it, FREE, which the verdict says. */
+    const servo_limrun_side_t *e = &r->first[k];
     const bool shown = r->state != SERVO_LIMRUN_IDLE;
     const bool under_way =
         running && !e->done && r->side == (uint8_t)k
