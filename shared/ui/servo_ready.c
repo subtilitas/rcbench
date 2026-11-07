@@ -421,7 +421,9 @@ static void apply(const servo_seq_do_t *d, const char *refused)
         prog5v_box_ask_on(PROG5V_BY_SERVO);
         ++s.power_rev;
     }
-    if (d->pd_on) {
+    /* Never past a standard servo's rating: that ON is the HV warning's
+     * alone (CK_PD_HV refuses the hold; the read-back then fails). */
+    if (d->pd_on && !hv_set_point()) {
         supply_screen_ask_on(SUPPLY_BY_SERVO);
         ++s.sup_rev;
     }

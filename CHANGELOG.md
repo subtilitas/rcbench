@@ -87,7 +87,10 @@ history is in git.
   meter's volts and amps under them. A row is green when met, amber when
   the hold does it, red when any of its texts refuses the hold, grey while
   it waits on PORT. The PD mini's output off is amber only while the rail
-  reads under 3.0V; a rail fed from elsewhere keeps the row red. A tap on PORT, SERVO, METER, ANGLE or ZERO takes its fix; a tap on
+  reads under 3.0V; a rail fed from elsewhere keeps the row red. With
+  the PD mini off and a set point past 6.0V the row is red with
+  `TAP: HV WARNING`: the hold switches nothing, and a tap on the row opens
+  OUTPUT ON's HV warning. A tap on PORT, SERVO, METER, ANGLE or ZERO takes its fix; a tap on
   another red row names it in the alert band.
 - RUDDER AUTO's start is the footer's `HOLD 2s: ARM + START`. It switches
   PORT PWM on, then PROG 5V on the carrier or the PD mini where it feeds

@@ -59,6 +59,7 @@ static const gate_text_t k_gate[] = {
     { 0, TX_SV_LIM_PROG_LOW, RAR_SUPPLY },
     { 0, TX_SV_LIM_PROG_RAIL, RAR_SUPPLY },
     { 0, TX_SV_LIM_PROG_NO_PD, RAR_SUPPLY },
+    { 0, TX_SV_TAP_HV, RAR_SUPPLY },
     { 0, TX_RA_NO_ANGLE, RAR_ANGLE },
     { 0, TX_RA_NO_ZERO, RAR_ZERO },
 };

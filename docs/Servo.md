@@ -1517,7 +1517,7 @@ while:
 | PORT | PORT is the bench's outputs, or the output is otherwise not the programming port | `AUTO PROGRAMS A SERVO ON THE PROG PORT`. Named before the meter: on the rbmod carrier the outputs have no channel watching them until one is bound as SERVO PWM |
 | METER | the meter is not set up for the servo's current, offline or without windows | the limit run's line |
 | PROGRAMMER | a programmer session holds the port, or the programmer is not in PWM | `LOCKED: SERVO PROGRAMMING USES THE PORT`, `PROGRAMMING: PORT IS NOT IN PWM MODE` |
-| PROG 5V, PD MINI, SUPPLY | ARMED with the PROG 5V off, a port holding it; a set point under 4.8V; a rail under 4.8V without a PD mini; no PD mini or PROG 5V to cycle a KST/Chaservo or classic Hitec servo's supply | the limit run's line |
+| PROG 5V, PD MINI, SUPPLY | ARMED with the PROG 5V off, a port holding it; a set point under 4.8V; a rail under 4.8V without a PD mini; no PD mini or PROG 5V to cycle a KST/Chaservo or classic Hitec servo's supply; the PD mini's output off with a set point past 6.0V | the limit run's line; `TAP: HV WARNING` for the set point past 6.0V, where a tap on the row opens OUTPUT ON's HV warning and its own 2s hold switches the output on. The hold never does: a PD mini already on past 6.0V counts as met, as OUTPUT ON asks nothing of a live output. PROG 5V is a fixed 5V and has no set point |
 | PORT PWM | ARMED with the port's pulse off | `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS`, `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` |
 | RANGE | PULSE MIN is above 1000us, PULSE MAX below 2000us, or PULSE CENTRE is not strictly between 1000us and 2000us | `PULSE MIN TO MAX MUST INCLUDE 1000 TO 2000us` |
 | ANGLE | the angle source gives no reading | `ANGLE SOURCE: NO READING` |
