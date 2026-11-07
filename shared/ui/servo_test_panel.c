@@ -374,7 +374,6 @@ void ask_hv_test(void)
     s.ask.open      = true;
     s.ask.hv        = true;
     s.ask.purpose   = ASK_TEST;
-    s.ask.target    = KT_NONE;
     s.ask.off_count = supply_screen_off_count();
     s.ask.stops     = s.stops;
     s.ask.v         = test_top_v();

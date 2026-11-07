@@ -3362,7 +3362,6 @@ shared/ui/include/supply_screen.h: warning: return type of member supply_screen_
 shared/ui/include/supply_screen.h: warning: return type of member supply_screen_poll_cmd is not documented
 shared/ui/include/supply_screen.h: warning: return type of member supply_screen_reading is not documented
 shared/ui/include/supply_screen.h: warning: return type of member supply_screen_set_v is not documented
-shared/ui/include/supply_screen.h: warning: return type of member supply_screen_typed_asks is not documented
 shared/ui/include/ui_band.h: warning: parameters of member ui_band_chip_rect are not documented
 shared/ui/include/ui_band.h: warning: parameters of member ui_band_help_render are not documented
 shared/ui/include/ui_band.h: warning: parameters of member ui_band_mode are not documented
@@ -4216,9 +4215,7 @@ shared/ui/servo_settings_panel.c: warning: Member ask_hv_on(void) (function) of 
 shared/ui/servo_settings_panel.c: warning: Member choose(int k) (function) of file servo_settings_panel.c is not documented.
 shared/ui/servo_settings_panel.c: warning: Member max_pulse_for_rate(void) (function) of file servo_settings_panel.c is not documented.
 shared/ui/servo_settings_panel.c: warning: Member open_keypad(int target, const char *title, const char *unit, float value, float lo, float hi, int decimals) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member open_set_point(int target) (function) of file servo_settings_panel.c is not documented.
 shared/ui/servo_settings_panel.c: warning: Member ov_rest(const touch_event_t *evt) (function) of file servo_settings_panel.c is not documented.
-shared/ui/servo_settings_panel.c: warning: Member set_point_typed(int target, float typed) (function) of file servo_settings_panel.c is not documented.
 shared/ui/servo_test_panel.c: warning: Member servo_screen_test_pop(void) (function) of file servo_test_panel.c is not documented.
 shared/ui/servo_test_panel.c: warning: Member test_apply(const servo_test_do_t *d) (function) of file servo_test_panel.c is not documented.
 shared/ui/servo_test_panel.c: warning: Member test_end_now(servo_test_abort_t why) (function) of file servo_test_panel.c is not documented.

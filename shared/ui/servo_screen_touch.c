@@ -10,16 +10,13 @@
  * SPDX-License-Identifier: MIT
  */
 #include "prog_registry.h"
-#include "esc_wire_panel.h"
 #include "servo_screen.h"
 
 #include <math.h>
 
 #include "servo_limrun.h"
-#include "supply_screen.h"
 #include "ui_screen.h"
 #include "ui_slider.h"
-#include "ui_text.h"
 #include "ui_widgets.h"
 
 /* Last: the layout macros of the headers it includes have short names
@@ -420,38 +417,6 @@ void svs_event_body(const touch_event_t *evt)
             }
             return;
         }
-        if (!drive_shown() && prog5v_box_shown()
-            && gfx_rect_contains(prog5v_box_button(&s.p5), px, py)) {
-            /* One contact owns PROG 5V, as OUTPUT; a port holding the
-             * supply locks it, and the band says why. */
-            if (!s.p5_down) {
-                if (prog5v_box_press(&s.p5)) {
-                    s.p5_down = true;
-                    s.p5_id   = evt->point.id;
-                    ++s.power_rev;
-                } else if (!prog5v_box_live()) {
-                    ui_router_set_alert(TR(P5_LOCKED));
-                }
-            }
-            return;
-        }
-        for (int k = 0; k < 2 && !drive_shown(); ++k) {
-            if (gfx_rect_contains(sup_val_rect(k), px, py)) {
-                /* No set point moves under a programming port, and the
-                 * band says why. */
-                if (supply_screen_port_held()) {
-                    ui_router_set_alert(esc_wire_panel_holds_port() ? TR(SUP_HELD_REFUSED_ESC)
-                                                                   : TR(SUP_HELD_REFUSED));
-                    return;
-                }
-                /* The run owns the set points while it runs. */
-                test_end_now(SERVO_TEST_AB_OPERATOR);
-                if (!s.ov_have) {
-                    ov_take(evt, (k == 0) ? OP_SUP_V : OP_SUP_I, -1);
-                }
-                return;
-            }
-        }
         float deg;
         if (live_shown() && on_the_dial(px, py, &deg)) {
             /* Refused while the value is not live: the press is the dial's
@@ -494,52 +459,10 @@ void svs_event_body(const touch_event_t *evt)
             stop_sweep();
             release();
         } else if (gfx_rect_contains(s.arm_btn, px, py)) {
-            if (drive_arm_press(evt)) {
-                return;             /* LIVE, SWEEP and RUDDER */
-            }
-            if (s.gate.armed) {
-                /* DISARM acts on the press: a stop never waits for a lift
-                 * that may not come.  The press takes no hold, so a finger
-                 * left on the button arms nothing when it reads ARM again. */
-                svs_ask_disarm();
-                ++s.arm_rev;
-                return;
-            }
-            if (svs_arm_locked()) {
-                /* Programming and an armed bench are exclusive: the
-                 * press arms nothing and says why in the alert band. */
-                if (prog_holds()) {
-                    ui_router_set_alert(prog_reg_hold_alert());
-                }
-                return;
-            }
-            if (s.arm_down) {
-                /* The gesture belongs to the contact that began it.  A second
-                 * finger, or a palm, taking it over would leave the first
-                 * one's release ignored and arm the bench from a contact
-                 * nobody made deliberately. */
-                return;
-            }
-            s.arm_down = true;
-            s.arm_id   = evt->point.id;
-            ui_hold_begin(&s.arm, TX_HOLD_HINT_ARM);
-            ++s.arm_rev;
-        }
-    }
-
-    if (s.p5_down && evt->point.id == s.p5_id) {
-        if (evt->type == TOUCH_EVENT_MOVE) {
-            if (prog5v_box_drag(&s.p5, px, py)) {
-                s.p5_down = false;
-                ++s.power_rev;
-            }
-            return;
-        }
-        if (evt->type == TOUCH_EVENT_UP) {
-            prog5v_box_release(&s.p5, evt);
-            s.p5_down = false;
-            ++s.power_rev;
-            return;
+            /* LIVE, SWEEP and RUDDER: KST's and HITEC's WRITE and the
+             * ARM + START of RUDDER AUTO, TEST and LIMIT RUN take their
+             * presses above. */
+            (void)drive_arm_press(evt);
         }
     }
 
