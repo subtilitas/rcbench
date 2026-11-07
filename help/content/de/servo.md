@@ -190,7 +190,7 @@ Der Lauf verwendet ausschließlich den INA3221-Kanal für das Testerziel. Solang
 
 | Zeile | Text | Bedingung |
 |---|---|---|
-| PROG 5V | `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN` | SAFE auf dem rbmod-Carrier mit PORT auf einem Programmierport und dem Feld PROG 5V aus. Gelb: das Halten schaltet es ein |
+| PROG 5V | `PROG 5V AUS: START SCHALTET ES EIN` | SAFE auf dem rbmod-Carrier mit PORT auf einem Programmierport und PROG 5V aus. Gelb: das Halten schaltet es ein |
 | ARM | `ZUERST ARM` | der Prüfstand ist SAFE. Gelb: das Halten schaltet ARM |
 | PORT | `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | PORT sind die Ausgänge des Prüfstands, und kein Ausgang ist als SERVO PWM zugeordnet, oder die Zuordnung ist noch nicht ausgelesen |
 | MESSGERÄT | `INA3221 NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET` | kein Kanal eines bestückten INA3221 überwacht in SETUP > SENSORS das Ziel des Testers |

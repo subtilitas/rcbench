@@ -29,7 +29,7 @@ J3 HEARTBEAT on GPIO 3, J5 SENSOR I2C on GPIO 16 and 17, J4 I2C 2 on GPIO 18 and
 
 ## Rev 1 boards
 
-The line under the columns reads `A REV 1 BOARD NEEDS THREE MANUAL CHANGES. THE HELP PAGE LISTS THEM.` [Carrier: Rev 1 rework](https://github.com/subtilitas/rcbench/wiki/Carrier#rev-1-rework) describes all three: moving PROGP03 from GPIO 26 to GPIO 15; adding a pull-down to keep the programming ports' 5V off while GPIO 21 is not driven; and adding a 5.6V 1W zener from M7's output to GND to prevent dropouts caused by a braking servo. The firmware does not rely on the third change. Rev 2 includes the first two in its copper layout; the third remains an open design point.
+The line under the columns reads `A REV 1 BOARD NEEDS THREE MANUAL CHANGES. THE HELP PAGE LISTS THEM.` [Carrier: Rev 1 rework](https://github.com/subtilitas/rcbench/wiki/Carrier#rev-1-rework) describes all three: moving PROGP03 from GPIO 26 to GPIO 15; adding a pull-down to keep the programming ports' 5V off while GPIO 21 is not driven; and adding a 5.6V zener of 2W or 5W from M7's output to GND to prevent dropouts caused by a braking servo. The firmware does not rely on the third change. Rev 2 includes the first two in its copper layout; the third remains an open design point.
 
 ## Related pages
 

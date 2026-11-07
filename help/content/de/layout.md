@@ -29,7 +29,7 @@ J3 HEARTBEAT liegt auf GPIO 3, J5 SENSOR I2C auf GPIO 16 und 17, J4 I2C 2 auf GP
 
 ## Platinen Rev 1
 
-Unter den Spalten steht `PLATINE REV 1: DREI ÄNDERUNGEN VON HAND. DIE HILFE NENNT SIE.` [Carrier: Nacharbeit Rev 1](https://github.com/subtilitas/rcbench/wiki/Carrier-de#nacharbeit-rev-1) beschreibt alle drei Änderungen: PROGP03 von GPIO 26 auf GPIO 15 verlegen; die 5V der Programmierports durch einen Pull-down ausgeschaltet halten, solange GPIO 21 nicht angesteuert ist; und eine Z-Diode mit 5,6V und 1W vom Ausgang von M7 nach GND ergänzen, um Ausfälle durch ein bremsendes Servo zu verhindern. Die Firmware setzt die dritte Änderung nicht voraus. Bei Rev 2 sind die ersten zwei im Platinenlayout umgesetzt; die dritte bleibt eine offene Designfrage.
+Unter den Spalten steht `PLATINE REV 1: DREI ÄNDERUNGEN VON HAND. DIE HILFE NENNT SIE.` [Carrier: Nacharbeit Rev 1](https://github.com/subtilitas/rcbench/wiki/Carrier-de#nacharbeit-rev-1) beschreibt alle drei Änderungen: PROGP03 von GPIO 26 auf GPIO 15 verlegen; die 5V der Programmierports durch einen Pull-down ausgeschaltet halten, solange GPIO 21 nicht angesteuert ist; und eine Z-Diode mit 5,6V und 2W oder 5W vom Ausgang von M7 nach GND ergänzen, um Ausfälle durch ein bremsendes Servo zu verhindern. Die Firmware setzt die dritte Änderung nicht voraus. Bei Rev 2 sind die ersten zwei im Platinenlayout umgesetzt; die dritte bleibt eine offene Designfrage.
 
 ## Verwandte Seiten
 
