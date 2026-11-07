@@ -76,6 +76,7 @@ void ui_slider_set(ui_slider_t *s, float value)
          */
         if (s->dragging) {
             s->drag_value = s->value;
+            s->drag_x     = s->last_x;
         }
     }
 }
@@ -96,6 +97,19 @@ void ui_slider_release(ui_slider_t *s)
 {
     if (s != NULL) {
         s->dragging       = false;
+        s->pressed_preset = -1;
+    }
+}
+
+void ui_slider_release_contact(ui_slider_t *s, uint8_t id)
+{
+    if (s == NULL) {
+        return;
+    }
+    if (s->dragging && s->drag_id == id) {
+        s->dragging = false;
+    }
+    if (s->pressed_preset >= 0 && s->preset_id == id) {
         s->pressed_preset = -1;
     }
 }
@@ -132,23 +146,29 @@ bool ui_slider_event(ui_slider_t *s, const touch_event_t *evt)
 
     if (evt->type == TOUCH_EVENT_DOWN) {
         /*
-         * Any press ends a drag that is still latched.  A release can go
-         * missing -- a contact lost, an event dropped, a screen changed
-         * under the finger -- and a latched drag holds an origin and a value
-         * from that gesture.  Under the delta model a later contact reusing
-         * the identifier would then apply its distance to a stale origin,
-         * which is a jump: the exact behaviour the delta model exists to
-         * prevent.  An absolute model was bounded by where the finger was;
-         * this one is not, so the latch has to be cleared rather than
-         * trusted.  The preset latch goes with it: a press that lost its
-         * release would otherwise leave a button held and mis-handle a later
-         * release carrying the same identifier.
+         * A press with the id of a drag still latched ends it.  A release
+         * can go missing -- a contact lost, an event dropped, a screen
+         * changed under the finger -- and a latched drag holds an origin and
+         * a value from that gesture.  Under the delta model a later contact
+         * reusing the identifier would then apply its distance to a stale
+         * origin, which is a jump: the exact behaviour the delta model
+         * exists to prevent.  An absolute model was bounded by where the
+         * finger was; this one is not, so the latch has to be cleared rather
+         * than trusted.  The preset latch goes with it: a press that lost
+         * its release would otherwise leave a button held and mis-handle a
+         * later release carrying the same identifier.
          */
-        ui_slider_release(s);
+        ui_slider_release_contact(s, evt->point.id);
+        /* A press of another contact is a second finger: the gesture held
+         * stays the first one's, and this press takes nothing here. */
+        if (s->dragging || s->pressed_preset >= 0) {
+            return false;
+        }
         if (gfx_rect_contains(s->track, x, y)) {
             s->dragging   = true;
             s->drag_id    = evt->point.id;
             s->drag_x     = (int16_t)x;
+            s->last_x     = (int16_t)x;
             s->drag_value = s->value;
             if (!s->tap_to_set || s->track.w <= 1) {
                 /* A press on its own commands nothing -- and a track one
@@ -179,6 +199,7 @@ bool ui_slider_event(ui_slider_t *s, const touch_event_t *evt)
     /* Only the contact that started the gesture may continue it: a second
      * finger or a resting palm must not steal the release. */
     if (s->dragging && evt->point.id == s->drag_id) {
+        s->last_x = (int16_t)x;
         if (evt->type == TOUCH_EVENT_MOVE) {
             /* Deliberately not requiring the finger to stay on the track: a
              * press that began there owns the value until it lets go. */

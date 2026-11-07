@@ -1747,9 +1747,13 @@ Loslassen läuft das Ziel bis zum letzten Fingerwinkel weiter und legt
 Jeder andere Befehl beendet den Filter sofort: SAFE, DISARM, STOP,
 FREIGEBEN, ZENTRIEREN, SWEEP oder eine Knopfdrehung, selbst wenn sie
 denselben Puls wie der letzte Filterbefehl ergibt. Auch eine vorzeitige
-Unterbrechung der Ziehbewegung beendet ihn: ein zweiter Finger auf der
-Seite, dem Statusband, STOP oder Alarmband, oder das Hineingleiten des
-ziehenden Fingers ins Statusband. Der Filter stoppt am erreichten Winkel
+Unterbrechung der Ziehbewegung beendet ihn: ein Finger auf dem Statusband,
+STOP oder Alarmband, ein Druck mit der Track-ID des ziehenden Fingers,
+nachdem dessen Abheben verloren ging, oder das Hineingleiten des ziehenden
+Fingers ins Statusband. Ein zweiter Finger an anderer Stelle der Seite lässt
+die Ziehbewegung weiterlaufen: Auf SPEED ändert er die Rate, und die
+laufende Bewegung übernimmt sie. Ein zweiter Finger auf dem Zifferblatt
+nimmt dem ersten nichts. Der Filter stoppt am erreichten Winkel
 und sendet keine weiteren Befehle. In SAFE bewegt er nichts. Das nächste
 ARM beginnt in Ruhelage ohne verbleibende Zieheingabe.
 
@@ -2973,7 +2977,8 @@ AUSGANG EIN und AUS, SPITZENWERTE ZURÜCKSETZEN und die Messwerte bleiben
 unter Tastenfeld und Rückfrage aktiv. Die Optionsliste öffnet nur bei
 ausgeschaltetem Ausgang, AUSGANG AUS liegt also nie darunter. Jeweils nur ein Finger
 bedient die Seite: Hält einer ein Bedienelement, hat ein zweiter Finger
-auf der Seite keine Wirkung.
+auf der Seite keine Wirkung, außer auf AUSGANG AUS und PROG 5V AUS: Ein
+Stopp schaltet beim Aufsetzen dieses Fingers aus.
 
 Auf dem [rbmod-Carrier](Carrier-de.md#versorgung) nennt eine Zeile am Fuß
 von STEUERUNG die getrennten 5V der Programmierports:

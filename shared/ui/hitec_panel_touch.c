@@ -12,6 +12,7 @@
  */
 #include "hitec_panel.h"
 
+#include "hitec_live.h"
 #include "hitec_move.h"
 #include "supply_screen.h"
 #include "ui_tabs.h"
@@ -300,6 +301,49 @@ void hpn_supply_sync(void)
     supply_screen_set_page_held(p->fed && p->f.supply_held);
 }
 
+/**
+ * @brief A DOWN while another contact holds the press: the controls that
+ *        stop the servo act on it at once, as a stop counts on the press
+ *        whatever other fingers hold.  MOVE SERVO while it is on ends the
+ *        loop; the FIND STOP key whose side searches ends the search.  The
+ *        press held stays its contact's, and any other DOWN takes nothing.
+ * @param evt the DOWN
+ */
+static void stop_down(const touch_event_t *evt)
+{
+    hitec_prog_t *p = &hp.prog;
+    const int x = evt->point.x, y = evt->point.y;
+
+    /* The page, the keypad, the keyboard and a list cover the rows. */
+    if (hp.page.open || hp.kp.open || hp.tk.open || hp.ch.open) {
+        return;
+    }
+    for (int i = 0; i < HP_ROW_COUNT; ++i) {
+        const hpn_row_t *r = &hpn_rows[i];
+
+        if (r->kind != K_ACT || r->page != hp.tabs.selected
+            || !hpn_row_shown(r) || !hpn_row_live(r)) {
+            continue;
+        }
+        if (r->what == A_MOVE && hitec_prog_move_on(p)
+            && gfx_rect_contains(hpn_value_rect(r), x, y)) {
+            hitec_prog_move_stop(p);
+            hpn_moved();
+            return;
+        }
+        if (r->what == A_FIND && hitec_prog_find_side(p) >= 0) {
+            const bool right =
+                hitec_prog_find_side(p) == (int)HITEC_FIND_RIGHT;
+
+            if (gfx_rect_contains(hpn_find_rect(r, right), x, y)) {
+                hpn_find_act(right);
+                hpn_moved();
+                return;
+            }
+        }
+    }
+}
+
 void hitec_panel_event(const touch_event_t *evt)
 {
     if (evt == NULL || !hp.open) {
@@ -310,6 +354,8 @@ void hitec_panel_event(const touch_event_t *evt)
     } else if (evt->type == TOUCH_EVENT_DOWN && !hp.have) {
         /* One press at a time in the overlay. */
         down(evt);
+    } else if (evt->type == TOUCH_EVENT_DOWN) {
+        stop_down(evt);
     }
     hpn_move_follow();
     hpn_supply_sync();

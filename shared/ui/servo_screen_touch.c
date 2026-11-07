@@ -322,20 +322,22 @@ void svs_event_body(const touch_event_t *evt)
 
     if (evt->type == TOUCH_EVENT_DOWN) {
         /*
-         * Any press ends a drag on the dial or on SPEED that is still
-         * latched, wherever the press lands; ui_slider_event() gives the
-         * reason.  A release can go missing, and a later contact reusing
-         * the track id would command a position, or a rate, with no press
-         * on the control.  A finger that was on the dial still owned it in
-         * this frame, so the knob stays out of the frame.
+         * A press with the id of a drag on the dial or on SPEED that is
+         * still latched ends it, wherever the press lands;
+         * ui_slider_event() gives the reason.  A release can go missing, and
+         * a later contact reusing the track id would command a position, or
+         * a rate, with no press on the control.  A finger that was on the
+         * dial still owned it in this frame, so the knob stays out of the
+         * frame.  A press of another contact is a second finger and leaves
+         * both drags running: one finger on the dial, another on SPEED.
          */
-        if (s.dragging) {
+        if (s.dragging && evt->point.id == s.drag_id) {
             s.knob_finger = true;
             /* The drag's filter ends with it, where it has got to: no
              * command follows the press (svs_drag_tick()). */
             svs_drag_end();
         }
-        ui_slider_release(&s.speed);
+        ui_slider_release_contact(&s.speed, evt->point.id);
         if (foot_down(evt)) {
             return;
         }
@@ -458,6 +460,11 @@ void svs_event_body(const touch_event_t *evt)
              * and takes no drag, so a bench armed under it moves nothing
              * until the next press. */
             if (!value_live()) {
+                return;
+            }
+            /* The drag is the contact's that began it: a second finger on
+             * the dial takes nothing from it. */
+            if (s.dragging) {
                 return;
             }
             /* A finger on the dial takes the horn from a sweep, and from a

@@ -21,8 +21,8 @@
  * - a_completed_arm_is_not_overwritten_by_the_servo_knob
  * - leaving_under_a_dial_drag_ends_the_drag
  * - a_press_ends_a_dial_drag_that_lost_its_release
- * - a_second_press_ends_a_dial_drag
- * - the_knob_stays_out_of_the_frame_a_second_press_ended_a_drag_in
+ * - a_second_press_leaves_a_dial_drag_running
+ * - the_knob_stays_out_while_a_second_press_leaves_a_drag_running
  * - a_withdrawal_after_an_arm_restores_no_drive_from_before_it
  * - a_press_on_the_dial_ends_a_speed_drag_that_lost_its_release
  * - a_withdrawal_on_a_disarmed_bench_restores_no_drive
@@ -333,10 +333,10 @@ TEST_CASE(a_press_ends_a_dial_drag_that_lost_its_release)
 }
 
 /*
- * Any press, a second finger's included, as on the sliders: the finger on
- * the dial commands nothing more until it presses again.
+ * A second finger elsewhere leaves the drag to the first, as on the sliders:
+ * the finger on the dial goes on commanding the horn.
  */
-TEST_CASE(a_second_press_ends_a_dial_drag)
+TEST_CASE(a_second_press_leaves_a_dial_drag_running)
 {
     fed_armed();
     int x, y, x2, y2;
@@ -348,24 +348,18 @@ TEST_CASE(a_second_press_ends_a_dial_drag)
 
     finger(1, BESIDE_X, P(SHAFT_Y));
     glide(0, x2, P(y2), 8);
-    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
-    CHECK_EQ(servo_screen_commanded(), held);
-    lift(1);
-    lift(0);
-
-    /* Pressed again, the dial has the horn. */
-    finger(0, x2, P(y2));
-    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+    frames(0.3f);           /* the drag's target follows the finger */
     CHECK(servo_screen_commanded() != held);
+    lift(1);
     lift(0);
 }
 
 /*
- * The second press ends the drag, and the finger that was dragging still
- * owned the dial in that frame: a knob turn applied at the end of the frame
- * moves nothing.  The next frame is the knob's.
+ * The finger that drags still owns the dial while a second press comes and
+ * goes: a knob turn moves nothing in that frame or the next.  The frame
+ * after the drag's release is the knob's.
  */
-TEST_CASE(the_knob_stays_out_of_the_frame_a_second_press_ended_a_drag_in)
+TEST_CASE(the_knob_stays_out_while_a_second_press_leaves_a_drag_running)
 {
     fed_armed();
     int x, y;
@@ -381,10 +375,15 @@ TEST_CASE(the_knob_stays_out_of_the_frame_a_second_press_ended_a_drag_in)
     CHECK_EQ(servo_screen_commanded(), held);
 
     servo_screen_knob_frame();          /* frame N+2 */
+    lift(1);
+    servo_screen_knob(0.1f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+
+    servo_screen_knob_frame();          /* frame N+3 */
+    lift(0);
+    servo_screen_knob_frame();          /* frame N+4 */
     servo_screen_knob(0.1f);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
-    lift(1);
-    lift(0);
 }
 
 /*
@@ -555,8 +554,8 @@ int main(void)
     RUN(a_completed_arm_is_not_overwritten_by_the_servo_knob);
     RUN(leaving_under_a_dial_drag_ends_the_drag);
     RUN(a_press_ends_a_dial_drag_that_lost_its_release);
-    RUN(a_second_press_ends_a_dial_drag);
-    RUN(the_knob_stays_out_of_the_frame_a_second_press_ended_a_drag_in);
+    RUN(a_second_press_leaves_a_dial_drag_running);
+    RUN(the_knob_stays_out_while_a_second_press_leaves_a_drag_running);
     RUN(a_withdrawal_after_an_arm_restores_no_drive_from_before_it);
     RUN(a_press_on_the_dial_ends_a_speed_drag_that_lost_its_release);
     RUN(a_withdrawal_on_a_disarmed_bench_restores_no_drive);

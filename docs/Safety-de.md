@@ -861,14 +861,26 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   Ein Druck auf DISARM startet kein Halten, also schaltet ein Finger, der auf
   der Taste bleibt, nichts auf ARMED, wenn sie wieder ARM zeigt; ARM bleibt
   ein Halten von 2s.
-- Die Seiten verlassen sich dafür nicht auf den Router. Jeder Druck beendet
-  einen Drag auf einem Schieberegler oder dem SERVO-Zifferblatt, der noch
-  hängt, wo auch immer der Druck landet, und das Verlassen von SERVO beendet
-  einen Drag auf dem Zifferblatt. SUPPLY erfasst jeweils einen aktiven Druck; ein Druck
+- Die Seiten verlassen sich dafür nicht auf den Router. Ein Druck mit der
+  Track-ID eines Drags auf einem Schieberegler oder dem SERVO-Zifferblatt,
+  der noch hängt, beendet diesen Drag, wo auch immer der Druck landet, und
+  das Verlassen von SERVO beendet einen Drag auf dem Zifferblatt. Ein Druck
+  mit einer anderen Track-ID ist ein zweiter Finger und lässt den Drag
+  weiterlaufen: Ein Finger zieht das SERVO-Zifferblatt, ein anderer zieht
+  SPEED. SUPPLY erfasst jeweils einen aktiven Druck; ein Druck
   mit der Track-ID des gehaltenen sagt, dass dieser Kontakt weg ist, und der
   gehaltene Druck wird verworfen, wie ein Touch-Verlust ihn verwirft. Nicht
   am Panel gemessen: ob der GT911 einem einzelnen Finger bei
   aufeinanderfolgenden Berührungen dieselbe Track-ID gibt.
+- Ein Stopp zählt, was auch immer andere Finger halten. Ein zweiter,
+  dritter oder weiterer Kontakt auf einem Stopp wirkt beim Aufsetzen, während
+  andere Kontakte eigene Drücke halten: DISARM, STOP TEST, ARM + START
+  während eines Laufs oder seiner Schritte, ABORT, die Versorgungszeile von
+  KST und Hitec, solange sie EIN zeigt, und auf SUPPLY AUSGANG AUS und
+  PROG 5V AUS, die ein einzelner Finger mit einem Tippen ausschaltet. Im
+  Overlay des Hitec-Programmers beenden EIN von SERVO BEWEGEN und die Taste
+  von ANSCHLAG SUCHEN, deren Seite sucht, die Schleife oder die Suche bei
+  einem solchen Druck.
 - Die Control-Task prüft das Rechteck von STOP bei jedem Aufsetzen selbst,
   unabhängig von den Seiten und vom Frame, und stoppt den Prüfstand beim
   Aufsetzen: Der Heartbeat fällt im selben Durchlauf weg, und der IOmcu

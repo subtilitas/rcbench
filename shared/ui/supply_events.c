@@ -121,6 +121,11 @@ static void down(const touch_event_t *evt)
 {
     const int x = evt->point.x, y = evt->point.y;
 
+    /* No press is held, so a drag still latched on a track is a gesture
+     * whose release went missing: it ends here. */
+    ui_slider_release(&s.v_slider);
+    ui_slider_release(&s.i_slider);
+
     /* The output and the peaks work whatever covers the left column. */
     if (gfx_rect_contains(s.out_rect, x, y)) {
         /* Off is always taken; on is not while a port holds the supply. */
@@ -358,6 +363,28 @@ void sup_drop_press(void)
     ++s.out_rev;
 }
 
+/**
+ * @brief A DOWN while another contact holds the press: OUTPUT OFF and
+ *        PROG 5V OFF switch off at once, as a stop counts on the press
+ *        whatever other fingers hold.  The press held stays its contact's,
+ *        and any other DOWN takes nothing.
+ * @param evt the DOWN event
+ */
+static void stop_down(const touch_event_t *evt)
+{
+    const int x = evt->point.x, y = evt->point.y;
+
+    if (s.on && gfx_rect_contains(s.out_rect, x, y)) {
+        sup_post_off();
+        ++s.out_rev;
+        ++s.ctrl_rev;
+    } else if (sup_p5_shown() && prog5v_box_live() && prog5v_box_on()
+               && gfx_rect_contains(prog5v_box_button(&s.p5), x, y)) {
+        prog5v_box_ask_off(PROG5V_BY_SUPPLY);
+        ++s.p5.rev;
+    }
+}
+
 /* OUTPUT OFF and PROG 5V OFF, the controls here whose press stops what
  * the bench drives: the router hands a press on one through the alert
  * band and the band's help bubble (ui_screen_t's safe_at).  OUTPUT ON and
@@ -389,7 +416,8 @@ void sup_event(const touch_event_t *evt)
      * any widget sees the event: a second finger on a track while the first
      * holds OUTPUT OFF would otherwise move the set point of a live output,
      * and on a button it would take over the record of the first press and
-     * lose its release.
+     * lose its release.  A stop is the exception: OUTPUT OFF and PROG 5V
+     * OFF act on a further contact's DOWN (stop_down()).
      */
     if (evt->type == TOUCH_EVENT_DOWN) {
         /* A contact comes down once between two releases, so a DOWN with
@@ -401,6 +429,8 @@ void sup_event(const touch_event_t *evt)
         }
         if (!s.have_press) {
             down(evt);
+        } else {
+            stop_down(evt);
         }
         return;
     }

@@ -1615,8 +1615,11 @@ finger's final angle, covering 99% of the remaining distance in 100ms.
 Any other command ends the filter immediately: SAFE, DISARM, STOP, RELEASE,
 CENTRE, SWEEP or the knob, even a turn resulting in the last filtered pulse.
 A press that cancels the drag before release also stops the filter: a
-second finger on the screen, status band, STOP or alert band, or the
-dragging finger moving into the status band. The filter stops at its
+finger on the status band, STOP or alert band, a press with the dragging
+finger's own track id after its release went missing, or the dragging
+finger moving into the status band. A second finger elsewhere on the screen
+leaves the drag running: on SPEED it changes the rate, and the move under
+way takes it. A second finger on the dial takes nothing from the first. The filter stops at its
 current angle and sends no further commands. It cannot move anything while
 SAFE. The next ARM starts at rest, with no remaining drag input.
 
@@ -2729,7 +2732,8 @@ unknown, so the rule may stop a run that would otherwise continue.
 OUTPUT ON and OFF, RESET PEAKS and the readings stay live under the
 keypad and the question. The settings list opens with the output off only,
 so OUTPUT OFF is never under it. One finger at a time: while one holds a control, a
-second finger does nothing anywhere on the screen.
+second finger does nothing anywhere on the screen, except on OUTPUT OFF and
+PROG 5V OFF: a stop switches off on that finger's press.
 
 On the [rbmod carrier](Carrier.md#power), a line below OUTPUT names the
 programming ports' separate 5V: `PROG PORTS 5V, GPIO 21: ON`, `OFF` or
