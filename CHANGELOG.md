@@ -203,6 +203,11 @@ history is in git.
   room for about 285Hz. The sensor stores RSW, so another device reading it
   afterwards gets 0x52 and 0x53 only until the sensor's app sets RSW back
   ([IMU](docs/IMU.md#the-sensor)).
+- Carrier rev 1 rework item 3 is a 5.6V zener of 2W or 5W, for example
+  SMBJ5339B-TP (5.6V 5W, SMB package), in place of a 1W one: its dynamic
+  impedance is about 1Ω against about 5Ω (typical datasheet values), so
+  its clamp stays lower at higher back-feed
+  ([Carrier, Rev 1 rework](docs/Carrier.md#rev-1-rework)).
 
 ### Fixed
 
