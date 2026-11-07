@@ -397,7 +397,7 @@ void ui_setlist_draw_strip(ui_setlist_t *sl, gfx_canvas_t *c)
                    sl->hit_kind == UI_SL_HIT_RESET, true, SL_F_LABEL);
 }
 
-void ui_setlist_draw_choices(ui_setlist_t *sl, gfx_canvas_t *c)
+void ui_setlist_draw_choices(const ui_setlist_t *sl, gfx_canvas_t *c)
 {
     if (sl->choice_row < 0) {
         return;

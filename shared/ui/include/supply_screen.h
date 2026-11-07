@@ -215,8 +215,11 @@ void supply_screen_settings_loaded(void);
 /** The operator's limits as the screen last read them from the settings. */
 supply_limits_t supply_screen_limits(void);
 
-/** The caps were changed in the settings from elsewhere, so read them
- *  again. */
+/**
+ * @brief The caps were changed in the settings from elsewhere: they are
+ *        read again.  A start value they correct waits with that change
+ *        for SAVE or DISCARD; no save is asked.
+ */
 void supply_screen_limits_changed(void);
 
 /*

@@ -19,7 +19,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "link_pages.h"
 #include "settings.h"
+#include "settings_screen.h"
 #include "ui_help.h"
 #include "ui_pinlist.h"
 #include "ui_screen.h"
@@ -388,6 +390,38 @@ static void value_changed(ui_setlist_t *sl, setting_id_t id)
 }
 
 /**
+ * @brief Idle pulse or Full pulse stepped, held LINK_CC_THROTTLE_GAP_US
+ *        from the other end as the keypad holds them: a step that would
+ *        close the gap stops at it, so the pair stays one the IOmcu takes.
+ * @param id    SET_OUT_MIN_US or SET_OUT_MAX_US.
+ * @param steps The steps, negative for "-".
+ */
+static void step_pulse(setting_id_t id, int steps)
+{
+    const setting_def_t *d = settings_def(id);
+    const float step = (d->step > 0.0f) ? d->step : 1.0f;
+    float next = settings_get(id) + step * (float)steps;
+    if (id == SET_OUT_MIN_US) {
+        const float top = (float)settings_get_int(SET_OUT_MAX_US)
+                          - (float)LINK_CC_THROTTLE_GAP_US;
+        next = (next > top) ? top : next;
+    } else {
+        const float bottom = (float)settings_get_int(SET_OUT_MIN_US)
+                             + (float)LINK_CC_THROTTLE_GAP_US;
+        next = (next < bottom) ? bottom : next;
+    }
+    /* A pair already narrower than the gap moves only by the key's own
+     * direction. */
+    const float now = settings_get(id);
+    if ((steps > 0 && next <= now) || (steps < 0 && next >= now)) {
+        return;
+    }
+    if (ui_setting_keypad_takes(id, next)) {
+        settings_set(id, next);
+    }
+}
+
+/**
  * @brief The "-" or "+" key of row @p index stepped @p steps times through
  *        settings_adjust(), or a custom row's step(); a string's row takes
  *        none.
@@ -410,7 +444,11 @@ static void step_row(ui_setlist_t *sl, int index, int steps)
         || sl_locked(sl, r.id) != NULL) {
         return;
     }
-    settings_adjust(r.id, steps);
+    if (r.id == SET_OUT_MIN_US || r.id == SET_OUT_MAX_US) {
+        step_pulse(r.id, steps);
+    } else {
+        settings_adjust(r.id, steps);
+    }
     value_changed(sl, r.id);
 }
 
@@ -901,7 +939,7 @@ static void release(ui_setlist_t *sl, int kind, int index, bool repeated,
             return;
         }
         /* The list's own settings and no other. */
-        setting_id_t ids[64];
+        setting_id_t ids[64] = { 0 };
         int n = 0;
         for (int i = 0; i < ui_setlist_count(sl) && n < 64; ++i) {
             const ui_setlist_row_t r = sl_row(sl, i);
@@ -934,12 +972,15 @@ static void release(ui_setlist_t *sl, int kind, int index, bool repeated,
         /*
          * Every changed value back to its stored one, each by the path an
          * edit by hand takes: the observer, which sends a pin or a port to
-         * the IOmcu, and the host's changed().  Never while ARMED, asked
+         * the IOmcu, every screen's state that follows the settings
+         * (settings_apply_all()), whichever list made the edit, and the
+         * host's changed().  Never while ARMED, asked
          * again at the release: a bench that armed while the finger was
          * down keeps its values.  After a refused save settings_discard()
          * also asks for a write.
          */
         (void)settings_discard();
+        settings_apply_all();
         sl->warn = false;
         if (sl->host->changed != NULL) {
             sl->host->changed((setting_id_t)SETTING_COUNT);

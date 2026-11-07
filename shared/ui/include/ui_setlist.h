@@ -374,7 +374,7 @@ void ui_setlist_draw_warning(ui_setlist_t *sl, gfx_canvas_t *c);
  * @param sl The list.
  * @param c  The canvas.
  */
-void ui_setlist_draw_choices(ui_setlist_t *sl, gfx_canvas_t *c);
+void ui_setlist_draw_choices(const ui_setlist_t *sl, gfx_canvas_t *c);
 
 /**
  * @brief Line @p i of the warning: a change as "name: saved -> now", or
