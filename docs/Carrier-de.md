@@ -102,9 +102,19 @@ Board; aus schaltet es ihn sofort. Ein bei ARMED eingeschaltetes PROG 5V
 lässt den Puls bis zum nächsten SAFE aus: der Endlagenlauf zeigt dann
 `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM`.
 
-PORT-PWM liegt auf OUTPUTS, das Feld PROG 5V auf SERVO und SUPPLY. Ein von
-SERVO eingeschaltetes PROG 5V bleibt von einer SERVO-Seite zur nächsten an,
-den Hub eingeschlossen. Das Verlassen von SERVO schaltet es aus.
+PORT-PWM liegt auf OUTPUTS. Das Feld PROG 5V liegt auf SUPPLY und auf
+KST und HITEC von SERVO. Ein von SERVO eingeschaltetes
+PROG 5V bleibt von einer SERVO-Seite zur nächsten an, den Hub
+eingeschlossen. Das Verlassen von SERVO schaltet es aus.
+
+Auf LIVE, SWEEP und RUDER zeigen die Zeilen PORT und VERSORGUNG der
+Karte BEREIT bei SAFE mit PORT-PWM oder PROG 5V aus `ARM SCHALTET EIN` in
+Gelb. Das 2s-Halten von ARM schaltet dann PORT-PWM EIN und PROG 5V EIN,
+wartet bis zu 1000ms auf ihre Rückmeldung, schaltet auf ARMED und wartet
+bis zu 500ms auf ARMED. Ein Schritt, der scheitert, nennt sich im
+Alarmband und schaltet alle Ausgänge aus. DISARM schaltet den Prüfstand
+auf SAFE und PROG 5V aus
+([Servo: ARM schaltet die Versorgung](Servo-de.md#arm-schaltet-die-versorgung-auf-live-sweep-und-ruder)).
 
 RUDER AUTO und ENDLAGENLAUF brauchen keinen Schritt von Hand: ihr 2s
 HALTEN: ARM + START schaltet bei SAFE PORT-PWM EIN, dann PROG 5V EIN,
@@ -243,7 +253,7 @@ Aktuelle Einschränkungen:
 
 ![SUPPLY auf dem Carrier](img/de/supply-rbmod.png)
 
-![SERVO auf dem Carrier, das Feld PROG 5V unter PD MINI](img/de/servo-rbmod.png)
+![LIVE auf dem Carrier: PORT-PWM und PROG 5V gelb, ARM schaltet sie ein](img/de/servo-rbmod.png)
 
 ![Der KST-Programmer hält die 5V](img/de/servo-kst-rbmod.png)
 

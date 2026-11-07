@@ -182,7 +182,7 @@ PWM02 und PWM03 teilen sich einen PWM-Slice und damit eine Pulsrate. SERVO PWM u
 
 PROG-PORT-Einträge nennen den festen Stecker und Pin, etwa `PROGP01 AUF GPIO 13`. PIN und FUNKTION lassen sich nicht direkt ändern. FUNKTION zeigt SERVO PWM, wenn der Port den Tester bedient, sonst PROGRAMMIERUNG.
 
-Ab IOmcu-Protokoll 4.36 sind SERVO-TESTER und PORT-PWM verfügbar. Die Portwahl fordert die Servopulsfunktion an. Ein PWM-Ausgang auf demselben Slice sperrt die Wahl. PORT-PWM EIN wird auch bei ausgeschaltetem Feld PROG 5V angenommen; der Puls startet, sobald das Feld auf SERVO EIN zeigt. Das Verlassen von SERVO schaltet ein dort eingeschaltetes PROG 5V aus, schalte es also nach der Rückkehr zu SERVO ein. Ältere Protokolle blenden die Testerzeilen aus und zeigen `PIN FEST. DER TESTER BRAUCHT IOMCU-PROTOKOLL 4.36`.
+Ab IOmcu-Protokoll 4.36 sind SERVO-TESTER und PORT-PWM verfügbar. Die Portwahl fordert die Servopulsfunktion an. Ein PWM-Ausgang auf demselben Slice sperrt die Wahl. PORT-PWM EIN wird auch bei ausgeschaltetem Feld PROG 5V angenommen; der Puls startet, sobald PROG 5V auf SERVO EIN zeigt. ARM auf LIVE, SWEEP und RUDER von SERVO schaltet PROG 5V und PORT-PWM selbst ein. Das Verlassen von SERVO schaltet ein dort eingeschaltetes PROG 5V aus. Ältere Protokolle blenden die Testerzeilen aus und zeigen `PIN FEST. DER TESTER BRAUCHT IOMCU-PROTOKOLL 4.36`.
 
 ## Die Übersicht: AUS
 

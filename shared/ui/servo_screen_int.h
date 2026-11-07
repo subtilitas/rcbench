@@ -108,10 +108,13 @@ _Static_assert(PORT_X == RCARD_X && PORT_W == RCARD_W,
 #define SV_CELL       10 /**< SV_FONT_LABEL's cell width, px. */
 
 /*
- * The output card, top to bottom: the servo rail's live power and its
- * plot, the supply's set points and output switch, SPEED, the type and
- * frame rate in force, and CENTRE / SWEEP / RELEASE.  Every row tapped is
- * UI_TAP_MIN or taller.  ARM is the footer's middle slot.
+ * The output card on KST and HITEC, top to bottom: the servo rail's live
+ * power and its plot, the supply's set points and output switch, SPEED,
+ * the type and frame rate in force, and CENTRE / SWEEP / RELEASE.  Every
+ * row tapped is UI_TAP_MIN or taller.  ARM is the footer's middle slot.
+ * LIVE, SWEEP and RUDDER show READY rows there instead
+ * (servo_drive_ready.c); RUDDER AUTO, TEST and LIMIT RUN their READY card
+ * (servo_ready.c).
  */
 #define RC_X      (RCARD_X + 12) /**< The output card's inner column, px. */
 #define RC_W      (RCARD_W - 24) /**< Its width: 356px. */

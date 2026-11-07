@@ -6,7 +6,7 @@ order: 23
 
 # Ruderausschlag
 
-RUDER im Hub von [SERVO](servo.md) steuert ein Servo und zeigt den Ruderausschlag. Die Anzeige nennt Grad ab einem Nullpunkt und bei eingegebener Ruderflächentiefe auch Millimeter an der Hinterkante. WINKELQUELLE unter [Sensoren](setup-sensors.md) wählt den AS5600-Ausgangsencoder oder die IMU. Wie bei GEMESSEN auf LIVE folgt das Vorzeichen der Richtung des Sollwinkels. Die Ausgangskarte bleibt rechts sichtbar: PORT nennt den angesteuerten Ausgang. ARM in der Fußleiste entscheidet, ob er sich bewegen kann.
+RUDER im Hub von [SERVO](servo.md) steuert ein Servo und zeigt den Ruderausschlag. Die Anzeige nennt Grad ab einem Nullpunkt und bei eingegebener Ruderflächentiefe auch Millimeter an der Hinterkante. WINKELQUELLE unter [Sensoren](setup-sensors.md) wählt den AS5600-Ausgangsencoder oder die IMU. Wie bei GEMESSEN auf LIVE folgt das Vorzeichen der Richtung des Sollwinkels. Die rechte Karte zeigt die Taste PORT und die Zeilen von BEREIT: PORT, WINKEL, NULLPUNKT, VERSORGUNG und ARM. ARM in der Fußleiste schaltet PORT-PWM und die Versorgung ein, wo sie aus sind, und schaltet dann auf ARMED ([SERVO, ARMED](servo.md#armed)).
 
 ![RUDER bei SAFE](view:servo-rudder)
 

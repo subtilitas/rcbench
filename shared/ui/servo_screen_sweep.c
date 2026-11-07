@@ -767,6 +767,9 @@ void svs_tick_body(float dt_s)
         }
         ++s.dial_rev;
     }
+    /* LIVE, SWEEP and RUDDER: ARM's hold dropped by a red row, and the
+     * steps that switch the supply before ARM. */
+    drive_frame(dt_s);
     if (s.arm_down && svs_arm_locked() && ui_hold_leave(&s.arm)) {
         /* The port was found held under a hold of ARM: no arm is sent, and the
          * alert says why. */
@@ -778,7 +781,7 @@ void svs_tick_body(float dt_s)
     }
     if (s.arm_down && !s.gate.armed) {
         ++s.arm_rev;
-        if (ui_hold_tick(&s.arm, dt_s)) {
+        if (ui_hold_tick(&s.arm, dt_s) && !drive_arm_fired()) {
             post(SERVO_CMD_ARM, 0);
         }
     }

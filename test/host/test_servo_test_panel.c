@@ -185,10 +185,12 @@ TEST_CASE(a_run_above_6_v_starts_through_the_hv_hold)
 }
 
 /* Every way out of a run ends it: the output asked off, the servo let go,
- * and the report says ABORTED. */
+ * and the report says ABORTED.  No SERVO screen shows OUTPUT OFF while
+ * TEST runs: LIVE, SWEEP and RUDDER show READY rows, and KST and HITEC end
+ * the run as they open. */
 TEST_CASE(every_way_out_of_a_run_switches_off_and_lets_go)
 {
-    for (int way = 0; way < 11; ++way) {
+    for (int way = 0; way < 10; ++way) {
         bench_fresh();
         servo_screen_set_link(true);
         hold_start(2.3f);
@@ -220,11 +222,7 @@ TEST_CASE(every_way_out_of_a_run_switches_off_and_lets_go)
             open_settings();
             sl_step(HL_REVERSE, +1);               /* REVERSE */
             break;
-        case 9: bench.online = false; break;            /* the supply is gone */
-        default:                    /* OUTPUT OFF, on LIVE's card */
-            close_settings();
-            tap(SUP_OUT_X, SUP_ROW_Y);
-            break;
+        default: bench.online = false; break;           /* the supply is gone */
         }
         bench_frames(2000u);
         CHECK(!servo_screen_testing());
@@ -367,6 +365,7 @@ TEST_CASE(a_run_follows_the_value_state_at_every_edge)
             break;
         case 1:                                  /* ARMING */
             servo_screen_set_armed(false);
+            go(SERVO_FN_KST);                    /* KST's ARM: ARM alone */
             arm_press();
             hold_for(2.3f);
             arm_release();

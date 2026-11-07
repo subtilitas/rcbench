@@ -105,7 +105,7 @@ static void open_row(int row)
         go(SERVO_FN_RAUTO);
         break;
     case AT_SET:
-        close_settings();
+        go(SERVO_FN_KST);               /* the SET row is KST's */
         break;
     }
     tap(w->x, w->y);

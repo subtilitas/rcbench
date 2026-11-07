@@ -33,6 +33,8 @@
  * SPDX-License-Identifier: MIT
  */
 
+/* SWEEP's screen: its button is the one the cases press. */
+#define SERVO_RIG_FN SERVO_FN_SWEEP
 #include "servo_screen_rig.h"
 
 /* SWEEP asks the IOmcu for the TEST page's curve, and only on an armed
@@ -135,6 +137,9 @@ TEST_CASE(a_sweep_ends_on_the_dial_centre_release_disarm_and_leave)
         tap(SWEEP_X, BTN_Y);
         frames(0.2f);
         (void)last_cmd();
+        if (k == 1) {
+            go(SERVO_FN_LIVE);                 /* CENTRE is LIVE's */
+        }
         tap(k == 0 ? x : by[k].px, k == 0 ? y : by[k].py);
         CHECK(!servo_screen_sweeping());
         const servo_cmd_t c = last_cmd();

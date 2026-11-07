@@ -132,6 +132,7 @@ TRACKED = [
     "shared/ui/servo_rudder_auto_panel.c",
     "shared/ui/servo_rudder_auto_ready.c",
     "shared/ui/servo_ready.c",
+    "shared/ui/servo_drive_ready.c",
     "shared/ui/servo_rudder_flap.c",
     "shared/ui/servo_guide.c",
     "shared/ui/servo_fn.c",

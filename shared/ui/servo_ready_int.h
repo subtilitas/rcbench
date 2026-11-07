@@ -22,6 +22,12 @@
  * SETTINGS list on its row, ZERO, SETUP > SENSORS); a tap on any other row
  * not met names it in the alert band.
  *
+ * LIVE, SWEEP and RUDDER show their rows the same way over the output
+ * card's controls (servo_drive_ready.c): the title and 3 or 5 rows from
+ * y 96, SPEED, the type pill and the buttons under them, the rail line at
+ * y 404.  Their footer's middle slot is ARM, which switches the supply on
+ * first through the same sequence where a part reads off.
+ *
  * The footer's middle slot is the function's one hold, HOLD 2s: ARM +
  * START.  It fires the sequence (servo_start_seq.h): PORT PWM, PROG 5V or
  * the PD mini, the read-back within 1000ms, ARM, ARMED within 500ms, the
@@ -72,6 +78,8 @@ typedef enum {
     RDY_SEQ,    /**< the hold does it: amber                        */
     RDY_BAD,    /**< refuses the hold: red                          */
     RDY_IDLE,   /**< waits on a row above it: grey                  */
+    RDY_WARN,   /**< refuses nothing, the operator's to look at:
+                     amber dot and value (no pin, no reading)       */
 } rdy_state_t;
 
 /** @brief What a row's text names when a step of the sequence fails on
@@ -320,6 +328,82 @@ void lim_ready_tap(int i);
 /** @brief lim_write_why() less the PROG 5V the hold switches on: why a run
  *         started by the hold writes nothing.  @return the line, or NULL */
 const char *lim_write_why_held(void);
+
+/* --- servo_drive_ready.c: LIVE's, SWEEP's and RUDDER's rows -------------- */
+
+/** @brief The rows of LIVE, SWEEP and RUDDER; LIVE and SWEEP show PORT,
+ *         SUPPLY and ARM. */
+typedef enum {
+    DRR_PORT = 0, /**< what the tester drives                         */
+    DRR_ANGLE,    /**< the angle source: RUDDER only                  */
+    DRR_ZERO,     /**< ZERO taken: RUDDER only                        */
+    DRR_SUPPLY,   /**< PROG 5V, the PD mini or a supply off the bench */
+    DRR_ARM,      /**< ARMED, or what keeps ARM from the bench        */
+    DRR_COUNT     /**< the count                                      */
+} drive_row_t;
+
+/** @brief Whether the function shown is LIVE, SWEEP or RUDDER: the READY
+ *         rows over its output card and ARM that switches the supply.
+ *  @return true then */
+bool drive_shown(void);
+/** @brief The rows shown.  @return 3 on LIVE and SWEEP, 5 on RUDDER, 0
+ *         elsewhere */
+int drive_ready_count(void);
+/** @brief Card row @p i as drawn now.  @param i the row
+ *  @param r receives it  @return false past the last */
+bool drive_ready_row(int i, rdy_row_t *r);
+/** @brief The first row that refuses ARM, and its text.
+ *  @param row receives its card row; may be NULL
+ *  @return the text; NULL when ARM may be held */
+const char *drive_hold_blocked(int *row);
+/** @brief The step a refusal names, for the sequence's failure.
+ *  @param why a text drive_hold_blocked() returned
+ *  @return servo_seq_part_t: PROG 5V, PD MINI or ARM; NONE otherwise */
+servo_seq_part_t drive_part_of(const char *why);
+/** @brief What ARM switches on: PORT PWM on a PROG PORT, PROG 5V on the
+ *         carrier's port, the PD mini where it feeds the servo and the
+ *         rail does not read fed from elsewhere.  @return the needs */
+servo_seq_need_t drive_seq_need(void);
+/** @brief A tap on card row @p i: its fix, or its reason in the alert
+ *         band.  @param i the row */
+void drive_ready_tap(int i);
+/** @brief The output card's controls laid out for the function shown:
+ *         SPEED, CENTRE, SWEEP and RELEASE where it has them. */
+void drive_layout(void);
+/** @brief A DOWN on ARM or DISARM on LIVE, SWEEP or RUDDER: DISARM and
+ *         every output off, a stop of the steps, a refusal named, or the
+ *         hold begun.  @param evt the DOWN  @return false on any other
+ *         screen */
+bool drive_arm_press(const touch_event_t *evt);
+/** @brief ARM's hold fired on LIVE, SWEEP or RUDDER: the steps where a
+ *         part reads off, else ARM.  @return false on any other screen */
+bool drive_arm_fired(void);
+/** @brief The frame: a hold dropped as a row turns red, the steps.
+ *  @param dt_s the frame */
+void drive_frame(float dt_s);
+/** @brief Whether ARM's hold switches a part on first.  @return true
+ *         while a part ARM needs reads off */
+bool drive_switches(void);
+/** @brief The output card on LIVE, SWEEP and RUDDER: the READY rows,
+ *         SPEED, the type pill, the buttons and the rail line.
+ *  @param c the canvas */
+void drive_render_card(gfx_canvas_t *c);
+
+/** @brief ARM, DISARM or the step under way in the footer's middle slot
+ *         on LIVE, SWEEP and RUDDER.  @param c the canvas */
+void drive_draw_arm(gfx_canvas_t *c);
+/** @brief SPEED's track on LIVE and SWEEP.  @return it; empty elsewhere */
+gfx_rect_t drive_speed_rect(void);
+/** @brief The type pill under the rows.  @return its rectangle */
+gfx_rect_t drive_tag_rect(void);
+/** @brief The profile in force, its frame rate and pulse range, in the
+ *         danger colour for one that can destroy a servo not made for it
+ *         (servo_screen_draw.c).  @param c the canvas @param r the pill */
+void svs_draw_tag(gfx_canvas_t *c, gfx_rect_t r);
+
+/** @brief Every output the bench drives off and the bench to SAFE:
+ *         DISARM, the carrier's PROG 5V, the PD mini's output. */
+void svs_all_off(void);
 
 #ifdef __cplusplus
 }

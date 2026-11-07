@@ -138,11 +138,11 @@ static const servo_state_t k_servo[] = {
       { TX_HG_SVH_TITLE_TILES, TX_HG_SVH_TITLE_FOOTER },
       { 5, 2 } },
     { "LIVE", SERVO_FN_LIVE, false, 3, 0,
-      { TX_HG_SV_TITLE_LIVE, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
+      { TX_HG_SV_TITLE_LIVE, TX_HG_SV_TITLE_DRV_READY, TX_HG_SV_TITLE_CARD },
       { 3, 4, 3 } },
     { "SWEEP", SERVO_FN_SWEEP, false, 3, 0,
-      { TX_HG_SV_TITLE_SWEEP, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
-      { 3, 4, 4 } },
+      { TX_HG_SV_TITLE_SWEEP, TX_HG_SV_TITLE_DRV_READY, TX_HG_SV_TITLE_CARD },
+      { 3, 5, 3 } },
     { "TEST", SERVO_FN_TEST, false, 2, 0,
       { TX_HG_SV_TITLE_TEST, TX_HG_SV_TITLE_READY },
       { 3, 5 } },
@@ -150,8 +150,8 @@ static const servo_state_t k_servo[] = {
       { TX_HG_SV_TITLE_LIMRUN, TX_HG_SV_TITLE_READY },
       { 2, 5 } },
     { "RUDDER", SERVO_FN_RUDDER, false, 4, 0,
-      { TX_HG_SV_TITLE_RUDDER, TX_HG_SV_TITLE_RUD_READ, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
-      { 4, 3, 4, 5 } },
+      { TX_HG_SV_TITLE_RUDDER, TX_HG_SV_TITLE_RUD_READ, TX_HG_SV_TITLE_DRV_READY, TX_HG_SV_TITLE_CARD },
+      { 4, 3, 5, 2 } },
     { "RUDDER AUTO", SERVO_FN_RAUTO, false, 3, 0,
       { TX_HG_SV_TITLE_AUTO, TX_HG_SV_TITLE_RUD_READ, TX_HG_SV_TITLE_READY },
       { 3, 2, 5 } },
@@ -281,28 +281,34 @@ TEST_CASE(every_supply_page_fits_and_hides_no_stop)
     ui_theme_set(UI_THEME_DARK);
 }
 
-/* OUTPUT OFF shows on SERVO's SET row and in SUPPLY's footer while the
- * output is on or an ON is on its way: SERVO's pages with the dock on the
- * right and every SUPPLY page, either dock over the footer's middle slot,
- * are not offered then, and come back once it is off. */
+/* OUTPUT OFF shows on the SET row of KST's and HITEC's output card and in
+ * SUPPLY's footer while the output is on or an ON is on its way: every
+ * SUPPLY page, either dock over the footer's middle slot, is not offered
+ * then, and comes back once it is off.  KST's pages dock on the left, off
+ * OUTPUT OFF, and LIVE has no OUTPUT OFF: their pages stay. */
 TEST_CASE(a_live_supply_output_takes_the_pages_that_cover_output_off)
 {
     fresh();
-    CHECK_EQ(scr->help_count(), 3);
+    go(SERVO_FN_KST);
+    CHECK_EQ(scr->help_count(), 2);
     supply_screen_set_output(true);
     supply_state_t st = *supply_screen_reading();
     st.online = true;
     st.output = true;
     supply_screen_push(&st);
     REQUIRE(supply_screen_output_on());
-    CHECK_EQ(pages_checked(scr, false, "SERVO LIVE, output on"), 2);
+    CHECK_EQ(pages_checked(scr, false, "SERVO KST, output on"), 2);
     CHECK_EQ(title_of(scr, 0), TX_HG_SV_TITLE_CARD);
+    go(SERVO_FN_LIVE);
+    CHECK_EQ(pages_checked(scr, false, "SERVO LIVE, output on"), 3);
+    CHECK_EQ(title_of(scr, 0), TX_HG_SV_TITLE_LIVE);
+    go(SERVO_FN_KST);
     const ui_screen_t *sup = supply_screen();
     CHECK_EQ(sup->help_count(), 0);
     st.output = false;
     supply_screen_set_output(false);
     supply_screen_push(&st);
-    CHECK_EQ(scr->help_count(), 3);
+    CHECK_EQ(scr->help_count(), 2);
     CHECK_EQ(sup->help_count(), 3);
 }
 
@@ -323,17 +329,22 @@ static int safe_points(const ui_screen_t *sc)
 }
 
 /* PROG 5V OFF stops the ports' own supply, while SAFE as well and with the
- * output off: while the supply reads ON it is a safe control on SERVO and
- * SUPPLY, and the pages with the dock on the right over it are not
- * offered.  At OFF they come back and PROG 5V ON is no safe control. */
+ * output off: while the supply reads ON it is a safe control on SUPPLY,
+ * and the pages with the dock on the right over it are not offered.  At
+ * OFF they come back and PROG 5V ON is no safe control.  On SERVO, LIVE
+ * shows PROG 5V as a READY row, and KST's session holds the presses of
+ * its screen (svs_safe_at()); its pages dock on the left, off the box. */
 TEST_CASE(prog_5v_on_takes_the_pages_that_cover_prog_5v_off)
 {
     prog5v_box_reset();
     prog5v_box_publish(P5_ON, 21u, (uint8_t)PROG5V_HELD_NONE);
     fresh();
     REQUIRE(!supply_screen_output_live());
-    CHECK(safe_points(scr) > 0);
-    CHECK_EQ(pages_checked(scr, false, "SERVO LIVE, PROG 5V on"), 2);
+    /* LIVE shows PROG 5V as a READY row, no PROG 5V OFF. */
+    CHECK_EQ(safe_points(scr), 0);
+    CHECK_EQ(pages_checked(scr, false, "SERVO LIVE, PROG 5V on"), 3);
+    go(SERVO_FN_KST);
+    CHECK_EQ(pages_checked(scr, false, "SERVO KST, PROG 5V on"), 2);
     CHECK_EQ(title_of(scr, 0), TX_HG_SV_TITLE_CARD);
     const ui_screen_t *sup = supply_screen();
     sup->enter();
@@ -378,6 +389,7 @@ TEST_CASE(a_run_takes_the_output_cards_pages_and_armed_leaves_none)
 TEST_CASE(a_panel_or_a_question_takes_every_page)
 {
     fresh();
+    go(SERVO_FN_KST);                          /* its SET row's keypad */
     tap(SV_SUP_V_X, SV_SUP_Y);
     REQUIRE(servo_screen_keypad() != NULL && servo_screen_keypad()->open);
     CHECK_EQ(scr->help_count(), 0);
@@ -407,22 +419,29 @@ TEST_CASE(a_panel_or_a_question_takes_every_page)
 }
 
 /* ARM reads DISARM while ARMED, OUTPUT ON OUTPUT OFF while on, and on a
- * board that switches the ports' 5V PROG 5V stands where the plot is. */
+ * board that switches the ports' 5V PROG 5V stands where the plot is, on
+ * KST's output card.  LIVE names ARM on its READY page. */
 TEST_CASE(the_labels_follow_what_the_controls_read)
 {
     fresh();
     ui_help_page_t p;
-    REQUIRE(ui_help_page(scr, false, 2, &p));
-    CHECK_STR_EQ(p.item[2].label, "ARM");
     REQUIRE(ui_help_page(scr, false, 1, &p));
+    CHECK_EQ(p.title, TX_HG_SV_TITLE_DRV_READY);
+    CHECK_STR_EQ(p.item[3].label, "ARM");
+    CHECK_EQ(p.item[3].text, TX_HG_SV_DRV_ARM);
+    go(SERVO_FN_KST);
+    REQUIRE(ui_help_page(scr, false, 1, &p));
+    CHECK_STR_EQ(p.item[2].label, "ARM");
+    REQUIRE(ui_help_page(scr, false, 0, &p));
     CHECK_EQ(p.item[1].text, TX_HG_SV_PLOT);
     prog5v_box_reset();
     prog5v_box_publish(P5_OFF, 21u, (uint8_t)PROG5V_HELD_NONE);
     fresh();
-    REQUIRE(ui_help_page(scr, false, 1, &p));
+    go(SERVO_FN_KST);
+    REQUIRE(ui_help_page(scr, false, 0, &p));
     CHECK_STR_EQ(p.item[1].label, "PROG 5V");
     CHECK_EQ(p.item[1].text, TX_HG_SV_P5);
-    pages_checked(scr, false, "SERVO LIVE, PROG 5V");
+    pages_checked(scr, false, "SERVO KST, PROG 5V");
     prog5v_box_reset();
     fresh();
     const ui_screen_t *sup = supply_screen();

@@ -102,6 +102,7 @@ static int pill_w(const char *word)
  * grid line or the plot's edge. */
 static bool pill_reads(const char *word)
 {
+    const servo_fn_t was = card_on();       /* the plot is TEST's */
     scr->render(&cv, 0);
     const bool model = supply_screen_model();
     static gfx_color_t seen[(size_t)W * H];
@@ -114,6 +115,7 @@ static bool pill_reads(const char *word)
     memcpy(fb, seen, sizeof(seen));
     supply_screen_set_model(model);
     scr->tick(1.0f / 39.0f);
+    card_back(was);
     const int w = pill_w(word);
     ui_pill_font(&want_cv, (gfx_rect_t){ PILL_X, PILL_Y, (int16_t)w, 26 },
                  word, ui_theme_color(UI_C_WARN),

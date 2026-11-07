@@ -456,6 +456,7 @@ TEST_CASE(the_port_button_stays_in_sight_under_a_keypad)
 {
     static gfx_color_t want[PB_W * PB_H], got[PB_W * PB_H];
     fresh();
+    go(SERVO_FN_KST);                          /* its SET row's keypad */
     servo_screen_set_pins(PIN(4), true);
     scr->render(&cv, 0);
     target_box(want);
@@ -599,6 +600,7 @@ TEST_CASE(the_port_pulse_is_not_switched_off_under_a_test_or_a_sweep)
     settings_set(SET_SERVO_PORT_PWM, 1.0f);
     servo_screen_set_armed(true);
     servo_screen_set_sweep(true);
+    go(SERVO_FN_SWEEP);
     tap(SWEEP_X, BTN_Y);
     CHECK(servo_screen_sweeping());
     CHECK(servo_screen_port_pwm_locked());

@@ -652,6 +652,14 @@ bool servo_screen_arm_asked(void);
 bool servo_screen_arm_held(void);
 
 /**
+ * @brief Whether ARM's hold on LIVE, SWEEP or RUDDER switches a part on
+ *        before it arms: PORT PWM on a PROG PORT, the carrier's PROG 5V,
+ *        the PD mini's output where it feeds the servo.
+ * @return true while one of them reads off; false on any other screen
+ */
+bool servo_screen_arm_switches(void);
+
+/**
  * Whether OUTPUTS' SERVO TESTER segment (the TARGET setting) takes no
  * press: servo_screen_target_locked(), or the bench ARMED for the motor.
  */

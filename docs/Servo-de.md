@@ -1438,6 +1438,32 @@ auf ARMED schaltet, und der Bildschirm zeigt die Ruhelage, wenn der Prüfstand
 ARMED meldet; die Zeit zwischen beidem ist auf einem Prüfstand nicht
 gemessen.
 
+## ARM schaltet die Versorgung auf LIVE, SWEEP und RUDER
+
+LIVE, SWEEP und RUDER zeigen Zeilen von BEREIT an der Stelle der
+Ausgangskarte: PORT, VERSORGUNG und ARM, auf RUDER dazu WINKEL und
+NULLPUNKT zwischen PORT und VERSORGUNG ([Bildschirme](Screens-de.md#servo)).
+Die Zeilen sind `shared/ui/servo_drive_ready.c`. Das 2s-Halten von ARM
+schaltet ein, was das Servo braucht und aus ist, und schaltet dann auf
+ARMED, mit den Schritten 1 bis 4 der [Startfolge](#auto-endpoints):
+
+| Teil | ARM schaltet es ein, wenn | ARM lässt es aus, wenn |
+| --- | --- | --- |
+| PORT-PWM | das Ziel ein PROG PORT ist und die Option AUS steht | ein Programmierport den Port hält |
+| PROG 5V | der Programmierport des rbmod-Carriers das Ziel ist | ein Programmierport die 5V hält oder die 5V nicht ausgelesen sind: die Zeile ist rot |
+| Ausgang des PD mini | ein PD mini antwortet und das Servo speist | sein Sollwert über 6.0V liegt: nur die HV-Warnung von AUSGANG EIN schaltet ihn dann ein, und die rote Zeile VERSORGUNG öffnet diese Warnung beim Tippen. Ein INA3221 misst die Schiene bei PD mini aus mit 3.0V oder mehr: die Schiene ist fremd gespeist. Ein Programmierport hält den PD mini |
+
+Ist jeder Teil schon an, schaltet das Halten sofort auf ARMED. Ein
+gescheiterter Schritt nennt sich im Alarmband und schaltet alle Ausgänge
+aus. Auf diesen Bildschirmen schalten DISARM, STOP, ein Fehler und eine
+verlorene Verbindung den Prüfstand auf SAFE und PROG 5V und den Ausgang
+des PD mini aus. Ein Verlassen schaltet auf SAFE und den PD mini aus; PROG
+5V bleibt zwischen den SERVO-Bildschirmen an und schaltet aus, wenn SERVO
+verlassen wird.
+
+Ohne INA3221-Fenster auf der Schiene misst sie nichts: ARM schaltet den PD
+mini auch neben einer Schiene ein, die ein anderes Netzteil speist.
+
 ## Ruderausschlag
 
 ### Zweck
@@ -1486,8 +1512,8 @@ aus“ ohne Lineal am Modell. Die Geometrie steht in
 - 1000us und 2000us befehlen diese Pulse als Winkel des eingestellten Typs,
   begrenzt auf WEG und den Pulsbereich des Typs; ZENTRIEREN befiehlt PULS
   MITTE plus TRIMMUNG. Alle drei und der Drehknopf wirken nur, solange der
-  Prüfstand ARMED ist. Die Taste PORT der Ausgangskarte nennt den Pin, den
-  sie ansteuern.
+  Prüfstand ARMED ist. Die Taste PORT und die Zeile PORT der Karte BEREIT
+  nennen den Pin, den sie ansteuern.
 
 | Messwert | Auflösung | Bereich |
 | --- | --- | --- |

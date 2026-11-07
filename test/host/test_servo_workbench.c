@@ -137,6 +137,7 @@ TEST_CASE(the_home_tag_closes_a_panel_climbs_from_a_runs_settings_and_leaves)
     /* A set point's keypad on an armed bench: closed, the bench stays
      * ARMED; the tag after it leaves, and leaving switches to SAFE. */
     fresh_armed();
+    go(SERVO_FN_KST);                          /* its SET row */
     scr->enter();
     tap(SUP_V_X, SUP_ROW_Y);
     CHECK(home_tag());
@@ -501,12 +502,13 @@ static bool keypad_opened(void)
 }
 
 /*
- * The rows a finger taps are UI_TAP_MIN tall: the SET row's values take a
- * press 1px inside each edge.  The lists' rows are ui_setlist.h's.
+ * The rows a finger taps are UI_TAP_MIN tall: the SET row's values on KST's
+ * output card take a press 1px inside each edge.  The lists' rows are ui_setlist.h's.
  */
 TEST_CASE(a_set_value_is_a_finger_tall)
 {
     fresh();
+    go(SERVO_FN_KST);                          /* its SET row */
     tap(SUP_V_X, SUP_ROW_Y - 23);              /* SET's voltage */
     CHECK(keypad_opened());
     tap(SUP_V_X, SUP_ROW_Y + 22);

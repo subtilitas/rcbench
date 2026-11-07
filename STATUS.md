@@ -427,7 +427,7 @@ goes from a function screen to the hub and from the hub to the menu, and the hub
 nothing (`test_servo_hub`). KST and HITEC are grey with their reason while the IOmcu does
 not report the capability or another session holds the port, from one table
 (`prog_registry.h`, `test_prog_registry`). Every function screen has the footer name and
-port line, ARM and SETTINGS, and an output card whose PORT button names the target as
+port line, ARM and SETTINGS, and a PORT button over the right card that names the target as
 `protocol pins` and opens the choice of OUTPUTS and the 4 programming ports, locked while ARMED or ARM
 is asked, and while the programmer holds the port (`test_servo_port_button`,
 `test_servo_workbench`). No list, page of rows or PORT list opens while a finger holds
@@ -510,7 +510,7 @@ RUDDER (`shared/ui/servo_rudder_panel.c`, `shared/servo/servo_rudder.c`) shows t
 source's angle, the AS5600's or the IMU's, as a control surface's deflection from ZERO in
 0.1°, with LENGTH (0 or 10 to 500mm, `rud_len_mm`) the trailing edge's travel L x sin in
 0.1mm, the largest deflection each side until ZERO or RESET MAX, and drives 1000us, CENTRE
-and 2000us and takes the knob only while ARMED, its PORT button the output card's
+and 2000us and takes the knob only while ARMED, its PORT button over the READY rows
 (`test_servo_rudder`, `test_servo_rudder_panel`, `test_rudder_layout`; host suite only). Its
 side view draws the surface at the deflection shown, -90 to +90° with a fixed flap of 62px,
 beyond that at ±90°, dim on the neutral line without a reading, with the MAX and, in AUTO's
@@ -540,6 +540,11 @@ and switches every output off (`test_servo_start_seq`, `test_servo_ready`,
 LIMIT RUN has the same READY card from `shared/ui/servo_limit_ready.c`, nine rows from
 `lim_blocked()`'s checks, and the same hold; the run ends SAFE, the PROG 5V kept
 (`test_servo_limrun_ready`, `test_servo_limrun_seq`; host suite only).
+LIVE, SWEEP and RUDDER show READY rows in the output card's place (PORT, SUPPLY, ARM; ANGLE
+and ZERO on RUDDER), and their ARM runs the same steps where PORT PWM, PROG 5V or the PD
+mini reads off: never the PD mini past 6.0V or beside a rail an INA3221 reads at 3.0V or
+more, DISARM and a failed step all off, PROG 5V kept between SERVO screens
+(`shared/ui/servo_drive_ready.c`, `test_servo_drive_ready`; host suite only).
 
 AUTO and the LIMIT RUN program a Hitec servo through the Hitec programmer's run seam when
 the LIMIT RUN settings' SERVO row reads HITEC, LEFT END and RIGHT END in counts from 0xC2 on
@@ -1281,7 +1286,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 501 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 502 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1394,7 +1399,7 @@ The host suite is 501 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_imu`, `test_imu_filter`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_kst`,
-`test_servo_rauto_panel`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_start_seq`,
+`test_servo_rauto_panel`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_drive_ready`, `test_servo_start_seq`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_rudder_flap`, `test_rudder_flap_view`.
@@ -1932,11 +1937,11 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/stop_hold.c` | 45 | 45 | 100.0% |
 | `shared/ui/ui_pinlist.c` | 62 | 62 | 100.0% |
 | `shared/ui/ui_board.c` | 56 | 56 | 100.0% |
-| `shared/ui/servo_screen.c` | 380 | 371 | 97.6% |
-| `shared/ui/servo_screen_sweep.c` | 506 | 503 | 99.4% |
+| `shared/ui/servo_screen.c` | 374 | 365 | 97.6% |
+| `shared/ui/servo_screen_sweep.c` | 507 | 504 | 99.4% |
 | `shared/ui/servo_screen_link.c` | 420 | 416 | 99.0% |
-| `shared/ui/servo_screen_touch.c` | 323 | 316 | 97.8% |
-| `shared/ui/servo_screen_draw.c` | 571 | 552 | 96.7% |
+| `shared/ui/servo_screen_touch.c` | 334 | 320 | 95.8% |
+| `shared/ui/servo_screen_draw.c` | 577 | 557 | 96.5% |
 | `shared/ui/servo_settings_panel.c` | 653 | 590 | 90.3% |
 | `shared/ui/servo_settings_draw.c` | 341 | 304 | 89.2% |
 | `shared/ui/servo_test_panel.c` | 454 | 445 | 98.0% |
@@ -1950,10 +1955,11 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_rudder_panel.c` | 402 | 399 | 99.2% |
 | `shared/ui/servo_rudder_auto_panel.c` | 564 | 510 | 90.4% |
 | `shared/ui/servo_rudder_auto_ready.c` | 273 | 269 | 98.5% |
-| `shared/ui/servo_ready.c` | 357 | 345 | 96.6% |
+| `shared/ui/servo_ready.c` | 393 | 377 | 95.9% |
+| `shared/ui/servo_drive_ready.c` | 360 | 338 | 93.9% |
 | `shared/ui/servo_rudder_flap.c` | 101 | 99 | 98.0% |
-| `shared/ui/servo_guide.c` | 154 | 152 | 98.7% |
-| `shared/ui/servo_fn.c` | 82 | 81 | 98.8% |
+| `shared/ui/servo_guide.c` | 180 | 176 | 97.8% |
+| `shared/ui/servo_fn.c` | 83 | 82 | 98.8% |
 | `shared/ui/servo_hub.c` | 184 | 179 | 97.3% |
 | `shared/ui/servo_footer.c` | 133 | 130 | 97.7% |
 | `shared/ui/servo_lists.c` | 201 | 200 | 99.5% |
@@ -2262,7 +2268,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **87092** | **85376** | **98.0%** |
+| **total** | **87527** | **85775** | **98.0%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

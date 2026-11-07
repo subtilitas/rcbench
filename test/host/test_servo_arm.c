@@ -73,8 +73,8 @@ static void drain(void)
     while (took().kind != SERVO_CMD_NONE) { }
 }
 
-/* The SERVO screen up on a disarmed bench, nothing on the glass. */
-static void fresh(void)
+/* Screen @p id of SERVO up on a disarmed bench, nothing on the glass. */
+static void fresh_at(ui_screen_id_t id)
 {
     if (fb == NULL) {
         fb     = calloc((size_t)W * H, sizeof(gfx_color_t));
@@ -90,13 +90,16 @@ static void fresh(void)
     }
     ui_router_tick(2.0f);
     ui_router_goto(SCREEN_OVERVIEW);
-    ui_router_goto(SCREEN_SERVO_LIVE);
+    ui_router_goto(id);
     feed_reset();
     /* Nothing measures the horn: it is drawn from the command. */
     servo_screen_feedback(0u, 0.0f, false);
     servo_screen_set_sweep(true);
     drain();
 }
+
+/* LIVE up on a disarmed bench, nothing on the glass. */
+static void fresh(void) { fresh_at(SCREEN_SERVO_LIVE); }
 
 static void frames(int n)
 {
@@ -731,7 +734,7 @@ static uint16_t start_sweep(void)
  * where the curve had it, and the arm after it is at the rest. */
 TEST_CASE(a_sweep_ended_by_a_disarm_leaves_nothing_to_send)
 {
-    fresh();
+    fresh_at(SCREEN_SERVO_SWEEP);
     CHECK(arm());
     CHECK_EQ(start_sweep(), SERVO_CMD_SWEEP);
     frames(12);
@@ -756,7 +759,7 @@ TEST_CASE(a_sweep_ended_by_a_disarm_leaves_nothing_to_send)
  * sweep nor starts one. */
 TEST_CASE(a_pause_not_yet_sent_is_dropped_by_a_disarm)
 {
-    fresh();
+    fresh_at(SCREEN_SERVO_SWEEP);
     CHECK(arm());
     CHECK_EQ(start_sweep(), SERVO_CMD_SWEEP);
     frames(12);
@@ -774,7 +777,7 @@ TEST_CASE(a_pause_not_yet_sent_is_dropped_by_a_disarm)
 /* A SWEEP tapped and the bench stopped before it is taken: not sent. */
 TEST_CASE(a_sweep_not_yet_sent_is_dropped_by_a_stop)
 {
-    fresh();
+    fresh_at(SCREEN_SERVO_SWEEP);
     CHECK(arm());
     feed_tap(FEED_LONE, SWEEP_X, BTN_Y);
     CHECK(servo_screen_sweeping());
@@ -808,7 +811,7 @@ static unsigned kinds_over(int n)
 TEST_CASE(a_disarm_tap_ends_a_sweep_and_a_pause_at_the_tap)
 {
     for (int paused = 0; paused < 2; ++paused) {
-        fresh();
+        fresh_at(SCREEN_SERVO_SWEEP);
         CHECK(arm());
         CHECK_EQ(start_sweep(), SERVO_CMD_SWEEP);
         frames(12);

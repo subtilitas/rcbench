@@ -29,15 +29,16 @@ static bool marked(int x, int y)
     return fb[(size_t)y * W + x] == MARK_COLOUR;
 }
 
-/* Marks in LIVE's CURRENT reading, the line, the plot, and around them on
- * both cards: the MEASURED reading, the type pill, the SET line, SPEED's
- * row and the left card away from the grip. */
+/* Marks in LIVE's CURRENT reading, the rail line (two: its name and its
+ * readings), and around them on both cards: the MEASURED reading, the type
+ * pill, the SUPPLY row, SPEED's row and the left card away from the
+ * grip. */
 enum { MK_ROW = 0, MK_LINE, MK_PLOT, MK_MEASURED, MK_TAG, MK_SET, MK_SPEED,
        MK_LEFT, MK_COUNT };
 
 static const struct { int x, y; } k_mark[MK_COUNT] = {
-    { 516, 406 }, { 950, 80 }, { 950, 130 }, { 318, 406 }, { 700, 332 },
-    { 700, 198 }, { 700, 240 }, { 40, 300 },
+    { 516, 406 }, { 950, 410 }, { 700, 410 }, { 318, 406 }, { 700, 296 },
+    { 700, 140 }, { 700, 240 }, { 40, 300 },
 };
 
 /* What each mark covers, as the screen drew it. */

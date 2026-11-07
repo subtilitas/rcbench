@@ -1397,6 +1397,30 @@ The panel centres the surfaces before it switches to ARMED and the screen shows
 the rest when the bench reports ARMED; the time between the two on a bench
 is not measured.
 
+## ARM switches the supply on LIVE, SWEEP and RUDDER
+
+LIVE, SWEEP and RUDDER show READY rows in the output card's place: PORT,
+SUPPLY and ARM, and on RUDDER ANGLE and ZERO between PORT and SUPPLY
+([Screens](Screens.md#servo)). The rows are `shared/ui/servo_drive_ready.c`.
+ARM's 2s hold switches on what the servo needs and reads off, then arms,
+in steps 1 to 4 of the [start sequence](#auto-end-points):
+
+| Part | ARM switches it on where | ARM leaves it off where |
+| --- | --- | --- |
+| PORT PWM | the target is a PROG PORT and the setting is OFF | a programming port holds the port |
+| PROG 5V | the rbmod carrier's programming port is the target | a programming port holds the 5V, or the 5V is not read: the row is red |
+| PD mini's output | a PD mini answers and feeds the servo | its set point is past 6.0V: only OUTPUT ON's HV warning switches it on, and the red SUPPLY row opens that warning on a tap. An INA3221 reads the rail at 3.0V or more with the PD mini off: the rail is fed from elsewhere. A programming port holds the PD mini |
+
+Where every part reads on already, the hold arms at once. A failed step
+names itself in the alert band and switches every output off. On these
+screens DISARM, STOP, an error and a lost link switch the bench to SAFE,
+PROG 5V and the PD mini's output off. A leave switches to SAFE and the PD
+mini off; PROG 5V stays on between SERVO screens and goes off when SERVO
+is left.
+
+Without an INA3221 window on the rail nothing reads it: ARM switches the
+PD mini on beside a rail another supply feeds.
+
 ## Rudder deflection
 
 ### Purpose
@@ -1440,7 +1464,8 @@ the screen is `shared/ui/servo_rudder_panel.c`.
 - 1000us and 2000us command those pulses as angles of the type in force,
   held to TRAVEL and the type's pulse range; CENTRE commands PULSE CENTRE
   plus TRIM. All three and the rotary knob act only while the bench is
-  ARMED. The output card's PORT button names the pin they drive.
+  ARMED. The PORT button and the READY card's PORT row name the pin they
+  drive.
 
 | Reading | Resolution | Range |
 | --- | --- | --- |

@@ -3503,7 +3503,7 @@ static void pose_analyser_views(ui_screen_id_t id, const char *view)
  *        soldered.
  *        layout-rbmod: LAYOUT with the same binding.  supply-rbmod:
  *        SUPPLY with the PROG PORTS 5V line and the PROG 5V box.
- *        servo-rbmod: SERVO's output card with the box.  servo-kst-rbmod:
+ *        servo-rbmod: LIVE on PROG PORT 1, PROG 5V off.  servo-kst-rbmod:
  *        the KST programmer, the box held by PROG PORT 1.  setup-sensors-rbmod:
  *        SENSORS with 0x40 soldered and its channels on the rails.
  * @param id   The screen of the shot.
@@ -3830,6 +3830,7 @@ static ui_screen_id_t servo_view_screen(const char *view)
         servo_fn_t  fn;     /**< the function shown                 */
     } k[] = {
         { "servo-hub", false, SERVO_FN_HUB },
+        { "servo-hv-live", true, SERVO_FN_KST },
         { "servo-settings", true, SERVO_FN_HUB },
         { "servo-rate-", false, SERVO_FN_HUB },
         { "servo-warning", true, SERVO_FN_HUB },
@@ -3908,6 +3909,18 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
             supply_sim_step(&sm, 0.05f, &sst);
             servo_screen_supply(&sst);
         }
+        /* LIVE on a SAFE bench, and the HV view: the PD mini answers with
+         * its output off, so the SUPPLY row reads what ARM does with it. */
+        if (strcmp(view, "servo") == 0 || strcmp(view, "servo-hv") == 0) {
+            if (strcmp(view, "servo-hv") == 0) {
+                supply_screen_put(7.4f, 2.0f);
+            }
+            supply_sim_output(&sm, false);
+            for (int i = 0; i < 20; ++i) {
+                supply_sim_step(&sm, 0.05f, &sst);
+                servo_screen_supply(&sst);
+            }
+        }
         /*
          * The INA3221 as the servo rail's meter: 13s of CH1's windows from
          * a servo of the same model stepped between two positions every
@@ -3979,6 +3992,14 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
             settings_set(SET_SERVO_TARGET, 1.0f);
             servo_screen_set_drive(1u, 13u, true);
         }
+        if (strcmp(view, "servo-rbmod") == 0) {
+            /* The carrier's PROG PORT 1 on GPIO 13, PORT PWM and the PROG
+             * 5V off: ARM switches both on. */
+            prog_choice_set_far_minor(LINK_MINOR_CARRIER_PWM);
+            settings_set(SET_SERVO_TARGET, 1.0f);
+            settings_set(SET_SERVO_PORT_PWM, 0.0f);
+            servo_screen_set_drive(1u, 13u, false);
+        }
         if (strcmp(view, "servo-model") == 0) {
             /* No PD mini: the panel's model is the supply, and the line
              * over the plot carries the MODELLED pill. */
@@ -4008,15 +4029,19 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
             if (p2 && kst_panel_notes_rect().w > 0) {
                 ktap(kst_panel_notes_rect());
             }
-        } else if (strcmp(view, "servo-hv") == 0
-                   || strcmp(view, "servo-hv-live") == 0) {
-            /* The voltage on the SET line, typed past 6.0V: the HV
-             * warning, and in servo-hv-live with the output on.  The
-             * keypad's keys from a probe opened where the screen opens its
-             * own, over the left card. */
-            if (strcmp(view, "servo-hv-live") == 0) {
-                supply_screen_set_output(true);
-            }
+        } else if (strcmp(view, "servo-hv") == 0) {
+            /* LIVE with the PD mini off and set to 7.40V: SUPPLY reads TAP:
+             * HV WARNING in red, and a tap on it opens OUTPUT ON's HV
+             * warning. */
+            ui_router_goto(id);
+            ui_router_tick(0.02f);
+            tap(SV_RDY_X, UI_BAND_H + SV_DRV_ROW_Y(1));
+        } else if (strcmp(view, "servo-hv-live") == 0) {
+            /* The voltage on the SET line of KST's output card, typed
+             * past 6.0V with the output on: the HV warning.  The keypad's
+             * keys from a probe opened where the screen opens its own,
+             * over the left card. */
+            supply_screen_set_output(true);
             ui_router_goto(id);
             tap(SV_SUP_V_X, UI_BAND_H + SV_SUP_Y);
             ui_keypad_t kp;

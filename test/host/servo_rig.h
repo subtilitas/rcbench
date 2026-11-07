@@ -43,6 +43,12 @@
 #define SHAFT_Y SV_SHAFT_Y
 #define ARC_R   150
 
+/* The function screen fresh() opens: LIVE, or SWEEP for the suites of
+ * the sweep, which define it before they include the rig. */
+#ifndef SERVO_RIG_FN
+#define SERVO_RIG_FN SERVO_FN_LIVE
+#endif
+
 static gfx_color_t *fb;
 static gfx_canvas_t cv;
 static const ui_screen_t *scr;
@@ -71,9 +77,9 @@ static inline void fresh(void)
     settings_init();
     supply_screen()->reset();
     supply_screen_settings_loaded();
-    scr = servo_fn_screen(SERVO_FN_LIVE);
+    scr = servo_fn_screen(SERVO_RIG_FN);
     scr->reset();
-    servo_screen_show_fn(SERVO_FN_LIVE);
+    servo_screen_show_fn(SERVO_RIG_FN);
     /* An IOmcu that reports its servo PWM bank: the KST tile is
      * live. */
     ui_bench_status_t st = *ui_router_status();
@@ -144,7 +150,7 @@ static inline void go(servo_fn_t fn)
 static inline void tap_settings(void) { tap(SV_FOOT_SET_X, SV_FOOT_Y); }
 /* The hub's SETTINGS list, the servo profile. */
 static inline void open_settings(void)  { go(SERVO_FN_HUB); tap_settings(); }
-static inline void close_settings(void) { go(SERVO_FN_LIVE); }
+static inline void close_settings(void) { go(SERVO_RIG_FN); }
 static inline void open_test(void)      { go(SERVO_FN_TEST); }
 static inline void open_limrun(void)    { go(SERVO_FN_LIMRUN); }
 static inline void open_sweep(void)     { go(SERVO_FN_SWEEP); }

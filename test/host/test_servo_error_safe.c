@@ -106,16 +106,13 @@ TEST_CASE(a_stalled_servo_ends_a_run_with_the_bench_safe)
 }
 
 /* The operator's ends: one DISARM posted, the bench to SAFE, as every end
- * of a run that ARM + START armed the bench for. */
+ * of a run that ARM + START armed the bench for.  OUTPUT OFF is none of
+ * them: no SERVO screen shows it while TEST runs. */
 TEST_CASE(the_operators_end_switches_the_bench_to_safe)
 {
-    for (int way = 0; way < 5; ++way) {
+    for (int way = 1; way < 5; ++way) {
         run_under_way(false);
         switch (way) {
-        case 0:                         /* OUTPUT OFF, on LIVE's card */
-            close_settings();
-            tap(SUP_OUT_X, SUP_ROW_Y);
-            break;
         case 1: {                                   /* the dial */
             close_settings();
             int x, y;

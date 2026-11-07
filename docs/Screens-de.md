@@ -289,7 +289,7 @@ alle ihre Hilfeseiten auch in ARMED sichtbar.
 ![Die Hilfe von SERVO auf Seite 1 in LIVE](img/de/help-servo.png)
 
 Eine Hilfeseite zur linken Karte hat das Hilfefeld rechts. Die Hilfeseiten
-zur rechten Karte, der Ausgangskarte von SERVO und den Messwerten und der
+zur rechten Karte, der Ausgangs- oder BEREIT-Karte von SERVO und den Messwerten und der
 Karte STEUERUNG von SUPPLY, haben es links; nur sie erscheinen in ARMED.
 Die Aufgabe auf der linken Karte bestimmt die ersten Hilfeseiten:
 
@@ -301,7 +301,8 @@ Die Aufgabe auf der linken Karte bestimmt die ersten Hilfeseiten:
 | SERVO ENDLAGENLAUF | UNTERES ENDE mit OBERES ENDE und die Zustandszeilen (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
 | SERVO RUDER | LÄNGE, die Fahrtasten, NULLPUNKT und MAX LÖSCHEN (4); AUSSCHLAG, HINTERKANTE und die Statuszeilen (3) |
 | SERVO RUDER AUTO | die Sollwerte, RESERVE und TOLERANZ, NULLPUNKT (3); AUSSCHLAG und HINTERKANTE (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
-| SERVO, jeder Funktionsbildschirm, SAFE | Typ, Grafik oder PROG 5V, SOLL und TEMPO (4); PORT, ZENTRIEREN mit SWEEP und FREIGEBEN, ARM, OPTIONEN, auf RUDER auch die Seitenansicht (4 oder 5) |
+| SERVO LIVE, SWEEP und RUDER, SAFE | PORT, BEREIT, die Schienenzeile, ARM und auf SWEEP und RUDER OPTIONEN (4 oder 5); TEMPO, Typ und die Tasten auf LIVE und SWEEP (3), Typ und Seitenansicht auf RUDER (2) |
+| SERVO KST und HITEC, SAFE | Typ, Grafik oder PROG 5V, SOLL und TEMPO (4); PORT, ZENTRIEREN mit SWEEP und FREIGEBEN, ARM und OPTIONEN (4) |
 | die Listen von SERVO (Hub, SWEEP, RUDER, RUDER AUTO, HITEC) | wie eine Optionsliste |
 | SUPPLY LIVE | GRAFIK und TABELLE, SPANNUNG und STROMBEGRENZUNG (3) |
 | SUPPLY LIVE, die rechte Spalte | der Bereich und die vier Messwertkarten (5); die Sollwerte, SPITZENWERTE ZURÜCKSETZEN, AUSGANG EIN und OPTIONEN (4) |
@@ -310,9 +311,11 @@ Die Aufgabe auf der linken Karte bestimmt die ersten Hilfeseiten:
 Eine Hilfeseite, deren Hilfefeld ein Bedienelement zum Anhalten eines
 Ausgangs verdecken würde, fehlt, solange dieses Element sichtbar ist:
 
-- Die Hilfeseiten zur linken Karte verdecken die SOLL-Zeile von SERVO. Sie
-  fehlen, solange der Netzteilausgang an ist oder ein EIN unterwegs ist:
-  AUSGANG AUS bleibt sichtbar. AUSGANG AUS von SUPPLY, das mittlere Feld
+- Die SOLL-Zeile mit AUSGANG AUS liegt im Ausgangsfeld von KST und
+  HITEC, deren Hilfeseiten links andocken, neben der Zeile. LIVE, SWEEP
+  und RUDER haben keine SOLL-Zeile und bieten ihre
+  Hilfeseiten auch bei eingeschaltetem Ausgang, aber keine, solange die
+  Schritte von ARM laufen. AUSGANG AUS von SUPPLY, das mittlere Feld
   der Fußleiste, liegt unter jedem Hilfefeld; SUPPLY bietet dann keine
   Hilfeseite.
 - Die Funktionsbildschirme von SERVO bieten bei ARMED keine Hilfeseite:
@@ -526,6 +529,7 @@ ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | Taste | Hinweis |
 | --- | --- |
 | ARM auf MOTOR & ESC und SERVO | `Halte 2s, um auf ARMED zu schalten.` |
+| ARM auf LIVE, SWEEP und RUDER, wenn es PORT-PWM oder die Versorgung einschaltet | `Halte 2s: Port und Versorgung gehen an, dann ARM.` |
 | AUSGANG EIN auf SUPPLY und im Versorgungsfeld von SERVO | `Halte 2s, um den Ausgang einzuschalten.` |
 | PROG 5V EIN im Feld PROG 5V auf SERVO und SUPPLY, rbmod-Carrier | `Halte 2s, um die 5V der Programmierports einzuschalten.` |
 | ÜBERNEHMEN in den Warnungen zu HV, Pulsrate und weichen Grenzen von SERVO, KST und Chaservo und auf den Hitec-Seiten | `Halte 2s, um zu übernehmen.` |
@@ -583,7 +587,7 @@ Die Füllung einer Taste sagt, was ein Druck mit einem Ausgang macht.
 
 | Klasse | Tasten | Verfügbar | Aktiv | Wartend | Abgelehnt |
 | --- | --- | --- | --- | --- | --- |
-| Ausgangsaktion: schaltet einen Ausgang ein, schaltet auf ARMED, startet einen Lauf, schreibt ein Servo | ARM, AUSGANG EIN, PROG 5V EIN, 2s HALTEN: ARM + START auf TEST, RUDER AUTO und ENDLAGENLAUF, ZENTRIEREN und SWEEP auf LIVE, 1000us, ZENTRIEREN, 2000us und NULLPUNKT auf RUDDER, VERBINDEN, SCHREIBEN INS SERVO FREIGEBEN, n WERTE SCHREIBEN und SERVO BEWEGEN der Programmierungen | grün (`UI_C_OK`) | rot (`UI_C_DANGER`): ein Ausgang ist ein, ARMED, ein Schreiben läuft, das Servo wird angesteuert; die Beschriftung sagt, was ein Druck anhält (DISARM, AUSGANG AUS, LAUF BEENDEN, PAUSE, VERLASSEN, ABBRECHEN, EIN) | bernstein (`UI_C_WARN`): PAUSIERT, WARTEN, der Schritt von ARM + START | grau (`ui_button_off_fill()`), blasse Beschriftung |
+| Ausgangsaktion: schaltet einen Ausgang ein, schaltet auf ARMED, startet einen Lauf, schreibt ein Servo | ARM, AUSGANG EIN, PROG 5V EIN, 2s HALTEN: ARM + START auf TEST, RUDER AUTO und ENDLAGENLAUF, ZENTRIEREN auf LIVE, SWEEP auf SWEEP, 1000us, ZENTRIEREN, 2000us und NULLPUNKT auf RUDER, VERBINDEN, SCHREIBEN INS SERVO FREIGEBEN, n WERTE SCHREIBEN und SERVO BEWEGEN der Programmierungen | grün (`UI_C_OK`) | rot (`UI_C_DANGER`): ein Ausgang ist ein, ARMED, ein Schreiben läuft, das Servo wird angesteuert; die Beschriftung sagt, was ein Druck anhält (DISARM, AUSGANG AUS, LAUF BEENDEN, PAUSE, VERLASSEN, ABBRECHEN, EIN) | bernstein (`UI_C_WARN`): PAUSIERT, WARTEN, der Schritt von ARM + START und von ARM auf LIVE, SWEEP und RUDER | grau (`ui_button_off_fill()`), blasse Beschriftung |
 | Notfall | STOP | rot | rot, blitzt beim Druck | - | nie |
 | Bearbeiten | `-` `+`, Wertfelder, MAX LÖSCHEN, KATEGORIE ZURÜCKSETZEN auf SETUP, VERWERFEN, NEU LESEN | neutral (`UI_C_PANEL_HI`) | - | - | grau |
 | SPEICHERN auf SETUP | SPEICHERN, GESPEICHERT, BEI STILLSTAND, NICHT GESPEICHERT | grün, solange etwas ungespeichert ist (SPEICHERN) | - | bernstein (BEI STILLSTAND) | neutral mit roter Beschriftung (NICHT GESPEICHERT); GESPEICHERT ist neutral |
@@ -1590,9 +1594,9 @@ nichts. Der neunte Platz bleibt frei.
 Der Hub steuert nichts. Seine Fußleiste zeigt SERVO mit der Portzeile
 darunter, einen leeren mittleren Platz und OPTIONEN, das die Liste des
 Servoprofils öffnet. Solange die 5V der Programmierports EIN lesen, steht
-im mittleren Platz `PROG 5V EIN` in der Warnfarbe: das Feld PROG 5V gibt
-es nur auf den Funktionsbildschirmen, und die 5V bleiben von einem
-SERVO-Bildschirm zum nächsten an. Auf dem Hub ist der Prüfstand SAFE: jedes Verlassen
+im mittleren Platz `PROG 5V EIN` in der Warnfarbe: die 5V schalten nur
+die Funktionsbildschirme, und sie bleiben von einem SERVO-Bildschirm zum
+nächsten an. Auf dem Hub ist der Prüfstand SAFE: jedes Verlassen
 eines Funktionsbildschirms schaltet auf SAFE.
 
 Das Home-Feld führt eine Ebene hinauf: vom Funktionsbildschirm zum Hub,
@@ -1601,14 +1605,57 @@ schließt zuerst. SCHLIESSEN von KST und HITEC beendet die Sitzung und
 führt zum Hub.
 
 Jeder Funktionsbildschirm hat denselben Rahmen. Das linke Feld ist 620px
-breit und reicht von y 8 bis zum Feldboden bei y 436. Das Ausgangsfeld
-rechts, x 636 bis 1016, trägt die Taste PORT (y 8 bis 56), Messzeile und
-Grafik, SOLL, TEMPO, die Typzeile, ZENTRIEREN, SWEEP und FREIGEBEN. Die
+breit und reicht von y 8 bis zum Feldboden bei y 436. Das rechte Feld, x
+636 bis 1016, beginnt mit der Taste PORT (y 8 bis 56). Auf KST und HITEC
+ist es das Ausgangsfeld: Messzeile und Grafik, SOLL, TEMPO, die Typzeile,
+ZENTRIEREN, SWEEP und FREIGEBEN. Auf LIVE, SWEEP und RUDER trägt es die
+Zeilen von BEREIT und die Bedienelemente darunter, auf TEST, ENDLAGENLAUF
+und RUDER AUTO die Karte BEREIT. Die
 Fußleiste bei y 444 bis 492 hat drei Plätze von 328 x 48px: den Namen der
 Funktion mit der Portzeile darunter, ARM oder DISARM und OPTIONEN.
 OPTIONEN ist grau, solange der Prüfstand nicht SAFE ist oder ein Sweep
 oder ein Lauf läuft, und nennt das beim Tippen im Alarmband. LIVE hat
 keine OPTIONEN.
+
+LIVE, SWEEP und RUDER zeigen BEREIT unter der Taste PORT: Zeilen von 30px
+ab y 96, jede mit Punkt, Bezeichnung von 13 Zellen und Zustand von 20.
+LIVE und SWEEP haben PORT, VERSORGUNG und ARM; RUDER hat PORT, WINKEL,
+NULLPUNKT, VERSORGUNG und ARM. Unter den Zeilen haben LIVE und SWEEP
+TEMPO, die Bezeichnung bei y 196 und den Regler bei y 220 bis 260. Alle
+drei haben die Typzeile bei y 274 bis 318. LIVE hat ZENTRIEREN und
+FREIGEBEN, SWEEP hat SWEEP und FREIGEBEN, je 174 x 48px bei y 330. Die
+Schienenzeile bei y 404 nennt das Messgerät der Servoschiene und zeigt
+ihre Volt und Ampere, `5.02V  0.120A`, ohne Messwert `--V  --A`; mit dem
+Netzteilmodell des Panels folgt SIMULIERT auf den Namen. Diese
+Bildschirme haben keine Grafik, keine SOLL-Zeile und kein Feld PROG 5V.
+
+| Zeile | Grün | Gelb | Rot |
+| --- | --- | --- | --- |
+| PORT | die Portzeile; auf einem Programmierport ist PORT-PWM an | auf einem Programmierport in SAFE mit PORT-PWM aus: ARM schaltet es ein. Ohne Ziel die Portzeile in der Warnfarbe | keiner |
+| WINKEL, RUDER | der Name der Winkelquelle | `WINKELQUELLE: KEIN MESSWERT`; ein Tippen öffnet die Optionen der Quelle | keiner |
+| NULLPUNKT, RUDER | `GESETZT` | `SETZE DEN NULLPUNKT MIT DEM RUDER IN NEUTRALLAGE`; ein Tippen setzt den Nullpunkt | keiner |
+| VERSORGUNG | die Schiene hat 3.0V oder mehr ohne PD mini: `FREMD GESPEIST` | in SAFE und aus: `ARM SCHALTET EIN`. Eine Schiene mit 3.0V oder mehr bei PD mini aus: `FREMD GESPEIST`, und ARM lässt den PD mini aus. Kein PD mini antwortet: `EXTERN`. Ein Programmierport hält den PD mini | `EIN` für PROG 5V, `EIN 6.00V` für den PD mini, solange er das Servo speist. Ein Sollwert über 6.0V: `TIPPEN: HV-WARNUNG`; ein Tippen öffnet die HV-Warnung von AUSGANG EIN. PROG 5V nicht ausgelesen oder von einem Programmierport belegt |
+| ARM | keiner | `2s HALTEN`; `ARM ANGEFRAGT`, solange die Schritte des Haltens laufen | `ARMED`. Eine Servoprogrammierung, ein Endlagenlauf oder ein automatischer Test, der ARM sperrt, mit Namen |
+
+Die Bezeichnung der Zeile VERSORGUNG nennt die Quelle: PROG 5V am
+Programmierport des rbmod-Carriers, PD MINI, wo ein PD mini antwortet,
+VERSORGUNG, wo keiner antwortet. Ein Tippen auf eine Zeile nennt ihren
+Zustand im Alarmband, zum Beispiel `VERSORGUNG: Kein PD mini antwortet:
+der Prüfstand schaltet die Servoversorgung nicht.`, außer das Tippen
+behebt ihn. PORT öffnet die Portliste. Keine Zeile nimmt einen Druck an,
+solange ein anderer Druck gehalten wird, die Schritte von ARM laufen oder
+der Prüfstand nicht SAFE ist.
+
+Die Schritte von ARM prüfen die Schiene in jedem Frame neu, bis sie das
+EIN des PD mini anfordern. Eine Schiene, die bis dahin von anderswo
+gespeist wird, beendet sie abgelehnt, alle Ausgänge aus. Aktuelle
+Einschränkung: vom EIN des PD mini bis zu seiner Rückmeldung, bis zu
+1000ms, kann der INA3221 eine an die Schiene angeschlossene Versorgung
+nicht vom Ausgang des PD mini unterscheiden. Eine in dieser Zeit
+angeschlossene Versorgung speist die Schiene neben dem PD mini, und die
+Schritte schalten ARMED.
+
+![LIVE auf dem rbmod-Carrier: PORT-PWM und PROG 5V gelb, ARM schaltet sie ein](img/de/servo-rbmod.png)
 
 RUDER AUTO und ENDLAGENLAUF behalten die Taste PORT und zeigen eine Karte
 BEREIT an der Stelle des Ausgangsfelds: Zeilen von 30px ab y 96, zehn auf
@@ -1632,13 +1679,14 @@ Servoschiene steht im linken Feld unter den Grenzen von SUPPLY.
 
 ![RUDER AUTO auf dem rbmod-Carrier, die Folge ARM + START wartet auf die Rückmeldung von PROG 5V](img/de/servo-rudder-auto-start-rbmod.png)
 
-Die PROG-5V-Box, die das Ausgangsfeld auf dem Carrier zeigt, bleibt von
-einem SERVO-Bildschirm zum nächsten eingeschaltet, auch auf dem Hub, und
-schaltet aus, sobald SERVO zu einem anderen Bildschirm verlassen wird.
+PROG 5V, eingeschaltet vom Feld im Ausgangsfeld oder von ARM auf LIVE,
+SWEEP oder RUDER, bleibt von einem SERVO-Bildschirm zum nächsten an, auch
+auf dem Hub, und schaltet aus, sobald SERVO zu einem anderen Bildschirm
+verlassen wird.
 
 Tastenfeld, Tastatur, Liste, Warnung, Bestätigungsdialog oder
 Servoprogrammierung verdecken das linke Feld bis zum Feldboden. Das
-Ausgangsfeld, die Taste PORT und die Fußleiste bleiben sichtbar.
+rechte Feld, die Taste PORT und die Fußleiste bleiben sichtbar.
 
 LIVE zeigt oben links den Winkel des Ruderhorns, darunter in SAFE
 `ZUERST ARM`, sowie das Servo-Zifferblatt mit 150px Radius. Am unteren
@@ -1731,6 +1779,32 @@ MOTOR & ESC. In ARMED schaltet ein Druck auf SAFE. Auch das Verlassen von
 SERVO schaltet auf SAFE und gibt den Pin frei. Eine unsichtbare Seite
 kann so weder ein Servo halten noch den Prüfstand ARMED lassen.
 
+Auf LIVE, SWEEP und RUDER schaltet ARM auch ein, was aus ist und was ARM
+schalten kann: PORT-PWM auf einem Programmierport, dann PROG 5V auf dem
+rbmod-Carrier oder den Ausgang des PD mini. Der Hinweis des Haltens lautet
+`Halte 2s: Port und Versorgung gehen an, dann ARM.`, und die Taste blinkt
+300ms, wenn das Halten auslöst. Das Halten führt dann die gemeinsamen
+Schritte des Starts von RUDER AUTO aus: PORT-PWM, die Versorgung, ihre
+Rückmeldung in 1000ms, ARM, ARMED in 500ms. Die Taste zeigt jeden Schritt
+in Gelb, `START, SCHRITT 3 VON 5: RÜCKMELDUNG`; ein Tippen darauf beendet
+sie mit allem aus. Ein Schritt, der scheitert, schaltet alle Ausgänge aus
+und nennt sich im Alarmband, zum Beispiel
+`PROG 5V FEHLGESCHLAGEN: KEINE RÜCKMELDUNG IN 1000ms`. Ist nichts aus,
+schaltet das Halten sofort auf ARMED.
+
+ARM lässt den PD mini aus, wenn sein Sollwert über 6.0V liegt: nur die
+HV-Warnung von AUSGANG EIN schaltet ihn dann ein, und ein Tippen auf die
+rote Zeile VERSORGUNG öffnet sie. ARM lässt ihn auch aus neben einer
+Schiene, die ein INA3221 bei PD mini aus mit 3.0V oder mehr misst; ohne
+INA3221-Fenster auf der Schiene misst sie nichts, und ARM schaltet den PD
+mini ein. Eine rote Zeile lehnt das Halten ab und nennt sich im
+Alarmband.
+
+Auf diesen drei Bildschirmen schalten DISARM, STOP, ein Fehler und eine
+verlorene Verbindung alle Ausgänge aus: den Prüfstand auf SAFE, PROG 5V
+und den Ausgang des PD mini. Ein Verlassen schaltet auf SAFE und den PD
+mini aus; PROG 5V bleibt zwischen den SERVO-Bildschirmen an.
+
 Die Bedienelemente verhalten sich je nach Zustand so:
 
 | Bedienelement | SAFE | ARMED |
@@ -1743,7 +1817,8 @@ Die Bedienelemente verhalten sich je nach Zustand so:
 | TEMPO | wird gesetzt; sendet nichts | wird gesetzt; eine gehaltene Stellung wird mit der neuen Rate erneut gesendet |
 | Die Liste des Hubs: TYP, PULSRATE, PULS MIN, MITTE und MAX, TRIMMUNG, WEG, UMKEHREN | werden auf dem Hub gesetzt, wo der Prüfstand SAFE ist; das nächste ARM ruht unter ihnen | nicht erreichbar: das Verlassen eines Funktionsbildschirms zum Hub schaltet auf SAFE |
 | PORT | ein Tippen öffnet die Liste mit OUTPUTS und den 4 Programmierports | gesperrt; nennt die Sperre im Alarmband |
-| SOLL, AUSGANG EIN, AUSGANG AUS | wie auf SUPPLY | wie auf SUPPLY |
+| SOLL, AUSGANG EIN, AUSGANG AUS auf KST und HITEC | wie auf SUPPLY | wie auf SUPPLY |
+| Die Zeilen von BEREIT auf LIVE, SWEEP und RUDER | ein Tippen behebt die Zeile oder nennt ihren Zustand | kein Druck |
 | 2s HALTEN: ARM + START auf TEST | schaltet ARMED und startet den Lauf nach der Haltegeste | startet den Lauf nach der Haltegeste |
 
 In SAFE ist das Ruderhorn abgeblendet und LIVE zeigt `ZUERST ARM`.
@@ -1788,7 +1863,8 @@ Das Ausgangsfeld zeigt den aktiven Typ, die Pulsrate und den Pulsbereich.
 Einstellungen, die ein ungeeignetes Servo zerstören können, erscheinen in
 der Gefahrenfarbe. Darunter stehen Spannung, Strom und Leistung der
 Servoschiene sowie ihre Grafik über die letzten 17,8s (356px bei 20 Punkten
-pro Sekunde). STROM auf LIVE zeigt den Strom zusätzlich.
+pro Sekunde). STROM auf LIVE zeigt den Strom zusätzlich. Auf LIVE, SWEEP
+und RUDER zeigen die Typzeile und die Schienenzeile dasselbe.
 
 Die 44px hohe Typzeile zeigt `STANDARD PWM  50Hz  1000-2000`: Typ,
 Pulsrate und PULS MIN bis PULS MAX in Mikrosekunden, mit je zwei Leerzeichen.
@@ -1821,7 +1897,8 @@ das CH1 des einzelnen über SENSE ausgelesenen Bausteins.
 ![Das Modell des Panels als Netzteil](img/de/servo-model.png)
 
 Auf dem [rbmod-Carrier](Carrier-de.md#versorgung) ersetzt das 48px hohe
-Feld PROG 5V die Grafik unter den Messwerten. Es steuert die getrennten
+Feld PROG 5V die Grafik unter den Messwerten auf KST und HITEC; auf
+LIVE, SWEEP und RUDER steht die Zeile VERSORGUNG dafür. Es steuert die getrennten
 5V der Programmierports. Die erste Zeile nennt Pin und Zustand:
 `PROG-PORTS 5V, GPIO 21: AUS`. Die zweite zeigt das letzte 50ms-Fenster
 von INA3221 0x40 CH3, der diese 5V überwacht: `5.02V  0.120A`, ohne
@@ -1833,8 +1910,8 @@ zweite Zeile `BELEGT VON PROG-PORT n` und die Taste ist abgeblendet.
 Ein Druck meldet
 `PROG-Ports 5V: von einem Programmierport belegt oder nicht ausgelesen.`
 Das Feld bleibt unter der KST- und Hitec-Programmierung sichtbar.
-Beim Verlassen von SERVO werden die dort eingeschalteten 5V abgeschaltet,
-außer ein Port hält sie. Bei aktivem Netzteilmodell steht SIMULIERT
+Beim Verlassen von SERVO werden die vom Feld oder von ARM eingeschalteten
+5V abgeschaltet, außer ein Port hält sie. Bei aktivem Netzteilmodell steht SIMULIERT
 unter dem Feld.
 
 SUPPLY zeigt dasselbe Feld ([Netzteil](#netzteil)); die Regeln stehen unter
@@ -1843,8 +1920,6 @@ unter 3000mV bei angezeigtem EIN lösen einen Fehler aus: SAFE, alle
 Ausgänge aus und die Bandmeldung
 `PROG 5V ausgefallen: INA3221 0x40 CH3 misst 0.12V trotz EIN. Alle Ausgänge aus.`
 ([Carrier, PROG 5V ausgefallen](Carrier-de.md#prog-5v-ausgefallen)).
-
-![SERVO auf dem Carrier](img/de/servo-rbmod.png)
 
 ![Die KST-Programmierung hält die 5V](img/de/servo-kst-rbmod.png)
 

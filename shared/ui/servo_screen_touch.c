@@ -61,6 +61,16 @@ bool svs_safe_at(int x, int y)
             return false;
         }
     }
+    if (drive_shown()) {
+        /* ARM's steps stop on a press of the button; the rows drive
+         * nothing. */
+        if (svs_seq_busy() && gfx_rect_contains(s.arm_btn, x, y)) {
+            return true;
+        }
+        if (gfx_rect_contains(ready_card_rect(), x, y)) {
+            return false;
+        }
+    }
     if (s.gate.armed && gfx_rect_contains(s.arm_btn, x, y)) {
         return true;
     }
@@ -70,7 +80,7 @@ bool svs_safe_at(int x, int y)
     if (prog_shown_set() != NULL || modal_open()) {
         return false;
     }
-    if (prog5v_box_shown() && prog5v_box_on()
+    if (!drive_shown() && prog5v_box_shown() && prog5v_box_on()
         && gfx_rect_contains(prog5v_box_button(&s.p5), x, y)) {
         return true;
     }
@@ -340,6 +350,14 @@ void svs_event_body(const touch_event_t *evt)
             }
             return;
         }
+        /* LIVE, SWEEP and RUDDER: the READY rows over the output card's
+         * controls; a row's fix opens nothing over a panel. */
+        if (drive_shown() && gfx_rect_contains(ready_card_rect(), px, py)) {
+            if (!modal_open()) {
+                (void)ready_down(evt);
+            }
+            return;
+        }
         if (modal_open() && gfx_rect_contains(overlay_area(), px, py)) {
             /* One press at a time in the panels and the pages. */
             if (!s.ov_have) {
@@ -379,7 +397,7 @@ void svs_event_body(const touch_event_t *evt)
             }
             return;
         }
-        if (prog5v_box_shown()
+        if (!drive_shown() && prog5v_box_shown()
             && gfx_rect_contains(prog5v_box_button(&s.p5), px, py)) {
             /* One contact owns PROG 5V, as OUTPUT; a port holding the
              * supply locks it, and the band says why. */
@@ -424,7 +442,7 @@ void svs_event_body(const touch_event_t *evt)
             }
             return;
         }
-        for (int k = 0; k < 2; ++k) {
+        for (int k = 0; k < 2 && !drive_shown(); ++k) {
             if (gfx_rect_contains(sup_val_rect(k), px, py)) {
                 /* No set point moves under a programming port, and the
                  * band says why. */
@@ -483,6 +501,9 @@ void svs_event_body(const touch_event_t *evt)
             stop_sweep();
             release();
         } else if (gfx_rect_contains(s.arm_btn, px, py)) {
+            if (drive_arm_press(evt)) {
+                return;             /* LIVE, SWEEP and RUDDER */
+            }
             if (s.gate.armed) {
                 /* DISARM acts on the press: a stop never waits for a lift
                  * that may not come.  The press takes no hold, so a finger

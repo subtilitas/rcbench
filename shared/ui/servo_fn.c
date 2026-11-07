@@ -90,6 +90,7 @@ void servo_screen_show_fn(servo_fn_t fn)
     close_panels();
     s.fn = (uint8_t)fn;
     (void)ui_wb_strip_select(&s.wb, k_task[fn]);
+    drive_layout();
     s.run_list = RL_NONE;
     /* RUDDER AUTO is RUDDER's view of AUTO's box, on a screen of its own;
      * RUDDER shows the drive buttons.  A run keeps its view: it runs only

@@ -416,7 +416,7 @@ TEST_CASE(every_frame_is_the_frame_drawn_whole)
         { SCREEN_SERVO_LIVE, false, MO_REST, PANEL_HZ },
         { SCREEN_SERVO_LIVE, true, MO_REST, PANEL_HZ },
         { SCREEN_SERVO_LIVE, true, MO_HELD, 25.0f },
-        { SCREEN_SERVO_LIVE, true, MO_SWEEP, PANEL_HZ },
+        { SCREEN_SERVO_SWEEP, true, MO_SWEEP, PANEL_HZ },
         { SCREEN_SERVO_LIVE, true, MO_DRAG, PANEL_HZ },
         { SCREEN_SERVO_LIVE, true, MO_BAND, PANEL_HZ },
         { SCREEN_OVERVIEW, true, MO_BAND, PANEL_HZ },

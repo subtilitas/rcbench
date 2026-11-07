@@ -28,7 +28,7 @@ KST und HITEC sind grau, solange dem IOmcu die Fähigkeit fehlt oder eine andere
 
 Home führt von einer Funktionsseite zum Hub und vom Hub zum Menü. Das Verlassen einer Funktionsseite schaltet den Prüfstand auf SAFE. PROG 5V auf dem Carrier bleibt von einer SERVO-Seite zur nächsten an und geht aus, wenn SERVO verlassen wird; auf dem Hub zeigt die Fußleiste dann `PROG 5V EIN` in der Warnfarbe.
 
-Jede Funktionsseite zeigt rechts dieselbe Ausgangskarte: die Taste PORT, Messzeile und Grafik, Netzteilzeile, TEMPO, Typzeile, ZENTRIEREN, SWEEP und FREIGEBEN. Die Fußleiste enthält den Namen der Funktion mit der Portzeile, ARM und OPTIONEN für die Liste der Seite; LIVE hat keine Liste. Jedes Bedienelement ist mindestens 48px (7,2mm) hoch. Der Drehknopf bewegt das Horn nur auf LIVE, SWEEP, RUDER und RUDER AUTO.
+LIVE, SWEEP und RUDER zeigen rechts die Taste PORT und die Zeilen von BEREIT, darunter die Bedienelemente. TEST, ENDLAGENLAUF und RUDER AUTO zeigen die Taste PORT und die Karte BEREIT. KST und HITEC zeigen dort die Ausgangskarte: die Taste PORT, Messzeile und Grafik, Netzteilzeile, TEMPO, Typzeile, ZENTRIEREN, SWEEP und FREIGEBEN. Die Fußleiste enthält den Namen der Funktion mit der Portzeile, ARM (2s HALTEN: ARM + START auf TEST, ENDLAGENLAUF und RUDER AUTO) und OPTIONEN für die Liste der Seite; LIVE hat keine Liste. Jedes Bedienelement ist mindestens 48px (7,2mm) hoch. Der Drehknopf bewegt das Horn nur auf LIVE, SWEEP, RUDER und RUDER AUTO.
 
 ## In Ruhe
 
@@ -44,24 +44,39 @@ Die Messwerte von LIVE, am Fuß der linken Karte:
 | GEMESSEN | Winkel der gewählten Quelle AS5600 oder IMU, -180,0 bis +179,9°. Der AS5600 muss eingeschaltet sein und seinen Magneten erkennen. Ohne Messwert steht `---`. |
 | STROM | Servoschienenstrom des aktiven Messgeräts in Hundertstel Ampere |
 
-Die rechte Karte, von oben:
+Die rechte Karte von LIVE, von oben:
 
 | Zeile | Inhalt |
 |---|---|
-| PORT | Angesteuerter Ausgang als `Protokoll Pins`, etwa `SERVO PWM GPIO 2`, `PROG-PORT 1 GPIO 13`, oder eine Warnung. Ein Tipp öffnet die Liste, in der er gewählt wird ([die Taste PORT](servo-settings.md#die-taste-port)). |
-| Typzeile | Aktiver Servotyp, Pulsrate und Pulsbereich, etwa `STANDARD PWM  50Hz  1000-2000`. |
-| Messzeile und Grafik | Spannung, Strom und Leistung der letzten 17,8s. |
-| SOLL | Netzteilspannung, Strombegrenzung und Ausgangsschalter. |
+| Taste PORT | Angesteuerter Ausgang als `Protokoll Pins`, etwa `SERVO PWM GPIO 2`, `PROG-PORT 1 GPIO 13`, oder eine Warnung. Ein Tipp öffnet die Liste, in der er gewählt wird ([die Taste PORT](servo-settings.md#die-taste-port)). |
+| BEREIT | Eine Zeile je Prüfung: PORT, VERSORGUNG und ARM; RUDER zeigt dazu WINKEL und NULLPUNKT. |
 | TEMPO | Maximale Bewegungsgeschwindigkeit des Ausgangs; 100% gibt Befehle unverändert weiter. |
+| Typzeile | Aktiver Servotyp, Pulsrate und Pulsbereich, etwa `STANDARD PWM  50Hz  1000-2000`. |
+| ZENTRIEREN, FREIGEBEN | SWEEP zeigt SWEEP und FREIGEBEN. |
+| Schienenzeile | Messgerät der Servoschiene links, Volt und Ampere rechts, etwa `6.00V  0.120A`. |
+
+Punkt und Zustand einer Zeile von BEREIT sind grün, wenn erfüllt, gelb, wenn ARM es erledigt oder ein Blick nötig ist, und rot, wenn sie ARM sperrt. Ein Tipp behebt die Zeile, wo das geht, oder nennt sie im Alarmband.
+
+| Zeile | Zeigt |
+|---|---|
+| PORT | die Portzeile. Auf einem Programmierport mit PORT-PWM aus gelb: ARM schaltet PORT-PWM ein |
+| VERSORGUNG | was das Servo speist: PROG 5V am Programmierport des Carriers, PD MINI, wo ein PD mini antwortet, VERSORGUNG, wo keiner antwortet. `ARM SCHALTET EIN` bei SAFE und aus; `EIN` oder `EIN 6.00V` in Rot, solange es das Servo speist; `FREMD GESPEIST`, wenn die Schiene bei PD mini aus 3,0V oder mehr hat; `EXTERN`, wenn kein PD mini antwortet; `TIPPEN: HV-WARNUNG` über 6,0V |
+| WINKEL, RUDER | die Winkelquelle; `WINKELQUELLE: KEIN MESSWERT` öffnet beim Tippen ihre Optionen |
+| NULLPUNKT, RUDER | `GESETZT`; `SETZE DEN NULLPUNKT MIT DEM RUDER IN NEUTRALLAGE` setzt beim Tippen den Nullpunkt |
+| ARM | `2s HALTEN`, `ARM ANGEFRAGT`, solange die Schritte von ARM laufen, `ARMED` in Rot; rot mit Grund, solange eine Programmierung oder ein Lauf ARM sperrt |
 
 ## ARMED
 
 ![SERVO bei ARMED SERVO](view:servo-armed)
 
-1. Halte ARM 2s. Das Band zeigt danach ARMED SERVO, die Taste heißt DISARM.
+1. Halte ARM 2s. Auf LIVE, SWEEP und RUDER schaltet das Halten zuerst ein, was aus ist: PORT-PWM auf einem Programmierport, dann PROG 5V oder den Ausgang des PD mini. Es wartet bis zu 1000ms auf ihre Rückmeldung, dann bis zu 500ms auf ARMED. Das Band zeigt danach ARMED SERVO, die Taste heißt DISARM.
 2. Ziehe auf LIVE an einer beliebigen Stelle des Bogens, um eine Position vorzugeben. Der kräftige Arm zeigt die gemessene, der blasse die vorgegebene Position.
 3. Beim Loslassen bleibt die Position aktiv. Die Seite wiederholt den letzten Befehl; das Servo hält seine Stellung.
-4. Tippe auf DISARM, drücke STOP oder verlasse die Seite, um auf SAFE zu schalten.
+4. Tippe auf DISARM, drücke STOP oder verlasse die Seite, um auf SAFE zu schalten. Auf LIVE, SWEEP und RUDER schalten DISARM und STOP auch PROG 5V und den Ausgang des PD mini aus. Ein Verlassen schaltet den PD mini aus; PROG 5V bleibt zwischen den SERVO-Seiten an.
+
+Solange die Schritte von ARM laufen, zeigt die Taste den Schritt in Gelb, etwa `START, SCHRITT 3 VON 5: RÜCKMELDUNG`. Ein Tipp darauf beendet sie mit allen Ausgängen aus. Ein Schritt, der scheitert, schaltet alle Ausgänge aus und nennt sich im Band, etwa `PROG 5V FEHLGESCHLAGEN: KEINE RÜCKMELDUNG IN 1000ms`.
+
+ARM schaltet den PD mini nie über 6,0V ein: die Zeile VERSORGUNG zeigt dann `TIPPEN: HV-WARNUNG` in Rot, und ein Tipp öffnet NUR HV-SERVOS. ARM lässt den PD mini auch aus, wenn ein INA3221 die Schiene bei PD mini aus mit 3,0V oder mehr misst. Ohne INA3221-Fenster auf der Schiene misst sie nichts, und ARM schaltet den PD mini ein.
 
 ARMED SERVO steuert Servoausgänge und einen pulsenden PROG-PORT an. Gasausgänge erhalten keinen Puls.
 
@@ -79,7 +94,7 @@ Beim Schalten auf ARMED wird die Mitte zwischen den Kanalendpunkten ohne TRIMMUN
 
 ## Das Messgerät der Servoschiene
 
-Die Zeile über der Grafik nennt das Messgerät der Servoschiene:
+Die Schienenzeile auf LIVE, SWEEP und RUDER und die Zeile über der Grafik auf den anderen Funktionsseiten nennen das Messgerät der Servoschiene:
 
 | Name | Messgerät |
 |---|---|
@@ -93,30 +108,30 @@ Der INA3221 wird nach 1000ms erfüllter Voraussetzungen zum Messgerät: Ein best
 
 ![Das Netzteilmodell des Panels als Messgerät, mit der Marke SIMULIERT](view:servo-model)
 
-Ist der PD mini unter SUPPLY > PD MINI deaktiviert, wird das Netzteilmodell des Panels verwendet. Die Grafik zeigt SIMULIERT; die Werte sind berechnet.
+Ist der PD mini unter SUPPLY > PD MINI deaktiviert, wird das Netzteilmodell des Panels verwendet. Die Grafik zeigt SIMULIERT, und auf der Schienenzeile folgt SIMULIERT auf den Namen; die Werte sind berechnet.
 
 Fehlende Messwerte erscheinen als `---` bei STROM auf LIVE, als `--` in der Messzeile und als Lücke in der Grafik.
 
 ## Das Netzteil auf SERVO
 
-SOLL enthält dieselben zwei Netzteilsollwerte und denselben Ausgangsschalter wie SUPPLY. Änderungen auf einer Seite gelten auf beiden.
+LIVE, SWEEP und RUDER haben die Zeile VERSORGUNG und keine Zeile SOLL: ARM schaltet die Versorgung ein, DISARM schaltet sie aus. TEST, ENDLAGENLAUF und RUDER AUTO schalten sie über ihr Halten und ihren Lauf. Auf KST und HITEC enthält SOLL dieselben zwei Netzteilsollwerte und denselben Ausgangsschalter wie SUPPLY. Änderungen auf einer Seite gelten auf beiden.
 
 - Tippe auf einen Sollwert, um das Tastenfeld über der linken Karte zu öffnen.
 - Halte AUSGANG EIN 2s oder tippe auf AUSGANG AUS.
 - Beim Verlassen schaltet SERVO einen von hier eingeschalteten Ausgang aus.
 - Lässt VERLASSEN einer Programmiersitzung den Ausgang eingeschaltet, fragt SERVO nach Wiederherstellung der vorherigen Sollwerte ([Servoprogrammierung](servo-programmer.md)). Bei PORT FREIGEBEN, STOP, Fehler, Verbindungsverlust oder Neustart entfällt die Frage. Die Sitzungswerte bleiben bis zum nächsten AUS.
 
-Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) ersetzt PROG 5V die Grafik unter PD MINI. Das Feld schaltet die eigene 5V-Schiene der Programmierports an GPIO 21, bei SAFE und ARMED. Halte PROG 5V EIN 2s zum Einschalten und tippe auf PROG 5V AUS zum Ausschalten. Die zweite Zeile zeigt das letzte INA3221-Fenster von 0x40 CH3, etwa `5.02V  0.120A`.
+Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) ersetzt das Feld PROG 5V die Grafik unter PD MINI auf KST und HITEC; auf LIVE, SWEEP und RUDER zeigt die Zeile VERSORGUNG PROG 5V, und ARM schaltet es, auf ENDLAGENLAUF und RUDER AUTO das Halten. Das Feld schaltet die eigene 5V-Schiene der Programmierports an GPIO 21, bei SAFE und ARMED. Halte PROG 5V EIN 2s zum Einschalten und tippe auf PROG 5V AUS zum Ausschalten. Die zweite Zeile zeigt das letzte INA3221-Fenster von 0x40 CH3, etwa `5.02V  0.120A`.
 
-Während einer Programmiersitzung steht dort `BELEGT VON PROG-PORT n`, und die Taste ist gesperrt. Beim Verlassen von SERVO schaltet eine hier aktivierte Schiene aus, außer ein Port belegt sie. SUPPLY bietet dasselbe Feld.
+Während einer Programmiersitzung steht dort `BELEGT VON PROG-PORT n`, und die Taste ist gesperrt. Beim Verlassen von SERVO schaltet eine hier oder von ARM aktivierte Schiene aus, außer ein Port belegt sie. SUPPLY bietet dasselbe Feld.
 
 Bei eingeschaltetem Feld bedeuten zwei Fenster unter 3000mV einen Ausfall der 5V-Schiene. Ein möglicher Grund ist Rückspeisung eines bremsenden Servos, durch die M7 wegen Überspannung abschaltet. Der Prüfstand geht auf SAFE, alle Ausgänge schalten aus. Das Band zeigt `PROG 5V ausgefallen: INA3221 0x40 CH3 misst 0.12V trotz EIN. Alle Ausgänge aus.` Mit PROG 5V EIN kannst du erneut einschalten. Ohne überwachenden INA3221-Kanal oder während eine Servoprogrammierung einen Port belegt, ist diese Überwachung inaktiv.
 
-![SERVO auf dem Carrier](view:servo-rbmod)
+![LIVE auf dem Carrier: ARM schaltet PORT-PWM und PROG 5V ein](view:servo-rbmod)
 
 ![NUR HV-SERVOS](view:servo-hv)
 
-Standardservos sind für 4,8 bis 6,0V ausgelegt. Eine Erhöhung von höchstens 6,0V auf über 6,0V öffnet NUR HV-SERVOS. Halte 2s HALTEN ZUM ÜBERNEHMEN, um die Spannung anzuwenden; ABBRECHEN verwirft sie. AUSGANG EIN bei einem Sollwert über 6,0V öffnet dieselbe Warnung.
+Standardservos sind für 4,8 bis 6,0V ausgelegt. Eine Erhöhung von höchstens 6,0V auf über 6,0V öffnet NUR HV-SERVOS. Halte 2s HALTEN ZUM ÜBERNEHMEN, um die Spannung anzuwenden; ABBRECHEN verwirft sie. AUSGANG EIN bei einem Sollwert über 6,0V öffnet dieselbe Warnung, ebenso ein Tipp auf die rote Zeile VERSORGUNG von LIVE.
 
 ## SWEEP und PAUSE
 
