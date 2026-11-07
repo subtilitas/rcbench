@@ -762,7 +762,7 @@ typedef struct {
      *  run ends once the LEAVE has (lim_end_due). */
     bool      lim_leaving;
     bool      lim_end_due;
-    /** It ended as FAIL: the supplies go off once the programmer's run
+    /** @brief It ended as FAIL: the supplies go off once the programmer's run
      *  has ended (lim_seam_ended()), after a LEAVE on its way. */
     bool      lim_off_due;
     int       lim_file;      /**< its report's number; 0 not yet, -1 none */
