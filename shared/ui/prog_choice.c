@@ -100,7 +100,8 @@ bool prog_choice_refusal(uint8_t port, char *buf, size_t cap)
 
 bool prog_choice_locked(void)
 {
-    return servo_screen_tester_target_locked() || servo_screen_arm_asked();
+    return servo_screen_tester_target_locked() || servo_screen_arm_asked()
+           || servo_screen_arm_held();
 }
 
 bool prog_choice_lock_line(char *buf, size_t cap)

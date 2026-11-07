@@ -451,6 +451,11 @@ bool servo_screen_arm_asked(void)
     return s.gate.arm_asked;
 }
 
+bool servo_screen_arm_held(void)
+{
+    return s.arm_down;
+}
+
 bool servo_screen_target_locked(void)
 {
     return target_locked_for(SET_SERVO_TARGET);

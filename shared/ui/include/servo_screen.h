@@ -639,6 +639,14 @@ bool servo_screen_target_locked(void);
 bool servo_screen_arm_asked(void);
 
 /**
+ * @brief Whether a finger holds ARM and its 2s hold has not fired yet: the
+ *        output it will arm is the one shown when the hold began, so the
+ *        PORT list takes no open and no pick meanwhile.
+ * @return true then
+ */
+bool servo_screen_arm_held(void);
+
+/**
  * Whether OUTPUTS' SERVO TESTER segment (the TARGET setting) takes no
  * press: servo_screen_target_locked(), or the bench ARMED for the motor.
  */
