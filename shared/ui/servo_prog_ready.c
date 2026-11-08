@@ -189,7 +189,9 @@ bool prog_ready_row(int i, rdy_row_t *r)
             snprintf(r->value, sizeof(r->value), "%s", TR(PRR_NOT_READ));
         } else {
             r->st = (uint8_t)RDY_IDLE;
-            r->why = TR(PRR_CONN_WHY);
+            /* A tap for a servo the operator powers, else a hold. */
+            r->why = ps.supply == (uint8_t)PROG_SES_AS_IS
+                         ? TR(PRR_CONN_WHY) : TR(PRR_CONN_HOLD_WHY);
             snprintf(r->value, sizeof(r->value), "%s", TR(PRR_NOT_CONN));
         }
         return true;

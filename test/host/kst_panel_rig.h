@@ -193,11 +193,22 @@ static inline void hold_connect(void)
     show();
 }
 
-/* PORT's button as it takes a press: CONNECT, in PWM, held 2s; LEAVE and
- * ABORT, and a button that takes nothing, tapped. */
+/* Whether CONNECT switches a supply on: the session's supply is the
+ * carrier's PROG 5V or a PD mini. */
+static inline bool connect_holds(void)
+{
+    prog_session_t ps;
+
+    kst_panel_session(&ps);
+    return ps.supply != (uint8_t)PROG_SES_AS_IS;
+}
+
+/* PORT's button as it takes a press: CONNECT, in PWM, held 2s where it
+ * switches a supply on; LEAVE, ABORT, CONNECT of a servo the operator
+ * powers, and a button that takes nothing, tapped. */
 static inline void press_port(void)
 {
-    if (kst_prog_state(M) == KST_PROG_PWM) {
+    if (kst_prog_state(M) == KST_PROG_PWM && connect_holds()) {
         hold_connect();
     } else {
         tap(val(PG_SERVO, 0, 0));

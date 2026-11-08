@@ -106,9 +106,12 @@ KST-Servoprogrammierung ([Seiten](Screens-de.md#programmierer)).
 
 ## VERBINDEN
 
-VERBINDEN ist eine Halte-Taste von 2s, wie bei KST
+Wo die Sitzung die Servoversorgung schaltet, die PROG 5V des Carriers,
+einen antwortenden PD mini oder bei jeder KLASSISCH-Sitzung, ist VERBINDEN
+eine Halte-Taste von 2s, wie bei KST
 ([Servo-Programmierer, Der Port](ServoProgrammer-de.md#der-port)): die
-Schritte unten beginnen, wenn das Halten vollständig ist. Loslassen vor 2s
+Schritte unten beginnen, wenn das Halten vollständig ist. Ein Servo der
+D-Serie, das der Bediener ohne beides einschaltet, nimmt ein Tippen. Loslassen vor 2s
 sendet nichts und zeigt `Halte 2s, um zu verbinden und die Versorgung des
 Ports einzuschalten.` FREIGEBEN, VERLASSEN und ABBRECHEN auf derselben Taste
 nehmen ein Tippen.

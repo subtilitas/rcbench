@@ -535,7 +535,7 @@ ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | ARM auf LIVE, SWEEP und RUDER, wenn es PORT-PWM oder die Versorgung einschaltet | `Halte 2s: Port und Versorgung gehen an, dann ARM.` |
 | AUSGANG EIN auf SUPPLY und im Versorgungsfeld von SERVO | `Halte 2s, um den Ausgang einzuschalten.` |
 | PROG 5V EIN im Feld PROG 5V auf SUPPLY, rbmod-Carrier | `Halte 2s, um die 5V der Programmierports einzuschalten.` |
-| VERBINDEN in den Programmierern für KST und HITEC | `Halte 2s, um zu verbinden und die Versorgung des Ports einzuschalten.` |
+| VERBINDEN in den Programmierern für KST und HITEC, wo die Sitzung die Servoversorgung schaltet | `Halte 2s, um zu verbinden und die Versorgung des Ports einzuschalten.` |
 | ÜBERNEHMEN in den Warnungen zu HV, Pulsrate und weichen Grenzen von SERVO, KST und Chaservo und auf den Hitec-Seiten | `Halte 2s, um zu übernehmen.` |
 | 2s HALTEN: ARM + START auf TEST | `Halte 2s, um auf ARMED zu schalten und den Test zu starten.` |
 | 2s HALTEN: ARM + START auf ENDLAGENLAUF | `Halte 2s, um Port und Versorgung einzuschalten, ARM und den Endlagenlauf zu starten.` |
@@ -2368,7 +2368,7 @@ Der Rahmen von KST und HITEC um die Sitzung:
 | Fußleiste, rechts | OPTIONEN: die Seite KST EXPERT MODE, bei HITEC Hitec-Serie und Hitec-D-Empfang; grau, solange die Sitzung den Port hält |
 
 Ein Tippen auf eine nicht erfüllte Zeile von BEREIT nennt sie im
-Alarmband, zum Beispiel `VERSORGUNG: Schalte die Servoversorgung aus und ein, halte dann sofort 2s VERBINDEN.` Ein Finger auf einer Zeile von
+Alarmband, zum Beispiel `VERSORGUNG: Schalte die Servoversorgung aus und ein, tippe dann 1s später auf VERBINDEN.` Ein Finger auf einer Zeile von
 BEREIT oder auf WERTE SCHREIBEN hält OPTIONEN und die Liste PORT zu, wie
 jeder gehaltene Druck.
 

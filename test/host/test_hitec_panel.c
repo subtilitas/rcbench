@@ -5,6 +5,7 @@
  * port and its GPIO in every state; CLOSE while the port is held opening
  * LEAVE, and a hold of 2s leaving; a port another session holds offering
  * RELEASE PORT; a classic servo with no PD mini refused with its reason;
+ * CONNECT a 2s hold with a PD mini and a tap without one;
  * the supply's lock while a port is held; the restore question after a
  * LEAVE and after no other end of the hold; every control a tap target above
  * the alert band, every label and value inside its field and every note
@@ -330,6 +331,28 @@ TEST_CASE(a_classic_connect_without_a_pd_mini_is_refused_with_its_reason)
     CHECK_EQ(pstate(), HITEC_PROG_PWM);
     prun(100u);
     CHECK_EQ(g_cmds, 0u);
+}
+
+/* CONNECT switches a supply on where the session has one, a PD mini here:
+ * a 2s hold, and a tap connects nothing.  A D series servo the operator
+ * powers, with no PD mini, takes a tap that connects at once. */
+TEST_CASE(connect_holds_only_where_it_switches_a_supply_on)
+{
+    prog_session_t ps;
+
+    open_at(SUPPLY_ON, UI_LANG_EN);
+    hitec_panel_session(&ps);
+    CHECK(ps.supply != (uint8_t)PROG_SES_AS_IS);
+    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    CHECK_EQ(pstate(), HITEC_PROG_PWM);
+    hold_connect();
+    CHECK(pstate() != HITEC_PROG_PWM);
+
+    open_at(SUPPLY_NONE, UI_LANG_EN);
+    hitec_panel_session(&ps);
+    CHECK_EQ(ps.supply, (uint8_t)PROG_SES_AS_IS);
+    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    CHECK(pstate() != HITEC_PROG_PWM);
 }
 
 /* ------------------------------------------------------------- PORT row */
@@ -750,6 +773,7 @@ int main(void)
     RUN(connect_reads_the_d485hw_and_the_tabs_show_its_values);
     RUN(before_a_read_the_value_tabs_say_so);
     RUN(a_classic_connect_without_a_pd_mini_is_refused_with_its_reason);
+    RUN(connect_holds_only_where_it_switches_a_supply_on);
     RUN(the_port_row_names_the_port_and_its_gpio_in_every_state);
     RUN(close_while_held_opens_leave_and_a_2s_hold_leaves);
     RUN(a_classic_leave_page_says_the_supply_cycles);

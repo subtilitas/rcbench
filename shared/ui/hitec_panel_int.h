@@ -203,6 +203,15 @@ typedef struct {
                                      port's supply on                    */
 } hpn_state_t;
 
+/**
+ * @brief Whether the session switches the servo's supply: the carrier's
+ *        PROG 5V, a PD mini that answers, or CLASSIC, which needs one.
+ *        CONNECT is a 2s hold then, and a tap when the operator powers the
+ *        servo.
+ * @return true when CONNECT switches a supply on
+ */
+bool hpn_switches_supply(void);
+
 /** @brief The state, in hitec_panel.c; the files read it as hp. */
 extern hpn_state_t hitec_panel_h;
 /** @brief Short name for hitec_panel_h inside the overlay's files. */

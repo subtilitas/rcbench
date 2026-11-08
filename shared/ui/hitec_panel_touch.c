@@ -120,9 +120,11 @@ static void down(const touch_event_t *evt)
                 }
             }
             if (r->kind == K_ACT && r->what == A_PORT
-                && hitec_prog_state(&hp.prog) == HITEC_PROG_PWM) {
-                /* CONNECT switches the port's supply on: a 2s hold, and
-                 * no hold from a low carrier input. */
+                && hitec_prog_state(&hp.prog) == HITEC_PROG_PWM
+                && hpn_switches_supply()) {
+                /* CONNECT that switches the port's supply on: a 2s hold,
+                 * and no hold from a low carrier input.  A servo the
+                 * operator powers takes a tap. */
                 if (prog5v_box_input_why() != NULL) {
                     ui_action_refused(prog5v_box_input_why());
                     return;
@@ -440,7 +442,8 @@ static void connect_tick(float dt_s)
     if (hp.have && hp.pressed == P_CONNECT && !hp.conn.fired) {
         const hpn_row_t *r = &hpn_rows[hp.row];
 
-        if (hitec_prog_state(&hp.prog) != HITEC_PROG_PWM || hp.page.open
+        if (hitec_prog_state(&hp.prog) != HITEC_PROG_PWM
+            || !hpn_switches_supply() || hp.page.open
             || hitec_panel_editor() != 0 || r->page != hp.tabs.selected
             || !hpn_row_shown(r) || !hpn_row_live(r)) {
             (void)ui_hold_left(&hp.conn);

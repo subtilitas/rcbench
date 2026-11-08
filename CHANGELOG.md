@@ -29,13 +29,17 @@ history is in git.
 - The PROG 5V lost error on the carrier watches a KST or Hitec session's
   5V as well: under a session a finding waits for a PROG_SUPPLY page read
   that still reads GPIO 21 on.
-- CONNECT on the KST and HITEC programmers is a 2s hold on every board,
-  as OUTPUT ON: it switches the port's supply on. A release before 2s
+- CONNECT on the KST and HITEC programmers is a 2s hold, as OUTPUT ON,
+  where the session switches the servo's supply on: the carrier's PROG
+  5V, a PD mini that answers, or a CLASSIC session. A release before 2s
   sends nothing and shows `Hold 2s to connect and switch the port's supply
   on.` On the rbmod carrier a low input refuses the press and ends a
-  running hold. ABORT, LEAVE and RELEASE take a tap. The texts that ask for
-  CONNECT say `Hold CONNECT 2s`; without a PD mini the step reads `Switch
-  the servo supply off, then on. Hold CONNECT 2s at once.`
+  running hold. For a servo the operator powers, with no PD mini, CONNECT
+  switches nothing on and stays a tap, so the sync keeps its 250ms after
+  the tap. ABORT, LEAVE and RELEASE take a tap. READY's SERVO row says
+  `Hold CONNECT 2s in the session.` where CONNECT holds; the session's
+  messages name CONNECT without a gesture: `No servo connected. CONNECT
+  first.`
 - DONE of a stick run's manual step before a power-up is a 2s hold: the
   run switches the supply on after it. A release before 2s confirms
   nothing and shows `Hold 2s to confirm the step before the supply

@@ -522,6 +522,11 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
 
 /* ------------------------------------------------------------ the screen */
 
+bool kpn_switches_supply(void)
+{
+    return ui_board_prog_5v_pin() >= 0 || kpn_flag(LINK_KS_F_RAIL);
+}
+
 void kst_panel_session(prog_session_t *out)
 {
     const kst_prog_t *p = &k.prog;
@@ -530,15 +535,15 @@ void kst_panel_session(prog_session_t *out)
 
     memset(out, 0, sizeof(*out));
     /* The supply the state line names before CONNECT (kst_panel_draw.c). */
-    if (ui_board_prog_5v_pin() >= 0) {
+    if (!kpn_switches_supply()) {
+        out->supply = (uint8_t)PROG_SES_AS_IS;
+        out->by_hand = true;
+    } else if (ui_board_prog_5v_pin() >= 0) {
         out->supply = (uint8_t)PROG_SES_5V;
-    } else if (kpn_flag(LINK_KS_F_RAIL)) {
+    } else {
         out->supply = (uint8_t)PROG_SES_PD_MINI;
         out->mv = kst_prog_supply_mv(p);
         out->ma = kst_prog_supply_ma(p);
-    } else {
-        out->supply = (uint8_t)PROG_SES_AS_IS;
-        out->by_hand = true;
     }
     out->held = kst_panel_holds_port();
     out->busy = st == KST_PROG_ENTERING || st == KST_PROG_WORKING

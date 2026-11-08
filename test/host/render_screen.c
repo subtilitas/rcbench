@@ -756,10 +756,18 @@ static void khold(void)
     flash_out();
 }
 
-/* CONNECT, a 2s hold: held 2.1s, and its flash. */
+/* CONNECT: where it switches a supply on a 2s hold, held 2.1s, and its
+ * flash; for a servo the operator powers a tap. */
 static void kconnect(void)
 {
     const gfx_rect_t r = kst_panel_value_rect(0, 0, 0);
+    prog_session_t ps;
+
+    kst_panel_session(&ps);
+    if (ps.supply == (uint8_t)PROG_SES_AS_IS) {
+        ktap(r);
+        return;
+    }
     touch_event_t e = { .type = TOUCH_EVENT_DOWN,
                         .point = { .id = 1, .x = (int16_t)(r.x + r.w / 2),
                                    .y = (int16_t)(UI_BAND_H + r.y + r.h / 2),

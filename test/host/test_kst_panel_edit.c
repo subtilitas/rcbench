@@ -11,6 +11,7 @@
  * - a_value_past_a_soft_limit_waits_for_a_2_s_hold
  * - the_hold_button_fills_through_its_own_revision
  * - connects_hold_fills_through_its_own_revision
+ * - connect_of_a_servo_the_operator_powers_is_a_tap
  * - stretch_is_chosen_from_the_values_the_core_takes
  * - a_switch_is_toggled_by_its_tap_and_warns_where_the_core_does
  * - a_switch_the_core_refuses_says_which_limit
@@ -202,15 +203,18 @@ TEST_CASE(the_hold_button_fills_through_its_own_revision)
     CHECK(!kst_prog_write_enabled(M));
 }
 
-/* CONNECT's hold fills its button alone: hold_revision moves, the
- * overlay's revision does not, and hold_rect names CONNECT. */
+/* With a PD mini CONNECT switches the servo's supply on: a 2s hold whose
+ * fill moves hold_revision alone, hold_rect naming CONNECT, and a tap that
+ * connects nothing. */
 TEST_CASE(connects_hold_fills_through_its_own_revision)
 {
     const gfx_rect_t c = (fresh(), val(PG_SERVO, 0, 0));
     uint32_t rev, hold_rev;
 
+    g_rig.rail = true;
     link_up();
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    CHECK(connect_holds());
     hold_rev = kst_panel_hold_revision();
     ev(cx(c), cy(c), TOUCH_EVENT_DOWN, 1);
     rev = kst_panel_revision();
@@ -222,6 +226,30 @@ TEST_CASE(connects_hold_fills_through_its_own_revision)
     CHECK(h.x == c.x && h.y == c.y && h.w == c.w && h.h == c.h);
     ev(cx(c), cy(c), TOUCH_EVENT_UP, 1);
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    tap(c);
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    hold_connect();
+    CHECK(kst_prog_state(M) != KST_PROG_PWM);
+}
+
+/* Without a PD mini the operator powers the servo and CONNECT switches
+ * nothing on: a tap, which sends the entry at once, so the sync keeps its
+ * 250ms after the tap (KP_NOPD_ENTRY); no hold runs. */
+TEST_CASE(connect_of_a_servo_the_operator_powers_is_a_tap)
+{
+    const gfx_rect_t c = (fresh(), val(PG_SERVO, 0, 0));
+
+    link_up();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    CHECK(!connect_holds());
+    CHECK_STR_EQ(status(1), TR(KP_NOPD_ENTRY));
+    ev(cx(c), cy(c), TOUCH_EVENT_DOWN, 1);
+    const gfx_rect_t h = kst_panel_pages.hold_rect();
+    CHECK(h.x != c.x || h.y != c.y);
+    ev(cx(c), cy(c), TOUCH_EVENT_UP, 1);
+    CHECK(kst_prog_state(M) != KST_PROG_PWM);
+    settle();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
 }
 
 TEST_CASE(stretch_is_chosen_from_the_values_the_core_takes)
@@ -416,6 +444,7 @@ int main(void)
     RUN(a_value_past_a_soft_limit_waits_for_a_2_s_hold);
     RUN(the_hold_button_fills_through_its_own_revision);
     RUN(connects_hold_fills_through_its_own_revision);
+    RUN(connect_of_a_servo_the_operator_powers_is_a_tap);
     RUN(stretch_is_chosen_from_the_values_the_core_takes);
     RUN(a_switch_is_toggled_by_its_tap_and_warns_where_the_core_does);
     RUN(a_switch_the_core_refuses_says_which_limit);

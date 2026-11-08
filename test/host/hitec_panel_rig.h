@@ -127,11 +127,15 @@ static inline const char *said(void)
                : "";
 }
 
-/* PORT's button as it takes a press: CONNECT, in PWM, held 2s; LEAVE,
- * RELEASE and ABORT, and a button that takes nothing, tapped. */
+/* PORT's button as it takes a press: CONNECT, in PWM, held 2s where it
+ * switches a supply on; LEAVE, RELEASE, ABORT, CONNECT of a servo the
+ * operator powers, and a button that takes nothing, tapped. */
 static inline void press_port(void)
 {
-    if (pstate() == HITEC_PROG_PWM) {
+    prog_session_t ps;
+
+    hitec_panel_session(&ps);
+    if (pstate() == HITEC_PROG_PWM && ps.supply != (uint8_t)PROG_SES_AS_IS) {
         hold_connect();
     } else {
         tap(val(HITEC_PANEL_SERVO, 0, 0));

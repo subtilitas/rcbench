@@ -100,9 +100,11 @@ and ends 4px above the alert band, as in the KST programmer
 
 ## CONNECT
 
-CONNECT is a 2s hold, as on KST
-([Servo programmer, The port](ServoProgrammer.md#the-port)): the steps
-below start when the hold completes. A release before 2s sends nothing and
+Where the session switches the servo's supply, the carrier's PROG 5V, a
+PD mini that answers, or any CLASSIC session, CONNECT is a 2s hold, as on
+KST ([Servo programmer, The port](ServoProgrammer.md#the-port)): the steps
+below start when the hold completes. A D series servo the operator powers,
+with neither, takes a tap. A release before 2s sends nothing and
 shows `Hold 2s to connect and switch the port's supply on.` RELEASE, LEAVE
 and ABORT on the same button take a tap.
 

@@ -109,12 +109,20 @@ static void hhold(void)
 }
 
 /**
- * @brief CONNECT, a 2s hold: held 2.1s with the bench still, and its
- *        flash.
+ * @brief CONNECT: where it switches a supply on a 2s hold, held 2.1s with
+ *        the bench still, and its flash; for a servo the operator powers a
+ *        tap.
  */
 static void hconnect_hold(void)
 {
     const gfx_rect_t r = hitec_panel_value_rect(HITEC_PANEL_SERVO, 0, 0);
+    prog_session_t ps;
+
+    hitec_panel_session(&ps);
+    if (ps.supply == (uint8_t)PROG_SES_AS_IS) {
+        htap(r);
+        return;
+    }
     touch_event_t e = { .type = TOUCH_EVENT_DOWN,
                         .point = { .id = 1,
                                    .x = (int16_t)(r.x + r.w / 2),

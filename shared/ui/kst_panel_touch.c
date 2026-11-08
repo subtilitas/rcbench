@@ -107,9 +107,11 @@ static void down(const touch_event_t *evt)
         }
         if (gfx_rect_contains(kpn_value_rect(r), x, y)) {
             if (r->kind == K_ACT && r->what == A_PORT
-                && kst_prog_state(&k.prog) == KST_PROG_PWM) {
-                /* CONNECT switches the port's supply on: a 2s hold, and
-                 * no hold from a low carrier input. */
+                && kst_prog_state(&k.prog) == KST_PROG_PWM
+                && kpn_switches_supply()) {
+                /* CONNECT that switches the port's supply on: a 2s hold,
+                 * and no hold from a low carrier input.  A servo the
+                 * operator powers takes a tap, its sync 250ms after it. */
                 if (prog5v_box_input_why() != NULL) {
                     ui_action_refused(prog5v_box_input_why());
                     return;
@@ -391,7 +393,8 @@ static void connect_tick(float dt_s)
     if (k.have && k.pressed == P_CONNECT && !k.conn.fired) {
         const row_t *r = &kpn_rows[k.row];
 
-        if (kst_prog_state(&k.prog) != KST_PROG_PWM || k.warn.open
+        if (kst_prog_state(&k.prog) != KST_PROG_PWM
+            || !kpn_switches_supply() || k.warn.open
             || kst_panel_editor() != 0 || r->page != kpn_page()
             || !kpn_row_live(r)) {
             (void)ui_hold_left(&k.conn);

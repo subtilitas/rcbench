@@ -54,7 +54,7 @@ If a requirement is unmet, all controls are disabled and the tab explains why. T
 
 The port runs either PWM (pulse-width modulation) or programming. CONNECT stops PWM, sets the supply if a PD mini responds, performs the entry sequence and reads all 32 registers. The button then becomes LEAVE, or ABORT while an operation is running.
 
-CONNECT switches the port's supply on, so it is a 2s hold on every board. The session starts when the hold completes. A release before 2s sends nothing and shows `Hold 2s to connect and switch the port's supply on.` LEAVE and ABORT take a tap.
+Where the session switches the servo's supply, PROG 5V on the carrier or a PD mini that answers, CONNECT switches it on and is a 2s hold. The session starts when the hold completes. A release before 2s sends nothing and shows `Hold 2s to connect and switch the port's supply on.` For a servo you power by hand, CONNECT takes a tap. LEAVE and ABORT take a tap.
 
 ![What CONNECT sets](view:servo-kst-options)
 
@@ -95,7 +95,7 @@ KST and Chaservo servos enter programming mode after power-up. Written settings 
 
 | Step | A PD mini with its output on | No PD mini |
 |---|---|---|
-| CONNECT | the output off for 1s, on, the line low for 1s, then the entry | the entry 250ms after the hold completes: switch the servo's supply off and on, then hold CONNECT 2s at once |
+| CONNECT | the output off for 1s, on, the line low for 1s, then the entry | the entry 250ms after the tap: switch the servo's supply off and on, tap CONNECT 1s later |
 | LEAVE after a write | the output off for 1s, on, the line low for 1s, then PWM | PWM; the values act after the servo's supply is switched off and on |
 | LEAVE with nothing written | PWM after WAIT BEFORE PWM, the supply as it is | the same |
 
@@ -112,7 +112,7 @@ If the output is off, CONNECT switches it on and enters programming. ABORT or ST
 
 | Row | Button | Does |
 |---|---|---|
-| PORT | CONNECT (a 2s hold), ABORT, LEAVE | takes the port, ends the running operation, gives the port back |
+| PORT | CONNECT (a 2s hold where it switches a supply on), ABORT, LEAVE | takes the port, ends the running operation, gives the port back |
 | SERVO | READ ALL | reads the 32 registers, each until 3 of at most 5 reads agree |
 | TYPE | V6?, V8?, V6, V8 | the servo type, V6 or V8, as the operator sets it |
 | FILES | CHOOSE | saves the servo's values to the card, loads a file |

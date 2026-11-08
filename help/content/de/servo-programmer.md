@@ -54,7 +54,7 @@ Fehlt eine Voraussetzung, sind alle Bedienelemente gesperrt. Der Reiter nennt de
 
 Der Port arbeitet entweder mit PWM (Pulsweitenmodulation) oder im Programmiermodus. VERBINDEN beendet PWM, stellt bei antwortendem PD mini die Versorgung ein, führt die Einstiegsfolge aus und liest alle 32 Register aus. Danach heißt die Taste VERLASSEN, während eines Vorgangs ABBRECHEN.
 
-VERBINDEN schaltet die Versorgung des Ports ein und ist darum auf jeder Platine eine Halte-Taste von 2s. Die Sitzung beginnt, wenn das Halten vollständig ist. Loslassen vor 2s sendet nichts und zeigt `Halte 2s, um zu verbinden und die Versorgung des Ports einzuschalten.` VERLASSEN und ABBRECHEN nehmen ein Tippen.
+Wo die Sitzung die Servoversorgung schaltet, PROG 5V am Carrier oder einen antwortenden PD mini, schaltet VERBINDEN sie ein und ist eine Halte-Taste von 2s. Die Sitzung beginnt, wenn das Halten vollständig ist. Loslassen vor 2s sendet nichts und zeigt `Halte 2s, um zu verbinden und die Versorgung des Ports einzuschalten.` Für ein Servo, das du von Hand einschaltest, nimmt VERBINDEN ein Tippen. VERLASSEN und ABBRECHEN nehmen ein Tippen.
 
 ![Was VERBINDEN stellt](view:servo-kst-options)
 
@@ -95,7 +95,7 @@ KST- und Chaservo-Servos öffnen den Programmiermodus nach dem Einschalten. Gesc
 
 | Schritt | PD mini mit eingeschaltetem Ausgang | Ohne PD mini |
 |---|---|---|
-| VERBINDEN | Ausgang 1s aus, dann ein; Leitung 1s Low, danach Einstieg. | Einstieg 250ms nach dem vollständigen Halten. Schalte die Servoversorgung aus und ein und halte sofort 2s VERBINDEN. |
+| VERBINDEN | Ausgang 1s aus, dann ein; Leitung 1s Low, danach Einstieg. | Einstieg 250ms nach dem Tipp. Schalte die Servoversorgung aus und ein und tippe 1s später auf VERBINDEN. |
 | VERLASSEN nach einem Schreibvorgang | Ausgang 1s aus, dann ein; Leitung 1s Low, danach PWM. | PWM; die geschriebenen Werte gelten nach Aus- und Einschalten der Servoversorgung. |
 | VERLASSEN ohne Schreibvorgang | PWM nach WARTEZEIT VOR PWM; Versorgung unverändert. | ebenso |
 
@@ -112,7 +112,7 @@ Bei ausgeschaltetem Ausgang schaltet VERBINDEN ihn ein und öffnet den Programmi
 
 | Zeile | Taste | Wirkung |
 |---|---|---|
-| PORT | VERBINDEN (2s halten), ABBRECHEN, VERLASSEN | nimmt den Port, beendet den laufenden Vorgang, gibt den Port zurück |
+| PORT | VERBINDEN (2s halten, wo es eine Versorgung einschaltet), ABBRECHEN, VERLASSEN | nimmt den Port, beendet den laufenden Vorgang, gibt den Port zurück |
 | SERVO | ALLES AUSLESEN | liest die 32 Register, jedes, bis 3 von höchstens 5 Lesungen übereinstimmen |
 | TYP | V6?, V8?, V6, V8 | der Servotyp, V6 oder V8, wie der Bediener ihn setzt |
 | DATEIEN | WÄHLEN | speichert die Werte des Servos auf die Karte, lädt eine Datei |

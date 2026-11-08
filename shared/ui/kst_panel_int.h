@@ -296,6 +296,13 @@ bool kpn_flag(uint16_t f);
  * @return true when the port is in programming
  */
 bool kpn_programming(void);
+/**
+ * @brief Whether the session switches the servo's supply: the carrier's
+ *        PROG 5V, or a PD mini that answers (LINK_KS_F_RAIL).  CONNECT is
+ *        a 2s hold then, and a tap when the operator powers the servo.
+ * @return true when CONNECT switches a supply on
+ */
+bool kpn_switches_supply(void);
 /** @brief A row's label: its text, or for PORT what it holds now.
  * @param r the row
  * @return the label
