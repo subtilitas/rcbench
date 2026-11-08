@@ -43,7 +43,10 @@ history is in git.
 - DONE of a stick run's manual step before a power-up is a 2s hold: the
   run switches the supply on after it. A release before 2s confirms
   nothing and shows `Hold 2s to confirm the step before the supply
-  switches on.` The other steps' DONE stays a tap. Every control that
+  switches on.` The other steps' DONE stays a tap. A touch loss found
+  after DONE's hold completed, before the supply reads on, ends the run
+  with no ON written; CONNECT acts on the frame after its hold completes,
+  so a touch loss found in between takes it back. Every control that
   switches a voltage, a supply or an output on is a 2s hold.
 
 - The READY card on the SERVO screens (LIVE, SWEEP, RUDDER, TEST, LIMIT

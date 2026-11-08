@@ -712,6 +712,7 @@ void kpn_mode_sync(void)
         k.have = false;
         k.pressed = P_NONE;
         ui_hold_reset(&k.conn);
+        k.conn_due = false;
     }
     k.expert = on;
     for (int p = 0; p < PG_COUNT; ++p) {

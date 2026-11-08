@@ -16,6 +16,7 @@
  * - a_crumb_never_cuts_inside_a_word_of_the_family
  * - an_unsure_selection_is_not_counted_as_made
  * - done_before_the_power_up_is_a_2s_hold
+ * - a_touch_loss_found_after_dones_hold_writes_no_on
  *
  * SPDX-License-Identifier: MIT
  */
@@ -793,6 +794,61 @@ TEST_CASE(done_before_the_power_up_is_a_2s_hold)
     esc_profiles_clear_overrides();
 }
 
+/*
+ * DONE's hold completes and the run asks the supply ON in the same tick; a
+ * touch loss found before the ON is collected -- the screens cancelled, as
+ * the render loop's drain does -- ends the run: no ON is written, the bench
+ * is disarmed and the supply stays off.
+ */
+TEST_CASE(a_touch_loss_found_after_dones_hold_writes_no_on)
+{
+    static const esc_manual_t k[] = {
+        { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 0u, NULL, false,
+          false },
+    };
+    fresh();
+    esc_profiles_clear_overrides();
+    esc_profile_t card = *esc_profiles_find("kontronik-jazz");
+    card.id = "card-at-power";
+    card.automatable = ESC_AUTO_ASSISTED;
+    card.automatable_note = "A button at the power-up.";
+    card.manual = k;
+    card.manual_count = 1;
+    CHECK(esc_profiles_override(&card, NULL));
+    fresh();
+    open_profile("card-at-power");
+    tap(CANCEL_X, HOLD_Y);                   /* the first opening */
+    tap(STEP_UP_X, STEP_CY(0));
+    supply_reads_off();
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);
+    static rig_t r;
+    rig_start(&r);
+    const esc_stick_t *run = esc_stick_panel_stick();
+    for (uint32_t i = 0; i < 60000u && run->phase != ESC_STICK_HAND_OFF; ++i) {
+        rig_step(&r);
+    }
+    for (uint32_t i = 0; i < ESC_STICK_HAND_MIN_MS; ++i) {
+        rig_step(&r);
+    }
+    CHECK(r.armed);
+    press(TOUCH_EVENT_DOWN, HOLD_X, HOLD_Y); /* DONE, held 2s */
+    for (int i = 0; i < 8; ++i) {
+        scr->tick(0.25f);
+    }
+    CHECK(run->phase != ESC_STICK_HAND_OFF); /* the step done, ON asked */
+    scr->cancel();                           /* the loss, found late */
+    supply_screen()->cancel();
+    rig_run(&r, 1000u);
+    CHECK(!r.on);
+    CHECK(!r.module_on);
+    CHECK(!r.armed);
+    CHECK_EQ(run->phase, ESC_STICK_ABORTED);
+    CHECK_EQ(run->reason, ESC_STICK_R_TOUCH);
+    scr->leave();
+    esc_profiles_clear_overrides();
+}
+
 int main(void)
 {
     RUN(a_result_of_many_changes_counts_the_rest);
@@ -807,5 +863,6 @@ int main(void)
     RUN(a_crumb_never_cuts_inside_a_word_of_the_family);
     RUN(an_unsure_selection_is_not_counted_as_made);
     RUN(done_before_the_power_up_is_a_2s_hold);
+    RUN(a_touch_loss_found_after_dones_hold_writes_no_on);
     return test_summary("esc_stick_panel_steps");
 }

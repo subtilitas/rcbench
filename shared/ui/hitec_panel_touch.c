@@ -418,6 +418,7 @@ void hitec_panel_cancel(void)
     ui_tabs_cancel(&hp.tabs);
     ui_hold_reset(&hp.page.hold);
     ui_hold_reset(&hp.conn);
+    hp.conn_due = false;
     hp.page.down = false;
     let_go();
     ++hp.rev;
@@ -432,13 +433,30 @@ void hitec_panel_leave(void)
 }
 
 /**
- * @brief A frame of CONNECT's hold: it connects at 2s; the port gone from
- *        PWM or its row from the page ends it, a low carrier input ends it
- *        with the reason.
+ * @brief A frame of CONNECT's hold: it connects on the tick after it
+ *        completes; the port gone from PWM or its row from the page ends
+ *        it, a low carrier input ends it with the reason.
+ *
+ * The connect waits a tick: the frame's drains run between the two, so a
+ * touch loss that the hold completed over is found first, and
+ * hitec_panel_cancel() takes the connect back before its command is
+ * queued.
  * @param dt_s the frame's time, s
  */
 static void connect_tick(float dt_s)
 {
+    if (hp.conn_due) {
+        const hpn_row_t *r = &hpn_rows[0];
+
+        hp.conn_due = false;
+        if (hitec_prog_state(&hp.prog) == HITEC_PROG_PWM
+            && hpn_switches_supply() && r->page == hp.tabs.selected
+            && hpn_row_shown(r) && hpn_row_live(r)) {
+            hpn_act(r);         /* refuses a low carrier input itself */
+            hpn_supply_sync();
+        }
+        ++hp.rev;
+    }
     if (hp.have && hp.pressed == P_CONNECT && !hp.conn.fired) {
         const hpn_row_t *r = &hpn_rows[hp.row];
 
@@ -456,8 +474,7 @@ static void connect_tick(float dt_s)
             ++hp.rev;
         } else {
             if (ui_hold_tick(&hp.conn, dt_s)) {
-                hpn_act(r);
-                hpn_supply_sync();
+                hp.conn_due = true;
                 ++hp.rev;
             }
             ++hp.hold_rev;

@@ -369,6 +369,7 @@ void kst_panel_cancel(void)
     ui_tabs_cancel(&k.tabs);
     ui_hold_reset(&k.warn.hold);
     ui_hold_reset(&k.conn);
+    k.conn_due = false;
     k.warn.down = false;
     let_go();
     ++k.rev;
@@ -383,13 +384,28 @@ void kst_panel_leave(void)
 }
 
 /**
- * @brief A frame of CONNECT's hold: it connects at 2s; the port gone from
- *        PWM or its row from the page ends it, a low carrier input ends it
- *        with the reason.
+ * @brief A frame of CONNECT's hold: it connects on the tick after it
+ *        completes; the port gone from PWM or its row from the page ends
+ *        it, a low carrier input ends it with the reason.
+ *
+ * The connect waits a tick: the frame's drains run between the two, so a
+ * touch loss that the hold completed over is found first, and
+ * kst_panel_cancel() takes the connect back before its START is queued.
  * @param dt_s the frame's time, s
  */
 static void connect_tick(float dt_s)
 {
+    if (k.conn_due) {
+        const row_t *r = kpn_row_at(PG_SERVO, 0, 0);
+
+        k.conn_due = false;
+        if (r != NULL && kst_prog_state(&k.prog) == KST_PROG_PWM
+            && kpn_switches_supply() && kpn_row_live(r)) {
+            kpn_act(r);         /* refuses a low carrier input itself */
+            kpn_supply_sync();
+        }
+        ++k.rev;
+    }
     if (k.have && k.pressed == P_CONNECT && !k.conn.fired) {
         const row_t *r = &kpn_rows[k.row];
 
@@ -407,8 +423,7 @@ static void connect_tick(float dt_s)
             ++k.rev;
         } else {
             if (ui_hold_tick(&k.conn, dt_s)) {
-                kpn_act(r);
-                kpn_supply_sync();
+                k.conn_due = true;
                 ++k.rev;
             }
             ++k.hold_rev;

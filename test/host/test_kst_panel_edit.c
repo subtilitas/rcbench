@@ -12,6 +12,7 @@
  * - the_hold_button_fills_through_its_own_revision
  * - connects_hold_fills_through_its_own_revision
  * - connect_of_a_servo_the_operator_powers_is_a_tap
+ * - a_touch_loss_found_after_connects_hold_connects_nothing
  * - stretch_is_chosen_from_the_values_the_core_takes
  * - a_switch_is_toggled_by_its_tap_and_warns_where_the_core_does
  * - a_switch_the_core_refuses_says_which_limit
@@ -252,6 +253,37 @@ TEST_CASE(connect_of_a_servo_the_operator_powers_is_a_tap)
     CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
 }
 
+/* CONNECT acts on the tick after its hold completes: a touch loss found in
+ * between (kst_panel_cancel(), as the render loop's drain calls it) takes
+ * it back, and no START goes out.  Without the loss the next tick
+ * connects. */
+TEST_CASE(a_touch_loss_found_after_connects_hold_connects_nothing)
+{
+    const gfx_rect_t c = (fresh(), val(PG_SERVO, 0, 0));
+
+    g_rig.rail = true;
+    link_up();
+    const unsigned base = g_rig.starts;
+    ev(cx(c), cy(c), TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 8; ++i) {
+        tick(0.25f);                    /* 2.0s: the hold completes */
+    }
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    kst_panel_cancel();                 /* the loss, found late */
+    tick(0.02f);
+    settle();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    CHECK_EQ(g_rig.starts, base);
+    ev(cx(c), cy(c), TOUCH_EVENT_DOWN, 2);
+    for (int i = 0; i < 8; ++i) {
+        tick(0.25f);
+    }
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    tick(0.02f);                        /* the next tick connects */
+    CHECK(kst_prog_state(M) != KST_PROG_PWM);
+    ev(cx(c), cy(c), TOUCH_EVENT_UP, 2);
+}
+
 TEST_CASE(stretch_is_chosen_from_the_values_the_core_takes)
 {
     uint16_t lo = 0, hi = 0;
@@ -445,6 +477,7 @@ int main(void)
     RUN(the_hold_button_fills_through_its_own_revision);
     RUN(connects_hold_fills_through_its_own_revision);
     RUN(connect_of_a_servo_the_operator_powers_is_a_tap);
+    RUN(a_touch_loss_found_after_connects_hold_connects_nothing);
     RUN(stretch_is_chosen_from_the_values_the_core_takes);
     RUN(a_switch_is_toggled_by_its_tap_and_warns_where_the_core_does);
     RUN(a_switch_the_core_refuses_says_which_limit);

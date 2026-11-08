@@ -223,7 +223,9 @@ OUTPUT ON's fade from green to red
 completes, with the finger still down; the release after it acts on
 nothing. A release before 2s sends nothing and shows `Hold 2s to connect
 and switch the port's supply on.` A finger that leaves the button, a lost
-touch or the port leaving PWM ends the hold. On the rbmod carrier an input
+touch or the port leaving PWM ends the hold. The connect goes out on the
+frame after the hold completes, and a touch loss found in between takes it
+back. On the rbmod carrier an input
 supply under 13.5V refuses the press and ends a running hold, with the
 input named ([Carrier, The input supply](Carrier.md#the-input-supply)).
 For a servo the operator powers, with no PD mini, **CONNECT** switches

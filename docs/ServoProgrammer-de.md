@@ -249,7 +249,9 @@ beginnt, wenn das Halten vollständig ist, der Finger liegt dann noch auf der
 Taste; das Loslassen danach bewirkt nichts. Loslassen vor 2s sendet nichts
 und zeigt `Halte 2s, um zu verbinden und die Versorgung des Ports
 einzuschalten.` Ein Finger, der die Taste verlässt, eine verlorene Berührung
-oder ein Port, der PWM verlässt, beendet das Halten. Auf dem rbmod-Carrier
+oder ein Port, der PWM verlässt, beendet das Halten. Das Verbinden geht im
+Frame nach dem vollständigen Halten hinaus; ein dazwischen gefundener
+Berührungsverlust nimmt es zurück. Auf dem rbmod-Carrier
 verweigert eine Eingangsspannung unter 13,5V den Druck und beendet ein
 laufendes Halten, mit der Eingangsspannung im Text
 ([Carrier, Die Eingangsversorgung](Carrier-de.md#die-eingangsversorgung)).

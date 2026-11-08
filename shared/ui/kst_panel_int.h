@@ -231,6 +231,9 @@ typedef struct {
     uint32_t hold_rev;                  /**< revision, counted up when a hold advances */
     /** @brief CONNECT's 2s hold: it switches the port's supply on */
     ui_hold_t conn;
+    /** @brief CONNECT's hold completed: it acts on the next tick, after
+     *         that frame's drains, unless a touch loss cancels it first */
+    bool conn_due;
 
     /* A limit run's step of the programmer (kst_panel_run_connect()). */
     struct {

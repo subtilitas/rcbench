@@ -5,7 +5,8 @@
  * port and its GPIO in every state; CLOSE while the port is held opening
  * LEAVE, and a hold of 2s leaving; a port another session holds offering
  * RELEASE PORT; a classic servo with no PD mini refused with its reason;
- * CONNECT a 2s hold with a PD mini and a tap without one;
+ * CONNECT a 2s hold with a PD mini and a tap without one, and taken back
+ * by a touch loss found after its hold completed;
  * the supply's lock while a port is held; the restore question after a
  * LEAVE and after no other end of the hold; every control a tap target above
  * the alert band, every label and value inside its field and every note
@@ -353,6 +354,27 @@ TEST_CASE(connect_holds_only_where_it_switches_a_supply_on)
     CHECK_EQ(ps.supply, (uint8_t)PROG_SES_AS_IS);
     tap(val(HITEC_PANEL_SERVO, 0, 0));
     CHECK(pstate() != HITEC_PROG_PWM);
+}
+
+/* CONNECT acts on the tick after its hold completes: a touch loss found in
+ * between (hitec_panel_cancel()) takes it back and nothing is sent. */
+TEST_CASE(a_touch_loss_found_after_connects_hold_connects_nothing)
+{
+    const gfx_rect_t c = (open_at(SUPPLY_ON, UI_LANG_EN),
+                          val(HITEC_PANEL_SERVO, 0, 0));
+
+    const unsigned cmds = g_cmds;
+
+    ev(cx(c), cy(c), TOUCH_EVENT_DOWN);
+    for (int i = 0; i < 8; ++i) {
+        hitec_panel_tick(0.25f);        /* 2.0s: the hold completes */
+    }
+    CHECK_EQ(pstate(), HITEC_PROG_PWM);
+    hitec_panel_cancel();               /* the loss, found late */
+    hitec_panel_tick(0.02f);
+    prun(100u);
+    CHECK_EQ(pstate(), HITEC_PROG_PWM);
+    CHECK_EQ(g_cmds, cmds);
 }
 
 /* ------------------------------------------------------------- PORT row */
@@ -774,6 +796,7 @@ int main(void)
     RUN(before_a_read_the_value_tabs_say_so);
     RUN(a_classic_connect_without_a_pd_mini_is_refused_with_its_reason);
     RUN(connect_holds_only_where_it_switches_a_supply_on);
+    RUN(a_touch_loss_found_after_connects_hold_connects_nothing);
     RUN(the_port_row_names_the_port_and_its_gpio_in_every_state);
     RUN(close_while_held_opens_leave_and_a_2s_hold_leaves);
     RUN(a_classic_leave_page_says_the_supply_cycles);

@@ -338,8 +338,10 @@ geprüft wurden. Vor einem Einschalten schaltet ERLEDIGT danach das Netzteil
 ein und ist dort darum eine Halte-Taste von 2s, mit der Überblendung von
 AUSGANG EIN von Grün nach Rot, gezählt ab einem Druck nach den ersten
 1000ms; Loslassen vor 2s zeigt `Halte 2s, um den Schritt vor dem
-Einschalten der Versorgung zu bestätigen.` ERLEDIGT der anderen Schritte
-nimmt ein Tippen. ABBRECHEN und STOP im Band beenden den Lauf.
+Einschalten der Versorgung zu bestätigen.` Ein Berührungsverlust, der nach
+diesem Halten gefunden wird, bevor das Netzteil als eingeschaltet gelesen
+wird, beendet den Lauf mit ausgeschaltetem Netzteil und DISARM. ERLEDIGT
+der anderen Schritte nimmt ein Tippen. ABBRECHEN und STOP im Band beenden den Lauf.
 
 Ohne ERLEDIGT innerhalb von 60s (`ESC_STICK_HAND_WAIT_MS`) endet der Lauf
 mit NICHT BESTÄTIGT. Während des Wartens gelten dieselben Regeln wie sonst:

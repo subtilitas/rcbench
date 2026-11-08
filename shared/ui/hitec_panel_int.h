@@ -201,6 +201,10 @@ typedef struct {
     uint32_t hold_rev;          /**< counts a hold's steps                */
     ui_hold_t conn;             /**< CONNECT's 2s hold: it switches the
                                      port's supply on                    */
+    bool     conn_due;          /**< CONNECT's hold completed: it acts on
+                                     the next tick, after that frame's
+                                     drains, unless a touch loss cancels
+                                     it first                            */
 } hpn_state_t;
 
 /**

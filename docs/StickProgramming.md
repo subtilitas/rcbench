@@ -298,7 +298,9 @@ the frame has judged STOP, the switch to ARMED, the link and the supply.
 Before a power-up DONE switches the supply on after it, so there it is a
 2s hold with OUTPUT ON's fade from green to red, counted from a press
 after the first 1000ms; a release before 2s shows `Hold 2s to confirm the
-step before the supply switches on.` The other steps' DONE takes a tap. ABORT ends the
+step before the supply switches on.` A touch loss found after that hold
+completes, before the supply reads on, ends the run with the supply off
+and the bench disarmed. The other steps' DONE takes a tap. ABORT ends the
 run, and so does STOP in the band. No DONE within 60s
 (`ESC_STICK_HAND_WAIT_MS`) ends the run with NOT CONFIRMED. While it waits
 the run keeps every rule it keeps elsewhere: a powered wait watches the

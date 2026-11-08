@@ -704,8 +704,15 @@ void esc_stick_panel_cancel(void)
     for (int i = 0; i < t->qn; ++i) {
         queued = queued || t->q[i].kind == MOTOR_CMD_ARM;
     }
+    /* And before the supply is in force: DONE's hold may have completed on
+     * a contact the panel lost, and the supply ON it led to -- asked, or
+     * still to be asked on the next step -- energises the ESC at its entry
+     * throttle.  The run ends, the ON with it. */
+    const bool powering = t->run.phase == ESC_STICK_POWER
+                          || (t->run.phase == ESC_STICK_HAND_OFF
+                              && t->run.hand_done);
     if (esc_stick_running(&t->run)
-        && (queued || t->run.phase == ESC_STICK_ARMING)) {
+        && (queued || t->run.phase == ESC_STICK_ARMING || powering)) {
         sp_end_run(ESC_STICK_R_TOUCH);
     }
 }
