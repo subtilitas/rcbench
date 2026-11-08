@@ -185,7 +185,7 @@ dialogs also have no "?".
 | Items a page | 5 at most |
 | Web line | `More: subtilitas.github.io/rcbench/help/`, German `Mehr: subtilitas.github.io/rcbench/help/de/` |
 | PREV and NEXT | 124 x 48px, 8px apart, in the band from x 8 to 264, y 6 to 54, in the home tag's place, the same on every page |
-| CLOSE | 140 x 48px, centred at the dock's bottom, y 496 to 544 |
+| CLOSE | 140 x 48px, centered at the dock's bottom, y 496 to 544 |
 | Marks | a 28px badge with the item's number 4px inside the control's top-left corner, or 4px left of a control less than 56px tall or wide; 4px inside the top-right corner for a control whose own text starts at its left edge; 2px brackets at the control's corners, 3px outside it |
 
 A control in the band has its badge under the band, below the control's
@@ -546,7 +546,7 @@ The fill of a button says what a press does to an output.
 
 | Class | Buttons | Available | Active | Waiting | Refused |
 | --- | --- | --- | --- | --- | --- |
-| Output action: switches an output on, arms, starts a run, writes a servo | ARM, OUTPUT ON, PROG 5V ON, HOLD 2s: ARM + START on TEST, RUDDER AUTO and LIMIT RUN, CENTRE on LIVE, SWEEP on SWEEP, 1000us, CENTRE, 2000us and ZERO on RUDDER, the programmers' CONNECT, ENABLE WRITE TO SERVO, WRITE n VALUES and MOVE SERVO | green (`UI_C_OK`) | red (`UI_C_DANGER`): an output is on, ARMED, a write runs, the servo is driven; the label says what a press stops (DISARM, OUTPUT OFF, STOP RUN, PAUSE, LEAVE, ABORT, ON) | amber (`UI_C_WARN`): PAUSED, WAIT, the step of ARM + START and of ARM on LIVE, SWEEP and RUDDER | grey (`ui_button_off_fill()`), faint label |
+| Output action: switches an output on, arms, starts a run, writes a servo | ARM, OUTPUT ON, PROG 5V ON, HOLD 2s: ARM + START on TEST, RUDDER AUTO and LIMIT RUN, CENTER on LIVE, SWEEP on SWEEP, 1000us, CENTER, 2000us and ZERO on RUDDER, the programmers' CONNECT, ENABLE WRITE TO SERVO, WRITE n VALUES and MOVE SERVO | green (`UI_C_OK`) | red (`UI_C_DANGER`): an output is on, ARMED, a write runs, the servo is driven; the label says what a press stops (DISARM, OUTPUT OFF, STOP RUN, PAUSE, LEAVE, ABORT, ON) | amber (`UI_C_WARN`): PAUSED, WAIT, the step of ARM + START and of ARM on LIVE, SWEEP and RUDDER | grey (`ui_button_off_fill()`), faint label |
 | Emergency | STOP | red | red, flashes on the press | - | never |
 | Edit | `-` `+`, value boxes, RESET MAX, RESET CATEGORY on SETUP, DISCARD, READ AGAIN | neutral (`UI_C_PANEL_HI`) | - | - | grey |
 | SAVE on SETUP | SAVE, SAVED, WHEN IDLE, NOT SAVED | green while something is unsaved (SAVE) | - | amber (WHEN IDLE) | neutral with the label in red (NOT SAVED); SAVED is neutral |
@@ -765,7 +765,7 @@ home tag with the warning shown closes the warning.
 ![The splash](img/splash.png)
 
 The splash fills the panel without a status band. The `rcbench` name uses
-the 20 x 36px font at twice its normal size, centred at the top on an 88px
+the 20 x 36px font at twice its normal size, centered at the top on an 88px
 high accent tag. The tagline below uses the 12 x 24px font. Starting at
 y 200, each startup step has a 40px row with its name, status (`OK`, `--`,
 `!!`, or `..` while running) and detail, all in 12 x 24px. The detail
@@ -1464,7 +1464,7 @@ SERVO opens on its hub: eight tiles of 328 x 130px in SETUP's grid, at x
 | SWEEP | SWEEP | the dial with the sweep; SETTINGS opens CURVE, SPEED and RANGE |
 | TEST | TEST | the AUTOMATIC TEST card, SUPPLY's caps, the plot and the run's box, the READY card in place of the output card, HOLD 2s: ARM + START in the footer; SETTINGS opens the automatic test's list |
 | LIMIT RUN | LIMIT RUN | the mode and output lines, LOW END and HIGH END and the state lines on the left card, the READY card in place of the output card, HOLD 2s: ARM + START in the footer; SETTINGS opens MODE, SERVO, SERVO PULSES and the programmer's rows ([Running it](Servo.md#running-it)) |
-| RUDDER | RUDDER | deflection in ° and mm, LENGTH, 1000us, CENTRE, 2000us, ZERO and RESET MAX ([Rudder deflection](Servo.md#rudder-deflection)) |
+| RUDDER | RUDDER | deflection in ° and mm, LENGTH, 1000us, CENTER, 2000us, ZERO and RESET MAX ([Rudder deflection](Servo.md#rudder-deflection)) |
 | RUDDER AUTO | RUDDER AUTO | AUTO's box in place of LENGTH and the drive buttons, the READY card in place of the output card, HOLD 2s: ARM + START in the footer ([AUTO end points](Servo.md#auto-end-points)) |
 | KST | SERVO > KST | the KST and Chaservo programmer over the left card ([Programmer](#programmer)) |
 | HITEC | HITEC | the Hitec programmer over the left card ([Hitec programmer](#hitec-programmer)) |
@@ -1508,7 +1508,7 @@ y 96, each a dot, a label of 13 cells and a state of 20. LIVE and SWEEP
 have PORT, SUPPLY and ARM; RUDDER has PORT, ANGLE, ZERO, SUPPLY and ARM.
 Under the rows LIVE and SWEEP have SPEED, its label at y 196 and its
 track at y 220 to 260. All three have the type pill at y 274 to 318. LIVE
-has CENTRE and RELEASE, SWEEP has SWEEP and RELEASE, each 174 x 48px at y
+has CENTER and RELEASE, SWEEP has SWEEP and RELEASE, each 174 x 48px at y
 330. The rail line at y 404 names the servo rail's meter and reads its
 volts and amps, `5.02V  0.120A`, or `--V  --A` without a reading; with the
 panel's model as the supply, SIMULATED follows the name.
@@ -1623,14 +1623,14 @@ reads give 0.5° to 2.1°. On a normal release, the target continues to the
 finger's final angle, covering 99% of the remaining distance in 100ms.
 
 Any other command ends the filter immediately: SAFE, DISARM, STOP, RELEASE,
-CENTRE, SWEEP or the knob, even a turn resulting in the last filtered pulse.
+CENTER, SWEEP or the knob, even a turn resulting in the last filtered pulse.
 A press that cancels the drag before release also stops the filter: a
 finger on the status band, STOP or alert band, a press with the dragging
 finger's own track id after its release went missing, or the dragging
 finger moving into the status band. A second finger elsewhere on the screen
 leaves the drag running: on SPEED it changes the rate, and the move under
 way takes it. A second finger on the dial takes nothing from the first;
-CENTRE, SWEEP and RELEASE under a second finger end the drag and take the
+CENTER, SWEEP and RELEASE under a second finger end the drag and take the
 horn. The filter stops at its
 current angle and sends no further commands. It cannot move anything while
 SAFE. The next ARM starts at rest, with no remaining drag input.
@@ -1701,18 +1701,18 @@ What each control does while the bench is SAFE:
 | --- | --- | --- |
 | The dial | refused: no command, the horn and COMMANDED stay | commands the position under the finger |
 | Rotary knob | refused; the turn is not kept | moves the horn from the commanded value |
-| CENTRE | refused; drawn dimmed | commands PULSE CENTRE plus TRIM |
+| CENTER | refused; drawn dimmed | commands PULSE CENTER plus TRIM |
 | SWEEP, PAUSE, PAUSED | refused; drawn dimmed | starts, pauses and resumes the sweep |
-| RELEASE | sends the release; the value shown stays | centres the surfaces; the value shown becomes the rest |
+| RELEASE | sends the release; the value shown stays | centers the surfaces; the value shown becomes the rest |
 | SPEED | set; sends nothing | set; a held position is sent again at the new rate |
-| The hub's list: TYPE, FRAME RATE, PULSE MIN, CENTRE and MAX, TRIM, TRAVEL, REVERSE | set on the hub, where the bench is SAFE; the next ARM rests under them | not reachable: the hub's leave of a function screen switches to SAFE |
+| The hub's list: TYPE, FRAME RATE, PULSE MIN, CENTER and MAX, TRIM, TRAVEL, REVERSE | set on the hub, where the bench is SAFE; the next ARM rests under them | not reachable: the hub's leave of a function screen switches to SAFE |
 | PORT | a tap opens the list of OUTPUTS and the 4 programming ports | locked; names the lock in the alert band |
 | SET, OUTPUT ON, OUTPUT OFF on KST and HITEC | as on SUPPLY | as on SUPPLY |
 | READY's rows on LIVE, SWEEP and RUDDER | a tap fixes the row or names its state | no press |
 | HOLD 2s: ARM + START on TEST | arms the bench and starts the run after its hold | starts the run after its hold |
 
 While SAFE, the horn is dimmed and LIVE shows `ARM FIRST`. The horn and
-COMMANDED retain the last driven position, or PULSE CENTRE after restart.
+COMMANDED retain the last driven position, or PULSE CENTER after restart.
 Changing a pulse-width setting while SAFE changes the microseconds shown
 for that angle; TRAVEL does not clamp the angle.
 
@@ -1837,7 +1837,7 @@ with the supply modelled ([The meter](Servo.md#the-meter)).
 
 MEASURED shows the horn angle from the selected source, AS5600 or IMU,
 in tenths of a degree from -180.0° to +179.9°. The AS5600 angle is measured
-from its centre count and read 20 times per second. It requires AS5600
+from its center count and read 20 times per second. It requires AS5600
 enabled under SETUP > SENSORS, a responding sensor and a detected magnet.
 No response or no magnet (STATUS MD clear) gives `---`; the count is then
 not a valid angle. A weak or strong magnet warning leaves the angle visible
@@ -1898,7 +1898,7 @@ screens use the same values; changing either screen updates the other.
 **SWEEP runs a curve on the IOmcu**, keeping its timing independent of the
 link. SWEEP's list sets CURVE (square, sine or triangle) and SPEED
 (0.05 to 5 cycles per second). The automatic test's DWELL TIME sets the
-hold at each end. The curve is centred on PULSE CENTRE. RANGE is a share
+hold at each end. The curve is centered on PULSE CENTER. RANGE is a share
 of the permitted travel, limited by TRAVEL and the nearer of PULSE MIN
 and MAX. The right-hand SPEED control limits motion as it does a drag;
 trim is not applied.
@@ -1941,7 +1941,7 @@ The IOmcu retains phase through HOLD and resumes with `LINK_SV_RESUME`
 while paused starts a new sweep instead.
 
 An IOmcu before protocol 4.6, or one whose hold has ended and therefore
-refuses resume, restarts the curve: at centre for sine or triangle, at the
+refuses resume, restarts the curve: at center for sine or triangle, at the
 first end for square. The alert band reports
 `IOmcu firmware older than 0.13.0. Sweep starts again.` or
 `IOmcu could not resume. Sweep starts again.` Tapping PAUSED after an
@@ -1953,7 +1953,7 @@ pause ends with that HOLD.
 ![A paused sweep](img/servo-paused.png)
 
 If HOLD is not repeated for 500ms, the IOmcu has released it. The panel
-then releases the surfaces to centre and draws the horn there. It also
+then releases the surfaces to center and draws the horn there. It also
 ends the pause if HOLD is answered only after a retry or more than 500ms:
 the IOmcu may have released and held again at another position, leaving
 the held angle unknown. Ending the pause avoids retaining an uncertain
@@ -1964,7 +1964,7 @@ rests the surfaces 500ms after the last write it received. Pending sweep
 or hold commands are not sent when the link returns; the next tap starts
 a new sweep.
 
-Touching the dial, CENTRE, RELEASE, STOP, switching to SAFE or leaving the
+Touching the dial, CENTER, RELEASE, STOP, switching to SAFE or leaving the
 screen ends either a running or paused sweep; the button returns to SWEEP.
 Changing type, frame rate, pulse width, trim, travel or reverse also ends
 a pause and holds its angle as a position. With feedback, this is the last
@@ -2020,7 +2020,7 @@ The READY card names what the hold needs, one row each:
 | METER | the servo rail's meter | - | - |
 | PD MINI | the supply on | the PD mini off: the run's steps switch it on | no supply answering; the PD mini off with the INA3221 reading 3.0V or more on the rail: `RAIL LIVE WITH THE PD MINI OFF: FED FROM ELSEWHERE` |
 | STEPS | the steps, `4.8-6.0V, BROWN-OUT` | a step above 6.0V: a tap opens HV SERVOS ONLY | no step chosen; a step outside SUPPLY's voltage caps |
-| RANGE | the two ends in us | - | RANGE and TRAVEL place both ends at PULSE CENTRE |
+| RANGE | the two ends in us | - | RANGE and TRAVEL place both ends at PULSE CENTER |
 | ARM | ARMED | SAFE: the hold arms | a limit run or RUDDER AUTO runs; a report still being written |
 
 A row reads red whenever one of its texts refuses the hold, and the hold is
@@ -2053,9 +2053,9 @@ points and switch throughout.
 
 Every end of the run, PASS and STOP TEST included, switches the bench to
 SAFE; the next run arms again with its hold. The run ends early with the
-output off and servo released to centre on STOP TEST (in the footer or the
+output off and servo released to center on STOP TEST (in the footer or the
 run's box), STOP, SAFE, link loss, leaving SERVO, touching
-the dial, CENTRE, SWEEP, RELEASE, tapping a set point, changing type,
+the dial, CENTER, SWEEP, RELEASE, tapping a set point, changing type,
 pulses, trim, travel, reverse or SPEED, missing touch events, or the supply
 conditions in [the list](Servo.md#what-ends-a-run).
 
@@ -2089,7 +2089,7 @@ SEARCH + PROGRAM also reduces the selected servo family's end settings
 until both ends are free: LEFT ANGLE and RIGHT ANGLE for KST and Chaservo,
 LEFT END and RIGHT END for Hitec.
 
-On a SERVO PWM pin, the search runs from PULSE CENTRE to PULSE MIN and MAX.
+On a SERVO PWM pin, the search runs from PULSE CENTER to PULSE MIN and MAX.
 On a programming port, a read session comes first. For KST and Chaservo,
 the search uses the servo's NEUTRAL, PULSE LOWER and PULSE UPPER; Hitec uses
 its family's pulse model.
@@ -2201,7 +2201,7 @@ opens again on its own screen: from another SERVO function screen the
 panel goes there. KST and HITEC have no ARM. ARM is disabled on the
 other SERVO screens and on MOTOR & ESC; pressing it shows
 `Cannot switch to ARMED: a port is in use by the servo programmer.`
-STOP remains active everywhere, CENTRE and RELEASE on LIVE. COMMANDED
+STOP remains active everywhere, CENTER and RELEASE on LIVE. COMMANDED
 shows `---`, because the tester sends no pulse to the held port.
 
 In PWM with a responding PD mini, the PORT row shows the voltage and
@@ -2317,11 +2317,11 @@ until SAVE.
 
 | Screen | SETTINGS opens |
 | --- | --- |
-| the hub | the servo profile: OUTPUT with TYPE, FRAME RATE, PULSE MIN, PULSE CENTRE, PULSE MAX, TRIM, TRAVEL, REVERSE and HV SERVO; DUT with NAME and REPORT |
+| the hub | the servo profile: OUTPUT with TYPE, FRAME RATE, PULSE MIN, PULSE CENTER, PULSE MAX, TRIM, TRAVEL, REVERSE and HV SERVO; DUT with NAME and REPORT |
 | SWEEP | CURVE, SPEED and RANGE |
 | TEST | VOLTAGE STEPS: Step 4.8V, Step 6.0V, HV SERVO, Step 7.4V, Step 8.4V; BROWN-OUT: Brown-out, Brown-out minimum voltage, Brown-out step; PASS/FAIL LIMITS: Stall threshold, Idle current max, Holding current max, Travel time max; LENGTH AND TIMING: Length by, Test time, Movements, Dwell time, Settling time |
 | LIMIT RUN | MODE, SERVO, SERVO PULSES, Programming voltage, Programming current and Wait before PWM |
-| RUDDER | LENGTH, ENC CENTRE and ANGLE SOURCE |
+| RUDDER | LENGTH, ENC CENTER and ANGLE SOURCE |
 | RUDDER AUTO | the targets, MARGIN, TOLERANCE, SERVO, SERVO PULSES and ANGLE SOURCE |
 | SERVO > KST | KST EXPERT MODE, one level down |
 | HITEC | SERIES and RECEIVE |
@@ -2386,8 +2386,8 @@ their usual key positions.
 AS5600, the output encoder, is switched on and off on SETUP > SENSORS
 alone ([the output encoder](#sensors-the-output-encoder)). It adds the
 horn's angle to the MEASURED row and to a run's CSV and report
-([Servo](Servo.md#the-output-encoder)). ENC CENTRE on RUDDER's list takes
-the live count as the centre, with the servo at its neutral; without a
+([Servo](Servo.md#the-output-encoder)). ENC CENTER on RUDDER's list takes
+the live count as the center, with the servo at its neutral; without a
 reading its line says `No AS5600 reading: set it up on SENSORS`.
 
 ![RUDDER's list with the output encoder on](img/servo-encoder.png)
@@ -2461,7 +2461,7 @@ read, 500ms, without waiting for ARM.
 
 ![The PORT button with PROG PORT](img/servo-target.png)
 
-| Type | Centre | Travel | Frame rates |
+| Type | Center | Travel | Frame rates |
 | --- | --- | --- | --- |
 | STANDARD PWM | 1500us | 1000-2000us | 50, 60, 100, 150, 200, 250, 300, 333Hz |
 | NARROW 760 | 760us | 660-860us | as STANDARD PWM |
@@ -2478,8 +2478,8 @@ at least 0.5ms between pulses.
 Rates that leave no required pause are refused, as is a PULSE MAX too
 long for the active rate. The pause follows the longest pulse the IOmcu
 can produce: the top of the command's range. This is PULSE MAX, or beyond
-it when CENTRE lies closer to MAX than MIN, by the difference between
-CENTRE-to-MIN and CENTRE-to-MAX. A CENTRE setting that pushes this top beyond the
+it when CENTER lies closer to MAX than MIN, by the difference between
+CENTER-to-MIN and CENTER-to-MAX. A CENTER setting that pushes this top beyond the
 required pause is also refused.
 
 **A heli type, or any frame rate above 60Hz, can destroy a servo that is not
@@ -3212,7 +3212,7 @@ is unmeasured. Entry sizes come from the same directory scan.
 
 The list scrollbar is 56px wide, about 8.4mm at the assumed, unmeasured
 pixel pitch of 0.150mm. Its thumb represents visible rows relative to the
-current page and scrolls only within that page. Tap the track to centre
+current page and scrolls only within that page. Tap the track to center
 the thumb under the finger, or drag the thumb.
 
 LOGS rereads the card whenever opened from the menu or its tab. It loads
@@ -4701,7 +4701,7 @@ reach the layout with two application slots: [First run, §1](FirstRun.md#1-flas
 ## Setup
 
 The SETUP tile of the menu opens a page of tiles, 3 by 3, in the menu's
-style. Each tile is 328 x 130px with 10px margins: a 36px icon centred
+style. Each tile is 328 x 130px with 10px margins: a 36px icon centered
 over its name in the 12 x 24px face, and a line in the 10 x 20px face.
 
 ![Setup](img/setup.png)
@@ -5259,7 +5259,7 @@ pitch split, Tap gap and Tap min periods. SENSORS marks its rows by part
 | after an IOmcu restart or a link-up, on what its page reads differently | the panel has written it |
 
 Rows are not marked while no IOmcu answers or before the first page read
-after link-up, because no comparison is available. AS5600 centre is the
+after link-up, because no comparison is available. AS5600 center is the
 panel's own and is never marked. The alert on the band is separate and stays
 as described above.
 
@@ -5421,7 +5421,7 @@ sensor bus beside the monitors, at its fixed address 0x36 (protocol 4.9):
 | Setting | Range | Default | |
 | --- | --- | --- | --- |
 | AS5600 | ON, OFF | OFF | the output encoder; it takes the sensor bus's SDA and SCL above, and needs both pins set |
-| AS5600 centre | 0 to 4095, 1 count steps | 0 | the sensor's 12-bit count with the servo at its neutral; 4096 counts a turn, 0.0879 degrees a count. The SERVO screen's ENC CENTRE sets it from the live reading |
+| AS5600 center | 0 to 4095, 1 count steps | 0 | the sensor's 12-bit count with the servo at its neutral; 4096 counts a turn, 0.0879 degrees a count. The SERVO screen's ENC CENTER sets it from the live reading |
 
 The panel writes the enable bit with the rest of the bus frame, 500ms after
 the last edit and only while the bench is SAFE, to an IOmcu that
@@ -5433,7 +5433,7 @@ once and one at a time like the monitors':
 | --- | --- |
 | `IOmcu firmware older than 0.15.0. AS5600 not read.` | the encoder is enabled and the IOmcu speaks a protocol older than 4.9; said at the link-up, and when the encoder is enabled while it answers |
 | `AS5600 is not responding at 0x36.` | enabled, and not answering 2.5s after its set-up was taken, or having stopped answering after it did; also when something at 0x36 gives a STATUS no AS5600 gives, ML and MH both set. The band takes it back with the first read that finds the part answering |
-| `AS5600 detects no magnet. Check the magnet on the servo horn shaft.` | it answers, an angle has been read, and STATUS MD (magnet detected) is clear. The count is no angle: MEASURED shows `---`, ENC CENTRE sets nothing, and a run logs and judges no angle |
+| `AS5600 detects no magnet. Check the magnet on the servo horn shaft.` | it answers, an angle has been read, and STATUS MD (magnet detected) is clear. The count is no angle: MEASURED shows `---`, ENC CENTER sets nothing, and a run logs and judges no angle |
 | `AS5600: magnetic field too weak. Move the magnet closer.` | STATUS MD and ML are set. The angle is used; the sensor's datasheet specifies its noise for 30 to 90 mT only |
 | `AS5600: magnetic field too strong. Move the magnet farther away.` | STATUS MD and MH are set. The angle is used, as with ML |
 
@@ -6329,7 +6329,7 @@ has room for nothing else. It runs at 40Hz, not the 50Hz the pulse drivers
 use: eight channels need 23,300us of frame and 50Hz gives 20,000.
 
 SERVO PWM and MOTOR PWM are the same pulse at the same 50Hz and differ in
-what the channel is for. A servo channel centres when nothing commands it; a
+what the channel is for. A servo channel centers when nothing commands it; a
 motor channel stops. Nothing in the pulse says which is on the pin, so the
 entry says it: bind an ESC as MOTOR PWM and a control surface as SERVO PWM.
 The MOTOR & ESC throttle drives every channel bound as a motor — MOTOR PWM

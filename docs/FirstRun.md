@@ -474,7 +474,7 @@ tree.
 then. Lifting the finger does not stop the output: the screen holds the
 position it was given and says it again every **100ms** (`SERVO_HOLD_MS`),
 against the IOmcu's **500ms** (`OUT_DEFAULT_TIMEOUT_MS`), so a servo
-stays where it was put. **RELEASE** returns the surfaces to centre; it does
+stays where it was put. **RELEASE** returns the surfaces to center; it does
 not clear the slot and the pin keeps pulsing. What stops the edges is a
 switch to SAFE, a STOP, or leaving the screen, which switches to SAFE. Check on the scope that
 RELEASE moves the pulse to the middle of the channel's travel and that a
@@ -784,7 +784,7 @@ pressed, with no Enter.
    6.00V, press `t`. 10s later the console prints a line starting `$Z`.
    Close PuTTY; this log is `noise.log`.
 5. Servo at rest: new log file. Connect the servo, press ARM, leave it at the
-   centre, supply on at 4.80V. Press `t` and wait for the `$Z` line.
+   center, supply on at 4.80V. Press `t` and wait for the `$Z` line.
 6. Moves, in the same log: on the SERVO screen's TEST task, switch to
    SAFE and open SETTINGS. Set Length by to MOVES, Movements 20, Dwell time
    1000ms, Step 4.8V on and every other step and Brown-out off, and SAVE.
@@ -907,7 +907,7 @@ answer whether an arrival is the horn's.
 **Part B: with the AS5600.** The same moves with the encoder on the shaft.
 
 1. SETUP > SENSORS: `AS5600` ON, with the bank SAFE. On SERVO's
-   RUDDER screen, SETTINGS, with the servo at its neutral, tap ENC CENTRE.
+   RUDDER screen, SETTINGS, with the servo at its neutral, tap ENC CENTER.
 2. Repeat part A's steps 5 to 7.
 3. Keep each log together with its test's `ATESTnnn.CSV` from the SD card's
    `USER/LOGS` folder.

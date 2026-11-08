@@ -157,7 +157,7 @@ A setting that differs from the value active on the IOmcu has a warning-coloured
 - on a value the IOmcu refused, until it is changed to one it takes;
 - on a part switched ON that the IOmcu holds off: Sensor SDA at -1, the INA228 on the address of a fitted INA3221, or an IOmcu too old for the part.
 
-No row is marked while no IOmcu answers. AS5600 centre is the panel's own value and is never marked.
+No row is marked while no IOmcu answers. AS5600 center is the panel's own value and is never marked.
 
 The mark on Sensor SDA, on AS5600 and on the phase tap's rows also turns the entry's state to `NOT ACCEPTED BY THE IOMCU`.
 
@@ -166,9 +166,9 @@ The mark on Sensor SDA, on AS5600 and on the phase tap's rows also turns the ent
 | Setting | Range | Default | What it does |
 |---|---|---|---|
 | AS5600 | ON, OFF | OFF | an AS5600 magnetic angle sensor on the servo's output shaft, at its fixed address 0x36 on the sensor bus |
-| AS5600 centre | 0 to 4095 | 0 | the count with the servo at neutral; 4096 counts a turn, 0.0879° a count |
+| AS5600 center | 0 to 4095 | 0 | the count with the servo at neutral; 4096 counts a turn, 0.0879° a count |
 
-The encoder requires IOmcu 0.15.0 or later. ENC CENTRE on RUDDER's list of [servo settings](servo-settings.md#rudder-s-list-and-kst-s-page) takes the live reading as centre. The band reports a missing magnet with `AS5600 detects no magnet. Check the magnet on the servo horn shaft.`, and also reports weak or strong magnets. Each message appears once while the magnet status is unchanged. Editing another setting does not repeat it; switching the sensor off and on does.
+The encoder requires IOmcu 0.15.0 or later. ENC CENTER on RUDDER's list of [servo settings](servo-settings.md#rudder-s-list-and-kst-s-page) takes the live reading as center. The band reports a missing magnet with `AS5600 detects no magnet. Check the magnet on the servo horn shaft.`, and also reports weak or strong magnets. Each message appears once while the magnet status is unchanged. Editing another setting does not repeat it; switching the sensor off and on does.
 
 ## The phase tap
 

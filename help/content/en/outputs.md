@@ -62,7 +62,7 @@ Each bound pin is one slot of the IOmcu's OUTPUTS page, in pin order across ever
 | DSHOT300, DSHOT600 | DShot digital throttle at 300 or 600kbit/s | up to 8 |
 | DSHOT300 BIDIR, DSHOT600 BIDIR | DShot with rpm telemetry from the ESC on the same wire | up to 8 |
 
-Without a command, a servo channel centres and a motor channel stops. The selected protocol determines this behavior because the pulse alone cannot identify the connected device. MOTOR & ESC drives every MOTOR PWM and DShot throttle channel while leaving servo channels unchanged. PPM requires all 8 channels, leaving no room for other protocols.
+Without a command, a servo channel centers and a motor channel stops. The selected protocol determines this behavior because the pulse alone cannot identify the connected device. MOTOR & ESC drives every MOTOR PWM and DShot throttle channel while leaving servo channels unchanged. PPM requires all 8 channels, leaving no room for other protocols.
 
 ![The longest protocol names](view:outputs-bidir)
 

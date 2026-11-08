@@ -152,7 +152,7 @@ band at y 0 to 59 included. `ms` is 1 to 30000. They are not screen-body
 coordinates, which start 60px lower down (`UI_BAND_H`). The boot question
 that offers the IOmcu update has its START button at panel (719, 376) and
 its CANCEL button at panel (305, 376). Their body coordinates, panel y minus
-60px, are (719, 316) and (305, 316), the centres of the rectangles `Q_START`
+60px, are (719, 316) and (305, 316), the centers of the rectangles `Q_START`
 and `Q_CANCEL` in `shared/ui/coproc_update_screen.c` (398x56px each). A tap
 at y 316 lands at body y 256, inside the question box above the buttons, and
 misses both.

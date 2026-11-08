@@ -488,7 +488,7 @@ travel time is an upper bound and TRAVEL TIME is reported, not checked.
 
 STOP, a switch to SAFE, link loss, the supply and the operator end a run with the output off
 and a report marked ABORTED. A position is taken only while ARMED: while SAFE, the dial, the
-rotary knob, CENTRE and SWEEP are refused and the value shown is the one last driven, and at
+rotary knob, CENTER and SWEEP are refused and the value shown is the one last driven, and at
 every switch to ARMED the commanded value is the surface's rest, the midpoint of the
 channel's endpoints; RELEASE while ARMED sets it to that rest as well (`test_servo_arm`;
 host suite only). A drag on the dial goes through a one-pole filter of 20ms
@@ -513,7 +513,7 @@ and Hitec sessions count a PD mini reading as their state line writes it
 RUDDER (`shared/ui/servo_rudder_panel.c`, `shared/servo/servo_rudder.c`) shows the angle
 source's angle, the AS5600's or the IMU's, as a control surface's deflection from ZERO in
 0.1°, with LENGTH (0 or 10 to 500mm, `rud_len_mm`) the trailing edge's travel L x sin in
-0.1mm, the largest deflection each side until ZERO or RESET MAX, and drives 1000us, CENTRE
+0.1mm, the largest deflection each side until ZERO or RESET MAX, and drives 1000us, CENTER
 and 2000us and takes the knob only while ARMED, its PORT button over the READY rows
 (`test_servo_rudder`, `test_servo_rudder_panel`, `test_rudder_layout`; host suite only). Its
 side view draws the surface at the deflection shown, -90 to +90° with a fixed flap of 62px,
@@ -972,19 +972,19 @@ SENSE gains ENABLE bit 2 and registers 26 to 31 (flags, angle, magnitude, sample
 still time); the panel gates both on minor 9, says so on the band for an older IOmcu and for
 a missing, weak or strong magnet, and reads registers 12 to 31 every 40ms
 (`test_sense_page`, `test_sense_link_view`, `test_link_pages`). SETUP SENSORS has AS5600
-(default OFF) and its centre count; the SERVO screen shows the angle in the MEASURED row and
-sets the centre from the live count on the DUT page (`test_servo_target`, `test_servo_run`).
+(default OFF) and its center count; the SERVO screen shows the angle in the MEASURED row and
+sets the center from the live count on the DUT page (`test_servo_target`, `test_servo_run`).
 With it on, the automatic servo test (`test_servo_test_enc`) adds per step the end angles,
 the angle error against the commanded angle and a travel time from the start of the angle's
 100ms stillness within 1.05 degrees, beside the current's, with three CSV columns and a
 report section; the deadband is not derived, because the moves go end to end.
 
 An angle read with STATUS MD clear (no magnet) is no position: the IOmcu holds no still time
-for it and `sense_link_enc()` hands it to no consumer, so MEASURED shows `---`, ENC CENTRE
+for it and `sense_link_enc()` hands it to no consumer, so MEASURED shows `---`, ENC CENTER
 stores nothing and a run judges no angle and reports how often it happened; with ML or MH
 beside MD the angle is used and counted in the report. STATUS bits 7, 6, 2, 1 and 0 are
 masked off, and the probe refuses only ML and MH both set. Angles are compared and averaged
-on the circle; an end more than 180 degrees from the centre count is reported 360 degrees
+on the circle; an end more than 180 degrees from the center count is reported 360 degrees
 off, and turns are not counted.
 
 An AS5600 in use from a run's start that stops answering is a gap of the run
@@ -1049,7 +1049,7 @@ Not started.
 
 Built; HOLD 2s: ARM + START on the SERVO LIMIT RUN screen switches PORT PWM and the
 supply on, reads them back, arms and runs it (`shared/servo/servo_limrun.c`) in 10us steps on INA3221 CH1's 50ms windows, bound
-above 1.8 x the free current and +0.15A: on a SERVO PWM pin from PULSE CENTRE to PULSE MIN
+above 1.8 x the free current and +0.15A: on a SERVO PWM pin from PULSE CENTER to PULSE MIN
 and PULSE MAX; on the programming port after a read session, from the servo's NEUTRAL to its
 own PULSE LOWER and PULSE UPPER, refused before any drive when those lie outside PULSE MIN
 to PULSE MAX. SERVO PULSES at 1000-2000 writes PULSE LOWER and PULSE UPPER to 1000.0 and
@@ -1071,7 +1071,7 @@ or the carrier programming port's fixed 5V supply. Without either, SEARCH + PROG
 SERVO PULSES at 1000-2000 are unavailable for those families. A Hitec D series servo saves
 and restarts during the write and does not require that power cycle (`lim_write_why()`). For
 KST and Chaservo servos, SEARCH + PROGRAM lowers the servo's LEFT ANGLE and RIGHT ANGLE
-(unit not known) in sessions of the programmer (centre, SAFE, CONNECT, one write, LEAVE,
+(unit not known) in sessions of the programmer (center, SAFE, CONNECT, one write, LEAVE,
 ARMED, the side searched again): the travel taken as linear in the pulse, the register for
 each side found from the first write, 2 writes a bound side (an overset 3% above the share
 at the first bound pulse, then the final value from the share the overset's search found
@@ -2496,7 +2496,7 @@ PASS, 41 and 41 moves timed at 771 to 989ms, and NOT MEASURABLE, 21 of 46 moves 
 to the low end) and none late.
 
 A move has 3000ms plus the meter's lag to arrive: 3300ms on the PD mini. With SETTLING TIME
-at 500ms the IDLE readings can still carry the move to the centre, which raises the
+at 500ms the IDLE readings can still carry the move to the center, which raises the
 threshold (0.026A on the 1102HB at 5.00V). The PD mini's travel times are an upper bound;
 the command's delay from the panel to the pin is inside every one and is not measured.
 

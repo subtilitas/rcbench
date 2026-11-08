@@ -100,7 +100,7 @@ PORT entry of **SETUP** > **OUTPUTS**:
 
 | Control | Values | Does |
 | --- | --- | --- |
-| SERVO TESTER | **OUTPUTS**, **PORT n** (the entry's port) | what the sweep, **CENTRE**, **RELEASE**, the hold of a position and the automatic test drive |
+| SERVO TESTER | **OUTPUTS**, **PORT n** (the entry's port) | what the sweep, **CENTER**, **RELEASE**, the hold of a position and the automatic test drive |
 | PORT PWM | **ON**, **OFF** | whether the programming port renders the tester's pulse while it is the target |
 
 The PORT button on the right card of every SERVO function screen sets
@@ -594,11 +594,11 @@ A write, a read and **DISCARD EDITS** end every confirmation.
 | DEAD BAND below the servo's | `A narrow DEAD BAND can cause back-and-forth movement and heat.` |
 | DEAD BAND below 1.0µs | `Very narrow DEAD BAND. Back-and-forth movement and heat are likely.` |
 | MOVE ON SIGNAL LOSS switched on | `On signal loss the servo moves to the failsafe position.` |
-| POSITION more than 300µs from NEUTRAL, MOVE ON SIGNAL LOSS on | `Failsafe position is far from the centre.` |
+| POSITION more than 300µs from NEUTRAL, MOVE ON SIGNAL LOSS on | `Failsafe position is far from the center.` |
 | AFTER below 1.0s | `Short dropouts will trigger the failsafe move.` |
 | an end point less than 300µs from NEUTRAL | `End point close to NEUTRAL. Little travel remains on this side.` |
 | an end point more than 100µs from the servo's | `End point changed. The servo travel per stick movement changes too.` |
-| NEUTRAL more than 20µs from the servo's | `The centre shifts. One side moves closer to the mechanical stop.` |
+| NEUTRAL more than 20µs from the servo's | `The center shifts. One side moves closer to the mechanical stop.` |
 | REVERSION changed | `Direction reversed. Check all control surfaces before flight.` |
 | an angle above the servo's | `More travel can push the servo against its stop and burn it out.` |
 | an angle below 50 | `Small angle. Full stick movement gives little servo travel.` |

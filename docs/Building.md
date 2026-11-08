@@ -171,7 +171,7 @@ breakout's own pull-ups go to its VDD, here 3.3V.
 - Bus clock: 400kHz. The datasheet allows an SCL (serial clock) period down
   to 1us and a rise and fall time of 150ns at most. The rise time on the
   terminal is not measured.
-- The magnet is a diametrically magnetised disc centred over the chip.
+- The magnet is a diametrically magnetised disc centered over the chip.
 - The I2C registers carry no field status: the magnet-too-weak and
   too-strong bits are in the SSI frame only. A sensor with no magnet over it
   still answers with an angle, and the panel takes it as a reading.

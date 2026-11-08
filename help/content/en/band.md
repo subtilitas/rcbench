@@ -160,7 +160,7 @@ The fill of a button says what a press does to an output.
 
 | Fill | Means | Buttons |
 |---|---|---|
-| green | a press switches an output on, arms, starts a run or writes a servo | ARM, OUTPUT ON, PROG 5V ON, `HOLD 2s: ARM + START` on TEST, RUDDER AUTO and LIMIT RUN, CENTRE and SWEEP, the rudder's 1000us, CENTRE, 2000us and ZERO, CONNECT, WRITE n VALUES; SAVE on SETUP while something is unsaved |
+| green | a press switches an output on, arms, starts a run or writes a servo | ARM, OUTPUT ON, PROG 5V ON, `HOLD 2s: ARM + START` on TEST, RUDDER AUTO and LIMIT RUN, CENTER and SWEEP, the rudder's 1000us, CENTER, 2000us and ZERO, CONNECT, WRITE n VALUES; SAVE on SETUP while something is unsaved |
 | red | an output is on, the bench is ARMED or a write runs; a press stops it | DISARM, OUTPUT OFF, STOP RUN, PAUSE while a sweep runs, LEAVE, ABORT, a write switch ON; STOP always |
 | amber | under way or waiting, nothing live yet | PAUSED, WAIT, `WHEN IDLE` |
 | grey, faint label | takes no press in this state | a tap on a grey `HOLD 2s: ARM + START` puts the reason in the alert band for 4s |

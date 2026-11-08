@@ -569,7 +569,7 @@ The limit of the bound is the frame that switches to ARMED itself. It is written
 before the deadline, and its acknowledgement can arrive up to the 1000ms
 exchange timeout (`LINK_HOST_TIMEOUT_MS`) later; the IOmcu has then
 switched the role it was asked for to ARMED, at rest: throttle 0 for MOTOR & ESC and
-its stick runs, surfaces centred for SERVO. The panel does not
+its stick runs, surfaces centered for SERVO. The panel does not
 undo it. An exchange of the switch that nobody
 answers (the STATUS read, the servo release, CLEAR or the frame that switches to ARMED)
 has waited the 1000ms exchange timeout or did not reach the wire: that is
@@ -876,7 +876,7 @@ reads the state and shows the alert, is not in the coverage figure.
     The ARM hold returns the slider to 0% when it asks, and so does the
     change to ARMED for a switch the hold did not ask for, as for a stick run
     on PROGRAM.
-  - SERVO: the dial, the knob, CENTRE and SWEEP are the controls. While SAFE,
+  - SERVO: the dial, the knob, CENTER and SWEEP are the controls. While SAFE,
     the horn and the pulse width shown stay at the position last driven. At
     a switch to ARMED the value becomes the surface's rest, which the pins drive once
     the switch has completed its release step: the midpoint of the channel's endpoints,
@@ -955,7 +955,7 @@ reads the state and shows the alert, is not in the coverage figure.
   whole ARM, whatever roles it named, and every output stops.
 - A bench in ARMED drives every bound pin of the roles it armed, whether or not
   anything is commanding it. A channel that has had no command for 500ms is rendered at its role's
-  rest: stopped for a throttle, centred for a surface. Centred is the midpoint
+  rest: stopped for a throttle, centered for a surface. Centered is the midpoint
   of that channel's own endpoints — 1500us across the default 1000 to 2000us,
   and 760us across the 660 to 860us of a narrow servo. The timeout moves the
   channel to that rest and leaves the pin driving; switching to SAFE is what stops the

@@ -1145,7 +1145,7 @@ Der IMU-Winkel wird in Zählerstände des AS5600 umgerechnet. Dadurch
 gelten die oben beschriebenen Regeln auch für diese Quelle:
 
 ```
-count = round(angle x 4096 / 360) mod 4096     centre count 0
+count = round(angle x 4096 / 360) mod 4096     center count 0
 ```
 
 Ein Zählschritt entspricht 0,088°. Der Servotest beurteilt und meldet den

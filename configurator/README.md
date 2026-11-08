@@ -670,8 +670,8 @@ file names no stage, so the checks follow the stages as one list.
   Osoyoo breakout board are vendor values (2A at 5V, 500mA at 3.3V), not measured.
   The V pins of all 40 strips follow the jumper V Selector; with USB alone and the jumper on 3V3 the schematic and
   the product page disagree.
-- DC supply of the Osoyoo breakout board: the DC jack (plug 5.5 x 2.1mm, centre positive) has no reverse-polarity
-  protection. A centre-negative plug reverses the input of the XL1509 converter. The SI2302 protects the VIN terminal
+- DC supply of the Osoyoo breakout board: the DC jack (plug 5.5 x 2.1mm, center positive) has no reverse-polarity
+  protection. A center-negative plug reverses the input of the XL1509 converter. The SI2302 protects the VIN terminal
   and H4 only.
 - DC jack of the Osoyoo breakout board: the product page names the socket DC005-2.1. The 2.1mm pin follows from that
   name. The 5.5mm outer diameter is the usual size of that socket family and is not stated by the vendor.

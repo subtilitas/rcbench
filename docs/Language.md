@@ -54,7 +54,7 @@ manual beside the bench.
 
 - The safety and drive controls: ARM, DISARM, STOP, SWEEP, PAUSE. The SERVO
   rows are German where the word has a German equivalent: TRIMMUNG,
-  UMKEHREN, PULS MITTE; the button that moves the servo to the centre reads
+  UMKEHREN, PULS MITTE; the button that moves the servo to the center reads
   ZENTRIEREN. HOLD stays
   English as the servo test's phase name. PAUSED, the sweep button of a
   paused sweep, is a state rather than the control and reads PAUSIERT;

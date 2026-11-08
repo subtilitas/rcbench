@@ -209,7 +209,7 @@ D series, encodings of the HFP-30:
 | Parameter | Register | Encoding | Edit | Source |
 |---|---|---|---|---|
 | model | 0x00 | number | read only | READ |
-| position | 0x0C | 0 to 16383, 8192 the centre | read only | READ |
+| position | 0x0C | 0 to 16383, 8192 the center | read only | READ |
 | ID | 0x32 | 0 to 255 | 0 to 255 | RCBENCH |
 | direction | 0x5E | 0 CW, 1 CCW | mirrors 0xC2, 0xB2, 0xB0; from a raw 0x5E, 0x5E alone | CAPTURED |
 | neutral, left end, right end | 0xC2, 0xB2, 0xB0 | position | 1 to 16383, left < neutral < right | CAPTURED |
@@ -232,7 +232,7 @@ Classic, encodings of the HPP-21 Plus:
 | checksum | 0x00 to 0x1C | OK, BAD | read only | CAPTURED |
 | dead band | 0x02 | steps 1 to 5: 01, 04, 08, 0C, 10 | 1 to 5 | CAPTURED |
 | speed | 0x06 | 10% to 100%: 01, 07, 0E, 15, 1C, 23, 2A, 31, 38, 40 | 10% to 100% | CAPTURED |
-| centre | 0x07, 0x08 | 0.25us: HS-5xxx stored + 2052, HS-7xxx stored + 2048 | 3600 to 8400 (900 to 2100us); sets 0x13 = 0x14 = 0x10 | CAPTURED |
+| center | 0x07, 0x08 | 0.25us: HS-5xxx stored + 2052, HS-7xxx stored + 2048 | 3600 to 8400 (900 to 2100us); sets 0x13 = 0x14 = 0x10 | CAPTURED |
 | left end, right end | 0x13, 0x14 | number, unit not known; CW: right 0x13, left 0x14; CCW: left 0x13, right 0x14 | 0 to 255 | CAPTURED |
 | direction | 0x1B bit 0 | 1 CW | swaps 0x13 and 0x14, 0x19 and 0x1A from 0x49 and 0x4A | CAPTURED |
 | fail-safe | 0x1B bit 1 | on, off | on, off | CAPTURED |
@@ -298,9 +298,9 @@ Not measured:
 - The HFP-30 writes a neutral or an end point after its adjust loop, with
   0x54 and 0x56 beside it; a plan writes the register alone.
 - Whether a D series speed of 20 and the factory 4095 behave the same.
-- The classic centre's offset rests on one capture per layout; the end
+- The classic center's offset rests on one capture per layout; the end
   point unit; the HS-7xxx fail-safe position mapping; what a resolution
-  change writes to the centre.
+  change writes to the center.
 - The fail-safe edit range of 900 to 2100us is Hitec's PWM range; the D
   series manual allows 2 to 5000us.
 - ID 0 reaches every servo on the line: two D series servos on one port

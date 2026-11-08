@@ -626,9 +626,9 @@ undoes it on the way. In order:
    D0 here.
 2. **MOTOR & ESC**, or **SERVO** for a pulse output: open it and press ARM there.
 3. **Command it away from rest**: throttle above zero, or the horn off
-   centre. ARMED is what makes the pin drive at all; a command away from rest
+   center. ARMED is what makes the pin drive at all; a command away from rest
    is what makes the trace unambiguous, since a DShot zero-throttle frame and
-   a 1500us centre pulse are both edges and neither is distinctive.
+   a 1500us center pulse are both edges and neither is distinctive.
 
 Then capture **after the gate** (the load-facing side of the gated output,
 and the monostable's output-enable) on whichever channels the run is not

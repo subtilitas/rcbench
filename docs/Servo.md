@@ -26,24 +26,24 @@ surface's travel differ; measure both.
 
 ### Method
 
-The search steps outward from centre in 10µs of pulse width per step (about 0.9° on a servo with 11µs per degree of travel), up to 600µs from centre and never past 500 or 2500µs. A last step shorter than 10µs reaches that end, so the end itself is measured. After each step it waits
+The search steps outward from center in 10µs of pulse width per step (about 0.9° on a servo with 11µs per degree of travel), up to 600µs from center and never past 500 or 2500µs. A last step shorter than 10µs reaches that end, so the end itself is measured. After each step it waits
 120ms for the servo to settle and averages the current over 80ms. While the
 surface moves freely the current is flat and low. The linkage counts as bound
 when the current exceeds 1.8 times the free-running baseline and exceeds it by
 at least 0.15A. The search stops at the first such step. It reports the last free pulse
-width, backed off by another 25µs toward centre, as the endpoint.
+width, backed off by another 25µs toward center, as the endpoint.
 
 On the bench the limit run (`shared/servo/servo_limrun.c`) searches the low
 side first, then the high side. Where depends on the target:
 
 | PORT | Read first | Search |
 | --- | --- | --- |
-| a SERVO PWM pin on OUTPUTS | nothing | PULSE CENTRE out to PULSE MIN and PULSE MAX |
+| a SERVO PWM pin on OUTPUTS | nothing | PULSE CENTER out to PULSE MIN and PULSE MAX |
 | PROG PORT, KST/CHASERVO | a read session of the [programmer](ServoProgrammer.md) | the servo's NEUTRAL out to its own PULSE LOWER and PULSE UPPER, never past them |
 
 The distance to that end replaces the 600µs. Current is measured in 50ms windows from the assigned INA3221 channel,
 so each position takes 250ms. The servo is held at the
-centre for 1000ms before each search and after it: returning from an end
+center for 1000ms before each search and after it: returning from an end
 600µs away at 0.67µs/ms takes 900ms, and that movement must finish
 before the baseline is measured.
 
@@ -141,7 +141,7 @@ the hold resolves itself read amber on their row and refuse nothing.
 | PORT PWM | `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS` | PORT on PROG PORT with PORT PWM off, the bench ARMED |
 | PORT PWM | `PORT PWM OFF: SWITCH IT ON IN OUTPUTS` | the same while SAFE. Amber: the hold switches it on and saves it |
 | PORT PWM | `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` | PORT on PROG PORT with PORT PWM on, no programmer holding the port, and its pulse still off. A pulse comes on only while SAFE, and the rbmod carrier's panel asks for it only with the PROG 5V on. Amber while SAFE: the read-back waits for it |
-| RANGE | `CENTRE MUST BE BETWEEN PULSE MIN AND MAX` | PULSE CENTRE is not between PULSE MIN and PULSE MAX |
+| RANGE | `CENTER MUST BE BETWEEN PULSE MIN AND MAX` | PULSE CENTER is not between PULSE MIN and PULSE MAX |
 
 ### Programming the servo's travel limits
 
@@ -183,7 +183,7 @@ the write therefore checks the servo with the new values in effect.
 #### The read first
 
 Every run on PROG PORT, SEARCH ONLY as well, starts with a read session.
-The servo is held at PULSE CENTRE, the run switches the bench to SAFE,
+The servo is held at PULSE CENTER, the run switches the bench to SAFE,
 CONNECT reads every register, LEAVE gives the port back, and the run
 switches the bench to ARMED. Nothing is driven before that.
 
@@ -299,7 +299,7 @@ FAIL; RESTORE gives the values before the run back.
 
 The run writes in sessions of the [programmer](ServoProgrammer.md):
 
-1. The servo goes back to the centre and is held there for 1000ms.
+1. The servo goes back to the center and is held there for 1000ms.
 2. The run switches the bench to SAFE.
 3. CONNECT takes the port and reads every register.
 4. The write: ENABLE WRITE TO SERVO on, the run's fields, the write switch
@@ -324,7 +324,7 @@ run as ABORTED, `servo holds other values`, before it writes again.
 | `SERVO_LIMRUN_OVERSET_PCT` | 3% | the overset above the share at the first bound pulse |
 | `SERVO_LIMRUN_STD_LOWER_DUS`, `SERVO_LIMRUN_STD_UPPER_DUS` | 1000.0µs, 2000.0µs | what SERVO PULSES at 1000-2000 writes |
 | `SERVO_LIMRUN_MOVED_US` | 20µs | an end that moved, or stayed; the smallest stop move an overset is written for |
-| `SERVO_LIMRUN_RETURN_MS` | 1000ms | at the centre before each search and before each SAFE |
+| `SERVO_LIMRUN_RETURN_MS` | 1000ms | at the center before each search and before each SAFE |
 
 Writes: no step of the protocol is known to make a value permanent, and no
 write that changes RAM only is known. Every write is the register write the
@@ -469,7 +469,7 @@ the run is the operator's: its first write saves its own backup file.
 - "No limit found" (`FREE`) means the search measured the end of its
   travel without binding: PULSE MIN or PULSE MAX on a SERVO PWM pin, the
   servo's PULSE LOWER or PULSE UPPER on PROG PORT.
-- A limit close to centre may be a tight spot in the linkage, such as a binding
+- A limit close to center may be a tight spot in the linkage, such as a binding
   bellcrank or a rubbing pushrod, rather than the end of travel.
 
 | Verdict | Meaning |
@@ -508,7 +508,7 @@ Device:         SERVO
 Firmware:       rcbench 0.23.10
 Mode:           search, then LEFT ANGLE and RIGHT ANGLE programmed
 Output:         PROG PORT 1 GPIO 13, 50Hz
-Pulse range:    centre 1500us, 1000-2000us
+Pulse range:    center 1500us, 1000-2000us
 Searched:       from 1500us out to 1000us and 2000us
 Current:        INA3221 0x40 CH1, 50ms windows, shunt 100.0mΩ
 Search rule:    10us steps, settle 120ms, mean of 80ms; bound above 1.8 x free and +0.15A
@@ -547,7 +547,7 @@ write has no `Backup:` line: the values before the run are held from the
 first write on. The `Backup:` line names the file this run's first write
 saved, also when that write was sent and lost, never an earlier run's file.
 The `Searched:` line
-names the search's centre and ends; a run that ended before its first
+names the search's center and ends; a run that ended before its first
 search has none. A run on a SERVO PWM pin has no `Servo pulses:` line.
 
 The full limit run and its figures above have not been measured on a
@@ -563,28 +563,28 @@ repeated cycles has not been measured.
 ### Purpose
 
 Two servos on one surface (dual ailerons, split elevator) work against each
-other whenever their travel or their centre disagree, and draw extra current
+other whenever their travel or their center disagree, and draw extra current
 continuously. The surface shows no visible sign.
 
 ### Method
 
 The two stop working against each other at the point of minimum total current.
-The search holds servo A and sweeps a correction on servo B, at centre and at
+The search holds servo A and sweeps a correction on servo B, at center and at
 ±300µs deflection:
 
-- a difference at centre is an offset error (trim);
+- a difference at center is an offset error (trim);
 - a difference at an end is a travel error for that end.
 
 Each stage runs 3 scans of 7 points. The first scan covers ±40µs around the
-stage's start point: 0µs for the centre stage, the ±300µs deflection for the
-end stages. Each later scan is centred on the best point of the scan before and
+stage's start point: 0µs for the center stage, the ±300µs deflection for the
+end stages. Each later scan is centered on the best point of the scan before and
 covers ±13µs, then ±4µs. Each point waits 120ms plus the travel time at an assumed
 0.8µs/ms, then averages the current over 100ms. A minimum is accepted when the
 current varies by at least 0.08A across the scan. The current ceiling is 4.0A
 for the pair.
 
 Each end gets its own correction; a linkage with a horn and a pushrod is not
-symmetric about centre. One sensor measuring the combined current of both servos is sufficient.
+symmetric about center. One sensor measuring the combined current of both servos is sufficient.
 
 ### Results
 
@@ -628,21 +628,21 @@ Each step runs these phases:
 
 | Phase | The servo | Ends |
 | --- | --- | --- |
-| SET | at PULSE CENTRE; the voltage asked; the first step switches the output on | the supply reads the set point back within 0.05V, at most 3000ms |
-| SETTLE | at PULSE CENTRE | after the run's SETTLING TIME |
-| IDLE | at PULSE CENTRE: the idle current is the mean of the readings, the idle noise their standard deviation | after 1000ms |
+| SET | at PULSE CENTER; the voltage asked; the first step switches the output on | the supply reads the set point back within 0.05V, at most 3000ms |
+| SETTLE | at PULSE CENTER | after the run's SETTLING TIME |
+| IDLE | at PULSE CENTER: the idle current is the mean of the readings, the idle noise their standard deviation | after 1000ms |
 | MOVE | a step command to one end, with no slew: SPEED does not apply | at the arrival, or after 3000ms plus the meter's lag (3300ms on the PD mini): late with movement seen, unseen without |
 | HOLD | at that end: the holding current is the mean of the readings | after DWELL TIME, at least 600ms |
 
-The two ends are SWEEP's: RANGE of the travel either side of PULSE CENTRE,
+The two ends are SWEEP's: RANGE of the travel either side of PULSE CENTER,
 trim not applied. With the defaults (RANGE 80%, TRAVEL +/-90deg, PULSE MIN
 1000us, MAX 2000us) they are 1100 and 1900us. CURVE and SPEED shape SWEEP
 only.
 
 A run that completes also switches the output off and releases the servo to
-its centre. On a bench it leaves in ARMED, the commanded value shown is then
+its center. On a bench it leaves in ARMED, the commanded value shown is then
 the rest, as after RELEASE: 1500us for STANDARD PWM whatever the trim, and
-the next drag or knob turn starts from it. A step's first two moves, centre to the low end and on to the
+the next drag or knob turn starts from it. A step's first two moves, center to the low end and on to the
 high end, are not counted: they measure each end's holding level. The counted moves then go
 end to end, MOVEMENTS of them or for TEST TIME, as TEST LENGTH BY says, at most
 1000 a step.
@@ -696,9 +696,9 @@ scales. A fixed movement threshold of 0.10A, the figure of firmware 0.13.0,
 misses the MG90S, which moves at 0.04 to 0.077A over a 0.001A hold: no move
 is seen, each runs out at 3000ms and counts late, and the run reads FAIL.
 
-**Limitation: the move to the centre can reach IDLE.** With SETTLING TIME at
+**Limitation: the move to the center can reach IDLE.** With SETTLING TIME at
 500ms the IDLE readings can still carry the end of the step's move to the
-centre: 0.025A falling to 0.003A on the 1102HB at 5.00V, from the PD
+center: 0.025A falling to 0.003A on the 1102HB at 5.00V, from the PD
 mini's 0.3s lag and the move itself. That raises the idle mean and the
 noise, and the threshold with it: 0.026A there instead of 0.020A. A
 longer SETTLING TIME avoids it.
@@ -721,7 +721,7 @@ ends there too. A LOWEST VOLTAGE at or above the start leaves one voltage,
 the start: under a cap of 4.5V, LOWEST VOLTAGE 4.8V walks 4.5V alone. The
 finest setting, 2.0V in 0.1V steps, asks for 31 voltages
 (`SERVO_TEST_BROWNOUT_MAX`). Each voltage runs
-SET, SETTLE and IDLE, then two moves (`SERVO_TEST_BROWNOUT_MOVES`), centre to
+SET, SETTLE and IDLE, then two moves (`SERVO_TEST_BROWNOUT_MOVES`), center to
 the high end and on to the low end, each held 600ms. A voltage shows **no
 movement** when no reading of either move lies more than that voltage's
 threshold, from its own IDLE readings, from the level before its command.
@@ -909,8 +909,8 @@ only while the bank is SAFE. A run uses the angle only when the
 IOmcu holds AS5600 on: AS5600 switched on while ARMED gives a run
 without angle columns until the set-up has been taken in a SAFE state.
 
-The angle is the sensor's 12-bit count less the centre count (AS5600 centre,
-or ENC CENTRE on RUDDER's SETTINGS list, which takes the live count with the servo at
+The angle is the sensor's 12-bit count less the center count (AS5600 center,
+or ENC CENTER on RUDDER's SETTINGS list, which takes the live count with the servo at
 its neutral), in degrees from -180 to just under 180. The sensor counts up in
 the direction its DIR pin is strapped for; the test assumes the angle rises
 with the pulse width, so a DIR strap that runs the other way shows as an
@@ -924,7 +924,7 @@ angle error.
 The count wraps from 4095 to 0, so every angle is a position on one turn and
 no two are subtracted or averaged as plain numbers. A move's distance from
 its start is taken the shortest way round, 0 to 180 degrees: two positions 1 count
-either side of the half turn from the centre are 0.18 degrees apart, not 359.8. A
+either side of the half turn from the center are 0.18 degrees apart, not 359.8. A
 step's end angles at one end are averaged as offsets from the first of them
 and the mean is put back on the circle, so ends read at +179.9 and -179.9
 degrees average to 180 (shown as -180.00), not 0. The angle error is wrapped
@@ -935,8 +935,8 @@ servo that travels more than 180 degrees:
 
 | Case | Reported |
 | --- | --- |
-| the ends more than 180 degrees apart, each within 180 degrees of the centre (-100 and +100) | both end angles and both errors as they are; the two ends are never subtracted from each other |
-| an end more than 180 degrees from the centre (+200) | the end angle 360 degrees off (-160); the angle error is right while the commanded angle names the same position (+200), since it is wrapped |
+| the ends more than 180 degrees apart, each within 180 degrees of the center (-100 and +100) | both end angles and both errors as they are; the two ends are never subtracted from each other |
+| an end more than 180 degrees from the center (+200) | the end angle 360 degrees off (-160); the angle error is right while the commanded angle names the same position (+200), since it is wrapped |
 | a move that ends within 2.0 degrees of a whole turn from its start | unmoved |
 | the direction of a move, and the turns of a winch servo | not judged, not counted |
 
@@ -1003,7 +1003,7 @@ readings and rows does not move an angle onto the wrong row. The report notes th
 not measured: it needs steps smaller than the end-to-end moves the test
 makes, and the test makes none. The SERVO screen's MEASURED row shows the
 live angle while AS5600 is on. A link that goes down clears the reading: the
-row shows dashes and ENC CENTRE sets nothing until a reading arrives with the
+row shows dashes and ENC CENTER sets nothing until a reading arrives with the
 link back. The same holds while the sensor reports no magnet.
 
 An AS5600 in use from the start of a run that stops answering is a gap of
@@ -1050,7 +1050,7 @@ The IMU angle is represented in AS5600 counts, allowing the angle
 processing above to use either source:
 
 ```
-count = round(angle x 4096 / 360) mod 4096     centre count 0
+count = round(angle x 4096 / 360) mod 4096     center count 0
 ```
 
 One count is 0.088°. The servo test judges and reports the IMU's angle in
@@ -1059,15 +1059,15 @@ MEASURED, RUDDER, AUTO, the LIMIT RUN's angle lines and the SERVO run log
 take those, and the screens show them to 0.01°. The IMU's angle passes
 its IMU filter first ([The Bluetooth IMU](IMU.md#the-filter)).
 The sensor's stated resolution is 0.05 to 0.2° on X and Y and 1° on Z,
-which needs the magnetometer (not measured on the bench). AS5600 centre
-does not apply to the IMU, and ENC CENTRE takes no count from it.
+which needs the magnetometer (not measured on the bench). AS5600 center
+does not apply to the IMU, and ENC CENTER takes no count from it.
 
 | | AS5600 | IMU |
 | --- | --- | --- |
 | a run reads angles when | AS5600 is on and the IOmcu holds it on | a reading under 300ms old is on show at the start |
 | still time | the IOmcu's, 12 counts (1.05°) | the IMU's own (`IMU_STILL_DEG`, 0.5°, `imu.h`) |
 | gap | not answering | no reading for 300ms (`IMU_STALE_MS`) |
-| report, `Encoder:` | `AS5600 on the horn shaft, centre count N` | `IMU X+, in AS5600 counts (0.088° per count)` |
+| report, `Encoder:` | `AS5600 on the horn shaft, center count N` | `IMU X+, in AS5600 counts (0.088° per count)` |
 
 IMU gaps use the same allowance as AS5600 gaps: at most 300ms, with
 at least 10s between the starts of consecutive gaps. Longer or more
@@ -1117,7 +1117,7 @@ left as they are.
 | `bench SAFE` | DISARM, or anything else that switched the bench to SAFE |
 | `link lost` | the link to the IOmcu went down during the run |
 | `SERVO screen left` | another screen opened |
-| `stopped by the operator` | STOP TEST, a finger on the dial, CENTRE, SWEEP, RELEASE, a tap on a set point, a programmer opened from the hub |
+| `stopped by the operator` | STOP TEST, a finger on the dial, CENTER, SWEEP, RELEASE, a tap on a set point, a programmer opened from the hub |
 | `servo settings changed` | the type, frame rate, pulses, trim, travel, reverse or SPEED changed |
 | `touch events lost` | events went missing between two frames |
 | `supply not answering` | a reading marked not answering |
@@ -1220,7 +1220,7 @@ writes:
 | `power (W)` | W | voltage times current |
 | `mode` | | the supply's: `CV`, `CC` or `OFF`. On the INA3221 the mode of the supply's last reading, empty before the first |
 | `travel (ms)` | ms | on an arrival's row: that move's travel time |
-| `angle (deg)` | deg | with an angle source in use: the horn's angle from the centre count, from the newest reading taken at or before the row; empty when that reading is older than 500ms or there is none |
+| `angle (deg)` | deg | with an angle source in use: the horn's angle from the center count, from the newest reading taken at or before the row; empty when that reading is older than 500ms or there is none |
 | `travel angle (ms)` | ms | with an angle source in use: on the row after a move settled, its travel time from the angle |
 | `angle gap (ms)` | ms | with an angle source in use: on the first row at or after the reading that ended a gap of the part not answering, the gap's length; empty otherwise |
 | `meter` | | `INA3221`, `PDMINI` or `MODEL`, on every row |
@@ -1262,7 +1262,7 @@ Duration:       184.0s
 Log rows:       1684 written, 0 lost to a full queue
 
 SETTINGS IN FORCE
-Type:           STANDARD PWM, centre 1500us, 1000-2000us, trim +0us, reverse OFF
+Type:           STANDARD PWM, center 1500us, 1000-2000us, trim +0us, reverse OFF
 Frame rate:     50Hz
 Can destroy:    none in force
 HV servo:       OFF, no step above 6.0V
@@ -1390,9 +1390,9 @@ which is while a pin follows it.
 
 | Bench | Commanded position |
 | --- | --- |
-| SAFE | the position last driven; the dial, the rotary knob, CENTRE and SWEEP are refused and nothing is sent |
+| SAFE | the position last driven; the dial, the rotary knob, CENTER and SWEEP are refused and nothing is sent |
 | at the switch to ARMED | the surface's rest: the midpoint of the channel's endpoints, without TRIM |
-| ARMED | what the dial, the knob, CENTRE, a sweep or a run commands |
+| ARMED | what the dial, the knob, CENTER, a sweep or a run commands |
 
 | TYPE | Endpoints | Value at the switch to ARMED |
 | --- | --- | ---: |
@@ -1403,8 +1403,8 @@ which is while a pin follows it.
 
 The rest is `outputs_role_rest()` in `shared/outputs/outputs.c`, the value
 the IOmcu renders on a channel in ARMED that nobody commands, put through the
-range the screen's commands carry. That range is centred on PULSE CENTRE, so
-a PULSE CENTRE set off the middle of PULSE MIN and MAX is the value at the
+range the screen's commands carry. That range is centered on PULSE CENTER, so
+a PULSE CENTER set off the middle of PULSE MIN and MAX is the value at the
 switch to ARMED. TRIM moves commanded positions and not the rest: with TRIM +20 the switch to ARMED
 shows 1500us and a position at 0deg is 1520us.
 
@@ -1412,7 +1412,7 @@ A sweep ends at a switch to SAFE and its last drawn position stays on screen; no
 position of it is sent after the switch to SAFE. The controls, one by one:
 [Screens](Screens.md#servo).
 
-The panel centres the surfaces before it switches to ARMED and the screen shows
+The panel centers the surfaces before it switches to ARMED and the screen shows
 the rest when the bench reports ARMED; the time between the two on a bench
 is not measured.
 
@@ -1454,11 +1454,11 @@ the screen is `shared/ui/servo_rudder_panel.c`.
 
 - The angle is the one LIVE's MEASURED reading takes, from the source
   ANGLE SOURCE names: the AS5600 output encoder's in degrees from its ENC
-  CENTRE, or the IMU's in AS5600 counts from count 0; negated with REVERSE.
+  CENTER, or the IMU's in AS5600 counts from count 0; negated with REVERSE.
   The first state line names the source, `AS5600` or `IMU X+` with the
   IMU's AXIS and SIGN.
 - ZERO stores its reference relative to the source's raw count 0. Changing
-  ENC CENTRE afterwards therefore leaves the measured deflection unchanged. Another ANGLE SOURCE, the IMU's other AXIS or
+  ENC CENTER afterwards therefore leaves the measured deflection unchanged. Another ANGLE SOURCE, the IMU's other AXIS or
   SIGN, or a ZERO or CLEAR ZERO on the IMU screen, drops the zero and MAX:
   the screen reads as before ZERO.
 - ZERO takes the current angle as the surface's neutral. The deflection is the
@@ -1481,7 +1481,7 @@ the screen is `shared/ui/servo_rudder_panel.c`.
   numbers stay as they are. Without a reading the flap lies dim on the
   neutral line. The drawing is `shared/ui/servo_rudder_flap.c`.
 - 1000us and 2000us command those pulses as angles of the type in force,
-  held to TRAVEL and the type's pulse range; CENTRE commands PULSE CENTRE
+  held to TRAVEL and the type's pulse range; CENTER commands PULSE CENTER
   plus TRIM. All three and the rotary knob act only while the bench is
   ARMED. The PORT button and the READY card's PORT row name the pin they
   drive.
@@ -1616,7 +1616,7 @@ while:
 | PROGRAMMER | a programmer session holds the port, or the programmer is not in PWM | `LOCKED: SERVO PROGRAMMING USES THE PORT`, `PROGRAMMING: PORT IS NOT IN PWM MODE` |
 | PROG 5V, PD MINI, SUPPLY | ARMED with the PROG 5V off, a port holding it; a set point under 4.8V; a rail under 4.8V without a PD mini; no PD mini or PROG 5V to cycle a KST/Chaservo or classic Hitec servo's supply; the PD mini's output off with a set point past 6.0V | the limit run's line; `TAP: HV WARNING` for the set point past 6.0V, where a tap on the row opens OUTPUT ON's HV warning and its own 2s hold switches the output on. The hold never does: a PD mini already on past 6.0V counts as met, as OUTPUT ON asks nothing of a live output. PROG 5V is a fixed 5V and has no set point |
 | PORT PWM | ARMED with the port's pulse off | `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS`, `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` |
-| RANGE | PULSE MIN is above 1000us, PULSE MAX below 2000us, or PULSE CENTRE is not strictly between 1000us and 2000us | `PULSE MIN TO MAX MUST INCLUDE 1000 TO 2000us` |
+| RANGE | PULSE MIN is above 1000us, PULSE MAX below 2000us, or PULSE CENTER is not strictly between 1000us and 2000us | `PULSE MIN TO MAX MUST INCLUDE 1000 TO 2000us` |
 | ANGLE | the angle source gives no reading | `ANGLE SOURCE: NO READING` |
 | ZERO | ZERO is not taken | `SET ZERO WITH THE SURFACE AT NEUTRAL` |
 | ARM | another run runs, or a report is still being written | the run's line, as on TEST |
@@ -1636,7 +1636,7 @@ ARMED is asked).
 
 ### Method
 
-- The read session: the servo held at PULSE CENTRE for 1000ms, SAFE asked,
+- The read session: the servo held at PULSE CENTER for 1000ms, SAFE asked,
   CONNECT and the read; for KST/Chaservo only, PULSE LOWER and PULSE UPPER
   are set to 1000.0us and 2000.0us if needed; then LEAVE and a request
   for ARMED.
@@ -1651,7 +1651,7 @@ ARMED is asked).
   does not move by half the change expected, the value goes to RIGHT ANGLE
   and LEFT ANGLE back. The register found moves that side, the other one the
   other side.
-- Each write is a session: the servo held at PULSE CENTRE for 1000ms, SAFE,
+- Each write is a session: the servo held at PULSE CENTER for 1000ms, SAFE,
   CONNECT, the write and its read-back, LEAVE, including the power cycle when required for the written values
   to take effect, ARMED, and another measurement of the side. The file of
   the values before the run is saved before the first write.
@@ -1711,12 +1711,12 @@ instead of the curve, and SPEED's row reads SPEED LIMITS THE SWEEP in the
 warning colour ([Screens](Screens.md#servo)).
 
 The fastest change, with f SWEEP's rate in Hz and A the amplitude in
-degrees (RANGE of the travel either side of PULSE CENTRE):
+degrees (RANGE of the travel either side of PULSE CENTER):
 
 | CURVE | Fastest change | Where |
 | --- | --- | --- |
 | square | a jump | at each change of end |
-| sine | 2 pi f A | through the centre |
+| sine | 2 pi f A | through the center |
 | triangle | 4 f A | throughout |
 
 SPEED below 100% allows 3.6deg/s per percent: 36deg/s at 10%, 356.4deg/s at 99%. At 100% the command is not slewed and nothing is limited. A

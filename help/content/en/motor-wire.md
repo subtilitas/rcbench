@@ -13,7 +13,7 @@ SimonK is not supported.
 ## Before CONNECT
 
 1. Remove the propeller.
-2. Connect only signal and ground. Leave the ESC's centre wire disconnected: a BEC (battery eliminator circuit) would feed the bench's rail.
+2. Connect only signal and ground. Leave the ESC's center wire disconnected: a BEC (battery eliminator circuit) would feed the bench's rail.
 3. Unplug servos.
 4. Check `TARGET`, `POWER`, `VOLTAGE` and `CURRENT LIMIT`. `VOLTAGE` and `CURRENT LIMIT` follow SUPPLY until you enter different values.
 5. Hold `HOLD 2s TO CONNECT` for 2s.
