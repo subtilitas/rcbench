@@ -45,8 +45,10 @@ enthält den Hinweis des Projekts.
 
 ## Start
 
-Das erste IMU EIN (SETUP > SENSOREN > IMU, auch beim Einschalten mit
-gespeichertem IMU EIN) startet Bluetooth LE: die Verbindung zum C6, den
+Das erste IMU EIN (SETUP > SENSOREN > IMU, SENSOREN SUCHEN auf der
+IMU-Seite oder IMU SUCHEN in der Liste WINKELQUELLE von SERVO bei
+ausgeschalteter IMU, und beim Einschalten mit gespeichertem IMU EIN)
+startet Bluetooth LE: die Verbindung zum C6, den
 Host-Task `nimble_host` und das Warten von 3 000ms auf seinen Sync
 ([Bauen, Bluetooth LE über den
 ESP32-C6](Building-de.md#bluetooth-le-über-den-esp32-c6)). Bluetooth LE
@@ -78,6 +80,13 @@ prüft das Verbinden den Dienst. Die Liste fasst 8 Geräte, das stärkste
 zuerst: Name, Adresse und RSSI (Received Signal Strength Indication), zum
 Beispiel `HC-06  00:0C:BF:08:19:29  -50dBm`. Das Funkmodul des Sensors
 meldet den Namen `HC-06`.
+
+Bei ausgeschalteter IMU schaltet SENSOREN SUCHEN in SETUP IMU EIN
+(gespeichert) und öffnet die Liste; ihre Überschrift zeigt `BLUETOOTH
+STARTET`, bis Bluetooth LE läuft, dann startet die Suche. Ohne Sync mit
+dem C6 (`KEIN BLUETOOTH AM C6`) und bei ausgefallenem C6 nimmt SENSOREN
+SUCHEN keinen Druck an. Die Zustandszeile der Karte zeigt `IMU AUS: SUCHEN
+SCHALTET SIE EIN`, solange die IMU aus ist.
 
 Ein Tippen auf eine Zeile bindet diesen Sensor sofort. SETUP behält seine
 Adresse mit dem Adresstyp, `00:0C:BF:08:19:29 P` (öffentlich) oder `... R`

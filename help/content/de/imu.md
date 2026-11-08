@@ -10,9 +10,11 @@ Die Seite IMU steuert eine Bluetooth-IMU (Inertial Measurement Unit): einen WitM
 
 ![IMU, Bluetooth LE läuft, kein Sensor gebunden](view:imu)
 
+![Die IMU aus in SETUP: SENSOREN SUCHEN schaltet sie ein](view:imu-off)
+
 | Bedienelement | Funktion |
 |---|---|
-| SENSOREN SUCHEN | öffnet die Sensorliste und startet eine Suche von 10s; verfügbar, solange Bluetooth läuft und keine Suche und keine Kalibrierung läuft |
+| SENSOREN SUCHEN | öffnet die Sensorliste und startet eine Suche von 10s; verfügbar, solange Bluetooth läuft und keine Suche und keine Kalibrierung läuft, und bei ausgeschalteter IMU oder startendem Bluetooth LE: dann schaltet es die IMU in SETUP ein, die Liste zeigt `BLUETOOTH STARTET`, und die Suche startet, sobald Bluetooth läuft |
 | 2s HALTEN: KALIBRIEREN | in der Mitte der Fußleiste; startet bei bestehender Verbindung die Kalibrierung des Beschleunigungssensors; halte ihn während des Countdowns von 3s still und waagerecht |
 | NULLPUNKT | übernimmt die aktuellen Winkel als Nullpunkt, wenn ein Messwert vorliegt; mit WINKELQUELLE IMU werden dabei der Nullpunkt und MAX auf RUDER gelöscht |
 | NULLPUNKT LÖSCHEN | zeigt die Winkel wieder relativ zum eigenen Nullpunkt des Sensors |
@@ -28,7 +30,7 @@ Ein Druck von weniger als 2s startet keine Kalibrierung. Das Band zeigt `Halte 2
 |---|---|
 | `SENSOR: HC-06` | der bei der Suche ermittelte Name des gebundenen Sensors, `OHNE NAMEN` ohne Namen, oder `KEINER GEBUNDEN`; darunter stehen Adresse und Typ (`P` öffentlich, `R` zufällig) |
 | `C6: 2.13.0` | die Firmware-Version des C6, `---`, wenn der C6 keine meldet |
-| Zustand | `IMU AUS: SIEHE OPTIONEN`, `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN SENSOR GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN`, `VERBUNDEN 50Hz` oder `KEINE FRAMES` |
+| Zustand | `IMU AUS: SUCHEN SCHALTET SIE EIN`, `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN SENSOR GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN`, `VERBUNDEN 50Hz` oder `KEINE FRAMES` |
 | X, Y, Z | die Winkel relativ zum Nullpunkt durch den IMU-Filter, mit einer Auflösung von 0,01°, ohne Messwert `---`; die von Servoläufen verwendete Achse erscheint in der Akzentfarbe |
 | RATE, ALTER | die Zahl der Winkel-Frames in der letzten Sekunde und die Zeit seit dem jüngsten Frame auf der Seite |
 | AKKU | der Akkuwert des Sensors aus Frame 0x52; über 6,0V ausgeblendet |

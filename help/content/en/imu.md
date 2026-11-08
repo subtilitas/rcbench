@@ -10,9 +10,11 @@ The IMU screen controls a Bluetooth inertial measurement unit: a WitMotion BWT90
 
 ![IMU with Bluetooth LE running and no sensor bound](view:imu)
 
+![The IMU off in SETUP: SCAN switches it on](view:imu-off)
+
 | Control | Function |
 |---|---|
-| SCAN FOR SENSORS | opens the sensor list and starts a 10s scan; available while Bluetooth runs and no scan or calibration is running |
+| SCAN FOR SENSORS | opens the sensor list and starts a 10s scan; available while Bluetooth runs and no scan or calibration is running, and while the IMU is off or Bluetooth LE starts: then it switches the IMU on in SETUP, the list reads `STARTING BLUETOOTH`, and the scan starts once Bluetooth runs |
 | HOLD 2s: CALIBRATE | in the footer's middle; starts accelerometer calibration while connected; keep the sensor still and level during the 3s countdown |
 | ZERO | uses the current angles as zero when a reading is available; with ANGLE SOURCE IMU, this clears RUDDER's zero and MAX |
 | CLEAR ZERO | restores angles relative to the sensor's own zero |
@@ -28,7 +30,7 @@ A press shorter than 2s does not start calibration. The band shows `Hold 2s to c
 |---|---|
 | `SENSOR: HC-06` | the bound sensor's name from the scan, `NO NAME` without one, or `NONE BOUND`; its address and type (`P` public, `R` random) under it |
 | `C6: 2.13.0` | the C6's firmware version, `---` when the C6 reports none |
-| state | `IMU OFF: SEE SETTINGS`, `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO SENSOR BOUND`, `SCANNING`, `CONNECTING`, `BOUND`, `CONNECTED 50Hz` or `NO FRAMES` |
+| state | `IMU OFF: SCAN SWITCHES IT ON`, `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO SENSOR BOUND`, `SCANNING`, `CONNECTING`, `BOUND`, `CONNECTED 50Hz` or `NO FRAMES` |
 | X, Y, Z | the angles from the zero through IMU filter, 0.01°, `---` without a reading. The axis the servo runs read is in the accent colour |
 | RATE, AGE | the angle frames of the last second, and the time since the newest reached the screen |
 | BATTERY | the sensor's battery, from its 0x52 frame; hidden above 6.0V |

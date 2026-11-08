@@ -3,11 +3,12 @@
  * @brief The IMU screen (imu_screen.h): its model, its touches and its
  *        texts.  imu_screen_draw.c draws it.
  *
- * The screen commands nothing itself: a tap queues an imu_cmd_t that the
- * panel hands to the IMU's task (imu_ctl.h), and the panel hands back
- * what to show each frame (imu_screen_set()).  SCAN opens the found list
- * at once; it shows the scan under way, then the devices, and a tap on one
- * binds it and closes the list.  CALIBRATE in the footer's middle slot is
+ * The screen commands nothing itself but IMU ON in SETUP: a tap queues an
+ * imu_cmd_t that the panel hands to the IMU's task (imu_ctl.h), and the
+ * panel hands back what to show each frame (imu_screen_set()).  SCAN opens
+ * the found list at once, with the IMU switched on in SETUP when it is
+ * off; it shows the start of Bluetooth LE and the scan under way, then the
+ * devices, and a tap on one binds it and closes the list.  CALIBRATE in the footer's middle slot is
  * a 2s hold with the band's hint on a short press (UI_HOLD_S); SETTINGS in
  * its right slot opens SETUP > SENSORS on the IMU entry.
  *
@@ -77,6 +78,24 @@ bool ims_row_shown(int row)
     }
 }
 
+/**
+ * @brief SCAN takes a press: Bluetooth runs and nothing scans or
+ *        calibrates, or the IMU is off or Bluetooth LE starts, which the
+ *        search switches on and waits for (imu_screen_search()).  No sync
+ *        with the C6 and a C6 that failed take none.
+ * @return Whether SCAN and SCAN AGAIN take a press.
+ */
+static bool scan_free(void)
+{
+    switch (ims.v.link) {
+    case IMU_LINK_OFF:
+    case IMU_LINK_STARTING:
+        return ims.v.cal != IMU_CAL_RUNNING && !ims.scan_owed;
+    default:
+        return at_free();
+    }
+}
+
 bool ims_row_enabled(int row)
 {
     if (!ims_row_shown(row)) {
@@ -84,7 +103,7 @@ bool ims_row_enabled(int row)
     }
     switch (row) {
     case IMS_ROW_SCAN: case IMS_ROW_RESCAN:
-        return at_free();
+        return scan_free();
     case IMS_ROW_CAL:
         return ims.v.link == IMU_LINK_CONNECTED
                && ims.v.cal != IMU_CAL_RUNNING;
@@ -331,6 +350,10 @@ static void head_line(char *buf, size_t n, gfx_color_t *ink)
     *ink = UI_TEXT;
     if (ims.v.link == IMU_LINK_SCANNING) {
         snprintf(buf, n, "%s", TR(IMU_SCANNING));
+    } else if (ims.scan_owed) {
+        /* The search waits for Bluetooth LE: what it waits on. */
+        snprintf(buf, n, "%s", ims.v.link == IMU_LINK_NO_BT
+                                   ? TR(IMU_ST_NO_BT) : TR(IMU_ST_STARTING));
     } else if (ims.v.found_n > 0u) {
         snprintf(buf, n, TR(IMU_FOUND), (unsigned)ims.v.found_n);
     } else if (ims.v.err != IMU_ERR_NONE) {
@@ -492,7 +515,9 @@ static void act(int hit)
     switch (hit) {
     case IMS_ROW_SCAN:
     case IMS_ROW_RESCAN:
-        post(IMU_CMD_SCAN, 0u);
+        /* With the IMU off it is switched on, and the scan waits for
+         * Bluetooth LE to run. */
+        (void)imu_screen_search();
         ims.list = true;
         break;
     case IMS_ROW_ZERO:   post(IMU_CMD_ZERO, 0u);   break;

@@ -42,8 +42,9 @@ the project's notice.
 
 ## Start
 
-The first IMU ON (SETUP > SENSORS > IMU, also at power-up with IMU stored
-ON) starts Bluetooth LE: the C6's link, the host task `nimble_host` and the
+The first IMU ON (SETUP > SENSORS > IMU, SCAN FOR SENSORS on the IMU
+screen or SEARCH FOR IMU in SERVO's ANGLE SOURCE list with the IMU off, and
+at power-up with IMU stored ON) starts Bluetooth LE: the C6's link, the host task `nimble_host` and the
 wait of 3,000ms for its sync ([Building, Bluetooth LE through the
 ESP32-C6](Building.md#bluetooth-le-through-the-esp32-c6)). It stays until
 the panel restarts; IMU OFF ends the scan and the link only. The C6's link
@@ -72,6 +73,12 @@ assignment, so the connect checks the service. The list holds 8 devices,
 strongest first: name, address and RSSI (received signal strength
 indication), for example `HC-06  00:0C:BF:08:19:29  -50dBm`. The sensor's
 radio advertises the name `HC-06`.
+
+With the IMU off, SCAN FOR SENSORS switches IMU ON in SETUP (saved) and
+opens the list; its heading reads `STARTING BLUETOOTH` until Bluetooth LE
+runs, and the scan starts then. Without sync with the C6 (`NO BLUETOOTH ON
+C6`) and on a failed C6, SCAN takes no press. The card's state line reads
+`IMU OFF: SCAN SWITCHES IT ON` while the IMU is off.
 
 A tap on a row binds that sensor at once. SETUP keeps its address with the
 address type, `00:0C:BF:08:19:29 P` (public) or `... R` (random), as

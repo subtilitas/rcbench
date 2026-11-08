@@ -823,6 +823,10 @@ SCREENS = {
     "imu-scan": ("imu-scan.png", "imu", "dark"),
     "imu-connected": ("imu-connected.png", "imu", "dark"),
     "setup-sensors-imu": ("setup-sensors-imu.png", "setup", "dark"),
+    # The IMU off in SETUP: the IMU screen with SCAN offered, and SENSORS
+    # on the IMU entry with ANGLE SOURCE under IMU.
+    "imu-off": ("imu-off.png", "imu", "dark"),
+    "setup-sensors-imu-off": ("setup-sensors-imu-off.png", "setup", "dark"),
     # RUDDER AUTO: SAFE on the bench's outputs, READY's PORT row red; its
     # SETTINGS list; on the rbmod carrier SAFE with the hold offered, the
     # ARM + START sequence waiting for the PROG 5V, and its read-back

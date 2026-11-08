@@ -30,10 +30,13 @@ static const setting_id_t k_as5600[] = { SET_ENC_EN, SET_ENC_CENTER };
 static const setting_id_t k_tap[] = { SET_TONE_EN, SET_TONE_PIN, SET_TONE_F_MIN,
                                       SET_TONE_F_MAX, SET_TONE_SPLIT,
                                       SET_TONE_GAP, SET_TONE_PERIODS };
-/** @brief The IMU's rows, the enable row first; ANGLE SOURCE last. */
-static const setting_id_t k_imu[] = { SET_IMU_EN, SET_IMU_AXIS, SET_IMU_SIGN,
+/** @brief The IMU's rows, the enable row first and ANGLE SOURCE second:
+ *         both stand while the IMU is off, so the source can go back to
+ *         the AS5600 without switching the IMU on. */
+static const setting_id_t k_imu[] = { SET_IMU_EN, SET_ANGLE_SOURCE,
+                                      SET_IMU_AXIS, SET_IMU_SIGN,
                                       SET_IMU_RATE, SET_IMU_ALGO,
-                                      SET_IMU_FILTER, SET_ANGLE_SOURCE };
+                                      SET_IMU_FILTER };
 
 /** @brief Appends @p table to all_rows()'s out, counted in its n. */
 #define COPY_ROWS(table)                                             \
@@ -105,8 +108,11 @@ int sensors_pane_rows(int entry, setting_id_t *out, int max)
 {
     setting_id_t rows[SENS_ENTRY_ROWS_MAX];
     int n = all_rows(entry, rows);
-    if (entry != SENS_ENTRY_BUS && n > 1 && !settings_get_bool(rows[0])) {
-        n = 1;
+    /* Off: the enable row alone; the IMU's ANGLE SOURCE with it. */
+    const int off_rows = (entry == SENS_ENTRY_IMU) ? 2 : 1;
+    if (entry != SENS_ENTRY_BUS && n > off_rows
+        && !settings_get_bool(rows[0])) {
+        n = off_rows;
     }
     for (int i = 0; out != NULL && i < n && i < max; ++i) {
         out[i] = rows[i];

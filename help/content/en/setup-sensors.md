@@ -194,17 +194,19 @@ Vibration and Optical tacho have stored keys and no entry: no screen or IOmcu re
 
 ![SENSORS on the IMU entry, connected](view:setup-sensors-imu)
 
+![The IMU off: IMU and Angle source](view:setup-sensors-imu-off)
+
 The WitMotion BWT901CL connects over Bluetooth LE through the board's ESP32-C6. Use the [IMU](imu.md) tile on SETUP to scan, bind and calibrate it. This entry contains its settings.
 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
 | IMU | ON, OFF | OFF | Bluetooth LE, the link to the bound sensor and its reading; the first ON starts Bluetooth LE until the panel restarts |
+| Angle source | AS5600, IMU | AS5600 | where the servo runs take their angle from ([Servo settings](servo-settings.md)); shown with the IMU off too, so the source can go back to the AS5600 without switching the IMU on |
 | IMU axis | X, Y, Z | X | the angle the servo runs and RUDDER read; `Z: 1° WITH THE MAGNETOMETER` |
 | IMU sign | +, - | + | `-` turns that angle round |
 | IMU rate | 10Hz, 20Hz, 50Hz, 100Hz, 200Hz | 50Hz | the sensor's frames a second; sent only when changed, it takes effect after the sensor is switched off and on; the sensor ships at 10Hz, and `CONNECTED` shows the rate it runs |
 | IMU algorithm | 6-AXIS, 9-AXIS | 6-AXIS | 9-AXIS takes the magnetometer for Z |
 | IMU filter | 1 to 50 | 1 | the panel's low-pass on the angle; 1 is off |
-| Angle source | AS5600, IMU | AS5600 | where the servo runs take their angle from ([Servo settings](servo-settings.md)) |
 
 IMU filter smooths the angle on the panel, per frame and axis: the angle moves by 1/k of the difference to the new frame, with k the setting. It covers 63% of a step in about k frames, so at 10Hz an IMU filter of 10 takes about 1s. The frames per second are the rate the sensor runs, which `CONNECTED` shows, not the IMU rate asked. The IMU screen, RUDDER, AUTO and the servo runs read the filtered angle. The first frame after a connect starts the filter at its own value, and a crossing of 180° takes the short way. AUTO waits until the filtered angle has settled, up to 3000ms plus the time the setting can take ([The Bluetooth IMU](https://github.com/subtilitas/rcbench/wiki/IMU#the-filter)).
 

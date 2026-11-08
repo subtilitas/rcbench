@@ -1194,8 +1194,8 @@ WINKELQUELLE legt fest, woher Servotest, ENDLAGENLAUF und
 SERVO-Aufzeichnung den Hornwinkel beziehen: `AS5600` als Vorgabe oder
 `IMU`. Bei `IMU` wird die gewählte IMU-Achse mit dem IMU-Vorzeichen
 verwendet, bezogen auf den auf der IMU-Seite gesetzten NULLPUNKT. Die
-Einstellung steht unter SETUP > SENSORS > IMU und in der Liste
-WINKELQUELLE.
+Einstellung ist die zweite Zeile unter SETUP > SENSORS > IMU, auch bei
+ausgeschalteter IMU gezeigt, und steht in der Liste WINKELQUELLE.
 
 Die Liste WINKELQUELLE öffnet sich über der linken Spalte, von der Zeile
 WINKEL der Karte BEREIT auf RUDER und RUDER AUTO und von der Zeile

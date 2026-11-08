@@ -58,6 +58,12 @@ history is in git.
   IMU on. While the IMU link takes no bind (no sync with the C6, the
   calibration running, the IMU off) the sensors but the bound one are
   refused with the reason in the alert band.
+- SETUP > SENSORS > IMU shows Angle source as its second row, also while
+  the IMU is off, so the source goes back to the AS5600 without switching
+  the IMU on. SCAN FOR SENSORS on the IMU screen takes a press with the IMU
+  off: it switches the IMU on and scans once Bluetooth LE runs. The card's
+  state line reads `IMU OFF: SCAN SWITCHES IT ON`.
+
 ### Fixed
 
 - LIMIT RUN's and RUDDER AUTO's SERVO set to HITEC fell back to
