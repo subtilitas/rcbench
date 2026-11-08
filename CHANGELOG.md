@@ -51,10 +51,13 @@ history is in git.
   their SETTINGS lists, open the ANGLE SOURCE list on a SAFE bench, with a
   reading or without: `AS5600` (`AS5600: OFF IN SETUP`, which opens SETUP
   > SENSORS on the AS5600, while it is off), the IMUs the last scan found
-  with name, address tail and RSSI, `NO IMU FOUND` after a scan that found
-  none, and `SEARCH FOR IMU`, which switches the IMU on when it is off and
-  scans once Bluetooth LE runs. A pick sets ANGLE SOURCE, and an IMU pick
-  binds the sensor and switches the IMU on.
+  with name, full address, address type (`P` public, `R` random) and RSSI,
+  `NO IMU FOUND` after a scan that found none, and `SEARCH FOR IMU`, which
+  switches the IMU on when it is off and scans once Bluetooth LE runs. A
+  pick sets ANGLE SOURCE, and an IMU pick binds the sensor and switches the
+  IMU on. While the IMU link takes no bind (no sync with the C6, the
+  calibration running, the IMU off) the sensors but the bound one are
+  refused with the reason in the alert band.
 ### Fixed
 
 - LIMIT RUN's and RUDDER AUTO's SERVO set to HITEC fell back to

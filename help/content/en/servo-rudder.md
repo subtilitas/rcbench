@@ -54,13 +54,15 @@ A tap on READY's ANGLE row, with a reading or without, opens the ANGLE SOURCE li
 |---|---|
 | `AS5600` | sets ANGLE SOURCE AS5600 and closes the list |
 | `AS5600: OFF IN SETUP` | opens the AS5600 entry of [Sensors](setup-sensors.md); the home tag returns here |
-| a sensor, `HC-06 19:29 -50dBm`: name, the last 5 characters of its address, the signal | binds it, switches the IMU on and sets ANGLE SOURCE IMU |
+| a sensor, `HC-06 00:0C:BF:08:19:29 P -50dBm`: name, its full address, its type (`P` public, `R` random), the signal; in two columns on two lines | binds it, switches the IMU on and sets ANGLE SOURCE IMU |
 | `NO IMU FOUND` | the last scan found none; the tap names the usual causes in the band |
 | `SEARCH FOR IMU` | switches the IMU on if it is off and scans for 10s once Bluetooth LE runs; the list stays open and shows `SCANNING: 10s`, then the sensors found |
 
 The source in force is in the accent colour. With the IMU on and no sensor bound, opening the list starts a scan by itself.
 
 ![The ANGLE SOURCE list: the AS5600 in force, two sensors found](view:servo-rudder-angle)
+
+![Six sensors found in two columns, two of them with the same address end](view:servo-rudder-angle-many)
 
 ![A scan under way](view:servo-rudder-angle-scan)
 
