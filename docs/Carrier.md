@@ -234,15 +234,22 @@ INA3221 0x40 CH3 measures VCC_PROGPORT_DCDC, M7's output. The panel
 watches it on every ON the PROG_SUPPLY page reads: the PROG 5V box's, the
 ON of ARM and of ARM + START, and a KST or Hitec session's. The page must
 report GPIO 21 on or have acknowledged the panel's ON, and the heartbeat
-must be running. A 50ms window whose mean bus voltage is under 4750mV
-(`PROG5V_MIN_MV`: 5V less 5%, the lower bound of USB's 5V range) is low.
+must be running. The watch judges each 50ms window by its mean bus
+voltage:
 
 - **Missing:** no window of 4750mV or more by 200ms after the ON
-  (`PROG5V_REACH_MS`, the page's read period). The first new window read
+  (`PROG5V_MIN_MV`, 5V less 5%, the lower bound of USB's 5V range;
+  `PROG5V_REACH_MS`, the page's read period). The first new window read
   at or after 200ms decides. On an input of 5V M7 cannot make 5V; what
   it makes there is not measured.
 - **Lost:** once a window has read 4750mV or more, two consecutive new
-  windows under 4750mV, both read at least 500ms after the ON.
+  windows under 3000mV (`PROG5V_LOST_MV`), both read at least 500ms after
+  the ON.
+
+Only the start is held to 4750mV. Under a servo's load the shunt and M7's
+load regulation pull the reading towards 4750mV, and a run is not stopped
+for that. 3000mV is under M7's under-voltage latch of 3.25V: a latched
+output falls close to 0V.
 
 M7's controller, most likely a JoulWatt JW5068A (not confirmed on the
 module), latches its output off on an over-voltage (over 6.0V for 20us) or
@@ -280,7 +287,8 @@ A KST or Hitec session switches the 5V off and on itself: a KST rail cycle
 keeps it off for 1000ms, a classic Hitec entry for 500ms. The panel sees
 GPIO 21 only at its page reads, every 200ms. While a session holds the 5V
 a finding waits for a page read made after it that still reads GPIO 21 on;
-a read that shows it off, or a window of 4750mV or more first, drops it.
+a read that shows it off, or first a window that is not low (4750mV or
+more before the 5V came, 3000mV or more after), drops it.
 A session's error therefore comes up to 200ms later than the box's.
 
 The rule is `shared/safety/prog5v_lost.c` under `test_prog5v_lost`;
@@ -296,7 +304,7 @@ Current limitations:
   (under 200ms) and leaves it off across the read after a finding trips
   the watch. No session of the firmware switches it off for less than
   500ms, except a Hitec D series entry, whose off time is 0ms.
-- A load that holds the 5V under 4750mV for two windows, for example a
+- A load that holds the 5V under 3000mV for two windows, for example a
   stalled servo past M7's current limit, is a loss. M7's current limit
   is not measured.
 - The detection time on hardware is not measured. By the rule it is

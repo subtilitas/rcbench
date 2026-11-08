@@ -103,7 +103,7 @@ Das Feld PROG 5V neben GRAFIK und TABELLE schaltet die Programmierschiene von Ha
 
 Belegt eine Servoprogrammierung einen Port, zeigt das Feld `BELEGT VON PROG-PORT n` und nimmt keinen Druck an. Beim Verlassen von SUPPLY schalten die über dieses Feld aktivierten 5V aus, außer ein Port belegt sie. Auch jeder Fehler schaltet sie ab. Ein laufender Schreibvorgang im Servospeicher wird vorher beendet, mit höchstens 10000ms Wartezeit.
 
-Nach jedem ON, dem des Felds, von ARM oder einer Servoprogrammierung, müssen die 5V innerhalb von 200ms 4750mV oder mehr lesen. Sonst schalten alle Ausgänge aus, mit `PROG 5V FEHLT: 3.1V NACH 200ms. VERSORGUNGSSPANNUNG PRÜFEN`. Zwei Messfenster unter 4750mV danach gelten als Ausfall der 5V-Versorgung: `PROG 5V ausgefallen: INA3221 0x40 CH3 misst 0.12V trotz EIN. Alle Ausgänge aus.`
+Nach jedem ON, dem des Felds, von ARM oder einer Servoprogrammierung, müssen die 5V innerhalb von 200ms 4750mV oder mehr lesen. Sonst schalten alle Ausgänge aus, mit `PROG 5V FEHLT: 3.1V NACH 200ms. VERSORGUNGSSPANNUNG PRÜFEN`. Zwei Messfenster unter 3000mV danach gelten als Ausfall der 5V-Versorgung: `PROG 5V ausgefallen: INA3221 0x40 CH3 misst 0.12V trotz EIN. Alle Ausgänge aus.`
 
 Die 5V der Programmierports kommen aus dem Eingang des Carriers, der 15V benötigt. Der PD mini läuft aus demselben Eingang und misst ihn. Solange dieser Messwert unter 13,5V liegt, zeigt die Kopfzeile `EINGANG 5.1V < 15V` in Rot, die zweite Zeile des Felds lautet `EINGANG 5.1V: BENÖTIGT 15V`, und PROG 5V EIN nimmt kein Halten an. Das Band zeigt `EINGANG 5.1V: BENÖTIGT 15V. VERSORGUNGSSPANNUNG PRÜFEN`. Ohne Messwert des PD mini gilt nur die Prüfung nach dem ON.
 

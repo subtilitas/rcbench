@@ -1948,7 +1948,7 @@ unter [Carrier, Das Feld PROG 5V](Carrier-de.md#das-feld-prog-5v). Nach
 jedem ON, dem des Felds, von ARM oder einer Sitzung, müssen die 5V
 innerhalb von 200ms 4750mV oder mehr lesen; sonst SAFE, alle Ausgänge aus
 und die Bandmeldung `PROG 5V FEHLT: 3.1V NACH 200ms. VERSORGUNGSSPANNUNG PRÜFEN`.
-Zwei Fenster unter 4750mV danach lösen denselben Fehler aus, mit
+Zwei Fenster unter 3000mV danach lösen denselben Fehler aus, mit
 `PROG 5V ausgefallen: INA3221 0x40 CH3 misst 0.12V trotz EIN. Alle Ausgänge aus.`
 ([Carrier, PROG 5V fehlt oder ausgefallen](Carrier-de.md#prog-5v-fehlt-oder-ausgefallen)).
 Solange der PD mini den Eingang des Carriers unter 13,5V liest, zeigt die

@@ -10,16 +10,17 @@
  * channel that watches the ports' 5V reads what M7 makes.
  *
  * The watch counts the channel's 50ms windows, each once, by the number the
- * SENSE_WIN page carries.  A window whose mean bus voltage is under
- * PROG5V_MIN_MV (4750mV) is low.  The watch runs on every ON the page
- * reads, the panel's own and a programming port's, and finds two things:
+ * SENSE_WIN page carries, by their mean bus voltage.  It runs on every ON
+ * the page reads, the panel's own and a programming port's, and finds two
+ * things:
  *
- * - MISSING: no window of PROG5V_MIN_MV or more by PROG5V_REACH_MS after
- *   the ON.  The first new window read at or after that time decides.  An
- *   input supply of 5V on the +15V net leaves M7 under 5V.
+ * - MISSING: no window of PROG5V_MIN_MV (4750mV) or more by
+ *   PROG5V_REACH_MS after the ON.  The first new window read at or after
+ *   that time decides.  An input supply of 5V on the +15V net leaves M7
+ *   under 5V.
  * - LOST: once the 5V has read PROG5V_MIN_MV or more, two new windows in a
- *   row under it, both read PROG5V_LOST_SETTLE_MS or more after the ON or
- *   after the latest change of the cuts.  M7's controller, most likely a
+ *   row under PROG5V_LOST_MV (3000mV), both read PROG5V_LOST_SETTLE_MS or
+ *   more after the ON or after the latest change of the cuts.  M7's controller, most likely a
  *   JoulWatt JW5068A, latches its output off on an over-voltage (over 6.0V
  *   for 20us) or an under-voltage (under 3.25V for 200us), and starts
  *   again only when EN is toggled; a latched output falls to near 0V.  The
@@ -30,7 +31,12 @@
  * Why the numbers:
  *
  * - PROG5V_MIN_MV, 4750mV: 5V less 5%, the lower bound of USB's 5V
- *   (VBUS) range.  KST and Chaservo servos are programmed at 5V.
+ *   (VBUS) range.  KST and Chaservo servos are programmed at 5V.  Only an
+ *   ON's start is held to it: under a servo's load the shunt and M7's load
+ *   regulation pull the bus reading near 4750mV, and a run is not stopped
+ *   for that.
+ * - PROG5V_LOST_MV, 3000mV: under M7's under-voltage latch of 3.25V, so a
+ *   window under it is a supply that is not regulating.
  * - PROG5V_REACH_MS, 200ms: PROG_SUPPLY_LINK_READ_MS, the page's read
  *   period.  A window is 50ms and the panel reads one every 40ms
  *   (SENSE_WIN_LINK_READ_MS), so at least two whole windows closed after
@@ -43,7 +49,8 @@
  * rail cycle of 1000ms off, a classic Hitec entry of 500ms off), and the
  * panel sees the pin only at its page reads.  While a port holds the 5V a
  * finding waits for a page read made after it that still reads the pin on;
- * a read that shows the pin off ends the ON.  A window of PROG5V_MIN_MV or more
+ * a read that shows the pin off ends the ON.  A window that is not low
+ * (PROG5V_MIN_MV or more for MISSING, PROG5V_LOST_MV or more for LOST)
  * drops a finding that waits.  The panel's own OFF moves the PROG_SUPPLY
  * cuts (prog_supply_link_cuts()); the page reads the pin on until its next
  * read, so a change of the cuts starts the settle time again, drops the
@@ -75,8 +82,11 @@
 extern "C" {
 #endif
 
-/** @brief A window's mean bus voltage under this is low, mV: 5V less 5%. */
+/** @brief The 5V an ON must reach, mV: 5V less 5%. */
 #define PROG5V_MIN_MV         4750u
+/** @brief Once reached, a window's mean bus voltage under this is low, mV:
+ *         under M7's under-voltage latch of 3.25V. */
+#define PROG5V_LOST_MV        3000u
 /** @brief The time after the ON by which a window must read PROG5V_MIN_MV
  *         or more, ms: the PROG_SUPPLY page's read period. */
 #define PROG5V_REACH_MS       200u

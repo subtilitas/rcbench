@@ -102,7 +102,8 @@ bool prog5v_lost_step(prog5v_lost_t *d, const prog5v_on_t *on,
     if (!fresh || !d->on || d->tripped) {
         return false;                  /* read again, off, or tripped */
     }
-    if (w->mv >= PROG5V_MIN_MV) {
+    /* Not low: PROG5V_MIN_MV before the 5V came, PROG5V_LOST_MV after. */
+    if (w->mv >= (d->reached ? PROG5V_LOST_MV : PROG5V_MIN_MV)) {
         d->reached = true;
         d->low     = 0u;
         d->waits   = false;

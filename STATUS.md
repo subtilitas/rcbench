@@ -634,7 +634,8 @@ Errors](docs/Safety.md#errors)). The rule is `shared/safety/error_stop.c`, host-
 `test_error_stop`; the supply link's errors are `supply_link_ev_error()`, an INA3221 limit
 passed `sense_limit_link_take_trip()` (`test_sense_limit_link`); the rbmod carrier's PROG 5V
 missing after an ON or collapsed under it, the panel's or a session's, `prog5v_lost_step()`
-(`test_prog5v_lost`: 4749mV and 4750mV, 199ms and 200ms, 5.0V reaching and 3.1V staying, a
+(`test_prog5v_lost`: 4749mV and 4750mV for missing, 2999mV and 3000mV for lost, 4.5V under
+load after 5.0V no trip, 199ms and 200ms, 5.0V reaching and 3.1V staying, a
 window read twice, the 500ms settle and an OFF asked under the ON, a session's finding
 confirmed by a page read or dropped, one trip an ON, the clock's and the window number's
 wrap; `test_prog5v_wire` drives it as `panel_sense.c` does, through `prog_supply_link` and

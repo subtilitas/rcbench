@@ -1,12 +1,13 @@
 /*
  * The PROG 5V watch (prog5v_lost.h).  MISSING: no window of 4750mV or more
  * by 200ms after the ON, decided by the first new window read at or after
- * 200ms.  LOST: once the 5V came, two new windows in a row under 4750mV,
+ * 200ms.  LOST: once the 5V came, two new windows in a row under 3000mV,
  * both read 500ms or more after the ON.  One trip an ON; while a
  * programming port holds the 5V a finding waits for a page read that still
  * reads the pin on.
  *
- * The edges: 4749mV and 4750mV for both, a window at 199ms and at 200ms,
+ * The edges: 4749mV and 4750mV for MISSING, 2999mV and 3000mV for LOST,
+ * 4.5V under load after the 5V came, a window at 199ms and at 200ms,
  * 5.0V reaching and 3.1V staying, one low window and a good one, a window
  * read twice, windows before the settle time and at exactly 500ms, an ON
  * the IOmcu has not confirmed, an invalid reading between two low windows,
@@ -174,23 +175,46 @@ TEST_CASE(an_off_asked_before_the_5v_came_holds_missing_back)
 
 /* ---------------------------------------------------------------- LOST */
 
-TEST_CASE(two_new_windows_under_4750mv_trip)
+TEST_CASE(two_new_windows_under_3000mv_trip)
 {
     reached_at_t_on();
-    CHECK(!win(true, 3u, T_OK, 10u, PROG5V_MIN_MV - 1u));
-    CHECK(win(true, 3u, T_OK + 40u, 11u, PROG5V_MIN_MV - 1u));
+    CHECK(!win(true, 3u, T_OK, 10u, PROG5V_LOST_MV - 1u));
+    CHECK(win(true, 3u, T_OK + 40u, 11u, PROG5V_LOST_MV - 1u));
     CHECK_EQ(prog5v_lost_kind(&d), PROG5V_TRIP_LOST);
-    CHECK_EQ(prog5v_lost_mv(&d), PROG5V_MIN_MV - 1u);
+    CHECK_EQ(prog5v_lost_mv(&d), PROG5V_LOST_MV - 1u);
     CHECK_EQ(d.trip_ms, PROG5V_LOST_SETTLE_MS + 40u);
 }
 
-TEST_CASE(windows_at_4750mv_do_not_trip)
+TEST_CASE(windows_at_3000mv_do_not_trip)
 {
     reached_at_t_on();
     for (uint16_t n = 10u; n < 40u; ++n) {
-        CHECK(!win(true, 3u, T_OK + 40u * n, n, PROG5V_MIN_MV));
+        CHECK(!win(true, 3u, T_OK + 40u * n, n, PROG5V_LOST_MV));
     }
     CHECK_EQ(prog5v_lost_mv(&d), 0u);
+}
+
+/* The 5V came at 5.0V; a servo's load then pulls the reading to 4.5V for
+ * many windows: no trip, the run goes on. */
+TEST_CASE(a_5v_at_4v5_under_load_after_it_came_does_not_trip)
+{
+    on_at_t_on();
+    CHECK(!win(true, 3u, T_ON + 100u, 5u, 5000u));
+    for (uint16_t n = 6u; n < 80u; ++n) {
+        CHECK(!win(true, 3u, T_ON + 40u * n, n, 4500u));
+    }
+    CHECK_EQ(prog5v_lost_kind(&d), PROG5V_TRIP_NONE);
+    /* Under a session too: nothing waits. */
+    on_at_t_on();
+    g_on.port  = true;
+    g_on.reads = 7u;
+    CHECK(!win(true, 3u, T_ON + 100u, 5u, 5000u));
+    for (uint16_t n = 6u; n < 80u; ++n) {
+        g_on.reads += (n % 5u == 0u) ? 1u : 0u;
+        CHECK(!win(true, 3u, T_ON + 40u * n, n, 4500u));
+    }
+    CHECK(!d.waits);
+    CHECK_EQ(prog5v_lost_kind(&d), PROG5V_TRIP_NONE);
 }
 
 TEST_CASE(one_low_window_then_a_good_one_does_not_trip)
@@ -462,13 +486,13 @@ TEST_CASE(the_console_line_names_the_part_the_channel_and_the_readings)
     CHECK_STR_EQ(prog5v_lost_line(&d, 11u, buf, sizeof(buf)),
                  "PROG 5V lost: INA3221 0x43 CH3 read 0.12V, 0.08V in 2 "
                  "windows, 640ms after ON. All outputs off.");
-    /* The longest line fits: 4749mV twice, the most milliseconds. */
-    d.mv[0] = 4749u;
-    d.mv[1] = 4749u;
+    /* The longest line fits: 2999mV twice, the most milliseconds. */
+    d.mv[0] = 2999u;
+    d.mv[1] = 2999u;
     d.trip_ms = 0xFFFFFFFFu;
     const char *s = prog5v_lost_line(&d, 3u, buf, sizeof(buf));
     CHECK(strlen(s) < sizeof(buf) - 1u);
-    CHECK(strstr(s, "0x41 CH1 read 4.74V, 4.74V") != NULL);
+    CHECK(strstr(s, "0x41 CH1 read 2.99V, 2.99V") != NULL);
     CHECK_STR_EQ(prog5v_lost_line(&d, 12u, buf, sizeof(buf)), "");
     CHECK_STR_EQ(prog5v_lost_line(NULL, 2u, buf, sizeof(buf)), "");
     CHECK_STR_EQ(prog5v_lost_line(&d, 2u, NULL, 8u), "");
@@ -515,8 +539,9 @@ int main(void)
     RUN(a_good_window_at_200ms_passes);
     RUN(no_window_read_is_no_finding);
     RUN(an_off_asked_before_the_5v_came_holds_missing_back);
-    RUN(two_new_windows_under_4750mv_trip);
-    RUN(windows_at_4750mv_do_not_trip);
+    RUN(two_new_windows_under_3000mv_trip);
+    RUN(windows_at_3000mv_do_not_trip);
+    RUN(a_5v_at_4v5_under_load_after_it_came_does_not_trip);
     RUN(one_low_window_then_a_good_one_does_not_trip);
     RUN(the_same_window_read_twice_counts_once);
     RUN(a_window_read_again_does_not_reset_the_count);

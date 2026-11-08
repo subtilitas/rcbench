@@ -243,17 +243,24 @@ INA3221 0x40 CH3 misst VCC_PROGPORT_DCDC, den Ausgang von M7. Das Panel
 überwacht ihn bei jedem ON, das die Page PROG_SUPPLY liest: dem des
 Felds PROG 5V, dem ON von ARM und von ARM + START und dem einer KST- oder
 Hitec-Sitzung. Die Page muss GPIO 21 als eingeschaltet melden oder das ON
-des Panels bestätigt haben, und der Heartbeat muss laufen. Ein Fenster von
-50ms mit einer mittleren Busspannung unter 4750mV (`PROG5V_MIN_MV`: 5V
-weniger 5%, die Untergrenze der 5V von USB) ist niedrig.
+des Panels bestätigt haben, und der Heartbeat muss laufen. Die
+Überwachung beurteilt jedes Fenster von 50ms nach seiner mittleren
+Busspannung:
 
 - **Fehlt:** kein Fenster mit 4750mV oder mehr bis 200ms nach dem ON
-  (`PROG5V_REACH_MS`, die Leseperiode der Page). Das erste neue Fenster,
+  (`PROG5V_MIN_MV`, 5V weniger 5%, die Untergrenze der 5V von USB;
+  `PROG5V_REACH_MS`, die Leseperiode der Page). Das erste neue Fenster,
   das bei oder nach 200ms gelesen wird, entscheidet. Aus einem Eingang von
   5V kann M7 keine 5V machen; was er dann liefert, ist nicht gemessen.
 - **Ausgefallen:** nachdem ein Fenster 4750mV oder mehr gelesen hat, zwei
-  aufeinanderfolgende neue Fenster unter 4750mV, beide frühestens 500ms
-  nach dem ON gelesen.
+  aufeinanderfolgende neue Fenster unter 3000mV (`PROG5V_LOST_MV`), beide
+  frühestens 500ms nach dem ON gelesen.
+
+Nur der Start muss 4750mV erreichen. Unter der Last eines Servos ziehen
+der Shunt und die Lastregelung von M7 den Messwert gegen 4750mV, und ein
+Lauf wird dafür nicht gestoppt. 3000mV liegen unter der
+Unterspannungsabschaltung von M7 bei 3,25V: ein abgeschalteter Ausgang
+fällt auf nahe 0V.
 
 Der Regler von M7, am ehesten ein JoulWatt JW5068A (am Modul nicht
 bestätigt), schaltet seinen Ausgang bei Überspannung (über 6,0V für 20us)
@@ -292,7 +299,8 @@ Schienenzyklus von KST hält sie 1000ms aus, der Einstieg eines klassischen
 Hitec 500ms. Das Panel sieht GPIO 21 nur bei seinen Lesungen der Page, alle
 200ms. Solange eine Sitzung die 5V hält, wartet ein Befund auf ein Lesen
 der Page nach ihm, das GPIO 21 noch als ein liest; ein Lesen, das sie als
-aus zeigt, oder vorher ein Fenster mit 4750mV oder mehr verwirft ihn. Der
+aus zeigt, oder vorher ein Fenster, das nicht niedrig ist (4750mV oder
+mehr, bevor die 5V kamen, 3000mV oder mehr danach), verwirft ihn. Der
 Fehler einer Sitzung kommt deshalb bis zu 200ms später als der des Felds.
 
 Die Regel ist `shared/safety/prog5v_lost.c` unter `test_prog5v_lost`;
@@ -310,7 +318,7 @@ Aktuelle Einschränkungen:
   aus lässt, löst die Überwachung aus. Keine Sitzung der Firmware
   schaltet sie kürzer als 500ms aus, außer dem Einstieg eines Hitec der
   D-Serie mit einer Auszeit von 0ms.
-- Eine Last, die die 5V zwei Fenster lang unter 4750mV hält, etwa ein
+- Eine Last, die die 5V zwei Fenster lang unter 3000mV hält, etwa ein
   blockiertes Servo über der Stromgrenze von M7, ist ein Ausfall. Die
   Stromgrenze von M7 ist nicht gemessen.
 - Die Erkennungszeit auf der Hardware ist nicht gemessen. Nach der Regel

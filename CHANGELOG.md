@@ -24,9 +24,9 @@ history is in git.
 
 ### Changed
 
-- The PROG 5V lost error on the carrier trips at 4750mV instead of
-  3000mV, and watches a session's 5V as well: under a session a finding
-  waits for a PROG_SUPPLY page read that still reads GPIO 21 on.
+- The PROG 5V lost error on the carrier watches a KST or Hitec session's
+  5V as well: under a session a finding waits for a PROG_SUPPLY page read
+  that still reads GPIO 21 on.
 
 - The READY card on the SERVO screens (LIVE, SWEEP, RUDDER, TEST, LIMIT
   RUN, RUDDER AUTO, KST and HITEC) draws each row's state on a raised tag
