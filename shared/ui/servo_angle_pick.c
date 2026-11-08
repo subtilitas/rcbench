@@ -250,9 +250,10 @@ static void build(void)
     }
     char line[64];
     if (v->bound_addr[0] != '\0' && !listed) {
-        const char type = strlen(v->bound_addr) == 19u ? v->bound_addr[18]
-                                                       : '?';
-        const uint8_t at = sensor_label(v->bound_name, v->bound_addr, type,
+        const char bound_type = strlen(v->bound_addr) == 19u
+                                    ? v->bound_addr[18] : '?';
+        const uint8_t at = sensor_label(v->bound_name, v->bound_addr,
+                                        bound_type,
                                         127, line, sizeof(line));
         add(line, AP_BOUND, false);
         s_split[s.ch.count - 1] = at;
