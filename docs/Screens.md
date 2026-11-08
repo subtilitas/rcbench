@@ -2323,9 +2323,9 @@ until SAVE.
 | the hub | the servo profile: OUTPUT with TYPE, FRAME RATE, PULSE MIN, PULSE CENTER, PULSE MAX, TRIM, TRAVEL, REVERSE and HV SERVO; DUT with NAME and REPORT |
 | SWEEP | CURVE, SPEED and RANGE |
 | TEST | VOLTAGE STEPS: Step 4.8V, Step 6.0V, HV SERVO, Step 7.4V, Step 8.4V; BROWN-OUT: Brown-out, Brown-out minimum voltage, Brown-out step; PASS/FAIL LIMITS: Stall threshold, Idle current max, Holding current max, Travel time max; LENGTH AND TIMING: Length by, Test time, Movements, Dwell time, Settling time |
-| LIMIT RUN | MODE, SERVO, SERVO PULSES, Programming voltage, Programming current and Wait before PWM |
+| LIMIT RUN | MODE, SERVO, Hitec D receive (with SERVO at HITEC D SERIES), SERVO PULSES, Programming voltage, Programming current and Wait before PWM |
 | RUDDER | LENGTH, ENC CENTER and ANGLE SOURCE |
-| RUDDER AUTO | the targets, MARGIN, TOLERANCE, SERVO, SERVO PULSES and ANGLE SOURCE |
+| RUDDER AUTO | the targets, MARGIN, TOLERANCE, SERVO, Hitec D receive (with SERVO at HITEC D SERIES), SERVO PULSES and ANGLE SOURCE |
 | SERVO > KST | KST EXPERT MODE, one level down |
 | HITEC | SERIES and RECEIVE |
 | LIVE | no list |
