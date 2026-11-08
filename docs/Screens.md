@@ -2415,7 +2415,13 @@ PORT 1, PROG PORT 2, PROG PORT 3 and PROG PORT 4 over the left card; a pick sets
 TARGET setting saved in NVS (non-volatile storage), as OUTPUTS' SERVO
 TESTER rows set it, and asks for a save. On the rbmod carrier the entries
 name each port's GPIO, and a port the carrier refuses shows its refusal
-line and takes no pick. The button follows the actual target even while a
+line and takes no pick. Off the carrier, with the binding read and no
+output bound as SERVO PWM, the first entry reads `OUTPUTS: NO PIN, OPEN
+OUTPUTS` (German `OUTPUTS: KEIN PIN, OUTPUTS ÖFFNEN`): a pick sets OUTPUTS
+as the target and opens OUTPUTS on the SERVO PWM protocol, where its pins
+are bound. Leaving switches the bench to SAFE as any way out does. The
+home tag there returns to the SERVO screen the list was opened on: LIVE,
+SWEEP, TEST, LIMIT RUN, RUDDER or RUDDER AUTO. The button follows the actual target even while a
 TARGET write is pending or a requested programming port has no pin.
 
 The PORT button is dimmed and locked while ARMED or ARM is asked, during

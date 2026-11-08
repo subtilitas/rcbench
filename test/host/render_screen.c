@@ -3971,8 +3971,10 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
         } else if (strcmp(view, "servo-rate-unsupported") == 0) {
             servo_screen_rate(SERVO_RATE_UNSUPPORTED, 50u);
         }
-        /* The binding read: one SERVO PWM output on GP2. */
-        servo_screen_set_pins((uint64_t)1u << 2, true);
+        /* The binding read: one SERVO PWM output on GP2; none for PORT's
+         * list whose OUTPUTS entry opens OUTPUTS. */
+        servo_screen_set_pins(strcmp(view, "servo-port-nopin") == 0
+                                  ? 0u : (uint64_t)1u << 2, true);
         /* The output encoder on, its center at count 3000 and the horn
          * read at the commanded 38 degrees: 38 * 4096 / 360 = 432
          * counts on. */

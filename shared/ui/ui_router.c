@@ -159,9 +159,12 @@ static void guide_close(void);
 /*
  * The openers, each on a row of its own: a control on one screen that opens
  * another, whose home tag then returns to the opener.  OUTPUTS opens from the
- * TARGET row of MOTOR & ESC and from SETUP's OUTPUTS tile; SUPPLY from the
- * caps button of SERVO's TEST; SETUP from the ANGLE SOURCE row of RUDDER's
- * and RUDDER AUTO's settings lists and from IMU's IMU SETTINGS; SETUP's SD
+ * TARGET row of MOTOR & ESC, from SETUP's OUTPUTS tile and from the PORT
+ * list's `OUTPUTS: NO PIN` entry on SERVO's LIVE, SWEEP, TEST, LIMIT RUN,
+ * RUDDER and RUDDER AUTO; SUPPLY from the caps button of SERVO's TEST; SETUP
+ * from the ANGLE SOURCE row of RUDDER's and RUDDER AUTO's settings lists,
+ * from the red METER row of LIMIT RUN's and RUDDER AUTO's READY cards and
+ * from IMU's IMU SETTINGS; SETUP's SD
  * CARD list from the footer's SETTINGS on LOGS and FILES; WI-FI from
  * UPDATES' button and LOGS' WI-FI button.  SETUP's WI-FI tile needs no row:
  * WI-FI's parent is SETUP.
@@ -175,9 +178,16 @@ static const struct {
 } k_openers[] = {
     { SCREEN_OUTPUTS, SCREEN_MOTOR },
     { SCREEN_OUTPUTS, SCREEN_SETUP },
+    { SCREEN_OUTPUTS, SCREEN_SERVO_LIVE },
+    { SCREEN_OUTPUTS, SCREEN_SERVO_SWEEP },
+    { SCREEN_OUTPUTS, SCREEN_SERVO_TEST },
+    { SCREEN_OUTPUTS, SCREEN_SERVO_LIMRUN },
+    { SCREEN_OUTPUTS, SCREEN_SERVO_RUDDER },
+    { SCREEN_OUTPUTS, SCREEN_SERVO_RAUTO },
     { SCREEN_SUPPLY,  SCREEN_SERVO_TEST },
     { SCREEN_SETUP,   SCREEN_SERVO_RUDDER },
     { SCREEN_SETUP,   SCREEN_SERVO_RAUTO },
+    { SCREEN_SETUP,   SCREEN_SERVO_LIMRUN },
     { SCREEN_WIFI,    SCREEN_UPDATES },
     { SCREEN_WIFI,    SCREEN_LOGS },
     { SCREEN_SETUP,   SCREEN_IMU },

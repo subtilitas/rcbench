@@ -3107,13 +3107,11 @@ shared/ui/include/motor_screen.h: warning: return type of member motor_screen_po
 shared/ui/include/motor_screen.h: warning: return type of member motor_screen_session_shown is not documented
 shared/ui/include/motor_screen.h: warning: return type of member motor_screen_target_locked is not documented
 shared/ui/include/motor_screen.h: warning: return type of member motor_target_cells is not documented
-shared/ui/include/outputs_screen.h: warning: Member outputs_screen_open_on_port(uint8_t port) (function) of file outputs_screen.h is not documented.
 shared/ui/include/outputs_screen.h: warning: Member outputs_screen_set_apply(outputs_apply_fn fn) (function) of file outputs_screen.h is not documented.
 shared/ui/include/outputs_screen.h: warning: Member outputs_screen_set_result(outputs_result_t r) (function) of file outputs_screen.h is not documented.
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_iface_at are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_iface_pins are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_cell are not documented
-shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_open_on are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_port_pin are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_port_reason are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_reason are not documented
@@ -3728,7 +3726,6 @@ shared/ui/outputs_port.c: warning: Member outputs_port_holds(uint8_t gpio) (func
 shared/ui/outputs_port.c: warning: Member outputs_port_open(void) (function) of file outputs_port.c is not documented.
 shared/ui/outputs_port.c: warning: Member outputs_port_pins(void) (function) of file outputs_port.c is not documented.
 shared/ui/outputs_port.c: warning: Member outputs_pwm_pins(const uint8_t *pins) (function) of file outputs_port.c is not documented.
-shared/ui/outputs_port.c: warning: Member outputs_screen_open_on_port(uint8_t port) (function) of file outputs_port.c is not documented.
 shared/ui/outputs_port.c: warning: Member pin_bit(int v) (function) of file outputs_port.c is not documented.
 shared/ui/outputs_port.c: warning: Member sense_part(setting_id_t en) (function) of file outputs_port.c is not documented.
 shared/ui/outputs_port.c: warning: Member sensors_on(void) (function) of file outputs_port.c is not documented.

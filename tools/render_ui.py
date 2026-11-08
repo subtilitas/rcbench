@@ -910,6 +910,9 @@ FIT_ONLY = {
     "help-servo-3":            (None, "servo", "dark"),
     "help-servo-test":         (None, "servo", "dark"),
     "help-servo-hub":          (None, "servo", "dark"),
+    # PORT's list with no output bound as SERVO PWM: its first entry
+    # opens OUTPUTS.
+    "servo-port-nopin":        (None, "servo", "dark"),
     # SWEEP's and LIMIT RUN's screens SAFE, and the guide over each.
     "servo-sweep-safe":        (None, "servo", "dark"),
     "servo-limcard":           (None, "servo", "dark"),

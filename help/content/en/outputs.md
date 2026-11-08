@@ -8,7 +8,7 @@ order: 62
 
 OUTPUTS assigns IOmcu pins to output protocols, defining which pins drive servos or ESCs (electronic speed controllers) and which signal they use. From [SETUP](setup.md), it opens the [overview](#the-overview-off), with OFF selected and every assigned pin labelled by protocol.
 
-From TARGET on [MOTOR & ESC](motor.md#target), it opens the throttle protocol, or the overview for mixed or unknown protocols. SERVO's [PORT button](servo-settings.md#the-port-button) picks the tester's port in a list of its own and does not open this screen. The home tag returns to the originating screen. If the protocol list is open, home first closes it without selecting anything.
+From TARGET on [MOTOR & ESC](motor.md#target), it opens the throttle protocol, or the overview for mixed or unknown protocols. SERVO's [PORT button](servo-settings.md#the-port-button) picks the tester's port in a list of its own; with no pin bound as SERVO PWM, the list's `OUTPUTS: NO PIN, OPEN OUTPUTS` opens the SERVO PWM protocol here. The home tag returns to the originating screen. If the protocol list is open, home first closes it without selecting anything.
 
 A board with a drawing or shape shows [pin keys](#the-board-and-its-keys). The list identifies each GPIO (general-purpose input/output); the drawing shows where to connect the lead. Boards without either description, and the rbmod carrier, use a [pin grid](#the-grid-view).
 

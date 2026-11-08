@@ -144,7 +144,7 @@ Enable or disable the AS5600 output encoder on [Sensors](setup-sensors.md). PORT
 ![The PORT button with PROG PORT](view:servo-target)
 ![PORT's list](view:servo-port)
 
-The PORT button over the output card identifies the driven outputs as `protocol pins`; the footer's port line repeats it. Tap it for the list of OUTPUTS (pins bound as SERVO PWM) and PROG PORT 1 to PROG PORT 4. A pick sets SERVO TESTER, as the PROG PORT entry of [Outputs](outputs.md#the-prog-port-entry) does, and is saved. On the rbmod carrier a port the carrier refuses shows why and takes no pick.
+The PORT button over the output card identifies the driven outputs as `protocol pins`; the footer's port line repeats it. Tap it for the list of OUTPUTS (pins bound as SERVO PWM) and PROG PORT 1 to PROG PORT 4. A pick sets SERVO TESTER, as the PROG PORT entry of [Outputs](outputs.md#the-prog-port-entry) does, and is saved. On the rbmod carrier a port the carrier refuses shows why and takes no pick. Off the carrier with no pin bound as SERVO PWM, the first entry reads `OUTPUTS: NO PIN, OPEN OUTPUTS`: a pick sets OUTPUTS and opens [Outputs](outputs.md) on the SERVO PWM protocol to bind one. The home tag there returns to the SERVO screen.
 
 The button is grey and locked while ARMED or ARM is asked, during a sweep, automatic test or limit run, or while the servo programmer holds the port; a tap names the lock in the alert band. It stays in view beside the lists, pages and programmer.
 

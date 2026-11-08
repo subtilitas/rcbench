@@ -3,11 +3,13 @@
  * @brief The PORT button over SERVO's output card: the choice of OUTPUTS
  * and PROG PORT 1 to 4 over the left card on every function screen but the
  * programmers', a pick as SET_SERVO_TARGET, and the TARGET lock that greys
- * it and names itself in the alert band.  The carrier's refusals and its
+ * it and names itself in the alert band.  With no output bound as SERVO
+ * PWM, the OUTPUTS entry opens OUTPUTS.  The carrier's refusals and its
  * pick are test_prog_choice's.
  *
  * Cases:
  * - port_opens_outputs_and_four_ports_over_the_left_card
+ * - with_no_servo_pwm_pin_outputs_opens_outputs
  * - the_hub_has_no_port_button
  * - a_pick_sets_the_target_asks_for_a_save_and_closes_the_list
  * - under_the_target_lock_port_opens_nothing_and_says_why
@@ -206,9 +208,50 @@ TEST_CASE(a_finger_on_arm_locks_port_until_it_lifts)
     CHECK_EQ(servo_screen_port_choices(), 1 + (int)LINK_PG_PORTS_MAX);
 }
 
+/* Off the carrier with the binding read and no output bound as SERVO PWM,
+ * OUTPUTS reads `OUTPUTS: NO PIN, OPEN OUTPUTS` in both languages; a pick
+ * sets OUTPUTS as the target and leaves for OUTPUTS.  With a pin bound, or
+ * the binding not read, the entry reads OUTPUTS and a pick stays. */
+TEST_CASE(with_no_servo_pwm_pin_outputs_opens_outputs)
+{
+    for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        fresh();
+        ui_router_init();
+        go(SERVO_FN_LIMRUN);
+        settings_set(SET_SERVO_TARGET, 2.0f);
+        servo_screen_set_pins(0u, true);
+        tap_port();
+        CHECK_STR_EQ(servo_screen_port_choice(0, NULL), TR(SVH_PORT_NO_PIN));
+        tap_choice(0);
+        CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 0);
+        CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
+    }
+    ui_text_set_language(UI_LANG_EN);
+
+    static const struct {
+        uint64_t pins;
+        bool known;
+    } k_plain[] = { { (uint64_t)1u << 2, true }, { 0u, false } };
+    for (size_t k = 0; k < sizeof(k_plain) / sizeof(k_plain[0]); ++k) {
+        fresh();
+        ui_router_init();
+        go(SERVO_FN_LIMRUN);
+        settings_set(SET_SERVO_TARGET, 2.0f);
+        servo_screen_set_pins(k_plain[k].pins, k_plain[k].known);
+        tap_port();
+        CHECK_STR_EQ(servo_screen_port_choice(0, NULL),
+                     TR(OUT_TESTER_OUTPUTS));
+        tap_choice(0);
+        CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 0);
+        CHECK(ui_router_current() != SCREEN_OUTPUTS);
+    }
+}
+
 int main(void)
 {
     RUN(port_opens_outputs_and_four_ports_over_the_left_card);
+    RUN(with_no_servo_pwm_pin_outputs_opens_outputs);
     RUN(the_hub_has_no_port_button);
     RUN(a_pick_sets_the_target_asks_for_a_save_and_closes_the_list);
     RUN(under_the_target_lock_port_opens_nothing_and_says_why);

@@ -11,7 +11,11 @@
  * The PORT button over the output card, (636, 68, 380, 48) on the panel:
  * PORT and the same line.  A tap opens the choice of OUTPUTS and PROG PORT
  * 1 to 4 over the left column; a port the carrier refuses shows its
- * refusal line and takes no pick.  The choice is SET_SERVO_TARGET, as
+ * refusal line and takes no pick.  Off the carrier with the binding read
+ * and no output bound as SERVO PWM, OUTPUTS reads `OUTPUTS: NO PIN, OPEN
+ * OUTPUTS`: a pick sets OUTPUTS as the target and opens OUTPUTS on the
+ * SERVO PWM protocol, whose home tag comes back to the function screen
+ * (ui_router.c's openers).  The choice is SET_SERVO_TARGET, as
  * OUTPUTS' SERVO TESTER rows set it: on the carrier through
  * prog_choice_pick().  Under the TARGET lock -- ARMED or asked to arm, a
  * sweep, a run, a programmer holding a port -- the button is grey and a
@@ -23,9 +27,12 @@
 #include <stdio.h>
 
 #include "link_pages.h"
+#include "out_bind.h"
+#include "outputs_screen.h"
 #include "prog_choice.h"
 #include "settings.h"
 #include "ui_footer.h"
+#include "ui_screen.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -126,6 +133,34 @@ void draw_footer(gfx_canvas_t *c)
     }
 }
 
+/**
+ * @brief Whether OUTPUTS as the target has nowhere to go: off the carrier,
+ *        the binding read and no output bound as SERVO PWM.
+ * @return true then
+ */
+static bool outputs_no_pin(void)
+{
+    return !prog_choice_carrier() && s.pins_known && s.pins == 0u;
+}
+
+/**
+ * @brief OUTPUTS opened on the SERVO PWM protocol, where its pins are
+ *        bound.  The router leaves this screen for it, which switches the
+ *        bench to SAFE as any way out does; the home tag there comes back
+ *        to the function screen (ui_router.c's openers).
+ */
+static void open_outputs(void)
+{
+    const outbind_proto_t *p = outbind_protos();
+    for (uint8_t i = 0; p != NULL && i < OUTBIND_PROTOS; ++i) {
+        if (p[i].driver == OUT_DRIVER_PWM && p[i].role == OUT_ROLE_SURFACE) {
+            outputs_screen_open_on(i);
+            break;
+        }
+    }
+    ui_router_goto(SCREEN_OUTPUTS);
+}
+
 void port_list_open(void)
 {
     if (prog_choice_locked()) {
@@ -140,7 +175,8 @@ void port_list_open(void)
     }
     close_panels();
     open_choice(CH_PORT, SETTING_COUNT, TR(SVH_PORT_TITLE));
-    choice_add(TR(OUT_TESTER_OUTPUTS), 0);
+    choice_add(outputs_no_pin() ? TR(SVH_PORT_NO_PIN)
+                                : TR(OUT_TESTER_OUTPUTS), 0);
     for (uint8_t port = 1u; port <= LINK_PG_PORTS_MAX; ++port) {
         char label[64];
         const bool refused = prog_choice_refusal(port, label, sizeof(label));
@@ -176,6 +212,10 @@ void port_list_pick(int value)
     } else if (settings_get_int(SET_SERVO_TARGET) != value) {
         settings_set(SET_SERVO_TARGET, (float)value);
         settings_request_save();
+    }
+    if (value == 0 && outputs_no_pin()) {
+        open_outputs();
+        return;
     }
     ++s.fp_rev;
     servo_invalidate();

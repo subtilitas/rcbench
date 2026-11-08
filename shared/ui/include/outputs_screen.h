@@ -191,14 +191,24 @@ void outputs_screen_select_port(uint8_t port);
 int outputs_screen_port_shown(void);
 
 /**
- * The next entry to this screen opens on protocol @p proto, or with
- * outputs_screen_open_on_port() on the PROG PORT entry of port @p port,
- * instead of the overview; once, then entries open on the overview again.
- * A protocol past the table or a port the list does not show opens the
- * overview.  The TARGET rows of MOTOR & ESC and SERVO call it before they
+ * @brief The next entry to this screen opens on protocol @p proto instead
+ *        of the overview; once, then entries open on the overview again.
+ *
+ * A protocol past the table opens the overview.  MOTOR & ESC's TARGET row
+ * and the `OUTPUTS: NO PIN` entry of SERVO's PORT list call it before they
  * open the screen.
+ *
+ * @param proto the entry, an index into outbind_protos()
  */
 void outputs_screen_open_on(uint8_t proto);
+/**
+ * @brief The next entry to this screen opens on the PROG PORT entry of
+ *        port @p port, as outputs_screen_open_on() does on a protocol.
+ *
+ * A port the list does not show opens the overview.
+ *
+ * @param port the port, 0 for port 1
+ */
 void outputs_screen_open_on_port(uint8_t port);
 
 /**
