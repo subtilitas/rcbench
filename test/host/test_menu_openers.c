@@ -4,8 +4,9 @@
  * LIMITS, DUT's AS5600 button to SENSORS, UPDATES' and LOGS' buttons to WI-FI
  * and the TARGET row from a programmer asking for a port, RUDDER AUTO's READY
  * rows ANGLE and METER and LIMIT RUN's METER to SENSORS on the part that
- * watches the target, PORT's `OUTPUTS: NO PIN` entry to OUTPUTS on SERVO PWM,
- * and the READY row SERVO's refusal on an ARMED bench.  Each one's way back by the home tag, its refusal while the
+ * watches the target, the ANGLE SOURCE list's AS5600 entry to SENSORS,
+ * PORT's `OUTPUTS: NO PIN` entry to OUTPUTS on SERVO PWM, and the READY row
+ * SERVO's refusal on an ARMED bench.  Each one's way back by the home tag, its refusal while the
  * target refuses, a busy target, what a later entry by a tile finds, LOGS' and
  * FILES' SETTINGS to SD CARD, and the rule that no text names a path.
  *
@@ -15,6 +16,7 @@
 #include "logview_spots.h"
 #include "nav_rig.h"
 #include "sensors_pane.h"
+#include "servo_angle_pick.h"
 #include "servo_ready_int.h"
 #include "settings_sensors.h"
 #include "supply_spots.h"
@@ -110,11 +112,24 @@ static void servo_on_rudder_list(void)
     CHECK(servo_screen_list()->open);
 }
 
-/** @brief A tap on ANGLE SOURCE, RUDDER's list's third row. */
+/** @brief A tap on the ANGLE SOURCE list's entry @p i.  @param i the entry */
+static void tap_angle_entry(int i)
+{
+    const gfx_rect_t r = angle_pick_rect(i);
+    tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
+}
+
+/** @brief A tap on ANGLE SOURCE, RUDDER's list's third row: its list opens
+ *         with the AS5600 refused, OFF in SETUP; a tap on that entry. */
 static void tap_angle_source(void)
 {
     const gfx_rect_t r = ui_setlist_row_rect(servo_screen_list(), 2);
     tap(r.x + 60, UI_BAND_H + r.y + r.h / 2);
+    CHECK(!servo_screen_list()->open);
+    bool refused = false;
+    CHECK_STR_EQ(angle_pick_label(0, &refused), TR(SV_ANG_AS5600_OFF));
+    CHECK(refused);
+    tap_angle_entry(0);
 }
 
 /** @brief UPDATES with no network saved and nothing running. */
@@ -239,9 +254,10 @@ TEST_CASE(a_later_tile_finds_no_opener)
 
 /* ---------------------------------------------- AS5600, RUDDER's list */
 
-/* ANGLE SOURCE on RUDDER's list opens SENSORS on the AS5600 entry with no
- * tiles above it; the tag comes back to RUDDER, the list closed.  SETUP's
- * tile later shows the tiles and climbs. */
+/* ANGLE SOURCE on RUDDER's list opens its list; the AS5600 OFF in SETUP
+ * opens SENSORS on the AS5600 entry with no tiles above it; the tag comes
+ * back to RUDDER, the lists closed.  SETUP's tile later shows the tiles and
+ * climbs. */
 TEST_CASE(the_angle_source_row_opens_its_entry_and_the_tag_returns_to_rudder)
 {
     start();
@@ -255,6 +271,7 @@ TEST_CASE(the_angle_source_row_opens_its_entry_and_the_tag_returns_to_rudder)
     CHECK_EQ(ui_router_current(), SCREEN_SERVO_RUDDER);
     CHECK_EQ(servo_screen_task(), (int)UI_WB_RUDDER);
     CHECK(!servo_screen_list()->open);
+    CHECK_EQ(angle_pick_count(), -1);
 
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_SERVO);
@@ -335,9 +352,9 @@ static void tap_ready_row(rauto_row_t i)
     tap(SV_RDY_X, UI_BAND_H + SV_RDY_ROW_Y((int)i));
 }
 
-/* A red ANGLE row opens SENSORS on the angle source's entry and a red METER
- * row on the INA3221's first entry; the home tag returns to RUDDER AUTO each
- * time. */
+/* A red ANGLE row opens the ANGLE SOURCE list, whose AS5600 OFF in SETUP
+ * opens SENSORS on the AS5600 entry, and a red METER row SENSORS on the
+ * INA3221's first entry; the home tag returns to RUDDER AUTO each time. */
 TEST_CASE(a_red_angle_or_meter_row_opens_its_entry_and_the_tag_returns)
 {
     start();
@@ -346,6 +363,9 @@ TEST_CASE(a_red_angle_or_meter_row_opens_its_entry_and_the_tag_returns)
     CHECK(rauto_ready_row(RAR_ANGLE, &r));
     CHECK_EQ(r.st, (uint8_t)RDY_BAD);
     tap_ready_row(RAR_ANGLE);
+    CHECK_EQ(ui_router_current(), servo_fn_screen_id(SERVO_FN_RAUTO));
+    CHECK(angle_pick_count() >= 2);
+    tap_angle_entry(0);
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
     CHECK_EQ(settings_screen_category(), (int)SET_CAT_SENSORS);
     CHECK_EQ(sensors_pane_selected(), SENS_ENTRY_AS5600);

@@ -46,6 +46,7 @@
 #include "prog5v_box.h"
 #include "prog_choice.h"
 #include "prog_registry.h"
+#include "servo_angle_pick.h"
 #include "servo_limrun.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -362,12 +363,15 @@ static void arm_row(rdy_row_t *r)
 }
 
 /**
- * @brief The ANGLE row, RUDDER's: the source, or that it reads nothing.  It refuses nothing: RUDDER drives without it.
+ * @brief The ANGLE row, RUDDER's: the source, or that it reads nothing.
+ *        It refuses nothing: RUDDER drives without it.  A tap opens the
+ *        ANGLE SOURCE list (servo_angle_pick.c), with a reading or not.
  * @param r the row
  */
 static void angle_row(rdy_row_t *r)
 {
     r->label = TR(RDY_ANGLE);
+    r->fix = true;
     float d = 0.0f;
     if (rudder_defl(&d)) {
         /* The source alone: the angle is the readout's, and a row that
@@ -378,7 +382,6 @@ static void angle_row(rdy_row_t *r)
     }
     r->st  = (uint8_t)RDY_WARN;
     r->why = TR(RA_NO_ANGLE);
-    r->fix = true;
     snprintf(r->value, sizeof(r->value), "%s", r->why);
 }
 
@@ -478,11 +481,8 @@ void drive_ready_tap(int i)
         port_list_open();
         return;
     case DRR_ANGLE:
-        if (r.fix) {
-            wb_open_encoder();
-            return;
-        }
-        break;
+        angle_pick_open();
+        return;
     case DRR_ZERO:
         if (r.fix) {
             rudder_zero();

@@ -86,6 +86,12 @@ Binding another sensor replaces the one before. A scan while a sensor is
 connected keeps the link; a scan while a connect is pending cancels it,
 and the connects go on after the scan.
 
+SERVO's ANGLE SOURCE list, from RUDDER's and RUDDER AUTO's ANGLE rows,
+lists the same sensors and binds the same way: a pick binds the sensor,
+switches IMU ON and sets ANGLE SOURCE to IMU. Its SEARCH FOR IMU switches
+IMU ON when it is off and starts the scan once Bluetooth LE runs
+([Servo procedures, Angle source](Servo.md#angle-source)).
+
 ## The link
 
 | Step | Time limit | Fails as |

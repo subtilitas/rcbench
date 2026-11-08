@@ -93,6 +93,12 @@ Eine Suche bei verbundenem Sensor behält die Verbindung; eine Suche während
 eines laufenden Verbindungsaufbaus bricht diesen ab, und die Versuche gehen
 nach der Suche weiter.
 
+Die Liste WINKELQUELLE von SERVO, von den Zeilen WINKEL auf RUDER und RUDER
+AUTO, listet dieselben Sensoren und bindet auf dieselbe Weise: eine Wahl
+bindet den Sensor, schaltet IMU EIN und setzt WINKELQUELLE auf IMU. Ihr
+IMU SUCHEN schaltet IMU EIN, falls aus, und startet die Suche, sobald
+Bluetooth LE läuft ([Servoverfahren, Winkelquelle](Servo-de.md#winkelquelle)).
+
 ## Die Verbindung
 
 | Schritt | Zeitgrenze | Scheitert als |

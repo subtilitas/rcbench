@@ -116,6 +116,34 @@ void imu_screen_set(const imu_view_t *v);
 /** @brief Take the next command. @param out Receives it.
  *  @return false when there is none. */
 bool imu_screen_take(imu_cmd_t *out);
+/** @brief The view the panel handed over last (imu_screen_set()), for
+ *         the screens that list the sensors outside this one.
+ *  @return The view; never NULL. */
+const imu_view_t *imu_screen_view(void);
+/**
+ * @brief Bind sensor @p i of the last scan, as a tap on it in the found
+ *        list does.
+ * @param i The index into the view's found list.
+ * @return Whether the BIND was queued: @p i is listed, Bluetooth runs, no
+ *         scan and no calibration runs.
+ */
+bool imu_screen_bind(uint8_t i);
+/** @brief Whether a BIND is taken now: Bluetooth runs, no scan and no
+ *         calibration runs (imu_screen_bind()).
+ *  @return Whether it is. */
+bool imu_screen_bind_free(void);
+/**
+ * @brief Search for sensors: IMU ON in SETUP when it is off (saved), and
+ *        the SCAN queued once Bluetooth LE runs and no scan or calibration
+ *        does.  A scan already under way, no sync with the C6 and a C6
+ *        that failed take none; a search owed waits through them.
+ * @return Whether a scan is queued or owed.
+ */
+bool imu_screen_search(void);
+/** @brief Whether a search waits for Bluetooth LE to start before its SCAN
+ *         is queued (imu_screen_search()).
+ *  @return Whether it waits. */
+bool imu_screen_search_owed(void);
 /** @brief The IMU screen, for the router. @return The screen. */
 const ui_screen_t *imu_screen(void);
 /** @brief Repaint on the next frame. */

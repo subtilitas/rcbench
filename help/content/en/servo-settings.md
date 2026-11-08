@@ -134,7 +134,7 @@ The active voltage and current caps constrain set points and run steps. They app
 | Setting | Where | What it does |
 |---|---|---|
 | ENC CENTER | RUDDER's list | a tap takes the live AS5600 count, 0 to 4095, as the center, with the servo at neutral; with ANGLE SOURCE IMU it takes nothing |
-| ANGLE SOURCE | RUDDER's and RUDDER AUTO's lists | read-only; a tap opens the IMU entry of [Sensors](setup-sensors.md), where it is set |
+| ANGLE SOURCE | RUDDER's and RUDDER AUTO's lists | a tap opens the [ANGLE SOURCE list](servo-rudder.md#the-angle-source): the AS5600, the IMUs found and SEARCH FOR IMU |
 | KST EXPERT MODE | SETTINGS on SERVO > KST | whether the [KST and Chaservo programmer](servo-programmer.md#kst-expert-mode) shows DEAD BAND, BOOST, STRETCH, RELEASE PAIRING and the LOCKED tab; OFF by default, ON after a 2s hold, OFF with a tap |
 
 ANGLE SOURCE selects the AS5600 or IMU for run angles. IMU angles use AS5600 counts of 0.088°. The test CSV identifies the source in its last column, `angle source`; both reports use an `Angle source:` line.

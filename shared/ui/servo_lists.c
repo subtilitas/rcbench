@@ -37,6 +37,7 @@
 
 #include "hitec_panel.h"
 #include "kst_panel.h"
+#include "servo_angle_pick.h"
 #include "settings.h"
 #include "ui_setlist.h"
 #include "ui_text.h"
@@ -209,11 +210,12 @@ static void src_value(char *out, size_t n)
     snprintf(out, n, "%s", enc_name(name, sizeof(name)));
 }
 
-/** @brief A tap on ANGLE SOURCE: SETUP > SENSORS on it. */
+/** @brief A tap on ANGLE SOURCE: the ANGLE SOURCE list, in the SETTINGS
+ *         list's place (servo_angle_pick.c). */
 static void src_tap(void)
 {
     svs_list_close();
-    wb_open_encoder();
+    angle_pick_open();
 }
 
 /** @brief SERVO PULSES' value, as LIMIT RUN's row. */

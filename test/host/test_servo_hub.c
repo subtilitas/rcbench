@@ -14,7 +14,7 @@
  * - the_hub_keeps_the_bench_safe
  * - a_programmers_home_tag_goes_back_to_the_hub
  * - hitecs_series_row_reaches_the_programmer
- * - the_angle_source_row_opens_the_sensors_setup
+ * - the_angle_source_row_opens_the_angle_source_list
  *
  * SPDX-License-Identifier: MIT
  */
@@ -22,6 +22,7 @@
 #include "nav_rig.h"
 #include "hitec_panel.h"
 #include "hitec_prog.h"
+#include "servo_angle_pick.h"
 #include "ui_footer.h"
 #include "ui_setlist.h"
 
@@ -244,9 +245,9 @@ TEST_CASE(hitecs_series_row_reaches_the_programmer)
     settings_cancel_save();
 }
 
-/* A tap on RUDDER's ANGLE SOURCE row closes the list and opens SETUP on the
- * sensor the source names: the IMU's entry while the IMU is the source. */
-TEST_CASE(the_angle_source_row_opens_the_sensors_setup)
+/* A tap on RUDDER's ANGLE SOURCE row closes the SETTINGS list and opens
+ * the ANGLE SOURCE list in its place, on RUDDER. */
+TEST_CASE(the_angle_source_row_opens_the_angle_source_list)
 {
     on_hub();
     tap_tile(4);
@@ -257,7 +258,8 @@ TEST_CASE(the_angle_source_row_opens_the_sensors_setup)
     const gfx_rect_t r = ui_setlist_row_rect(sl, 2);
     tap(r.x + 60, UI_BAND_H + r.y + r.h / 2);
     CHECK(!servo_screen_list()->open);
-    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO_RUDDER);
+    CHECK(angle_pick_count() >= 2);
 }
 
 int main(void)
@@ -270,6 +272,6 @@ int main(void)
     RUN(the_hub_keeps_the_bench_safe);
     RUN(a_programmers_home_tag_goes_back_to_the_hub);
     RUN(hitecs_series_row_reaches_the_programmer);
-    RUN(the_angle_source_row_opens_the_sensors_setup);
+    RUN(the_angle_source_row_opens_the_angle_source_list);
     return test_summary("servo_hub");
 }
