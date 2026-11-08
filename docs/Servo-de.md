@@ -105,7 +105,9 @@ SERVO-Funktionsbildschirms. Der Bildschirm steht in
 - Ein Tippen auf PORT öffnet die PORT-Auswahl; auf SERVO die Liste auf
   der Zeile SERVO, an den Ausgängen des Prüfstands nennt das Band `SERVO:
   Nur an einem PROG-PORT: wähle einen mit PORT`; auf ein rotes MESSGERÄT
-  öffnet es SETUP > SENSORS am INA3221; auf eine rote Versorgungszeile mit
+  öffnet es SETUP > SENSORS an dem INA3221, dessen Kanal das Ziel des
+  Testers überwacht, sonst am ersten bestückten, und das Home-Feld dort
+  führt zum ENDLAGENLAUF zurück; auf eine rote Versorgungszeile mit
   `TIPPEN: HV-WARNUNG` öffnet es die HV-Warnung von AUSGANG EIN. Ein Tippen
   auf eine andere rote oder graue Zeile nennt sie im Alarmband, `ZEILE:
   Grund`.
@@ -1602,7 +1604,8 @@ Bluetooth-IMU).
 - Ein Tippen auf PORT öffnet die PORT-Auswahl; auf SERVO die OPTIONEN auf
   der Zeile SERVO; auf einen roten NULLPUNKT mit Messwert setzt es den
   Nullpunkt; auf einen roten WINKEL oder ein rotes MESSGERÄT öffnet es
-  SETUP > SENSORS am AS5600, an der IMU oder am INA3221. Ein Tippen auf eine
+  SETUP > SENSORS am AS5600, an der IMU oder an dem INA3221, dessen Kanal
+  das Ziel des Testers überwacht (sonst am ersten bestückten). Ein Tippen auf eine
   andere rote oder graue Zeile nennt sie im Alarmband, `ZEILE: Grund`.
 - 2s HALTEN: ARM + START in der Mitte der Fußleiste, 328 x 48px, grün,
   solange keine Zeile rot ist. Es startet die Startfolge

@@ -97,7 +97,9 @@ screen. The screen is `shared/ui/servo_limit_panel.c`, its left card
 - A tap on PORT opens the PORT choice; on SERVO the list on its SERVO row,
   on the bench's outputs the band names `SERVO: On a PROG PORT only:
   choose one with PORT`; on a red METER it opens SETUP > SENSORS on the
-  INA3221; on a red supply row with `TAP: HV WARNING` it opens OUTPUT ON's
+  INA3221 part whose channel watches the tester's target, else on the
+  first part fitted, and the home tag there returns to LIMIT RUN; on a red
+  supply row with `TAP: HV WARNING` it opens OUTPUT ON's
   HV warning. A tap on another red or grey row names it in the alert band,
   `LABEL: reason`.
 - HOLD 2s: ARM + START in the footer's middle slot, 328 x 48px, green
@@ -1543,7 +1545,8 @@ link is not authenticated (`SECURITY.md`, the Bluetooth IMU).
 - A tap on PORT opens the PORT choice; on SERVO the SETTINGS list on its
   SERVO row; on a red ZERO with a reading it takes the zero; on a red
   ANGLE or METER it opens SETUP > SENSORS on the AS5600, the IMU or the
-  INA3221. A tap on another red or grey row names it in the alert band,
+  INA3221 part whose channel watches the tester's target (else the first
+  part fitted). A tap on another red or grey row names it in the alert band,
   `LABEL: reason`.
 - HOLD 2s: ARM + START in the footer's middle slot, 328 x 48px, green
   while no row is red. It fires the start sequence

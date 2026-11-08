@@ -144,7 +144,7 @@ Schalte den AS5600 an der Hornwelle unter [Sensoren](setup-sensors.md) ein oder 
 ![Die Taste PORT mit PROG-PORT](view:servo-target)
 ![Die Liste von PORT](view:servo-port)
 
-Die Taste PORT über der Ausgangskarte nennt die angesteuerten Ausgänge als `Protokoll Pins`; die Portzeile der Fußleiste wiederholt sie. Tippe darauf für die Liste OUTPUTS (als SERVO PWM zugeordnete Pins) und PROG-PORT 1 bis PROG-PORT 4. Eine Wahl setzt SERVO-TESTER wie der Eintrag PROG-PORT unter [Ausgänge](outputs.md#der-eintrag-prog-port) und wird gespeichert. Auf dem rbmod-Carrier nennt ein abgelehnter Port den Grund und nimmt keine Wahl an.
+Die Taste PORT über der Ausgangskarte nennt die angesteuerten Ausgänge als `Protokoll Pins`; die Portzeile der Fußleiste wiederholt sie. Tippe darauf für die Liste OUTPUTS (als SERVO PWM zugeordnete Pins) und PROG-PORT 1 bis PROG-PORT 4. Eine Wahl setzt SERVO-TESTER wie der Eintrag PROG-PORT unter [Ausgänge](outputs.md#der-eintrag-prog-port) und wird gespeichert. Auf dem rbmod-Carrier nennt ein abgelehnter Port den Grund und nimmt keine Wahl an. Ohne Carrier und ohne als SERVO PWM gebundenen Pin lautet der erste Eintrag `OUTPUTS: KEIN PIN, OUTPUTS ÖFFNEN`: eine Wahl setzt OUTPUTS und öffnet [Ausgänge](outputs.md) auf dem Protokoll SERVO PWM, um einen zu binden. Das Home-Feld dort führt zum SERVO-Bildschirm zurück.
 
 Bei ARMED oder angefordertem ARM, während Sweep, automatischem Test oder Endlagenlauf und bei belegtem Programmierport ist die Taste grau und gesperrt; ein Tippen nennt die Sperre im Alarmband. Sie bleibt neben Listen, Seiten und Servoprogrammierung sichtbar.
 

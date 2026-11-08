@@ -96,9 +96,16 @@ void draw_rows_page(gfx_canvas_t *c);
 bool opener_down(const touch_event_t *evt, gfx_rect_t r, int code);
 void wb_open_caps(void);
 void wb_open_encoder(void);
-/** @brief SETUP > SENSORS on the INA3221's entry, for RUDDER AUTO's METER
- *         row. */
+/** @brief SETUP > SENSORS on wb_meter_entry(), for the red METER row of
+ *         LIMIT RUN and RUDDER AUTO. */
 void wb_open_meter(void);
+/**
+ * @brief The SENSORS entry a METER row opens: the INA3221 part whose
+ *        channel watches the tester's target, else the first part fitted,
+ *        else 0x40.
+ * @return SENS_ENTRY_INA3221_0 plus the part, 0 to 3 for 0x40 to 0x43
+ */
+int wb_meter_entry(void);
 
 /* The task strip at its start (reset); a screen entered; leaving (a page
  * of rows closes); touch events lost. */

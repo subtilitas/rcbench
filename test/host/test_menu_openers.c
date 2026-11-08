@@ -3,8 +3,9 @@
  * @brief The menu's openers through the router: SERVO's caps button to SUPPLY's
  * LIMITS, DUT's AS5600 button to SENSORS, UPDATES' and LOGS' buttons to WI-FI
  * and the TARGET row from a programmer asking for a port, RUDDER AUTO's READY
- * rows ANGLE and METER to SENSORS, and the READY row SERVO's refusal on an
- * ARMED bench.  Each one's way back by the home tag, its refusal while the
+ * rows ANGLE and METER and LIMIT RUN's METER to SENSORS on the part that
+ * watches the target, PORT's `OUTPUTS: NO PIN` entry to OUTPUTS on SERVO PWM,
+ * and the READY row SERVO's refusal on an ARMED bench.  Each one's way back by the home tag, its refusal while the
  * target refuses, a busy target, what a later entry by a tile finds, LOGS' and
  * FILES' SETTINGS to SD CARD, and the rule that no text names a path.
  *
@@ -15,6 +16,7 @@
 #include "nav_rig.h"
 #include "sensors_pane.h"
 #include "servo_ready_int.h"
+#include "settings_sensors.h"
 #include "supply_spots.h"
 #include "ui_setlist.h"
 #include "upd_screen.h"
@@ -362,6 +364,98 @@ TEST_CASE(a_red_angle_or_meter_row_opens_its_entry_and_the_tag_returns)
     CHECK_EQ(ui_router_current(), servo_fn_screen_id(SERVO_FN_RAUTO));
 }
 
+/** @brief LIMIT RUN shown through the router, SAFE, on its READY card, one
+ *         output bound as SERVO PWM so no row waits on PORT. */
+static void servo_on_limrun(void)
+{
+    ui_router_goto(servo_fn_screen_id(SERVO_FN_LIMRUN));
+    CHECK_EQ(ui_router_current(), servo_fn_screen_id(SERVO_FN_LIMRUN));
+    servo_screen_set_pins((uint64_t)1u << 2, true);
+    CHECK(ready_shown());
+}
+
+/* LIMIT RUN's red METER row opens SENSORS on the INA3221 entry, and the
+ * home tag returns to LIMIT RUN. */
+TEST_CASE(limit_runs_red_meter_row_opens_sensors_and_the_tag_returns)
+{
+    start();
+    servo_on_limrun();
+    rdy_row_t r;
+    CHECK(lim_ready_row(LRR_METER, &r));
+    CHECK_EQ(r.st, (uint8_t)RDY_BAD);
+    CHECK(r.fix);
+    tap(SV_RDY_X, UI_BAND_H + SV_RDY_ROW_Y((int)LRR_METER));
+    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+    CHECK_EQ(settings_screen_category(), (int)SET_CAT_SENSORS);
+    CHECK_EQ(sensors_pane_selected(), SENS_ENTRY_INA3221_0);
+    CHECK_EQ(ui_router_parent(SCREEN_SETUP),
+             servo_fn_screen_id(SERVO_FN_LIMRUN));
+    tap_home();
+    CHECK_EQ(ui_router_current(), servo_fn_screen_id(SERVO_FN_LIMRUN));
+}
+
+/* The METER row opens the part whose channel watches the target: 0x41 when
+ * its CH1 watches OUT 1; with no channel watching, the first part fitted.
+ * LIMIT RUN and RUDDER AUTO alike. */
+TEST_CASE(the_meter_row_opens_the_part_that_watches_the_target)
+{
+    static const servo_fn_t k_fn[] = { SERVO_FN_LIMRUN, SERVO_FN_RAUTO };
+    for (size_t f = 0; f < sizeof(k_fn) / sizeof(k_fn[0]); ++f) {
+        for (int watch = 0; watch < 2; ++watch) {
+            start();
+            settings_set(SET_INA_FIT(0), 1.0f);
+            settings_set(SET_INA_FIT(1), 1.0f);
+            settings_set(SET_INA_W(0), (float)SENS_W_NONE);
+            settings_set(SET_INA_W(3),
+                         (float)(watch ? SENS_W_OUT_1 : SENS_W_NONE));
+            (void)settings_save();
+            if (k_fn[f] == SERVO_FN_LIMRUN) {
+                servo_on_limrun();
+            } else {
+                servo_on_auto();
+            }
+            const int row = (k_fn[f] == SERVO_FN_LIMRUN) ? (int)LRR_METER
+                                                         : (int)RAR_METER;
+            tap(SV_RDY_X, UI_BAND_H + SV_RDY_ROW_Y(row));
+            CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+            CHECK_EQ(sensors_pane_selected(), SENS_ENTRY_INA3221_0 + watch);
+            tap_home();
+            CHECK_EQ(ui_router_current(), servo_fn_screen_id(k_fn[f]));
+        }
+    }
+}
+
+/* Off the carrier with no output bound as SERVO PWM, PORT's OUTPUTS entry
+ * opens OUTPUTS on the SERVO PWM protocol from every function screen with
+ * the PORT button; the home tag returns to that screen. */
+TEST_CASE(port_outputs_with_no_pin_opens_outputs_and_the_tag_returns)
+{
+    static const servo_fn_t k_fn[] = {
+        SERVO_FN_LIVE,   SERVO_FN_SWEEP,  SERVO_FN_TEST,
+        SERVO_FN_LIMRUN, SERVO_FN_RUDDER, SERVO_FN_RAUTO,
+    };
+    const outbind_proto_t *p = outbind_protos();
+    uint8_t pwm = 0u;
+    while (pwm < OUTBIND_PROTOS && strcmp(p[pwm].name, "SERVO PWM") != 0) {
+        ++pwm;
+    }
+    CHECK(pwm < OUTBIND_PROTOS);
+    for (size_t f = 0; f < sizeof(k_fn) / sizeof(k_fn[0]); ++f) {
+        start();
+        servo_on(k_fn[f]);
+        servo_screen_set_pins(0u, true);
+        tap(SV_PORT_X, UI_BAND_H + SV_PORT_Y);
+        CHECK_STR_EQ(servo_screen_port_choice(0, NULL), TR(SVH_PORT_NO_PIN));
+        const gfx_rect_t c = servo_screen_port_choice_rect(0);
+        tap(c.x + c.w / 2, UI_BAND_H + c.y + c.h / 2);
+        CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
+        CHECK_EQ(picker_screen_binding()->proto, pwm);
+        CHECK_EQ(ui_router_parent(SCREEN_OUTPUTS), servo_fn_screen_id(k_fn[f]));
+        tap_home();
+        CHECK_EQ(ui_router_current(), servo_fn_screen_id(k_fn[f]));
+    }
+}
+
 /* ARMED: the SERVO row opens no list and names why in the band as a notice;
  * on a SAFE bench it opens the list. */
 TEST_CASE(the_servo_row_refuses_while_armed_and_names_why)
@@ -703,6 +797,9 @@ int main(void)
     RUN(an_unsaved_edit_asks_before_the_tag_returns_to_rudder);
     RUN(rudders_list_refuses_while_armed);
     RUN(a_red_angle_or_meter_row_opens_its_entry_and_the_tag_returns);
+    RUN(limit_runs_red_meter_row_opens_sensors_and_the_tag_returns);
+    RUN(the_meter_row_opens_the_part_that_watches_the_target);
+    RUN(port_outputs_with_no_pin_opens_outputs_and_the_tag_returns);
     RUN(the_servo_row_refuses_while_armed_and_names_why);
     RUN(the_network_button_opens_wifi_and_the_tag_returns_to_updates);
     RUN(wifi_levels_and_a_staged_image_climb_before_the_tag_returns);

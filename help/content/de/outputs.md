@@ -8,7 +8,7 @@ order: 62
 
 OUTPUTS ordnet IOmcu-Pins Ausgangsprotokollen zu. Damit legst du fest, welche Pins Servos oder ESCs (Electronic Speed Controller) ansteuern und welches Signal sie verwenden. Von [SETUP](setup.md) aus öffnet sich die [Übersicht](#die-übersicht-aus) mit AUS. Jeder zugeordnete Pin trägt seinen Protokollnamen.
 
-Über ZIEL auf [MOTOR & ESC](motor.md#ziel) öffnet sich das Gasprotokoll, bei gemischten oder unbekannten Protokollen die Übersicht. Die [Taste PORT](servo-settings.md#die-taste-port) auf SERVO wählt den Port des Testers in einer eigenen Liste und öffnet diese Seite nicht. Das Home-Feld führt zur aufrufenden Seite zurück. Eine offene Protokollliste schließt es zuerst ohne Auswahl.
+Über ZIEL auf [MOTOR & ESC](motor.md#ziel) öffnet sich das Gasprotokoll, bei gemischten oder unbekannten Protokollen die Übersicht. Die [Taste PORT](servo-settings.md#die-taste-port) auf SERVO wählt den Port des Testers in einer eigenen Liste; ohne als SERVO PWM gebundenen Pin öffnet deren `OUTPUTS: KEIN PIN, OUTPUTS ÖFFNEN` hier das Protokoll SERVO PWM. Das Home-Feld führt zur aufrufenden Seite zurück. Eine offene Protokollliste schließt es zuerst ohne Auswahl.
 
 Für Platinen mit Zeichnung oder Formbeschreibung erscheinen [Pin-Tasten](#die-platine-und-ihre-tasten). Die Liste nennt den GPIO (General-Purpose Input/Output), die Zeichnung zeigt den Anschlussort. Ohne beide Beschreibungen und auf dem rbmod-Carrier erscheint ein [Pin-Raster](#die-rasteransicht).
 

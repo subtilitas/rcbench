@@ -32,6 +32,7 @@
 #include "sensors_pane.h"
 #include "settings.h"
 #include "settings_screen.h"
+#include "settings_sensors.h"
 #include "supply_screen.h"
 #include "ui_target_row.h"
 #include "ui_text.h"
@@ -248,11 +249,26 @@ void wb_open_encoder(void)
     settings_screen_open_on(SET_CAT_SENSORS, e);
 }
 
-/** @brief SETUP > SENSORS on the INA3221's first entry. */
+int wb_meter_entry(void)
+{
+    /* The part of the channel watching the target, else the first part
+     * fitted: settings_sensors_map()'s mirror part. */
+    settings_sensors_map_t m;
+    settings_sensors_map(&m);
+    const int part = (m.mirror < SET_INA_PARTS) ? (int)m.mirror : 0;
+    return SENS_ENTRY_INA3221_0 + part;
+}
+
+/**
+ * @brief The red METER row tapped: SETUP > SENSORS on the INA3221 entry
+ *        wb_meter_entry() names.  The router leaves this screen for it,
+ *        and the home tag there comes back here.
+ */
 void wb_open_meter(void)
 {
+    const int e = wb_meter_entry();
     ui_router_goto(SCREEN_SETUP);
-    settings_screen_open_on(SET_CAT_SENSORS, SENS_ENTRY_INA3221_0);
+    settings_screen_open_on(SET_CAT_SENSORS, e);
 }
 
 /**

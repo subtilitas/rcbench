@@ -2638,7 +2638,14 @@ SERVO-TESTER, die im NVS (nichtflüchtiger Speicher) gespeicherte
 Einstellung ZIEL, wie es die Zeilen SERVO-TESTER von OUTPUTS tun, und
 fordert das Speichern an. Auf dem rbmod-Carrier nennen die Einträge den
 GPIO jedes Ports, und ein vom Carrier abgelehnter Port zeigt seine
-Ablehnung und nimmt keine Wahl an. Die Taste folgt dem wirklich
+Ablehnung und nimmt keine Wahl an. Ohne Carrier, mit gelesener Bindung
+und keinem als SERVO PWM gebundenen Ausgang, lautet der erste Eintrag
+`OUTPUTS: KEIN PIN, OUTPUTS ÖFFNEN`: eine Wahl setzt OUTPUTS als Ziel und
+öffnet OUTPUTS auf dem Protokoll SERVO PWM, wo dessen Pins gebunden
+werden. Das Verlassen schaltet den Prüfstand auf SAFE wie jeder andere
+Weg hinaus. Das Home-Feld dort führt zu dem SERVO-Bildschirm zurück, auf
+dem die Liste geöffnet wurde: LIVE, SWEEP, TEST, ENDLAGENLAUF, RUDER oder
+RUDER AUTO. Die Taste folgt dem wirklich
 angesteuerten Ziel, auch bei ausstehendem Schreibvorgang oder einem
 angeforderten Port ohne Pin.
 

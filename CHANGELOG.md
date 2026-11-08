@@ -23,6 +23,21 @@ history is in git.
   the ESC backup files, and the settings key `enc_centre` keeps its name, so
   saved files and settings keep loading.
 
+### Fixed
+
+- SERVO's PORT list on a board without the carrier, with the binding read
+  and no output bound as SERVO PWM, offers a way to bind one: its first
+  entry reads `OUTPUTS: NO PIN, OPEN OUTPUTS` and a pick opens OUTPUTS on
+  the SERVO PWM protocol. The home tag there returns to the SERVO screen
+  the list was opened on (LIVE, SWEEP, TEST, LIMIT RUN, RUDDER or RUDDER
+  AUTO).
+- A tap on LIMIT RUN's red METER row opens SETUP > SENSORS, and the home
+  tag there returns to LIMIT RUN instead of the SERVO hub.
+- The red METER row on LIMIT RUN and RUDDER AUTO opens SETUP > SENSORS on
+  the INA3221 part whose channel watches the tester's target, such as
+  0x41, instead of 0x40 every time; with no channel watching, on the first
+  part fitted.
+
 ## 0.23.10 - 2026-11-08
 
 0.23.10 is a testing release. It removes the stall before `app_main()` in
