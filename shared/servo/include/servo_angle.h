@@ -27,7 +27,8 @@ typedef enum { SERVO_ANGLE_AS5600 = 0, SERVO_ANGLE_IMU = 1 } servo_angle_src_t;
 typedef struct {
     bool     valid;      /**< a reading within IMU_STALE_MS */
     float    deg;        /**< from the zero, signed, -180 to 180 */
-    uint16_t still_ms;   /**< the IMU's still time at the reading, ms */
+    uint16_t still_ms;   /**< the IMU's still time at the reading of the
+                              axis deg comes from (imu_still_ms()), ms */
     uint32_t taken_ms;   /**< when the panel had it; for one not valid,
                               when it was found so */
     bool     gap;        /**< readings before this one were lost */

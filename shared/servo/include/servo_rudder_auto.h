@@ -11,8 +11,9 @@
  * (KST: PULSE LOWER and PULSE UPPER, as SERVO PULSES; Hitec: nothing, the
  * D series takes 1000us as 76.9% of the way to 0xB2, hitec_live.h); then
  * per side, at most SERVO_RAUTO_WRITES_MAX times: move to the end pulse,
- * wait for still (SERVO_RAUTO_STILL_MS within IMU_STILL_DEG, at most
- * SERVO_RAUTO_MOVE_MS plus the angle source's settle), measure, done when |measured - goal| <= tol, else
+ * wait for still (SERVO_RAUTO_STILL_MS within IMU_STILL_DEG on the axis
+ * read, at most SERVO_RAUTO_MOVE_MS plus the angle source's settle),
+ * measure, done when |measured - goal| <= tol, else
  * value = value x goal / measured within lo..hi (a linear servo between
  * neutral and the end), write in a session, move again.  Which register
  * moves which side is found on the first write as the limit run finds it
@@ -183,7 +184,8 @@ typedef struct {
           safe;               /**< the bench is SAFE, no ARM on its way */
     bool  angle_valid;        /**< the angle source has an angle */
     float angle_deg;          /**< deflection from the zero */
-    uint16_t still_ms;        /**< the angle still this long, ms */
+    uint16_t still_ms;        /**< the angle still this long, ms; from the
+                                   IMU, the still time of the axis read */
     uint32_t settle_ms;       /**< the angle source's filter may take this
                                    much longer to settle, ms; 0 none */
 } servo_rauto_in_t;

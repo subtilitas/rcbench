@@ -337,3 +337,16 @@ imu_hand_t imu_handout_next(imu_handout_t *h, const imu_reading_t *r,
     }
     return IMU_HAND_READING;
 }
+
+bool imu_handout_angle(const imu_reading_t *r, imu_axis_t axis, bool neg,
+                       servo_angle_in_t *out)
+{
+    if (r == NULL || out == NULL || !r->valid) {
+        return false;
+    }
+    out->valid    = true;
+    out->deg      = imu_deg(r, axis, neg);
+    out->still_ms = imu_still_ms(r, axis);
+    out->taken_ms = r->taken_ms;
+    return true;
+}

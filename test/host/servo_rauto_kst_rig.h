@@ -265,7 +265,7 @@ static inline void ra_imu(void)
     ra.imu_taken = r.taken_ms;
     const servo_angle_in_t in = {
         .valid = ok, .deg = imu_deg(&r, IMU_AXIS_X, false),
-        .still_ms = ok ? r.still_ms : 0u,
+        .still_ms = imu_still_ms(&r, IMU_AXIS_X),
         .taken_ms = ok ? r.taken_ms : g_rig.ms,
     };
     servo_test_enc_t e;
