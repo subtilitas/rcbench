@@ -186,7 +186,7 @@ Spannungsabfall im Kabel), warnt das Panel und lehnt ab:
 | Die zweite Zeile des Felds PROG 5V, rot | `EINGANG 5.1V: BENÖTIGT 15V` |
 | PROG 5V EIN | Nimmt kein Halten an; das Warnband nennt den Eingang. Ein Eingang, der während der 2s Halten niedrig wird, beendet es ebenso, und der Steuer-Task lehnt ein ON ab, das ihn bei niedrigem Eingang erreicht, und schreibt nichts. |
 | Die Zeile PROG 5V der Karte BEREIT auf KST, HITEC, ENDLAGENLAUF und RUDER AUTO, rot | `EINGANG 5.1V < 15V`; ein Tippen nennt den Eingang im Warnband. |
-| VERBINDEN auf KST und HITEC | Abgelehnt mit dem Eingang; die Sitzung bleibt in PWM, die 5V aus. |
+| VERBINDEN auf KST und HITEC | Nimmt kein Halten an; das Warnband nennt den Eingang. Ein Eingang, der während der 2s Halten niedrig wird, beendet es ebenso. Die Sitzung bleibt in PWM, die 5V aus. |
 | ARM + START auf ENDLAGENLAUF und RUDER AUTO | Abgelehnt mit `PROG 5V: EINGANG 5.1V: BENÖTIGT 15V. VERSORGUNGSSPANNUNG PRÜFEN`; kein Ausgang wird geschaltet. |
 | Die Schritte von ARM und ARM + START, die PROG 5V schalten, auf jeder SERVO-Ansicht | Ein Eingang, der nach dem Halten niedrig wird, bis zum und im Rücklesen, beendet sie sofort: alle Ausgänge aus, die Fehlerzeile nennt den Eingang. |
 | Das VERBINDEN eines Endlagenlaufs oder von RUDER AUTO nach START | Abgelehnt, solange der Eingang niedrig ist; der Lauf endet. |

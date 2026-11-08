@@ -557,7 +557,7 @@ TEST_CASE(a_session_holding_the_port_is_named_before_port_pwm)
     servo_screen_set_armed(false);
     ra_ms(40u);
     program_open();
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     settle();
     CHECK(kst_panel_holds_port());
     CHECK(prog_reg_servo_holds());

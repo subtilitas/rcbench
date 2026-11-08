@@ -301,7 +301,7 @@ TEST_CASE(the_working_line_counts_the_frames)
         fresh();
         ui_text_set_language((ui_lang_t)lang);
         link_up();
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         for (int i = 0; i < 4000 && kst_panel_holds_port()
                         && kst_prog_state(M) != KST_PROG_PROGRAMMING; ++i) {
             char want[KST_PANEL_LINE];
@@ -332,7 +332,7 @@ TEST_CASE(port_is_abort_while_an_operation_runs)
 {
     fresh();
     link_up();
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     rig_frames(40);
     show();
     CHECK(kst_prog_state(M) == KST_PROG_ENTERING
@@ -345,7 +345,7 @@ TEST_CASE(port_is_abort_while_an_operation_runs)
     CHECK_EQ(kst_panel_editor(), 0);
     /* READ ALL takes no tap; PORT aborts. */
     tap(val(PG_SERVO, 1, 0));
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     settle();
     CHECK(g_rig.aborts >= 1u);
     CHECK(msg() != KST_PROG_MSG_NONE);
@@ -417,7 +417,7 @@ TEST_CASE(a_link_lost_in_a_write_leaves_a_servo_nobody_should_use)
     rig_frames(5);
     CHECK_EQ(g_rig.fc.lists, 0);
     /* LEAVE says what leaving costs. */
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK(warns(TR(KP_LEAVE_DOUBT_1)));
     tap(kst_panel_cancel_rect());
@@ -488,13 +488,13 @@ TEST_CASE(a_restore_from_the_record_that_is_cancelled_leaves_no_value_pending)
     fresh();
     cut_write();
     come_back();
-    tap(val(PG_SERVO, 0, 0));                       /* LEAVE */
+    press_port();                       /* LEAVE */
     CHECK_EQ(kst_panel_editor(), 3);
     hold(2.1f);
     settle();
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
     CHECK(M->journal);
-    tap(val(PG_SERVO, 0, 0));                       /* CONNECT */
+    press_port();                       /* CONNECT */
     settle();
     CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
     enable();
@@ -570,7 +570,7 @@ TEST_CASE(a_servo_that_fails_the_fingerprint_is_shown_and_never_written)
     fresh();
     g_rig.sim.reg[0x06] = 0x05u;
     link_up();
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     settle();
     CHECK(kst_prog_have_servo(M));
     CHECK(!kst_prog_editable(M));
@@ -609,7 +609,7 @@ TEST_CASE(leave_with_changes_names_them_and_gives_the_port_back)
     fresh();
     connected();
     edits();
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK(warns(TR(KP_LEAVE_CHANGES)));
     CHECK(warns(TR(KP_LEAVE_1)));

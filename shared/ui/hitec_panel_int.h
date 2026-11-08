@@ -108,7 +108,7 @@ extern const hpn_row_t hpn_rows[HP_ROW_COUNT];
 /** @brief What a press is on. */
 enum {
     P_NONE = 0, P_TAB, P_ROW, P_KEYPAD, P_CHOICE, P_CHOICE_CANCEL,
-    P_APPLY, P_CANCEL, P_TEXTKEY, P_PORT, P_PLUS, P_MINUS
+    P_APPLY, P_CANCEL, P_TEXTKEY, P_PORT, P_PLUS, P_MINUS, P_CONNECT
 };
 
 /** @brief A position's -/+ keys while MOVE SERVO is on, KST's 56px. */
@@ -199,6 +199,8 @@ typedef struct {
     uint32_t sig;               /**< signature of the last draw           */
     uint32_t rev;               /**< counts the picture's changes         */
     uint32_t hold_rev;          /**< counts a hold's steps                */
+    ui_hold_t conn;             /**< CONNECT's 2s hold: it switches the
+                                     port's supply on                    */
 } hpn_state_t;
 
 /** @brief The state, in hitec_panel.c; the files read it as hp. */

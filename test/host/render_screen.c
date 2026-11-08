@@ -756,6 +756,24 @@ static void khold(void)
     flash_out();
 }
 
+/* CONNECT, a 2s hold: held 2.1s, and its flash. */
+static void kconnect(void)
+{
+    const gfx_rect_t r = kst_panel_value_rect(0, 0, 0);
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = (int16_t)(r.x + r.w / 2),
+                                   .y = (int16_t)(UI_BAND_H + r.y + r.h / 2),
+                                   .strength = 40 } };
+
+    ui_router_event(&e);
+    for (int i = 0; i < 105; ++i) {
+        ui_router_tick(0.02f);
+    }
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+    flash_out();
+}
+
 static void ksettle(void)
 {
     (void)rig_settle();
@@ -1099,12 +1117,13 @@ static void kst_view(const char *view)
         }
         return;
     }
-    ktap(kst_panel_value_rect(0, 0, 0));            /* CONNECT */
     if (strcmp(v, "-rbmod-input") == 0) {
-        /* Refused: the carrier's input supply reads low. */
+        /* Refused at the press: the carrier's input supply reads low. */
+        ktap(kst_panel_value_rect(0, 0, 0));
         ui_router_tick(0.02f);
         return;
     }
+    kconnect();
     if (strcmp(v, "-nopin") == 0) {
         ksettle();
         return;

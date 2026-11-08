@@ -10,6 +10,7 @@
  * - a_value_beyond_a_hard_limit_cannot_be_entered
  * - a_value_past_a_soft_limit_waits_for_a_2_s_hold
  * - the_hold_button_fills_through_its_own_revision
+ * - connects_hold_fills_through_its_own_revision
  * - stretch_is_chosen_from_the_values_the_core_takes
  * - a_switch_is_toggled_by_its_tap_and_warns_where_the_core_does
  * - a_switch_the_core_refuses_says_which_limit
@@ -199,6 +200,28 @@ TEST_CASE(the_hold_button_fills_through_its_own_revision)
     CHECK_EQ(kst_panel_revision(), rev);
     ev(cx(apply), cy(apply), TOUCH_EVENT_UP, 1);
     CHECK(!kst_prog_write_enabled(M));
+}
+
+/* CONNECT's hold fills its button alone: hold_revision moves, the
+ * overlay's revision does not, and hold_rect names CONNECT. */
+TEST_CASE(connects_hold_fills_through_its_own_revision)
+{
+    const gfx_rect_t c = (fresh(), val(PG_SERVO, 0, 0));
+    uint32_t rev, hold_rev;
+
+    link_up();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    hold_rev = kst_panel_hold_revision();
+    ev(cx(c), cy(c), TOUCH_EVENT_DOWN, 1);
+    rev = kst_panel_revision();
+    tick(0.1f);
+    tick(0.1f);
+    CHECK(kst_panel_hold_revision() != hold_rev);
+    CHECK_EQ(kst_panel_revision(), rev);
+    const gfx_rect_t h = kst_panel_pages.hold_rect();
+    CHECK(h.x == c.x && h.y == c.y && h.w == c.w && h.h == c.h);
+    ev(cx(c), cy(c), TOUCH_EVENT_UP, 1);
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
 }
 
 TEST_CASE(stretch_is_chosen_from_the_values_the_core_takes)
@@ -392,6 +415,7 @@ int main(void)
     RUN(a_value_beyond_a_hard_limit_cannot_be_entered);
     RUN(a_value_past_a_soft_limit_waits_for_a_2_s_hold);
     RUN(the_hold_button_fills_through_its_own_revision);
+    RUN(connects_hold_fills_through_its_own_revision);
     RUN(stretch_is_chosen_from_the_values_the_core_takes);
     RUN(a_switch_is_toggled_by_its_tap_and_warns_where_the_core_does);
     RUN(a_switch_the_core_refuses_says_which_limit);

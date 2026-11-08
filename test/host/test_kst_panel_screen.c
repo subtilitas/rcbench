@@ -75,14 +75,14 @@ TEST_CASE(commanded_shows_no_pulse_while_the_programmer_holds_the_port)
     CHECK(strstr(servo_screen_commanded_text(), "us") != NULL);
     program_open();
     CHECK(kst_panel_is_open());
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     CHECK(kst_panel_holds_port());
     CHECK_STR_EQ(servo_screen_commanded_text(), "---");
     settle();
     CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
     scr->render(&cv, 0);
     CHECK_STR_EQ(servo_screen_commanded_text(), "---");
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     CHECK_EQ(kst_panel_editor(), 3);
     hold(2.1f);
     settle();
@@ -136,7 +136,7 @@ TEST_CASE(the_home_tag_in_a_held_session_asks_for_leave_then_climbs)
     CHECK_EQ(kst_panel_editor(), 0);
     CHECK(kst_panel_is_open());
     /* CONNECT: while the port goes into programming the tag waits. */
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     CHECK(kst_panel_holds_port());
     CHECK(kst_prog_state(M) != KST_PROG_PROGRAMMING);
     CHECK(scr->back());
@@ -289,7 +289,7 @@ TEST_CASE(no_setting_that_reaches_the_port_changes_while_it_is_held)
         CHECK(!settings_held(SET_BRIGHTNESS));
 
         /* CONNECT: held from the press, before a frame has gone out. */
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         CHECK_EQ(kst_prog_state(M), KST_PROG_ENTERING);
         CHECK(settings_held(SET_SERVO_TARGET));
         CHECK(settings_held(SET_SERVO_PORT_PWM));
@@ -314,7 +314,7 @@ TEST_CASE(no_setting_that_reaches_the_port_changes_while_it_is_held)
         CHECK_EQ(g_free_frames, 0u);
 
         /* DISCONNECT, stopped on its way: the port stays out of PWM. */
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         hold(2.1f);
         CHECK_EQ(kst_prog_state(M), KST_PROG_LEAVING);
         rig_stop(true);
@@ -325,7 +325,7 @@ TEST_CASE(no_setting_that_reaches_the_port_changes_while_it_is_held)
         CHECK(held_frames(600u));
 
         /* And carried out: free once the port is back in PWM. */
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         hold(2.1f);
         const unsigned held = g_held_frames;
         CHECK(held_frames(12000u));
@@ -365,7 +365,7 @@ TEST_CASE(the_programmer_stays_on_the_screen_while_the_port_is_held)
     fresh_screen();
     link_up();
     program_open();
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     settle();
     CHECK(kst_panel_holds_port());
     /* CLOSE asks for the way back and closes nothing. */
@@ -388,7 +388,7 @@ TEST_CASE(the_programmer_stays_on_the_screen_while_the_port_is_held)
     scr->render(&cv, 0);
     scr->render(&cv, 1);
     /* Leaving programming gives the tester its screen back. */
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     CHECK_EQ(kst_panel_editor(), 3);
     hold(2.1f);
     settle();
@@ -419,7 +419,7 @@ static void connect_powered(void)
     g_rig.rail = true;
     link_up();
     program_open();
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     settle();
     CHECK(kst_panel_holds_port());
     supply_screen_set_output(true);
@@ -478,7 +478,7 @@ TEST_CASE(leaving_servo_switches_its_supply_off_once_the_port_lets_go)
     scr->enter();
     scr->tick(0.02f);
     CHECK(!supply_screen_off_owed());
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     hold(2.1f);
     settle();
     CHECK(!kst_panel_holds_port());
@@ -524,7 +524,7 @@ TEST_CASE(the_supplys_controls_are_held_for_as_long_as_the_port)
     const float v0 = supply_screen_set_v();
     const float i0 = supply_screen_set_i();
     /* CONNECT: held from the tap, before the port has answered. */
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     CHECK_EQ(kst_prog_state(M), KST_PROG_ENTERING);
     CHECK(supply_screen_port_held());
     settle();
@@ -549,7 +549,7 @@ TEST_CASE(the_supplys_controls_are_held_for_as_long_as_the_port)
     tap(val(PG_SERVO, 1, 0));
     CHECK(supply_screen_port_held());
     settle();
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     hold(2.1f);
     CHECK_EQ(kst_prog_state(M), KST_PROG_LEAVING);
     CHECK(supply_screen_port_held());
@@ -567,7 +567,7 @@ TEST_CASE(the_supplys_controls_are_held_for_as_long_as_the_port)
     link_up();
     program_open();
     servo_screen_set_armed(true);
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_NEED_DISARM);
     CHECK(!supply_screen_port_held());
@@ -591,7 +591,7 @@ TEST_CASE(connect_is_refused_over_the_supplys_limits)
             link_up();
             program_open();
             const unsigned starts = g_rig.starts;
-            tap(val(PG_SERVO, 0, 0));
+            press_port();
             settle();
             CHECK_EQ(msg(), KST_PROG_MSG_SUPPLY_CAPS);
             CHECK_STR_EQ(said(), TR(KP_M_SUPPLY_CAPS));
@@ -604,7 +604,7 @@ TEST_CASE(connect_is_refused_over_the_supplys_limits)
             settings_set(SET_SUPPLY_V_MAX, which == 0 ? 5.0f : 21.0f);
             settings_set(SET_SUPPLY_I_MAX, which == 0 ? 5.0f : 1.0f);
             supply_screen_settings_loaded();
-            tap(val(PG_SERVO, 0, 0));
+            press_port();
             settle();
             CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
             CHECK_EQ(g_rig.sup_mv, KST_PROG_SUPPLY_MV);
@@ -630,7 +630,7 @@ TEST_CASE(the_carriers_fixed_5v_is_not_held_to_the_supplys_limits)
         ui_board_set((uint16_t)OUTBIND_BOARD_RBMOD);
         program_open();
         const unsigned starts = g_rig.starts;
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         settle();
         CHECK(msg() != KST_PROG_MSG_SUPPLY_CAPS);
         CHECK(g_rig.starts > starts);
@@ -647,7 +647,7 @@ TEST_CASE(a_panel_that_starts_under_a_session_reads_its_options_at_the_entry)
         fresh_screen();
         link_up();
         program_open();
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         settle();
         CHECK(kst_panel_holds_port());
         /* The panel starts again: its screens are set up before the
@@ -690,7 +690,7 @@ TEST_CASE(an_armed_bench_is_not_connected_and_kst_offers_no_arm)
         program_open();
         /* Armed: CONNECT is refused by name and nothing is sent. */
         servo_screen_set_armed(true);
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         settle();
         CHECK_EQ(msg(), KST_PROG_MSG_NEED_DISARM);
         CHECK_STR_EQ(said(), TR(KP_M_NEED_DISARM));
@@ -707,7 +707,7 @@ TEST_CASE(an_armed_bench_is_not_connected_and_kst_offers_no_arm)
         }
         CHECK(!armed);
         /* Disarmed: the port is taken; the same finger asks none either. */
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         settle();
         CHECK(g_rig.starts > 0);
         CHECK(kst_panel_holds_port());
@@ -801,7 +801,7 @@ TEST_CASE(a_port_found_held_ends_a_hold_of_arm)
     fresh_screen();
     link_up();
     program_open();
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     settle();
     CHECK(kst_panel_holds_port());
     /* The panel starts again on LIVE and a finger is on ARM before the
@@ -862,7 +862,7 @@ TEST_CASE(a_tap_asks_for_a_look_once)
     kst_panel_open();
     CHECK(kst_panel_card_look());
     CHECK(!kst_panel_card_look());
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     settle();
     CHECK(kst_panel_holds_port());
     CHECK(kst_panel_card_look());
@@ -887,7 +887,7 @@ TEST_CASE(a_lost_touch_stream_on_the_screen_drops_the_programmers_hold)
 
     link_up();
     program_open();
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     settle();
     tap(val(PG_SERVO, 3, 0));
     CHECK_EQ(kst_panel_editor(), 3);

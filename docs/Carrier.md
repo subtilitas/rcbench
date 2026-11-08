@@ -179,7 +179,7 @@ refuses:
 | The PROG 5V box's second line, in red | `INPUT 5.1V: NEEDS 15V` |
 | PROG 5V ON | Takes no hold; the alert band names the input. An input that goes low during the 2s hold ends it the same way, and the control task refuses an ON that reaches it while the input is low, writing nothing. |
 | The PROG 5V row of the READY card on KST, HITEC, LIMIT RUN and RUDDER AUTO, in red | `INPUT 5.1V < 15V`; a tap names the input in the alert band. |
-| CONNECT on KST and HITEC | Refused with the input named; the session stays in PWM, the 5V off. |
+| CONNECT on KST and HITEC | Takes no hold; the alert band names the input. An input that goes low during the 2s hold ends it the same way. The session stays in PWM, the 5V off. |
 | ARM + START on LIMIT RUN and RUDDER AUTO | Refused with `PROG 5V: INPUT 5.1V: NEEDS 15V. CHECK THE SUPPLY VOLTAGE`; no output is switched. |
 | The steps of ARM and ARM + START that switch PROG 5V, on every SERVO screen | An input that goes low after the hold, up to and during the read-back, ends them at once: every output off, the failure line naming the input. |
 | A limit run's or RUDDER AUTO's CONNECT, after START | Refused while the input is low; the run ends. |

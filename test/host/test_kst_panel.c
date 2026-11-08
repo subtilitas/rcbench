@@ -62,7 +62,7 @@ TEST_CASE(a_coprocessor_without_the_page_leaves_the_programmer_unavailable)
     CHECK(rig_link_up((uint16_t)(LINK_MINOR_KST - 1u)));
     show();
     CHECK_EQ(kst_prog_state(M), KST_PROG_NO_PAGE);
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     rig_frames(50);
     CHECK_EQ(g_rig.starts, 0);
     CHECK(!kst_panel_holds_port());
@@ -106,7 +106,7 @@ TEST_CASE(programming_is_locked_until_the_port_is_the_testers_target)
         /* Another port as the target is not this one. */
         g_rig.target = 2u + RIG_PORT;
         settle();
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         settle();
         CHECK_EQ(g_rig.starts, 1);
         CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_PORT);
@@ -120,7 +120,7 @@ TEST_CASE(programming_is_locked_until_the_port_is_the_testers_target)
         /* No PD mini: the servo powers up into the entry by the
          * operator's hand. */
         CHECK_STR_EQ(status(1), TR(KP_NOPD_ENTRY));
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         settle();
         CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
         /* The target moves while the port is held: nothing is locked. */
@@ -131,7 +131,7 @@ TEST_CASE(programming_is_locked_until_the_port_is_the_testers_target)
         tap(val(PG_SERVO, 1, 0));
         settle();
         CHECK_EQ(msg(), KST_PROG_MSG_READ);
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         CHECK_EQ(kst_panel_editor(), 3);
         hold(2.1f);
         settle();
@@ -147,7 +147,7 @@ TEST_CASE(a_port_without_a_pin_is_refused_by_name)
         ui_text_set_language((ui_lang_t)lang);
         g_rig.no_pin = true;
         link_up();
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         settle();
         CHECK_EQ(g_rig.starts, 1);
         CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_NO_PIN);
@@ -166,7 +166,7 @@ TEST_CASE(a_port_without_a_servo_says_so_and_gives_the_port_back)
     g_rig.sim.powered = false;
     link_up();
     CHECK_EQ(kst_link_faults(&g_rig.link), 0u);
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_SES + KST_SES_ERR_NO_SERVO);
     CHECK_STR_EQ(said(), TR(KP_S_NO_SERVO));
@@ -178,7 +178,7 @@ TEST_CASE(a_port_without_a_servo_says_so_and_gives_the_port_back)
         /* Nothing to edit, nothing to write; LEAVE is the way out. */
         tap(val(PG_SERVO, 3, 0));
         CHECK_EQ(kst_panel_editor(), 0);
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         CHECK_EQ(kst_panel_editor(), 3);
         hold(2.1f);
         settle();
@@ -285,7 +285,7 @@ TEST_CASE(the_programming_voltage_is_typed_inside_1_to_6_v)
         CHECK_EQ(g_rig.sup_sets, 0);
         /* CONNECT sets it, and the line shows what the supply reads. */
         g_rig.load_ma = 37u;
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         settle();
         CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
         CHECK(g_rig.sup_on);
@@ -340,7 +340,7 @@ TEST_CASE(a_programming_voltage_above_6_v_needs_hv_servo_and_a_hold)
     hold(2.1f);
     CHECK_EQ(kst_panel_editor(), 0);
     CHECK_EQ(kst_prog_supply_mv(M), KST_PORT_SUPPLY_MAX_MV);
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     settle();
     CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
     CHECK_EQ(g_rig.sup_mv, KST_PORT_SUPPLY_MAX_MV);
@@ -414,7 +414,7 @@ TEST_CASE(a_stored_programming_voltage_above_6_v_is_loaded_as_6_v)
                 /* CONNECT asks the supply for it. */
                 kst_panel_open();
                 link_up();
-                tap(val(PG_SERVO, 0, 0));
+                press_port();
                 settle();
                 CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
                 CHECK_EQ(g_rig.sup_mv, v[i].want_mv);
@@ -460,7 +460,7 @@ TEST_CASE(a_confirmed_voltage_above_6_v_is_not_kept)
     type_text("7.4");
     hold(2.1f);
     CHECK_EQ(kst_prog_supply_mv(M), 7400u);
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     settle();
     CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
     CHECK_EQ(g_rig.sup_mv, 7400u);

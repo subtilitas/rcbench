@@ -26,7 +26,7 @@
 static void read_untyped(void)
 {
     link_up();
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     settle();
     CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
     CHECK(kst_prog_have_servo(M));
@@ -255,7 +255,7 @@ TEST_CASE(with_the_pd_mini_on_connect_says_it_cycles_and_leave_cycles_after_a_wr
     CHECK(message_has(TR(KP_M_ACT_AT_LEAVE)));
     CHECK(!message_has(TR(KP_M_LEFT_NOTE)));
     /* LEAVE's page names the cycle. */
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK(warns(TR(KP_LEAVE_CYCLE)));
     CHECK(!warns(TR(KP_LEAVE_1)));
@@ -283,7 +283,7 @@ TEST_CASE(abort_in_the_leave_cycle_is_the_port_button_and_keeps_the_output_off)
         link_up();
         connected();
         write_edits();
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         hold(2.1f);
         rig_frames(200);
         show();
@@ -292,7 +292,7 @@ TEST_CASE(abort_in_the_leave_cycle_is_the_port_button_and_keeps_the_output_off)
         CHECK_EQ(kst_prog_op(M), LINK_KST_OP_REBOOT);
         CHECK(!g_rig.sup_on);
         CHECK_STR_EQ(kst_panel_button(PG_SERVO, 0, 0), TR(KP_ABORT));
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         settle();
         CHECK_EQ(msg(), KST_PROG_MSG_CYCLE_CUT);
         CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
@@ -309,7 +309,7 @@ TEST_CASE(without_a_pd_mini_a_write_and_leave_note_the_power_cycle)
     write_edits();
     CHECK(message_has(TR(KP_M_LEFT_NOTE)));
     CHECK(!message_has(TR(KP_M_ACT_AT_LEAVE)));
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK(warns(TR(KP_LEAVE_1)));
     CHECK(warns(TR(KP_M_LEFT_NOTE)));
@@ -333,7 +333,7 @@ TEST_CASE(a_leave_without_a_write_cycles_nothing)
     g_rig.sup_mv = 5000u;
     g_rig.sup_ma = 1000u;
     connected();
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     CHECK(warns(TR(KP_LEAVE_1)));
     CHECK(!warns(TR(KP_LEAVE_CYCLE)));
     CHECK(!warns(TR(KP_M_LEFT_NOTE)));

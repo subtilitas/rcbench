@@ -495,6 +495,7 @@ replaces a visible hint.
 | ARM on LIVE, SWEEP and RUDDER while it switches PORT PWM or the supply on | `Hold 2s: the port and its supply go on, then ARM.` |
 | OUTPUT ON on SUPPLY and in SERVO's supply box | `Hold 2s to switch the output on.` |
 | PROG 5V ON in the PROG 5V box on SUPPLY, rbmod carrier | `Hold 2s to switch the programming ports' 5V on.` |
+| CONNECT on the KST and HITEC programmers | `Hold 2s to connect and switch the port's supply on.` |
 | APPLY on the HV, frame rate and soft limit warnings of SERVO, KST and Chaservo, and on Hitec pages | `Hold 2s to apply.` |
 | HOLD 2s: ARM + START on TEST | `Hold 2s to arm and start the test.` |
 | HOLD 2s: ARM + START on LIMIT RUN | `Hold 2s to switch the port and its supply on, ARM and start the limit run.` |
@@ -524,8 +525,8 @@ button white, black, then its settled colour, twice, 50ms a phase
 (`UI_HOLD_FLASH_PHASE_MS`), 300ms in all (`UI_HOLD_FLASH_MS`). At 60 frames
 a second a phase is 3 frames. A slower frame ends the phase it falls in and
 no more, so every phase is drawn at any frame rate. The settled colour is
-the one the hold fades to: the danger red for ARM, OUTPUT ON and PROG 5V
-ON; amber for HOLD 2s: ARM + START on TEST, RUDDER AUTO and LIMIT RUN,
+the one the hold fades to: the danger red for ARM, OUTPUT ON, PROG 5V ON
+and the programmers' CONNECT; amber for HOLD 2s: ARM + START on TEST, RUDDER AUTO and LIMIT RUN,
 whose sequence waits for ARMED and its read-backs before the run.
 
 - The flash starts with the hold, not with the answer. ARMED, the output
@@ -2183,8 +2184,7 @@ KST's and HITEC's frame around the session:
 | footer, right | SETTINGS: KST's KST EXPERT MODE page, HITEC's Hitec series and Hitec D receive; grey while the session holds the port |
 
 A tap on a READY row that is not met names it in the alert band, for
-example `SUPPLY: Switch the servo supply off and on, then tap CONNECT 1s
-later.` A finger on a READY row or on WRITE keeps SETTINGS and the PORT
+example `SUPPLY: Switch the servo supply off and on, then hold CONNECT 2s at once.` A finger on a READY row or on WRITE keeps SETTINGS and the PORT
 list shut, as every held press does.
 
 ![KST before CONNECT](img/servo-kst.png)

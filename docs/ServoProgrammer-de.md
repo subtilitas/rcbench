@@ -224,7 +224,7 @@ einen Neustart erhalten.
 | --- | --- | --- |
 | PWM, ein PD mini antwortet, sein Ausgang aus | `Tester nutzt Port 1. VERBINDEN stellt 5.0V und 1000mA ein.` | die Pulse des Testers |
 | PWM, ein PD mini antwortet, sein Ausgang ein | dasselbe und `VERBINDEN schaltet den Ausgang 1s aus und wieder ein. Das Servo startet im Programmiermodus.` | die Pulse des Testers |
-| PWM, kein PD mini | `Tester nutzt Port 1. Kein PD mini: Versorgung bleibt unverändert.` und in der Warnfarbe `Schalte die Servoversorgung aus und ein. Tippe 1s später auf VERBINDEN. Der Sync folgt 250ms danach.` | die Pulse des Testers |
+| PWM, kein PD mini | `Tester nutzt Port 1. Kein PD mini: Versorgung bleibt unverändert.` und in der Warnfarbe `Schalte die Servoversorgung aus und ein. Halte sofort 2s VERBINDEN. Der Sync folgt 250ms danach.` | die Pulse des Testers |
 | Verbinden | `Verbindung an Port 1 wird aufgebaut. PWM ist aus.` | 50ms keinen Puls, dann 100ms Low, dann die Einstiegssequenz |
 | Die Versorgung aus, bei **VERBINDEN** mit eingeschaltetem Ausgang oder bei **VERLASSEN** nach einem Schreiben | `Port 1: Versorgung 1s aus. PWM ist aus.` | keinen Puls; die Leitung auf Low |
 | Die Versorgung wieder an | `Port 1: Versorgung ein. 1s Wartezeit für den Servostart. PWM aus.` | die Leitung 1000ms auf Low, dann die Einstiegssequenz, oder PWM nach **VERLASSEN** |
@@ -240,6 +240,19 @@ einen Neustart erhalten.
 ein, führt die Einstiegssequenz aus und liest alle 32 Register aus. Während
 eines Vorgangs oder der Wartezeit beim Verlassen heißt die Taste
 **ABBRECHEN**, im Programmiermodus **VERLASSEN**.
+
+**VERBINDEN** schaltet die Versorgung des Ports ein und ist darum auf jeder
+Platine eine Halte-Taste von 2s, mit der Überblendung von AUSGANG EIN von
+Grün nach Rot ([Halte-Tasten](Screens-de.md#halte-tasten)). Die Sitzung
+beginnt, wenn das Halten vollständig ist, der Finger liegt dann noch auf der
+Taste; das Loslassen danach bewirkt nichts. Loslassen vor 2s sendet nichts
+und zeigt `Halte 2s, um zu verbinden und die Versorgung des Ports
+einzuschalten.` Ein Finger, der die Taste verlässt, eine verlorene Berührung
+oder ein Port, der PWM verlässt, beendet das Halten. Auf dem rbmod-Carrier
+verweigert eine Eingangsspannung unter 13,5V den Druck und beendet ein
+laufendes Halten, mit der Eingangsspannung im Text
+([Carrier, Die Eingangsversorgung](Carrier-de.md#die-eingangsversorgung)).
+**ABBRECHEN** und **VERLASSEN** nehmen ein Tippen.
 
 ![Ein laufender Vorgang](img/de/servo-kst-working.png)
 
@@ -294,19 +307,20 @@ rbmod-Carrier schalten dieselben Zyklen die feste 5V-Versorgung der Ports:
 
 | Schritt | Ein PD mini antwortet, sein Ausgang an | Ein PD mini antwortet, sein Ausgang aus | Kein PD mini |
 | --- | --- | --- | --- |
-| **VERBINDEN** | der Ausgang 1000ms aus, an mit der niedrigeren der zwei Spannungen und der niedrigeren der zwei Stromgrenzen, die Leitung 1000ms auf Low, dann die Einstiegssequenz | der Ausgang an, die Leitung 1000ms auf Low, dann die Einstiegssequenz | die Einstiegssequenz 250ms nach dem Tippen: 50ms ohne Puls, 100ms Low, 100ms der Low-Leitung des Einstiegs. Der Bediener schaltet das Servo kurz davor ein |
+| **VERBINDEN** | der Ausgang 1000ms aus, an mit der niedrigeren der zwei Spannungen und der niedrigeren der zwei Stromgrenzen, die Leitung 1000ms auf Low, dann die Einstiegssequenz | der Ausgang an, die Leitung 1000ms auf Low, dann die Einstiegssequenz | die Einstiegssequenz 250ms nach dem vollständigen Halten: 50ms ohne Puls, 100ms Low, 100ms der Low-Leitung des Einstiegs. Der Bediener schaltet das Servo kurz davor ein |
 | **VERLASSEN** nach einem Schreiben, Zurückspielen oder Lösen des Pairings | der Ausgang 1000ms aus, an, die Leitung 1000ms und dann für **WARTEZEIT VOR PWM** auf Low, dann PWM | kommt nicht vor: **VERBINDEN** schaltet den Ausgang ein | der Port kehrt zu PWM zurück; die Werte wirken, nachdem der Bediener die Servoversorgung aus- und wieder eingeschaltet hat |
 | **VERLASSEN** ohne Geschriebenes | der Port kehrt nach **WARTEZEIT VOR PWM** zu PWM zurück; die Versorgung bleibt, wie sie ist | dasselbe | dasselbe |
 | Ein Schreiben | kein Zyklus: das Rücklesen läuft im Programmiermodus | dasselbe | dasselbe |
 
 Ohne PD mini nennt die Zeile unter dem Zustand den Schritt:
-`Schalte die Servoversorgung aus und ein. Tippe 1s später auf VERBINDEN. Der Sync folgt 250ms danach.` Der Port versucht den Einstieg einmal und
-wiederholt ihn nicht. Der Sync geht 250ms nach dem Tippen, ein Tippen 1s
-nach dem Einschalten legt ihn also 1250ms nach das Einschalten, nahe an die
-1000ms, die der Port einem selbst eingeschalteten Servo lässt. Wie lange
-nach einem Einschalten ein Servo den Sync noch annimmt, ist nicht gemessen:
-das Chaservo des Prüfstands nahm ihn 1000ms danach, ein KST-Servo an der
-Karte des Herstellers etwa 3s danach.
+`Schalte die Servoversorgung aus und ein. Halte sofort 2s VERBINDEN. Der Sync folgt 250ms danach.` Der Port versucht den Einstieg einmal und
+wiederholt ihn nicht. Der Sync geht 250ms nach dem vollständigen Halten von
+VERBINDEN, ein Halten ab dem Einschalten legt ihn also 2250ms nach das
+Einschalten, plus die Zeit bis zur Taste. Einem selbst eingeschalteten
+Servo lässt der Port 1000ms. Wie lange nach einem Einschalten ein Servo den
+Sync noch annimmt, ist nicht gemessen: das Chaservo des Prüfstands nahm ihn
+1000ms danach, ein KST-Servo an der Karte des Herstellers etwa 3s danach.
+Ein Chaservo bei 2250ms ist ungetestet.
 
 Nach einem Schreiben trägt die Meldung eine zweite Zeile: mit PD mini
 `Die Werte werden nach VERLASSEN wirksam: Die Versorgung wird 1s aus- und wieder eingeschaltet.`,
@@ -505,7 +519,7 @@ Versorgungszyklus eines **VERLASSEN** einer ab 4.30.
 
 | Zeile | Taste | Wirkung |
 | --- | --- | --- |
-| PORT | **VERBINDEN**, **ABBRECHEN**, **VERLASSEN** | nimmt den Port, beendet den laufenden Vorgang, [gibt den Port zurück](#verlassen) |
+| PORT | **VERBINDEN** (2s halten), **ABBRECHEN**, **VERLASSEN** | nimmt den Port, beendet den laufenden Vorgang, [gibt den Port zurück](#verlassen) |
 | SERVO | **ALLES AUSLESEN** | liest die 32 Register, jedes, bis 3 von höchstens 5 Lesungen übereinstimmen |
 | TYP | `--`, `V6?`, `V8?`, **V6**, **V8** | [der Servotyp](#der-servotyp), den der Bediener setzt; `V6?` ist die Vermutung aus 20k_sel |
 | DATEIEN | **WÄHLEN** | [speichert die Werte des Servos auf die Karte und lädt eine Datei](#servodateien) |
@@ -862,7 +876,7 @@ geänderten Werte stehen. Die Zeile nennt die Ablehnung:
 | Bei der Antwort der Karte | Zeile |
 | --- | --- |
 | der Schalter ist aus | `SCHREIBEN INS SERVO FREIGEBEN ist aus.` |
-| der Port meldet PWM, oder ein anderer Port ist belegt | `Kein Servo verbunden. Tippe auf VERBINDEN.` |
+| der Port meldet PWM, oder ein anderer Port ist belegt | `Kein Servo verbunden. Halte 2s VERBINDEN.` |
 | der Port meldet einen laufenden Vorgang, oder sein Status ist noch nicht gelesen | `Ein anderer Vorgang läuft.` |
 | der Prüfstand ist ARMED | `Tippe zuerst auf DISARM. Bei ARMED kann der Port nicht übernommen werden.` |
 
@@ -1094,7 +1108,7 @@ wiederherstellbar.
 | Die Karte wird entnommen, während eine Seite offen ist, die die Datei zusagt | das Halten sendet nichts, und die Seite kommt mit den drei Zeilen zurück; ihr eigenes Halten von 2s sendet das Schreiben |
 | Die Karte wird entnommen, nachdem die Backup-Datei gespeichert ist | spätere Schreiben der Sitzung werden gesendet; der Vermerk des Schreibens bleibt im RAM |
 | **DATEIEN**, Speichern und Laden ohne Karte | abgelehnt: `Keine Karte. Nichts gespeichert oder ins Servo geschrieben.` |
-| Eine Karte, die nach dem Start des Panels eingesteckt, entnommen oder getauscht wird | das Panel sieht in den Steckplatz, wenn der Programmierer öffnet und bei jedem Tippen auf **VERBINDEN**, **ALLES AUSLESEN**, **DATEIEN**, **ZURÜCKSPIELEN**, **WEITERES**, **SCHREIBEN INS SERVO FREIGEBEN** oder die Schreibzeile: Eine eingesteckte oder getauschte Karte wird eingebunden, eine entnommene freigegeben. Der Blick auf eine eingebundene Karte ist ein Befehl SEND_STATUS (CMD13). Eine Dateianfrage (Liste, Laden, Speichern) läuft auf der Karte, für die sie gestellt wurde; ist bis dahin eine andere an ihrer Stelle eingebunden, findet sie keine Karte. Der Vermerk eines Schreibvorgangs geht auf die Karte, deren Vermerk der Programmierer zuletzt gelesen hat, nie auf eine an ihrer Stelle eingebundene, bevor der nächste Blick deren Vermerk liest. Das Tippen, das eine neue Karte findet, liest noch den Kartenzustand von vorher; das nächste hat ihn, und eine offene Schreibseite wechselt zur Seite mit der Datei |
+| Eine Karte, die nach dem Start des Panels eingesteckt, entnommen oder getauscht wird | das Panel sieht in den Steckplatz, wenn der Programmierer öffnet, wenn das Halten von **VERBINDEN** vollständig ist und bei jedem Tippen auf **ALLES AUSLESEN**, **DATEIEN**, **ZURÜCKSPIELEN**, **WEITERES**, **SCHREIBEN INS SERVO FREIGEBEN** oder die Schreibzeile: Eine eingesteckte oder getauschte Karte wird eingebunden, eine entnommene freigegeben. Der Blick auf eine eingebundene Karte ist ein Befehl SEND_STATUS (CMD13). Eine Dateianfrage (Liste, Laden, Speichern) läuft auf der Karte, für die sie gestellt wurde; ist bis dahin eine andere an ihrer Stelle eingebunden, findet sie keine Karte. Der Vermerk eines Schreibvorgangs geht auf die Karte, deren Vermerk der Programmierer zuletzt gelesen hat, nie auf eine an ihrer Stelle eingebundene, bevor der nächste Blick deren Vermerk liest. Das Tippen, das eine neue Karte findet, liest noch den Kartenzustand von vorher; das nächste hat ihn, und eine offene Schreibseite wechselt zur Seite mit der Datei |
 
 Eine Karte, die sich nicht einbinden lässt, gilt als nicht vorhanden.
 Schreiben, Zurückspielen und Lösen des Pairings folgen dem oben
@@ -1234,7 +1248,7 @@ der Sitzung wird genauso geprüft, solange die Werte des Servos bekannt sind.
 Das Backup der Sitzung gehört zu dem Servo, von dem es gelesen wurde. Weichen
 die ausgelesenen Werte in einem Feld vom Backup ab, das kein
 Schreibvorgang der Sitzung ändern sollte, behandelt das Panel das Servo
-als ein anderes: `Das ist ein anderes Servo. Das Backup dieser Sitzung gehört nicht dazu.` `Tippe auf VERLASSEN, dann auf VERBINDEN. So beginnt eine neue Sitzung mit eigenem Backup.` Der Schreibschalter geht aus, die Liste zum Zurückspielen
+als ein anderes: `Das ist ein anderes Servo. Das Backup dieser Sitzung gehört nicht dazu.` `Tippe auf VERLASSEN, dann halte 2s VERBINDEN. So beginnt eine neue Sitzung mit eigenem Backup.` Der Schreibschalter geht aus, die Liste zum Zurückspielen
 enthält das Backup der Sitzung nicht, und kein Zurückspielen davon wird
 gesendet. **VERLASSEN** und **VERBINDEN** beginnen eine Sitzung, deren
 Backup das dieses Servos ist. Eine Lesung des ersten Servos bringt sein
@@ -1565,8 +1579,8 @@ Bei 0ms ist es die Meldung eines IOmcu mit 4.30.
 | **ABBRECHEN** | dasselbe, ohne den eingerasteten Stopp |
 | Der Link fällt weg | der Schalter geht aus, offene Seiten schließen; ein laufendes Schreiben ist [unterbrochen](#ein-unterbrochenes-schreiben) |
 | Ein Fehler des Prüfstands ([Sicherheit, Fehler](Safety-de.md#fehler)) oder ein Vorgang, der in einer Störung des Servos oder der Leitung endet: kein Servo, ein fehlgeschlagenes Auslesen, geänderte Servowerte, ein Schreibvorgang, der fehlgeschlagen, zurückgesetzt oder unvollständig geblieben ist, eine Prüfung mit Abweichung, ein Fehler des Treibers | ein laufender Schreibvorgang endet zuerst einschließlich seiner Kontrolllesungen: der IOmcu hält die Versorgung bis dahin und 150ms danach an, höchstens 10.000ms; das anschließende vollständige Auslesen wird abgebrochen. Danach wird die schaltbare Servoversorgung ausgeschaltet; der Port erkennt dies und hält sie 1000ms ausgeschaltet und ist wieder in PWM: `Der Port hat die Sitzung beendet: Versorgung aus oder Neustart.` Ein IOmcu älter als Link 4.31 lässt die Versorgung an ([Die Versorgung eines Programmierports](Safety-de.md#die-versorgung-eines-programmierports)) |
-| Der IOmcu startet neu | seine Sitzung und sein Backup sind weg; `IOmcu neu gestartet. Tippe auf VERBINDEN, dann auf ALLES AUSLESEN.` und `Schalte zuerst die Servoversorgung aus und wieder ein.`: der Port ist in PWM, und das Servo wurde nicht aus dem Programmiermodus geführt |
-| Der Port liest PWM bei gelesenem Servo, eingeschaltetem Schalter, erfolgtem Schreiben oder verlangtem Lesen, und kein Kommando des Programmierers hat ihn dorthin gebracht | die Werte des Servos, das Backup und der Schalter sind auf dem Panel weg; `Der Port hat die Sitzung beendet: Versorgung aus oder Neustart.` und `Schalte die Servoversorgung aus und ein. Tippe dann auf VERBINDEN.` Ein Vorgang, der in derselben Ablesung endete, behält seine eigene Zeile |
+| Der IOmcu startet neu | seine Sitzung und sein Backup sind weg; `IOmcu neu gestartet. Halte 2s VERBINDEN, dann tippe auf ALLES AUSLESEN.` und `Schalte zuerst die Servoversorgung aus und wieder ein.`: der Port ist in PWM, und das Servo wurde nicht aus dem Programmiermodus geführt |
+| Der Port liest PWM bei gelesenem Servo, eingeschaltetem Schalter, erfolgtem Schreiben oder verlangtem Lesen, und kein Kommando des Programmierers hat ihn dorthin gebracht | die Werte des Servos, das Backup und der Schalter sind auf dem Panel weg; `Der Port hat die Sitzung beendet: Versorgung aus oder Neustart.` und `Schalte die Servoversorgung aus und ein. Halte dann 2s VERBINDEN.` Ein Vorgang, der in derselben Ablesung endete, behält seine eigene Zeile |
 | Die Control-Task des Panels nimmt 2s kein Kommando an | nichts wird gesendet; `Kein Ergebnis vom IOmcu. Tippe auf ALLES AUSLESEN.` Das Kommando ist zurückgezogen: die Control-Task verwirft es, wenn es die Warteschlange verlässt, wie spät auch immer |
 | Der IOmcu lehnt einen Austausch eines Vorgangs ab, den er angenommen hat | die Zeile der Ablehnung; die Werte auf dem Panel werden bis zum Abschluss von **ALLES AUSLESEN** nicht geändert, gespeichert oder geschrieben |
 | 3 Austausche mit dem IOmcu in Folge bleiben unbeantwortet | `Keine Antwort vom IOmcu. Tippe auf ALLES AUSLESEN.`; nach einem Lesen oder Prüfen werden die Werte auf dem Panel bis zum Abschluss von **ALLES AUSLESEN** nicht geändert, gespeichert oder geschrieben |

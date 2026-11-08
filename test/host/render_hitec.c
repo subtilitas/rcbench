@@ -109,6 +109,29 @@ static void hhold(void)
 }
 
 /**
+ * @brief CONNECT, a 2s hold: held 2.1s with the bench still, and its
+ *        flash.
+ */
+static void hconnect_hold(void)
+{
+    const gfx_rect_t r = hitec_panel_value_rect(HITEC_PANEL_SERVO, 0, 0);
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1,
+                                   .x = (int16_t)(r.x + r.w / 2),
+                                   .y = (int16_t)(UI_BAND_H + r.y
+                                                  + r.h / 2),
+                                   .strength = 40 } };
+
+    ui_router_event(&e);
+    for (int i = 0; i < 105; ++i) {
+        ui_router_tick(0.02f);
+    }
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+    hflash_out();
+}
+
+/**
  * @brief Run the bench until the model is in @p s, or end the render.
  * @param s the state
  */
@@ -143,7 +166,7 @@ static void hseries(int i)
  */
 static void hconnect(void)
 {
-    htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 0, 0));
+    hconnect_hold();
     for (unsigned i = 0; i < 60000u
                          && (pstate() == HITEC_PROG_OPENING
                              || pstate() == HITEC_PROG_ENTERING
@@ -748,12 +771,12 @@ void render_hitec_view(const char *view)
         g_drv.d_drop = true;
     }
     if (strcmp(v, "-nopd") == 0) {
-        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 0, 0));
+        hconnect_hold();
         prun(50u);
         return;
     }
     if (strcmp(v, "-reading") == 0) {
-        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 0, 0));
+        hconnect_hold();
         hwait(HITEC_PROG_READING);
         prun(160u);
         ui_router_tick(0.02f);

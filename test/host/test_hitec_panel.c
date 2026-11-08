@@ -99,7 +99,7 @@ TEST_CASE(the_series_row_and_more_take_no_tap_while_the_port_is_held)
     CHECK_EQ(hitec_panel_editor(), 0);
     CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 1, 1));   /* READ ALL */
     /* LEAVE gives SERIES back. */
-    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    press_port();
     hold(2.1f);
     until(HITEC_PROG_PWM);
     show();
@@ -324,7 +324,7 @@ TEST_CASE(a_classic_connect_without_a_pd_mini_is_refused_with_its_reason)
     open_at(SUPPLY_NONE, UI_LANG_EN);
     tap(val(HITEC_PANEL_SERVO, 1, 0));
     tap(hitec_panel_choice_rect(1));
-    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    press_port();
     CHECK_EQ(msg(), HITEC_PROG_MSG_NEED_PD_C);
     CHECK_EQ(strcmp(said(), TR(HP_NEED_PD_C)), 0);
     CHECK_EQ(pstate(), HITEC_PROG_PWM);
@@ -424,7 +424,7 @@ TEST_CASE(a_classic_leave_page_says_the_supply_cycles)
     tap(val(HITEC_PANEL_SERVO, 1, 0));
     tap(hitec_panel_choice_rect(1));
     tap_connect();
-    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    press_port();
     CHECK_EQ(hitec_panel_editor(), 3);
     CHECK_EQ(strcmp(hitec_panel_page_line(1), TR(HP_LEAVE_C)), 0);
     tap(hitec_panel_cancel_rect());
@@ -445,7 +445,7 @@ TEST_CASE(a_port_another_session_holds_offers_release_port)
                     TR(HP_RELEASE)),
              0);
     CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 0, 0));
-    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    press_port();
     CHECK_EQ(hitec_panel_editor(), 3);
     CHECK_EQ(strcmp(hitec_panel_page_line(0), TR(HP_RELEASE)), 0);
     snprintf(want, sizeof(want), TR(HP_RELEASE_1), 1u);
@@ -524,7 +524,7 @@ TEST_CASE(only_a_leave_offers_the_operators_set_points_back)
     CHECK(supply_screen_port_held());
     supply_screen_adopt(5.0f, 1.0f);
     supply_screen_set_output(true);
-    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    press_port();
     hold(2.1f);
     until(HITEC_PROG_PWM);
     prun(50u);
@@ -541,7 +541,7 @@ TEST_CASE(only_a_leave_offers_the_operators_set_points_back)
     until(HITEC_PROG_OTHER);
     show();
     CHECK(!supply_screen_restore_offer(NULL, NULL));
-    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    press_port();
     hold(2.1f);
     until(HITEC_PROG_PWM);
     prun(50u);
@@ -689,7 +689,7 @@ TEST_CASE(every_control_label_value_and_note_fits_in_both_languages)
         until(HITEC_PROG_OTHER);
         check_layout();
         tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-        tap(val(HITEC_PANEL_SERVO, 0, 0));
+        press_port();
         CHECK_EQ(hitec_panel_editor(), 3);
         target(hitec_panel_apply_rect());
         target(hitec_panel_cancel_rect());

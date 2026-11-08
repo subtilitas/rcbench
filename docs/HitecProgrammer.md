@@ -100,6 +100,12 @@ and ends 4px above the alert band, as in the KST programmer
 
 ## CONNECT
 
+CONNECT is a 2s hold, as on KST
+([Servo programmer, The port](ServoProgrammer.md#the-port)): the steps
+below start when the hold completes. A release before 2s sends nothing and
+shows `Hold 2s to connect and switch the port's supply on.` RELEASE, LEAVE
+and ABORT on the same button take a tap.
+
 1. OPEN: the IOmcu takes the port out of PWM mode. After 50ms without
    pulses, the wire driver takes over with the line released.
 2. The entry:

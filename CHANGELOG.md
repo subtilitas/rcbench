@@ -29,6 +29,13 @@ history is in git.
 - The PROG 5V lost error on the carrier watches a KST or Hitec session's
   5V as well: under a session a finding waits for a PROG_SUPPLY page read
   that still reads GPIO 21 on.
+- CONNECT on the KST and HITEC programmers is a 2s hold on every board,
+  as OUTPUT ON: it switches the port's supply on. A release before 2s
+  sends nothing and shows `Hold 2s to connect and switch the port's supply
+  on.` On the rbmod carrier a low input refuses the press and ends a
+  running hold. ABORT, LEAVE and RELEASE take a tap. The texts that ask for
+  CONNECT say `Hold CONNECT 2s`; without a PD mini the step reads `Switch
+  the servo supply off, then on. Hold CONNECT 2s at once.`
 
 - The READY card on the SERVO screens (LIVE, SWEEP, RUDDER, TEST, LIMIT
   RUN, RUDDER AUTO, KST and HITEC) draws each row's state on a raised tag

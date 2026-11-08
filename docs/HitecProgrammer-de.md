@@ -106,6 +106,13 @@ KST-Servoprogrammierung ([Seiten](Screens-de.md#programmierer)).
 
 ## VERBINDEN
 
+VERBINDEN ist eine Halte-Taste von 2s, wie bei KST
+([Servo-Programmierer, Der Port](ServoProgrammer-de.md#der-port)): die
+Schritte unten beginnen, wenn das Halten vollständig ist. Loslassen vor 2s
+sendet nichts und zeigt `Halte 2s, um zu verbinden und die Versorgung des
+Ports einzuschalten.` FREIGEBEN, VERLASSEN und ABBRECHEN auf derselben Taste
+nehmen ein Tippen.
+
 1. OPEN: Der IOmcu beendet PWM am Port. Nach 50ms ohne Pulse übernimmt der
    Leitungstreiber die freigegebene Leitung.
 2. Der Einstieg:

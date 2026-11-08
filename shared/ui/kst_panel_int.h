@@ -115,7 +115,8 @@ extern const int16_t kpn_rule[KST_RULE_COUNT];
 
 enum {
     P_NONE = 0, P_TAB, P_ROW, P_MINUS, P_PLUS, P_KEYPAD, P_CHOICE,
-    P_CHOICE_CANCEL, P_APPLY, P_CANCEL, P_TEXTKEY, P_NOTES, P_PORT
+    P_CHOICE_CANCEL, P_APPLY, P_CANCEL, P_TEXTKEY, P_NOTES, P_PORT,
+    P_CONNECT
 };
 
 enum { C_STRETCH = 0, C_RESTORE, C_MORE, C_FILES, C_TYPE, C_PORT };
@@ -228,6 +229,8 @@ typedef struct {
     /** @brief Revision, counted up when the overlay's picture changes */
     uint32_t rev;
     uint32_t hold_rev;                  /**< revision, counted up when a hold advances */
+    /** @brief CONNECT's 2s hold: it switches the port's supply on */
+    ui_hold_t conn;
 
     /* A limit run's step of the programmer (kst_panel_run_connect()). */
     struct {

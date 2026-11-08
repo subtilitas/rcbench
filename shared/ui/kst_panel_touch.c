@@ -13,6 +13,7 @@
 
 #include "kst_port.h"
 #include "link_pages.h"
+#include "prog5v_box.h"
 #include "supply_screen.h"
 #include "ui_tabs.h"
 #include "ui_textkey.h"
@@ -105,6 +106,19 @@ static void down(const touch_event_t *evt)
             }
         }
         if (gfx_rect_contains(kpn_value_rect(r), x, y)) {
+            if (r->kind == K_ACT && r->what == A_PORT
+                && kst_prog_state(&k.prog) == KST_PROG_PWM) {
+                /* CONNECT switches the port's supply on: a 2s hold, and
+                 * no hold from a low carrier input. */
+                if (prog5v_box_input_why() != NULL) {
+                    ui_action_refused(prog5v_box_input_why());
+                    return;
+                }
+                take(evt, P_CONNECT, i);
+                ui_hold_reset(&k.conn);
+                ui_hold_begin(&k.conn, TX_HOLD_HINT_CONNECT);
+                return;
+            }
             take(evt, P_ROW, i);
             return;
         }
@@ -227,6 +241,20 @@ static void rest(const touch_event_t *evt)
         k.warn.down = false;
         let_go();
         return;
+    case P_CONNECT:
+        if (!up) {
+            /* A finger that leaves CONNECT abandons its hold. */
+            if (!gfx_rect_contains(kpn_value_rect(&kpn_rows[which]), x, y)
+                && ui_hold_leave(&k.conn)) {
+                let_go();
+            }
+            return;
+        }
+        /* The hold has connected, or a short release shows the hint; the
+         * release is no tap on what the button shows now. */
+        (void)ui_hold_end(&k.conn, evt, kpn_value_rect(&kpn_rows[which]));
+        let_go();
+        return;
     case P_PLUS:
     case P_MINUS:
         /* A finger that leaves the key ends the repeat. */
@@ -338,6 +366,7 @@ void kst_panel_cancel(void)
     ui_textkey_cancel_press(&k.tk);
     ui_tabs_cancel(&k.tabs);
     ui_hold_reset(&k.warn.hold);
+    ui_hold_reset(&k.conn);
     k.warn.down = false;
     let_go();
     ++k.rev;
@@ -351,10 +380,51 @@ void kst_panel_leave(void)
     k.note_page = 0;
 }
 
+/**
+ * @brief A frame of CONNECT's hold: it connects at 2s; the port gone from
+ *        PWM or its row from the page ends it, a low carrier input ends it
+ *        with the reason.
+ * @param dt_s the frame's time, s
+ */
+static void connect_tick(float dt_s)
+{
+    if (k.have && k.pressed == P_CONNECT && !k.conn.fired) {
+        const row_t *r = &kpn_rows[k.row];
+
+        if (kst_prog_state(&k.prog) != KST_PROG_PWM || k.warn.open
+            || kst_panel_editor() != 0 || r->page != kpn_page()
+            || !kpn_row_live(r)) {
+            (void)ui_hold_left(&k.conn);
+            let_go();
+            ++k.rev;
+        } else if (prog5v_box_input_why() != NULL) {
+            ui_hold_reset(&k.conn);
+            let_go();
+            ui_action_refused(prog5v_box_input_why());
+            ++k.rev;
+        } else {
+            if (ui_hold_tick(&k.conn, dt_s)) {
+                kpn_act(r);
+                kpn_supply_sync();
+                ++k.rev;
+            }
+            ++k.hold_rev;
+        }
+    }
+    if (ui_hold_flashing(&k.conn)) {
+        ui_hold_flash_step(&k.conn, dt_s);
+        ++k.hold_rev;
+        if (!ui_hold_flashing(&k.conn)) {
+            ++k.rev;            /* the row under the flash, whole */
+        }
+    }
+}
+
 void kst_panel_tick(float dt_s)
 {
     /* SERVO > SETTINGS may have turned KST EXPERT MODE on or off. */
     kpn_mode_sync();
+    connect_tick(dt_s);
     if (k.warn.open && k.warn.down) {
         if (ui_hold_tick(&k.warn.hold, dt_s)) {
             kpn_warn_apply();

@@ -11,7 +11,10 @@
  * AUTO's supply rows red and their ARM + START refused with nothing
  * switched; SUPPLY's head line.  An input that goes low after the press:
  * under the box's hold, under ARM + START's hold, during the steps up to
- * the read-back, and at a limit run's CONNECT.  The rig is
+ * the read-back, and at a limit run's CONNECT.  KST's CONNECT as a 2s hold:
+ * a tap shows the hint, a finger that leaves or a touch loss connects
+ * nothing, a press refused at a low input takes no hold, an input gone low
+ * under the hold ends it with the reason.  The rig is
  * servo_rauto_kst_rig.h.
  *
  * Cases:
@@ -28,6 +31,7 @@
  * - an_input_gone_low_under_rudder_autos_hold_refuses_it
  * - an_input_gone_low_during_the_steps_ends_them_all_off
  * - a_limit_runs_connect_is_refused_while_the_input_is_low
+ * - kst_connect_is_a_2s_hold
  *
  * SPDX-License-Identifier: MIT
  */
@@ -200,7 +204,7 @@ TEST_CASE(kst_supply_row_is_red_and_connect_is_refused)
     ui_router_set_alert(NULL);
     while (prog5v_box_poll_cmd(NULL)) { }
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     ra_ms(200u);
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
     CHECK_STR_EQ(band(), WHY_EN);
@@ -210,7 +214,7 @@ TEST_CASE(kst_supply_row_is_red_and_connect_is_refused)
     CHECK(ready_row((int)PRR_SUPPLY, &r));
     CHECK_EQ(r.st, (uint8_t)RDY_SEQ);
     ui_router_set_alert(NULL);
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     CHECK(kst_prog_state(M) != KST_PROG_PWM);
     CHECK(strcmp(band(), WHY_EN) != 0);
     carrier_done();
@@ -411,6 +415,74 @@ TEST_CASE(a_limit_runs_connect_is_refused_while_the_input_is_low)
     carrier_done();
 }
 
+/** @brief A DOWN on CONNECT.  @return the button */
+static gfx_rect_t connect_down(void)
+{
+    const gfx_rect_t r = val(PG_SERVO, 0, 0);
+
+    ev(cx(r), cy(r), TOUCH_EVENT_DOWN, 1);
+    return r;
+}
+
+TEST_CASE(kst_connect_is_a_2s_hold)
+{
+    band_live();
+    carrier_port(false);
+    go(SERVO_FN_KST);
+    ra_ms(100u);
+    prog5v_box_publish_input(15000u);
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    /* A tap: the hint, no session. */
+    ui_router_set_alert(NULL);
+    tap(val(PG_SERVO, 0, 0));
+    ticks(0.1f);
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    CHECK_STR_EQ(band(), TR(HOLD_HINT_CONNECT));
+    /* 1s, then the finger leaves: nothing, no hint. */
+    ui_router_set_alert(NULL);
+    gfx_rect_t r = connect_down();
+    ticks(1.0f);
+    ev(r.x - 20, cy(r), TOUCH_EVENT_MOVE, 1);
+    ticks(1.5f);
+    ev(r.x - 20, cy(r), TOUCH_EVENT_UP, 1);
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    CHECK_STR_EQ(band(), "");
+    /* 1s, then the touch is lost. */
+    r = connect_down();
+    ticks(1.0f);
+    kst_panel_cancel();
+    ticks(1.5f);
+    ev(cx(r), cy(r), TOUCH_EVENT_UP, 1);
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    /* Pressed at 5.1V: refused, and no hold runs after the input is back. */
+    prog5v_box_publish_input(5100u);
+    r = connect_down();
+    CHECK_STR_EQ(band(), WHY_EN);
+    prog5v_box_publish_input(15000u);
+    ticks(2.5f);
+    ev(cx(r), cy(r), TOUCH_EVENT_UP, 1);
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    /* Gone low at 1s: the hold ends with the reason and stays ended. */
+    ui_router_set_alert(NULL);
+    r = connect_down();
+    ticks(1.0f);
+    prog5v_box_publish_input(5100u);
+    ticks(0.1f);
+    CHECK_STR_EQ(band(), WHY_EN);
+    prog5v_box_publish_input(15000u);
+    ticks(1.5f);
+    ev(cx(r), cy(r), TOUCH_EVENT_UP, 1);
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    CHECK(!asked_on_any());
+    /* Held 2s: the session starts while the finger is still down. */
+    r = connect_down();
+    ticks(2.1f);
+    CHECK(kst_prog_state(M) != KST_PROG_PWM);
+    ev(cx(r), cy(r), TOUCH_EVENT_UP, 1);
+    CHECK(kst_prog_state(M) != KST_PROG_PWM);
+    carrier_done();
+}
+
 int main(void)
 {
     RUN(low_is_under_13v5_on_the_carrier_with_a_reading);
@@ -426,5 +498,6 @@ int main(void)
     RUN(an_input_gone_low_under_rudder_autos_hold_refuses_it);
     RUN(an_input_gone_low_during_the_steps_ends_them_all_off);
     RUN(a_limit_runs_connect_is_refused_while_the_input_is_low);
+    RUN(kst_connect_is_a_2s_hold);
     return test_summary("prog5v_input");
 }
