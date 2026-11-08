@@ -360,6 +360,8 @@ typedef struct {
     uint32_t        ctrl_rev;           /**< revision of the CONTROL card */
     uint32_t        prog_5v;            /**< the ports' own supply as last drawn:
                                              state << 8 | pin                */
+    uint16_t        in_low;             /**< prog5v_box_input_low_mv() as
+                                             last drawn                     */
     uint32_t        drawn_ctrl[2];      /**< CONTROL revision each frame buffer last drew */
     uint32_t        set_rev;            /**< revision of the set points */
     uint32_t        drawn_set[2];       /**< set point revision each frame buffer last drew */

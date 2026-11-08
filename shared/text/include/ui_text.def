@@ -1845,6 +1845,18 @@ UI_TEXT(P5_LOCKED, 94,
 UI_TEXT(P5_HELD_SOME, 27,
     "HELD BY A PROG PORT",
     "BELEGT VON EINEM PROG-PORT")
+/* The carrier's input supply under 13.5V, as the PD mini reads it
+ * (prog5v_box_input_low_mv()): the box's second line, a READY card's tag
+ * and SUPPLY's head line, and the refusal and the band's warning. */
+UI_TEXT(P5_IN_LINE, 0,
+    "INPUT %u.%uV: NEEDS 15V",
+    "EINGANG %u.%uV: BENÖTIGT 15V")
+UI_TEXT(P5_IN_TAG, 20,
+    "INPUT %u.%uV < 15V",
+    "EINGANG %u.%uV < 15V")
+UI_TEXT(P5_IN_WHY, 94,
+    "INPUT %u.%uV: NEEDS 15V. CHECK THE SUPPLY VOLTAGE",
+    "EINGANG %u.%uV: BENÖTIGT 15V. VERSORGUNGSSPANNUNG PRÜFEN")
 UI_TEXT(MO_RESET_PEAKS, 0,
     "RESET PEAKS",
     "SPITZENWERTE ZURÜCKSETZEN")
@@ -5445,6 +5457,9 @@ UI_TEXT(ALERT_P5_TOUCH, 94,
 UI_TEXT(ALERT_P5_LOST, 94,
     "PROG 5V lost: INA3221 0x%02X CH%u read %u.%02uV while ON. All outputs off.",
     "PROG 5V ausgefallen: INA3221 0x%02X CH%u misst %u.%02uV trotz EIN. Alle Ausgänge aus.")
+UI_TEXT(ALERT_P5_MISSING, 94,
+    "PROG 5V MISSING: %u.%uV AFTER %lums. CHECK THE SUPPLY VOLTAGE",
+    "PROG 5V FEHLT: %u.%uV NACH %lums. VERSORGUNGSSPANNUNG PRÜFEN")
 UI_TEXT(ALERT_SUPPLY_CHANGED, 94,
     "Supply changed in SETUP. Output off.",
     "Netzteil in SETUP geändert. Ausgang aus.")

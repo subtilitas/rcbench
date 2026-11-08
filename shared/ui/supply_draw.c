@@ -109,8 +109,14 @@ void supply_screen_header_text(char *out, size_t size)
     } else {
         snprintf(who, sizeof(who), "%s", TR(SUP_PD_NO_PINS));
     }
-    snprintf(out, size, "%s   %s%s", who,
-             s.sup.online ? TR(SUP_ONLINE) : TR(SUP_NOT_ANSWERING), rate);
+    /* The carrier's input low: the PD mini answers and reads it. */
+    char tag[24];
+    const char *said = s.sup.online ? TR(SUP_ONLINE) : TR(SUP_NOT_ANSWERING);
+    if (!s.model && prog5v_box_input_tag(tag, sizeof(tag))[0] != '\0') {
+        said    = tag;
+        rate[0] = '\0';
+    }
+    snprintf(out, size, "%s   %s%s", who, said, rate);
 }
 
 gfx_rect_t sup_model_line_rect(void)
@@ -127,7 +133,10 @@ gfx_rect_t sup_model_line_rect(void)
  *        take, in the fine face.  The longest,
  *        `PD MINI TX GPIO 12 RX GPIO 13   ANTWORTET NICHT`, is 47 cells of
  *        the label face (470px) and `10.0-21.0V  0.50-5.00A` 22 of the
- *        fine face (176px): 646px of the 680px the row holds.  On the model
+ *        fine face (176px): 646px of the 680px the row holds.  The
+ *        carrier's low input, `PD MINI TX GPIO 7 RX GPIO 6   EINGANG 13.4V
+ *        < 15V`, is 50 cells (500px) in red, its range under 13.5V
+ *        `1.0-12.7V  0.05-3.00A` 21 (168px).  On the model
  *        the source is a button that opens the PD MINI tab, SIMULATED's 33
  *        cells and 20px, and ONLINE after it: 350 + 90 + 176 = 616px.
  * @param c the canvas
@@ -137,8 +146,11 @@ static void draw_header(gfx_canvas_t *c)
     const int x0 = INFO_X;
     const int x1 = W - PAD;
     gfx_fill_rect(c, x0, 0, W - x0, OV_Y - 1, ui_theme_color(UI_C_BG));
-    const gfx_color_t col = s.sup.online ? ui_theme_color(UI_C_TEXT_DIM)
-                                         : ui_theme_color(UI_C_WARN);
+    const gfx_color_t col =
+        (!s.model && prog5v_box_input_low_mv() != 0u)
+            ? ui_theme_color(UI_C_DANGER)
+        : s.sup.online ? ui_theme_color(UI_C_TEXT_DIM)
+                       : ui_theme_color(UI_C_WARN);
     if (s.model) {
         const gfx_rect_t b = sup_model_line_rect();
         ui_button_font(c, b, TR(SUP_MODEL), ui_theme_color(UI_C_PANEL_SUNK),
@@ -637,6 +649,12 @@ void sup_render(gfx_canvas_t *c, int buffer_index)
     const uint32_t p5 = sup_prog_5v();
     if (p5 != s.prog_5v) {
         s.prog_5v = p5;
+        ++s.ctrl_rev;
+    }
+    /* The carrier's input low or back: the head line repaints. */
+    const uint16_t in_low = prog5v_box_input_low_mv();
+    if (in_low != s.in_low) {
+        s.in_low = in_low;
         ++s.ctrl_rev;
     }
     const uint8_t tag = output_tag();

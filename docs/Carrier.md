@@ -159,6 +159,40 @@ The IOmcu drives GPIO 21 low from the first statement of `main()`. While
 the IOmcu does not drive GPIO 21 (in reset, in BOOTSEL, unpowered), the
 pull-down on EN holds M7 off.
 
+### The input supply
+
+M6's DIP switch is set to 15V on the carrier. M7 makes the programming
+ports' 5V from the +15V net, so an input source that delivers 5V instead
+leaves M7 short of 5V: a KST or Hitec CONNECT then finds no servo.
+
+The PD mini on J8 runs from the same input and reports its input
+voltage. The IOmcu reads it every 500ms while the PD mini is enabled and
+answers, with its output on or off; the panel reads the SUPPLY page every
+100ms. While that reading is under 13.5V (`PROG5V_INPUT_MIN_MV`: 15V less
+10%, room for the reading and the cable's drop), the panel warns and
+refuses:
+
+| Where | What it shows or does |
+| --- | --- |
+| The alert band, once as the reading goes under 13.5V, taken back when it is 13.5V or more | `INPUT 5.1V: NEEDS 15V. CHECK THE SUPPLY VOLTAGE` |
+| SUPPLY's head line, in red | `PD MINI TX GPIO 7 RX GPIO 6   INPUT 5.1V < 15V` |
+| The PROG 5V box's second line, in red | `INPUT 5.1V: NEEDS 15V` |
+| PROG 5V ON | Takes no hold; the alert band names the input. |
+| The PROG 5V row of the READY card on KST, HITEC, LIMIT RUN and RUDDER AUTO, in red | `INPUT 5.1V < 15V`; a tap names the input in the alert band. |
+| CONNECT on KST and HITEC | Refused with the input named; the session stays in PWM, the 5V off. |
+| ARM + START on LIMIT RUN and RUDDER AUTO | Refused with `PROG 5V: INPUT 5.1V: NEEDS 15V. CHECK THE SUPPLY VOLTAGE`; no output is switched. |
+
+The volts are in tenths, rounded down: 13.49V reads `13.4V`. Without a
+PD mini reading there is no warning from the input: the PD mini disabled,
+not fitted, not answering, or its reading older than 1500ms. The check
+after PROG 5V ON ([PROG 5V missing or lost](#prog-5v-missing-or-lost))
+covers that case. Rev 1 has no other reading of the input
+([Rev 1 rework](#rev-1-rework)).
+
+![SUPPLY with the input at 5.1V](img/supply-rbmod-input.png)
+
+![KST with the input at 5.1V: CONNECT refused](img/servo-kst-rbmod-input.png)
+
 | An ON that does not take | Alert |
 | --- | --- |
 | no live heartbeat (NOT_ARMED) | `PROG ports 5V not switched on: the IOmcu has no heartbeat.` |
@@ -194,7 +228,21 @@ mini's OUTPUT ON:
 - A firmware install, an IOmcu update, a flash write and the Wi-Fi count
   the ON from the moment it is queued (`supplies_live_or_coming()`).
 
-### PROG 5V lost
+### PROG 5V missing or lost
+
+INA3221 0x40 CH3 measures VCC_PROGPORT_DCDC, M7's output. The panel
+watches it on every ON the PROG_SUPPLY page reads: the PROG 5V box's, the
+ON of ARM and of ARM + START, and a KST or Hitec session's. The page must
+report GPIO 21 on or have acknowledged the panel's ON, and the heartbeat
+must be running. A 50ms window whose mean bus voltage is under 4750mV
+(`PROG5V_MIN_MV`: 5V less 5%, the lower bound of USB's 5V range) is low.
+
+- **Missing:** no window of 4750mV or more by 200ms after the ON
+  (`PROG5V_REACH_MS`, the page's read period). The first new window read
+  at or after 200ms decides. On an input of 5V M7 cannot make 5V; what
+  it makes there is not measured.
+- **Lost:** once a window has read 4750mV or more, two consecutive new
+  windows under 4750mV, both read at least 500ms after the ON.
 
 M7's controller, most likely a JoulWatt JW5068A (not confirmed on the
 module), latches its output off on an over-voltage (over 6.0V for 20us) or
@@ -205,29 +253,36 @@ cannot sink. A zener on the rail absorbs it on a reworked board
 ([Rev 1 rework](#rev-1-rework), item 3). The PROG_SUPPLY page then still
 reads GPIO 21 on.
 
-The panel monitors 0x40 CH3 while its own ON remains active. The page
-must report the 5V as on or have acknowledged ON, no programming port
-may hold the supply, and the heartbeat must be running. The panel
-reports a bench error after two consecutive new 50ms windows with mean
-bus voltage below 3000mV, provided both are read at least 500ms after ON:
+Either finding is a bench error:
 
 - SAFE, every output off, and the page's OFF
   ([Safety, Errors](Safety.md#errors)). The next PROG 5V ON toggles EN and
   clears M7's latch.
-- The band: `PROG 5V lost: INA3221 0x40 CH3 read 0.12V while ON. All
-  outputs off.`
-- The console: `PROG 5V lost: INA3221 0x40 CH3 read 0.12V, 0.08V in 2
-  windows, 640ms after ON. All outputs off.`
+- The band, missing: `PROG 5V MISSING: 3.1V AFTER 200ms. CHECK THE SUPPLY
+  VOLTAGE`; lost: `PROG 5V lost: INA3221 0x40 CH3 read 0.12V while ON.
+  All outputs off.`
+- The console: `PROG 5V missing: INA3221 0x40 CH3 read 3.10V 200ms after
+  ON. All outputs off.` or `PROG 5V lost: INA3221 0x40 CH3 read 0.12V,
+  0.08V in 2 windows, 640ms after ON. All outputs off.`
 - One error an ON: none again until the 5V has been off and on.
 
-According to the datasheet, the converter latches off after 200us below
-3.25V, and its output then falls close to 0V. The 3000mV threshold and
-two-window requirement distinguish that condition from voltage sag
-under load. Each window is counted once by its number. The panel polls
-about every 50ms, and the IOmcu closes a window every 50ms, so a window
-can be read twice. An OFF request, whether from the operator or an error,
-restarts the 500ms interval: the page can still report the 5V as on
-until its next read, at most 200ms later.
+The 200ms count from the moment the panel sees the ON: the acknowledged
+write of the box's ON, or the first page read that shows a session's ON.
+A window is 50ms and the panel reads one every 40ms, so at least two whole
+windows closed after the ON are read in 200ms. Two windows for a loss
+keep one window of a heavy load's sag from tripping. Each window is
+counted once by its number. An OFF request, whether from the operator or
+an error, restarts the 500ms interval and holds a missing finding back
+until it has passed: the page can still report the 5V as on until its
+next read, at most 200ms later.
+
+A KST or Hitec session switches the 5V off and on itself: a KST rail cycle
+keeps it off for 1000ms, a classic Hitec entry for 500ms. The panel sees
+GPIO 21 only at its page reads, every 200ms. While a session holds the 5V
+a finding waits for a page read made after it that still reads GPIO 21 on;
+a read that shows it off, or a window of 4750mV or more first, drops it.
+A session's error therefore comes up to 200ms later than the box's.
+
 The rule is `shared/safety/prog5v_lost.c` under `test_prog5v_lost`;
 `test_prog5v_wire` drives it with the pages as the panel does.
 
@@ -237,10 +292,17 @@ Current limitations:
   force with a channel set to watch PROG 5V, or no window of that channel
   read (the part offline, the link down). A board without the PROG_SUPPLY
   switch has no watch either.
-- While a KST, Hitec or ESC wire session holds the 5V there is no watch:
-  the session switches it off and on itself.
-- The detection time on hardware is not measured. By the rule it is 2 new
-  windows after the collapse, about 100ms, plus the 500ms after the ON.
+- A session that switches the 5V off and on again between two page reads
+  (under 200ms) and leaves it off across the read after a finding trips
+  the watch. No session of the firmware switches it off for less than
+  500ms, except a Hitec D series entry, whose off time is 0ms.
+- A load that holds the 5V under 4750mV for two windows, for example a
+  stalled servo past M7's current limit, is a loss. M7's current limit
+  is not measured.
+- The detection time on hardware is not measured. By the rule it is
+  200ms to about 240ms after the ON for a missing 5V, and 2 new windows
+  after the collapse, about 100ms, plus the 500ms after the ON for a loss;
+  under a session up to 200ms more.
 
 ![SUPPLY on the carrier](img/supply-rbmod.png)
 
@@ -346,11 +408,20 @@ Rev 2 implements items 1 and 2 in the board layout. The solution for
 item 3 remains open for rev 2: a converter that does not latch off, or
 a clamp implemented on the board.
 
+Rev 2 also adds, as planned, a divider from the +15V net to GPIO 26
+(ADC0, unused on the carrier since item 1): 100kΩ top, 10kΩ bottom and
+100nF at the pin. It reads 1.36V at 15V, 1.82V at 20V (M6's highest DIP
+setting) and 0.45V at 5V, all under the pin's 3.3V. With it the panel can
+warn about a low input supply from power-on, also without a PD mini
+fitted. Rev 1 has no such divider, and the firmware does not read GPIO 26:
+on rev 1 the warning comes from the PD mini's input reading
+([The input supply](#the-input-supply)).
+
 | # | Change | Reason | The firmware relies on it |
 | --- | --- | --- | --- |
 | 1 | PROGP03 (J1 position 4, through R4) moves from GPIO 26 to GPIO 15: the trace is cut under the series resistor R4, and a bodge wire runs from R4 to GPIO 15. | GPIO 26 is an ADC pin and not 5V tolerant. A Hitec or KST pull-up puts the servo supply on the programming line. | PROG PORT 3 is GPIO 15 on every carrier. GPIO 26 stays unused. |
 | 2 | A pull-down of 2kΩ to 5kΩ from M7's EN (the GPIO 21 net) to GND. | The buck module's EN reads open as on. Without the pull-down the programming ports' 5V is on while the IOmcu is in reset, in BOOTSEL or unpowered. | The programming ports' supply is off whenever GPIO 21 is not driven high. |
-| 3 | A 5.6V zener of 2W or 5W from M7's output (VCC_PROGPORT_DCDC) to GND, cathode at the rail, for example SMBJ5339B-TP (5.6V 5W, SMB package). | A braking servo feeds energy back into PROG 5V. M7 cannot sink current and latches off when its output passes about 6.0V for 20us. The zener absorbs the feedback. | No. The PROG 5V lost error ([PROG 5V lost](#prog-5v-lost)) reports a latched M7 with or without the zener. |
+| 3 | A 5.6V zener of 2W or 5W from M7's output (VCC_PROGPORT_DCDC) to GND, cathode at the rail, for example SMBJ5339B-TP (5.6V 5W, SMB package). | A braking servo feeds energy back into PROG 5V. M7 cannot sink current and latches off when its output passes about 6.0V for 20us. The zener absorbs the feedback. | No. The PROG 5V lost error ([PROG 5V missing or lost](#prog-5v-missing-or-lost)) reports a latched M7 with or without the zener. |
 
 Item 3's limits:
 

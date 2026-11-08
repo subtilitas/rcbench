@@ -349,8 +349,9 @@ static const char *TAG = "rcbench";
 static prog5v_lost_t s_p5_lost;
 
 /**
- * @brief The PROG 5V watch tripped: the error (bench_error_stop()), the
- *        band's alert and one console line.  Out of line: the lines stay
+ * @brief The PROG 5V watch tripped, the 5V missing after an ON or lost
+ *        under it: the error (bench_error_stop()), the band's alert and one
+ *        console line.  Out of line: the lines stay
  *        off the poll's frame.
  * @param ch the channel that read it, 0 to 11
  */
@@ -359,9 +360,15 @@ static __attribute__((noinline)) void prog5v_lost_act(unsigned ch)
     bench_error_stop();
     const unsigned mv = prog5v_lost_mv(&s_p5_lost);
     char line[ALERT_MAX];
-    snprintf(line, sizeof(line), TR(ALERT_P5_LOST),
-             (unsigned)(LINK_SN_I3221_ADDR_MIN + ch / 3u), ch % 3u + 1u,
-             mv / 1000u, (mv % 1000u) / 10u);
+    if (prog5v_lost_kind(&s_p5_lost) == PROG5V_TRIP_MISSING) {
+        /* Tenths, rounded down: 4.749V reads 4.7V, under the 4.75V. */
+        snprintf(line, sizeof(line), TR(ALERT_P5_MISSING), mv / 1000u,
+                 (mv % 1000u) / 100u, (unsigned long)s_p5_lost.trip_ms);
+    } else {
+        snprintf(line, sizeof(line), TR(ALERT_P5_LOST),
+                 (unsigned)(LINK_SN_I3221_ADDR_MIN + ch / 3u), ch % 3u + 1u,
+                 mv / 1000u, (mv % 1000u) / 10u);
+    }
     control_alert(line);
     char con[112];
     ESP_LOGI(TAG, "%s", prog5v_lost_line(&s_p5_lost, ch, con, sizeof(con)));
@@ -385,8 +392,9 @@ void prog5v_publish_reading(void)
         }
     }
     prog5v_box_reading(w.ok, w.mv, ma);
-    if (prog5v_lost_step(&s_p5_lost, prog5v_panel_on(),
-                         prog_supply_link_cuts(&s_psup_link), now_ms(), &w)) {
+    prog5v_on_t on;
+    prog5v_watch_on(&on);
+    if (prog5v_lost_step(&s_p5_lost, &on, now_ms(), &w)) {
         prog5v_lost_act(ch);
     }
 }

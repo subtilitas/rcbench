@@ -1100,6 +1100,11 @@ static void kst_view(const char *view)
         return;
     }
     ktap(kst_panel_value_rect(0, 0, 0));            /* CONNECT */
+    if (strcmp(v, "-rbmod-input") == 0) {
+        /* Refused: the carrier's input supply reads low. */
+        ui_router_tick(0.02f);
+        return;
+    }
     if (strcmp(v, "-nopin") == 0) {
         ksettle();
         return;
@@ -2795,6 +2800,27 @@ static void pose_motor_supply(ui_screen_id_t id, const char *view,
             }
         }
     } else if (id == SCREEN_SUPPLY
+               && strcmp(view, "supply-rbmod-input") == 0) {
+        /*
+         * The carrier's PD mini on its soldered pins, answering with its
+         * output off; its input reads 5.1V (pose_carrier_views()): the
+         * head line and the PROG 5V box name it in red, the range capped
+         * 0.7V under the input.
+         */
+        supply_caps_t caps = SUPPLY_CAPS_PDMINI;
+        caps.v_max = 4.4f;
+        supply_screen_set_caps(&caps);
+        supply_screen_settings_loaded();
+        supply_screen_set_model(false);
+        supply_screen_set_pins(7, 6);
+        supply_screen_set_baud(19200u);
+        supply_state_t st;
+        memset(&st, 0, sizeof(st));
+        st.set_v  = 4.4f;
+        st.set_i  = 2.0f;
+        st.online = true;
+        supply_screen_push(&st);
+    } else if (id == SCREEN_SUPPLY
                && strncmp(view, "supply-pdmini", 13) != 0) {
         /* A run of the panel's model, as the panel drives it: the output on
          * at 6V and a 2A limit, the load's bursts holding the limit, the
@@ -3519,7 +3545,10 @@ static void pose_analyser_views(ui_screen_id_t id, const char *view)
  *        layout-rbmod: LAYOUT with the same binding.  supply-rbmod:
  *        SUPPLY with the PROG PORTS 5V line and the PROG 5V box.
  *        servo-rbmod: LIVE on PROG PORT 1, PROG 5V off.  servo-kst-rbmod:
- *        the KST programmer, the box held by PROG PORT 1.  setup-sensors-rbmod:
+ *        the KST programmer, the box held by PROG PORT 1.  The -input
+ *        views: the carrier's input supply read at 5.1V by the PD mini,
+ *        supply-rbmod-input SUPPLY with it, servo-kst-rbmod-input KST's
+ *        CONNECT refused and its PROG 5V row red.  setup-sensors-rbmod:
  *        SENSORS with 0x40 soldered and its channels on the rails.
  * @param id   The screen of the shot.
  * @param view The golden's name.
@@ -3546,6 +3575,7 @@ static bool pose_carrier_views(ui_screen_id_t id, const char *view)
      * 5V box shows it with 0x40 CH3's reading; on the KST programmer a
      * session on PROG PORT 1 holds it on. */
     supply_screen_set_prog_5v((uint8_t)PROG_SUPPLY_OFF, 21u);
+    prog5v_box_publish_input(strstr(view, "-input") != NULL ? 5100u : 0u);
     if (strcmp(view, "servo-kst-rbmod") == 0) {
         prog5v_box_publish((uint8_t)PROG_SUPPLY_ON, 21u, 0u);
         prog5v_box_reading(true, 5018u, 86);

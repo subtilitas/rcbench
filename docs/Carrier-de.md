@@ -165,6 +165,41 @@ Der IOmcu treibt GPIO 21 ab der ersten Anweisung von `main()` low. Solange
 der IOmcu GPIO 21 nicht treibt (im Reset, im BOOTSEL, ohne Versorgung),
 hält der Pull-down an EN M7 aus.
 
+### Die Eingangsversorgung
+
+Der DIP-Schalter von M6 steht auf dem Carrier auf 15V. M7 macht die 5V der
+Programmierports aus dem Netz +15V, also lässt eine Eingangsquelle, die
+stattdessen 5V liefert, M7 unter 5V: ein VERBINDEN von KST oder Hitec
+findet dann kein Servo.
+
+Der PD mini an J8 läuft aus demselben Eingang und meldet seine
+Eingangsspannung. Der IOmcu liest sie alle 500ms, solange der PD mini
+aktiviert ist und antwortet, mit seinem Ausgang ein oder aus; das Panel
+liest die Page SUPPLY alle 100ms. Solange dieser Messwert unter 13,5V liegt
+(`PROG5V_INPUT_MIN_MV`: 15V weniger 10%, Raum für den Messwert und den
+Spannungsabfall im Kabel), warnt das Panel und lehnt ab:
+
+| Wo | Was es zeigt oder tut |
+| --- | --- |
+| Das Warnband, einmal, sobald der Messwert unter 13,5V fällt, zurückgenommen bei 13,5V oder mehr | `EINGANG 5.1V: BENÖTIGT 15V. VERSORGUNGSSPANNUNG PRÜFEN` |
+| Die Kopfzeile von SUPPLY, rot | `PD MINI TX GPIO 7 RX GPIO 6   EINGANG 5.1V < 15V` |
+| Die zweite Zeile des Felds PROG 5V, rot | `EINGANG 5.1V: BENÖTIGT 15V` |
+| PROG 5V EIN | Nimmt kein Halten an; das Warnband nennt den Eingang. |
+| Die Zeile PROG 5V der Karte BEREIT auf KST, HITEC, ENDLAGENLAUF und RUDER AUTO, rot | `EINGANG 5.1V < 15V`; ein Tippen nennt den Eingang im Warnband. |
+| VERBINDEN auf KST und HITEC | Abgelehnt mit dem Eingang; die Sitzung bleibt in PWM, die 5V aus. |
+| ARM + START auf ENDLAGENLAUF und RUDER AUTO | Abgelehnt mit `PROG 5V: EINGANG 5.1V: BENÖTIGT 15V. VERSORGUNGSSPANNUNG PRÜFEN`; kein Ausgang wird geschaltet. |
+
+Die Volt stehen in Zehnteln, abgerundet: 13,49V liest `13.4V`. Ohne
+Messwert des PD mini warnt der Eingang nicht: PD mini deaktiviert, nicht
+bestückt, ohne Antwort oder sein Messwert älter als 1500ms. Diesen Fall
+deckt die Prüfung nach PROG 5V EIN ab
+([PROG 5V fehlt oder ausgefallen](#prog-5v-fehlt-oder-ausgefallen)). Rev 1
+hat keinen anderen Messwert des Eingangs ([Nacharbeit Rev 1](#nacharbeit-rev-1)).
+
+![SUPPLY mit dem Eingang bei 5,1V](img/de/supply-rbmod-input.png)
+
+![KST mit dem Eingang bei 5,1V: VERBINDEN abgelehnt](img/de/servo-kst-rbmod-input.png)
+
 | Ein ON, das nicht greift | Warnung |
 | --- | --- |
 | kein lebender Heartbeat (NOT_ARMED) | `PROG-Ports 5V nicht eingeschaltet: der IOmcu hat keinen Heartbeat.` |
@@ -202,7 +237,23 @@ wie es AUSGANG EIN des PD mini beurteilt:
 - Firmware-Installation, IOmcu-Update, Flash-Schreiben und WLAN zählen das
   ON ab dem Einreihen in die Warteschlange (`supplies_live_or_coming()`).
 
-### PROG 5V ausgefallen
+### PROG 5V fehlt oder ausgefallen
+
+INA3221 0x40 CH3 misst VCC_PROGPORT_DCDC, den Ausgang von M7. Das Panel
+überwacht ihn bei jedem ON, das die Page PROG_SUPPLY liest: dem des
+Felds PROG 5V, dem ON von ARM und von ARM + START und dem einer KST- oder
+Hitec-Sitzung. Die Page muss GPIO 21 als eingeschaltet melden oder das ON
+des Panels bestätigt haben, und der Heartbeat muss laufen. Ein Fenster von
+50ms mit einer mittleren Busspannung unter 4750mV (`PROG5V_MIN_MV`: 5V
+weniger 5%, die Untergrenze der 5V von USB) ist niedrig.
+
+- **Fehlt:** kein Fenster mit 4750mV oder mehr bis 200ms nach dem ON
+  (`PROG5V_REACH_MS`, die Leseperiode der Page). Das erste neue Fenster,
+  das bei oder nach 200ms gelesen wird, entscheidet. Aus einem Eingang von
+  5V kann M7 keine 5V machen; was er dann liefert, ist nicht gemessen.
+- **Ausgefallen:** nachdem ein Fenster 4750mV oder mehr gelesen hat, zwei
+  aufeinanderfolgende neue Fenster unter 4750mV, beide frühestens 500ms
+  nach dem ON gelesen.
 
 Der Regler von M7, am ehesten ein JoulWatt JW5068A (am Modul nicht
 bestätigt), schaltet seinen Ausgang bei Überspannung (über 6,0V für 20us)
@@ -214,29 +265,36 @@ Z-Diode an der Schiene nimmt sie auf einer nachgearbeiteten Platine auf
 ([Nacharbeit Rev 1](#nacharbeit-rev-1), Punkt 3). Die Page PROG_SUPPLY
 meldet GPIO 21 dabei weiterhin als eingeschaltet.
 
-Das Panel überwacht 0x40 CH3, solange sein eigenes ON aktiv ist. Die
-Page muss die 5V als eingeschaltet melden oder ON bestätigt haben,
-kein Programmierport darf die Versorgung belegen, und der Heartbeat
-muss laufen. Zwei aufeinanderfolgende neue Fenster von 50ms mit einer
-mittleren Busspannung unter 3000mV lösen einen Prüfstandsfehler aus,
-wenn beide frühestens 500ms nach ON gelesen werden:
+Beides ist ein Prüfstandsfehler:
 
 - SAFE, alle Ausgänge aus und das OFF der Page
   ([Sicherheit, Fehler](Safety-de.md#fehler)). Das nächste PROG 5V EIN
   schaltet EN um und hebt die Abschaltung von M7 auf.
-- Das Band: `PROG 5V ausgefallen: INA3221 0x40 CH3 misst 0.12V trotz EIN. Alle Ausgänge aus.`
-- Die Konsole, englisch: `PROG 5V lost: INA3221 0x40 CH3 read 0.12V,
-  0.08V in 2 windows, 640ms after ON. All outputs off.`
+- Das Band, fehlt: `PROG 5V FEHLT: 3.1V NACH 200ms. VERSORGUNGSSPANNUNG PRÜFEN`;
+  ausgefallen: `PROG 5V ausgefallen: INA3221 0x40 CH3 misst 0.12V trotz EIN. Alle Ausgänge aus.`
+- Die Konsole, englisch: `PROG 5V missing: INA3221 0x40 CH3 read 3.10V
+  200ms after ON. All outputs off.` oder `PROG 5V lost: INA3221 0x40 CH3
+  read 0.12V, 0.08V in 2 windows, 640ms after ON. All outputs off.`
 - Ein Fehler je ON: keiner mehr, bis die 5V aus und wieder ein waren.
 
-Unter 3,25V für 200us hat der Regler laut Datenblatt abgeschaltet, und ein
-abgeschalteter Ausgang fällt auf nahe 0V. 3000mV und zwei Fenster halten
-das Absinken eines belasteten Ports vom Auslösen ab. Jedes Fenster zählt
-einmal, nach seiner Nummer: das Panel liest die Page einmal je Abfrage,
-etwa alle 50ms, und der IOmcu schließt alle 50ms ein Fenster, also kann
-ein Fenster zweimal gelesen werden. Ein verlangtes AUS, von Hand oder durch
-einen Fehler, startet die 500ms neu: die Page liest die 5V bis zu ihrem
-nächsten Lesen als ein, höchstens 200ms.
+Die 200ms zählen ab dem Moment, in dem das Panel das ON sieht: dem
+bestätigten Schreiben des ON aus dem Feld oder dem ersten Lesen der Page,
+das das ON einer Sitzung zeigt. Ein Fenster dauert 50ms, und das Panel
+liest alle 40ms eines, also werden in 200ms mindestens zwei ganze Fenster
+nach dem ON gelesen. Zwei Fenster für einen Ausfall halten das Absinken
+eines belasteten Ports vom Auslösen ab. Jedes Fenster zählt einmal, nach
+seiner Nummer. Ein verlangtes AUS, von Hand oder durch einen Fehler,
+startet die 500ms neu und hält ein fehlendes 5V bis dahin zurück: die
+Page liest die 5V bis zu ihrem nächsten Lesen als ein, höchstens 200ms.
+
+Eine KST- oder Hitec-Sitzung schaltet die 5V selbst aus und ein: ein
+Schienenzyklus von KST hält sie 1000ms aus, der Einstieg eines klassischen
+Hitec 500ms. Das Panel sieht GPIO 21 nur bei seinen Lesungen der Page, alle
+200ms. Solange eine Sitzung die 5V hält, wartet ein Befund auf ein Lesen
+der Page nach ihm, das GPIO 21 noch als ein liest; ein Lesen, das sie als
+aus zeigt, oder vorher ein Fenster mit 4750mV oder mehr verwirft ihn. Der
+Fehler einer Sitzung kommt deshalb bis zu 200ms später als der des Felds.
+
 Die Regel ist `shared/safety/prog5v_lost.c` unter `test_prog5v_lost`;
 `test_prog5v_wire` treibt sie mit den Pages wie das Panel.
 
@@ -247,12 +305,18 @@ Aktuelle Einschränkungen:
   fehlender Kanalzuordnung oder ausbleibenden Fenstern, etwa weil das
   Bauteil offline oder der Link unterbrochen ist. Auf einer Platine
   ohne Schalter PROG_SUPPLY fehlt die Überwachung von PROG 5V ebenfalls.
-- Während einer KST-, Hitec- oder ESC-Wire-Sitzung, die die 5V belegt,
-  ist die Überwachung ausgesetzt. Die Sitzung schaltet die Versorgung
-  selbst aus und ein.
+- Eine Sitzung, die die 5V zwischen zwei Lesungen der Page (unter 200ms)
+  aus- und wieder einschaltet und sie über das Lesen nach einem Befund
+  aus lässt, löst die Überwachung aus. Keine Sitzung der Firmware
+  schaltet sie kürzer als 500ms aus, außer dem Einstieg eines Hitec der
+  D-Serie mit einer Auszeit von 0ms.
+- Eine Last, die die 5V zwei Fenster lang unter 4750mV hält, etwa ein
+  blockiertes Servo über der Stromgrenze von M7, ist ein Ausfall. Die
+  Stromgrenze von M7 ist nicht gemessen.
 - Die Erkennungszeit auf der Hardware ist nicht gemessen. Nach der Regel
-  sind es 2 neue Fenster nach dem Ausfall, etwa 100ms, dazu die 500ms
-  nach dem ON.
+  sind es für fehlende 5V 200ms bis etwa 240ms nach dem ON und für einen
+  Ausfall 2 neue Fenster nach dem Ausfall, etwa 100ms, dazu die 500ms
+  nach dem ON; unter einer Sitzung bis zu 200ms mehr.
 
 ![SUPPLY auf dem Carrier](img/de/supply-rbmod.png)
 
@@ -363,11 +427,21 @@ Platinenlayout enthalten. Die Lösung für Punkt 3 ist bei Rev 2 noch
 offen: ein Wandler ohne verriegelnde Abschaltung oder eine
 Klemmschaltung auf der Platine.
 
+Rev 2 ergänzt außerdem, geplant, einen Spannungsteiler vom Netz +15V an
+GPIO 26 (ADC0, auf dem Carrier seit Punkt 1 unbenutzt): 100kΩ oben, 10kΩ
+unten und 100nF am Pin. Er liest 1,36V bei 15V, 1,82V bei 20V (die höchste
+DIP-Einstellung von M6) und 0,45V bei 5V, alles unter den 3,3V des Pins.
+Damit kann das Panel ab dem Einschalten vor einer niedrigen
+Eingangsversorgung warnen, auch ohne bestückten PD mini. Rev 1 hat keinen
+solchen Teiler, und die Firmware liest GPIO 26 nicht: auf Rev 1 kommt die
+Warnung aus dem Eingangsmesswert des PD mini
+([Die Eingangsversorgung](#die-eingangsversorgung)).
+
 | # | Änderung | Grund | Die Firmware verlässt sich darauf |
 | --- | --- | --- | --- |
 | 1 | PROGP03 (J1 Position 4, über R4) wechselt von GPIO 26 auf GPIO 15: die Leiterbahn wird unter dem Serienwiderstand R4 getrennt, und ein Fädeldraht läuft von R4 zu GPIO 15. | GPIO 26 ist ein ADC-Pin und nicht 5V-fest. Ein Pull-up von Hitec oder KST legt die Servoversorgung auf die Programmierleitung. | PROG PORT 3 ist auf jedem Carrier GPIO 15. GPIO 26 bleibt unbenutzt. |
 | 2 | Ein Pull-down von 2kΩ bis 5kΩ von EN an M7 (das Netz von GPIO 21) nach GND. | EN des Buck-Moduls liest offen als an. Ohne den Pull-down sind die 5V der Programmierports an, solange der IOmcu im Reset, im BOOTSEL oder ohne Versorgung ist. | Die Versorgung der Programmierports ist aus, solange GPIO 21 nicht high getrieben wird. |
-| 3 | Eine Z-Diode 5,6V mit 2W oder 5W vom Ausgang von M7 (VCC_PROGPORT_DCDC) nach GND, Kathode an der Schiene, zum Beispiel SMBJ5339B-TP (5,6V 5W, Gehäuse SMB). | Ein bremsendes Servo speist Energie in PROG 5V zurück. M7 kann keinen Strom aufnehmen und schaltet ab, wenn sein Ausgang etwa 6,0V für 20us überschreitet. Die Z-Diode nimmt die Rückspeisung auf. | Nein. Der Fehler PROG 5V ausgefallen ([PROG 5V ausgefallen](#prog-5v-ausgefallen)) meldet ein abgeschaltetes M7 mit oder ohne die Z-Diode. |
+| 3 | Eine Z-Diode 5,6V mit 2W oder 5W vom Ausgang von M7 (VCC_PROGPORT_DCDC) nach GND, Kathode an der Schiene, zum Beispiel SMBJ5339B-TP (5,6V 5W, Gehäuse SMB). | Ein bremsendes Servo speist Energie in PROG 5V zurück. M7 kann keinen Strom aufnehmen und schaltet ab, wenn sein Ausgang etwa 6,0V für 20us überschreitet. Die Z-Diode nimmt die Rückspeisung auf. | Nein. Der Fehler PROG 5V ausgefallen ([PROG 5V fehlt oder ausgefallen](#prog-5v-fehlt-oder-ausgefallen)) meldet ein abgeschaltetes M7 mit oder ohne die Z-Diode. |
 
 Grenzen von Punkt 3:
 

@@ -83,6 +83,10 @@ With carrier protocol 4.36 or later, tap the PORT label before CONNECT to choose
 
 ![The KST programmer holding the 5V](view:servo-kst-rbmod)
 
+The fixed 5V comes from the carrier's input, which needs 15V. While the PD mini reads that input under 13.5V, the PROG 5V row reads `INPUT 5.1V < 15V` in red and CONNECT is refused with `INPUT 5.1V: NEEDS 15V. CHECK THE SUPPLY VOLTAGE`. After CONNECT switches the 5V on, it must read 4750mV or more within 200ms; otherwise every output goes off with `PROG 5V MISSING: 3.1V AFTER 200ms. CHECK THE SUPPLY VOLTAGE`.
+
+![KST with the input at 5.1V: CONNECT refused](view:servo-kst-rbmod-input)
+
 ## The power cycle
 
 KST and Chaservo servos enter programming mode after power-up. Written settings take effect at the next power-up. On the tested Chaservo, CONNECT was ignored while power stayed on, and PWM commands were ignored after writing until power was cycled.

@@ -148,6 +148,9 @@ void prog_supply_link_read(prog_supply_link_t *l, const uint16_t *regs,
     l->port   = l->fitted && (f & LINK_PS_PORT) != 0u;
     l->pin    = (uint8_t)regs[LINK_PS_PIN];
     l->declared = regs[LINK_PS_PANEL] != 0u;
+    if (l->on) {
+        ++l->on_reads;
+    }
 }
 
 prog_supply_state_t prog_supply_link_state(const prog_supply_link_t *l)
@@ -164,6 +167,11 @@ prog_supply_state_t prog_supply_link_state(const prog_supply_link_t *l)
 bool prog_supply_link_port(const prog_supply_link_t *l)
 {
     return l != NULL && l->page && l->answered && l->port;
+}
+
+uint32_t prog_supply_link_on_reads(const prog_supply_link_t *l)
+{
+    return (l != NULL) ? l->on_reads : 0u;
 }
 
 bool prog_supply_link_owns(const prog_supply_link_t *l, bool board_has)

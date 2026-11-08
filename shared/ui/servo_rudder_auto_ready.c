@@ -14,7 +14,9 @@
  * A text the ARM + START hold fixes itself -- PROG 5V off, the PD mini's
  * output off, PORT PWM off, not ARMED -- reads `START SWITCHES IT ON` or
  * `START ARMS` in amber on a SAFE bench (rauto_seq_fixes()); every other
- * one is red and refuses the hold (rauto_hold_blocked()).
+ * one is red and refuses the hold (rauto_hold_blocked()).  On the carrier's
+ * port an input supply the PD mini reads low (prog5v_box_input_why()) is
+ * the first check, red on the supply row as `INPUT 5.1V < 15V`.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -42,7 +44,8 @@
 
 /** @brief The gate's checks, in rauto_blocked()'s order. */
 enum {
-    CK_SAFE_5V = 0, /**< not ARMED, on the carrier's port with 5V off   */
+    CK_INPUT = 0,   /**< the carrier's port with its input supply low  */
+    CK_SAFE_5V,     /**< not ARMED, on the carrier's port with 5V off   */
     CK_NOT_ARMED,   /**< not ARMED                                     */
     CK_TEST,        /**< the automatic test runs                       */
     CK_LIMIT,       /**< a limit run runs                              */
@@ -79,6 +82,9 @@ static bool pd_output_on(void)
 static const char *check(int k)
 {
     switch (k) {
+    case CK_INPUT:
+        /* The carrier's port with its input supply low: M7 makes no 5V. */
+        return lim_fixed_supply() ? prog5v_box_input_why() : NULL;
     case CK_SAFE_5V:
         /* The rbmod carrier's port: the PROG 5V before ARM, as the port's
          * pulse comes on only with it and only in SAFE (lim_pwm_why()). */
@@ -164,6 +170,9 @@ rauto_row_t rauto_row_of(const char *why)
 {
     if (why == NULL) {
         return RAR_COUNT;
+    }
+    if (prog5v_box_input_is(why)) {
+        return RAR_SUPPLY;
     }
     /* Each text of the gate, by the row it belongs to.  A text is the
      * table's own string, so the pointers compare. */
@@ -444,7 +453,11 @@ bool rauto_ready_row(int i, rdy_row_t *r)
     } else if (mine != NULL) {
         r->st  = (uint8_t)RDY_BAD;
         r->why = mine;
-        snprintf(r->value, sizeof(r->value), "%s", mine);
+        if (prog5v_box_input_is(mine)) {
+            (void)prog5v_box_input_tag(r->value, sizeof(r->value));
+        } else {
+            snprintf(r->value, sizeof(r->value), "%s", mine);
+        }
     } else if (i == RAR_PWM && !s.drive_pwm && safe_now()) {
         /* PORT PWM on, the pulse not yet: it comes with the PROG 5V the
          * hold switches, which the read-back waits for. */

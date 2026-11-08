@@ -83,6 +83,10 @@ Ab Carrier-Protokoll 4.36 öffnet ein Tipp auf die PORT-Beschriftung vor VERBIND
 
 ![Der KST-Programmer hält die 5V](view:servo-kst-rbmod)
 
+Die festen 5V kommen aus dem Eingang des Carriers, der 15V benötigt. Solange der PD mini diesen Eingang unter 13,5V liest, zeigt die Zeile PROG 5V `EINGANG 5.1V < 15V` in Rot, und VERBINDEN wird mit `EINGANG 5.1V: BENÖTIGT 15V. VERSORGUNGSSPANNUNG PRÜFEN` abgelehnt. Nachdem VERBINDEN die 5V einschaltet, müssen sie innerhalb von 200ms 4750mV oder mehr lesen; sonst schalten alle Ausgänge aus, mit `PROG 5V FEHLT: 3.1V NACH 200ms. VERSORGUNGSSPANNUNG PRÜFEN`.
+
+![KST mit dem Eingang bei 5,1V: VERBINDEN abgelehnt](view:servo-kst-rbmod-input)
+
 ## Der Versorgungszyklus
 
 KST- und Chaservo-Servos öffnen den Programmiermodus nach dem Einschalten. Geschriebene Werte gelten erst nach dem nächsten Einschalten. Das getestete Chaservo ignorierte VERBINDEN bei durchgehend eingeschalteter Versorgung. Nach einem Schreibvorgang reagierte es erst wieder auf PWM, nachdem die Versorgung aus- und eingeschaltet wurde.

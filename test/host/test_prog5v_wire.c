@@ -8,10 +8,13 @@
  *
  * Under test: a collapse under the panel's ON is one error (DISARM of an
  * ARMED bench, the supply off, the PROG_SUPPLY OFF owed) and none again on
- * the same ON; an OFF written and read, and an ON again, is a new ON.  No
- * error for the operator's OFF, which the page reads on until its next
- * read; none while a programming port holds the 5V; none while the
- * heartbeat is withheld (a STOP), which switches the 5V off at the IOmcu.
+ * the same ON; an OFF written and read, and an ON again, is a new ON whose
+ * 5V that stays at 3.1V is MISSING.  No error for the operator's OFF, which
+ * the page reads on until its next read; none for a programming port's
+ * power cycle, which the next page read shows off; one for a 5V that a
+ * port's session switched on and that never came, once a page read still
+ * reads the pin on; none while the heartbeat is withheld (a STOP), which
+ * switches the 5V off at the IOmcu.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -30,6 +33,7 @@
 #define POLL_MS 50u
 #define MV_GOOD 5000u
 #define MV_DEAD 100u
+#define MV_SHORT 3100u
 
 static prog_supply_link_t g_ps;
 static sense_win_link_t   g_sw;
@@ -77,11 +81,14 @@ static void pass(uint16_t mv)
     prog5v_window_t w = { 0 };
     int16_t ma = 0;
     w.ok = sense_win_link_last(&g_sw, 2u, &w.mv, &ma, &w.window);
-    /* prog5v_panel_on(): the page reads on, no port holds it, the beat. */
-    const bool on = prog_supply_link_state(&g_ps) == PROG_SUPPLY_ON
-                    && !prog_supply_link_port(&g_ps) && g_beat;
-    if (prog5v_lost_step(&g_p5, on, prog_supply_link_cuts(&g_ps), g_now,
-                         &w)) {
+    /* prog5v_watch_on(): the page reads on, the beat; the port, the cuts
+     * and the reads. */
+    const prog5v_on_t on = {
+        prog_supply_link_state(&g_ps) == PROG_SUPPLY_ON && g_beat,
+        prog_supply_link_port(&g_ps), prog_supply_link_cuts(&g_ps),
+        prog_supply_link_on_reads(&g_ps),
+    };
+    if (prog5v_lost_step(&g_p5, &on, g_now, &w)) {
         ++g_trips;
         const error_bench_t b = {
             true, true, false, true, true, LINK_MINOR_PROG_SUPPLY, true,
@@ -142,10 +149,21 @@ TEST_CASE(a_collapse_under_the_panels_on_is_one_error)
     ps_read(false, false);
     pass(0u);
     ps_read(true, false);
-    passes(9, MV_DEAD);                       /* under 500ms: nothing */
+    passes(4, MV_SHORT);                      /* under 200ms: nothing */
     CHECK_EQ(g_trips, 1u);
-    passes(3, MV_DEAD);
+    passes(1, MV_SHORT);
     CHECK_EQ(g_trips, 2u);
+    CHECK_EQ(prog5v_lost_kind(&g_p5), PROG5V_TRIP_MISSING);
+    CHECK_EQ(prog5v_lost_mv(&g_p5), MV_SHORT);
+    CHECK_EQ(g_disarms, 2u);
+}
+
+TEST_CASE(a_5v_reaching_5v_after_the_on_is_no_error)
+{
+    up();
+    passes(1, 0u);                            /* the window before the ON */
+    passes(60, MV_GOOD);
+    CHECK_EQ(g_trips, 0u);
 }
 
 TEST_CASE(the_operators_off_is_no_error)
@@ -162,13 +180,41 @@ TEST_CASE(the_operators_off_is_no_error)
     CHECK_EQ(g_disarms, 0u);
 }
 
-TEST_CASE(a_port_holding_the_5v_is_not_watched)
+/* A KST rail cycle: off for 1000ms, which the next page read shows. */
+TEST_CASE(a_ports_power_cycle_is_no_error)
 {
     up();
     ps_read(true, true);
     passes(20, MV_GOOD);
-    passes(20, MV_DEAD);                      /* a session's power cycle */
+    passes(3, MV_DEAD);
+    ps_read(false, true);
+    passes(17, MV_DEAD);
+    ps_read(true, true);
+    passes(20, MV_GOOD);
     CHECK_EQ(g_trips, 0u);
+}
+
+/* A Hitec CONNECT on an input of 5V: the session switches the 5V on and M7
+ * makes 3.1V. */
+TEST_CASE(a_ports_5v_that_never_comes_is_one_error)
+{
+    up();
+    ps_read(false, true);
+    pass(0u);
+    ps_read(true, true);
+    passes(10, MV_SHORT);
+    CHECK_EQ(g_trips, 0u);                    /* waits for a page read */
+    ps_read(true, true);
+    passes(1, MV_SHORT);
+    CHECK_EQ(g_trips, 1u);
+    CHECK_EQ(prog5v_lost_kind(&g_p5), PROG5V_TRIP_MISSING);
+    CHECK_EQ(g_disarms, 1u);
+    CHECK_EQ(g_offs, 1u);
+    uint8_t  off = 0u;
+    uint16_t v   = 1u;
+    CHECK(prog_supply_link_next(&g_ps, &off, &v));
+    CHECK_EQ(off, LINK_PS_OUTPUT);
+    CHECK_EQ(v, 0u);
 }
 
 /* A STOP withholds the heartbeat; the IOmcu switches the 5V off before the
@@ -188,7 +234,9 @@ int main(void)
 {
     RUN(a_collapse_under_the_panels_on_is_one_error);
     RUN(the_operators_off_is_no_error);
-    RUN(a_port_holding_the_5v_is_not_watched);
+    RUN(a_5v_reaching_5v_after_the_on_is_no_error);
+    RUN(a_ports_power_cycle_is_no_error);
+    RUN(a_ports_5v_that_never_comes_is_one_error);
     RUN(a_withheld_heartbeat_is_no_error);
     return test_summary("prog5v_wire");
 }

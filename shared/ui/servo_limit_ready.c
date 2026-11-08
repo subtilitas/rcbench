@@ -17,7 +17,9 @@
  * mini's output elsewhere.  Every other text is red and refuses the hold
  * (lim_hold_blocked()).  A PD mini whose output is off on a rail fed from
  * elsewhere stays the operator's: on a PROG PORT the gate names it, on
- * OUTPUTS the hold leaves it off.
+ * OUTPUTS the hold leaves it off.  On the carrier's port an input supply
+ * the PD mini reads low (prog5v_box_input_why()) is the first check, red
+ * on the supply row as `INPUT 5.1V < 15V`: M7 makes no 5V from it.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -44,7 +46,8 @@
 
 /** @brief The gate's checks, in lim_blocked()'s order. */
 enum {
-    LK_SAFE_5V = 0, /**< not ARMED, on the carrier's port with 5V off   */
+    LK_INPUT = 0,   /**< the carrier's port with its input supply low  */
+    LK_SAFE_5V,     /**< not ARMED, on the carrier's port with 5V off   */
     LK_NOT_ARMED,   /**< not ARMED                                     */
     LK_TEST,        /**< the automatic test runs                       */
     LK_AUTO,        /**< RUDDER AUTO's run runs                        */
@@ -91,6 +94,8 @@ static bool rail_live(void)
 static const char *check(int k)
 {
     switch (k) {
+    case LK_INPUT:
+        return lim_fixed_supply() ? prog5v_box_input_why() : NULL;
     case LK_SAFE_5V:
         /* The rbmod carrier's port: the PROG 5V before ARM, as the port's
          * pulse comes on only with it and only in SAFE (lim_pwm_why()). */
@@ -193,6 +198,9 @@ limrun_row_t lim_row_of(const char *why)
 {
     if (why == NULL) {
         return LRR_COUNT;
+    }
+    if (prog5v_box_input_is(why)) {
+        return LRR_SUPPLY;
     }
     /* Each text of the gate, by the row it belongs to.  A text is the
      * table's own string, so the pointers compare. */
@@ -475,7 +483,11 @@ bool lim_ready_row(int i, rdy_row_t *r)
     } else if (mine != NULL) {
         r->st  = (uint8_t)RDY_BAD;
         r->why = mine;
-        snprintf(r->value, sizeof(r->value), "%s", mine);
+        if (prog5v_box_input_is(mine)) {
+            (void)prog5v_box_input_tag(r->value, sizeof(r->value));
+        } else {
+            snprintf(r->value, sizeof(r->value), "%s", mine);
+        }
     } else {
         r->st = (uint8_t)RDY_OK;
         met_value(i, r->value, sizeof(r->value), &r->st);

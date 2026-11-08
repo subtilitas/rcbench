@@ -1944,11 +1944,20 @@ nicht ausgelesen.` Beim Verlassen von SERVO werden die von ARM oder ARM +
 START eingeschalteten 5V abgeschaltet, außer ein Port hält sie.
 
 SUPPLY zeigt das Feld PROG 5V ([Netzteil](#netzteil)); die Regeln stehen
-unter [Carrier, Das Feld PROG 5V](Carrier-de.md#das-feld-prog-5v). Zwei Fenster
-unter 3000mV bei angezeigtem EIN lösen einen Fehler aus: SAFE, alle
-Ausgänge aus und die Bandmeldung
+unter [Carrier, Das Feld PROG 5V](Carrier-de.md#das-feld-prog-5v). Nach
+jedem ON, dem des Felds, von ARM oder einer Sitzung, müssen die 5V
+innerhalb von 200ms 4750mV oder mehr lesen; sonst SAFE, alle Ausgänge aus
+und die Bandmeldung `PROG 5V FEHLT: 3.1V NACH 200ms. VERSORGUNGSSPANNUNG PRÜFEN`.
+Zwei Fenster unter 4750mV danach lösen denselben Fehler aus, mit
 `PROG 5V ausgefallen: INA3221 0x40 CH3 misst 0.12V trotz EIN. Alle Ausgänge aus.`
-([Carrier, PROG 5V ausgefallen](Carrier-de.md#prog-5v-ausgefallen)).
+([Carrier, PROG 5V fehlt oder ausgefallen](Carrier-de.md#prog-5v-fehlt-oder-ausgefallen)).
+Solange der PD mini den Eingang des Carriers unter 13,5V liest, zeigt die
+Zeile PROG 5V der Karte BEREIT auf KST, HITEC, ENDLAGENLAUF und RUDER AUTO
+`EINGANG 5.1V < 15V` in Rot, und VERBINDEN und ARM + START werden mit
+`EINGANG 5.1V: BENÖTIGT 15V. VERSORGUNGSSPANNUNG PRÜFEN` abgelehnt
+([Carrier, Die Eingangsversorgung](Carrier-de.md#die-eingangsversorgung)).
+
+![KST mit dem Eingang bei 5,1V: VERBINDEN abgelehnt](img/de/servo-kst-rbmod-input.png)
 
 ![Die KST-Programmierung hält die 5V](img/de/servo-kst-rbmod.png)
 
@@ -3032,6 +3041,17 @@ Beim Verlassen schaltet SUPPLY die von seinem Feld eingeschalteten 5V
 aus, außer ein Port hält sie. Platinen ohne Schalter zeigen beides nicht.
 
 ![SUPPLY auf dem Carrier](img/de/supply-rbmod.png)
+
+Der PD mini auf dem Carrier läuft aus demselben Eingang wie M7. Solange er
+diesen Eingang unter 13,5V liest, nennt ihn die Kopfzeile in Rot nach den
+Pins des PD mini, `EINGANG 5.1V < 15V` statt `ONLINE`, die zweite Zeile des
+Felds lautet `EINGANG 5.1V: BENÖTIGT 15V` in Rot, und PROG 5V EIN nimmt kein
+Halten an: das Warnband zeigt `EINGANG 5.1V: BENÖTIGT 15V.
+VERSORGUNGSSPANNUNG PRÜFEN`. Das Band zeigt diesen Text einmal, sobald der
+Messwert niedrig wird, und nimmt ihn zurück, sobald er 13,5V oder mehr
+beträgt ([Carrier, Die Eingangsversorgung](Carrier-de.md#die-eingangsversorgung)).
+
+![SUPPLY mit dem Eingang bei 5,1V](img/de/supply-rbmod-input.png)
 
 ### Netzteil, Optionen
 

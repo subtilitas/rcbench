@@ -25,6 +25,10 @@ static atomic_uint s_state = (unsigned)PROG5V_HELD_NONE;
 static atomic_uint s_read;
 /** @brief The PROG_SUPPLY link's cuts, as published. */
 static atomic_uint s_cuts;
+/** @brief The PD mini's input, mV, as published; 0 for none. */
+static atomic_uint s_input;
+/** @brief prog5v_box_input_why()'s text.  app_main only. */
+static char s_in_why[96];
 
 /** @brief What the boxes asked and not yet polled.  app_main only. */
 static prog5v_cmd_t s_cmd;
@@ -40,6 +44,11 @@ void prog5v_box_publish(uint8_t state, uint8_t pin, uint8_t held_port)
 void prog5v_box_publish_cuts(uint32_t cuts)
 {
     atomic_store(&s_cuts, cuts);
+}
+
+void prog5v_box_publish_input(uint16_t vin_mv)
+{
+    atomic_store(&s_input, vin_mv);
 }
 
 uint8_t prog5v_box_held_port(int kst_port, int hitec_port, bool some)
@@ -72,6 +81,43 @@ bool prog5v_box_shown(void) { return st() != ST_NONE; }
 
 bool prog5v_box_on(void) { return st() == ST_ON; }
 
+uint16_t prog5v_box_input_low_mv(void)
+{
+    const unsigned vin = atomic_load(&s_input);
+    return (prog5v_box_shown() && vin != 0u && vin < PROG5V_INPUT_MIN_MV)
+               ? (uint16_t)vin : 0u;
+}
+
+const char *prog5v_box_input_why(void)
+{
+    const unsigned vin = prog5v_box_input_low_mv();
+    if (vin == 0u) {
+        return NULL;
+    }
+    /* Tenths, rounded down: 13.49V reads 13.4V, under the 13.5V. */
+    snprintf(s_in_why, sizeof(s_in_why), TR(P5_IN_WHY), vin / 1000u,
+             (vin % 1000u) / 100u);
+    return s_in_why;
+}
+
+bool prog5v_box_input_is(const char *why)
+{
+    return why != NULL && why == s_in_why;
+}
+
+const char *prog5v_box_input_tag(char *buf, size_t n)
+{
+    if (buf == NULL || n == 0u) {
+        return "";
+    }
+    buf[0] = '\0';
+    const unsigned vin = prog5v_box_input_low_mv();
+    if (vin != 0u) {
+        snprintf(buf, n, TR(P5_IN_TAG), vin / 1000u, (vin % 1000u) / 100u);
+    }
+    return buf;
+}
+
 bool prog5v_box_live(void)
 {
     return (st() == ST_ON || st() == ST_OFF) && held() == PROG5V_HELD_NONE;
@@ -88,6 +134,7 @@ void prog5v_box_init(prog5v_box_t *b, gfx_rect_t r, prog5v_by_t by)
     b->was_on = prog5v_box_on();
     b->seen   = atomic_load(&s_state);
     b->seen_read = atomic_load(&s_read);
+    b->seen_in   = prog5v_box_input_low_mv();
     ui_hold_reset(&b->hold);
 }
 
@@ -128,6 +175,11 @@ bool prog5v_box_press(prog5v_box_t *b)
 {
     if (b == NULL || !prog5v_box_live()) {
         return false;
+    }
+    if (!prog5v_box_on() && prog5v_box_input_low_mv() != 0u) {
+        /* M7 makes no 5V from a low input: no hold, the reason said. */
+        ui_action_refused(prog5v_box_input_why());
+        return true;
     }
     b->pressed  = true;
     b->press_on = prog5v_box_on();
@@ -201,9 +253,11 @@ void prog5v_box_tick(prog5v_box_t *b, float dt_s)
     }
     const uint32_t now = atomic_load(&s_state);
     const uint32_t rd  = atomic_load(&s_read);
-    if (now != b->seen || rd != b->seen_read) {
+    const uint32_t in  = prog5v_box_input_low_mv();
+    if (now != b->seen || rd != b->seen_read || in != b->seen_in) {
         b->seen      = now;
         b->seen_read = rd;
+        b->seen_in   = in;
         ++b->rev;
     }
     const bool on = prog5v_box_on();
@@ -254,6 +308,11 @@ const char *prog5v_box_text(int line, char *buf, size_t n)
         snprintf(buf, n, TR(SUP_PROG5V_LINE), pin(), what);
         return buf;
     }
+    const unsigned vin = prog5v_box_input_low_mv();
+    if (vin != 0u) {
+        snprintf(buf, n, TR(P5_IN_LINE), vin / 1000u, (vin % 1000u) / 100u);
+        return buf;
+    }
     const unsigned h = held();
     if (h != PROG5V_HELD_NONE) {
         if (h < 4u) {
@@ -294,7 +353,9 @@ void prog5v_box_render(const prog5v_box_t *b, gfx_canvas_t *c)
              UI_FONT_FINE, (s == ST_ON) ? ui_theme_color(UI_C_ACCENT)
                                         : ui_theme_color(UI_C_TEXT), 1);
     gfx_text(c, b->r.x, y1 + 20, prog5v_box_text(1, line, sizeof(line)),
-             UI_FONT_FINE, (held() != PROG5V_HELD_NONE)
+             UI_FONT_FINE, (prog5v_box_input_low_mv() != 0u)
+                               ? ui_theme_color(UI_C_DANGER)
+                           : (held() != PROG5V_HELD_NONE)
                                ? ui_theme_color(UI_C_WARN)
                                : ui_theme_color(UI_C_TEXT_DIM), 1);
     /* OUTPUT ON's colours: green when off, fading to the red of on under
@@ -349,4 +410,5 @@ void prog5v_box_reset(void)
     prog5v_box_publish(0u, 0u, (uint8_t)PROG5V_HELD_NONE);
     prog5v_box_reading(false, 0u, 0);
     prog5v_box_publish_cuts(0u);
+    prog5v_box_publish_input(0u);
 }

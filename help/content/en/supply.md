@@ -103,7 +103,11 @@ The PROG 5V box beside PLOT and TABLE controls the programming rail manually, wh
 
 While a programmer holds a port, the box reads `HELD BY PROG PORT n` and accepts no press. Leaving SUPPLY switches off a 5V rail enabled by this box, unless a port holds it. Errors switch it off too, after an active servo-memory write finishes, with a maximum wait of 10000ms.
 
-With the box set to ON, two measurement windows below 3000mV count as a 5V failure: `PROG 5V lost: INA3221 0x40 CH3 read 0.12V while ON. All outputs off.`
+After every ON, the box's, ARM's or a programmer session's, the 5V must read 4750mV or more within 200ms. Otherwise every output goes off with `PROG 5V MISSING: 3.1V AFTER 200ms. CHECK THE SUPPLY VOLTAGE`. Two measurement windows below 4750mV after that count as a 5V failure: `PROG 5V lost: INA3221 0x40 CH3 read 0.12V while ON. All outputs off.`
+
+The programming ports' 5V comes from the carrier's input, which needs 15V. The PD mini runs from the same input and reads it. While that reading is under 13.5V, the head line shows `INPUT 5.1V < 15V` in red, the box's second line reads `INPUT 5.1V: NEEDS 15V`, and PROG 5V ON takes no hold. The band reads `INPUT 5.1V: NEEDS 15V. CHECK THE SUPPLY VOLTAGE`. Without a PD mini reading, only the check after the ON applies.
+
+![SUPPLY with the input at 5.1V](view:supply-rbmod-input)
 
 ## SETTINGS
 

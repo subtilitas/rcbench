@@ -633,11 +633,16 @@ Built: an error switches every output off and the bench to SAFE ([Safety,
 Errors](docs/Safety.md#errors)). The rule is `shared/safety/error_stop.c`, host-tested in
 `test_error_stop`; the supply link's errors are `supply_link_ev_error()`, an INA3221 limit
 passed `sense_limit_link_take_trip()` (`test_sense_limit_link`); the rbmod carrier's PROG 5V
-collapsed under the panel's ON `prog5v_lost_step()` (`test_prog5v_lost`: 2999mV and 3000mV,
-a window read twice, the 500ms settle and an OFF asked under the ON, one trip an ON, the
-clock's and the window number's wrap; `test_prog5v_wire` drives it as `panel_sense.c` does,
-through `prog_supply_link` and `sense_win_link` into `error_sites_stop()`, with the
-operator's OFF, a port holding the 5V and a withheld heartbeat that are no error); a
+missing after an ON or collapsed under it, the panel's or a session's, `prog5v_lost_step()`
+(`test_prog5v_lost`: 4749mV and 4750mV, 199ms and 200ms, 5.0V reaching and 3.1V staying, a
+window read twice, the 500ms settle and an OFF asked under the ON, a session's finding
+confirmed by a page read or dropped, one trip an ON, the clock's and the window number's
+wrap; `test_prog5v_wire` drives it as `panel_sense.c` does, through `prog_supply_link` and
+`sense_win_link` into `error_sites_stop()`, with the operator's OFF, a session's power cycle
+and a withheld heartbeat that are no error); the carrier's input supply under 13.5V as the PD
+mini reads it refuses PROG 5V ON, CONNECT and ARM + START (`test_prog5v_input`,
+`test_prog5v_input_hitec`: 5.1V, 13.499V, 13.5V, 15.0V, 20.0V, no reading, a board without
+the switch); a
 programming session's faults `kst_link_outcome_fault()` and `hitec_prog_ses_fault()`, and
 the OFF written whatever the panel reads (`supply_link_cut()`), in `test_error_stop`; from
 link 4.31 the IOmcu holds the OFF of a supply a programming port holds for the port's write,
@@ -1294,7 +1299,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 510 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 512 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1308,7 +1313,7 @@ The host suite is 510 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_keypad_rows_kst`, `test_pinlist`, `test_bench`, `test_supply`, `test_supply_screen`, `test_supply_stop_fingers`,
 `test_supply_screen_tasks`, `test_supply_pdmini`, `test_supply_screen_home`,
 `test_supply_screen_draw`, `test_supply_layout`, `test_prog5v_box`, `test_prog5v_lost`,
-`test_prog5v_wire`, `test_prog5v_servo`, `test_prog5v_supply`, `test_pdmini`, `test_motor`,
+`test_prog5v_wire`, `test_prog5v_servo`, `test_prog5v_supply`, `test_prog5v_input`, `test_prog5v_input_hitec`, `test_pdmini`, `test_motor`,
 `test_motor_draw`, `test_motor_throttle`, `test_motor_arm`, `test_motor_workbench`,
 `test_motor_program`, `test_motor_layout`, `test_value_state`, `test_servo`,
 `test_servo_knob`, `test_servo_two_drags`, `test_servo_two_drags_sweep`, `test_servo_drag`, `test_servo_repaint`, `test_repaint_parts`,
@@ -1869,8 +1874,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 906 committed screenshots to the current render,
-453 in English and the same 453 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` holds 910 committed screenshots to the current render,
+455 in English and the same 455 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

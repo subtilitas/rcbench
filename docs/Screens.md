@@ -1798,10 +1798,19 @@ unless a port holds it.
 
 SUPPLY has the PROG 5V box ([Supply](#supply)); see
 [Carrier, The PROG 5V box](Carrier.md#the-prog-5v-box) for its rules.
-Two windows below 3000mV while the box reports ON cause a fault: SAFE,
-all outputs off, and the band message
+After every ON, the box's, ARM's or a session's, the 5V must read 4750mV
+or more within 200ms; otherwise SAFE, all outputs off, and the band
+message `PROG 5V MISSING: 3.1V AFTER 200ms. CHECK THE SUPPLY VOLTAGE`.
+Two windows below 4750mV after that cause the same fault with
 `PROG 5V lost: INA3221 0x40 CH3 read 0.12V while ON. All outputs off.`
-([Carrier, PROG 5V lost](Carrier.md#prog-5v-lost)).
+([Carrier, PROG 5V missing or lost](Carrier.md#prog-5v-missing-or-lost)).
+While the PD mini reads the carrier's input under 13.5V, the PROG 5V
+row of the READY card on KST, HITEC, LIMIT RUN and RUDDER AUTO reads
+`INPUT 5.1V < 15V` in red, and CONNECT and ARM + START are refused with
+`INPUT 5.1V: NEEDS 15V. CHECK THE SUPPLY VOLTAGE`
+([Carrier, The input supply](Carrier.md#the-input-supply)).
+
+![KST with the input at 5.1V: CONNECT refused](img/servo-kst-rbmod-input.png)
 
 ![The KST programmer holding the 5V](img/servo-kst-rbmod.png)
 
@@ -2780,6 +2789,16 @@ Leaving SUPPLY turns off 5V switched on by its box unless a port holds it.
 Boards without the switch show neither control.
 
 ![SUPPLY on the carrier](img/supply-rbmod.png)
+
+The PD mini on the carrier runs from the same input as M7. While it reads
+that input under 13.5V, the head line names it in red after the PD mini's
+pins, `INPUT 5.1V < 15V` in place of `ONLINE`, the box's second line reads
+`INPUT 5.1V: NEEDS 15V` in red, and PROG 5V ON takes no hold: the alert
+band reads `INPUT 5.1V: NEEDS 15V. CHECK THE SUPPLY VOLTAGE`. The band
+shows that text once as the reading goes low and takes it back once it is
+13.5V or more ([Carrier, The input supply](Carrier.md#the-input-supply)).
+
+![SUPPLY with the input at 5.1V](img/supply-rbmod-input.png)
 
 ### Supply settings
 

@@ -868,6 +868,29 @@ static void supply_link_alerts(void)
      * replaces it. */
 }
 
+/**
+ * @brief The PD mini's input to the PROG 5V box, and the band's warning
+ *        once while the carrier's input supply reads low
+ *        (prog5v_box_input_low_mv()): posted as it goes low, taken back
+ *        once it is not.  The PD mini runs from the same input as the +15V
+ *        net that M7 makes the ports' 5V from.
+ */
+static void input_publish(void)
+{
+    static uint32_t posted;   /* the warning's alert number, 0 for none */
+    prog5v_box_publish_input(supply_link_input_mv(&s_supply_link, now_ms()));
+    const unsigned low = prog5v_box_input_low_mv();
+    if (low != 0u && posted == 0u) {
+        char line[ALERT_MAX];
+        snprintf(line, sizeof(line), TR(P5_IN_WHY), low / 1000u,
+                 (low % 1000u) / 100u);
+        posted = control_alert_kept(line);
+    } else if (low == 0u && posted != 0u) {
+        control_alert_withdraw(posted);
+        posted = 0u;
+    }
+}
+
 /*
  * The SUPPLY page: what is owed written -- an OFF first -- and the page read
  * every SUPPLY_LINK_READ_MS.  From poll_bench(), outside the pump: the pump
@@ -878,6 +901,7 @@ static void supply_link_alerts(void)
 void supply_link_service(void)
 {
     if (!s_supply_page) {
+        input_publish();
         return;
     }
     supply_wiring_t w = { 0 };
@@ -949,6 +973,7 @@ void supply_link_service(void)
                                            : reply.regs[LINK_SP_BAUD]));
         }
     }
+    input_publish();
     supply_link_alerts();
 }
 
@@ -1013,12 +1038,14 @@ static uint8_t prog5v_held_port(void)
                                 || prog_supply_link_port(&s_psup_link));
 }
 
-bool prog5v_panel_on(void)
+void prog5v_watch_on(prog5v_on_t *out)
 {
-    return prog_supply_link_state(&s_psup_link) == PROG_SUPPLY_ON
-           && prog5v_held_port() == PROG5V_HELD_NONE
-           && arming_heartbeat(&s_arm, now_ms())
-           && !atomic_load(&s_disarm_request);
+    out->on = prog_supply_link_state(&s_psup_link) == PROG_SUPPLY_ON
+              && arming_heartbeat(&s_arm, now_ms())
+              && !atomic_load(&s_disarm_request);
+    out->port  = prog5v_held_port() != PROG5V_HELD_NONE;
+    out->cuts  = prog_supply_link_cuts(&s_psup_link);
+    out->reads = prog_supply_link_on_reads(&s_psup_link);
 }
 
 void prog_supply_publish(void)

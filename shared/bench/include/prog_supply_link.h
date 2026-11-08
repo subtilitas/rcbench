@@ -72,6 +72,8 @@ typedef struct {
                             restarts of the state, counted: an ON made
                             before the latest is refused               */
     uint32_t read_ms;  /**< when the last read was made                 */
+    uint32_t on_reads; /**< answered reads that showed the pin on,
+                            counted across the 32-bit wrap            */
 } prog_supply_link_t;
 
 /**
@@ -191,6 +193,15 @@ prog_supply_state_t prog_supply_link_state(const prog_supply_link_t *l);
  *         unanswered read
  */
 bool prog_supply_link_port(const prog_supply_link_t *l);
+
+/**
+ * @brief The answered reads that showed the pin on, counted: a finding of
+ *        the PROG 5V watch made while a port holds the supply waits for
+ *        this to move (prog5v_lost.h).
+ * @param l the state
+ * @return the count; 0 for NULL
+ */
+uint32_t prog_supply_link_on_reads(const prog_supply_link_t *l);
 
 /**
  * @brief Whether the ports' own supply is the programmers' supply: the

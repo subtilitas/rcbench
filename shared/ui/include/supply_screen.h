@@ -139,7 +139,10 @@ void supply_screen_set_prog_5v(uint8_t state, uint8_t pin);
 /**
  * @brief The left text of the header strip: the supply and its pins, the
  *        answer and the rate ("PD MINI TX GPIO 12 RX GPIO 13   ONLINE
- *        38400"), 47 characters at most.
+ *        38400"), 47 characters at most.  On the rbmod carrier with its
+ *        input supply low (prog5v_box_input_low_mv()) the input in place of
+ *        the answer and the rate: "PD MINI TX GPIO 7 RX GPIO 6   INPUT 5.1V
+ *        < 15V", 50 characters at most.
  * @param out   takes the text
  * @param size  bytes at @p out
  */
