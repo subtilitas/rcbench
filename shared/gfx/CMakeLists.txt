@@ -8,6 +8,7 @@ set(SRCS
     gfx_text.c
     gfx_turn.c
     gfx_seg.c
+    gfx_trapezoid.c
     gfx_sprite.c
     gfx_font8x16.c
     gfx_font16x28.c

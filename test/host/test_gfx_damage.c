@@ -368,12 +368,15 @@ static void draw_one(gfx_canvas_t *c, int k)
                           (float)irnd(0, 30));
              break;
     case 28: gfx_clear(c, col); break;
+    case 29: gfx_fill_trapezoid(c, y, h, x, x + w, x + irnd(-30, 30),
+                                x + w - irnd(-30, 30), col);
+             break;
     default: gfx_char(c, x, y, 'Q', &gfx_font_num_32x44, col, 1); break;
     }
 }
 
 /** @brief Kinds draw_one() knows. */
-#define KINDS 30
+#define KINDS 31
 
 /* Every primitive, many times over, on the root canvas and on clipped
  * sub-canvases: no pixel changes outside what it reported. */
