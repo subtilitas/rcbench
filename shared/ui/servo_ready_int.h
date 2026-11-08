@@ -275,6 +275,7 @@ void rauto_ready_tap(int i);
 typedef enum {
     TRR_PORT = 0,  /**< OUTPUTS, or a PROG PORT off the carrier, its pulse */
     TRR_METER,     /**< the meter the run reads                           */
+    TRR_ANGLE,     /**< the angle source the run reads; never a refusal   */
     TRR_PD,        /**< the PD mini the steps set                         */
     TRR_STEPS,     /**< the steps chosen and inside the caps              */
     TRR_RANGE,     /**< the ends either side of PULSE CENTER              */
@@ -317,6 +318,7 @@ typedef enum {
     LRR_PORT = 0,  /**< an output the tester drives                    */
     LRR_SERVO,     /**< the family a run on a PROG PORT reads          */
     LRR_METER,     /**< the INA3221 channel the run reads              */
+    LRR_ANGLE,     /**< the angle source the run reads; never a refusal */
     LRR_RAIL,      /**< the servo rail, 3.0V or more                   */
     LRR_RANGE,     /**< PULSE MIN, CENTER and MAX                      */
     LRR_PROG,      /**< the programmer free                            */

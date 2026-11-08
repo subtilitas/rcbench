@@ -46,6 +46,7 @@
 #include "prog_choice.h"
 #include "prog_registry.h"
 #include "sensors_rows.h"
+#include "servo_angle_pick.h"
 #include "servo_limrun.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -280,6 +281,7 @@ static const char *row_label(int i)
     switch ((test_row_t)i) {
     case TRR_PORT:  return TR(SVH_PORT);
     case TRR_METER: return TR(RDY_METER);
+    case TRR_ANGLE: return TR(RDY_ANGLE);
     case TRR_PD:    return "PD MINI";
     case TRR_STEPS: return TR(TST_STEPS);
     case TRR_RANGE: return TR(RDY_RANGE);
@@ -361,6 +363,17 @@ bool test_ready_row(int i, rdy_row_t *r)
     }
     memset(r, 0, sizeof(*r));
     r->label = row_label(i);
+    if (i == TRR_ANGLE) {
+        /* The source the run reads, as it started while it runs; no check
+         * of the gate belongs to it. */
+        const servo_test_cfg_t *rc = &s.test.cfg;
+        char name[24];
+        const bool running = servo_test_running(&s.test);
+        angle_pick_run_row(r, running ? servo_test_enc_source(rc)
+                                      : enc_name(name, sizeof(name)),
+                           running ? rc->enc_on : enc_on_now());
+        return true;
+    }
     /* The row's first text that refuses the hold, else its first the hold
      * does: an amber text never hides a red one of the same row. */
     const char *bad = NULL, *seq = NULL;
@@ -424,6 +437,10 @@ void test_ready_tap(int i)
     }
     if (i == TRR_PORT) {
         port_list_open();
+        return;
+    }
+    if (i == TRR_ANGLE) {
+        angle_pick_open();
         return;
     }
     if (i == TRR_STEPS && r.fix) {

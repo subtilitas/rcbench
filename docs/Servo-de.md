@@ -104,10 +104,12 @@ SERVO-Funktionsbildschirms. Der Bildschirm steht in
   SERIE der HITEC-Seite ändern keine von beiden. Eine Wahl wird
   abgelehnt, solange der Prüfstand nicht SAFE ist, ein Lauf oder eine
   Startfolge läuft oder eine Programmierung den Port hält.
-- Die Karte BEREIT an der Stelle der Ausgangskarte, neun Zeilen zu 30px
-  ab y 96: PORT, SERVO, MESSGERÄT, SCHIENE, BEREICH, PROGRAMMER, die
-  Versorgung, PORT-PWM und ARM, je ein Punkt, die Bezeichnung und der
-  Zustand. Die Versorgungszeile heißt PROG 5V am Programmierport des
+- Die Karte BEREIT an der Stelle der Ausgangskarte, zehn Zeilen zu 30px
+  von y 96 bis y 396, 4px über der Schienenzeile: PORT, SERVO, MESSGERÄT,
+  WINKEL, SCHIENE, BEREICH, PROGRAMMER, die Versorgung, PORT-PWM und ARM,
+  je ein Punkt, die Bezeichnung und der Zustand. WINKEL nennt die
+  Winkelquelle und verweigert nichts: grün, solange der Lauf einen Winkel
+  liest, gelb `AS5600 AUS` oder `IMU X+ KEIN MESSWERT`, solange nicht. Die Versorgungszeile heißt PROG 5V am Programmierport des
   rbmod-Carriers, PD MINI, wo ein PD mini das Servo speist, sonst
   VERSORGUNG. PROG 5V und PD MINI zeigen die `5.0V` des Laufs, VERSORGUNG
   die mittlere Spannung der Schiene. Die Farben sind die von RUDER AUTO
@@ -115,7 +117,8 @@ SERVO-Funktionsbildschirms. Der Bildschirm steht in
   oder ein Ausgang ist über sie aktiv, gelb erledigt das Halten selbst,
   grau wartet auf die Zeile PORT. An den Ausgängen des Prüfstands zeigt
   SERVO `NUR SUCHE` in Grau, PROGRAMMER und PORT-PWM `--`.
-- Ein Tippen auf PORT öffnet die PORT-Auswahl; auf SERVO die Auswahl
+- Ein Tippen auf PORT öffnet die PORT-Auswahl; auf WINKEL die
+  [Liste WINKELQUELLE](#winkelquelle); auf SERVO die Auswahl
   SERVO, KST/CHASERVO, HITEC D-SERIE und HITEC KLASSISCH über der linken
   Spalte, an den Ausgängen des Prüfstands nennt das Band `SERVO:
   Nur an einem PROG-PORT: wähle einen mit PORT`; auf ein rotes MESSGERÄT
@@ -1198,8 +1201,8 @@ Einstellung ist die zweite Zeile unter SETUP > SENSORS > IMU, auch bei
 ausgeschalteter IMU gezeigt, und steht in der Liste WINKELQUELLE.
 
 Die Liste WINKELQUELLE öffnet sich über der linken Spalte, von der Zeile
-WINKEL der Karte BEREIT auf RUDER und RUDER AUTO und von der Zeile
-WINKELQUELLE ihrer OPTIONEN, nur bei SAFE: ARMED, ein angefordertes ARM,
+WINKEL der Karte BEREIT auf RUDER, RUDER AUTO, TEST und ENDLAGENLAUF und
+von der Zeile WINKELQUELLE der OPTIONEN von RUDER und RUDER AUTO, nur bei SAFE: ARMED, ein angefordertes ARM,
 ein Lauf oder ein gehaltener Druck verweigern sie, und ein Prüfstand, der
 SAFE verlässt, schließt sie. Der Code ist `shared/ui/servo_angle_pick.c`.
 Ihre Einträge, von oben, höchstens 10:
