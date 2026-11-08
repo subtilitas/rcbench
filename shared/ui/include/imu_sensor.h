@@ -32,6 +32,7 @@
 
 #include "imu.h"
 #include "imu_screen.h"
+#include "servo_angle.h"
 #include "witmotion.h"
 
 #ifdef __cplusplus
@@ -265,6 +266,21 @@ void imu_handout_reset(imu_handout_t *h);
  */
 imu_hand_t imu_handout_next(imu_handout_t *h, const imu_reading_t *r,
                             uint32_t gaps);
+
+/**
+ * @brief A valid reading as it goes on to SERVO: the angle of @p axis from
+ *        the zero, negated with @p neg (imu_deg()), the still time of that
+ *        same axis (imu_still_ms()) and the frame's time.  The other axes'
+ *        moves do not hold the still time at 0.
+ * @param r    The reading.
+ * @param axis The axis SERVO reads: IMU AXIS.
+ * @param neg  IMU SIGN negative.
+ * @param out  Takes valid, deg, still_ms and taken_ms while @p r is valid;
+ *             untouched otherwise.
+ * @return r->valid; false for NULL.
+ */
+bool imu_handout_angle(const imu_reading_t *r, imu_axis_t axis, bool neg,
+                       servo_angle_in_t *out);
 
 #ifdef __cplusplus
 }

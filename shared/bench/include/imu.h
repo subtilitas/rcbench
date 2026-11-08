@@ -13,6 +13,12 @@
  * after imu_init(), imu_reseed() or a stale reading seeds it.  The
  * time constant is about k frames: the angle covers 63% of a step in
  * about k frames, so k 10 at 10Hz takes about 1s.
+ *
+ * The still time is kept per axis: roll, pitch and yaw each have their
+ * own stretch within IMU_STILL_DEG and their own settle.  A consumer
+ * reads the still time of the axis it takes the angle of, the axis it
+ * passes to imu_deg(), through imu_still_ms(): pitch creeping 1°/s does
+ * not hold a still yaw at 0.
  * SPDX-License-Identifier: MIT
  */
 #pragma once
@@ -30,7 +36,8 @@ extern "C" {
 /** @brief A reading older than this is not valid: the non-safety
  *         allowance of servo_gap.h (SERVO_GAP_MAX_MS, asserted equal). */
 #define IMU_STALE_MS     300u
-/** @brief The angle within this of the one before counts as still, °. */
+/** @brief An axis' angle within this of its still stretch's first frame
+ *         counts as still, °. */
 #define IMU_STILL_DEG    0.5f
 /** @brief The window the frame rate is counted over, ms. */
 #define IMU_RATE_WIN_MS  1000u
@@ -41,8 +48,9 @@ extern "C" {
 #define IMU_FILTER_MAX     50u
 /** @brief IMU FILTER's default: no filtering. */
 #define IMU_FILTER_DEFAULT 1u
-/** @brief The filtered angle counts as settled once it lies within this
- *         of the sensor's, °: half of AUTO's smallest tolerance, 0.1°. */
+/** @brief An axis' filtered angle counts as settled once it lies within
+ *         this of the sensor's, °: half of AUTO's smallest tolerance,
+ *         0.1°. */
 #define IMU_SETTLE_DEG     0.05f
 
 /** @brief An axis of the sensor: roll, pitch, yaw. */
@@ -56,11 +64,13 @@ typedef struct {
                                 -180 to 180 */
     float    zero[3];      /**< the zero taken, ° */
     bool     zeroed;       /**< imu_zero() took zero[] */
-    uint16_t still_ms;     /**< the sensor's angle within IMU_STILL_DEG for
-                                this long; 0 while the filtered angle
-                                has not settled to IMU_SETTLE_DEG, and
-                                0 on any frame it lies further than
-                                that from the sensor's */
+    uint16_t still_ms[3];  /**< per axis, roll, pitch, yaw: the sensor's
+                                angle of that axis within IMU_STILL_DEG
+                                for this long, ms; 0 while that axis'
+                                filtered angle has not settled to
+                                IMU_SETTLE_DEG, and 0 on any frame it
+                                lies further than that from the
+                                sensor's.  Read through imu_still_ms() */
     uint16_t rate_dhz;     /**< angle frames in the last second, 0.1Hz */
     float    battery_v;    /**< from 0x52; NAN until one came */
     float    temp_c;       /**< from 0x51; NAN until one came, and
@@ -76,14 +86,16 @@ typedef struct {
     wit_parser_t  p;              /**< the frame parser */
     uint32_t rate_from_ms;        /**< the rate window's start */
     uint16_t rate_count;          /**< angle frames in the window so far */
-    float    still_ref[3];        /**< the angles the still time runs from */
-    uint32_t still_from_ms;       /**< when they came */
+    float    still_ref[3];        /**< per axis: the angle its still time
+                                       runs from, ° */
+    uint32_t still_from_ms[3];    /**< per axis: when that angle came */
     uint8_t  filter;              /**< IMU FILTER, IMU_FILTER_MIN to _MAX */
     bool     seed;                /**< the next angle frame seeds the filter */
-    bool     settled;             /**< the filter settled in this still time */
-    float    resid;               /**< the filter's distance from the sensor's
-                                       angle as the still time began, decayed
-                                       a frame at a time, ° */
+    bool     settled[3];          /**< per axis: its filtered angle settled
+                                       in its still time */
+    float    resid[3];            /**< per axis: the filter's distance from
+                                       the sensor's angle as its still time
+                                       began, decayed a frame at a time, ° */
     uint16_t content;             /**< WIT_RSW_* bits of the frame types
                                        since imu_content_restart() */
     uint8_t  content_n;           /**< good frames since then, held at 255 */
@@ -135,6 +147,15 @@ bool imu_reading(const imu_t *m, imu_reading_t *out);
  * @return the angle, °; 0 while not valid.
  */
 float imu_deg(const imu_reading_t *r, imu_axis_t axis, bool neg);
+/**
+ * @brief The still time of @p axis: the axis a consumer passes to
+ *        imu_deg() for its angle.
+ * @param r    The reading.
+ * @param axis The axis.
+ * @return r->still_ms[axis], ms; 0 while not valid, for NULL and for
+ *         another axis.
+ */
+uint16_t imu_still_ms(const imu_reading_t *r, imu_axis_t axis);
 /** @brief "X", "Y" or "Z". @param axis The axis.
  *  @return The name; "" for another. */
 const char *imu_axis_name(imu_axis_t axis);

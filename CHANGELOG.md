@@ -23,6 +23,16 @@ history is in git.
   the ESC backup files, and the settings key `enc_centre` keeps its name, so
   saved files and settings keep loading.
 
+### Fixed
+
+- With the IMU as ANGLE SOURCE, RUDDER AUTO, the servo test and the LIMIT
+  RUN wait for the still time of the IMU axis setting alone: that axis
+  within 0.5° (`IMU_STILL_DEG`) for 500ms. Roll and pitch may move while
+  the run reads yaw: a pitch that creeps 1°/s while yaw holds within 0.1°
+  leaves yaw's still time running, and RUDDER AUTO takes the angle instead
+  of ending with `surface not still within 3s`. The settle of IMU FILTER
+  above 1 is judged per axis too.
+
 ## 0.23.10 - 2026-11-08
 
 0.23.10 is a testing release. It removes the stall before `app_main()` in

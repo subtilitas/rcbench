@@ -1065,7 +1065,7 @@ does not apply to the IMU, and ENC CENTER takes no count from it.
 | | AS5600 | IMU |
 | --- | --- | --- |
 | a run reads angles when | AS5600 is on and the IOmcu holds it on | a reading under 300ms old is on show at the start |
-| still time | the IOmcu's, 12 counts (1.05°) | the IMU's own (`IMU_STILL_DEG`, 0.5°, `imu.h`) |
+| still time | the IOmcu's, 12 counts (1.05°) | the IMU's own of the IMU axis setting alone (`IMU_STILL_DEG`, 0.5°, `imu.h`); the other axes may move |
 | gap | not answering | no reading for 300ms (`IMU_STALE_MS`) |
 | report, `Encoder:` | `AS5600 on the horn shaft, center count N` | `IMU X+, in AS5600 counts (0.088° per count)` |
 
@@ -1641,8 +1641,8 @@ ARMED is asked).
   are set to 1000.0us and 2000.0us if needed; then LEAVE and a request
   for ARMED.
 - A measure: the end pulse commanded; from 500ms after the command the
-  first angle still for 500ms is taken. No still angle by 3000ms ends the
-  run.
+  first angle still for 500ms is taken. With the IMU that is the still
+  time of the IMU axis setting alone. No still angle by 3000ms ends the run.
 - A side's direction is the sign of its first measure. Both sides on one
   sign end the run as `end point of a side not found`.
 - A side outside the tolerance gets value x goal / measured, held to the

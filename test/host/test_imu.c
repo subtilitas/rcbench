@@ -12,6 +12,7 @@
 #include "imu_rig.h"
 
 #include "servo_gap.h"
+#include "servo_rudder_auto.h"
 
 /* The non-safety allowance of servo_gap.h, the IMU's stale time. */
 _Static_assert(IMU_STALE_MS == SERVO_GAP_MAX_MS,
@@ -100,47 +101,98 @@ TEST_CASE(the_zero_is_subtracted_and_wrapped_at_180)
     CHECK_EQ(imu_deg(NULL, IMU_AXIS_X, false), 0.0f);
 }
 
-/* Within 0.5° of where it settled on every axis the still time runs; a
- * move past it on one axis starts it again; a stale reading ends it. */
-TEST_CASE(still_ms_counts_while_the_angle_stays_within_half_a_degree)
+/** @brief Check the still time of roll, pitch and yaw in @p r, ms. */
+#define CHECK_STILL3(r, x, y, z)                                       \
+    do {                                                               \
+        CHECK_EQ((r).still_ms[IMU_AXIS_X], (x));                       \
+        CHECK_EQ((r).still_ms[IMU_AXIS_Y], (y));                       \
+        CHECK_EQ((r).still_ms[IMU_AXIS_Z], (z));                       \
+    } while (0)
+
+/* Each axis within 0.5° of its stretch's first frame runs its own still
+ * time; a move past it on one axis starts that axis' again and leaves the
+ * others running; a stale reading ends all three. */
+TEST_CASE(still_ms_counts_per_axis_while_it_stays_within_half_a_degree)
 {
     imu_t m;
     imu_init(&m);
     imu_reading_t r;
     rig_feed_angle(&m, 0.0f, 0.0f, 0.0f, 1000u);
     (void)imu_reading(&m, &r);
-    CHECK_EQ(r.still_ms, 0u);
+    CHECK_STILL3(r, 0u, 0u, 0u);
     rig_feed_angle(&m, 0.45f, -0.45f, 0.45f, 1100u);
     (void)imu_reading(&m, &r);
-    CHECK_EQ(r.still_ms, 100u);
+    CHECK_STILL3(r, 100u, 100u, 100u);
     rig_feed_angle(&m, -0.45f, 0.0f, 0.0f, 1200u);
     (void)imu_reading(&m, &r);
-    CHECK_EQ(r.still_ms, 200u);
-    /* 0.6° on Z alone: moved. */
+    CHECK_STILL3(r, 200u, 200u, 200u);
+    /* 0.6° on Z alone: Z moved, X and Y run on. */
     rig_feed_angle(&m, 0.0f, 0.0f, 0.6f, 1300u);
     (void)imu_reading(&m, &r);
-    CHECK_EQ(r.still_ms, 0u);
+    CHECK_STILL3(r, 300u, 300u, 0u);
     rig_feed_angle(&m, 0.0f, 0.0f, 0.6f, 1350u);
     (void)imu_reading(&m, &r);
-    CHECK_EQ(r.still_ms, 50u);
-    /* Across ±180 the difference is the short way round. */
+    CHECK_STILL3(r, 350u, 350u, 50u);
+    CHECK_EQ(imu_still_ms(&r, IMU_AXIS_Z), 50u);
+    CHECK_EQ(imu_still_ms(&r, IMU_AXIS_Y), 350u);
+    /* Across ±180 the difference is the short way round: X moved to
+     * 179.9°, then 0.2° on to -179.9° is still. */
     rig_feed_angle(&m, 179.9f, 0.0f, 0.6f, 1400u);
     rig_feed_angle(&m, -179.9f, 0.0f, 0.6f, 1450u);
     (void)imu_reading(&m, &r);
-    CHECK_EQ(r.still_ms, 50u);
-    /* Stale: the still time ends, and the next frame starts it again. */
+    CHECK_STILL3(r, 50u, 450u, 150u);
+    /* Stale: every still time ends, and the next frame starts them. */
     imu_tick(&m, 1750u);
     (void)imu_reading(&m, &r);
-    CHECK_EQ(r.still_ms, 0u);
+    CHECK_STILL3(r, 0u, 0u, 0u);
     rig_feed_angle(&m, -179.9f, 0.0f, 0.6f, 1800u);
     (void)imu_reading(&m, &r);
-    CHECK_EQ(r.still_ms, 0u);
-    /* It holds at 65535ms. */
+    CHECK_STILL3(r, 0u, 0u, 0u);
+    /* They hold at 65535ms. */
     for (uint32_t t = 1900u; t < 1900u + 70000u; t += 200u) {
         rig_feed_angle(&m, -179.9f, 0.0f, 0.6f, t);
     }
     (void)imu_reading(&m, &r);
-    CHECK_EQ(r.still_ms, 65535u);
+    CHECK_STILL3(r, 65535u, 65535u, 65535u);
+    /* imu_still_ms(): 0 for another axis, NULL and a stale reading. */
+    CHECK_EQ(imu_still_ms(&r, IMU_AXIS_X), 65535u);
+    CHECK_EQ(imu_still_ms(&r, (imu_axis_t)3), 0u);
+    CHECK_EQ(imu_still_ms(&r, (imu_axis_t)-1), 0u);
+    CHECK_EQ(imu_still_ms(NULL, IMU_AXIS_X), 0u);
+    r.valid = false;
+    CHECK_EQ(imu_still_ms(&r, IMU_AXIS_X), 0u);
+}
+
+/* The bench of 2026-11-08, BLE 50Hz, IMU FILTER 1, axis Z+: yaw held
+ * 50.49° to 50.56° while pitch crept about 1°/s and roll 4.04° to 4.26°.
+ * Yaw's still time runs from the first frame past SERVO_RAUTO_STILL_MS;
+ * pitch's own starts again within every 0.5° of the creep and never
+ * reaches it. */
+TEST_CASE(a_still_yaw_counts_while_pitch_creeps)
+{
+    static const float k_yaw[] = { 50.49f, 50.52f, 50.56f, 50.53f, 50.50f };
+    imu_t m;
+    imu_init(&m);
+    imu_reading_t r;
+    const uint32_t t0 = 5000u;
+    uint16_t pitch_max = 0u;
+    unsigned pitch_restarts = 0u;
+    for (uint32_t n = 0u; n <= 300u; ++n) {        /* 6s at 20ms */
+        const uint32_t t = t0 + 20u * n;
+        const float s = (float)(20u * n) / 1000.0f;
+        rig_feed_angle(&m, 4.04f + 0.22f * s / 6.0f, -3.26f + 1.1f * s,
+                       k_yaw[n % 5u], t);
+        (void)imu_reading(&m, &r);
+        CHECK_EQ(imu_still_ms(&r, IMU_AXIS_Z), (uint16_t)(t - t0));
+        CHECK_EQ(imu_still_ms(&r, IMU_AXIS_X), (uint16_t)(t - t0));
+        const uint16_t p = imu_still_ms(&r, IMU_AXIS_Y);
+        pitch_max = (p > pitch_max) ? p : pitch_max;
+        pitch_restarts += (n > 0u && p == 0u) ? 1u : 0u;
+    }
+    CHECK(imu_still_ms(&r, IMU_AXIS_Z) >= SERVO_RAUTO_STILL_MS);
+    CHECK_EQ(imu_still_ms(&r, IMU_AXIS_Z), 6000u);
+    CHECK(pitch_max < SERVO_RAUTO_STILL_MS);
+    CHECK(pitch_restarts >= 12u);       /* 6.6° of creep, 0.5° a stretch */
 }
 
 /* The angle frames of each window of 1s, in 0.1Hz; a window that ran two
@@ -290,7 +342,8 @@ int main(void)
     RUN(imu_stale_equals_the_gap_allowance);
     RUN(angle_frames_make_the_reading_valid_and_stale_after_300ms);
     RUN(the_zero_is_subtracted_and_wrapped_at_180);
-    RUN(still_ms_counts_while_the_angle_stays_within_half_a_degree);
+    RUN(still_ms_counts_per_axis_while_it_stays_within_half_a_degree);
+    RUN(a_still_yaw_counts_while_pitch_creeps);
     RUN(the_rate_counts_angle_frames_over_the_last_second);
     RUN(battery_and_temperature_come_from_their_frames);
     RUN(the_content_counts_frame_types_since_the_restart);

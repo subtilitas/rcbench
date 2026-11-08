@@ -77,7 +77,8 @@ typedef struct {
                                  has an angle                           */
     uint16_t raw;           /**< RAW ANGLE, 0 to 4095                   */
     uint16_t still_ms;      /**< the angle within the tolerance for this
-                                 long at the reading                    */
+                                 long at the reading; from the IMU, the
+                                 still time of IMU AXIS alone           */
     uint32_t taken_ms;      /**< when the panel had it, on the run's clock;
                                  for one not valid, when it was found so */
     bool     gap;           /**< readings before this one were lost: the

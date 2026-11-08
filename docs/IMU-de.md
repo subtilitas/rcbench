@@ -256,23 +256,27 @@ Sprungs, bei 50Hz etwa 0,2s.
   179,9° auf -179,9° bewegt den Winkel 0,2° auf dem kurzen Weg, nicht über
   0. Das gilt für jede Achse.
 
-Die Ruhezeit ist die des Sensors: der Winkel innerhalb von 0,5°
-(`IMU_STILL_DEG`) um den ersten Frame der Strecke. Solange der gefilterte
-Winkel dem des Sensors um mehr als 0,05° (`IMU_SETTLE_DEG`) nachläuft,
-zeigt die Ruhezeit 0. Das Panel bestimmt diesen Rest aus dem Abstand beim
-ersten Frame der Strecke, je Frame mit (1 - 1/k) verkleinert. Ist er 0,05°
-oder weniger, zählt die Ruhezeit ab dem Stillstand des Sensors. Auch danach
-zeigt sie auf jedem Frame 0, solange der gefilterte Winkel mehr als 0,05°
-vom Frame entfernt liegt; ein Wandern innerhalb der 0,5° hält sie also auf
-0, bis der Filter nachgezogen hat. AUTO auf
-RUDER wartet auf 500ms Ruhezeit und nimmt damit einen eingeschwungenen
-Winkel, höchstens 0,05° vom Sensorwert entfernt. AUTO wartet nach dem
-Befehl bis zu 3 000ms plus das längste Einschwingen des Filters
-(`imu_filter_settle_ms()`): die Frames, die ein Abstand von 180° bis auf
-0,05° braucht, zum 1,5-Fachen der gemessenen Frame-Periode, höchstens
-300ms je Frame. Das sind 0ms bei IMU-Filter 1, 11 700ms bei IMU-Filter 10
-mit 10Hz und 60 900ms bei IMU-Filter 50 mit 10Hz. Der Bericht nennt die
-Wartezeit: `spätestens 14700ms nach dem Befehl`.
+Die Ruhezeit ist die des Sensors und gilt je Achse: der Winkel einer Achse
+innerhalb von 0,5° (`IMU_STILL_DEG`) um den ersten Frame der Strecke
+dieser Achse. RUDER AUTO, der Servotest und der ENDLAGENLAUF lesen die
+Ruhezeit der Einstellung IMU-Achse, deren Winkel sie nehmen. Die beiden
+anderen Achsen dürfen sich bewegen: ein Pitch, der mit 1°/s wandert, hält
+die Ruhezeit eines ruhigen Yaw nicht auf 0. Solange der gefilterte Winkel
+einer Achse dem des Sensors um mehr als 0,05° (`IMU_SETTLE_DEG`)
+nachläuft, zeigt die Ruhezeit dieser Achse 0. Das Panel bestimmt diesen
+Rest je Achse aus dem Abstand beim ersten Frame der Strecke, je Frame mit
+(1 - 1/k) verkleinert. Ist er 0,05° oder weniger, zählt die Ruhezeit ab
+dem Stillstand des Sensors. Auch danach zeigt sie auf jedem Frame 0,
+solange der gefilterte Winkel mehr als 0,05° vom Frame entfernt liegt; ein
+Wandern innerhalb der 0,5° hält sie also auf 0, bis der Filter nachgezogen
+hat. AUTO auf RUDER wartet auf 500ms Ruhezeit und nimmt damit einen
+eingeschwungenen Winkel, höchstens 0,05° vom Sensorwert entfernt. AUTO
+wartet nach dem Befehl bis zu 3 000ms plus das längste Einschwingen des
+Filters (`imu_filter_settle_ms()`): die Frames, die ein Abstand von 180°
+bis auf 0,05° braucht, zum 1,5-Fachen der gemessenen Frame-Periode,
+höchstens 300ms je Frame. Das sind 0ms bei IMU-Filter 1, 11 700ms bei
+IMU-Filter 10 mit 10Hz und 60 900ms bei IMU-Filter 50 mit 10Hz. Der
+Bericht nennt die Wartezeit: `spätestens 14700ms nach dem Befehl`.
 
 Derzeitige Einschränkung: bei IMU-Filter über 1 zählt eine Bewegung des
 Servotests als verspätet, wenn der gefilterte Winkel bis zum nächsten
