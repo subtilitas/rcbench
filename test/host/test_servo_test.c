@@ -108,7 +108,7 @@ TEST_CASE(length_by_time_moves_for_the_test_time)
 
 /*
  * A servo whose ends hold at different currents -- 0.40A at the low end,
- * which is loaded, 0.05A at the high end and the centre -- and whose
+ * which is loaded, 0.05A at the high end and the center -- and whose
  * current ramps up from where it was at 0.95A a second while it moves,
  * for 1200ms end to end.  Neither the first reading of a move, still at
  * the start end's level, nor the ramp passing the destination's level on
@@ -127,7 +127,7 @@ TEST_CASE(unequal_end_levels_do_not_arrive_early)
     c.report     = false;
     servo_test_init(&t);
     uint32_t now = 1000u, cmd_at = 0u, next = now;
-    uint16_t cmd = CENTRE, from = CENTRE, samples = 1u;
+    uint16_t cmd = CENTER, from = CENTER, samples = 1u;
     servo_test_reading_t r;
     memset(&r, 0, sizeof(r));
     r.v = 4.8f;

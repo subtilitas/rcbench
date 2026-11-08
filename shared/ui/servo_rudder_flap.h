@@ -62,7 +62,7 @@ typedef struct {
     float hinge_x;   /**< the hinge's column                          */
     float hinge_y;   /**< its row: the neutral line                   */
     float flap_len;  /**< hinge to trailing edge                      */
-    float fixed_len; /**< the leading edge's centre to the hinge       */
+    float fixed_len; /**< the leading edge's center to the hinge       */
 } rudder_flap_t;
 
 /** @brief What the drawing shows. */
@@ -77,7 +77,7 @@ typedef struct {
 
 /**
  * @brief The drawing's places in @p area: the hinge at the area's
- *        centre; the flap half the area's height less RUD_FLAP_LEN_INSET
+ *        center; the flap half the area's height less RUD_FLAP_LEN_INSET
  *        long, shortened where the half width less the margin would not
  *        hold the fixed surface and its leading edge on the left or the
  *        ticks on the right, rounded down to a whole pixel; the fixed

@@ -109,8 +109,8 @@ static inline void release_at(int x, int y)
     scr()->event(&u);
 }
 
-/** @brief Centre of the pin grid cell of @p gpio on the Pico header board. */
-static inline void cell_centre(uint8_t gpio, int *x, int *y)
+/** @brief Center of the pin grid cell of @p gpio on the Pico header board. */
+static inline void cell_center(uint8_t gpio, int *x, int *y)
 {
     const uint8_t i = outbind_index_of(OUTBIND_BOARD_PICO_HEADER, gpio);
     const int col = i / GRID_ROWS, row = i % GRID_ROWS;
@@ -147,7 +147,7 @@ static inline void choose_named(const char *name) { choose_proto(proto_row(name)
 static inline void tap_pin(uint8_t gpio)
 {
     int x, y;
-    cell_centre(gpio, &x, &y);
+    cell_center(gpio, &x, &y);
     tap(x, y);
 }
 

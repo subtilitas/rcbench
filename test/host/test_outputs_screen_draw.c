@@ -644,7 +644,7 @@ TEST_CASE(a_cell_names_its_pin_gpio_and_its_number)
         scr()->render(&c, 0);
         for (size_t k = 0; k < sizeof(k_pins); ++k) {
             int cx, cy;
-            cell_centre(k_pins[k], &cx, &cy);
+            cell_center(k_pins[k], &cx, &cy);
             const gfx_rect_t top = { (int16_t)(cx - CELL_W / 2),
                                      (int16_t)(cy - CELL_H / 2),
                                      (int16_t)CELL_W, 40 };

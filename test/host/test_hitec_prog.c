@@ -550,7 +550,7 @@ TEST_CASE(each_soft_rule_asks_at_its_bound_and_not_inside_it)
     /* NEUTRAL, DIRECTION. */
     CHECK_EQ(hitec_prog_rules(model(), HITEC_P_D_NEUTRAL, 8192), 0u);
     CHECK_EQ(hitec_prog_rules(model(), HITEC_P_D_NEUTRAL, 8193),
-             HITEC_RULE_BIT(HITEC_RULE_CENTRE));
+             HITEC_RULE_BIT(HITEC_RULE_CENTER));
     CHECK_EQ(hitec_prog_rules(model(), HITEC_P_D_DIRECTION, HITEC_CCW),
              HITEC_RULE_BIT(HITEC_RULE_DIRECTION));
     /* FAILSAFE: 300us from 1500us is the bound. */
@@ -597,8 +597,8 @@ TEST_CASE(the_classic_soft_rules_ask_at_their_bounds)
              HITEC_RULE_BIT(HITEC_RULE_OVERLOAD));
     CHECK_EQ(hitec_prog_rules(model(), HITEC_P_C_LEFT_END, 0),
              HITEC_RULE_BIT(HITEC_RULE_END));
-    CHECK_EQ(hitec_prog_rules(model(), HITEC_P_C_CENTRE, 6000),
-             HITEC_RULE_BIT(HITEC_RULE_CENTRE));
+    CHECK_EQ(hitec_prog_rules(model(), HITEC_P_C_CENTER, 6000),
+             HITEC_RULE_BIT(HITEC_RULE_CENTER));
 }
 
 /* ------------------------------------------------------------------ edits */

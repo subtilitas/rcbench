@@ -22,7 +22,7 @@
  *   - the output card from SV_RCARD_X, y 62 to 436, its inner column SV_RC_X
  *     and SV_RC_W.  On LIVE, SWEEP and RUDDER: the READY rows, 30px from
  *     y 96; on LIVE and SWEEP SPEED's track at y 220 to 260; the type pill
- *     at y 274 to 318; CENTRE (LIVE) or SWEEP (SWEEP) and RELEASE, half of
+ *     at y 274 to 318; CENTER (LIVE) or SWEEP (SWEEP) and RELEASE, half of
  *     it each, y 330 to 378; the rail line at y 404.  On TEST, LIMIT RUN,
  *     KST and HITEC the SET row's values and OUTPUT ON at y 174 to 222.
  *
@@ -130,11 +130,11 @@
 #define SV_RCARD_W         (UI_PANEL_W - SV_RCARD_X - UI_MARGIN) /**< 380. */
 #define SV_RC_X            (SV_RCARD_X + 12)  /**< The inner column. */
 #define SV_RC_W            (SV_RCARD_W - 24)  /**< Its width: 356. */
-/** @brief CENTRE on LIVE, SWEEP on SWEEP, and RELEASE on both
+/** @brief CENTER on LIVE, SWEEP on SWEEP, and RELEASE on both
  *         (servo_drive_ready.c), 174px each, 8px apart: their row and the
  *         middle of each. */
 #define SV_BTN_Y           (330 + 24)
-#define SV_CENTRE_X        (SV_RC_X + 87)            /**< CENTRE, LIVE. */
+#define SV_CENTER_X        (SV_RC_X + 87)            /**< CENTER, LIVE. */
 #define SV_SWEEP_X         (SV_RC_X + 87)            /**< SWEEP, SWEEP. */
 #define SV_RELEASE_X       (SV_RC_X + 182 + 87)      /**< RELEASE. */
 /** @brief The READY rows on LIVE, SWEEP and RUDDER: card row @p i, 30px

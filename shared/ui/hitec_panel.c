@@ -75,8 +75,8 @@ const hpn_row_t hpn_rows[] = {
     /* FIND STOP: LEFT END and RIGHT END keys in DIRECTION's place while
      * MOVE SERVO's loop runs, which holds DIRECTION at CW. */
     { HITEC_PANEL_TRAVEL, 3, 0, 1, K_ACT, A_FIND, S_D, TX_HP_FIND, NULL },
-    { HITEC_PANEL_TRAVEL, 0, 0, 1, K_SHOW, HITEC_P_C_CENTRE, S_C,
-      TX_HP_CENTRE, NULL },
+    { HITEC_PANEL_TRAVEL, 0, 0, 1, K_SHOW, HITEC_P_C_CENTER, S_C,
+      TX_HP_CENTER, NULL },
     { HITEC_PANEL_TRAVEL, 1, 0, 1, K_SHOW, HITEC_P_C_LEFT_END, S_C,
       TX_HP_END_L, NULL },
     { HITEC_PANEL_TRAVEL, 2, 0, 1, K_SHOW, HITEC_P_C_RIGHT_END, S_C,

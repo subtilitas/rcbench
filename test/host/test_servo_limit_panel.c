@@ -33,7 +33,7 @@
 /*
  * LIMIT RUN's left card, mirrored from servo_limit_card.c: the output and
  * meter line at y 40, 20px tall; the state lines from y 178, each 24px
- * with its text centred in it; all in the 10 x 20 face 10px into the card
+ * with its text centered in it; all in the 10 x 20 face 10px into the card
  * (x UI_MARGIN + 10), across 600px.
  */
 #define LIM_X        (UI_MARGIN + 10)

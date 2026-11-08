@@ -348,7 +348,7 @@ static void draw_lane(gfx_canvas_t *c, int ch)
     }
 
     /*
-     * The bar, filled from its own centre.  A control channel's interesting
+     * The bar, filled from its own center.  A control channel's interesting
      * quantity is how far it is from neutral and which way, and a bar growing
      * from one end puts that sign in the number rather than in the picture.
      */
@@ -462,7 +462,7 @@ static size_t line_len(const char *at, int cells)
 
 /**
  * @brief The state's line in the 12 x 24 face, broken after a space into
- *        lines as wide as the state card's inner column, each centred, at
+ *        lines as wide as the state card's inner column, each centered, at
  *        most WHY_LINES of them.
  * @param c    The canvas, or NULL to count the lines only.
  * @param why  The line.

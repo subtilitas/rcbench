@@ -248,7 +248,7 @@ static const esc_item_t p_dualsky_xcontroller_lite_items[] = {
 static const char *const p_eflite_10a_pro_steps[] = {
     "Battery disconnected, transmitter on, throttle full (above 1.7ms).",
     "Connect battery and hold full throttle for 5s: two sets of fast tones.",
-    "Throttle to centre (1.4-1.6ms): 1 beep = menu 1.",
+    "Throttle to center (1.4-1.6ms): 1 beep = menu 1.",
 };
 static const esc_model_t p_eflite_10a_pro_models[] = {
     { "10-Amp Pro Brushless ESC (EFLA1010)", 2u, 3u, false, 12600u, 10u, 0u },
@@ -285,7 +285,7 @@ static const esc_item_t p_eflite_10a_pro_items[] = {
 static const char *const p_eflite_pro_sbec_7menu_steps[] = {
     "Battery disconnected, transmitter on, throttle full (above 1.7ms).",
     "Connect battery, hold full throttle 5s: two sets of fast ringing tones.",
-    "Throttle to centre for 5s: 1 beep = menu 1.",
+    "Throttle to center for 5s: 1 beep = menu 1.",
 };
 static const esc_model_t p_eflite_pro_sbec_7menu_models[] = {
     { "30-Amp Pro Switch-Mode BEC ESC", 3u, 4u, false, 16800u, 30u, 0u },
@@ -642,7 +642,7 @@ static const char *const p_hacker_master_gen3_a5[] = {
     "Master B-Car Comp",
 };
 static const esc_value_t p_hacker_master_gen3_v6[] = {
-    { "teach full power, then centre or neutral position", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "teach full power, then center or neutral position", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const char *const p_hacker_master_gen3_a6[] = {
     "Master 40-SB-Navy",
@@ -2263,7 +2263,7 @@ static const esc_value_t p_kontronik_jive_pro_v0[] = {
     { "Glider, ESC operation with EMK brake (default strength 92%), optional separate motor-off position", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Motor plane, ESC operation, no brake", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Helicopter governor with autorotation (AR on at 25% throttle)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "Forward / reverse, motor-off at stick centre", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "Forward / reverse, motor-off at stick center", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "BEC voltage setting, 5 to 8V", 10u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_kontronik_jive_pro_v1[] = {
@@ -2372,7 +2372,7 @@ static const esc_value_t p_kontronik_kolibri_v0[] = {
     { "Glider, ESC operation, EMK brake (default 92%), optional separate motor-off position", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Motor plane, ESC operation, no brake", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Helicopter governor with autorotation (AR at 25% throttle)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "Forward / reverse, motor-off at stick centre", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "Forward / reverse, motor-off at stick center", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Reverse motor rotation", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Telemetry protocol, port 1 (front port)", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Telemetry protocol, port 2 (side port); only KOLIBRI 140 LV-I and 140 HV-I", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2789,7 +2789,7 @@ static const esc_model_t p_multiplex_roxxy_bl_725_4d_models[] = {
 };
 static const esc_value_t p_multiplex_roxxy_bl_725_4d_v0[] = {
     { "forward only, stick at motor OFF at power-up", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "forward and reverse (4D), stick at centre at power-up", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "forward and reverse (4D), stick at center at power-up", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_multiplex_roxxy_bl_725_4d_v1[] = {
     { "calibrate: maximum at power-up, minimum after the long fourth sound", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2868,9 +2868,9 @@ static const esc_item_t p_multiplex_roxxy_bl_900_items[] = {
 static const char *const p_multiplex_roxxy_bl_control_s_bec_steps[] = {
     "Battery disconnected, stick to full throttle, transmitter on.",
     "Connect a charged flight battery: rising tone sequence, then in LiPo mode cell-count beeps.",
-    "Move the stick to centre.",
+    "Move the stick to center.",
     "Move the stick to full throttle.",
-    "Stick to centre: rising tone sequence four times, programming mode.",
+    "Stick to center: rising tone sequence four times, programming mode.",
 };
 static const esc_model_t p_multiplex_roxxy_bl_control_s_bec_models[] = {
     { "ROXXY BL-Control 715 S-BEC", 2u, 4u, false, 16800u, 15u, 0u },
@@ -4386,7 +4386,7 @@ const esc_profile_t esc_profiles_builtin[] = {
     { "hacker-master-gen3", "Hacker",
       "Master (third generation: Flight, F5, Acro, Heli, Navy, Car; OPTO, BEC, S-BEC)", "Master (dritte Generation: Flight, F5, Acro, Heli, Navy, Car; OPTO, BEC, S-BEC)",
       ESC_SCHEME_MELODY_GROUPS, ESC_ENC_COUNT, ESC_ANNOUNCE_VALUE, ESC_AUTO_FULL,
-      "Only throttle signal and supply are needed. Car types use a centre-neutral throttle and the current-limit item starts from the max-brake end, so the bench must output those throttle positions. Navy types need a full-then-centre teach once. OPTO types are specified with a separate 4.5-6.0V receiver supply for programming through the programming box; whether stick programming needs it is not stated.",
+      "Only throttle signal and supply are needed. Car types use a center-neutral throttle and the current-limit item starts from the max-brake end, so the bench must output those throttle positions. Navy types need a full-then-center teach once. OPTO types are specified with a separate 4.5-6.0V receiver supply for programming through the programming box; whether stick programming needs it is not stated.",
       ESC_THR_MAX, false, 5000u,
       ESC_THR_MIN, 0u, ESC_THR_NONE, 0u, ESC_THR_NONE, ESC_THR_NONE, ESC_THR_NONE,
       0u, 0u, 0u, 0u, 5, true, false,

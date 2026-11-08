@@ -18,7 +18,7 @@
 
 /** @brief The soft rules a run's start hold confirms for the run's edits. */
 #define RUN_RULES \
-    ((uint16_t)(HITEC_RULE_BIT(HITEC_RULE_END) | HITEC_RULE_BIT(HITEC_RULE_CENTRE)))
+    ((uint16_t)(HITEC_RULE_BIT(HITEC_RULE_END) | HITEC_RULE_BIT(HITEC_RULE_CENTER)))
 
 void hitec_prog_run_begin(hitec_prog_t *p)
 {

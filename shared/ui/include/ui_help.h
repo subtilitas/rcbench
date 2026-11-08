@@ -186,7 +186,7 @@ typedef enum {
  *        124 x 48px each, 8px apart, from x 8 to 264 at y 6, where the
  *        home tag is, which does nothing while the guide is open.  The
  *        band's chips start at x 270 at the least, so the two cover none.
- *        CLOSE is 140 x 48px, centred at the dock's bottom, from y 496.
+ *        CLOSE is 140 x 48px, centered at the dock's bottom, from y 496.
  * @param side The dock's side.
  * @param hit  UI_HELP_HIT_PREV, _NEXT or _CLOSE.
  * @return The rect; empty for another @p hit.
@@ -196,7 +196,7 @@ gfx_rect_t ui_help_button_rect(ui_help_side_t side, ui_help_hit_t hit);
 /**
  * @brief The badge of item @p i of @p p, in panel coordinates: 28 x 28px,
  *        4px inside the control's top-left corner; 4px left of a control
- *        less than 56px tall or wide, centred on it, where the live half
+ *        less than 56px tall or wide, centered on it, where the live half
  *        has the room; under the band below the left end of a control in
  *        the band.  An item marked UI_HELP_AT_RIGHT in the body has it
  *        4px inside the control's top-right corner instead.

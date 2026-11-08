@@ -47,7 +47,7 @@ const ov_row_t k_rows[] = {
     { PG_OUTPUT, R_TYPE,    SETTING_COUNT, TX_SV_ROW_TYPE,  0, 0, true  },
     { PG_OUTPUT, R_RATE,    SETTING_COUNT, TX_SV_ROW_RATE,  0, 1, true  },
     { PG_OUTPUT, R_MIN,     SETTING_COUNT, TX_SV_ROW_MIN,  0, 2, false },
-    { PG_OUTPUT, R_CENTRE,  SETTING_COUNT, TX_SV_ROW_CENTRE,  1, 2, false },
+    { PG_OUTPUT, R_CENTER,  SETTING_COUNT, TX_SV_ROW_CENTER,  1, 2, false },
     { PG_OUTPUT, R_MAX,     SETTING_COUNT, TX_SV_ROW_MAX,  0, 3, false },
     { PG_OUTPUT, R_TRIM,    SETTING_COUNT, TX_SV_ROW_TRIM,  1, 3, false },
     { PG_OUTPUT, R_TRAVEL,  SETTING_COUNT, TX_SV_ROW_TRAVEL,  0, 4, false },
@@ -333,27 +333,27 @@ bool target_locked(const ov_row_t *r)
 }
 
 /**
- * @brief The range PULSE MIN, PULSE CENTRE or PULSE MAX is typed and
+ * @brief The range PULSE MIN, PULSE CENTER or PULSE MAX is typed and
  *        stepped in.
  *
- * Each end at least 50us from the centre, and the range a command carries
- * -- centred on CENTRE, out to the further end; see cmd_range() -- inside
+ * Each end at least 50us from the center, and the range a command carries
+ * -- centered on CENTER, out to the further end; see cmd_range() -- inside
  * what the IOmcu takes and what the frame rate leaves a pause after
  * (max_pulse_for_rate(), never above the ceiling).  So an end may lie no
- * further from the centre than the centre lies from the floor or from that
+ * further from the center than the center lies from the floor or from that
  * top.
- * @param kind R_MIN, R_CENTRE or R_MAX
+ * @param kind R_MIN, R_CENTER or R_MAX
  * @param lo   takes the lowest, us
  * @param hi   takes the highest, us
  */
 static void pulse_range(int kind, unsigned *lo, unsigned *hi)
 {
-    const unsigned c = s.centre_us;
+    const unsigned c = s.center_us;
     if (kind == R_MIN) {
         const unsigned top = max_pulse_for_rate();
         *lo = (2u * c > top + OUT_FLOOR_US) ? 2u * c - top : OUT_FLOOR_US;
         *hi = c - 50u;
-    } else if (kind == R_CENTRE) {
+    } else if (kind == R_CENTER) {
         *lo = (s.max_us + OUT_FLOOR_US + 1u) / 2u;
         *hi = (max_pulse_for_rate() + s.min_us) / 2u;
         if (*lo < s.min_us + 50u) { *lo = s.min_us + 50u; }
@@ -402,10 +402,10 @@ static void edit_row(int i)
                     (float)hi, 0);
         break;
     }
-    case R_CENTRE: {
+    case R_CENTER: {
         unsigned lo = 0u, hi = 0u;
-        pulse_range(R_CENTRE, &lo, &hi);
-        open_keypad(KT_CENTRE, TR(SV_ROW_CENTRE), "us", (float)s.centre_us,
+        pulse_range(R_CENTER, &lo, &hi);
+        open_keypad(KT_CENTER, TR(SV_ROW_CENTER), "us", (float)s.center_us,
                     (float)lo, (float)hi, 0);
         break;
     }
@@ -500,9 +500,9 @@ void svs_profile_step(int kind, int dir)
                                        (int)hi);
         reissue();
         break;
-    case R_CENTRE:
-        pulse_range(R_CENTRE, &lo, &hi);
-        s.centre_us = (uint16_t)clamp_int((int)s.centre_us + 10 * dir,
+    case R_CENTER:
+        pulse_range(R_CENTER, &lo, &hi);
+        s.center_us = (uint16_t)clamp_int((int)s.center_us + 10 * dir,
                                           (int)lo, (int)hi);
         reissue();
         break;
@@ -588,7 +588,7 @@ static void keypad_done(ui_keypad_result_t r, float v)
         const uint16_t us = (uint16_t)lroundf(v);
         switch (target) {
         case KT_MIN:    s.min_us = us;    reissue(); break;
-        case KT_CENTRE: s.centre_us = us; reissue(); break;
+        case KT_CENTER: s.center_us = us; reissue(); break;
         case KT_MAX:
             s.max_us = us;
             apply_profile(s.type, s.frame_hz);   /* a rate it no longer fits

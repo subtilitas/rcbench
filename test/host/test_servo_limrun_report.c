@@ -29,7 +29,7 @@ TEST_CASE(the_report_holds_the_run)
     CHECK(strstr(g.report, "INA3221") != NULL);
     CHECK(strstr(g.report, "1.8") != NULL);
     CHECK(strstr(g.report, "3.0A") != NULL);
-    CHECK(strstr(g.report, "Pulse range:    centre 1500us, 800-2200us")
+    CHECK(strstr(g.report, "Pulse range:    center 1500us, 800-2200us")
           != NULL);
     CHECK(strstr(g.report, "Searched:       from 1500us out to 900us and "
                            "2100us") != NULL);
@@ -78,13 +78,13 @@ TEST_CASE(the_report_holds_the_run)
     CHECK(strstr(g.report, "LEFT ANGLE:") == NULL);
 }
 
-TEST_CASE(a_start_with_its_centre_outside_min_and_max_is_refused)
+TEST_CASE(a_start_with_its_center_outside_min_and_max_is_refused)
 {
     rig_init(0u, false);
-    g.cfg.centre_us = MAX_US;
+    g.cfg.center_us = MAX_US;
     CHECK(!start());
     CHECK(!servo_limrun_running(&g.run));
-    g.cfg.centre_us = CENTRE;
+    g.cfg.center_us = CENTER;
     CHECK(start());
     CHECK(!start());                    /* one at a time */
     servo_limrun_step(NULL, 0u, NULL, NULL);
@@ -307,7 +307,7 @@ TEST_CASE(no_servo_answering_outside_a_connect_ends_nothing)
 int main(void)
 {
     RUN(the_report_holds_the_run);
-    RUN(a_start_with_its_centre_outside_min_and_max_is_refused);
+    RUN(a_start_with_its_center_outside_min_and_max_is_refused);
     RUN(every_reason_and_phase_has_its_words);
     RUN(the_share_the_overset_and_the_final_value);
     RUN(a_first_connect_no_servo_answers_ends_as_not_kst);

@@ -258,7 +258,7 @@ typedef enum {
     TRR_METER,     /**< the meter the run reads                           */
     TRR_PD,        /**< the PD mini the steps set                         */
     TRR_STEPS,     /**< the steps chosen and inside the caps              */
-    TRR_RANGE,     /**< the ends either side of PULSE CENTRE              */
+    TRR_RANGE,     /**< the ends either side of PULSE CENTER              */
     TRR_ARM,       /**< ARMED, or a run or a report in the way            */
     TRR_COUNT      /**< the count                                         */
 } test_row_t;
@@ -299,7 +299,7 @@ typedef enum {
     LRR_SERVO,     /**< the family a run on a PROG PORT reads          */
     LRR_METER,     /**< the INA3221 channel the run reads              */
     LRR_RAIL,      /**< the servo rail, 3.0V or more                   */
-    LRR_RANGE,     /**< PULSE MIN, CENTRE and MAX                      */
+    LRR_RANGE,     /**< PULSE MIN, CENTER and MAX                      */
     LRR_PROG,      /**< the programmer free                            */
     LRR_SUPPLY,    /**< PROG 5V, the PD mini or the rail               */
     LRR_PWM,       /**< the port's pulse                               */
@@ -372,7 +372,7 @@ servo_seq_need_t drive_seq_need(void);
  *         band.  @param i the row */
 void drive_ready_tap(int i);
 /** @brief The output card's controls laid out for the function shown:
- *         SPEED, CENTRE, SWEEP and RELEASE where it has them. */
+ *         SPEED, CENTER, SWEEP and RELEASE where it has them. */
 void drive_layout(void);
 /** @brief A DOWN on ARM or DISARM on LIVE, SWEEP or RUDDER: DISARM and
  *         every output off, a stop of the steps, a refusal named, or the

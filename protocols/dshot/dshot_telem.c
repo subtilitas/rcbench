@@ -279,7 +279,7 @@ bool dshot_rx_bits(const uint32_t *samples, size_t words, uint8_t oversample,
      * drifted from this end's.  Without it, a percent of error walks the
      * sample point a fifth of a bit over the 21 bits of a response.
      */
-    const uint8_t centre = (uint8_t)(oversample / 2u);
+    const uint8_t center = (uint8_t)(oversample / 2u);
     bool     level = false;             /* the falling edge, at index i    */
     uint8_t  phase = 0u;
     unsigned got   = 0u;
@@ -291,7 +291,7 @@ bool dshot_rx_bits(const uint32_t *samples, size_t words, uint8_t oversample,
             level = now;
             phase = 0u;
         }
-        if (phase == centre) {
+        if (phase == center) {
             out = (out << 1) | (level ? 1u : 0u);
             ++got;
         }

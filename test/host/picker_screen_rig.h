@@ -122,7 +122,7 @@ static inline void tap(int x, int y)
     scr()->event(&u);
 }
 
-/** @brief Taps the centre of @p r. */
+/** @brief Taps the center of @p r. */
 static inline void tap_rect(gfx_rect_t r) { tap(r.x + r.w / 2, r.y + r.h / 2); }
 
 /** @brief By name, so an entry added to the catalogue does not retarget a test. */

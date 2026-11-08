@@ -357,7 +357,7 @@ static int wrap_in(gfx_canvas_t *c, gfx_rect_t box, const char *text,
 
 /**
  * @brief One reading row of the right card: its label at the left, its
- *        value at the right, centred in a row ROW_PITCH tall.
+ *        value at the right, centered in a row ROW_PITCH tall.
  * @param c   The canvas.
  * @param i   The row, 0 for the first.
  * @param k   The label.

@@ -93,15 +93,15 @@ typedef struct {
 } servo_test_enc_t;
 
 /**
- * @brief @p raw from @p centre on the circle, degrees, -180 to just under 180:
+ * @brief @p raw from @p center on the circle, degrees, -180 to just under 180:
  *        360 / 4096 a count.  The difference of any two counts the shortest way
  *        round.
  *
  * @param raw    Encoder count, 0 to 4095.
- * @param centre Centre count, 0 to 4095.
+ * @param center Center count, 0 to 4095.
  * @return angle, degrees, -180 up to just under 180.
  */
-float servo_test_enc_deg(uint16_t raw, uint16_t centre);
+float servo_test_enc_deg(uint16_t raw, uint16_t center);
 
 /**
  * @brief @p deg on the circle: -180 to just under 180.
@@ -120,7 +120,7 @@ typedef struct {
     bool     off;           /**< the output off                         */
     bool     command;       /**< the servo to cmd_us, at once (no slew) */
     uint16_t cmd_us;                    /**< the pulse, µs */
-    bool     release;       /**< the servo let go, to its centre        */
+    bool     release;       /**< the servo let go, to its center        */
     bool     disarm;        /**< the bench to SAFE: the run ended on an
                                  error (servo_test_abort_error())       */
 } servo_test_do_t;

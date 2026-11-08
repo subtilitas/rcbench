@@ -9,7 +9,7 @@ import type { Layout, Pt, WirePath } from '../src/draw/layout.ts';
 
 type Seg = { n: number; wire: WirePath; x1: number; y1: number; x2: number; y2: number; half: number };
 
-/** Smallest distance in px between the centre lines of two parallel runs of different nets. */
+/** Smallest distance in px between the center lines of two parallel runs of different nets. */
 export const CLEARANCE = 5;
 
 function segments(l: Layout): Seg[] {

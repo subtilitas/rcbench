@@ -433,7 +433,7 @@ static inline void draw(void)
 #define OPEN_X       LV_OPEN_CX
 #define DELETE_X     LV_DELETE_CX
 #define RESCAN_X     LV_RESCAN_CX
-/* The plot view: a point inside the plot, and the > button's centre. */
+/* The plot view: a point inside the plot, and the > button's center. */
 #define PV_TAP_X     LV_PV_CX
 #define NEXT_X       LV_PV_NEXT_CX
 #define FOOT_PLOT_CY LV_FOOT_CY

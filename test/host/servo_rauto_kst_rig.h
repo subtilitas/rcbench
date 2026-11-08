@@ -28,8 +28,8 @@
 #include "ui_board.h"
 #include "wit_frame.h"
 
-/** @brief The AS5600's centre count. */
-#define CENTRE_COUNT 2048
+/** @brief The AS5600's center count. */
+#define CENTER_COUNT 2048
 /** @brief The surface's degrees per microsecond of the horn. */
 #define DEG_PER_US 0.06f
 /** @brief RUDDER's ZERO, AUTO and START (servo_spots.h). */
@@ -227,7 +227,7 @@ static inline void ra_p5(void)
 static inline void ra_encoder(void)
 {
     const float deg = (ra.sv.position_us - 1500.0f) * DEG_PER_US;
-    const int raw = (CENTRE_COUNT + (int)lroundf(deg * 4096.0f / 360.0f))
+    const int raw = (CENTER_COUNT + (int)lroundf(deg * 4096.0f / 360.0f))
                     & 4095;
     if (abs(raw - ra.last_raw) > 1) {
         ra.last_raw = raw;
@@ -374,7 +374,7 @@ static inline void ra_pd_reading(bool on)
  *        reading the surface; RUDDER with its zero taken and AUTO's box
  *        shown.
  * @param pd a PD mini answers with its output on behind the servo
- * @param zero ZERO tapped at the centre
+ * @param zero ZERO tapped at the center
  * @param imu the IMU through IMU FILTER RA_IMU_FILTER is ANGLE SOURCE
  */
 static inline void ra_setup_on(bool pd, bool zero, bool imu)
@@ -401,7 +401,7 @@ static inline void ra_setup_on(bool pd, bool zero, bool imu)
     ra.enc = true;
     settings_set(SET_INA_FIT(0), 1.0f);
     settings_set(SET_ENC_EN, 1.0f);
-    settings_set(SET_ENC_CENTRE, (float)CENTRE_COUNT);
+    settings_set(SET_ENC_CENTER, (float)CENTER_COUNT);
     servo_screen_source(SERVO_SOURCE_PDMINI, 1u);
     servo_screen_source(SERVO_SOURCE_INA3221, 2u);
     if (pd) {
@@ -429,7 +429,7 @@ static inline void ra_setup_on(bool pd, bool zero, bool imu)
 /**
  * @brief ra_setup_on() with the AS5600.
  * @param pd a PD mini answers with its output on behind the servo
- * @param zero ZERO tapped at the centre
+ * @param zero ZERO tapped at the center
  */
 static inline void ra_setup(bool pd, bool zero)
 {

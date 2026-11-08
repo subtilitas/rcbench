@@ -502,7 +502,7 @@ bool arming_write_failed(arming_t *a, bool answered);
 typedef enum {
         /** @brief Just handed out: nothing done for it yet. */
     ARMING_HS_HANDED = 0,
-        /** @brief The command is zero and the surfaces are asked to centre. */
+        /** @brief The command is zero and the surfaces are asked to center. */
     ARMING_HS_PREPARED,
     /**
      * @brief CLEAR came back acknowledged.

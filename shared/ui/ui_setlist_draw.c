@@ -105,7 +105,7 @@ static void draw_text_row(const ui_setlist_t *sl, gfx_canvas_t *c, int index,
 }
 
 /**
- * @brief A row's "-" and "+" keys, or "<" and ">", centred in its height.
+ * @brief A row's "-" and "+" keys, or "<" and ">", centered in its height.
  * @param sl     The list.
  * @param c      The canvas.
  * @param index  The row.
@@ -173,7 +173,7 @@ static void draw_setting_row(const ui_setlist_t *sl, gfx_canvas_t *c,
     c->clip = saved;
 
     /* Value, then the unit after it (a pin word before it: "GPIO 4"), both
-     * right-aligned against the + key and centred in the row's height.  A
+     * right-aligned against the + key and centered in the row's height.  A
      * value takes the body face, a number and a switch's or a choice's word
      * alike.  A value wider than the gap takes the label face, because a
      * clipped value is worse than a small one; no value of the present

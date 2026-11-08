@@ -2,7 +2,7 @@
  * @file
  * @brief The SERVO workbench's RUDDER task: the control surface's
  *        deflection in ° and mm, LENGTH, the buttons that drive 1000us,
- *        CENTRE and 2000us, ZERO, the MAX of each side, the angle
+ *        CENTER and 2000us, ZERO, the MAX of each side, the angle
  *        source's state line and the side view of the surface at the
  *        deflection shown.
  *
@@ -11,8 +11,8 @@
  * direction of the commanded angle as LIVE's MEASURED reading is; the zero
  * and the MAX are kept in the source's own sign, so REVERSE flips what is
  * shown and keeps the zero.  The zero is taken from the source's count 0,
- * not from ENC CENTRE, so a new ENC CENTRE moves no deflection after ZERO.
- * The buttons post as the output card's CENTRE does, through the screen's
+ * not from ENC CENTER, so a new ENC CENTER moves no deflection after ZERO.
+ * The buttons post as the output card's CENTER does, through the screen's
  * own seam: the output, the PORT button that names it and the footer's ARM
  * are the same on every function screen.  RUDDER AUTO is this card with
  * AUTO's box in the place of LENGTH and the drive buttons, on a screen of
@@ -44,7 +44,7 @@
 #define RUD_NUM_Y  (CARD_Y + 30)          /**< Their numerals, 44px. */
 #define RUD_MAX_Y  (CARD_Y + 82)          /**< The MAX lines. */
 #define RUD_LEN_Y  (CARD_Y + 112)         /**< LENGTH's row. */
-#define RUD_BTN_Y  (CARD_Y + 172)         /**< 1000us, CENTRE, 2000us. */
+#define RUD_BTN_Y  (CARD_Y + 172)         /**< 1000us, CENTER, 2000us. */
 #define RUD_BTN_W  160                    /**< One of them, px. */
 #define RUD_GAP    10                     /**< Between two, px. */
 #define RUD_ZERO_Y (CARD_Y + 232)         /**< ZERO and RESET MAX. */
@@ -81,7 +81,7 @@ void rudder_init(void)
 
 /**
  * @brief The source's angle now, in its own sign, from its count 0: what
- *        ZERO takes, so ENC CENTRE has no part in a deflection after it.
+ *        ZERO takes, so ENC CENTER has no part in a deflection after it.
  * @return degrees, -180 up to 180
  */
 static float src_abs_now(void)
@@ -91,7 +91,7 @@ static float src_abs_now(void)
 
 /**
  * @brief The deflection now, in the source's own sign: from the zero once
- *        taken, else the angle from the source's centre (enc_deg_now()
+ *        taken, else the angle from the source's center (enc_deg_now()
  *        without REVERSE).
  * @return degrees
  */
@@ -218,7 +218,7 @@ gfx_rect_t rudder_rect(rudder_ctl_t k)
     case RUD_C_LENGTH:
         return (gfx_rect_t){ RUD_X, RUD_LEN_Y, RUD_W, UI_TAP_MIN };
     case RUD_C_1000:
-    case RUD_C_CENTRE:
+    case RUD_C_CENTER:
     case RUD_C_2000: {
         const int i = (int)k - (int)RUD_C_1000;
         return (gfx_rect_t){ (int16_t)(RUD_X + i * (RUD_BTN_W + RUD_GAP)),
@@ -263,8 +263,8 @@ gfx_rect_t rudder_len_value_rect(void)
 /* -------------------------------------------------------- the presses */
 
 /**
- * @brief 1000us, CENTRE or 2000us: a position, refused while the value is
- *        not live, as the output card's CENTRE is.  It takes the horn from
+ * @brief 1000us, CENTER or 2000us: a position, refused while the value is
+ *        not live, as the output card's CENTER is.  It takes the horn from
  *        a run and a sweep.  1000us and 2000us are angles of the profile
  *        in force, held to TRAVEL and the pulse range; the PULSE line says
  *        the pulse driven.
@@ -277,9 +277,9 @@ static void drive(rudder_ctl_t k)
     }
     test_end_now(SERVO_TEST_AB_OPERATOR);
     stop_sweep();
-    if (k == RUD_C_CENTRE) {
+    if (k == RUD_C_CENTER) {
         s.commanded_deg = 0.0f;
-        post(SERVO_CMD_CENTRE, svs_deg_to_us(0.0f));
+        post(SERVO_CMD_CENTER, svs_deg_to_us(0.0f));
         ++s.dial_rev;
     } else {
         (void)svs_command(us_to_deg((k == RUD_C_1000) ? 1000u : 2000u));
@@ -347,7 +347,7 @@ void rudder_down(const touch_event_t *evt)
                                evt->point.y)) {
             continue;
         }
-        if (k == RUD_C_1000 || k == RUD_C_CENTRE || k == RUD_C_2000) {
+        if (k == RUD_C_1000 || k == RUD_C_CENTER || k == RUD_C_2000) {
             drive((rudder_ctl_t)k);
         } else if (s.rud.pressed == RUD_C_NONE
                    && !servo_rauto_running(&s.ra.run)) {
@@ -605,7 +605,7 @@ static void draw_length(gfx_canvas_t *c)
 }
 
 /**
- * @brief The buttons: 1000us, CENTRE and 2000us dimmed while the value is
+ * @brief The buttons: 1000us, CENTER and 2000us dimmed while the value is
  *        not live, and not drawn with AUTO's box shown; ZERO dimmed
  *        without a reading; ZERO, RESET MAX and AUTO, or MANUAL with the
  *        box, dimmed while AUTO's run runs.
@@ -622,7 +622,7 @@ static void draw_buttons(gfx_canvas_t *c)
     if (!s.ra.view) {
         ui_button_font(c, rudder_rect(RUD_C_1000), k_us[0], go, false,
                        live, SV_FONT_LABEL);
-        ui_button_font(c, rudder_rect(RUD_C_CENTRE), TR(SV_CENTRE_BTN), go,
+        ui_button_font(c, rudder_rect(RUD_C_CENTER), TR(SV_CENTER_BTN), go,
                        false, live, SV_FONT_LABEL);
         ui_button_font(c, rudder_rect(RUD_C_2000), k_us[1], go, false,
                        live, SV_FONT_LABEL);

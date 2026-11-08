@@ -48,12 +48,12 @@
       "gap_ms": null,
       "group_gap_ms": null,
       "repeat": null,
-      "description": "No numbered menu. The mode is chosen by the stick position at power-up (off for forward only, centre for forward and reverse). The ready signal is a three-way tone sequence followed by a fourth sound."
+      "description": "No numbered menu. The mode is chosen by the stick position at power-up (off for forward only, center for forward and reverse). The ready signal is a three-way tone sequence followed by a fourth sound."
     },
     "select": {
       "throttle": "mid",
       "within_ms": null,
-      "description": "Stick at centre at power-up selects forward and reverse (4D)."
+      "description": "Stick at center at power-up selects forward and reverse (4D)."
     },
     "skip": {
       "throttle": "min",
@@ -63,7 +63,7 @@
     "exit": "Disconnect battery.",
     "changes_per_entry": "one",
     "reset_to_defaults": null,
-    "description": "The stick position at power-up picks the mode: motor OFF for forward only, centre for forward and reverse (4D). Throttle range is calibrated by powering up at maximum, waiting for the long fourth sound after about 3s, and moving the stick to minimum."
+    "description": "The stick position at power-up picks the mode: motor OFF for forward only, center for forward and reverse (4D). Throttle range is calibrated by powering up at maximum, waiting for the long fourth sound after about 3s, and moving the stick to minimum."
   },
   "items": [
     {
@@ -77,7 +77,7 @@
         },
         {
           "number": 2,
-          "name": "forward and reverse (4D), stick at centre at power-up"
+          "name": "forward and reverse (4D), stick at center at power-up"
         }
       ],
       "applies_to": null,

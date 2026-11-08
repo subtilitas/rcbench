@@ -596,7 +596,7 @@ bool prog_link_no_drive(const prog_link_t *p);
  * port the page does not have); pwm is prog_link_pwm(), false with target
  * 0.  A port target without a pin stays a port target: the commands still
  * go to the port and do not reach the SERVO PWM outputs, which an armed
- * bank holds at their rest, the centre between their endpoints.  With
+ * bank holds at their rest, the center between their endpoints.  With
  * prog_link_no_drive() and target 0 the target is the port the screen
  * wants, with no pin and pwm as wanted: the tester sends no command.
  *

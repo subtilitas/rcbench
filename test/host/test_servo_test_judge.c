@@ -23,7 +23,7 @@
  * A servo with its own current profile: after 40ms of latency it moves for
  * 1200ms at @p mv amperes, the first 100ms of the motion at @p spike when
  * that is above zero, and settles at the end's holding level -- @p lo at the
- * low end, 0.05A at the centre and the high end.  Readings every 100ms,
+ * low end, 0.05A at the center and the high end.  Readings every 100ms,
  * @p off ms after the run starts.  Six counted moves.
  */
 typedef struct {
@@ -55,7 +55,7 @@ static float profile_current(const profile_t *p, uint32_t now)
 static void run_profile(servo_test_t *t, float lo, float mv, float spike,
                         uint32_t off)
 {
-    profile_t p = { lo, mv, spike, CENTRE, CENTRE, 0u };
+    profile_t p = { lo, mv, spike, CENTER, CENTER, 0u };
     servo_test_cfg_t c;
     cfg_defaults(&c);
     c.step_count = 1u;
@@ -168,7 +168,7 @@ static void run_lagged(servo_test_t *t, uint32_t travel_ms, uint32_t lag_ms,
     c.meter      = *meter;
     servo_test_init(t);
     uint32_t now = 1000u, next = now, cmd_at = 0u, first_at = 0u;
-    uint16_t cmd = CENTRE, prev = CENTRE, samples = 1u;
+    uint16_t cmd = CENTER, prev = CENTER, samples = 1u;
     unsigned moves = 0u;
     servo_test_reading_t r;
     memset(&r, 0, sizeof(r));
@@ -207,7 +207,7 @@ static void run_lagged(servo_test_t *t, uint32_t travel_ms, uint32_t lag_ms,
             prev = cmd;
             cmd = d.cmd_us;
             cmd_at = now;
-            if (cmd != CENTRE && ++moves == 3u && travel_ms == 0u) {
+            if (cmd != CENTER && ++moves == 3u && travel_ms == 0u) {
                 first_at = now;
             }
         }
@@ -339,7 +339,7 @@ TEST_CASE(a_step_cut_short_is_said_so)
 
 /* A start is refused, and nothing changes, for no step, a step outside the
  * caps, a supply that does not answer, and ends that do not straddle the
- * centre. */
+ * center. */
 TEST_CASE(a_start_is_refused_for_what_cannot_run)
 {
     servo_test_cfg_t c;
@@ -364,7 +364,7 @@ TEST_CASE(a_start_is_refused_for_what_cannot_run)
     g.online = true;
 
     cfg_defaults(&c);
-    c.end_lo_us = CENTRE;
+    c.end_lo_us = CENTER;
     CHECK_EQ(start(&c), SERVO_TEST_START_BAD_ENDS);
     CHECK(!servo_test_running(&g.t));
     CHECK_EQ(servo_test_peek(&g.t, NULL), SERVO_TEST_OUT_NONE);
@@ -392,7 +392,7 @@ TEST_CASE(an_output_already_on_is_used_as_it_is)
     CHECK(d.set);
     CHECK(!d.on);
     CHECK(d.command);
-    CHECK_EQ(d.cmd_us, CENTRE);
+    CHECK_EQ(d.cmd_us, CENTER);
     supply_sim_set(&g.sup, d.set_v, d.set_i);   /* as frame() would */
     run_out(60000u);
     CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_PASS);
@@ -497,7 +497,7 @@ static void dl_feed(uint32_t t, float i)
     servo_test_step(&g_dl, t, &in, &d);
 }
 
-/* The brown-out's first move, centre to the high end, on the PD mini's
+/* The brown-out's first move, center to the high end, on the PD mini's
  * meter: 0.12A at rest, 0.9A moving every 100ms, and the reading back
  * at 0.12A @p back_ms after the command. */
 static void dl_run(uint32_t back_ms)
@@ -636,7 +636,7 @@ TEST_CASE(a_reading_equal_to_a_limit_passes_it)
             const servo_test_in_t in = { true, 20.0f };
             servo_test_do_t d;
             servo_test_step(&t, now, &in, &d);
-            if (d.command && d.cmd_us != CENTRE) {
+            if (d.command && d.cmd_us != CENTER) {
                 cmd_at = now;
                 moved  = true;
             }
@@ -748,7 +748,7 @@ TEST_CASE(a_count_step_of_half_the_range_is_a_restart_and_one_less_is_not)
 }
 
 /*
- * A run asks for its first set point, the output on and the centre at its
+ * A run asks for its first set point, the output on and the center at its
  * start, and the first step hands that over.  A run that ends before that
  * step, or in it, hands over off and release and none of the three: the
  * supply is not switched on, set or the servo commanded by a run that is

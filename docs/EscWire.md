@@ -75,7 +75,7 @@ The strip identifies the session target, for example `TARGET SLOT 1 GPIO 0`, fol
 
 The session has no default voltage. VOLTAGE and CURRENT LIMIT follow SUPPLY until you tap a number and enter a different value. POWER retains the last choice across panel restarts in non-volatile storage (NVS key `escw_by_hand`). Without a stored choice, it starts on SWITCHED. SWITCHED uses the PD mini. BY HAND drives the line high and waits at most 60s for `POWER IS ON`.
 
-Take the propeller off. Connect signal and ground only: a BEC (battery eliminator circuit) on the ESC's centre wire would feed the bench's rail. Unplug servos. CONNECT is a red 2s hold.
+Take the propeller off. Connect signal and ground only: a BEC (battery eliminator circuit) on the ESC's center wire would feed the bench's rail. Unplug servos. CONNECT is a red 2s hold.
 
 ![Connect page](img/motor-wire-connect.png)
 

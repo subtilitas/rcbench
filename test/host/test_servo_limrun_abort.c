@@ -190,12 +190,12 @@ TEST_CASE(the_runs_own_timeouts_end_it)
     CHECK_EQ(g.offs, 1u);
 }
 
-/* Before every session the servo goes back to the centre from the end the
+/* Before every session the servo goes back to the center from the end the
  * search left it at, and SAFE is asked SERVO_LIMRUN_RETURN_MS later, not
  * sooner: a session never starts with the servo against an end.  A disarm
  * while it returns is the operator's and ends the run.  The read session
- * at the start holds PULSE CENTRE the same way. */
-TEST_CASE(a_session_starts_with_the_servo_back_at_the_centre)
+ * at the start holds PULSE CENTER the same way. */
+TEST_CASE(a_session_starts_with_the_servo_back_at_the_center)
 {
     for (int k = 0; k < 2; ++k) {
         rig_init(0u, false);
@@ -204,11 +204,11 @@ TEST_CASE(a_session_starts_with_the_servo_back_at_the_centre)
         CHECK(run_to(SERVO_LIMRUN_PH_SAFE, RUN_MS));
         const uint32_t at = g.run.phase_ms;
         /* The horn still out at the end the search reached. */
-        CHECK(fabsf(g.servo.position_us - (float)CENTRE) > 200.0f);
+        CHECK(fabsf(g.servo.position_us - (float)CENTER) > 200.0f);
         while (g.now - at < 20u) {
             tick();
         }
-        CHECK_EQ(g.cmd, CENTRE);
+        CHECK_EQ(g.cmd, CENTER);
         CHECK(!servo_limrun_switching(&g.run));
         if (k == 1) {
             g.live = false;
@@ -232,7 +232,7 @@ TEST_CASE(a_session_starts_with_the_servo_back_at_the_centre)
         CHECK(run_to(SERVO_LIMRUN_PH_CONNECT, 5000u));
     }
 
-    /* The start: PULSE CENTRE commanded, SAFE asked RETURN_MS later. */
+    /* The start: PULSE CENTER commanded, SAFE asked RETURN_MS later. */
     rig_init(0u, false);
     CHECK(start());
     CHECK_EQ(g.run.phase, SERVO_LIMRUN_PH_SAFE);
@@ -240,7 +240,7 @@ TEST_CASE(a_session_starts_with_the_servo_back_at_the_centre)
     while (g.now - g.t0 < SERVO_LIMRUN_RETURN_MS - 1u) {
         tick();
     }
-    CHECK_EQ(g.cmd, CENTRE);
+    CHECK_EQ(g.cmd, CENTER);
     CHECK_EQ(g.disarms, 0u);
     while (g.now - g.t0 < SERVO_LIMRUN_RETURN_MS + 10u) {
         tick();
@@ -587,7 +587,7 @@ TEST_CASE(a_supply_that_answers_late_ends_the_run)
 
 /* Every search window holds 3.0V on the rail, the first included: a rail
  * that goes off in the read session ends the run at the first search
- * window.  The search holds the centre for SERVO_LIMRUN_RETURN_MS first;
+ * window.  The search holds the center for SERVO_LIMRUN_RETURN_MS first;
  * the run is followed past that, so a run that went on would have
  * stepped.  3000mV searches on and steps. */
 TEST_CASE(a_rail_under_3_v_in_any_search_window_ends_the_run)
@@ -669,7 +669,7 @@ TEST_CASE(an_abort_behind_the_arm_leaves_the_bench_safe)
 /* The last window at t: the run goes on at t + 199ms and ends at t + 200
  * ms (also when the step comes at t + 201), at tick 0 and with the wrap
  * between the window and the step; on the programming port, where the run
- * starts with the servo held at the centre for the read, and on the PWM
+ * starts with the servo held at the center for the read, and on the PWM
  * pin, where it starts with a search. */
 TEST_CASE(no_window_for_200_ms_ends_the_run)
 {
@@ -921,7 +921,7 @@ int main(void)
 {
     RUN(every_caller_abort_ends_every_phase_with_the_output_off);
     RUN(the_runs_own_timeouts_end_it);
-    RUN(a_session_starts_with_the_servo_back_at_the_centre);
+    RUN(a_session_starts_with_the_servo_back_at_the_center);
     RUN(a_sample_at_3_a_ends_the_run_in_every_phase);
     RUN(above_1_a_for_400_ms_ends_the_run);
     RUN(a_changed_supply_ends_a_search_but_not_a_session);

@@ -70,7 +70,7 @@ int ui_footer_hit(int x, int y);
 /**
  * @brief A name and its line in @p r: with no line the name in the head
  *        face (20 x 36) where it fits 16px short of the slot, else in the
- *        body face (12 x 24), centred in the slot's height; with a line the
+ *        body face (12 x 24), centered in the slot's height; with a line the
  *        name in the body face at the slot's top and the line in the label
  *        face (10 x 20) under it.  16px from the slot's left edge.
  * @param c    The canvas.
@@ -85,7 +85,7 @@ void ui_footer_name(gfx_canvas_t *c, gfx_rect_t r, const char *name,
 
 /**
  * @brief SETTINGS / OPTIONEN in the right slot: the neutral fill, the
- *        sliders icon left of the label, both centred.
+ *        sliders icon left of the label, both centered.
  * @param c       The canvas.
  * @param pressed Whether a finger is on it.
  * @param enabled Whether it takes a press; grey with a faint label when not.

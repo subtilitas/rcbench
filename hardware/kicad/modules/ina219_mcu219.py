@@ -7,7 +7,7 @@ the A0/A1 "I2C Address" bridges, as drawn in configurator parts.ts (often
 sold as MCU-219 or ROB-002, 8 connections). No owner photo. Measured from
 the ProtoSupplies top-view photo INA219-DC-Current-Sensor-Module-Top-1.jpg
 (800 x 600px, near-orthographic). The photo is rectified by the 4 mounting
-hole centres (profiles across each hole) to a rectangle; the scale comes
+hole centers (profiles across each hole) to a rectangle; the scale comes
 from the header, 5 x 2.54mm = 235.1px at the header row, 18.39px/mm on
 average. After rectification the header pitch reads 2.541mm and the
 terminal pitch 3.50mm. Positions are within about 0.2mm (estimate; one
@@ -21,7 +21,7 @@ and 14.52mm (Vin+); the wires enter from the top edge. Terminal block
 outline as printed: x 9.15-16.22mm, y 0.15-6.35mm. Mounting holes at
 (2.53, 2.10), (22.79, 2.10), (2.53, 18.89), (22.79, 18.89)mm, plated,
 opening about 2.3mm, ring about 3.2mm; drawn on F.Fab only. Shunt 2512
-below the terminal, INA219 (SOT-23-8) centre at (12.68, 12.95)mm.
+below the terminal, INA219 (SOT-23-8) center at (12.68, 12.95)mm.
 
 Header Vin- and Vin+ are the same nets as the terminal (board print and
 seller text); here they are separate pads 5/7 and 6/8.

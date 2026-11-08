@@ -25,7 +25,7 @@ static const setting_id_t k_bus[] = { SET_SENSE_SDA, SET_SENSE_SCL };
 static const setting_id_t k_ina228[] = { SET_INA228_EN, SET_INA228_ADDR,
                                          SET_INA228_UOHM, SET_INA228_MAX_A };
 /** @brief The AS5600's rows, the enable row first. */
-static const setting_id_t k_as5600[] = { SET_ENC_EN, SET_ENC_CENTRE };
+static const setting_id_t k_as5600[] = { SET_ENC_EN, SET_ENC_CENTER };
 /** @brief The phase tap's rows, the enable row first. */
 static const setting_id_t k_tap[] = { SET_TONE_EN, SET_TONE_PIN, SET_TONE_F_MIN,
                                       SET_TONE_F_MAX, SET_TONE_SPLIT,

@@ -55,11 +55,11 @@
 #define WARM 60
 /** @brief The frames measured: three seconds at PANEL_HZ. */
 #define FRAMES 182
-/** @brief The frame of a run's tap, CENTRE or SWEEP, or a drag's start. */
+/** @brief The frame of a run's tap, CENTER or SWEEP, or a drag's start. */
 #define MOVE_AT (WARM - 30)
 
 /** @brief The grip's box, px a side: the ring of 36px radius round the
- *         tip and its centre (servo_screen_draw.c). */
+ *         tip and its center (servo_screen_draw.c). */
 #define GRIP_SIDE 73
 /** @brief A moving arm's budget: visits a frame, half what a moving arm
  *         drew before its boxes were drawn by what lies in them. */
@@ -71,7 +71,7 @@
 /** @brief What moves the screen during a run. */
 typedef enum {
     MO_REST,    /**< nothing: the bench as it is */
-    MO_HELD,    /**< CENTRE tapped: a position held, the grip breathing */
+    MO_HELD,    /**< CENTER tapped: a position held, the grip breathing */
     MO_SWEEP,   /**< SWEEP tapped and acknowledged */
     MO_DRAG,    /**< a finger round the dial and back */
     MO_BAND,    /**< the band: a FAULT chip comes and goes, STOP pressed */
@@ -226,7 +226,7 @@ static void feed(const run_t *r, int i, uint32_t ms)
     }
     if (sv_armed && i == MOVE_AT) {
         if (r->motion == MO_HELD) {
-            tap(SV_CENTRE_X, SV_BTN_Y);
+            tap(SV_CENTER_X, SV_BTN_Y);
         } else if (r->motion == MO_SWEEP) {
             tap(SV_SWEEP_X, SV_BTN_Y);
         }

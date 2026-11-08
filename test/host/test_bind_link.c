@@ -1915,7 +1915,7 @@ static bool picker_button(uint8_t gpio, int *bx, int *by)
     const int px = (SCREEN_W - bw) / 2
                    + (int)(((uint32_t)xc * (uint32_t)bw)
                            / bd->shape->width_cmm);
-    /* The board centred between the body's top and OU_FOOT. */
+    /* The board centered between the body's top and OU_FOOT. */
     const int py = (OU_FOOT - bh) / 2
                    + (int)(((uint32_t)yc * (uint32_t)bh)
                            / bd->shape->height_cmm);

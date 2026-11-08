@@ -75,7 +75,7 @@
  *     shaft of the servo under test.  ENABLE bit 2 turns it on and has no
  *     parameter of its own: the bus pins are the INA parts', and the angle
  *     comes back as the 12-bit count, 0 to 4095 for one turn (0.0879 degrees
- *     a count), with no centre applied -- the panel keeps that.  The
+ *     a count), with no center applied -- the panel keeps that.  The
  *     IOmcu reads it at 500Hz.  A bit 2 written to a 4.8 or older
  *     IOmcu is not sent: the panel gates it on minor >= 9.
  *

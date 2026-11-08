@@ -31,7 +31,7 @@
 
 /* TEST's ARM + START, the footer's middle slot, runs only from a
  * two-second hold: the run asks the first set point and the output on and
- * steps the servo to its centre with no slew, and the workbench stays on
+ * steps the servo to its center with no slew, and the workbench stays on
  * TEST.  No PD mini answering refuses it. */
 TEST_CASE(start_test_is_a_two_second_hold_on_an_armed_bench)
 {
@@ -452,7 +452,7 @@ TEST_CASE(a_run_ended_by_a_disarm_leaves_no_position_to_send)
  * run: one DISARM, and the value shown stays where the run last drove the
  * servo until the next ARM puts it at the rest the pins go to: 1500us for
  * STANDARD PWM whatever the trim, 760us for NARROW 760.  Ended by its last
- * step, or by STOP TEST in the box while it is driven off the centre.
+ * step, or by STOP TEST in the box while it is driven off the center.
  */
 static void a_run_ends_safe(int profile, bool by_operator)
 {

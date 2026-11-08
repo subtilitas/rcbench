@@ -532,7 +532,7 @@ typedef enum {
     HITEC_RULE_DEAD_BAND,  /**< DEAD BAND below the servo's            */
     HITEC_RULE_OVERLOAD,   /**< OVERLOAD PROTECTION switched off       */
     HITEC_RULE_END,        /**< an end point differs from the servo's  */
-    HITEC_RULE_CENTRE,     /**< NEUTRAL or CENTRE differs from it      */
+    HITEC_RULE_CENTER,     /**< NEUTRAL or CENTER differs from it      */
     HITEC_RULE_DIRECTION,  /**< DIRECTION reversed                     */
     HITEC_RULE_FS_FAR,     /**< a failsafe position more than 300us
                                 from 1500us                            */

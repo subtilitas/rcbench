@@ -706,7 +706,7 @@ static bool number_follows(const char *brk)
 
 int outputs_wrap(gfx_canvas_t *c, gfx_rect_t box, int pitch, const char *text,
                  int max_lines, const gfx_font_t *font, gfx_color_t ink,
-                 bool centre)
+                 bool center)
 {
     const int cell = gfx_text_width(font, " ", 1);
     const int cells = (cell > 0) ? box.w / cell : 0;
@@ -740,7 +740,7 @@ int outputs_wrap(gfx_canvas_t *c, gfx_rect_t box, int pitch, const char *text,
             /* The line, cut to the buffer where it is longer. */
             char buf[96];
             snprintf(buf, sizeof(buf), "%.*s", (int)len, at);
-            const int x = centre
+            const int x = center
                               ? box.x + (box.w
                                          - gfx_text_width(font, buf, 1)) / 2
                               : box.x;
@@ -956,7 +956,7 @@ void outputs_unbind_draw(gfx_canvas_t *c)
                                                  &s.clear);
     gfx_fill_chamfer_rect_ex(c, k.x, k.y, k.w, k.h, 10, 0, 10, 0, fill);
     gfx_draw_chamfer_rect_ex(c, k.x, k.y, k.w, k.h, 10, 0, 10, 0, UI_DANGER);
-    /* Centred, 10px in from either end: on the grid in the label face, two
+    /* Centered, 10px in from either end: on the grid in the label face, two
      * lines at most; on the narrower board view's key in 8 x 16, four. */
     const char *label = TR(OUT_HOLD_UNBIND);
     const gfx_font_t *font = s_board_view ? OU_FONT_FINE : OU_FONT_LABEL;

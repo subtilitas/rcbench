@@ -489,7 +489,7 @@ static bool follow_the_lines(char *seen, size_t n)
 /* On the rbmod carrier the port's pulse needs the PROG 5V and comes on
  * only while SAFE.  From SAFE with the box off the first line asks for the
  * PROG 5V before ARM; the pulse comes on in SAFE, ARM follows, and a hold
- * on START at its centre starts AUTO. */
+ * on START at its center starts AUTO. */
 TEST_CASE(on_the_carrier_the_lines_lead_to_a_start_from_safe)
 {
     char seen[256];

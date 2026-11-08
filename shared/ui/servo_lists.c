@@ -4,7 +4,7 @@
  * footer's SETTINGS.
  *
  * The hub's list is the servo profile every function reads: TYPE, FRAME
- * RATE, PULSE MIN, PULSE CENTRE, PULSE MAX, TRIM, TRAVEL, REVERSE and HV
+ * RATE, PULSE MIN, PULSE CENTER, PULSE MAX, TRIM, TRAVEL, REVERSE and HV
  * SERVO under OUTPUT, then the device under test's NAME and REPORT.  The
  * profile is for the session: STANDARD PWM at 50Hz at every restart, and a
  * type or a frame rate that can destroy a servo not made for it goes into
@@ -13,7 +13,7 @@
  * TRIM or TRAVEL opens the keypad over the left column, its keys step it.
  *
  * A function's list holds how that screen runs its function: SWEEP's
- * CURVE, SPEED and RANGE; RUDDER's LENGTH, ENC CENTRE (taken from the
+ * CURVE, SPEED and RANGE; RUDDER's LENGTH, ENC CENTER (taken from the
  * AS5600's reading) and ANGLE SOURCE (read-only, a tap opens SETUP >
  * SENSORS on it); RUDDER AUTO's targets, MARGIN, TOLERANCE, SERVO, SERVO
  * PULSES and ANGLE SOURCE; LIMIT RUN's MODE, SERVO, SERVO PULSES and the
@@ -83,14 +83,14 @@ static const char *rate_warn(void)
 VALUE_OF(type_value, R_TYPE)
 VALUE_OF(rate_value, R_RATE)
 VALUE_OF(min_value, R_MIN)
-VALUE_OF(centre_value, R_CENTRE)
+VALUE_OF(center_value, R_CENTER)
 VALUE_OF(max_value, R_MAX)
 VALUE_OF(trim_value, R_TRIM)
 VALUE_OF(travel_value, R_TRAVEL)
 VALUE_OF(reverse_value, R_REVERSE)
 VALUE_OF(hv_value, R_HV)
 STEP_OF(min_step, R_MIN)
-STEP_OF(centre_step, R_CENTRE)
+STEP_OF(center_step, R_CENTER)
 STEP_OF(max_step, R_MAX)
 STEP_OF(trim_step, R_TRIM)
 STEP_OF(travel_step, R_TRAVEL)
@@ -99,7 +99,7 @@ STEP_OF(hv_step, R_HV)
 TAP_OF(type_tap, R_TYPE)
 TAP_OF(rate_tap, R_RATE)
 TAP_OF(min_tap, R_MIN)
-TAP_OF(centre_tap, R_CENTRE)
+TAP_OF(center_tap, R_CENTER)
 TAP_OF(max_tap, R_MAX)
 TAP_OF(trim_tap, R_TRIM)
 TAP_OF(travel_tap, R_TRAVEL)
@@ -124,10 +124,10 @@ static const ui_setlist_custom_t k_min = {
     .label = TX_SV_ROW_MIN, .help = TX_SVL_PULSE_HELP,
     .value_text = min_value, .step = min_step, .tap = min_tap,
 };
-/** @brief The PULSE CENTRE row. */
-static const ui_setlist_custom_t k_centre = {
-    .label = TX_SV_ROW_CENTRE, .help = TX_SVL_PULSE_HELP,
-    .value_text = centre_value, .step = centre_step, .tap = centre_tap,
+/** @brief The PULSE CENTER row. */
+static const ui_setlist_custom_t k_center = {
+    .label = TX_SV_ROW_CENTER, .help = TX_SVL_PULSE_HELP,
+    .value_text = center_value, .step = center_step, .tap = center_tap,
 };
 /** @brief The PULSE MAX row. */
 static const ui_setlist_custom_t k_max = {
@@ -161,7 +161,7 @@ static const ui_setlist_row_t k_hub_rows[] = {
     UI_SL_ROW_CUSTOM(&k_type),
     UI_SL_ROW_CUSTOM(&k_rate),
     UI_SL_ROW_CUSTOM(&k_min),
-    UI_SL_ROW_CUSTOM(&k_centre),
+    UI_SL_ROW_CUSTOM(&k_center),
     UI_SL_ROW_CUSTOM(&k_max),
     UI_SL_ROW_CUSTOM(&k_trim),
     UI_SL_ROW_CUSTOM(&k_travel),
@@ -175,23 +175,23 @@ static const ui_setlist_row_t k_hub_rows[] = {
 
 /* ------------------------------------------- the functions' own rows */
 
-/** @brief ENC CENTRE's value: the count the AS5600 reads at neutral. */
+/** @brief ENC CENTER's value: the count the AS5600 reads at neutral. */
 static void enc_value(char *out, size_t n)
 {
-    snprintf(out, n, "%d", settings_get_int(SET_ENC_CENTRE));
+    snprintf(out, n, "%d", settings_get_int(SET_ENC_CENTER));
 }
 
-/** @brief A tap on ENC CENTRE: the live count is the centre.  An IMU's
+/** @brief A tap on ENC CENTER: the live count is the center.  An IMU's
  *         zero is taken on the IMU screen, not here. */
 static void enc_tap(void)
 {
     if (enc_shown() && enc_src() == SERVO_ANGLE_AS5600) {
-        settings_set(SET_ENC_CENTRE, (float)s.enc_raw);
+        settings_set(SET_ENC_CENTER, (float)s.enc_raw);
         ++s.sl_rev;
     }
 }
 
-/** @brief Why ENC CENTRE takes no tap: no AS5600 reading on show.
+/** @brief Why ENC CENTER takes no tap: no AS5600 reading on show.
  *  @return the reason, NULL while it takes one */
 static const char *enc_locked(void)
 {
@@ -295,9 +295,9 @@ static const char *mode_locked(void)
     return lim_reads() ? lim_write_why_held() : TR(SVL_PORT_ONLY);
 }
 
-/** @brief RUDDER's ENC CENTRE row: a tap takes the live count. */
+/** @brief RUDDER's ENC CENTER row: a tap takes the live count. */
 static const ui_setlist_custom_t k_enc = {
-    .label = TX_SV_ROW_ENC_CENTRE, .help = TX_SVL_ENC_HELP,
+    .label = TX_SV_ROW_ENC_CENTER, .help = TX_SVL_ENC_HELP,
     .value_text = enc_value, .tap = enc_tap, .locked = enc_locked,
 };
 /** @brief The ANGLE SOURCE row. */
@@ -329,7 +329,7 @@ static const ui_setlist_row_t k_sweep_rows[] = {
     UI_SL_ROW_SETTING(SET_SERVO_TEST_HZ),
     UI_SL_ROW_SETTING(SET_SERVO_TEST_RANGE),
 };
-/** @brief RUDDER's list: LENGTH, ENC CENTRE and ANGLE SOURCE. */
+/** @brief RUDDER's list: LENGTH, ENC CENTER and ANGLE SOURCE. */
 static const ui_setlist_row_t k_rudder_rows[] = {
     UI_SL_ROW_SETTING(SET_RUDDER_LEN_MM),
     UI_SL_ROW_CUSTOM(&k_enc),

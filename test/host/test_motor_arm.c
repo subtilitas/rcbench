@@ -617,7 +617,7 @@ TEST_CASE(the_throttle_is_dimmed_and_says_arm_first_while_disarmed)
     const gfx_color_t sunk  = ui_theme_color(UI_C_PANEL_SUNK);
     const gfx_color_t thumb = ui_theme_color(UI_C_TEXT);
     /* Inside each step button, clear of its label; and on the thumb, which
-     * at 0% is centred 10px into the track, between its grip lines. */
+     * at 0% is centered 10px into the track, between its grip lines. */
     const gfx_color_t down_off = px(DOWN_X - 16, TRACK_Y - 12);
     CHECK(down_off != sunk);
     CHECK_EQ(px(UP_X - 16, TRACK_Y - 12), down_off);

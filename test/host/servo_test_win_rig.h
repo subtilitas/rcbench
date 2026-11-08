@@ -27,7 +27,7 @@
 
 #define LO_US   1100u
 #define HI_US   1900u
-#define CENTRE  1500u
+#define CENTER  1500u
 
 /* The run's abort for the condition that took the INA3221 off the rail, as
  * the SERVO screen maps it. */
@@ -207,7 +207,7 @@ static inline void h_fresh(uint32_t tick0)
     h.move_ma  = 400;
     h.force_ma = INT16_MIN;
     h.pd_a     = 0.005f;
-    h.cmd      = CENTRE;
+    h.cmd      = CENTER;
     h.set_v    = 5.0f;
     h.set_i    = 2.0f;
 }
@@ -220,7 +220,7 @@ static inline void h_cfg(servo_test_cfg_t *c, bool ina)
     c->steps_v[0] = 4.8f;
     c->step_count = 1u;
     c->i_limit    = 2.0f;
-    c->centre_us  = CENTRE;
+    c->center_us  = CENTER;
     c->end_lo_us  = LO_US;
     c->end_hi_us  = HI_US;
     c->settle_ms  = 100u;
@@ -325,11 +325,11 @@ static inline void h_step_at(uint32_t at)
         ++h.commands;
         h.cmd    = d.cmd_us;
         h.cmd_ms = at;
-        h.moving = d.cmd_us != CENTRE;
+        h.moving = d.cmd_us != CENTER;
     }
     if (d.release) {
         ++h.releases;
-        h.cmd    = CENTRE;
+        h.cmd    = CENTER;
         h.moving = false;
     }
     out_drain(&h.out, &h.t);

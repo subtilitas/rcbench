@@ -108,7 +108,7 @@ TEST_CASE(a_moved_row_keeps_its_key)
         { SET_INA228_EN, "ina228_en" }, { SET_INA228_ADDR, "ina228_adr" },
         { SET_INA228_UOHM, "ina228_uohm" }, { SET_INA228_MAX_A, "ina228_max_a" },
         { SET_SENSE_SDA, "sns_sda" }, { SET_SENSE_SCL, "sns_scl" },
-        { SET_ENC_EN, "enc_en" }, { SET_ENC_CENTRE, "enc_centre" },
+        { SET_ENC_EN, "enc_en" }, { SET_ENC_CENTER, "enc_centre" },
         { SET_TONE_EN, "tone_en" }, { SET_TONE_PIN, "tone_pin" },
         { SET_TONE_F_MIN, "tone_fmin" }, { SET_TONE_F_MAX, "tone_fmax" },
         { SET_TONE_SPLIT, "tone_split" }, { SET_TONE_GAP, "tone_gap" },
@@ -302,14 +302,14 @@ TEST_CASE(reset_takes_the_selected_entry_alone_hidden_rows_too)
     settings_set(SET_INA228_UOHM, 400.0f);
     settings_set(SET_INA228_EN, 0.0f);       /* the shunt's row hides */
     settings_set(SET_SENSE_SDA, 14.0f);
-    settings_set(SET_ENC_CENTRE, 100.0f);
+    settings_set(SET_ENC_CENTER, 100.0f);
 
     tap(entry_x(SENS_ENTRY_INA228), entry_y(SENS_ENTRY_INA228));
     tap(RESET_X + 100, RESET_Y + RESET_H / 2);
     CHECK_EQ(settings_get_int(SET_INA228_UOHM), 200);
     CHECK_EQ(settings_get_int(SET_TONE_F_MIN), 800);
     CHECK_EQ(settings_get_int(SET_SENSE_SDA), 14);
-    CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 100);
+    CHECK_EQ(settings_get_int(SET_ENC_CENTER), 100);
     CHECK_EQ(settings_screen_category(), (int)SET_CAT_SENSORS);
 
     tap(entry_x(SENS_ENTRY_BUS), entry_y(SENS_ENTRY_BUS));
@@ -323,7 +323,7 @@ TEST_CASE(reset_takes_the_selected_entry_alone_hidden_rows_too)
     CHECK(!settings_get_bool(SET_TONE_EN));
     CHECK_EQ(settings_get_int(SET_TONE_F_MIN), 400);
     CHECK_EQ(settings_screen_rows(SET_CAT_SENSORS), 1);
-    CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 100);
+    CHECK_EQ(settings_get_int(SET_ENC_CENTER), 100);
 }
 
 /* The label names the entry, in both languages, and fits its button. */
@@ -365,12 +365,12 @@ TEST_CASE(a_reset_with_nothing_to_change_is_no_edit)
     settings_reset_rows(bad, 2);
     CHECK_EQ(s_observed, 0);
     CHECK(!settings_dirty());
-    settings_set(SET_ENC_CENTRE, 5.0f);
+    settings_set(SET_ENC_CENTER, 5.0f);
     CHECK_EQ(s_observed, 1);
     CHECK(settings_dirty());
     sensors_pane_reset(SENS_ENTRY_AS5600);
     CHECK_EQ(s_observed, 2);
-    CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 0);
+    CHECK_EQ(settings_get_int(SET_ENC_CENTER), 0);
     settings_set_observer(NULL);
 }
 
@@ -497,7 +497,7 @@ TEST_CASE(a_flick_onto_the_warning_answers_nothing)
 {
     fresh_hub();
     settings_set_store(&s_mem_store);
-    settings_set(SET_ENC_CENTRE, 5.0f);
+    settings_set(SET_ENC_CENTER, 5.0f);
     feed_reset();
     feed_tick_per_report(REPORT_S);
     tap(home_x(), home_y());
@@ -506,7 +506,7 @@ TEST_CASE(a_flick_onto_the_warning_answers_nothing)
     finger(FEED_LONE, RESET_X + 100, RESET_Y + 10);
     lift(FEED_LONE);
     CHECK(settings_screen_warning());
-    CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 5);
+    CHECK_EQ(settings_get_int(SET_ENC_CENTER), 5);
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
 }
 

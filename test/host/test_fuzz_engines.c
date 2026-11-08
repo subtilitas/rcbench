@@ -16,7 +16,7 @@
  * readings; a cap that moves, disarms and aborts; the clock started
  * anywhere in 2^32ms.  Checked: the step that sees the run over hands off
  * and release together; nothing is asked on, set or commanded after it; a
- * set point is at most the cap and at least 3.0V; a command is the centre
+ * set point is at most the cap and at least 3.0V; a command is the center
  * or an end; step and step_count stay inside the slots; every CSV row has
  * the header's number of fields and neither nan nor inf; no line fills its
  * buffer or holds a newline; the outbox drains.
@@ -134,7 +134,7 @@ static void one_servo_run(uint32_t seed, unsigned id)
     }
     c.brownout = upto(2u) != 0u;
     c.i_limit = frand(0.5f, 5.0f);
-    c.centre_us = 1500u;
+    c.center_us = 1500u;
     c.end_lo_us = (uint16_t)(1100u + upto(300u));
     c.end_hi_us = (uint16_t)(1600u + upto(300u));
     c.settle_ms = (uint16_t)upto(2000u);
@@ -163,7 +163,7 @@ static void one_servo_run(uint32_t seed, unsigned id)
     c.meter_changes = rnd();
     c.ina_why = (uint8_t)upto(SERVO_TEST_INA_COUNT);
     c.enc_on = upto(3u) == 0u;
-    c.enc_centre = (uint16_t)upto(4096u);
+    c.enc_center = (uint16_t)upto(4096u);
     c.enc_cmd_deg[0] = frand(-90.0f, 0.0f);
     c.enc_cmd_deg[1] = frand(0.0f, 90.0f);
     c.min_us = 65535u;
@@ -192,7 +192,7 @@ static void one_servo_run(uint32_t seed, unsigned id)
     uint16_t samples = (uint16_t)rnd();
     uint16_t win_number = (uint16_t)rnd();
     uint32_t win_next = now;
-    uint16_t enc_raw = c.enc_centre;
+    uint16_t enc_raw = c.enc_center;
     uint16_t cmd = 1500u;
     uint32_t cmd_at = now;
     bool was_running = true;
@@ -309,7 +309,7 @@ static void one_servo_run(uint32_t seed, unsigned id)
             ++releases;
         }
         if (d.command) {
-            RULE(d.cmd_us == c.centre_us || d.cmd_us == c.end_lo_us
+            RULE(d.cmd_us == c.center_us || d.cmd_us == c.end_lo_us
                  || d.cmd_us == c.end_hi_us, "command %u us",
                  (unsigned)d.cmd_us);
             cmd = d.cmd_us;

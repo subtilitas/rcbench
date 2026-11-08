@@ -91,7 +91,7 @@
       "steps": [
         "Battery disconnected, transmitter on, throttle full (above 1.7ms).",
         "Connect battery, hold full throttle 5s: two sets of fast ringing tones.",
-        "Throttle to centre for 5s: 1 beep = menu 1."
+        "Throttle to center for 5s: 1 beep = menu 1."
       ]
     },
     "announce": {
@@ -102,22 +102,22 @@
       "gap_ms": null,
       "group_gap_ms": null,
       "repeat": null,
-      "description": "Menu N is N beeps after the stick rests at centre for 5s. With full throttle held, the ESC then beeps the options one after another: option N is N short beeps."
+      "description": "Menu N is N beeps after the stick rests at center for 5s. With full throttle held, the ESC then beeps the options one after another: option N is N short beeps."
     },
     "select": {
       "throttle": "mid",
       "within_ms": null,
-      "description": "Hold full throttle while the desired option is beeped, then move to centre (1.4-1.6ms). Two beeps confirm the stored option."
+      "description": "Hold full throttle while the desired option is beeped, then move to center (1.4-1.6ms). Two beeps confirm the stored option."
     },
     "skip": {
       "throttle": "none",
-      "description": "Leave full throttle in place for 5s: the ESC beeps the next option; after the last option it returns to the first. Leave the stick at centre after the menu beeps and make no move for 5s to pass to the next menu."
+      "description": "Leave full throttle in place for 5s: the ESC beeps the next option; after the last option it returns to the first. Leave the stick at center after the menu beeps and make no move for 5s to pass to the next menu."
     },
-    "confirm_signal": "Two beeps after centre stick on a beeped option.",
+    "confirm_signal": "Two beeps after center stick on a beeped option.",
     "exit": "Idle stick or unplug the battery after the last wanted change.",
     "changes_per_entry": "many",
     "reset_to_defaults": null,
-    "description": "Full throttle at power-up for 5s enters programming; centre stick for 5s gives menu 1 as one beep. Full throttle makes the ESC beep its options in turn (N beeps = option N); centre stick while an option is beeped stores it with two beeps. Menus advance after 5s without a selection."
+    "description": "Full throttle at power-up for 5s enters programming; center stick for 5s gives menu 1 as one beep. Full throttle makes the ESC beep its options in turn (N beeps = option N); center stick while an option is beeped stores it with two beeps. Menus advance after 5s without a selection."
   },
   "items": [
     {
@@ -291,7 +291,7 @@
     "The 40A Pro V2 feature list names 5-cell (15V) and 6-cell (18V) cutoffs but its menu 1 lists only 3-cell, 4-cell and 70%: whether options 5 and 6 exist on V2 is unknown."
   ],
   "notes": [
-    "Eflite_30A_Pro_SBEC.pdf gives the centre window as 1.4-1.7ms in entry step 3 and 1.4-1.6ms elsewhere; Eflite_40A_Pro_SBEC.pdf gives 1.4-1.7ms in step 3 and 1.4-1.6ms in option steps.",
+    "Eflite_30A_Pro_SBEC.pdf gives the center window as 1.4-1.7ms in entry step 3 and 1.4-1.6ms elsewhere; Eflite_40A_Pro_SBEC.pdf gives 1.4-1.7ms in step 3 and 1.4-1.6ms in option steps.",
     "Eflite_30A_Pro_SBEC.pdf and Eflite_40A_Pro_SBEC.pdf label the start-up rate entry as 'Menu 3' although they say five beeps; Eflite_40A_Pro_SBEC.pdf also says six beeps for the throttle range menu in one line and four beeps in the next. The menu order and the beep counts used here are 1..7 in the manuals' own menu headings.",
     "Cutoff percent differs between manuals: 74% in Eflite_30A_Pro_SBEC.pdf and Eflite_40A_LitePro_SBEC_V2.pdf, 70% in Eflite_40A_Pro_SBEC.pdf and Eflite_40A_Pro_SBEC_V2.pdf.",
     "Eflite_40A_Pro_SBEC_V2.pdf and Eflite_40A_LitePro_SBEC_V2.pdf are one-sheet English/German/French/Italian manuals; the pages cited are the English columns."

@@ -20,7 +20,7 @@
  *   - STEPS: a step or the brown-out walk chosen, each step inside
  *     SUPPLY's caps.  A step past 6.0V reads `TAP: HV WARNING`: the hold
  *     is then a tap that opens the HV warning, whose own 2s hold fires;
- *   - RANGE: the run's ends either side of PULSE CENTRE;
+ *   - RANGE: the run's ends either side of PULSE CENTER;
  *   - ARM: ARMED, no limit run or AUTO under way, no report on its way.
  *
  * The hold fixes NOT ARMED and a port's PORT PWM off on a SAFE bench
@@ -72,7 +72,7 @@ enum {
     CK_NO_STEPS,      /**< no step and no brown-out walk               */
     CK_NO_SUPPLY,     /**< no PD mini answering                        */
     CK_FED,           /**< the rail live with the PD mini's output off */
-    CK_ENDS,          /**< the ends not either side of PULSE CENTRE    */
+    CK_ENDS,          /**< the ends not either side of PULSE CENTER    */
     CK_CAP,           /**< a step outside SUPPLY's caps                */
     CK_COUNT          /**< the count                                   */
 };
@@ -147,7 +147,7 @@ static const char *check(int k)
     case CK_ENDS: {
         uint16_t lo, hi;
         test_ends(&lo, &hi);
-        return !(lo < s.centre_us && s.centre_us < hi)
+        return !(lo < s.center_us && s.center_us < hi)
                    ? ui_servo_str(SERVO_STR_START_BAD_ENDS) : NULL;
     }
     case CK_CAP: {

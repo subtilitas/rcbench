@@ -64,7 +64,7 @@ extern "C" {
  *
  * A throttle at rest is stopped, and its slew is asymmetric: going up is
  * ramped and coming down is immediate, because reducing throttle is the safe
- * direction.  A surface at rest is centred, and its slew is symmetric,
+ * direction.  A surface at rest is centered, and its slew is symmetric,
  * because for a surface neither direction is the safe one.
  */
 typedef enum {

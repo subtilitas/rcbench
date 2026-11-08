@@ -83,7 +83,7 @@ servo, no PD mini, `servoPower: bench`, `connection: osoyoo`. Its wires 65
 DC jack, the VIN terminal or the header H4. The plus is PWRIN at all 3. The
 minus is VIN- at the VIN terminal and at H4, and GND of the board at the DC
 jack (schematic REV 1.0: DC1 pin 1 PWRIN, pins 2 and 3 GND). The jack takes a
-5.5 x 2.1mm plug, centre positive. The product page names the socket
+5.5 x 2.1mm plug, center positive. The product page names the socket
 DC005-2.1: the 2.1mm pin follows from that name; the 5.5mm outer diameter is
 the usual size of that socket family and is not stated by the vendor. The jack
 has no reverse-polarity protection: the SI2302 (Q3) joins VIN- to GND and
@@ -444,7 +444,7 @@ Line coverage of the resolver, the groups and the motor simulator, measured by `
 - Servo on pad 40 (VBUS): the current limit of the pin is not stated. "Small servo" carries no number.
 - Osoyoo breakout board: the jumper V Selector (header H3) sets the V pins of all 40 strips: 3V3 from the regulator U1 (input VSYS), 5V from the XL1509 converter U9 (input DC jack, VIN terminal or 2-pin header H4). The sources are the schematic REV 1.0 (file of 2024-12-03), the XL1509 datasheet Rev 2.0 and the product page of 2024-12-02, cited by the source kind `doc`. The currents 2A at 5V and 500mA at 3.3V are vendor values, not measured. The DC input range differs between the print (7 to 16V), the vendor (7 to 12V recommended, 7 to 18V limit) and the chip (7 to 40V). With USB alone and the jumper on 3V3 the schematic and the product page disagree; not measured.
 - DC supply of the Osoyoo breakout board (`dcsup`): the current it must deliver is not stated. The product page rates the output of the board at 2A at 5V; no source states the input current.
-- DC jack of the Osoyoo breakout board: no reverse-polarity protection. A centre-negative plug puts the reverse voltage through the switch OFF/ON on the input of the XL1509 converter. The SI2302 (Q3) protects the VIN terminal and H4 only.
+- DC jack of the Osoyoo breakout board: no reverse-polarity protection. A center-negative plug puts the reverse voltage through the switch OFF/ON on the input of the XL1509 converter. The SI2302 (Q3) protects the VIN terminal and H4 only.
 - DC jack of the Osoyoo breakout board, plug size: the product page names the socket DC005-2.1. The 2.1mm pin follows from that name. The 5.5mm outer diameter is the usual size of that socket family; no vendor source states it.
 - SI2302 (Q3) of the Osoyoo breakout board above 12V: its gate sits at PWRIN through R7 with no clamp and its source at GND (schematic REV 1.0), so its gate-source voltage is the input voltage at every input. The datasheet linked on the product page rates the gate-source voltage at ±12V (absolute maximum). Above 12V Q3 is outside that rating; the print of 16V and the vendor limit of 18V are above it. The data keeps the range at 7 to 12V.
 - ESC STICK programming: `docs/StickProgramming.md` at `v0.23.10` runs it on ESC power B (PD mini). An owner statement of 2026-10-11 says that programming an ESC needs no power. The data keeps the PD mini as needed bench hardware; what powers the ESC during programming is stated as unknown in the check entry `esc-programming-power`.

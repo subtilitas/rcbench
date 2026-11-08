@@ -109,7 +109,7 @@ _Static_assert(PORT_X == RCARD_X && PORT_W == RCARD_W,
 
 /*
  * The output card, top to bottom: the servo rail's live power and its
- * plot, SPEED, the type and frame rate in force, and CENTRE / SWEEP /
+ * plot, SPEED, the type and frame rate in force, and CENTER / SWEEP /
  * RELEASE.  Every row tapped is
  * UI_TAP_MIN or taller.  No function screen draws it: LIVE, SWEEP and
  * RUDDER show READY rows in its place (servo_drive_ready.c), RUDDER AUTO,
@@ -145,7 +145,7 @@ _Static_assert(RC_W >= PROG5V_BOX_MIN_W, "the PROG 5V box fits the card");
  */
 #define TAG_Y     (SLIDER_Y + SLIDER_H + UI_SLIDER_OVERHANG + 9)
 #define TAG_H     44             /**< The type pill's height, px. */
-#define BTN_Y     (TAG_Y + TAG_H + 12) /**< CENTRE, SWEEP, RELEASE. */
+#define BTN_Y     (TAG_Y + TAG_H + 12) /**< CENTER, SWEEP, RELEASE. */
 #define BTN_H     UI_TAP_MIN           /**< Their height, px. */
 #define BTN_GAP   8                    /**< Between two of them, px. */
 /** @brief ARM and DISARM: the footer's middle slot, 328 x 48px. */
@@ -154,7 +154,7 @@ _Static_assert(RC_W >= PROG5V_BOX_MIN_W, "the PROG 5V box fits the card");
 _Static_assert(ARM_Y + ARM_H <= STOP_FLOOR,
                "DISARM ends above the alert band");
 _Static_assert(BTN_Y + BTN_H + 8 <= CARD_FLOOR,
-               "CENTRE, SWEEP and RELEASE end inside the output card");
+               "CENTER, SWEEP and RELEASE end inside the output card");
 
 /*
  * LIVE's card: the horn's angle in the bench's numerals top left, ARM
@@ -193,7 +193,7 @@ _Static_assert(KST_PANEL_STD_MV == 6000,
 /*
  * The panels: the keypad, keyboard, list, warnings, question and the servo
  * programmer cover the whole left column down to the card's floor.  The
- * output card -- CENTRE, RELEASE and the readings -- and the footer's ARM
+ * output card -- CENTER, RELEASE and the readings -- and the footer's ARM
  * stay where they are and work.
  */
 #define OV_X      PAD             /**< The left column's panels, px. */
@@ -236,7 +236,9 @@ _Static_assert(RL_NOTE_Y + 20 <= CARD_FLOOR,
 /* A profile the bench drives; k_types in servo_screen.c holds them. */
 typedef struct {
     const char     *name;
-    uint16_t        min_us, centre_us, max_us;
+    uint16_t        min_us;      /**< PULSE MIN, us                       */
+    uint16_t        center_us;   /**< PULSE CENTER, us                    */
+    uint16_t        max_us;      /**< PULSE MAX, us                       */
     const uint16_t *rates;       /* the frame rates offered, Hz           */
     uint8_t         rate_count;
     uint16_t        default_hz;
@@ -259,8 +261,8 @@ enum { PG_OUTPUT = 0, PG_COUNT, PG_KST = PG_COUNT };
 enum { RL_NONE = 0, RL_KST = 1 };
 
 /* What a settings row edits. */
-enum { R_TYPE = 0, R_RATE, R_MIN, R_CENTRE, R_MAX, R_TRIM, R_TRAVEL,
-       R_REVERSE, R_SETTING, R_TEXT, R_HV, R_ENC_CENTRE, R_KST_EXPERT };
+enum { R_TYPE = 0, R_RATE, R_MIN, R_CENTER, R_MAX, R_TRIM, R_TRAVEL,
+       R_REVERSE, R_SETTING, R_TEXT, R_HV, R_ENC_CENTER, R_KST_EXPERT };
 
 typedef struct {
     uint8_t      page;
@@ -281,7 +283,7 @@ enum { OP_NONE = 0, OP_ROW, OP_TRIM_DN, OP_TRIM_UP, OP_KEYPAD,
 /* What the list chooses -- the PORT button's port among them -- and what
  * the keypad types. */
 enum { CH_NONE = 0, CH_TYPE, CH_RATE, CH_ENUM, CH_PORT };
-enum { KT_NONE = 0, KT_MIN, KT_CENTRE, KT_MAX, KT_TRAVEL, KT_RATE,
+enum { KT_NONE = 0, KT_MIN, KT_CENTER, KT_MAX, KT_TRAVEL, KT_RATE,
        KT_SETTING, KT_TRIM };
 
 /* What the question or the HV warning applies: the supply's output
@@ -295,7 +297,9 @@ enum { ASK_ON = 0, ASK_TEST, ASK_RESTORE };
 /* What a command means as a pulse and an angle: the profile's pulses, trim,
  * reverse and travel, as they were when a command was sent. */
 typedef struct {
-    uint16_t min_us, centre_us, max_us;
+    uint16_t min_us;     /**< PULSE MIN, us    */
+    uint16_t center_us;  /**< PULSE CENTER, us */
+    uint16_t max_us;     /**< PULSE MAX, us    */
     int16_t  trim_us;
     bool     reverse;
     float    travel_deg;
@@ -360,10 +364,12 @@ typedef struct {
     /* The profile in force, for this session only: STANDARD PWM at 50Hz
      * at every restart. */
     int      type;
-    uint16_t min_us, centre_us, max_us;
+    uint16_t min_us;     /**< PULSE MIN, us    */
+    uint16_t center_us;  /**< PULSE CENTER, us */
+    uint16_t max_us;     /**< PULSE MAX, us    */
     uint16_t frame_hz;
     bool     reverse;
-    int16_t  trim_us;      /**< added to centre                        */
+    int16_t  trim_us;      /**< added to center                        */
     float    travel_deg;   /**< how far each way the horn is allowed   */
     int      speed_pct;    /**< how fast the bench slews the command   */
 
@@ -430,7 +436,10 @@ typedef struct {
     uint32_t   arm_rev;
     uint32_t   drawn_arm[2];
 
-    gfx_rect_t arm_btn, centre_btn, sweep_btn, release_btn;
+    gfx_rect_t arm_btn;          /**< ARM / DISARM                     */
+    gfx_rect_t center_btn;       /**< CENTER; empty off LIVE           */
+    gfx_rect_t sweep_btn;        /**< SWEEP                            */
+    gfx_rect_t release_btn;      /**< RELEASE                          */
     bool       kst_shown;        /* a session had the left column      */
     bool       kst_held;         /* and a port: ARM takes no press      */
     bool       sup_held;         /* the port holds the supply: SET is dim */
@@ -584,7 +593,7 @@ typedef struct {
      * further PAUSE before the resume is acknowledged -- that HOLD holds
      * what the first pause left.  Ended by the acknowledgement of a start
      * or a resume (the far end then moves on its own), and by anything
-     * that sets a new origin: stop_sweep() -- a drag, CENTRE, RELEASE, a
+     * that sets a new origin: stop_sweep() -- a drag, CENTER, RELEASE, a
      * curve restarted, a disarm, leaving, the link going -- and
      * start_sweep() -- SWEEP, or a PAUSED that starts a changed curve.
      * Every command carries it (from_pause); the panel drops those of a
@@ -1040,7 +1049,7 @@ uint8_t test_steps(float *v);
 void test_steps_text(char *b, size_t n, const float *v, uint8_t count,
                      bool bo);
 /** @brief The run's ends: SWEEP's RANGE of the travel either side of
- *         PULSE CENTRE.  @param end_lo receives the low end, us
+ *         PULSE CENTER.  @param end_lo receives the low end, us
  *  @param end_hi receives the high end, us */
 void test_ends(uint16_t *end_lo, uint16_t *end_hi);
 /** @brief Whether a run started now reads the INA3221.  @return true
@@ -1263,26 +1272,26 @@ void lim_seam_close_pages(void);
 static inline const servo_type_t *type(void) { return &k_types[s.type]; }
 
 /*
- * The range a command carries: the narrowest one centred on CENTRE that
+ * The range a command carries: the narrowest one centered on CENTER that
  * holds MIN and MAX.  The IOmcu knows a channel only by its two
  * endpoints and rests a surface at their midpoint -- on RELEASE, before an
- * arm, after a silence -- so MIN..MAX itself would rest a servo whose CENTRE
- * is not midway between them away from its centre.  Commands never leave
+ * arm, after a silence -- so MIN..MAX itself would rest a servo whose CENTER
+ * is not midway between them away from its center.  Commands never leave
  * MIN..MAX: svs_deg_to_us() clamps them.  The PULSE keypads keep this
  * range inside OUT_FLOOR_US..OUT_CEILING_US.
  */
 static inline void cmd_range(uint16_t *lo, uint16_t *hi)
 {
-    const unsigned below = (unsigned)s.centre_us - (unsigned)s.min_us;
-    const unsigned above = (unsigned)s.max_us - (unsigned)s.centre_us;
+    const unsigned below = (unsigned)s.center_us - (unsigned)s.min_us;
+    const unsigned above = (unsigned)s.max_us - (unsigned)s.center_us;
     const unsigned half  = (below > above) ? below : above;
-    *lo = (uint16_t)((unsigned)s.centre_us - half);
-    *hi = (uint16_t)((unsigned)s.centre_us + half);
+    *lo = (uint16_t)((unsigned)s.center_us - half);
+    *hi = (uint16_t)((unsigned)s.center_us + half);
 }
 
 /*
  * The longest pulse the far end can render: the top of the range a command
- * carries, which is past PULSE MAX when CENTRE is off the middle.  A pulse
+ * carries, which is past PULSE MAX when CENTER is off the middle.  A pulse
  * of an old span under a new range reaches it between two transactions, so
  * the frame rate's pause is kept from it rather than from PULSE MAX.
  */
@@ -1538,19 +1547,19 @@ static inline uint8_t save_state(void)
 
 /* --- helpers the screen and the limit run inline ------------------------- */
 
-/** @brief The count the source's degrees are taken from: AS5600 centre for
+/** @brief The count the source's degrees are taken from: AS5600 center for
  *         the AS5600, 0 for the IMU, whose zero is taken before its counts.
- *  @return the centre count, 0 to 4095. */
-static inline uint16_t enc_centre(void)
+ *  @return the center count, 0 to 4095. */
+static inline uint16_t enc_center(void)
 {
-    return servo_angle_centre(enc_src(),
-                              (uint16_t)settings_get_int(SET_ENC_CENTRE));
+    return servo_angle_center(enc_src(),
+                              (uint16_t)settings_get_int(SET_ENC_CENTER));
 }
 
 /**
  * @brief Whether the last reading's degrees are the IMU's as read: finer
- *        than the 0.088° of its counts.  Its centre is count 0, so they are
- *        from the centre as they are.
+ *        than the 0.088° of its counts.  Its center is count 0, so they are
+ *        from the center as they are.
  * @return Whether they are, with ANGLE SOURCE IMU.
  */
 static inline bool enc_exact(void)
@@ -1567,12 +1576,12 @@ static inline float enc_abs_now(void)
     return enc_exact() ? s.enc_deg : servo_test_enc_deg(s.enc_raw, 0u);
 }
 
-/* The encoder's angle from its centre, degrees, in the direction of the
+/* The encoder's angle from its center, degrees, in the direction of the
  * commanded angle: negated with REVERSE on, as us_to_deg() is. */
 static inline float enc_deg_now(void)
 {
     const float d = enc_exact() ? s.enc_deg
-                                : servo_test_enc_deg(s.enc_raw, enc_centre());
+                                : servo_test_enc_deg(s.enc_raw, enc_center());
     return s.reverse ? -d : d;
 }
 

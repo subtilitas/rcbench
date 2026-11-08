@@ -10,7 +10,7 @@
  * The stop has a signature.  While the surface is free, current against
  * commanded position is flat and low.  When the linkage binds, current rises
  * steeply: the servo has stopped moving the surface and is pushing.  The
- * search walks out from centre in small steps, watches for the rise, stops
+ * search walks out from center in small steps, watches for the rise, stops
  * at the first one rather than pushing through it, backs off by a margin,
  * and reports that position as the endpoint.
  *
@@ -56,7 +56,7 @@ typedef enum {
     SERVO_LIMIT_FAULT_NO_LIMIT,
     /** @brief step_us is 0: no step can reach a stop.
      *
-     * Set by servo_limit_init(), which then commands nothing but the centre. */
+     * Set by servo_limit_init(), which then commands nothing but the center. */
     SERVO_LIMIT_FAULT_BAD_CONFIG,
 } servo_limit_fault_t;
 
@@ -65,9 +65,9 @@ typedef enum {
 #define SERVO_LIMIT_MAX_US 2500u
 
 typedef struct {
-    uint16_t centre_us;      /**< where the search starts */
+    uint16_t center_us;      /**< where the search starts */
     int16_t  step_us;        /**< signed: direction and size of a step */
-    uint16_t max_travel_us;  /**< how far from centre the search may go */
+    uint16_t max_travel_us;  /**< how far from center the search may go */
 
     uint16_t settle_ms;      /**< wait for the servo to arrive before reading */
     uint16_t measure_ms;     /**< average over this long once settled */
@@ -107,11 +107,11 @@ typedef struct {
  * @brief Defaults for a hobby servo on a control surface.
  *
  * @param cfg       Configuration to fill. Does nothing when NULL.
- * @param centre_us Centre pulse width, us.
+ * @param center_us Center pulse width, us.
  * @param positive  true to step toward longer pulse widths, false toward
  *        shorter ones; the step is 10us either way.
  */
-void servo_limit_defaults(servo_limit_cfg_t *cfg, uint16_t centre_us,
+void servo_limit_defaults(servo_limit_cfg_t *cfg, uint16_t center_us,
                           bool positive);
 
 typedef struct {
@@ -152,7 +152,7 @@ void servo_limit_init(servo_limit_t *lf, const servo_limit_cfg_t *cfg);
  *
  * Call it at the sampling rate of the current sensor.  Calling after the
  * search has finished is safe; the returned width then holds the servo at
- * centre, so a finished search leaves no surface deflected.
+ * center, so a finished search leaves no surface deflected.
  *
  * @param lf        Search state.  A NULL lf gives 0.
  * @param current_a Current reading, A. At or above hard_limit_a, or NaN, aborts
@@ -166,7 +166,7 @@ uint16_t servo_limit_step(servo_limit_t *lf, float current_a, uint32_t now_ms);
  * @brief How far the search has gone, 0..1, for a progress bar.
  *
  * @param lf Search state.
- * @return progress from 0.0 (centre) to 1.0; 1.0 when the state is not RUNNING,
+ * @return progress from 0.0 (center) to 1.0; 1.0 when the state is not RUNNING,
  *        0.0 when lf is NULL or max_travel_us is 0.
  */
 float servo_limit_progress(const servo_limit_t *lf);

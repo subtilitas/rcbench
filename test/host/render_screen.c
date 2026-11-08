@@ -191,7 +191,7 @@ static bool s_monitors_on;
 /* The phase tap enabled, and the readout a run's page shows beside it. */
 static bool s_tap_on;
 static bool s_tone_fed;
-/* The output encoder enabled, its centre at count 3000. */
+/* The output encoder enabled, its center at count 3000. */
 static bool s_enc_on;
 /* Screen rotation stored at 180. */
 static bool s_rot_on;
@@ -223,9 +223,9 @@ static bool lang_load(float *values, int count)
     if (s_hwstop_on && (int)SET_HW_STOP < count) {
         values[SET_HW_STOP] = 1.0f;
     }
-    if (s_enc_on && (int)SET_ENC_CENTRE < count) {
+    if (s_enc_on && (int)SET_ENC_CENTER < count) {
         values[SET_ENC_EN]     = 1.0f;
-        values[SET_ENC_CENTRE] = 3000.0f;
+        values[SET_ENC_CENTER] = 3000.0f;
     }
     if (s_monitors_on && (int)SET_INA_FIT(0) < count) {
         values[SET_INA228_EN]  = 1.0f;
@@ -316,7 +316,7 @@ static void make_servo_csv(void)
         const float target = (us - 1500.0f) * 0.09f;
         const float moving = fabsf(target - angle);
         angle += (target - angle) * 0.6f;
-        /* Idle, the move, and the load that grows away from the centre. */
+        /* Idle, the move, and the load that grows away from the center. */
         log_rail_t r;
         memset(&r, 0, sizeof(r));
         r.i  = 0.035f + 0.06f * moving + 0.004f * fabsf(angle);
@@ -1804,7 +1804,7 @@ static void limrun_view(const char *view)
 /*
  * The TEST page's sine, 0.5Hz over 80% of the travel, swept with SPEED at
  * the left end of its track, 12%: the curve asks for 1257 units a second
- * at the centre and SPEED allows 240, so SPEED's row says it limits the
+ * at the center and SPEED allows 240, so SPEED's row says it limits the
  * sweep.  Geometry from servo_screen.c, offset by the band: the SPEED
  * track's left end and SWEEP.  With @p pause, PAUSE is tapped 0.8s in and
  * the frames after it show the paused button.
@@ -2116,7 +2116,7 @@ static void pose_splash(void)
 
 /* ------------------------------------------------- WI-FI */
 
-/* A key of the keyboard WI-FI has open, tapped at its centre: the
+/* A key of the keyboard WI-FI has open, tapped at its center: the
  * screen's own keyboard, so a name's bottom row and a password's each
  * take the taps meant for them. */
 static void wifi_key(int key)
@@ -3973,7 +3973,7 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
         }
         /* The binding read: one SERVO PWM output on GP2. */
         servo_screen_set_pins((uint64_t)1u << 2, true);
-        /* The output encoder on, its centre at count 3000 and the horn
+        /* The output encoder on, its center at count 3000 and the horn
          * read at the commanded 38 degrees: 38 * 4096 / 360 = 432
          * counts on. */
         if (strcmp(view, "servo-encoder") == 0) {

@@ -132,7 +132,7 @@ static inline kst_image_t sim_bench_image(void)
 /*
  * Where a programmable servo's horn goes for pulse @p cmd_us, as the pulse
  * width a servo model (servo_sim.h) is commanded: the model the limit run
- * takes (servo_limrun.h).  NEUTRAL holds the horn at the centre; PULSE
+ * takes (servo_limrun.h).  NEUTRAL holds the horn at the center; PULSE
  * LOWER and PULSE UPPER are the pulses of full travel, LEFT ANGLE or RIGHT
  * ANGLE at @p us_per_count each count; between, the travel is the share of
  * the way to that pulse (@p square: that share squared); past it the horn

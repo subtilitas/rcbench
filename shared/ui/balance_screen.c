@@ -101,7 +101,7 @@ _Static_assert(RULE_Y0 + 5 * RULE_PITCH + RULE_L2 + 16 <= TEXT_FLOOR,
 
 /*
  * The placement drawings of TEST RIG and AIRCRAFT keep their 450px card's
- * coordinates and are drawn in a window centred in the 640px card, from
+ * coordinates and are drawn in a window centered in the 640px card, from
  * the card's top.
  */
 #define FIG_X     ((LCARD_W - 450) / 2)              /**< x 95. */
@@ -436,8 +436,8 @@ static void draw_rig(gfx_canvas_t *c)
                    ui_theme_color(UI_C_PANEL_HI));
     gfx_capsule_aa(c, SPIN_X, SHAFT_Y + 14, SPIN_X, SHAFT_Y + BLADE_L, 13,
                    ui_theme_color(UI_C_PANEL_HI));
-    /* A hub, not a hole: filled light with a dark centre.  A dark disc with a
-     * light centre reads as a gap in the blades. */
+    /* A hub, not a hole: filled light with a dark center.  A dark disc with a
+     * light center reads as a gap in the blades. */
     gfx_fill_circle_aa(c, SPIN_X, SHAFT_Y, 18, steel);
     gfx_fill_circle_aa(c, SPIN_X, SHAFT_Y, 6, ui_theme_color(UI_C_PANEL));
 
@@ -893,7 +893,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
         draw_readings(c);
         return;
     }
-    /* The drawing in its window, centred in the card. */
+    /* The drawing in its window, centered in the card. */
     gfx_canvas_t fig;
     if (gfx_canvas_sub(c, (gfx_rect_t){ FIG_X, FIG_Y,
                                         (int16_t)(PAD + LCARD_W - 4 - FIG_X),

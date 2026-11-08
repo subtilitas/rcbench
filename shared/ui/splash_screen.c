@@ -132,8 +132,8 @@ static const char *mark_of(splash_result_t r)
 /*
  * The splash on the whole panel:
  * The mark: the home tag's shape at twice its size, "rcbench" in
- * SP_FONT_MARK (20 x 36) at scale 2, centred from MARK_Y.  The tagline in
- * SP_FONT_BODY (12 x 24) centred under it.  The seven steps in rows of
+ * SP_FONT_MARK (20 x 36) at scale 2, centered from MARK_Y.  The tagline in
+ * SP_FONT_BODY (12 x 24) centered under it.  The seven steps in rows of
  * ROW_H from LIST_Y, each its label, its mark and its detail in
  * SP_FONT_BODY; the detail 47 cells from DETAIL_X to 24px short of the
  * panel's edge.  The credit in SP_FONT_LABEL (10 x 20) at the foot.
@@ -173,7 +173,7 @@ _Static_assert(LIST_Y + SPLASH_STEP_COUNT * ROW_H <= CREDIT_Y - 16,
 
 /**
  * @brief The mark: the home tag's chamfered shape at MARK_SCALE times its
- *        size, centred, with @p text on it.
+ *        size, centered, with @p text on it.
  * @param c    Canvas, the whole panel.
  * @param text The word.
  * @param fill The shape's colour.

@@ -63,8 +63,8 @@ void outputs_init(outputs_t *o, uint32_t now_ms)
         out_channel_t *c = &o->channel[i];
         /*
          * Surface rather than throttle by default.  Getting the role wrong in
-         * that direction gives an output that centres when it should stop;
-         * the other way gives one that stops when it should centre, and a
+         * that direction gives an output that centers when it should stop;
+         * the other way gives one that stops when it should center, and a
          * surface slamming to an endpoint is the worse of the two.
          */
         c->role   = OUT_ROLE_SURFACE;

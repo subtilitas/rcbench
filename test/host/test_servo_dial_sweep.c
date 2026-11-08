@@ -8,7 +8,7 @@
  * Cases:
  * - a_sweep_needs_an_armed_bench_and_a_coprocessor_that_sweeps
  * - the_horn_follows_the_sweep_and_hold_keeps_it_where_it_is
- * - a_sweep_ends_on_the_dial_centre_release_disarm_and_leave
+ * - a_sweep_ends_on_the_dial_center_release_disarm_and_leave
  * - a_changed_setting_starts_the_sweep_over
  * - a_profile_changed_while_it_sweeps_goes_with_the_sweep
  * - hold_keeps_the_output_where_it_has_got_to
@@ -119,15 +119,15 @@ TEST_CASE(a_turn_in_a_frame_where_a_sweep_ran_is_dropped)
     CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
 }
 
-/* A finger on the dial, CENTRE, RELEASE, a disarm and leaving each end the
+/* A finger on the dial, CENTER, RELEASE, a disarm and leaving each end the
  * sweep, with the command that ends it. */
-TEST_CASE(a_sweep_ends_on_the_dial_centre_release_disarm_and_leave)
+TEST_CASE(a_sweep_ends_on_the_dial_center_release_disarm_and_leave)
 {
     int x, y;
     dial_at(30.0f, ARC_R - 20, &x, &y);
     const struct { int px, py; servo_cmd_kind_t kind; } by[] = {
         { 0, 0, SERVO_CMD_POSITION },          /* the dial, below */
-        { COL_X + 40, BTN_Y, SERVO_CMD_CENTRE },
+        { COL_X + 40, BTN_Y, SERVO_CMD_CENTER },
         { COL_X + COL_W - 40, BTN_Y, SERVO_CMD_RELEASE },
     };
     for (int k = 0; k < 3; ++k) {
@@ -138,7 +138,7 @@ TEST_CASE(a_sweep_ends_on_the_dial_centre_release_disarm_and_leave)
         frames(0.2f);
         (void)last_cmd();
         if (k == 1) {
-            go(SERVO_FN_LIVE);                 /* CENTRE is LIVE's */
+            go(SERVO_FN_LIVE);                 /* CENTER is LIVE's */
         }
         tap(k == 0 ? x : by[k].px, k == 0 ? y : by[k].py);
         CHECK(!servo_screen_sweeping());
@@ -176,7 +176,7 @@ TEST_CASE(a_sweep_ends_on_the_dial_centre_release_disarm_and_leave)
     CHECK(!servo_screen_sweeping());
     CHECK_EQ(last_cmd().kind, SERVO_CMD_HOLD);
 
-    /* A hold the panel had to let go of: the horn goes to the centre the
+    /* A hold the panel had to let go of: the horn goes to the center the
      * surfaces were released to, and nothing is held. */
     fresh();
     servo_screen_set_armed(true);
@@ -845,7 +845,7 @@ int main(void)
 {
     RUN(a_sweep_needs_an_armed_bench_and_a_coprocessor_that_sweeps);
     RUN(the_horn_follows_the_sweep_and_hold_keeps_it_where_it_is);
-    RUN(a_sweep_ends_on_the_dial_centre_release_disarm_and_leave);
+    RUN(a_sweep_ends_on_the_dial_center_release_disarm_and_leave);
     RUN(a_changed_setting_starts_the_sweep_over);
     RUN(a_profile_changed_while_it_sweeps_goes_with_the_sweep);
     RUN(hold_keeps_the_output_where_it_has_got_to);

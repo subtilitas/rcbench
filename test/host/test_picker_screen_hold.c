@@ -249,9 +249,9 @@ TEST_CASE(a_pwm_pin_the_coprocessor_would_refuse_is_held_and_named)
  * Every button against everything else on the screen, with the
  * IOmcu's drawing and with the board drawn from its shape (both 240px
  * tall): at least UI_TAP_MIN wide and tall, inside the screen and above
- * the alert band, centred on its own pad unless the screen edge stops it,
+ * the alert band, centered on its own pad unless the screen edge stops it,
  * 8px or more clear of every other button beside it, clear of every
- * marker inside the board and of the text areas, and a tap on its centre
+ * marker inside the board and of the text areas, and a tap on its center
  * binds its own pin and no other.
  */
 TEST_CASE(every_button_is_clear_of_everything_else)
@@ -338,7 +338,7 @@ TEST_CASE(every_button_is_clear_of_everything_else)
                 T_FAIL("pass %d: GPIO %u covers the protocol list", pass, gp);
             }
         }
-        /* And each centre binds its own pin, every one in turn. */
+        /* And each center binds its own pin, every one in turn. */
         for (uint8_t i = 0; i < bd->count; ++i) {
             if (!has[i]) { continue; }
             const int was = s_applied;
@@ -346,7 +346,7 @@ TEST_CASE(every_button_is_clear_of_everything_else)
             if (s_applied != was + 1
                 || outbind_group_of(&s_last, i) != proto_named("SERVO PWM")
                 || outbind_chosen(&s_last) != 1u) {
-                T_FAIL("pass %d: GPIO %u's centre bound something else", pass,
+                T_FAIL("pass %d: GPIO %u's center bound something else", pass,
                        bd->pins[i].gpio);
             }
             tap_rect(btn[i]);                     /* and gives it back */

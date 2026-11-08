@@ -420,7 +420,7 @@ static void paused_sweep(void)
 }
 
 /*
- * A pause ends as a hold did: CENTRE, RELEASE, a finger on the dial, a
+ * A pause ends as a hold did: CENTER, RELEASE, a finger on the dial, a
  * disarm, STOP, leaving the screen, an IOmcu that stops sweeping, a
  * hold the panel had to let go of, and a changed profile, which says the
  * position again.  The button reads SWEEP after each.
@@ -428,10 +428,10 @@ static void paused_sweep(void)
 TEST_CASE(a_pause_ends_where_a_hold_ended)
 {
     paused_sweep();
-    go(SERVO_FN_LIVE);                         /* CENTRE is LIVE's */
-    tap(COL_X + 40, BTN_Y);                    /* CENTRE */
+    go(SERVO_FN_LIVE);                         /* CENTER is LIVE's */
+    tap(COL_X + 40, BTN_Y);                    /* CENTER */
     CHECK(!servo_screen_paused());
-    CHECK_EQ(last_cmd().kind, SERVO_CMD_CENTRE);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_CENTER);
 
     paused_sweep();
     tap(COL_X + COL_W - 40, BTN_Y);            /* RELEASE */
@@ -480,7 +480,7 @@ TEST_CASE(a_pause_ends_where_a_hold_ended)
 /*
  * Without feedback the horn is drawn where the far end's output is, slewing
  * as the IOmcu slews -- in its command units -- so the horn PAUSE
- * leaves drawn is where the IOmcu holds the servo, with CENTRE off
+ * leaves drawn is where the IOmcu holds the servo, with CENTER off
  * the middle as well.  The far end
  * here is the bank the IOmcu runs, fed the same sweep.
  */
@@ -490,7 +490,7 @@ TEST_CASE(hold_without_feedback_matches_the_far_ends_slew)
     servo_screen_set_armed(true);
     servo_screen_set_sweep(true);
     open_settings();
-    sl_tap(HL_CENTRE);                    /* PULSE CENTRE */
+    sl_tap(HL_CENTER);                    /* PULSE CENTER */
     keys("1520");
     sl_tap(HL_MIN);                    /* PULSE MIN */
     keys("900");

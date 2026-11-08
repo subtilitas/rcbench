@@ -1,9 +1,9 @@
 """INA228 module with two XT90 plugs, board print "BIFRC V1.1", 80 x 48mm.
 
 Source: owner photo 15-current-sensor-top.webp (top view, board in a black
-printed frame). The photo is rectified to a top view: the 4 screw centres
+printed frame). The photo is rectified to a top view: the 4 screw centers
 are taken as a rectangle, a pinhole camera with the principal point at the
-image centre is solved (focal length 3164px, aspect 0.548), and the scale
+image center is solved (focal length 3164px, aspect 0.548), and the scale
 comes from the 5-hole header (pitch 2.54mm over 4 pitches = 202px, 19.88px/mm
 in the rectified image). Owner photo 14-current-sensor-oblique.webp shows the
 same board from an angle (straight header, connector shapes). Both owner
@@ -13,7 +13,7 @@ Accuracy: header and points near it within about 0.2mm; board outline, screw
 holes and solder bars within about 0.6mm (scale error 0.75% over 80mm, plus
 the frame edge hiding the board edge). The XT90 bodies stand about 10mm above
 the board; their outlines are corrected for that height by a factor 1/1.05
-towards the board centre and are within about 1.5mm. Contact positions:
+towards the board center and are within about 1.5mm. Contact positions:
 about 0.5mm.
 
 Pads: header L A V G 5 (THT, 2.54mm). The XT90 plugs are soldered onto 3
@@ -77,7 +77,7 @@ def _xt90(contacts=True):
 
 
 def _slots():
-    """Milled slots through the board, drawn as their centre lines."""
+    """Milled slots through the board, drawn as their center lines."""
     items = []
     rows = ((24.04, 12.47, 12), (17.86, 37.88, 6), (49.4, 34.71, 3))
     for x0, y, n in rows:

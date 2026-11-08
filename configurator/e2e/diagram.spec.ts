@@ -315,11 +315,11 @@ for (const size of SIZES) {
       for (let i = 0; i < 4; i++) await page.keyboard.press('+');
       await page.keyboard.press('Tab');
       await page.keyboard.press('End');
-      const centre = (await wire(last).getAttribute('data-c'))!.split(' ').map(Number);
+      const center = (await wire(last).getAttribute('data-c'))!.split(' ').map(Number);
       const v = await viewOf(page);
       const size = await page.locator('svg.picture').evaluate((el: SVGSVGElement) => [el.viewBox.baseVal.width, el.viewBox.baseVal.height]);
       for (const i of [0, 1]) {
-        const at = centre[i]! * v.k + (i === 0 ? v.x : v.y);
+        const at = center[i]! * v.k + (i === 0 ? v.x : v.y);
         expect(at).toBeGreaterThanOrEqual(0);
         expect(at).toBeLessThanOrEqual(size[i]!);
       }

@@ -256,7 +256,7 @@ void log_rail_take_ina(log_rail_t *out, const sense_link_win_t *win,
  */
 typedef struct {
     float    angle_deg;  /**< the horn's angle from the angle source's
-                              centre, deg (servo_screen_log_angle())  */
+                              center, deg (servo_screen_log_angle())  */
     uint16_t pulse_us;   /**< the commanded pulse, us */
     bool     pulse_ok;   /**< a pulse is commanded */
     bool     angle_ok;   /**< an angle was measured */

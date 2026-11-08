@@ -272,7 +272,7 @@ gfx_rect_t ui_help_badge_rect(const ui_help_page_t *p, int i)
                              BADGE, BADGE);
     }
     if (r.h < 2 * BADGE || r.w < 2 * BADGE) {
-        /* Too small to carry one inside: left of it, centred, where the
+        /* Too small to carry one inside: left of it, centered, where the
          * live half has the room. */
         const int x = r.x - BADGE_IN - BADGE;
         if (x >= ui_help_live_rect(p->side).x) {

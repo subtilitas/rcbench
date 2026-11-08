@@ -22,13 +22,13 @@ static inline bool elapsed(uint32_t now, uint32_t then, uint32_t ms)
     return (uint32_t)(now - then) >= ms;
 }
 
-void servo_sync_defaults(servo_sync_cfg_t *cfg, uint16_t centre_us)
+void servo_sync_defaults(servo_sync_cfg_t *cfg, uint16_t center_us)
 {
     if (cfg == NULL) {
         return;
     }
     memset(cfg, 0, sizeof(*cfg));
-    cfg->centre_us     = centre_us;
+    cfg->center_us     = center_us;
     cfg->deflection_us = 300;
     /*
      * 40us each way is about 3.6 degrees at 11us per degree, more
@@ -76,12 +76,12 @@ static int32_t point_us(const servo_sync_t *sy, uint8_t i)
 {
     const uint8_t n = sy->cfg.points;
     if (n <= 1) {
-        return sy->win_centre_us;
+        return sy->win_center_us;
     }
     /* Spread across the full window, ends included, so the first round can
      * reach the edge of the range it claims to cover. */
     const int32_t span = sy->win_half_us * 2;
-    return sy->win_centre_us - sy->win_half_us
+    return sy->win_center_us - sy->win_half_us
            + (span * (int32_t)i) / (int32_t)(n - 1);
 }
 
@@ -92,27 +92,27 @@ static int32_t point_us(const servo_sync_t *sy, uint8_t i)
  */
 static void aim(servo_sync_t *sy)
 {
-    const int32_t centre = (int32_t)sy->cfg.centre_us;
+    const int32_t center = (int32_t)sy->cfg.center_us;
     const int32_t defl   = (int32_t)sy->cfg.deflection_us;
     const int32_t under  = point_us(sy, sy->point);
     const int32_t was_a  = (int32_t)sy->cmd_a_us;
     const int32_t was_b  = (int32_t)sy->cmd_b_us;
 
     switch (sy->stage) {
-    case SERVO_SYNC_STAGE_CENTRE:
-        sy->cmd_a_us = pulse_us(centre);
-        sy->cmd_b_us = pulse_us(centre + under);
+    case SERVO_SYNC_STAGE_CENTER:
+        sy->cmd_a_us = pulse_us(center);
+        sy->cmd_b_us = pulse_us(center + under);
         break;
     case SERVO_SYNC_STAGE_HIGH:
-        sy->cmd_a_us = pulse_us(centre + defl);
-        /* The trim found at centre is applied; the search here is for the
+        sy->cmd_a_us = pulse_us(center + defl);
+        /* The trim found at center is applied; the search here is for the
          * throw on top of it, which is what a travel adjustment is. */
-        sy->cmd_b_us = pulse_us(centre + sy->trim_us + under);
+        sy->cmd_b_us = pulse_us(center + sy->trim_us + under);
         break;
     case SERVO_SYNC_STAGE_LOW:
     default:
-        sy->cmd_a_us = pulse_us(centre - defl);
-        sy->cmd_b_us = pulse_us(centre + sy->trim_us - under);
+        sy->cmd_a_us = pulse_us(center - defl);
+        sy->cmd_b_us = pulse_us(center + sy->trim_us - under);
         break;
     }
 
@@ -149,18 +149,18 @@ void servo_sync_init(servo_sync_t *sy, const servo_sync_cfg_t *cfg)
         sy->cfg.rounds = 1;   /* a scan of no round measures nothing */
     }
     sy->state         = SERVO_SYNC_RUNNING;
-    sy->stage         = SERVO_SYNC_STAGE_CENTRE;
-    sy->win_centre_us = 0;
+    sy->stage         = SERVO_SYNC_STAGE_CENTER;
+    sy->win_center_us = 0;
     sy->win_half_us   = sy->cfg.window_us;
     /* The high and low stages search a throw rather than an offset, so their
-     * window is centred on the deflection itself. Set when they start. */
+     * window is centered on the deflection itself. Set when they start. */
     sy->travel_hi_us  = (int16_t)cfg->deflection_us;
     sy->travel_lo_us  = (int16_t)cfg->deflection_us;
     aim(sy);
 }
 
 /**
- * @brief End the search with the servos back at centre.
+ * @brief End the search with the servos back at center.
  *
  * @param sy    Search state. Sets state, fault and the two commands.
  * @param state Final state.
@@ -171,8 +171,8 @@ static void finish(servo_sync_t *sy, servo_sync_state_t state,
 {
     sy->state    = state;
     sy->fault    = fault;
-    sy->cmd_a_us = pulse_us((int32_t)sy->cfg.centre_us);
-    sy->cmd_b_us = pulse_us((int32_t)sy->cfg.centre_us + sy->trim_us);
+    sy->cmd_a_us = pulse_us((int32_t)sy->cfg.center_us);
+    sy->cmd_b_us = pulse_us((int32_t)sy->cfg.center_us + sy->trim_us);
 }
 
 /**
@@ -186,14 +186,14 @@ static void next_stage(servo_sync_t *sy)
     sy->point = 0;
 
     switch (sy->stage) {
-    case SERVO_SYNC_STAGE_CENTRE:
+    case SERVO_SYNC_STAGE_CENTER:
         sy->stage         = SERVO_SYNC_STAGE_HIGH;
-        sy->win_centre_us = (int32_t)sy->cfg.deflection_us;
+        sy->win_center_us = (int32_t)sy->cfg.deflection_us;
         sy->win_half_us   = sy->cfg.window_us;
         break;
     case SERVO_SYNC_STAGE_HIGH:
         sy->stage         = SERVO_SYNC_STAGE_LOW;
-        sy->win_centre_us = (int32_t)sy->cfg.deflection_us;
+        sy->win_center_us = (int32_t)sy->cfg.deflection_us;
         sy->win_half_us   = sy->cfg.window_us;
         break;
     default:
@@ -252,7 +252,7 @@ static void close_round(servo_sync_t *sy)
 
     if (sy->round >= sy->cfg.rounds) {
         switch (sy->stage) {
-        case SERVO_SYNC_STAGE_CENTRE: sy->trim_us      = (int16_t)at; break;
+        case SERVO_SYNC_STAGE_CENTER: sy->trim_us      = (int16_t)at; break;
         case SERVO_SYNC_STAGE_HIGH:   sy->travel_hi_us = (int16_t)at; break;
         default:                      sy->travel_lo_us = (int16_t)at; break;
         }
@@ -265,7 +265,7 @@ static void close_round(servo_sync_t *sy)
      * finished round, so the next round covers the interval between the
      * winner's neighbours, the only region the minimum can be in.
      */
-    sy->win_centre_us = at;
+    sy->win_center_us = at;
     sy->win_half_us   = (sy->win_half_us * 2) / (int32_t)(sy->cfg.points - 1);
     if (sy->win_half_us < 1) {
         sy->win_half_us = 1;

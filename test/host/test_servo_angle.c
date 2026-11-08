@@ -1,12 +1,12 @@
 /*
  * The angle source of the servo runs (servo_angle.h): the IMU's angle in
- * AS5600 counts, the centre each source's degrees are taken from, and the
+ * AS5600 counts, the center each source's degrees are taken from, and the
  * source's name.
  *
  * Under test: 0, 90, -90, 180 and -180° and the smallest step that rounds
  * to a count; the wrap of an angle past a turn and of one not a number; a
  * reading not valid keeping its time and its gap and nothing else; the
- * time across the 32-bit wrap; NULL; the centre of each source; every
+ * time across the 32-bit wrap; NULL; the center of each source; every
  * source's and axis's name, and a buffer too short for it.
  *
  * SPDX-License-Identifier: MIT
@@ -31,7 +31,7 @@ static uint16_t counts_of(float deg)
     return e.raw;
 }
 
-TEST_CASE(degrees_become_counts_with_centre_zero)
+TEST_CASE(degrees_become_counts_with_center_zero)
 {
     CHECK_EQ(counts_of(0.0f), 0u);
     CHECK_EQ(counts_of(90.0f), 1024u);
@@ -51,7 +51,7 @@ TEST_CASE(degrees_become_counts_with_centre_zero)
     /* Just under 180 rounds up to the half turn, never to 4096. */
     CHECK_EQ(counts_of(359.99f), 0u);
     CHECK_EQ(counts_of(179.99f), 2048u);
-    /* Back to degrees through the servo test's own rule, centre 0. */
+    /* Back to degrees through the servo test's own rule, center 0. */
     for (int d = -179; d <= 179; d += 7) {
         const uint16_t raw = counts_of((float)d);
         CHECK(raw < SERVO_ANGLE_COUNTS);
@@ -133,13 +133,13 @@ TEST_CASE(a_reading_not_valid_keeps_its_time_and_gap)
     CHECK(!e.gap);
 }
 
-TEST_CASE(centre_is_the_setting_for_the_as5600_and_zero_for_the_imu)
+TEST_CASE(center_is_the_setting_for_the_as5600_and_zero_for_the_imu)
 {
-    CHECK_EQ(servo_angle_centre(SERVO_ANGLE_AS5600, 3000u), 3000u);
-    CHECK_EQ(servo_angle_centre(SERVO_ANGLE_AS5600, 0u), 0u);
-    CHECK_EQ(servo_angle_centre(SERVO_ANGLE_AS5600, 4095u), 4095u);
-    CHECK_EQ(servo_angle_centre(SERVO_ANGLE_IMU, 3000u), 0u);
-    CHECK_EQ(servo_angle_centre(SERVO_ANGLE_IMU, 4095u), 0u);
+    CHECK_EQ(servo_angle_center(SERVO_ANGLE_AS5600, 3000u), 3000u);
+    CHECK_EQ(servo_angle_center(SERVO_ANGLE_AS5600, 0u), 0u);
+    CHECK_EQ(servo_angle_center(SERVO_ANGLE_AS5600, 4095u), 4095u);
+    CHECK_EQ(servo_angle_center(SERVO_ANGLE_IMU, 3000u), 0u);
+    CHECK_EQ(servo_angle_center(SERVO_ANGLE_IMU, 4095u), 0u);
 }
 
 TEST_CASE(the_name_of_every_source_and_axis)
@@ -175,10 +175,10 @@ TEST_CASE(the_name_of_every_source_and_axis)
 
 int main(void)
 {
-    RUN(degrees_become_counts_with_centre_zero);
+    RUN(degrees_become_counts_with_center_zero);
     RUN(the_degrees_as_read_come_with_the_counts);
     RUN(a_reading_not_valid_keeps_its_time_and_gap);
-    RUN(centre_is_the_setting_for_the_as5600_and_zero_for_the_imu);
+    RUN(center_is_the_setting_for_the_as5600_and_zero_for_the_imu);
     RUN(the_name_of_every_source_and_axis);
     return test_summary("servo_angle");
 }

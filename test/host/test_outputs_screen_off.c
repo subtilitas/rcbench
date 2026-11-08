@@ -259,7 +259,7 @@ TEST_CASE(the_overview_with_every_slot_bound_names_every_pin)
 static bool label_inked(const gfx_canvas_t *c, uint8_t gpio, gfx_color_t ink)
 {
     int x, y;
-    cell_centre(gpio, &x, &y);
+    cell_center(gpio, &x, &y);
     const int x0 = x - CELL_W / 2 + OU_CELL_PAD;
     const int y0 = y - CELL_H / 2 + OU_CELL_LABEL_Y;
     for (int yy = y0; yy < y0 + 16; ++yy) {
@@ -304,7 +304,7 @@ TEST_CASE(the_overview_shows_no_count_and_no_pressed_face)
     memcpy(was, px, sizeof(px));
 
     int x, y;
-    cell_centre(4, &x, &y);                     /* a free pin */
+    cell_center(4, &x, &y);                     /* a free pin */
     press_at(x, y);
     outputs_screen_invalidate();
     scr()->render(&c, 0);
@@ -686,7 +686,7 @@ TEST_CASE(a_binding_that_did_not_read_is_kept_marked_and_not_edited)
     read_back(&b, &ok);
     outputs_screen_set_reading(&ok);
     int x, y;
-    cell_centre(4, &x, &y);
+    cell_center(4, &x, &y);
     press_at(x, y);
     outputs_screen_set_reading(&none);
     release_at(x, y);

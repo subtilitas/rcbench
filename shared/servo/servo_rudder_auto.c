@@ -202,7 +202,7 @@ void servo_rauto_supply_changed(servo_rauto_t *r, uint32_t now_ms)
 /* ------------------------------------------------------------ the steps */
 
 /**
- * @brief A session next: the servo to PULSE CENTRE, SAFE asked once it had
+ * @brief A session next: the servo to PULSE CENTER, SAFE asked once it had
  *        SERVO_LIMRUN_RETURN_MS to get there (servo_rauto_step()).
  * @param r      Run state.
  * @param now_ms Time, ms.
@@ -212,7 +212,7 @@ static void go_safe(servo_rauto_t *r, uint32_t now_ms)
     r->phase      = SERVO_RAUTO_PH_SAFE;
     r->phase_ms   = now_ms;
     r->safe_asked = false;
-    r->cmd_us     = r->cfg.centre_us;
+    r->cmd_us     = r->cfg.center_us;
     r->cmd_due    = true;
 }
 
@@ -528,7 +528,7 @@ bool servo_rauto_start(servo_rauto_t *r, const servo_rauto_cfg_t *cfg,
         || cfg->tol_ddeg < SERVO_RAUTO_TOL_MIN_DDEG
         || cfg->tol_ddeg > SERVO_RAUTO_TOL_MAX_DDEG
         || cfg->family > (uint8_t)SERVO_RAUTO_FAM_HITEC_C
-        || !(cfg->centre_us > k_end_us[0] && cfg->centre_us < k_end_us[1])) {
+        || !(cfg->center_us > k_end_us[0] && cfg->center_us < k_end_us[1])) {
         return false;
     }
     for (int s = 0; s < 2; ++s) {
@@ -825,7 +825,7 @@ void servo_rauto_no_servo(servo_rauto_t *r, uint32_t now_ms)
 }
 
 /**
- * @brief The SAFE phase: the hold at PULSE CENTRE, SAFE asked, CONNECT once
+ * @brief The SAFE phase: the hold at PULSE CENTER, SAFE asked, CONNECT once
  *        the bench is SAFE.
  * @param r      Run state.
  * @param now_ms Time, ms.

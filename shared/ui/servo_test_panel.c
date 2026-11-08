@@ -124,18 +124,18 @@ float test_top_v(void)
 }
 
 /* What the run is told: its settings and SWEEP's, the servo's profile, and
- * its ends -- the sweep's, RANGE of the travel either side of PULSE CENTRE. */
+ * its ends -- the sweep's, RANGE of the travel either side of PULSE CENTER. */
 void test_ends(uint16_t *end_lo, uint16_t *end_hi)
 {
     const sweep_cfg_t sw = sweep_cfg_now();
     uint16_t lo, hi;
     cmd_range(&lo, &hi);
     const float span = (float)(hi - lo);
-    const float k = 2.0f * (float)SWEEP_CENTRE;
+    const float k = 2.0f * (float)SWEEP_CENTER;
     *end_lo = (uint16_t)lroundf(
-        (float)lo + span * (float)(SWEEP_CENTRE - sw.amplitude) / k);
+        (float)lo + span * (float)(SWEEP_CENTER - sw.amplitude) / k);
     *end_hi = (uint16_t)lroundf(
-        (float)lo + span * (float)(SWEEP_CENTRE + sw.amplitude) / k);
+        (float)lo + span * (float)(SWEEP_CENTER + sw.amplitude) / k);
 }
 
 /* Whether a run started now reads the INA3221: it is the rail's meter,
@@ -168,7 +168,7 @@ void test_cfg(servo_test_cfg_t *c)
     c->bo_floor_v = settings_get(SET_SERVO_BO_FLOOR);
     c->bo_step_v  = settings_get(SET_SERVO_BO_STEP);
     c->i_limit    = supply_screen_set_i();
-    c->centre_us = s.centre_us;
+    c->center_us = s.center_us;
     test_ends(&c->end_lo_us, &c->end_hi_us);
     c->settle_ms     = (uint16_t)settings_get_int(SET_SERVO_SETTLE_MS);
     c->dwell_ms      = (uint16_t)settings_get_int(SET_SERVO_DWELL_MS);
@@ -206,7 +206,7 @@ void test_cfg_bench(servo_test_cfg_t *c)
      * not taken -- written only while SAFE -- gives a run none.  The IMU
      * reads them with a reading on show. */
     c->enc_on     = enc_on_now();
-    c->enc_centre = enc_centre();
+    c->enc_center = enc_center();
     (void)enc_name(c->enc_source, sizeof(c->enc_source));
     c->enc_imu    = (enc_src() == SERVO_ANGLE_IMU);
     memset(&c->meter, 0, sizeof(c->meter));

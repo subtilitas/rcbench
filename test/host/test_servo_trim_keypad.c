@@ -39,11 +39,11 @@ static void ktype(const char *text)
 }
 
 /**
- * @brief The commanded pulse with the dial at the centre, on an armed
- *        bench: PULSE CENTRE plus TRIM.
+ * @brief The commanded pulse with the dial at the center, on an armed
+ *        bench: PULSE CENTER plus TRIM.
  * @return The pulse, us.
  */
-static int centre_us(void)
+static int center_us(void)
 {
     int x, y;
     dial_at(0.0f, ARC_R - 20, &x, &y);
@@ -81,19 +81,19 @@ TEST_CASE(minus_200_is_what_40_steps_send_and_minus_201_is_refused)
 {
     fresh_armed();
     open_settings();
-    const int zero = centre_us();
+    const int zero = center_us();
     sl_tap(HL_TRIM);
     ktype("-201");
     kkey(UI_KEY_OK);
     CHECK(servo_screen_keypad()->open);
     CHECK(servo_screen_keypad()->refused);
     kkey(UI_KEY_CANCEL);
-    CHECK_EQ(centre_us(), zero);
+    CHECK_EQ(center_us(), zero);
     sl_tap(HL_TRIM);
     ktype("-200");
     kkey(UI_KEY_OK);
     CHECK(!servo_screen_keypad()->open);
-    const int typed = centre_us();
+    const int typed = center_us();
     CHECK_EQ(typed, zero - 200);
 
     fresh_armed();
@@ -101,7 +101,7 @@ TEST_CASE(minus_200_is_what_40_steps_send_and_minus_201_is_refused)
     for (int i = 0; i < 40; ++i) {
         sl_step(HL_TRIM, -1);
     }
-    CHECK_EQ(centre_us(), typed);
+    CHECK_EQ(center_us(), typed);
     /* +200, and past it. */
     sl_tap(HL_TRIM);
     ktype("201");
@@ -110,17 +110,17 @@ TEST_CASE(minus_200_is_what_40_steps_send_and_minus_201_is_refused)
     kkey(UI_KEY_DEL);
     ktype("0");
     kkey(UI_KEY_OK);
-    CHECK_EQ(centre_us(), zero + 200);
+    CHECK_EQ(center_us(), zero + 200);
 }
 
 /* OK on TRIM sends the pulse at once, as a step does: with the dial left
- * at the centre, the last command is PULSE CENTRE plus the typed trim,
+ * at the center, the last command is PULSE CENTER plus the typed trim,
  * before and after one "-" step. */
 TEST_CASE(ok_on_trim_sends_the_pulse_at_once)
 {
     fresh_armed();
     open_settings();
-    const int zero = centre_us();             /* the dial at the centre */
+    const int zero = center_us();             /* the dial at the center */
     sl_tap(HL_TRIM);
     ktype("-35");
     kkey(UI_KEY_OK);
@@ -139,7 +139,7 @@ TEST_CASE(a_typed_trim_lands_on_the_steps)
 {
     fresh_armed();
     open_settings();
-    const int zero = centre_us();
+    const int zero = center_us();
     static const struct { const char *typed; int us; } k_cases[] = {
         { "13", 15 }, { "12", 10 }, { "-12", -10 }, { "-13", -15 },
         { "-0", 0 }, { "7", 5 },
@@ -148,14 +148,14 @@ TEST_CASE(a_typed_trim_lands_on_the_steps)
         sl_tap(HL_TRIM);
         ktype(k_cases[i].typed);
         kkey(UI_KEY_OK);
-        CHECK_EQ(centre_us() - zero, k_cases[i].us);
+        CHECK_EQ(center_us() - zero, k_cases[i].us);
     }
     /* The sign alone is nothing typed. */
     sl_tap(HL_TRIM);
     ktype("-");
     kkey(UI_KEY_OK);
     CHECK(!servo_screen_keypad()->open);
-    CHECK_EQ(centre_us() - zero, 5);
+    CHECK_EQ(center_us() - zero, 5);
 }
 
 /* CANCEL, the home tag and a STOP leave the trim as it was; the steps
@@ -164,11 +164,11 @@ TEST_CASE(cancel_home_and_stop_change_nothing)
 {
     fresh_armed();
     open_settings();
-    const int zero = centre_us();
+    const int zero = center_us();
     sl_tap(HL_TRIM);
     ktype("-50");
     kkey(UI_KEY_CANCEL);
-    CHECK_EQ(centre_us(), zero);
+    CHECK_EQ(center_us(), zero);
     sl_tap(HL_TRIM);
     ktype("-50");
     CHECK(scr->back());

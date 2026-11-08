@@ -26,7 +26,7 @@
 #include "servo_limrun.h"
 #include "servo_sim.h"
 
-#define CENTRE  1500u
+#define CENTER  1500u
 #define MIN_US  800u
 #define MAX_US  2200u
 #define HI_RAW  255u
@@ -68,7 +68,7 @@ typedef struct {
     uint16_t want_p[2];
     unsigned connects, write_ops, leaves, leave_asks, values;
     unsigned pulse_ops;          /* pulse writes, among write_ops         */
-    uint32_t first_drive;        /* when a pulse first left the centre    */
+    uint32_t first_drive;        /* when a pulse first left the center    */
     bool driven;
     unsigned connects_at_drive, leaves_at_drive, pulse_ops_at_drive;
     float shrink;                /* a value below 150 moves the horn this
@@ -162,7 +162,7 @@ static inline void rig_init(uint32_t t0, bool reversion)
     g.bench_to = -1;
     g.bench_ms = 60u;
     g.prog_ms  = 700u;
-    g.cmd = CENTRE;
+    g.cmd = CENTER;
     g.windows = true;
     g.win_end = t0 + SERVO_TEST_WIN_MS;
     g.mx = INT16_MIN;
@@ -180,7 +180,7 @@ static inline void rig_init(uint32_t t0, bool reversion)
     g.sup_feed = true;
 
     memset(&g.cfg, 0, sizeof(g.cfg));
-    g.cfg.centre_us = CENTRE;
+    g.cfg.center_us = CENTER;
     g.cfg.min_us    = MIN_US;
     g.cfg.max_us    = MAX_US;
     g.cfg.read      = true;
@@ -409,7 +409,7 @@ static inline void take(const servo_limrun_do_t *d)
 {
     if (d->command) {
         g.cmd = d->cmd_us;
-        if (g.cmd != g.run.ctr_us && g.cmd != CENTRE && !g.driven) {
+        if (g.cmd != g.run.ctr_us && g.cmd != CENTER && !g.driven) {
             g.driven = true;
             g.first_drive = g.now;
             g.connects_at_drive = g.connects;
@@ -483,7 +483,7 @@ static inline void tick(void)
         in.live = g.live;
         in.safe = g.safe;
         in.enc_valid = g.enc;
-        in.enc_deg = (g.servo.position_us - (float)CENTRE) * 0.09f;
+        in.enc_deg = (g.servo.position_us - (float)CENTER) * 0.09f;
         servo_limrun_step(&g.run, g.now, &in, &d);
         take(&d);
         if (servo_limrun_running(&g.run)) {

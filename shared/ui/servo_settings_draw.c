@@ -79,7 +79,7 @@ void ov_row_value(const ov_row_t *r, char *buf, size_t n)
     case R_TYPE:    snprintf(buf, n, "%s", type()->name); return;
     case R_RATE:    snprintf(buf, n, "%uHz", (unsigned)s.frame_hz); return;
     case R_MIN:     snprintf(buf, n, "%uus", (unsigned)s.min_us); return;
-    case R_CENTRE:  snprintf(buf, n, "%uus", (unsigned)s.centre_us); return;
+    case R_CENTER:  snprintf(buf, n, "%uus", (unsigned)s.center_us); return;
     case R_MAX:     snprintf(buf, n, "%uus", (unsigned)s.max_us); return;
     case R_TRIM:    snprintf(buf, n, "%+d", (int)s.trim_us); return;
     case R_TRAVEL:  snprintf(buf, n, "+/-%d", (int)s.travel_deg); return;

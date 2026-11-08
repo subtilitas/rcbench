@@ -372,7 +372,7 @@ const char *outputs_proto_name(uint8_t proto);
  *
  * The lines run from the box's top down by @p pitch, broken after the
  * last space that fits or inside a word where none does, left-aligned or
- * with @p centre centred in the box.  A word of digits alone after the
+ * with @p center centered in the box.  A word of digits alone after the
  * break goes down with the word before it, so "PORT 1" stays together.
  * At most @p max_lines lines, the last taking the rest.  Both screens
  * draw the line under the protocol with it.
@@ -384,12 +384,12 @@ const char *outputs_proto_name(uint8_t proto);
  * @param max_lines  The most lines drawn.
  * @param font       The face.
  * @param ink        The colour.
- * @param centre     true centres each line in the box.
+ * @param center     true centers each line in the box.
  * @return The lines the text takes.
  */
 int outputs_wrap(gfx_canvas_t *c, gfx_rect_t box, int pitch, const char *text,
                  int max_lines, const gfx_font_t *font, gfx_color_t ink,
-                 bool centre);
+                 bool center);
 
 /**
  * @brief Select protocol @p proto, as a pick in the list does: the set shown and

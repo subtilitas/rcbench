@@ -36,7 +36,7 @@
       "steps": [
         "Battery disconnected, transmitter on, throttle full (above 1.7ms).",
         "Connect battery and hold full throttle for 5s: two sets of fast tones.",
-        "Throttle to centre (1.4-1.6ms): 1 beep = menu 1."
+        "Throttle to center (1.4-1.6ms): 1 beep = menu 1."
       ]
     },
     "announce": {
@@ -47,7 +47,7 @@
       "gap_ms": null,
       "group_gap_ms": null,
       "repeat": null,
-      "description": "Menu N is N beeps after the stick returns to centre. The offered options are not announced; the manual numbers them 1 and 2 and ties each to a stick position (full throttle above 1.7ms or idle below 1.3ms)."
+      "description": "Menu N is N beeps after the stick returns to center. The offered options are not announced; the manual numbers them 1 and 2 and ties each to a stick position (full throttle above 1.7ms or idle below 1.3ms)."
     },
     "select": {
       "throttle": "max",
@@ -62,7 +62,7 @@
     "exit": "Idle for about 8s until three rising tones (armed), or unplug the battery.",
     "changes_per_entry": "many",
     "reset_to_defaults": null,
-    "description": "At full throttle power-up the ESC enters programming after 5s. Centre stick gives menu N as N beeps. Full throttle or idle within 5s picks option 1 or 2 of that menu; centre stick moves on. Menu 1 has a hidden third value reached by holding full throttle for 7s until 7 beeps."
+    "description": "At full throttle power-up the ESC enters programming after 5s. Center stick gives menu N as N beeps. Full throttle or idle within 5s picks option 1 or 2 of that menu; center stick moves on. Menu 1 has a hidden third value reached by holding full throttle for 7s until 7 beeps."
   },
   "items": [
     {

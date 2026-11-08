@@ -2,7 +2,7 @@
 // the folder that touches the document. The listeners sit on the document, so
 // they outlive a render; `sync` applies the state to the markup of a render.
 
-import { PAN_STEP, ZOOM_STEP, centreOn, clamp, fit, pan, shows, transformOf, zoomAt } from './view.ts';
+import { PAN_STEP, ZOOM_STEP, centerOn, clamp, fit, pan, shows, transformOf, zoomAt } from './view.ts';
 import type { Size, ViewT } from './view.ts';
 
 let view: ViewT = fit();
@@ -160,7 +160,7 @@ function onFocus(event: FocusEvent): void {
   if (!wire || !p) return;
   const [cx, cy] = (wire.dataset.c ?? '0 0').split(' ').map(Number) as [number, number];
   if (!shows(view, cx, cy, p.size)) {
-    view = centreOn(view, cx, cy, p.size, maxOf(p));
+    view = centerOn(view, cx, cy, p.size, maxOf(p));
     apply(p);
   }
 }

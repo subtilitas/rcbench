@@ -7,7 +7,7 @@
  *        light theme's colours; and the view's place beside the state
  *        lines.
  *
- * The AS5600 is on with its centre at count 2048; 256 counts are 22.5°.
+ * The AS5600 is on with its center at count 2048; 256 counts are 22.5°.
  *
  * Cases:
  * - the_side_view_lies_beside_the_state_lines_under_the_zero_row
@@ -29,18 +29,18 @@
 #include "servo_rudder_flap.h"
 #include "servo_rudder_int.h"
 
-/** @brief The AS5600's centre count in these cases. */
-#define CENTRE_COUNT 2048u
+/** @brief The AS5600's center count in these cases. */
+#define CENTER_COUNT 2048u
 
-/** @brief The AS5600 on, its centre at CENTRE_COUNT. */
+/** @brief The AS5600 on, its center at CENTER_COUNT. */
 static void encoder_on(void)
 {
     settings_set(SET_ENC_EN, 1.0f);
-    settings_set(SET_ENC_CENTRE, (float)CENTRE_COUNT);
+    settings_set(SET_ENC_CENTER, (float)CENTER_COUNT);
 }
 
 /**
- * @brief A reading at @p counts from the centre, as the panel hands it.
+ * @brief A reading at @p counts from the center, as the panel hands it.
  * @param counts the counts, signed
  */
 static void reading(int counts)
@@ -49,12 +49,12 @@ static void reading(int counts)
     at_ms += 40u;
     const servo_test_enc_t e = {
         .valid = true,
-        .raw = (uint16_t)(((int)CENTRE_COUNT + counts) & 4095),
+        .raw = (uint16_t)(((int)CENTER_COUNT + counts) & 4095),
         .taken_ms = at_ms };
     servo_screen_encoder(&e);
 }
 
-/** @brief RUDDER with a reading at the centre taken as the zero. */
+/** @brief RUDDER with a reading at the center taken as the zero. */
 static void zeroed(void)
 {
     encoder_on();

@@ -119,7 +119,7 @@ SYMBOL = {
 
 # 3D model. Part class figures, not measured; no source for these boards
 # was found: receptacles 3.2mm; plug shell 2.4mm and overmould 3.6mm, both
-# centred in the receptacle's height; the plug board 1.0mm thick, centred
+# centered in the receptacle's height; the plug board 1.0mm thick, centered
 # on the plug. The tap board is T-shaped. The pads are carrier wire points
 # under the plug board, so the model has no holes. The assembly is wired,
 # so the tap board rests on the carrier.

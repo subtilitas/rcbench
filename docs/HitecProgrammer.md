@@ -157,7 +157,7 @@ writable value takes a tap while the port is held and not stopped
 | Tab | D series | Classic |
 | --- | --- | --- |
 | MOTION | SPEED, DEAD BAND, SOFT START | SPEED, DEAD BAND, RESOLUTION |
-| TRAVEL | NEUTRAL, LEFT END, RIGHT END in servo counts with degrees (220° over 16383 counts, 8192 the centre), DIRECTION, [MOVE SERVO](#move-servo) | CENTRE in microseconds, LEFT END, RIGHT END as raw values (unit unknown), DIRECTION |
+| TRAVEL | NEUTRAL, LEFT END, RIGHT END in servo counts with degrees (220° over 16383 counts, 8192 the center), DIRECTION, [MOVE SERVO](#move-servo) | CENTER in microseconds, LEFT END, RIGHT END as raw values (unit unknown), DIRECTION |
 | PROTECT | FAILSAFE (OFF, LIMP, or a position in microseconds), OVERLOAD PROTECTION, SMART SENSOR, SENSITIVITY (raw) | FAILSAFE, FAILSAFE POSITION, OVERLOAD PROTECTION |
 | INFO | MODEL, ID, POSITION, and registers 0x04, 0x22, 0x8A, 0x8C, 0xD4 and 0xD6 raw | MODEL, VERSION, DATE, SERIAL, CHECKSUM |
 
@@ -196,7 +196,7 @@ marked twice: by `*` before it and by the accent fill.
 | D series SMART SENSOR, classic FAILSAFE | list | ON, OFF |
 | D series ID | keypad | 0 to 255 |
 | classic SPEED | keypad | 10% to 100% in steps of 10% |
-| classic CENTRE | keypad | 900.00us to 2100.00us in steps of 0.25us |
+| classic CENTER | keypad | 900.00us to 2100.00us in steps of 0.25us |
 | classic LEFT END, RIGHT END | keypad | 0 to 255, raw |
 | classic FAILSAFE POSITION (HS-5xxx) | keypad | 900.00us to 2100.00us in steps of 0.25us |
 
@@ -206,7 +206,7 @@ positions in the wrong order, with the reason:
 `This value is not allowed for this setting.` or `LEFT END, NEUTRAL and RIGHT END must be in ascending order.`
 
 An edit also changes dependent values in the draft, as the vendor programmer
-does. D series DIRECTION mirrors NEUTRAL and both ends. Classic CENTRE sets
+does. D series DIRECTION mirrors NEUTRAL and both ends. Classic CENTER sets
 both end points to 0x10; classic DIRECTION swaps them and takes the failsafe
 position from factory cells 0x49 and 0x4A. Every classic edit recalculates
 the balance in cell 0x1C. A D series DIRECTION stored as neither 0 nor 1 is
@@ -227,9 +227,9 @@ it was.
 | DEAD BAND below the servo's | `A narrow DEAD BAND can cause back-and-forth movement and heat.` |
 | OVERLOAD PROTECTION switched off | `Without overload protection a stalled servo heats up.` |
 | an end point other than the servo's | `End point changed. The servo travel per stick movement changes too.` |
-| NEUTRAL or CENTRE other than the servo's | `The centre shifts. One side moves closer to the mechanical stop.` |
+| NEUTRAL or CENTER other than the servo's | `The center shifts. One side moves closer to the mechanical stop.` |
 | DIRECTION reversed | `Direction reversed. Check all control surfaces before flight.` |
-| a failsafe position more than 300us from 1500us | `Failsafe position is far from the centre.` |
+| a failsafe position more than 300us from 1500us | `Failsafe position is far from the center.` |
 
 A confirmation covers that value and values closer to the servo's value
 on the same side. Moving farther away or to the other side requires another
@@ -287,7 +287,7 @@ Tap it to open the write page. It lists up to 6 changed values in tab order,
 such as `SOFT START: 20% -> 60%`, followed by a count of the rest.
 
 On the first write after CONNECT, and on every write that changes DIRECTION,
-NEUTRAL, CENTRE or an end point, the page shows `Keep the servo horn clear. Disconnect the linkage.`
+NEUTRAL, CENTER or an end point, the page shows `Keep the servo horn clear. Disconnect the linkage.`
 and `Test the servo on the bench before fitting it to a model.` It also
 explains the series' write sequence, identifies the backup file or explains
 why there is none ([The backup before the first write](#the-backup-before-the-first-write)),
@@ -1028,7 +1028,7 @@ CW and CCW are DIRECTION as read: D series register 0x5E, classic cell
   text that clears a record keeps the record: the next panel start reports
   that write as interrupted.
 - MOVE SERVO moves D series servos only, CW only, and only with a PD mini.
-  The classic CENTRE and end points are edited as numbers; the servo does
+  The classic CENTER and end points are edited as numbers; the servo does
   not move to them.
 - FACTORY DEFAULT is not offered for the D series; for a classic servo it
   is the HPP-21 Plus's copy of cells 0x30 to 0x53, tested in the host

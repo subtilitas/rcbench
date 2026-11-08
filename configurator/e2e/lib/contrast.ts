@@ -105,7 +105,7 @@ function measure(): Contrast {
     note('text', label(el, text), over([colour[0], colour[1], colour[2], colour[3] * alpha], bg), bg, large ? 3 : 4.5);
   }
 
-  // Text of the drawings: the fill of the text against the filled shape under its centre.
+  // Text of the drawings: the fill of the text against the filled shape under its center.
   for (const text of document.querySelectorAll<SVGTextElement>('svg text')) {
     if (!shown(text) || (text.textContent ?? '').trim() === '') continue;
     const fill = parse(getComputedStyle(text).fill, label(text));

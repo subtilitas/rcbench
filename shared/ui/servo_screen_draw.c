@@ -76,8 +76,8 @@ static void draw_body(gfx_canvas_t *c)
 
     /* Mounting tabs first, so the case overlaps them. */
     for (int i = 0; i < 2; ++i) {
-        /* Two holes, and the flange centred on the case: a servo's mounting
-         * lugs are symmetric about its centreline. */
+        /* Two holes, and the flange centered on the case: a servo's mounting
+         * lugs are symmetric about its centerline. */
         const int tx = (i == 0) ? bx - TAB_W + TAB_OVER
                                 : bx + BODY_W - TAB_OVER;
         const int ty = by;

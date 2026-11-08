@@ -278,7 +278,7 @@ TEST_CASE(an_unsaved_edit_asks_before_the_tag_returns_to_rudder)
     start();
     servo_on_rudder_list();
     tap_angle_source();
-    settings_set(SET_ENC_CENTRE, settings_get(SET_ENC_CENTRE) + 1.0f);
+    settings_set(SET_ENC_CENTER, settings_get(SET_ENC_CENTER) + 1.0f);
     CHECK(settings_dirty());
     tap_home();
     CHECK(settings_screen_warning());

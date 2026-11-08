@@ -168,7 +168,7 @@ static void ra_cfg(servo_rauto_cfg_t *c)
     c->margin_pct    = (uint8_t)settings_get_int(SET_RUDDER_MARGIN);
     c->tol_ddeg = (uint16_t)lroundf(settings_get(SET_RUDDER_TOL) * 10.0f);
     c->family    = lim_family();
-    c->centre_us = s.centre_us;
+    c->center_us = s.center_us;
     const float len = settings_get(SET_RUDDER_LEN_MM);
     c->len_mm = (len >= SERVO_RUDDER_LEN_MIN_MM) ? len : 0.0f;
     snprintf(c->dut, sizeof(c->dut), "%s", settings_text(SET_TEXT_DUT_NAME));

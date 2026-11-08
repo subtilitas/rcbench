@@ -35,9 +35,9 @@
  * @brief The sweep the SWEEP page describes, under the profile in force: CURVE,
  *        SPEED and DWELL as they are, and RANGE as a share of the travel the
  *        servo may make -- TRAVEL, and the nearer of PULSE MIN and MAX, so a sweep
- *        about the centre reaches neither end it may not.  In the command units of
- *        the range a command carries (cmd_range()), centred on PULSE CENTRE.  Trim
- *        is not applied: the sweep turns about the centre a release rests at.
+ *        about the center reaches neither end it may not.  In the command units of
+ *        the range a command carries (cmd_range()), centered on PULSE CENTER.  Trim
+ *        is not applied: the sweep turns about the center a release rests at.
  * @return the curve
  */
 sweep_cfg_t sweep_cfg_now(void)
@@ -51,8 +51,8 @@ sweep_cfg_t sweep_cfg_now(void)
     uint16_t lo, hi;
     cmd_range(&lo, &hi);
     const float half = (float)(hi - lo) * 0.5f;
-    const float below = (float)s.centre_us - (float)s.min_us;
-    const float above = (float)s.max_us - (float)s.centre_us;
+    const float below = (float)s.center_us - (float)s.min_us;
+    const float above = (float)s.max_us - (float)s.center_us;
     const float nearer = (below < above) ? below : above;
     float amp = 0.0f;
     if (half > 0.0f) {
@@ -75,7 +75,7 @@ static float sweep_deg(uint16_t cmd)
     uint16_t lo, hi;
     cmd_range(&lo, &hi);
     const float us = (float)lo + (float)(hi - lo) * (float)cmd
-                                 / (float)(2u * SWEEP_CENTRE);
+                                 / (float)(2u * SWEEP_CENTER);
     return us_to_deg((uint16_t)(us + 0.5f));
 }
 
@@ -350,10 +350,10 @@ uint32_t servo_screen_curve_ms(void) { return s.clock_ms - s.sw.start_ms; }
 void servo_screen_released(uint16_t pause_seq)
 {
     /*
-     * Nothing held any more, and the horn goes to the centre the surfaces
+     * Nothing held any more, and the horn goes to the center the surfaces
      * were released to -- while the screen is still on that pause.  The
      * panel dropped everything it asked since (its lineage), so the
-     * surfaces are at rest.  Left since, by a drag, CENTRE, a new pause or
+     * surfaces are at rest.  Left since, by a drag, CENTER, a new pause or
      * a new start, the screen's newer command was sent and is what the
      * surfaces do, so this changes nothing.
      */
@@ -508,7 +508,7 @@ static float drawn_after(const sweep_t *w, uint32_t phase_ms, uint32_t ms,
     for (uint32_t done = 0u; done < ms;) {
         const uint32_t dt = (ms - done < 4u) ? ms - done : 4u;
         done += dt;
-        uint16_t cmd = (uint16_t)SWEEP_CENTRE;
+        uint16_t cmd = (uint16_t)SWEEP_CENTER;
         (void)sweep_step(&run, phase_ms + done, &cmd);
         const float want =
             svs_us_to_cmd(svs_deg_to_us_f(clamp_travel(sweep_deg(cmd))));
@@ -730,7 +730,7 @@ void svs_tick_body(float dt_s)
         if (!svs_same_sweep(&now, &s.sw.cfg)) {
             svs_restart_sweep();
         }
-        uint16_t cmd = (uint16_t)SWEEP_CENTRE;
+        uint16_t cmd = (uint16_t)SWEEP_CENTER;
         if (s.sweeping && !s.awaiting
             && sweep_step(&s.sw, s.clock_ms, &cmd)) {
             s.commanded_deg = clamp_travel(sweep_deg(cmd));
@@ -738,7 +738,7 @@ void svs_tick_body(float dt_s)
         }
     }
     if (s.dr.on) {
-        uint16_t cmd = (uint16_t)SWEEP_CENTRE;
+        uint16_t cmd = (uint16_t)SWEEP_CENTER;
         if ((uint32_t)(s.clock_ms - s.dr.from_ms) > OUT_DEFAULT_TIMEOUT_MS
             || !sweep_step(&s.dr.sw, s.clock_ms, &cmd)) {
             /* Unheard for that long the far end has stopped too. */
@@ -948,7 +948,7 @@ void svs_tick_body(float dt_s)
      * In the units the far end slews in -- its command across the range a
      * command carries -- and at its rate, svs_slew_of(); at 100% there is none
      * and the output is drawn at the command at once.  An angle a second
-     * would not be: with CENTRE off the middle a degree is a different share
+     * would not be: with CENTER off the middle a degree is a different share
      * of the command on either side, and PAUSE, which keeps the servo where
      * the horn is drawn, would keep it somewhere else.
      */

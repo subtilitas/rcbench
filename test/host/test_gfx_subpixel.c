@@ -89,7 +89,7 @@ TEST_CASE(at_whole_pixels_the_float_shapes_are_the_int_ones)
 /* ------------------------------------------------------------ the disc */
 
 /* A disc moved by tenths of a pixel moves its picture by tenths: the
- * centroid of its coverage is its centre to 0.02px at every step, where
+ * centroid of its coverage is its center to 0.02px at every step, where
  * a disc on whole pixels stands still and then jumps a pixel. */
 TEST_CASE(a_disc_moves_by_fractions_of_a_pixel)
 {
@@ -146,8 +146,8 @@ TEST_CASE(a_capsule_of_no_width_draws_nothing)
 /* ------------------------------------------------------------- the ring */
 
 /* A whole ring has its band's area, 2 pi r t, and its centroid is its
- * centre to 0.05px, wherever between pixels the centre sits. */
-TEST_CASE(a_ring_has_its_bands_area_and_centre)
+ * center to 0.05px, wherever between pixels the center sits. */
+TEST_CASE(a_ring_has_its_bands_area_and_center)
 {
     for (int k = 0; k <= 4; ++k) {
         fresh();
@@ -265,11 +265,11 @@ TEST_CASE(a_ring_of_nothing_draws_nothing)
     CHECK(coverage(NULL, NULL) == 0.0);
 }
 
-/* A band thick enough to reach the centre (thickness over 2r - 1) covers
- * the centre pixel as it covers any other: by half the thickness and half a
- * pixel less the radius, at most whole.  At 2r - 1 it reaches the centre
+/* A band thick enough to reach the center (thickness over 2r - 1) covers
+ * the center pixel as it covers any other: by half the thickness and half a
+ * pixel less the radius, at most whole.  At 2r - 1 it reaches the center
  * with no coverage left. */
-TEST_CASE(a_ring_over_its_centre_covers_the_centre)
+TEST_CASE(a_ring_over_its_center_covers_the_center)
 {
     static const struct { float r, t; } k_rings[] = {
         { 1.0f, 4.0f }, { 2.0f, 5.0f }, { 3.0f, 6.5f }, { 0.5f, 1.2f },
@@ -283,7 +283,7 @@ TEST_CASE(a_ring_over_its_centre_covers_the_centre)
         const double want = fmin(1.0, fmax(0.0, (double)(t / 2.0f + 0.5f - r)));
         const double got = cov_at(24 * W + 24);
         if (fabs(got - want) > 1.5 / 63.0) {
-            T_FAIL("r %.1f, thickness %.1f: centre %.3f, want %.3f",
+            T_FAIL("r %.1f, thickness %.1f: center %.3f, want %.3f",
                    (double)r, (double)t, got, want);
         }
     }
@@ -297,12 +297,12 @@ int main(int argc, char **argv)
     RUN(a_disc_moves_by_fractions_of_a_pixel);
     RUN(a_capsule_grows_by_fractions_of_a_pixel);
     RUN(a_capsule_of_no_width_draws_nothing);
-    RUN(a_ring_has_its_bands_area_and_centre);
+    RUN(a_ring_has_its_bands_area_and_center);
     RUN(an_arc_keeps_to_its_span);
     RUN(an_arc_fades_from_its_ends);
     RUN(an_arc_is_the_same_either_way_round);
     RUN(a_ring_keeps_to_the_clip);
     RUN(a_ring_of_nothing_draws_nothing);
-    RUN(a_ring_over_its_centre_covers_the_centre);
+    RUN(a_ring_over_its_center_covers_the_center);
     return test_summary("gfx_subpixel");
 }

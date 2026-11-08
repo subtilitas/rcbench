@@ -481,7 +481,7 @@ TEST_CASE(two_fingers_spread_zoom_in_and_the_view_stays)
     CHECK_EQ(count, LONG_ROWS);
 
     /* Spread from 100px apart to 400px apart around x = 400: a quarter
-     * of the samples, centred where the fingers were. */
+     * of the samples, centered where the fingers were. */
     two_down(350, 450);
     two_move(200, 600);
     two_up(200, 600);

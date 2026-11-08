@@ -1,7 +1,7 @@
 /**
  * @file
  * @brief A servo swept through a curve: square, sine or triangle about its
- *        centre.
+ *        center.
  *
  * The curve runs where the pins are, on the IOmcu, so its timing does
  * not depend on the link: a 5Hz sine over a CAN round trip of tens of
@@ -9,18 +9,18 @@
  * the same code to draw the horn.
  *
  * One cycle, of period 1000 / mhz seconds plus the dwells, starts at the
- * centre and goes to +amplitude, holds there for dwell_ms, goes to
- * -amplitude, holds again and comes back to the centre, where the next cycle
+ * center and goes to +amplitude, holds there for dwell_ms, goes to
+ * -amplitude, holds again and comes back to the center, where the next cycle
  * carries on towards +amplitude.  A square jumps between the ends at the
- * cycle's start and half; a sine and a triangle start at the centre, so a
+ * cycle's start and half; a sine and a triangle start at the center, so a
  * sweep begins without a jump.  An end is counted as a movement when the
  * curve reaches it -- a quarter cycle after the jump for a square.
  *
  * With a movement count the sweep ends once that many ends have been reached
- * and the last dwell is over, and the command goes back to the centre.
+ * and the last dwell is over, and the command goes back to the center.
  *
  * Commands are in the bank's units, 0..OUT_SPAN of the channel's own travel,
- * with the centre at OUT_SPAN / 2.
+ * with the center at OUT_SPAN / 2.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -45,17 +45,17 @@ typedef enum {
 /** @brief The slowest and fastest curve, in thousandths of a cycle a second. */
 #define SWEEP_MHZ_MIN      50u
 #define SWEEP_MHZ_MAX    5000u
-/** @brief The furthest from the centre a sweep goes, in command units. */
+/** @brief The furthest from the center a sweep goes, in command units. */
 #define SWEEP_AMPLITUDE_MAX 500u
 /** @brief The longest hold at an end. */
 #define SWEEP_DWELL_MAX_MS 5000u
-/** @brief The centre, in command units. */
-#define SWEEP_CENTRE        500u
+/** @brief The center, in command units. */
+#define SWEEP_CENTER        500u
 
 typedef struct {
     sweep_kind_t kind;
     uint16_t     mhz;        /**< cycles a second, x1000                   */
-    uint16_t     amplitude;  /**< command units either side of the centre  */
+    uint16_t     amplitude;  /**< command units either side of the center  */
     uint16_t     dwell_ms;   /**< held at each end                         */
     uint16_t     moves;      /**< ends to reach, 0 for no end              */
 } sweep_cfg_t;
@@ -123,11 +123,11 @@ bool sweep_resume(sweep_t *w, uint32_t now_ms);
 /**
  * @brief The command at @p now_ms into @p command.  True while the sweep runs;
  *        false once it has stopped or made its movements, with @p command at
- *        the centre.  The clock may wrap.
+ *        the center.  The clock may wrap.
  *
  * @param w       Sweep state. Stops the sweep once its moves are made.
  * @param now_ms  Current time, ms.
- * @param command Out: command in units, 0 to 2 x SWEEP_CENTRE. NULL to skip.
+ * @param command Out: command in units, 0 to 2 x SWEEP_CENTER. NULL to skip.
  * @return true while the sweep runs; false for a NULL w, a stopped sweep or one
  *        whose moves are made.
  */
@@ -149,7 +149,7 @@ uint32_t sweep_moves(const sweep_t *w, uint32_t now_ms);
  *        the fastest change @p cfg's curve asks for, so the slew and not the
  *        curve decides how the output moves.  The fastest change, at amplitude
  *        A and f = mhz / 1000 cycles a second, is 2 pi f A for a sine (at the
- *        centre) and 4 f A for a triangle (throughout).  A square jumps, so any
+ *        center) and 4 f A for a triangle (throughout).  A square jumps, so any
  *        slew limits it.  The dwell does not enter: it adds time at the ends,
  *        not to the motion.
  *

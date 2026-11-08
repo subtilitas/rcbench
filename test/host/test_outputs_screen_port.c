@@ -160,7 +160,7 @@ TEST_CASE(a_prog_port_entry_lights_its_pin_and_takes_no_tick)
     guard_canvas_t g;
     gfx_canvas_t c;
     int x, y;
-    cell_centre(13u, &x, &y);
+    cell_center(13u, &x, &y);
     const int top = y - CELL_H / 2;
 
     fresh_port();

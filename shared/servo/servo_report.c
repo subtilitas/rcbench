@@ -266,14 +266,14 @@ static bool header_lines(const servo_test_t *t, cursor_t *c)
         snprintf(b, n, "%s", S(R_NEGATIVE));
         return true;
     }
-    /* The AS5600 with its centre; the IMU, whose angle is carried in the
+    /* The AS5600 with its center; the IMU, whose angle is carried in the
      * AS5600's counts from count 0. */
     const char *src = servo_test_enc_source(g);
     if (g->enc_on && here(c)) {
         if (enc_imu(g)) {
             snprintf(b, n, S(R_ENC_IMU), src, (unsigned long)t->enc_reads);
         } else {
-            snprintf(b, n, S(R_ENC_DEVICE), (unsigned)g->enc_centre,
+            snprintf(b, n, S(R_ENC_DEVICE), (unsigned)g->enc_center,
                      (unsigned long)t->enc_reads);
         }
         return true;
@@ -373,7 +373,7 @@ static bool settings_lines(const servo_test_t *t, cursor_t *c)
         return true;
     }
     if (here(c)) {
-        snprintf(b, n, S(R_TYPE), g->type, (unsigned)g->centre_us,
+        snprintf(b, n, S(R_TYPE), g->type, (unsigned)g->center_us,
                  (unsigned)g->min_us, (unsigned)g->max_us, (int)g->trim_us,
                  g->reverse ? S(R_ON) : S(R_OFF));
         return true;

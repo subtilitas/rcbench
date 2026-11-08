@@ -40,7 +40,7 @@
 			)
 		)
 	)
-	(property "Description" "AS5600 magnetic angle encoder board 22.5 x 22.5mm, 4 corner holes on a 16.0mm grid. Pads: 1 VCC (square), 2 OUT, 3 GND on the 3-hole row; 4 DIR (square), 5 SCL, 6 SDA, 7 GPO on the 4-hole row; 2.54mm, rows 13.22mm apart. Magnet axis over the AS5600 package centre at (-2.65, 6.51)mm from pad 1. Scaled from the owner's photo, about 0.3mm; check with a caliper before ordering a PCB."
+	(property "Description" "AS5600 magnetic angle encoder board 22.5 x 22.5mm, 4 corner holes on a 16.0mm grid. Pads: 1 VCC (square), 2 OUT, 3 GND on the 3-hole row; 4 DIR (square), 5 SCL, 6 SDA, 7 GPO on the 4-hole row; 2.54mm, rows 13.22mm apart. Magnet axis over the AS5600 package center at (-2.65, 6.51)mm from pad 1. Scaled from the owner's photo, about 0.3mm; check with a caliper before ordering a PCB."
 		(at 0 0 0)
 		(unlocked yes)
 		(layer "F.Fab")

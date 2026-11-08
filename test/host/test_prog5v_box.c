@@ -44,7 +44,7 @@ static void fresh(uint8_t state)
     prog5v_box_init(&b, BOX_R, PROG5V_BY_SERVO);
 }
 
-/* The button's centre. */
+/* The button's center. */
 static int bx(void) { const gfx_rect_t r = prog5v_box_button(&b); return r.x + r.w / 2; }
 static int by_(void) { const gfx_rect_t r = prog5v_box_button(&b); return r.y + r.h / 2; }
 

@@ -84,9 +84,9 @@
       "steps": [
         "Battery disconnected, stick to full throttle, transmitter on.",
         "Connect a charged flight battery: rising tone sequence, then in LiPo mode cell-count beeps.",
-        "Move the stick to centre.",
+        "Move the stick to center.",
         "Move the stick to full throttle.",
-        "Stick to centre: rising tone sequence four times, programming mode."
+        "Stick to center: rising tone sequence four times, programming mode."
       ]
     },
     "announce": {
@@ -97,7 +97,7 @@
       "gap_ms": null,
       "group_gap_ms": null,
       "repeat": 0,
-      "description": "Parameter N sounds as N beeps, repeated until the stick moves. After the parameter 9 beeps the programming ends with stick centre then stick to motor OFF."
+      "description": "Parameter N sounds as N beeps, repeated until the stick moves. After the parameter 9 beeps the programming ends with stick center then stick to motor OFF."
     },
     "select": {
       "throttle": "max",
@@ -106,13 +106,13 @@
     },
     "skip": {
       "throttle": "mid",
-      "description": "Return the stick to centre to leave the parameter unchanged or after a change; the ESC goes to the next parameter."
+      "description": "Return the stick to center to leave the parameter unchanged or after a change; the ESC goes to the next parameter."
     },
     "confirm_signal": "Long tone for parameter 1; 'confirmation signal' for the others (tone not described).",
-    "exit": "Stick centre (rising tone sequence), then stick to motor OFF: rising tone sequence twice, parameters stored.",
+    "exit": "Stick center (rising tone sequence), then stick to motor OFF: rising tone sequence twice, parameters stored.",
     "changes_per_entry": "many",
     "reset_to_defaults": null,
-    "description": "Full throttle at power-up, then centre, full, centre enters programming (four rising sequences). Parameters 1 to 9 sound as 1 to 9 repeated beeps. Full throttle or motor OFF selects the option; centre moves on. Centre then motor OFF after parameter 9 stores and exits."
+    "description": "Full throttle at power-up, then center, full, center enters programming (four rising sequences). Parameters 1 to 9 sound as 1 to 9 repeated beeps. Full throttle or motor OFF selects the option; center moves on. Center then motor OFF after parameter 9 stores and exits."
   },
   "items": [
     {
@@ -283,8 +283,8 @@
     "Beep duration, gap and the interval between repeats: not stated.",
     "Time to hold each stick position in the entry sequence: not stated.",
     "Timing of the 'confirmation signal' tones: not stated.",
-    "Whether stick centre alone after parameter 9 (10.1) with rising tone sequence is required: manual gives 10.1 stick centre, 10.2 stick motor OFF.",
-    "Stick-position pulse widths: not stated (the manual refers to the radio's full-throttle, centre and motor OFF positions).",
+    "Whether stick center alone after parameter 9 (10.1) with rising tone sequence is required: manual gives 10.1 stick center, 10.2 stick motor OFF.",
+    "Stick-position pulse widths: not stated (the manual refers to the radio's full-throttle, center and motor OFF positions).",
     "Value numbers 1 and 2 are the order the manual lists the options in; the ESC does not sound them.",
     "Spec table columns for 715, 720 and 755 are read from a merged table; current and BEC numbers per column follow the column order of Multiplex_Roxxy_BL-715_S-BEC.pdf.",
     "Cell counts for the 755 are taken from the 740/755 manual (2-6S LiPo)."

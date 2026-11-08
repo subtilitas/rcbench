@@ -13,7 +13,7 @@
  * How many positions feed the free-running baseline before the knee test is
  * allowed to fire.
  *
- * Three, more than one: the first position is the centre, where a surface
+ * Three, more than one: the first position is the center, where a surface
  * with any preload draws more than it does a few degrees out, and a baseline
  * from that single reading sits high enough to hide a real knee.  Three
  * positions average that away and are over within three steps of travel.
@@ -36,22 +36,22 @@ static inline bool elapsed(uint32_t now, uint32_t then, uint32_t ms)
 /**
  * @brief Clamp a pulse width to the search travel and the pulse range.
  *
- * @param cfg Configuration whose centre_us and max_travel_us bound the travel.
+ * @param cfg Configuration whose center_us and max_travel_us bound the travel.
  * @param us  Pulse width to clamp, us.
  * @return the clamped width, SERVO_LIMIT_MIN_US to SERVO_LIMIT_MAX_US.
  */
 static uint16_t clamp_travel(const servo_limit_cfg_t *cfg, int32_t us)
 {
-    const int32_t centre = (int32_t)cfg->centre_us;
+    const int32_t center = (int32_t)cfg->center_us;
     const int32_t span   = (int32_t)cfg->max_travel_us;
-    if (us > centre + span) {
-        us = centre + span;
+    if (us > center + span) {
+        us = center + span;
     }
-    if (us < centre - span) {
-        us = centre - span;
+    if (us < center - span) {
+        us = center - span;
     }
     /* A pulse width the servo takes: this also guards a configuration
-     * with centre below max_travel. */
+     * with center below max_travel. */
     if (us < (int32_t)SERVO_LIMIT_MIN_US) {
         us = (int32_t)SERVO_LIMIT_MIN_US;
     }
@@ -61,14 +61,14 @@ static uint16_t clamp_travel(const servo_limit_cfg_t *cfg, int32_t us)
     return (uint16_t)us;
 }
 
-void servo_limit_defaults(servo_limit_cfg_t *cfg, uint16_t centre_us,
+void servo_limit_defaults(servo_limit_cfg_t *cfg, uint16_t center_us,
                           bool positive)
 {
     if (cfg == NULL) {
         return;
     }
     memset(cfg, 0, sizeof(*cfg));
-    cfg->centre_us     = centre_us;
+    cfg->center_us     = center_us;
     /*
      * 10us is about 1 degree on a standard servo (1000us of pulse width
      * over about 90 degrees of travel).  The step has to be small enough that
@@ -76,7 +76,7 @@ void servo_limit_defaults(servo_limit_cfg_t *cfg, uint16_t centre_us,
      * method depends on meeting the knee rather than arriving past it.
      */
     cfg->step_us       = positive ? 10 : -10;
-    cfg->max_travel_us = 600;    /* 900..2100us from a 1500us centre */
+    cfg->max_travel_us = 600;    /* 900..2100us from a 1500us center */
     cfg->settle_ms     = 120;    /* a slow digital servo arrives within this */
     cfg->measure_ms    = 80;
     cfg->knee_ratio    = 1.8f;
@@ -94,18 +94,18 @@ void servo_limit_init(servo_limit_t *lf, const servo_limit_cfg_t *cfg)
     }
     memset(lf, 0, sizeof(*lf));
     lf->cfg          = *cfg;
-    /* The centre is a command too: held within the pulse widths a servo
+    /* The center is a command too: held within the pulse widths a servo
      * takes. */
-    if (lf->cfg.centre_us < SERVO_LIMIT_MIN_US) {
-        lf->cfg.centre_us = SERVO_LIMIT_MIN_US;
+    if (lf->cfg.center_us < SERVO_LIMIT_MIN_US) {
+        lf->cfg.center_us = SERVO_LIMIT_MIN_US;
     }
-    if (lf->cfg.centre_us > SERVO_LIMIT_MAX_US) {
-        lf->cfg.centre_us = SERVO_LIMIT_MAX_US;
+    if (lf->cfg.center_us > SERVO_LIMIT_MAX_US) {
+        lf->cfg.center_us = SERVO_LIMIT_MAX_US;
     }
     lf->state        = SERVO_LIMIT_RUNNING;
-    lf->cmd_us       = lf->cfg.centre_us;
-    lf->last_free_us = lf->cfg.centre_us;
-    lf->limit_us     = lf->cfg.centre_us;
+    lf->cmd_us       = lf->cfg.center_us;
+    lf->last_free_us = lf->cfg.center_us;
+    lf->limit_us     = lf->cfg.center_us;
     if (cfg->step_us == 0) {
         /* A search that never moves never ends. */
         lf->state = SERVO_LIMIT_FAULT;
@@ -114,7 +114,7 @@ void servo_limit_init(servo_limit_t *lf, const servo_limit_cfg_t *cfg)
 }
 
 /**
- * @brief Finish the search with the surface returned to centre.
+ * @brief Finish the search with the surface returned to center.
  *
  * @param lf    Search state to update.
  * @param state Final state to store.
@@ -125,7 +125,7 @@ static void finish(servo_limit_t *lf, servo_limit_state_t state,
 {
     lf->state  = state;
     lf->fault  = fault;
-    lf->cmd_us = lf->cfg.centre_us;
+    lf->cmd_us = lf->cfg.center_us;
 }
 
 /**
@@ -145,9 +145,9 @@ static bool advance(servo_limit_t *lf)
 {
     const int32_t next  = (int32_t)lf->cmd_us + lf->cfg.step_us;
     int32_t reach = (lf->cfg.step_us > 0)
-                        ? (int32_t)lf->cfg.centre_us
+                        ? (int32_t)lf->cfg.center_us
                               + (int32_t)lf->cfg.max_travel_us
-                        : (int32_t)lf->cfg.centre_us
+                        : (int32_t)lf->cfg.center_us
                               - (int32_t)lf->cfg.max_travel_us;
     /* The end of the pulse range is an end of the travel too: a command
      * held there would otherwise never pass the reach. */
@@ -186,7 +186,7 @@ static void judge(servo_limit_t *lf, float avg_a)
         lf->last_free_us = lf->cmd_us;
         /* Advance, so the baseline covers BASELINE_STEPS positions rather
          * than that many readings of one.  A preloaded surface draws most at
-         * centre, and a baseline of centre readings alone sits high enough to
+         * center, and a baseline of center readings alone sits high enough to
          * hide a real knee. */
         (void)advance(lf);
         return;
@@ -209,11 +209,11 @@ static void judge(servo_limit_t *lf, float avg_a)
         endpoint -= (lf->cfg.step_us > 0) ? (int32_t)lf->cfg.backoff_us
                                           : -(int32_t)lf->cfg.backoff_us;
         /* A bind at the first judged position backs the endpoint past
-         * centre: it stays on the side searched. */
-        const int32_t centre = (int32_t)lf->cfg.centre_us;
-        if ((lf->cfg.step_us > 0) ? (endpoint < centre)
-                                  : (endpoint > centre)) {
-            endpoint = centre;
+         * center: it stays on the side searched. */
+        const int32_t center = (int32_t)lf->cfg.center_us;
+        if ((lf->cfg.step_us > 0) ? (endpoint < center)
+                                  : (endpoint > center)) {
+            endpoint = center;
         }
         lf->limit_us = clamp_travel(&lf->cfg, endpoint);
         finish(lf, SERVO_LIMIT_FOUND, SERVO_LIMIT_FAULT_NONE);
@@ -230,7 +230,7 @@ uint16_t servo_limit_step(servo_limit_t *lf, float current_a, uint32_t now_ms)
         return 0;
     }
     if (lf->state != SERVO_LIMIT_RUNNING) {
-        return lf->cfg.centre_us;
+        return lf->cfg.center_us;
     }
 
     if (!lf->started) {
@@ -305,7 +305,7 @@ float servo_limit_progress(const servo_limit_t *lf)
     if (lf->cfg.max_travel_us == 0) {
         return 0.0f;
     }
-    int32_t gone = (int32_t)lf->cmd_us - (int32_t)lf->cfg.centre_us;
+    int32_t gone = (int32_t)lf->cmd_us - (int32_t)lf->cfg.center_us;
     if (gone < 0) {
         gone = -gone;
     }

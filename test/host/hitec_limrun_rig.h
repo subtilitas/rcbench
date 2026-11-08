@@ -26,7 +26,7 @@
 #include "servo_limrun.h"
 #include "servo_sim.h"
 
-#define H_CENTRE 1500u
+#define H_CENTER 1500u
 #define H_MIN_US 800u            /* TYPE WIDE: 800 to 2200us */
 #define H_MAX_US 2200u
 #define H_RUN_MS 900000u
@@ -107,12 +107,12 @@ static inline void h_init_d(uint32_t t0, bool cw)
     h.live = true;
     h.bench_to = -1;
     h.prog_ms = 1200u;           /* the D series' save and reboot in it */
-    h.cmd = H_CENTRE;
+    h.cmd = H_CENTER;
     h.cmd_lo = 0xFFFFu;
     h.win_end = t0 + SERVO_TEST_WIN_MS;
     h.mx = INT16_MIN;
     memset(&h.cfg, 0, sizeof(h.cfg));
-    h.cfg.centre_us = H_CENTRE;
+    h.cfg.center_us = H_CENTER;
     h.cfg.min_us = H_MIN_US;
     h.cfg.max_us = H_MAX_US;
     h.cfg.read = true;
@@ -285,7 +285,7 @@ static inline void h_take(const servo_limrun_do_t *d)
 {
     if (d->command) {
         h.cmd = d->cmd_us;
-        if (h.cmd != H_CENTRE && !h.driven) {
+        if (h.cmd != H_CENTER && !h.driven) {
             h.driven = true;
             h.connects_at_drive = h.connects;
         }

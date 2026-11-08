@@ -12,7 +12,7 @@ import { BODY, LABEL, TEXT_CHAR, bayOf, diagramOf, simplify } from '../src/diagr
 import type { Diagram, Pt } from '../src/diagram/route.ts';
 import { RADIUS, baselines, bodyRects, legend, pathOf, picture, swatch } from '../src/diagram/picture.ts';
 import { componentText, sceneOf } from '../src/diagram/scene.ts';
-import { PAN_STEP, ZOOM_STEP, centreOn, clamp, fit, pan, shows, transformOf, zoomAt } from '../src/diagram/view.ts';
+import { PAN_STEP, ZOOM_STEP, centerOn, clamp, fit, pan, shows, transformOf, zoomAt } from '../src/diagram/view.ts';
 import { STRINGS } from '../src/i18n.ts';
 import { optionsOf } from '../src/names.ts';
 import type { View } from '../src/view/chooser.ts';
@@ -62,13 +62,13 @@ function breaks(d: Diagram, setup: Setup): string[] {
   }
 
   // Columns: the IOmcu column lies between the left and the right parts.
-  if (!d.columns[d.centre]?.includes('copro')) out.push('the IOmcu is not in the centre column');
+  if (!d.columns[d.center]?.includes('copro')) out.push('the IOmcu is not in the center column');
   const column = new Map(setup.parts.map((r) => [r.part.id, r.part.slot.column]));
   d.columns.forEach((ids, i) => {
     for (const id of ids) {
       const c = column.get(id);
-      if (c === 'L' && i >= d.centre) out.push(`${id}: left part right of the IOmcu`);
-      if (c === 'R' && i <= d.centre) out.push(`${id}: right part left of the IOmcu`);
+      if (c === 'L' && i >= d.center) out.push(`${id}: left part right of the IOmcu`);
+      if (c === 'R' && i <= d.center) out.push(`${id}: right part left of the IOmcu`);
     }
   });
 
@@ -126,7 +126,7 @@ function breaks(d: Diagram, setup: Setup): string[] {
   for (const [key, list] of onPad) {
     list.sort((p, q) => p.at - q.at);
     if (list.length === 1 && list[0]!.at !== 0) out.push(`${key}: wire ${list[0]!.n} ends ${list[0]!.at} px off its point`);
-    if (Math.abs(list[0]!.at + list[list.length - 1]!.at) > 1e-9) out.push(`${key}: wires not centred on the point`);
+    if (Math.abs(list[0]!.at + list[list.length - 1]!.at) > 1e-9) out.push(`${key}: wires not centered on the point`);
     for (let i = 1; i < list.length; i++) {
       if (list[i]!.at - list[i - 1]!.at !== pitch(list[i]!.w, list[i - 1]!.w)) out.push(`${key}: wires ${list[i - 1]!.n} and ${list[i]!.n} not a pitch apart`);
     }
@@ -581,14 +581,14 @@ test('a part between 2 parts stands in the column between theirs: charger, T-plu
     const ids = new Set(scene.parts.map((p) => p.id));
     const d = diagramOf(scene);
     const col = (id: string): number => d.parts.find((p) => p.id === id)!.col;
-    const centre = col('copro');
+    const center = col('copro');
     if (!ids.has('usbtap') || !ids.has('charger') || !ids.has('pdmini')) {
       // Without the 3 parts a side has at most 2 columns.
-      assert.ok(centre <= 2, describe(s.selection));
+      assert.ok(center <= 2, describe(s.selection));
       continue;
     }
     seen++;
-    assert.deepEqual([col('charger'), col('usbtap'), col('pdmini'), centre], [0, 1, 2, 3], describe(s.selection));
+    assert.deepEqual([col('charger'), col('usbtap'), col('pdmini'), center], [0, 1, 2, 3], describe(s.selection));
     // The charger stands alone in its column.
     assert.deepEqual(d.parts.filter((p) => p.col === 0).map((p) => p.id), ['charger']);
     const box = (id: string) => d.parts.find((p) => p.id === id)!;
@@ -615,7 +615,7 @@ test('the between rule at its limits: a missing neighbour, the right side, a par
     columnsOf({ parts, wires, undrawn: [] }).cols.map((c) => c.map((p) => p.id));
   const mcu = part('mcu', 'C', 0);
   const wires = [wire(1, 'a', 'm'), wire(2, 'm', 'b'), wire(3, 'm', 'mcu'), wire(4, 'x', 'mcu'), wire(5, 'y', 'a')];
-  // Left side: first neighbour outermost, the part, the second neighbour beside the centre.
+  // Left side: first neighbour outermost, the part, the second neighbour beside the center.
   assert.deepEqual(
     cols([part('a', 'L', 3), part('m', 'L', 2, ['a', 'b']), part('b', 'L', 1), part('x', 'L', 4), part('y', 'L', 5), mcu], wires),
     [['a'], ['m', 'y'], ['b', 'x'], ['mcu']],
@@ -751,11 +751,11 @@ test('the view stays between the fit and the largest scale and never shows a bla
   assert.deepEqual(pan(fit(), 100, 100, size, 4), fit());
 });
 
-test('centreOn brings a point into the box and shows tells whether it is there', () => {
+test('centerOn brings a point into the box and shows tells whether it is there', () => {
   const size = { w: 1000, h: 500 };
   const v = { k: 4, x: 0, y: 0 };
   assert.equal(shows(v, 900, 400, size), false);
-  const c = centreOn(v, 900, 400, size, 4);
+  const c = centerOn(v, 900, 400, size, 4);
   assert.equal(shows(c, 900, 400, size), true);
   assert.deepEqual(c, { k: 4, x: -3000, y: -1350 });
   assert.equal(shows(fit(), 0, 0, size), true);

@@ -5,16 +5,16 @@
  *        on the programming port, the servo's own travel limits lowered until
  *        neither end binds.
  *
- * The search.  A side is searched from its centre outward, a servo_limit
+ * The search.  A side is searched from its center outward, a servo_limit
  * search in steps of 10us, the position bound once its current is above
  * 1.8 times the free current and 0.15A above it.  A side whose end is
  * measured free is free.  The endpoints are reported; the bench's own pulse
  * range is not changed.  Where the search runs depends on the target:
  *
- *   - The bench's own PWM output (cfg.read off): from PULSE CENTRE out to
+ *   - The bench's own PWM output (cfg.read off): from PULSE CENTER out to
  *     PULSE MIN and PULSE MAX in force.  Nothing is read or written.
  *   - A KST or Chaservo servo on the programming port (cfg.read on): a
- *     read session comes first -- the servo held at PULSE CENTRE, the
+ *     read session comes first -- the servo held at PULSE CENTER, the
  *     bench switched to SAFE, CONNECT with its read, LEAVE, the bench
  *     switched to ARMED again -- and the search runs from the servo's
  *     NEUTRAL out to its own PULSE LOWER and PULSE UPPER, never past them.
@@ -94,7 +94,7 @@
  * before the run back.
  *
  * Writes.  A value is written in a session of the programmer: the servo
- * held at the centre for SERVO_LIMRUN_RETURN_MS after the search, so a
+ * held at the center for SERVO_LIMRUN_RETURN_MS after the search, so a
  * session never starts with the servo against an end, the bench switched to
  * SAFE, the port taken (CONNECT reads all registers), the write, the port
  * given back (LEAVE), the bench switched to ARMED again.  The read session
@@ -192,11 +192,11 @@ extern "C" {
 /** @brief An endpoint that moves this far out moved; one within it stayed. */
 #define SERVO_LIMRUN_MOVED_US     20u
 /** @brief One search of one side at most: 1000us of travel, PULSE MIN 500us
- *         to a 1500us centre, is 100 positions of 250ms, 25s; the baseline's
+ *         to a 1500us center, is 100 positions of 250ms, 25s; the baseline's
  *         three and the slower windows of a busy panel fit in the rest. */
 #define SERVO_LIMRUN_SEARCH_MS    40000u
-/** @brief Each search starts with the servo held at PULSE CENTRE this long, and
- *         each session waits this long at PULSE CENTRE before the bench is
+/** @brief Each search starts with the servo held at PULSE CENTER this long, and
+ *         each session waits this long at PULSE CENTER before the bench is
  *         asked to SAFE: the return from the last end, 600us at 0.67us/ms
  *         (0.3s for 60 degrees) is 900ms, and the search's baseline is not to
  *         see it travel. */
@@ -227,7 +227,7 @@ extern "C" {
 
 /* ------------------------------------------------------ what it is told */
 
-/** @brief The two sides of PULSE CENTRE: shorter and longer pulses. */
+/** @brief The two sides of PULSE CENTER: shorter and longer pulses. */
 enum { SERVO_LIMRUN_LO = 0, SERVO_LIMRUN_HI = 1 };
 /** @brief The two registers. */
 enum { SERVO_LIMRUN_LEFT = 0, SERVO_LIMRUN_RIGHT = 1 };
@@ -262,7 +262,9 @@ typedef enum {
 #define SERVO_LIMRUN_REG_CCW 0x02u
 
 typedef struct {
-    uint16_t centre_us, min_us, max_us;   /**< PULSE CENTRE, MIN, MAX   */
+    uint16_t center_us;                   /**< PULSE CENTER, us         */
+    uint16_t min_us;                      /**< PULSE MIN, us            */
+    uint16_t max_us;                      /**< PULSE MAX, us            */
     /** @brief A KST or Chaservo servo on the programming port: read first, and
      *         searched from its NEUTRAL out to its PULSE LOWER and PULSE
      *         UPPER. */
@@ -315,7 +317,7 @@ typedef struct {
     bool  live;           /**< the bench is ARMED and the value live      */
     bool  safe;           /**< the bench is SAFE, no ARM on its way       */
     bool  enc_valid;      /**< the AS5600 has an angle                    */
-    float enc_deg;        /**< that angle from ENC CENTRE                 */
+    float enc_deg;        /**< that angle from ENC CENTER                 */
 } servo_limrun_in_t;
 
 /** @brief What the run wants done. */
@@ -346,7 +348,7 @@ typedef enum {
 typedef enum {
     SERVO_LIMRUN_PH_NONE = 0,
     SERVO_LIMRUN_PH_SEARCH,     /**< the first search of a side          */
-    SERVO_LIMRUN_PH_SAFE,       /**< the servo back at the centre, then
+    SERVO_LIMRUN_PH_SAFE,       /**< the servo back at the center, then
                                      the bench on its way to SAFE        */
     SERVO_LIMRUN_PH_CONNECT,
     SERVO_LIMRUN_PH_WRITE,
@@ -408,7 +410,7 @@ typedef struct {
     float baseline_a,                       /**< the current before the knee, A            */
           knee_a;                           /**< the current at the knee, A                */
     bool     enc;           /**< enc_deg is the angle at the last free one */
-    /** @brief The angle at the last free position, from ENC CENTRE */
+    /** @brief The angle at the last free position, from ENC CENTER */
     float    enc_deg;
 } servo_limrun_side_t;
 
@@ -509,13 +511,13 @@ void servo_limrun_init(servo_limrun_t *r);
 
 /**
  * @brief Start at @p now_ms.  False, and nothing started, for a configuration
- *        whose centre is not between its MIN and MAX.
+ *        whose center is not between its MIN and MAX.
  *
  * @param r      Run state. Cleared before the run starts.
  * @param cfg    Configuration of the run.
  * @param now_ms Start time, ms.
  * @return true when the run started; false for a NULL r or cfg, a run already
- *        RUNNING, a centre not strictly between min_us and max_us, program
+ *        RUNNING, a center not strictly between min_us and max_us, program
  *        or set_pulses without read, a family not in servo_limrun_family_t,
  *        or set_pulses with a family other than SERVO_LIMRUN_FAM_KST.
  */
@@ -686,7 +688,7 @@ bool servo_limrun_running(const servo_limrun_t *r);
 /**
  * @brief The run asked the bench to SAFE or to ARMED and waits for it, or holds
  *        the programmer: a disarm then is its own, not the operator's.  Not
- *        while the servo returns to the centre before a session: a disarm then
+ *        while the servo returns to the center before a session: a disarm then
  *        is the operator's.
  *
  * @param r Run state. NULL gives false.

@@ -16,12 +16,12 @@ SETTINGS in the footer of a [SERVO](servo.md) screen opens that screen's list. T
 |---|---|---|
 | TYPE | STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI TAIL 760 | selects the servo profile |
 | FRAME RATE | the type's list, or CUSTOM on the keypad | sets how often a pulse is sent |
-| PULSE MIN, CENTRE, MAX | 400 to 2500us; each end at least 50us from CENTRE | maps -90° to MIN, 0° to CENTRE and +90° to MAX |
-| TRIM | -200 to +200us, 5us steps | adds to the centre; tap the value for a keypad with a `+/-` key |
+| PULSE MIN, CENTER, MAX | 400 to 2500us; each end at least 50us from CENTER | maps -90° to MIN, 0° to CENTER and +90° to MAX |
+| TRIM | -200 to +200us, 5us steps | adds to the center; tap the value for a keypad with a `+/-` key |
 | TRAVEL | 10 to 90° | limits horn movement in each direction |
 | REVERSE | ON, OFF | reverses the mapping from angle to pulse |
 
-| Type | Centre | Travel | Frame rates |
+| Type | Center | Travel | Frame rates |
 |---|---|---|---|
 | STANDARD PWM | 1500us | 1000-2000us | 50, 60, 100, 150, 200, 250, 300, 333Hz |
 | NARROW 760 | 760us | 660-860us | as STANDARD PWM |
@@ -131,7 +131,7 @@ The active voltage and current caps constrain set points and run steps. They app
 
 | Setting | Where | What it does |
 |---|---|---|
-| ENC CENTRE | RUDDER's list | a tap takes the live AS5600 count, 0 to 4095, as the centre, with the servo at neutral; with ANGLE SOURCE IMU it takes nothing |
+| ENC CENTER | RUDDER's list | a tap takes the live AS5600 count, 0 to 4095, as the center, with the servo at neutral; with ANGLE SOURCE IMU it takes nothing |
 | ANGLE SOURCE | RUDDER's and RUDDER AUTO's lists | read-only; a tap opens the IMU entry of [Sensors](setup-sensors.md), where it is set |
 | KST EXPERT MODE | SETTINGS on SERVO > KST | whether the [KST and Chaservo programmer](servo-programmer.md#kst-expert-mode) shows DEAD BAND, BOOST, STRETCH, RELEASE PAIRING and the LOCKED tab; OFF by default, ON after a 2s hold, OFF with a tap |
 

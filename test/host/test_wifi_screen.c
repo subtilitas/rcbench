@@ -570,7 +570,7 @@ TEST_CASE(the_keyboard_keys_are_large_and_end_above_the_alert_band)
 }
 
 /*
- * A tap at the centre of a key of wifi_screen_key_area() types that key on
+ * A tap at the center of a key of wifi_screen_key_area() types that key on
  * the screen's own keyboard: what the cases here and the renderer's views
  * type is what they aim at.
  */

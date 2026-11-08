@@ -81,7 +81,7 @@ TEST_CASE(a_sweep_does_not_come_back_with_the_link)
 
     const servo_cmd_t kinds[] = {
         { .kind = SERVO_CMD_SWEEP }, { .kind = SERVO_CMD_HOLD },
-        { .kind = SERVO_CMD_POSITION }, { .kind = SERVO_CMD_CENTRE },
+        { .kind = SERVO_CMD_POSITION }, { .kind = SERVO_CMD_CENTER },
         { .kind = SERVO_CMD_RELEASE },
     };
     CHECK(!servo_cmd_survives_link_loss(&kinds[0]));
@@ -177,12 +177,12 @@ TEST_CASE(commands_from_a_let_go_pause_are_stale)
     CHECK(!servo_cmd_stale(&ended, &disarm));
     CHECK(ended.on);                           /* not a drive command */
     servo_screen_released(g_hold_seq);
-    go(SERVO_FN_LIVE);                         /* CENTRE is LIVE's */
-    tap(COL_X + 40, BTN_Y);                    /* CENTRE, after the pause */
-    const servo_cmd_t centre = last_cmd();
-    CHECK_EQ(centre.kind, SERVO_CMD_CENTRE);
-    CHECK_EQ(centre.from_pause, 0u);
-    CHECK(!servo_cmd_stale(&ended, &centre));
+    go(SERVO_FN_LIVE);                         /* CENTER is LIVE's */
+    tap(COL_X + 40, BTN_Y);                    /* CENTER, after the pause */
+    const servo_cmd_t center = last_cmd();
+    CHECK_EQ(center.kind, SERVO_CMD_CENTER);
+    CHECK_EQ(center.from_pause, 0u);
+    CHECK(!servo_cmd_stale(&ended, &center));
     CHECK(!ended.on);                          /* retired */
     CHECK(!servo_cmd_stale(&ended, &pos));     /* a reused number later */
     CHECK(!servo_cmd_stale(NULL, &pos));
@@ -248,13 +248,13 @@ TEST_CASE(a_drag_after_pause_outlives_the_let_go)
     CHECK_EQ(again.value_us, at + 5u);
     close_settings();
 
-    /* CENTRE the same way. */
+    /* CENTER the same way. */
     paused_on_n(&hold);
-    go(SERVO_FN_LIVE);                         /* CENTRE is LIVE's */
+    go(SERVO_FN_LIVE);                         /* CENTER is LIVE's */
     tap(COL_X + 40, BTN_Y);
-    const servo_cmd_t centre = last_cmd();
-    CHECK_EQ(centre.kind, SERVO_CMD_CENTRE);
-    CHECK_EQ(centre.from_pause, 0u);
+    const servo_cmd_t center = last_cmd();
+    CHECK_EQ(center.kind, SERVO_CMD_CENTER);
+    CHECK_EQ(center.from_pause, 0u);
     servo_screen_released(hold.pause_seq);
     CHECK_EQ(servo_screen_commanded(), 1500u);
 }

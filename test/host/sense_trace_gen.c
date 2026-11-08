@@ -7,7 +7,7 @@
  *
  * The session, in ms from its start, the clock at 20s:
  *
- *   400    `t` on the console: a trace of the servo holding the centre
+ *   400    `t` on the console: a trace of the servo holding the center
  *   900    `x`: that trace ends
  *   2000   the pulse goes from 1500 to 1800µs; a trace starts
  *   3600   to 1200µs, 5200 to 1800µs, 6800 to 1200µs: each 4s of

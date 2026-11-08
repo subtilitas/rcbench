@@ -2,7 +2,7 @@
  * @file
  * @brief The angle source of the servo runs: the AS5600's counts as they
  *        come, or the IMU's angle converted to the same counts
- *        (SERVO_ANGLE_COUNTS a turn, centre 0), so servo_test and
+ *        (SERVO_ANGLE_COUNTS a turn, center 0), so servo_test and
  *        servo_limrun read one form.  Pure C.
  * SPDX-License-Identifier: MIT
  */
@@ -35,7 +35,7 @@ typedef struct {
 
 /**
  * @brief The IMU reading as a servo_test_enc_t: raw = lround(deg x
- *        SERVO_ANGLE_COUNTS / 360) mod SERVO_ANGLE_COUNTS, centre 0; not
+ *        SERVO_ANGLE_COUNTS / 360) mod SERVO_ANGLE_COUNTS, center 0; not
  *        valid carries taken_ms and gap, no_magnet false, weak and strong
  *        false.  A valid one also carries the degrees as they came,
  *        wrapped to -180 to 180, in deg with exact set.
@@ -45,12 +45,12 @@ typedef struct {
  */
 bool servo_angle_enc(const servo_angle_in_t *in, servo_test_enc_t *out);
 
-/** @brief The centre count the source's degrees are taken from: @p enc_centre
+/** @brief The center count the source's degrees are taken from: @p enc_center
  *         for the AS5600, 0 for the IMU.
  *  @param src        The source.
- *  @param enc_centre AS5600 centre, 0 to 4095.
- *  @return the centre count. */
-uint16_t servo_angle_centre(servo_angle_src_t src, uint16_t enc_centre);
+ *  @param enc_center AS5600 center, 0 to 4095.
+ *  @return the center count. */
+uint16_t servo_angle_center(servo_angle_src_t src, uint16_t enc_center);
 
 /**
  * @brief The source's name for the report and the CSV: "AS5600", "IMU X+",

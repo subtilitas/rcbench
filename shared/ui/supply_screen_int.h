@@ -91,7 +91,7 @@
  */
 /** @brief The header's left edge: the left column's padding. */
 #define INFO_X    (LEFT_X + INNER)
-/** @brief Its top: centred on the strip's 40px. */
+/** @brief Its top: centered on the strip's 40px. */
 #define INFO_Y    (SU_STRIP_Y + (SU_STRIP_H - LINE_H) / 2)
 
 /** @brief A panel's title strip, the accent tag on its top edge, px. */

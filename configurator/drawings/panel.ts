@@ -8,7 +8,7 @@
 // Y across it.
 //
 // The configurator drawing is not to scale: its board is longer than the pad
-// rows need. The panel drawing maps every part centre between the same pads
+// rows need. The panel drawing maps every part center between the same pads
 // as in `copro.svg` and keeps the size of each part at one scale, the scale
 // across the pad rows. The parts beyond the pad rows do not fit that way and
 // carry their own placement between the rows: the USB-C socket on the end of
@@ -37,7 +37,7 @@ export type PanelPadKind = 'ground' | 'rail' | 'other' | 'gpio';
 export type PanelPad = { pad: number; kind: PanelPadKind; value: number; square: boolean; x: number; y: number };
 /**
  * One flat shape. rect and rrect: a, b = top-left corner, c, d = width, height;
- * param = corner radius of rrect. disc: a, b = centre, c = radius, d = 0.
+ * param = corner radius of rrect. disc: a, b = center, c = radius, d = 0.
  * line: a, b to c, d, param = width.
  */
 export type PanelShape = { kind: 'rect' | 'rrect' | 'disc' | 'line'; param: number; colour: string; a: number; b: number; c: number; d: number };
@@ -59,11 +59,11 @@ const { width: W, height: H, pitch: PITCH, inset: INSET, perSide: PER } = PANEL_
 export const LEAD = (W - (PER - 1) * PITCH) / 2;
 /** cmm per local unit across the board: the pad rows of both drawings line up. Every part keeps this scale. */
 export const SCALE = (H - 2 * INSET) / (RP.pads.right - RP.pads.left);
-/** cmm per local unit along the board, for part centres only. */
+/** cmm per local unit along the board, for part centers only. */
 const ALONG = PITCH / RP.pads.pitch;
 
 const round = (v: number): number => Math.round(v);
-/** Panel X of a local y and panel Y of a local x: centres between the same pads as in the SVG. */
+/** Panel X of a local y and panel Y of a local x: centers between the same pads as in the SVG. */
 export const along = (y: number): number => LEAD + (y - RP.pads.y0) * ALONG;
 export const across = (x: number): number => (H - INSET) - (x - RP.pads.left) * SCALE;
 
@@ -175,7 +175,7 @@ function terminalShapes(): PanelShape[] {
 }
 
 /**
- * The traces. Their ends follow the centre map of the parts, so a run still
+ * The traces. Their ends follow the center map of the parts, so a run still
  * ends at the parts it joins; a run that leaves the outline under the USB-C
  * socket is cut at the outline.
  */

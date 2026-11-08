@@ -84,11 +84,11 @@ extern "C" {
 #define HITEC_SES_OFF_MS_MAX 10000u
 /** @brief Bytes of an address set: one bit for each of 256 addresses. */
 #define HITEC_SES_SET_BYTES 32u
-/** @brief Lowest classic move target, 0.25us: 900us, the lowest centre
+/** @brief Lowest classic move target, 0.25us: 900us, the lowest center
  *         an edit takes. */
 #define HITEC_SES_C_MOVE_MIN 3600u
 /** @brief Highest classic move target, 0.25us: 2100us, the highest
- *         centre an edit takes. */
+ *         center an edit takes. */
 #define HITEC_SES_C_MOVE_MAX 8400u
 
 /* --- steps and results ---------------------------------------------------- */
@@ -393,7 +393,7 @@ hitec_ses_t hitec_session_leave(hitec_session_t *s);
  * tries; HITEC_SES_C_GAP_MS; with @p read_pos `65 00 00`
  * (HITEC_C_READ_POSITION), answered with the feedback potentiometer, high
  * byte first, HITEC_SES_TRIES tries.  The target is in 0.25us, as the
- * classic centre.
+ * classic center.
  *
  * A move writes no EEPROM cell and no saved register, changes nothing in
  * the image and marks no step `more`: a supply cut during a move cuts no

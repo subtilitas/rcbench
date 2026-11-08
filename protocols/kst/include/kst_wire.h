@@ -289,7 +289,7 @@ uint32_t kst_reply_window_ns(kst_expect_t expect);
  * @brief Decode a reply window.
  *
  * The decoder tracks the mid-cell edge of each of the 10 cells after the
- * start cell and re-centres on every edge it finds.  It does not classify
+ * start cell and re-centers on every edge it finds.  It does not classify
  * run lengths: the last high of a reply is stretched by the release of the
  * line.  The value after a write is not a dependable echo; the caller reads
  * the register back.

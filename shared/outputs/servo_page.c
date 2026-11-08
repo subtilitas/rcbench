@@ -214,7 +214,7 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
      * after a sweep has run out -- unwritten for OUT_DEFAULT_TIMEOUT_MS,
      * disarmed, or past its last movement -- and before the pass that ends
      * it.  Judged as that pass leaves it, the sweep has ended: its last
-     * pass has commanded the surfaces to the centre, a hold keeps no phase
+     * pass has commanded the surfaces to the center, a hold keeps no phase
      * of it, a resume is refused and a repeat does not carry it on.  A pass
      * repeated at the same time changes nothing.
      */
@@ -297,7 +297,7 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
          * drawing is an estimate without feedback.  Each write keeps it.
          * A running sweep keeps its phase for a RESUME; anything else held
          * keeps none.  A sweep that has made its movements is held at the
-         * centre its last pass commanded, the place it ends on whichever
+         * center its last pass commanded, the place it ends on whichever
          * of the hold and that pass came first.
          */
         if (!p->holding) {
@@ -330,7 +330,7 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
             p->finished = false;
         } else if (p->finished && same_curve(&cfg, &was)) {
             /* Done, and not started again; but still asked for, so the
-             * centre it ended on is kept commanded while the output slews
+             * center it ended on is kept commanded while the output slews
              * there (servo_page_step()). */
             p->regs[LINK_SV_SWEEP] = 0u;
             p->heard_ms = now_ms;
@@ -389,7 +389,7 @@ bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms)
     }
     /*
      * A sweep that has made its movements and is still being repeated holds
-     * the surfaces at the centre it ended on: stamped each pass, so a slow
+     * the surfaces at the center it ended on: stamped each pass, so a slow
      * SPEED slews them there rather than the channel's timeout dropping them
      * to rest part way.  Once the repeats stop, the channels rest as any
      * command does.
@@ -397,7 +397,7 @@ bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms)
     if (p != NULL && o != NULL && p->finished
         && outputs_role_armed(o, OUT_ROLE_SURFACE)
         && (uint32_t)(now_ms - p->heard_ms) <= OUT_DEFAULT_TIMEOUT_MS) {
-        command_surfaces(p, o, (uint16_t)SWEEP_CENTRE, now_ms);
+        command_surfaces(p, o, (uint16_t)SWEEP_CENTER, now_ms);
     }
     if (p == NULL || o == NULL || !p->sweep.running) {
         if (p != NULL) {
@@ -417,11 +417,11 @@ bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms)
         p->regs[LINK_SV_SWEEP] = 0u;
         return false;
     }
-    uint16_t cmd = (uint16_t)SWEEP_CENTRE;
+    uint16_t cmd = (uint16_t)SWEEP_CENTER;
     const bool running = sweep_step(&p->sweep, now_ms, &cmd);
     const uint32_t done = sweep_moves(&p->sweep, now_ms);
     p->regs[LINK_SV_SWEEP_DONE] = (done > 0xFFFFu) ? 0xFFFFu : (uint16_t)done;
-    /* The last pass puts the surfaces at the centre the sweep ends on. */
+    /* The last pass puts the surfaces at the center the sweep ends on. */
     command_surfaces(p, o, cmd, now_ms);
     if (!running) {
         p->regs[LINK_SV_SWEEP] = 0u;

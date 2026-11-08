@@ -57,7 +57,7 @@ static gfx_color_t px_at(int x, int y)
     return s_px[(size_t)y * W + (size_t)x];
 }
 
-/* The hinge at the area's centre, (523, 416); the flap half of 152px less
+/* The hinge at the area's center, (523, 416); the flap half of 152px less
  * 14px, 62px; the fixed surface 1.15 x that, 71.3px. */
 TEST_CASE(the_places_follow_the_area)
 {
@@ -369,7 +369,7 @@ TEST_CASE(the_ticks_mark_0_30_60_and_90_degrees_either_side)
         rudder_flap_at(&f, (float)d, r, &x, &y);
         const bool tick = (d % 30) == 0;
         const gfx_color_t px = px_at((int)lroundf(x), (int)lroundf(y));
-        /* A 1.5px tick on a slant blends its centre pixel. */
+        /* A 1.5px tick on a slant blends its center pixel. */
         if ((px != ui_theme_color(UI_C_PANEL)) != tick) {
             T_FAIL("at %d° the pixel is %04x", d, (unsigned)px);
         }

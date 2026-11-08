@@ -1,12 +1,12 @@
 /**
  * @file
  * @brief The angle source of the servo runs: the IMU's angle as AS5600
- *        counts, the centre each source's degrees are taken from, and the
+ *        counts, the center each source's degrees are taken from, and the
  *        source's name.
  *
  * The servo test and the limit run judge moves in counts of the AS5600
  * (SERVO_TEST_ENC_TOL_COUNTS, servo_test.h).  An IMU angle is carried in the
- * same form: 360 / 4096 = 0.088° a count, centre 0, so its degrees from the
+ * same form: 360 / 4096 = 0.088° a count, center 0, so its degrees from the
  * zero the IMU took are the counts from count 0.
  *
  * SPDX-License-Identifier: MIT
@@ -51,9 +51,9 @@ bool servo_angle_enc(const servo_angle_in_t *in, servo_test_enc_t *out)
     return true;
 }
 
-uint16_t servo_angle_centre(servo_angle_src_t src, uint16_t enc_centre)
+uint16_t servo_angle_center(servo_angle_src_t src, uint16_t enc_center)
 {
-    return (src == SERVO_ANGLE_IMU) ? 0u : enc_centre;
+    return (src == SERVO_ANGLE_IMU) ? 0u : enc_center;
 }
 
 const char *servo_angle_name(servo_angle_src_t src, uint8_t axis, bool neg,

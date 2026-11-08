@@ -2,16 +2,16 @@
  * @file test_servo_lists_rows.c
  * @brief The rows of SERVO's SETTINGS lists as the list reads them: the
  *        hub's profile keys and FRAME RATE's list, RESET, RUDDER's ENC
- *        CENTRE and ANGLE SOURCE, RUDDER AUTO's SERVO and SERVO PULSES
+ *        CENTER and ANGLE SOURCE, RUDDER AUTO's SERVO and SERVO PULSES
  *        with the reason each gives while it takes no press, and a list
  *        refused at the hub.
  *
  * Cases:
- * - the_hubs_keys_step_centre_max_travel_and_hv
- * - pulse_min_steps_10_us_and_stops_50_us_under_centre
+ * - the_hubs_keys_step_center_max_travel_and_hv
+ * - pulse_min_steps_10_us_and_stops_50_us_under_center
  * - the_rate_list_marks_the_rate_in_force
  * - reset_on_the_hub_puts_the_profile_back
- * - enc_centre_takes_the_live_count_of_an_as5600_only
+ * - enc_center_takes_the_live_count_of_an_as5600_only
  * - angle_source_names_the_source_in_force
  * - servo_family_steps_on_the_programming_port_only
  * - servo_pulses_name_their_reason_until_a_pd_mini_feeds
@@ -52,18 +52,18 @@ static const char *why_of(int i)
 }
 
 /* One step on each key of the profile's list moves its value by the row's
- * step, the keys of TRAVEL and PULSE CENTRE and MAX at 5 degrees and 10us,
+ * step, the keys of TRAVEL and PULSE CENTER and MAX at 5 degrees and 10us,
  * and the two switches flip. */
-TEST_CASE(the_hubs_keys_step_centre_max_travel_and_hv)
+TEST_CASE(the_hubs_keys_step_center_max_travel_and_hv)
 {
     fresh();
     open_settings();
-    CHECK_STR_EQ(value_of(HL_CENTRE), "1500us");
-    sl_step(HL_CENTRE, +1);
-    CHECK_STR_EQ(value_of(HL_CENTRE), "1510us");
-    sl_step(HL_CENTRE, -1);
-    sl_step(HL_CENTRE, -1);
-    CHECK_STR_EQ(value_of(HL_CENTRE), "1490us");
+    CHECK_STR_EQ(value_of(HL_CENTER), "1500us");
+    sl_step(HL_CENTER, +1);
+    CHECK_STR_EQ(value_of(HL_CENTER), "1510us");
+    sl_step(HL_CENTER, -1);
+    sl_step(HL_CENTER, -1);
+    CHECK_STR_EQ(value_of(HL_CENTER), "1490us");
 
     CHECK_STR_EQ(value_of(HL_MAX), "2000us");
     sl_step(HL_MAX, -1);
@@ -83,8 +83,8 @@ TEST_CASE(the_hubs_keys_step_centre_max_travel_and_hv)
 }
 
 /* PULSE MIN's key steps 10us either way and stops 50us under PULSE
- * CENTRE, as its keypad's range does. */
-TEST_CASE(pulse_min_steps_10_us_and_stops_50_us_under_centre)
+ * CENTER, as its keypad's range does. */
+TEST_CASE(pulse_min_steps_10_us_and_stops_50_us_under_center)
 {
     fresh();
     open_settings();
@@ -150,7 +150,7 @@ TEST_CASE(reset_on_the_hub_puts_the_profile_back)
     sl_step(HL_TRAVEL, -1);
     sl_step(HL_REVERSE, +1);
     sl_step(HL_HV, +1);
-    sl_step(HL_CENTRE, +1);
+    sl_step(HL_CENTER, +1);
     CHECK_STR_EQ(value_of(HL_TRIM), "+5");
     CHECK_STR_EQ(value_of(HL_TRAVEL), "+/-85");
     CHECK(strcmp(value_of(HL_REVERSE), rev0) != 0);
@@ -164,7 +164,7 @@ TEST_CASE(reset_on_the_hub_puts_the_profile_back)
     CHECK_STR_EQ(value_of(HL_TRAVEL), "+/-90");
     CHECK_STR_EQ(value_of(HL_REVERSE), rev0);
     CHECK_STR_EQ(value_of(HL_HV), hv0);
-    CHECK_STR_EQ(value_of(HL_CENTRE), "1500us");
+    CHECK_STR_EQ(value_of(HL_CENTER), "1500us");
     settings_cancel_save();
 }
 
@@ -181,15 +181,15 @@ static void encoder(int raw)
     }
 }
 
-/* RUDDER's ENC CENTRE shows the stored count.  With no reading, or with the
+/* RUDDER's ENC CENTER shows the stored count.  With no reading, or with the
  * IMU as the source, it names why it takes no tap and a tap keeps the
  * count; with an AS5600 reading on show a tap stores that count. */
-TEST_CASE(enc_centre_takes_the_live_count_of_an_as5600_only)
+TEST_CASE(enc_center_takes_the_live_count_of_an_as5600_only)
 {
     enum { ENC = 1 };
     fresh();
     settings_set(SET_ENC_EN, 1.0f);
-    settings_set(SET_ENC_CENTRE, 2048.0f);
+    settings_set(SET_ENC_CENTER, 2048.0f);
     encoder(-1);
     go(SERVO_FN_RUDDER);
     tap_settings();
@@ -197,19 +197,19 @@ TEST_CASE(enc_centre_takes_the_live_count_of_an_as5600_only)
     CHECK_STR_EQ(value_of(ENC), "2048");
     CHECK_STR_EQ(why_of(ENC), ui_tr(TX_SVL_ENC_NO_READING));
     sl_tap(ENC);
-    CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 2048);
+    CHECK_EQ(settings_get_int(SET_ENC_CENTER), 2048);
 
     encoder(2100);
     CHECK_STR_EQ(why_of(ENC), "");
     sl_tap(ENC);
-    CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 2100);
+    CHECK_EQ(settings_get_int(SET_ENC_CENTER), 2100);
     CHECK_STR_EQ(value_of(ENC), "2100");
 
     settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_IMU);
     encoder(2200);
-    CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 2100);
+    CHECK_EQ(settings_get_int(SET_ENC_CENTER), 2100);
     sl_tap(ENC);
-    CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 2100);
+    CHECK_EQ(settings_get_int(SET_ENC_CENTER), 2100);
     settings_cancel_save();
 }
 
@@ -331,11 +331,11 @@ TEST_CASE(the_servos_name_takes_the_name_keyboard)
 
 int main(void)
 {
-    RUN(the_hubs_keys_step_centre_max_travel_and_hv);
-    RUN(pulse_min_steps_10_us_and_stops_50_us_under_centre);
+    RUN(the_hubs_keys_step_center_max_travel_and_hv);
+    RUN(pulse_min_steps_10_us_and_stops_50_us_under_center);
     RUN(the_rate_list_marks_the_rate_in_force);
     RUN(reset_on_the_hub_puts_the_profile_back);
-    RUN(enc_centre_takes_the_live_count_of_an_as5600_only);
+    RUN(enc_center_takes_the_live_count_of_an_as5600_only);
     RUN(angle_source_names_the_source_in_force);
     RUN(servo_family_steps_on_the_programming_port_only);
     RUN(servo_pulses_name_their_reason_until_a_pd_mini_feeds);

@@ -137,7 +137,7 @@ void hpn_page_move(void)
     hpn_page_add(HITEC_PROG_INFO, line);
     hpn_page_add(HITEC_PROG_INFO, TR(HP_MOVE_6));
     hpn_page_rules((uint16_t)(HITEC_RULE_BIT(HITEC_RULE_END)
-                              | HITEC_RULE_BIT(HITEC_RULE_CENTRE)));
+                              | HITEC_RULE_BIT(HITEC_RULE_CENTER)));
 }
 
 void hpn_move_act(void)
@@ -228,7 +228,7 @@ void hpn_find_act(bool right)
 
 /**
  * @brief "+64.6°": a D position in degrees, 220deg over 16383 counts,
- *        8192 the centre, to a tenth.
+ *        8192 the center, to a tenth.
  * @param pos the position
  * @param out the text
  * @param n   bytes at @p out

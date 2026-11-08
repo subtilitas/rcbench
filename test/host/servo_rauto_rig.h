@@ -4,7 +4,7 @@
  *
  * The rig: a surface on a servo whose deflection at 1000us and at 2000us
  * is linear in the register that moves that side (map[]), dir[] giving
- * each side's sign; between the end pulses and PULSE CENTRE the deflection
+ * each side's sign; between the end pulses and PULSE CENTER the deflection
  * is linear in the pulse.  The surface travels at 200°/s and is still once
  * it moved less than 0.5° for a time, as the IMU path counts still_ms.  A
  * bind on a side holds the surface at that deflection and the servo then
@@ -26,7 +26,7 @@
 
 #include "servo_rudder_auto.h"
 
-#define RCENTRE 1500u
+#define RCENTER 1500u
 
 enum { OP_NONE = 0, OP_CONNECT, OP_WRITE, OP_PULSES, OP_LEAVE };
 
@@ -115,10 +115,10 @@ static inline float rig_target(uint16_t us)
     if (us >= 2000u) {
         return e[1];
     }
-    if (us <= RCENTRE) {
-        return e[0] * (float)(RCENTRE - us) / (float)(RCENTRE - 1000u);
+    if (us <= RCENTER) {
+        return e[0] * (float)(RCENTER - us) / (float)(RCENTER - 1000u);
     }
-    return e[1] * (float)(us - RCENTRE) / (float)(2000u - RCENTRE);
+    return e[1] * (float)(us - RCENTER) / (float)(2000u - RCENTER);
 }
 
 static inline void rig_init(uint32_t t0)
@@ -137,7 +137,7 @@ static inline void rig_init(uint32_t t0)
     g.dir[1] = 1.0f;
     g.gain = 0.2f;               /* 150 counts: 30° */
     g.resp = 1.0f;
-    g.cmd = RCENTRE;
+    g.cmd = RCENTER;
     g.live = true;
     g.bench_to = -1;
     g.bench_ms = 20u;
@@ -156,7 +156,7 @@ static inline void rig_init(uint32_t t0)
     g.cfg.margin_pct = 10u;
     g.cfg.tol_ddeg = 5u;
     g.cfg.family = SERVO_RAUTO_FAM_KST;
-    g.cfg.centre_us = RCENTRE;
+    g.cfg.center_us = RCENTER;
     snprintf(g.cfg.dut, sizeof(g.cfg.dut), "%s", "AILERON L");
     snprintf(g.cfg.type, sizeof(g.cfg.type), "%s", "DIGITAL");
     snprintf(g.cfg.output, sizeof(g.cfg.output), "%s", "PROG PORT 1 GPIO 13");
@@ -359,7 +359,7 @@ static inline void take(const servo_rauto_do_t *d)
 {
     if (d->command) {
         g.cmd = d->cmd_us;
-        if (g.cmd != RCENTRE && !g.driven) {
+        if (g.cmd != RCENTER && !g.driven) {
             g.driven = true;
             g.pulses_before_drive = g.pulse_ops > 0u;
         }

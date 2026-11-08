@@ -28,7 +28,7 @@
 #define FRAME_MS 20u            /* the panel's loop, about 50 frames a second */
 #define LO_US    1100u
 #define HI_US    1900u
-#define CENTRE   1500u
+#define CENTER   1500u
 
 /* The servo, the supply and the run, stepped together. */
 typedef struct {
@@ -60,7 +60,7 @@ typedef struct {
     bool     released;
     bool     off_asked;
     /* The output encoder: the horn's angle at enc_deg_per_us from 1500us,
-     * read from a count with its centre at ENC_CENTRE_COUNT, every
+     * read from a count with its center at ENC_CENTER_COUNT, every
      * enc_every ms, with the IOmcu's still time (a 12-count anchor)
      * kept at the frame rate. */
     bool     enc_model_on;
@@ -92,7 +92,7 @@ typedef struct {
 
 static rig_t g;
 
-#define ENC_CENTRE_COUNT 3000u
+#define ENC_CENTER_COUNT 3000u
 #define ENC_DEG_PER_US   0.09f      /* 90 degrees across 1000us */
 
 static inline void cfg_defaults(servo_test_cfg_t *c)
@@ -103,7 +103,7 @@ static inline void cfg_defaults(servo_test_cfg_t *c)
     c->step_count = 2u;
     c->brownout   = false;
     c->i_limit    = 3.0f;
-    c->centre_us  = CENTRE;
+    c->center_us  = CENTER;
     c->end_lo_us  = LO_US;
     c->end_hi_us  = HI_US;
     c->settle_ms  = 500u;
@@ -134,11 +134,11 @@ static inline void rig_fresh(void)
     sc.stop_lo_us = 1000u;
     sc.stop_hi_us = 2000u;
     servo_sim_init(&g.servo, &sc);
-    g.servo.position_us = (float)CENTRE;
+    g.servo.position_us = (float)CENTER;
     supply_sim_init(&g.sup);
     supply_sim_set(&g.sup, 6.0f, 2.0f);
     g.now = 1000u;
-    g.cmd_us = CENTRE;
+    g.cmd_us = CENTER;
     g.armed = true;
     g.v_min = 3.3f;
     g.v_max = 21.0f;
@@ -266,7 +266,7 @@ static inline void enc_model(void)
     const int counts = (int)lroundf(deg * 4096.0f / 360.0f);
     const int flutter = (g.enc_sent & 1u) ? g.enc_flutter : -g.enc_flutter;
     const int by_move = ((g.cmds >> 1) & 1u) ? g.enc_by_move : -g.enc_by_move;
-    const uint16_t raw = (uint16_t)((counts + (int)ENC_CENTRE_COUNT + flutter
+    const uint16_t raw = (uint16_t)((counts + (int)ENC_CENTER_COUNT + flutter
                                      + by_move) & 4095);
     int d = (int)raw - (int)g.enc_anchor;
     d = ((d + 2048) & 4095) - 2048;
@@ -338,7 +338,7 @@ static inline void frame(void)
     }
     if (d.release) {
         g.released = true;
-        g.cmd_us = CENTRE;
+        g.cmd_us = CENTER;
     }
     if (g.drain) {
         drain();

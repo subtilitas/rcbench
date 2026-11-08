@@ -213,7 +213,7 @@ const char *lim_write_why(void)
 static void lim_cfg(servo_limrun_cfg_t *c)
 {
     memset(c, 0, sizeof(*c));
-    c->centre_us = s.centre_us;
+    c->center_us = s.center_us;
     c->min_us    = s.min_us;
     c->max_us    = s.max_us;
     c->read       = lim_reads();

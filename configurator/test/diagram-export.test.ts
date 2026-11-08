@@ -82,7 +82,7 @@ test('the export form draws a load wire 7 px wide, every other wire 3 px, plus r
 });
 
 test('the export form of a diagram without a part or with a part without a drawing record is valid markup', () => {
-  const empty = exportSvg({ w: 10, h: 10, parts: [], wires: [], undrawn: [], columns: [], centre: 0, clashes: [] }, 'en', new Map());
+  const empty = exportSvg({ w: 10, h: 10, parts: [], wires: [], undrawn: [], columns: [], center: 0, clashes: [] }, 'en', new Map());
   assert.equal(empty, '<svg viewBox="0 0 10 10" width="10" height="10"><g></g><g></g></svg>');
   assert.equal(paintSvg(empty, css(), fonts()).texts.length, 0);
   const d = diagramOf(sceneOf(SMALLEST.setup, ANCHORS));

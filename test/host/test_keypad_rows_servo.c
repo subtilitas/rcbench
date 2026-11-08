@@ -12,7 +12,7 @@
  *
  * STANDARD PWM at its defaults: 1000, 1500 and 2000us at 50Hz.  The
  * pulse rows' ranges follow from those (servo_settings_panel.c): an end
- * at least 50us from the centre and the command's range inside 400 to
+ * at least 50us from the center and the command's range inside 400 to
  * 2500us; the CUSTOM rate up to 1,000,000 / (2000 + 1000)us = 333Hz.
  *
  * SPDX-License-Identifier: MIT
@@ -43,7 +43,7 @@ typedef struct {
 /** @brief The rows, in the order of the table in the case. */
 static const where_t k_where[] = {
     { AT_OUTPUT, 0, HL_MIN },              /* PULSE MIN     */
-    { AT_OUTPUT, 0, HL_CENTRE },           /* PULSE CENTRE  */
+    { AT_OUTPUT, 0, HL_CENTER },           /* PULSE CENTER  */
     { AT_OUTPUT, 0, HL_MAX },              /* PULSE MAX     */
     { AT_OUTPUT, 0, HL_TRIM },             /* TRIM          */
     { AT_OUTPUT, 0, HL_TRAVEL },           /* TRAVEL        */
@@ -118,7 +118,7 @@ TEST_CASE(every_servo_keypad_takes_ok_and_refuses_and_cancels)
 {
     kpr_row_t rows[ROW_COUNT] = {
         { "min", TR(SV_ROW_MIN), "us", 500.0f, 1450.0f, 0, 1200.0f },
-        { "centre", TR(SV_ROW_CENTRE), "us", 1200.0f, 1750.0f, 0, 1550.0f },
+        { "center", TR(SV_ROW_CENTER), "us", 1200.0f, 1750.0f, 0, 1550.0f },
         { "max", TR(SV_ROW_MAX), "us", 1550.0f, 2500.0f, 0, 2200.0f },
         { "trim", TR(SV_ROW_TRIM), "us", -200.0f, 200.0f, 0, 35.0f },
         { "travel", TR(SV_ROW_TRAVEL), "deg", 10.0f, 90.0f, 0, 60.0f },

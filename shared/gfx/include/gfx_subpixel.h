@@ -6,7 +6,7 @@
  * The whole-pixel shapes of gfx.h jump a pixel at a time when the thing
  * they draw moves: a servo horn turning by a tenth of a degree moves its tip
  * by a sixth of a pixel and is drawn where it was, then a pixel further.
- * These take their centres, ends, radii and widths as floats and blend
+ * These take their centers, ends, radii and widths as floats and blend
  * their edge pixels from the exact distance, so a shape that moves by a
  * tenth of a pixel changes its edge pixels' coverage by about a tenth.  At
  * whole numbers the disc and the capsule give the same pixels as
@@ -26,11 +26,11 @@ extern "C" {
 #endif
 
 /**
- * @brief A disc of radius @p r centred on (@p cx, @p cy), anti-aliased from
- *        each pixel's distance to the centre.
+ * @brief A disc of radius @p r centered on (@p cx, @p cy), anti-aliased from
+ *        each pixel's distance to the center.
  * @param c the canvas
- * @param cx the centre's column, px
- * @param cy the centre's row, px
+ * @param cx the center's column, px
+ * @param cy the center's row, px
  * @param r the radius, px; 0 or less draws nothing
  * @param col the colour
  */
@@ -54,16 +54,16 @@ void gfx_capsule_aaf(gfx_canvas_t *c, float ax, float ay, float bx, float by,
 
 /**
  * @brief A ring, or an arc of one, solved per pixel from its distance and
- *        direction to the centre.
+ *        direction to the center.
  *
  * gfx_arc_fade() walks its arc and rounds each step to a pixel.  This one
  * blends the band's two edges and the arc's two ends over half a pixel
  * either side, the ends measured along the arc at each pixel's radius.  A
- * span of 360deg or more is the whole ring.  A pixel whose centre lies
+ * span of 360deg or more is the whole ring.  A pixel whose center lies
  * half a pixel or more beyond the band or past an end is not touched.
  * @param c the canvas
- * @param cx the centre's column, px
- * @param cy the centre's row, px
+ * @param cx the center's column, px
+ * @param cy the center's row, px
  * @param r the band's middle radius, px
  * @param thickness the band's width, px
  * @param a0_deg one end, degrees counter-clockwise from +x (90 is up)

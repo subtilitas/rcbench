@@ -169,7 +169,7 @@ function assertInvariants(catalogue: Catalogue, selection: Selection): Setup {
   const through = numbers.has(5) && numbers.has(6);
   assert.ok(direct !== through && numbers.has(5) === numbers.has(6), `heartbeat wires 4, 5, 6 for ${where}`);
 
-  // 21: the centre wire of the ESC, and one power wire per supply pin.
+  // 21: the center wire of the ESC, and one power wire per supply pin.
   const power = (end: string): number =>
     setup.wires.filter((w) => w.cls === 'power' && (w.a === end || w.b === end)).length;
   if (present.has('esc')) {
@@ -391,7 +391,7 @@ test('the sweep reports the DC supply of the Osoyoo breakout board outside the s
   failsSweep((c) => { c.wires = c.wires.filter((w) => w.n !== 65); }, /wires 65 and 66 for /);
 });
 
-test('the sweep reports a second power wire on a supply pin and a missing centre wire', () => {
+test('the sweep reports a second power wire on a supply pin and a missing center wire', () => {
   failsSweep((c) => { c.wires[13]!.when = { has: 'esc' }; }, /esc\.POS/);
   failsSweep((c) => { c.wires[12]!.when = { all: [{ has: 'esc' }, { has: 'sim' }] }; }, /wire 13 is missing/);
 });

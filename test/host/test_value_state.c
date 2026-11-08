@@ -501,7 +501,7 @@ TEST_CASE(motor_a_late_callback_changes_nothing)
 
 #define SHAFT_X     SV_SHAFT_X
 #define SHAFT_Y     P(SV_SHAFT_Y)
-#define CENTRE_X    SV_CENTRE_X
+#define CENTER_X    SV_CENTER_X
 #define SWEEP_X     SV_SWEEP_X
 #define RELEASE_X   SV_RELEASE_X
 #define BTN_Y       P(SV_BTN_Y)
@@ -511,11 +511,11 @@ TEST_CASE(motor_a_late_callback_changes_nothing)
 /* ARM FIRST, under the horn's angle at the top of the left card. */
 #define S_HINT_Y    P(SV_HINT_Y + 10)
 
-enum { SC_DIAL = 0, SC_KNOB, SC_CENTRE, SC_SWEEP, SC_HOOK, SC_RELEASE,
+enum { SC_DIAL = 0, SC_KNOB, SC_CENTER, SC_SWEEP, SC_HOOK, SC_RELEASE,
        SC_COUNT };
 
 #define S_BIT(k) (1u << (unsigned)(k))
-#define S_DRIVES (S_BIT(SERVO_CMD_POSITION) | S_BIT(SERVO_CMD_CENTRE) \
+#define S_DRIVES (S_BIT(SERVO_CMD_POSITION) | S_BIT(SERVO_CMD_CENTER) \
                   | S_BIT(SERVO_CMD_SWEEP) | S_BIT(SERVO_CMD_HOLD))
 
 static servo_cmd_t s_took(void)
@@ -635,29 +635,29 @@ static void s_input(int control)
         feed_tap(FEED_LONE, x, y);
         break;
     case SC_KNOB:    s_knob(0.1f); break;
-    case SC_CENTRE:  feed_tap(FEED_LONE, CENTRE_X, BTN_Y); break;
+    case SC_CENTER:  feed_tap(FEED_LONE, CENTER_X, BTN_Y); break;
     case SC_SWEEP:   feed_tap(FEED_LONE, SWEEP_X, BTN_Y); break;
     case SC_HOOK:    servo_screen_set_commanded(25.0f); break;
     default:         feed_tap(FEED_LONE, RELEASE_X, BTN_Y); break;
     }
 }
 
-/* The dimming as drawn: CENTRE in the accent and no ARM FIRST on the left
- * card, or CENTRE dimmed with the line.  SWEEP's screen has SWEEP in
- * CENTRE's place, red as PAUSE once it sweeps: its horn says it. */
+/* The dimming as drawn: CENTER in the accent and no ARM FIRST on the left
+ * card, or CENTER dimmed with the line.  SWEEP's screen has SWEEP in
+ * CENTER's place, red as PAUSE once it sweeps: its horn says it. */
 static bool s_drawn_live(void)
 {
     picture(fb);
     return (s_screen == SCREEN_SERVO_SWEEP
                 ? px(SHAFT_X + 22, SHAFT_Y) == ui_theme_color(UI_C_ACCENT)
-                : px(CENTRE_X - 36, BTN_Y - 10) == ui_theme_color(UI_C_OK))
+                : px(CENTER_X - 36, BTN_Y - 10) == ui_theme_color(UI_C_OK))
            && count_px(52, 200, S_HINT_Y, ui_theme_color(UI_C_WARN)) == 0;
 }
 
 static bool s_drawn_refused(void)
 {
     picture(fb);
-    return px(CENTRE_X - 36, BTN_Y - 10) != ui_theme_color(UI_C_OK)
+    return px(CENTER_X - 36, BTN_Y - 10) != ui_theme_color(UI_C_OK)
            && px(SHAFT_X + 22, SHAFT_Y) != ui_theme_color(UI_C_ACCENT)
            && count_px(52, 200, S_HINT_Y, ui_theme_color(UI_C_WARN)) > 0;
 }
@@ -672,7 +672,7 @@ static bool s_drawn_refused(void)
 TEST_CASE(servo_an_input_is_taken_only_in_live)
 {
     static const servo_cmd_kind_t posts[SC_COUNT] = {
-        SERVO_CMD_POSITION, SERVO_CMD_POSITION, SERVO_CMD_CENTRE,
+        SERVO_CMD_POSITION, SERVO_CMD_POSITION, SERVO_CMD_CENTER,
         SERVO_CMD_SWEEP, SERVO_CMD_POSITION, SERVO_CMD_RELEASE,
     };
     for (int st = 0; st < ST_COUNT; ++st) {
@@ -709,7 +709,7 @@ TEST_CASE(servo_an_input_is_taken_only_in_live)
                 case SC_SWEEP:
                     CHECK(servo_screen_sweeping());
                     break;
-                default:        /* CENTRE and RELEASE */
+                default:        /* CENTER and RELEASE */
                     CHECK_EQ(servo_screen_commanded(), 1500);
                     break;
                 }
@@ -740,7 +740,7 @@ TEST_CASE(servo_an_input_is_taken_only_in_live)
 }
 
 /* What owns the value on a live bench. */
-enum { OWN_DRAG = 0, OWN_KNOB, OWN_CENTRE, OWN_SWEEP_ASKED, OWN_SWEEP,
+enum { OWN_DRAG = 0, OWN_KNOB, OWN_CENTER, OWN_SWEEP_ASKED, OWN_SWEEP,
        OWN_PAUSE, OWN_HELD, OWN_COUNT };
 
 /* The owner made active; the value the edge has to leave on the screen. */
@@ -761,8 +761,8 @@ static uint16_t s_activate(int owner, uint16_t *pause_seq)
         /* Withdrawn at the edge with the value it replaced. */
         s_knob(0.1f);
         return driven;
-    case OWN_CENTRE:
-        feed_tap(FEED_LONE, CENTRE_X, BTN_Y);
+    case OWN_CENTER:
+        feed_tap(FEED_LONE, CENTER_X, BTN_Y);
         return servo_screen_commanded();
     case OWN_SWEEP_ASKED:
         feed_tap(FEED_LONE, SWEEP_X, BTN_Y);
@@ -787,7 +787,7 @@ static uint16_t s_activate(int owner, uint16_t *pause_seq)
 
 /*
  * The edge out of LIVE while something owns the value: a drag, the knob's
- * command, CENTRE's, a sweep asked for, running or paused, a held
+ * command, CENTER's, a sweep asked for, running or paused, a held
  * position.  The owner ends at the edge: nothing that drives is posted
  * from it on -- not by a frame, the finger's travel, a tap on the sweep
  * button, a change of SPEED, or the panel's late notifications -- and the

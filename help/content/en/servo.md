@@ -20,7 +20,7 @@ The hub holds eight tiles, each opening a screen of its own:
 | SWEEP | the dial with SWEEP; its list sets CURVE, SPEED and RANGE ([Servo settings](servo-settings.md)) |
 | TEST | the AUTOMATIC TEST card with a summary line, the last result and its file; SUPPLY's caps, read-only; the rail's plot and the run's box under them; the READY card and HOLD 2s: ARM + START |
 | LIMIT RUN | the ends the last run found, its state lines, the READY card and HOLD 2s: ARM + START |
-| RUDDER | the control surface's deflection in ° and mm, LENGTH, the buttons 1000us, CENTRE and 2000us, ZERO and RESET MAX ([Rudder deflection](servo-rudder.md)) |
+| RUDDER | the control surface's deflection in ° and mm, LENGTH, the buttons 1000us, CENTER and 2000us, ZERO and RESET MAX ([Rudder deflection](servo-rudder.md)) |
 | RUDDER AUTO | AUTO's box, which programs KST, Chaservo or Hitec end points to the deflection entered |
 | KST, HITEC | the programmer for that make, over the left card ([Servo programmer](servo-programmer.md)) |
 
@@ -52,7 +52,7 @@ LIVE's right card, from the top:
 | READY | one row per check: PORT, SUPPLY and ARM; RUDDER adds ANGLE and ZERO |
 | SPEED | the rate the bench may move the output, 100% passes the command straight through |
 | type pill | the servo type, frame rate and pulse range in force: `STANDARD PWM  50Hz  1000-2000` |
-| CENTRE, RELEASE | SWEEP shows SWEEP and RELEASE |
+| CENTER, RELEASE | SWEEP shows SWEEP and RELEASE |
 | rail line | the servo rail's meter on the left, its volts and amps on the right: `6.00V  0.120A` |
 
 A READY row's dot and state are green when met, amber when ARM does it or it needs a look, and red when it refuses ARM. A tap fixes the row where it can, or names it in the alert band.
@@ -84,7 +84,7 @@ ARMED SERVO drives the servo outputs and a pulsing PROG PORT. Throttle outputs g
 |---|---|---|
 | The dial | refused | commands the position under the finger |
 | Rotary knob | refused; the turn is not kept | moves the horn from the commanded value |
-| CENTRE | refused; drawn dimmed | commands PULSE CENTRE plus TRIM |
+| CENTER | refused; drawn dimmed | commands PULSE CENTER plus TRIM |
 | SWEEP, PAUSE, PAUSED | refused; drawn dimmed | starts, pauses and resumes the sweep |
 | RELEASE | sends the release | returns the surfaces to their rest: 1500us for STANDARD PWM, 760us for NARROW 760 |
 | SPEED | set | set; a held position is sent again at the new rate |
@@ -143,7 +143,7 @@ SWEEP follows the CURVE on the SWEEP screen's SETTINGS list (square, sine or tri
 
 `SPEED LIMITS THE SWEEP` replaces SPEED's label, in the warning colour, while SPEED is slower than the fastest change the curve asks for. The curve then moves as ramps. Raise SPEED, or lower SETTINGS > SWEEP's SPEED or RANGE. With the SWEEP page's defaults (sine, 0.5Hz, RANGE 80%) and TRAVEL 90° each way it clears at SPEED 63%.
 
-A finger on the dial, CENTRE, RELEASE, STOP, a switch to SAFE and leaving the screen end a sweep.
+A finger on the dial, CENTER, RELEASE, STOP, a switch to SAFE and leaving the screen end a sweep.
 
 ## The automatic test
 
@@ -159,7 +159,7 @@ The summary line shows the voltage steps and duration, such as `4.8V, 6.0V, BROW
 
 TEST remains visible when the run begins, with the current step on its status line. A box under the card shows step and phase. Beside its STOP TEST it identifies the meter: `PD mini`, an INA channel such as `INA 0x41 CH2`, or `SIMULATION`.
 
-The run ends early with the output off and servo released on STOP TEST (the footer's slot during the run, or the run's box), STOP, SAFE, link loss, leaving the screen, touching the dial, CENTRE, SWEEP, RELEASE, tapping a set point or changing servo settings. An INA3221 run also ends if that sensor ceases to be the meter or no window containing both current and voltage arrives for 200ms (4 windows of 50ms): `no INA3221 window for 0.2s`. Those windows supply the STALL AT protection, so the run cannot continue through that gap.
+The run ends early with the output off and servo released on STOP TEST (the footer's slot during the run, or the run's box), STOP, SAFE, link loss, leaving the screen, touching the dial, CENTER, SWEEP, RELEASE, tapping a set point or changing servo settings. An INA3221 run also ends if that sensor ceases to be the meter or no window containing both current and voltage arrives for 200ms (4 windows of 50ms): `no INA3221 window for 0.2s`. Those windows supply the STALL AT protection, so the run cannot continue through that gap.
 
 When the AS5600 is used from the start, the run tolerates one encoder outage of up to 300ms within 10s. High-current motor or ESC runs, or plugging a part in during a run, can disturb the sensor bus. Angles are not evaluated during the gap. The report records it, for example `AS5600 gaps: 1, longest 120ms. ...`, and the CSV column `angle gap (ms)` gives its duration.
 
@@ -202,19 +202,19 @@ The run reads only the INA3221 channel that watches the tester's target. While o
 | PORT PWM | `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS` | PORT is PROG PORT with PORT PWM off, the bench ARMED |
 | PORT PWM | `PORT PWM OFF: SWITCH IT ON IN OUTPUTS` | the same while SAFE. Amber: the hold switches it on |
 | PORT PWM | `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` | PORT is PROG PORT with PORT PWM on and its pulse still off. Amber while SAFE: the read-back waits for it |
-| RANGE | `CENTRE MUST BE BETWEEN PULSE MIN AND MAX` | the pulse range does not hold PULSE CENTRE |
+| RANGE | `CENTER MUST BE BETWEEN PULSE MIN AND MAX` | the pulse range does not hold PULSE CENTER |
 | ARM | `REPORT STILL BEING WRITTEN` | a test or a run is under way, or its report is still going to the card |
 
 ### The search
 
-The search moves outward from centre, low side first, in 10us steps. Each position lasts 250ms: 120ms settling time, followed by averaging the next windows. Binding is detected when current is both above 1.8 times the free-running current and at least 0.15A higher. The reported end point is 25us before that position. The bench's PULSE MIN and PULSE MAX remain unchanged.
+The search moves outward from center, low side first, in 10us steps. Each position lasts 250ms: 120ms settling time, followed by averaging the next windows. Binding is detected when current is both above 1.8 times the free-running current and at least 0.15A higher. The reported end point is 25us before that position. The bench's PULSE MIN and PULSE MAX remain unchanged.
 
 | PORT | Search |
 |---|---|
-| a SERVO PWM pin | from PULSE CENTRE out to PULSE MIN and PULSE MAX; nothing is read or written |
+| a SERVO PWM pin | from PULSE CENTER out to PULSE MIN and PULSE MAX; nothing is read or written |
 | PROG PORT | a read session first, then from the servo's NEUTRAL out to its own PULSE LOWER and PULSE UPPER, never past them |
 
-For a programming-port search, the read session holds PULSE CENTRE, switches to SAFE, reads with CONNECT, returns the port with LEAVE and switches back to ARMED. No search movement occurs before this session. For KST/Chaservo, the run fails before searching if:
+For a programming-port search, the read session holds PULSE CENTER, switches to SAFE, reads with CONNECT, returns the port with LEAVE and switches back to ARMED. No search movement occurs before this session. For KST/Chaservo, the run fails before searching if:
 
 - no KST or Chaservo servo is read (`no KST or Chaservo servo read`): search a servo that is no KST or Chaservo on a SERVO PWM pin;
 - NEUTRAL is not between PULSE LOWER and PULSE UPPER (`NEUTRAL outside LOWER/UPPER`);
@@ -244,7 +244,7 @@ At the bench's standard outputs, LIMIT RUN is SEARCH ONLY: MODE is locked in the
 
 The run writes in sessions of the [servo programmer](servo-programmer.md):
 
-1. The servo goes back to the centre for 1000ms.
+1. The servo goes back to the center for 1000ms.
 2. The run switches the bench to SAFE.
 3. CONNECT reads the servo.
 4. One write, with every limit check of the programmer.

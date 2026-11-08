@@ -12,7 +12,7 @@
  * prefixed svs_: among them the conversions between angle, pulse and
  * command in servo_screen.c.  Nothing outside these five files includes
  * this header but servo_rudder_panel.c, RUDDER's task, whose buttons
- * command the horn as the output card's CENTRE does, and servo_guide.c,
+ * command the horn as the output card's CENTER does, and servo_guide.c,
  * whose guide pages mark the dial; the seam with the
  * screen's pages and panels is servo_screen_int.h, which this header
  * includes.
@@ -69,7 +69,7 @@ _Static_assert(PAD + 10 + BOX_W <= SHAFT_X - 36,
 #define TAB_OVER    6                   /**< how far the case laps over the flange, px */
 #define TAB_W       (TAB_MARGIN + 2 * TAB_HOLE_R + TAB_INNER + TAB_OVER)  /**< flange width, px */
 #define TAB_H       BODY_H              /**< flange height: the case's width, px */
-/** @brief Bore's offset from the flange's centre line, px */
+/** @brief Bore's offset from the flange's center line, px */
 #define TAB_HOLE_DY (BODY_H / 2 - TAB_MARGIN - TAB_HOLE_R)
 
 /*

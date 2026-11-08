@@ -117,7 +117,7 @@ static const char *check(int k)
     case CK_RANGE:
         /* The end pulses lie inside the bench's own range. */
         return (s.min_us > 1000u || s.max_us < 2000u
-                || !(s.centre_us > 1000u && s.centre_us < 2000u))
+                || !(s.center_us > 1000u && s.center_us < 2000u))
                    ? TR(RA_RANGE) : NULL;
     case CK_PROG:
         /* The programmer free, and a written value able to act: a PD

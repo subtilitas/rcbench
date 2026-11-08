@@ -79,7 +79,7 @@ so the C file cannot drift from `panel.json`.
 - Text is not drawn; the panel prints its own labels.
 
 `copro.svg` is not to scale: its board is longer than the pad rows need.
-The panel drawing keeps every part centre between the same pads as in
+The panel drawing keeps every part center between the same pads as in
 `copro.svg` and every part's size at one scale, the scale across the pad
 rows. The parts beyond the pad rows do not fit that way and are placed
 between the rows: the USB-C socket and the BOOT and RESET buttons at the end

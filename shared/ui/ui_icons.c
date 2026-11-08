@@ -5,7 +5,7 @@
  *
  * Each icon is a few rings, capsules and strokes scaled to the requested
  * size.  A drawn icon is sharp at any size and needs no image data in flash.
- * Every icon is drawn centred on the point it is given, inside a box of
+ * Every icon is drawn centered on the point it is given, inside a box of
  * size x size px around it.
  *
  * SPDX-License-Identifier: MIT
@@ -20,8 +20,8 @@
 /**
  * @brief A ring of @p thick circles inward from radius @p outer.
  * @param c      the canvas
- * @param cx     the centre, x
- * @param cy     the centre, y
+ * @param cx     the center, x
+ * @param cy     the center, y
  * @param outer  the outer radius, px
  * @param thick  the ring's width, px
  * @param color  the colour
@@ -196,7 +196,7 @@ void ui_icon_battery(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
 }
 
 /*
- * A disc with an off-centre mass, and two correction ticks opposite it.
+ * A disc with an off-center mass, and two correction ticks opposite it.
  */
 void ui_icon_balance(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
 {

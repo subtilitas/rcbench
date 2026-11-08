@@ -21,7 +21,7 @@
 static void enc_on(void)
 {
     settings_set(SET_ENC_EN, 1.0f);
-    settings_set(SET_ENC_CENTRE, 3000.0f);
+    settings_set(SET_ENC_CENTER, 3000.0f);
     servo_screen_set_enc_held(true);
     bench.enc = true;
     bench.enc_next = bench.now;

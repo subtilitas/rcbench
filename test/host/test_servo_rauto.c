@@ -388,14 +388,14 @@ TEST_CASE(start_refuses_a_target_out_of_range_a_margin_above_50_and_a_tolerance_
     c.family = (uint8_t)SERVO_RAUTO_FAM_HITEC_C + 1u;
     CHECK(!servo_rauto_start(&r, &c, 0u));
     c = g.cfg;
-    c.centre_us = 1000u;
+    c.center_us = 1000u;
     CHECK(!servo_rauto_start(&r, &c, 0u));
-    c.centre_us = 2000u;
+    c.center_us = 2000u;
     CHECK(!servo_rauto_start(&r, &c, 0u));
-    c.centre_us = 1001u;
+    c.center_us = 1001u;
     CHECK(servo_rauto_start(&r, &c, 0u));
     servo_rauto_init(&r);
-    c.centre_us = 1999u;
+    c.center_us = 1999u;
     CHECK(servo_rauto_start(&r, &c, 0u));
     CHECK(!servo_rauto_running(NULL));
 }

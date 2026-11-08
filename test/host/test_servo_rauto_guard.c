@@ -59,7 +59,7 @@ TEST_CASE(a_stall_before_the_goal_ends_binds_with_the_angle)
     CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_BINDS);
     CHECK_NEAR(g.run.bind_deg, -10.0f, 0.01f);
 
-    /* A stall while the servo is held at the centre. */
+    /* A stall while the servo is held at the center. */
     rig_init(0u);
     CHECK(start());
     g.extra_ma = 1100;
@@ -367,7 +367,7 @@ TEST_CASE(the_meter_and_the_bench_silent_end_the_run)
     CHECK_EQ(g.run.end_ms - p, SERVO_LIMRUN_PROG_MS);
     CHECK_EQ(g.offs, 1u);
 
-    /* The operator's SAFE while the servo is held at the centre, and while
+    /* The operator's SAFE while the servo is held at the center, and while
      * a measure drives it. */
     rig_init(0u);
     CHECK(start());
@@ -477,7 +477,7 @@ TEST_CASE(a_refused_connect_ends_prog_and_restore_is_offered_after_a_write)
     CHECK(servo_rauto_switching(&g.run));
     servo_rauto_refused(&g.run, g.now);
     CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_PROG);
-    /* The hold at PULSE CENTRE before SAFE is no programmer's step. */
+    /* The hold at PULSE CENTER before SAFE is no programmer's step. */
     rig_init(0u);
     CHECK(start());
     CHECK_EQ(g.run.phase, SERVO_RAUTO_PH_SAFE);
@@ -607,7 +607,7 @@ TEST_CASE(the_words_name_every_reason_and_phase)
     servo_rauto_step(&g.run, 1u, NULL, NULL);
     servo_rauto_step(&g.run, 2u, NULL, &d);
     CHECK(d.command);
-    CHECK_EQ(d.cmd_us, RCENTRE);
+    CHECK_EQ(d.cmd_us, RCENTER);
     /* Handed out once. */
     servo_rauto_step(&g.run, 3u, NULL, &d);
     CHECK(!d.command);

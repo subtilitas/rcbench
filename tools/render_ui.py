@@ -175,7 +175,7 @@ SCREENS = {
     "servo-brownout": ("servo-brownout.png", "servo", "dark"),
     "servo-warning":  ("servo-warning.png",  "servo", "dark"),
     "servo-name":     ("servo-name.png",     "servo", "dark"),
-    # RUDDER's list with the output encoder on: ENC CENTRE from its
+    # RUDDER's list with the output encoder on: ENC CENTER from its
     # reading.
     "servo-encoder":  ("servo-encoder.png",  "servo", "dark"),
     # KST's EXPERT MODE page, ON.

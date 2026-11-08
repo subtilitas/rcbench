@@ -5,7 +5,7 @@ Sources: the maker's 3D model I2C-INA-BM.step (mateksys.com download,
 from its solids' vertices; the maker's product image I2C-INA-BM_1.jpg (27mm
 and 20mm dimension arrows, hole "3mm", 17.6px/mm) for the BAT+ and ESC+ pads,
 which the 3D model leaves out, and for the board print. Board frame: the 3D
-model's centre is the board centre, x right, y up; x_board = x + 13.5,
+model's center is the board center, x right, y up; x_board = x + 13.5,
 y_board = 10 - y.
 
 Accuracy: positions from the 3D model within 0.05mm of the model (the model
@@ -35,7 +35,7 @@ DESC = ("MATEK I2C-INA-BM, INA228 (or INA238) current and voltage monitor, "
 
 # Pin rows of the two JST-GH connectors, y in the board frame (3D model).
 JST_Y = (13.325, 14.575, 15.825, 17.075)
-JST_LX, JST_RX = 4.95, 22.05          # lead foot centres
+JST_LX, JST_RX = 4.95, 22.05          # lead foot centers
 JST_Y0, JST_Y1 = 11.075, 19.325       # body incl. mounting tabs
 
 SHUNT = (6.0, 0.6, 21.0, 8.4)

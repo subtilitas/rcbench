@@ -31,7 +31,7 @@
  * An edit (hitec_param_set()) changes a draft image as the vendor
  * programmer changes the servo, with the side effects it writes: the D
  * series direction mirrors the neutral and both end points; the classic
- * centre resets both end points; the classic direction swaps the end
+ * center resets both end points; the classic direction swaps the end
  * points and takes the fail-safe position from the factory block.  A plan
  * (hitec_plan()) lists the writes that take a servo from its read image to
  * the draft, in the vendor programmer's order, with the classic checksum
@@ -85,7 +85,7 @@ extern "C" {
 #define HITEC_D_REG_TARGET  0x1Eu  /**< the target the horn moves to */
 #define HITEC_D_FACTORY_KEY 0x0F0Fu  /**< the value of a factory reset */
 #define HITEC_D_SAVE_KEY    0xFFFFu  /**< the value of a save */
-/** @brief Highest D series position; 8192 is the centre. */
+/** @brief Highest D series position; 8192 is the center. */
 #define HITEC_D_POS_MAX     16383u
 /** @brief Highest D series target (0x1E); 3000 is the neutral. */
 #define HITEC_D_TARGET_MAX  6000u
@@ -370,7 +370,7 @@ typedef enum {
     HITEC_P_C_CHECKSUM,      /**< 0x00 to 0x1C sum to 0, read only */
     HITEC_P_C_DEAD_BAND,     /**< 0x02 */
     HITEC_P_C_SPEED,         /**< 0x06 */
-    HITEC_P_C_CENTRE,        /**< 0x07 and 0x08; resets 0x13, 0x14 */
+    HITEC_P_C_CENTER,        /**< 0x07 and 0x08; resets 0x13, 0x14 */
     HITEC_P_C_LEFT_END,      /**< 0x14 on a CW servo, 0x13 on a CCW one */
     HITEC_P_C_RIGHT_END,     /**< 0x13 on a CW servo, 0x14 on a CCW one */
     HITEC_P_C_DIRECTION,     /**< 0x1B bit 0; swaps 0x13, 0x14 */
@@ -384,7 +384,7 @@ typedef enum {
 /** @brief Unit of a decoded value. */
 typedef enum {
     HITEC_UNIT_RAW = 0,     /**< the stored value, no unit known */
-    HITEC_UNIT_COUNTS,      /**< D series position, 8192 the centre */
+    HITEC_UNIT_COUNTS,      /**< D series position, 8192 the center */
     HITEC_UNIT_PERCENT,     /**< 1% */
     HITEC_UNIT_STEP,        /**< a dead band step, 1 to 5 */
     HITEC_UNIT_CHOICE,      /**< an index; hitec_choice_t names them */
@@ -515,7 +515,7 @@ typedef enum {
  *                   nor 1 the present direction is not known, and 0x5E is
  *                   written alone
  *   D smart sensor  on: 0x6C = 0x44 = 0; off: 0x6C = 0x8A, 0x44 = 0x8C
- *   C centre        0x13 = 0x14 = 0x10
+ *   C center        0x13 = 0x14 = 0x10
  *   C direction     0x13 and 0x14 swapped, 0x19 and 0x1A from 0x49 and 0x4A
  *   C fail-safe position  0x1B bit 1 set
  *   C overload      HS-5xxx 0x21 = 0xFF, HS-7xxx 0x20 = 0x00

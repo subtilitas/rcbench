@@ -464,7 +464,7 @@ TEST_CASE(a_badge_at_the_right_sits_in_the_top_right_corner)
                                   gfx_rect_make(100, 100, 200, 40),
                                   UI_HELP_AT_LEFT };
     const uint32_t left = ui_help_marks_key(&p);
-    /* 40px tall: left of it, centred. */
+    /* 40px tall: left of it, centered. */
     gfx_rect_t b = ui_help_badge_rect(&p, 0);
     CHECK_EQ(b.x, 100 - 4 - 28);
     p.item[0].at = UI_HELP_AT_RIGHT;

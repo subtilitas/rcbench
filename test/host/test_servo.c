@@ -16,7 +16,7 @@
  * - the_case_is_not_the_dial
  * - past_the_sweeps_ends_is_not_the_dial
  * - the_travel_limit_clamps_rather_than_refuses
- * - centre_and_release_post_their_own_commands
+ * - center_and_release_post_their_own_commands
  * - a_hold_on_arm_asks_to_arm_exactly_once
  * - a_short_press_on_arm_asks_for_nothing
  * - a_finger_that_leaves_arm_arms_nothing
@@ -61,7 +61,7 @@ TEST_CASE(a_touch_on_the_dial_points_the_horn_there)
 
         const servo_cmd_t c = last_cmd();
         CHECK_EQ(c.kind, SERVO_CMD_POSITION);
-        /* Centre 1500, half-span 500, so a degree is 500/90 microseconds. */
+        /* Center 1500, half-span 500, so a degree is 500/90 microseconds. */
         const int expect = 1500 + (int)((float)want * 500.0f / 90.0f + 0.5f);
         if (abs((int)c.value_us - expect) > 12) {
             T_FAIL("%d deg gave %u us, wanted about %d",
@@ -174,7 +174,7 @@ TEST_CASE(the_travel_limit_clamps_rather_than_refuses)
     }
 }
 
-TEST_CASE(centre_and_release_post_their_own_commands)
+TEST_CASE(center_and_release_post_their_own_commands)
 {
     fresh_armed();
     int x, y;
@@ -183,9 +183,9 @@ TEST_CASE(centre_and_release_post_their_own_commands)
     ev(x, y, TOUCH_EVENT_UP, 1);
     (void)last_cmd();
 
-    tap(SV_CENTRE_X, SV_BTN_Y);
+    tap(SV_CENTER_X, SV_BTN_Y);
     const servo_cmd_t c = last_cmd();
-    CHECK_EQ(c.kind, SERVO_CMD_CENTRE);
+    CHECK_EQ(c.kind, SERVO_CMD_CENTER);
     CHECK_EQ(c.value_us, 1500);
     CHECK_EQ(servo_screen_commanded(), 1500);
 
@@ -326,7 +326,7 @@ static int red_of(gfx_color_t c)   { return (int)(((c >> 11) & 0x1f) << 3); }
 
 static int green_of(gfx_color_t c) { return (int)(((c >> 5) & 0x3f) << 2); }
 
-/* Inside the ARM button, clear of its rounded corner and its centred
+/* Inside the ARM button, clear of its rounded corner and its centered
  * label. */
 static gfx_color_t arm_px(void)
 {
@@ -659,7 +659,7 @@ TEST_CASE(a_profile_changed_while_an_arm_is_pending_is_the_one_armed)
 
 /*
  * The range travels with the pulse.  A narrow servo runs 660 to 860us and
- * its centre is below a standard servo's floor, so a command clamped against
+ * its center is below a standard servo's floor, so a command clamped against
  * the wrong pair sends the whole travel to one end.
  */
 TEST_CASE(a_command_carries_the_endpoints_of_the_type_it_was_made_for)
@@ -690,7 +690,7 @@ int main(void)
     RUN(past_the_sweeps_ends_is_not_the_dial);
     RUN(the_dial_reaches_184_px_from_the_shaft);
     RUN(the_travel_limit_clamps_rather_than_refuses);
-    RUN(centre_and_release_post_their_own_commands);
+    RUN(center_and_release_post_their_own_commands);
     RUN(a_hold_on_arm_asks_to_arm_exactly_once);
     RUN(a_short_press_on_arm_asks_for_nothing);
     RUN(a_finger_that_leaves_arm_arms_nothing);

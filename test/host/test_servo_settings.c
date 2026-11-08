@@ -100,9 +100,9 @@ TEST_CASE(a_pulse_width_the_coprocessor_would_refuse_is_not_taken)
     sl_tap(HL_MAX);                    /* PULSE MAX */
     keys("2600");
     key(UI_KEY_CANCEL);
-    /* A centre further from one end than the ceiling allows the other:
+    /* A center further from one end than the ceiling allows the other:
      * 1800us with MIN at 1000 would carry 1000..2600. */
-    sl_tap(HL_CENTRE);                    /* PULSE CENTRE */
+    sl_tap(HL_CENTER);                    /* PULSE CENTER */
     keys("1800");
     key(UI_KEY_CANCEL);
     close_settings();
@@ -114,11 +114,11 @@ TEST_CASE(a_pulse_width_the_coprocessor_would_refuse_is_not_taken)
 }
 
 /*
- * The range a command carries reaches past PULSE MAX when CENTRE is off the
+ * The range a command carries reaches past PULSE MAX when CENTER is off the
  * middle, and the far end can render its top between two transactions: the
  * frame rate's pause is kept from that top.  At HELI TAIL 760's 560Hz,
- * 1285us is the longest pulse with 0.5ms after it, so CENTRE may not move
- * the range past it; at 50Hz a centre of 1700us carries 1000..2400us and
+ * 1285us is the longest pulse with 0.5ms after it, so CENTER may not move
+ * the range past it; at 50Hz a center of 1700us carries 1000..2400us and
  * leaves 294Hz as the fastest rate.
  */
 TEST_CASE(the_pause_is_kept_from_the_top_of_the_range_a_command_carries)
@@ -126,7 +126,7 @@ TEST_CASE(the_pause_is_kept_from_the_top_of_the_range_a_command_carries)
     fresh_armed();
     choose_type(4);                            /* HELI TAIL 760, 560Hz */
     open_settings();
-    sl_tap(HL_CENTRE);                    /* PULSE CENTRE */
+    sl_tap(HL_CENTER);                    /* PULSE CENTER */
     keys("1060");                              /* would carry 410..1710 */
     key(UI_KEY_CANCEL);
     close_settings();
@@ -134,7 +134,7 @@ TEST_CASE(the_pause_is_kept_from_the_top_of_the_range_a_command_carries)
     servo_cmd_t c = last_cmd();
     CHECK_EQ(c.max_us, 1110);                  /* refused: still 760 */
     open_settings();
-    sl_tap(HL_CENTRE);
+    sl_tap(HL_CENTER);
     keys("840");                               /* 410..1270 fits */
     close_settings();
     servo_screen_set_commanded(90.0f);
@@ -145,7 +145,7 @@ TEST_CASE(the_pause_is_kept_from_the_top_of_the_range_a_command_carries)
 
     fresh_armed();
     open_settings();
-    sl_tap(HL_CENTRE);                    /* PULSE CENTRE */
+    sl_tap(HL_CENTER);                    /* PULSE CENTER */
     keys("1700");                              /* 1000..2400 */
     sl_tap(HL_RATE);                    /* FRAME RATE */
     tap(CH_X(6), CH_Y(6));                     /* CUSTOM, after 250Hz */
@@ -165,16 +165,16 @@ TEST_CASE(the_pause_is_kept_from_the_top_of_the_range_a_command_carries)
 }
 
 /*
- * MIN, CENTRE and MAX are set one by one, so each side of centre runs to
+ * MIN, CENTER and MAX are set one by one, so each side of center runs to
  * its own end: -90deg is MIN and +90deg is MAX.  The range a command
- * carries is centred on CENTRE, because the far end rests a surface at its
- * midpoint -- on RELEASE and before an arm -- and that rest is the centre.
+ * carries is centered on CENTER, because the far end rests a surface at its
+ * midpoint -- on RELEASE and before an arm -- and that rest is the center.
  */
-TEST_CASE(each_side_of_centre_runs_to_its_own_end)
+TEST_CASE(each_side_of_center_runs_to_its_own_end)
 {
     fresh_armed();
     open_settings();
-    sl_tap(HL_CENTRE);                    /* PULSE CENTRE */
+    sl_tap(HL_CENTER);                    /* PULSE CENTER */
     keys("1520");
     sl_tap(HL_MIN);                    /* PULSE MIN */
     keys("900");
@@ -314,7 +314,7 @@ TEST_CASE(reverse_and_the_pulse_widths_reshape_the_command)
 
     fresh_armed();
     open_settings();
-    sl_tap(HL_CENTRE);                    /* PULSE CENTRE */
+    sl_tap(HL_CENTER);                    /* PULSE CENTER */
     keys("1520");
     sl_tap(HL_MIN);                    /* PULSE MIN */
     keys("900");
@@ -376,8 +376,8 @@ TEST_CASE(the_sweep_and_run_settings_are_kept)
 
 TEST_CASE(the_overlay_leaves_the_right_card_working)
 {
-    /* ARM, CENTRE and RELEASE work beside a panel over the left column,
-     * PORT's list; the dial under it does not.  CENTRE is a position,
+    /* ARM, CENTER and RELEASE work beside a panel over the left column,
+     * PORT's list; the dial under it does not.  CENTER is a position,
      * taken on an armed bench. */
     fresh();
     tap(SV_PORT_X, SV_PORT_Y);
@@ -387,8 +387,8 @@ TEST_CASE(the_overlay_leaves_the_right_card_working)
     arm_release();
     CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
     servo_screen_set_armed(true);
-    tap(SV_CENTRE_X, SV_BTN_Y);                /* CENTRE */
-    CHECK_EQ(last_cmd().kind, SERVO_CMD_CENTRE);
+    tap(SV_CENTER_X, SV_BTN_Y);                /* CENTER */
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_CENTER);
     int x, y;
     dial_at(45.0f, ARC_R - 20, &x, &y);
     tap(x, y);                                 /* on the keypad, not the dial */
@@ -1194,7 +1194,7 @@ int main(void)
     RUN(a_heli_type_waits_for_the_warning_held_two_seconds);
     RUN(every_profile_is_a_range_the_coprocessor_takes);
     RUN(a_pulse_width_the_coprocessor_would_refuse_is_not_taken);
-    RUN(each_side_of_centre_runs_to_its_own_end);
+    RUN(each_side_of_center_runs_to_its_own_end);
     RUN(the_pause_is_kept_from_the_top_of_the_range_a_command_carries);
     RUN(a_warning_cancelled_dropped_or_left_applies_nothing);
     RUN(a_rate_above_60_hz_needs_the_warning_and_60_does_not);

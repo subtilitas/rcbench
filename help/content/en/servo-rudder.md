@@ -14,7 +14,7 @@ RUDDER on the [SERVO](servo.md) hub drives one servo and displays control-surfac
 
 | Part | Shows |
 |---|---|
-| DEFLECTION | the angle from ZERO, -180.0 to +179.9° from the AS5600, -180.00 to +180.00° from the IMU, from 100.00° on in smaller digits; before ZERO the angle from the AS5600's ENC CENTRE, or from the IMU's count 0; `---` without a reading |
+| DEFLECTION | the angle from ZERO, -180.0 to +179.9° from the AS5600, -180.00 to +180.00° from the IMU, from 100.00° on in smaller digits; before ZERO the angle from the AS5600's ENC CENTER, or from the IMU's count 0; `---` without a reading |
 | TRAILING EDGE | L x sin(deflection) for a LENGTH of L mm: what a ruler held upright at the trailing edge reads, signed |
 | MAX | the largest deflection each side since ZERO or RESET MAX, in ° and in mm |
 
@@ -39,12 +39,12 @@ LENGTH is the distance from the hinge line to the trailing edge: 0 or 10 to 500m
 | Control | SAFE | ARMED |
 |---|---|---|
 | 1000us, 2000us | refused; drawn dimmed | commands that pulse, held to TRAVEL and the pulse range of the type in force |
-| CENTRE | refused; drawn dimmed | commands PULSE CENTRE plus TRIM |
+| CENTER | refused; drawn dimmed | commands PULSE CENTER plus TRIM |
 | Rotary knob | refused; the turn is not kept | moves the horn from the commanded value, as on LIVE; refused while AUTO runs |
 | ZERO | takes the current angle as the neutral and clears MAX; grey without a reading; another ANGLE SOURCE, the IMU's other AXIS or SIGN, or a ZERO or CLEAR ZERO on the IMU screen, drops the zero and MAX | the same; refused while AUTO runs |
 | RESET MAX | clears MAX; the zero stays | the same; refused while AUTO runs |
 
-1000us, CENTRE and 2000us act on press. LENGTH, ZERO and RESET MAX act when you release a tap on them. PULSE below the buttons shows the commanded pulse. DISARM, STOP or leaving the screen switches the bench to SAFE. [RUDDER AUTO](#rudder-auto) programs the end points on a screen of its own.
+1000us, CENTER and 2000us act on press. LENGTH, ZERO and RESET MAX act when you release a tap on them. PULSE below the buttons shows the commanded pulse. DISARM, STOP or leaving the screen switches the bench to SAFE. [RUDDER AUTO](#rudder-auto) programs the end points on a screen of its own.
 
 ## The state lines
 
@@ -55,7 +55,7 @@ LENGTH is the distance from the hinge line to the trailing edge: 0 or 10 to 500m
 | `ANGLE: AS5600 NOT ANSWERING`, `ANGLE: IMU X+ NOT ANSWERING` | on, and no reading arrives; the IMU also while it is off or not connected |
 | `ANGLE: AS5600 SEES NO MAGNET` | the sensor reports no magnet |
 | `ANGLE: NO LINK` | no link to the IOmcu, the RP2350 board |
-| `NO ZERO: FROM THE SENSOR'S CENTRE` | ZERO not taken yet |
+| `NO ZERO: FROM THE SENSOR'S CENTER` | ZERO not taken yet |
 | `ARM FIRST` | the bench is SAFE |
 
 ## RUDDER AUTO

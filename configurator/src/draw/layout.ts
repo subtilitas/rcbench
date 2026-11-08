@@ -142,7 +142,7 @@ export type WirePath = {
   b: EndRef | null;
   points: Pt[];
   title: string;
-  /** Centre of the cross mark at the open end of a stub. */
+  /** Center of the cross mark at the open end of a stub. */
   cross: Pt | null;
 };
 

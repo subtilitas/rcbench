@@ -246,7 +246,7 @@ TEST_CASE(a_pad_out_of_place_or_of_no_kind_is_refused)
                                    - ((side == 2) ? 1 : 0)));
         CHECK(refused(n));
     }
-    /* A centre at 0 does not wrap to a large x. */
+    /* A center at 0 does not wrap to a large x. */
     fresh();
     fx_put16(p + 4, 0u);
     CHECK(refused(n));

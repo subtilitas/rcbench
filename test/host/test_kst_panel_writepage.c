@@ -179,7 +179,7 @@ TEST_CASE(a_value_further_out_than_the_confirmed_one_opens_the_page_again)
 }
 
 /* The second write of a session asks for a free horn again where it turns
- * the horn round or moves it: the direction, the centre, an end point or an
+ * the horn round or moves it: the direction, the center, an end point or an
  * angle. */
 TEST_CASE(a_later_write_that_moves_the_horn_asks_for_a_free_horn_again)
 {
