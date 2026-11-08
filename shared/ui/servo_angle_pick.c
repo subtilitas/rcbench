@@ -13,7 +13,9 @@
  *   - the bound sensor, `name 19:29`, when the last scan did not list it;
  *   - each sensor of the last scan, `name 19:29 -61dBm`: its name or `NO
  *     NAME` cut to AP_NAME_CELLS, the last 5 characters of its address
- *     and its RSSI when the scan heard one;
+ *     and its RSSI when the scan heard one.  While no bind is taken (no
+ *     sync with the C6, the calibration running, the IMU off) each but the
+ *     bound one is refused, its tap naming why;
  *   - `NO IMU FOUND`, refused, when the last scan listed none, or the
  *     scan's failure with its code;
  *   - `SEARCH FOR IMU`; refused with the state while Bluetooth LE starts
@@ -22,7 +24,8 @@
  *
  * The entry in force is in the accent: the AS5600, or with ANGLE SOURCE
  * IMU the bound sensor.  A pick of the AS5600 sets SET_ANGLE_SOURCE to
- * AS5600; a pick of a sensor binds it when it is not the bound one,
+ * AS5600; a pick of a sensor binds it when it is not the bound one -- a
+ * sensor is its address and its type, public or random --
  * switches the IMU on when it is off and sets SET_ANGLE_SOURCE to IMU; all
  * three save at once and close the list.  SEARCH FOR IMU switches the IMU
  * on when it is off and scans once Bluetooth LE runs (imu_screen_search());
@@ -75,38 +78,69 @@
  *         refusals, so a rebuild repaints only when one changed. */
 static uint32_t s_sig;
 
-/** @brief The address of each sensor entry as built: a pick binds the
- *         sensor of that address in the view of its release, whose found
- *         list may have changed under a finger. */
+/** @brief The address of each sensor entry as built, and its type below:
+ *         a pick binds the sensor of that address and type in the view of
+ *         its release, whose found list may have changed under a finger. */
 static char s_addr[IMU_FOUND_MAX][IMU_ADDR_MAX];
+/** @brief Each sensor entry's address type: 0 public, 1 random. */
+static uint8_t s_type[IMU_FOUND_MAX];
 
 /**
- * @brief Whether the bound sensor's address, which carries its type after
- *        a space ("00:0C:BF:08:19:29 P"), is @p found's.
+ * @brief Whether the bound sensor is scanned device @p d.  The bound
+ *        address carries its type after a space ("00:0C:BF:08:19:29 P",
+ *        "... R"); a public and a random address of the same 48 bits are
+ *        two devices.
  * @param bound The bound address, "" for none.
- * @param found A scanned address, colons, no type.
- * @return true for the same address.
+ * @param d     A device of the scan: its address, colons, no type, and its
+ *              type.
+ * @return true for the same address and type.
  */
-static bool same_addr(const char *bound, const char *found)
+static bool same_dev(const char *bound, const imu_dev_t *d)
 {
-    const size_t n = strcspn(bound, " ");
-    return n > 0u && strlen(found) == n && strncmp(bound, found, n) == 0;
+    const size_t n = strlen(d->addr);
+    return n == 17u && strlen(bound) == 19u && bound[17] == ' '
+           && strncmp(bound, d->addr, n) == 0
+           && bound[18] == (d->addr_type == 1u ? 'R' : 'P');
 }
 
 /**
- * @brief The index of the sensor at @p addr in the view's found list.
+ * @brief The index of the sensor at @p addr of type @p type in the view's
+ *        found list.
  * @param v    The IMU's view.
  * @param addr The address, colons, no type.
- * @return The index; -1 when the list holds none of that address.
+ * @param type Its type: 0 public, 1 random.
+ * @return The index; -1 when the list holds none of that address and type.
  */
-static int find_sensor(const imu_view_t *v, const char *addr)
+static int find_sensor(const imu_view_t *v, const char *addr, uint8_t type)
 {
     for (int i = 0; i < (int)v->found_n && i < (int)IMU_FOUND_MAX; ++i) {
-        if (addr[0] != '\0' && strcmp(v->found[i].addr, addr) == 0) {
+        if (addr[0] != '\0' && strcmp(v->found[i].addr, addr) == 0
+            && v->found[i].addr_type == type) {
             return i;
         }
     }
     return -1;
+}
+
+/**
+ * @brief Why no sensor of the scan can be bound now: the calibration runs,
+ *        the IMU is off, or Bluetooth LE does not run free of a scan.
+ * @param v The IMU's view.
+ * @return The reason for the alert band; NULL while a bind is taken.
+ */
+static const char *bind_why(const imu_view_t *v)
+{
+    static char word[48];
+    if (imu_screen_bind_free()) {
+        return NULL;
+    }
+    if (v->cal == IMU_CAL_RUNNING) {
+        return TR(SV_ANG_BIND_CAL);
+    }
+    if (v->link == IMU_LINK_OFF) {
+        return TR(SV_ANG_BIND_OFF);
+    }
+    return sensors_rows_imu_word(v->link, 0u, word, sizeof(word));
 }
 
 /**
@@ -185,7 +219,7 @@ static void build(void)
                                                     : (int)v->found_n;
     bool listed = false;
     for (int i = 0; i < found; ++i) {
-        listed = listed || same_addr(v->bound_addr, v->found[i].addr);
+        listed = listed || same_dev(v->bound_addr, &v->found[i]);
     }
     char line[64];
     if (v->bound_addr[0] != '\0' && !listed) {
@@ -195,11 +229,16 @@ static void build(void)
     /* SEARCH FOR IMU keeps the last place: 1 + 8 + 1 fill CHOICE_MAX, and
      * a bound sensor beside 8 found drops the eighth. */
     const int room = CHOICE_MAX - 1 - s.ch.count;
+    /* While no bind is taken a sensor other than the bound one is refused,
+     * its line kept; a tap names why in the band. */
+    const bool bind_off = bind_why(v) != NULL;
     for (int i = 0; i < found && i < room; ++i) {
         sensor_label(v->found[i].name, v->found[i].addr, v->found[i].rssi,
                      line, sizeof(line));
-        add(line, AP_IMU0 + i, false);
+        add(line, AP_IMU0 + i,
+            bind_off && !same_dev(v->bound_addr, &v->found[i]));
         snprintf(s_addr[i], sizeof(s_addr[i]), "%s", v->found[i].addr);
+        s_type[i] = v->found[i].addr_type;
     }
     const bool idle = v->link != IMU_LINK_SCANNING
                       && !imu_screen_search_owed();
@@ -313,11 +352,17 @@ void angle_pick_choose(int value)
         imu_on();
         set_source(SERVO_ANGLE_IMU);
     } else if (value >= AP_IMU0 && value - AP_IMU0 < (int)IMU_FOUND_MAX) {
-        const int i = find_sensor(v, s_addr[value - AP_IMU0]);
-        if (i >= 0) {
-            if (!same_addr(v->bound_addr, v->found[i].addr)) {
-                (void)imu_screen_bind((uint8_t)i);
-            }
+        const int k = value - AP_IMU0;
+        const int i = find_sensor(v, s_addr[k], s_type[k]);
+        if (i >= 0 && !same_dev(v->bound_addr, &v->found[i])
+            && !imu_screen_bind((uint8_t)i)) {
+            /* No bind taken now: nothing changes, the list stays, the
+             * band names why. */
+            const char *why = bind_why(v);
+            ui_router_set_alert(why != NULL ? why : TR(SV_ANG_BIND_OFF));
+            open_choice(CH_ANGLE, SETTING_COUNT, TR(SV_ANG_TITLE));
+            build();
+        } else if (i >= 0) {
             imu_on();
             set_source(SERVO_ANGLE_IMU);
         }
@@ -335,6 +380,12 @@ void angle_pick_refused(int k)
         s.ch.open = false;
         ui_router_goto(SCREEN_SETUP);
         settings_screen_open_on(SET_CAT_SENSORS, SENS_ENTRY_AS5600);
+        return;
+    }
+    if (s.ch.values[k] >= AP_IMU0) {
+        /* A sensor while no bind is taken: why. */
+        const char *why = bind_why(imu_screen_view());
+        ui_router_set_alert(why != NULL ? why : s.ch.labels[k]);
         return;
     }
     ui_router_set_alert(s.ch.values[k] == AP_NONE ? TR(IMU_ERR_NONE_FOUND)
@@ -355,7 +406,7 @@ bool angle_pick_current(int k)
         return true;
     }
     return value >= AP_IMU0 && value - AP_IMU0 < (int)v->found_n
-           && same_addr(v->bound_addr, v->found[value - AP_IMU0].addr);
+           && same_dev(v->bound_addr, &v->found[value - AP_IMU0]);
 }
 
 void angle_pick_run_row(rdy_row_t *r, const char *name, bool reads)

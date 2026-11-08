@@ -411,13 +411,15 @@ bool lim_ready_row(int i, rdy_row_t *r)
     }
     memset(r, 0, sizeof(*r));
     if (i == LRR_ANGLE) {
-        /* The source the run names; it reads an angle while one is shown.
-         * No check of the gate belongs to it. */
+        /* The source the run names, and whether it reads angles: as the
+         * run under way took it at its start (a reading that arrives
+         * later is not the run's), else as a run started now would.  No
+         * check of the gate belongs to it. */
         char name[24];
         const bool running = servo_limrun_running(&s.lim);
         angle_pick_run_row(r, running ? s.lim.cfg.source
                                       : enc_name(name, sizeof(name)),
-                           enc_shown());
+                           running ? s.lim.cfg.enc_on : enc_on_now());
         return true;
     }
     r->label = (i == LRR_SUPPLY) ? supply_label()

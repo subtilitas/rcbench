@@ -21,7 +21,10 @@
  * - the_list_is_refused_armed_and_closes_when_the_bench_arms
  * - rudder_autos_angle_row_and_list_row_open_the_list
  * - a_search_owed_is_dropped_by_imu_off_and_refused_on_a_failed_c6
+ * - no_bind_without_c6_sync_or_during_calibration_changes_nothing
+ * - a_public_and_a_random_address_of_the_same_bits_are_two_sensors
  * - test_and_limit_run_show_the_angle_and_never_refuse_on_it
+ * - a_limit_run_shows_whether_it_reads_angles_as_it_started
  *
  * SPDX-License-Identifier: MIT
  */
@@ -462,6 +465,133 @@ TEST_CASE(a_search_owed_is_dropped_by_imu_off_and_refused_on_a_failed_c6)
 }
 
 /**
+ * @brief Sensor @p i of the scan with its address type.
+ * @param i    the index
+ * @param addr its address
+ * @param type 0 public, 1 random
+ * @param rssi its RSSI, dBm
+ */
+static void found_typed(int i, const char *addr, uint8_t type, int8_t rssi)
+{
+    found(i, addr, "HC-06", rssi);
+    g_v.found[i].addr_type = type;
+}
+
+/* Without sync with the C6, and while the calibration runs, the sensors of
+ * the scan but the bound one are refused: a tap names why and changes
+ * nothing.  A pick under a finger whose bind the link refuses by its
+ * release changes nothing either: no source, no IMU ON, no save. */
+TEST_CASE(no_bind_without_c6_sync_or_during_calibration_changes_nothing)
+{
+    safe_on(SERVO_FN_RUDDER, IMU_LINK_READY);
+    g_v.found_n = 2u;
+    found(0, "00:0C:BF:08:19:29", "HC-06", -50);
+    found(1, "00:0C:BF:0A:44:17", "HC-06", -71);
+    view_now();
+    tap_angle_row();
+    bool refused = true;
+    (void)entry(1, &refused);
+    CHECK(!refused);
+    g_v.link = IMU_LINK_NO_BT;
+    view_now();
+    frame();
+    (void)entry(1, &refused);
+    CHECK(refused);
+    (void)entry(2, &refused);
+    CHECK(refused);
+    ui_router_set_alert(NULL);
+    tap_entry(1);
+    CHECK_STR_EQ(ui_router_alert(), TR(IMU_ST_NO_BT));
+    CHECK_EQ(imu_took().kind, IMU_CMD_NONE);
+    CHECK_EQ(settings_get_int(SET_ANGLE_SOURCE), (int)SERVO_ANGLE_AS5600);
+    CHECK_EQ(angle_pick_count(), 4);
+
+    /* The calibration runs on the bound sensor: the other is refused, the
+     * bound one is picked without a bind. */
+    g_v.link = IMU_LINK_CONNECTED;
+    g_v.cal = IMU_CAL_RUNNING;
+    snprintf(g_v.bound_addr, sizeof(g_v.bound_addr), "00:0C:BF:08:19:29 P");
+    view_now();
+    frame();
+    (void)entry(1, &refused);
+    CHECK(!refused);
+    (void)entry(2, &refused);
+    CHECK(refused);
+    ui_router_set_alert(NULL);
+    tap_entry(2);
+    CHECK_STR_EQ(ui_router_alert(), TR(SV_ANG_BIND_CAL));
+    CHECK_EQ(imu_took().kind, IMU_CMD_NONE);
+    CHECK_EQ(settings_get_int(SET_ANGLE_SOURCE), (int)SERVO_ANGLE_AS5600);
+    tap_entry(1);
+    CHECK_EQ(imu_took().kind, IMU_CMD_NONE);
+    CHECK_EQ(settings_get_int(SET_ANGLE_SOURCE), (int)SERVO_ANGLE_IMU);
+    CHECK_EQ(angle_pick_count(), -1);
+
+    /* The sync lost under a finger: its release binds nothing and changes
+     * nothing; the list stays. */
+    settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_AS5600);
+    settings_set(SET_IMU_EN, 0.0f);
+    g_v.link = IMU_LINK_READY;
+    g_v.cal = IMU_CAL_NONE;
+    g_v.bound_addr[0] = '\0';
+    view_now();
+    settings_cancel_save();
+    tap_angle_row();
+    const gfx_rect_t r = angle_pick_rect(2);
+    ev(cx(r), cy(r), TOUCH_EVENT_DOWN, 3);
+    g_v.link = IMU_LINK_NO_BT;
+    view_now();
+    frame();
+    ui_router_set_alert(NULL);
+    ev(cx(r), cy(r), TOUCH_EVENT_UP, 3);
+    CHECK_EQ(imu_took().kind, IMU_CMD_NONE);
+    CHECK_STR_EQ(ui_router_alert(), TR(IMU_ST_NO_BT));
+    CHECK_EQ(settings_get_int(SET_ANGLE_SOURCE), (int)SERVO_ANGLE_AS5600);
+    CHECK(!settings_get_bool(SET_IMU_EN));
+    CHECK(!settings_save_asked());
+    CHECK_EQ(angle_pick_count(), 4);
+}
+
+/* A random address of the same 48 bits as the bound public one, heard
+ * stronger, sorts first: it is another sensor.  The bound check tells them
+ * apart, and a tap on the public one binds the public one's index, also
+ * when the scan swaps them under the finger. */
+TEST_CASE(a_public_and_a_random_address_of_the_same_bits_are_two_sensors)
+{
+    safe_on(SERVO_FN_RUDDER, IMU_LINK_CONNECTED);
+    settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_IMU);
+    g_v.found_n = 2u;
+    found_typed(0, "00:0C:BF:08:19:29", 1u, -40);
+    found_typed(1, "00:0C:BF:08:19:29", 0u, -60);
+    snprintf(g_v.bound_addr, sizeof(g_v.bound_addr), "00:0C:BF:08:19:29 P");
+    view_now();
+    tap_angle_row();
+    CHECK_EQ(angle_pick_count(), 4);           /* no extra bound entry */
+    CHECK(!angle_pick_current(1));
+    CHECK(angle_pick_current(2));
+    tap_entry(1);                              /* the random one */
+    imu_cmd_t c = imu_took();
+    CHECK_EQ(c.kind, IMU_CMD_BIND);
+    CHECK_EQ(c.arg, 0u);
+
+    /* Nothing bound: the public one, swapped under the finger. */
+    g_v.bound_addr[0] = '\0';
+    g_v.link = IMU_LINK_READY;
+    view_now();
+    tap_angle_row();
+    const gfx_rect_t r = angle_pick_rect(2);
+    ev(cx(r), cy(r), TOUCH_EVENT_DOWN, 3);
+    found_typed(0, "00:0C:BF:08:19:29", 0u, -60);
+    found_typed(1, "00:0C:BF:08:19:29", 1u, -40);
+    view_now();
+    frame();
+    ev(cx(r), cy(r), TOUCH_EVENT_UP, 3);
+    c = imu_took();
+    CHECK_EQ(c.kind, IMU_CMD_BIND);
+    CHECK_EQ(c.arg, 0u);
+}
+
+/**
  * @brief The ANGLE row of the card shown, TEST's or LIMIT RUN's.
  * @param test TEST's, else LIMIT RUN's
  * @return the row
@@ -553,6 +683,53 @@ TEST_CASE(test_and_limit_run_show_the_angle_and_never_refuse_on_it)
           <= ready_rail_rect().y);
 }
 
+/* LIMIT RUN started with the IMU in force and no reading: the run reads
+ * no angle, and a reading that arrives during the run leaves its ANGLE row
+ * amber.  Started with a reading on show: green through the run. */
+TEST_CASE(a_limit_run_shows_whether_it_reads_angles_as_it_started)
+{
+    for (int with = 0; with < 2; ++with) {
+        ra_setup(true, true);
+        carrier_safe_off(40u);
+        go(SERVO_FN_LIMRUN);
+        settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_IMU);
+        if (!with) {
+            ra.enc = false;
+            const servo_test_enc_t none = { .valid = false,
+                                            .taken_ms = g_rig.ms };
+            servo_screen_encoder(&none);
+        }
+        ra_ms(100u);
+        CHECK_EQ(run_angle(false).st,
+                 with ? (uint8_t)RDY_OK : (uint8_t)RDY_WARN);
+        ev(SV_HOLD_X, SV_HOLD_Y, TOUCH_EVENT_DOWN, 1);
+        ra_ms(2300u);
+        ev(SV_HOLD_X, SV_HOLD_Y, TOUCH_EVENT_UP, 1);
+        ra_ms(20u);
+        CHECK(servo_screen_limit_running());
+        if (!with) {
+            /* The IMU connects under the run: a reading on show now. */
+            ra.enc = true;
+            ra_ms(200u);
+        }
+        const rdy_row_t r = run_angle(false);
+        char want[64];
+        snprintf(want, sizeof(want), TR(SV_ANG_RUN_NONE), "IMU X+");
+        if (with) {
+            CHECK_EQ(r.st, (uint8_t)RDY_OK);
+            CHECK_STR_EQ(r.value, "IMU X+");
+        } else {
+            CHECK_EQ(r.st, (uint8_t)RDY_WARN);
+            CHECK_STR_EQ(r.value, want);
+        }
+        ev(SV_HOLD_X, SV_HOLD_Y, TOUCH_EVENT_DOWN, 1);
+        ev(SV_HOLD_X, SV_HOLD_Y, TOUCH_EVENT_UP, 1);
+        CHECK(!servo_screen_limit_running());
+        ra_ms(2000u);
+        ra.p5_task = false;
+    }
+}
+
 int main(void)
 {
     RUN(the_angle_row_opens_the_list_with_a_reading_and_without);
@@ -566,6 +743,9 @@ int main(void)
     RUN(the_list_is_refused_armed_and_closes_when_the_bench_arms);
     RUN(rudder_autos_angle_row_and_list_row_open_the_list);
     RUN(a_search_owed_is_dropped_by_imu_off_and_refused_on_a_failed_c6);
+    RUN(no_bind_without_c6_sync_or_during_calibration_changes_nothing);
+    RUN(a_public_and_a_random_address_of_the_same_bits_are_two_sensors);
     RUN(test_and_limit_run_show_the_angle_and_never_refuse_on_it);
+    RUN(a_limit_run_shows_whether_it_reads_angles_as_it_started);
     return test_summary("servo_angle_pick");
 }

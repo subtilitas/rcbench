@@ -128,6 +128,10 @@ const imu_view_t *imu_screen_view(void);
  *         scan and no calibration runs.
  */
 bool imu_screen_bind(uint8_t i);
+/** @brief Whether a BIND is taken now: Bluetooth runs, no scan and no
+ *         calibration runs (imu_screen_bind()).
+ *  @return Whether it is. */
+bool imu_screen_bind_free(void);
 /**
  * @brief Search for sensors: IMU ON in SETUP when it is off (saved), and
  *        the SCAN queued once Bluetooth LE runs and no scan or calibration
