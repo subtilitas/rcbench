@@ -133,7 +133,7 @@ TEST_CASE(the_first_frame_seeds_the_filter_after_init_reseed_and_stale)
     feed(&m, 90.0f, 3300u);
     CHECK(m.r.valid);
     CHECK_EQ(m.r.angle[0], word_of(90.0f));
-    CHECK_EQ(m.r.still_ms, 0u);
+    CHECK_EQ(m.r.still_ms[IMU_AXIS_X], 0u);
     /* NULL does nothing. */
     imu_reseed(NULL);
     imu_set_filter(NULL, 5);
@@ -285,7 +285,7 @@ static uint32_t settle_after_step(int32_t k, float deg, uint32_t period,
     for (int n = 0; n < 4000; ++n) {
         t += period;
         feed3(m, deg, 0.0f, 0.0f, t);
-        if (m->r.still_ms > 0u) {
+        if (m->r.still_ms[IMU_AXIS_X] > 0u) {
             return t - from;
         }
     }
@@ -308,10 +308,10 @@ TEST_CASE(a_drift_after_the_settle_holds_the_still_time_at_0)
     for (; t <= 2000u; t += 100u) {
         feed(&m, 0.0f, t);
     }
-    CHECK(m.r.still_ms > 0u);
+    CHECK(m.r.still_ms[IMU_AXIS_X] > 0u);
     for (; t <= 2600u; t += 100u) {
         feed(&m, 0.49f, t);
-        CHECK_EQ(m.r.still_ms, 0u);
+        CHECK_EQ(m.r.still_ms[IMU_AXIS_X], 0u);
     }
     CHECK(fabsf(m.r.angle[0] - word_of(0.49f)) > IMU_SETTLE_DEG);
 }
@@ -325,7 +325,7 @@ TEST_CASE(the_still_time_waits_until_the_filtered_angle_settled)
         CHECK(ms != UINT32_MAX);
         CHECK(fabsf(m.r.angle[0] - word_of(30.0f)) <= IMU_SETTLE_DEG);
         /* From the sensor's stop: the step's frame. */
-        CHECK_EQ(m.r.still_ms, ms);
+        CHECK_EQ(m.r.still_ms[IMU_AXIS_X], ms);
         if (k_k[j] == 1) {
             CHECK_EQ(ms, 100u);
         } else {
@@ -336,7 +336,7 @@ TEST_CASE(the_still_time_waits_until_the_filtered_angle_settled)
         for (int n = 0; n < 10; ++n) {
             t += 100u;
             feed3(&m, 30.0f, 0.0f, 0.0f, t);
-            CHECK(m.r.still_ms > ms);
+            CHECK(m.r.still_ms[IMU_AXIS_X] > ms);
             CHECK(fabsf(m.r.angle[0] - word_of(30.0f)) <= IMU_SETTLE_DEG);
         }
     }
@@ -353,16 +353,45 @@ TEST_CASE(the_still_time_waits_until_the_filtered_angle_settled)
         for (int n = 0; n <= 700; ++n, t += 100u) {
             feed3(&h, 12.0f, 0.0f, 0.0f, t);
             if (n == 655) {
-                CHECK_EQ(h.r.still_ms, 65500u);
+                CHECK_EQ(h.r.still_ms[IMU_AXIS_X], 65500u);
             }
         }
-        CHECK_EQ(h.r.still_ms, 65535u);
+        CHECK_EQ(h.r.still_ms[IMU_AXIS_X], 65535u);
     }
     /* A move again starts over: 0 until it settled once more. */
     feed3(&m, 10.0f, 0.0f, 0.0f, m.r.taken_ms + 100u);
-    CHECK_EQ(m.r.still_ms, 0u);
+    CHECK_EQ(m.r.still_ms[IMU_AXIS_X], 0u);
     feed3(&m, 10.0f, 0.0f, 0.0f, m.r.taken_ms + 100u);
-    CHECK_EQ(m.r.still_ms, 0u);
+    CHECK_EQ(m.r.still_ms[IMU_AXIS_X], 0u);
+}
+
+/* Each axis settles on its own: k 10 at 10Hz, all three still at 0°, then
+ * a step of 30° on pitch alone.  Pitch's still time reads 0 until its
+ * filtered angle settled, the 60th frame after the step, then counts from
+ * the step; roll's and yaw's run on from their first frame throughout. */
+TEST_CASE(a_step_on_one_axis_leaves_the_others_still_time_running)
+{
+    imu_t m;
+    imu_init(&m);
+    imu_set_filter(&m, 10);
+    const uint32_t t0 = 20000u;
+    uint32_t t = t0;
+    for (; t <= t0 + 1000u; t += 100u) {
+        feed3(&m, 0.0f, 0.0f, 0.0f, t);
+    }
+    CHECK_EQ(m.r.still_ms[IMU_AXIS_X], 1000u);
+    CHECK_EQ(m.r.still_ms[IMU_AXIS_Y], 1000u);
+    const uint32_t step = t;
+    for (; t < step + 6000u; t += 100u) {
+        feed3(&m, 0.0f, 30.0f, 0.0f, t);
+        CHECK_EQ(m.r.still_ms[IMU_AXIS_Y], 0u);
+        CHECK_EQ(m.r.still_ms[IMU_AXIS_X], t - t0);
+        CHECK_EQ(m.r.still_ms[IMU_AXIS_Z], t - t0);
+    }
+    feed3(&m, 0.0f, 30.0f, 0.0f, t);
+    CHECK_EQ(m.r.still_ms[IMU_AXIS_Y], 6000u);
+    CHECK(fabsf(m.r.angle[1] - word_of(30.0f)) <= IMU_SETTLE_DEG);
+    CHECK_EQ(m.r.still_ms[IMU_AXIS_X], t - t0);
 }
 
 /* The allowance: 0 for k 1; for k 10 at 10Hz 78 frames at 150ms; with no
@@ -449,6 +478,7 @@ int main(void)
     RUN(the_limits_1_and_50_hold_and_out_of_range_values_are_clamped);
     RUN(a_drift_after_the_settle_holds_the_still_time_at_0);
     RUN(the_still_time_waits_until_the_filtered_angle_settled);
+    RUN(a_step_on_one_axis_leaves_the_others_still_time_running);
     RUN(the_settle_allowance_covers_the_slowest_settle);
     RUN(the_angle_text_has_two_decimals_and_rounds_005_away_from_zero);
     return test_summary("imu_filter");

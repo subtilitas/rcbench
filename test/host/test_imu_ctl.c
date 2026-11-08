@@ -842,6 +842,39 @@ TEST_CASE(the_handout_gives_each_frame_once_and_again_after_a_reset)
     imu_handout_reset(NULL);
 }
 
+/* What goes on to SERVO of a valid reading: IMU AXIS' angle from the
+ * zero, signed by IMU SIGN, and that axis' still time, not another's; a
+ * stale reading or NULL leaves the input as it was. */
+TEST_CASE(the_handout_angle_takes_the_still_time_of_its_axis)
+{
+    imu_reading_t rd;
+    memset(&rd, 0, sizeof rd);
+    rd.valid = true;
+    rd.taken_ms = 4321u;
+    rd.angle[IMU_AXIS_Y] = -2.5f;
+    rd.angle[IMU_AXIS_Z] = 50.5f;
+    rd.still_ms[IMU_AXIS_X] = 900u;
+    rd.still_ms[IMU_AXIS_Y] = 0u;
+    rd.still_ms[IMU_AXIS_Z] = 2400u;
+    servo_angle_in_t in;
+    memset(&in, 0, sizeof in);
+    CHECK(imu_handout_angle(&rd, IMU_AXIS_Z, false, &in));
+    CHECK(in.valid);
+    CHECK_EQ(in.deg, 50.5f);
+    CHECK_EQ(in.still_ms, 2400u);
+    CHECK_EQ(in.taken_ms, 4321u);
+    CHECK(imu_handout_angle(&rd, IMU_AXIS_Y, true, &in));
+    CHECK_EQ(in.deg, 2.5f);
+    CHECK_EQ(in.still_ms, 0u);
+    rd.valid = false;
+    in.taken_ms = 77u;
+    CHECK(!imu_handout_angle(&rd, IMU_AXIS_Z, false, &in));
+    CHECK_EQ(in.taken_ms, 77u);
+    CHECK_EQ(in.still_ms, 0u);
+    CHECK(!imu_handout_angle(NULL, IMU_AXIS_Z, false, &in));
+    CHECK(!imu_handout_angle(&rd, IMU_AXIS_Z, false, NULL));
+}
+
 /* A frame 300ms or more after the one before ends a stale stretch: it is
  * counted with the time the reading went stale; a shorter pause is none. */
 TEST_CASE(a_frame_after_the_stale_point_counts_a_gap)
@@ -929,6 +962,7 @@ int main(void)
     RUN(a_connect_at_the_default_rsw_sends_rsw_0x0c_and_save);
     RUN(a_refused_rsw_write_is_sent_again_at_the_next_connection);
     RUN(the_handout_gives_each_frame_once_and_again_after_a_reset);
+    RUN(the_handout_angle_takes_the_still_time_of_its_axis);
     RUN(a_frame_after_the_stale_point_counts_a_gap);
     RUN(the_rate_options_are_the_wit_codes_and_null_does_nothing);
     return test_summary("imu_ctl");

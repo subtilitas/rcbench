@@ -5,12 +5,16 @@
  * allowance imu_filter_settle_ms() gives.
  *
  * The failures this is about: a run that takes an angle the filter has
- * not settled to, and so programs an end point off by the lag; and a run
+ * not settled to, and so programs an end point off by the lag; a run
  * that fails NOT STILL because the filter is slower than the 3000ms it
- * waits.
+ * waits; and a run on yaw that fails NOT STILL because pitch creeps.
  *
  * SPDX-License-Identifier: MIT
  */
+/* Ahead of the rig: gfx.h, which imu_sensor.h brings, names a parameter g,
+ * and after the rig's g that shadows it. */
+#include "imu_sensor.h"
+
 #include "servo_rauto_rig.h"
 
 #include "imu.h"
@@ -23,15 +27,25 @@ static struct {
     int32_t  k;
     uint32_t period;
     bool     allow;
+    imu_axis_t axis;    /* the axis the surface turns and the run reads */
+    float    creep;     /* pitch's creep while the run reads yaw, °/s */
     float    worst;     /* the largest |measured - surface| seen, ° */
     uint8_t  steps;     /* the measures checked */
 } f;
 
-/** @brief One angle frame of roll @p deg at @p t into the IMU. */
+/** @brief One angle frame at @p t into the IMU: @p deg on the rig's axis;
+ *         pitch creeping f.creep °/s from -3.26° and roll at 4.04° while
+ *         that axis is yaw, 0° otherwise. */
 static void frame_in(float deg, uint32_t t)
 {
+    float v[3] = { 0.0f, 0.0f, 0.0f };
+    if (f.axis == IMU_AXIS_Z) {
+        v[IMU_AXIS_X] = 4.04f;
+        v[IMU_AXIS_Y] = -3.26f + f.creep * (float)(t - g.t0) / 1000.0f;
+    }
+    v[f.axis] = deg;
     uint8_t b[WIT_FRAME_LEN];
-    wit_angle_frame(b, deg, 0.0f, 0.0f);
+    wit_angle_frame(b, v[0], v[1], v[2]);
     imu_feed(&f.m, b, sizeof b, t);
 }
 
@@ -46,6 +60,7 @@ static void filter_rig(int32_t k, uint32_t period, bool allow)
     f.k = k;
     f.period = period;
     f.allow = allow;
+    f.axis = IMU_AXIS_X;
 }
 
 /** @brief One ms as the rig's tick(), with the angle from the IMU: the
@@ -62,21 +77,19 @@ static void ftick(void)
     }
     imu_tick(&f.m, g.now);
     imu_reading_t r;
-    const bool ok = imu_reading(&f.m, &r);
-    const float deg = imu_deg(&r, IMU_AXIS_X, false);
+    (void)imu_reading(&f.m, &r);
+    /* As the panel hands it on: the rig's axis and that axis' still. */
+    servo_angle_in_t a;
+    memset(&a, 0, sizeof(a));
+    const bool ok = imu_handout_angle(&r, f.axis, false, &a);
     if ((g.now - g.t0) % 20u == 0u) {
-        servo_angle_in_t a;
-        memset(&a, 0, sizeof(a));
-        a.valid = ok;
-        a.deg = deg;
-        a.still_ms = ok ? r.still_ms : 0u;
         a.taken_ms = g.now;
         servo_rauto_angle(&g.run, &a);
     }
     servo_rauto_in_t in = rig_in();
     in.angle_valid = ok;
-    in.angle_deg = deg;
-    in.still_ms = ok ? r.still_ms : 0u;
+    in.angle_deg = a.deg;
+    in.still_ms = a.still_ms;
     in.settle_ms = f.allow ? imu_filter_settle_ms(f.k, r.rate_dhz) : 0u;
     servo_rauto_do_t d;
     servo_rauto_step(&g.run, g.now, &in, &d);
@@ -148,9 +161,32 @@ TEST_CASE(without_the_allowance_a_slow_filter_ends_not_still)
     CHECK_EQ(f.steps, 0u);
 }
 
+/* The bench of 2026-11-08: IMU FILTER 1 at 50Hz, the run on yaw (Z+),
+ * pitch creeping 1.1°/s and roll at 4.04°.  The run waits for yaw's own
+ * still time and passes, both end points in the tolerance; pitch's still
+ * time never reaches SERVO_RAUTO_STILL_MS on the way. */
+TEST_CASE(auto_on_yaw_passes_while_pitch_creeps)
+{
+    filter_rig(1, 20u, true);
+    f.axis = IMU_AXIS_Z;
+    f.creep = 1.1f;
+    CHECK(run_out(RAUTO_MS));
+    CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
+    CHECK(f.steps >= 2u);
+    for (int s = 0; s < 2; ++s) {
+        CHECK(fabsf(g.run.measured_deg[s] - g.run.goal_deg[s])
+              <= (float)g.cfg.tol_ddeg / 10.0f);
+    }
+    imu_reading_t r;
+    CHECK(imu_reading(&f.m, &r));
+    CHECK(imu_still_ms(&r, IMU_AXIS_Z) >= SERVO_RAUTO_STILL_MS);
+    CHECK(imu_still_ms(&r, IMU_AXIS_Y) < SERVO_RAUTO_STILL_MS);
+}
+
 int main(void)
 {
     RUN(auto_on_the_filtered_imu_measures_settled_angles_and_passes);
     RUN(without_the_allowance_a_slow_filter_ends_not_still);
+    RUN(auto_on_yaw_passes_while_pitch_creeps);
     return test_summary("servo_rauto_filter");
 }

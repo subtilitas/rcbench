@@ -324,16 +324,14 @@ bool panel_imu_angle(bool fresh, servo_test_enc_t *out)
     if (give == IMU_HAND_NONE) {
         return false;
     }
+    /* The angle of IMU AXIS with that axis' own still time: pitch or roll
+     * moving does not hold a still yaw at 0. */
     servo_angle_in_t in = { 0 };
     if (give == IMU_HAND_GAP) {
         in.taken_ms = s_seen.gap_at_ms;
-    } else if (r->valid) {
-        in.valid    = true;
-        in.deg      = imu_deg(r, (imu_axis_t)settings_get_int(SET_IMU_AXIS),
-                              settings_get_int(SET_IMU_SIGN) == 1);
-        in.still_ms = r->still_ms;
-        in.taken_ms = r->taken_ms;
-    } else {
+    } else if (!imu_handout_angle(r,
+                                  (imu_axis_t)settings_get_int(SET_IMU_AXIS),
+                                  settings_get_int(SET_IMU_SIGN) == 1, &in)) {
         /* When it was found so: a run times the silence from here. */
         in.taken_ms = now_ms();
     }
