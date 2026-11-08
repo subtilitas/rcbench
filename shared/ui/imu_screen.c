@@ -195,6 +195,8 @@ bool imu_screen_bind(uint8_t i)
     return true;
 }
 
+bool imu_screen_bind_free(void) { return at_free(); }
+
 bool imu_screen_search(void)
 {
     if (ims.v.link == IMU_LINK_C6_FAILED || ims.v.link == IMU_LINK_NO_BT
