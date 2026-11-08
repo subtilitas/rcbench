@@ -1559,9 +1559,10 @@ the run's steps switch the PD mini at each step's voltage. During the run
 the slot reads STOP TEST, which ends the run on its press. The plot of the
 servo rail moves to the left card, under SUPPLY's caps.
 
-KST and HITEC keep the PORT button and show a READY card of three rows in
-the output card's place: PORT, the supply the session's CONNECT switches,
-and SERVO, the servo read. While the supply reads ON, a tap on its row
+KST and HITEC keep the PORT button and show a READY card in the output
+card's place: PORT, the supply the session's CONNECT switches, and SERVO,
+the servo read; HITEC adds SERIES under PORT, D SERIES or CLASSIC, whose
+tap opens the two over the left card while the session holds no port. While the supply reads ON, a tap on its row
 switches it off, also under a panel over the left card. Their footer's
 middle slot is the session's WRITE n VALUES; neither screen has ARM
 ([Programmer](#programmer)).

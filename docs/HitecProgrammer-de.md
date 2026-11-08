@@ -15,13 +15,23 @@ Tippe im [SERVO-Hub](Screens-de.md#servo) auf HITEC. Die
 Servoprogrammierung öffnet sich auf einer eigenen Seite und deckt die linke
 Karte ab. Das Home-Feld führt zum Hub zurück, solange die
 Servoprogrammierung keinen Port hält; die Sitzung hat kein SCHLIESSEN. Die
-rechte Karte ist die Karte BEREIT mit PORT, der Versorgung, die
+rechte Karte ist die Karte BEREIT mit PORT, SERIE, der Versorgung, die
 **VERBINDEN** schaltet, und dem gelesenen Servo; die Mitte der Fußleiste
 ist **WERTE SCHREIBEN** der Sitzung. Die Seite hat kein **ARM**
 ([Bildschirme: Programmierer](Screens-de.md#programmierer)). Die Kachel ist mit
 `IOMCU OHNE SERVO PWM` ausgegraut und lässt sich nicht öffnen, solange der
 IOmcu, die RP2350-Platine, kein Servo-PWM (Pulsweitenmodulation) meldet.
 Das gilt auch, wenn kein IOmcu antwortet.
+
+Die Zeile SERIE der Karte BEREIT, die zweite ihrer vier Zeilen, zeigt
+D-SERIE oder KLASSISCH, die Serie, mit der das nächste VERBINDEN arbeitet
+(SET_HITEC_SERIES). Ein Tippen öffnet die beiden über der linken Karte; eine
+Wahl wird sofort gespeichert und lädt die Optionen der Servoprogrammierung
+neu. Solange die Sitzung den Port hält oder ein VERBINDEN läuft, zeigt die
+Zeile die Serie der Sitzung, und ein Tippen nennt
+`Tippe zuerst auf VERLASSEN: die Sitzung behält ihre Serie.` im Alarmband.
+
+![Die Auswahl SERIE von HITEC über der linken Karte](img/de/servo-hitec-card-series.png)
 
 Hitec ist ein Name oder eine Marke des jeweiligen Inhabers. rcbench ist
 unabhängig: Es ist mit diesem Inhaber weder verbunden noch von ihm
@@ -86,7 +96,7 @@ und von je 1 HS-5645MG, HS-7955TG und HS-5955TG (18.10. bis 20.10.2026)
 | Zeile | Was sie tut |
 | --- | --- |
 | PORT | Zwei Zeilen: der Port und sein GPIO mit der Serie, `PROG-PORT 1 GPIO 13  D-SERIE`, auf dem rbmod-Carrier öffnet ein Tipp darauf vor VERBINDEN die Liste der Programmierports, dann die Empfangsart und die Versorgung, die VERBINDEN einstellt, `RX PRECHARGE  5.0V 1000mA` (`VERSORGUNG UNVERÄNDERT` bei einem Servo der D-Serie ohne PD mini und ohne feste 5V-Versorgung des Carriers). Die Taste lautet VERBINDEN, ABBRECHEN, während der Port in den Programmiermodus wechselt oder Werte ausgelesen werden, WARTEN, VERLASSEN, solange der Port gehalten ist, und PORT FREIGEBEN, solange eine andere Sitzung ihn hält |
-| SERIE | D-SERIE oder KLASSISCH, vor VERBINDEN gewählt; in den SERVO-Einstellungen gespeichert (SET_HITEC_SERIES). Solange der Port gehalten ist, nennt die Zeile PORT die Serie, und DATEIEN steht an dieser Stelle |
+| SERIE | D-SERIE oder KLASSISCH, vor VERBINDEN gewählt; in den SERVO-Einstellungen gespeichert (SET_HITEC_SERIES), derselbe Wert wie die Zeile SERIE der Karte BEREIT. Solange der Port gehalten ist, nennt die Zeile PORT die Serie, und DATEIEN steht an dieser Stelle |
 | DATEIEN | Solange der Port gehalten ist: die Servodateien auf der Karte, Speichern und Laden ([Servodateien](#servodateien)) |
 | SERVO | Das ausgelesene Modell, `D485HW` oder `HS-5645MG`; ALLES AUSLESEN liest die Werte der Serie erneut aus |
 | WEITERES | Programmierspannung und Strombegrenzung, jede auf dem Tastenfeld, solange der Tester den Port hat. Solange der Port gehalten ist: ÄNDERUNGEN VERWERFEN, wenn eine Änderung besteht, PRÜFSUMME REPARIEREN bei einer falschen klassischen Prüfsumme und WERKSEINSTELLUNG für ein gelesenes klassisches Servo ([WERKSEINSTELLUNG](#werkseinstellung)) |
