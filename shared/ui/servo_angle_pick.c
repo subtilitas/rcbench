@@ -10,10 +10,13 @@
  *   - `AS5600`; `AS5600: OFF IN SETUP`, refused, while SET_ENC_EN is off.
  *     Its tap opens SETUP > SENSORS on the AS5600 entry: the AS5600 is
  *     the IOmcu's part, switched on there;
- *   - the bound sensor, `name 19:29`, when the last scan did not list it;
- *   - each sensor of the last scan, `name 19:29 -61dBm`: its name or `NO
- *     NAME` cut to AP_NAME_CELLS, the last 5 characters of its address
- *     and its RSSI when the scan heard one.  While no bind is taken (no
+ *   - the bound sensor, `name 00:0C:BF:08:19:29 P`, when the last scan
+ *     did not list it;
+ *   - each sensor of the last scan, `name 00:0C:BF:08:19:29 P -61dBm`: its
+ *     name or `NO NAME` cut to AP_NAME_CELLS, its full address, its type (P
+ *     public, R random) and its RSSI when the scan heard one.  An entry the
+ *     line does not fit, a column of two, takes two lines: the name and the
+ *     RSSI over the address and the type.  While no bind is taken (no
  *     sync with the C6, the calibration running, the IMU off) each but the
  *     bound one is refused, its tap naming why;
  *   - `NO IMU FOUND`, refused, when the last scan listed none, or the
@@ -70,9 +73,14 @@
 #define AP_IMU0   16  /**< sensor 0 of the last scan; sensor i is + i */
 /** @} */
 
-/** @brief A sensor's name, cut to this many cells: with ` 19:29 -100dBm`
- *         it takes 26 of a two-column entry's 29. */
-#define AP_NAME_CELLS 12
+/** @brief A sensor's name, cut to this many cells: with ` -100dBm` it
+ *         takes 26 of a two-column entry's 29 cells of 10px, the address
+ *         and type on the line under it. */
+#define AP_NAME_CELLS 18
+
+/** @brief A sensor entry's address and type, `00:0C:BF:08:19:29 P`, in
+ *         characters. */
+#define AP_ADDR_LEN 19
 
 /** @brief The entries as last drawn: a hash of their labels, values and
  *         refusals, so a rebuild repaints only when one changed. */
@@ -84,6 +92,9 @@ static uint32_t s_sig;
 static char s_addr[IMU_FOUND_MAX][IMU_ADDR_MAX];
 /** @brief Each sensor entry's address type: 0 public, 1 random. */
 static uint8_t s_type[IMU_FOUND_MAX];
+/** @brief Where each entry's address starts in its label: 0 on an entry that
+ *         names no sensor. */
+static uint8_t s_split[CHOICE_MAX];
 
 /**
  * @brief Whether the bound sensor is scanned device @p d.  The bound
@@ -144,27 +155,47 @@ static const char *bind_why(const imu_view_t *v)
 }
 
 /**
- * @brief A sensor's entry: its name or NO NAME, cut, the last 5
- *        characters of its address, and its RSSI when known.
+ * @brief The length of @p t, at most @p max characters read.
+ * @param t   The text.
+ * @param max The most characters read.
+ * @return The characters before the NUL, @p max at most.
+ */
+static size_t text_len(const char *t, size_t max)
+{
+    size_t n = 0u;
+    while (n < max && t[n] != '\0') {
+        ++n;
+    }
+    return n;
+}
+
+/**
+ * @brief A sensor's entry: its name or NO NAME, cut, its full address, its
+ *        type and its RSSI when known: `HC-06 00:0C:BF:08:19:29 P -60dBm`.
  * @param name Its name, "" for none.
- * @param addr Its address, a type after a space allowed.
+ * @param addr Its address, colons; anything after the 17th character is
+ *             not read.
+ * @param type Its type: 'P' public, 'R' random.
  * @param rssi Its RSSI, dBm; 127 unknown.
  * @param out  Takes the entry.
  * @param n    @p out's size.
+ * @return Where the address starts in @p out.
  */
-static void sensor_label(const char *name, const char *addr, int8_t rssi,
-                         char *out, size_t n)
+static uint8_t sensor_label(const char *name, const char *addr, char type,
+                            int8_t rssi, char *out, size_t n)
 {
     const char *nm = (name[0] != '\0') ? name : TR(IMU_NO_NAME);
     const int cut = (int)gfx_text_prefix(nm, AP_NAME_CELLS);
-    const size_t len = strcspn(addr, " ");
-    const char *tail = addr + ((len > 5u) ? len - 5u : 0u);
-    const int tlen = (int)((len > 5u) ? 5u : len);
+    const int alen = (int)text_len(addr, 17u);
     if (rssi != 127) {
-        snprintf(out, n, "%.*s %.*s %ddBm", cut, nm, tlen, tail, (int)rssi);
+        snprintf(out, n, "%.*s %.*s %c %ddBm", cut, nm, alen, addr, type,
+                 (int)rssi);
     } else {
-        snprintf(out, n, "%.*s %.*s", cut, nm, tlen, tail);
+        snprintf(out, n, "%.*s %.*s %c", cut, nm, alen, addr, type);
     }
+    /* The address follows the name's bytes and a space. */
+    const size_t at = strlen(nm) < (size_t)cut ? strlen(nm) : (size_t)cut;
+    return (uint8_t)(at + 1u);
 }
 
 /**
@@ -210,6 +241,7 @@ static void build(void)
     const imu_view_t *v = imu_screen_view();
     s.ch.count = 0;
     s.ch.refused = 0u;
+    memset(s_split, 0, sizeof(s_split));
     if (settings_get_bool(SET_ENC_EN)) {
         add("AS5600", AP_AS5600, false);
     } else {
@@ -223,8 +255,12 @@ static void build(void)
     }
     char line[64];
     if (v->bound_addr[0] != '\0' && !listed) {
-        sensor_label(v->bound_name, v->bound_addr, 127, line, sizeof(line));
+        const char type = strlen(v->bound_addr) == 19u ? v->bound_addr[18]
+                                                       : '?';
+        const uint8_t at = sensor_label(v->bound_name, v->bound_addr, type,
+                                        127, line, sizeof(line));
         add(line, AP_BOUND, false);
+        s_split[s.ch.count - 1] = at;
     }
     /* SEARCH FOR IMU keeps the last place: 1 + 8 + 1 fill CHOICE_MAX, and
      * a bound sensor beside 8 found drops the eighth. */
@@ -233,10 +269,13 @@ static void build(void)
      * its line kept; a tap names why in the band. */
     const bool bind_off = bind_why(v) != NULL;
     for (int i = 0; i < found && i < room; ++i) {
-        sensor_label(v->found[i].name, v->found[i].addr, v->found[i].rssi,
-                     line, sizeof(line));
+        const uint8_t at = sensor_label(
+            v->found[i].name, v->found[i].addr,
+            v->found[i].addr_type == 1u ? 'R' : 'P', v->found[i].rssi, line,
+            sizeof(line));
         add(line, AP_IMU0 + i,
             bind_off && !same_dev(v->bound_addr, &v->found[i]));
+        s_split[s.ch.count - 1] = at;
         snprintf(s_addr[i], sizeof(s_addr[i]), "%s", v->found[i].addr);
         s_type[i] = v->found[i].addr_type;
     }
@@ -424,6 +463,39 @@ void angle_pick_run_row(rdy_row_t *r, const char *name, bool reads)
                      && !settings_get_bool(SET_ENC_EN);
     snprintf(r->value, sizeof(r->value),
              off ? TR(SV_ANG_RUN_OFF) : TR(SV_ANG_RUN_NONE), name);
+}
+
+bool angle_pick_draw_entry(gfx_canvas_t *c, int k, gfx_color_t fill,
+                           bool refused, bool down)
+{
+    if (k < 0 || k >= s.ch.count || s_split[k] == 0u) {
+        return false;
+    }
+    const gfx_rect_t r = choice_rect(k);
+    const char *label = s.ch.labels[k];
+    /* One line while it fits with 10px each side, a column of one. */
+    if (gfx_text_width(SV_FONT_LABEL, label, 1) <= r.w - 20) {
+        return false;
+    }
+    const size_t at = s_split[k];
+    const char *addr = label + at;
+    const size_t alen = text_len(addr, AP_ADDR_LEN);
+    char top[sizeof(s.ch.labels[0])];
+    char low[AP_ADDR_LEN + 1];
+    /* The name and the RSSI over the address and the type. */
+    snprintf(top, sizeof(top), "%.*s%s", (int)(at - 1u), label, addr + alen);
+    snprintf(low, sizeof(low), "%.*s", (int)alen, addr);
+    ui_button_font(c, r, NULL, fill, down, true, SV_FONT_LABEL);
+    const gfx_color_t ink = refused ? ui_theme_color(UI_C_WARN)
+                            : ui_is_light(fill) ? UI_TEXT_ON_LIGHT
+                                                : UI_TEXT;
+    /* 20px over 16px with 2px between: 5px above and below in 48px. */
+    const int y0 = r.y + (r.h - 38) / 2;
+    gfx_text_in(c, (gfx_rect_t){ r.x, (int16_t)y0, r.w, 20 }, top,
+                SV_FONT_LABEL, ink, 1, GFX_ALIGN_CENTER);
+    gfx_text_in(c, (gfx_rect_t){ r.x, (int16_t)(y0 + 22), r.w, 16 }, low,
+                &gfx_font_8x16, ink, 1, GFX_ALIGN_CENTER);
+    return true;
 }
 
 int angle_pick_count(void)

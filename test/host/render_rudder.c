@@ -22,7 +22,9 @@
  * servo-rudder-auto-failed-rbmod 1100ms later, the read-back failed, the
  * bench SAFE.  The servo-rudder-angle views tap RUDDER's ANGLE row with the
  * IMU on and Bluetooth LE running: servo-rudder-angle with two sensors
- * found, servo-rudder-angle-scan with a scan under way, and
+ * found, servo-rudder-angle-many with six, a public and a random address
+ * of the same last bytes among them, in two columns of entries on two
+ * lines, servo-rudder-angle-scan with a scan under way, and
  * servo-rudder-angle-none with the AS5600 off in SETUP and a scan that
  * found none.
  *
@@ -104,6 +106,20 @@ static void angle_list(const char *view)
         v.found_n = 2u;
         sensor(&v.found[0], "00:0C:BF:08:19:29", "HC-06", -50);
         sensor(&v.found[1], "D4:2B:7E:51:0C:A3", "BWT901CL", -71);
+    } else if (strcmp(view, "servo-rudder-angle-many") == 0) {
+        static const char *const k_addr[6] = {
+            "00:0C:BF:08:19:29", "D4:2B:7E:51:19:29", "D4:2B:7E:51:0C:A3",
+            "00:0C:BF:0A:44:17", "00:0C:BF:0A:51:06", "C8:47:8C:12:7E:90",
+        };
+        static const char *const k_name[6] = {
+            "HC-06", "HC-06", "BWT901CL", "", "HC-06", "WT901BLE68",
+        };
+        v.found_n = 6u;
+        for (int i = 0; i < 6; ++i) {
+            sensor(&v.found[i], k_addr[i], k_name[i], (int8_t)(-48 - 7 * i));
+        }
+        v.found[1].addr_type = 1u;
+        v.found[5].addr_type = 1u;
     } else if (strcmp(view, "servo-rudder-angle-scan") == 0) {
         v.link = IMU_LINK_SCANNING;
     } else {

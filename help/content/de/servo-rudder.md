@@ -54,13 +54,15 @@ Ein Tippen auf die Zeile WINKEL von BEREIT, mit Messwert oder ohne, öffnet bei 
 |---|---|
 | `AS5600` | setzt WINKELQUELLE AS5600 und schließt die Liste |
 | `AS5600: AUS IN SETUP` | öffnet den Eintrag AS5600 unter [Sensoren](setup-sensors.md); das Home-Tag kehrt hierher zurück |
-| ein Sensor, `HC-06 19:29 -50dBm`: Name, die letzten 5 Zeichen seiner Adresse, das Signal | bindet ihn, schaltet die IMU ein und setzt WINKELQUELLE IMU |
+| ein Sensor, `HC-06 00:0C:BF:08:19:29 P -50dBm`: Name, seine ganze Adresse, ihr Typ (`P` öffentlich, `R` zufällig), das Signal; in zwei Spalten auf zwei Zeilen | bindet ihn, schaltet die IMU ein und setzt WINKELQUELLE IMU |
 | `KEINE IMU GEFUNDEN` | die letzte Suche fand keine; das Tippen nennt die üblichen Ursachen im Band |
 | `IMU SUCHEN` | schaltet die IMU ein, falls aus, und sucht 10s, sobald Bluetooth LE läuft; die Liste bleibt offen und zeigt `SUCHE: 10s`, danach die gefundenen Sensoren |
 
 Die gültige Quelle steht in der Akzentfarbe. Bei eingeschalteter IMU ohne gebundenen Sensor startet das Öffnen der Liste von selbst eine Suche.
 
 ![Die Liste WINKELQUELLE: AS5600 gültig, zwei Sensoren gefunden](view:servo-rudder-angle)
+
+![Sechs gefundene Sensoren in zwei Spalten, zwei mit gleichem Adressende](view:servo-rudder-angle-many)
 
 ![Eine laufende Suche](view:servo-rudder-angle-scan)
 

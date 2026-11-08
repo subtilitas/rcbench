@@ -25,6 +25,7 @@
  * - a_public_and_a_random_address_of_the_same_bits_are_two_sensors
  * - test_and_limit_run_show_the_angle_and_never_refuse_on_it
  * - a_limit_run_shows_whether_it_reads_angles_as_it_started
+ * - each_entry_names_the_full_address_and_its_type
  *
  * SPDX-License-Identifier: MIT
  */
@@ -189,10 +190,11 @@ TEST_CASE(an_imu_pick_binds_it_switches_the_imu_on_and_sets_the_source)
     tap_angle_row();
     CHECK_EQ(angle_pick_count(), 4);
     bool refused = true;
-    CHECK_STR_EQ(entry(1, &refused), "HC-06 19:29 -50dBm");
+    CHECK_STR_EQ(entry(1, &refused), "HC-06 00:0C:BF:08:19:29 P -50dBm");
     CHECK(!refused);
     char want[64];
-    snprintf(want, sizeof(want), "%s 44:17 -71dBm", TR(IMU_NO_NAME));
+    snprintf(want, sizeof(want), "%s 00:0C:BF:0A:44:17 P -71dBm",
+             TR(IMU_NO_NAME));
     CHECK_STR_EQ(entry(2, NULL), want);
     CHECK_STR_EQ(entry(3, NULL), TR(SV_ANG_SEARCH));
     CHECK_EQ(imu_took().kind, IMU_CMD_NONE);   /* listed: no scan of its own */
@@ -305,7 +307,7 @@ TEST_CASE(the_list_follows_the_scan_to_no_imu_found_and_a_failed_scan)
 
 /* 8 sensors: AS5600, the 8 and SEARCH fill CHOICE_MAX's 10 in two columns;
  * the bound sensor not in the scan stands second, in the accent with the
- * IMU in force, and the eighth found gives way.  A long name is cut to 12
+ * IMU in force, and the eighth found gives way.  A long name is cut to 18
  * cells. */
 TEST_CASE(eight_found_fill_ten_entries_and_a_bound_one_drops_the_eighth)
 {
@@ -320,8 +322,9 @@ TEST_CASE(eight_found_fill_ten_entries_and_a_bound_one_drops_the_eighth)
     view_now();
     tap_angle_row();
     CHECK_EQ(angle_pick_count(), 10);
-    CHECK_STR_EQ(entry(1, NULL), "WT901BLE68-A 19:10 -40dBm");
-    CHECK_STR_EQ(entry(8, NULL), "HC-06 19:17 -47dBm");
+    CHECK_STR_EQ(entry(1, NULL),
+                 "WT901BLE68-ABCDEFG 00:0C:BF:08:19:10 P -40dBm");
+    CHECK_STR_EQ(entry(8, NULL), "HC-06 00:0C:BF:08:19:17 P -47dBm");
     CHECK_STR_EQ(entry(9, NULL), TR(SV_ANG_SEARCH));
     /* Two columns of 5. */
     CHECK(angle_pick_rect(5).x > angle_pick_rect(0).x);
@@ -334,10 +337,10 @@ TEST_CASE(eight_found_fill_ten_entries_and_a_bound_one_drops_the_eighth)
     view_now();
     frame();
     CHECK_EQ(angle_pick_count(), 10);
-    CHECK_STR_EQ(entry(1, NULL), "BWT901CL 02:03");
+    CHECK_STR_EQ(entry(1, NULL), "BWT901CL 00:0C:BF:01:02:03 P");
     CHECK(angle_pick_current(1));
     CHECK(!angle_pick_current(0));
-    CHECK_STR_EQ(entry(8, NULL), "HC-06 19:16 -46dBm");
+    CHECK_STR_EQ(entry(8, NULL), "HC-06 00:0C:BF:08:19:16 P -46dBm");
     CHECK_STR_EQ(entry(9, NULL), TR(SV_ANG_SEARCH));
 }
 
@@ -374,7 +377,7 @@ TEST_CASE(a_finger_on_an_entry_keeps_the_entries_under_it)
     found(0, "00:0C:BF:0A:44:17", "OTHER", -40);
     view_now();
     frame();
-    CHECK_STR_EQ(entry(1, NULL), "HC-06 19:29 -50dBm");
+    CHECK_STR_EQ(entry(1, NULL), "HC-06 00:0C:BF:08:19:29 P -50dBm");
     ev(cx(r), cy(r), TOUCH_EVENT_UP, 3);
     const imu_cmd_t c = imu_took();
     CHECK_EQ(c.kind, IMU_CMD_BIND);
@@ -730,6 +733,40 @@ TEST_CASE(a_limit_run_shows_whether_it_reads_angles_as_it_started)
     }
 }
 
+/* Two sensors of one name and RSSI whose addresses end alike read apart:
+ * each entry names the full address and its type, in one column and, past
+ * 5 entries, on two lines of a column of two. */
+TEST_CASE(each_entry_names_the_full_address_and_its_type)
+{
+    safe_on(SERVO_FN_RUDDER, IMU_LINK_READY);
+    g_v.found_n = 2u;
+    found_typed(0, "D4:12:34:56:19:29", 1u, -60);
+    found_typed(1, "00:0C:BF:08:19:29", 0u, -60);
+    view_now();
+    tap_angle_row();
+    CHECK_EQ(angle_pick_count(), 4);
+    CHECK_STR_EQ(entry(1, NULL), "HC-06 D4:12:34:56:19:29 R -60dBm");
+    CHECK_STR_EQ(entry(2, NULL), "HC-06 00:0C:BF:08:19:29 P -60dBm");
+    CHECK(strcmp(entry(1, NULL), entry(2, NULL)) != 0);
+    scr->render(&cv, 0);
+
+    /* The bound sensor, not in the scan, with its type. */
+    snprintf(g_v.bound_addr, sizeof(g_v.bound_addr), "D4:12:34:56:19:30 R");
+    snprintf(g_v.bound_name, sizeof(g_v.bound_name), "HC-06");
+    g_v.found_n = 6u;
+    for (int i = 2; i < 6; ++i) {
+        char addr[24];
+        snprintf(addr, sizeof(addr), "00:0C:BF:08:19:%02d", 30 + i);
+        found_typed(i, addr, 0u, (int8_t)(-70 - i));
+    }
+    view_now();
+    frame();
+    CHECK_EQ(angle_pick_count(), 9);
+    CHECK_STR_EQ(entry(1, NULL), "HC-06 D4:12:34:56:19:30 R");
+    CHECK(angle_pick_rect(5).x > angle_pick_rect(0).x);
+    scr->render(&cv, 0);
+}
+
 int main(void)
 {
     RUN(the_angle_row_opens_the_list_with_a_reading_and_without);
@@ -747,5 +784,6 @@ int main(void)
     RUN(a_public_and_a_random_address_of_the_same_bits_are_two_sensors);
     RUN(test_and_limit_run_show_the_angle_and_never_refuse_on_it);
     RUN(a_limit_run_shows_whether_it_reads_angles_as_it_started);
+    RUN(each_entry_names_the_full_address_and_its_type);
     return test_summary("servo_angle_pick");
 }
