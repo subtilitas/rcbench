@@ -36,12 +36,37 @@ static bool hit_down(gfx_rect_t r, int px, int py)
 }
 
 /**
- * @brief Follows the warning's hold: the contact leaving the button ends it; a
- *        release ends it.
+ * @brief Follows DONE's hold: the contact leaving the button ends it; a
+ *        release ends it, before 2s with the hint.
+ * @param evt the event of DONE's contact
+ */
+static void sp_track_done(const touch_event_t *evt)
+{
+    stick_t *t = &s.st;
+    if (evt->type == TOUCH_EVENT_MOVE) {
+        if (!gfx_rect_contains(t->hold_btn, evt->point.x, evt->point.y)
+            && ui_hold_leave(&t->done)) {
+            t->done_down = false;
+            ++pg.rev;
+        }
+        return;
+    }
+    (void)ui_hold_end(&t->done, evt, t->hold_btn);
+    t->done_down = false;
+    ++pg.rev;
+}
+
+/**
+ * @brief Follows the warning's hold and DONE's: the contact leaving the
+ *        button ends it; a release ends it.
  */
 static void sp_track(const touch_event_t *evt)
 {
     stick_t *t = &s.st;
+    if (t->done_down && evt->point.id == t->done_id) {
+        sp_track_done(evt);
+        return;
+    }
     if (!t->warn_down || evt->point.id != t->warn_id) {
         return;
     }
@@ -125,6 +150,7 @@ bool esc_stick_panel_holds_press(uint8_t id)
 {
     const stick_t *t = &s.st;
     return (t->warn_down && t->warn_id == id)
+           || (t->done_down && t->done_id == id)
            || (t->tk.open && t->tk.pressed >= 0 && t->tk.press_id == id);
 }
 
@@ -374,9 +400,23 @@ bool esc_stick_panel_down(const touch_event_t *evt)
      * motor. */
     if (esc_stick_running(&t->run)) {
         /* A manual step asked covers the page: DONE or ABORT.  DONE is
-         * acted on in the next tick, after the bench has been judged. */
+         * acted on in the next tick, after the bench has been judged.
+         * DONE before the power-up switches the supply on after it: a 2s
+         * hold from the press, once DONE counts. */
         if (esc_stick_hand(&t->run) != NULL) {
-            if (hit(t->hold_btn, px, py)) {
+            if (sp_done_holds() && hit_down(t->hold_btn, px, py)) {
+                if (esc_stick_hand_ready(&t->run) && !t->done_down) {
+                    t->done_down = true;
+                    t->done_id = evt->point.id;
+                    ui_hold_reset(&t->done);
+                    ui_hold_begin(&t->done, TX_HOLD_HINT_DONE);
+                    ++pg.rev;
+                }
+            } else if (sp_done_holds()) {
+                if (hit_down(t->cancel_btn, px, py)) {
+                    sp_end_run(ESC_STICK_R_USER);
+                }
+            } else if (hit(t->hold_btn, px, py)) {
                 if (esc_stick_confirm(&t->run)) {
                     ++pg.rev;
                 }

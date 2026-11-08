@@ -36,6 +36,11 @@ history is in git.
   running hold. ABORT, LEAVE and RELEASE take a tap. The texts that ask for
   CONNECT say `Hold CONNECT 2s`; without a PD mini the step reads `Switch
   the servo supply off, then on. Hold CONNECT 2s at once.`
+- DONE of a stick run's manual step before a power-up is a 2s hold: the
+  run switches the supply on after it. A release before 2s confirms
+  nothing and shows `Hold 2s to confirm the step before the supply
+  switches on.` The other steps' DONE stays a tap. Every control that
+  switches a voltage, a supply or an output on is a 2s hold.
 
 - The READY card on the SERVO screens (LIVE, SWEEP, RUDDER, TEST, LIMIT
   RUN, RUDDER AUTO, KST and HITEC) draws each row's state on a raised tag

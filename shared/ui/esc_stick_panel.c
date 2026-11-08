@@ -466,6 +466,41 @@ void sp_end_hold(void)
         ui_hold_reset(&s.st.hold);
         ++pg.rev;
     }
+    if (s.st.done_down || s.st.done.held_s > 0.0f) {
+        s.st.done_down = false;
+        ui_hold_reset(&s.st.done);
+        ++pg.rev;
+    }
+}
+
+bool sp_done_holds(void)
+{
+    const esc_stick_t *e = &s.st.run;
+    return esc_stick_running(e) && esc_stick_hand(e) != NULL
+           && e->phase == ESC_STICK_HAND_OFF;
+}
+
+/**
+ * @brief A frame of DONE's hold: at 2s DONE counts; the step gone, or the
+ *        steps' list or the warning over the page, ends it.
+ * @param dt_s the frame's time, s
+ */
+static void sp_done_tick(float dt_s)
+{
+    stick_t *t = &s.st;
+    if (t->done_down && !t->done.fired) {
+        if (!sp_done_holds() || t->hand_open || t->warn) {
+            (void)ui_hold_left(&t->done);
+            t->done_down = false;
+        } else if (ui_hold_tick(&t->done, dt_s)) {
+            (void)esc_stick_confirm(&t->run);
+        }
+        ++pg.rev;            /* the hold's fill */
+    }
+    if (ui_hold_flashing(&t->done)) {
+        ui_hold_flash_step(&t->done, dt_s);
+        ++pg.rev;            /* the flash's frames, and the page after it */
+    }
 }
 
 /* What the display shows of a run, to repaint only when it changes. */
@@ -546,6 +581,7 @@ void esc_stick_panel_tick(float dt_s)
         ui_hold_flash_step(&t->hold, dt_s);
         ++pg.rev;            /* the flash's frames, and the page after it */
     }
+    sp_done_tick(dt_s);
     const bool running = esc_stick_running(&t->run);
     /* Not gated on the result still showing: a tap queued in the frame
      * the run ended -- on ABORT, which the result's OK replaces -- closes

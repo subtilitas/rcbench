@@ -191,6 +191,11 @@ typedef struct {
          warn_down;                         /**< whether the warning's hold button is down */
     uint8_t   warn_id;                  /**< id of the warning's hold */
     ui_hold_t hold;                     /**< hold counter of the warning's button */
+    /* DONE of a step before the power-up, a 2s hold: the run switches the
+     * supply on after it (sp_done_holds()). */
+    bool      done_down;                /**< whether DONE's hold is down */
+    uint8_t   done_id;                  /**< id of DONE's hold */
+    ui_hold_t done;                     /**< hold counter of DONE */
 
     /* The run, and whether its result is still on screen. */
     esc_stick_t run;                    /**< the engine's run */
@@ -347,8 +352,16 @@ bool sp_can_run(void);
 /** @brief What the run asks for, onto the paths an operator's own presses
  *         take. */
 void sp_follow(void);
-/** @brief The warning's hold dropped, with nothing started. */
+/** @brief The warning's hold and DONE's dropped, with nothing started or
+ *         confirmed. */
 void sp_end_hold(void);
+/**
+ * @brief Whether DONE is a 2s hold: a run's manual step before the power-up
+ *        is asked (ESC_STICK_HAND_OFF), and the run switches the supply on
+ *        after it.
+ * @return true then
+ */
+bool sp_done_holds(void);
 /**
  * @brief The run ends now as @p why; nothing it queued survives.
  * @param why the reason the run ends

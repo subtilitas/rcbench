@@ -470,7 +470,9 @@ end above it.
 ## Hold buttons
 
 A hold button acts after 2s of contact (`UI_HOLD_S`). Releasing it earlier
-sends no command. Instead, the alert band shows a hint for 4s: amber
+sends no command. Every control that switches a voltage, a supply or an
+output on is a hold button; one that switches it off, such as OUTPUT OFF,
+PROG 5V OFF, DISARM, STOP or ABORT, takes a tap. Instead, the alert band shows a hint for 4s: amber
 (`UI_C_WARN`) with dark text, rather than the danger colour. Tap the band
 to dismiss it earlier. The hint fits on one line of at most 97 characters.
 
@@ -509,6 +511,7 @@ replaces a visible hint.
 | HOLD 2s TO RELEASE | `Hold 2s to release the port.` |
 | HOLD 2s TO REPAIR | `Hold 2s to repair.` |
 | HOLD 2s TO RUN on a stick run's warning | `Hold 2s to run.` |
+| DONE of a stick run's step before a power-up | `Hold 2s to confirm the step before the supply switches on.` |
 | HOLD 2s TO INSTALL on Wi-Fi | `Hold 2s to install.` |
 | HOLD 2s TO DOWNLOAD & INSTALL on UPDATES and in the update reminder | `Hold 2s to download and install.` |
 | HOLD 2s TO UPDATE THE IOMCU on UPDATES, and START on the IOmcu update's question | `Hold 2s to update the IOmcu.` |
@@ -525,8 +528,8 @@ button white, black, then its settled colour, twice, 50ms a phase
 (`UI_HOLD_FLASH_PHASE_MS`), 300ms in all (`UI_HOLD_FLASH_MS`). At 60 frames
 a second a phase is 3 frames. A slower frame ends the phase it falls in and
 no more, so every phase is drawn at any frame rate. The settled colour is
-the one the hold fades to: the danger red for ARM, OUTPUT ON, PROG 5V ON
-and the programmers' CONNECT; amber for HOLD 2s: ARM + START on TEST, RUDDER AUTO and LIMIT RUN,
+the one the hold fades to: the danger red for ARM, OUTPUT ON, PROG 5V ON,
+the programmers' CONNECT and a stick run's DONE before a power-up; amber for HOLD 2s: ARM + START on TEST, RUDDER AUTO and LIMIT RUN,
 whose sequence waits for ARMED and its read-backs before the run.
 
 - The flash starts with the hold, not with the answer. ARMED, the output
@@ -1304,9 +1307,11 @@ profile; [Stick programming](StickProgramming.md) describes the runs.
 ESC STICK controls normally act on a tap: lift inside the pressed control,
 within 8px of the starting point on each axis. Sliding away or across a
 control does not activate it. Each control accepts one finger at a time.
-Three controls use the press directly:
+Four controls use the press directly:
 
 - HOLD 2s TO RUN: its 2s hold starts at the press.
+- DONE on a manual step's prompt before a power-up: its 2s hold starts at
+  the press, once DONE is lit.
 - ABORT of a stick run, on the run's page and on a manual step's prompt. It
   stops a motor, so it does not wait for the lift, and it answers a second
   finger.

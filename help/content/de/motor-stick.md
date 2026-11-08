@@ -115,7 +115,7 @@ Die Warnung listet die Handgriffe vor dem Einschalten auf. Passen sie nicht voll
 
 ![Der Lauf wartet auf den Jumper](view:motor-stick-hand-prompt)
 
-Ist während des Laufs ein Handgriff nötig, verdeckt eine Aufforderung mit ERLEDIGT und ABBRECHEN die Seite. ERLEDIGT ist die ersten 1000ms gesperrt. Ohne Bestätigung innerhalb von 60s endet der Lauf mit NICHT BESTÄTIGT.
+Ist während des Laufs ein Handgriff nötig, verdeckt eine Aufforderung mit ERLEDIGT und ABBRECHEN die Seite. ERLEDIGT ist die ersten 1000ms gesperrt. Vor einem Einschalten schaltet ERLEDIGT danach das Netzteil ein und ist dort darum eine Halte-Taste von 2s. Ohne Bestätigung innerhalb von 60s endet der Lauf mit NICHT BESTÄTIGT.
 
 ![Die Handgriffe nach dem Programmieren, am Ende eines Laufs](view:motor-stick-hand-after)
 

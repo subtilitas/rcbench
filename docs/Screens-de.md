@@ -504,7 +504,10 @@ Bedienelemente zum Anhalten des Prüfstands enden darüber.
 ## Halte-Tasten
 
 Eine Halte-Taste wirkt nach 2s Berührung (`UI_HOLD_S`). Loslassen vor 2s
-sendet keinen Befehl. Stattdessen erscheint ihr Hinweis für 4s im Alarmband:
+sendet keinen Befehl. Jede Taste, die eine Spannung, eine Versorgung oder
+einen Ausgang einschaltet, ist eine Halte-Taste; eine, die sie ausschaltet,
+etwa AUSGANG AUS, PROG 5V AUS, DISARM, STOP oder ABBRECHEN, nimmt ein
+Tippen. Stattdessen erscheint ihr Hinweis für 4s im Alarmband:
 in Bernsteinfarbe (`UI_C_WARN`) mit dunkler Schrift statt der
 Gefahrenfarbe. Tippe auf das Band, um ihn früher zu löschen. Der Hinweis
 passt in eine Zeile mit höchstens 97 Zeichen.
@@ -546,6 +549,7 @@ ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | 2s HALTEN ZUM FREIGEBEN auf PORT FREIGEBEN | `Halte 2s, um den Port freizugeben.` |
 | 2s HALTEN ZUM REPARIEREN | `Halte 2s, um zu reparieren.` |
 | 2s HALTEN ZUM STARTEN in der Warnung eines Stick-Laufs | `Halte 2s, um zu starten.` |
+| ERLEDIGT eines Schritts vor einem Einschalten im Stick-Lauf | `Halte 2s, um den Schritt vor dem Einschalten der Versorgung zu bestätigen.` |
 | 2s HALTEN ZUM INSTALLIEREN auf WI-FI | `Halte 2s, um zu installieren.` |
 | 2s HALTEN: LADEN & INSTALLIEREN auf UPDATES und in der Update-Erinnerung | `Halte 2s, um zu laden und zu installieren.` |
 | 2s HALTEN ZUM IOMCU-UPDATE auf UPDATES und START im Bestätigungsdialog des IOmcu-Updates | `Halte 2s, um den IOmcu zu aktualisieren.` |
@@ -564,7 +568,7 @@ ist: die ganze Taste weiß, schwarz, dann in ihrer neuen Farbe, zweimal,
 Ein langsamerer Frame beendet nur die Phase, in die er fällt; so wird
 jede Phase bei jeder Bildrate gezeichnet. Die neue Farbe ist die,
 zu der das Halten überblendet: Gefahrenrot bei ARM, AUSGANG EIN, PROG 5V
-EIN und VERBINDEN der Programmierer; Bernstein bei 2s HALTEN: ARM + START auf TEST, RUDER AUTO und
+EIN, VERBINDEN der Programmierer und ERLEDIGT eines Stick-Laufs vor einem Einschalten; Bernstein bei 2s HALTEN: ARM + START auf TEST, RUDER AUTO und
 ENDLAGENLAUF, deren Folge vor dem Lauf auf ARMED und ihre Rückmeldungen
 wartet.
 
@@ -1409,10 +1413,12 @@ die Läufe.
 Die Bedienelemente auf ESC STICK reagieren normalerweise auf einen Tipp:
 Lasse innerhalb des gedrückten Elements los, höchstens 8px vom Aufsetzpunkt
 entfernt auf jeder Achse. Herausgleiten oder Überqueren löst nichts aus.
-Jedes Element nimmt eine Berührung mit einem Finger an. Drei Elemente
+Jedes Element nimmt eine Berührung mit einem Finger an. Vier Elemente
 nutzen das Aufsetzen direkt:
 
 - 2s HALTEN ZUM STARTEN: Das Halten über 2s beginnt mit dem Aufsetzen.
+- ERLEDIGT in der Aufforderung zu einem Handgriff vor einem Einschalten:
+  Das Halten über 2s beginnt mit dem Aufsetzen, sobald ERLEDIGT aktiv ist.
 - ABBRECHEN eines Stick-Laufs, auf der Seite des Laufs und in der Aufforderung
   zu einem Handgriff. Es hält einen Motor an, wartet deshalb nicht auf
   das Abheben und reagiert auch auf einen zweiten Finger.

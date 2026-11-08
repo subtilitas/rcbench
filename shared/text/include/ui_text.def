@@ -5749,6 +5749,9 @@ UI_TEXT(HOLD_HINT_PROG5V, 94,
 UI_TEXT(HOLD_HINT_CONNECT, 94,
     "Hold 2s to connect and switch the port's supply on.",
     "Halte 2s, um zu verbinden und die Versorgung des Ports einzuschalten.")
+UI_TEXT(HOLD_HINT_DONE, 94,
+    "Hold 2s to confirm the step before the supply switches on.",
+    "Halte 2s, um den Schritt vor dem Einschalten der Versorgung zu bestätigen.")
 UI_TEXT(HOLD_HINT_APPLY, 94,
     "Hold 2s to apply.",
     "Halte 2s, um zu übernehmen.")

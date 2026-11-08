@@ -490,8 +490,8 @@ bool esc_stick_panel_back(void);
 void esc_stick_panel_follow(const touch_event_t *evt);
 
 /**
- * @brief Whether contact @p id holds the warning's hold or a key of the
- *        search's keyboard.
+ * @brief Whether contact @p id holds the warning's hold, DONE's or a key
+ *        of the search's keyboard.
  * @param id The contact.
  * @return True when it does.
  */
