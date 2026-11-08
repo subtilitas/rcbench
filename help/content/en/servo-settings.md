@@ -105,7 +105,8 @@ SETTINGS in LIMIT RUN's footer opens the list. Off a PROG PORT, MODE, SERVO and 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
 | MODE | SEARCH ONLY, SEARCH + PROGRAM | SEARCH ONLY | what ARM + START does: search the ends, or also program LEFT ANGLE and RIGHT ANGLE; a tap switches it |
-| SERVO | KST/CHASERVO, HITEC | the programmer opened last, else KST/CHASERVO | PORT on PROG PORT only: the programmer the run's sessions go to; HITEC in the series of the Hitec programmer's SERIES row ([Hitec servos](servo.md#hitec-servos)) |
+| SERVO | KST/CHASERVO, HITEC D SERIES, HITEC CLASSIC | KST/CHASERVO | PORT on PROG PORT only: the programmer and series the run's sessions go to ([Hitec servos](servo.md#hitec-servos)); a tap opens the three. LIMIT RUN's own, apart from RUDDER AUTO's; the same as the READY card's SERVO row |
+| Hitec D receive | PULL-UP, PRECHARGE | PULL-UP | shown under SERVO at HITEC D SERIES only: how the IOmcu receives a D series answer; the HITEC page's setting |
 | SERVO PULSES | KEEP, 1000-2000 | KEEP | PORT on PROG PORT and SERVO at KST/CHASERVO only: 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0us before the search |
 | Programming voltage | 4.8 to 8.4V | 5.0V | the PD mini's set point while the programmer holds the servo |
 | Programming current | 0.05 to 3.000A | 1.000A | the PD mini's current limit while it programs |
@@ -164,4 +165,4 @@ The button follows the target the IOmcu holds, not the setting. A change of SERV
 
 ## Keeping the values
 
-OUTPUT, HV SERVO, LIMIT RUN's MODE, SERVO and SERVO PULSES are kept for the session. SWEEP, the automatic test's settings, DUT, KST EXPERT MODE included, and TARGET are kept in NVS (non-volatile storage) and written as the SUPPLY settings are: on the next frame with the bench SAFE and the supply output off. A change on a list is written by SAVE in its strip.
+OUTPUT, HV SERVO, LIMIT RUN's MODE and SERVO PULSES are kept for the session. LIMIT RUN's and RUDDER AUTO's SERVO are written at the pick. SWEEP, the automatic test's settings, DUT, KST EXPERT MODE included, and TARGET are kept in NVS (non-volatile storage) and written as the SUPPLY settings are: on the next frame with the bench SAFE and the supply output off. A change on a list is written by SAVE in its strip.

@@ -76,15 +76,23 @@ screen. The screen is `shared/ui/servo_limit_panel.c`, its left card
   or why the hold is refused; why the mode chosen is not offered; the last
   result; the mode's note.
 - SETTINGS opens the run's list: MODE (SEARCH ONLY or SEARCH + PROGRAM),
-  SERVO (KST/CHASERVO or HITEC, the programmer the run's sessions go to,
-  [Hitec servos](#hitec-servos)), SERVO PULSES (KEEP or 1000-2000) and the
-  programmer's Programming voltage, Programming current and Wait before
-  PWM. On the bench's outputs MODE, SERVO and SERVO PULSES are locked with
-  `On a PROG PORT only: choose one with PORT`. SERVO starts at
-  KST/CHASERVO and takes the programmer opened last from the hub. SERVO
-  PULSES is locked while SERVO reads HITEC. MODE starts at SEARCH ONLY
-  and SERVO PULSES at KEEP. The list closes when the bench leaves SAFE or
-  the start steps begin.
+  SERVO (KST/CHASERVO, HITEC D SERIES or HITEC CLASSIC, the programmer the
+  run's sessions go to, [Hitec servos](#hitec-servos)), SERVO PULSES (KEEP
+  or 1000-2000) and the programmer's Programming voltage, Programming
+  current and Wait before PWM. With SERVO at HITEC D SERIES, Hitec D
+  receive (PULL-UP or PRECHARGE) follows SERVO: the same saved setting as
+  on the [HITEC page](HitecProgrammer.md). On the bench's outputs MODE,
+  SERVO and SERVO PULSES are locked with `On a PROG PORT only: choose one
+  with PORT`. SERVO PULSES is locked while SERVO reads HITEC. MODE starts
+  at SEARCH ONLY and SERVO PULSES at KEEP. The list closes when the bench
+  leaves SAFE or the start steps begin.
+- SERVO is LIMIT RUN's own saved setting (`lim_family`), KST/CHASERVO
+  until another is picked. A tap on the READY card's SERVO row or on the
+  list's SERVO row opens the three entries; a pick is saved at once.
+  RUDDER AUTO keeps its own (`rauto_family`): a pick on one screen leaves
+  the other. Opening the KST or HITEC programmer, and the HITEC page's
+  SERIES, change neither. A pick is refused while the bench is not SAFE, a
+  run or a start sequence runs, or a programmer holds the port.
 - The READY card in the output card's place, nine rows of 30px from y 96:
   PORT, SERVO, METER, RAIL, RANGE, PROGRAMMER, the supply, PORT PWM and
   ARM, each a dot, the label and the state. The supply row is PROG 5V on
@@ -94,7 +102,8 @@ screen. The screen is `shared/ui/servo_limit_panel.c`, its left card
   an output is live through it, amber the hold does it itself, grey waits
   on the PORT row. On the bench's outputs SERVO reads `SEARCH ONLY` in
   grey, PROGRAMMER and PORT PWM `--`.
-- A tap on PORT opens the PORT choice; on SERVO the list on its SERVO row,
+- A tap on PORT opens the PORT choice; on SERVO the SERVO choice,
+  KST/CHASERVO, HITEC D SERIES and HITEC CLASSIC over the left column,
   on the bench's outputs the band names `SERVO: On a PROG PORT only:
   choose one with PORT`; on a red METER it opens SETUP > SENSORS on the
   INA3221 part whose channel watches the tester's target, else on the
@@ -342,12 +351,15 @@ The ends found are not applied to the bench's own PULSE MIN and PULSE MAX.
 
 ### Hitec servos
 
-With SERVO at HITEC the run's sessions go to the
-[Hitec programmer](HitecProgrammer.md#runs) in the series its SERIES row
-holds, D SERIES or CLASSIC. The search, the overset, the mapping and the
-check are the ones above.
+With SERVO at HITEC D SERIES or HITEC CLASSIC, not KST/CHASERVO, the
+run's sessions go to the [Hitec programmer](HitecProgrammer.md#runs) in
+that series, whatever
+the HITEC page's SERIES row holds. The search, the overset, the mapping
+and the check are the ones above.
 
-![The LIMIT RUN settings, SERVO at HITEC](img/servo-limrun-hitec.png)
+![The LIMIT RUN settings, SERVO at HITEC D SERIES](img/servo-limrun-hitec.png)
+
+![LIMIT RUN's SERVO choice over the left column](img/servo-limrun-family.png)
 
 What differs:
 
@@ -1542,8 +1554,9 @@ link is not authenticated (`SECURITY.md`, the Bluetooth IMU).
   ARMS`). Grey: waits on the PORT row. A state longer than its 20 cells
   is cut after a whole word. The rail line under the rows names the meter
   the run reads with its volts and amps.
-- A tap on PORT opens the PORT choice; on SERVO the SETTINGS list on its
-  SERVO row; on a red ZERO with a reading it takes the zero; on a red
+- A tap on PORT opens the PORT choice; on SERVO the SERVO choice,
+  KST/CHASERVO, HITEC D SERIES and HITEC CLASSIC over the left column; on
+  a red ZERO with a reading it takes the zero; on a red
   ANGLE or METER it opens SETUP > SENSORS on the AS5600, the IMU or the
   INA3221 part whose channel watches the tester's target (else the first
   part fitted). A tap on another red or grey row names it in the alert band,
@@ -1562,9 +1575,11 @@ link is not authenticated (`SECURITY.md`, the Bluetooth IMU).
   the first run; then the report's file, or `RESTORE IN KST` (a Hitec
   servo: `LOAD HITEC001 IN FILES`) after a FAIL or an abort that wrote, or
   that cut off a write on its way, which may have landed.
-- The servo is the SERVO row: KST/CHASERVO, or HITEC in the Hitec
-  programmer's series. It takes the programmer opened last from the hub.
-  On a Hitec servo the end points are LEFT END and RIGHT END in the units
+- The servo is the SERVO row: RUDDER AUTO's own saved setting
+  (`rauto_family`), KST/CHASERVO, HITEC D SERIES or HITEC CLASSIC, apart
+  from LIMIT RUN's. The card's SERVO choice and the SETTINGS list's SERVO
+  row set it; nothing else does. With HITEC D SERIES the list shows Hitec
+  D receive under SERVO. On a Hitec servo the end points are LEFT END and RIGHT END in the units
   of [Hitec servos](#hitec-servos), the read session writes no pulses, and
   a D series servo needs no PD mini.
 

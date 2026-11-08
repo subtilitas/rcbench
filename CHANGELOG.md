@@ -22,6 +22,23 @@ history is in git.
   BLHeli_S field CENTRE THROTTLE on ESC WIRE keeps its name, a field line of
   the ESC backup files, and the settings key `enc_centre` keeps its name, so
   saved files and settings keep loading.
+- LIMIT RUN and RUDDER AUTO each keep their own SERVO, KST/CHASERVO, HITEC
+  D SERIES or HITEC CLASSIC, saved in the settings (`lim_family`,
+  `rauto_family`). A tap on the READY card's SERVO row opens the three
+  over the left column; the SETTINGS list's SERVO row opens the same three.
+  A pick is refused off a PROG PORT, while the bench is not SAFE, while a
+  run or a start sequence runs and while a programmer holds the port. The
+  series a Hitec run connects with is its screen's SERVO, not the HITEC
+  page's SERIES. With HITEC D SERIES the list shows Hitec D receive under
+  SERVO, the HITEC page's setting.
+
+### Fixed
+
+- LIMIT RUN's and RUDDER AUTO's SERVO set to HITEC fell back to
+  KST/CHASERVO after a restart and after opening the KST programmer from
+  the hub; opening the HITEC programmer set it to HITEC. Both screens
+  shared that one value. Each screen's SERVO changes only by a pick on
+  that screen.
 
 ### Fixed
 

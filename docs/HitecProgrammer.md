@@ -941,9 +941,13 @@ operator confirmation page for each write, as in the KST limit run
 ([Programming the servo's travel limits](Servo.md#programming-the-servos-travel-limits)).
 The programmer provides an interface for Hitec runs
 (`shared/bench/include/hitec_prog_run.h`,
-`shared/ui/include/hitec_panel_run.h`). The SERVO screen's LIMIT RUN with
-SERVO at HITEC and RUDDER AUTO start runs through it
-([Servo: Hitec servos](Servo.md#hitec-servos)).
+`shared/ui/include/hitec_panel_run.h`). The SERVO screen's LIMIT RUN and
+RUDDER AUTO, each with its own SERVO at HITEC D SERIES or HITEC CLASSIC
+(KST/CHASERVO runs go to the KST programmer), start runs through it ([Servo: Hitec servos](Servo.md#hitec-servos)). A
+run's CONNECT takes the series of that SERVO, not SERIES on this page; the
+run's end puts SERIES back into the programmer. D receive (PULL-UP or
+PRECHARGE) is the one setting this page's MORE list and the runs' lists
+share.
 
 A run writes LEFT END and RIGHT END and nothing else, in travel units:
 

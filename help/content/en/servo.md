@@ -177,7 +177,7 @@ The limit run searches for mechanical binding at each end of an installed servo'
 ![The limit run, ready](view:servo-limrun-ready)
 
 1. Tap SETTINGS in the footer, then MODE to choose SEARCH ONLY or SEARCH + PROGRAM.
-2. With PORT on PROG PORT, tap SERVO to choose KST/CHASERVO or HITEC, the programmer the run's sessions go to; it takes the programmer opened last from the hub. With KST/CHASERVO, set SERVO PULSES to KEEP or 1000-2000. It starts at KEEP.
+2. With PORT on PROG PORT, tap SERVO on the READY card and pick KST/CHASERVO, HITEC D SERIES or HITEC CLASSIC, the programmer the run's sessions go to. The pick is LIMIT RUN's own and is saved; RUDDER AUTO keeps its own. With KST/CHASERVO, set SERVO PULSES to KEEP or 1000-2000. It starts at KEEP.
 3. Tap the home tag to go back to LIMIT RUN.
 4. Hold HOLD 2s: ARM + START in the footer. From SAFE it switches PORT PWM on, then PROG 5V or the PD mini's output, waits up to 1000ms for them to read back ON, arms, waits up to 500ms for ARMED, and starts the run. A tap or a shorter hold starts nothing and shows `Hold 2s to switch the port and its supply on, ARM and start the limit run.` in the alert band.
 5. While the run runs, the hold reads STOP RUN. The state lines show the phase, the side and the pulse. After the run's last command the bench is SAFE again; PROG 5V stays on.
@@ -266,9 +266,11 @@ Finally, both ends are searched again. Both free means PASS; either binding mean
 
 ### Hitec servos
 
-![The LIMIT RUN settings, SERVO at HITEC](view:servo-limrun-hitec)
+![LIMIT RUN's SERVO choice](view:servo-limrun-family)
 
-With SERVO set to HITEC, sessions use the [Hitec programmer](servo-programmer.md) and its SERIES selection. LEFT END and RIGHT END map to 0xB2 and 0xB0 on D-series servos, in counts relative to NEUTRAL 0xC2. Classic servos use raw cells 0x14 and 0x13, swapped for CCW.
+![The LIMIT RUN settings, SERVO at HITEC D SERIES](view:servo-limrun-hitec)
+
+With SERVO at HITEC D SERIES or HITEC CLASSIC, sessions use the [Hitec programmer](servo-programmer.md) in that series, whatever the HITEC page's SERIES reads. With HITEC D SERIES the list shows Hitec D receive under SERVO, the HITEC page's setting. LEFT END and RIGHT END map to 0xB2 and 0xB0 on D-series servos, in counts relative to NEUTRAL 0xC2. Classic servos use raw cells 0x14 and 0x13, swapped for CCW.
 
 Hitec has no pulse registers, so SERVO PULSES is locked. The run uses an unmeasured pulse model: NEUTRAL 1500.0us, full travel at 850.0us and 2150.0us for D series, or 900.0us and 2100.0us for classic. PULSE MIN and MAX must cover the range, otherwise RANGE is red with `HITEC: PULSE MIN/MAX MUST COVER 850-2150us`. TYPE WIDE, 800 to 2200us, covers both.
 

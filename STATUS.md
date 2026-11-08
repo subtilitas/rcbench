@@ -551,9 +551,12 @@ more, DISARM and a failed step all off, PROG 5V kept between SERVO screens
 (`shared/ui/servo_drive_ready.c`, `test_servo_drive_ready`; host suite only).
 
 AUTO and the LIMIT RUN program a Hitec servo through the Hitec programmer's run seam when
-the LIMIT RUN settings' SERVO row reads HITEC, LEFT END and RIGHT END in counts from 0xC2 on
-a D series servo and the raw cells 0x14 and 0x13 on a classic one
-(`shared/ui/servo_limit_seam.c`, `shared/servo/servo_limrun_family.c`;
+the screen's own SERVO reads HITEC D SERIES or HITEC CLASSIC (KST/CHASERVO goes to the KST
+programmer), LEFT END and RIGHT END in
+counts from 0xC2 on a D series servo and the raw cells 0x14 and 0x13 on a classic one. Each
+screen's SERVO is a saved setting of its own, picked on its READY card or list and written
+by nothing else (`shared/ui/servo_pick.c`, `test_servo_family_pick`;
+`shared/ui/servo_limit_seam.c`, `shared/servo/servo_limrun_family.c`;
 `test_servo_limrun_hitec` on the core, `test_servo_limit_hitec` and `test_servo_rauto_hitec`
 through the screen and the Hitec programmer on the modelled D485HW and HS-5645MG; host suite
 only).
@@ -1291,7 +1294,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 509 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 510 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1407,7 +1410,7 @@ The host suite is 509 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_rauto_panel`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_drive_ready`, `test_servo_start_seq`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
-`test_servo_rudder_flap`, `test_rudder_flap_view`.
+`test_servo_family_pick`, `test_servo_rudder_flap`, `test_rudder_flap_view`.
 
 The harness is `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
@@ -1866,8 +1869,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 904 committed screenshots to the current render,
-452 in English and the same 452 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` holds 906 committed screenshots to the current render,
+453 in English and the same 453 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

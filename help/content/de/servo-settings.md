@@ -105,7 +105,8 @@ OPTIONEN in der Fußleiste von ENDLAGENLAUF öffnet die Liste. Außerhalb eines 
 | Option | Bereich | Vorgabe | Wirkung |
 |---|---|---|---|
 | MODUS | NUR SUCHE, SUCHEN + PROGRAMMIEREN | NUR SUCHE | ARM + START sucht die Enden und programmiert optional LEFT ANGLE und RIGHT ANGLE. Ein Tippen schaltet um. |
-| SERVO | KST/CHASERVO, HITEC | zuletzt geöffnete Servoprogrammierung, sonst KST/CHASERVO | Nur bei PORT auf PROG PORT. Wählt die Servoprogrammierung für die Sitzungen des Laufs. HITEC verwendet die in SERIE gewählte Serie ([Hitec-Servos](servo.md#hitec-servos)). |
+| SERVO | KST/CHASERVO, HITEC D-SERIE, HITEC KLASSISCH | KST/CHASERVO | Nur bei PORT auf PROG PORT. Wählt Servoprogrammierung und Serie für die Sitzungen des Laufs ([Hitec-Servos](servo.md#hitec-servos)); ein Tippen öffnet die drei. Gehört dem Endlagenlauf, getrennt von RUDER AUTO; dieselbe wie die Zeile SERVO der Karte BEREIT. |
+| Hitec-D-Empfang | PULL-UP, PRECHARGE | PULL-UP | Nur unter SERVO auf HITEC D-SERIE. Wie die IOmcu eine Antwort der D-Serie empfängt; die Einstellung der HITEC-Seite. |
 | SERVOPULSE | BEHALTEN, 1000-2000 | BEHALTEN | Nur bei PORT auf PROG PORT und SERVO KST/CHASERVO. 1000-2000 setzt PULSE LOWER und PULSE UPPER vor der Suche auf 1000,0 und 2000,0us. |
 | Programmierspannung | 4,8 bis 8,4V | 5,0V | der Sollwert des PD mini, solange der Programmierer das Servo hält |
 | Programmierstrom | 0,05 bis 3,000A | 1,000A | die Strombegrenzung des PD mini beim Programmieren |
@@ -164,4 +165,4 @@ Die Taste folgt dem aktiven Ziel des IOmcu, nicht dem Einstellwert. Eine Änderu
 
 ## Die Werte behalten
 
-AUSGANG, HV-SERVO, MODUS des Endlagenlaufs, SERVO und SERVOPULSE gelten nur für die Sitzung. SWEEP, Optionen des automatischen Tests, PRÜFLING samt KST EXPERT MODE und ZIEL werden im NVS (nichtflüchtiger Speicher) gespeichert. Wie bei den Netzteiloptionen erfolgt das Schreiben im nächsten Frame bei SAFE und ausgeschaltetem Netzteilausgang. Eine Änderung in einer Liste schreibt SPEICHERN in ihrer Leiste.
+AUSGANG, HV-SERVO, MODUS des Endlagenlaufs und SERVOPULSE gelten nur für die Sitzung. SERVO des Endlagenlaufs und von RUDER AUTO werden bei der Wahl geschrieben. SWEEP, Optionen des automatischen Tests, PRÜFLING samt KST EXPERT MODE und ZIEL werden im NVS (nichtflüchtiger Speicher) gespeichert. Wie bei den Netzteiloptionen erfolgt das Schreiben im nächsten Frame bei SAFE und ausgeschaltetem Netzteilausgang. Eine Änderung in einer Liste schreibt SPEICHERN in ihrer Leiste.
