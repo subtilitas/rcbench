@@ -122,6 +122,8 @@ typedef struct {
                                                    framebuffer last drew it */
     imu_cmd_t  cmds[IMS_CMDS];  /**< commands not yet taken, oldest first */
     uint8_t    cmd_n;        /**< how many */
+    bool       scan_owed;    /**< a search waits for Bluetooth LE to run
+                                  before its SCAN is queued */
 } ims_state_t;
 
 /** @brief The state, imu_screen.c's. */

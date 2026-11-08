@@ -9,7 +9,8 @@
  * refused with no hold and no command; KST's READY supply row red, and its
  * CONNECT refused with the session left in PWM; LIMIT RUN's and RUDDER
  * AUTO's supply rows red and their ARM + START refused with nothing
- * switched; SUPPLY's head line.  An input that goes low after the press:
+ * switched, RUDDER AUTO's ANGLE row still opening its list; SUPPLY's head
+ * line.  An input that goes low after the press:
  * under the box's hold, under ARM + START's hold, during the steps up to
  * the read-back, and at a limit run's CONNECT.  KST's CONNECT as a 2s hold:
  * a tap shows the hint, a finger that leaves or a touch loss connects
@@ -36,6 +37,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "servo_rauto_kst_rig.h"
+#include "servo_angle_pick.h"
 #include "splash_screen.h"
 
 enum { ST_OFF = 2, ST_ON = 3 };
@@ -251,6 +253,15 @@ TEST_CASE(rudder_auto_start_is_refused_with_nothing_switched)
     ra_ms(20u);
     CHECK(rauto_hold_blocked(NULL) == NULL);
     CHECK_EQ(row_now(RAR_SUPPLY).st, (uint8_t)RDY_SEQ);
+    /* Low again: the ANGLE row's tap opens the ANGLE SOURCE list, switches
+     * nothing, and SUPPLY's row keeps the reason. */
+    prog5v_box_publish_input(5100u);
+    ra_ms(20u);
+    rauto_ready_tap((int)RAR_ANGLE);
+    CHECK(angle_pick_count() >= 0);
+    CHECK_EQ(ra.p5_ons, 0u);
+    CHECK(!prog5v_box_on());
+    CHECK_STR_EQ(row_now(RAR_SUPPLY).value, TAG_EN);
     ra.p5_task = false;
     carrier_done();
 }

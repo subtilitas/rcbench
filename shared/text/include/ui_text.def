@@ -5316,8 +5316,32 @@ UI_TEXT(SVL_ANGLE_SOURCE, 0,
     "ANGLE SOURCE",
     "WINKELQUELLE")
 UI_TEXT(SVL_ANGLE_HELP, 0,
-    "Set on SENSORS; a tap opens it there",
-    "Eingestellt unter SENSORS; ein Tippen öffnet es dort")
+    "A tap lists the AS5600 and the IMUs found",
+    "Ein Tippen listet den AS5600 und die gefundenen IMUs")
+/* The ANGLE SOURCE list (servo_angle_pick.c): its title and its entries,
+ * 27 cells of 10 x 20 in a column of two. */
+UI_TEXT(SV_ANG_TITLE, 0,
+    "ANGLE SOURCE: WHERE THE ANGLE COMES FROM",
+    "WINKELQUELLE: WOHER DER WINKEL KOMMT")
+UI_TEXT(SV_ANG_AS5600_OFF, 0,
+    "AS5600: OFF IN SETUP",
+    "AS5600: AUS IN SETUP")
+UI_TEXT(SV_ANG_SEARCH, 0,
+    "SEARCH FOR IMU",
+    "IMU SUCHEN")
+UI_TEXT(SV_ANG_NONE, 0,
+    "NO IMU FOUND",
+    "KEINE IMU GEFUNDEN")
+/* The band's reason a sensor of the list takes no pick (94 cells). */
+UI_TEXT(SV_ANG_BIND_CAL, 94,
+    "CALIBRATION RUNS: BIND A SENSOR AFTER IT",
+    "KALIBRIERUNG LÄUFT: BINDE DANACH EINEN SENSOR")
+UI_TEXT(SV_ANG_BIND_OFF, 94,
+    "IMU OFF: SEARCH FOR IMU SWITCHES IT ON",
+    "IMU AUS: IMU SUCHEN SCHALTET SIE EIN")
+UI_TEXT(SV_ANG_SCAN_FAIL, 27,
+    "SCAN FAILED: CODE %u",
+    "SUCHE FEHLGESCHLAGEN: %u")
 UI_TEXT(SVL_FAMILY_HELP, 60,
     "The programmer a run writes the end points with",
     "Der Programmierer, mit dem ein Lauf die Endpunkte schreibt")

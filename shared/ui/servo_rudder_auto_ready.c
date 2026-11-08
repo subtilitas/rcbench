@@ -30,6 +30,7 @@
 #include "prog_choice.h"
 #include "prog_registry.h"
 #include "sensors_rows.h"
+#include "servo_angle_pick.h"
 #include "servo_limrun.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -460,10 +461,10 @@ bool rauto_ready_row(int i, rdy_row_t *r)
         r->st = (uint8_t)RDY_OK;
         met_value(i, r->value, sizeof(r->value), &r->st);
     }
-    /* The rows a tap fixes: PORT and SERVO always, ANGLE and METER on
-     * SETUP, ZERO with a reading. */
-    r->fix = (i == RAR_PORT || i == RAR_SERVO)
-             || ((i == RAR_ANGLE || i == RAR_METER || i == RAR_ZERO)
+    /* The rows a tap fixes: PORT, SERVO and ANGLE (its list) always,
+     * METER on SETUP, ZERO with a reading. */
+    r->fix = (i == RAR_PORT || i == RAR_SERVO || i == RAR_ANGLE)
+             || ((i == RAR_METER || i == RAR_ZERO)
                  && r->st == (uint8_t)RDY_BAD)
              || (i == RAR_SUPPLY && r->st == (uint8_t)RDY_BAD
                  && r->why == TR(SV_RUN_PD_5V));
@@ -497,11 +498,8 @@ void rauto_ready_tap(int i)
         }
         break;
     case RAR_ANGLE:
-        if (r.st == (uint8_t)RDY_BAD) {
-            wb_open_encoder();
-            return;
-        }
-        break;
+        angle_pick_open();
+        return;
     case RAR_METER:
         if (r.st == (uint8_t)RDY_BAD) {
             wb_open_meter();

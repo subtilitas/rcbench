@@ -18,6 +18,7 @@
 
 #include "kst_panel.h"
 #include "outputs.h"
+#include "servo_angle_pick.h"
 #include "servo_limrun.h"
 #include "servo_sweep.h"
 #include "settings.h"
@@ -690,6 +691,8 @@ void svs_tick_body(float dt_s)
     /* The SETTINGS list: its keys' repeats, its SAVE; a bench that goes
      * live under it closes it. */
     svs_list_tick(dt_s);
+    /* The ANGLE SOURCE list follows the IMU's scan. */
+    angle_pick_follow();
     /* A PD mini the programmer's CONNECT switched on, through the
      * IOmcu rather than through SUPPLY, is this screen's. */
     if (supply_screen_port_held()) {

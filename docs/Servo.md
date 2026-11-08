@@ -1090,10 +1090,43 @@ at once with the INA3221's reason.
 
 #### Angle source
 
-ANGLE SOURCE on SETUP > SENSORS > IMU sets where the servo test, the LIMIT
-RUN and the SERVO run log take the horn's angle from: `AS5600`, the
-default, or `IMU`. With `IMU` the angle is the IMU's AXIS with its SIGN,
-from the zero the IMU screen takes (ZERO).
+ANGLE SOURCE sets where the servo test, the LIMIT RUN and the SERVO run
+log take the horn's angle from: `AS5600`, the default, or `IMU`. With
+`IMU` the angle is the IMU's AXIS with its SIGN, from the zero the IMU
+screen takes (ZERO). The setting is on SETUP > SENSORS > IMU and in the
+ANGLE SOURCE list.
+
+The ANGLE SOURCE list opens over the left column from RUDDER's and RUDDER
+AUTO's READY row ANGLE and from the ANGLE SOURCE row of their SETTINGS
+lists, on a SAFE bench only: ARMED, an ARM asked, a run or a press held
+refuses it, and a bench that leaves SAFE closes it. The code is
+`shared/ui/servo_angle_pick.c`. Its entries, top down, 10 at most:
+
+| Entry | What a tap does |
+| --- | --- |
+| `AS5600` | ANGLE SOURCE AS5600, saved; the list closes |
+| `AS5600: OFF IN SETUP` (refused, amber) | opens SETUP > SENSORS on the AS5600 entry; the home tag there comes back |
+| the bound sensor, `HC-06 00:0C:BF:08:19:29 P`, when the last scan did not list it | IMU ON when off, ANGLE SOURCE IMU, saved; the list closes |
+| each sensor of the last scan, `HC-06 00:0C:BF:08:19:29 P -50dBm`: the name (`NO NAME` without one) cut to 18 cells, the full address, its type (`P` public, `R` random), the RSSI (received signal strength) | binds it when it is not the bound one, IMU ON when off, ANGLE SOURCE IMU, saved; the list closes. While no bind is taken (no sync with the C6, the calibration running, the IMU off) every sensor but the bound one is refused: a tap names why in the alert band and changes nothing |
+| `NO IMU FOUND` (refused) after a scan that listed none, or `SCAN FAILED: CODE n` | names `NO SENSOR FOUND: IS IT ON, NO PHONE ON IT?` or the code in the alert band |
+| `SEARCH FOR IMU` | IMU ON when off, saved; the scan starts once Bluetooth LE runs. The list stays open: the entry reads `STARTING BLUETOOTH` while the start runs, `SCANNING: 10s` while the scan runs, then the sensors found or `NO IMU FOUND` stand in the list. Without sync with the C6 the entry is refused as `NO BLUETOOTH ON C6`, on a failed C6 as `C6 FAILED: RESTART` |
+
+The entry in force is in the accent colour: the AS5600, or with ANGLE
+SOURCE IMU the bound sensor. Opening the list with the IMU on, no sensor
+bound, no scan since the start and no error starts a scan at once. The
+list follows the IMU's state each frame while no finger is on it; a pick
+binds the sensor of the address and address type (public or random) its
+entry was built from. With 8 sensors found the
+list holds `AS5600`, the 8 and `SEARCH FOR IMU` in two columns of 5; a
+bound sensor the scan did not list takes the eighth's place. Two sensors
+whose addresses end alike read apart: every sensor entry names the whole
+address and its type. A column of one, up to 5 entries, holds an entry on
+one line of 10 x 20 cells; in two columns, 295px each, a sensor entry
+takes two lines, the name and the RSSI in 10 x 20 over the address and
+its type in 8 x 16.
+
+A scan while a sensor is connected keeps the link
+([The Bluetooth IMU](IMU.md#scan-and-bind)).
 
 The IMU angle is represented in AS5600 counts, allowing the angle
 processing above to use either source:
@@ -1470,6 +1503,8 @@ is not measured.
 LIVE, SWEEP and RUDDER show READY rows in the output card's place: PORT,
 SUPPLY and ARM, and on RUDDER ANGLE and ZERO between PORT and SUPPLY
 ([Screens](Screens.md#servo)). The rows are `shared/ui/servo_drive_ready.c`.
+A tap on RUDDER's ANGLE row opens the [ANGLE SOURCE list](#angle-source)
+on a SAFE bench, with a reading or without.
 ARM's 2s hold switches on what the servo needs and reads off, then arms,
 in steps 1 to 4 of the [start sequence](#auto-end-points):
 
@@ -1591,9 +1626,9 @@ link is not authenticated (`SECURITY.md`, the Bluetooth IMU).
   the run reads with its volts and amps.
 - A tap on PORT opens the PORT choice; on SERVO the SERVO choice,
   KST/CHASERVO, HITEC D SERIES and HITEC CLASSIC over the left column; on
-  a red ZERO with a reading it takes the zero; on a red
-  ANGLE or METER it opens SETUP > SENSORS on the AS5600, the IMU or the
-  INA3221 part whose channel watches the tester's target (else the first
+  ANGLE the [ANGLE SOURCE list](#angle-source), red or not; on a red ZERO
+  with a reading it takes the zero; on a red METER it opens SETUP >
+  SENSORS on the INA3221 part whose channel watches the tester's target (else the first
   part fitted); on a red PD MINI with `PD MINI: 5.0V OUTSIDE ITS LIMITS` it
   opens SUPPLY's settings at OUTPUT LIMITS. A tap on another red or grey row names it in the alert band,
   `LABEL: reason`.

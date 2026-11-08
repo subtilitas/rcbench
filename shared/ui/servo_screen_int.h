@@ -280,10 +280,11 @@ enum { OP_NONE = 0, OP_ROW, OP_TRIM_DN, OP_TRIM_UP, OP_KEYPAD,
        OP_LIM_START, OP_RUN_CLOSE, OP_OPEN_CAPS,
        OP_KST_EXPERT };
 
-/* What the list chooses -- the PORT button's port among them -- and what
- * the keypad types. */
+/* What the list chooses -- the PORT button's port, the programmer family
+ * (servo_pick.c) and the angle source (servo_angle_pick.c) among them --
+ * and what the keypad types. */
 enum { CH_NONE = 0, CH_TYPE, CH_RATE, CH_ENUM, CH_PORT, CH_FAMILY,
-       CH_SERIES };
+       CH_SERIES, CH_ANGLE };
 enum { KT_NONE = 0, KT_MIN, KT_CENTER, KT_MAX, KT_TRAVEL, KT_RATE,
        KT_SETTING, KT_TRIM };
 

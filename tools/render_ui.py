@@ -810,6 +810,17 @@ SCREENS = {
     "servo-rudder-armed": ("servo-rudder-armed.png", "servo", "dark"),
     "servo-rudder-nolength": ("servo-rudder-nolength.png", "servo", "dark"),
     "servo-rudder-85": ("servo-rudder-85.png", "servo", "dark"),
+    # RUDDER's ANGLE row tapped: the ANGLE SOURCE list with the AS5600 in
+    # force and two IMUs found; with six found, two columns of entries on
+    # two lines; the same with a scan under way; and with the AS5600 off in
+    # SETUP after a scan that found none.
+    "servo-rudder-angle": ("servo-rudder-angle.png", "servo", "dark"),
+    "servo-rudder-angle-many": ("servo-rudder-angle-many.png", "servo",
+                                "dark"),
+    "servo-rudder-angle-scan": ("servo-rudder-angle-scan.png", "servo",
+                                "dark"),
+    "servo-rudder-angle-none": ("servo-rudder-angle-none.png", "servo",
+                                "dark"),
     # The IMU tile's screen: the HC-05 answering with no sensor bound; the
     # found list after SCAN; bound and connected at 50Hz with ZERO taken.
     # SETUP > SENSORS on the IMU entry, connected.

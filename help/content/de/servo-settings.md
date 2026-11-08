@@ -134,7 +134,7 @@ Die aktiven Spannungs- und Stromgrenzen begrenzen Sollwerte und Laufstufen. Sie 
 | Option | Ort | Wirkung |
 |---|---|---|
 | SENSOR-MITTE | Liste von RUDER | Übernimmt per Tipp den aktuellen AS5600-Zählwert von 0 bis 4095 als Mitte, während das Servo neutral steht. Bei WINKELQUELLE IMU ohne Wirkung. |
-| WINKELQUELLE | Listen von RUDER und RUDER AUTO | Nur lesbar; ein Tippen öffnet den IMU-Eintrag von [Sensoren](setup-sensors.md), wo sie eingestellt wird. |
+| WINKELQUELLE | Listen von RUDER und RUDER AUTO | Ein Tippen öffnet die [Liste WINKELQUELLE](servo-rudder.md#die-winkelquelle): AS5600, die gefundenen IMUs und IMU SUCHEN. |
 | KST EXPERT MODE | OPTIONEN auf SERVO > KST | Ob der [Programmierer für KST- und Chaservo-Servos](servo-programmer.md#kst-expert-mode) DEAD BAND, BOOST, STRETCH, PAIRING LÖSEN und den Reiter GESPERRT zeigt; standardmäßig AUS, EIN nach 2s Halten, AUS mit einem Tipp. |
 
 WINKELQUELLE wählt AS5600 oder IMU für die Laufwinkel. IMU-Winkel werden in AS5600-Zählschritten von 0,088° verwendet. Die Test-CSV nennt die Quelle in ihrer letzten Spalte `angle source`, beide Berichte in der Zeile `Winkelquelle:`.

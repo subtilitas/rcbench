@@ -6,7 +6,7 @@ order: 23
 
 # Ruderausschlag
 
-RUDER im Hub von [SERVO](servo.md) steuert ein Servo und zeigt den Ruderausschlag. Die Anzeige nennt Grad ab einem Nullpunkt und bei eingegebener Ruderflächentiefe auch Millimeter an der Hinterkante. WINKELQUELLE unter [Sensoren](setup-sensors.md) wählt den AS5600-Ausgangsencoder oder die IMU. Wie bei GEMESSEN auf LIVE folgt das Vorzeichen der Richtung des Sollwinkels. Die rechte Karte zeigt die Taste PORT und die Zeilen von BEREIT: PORT, WINKEL, NULLPUNKT, VERSORGUNG und ARM. ARM in der Fußleiste schaltet PORT-PWM und die Versorgung ein, wo sie aus sind, und schaltet dann auf ARMED ([SERVO, ARMED](servo.md#armed)).
+RUDER im Hub von [SERVO](servo.md) steuert ein Servo und zeigt den Ruderausschlag. Die Anzeige nennt Grad ab einem Nullpunkt und bei eingegebener Ruderflächentiefe auch Millimeter an der Hinterkante. WINKELQUELLE wählt den AS5600-Ausgangsencoder oder die IMU: ein Tippen auf die Zeile WINKEL öffnet [ihre Liste](#die-winkelquelle). Wie bei GEMESSEN auf LIVE folgt das Vorzeichen der Richtung des Sollwinkels. Die rechte Karte zeigt die Taste PORT und die Zeilen von BEREIT: PORT, WINKEL, NULLPUNKT, VERSORGUNG und ARM. ARM in der Fußleiste schaltet PORT-PWM und die Versorgung ein, wo sie aus sind, und schaltet dann auf ARMED ([SERVO, ARMED](servo.md#armed)).
 
 ![RUDER bei SAFE](view:servo-rudder)
 
@@ -46,6 +46,28 @@ LÄNGE ist der Abstand von der Scharnierlinie zur Hinterkante: 0 oder 10 bis 500
 
 1000us, ZENTRIEREN und 2000us wirken beim Drücken. LÄNGE, NULLPUNKT und MAX LÖSCHEN wirken, wenn du einen Tipp darauf loslässt. PULS unter den Tasten zeigt den Sollpuls. DISARM, STOP oder das Verlassen der Seite schaltet den Prüfstand auf SAFE. [RUDER AUTO](#ruder-auto) programmiert die Endpunkte auf einer eigenen Seite.
 
+## Die Winkelquelle
+
+Ein Tippen auf die Zeile WINKEL von BEREIT, mit Messwert oder ohne, öffnet bei SAFE die Liste WINKELQUELLE über der linken Karte. Bei ARMED oder während eines Laufs wird das Tippen verweigert, der Grund steht im Band. Die Liste fasst bis zu 10 Einträge:
+
+| Eintrag | Ein Tippen |
+|---|---|
+| `AS5600` | setzt WINKELQUELLE AS5600 und schließt die Liste |
+| `AS5600: AUS IN SETUP` | öffnet den Eintrag AS5600 unter [Sensoren](setup-sensors.md); das Home-Tag kehrt hierher zurück |
+| ein Sensor, `HC-06 00:0C:BF:08:19:29 P -50dBm`: Name, seine ganze Adresse, ihr Typ (`P` öffentlich, `R` zufällig), das Signal; in zwei Spalten auf zwei Zeilen | bindet ihn, schaltet die IMU ein und setzt WINKELQUELLE IMU |
+| `KEINE IMU GEFUNDEN` | die letzte Suche fand keine; das Tippen nennt die üblichen Ursachen im Band |
+| `IMU SUCHEN` | schaltet die IMU ein, falls aus, und sucht 10s, sobald Bluetooth LE läuft; die Liste bleibt offen und zeigt `SUCHE: 10s`, danach die gefundenen Sensoren |
+
+Die gültige Quelle steht in der Akzentfarbe. Bei eingeschalteter IMU ohne gebundenen Sensor startet das Öffnen der Liste von selbst eine Suche.
+
+![Die Liste WINKELQUELLE: AS5600 gültig, zwei Sensoren gefunden](view:servo-rudder-angle)
+
+![Sechs gefundene Sensoren in zwei Spalten, zwei mit gleichem Adressende](view:servo-rudder-angle-many)
+
+![Eine laufende Suche](view:servo-rudder-angle-scan)
+
+![AS5600 aus in SETUP, eine Suche ohne Fund](view:servo-rudder-angle-none)
+
 ## Die Statuszeilen
 
 | Zeile | Bedeutung |
@@ -74,7 +96,7 @@ Die linke Karte hält Anzeige, Sollwerte, RESERVE und TOLERANZ, NULLPUNKT und MA
 
 ### BEREIT
 
-Die Karte BEREIT rechts zeigt, was der Start braucht, eine Zeile je Punkt: PORT, SERVO, MESSGERÄT, WINKEL, NULLPUNKT, BEREICH, PROGRAMMER, die Versorgung (PROG 5V auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de), PD MINI, wo das PD mini das Servo speist), PORT-PWM und ARM. PROG 5V und PD MINI zeigen die `5.0V` des Laufs. Ein grüner Punkt ist erfüllt. Ein roter Punkt sperrt das Halten oder zeigt einen über die Zeile aktiven Ausgang. Gelb zeigt `START SCHALTET EIN` oder `START SCHALTET ARMED`: das erledigt das Halten. Grau wartet auf PORT. Ein Tippen auf PORT öffnet die Port-Auswahl, auf SERVO die drei Programmierer über der linken Spalte, auf einen roten NULLPUNKT setzt es den Nullpunkt, auf einen roten WINKEL oder ein rotes MESSGERÄT öffnet es [Sensoren](setup-sensors.md), auf ein rotes PD MINI mit `PD MINI: 5.0V AUSSERHALB SEINER GRENZEN` die Grenzen in der Optionsliste von [SUPPLY](supply.md). Ein Tippen auf eine andere rote Zeile nennt sie im Alarmband. Die Zeile unter den Zeilen ist das Messgerät des Laufs.
+Die Karte BEREIT rechts zeigt, was der Start braucht, eine Zeile je Punkt: PORT, SERVO, MESSGERÄT, WINKEL, NULLPUNKT, BEREICH, PROGRAMMER, die Versorgung (PROG 5V auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de), PD MINI, wo das PD mini das Servo speist), PORT-PWM und ARM. PROG 5V und PD MINI zeigen die `5.0V` des Laufs. Ein grüner Punkt ist erfüllt. Ein roter Punkt sperrt das Halten oder zeigt einen über die Zeile aktiven Ausgang. Gelb zeigt `START SCHALTET EIN` oder `START SCHALTET ARMED`: das erledigt das Halten. Grau wartet auf PORT. Ein Tippen auf PORT öffnet die Port-Auswahl, auf SERVO die drei Programmierer über der linken Spalte, auf WINKEL die [Liste WINKELQUELLE](#die-winkelquelle), auf einen roten NULLPUNKT setzt es den Nullpunkt, auf ein rotes MESSGERÄT öffnet es [Sensoren](setup-sensors.md), auf ein rotes PD MINI mit `PD MINI: 5.0V AUSSERHALB SEINER GRENZEN` die Grenzen in der Optionsliste von [SUPPLY](supply.md). Ein Tippen auf eine andere rote Zeile nennt sie im Alarmband. Die Zeile unter den Zeilen ist das Messgerät des Laufs.
 
 ![Auf dem rbmod-Carrier, SAFE: PROG 5V, PORT-PWM und ARM gelb, das Halten grün](view:servo-rudder-auto-rbmod)
 

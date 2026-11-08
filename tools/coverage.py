@@ -143,6 +143,7 @@ TRACKED = [
     "shared/ui/servo_lists.c",
     "shared/ui/servo_pick.c",
     "shared/ui/servo_run_supply.c",
+    "shared/ui/servo_angle_pick.c",
     "shared/ui/kst_panel.c",
     "shared/ui/kst_panel_text.c",
     "shared/ui/kst_panel_warn.c",

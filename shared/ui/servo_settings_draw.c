@@ -16,6 +16,7 @@
 #include <string.h>
 
 #include "prog_choice.h"
+#include "servo_angle_pick.h"
 #include "servo_limrun.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -298,10 +299,19 @@ static void draw_choice(gfx_canvas_t *c)
             current = (s.ch.values[k] == settings_get_int(s.ch.id));
         } else if (s.ch.target == CH_PORT) {
             current = (s.ch.values[k] == settings_get_int(SET_SERVO_TARGET));
+        } else if (s.ch.target == CH_ANGLE) {
+            current = angle_pick_current(k);
         }
         const bool refused = (s.ch.refused & (1u << k)) != 0u;
         const bool down = s.ov_have && s.ov_pressed == OP_CHOICE
                           && s.ov_row == k;
+        const gfx_color_t fill = (current && !refused)
+                                     ? ui_theme_color(UI_C_ACCENT)
+                                     : ui_theme_color(UI_C_PANEL_SUNK);
+        if (s.ch.target == CH_ANGLE
+            && angle_pick_draw_entry(c, k, fill, refused, down)) {
+            continue;
+        }
         if (refused) {
             /* Its reason in the warning colour on a grey key: a tap
              * repeats it in the band. */
@@ -311,10 +321,8 @@ static void draw_choice(gfx_canvas_t *c)
                           SV_FONT_LABEL);
             continue;
         }
-        ui_button_font(c, choice_rect(k), s.ch.labels[k],
-                       current ? ui_theme_color(UI_C_ACCENT)
-                               : ui_theme_color(UI_C_PANEL_SUNK),
-                       down, true, SV_FONT_LABEL);
+        ui_button_font(c, choice_rect(k), s.ch.labels[k], fill, down, true,
+                       SV_FONT_LABEL);
     }
     ui_button_font(c, choice_cancel_rect(), TR(CANCEL),
                    ui_theme_color(UI_C_PANEL_SUNK),
