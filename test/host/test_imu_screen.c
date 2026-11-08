@@ -5,7 +5,8 @@
  *
  * The failures this is about: a scan whose list never opens, a tap on a
  * device that binds another one, a calibration started by a brush of the
- * glass, a refused scan that leaves no way on, a line that runs past its
+ * glass, a refused scan that leaves no way on, a SCAN with the IMU off
+ * that does not switch it on, a line that runs past its
  * field in German, and a screen that leaves for the menu rather than SETUP.
  *
  * SPDX-License-Identifier: MIT
@@ -213,6 +214,43 @@ TEST_CASE(scan_posts_the_command_and_the_list_shows_the_found_devices)
     CHECK_EQ(took().kind, IMU_CMD_NONE);
     CHECK(!imu_screen()->covered());
     ui_router_render(&s_c, 0);
+}
+
+/* IMU OFF: SCAN takes a press, switches the IMU on in SETUP and opens the
+ * list, whose heading names the start of Bluetooth LE; the SCAN goes out
+ * once Bluetooth runs, once, and SCAN AGAIN waits with it. */
+TEST_CASE(scan_with_the_imu_off_switches_it_on_and_scans_once_bluetooth_runs)
+{
+    imu_view_t v;
+    memset(&v, 0, sizeof v);
+    v.link = IMU_LINK_OFF;
+    on_imu(&v);
+    CHECK(!settings_get_bool(SET_IMU_EN));
+    CHECK_STR_EQ(imu_screen_line(IMS_L_STATE), "IMU OFF: SCAN SWITCHES IT ON");
+    CHECK(ims_row_enabled(IMS_ROW_SCAN));
+    tap_rect(imu_screen_row_rect(IMS_ROW_SCAN));
+    CHECK(settings_get_bool(SET_IMU_EN));
+    CHECK(imu_screen()->covered());
+    CHECK_EQ(took().kind, IMU_CMD_NONE);
+    CHECK_STR_EQ(imu_screen_line(IMS_L_HEAD), "STARTING BLUETOOTH");
+    CHECK(!ims_row_enabled(IMS_ROW_RESCAN));
+    v.link = IMU_LINK_STARTING;
+    imu_screen_set(&v);
+    CHECK_EQ(took().kind, IMU_CMD_NONE);
+    v.link = IMU_LINK_READY;
+    imu_screen_set(&v);
+    CHECK_EQ(took().kind, IMU_CMD_SCAN);
+    CHECK_EQ(took().kind, IMU_CMD_NONE);
+    CHECK_STR_EQ(imu_screen_line(IMS_L_HEAD), "NO SCAN YET");
+    v.link = IMU_LINK_SCANNING;
+    imu_screen_set(&v);
+    CHECK_STR_EQ(imu_screen_line(IMS_L_HEAD), "SCANNING: 10s");
+    ui_router_render(&s_c, 0);
+    /* A C6 that failed takes no SCAN. */
+    tap_rect(imu_screen_row_rect(IMS_ROW_CLOSE));
+    v.link = IMU_LINK_C6_FAILED;
+    imu_screen_set(&v);
+    CHECK(!ims_row_enabled(IMS_ROW_SCAN));
 }
 
 TEST_CASE(a_tap_on_a_device_posts_bind_with_its_index)
@@ -455,12 +493,12 @@ TEST_CASE(zero_posts_zero_and_the_lines_show_the_zeroed_angles)
 TEST_CASE(the_state_line_names_every_link_state)
 {
     static const char *const en[] = {
-        "IMU OFF: SEE SETTINGS", "STARTING BLUETOOTH",
+        "IMU OFF: SCAN SWITCHES IT ON", "STARTING BLUETOOTH",
         "NO BLUETOOTH ON C6", "C6 FAILED: RESTART", "NO SENSOR BOUND",
         "SCANNING", "CONNECTING", "BOUND", "CONNECTED 50Hz", "NO FRAMES",
     };
     static const char *const de[] = {
-        "IMU AUS: SIEHE OPTIONEN", "BLUETOOTH STARTET",
+        "IMU AUS: SUCHEN SCHALTET SIE EIN", "BLUETOOTH STARTET",
         "KEIN BLUETOOTH AM C6", "C6 AUSGEFALLEN: NEUSTART",
         "KEIN SENSOR GEBUNDEN", "SUCHE LÄUFT", "VERBINDE", "GEBUNDEN",
         "VERBUNDEN 50Hz", "KEINE FRAMES",
@@ -609,6 +647,7 @@ int main(void)
     RUN(the_tile_opens_the_screen_and_home_returns_to_setup);
     RUN(the_hold_and_settings_sit_in_the_footer_over_nothing_else);
     RUN(scan_posts_the_command_and_the_list_shows_the_found_devices);
+    RUN(scan_with_the_imu_off_switches_it_on_and_scans_once_bluetooth_runs);
     RUN(a_tap_on_a_device_posts_bind_with_its_index);
     RUN(a_scan_error_reads_in_the_list_and_on_the_main_view);
     RUN(calibrate_needs_a_2s_hold_and_the_band_hint_on_a_short_press);

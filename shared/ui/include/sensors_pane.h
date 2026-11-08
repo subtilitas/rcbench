@@ -32,7 +32,8 @@ enum {
     SENS_ENTRY_INA3221_0,    /**< FITTED and 3 channels x 3 rows, 0x40     */
     SENS_ENTRY_AS5600 = SENS_ENTRY_INA3221_0 + SET_INA_PARTS, /**< enable, center */
     SENS_ENTRY_TAP,          /**< enable, pin, 2 tones, split, gap, periods */
-    SENS_ENTRY_IMU,          /**< enable, axis, sign, rate, algorithm, angle source */
+    SENS_ENTRY_IMU,          /**< enable, angle source, axis, sign, rate,
+                                  algorithm, filter */
     SENS_ENTRY_COUNT
 };
 

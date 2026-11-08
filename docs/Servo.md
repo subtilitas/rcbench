@@ -1093,8 +1093,8 @@ at once with the INA3221's reason.
 ANGLE SOURCE sets where the servo test, the LIMIT RUN and the SERVO run
 log take the horn's angle from: `AS5600`, the default, or `IMU`. With
 `IMU` the angle is the IMU's AXIS with its SIGN, from the zero the IMU
-screen takes (ZERO). The setting is on SETUP > SENSORS > IMU and in the
-ANGLE SOURCE list.
+screen takes (ZERO). The setting is the second row of SETUP > SENSORS >
+IMU, shown with the IMU off too, and in the ANGLE SOURCE list.
 
 The ANGLE SOURCE list opens over the left column from RUDDER's and RUDDER
 AUTO's READY row ANGLE and from the ANGLE SOURCE row of their SETTINGS

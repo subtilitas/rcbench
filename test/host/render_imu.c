@@ -7,7 +7,9 @@
  * other devices hidden.
  * imu-connected: bound to it, 50Hz, ZERO taken, the surface at +12.3° on
  * X, the battery at 3.95V and the calibration done.  setup-sensors-imu:
- * SENSORS on the IMU entry, the IMU on and connected at 50Hz.
+ * SENSORS on the IMU entry, the IMU on and connected at 50Hz.  imu-off:
+ * the IMU off in SETUP since the start, SCAN offered.  setup-sensors-imu-off: SENSORS on
+ * the IMU entry with the IMU off, ANGLE SOURCE under it.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -28,7 +30,7 @@
 bool render_imu_view(const char *view)
 {
     return strcmp(view, "imu") == 0 || strncmp(view, "imu-", 4) == 0
-           || strcmp(view, "setup-sensors-imu") == 0;
+           || strncmp(view, "setup-sensors-imu", 17) == 0;
 }
 
 /**
@@ -99,6 +101,17 @@ void render_imu_pose(const char *view)
     snprintf(v.version, sizeof(v.version), "2.13.0");
     v.r.battery_v = NAN;
     v.r.temp_c = NAN;
+    if (strcmp(view, "imu-off") == 0
+        || strcmp(view, "setup-sensors-imu-off") == 0) {
+        v.link = IMU_LINK_OFF;
+        v.version[0] = '\0';     /* Bluetooth LE not started since boot */
+        if (strcmp(view, "setup-sensors-imu-off") == 0) {
+            settings_screen_open_on(SET_CAT_SENSORS, SENS_ENTRY_IMU);
+            return;
+        }
+        imu_screen_set(&v);
+        return;
+    }
     settings_set(SET_IMU_EN, 1.0f);
     if (strcmp(view, "setup-sensors-imu") == 0) {
         sensors_rows_set_imu(IMU_LINK_CONNECTED, 500u);
