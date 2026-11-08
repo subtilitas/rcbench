@@ -806,6 +806,32 @@ wrapped; esp_hosted uses `xTaskCreateStatic()` only with
 console lists every task at start-up, `task <name> core <0|1|any> priority
 <n>`.
 
+At start-up core 1 waits in `esp_startup_start_app_other_cores()`
+(ESP-IDF `components/freertos/app_startup.c`) until core 0's scheduler
+runs. ESP-IDF v6.1 reads `port_xSchedulerRunning[0]` there in a loop of
+two instructions with no pause, while core 0 creates the main task and
+clears its stack. The panel builds a copy of the freertos component with
+that loop reading once about every 10us; between reads it counts 2000
+down in registers (`firmware/panel/core1_wait.cmake`). The configure stops
+when the loop is not found exactly once.
+
+| Image | Starts | Stalls before `app_main()` |
+| --- | ---: | ---: |
+| release 0.23.9, unchanged loop | 60 | 11 |
+| release 0.23.9 source, loop read about every 10us | 60 | 0 |
+| release 0.23.9 source, loop without pause, not compressed | 60 | 0 |
+
+Measured on one Waveshare ESP32-P4 board (chip revision 3.2) on
+2026-11-08, interleaved in blocks of 20 starts, 20s apart. A stall
+stops after `sleep_gpio: Enable automatic switching of GPIO sleep
+configuration`: core 0 hangs on a store or load in internal memory and
+the watchdog resets the chip after 10s, or the start ends in a store
+access fault. Every stall that saved its program counters had core 1 in
+the loop. Images with the unchanged loop, a compressed `lw`/`beqz` pair
+inside one 16-byte block, stalled in 18 of 24 layouts tried; a loop that
+crosses a 16-byte boundary stalled in none of 9 (380 starts). The layouts
+were measured in different hours. The hardware cause is not known.
+
 The SD card and the C6 share ESP-IDF's SDMMC request mutex, which uses
 priority inheritance. While the run log task on core 1 holds it for a card write and
 an esp_hosted task waits for it, the run log task runs at priority 23 on
