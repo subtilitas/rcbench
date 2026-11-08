@@ -79,5 +79,10 @@ include("${CMAKE_CURRENT_LIST_DIR}/fatfs_exfat.cmake")
 # rotation 180; the reason and the mechanism are in the file.
 include("${CMAKE_CURRENT_LIST_DIR}/ppa_dig734.cmake")
 
+# ESP-IDF's freertos with core 1's wait for the scheduler read about every
+# 10us, against a start-up stall; the reason and the mechanism are in the
+# file.
+include("${CMAKE_CURRENT_LIST_DIR}/core1_wait.cmake")
+
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(rcbench-panel)
