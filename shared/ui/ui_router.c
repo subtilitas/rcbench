@@ -163,9 +163,9 @@ static void guide_close(void);
  * list's `OUTPUTS: NO PIN` entry on SERVO's LIVE, SWEEP, TEST, LIMIT RUN,
  * RUDDER and RUDDER AUTO; SUPPLY from the caps button of SERVO's TEST and
  * from the supply row of LIMIT RUN's and RUDDER AUTO's READY cards; SETUP
- * from the ANGLE SOURCE row of RUDDER's and RUDDER AUTO's settings lists,
- * from the red METER row of LIMIT RUN's and RUDDER AUTO's READY cards and
- * from IMU's IMU SETTINGS; SETUP's SD
+ * from the ANGLE SOURCE list's AS5600 entry on RUDDER, RUDDER AUTO, TEST
+ * and LIMIT RUN, from the red METER row of LIMIT RUN's and RUDDER AUTO's
+ * READY cards and from IMU's IMU SETTINGS; SETUP's SD
  * CARD list from the footer's SETTINGS on LOGS and FILES; WI-FI from
  * UPDATES' button and LOGS' WI-FI button.  SETUP's WI-FI tile needs no row:
  * WI-FI's parent is SETUP.
@@ -190,6 +190,7 @@ static const struct {
     { SCREEN_SUPPLY,  SCREEN_SERVO_RAUTO },
     { SCREEN_SETUP,   SCREEN_SERVO_RUDDER },
     { SCREEN_SETUP,   SCREEN_SERVO_RAUTO },
+    { SCREEN_SETUP,   SCREEN_SERVO_TEST },
     { SCREEN_SETUP,   SCREEN_SERVO_LIMRUN },
     { SCREEN_WIFI,    SCREEN_UPDATES },
     { SCREEN_WIFI,    SCREEN_LOGS },

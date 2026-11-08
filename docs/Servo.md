@@ -94,9 +94,12 @@ screen. The screen is `shared/ui/servo_limit_panel.c`, its left card
   the other. Opening the KST or HITEC programmer, and the HITEC page's
   SERIES, change neither. A pick is refused while the bench is not SAFE, a
   run or a start sequence runs, or a programmer holds the port.
-- The READY card in the output card's place, nine rows of 30px from y 96:
-  PORT, SERVO, METER, RAIL, RANGE, PROGRAMMER, the supply, PORT PWM and
-  ARM, each a dot, the label and the state. The supply row is PROG 5V on
+- The READY card in the output card's place, ten rows of 30px from y 96
+  to y 396, 4px over the rail line: PORT, SERVO, METER, ANGLE, RAIL,
+  RANGE, PROGRAMMER, the supply, PORT PWM and ARM, each a dot, the label
+  and the state. ANGLE names the angle source and refuses nothing: green
+  while the run reads an angle, amber `AS5600 OFF` or `IMU X+ NO READING`
+  while it does not. The supply row is PROG 5V on
   the rbmod carrier's programming port, PD MINI where a PD mini feeds the
   servo, SUPPLY otherwise. PROG 5V and PD MINI read the run's `5.0V`,
   SUPPLY the rail's mean voltage. The colours are RUDDER AUTO's
@@ -104,7 +107,8 @@ screen. The screen is `shared/ui/servo_limit_panel.c`, its left card
   an output is live through it, amber the hold does it itself, grey waits
   on the PORT row. On the bench's outputs SERVO reads `SEARCH ONLY` in
   grey, PROGRAMMER and PORT PWM `--`.
-- A tap on PORT opens the PORT choice; on SERVO the SERVO choice,
+- A tap on PORT opens the PORT choice; on ANGLE the
+  [ANGLE SOURCE list](#angle-source); on SERVO the SERVO choice,
   KST/CHASERVO, HITEC D SERIES and HITEC CLASSIC over the left column,
   on the bench's outputs the band names `SERVO: On a PROG PORT only:
   choose one with PORT`; on a red METER it opens SETUP > SENSORS on the
@@ -1093,12 +1097,12 @@ at once with the INA3221's reason.
 ANGLE SOURCE sets where the servo test, the LIMIT RUN and the SERVO run
 log take the horn's angle from: `AS5600`, the default, or `IMU`. With
 `IMU` the angle is the IMU's AXIS with its SIGN, from the zero the IMU
-screen takes (ZERO). The setting is on SETUP > SENSORS > IMU and in the
-ANGLE SOURCE list.
+screen takes (ZERO). The setting is the second row of SETUP > SENSORS >
+IMU, shown with the IMU off too, and in the ANGLE SOURCE list.
 
-The ANGLE SOURCE list opens over the left column from RUDDER's and RUDDER
-AUTO's READY row ANGLE and from the ANGLE SOURCE row of their SETTINGS
-lists, on a SAFE bench only: ARMED, an ARM asked, a run or a press held
+The ANGLE SOURCE list opens over the left column from the READY row ANGLE
+of RUDDER, RUDDER AUTO, TEST and LIMIT RUN and from the ANGLE SOURCE row
+of RUDDER's and RUDDER AUTO's SETTINGS lists, on a SAFE bench only: ARMED, an ARM asked, a run or a press held
 refuses it, and a bench that leaves SAFE closes it. The code is
 `shared/ui/servo_angle_pick.c`. Its entries, top down, 10 at most:
 

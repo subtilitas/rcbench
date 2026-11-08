@@ -4341,7 +4341,7 @@ static void pose_shown_setup(ui_screen_id_t id, const char *view)
      */
     if (strncmp(view, "setup-sensors", 13) == 0
         && strcmp(view, "setup-sensors-ina228") != 0
-        && strcmp(view, "setup-sensors-imu") != 0) {
+        && strncmp(view, "setup-sensors-imu", 17) != 0) {
         settings_set(SET_INA_FIT(1), 1.0f);
         settings_set(SET_INA_W(4), (float)SENS_W_PORT_1);
         settings_set(SET_INA_LIM(4), 800.0f);

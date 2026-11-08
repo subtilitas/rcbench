@@ -2,7 +2,8 @@
  * SETUP > SENSORS > IMU (sensors_pane.h, sensors_rows.h): the entry's rows,
  * its state column, and what a RATE or an ALGORITHM change does.
  *
- * The failures this is about: an IMU entry that shows its rows while off,
+ * The failures this is about: an IMU entry that shows its sensor's rows
+ * while off or hides ANGLE SOURCE then,
  * a state word in a colour that says connected when it is not, a RATE
  * changed in SETUP that never reaches the sensor or reaches it without the
  * operator learning it needs a power cycle, and a SENSORS row past the
@@ -22,15 +23,18 @@ TEST_CASE(the_imu_entry_shows_its_rows_under_on)
     char name[16];
     CHECK_STR_EQ(sensors_pane_name(SENS_ENTRY_IMU, name, sizeof name), "IMU");
     setting_id_t rows[SENS_ENTRY_ROWS_MAX];
-    CHECK_EQ(sensors_pane_rows(SENS_ENTRY_IMU, rows, SENS_ENTRY_ROWS_MAX), 1);
+    /* OFF: IMU and ANGLE SOURCE, so the source goes back to the AS5600
+     * with the IMU off. */
+    CHECK_EQ(sensors_pane_rows(SENS_ENTRY_IMU, rows, SENS_ENTRY_ROWS_MAX), 2);
     CHECK_EQ(rows[0], SET_IMU_EN);
+    CHECK_EQ(rows[1], SET_ANGLE_SOURCE);
     settings_set(SET_IMU_EN, 1.0f);
-    /* ON, AXIS, SIGN, RATE, ALGORITHM, FILTER, and ANGLE SOURCE under
-     * them. */
-    static const setting_id_t want[] = { SET_IMU_EN, SET_IMU_AXIS,
-                                         SET_IMU_SIGN, SET_IMU_RATE,
-                                         SET_IMU_ALGO, SET_IMU_FILTER,
-                                         SET_ANGLE_SOURCE };
+    /* ON: ANGLE SOURCE second, AXIS, SIGN, RATE, ALGORITHM and FILTER
+     * under it. */
+    static const setting_id_t want[] = { SET_IMU_EN, SET_ANGLE_SOURCE,
+                                         SET_IMU_AXIS, SET_IMU_SIGN,
+                                         SET_IMU_RATE, SET_IMU_ALGO,
+                                         SET_IMU_FILTER };
     CHECK_EQ(sensors_pane_rows(SENS_ENTRY_IMU, rows, SENS_ENTRY_ROWS_MAX), 7);
     for (int i = 0; i < 7; ++i) {
         CHECK_EQ(rows[i], want[i]);

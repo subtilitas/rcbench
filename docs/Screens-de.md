@@ -1683,9 +1683,11 @@ Lauf in einem Halten startet
 [Servo: Starten](Servo-de.md#starten)). Nichts vom Ausgangsfeld nimmt auf
 einem der beiden Bildschirme einen Druck an.
 
-TEST zeigt an derselben Stelle eine Karte BEREIT: sechs Zeilen ab y 96,
-PORT, MESSGERÄT, PD MINI, STUFEN, BEREICH und ARM, und die Schienenzeile
-bei y 404. Die Mitte seiner Fußleiste ist 2s HALTEN: ARM + START, das
+TEST zeigt an derselben Stelle eine Karte BEREIT: sieben Zeilen ab y 96,
+PORT, MESSGERÄT, WINKEL, PD MINI, STUFEN, BEREICH und ARM, und die
+Schienenzeile bei y 404. WINKEL nennt die Winkelquelle, verweigert nichts,
+und ein Tippen darauf öffnet die Liste WINKELQUELLE
+([Servo](Servo-de.md#winkelquelle)). Die Mitte seiner Fußleiste ist 2s HALTEN: ARM + START, das
 PORT-PWM einschaltet, wo der Port es braucht, ARM schaltet und den
 automatischen Test in einem Halten startet; die Stufen des Laufs schalten
 den PD mini bei der Spannung jeder Stufe. Während des Laufs lautet die
@@ -2299,8 +2301,8 @@ Die linke Karte, x 18 bis 618 des Inhalts:
 | UNTERES ENDE, OBERES ENDE | zwei Felder von 295 x 96px ab y 70, 10px Abstand | das Ende, das der letzte Lauf zuerst fand, in Ziffern von 32 x 44 mit `us`; `FREI` in Grün; `-` vor einem Lauf |
 | Zustandszeilen | ab y 178, 24px Abstand, 10 x 20 | Titel und Schritt des Laufs; sonst die Startschritte, ein Fehler oder warum das Halten gesperrt ist; warum der Modus nicht angeboten wird; Urteil, Werte oder Grund, ZURÜCKSPIELEN, die Bereiche oder der Ausgang, die Datei des Berichts; der Hinweis des Modus |
 
-Die neun Zeilen der Karte BEREIT sind PORT, SERVO, MESSGERÄT, SCHIENE,
-BEREICH, PROGRAMMER, die Versorgung (PROG 5V, PD MINI oder
+Die zehn Zeilen der Karte BEREIT sind PORT, SERVO, MESSGERÄT, WINKEL,
+SCHIENE, BEREICH, PROGRAMMER, die Versorgung (PROG 5V, PD MINI oder
 VERSORGUNG), PORT-PWM und ARM. PROG 5V und PD MINI zeigen die `5.0V` des
 Laufs. 2s HALTEN: ARM + START stellt ein PD mini auf 5,0V, schaltet
 PORT-PWM und die Versorgung ein, liest sie zurück, schaltet ARM und

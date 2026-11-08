@@ -32,6 +32,7 @@
 #include "prog_choice.h"
 #include "prog_registry.h"
 #include "sensors_rows.h"
+#include "servo_angle_pick.h"
 #include "servo_limrun.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -291,8 +292,8 @@ const char *lim_write_why_held(void)
 
 /** @brief Each row's label; the supply's and ARM's are set apart. */
 static const ui_text_id_t k_label[LRR_COUNT] = {
-    TX_SVH_PORT,  TX_SVH_SERVO, TX_RDY_METER, TX_RDY_RAIL, TX_RDY_RANGE,
-    TX_RDY_PROG,  TX_RDY_SUPPLY, TX_RDY_PWM,  TX_COUNT,
+    TX_SVH_PORT,  TX_SVH_SERVO, TX_RDY_METER, TX_RDY_ANGLE, TX_RDY_RAIL,
+    TX_RDY_RANGE, TX_RDY_PROG,  TX_RDY_SUPPLY, TX_RDY_PWM,  TX_COUNT,
 };
 
 /**
@@ -417,6 +418,18 @@ bool lim_ready_row(int i, rdy_row_t *r)
         return false;
     }
     memset(r, 0, sizeof(*r));
+    if (i == LRR_ANGLE) {
+        /* The source the run names, and whether it reads angles: as the
+         * run under way took it at its start (a reading that arrives
+         * later is not the run's), else as a run started now would.  No
+         * check of the gate belongs to it. */
+        char name[24];
+        const bool running = servo_limrun_running(&s.lim);
+        angle_pick_run_row(r, running ? s.lim.cfg.source
+                                      : enc_name(name, sizeof(name)),
+                           running ? s.lim.cfg.enc_on : enc_on_now());
+        return true;
+    }
     r->label = (i == LRR_SUPPLY) ? supply_label()
                : (i == LRR_ARM)    ? "ARM"
                                    : ui_tr(k_label[i]);
@@ -498,6 +511,9 @@ void lim_ready_tap(int i)
     switch ((limrun_row_t)i) {
     case LRR_PORT:
         port_list_open();
+        return;
+    case LRR_ANGLE:
+        angle_pick_open();
         return;
     case LRR_SERVO:
         if (!lim_reads()) {

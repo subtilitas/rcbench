@@ -120,31 +120,31 @@ TEST_CASE(a_moved_row_keeps_its_key)
     }
 }
 
-/* The enable row alone while off, the sensor's rows under it while on; the
- * bus has no enable row. */
+/* The enable row alone while off, the IMU's with ANGLE SOURCE, the
+ * sensor's rows under it while on; the bus has no enable row. */
 TEST_CASE(rows_appear_when_a_sensor_is_enabled)
 {
-    static const struct { int e; setting_id_t en; int on; } k[] = {
-        { SENS_ENTRY_INA228, SET_INA228_EN, 4 },
-        { SENS_ENTRY_INA3221_0, SET_INA_FIT_0, 10 },
-        { SENS_ENTRY_INA3221_0 + 3, (setting_id_t)(SET_INA_FIT_0 + 3), 10 },
-        { SENS_ENTRY_AS5600, SET_ENC_EN, 2 },
-        { SENS_ENTRY_TAP, SET_TONE_EN, 7 },
-        { SENS_ENTRY_IMU, SET_IMU_EN, 7 },
+    static const struct { int e; setting_id_t en; int on; int off; } k[] = {
+        { SENS_ENTRY_INA228, SET_INA228_EN, 4, 1 },
+        { SENS_ENTRY_INA3221_0, SET_INA_FIT_0, 10, 1 },
+        { SENS_ENTRY_INA3221_0 + 3, (setting_id_t)(SET_INA_FIT_0 + 3), 10, 1 },
+        { SENS_ENTRY_AS5600, SET_ENC_EN, 2, 1 },
+        { SENS_ENTRY_TAP, SET_TONE_EN, 7, 1 },
+        { SENS_ENTRY_IMU, SET_IMU_EN, 7, 2 },   /* ANGLE SOURCE stays */
     };
     pane();
     CHECK_EQ(settings_screen_rows(SET_CAT_SENSORS), 2);
     for (size_t i = 0u; i < sizeof(k) / sizeof(k[0]); ++i) {
         tap(entry_x(k[i].e), entry_y(k[i].e));
         CHECK_EQ(sensors_pane_selected(), k[i].e);
-        CHECK_EQ(settings_screen_rows(SET_CAT_SENSORS), 1);
+        CHECK_EQ(settings_screen_rows(SET_CAT_SENSORS), k[i].off);
         /* The tap on the enable row's ">" brings the others. */
         tap(XP, LIST_Y + ROW_H / 2);
         CHECK(settings_get_bool(k[i].en));
         CHECK_EQ(settings_screen_rows(SET_CAT_SENSORS), k[i].on);
         tap(XM, LIST_Y + ROW_H / 2);
         CHECK(!settings_get_bool(k[i].en));
-        CHECK_EQ(settings_screen_rows(SET_CAT_SENSORS), 1);
+        CHECK_EQ(settings_screen_rows(SET_CAT_SENSORS), k[i].off);
     }
     CHECK_EQ(sensors_pane_rows(-1, NULL, 0), 0);
     CHECK_EQ(sensors_pane_rows(SENS_ENTRY_COUNT, NULL, 0), 0);

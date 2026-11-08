@@ -1557,8 +1557,10 @@ read-back, arms and starts the run in one hold
 [Servo: Running it](Servo.md#running-it)). Nothing of the output card
 takes a press on either screen.
 
-TEST shows a READY card in the same place: six rows from y 96, PORT,
-METER, PD MINI, STEPS, RANGE and ARM, and the rail line at y 404. Its
+TEST shows a READY card in the same place: seven rows from y 96, PORT,
+METER, ANGLE, PD MINI, STEPS, RANGE and ARM, and the rail line at y 404.
+ANGLE names the angle source, refuses nothing, and a tap on it opens the
+ANGLE SOURCE list ([Servo](Servo.md#angle-source)). Its
 footer's middle slot is HOLD 2s: ARM + START, which switches PORT PWM on
 where the port needs it, arms and starts the automatic test in one hold;
 the run's steps switch the PD mini at each step's voltage. During the run
@@ -2124,7 +2126,7 @@ The left card, x 18 to 618 of the body:
 | LOW END, HIGH END | two 295 x 96px cells from y 70, 10px apart | the end the last run found first, in 32 x 44 digits with `us`; `FREE` in green; `-` before a run |
 | State lines | from y 178, 24px apart, 10 x 20 | the run's title and step; else the start steps, a failure or why the hold is refused; why the mode is not offered; the verdict, its values or reason, RESTORE, the ranges or the output, the report's file; the mode's note |
 
-The READY card's nine rows are PORT, SERVO, METER, RAIL, RANGE,
+The READY card's ten rows are PORT, SERVO, METER, ANGLE, RAIL, RANGE,
 PROGRAMMER, the supply (PROG 5V, PD MINI or SUPPLY), PORT PWM and ARM.
 PROG 5V and PD MINI read the run's `5.0V`. HOLD 2s: ARM + START sets a
 PD mini to 5.0V, switches PORT PWM and the supply on, reads them back,
