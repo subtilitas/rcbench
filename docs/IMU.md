@@ -233,21 +233,25 @@ IMU filter 10 takes about 1s to 63% of a step; at 50Hz about 0.2s.
   to -179.9° moves the angle 0.2° the short way, not through 0. This
   holds on every axis.
 
-The still time is the sensor's: the angle within 0.5° (`IMU_STILL_DEG`)
-of the stretch's first frame. While the filtered angle lags the sensor's
-by more than 0.05° (`IMU_SETTLE_DEG`), the still time reads 0. The panel
-works out that lag from the distance at the stretch's first frame, shrunk
+The still time is the sensor's and is kept per axis: an axis' angle within
+0.5° (`IMU_STILL_DEG`) of the first frame of that axis' stretch. RUDDER
+AUTO, the servo test and the LIMIT RUN read the still time of the IMU axis
+setting, the axis they take the angle of. The other two axes may move: a
+pitch that creeps 1°/s does not hold a still yaw's still time at 0. While
+an axis' filtered angle lags the sensor's by more than 0.05°
+(`IMU_SETTLE_DEG`), that axis' still time reads 0. The panel works out
+that lag per axis from the distance at the stretch's first frame, shrunk
 by (1 - 1/k) each frame. Once it is 0.05° or less, the still time counts
 from the sensor's stop. On every frame after that the still time also
 reads 0 while the filtered angle lies more than 0.05° from the frame's, so
-a drift inside the 0.5° holds it at 0 until the filter catches up. RUDDER AUTO, which waits for 500ms of still
-time, then takes a settled angle, within 0.05° of the sensor's. AUTO waits
-up to 3,000ms after the command plus the filter's longest settle
-(`imu_filter_settle_ms()`): the frames a distance of 180° needs to come
-within 0.05°, at 1.5 times the frame period measured, 300ms a frame at
-most. That is 0ms for IMU filter 1, 11,700ms for IMU filter 10 at 10Hz and
-60,900ms for IMU filter 50 at 10Hz. The report names the wait:
-`within 14700ms of the command`.
+a drift inside the 0.5° holds it at 0 until the filter catches up. RUDDER
+AUTO, which waits for 500ms of still time, then takes a settled angle,
+within 0.05° of the sensor's. AUTO waits up to 3,000ms after the command
+plus the filter's longest settle (`imu_filter_settle_ms()`): the frames a
+distance of 180° needs to come within 0.05°, at 1.5 times the frame period
+measured, 300ms a frame at most. That is 0ms for IMU filter 1, 11,700ms
+for IMU filter 10 at 10Hz and 60,900ms for IMU filter 50 at 10Hz. The
+report names the wait: `within 14700ms of the command`.
 
 Current limitation: with IMU filter above 1, a move of the servo test
 counts as late when the filtered angle has not settled by the next

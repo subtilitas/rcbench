@@ -1161,7 +1161,7 @@ und SENSOR-MITTE übernimmt keinen Zählerstand von ihr.
 | | AS5600 | IMU |
 | --- | --- | --- |
 | ein Lauf liest Winkel, wenn | AS5600 an ist und der IOmcu es an hält | beim Start ein Messwert unter 300ms Alter angezeigt wird |
-| Ruhezeit | die des IOmcu, 12 Zählschritte (1,05°) | die eigene der IMU (`IMU_STILL_DEG`, 0,5°, `imu.h`) |
+| Ruhezeit | die des IOmcu, 12 Zählschritte (1,05°) | die eigene der IMU, nur die der Einstellung IMU-Achse (`IMU_STILL_DEG`, 0,5°, `imu.h`); die anderen Achsen dürfen sich bewegen |
 | Lücke | antwortet nicht | 300ms kein Messwert (`IMU_STALE_MS`) |
 | Bericht, `Encoder:` | `AS5600 an der Welle des Ruderhorns, Mittenwert N` | `IMU X+, in AS5600-Zählschritten (0.088° je Schritt)` |
 
@@ -1711,8 +1711,9 @@ angefragt ist).
   PULSE LOWER und PULSE UPPER bei Bedarf auf 1000,0us und 2000,0us
   geschrieben. Danach folgen VERLASSEN und die Anforderung von ARMED.
 - Für eine Messung wird der Endpuls angefordert. Ab 500ms nach dem
-  Befehl zählt der erste Winkel, der seit 500ms ruhig ist. Liegt bis
-  3000ms kein solcher Winkel vor, endet der Lauf.
+  Befehl zählt der erste Winkel, der seit 500ms ruhig ist. Mit der IMU
+  ist das die Ruhezeit der Einstellung IMU-Achse allein. Liegt bis 3000ms
+  kein solcher Winkel vor, endet der Lauf.
 - Die Richtung einer Seite ist das Vorzeichen ihrer ersten Messung. Beide
   Seiten mit einem Vorzeichen beenden den Lauf mit `Endpoint einer Seite fehlt`.
 - Eine Seite außerhalb der Toleranz bekommt Wert x Sollwert / gemessen,

@@ -1018,8 +1018,9 @@ gaps (`shared/ui/imu_sensor.c`, `test_imu_sensor` without a radio), the BLE link
 `test_imu_ctl` against `ble_sim.h`), the IMU screen on SETUP's IMU tile (`test_imu_screen`),
 SETUP > SENSORS > IMU (`test_imu_pane`) and the panel's IMU task
 (`firmware/panel/main/panel_imu.c`). The angle's low-pass, IMU filter, its seed, its wrap
-at ±180° and the still time that waits for it (`test_imu_filter`), and AUTO on the filtered
-angle with the settle allowance (`test_servo_rauto_filter`, `test_servo_rauto_kst`). With
+at ±180° and the still time that waits for it, kept per axis (`test_imu`, `test_imu_filter`),
+and AUTO on the filtered angle with the settle allowance and on yaw while pitch creeps
+(`test_servo_rauto_filter`, `test_servo_rauto_kst`). With
 ANGLE SOURCE IMU the servo test reads its angle in AS5600 counts; RUDDER, AUTO, the LIMIT
 RUN and MEASURED take its degrees as read. The link has not run against NimBLE's answers or the sensor. `protocols/hc05`
 and its suites stay in the host suite; no firmware builds them.
