@@ -30,6 +30,7 @@
  * - on_the_carrier_the_lines_lead_to_a_start_from_armed
  * - a_session_holding_the_port_is_named_before_port_pwm
  * - auto_start_flashes_as_it_fires
+ * - auto_enters_at_5v_whatever_the_kst_page_loaded
  *
  * SPDX-License-Identifier: MIT
  */
@@ -612,6 +613,32 @@ TEST_CASE(auto_start_flashes_as_it_fires)
     rauto_end_now(SERVO_TEST_AB_OPERATOR);
 }
 
+/* The KST page loaded at 6.0V and at 4.8V, SET_SERVO_PROG_V and the
+ * programmer alike: every ENTER of the run asks 5000mV, the PD mini takes
+ * 5.0V, the run passes, and the PD mini's set point is 5.0V after it.  The
+ * run over, the programmer holds the page's voltage again. */
+TEST_CASE(auto_enters_at_5v_whatever_the_kst_page_loaded)
+{
+    static const uint16_t k_mv[] = { 6000u, 4800u };
+
+    for (size_t i = 0; i < 2u; ++i) {
+        ra_setup(true, true);
+        settings_set(SET_SERVO_PROG_V, (float)k_mv[i] / 1000.0f);
+        kst_prog_supply_set(M, k_mv[i], kst_prog_supply_ma(M));
+        g_rig.enter_mv = 0u;
+        ra_hold_start();
+        CHECK(servo_screen_rauto_running());
+        ra_run_out();
+        CHECK(!servo_screen_rauto_running());
+        CHECK(strstr(ra.report, "PASS") != NULL);
+        CHECK_EQ(g_rig.enter_mv, (uint16_t)SERVO_LIMRUN_SUPPLY_MV);
+        CHECK_EQ(g_rig.sup_mv, (uint16_t)SERVO_LIMRUN_SUPPLY_MV);
+        CHECK(fabsf(supply_screen_set_v() - 5.0f) < 0.005f);
+        CHECK_EQ(kst_prog_supply_mv(M), k_mv[i]);
+    }
+    settings_set(SET_SERVO_PROG_V, settings_def(SET_SERVO_PROG_V)->def);
+}
+
 int main(void)
 {
     RUN(auto_programs_both_end_points_to_the_goal_and_ends_safe);
@@ -630,5 +657,6 @@ int main(void)
     RUN(on_the_carrier_the_lines_lead_to_a_start_from_armed);
     RUN(a_session_holding_the_port_is_named_before_port_pwm);
     RUN(auto_start_flashes_as_it_fires);
+    RUN(auto_enters_at_5v_whatever_the_kst_page_loaded);
     return test_summary("servo_rauto_kst");
 }

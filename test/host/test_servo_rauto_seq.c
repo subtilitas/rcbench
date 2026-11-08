@@ -22,8 +22,9 @@
  * - a_window_measured_before_the_5v_refuses_nothing
  * - a_rail_dead_after_the_5v_fails_naming_prog_5v
  * - a_pd_mini_off_on_a_rail_fed_from_elsewhere_refuses_the_hold
- * - a_pd_mini_set_low_is_red_behind_its_amber_output
- * - a_pd_mini_off_past_6v_goes_on_only_through_the_hv_warning
+ * - a_pd_mini_set_low_or_past_6v_runs_at_5v_and_stays_there
+ * - a_pd_mini_that_does_not_answer_5v_fails_the_read_back
+ * - a_pd_mini_capped_under_5v_refuses_the_hold
  * - a_tap_on_a_red_zero_row_takes_the_zero_while_the_encoder_reads
  * - a_tap_on_a_met_row_opens_and_names_nothing
  * - port_pwm_on_with_the_5v_off_reads_amber_with_no_text_of_its_own
@@ -430,80 +431,130 @@ TEST_CASE(a_pd_mini_off_on_a_rail_fed_from_elsewhere_refuses_the_hold)
     CHECK(rauto_hold_blocked(NULL) == NULL);
 }
 
-/* The PD mini off and set to 4.0V: its row is red with the low-voltage
- * text, not amber with the output's, and the hold names it. */
-TEST_CASE(a_pd_mini_set_low_is_red_behind_its_amber_output)
+/* The PD mini off, set to @p v: its row is amber, the hold offered; START
+ * sets it to 5.0V before its ON, the run's sessions ask 5000mV, and after
+ * the run it stays at 5.0V.  A set point of 4.0V and one past a standard
+ * servo's 6.0V take the same way. */
+static void pd_set_to_5v_by_the_hold(float v)
 {
     ra_setup(true, true);
     ra.armed = false;
     servo_screen_set_armed(false);
-    settings_set(SET_SUPPLY_V_START, 4.0f);
+    settings_set(SET_SUPPLY_V_START, v);
     supply_screen_settings_loaded();
+    CHECK(fabsf(supply_screen_set_v() - v) < 0.01f);
     g_rig.sup_on = false;
     ra_pd_reading(false);
     ra_ms(200u);
     rdy_row_t r = row_now(RAR_SUPPLY);
-    CHECK_EQ(r.st, (uint8_t)RDY_BAD);
-    CHECK_STR_EQ(r.why, TR(SV_LIM_PROG_LOW));
-    CHECK_STR_EQ(rauto_hold_blocked(NULL), TR(SV_LIM_PROG_LOW));
+    CHECK_EQ(r.st, (uint8_t)RDY_SEQ);
+    CHECK(rauto_hold_blocked(NULL) == NULL);
+    ra_hold_start();
+    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 0.005f);
+    CHECK_EQ(ra.pd_ons, 1u);
+    CHECK(servo_screen_rauto_running());
+    CHECK_STR_EQ(row_now(RAR_SUPPLY).value, "5.0V");
+    rauto_end_now(SERVO_TEST_AB_OPERATOR);
+    ra_ms(2000u);
+    CHECK(!servo_screen_rauto_running());
+    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 0.005f);
     settings_set(SET_SUPPLY_V_START, settings_def(SET_SUPPLY_V_START)->def);
     supply_screen_settings_loaded();
 }
 
-/* The PD mini off with SUPPLY's set point at 8.4V: PD MINI's row is red
- * with TAP: HV WARNING, the hold refuses and sends no ON, the bench stays
- * SAFE, and a tap on the grey hold names the row.  A tap on the row opens
- * OUTPUT ON's HV warning, the one way that ON is taken.  With the output
- * already on at 8.4V the row is met, as OUTPUT ON asks nothing of a live
- * output, and the hold sends no ON either. */
-TEST_CASE(a_pd_mini_off_past_6v_goes_on_only_through_the_hv_warning)
+TEST_CASE(a_pd_mini_set_low_or_past_6v_runs_at_5v_and_stays_there)
+{
+    pd_set_to_5v_by_the_hold(4.0f);
+    pd_set_to_5v_by_the_hold(8.4f);
+
+    /* The output already on at 8.4V: the row is met, START lowers it to
+     * 5.0V with the output on, and the read-back waits for a reading at
+     * 5.0V.  The output never goes off on the way. */
+    ra_setup(true, true);
+    ra.armed = false;
+    servo_screen_set_armed(false);
+    settings_set(SET_SUPPLY_V_START, 8.4f);
+    supply_screen_settings_loaded();
+    ra_pd_reading(true);
+    ra_ms(200u);
+    CHECK(rauto_hold_blocked(NULL) == NULL);
+    ra_hold_start();
+    CHECK(ra.pd_ons <= 1u);
+    CHECK_EQ(ra.offs, 0u);
+    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 0.005f);
+    CHECK(fabsf(ra.pd_sent_v - 5.0f) < 0.005f);
+    CHECK(servo_screen_rauto_running());
+    rauto_end_now(SERVO_TEST_AB_OPERATOR);
+    ra_ms(2000u);
+    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 0.005f);
+    settings_set(SET_SUPPLY_V_START, settings_def(SET_SUPPLY_V_START)->def);
+    supply_screen_settings_loaded();
+}
+
+/* The PD mini on at 8.4V answers no new set point: its readings hold 8.4V
+ * after START asked 5.0V.  The read-back fails at 1000ms naming the PD
+ * mini, the run does not start, and every output goes off. */
+TEST_CASE(a_pd_mini_that_does_not_answer_5v_fails_the_read_back)
+{
+    char b[96];
+    ra_setup(true, true);
+    ra.armed = false;
+    servo_screen_set_armed(false);
+    settings_set(SET_SUPPLY_V_START, 8.4f);
+    supply_screen_settings_loaded();
+    ra_pd_reading(true);
+    ra_ms(200u);
+    ra.pd_deaf = true;
+    CHECK(rauto_hold_blocked(NULL) == NULL);
+    ra_hold_start();
+    ra_ms(1500u);
+    CHECK(!servo_screen_rauto_running());
+    CHECK(!svs_seq_busy());
+    CHECK(fabsf(ra.pd_sent_v - 8.4f) < 0.005f);
+    CHECK_STR_EQ(rauto_line(0, b, sizeof(b)),
+                 "PD MINI FAILED: NO READ-BACK IN 1000ms");
+    CHECK(!g_rig.sup_on);
+    CHECK(!ra.armed);
+    settings_set(SET_SUPPLY_V_START, settings_def(SET_SUPPLY_V_START)->def);
+    supply_screen_settings_loaded();
+}
+
+/* SUPPLY's LIMITS cap the voltage at 4.5V: PD MINI's row is red with
+ * its text, the hold refuses and switches nothing, the set point stays,
+ * and a tap on the row opens SUPPLY's LIMITS. */
+TEST_CASE(a_pd_mini_capped_under_5v_refuses_the_hold)
 {
     char want[128], got[128];
     ra_setup(true, true);
     ra.armed = false;
     servo_screen_set_armed(false);
-    settings_set(SET_SUPPLY_V_START, 8.4f);
-    supply_screen_settings_loaded();
-    CHECK(supply_screen_set_v() > 8.3f);
+    settings_set(SET_SUPPLY_V_MAX, 4.5f);
+    supply_screen_limits_changed();
     g_rig.sup_on = false;
     ra_pd_reading(false);
     ra_ms(200u);
+    const float before = supply_screen_set_v();
     rdy_row_t r = row_now(RAR_SUPPLY);
     CHECK_EQ(r.st, (uint8_t)RDY_BAD);
-    CHECK_STR_EQ(r.why, TR(SV_TAP_HV));
+    CHECK_STR_EQ(r.why, TR(SV_RUN_PD_5V));
     CHECK(r.fix);
-    CHECK_STR_EQ(rauto_hold_blocked(NULL), TR(SV_TAP_HV));
-    snprintf(want, sizeof(want), TR(RDY_BAND), "PD MINI", TR(SV_TAP_HV));
+    CHECK_STR_EQ(rauto_hold_blocked(NULL), TR(SV_RUN_PD_5V));
+    snprintf(want, sizeof(want), TR(RDY_BAND), "PD MINI", TR(SV_RUN_PD_5V));
     CHECK_STR_EQ(ready_refusal(got, sizeof(got)), want);
     ra_hold_start();
     CHECK(!svs_seq_busy());
     CHECK_EQ(ra.pd_ons, 0u);
-    CHECK_EQ(ra.arms, 0u);
-    CHECK(!ra.armed);
-    CHECK(!g_rig.sup_on);
-    CHECK(!servo_screen_output_held());
-    ev(SV_RDY_X, SV_RDY_ROW_Y(RAR_SUPPLY), TOUCH_EVENT_DOWN, 2);
-    ev(SV_RDY_X, SV_RDY_ROW_Y(RAR_SUPPLY), TOUCH_EVENT_UP, 2);
-    ra_ms(20u);
-    CHECK(servo_screen_output_held());
-    CHECK_EQ(ra.pd_ons, 0u);
-
-    ra_setup(true, true);
-    ra.armed = false;
-    servo_screen_set_armed(false);
-    settings_set(SET_SUPPLY_V_START, 8.4f);
-    supply_screen_settings_loaded();
-    CHECK(supply_screen_set_v() > 8.3f);
-    ra_pd_reading(true);
-    ra_ms(200u);
-    CHECK(rauto_hold_blocked(NULL) == NULL);
-    ra_hold_start();
-    CHECK_EQ(ra.pd_ons, 0u);
-    CHECK(servo_screen_rauto_running());
-    rauto_end_now(SERVO_TEST_AB_OPERATOR);
-    ra_ms(2000u);
-    settings_set(SET_SUPPLY_V_START, settings_def(SET_SUPPLY_V_START)->def);
-    supply_screen_settings_loaded();
+    CHECK(!servo_screen_rauto_running());
+    CHECK(fabsf(supply_screen_set_v() - before) < 0.005f);
+    const ui_screen_id_t was = ui_router_current();
+    ev(SV_RDY_X, SV_RDY_ROW_Y(RAR_SUPPLY), TOUCH_EVENT_DOWN, 1);
+    ev(SV_RDY_X, SV_RDY_ROW_Y(RAR_SUPPLY), TOUCH_EVENT_UP, 1);
+    CHECK_EQ(ui_router_current(), SCREEN_SUPPLY);
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
+    CHECK_EQ(supply_screen_settings_tab(), 0);
+    ui_router_goto(was);
+    settings_set(SET_SUPPLY_V_MAX, settings_def(SET_SUPPLY_V_MAX)->def);
+    supply_screen_limits_changed();
 }
 
 /* ZERO is red until taken; with the encoder reading, a tap on its row
@@ -716,8 +767,9 @@ int main(void)
     RUN(a_window_measured_before_the_5v_refuses_nothing);
     RUN(a_rail_dead_after_the_5v_fails_naming_prog_5v);
     RUN(a_pd_mini_off_on_a_rail_fed_from_elsewhere_refuses_the_hold);
-    RUN(a_pd_mini_set_low_is_red_behind_its_amber_output);
-    RUN(a_pd_mini_off_past_6v_goes_on_only_through_the_hv_warning);
+    RUN(a_pd_mini_set_low_or_past_6v_runs_at_5v_and_stays_there);
+    RUN(a_pd_mini_that_does_not_answer_5v_fails_the_read_back);
+    RUN(a_pd_mini_capped_under_5v_refuses_the_hold);
     RUN(a_tap_on_a_red_zero_row_takes_the_zero_while_the_encoder_reads);
     RUN(a_tap_on_a_met_row_opens_and_names_nothing);
     RUN(port_pwm_on_with_the_5v_off_reads_amber_with_no_text_of_its_own);

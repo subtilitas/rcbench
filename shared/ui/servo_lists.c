@@ -17,7 +17,8 @@
  * AS5600's reading) and ANGLE SOURCE (read-only, a tap opens SETUP >
  * SENSORS on it); RUDDER AUTO's targets, MARGIN, TOLERANCE, SERVO, SERVO
  * PULSES and ANGLE SOURCE; LIMIT RUN's MODE, SERVO, SERVO PULSES and the
- * programmer's PROG VOLTAGE, PROG CURRENT and PROG WAIT; HITEC's SERIES
+ * programmer's PROG CURRENT and PROG WAIT (a run programs at 5.0V,
+ * servo_run_supply.c); HITEC's SERIES
  * and RECEIVE; TEST's 17 rows of the automatic test (servo_test_list.c).
  * LIMIT RUN's and RUDDER AUTO's SERVO is each screen's own (servo_pick.c);
  * with HITEC D SERIES, D RECEIVE follows it.
@@ -331,12 +332,11 @@ static const ui_setlist_row_t k_rauto_d_rows[] = {
     UI_SL_ROW_CUSTOM(&k_src),
 };
 /** @brief LIMIT RUN's list: MODE, the servo, its pulses and the
- *         programmer's supply and wait. */
+ *         programmer's current limit and wait. */
 static const ui_setlist_row_t k_limrun_rows[] = {
     UI_SL_ROW_CUSTOM(&k_mode),
     UI_SL_ROW_CUSTOM(&svs_family_row),
     UI_SL_ROW_CUSTOM(&k_pulses),
-    UI_SL_ROW_SETTING(SET_SERVO_PROG_V),
     UI_SL_ROW_SETTING(SET_SERVO_PROG_I),
     UI_SL_ROW_SETTING(SET_SERVO_PROG_WAIT),
 };
@@ -347,7 +347,6 @@ static const ui_setlist_row_t k_limrun_d_rows[] = {
     UI_SL_ROW_CUSTOM(&svs_family_row),
     UI_SL_ROW_SETTING(SET_HITEC_RX),
     UI_SL_ROW_CUSTOM(&k_pulses),
-    UI_SL_ROW_SETTING(SET_SERVO_PROG_V),
     UI_SL_ROW_SETTING(SET_SERVO_PROG_I),
     UI_SL_ROW_SETTING(SET_SERVO_PROG_WAIT),
 };

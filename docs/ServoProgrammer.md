@@ -1204,6 +1204,13 @@ until the next run's first write or a panel restart, and RESTORE offers it as
 `Settings before the limit run.`. While the run holds the port, the screen's
 PORT button and the run's box name it: `PROG PORT 1 GPIO 13`.
 
+Every session of the run asks 5000mV, with or without a PD mini, whatever
+PROGRAMMING VOLTAGE holds or this page loaded when it opened
+([Servo: The run's 5.0V](Servo.md#the-runs-50v)). With a PD mini feeding
+the servo, START sets it to 5.0V, and it stays at 5.0V after the run. The
+run's end gives the programmer back the voltage and current it held
+before the run's first CONNECT, which this page's own sessions use.
+
 Each session of the run follows the programmer's
 [power-cycle procedure](#the-power-cycle). With the PD mini output on,
 each **CONNECT** switches it off for 1s and back on; **LEAVE** after a

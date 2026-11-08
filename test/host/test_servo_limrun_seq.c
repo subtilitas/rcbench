@@ -19,7 +19,8 @@
  * - armed_has_500ms_and_a_refused_arm_ends_all_off
  * - a_pd_mini_off_on_a_dead_rail_is_switched_on_by_the_hold
  * - a_pd_mini_off_on_a_rail_fed_from_elsewhere_refuses_the_hold
- * - a_pd_mini_off_past_6v_goes_on_only_through_the_hv_warning
+ * - a_pd_mini_set_past_6v_runs_at_5v_and_stays_there
+ * - a_pd_mini_capped_under_5v_refuses_the_hold
  * - a_row_turning_red_under_the_hold_drops_it
  * - a_press_on_the_hold_during_the_steps_ends_them_all_off
  * - a_finger_on_arm_start_opens_nothing
@@ -243,13 +244,11 @@ TEST_CASE(a_pd_mini_off_on_a_rail_fed_from_elsewhere_refuses_the_hold)
     ra.rail_fed = false;
 }
 
-/* The PD mini off with SUPPLY's set point at 8.4V: PD MINI's row is red
- * with TAP: HV WARNING, the hold refuses and sends no ON, the bench stays
- * SAFE.  A tap on the row opens OUTPUT ON's HV warning, the one way that
- * ON is taken. */
-TEST_CASE(a_pd_mini_off_past_6v_goes_on_only_through_the_hv_warning)
+/* The PD mini off with SUPPLY's set point at 8.4V: PD MINI's row is
+ * amber and reads 5.0V, the hold is offered.  START sets the PD mini to
+ * 5.0V before its ON; after a STOP it stays at 5.0V, the output off. */
+TEST_CASE(a_pd_mini_set_past_6v_runs_at_5v_and_stays_there)
 {
-    char want[128], got[128];
     lim_pd(false);
     settings_set(SET_SUPPLY_V_START, 8.4f);
     supply_screen_settings_loaded();
@@ -257,26 +256,55 @@ TEST_CASE(a_pd_mini_off_past_6v_goes_on_only_through_the_hv_warning)
     ra_pd_reading(false);
     ra_ms(200u);
     rdy_row_t r = lim_row(LRR_SUPPLY);
+    CHECK_EQ(r.st, (uint8_t)RDY_SEQ);
+    CHECK(lim_hold_blocked(NULL) == NULL);
+    lim_hold_for(2300u);
+    ra_ms(20u);
+    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 0.005f);
+    CHECK_EQ(ra.pd_ons, 1u);
+    CHECK(servo_screen_limit_running());
+    CHECK_STR_EQ(lim_row(LRR_SUPPLY).value, "5.0V");
+    lim_press(2);
+    ra_ms(2000u);
+    CHECK(!servo_screen_limit_running());
+    CHECK(!g_rig.sup_on);
+    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 0.005f);
+    settings_set(SET_SUPPLY_V_START, settings_def(SET_SUPPLY_V_START)->def);
+    supply_screen_settings_loaded();
+}
+
+/* SUPPLY's LIMITS cap the voltage at 4.5V: PD MINI's row is red with its
+ * text, the hold refuses and switches nothing, and a tap on the row opens
+ * SUPPLY's LIMITS. */
+TEST_CASE(a_pd_mini_capped_under_5v_refuses_the_hold)
+{
+    char want[128], got[128];
+    lim_pd(false);
+    settings_set(SET_SUPPLY_V_MAX, 4.5f);
+    supply_screen_limits_changed();
+    ra_pd_reading(false);
+    ra_ms(200u);
+    rdy_row_t r = lim_row(LRR_SUPPLY);
     CHECK_EQ(r.st, (uint8_t)RDY_BAD);
-    CHECK_STR_EQ(r.why, TR(SV_TAP_HV));
+    CHECK_STR_EQ(r.why, TR(SV_RUN_PD_5V));
     CHECK(r.fix);
-    CHECK_STR_EQ(txt(lim_hold_blocked(NULL)), TR(SV_TAP_HV));
-    snprintf(want, sizeof(want), TR(RDY_BAND), "PD MINI", TR(SV_TAP_HV));
+    CHECK_STR_EQ(txt(lim_hold_blocked(NULL)), TR(SV_RUN_PD_5V));
+    snprintf(want, sizeof(want), TR(RDY_BAND), "PD MINI", TR(SV_RUN_PD_5V));
     CHECK_STR_EQ(ready_refusal(got, sizeof(got)), want);
     lim_hold_for(2300u);
     ra_ms(20u);
     CHECK(!svs_seq_busy());
+    CHECK(!servo_screen_limit_running());
     CHECK_EQ(ra.pd_ons, 0u);
-    CHECK_EQ(ra.arms, 0u);
-    CHECK(!ra.armed);
-    CHECK(!servo_screen_output_held());
-    ev(SV_RDY_X, SV_RDY_ROW_Y(LRR_SUPPLY), TOUCH_EVENT_DOWN, 2);
-    ev(SV_RDY_X, SV_RDY_ROW_Y(LRR_SUPPLY), TOUCH_EVENT_UP, 2);
-    ra_ms(20u);
-    CHECK(servo_screen_output_held());
-    CHECK_EQ(ra.pd_ons, 0u);
-    settings_set(SET_SUPPLY_V_START, settings_def(SET_SUPPLY_V_START)->def);
-    supply_screen_settings_loaded();
+    const ui_screen_id_t was = ui_router_current();
+    ev(SV_RDY_X, SV_RDY_ROW_Y(LRR_SUPPLY), TOUCH_EVENT_DOWN, 1);
+    ev(SV_RDY_X, SV_RDY_ROW_Y(LRR_SUPPLY), TOUCH_EVENT_UP, 1);
+    CHECK_EQ(ui_router_current(), SCREEN_SUPPLY);
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
+    CHECK_EQ(supply_screen_settings_tab(), 0);
+    ui_router_goto(was);
+    settings_set(SET_SUPPLY_V_MAX, settings_def(SET_SUPPLY_V_MAX)->def);
+    supply_screen_limits_changed();
 }
 
 /* A row that turns red under the 2s hold drops it: the PD mini off on a
@@ -577,7 +605,8 @@ int main(void)
     RUN(armed_has_500ms_and_a_refused_arm_ends_all_off);
     RUN(a_pd_mini_off_on_a_dead_rail_is_switched_on_by_the_hold);
     RUN(a_pd_mini_off_on_a_rail_fed_from_elsewhere_refuses_the_hold);
-    RUN(a_pd_mini_off_past_6v_goes_on_only_through_the_hv_warning);
+    RUN(a_pd_mini_set_past_6v_runs_at_5v_and_stays_there);
+    RUN(a_pd_mini_capped_under_5v_refuses_the_hold);
     RUN(a_row_turning_red_under_the_hold_drops_it);
     RUN(a_press_on_the_hold_during_the_steps_ends_them_all_off);
     RUN(a_finger_on_arm_start_opens_nothing);

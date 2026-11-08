@@ -238,9 +238,13 @@ typedef enum {
 bool kst_panel_run_ready(void);
 /** A run begins: no write of it yet. */
 void kst_panel_run_begin(void);
-/** CONNECT on the SERVO screen's port.  With @p supply, a PD mini answers
- *  and the session asks it for @p mv and @p ma: its set point as it
- *  stands, so the ENTER changes nothing.  KST_PROG_MSG_NONE when taken. */
+/** @brief CONNECT on the SERVO screen's port.  With @p supply the session
+ *         asks for @p mv and @p ma in place of the page's own;
+ *         kst_panel_run_end() puts the page's back.
+ *  @param supply true: the session asks for @p mv and @p ma
+ *  @param mv     the programming voltage, mV
+ *  @param ma     the current limit, mA
+ *  @return KST_PROG_MSG_NONE when taken, else the refusal */
 kst_prog_msg_id_t kst_panel_run_connect(bool supply, uint16_t mv,
                                         uint16_t ma);
 /** Write LEFT ANGLE @p left and RIGHT ANGLE @p right and nothing else.

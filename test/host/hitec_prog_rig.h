@@ -53,6 +53,7 @@ static bool              g_panel;       /* the overlay's model, not g_p */
 
 static hitec_prog_cmd_t  g_q[RIG_Q_LEN];
 static unsigned          g_q_n;
+static uint16_t          g_step_mv;     /* the last STEP's supply voltage, mV */
 static bool              g_q_hold;      /* the control task takes nothing */
 static unsigned          g_q_lost;      /* commands the queue had no room for */
 
@@ -438,6 +439,9 @@ static inline void frame(void)
 
     model_feed(&g_f);
     while (g_q_n < RIG_Q_LEN && model_take(&c)) {
+        if (c.kind == HITEC_PROG_CMD_STEP) {
+            g_step_mv = c.mv;
+        }
         g_q[g_q_n++] = c;
     }
     card_frame();

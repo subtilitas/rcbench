@@ -74,15 +74,18 @@ void lim_seam_begin(uint8_t fam)
     }
 }
 
-bool lim_seam_connect(uint8_t fam, bool pd, uint16_t mv, uint16_t ma)
+bool lim_seam_connect(uint8_t fam, uint16_t mv, uint16_t ma)
 {
     /* The carrier's input low: the session's PROG 5V would not come. */
     if (prog5v_box_input_why() != NULL) {
         return false;
     }
-    return hitec(fam) ? hitec_panel_run_connect(series_of(fam), pd, mv, ma)
+    /* The session's supply is the run's, with or without a PD mini: the
+     * programmer's own, loaded from SET_SERVO_PROG_V when its page opened,
+     * never reaches a run. */
+    return hitec(fam) ? hitec_panel_run_connect(series_of(fam), true, mv, ma)
                             == HITEC_PROG_MSG_NONE
-                   : kst_panel_run_connect(pd, mv, ma) == KST_PROG_MSG_NONE;
+                   : kst_panel_run_connect(true, mv, ma) == KST_PROG_MSG_NONE;
 }
 
 bool lim_seam_write(uint8_t fam, const uint16_t v[2])

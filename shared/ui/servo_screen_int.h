@@ -1206,13 +1206,40 @@ bool lim_seam_ready(uint8_t fam);
 /** @brief A run with a read begins on its family's programmer.
  *  @param fam the family */
 void lim_seam_begin(uint8_t fam);
-/** @brief CONNECT on the run's programmer.
+/** @brief CONNECT on the run's programmer, its session's supply @p mv and
+ *         @p ma whether or not a PD mini feeds the servo.
  *  @param fam the family
- *  @param pd with a PD mini at @p mv and @p ma
- *  @param mv the programming voltage, mV
+ *  @param mv the programming voltage, mV: SERVO_LIMRUN_SUPPLY_MV
  *  @param ma the current limit, mA
  *  @return true when it started */
-bool lim_seam_connect(uint8_t fam, bool pd, uint16_t mv, uint16_t ma);
+bool lim_seam_connect(uint8_t fam, uint16_t mv, uint16_t ma);
+
+/* --- servo_run_supply.c: the runs' 5.0V ---------------------------------- */
+
+/** @brief Whether a PD mini feeds the servo for the run: one answers, on
+ *         or off on a rail that reads under 3.0V (svs_seq_need()).
+ *  @return true then; false on the carrier's PROG 5V or another feed */
+bool rsup_pd_used(void);
+/** @brief Why the PD mini feeding the servo cannot take the run's 5.0V:
+ *         SUPPLY's caps leave it out.  @return the reason, NULL with no
+ *         PD mini or one that takes it */
+const char *rsup_why(void);
+/** @brief START: the PD mini feeding the servo to 5.0V, its current limit
+ *         kept; it stays there after the run.  @return false when SUPPLY
+ *         did not take 5.0V; true with no PD mini */
+bool rsup_begin(void);
+/** @brief The start sequence's read-back of the PD mini: on LIMIT RUN and
+ *         RUDDER AUTO its reading must hold the run's 5.0V as well as the
+ *         output on.
+ *  @param set_v the set point the PD mini's reading holds, V
+ *  @return true where it does, and on every other SERVO function */
+bool rsup_read_back(float set_v);
+/** @brief A run session's current limit: the PD mini's set point where it
+ *         feeds the servo, else SET_SERVO_PROG_I.  @return mA */
+uint16_t rsup_ma(void);
+/** @brief The run's supply as the READY cards show it, `5.0V`.
+ *  @param b where it goes @param n its size */
+void rsup_text(char *b, size_t n);
 /** @brief The two travel values, in the family's units.
  *  @param fam the family
  *  @param v LEFT and RIGHT

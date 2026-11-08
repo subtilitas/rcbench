@@ -1,8 +1,8 @@
 /*
  * The limit run through the SERVO screen and the overlay of the programmer
  * (shared/ui/kst_panel.c, shared/servo/servo_limrun.c): the LIMITS page, the
- * refusals before a drive, and the sessions and backups around a run on the
- * programming port.  The bench is kst_panel_rig.h.
+ * refusals before a drive, and the sessions, their 5.0V and the backups
+ * around a run on the programming port.  The bench is kst_panel_rig.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -63,6 +63,10 @@ static struct {
      * 5.0V 1.0A, each time the port takes the supply, the output on; and
      * whether SERVO ever asked to restore the operator's. */
     bool adopt, adopted, asked;
+    /* The PD mini's last reading: a set point moved since is answered
+     * with a reading of its own on the next 20ms. */
+    bool pd_sent, pd_sent_on;
+    float pd_sent_v;
 } lr;
 
 static void lr_drain(void)
@@ -93,6 +97,8 @@ static void lr_drain(void)
     }
 }
 
+static void lr_pd_reading(bool on);
+
 /* What the panel does with the screen's commands. */
 static void lr_commands(void)
 {
@@ -118,6 +124,9 @@ static void lr_commands(void)
     }
     g_rig.safe = !lr.armed;
     servo_screen_set_armed(lr.armed);
+    if (lr.pd_sent && fabsf(supply_screen_set_v() - lr.pd_sent_v) > 0.001f) {
+        lr_pd_reading(lr.pd_sent_on);
+    }
 }
 
 static void lr_ms(uint32_t ms)
@@ -191,6 +200,9 @@ static void lr_pd_reading(bool on)
     st.taken_ms = g_rig.ms;
     st.stamped = true;
     servo_screen_supply(&st);
+    lr.pd_sent = true;
+    lr.pd_sent_on = on;
+    lr.pd_sent_v = st.set_v;
 }
 
 /**
@@ -441,9 +453,9 @@ TEST_CASE(a_limit_run_programs_the_servo_on_the_programming_port)
 }
 
 /* The read session's LEAVE inside a run leaves the output on at the
- * port's 5.0V 1.0A, the operator's 6.0V standing before the run: SERVO
- * asks nothing, during the run or after it.  A LEAVE after the run, from
- * PROGRAM, asks. */
+ * port's 5.0V 1.0A, the operator's 6.0V standing before the START set
+ * the run's 5.0V: SERVO asks nothing, during the run or after it.  A
+ * LEAVE after the run, from PROGRAM, asks. */
 TEST_CASE(a_limit_runs_read_session_asks_no_restore)
 {
     lr_fresh(false);
@@ -1132,6 +1144,41 @@ TEST_CASE(a_limit_run_takes_the_prog_wait_set_since_the_screen_opened)
     settings_cancel_save();
 }
 
+/* The KST page loaded at 6.0V and at 4.8V, SET_SERVO_PROG_V and the
+ * programmer alike, with the PD mini behind the servo and without: every
+ * ENTER of the run asks 5000mV.  The PD mini takes 5.0V and is at 5.0V
+ * after the run.  The run over, the programmer holds the page's voltage
+ * again. */
+TEST_CASE(a_limit_run_enters_at_5v_whatever_the_kst_page_loaded)
+{
+    static const uint16_t k_mv[] = { 6000u, 4800u };
+
+    for (int pd = 0; pd < 2; ++pd) {
+        for (size_t i = 0; i < 2u; ++i) {
+            if (pd != 0) {
+                lr_fresh(false);
+            } else {
+                lr_fresh_ext(false);
+            }
+            settings_set(SET_SERVO_PROG_V, (float)k_mv[i] / 1000.0f);
+            kst_prog_supply_set(M, k_mv[i], kst_prog_supply_ma(M));
+            g_rig.enter_mv = 0u;
+            lr_start();
+            CHECK(servo_screen_limit_running());
+            lr_run_out();
+            CHECK(!servo_screen_limit_running());
+            CHECK(strstr(lr.report, pd != 0 ? "PASS" : "FOUND") != NULL);
+            CHECK_EQ(g_rig.enter_mv, (uint16_t)SERVO_LIMRUN_SUPPLY_MV);
+            if (pd != 0) {
+                CHECK_EQ(g_rig.sup_mv, (uint16_t)SERVO_LIMRUN_SUPPLY_MV);
+                CHECK(fabsf(supply_screen_set_v() - 5.0f) < 0.005f);
+            }
+            CHECK_EQ(kst_prog_supply_mv(M), k_mv[i]);
+        }
+    }
+    settings_set(SET_SERVO_PROG_V, settings_def(SET_SERVO_PROG_V)->def);
+}
+
 int main(void)
 {
     RUN(a_limit_run_programs_the_servo_on_the_programming_port);
@@ -1153,5 +1200,6 @@ int main(void)
     RUN(a_run_write_refused_before_it_is_sent_switches_write_enable_off);
     RUN(a_limit_run_aborted_behind_its_arm_leaves_the_bench_safe);
     RUN(a_limit_run_takes_the_prog_wait_set_since_the_screen_opened);
+    RUN(a_limit_run_enters_at_5v_whatever_the_kst_page_loaded);
     return test_summary("kst_panel_limrun");
 }

@@ -400,7 +400,7 @@ TEST_CASE(an_input_gone_low_during_the_steps_ends_them_all_off)
 }
 
 /* The limit run's seam to the programmer (servo_screen_int.h). */
-bool lim_seam_connect(uint8_t fam, bool pd, uint16_t mv, uint16_t ma);
+bool lim_seam_connect(uint8_t fam, uint16_t mv, uint16_t ma);
 
 /* A limit run's CONNECT, asked after its START, is refused while the
  * input is low, and taken once it is back. */
@@ -410,7 +410,7 @@ TEST_CASE(a_limit_runs_connect_is_refused_while_the_input_is_low)
     go(SERVO_FN_LIMRUN);
     ra_ms(100u);
     prog5v_box_publish_input(5100u);
-    CHECK(!lim_seam_connect(SERVO_LIMRUN_FAM_KST, false, 0u, 0u));
+    CHECK(!lim_seam_connect(SERVO_LIMRUN_FAM_KST, 0u, 0u));
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
     carrier_done();
 }

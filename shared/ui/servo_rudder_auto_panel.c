@@ -231,10 +231,9 @@ static bool ra_apply(const servo_rauto_do_t *d)
         }
         again = true;
     } else if (d->connect) {
-        taken = lim_seam_connect(
-            fam, lim_pd_feeds(),
-            (uint16_t)lroundf(supply_screen_set_v() * 1000.0f),
-            (uint16_t)lroundf(supply_screen_set_i() * 1000.0f));
+        /* 5.0V, whatever the programmers' own voltage reads; the PD
+         * mini's current limit, or the programmers' without one. */
+        taken = lim_seam_connect(fam, SERVO_LIMRUN_SUPPLY_MV, rsup_ma());
     } else if (d->write) {
         taken = lim_seam_write(fam, d->value);
     } else if (d->pulses) {
@@ -488,6 +487,11 @@ static void ra_begin(void)
     ++s.ctrl_rev;
     ++s.arm_rev;
     if (rauto_hold_blocked(NULL) != NULL) {
+        return;
+    }
+    /* The PD mini to 5.0V before the steps switch it on. */
+    if (!rsup_begin()) {
+        s.ra.note = TR(SV_RUN_PD_SET);
         return;
     }
     /* The settings as they read now: the run starts on these whatever

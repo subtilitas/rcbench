@@ -92,6 +92,10 @@ static struct {
     bool latched, line_out, clear_dead;
     uint16_t faults_more;   /* other STATUS bits shown with them */
     unsigned clears, refused;
+    /* The PD mini's last reading: a set point moved since is answered
+     * with a reading of its own on the next 20ms, unless pd_deaf. */
+    bool pd_sent, pd_sent_on, pd_deaf;
+    float pd_sent_v;
 } ra;
 
 /** @brief The IOmcu's STATUS faults, read now: the failsafe as the rig's
@@ -196,6 +200,10 @@ static inline void ra_commands(void)
             g_rig.sup_on = true;
             ra_pd_reading(true);
         }
+    }
+    if (ra.pd_sent && !ra.pd_deaf
+        && fabsf(supply_screen_set_v() - ra.pd_sent_v) > 0.001f) {
+        ra_pd_reading(ra.pd_sent_on);
     }
 }
 
@@ -351,7 +359,8 @@ static inline void ra_ms(uint32_t ms)
     }
 }
 
-/* One reading of a PD mini that answers, its output on or off. */
+/* One reading of a PD mini that answers, its output on or off; with
+ * ra.pd_deaf at the set point of its last reading, whatever SUPPLY asks. */
 static inline void ra_pd_reading(bool on)
 {
     supply_state_t st;
@@ -359,13 +368,17 @@ static inline void ra_pd_reading(bool on)
     st.online = true;
     st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
     st.output = on;
-    st.set_v = supply_screen_set_v();
+    st.set_v = (ra.pd_deaf && ra.pd_sent) ? ra.pd_sent_v
+                                          : supply_screen_set_v();
     st.set_i = supply_screen_set_i();
     st.v = on ? st.set_v : 0.0f;
     st.samples = 1u;
     st.taken_ms = g_rig.ms;
     st.stamped = true;
     servo_screen_supply(&st);
+    ra.pd_sent = true;
+    ra.pd_sent_on = on;
+    ra.pd_sent_v = st.set_v;
 }
 
 /**

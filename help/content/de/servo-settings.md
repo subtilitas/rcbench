@@ -108,9 +108,10 @@ OPTIONEN in der Fußleiste von ENDLAGENLAUF öffnet die Liste. Außerhalb eines 
 | SERVO | KST/CHASERVO, HITEC D-SERIE, HITEC KLASSISCH | KST/CHASERVO | Nur bei PORT auf PROG PORT. Wählt Servoprogrammierung und Serie für die Sitzungen des Laufs ([Hitec-Servos](servo.md#hitec-servos)); ein Tippen öffnet die drei. Gehört dem Endlagenlauf, getrennt von RUDER AUTO; dieselbe wie die Zeile SERVO der Karte BEREIT. |
 | Hitec-D-Empfang | PULL-UP, PRECHARGE | PULL-UP | Nur unter SERVO auf HITEC D-SERIE. Wie die IOmcu eine Antwort der D-Serie empfängt; die Einstellung der HITEC-Seite. |
 | SERVOPULSE | BEHALTEN, 1000-2000 | BEHALTEN | Nur bei PORT auf PROG PORT und SERVO KST/CHASERVO. 1000-2000 setzt PULSE LOWER und PULSE UPPER vor der Suche auf 1000,0 und 2000,0us. |
-| Programmierspannung | 4,8 bis 8,4V | 5,0V | der Sollwert des PD mini, solange der Programmierer das Servo hält |
-| Programmierstrom | 0,05 bis 3,000A | 1,000A | die Strombegrenzung des PD mini beim Programmieren |
+| Programmierstrom | 0,05 bis 3,000A | 1,000A | die Strombegrenzung der Sitzung, wo kein PD mini das Servo speist; mit einem behält der Lauf die Strombegrenzung von SUPPLY |
 | Warten vor PWM | 0 bis 10000ms | 100ms | vom Ende des Programmierens bis zum ersten Puls |
+
+Die Liste hat keine Spannung: ein Lauf programmiert mit 5,0V ([Die Versorgung: 5,0V](servo.md#die-versorgung-5-0v)).
 
 ## Die Grenzen von SUPPLY
 

@@ -3,8 +3,9 @@
  * through servo_limit_seam.c and the Hitec run seam hitec_panel_run.h):
  * a D series servo landed within the tolerance, a classic servo's 8-bit
  * cells kept within what the servo takes, and the D series save and
- * reboot inside a write's session, and READY's SERVO and SUPPLY rows on
- * both families.  The bench is hitec_limit_panel_rig.h,
+ * reboot inside a write's session, READY's SERVO and SUPPLY rows on
+ * both families, and the 5.0V every session asks.  The bench is
+ * hitec_limit_panel_rig.h,
  * the surface on the AS5600 at 0.06° a us of the horn, the stops at 700
  * and 2300us outside the travel; the targets 20° with a 10% margin, 22°
  * goals.
@@ -263,7 +264,7 @@ TEST_CASE(a_stop_with_the_first_hitec_write_on_its_way_names_the_backup)
  * passes the gate: READY reads SERVO as HITEC D SERIES, SUPPLY green with
  * the 6.00V the INA3221 measures and nothing live through it, and the hold
  * is offered with nothing for it to switch on.  On the classic servo's bench
- * the PD mini feeds it: SERVO reads HITEC CLASSIC, SUPPLY PD MINI on, in
+ * the PD mini feeds it: SERVO reads HITEC CLASSIC, PD MINI the run's 5.0V, in
  * red as an output that is live through it. */
 TEST_CASE(a_d_series_servo_on_an_external_rail_reads_the_rail_voltage)
 {
@@ -285,7 +286,36 @@ TEST_CASE(a_d_series_servo_on_an_external_rail_reads_the_rail_voltage)
     CHECK(rauto_ready_row(RAR_SUPPLY, &r));
     CHECK_STR_EQ(r.label, "PD MINI");
     CHECK_EQ(r.st, (uint8_t)RDY_LIVE);
-    CHECK_STR_EQ(r.value, ui_on_off(1));
+    CHECK_STR_EQ(r.value, "5.0V");
+}
+
+/* SET_SERVO_PROG_V at 6.0V and at 4.8V: AUTO's sessions ask 5000mV, on
+ * the D series servo's external rail and on the classic servo behind the
+ * PD mini, which is at 5.0V after the run.  The run over, the HITEC page's
+ * programmer holds the setting's voltage again. */
+TEST_CASE(auto_programs_at_5v_whatever_prog_v_holds)
+{
+    static const float k_v[] = { 6.0f, 4.8f };
+
+    for (int cls = 0; cls < 2; ++cls) {
+        for (size_t i = 0; i < 2u; ++i) {
+            ha_setup(cls != 0);
+            settings_set(SET_SERVO_PROG_V, k_v[i]);
+            g_step_mv = 0u;
+            ha_hold_start();
+            CHECK(servo_screen_rauto_running());
+            ha_run_out();
+            CHECK(!servo_screen_rauto_running());
+            CHECK(strstr(hl.report, "PASS") != NULL);
+            CHECK_EQ(g_step_mv, (uint16_t)SERVO_LIMRUN_SUPPLY_MV);
+            if (cls != 0) {
+                CHECK(fabsf(supply_screen_set_v() - 5.0f) < 0.005f);
+            }
+            CHECK_EQ(hitec_prog_mv(model()),
+                     (uint16_t)lroundf(k_v[i] * 1000.0f));
+        }
+    }
+    settings_set(SET_SERVO_PROG_V, settings_def(SET_SERVO_PROG_V)->def);
 }
 
 int main(void)
@@ -296,5 +326,6 @@ int main(void)
     RUN(a_d_series_write_counts_the_save_and_reboot_time_in_the_session_cap);
     RUN(a_stop_with_the_first_hitec_write_on_its_way_names_the_backup);
     RUN(a_d_series_servo_on_an_external_rail_reads_the_rail_voltage);
+    RUN(auto_programs_at_5v_whatever_prog_v_holds);
     return test_summary("servo_rauto_hitec");
 }
