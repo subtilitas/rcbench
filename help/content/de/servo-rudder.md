@@ -60,7 +60,7 @@ LÄNGE ist der Abstand von der Scharnierlinie zur Hinterkante: 0 oder 10 bis 500
 
 ## RUDER AUTO
 
-RUDER AUTO, eine eigene Kachel im Hub, programmiert ein KST-, Chaservo- oder Hitec-Servo am Programmierport so, dass 1000us und 2000us den je Seite vorgegebenen Ausschlag erreichen. Seine Option SERVO übernimmt die zuletzt im Hub geöffnete Servoprogrammierung. Die dritte Zeile nennt sie, etwa `SERVO HITEC D-SERIE`.
+RUDER AUTO, eine eigene Kachel im Hub, programmiert ein KST-, Chaservo- oder Hitec-Servo am Programmierport so, dass 1000us und 2000us den je Seite vorgegebenen Ausschlag erreichen. Sein SERVO, KST/CHASERVO, HITEC D-SERIE oder HITEC KLASSISCH, ist die eigene gespeicherte Wahl von RUDER AUTO, getrennt von der des Endlagenlaufs; ein Tippen auf die Zeile SERVO der Karte BEREIT wählt es. Die dritte Zeile nennt sie, etwa `SERVO HITEC D-SERIE`.
 
 Die linke Karte hält Anzeige, Sollwerte, RESERVE und TOLERANZ, NULLPUNKT und MAX LÖSCHEN, die Seitenansicht und die Statuszeilen. Die Seitenansicht zeigt beide Sollwerte als bernsteinfarbene gestrichelte Linien: 1000us auf der negativen, 2000us auf der positiven Seite, oder jeweils auf der vom letzten Lauf gemessenen Seite.
 
@@ -74,7 +74,7 @@ Die linke Karte hält Anzeige, Sollwerte, RESERVE und TOLERANZ, NULLPUNKT und MA
 
 ### BEREIT
 
-Die Karte BEREIT rechts zeigt, was der Start braucht, eine Zeile je Punkt: PORT, SERVO, MESSGERÄT, WINKEL, NULLPUNKT, BEREICH, PROGRAMMER, die Versorgung (PROG 5V auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de), PD MINI, wo das PD mini das Servo speist), PORT-PWM und ARM. Ein grüner Punkt ist erfüllt. Ein roter Punkt sperrt das Halten oder zeigt einen über die Zeile aktiven Ausgang. Gelb zeigt `START SCHALTET EIN` oder `START SCHALTET ARMED`: das erledigt das Halten. Grau wartet auf PORT. Ein Tippen auf PORT öffnet die Port-Auswahl, auf SERVO die OPTIONEN, auf einen roten NULLPUNKT setzt es den Nullpunkt, auf einen roten WINKEL oder ein rotes MESSGERÄT öffnet es [Sensoren](setup-sensors.md). Ein Tippen auf eine andere rote Zeile nennt sie im Alarmband. Die Zeile unter den Zeilen ist das Messgerät des Laufs.
+Die Karte BEREIT rechts zeigt, was der Start braucht, eine Zeile je Punkt: PORT, SERVO, MESSGERÄT, WINKEL, NULLPUNKT, BEREICH, PROGRAMMER, die Versorgung (PROG 5V auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de), PD MINI, wo das PD mini das Servo speist), PORT-PWM und ARM. Ein grüner Punkt ist erfüllt. Ein roter Punkt sperrt das Halten oder zeigt einen über die Zeile aktiven Ausgang. Gelb zeigt `START SCHALTET EIN` oder `START SCHALTET ARMED`: das erledigt das Halten. Grau wartet auf PORT. Ein Tippen auf PORT öffnet die Port-Auswahl, auf SERVO die drei Programmierer über der linken Spalte, auf einen roten NULLPUNKT setzt es den Nullpunkt, auf einen roten WINKEL oder ein rotes MESSGERÄT öffnet es [Sensoren](setup-sensors.md). Ein Tippen auf eine andere rote Zeile nennt sie im Alarmband. Die Zeile unter den Zeilen ist das Messgerät des Laufs.
 
 ![Auf dem rbmod-Carrier, SAFE: PROG 5V, PORT-PWM und ARM gelb, das Halten grün](view:servo-rudder-auto-rbmod)
 

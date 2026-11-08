@@ -1485,8 +1485,11 @@ static void servo_run_view(bool to_the_end, bool ina)
  *             and RESTORE's list: the servo as the run found it
  *   -nopd     -ready, and then no PD mini answers: SEARCH+PROG and SERVO
  *             PULSES chosen and not offered
- *   -hitec    LIMIT RUN's list, SERVO at HITEC on the Hitec programmer's
- *             D SERIES and SEARCH+PROG: SERVO PULSES locked
+ *   -hitec    LIMIT RUN's list, SERVO picked from its list at HITEC D
+ *             SERIES and SEARCH+PROG: D RECEIVE under SERVO, SERVO PULSES
+ *             locked
+ *   -family   -ready, then a tap on the READY card's SERVO: the three
+ *             families over the left column
  *   -settings LIMIT RUN's list with SEARCH+PROG and SERVO PULSES chosen
  */
 static struct {
@@ -1686,12 +1689,18 @@ static void limrun_view(const char *view)
     settings_request_save();
     tap(SV_FOOT_SET_X, UI_BAND_H + SV_FOOT_Y);
     if (strcmp(v, "-hitec") == 0) {
-        /* The Hitec programmer's model in PWM, its series D SERIES; SERVO
-         * to HITEC, then MODE to SEARCH+PROG; the list left open. */
+        /* The Hitec programmer's model in PWM; SERVO picked at HITEC D
+         * SERIES from its choice list, then MODE to SEARCH+PROG; the list
+         * left open. */
         render_hitec_feed(false);
-        settings_set(SET_HITEC_SERIES, 1.0f);
         limrun_ms(40u);
-        servo_list_tap(1, UI_SL_PART_PLUS);
+        servo_list_tap(1, UI_SL_PART_VALUE);
+        {
+            const gfx_rect_t c =
+                ui_setlist_choice_rect(servo_screen_list(), 1);
+            tap(c.x + c.w / 2, UI_BAND_H + c.y + c.h / 2);
+        }
+        limrun_ms(40u);
         servo_list_tap(0, UI_SL_PART_VALUE);
         limrun_ms(100u);
         return;
@@ -1721,6 +1730,12 @@ static void limrun_view(const char *view)
         return;
     }
     if (strcmp(v, "-ready") == 0) {
+        return;
+    }
+    if (strcmp(v, "-family") == 0) {
+        /* The READY card's SERVO (LRR_SERVO, row 1): its list, open. */
+        tap(SV_RDY_X, UI_BAND_H + SV_RDY_ROW_Y(1));
+        limrun_ms(100u);
         return;
     }
     touch_event_t e = { .type = TOUCH_EVENT_DOWN,

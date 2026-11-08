@@ -19,6 +19,8 @@
  * PULSES and ANGLE SOURCE; LIMIT RUN's MODE, SERVO, SERVO PULSES and the
  * programmer's PROG VOLTAGE, PROG CURRENT and PROG WAIT; HITEC's SERIES
  * and RECEIVE; TEST's 17 rows of the automatic test (servo_test_list.c).
+ * LIMIT RUN's and RUDDER AUTO's SERVO is each screen's own (servo_pick.c);
+ * with HITEC D SERIES, D RECEIVE follows it.
  * KST opens its EXPERT MODE page, which keeps its 2s hold; LIVE has no
  * list.
  *
@@ -213,30 +215,6 @@ static void src_tap(void)
     wb_open_encoder();
 }
 
-/** @brief SERVO's value: KST/CHASERVO or HITEC, as LIMIT RUN's row. */
-static void fam_value(char *out, size_t n)
-{
-    snprintf(out, n, "%s",
-             s.lim_hitec ? TR(SV_LIM_SERVO_HITEC) : TR(SV_LIM_SERVO_KST));
-}
-
-/** @brief SERVO stepped: the other family, for a run started after it. */
-static void fam_step(int dir)
-{
-    (void)dir;
-    if (!servo_limrun_running(&s.lim) && !servo_rauto_running(&s.ra.run)) {
-        s.lim_hitec = !s.lim_hitec;
-        ++s.ctrl_rev;
-    }
-}
-
-/** @brief Why SERVO and SERVO PULSES take no press: the target is no
- *         programming port.  @return the reason, NULL while they take one */
-static const char *fam_locked(void)
-{
-    return lim_reads() ? NULL : TR(SVL_PORT_ONLY);
-}
-
 /** @brief SERVO PULSES' value, as LIMIT RUN's row. */
 static void pulses_value(char *out, size_t n)
 {
@@ -305,11 +283,6 @@ static const ui_setlist_custom_t k_src = {
     .label = TX_SVL_ANGLE_SOURCE, .help = TX_SVL_ANGLE_HELP,
     .value_text = src_value, .tap = src_tap,
 };
-/** @brief RUDDER AUTO's SERVO row: KST/CHASERVO or HITEC. */
-static const ui_setlist_custom_t k_fam = {
-    .label = TX_SV_ROW_LIM_SERVO, .help = TX_SVL_FAMILY_HELP, .cycles = true,
-    .value_text = fam_value, .step = fam_step, .locked = fam_locked,
-};
 /** @brief RUDDER AUTO's SERVO PULSES row. */
 static const ui_setlist_custom_t k_pulses = {
     .label = TX_SV_ROW_LIM_PULSES, .help = TX_SVL_PULSES_HELP,
@@ -341,7 +314,19 @@ static const ui_setlist_row_t k_rauto_rows[] = {
     UI_SL_ROW_SETTING(SET_RUDDER_DEFL_HI),
     UI_SL_ROW_SETTING(SET_RUDDER_MARGIN),
     UI_SL_ROW_SETTING(SET_RUDDER_TOL),
-    UI_SL_ROW_CUSTOM(&k_fam),
+    UI_SL_ROW_CUSTOM(&svs_family_row),
+    UI_SL_ROW_CUSTOM(&k_pulses),
+    UI_SL_ROW_CUSTOM(&k_src),
+};
+/** @brief RUDDER AUTO's list with its SERVO at HITEC D SERIES: D RECEIVE
+ *         under SERVO. */
+static const ui_setlist_row_t k_rauto_d_rows[] = {
+    UI_SL_ROW_SETTING(SET_RUDDER_DEFL_LO),
+    UI_SL_ROW_SETTING(SET_RUDDER_DEFL_HI),
+    UI_SL_ROW_SETTING(SET_RUDDER_MARGIN),
+    UI_SL_ROW_SETTING(SET_RUDDER_TOL),
+    UI_SL_ROW_CUSTOM(&svs_family_row),
+    UI_SL_ROW_SETTING(SET_HITEC_RX),
     UI_SL_ROW_CUSTOM(&k_pulses),
     UI_SL_ROW_CUSTOM(&k_src),
 };
@@ -349,7 +334,18 @@ static const ui_setlist_row_t k_rauto_rows[] = {
  *         programmer's supply and wait. */
 static const ui_setlist_row_t k_limrun_rows[] = {
     UI_SL_ROW_CUSTOM(&k_mode),
-    UI_SL_ROW_CUSTOM(&k_fam),
+    UI_SL_ROW_CUSTOM(&svs_family_row),
+    UI_SL_ROW_CUSTOM(&k_pulses),
+    UI_SL_ROW_SETTING(SET_SERVO_PROG_V),
+    UI_SL_ROW_SETTING(SET_SERVO_PROG_I),
+    UI_SL_ROW_SETTING(SET_SERVO_PROG_WAIT),
+};
+/** @brief LIMIT RUN's list with its SERVO at HITEC D SERIES: D RECEIVE
+ *         under SERVO. */
+static const ui_setlist_row_t k_limrun_d_rows[] = {
+    UI_SL_ROW_CUSTOM(&k_mode),
+    UI_SL_ROW_CUSTOM(&svs_family_row),
+    UI_SL_ROW_SETTING(SET_HITEC_RX),
     UI_SL_ROW_CUSTOM(&k_pulses),
     UI_SL_ROW_SETTING(SET_SERVO_PROG_V),
     UI_SL_ROW_SETTING(SET_SERVO_PROG_I),
@@ -383,9 +379,19 @@ static const fn_rows_t k_rows_of[SERVO_FN_COUNT] = {
 
 /* ------------------------------------------------------------ the host */
 
-/** @brief The function the list is open for, its rows. */
+/** @brief LIMIT RUN's rows with D RECEIVE. */
+static const fn_rows_t k_limrun_d = ROWS(k_limrun_d_rows);
+/** @brief RUDDER AUTO's rows with D RECEIVE. */
+static const fn_rows_t k_rauto_d = ROWS(k_rauto_d_rows);
+
+/** @brief The function the list is open for, its rows: LIMIT RUN's and
+ *         RUDDER AUTO's with D RECEIVE while their SERVO is HITEC D
+ *         SERIES.  @return the rows */
 static const fn_rows_t *rows_now(void)
 {
+    if (svs_family_d_receive()) {
+        return s.fn == SERVO_FN_RAUTO ? &k_rauto_d : &k_limrun_d;
+    }
     return &k_rows_of[(s.fn < SERVO_FN_COUNT) ? s.fn : SERVO_FN_HUB];
 }
 

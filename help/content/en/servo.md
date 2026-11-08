@@ -177,14 +177,14 @@ The limit run searches for mechanical binding at each end of an installed servo'
 ![The limit run, ready](view:servo-limrun-ready)
 
 1. Tap SETTINGS in the footer, then MODE to choose SEARCH ONLY or SEARCH + PROGRAM.
-2. With PORT on PROG PORT, tap SERVO to choose KST/CHASERVO or HITEC, the programmer the run's sessions go to; it takes the programmer opened last from the hub. With KST/CHASERVO, set SERVO PULSES to KEEP or 1000-2000. It starts at KEEP.
+2. With PORT on PROG PORT, tap SERVO on the READY card and pick KST/CHASERVO, HITEC D SERIES or HITEC CLASSIC, the programmer the run's sessions go to. The pick is LIMIT RUN's own and is saved; RUDDER AUTO keeps its own. With KST/CHASERVO, set SERVO PULSES to KEEP or 1000-2000. It starts at KEEP.
 3. Tap the home tag to go back to LIMIT RUN.
 4. Hold HOLD 2s: ARM + START in the footer. From SAFE it switches PORT PWM on, then PROG 5V or the PD mini's output, waits up to 1000ms for them to read back ON, arms, waits up to 500ms for ARMED, and starts the run. A tap or a shorter hold starts nothing and shows `Hold 2s to switch the port and its supply on, ARM and start the limit run.` in the alert band.
 5. While the run runs, the hold reads STOP RUN. The state lines show the phase, the side and the pulse. After the run's last command the bench is SAFE again; PROG 5V stays on.
 
 The left card shows the mode, then the output and the meter: `OUTPUT PROG PORT 1 GPIO 13, CURRENT INA3221 0x41 CH2` or `OUTPUT SERVO PWM GPIO 2, CURRENT INA3221 0x40 CH1`. LOW END and HIGH END hold the ends the last run found, in us, or `FREE`. The state lines under them name the step under way, why the hold is refused, and the last result with its file.
 
-The READY card on the right lists what the start needs, one row each: PORT, SERVO, METER, RAIL, RANGE, PROGRAMMER, the supply (PROG 5V on the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), PD MINI where the PD mini feeds the servo), PORT PWM and ARM. A green dot is met. A red dot refuses the hold, or marks an output live through the row. Amber reads `START SWITCHES IT ON` or `START ARMS`: the hold does it. Grey waits on PORT. A tap on PORT opens the port choice, on SERVO the SETTINGS list, on a red METER [Sensors](setup-sensors.md) on the INA3221 that watches the target, on a red PD MINI with `TAP: HV WARNING` OUTPUT ON's HV warning. A tap on another red row, or on the grey hold, names it in the alert band.
+The READY card on the right lists what the start needs, one row each: PORT, SERVO, METER, RAIL, RANGE, PROGRAMMER, the supply (PROG 5V on the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), PD MINI where the PD mini feeds the servo), PORT PWM and ARM. A green dot is met. A red dot refuses the hold, or marks an output live through the row. Amber reads `START SWITCHES IT ON` or `START ARMS`: the hold does it. Grey waits on PORT. A tap on PORT opens the port choice, on SERVO the three programmers over the left column, on a red METER [Sensors](setup-sensors.md) on the INA3221 that watches the target, on a red PD MINI with `TAP: HV WARNING` OUTPUT ON's HV warning. A tap on another red row, or on the grey hold, names it in the alert band.
 
 The run reads only the INA3221 channel that watches the tester's target. While one of these holds, its row is red, the hold is grey and the first state line says why:
 
@@ -266,9 +266,11 @@ Finally, both ends are searched again. Both free means PASS; either binding mean
 
 ### Hitec servos
 
-![The LIMIT RUN settings, SERVO at HITEC](view:servo-limrun-hitec)
+![LIMIT RUN's SERVO choice](view:servo-limrun-family)
 
-With SERVO set to HITEC, sessions use the [Hitec programmer](servo-programmer.md) and its SERIES selection. LEFT END and RIGHT END map to 0xB2 and 0xB0 on D-series servos, in counts relative to NEUTRAL 0xC2. Classic servos use raw cells 0x14 and 0x13, swapped for CCW.
+![The LIMIT RUN settings, SERVO at HITEC D SERIES](view:servo-limrun-hitec)
+
+With SERVO at HITEC D SERIES or HITEC CLASSIC, sessions use the [Hitec programmer](servo-programmer.md) in that series, whatever the HITEC page's SERIES reads. With HITEC D SERIES the list shows Hitec D receive under SERVO, the HITEC page's setting. LEFT END and RIGHT END map to 0xB2 and 0xB0 on D-series servos, in counts relative to NEUTRAL 0xC2. Classic servos use raw cells 0x14 and 0x13, swapped for CCW.
 
 Hitec has no pulse registers, so SERVO PULSES is locked. The run uses an unmeasured pulse model: NEUTRAL 1500.0us, full travel at 850.0us and 2150.0us for D series, or 900.0us and 2100.0us for classic. PULSE MIN and MAX must cover the range, otherwise RANGE is red with `HITEC: PULSE MIN/MAX MUST COVER 850-2150us`. TYPE WIDE, 800 to 2200us, covers both.
 

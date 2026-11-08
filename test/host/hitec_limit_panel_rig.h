@@ -104,10 +104,12 @@ static inline uint16_t hl_horn_c(void)
     return (uint16_t)lroundf(low ? 1500.0f - off : 1500.0f + off);
 }
 
-/* Where the horn of the servo on the line stands for the pulse. */
+/* Where the horn of the servo on the line stands for the pulse: the
+ * classic servo's (servo_hs5645() answers the classic entry) or the D
+ * series one's, whatever series the programmer holds. */
 static inline uint16_t hl_horn(void)
 {
-    if (hitec_prog_series(model()) == HITEC_CLASSIC) {
+    if (g_drv.c_entry) {
         return hl_horn_c();
     }
     int32_t t = ((int32_t)hl.cmd - 750) * 4;
@@ -290,18 +292,51 @@ static inline void hl_classic_ccw(void)
     g_drv.eeprom[0x1C] = (uint8_t)(0u - sum);
 }
 
-/* LIMIT RUN's list, the rows stepped as asked, back to LIMIT RUN. */
-static inline void hl_settings(bool hitec, bool prog)
+/* LIMIT RUN's list: SERVO picked as @p fam (servo_limrun_family_t) from
+ * its choice list where it reads another, MODE at SEARCH + PROGRAM with
+ * @p prog, back to LIMIT RUN. */
+static inline void hl_settings(uint8_t fam, bool prog)
 {
     open_limrun_list();
-    if (hitec) {
-        HL_STEP(LL_SERVO);
+    if (servo_screen_limit_family() != (int)fam) {
+        sl_choose(LL_SERVO, fam);
     }
     if (prog) {
         sl_tap(LL_MODE);
     }
     /* Back to the screen: the list opened on a SAFE bench, and the home
      * tag arms it again. */
+    (void)home_tag();
+    scr->tick(0.02f);
+}
+
+/* LIMIT RUN's READY card: SERVO tapped on a SAFE bench and @p fam
+ * (servo_limrun_family_t) picked from the list over the left column; the
+ * bench armed again as it was. */
+static inline void hl_card_family(uint8_t fam)
+{
+    servo_screen_set_armed(false);
+    go(SERVO_FN_LIMRUN);
+    scr->tick(0.02f);
+    tap(SV_RDY_X, SV_RDY_ROW_Y(1));         /* LRR_SERVO */
+    ov_choose(fam);
+    servo_screen_set_armed(hl.armed);
+    scr->tick(0.02f);
+}
+
+/* RUDDER AUTO's list: SERVO picked as @p fam (servo_rauto_family_t), back
+ * to RUDDER AUTO.  The list opens on a SAFE bench, as LIMIT RUN's. */
+static inline void hl_rauto_family(uint8_t fam)
+{
+    settings_request_save();
+    go(SERVO_FN_RAUTO);
+    tap_settings();
+    if (!servo_screen_list()->open) {
+        servo_screen_set_armed(false);
+        g_rig_rearm = true;
+        tap_settings();
+    }
+    sl_choose(RAL_SERVO, fam);
     (void)home_tag();
     scr->tick(0.02f);
 }

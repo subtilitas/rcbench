@@ -13,7 +13,8 @@
  * - reset_on_the_hub_puts_the_profile_back
  * - enc_center_takes_the_live_count_of_an_as5600_only
  * - angle_source_names_the_source_in_force
- * - servo_family_steps_on_the_programming_port_only
+ * - servo_family_is_picked_on_the_programming_port_only
+ * - limit_run_picks_its_family_apart_from_rudder_auto
  * - servo_pulses_name_their_reason_until_a_pd_mini_feeds
  * - a_finger_on_a_programmer_control_keeps_the_hubs_list_shut
  * - the_servos_name_takes_the_name_keyboard
@@ -24,6 +25,8 @@
 #include "servo_screen_rig.h"
 
 #include "kst_panel.h"
+#include "servo_limrun.h"
+#include "servo_rudder_auto.h"
 
 /** @brief The open list's row @p i as the list reads it.
  *  @param i the row @return its hooks */
@@ -227,31 +230,65 @@ TEST_CASE(angle_source_names_the_source_in_force)
     settings_cancel_save();
 }
 
-/* RUDDER AUTO's SERVO row steps between KST/CHASERVO and HITEC for a run
- * started after it, and only while the target is a programming port; off
- * the port it names why and a key keeps the family. */
-TEST_CASE(servo_family_steps_on_the_programming_port_only)
+/* RUDDER AUTO's SERVO row opens its three families as a choice list, and
+ * only while the target is a programming port; off the port it names why
+ * and a tap opens nothing.  A pick is RUDDER AUTO's alone: LIMIT RUN keeps
+ * its own.  With HITEC D SERIES, D RECEIVE (the HITEC page's setting)
+ * follows SERVO; with CLASSIC and KST/CHASERVO it does not. */
+TEST_CASE(servo_family_is_picked_on_the_programming_port_only)
 {
-    enum { FAM = 4 };
     fresh();
     go(SERVO_FN_RAUTO);
     tap_settings();
     CHECK(servo_screen_list()->open);
-    char kst[48];
-    snprintf(kst, sizeof(kst), "%s", value_of(FAM));
-    CHECK_STR_EQ(kst, ui_tr(TX_SV_LIM_SERVO_KST));
-    CHECK_STR_EQ(why_of(FAM), ui_tr(TX_SVL_PORT_ONLY));
+    const int n = ui_setlist_count(servo_screen_list());
+    CHECK_STR_EQ(value_of(RAL_SERVO), ui_tr(TX_SV_LIM_SERVO_KST));
+    CHECK_STR_EQ(why_of(RAL_SERVO), ui_tr(TX_SVL_PORT_ONLY));
+    CHECK_EQ(hooks(RAL_SERVO)->choices(), 3);
+    CHECK_STR_EQ(hooks(RAL_SERVO)->choice(1), "HITEC D SERIES");
+    sl_choose(RAL_SERVO, 1);
+    CHECK_EQ(servo_screen_rauto_family(), SERVO_RAUTO_FAM_KST);
 
     servo_screen_set_drive(1u, 13u, true);
-    CHECK_STR_EQ(why_of(FAM), "");
-    sl_step(FAM, +1);
-    CHECK_STR_EQ(value_of(FAM), ui_tr(TX_SV_LIM_SERVO_HITEC));
-    sl_step(FAM, +1);
-    CHECK_STR_EQ(value_of(FAM), kst);
+    CHECK_STR_EQ(why_of(RAL_SERVO), "");
+    sl_choose(RAL_SERVO, 1);
+    CHECK_STR_EQ(value_of(RAL_SERVO), "HITEC D SERIES");
+    CHECK_EQ(hooks(RAL_SERVO)->chosen(), 1);
+    CHECK_EQ(servo_screen_rauto_family(), SERVO_RAUTO_FAM_HITEC_D);
+    CHECK_EQ(servo_screen_limit_family(), SERVO_LIMRUN_FAM_KST);
+    CHECK_EQ(ui_setlist_count(servo_screen_list()), n + 1);
+    const ui_setlist_row_t rx = servo_screen_list()->host->row(RAL_RX);
+    CHECK_EQ(rx.kind, (uint8_t)UI_SL_SETTING);
+    CHECK_EQ(rx.id, SET_HITEC_RX);
+    sl_choose(RAL_SERVO, 2);
+    CHECK_STR_EQ(value_of(RAL_SERVO), "HITEC CLASSIC");
+    CHECK_EQ(ui_setlist_count(servo_screen_list()), n);
+    sl_choose(RAL_SERVO, 0);
+    CHECK_STR_EQ(value_of(RAL_SERVO), ui_tr(TX_SV_LIM_SERVO_KST));
 
     servo_screen_set_drive(0u, SERVO_SCREEN_NO_PIN, false);
-    sl_step(FAM, +1);
-    CHECK_STR_EQ(value_of(FAM), kst);
+    sl_choose(RAL_SERVO, 2);
+    CHECK_EQ(servo_screen_rauto_family(), SERVO_RAUTO_FAM_KST);
+    settings_cancel_save();
+}
+
+/* LIMIT RUN's SERVO row is LIMIT RUN's own: a pick there leaves RUDDER
+ * AUTO's, and D RECEIVE follows it with HITEC D SERIES. */
+TEST_CASE(limit_run_picks_its_family_apart_from_rudder_auto)
+{
+    fresh();
+    servo_screen_set_drive(1u, 13u, true);
+    settings_set(SET_RAUTO_FAMILY, (float)SERVO_RAUTO_FAM_HITEC_C);
+    go(SERVO_FN_LIMRUN);
+    tap_settings();
+    CHECK(servo_screen_list()->open);
+    const int n = ui_setlist_count(servo_screen_list());
+    sl_choose(LL_SERVO, 1);
+    CHECK_EQ(servo_screen_limit_family(), SERVO_LIMRUN_FAM_HITEC_D);
+    CHECK_EQ(servo_screen_rauto_family(), SERVO_RAUTO_FAM_HITEC_C);
+    CHECK_EQ(ui_setlist_count(servo_screen_list()), n + 1);
+    CHECK_EQ(servo_screen_list()->host->row(LL_RX).id, SET_HITEC_RX);
+    settings_cancel_save();
 }
 
 /* RUDDER AUTO's SERVO PULSES row names a port to be on, then a KST or
@@ -259,7 +296,7 @@ TEST_CASE(servo_family_steps_on_the_programming_port_only)
  * PD mini feeds the servo. */
 TEST_CASE(servo_pulses_name_their_reason_until_a_pd_mini_feeds)
 {
-    enum { FAM = 4, PULSES = 5 };
+    enum { PULSES = 5 };
     fresh();
     go(SERVO_FN_RAUTO);
     tap_settings();
@@ -285,10 +322,12 @@ TEST_CASE(servo_pulses_name_their_reason_until_a_pd_mini_feeds)
     sl_step(PULSES, +1);
     CHECK_STR_EQ(value_of(PULSES), keep);
 
-    sl_step(FAM, +1);                       /* HITEC has no pulses to set */
+    /* HITEC CLASSIC has no pulses to set (and no D RECEIVE row above). */
+    sl_choose(RAL_SERVO, SERVO_RAUTO_FAM_HITEC_C);
     CHECK_STR_EQ(why_of(PULSES), ui_tr(TX_SVL_KST_ONLY));
     sl_step(PULSES, +1);
     CHECK_STR_EQ(value_of(PULSES), keep);
+    settings_cancel_save();
 }
 
 /* A finger on a programmer's control keeps the hub's list shut as it keeps
@@ -337,7 +376,8 @@ int main(void)
     RUN(reset_on_the_hub_puts_the_profile_back);
     RUN(enc_center_takes_the_live_count_of_an_as5600_only);
     RUN(angle_source_names_the_source_in_force);
-    RUN(servo_family_steps_on_the_programming_port_only);
+    RUN(servo_family_is_picked_on_the_programming_port_only);
+    RUN(limit_run_picks_its_family_apart_from_rudder_auto);
     RUN(servo_pulses_name_their_reason_until_a_pd_mini_feeds);
     RUN(a_finger_on_a_programmer_control_keeps_the_hubs_list_shut);
     RUN(the_servos_name_takes_the_name_keyboard);

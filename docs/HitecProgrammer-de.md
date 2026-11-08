@@ -1019,9 +1019,14 @@ Endlagenlauf eines KST-Servos
 ([Die Weggrenzen des Servos programmieren](Servo-de.md#die-weggrenzen-des-servos-programmieren)).
 Die Servoprogrammierung bietet dafür eine Schnittstelle für Hitec-Servos
 (`shared/bench/include/hitec_prog_run.h`,
-`shared/ui/include/hitec_panel_run.h`). Der ENDLAGENLAUF des
-SERVO-Bildschirms mit SERVO auf HITEC und RUDER AUTO starten Läufe
-über sie ([Servo: Hitec-Servos](Servo-de.md#hitec-servos)).
+`shared/ui/include/hitec_panel_run.h`). Der ENDLAGENLAUF und RUDER AUTO
+des SERVO-Bildschirms, jeder mit seinem eigenen SERVO auf HITEC D-SERIE
+oder HITEC KLASSISCH, starten Läufe über sie
+([Servo: Hitec-Servos](Servo-de.md#hitec-servos)). Das VERBINDEN eines
+Laufs nimmt die Serie dieses SERVO, nicht SERIE auf dieser Seite; das Ende
+des Laufs setzt SERIE wieder in die Programmierung. Der D-Empfang
+(PULL-UP oder PRECHARGE) ist die eine Einstellung, die die Liste WEITERES
+dieser Seite und die Listen der Läufe teilen.
 
 Ein Lauf schreibt ENDE LINKS und ENDE RECHTS und sonst nichts, in
 Wegeinheiten:

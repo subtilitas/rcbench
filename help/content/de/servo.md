@@ -177,14 +177,14 @@ Der Endlagenlauf sucht mechanische Anschläge an beiden Enden des eingebauten Se
 ![Der Endlagenlauf, bereit](view:servo-limrun-ready)
 
 1. Tippe auf OPTIONEN in der Fußleiste, dann auf MODUS, um NUR SUCHE oder SUCHEN + PROGRAMMIEREN zu wählen.
-2. Wähle bei PORT auf PROG-PORT unter SERVO KST/CHASERVO oder HITEC. Die Vorgabe folgt der zuletzt im Hub geöffneten Servoprogrammierung. Bei KST/CHASERVO stelle SERVOPULSE auf BEHALTEN oder 1000-2000; die Vorgabe ist BEHALTEN.
+2. Tippe bei PORT auf PROG-PORT auf SERVO in der Karte BEREIT und wähle KST/CHASERVO, HITEC D-SERIE oder HITEC KLASSISCH, den Programmierer der Sitzungen des Laufs. Die Wahl gehört dem Endlagenlauf und wird gespeichert; RUDER AUTO hat seine eigene. Bei KST/CHASERVO stelle SERVOPULSE auf BEHALTEN oder 1000-2000; die Vorgabe ist BEHALTEN.
 3. Tippe auf das Home-Feld, um zu ENDLAGENLAUF zurückzukehren.
 4. Halte 2s HALTEN: ARM + START in der Fußleiste. Bei SAFE schaltet es PORT-PWM ein, dann PROG 5V oder den Ausgang des PD mini, wartet bis zu 1000ms auf deren Rückmeldung EIN, schaltet ARM, wartet bis zu 500ms auf ARMED und startet den Lauf. Ein Tipp oder kürzeres Halten startet nichts und zeigt `Halte 2s, um Port und Versorgung einzuschalten, ARM und den Endlagenlauf zu starten.` im Alarmband.
 5. Während des Laufs zeigt das Halten LAUF BEENDEN. Die Zustandszeilen zeigen Phase, Seite und Puls. Nach dem letzten Befehl des Laufs ist der Prüfstand wieder SAFE; PROG 5V bleibt an.
 
 Die linke Karte zeigt den Modus, dann Ausgang und Messgerät: `AUSGANG PROG-PORT 1 GPIO 13, STROM INA3221 0x41 CH2` oder `AUSGANG SERVO PWM GPIO 2, STROM INA3221 0x40 CH1`. UNTERES ENDE und OBERES ENDE zeigen die Enden des letzten Laufs in us, oder `FREI`. Die Zustandszeilen darunter nennen den laufenden Schritt, warum das Halten gesperrt ist, und das letzte Ergebnis mit seiner Datei.
 
-Die Karte BEREIT rechts zeigt, was der Start braucht, eine Zeile je Punkt: PORT, SERVO, MESSGERÄT, SCHIENE, BEREICH, PROGRAMMER, die Versorgung (PROG 5V auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de), PD MINI, wo das PD mini das Servo speist), PORT-PWM und ARM. Ein grüner Punkt ist erfüllt. Ein roter Punkt sperrt das Halten oder zeigt einen über die Zeile aktiven Ausgang. Gelb zeigt `START SCHALTET EIN` oder `START SCHALTET ARMED`: das erledigt das Halten. Grau wartet auf PORT. Ein Tippen auf PORT öffnet die Port-Auswahl, auf SERVO die OPTIONEN, auf ein rotes MESSGERÄT [Sensoren](setup-sensors.md) am INA3221, der das Ziel überwacht, auf ein rotes PD MINI mit `TIPPEN: HV-WARNUNG` die HV-Warnung von AUSGANG EIN. Ein Tippen auf eine andere rote Zeile oder auf das graue Halten nennt sie im Alarmband.
+Die Karte BEREIT rechts zeigt, was der Start braucht, eine Zeile je Punkt: PORT, SERVO, MESSGERÄT, SCHIENE, BEREICH, PROGRAMMER, die Versorgung (PROG 5V auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de), PD MINI, wo das PD mini das Servo speist), PORT-PWM und ARM. Ein grüner Punkt ist erfüllt. Ein roter Punkt sperrt das Halten oder zeigt einen über die Zeile aktiven Ausgang. Gelb zeigt `START SCHALTET EIN` oder `START SCHALTET ARMED`: das erledigt das Halten. Grau wartet auf PORT. Ein Tippen auf PORT öffnet die Port-Auswahl, auf SERVO die drei Programmierer über der linken Spalte, auf ein rotes MESSGERÄT [Sensoren](setup-sensors.md) am INA3221, auf ein rotes PD MINI mit `TIPPEN: HV-WARNUNG` die HV-Warnung von AUSGANG EIN. Ein Tippen auf eine andere rote Zeile oder auf das graue Halten nennt sie im Alarmband.
 
 Der Lauf verwendet ausschließlich den INA3221-Kanal für das Testerziel. Solange eine dieser Bedingungen gilt, ist ihre Zeile rot, das Halten grau, und die erste Zustandszeile nennt den Grund:
 
@@ -266,9 +266,11 @@ Zum Schluss werden beide Enden erneut geprüft. Sind beide frei, lautet das Erge
 
 ### Hitec-Servos
 
-![Die Optionen des ENDLAGENLAUFS, SERVO auf HITEC](view:servo-limrun-hitec)
+![Die Auswahl SERVO des Endlagenlaufs](view:servo-limrun-family)
 
-Bei SERVO HITEC verwendet der Lauf die [Hitec-Servoprogrammierung](servo-programmer.md) mit ihrer Auswahl SERIE. LEFT END und RIGHT END entsprechen bei D-Serie 0xB2 und 0xB0 in Zählschritten relativ zu NEUTRAL 0xC2. Classic-Servos verwenden die rohen Zellen 0x14 und 0x13, bei CCW vertauscht.
+![Die Optionen des ENDLAGENLAUFS, SERVO auf HITEC D-SERIE](view:servo-limrun-hitec)
+
+Bei SERVO auf HITEC D-SERIE oder HITEC KLASSISCH verwendet der Lauf die [Hitec-Servoprogrammierung](servo-programmer.md) in dieser Serie, gleich, was SERIE auf der HITEC-Seite zeigt. Mit HITEC D-SERIE zeigt die Liste unter SERVO den Hitec-D-Empfang, die Einstellung der HITEC-Seite. LEFT END und RIGHT END entsprechen bei D-Serie 0xB2 und 0xB0 in Zählschritten relativ zu NEUTRAL 0xC2. Classic-Servos verwenden die rohen Zellen 0x14 und 0x13, bei CCW vertauscht.
 
 Hitec hat keine Pulsregister; SERVOPULSE ist gesperrt. Der Lauf verwendet ein nicht gemessenes Pulsmodell: NEUTRAL 1500,0us, voller Weg bei 850,0us und 2150,0us für D-Serie beziehungsweise 900,0us und 2100,0us für Classic. PULS MIN und PULS MAX müssen diesen Bereich enthalten. Sonst ist BEREICH rot mit `HITEC: PULS MIN/MAX MUSS 850-2150us ABDECKEN`. TYP WIDE mit 800 bis 2200us deckt beide ab.
 

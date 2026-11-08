@@ -457,23 +457,27 @@ TEST_CASE(port_outputs_with_no_pin_opens_outputs_and_the_tag_returns)
 }
 
 /* ARMED: the SERVO row opens no list and names why in the band as a notice;
- * on a SAFE bench it opens the list. */
+ * on a SAFE bench with a PROG PORT it opens the three families. */
 TEST_CASE(the_servo_row_refuses_while_armed_and_names_why)
 {
     start();
     servo_on_auto();
+    settings_set(SET_SERVO_TARGET, 1.0f);
+    servo_screen_set_drive(1u, 13u, true);
     set_armed(true);
     drain_servo();
     ui_router_set_alert(NULL);
     tap_ready_row(RAR_SERVO);
     CHECK(!servo_screen_list()->open);
+    CHECK_EQ(servo_screen_family_choices(), -1);
     CHECK(ui_router_alert() != NULL);
     CHECK_STR_EQ(ui_router_alert(), TR(FOOT_SETTINGS_SAFE));
     CHECK(ui_router_alert_is_notice());
     CHECK_EQ(servo_took().kind, SERVO_CMD_NONE);
     set_armed(false);
     tap_ready_row(RAR_SERVO);
-    CHECK(servo_screen_list()->open);
+    CHECK(!servo_screen_list()->open);
+    CHECK_EQ(servo_screen_family_choices(), 3);  /* the three families */
 }
 
 /* ------------------------------------------------------------ WI-FI, UPDATES */

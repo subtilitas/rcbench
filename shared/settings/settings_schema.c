@@ -369,6 +369,20 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
         "hitec_series", "",
         SET_CAT_SERVO, SET_TYPE_ENUM, 0, 0, 1, 1, ENUM_OPTS(hitec_series) },
     /*
+     * The programmer a run writes the end points with, one value per
+     * screen, in servo_limrun_family_t's order: KST/CHASERVO, HITEC D
+     * SERIES or HITEC CLASSIC.  LIMIT RUN's and RUDDER AUTO's own, each
+     * chosen on its READY card's SERVO row or its settings list; no other
+     * screen writes either.  Kept across restarts; no SETUP list shows
+     * them (SET_CAT_SERVO).
+     */
+    [SET_LIMIT_FAMILY] = {
+        "lim_family", "",
+        SET_CAT_SERVO, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(servo_family) },
+    [SET_RAUTO_FAMILY] = {
+        "rauto_family", "",
+        SET_CAT_SERVO, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(servo_family) },
+    /*
      * The ESC signal-wire session's STROM: SWITCHED (0) or BY HAND (1), as the
      * operator last chose it on the connect page.  Kept with the programmers'
      * choices, as the Hitec series is: SERVO's screen lists its rows by name,

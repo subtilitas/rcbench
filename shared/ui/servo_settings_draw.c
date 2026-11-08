@@ -293,7 +293,7 @@ static void draw_choice(gfx_canvas_t *c)
             current = (s.ch.values[k] == s.type);
         } else if (s.ch.target == CH_RATE) {
             current = (s.ch.values[k] == (int)s.frame_hz);
-        } else if (s.ch.target == CH_ENUM) {
+        } else if (s.ch.target == CH_ENUM || s.ch.target == CH_FAMILY) {
             current = (s.ch.values[k] == settings_get_int(s.ch.id));
         } else if (s.ch.target == CH_PORT) {
             current = (s.ch.values[k] == settings_get_int(SET_SERVO_TARGET));

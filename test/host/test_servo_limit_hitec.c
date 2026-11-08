@@ -11,44 +11,66 @@
 
 #include "ui_text.h"
 
-/* The list's rows on a bench where both programmers can run: the SERVO
- * row offered on the programming port, SERVO PULSES locked with HITEC. */
-TEST_CASE(the_limit_run_card_offers_hitec_when_the_row_says_so_and_hides_servo_pulses)
+/* Row @p i of the open list. */
+static ui_setlist_row_t list_row(int i)
+{
+    return servo_screen_list()->host->row(i);
+}
+
+/* The list's rows on a bench where both programmers can run: SERVO
+ * picked from its choice list, SERVO PULSES locked with a Hitec family,
+ * D RECEIVE under SERVO with HITEC D SERIES only.  The series is LIMIT
+ * RUN's own: the HITEC page's SET_HITEC_SERIES changes nothing here, and
+ * opening the HITEC or the KST programmer leaves the pick as it is. */
+TEST_CASE(the_limit_run_list_picks_its_own_family_and_hides_servo_pulses)
 {
     hl_fresh(true);
     open_limrun_list();                /* the list, on a SAFE bench */
     scr->tick(0.02f);
-    /* KST/CHASERVO first: SERVO PULSES steps; HITEC locks it, and a step
-     * changes nothing. */
+    /* KST/CHASERVO first, no D RECEIVE: SERVO PULSES under SERVO. */
     CHECK_EQ(servo_screen_limit_family(), SERVO_LIMRUN_FAM_KST);
-    HL_STEP(LL_SERVO);
+    CHECK(list_row(LL_PULSES).kind == (uint8_t)UI_SL_CUSTOM);
+    sl_choose(LL_SERVO, SERVO_LIMRUN_FAM_HITEC_D);
     CHECK_EQ(servo_screen_limit_family(), SERVO_LIMRUN_FAM_HITEC_D);
+    /* D RECEIVE under SERVO: the HITEC page's setting. */
+    CHECK(list_row(LL_RX).kind == (uint8_t)UI_SL_SETTING);
+    CHECK_EQ(list_row(LL_RX).id, SET_HITEC_RX);
+    /* HITEC locks SERVO PULSES, one row down: a step changes nothing. */
     CHECK(!servo_screen_limit_pulses());
-    HL_STEP(LL_PULSES);
+    HL_STEP(LL_PULSES + 1);
     CHECK(!servo_screen_limit_pulses());
-    /* The series is the Hitec programmer's: CLASSIC there, CLASSIC here. */
-    settings_set(SET_HITEC_SERIES, (float)HITEC_CLASSIC);
+    /* CLASSIC from the list, with the HITEC page at D SERIES: CLASSIC, and
+     * no D RECEIVE. */
+    sl_choose(LL_SERVO, SERVO_LIMRUN_FAM_HITEC_C);
+    CHECK_EQ(settings_get_int(SET_HITEC_SERIES), (int)HITEC_D);
     CHECK_EQ(servo_screen_limit_family(), SERVO_LIMRUN_FAM_HITEC_C);
+    CHECK(list_row(LL_PULSES).kind == (uint8_t)UI_SL_CUSTOM);
+    /* The HITEC page's series moves; LIMIT RUN's stays. */
+    settings_set(SET_HITEC_SERIES, (float)HITEC_CLASSIC);
     settings_set(SET_HITEC_SERIES, (float)HITEC_D);
+    CHECK_EQ(servo_screen_limit_family(), SERVO_LIMRUN_FAM_HITEC_C);
     /* Back to KST/CHASERVO: SERVO PULSES taps again. */
-    HL_STEP(LL_SERVO);
+    sl_choose(LL_SERVO, SERVO_LIMRUN_FAM_KST);
     CHECK_EQ(servo_screen_limit_family(), SERVO_LIMRUN_FAM_KST);
     HL_STEP(LL_PULSES);
     CHECK(servo_screen_limit_pulses());
     HL_STEP(LL_PULSES);
-    /* The programmer opened last takes the row with it: the Hitec one on
-     * HITEC, then the KST one on KST. */
+    /* HITEC D SERIES, then the programmers' tiles: the pick stays, and
+     * RUDDER AUTO's own is untouched. */
+    sl_choose(LL_SERVO, SERVO_LIMRUN_FAM_HITEC_D);
     go(SERVO_FN_HITEC);
     hl_ms(100u);
     CHECK(hitec_panel_is_open());
-    CHECK_EQ(servo_screen_limit_family(), SERVO_LIMRUN_FAM_HITEC_D);
     hitec_panel_close();
     hl_ms(100u);
     CHECK_EQ(servo_screen_limit_family(), SERVO_LIMRUN_FAM_HITEC_D);
     open_kst();
     hl_ms(100u);
-    CHECK_EQ(servo_screen_limit_family(), SERVO_LIMRUN_FAM_KST);
+    CHECK_EQ(servo_screen_limit_family(), SERVO_LIMRUN_FAM_HITEC_D);
     close_kst();
+    hl_ms(100u);
+    CHECK_EQ(servo_screen_limit_family(), SERVO_LIMRUN_FAM_HITEC_D);
+    CHECK_EQ(servo_screen_rauto_family(), 0);    /* KST/CHASERVO */
 }
 
 /* The refusals a Hitec run meets before any hold: PULSE MIN and MAX short
@@ -58,7 +80,7 @@ TEST_CASE(a_hitec_start_is_refused_before_a_drive_where_it_cannot_run)
     char want[80];
 
     hl_fresh(false);
-    hl_settings(true, true);
+    hl_settings(SERVO_LIMRUN_FAM_HITEC_D, true);
     CHECK(servo_screen_limit_blocked() == NULL);
     choose_type(0);                          /* STANDARD PWM: 1000-2000us */
     hl_ms(100u);
@@ -72,11 +94,11 @@ TEST_CASE(a_hitec_start_is_refused_before_a_drive_where_it_cannot_run)
     choose_type(2);
     hl_ms(100u);
     CHECK(servo_screen_limit_blocked() == NULL);
-    /* CLASSIC: its entry needs a supply the bench switches. */
-    settings_set(SET_HITEC_SERIES, (float)HITEC_CLASSIC);
+    /* LIMIT RUN at CLASSIC: its entry needs a supply the bench switches. */
+    settings_set(SET_LIMIT_FAMILY, (float)SERVO_LIMRUN_FAM_HITEC_C);
     hl_ms(100u);
     CHECK_STR_EQ(servo_screen_limit_blocked(), TR(HP_NEED_PD_C));
-    settings_set(SET_HITEC_SERIES, (float)HITEC_D);
+    settings_set(SET_LIMIT_FAMILY, (float)SERVO_LIMRUN_FAM_HITEC_D);
 }
 
 /**
@@ -100,7 +122,7 @@ static void hl_pulses(const char *min, const char *max)
 TEST_CASE(pulse_min_850us_and_max_2150us_are_the_d_series_exact_limits)
 {
     hl_fresh(false);
-    hl_settings(true, true);
+    hl_settings(SERVO_LIMRUN_FAM_HITEC_D, true);
     hl_pulses("850", "2150");
     CHECK(servo_screen_limit_blocked() == NULL);
     hl_pulses("851", "2150");
@@ -120,7 +142,7 @@ TEST_CASE(pulse_min_850us_and_max_2150us_are_the_d_series_exact_limits)
 TEST_CASE(a_d_series_limit_run_programs_0xb2_and_0xb0_through_the_seam)
 {
     hl_fresh(false);
-    hl_settings(true, true);
+    hl_settings(SERVO_LIMRUN_FAM_HITEC_D, true);
     CHECK(servo_screen_limit_blocked() == NULL);
     hl_hold_start();
     CHECK(servo_screen_limit_running());
@@ -165,8 +187,12 @@ TEST_CASE(a_classic_ccw_limit_run_lowers_cell_0x13_for_the_short_pulses)
     hl_fresh(true);
     servo_hs5645();
     hl_classic_ccw();
-    settings_set(SET_HITEC_SERIES, (float)HITEC_CLASSIC);
-    hl_settings(true, true);
+    /* LIMIT RUN's own CLASSIC, picked on its READY card: the HITEC page
+     * stays at D SERIES, and the run's sessions go in as CLASSIC. */
+    hl_card_family(SERVO_LIMRUN_FAM_HITEC_C);
+    CHECK_EQ(servo_screen_limit_family(), SERVO_LIMRUN_FAM_HITEC_C);
+    hl_settings(SERVO_LIMRUN_FAM_HITEC_C, true);
+    CHECK_EQ(settings_get_int(SET_HITEC_SERIES), (int)HITEC_D);
     CHECK(servo_screen_limit_blocked() == NULL);
     hl_hold_start();
     CHECK(servo_screen_limit_running());
@@ -179,6 +205,8 @@ TEST_CASE(a_classic_ccw_limit_run_lowers_cell_0x13_for_the_short_pulses)
     CHECK(g_drv.eeprom[0x13] < 194u);
     CHECK_EQ(g_drv.eeprom[0x14], 162u);
     CHECK_EQ(g_drv.eeprom[0x1B] & 1u, 0u);
+    /* The run over, the programmer's series is the HITEC page's again. */
+    CHECK_EQ(hitec_prog_series(model()), (uint8_t)HITEC_D);
 }
 
 /* A STOP while the run searches after its first write: the run ends
@@ -187,7 +215,7 @@ TEST_CASE(a_classic_ccw_limit_run_lowers_cell_0x13_for_the_short_pulses)
 TEST_CASE(a_stop_during_a_hitec_run_ends_it_with_every_output_off)
 {
     hl_fresh(true);
-    hl_settings(true, true);
+    hl_settings(SERVO_LIMRUN_FAM_HITEC_D, true);
     hl_hold_start();
     CHECK(servo_screen_limit_running());
     /* Until the first write landed and the bench is ARMED again. */
@@ -201,6 +229,11 @@ TEST_CASE(a_stop_during_a_hitec_run_ends_it_with_every_output_off)
     CHECK(hl.armed);
     hl_ms(500u);
     CHECK(servo_screen_limit_running());
+    /* The run holds the screen: SERVO takes no pick. */
+    CHECK(servo_screen_family_refused() != NULL);
+    tap(SV_RDY_X, SV_RDY_ROW_Y(1));          /* LRR_SERVO */
+    CHECK_EQ(servo_screen_family_choices(), -1);
+    CHECK_EQ(servo_screen_limit_family(), SERVO_LIMRUN_FAM_HITEC_D);
     const unsigned offs = hl.offs;
     const unsigned releases = hl.releases;
     press_stop();
@@ -230,7 +263,7 @@ TEST_CASE(a_stop_during_a_hitec_run_ends_it_with_every_output_off)
 TEST_CASE(a_stop_with_the_first_hitec_write_on_its_way_offers_restore)
 {
     hl_fresh(false);
-    hl_settings(true, true);
+    hl_settings(SERVO_LIMRUN_FAM_HITEC_D, true);
     hl_hold_start();
     CHECK(servo_screen_limit_running());
     for (int i = 0; i < 400000 && g_files_saves == 0u; ++i) {
@@ -255,7 +288,7 @@ TEST_CASE(a_stop_with_the_first_hitec_write_on_its_way_offers_restore)
 
 int main(void)
 {
-    RUN(the_limit_run_card_offers_hitec_when_the_row_says_so_and_hides_servo_pulses);
+    RUN(the_limit_run_list_picks_its_own_family_and_hides_servo_pulses);
     RUN(a_hitec_start_is_refused_before_a_drive_where_it_cannot_run);
     RUN(pulse_min_850us_and_max_2150us_are_the_d_series_exact_limits);
     RUN(a_d_series_limit_run_programs_0xb2_and_0xb0_through_the_seam);

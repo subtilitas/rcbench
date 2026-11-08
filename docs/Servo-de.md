@@ -82,16 +82,27 @@ SERVO-Funktionsbildschirms. Der Bildschirm steht in
   der gewählte Modus nicht angeboten wird; das letzte Ergebnis; der
   Hinweis des Modus.
 - OPTIONEN öffnet die Liste des Laufs: MODUS (NUR SUCHE oder SUCHEN +
-  PROGRAMMIEREN), SERVO (KST/CHASERVO oder HITEC, der Programmierer, an
-  den die Sitzungen des Laufs gehen, [Hitec-Servos](#hitec-servos)),
-  SERVOPULSE (BEHALTEN oder 1000-2000) und die Programmierspannung, den
-  Programmierstrom und Warten vor PWM des Programmierers. An den Ausgängen
-  des Prüfstands sind MODUS, SERVO und SERVOPULSE gesperrt mit `Nur an
-  einem PROG-PORT: wähle einen mit PORT`. SERVO beginnt bei KST/CHASERVO
-  und übernimmt den Programmierer, der im Hub zuletzt geöffnet wurde.
-  SERVOPULSE ist gesperrt, solange SERVO auf HITEC steht. MODUS beginnt
-  bei NUR SUCHE, SERVOPULSE bei BEHALTEN. Die Liste schließt, wenn der
-  Prüfstand SAFE verlässt oder die Startschritte beginnen.
+  PROGRAMMIEREN), SERVO (KST/CHASERVO, HITEC D-SERIE oder HITEC
+  KLASSISCH, der Programmierer, an den die Sitzungen des Laufs gehen,
+  [Hitec-Servos](#hitec-servos)), SERVOPULSE (BEHALTEN oder 1000-2000) und
+  die Programmierspannung, den Programmierstrom und Warten vor PWM des
+  Programmierers. Mit SERVO auf HITEC D-SERIE folgt unter SERVO der
+  Hitec-D-Empfang (PULL-UP oder PRECHARGE), dieselbe gespeicherte
+  Einstellung wie auf der [HITEC-Seite](HitecProgrammer-de.md). An den
+  Ausgängen des Prüfstands sind MODUS, SERVO und SERVOPULSE gesperrt mit
+  `Nur an einem PROG-PORT: wähle einen mit PORT`. SERVOPULSE ist
+  gesperrt, solange SERVO auf HITEC steht. MODUS beginnt bei NUR SUCHE,
+  SERVOPULSE bei BEHALTEN. Die Liste schließt, wenn der Prüfstand SAFE
+  verlässt oder die Startschritte beginnen.
+- SERVO ist die eigene gespeicherte Einstellung des Endlagenlaufs
+  (`lim_family`), KST/CHASERVO, bis eine andere gewählt wird. Ein Tippen
+  auf die Zeile SERVO der Karte BEREIT oder der Liste öffnet die drei
+  Einträge; eine Wahl wird sofort gespeichert. RUDER AUTO hat seine
+  eigene (`rauto_family`): eine Wahl auf einem Bildschirm lässt die des
+  anderen stehen. Das Öffnen der KST- oder HITEC-Programmierung und die
+  SERIE der HITEC-Seite ändern keine von beiden. Eine Wahl wird
+  abgelehnt, solange der Prüfstand nicht SAFE ist, ein Lauf oder eine
+  Startfolge läuft oder eine Programmierung den Port hält.
 - Die Karte BEREIT an der Stelle der Ausgangskarte, neun Zeilen zu 30px
   ab y 96: PORT, SERVO, MESSGERÄT, SCHIENE, BEREICH, PROGRAMMER, die
   Versorgung, PORT-PWM und ARM, je ein Punkt, die Bezeichnung und der
@@ -102,8 +113,9 @@ SERVO-Funktionsbildschirms. Der Bildschirm steht in
   oder ein Ausgang ist über sie aktiv, gelb erledigt das Halten selbst,
   grau wartet auf die Zeile PORT. An den Ausgängen des Prüfstands zeigt
   SERVO `NUR SUCHE` in Grau, PROGRAMMER und PORT-PWM `--`.
-- Ein Tippen auf PORT öffnet die PORT-Auswahl; auf SERVO die Liste auf
-  der Zeile SERVO, an den Ausgängen des Prüfstands nennt das Band `SERVO:
+- Ein Tippen auf PORT öffnet die PORT-Auswahl; auf SERVO die Auswahl
+  SERVO, KST/CHASERVO, HITEC D-SERIE und HITEC KLASSISCH über der linken
+  Spalte, an den Ausgängen des Prüfstands nennt das Band `SERVO:
   Nur an einem PROG-PORT: wähle einen mit PORT`; auf ein rotes MESSGERÄT
   öffnet es SETUP > SENSORS an dem INA3221, dessen Kanal das Ziel des
   Testers überwacht, sonst am ersten bestückten, und das Home-Feld dort
@@ -374,13 +386,14 @@ Prüfstands angewendet.
 
 ### Hitec-Servos
 
-Mit SERVO auf HITEC übernimmt die
+Mit SERVO auf HITEC D-SERIE oder HITEC KLASSISCH übernimmt die
 [Hitec-Servoprogrammierung](HitecProgrammer-de.md#läufe) die Sitzungen des
-Laufs. Verwendet wird die unter SERIE gewählte Familie, D-SERIE oder
-KLASSISCH. Suche, Vorhalt, Zuordnung
-und Prüfung sind die oben beschriebenen.
+Laufs in dieser Serie, gleich, was die Zeile SERIE der HITEC-Seite hält.
+Suche, Vorhalt, Zuordnung und Prüfung sind die oben beschriebenen.
 
-![Die Optionen des ENDLAGENLAUFS, SERVO auf HITEC](img/de/servo-limrun-hitec.png)
+![Die Optionen des ENDLAGENLAUFS, SERVO auf HITEC D-SERIE](img/de/servo-limrun-hitec.png)
+
+![Die Auswahl SERVO des Endlagenlaufs über der linken Spalte](img/de/servo-limrun-family.png)
 
 Was anders ist:
 
@@ -1601,8 +1614,9 @@ Bluetooth-IMU).
   Zeile PORT. Ein Zustand länger als seine 20 Zellen endet nach dem
   letzten ganzen Wort. Die Schienenzeile unter den Zeilen nennt das
   Messgerät des Laufs mit Volt und Ampere.
-- Ein Tippen auf PORT öffnet die PORT-Auswahl; auf SERVO die OPTIONEN auf
-  der Zeile SERVO; auf einen roten NULLPUNKT mit Messwert setzt es den
+- Ein Tippen auf PORT öffnet die PORT-Auswahl; auf SERVO die Auswahl
+  SERVO, KST/CHASERVO, HITEC D-SERIE und HITEC KLASSISCH über der linken
+  Spalte; auf einen roten NULLPUNKT mit Messwert setzt es den
   Nullpunkt; auf einen roten WINKEL oder ein rotes MESSGERÄT öffnet es
   SETUP > SENSORS am AS5600, an der IMU oder an dem INA3221, dessen Kanal
   das Ziel des Testers überwacht (sonst am ersten bestückten). Ein Tippen auf eine
@@ -1623,9 +1637,12 @@ Bluetooth-IMU).
   `ZURÜCKSPIELEN IN KST` (an einem Hitec-Servo `HITEC001 IN DATEIEN
   LADEN`) nach einem NICHT BESTANDEN oder einem Abbruch, der geschrieben
   hat oder ein Schreiben unterwegs abbrach, das angekommen sein kann.
-- Das Servo ist die Zeile SERVO: KST/CHASERVO, oder HITEC in der Serie des
-  Hitec-Programmierers. Es übernimmt den Programmierer, der im Hub zuletzt
-  geöffnet wurde. An einem Hitec-Servo sind die Endpoints LEFT END und
+- Das Servo ist die Zeile SERVO: die eigene gespeicherte Einstellung von
+  RUDER AUTO (`rauto_family`), KST/CHASERVO, HITEC D-SERIE oder HITEC
+  KLASSISCH, getrennt von der des Endlagenlaufs. Die Auswahl SERVO der
+  Karte und die Zeile SERVO der OPTIONEN setzen sie, sonst nichts. Mit
+  HITEC D-SERIE zeigt die Liste unter SERVO den Hitec-D-Empfang. An einem
+  Hitec-Servo sind die Endpoints LEFT END und
   RIGHT END in den Einheiten aus [Hitec-Servos](#hitec-servos), die
   Lesesitzung schreibt keine Pulse, und ein Servo der D-Serie braucht kein
   PD mini.

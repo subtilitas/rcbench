@@ -60,7 +60,7 @@ LENGTH is the distance from the hinge line to the trailing edge: 0 or 10 to 500m
 
 ## RUDDER AUTO
 
-RUDDER AUTO, a tile of its own on the hub, programs a KST, Chaservo or Hitec servo on the programming port so that 1000us and 2000us produce the deflection specified for each side. Its SERVO setting selects the programmer last opened from the hub. The third line identifies it, for example `SERVO HITEC D SERIES`.
+RUDDER AUTO, a tile of its own on the hub, programs a KST, Chaservo or Hitec servo on the programming port so that 1000us and 2000us produce the deflection specified for each side. Its SERVO, KST/CHASERVO, HITEC D SERIES or HITEC CLASSIC, is RUDDER AUTO's own saved choice, apart from LIMIT RUN's; a tap on the READY card's SERVO row picks it. The third line identifies it, for example `SERVO HITEC D SERIES`.
 
 The left card holds the readout, the targets, MARGIN and TOLERANCE, ZERO and RESET MAX, the side view and the state lines. The side view shows the two targets as amber dashed lines: 1000us on the negative side and 2000us on the positive side, or the sides measured by the last run.
 
@@ -74,7 +74,7 @@ The left card holds the readout, the targets, MARGIN and TOLERANCE, ZERO and RES
 
 ### READY
 
-The READY card on the right lists what the start needs, one row each: PORT, SERVO, METER, ANGLE, ZERO, RANGE, PROGRAMMER, the supply (PROG 5V on the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), PD MINI where the PD mini feeds the servo), PORT PWM and ARM. A green dot is met. A red dot refuses the hold, or marks an output live through the row. Amber reads `START SWITCHES IT ON` or `START ARMS`: the hold does it. Grey waits on PORT. A tap on PORT opens the port choice, on SERVO the SETTINGS list, on a red ZERO it takes the zero, on a red ANGLE or METER it opens [Sensors](setup-sensors.md). A tap on another red row names it in the alert band. The line under the rows is the meter the run reads.
+The READY card on the right lists what the start needs, one row each: PORT, SERVO, METER, ANGLE, ZERO, RANGE, PROGRAMMER, the supply (PROG 5V on the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), PD MINI where the PD mini feeds the servo), PORT PWM and ARM. A green dot is met. A red dot refuses the hold, or marks an output live through the row. Amber reads `START SWITCHES IT ON` or `START ARMS`: the hold does it. Grey waits on PORT. A tap on PORT opens the port choice, on SERVO the three families over the left column, on a red ZERO it takes the zero, on a red ANGLE or METER it opens [Sensors](setup-sensors.md). A tap on another red row names it in the alert band. The line under the rows is the meter the run reads.
 
 ![On the rbmod carrier, SAFE: PROG 5V, PORT PWM and ARM amber, the hold green](view:servo-rudder-auto-rbmod)
 

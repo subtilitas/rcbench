@@ -282,7 +282,7 @@ enum { OP_NONE = 0, OP_ROW, OP_TRIM_DN, OP_TRIM_UP, OP_KEYPAD,
 
 /* What the list chooses -- the PORT button's port among them -- and what
  * the keypad types. */
-enum { CH_NONE = 0, CH_TYPE, CH_RATE, CH_ENUM, CH_PORT };
+enum { CH_NONE = 0, CH_TYPE, CH_RATE, CH_ENUM, CH_PORT, CH_FAMILY };
 enum { KT_NONE = 0, KT_MIN, KT_CENTER, KT_MAX, KT_TRAVEL, KT_RATE,
        KT_SETTING, KT_TRIM };
 
@@ -755,9 +755,6 @@ typedef struct {
     servo_limrun_t lim;
     bool      lim_prog;      /**< LIMIT RUN: SEARCH+PROG, for the session */
     bool      lim_pulses;    /**< SERVO PULSES at 1000-2000, session */
-    bool      lim_hitec;     /**< LIMIT RUN's SERVO row: HITEC, session */
-    uint8_t   lim_open;      /**< the programmer open when last looked:
-                                  LIM_OPEN_*, servo_limit_seam.c */
     ui_hold_t lim_hold;      /**< ARM + START on LIMIT RUN              */
     bool      lim_down;      /**< a finger on it, the hold not fired    */
     /** @brief The run the hold fired: the settings as they read then, the
@@ -1189,8 +1186,9 @@ gfx_rect_t lim_lines_rect(void);
 /* --- servo_limit_seam.c: the programmer a run's sessions go to ----------- */
 
 /**
- * @brief The family a run started now takes: KST, or with the SERVO row at
- *        HITEC the series the Hitec programmer enters (SET_HITEC_SERIES).
+ * @brief The family a run started now takes on the screen in front: RUDDER
+ *        AUTO's own SERVO (SET_RAUTO_FAMILY) on RUDDER AUTO, LIMIT RUN's
+ *        (SET_LIMIT_FAMILY) elsewhere.  servo_pick.c.
  * @return servo_limrun_family_t
  */
 uint8_t lim_family(void);
@@ -1261,8 +1259,6 @@ const char *lim_seam_backup_kept(uint8_t fam);
 /** @brief The run is over on its programmer.
  *  @param fam the family */
 void lim_seam_end(uint8_t fam);
-/** @brief The SERVO row follows the programmer last opened on PROGRAM. */
-void lim_seam_follow(void);
 /** @brief A programmer page open and not holding its port closes as a run
  *         starts. */
 void lim_seam_close_pages(void);
@@ -1694,6 +1690,36 @@ bool svs_list_shown(void);
 bool svs_list_back(void);
 /** @brief A frame of the list, @p dt_s seconds. @param dt_s the frame */
 void svs_list_tick(float dt_s);
+
+/* --- servo_pick.c: the programmer each run writes with ------------------ */
+
+/** @brief The setting that holds function @p fn's SERVO: SET_RAUTO_FAMILY
+ *         for RUDDER AUTO, else SET_LIMIT_FAMILY.
+ *  @param fn the function  @return the setting */
+setting_id_t svs_family_id(servo_fn_t fn);
+/** @brief Function @p fn's SERVO as saved.
+ *  @param fn the function  @return servo_limrun_family_t */
+uint8_t svs_family_of(servo_fn_t fn);
+/** @brief A family's name on the cards and lists: KST/CHASERVO, HITEC D
+ *         SERIES or HITEC CLASSIC.
+ *  @param fam servo_limrun_family_t  @return the name */
+const char *svs_family_name(uint8_t fam);
+/** @brief Why SERVO takes no pick now: svs_list_refused(), else no
+ *         programming port.  @return the reason, NULL while it takes one */
+const char *svs_family_refused(void);
+/** @brief Whether the screen's list shows D RECEIVE: LIMIT RUN or RUDDER
+ *         AUTO with its SERVO at HITEC D SERIES.  @return true then */
+bool svs_family_d_receive(void);
+/** @brief The READY card's SERVO tapped: the three families in the choice
+ *         list, or the refusal in the band. */
+void svs_family_open(void);
+/** @brief A family picked: written to @p id and saved, unless refused.
+ *  @param id SET_LIMIT_FAMILY or SET_RAUTO_FAMILY
+ *  @param value servo_limrun_family_t */
+void svs_family_pick(setting_id_t id, int value);
+/** @brief The settings list's SERVO row: the screen's family, a tap opens
+ *         the three as a choice list. */
+extern const ui_setlist_custom_t svs_family_row;
 
 /* --- servo_footer.c: the footer and the PORT button --------------------- */
 

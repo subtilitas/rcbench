@@ -2515,9 +2515,9 @@ Eine Änderung gilt bis SPEICHERN als nicht gespeichert.
 | der Hub | das Servoprofil: AUSGANG mit TYP, PULSRATE, PULS MIN, PULS MITTE, PULS MAX, TRIMMUNG, WEG, UMKEHREN und HV-SERVO; PRÜFLING mit NAME und BERICHT |
 | SWEEP | KURVE, TEMPO und BEREICH |
 | TEST | SPANNUNGSSTUFEN: Stufe 4.8V, Stufe 6.0V, HV-SERVO, Stufe 7.4V, Stufe 8.4V; BROWN-OUT: Brown-out, Brown-out Mindestspannung, Brown-out-Schritt; GRENZWERTE: Blockierschwelle, Ruhestrom max, Haltestrom max, Stellzeit max; DAUER UND ZEITEN: Länge nach, Testzeit, Bewegungen, Haltezeit, Einschwingzeit |
-| ENDLAGENLAUF | MODUS, SERVO, SERVOPULSE, Programmierspannung, Programmierstrom und Warten vor PWM |
+| ENDLAGENLAUF | MODUS, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, Programmierspannung, Programmierstrom und Warten vor PWM |
 | RUDER | LÄNGE, SENSOR-MITTE und WINKELQUELLE |
-| RUDER AUTO | die Ziele, MARGIN, TOLERANZ, SERVO, SERVOPULSE und WINKELQUELLE |
+| RUDER AUTO | die Ziele, MARGIN, TOLERANZ, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE und WINKELQUELLE |
 | SERVO > KST | KST EXPERT MODE, eine Ebene tiefer |
 | HITEC | SERIE und EMPFANG |
 | LIVE | keine Liste |
@@ -2590,7 +2590,7 @@ Die 56px hohen Tasten 2s HALTEN ZUM ÜBERNEHMEN und ABBRECHEN enden 8px
 | Liste von TEST, DAUER UND ZEITEN | Länge nach, Testzeit, Bewegungen | wie lange jede Spannungsstufe läuft: eine Zeit oder eine Zahl von Bewegungen; Testzeit nimmt nur bei ZEIT einen Druck an, Bewegungen nur bei BEWEGUNGEN |
 | Liste von TEST, DAUER UND ZEITEN | Haltezeit, Einschwingzeit | Haltezeit an jedem Ende, im Test und bei SWEEP; Wartezeit nach einer Spannungsstufe vor dem Messen |
 | ENDLAGENLAUF > OPTIONEN | MODUS | NUR SUCHE oder SUCHEN + PROGRAMMIEREN; an den Ausgängen des Prüfstands gesperrt mit `Nur an einem PROG-PORT: wähle einen mit PORT`. Für die Sitzung |
-| ENDLAGENLAUF > OPTIONEN | SERVO | KST/CHASERVO oder HITEC; wählt die Servofamilie für SUCHEN + PROGRAMMIEREN |
+| ENDLAGENLAUF > OPTIONEN | SERVO | KST/CHASERVO, HITEC D-SERIE oder HITEC KLASSISCH; der Programmierer, an den die Sitzungen des Laufs gehen. Die eigene gespeicherte Einstellung des Endlagenlaufs, dieselbe wie die Zeile SERVO der Karte BEREIT |
 | ENDLAGENLAUF > OPTIONEN | SERVOPULSE | BEHALTEN oder 1000-2000; gesperrt, solange PORT nicht auf PROG-PORT oder SERVO auf HITEC steht. 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos in der Lesesitzung des Laufs, vor der Suche, auf 1000,0 und 2000,0us. Vorgabe BEHALTEN; für die Sitzung |
 | Liste des Hubs | NAME | der Prüfling, bis 23 Zeichen, für den Bericht |
 | Liste des Hubs | BERICHT | ein Textbericht neben der Aufzeichnung jedes Tests |

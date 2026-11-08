@@ -8967,6 +8967,18 @@ UI_SETTING_LABEL(SET_HITEC_SERIES,
 UI_SETTING_HELP(SET_HITEC_SERIES,
     "The series the Hitec programmer connects to",
     "Die Serie, mit der sich die Hitec-Programmierung verbindet")
+UI_SETTING_LABEL(SET_LIMIT_FAMILY,
+    "LIMIT RUN servo",
+    "LIMIT RUN Servo")
+UI_SETTING_HELP(SET_LIMIT_FAMILY,
+    "The programmer LIMIT RUN writes the end points with",
+    "Der Programmierer, mit dem LIMIT RUN die Endpunkte schreibt")
+UI_SETTING_LABEL(SET_RAUTO_FAMILY,
+    "RUDDER AUTO servo",
+    "RUDDER AUTO Servo")
+UI_SETTING_HELP(SET_RAUTO_FAMILY,
+    "The programmer RUDDER AUTO writes the end points with",
+    "Der Programmierer, mit dem RUDDER AUTO die Endpunkte schreibt")
 UI_SETTING_LABEL(SET_ESCW_BY_HAND,
     "ESC signal wire: manual power",
     "ESC-Signalleitung: Strom von Hand")
@@ -9217,6 +9229,14 @@ UI_OPTIONS(hitec_series)
 UI_OPTION("CLASSIC", "KLASSISCH")
 UI_OPTION("D SERIES", "D-SERIE")
 UI_OPTIONS_END(hitec_series)
+
+/* The programmer a LIMIT RUN or RUDDER AUTO run writes with, in
+ * servo_limrun_family_t's order; the READY cards' SERVO rows show these. */
+UI_OPTIONS(servo_family)
+UI_OPTION("KST/CHASERVO", "KST/CHASERVO")
+UI_OPTION("HITEC D SERIES", "HITEC D-SERIE")
+UI_OPTION("HITEC CLASSIC", "HITEC KLASSISCH")
+UI_OPTIONS_END(servo_family)
 
 UI_OPTIONS(upd_channel)
 UI_OPTION("STABLE", NULL)
@@ -11197,9 +11217,9 @@ UI_TEXT(SV_ROW_LIM_SERVO, 0,
 UI_TEXT(SV_LIM_SERVO_KST, 12,
     "KST/CHASERVO",
     "KST/CHASERVO")
-UI_TEXT(SV_LIM_SERVO_HITEC, 12,
-    "HITEC",
-    "HITEC")
+UI_TEXT(SV_FAM_TITLE, 0,
+    "SERVO: THE PROGRAMMER THE RUN USES",
+    "SERVO: DER PROGRAMMIERER DES LAUFS")
 UI_TEXT(SV_LIM_PROG_NOTE_HITEC, 58,
     "REDUCES LEFT/RIGHT END ON A HITEC SERVO",
     "VERRINGERT ENDE LINKS/RECHTS BEI HITEC-SERVOS")
