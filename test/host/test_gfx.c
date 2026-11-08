@@ -543,6 +543,56 @@ TEST_CASE(round_rect_rounds_the_corners)
     CHECK_EQ(count_of(GFX_RED), 0);
 }
 
+/* A trapezoid: its top row spans xl_top to xr_top, its bottom row xl_bot
+ * to xr_bot, each row between them both edges rounded to the nearest
+ * column.  The READY card's tag: 24 rows, the right end 14px further left
+ * at the bottom than at the top.  Nothing outside its rows or the clip;
+ * nothing for no rows; a height far past the canvas stays in it. */
+TEST_CASE(trapezoid_fills_the_rows_between_its_edges)
+{
+    fresh();
+    gfx_fill_trapezoid(&s_c, 2, 24, 1, 30, 1, 16, GFX_RED);
+    int want = 0;
+    for (int r = 0; r < 24; ++r) {
+        const int end = 30 - (2 * 14 * r + 23) / (2 * 23);
+        CHECK_EQ(gfx_pixel_get(&s_c, 0, 2 + r), GFX_BLACK);
+        CHECK_EQ(gfx_pixel_get(&s_c, 1, 2 + r), GFX_RED);
+        CHECK_EQ(gfx_pixel_get(&s_c, end - 1, 2 + r), GFX_RED);
+        CHECK_EQ(gfx_pixel_get(&s_c, end, 2 + r), GFX_BLACK);
+        want += end - 1;
+    }
+    CHECK_EQ(gfx_pixel_get(&s_c, 29, 2), GFX_RED);   /* top right */
+    CHECK_EQ(gfx_pixel_get(&s_c, 15, 25), GFX_RED);  /* bottom right */
+    CHECK_EQ(gfx_pixel_get(&s_c, 16, 25), GFX_BLACK);
+    CHECK_EQ(count_of(GFX_RED), want);
+
+    /* A slanted left edge, the other way round. */
+    fresh();
+    gfx_fill_trapezoid(&s_c, 0, 5, 4, 10, 0, 10, GFX_GREEN);
+    CHECK_EQ(gfx_pixel_get(&s_c, 3, 0), GFX_BLACK);
+    CHECK_EQ(gfx_pixel_get(&s_c, 4, 0), GFX_GREEN);
+    CHECK_EQ(gfx_pixel_get(&s_c, 2, 2), GFX_GREEN);
+    CHECK_EQ(gfx_pixel_get(&s_c, 1, 2), GFX_BLACK);
+    CHECK_EQ(gfx_pixel_get(&s_c, 0, 4), GFX_GREEN);
+    CHECK_EQ(count_of(GFX_GREEN), 6 + 7 + 8 + 9 + 10);
+
+    fresh();
+    gfx_fill_trapezoid(&s_c, 0, 0, 0, 10, 0, 10, GFX_BLUE);
+    gfx_fill_trapezoid(&s_c, 0, -3, 0, 10, 0, 10, GFX_BLUE);
+    CHECK_EQ(count_of(GFX_BLUE), 0);
+
+    gfx_clip_set(&s_c, gfx_rect_make(5, 5, 4, 4));
+    gfx_fill_trapezoid(&s_c, 0, H, 0, W, 0, W - 10, GFX_BLUE);
+    CHECK_EQ(count_of(GFX_BLUE), 16);
+    gfx_clip_reset(&s_c);
+
+    fresh();
+    gfx_fill_trapezoid(&s_c, -1000000, INT_MAX, 0, W, INT_MIN, INT_MAX,
+                       GFX_WHITE);
+    CHECK(count_of(GFX_WHITE) > 0);
+    CHECK(count_of(GFX_WHITE) <= W * H);
+}
+
 TEST_CASE(gradient_runs_from_a_to_b)
 {
     fresh();
@@ -1001,6 +1051,7 @@ int main(void)
     RUN(draw_rect_outline_only);
     RUN(circles_are_symmetric);
     RUN(round_rect_rounds_the_corners);
+    RUN(trapezoid_fills_the_rows_between_its_edges);
     RUN(gradient_runs_from_a_to_b);
     RUN(blit_copies_and_clips);
     RUN(blit_key_skips_transparent_pixels);

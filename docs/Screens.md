@@ -1504,7 +1504,7 @@ bench is not SAFE, while a sweep or a run is under way, and names that in
 the alert band on a tap. LIVE has no SETTINGS.
 
 LIVE, SWEEP and RUDDER show READY under the PORT button: rows of 30px from
-y 96, each a dot, a label of 13 cells and a state of 20. LIVE and SWEEP
+y 96, each a dot, a label of 10 cells and a state of 20. LIVE and SWEEP
 have PORT, SUPPLY and ARM; RUDDER has PORT, ANGLE, ZERO, SUPPLY and ARM.
 Under the rows LIVE and SWEEP have SPEED, its label at y 196 and its
 track at y 220 to 260. All three have the type pill at y 274 to 318. LIVE
@@ -1540,8 +1540,11 @@ the PD mini, and the steps arm.
 
 RUDDER AUTO and LIMIT RUN keep the PORT button and show a READY card in
 the output card's place: rows of 30px from y 96, ten on RUDDER AUTO and
-nine on LIMIT RUN, each a dot, a label of 13 cells and a state of 20, and
-the rail line at y 404. Their footer's middle slot is HOLD 2s: ARM +
+nine on LIMIT RUN, each a dot, a label of 10 cells and a state of 20, and
+the rail line at y 404. Each state sits on a raised tag 24px high, its
+right end cut at 30° from vertical, and the tags of one card share the
+left edge the widest state shown needs: its text, 9px each side and the
+14px cut. Their footer's middle slot is HOLD 2s: ARM +
 START, which switches PORT PWM and the supply on, waits for their
 read-back, arms and starts the run in one hold
 ([Servo: AUTO end points](Servo.md#auto-end-points),

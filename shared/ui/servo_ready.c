@@ -44,6 +44,9 @@
 /** @brief The dot's radius, px. */
 #define DOT_R  5
 #define DOT_DX 5 /**< The center's offset, px. */
+/** @brief A tag's width past its text: the text's room each side and the
+ *         slanted end, px. */
+#define TAG_EXTRA (2 * READY_TAG_PAD + READY_TAG_SLANT)
 
 _Static_assert(READY_ROW_Y + READY_ROWS_MAX * READY_ROW_H <= READY_RAIL_Y,
                "the rows end above the rail line");
@@ -51,6 +54,10 @@ _Static_assert(READY_RAIL_Y + 20 + 8 <= CARD_FLOOR,
                "the rail line ends inside the card");
 _Static_assert(18 + READY_LABEL_W + READY_VALUE_W <= RDY_W,
                "the dot, the label and the value fit the column");
+_Static_assert(18 + READY_LABEL_W + READY_TAG_GAP
+                   + (READY_VALUE_W / SV_CELL) * SV_CELL + TAG_EXTRA
+                   <= RDY_W,
+               "a tag round a whole state stays clear of the labels");
 
 /* ------------------------------------------------------------ the card */
 
@@ -305,12 +312,91 @@ static gfx_color_t value_color(uint8_t st)
 }
 
 /**
- * @brief Row @p i drawn: its ground, dot, label and value, the value cut
- *        to its 20 cells.
+ * @brief A row's value as the card shows it: cut after its last whole
+ *        word that fits @p cells, mid-word for a first word longer.  A
+ *        tap on the row shows it whole.
+ * @param value the row's value
+ * @param cells the cells it may take
+ * @param out receives the text
+ * @param n @p out's size
+ */
+static void cut_value(const char *value, int cells, char *out, size_t n)
+{
+    size_t cut = gfx_text_prefix(value, cells);
+    if (value[cut] != '\0') {
+        size_t sp = cut;
+        while (sp > 0u && value[sp] != ' ') {
+            --sp;
+        }
+        cut = (sp > 0u) ? sp : cut;
+    }
+    snprintf(out, n, "%.*s", (int)cut, value);
+}
+
+int ready_tag_left(void)
+{
+    int widest = 0;
+    for (int i = 0; i < ready_count(); ++i) {
+        rdy_row_t r;
+        if (ready_row(i, &r)) {
+            char v[64];
+            cut_value(r.value, READY_VALUE_W / SV_CELL, v, sizeof(v));
+            const int w = gfx_text_width(SV_FONT_LABEL, v, 1);
+            widest = (w > widest) ? w : widest;
+        }
+    }
+    return RDY_X + RDY_W - TAG_EXTRA - widest;
+}
+
+gfx_rect_t ready_tag_rect(int i)
+{
+    if (i < 0 || i >= ready_count()) {
+        return (gfx_rect_t){ 0, 0, 0, 0 };
+    }
+    const int x = ready_tag_left();
+    const gfx_rect_t a = ready_row_rect(i);
+    return (gfx_rect_t){ (int16_t)x,
+                         (int16_t)(a.y + (READY_ROW_H - READY_TAG_H) / 2),
+                         (int16_t)(RDY_X + RDY_W - x), READY_TAG_H };
+}
+
+/**
+ * @brief A value's raised tag from @p x to the values' right edge, its
+ *        right end slanted: the button fill, a lit top and left edge, a
+ *        dark bottom edge, a dim edge along the slant and a 2px drop
+ *        shadow down-right in the page's ground.
+ * @param c the canvas
+ * @param x its left edge
+ * @param y its top
+ * @param pressed lightens the fill, as a pressed button's
+ */
+static void draw_tag(gfx_canvas_t *c, int x, int y, bool pressed)
+{
+    const int r = RDY_X + RDY_W;
+    const int h = READY_TAG_H;
+    const int k = READY_TAG_SLANT;
+    gfx_fill_trapezoid(c, y + 2, h, x + 2, r + 2, x + 2, r + 2 - k,
+                       ui_theme_color(UI_C_BG));
+    gfx_fill_trapezoid(c, y, h, x, r, x, r - k, ui_theme_color(UI_C_GRID));
+    gfx_color_t body = ui_theme_color(UI_C_PANEL_HI);
+    if (pressed) {
+        body = gfx_lerp(body, GFX_WHITE, 110);
+    }
+    gfx_fill_trapezoid(c, y, h, x + 1, r - 1, x + 1, r - 1 - k, body);
+    const gfx_color_t lit = ui_theme_color(UI_C_BEVEL_LIT);
+    gfx_hline(c, x, y, r - x, lit);
+    gfx_vline(c, x, y, h - 1, lit);
+    gfx_hline(c, x, y + h - 1, r - k - x, ui_theme_color(UI_C_BEVEL_DARK));
+}
+
+/**
+ * @brief Row @p i drawn: its ground, dot, label and its value on a tag
+ *        from @p left, the value cut to its 20 cells.
  * @param c the canvas
  * @param i the row
+ * @param left the tags' shared left edge, ready_tag_left()
  */
-static void draw_row(gfx_canvas_t *c, int i)
+static void draw_row(gfx_canvas_t *c, int i, int left)
 {
     rdy_row_t r;
     if (!ready_row(i, &r)) {
@@ -325,22 +411,12 @@ static void draw_row(gfx_canvas_t *c, int i)
                     dot_color(r.st));
     gfx_text(c, RDY_X + 18, ty, r.label, SV_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
-    /* A text past the column is cut after its last whole word that
-     * fits; a tap on the row shows it whole. */
+    draw_tag(c, left, a.y + (READY_ROW_H - READY_TAG_H) / 2,
+             s.rdy.pressed == i);
     char v[64];
-    const int cells = READY_VALUE_W / SV_CELL;
-    size_t cut = gfx_text_prefix(r.value, cells);
-    if (r.value[cut] != '\0') {
-        size_t sp = cut;
-        while (sp > 0u && r.value[sp] != ' ') {
-            --sp;
-        }
-        cut = (sp > 0u) ? sp : cut;
-    }
-    snprintf(v, sizeof(v), "%.*s", (int)cut, r.value);
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)(RDY_X + RDY_W - READY_VALUE_W),
-                                 (int16_t)ty, READY_VALUE_W, 20 },
-                v, SV_FONT_LABEL, value_color(r.st), 1, GFX_ALIGN_RIGHT);
+    cut_value(r.value, READY_VALUE_W / SV_CELL, v, sizeof(v));
+    gfx_text(c, left + READY_TAG_PAD, ty, v, SV_FONT_LABEL,
+             value_color(r.st), 1);
 }
 
 void ready_render_rail(gfx_canvas_t *c)
@@ -384,8 +460,10 @@ void ready_render(gfx_canvas_t *c)
                   ui_theme_color(UI_C_PANEL));
     gfx_text(c, RDY_X, READY_TITLE_Y, TR(RDY_TITLE), SV_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
+    /* One left edge for every tag: the widest value's. */
+    const int left = ready_tag_left();
     for (int i = 0; i < ready_count(); ++i) {
-        draw_row(c, i);
+        draw_row(c, i, left);
     }
     /* On LIVE, SWEEP and RUDDER the card's controls are under the rows
      * and the rail line is drawn with them. */

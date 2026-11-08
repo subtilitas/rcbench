@@ -233,6 +233,23 @@ void gfx_fill_chamfer_rect_ex(gfx_canvas_t *c, int x, int y, int w, int h,
 void gfx_draw_chamfer_rect_ex(gfx_canvas_t *c, int x, int y, int w, int h,
                               int tl, int tr, int br, int bl, gfx_color_t color);
 
+/**
+ * @brief A trapezoid filled row by row: its top row spans @p xl_top up to
+ *        @p xr_top, its bottom row @p xl_bot up to @p xr_bot, and each row
+ *        between them the two edges interpolated and rounded to the
+ *        nearest pixel.  A right end cut on a slant is xr_bot < xr_top.
+ * @param c      the canvas
+ * @param y      the top row
+ * @param h      the rows, px; none for h <= 0
+ * @param xl_top the top row's first column
+ * @param xr_top the column after the top row's last
+ * @param xl_bot the bottom row's first column
+ * @param xr_bot the column after the bottom row's last
+ * @param color  the fill
+ */
+void gfx_fill_trapezoid(gfx_canvas_t *c, int y, int h, int xl_top, int xr_top,
+                        int xl_bot, int xr_bot, gfx_color_t color);
+
 /** Vertical gradient fill, top colour @p a to bottom colour @p b. */
 void gfx_fill_rect_gradient(gfx_canvas_t *c, int x, int y, int w, int h,
                             gfx_color_t a, gfx_color_t b);

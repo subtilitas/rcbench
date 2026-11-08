@@ -23,6 +23,7 @@ SOURCES = [
     "shared/gfx/gfx_damage.c",
     "shared/gfx/gfx_text.c",
     "shared/gfx/gfx_seg.c",
+    "shared/gfx/gfx_trapezoid.c",
     "shared/gfx/gfx_sprite.c",
     "shared/gfx/gfx_font8x16.c",
     "shared/gfx/gfx_font16x28.c",

@@ -11,10 +11,11 @@
  *
  *   - READY, the card's title, y 70 to 90;
  *   - up to READY_ROWS_MAX rows of READY_ROW_H (30px) from y 96: a dot,
- *     the label and the state right.  The dot is green for a row met, red
- *     for one that refuses the hold or drives an output now, amber for one
- *     the hold does itself (`START SWITCHES IT ON`), grey for one that
- *     waits on another;
+ *     the label and the state on a raised tag right, the tags of the card
+ *     from one left edge (ready_tag_left()).  The dot is green for a row
+ *     met, red for one that refuses the hold or drives an output now,
+ *     amber for one the hold does itself (`START SWITCHES IT ON`), grey
+ *     for one that waits on another;
  *   - the rail line, y 404 to 424: the meter the function reads, its volts
  *     and amps.
  *
@@ -66,10 +67,19 @@ extern "C" {
 #define READY_ROW_Y 96
 /** @brief The rail line's top, y in the body. */
 #define READY_RAIL_Y 404
-/** @brief The label's column, px: 13 cells of 10px. */
-#define READY_LABEL_W 130
+/** @brief The label's column, px: 10 cells of 10px. */
+#define READY_LABEL_W 100
 /** @brief The state's column, px: 20 cells of 10px. */
 #define READY_VALUE_W 204
+/** @brief A state's tag: its height, px, centred on the row. */
+#define READY_TAG_H 24
+/** @brief The room left and right of the state's text in its tag, px. */
+#define READY_TAG_PAD 9
+/** @brief The tag's right end cut at 30 degrees from vertical: its bottom
+ *         corner this many px left of its top one, round(24 * tan(30)). */
+#define READY_TAG_SLANT 14
+/** @brief The least room between the label's column and a tag, px. */
+#define READY_TAG_GAP 6
 
 /** @brief A row's state, as its dot and its value's colour show it. */
 typedef enum {
@@ -139,6 +149,15 @@ const char *ready_refusal(char *buf, size_t n);
 /** @brief Row @p i's place.  @param i the row @return its rectangle;
  *         empty past READY_ROWS_MAX */
 gfx_rect_t ready_row_rect(int i);
+/** @brief The left edge every tag on the card shares: the one the widest
+ *         state shown needs, its text, READY_TAG_PAD each side and
+ *         READY_TAG_SLANT left of the states' right edge.
+ *  @return its x, px */
+int ready_tag_left(void);
+/** @brief Row @p i's tag, its drop shadow left out.  @param i the row
+ *  @return its bounding rectangle, from ready_tag_left() to the states'
+ *          right edge; empty past the last row */
+gfx_rect_t ready_tag_rect(int i);
 /** @brief The card's place: the output card's.  @return its rectangle */
 gfx_rect_t ready_card_rect(void);
 /** @brief The rail line's place.  @return its rectangle */

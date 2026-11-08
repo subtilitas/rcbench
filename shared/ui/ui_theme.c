@@ -50,6 +50,8 @@ static const ui_rgb_t k_base[UI_THEME_COUNT][UI_C_COUNT] = {
         [UI_C_RPM]           = { 132, 255,  56 },
         [UI_C_LILAC]         = { 192, 138, 255 },
         [UI_C_TEAL]          = {  34, 244, 202 },
+        [UI_C_BEVEL_LIT]     = {  74, 106, 140 },
+        [UI_C_BEVEL_DARK]    = {   2,   5,   9 },
     },
     [UI_THEME_LIGHT] = {
         [UI_C_BG]            = { 234, 239, 245 },
@@ -74,6 +76,8 @@ static const ui_rgb_t k_base[UI_THEME_COUNT][UI_C_COUNT] = {
         [UI_C_RPM]           = {  46, 148,  22 },
         [UI_C_LILAC]         = { 118,  80, 200 },
         [UI_C_TEAL]          = {   0, 150, 130 },
+        [UI_C_BEVEL_LIT]     = { 255, 255, 255 },
+        [UI_C_BEVEL_DARK]    = { 150, 166, 186 },
     },
 };
 

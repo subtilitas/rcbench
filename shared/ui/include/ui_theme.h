@@ -51,6 +51,10 @@ typedef enum {
     UI_C_RPM,
     UI_C_LILAC,
     UI_C_TEAL,
+    UI_C_BEVEL_LIT,  /**< a raised face's lit top and left edge: lighter
+                          than UI_C_PANEL_HI in both themes */
+    UI_C_BEVEL_DARK, /**< a raised face's bottom edge: darker than
+                          UI_C_PANEL_HI in both themes */
     UI_C_COUNT
 } ui_color_id_t;
 
