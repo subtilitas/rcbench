@@ -211,6 +211,13 @@ history is in git.
 
 ### Fixed
 
+- The panel starts without the stall before `app_main()` that 0.23.9
+  showed in about 1 start of 5: core 0 hung on a store or load in internal
+  memory while core 1 read `port_xSchedulerRunning[0]` back to back in
+  ESP-IDF's wait for the scheduler, and the watchdog reset the chip after
+  10s or the start ended in a store access fault. The build patches that
+  wait to one read about every 10us (`firmware/panel/core1_wait.cmake`):
+  0 stalls in 60 starts against the release's 11 in 60 in the same hour.
 - UPDATES' release pane says `Waiting for the C6 radio update to finish.`
   while the C6 radio update runs. It said
   `Waiting for the IOmcu update to finish.` for both updates.

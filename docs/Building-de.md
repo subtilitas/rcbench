@@ -841,6 +841,35 @@ Aufrufe `xTaskCreate*WithCaps()` sind nicht umgeleitet; esp_hosted nutzt
 das den Build abbricht. Die Konsole listet beim Start jeden Task,
 `task <Name> core <0|1|any> priority <n>`.
 
+Beim Start wartet Kern 1 in `esp_startup_start_app_other_cores()`
+(ESP-IDF `components/freertos/app_startup.c`), bis der Scheduler von
+Kern 0 läuft. ESP-IDF v6.1 liest dort `port_xSchedulerRunning[0]` in einer
+Schleife aus zwei Befehlen ohne Pause, während Kern 0 den Main-Task anlegt
+und seinen Stack löscht. Das Panel baut eine Kopie der Komponente freertos,
+in der diese Schleife etwa alle 10us einmal liest; zwischen zwei Lesezugriffen
+zählt sie in Registern 2000 herunter (`firmware/panel/core1_wait.cmake`).
+Das Konfigurieren bricht ab, wenn die Schleife nicht genau einmal gefunden
+wird.
+
+| Image | Starts | Hänger vor `app_main()` |
+| --- | ---: | ---: |
+| Release 0.23.9, Schleife unverändert | 60 | 11 |
+| Quelle von Release 0.23.9, Schleife etwa alle 10us | 60 | 0 |
+| Quelle von Release 0.23.9, Schleife ohne Pause, nicht komprimiert | 60 | 0 |
+
+Gemessen an einem Waveshare-ESP32-P4-Board (Chip-Revision 3.2) am
+2026-11-08, abwechselnd in Blöcken zu 20 Starts im Abstand von 20s. Ein
+Hänger endet nach `sleep_gpio: Enable automatic switching of GPIO sleep
+configuration`: Kern 0 bleibt an einem Schreib- oder Lesezugriff im
+internen Speicher hängen und der Watchdog setzt den Chip nach 10s zurück,
+oder der Start endet in einem Store Access Fault. Bei jedem Hänger mit
+gesicherten Programmzählern stand Kern 1 in der Schleife. Images mit der
+unveränderten Schleife, einem komprimierten Paar `lw`/`beqz` in einem
+16-Byte-Block, hingen in 18 von 24 erprobten Layouts; eine Schleife über
+eine 16-Byte-Grenze hinweg hing in keinem von 9 (380 Starts). Die Layouts
+wurden zu verschiedenen Stunden gemessen. Die Ursache in der Hardware ist
+nicht bekannt.
+
 Die SD-Karte und der C6 teilen sich den Anfrage-Mutex des SDMMC-Treibers
 von ESP-IDF, der Priorität vererbt. Hält der Run-Log-Task auf Kern 1 ihn für
 einen Schreibvorgang auf die Karte und wartet ein Task von esp_hosted
