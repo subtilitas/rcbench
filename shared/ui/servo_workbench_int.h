@@ -95,7 +95,6 @@ void draw_rows_page(gfx_canvas_t *c);
  * back to the screen they were opened from. */
 bool opener_down(const touch_event_t *evt, gfx_rect_t r, int code);
 void wb_open_caps(void);
-void wb_open_encoder(void);
 /** @brief SETUP > SENSORS on wb_meter_entry(), for the red METER row of
  *         LIMIT RUN and RUDDER AUTO. */
 void wb_open_meter(void);

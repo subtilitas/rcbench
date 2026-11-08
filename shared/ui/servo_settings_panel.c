@@ -22,6 +22,7 @@
 
 #include "kst_panel.h"
 #include "outputs.h"
+#include "servo_angle_pick.h"
 #include "servo_limrun.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -84,9 +85,11 @@ gfx_rect_t value_rect(int i)
 gfx_rect_t choice_rect(int i)
 {
     /* The PORT, SERVO and SERIES lists: one column, entries and refusals
-     * 60 cells. */
+     * 60 cells; the ANGLE SOURCE list too while it holds 5 entries or
+     * fewer. */
     if (s.ch.target == CH_PORT || s.ch.target == CH_FAMILY
-        || s.ch.target == CH_SERIES) {
+        || s.ch.target == CH_SERIES
+        || (s.ch.target == CH_ANGLE && s.ch.count <= CHOICE_MAX / 2)) {
         return (gfx_rect_t){ (int16_t)(OV_X + 10),
                              (int16_t)(OV_Y + 56 + i * 56),
                              (int16_t)(OV_W - 20), UI_TAP_MIN };
@@ -577,6 +580,8 @@ static void choose(int k)
         svs_family_pick(id, v);
     } else if (target == CH_SERIES) {
         svs_series_pick(v);
+    } else if (target == CH_ANGLE) {
+        angle_pick_choose(v);
     }
     ++s.ctrl_rev;
 }
@@ -916,7 +921,10 @@ void ov_rest(const touch_event_t *evt)
     case OP_CHOICE:
         if (which >= 0 && which < s.ch.count
             && gfx_rect_contains(choice_rect(which), x, y)) {
-            if ((s.ch.refused & (1u << which)) != 0u) {
+            if ((s.ch.refused & (1u << which)) != 0u
+                && s.ch.target == CH_ANGLE) {
+                angle_pick_refused(which);
+            } else if ((s.ch.refused & (1u << which)) != 0u) {
                 /* A refused port: its line, in the band too. */
                 ui_router_set_alert(s.ch.labels[which]);
             } else {

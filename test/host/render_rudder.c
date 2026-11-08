@@ -20,14 +20,20 @@
  * PORT PWM and ARM amber; servo-rudder-auto-start-rbmod after the hold,
  * the sequence waiting for the PROG 5V's read-back; and
  * servo-rudder-auto-failed-rbmod 1100ms later, the read-back failed, the
- * bench SAFE.
+ * bench SAFE.  The servo-rudder-angle views tap RUDDER's ANGLE row with the
+ * IMU on and Bluetooth LE running: servo-rudder-angle with two sensors
+ * found, servo-rudder-angle-scan with a scan under way, and
+ * servo-rudder-angle-none with the AS5600 off in SETUP and a scan that
+ * found none.
  *
  * SPDX-License-Identifier: MIT
  */
 #include "render_rudder.h"
 
+#include <stdio.h>
 #include <string.h>
 
+#include "imu_screen.h"
 #include "servo_screen.h"
 #include "servo_spots.h"
 #include "servo_test.h"
@@ -64,6 +70,50 @@ static void reading(uint16_t raw, uint32_t at_ms)
     const servo_test_enc_t e = { .valid = true, .raw = raw,
                                  .taken_ms = at_ms };
     servo_screen_encoder(&e);
+}
+
+/**
+ * @brief A sensor of the IMU's found list.
+ * @param d    the device
+ * @param addr its address, colons
+ * @param name its name
+ * @param rssi its RSSI, dBm
+ */
+static void sensor(imu_dev_t *d, const char *addr, const char *name,
+                   int8_t rssi)
+{
+    snprintf(d->addr, sizeof(d->addr), "%s", addr);
+    snprintf(d->name, sizeof(d->name), "%s", name);
+    d->rssi = rssi;
+    d->flags = IMU_DEV_UUID_18F0;
+}
+
+/**
+ * @brief The servo-rudder-angle views: the IMU's view handed over, then
+ *        RUDDER's ANGLE row tapped.
+ * @param view the view
+ */
+static void angle_list(const char *view)
+{
+    imu_view_t v;
+    memset(&v, 0, sizeof(v));
+    v.link = IMU_LINK_READY;
+    snprintf(v.version, sizeof(v.version), "2.13.0");
+    settings_set(SET_IMU_EN, 1.0f);
+    if (strcmp(view, "servo-rudder-angle") == 0) {
+        v.found_n = 2u;
+        sensor(&v.found[0], "00:0C:BF:08:19:29", "HC-06", -50);
+        sensor(&v.found[1], "D4:2B:7E:51:0C:A3", "BWT901CL", -71);
+    } else if (strcmp(view, "servo-rudder-angle-scan") == 0) {
+        v.link = IMU_LINK_SCANNING;
+    } else {
+        settings_set(SET_ENC_EN, 0.0f);
+        v.err = IMU_ERR_NONE_FOUND;
+    }
+    imu_screen_set(&v);
+    tap_body(826, 96 + 30 + 15);            /* READY's ANGLE row */
+    imu_cmd_t c;
+    while (imu_screen_take(&c)) { }
 }
 
 bool render_rudder_view(const char *view)
@@ -109,6 +159,9 @@ void render_rudder_pose(const char *view)
     }
     if (strcmp(view, "servo-rudder-auto-settings") == 0) {
         tap_body(SV_FOOT_SET_X, SV_FOOT_Y);
+    }
+    if (strstr(view, "servo-rudder-angle") == view) {
+        angle_list(view);
     }
     servo_cmd_t c;
     while (servo_screen_take(&c)) { }

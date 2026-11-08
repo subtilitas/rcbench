@@ -6,7 +6,7 @@ order: 23
 
 # Rudder deflection
 
-RUDDER on the [SERVO](servo.md) hub drives one servo and displays control-surface deflection. It shows degrees from a zero point and, when the surface length is entered, millimetres at the trailing edge. ANGLE SOURCE on [Sensors](setup-sensors.md) selects the AS5600 output encoder or IMU. Like MEASURED on LIVE, the reading is signed in the direction of the commanded angle. The right card shows the PORT button and READY's rows: PORT, ANGLE, ZERO, SUPPLY and ARM. ARM in the footer switches PORT PWM and the supply on where they read off, then arms ([SERVO, ARMED](servo.md#armed)).
+RUDDER on the [SERVO](servo.md) hub drives one servo and displays control-surface deflection. It shows degrees from a zero point and, when the surface length is entered, millimetres at the trailing edge. ANGLE SOURCE selects the AS5600 output encoder or IMU: a tap on the ANGLE row opens [its list](#the-angle-source). Like MEASURED on LIVE, the reading is signed in the direction of the commanded angle. The right card shows the PORT button and READY's rows: PORT, ANGLE, ZERO, SUPPLY and ARM. ARM in the footer switches PORT PWM and the supply on where they read off, then arms ([SERVO, ARMED](servo.md#armed)).
 
 ![RUDDER while SAFE](view:servo-rudder)
 
@@ -46,6 +46,26 @@ LENGTH is the distance from the hinge line to the trailing edge: 0 or 10 to 500m
 
 1000us, CENTER and 2000us act on press. LENGTH, ZERO and RESET MAX act when you release a tap on them. PULSE below the buttons shows the commanded pulse. DISARM, STOP or leaving the screen switches the bench to SAFE. [RUDDER AUTO](#rudder-auto) programs the end points on a screen of its own.
 
+## The angle source
+
+A tap on READY's ANGLE row, with a reading or without, opens the ANGLE SOURCE list over the left card on a SAFE bench. ARMED or during a run the tap is refused with the reason in the band. The list holds up to 10 entries:
+
+| Entry | A tap |
+|---|---|
+| `AS5600` | sets ANGLE SOURCE AS5600 and closes the list |
+| `AS5600: OFF IN SETUP` | opens the AS5600 entry of [Sensors](setup-sensors.md); the home tag returns here |
+| a sensor, `HC-06 19:29 -50dBm`: name, the last 5 characters of its address, the signal | binds it, switches the IMU on and sets ANGLE SOURCE IMU |
+| `NO IMU FOUND` | the last scan found none; the tap names the usual causes in the band |
+| `SEARCH FOR IMU` | switches the IMU on if it is off and scans for 10s once Bluetooth LE runs; the list stays open and shows `SCANNING: 10s`, then the sensors found |
+
+The source in force is in the accent colour. With the IMU on and no sensor bound, opening the list starts a scan by itself.
+
+![The ANGLE SOURCE list: the AS5600 in force, two sensors found](view:servo-rudder-angle)
+
+![A scan under way](view:servo-rudder-angle-scan)
+
+![The AS5600 off in SETUP, a scan that found none](view:servo-rudder-angle-none)
+
 ## The state lines
 
 | Line | Reads |
@@ -74,7 +94,7 @@ The left card holds the readout, the targets, MARGIN and TOLERANCE, ZERO and RES
 
 ### READY
 
-The READY card on the right lists what the start needs, one row each: PORT, SERVO, METER, ANGLE, ZERO, RANGE, PROGRAMMER, the supply (PROG 5V on the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), PD MINI where the PD mini feeds the servo), PORT PWM and ARM. PROG 5V and PD MINI read the run's `5.0V`. A green dot is met. A red dot refuses the hold, or marks an output live through the row. Amber reads `START SWITCHES IT ON` or `START ARMS`: the hold does it. Grey waits on PORT. A tap on PORT opens the port choice, on SERVO the three families over the left column, on a red ZERO it takes the zero, on a red ANGLE or METER it opens [Sensors](setup-sensors.md), on a red PD MINI with `PD MINI: 5.0V OUTSIDE ITS LIMITS` [SUPPLY](supply.md) > SETTINGS > LIMITS. A tap on another red row names it in the alert band. The line under the rows is the meter the run reads.
+The READY card on the right lists what the start needs, one row each: PORT, SERVO, METER, ANGLE, ZERO, RANGE, PROGRAMMER, the supply (PROG 5V on the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), PD MINI where the PD mini feeds the servo), PORT PWM and ARM. PROG 5V and PD MINI read the run's `5.0V`. A green dot is met. A red dot refuses the hold, or marks an output live through the row. Amber reads `START SWITCHES IT ON` or `START ARMS`: the hold does it. Grey waits on PORT. A tap on PORT opens the port choice, on SERVO the three families over the left column, on ANGLE the [ANGLE SOURCE list](#the-angle-source), on a red ZERO it takes the zero, on a red METER it opens [Sensors](setup-sensors.md), on a red PD MINI with `PD MINI: 5.0V OUTSIDE ITS LIMITS` [SUPPLY](supply.md) > SETTINGS > LIMITS. A tap on another red row names it in the alert band. The line under the rows is the meter the run reads.
 
 ![On the rbmod carrier, SAFE: PROG 5V, PORT PWM and ARM amber, the hold green](view:servo-rudder-auto-rbmod)
 

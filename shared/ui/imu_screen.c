@@ -97,6 +97,34 @@ bool ims_row_enabled(int row)
     }
 }
 
+/**
+ * @brief Queue @p kind for the panel; a full queue drops the oldest.
+ * @param kind The command.
+ * @param arg  Its argument.
+ */
+static void post(imu_cmd_kind_t kind, uint8_t arg);
+
+/**
+ * @brief A search's SCAN, owed since Bluetooth LE was not running: queued
+ *        once it runs and nothing scans or calibrates; dropped by IMU OFF,
+ *        a C6 that failed or a scan that runs anyway.
+ */
+static void search_follow(void)
+{
+    if (!ims.scan_owed) {
+        return;
+    }
+    if (!settings_get_bool(SET_IMU_EN) || ims.v.link == IMU_LINK_C6_FAILED
+        || ims.v.link == IMU_LINK_SCANNING) {
+        ims.scan_owed = false;
+        return;
+    }
+    if (at_free()) {
+        post(IMU_CMD_SCAN, 0u);
+        ims.scan_owed = false;
+    }
+}
+
 /** @brief A press on the hold the model took away under it ends here. */
 static void drop_hold_if_gone(void)
 {
@@ -125,6 +153,7 @@ void imu_screen_set(const imu_view_t *v)
     const bool alone = memcmp(v, &ims.v, offsetof(imu_view_t, r)) == 0;
     ims.v = *v;
     drop_hold_if_gone();
+    search_follow();
     if (alone) {
         ++ims.read_rev;
     } else {
@@ -132,11 +161,6 @@ void imu_screen_set(const imu_view_t *v)
     }
 }
 
-/**
- * @brief Queue @p kind for the panel; a full queue drops the oldest.
- * @param kind The command.
- * @param arg  Its argument.
- */
 static void post(imu_cmd_kind_t kind, uint8_t arg)
 {
     if (ims.cmd_n >= IMS_CMDS) {
@@ -159,6 +183,35 @@ bool imu_screen_take(imu_cmd_t *out)
     memmove(&ims.cmds[0], &ims.cmds[1], ims.cmd_n * sizeof(ims.cmds[0]));
     return true;
 }
+
+const imu_view_t *imu_screen_view(void) { return &ims.v; }
+
+bool imu_screen_bind(uint8_t i)
+{
+    if (i >= ims.v.found_n || i >= IMU_FOUND_MAX || !at_free()) {
+        return false;
+    }
+    post(IMU_CMD_BIND, i);
+    return true;
+}
+
+bool imu_screen_search(void)
+{
+    if (ims.v.link == IMU_LINK_C6_FAILED || ims.v.link == IMU_LINK_NO_BT
+        || ims.v.link == IMU_LINK_SCANNING) {
+        return false;
+    }
+    if (!settings_get_bool(SET_IMU_EN)) {
+        settings_set(SET_IMU_EN, 1.0f);
+        settings_request_save();
+    }
+    ims.scan_owed = true;
+    search_follow();
+    touched();
+    return true;
+}
+
+bool imu_screen_search_owed(void) { return ims.scan_owed; }
 
 /* ---------------------------------------------------------- the geometry */
 

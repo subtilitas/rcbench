@@ -16,6 +16,7 @@
 #include <string.h>
 
 #include "prog_choice.h"
+#include "servo_angle_pick.h"
 #include "servo_limrun.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -298,6 +299,8 @@ static void draw_choice(gfx_canvas_t *c)
             current = (s.ch.values[k] == settings_get_int(s.ch.id));
         } else if (s.ch.target == CH_PORT) {
             current = (s.ch.values[k] == settings_get_int(SET_SERVO_TARGET));
+        } else if (s.ch.target == CH_ANGLE) {
+            current = angle_pick_current(k);
         }
         const bool refused = (s.ch.refused & (1u << k)) != 0u;
         const bool down = s.ov_have && s.ov_pressed == OP_CHOICE

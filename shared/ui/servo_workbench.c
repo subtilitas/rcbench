@@ -236,19 +236,6 @@ void wb_open_caps(void)
     supply_screen_open_limits();
 }
 
-/**
- * @brief ANGLE SOURCE tapped in RUDDER's or RUDDER AUTO's list: SENSORS on
- *        the source's entry, the AS5600's or the IMU's.  The router leaves
- *        this screen for it, and the home tag there comes back here.
- */
-void wb_open_encoder(void)
-{
-    const int e = (enc_src() == SERVO_ANGLE_IMU) ? SENS_ENTRY_IMU
-                                                          : SENS_ENTRY_AS5600;
-    ui_router_goto(SCREEN_SETUP);
-    settings_screen_open_on(SET_CAT_SENSORS, e);
-}
-
 int wb_meter_entry(void)
 {
     /* The part of the channel watching the target, else the first part

@@ -550,6 +550,10 @@ and ZERO on RUDDER), and their ARM runs the same steps where PORT PWM, PROG 5V o
 mini reads off: never the PD mini past 6.0V or beside a rail an INA3221 reads at 3.0V or
 more, DISARM and a failed step all off, PROG 5V kept between SERVO screens
 (`shared/ui/servo_drive_ready.c`, `test_servo_drive_ready`; host suite only).
+RUDDER's and RUDDER AUTO's ANGLE rows open the ANGLE SOURCE list on a SAFE bench: the
+AS5600, the IMUs of the last scan, NO IMU FOUND and SEARCH FOR IMU, which switches the IMU
+on and scans once Bluetooth LE runs; a pick sets the source and binds an IMU
+(`shared/ui/servo_angle_pick.c`, `test_servo_angle_pick`; host suite only).
 
 AUTO and the LIMIT RUN program a Hitec servo through the Hitec programmer's run seam when
 the screen's own SERVO reads HITEC D SERIES or HITEC CLASSIC (KST/CHASERVO goes to the KST
@@ -1295,7 +1299,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 511 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 512 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1408,7 +1412,7 @@ The host suite is 511 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_imu`, `test_imu_filter`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_kst`,
-`test_servo_rauto_panel`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_drive_ready`, `test_servo_start_seq`,
+`test_servo_rauto_panel`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_drive_ready`, `test_servo_angle_pick`, `test_servo_start_seq`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`.
@@ -1870,8 +1874,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 908 committed screenshots to the current render,
-454 in English and the same 454 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` holds 914 committed screenshots to the current render,
+457 in English and the same 457 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

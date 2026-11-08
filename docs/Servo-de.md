@@ -1190,11 +1190,40 @@ offen ist, beendet den Lauf sofort mit dem Grund des INA3221.
 
 #### Winkelquelle
 
-WINKELQUELLE unter SETUP > SENSORS > IMU legt fest, woher Servotest,
-ENDLAGENLAUF und SERVO-Aufzeichnung den Hornwinkel beziehen: `AS5600`
-als Vorgabe oder `IMU`. Bei `IMU` wird die gewählte IMU-Achse mit dem
-IMU-Vorzeichen verwendet, bezogen auf den auf der IMU-Seite gesetzten
-NULLPUNKT.
+WINKELQUELLE legt fest, woher Servotest, ENDLAGENLAUF und
+SERVO-Aufzeichnung den Hornwinkel beziehen: `AS5600` als Vorgabe oder
+`IMU`. Bei `IMU` wird die gewählte IMU-Achse mit dem IMU-Vorzeichen
+verwendet, bezogen auf den auf der IMU-Seite gesetzten NULLPUNKT. Die
+Einstellung steht unter SETUP > SENSORS > IMU und in der Liste
+WINKELQUELLE.
+
+Die Liste WINKELQUELLE öffnet sich über der linken Spalte, von der Zeile
+WINKEL der Karte BEREIT auf RUDER und RUDER AUTO und von der Zeile
+WINKELQUELLE ihrer OPTIONEN, nur bei SAFE: ARMED, ein angefordertes ARM,
+ein Lauf oder ein gehaltener Druck verweigern sie, und ein Prüfstand, der
+SAFE verlässt, schließt sie. Der Code ist `shared/ui/servo_angle_pick.c`.
+Ihre Einträge, von oben, höchstens 10:
+
+| Eintrag | Was ein Tippen tut |
+| --- | --- |
+| `AS5600` | WINKELQUELLE AS5600, gespeichert; die Liste schließt |
+| `AS5600: AUS IN SETUP` (verweigert, gelb) | öffnet SETUP > SENSORS am AS5600; das Home-Tag dort kehrt zurück |
+| der gebundene Sensor, `HC-06 19:29`, wenn die letzte Suche ihn nicht listete | IMU EIN, falls aus, WINKELQUELLE IMU, gespeichert; die Liste schließt |
+| jeder Sensor der letzten Suche, `HC-06 19:29 -50dBm`: der Name (`OHNE NAMEN` ohne einen) auf 12 Zeichen gekürzt, die letzten 5 Zeichen der Adresse, die RSSI (Empfangsfeldstärke) | bindet ihn, wenn er nicht der gebundene ist, IMU EIN, falls aus, WINKELQUELLE IMU, gespeichert; die Liste schließt |
+| `KEINE IMU GEFUNDEN` (verweigert) nach einer Suche ohne Fund, oder `SUCHE FEHLGESCHLAGEN: n` | nennt `KEIN SENSOR GEFUNDEN: IST ER AN, KEIN HANDY DRAN?` oder den Code im Alarmband |
+| `IMU SUCHEN` | IMU EIN, falls aus, gespeichert; die Suche startet, sobald Bluetooth LE läuft. Die Liste bleibt offen: der Eintrag zeigt `BLUETOOTH STARTET`, solange der Start läuft, `SUCHE: 10s`, solange die Suche läuft, danach stehen die gefundenen Sensoren oder `KEINE IMU GEFUNDEN` in der Liste. Ohne Sync mit dem C6 ist der Eintrag als `KEIN BLUETOOTH AM C6` verweigert, bei ausgefallenem C6 als `C6 AUSGEFALLEN: NEUSTART` |
+
+Der gültige Eintrag steht in der Akzentfarbe: der AS5600, bei WINKELQUELLE
+IMU der gebundene Sensor. Öffnet sich die Liste bei eingeschalteter IMU,
+ohne gebundenen Sensor, ohne Suche seit dem Start und ohne Fehler, startet
+sofort eine Suche. Die Liste folgt dem Zustand der IMU in jedem Bild,
+solange kein Finger auf ihr liegt; eine Wahl bindet den Sensor der
+Adresse, die ihr Eintrag zeigt. Mit 8 gefundenen Sensoren hält die Liste
+`AS5600`, die 8 und `IMU SUCHEN` in zwei Spalten zu 5; ein gebundener
+Sensor, den die Suche nicht listete, nimmt den Platz des achten ein.
+
+Eine Suche bei verbundenem Sensor behält die Verbindung
+([Die Bluetooth-IMU](IMU-de.md#suchen-und-binden)).
 
 Der IMU-Winkel wird in Zählerstände des AS5600 umgerechnet. Dadurch
 gelten die oben beschriebenen Regeln auch für diese Quelle:
@@ -1519,7 +1548,9 @@ gemessen.
 LIVE, SWEEP und RUDER zeigen Zeilen von BEREIT an der Stelle der
 Ausgangskarte: PORT, VERSORGUNG und ARM, auf RUDER dazu WINKEL und
 NULLPUNKT zwischen PORT und VERSORGUNG ([Bildschirme](Screens-de.md#servo)).
-Die Zeilen sind `shared/ui/servo_drive_ready.c`. Das 2s-Halten von ARM
+Die Zeilen sind `shared/ui/servo_drive_ready.c`. Ein Tippen auf die Zeile
+WINKEL von RUDER öffnet bei SAFE die [Liste WINKELQUELLE](#winkelquelle),
+mit Messwert oder ohne. Das 2s-Halten von ARM
 schaltet ein, was das Servo braucht und aus ist, und schaltet dann auf
 ARMED, mit den Schritten 1 bis 4 der [Startfolge](#auto-endpoints):
 
@@ -1657,8 +1688,9 @@ Bluetooth-IMU).
 - Ein Tippen auf PORT öffnet die PORT-Auswahl; auf SERVO die Auswahl
   SERVO, KST/CHASERVO, HITEC D-SERIE und HITEC KLASSISCH über der linken
   Spalte; auf einen roten NULLPUNKT mit Messwert setzt es den
-  Nullpunkt; auf einen roten WINKEL oder ein rotes MESSGERÄT öffnet es
-  SETUP > SENSORS am AS5600, an der IMU oder an dem INA3221, dessen Kanal
+  Nullpunkt; auf WINKEL die [Liste WINKELQUELLE](#winkelquelle), rot oder
+  nicht; auf ein rotes MESSGERÄT öffnet es SETUP > SENSORS an dem
+  INA3221, dessen Kanal
   das Ziel des Testers überwacht (sonst am ersten bestückten); auf ein
   rotes PD MINI mit `PD MINI: 5.0V AUSSERHALB SEINER GRENZEN` öffnet es die
   Einstellungen von SUPPLY bei AUSGANGSGRENZEN. Ein Tippen auf eine

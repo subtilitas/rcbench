@@ -47,6 +47,14 @@ history is in git.
   supply row reads `5.0V` for PROG 5V and PD MINI. The `TAP: HV WARNING`
   and `PROGRAMMING: SUPPLY SET BELOW 4.8V` refusals leave both screens.
 
+- RUDDER's and RUDDER AUTO's READY row ANGLE, and the ANGLE SOURCE row of
+  their SETTINGS lists, open the ANGLE SOURCE list on a SAFE bench, with a
+  reading or without: `AS5600` (`AS5600: OFF IN SETUP`, which opens SETUP
+  > SENSORS on the AS5600, while it is off), the IMUs the last scan found
+  with name, address tail and RSSI, `NO IMU FOUND` after a scan that found
+  none, and `SEARCH FOR IMU`, which switches the IMU on when it is off and
+  scans once Bluetooth LE runs. A pick sets ANGLE SOURCE, and an IMU pick
+  binds the sensor and switches the IMU on.
 ### Fixed
 
 - LIMIT RUN's and RUDDER AUTO's SERVO set to HITEC fell back to
