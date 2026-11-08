@@ -116,15 +116,10 @@ KST-Servoprogrammierung ([Seiten](Screens-de.md#programmierer)).
 
 ## VERBINDEN
 
-Wo die Sitzung die Servoversorgung schaltet, die PROG 5V des Carriers,
-einen antwortenden PD mini oder bei jeder KLASSISCH-Sitzung, ist VERBINDEN
-eine Halte-Taste von 2s, wie bei KST
-([Servo-Programmierer, Der Port](ServoProgrammer-de.md#der-port)): die
-Schritte unten beginnen, wenn das Halten vollständig ist. Ein Servo der
-D-Serie, das der Bediener ohne beides einschaltet, nimmt ein Tippen. Loslassen vor 2s
-sendet nichts und zeigt `Halte 2s, um zu verbinden und die Versorgung des
-Ports einzuschalten.` FREIGEBEN, VERLASSEN und ABBRECHEN auf derselben Taste
-nehmen ein Tippen.
+VERBINDEN ist eine Halte-Taste von 2s, wo die Sitzung die Servoversorgung schaltet: PROG 5V des Carriers, ein
+antwortender PD mini oder KLASSISCH ([Servo-Programmierer, Der Port](ServoProgrammer-de.md#der-port)). Die Schritte
+unten beginnen mit dem vollständigen Halten; ein vom Bediener versorgtes Servo der D-Serie nimmt ein Tippen. Loslassen
+vor 2s zeigt `Halte 2s, um zu verbinden und die Versorgung des Ports einzuschalten.` FREIGEBEN, VERLASSEN und ABBRECHEN nehmen ein Tippen.
 
 1. OPEN: Der IOmcu beendet PWM am Port. Nach 50ms ohne Pulse übernimmt der
    Leitungstreiber die freigegebene Leitung.

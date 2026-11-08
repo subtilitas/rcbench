@@ -298,7 +298,8 @@ TEST_CASE(no_german_text_writes_a_number_with_a_comma)
  * takes up later is either here, a KP_ or PC_ text, or a failing test.
  */
 static const ui_text_id_t k_routed[] = {
-    TX_CANCEL,          TX_HOLD_HINT_APPLY,   TX_HOLD_HINT_CONTINUE,
+    TX_CANCEL,          TX_HOLD_HINT_APPLY,   TX_HOLD_HINT_CONNECT,
+    TX_HOLD_HINT_CONTINUE,
     TX_HOLD_HINT_ENABLE, TX_HOLD_HINT_LEAVE,  TX_HOLD_HINT_LOAD,
     TX_HOLD_HINT_RESTORE, TX_HOLD_HINT_WRITE, TX_HP_PORT_NONE,
     TX_OFF,             TX_ON,                TX_SV_HOLD_TO_APPLY, TX_SV_HV_1,          TX_SV_HV_2,
