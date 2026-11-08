@@ -56,6 +56,19 @@ void angle_pick_refused(int k);
  */
 bool angle_pick_current(int k);
 /**
+ * @brief Entry @p k drawn on two lines when it names a sensor and its one
+ *        line does not fit its button, a column of two: the name and the
+ *        RSSI in 10 x 20 over the full address and its type in 8 x 16.
+ * @param c       The canvas.
+ * @param k       The entry.
+ * @param fill    Its button's fill.
+ * @param refused Whether it is refused: the text in the warning colour.
+ * @param down    Whether a finger holds it.
+ * @return true when drawn; false leaves it to the one-line button.
+ */
+bool angle_pick_draw_entry(gfx_canvas_t *c, int k, gfx_color_t fill,
+                           bool refused, bool down);
+/**
  * @brief The list's entries, for the tests.
  * @return Their count while the list shows, -1 while it does not.
  */

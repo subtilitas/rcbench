@@ -1106,8 +1106,8 @@ refuses it, and a bench that leaves SAFE closes it. The code is
 | --- | --- |
 | `AS5600` | ANGLE SOURCE AS5600, saved; the list closes |
 | `AS5600: OFF IN SETUP` (refused, amber) | opens SETUP > SENSORS on the AS5600 entry; the home tag there comes back |
-| the bound sensor, `HC-06 19:29`, when the last scan did not list it | IMU ON when off, ANGLE SOURCE IMU, saved; the list closes |
-| each sensor of the last scan, `HC-06 19:29 -50dBm`: the name (`NO NAME` without one) cut to 12 cells, the last 5 characters of the address, the RSSI (received signal strength) | binds it when it is not the bound one, IMU ON when off, ANGLE SOURCE IMU, saved; the list closes. While no bind is taken (no sync with the C6, the calibration running, the IMU off) every sensor but the bound one is refused: a tap names why in the alert band and changes nothing |
+| the bound sensor, `HC-06 00:0C:BF:08:19:29 P`, when the last scan did not list it | IMU ON when off, ANGLE SOURCE IMU, saved; the list closes |
+| each sensor of the last scan, `HC-06 00:0C:BF:08:19:29 P -50dBm`: the name (`NO NAME` without one) cut to 18 cells, the full address, its type (`P` public, `R` random), the RSSI (received signal strength) | binds it when it is not the bound one, IMU ON when off, ANGLE SOURCE IMU, saved; the list closes. While no bind is taken (no sync with the C6, the calibration running, the IMU off) every sensor but the bound one is refused: a tap names why in the alert band and changes nothing |
 | `NO IMU FOUND` (refused) after a scan that listed none, or `SCAN FAILED: CODE n` | names `NO SENSOR FOUND: IS IT ON, NO PHONE ON IT?` or the code in the alert band |
 | `SEARCH FOR IMU` | IMU ON when off, saved; the scan starts once Bluetooth LE runs. The list stays open: the entry reads `STARTING BLUETOOTH` while the start runs, `SCANNING: 10s` while the scan runs, then the sensors found or `NO IMU FOUND` stand in the list. Without sync with the C6 the entry is refused as `NO BLUETOOTH ON C6`, on a failed C6 as `C6 FAILED: RESTART` |
 
@@ -1118,7 +1118,12 @@ list follows the IMU's state each frame while no finger is on it; a pick
 binds the sensor of the address and address type (public or random) its
 entry was built from. With 8 sensors found the
 list holds `AS5600`, the 8 and `SEARCH FOR IMU` in two columns of 5; a
-bound sensor the scan did not list takes the eighth's place.
+bound sensor the scan did not list takes the eighth's place. Two sensors
+whose addresses end alike read apart: every sensor entry names the whole
+address and its type. A column of one, up to 5 entries, holds an entry on
+one line of 10 x 20 cells; in two columns, 295px each, a sensor entry
+takes two lines, the name and the RSSI in 10 x 20 over the address and
+its type in 8 x 16.
 
 A scan while a sensor is connected keeps the link
 ([The Bluetooth IMU](IMU.md#scan-and-bind)).
