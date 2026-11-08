@@ -27,10 +27,12 @@ Register layout and timing were derived from 1 KST Tool Card #2 and 1 Chaservo s
 ## The READY card and the footer
 
 ![KST before CONNECT](view:servo-kst)
+![HITEC's SERIES on the READY card](view:servo-hitec-card-series)
 
-The right card is the READY card, with three rows and the rail line:
+The right card is the READY card, with three rows on KST, four on HITEC, and the rail line:
 
 - PORT: the port the session works on. Red with `NO PROG PORT` while the tester drives OUTPUTS. A tap opens the PORT list; while the session holds the port, the list stays shut and the alert band names the lock.
+- SERIES, on HITEC only: D SERIES or CLASSIC, the series the next CONNECT enters. A tap opens the two over the left column; a pick is saved and is the SERVO tab's SERIES too. While the session holds the port the row shows the session's series, and a tap names `Tap LEAVE first: the session keeps its series.` in the alert band.
 - The supply CONNECT switches: PROG 5V on the rbmod carrier, PD MINI where one answers, SUPPLY otherwise. Amber `ON AT CONNECT` while off. A red dot and `ON` while on; a tap then switches it off, as OUTPUT OFF does. Without a supply the bench switches: amber `OFF, ON BY HAND`.
 - SERVO: `NOT CONNECTED` before CONNECT, `NOT READ` with the port held, then the servo's type, `V6?` while it is 20k_sel's guess.
 

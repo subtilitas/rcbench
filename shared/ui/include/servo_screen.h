@@ -817,13 +817,13 @@ int servo_screen_limit_family(void);
  *         AUTO's own SERVO (SET_RAUTO_FAMILY), for the tests.
  *  @return a servo_rauto_family_t, as an int */
 int servo_screen_rauto_family(void);
-/** @brief The SERVO choice list a READY card's SERVO row opens, for the
- *         tests.
+/** @brief The choice list a READY card's SERVO row (LIMIT RUN, RUDDER
+ *         AUTO) or SERIES row (HITEC) opens, for the tests.
  *  @return its entries' count while it shows, -1 while it does not */
 int servo_screen_family_choices(void);
-/** @brief Entry @p i of the SERVO choice list, for the tests; its
- *         rectangle is servo_screen_port_choice_rect()'s.
- *  @param i the entry, 0 for KST/CHASERVO
+/** @brief Entry @p i of that list, for the tests; its rectangle is
+ *         servo_screen_port_choice_rect()'s.
+ *  @param i the entry, 0 for KST/CHASERVO or D SERIES
  *  @return its label, "" past the last */
 const char *servo_screen_family_choice(int i);
 /** @brief Why the SERVO row of the screen shown takes no pick now, for

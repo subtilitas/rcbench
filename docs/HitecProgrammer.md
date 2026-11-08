@@ -12,12 +12,21 @@ into the draft and restore the session's backup.
 Tap HITEC on the [SERVO hub](Screens.md#servo). The programmer opens on a
 screen of its own and covers the left card. The home tag returns to the
 hub while the programmer holds no port; the session has no CLOSE. The
-right card is the READY card with PORT, the supply **CONNECT** switches
-and the servo read, and the footer's middle slot is the session's
+right card is the READY card with PORT, SERIES, the supply **CONNECT**
+switches and the servo read, and the footer's middle slot is the session's
 **WRITE n VALUES**; the screen has no **ARM**
 ([Screens: Programmer](Screens.md#programmer)). The tile is grey with `IOMCU HAS NO SERVO PWM`
 and cannot be opened while the IOmcu, the RP2350 board, reports no servo PWM
 (pulse-width modulation), including when the IOmcu does not answer.
+
+The READY card's SERIES row, the second of its four rows, reads D SERIES or
+CLASSIC, the series the next CONNECT enters (SET_HITEC_SERIES). A tap opens
+the two over the left card; a pick is saved at once and reloads the
+programmer's options. While the session holds the port, or a CONNECT is
+under way, the row shows the session's series and a tap names
+`Tap LEAVE first: the session keeps its series.` in the alert band.
+
+![HITEC's SERIES choice over the left card](img/servo-hitec-card-series.png)
 
 Hitec is a name or trademark of its owner. rcbench is independent and is
 not affiliated with, endorsed by or sponsored by that owner. The name
@@ -80,7 +89,7 @@ from 1 HS-5645MG, 1 HS-7955TG and 1 HS-5955TG (2026-10-18 to 2026-10-20)
 | Row | What it does |
 | --- | --- |
 | PORT | Two lines: the port and its GPIO with the series, `PROG PORT 1 GPIO 13  D SERIES`, on the rbmod carrier a tap on them before CONNECT opens the list of the programming ports, then the receive mode and the supply CONNECT sets, `RX PRECHARGE  5.0V 1000mA` (`SUPPLY AS IT IS` for a D series servo with neither a PD mini nor the carrier's fixed 5V supply). The button reads CONNECT, ABORT while the port moves into programming or a read runs, WAIT, LEAVE while the port is held, and RELEASE PORT while another session holds it |
-| SERIES | D SERIES or CLASSIC, chosen before CONNECT; kept with the SERVO settings (SET_HITEC_SERIES). While the port is held the PORT row names the series and FILES takes this place |
+| SERIES | D SERIES or CLASSIC, chosen before CONNECT; kept with the SERVO settings (SET_HITEC_SERIES), the same value as the READY card's SERIES row. While the port is held the PORT row names the series and FILES takes this place |
 | FILES | While the port is held: the servo files on the card, a save and a load ([Servo files](#servo-files)) |
 | SERVO | The model read, `D485HW` or `HS-5645MG`; READ ALL reads the series' set again |
 | MORE | The programming voltage and current limit, each on the keypad, and [Hitec D receive](#hitec-d-receive), while the tester holds the port. While the port is held: DISCARD EDITS with an edit standing, REPAIR CHECKSUM with a classic checksum that is wrong, and FACTORY DEFAULT for a classic servo read ([FACTORY DEFAULT](#factory-default)) |

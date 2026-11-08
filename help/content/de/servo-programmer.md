@@ -27,10 +27,12 @@ Registerbelegung und Timing wurden an 1 KST Tool Card #2 und 1 Chaservo-Servo er
 ## Die Karte BEREIT und die Fußleiste
 
 ![KST vor VERBINDEN](view:servo-kst)
+![SERIE von HITEC auf der Karte BEREIT](view:servo-hitec-card-series)
 
-Die rechte Karte ist die Karte BEREIT mit drei Zeilen und der Schienenzeile:
+Die rechte Karte ist die Karte BEREIT mit drei Zeilen auf KST, vier auf HITEC, und der Schienenzeile:
 
 - PORT: der Port, an dem die Sitzung arbeitet. Rot mit `KEIN PROG-PORT`, solange der Tester OUTPUTS ansteuert. Ein Tippen öffnet die Liste PORT; hält die Sitzung den Port, bleibt die Liste zu und das Alarmband nennt die Sperre.
+- SERIE, nur auf HITEC: D-SERIE oder KLASSISCH, die Serie, mit der das nächste VERBINDEN arbeitet. Ein Tippen öffnet die beiden über der linken Spalte; eine Wahl wird gespeichert und ist auch die SERIE des Reiters SERVO. Hält die Sitzung den Port, zeigt die Zeile die Serie der Sitzung, und ein Tippen nennt `Tippe zuerst auf VERLASSEN: die Sitzung behält ihre Serie.` im Alarmband.
 - Die Versorgung, die VERBINDEN schaltet: PROG 5V am rbmod-Carrier, PD MINI, wo einer antwortet, sonst VERSORGUNG. Gelb `EIN BEI VERBINDEN`, solange aus. Ein roter Punkt und `EIN`, solange an; dann schaltet ein Tippen sie aus wie AUSGANG AUS. Ohne Versorgung, die der Prüfstand schaltet: gelb `AUS, EIN VON HAND`.
 - SERVO: `NICHT VERBUNDEN` vor VERBINDEN, `NICHT GELESEN` bei gehaltenem Port, danach der Typ des Servos, `V6?`, solange er die Vermutung aus 20k_sel ist.
 

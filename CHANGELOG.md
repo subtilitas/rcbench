@@ -69,6 +69,10 @@ history is in git.
   series a Hitec run connects with is its screen's SERVO, not the HITEC
   page's SERIES. With HITEC D SERIES the list shows Hitec D receive under
   SERVO, the HITEC page's setting.
+- HITEC's READY card has a SERIES row under PORT, D SERIES or CLASSIC: a
+  tap opens the two over the left card and a pick writes the Hitec series
+  the next CONNECT enters, the same setting as the SERVO tab's SERIES. The
+  row is refused while the page holds the port or a CONNECT is under way.
 
 ### Fixed
 

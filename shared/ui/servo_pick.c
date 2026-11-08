@@ -20,6 +20,11 @@
  * D SERIES the settings list shows D RECEIVE (SET_HITEC_RX) under SERVO,
  * the HITEC page's own setting.
  *
+ * HITEC's READY card has a SERIES row of its own: a tap opens D SERIES and
+ * CLASSIC (CH_SERIES), a pick writes SET_HITEC_SERIES, the series the
+ * HITEC page's next CONNECT enters, and reloads the page's options.  It is
+ * refused while the page holds the port or a step of its session runs.
+ *
  * KST, Chaservo and Hitec are names or trademarks of their owners; they
  * are used here only to say which servos the runs work with.
  *
@@ -28,6 +33,9 @@
 
 #include <stdio.h>
 
+#include "hitec_panel.h"
+#include "hitec_wire.h"
+#include "prog_registry.h"
 #include "servo_limrun.h"
 #include "settings.h"
 #include "ui_setlist.h"
@@ -113,6 +121,60 @@ void svs_family_pick(setting_id_t id, int value)
     servo_invalidate();
 }
 
+/* ------------------------------------------------------ HITEC's SERIES */
+
+/**
+ * @brief Why HITEC's SERIES takes no pick now: the page holds the port or
+ *        a step of its session runs, or a press is held.
+ * @return the reason, NULL while it takes one
+ */
+static const char *series_refused(void)
+{
+    prog_session_t ps;
+    hitec_panel_session(&ps);
+    if (ps.held || ps.busy) {
+        return TR(PRR_SERIES_HELD);
+    }
+    return svs_press_held() ? TR(FOOT_PRESS_HELD) : NULL;
+}
+
+void svs_series_open(void)
+{
+    const char *why = series_refused();
+    if (why != NULL) {
+        ui_action_refused(why);
+        return;
+    }
+    char label[64];
+    close_panels();
+    open_choice(CH_SERIES, SET_HITEC_SERIES, TR(PRR_SERIES_TITLE));
+    choice_add(TR(HP_SERIES_D), (int)HITEC_D);
+    snprintf(label, sizeof(label), "%s  %s", TR(HP_SERIES_C),
+             TR(HP_SERIES_C_HELP));
+    choice_add(label, (int)HITEC_CLASSIC);
+    servo_invalidate();
+    ++s.ctrl_rev;
+}
+
+void svs_series_pick(int value)
+{
+    const char *why = series_refused();
+    if (why != NULL) {
+        ui_action_refused(why);
+        return;
+    }
+    if (value != (int)HITEC_D && value != (int)HITEC_CLASSIC) {
+        return;
+    }
+    if (settings_get_int(SET_HITEC_SERIES) != value) {
+        settings_set(SET_HITEC_SERIES, (float)value);
+        settings_request_save();
+        hitec_panel_settings_changed();
+    }
+    ++s.ctrl_rev;
+    servo_invalidate();
+}
+
 /* ------------------------------------------- the settings list's SERVO row */
 
 /** @brief SERVO's value: the screen's family. @param out takes it
@@ -173,7 +235,8 @@ int servo_screen_rauto_family(void)
 
 int servo_screen_family_choices(void)
 {
-    return (s.ch.open && s.ch.target == CH_FAMILY) ? s.ch.count : -1;
+    return (s.ch.open && (s.ch.target == CH_FAMILY || s.ch.target == CH_SERIES))
+               ? s.ch.count : -1;
 }
 
 const char *servo_screen_family_choice(int i)

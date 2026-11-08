@@ -282,7 +282,8 @@ enum { OP_NONE = 0, OP_ROW, OP_TRIM_DN, OP_TRIM_UP, OP_KEYPAD,
 
 /* What the list chooses -- the PORT button's port among them -- and what
  * the keypad types. */
-enum { CH_NONE = 0, CH_TYPE, CH_RATE, CH_ENUM, CH_PORT, CH_FAMILY };
+enum { CH_NONE = 0, CH_TYPE, CH_RATE, CH_ENUM, CH_PORT, CH_FAMILY,
+       CH_SERIES };
 enum { KT_NONE = 0, KT_MIN, KT_CENTER, KT_MAX, KT_TRAVEL, KT_RATE,
        KT_SETTING, KT_TRIM };
 
@@ -1720,6 +1721,13 @@ void svs_family_pick(setting_id_t id, int value);
 /** @brief The settings list's SERVO row: the screen's family, a tap opens
  *         the three as a choice list. */
 extern const ui_setlist_custom_t svs_family_row;
+/** @brief HITEC's READY card SERIES tapped: D SERIES and CLASSIC in the
+ *         choice list, or the refusal in the band. */
+void svs_series_open(void);
+/** @brief A series picked on HITEC's card: SET_HITEC_SERIES written and
+ *         saved, the page's options reloaded, unless refused.
+ *  @param value hitec_family_t */
+void svs_series_pick(int value);
 
 /* --- servo_footer.c: the footer and the PORT button --------------------- */
 

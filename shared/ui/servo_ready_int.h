@@ -434,13 +434,23 @@ void svs_supplies_off(void);
 
 /* --- servo_prog_ready.c: KST's and HITEC's rows and WRITE ------------------ */
 
-/** @brief KST's and HITEC's rows, in the card's order. */
+/** @brief KST's and HITEC's rows, in KST's card order; HITEC shows
+ *  SERIES under PORT (prog_ready_at()). */
 typedef enum {
     PRR_PORT = 0, /**< a PROG PORT the tester drives                  */
     PRR_SUPPLY,   /**< the supply the session's CONNECT switches      */
     PRR_SERVO,    /**< the servo read                                 */
-    PRR_COUNT     /**< the count                                      */
+    PRR_SERIES,   /**< HITEC only: D SERIES or CLASSIC, chosen here   */
+    PRR_COUNT     /**< the count of the kinds                         */
 } prog_ready_row_t;
+
+/** @brief The rows the programmer's card shows: 3 on KST, 4 on HITEC.
+ *  @return the count, 0 on another screen */
+int prog_ready_count(void);
+/** @brief Where row @p kind stands on the card shown.
+ *  @param kind a prog_ready_row_t
+ *  @return its index from 0, -1 where the card has no such row */
+int prog_ready_at(prog_ready_row_t kind);
 
 /** @brief Whether the screen shown is a programmer's, KST or HITEC.
  *  @return true there */
@@ -448,9 +458,9 @@ bool prog_ready_shown(void);
 /** @brief KST's or HITEC's row @p i.  @param i the row @param r receives
  *  it  @return false past the last or on another screen */
 bool prog_ready_row(int i, rdy_row_t *r);
-/** @brief A tap on row @p i: PORT's list, the supply off while its row
- *         reads ON, or the row's reason in the alert band.  @param i the
- *         row */
+/** @brief A tap on row @p i: PORT's list, SERIES' list, the supply off
+ *         while its row reads ON, or the row's reason in the alert band.
+ *         @param i the row */
 void prog_ready_tap(int i);
 /** @brief Whether a press at (@p x, @p y) lands on the supply row while it
  *         reads ON: a tap there switches an output off (svs_safe_at()).
