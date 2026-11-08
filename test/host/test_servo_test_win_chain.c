@@ -189,7 +189,7 @@ static void b_frame(void)
     }
     if (d.release) {
         ++bench.releases;
-        bench.cmd = CENTRE;
+        bench.cmd = CENTER;
     }
     out_drain(&bench.out, &bench.t);
 }
@@ -218,13 +218,13 @@ static void b_fresh(uint32_t tick0)
     sc.stop_lo_us = 1000u;
     sc.stop_hi_us = 2000u;
     servo_sim_init(&bench.servo, &sc);
-    bench.servo.position_us = (float)CENTRE;
+    bench.servo.position_us = (float)CENTER;
     bench.armed   = true;
     bench.set_v   = 5.0f;
     bench.set_i   = 2.0f;
     bench.pd_gain = 1.0f;
     bench.sign    = 1.0;
-    bench.cmd     = CENTRE;
+    bench.cmd     = CENTER;
     bench.link_up = true;
     bench.pd_next = b_now();
     chain_link_up();
@@ -239,7 +239,7 @@ static void b_cfg(servo_test_cfg_t *c)
     c->steps_v[1] = 6.0f;
     c->step_count = 2u;
     c->i_limit    = 3.0f;
-    c->centre_us  = CENTRE;
+    c->center_us  = CENTER;
     c->end_lo_us  = LO_US;
     c->end_hi_us  = HI_US;
     c->settle_ms  = 500u;

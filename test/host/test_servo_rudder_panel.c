@@ -1,12 +1,12 @@
 /**
  * @file test_servo_rudder_panel.c
  * @brief SERVO's RUDDER task: the fifth tab, the readout in ° and mm,
- *        LENGTH, the buttons that drive 1000us, CENTRE and 2000us only
+ *        LENGTH, the buttons that drive 1000us, CENTER and 2000us only
  *        while ARMED, ZERO and RESET MAX, the angle source's state line,
  *        the knob, leaving to SAFE, the TARGET row the buttons drive, the
  *        guide's page and the strings in their fields.
  *
- * The AS5600 is on with its centre at count 2048; 256 counts are 22.5°.
+ * The AS5600 is on with its center at count 2048; 256 counts are 22.5°.
  *
  * Cases:
  * - the_strip_has_five_tabs_and_rudder_opens
@@ -14,7 +14,7 @@
  * - reverse_flips_the_readout_and_keeps_the_zero
  * - the_buttons_drive_1000_1500_2000us_only_while_armed
  * - zero_takes_the_current_angle_and_reset_clears_the_max
- * - a_new_enc_centre_after_zero_moves_no_deflection
+ * - a_new_enc_center_after_zero_moves_no_deflection
  * - a_stop_refuses_the_buttons_and_the_knob
  * - a_tap_that_slides_off_or_loses_its_release_does_nothing
  * - length_takes_0_or_10_to_500mm_and_refuses_the_gap
@@ -42,23 +42,23 @@
 #include "ui_help.h"
 #include "ui_workbench.h"
 
-/** @brief The AS5600's centre count in these cases. */
-#define CENTRE_COUNT 2048u
+/** @brief The AS5600's center count in these cases. */
+#define CENTER_COUNT 2048u
 /** @brief The readings' numerals' height: the 32 x 44 face's, px. */
 #define NUM_H 44
 /** @brief The degrees' column's left edge, px. */
 #define DEG_X 18
 /** @brief Tab @p t's last column: tabs are 120px from x 9, 124px apart. */
 
-/** @brief The AS5600 on, its centre at CENTRE_COUNT. */
+/** @brief The AS5600 on, its center at CENTER_COUNT. */
 static void encoder_on(void)
 {
     settings_set(SET_ENC_EN, 1.0f);
-    settings_set(SET_ENC_CENTRE, (float)CENTRE_COUNT);
+    settings_set(SET_ENC_CENTER, (float)CENTER_COUNT);
 }
 
 /**
- * @brief A reading at @p counts from the centre, as the panel hands it.
+ * @brief A reading at @p counts from the center, as the panel hands it.
  * @param counts the counts, signed
  */
 static void reading(int counts)
@@ -67,7 +67,7 @@ static void reading(int counts)
     at_ms += 40u;
     const servo_test_enc_t e = {
         .valid = true,
-        .raw = (uint16_t)(((int)CENTRE_COUNT + counts) & 4095),
+        .raw = (uint16_t)(((int)CENTER_COUNT + counts) & 4095),
         .taken_ms = at_ms };
     servo_screen_encoder(&e);
 }
@@ -225,15 +225,15 @@ TEST_CASE(reverse_flips_the_readout_and_keeps_the_zero)
 
 /* --------------------------------------------------------- the buttons */
 
-/* SAFE: the three buttons post nothing.  ARMED: 1000us, CENTRE at PULSE
- * CENTRE plus TRIM and 2000us, on the press; a disarm makes them refuse
+/* SAFE: the three buttons post nothing.  ARMED: 1000us, CENTER at PULSE
+ * CENTER plus TRIM and 2000us, on the press; a disarm makes them refuse
  * again. */
 TEST_CASE(the_buttons_drive_1000_1500_2000us_only_while_armed)
 {
     fresh();
     to_rudder();
     taken();
-    static const rudder_ctl_t k[3] = { RUD_C_1000, RUD_C_CENTRE, RUD_C_2000 };
+    static const rudder_ctl_t k[3] = { RUD_C_1000, RUD_C_CENTER, RUD_C_2000 };
     for (int i = 0; i < 3; ++i) {
         press(k[i]);
         CHECK_EQ(taken().kind, SERVO_CMD_NONE);
@@ -241,7 +241,7 @@ TEST_CASE(the_buttons_drive_1000_1500_2000us_only_while_armed)
     fresh_armed();
     to_rudder();
     static const struct { servo_cmd_kind_t kind; uint16_t us; } want[3] = {
-        { SERVO_CMD_POSITION, 1000u }, { SERVO_CMD_CENTRE, 1500u },
+        { SERVO_CMD_POSITION, 1000u }, { SERVO_CMD_CENTER, 1500u },
         { SERVO_CMD_POSITION, 2000u },
     };
     for (int i = 0; i < 3; ++i) {
@@ -279,7 +279,7 @@ TEST_CASE(zero_takes_the_current_angle_and_reset_clears_the_max)
     press(RUD_C_ZERO);
     CHECK(rudder_geo()->zeroed);
     CHECK_NEAR(rudder_geo()->zero_deg,
-               servo_test_enc_deg(CENTRE_COUNT + 100u, 0u), 1e-3f);
+               servo_test_enc_deg(CENTER_COUNT + 100u, 0u), 1e-3f);
     CHECK(!rudder_geo()->have[0] && !rudder_geo()->have[1]);
     float d = 1.0f;
     CHECK(rudder_defl(&d));
@@ -300,15 +300,15 @@ TEST_CASE(zero_takes_the_current_angle_and_reset_clears_the_max)
     reading(400);
     press(RUD_C_ZERO);
     CHECK_NEAR(rudder_geo()->zero_deg,
-               servo_test_enc_deg(CENTRE_COUNT + 100u, 0u), 1e-3f);
+               servo_test_enc_deg(CENTER_COUNT + 100u, 0u), 1e-3f);
     CHECK(!rudder_geo()->have[0] && !rudder_geo()->have[1]);
     scr->render(&cv, 0);
 }
 
-/* ENC CENTRE taken again after ZERO, the surface not moved: the
+/* ENC CENTER taken again after ZERO, the surface not moved: the
  * deflection stays 0 and MAX takes nothing; before ZERO the deflection is
- * the angle from the new centre. */
-TEST_CASE(a_new_enc_centre_after_zero_moves_no_deflection)
+ * the angle from the new center. */
+TEST_CASE(a_new_enc_center_after_zero_moves_no_deflection)
 {
     fresh();
     encoder_on();
@@ -318,7 +318,7 @@ TEST_CASE(a_new_enc_centre_after_zero_moves_no_deflection)
     CHECK(rudder_defl(&d));
     CHECK_NEAR(d, 100.0f * 360.0f / 4096.0f, 1e-3f);
     press(RUD_C_ZERO);
-    settings_set(SET_ENC_CENTRE, (float)(CENTRE_COUNT + 100u));
+    settings_set(SET_ENC_CENTER, (float)(CENTER_COUNT + 100u));
     reading(100);
     CHECK(rudder_defl(&d));
     CHECK_NEAR(d, 0.0f, 1e-4f);
@@ -330,16 +330,16 @@ TEST_CASE(a_new_enc_centre_after_zero_moves_no_deflection)
     fresh();
     encoder_on();
     to_rudder();
-    reading(-(int)CENTRE_COUNT + 10);           /* count 10 */
+    reading(-(int)CENTER_COUNT + 10);           /* count 10 */
     press(RUD_C_ZERO);
-    reading(-(int)CENTRE_COUNT - 20);           /* count 4076 */
+    reading(-(int)CENTER_COUNT - 20);           /* count 4076 */
     CHECK(rudder_defl(&d));
     CHECK_NEAR(d, -30.0f * 360.0f / 4096.0f, 1e-3f);
 }
 
 /* A STOP (servo_screen_cancel_arm()) on RUDDER takes the value out of
  * LIVE: a position the buttons or the knob posted and not yet taken is
- * dropped, and 1000us, CENTRE, 2000us and the knob post nothing until
+ * dropped, and 1000us, CENTER, 2000us and the knob post nothing until
  * the bench is ARMED again. */
 TEST_CASE(a_stop_refuses_the_buttons_and_the_knob)
 {
@@ -349,11 +349,11 @@ TEST_CASE(a_stop_refuses_the_buttons_and_the_knob)
     servo_screen_cancel_arm();
     servo_cmd_t c = taken();
     CHECK(c.kind != SERVO_CMD_POSITION);
-    static const rudder_ctl_t k[3] = { RUD_C_1000, RUD_C_CENTRE, RUD_C_2000 };
+    static const rudder_ctl_t k[3] = { RUD_C_1000, RUD_C_CENTER, RUD_C_2000 };
     for (int i = 0; i < 3; ++i) {
         press(k[i]);
         c = taken();
-        CHECK(c.kind != SERVO_CMD_POSITION && c.kind != SERVO_CMD_CENTRE);
+        CHECK(c.kind != SERVO_CMD_POSITION && c.kind != SERVO_CMD_CENTER);
     }
     servo_screen_knob_frame();
     servo_screen_knob(0.25f);
@@ -496,7 +496,7 @@ TEST_CASE(the_state_line_names_no_source_stale_and_connected)
     to_rudder();
     CHECK_STR_EQ(rudder_line(1, line, sizeof(line)), "PULSE 1500us");
     CHECK_STR_EQ(rudder_line(2, line, sizeof(line)),
-                 "NO ZERO: FROM THE SENSOR'S CENTRE");
+                 "NO ZERO: FROM THE SENSOR'S CENTER");
     CHECK_STR_EQ(rudder_line(3, line, sizeof(line)), "ARM FIRST");
     CHECK_STR_EQ(rudder_line(4, line, sizeof(line)), "");
     CHECK_STR_EQ(rudder_line(-1, line, sizeof(line)), "");
@@ -641,12 +641,12 @@ static void dropped(void)
     CHECK(!g->have[0]);
     CHECK(!g->have[1]);
     CHECK_STR_EQ(rudder_line(2, line, sizeof(line)),
-                 "NO ZERO: FROM THE SENSOR'S CENTRE");
+                 "NO ZERO: FROM THE SENSOR'S CENTER");
 }
 
 /* A zero and a MAX taken on the AS5600 are dropped when ANGLE SOURCE turns
  * to the IMU, across leaving SERVO and coming back; the IMU's first
- * reading then reads from its own centre, not against the old zero. */
+ * reading then reads from its own center, not against the old zero. */
 TEST_CASE(another_source_drops_the_zero_and_the_max)
 {
     fresh();
@@ -1072,9 +1072,9 @@ TEST_CASE(every_string_fits)
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
         CHECK(ui_text_fits(f, TR(WB_RUDDER), 120, 40, 6));
-        static const ui_text_id_t k_btn[] = { TX_SV_CENTRE_BTN, TX_RUD_ZERO,
+        static const ui_text_id_t k_btn[] = { TX_SV_CENTER_BTN, TX_RUD_ZERO,
                                               TX_RUD_RESET_MAX };
-        static const rudder_ctl_t k_ctl[] = { RUD_C_CENTRE, RUD_C_ZERO,
+        static const rudder_ctl_t k_ctl[] = { RUD_C_CENTER, RUD_C_ZERO,
                                               RUD_C_RESET };
         for (int i = 0; i < 3; ++i) {
             const gfx_rect_t r = rudder_rect(k_ctl[i]);
@@ -1138,7 +1138,7 @@ int main(void)
     RUN(reverse_flips_the_readout_and_keeps_the_zero);
     RUN(the_buttons_drive_1000_1500_2000us_only_while_armed);
     RUN(zero_takes_the_current_angle_and_reset_clears_the_max);
-    RUN(a_new_enc_centre_after_zero_moves_no_deflection);
+    RUN(a_new_enc_center_after_zero_moves_no_deflection);
     RUN(a_stop_refuses_the_buttons_and_the_knob);
     RUN(a_tap_that_slides_off_or_loses_its_release_does_nothing);
     RUN(length_takes_0_or_10_to_500mm_and_refuses_the_gap);

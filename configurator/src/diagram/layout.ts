@@ -27,7 +27,7 @@ export const GAP = 24;
 /** Width of a channel between 2 columns that no wire uses. */
 export const CHANNEL = 32;
 
-export type Columns = { cols: ScenePart[][]; centre: number };
+export type Columns = { cols: ScenePart[][]; center: number };
 
 /**
  * Tracks per gap and per channel, and whether a wire end faces them.
@@ -55,10 +55,10 @@ export type Placement = {
   chans: Array<{ x: number; w: number; lead: number; off: number[] }>;
 };
 
-/** Distance between the centre lines of 2 wires that run side by side. */
+/** Distance between the center lines of 2 wires that run side by side. */
 export const pitch = (a: number, b: number): number => (a + b) / 2 + CLEAR;
 
-/** Centre lines of tracks of the given stroke widths, from the start of their strip. Neighbours keep `CLEAR` edge to edge. */
+/** Center lines of tracks of the given stroke widths, from the start of their strip. Neighbours keep `CLEAR` edge to edge. */
 export function offsets(widths: ReadonlyArray<number>): number[] {
   const out: number[] = [];
   let edge = U - THIN / 2;
@@ -77,7 +77,7 @@ const byOrder = (p: ScenePart, q: ScenePart): number => p.order - q.order || (p.
 const tall = (list: ScenePart[]): number => list.reduce((n, p) => n + up(CAP + p.h), 0);
 
 /**
- * Columns from left to right. The IOmcu column is `centre`. A side has 2
+ * Columns from left to right. The IOmcu column is `center`. A side has 2
  * columns when it holds parts without a wire to the IOmcu column: those
  * stand in the outer column. A part without a wire joins the shorter column.
  *
@@ -87,8 +87,8 @@ const tall = (list: ScenePart[]): number => list.reduce((n, p) => n + up(CAP + p
  * parts then follow each other across the picture in the order of the path.
  */
 export function columnsOf(scene: Scene): Columns {
-  const centre = scene.parts.filter((p) => p.column === 'C').sort(byOrder);
-  const central = new Set(centre.map((p) => p.id));
+  const center = scene.parts.filter((p) => p.column === 'C').sort(byOrder);
+  const central = new Set(center.map((p) => p.id));
   const wired = new Set<string>();
   const near = new Set<string>();
   for (const wire of scene.wires) {
@@ -121,7 +121,7 @@ export function columnsOf(scene: Scene): Columns {
   };
   const left = side('L').reverse().filter((c) => c.length > 0);
   const right = side('R').filter((c) => c.length > 0);
-  return { cols: [...left, ...(centre.length > 0 ? [centre] : []), ...right], centre: left.length };
+  return { cols: [...left, ...(center.length > 0 ? [center] : []), ...right], center: left.length };
 }
 
 /** Sizes without a wire: the first placement, which the router reads for directions only. */
@@ -145,7 +145,7 @@ function room(tracks: ReadonlyArray<number>, ends: boolean, unused: number): num
 }
 
 /**
- * `shifts[c]`: px that column c starts lower than its centred place. The router
+ * `shifts[c]`: px that column c starts lower than its centered place. The router
  * moves a column when a line of it meets a line of the column before it.
  */
 export function place(columns: Columns, sizes: Sizes, shifts: ReadonlyArray<number> = []): Placement {

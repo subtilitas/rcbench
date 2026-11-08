@@ -73,7 +73,7 @@ bool ui_tabs_event(ui_tabs_t *t, const touch_event_t *evt);
  */
 void ui_tabs_cancel(ui_tabs_t *t);
 /**
- * @brief The tabs' labels in the face of ui_tabs_font(), centred in each
+ * @brief The tabs' labels in the face of ui_tabs_font(), centered in each
  *        tab; the selected tab raised in a sunk trough 3px around the row.
  * @param t The tabs.
  * @param c Canvas.

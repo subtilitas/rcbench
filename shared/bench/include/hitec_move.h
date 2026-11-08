@@ -42,7 +42,7 @@
  *      HITEC_LIVE_STALL_PCT of the session's current limit.
  *   3. BACK, on a bind: one move to hitec_live_back(), the bind's message
  *      said; the switch reads OFF from here.
- *   4. CENTRE: 0x1E = 3000, the reset value.
+ *   4. CENTER: 0x1E = 3000, the reset value.
  *   5. REBOOT: 0x46 = 1, HITEC_D_REBOOT_WAIT_MS, and the read of the full
  *      set (hitec_session_run_plan()): the servo starts again with its
  *      stored values.
@@ -82,7 +82,7 @@
  * Edits: while the switch reads ON the draft's NEUTRAL, LEFT END and RIGHT
  * END take edits (hitec_prog_move_edit()), and each edit makes its
  * parameter the followed one.  The 2s hold is the consent CHECK THIS CHANGE
- * asks for: HITEC_RULE_END and HITEC_RULE_CENTRE are confirmed for those
+ * asks for: HITEC_RULE_END and HITEC_RULE_CENTER are confirmed for those
  * edits.  Every hard rule stays: the encoding and the order left end <
  * neutral < right end.
  *
@@ -140,7 +140,7 @@ typedef enum {
     HITEC_MOVE_RUN,      /**< the passes                                 */
     HITEC_MOVE_FIND,     /**< FIND STOP: to the neutral, then the search */
     HITEC_MOVE_BACK,     /**< a bind: the move back                      */
-    HITEC_MOVE_CENTRE,   /**< the end: 0x1E = 3000                       */
+    HITEC_MOVE_CENTER,   /**< the end: 0x1E = 3000                       */
     HITEC_MOVE_REBOOT,   /**< the end: the reboot and the full read      */
     HITEC_MOVE_CHECK,    /**< the end: the loop's set read and compared  */
 } hitec_move_phase_t;
@@ -223,7 +223,7 @@ bool hitec_prog_move_live(const hitec_prog_t *p, uint8_t id);
 
 /**
  * @brief Edit a position the loop follows: hitec_prog_edit() with the hold's
- *        consent for HITEC_RULE_END and HITEC_RULE_CENTRE.  An edit taken
+ *        consent for HITEC_RULE_END and HITEC_RULE_CENTER.  An edit taken
  *        makes @p id the followed parameter.
  *
  * @param p     The programmer.

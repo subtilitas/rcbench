@@ -28,7 +28,7 @@ Pads::
     {"num": "1", ..., "drill": None}       surface mount on F.Cu
     {"num": "", "x": .., "y": .., "shape": "circle", "size": (d, d),
      "drill": d, "type": "np"}              non-plated hole
-    {"num": "1", ..., "drill": 1.0, "offset": (dx, dy)}  drill off centre
+    {"num": "1", ..., "drill": 1.0, "offset": (dx, dy)}  drill off center
 
 Symbol graphics::
 

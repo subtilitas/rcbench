@@ -110,7 +110,7 @@ static void gap_rig(servo_test_cfg_t *c, uint16_t moves)
     c->step_count = 1u;
     c->moves = moves;
     c->enc_on = true;
-    c->enc_centre = ENC_CENTRE_COUNT;
+    c->enc_center = ENC_CENTER_COUNT;
     c->enc_cmd_deg[0] = -400.0f * ENC_DEG_PER_US;
     c->enc_cmd_deg[1] =  400.0f * ENC_DEG_PER_US;
     g.enc_model_on = true;
@@ -130,7 +130,7 @@ static void enc_lost(uint32_t at)
 /* The part answers again at @p at, and every 40ms from there. */
 static void enc_back(uint32_t at)
 {
-    const servo_test_enc_t e = { .valid = true, .raw = ENC_CENTRE_COUNT,
+    const servo_test_enc_t e = { .valid = true, .raw = ENC_CENTER_COUNT,
                                  .taken_ms = at };
     servo_test_encoder(&g.t, &e);
     g.enc_valid = true;

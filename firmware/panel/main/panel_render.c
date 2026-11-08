@@ -234,7 +234,7 @@ static void send_cmd(const panel_cmd_t *in)
     } else if (pc->kind == PANEL_CMD_SERVO
                && (pc->servo.kind == SERVO_CMD_HOLD || pc->servo.ends_sweep)) {
         /*
-         * HOLD, and a finger on the dial or CENTRE that ends a sweep, stop
+         * HOLD, and a finger on the dial or CENTER that ends a sweep, stop
          * a moving servo, so they do not wait either: a sweep being written
          * gives way at once, and one queued before them is dropped as
          * stale.  Each is a drive itself, so it carries the generation it

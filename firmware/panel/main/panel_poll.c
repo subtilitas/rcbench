@@ -95,7 +95,7 @@ static bool poll_bench(bench_state_t *bench)
         /*
          * Not while a surface at the far end is still holding a position and
          * owed a release: the far end would render that old command before the
-         * centre arrived.  servo_link_service() pays the debt every pass, so
+         * center arrived.  servo_link_service() pays the debt every pass, so
          * this holds for one.  A bank armed with no link does not reach this:
          * poll_far_end() stops it on the edge where one answers, as it stops
          * an armed bench on the edge where the link goes.  Nor while the rate

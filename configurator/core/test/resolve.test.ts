@@ -514,9 +514,9 @@ test('an ESC is connected with signal and ground only, under every variant', () 
         for (const id of ['esc', 'escpow', 'stick', 'tap']) {
           const setup = resolve(CATALOGUE, select([id, 'servo'], [], { connection, escPower, servoPower }));
           const where = `${id} ${connection} ${escPower} ${servoPower}`;
-          // Wire 13 is the centre wire, a stub that ends nowhere.
-          const centre = setup.wires.filter((w) => w.a === 'esc.BEC' || w.b === 'esc.BEC');
-          assert.deepEqual(centre.map((w) => [w.n, w.kind, w.b]), [[13, 'stub', null]], where);
+          // Wire 13 is the center wire, a stub that ends nowhere.
+          const center = setup.wires.filter((w) => w.a === 'esc.BEC' || w.b === 'esc.BEC');
+          assert.deepEqual(center.map((w) => [w.n, w.kind, w.b]), [[13, 'stub', null]], where);
           // The pads an ESC lead reaches: signal and GND.
           const pads = setup.wires
             .filter((w) => [w.a, w.b].some((end) => end?.startsWith('esc.')) && [w.a, w.b].some((end) => end?.startsWith('pad.')))

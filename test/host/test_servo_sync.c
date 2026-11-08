@@ -1,7 +1,7 @@
 /*
  * Synchronising two servos on one surface, run against a modelled pair.
  *
- * Under test: the two installation errors (a centre that is off and a throw
+ * Under test: the two installation errors (a center that is off and a throw
  * that is long) are told apart by measuring current at three positions, and
  * the routine says so rather than inventing a correction when there is
  * nothing to find.
@@ -43,7 +43,7 @@ static uint32_t run(servo_sync_t *sy, servo_pair_t *pair, uint32_t budget_ms)
 static float residual(const servo_pair_t *pair, const servo_sync_t *sy,
                       int which)
 {
-    const int32_t c = (int32_t)sy->cfg.centre_us;
+    const int32_t c = (int32_t)sy->cfg.center_us;
     const int32_t d = (int32_t)sy->cfg.deflection_us;
     switch (which) {
     case 1:
@@ -153,15 +153,15 @@ TEST_CASE(the_uncorrected_pair_really_was_fighting)
 }
 
 /*
- * An offset error shows at centre and a travel error does not, which is what
+ * An offset error shows at center and a travel error does not, which is what
  * keeps this from being a two-variable search.
  */
-TEST_CASE(a_pure_offset_error_is_found_at_centre_and_leaves_travel_alone)
+TEST_CASE(a_pure_offset_error_is_found_at_center_and_leaves_travel_alone)
 {
     servo_pair_cfg_t pc;
     servo_pair_defaults(&pc, 1500);
     pc.offset_us = 25;
-    pc.travel    = 1.0f;      /* the throw is right; only the centre is not */
+    pc.travel    = 1.0f;      /* the throw is right; only the center is not */
     servo_pair_t pair;
     servo_pair_init(&pair, &pc);
 
@@ -180,11 +180,11 @@ TEST_CASE(a_pure_offset_error_is_found_at_centre_and_leaves_travel_alone)
 }
 
 /*
- * And the other way round.  A servo whose centre is right but whose throw is
- * long agrees at centre, so the centre stage must find nothing to correct,
+ * And the other way round.  A servo whose center is right but whose throw is
+ * long agrees at center, so the center stage must find nothing to correct,
  * and say so, rather than moving the trim to chase a travel error.
  */
-TEST_CASE(a_pure_travel_error_leaves_the_centre_alone)
+TEST_CASE(a_pure_travel_error_leaves_the_center_alone)
 {
     servo_pair_cfg_t pc;
     servo_pair_defaults(&pc, 1500);
@@ -200,8 +200,8 @@ TEST_CASE(a_pure_travel_error_leaves_the_centre_alone)
     run(&sy, &pair, 300000);
 
     /*
-     * The centre scan is not flat even though the centre is right: moving B
-     * away from agreement is what the scan does, so a correct centre shows as
+     * The center scan is not flat even though the center is right: moving B
+     * away from agreement is what the scan does, so a correct center shows as
      * a clean minimum at zero correction rather than as no minimum at all.
      * That is the difference between "measured, and nothing to change" and
      * "could not measure", and only the second is a fault.
@@ -209,7 +209,7 @@ TEST_CASE(a_pure_travel_error_leaves_the_centre_alone)
     CHECK_EQ(sy.state, SERVO_SYNC_DONE);
     CHECK(sy.trim_us > -3 && sy.trim_us < 3);
 
-    /* And the travel error, which centre could not see, is corrected: a
+    /* And the travel error, which center could not see, is corrected: a
      * throw 8% long must be commanded 300 / 1.08 = 278us. */
     CHECK(sy.travel_hi_us > 268 && sy.travel_hi_us < 288);
     CHECK(sy.travel_lo_us > 268 && sy.travel_lo_us < 288);
@@ -238,7 +238,7 @@ TEST_CASE(an_already_synchronised_pair_is_left_alone)
     CHECK(sy.trim_us > -3 && sy.trim_us < 3);
     CHECK(sy.travel_hi_us > 295 && sy.travel_hi_us < 305);
     CHECK(sy.travel_lo_us > 295 && sy.travel_lo_us < 305);
-    /* Nothing to gain, and it says so: the best and worst of the centre scan
+    /* Nothing to gain, and it says so: the best and worst of the center scan
      * differ only by what moving B away from agreement costs. */
     CHECK(residual(&pair, &sy, 0) < 3.0f);
 }
@@ -471,8 +471,8 @@ int main(void)
     RUN(the_uncorrected_pair_really_was_fighting);
     RUN(a_slow_pair_is_measured_after_it_arrives_not_while_it_travels);
     RUN(after_the_search_the_pair_barely_disagree_anywhere);
-    RUN(a_pure_offset_error_is_found_at_centre_and_leaves_travel_alone);
-    RUN(a_pure_travel_error_leaves_the_centre_alone);
+    RUN(a_pure_offset_error_is_found_at_center_and_leaves_travel_alone);
+    RUN(a_pure_travel_error_leaves_the_center_alone);
     RUN(an_already_synchronised_pair_is_left_alone);
     RUN(a_sensor_that_cannot_see_the_fight_says_so);
     RUN(the_two_ends_get_their_own_corrections);

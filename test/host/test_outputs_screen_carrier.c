@@ -28,7 +28,7 @@ static void fresh_carrier(void)
     ui_board_set(RBMOD);
 }
 
-/* Centre of the grid cell at position @p pos (PWM01 is 0). */
+/* Center of the grid cell at position @p pos (PWM01 is 0). */
 static void cell_at_pos(int pos, int *x, int *y)
 {
     const int col = pos / GRID_ROWS, row = pos % GRID_ROWS;

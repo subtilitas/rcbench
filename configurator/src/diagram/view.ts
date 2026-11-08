@@ -36,7 +36,7 @@ export function pan(v: ViewT, dx: number, dy: number, size: Size, max: number): 
 }
 
 /** Moves the point (cx, cy) of the picture to the middle of the box, as far as the edges allow. */
-export function centreOn(v: ViewT, cx: number, cy: number, size: Size, max: number): ViewT {
+export function centerOn(v: ViewT, cx: number, cy: number, size: Size, max: number): ViewT {
   return clamp({ k: v.k, x: size.w / 2 - cx * v.k, y: size.h / 2 - cy * v.k }, size, max);
 }
 

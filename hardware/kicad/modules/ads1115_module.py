@@ -9,12 +9,12 @@ photo then gives the outline as 28.0 x 16.9mm, matching the drawing.
 Positions are within about 0.2mm (estimate; one vendor photo, no board in
 hand). Corners rounded, radius about 1.0mm (photo).
 
-Results: 10 holes at 2.54mm, row centred on the board width (within
+Results: 10 holes at 2.54mm, row centered on the board width (within
 0.1mm), 15.1mm below the top edge (1.9mm above the bottom edge). Two
 mounting holes at the top corners, 2.50mm below the top edge, on the same
 x as header holes 1 and 10 (22.87mm apart in the photo, 22.86mm on the
 grid). Mounting hole: white opening about 2.4mm, plated ring about 3.0mm;
-drawn 2.5mm on F.Fab only. Chip: ADS1115 in VSSOP-10 (3 x 3mm body), centre
+drawn 2.5mm on F.Fab only. Chip: ADS1115 in VSSOP-10 (3 x 3mm body), center
 at (21.98, 7.34)mm, leads left and right, pin 1 at the top left (dot).
 Above pads 1-6 sit 6 vertical 0805 parts (caps on VDD/GND, 10kΩ "103"
 pull-ups on SCL SDA ADDR ALRT); one horizontal cap below the first two, one

@@ -141,14 +141,14 @@ float servo_sim_step(servo_sim_t *s, uint16_t cmd_us, uint32_t now_ms)
 
 /* ------------------------------------------ two servos on one surface */
 
-void servo_pair_defaults(servo_pair_cfg_t *cfg, uint16_t centre_us)
+void servo_pair_defaults(servo_pair_cfg_t *cfg, uint16_t center_us)
 {
     if (cfg == NULL) {
         return;
     }
     memset(cfg, 0, sizeof(*cfg));
-    cfg->centre_us      = centre_us;
-    cfg->offset_us      = 18;     /* B's centre out by about 1.6 degrees */
+    cfg->center_us      = center_us;
+    cfg->offset_us      = 18;     /* B's center out by about 1.6 degrees */
     cfg->travel         = 1.06f;  /* and its throw 6% long */
     cfg->free_a         = 0.24f;  /* two servos, free */
     cfg->fight_a_per_us = 0.011f;
@@ -165,8 +165,8 @@ void servo_pair_init(servo_pair_t *p, const servo_pair_cfg_t *cfg)
     memset(p, 0, sizeof(*p));
     p->cfg      = *cfg;
     p->seed     = 0x2B0DDA7Au;
-    p->pos_a_us = (float)cfg->centre_us;
-    p->pos_b_us = (float)cfg->centre_us;
+    p->pos_a_us = (float)cfg->center_us;
+    p->pos_b_us = (float)cfg->center_us;
 }
 
 float servo_pair_disagreement(const servo_pair_t *p, uint16_t cmd_a_us,
@@ -175,15 +175,15 @@ float servo_pair_disagreement(const servo_pair_t *p, uint16_t cmd_a_us,
     if (p == NULL) {
         return 0.0f;
     }
-    const float centre = (float)p->cfg.centre_us;
+    const float center = (float)p->cfg.center_us;
     /*
      * Where each servo holds the surface.  A is the reference only because
      * there is nothing else to be right against: what matters is the
      * difference, which the surface absorbs.
      */
     const float a = (float)cmd_a_us;
-    const float b = centre + (float)p->cfg.offset_us
-                    + p->cfg.travel * ((float)cmd_b_us - centre);
+    const float b = center + (float)p->cfg.offset_us
+                    + p->cfg.travel * ((float)cmd_b_us - center);
     const float d = a - b;
     return d < 0.0f ? -d : d;
 }

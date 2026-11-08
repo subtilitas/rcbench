@@ -22,7 +22,7 @@
 
 /* ------------------------------------------------- the output encoder */
 
-/* The DUT page's rows: AS5600 on row 2 and ENC CENTRE on row 3 of the left
+/* The DUT page's rows: AS5600 on row 2 and ENC CENTER on row 3 of the left
  * column. */
 TEST_CASE(the_encoders_angle_replaces_the_dashes_in_the_measured_row)
 {
@@ -39,9 +39,9 @@ TEST_CASE(the_encoders_angle_replaces_the_dashes_in_the_measured_row)
     scr->render(&cv, 0);
     CHECK_EQ(memcmp(none, fb, (size_t)W * H * sizeof(gfx_color_t)), 0);
 
-    /* On: the MEASURED row shows the angle from the centre count. */
+    /* On: the MEASURED row shows the angle from the center count. */
     settings_set(SET_ENC_EN, 1.0f);
-    settings_set(SET_ENC_CENTRE, 3000.0f);
+    settings_set(SET_ENC_CENTER, 3000.0f);
     servo_invalidate();
     servo_screen_encoder(&e);
     scr->render(&cv, 0);

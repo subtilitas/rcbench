@@ -23,7 +23,7 @@
 typedef struct {
     /** @brief Where the linkage binds, as a pulse width.
      *
-     * Two values: a surface's stops are not symmetric about the servo's centre
+     * Two values: a surface's stops are not symmetric about the servo's center
      * once a horn and a pushrod are involved, which is why the limit is
      * measured per installation. */
     uint16_t stop_lo_us;
@@ -115,13 +115,13 @@ float servo_sim_step(servo_sim_t *s, uint16_t cmd_us, uint32_t now_ms);
  *
  * The model renders two facts: disagreement costs current and agreement does
  * not, and the disagreement is settled mechanically rather than reported.
- * Servo B's centre and its throw are each wrong by a configurable amount,
+ * Servo B's center and its throw are each wrong by a configurable amount,
  * the installation error the synchroniser measures.  The two errors are
  * separate parameters because the synchroniser separates them.
  */
 typedef struct {
-    uint16_t centre_us;
-    /** @brief How far servo B's real centre sits from where it is commanded. */
+    uint16_t center_us; /**< the center both servos are commanded to, us */
+    /** @brief How far servo B's real center sits from where it is commanded. */
     int16_t  offset_us;
     /** @brief B's real throw as a multiple of what it is commanded. 1.0 is
      *         right. */
@@ -151,11 +151,11 @@ typedef struct {
  * @brief Defaults for two servos on one surface.
  *
  * @param cfg       Configuration to fill.
- * @param centre_us Centre pulse width, us.
+ * @param center_us Center pulse width, us.
  */
-void servo_pair_defaults(servo_pair_cfg_t *cfg, uint16_t centre_us);
+void servo_pair_defaults(servo_pair_cfg_t *cfg, uint16_t center_us);
 /**
- * @brief Start the two-servo model with both servos at the centre.
+ * @brief Start the two-servo model with both servos at the center.
  *
  * @param p   Model state to initialise.
  * @param cfg Configuration to copy.

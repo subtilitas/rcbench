@@ -339,7 +339,7 @@ TEST_CASE(the_drawing_is_drawn_inside_its_box_with_every_pad_ring)
     board_drawing_render(&c, &d, 0, 0, CW, CH, hole);
     CHECK_EQ(guard_canvas_touched(&g), 0);
 
-    /* Every pad: its hole at its centre, its ring beside it. */
+    /* Every pad: its hole at its center, its ring beside it. */
     for (uint8_t i = 0; i < d.pads; ++i) {
         link_draw_pad_t p;
         CHECK(link_drawing_pad_at(&d, i, &p));

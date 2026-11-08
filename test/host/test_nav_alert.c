@@ -461,7 +461,7 @@ static int alert_ink(int y0, int y1)
 }
 
 /* An alert longer than a row's 97 cells takes two rows of 20px from 2px
- * under the band's top edge; one that fits a row is centred in the band. */
+ * under the band's top edge; one that fits a row is centered in the band. */
 TEST_CASE(a_long_alert_draws_on_two_rows)
 {
     fresh();

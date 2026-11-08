@@ -326,7 +326,7 @@ static inline unsigned save_face(void)
  * The cases below put finger frames through the tracker and the router
  * (touch_feed.h), one report every REPORT_S with the frame's tick after it,
  * and compare every setting before and after.  Coordinates are the
- * panel's.  XL is on a row's label, XM and XP are the centres of the "-"
+ * panel's.  XL is on a row's label, XM and XP are the centers of the "-"
  * and the "+" column.
  */
 #define REPORT_S 0.010f

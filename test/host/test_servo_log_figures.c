@@ -21,11 +21,11 @@ TEST_CASE(the_log_takes_the_pulse_the_screen_commands)
     uint16_t us = 0u;
     CHECK(servo_screen_log_pulse(&us));
     CHECK_EQ(us, servo_screen_commanded());
-    const uint16_t centre = us;
+    const uint16_t center = us;
     servo_screen_set_commanded(30.0f);
     CHECK(servo_screen_log_pulse(&us));
     CHECK_EQ(us, servo_screen_commanded());
-    CHECK(us != centre);
+    CHECK(us != center);
     CHECK(!servo_screen_log_pulse(NULL));
 }
 
@@ -39,10 +39,10 @@ TEST_CASE(the_log_takes_the_encoders_angle_only_while_measured_shows_it)
     servo_screen_encoder(&e);
     CHECK(!servo_screen_log_angle(&deg));
 
-    /* On, with a reading: the angle from the centre count, 100 counts of
+    /* On, with a reading: the angle from the center count, 100 counts of
      * 360/4096deg. */
     settings_set(SET_ENC_EN, 1.0f);
-    settings_set(SET_ENC_CENTRE, 3000.0f);
+    settings_set(SET_ENC_CENTER, 3000.0f);
     servo_screen_encoder(&e);
     CHECK(servo_screen_log_angle(&deg));
     CHECK_NEAR(deg, 100.0f * 360.0f / 4096.0f, 0.01f);

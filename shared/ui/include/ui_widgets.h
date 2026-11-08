@@ -34,7 +34,7 @@ void ui_panel_header(gfx_canvas_t *c, gfx_rect_t r, const char *title,
  * @brief Filled rounded button, its label in UI_FONT_LABEL.
  * @param c       Canvas.
  * @param r       The button.
- * @param label   Its label, centred, or NULL for none.
+ * @param label   Its label, centered, or NULL for none.
  * @param fill    Its colour while enabled.
  * @param pressed Lightens the fill.
  * @param enabled False draws it in ui_button_off_fill() with a dim edge and
@@ -49,7 +49,7 @@ void ui_button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
  *        danger colour.
  * @param c       Canvas.
  * @param r       The button.
- * @param label   Its label, centred, or NULL for none.
+ * @param label   Its label, centered, or NULL for none.
  * @param fill    Its colour while enabled.
  * @param ink     The label's colour while enabled; disabled it is faint.
  * @param pressed Lightens the fill.
@@ -74,7 +74,7 @@ gfx_color_t ui_button_off_fill(void);
  * @brief ui_button() with its label in face @p f.
  * @param c       Canvas.
  * @param r       The button.
- * @param label   Its label, centred, or NULL for none.
+ * @param label   Its label, centered, or NULL for none.
  * @param fill    Its colour.
  * @param pressed Lightens the fill.
  * @param enabled False dims it.
@@ -164,9 +164,9 @@ typedef struct {
  * @brief A tile of a grid that opens what it names: the menu's, and
  *        SETUP's.
  *
- * A rounded surface, @p icon in a square box placed by @p look, centred in
+ * A rounded surface, @p icon in a square box placed by @p look, centered in
  * x, the name under it in the text colour and the line under the name in
- * the dim one, both centred and clipped to the tile less UI_TILE_PAD px on
+ * the dim one, both centered and clipped to the tile less UI_TILE_PAD px on
  * either side.  A line wider than that breaks at the last space that fits
  * onto a second row look->line_pitch px lower, where line_pitch is not 0
  * and that row ends inside the tile; a line with no such space or no such
@@ -184,8 +184,8 @@ void ui_tile(gfx_canvas_t *c, gfx_rect_t r, const ui_tile_look_t *look,
              ui_icon_fn icon, const char *name, const char *line,
              bool pressed);
 
-/** Small status pill: a filled dot, then a label UI_PILL_INSET px from
- *  the pill's left edge, the dot centred half that from it. */
+/** @brief Small status pill: a filled dot, then a label UI_PILL_INSET px from
+ *  the pill's left edge, the dot centered half that from it. */
 #define UI_PILL_INSET 24
 /**
  * @brief A status pill in the label face, its label UI_PILL_INSET px in.
@@ -200,14 +200,14 @@ void ui_pill(gfx_canvas_t *c, gfx_rect_t r, const char *label,
 
 /**
  * @brief ui_pill() with the label in face @p f, @p inset px from the left
- *        edge and centred in the pill's height.
+ *        edge and centered in the pill's height.
  * @param c     Canvas.
  * @param r     The pill.
  * @param label Its label, or NULL for none.
  * @param dot   The dot's colour.
  * @param fill  The pill's colour.
  * @param inset The label's start from the pill's left edge, in pixels; the
- *              dot is centred half that from it.
+ *              dot is centered half that from it.
  * @param f     The label's face.
  */
 void ui_pill_font(gfx_canvas_t *c, gfx_rect_t r, const char *label,
@@ -313,7 +313,7 @@ void ui_rule(gfx_canvas_t *c, int x, int y, int w, gfx_color_t color);
  * text in the type scale's head face, 20 x 36 (UI_FONT_TAG), when the text
  * fits; a shorter one, and a text that does not fit, in the 16 x 28 face
  * (UI_FONT_HEAD).  A screen takes the larger face with the row height its
- * own layout gives.  The text is centred in the face's and each row's
+ * own layout gives.  The text is centered in the face's and each row's
  * height.  A face takes 10px before its text and 33px after it for a
  * 7px chevron, 12px and 43px for an 11px one when tall; a row 12px
  * before and after its text.  Each face and row picks its own face: the
@@ -606,7 +606,7 @@ gfx_color_t ui_hold_button_fill(gfx_color_t base, gfx_color_t target,
  * flash shows, and the state it asked for can refuse the next one.
  * @param c       Canvas.
  * @param r       The button.
- * @param label   Its label, centred, or NULL for none.
+ * @param label   Its label, centered, or NULL for none.
  * @param base    The fill with nothing held.
  * @param target  The fill the hold fades to and the flash settles on.
  * @param h       The hold; it keeps where and how the button was drawn,

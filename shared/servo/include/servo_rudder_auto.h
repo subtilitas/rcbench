@@ -26,7 +26,7 @@
  *
  * In detail:
  *
- *   - The read session: the servo held at the bench's PULSE CENTRE for
+ *   - The read session: the servo held at the bench's PULSE CENTER for
  *     SERVO_LIMRUN_RETURN_MS, SAFE asked, CONNECT with its read (phase
  *     READ), for KST the pulse write when PULSE LOWER and PULSE UPPER are
  *     not 1000.0us and 2000.0us, LEAVE, ARMED asked.  A read that is no
@@ -65,7 +65,7 @@
  *     the side is measured again.  Stayed a second time, the run ends as
  *     FAIL (SERVO_RAUTO_WHY_MAPPING).  The register found moves that side,
  *     the other one the other side.
- *   - A write session: the servo held at PULSE CENTRE for
+ *   - A write session: the servo held at PULSE CENTER for
  *     SERVO_LIMRUN_RETURN_MS, SAFE asked, CONNECT, the write, LEAVE, ARMED
  *     asked, the written side measured.  A CONNECT that reads other values
  *     than those the run left ends it (SERVO_RAUTO_WHY_PROG); a write that
@@ -154,7 +154,7 @@ typedef struct {
     uint8_t  margin_pct;      /**< 0 to SERVO_RAUTO_MARGIN_MAX */
     uint16_t tol_ddeg;        /**< 0.1° */
     uint8_t  family;          /**< servo_rauto_family_t */
-    uint16_t centre_us;       /**< the bench's PULSE CENTRE */
+    uint16_t center_us;       /**< the bench's PULSE CENTER */
     float    len_mm;          /**< 0 for none: the report in ° only */
     /* For the report only. */
     char     dut[24];         /**< DUT NAME */
@@ -312,7 +312,7 @@ void servo_rauto_init(servo_rauto_t *r);
  * @param now_ms Start time, ms.
  * @return false for a target outside 0.1 to 90°, a margin above the
  *          maximum, a tolerance outside its range, or RUNNING; also for
- *          NULL, a family not in servo_rauto_family_t, and a centre not
+ *          NULL, a family not in servo_rauto_family_t, and a center not
  *          strictly between 1000us and 2000us.
  */
 bool servo_rauto_start(servo_rauto_t *r, const servo_rauto_cfg_t *cfg, uint32_t now_ms);

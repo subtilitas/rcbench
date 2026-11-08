@@ -53,7 +53,7 @@ static void ha_setup(bool classic)
     hl.last_raw = -100;
     hl.enc = true;
     settings_set(SET_ENC_EN, 1.0f);
-    settings_set(SET_ENC_CENTRE, (float)HL_CENTRE_COUNT);
+    settings_set(SET_ENC_CENTER, (float)HL_CENTER_COUNT);
     hl_settings(true, false);                /* SERVO: HITEC */
     (void)home_tag();
     hl_ms(200u);

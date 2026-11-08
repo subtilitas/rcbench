@@ -65,7 +65,7 @@ static void send(touch_event_type_t type, int x, int y)
     view()->event(&e);
 }
 
-/** @brief A press and a release at the centre of @p r. */
+/** @brief A press and a release at the center of @p r. */
 static void press(gfx_rect_t r)
 {
     send(TOUCH_EVENT_DOWN, r.x + r.w / 2, r.y + r.h / 2);

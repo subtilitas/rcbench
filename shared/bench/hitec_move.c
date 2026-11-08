@@ -111,7 +111,7 @@ static void hard_end(hitec_prog_t *p, hitec_ses_t r)
 static void end_begin(hitec_prog_t *p)
 {
     hitec_live_find_abort(&p->mv.fs);
-    p->mv.phase = (uint8_t)HITEC_MOVE_CENTRE;
+    p->mv.phase = (uint8_t)HITEC_MOVE_CENTER;
     (void)runs(p, hitec_session_move(&p->ses, HITEC_LIVE_D_T_MID, false));
 }
 
@@ -486,7 +486,7 @@ void hpm_done(hitec_prog_t *p, hitec_ses_t r)
     case HITEC_MOVE_BACK:
         end_begin(p);
         break;
-    case HITEC_MOVE_CENTRE:
+    case HITEC_MOVE_CENTER:
         reboot(p);
         break;
     case HITEC_MOVE_REBOOT:
@@ -661,7 +661,7 @@ hitec_prog_edit_t hitec_prog_move_edit(hitec_prog_t *p, uint8_t id,
                                        int32_t value)
 {
     const uint16_t consent = (uint16_t)(HITEC_RULE_BIT(HITEC_RULE_END)
-                                        | HITEC_RULE_BIT(HITEC_RULE_CENTRE));
+                                        | HITEC_RULE_BIT(HITEC_RULE_CENTER));
     hitec_prog_edit_t e;
 
     if (!hpm_edit_ok(p, id)) {

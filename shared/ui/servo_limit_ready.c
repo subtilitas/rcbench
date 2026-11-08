@@ -57,7 +57,7 @@ enum {
     LK_5V,          /**< the carrier's PROG 5V off                     */
     LK_RAIL,        /**< the servo rail under 3.0V or not read         */
     LK_PWM,         /**< the port's pulse off, or a session holding it */
-    LK_CENTRE,      /**< PULSE CENTRE not between PULSE MIN and MAX    */
+    LK_CENTER,      /**< PULSE CENTER not between PULSE MIN and MAX    */
     LK_HITEC,       /**< a Hitec model's travel past PULSE MIN or MAX  */
     LK_PROG,        /**< the programmer, and the supply it switches    */
     LK_PD_LOW,      /**< the PD mini set under 4.8V: lim_prog_why()
@@ -136,8 +136,8 @@ static const char *check(int k)
         return (s.drive_target != 0u
                 && (!s.drive_pwm || prog_reg_servo_holds()))
                    ? lim_pwm_why() : NULL;
-    case LK_CENTRE:
-        return !(s.min_us < s.centre_us && s.centre_us < s.max_us)
+    case LK_CENTER:
+        return !(s.min_us < s.center_us && s.center_us < s.max_us)
                    ? TR(SV_LIM_REFUSED) : NULL;
     case LK_HITEC: {
         /* A Hitec servo is searched out to its model's full travel: PULSE

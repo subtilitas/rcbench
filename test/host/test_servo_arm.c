@@ -45,7 +45,7 @@
 #define P(y)        (UI_BAND_H + (y))
 #define SHAFT_X     SV_SHAFT_X
 #define SHAFT_Y     P(SV_SHAFT_Y)
-#define CENTRE_X    SV_CENTRE_X
+#define CENTER_X    SV_CENTER_X
 #define SWEEP_X     SV_SWEEP_X
 #define RELEASE_X   SV_RELEASE_X
 #define BTN_Y       P(SV_BTN_Y)
@@ -151,7 +151,7 @@ static void drag(float deg, float to)
 
 /*
  * ARM held until it posts, and the bench's answer.  The range the arm
- * carries is kept: the panel configures the channels from it and centres
+ * carries is kept: the panel configures the channels from it and centers
  * them before it arms.
  */
 static uint16_t g_min_us, g_max_us;
@@ -253,7 +253,7 @@ static void choose_narrow(void)
 }
 
 /* Every position control at once, each refused: the dial pressed and
- * dragged, the knob turned both ways, CENTRE, SWEEP and the hook the
+ * dragged, the knob turned both ways, CENTER, SWEEP and the hook the
  * application has.  True when none posted or moved anything. */
 static bool every_input_is_refused(void)
 {
@@ -268,7 +268,7 @@ static bool every_input_is_refused(void)
     quiet = quiet && took().kind == SERVO_CMD_NONE;
     knob(-0.5f);
     quiet = quiet && took().kind == SERVO_CMD_NONE;
-    feed_tap(FEED_LONE, CENTRE_X, BTN_Y);
+    feed_tap(FEED_LONE, CENTER_X, BTN_Y);
     quiet = quiet && took().kind == SERVO_CMD_NONE;
     feed_tap(FEED_LONE, SWEEP_X, BTN_Y);
     quiet = quiet && took().kind == SERVO_CMD_NONE;
@@ -284,7 +284,7 @@ static bool every_input_is_refused(void)
 
 /* ------------------------------------------------------------- refusals */
 
-/* A bench never armed: the value is the centre it starts at, and stays. */
+/* A bench never armed: the value is the center it starts at, and stays. */
 TEST_CASE(no_position_control_moves_the_value_before_the_first_arm)
 {
     fresh();
@@ -432,7 +432,7 @@ TEST_CASE(nothing_moves_the_value_under_a_disarm_not_yet_taken)
     feed_tap(FEED_LONE, ARM_X, ARM_Y);  /* DISARM, not yet taken */
     drag(-60.0f, -30.0f);
     knob(0.2f);
-    feed_tap(FEED_LONE, CENTRE_X, BTN_Y);
+    feed_tap(FEED_LONE, CENTER_X, BTN_Y);
     CHECK_EQ(servo_screen_commanded(), driven);
     CHECK_EQ(took().kind, SERVO_CMD_DISARM);
     CHECK_EQ(took().kind, SERVO_CMD_NONE);
@@ -458,7 +458,7 @@ TEST_CASE(nothing_moves_the_value_between_a_disarm_and_its_answer)
         servo_screen_set_armed(true);           /* not yet answered */
         drag(-60.0f, -30.0f);
         knob(0.2f);
-        feed_tap(FEED_LONE, CENTRE_X, BTN_Y);
+        feed_tap(FEED_LONE, CENTER_X, BTN_Y);
         feed_tap(FEED_LONE, SWEEP_X, BTN_Y);
         CHECK_EQ(took().kind, SERVO_CMD_NONE);
         CHECK_EQ(servo_screen_commanded(), driven);
@@ -525,7 +525,7 @@ TEST_CASE(an_arm_on_a_narrow_servo_sets_the_value_to_760_us)
 
 /* The rest is the midpoint of the endpoints, which TRIM does not move: a
  * trimmed servo arms at 1500us, and a position at 0 degrees is 1520us. */
-TEST_CASE(an_arm_sets_the_rest_and_not_the_trimmed_centre)
+TEST_CASE(an_arm_sets_the_rest_and_not_the_trimmed_center)
 {
     fresh();
     open_settings();
@@ -799,7 +799,7 @@ static unsigned kinds_over(int n)
     return seen;
 }
 
-#define DRIVES ((1u << SERVO_CMD_POSITION) | (1u << SERVO_CMD_CENTRE) \
+#define DRIVES ((1u << SERVO_CMD_POSITION) | (1u << SERVO_CMD_CENTER) \
                 | (1u << SERVO_CMD_SWEEP) | (1u << SERVO_CMD_HOLD))
 
 /*
@@ -891,34 +891,34 @@ static int arm_first_px(void)
     return n;
 }
 
-/* CENTRE is dimmed with SWEEP while the bench is disarmed, the horn is
- * drawn dimmed and the left card says ARM FIRST; armed, CENTRE is the OK
+/* CENTER is dimmed with SWEEP while the bench is disarmed, the horn is
+ * drawn dimmed and the left card says ARM FIRST; armed, CENTER is the OK
  * green, the horn the accent, and the line is gone. */
-TEST_CASE(centre_and_the_horn_are_dimmed_while_disarmed)
+TEST_CASE(center_and_the_horn_are_dimmed_while_disarmed)
 {
     fresh();
     picture(fb);
     const gfx_color_t accent = ui_theme_color(UI_C_ACCENT);
-    /* Inside CENTRE, clear of its label; and on the horn's boss. */
-    CHECK(px(CENTRE_X - 36, BTN_Y - 10) != ui_theme_color(UI_C_OK));
+    /* Inside CENTER, clear of its label; and on the horn's boss. */
+    CHECK(px(CENTER_X - 36, BTN_Y - 10) != ui_theme_color(UI_C_OK));
     CHECK(px(SHAFT_X + 22, SHAFT_Y) != accent);
     CHECK(arm_first_px() > 0);
     CHECK(arm());
     frames(UI_HOLD_FLASH_MS / 10);
     picture(fb);
-    CHECK_EQ(px(CENTRE_X - 36, BTN_Y - 10), ui_theme_color(UI_C_OK));
+    CHECK_EQ(px(CENTER_X - 36, BTN_Y - 10), ui_theme_color(UI_C_OK));
     CHECK_EQ(px(SHAFT_X + 22, SHAFT_Y), accent);
     CHECK_EQ(arm_first_px(), 0);
     CHECK(disarm());
     picture(fb);
-    CHECK(px(CENTRE_X - 36, BTN_Y - 10) != ui_theme_color(UI_C_OK));
+    CHECK(px(CENTER_X - 36, BTN_Y - 10) != ui_theme_color(UI_C_OK));
     CHECK(px(SHAFT_X + 22, SHAFT_Y) != accent);
     CHECK(arm_first_px() > 0);
 }
 
 /* From the DISARM tap to the bench's answer the position controls are
  * refused, and drawn so, before the DISARM is taken and after. */
-TEST_CASE(centre_and_the_horn_are_dimmed_from_the_disarm_tap_to_its_answer)
+TEST_CASE(center_and_the_horn_are_dimmed_from_the_disarm_tap_to_its_answer)
 {
     fresh();
     CHECK(arm());
@@ -932,18 +932,18 @@ TEST_CASE(centre_and_the_horn_are_dimmed_from_the_disarm_tap_to_its_answer)
         }
         ui_router_tick(0.026f);
         ui_router_render(&cv, 0);
-        CHECK(px(CENTRE_X - 36, BTN_Y - 10) != ui_theme_color(UI_C_OK));
+        CHECK(px(CENTER_X - 36, BTN_Y - 10) != ui_theme_color(UI_C_OK));
         CHECK(px(SHAFT_X + 22, SHAFT_Y) != accent);
         CHECK(arm_first_px() > 0);
         picture(fb);
-        CHECK(px(CENTRE_X - 36, BTN_Y - 10) != ui_theme_color(UI_C_OK));
+        CHECK(px(CENTER_X - 36, BTN_Y - 10) != ui_theme_color(UI_C_OK));
         CHECK(arm_first_px() > 0);
     }
     servo_screen_set_armed(false);
     CHECK(arm());
     frames(UI_HOLD_FLASH_MS / 10);
     picture(fb);
-    CHECK_EQ(px(CENTRE_X - 36, BTN_Y - 10), ui_theme_color(UI_C_OK));
+    CHECK_EQ(px(CENTER_X - 36, BTN_Y - 10), ui_theme_color(UI_C_OK));
     CHECK_EQ(arm_first_px(), 0);
 }
 
@@ -1006,7 +1006,7 @@ static void choose_profile(int profile)
 static const uint16_t k_rest[PROFILE_COUNT]     = { 1500, 760, 1500 };
 static const uint16_t k_rest_1pct[PROFILE_COUNT] = { 1510, 762, 1510 };
 
-/* An armed bench of @p profile, driven 30 degrees off its centre. */
+/* An armed bench of @p profile, driven 30 degrees off its center. */
 static uint16_t armed_and_driven(int profile)
 {
     fresh();
@@ -1249,7 +1249,7 @@ int main(void)
     RUN(nothing_moves_the_value_between_a_disarm_and_its_answer);
     RUN(an_arm_sets_the_value_to_the_channels_rest);
     RUN(an_arm_on_a_narrow_servo_sets_the_value_to_760_us);
-    RUN(an_arm_sets_the_rest_and_not_the_trimmed_centre);
+    RUN(an_arm_sets_the_rest_and_not_the_trimmed_center);
     RUN(an_arm_after_a_change_of_type_rests_at_the_new_rest);
     RUN(the_first_knob_turn_after_an_arm_starts_from_the_rest);
     RUN(the_first_dial_drag_after_an_arm_starts_from_the_rest);
@@ -1261,8 +1261,8 @@ int main(void)
     RUN(a_sweep_not_yet_sent_is_dropped_by_a_stop);
     RUN(a_disarm_tap_ends_a_sweep_and_a_pause_at_the_tap);
     RUN(a_held_position_is_not_said_again_after_a_disarm_tap);
-    RUN(centre_and_the_horn_are_dimmed_while_disarmed);
-    RUN(centre_and_the_horn_are_dimmed_from_the_disarm_tap_to_its_answer);
+    RUN(center_and_the_horn_are_dimmed_while_disarmed);
+    RUN(center_and_the_horn_are_dimmed_from_the_disarm_tap_to_its_answer);
     RUN(a_disarm_during_the_arm_flash_leaves_the_button_green);
     RUN(release_speed_and_the_settings_work_while_disarmed);
     RUN(release_on_an_armed_bench_sets_the_value_to_the_rest);

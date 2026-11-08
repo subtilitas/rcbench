@@ -264,7 +264,7 @@ TEST_CASE(the_d_failsafe_list_leads_to_its_position_keypad)
     type("1600");
     CHECK_EQ(hitec_panel_editor(), 0);
     CHECK_EQ(hitec_image_reg(hitec_prog_draft(model()), 0x4C), 1600u);
-    /* 1900us asks: far from the centre. */
+    /* 1900us asks: far from the center. */
     tap(row_of(HITEC_PANEL_PROTECT, TR(HP_FAILSAFE)));
     pick(TR(HP_POSITION));
     type("1900");
@@ -646,7 +646,7 @@ TEST_CASE(each_keypad_opens_on_its_value_or_its_range)
     tap(row_of(HITEC_PANEL_TRAVEL, TR(HP_NEUTRAL)));
     CHECK_EQ(hitec_panel_editor(), 1);
     hitec_panel_back();
-    /* A classic CENTRE in quarter microseconds, read and raw. */
+    /* A classic CENTER in quarter microseconds, read and raw. */
     open_en();
     servo_hs5645();
     tap(val(HITEC_PANEL_SERVO, 1, 0));
@@ -656,7 +656,7 @@ TEST_CASE(each_keypad_opens_on_its_value_or_its_range)
     tap(val(HITEC_PANEL_TRAVEL, 0, 0));
     CHECK_EQ(hitec_panel_editor(), 1);
     type("1500.25");
-    CHECK_EQ(hitec_panel_editor(), 3);   /* the centre moves: CHECK */
+    CHECK_EQ(hitec_panel_editor(), 3);   /* the center moves: CHECK */
     hitec_panel_back();
     open_en();
     servo_hs5645();

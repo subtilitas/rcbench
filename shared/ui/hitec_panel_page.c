@@ -88,7 +88,7 @@ static bool classic(void)
 
 /**
  * @brief Whether @p to moves the horn or turns it round: it changes the
- *        direction, the centre or an end point.
+ *        direction, the center or an end point.
  * @param to the image a write leaves
  * @return true when it does
  */
@@ -96,7 +96,7 @@ static bool moves_horn(const hitec_image_t *to)
 {
     static const uint8_t k_moves[] = {
         HITEC_P_D_DIRECTION, HITEC_P_D_NEUTRAL, HITEC_P_D_LEFT_END,
-        HITEC_P_D_RIGHT_END, HITEC_P_C_DIRECTION, HITEC_P_C_CENTRE,
+        HITEC_P_D_RIGHT_END, HITEC_P_C_DIRECTION, HITEC_P_C_CENTER,
         HITEC_P_C_LEFT_END, HITEC_P_C_RIGHT_END,
     };
 

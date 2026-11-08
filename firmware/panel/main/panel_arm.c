@@ -361,10 +361,10 @@ void service_arming(bool link_up)
         throttle_to_zero();
         servo_link_let_go();
         /*
-         * And the surfaces are centred before the arm, not after it.  The far
+         * And the surfaces are centered before the arm, not after it.  The far
          * end applies ARM and stamps every channel's clock before it steps its
          * outputs, so a channel still holding a position at that moment
-         * renders it for as long as the centre takes to arrive.
+         * renders it for as long as the center takes to arrive.
          */
         servo_link_service(link_up);
         facts.release_owed = link_up && servo_link_release_owed();
@@ -719,7 +719,7 @@ void drain_commands(bool link_up, bench_state_t *bench)
                             || (pc.kind == PANEL_CMD_SERVO
                                 && (pc.servo.kind == SERVO_CMD_ARM
                                     || pc.servo.kind == SERVO_CMD_POSITION
-                                    || pc.servo.kind == SERVO_CMD_CENTRE
+                                    || pc.servo.kind == SERVO_CMD_CENTER
                                     || pc.servo.kind == SERVO_CMD_SWEEP
                                     || pc.servo.kind == SERVO_CMD_HOLD));
         /*
@@ -843,7 +843,7 @@ void drain_commands(bool link_up, bench_state_t *bench)
              *
              * The debt is not voided.  A binding writes the roles and the
              * slots and not the commands, so a surface the horn left
-             * somewhere is still there afterwards and still owes a centre.
+             * somewhere is still there afterwards and still owes a center.
              * The release goes to whatever is a surface under the new
              * binding: a channel this binding turned into a motor carries the
              * rest its new role brought with it, and a servo horn writing to

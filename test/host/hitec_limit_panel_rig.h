@@ -15,7 +15,7 @@
  * 900us or 2100us times the end cell of that side, 2.2us a count (cell
  * 0x14 the short pulses on a CW servo); the HS-5645MG's 162 and 194 are
  * 356 and 427us.  With hl.enc the AS5600 reads the surface at 0.06° a us
- * of the horn every 40ms, its centre count 2048.  One frame of the rig is
+ * of the horn every 40ms, its center count 2048.  One frame of the rig is
  * 1ms; the screen ticks every 20ms.
  *
  * SPDX-License-Identifier: MIT
@@ -87,8 +87,8 @@ static inline void hl_drain(void)
     }
 }
 
-/* The AS5600's centre count; the surface's degrees a us of the horn. */
-#define HL_CENTRE_COUNT 2048
+/* The AS5600's center count; the surface's degrees a us of the horn. */
+#define HL_CENTER_COUNT 2048
 #define HL_DEG_PER_US   0.06f
 
 /* Where the horn of a classic servo on the line stands for the pulse. */
@@ -165,7 +165,7 @@ static inline void hl_pd_reading(void)
 static inline void hl_encoder(void)
 {
     const float deg = (hl.sv.position_us - 1500.0f) * HL_DEG_PER_US;
-    const int raw = (HL_CENTRE_COUNT + (int)lroundf(deg * 4096.0f / 360.0f))
+    const int raw = (HL_CENTER_COUNT + (int)lroundf(deg * 4096.0f / 360.0f))
                     & 4095;
     if (abs(raw - hl.last_raw) > 1) {
         hl.last_raw = raw;

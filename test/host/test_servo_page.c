@@ -368,7 +368,7 @@ TEST_CASE(a_sweep_stops_when_nobody_writes_it_and_on_a_disarm)
     CHECK_EQ(reg(LINK_SV_SWEEP), 0u);
 }
 
-/* After its movements a sweep ends at the centre and stays ended while the
+/* After its movements a sweep ends at the center and stays ended while the
  * same curve is repeated; a stop, or another curve, starts afresh. */
 TEST_CASE(a_finished_sweep_is_not_started_again_by_a_repeat)
 {
@@ -384,7 +384,7 @@ TEST_CASE(a_finished_sweep_is_not_started_again_by_a_repeat)
         ++t;
     }
     CHECK_EQ(t, T0 + 750u);
-    CHECK_EQ(o.channel[0].command, SWEEP_CENTRE);
+    CHECK_EQ(o.channel[0].command, SWEEP_CENTER);
     CHECK_EQ(reg(LINK_SV_SWEEP_DONE), 2u);
     CHECK_EQ(reg(LINK_SV_SWEEP), 0u);
 
@@ -466,10 +466,10 @@ TEST_CASE(a_sweep_starts_only_from_all_four_registers)
     CHECK(servo_page_step(&pg, &o, T0 + 70u));
 }
 
-/* A finished sweep the panel still repeats keeps its centre commanded, so
+/* A finished sweep the panel still repeats keeps its center commanded, so
  * a slow SPEED slews the output there instead of a timeout dropping it to
  * rest part way. */
-TEST_CASE(a_finished_sweep_keeps_its_centre_while_repeated)
+TEST_CASE(a_finished_sweep_keeps_its_center_while_repeated)
 {
     fresh(true);
     CHECK(outputs_set_slew(&o, 0, 100u));      /* 100 units a second */
@@ -486,7 +486,7 @@ TEST_CASE(a_finished_sweep_keeps_its_centre_while_repeated)
         CHECK(!outputs_overdue(&o, 0, t));
     }
     CHECK_EQ(reg(LINK_SV_SWEEP), 0u);
-    CHECK_EQ(outputs_actual(&o, 0), SWEEP_CENTRE);
+    CHECK_EQ(outputs_actual(&o, 0), SWEEP_CENTER);
 }
 
 /*
@@ -661,7 +661,7 @@ TEST_CASE(resume_keeps_the_movements_reached)
     CHECK(servo_page_step(&pg, &o, T0 + 1650u + 600u));   /* 1200ms in */
     CHECK(!servo_page_step(&pg, &o, T0 + 1650u + 700u));  /* the third end */
     CHECK_EQ(reg(LINK_SV_SWEEP_DONE), 3u);
-    CHECK_EQ(o.channel[0].command, SWEEP_CENTRE);
+    CHECK_EQ(o.channel[0].command, SWEEP_CENTER);
 }
 
 /*
@@ -778,7 +778,7 @@ TEST_CASE(a_write_after_the_timeout_and_before_the_step_finds_it_stopped)
     CHECK_EQ(say(LINK_SV_HOLD, late - 1u), 0u);
     CHECK_EQ(say(LINK_SV_RESUME, late + 10u), 0u);
 
-    /* A repeat after the timeout starts the curve from the centre. */
+    /* A repeat after the timeout starts the curve from the center. */
     fresh(true);
     CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
     CHECK(servo_page_step(&pg, &o, T0 + 100u));
@@ -790,7 +790,7 @@ TEST_CASE(a_write_after_the_timeout_and_before_the_step_finds_it_stopped)
 /*
  * A sweep with a movement count that has made its last movement has ended,
  * even when the HOLD is served before the pass that ends it: the surfaces
- * go to the centre the sweep ends on and are held there, no phase is kept,
+ * go to the center the sweep ends on and are held there, no phase is kept,
  * and RESUME is refused -- the same as when the pass comes first.  A 1Hz
  * sine with one movement ends 250ms in.
  */
@@ -813,11 +813,11 @@ TEST_CASE(a_hold_after_the_last_movement_finds_the_sweep_ended)
         outputs_step(&o, T0 + 251u);
         CHECK_EQ(reg(LINK_SV_SWEEP_DONE), 1u);
         CHECK_EQ(reg(LINK_SV_SWEEP), LINK_SV_HOLD);
-        CHECK_EQ(o.channel[0].command, SWEEP_CENTRE);
-        CHECK_EQ(outputs_actual(&o, 0), SWEEP_CENTRE);
+        CHECK_EQ(o.channel[0].command, SWEEP_CENTER);
+        CHECK_EQ(outputs_actual(&o, 0), SWEEP_CENTER);
         CHECK_EQ(say(LINK_SV_RESUME, T0 + 300u), LINK_NACK_BAD_VALUE);
-        held(T0 + 300u, T0 + 900u);                /* held at the centre */
-        CHECK_EQ(outputs_actual(&o, 0), SWEEP_CENTRE);
+        held(T0 + 300u, T0 + 900u);                /* held at the center */
+        CHECK_EQ(outputs_actual(&o, 0), SWEEP_CENTER);
     }
 
     /* Just before the last movement it is still running, and a hold keeps
@@ -834,7 +834,7 @@ TEST_CASE(a_hold_after_the_last_movement_finds_the_sweep_ended)
  * A RESUME taken whose acknowledgement the host lost: its retry is refused,
  * and the curve written next carries the resumed sweep on, so a host that
  * starts over writes a stop first; the curve after the stop starts from the
- * centre.
+ * center.
  */
 TEST_CASE(after_a_lost_resume_acknowledgement_a_stop_makes_a_start)
 {
@@ -910,7 +910,7 @@ TEST_CASE(the_host_times_the_far_ends_phase_across_holds)
 
 /*
  * The HOLD's sequence at the panel: a pause kept, then a stop written for
- * CENTRE, then a HOLD of no sweep -- a SWEEP tap whose start a touch loss
+ * CENTER, then a HOLD of no sweep -- a SWEEP tap whose start a touch loss
  * replaced -- leave nothing to resume, so a PAUSED tap writes the curve
  * whole with no alert, not a RESUME the far end would refuse.
  */
@@ -921,7 +921,7 @@ TEST_CASE(a_stop_forgets_the_kept_phase_at_the_panel)
     servo_phase_started(&ph, 1000u);
     (void)servo_phase_held(&ph, 1400u);
     CHECK(servo_phase_resumable(&ph));
-    servo_phase_stopped(&ph);                  /* CENTRE: the stop */
+    servo_phase_stopped(&ph);                  /* CENTER: the stop */
     CHECK(!servo_phase_resumable(&ph));
     /* A HOLD of no sweep holds nothing resumable either. */
     CHECK_EQ(servo_page_resume_plan(true, servo_phase_resumable(&ph),
@@ -1016,7 +1016,7 @@ TEST_CASE(the_curve_over_a_hold_starts_from_its_beginning)
     held(T0 + 100u, T0 + 300u);
     CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0 + 350u), 0u);
     CHECK(servo_page_step(&pg, &o, T0 + 350u));
-    CHECK_EQ(o.channel[0].command, 500u);          /* from the centre */
+    CHECK_EQ(o.channel[0].command, 500u);          /* from the center */
     CHECK_EQ(say(LINK_SV_RESUME, T0 + 400u), LINK_NACK_BAD_VALUE);
 }
 
@@ -1067,7 +1067,7 @@ TEST_CASE(a_hold_ends_on_500_ms_of_silence_across_the_tick_wrap)
     at_tick_0_and_before_the_wrap(a_hold_outlasts_500_ms_of_silence, 270u);
 }
 
-/* A finished sweep's centre is commanded for 500ms after the last repeat
+/* A finished sweep's center is commanded for 500ms after the last repeat
  * and not at 501ms: the surface's stamp follows the pass up to there. */
 static void a_finished_sweep_is_stamped_for_500_ms(uint32_t t0)
 {
@@ -1091,10 +1091,10 @@ static void a_finished_sweep_is_stamped_for_500_ms(uint32_t t0)
     CHECK_EQ(o.channel[0].last_command_ms, tr + OUT_DEFAULT_TIMEOUT_MS);
     CHECK(!servo_page_step(&pg, &o, tr + OUT_DEFAULT_TIMEOUT_MS + 1u));
     CHECK_EQ(o.channel[0].last_command_ms, tr + OUT_DEFAULT_TIMEOUT_MS);
-    CHECK_EQ(o.channel[0].command, SWEEP_CENTRE);
+    CHECK_EQ(o.channel[0].command, SWEEP_CENTER);
 }
 
-TEST_CASE(a_finished_sweep_keeps_its_centre_for_500_ms_across_the_tick_wrap)
+TEST_CASE(a_finished_sweep_keeps_its_center_for_500_ms_across_the_tick_wrap)
 {
     /* The last repeat 250ms before the wrap. */
     at_tick_0_and_before_the_wrap(a_finished_sweep_is_stamped_for_500_ms,
@@ -1153,7 +1153,7 @@ int main(void)
     RUN(a_sweep_stopped_by_silence_leaves_the_surfaces_where_they_are);
     RUN(a_sweep_stopped_by_the_panel_leaves_the_surfaces_where_they_are);
     RUN(a_sweep_starts_only_from_all_four_registers);
-    RUN(a_finished_sweep_keeps_its_centre_while_repeated);
+    RUN(a_finished_sweep_keeps_its_center_while_repeated);
     RUN(hold_keeps_the_surfaces_where_their_outputs_are);
     RUN(a_target_names_the_channels_the_sweep_commands);
     RUN(resume_carries_a_held_sweep_on_in_phase);
@@ -1171,7 +1171,7 @@ int main(void)
     RUN(the_curve_over_a_hold_starts_from_its_beginning);
     RUN(a_sweep_ends_on_500_ms_of_silence_across_the_tick_wrap);
     RUN(a_hold_ends_on_500_ms_of_silence_across_the_tick_wrap);
-    RUN(a_finished_sweep_keeps_its_centre_for_500_ms_across_the_tick_wrap);
+    RUN(a_finished_sweep_keeps_its_center_for_500_ms_across_the_tick_wrap);
     RUN(a_sweep_needs_the_surfaces_armed);
     RUN(a_restored_rate_is_the_rate_before);
     return test_summary("servo_page");

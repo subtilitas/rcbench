@@ -83,7 +83,7 @@
  *        and NEXT while the card holds more than one page.
  *
  * PREV and NEXT are 140 x 48px over DELETE and OPEN.  The tabs are 110 x
- * 40px, 4px apart, centred on the row; ui_tabs draws its trough 3px
+ * 40px, 4px apart, centered on the row; ui_tabs draws its trough 3px
  * round them.  The folder follows from BR_HEAD_X and the card's name ends
  * the row, right-aligned: at BR_HEAD_END with PREV and NEXT showing, at
  * BR_HEAD_FAR without them.  BR_HEAD_X to BR_HEAD_END is 352px, 35 cells

@@ -163,7 +163,7 @@ const parts: Part[] = [
     locked: true,
     selectable: false,
     release: 'released',
-    // Drawn in the centre from `pads`, not as a column module.
+    // Drawn in the center from `pads`, not as a column module.
     slot: { column: 'none', order: 0, sub: same('RP2350-CAN') },
     pins: [],
     variantName: {
@@ -285,7 +285,7 @@ const parts: Part[] = [
     id: 'dcsup',
     name: t('DC supply for the Osoyoo breakout board, 7 to 12V DC (yours)', 'DC-Versorgung für die Osoyoo-Breakout-Platine, 7 bis 12V DC (eigene)'),
     short: t('Osoyoo DC supply', 'Osoyoo-DC-Versorgung'),
-    role: t('Feeds the XL1509 converter of the Osoyoo breakout board, which feeds the V pins while the jumper V Selector sits on 5V. 7 to 12V DC (vendor recommendation; print 7 to 16V, vendor limit 18V, capacitors rated 16V). Above 12V the gate-source voltage of the SI2302 (Q3) exceeds its rating of ±12V (datasheet linked on the product page) at every input: the gate sits at PWRIN through R7, with no clamp. The print of 16V and the vendor limit of 18V are above that. The supply connects at exactly 1 of these: the DC jack, the VIN terminal or the header H4 (pin 2 PWRIN, pin 1 VIN-). At the DC jack: plug 5.5 x 2.1mm, centre positive. The product page names the socket DC005-2.1: the 2.1mm pin follows from that name; the 5.5mm outer diameter is the usual size of that socket family and is not stated by the vendor. The minus of the jack is GND of the board, with no reverse-polarity protection: the SI2302 (Q3) in the lead VIN- protects the VIN terminal and H4 only. The switch OFF/ON is on ON. Current it must deliver: not stated.', 'Speist den XL1509-Wandler der Osoyoo-Breakout-Platine, der die V-Pins speist, solange der Jumper V Selector auf 5V sitzt. 7 bis 12V DC (Herstellerempfehlung; Aufdruck 7 bis 16V, Herstellergrenze 18V, Kondensatoren mit 16V). Über 12V überschreitet die Gate-Source-Spannung des SI2302 (Q3) an jedem Eingang ihren Grenzwert von ±12V (Datenblatt, verlinkt auf der Produktseite): Das Gate liegt über R7 ohne Begrenzung an PWRIN. Der Aufdruck von 16V und die Herstellergrenze von 18V liegen darüber. Die Versorgung wird an genau einem dieser Anschlüsse angeschlossen: an der DC-Buchse, an der VIN-Klemme oder am Pfostenverbinder H4 (Pin 2 PWRIN, Pin 1 VIN-). An der DC-Buchse: Stecker 5,5 x 2,1mm, Mittelstift Plus. Die Produktseite nennt die Buchse DC005-2.1: Der Stift von 2,1mm folgt aus diesem Namen; der Außendurchmesser von 5,5mm ist das übliche Maß dieser Buchsenfamilie und vom Hersteller nicht angegeben. Das Minus der Buchse ist GND der Platine, ohne Verpolschutz: Der SI2302 (Q3) in der Leitung VIN- schützt nur die VIN-Klemme und H4. Der Schalter OFF/ON steht auf ON. Strom, den sie liefern muss: nicht angegeben.'),
+    role: t('Feeds the XL1509 converter of the Osoyoo breakout board, which feeds the V pins while the jumper V Selector sits on 5V. 7 to 12V DC (vendor recommendation; print 7 to 16V, vendor limit 18V, capacitors rated 16V). Above 12V the gate-source voltage of the SI2302 (Q3) exceeds its rating of ±12V (datasheet linked on the product page) at every input: the gate sits at PWRIN through R7, with no clamp. The print of 16V and the vendor limit of 18V are above that. The supply connects at exactly 1 of these: the DC jack, the VIN terminal or the header H4 (pin 2 PWRIN, pin 1 VIN-). At the DC jack: plug 5.5 x 2.1mm, center positive. The product page names the socket DC005-2.1: the 2.1mm pin follows from that name; the 5.5mm outer diameter is the usual size of that socket family and is not stated by the vendor. The minus of the jack is GND of the board, with no reverse-polarity protection: the SI2302 (Q3) in the lead VIN- protects the VIN terminal and H4 only. The switch OFF/ON is on ON. Current it must deliver: not stated.', 'Speist den XL1509-Wandler der Osoyoo-Breakout-Platine, der die V-Pins speist, solange der Jumper V Selector auf 5V sitzt. 7 bis 12V DC (Herstellerempfehlung; Aufdruck 7 bis 16V, Herstellergrenze 18V, Kondensatoren mit 16V). Über 12V überschreitet die Gate-Source-Spannung des SI2302 (Q3) an jedem Eingang ihren Grenzwert von ±12V (Datenblatt, verlinkt auf der Produktseite): Das Gate liegt über R7 ohne Begrenzung an PWRIN. Der Aufdruck von 16V und die Herstellergrenze von 18V liegen darüber. Die Versorgung wird an genau einem dieser Anschlüsse angeschlossen: an der DC-Buchse, an der VIN-Klemme oder am Pfostenverbinder H4 (Pin 2 PWRIN, Pin 1 VIN-). An der DC-Buchse: Stecker 5,5 x 2,1mm, Mittelstift Plus. Die Produktseite nennt die Buchse DC005-2.1: Der Stift von 2,1mm folgt aus diesem Namen; der Außendurchmesser von 5,5mm ist das übliche Maß dieser Buchsenfamilie und vom Hersteller nicht angegeben. Das Minus der Buchse ist GND der Platine, ohne Verpolschutz: Der SI2302 (Q3) in der Leitung VIN- schützt nur die VIN-Klemme und H4. Der Schalter OFF/ON steht auf ON. Strom, den sie liefern muss: nicht angegeben.'),
     locked: false,
     selectable: false,
     modelled: true,
@@ -296,7 +296,7 @@ const parts: Part[] = [
       pin('NEG', same('−'), OSOYOO_SCHEMATIC),
     ],
     buy: [
-      buy(null, t('DC power supply 7 to 12V, plug 5.5 × 2.1mm, centre positive', 'DC-Netzteil 7 bis 12V, Stecker 5,5 × 2,1mm, Mittelstift Plus'), t('Do not exceed 12V. The centre pin is positive. The DC jack has no reverse-polarity protection. Required current: not stated.', 'Überschreite 12V nicht. Der Mittelstift ist Plus. Die DC-Buchse hat keinen Verpolschutz. Erforderlicher Strom: nicht angegeben.')),
+      buy(null, t('DC power supply 7 to 12V, plug 5.5 × 2.1mm, center positive', 'DC-Netzteil 7 bis 12V, Stecker 5,5 × 2,1mm, Mittelstift Plus'), t('Do not exceed 12V. The center pin is positive. The DC jack has no reverse-polarity protection. Required current: not stated.', 'Überschreite 12V nicht. Der Mittelstift ist Plus. Die DC-Buchse hat keinen Verpolschutz. Erforderlicher Strom: nicht angegeben.')),
     ],
     src: OSOYOO_PAGE,
   },
@@ -317,7 +317,7 @@ const parts: Part[] = [
     pins: [
       pin('SIG', t('signal', 'Signal'), guide('wires')),
       pin('SG', t('signal ground', 'Signalmasse'), guide('wires')),
-      pin('BEC', t('centre wire (BEC +)', 'Mittelader (BEC +)'), guide('wires')),
+      pin('BEC', t('center wire (BEC +)', 'Mittelader (BEC +)'), guide('wires')),
       pin('POS', same('+'), guide('wires')),
       pin('NEG', same('−'), guide('wires')),
       pin('A', t('phase A', 'Phase A'), guide('wires')),
@@ -326,7 +326,7 @@ const parts: Part[] = [
     ],
     yours: true,
     buy: [
-      buy(null, t('ESC and motor', 'ESC und Motor'), t('Connect only signal and ground to the bench. Leave the centre wire (BEC +) disconnected.', 'Verbinde nur Signal und Masse mit dem Prüfstand. Lass die Mittelader (BEC +) unbeschaltet.')),
+      buy(null, t('ESC and motor', 'ESC und Motor'), t('Connect only signal and ground to the bench. Leave the center wire (BEC +) disconnected.', 'Verbinde nur Signal und Masse mit dem Prüfstand. Lass die Mittelader (BEC +) unbeschaltet.')),
     ],
     src: guide('also-needed'),
   },
@@ -839,7 +839,7 @@ const STRIP_V = t(
   'V-Pin der S-V-G-Leiste an GPIO 2 (Aufdruck GP2) der Osoyoo-Breakout-Platine',
 );
 const DC_IN_POS = t(
-  'plus of the DC input of the Osoyoo breakout board: the centre pin of the DC jack, the VIN terminal or H4 pin 2 PWRIN, exactly 1 of them',
+  'plus of the DC input of the Osoyoo breakout board: the center pin of the DC jack, the VIN terminal or H4 pin 2 PWRIN, exactly 1 of them',
   'Plus des DC-Eingangs der Osoyoo-Breakout-Platine: Mittelstift der DC-Buchse, VIN-Klemme oder H4 Pin 2 PWRIN, genau einer davon',
 );
 const DC_IN_NEG = t(
@@ -847,7 +847,7 @@ const DC_IN_NEG = t(
   'Minus desselben DC-Eingangs der Osoyoo-Breakout-Platine: VIN- am Minuspol der 2-poligen VIN-Klemme oder an H4 Pin 1, GND am Außenkontakt der DC-Buchse',
 );
 const DC_IN_SIGNAL = t('DC input of the Osoyoo breakout board, 7 to 12V', 'DC-Eingang der Osoyoo-Breakout-Platine, 7 bis 12V');
-const DC_IN_NOTE = t('Exactly 1 input: the DC jack, the VIN terminal or the header H4, never 2 of them. DC jack: type DC005-2.1 (product page), plug 5.5 x 2.1mm (2.1mm from the socket name, 5.5mm the usual size of that socket family, not stated by the vendor), centre positive, no reverse-polarity protection; the SI2302 protects the VIN terminal and H4 only. The switch OFF/ON on ON. USB does not feed the V pins.', 'Genau 1 Eingang: DC-Buchse, VIN-Klemme oder Pfostenverbinder H4, nie 2 davon. DC-Buchse: Typ DC005-2.1 (Produktseite), Stecker 5,5 x 2,1mm (2,1mm aus dem Namen der Buchse, 5,5mm das übliche Maß dieser Buchsenfamilie, vom Hersteller nicht angegeben), Mittelstift Plus, ohne Verpolschutz; der SI2302 schützt nur die VIN-Klemme und H4. Der Schalter OFF/ON auf ON. USB speist die V-Pins nicht.');
+const DC_IN_NOTE = t('Exactly 1 input: the DC jack, the VIN terminal or the header H4, never 2 of them. DC jack: type DC005-2.1 (product page), plug 5.5 x 2.1mm (2.1mm from the socket name, 5.5mm the usual size of that socket family, not stated by the vendor), center positive, no reverse-polarity protection; the SI2302 protects the VIN terminal and H4 only. The switch OFF/ON on ON. USB does not feed the V pins.', 'Genau 1 Eingang: DC-Buchse, VIN-Klemme oder Pfostenverbinder H4, nie 2 davon. DC-Buchse: Typ DC005-2.1 (Produktseite), Stecker 5,5 x 2,1mm (2,1mm aus dem Namen der Buchse, 5,5mm das übliche Maß dieser Buchsenfamilie, vom Hersteller nicht angegeben), Mittelstift Plus, ohne Verpolschutz; der SI2302 schützt nur die VIN-Klemme und H4. Der Schalter OFF/ON auf ON. USB speist die V-Pins nicht.');
 
 const wires: Wire[] = [
   {
@@ -1696,7 +1696,7 @@ const checks: Check[] = [
   },
   {
     id: 'prog-target', kind: 'note',
-    text: t('Servo programmer: the servo is on the programming port, GPIO 13 (pad 17), unless another pin is stored for port 1. On the PROG PORT 1 entry of SETUP → OUTPUTS, set SERVO TESTER to PORT 1: with OUTPUTS as target the programmer is locked. The sweep, CENTRE, RELEASE, the hold and the automatic test then drive the same pin when PORT PWM on that entry is ON; with PORT PWM OFF the port sends no pulse. A slot of OUTPUTS on GPIO 13 leaves the port without a pin.', 'Servoprogrammierung: Das Servo hängt am Programmierport, GPIO 13 (Pad 17), sofern für Port 1 kein anderer Pin gespeichert ist. Auf dem Eintrag PROG-PORT 1 von SETUP → OUTPUTS SERVO-TESTER auf PORT 1 stellen: Mit OUTPUTS als Ziel ist der Programmierer gesperrt. Sweep, ZENTRIEREN, FREIGEBEN, das Halten und der automatische Test treiben dann denselben Pin, wenn PORT-PWM auf diesem Eintrag auf EIN steht; mit PORT-PWM AUS sendet der Port keinen Puls. Ein Slot von OUTPUTS auf GPIO 13 lässt den Port ohne Pin.'),
+    text: t('Servo programmer: the servo is on the programming port, GPIO 13 (pad 17), unless another pin is stored for port 1. On the PROG PORT 1 entry of SETUP → OUTPUTS, set SERVO TESTER to PORT 1: with OUTPUTS as target the programmer is locked. The sweep, CENTER, RELEASE, the hold and the automatic test then drive the same pin when PORT PWM on that entry is ON; with PORT PWM OFF the port sends no pulse. A slot of OUTPUTS on GPIO 13 leaves the port without a pin.', 'Servoprogrammierung: Das Servo hängt am Programmierport, GPIO 13 (Pad 17), sofern für Port 1 kein anderer Pin gespeichert ist. Auf dem Eintrag PROG-PORT 1 von SETUP → OUTPUTS SERVO-TESTER auf PORT 1 stellen: Mit OUTPUTS als Ziel ist der Programmierer gesperrt. Sweep, ZENTRIEREN, FREIGEBEN, das Halten und der automatische Test treiben dann denselben Pin, wenn PORT-PWM auf diesem Eintrag auf EIN steht; mit PORT-PWM AUS sendet der Port keinen Puls. Ein Slot von OUTPUTS auf GPIO 13 lässt den Port ohne Pin.'),
     when: SERVO_PROG, src: repo(PROGRAMMER, 103, "| SERVO TESTER | **OUTPUTS**, **PORT n** (the entry's port) |"),
   },
   {
@@ -1854,7 +1854,7 @@ const safety: Catalogue['safety'] = [
     src: guide('safety'),
   },
   {
-    text: t('<b>Connect only signal and ground</b> from the ESC lead to the IOmcu. Leave the centre wire (BEC +) disconnected.', '<b>Verbinde nur Signal und Masse</b> des ESC-Kabels mit dem IOmcu. Lass die Mittelader (BEC +) unbeschaltet.'),
+    text: t('<b>Connect only signal and ground</b> from the ESC lead to the IOmcu. Leave the center wire (BEC +) disconnected.', '<b>Verbinde nur Signal und Masse</b> des ESC-Kabels mit dem IOmcu. Lass die Mittelader (BEC +) unbeschaltet.'),
     src: guide('safety'),
   },
   {

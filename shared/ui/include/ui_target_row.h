@@ -112,7 +112,7 @@ ui_target_ev_t ui_target_row_event(ui_target_row_t *t,
 void ui_target_row_cancel(ui_target_row_t *t);
 
 /**
- * @brief The row: @p label at the left, @p value centred in its box, both
+ * @brief The row: @p label at the left, @p value centered in its box, both
  *        in ui_target_row_font().
  * @param t      The row.
  * @param c      Canvas.

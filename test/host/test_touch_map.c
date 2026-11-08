@@ -176,7 +176,7 @@ static const touch_map_t k_board_inject = {
     .rotation = TOUCH_ROTATION_0,
 };
 
-TEST_CASE(the_turned_glass_lands_on_the_mirrored_corner_centre_and_band)
+TEST_CASE(the_turned_glass_lands_on_the_mirrored_corner_center_and_band)
 {
     /* Raw glass -> logical pixel, normal and turned: the turn is
      * x' = 1023 - x, y' = 599 - y of the normal pixel. */
@@ -186,7 +186,7 @@ TEST_CASE(the_turned_glass_lands_on_the_mirrored_corner_centre_and_band)
         {    0, 599, 1023,   0,    0, 599 },   /* top-right            */
         { 1023,   0,    0, 599, 1023,   0 },   /* bottom-left          */
         {    0,   0, 1023, 599,    0,   0 },   /* bottom-right         */
-        {  511, 299,  512, 300,  511, 299 },   /* centre               */
+        {  511, 299,  512, 300,  511, 299 },   /* center               */
         {  123, 569,  900,  30,  123, 569 },   /* in the 60px band     */
         {  900,  30,  123, 569,  900,  30 },   /* turned into the band */
         { 1023, 540,    0,  59, 1023, 540 },   /* the band's last row  */
@@ -289,7 +289,7 @@ static int board_frame(bool turned, const touch_point_t *glass, int ng,
 
 TEST_CASE(injected_contacts_keep_their_logical_pixels_in_both_orientations)
 {
-    /* The four corners, the centre, STOP's corner of the band and a point
+    /* The four corners, the center, STOP's corner of the band and a point
      * in the band's middle: what station scripts and the injector's README
      * name. */
     static const int k[][2] = {
@@ -774,7 +774,7 @@ int main(void)
     RUN(out_of_range_input_is_clamped);
     RUN(map_point_updates_in_place);
     RUN(a_1024_by_600_glass_mirrored_lands_on_the_panels_corners);
-    RUN(the_turned_glass_lands_on_the_mirrored_corner_centre_and_band);
+    RUN(the_turned_glass_lands_on_the_mirrored_corner_center_and_band);
     RUN(a_turn_reverses_both_axes_of_the_mapped_area_for_every_map);
     RUN(no_turn_keeps_the_map_and_two_turns_are_none);
     RUN(injected_contacts_keep_their_logical_pixels_in_both_orientations);

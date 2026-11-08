@@ -170,8 +170,8 @@ def circle(cx, cy, r):
     """Closed polygon of a circle, 16 to 32 sides by radius.
 
     Args:
-        cx: Centre x.
-        cy: Centre y.
+        cx: Center x.
+        cy: Center y.
         r: Radius.
 
     Returns:

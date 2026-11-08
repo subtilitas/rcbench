@@ -163,7 +163,7 @@ TEST_CASE(a_name_alone_takes_the_head_face_where_it_fits)
     ink_rows(r, bg, &top, &bottom);
     CHECK(top >= 0);
     CHECK(bottom - top + 1 <= body + 4);
-    /* Centred in the slot's height. */
+    /* Centered in the slot's height. */
     const int above = top - r.y, below = r.y + r.h - 1 - bottom;
     CHECK(abs(above - below) <= 6);
 }

@@ -90,8 +90,8 @@ typedef struct {
 typedef struct {
     uint16_t width_cmm;   /**< outline, along the pad rows                 */
     uint16_t height_cmm;  /**< outline, across them                        */
-    uint16_t pitch_cmm;   /**< centre to centre, 254 for 0.1 inch          */
-    uint16_t inset_cmm;   /**< edge to the centre of a pad row             */
+    uint16_t pitch_cmm;   /**< center to center, 254 for 0.1 inch          */
+    uint16_t inset_cmm;   /**< edge to the center of a pad row             */
     uint8_t  per_side;    /**< pads in one row                             */
     uint8_t  corner;      /**< a link_shape_corner_t: where pad 1 sits     */
 } outbind_shape_t;
@@ -323,7 +323,7 @@ void outbind_shape_to_regs(const outbind_board_t *board, uint16_t *regs);
 bool outbind_learn_shape(uint16_t id, const uint16_t *regs);
 
 /**
- * @brief Where a pad's centre is, in hundredths of a millimetre from the
+ * @brief Where a pad's center is, in hundredths of a millimetre from the
  *        top-left of the outline.
  *
  * False for a pad the shape does not place: pads are numbered from one, up to
@@ -331,8 +331,8 @@ bool outbind_learn_shape(uint16_t id, const uint16_t *regs);
  *
  * @param shape  The outline to place the pad on.
  * @param pad    Pad number, 1 to twice @p shape's per_side.
- * @param x_cmm  Receives the x coordinate of the pad centre.
- * @param y_cmm  Receives the y coordinate of the pad centre.
+ * @param x_cmm  Receives the x coordinate of the pad center.
+ * @param y_cmm  Receives the y coordinate of the pad center.
  * @return       true when the pad is placed and both outputs are written;
  *               false for a NULL argument, a shape with no pads per side, or a
  *               pad outside the range above.
@@ -519,7 +519,7 @@ typedef struct {
      *
      * Carried by the entry rather than derived from the driver: a pulse at
      * 50Hz is a servo on one pin and an ESC (electronic speed controller)
-     * on the next, and the two rest in different places -- centred at
+     * on the next, and the two rest in different places -- centered at
      * 1500us, or stopped at the low end.  The driver cannot tell them
      * apart, so the operator does, by choosing the entry.
      */
@@ -843,7 +843,7 @@ uint8_t outbind_role_proto(const uint16_t *regs, const uint16_t *chan_cfg,
  * @brief Render the channel configuration to match.
  *
  * Each entry says what its channels are for, and that is what decides where a
- * channel rests when it stops being commanded -- stopped, or centred.  With
+ * channel rests when it stops being commanded -- stopped, or centered.  With
  * more than one protocol bound the roles are mixed, and each channel takes the
  * role of the protocol whose pin renders it.  Channels the selection does not
  * use keep the schema's defaults.

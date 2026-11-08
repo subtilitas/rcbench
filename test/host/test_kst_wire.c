@@ -534,7 +534,7 @@ TEST_CASE(an_edge_more_than_8_us_from_its_place_is_not_a_mid_cell_edge)
     CHECK_EQ(kst_reply_decode(&cap, KST_EXPECT_READ, &r), KST_RX_OK);
     CHECK_EQ(r.value, 0xFF);
 
-    /* The tracker re-centres: the cells after a shifted edge are found from
+    /* The tracker re-centers: the cells after a shifted edge are found from
      * that edge, so a steady drift of the rate is followed. */
     sim_reply(&cap, KST_READ_WINDOW_NS, 3, 0xFF, &shape);
     for (unsigned i = 2; i < cap.n_edges; ++i) {

@@ -371,7 +371,7 @@ static bool servo_countermanded(void)
  *
  * A release goes to the midpoint of the range the far end holds, which is the
  * one the last position carried; a profile chosen since, with no position under
- * it yet, would be released at the old profile's centre.  So a release restates
+ * it yet, would be released at the old profile's center.  So a release restates
  * the range first.  Kind NONE until a command names one.
  */
 static servo_cmd_t s_servo_range;
@@ -416,7 +416,7 @@ static void servo_cfg(const servo_cmd_t *sv, uint16_t *cfg)
 /**
  * @brief The sweep on the SERVO page (protocol 4.2).
  *
- * While one runs the IOmcu commands the surfaces itself every pass, so a centre
+ * While one runs the IOmcu commands the surfaces itself every pass, so a center
  * or a position written under it would last one pass: anything but a sweep
  * stops it first.  Not known after the link comes up: then the next command, a
  * sweep included, writes a stop first, which also clears a finished sweep that
@@ -521,7 +521,7 @@ static bool write_servo(const servo_cmd_t sv)
          * Unrepeated for as long as a channel command is trusted, the far
          * end ended the hold and the surfaces rested; a HOLD now would hold
          * wherever resting had got them.  So the hold is over: the surfaces
-         * are released to their centre, a state both ends know, and the
+         * are released to their center, a state both ends know, and the
          * screen is told.
          */
         const uint32_t since = sl_now_ms() - s_servo_hold_ms;
@@ -557,7 +557,7 @@ static bool write_servo(const servo_cmd_t sv)
          * may have been let go meanwhile too.  Where the output is held is
          * then not known here, and an angle drawn from the tap would be
          * said again to the servo by the next change of profile.  So the
-         * hold is over: the surfaces are released to their centre, a state
+         * hold is over: the surfaces are released to their center, a state
          * both ends know, and the screen is told, as for a HOLD left
          * unrepeated.
          */
@@ -618,7 +618,7 @@ static bool write_servo(const servo_cmd_t sv)
      * marks as surfaces now -- never to the ones this process wrote earlier.
      *
      * A channel that has stopped being a surface is not this screen's to
-     * settle, and centring it would be the defect this file just stopped
+     * settle, and centering it would be the defect this file just stopped
      * committing from the other side: mid-travel is a surface's rest and half
      * power on a throttle, so a channel rebound as a motor between the drag
      * and the release would be commanded to half throttle.  What settles it
@@ -627,7 +627,7 @@ static bool write_servo(const servo_cmd_t sv)
      * the channel at all.
      *
      * Reaching what this process never wrote is deliberate: after a panel
-     * restart the far end still holds whatever it was left at, and centring a
+     * restart the far end still holds whatever it was left at, and centering a
      * surface that is not holding anything costs nothing.
      */
     /*
@@ -659,12 +659,12 @@ static bool write_servo(const servo_cmd_t sv)
         }
         /*
          * A release settles what was written, as the release below does
-         * once it has centred its runs.  A bit kept here names a port that
+         * once it has centered its runs.  A bit kept here names a port that
          * is no longer the target: an IOmcu that started again holds the
          * standard outputs as TARGET and the port's CMD at rest.  No write
          * can pay it, and servo_link_prog_service() would wait on it for
          * ever before it puts the port back as the target.  The next ARM
-         * centres the target in force before it arms.
+         * centers the target in force before it arms.
          */
         if (sv.kind == SERVO_CMD_RELEASE) {
             s_servo_written = 0u;
@@ -675,7 +675,7 @@ static bool write_servo(const servo_cmd_t sv)
     if (sv.kind == SERVO_CMD_RELEASE) {
         /*
          * Stop holding the surfaces where the horn put them: each is
-         * commanded to the centre it rests at.  The slots are the operator's,
+         * commanded to the center it rests at.  The slots are the operator's,
          * written from the OUTPUTS screen, and are not touched -- a screen
          * that cleared one would take away the wiring the operator described,
          * and on a bench where a motor holds the lowest pin it would take
@@ -686,12 +686,12 @@ static bool write_servo(const servo_cmd_t sv)
          * caller's record of owing the release is the only thing that would
          * notice.
          */
-        uint16_t centre[LINK_OUT_CHANNELS];
+        uint16_t center[LINK_OUT_CHANNELS];
         for (uint8_t i = 0; i < LINK_OUT_CHANNELS; ++i) {
-            centre[i] = (uint16_t)(LINK_CH_SPAN / 2u);
+            center[i] = (uint16_t)(LINK_CH_SPAN / 2u);
         }
         /* The midpoint of the range the screen last named, which the
-         * screen centres on its PULSE CENTRE. */
+         * screen centers on its PULSE CENTER. */
         const bool ranged = s_servo_range.kind != SERVO_CMD_NONE;
         uint16_t cfg[LINK_CC_COUNT];
         servo_cfg(&s_servo_range, cfg);
@@ -701,7 +701,7 @@ static bool write_servo(const servo_cmd_t sv)
                 && !servo_cfg_write(port, first, count, cfg, &reply)) {
                 return false;
             }
-            if (!servo_cmd_write(port, first, count, centre, &reply)) {
+            if (!servo_cmd_write(port, first, count, center, &reply)) {
                 return false;
             }
             /* Settled, so no longer holding anything.  Run by run, because a
@@ -724,7 +724,7 @@ static bool write_servo(const servo_cmd_t sv)
          */
         /*
          * The endpoints the screen named, not this file's.  A narrow servo
-         * runs 660 to 860us and its centre is below a standard servo's
+         * runs 660 to 860us and its center is below a standard servo's
          * floor, so clamping it against 1000 to 2000 would send its whole
          * travel to one end.  A command that names no range keeps the
          * standard one.
@@ -914,7 +914,7 @@ static bool write_servo(const servo_cmd_t sv)
             s_servo_curve_ms = took;
             s_servo_sweeping = true;
             s_servo_holding  = false;
-            /* Every surface is moving, so a release owes each a centre. */
+            /* Every surface is moving, so a release owes each a center. */
             s_servo_written |= mask;
             return true;
         }
@@ -944,7 +944,7 @@ static bool write_servo(const servo_cmd_t sv)
                 return false;
             }
             /* Landed, so this run is holding a position and a release owes
-             * it a centre.  Recorded before the next run is attempted: one
+             * it a center.  Recorded before the next run is attempted: one
              * that fails must not lose what an earlier one did. */
             s_servo_written |= servo_run_bits(first, count);
             if (servo_countermanded()) {
@@ -1168,7 +1168,7 @@ void servo_link_apply(const servo_cmd_t sv, bool link_up, uint32_t stops)
     }
     if (sv.kind == SERVO_CMD_ARM) {
         /*
-         * The surfaces are centred first, whether or not this process cached
+         * The surfaces are centered first, whether or not this process cached
          * a position.  After a panel restart the far end can still hold the
          * command from before it, and arming would render that: the same
          * reason DISARM and RELEASE ask unconditionally.  The arm itself
@@ -1193,7 +1193,7 @@ void servo_link_apply(const servo_cmd_t sv, bool link_up, uint32_t stops)
     }
     if (sv.kind == SERVO_CMD_DISARM) {
         /*
-         * Asked for by this screen, so the surfaces are centred whether or not
+         * Asked for by this screen, so the surfaces are centered whether or not
          * this process cached a position for them -- the far end keeps its
          * channel commands across a panel restart, and the screen promises to
          * let go of the output.
@@ -1206,7 +1206,7 @@ void servo_link_apply(const servo_cmd_t sv, bool link_up, uint32_t stops)
     }
     if (sv.kind == SERVO_CMD_RELEASE) {
         /*
-         * Asked for, so the surfaces are centred whether or not this process
+         * Asked for, so the surfaces are centered whether or not this process
          * remembers commanding them: after a panel restart the far end holds
          * a position this end never wrote, and the button says it releases
          * the output.
@@ -1249,7 +1249,7 @@ void servo_link_apply(const servo_cmd_t sv, bool link_up, uint32_t stops)
     s_servo_next_ms = sl_now_ms() + SERVO_HOLD_MS;
     /*
      * And a sweep goes only once an owed release is paid: the surfaces at
-     * their centre, a start both ends know, not wherever a stop froze them.
+     * their center, a start both ends know, not wherever a stop froze them.
      * One not yet paid keeps the sweep held, and the refresh pays it first.
      */
     if (sv.kind == SERVO_CMD_SWEEP && s_servo_release_owed) {
@@ -1261,7 +1261,7 @@ void servo_link_apply(const servo_cmd_t sv, bool link_up, uint32_t stops)
     if (link_up && write_servo_and_rate(sv)) {
         /*
          * The surfaces are holding this position now, so an older release
-         * still owed for them is void.  Paying it afterwards would centre
+         * still owed for them is void.  Paying it afterwards would center
          * what was just asked for and leave the output at rest until the next
          * refresh.  A write that failed leaves the debt where it was.
          */
@@ -1277,7 +1277,7 @@ void servo_link_apply(const servo_cmd_t sv, bool link_up, uint32_t stops)
  * The far end keeps the channel command through a disarm and a failsafe, and
  * outputs_arm() stamps every channel's clock, so on the next arm the surface
  * is neither overdue nor at rest -- it is at its old position, with nobody
- * having touched anything.  So the position has to be returned to centre, and
+ * having touched anything.  So the position has to be returned to center, and
  * until it can be the release is owed.
  *
  * Owed for what was written rather than for what the screen is holding: a
@@ -1298,7 +1298,7 @@ void servo_link_let_go(void)
  *
  * A channel nobody has commanded for OUT_DEFAULT_TIMEOUT_MS (500ms) goes to
  * its rest, which for a surface is mid-travel: a servo held at an endpoint
- * would swing back to centre half a second after the finger stopped, with
+ * would swing back to center half a second after the finger stopped, with
  * the screen still showing where it was put.  The throttle is kept alive by
  * the control page, which is written every poll; nothing writes this channel
  * between touches.

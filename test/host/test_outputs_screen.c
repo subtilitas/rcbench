@@ -142,7 +142,7 @@ TEST_CASE(a_cancelled_press_applies_nothing)
     const int was = s_applied;
 
     int x, y;
-    cell_centre(0, &x, &y);
+    cell_center(0, &x, &y);
     press_at(x, y);
     scr()->cancel();
 
@@ -163,7 +163,7 @@ TEST_CASE(a_release_away_from_the_press_does_nothing)
     const int was = s_applied;
 
     int x, y;
-    cell_centre(0, &x, &y);
+    cell_center(0, &x, &y);
     press_at(x, y);
     release_at(x + 400, y);          /* finger slid off the cell */
     CHECK_EQ(outbind_chosen(outputs_screen_binding()), 0);
@@ -179,7 +179,7 @@ TEST_CASE(a_release_the_tracker_makes_for_a_jump_picks_nothing)
     choose_named("SERVO PWM");
     const int was = s_applied;
     int x, y;
-    cell_centre(0, &x, &y);
+    cell_center(0, &x, &y);
     feed_reset();
     feed_to_screen(scr());
     /* Off every control: the left column's foot. */

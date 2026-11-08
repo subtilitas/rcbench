@@ -37,7 +37,7 @@ static kst_image_t with(kst_field_id_t id, unsigned raw)
 }
 
 /* The bench image with Neutral at exactly 1500.0us. */
-static kst_image_t centred(void)
+static kst_image_t centered(void)
 {
     return with(KST_F_NEUTRAL, 3455);
 }
@@ -833,7 +833,7 @@ TEST_CASE(the_end_points_stay_in_500_to_2500_us)
 
 TEST_CASE(an_end_point_keeps_100_us_from_neutral)
 {
-    kst_image_t img = centred();
+    kst_image_t img = centered();
 
     CHECK(kst_limits_image(&img) == 0u);
     /* Lower 1400.0us: 100.0us below Neutral. */
@@ -845,14 +845,14 @@ TEST_CASE(an_end_point_keeps_100_us_from_neutral)
     CHECK(kst_field_edit(&img, KST_F_PULSE_LOWER, 1876));
     CHECK(breaks(&img, KST_H_LOWER_MARGIN));
 
-    img = centred();
+    img = centered();
     CHECK(kst_field_edit(&img, KST_F_PULSE_UPPER, 2000));
     CHECK(kst_limits_image(&img) == 0u);
     CHECK(kst_field_edit(&img, KST_F_PULSE_UPPER, 1999));
     CHECK(kst_limits_image(&img) == RULE(KST_H_UPPER_MARGIN));
 
     /* Neutral is compared in its own unit: one count of it, 0.2us, decides. */
-    img = centred();
+    img = centered();
     CHECK(kst_field_edit(&img, KST_F_PULSE_LOWER, 1750));
     CHECK(kst_field_edit(&img, KST_F_NEUTRAL, 3454));
     CHECK(kst_limits_image(&img) == RULE(KST_H_LOWER_MARGIN));
@@ -1156,7 +1156,7 @@ TEST_CASE(a_narrow_dead_band_with_gain_asks_once_more)
 
 TEST_CASE(the_failsafe_asks_when_enabled_far_out_or_short)
 {
-    const kst_image_t backup = centred();
+    const kst_image_t backup = centered();
     kst_image_t target = backup;
     kst_image_t on;
 
@@ -1198,7 +1198,7 @@ TEST_CASE(the_failsafe_asks_when_enabled_far_out_or_short)
 
 TEST_CASE(an_end_point_asks_within_300_us_of_neutral_and_100_us_from_its_backup)
 {
-    const kst_image_t backup = centred();
+    const kst_image_t backup = centered();
     kst_image_t target = backup;
 
     /* Lower 900us: 100.0us up and down. */
@@ -1239,7 +1239,7 @@ TEST_CASE(an_end_point_asks_within_300_us_of_neutral_and_100_us_from_its_backup)
 
 TEST_CASE(neutral_asks_more_than_20_us_from_its_backup)
 {
-    const kst_image_t backup = centred();
+    const kst_image_t backup = centered();
     kst_image_t target = backup;
 
     CHECK_EQ(disp(KST_F_NEUTRAL, 3555), 15200);

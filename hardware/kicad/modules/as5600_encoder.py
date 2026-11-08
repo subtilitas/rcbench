@@ -1,7 +1,7 @@
 """AS5600 magnetic angle encoder board, 22.5 x 22.5mm, white, 4 corner holes.
 
 Measured from the owner's photo 10-as5600-b.webp (component side, oblique).
-The photo is rectified by the 4 corner-hole centres (ellipse fits) to a
+The photo is rectified by the 4 corner-hole centers (ellipse fits) to a
 square; the scale comes from the two headers, 2.54mm = 79.5px (3 + 3
 pitches, 79.3 and 79.8px), so 31.3px/mm. The SOIC-8 lead pitch gives the
 same scale (1.27mm = 40px). Positions are within about 0.3mm (estimate, not
@@ -9,20 +9,20 @@ checked with a caliper).
 
 Results: corner holes on a 16.0mm square grid, diameter about 3.9mm (photo;
 the Tinytronics listing says 3.7mm). Board 22.4 x 22.7mm in the photo,
-drawn 22.5 x 22.5mm centred on the hole grid (the listing says 23 x 23mm).
+drawn 22.5 x 22.5mm centered on the hole grid (the listing says 23 x 23mm).
 Corners cut at 45 degrees, about 1.2mm
 (photo).
 3-hole row GND OUT VCC (VCC square) 1.39mm below the top hole line, its
-middle hole 0.22mm right of the board centre; 4-hole row GPO SDA SCL DIR
-(DIR square) 1.39mm above the bottom hole line, its centre 0.78mm right of
-the board centre. Rows 13.22mm apart. The rows are not on one 2.54mm grid.
+middle hole 0.22mm right of the board center; 4-hole row GPO SDA SCL DIR
+(DIR square) 1.39mm above the bottom hole line, its center 0.78mm right of
+the board center. Rows 13.22mm apart. The rows are not on one 2.54mm grid.
 
-Sensor: AS5600 in SOIC-8, package centre at (11.35, 11.15)mm in the board
-frame, 0.1mm right of and 0.1mm above the board centre (within the 0.3mm
-estimate, so equal to the board centre as far as the photo shows). Pin 1 is
+Sensor: AS5600 in SOIC-8, package center at (11.35, 11.15)mm in the board
+frame, 0.1mm right of and 0.1mm above the board center (within the 0.3mm
+estimate, so equal to the board center as far as the photo shows). Pin 1 is
 at the top-right lead, next to the silk dot; pins 1-4 face the 3-hole row,
 pins 5-8 (PGO SDA SCL DIR) face the 4-hole row. The AS5600 datasheet puts
-the Hall array at the package centre: the magnet axis goes through
+the Hall array at the package center: the magnet axis goes through
 (11.35, 11.15)mm. The magnet circle is drawn 6mm in diameter (a common
 diametric magnet); its size is not measured. Air gap: not stated here; the
 datasheet range applies.
@@ -36,7 +36,7 @@ NAME = "AS5600_Encoder_22.5x22.5mm"
 DESC = ("AS5600 magnetic angle encoder board 22.5 x 22.5mm, 4 corner holes "
         "on a 16.0mm grid. Pads: 1 VCC (square), 2 OUT, 3 GND on the 3-hole "
         "row; 4 DIR (square), 5 SCL, 6 SDA, 7 GPO on the 4-hole row; 2.54mm, "
-        "rows 13.22mm apart. Magnet axis over the AS5600 package centre at "
+        "rows 13.22mm apart. Magnet axis over the AS5600 package center at "
         "(-2.65, 6.51)mm from pad 1. Scaled from the owner's photo, about "
         "0.3mm; check with a caliper before ordering a PCB.")
 

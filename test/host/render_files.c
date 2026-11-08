@@ -159,7 +159,7 @@ static const char k_limit_report[] =
     "Firmware:       rcbench 0.22.0\n"
     "Mode:           search only, nothing written to the servo\n"
     "Output:         S1, 333Hz\n"
-    "Pulse range:    centre 1500us, 900-2100us\n"
+    "Pulse range:    center 1500us, 900-2100us\n"
     "Searched:       from 1500us out to 900us and 2100us\n"
     "Current:        INA3221, 50ms windows, shunt 100.0m\xCE\xA9\n"
     "Search rule:    10us steps, settle 120ms, mean of 80ms; bound above "
@@ -231,7 +231,7 @@ static size_t servo_report(char *out, size_t n)
     static const float idle[3] = { 0.012f, 0.018f, 0.121f };
     g->step_count = 3u;
     g->i_limit = 2.0f;
-    g->centre_us = 1500u;
+    g->center_us = 1500u;
     g->end_lo_us = 1000u;
     g->end_hi_us = 2000u;
     g->settle_ms = 300u;

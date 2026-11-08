@@ -217,7 +217,7 @@ UI_TEXT(BH_ARMED_ALL, 0,
     "All assigned motor and servo outputs send pulses.",
     "Alle zugeordneten Motor- und Servoausgänge geben Pulse aus.")
 UI_TEXT(BH_ARMED_REST, 0,
-    "A channel with no command for 500ms returns to rest: throttle at 0, servo at the centre of its travel. STOP, DISARM or leaving the screen switches the bench to SAFE.",
+    "A channel with no command for 500ms returns to rest: throttle at 0, servo at the center of its travel. STOP, DISARM or leaving the screen switches the bench to SAFE.",
     "Erhält ein Kanal 500ms keinen Befehl, geht er in Ruhestellung: Gas auf 0, Servo in die Mitte seines Wegs. STOP, DISARM oder das Verlassen der Seite schaltet den Prüfstand auf SAFE.")
 UI_TEXT(BH_ARMED_SIM, 0,
     "No IOmcu is responding. ARM runs the panel's simulation, not real outputs.",
@@ -2993,7 +2993,7 @@ UI_TEXT(EW_WARN_PROP, 0,
     "Remove the propeller.",
     "Nimm den Propeller ab.")
 UI_TEXT(EW_WARN_BEC, 0,
-    "Connect signal and ground only. Disconnect the ESC's centre wire: a BEC would feed the bench rail.",
+    "Connect signal and ground only. Disconnect the ESC's center wire: a BEC would feed the bench rail.",
     "Nur Signal und Masse. Trenne die ESC-Mittelader: Ein BEC speist sonst die Prüfstand-Versorgung.")
 UI_TEXT(EW_WARN_SERVOS, 0,
     "Unplug the servos.",
@@ -3576,7 +3576,7 @@ UI_TEXT(EW_HS_1F, 100,
     "Demagnetisation compensation: off, low or high.",
     "Demagnetisierungs-Kompensation: aus, low oder high.")
 UI_TEXT(EW_HS_21, 100,
-    "Centre throttle in bidirectional mode: shown, its range is unknown.",
+    "Center throttle in bidirectional mode: shown, its range is unknown.",
     "Mittelgas im bidirektionalen Modus: nur Anzeige, der Bereich ist unbekannt.")
 UI_TEXT(EW_HS_23, 100,
     "Temperature protection. Off disables it.",
@@ -4652,8 +4652,8 @@ UI_TEXT(SV_ROW_RATE, 0,
 UI_TEXT(SV_ROW_MIN, 0,
     "PULSE MIN",
     "PULS MIN")
-UI_TEXT(SV_ROW_CENTRE, 0,
-    "PULSE CENTRE",
+UI_TEXT(SV_ROW_CENTER, 0,
+    "PULSE CENTER",
     "PULS MITTE")
 UI_TEXT(SV_ROW_MAX, 0,
     "PULSE MAX",
@@ -4682,8 +4682,8 @@ UI_TEXT(SV_ROW_NAME, 16,
 UI_TEXT(SV_ROW_REPORT, 16,
     "REPORT",
     "BERICHT")
-UI_TEXT(SV_ROW_ENC_CENTRE, 16,
-    "ENC CENTRE",
+UI_TEXT(SV_ROW_ENC_CENTER, 16,
+    "ENC CENTER",
     "SENSOR-MITTE")
 UI_TEXT(SV_ROW_KST_EXPERT, 0,
     "KST EXPERT MODE",
@@ -4774,8 +4774,8 @@ UI_TEXT(SV_TARGET_UNKNOWN, 23,
 UI_TEXT(SV_TARGET_NO_LINK, 23,
     "NO LINK",
     "KEINE VERBINDUNG")
-UI_TEXT(SV_CENTRE_BTN, 0,
-    "CENTRE",
+UI_TEXT(SV_CENTER_BTN, 0,
+    "CENTER",
     "ZENTRIEREN")
 UI_TEXT(SV_PAUSE, 0,
     "PAUSE",
@@ -4892,7 +4892,7 @@ UI_TEXT(SV_LIM_RAIL_LOW, 58,
     "SERVO SUPPLY BELOW 3.0V OR NOT READ",
     "SERVOVERSORGUNG UNTER 3.0V ODER OHNE MESSWERT")
 UI_TEXT(SV_LIM_REFUSED, 58,
-    "CENTRE MUST BE BETWEEN PULSE MIN AND MAX",
+    "CENTER MUST BE BETWEEN PULSE MIN AND MAX",
     "MITTE MUSS ZWISCHEN PULS MIN UND PULS MAX LIEGEN")
 UI_TEXT(SV_LIM_SEARCH_NOTE, 58,
     "SEARCH ONLY: NO VALUES ARE WRITTEN TO THE SERVO",
@@ -4961,7 +4961,7 @@ UI_TEXT(SV_ENC_NOTE_1, 58,
     "AS5600 ON OR OFF: OPEN SENSORS",
     "AS5600 EIN ODER AUS: SENSORS ÖFFNEN")
 UI_TEXT(SV_ENC_NOTE_2, 58,
-    "Centre the servo, then tap ENC CENTRE.",
+    "Center the servo, then tap ENC CENTER.",
     "Stelle das Servo auf Mitte und tippe auf SENSOR-MITTE.")
 /* TEST's run cards: a summary of the run's settings, the last result with
  * its file, and SUPPLY's caps on the button that opens their home. */
@@ -5129,7 +5129,7 @@ UI_TEXT(HG_SV_RUD_LEN, 0,
     "Hinge line to trailing edge, 0 or 10 to 500mm. TRAILING EDGE turns the deflection into mm with it.",
     "Scharnierlinie bis Hinterkante, 0 oder 10 bis 500mm. Damit rechnet HINTERKANTE den Ausschlag in mm um.")
 UI_TEXT(HG_SV_RUD_DRIVE, 0,
-    "1000us, CENTRE and 2000us drive the servo to that pulse while ARMED. PULSE below names it.",
+    "1000us, CENTER and 2000us drive the servo to that pulse while ARMED. PULSE below names it.",
     "1000us, ZENTRIEREN und 2000us fahren das Servo bei ARMED auf diesen Puls. PULS darunter nennt ihn.")
 UI_TEXT(HG_SV_RUD_ZERO, 0,
     "Takes the angle now as the neutral and clears MAX. Tap it with the surface at neutral.",
@@ -5171,7 +5171,7 @@ UI_TEXT(HG_SV_TARGET, 0,
     "What the buttons and the knob drive. A tap chooses OUTPUTS or a PROG PORT while SAFE.",
     "Was die Tasten und der Drehknopf ansteuern. Ein Tippen wählt OUTPUTS oder einen PROG-PORT, solange SAFE.")
 UI_TEXT(HG_SV_BUTTONS, 0,
-    "While ARMED: CENTRE to PULSE CENTRE plus TRIM, SWEEP runs the curve. RELEASE goes back to rest.",
+    "While ARMED: CENTER to PULSE CENTER plus TRIM, SWEEP runs the curve. RELEASE goes back to rest.",
     "Bei ARMED: ZENTRIEREN auf PULS MITTE plus TRIMMUNG, SWEEP fährt die Kurve. FREIGEBEN geht in Ruhe.")
 UI_TEXT(HG_SV_SETTINGS, 0,
     "How this screen runs its function. Opens on a SAFE bench only.",
@@ -5277,7 +5277,7 @@ UI_TEXT(SVL_PULSE_HELP, 0,
     "Keys step 10us; a tap on the value opens the keypad",
     "10us je Taste; ein Tippen auf den Wert öffnet die Zahlentasten")
 UI_TEXT(SVL_TRIM_HELP, 0,
-    "Added to PULSE CENTRE, -200 to +200us in 5us steps",
+    "Added to PULSE CENTER, -200 to +200us in 5us steps",
     "Zu PULS MITTE addiert, -200 bis +200us in 5us-Schritten")
 UI_TEXT(SVL_TRAVEL_HELP, 0,
     "How far each way the horn goes, 10 to 90° in 5° steps",
@@ -6940,7 +6940,7 @@ UI_TEXT(KP_W_ALLOW_UNCONT_ON, 116,
     "On signal loss the servo moves to the failsafe position.",
     "Ohne Signal fährt das Servo auf die Failsafe-Position.")
 UI_TEXT(KP_W_UNCONT_POS_FAR, 116,
-    "Failsafe position is far from the centre.",
+    "Failsafe position is far from the center.",
     "Die Failsafe-Position liegt weit von der Mitte entfernt.")
 UI_TEXT(KP_W_UNCONT_TIME_SHORT, 116,
     "Short dropouts will trigger the failsafe move.",
@@ -6952,7 +6952,7 @@ UI_TEXT(KP_W_END_MOVED, 116,
     "End point changed. The servo travel per stick movement changes too.",
     "Endpunkt geändert. Dadurch ändert sich auch der Servoweg je Knüppelbewegung.")
 UI_TEXT(KP_W_NEUTRAL_MOVED, 116,
-    "The centre shifts. One side moves closer to the mechanical stop.",
+    "The center shifts. One side moves closer to the mechanical stop.",
     "Die Mitte verschiebt sich. Eine Seite kommt näher an den mechanischen Anschlag.")
 UI_TEXT(KP_W_REVERSION_CHANGED, 116,
     "Direction reversed. Check all control surfaces before flight.",
@@ -7053,8 +7053,8 @@ UI_TEXT(HP_END_R, 32,
 UI_TEXT(HP_DIRECTION, 32,
     "DIRECTION",
     "DREHRICHTUNG")
-UI_TEXT(HP_CENTRE, 32,
-    "CENTRE",
+UI_TEXT(HP_CENTER, 32,
+    "CENTER",
     "MITTE")
 UI_TEXT(HP_FAILSAFE, 32,
     "FAILSAFE",
@@ -7234,7 +7234,7 @@ UI_TEXT(HP_RAW_BESIDE, 116,
     "Stored value in brackets. RAW: a value that fits no known encoding.",
     "Gespeicherter Wert in Klammern. RAW: ein Wert, der zu keiner bekannten Codierung passt.")
 UI_TEXT(HP_POS_NOTE, 116,
-    "Positions in servo counts. 8192 is the centre.",
+    "Positions in servo counts. 8192 is the center.",
     "Positionen als Servo-Zählwerte. 8192 ist die Mitte.")
 UI_TEXT(HP_DEG_NOTE, 116,
     "Degrees for a standard D servo, 220° over 16383 counts.",
@@ -8411,10 +8411,10 @@ UI_SETTING_LABEL(SET_ENC_EN,
 UI_SETTING_HELP(SET_ENC_EN,
     "Angle sensor on the servo shaft",
     "Winkelsensor an der Servowelle")
-UI_SETTING_LABEL(SET_ENC_CENTRE,
-    "AS5600 centre",
+UI_SETTING_LABEL(SET_ENC_CENTER,
+    "AS5600 center",
     "AS5600-Mitte")
-UI_SETTING_HELP(SET_ENC_CENTRE,
+UI_SETTING_HELP(SET_ENC_CENTER,
     "Count at neutral; 4096 per turn",
     "Zählerstand in Mitte; 4096 je Umdr.")
 UI_SETTING_LABEL(SET_TONE_EN,
@@ -9540,7 +9540,7 @@ UI_SERVO_TEXT(SERVO_STR_R_SETTINGS,
     "SETTINGS IN FORCE",
     "AKTIVE EINSTELLUNGEN")
 UI_SERVO_TEXT(SERVO_STR_R_TYPE,
-    "Type:           %s, centre %uus, %u-%u"
+    "Type:           %s, center %uus, %u-%u"
     "us, trim %+dus, reverse %s",
     "Typ:             %s, Mitte %uus, %u-%u"
     "us, Trimmung %+dus, Umkehren %s")
@@ -9781,11 +9781,11 @@ UI_SERVO_TEXT(SERVO_STR_R_UNM_PATH,
 /* The output encoder. */
 UI_SERVO_TEXT(SERVO_STR_R_ENC_DEVICE,
     "Encoder:        AS5600 on the horn shaft, "
-    "centre count %u, %lu angle readings",
+    "center count %u, %lu angle readings",
     "Encoder:         AS5600 an der Welle des "
     "Ruderhorns, Mittenwert %u, %lu Winkelmesswerte")
 UI_SERVO_TEXT(SERVO_STR_R_ENC_HEAD,
-    "ENCODER (angles in degrees from the centre "
+    "ENCODER (angles in degrees from the center "
     "count, times in ms)",
     "ENCODER (Winkel in Grad ab dem "
     "Mittenwert, Zeiten in ms)")
@@ -9803,7 +9803,7 @@ UI_SERVO_TEXT(SERVO_STR_R_ENC_CMD,
     "Ende, %+.1f° am oberen.")
 UI_SERVO_TEXT(SERVO_STR_R_ENC_END,
     "End: the settled angle, -180 to +180° "
-    "from the centre count. Err: End minus "
+    "from the center count. Err: End minus "
     "commanded, the shortest way round.",
     "Ende: eingeschwungener Winkel, -180 bis "
     "+180° ab dem Mittenwert. Abw.: Ende "
@@ -10138,7 +10138,7 @@ UI_SERVO_TEXT(SERVO_STR_L_R_OUTPUT,
     "Output:         %s, %uHz",
     "Ausgang:         %s, %uHz")
 UI_SERVO_TEXT(SERVO_STR_L_R_PULSE,
-    "Pulse range:    centre %uus, %u-%uus",
+    "Pulse range:    center %uus, %u-%uus",
     "Pulsbereich:     Mitte %uus, %u-%uus")
 UI_SERVO_TEXT(SERVO_STR_L_R_METER,
     "Current:        %s, 50ms "
@@ -10969,7 +10969,7 @@ UI_TEXT(RUD_MAX, 0,
     "MAX",
     "MAX")
 UI_TEXT(RUD_NOT_ZEROED, 40,
-    "NO ZERO: FROM THE SENSOR'S CENTRE",
+    "NO ZERO: FROM THE SENSOR'S CENTER",
     "KEIN NULLPUNKT: AB SENSORMITTE")
 UI_TEXT(RUD_PULSE, 0,
     "PULSE %s",

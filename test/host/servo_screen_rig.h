@@ -112,7 +112,7 @@ static inline int sweep_btn_pixels(gfx_color_t col)
 /*
  * The TARGET row of the output card, as the pixels of its box: the row at
  * y 308 to 356, between the SPEED slider, whose thumb and its shadow paint
- * down to y 303, and CENTRE (from y 366); the label at the output card's
+ * down to y 303, and CENTER (from y 366); the label at the output card's
  * column, SV_RC_X, and the value box 64px further.
  */
 #define TGT_X SV_RC_X

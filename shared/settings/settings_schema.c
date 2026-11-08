@@ -146,15 +146,15 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
     /*
      * The output encoder (protocol 4.9): an AS5600 magnetic angle sensor on
      * the horn shaft of the servo under test, at 0x36 on the sensor bus
-     * above.  AS5600 centre is the sensor's 12-bit count with the servo at
+     * above.  AS5600 center is the sensor's 12-bit count with the servo at
      * its neutral; angles are shown and reported from it.  The SERVO
-     * screen's ENC CENTRE row sets it from the live reading.
+     * screen's ENC CENTER row sets it from the live reading.
      */
     [SET_ENC_EN] = {
         "enc_en", "",
         SET_CAT_SENSORS, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
-    [SET_ENC_CENTRE] = {
-        "enc_centre", "",
+    [SET_ENC_CENTER] = {
+        "enc_centre", "", /* stored key: saved settings keep loading */
         SET_CAT_SENSORS, SET_TYPE_INT, 0, 4095, 1, 0, NULL, 0 },
     /*
      * The phase tap, written to the IOmcu's TONE page (protocol

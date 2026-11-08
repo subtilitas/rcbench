@@ -28,7 +28,7 @@
  * sweep running when it began keeps its phase; a resume (LINK_SV_RESUME,
  * protocol 4.6) carries that sweep on from there.  Whatever ends the hold -- 0,
  * a curve written over it, a disarm, silence -- forgets the phase.  A hold of a
- * sweep that has made its movements keeps the centre it ended on.
+ * sweep that has made its movements keeps the center it ended on.
  *
  * Every write is judged against the page as a servo_page_step() at the same
  * moment leaves it, so a write served ahead of the pass finds a sweep that

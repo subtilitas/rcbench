@@ -1,7 +1,7 @@
 """Waveshare RP2350-CAN, 21.00 x 51.00mm, 40 pads in the Pico pinout.
 
 Pad grid from the maker's dimension drawing (Waveshare wiki RP2350-CAN,
-800px-RP2350-CAN-details-size.jpg): board 21.00 x 51.00mm, pad 1 centre
+800px-RP2350-CAN-details-size.jpg): board 21.00 x 51.00mm, pad 1 center
 1.61mm from the long side and 1.37mm from the USB end, pitch 2.54mm, rows
 17.78mm apart. The pad grid is exact to the drawing. Each pad is a
 castellated half-hole at the edge plus a 1.0mm hole at the grid point; the

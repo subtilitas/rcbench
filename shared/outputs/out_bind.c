@@ -463,7 +463,7 @@ bool outbind_pad_xy(const outbind_shape_t *shape, uint8_t pad,
     /*
      * A corner on the right numbers the row the other way, which is a step
      * along the row and not a mirror across the outline.  Mirroring would
-     * put the pads at width - x, and the centring leaves an odd half
+     * put the pads at width - x, and the centering leaves an odd half
      * millimetre on one side when (width - span) is odd -- so the whole row
      * would shift by that much rather than simply reverse.
      */
@@ -472,7 +472,7 @@ bool outbind_pad_xy(const outbind_shape_t *shape, uint8_t pad,
         along = (uint8_t)(shape->per_side - 1u - along);
     }
 
-    /* Centred, so the margin either end of a row is the same. */
+    /* Centered, so the margin either end of a row is the same. */
     const uint32_t span = (uint32_t)(shape->per_side - 1u) * shape->pitch_cmm;
     const uint32_t lead = ((uint32_t)shape->width_cmm - span) / 2u;
     const uint32_t x = lead + (uint32_t)along * shape->pitch_cmm;
@@ -646,7 +646,7 @@ uint64_t outbind_reserved_mask(uint16_t board)
  * same wire asking for telemetry back.
  *
  * SERVO PWM and MOTOR PWM are the same signal at the same rate and differ
- * only in what the channel is for.  A servo centres when nothing commands
+ * only in what the channel is for.  A servo centers when nothing commands
  * it; a motor stops.  Nothing in the pulse says which is on the pin, so the
  * two are separate entries and the operator picks the one that is wired.
  */
@@ -1272,7 +1272,7 @@ void outbind_to_chan_cfg(const outbind_t *b, uint16_t *regs,
      * the role of the protocol whose pin renders it.  The role is not decoration: it
      * decides where the channel goes when it stops being commanded, and it
      * is what the throttle looks for when it drives the bound pins, so a
-     * throttle that centres is a motor at half power.
+     * throttle that centers is a motor at half power.
      */
     uint8_t slot = 0u, channel = 0u;
     const uint8_t cells = outbind_cell_count(b->board);

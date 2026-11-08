@@ -134,7 +134,7 @@ static inline void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
 /* The hub's list, row by row: the profile under OUTPUT, then the device
  * under test. */
 enum {
-    HL_OUTPUT = 0, HL_TYPE, HL_RATE, HL_MIN, HL_CENTRE, HL_MAX, HL_TRIM,
+    HL_OUTPUT = 0, HL_TYPE, HL_RATE, HL_MIN, HL_CENTER, HL_MAX, HL_TRIM,
     HL_TRAVEL, HL_REVERSE, HL_HV, HL_DUT, HL_NAME, HL_REPORT,
 };
 
@@ -361,7 +361,7 @@ static inline void acked(uint32_t age_ms, servo_sweep_from_t from,
     servo_screen_sweep_started(g_sweep_seq, age_ms, from, since_ms);
 }
 
-/* The output card's inner column: CENTRE, SWEEP and RELEASE, SPEED. */
+/* The output card's inner column: CENTER, SWEEP and RELEASE, SPEED. */
 #define COL_X SV_RC_X
 #define COL_W SV_RC_W
 /* ARM and DISARM in the footer's middle slot. */

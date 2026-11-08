@@ -66,7 +66,7 @@ static void warn_text(kst_prog_level_t level, const char *s)
 
 /**
  * @brief A write of @p to moves the horn or turns it round: it changes the
- *        direction, the centre, an end point or an angle.
+ *        direction, the center, an end point or an angle.
  */
 static bool moves_horn(const kst_image_t *to)
 {

@@ -2,7 +2,7 @@
  * @file render_rudder.c
  * @brief SERVO's RUDDER views for tools/render_ui.py (render_rudder.h).
  *
- * The AS5600 is on with its centre at count 2048 and reads through
+ * The AS5600 is on with its center at count 2048 and reads through
  * servo_screen_encoder() as the panel hands it over.  ZERO is taken at
  * count 2048; the surface then goes to -24.6° and +25.5°, which MAX holds,
  * and comes back to +12.3°.  LENGTH is 120mm, or not set in
@@ -82,7 +82,7 @@ void render_rudder_pose(const char *view)
         return;
     }
     settings_set(SET_ENC_EN, 1.0f);
-    settings_set(SET_ENC_CENTRE, 2048.0f);
+    settings_set(SET_ENC_CENTER, 2048.0f);
     settings_set(SET_RUDDER_LEN_MM,
                  strcmp(view, "servo-rudder-nolength") == 0 ? 0.0f : 120.0f);
     servo_screen_set_link(true);

@@ -176,7 +176,7 @@ static int lum(gfx_color_t c)
 }
 
 /**
- * @brief The centre of the tip's hole in @p px, from the pixels within
+ * @brief The center of the tip's hole in @p px, from the pixels within
  *        6px of (@p x, @p y): the hole is the card's colour in the arm's,
  *        and the next hole is 12px further in.
  */

@@ -28,11 +28,11 @@ import type { Scene, ScenePin, SceneWire } from './scene.ts';
 
 export type Pt = [number, number];
 
-/** A wire number on the picture: its centre. */
+/** A wire number on the picture: its center. */
 export type Label = { x: number; y: number };
 
 /**
- * The body of a component on its wire. `x, y`: its centre. `upright`: its axis
+ * The body of a component on its wire. `x, y`: its center. `upright`: its axis
  * is vertical. `len`: its length along the axis. `band`: -1 when the band lies
  * towards the start of the axis (up or left), 1 otherwise; the band lies on the
  * side of end `a` of the wire. `text`: where its lines stand; `x` is the start,
@@ -74,7 +74,7 @@ export type Diagram = {
   /** Part ids per column, left to right. */
   columns: string[][];
   /** Index of the IOmcu column. */
-  centre: number;
+  center: number;
   /** Pairs of wire numbers whose lines overlap in a channel because no order of its tracks separates them. */
   clashes: Array<[number, number]>;
 };
@@ -87,7 +87,7 @@ export const SHIFTS: ReadonlyArray<number> = [0, 4, 8, 12, 16, 20, 24, 28, 32];
 export const BODY = { w: 12, len: 20, band: 4, lead: 3 };
 /** Estimated width of 1 character of a component line in px, at the 12px of the export form. The page draws 10px. */
 export const TEXT_CHAR = 6.6;
-/** From the axis of a body to the centre of its number, and to its lines. */
+/** From the axis of a body to the center of its number, and to its lines. */
 const BODY_NUMBER = BODY.w / 2 + 3 + LABEL.w / 2;
 const BODY_TEXT = BODY_NUMBER + LABEL.w / 2 + 4;
 
@@ -180,7 +180,7 @@ function plans(scene: Scene, p: Placement): Plan[] {
 
 /**
  * Lanes and number steps of the ends on each edge of each part. The wires of
- * 1 pad lie side by side, centred on the wire point. A lane starts on its pad
+ * 1 pad lie side by side, centered on the wire point. A lane starts on its pad
  * unless the pads of the edge are closer than their wires are wide: then it
  * moves along the edge and the lead bends once.
  */
@@ -515,7 +515,7 @@ export function diagramOf(scene: Scene): Diagram {
     wires: list.map((plan) => realise(plan, final)),
     undrawn: [...scene.undrawn],
     columns: columns.cols.map((c) => c.map((part) => part.id)),
-    centre: columns.centre,
+    center: columns.center,
     clashes,
   };
 }

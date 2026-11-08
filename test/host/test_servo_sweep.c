@@ -2,7 +2,7 @@
  * The sweep: a servo driven through a square, a sine or a triangle.
  *
  * Under test: the curve's shape at its quarters, the dwell standing it still
- * at each end, the movement count ending it at the centre, a clock that
+ * at each end, the movement count ending it at the center, a clock that
  * wraps, and a sweep hours long keeping its period to the microsecond.
  *
  * SPDX-License-Identifier: MIT
@@ -47,13 +47,13 @@ TEST_CASE(a_configuration_outside_its_ranges_is_refused)
         CHECK(!w.running);
         uint16_t c = 0;
         CHECK(!sweep_step(&w, 10u, &c));
-        CHECK_EQ(c, SWEEP_CENTRE);
+        CHECK_EQ(c, SWEEP_CENTER);
     }
     CHECK(!sweep_cfg_valid(NULL));
     CHECK(!sweep_start(NULL, &bad[0], 0u));
 }
 
-/* A sine starts at the centre, so a sweep begins without a jump. */
+/* A sine starts at the center, so a sweep begins without a jump. */
 TEST_CASE(a_sine_is_at_its_ends_at_the_quarters)
 {
     sweep_t w = make(SWEEP_SINE, 1000u, 400u, 0u, 0u);   /* 1Hz */
@@ -107,8 +107,8 @@ TEST_CASE(the_dwell_holds_each_end)
 }
 
 /* Each end reached is a movement; with a count the sweep ends after the last
- * end's dwell, at the centre. */
-TEST_CASE(a_movement_count_ends_the_sweep_at_the_centre)
+ * end's dwell, at the center. */
+TEST_CASE(a_movement_count_ends_the_sweep_at_the_center)
 {
     sweep_t w = make(SWEEP_SINE, 1000u, 400u, 0u, 3u);
     CHECK_EQ(sweep_moves(&w, w.start_ms + 249u), 0u);
@@ -118,7 +118,7 @@ TEST_CASE(a_movement_count_ends_the_sweep_at_the_centre)
     CHECK(sweep_step(&w, w.start_ms + 1249u, &c));
     CHECK(c > 890u);
     CHECK(!sweep_step(&w, w.start_ms + 1250u, &c));
-    CHECK_EQ(c, SWEEP_CENTRE);
+    CHECK_EQ(c, SWEEP_CENTER);
     CHECK(!w.running);
     CHECK_EQ(sweep_moves(&w, w.start_ms + 5000u), 3u);
 
@@ -126,16 +126,16 @@ TEST_CASE(a_movement_count_ends_the_sweep_at_the_centre)
     CHECK(sweep_step(&d, d.start_ms + 949u, &c));
     CHECK_EQ(c, 100u);                             /* holding the second end */
     CHECK(!sweep_step(&d, d.start_ms + 950u, &c));
-    CHECK_EQ(c, SWEEP_CENTRE);
+    CHECK_EQ(c, SWEEP_CENTER);
 }
 
-TEST_CASE(a_stopped_sweep_rests_at_the_centre)
+TEST_CASE(a_stopped_sweep_rests_at_the_center)
 {
     sweep_t w = make(SWEEP_SQUARE, 1000u, 400u, 0u, 0u);
     sweep_stop(&w);
     uint16_t c = 0;
     CHECK(!sweep_step(&w, w.start_ms + 10u, &c));
-    CHECK_EQ(c, SWEEP_CENTRE);
+    CHECK_EQ(c, SWEEP_CENTER);
     sweep_stop(NULL);
     CHECK(!sweep_step(NULL, 0u, &c));
     CHECK_EQ(sweep_moves(NULL, 0u), 0u);
@@ -234,8 +234,8 @@ TEST_CASE(a_paused_sweep_resumes_where_it_was)
     CHECK_EQ(c, 900u);
     sweep_pause(&w, 1300u);
     CHECK(!w.running);
-    CHECK(!sweep_step(&w, 5000u, &c));             /* paused: the centre */
-    CHECK_EQ(c, SWEEP_CENTRE);
+    CHECK(!sweep_step(&w, 5000u, &c));             /* paused: the center */
+    CHECK_EQ(c, SWEEP_CENTER);
     CHECK(sweep_resume(&w, 9000u));
     CHECK(sweep_step(&w, 9000u + 40u, &c));        /* 340ms: still held */
     CHECK_EQ(c, 900u);
@@ -273,8 +273,8 @@ int main(void)
     RUN(a_triangle_moves_at_one_speed);
     RUN(a_square_jumps_at_the_start_and_the_half);
     RUN(the_dwell_holds_each_end);
-    RUN(a_movement_count_ends_the_sweep_at_the_centre);
-    RUN(a_stopped_sweep_rests_at_the_centre);
+    RUN(a_movement_count_ends_the_sweep_at_the_center);
+    RUN(a_stopped_sweep_rests_at_the_center);
     RUN(the_clock_may_wrap);
     RUN(a_long_sweep_keeps_its_period);
     RUN(a_slew_limits_a_sweep_that_asks_for_a_faster_change);

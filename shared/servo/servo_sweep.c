@@ -206,7 +206,7 @@ static float shape(sweep_kind_t kind, float x)
 
 bool sweep_step(sweep_t *w, uint32_t now_ms, uint16_t *command)
 {
-    uint16_t out = (uint16_t)SWEEP_CENTRE;
+    uint16_t out = (uint16_t)SWEEP_CENTER;
     bool running = false;
     if (w != NULL && w->running && sweep_cfg_valid(&w->cfg)) {
         const cycle_t y = cycle_of(&w->cfg);
@@ -235,12 +235,12 @@ bool sweep_step(sweep_t *w, uint32_t now_ms, uint16_t *command)
             }
             const float x = (float)m / (float)y.period;
             const float p = shape(w->cfg.kind, x);
-            float c = (float)SWEEP_CENTRE + p * (float)w->cfg.amplitude;
+            float c = (float)SWEEP_CENTER + p * (float)w->cfg.amplitude;
             if (c < 0.0f) {
                 c = 0.0f;
             }
-            if (c > 2.0f * (float)SWEEP_CENTRE) {
-                c = 2.0f * (float)SWEEP_CENTRE;
+            if (c > 2.0f * (float)SWEEP_CENTER) {
+                c = 2.0f * (float)SWEEP_CENTER;
             }
             out = (uint16_t)(c + 0.5f);
             running = true;

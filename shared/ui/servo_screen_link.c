@@ -230,7 +230,7 @@ void servo_screen_cancel_arm(void)
     /*
      * And nothing is being held any more.  The armed state need not have
      * moved -- a bench that was not armed is stopped just the same, and the
-     * panel centres the surface either way -- so this cannot wait for that
+     * panel centers the surface either way -- so this cannot wait for that
      * edge: the rings would go on pulsing, and the next change of profile,
      * trim or travel would say the released position again.
      */
@@ -705,7 +705,7 @@ void servo_screen_set_link(bool up)
     if (s.link_up && !up) {
         test_end_now(SERVO_TEST_AB_LINK);
         /* The encoder's last angle is not the horn's now: the dashes, and
-         * no ENC CENTRE from it, until a reading arrives with the link. */
+         * no ENC CENTER from it, until a reading arrives with the link. */
         const servo_test_enc_t none = { .valid = false,
                                         .taken_ms = test_now() };
         s.enc_valid     = false;

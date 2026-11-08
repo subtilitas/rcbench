@@ -53,7 +53,7 @@ TEST_CASE(everything_goes_to_rest_together)
     CHECK_EQ(outputs_actual(&o, 1), OUT_SPAN);
 
     outputs_all_off(&o);
-    /* A throttle rests at stopped and a surface rests centred, and both
+    /* A throttle rests at stopped and a surface rests centered, and both
      * happened on one call. */
     CHECK_EQ(outputs_actual(&o, 0), 0u);
     CHECK_EQ(outputs_actual(&o, 1), OUT_SPAN / 2u);
@@ -61,7 +61,7 @@ TEST_CASE(everything_goes_to_rest_together)
 
 /*
  * One silence timeout for every channel: a surface goes to its rest after
- * silence the same as a throttle does.  Both keep driving; rest is centred
+ * silence the same as a throttle does.  Both keep driving; rest is centered
  * for the surface and stopped for the throttle.
  */
 TEST_CASE(silence_stops_every_role)
@@ -145,7 +145,7 @@ TEST_CASE(the_role_decides_which_direction_is_safe)
         outputs_step(&o, t);
     }
     CHECK_EQ(outputs_actual(&o, 0), 500u);  /* both ramp up alike */
-    CHECK_EQ(outputs_actual(&o, 1), 1000u); /* from centre, so it arrived */
+    CHECK_EQ(outputs_actual(&o, 1), 1000u); /* from center, so it arrived */
 
     /* Then down.  The throttle goes at once; the surface is ramped. */
     outputs_set(&o, 0, 0u, 2000u);
@@ -1021,15 +1021,15 @@ TEST_CASE(a_channel_range_outside_the_page_is_refused_rather_than_wrapped)
  * The IOmcu's boot order, in the calls firmware/iomcu/src/main.c makes:
  * the pages get their defaults, the bank is initialised, the configuration is
  * applied, and the channels page is filled from the bank rather than applied
- * to it.  A surface nobody has commanded is then asked for its centre, and
+ * to it.  A surface nobody has commanded is then asked for its center, and
  * the first arm holds it there.
  *
  * The page's default is zero, which is a throttle's rest and a surface's low
  * endpoint.  Applied as commands it asks a bound surface for its endpoint,
  * and outputs_arm() restamps every channel's clock, so the staleness timeout
- * cannot return it to centre for a further OUT_DEFAULT_TIMEOUT_MS.
+ * cannot return it to center for a further OUT_DEFAULT_TIMEOUT_MS.
  */
-TEST_CASE(boot_arms_an_uncommanded_surface_at_its_centre)
+TEST_CASE(boot_arms_an_uncommanded_surface_at_its_center)
 {
     fresh_pages();
     chan_cfg[LINK_CC_ROLE]   = LINK_CC_ROLE_SURFACE;
@@ -1058,10 +1058,10 @@ TEST_CASE(boot_arms_an_uncommanded_surface_at_its_centre)
 
 /*
  * The same bench with a narrow servo: 660..860us, where the low endpoint is
- * the servo's hard stop.  Centre is 760us and that is where an uncommanded
+ * the servo's hard stop.  Center is 760us and that is where an uncommanded
  * channel arms.
  */
-TEST_CASE(a_narrow_servo_arms_at_its_centre_not_its_stop)
+TEST_CASE(a_narrow_servo_arms_at_its_center_not_its_stop)
 {
     fresh_pages();
     chan_cfg[LINK_CC_ROLE]   = LINK_CC_ROLE_SURFACE;
@@ -1078,11 +1078,11 @@ TEST_CASE(a_narrow_servo_arms_at_its_centre_not_its_stop)
 /*
  * The failsafe edge fills the page the same way.  The disarm puts every pin
  * at rest and leaves the commands in place, and the page says what the bank
- * holds: a channel nobody commanded reads its centre, and a channel that was
+ * holds: a channel nobody commanded reads its center, and a channel that was
  * commanded reads what it was asked for.  A zeroed page would report the
- * first at its low endpoint while the pin rested at centre.
+ * first at its low endpoint while the pin rested at center.
  */
-TEST_CASE(a_failsafe_leaves_an_uncommanded_surface_reading_its_centre)
+TEST_CASE(a_failsafe_leaves_an_uncommanded_surface_reading_its_center)
 {
     fresh_pages();
     chan_cfg[LINK_CC_ROLE]   = LINK_CC_ROLE_SURFACE;
@@ -2054,9 +2054,9 @@ int main(void)
     RUN(the_range_register_packs_first_and_count);
     RUN(a_channel_command_is_clamped_in_place);
     RUN(writing_off_a_page_end_is_refused);
-    RUN(boot_arms_an_uncommanded_surface_at_its_centre);
-    RUN(a_narrow_servo_arms_at_its_centre_not_its_stop);
-    RUN(a_failsafe_leaves_an_uncommanded_surface_reading_its_centre);
+    RUN(boot_arms_an_uncommanded_surface_at_its_center);
+    RUN(a_narrow_servo_arms_at_its_center_not_its_stop);
+    RUN(a_failsafe_leaves_an_uncommanded_surface_reading_its_center);
     RUN(a_zero_page_applied_as_commands_reaches_the_endpoint);
     RUN(the_mirror_leaves_a_throttle_at_zero);
     RUN(the_mirror_refuses_a_null_side);

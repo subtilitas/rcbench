@@ -38,7 +38,7 @@ void servo_invalidate(void);
 /** @brief The SERVO hub and its function screens, one per tile. */
 typedef enum {
     SERVO_FN_HUB = 0, /**< the hub, SCREEN_SERVO                  */
-    SERVO_FN_LIVE,    /**< the dial, CENTRE, RELEASE              */
+    SERVO_FN_LIVE,    /**< the dial, CENTER, RELEASE              */
     SERVO_FN_SWEEP,   /**< the curve, SWEEP / PAUSE, RELEASE      */
     SERVO_FN_TEST,    /**< the automatic test                     */
     SERVO_FN_LIMRUN,  /**< the limit run                          */
@@ -196,10 +196,10 @@ bool servo_screen_take_clear(void);
  * the AS5600 on the horn shaft, or with ANGLE SOURCE IMU the IMU's angle in
  * AS5600 counts from count 0 (servo_angle_enc()).  With AS5600 on in SETUP,
  * or with the IMU as the source, the MEASURED row shows its angle from the
- * source's centre (servo_angle_centre()), and a run reads it for the angle
+ * source's center (servo_angle_center()), and a run reads it for the angle
  * results in its CSV and report.  A reading that is not valid -- the
  * sensor not answering, or answering and detecting no magnet -- shows
- * "---", and ENC CENTRE takes nothing from it nor from any IMU reading.
+ * "---", and ENC CENTER takes nothing from it nor from any IMU reading.
  *
  * @param e The reading; NULL does nothing.
  */
@@ -223,7 +223,7 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid);
  * the pins drive -- outputs_role_rest() across the range a command carries,
  * 1500us for STANDARD PWM and 760us for NARROW 760 -- and without
  * feedback the horn is drawn there at once.  While the bench is disarmed no
- * input changes it: the dial, the knob, CENTRE, SWEEP and
+ * input changes it: the dial, the knob, CENTER, SWEEP and
  * servo_screen_set_commanded() post nothing and move nothing, and the value
  * shown is the one last driven.  At a disarm a drag ends, and a position, a
  * sweep or a hold still waiting to be taken is not sent; the knob's is
@@ -294,7 +294,7 @@ bool servo_screen_log_pulse(uint16_t *us);
  *        shows it: AS5600 on in SETUP or the IMU as the source, a valid
  *        reading and the link up.
  *
- * @param deg Receives the horn's angle from the source's centre, deg.
+ * @param deg Receives the horn's angle from the source's center, deg.
  * @return true when an angle is shown; false with @p deg NULL.
  */
 bool servo_screen_log_angle(float *deg);
@@ -726,11 +726,15 @@ bool servo_screen_asks_restore(void);
 bool servo_screen_paused(void);
 
 /**
- * The panel let go of pause @p pause_seq -- a HOLD the far end had already
- * ended, or one answered late -- released the surfaces to their centre and
- * dropped the commands asked during that pause.  Taken only while the
- * screen's commands still derive from that pause; one that has moved on
- * since was sent, and the surfaces follow it.
+ * @brief The panel let go of pause @p pause_seq.
+ *
+ * A HOLD the far end had already ended, or one answered late: the panel
+ * released the surfaces to their center and dropped the commands asked
+ * during that pause.  Taken only while the screen's commands still derive
+ * from that pause; one that has moved on since was sent, and the surfaces
+ * follow it.
+ *
+ * @param pause_seq The pause the panel let go of.
  */
 void servo_screen_released(uint16_t pause_seq);
 

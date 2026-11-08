@@ -175,7 +175,7 @@ export class Dwg {
     return `<g filter="${this.u('s3')}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="5" fill="${this.u('tin')}"/></g><rect x="${x + 0.5}" y="${y + 0.5}" width="${w - 1}" height="${h - 1}" rx="5" fill="none" stroke="#fff" stroke-opacity=".5"/>${slots}${lip}`;
   }
 
-  // One pole of a green screw terminal block, centre x,y, cell w by h.
+  // One pole of a green screw terminal block, center x,y, cell w by h.
   // open: the side the wire enters. dim: a pole the bench does not use.
   pole(x: number, y: number, w: number, h: number, open: Side, o: { dim?: boolean } = {}): string {
     const { dim = false } = o;

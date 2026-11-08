@@ -212,7 +212,7 @@ TEST_CASE(nothing_is_drawn_under_the_alert_band)
         for (unsigned g = 0; g < 8u; ++g) {
             const uint8_t gp[8] = { 0, 1, 2, 4, 5, 6, 7, 13 };
             int x, y;
-            cell_centre(gp[g], &x, &y);
+            cell_center(gp[g], &x, &y);
             tap(x, y);
         }
         CHECK_EQ(outbind_chosen(outputs_screen_binding()), 8);

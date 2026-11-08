@@ -200,7 +200,7 @@ TEST_CASE(the_footers_write_is_the_sessions_from_any_tab)
 }
 
 /* No ARM on KST: a finger on the footer's middle for 2.5s asks none.  The
- * output card's places -- CENTRE, SWEEP, OUTPUT ON -- are the READY card
+ * output card's places -- CENTER, SWEEP, OUTPUT ON -- are the READY card
  * and command nothing. */
 TEST_CASE(the_footer_asks_no_arm_and_the_card_drives_nothing)
 {
@@ -213,14 +213,14 @@ TEST_CASE(the_footer_asks_no_arm_and_the_card_drives_nothing)
     ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
     ticks(2.5f);
     ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
-    screen_tap(SV_CENTRE_X, SV_BTN_Y);
+    screen_tap(SV_CENTER_X, SV_BTN_Y);
     screen_tap(SV_SWEEP_X, SV_BTN_Y);
     ev(SV_SUP_OUT_X, SV_SUP_Y, TOUCH_EVENT_DOWN, 2);
     ticks(2.5f);
     ev(SV_SUP_OUT_X, SV_SUP_Y, TOUCH_EVENT_UP, 2);
     while (servo_screen_take(&c)) {
         CHECK(c.kind != SERVO_CMD_ARM);
-        CHECK(c.kind != SERVO_CMD_CENTRE);
+        CHECK(c.kind != SERVO_CMD_CENTER);
     }
     CHECK(!supply_screen_poll_cmd(&sc));
     CHECK(!servo_screen_sweeping());

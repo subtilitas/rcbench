@@ -80,7 +80,7 @@ TEST_CASE(every_control_is_a_finger_tall_inside_the_card_and_apart)
     CHECK_EQ(rudder_rect(RUD_C_COUNT).h, 0);
     /* The buttons in a row, 10px apart, as the guide's item marks them. */
     const gfx_rect_t a = rudder_rect(RUD_C_1000);
-    const gfx_rect_t c = rudder_rect(RUD_C_CENTRE);
+    const gfx_rect_t c = rudder_rect(RUD_C_CENTER);
     const gfx_rect_t b = rudder_rect(RUD_C_2000);
     CHECK_EQ(a.y, c.y);
     CHECK_EQ(c.y, b.y);

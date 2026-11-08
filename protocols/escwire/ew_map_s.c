@@ -67,6 +67,8 @@ const ew_field_t ew_map_s[] = {
     NUMBER("BEACON STRENGTH", 0x1Cu, 1u, 255u),
     NAMED("BEACON DELAY", 0x1Du, 1u, 5u, k_delay, 0u),
     NAMED("DEMAG", 0x1Fu, 1u, 3u, k_demag, 0u),
+    /* The name is a field line of the backup files (ew_file.h); it keeps the
+     * spelling CENTRE so that saved and edited files keep loading. */
     THROTTLE("CENTRE THROTTLE", 0x21u),
     { .name = "TEMPERATURE", .labels = k_off_on, .unit = "", .off = 0x23u,
       .access = EW_ACC_EDIT, .flags = EW_FF_WARN, .lo = 0u, .hi = 1u,

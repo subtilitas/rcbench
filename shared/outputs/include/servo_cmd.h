@@ -23,12 +23,13 @@ extern "C" {
 typedef enum {
     SERVO_CMD_NONE = 0,   /**< no command */
     SERVO_CMD_POSITION,   /**< value is the pulse width in microseconds */
-    SERVO_CMD_CENTRE,     /**< centre the surfaces */
+    SERVO_CMD_CENTER,     /**< center the surfaces */
     /**
-     * Let go of the output: the surfaces the bench drives return to centre,
-     * which is where a surface rests.  The pins stay bound to what the
-     * OUTPUTS screen bound them to; this screen commands channels and owns no
-     * wiring of its own.
+     * @brief Let go of the output: the surfaces the bench drives return to
+     *        center, which is where a surface rests.
+     *
+     * The pins stay bound to what the OUTPUTS screen bound them to; this
+     * screen commands channels and owns no wiring of its own.
      */
     SERVO_CMD_RELEASE,
     SERVO_CMD_ARM,        /**< the two-second hold, as on MOTOR & ESC    */
@@ -60,12 +61,12 @@ typedef struct {
     uint16_t         value_us; /**< pulse width in microseconds, for a position */
     /**
      * @brief The range the channel is configured with, carried with the
-     *        command: centred on the servo's PULSE CENTRE and reaching the
+     *        command: centered on the servo's PULSE CENTER and reaching the
      *        further of its PULSE MIN and MAX, so its midpoint -- where the
-     *        far end rests a surface -- is the centre.  value_us stays within
+     *        far end rests a surface -- is the center.  value_us stays within
      *        MIN..MAX.
      *
-     * The pulse means nothing without them: 760us is the centre of a narrow
+     * The pulse means nothing without them: 760us is the center of a narrow
      * servo and below the bottom of a standard one, so a command clamped
      * against the wrong pair is a servo that does not move, or one driven
      * past its stops. Zero on either says the sender named no range.
@@ -92,16 +93,16 @@ typedef struct {
     uint16_t         frame_hz;
     /** @brief SERVO_CMD_SWEEP's curve, as the SERVO page takes it
      *        (servo_sweep.h): the curve, thousandths of a cycle a second,
-     *        command units either side of the centre and the hold at each end.
+     *        command units either side of the center and the hold at each end.
      *
      * Zero otherwise.
      */
     uint16_t sweep_kind,                    /**< the curve's kind                    */
              sweep_mhz,                     /**< cycles a second, thousandths        */
-             sweep_span,                    /**< command units either side of the centre */
+             sweep_span,                    /**< command units either side of the center */
              sweep_dwell_ms;                /**< the hold at each end, ms            */
     /** @brief This command ends a sweep the screen was running: a HOLD, a
-     *        finger on the dial, CENTRE.
+     *        finger on the dial, CENTER.
      *
      * The panel gives it way at once over sweep writes already on the wire or
      * queued.
@@ -196,7 +197,7 @@ typedef struct {
 } servo_pause_end_t;
 
 /**
- * @brief Whether the drive command @p c (a position, a centre, a sweep or a
+ * @brief Whether the drive command @p c (a position, a center, a sweep or a
  *        hold) was asked during the pause @p e records as let go of, so is
  *        stale and is not to be sent: the screen has ended that pause, and the
  *        command would hold or move the servo somewhere it no longer shows.

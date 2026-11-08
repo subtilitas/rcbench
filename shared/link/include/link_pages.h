@@ -518,7 +518,7 @@ enum {
  *     SWEEP to SWEEP_DWELL_MS are a sweep (servo_sweep.h), four registers so
  *     a start fits one frame.  SWEEP is the curve, 0 stopped, 1 square,
  *     2 sine, 3 triangle; MHZ thousandths of a cycle a second, 50 to 5000;
- *     SPAN command units either side of the centre, 0 to 500; DWELL_MS the
+ *     SPAN command units either side of the center, 0 to 500; DWELL_MS the
  *     hold at each end, 0 to 5000.  A sweep needs the bench armed
  *     (NOT_ARMED) and stops after 500ms unwritten, on a disarm, or after
  *     SWEEP_MOVES ends (0 for no end), read back in SWEEP_DONE.
@@ -529,7 +529,7 @@ enum {
  *     disarm rules.  A sweep that was running when the hold began keeps its
  *     phase: how far into the curve it was, so its point, its dwell and its
  *     movements reached.  One that had made its movements is held at the
- *     centre it ended on.  A write is judged against the page as a pass at
+ *     center it ended on.  A write is judged against the page as a pass at
  *     the same moment leaves it: a sweep past its last movement, unwritten
  *     for 500ms or disarmed has ended, even before the pass that ends it.
  *
@@ -1162,9 +1162,9 @@ enum {
     LINK_SH_WIDTH_CMM  = 0, /**< outline, along the pad rows              */
     LINK_SH_HEIGHT_CMM = 1, /**< outline, across them                     */
     LINK_SH_LAYOUT     = 2, /**< (corner << 8) | pads in one row          */
-    LINK_SH_PITCH_CMM  = 3, /**< centre to centre, 254 for 0.1 inch       */
+    LINK_SH_PITCH_CMM  = 3, /**< center to center, 254 for 0.1 inch       */
     /**
-     * @brief Edge to the centre of the pad row, from the outline's own edge.
+     * @brief Edge to the center of the pad row, from the outline's own edge.
      *
      * A board drawing (LINK_ART_DRAWING) places its pads on the same grid.
      */
@@ -1280,15 +1280,15 @@ typedef enum {
  *   2  u8   the GPIO of a LINK_DRAW_PAD_GPIO pad, the rail of a POWER pad in
  *           tenths of a volt (0: not a fixed voltage), else 0
  *   3  u8   flags: LINK_DRAW_PAD_SQUARE
- *   4  u16  x of the pad centre
- *   6  u16  y of the pad centre
+ *   4  u16  x of the pad center
+ *   6  u16  y of the pad center
  * Then the shapes, LINK_DRAW_SHAPE_BYTES each, drawn in order over the board
  * colour and under the rings:
  *   0  u8   kind: a link_draw_shape_kind_t
  *   1  u8   corner radius of an RRECT, width of a LINE, else 0
  *   2  u16  colour, RGB565
- *   4  u16  a   RECT, RRECT: left x;  DISC: centre x;  LINE: x0
- *   6  u16  b   RECT, RRECT: top y;   DISC: centre y;  LINE: y0
+ *   4  u16  a   RECT, RRECT: left x;  DISC: center x;  LINE: x0
+ *   6  u16  b   RECT, RRECT: top y;   DISC: center y;  LINE: y0
  *   8  u16  c   RECT, RRECT: width;   DISC: radius;    LINE: x1
  *   10 u16  d   RECT, RRECT: height;  DISC: 0;         LINE: y1
  * The length is exactly the header, the pads and the shapes.

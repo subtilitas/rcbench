@@ -490,8 +490,8 @@ static int rotated_stencil(gfx_canvas_t *c, int cx, int cy, const char *s,
  *        the share @p alpha of its pixels by an ordered dither
  *        (include/gfx.h).
  * @param c the canvas
- * @param cx the centre's column, px
- * @param cy the centre's row, px
+ * @param cx the center's column, px
+ * @param cy the center's row, px
  * @param s the text, UTF-8
  * @param font the face
  * @param fg the colour

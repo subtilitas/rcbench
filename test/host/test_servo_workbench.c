@@ -401,7 +401,7 @@ TEST_CASE(the_supply_caps_show_on_their_button)
     ui_text_set_language(UI_LANG_EN);
 }
 
-/* AS5600 has one home, SETUP > SENSORS; RUDDER's list keeps ENC CENTRE,
+/* AS5600 has one home, SETUP > SENSORS; RUDDER's list keeps ENC CENTER,
  * the action on the servo. */
 TEST_CASE(the_as5600_lives_on_sensors)
 {

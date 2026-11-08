@@ -117,7 +117,7 @@ static inline int green_of(gfx_color_t c) { return (int)(((c >> 5) & 0x3f) << 2)
 static inline gfx_color_t arm_px(void)
 {
     /* Inside the ARM button, clear of its rounded corner, its hairline and
-     * the centred label. */
+     * the centered label. */
     return fb[(size_t)(ARM_Y + 8) * W + (ARM_X - 90)];
 }
 

@@ -241,7 +241,7 @@ void servo_limrun_abort(servo_limrun_t *r, servo_test_abort_t why,
 /* ------------------------------------------------------- the searches */
 
 /**
- * @brief Start a limit search of one side, from the centre outward.
+ * @brief Start a limit search of one side, from the center outward.
  *
  * @param r      Run state.
  * @param side   SERVO_LIMRUN_LO or SERVO_LIMRUN_HI.
@@ -291,12 +291,12 @@ static servo_limrun_side_t side_result(const servo_limrun_t *r,
 
 /**
  * @brief How far @p now lies outward of @p was on @p side, us: positive further
- *        from the centre.
+ *        from the center.
  *
  * @param side SERVO_LIMRUN_LO or SERVO_LIMRUN_HI.
  * @param now  Result being compared.
  * @param was  Earlier result to compare against.
- * @return distance in us, positive further from the centre.
+ * @return distance in us, positive further from the center.
  */
 static int32_t outward(uint8_t side, const servo_limrun_side_t *now,
                        const servo_limrun_side_t *was)
@@ -333,16 +333,16 @@ static unsigned changes(const servo_limrun_t *r, const uint16_t *want)
 }
 
 /**
- * @brief The search centre and ends: the servo's NEUTRAL, PULSE LOWER and PULSE
+ * @brief The search center and ends: the servo's NEUTRAL, PULSE LOWER and PULSE
  *        UPPER once read, rounded inward to whole microseconds so no command
- *        passes a pulse limit; the bench's PULSE CENTRE, MIN and MAX before.
+ *        passes a pulse limit; the bench's PULSE CENTER, MIN and MAX before.
  *
  * @param r Run state.
  */
 static void search_span(servo_limrun_t *r)
 {
     if (!r->read_once) {
-        r->ctr_us = r->cfg.centre_us;
+        r->ctr_us = r->cfg.center_us;
         r->end_us[SERVO_LIMRUN_LO] = r->cfg.min_us;
         r->end_us[SERVO_LIMRUN_HI] = r->cfg.max_us;
         return;
@@ -455,7 +455,7 @@ static void plan(const servo_limrun_t *r, uint16_t *want, int8_t *search)
 }
 
 /**
- * @brief A session next: the servo back to the centre first, SAFE asked once it
+ * @brief A session next: the servo back to the center first, SAFE asked once it
  *        had SERVO_LIMRUN_RETURN_MS to get there (servo_limrun_step()).
  *
  * @param r      Run state.
@@ -664,7 +664,7 @@ static void search_done(servo_limrun_t *r, uint16_t bind_us, uint32_t now_ms)
         return;
     }
     r->probe = side_result(r, bind_us);
-    /* Back to the centre from the end it reached, whatever comes next. */
+    /* Back to the center from the end it reached, whatever comes next. */
     r->cmd_us  = r->ctr_us;
     r->cmd_due = true;
     switch (r->phase) {
@@ -711,7 +711,7 @@ bool servo_limrun_start(servo_limrun_t *r, const servo_limrun_cfg_t *cfg,
                         uint32_t now_ms)
 {
     if (r == NULL || cfg == NULL || servo_limrun_running(r)
-        || !(cfg->min_us < cfg->centre_us && cfg->centre_us < cfg->max_us)
+        || !(cfg->min_us < cfg->center_us && cfg->center_us < cfg->max_us)
         || ((cfg->program || cfg->set_pulses) && !cfg->read)
         || !limrun_family_ok(cfg)) {
         return false;
@@ -1285,7 +1285,7 @@ void servo_limrun_step(servo_limrun_t *r, uint32_t now_ms,
         r->in_flight = true;
     }
     if (servo_limrun_running(r) && r->cmd_due) {
-        /* A search's position, or PULSE CENTRE after one. */
+        /* A search's position, or PULSE CENTER after one. */
         out->command = true;
         out->cmd_us  = r->cmd_us;
         r->cmd_due   = false;

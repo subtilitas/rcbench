@@ -875,7 +875,7 @@ TEST_CASE(an_injected_point_past_the_ui_is_clamped_to_its_edge)
     CHECK_EQ(out[0].y, 599);
 }
 
-TEST_CASE(the_glass_lands_mirrored_on_the_ui_corners_and_centre)
+TEST_CASE(the_glass_lands_mirrored_on_the_ui_corners_and_center)
 {
     /* Raw glass -> panel pixel: x' = 1023 - x, y' = 599 - y.  The UI is
      * the whole glass, so every corner of the glass is a corner of it. */
@@ -884,7 +884,7 @@ TEST_CASE(the_glass_lands_mirrored_on_the_ui_corners_and_centre)
         { 0, 599, 1023, 0 },     /* top-right */
         { 1023, 0, 0, 599 },     /* bottom-left */
         { 0, 0, 1023, 599 },     /* bottom-right */
-        { 511, 299, 512, 300 },  /* centre */
+        { 511, 299, 512, 300 },  /* center */
     };
     for (size_t c = 0; c < sizeof(k) / sizeof(k[0]); ++c) {
         const touch_point_t g = pt(3, k[c][0], k[c][1]);
@@ -911,7 +911,7 @@ TEST_CASE(no_point_of_the_glass_is_dropped)
 
 TEST_CASE(both_sources_at_once_keep_their_own_maps)
 {
-    /* The glass at the centre, the injector at (100, 50): each where it
+    /* The glass at the center, the injector at (100, 50): each where it
      * means, not the injector mirrored to (923, 549). */
     const touch_point_t g = pt(0, 511, 299);
     const touch_point_t inj = pt(0, 100, 50);
@@ -969,7 +969,7 @@ int main(void)
     RUN(null_detach_calls_are_harmless);
     RUN(an_injected_point_lands_on_the_pixel_it_names);
     RUN(an_injected_point_past_the_ui_is_clamped_to_its_edge);
-    RUN(the_glass_lands_mirrored_on_the_ui_corners_and_centre);
+    RUN(the_glass_lands_mirrored_on_the_ui_corners_and_center);
     RUN(no_point_of_the_glass_is_dropped);
     RUN(both_sources_at_once_keep_their_own_maps);
     RUN(mapping_no_points_or_no_map_changes_nothing);

@@ -41,7 +41,7 @@ static bool no_position_posted(void)
     servo_cmd_t c;
     while (servo_screen_take(&c)) {
         none = none && c.kind != SERVO_CMD_POSITION
-               && c.kind != SERVO_CMD_CENTRE;
+               && c.kind != SERVO_CMD_CENTER;
     }
     return none;
 }
@@ -213,15 +213,15 @@ TEST_CASE(a_release_settles_on_the_last_finger_angle)
     CHECK(!servo_screen_take(&junk));
 }
 
-/* CENTRE tapped while the target is still on its way: CENTRE's command
+/* CENTER tapped while the target is still on its way: CENTER's command
  * stands, and the filter posts nothing over it. */
 TEST_CASE(another_command_takes_the_horn_from_the_filter)
 {
     held_then_moved(-40.0f, 40.0f);
     on_dial(40.0f, TOUCH_EVENT_UP, 1);
     at_hz(60.0f, 1.0f / 60.0f);
-    tap(SV_CENTRE_X, SV_BTN_Y);
-    CHECK_EQ(last_cmd().kind, SERVO_CMD_CENTRE);
+    tap(SV_CENTER_X, SV_BTN_Y);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_CENTER);
     at_hz(60.0f, 0.5f);
     CHECK(no_position_posted());
     CHECK_EQ(servo_screen_commanded(), 1500);

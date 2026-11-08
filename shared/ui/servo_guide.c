@@ -270,9 +270,9 @@ static void page_drive_ctl(ui_help_page_t *p)
     }
     (void)ui_help_add(p, TR(SV_SPEED), TX_HG_SV_SPEED, drive_speed_rect());
     (void)ui_help_add(p, TR(SV_ROW_TYPE), TX_HG_SV_TYPE, drive_tag_rect());
-    (void)ui_help_add(p, TR(SV_CENTRE_BTN), TX_HG_SV_BUTTONS,
+    (void)ui_help_add(p, TR(SV_CENTER_BTN), TX_HG_SV_BUTTONS,
                       both(s.fn == SERVO_FN_SWEEP ? s.sweep_btn
-                                                  : s.centre_btn,
+                                                  : s.center_btn,
                            s.release_btn));
 }
 

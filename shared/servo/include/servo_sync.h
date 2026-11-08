@@ -13,12 +13,12 @@
  *
  * The two errors separate:
  *
- *     a difference at centre   is an offset error  -> trim one servo's centre
+ *     a difference at center   is an offset error  -> trim one servo's center
  *     a difference at the ends is a travel error   -> scale one servo's throw
  *
- * Measured at the centre and then at each end, each correction comes from
+ * Measured at the center and then at each end, each correction comes from
  * its own measurement.  Each end gets its own number: a linkage is not
- * symmetric about centre once a horn and a pushrod are involved, the same
+ * symmetric about center once a horn and a pushrod are involved, the same
  * reason the limit search measures both ends.
  *
  * Current cannot show two servos that agree with each other and are both
@@ -66,7 +66,7 @@ typedef enum {
 
 /** @brief Which of the three measurements the search is on. */
 typedef enum {
-    SERVO_SYNC_STAGE_CENTRE = 0,
+    SERVO_SYNC_STAGE_CENTER = 0,
     SERVO_SYNC_STAGE_HIGH,
     SERVO_SYNC_STAGE_LOW,
     SERVO_SYNC_STAGE_COUNT,
@@ -76,7 +76,7 @@ typedef enum {
 #define SERVO_SYNC_MAX_POINTS 9
 
 typedef struct {
-    uint16_t centre_us;
+    uint16_t center_us;     /**< the surface's center, us          */
     uint16_t deflection_us; /**< how far out the ends are measured */
 
     int16_t  window_us;     /**< half-width of the first scan, each stage */
@@ -125,8 +125,8 @@ typedef struct {
     servo_sync_fault_t fault;
 
     /* The answers. All three are what the *second* servo should be commanded
-     * to, given the first is at centre, at +deflection and at -deflection. */
-    int16_t  trim_us;       /**< signed offset applied at centre */
+     * to, given the first is at center, at +deflection and at -deflection. */
+    int16_t  trim_us;       /**< signed offset applied at center */
     int16_t  travel_hi_us;  /**< B's throw when A is at +deflection */
     int16_t  travel_lo_us;  /**< B's throw when A is at -deflection */
 
@@ -141,7 +141,7 @@ typedef struct {
     servo_sync_stage_t stage;
     uint8_t  round;
     uint8_t  point;
-    int32_t  win_centre_us;
+    int32_t  win_center_us; /**< middle of this round's scan window, us */
     int32_t  win_half_us;
     float    scan_a[SERVO_SYNC_MAX_POINTS];
     uint32_t phase_start_ms;
@@ -158,12 +158,12 @@ typedef struct {
  * @brief Defaults for a sync search.
  *
  * @param cfg       Configuration to fill. Does nothing when NULL.
- * @param centre_us Centre pulse width, us.
+ * @param center_us Center pulse width, us.
  */
-void servo_sync_defaults(servo_sync_cfg_t *cfg, uint16_t centre_us);
+void servo_sync_defaults(servo_sync_cfg_t *cfg, uint16_t center_us);
 
 /**
- * @brief Start a sync search at the centre stage.
+ * @brief Start a sync search at the center stage.
  *
  * @param sy  Search state to initialise. Does nothing when NULL.
  * @param cfg Configuration to copy. Does nothing when NULL.

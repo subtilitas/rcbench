@@ -27,7 +27,7 @@
 #define RCARD_W  (W - RCARD_X - PAD)
 #define CTRL_X   BL_RC_X
 #define CTRL_W   BL_RC_W
-/* Centres of the controls reset() lays out. */
+/* Centers of the controls reset() lays out. */
 #define BLADE_DN_X BL_DOWN_X
 #define BLADE_UP_X BL_UP_X
 #define BLADE_Y    BL_BLADES_Y
@@ -469,7 +469,7 @@ TEST_CASE(a_negative_angle_does_not_index_before_the_first_blade)
     CHECK_EQ(hi, 2);
 }
 
-/* Tab centres, from the tab row reset() lays out: from x 11, three tabs of
+/* Tab centers, from the tab row reset() lays out: from x 11, three tabs of
  * 150px, 4px apart. */
 #define TAB0_X   IN_TAB_X(0)
 #define TAB1_X   IN_TAB_X(1)

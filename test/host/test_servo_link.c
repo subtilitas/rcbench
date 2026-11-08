@@ -396,7 +396,7 @@ TEST_CASE(a_sweep_waits_while_a_release_is_owed_and_cannot_be_paid)
     CHECK(servo_link_release_owed());
 
     servo_link_apply(sweep(1u, false), true, 0u);
-    /* The stop link-up owes, and no range, no curve, no centre. */
+    /* The stop link-up owes, and no range, no curve, no center. */
     CHECK_EQ(frames_to(LINK_PAGE_CHAN_CFG, 0u), 0u);
     CHECK_EQ(frames_to(LINK_PAGE_CHANNELS, 0u), 0u);
     CHECK_EQ(frames_to(LINK_PAGE_SERVO, LINK_SV_SWEEP_MOVES), 0u);
@@ -408,10 +408,10 @@ TEST_CASE(a_sweep_waits_while_a_release_is_owed_and_cannot_be_paid)
     clear_log();
     servo_link_service(true);
     CHECK(!servo_link_release_owed());
-    const frame_t *centre = last_to(LINK_PAGE_CHANNELS);
-    CHECK(centre != NULL);
-    if (centre != NULL) {
-        CHECK_EQ(centre->regs[0], LINK_CH_SPAN / 2u);
+    const frame_t *center = last_to(LINK_PAGE_CHANNELS);
+    CHECK(center != NULL);
+    if (center != NULL) {
+        CHECK_EQ(center->regs[0], LINK_CH_SPAN / 2u);
     }
     CHECK(!servo_link_take_sweep_start());
     s_now += 100u;
@@ -426,7 +426,7 @@ TEST_CASE(a_sweep_waits_for_an_unpaid_release_over_a_known_binding)
     servo_link_apply(pos(1800u), true, 0u);
     servo_link_let_go();
     clear_log();
-    bus.quiet_channels = true;   /* the centre write goes unanswered */
+    bus.quiet_channels = true;   /* the center write goes unanswered */
     servo_link_apply(sweep(1u, false), true, 0u);
     CHECK(servo_link_release_owed());
     CHECK(!servo_link_take_sweep_start());
@@ -439,10 +439,10 @@ TEST_CASE(a_sweep_waits_for_an_unpaid_release_over_a_known_binding)
     s_now += 100u;
     servo_link_service(true);
     CHECK(!servo_link_release_owed());
-    const frame_t *centre = last_to(LINK_PAGE_CHANNELS);
-    CHECK(centre != NULL);
-    if (centre != NULL) {
-        CHECK_EQ(centre->regs[0], LINK_CH_SPAN / 2u);
+    const frame_t *center = last_to(LINK_PAGE_CHANNELS);
+    CHECK(center != NULL);
+    if (center != NULL) {
+        CHECK_EQ(center->regs[0], LINK_CH_SPAN / 2u);
     }
 }
 
@@ -638,21 +638,21 @@ TEST_CASE(a_hold_asked_501_ms_after_the_last_owes_the_release_until_paid)
     CHECK_EQ(seq, 7u);
     CHECK(servo_link_release_owed());
 
-    /* The next refresh pays it: the range, then the centre. */
+    /* The next refresh pays it: the range, then the center. */
     servo_link_service(true);
     CHECK(!servo_link_release_owed());
     CHECK_EQ(frames_to(LINK_PAGE_CHAN_CFG, 0u), 1u);
-    const frame_t *centre = last_to(LINK_PAGE_CHANNELS);
-    CHECK(centre != NULL);
-    if (centre != NULL) {
-        CHECK_EQ(centre->regs[0], LINK_CH_SPAN / 2u);
+    const frame_t *center = last_to(LINK_PAGE_CHANNELS);
+    CHECK(center != NULL);
+    if (center != NULL) {
+        CHECK_EQ(center->regs[0], LINK_CH_SPAN / 2u);
     }
     clear_log();
     servo_link_service(true);
     CHECK_EQ(bus.n, 0u);                        /* paid once */
 }
 
-TEST_CASE(a_sweep_after_a_hold_lost_at_501_ms_starts_from_the_centre)
+TEST_CASE(a_sweep_after_a_hold_lost_at_501_ms_starts_from_the_center)
 {
     up(6u, 0x01u);
     sweep_then_hold(7u);
@@ -660,21 +660,21 @@ TEST_CASE(a_sweep_after_a_hold_lost_at_501_ms_starts_from_the_centre)
     servo_link_apply(hold(7u), true, 0u);
     servo_link_apply(sweep(2u, false), true, 0u);
     /* The release first, then the curve. */
-    unsigned centre_at = LOG_MAX;
+    unsigned center_at = LOG_MAX;
     unsigned moves_at  = LOG_MAX;
     for (unsigned i = 0; i < bus.n && i < LOG_MAX; ++i) {
-        if (bus.log[i].page == LINK_PAGE_CHANNELS && centre_at == LOG_MAX
+        if (bus.log[i].page == LINK_PAGE_CHANNELS && center_at == LOG_MAX
             && bus.log[i].regs[0] == LINK_CH_SPAN / 2u) {
-            centre_at = i;
+            center_at = i;
         }
         if (bus.log[i].page == LINK_PAGE_SERVO
             && bus.log[i].offset == LINK_SV_SWEEP_MOVES) {
             moves_at = i;
         }
     }
-    CHECK(centre_at < LOG_MAX);
+    CHECK(center_at < LOG_MAX);
     CHECK(moves_at < LOG_MAX);
-    CHECK(centre_at < moves_at);
+    CHECK(center_at < moves_at);
     CHECK(!servo_link_release_owed());
     CHECK(servo_link_take_sweep_start());
     CHECK_EQ(servo_link_sweep_start().from, SERVO_SWEEP_FROM_REST);
@@ -823,7 +823,7 @@ TEST_CASE(an_arm_after_a_stop_in_between_is_not_asked_for)
     panel.stops = 4u;
     servo_link_apply(bare(SERVO_CMD_ARM), true, 3u);
     CHECK_EQ(panel.arms, 0u);
-    /* The surfaces are centred all the same. */
+    /* The surfaces are centered all the same. */
     CHECK_EQ(frames_to(LINK_PAGE_CHANNELS, 0u), 1u);
     CHECK(!servo_link_release_owed());
 
@@ -1081,7 +1081,7 @@ int main(void)
     RUN(a_hold_unrepeated_for_more_than_500_ms_is_let_go);
     RUN(a_hold_asked_499_or_500_ms_after_the_last_is_held_and_owes_nothing);
     RUN(a_hold_asked_501_ms_after_the_last_owes_the_release_until_paid);
-    RUN(a_sweep_after_a_hold_lost_at_501_ms_starts_from_the_centre);
+    RUN(a_sweep_after_a_hold_lost_at_501_ms_starts_from_the_center);
     RUN(a_hold_lost_at_501_ms_sends_no_faster_rate);
     RUN(a_hold_answered_after_more_than_500_ms_ends_the_pause);
     RUN(a_held_position_is_said_again_at_100_ms_and_not_before);

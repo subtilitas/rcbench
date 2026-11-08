@@ -34,8 +34,8 @@ typedef struct {
     uint8_t  kind;     /**< LINK_PAD_* or LINK_DRAW_PAD_GPIO                */
     uint8_t  value;    /**< GPIO, or a POWER pad's tenths of a volt         */
     uint8_t  flags;    /**< LINK_DRAW_PAD_SQUARE                            */
-    uint16_t x;        /**< pad centre, 0.01mm from the outline's left      */
-    uint16_t y;        /**< pad centre, 0.01mm from the outline's top       */
+    uint16_t x;        /**< pad center, 0.01mm from the outline's left      */
+    uint16_t y;        /**< pad center, 0.01mm from the outline's top       */
 } link_draw_pad_t;
 
 /** @brief One shape record; see link_pages.h for what a to d mean per kind. */

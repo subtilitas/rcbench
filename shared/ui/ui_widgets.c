@@ -345,12 +345,12 @@ void ui_tile(gfx_canvas_t *c, gfx_rect_t r, const ui_tile_look_t *look,
     }
 
     if (icon != NULL) {
-        /* Centred over the name and the line, its box's top at icon_dy. */
+        /* Centered over the name and the line, its box's top at icon_dy. */
         icon(c, r.x + r.w / 2, r.y + look->icon_dy + look->icon / 2,
              look->icon, UI_ACCENT);
     }
 
-    /* Clipped to the tile less its padding: centring a string wider than
+    /* Clipped to the tile less its padding: centering a string wider than
      * its tile puts the overhang on the neighbour. */
     const int16_t tx = (int16_t)(r.x + UI_TILE_PAD);
     const int16_t tw = (int16_t)(r.w - 2 * UI_TILE_PAD);

@@ -57,7 +57,7 @@
 
 /**
  * @brief The board's box: 600px wide and as tall as its outline makes
- *        it, up to 240px, centred between the body's top and FOOT.
+ *        it, up to 240px, centered between the body's top and FOOT.
  *
  * 240px leaves 126px above and below for two tiers of 56px keys with
  * their gaps.  The RP2350-CAN's outline, 51 x 21mm, draws 582 x 240px,
@@ -320,7 +320,7 @@ int pk_use_foot(void);
 
 /**
  * @brief Gives the box the board occupies: the drawing's outline or else the
- *        shape's, centred across the screen between the body's top and FOOT.
+ *        shape's, centered across the screen between the body's top and FOOT.
  * @param x takes the left edge, px
  * @param y takes the top edge, px
  * @param w takes the width, px
@@ -331,8 +331,8 @@ void pk_board_box(int *x, int *y, int *w, int *h);
  * @brief Gives where a pad sits on screen, from the drawing's pad record or
  *        else the shape's grid.
  * @param pad the pad
- * @param px takes the x of the pad's ring centre, px
- * @param py takes the y of the pad's ring centre, px
+ * @param px takes the x of the pad's ring center, px
+ * @param py takes the y of the pad's ring center, px
  * @return true when the pad is on the board
  */
 bool pk_pad_xy(uint8_t pad, int *px, int *py);
@@ -352,10 +352,10 @@ bool pk_pad_is_top(uint8_t pad);
  */
 bool pk_button_at(int i, gfx_rect_t *out, int *tier_out);
 /**
- * @brief Gives the centre and radius of the marker of pad-list entry @p e.
+ * @brief Gives the center and radius of the marker of pad-list entry @p e.
  * @param e pad-list entry
- * @param mx takes the centre x, px
- * @param my takes the centre y, px
+ * @param mx takes the center x, px
+ * @param my takes the center y, px
  * @param r takes the radius, px
  * @return true when the pad has a marker
  */

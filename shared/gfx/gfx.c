@@ -766,12 +766,12 @@ typedef struct {
 } span_t;
 
 /**
- * @brief Narrow @p sp to the columns of the row @p dy from a centre at
- *        @p cx that can lie nearer the centre than @p reach: those more
+ * @brief Narrow @p sp to the columns of the row @p dy from a center at
+ *        @p cx that can lie nearer the center than @p reach: those more
  *        than a pixel further are left out, so a loop over a shape's box
  *        walks the shape's own pixels.
- * @param cx the centre's column, px
- * @param dy the row's distance from the centre's row, px
+ * @param cx the center's column, px
+ * @param dy the row's distance from the center's row, px
  * @param reach the distance, px
  * @param sp the run, narrowed in place
  * @return false when nothing of the row is left
@@ -789,11 +789,11 @@ static bool span_round(float cx, float dy, float reach, span_t *sp)
 }
 
 /**
- * @brief Set @p sp to columns of the row @p dy from a centre at @p cx that
- *        lie at least a pixel nearer the centre than @p reach: inside it
+ * @brief Set @p sp to columns of the row @p dy from a center at @p cx that
+ *        lie at least a pixel nearer the center than @p reach: inside it
  *        whatever a float's rounding does to the distance.
- * @param cx the centre's column, px
- * @param dy the row's distance from the centre's row, px
+ * @param cx the center's column, px
+ * @param dy the row's distance from the center's row, px
  * @param reach the distance, px
  * @param sp the run: left empty, at @c sp->hi, when there is none;
  *           kept within the columns it held
@@ -859,8 +859,8 @@ void gfx_fill_circle_aaf(gfx_canvas_t *c, float cx, float cy, float r,
 /**
  * @brief gfx_fill_circle_aaf() on whole pixels.
  * @param c the canvas
- * @param cx the centre's column, px
- * @param cy the centre's row, px
+ * @param cx the center's column, px
+ * @param cy the center's row, px
  * @param r the radius, px; 0 or less draws nothing
  * @param col the colour
  */
@@ -1068,7 +1068,7 @@ void gfx_ring_aaf(gfx_canvas_t *c, float cx, float cy, float r,
         return;
     }
     const float out2 = outer * outer;
-    /* A band thicker than 2r - 1 reaches over the centre: no hole. */
+    /* A band thicker than 2r - 1 reaches over the center: no hole. */
     const bool  has_hole = inner > 0.0f;
     const float in2  = has_hole ? inner * inner : 0.0f;
     ring_cut_t cut = { 0 };
@@ -1172,14 +1172,14 @@ static float dir_of(int x, int y, int cx, int cy)
  *
  * A pixel arc_walk() lays lies within 1.5px of its step's point on the
  * ray: its coordinates are truncated, not rounded, on the negative side.
- * So a clip wholly nearer the centre than r0 - 3 or wholly further than
- * r1 + 2 gets nothing, and a clip off the centre is reached only from the
+ * So a clip wholly nearer the center than r0 - 3 or wholly further than
+ * r1 + 2 gets nothing, and a clip off the center is reached only from the
  * directions of its corners, widened by 3px of arc at r0 - 1.  A repaint
  * clipped to a box beside a dial walks the part of the dial's arc that
  * passes the box, not all of it.
  *
  * @param c the canvas
- * @param cx the centre's column, px
+ * @param cx the center's column, px
  * @param cy its row, px
  * @param r0 the inner radius, px
  * @param r1 the outer radius, px
@@ -1191,7 +1191,7 @@ static bool arc_window(const gfx_canvas_t *c, int cx, int cy, float r0,
 {
     out->lo   = 0.0f;
     out->span = 360.0f;
-    /* The clip's pixel centres. */
+    /* The clip's pixel centers. */
     const int x0 = c->clip.x, x1 = c->clip.x + c->clip.w - 1;
     const int y0 = c->clip.y, y1 = c->clip.y + c->clip.h - 1;
     const float nx = (float)((cx < x0) ? x0 - cx : (cx > x1) ? cx - x1 : 0);
@@ -1203,7 +1203,7 @@ static bool arc_window(const gfx_canvas_t *c, int cx, int cy, float r0,
     if (far < r0 - 3.0f || near > r1 + 2.0f) {
         return false;
     }
-    /* The centre in the clip or next to it, or a radius too small for a
+    /* The center in the clip or next to it, or a radius too small for a
      * margin of 3px of arc: every direction. */
     if (near < 2.0f || r0 < 8.0f) {
         return true;

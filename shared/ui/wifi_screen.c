@@ -783,7 +783,7 @@ static void leave(void)
 
 /**
  * @brief @p t left aligned in face @p f, in a box of @p w x @p h px from
- *        (@p x, @p y), centred in its height.
+ *        (@p x, @p y), centered in its height.
  * @param c   Canvas.
  * @param x   Left edge.
  * @param y   Top edge.

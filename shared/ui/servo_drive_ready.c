@@ -11,7 +11,7 @@
  *     and ARM on RUDDER;
  *   - on LIVE and SWEEP SPEED from y 196, its track at y 220 to 260;
  *   - the type pill, y 274 to 318;
- *   - on LIVE CENTRE and RELEASE, on SWEEP SWEEP and RELEASE, y 330 to
+ *   - on LIVE CENTER and RELEASE, on SWEEP SWEEP and RELEASE, y 330 to
  *     378, each half the column;
  *   - the rail line at y 404: the servo rail's meter, its volts and amps.
  *
@@ -126,7 +126,7 @@ void drive_layout(void)
     if (!drive_shown()) {
         /* TEST, LIMIT RUN, RUDDER AUTO, KST and HITEC: a READY card in the
          * output card's place, none of its controls. */
-        s.centre_btn  = none;
+        s.center_btn  = none;
         s.sweep_btn   = none;
         s.release_btn = none;
         s.out_btn     = none;
@@ -137,7 +137,7 @@ void drive_layout(void)
     const gfx_rect_t right = { (int16_t)(RC_X + DRV_BTN_W + BTN_GAP),
                                DRV_BTN_Y,
                                (int16_t)(RC_W - DRV_BTN_W - BTN_GAP), BTN_H };
-    s.centre_btn  = (s.fn == SERVO_FN_LIVE) ? left : none;
+    s.center_btn  = (s.fn == SERVO_FN_LIVE) ? left : none;
     s.sweep_btn   = (s.fn == SERVO_FN_SWEEP) ? left : none;
     s.release_btn = dial_fn() ? right : none;
     s.out_btn     = none;
@@ -655,8 +655,8 @@ void drive_render_card(gfx_canvas_t *c)
     }
     svs_draw_tag(c, (gfx_rect_t){ RC_X, DRV_TAG_Y, RC_W, TAG_H });
     if (s.fn == SERVO_FN_LIVE) {
-        /* CENTRE sets a position: green, dimmed while SAFE. */
-        ui_button_font(c, s.centre_btn, TR(SV_CENTRE_BTN),
+        /* CENTER sets a position: green, dimmed while SAFE. */
+        ui_button_font(c, s.center_btn, TR(SV_CENTER_BTN),
                        ui_action_fill(UI_ACTION_AVAILABLE), false,
                        value_live(), SV_FONT_LABEL);
     } else if (s.fn == SERVO_FN_SWEEP) {

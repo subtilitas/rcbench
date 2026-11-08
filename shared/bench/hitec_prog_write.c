@@ -220,9 +220,9 @@ uint16_t hitec_prog_rules(const hitec_prog_t *p, uint8_t id, int32_t value)
         }
         break;
     case HITEC_P_D_NEUTRAL:
-    case HITEC_P_C_CENTRE:
+    case HITEC_P_C_CENTER:
         if (moved) {
-            r |= HITEC_RULE_BIT(HITEC_RULE_CENTRE);
+            r |= HITEC_RULE_BIT(HITEC_RULE_CENTER);
         }
         break;
     case HITEC_P_D_DIRECTION:

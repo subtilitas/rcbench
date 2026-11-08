@@ -458,18 +458,18 @@ void svs_event_body(const touch_event_t *evt)
             }
             return;
         }
-        if (gfx_rect_contains(s.centre_btn, px, py)) {
+        if (gfx_rect_contains(s.center_btn, px, py)) {
             /* A position like any other, and refused like one. */
             if (!value_live()) {
                 return;
             }
-            /* CENTRE takes the horn from a drag a second finger makes, as
+            /* CENTER takes the horn from a drag a second finger makes, as
              * SWEEP and RELEASE do. */
             end_dial_drag();
             test_end_now(SERVO_TEST_AB_OPERATOR);
             stop_sweep();
             s.commanded_deg = 0.0f;
-            post(SERVO_CMD_CENTRE, svs_deg_to_us(0.0f));
+            post(SERVO_CMD_CENTER, svs_deg_to_us(0.0f));
             ++s.ctrl_rev;
         } else if (gfx_rect_contains(s.sweep_btn, px, py)) {
             end_dial_drag();

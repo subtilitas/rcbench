@@ -6,7 +6,7 @@
  * setting.
  *
  * Under test:
- *  - the side effects of the classic centre, direction and fail-safe
+ *  - the side effects of the classic center, direction and fail-safe
  *    position, the end points by side, the factory reset;
  *  - the balance after every classic setting, none above 0x1C, the repair
  *    of a bad checksum, a restore of every cell;
@@ -23,18 +23,18 @@ TEST_CASE(classic_edits_write_the_hpp21_side_effects)
 {
     hitec_image_t img;
 
-    /* HS-5645MG centre at target 0x1770: 0x0F6C, both ends 0x10. */
+    /* HS-5645MG center at target 0x1770: 0x0F6C, both ends 0x10. */
     hs5645(&img);
-    CHECK_EQ(hitec_param_set(&img, HITEC_LAYOUT_HS5, HITEC_P_C_CENTRE,
+    CHECK_EQ(hitec_param_set(&img, HITEC_LAYOUT_HS5, HITEC_P_C_CENTER,
                              0x1770), HITEC_SET_OK);
     CHECK_EQ(img.mem[0x07], 0x0F);
     CHECK_EQ(img.mem[0x08], 0x6C);
     CHECK_EQ(img.mem[0x13], 0x10);
     CHECK_EQ(img.mem[0x14], 0x10);
     CHECK_EQ(hitec_c_eeprom_sum(&img), 0);
-    /* HS-7955TG centre at target 0x1788: 0x0F88. */
+    /* HS-7955TG center at target 0x1788: 0x0F88. */
     hs7955(&img);
-    CHECK_EQ(hitec_param_set(&img, HITEC_LAYOUT_HS7, HITEC_P_C_CENTRE,
+    CHECK_EQ(hitec_param_set(&img, HITEC_LAYOUT_HS7, HITEC_P_C_CENTER,
                              0x1788), HITEC_SET_OK);
     CHECK_EQ(img.mem[0x07], 0x0F);
     CHECK_EQ(img.mem[0x08], 0x88);
@@ -111,7 +111,7 @@ TEST_CASE(classic_factory_reset_copies_the_factory_block)
     CHECK(memcmp(img.mem, fix_hs7955_fac(), 0x24) == 0);
     CHECK_EQ(img.mem[0x1C], 0x1D);
     /* The HPP-21 Plus writes all 24 settings; a plan writes the changed
-     * ones: the centre, both ends, the direction, the resolution. */
+     * ones: the center, both ends, the direction, the resolution. */
     CHECK_EQ(hitec_plan(&from, &img, &p), HITEC_PLAN_OK);
     CHECK_EQ(p.n, 10);
     check_step(&p.step[0], HITEC_STEP_C_CELL, 0x07, 0x0F);
@@ -146,8 +146,8 @@ TEST_CASE(a_classic_setting_writes_its_cells_then_the_balance)
     check_step(&p.step[1], HITEC_STEP_C_SUM, 0x1C,
                (uint8_t)(0x8C + 0x40 - 0x1C));
     CHECK_EQ(p.step[0].wait_ms, 0);
-    /* Centre: the pair, the balance, each end, the balance. */
-    p = plan_edit(&from, HITEC_LAYOUT_HS5, HITEC_P_C_CENTRE, 0x1770);
+    /* Center: the pair, the balance, each end, the balance. */
+    p = plan_edit(&from, HITEC_LAYOUT_HS5, HITEC_P_C_CENTER, 0x1770);
     CHECK_EQ(p.n, 7);
     check_step(&p.step[0], HITEC_STEP_C_CELL, 0x07, 0x0F);
     check_step(&p.step[1], HITEC_STEP_C_CELL, 0x08, 0x6C);
@@ -156,7 +156,7 @@ TEST_CASE(a_classic_setting_writes_its_cells_then_the_balance)
     CHECK_EQ(p.step[4].kind, HITEC_STEP_C_SUM);
     check_step(&p.step[5], HITEC_STEP_C_CELL, 0x14, 0x10);
     to = from;
-    hitec_param_set(&to, HITEC_LAYOUT_HS5, HITEC_P_C_CENTRE, 0x1770);
+    hitec_param_set(&to, HITEC_LAYOUT_HS5, HITEC_P_C_CENTER, 0x1770);
     check_step(&p.step[6], HITEC_STEP_C_SUM, 0x1C, to.mem[0x1C]);
     /* Direction: 0x13, 0x14, the fail-safe pair, 0x1B, a balance after
      * each. */

@@ -62,8 +62,8 @@
 /*
  * The profiles the bench drives.  STANDARD PWM is the safe one and the one
  * every restart starts at.  The heli profiles are Rotorflight's for digital
- * cyclic and narrow-band tail servos: 1520us centre, +/-700us, up to
- * 333Hz; and 760us centre, +/-350us, up to 560Hz.
+ * cyclic and narrow-band tail servos: 1520us center, +/-700us, up to
+ * 333Hz; and 760us center, +/-350us, up to 560Hz.
  */
 static const uint16_t k_std_rates[]  = { 50, 60, 100, 150, 200, 250, 300, 333 };
 static const uint16_t k_cyc_rates[]  = { 50, 120, 200, 333 };
@@ -93,20 +93,20 @@ servo_screen_state_t s;
 /* ------------------------------------------------------------- conversions */
 
 /*
- * Each side of centre runs to its own end: MIN, CENTRE and MAX are set one
+ * Each side of center runs to its own end: MIN, CENTER and MAX are set one
  * by one, so -90deg is MIN and +90deg is MAX however far each lies from
- * the centre.
+ * the center.
  */
 static float half_travel_us(bool below)
 {
-    return below ? (float)s.centre_us - (float)s.min_us
-                 : (float)s.max_us - (float)s.centre_us;
+    return below ? (float)s.center_us - (float)s.min_us
+                 : (float)s.max_us - (float)s.center_us;
 }
 
 float svs_deg_to_us_f(float deg)
 {
     const float d = s.reverse ? -deg : deg;
-    float us = (float)s.centre_us + (float)s.trim_us
+    float us = (float)s.center_us + (float)s.trim_us
                + d / 90.0f * half_travel_us(d < 0.0f);
     if (us < (float)s.min_us) { us = (float)s.min_us; }
     if (us > (float)s.max_us) { us = (float)s.max_us; }
@@ -120,7 +120,7 @@ uint16_t svs_deg_to_us(float deg)
 
 float us_to_deg_f(float us)
 {
-    const float off = us - (float)s.centre_us - (float)s.trim_us;
+    const float off = us - (float)s.center_us - (float)s.trim_us;
     const float half = half_travel_us(off < 0.0f);
     if (half <= 0.0f) {
         return 0.0f;
@@ -132,7 +132,7 @@ float us_to_deg_f(float us)
 /* The mapping in force now. */
 servo_map_t svs_map_now(void)
 {
-    const servo_map_t m = { s.min_us, s.centre_us, s.max_us, s.trim_us,
+    const servo_map_t m = { s.min_us, s.center_us, s.max_us, s.trim_us,
                             s.reverse, s.travel_deg };
     return m;
 }
@@ -141,18 +141,18 @@ servo_map_t svs_map_now(void)
  * svs_cmd_to_us() and us_to_deg_f() are for the mapping in force. */
 float svs_map_cmd_to_us(const servo_map_t *m, float cmd)
 {
-    const unsigned below = (unsigned)m->centre_us - (unsigned)m->min_us;
-    const unsigned above = (unsigned)m->max_us - (unsigned)m->centre_us;
+    const unsigned below = (unsigned)m->center_us - (unsigned)m->min_us;
+    const unsigned above = (unsigned)m->max_us - (unsigned)m->center_us;
     const float half = (float)((below > above) ? below : above);
-    return (float)m->centre_us - half + 2.0f * half * cmd / (float)OUT_SPAN;
+    return (float)m->center_us - half + 2.0f * half * cmd / (float)OUT_SPAN;
 }
 
 float svs_map_us_to_deg(const servo_map_t *m, float us)
 {
-    const float off = us - (float)m->centre_us - (float)m->trim_us;
+    const float off = us - (float)m->center_us - (float)m->trim_us;
     const float half = (off < 0.0f)
-                       ? (float)m->centre_us - (float)m->min_us
-                       : (float)m->max_us - (float)m->centre_us;
+                       ? (float)m->center_us - (float)m->min_us
+                       : (float)m->max_us - (float)m->center_us;
     if (half <= 0.0f) {
         return 0.0f;
     }
@@ -185,7 +185,7 @@ float svs_cmd_to_us(float cmd)
 /*
  * The angle the pin drives on an armed bench while nothing commands it: the
  * outputs layer's rest for a surface, in the range a command carries.  The
- * midpoint of that range, so PULSE CENTRE without the trim: 1500us for
+ * midpoint of that range, so PULSE CENTER without the trim: 1500us for
  * STANDARD PWM, 760us for NARROW 760.
  */
 float svs_rest_deg(void)
@@ -288,14 +288,14 @@ void post(servo_cmd_kind_t kind, uint16_t us)
         ui_value_drop_arm(&s.gate);
     }
     /* The range travels with the pulse: the panel configures the channel
-     * from it, and a narrow servo's 760us centre is below a standard
+     * from it, and a narrow servo's 760us center is below a standard
      * servo's floor.  The frame rate goes with it. */
     cmd_range(&s.pending.min_us, &s.pending.max_us);
     s.pending.frame_hz = s.frame_hz;
     s.pending.slew_per_s = svs_slew_of(s.speed_pct);
     /* The grip only breathes while something is actually being held, so this
      * has to follow the command rather than the screen being open. */
-    s.driving = (kind == SERVO_CMD_POSITION || kind == SERVO_CMD_CENTRE
+    s.driving = (kind == SERVO_CMD_POSITION || kind == SERVO_CMD_CENTER
                  || kind == SERVO_CMD_SWEEP || kind == SERVO_CMD_HOLD);
     if (s.driving) {
         s.at_rest = false;
@@ -335,7 +335,7 @@ void reissue(void)
     if (s.pending.kind == SERVO_CMD_ARM) {
         /*
          * An arm asked for and not yet collected carries the profile it was
-         * asked under, and the panel centres the surfaces under it before it
+         * asked under, and the panel centers the surfaces under it before it
          * arms: it carries the one in force instead.  One already collected
          * is answered when the arm lands; see servo_screen_set_armed().
          */
@@ -367,7 +367,7 @@ void reissue(void)
         if (svs_same_sweep(&now, &s.sw.cfg)) {
             post(SERVO_CMD_SWEEP, 0);
         } else {
-            /* The curve changed with the range -- MIN, CENTRE, MAX or
+            /* The curve changed with the range -- MIN, CENTER, MAX or
              * TRAVEL move its amplitude -- so it starts over now, rather
              * than going out once with the old amplitude under the new
              * range before tick() catches it. */
@@ -391,7 +391,7 @@ void reissue(void)
          * Resting on an armed bench: the rest restated under the profile now
          * in force, its range and its frame rate, which the panel orders so
          * a faster rate never meets wider pulses.  Left alone, a narrow
-         * servo would rest at a standard servo's centre, past its stop, and
+         * servo would rest at a standard servo's center, past its stop, and
          * a servo would go on running at a heli rate after STANDARD PWM was
          * chosen.
          *
@@ -430,7 +430,7 @@ void svs_drop_motion(void)
     svs_knob_withdraw();
     svs_drag_filter_end();      /* and the drag's filter commands no more */
     const servo_cmd_kind_t k = s.pending.kind;
-    if (k == SERVO_CMD_POSITION || k == SERVO_CMD_CENTRE
+    if (k == SERVO_CMD_POSITION || k == SERVO_CMD_CENTER
         || k == SERVO_CMD_SWEEP || k == SERVO_CMD_HOLD) {
         /* What it was to end at the far end, the next command still ends. */
         s.sweep_ended  = s.sweep_ended || s.pending.ends_sweep;
@@ -453,7 +453,7 @@ void apply_profile(int t, uint16_t hz)
     if (t != s.type) {
         s.type      = t;
         s.min_us    = k_types[t].min_us;
-        s.centre_us = k_types[t].centre_us;
+        s.center_us = k_types[t].center_us;
         s.max_us    = k_types[t].max_us;
     }
     const uint16_t top = max_rate_for(s.type, cmd_top());
@@ -540,7 +540,7 @@ void svs_reset(void)
      * session before it used. */
     s.type      = 0;
     s.min_us    = k_types[0].min_us;
-    s.centre_us = k_types[0].centre_us;
+    s.center_us = k_types[0].center_us;
     s.max_us    = k_types[0].max_us;
     s.frame_hz  = k_types[0].default_hz;
 
@@ -565,7 +565,7 @@ void svs_reset(void)
     svs_lists_init();
     s.fn = (uint8_t)SERVO_FN_LIVE;
     (void)ui_wb_strip_select(&s.wb, UI_WB_LIVE);
-    /* CENTRE, SWEEP, RELEASE, SPEED and OUTPUT ON where LIVE has them. */
+    /* CENTER, SWEEP, RELEASE, SPEED and OUTPUT ON where LIVE has them. */
     drive_layout();
     s.fp_tile = -1;
     s.kp.pressed = -1;

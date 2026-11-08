@@ -239,7 +239,7 @@ static void rudder_reading(uint16_t raw, uint32_t at_ms)
 static void rudder_open(void)
 {
     settings_set(SET_ENC_EN, 1.0f);
-    settings_set(SET_ENC_CENTRE, 2048.0f);
+    settings_set(SET_ENC_CENTER, 2048.0f);
     settings_set(SET_RUDDER_LEN_MM, 120.0f);
     servo_screen_set_link(true);
     /* The leave posts a DISARM; the bench's answer is ARMED still. */

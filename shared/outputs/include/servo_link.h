@@ -138,8 +138,8 @@ void servo_link_surfaces_publish(void);
  * @brief One command from the screen, with the link state @p link_up and the
  *        stop count @p stops its sender had seen.
  *
- * ARM centres the surfaces and asks the policy to arm, unless a stop came in
- * between; DISARM and RELEASE centre them; a sweep waits for an owed release to
+ * ARM centers the surfaces and asks the policy to arm, unless a stop came in
+ * between; DISARM and RELEASE center them; a sweep waits for an owed release to
  * be paid; a command asked during a pause let go of is not sent.
  *
  * @param sv      The command.

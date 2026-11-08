@@ -12,7 +12,7 @@ caliper); spacings of 5.08mm are taken where the photo gives 5.04-5.11mm.
 Holes: 8-hole header 2.54mm, row 1.95mm below the top edge, pin 1 (square,
 VS) 26.7mm from the left edge; 3 large plated holes at x 34.6mm, 5.08mm
 apart, VPU on top, then GND, GND; 6 channel holes at y 28.65mm in 3 pairs
-5.08mm apart, pair centres 6.99, 19.12 and 31.16mm; 3 mounting holes 3.2mm
+5.08mm apart, pair centers 6.99, 19.12 and 31.16mm; 3 mounting holes 3.2mm
 at (2.85, 2.82), (2.93, 20.93) and (35.10, 20.88)mm, drawn on F.Fab only.
 Large and channel holes: drill about 2.6mm, ring about 4.0mm (photo).
 Header drill: 1.0mm by the photo's ring of 1.5mm; footprint pads 1.7mm.

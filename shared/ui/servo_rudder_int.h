@@ -8,7 +8,7 @@
  * surface's deflection on the angle the screen takes in
  * (servo_screen_encoder()): degrees from ZERO and, with LENGTH set, the
  * trailing edge's travel in mm (servo_rudder.h).  Its buttons drive
- * 1000us, CENTRE and 2000us, and the knob moves the horn as on LIVE; both
+ * 1000us, CENTER and 2000us, and the knob moves the horn as on LIVE; both
  * only while the value is live (ARMED).  The output card, the PORT button
  * and the footer's ARM stay where they are on every function screen.
  *
@@ -18,7 +18,7 @@
  *   - the readout, y 14 to 114: DEFLECTION and TRAILING EDGE over their
  *     numerals in the 32 x 44 face, the MAX of each side under them;
  *   - LENGTH's row, y 120 to 168, a tap opens the keypad;
- *   - 1000us, CENTRE and 2000us, y 180 to 228, 160px each, 10px apart;
+ *   - 1000us, CENTER and 2000us, y 180 to 228, 160px each, 10px apart;
  *   - ZERO and RESET MAX, y 240 to 288, 160px each;
  *   - the state lines, x 18 to 418, y 300 to 396: the angle source, the
  *     pulse, the zero and ARM FIRST;
@@ -54,7 +54,7 @@ typedef enum {
     RUD_C_NONE = 0,  /**< no control                                  */
     RUD_C_LENGTH,    /**< LENGTH's row: the keypad                    */
     RUD_C_1000,      /**< 1000us                                      */
-    RUD_C_CENTRE,    /**< CENTRE: PULSE CENTRE plus TRIM              */
+    RUD_C_CENTER,    /**< CENTER: PULSE CENTER plus TRIM              */
     RUD_C_2000,      /**< 2000us                                      */
     RUD_C_ZERO,      /**< ZERO: the angle now is the neutral          */
     RUD_C_RESET,     /**< RESET MAX                                   */
@@ -166,7 +166,7 @@ const servo_rudder_t *rudder_geo(void);
 #define RUD_LINES 4
 
 /**
- * @brief A DOWN on the page area while RUDDER is shown: 1000us, CENTRE and
+ * @brief A DOWN on the page area while RUDDER is shown: 1000us, CENTER and
  *        2000us act on it, while the value is live; LENGTH, ZERO and
  *        RESET MAX take the press and act on its release over them.
  * @param evt the DOWN

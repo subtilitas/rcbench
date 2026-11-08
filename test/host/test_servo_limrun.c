@@ -30,7 +30,7 @@ static float full_us(int side, uint16_t v)
 /* --- the read first ------------------------------------------------------ */
 
 /* Nothing drives the servo before the read session is over: CONNECT, the
- * read and LEAVE come first, at PULSE CENTRE. */
+ * read and LEAVE come first, at PULSE CENTER. */
 static void read_before_drive(void)
 {
     CHECK(g.driven);

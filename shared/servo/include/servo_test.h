@@ -42,8 +42,8 @@
  *   SET     the set point asked, and waited for until the supply reads it
  *           back (SERVO_TEST_SET_TOL_V), at most SERVO_TEST_SET_TIMEOUT_MS;
  *           the first step also waits for the output to read on;
- *   SETTLE  the TEST page's SETTLE, with the servo at its centre;
- *   IDLE    SERVO_TEST_IDLE_MS at the centre: the idle current, and its
+ *   SETTLE  the TEST page's SETTLE, with the servo at its center;
+ *   IDLE    SERVO_TEST_IDLE_MS at the center: the idle current, and its
  *           noise, the standard deviation of those readings.  The step's
  *           threshold is the larger of SERVO_TEST_MOVE_MIN_A and
  *           SERVO_TEST_NOISE_K times that noise;
@@ -66,7 +66,7 @@
  *           the holding current there, and the holding level the next move
  *           to that end falls back to.
  *
- * A step's first two moves, from the centre to the low end and on to the
+ * A step's first two moves, from the center to the low end and on to the
  * high end, are not counted: they measure each end's holding level.  The
  * counted moves go end to end from there, for MOVEMENTS moves or TEST
  * TIME, as LENGTH BY says.  Before an end's holding level is known the
@@ -75,7 +75,7 @@
  * The brown-out test follows: from SERVO_TEST_BROWNOUT_START_V (or the cap,
  * if lower) down in steps of STEP to LOWEST VOLTAGE, the floor (cfg.bo_step_v,
  * cfg.bo_floor_v), each one SET, SETTLE and IDLE as above and then
- * SERVO_TEST_BROWNOUT_MOVES moves, centre to the high end and back to the
+ * SERVO_TEST_BROWNOUT_MOVES moves, center to the high end and back to the
  * low end.  The k-th voltage is the start less k steps, to 0.01V
  * (servo_test_brownout_v()); a floor off that grid is the last voltage
  * itself, a step shorter than STEP.  A floor at or above the start leaves
@@ -104,26 +104,26 @@
  *            polling interval.  It includes the command's way from the
  *            panel to the pin, up to one poll interval and one PWM frame,
  *            not measured;
- *   end angle the last reading of a settled move, from the centre count
- *            (cfg.enc_centre); the angle error is that minus the commanded
+ *   end angle the last reading of a settled move, from the center count
+ *            (cfg.enc_center); the angle error is that minus the commanded
  *            angle of the end (cfg.enc_cmd_deg).
  *
  * The circle.  The sensor's count wraps from 4095 to 0 and every angle is a
  * position on one turn, so no two angles are subtracted or averaged as
- * plain numbers.  An angle is the count less the centre count taken the
+ * plain numbers.  An angle is the count less the center count taken the
  * shortest way, -180 to just under +180 degrees.  A step's end angles at
  * one end are averaged as offsets from the first of them, each offset the
  * shortest way, and the mean is put back on the circle
  * (servo_test_enc_end()); the angle error is wrapped to the same range.
- * Two readings 2 counts apart either side of the half turn from the centre
+ * Two readings 2 counts apart either side of the half turn from the center
  * are 0.18 degrees apart, and ends read at +179.9 and -179.9 degrees
  * average to 180, shown as -180.0.
  *
  * More than 180 degrees.  One turn is all the sensor tells apart.  A servo
  * whose ends lie more than 180 degrees apart is reported correctly while
- * each end lies within 180 degrees of the centre: the two ends are never
+ * each end lies within 180 degrees of the center: the two ends are never
  * subtracted from each other.  An end further than 180 degrees from the
- * centre is reported 360 degrees off (+200 as -160); its angle error is
+ * center is reported 360 degrees off (+200 as -160); its angle error is
  * still right while the commanded angle names the same position, since the
  * error is wrapped.  A move is "moved" by the shortest way between its
  * start and the reading, so a move that ends within
@@ -243,7 +243,7 @@ extern "C" {
 /** @brief The most voltages a walk holds: from START to the lowest floor in
  *         the smallest step, both ends included, (5.0 - 2.0) / 0.1 + 1. */
 #define SERVO_TEST_BROWNOUT_MAX      31u
-/** @brief Moves at each brown-out voltage: centre to the high end, then to the
+/** @brief Moves at each brown-out voltage: center to the high end, then to the
  *         low end. */
 #define SERVO_TEST_BROWNOUT_MOVES    2u
 
@@ -411,8 +411,10 @@ typedef struct {
     float    bo_step_v;
     float    i_limit;       /**< the current limit through the run, A   */
 
-    /* The servo: its centre and the two ends the moves go between. */
-    uint16_t centre_us, end_lo_us, end_hi_us;
+    /* The servo: its center and the two ends the moves go between. */
+    uint16_t center_us;     /**< the servo's center, us                 */
+    uint16_t end_lo_us;     /**< the low end of the moves, us           */
+    uint16_t end_hi_us;     /**< the high end of the moves, us          */
 
     /* The TEST page. */
     uint16_t settle_ms, dwell_ms;
@@ -434,7 +436,7 @@ typedef struct {
     /* The output encoder: off leaves the run, the CSV and the report as
      * they are without one. */
     bool     enc_on;
-    uint16_t enc_centre;    /**< the count at the servo's neutral       */
+    uint16_t enc_center;    /**< the count at the servo's neutral       */
     float    enc_cmd_deg[2];/**< the commanded angle of the low and the
                                  high end, the screen's degrees          */
     /** @brief The angle source's name (servo_angle_name()): "AS5600",
@@ -555,7 +557,7 @@ typedef enum {
     SERVO_TEST_START_ABOVE_CAP,  /**< a step above the voltage cap      */
     SERVO_TEST_START_NO_SUPPLY,  /**< the supply does not answer        */
     SERVO_TEST_START_BAD_ENDS,   /**< the ends are not either side of the
-                                      centre                            */
+                                      center                            */
 } servo_test_start_t;
 
 /** @brief A mean, kept as a sum. */
@@ -726,7 +728,7 @@ void servo_test_init(servo_test_t *t);
  *
  * Refused, and nothing changed, for no step and no brown-out, a step outside
  * the range, a supply that does not answer, or ends not either side of the
- * centre.  A run that starts hands over OPEN and the CSV header first.
+ * center.  A run that starts hands over OPEN and the CSV header first.
  *
  * @param t      Run state to start. NULL is refused as NO_STEPS.
  * @param cfg    Configuration of the run, copied into the state. NULL is
@@ -823,14 +825,14 @@ void servo_test_meter_now(servo_test_t *t, const servo_test_meter_now_t *m,
 void servo_test_encoder(servo_test_t *t, const servo_test_enc_t *e);
 
 /**
- * @brief The angle at @p at_ms, degrees from cfg.enc_centre: the newest kept
+ * @brief The angle at @p at_ms, degrees from cfg.enc_center: the newest kept
  *        reading taken at or before @p at_ms (a signed difference, so a reading
  *        taken later than the row does not count), when it is no older than
  *        SERVO_TEST_ENC_STALE_MS.  False when there is none.
  *
  * @param t     Run state.
  * @param at_ms Time of the row, ms.
- * @param deg   Out: angle, degrees from the centre count.
+ * @param deg   Out: angle, degrees from the center count.
  * @return true when a kept reading no older than SERVO_TEST_ENC_STALE_MS was
  *        taken at or before at_ms; deg is set then.
  */
@@ -838,7 +840,7 @@ bool servo_test_enc_at(const servo_test_t *t, uint32_t at_ms, float *deg);
 
 /**
  * @brief The mean settled end angle of step @p s at @p end (0 low, 1 high) into
- *        @p deg, degrees from cfg.enc_centre in the commanded direction, -180
+ *        @p deg, degrees from cfg.enc_center in the commanded direction, -180
  *        to just under 180, and its error against cfg.enc_cmd_deg[end] into @p
  *        err, the same range; either may be NULL.
  *

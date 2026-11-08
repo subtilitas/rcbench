@@ -374,7 +374,7 @@
     }
   ],
   "automatable": "full",
-  "automatable_note": "Only throttle signal and supply are needed. Car types use a centre-neutral throttle and the current-limit item starts from the max-brake end, so the bench must output those throttle positions. Navy types need a full-then-centre teach once. OPTO types are specified with a separate 4.5-6.0V receiver supply for programming through the programming box; whether stick programming needs it is not stated.",
+  "automatable_note": "Only throttle signal and supply are needed. Car types use a center-neutral throttle and the current-limit item starts from the max-brake end, so the bench must output those throttle positions. Navy types need a full-then-center teach once. OPTO types are specified with a separate 4.5-6.0V receiver supply for programming through the programming box; whether stick programming needs it is not stated.",
   "scheme": {
     "type": "melody_groups",
     "entry": {
@@ -403,7 +403,7 @@
     "select": {
       "throttle": "min",
       "within_ms": null,
-      "description": "Move the throttle to the stop position while the desired group or pattern is sounding. The stop position is minimum throttle on aircraft types and the centre position on Car types. Selecting the mode toggle needs the move right after the melody."
+      "description": "Move the throttle to the stop position while the desired group or pattern is sounding. The stop position is minimum throttle on aircraft types and the center position on Car types. Selecting the mode toggle needs the move right after the melody."
     },
     "skip": {
       "throttle": "none",
@@ -601,7 +601,7 @@
       "values": [
         {
           "number": 1,
-          "name": "teach full power, then centre or neutral position"
+          "name": "teach full power, then center or neutral position"
         }
       ],
       "applies_to": [
@@ -612,7 +612,7 @@
         "Master 99-O-Navy"
       ],
       "source_page": "10-11",
-      "note": "Throttle at full before power-up, tone sequence, then centre (normal transmitter) or the self-centring position (pistol-grip transmitter) right after it; the ESC answers with one tone. Stored settings keep until repeated."
+      "note": "Throttle at full before power-up, tone sequence, then center (normal transmitter) or the self-centering position (pistol-grip transmitter) right after it; the ESC answers with one tone. Stored settings keep until repeated."
     }
   ],
   "unknowns": [
@@ -623,7 +623,7 @@
     "Length of the window after the melody in which the mode toggle must be triggered ('immediately'): not stated.",
     "Whether the group and pattern sequence loops after the last pattern: not stated.",
     "Navy: which beep count belongs to forward-only and which to forward-reverse mode: not stated.",
-    "Navy: tone sequence after the full-power detection and length of the window for the centre move: not stated.",
+    "Navy: tone sequence after the full-power detection and length of the window for the center move: not stated.",
     "Car: which throttle end is 'max brake' for the current-limit entry: not stated.",
     "Default values of cutoff voltage (up to 30A types), current limit and direction: not stated.",
     "Acknowledgement melody for each stored change: shown only as note symbols, no durations.",

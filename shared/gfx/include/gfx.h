@@ -184,7 +184,7 @@ void gfx_thick_line(gfx_canvas_t *c, int x0, int y0, int x1, int y1,
 void gfx_draw_circle(gfx_canvas_t *c, int cx, int cy, int r, gfx_color_t color);
 
 /*
- * Antialiased disc and capsule, filled from the distance to their own centre
+ * Antialiased disc and capsule, filled from the distance to their own center
  * or spine.  The capsule is a thick line with round ends, and its sides and
  * caps come out of one expression -- so there is no seam where they meet,
  * which a disc drawn over a rectangle cannot avoid.
@@ -196,7 +196,7 @@ void gfx_capsule_aa(gfx_canvas_t *c, int ax, int ay, int bx, int by,
 void gfx_fill_circle(gfx_canvas_t *c, int cx, int cy, int r, gfx_color_t color);
 
 /*
- * An arc of @p thickness centred on (cx, cy), from @p a0_deg to @p a1_deg.
+ * An arc of @p thickness centered on (cx, cy), from @p a0_deg to @p a1_deg.
  * Angles are degrees counter-clockwise from the +x axis, so 90 is straight up
  * on screen.  The radial edges are antialiased.
  */
@@ -396,7 +396,16 @@ typedef enum {
     GFX_ALIGN_RIGHT,
 } gfx_align_t;
 
-/** Draw @p s aligned inside @p box, vertically centred. */
+/**
+ * @brief Draw @p s aligned inside @p box, vertically centered.
+ * @param c     The canvas; NULL draws nothing.
+ * @param box   The box the text is placed in.
+ * @param s     The text; NULL draws nothing.
+ * @param font  The font; NULL draws nothing.
+ * @param fg    The text colour.
+ * @param scale The font's scale, 1 or more; below 1 counts as 1.
+ * @param align Left, center or right inside @p box.
+ */
 void gfx_text_in(gfx_canvas_t *c, gfx_rect_t box, const char *s,
                  const gfx_font_t *font, gfx_color_t fg, int scale,
                  gfx_align_t align);

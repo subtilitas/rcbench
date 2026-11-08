@@ -34,7 +34,7 @@ bool servo_cmd_stale(servo_pause_end_t *e, const servo_cmd_t *c)
         return false;
     }
     const bool drive = c->kind == SERVO_CMD_POSITION
-                       || c->kind == SERVO_CMD_CENTRE
+                       || c->kind == SERVO_CMD_CENTER
                        || c->kind == SERVO_CMD_SWEEP
                        || c->kind == SERVO_CMD_HOLD;
     if (!drive) {

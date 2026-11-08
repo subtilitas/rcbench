@@ -25,7 +25,7 @@
 static void imu_on(uint8_t axis, bool neg)
 {
     settings_set(SET_ENC_EN, 0.0f);
-    settings_set(SET_ENC_CENTRE, 3000.0f);
+    settings_set(SET_ENC_CENTER, 3000.0f);
     settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_IMU);
     servo_screen_set_enc_held(false);
     servo_screen_set_imu_axis(axis, neg);
@@ -99,14 +99,14 @@ static bool ends_in(const char *line, const char *tail)
 
 /*
  * With the IMU as the source the screen takes its angle from count 0,
- * whatever the AS5600's centre and switch say; with the AS5600 as the
+ * whatever the AS5600's center and switch say; with the AS5600 as the
  * source the same reading is the AS5600's, off in SETUP: none.
  */
 TEST_CASE(the_servo_screen_shows_the_imu_angle_when_the_source_is_imu)
 {
     bench_fresh();
     settings_set(SET_ENC_EN, 0.0f);
-    settings_set(SET_ENC_CENTRE, 3000.0f);
+    settings_set(SET_ENC_CENTER, 3000.0f);
     settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_IMU);
     float deg = 0.0f;
     for (int k = -3; k <= 3; ++k) {
@@ -126,7 +126,7 @@ TEST_CASE(the_servo_screen_shows_the_imu_angle_when_the_source_is_imu)
     CHECK(servo_screen_log_angle(&deg));
     settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_AS5600);
     CHECK(!servo_screen_log_angle(&deg));
-    /* The AS5600 on: the same count is 3000 counts from its centre. */
+    /* The AS5600 on: the same count is 3000 counts from its center. */
     settings_set(SET_ENC_EN, 1.0f);
     CHECK(servo_screen_log_angle(&deg));
     CHECK_NEAR(deg, servo_test_enc_deg(e.raw, 3000u), 1e-4f);
@@ -158,7 +158,7 @@ TEST_CASE(the_automatic_test_judges_moves_on_imu_counts)
     CHECK(strstr(bench.report, "Settled: the angle has stayed within "
                                "1.05° for 100ms.")
           != NULL);
-    CHECK(strstr(bench.report, "ENCODER (angles in degrees from the centre")
+    CHECK(strstr(bench.report, "ENCODER (angles in degrees from the center")
           != NULL);
     /* The AS5600's run of the same servo, for the same judgement. */
     char imu_report[4096];
@@ -167,7 +167,7 @@ TEST_CASE(the_automatic_test_judges_moves_on_imu_counts)
     short_runs();
     settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_AS5600);
     settings_set(SET_ENC_EN, 1.0f);
-    settings_set(SET_ENC_CENTRE, 3000.0f);
+    settings_set(SET_ENC_CENTER, 3000.0f);
     servo_screen_set_enc_held(true);
     bench.enc = true;
     bench.enc_next = bench.now;
@@ -177,7 +177,7 @@ TEST_CASE(the_automatic_test_judges_moves_on_imu_counts)
     CHECK(strstr(bench.report, "Result:         PASS") != NULL);
     CHECK(strstr(bench.report, "Angle source:   AS5600\n") != NULL);
     CHECK(strstr(bench.report, "Encoder:        AS5600 on the horn shaft, "
-                               "centre count 3000,")
+                               "center count 3000,")
           != NULL);
     /* The encoder's table reads the same from both sources. */
     const char *a = strstr(imu_report, "ENCODER (");
@@ -262,7 +262,7 @@ TEST_CASE(the_csv_header_ends_in_angle_source_and_each_row_names_it)
     short_runs();
     settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_AS5600);
     settings_set(SET_ENC_EN, 1.0f);
-    settings_set(SET_ENC_CENTRE, 3000.0f);
+    settings_set(SET_ENC_CENTER, 3000.0f);
     servo_screen_set_enc_held(true);
     bench.enc = true;
     bench.enc_next = bench.now;
@@ -300,15 +300,15 @@ TEST_CASE(the_csv_header_ends_in_angle_source_and_each_row_names_it)
 }
 
 /* The SERVO run log takes the angle MEASURED shows: from the source in
- * force, each with its own centre. */
+ * force, each with its own center. */
 TEST_CASE(the_run_log_angle_follows_the_source)
 {
     bench_fresh();
     settings_set(SET_ENC_EN, 1.0f);
-    settings_set(SET_ENC_CENTRE, 3000.0f);
+    settings_set(SET_ENC_CENTER, 3000.0f);
     servo_screen_set_enc_held(true);
     float deg = 0.0f;
-    /* The AS5600's reading 100 counts past its centre. */
+    /* The AS5600's reading 100 counts past its center. */
     const servo_test_enc_t as = { true, 3100u, 0u, bench.now, false, false,
                                   false, false, false, 0.0f };
     servo_screen_encoder(&as);

@@ -219,12 +219,12 @@ def sleep(w: int, h: int, fur: Rgb, dark: Rgb, pink: Rgb):
 
 def _face(d, cx: float, cy: float, r: float, fur: Rgb, dark: Rgb,
           pink: Rgb, eyes: str = "open", cheeks: bool = True) -> None:
-    """A cat's head of radius @p r centred on (cx, cy), with its ears.
+    """A cat's head of radius @p r centered on (cx, cy), with its ears.
 
     Args:
         d: The drawing context on a 4x canvas.
-        cx: The head's centre, drawing units.
-        cy: Its centre's row.
+        cx: The head's center, drawing units.
+        cy: Its center's row.
         r: Its radius.
         fur: The coat.
         dark: The outline and the whiskers.

@@ -90,7 +90,7 @@ TEST_CASE(the_dock_and_the_live_half_split_the_body)
             CHECK_EQ(l.x, 0);
             CHECK_EQ(l.x + l.w + 8, d.x);
         }
-        /* CLOSE: 140 x 48px, centred at the dock's bottom, above the
+        /* CLOSE: 140 x 48px, centered at the dock's bottom, above the
          * alert band, a row and more under the dock's text. */
         const gfx_rect_t b = ui_help_button_rect((ui_help_side_t)side,
                                                  UI_HELP_HIT_CLOSE);

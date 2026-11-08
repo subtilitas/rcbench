@@ -52,7 +52,7 @@ void picker_board_fit(uint16_t ow, uint16_t oh, int *w, int *h)
 
 /*
  * The box the board occupies, from the drawing's outline or else the
- * shape's, centred across the screen and between the body's top and
+ * shape's, centered across the screen and between the body's top and
  * FOOT, so the tiers above and below it end inside both.  The drawing is
  * drawn to scale into it; its outline is the shape's whenever the board
  * has one (board_drawing_agrees()).
@@ -200,7 +200,7 @@ bool picker_screen_button_rect(uint8_t index, gfx_rect_t *out)
 }
 
 /*
- * The centre and radius of the marker of pad-list entry @p e, or false for
+ * The center and radius of the marker of pad-list entry @p e, or false for
  * a pad that has none.
  *
  * A rail's depth is the parity of the rails before it in its row, counted by

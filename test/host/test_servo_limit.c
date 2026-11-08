@@ -91,7 +91,7 @@ TEST_CASE(it_finds_the_lower_stop_the_same_way)
 }
 
 /*
- * The two stops are not mirror images about the servo's centre once a horn
+ * The two stops are not mirror images about the servo's center once a horn
  * and a pushrod are involved, so each end is reported as its own number.
  */
 TEST_CASE(the_two_ends_are_found_independently_and_are_not_symmetric)
@@ -233,17 +233,17 @@ TEST_CASE(a_step_too_coarse_to_meet_the_knee_is_caught_by_the_ceiling)
 
 /*
  * The baseline is taken from more than one position.  A surface with preload
- * draws more at centre than a few degrees out, and a baseline taken from that
+ * draws more at center than a few degrees out, and a baseline taken from that
  * single reading sits high enough to hide a real knee.
  */
-TEST_CASE(a_preloaded_centre_does_not_blind_the_search)
+TEST_CASE(a_preloaded_center_does_not_blind_the_search)
 {
     servo_sim_cfg_t sc;
     servo_sim_defaults(&sc);
     /*
-     * The low stop is above the centre the search starts from, so the servo
+     * The low stop is above the center the search starts from, so the servo
      * is already pushing at its first position and unloads as soon as it
-     * steps away.  A stop just below centre (1495) loads nothing and tests
+     * steps away.  A stop just below center (1495) loads nothing and tests
      * the ordinary case.
      */
     sc.stop_lo_us = 1505;
@@ -258,10 +258,10 @@ TEST_CASE(a_preloaded_centre_does_not_blind_the_search)
     search(&lf, &sim, 60000);
     CHECK_EQ(lf.state, SERVO_LIMIT_FOUND);
     /*
-     * The same 1855 as the unloaded case: averaging the loaded centre with
+     * The same 1855 as the unloaded case: averaging the loaded center with
      * the two free positions after it puts the baseline at 0.20A, and the
      * knee still lands on the step past 1880.  Taking the baseline from the
-     * centre alone puts it at 0.37A, which needs 0.67A to beat; the first
+     * center alone puts it at 0.37A, which needs 0.67A to beat; the first
      * bound step only reaches 0.63, so the search walks one step further
      * into the stop and answers 1865.
      */
@@ -418,9 +418,9 @@ TEST_CASE(progress_runs_from_nothing_to_all_of_it)
     CHECK_NEAR(servo_limit_progress(&lf), 1.0f, 0.001f);
 }
 
-/* A stop 20us from centre binds at the first position judged, 30us out:
+/* A stop 20us from center binds at the first position judged, 30us out:
  * the last free position is 20us out and backing off by 25us would put
- * the endpoint on the other side of centre. */
+ * the endpoint on the other side of center. */
 TEST_CASE(a_bind_at_the_first_judged_position_stays_on_the_searched_side)
 {
     servo_sim_cfg_t sc;
@@ -463,7 +463,7 @@ TEST_CASE(a_step_of_zero_is_refused)
     CHECK_NEAR(servo_limit_progress(&lf), 1.0f, 0.001f);
 }
 
-/* No command leaves 500 to 2500us, whatever the centre and the travel. */
+/* No command leaves 500 to 2500us, whatever the center and the travel. */
 TEST_CASE(no_command_leaves_the_pulse_range)
 {
     for (int up = 0; up < 2; ++up) {
@@ -483,7 +483,7 @@ TEST_CASE(no_command_leaves_the_pulse_range)
         CHECK(lf.state != SERVO_LIMIT_RUNNING);
         CHECK(lo >= 500u && hi <= 2500u);
     }
-    /* A centre outside the range is held inside it. */
+    /* A center outside the range is held inside it. */
     servo_limit_cfg_t lc;
     servo_limit_defaults(&lc, 3000, true);
     servo_limit_t lf;
@@ -528,7 +528,7 @@ TEST_CASE(progress_of_a_finished_search_is_one_without_travel)
 TEST_CASE(the_end_of_the_travel_is_measured_before_no_limit)
 {
     static const struct {
-        uint16_t centre;
+        uint16_t center;
         uint16_t travel;
         bool     up;
         uint16_t end;
@@ -540,7 +540,7 @@ TEST_CASE(the_end_of_the_travel_is_measured_before_no_limit)
     };
     for (size_t i = 0; i < sizeof k / sizeof k[0]; ++i) {
         servo_limit_cfg_t lc;
-        servo_limit_defaults(&lc, k[i].centre, k[i].up);
+        servo_limit_defaults(&lc, k[i].center, k[i].up);
         lc.max_travel_us = k[i].travel;
         servo_limit_t lf;
         servo_limit_init(&lf, &lc);
@@ -642,7 +642,7 @@ int main(void)
     RUN(elevated_current_under_the_ceiling_still_times_out);
     RUN(a_normal_search_never_trips_the_stall_timer);
     RUN(a_step_too_coarse_to_meet_the_knee_is_caught_by_the_ceiling);
-    RUN(a_preloaded_centre_does_not_blind_the_search);
+    RUN(a_preloaded_center_does_not_blind_the_search);
     RUN(sensor_noise_alone_does_not_read_as_a_limit);
     RUN(a_large_servos_own_noise_does_not_clear_the_margin_test);
     RUN(a_tight_spot_in_the_linkage_is_not_the_end_of_the_travel);

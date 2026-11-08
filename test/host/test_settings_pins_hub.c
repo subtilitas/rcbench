@@ -797,10 +797,10 @@ static bool ink(gfx_rect_t r, int y0, int y1, gfx_color_t bg, ink_t *out)
 
 /*
  * A tile's icon sits over its name.  The icon's drawn ink, from its
- * leftmost to its rightmost pixel, is centred on the name's line of text,
- * which ui_tile() centres in the tile, to 1px; the name's own ink lies in
+ * leftmost to its rightmost pixel, is centered on the name's line of text,
+ * which ui_tile() centers in the tile, to 1px; the name's own ink lies in
  * that line (its glyphs leave blank columns in their cells, so the ink of
- * "MOTOR & ESC" is centred left of its line).  The icon's ink stays in its
+ * "MOTOR & ESC" is centered left of its line).  The icon's ink stays in its
  * box, clear of the name under it.  @p r is in canvas coordinates, on a
  * tile already drawn with @p look.
  */
@@ -820,7 +820,7 @@ static void icon_over_name(gfx_rect_t r, const ui_tile_look_t *look,
     const int tw = gfx_text_width(look->name_f, name, 1);
     const int line_x = r.x + (r.w - tw) / 2;
     if (abs((icon.left + icon.right + 1) - (2 * line_x + tw)) > 2) {
-        T_FAIL("%s: icon centred at %.1f, its name's line at %.1f", what,
+        T_FAIL("%s: icon centered at %.1f, its name's line at %.1f", what,
                (icon.left + icon.right + 1) / 2.0, line_x + tw / 2.0);
     }
     if (label.left < line_x || label.right >= line_x + tw) {
@@ -848,7 +848,7 @@ static setting_cat_t hub_tile_category(int tile)
 }
 
 /* Every icon a tile draws, the menu's and SETUP's, in the tiles' sizes. */
-TEST_CASE(every_tile_icon_is_centred_over_its_name)
+TEST_CASE(every_tile_icon_is_centered_over_its_name)
 {
     fresh_hub();
     static const struct { ui_icon_fn icon; const char *name; } menu[] = {
@@ -955,7 +955,7 @@ int main(void)
     RUN(a_free_slot_opens_nothing);
     RUN(entering_setup_shows_the_tiles_and_the_list_keeps_its_place);
     RUN(the_tiles_show_and_save_what_a_list_left_unsaved);
-    RUN(every_tile_icon_is_centred_over_its_name);
+    RUN(every_tile_icon_is_centered_over_its_name);
     RUN(nothing_of_setup_that_acts_is_under_the_alert_band);
     return test_summary("settings_pins_hub");
 }

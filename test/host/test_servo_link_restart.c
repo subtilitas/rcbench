@@ -291,8 +291,8 @@ static void at_port_with_position(uint8_t channels)
     servo_link_apply(c, true, panel.stops);
 }
 
-/** @brief Port 0's CMD at the centre of its range. */
-#define CMD_CENTRE ((uint16_t)(LINK_CH_SPAN / 2u))
+/** @brief Port 0's CMD at the center of its range. */
+#define CMD_CENTER ((uint16_t)(LINK_CH_SPAN / 2u))
 
 /* ------------------------------------------------------------------ cases */
 
@@ -309,7 +309,7 @@ TEST_CASE(the_port_is_the_target_with_a_position_before_any_restart)
  * The station's case: no standard output is a surface, the port held a
  * position, the IOmcu restarts while SAFE.  The release owed for the port
  * goes to the standard outputs the restarted IOmcu names, where there is
- * nothing to centre; the port's TARGET and pulse come back within one read
+ * nothing to center; the port's TARGET and pulse come back within one read
  * cadence.
  */
 TEST_CASE(a_restart_while_safe_gives_the_port_back_within_a_read)
@@ -329,7 +329,7 @@ TEST_CASE(a_restart_while_safe_gives_the_port_back_within_a_read)
     CHECK_EQ(far.pulses, 0u);
 }
 
-/* With a standard surface bound the release centres it, as before. */
+/* With a standard surface bound the release centers it, as before. */
 TEST_CASE(a_restart_with_a_standard_surface_gives_the_port_back_too)
 {
     at_port_with_position(0x01u);
@@ -376,14 +376,14 @@ TEST_CASE(a_restart_while_armed_writes_nothing_until_safe_and_arms_nothing)
     CHECK_EQ(far.pwm, 1u);
     CHECK_EQ(panel.arms, 0u);
     CHECK_EQ(far.pulses, before);
-    /* The operator arms: the port renders from its centre, not the 1700us
+    /* The operator arms: the port renders from its center, not the 1700us
      * written before the restart. */
     servo_cmd_t arm;
     memset(&arm, 0, sizeof(arm));
     arm.kind = SERVO_CMD_ARM;
     servo_link_apply(arm, true, panel.stops);
     CHECK_EQ(panel.arms, 1u);
-    CHECK_EQ(far.cmd, CMD_CENTRE);
+    CHECK_EQ(far.cmd, CMD_CENTER);
 }
 
 /*
@@ -424,7 +424,7 @@ TEST_CASE(a_link_lost_without_a_restart_keeps_the_target_and_the_position)
     /* Let go, the release goes to the port the IOmcu still names. */
     servo_link_let_go();
     run_ms(10u);
-    CHECK_EQ(far.cmd, CMD_CENTRE);
+    CHECK_EQ(far.cmd, CMD_CENTER);
     CHECK(!servo_link_release_owed());
 }
 

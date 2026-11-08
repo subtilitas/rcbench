@@ -482,7 +482,7 @@ TEST_CASE(circles_are_symmetric)
             CHECK_EQ(a, gfx_pixel_get(&s_c, 12 + dx, 12 - dy));
         }
     }
-    /* Centre filled, well outside the radius not. */
+    /* Center filled, well outside the radius not. */
     CHECK_EQ(gfx_pixel_get(&s_c, 12, 12), GFX_RED);
     CHECK_EQ(gfx_pixel_get(&s_c, 12 + 7, 12 + 7), GFX_BLACK);
 

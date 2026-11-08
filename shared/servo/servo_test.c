@@ -45,13 +45,13 @@ static float mean_of(const servo_test_mean_t *m)
  */
 static float enc_dir_deg(const servo_test_t *t, uint16_t raw)
 {
-    const float d = servo_test_enc_deg(raw, t->cfg.enc_centre);
+    const float d = servo_test_enc_deg(raw, t->cfg.enc_center);
     return t->cfg.reverse ? -d : d;
 }
 
-float servo_test_enc_deg(uint16_t raw, uint16_t centre)
+float servo_test_enc_deg(uint16_t raw, uint16_t center)
 {
-    int d = (int)((unsigned)(raw - centre) & 4095u);
+    int d = (int)((unsigned)(raw - center) & 4095u);
     if (d >= 2048) {
         d -= 4096;
     }
@@ -75,10 +75,10 @@ bool servo_test_enc_end(const servo_test_t *t, const servo_test_step_t *s,
     if (t == NULL || s == NULL || end > 1u || s->enc_end_off[end].n == 0u) {
         return false;
     }
-    /* The first end angle from the centre, and the mean of the offsets
+    /* The first end angle from the center, and the mean of the offsets
      * from it; negated with REVERSE on as enc_dir_deg() does, and wrapped
      * after it, since -180 negated is 180. */
-    float d = servo_test_enc_deg(s->enc_end_ref[end], t->cfg.enc_centre)
+    float d = servo_test_enc_deg(s->enc_end_ref[end], t->cfg.enc_center)
               + mean_of(&s->enc_end_off[end]);
     if (t->cfg.reverse) {
         d = -d;
@@ -495,7 +495,7 @@ static void command(servo_test_t *t, uint16_t us, uint32_t now_ms)
 
 /**
  * @brief The voltage step @p idx begins: its set point, the servo at its
- *        centre, and on the first step the output on.
+ *        center, and on the first step the output on.
  *
  * @param t      Run state.
  * @param idx    Index of the step to begin.
@@ -517,7 +517,7 @@ static void begin_step(servo_test_t *t, uint8_t idx, uint32_t now_ms)
     if (!t->on_seen) {
         t->pend.on = true;
     }
-    command(t, t->cfg.centre_us, now_ms);
+    command(t, t->cfg.center_us, now_ms);
     t->hold_known[0] = false;
     t->hold_known[1] = false;
     t->moves_done    = 0u;
@@ -541,7 +541,7 @@ static void begin_move(servo_test_t *t, uint8_t end, bool counted,
     const servo_test_step_t *s = cur(t);
     const float idle = mean_of(&s->idle);
     const float to   = t->hold_known[end] ? t->hold_ref[end] : idle;
-    /* Where it starts from: the end it holds, or the centre's idle. */
+    /* Where it starts from: the end it holds, or the center's idle. */
     const uint8_t from = (uint8_t)(end ^ 1u);
     float start = idle;
     if (t->phase == SERVO_TEST_PH_HOLD && t->hold_known[from]) {
@@ -767,7 +767,7 @@ servo_test_start_t servo_test_start(servo_test_t *t,
     if (last == NULL || !last->online) {
         return SERVO_TEST_START_NO_SUPPLY;
     }
-    if (!(cfg->end_lo_us < cfg->centre_us && cfg->centre_us < cfg->end_hi_us)) {
+    if (!(cfg->end_lo_us < cfg->center_us && cfg->center_us < cfg->end_hi_us)) {
         return SERVO_TEST_START_BAD_ENDS;
     }
 
@@ -1215,7 +1215,7 @@ void servo_test_encoder(servo_test_t *t, const servo_test_enc_t *e)
     }
     t->enc_last_raw = e->raw;
     /* How far from the start, on the circle: 2 counts across the half
-     * turn from the centre are 0.18 degrees, not 359.8. */
+     * turn from the center are 0.18 degrees, not 359.8. */
     if (!t->enc_moved
         && fabsf(servo_test_enc_deg(e->raw, t->enc_start_raw))
                > SERVO_TEST_ENC_MOVED_DEG) {
@@ -1295,7 +1295,7 @@ void servo_test_step(servo_test_t *t, uint32_t now_ms,
                 }
                 set_threshold(cur(t));
                 if (cur(t)->brownout) {
-                    /* From the centre to the high end, then back. */
+                    /* From the center to the high end, then back. */
                     begin_move(t, 1u, true, now_ms);
                 } else {
                     /* To the low end, not counted: the counted moves go

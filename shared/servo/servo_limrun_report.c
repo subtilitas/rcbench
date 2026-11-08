@@ -231,7 +231,7 @@ static bool head_lines(const servo_limrun_t *r, cur_t *c)
         return true;
     }
     if (here(c)) {
-        snprintf(c->buf, c->n, LS(L_R_PULSE), (unsigned)g->centre_us,
+        snprintf(c->buf, c->n, LS(L_R_PULSE), (unsigned)g->center_us,
                  (unsigned)g->min_us, (unsigned)g->max_us);
         return true;
     }
@@ -251,7 +251,7 @@ static bool head_lines(const servo_limrun_t *r, cur_t *c)
     }
     if (here(c)) {
         servo_limit_cfg_t d;
-        servo_limit_defaults(&d, g->centre_us, true);
+        servo_limit_defaults(&d, g->center_us, true);
         snprintf(c->buf, c->n, LS(L_R_RULE), (double)d.knee_ratio,
                  (double)d.knee_margin_a);
         return true;

@@ -575,27 +575,27 @@ TEST_CASE(a_refused_pending_write_repaints_the_button)
     CHECK(memcmp(before, s_fb, sizeof(before)) != 0);
 }
 
-/* The output encoder: off at the start, a centre inside the sensor's 12
+/* The output encoder: off at the start, a center inside the sensor's 12
  * bits, in SENSORS beside the sensor bus. */
-TEST_CASE(the_encoder_settings_start_off_with_a_12_bit_centre)
+TEST_CASE(the_encoder_settings_start_off_with_a_12_bit_center)
 {
     settings_set_store(NULL);
     settings_init();
     CHECK_EQ(settings_get_int(SET_ENC_EN), 0);
-    CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 0);
+    CHECK_EQ(settings_get_int(SET_ENC_CENTER), 0);
     const setting_def_t *d = settings_def(SET_ENC_EN);
     CHECK_EQ(d->type, SET_TYPE_BOOL);
     CHECK_EQ(d->cat, SET_CAT_SENSORS);
     CHECK_STR_EQ(settings_label(SET_ENC_EN), "AS5600");
-    d = settings_def(SET_ENC_CENTRE);
+    d = settings_def(SET_ENC_CENTER);
     CHECK_EQ(d->type, SET_TYPE_INT);
     CHECK_EQ(d->cat, SET_CAT_SENSORS);
     CHECK_EQ((int)d->min, 0);
     CHECK_EQ((int)d->max, 4095);
-    settings_set(SET_ENC_CENTRE, 5000.0f);
-    CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 4095);
-    settings_set(SET_ENC_CENTRE, -3.0f);
-    CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 0);
+    settings_set(SET_ENC_CENTER, 5000.0f);
+    CHECK_EQ(settings_get_int(SET_ENC_CENTER), 4095);
+    settings_set(SET_ENC_CENTER, -3.0f);
+    CHECK_EQ(settings_get_int(SET_ENC_CENTER), 0);
 }
 
 /* ------------------------------------------------------------ held values */
@@ -972,7 +972,7 @@ int main(void)
 {
     RUN(a_held_setting_is_left_by_every_call_that_changes_one);
     RUN(setup_changes_no_held_setting);
-    RUN(the_encoder_settings_start_off_with_a_12_bit_centre);
+    RUN(the_encoder_settings_start_off_with_a_12_bit_center);
     RUN(screen_switches_category_and_renders);
     RUN(plus_and_minus_change_the_setting_under_them);
     RUN(a_setup_key_notifies_once_per_press);

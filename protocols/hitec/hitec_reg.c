@@ -45,8 +45,8 @@ enum {
     ENC_C_SERIAL,    /**< 7 ASCII digits */
     ENC_C_SUM,       /**< cells 0x00 to 0x1C sum to 0 */
     ENC_C_SPEED,     /**< 10% to 100%: 01, 07, 0E ... 38, 40 */
-    ENC_C_CENTRE5,   /**< 0.25us: stored + 2052 */
-    ENC_C_CENTRE7,   /**< 0.25us: stored + 2048 */
+    ENC_C_CENTER5,   /**< 0.25us: stored + 2052 */
+    ENC_C_CENTER7,   /**< 0.25us: stored + 2048 */
     ENC_C_END,       /**< addr on a CW servo, addr2 on a CCW one */
     ENC_C_DIR,       /**< 0x1B bit 0, 1 CW */
     ENC_C_FS,        /**< 0x1B bit 1 */
@@ -165,9 +165,9 @@ static const hitec_param_info_t k_rows[] = {
         RW, SC, 1, 1, 5),
     ROW(HITEC_P_C_SPEED, LC, 0x06, NO, 1, ENC_C_SPEED, HITEC_UNIT_PERCENT,
         RW, SC, 10, 10, 100),
-    ROW(HITEC_P_C_CENTRE, L5, 0x07, NO, 2, ENC_C_CENTRE5,
+    ROW(HITEC_P_C_CENTER, L5, 0x07, NO, 2, ENC_C_CENTER5,
         HITEC_UNIT_QUARTER_US, RW, SC, 1, 3600, 8400),
-    ROW(HITEC_P_C_CENTRE, L7, 0x07, NO, 2, ENC_C_CENTRE7,
+    ROW(HITEC_P_C_CENTER, L7, 0x07, NO, 2, ENC_C_CENTER7,
         HITEC_UNIT_QUARTER_US, RW, SC, 1, 3600, 8400),
     ROW(HITEC_P_C_LEFT_END, LC, 0x14, 0x13, 1, ENC_C_END, HITEC_UNIT_RAW,
         RW, SC, 1, 0, 255),
@@ -570,7 +570,7 @@ static uint8_t end_cell(const hitec_image_t *img, const hitec_param_info_t *p)
  */
 static unsigned quarter_offset(uint8_t enc)
 {
-    return enc == ENC_C_CENTRE5 ? 2052u : enc == ENC_C_CENTRE7 ? 2048u : 4u;
+    return enc == ENC_C_CENTER5 ? 2052u : enc == ENC_C_CENTER7 ? 2048u : 4u;
 }
 
 /**
@@ -722,8 +722,8 @@ static hitec_get_t decode(const hitec_image_t *img,
     case ENC_C_DIR:
         return fit(true, (raw & 1u) != 0u ? HITEC_CW : HITEC_CCW, out);
     case ENC_C_FS:     return fit(true, (int32_t)((raw >> 1) & 1u), out);
-    case ENC_C_CENTRE5:
-    case ENC_C_CENTRE7:
+    case ENC_C_CENTER5:
+    case ENC_C_CENTER7:
     case ENC_C_FSPOS5:
         return fit(true, (int32_t)(raw + quarter_offset(p->enc)), out);
     default:           return fit(true, (int32_t)raw, out);
@@ -956,8 +956,8 @@ static hitec_set_t encode(hitec_image_t *d, const hitec_param_info_t *p,
         d->mem[p->addr] = (uint8_t)to_raw(t, v);
         d->mem[p->addr2] = p->enc == ENC_C_OVL5 ? 0xFFu : 0x00u;
         break;
-    case ENC_C_CENTRE5:
-    case ENC_C_CENTRE7:
+    case ENC_C_CENTER5:
+    case ENC_C_CENTER7:
         put_be16(d, p->addr, u - quarter_offset(p->enc));
         d->mem[0x13] = 0x10u;
         d->mem[0x14] = 0x10u;

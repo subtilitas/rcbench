@@ -49,7 +49,7 @@ let note: Deselect | null = null;
 /** The row tokens of the "have it" ticks of the parts list, each a row to buy of the setup. Part of the link. */
 let have: string[] = [];
 
-/** x in drawing px that the pan box centres on first: midway between the panel's pins and pad 1. */
+/** x in drawing px that the pan box centers on first: midway between the panel's pins and pad 1. */
 const PAN_START = 351;
 
 const byId = (id: string): HTMLElement | null => document.getElementById(id);

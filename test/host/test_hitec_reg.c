@@ -298,7 +298,7 @@ TEST_CASE(the_table_has_one_row_per_parameter_and_layout)
         { HITEC_P_C_CHECKSUM, 6, HITEC_RO, HITEC_SRC_CAPTURED },
         { HITEC_P_C_DEAD_BAND, 6, HITEC_RW, HITEC_SRC_CAPTURED },
         { HITEC_P_C_SPEED, 6, HITEC_RW, HITEC_SRC_CAPTURED },
-        { HITEC_P_C_CENTRE, 6, HITEC_RW, HITEC_SRC_CAPTURED },
+        { HITEC_P_C_CENTER, 6, HITEC_RW, HITEC_SRC_CAPTURED },
         { HITEC_P_C_LEFT_END, 6, HITEC_RW, HITEC_SRC_CAPTURED },
         { HITEC_P_C_RIGHT_END, 6, HITEC_RW, HITEC_SRC_CAPTURED },
         { HITEC_P_C_DIRECTION, 6, HITEC_RW, HITEC_SRC_CAPTURED },
@@ -414,7 +414,7 @@ TEST_CASE(the_classic_reads_decode_as_the_hpp21_shows_them)
     CHECK_EQ(get(&img, HITEC_LAYOUT_HS5, HITEC_P_C_SPEED, HITEC_GET_OK).value,
              100);
     /* 0x0F70 + 2052 = 6004: 1501us. */
-    v = get(&img, HITEC_LAYOUT_HS5, HITEC_P_C_CENTRE, HITEC_GET_OK);
+    v = get(&img, HITEC_LAYOUT_HS5, HITEC_P_C_CENTER, HITEC_GET_OK);
     CHECK_EQ(v.value, 6004);
     CHECK_EQ(v.raw, 0x0F70);
     /* CW: the right end in 0x13, the left in 0x14. */
@@ -444,7 +444,7 @@ TEST_CASE(the_classic_reads_decode_as_the_hpp21_shows_them)
     CHECK_EQ(get(&img, HITEC_LAYOUT_HS7, HITEC_P_C_SPEED, HITEC_GET_OK).value,
              100);
     /* 0x0F94 + 2048 = 6036. */
-    CHECK_EQ(get(&img, HITEC_LAYOUT_HS7, HITEC_P_C_CENTRE, HITEC_GET_OK).value,
+    CHECK_EQ(get(&img, HITEC_LAYOUT_HS7, HITEC_P_C_CENTER, HITEC_GET_OK).value,
              6036);
     CHECK_EQ(get(&img, HITEC_LAYOUT_HS7, HITEC_P_C_DIRECTION,
                  HITEC_GET_OK).value, HITEC_CCW);
@@ -471,7 +471,7 @@ TEST_CASE(the_classic_reads_decode_as_the_hpp21_shows_them)
     hs5955(&img);
     CHECK_EQ(get(&img, HITEC_LAYOUT_HS5, HITEC_P_C_DATE, HITEC_GET_OK).value,
              20080110);
-    CHECK_EQ(get(&img, HITEC_LAYOUT_HS5, HITEC_P_C_CENTRE, HITEC_GET_OK).value,
+    CHECK_EQ(get(&img, HITEC_LAYOUT_HS5, HITEC_P_C_CENTER, HITEC_GET_OK).value,
              0x0FA0 + 2052);
     get(&img, HITEC_LAYOUT_HS5, HITEC_P_C_DEAD_BAND, HITEC_GET_RAW);
     get(&img, HITEC_LAYOUT_HS5, HITEC_P_C_OVERLOAD, HITEC_GET_RAW);
@@ -833,7 +833,7 @@ TEST_CASE(the_clamp_takes_the_nearest_step)
     CHECK_EQ(hitec_param_clamp(HITEC_LAYOUT_D, HITEC_P_D_NEUTRAL, 0), 1);
     CHECK_EQ(hitec_param_clamp(HITEC_LAYOUT_D, HITEC_P_D_NEUTRAL, 20000),
              16383);
-    CHECK_EQ(hitec_param_clamp(HITEC_LAYOUT_HS5, HITEC_P_C_CENTRE, 3000),
+    CHECK_EQ(hitec_param_clamp(HITEC_LAYOUT_HS5, HITEC_P_C_CENTER, 3000),
              3600);
     CHECK_EQ(hitec_param_clamp(HITEC_LAYOUT_HS7, HITEC_P_C_DEAD_BAND, 9), 5);
     CHECK_EQ(hitec_param_clamp(HITEC_LAYOUT_HS5, HITEC_P_C_RIGHT_END, 256),
@@ -933,7 +933,7 @@ TEST_CASE(edits_refuse_what_the_servo_would_not_take)
     CHECK_EQ(hitec_param_set(&img, HITEC_LAYOUT_HS7, HITEC_P_C_OVERLOAD, 10),
              HITEC_SET_ERR_UNKNOWN);
     /* A value equal to the decoded one changes nothing: speed 100% stays
-     * 4095, a centre edit to the same value keeps the end points. */
+     * 4095, a center edit to the same value keeps the end points. */
     d485(&img);
     keep = img;
     CHECK_EQ(hitec_param_set(&img, HITEC_LAYOUT_D, HITEC_P_D_SPEED, 100),
@@ -943,7 +943,7 @@ TEST_CASE(edits_refuse_what_the_servo_would_not_take)
     CHECK(memcmp(&img, &keep, sizeof(img)) == 0);
     hs5645(&img);
     keep = img;
-    CHECK_EQ(hitec_param_set(&img, HITEC_LAYOUT_HS5, HITEC_P_C_CENTRE, 6004),
+    CHECK_EQ(hitec_param_set(&img, HITEC_LAYOUT_HS5, HITEC_P_C_CENTER, 6004),
              HITEC_SET_OK);
     CHECK(memcmp(&img, &keep, sizeof(img)) == 0);
 }

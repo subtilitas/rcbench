@@ -3,7 +3,7 @@
 No owner photo. Measured from the Core Electronics product photo
 018-gy-291.jpg (700 x 700px, oblique). The photo is rectified by a fit:
 the image-to-board homography that makes the 8 pad rings and the 2
-mounting holes circles, with the pad centres 2.54mm apart on one line
+mounting holes circles, with the pad centers 2.54mm apart on one line
 (outline residual 0.07mm rms, 0.4mm max). The ADXL345 package comes out
 3.0mm wide (datasheet 3 x 5mm), which checks the result. A rectification
 by the 4 board corners alone gives a width 20% too large; the corners of

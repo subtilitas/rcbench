@@ -77,13 +77,13 @@ export const BAND_FILL = '#17181c';
 
 /** Body and band of a component as 2 rectangles: `[x, y, width, height]` each. */
 export function bodyRects(b: Body): [[number, number, number, number], [number, number, number, number]] {
-  const centre = b.band * (b.len / 2 - 2 - BODY.band / 2);
+  const center = b.band * (b.len / 2 - 2 - BODY.band / 2);
   return b.upright
-    ? [[b.x - BODY.w / 2, b.y - b.len / 2, BODY.w, b.len], [b.x - BODY.w / 2, b.y + centre - BODY.band / 2, BODY.w, BODY.band]]
-    : [[b.x - b.len / 2, b.y - BODY.w / 2, b.len, BODY.w], [b.x + centre - BODY.band / 2, b.y - BODY.w / 2, BODY.band, BODY.w]];
+    ? [[b.x - BODY.w / 2, b.y - b.len / 2, BODY.w, b.len], [b.x - BODY.w / 2, b.y + center - BODY.band / 2, BODY.w, BODY.band]]
+    : [[b.x - b.len / 2, b.y - BODY.w / 2, b.len, BODY.w], [b.x + center - BODY.band / 2, b.y - BODY.w / 2, BODY.band, BODY.w]];
 }
 
-/** Baselines of the lines of a component: `count` lines of `size` px, `pitch` px apart, centred on `y`. */
+/** Baselines of the lines of a component: `count` lines of `size` px, `pitch` px apart, centered on `y`. */
 export const baselines = (y: number, count: number, size: number, pitch: number): number[] =>
   Array.from({ length: count }, (_, i) => y + (i - (count - 1) / 2) * pitch + size * 0.35);
 

@@ -10,7 +10,7 @@
  * - a_second_finger_on_the_dial_leaves_a_speed_drag_running
  * - a_second_finger_on_the_dial_takes_nothing_from_its_drag
  * - a_second_finger_on_release_ends_the_dial_drag
- * - a_second_finger_on_centre_ends_the_dial_drag
+ * - a_second_finger_on_center_ends_the_dial_drag
  * - a_down_with_the_dials_own_id_ends_its_drag_and_not_speeds
  * - a_down_with_speeds_own_id_ends_its_drag_and_not_the_dials
  *
@@ -149,9 +149,9 @@ TEST_CASE(a_second_finger_on_release_ends_the_dial_drag)
     lift(0);
 }
 
-/* Finger 0 drags the dial; finger 1 taps CENTRE.  The horn goes to the
- * centre and stays there: finger 0's travel afterwards commands nothing. */
-TEST_CASE(a_second_finger_on_centre_ends_the_dial_drag)
+/* Finger 0 drags the dial; finger 1 taps CENTER.  The horn goes to the
+ * center and stays there: finger 0's travel afterwards commands nothing. */
+TEST_CASE(a_second_finger_on_center_ends_the_dial_drag)
 {
     fed_armed();
     int x, y, x2, y2;
@@ -161,14 +161,14 @@ TEST_CASE(a_second_finger_on_centre_ends_the_dial_drag)
     CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
     (void)after_frames(0.3f);
 
-    finger(1, SV_CENTRE_X, P(SV_BTN_Y));
+    finger(1, SV_CENTER_X, P(SV_BTN_Y));
     lift(1);
-    CHECK_EQ(last_cmd().kind, SERVO_CMD_CENTRE);
-    const uint16_t centre = servo_screen_commanded();
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_CENTER);
+    const uint16_t center = servo_screen_commanded();
     glide(0, x2, P(y2), 8);
     (void)after_frames(0.3f);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
-    CHECK_EQ(servo_screen_commanded(), centre);
+    CHECK_EQ(servo_screen_commanded(), center);
     lift(0);
 }
 
@@ -246,7 +246,7 @@ int main(void)
     RUN(a_second_finger_on_the_dial_leaves_a_speed_drag_running);
     RUN(a_second_finger_on_the_dial_takes_nothing_from_its_drag);
     RUN(a_second_finger_on_release_ends_the_dial_drag);
-    RUN(a_second_finger_on_centre_ends_the_dial_drag);
+    RUN(a_second_finger_on_center_ends_the_dial_drag);
     RUN(a_down_with_the_dials_own_id_ends_its_drag_and_not_speeds);
     RUN(a_down_with_speeds_own_id_ends_its_drag_and_not_the_dials);
     return test_summary("servo_two_drags");

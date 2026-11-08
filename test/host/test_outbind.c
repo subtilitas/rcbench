@@ -475,7 +475,7 @@ TEST_CASE(a_throttle_protocol_makes_throttles_and_a_pulse_one_makes_surfaces)
     uint16_t cc[LINK_CC_COUNT];
 
     /* The role decides where a channel goes when it stops being commanded.
-     * A throttle that rests centred is a motor at half power. */
+     * A throttle that rests centered is a motor at half power. */
     init(&b);
     outbind_set_proto(&b, proto_named("DSHOT600"));
     CHECK(outbind_toggle(&b, idx(0)));
@@ -501,7 +501,7 @@ TEST_CASE(the_esc_endpoints_reach_the_motor_and_not_the_servo_beside_it)
     /* MOTOR PWM and SERVO PWM bound together, the case the OUTPUTS screen
      * allows.  An ESC calibrated on a transmitter sending 985 to 2012us
      * needs 980 and 2020; a servo given that range would rest at 1500, and
-     * one given an asymmetric range would rest off centre while the motor
+     * one given an asymmetric range would rest off center while the motor
      * runs. */
     outbind_t b;
     uint16_t cc[LINK_CC_COUNT];
@@ -636,7 +636,7 @@ TEST_CASE(two_protocols_at_once_are_the_ordinary_case)
     CHECK_EQ(back.proto, pwm < dshot ? pwm : dshot);
 
     /*
-     * The roles are mixed to match.  A throttle that centres is a motor at
+     * The roles are mixed to match.  A throttle that centers is a motor at
      * half power, so the ESC's channel has to be a throttle while the servo
      * channels either side of it stay surfaces.
      */
@@ -1541,7 +1541,7 @@ TEST_CASE(the_pico_shape_places_its_pads_where_the_board_has_them)
     }
 
     /*
-     * And it agrees with the board itself.  The pad centres were measured
+     * And it agrees with the board itself.  The pad centers were measured
      * off the rectified photograph at 500px for a 51.00mm outline and fit
      * x = 13.55 + 24.888 i pixels; these are the same points from the
      * outline's own numbers, so the two must land together.
@@ -1663,7 +1663,7 @@ TEST_CASE(a_corner_on_the_right_numbers_the_row_the_other_way)
      * where a left-cornered board of the same outline puts its last pad.
      *
      * Reversing along the row, not mirroring across the outline.  The row is
-     * centred by integer division, so when (width - span) is odd the two
+     * centered by integer division, so when (width - span) is odd the two
      * margins differ by one and a mirror moves the whole row by that much
      * instead of only reversing it.  The shapes below are built here rather
      * than learned: outbind_pad_xy() takes the shape, and the point is to
@@ -1698,7 +1698,7 @@ TEST_CASE(the_row_sits_in_the_same_place_whichever_end_it_is_numbered_from)
     /*
      * The pads are where they are; only the numbering changes.  So the set
      * of positions a row occupies has to be identical for the two corners,
-     * including when the centring leaves an odd hundredth of a millimetre
+     * including when the centering leaves an odd hundredth of a millimetre
      * on one side.
      */
     const outbind_shape_t lf = { 5101u, 2100u, 254u, 161u, 20u,

@@ -353,7 +353,7 @@ void    outputs_chan_cfg_restore(uint16_t *regs, const uint16_t *saved);
  * controller) calibrated on a transmitter takes that transmitter's shortest
  * pulse as zero.  A surface keeps its own range -- the schema's default, or
  * the one the SERVO screen named for the servo on it -- because a surface
- * that took an ESC's range would rest at that range's midpoint, off centre
+ * that took an ESC's range would rest at that range's midpoint, off center
  * whenever the range is not symmetric about 1500us.
  *
  * Returns false and changes nothing for endpoints the page would refuse:

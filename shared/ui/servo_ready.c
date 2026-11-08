@@ -43,7 +43,7 @@
 #define RDY_W (RCARD_W - 24) /**< Its width: 356px. */
 /** @brief The dot's radius, px. */
 #define DOT_R  5
-#define DOT_DX 5 /**< The centre's offset, px. */
+#define DOT_DX 5 /**< The center's offset, px. */
 
 _Static_assert(READY_ROW_Y + READY_ROWS_MAX * READY_ROW_H <= READY_RAIL_Y,
                "the rows end above the rail line");

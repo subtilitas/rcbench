@@ -39,7 +39,7 @@ export const RP = {
     [[112, 230], [96, 230], [96, 180]], [[158, 230], [176, 230], [176, 300]],
     [[112, 386], [98, 386], [98, 450]], [[156, 386], [172, 386], [172, 330]],
   ] as ReadonlyArray<ReadonlyArray<readonly [number, number]>>,
-  /** The 3-pole CAN screw terminal: centre pole at x, top edge at y, poles `pitch` apart, `h` deep. */
+  /** The 3-pole CAN screw terminal: center pole at x, top edge at y, poles `pitch` apart, `h` deep. */
   terminal: { x: RP_CX, y: 664, pitch: 46, h: 66 },
 } as const;
 

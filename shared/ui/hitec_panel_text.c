@@ -101,7 +101,7 @@ static void fmt_value(uint8_t id, uint8_t unit, const hitec_value_t *v,
 
     switch (unit) {
     case HITEC_UNIT_COUNTS: {
-        /* 220 degrees over 16383 counts, 8192 the centre, in tenths. */
+        /* 220 degrees over 16383 counts, 8192 the center, in tenths. */
         const long d = (val - 8192L) * 2200L;
         const long tenths = (d >= 0 ? d + 8191L : d - 8191L) / 16383L;
 

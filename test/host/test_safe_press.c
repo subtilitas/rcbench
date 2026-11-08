@@ -331,7 +331,7 @@ TEST_CASE(the_help_bubble_takes_no_disarm_and_starts_no_arm)
 }
 
 /* What the screen names, read straight: DISARM while the button reads
- * DISARM, and nothing on ARM, on CENTRE, or on the dial. */
+ * DISARM, and nothing on ARM, on CENTER, or on the dial. */
 TEST_CASE(servo_names_disarm_and_not_arm)
 {
     const ui_screen_t *scr = servo_fn_screen(SERVO_FN_LIVE);
@@ -344,7 +344,7 @@ TEST_CASE(servo_names_disarm_and_not_arm)
     CHECK(sv_armed());
     CHECK(scr->safe_at(SV_ARM_X, SV_ARM_MY - UI_BAND_H));
     CHECK(!scr->safe_at(SV_ARM_X, SV_ARM_T - UI_BAND_H - 1));
-    CHECK(!scr->safe_at(SV_CENTRE_X, SV_BTN_Y));  /* CENTRE */
+    CHECK(!scr->safe_at(SV_CENTER_X, SV_BTN_Y));  /* CENTER */
     CHECK(!scr->safe_at(400, 216));               /* the dial */
     servo_screen_set_armed(false);
     CHECK(!scr->safe_at(SV_ARM_X, SV_ARM_MY - UI_BAND_H));

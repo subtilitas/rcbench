@@ -1252,7 +1252,7 @@ int ui_router_alert_rows(const char *text)
 /**
  * @brief Draw the alert band across the bottom of the panel.
  * @param c        The canvas, the panel's.
- * @param text     The alert, on one row centred or on two from the top.
+ * @param text     The alert, on one row centered or on two from the top.
  * @param closable A tap closes it: the "x" at its right end shows.
  */
 static void draw_alert(gfx_canvas_t *c, const char *text, bool closable)
@@ -1263,7 +1263,7 @@ static void draw_alert(gfx_canvas_t *c, const char *text, bool closable)
     const gfx_color_t ink = ui_theme_color(notice ? UI_C_TEXT_ON_LIGHT
                                                   : UI_C_TEXT);
     const int y = PANEL_H - ALERT_H;
-    /* One row centred in the band's height. */
+    /* One row centered in the band's height. */
     const int y1 = y + (ALERT_H - gfx_text_height(ALERT_FONT, 1)) / 2;
     gfx_fill_rect(c, 0, y, PANEL_W, ALERT_H, fill);
     if (ui_router_alert_rows(text) <= 1) {
