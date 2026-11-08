@@ -214,7 +214,8 @@ static void first_lines(cands_t *c)
         TX_SV_LIM_INA_SETUP, TX_SV_LIM_INA_OFFLINE, TX_SV_LIM_INA_NO_WIN,
         TX_SV_LIM_RAIL_LOW,
         TX_SV_LIM_PROG_PORT, TX_SV_LIM_PROG_BUSY, TX_SV_LIM_PROG_PD_OFF,
-        TX_SV_LIM_PROG_LOW, TX_SV_LIM_PROG_RAIL, TX_SV_LIM_PROG_NO_PD,
+        TX_SV_RUN_PD_5V, TX_SV_RUN_PD_SET, TX_SV_LIM_PROG_RAIL,
+        TX_SV_LIM_PROG_NO_PD,
         TX_HP_NEED_PD_C,
     };
     for (size_t k = 0; k < sizeof(k_why) / sizeof(k_why[0]); ++k) {

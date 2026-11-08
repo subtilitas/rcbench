@@ -95,8 +95,9 @@ hitec_prog_msg_id_t hitec_panel_run_connect(uint8_t series, bool supply,
         s_run.keep_ma = p->supply_ma;
     }
     if (supply) {
-        /* The PD mini's set point as it stands: the entry changes nothing
-         * of it. */
+        /* The run's supply (5.0V for LIMIT RUN and RUDDER AUTO): a PD
+         * mini that feeds the servo was set to it at START, so the entry
+         * changes nothing of it. */
         hitec_prog_supply_set(p, mv, ma);
     }
     hpn_supply_caps();

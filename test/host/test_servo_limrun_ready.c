@@ -58,9 +58,8 @@ static const gate_text_t k_gate[] = {
     { 0, TX_SV_LIM_PROG_BUSY, LRR_PROG },
     { 0, TX_HP_NEED_PD_C, LRR_SUPPLY },
     { 0, TX_SV_LIM_PROG_PD_OFF, LRR_SUPPLY },
-    { 0, TX_SV_LIM_PROG_LOW, LRR_SUPPLY },
+    { 0, TX_SV_RUN_PD_5V, LRR_SUPPLY },
     { 0, TX_SV_LIM_PROG_NO_PD, LRR_SUPPLY },
-    { 0, TX_SV_TAP_HV, LRR_SUPPLY },
     { 0, TX_SV_LIM_PWM_SAFE, LRR_PWM },
     { 0, TX_SV_LIM_PWM_OFF, LRR_PWM },
     { 0, TX_SV_LIM_PWM_OFF_ARMED, LRR_PWM },
@@ -427,8 +426,8 @@ TEST_CASE(the_card_and_the_hold_take_the_footer_and_the_output_cards_place)
     CHECK(ready_shown());
 }
 
-/* LIMIT RUN's list: MODE, SERVO, SERVO PULSES, PROG VOLTAGE, PROG CURRENT
- * and PROG WAIT.  On OUTPUTS MODE, SERVO and SERVO PULSES are locked with
+/* LIMIT RUN's list: MODE, SERVO, SERVO PULSES, PROG CURRENT and PROG
+ * WAIT, no PROG VOLTAGE.  On OUTPUTS MODE, SERVO and SERVO PULSES are locked with
  * the reason; on a PROG PORT behind a PD mini a tap on MODE switches it to
  * SEARCH + PROGRAM. */
 TEST_CASE(the_list_holds_mode_servo_pulses_and_the_programmers_rows)
@@ -438,13 +437,17 @@ TEST_CASE(the_list_holds_mode_servo_pulses_and_the_programmers_rows)
     tap_settings();
     const ui_setlist_t *sl = servo_screen_list();
     CHECK(sl->open);
-    CHECK_EQ(sl->host->count(), 6);
+    /* No PROG VOLTAGE: a run programs at 5.0V. */
+    CHECK_EQ(sl->host->count(), (int)LL_ROWS);
     CHECK_EQ(sl->host->row(0).kind, (int)UI_SL_CUSTOM);
     CHECK_EQ(sl->host->row(1).kind, (int)UI_SL_CUSTOM);
     CHECK_EQ(sl->host->row(2).kind, (int)UI_SL_CUSTOM);
-    CHECK_EQ(sl->host->row(3).id, SET_SERVO_PROG_V);
-    CHECK_EQ(sl->host->row(4).id, SET_SERVO_PROG_I);
-    CHECK_EQ(sl->host->row(5).id, SET_SERVO_PROG_WAIT);
+    CHECK_EQ(sl->host->row(LL_PROG_I).id, SET_SERVO_PROG_I);
+    CHECK_EQ(sl->host->row(LL_WAIT).id, SET_SERVO_PROG_WAIT);
+    for (int i = 0; i < sl->host->count(); ++i) {
+        CHECK(sl->host->row(i).kind != (uint8_t)UI_SL_SETTING
+              || sl->host->row(i).id != SET_SERVO_PROG_V);
+    }
     CHECK_STR_EQ(sl->host->row(0).custom->locked(), TR(SVL_PORT_ONLY));
     sl_tap(LL_MODE);
     CHECK(!servo_screen_limit_prog());

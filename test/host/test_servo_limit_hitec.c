@@ -2,8 +2,9 @@
  * The SERVO screen's limit run on a Hitec servo (shared/ui/servo_limit_seam.c,
  * servo_limit_panel.c, the Hitec run seam hitec_panel_run.h): the LIMIT RUN
  * settings' SERVO row, the card's lines, the refusals before a start, a D
- * series run that programs 0xB2 and 0xB0 through the seam, and a STOP that
- * ends a run with every output off.  The bench is hitec_limit_panel_rig.h.
+ * series run that programs 0xB2 and 0xB0 through the seam, a STOP that
+ * ends a run with every output off, and the 5.0V every run session asks.
+ * The bench is hitec_limit_panel_rig.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -286,6 +287,38 @@ TEST_CASE(a_stop_with_the_first_hitec_write_on_its_way_offers_restore)
     CHECK(!hitec_prog_write_on(model()));
 }
 
+/* SET_SERVO_PROG_V at 6.0V and at 4.8V, with and without a PD mini: the
+ * run's sessions ask 5000mV.  A PD mini that feeds the servo is at 5.0V
+ * after the run and stays there.  The run over, the HITEC page's
+ * programmer holds the setting's voltage again. */
+TEST_CASE(a_hitec_limit_run_programs_at_5v_whatever_prog_v_holds)
+{
+    static const float k_v[] = { 6.0f, 4.8f };
+
+    for (int pd = 0; pd < 2; ++pd) {
+        for (size_t i = 0; i < 2u; ++i) {
+            hl_fresh(pd != 0);
+            settings_set(SET_SERVO_PROG_V, k_v[i]);
+            hl_settings(SERVO_LIMRUN_FAM_HITEC_D, true);
+            g_step_mv = 0u;
+            hl_hold_start();
+            CHECK(servo_screen_limit_running());
+            hl_run_out();
+            CHECK(!servo_screen_limit_running());
+            CHECK(strstr(hl.report, "Result:         PASS\n") != NULL);
+            CHECK_EQ(g_step_mv, (uint16_t)SERVO_LIMRUN_SUPPLY_MV);
+            if (pd != 0) {
+                CHECK(fabsf(supply_screen_set_v() - 5.0f) < 0.005f);
+                hl_ms(2000u);
+                CHECK(fabsf(supply_screen_set_v() - 5.0f) < 0.005f);
+            }
+            CHECK_EQ(hitec_prog_mv(model()),
+                     (uint16_t)lroundf(k_v[i] * 1000.0f));
+        }
+    }
+    settings_set(SET_SERVO_PROG_V, settings_def(SET_SERVO_PROG_V)->def);
+}
+
 int main(void)
 {
     RUN(the_limit_run_list_picks_its_own_family_and_hides_servo_pulses);
@@ -295,5 +328,6 @@ int main(void)
     RUN(a_classic_ccw_limit_run_lowers_cell_0x13_for_the_short_pulses);
     RUN(a_stop_during_a_hitec_run_ends_it_with_every_output_off);
     RUN(a_stop_with_the_first_hitec_write_on_its_way_offers_restore);
+    RUN(a_hitec_limit_run_programs_at_5v_whatever_prog_v_holds);
     return test_summary("servo_limit_hitec");
 }

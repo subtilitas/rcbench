@@ -74,6 +74,7 @@ set(SRCS
     servo_footer.c
     servo_lists.c
     servo_pick.c
+    servo_run_supply.c
     kst_panel.c
     kst_panel_text.c
     kst_panel_warn.c
