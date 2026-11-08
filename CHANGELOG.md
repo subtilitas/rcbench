@@ -60,6 +60,11 @@ history is in git.
   the IMU on. SCAN FOR SENSORS on the IMU screen takes a press with the IMU
   off: it switches the IMU on and scans once Bluetooth LE runs. The card's
   state line reads `IMU OFF: SCAN SWITCHES IT ON`.
+- TEST's and LIMIT RUN's READY cards show an ANGLE row after METER: the
+  angle source in green while a run reads it, `AS5600 OFF` or `IMU X+ NO
+  READING` in amber while it does not. The row refuses nothing; a tap opens
+  the ANGLE SOURCE list on a SAFE bench, and the AS5600 entry's SETUP jump
+  returns to TEST or LIMIT RUN. LIMIT RUN's card holds 10 rows.
 
 ### Fixed
 

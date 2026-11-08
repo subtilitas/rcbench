@@ -6,9 +6,10 @@
  *        column, and what a pick sets.
  *
  * The screen's files call it: the READY rows and the SETTINGS list rows
- * that open it, the list's press and draw code (servo_settings_panel.c,
- * servo_settings_draw.c) and the frame step that keeps it on the IMU's
- * view.  The tests read its entries through the last three calls.
+ * that open it, the ANGLE row TEST's and LIMIT RUN's cards draw with
+ * angle_pick_run_row(), the list's press and draw code
+ * (servo_settings_panel.c, servo_settings_draw.c) and the frame step that
+ * keeps it on the IMU's view.  The tests read its entries through the last three calls.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -17,6 +18,7 @@
 #include <stdbool.h>
 
 #include "gfx.h"
+#include "servo_ready_int.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -55,6 +57,17 @@ void angle_pick_refused(int k);
  * @return true to draw it in the accent.
  */
 bool angle_pick_current(int k);
+/**
+ * @brief The ANGLE row of TEST's and LIMIT RUN's READY cards: the source
+ *        a run reads and whether it reads, never a refusal of the hold.  A
+ *        tap opens the list (angle_pick_open()).
+ * @param r     The row, cleared by the caller; its label, state, value and
+ *              fix are set.
+ * @param name  The source's name: "AS5600", "IMU X+".
+ * @param reads Whether a run started now, or the run under way, reads
+ *              angles from it.
+ */
+void angle_pick_run_row(rdy_row_t *r, const char *name, bool reads);
 /**
  * @brief The list's entries, for the tests.
  * @return Their count while the list shows, -1 while it does not.

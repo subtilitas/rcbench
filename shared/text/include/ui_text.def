@@ -5323,6 +5323,14 @@ UI_TEXT(SV_ANG_NONE, 0,
 UI_TEXT(SV_ANG_SCAN_FAIL, 27,
     "SCAN FAILED: CODE %u",
     "SUCHE FEHLGESCHLAGEN: %u")
+/* TEST's and LIMIT RUN's READY row ANGLE without a reading, the source's
+ * name first (20 cells of a state). */
+UI_TEXT(SV_ANG_RUN_OFF, 20,
+    "%s OFF",
+    "%s AUS")
+UI_TEXT(SV_ANG_RUN_NONE, 20,
+    "%s NO READING",
+    "%s KEIN MESSWERT")
 UI_TEXT(SVL_FAMILY_HELP, 60,
     "The programmer a run writes the end points with",
     "Der Programmierer, mit dem ein Lauf die Endpunkte schreibt")

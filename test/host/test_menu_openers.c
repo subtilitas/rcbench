@@ -4,9 +4,10 @@
  * LIMITS, DUT's AS5600 button to SENSORS, UPDATES' and LOGS' buttons to WI-FI
  * and the TARGET row from a programmer asking for a port, RUDDER AUTO's READY
  * rows ANGLE and METER and LIMIT RUN's METER to SENSORS on the part that
- * watches the target, the ANGLE SOURCE list's AS5600 entry to SENSORS,
- * PORT's `OUTPUTS: NO PIN` entry to OUTPUTS on SERVO PWM, and the READY row
- * SERVO's refusal on an ARMED bench.  Each one's way back by the home tag, its refusal while the
+ * watches the target, the ANGLE SOURCE list's AS5600 entry from RUDDER,
+ * RUDDER AUTO, TEST and LIMIT RUN to SENSORS, PORT's `OUTPUTS: NO PIN`
+ * entry to OUTPUTS on SERVO PWM, and the READY row SERVO's refusal on an
+ * ARMED bench.  Each one's way back by the home tag, its refusal while the
  * target refuses, a busy target, what a later entry by a tile finds, LOGS' and
  * FILES' SETTINGS to SD CARD, and the rule that no text names a path.
  *
@@ -476,6 +477,27 @@ TEST_CASE(port_outputs_with_no_pin_opens_outputs_and_the_tag_returns)
     }
 }
 
+/* LIMIT RUN's and TEST's ANGLE rows open the ANGLE SOURCE list; its AS5600
+ * OFF in SETUP opens SENSORS on the AS5600 entry, and the home tag returns
+ * to the card's screen. */
+TEST_CASE(a_run_cards_angle_row_reaches_setup_and_the_tag_returns)
+{
+    static const servo_fn_t k_fn[] = { SERVO_FN_LIMRUN, SERVO_FN_TEST };
+    static const int k_row[] = { (int)LRR_ANGLE, (int)TRR_ANGLE };
+    for (size_t i = 0u; i < 2u; ++i) {
+        start();
+        servo_on(k_fn[i]);
+        tap(SV_RDY_X, UI_BAND_H + SV_RDY_ROW_Y(k_row[i]));
+        CHECK(angle_pick_count() >= 2);
+        tap_angle_entry(0);
+        CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+        CHECK_EQ(sensors_pane_selected(), SENS_ENTRY_AS5600);
+        CHECK_EQ(ui_router_parent(SCREEN_SETUP), servo_fn_screen_id(k_fn[i]));
+        tap_home();
+        CHECK_EQ(ui_router_current(), servo_fn_screen_id(k_fn[i]));
+    }
+}
+
 /* ARMED: the SERVO row opens no list and names why in the band as a notice;
  * on a SAFE bench with a PROG PORT it opens the three families. */
 TEST_CASE(the_servo_row_refuses_while_armed_and_names_why)
@@ -824,6 +846,7 @@ int main(void)
     RUN(limit_runs_red_meter_row_opens_sensors_and_the_tag_returns);
     RUN(the_meter_row_opens_the_part_that_watches_the_target);
     RUN(port_outputs_with_no_pin_opens_outputs_and_the_tag_returns);
+    RUN(a_run_cards_angle_row_reaches_setup_and_the_tag_returns);
     RUN(the_servo_row_refuses_while_armed_and_names_why);
     RUN(the_network_button_opens_wifi_and_the_tag_returns_to_updates);
     RUN(wifi_levels_and_a_staged_image_climb_before_the_tag_returns);

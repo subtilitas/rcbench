@@ -542,8 +542,8 @@ each check of the start gate one row, and the footer's HOLD 2s: ARM + START runs
 1000ms, ARM, ARMED within 500ms, the run; a failed step names itself in the alert band
 and switches every output off (`test_servo_start_seq`, `test_servo_ready`,
 `test_servo_rauto_seq`, `test_prog5v_servo`; host suite only).
-LIMIT RUN has the same READY card from `shared/ui/servo_limit_ready.c`, nine rows from
-`lim_blocked()`'s checks, and the same hold; the run ends SAFE, the PROG 5V kept
+LIMIT RUN has the same READY card from `shared/ui/servo_limit_ready.c`, ten rows, nine from
+`lim_blocked()`'s checks and ANGLE, which names the angle source and refuses nothing, and the same hold; the run ends SAFE, the PROG 5V kept
 (`test_servo_limrun_ready`, `test_servo_limrun_seq`; host suite only).
 LIVE, SWEEP and RUDDER show READY rows in the output card's place (PORT, SUPPLY, ARM; ANGLE
 and ZERO on RUDDER), and their ARM runs the same steps where PORT PWM, PROG 5V or the PD

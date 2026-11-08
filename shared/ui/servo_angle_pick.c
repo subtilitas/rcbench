@@ -28,6 +28,11 @@
  * on when it is off and scans once Bluetooth LE runs (imu_screen_search());
  * the list stays open and follows the scan.
  *
+ * TEST's and LIMIT RUN's cards draw an ANGLE row with angle_pick_run_row():
+ * the source's name in green while a run reads it, `AS5600 OFF` or `IMU X+
+ * NO READING` in amber while it does not.  It is never a refusal: a run
+ * without an angle runs without its angle columns.
+ *
  * The entries are built from the view the panel hands the IMU screen each
  * frame, whatever screen shows, so the list needs no panel code of its own.
  *
@@ -351,6 +356,23 @@ bool angle_pick_current(int k)
     }
     return value >= AP_IMU0 && value - AP_IMU0 < (int)v->found_n
            && same_addr(v->bound_addr, v->found[value - AP_IMU0].addr);
+}
+
+void angle_pick_run_row(rdy_row_t *r, const char *name, bool reads)
+{
+    r->label = TR(RDY_ANGLE);
+    r->fix = true;
+    if (reads) {
+        r->st = (uint8_t)RDY_OK;
+        snprintf(r->value, sizeof(r->value), "%s", name);
+        return;
+    }
+    /* Amber: the run goes without the angle columns, refused by nothing. */
+    r->st = (uint8_t)RDY_WARN;
+    const bool off = enc_src() == SERVO_ANGLE_AS5600
+                     && !settings_get_bool(SET_ENC_EN);
+    snprintf(r->value, sizeof(r->value),
+             off ? TR(SV_ANG_RUN_OFF) : TR(SV_ANG_RUN_NONE), name);
 }
 
 int angle_pick_count(void)

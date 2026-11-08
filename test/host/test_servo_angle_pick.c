@@ -1,6 +1,7 @@
 /*
- * The ANGLE SOURCE list (servo_angle_pick.c) on RUDDER and RUDDER AUTO: the
- * READY row ANGLE and the SETTINGS list's ANGLE SOURCE row open it on a
+ * The ANGLE SOURCE list (servo_angle_pick.c) on RUDDER and RUDDER AUTO, and
+ * the ANGLE row of TEST's and LIMIT RUN's cards: the READY rows ANGLE and
+ * the SETTINGS list's ANGLE SOURCE row open it on a
  * SAFE bench, with a reading and without; the AS5600 and the IMUs the last
  * scan found as its entries; what a pick sets; SEARCH FOR IMU switching
  * the IMU on and scanning once Bluetooth LE runs; NO IMU FOUND; and the
@@ -20,6 +21,7 @@
  * - the_list_is_refused_armed_and_closes_when_the_bench_arms
  * - rudder_autos_angle_row_and_list_row_open_the_list
  * - a_search_owed_is_dropped_by_imu_off_and_refused_on_a_failed_c6
+ * - test_and_limit_run_show_the_angle_and_never_refuse_on_it
  *
  * SPDX-License-Identifier: MIT
  */
@@ -459,6 +461,98 @@ TEST_CASE(a_search_owed_is_dropped_by_imu_off_and_refused_on_a_failed_c6)
     CHECK(refused);
 }
 
+/**
+ * @brief The ANGLE row of the card shown, TEST's or LIMIT RUN's.
+ * @param test TEST's, else LIMIT RUN's
+ * @return the row
+ */
+static rdy_row_t run_angle(bool test)
+{
+    rdy_row_t r;
+    CHECK(test ? test_ready_row(TRR_ANGLE, &r)
+               : lim_ready_row(LRR_ANGLE, &r));
+    return r;
+}
+
+/**
+ * @brief The text the card's gate refuses the hold with now.
+ * @param test TEST's, else LIMIT RUN's
+ * @return it; "" when none
+ */
+static const char *run_gate(bool test)
+{
+    const char *why = test ? test_hold_blocked(NULL) : lim_hold_blocked(NULL);
+    return why != NULL ? why : "";
+}
+
+/* TEST and LIMIT RUN: ANGLE names the source, green while a run reads it,
+ * amber with OFF or NO READING while it does not; the gate is the same
+ * either way.  A tap opens the list on a SAFE bench. */
+TEST_CASE(test_and_limit_run_show_the_angle_and_never_refuse_on_it)
+{
+    for (int k = 0; k < 2; ++k) {
+        const bool test = (k == 0);
+        safe_on(test ? SERVO_FN_TEST : SERVO_FN_LIMRUN, IMU_LINK_OFF);
+        /* The IOmcu holds the AS5600 on, as the panel reports it. */
+        servo_screen_set_enc_held(true);
+        rdy_row_t r = run_angle(test);
+        CHECK_STR_EQ(r.label, TR(RDY_ANGLE));
+        CHECK(r.fix);
+        CHECK_STR_EQ(r.value, "AS5600");
+        CHECK_EQ(r.st, (uint8_t)RDY_OK);
+        CHECK(r.why == NULL);
+        char gate[128];
+        snprintf(gate, sizeof(gate), "%s", run_gate(test));
+
+        settings_set(SET_ENC_EN, 0.0f);
+        ra_ms(100u);
+        r = run_angle(test);
+        char want[64];
+        snprintf(want, sizeof(want), TR(SV_ANG_RUN_OFF), "AS5600");
+        CHECK_STR_EQ(r.value, want);
+        CHECK_EQ(r.st, (uint8_t)RDY_WARN);
+        CHECK(r.why == NULL);
+        CHECK_STR_EQ(run_gate(test), gate);
+
+        /* The IMU in force with no reading handed over, as the panel
+         * hands the IMU's when it is the source. */
+        settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_IMU);
+        ra.enc = false;
+        const servo_test_enc_t none = { .valid = false,
+                                        .taken_ms = g_rig.ms };
+        servo_screen_encoder(&none);
+        ra_ms(100u);
+        r = run_angle(test);
+        snprintf(want, sizeof(want), TR(SV_ANG_RUN_NONE), "IMU X+");
+        CHECK_STR_EQ(r.value, want);
+        CHECK_EQ(r.st, (uint8_t)RDY_WARN);
+        CHECK_STR_EQ(run_gate(test), gate);
+
+        const int row = test ? (int)TRR_ANGLE : (int)LRR_ANGLE;
+        ev(SV_RDY_X, SV_RDY_ROW_Y(row), TOUCH_EVENT_DOWN, 2);
+        ev(SV_RDY_X, SV_RDY_ROW_Y(row), TOUCH_EVENT_UP, 2);
+        CHECK_EQ(angle_pick_count(), 2);
+        bool refused = false;
+        CHECK_STR_EQ(entry(0, &refused), TR(SV_ANG_AS5600_OFF));
+        CHECK(refused);
+        scr->render(&cv, 0);
+        /* ARMED: refused, the list shut. */
+        tap_entry(1);                           /* SEARCH: stays open */
+        CHECK_EQ(angle_pick_count(), 2);
+        servo_screen_set_armed(true);
+        ra.armed = true;
+        ra_ms(40u);
+        CHECK_EQ(angle_pick_count(), -1);
+        ev(SV_RDY_X, SV_RDY_ROW_Y(row), TOUCH_EVENT_DOWN, 2);
+        ev(SV_RDY_X, SV_RDY_ROW_Y(row), TOUCH_EVENT_UP, 2);
+        CHECK_EQ(angle_pick_count(), -1);
+    }
+    /* Ten rows on LIMIT RUN end over the rail line. */
+    CHECK_EQ((int)LRR_COUNT, READY_ROWS_MAX);
+    CHECK(ready_row_rect(READY_ROWS_MAX - 1).y + READY_ROW_H
+          <= ready_rail_rect().y);
+}
+
 int main(void)
 {
     RUN(the_angle_row_opens_the_list_with_a_reading_and_without);
@@ -472,5 +566,6 @@ int main(void)
     RUN(the_list_is_refused_armed_and_closes_when_the_bench_arms);
     RUN(rudder_autos_angle_row_and_list_row_open_the_list);
     RUN(a_search_owed_is_dropped_by_imu_off_and_refused_on_a_failed_c6);
+    RUN(test_and_limit_run_show_the_angle_and_never_refuse_on_it);
     return test_summary("servo_angle_pick");
 }
