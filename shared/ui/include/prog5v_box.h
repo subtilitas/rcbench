@@ -30,8 +30,10 @@
  * (prog5v_box_input_low_mv()), the box's second line reads
  * `INPUT 5.1V: NEEDS 15V` in red, PROG 5V ON takes no press and names the
  * input in the alert band (prog5v_box_input_why()), and the screens that
- * switch the 5V for a run or a session refuse the same way.  No PD mini
- * reading, no warning.
+ * switch the 5V for a run or a session refuse the same way.  An input that
+ * goes low under the hold ends it with the same text, prog5v_box_ask_on()
+ * asks nothing while it is low, and the control task refuses an ON that
+ * reaches it then (apply_prog5v_cmd()).  No PD mini reading, no warning.
  *
  * What the box asks goes out as a command (prog5v_box_poll_cmd()); the
  * control task judges an ON as it judges the PD mini's OUTPUT ON.  The box

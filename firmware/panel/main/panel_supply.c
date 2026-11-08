@@ -463,9 +463,17 @@ void apply_prog5v_cmd(const panel_cmd_t *pc)
      * counted before the ON is judged against them; then the PD mini's
      * OUTPUT ON rules. */
     control_pump();
+    const unsigned low = prog5v_box_input_low_mv();
     if (arming_held(&s_arm)) {
         /* A pressed STOP stands: no ON until its reset. */
         s_stop_alert = control_alert_kept(TR(ALERT_STOP_HELD));
+    } else if (low != 0u) {
+        /* The carrier's input went low after the box or the steps asked:
+         * M7 makes no 5V from it.  Nothing is written. */
+        char line[ALERT_MAX];
+        snprintf(line, sizeof(line), TR(P5_IN_WHY), low / 1000u,
+                 (low % 1000u) / 100u);
+        control_alert(line);
     } else if (!s_prog_taken
         && pc->stops == arming_stop_count(&s_arm)
         && pc->resets == atomic_load(&s_stop_resets)

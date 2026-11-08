@@ -184,10 +184,12 @@ Spannungsabfall im Kabel), warnt das Panel und lehnt ab:
 | Das Warnband, einmal, sobald der Messwert unter 13,5V fällt, zurückgenommen bei 13,5V oder mehr | `EINGANG 5.1V: BENÖTIGT 15V. VERSORGUNGSSPANNUNG PRÜFEN` |
 | Die Kopfzeile von SUPPLY, rot | `PD MINI TX GPIO 7 RX GPIO 6   EINGANG 5.1V < 15V` |
 | Die zweite Zeile des Felds PROG 5V, rot | `EINGANG 5.1V: BENÖTIGT 15V` |
-| PROG 5V EIN | Nimmt kein Halten an; das Warnband nennt den Eingang. |
+| PROG 5V EIN | Nimmt kein Halten an; das Warnband nennt den Eingang. Ein Eingang, der während der 2s Halten niedrig wird, beendet es ebenso, und der Steuer-Task lehnt ein ON ab, das ihn bei niedrigem Eingang erreicht, und schreibt nichts. |
 | Die Zeile PROG 5V der Karte BEREIT auf KST, HITEC, ENDLAGENLAUF und RUDER AUTO, rot | `EINGANG 5.1V < 15V`; ein Tippen nennt den Eingang im Warnband. |
 | VERBINDEN auf KST und HITEC | Abgelehnt mit dem Eingang; die Sitzung bleibt in PWM, die 5V aus. |
 | ARM + START auf ENDLAGENLAUF und RUDER AUTO | Abgelehnt mit `PROG 5V: EINGANG 5.1V: BENÖTIGT 15V. VERSORGUNGSSPANNUNG PRÜFEN`; kein Ausgang wird geschaltet. |
+| Die Schritte von ARM und ARM + START, die PROG 5V schalten, auf jeder SERVO-Ansicht | Ein Eingang, der nach dem Halten niedrig wird, bis zum und im Rücklesen, beendet sie sofort: alle Ausgänge aus, die Fehlerzeile nennt den Eingang. |
+| Das VERBINDEN eines Endlagenlaufs oder von RUDER AUTO nach START | Abgelehnt, solange der Eingang niedrig ist; der Lauf endet. |
 
 Die Volt stehen in Zehnteln, abgerundet: 13,49V liest `13.4V`. Ohne
 Messwert des PD mini warnt der Eingang nicht: PD mini deaktiviert, nicht
@@ -299,8 +301,11 @@ Schienenzyklus von KST hält sie 1000ms aus, der Einstieg eines klassischen
 Hitec 500ms. Das Panel sieht GPIO 21 nur bei seinen Lesungen der Page, alle
 200ms. Solange eine Sitzung die 5V hält, wartet ein Befund auf ein Lesen
 der Page nach ihm, das GPIO 21 noch als ein liest; ein Lesen, das sie als
-aus zeigt, oder vorher ein Fenster, das nicht niedrig ist (4750mV oder
-mehr, bevor die 5V kamen, 3000mV oder mehr danach), verwirft ihn. Der
+aus zeigt, oder ein Fenster, das nicht niedrig ist (4750mV oder mehr,
+bevor die 5V kamen, 3000mV oder mehr danach), verwirft ihn. Das Fenster
+wird zuerst beurteilt: das Panel liest in einem Durchlauf PROG_SUPPLY vor
+den Fenstern, also verwirft ein wieder gutes Fenster den Befund auch im
+selben Durchlauf wie das Lesen der Page, das ihn bestätigen würde. Der
 Fehler einer Sitzung kommt deshalb bis zu 200ms später als der des Felds.
 
 Die Regel ist `shared/safety/prog5v_lost.c` unter `test_prog5v_lost`;

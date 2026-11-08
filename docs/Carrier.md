@@ -177,10 +177,12 @@ refuses:
 | The alert band, once as the reading goes under 13.5V, taken back when it is 13.5V or more | `INPUT 5.1V: NEEDS 15V. CHECK THE SUPPLY VOLTAGE` |
 | SUPPLY's head line, in red | `PD MINI TX GPIO 7 RX GPIO 6   INPUT 5.1V < 15V` |
 | The PROG 5V box's second line, in red | `INPUT 5.1V: NEEDS 15V` |
-| PROG 5V ON | Takes no hold; the alert band names the input. |
+| PROG 5V ON | Takes no hold; the alert band names the input. An input that goes low during the 2s hold ends it the same way, and the control task refuses an ON that reaches it while the input is low, writing nothing. |
 | The PROG 5V row of the READY card on KST, HITEC, LIMIT RUN and RUDDER AUTO, in red | `INPUT 5.1V < 15V`; a tap names the input in the alert band. |
 | CONNECT on KST and HITEC | Refused with the input named; the session stays in PWM, the 5V off. |
 | ARM + START on LIMIT RUN and RUDDER AUTO | Refused with `PROG 5V: INPUT 5.1V: NEEDS 15V. CHECK THE SUPPLY VOLTAGE`; no output is switched. |
+| The steps of ARM and ARM + START that switch PROG 5V, on every SERVO screen | An input that goes low after the hold, up to and during the read-back, ends them at once: every output off, the failure line naming the input. |
+| A limit run's or RUDDER AUTO's CONNECT, after START | Refused while the input is low; the run ends. |
 
 The volts are in tenths, rounded down: 13.49V reads `13.4V`. Without a
 PD mini reading there is no warning from the input: the PD mini disabled,
@@ -287,8 +289,11 @@ A KST or Hitec session switches the 5V off and on itself: a KST rail cycle
 keeps it off for 1000ms, a classic Hitec entry for 500ms. The panel sees
 GPIO 21 only at its page reads, every 200ms. While a session holds the 5V
 a finding waits for a page read made after it that still reads GPIO 21 on;
-a read that shows it off, or first a window that is not low (4750mV or
-more before the 5V came, 3000mV or more after), drops it.
+a read that shows it off, or a window that is not low (4750mV or more
+before the 5V came, 3000mV or more after), drops it. The window is judged
+first: the panel reads PROG_SUPPLY before the windows in a pass, so a
+window that has recovered drops the finding even when it comes in the
+same pass as the page read that would confirm it.
 A session's error therefore comes up to 200ms later than the box's.
 
 The rule is `shared/safety/prog5v_lost.c` under `test_prog5v_lost`;

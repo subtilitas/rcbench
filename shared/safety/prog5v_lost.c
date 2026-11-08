@@ -56,6 +56,23 @@ static bool found(prog5v_lost_t *d, prog5v_trip_t kind, const prog5v_on_t *on)
     return true;
 }
 
+/**
+ * @brief A finding that waits under a port's hold, confirmed: a page read
+ *        made since it still reads the pin on.
+ * @param d  the state
+ * @param on the ON as the page reads it, on
+ * @return true for the trip now
+ */
+static bool confirm(prog5v_lost_t *d, const prog5v_on_t *on)
+{
+    if (!d->waits || on->reads == d->wait_reads) {
+        return false;
+    }
+    d->waits   = false;
+    d->tripped = true;
+    return true;
+}
+
 bool prog5v_lost_step(prog5v_lost_t *d, const prog5v_on_t *on,
                       uint32_t now_ms, const prog5v_window_t *w)
 {
@@ -85,12 +102,9 @@ bool prog5v_lost_step(prog5v_lost_t *d, const prog5v_on_t *on,
     if (d->on && (uint32_t)(now_ms - d->on_ms) >= PROG5V_LOST_SETTLE_MS) {
         d->settled = true;
     }
-    /* A finding under a port's hold: a page read since still reads on. */
-    if (d->waits && on->reads != d->wait_reads) {
-        d->waits   = false;
-        d->tripped = true;
-        return true;
-    }
+    /* The window before a waiting finding is confirmed: the panel reads
+     * PROG_SUPPLY before SENSE_WIN in a pass, so the page read that would
+     * confirm it and a window that drops it can come in the same step. */
     if (w == NULL || !w->ok) {
         d->low   = 0u;
         d->waits = false;
@@ -100,7 +114,9 @@ bool prog5v_lost_step(prog5v_lost_t *d, const prog5v_on_t *on,
     d->seen   = true;
     d->window = w->window;
     if (!fresh || !d->on || d->tripped) {
-        return false;                  /* read again, off, or tripped */
+        /* Read again, off, or tripped: a finding under a port's hold is
+         * confirmed by a page read since that still reads on. */
+        return confirm(d, on);
     }
     /* Not low: PROG5V_MIN_MV before the 5V came, PROG5V_LOST_MV after. */
     if (w->mv >= (d->reached ? PROG5V_LOST_MV : PROG5V_MIN_MV)) {
@@ -110,7 +126,7 @@ bool prog5v_lost_step(prog5v_lost_t *d, const prog5v_on_t *on,
         return false;
     }
     if (d->waits) {
-        return false;
+        return confirm(d, on);
     }
     if (!d->reached) {
         if ((uint32_t)(now_ms - d->start_ms) < PROG5V_REACH_MS

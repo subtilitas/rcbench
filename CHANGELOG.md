@@ -15,8 +15,10 @@ history is in git.
   red, and the PROG 5V row of the READY card on KST, HITEC, LIMIT RUN and
   RUDDER AUTO reads `INPUT 5.1V < 15V` in red. PROG 5V ON, a KST or Hitec
   CONNECT and ARM + START of LIMIT RUN and RUDDER AUTO are refused with
-  that text, and no output is switched. Without a PD mini reading there is
-  no warning.
+  that text, and no output is switched. An input that goes low during the
+  2s hold, during ARM's or ARM + START's steps up to the read-back, or
+  before a run's CONNECT ends them the same way, with every output off.
+  Without a PD mini reading there is no warning.
 - After every ON of the carrier's programming-port 5V, the PROG 5V box's,
   ARM's and a KST or Hitec session's, INA3221 0x40 CH3 must read 4750mV or
   more within 200ms; otherwise every output goes off with `PROG 5V

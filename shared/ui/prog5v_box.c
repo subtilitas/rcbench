@@ -279,6 +279,12 @@ void prog5v_box_tick(prog5v_box_t *b, float dt_s)
     if (b->pressed && !prog5v_box_live()) {
         prog5v_box_cancel(b);
     }
+    /* The input gone low under PROG 5V ON's hold: the hold ends, the
+     * reason said, as at the press. */
+    if (b->pressed && !b->press_on && in != 0u) {
+        prog5v_box_cancel(b);
+        ui_action_refused(prog5v_box_input_why());
+    }
     if (b->pressed && !b->press_on && !on) {
         ++b->rev;
         if (ui_hold_tick(&b->hold, dt_s)) {
@@ -388,6 +394,11 @@ void prog5v_box_ask_off(prog5v_by_t by)
 
 void prog5v_box_ask_on(prog5v_by_t by)
 {
+    /* Not from a low input: the sequence that asks names it itself
+     * (svs_seq_frame()). */
+    if (prog5v_box_input_low_mv() != 0u) {
+        return;
+    }
     post(true, by, atomic_load(&s_cuts));
 }
 

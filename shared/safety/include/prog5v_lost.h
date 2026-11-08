@@ -51,7 +51,9 @@
  * finding waits for a page read made after it that still reads the pin on;
  * a read that shows the pin off ends the ON.  A window that is not low
  * (PROG5V_MIN_MV or more for MISSING, PROG5V_LOST_MV or more for LOST)
- * drops a finding that waits.  The panel's own OFF moves the PROG_SUPPLY
+ * drops a finding that waits, also one read in the same step as the page
+ * read that would confirm it: the window is judged first.  An invalid
+ * reading drops it as well, and no reading confirms nothing.  The panel's own OFF moves the PROG_SUPPLY
  * cuts (prog_supply_link_cuts()); the page reads the pin on until its next
  * read, so a change of the cuts starts the settle time again, drops the
  * windows counted and a finding that waits, and holds MISSING back until

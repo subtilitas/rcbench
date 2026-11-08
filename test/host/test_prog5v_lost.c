@@ -14,6 +14,7 @@
  * one trip an ON and none until the ON goes and comes back, an OFF asked
  * under an ON the page still reads on (the cuts), a port's finding
  * confirmed, ended by a read of the pin off and dropped by a good window,
+ * also one read in the same step as the confirming page read,
  * the window number's and the clock's wrap, and the console lines.
  *
  * SPDX-License-Identifier: MIT
@@ -434,9 +435,60 @@ TEST_CASE(a_ports_lost_5v_trips_at_the_next_read)
     CHECK(!win(true, 3u, T_ON + 100u, 3u, MV_GOOD));
     CHECK(!win(true, 3u, T_OK, 10u, MV_DEAD));
     CHECK(!win(true, 3u, T_OK + 40u, 11u, MV_DEAD));
+    /* The page read, and the same window read again: confirmed. */
     g_on.reads = 8u;
-    CHECK(bare(true, 3u, T_OK + 60u));
+    CHECK(win(true, 3u, T_OK + 60u, 11u, MV_DEAD));
     CHECK_EQ(prog5v_lost_kind(&d), PROG5V_TRIP_LOST);
+}
+
+/* The panel reads PROG_SUPPLY before SENSE_WIN in a pass: the page read
+ * that would confirm a waiting finding and a window that has recovered
+ * come in the same step.  The window goes first: no trip.  With a low
+ * window in that step instead, the read confirms it. */
+TEST_CASE(a_ports_finding_and_a_recovered_window_in_one_step_do_not_trip)
+{
+    port_on();
+    CHECK(!win(true, 3u, T_ON + 100u, 3u, MV_GOOD));
+    CHECK(!win(true, 3u, T_OK, 10u, MV_DEAD));
+    CHECK(!win(true, 3u, T_OK + 40u, 11u, MV_DEAD));
+    CHECK(d.waits);
+    g_on.reads = 8u;
+    CHECK(!win(true, 3u, T_OK + 80u, 12u, MV_GOOD));
+    CHECK(!d.waits);
+    CHECK_EQ(prog5v_lost_kind(&d), PROG5V_TRIP_NONE);
+    /* MISSING the same way: a 5V that comes in the confirming step. */
+    port_on();
+    CHECK(!win(true, 3u, T_REACH, 5u, MV_SHORT));
+    CHECK(d.waits);
+    g_on.reads = 8u;
+    CHECK(!win(true, 3u, T_REACH + 40u, 6u, MV_GOOD));
+    CHECK_EQ(prog5v_lost_kind(&d), PROG5V_TRIP_NONE);
+}
+
+TEST_CASE(a_ports_finding_and_a_low_window_in_one_step_trip)
+{
+    port_on();
+    CHECK(!win(true, 3u, T_ON + 100u, 3u, MV_GOOD));
+    CHECK(!win(true, 3u, T_OK, 10u, MV_DEAD));
+    CHECK(!win(true, 3u, T_OK + 40u, 11u, MV_DEAD));
+    g_on.reads = 8u;
+    CHECK(win(true, 3u, T_OK + 80u, 12u, MV_DEAD));
+    CHECK_EQ(prog5v_lost_kind(&d), PROG5V_TRIP_LOST);
+    CHECK_EQ(prog5v_lost_mv(&d), MV_DEAD);
+}
+
+/* No reading in the confirming step: the finding goes, as for an invalid
+ * reading; nothing is confirmed blind. */
+TEST_CASE(a_ports_finding_without_a_reading_is_dropped)
+{
+    port_on();
+    CHECK(!win(true, 3u, T_ON + 100u, 3u, MV_GOOD));
+    CHECK(!win(true, 3u, T_OK, 10u, MV_DEAD));
+    CHECK(!win(true, 3u, T_OK + 40u, 11u, MV_DEAD));
+    g_on.reads = 8u;
+    CHECK(!bare(true, 3u, T_OK + 60u));
+    CHECK(!d.waits);
+    CHECK_EQ(prog5v_lost_kind(&d), PROG5V_TRIP_NONE);
 }
 
 /* ------------------------------------------------------------ the clock */
@@ -558,6 +610,9 @@ int main(void)
     RUN(a_ports_finding_ends_with_a_read_of_the_pin_off);
     RUN(a_ports_finding_drops_on_a_good_window);
     RUN(a_ports_lost_5v_trips_at_the_next_read);
+    RUN(a_ports_finding_and_a_recovered_window_in_one_step_do_not_trip);
+    RUN(a_ports_finding_and_a_low_window_in_one_step_trip);
+    RUN(a_ports_finding_without_a_reading_is_dropped);
     RUN(the_settle_time_holds_across_the_clocks_wrap);
     RUN(the_reach_time_holds_across_the_clocks_wrap);
     RUN(an_on_held_past_the_clocks_period_stays_settled);

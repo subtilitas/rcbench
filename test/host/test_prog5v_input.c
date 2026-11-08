@@ -9,7 +9,10 @@
  * refused with no hold and no command; KST's READY supply row red, and its
  * CONNECT refused with the session left in PWM; LIMIT RUN's and RUDDER
  * AUTO's supply rows red and their ARM + START refused with nothing
- * switched; SUPPLY's head line.  The rig is servo_rauto_kst_rig.h.
+ * switched; SUPPLY's head line.  An input that goes low after the press:
+ * under the box's hold, under ARM + START's hold, during the steps up to
+ * the read-back, and at a limit run's CONNECT.  The rig is
+ * servo_rauto_kst_rig.h.
  *
  * Cases:
  * - low_is_under_13v5_on_the_carrier_with_a_reading
@@ -21,6 +24,10 @@
  * - limit_run_start_is_refused_with_nothing_switched
  * - no_warning_off_the_carrier
  * - supply_names_the_input_in_its_head_line
+ * - an_input_gone_low_under_the_boxs_hold_posts_no_on
+ * - an_input_gone_low_under_rudder_autos_hold_refuses_it
+ * - an_input_gone_low_during_the_steps_ends_them_all_off
+ * - a_limit_runs_connect_is_refused_while_the_input_is_low
  *
  * SPDX-License-Identifier: MIT
  */
@@ -306,6 +313,104 @@ TEST_CASE(supply_names_the_input_in_its_head_line)
     prog5v_box_reset();
 }
 
+/* PROG 5V ON held at 15V; 5.1V published before the hold completes:
+ * the hold ends, no ON is posted, the band names the input.  The bench's
+ * own ON (prog5v_box_ask_on()) asks nothing while the input is low. */
+TEST_CASE(an_input_gone_low_under_the_boxs_hold_posts_no_on)
+{
+    band_live();
+    prog5v_box_reset();
+    ui_text_set_language(UI_LANG_EN);
+    prog5v_box_publish(ST_OFF, 21u, (uint8_t)PROG5V_HELD_NONE);
+    prog5v_box_publish_input(15000u);
+    ui_router_set_alert(NULL);
+    prog5v_box_t bx;
+    prog5v_box_init(&bx, (gfx_rect_t){ 648, 160, 356, PROG5V_BOX_H },
+                    PROG5V_BY_SUPPLY);
+    while (prog5v_box_poll_cmd(NULL)) { }
+    CHECK(prog5v_box_press(&bx));
+    CHECK(bx.pressed);
+    for (int k = 0; k < 50; ++k) {           /* 1000ms of the 2000ms */
+        prog5v_box_tick(&bx, 0.02f);
+    }
+    prog5v_box_publish_input(5100u);
+    for (int k = 0; k < 100; ++k) {
+        prog5v_box_tick(&bx, 0.02f);
+    }
+    CHECK(!bx.pressed);
+    CHECK(!asked_on_any());
+    CHECK_STR_EQ(band(), WHY_EN);
+    prog5v_box_ask_on(PROG5V_BY_SERVO);
+    CHECK(!asked_on_any());
+    prog5v_box_publish_input(15000u);
+    prog5v_box_ask_on(PROG5V_BY_SERVO);
+    CHECK(asked_on_any());
+    prog5v_box_reset();
+}
+
+/* ARM + START held at 15V; 5.1V published before it fires: the gate at
+ * the fire refuses it, nothing is switched. */
+TEST_CASE(an_input_gone_low_under_rudder_autos_hold_refuses_it)
+{
+    carrier_safe_off(40u);
+    CHECK(rauto_hold_blocked(NULL) == NULL);
+    ui_router_set_alert(NULL);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 1);
+    ra_ms(1000u);
+    prog5v_box_publish_input(5100u);
+    ra_ms(1300u);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 1);
+    ra_ms(20u);
+    CHECK(!servo_screen_rauto_running());
+    CHECK(!svs_seq_busy());
+    CHECK_EQ(ra.p5_ons, 0u);
+    CHECK_EQ(ra.arms, 0u);
+    CHECK(!prog5v_box_on());
+    CHECK(strstr(band(), WHY_EN) != NULL);
+    ra.p5_task = false;
+    carrier_done();
+}
+
+/* The hold fired at 15V, the PROG 5V read back after 800ms; 5.1V
+ * published while the steps wait: they end, every output off, the
+ * failure naming the input; no ARM. */
+TEST_CASE(an_input_gone_low_during_the_steps_ends_them_all_off)
+{
+    carrier_safe_off(800u);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 1);
+    ra_ms(2060u);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 1);
+    CHECK(svs_seq_busy());
+    ra_ms(100u);
+    prog5v_box_publish_input(5100u);
+    ra_ms(100u);
+    CHECK(!svs_seq_busy());
+    CHECK(!servo_screen_rauto_running());
+    CHECK_EQ(ra.arms, 0u);
+    const char *f = svs_seq_failure();
+    CHECK(f != NULL && strstr(f, WHY_EN) != NULL);
+    ra_ms(1000u);
+    CHECK(!prog5v_box_on());
+    ra.p5_task = false;
+    carrier_done();
+}
+
+/* The limit run's seam to the programmer (servo_screen_int.h). */
+bool lim_seam_connect(uint8_t fam, bool pd, uint16_t mv, uint16_t ma);
+
+/* A limit run's CONNECT, asked after its START, is refused while the
+ * input is low, and taken once it is back. */
+TEST_CASE(a_limit_runs_connect_is_refused_while_the_input_is_low)
+{
+    carrier_port(false);
+    go(SERVO_FN_LIMRUN);
+    ra_ms(100u);
+    prog5v_box_publish_input(5100u);
+    CHECK(!lim_seam_connect(SERVO_LIMRUN_FAM_KST, false, 0u, 0u));
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    carrier_done();
+}
+
 int main(void)
 {
     RUN(low_is_under_13v5_on_the_carrier_with_a_reading);
@@ -317,5 +422,9 @@ int main(void)
     RUN(limit_run_start_is_refused_with_nothing_switched);
     RUN(no_warning_off_the_carrier);
     RUN(supply_names_the_input_in_its_head_line);
+    RUN(an_input_gone_low_under_the_boxs_hold_posts_no_on);
+    RUN(an_input_gone_low_under_rudder_autos_hold_refuses_it);
+    RUN(an_input_gone_low_during_the_steps_ends_them_all_off);
+    RUN(a_limit_runs_connect_is_refused_while_the_input_is_low);
     return test_summary("prog5v_input");
 }
