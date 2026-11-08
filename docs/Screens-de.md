@@ -2285,9 +2285,10 @@ Die linke Karte, x 18 bis 618 des Inhalts:
 
 Die neun Zeilen der Karte BEREIT sind PORT, SERVO, MESSGERÄT, SCHIENE,
 BEREICH, PROGRAMMER, die Versorgung (PROG 5V, PD MINI oder
-VERSORGUNG), PORT-PWM und ARM. 2s HALTEN: ARM + START schaltet PORT-PWM
-und die Versorgung ein, liest sie zurück, schaltet ARM und startet den
-Lauf. Während des Laufs zeigt das Halten LAUF BEENDEN, und OPTIONEN ist
+VERSORGUNG), PORT-PWM und ARM. PROG 5V und PD MINI zeigen die `5.0V` des
+Laufs. 2s HALTEN: ARM + START stellt ein PD mini auf 5,0V, schaltet
+PORT-PWM und die Versorgung ein, liest sie zurück, schaltet ARM und
+startet den Lauf ([Servo: Die 5,0V des Laufs](Servo-de.md#die-50v-des-laufs)). Während des Laufs zeigt das Halten LAUF BEENDEN, und OPTIONEN ist
 grau. Für jedes Schreiben schaltet der Lauf selbst auf SAFE und zurück auf
 ARMED; die Zeile ARM zeigt SAFE, solange eine Sitzung den Prüfstand SAFE
 hält. Nach dem letzten Befehl des Laufs schaltet der Prüfstand auf SAFE.
@@ -2517,7 +2518,7 @@ Eine Änderung gilt bis SPEICHERN als nicht gespeichert.
 | der Hub | das Servoprofil: AUSGANG mit TYP, PULSRATE, PULS MIN, PULS MITTE, PULS MAX, TRIMMUNG, WEG, UMKEHREN und HV-SERVO; PRÜFLING mit NAME und BERICHT |
 | SWEEP | KURVE, TEMPO und BEREICH |
 | TEST | SPANNUNGSSTUFEN: Stufe 4.8V, Stufe 6.0V, HV-SERVO, Stufe 7.4V, Stufe 8.4V; BROWN-OUT: Brown-out, Brown-out Mindestspannung, Brown-out-Schritt; GRENZWERTE: Blockierschwelle, Ruhestrom max, Haltestrom max, Stellzeit max; DAUER UND ZEITEN: Länge nach, Testzeit, Bewegungen, Haltezeit, Einschwingzeit |
-| ENDLAGENLAUF | MODUS, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, Programmierspannung, Programmierstrom und Warten vor PWM |
+| ENDLAGENLAUF | MODUS, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, Programmierstrom und Warten vor PWM; ein Lauf programmiert mit 5,0V ([Servo](Servo-de.md#die-50v-des-laufs)) |
 | RUDER | LÄNGE, SENSOR-MITTE und WINKELQUELLE |
 | RUDER AUTO | die Ziele, MARGIN, TOLERANZ, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE und WINKELQUELLE |
 | SERVO > KST | KST EXPERT MODE, eine Ebene tiefer |

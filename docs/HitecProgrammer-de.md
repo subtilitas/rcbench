@@ -1038,6 +1038,15 @@ des Laufs setzt SERIE wieder in die Programmierung. Der D-Empfang
 (PULL-UP oder PRECHARGE) ist die eine Einstellung, die die Liste WEITERES
 dieser Seite und die Listen der Läufe teilen.
 
+Die Sitzungen eines Laufs programmieren mit 5,0V, mit und ohne PD mini,
+nie mit PROGRAMMIERSPANNUNG (SET_SERVO_PROG_V). Speist ein PD mini das
+Servo, stellt START es auf 5,0V, und es bleibt nach dem Lauf auf 5,0V
+([Servo: Die 5,0V des Laufs](Servo-de.md#die-50v-des-laufs)). Die
+Strombegrenzung ist SOLL A von SUPPLY mit PD mini, ohne PD mini der
+Programmierstrom (SET_SERVO_PROG_I). Das Ende des Laufs gibt der
+Programmierung Spannung und Strom der Einstellungen zurück, die die
+eigenen Sitzungen dieser Seite verwenden.
+
 Ein Lauf schreibt ENDE LINKS und ENDE RECHTS und sonst nichts, in
 Wegeinheiten:
 

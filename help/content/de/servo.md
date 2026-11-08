@@ -179,12 +179,12 @@ Der Endlagenlauf sucht mechanische Anschläge an beiden Enden des eingebauten Se
 1. Tippe auf OPTIONEN in der Fußleiste, dann auf MODUS, um NUR SUCHE oder SUCHEN + PROGRAMMIEREN zu wählen.
 2. Tippe bei PORT auf PROG-PORT auf SERVO in der Karte BEREIT und wähle KST/CHASERVO, HITEC D-SERIE oder HITEC KLASSISCH, den Programmierer der Sitzungen des Laufs. Die Wahl gehört dem Endlagenlauf und wird gespeichert; RUDER AUTO hat seine eigene. Bei KST/CHASERVO stelle SERVOPULSE auf BEHALTEN oder 1000-2000; die Vorgabe ist BEHALTEN.
 3. Tippe auf das Home-Feld, um zu ENDLAGENLAUF zurückzukehren.
-4. Halte 2s HALTEN: ARM + START in der Fußleiste. Bei SAFE schaltet es PORT-PWM ein, dann PROG 5V oder den Ausgang des PD mini, wartet bis zu 1000ms auf deren Rückmeldung EIN, schaltet ARM, wartet bis zu 500ms auf ARMED und startet den Lauf. Ein Tipp oder kürzeres Halten startet nichts und zeigt `Halte 2s, um Port und Versorgung einzuschalten, ARM und den Endlagenlauf zu starten.` im Alarmband.
-5. Während des Laufs zeigt das Halten LAUF BEENDEN. Die Zustandszeilen zeigen Phase, Seite und Puls. Nach dem letzten Befehl des Laufs ist der Prüfstand wieder SAFE; PROG 5V bleibt an.
+4. Halte 2s HALTEN: ARM + START in der Fußleiste. Es stellt ein PD mini auf 5,0V. Bei SAFE schaltet es PORT-PWM ein, dann PROG 5V oder den Ausgang des PD mini, wartet bis zu 1000ms auf deren Rückmeldung EIN, das PD mini auf 5,0V, schaltet ARM, wartet bis zu 500ms auf ARMED und startet den Lauf. Ein Tipp oder kürzeres Halten startet nichts und zeigt `Halte 2s, um Port und Versorgung einzuschalten, ARM und den Endlagenlauf zu starten.` im Alarmband.
+5. Während des Laufs zeigt das Halten LAUF BEENDEN. Die Zustandszeilen zeigen Phase, Seite und Puls. Nach dem letzten Befehl des Laufs ist der Prüfstand wieder SAFE; PROG 5V bleibt an, und ein PD mini bleibt auf 5,0V.
 
 Die linke Karte zeigt den Modus, dann Ausgang und Messgerät: `AUSGANG PROG-PORT 1 GPIO 13, STROM INA3221 0x41 CH2` oder `AUSGANG SERVO PWM GPIO 2, STROM INA3221 0x40 CH1`. UNTERES ENDE und OBERES ENDE zeigen die Enden des letzten Laufs in us, oder `FREI`. Die Zustandszeilen darunter nennen den laufenden Schritt, warum das Halten gesperrt ist, und das letzte Ergebnis mit seiner Datei.
 
-Die Karte BEREIT rechts zeigt, was der Start braucht, eine Zeile je Punkt: PORT, SERVO, MESSGERÄT, SCHIENE, BEREICH, PROGRAMMER, die Versorgung (PROG 5V auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de), PD MINI, wo das PD mini das Servo speist), PORT-PWM und ARM. Ein grüner Punkt ist erfüllt. Ein roter Punkt sperrt das Halten oder zeigt einen über die Zeile aktiven Ausgang. Gelb zeigt `START SCHALTET EIN` oder `START SCHALTET ARMED`: das erledigt das Halten. Grau wartet auf PORT. Ein Tippen auf PORT öffnet die Port-Auswahl, auf SERVO die drei Programmierer über der linken Spalte, auf ein rotes MESSGERÄT [Sensoren](setup-sensors.md) am INA3221, auf ein rotes PD MINI mit `TIPPEN: HV-WARNUNG` die HV-Warnung von AUSGANG EIN. Ein Tippen auf eine andere rote Zeile oder auf das graue Halten nennt sie im Alarmband.
+Die Karte BEREIT rechts zeigt, was der Start braucht, eine Zeile je Punkt: PORT, SERVO, MESSGERÄT, SCHIENE, BEREICH, PROGRAMMER, die Versorgung (PROG 5V auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de), PD MINI, wo das PD mini das Servo speist), PORT-PWM und ARM. PROG 5V und PD MINI zeigen die `5.0V` des Laufs. Ein grüner Punkt ist erfüllt. Ein roter Punkt sperrt das Halten oder zeigt einen über die Zeile aktiven Ausgang. Gelb zeigt `START SCHALTET EIN` oder `START SCHALTET ARMED`: das erledigt das Halten. Grau wartet auf PORT. Ein Tippen auf PORT öffnet die Port-Auswahl, auf SERVO die drei Programmierer über der linken Spalte, auf ein rotes MESSGERÄT [Sensoren](setup-sensors.md) am INA3221, auf ein rotes PD MINI mit `PD MINI: 5.0V AUSSERHALB SEINER GRENZEN` die Grenzen in der Optionsliste von [SUPPLY](supply.md). Ein Tippen auf eine andere rote Zeile oder auf das graue Halten nennt sie im Alarmband.
 
 Der Lauf verwendet ausschließlich den INA3221-Kanal für das Testerziel. Solange eine dieser Bedingungen gilt, ist ihre Zeile rot, das Halten grau, und die erste Zustandszeile nennt den Grund:
 
@@ -196,7 +196,6 @@ Der Lauf verwendet ausschließlich den INA3221-Kanal für das Testerziel. Solang
 | MESSGERÄT | `INA3221 NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET` | kein Kanal eines bestückten INA3221 überwacht in SETUP > SENSORS das Ziel des Testers |
 | MESSGERÄT | `INA3221 NICHT ERREICHBAR` | keine Verbindung, oder der INA3221 antwortet nicht |
 | MESSGERÄT | `NOCH KEINE INA3221-MESSFENSTER` | der INA3221 ist noch nicht das Messgerät |
-| PD MINI | `TIPPEN: HV-WARNUNG` | der Ausgang des PD mini aus mit einem Sollwert über 6,0V: nur die HV-Warnung von AUSGANG EIN schaltet ihn ein |
 | SCHIENE | `SERVOVERSORGUNG UNTER 3.0V ODER OHNE MESSWERT` | das letzte INA3221-Fenster hat keine Schienenspannung oder weniger als 3,0V: ein ausgeschalteter Ausgang liest 0V. Gelb bei SAFE, wo die Versorgung des Haltens die Schiene speist |
 | PROGRAMMER | `GESPERRT: SERVOPROGRAMMIERUNG BELEGT DEN PORT` | PORT ist PROG-PORT, und eine Sitzung eines Programmers hält den Port; vor PORT-PWM genannt |
 | PORT-PWM | `PORT-PWM AUS: DISARM, SCHALTE ES IN OUTPUTS EIN` | PORT ist PROG-PORT mit PORT-PWM aus, der Prüfstand ARMED |
@@ -204,6 +203,11 @@ Der Lauf verwendet ausschließlich den INA3221-Kanal für das Testerziel. Solang
 | PORT-PWM | `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` | PORT ist PROG-PORT mit PORT-PWM ein, und sein Puls ist noch aus. Gelb bei SAFE: die Rückmeldung wartet auf ihn |
 | BEREICH | `MITTE MUSS ZWISCHEN PULS MIN UND PULS MAX LIEGEN` | der Pulsbereich enthält PULS MITTE nicht |
 | ARM | `BERICHT WIRD NOCH GESCHRIEBEN` | ein Test oder ein Lauf ist im Gang, oder sein Bericht geht noch auf die Karte |
+| PD MINI | `PD MINI: 5.0V AUSSERHALB SEINER GRENZEN` | ein PD mini speist das Servo, und die Grenzen von SUPPLY lassen 5,0V aus; ein Tippen öffnet die Grenzen in der Optionsliste von SUPPLY |
+
+### Die Versorgung: 5,0V
+
+Endlagenlauf und RUDER AUTO programmieren mit 5,0V. Jede Programmiersitzung eines Laufs fordert 5,0V, KST/Chaservo wie Hitec, mit und ohne PD mini. Die Programmierspannung der KST- und HITEC-Seite gilt für keinen Lauf; die Seiten nutzen sie weiter. Speist ein PD mini das Servo, stellt das Halten es auf 5,0V, bevor etwas einschaltet, und es bleibt nach dem Lauf auf 5,0V, wie der Lauf auch endet. Ein PD mini, das nicht mit 5,0V antwortet, lässt den Start fehlschlagen: `PD MINI FEHLGESCHLAGEN: KEINE RÜCKMELDUNG IN 1000ms`, und alle Ausgänge gehen aus.
 
 ### Die Suche
 
@@ -230,9 +234,9 @@ SERVOPULSE 1000-2000 schreibt während der Auslesesitzung PULSE LOWER 1000,0us u
 
 ### LEFT ANGLE und RIGHT ANGLE programmieren
 
-Für KST/Chaservo benötigt SUCHEN + PROGRAMMIEREN PORT auf PROG-PORT mit aktivem PWM und eine schaltbare Servoversorgung. Bei manueller Verdrahtung ist dies ein PD mini mit eingeschaltetem Ausgang und mindestens 4,8V Sollwert. Geschriebene Werte gelten erst nach Aus- und Einschalten.
+Für KST/Chaservo benötigt SUCHEN + PROGRAMMIEREN PORT auf PROG-PORT mit aktivem PWM und eine schaltbare Servoversorgung. Bei manueller Verdrahtung ist dies ein PD mini mit eingeschaltetem Ausgang; das Halten stellt es auf 5,0V. Geschriebene Werte gelten erst nach Aus- und Einschalten.
 
-Ohne PD mini sind SUCHEN + PROGRAMMIEREN und SERVOPULSE 1000-2000 gesperrt. Die linke Karte zeigt `PROGRAMMIEREN: KEIN PD MINI ZUM AUS- UND EINSCHALTEN`. NUR SUCHE ist bei mindestens 4,8V im letzten INA3221-Fenster möglich. Ist ein PD mini vorhanden, muss sein Ausgang eingeschaltet sein. Ein Port ohne PWM oder eine Versorgung unter 4,8V sperrt auch NUR SUCHE.
+Ohne PD mini sind SUCHEN + PROGRAMMIEREN und SERVOPULSE 1000-2000 gesperrt. Die linke Karte zeigt `PROGRAMMIEREN: KEIN PD MINI ZUM AUS- UND EINSCHALTEN`. NUR SUCHE ist bei mindestens 4,8V im letzten INA3221-Fenster möglich. Ist ein PD mini vorhanden, muss sein Ausgang eingeschaltet sein. Ein Port ohne PWM oder eine Schiene unter 4,8V ohne PD mini sperrt auch NUR SUCHE.
 
 Auf dem rbmod-Carrier übernimmt PROG 5V die Portversorgung und die Versorgungszyklen. Bei eingeschalteter Schiene sind SUCHEN + PROGRAMMIEREN und SERVOPULSE verfügbar. Andernfalls zeigt die Zeile PROG 5V bei SAFE `START SCHALTET EIN`: das Halten schaltet es ein. Der PD mini an den Servoschienen wird für diesen Portlauf weder verwendet noch überwacht.
 

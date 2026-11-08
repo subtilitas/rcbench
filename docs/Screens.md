@@ -2111,8 +2111,9 @@ The left card, x 18 to 618 of the body:
 
 The READY card's nine rows are PORT, SERVO, METER, RAIL, RANGE,
 PROGRAMMER, the supply (PROG 5V, PD MINI or SUPPLY), PORT PWM and ARM.
-HOLD 2s: ARM + START switches PORT PWM and the supply on, reads them back,
-arms and starts the run. While the run runs the hold reads STOP RUN, and
+PROG 5V and PD MINI read the run's `5.0V`. HOLD 2s: ARM + START sets a
+PD mini to 5.0V, switches PORT PWM and the supply on, reads them back,
+arms and starts the run ([Servo: The run's 5.0V](Servo.md#the-runs-50v)). While the run runs the hold reads STOP RUN, and
 SETTINGS is grey. Each write switches the bench to SAFE and back to
 ARMED; the ARM row reads SAFE while a session holds the bench SAFE.
 After the run's last command the bench switches to SAFE. STOP,
@@ -2324,7 +2325,7 @@ until SAVE.
 | the hub | the servo profile: OUTPUT with TYPE, FRAME RATE, PULSE MIN, PULSE CENTER, PULSE MAX, TRIM, TRAVEL, REVERSE and HV SERVO; DUT with NAME and REPORT |
 | SWEEP | CURVE, SPEED and RANGE |
 | TEST | VOLTAGE STEPS: Step 4.8V, Step 6.0V, HV SERVO, Step 7.4V, Step 8.4V; BROWN-OUT: Brown-out, Brown-out minimum voltage, Brown-out step; PASS/FAIL LIMITS: Stall threshold, Idle current max, Holding current max, Travel time max; LENGTH AND TIMING: Length by, Test time, Movements, Dwell time, Settling time |
-| LIMIT RUN | MODE, SERVO, Hitec D receive (with SERVO at HITEC D SERIES), SERVO PULSES, Programming voltage, Programming current and Wait before PWM |
+| LIMIT RUN | MODE, SERVO, Hitec D receive (with SERVO at HITEC D SERIES), SERVO PULSES, Programming current and Wait before PWM; a run programs at 5.0V ([Servo](Servo.md#the-runs-50v)) |
 | RUDDER | LENGTH, ENC CENTER and ANGLE SOURCE |
 | RUDDER AUTO | the targets, MARGIN, TOLERANCE, SERVO, Hitec D receive (with SERVO at HITEC D SERIES), SERVO PULSES and ANGLE SOURCE |
 | SERVO > KST | KST EXPERT MODE, one level down |
