@@ -12,10 +12,10 @@ history is in git.
   PULSE CENTER on the servo list, ENC CENTER on RUDDER's list, AS5600 center
   in SETUP > SENSORS, CENTER on the Hitec TRAVEL page, the warnings of the
   KST and Hitec pages, LIMIT RUN's refusal, the ESC WIRE notes, the servo
-  reports, the help pages and the docs. German
-  texts are unchanged. The BLHeli_S field CENTRE THROTTLE on ESC WIRE keeps
-  its name, a field line of the ESC backup files, and the settings key
-  `enc_centre` keeps its name, so saved files and settings keep loading.
+  reports, the help pages and the docs. German texts are unchanged. The
+  BLHeli_S field CENTRE THROTTLE on ESC WIRE keeps its name, a field line of
+  the ESC backup files, and the settings key `enc_centre` keeps its name, so
+  saved files and settings keep loading.
 
 ## 0.23.10 - 2026-11-08
 
