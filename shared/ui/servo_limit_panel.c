@@ -611,7 +611,7 @@ uint32_t lim_signature(void)
         (uint32_t)(uintptr_t)svs_seq_failure(),
         (uint32_t)servo_seq_step_now(&s.rdy.seq),
         (s.lim_prog ? 1u : 0u) | (s.lim_pulses ? 2u : 0u)
-            | (s.lim_hitec ? 4u : 0u),
+            | ((uint32_t)lim_family() << 2),
     };
     uint32_t h = 2166136261u;
     for (size_t k = 0; k < sizeof(f) / sizeof(f[0]); ++k) {
@@ -640,7 +640,6 @@ static void lim_safe_follow(void)
 void lim_tick(void)
 {
     lim_hold_frame();
-    lim_seam_follow();
     lim_poll();
     lim_step();
     lim_ended();

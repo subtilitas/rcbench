@@ -2,7 +2,7 @@
  * @file servo_limit_seam.c
  * @brief The programmer a SERVO screen limit run's sessions go to: the KST
  *        and Chaservo programmer (kst_panel.h) or the Hitec programmer
- *        (hitec_panel_run.h), by the LIMIT RUN settings' SERVO row.
+ *        (hitec_panel_run.h), by the run's SERVO (servo_pick.c).
  *
  * A run -- the limit run (servo_limrun.h) or AUTO on RUDDER
  * (servo_rudder_auto.h) -- asks for CONNECT, a write of its two travel
@@ -28,24 +28,10 @@
 #include "hitec_reg.h"
 #include "kst_panel.h"
 #include "servo_limrun.h"
-#include "settings.h"
 
 /* Last: its layout macros have short names (W, H, PAD), which no header
  * included after it may meet. */
 #include "servo_screen_int.h"
-
-/** @brief The programmer open on PROGRAM when last looked (s.lim_open). */
-enum { LIM_OPEN_NONE = 0, LIM_OPEN_KST, LIM_OPEN_HITEC };
-
-uint8_t lim_family(void)
-{
-    if (!s.lim_hitec) {
-        return SERVO_LIMRUN_FAM_KST;
-    }
-    return settings_get_int(SET_HITEC_SERIES) == (int)HITEC_D
-               ? (uint8_t)SERVO_LIMRUN_FAM_HITEC_D
-               : (uint8_t)SERVO_LIMRUN_FAM_HITEC_C;
-}
 
 uint8_t lim_family_now(void)
 {
@@ -60,6 +46,17 @@ uint8_t lim_family_now(void)
 static bool hitec(uint8_t fam)
 {
     return fam != SERVO_LIMRUN_FAM_KST;
+}
+
+/**
+ * @brief The Hitec series of a run of @p fam.
+ * @param fam servo_limrun_family_t, a Hitec one
+ * @return hitec_family_t: HITEC_D or HITEC_CLASSIC
+ */
+static uint8_t series_of(uint8_t fam)
+{
+    return fam == SERVO_LIMRUN_FAM_HITEC_D ? (uint8_t)HITEC_D
+                                           : (uint8_t)HITEC_CLASSIC;
 }
 
 bool lim_seam_ready(uint8_t fam)
@@ -78,7 +75,8 @@ void lim_seam_begin(uint8_t fam)
 
 bool lim_seam_connect(uint8_t fam, bool pd, uint16_t mv, uint16_t ma)
 {
-    return hitec(fam) ? hitec_panel_run_connect(pd, mv, ma) == HITEC_PROG_MSG_NONE
+    return hitec(fam) ? hitec_panel_run_connect(series_of(fam), pd, mv, ma)
+                            == HITEC_PROG_MSG_NONE
                    : kst_panel_run_connect(pd, mv, ma) == KST_PROG_MSG_NONE;
 }
 
@@ -136,8 +134,7 @@ bool lim_seam_no_servo(uint8_t fam)
 static bool hitec_servo(uint8_t fam, servo_limrun_servo_t *sv)
 {
     hitec_run_servo_t h;
-    const uint8_t series = fam == SERVO_LIMRUN_FAM_HITEC_D
-                               ? (uint8_t)HITEC_D : (uint8_t)HITEC_CLASSIC;
+    const uint8_t series = series_of(fam);
     const bool read = hitec_panel_run_servo(&h);
     sv->angle[0] = h.value[0];
     sv->angle[1] = h.value[1];
@@ -193,20 +190,6 @@ void lim_seam_end(uint8_t fam)
     }
 }
 
-void lim_seam_follow(void)
-{
-    const uint8_t open = hitec_panel_is_open() ? (uint8_t)LIM_OPEN_HITEC
-                         : kst_panel_is_open() ? (uint8_t)LIM_OPEN_KST
-                                               : (uint8_t)LIM_OPEN_NONE;
-    /* A programmer opened takes the SERVO row with it, for a run started
-     * after it; a tap on the row sets it otherwise. */
-    if (open != s.lim_open && open != LIM_OPEN_NONE
-        && !servo_limrun_running(&s.lim)) {
-        s.lim_hitec = open == LIM_OPEN_HITEC;
-    }
-    s.lim_open = open;
-}
-
 void lim_seam_close_pages(void)
 {
     if (kst_panel_is_open() && !kst_panel_holds_port()) {
@@ -215,11 +198,6 @@ void lim_seam_close_pages(void)
     if (hitec_panel_is_open() && !hitec_panel_holds_port()) {
         hitec_panel_close();
     }
-}
-
-int servo_screen_limit_family(void)
-{
-    return (int)lim_family();
 }
 
 bool servo_screen_limit_pulses(void)

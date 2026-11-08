@@ -324,16 +324,10 @@ static void met_value(int i, char *b, size_t n, uint8_t *st)
         (void)svs_port_line(b, n);
         break;
     case RAR_SERVO: {
-        const uint8_t fam = servo_rauto_running(&s.ra.run)
-                                ? s.ra.run.cfg.family : lim_family();
-        if (fam == SERVO_RAUTO_FAM_KST) {
-            snprintf(b, n, "%s", TR(SV_LIM_SERVO_KST));
-        } else {
-            snprintf(b, n, "%s %s", TR(SV_LIM_SERVO_HITEC),
-                     ui_setting_option(SET_HITEC_SERIES,
-                                       fam == SERVO_RAUTO_FAM_HITEC_D ? 1
-                                                                      : 0));
-        }
+        snprintf(b, n, "%s",
+                 svs_family_name(servo_rauto_running(&s.ra.run)
+                                     ? s.ra.run.cfg.family
+                                     : svs_family_of(SERVO_FN_RAUTO)));
         break;
     }
     case RAR_METER:
@@ -487,13 +481,8 @@ void rauto_ready_tap(int i)
         port_list_open();
         return;
     case RAR_SERVO:
-        if (svs_list_refused() != NULL) {
-            ui_action_refused(svs_list_refused());
-            return;
-        }
-        svs_list_open();
-        /* The list on its SERVO row (servo_lists.c's RUDDER AUTO rows). */
-        ui_setlist_scroll_to(&s.sl, 4);
+        /* The three families over the left column (servo_pick.c). */
+        svs_family_open();
         return;
     case RAR_ZERO:
         if (r.st == (uint8_t)RDY_BAD && enc_shown()) {

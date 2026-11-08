@@ -371,7 +371,7 @@ TEST_CASE(alerts_and_details_fit_their_buffers)
  * cells, a category name in 30 of the label face (the heading face's 15
  * where it fits; 32 on its tile) and an option in 13;
  * ESC STICK's TIMING page a label in 47 and its help in 96; the SERVO
- * screen an option in a button of 12.  Translations only: tools/render_ui.py
+ * screen an option in a button of 12, a run's SERVO family in 15.  Translations only: tools/render_ui.py
  * --fit holds the English strings where they are drawn.
  */
 TEST_CASE(translated_settings_fit_where_they_are_drawn)
@@ -390,6 +390,10 @@ TEST_CASE(translated_settings_fit_where_they_are_drawn)
             } else if (d->cat == SET_CAT_STICK) {
                 label_max = 47;
                 help_max = 96;
+            } else if (i == SET_LIMIT_FAMILY || i == SET_RAUTO_FAMILY) {
+                /* The READY cards' value column (204px) and the SERVO
+                 * lists' choice rows, never a 12-cell button. */
+                option_max = 15;
             } else if (d->cat == SET_CAT_SERVO) {
                 option_max = 12;
             }

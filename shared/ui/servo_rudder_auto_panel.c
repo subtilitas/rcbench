@@ -167,7 +167,7 @@ static void ra_cfg(servo_rauto_cfg_t *c)
     c->target_deg[1] = settings_get(SET_RUDDER_DEFL_HI);
     c->margin_pct    = (uint8_t)settings_get_int(SET_RUDDER_MARGIN);
     c->tol_ddeg = (uint16_t)lroundf(settings_get(SET_RUDDER_TOL) * 10.0f);
-    c->family    = lim_family();
+    c->family    = svs_family_of(SERVO_FN_RAUTO);
     c->center_us = s.center_us;
     const float len = settings_get(SET_RUDDER_LEN_MM);
     c->len_mm = (len >= SERVO_RUDDER_LEN_MIN_MM) ? len : 0.0f;
@@ -832,7 +832,8 @@ const char *rauto_line(int i, char *buf, size_t n)
     case 2:
         if (r->state != SERVO_RAUTO_DONE || running) {
             /* The servo the run programs, or one started now would. */
-            servo_name(buf, n, running ? r->cfg.family : lim_family());
+            servo_name(buf, n, running ? r->cfg.family
+                                       : svs_family_of(SERVO_FN_RAUTO));
         } else if (servo_rauto_restore(r)) {
             restore_text(buf, n, r);
         } else {

@@ -167,8 +167,14 @@ enum {
 };
 
 
-/* LIMIT RUN's list, row by row (servo_lists.c). */
+/* LIMIT RUN's list, row by row (servo_lists.c).  With SERVO at HITEC D
+ * SERIES, D RECEIVE is row LL_RX and the rows from SERVO PULSES on move
+ * down one. */
 enum { LL_MODE = 0, LL_SERVO, LL_PULSES, LL_PROG_V, LL_PROG_I, LL_WAIT };
+enum { LL_RX = 2 };
+/* RUDDER AUTO's list: its SERVO row, and D RECEIVE under it with HITEC D
+ * SERIES. */
+enum { RAL_SERVO = 4, RAL_RX = 5 };
 
 /* LIMIT RUN's list, from the footer's SETTINGS.  It opens on a SAFE bench
  * only: on an armed one the rig switches to SAFE first, and the home tag
@@ -234,6 +240,20 @@ static inline void sl_part(int i, ui_sl_part_t part)
 {
     (void)sl_row(i);
     const gfx_rect_t r = ui_setlist_row_part(servo_screen_list(), i, part);
+    tap(r.x + r.w / 2, r.y + r.h / 2);
+}
+/* Row @p i's choice list opened by a tap and its entry @p k tapped. */
+static inline void sl_choose(int i, int k)
+{
+    sl_tap(i);
+    const gfx_rect_t r = ui_setlist_choice_rect(servo_screen_list(), k);
+    tap(r.x + r.w / 2, r.y + r.h / 2);
+}
+/* Entry @p k of the one-column list over the left column: PORT's, or the
+ * SERVO list a READY card's SERVO row opens. */
+static inline void ov_choose(int k)
+{
+    const gfx_rect_t r = servo_screen_port_choice_rect(k);
     tap(r.x + r.w / 2, r.y + r.h / 2);
 }
 /* One step of the open list's row @p i, @p dir -1 or +1. */

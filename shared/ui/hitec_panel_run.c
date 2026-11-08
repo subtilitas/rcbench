@@ -75,8 +75,8 @@ void hitec_panel_run_begin(void)
     hitec_prog_run_begin(&hp.prog);
 }
 
-hitec_prog_msg_id_t hitec_panel_run_connect(bool supply, uint16_t mv,
-                                            uint16_t ma)
+hitec_prog_msg_id_t hitec_panel_run_connect(uint8_t series, bool supply,
+                                            uint16_t mv, uint16_t ma)
 {
     hitec_prog_t *p = &hp.prog;
     hitec_prog_msg_id_t m;
@@ -85,9 +85,10 @@ hitec_prog_msg_id_t hitec_panel_run_connect(bool supply, uint16_t mv,
         return HITEC_PROG_MSG_BUSY;
     }
     run_close_editors();
-    /* The series and the operator's voltage and current from the
-     * settings, as the overlay's opening takes them. */
+    /* The operator's voltage and current from the settings, as the
+     * overlay's opening takes them; the series is the run's own. */
     hpn_options_load();
+    (void)hitec_prog_series_set(p, series);
     if (!s_run.kept) {
         s_run.kept = true;
         s_run.keep_mv = p->supply_mv;
@@ -233,5 +234,10 @@ void hitec_panel_run_end(void)
         s_run.kept = false;
         hitec_prog_supply_set(p, s_run.keep_mv, s_run.keep_ma);
     }
+    /* The HITEC page's series again, not the run's. */
+    (void)hitec_prog_series_set(p, settings_get_int(SET_HITEC_SERIES)
+                                           == (int)HITEC_CLASSIC
+                                       ? (uint8_t)HITEC_CLASSIC
+                                       : (uint8_t)HITEC_D);
     ++hp.rev;
 }

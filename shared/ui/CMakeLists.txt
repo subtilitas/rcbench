@@ -73,6 +73,7 @@ set(SRCS
     servo_hub.c
     servo_footer.c
     servo_lists.c
+    servo_pick.c
     kst_panel.c
     kst_panel_text.c
     kst_panel_warn.c

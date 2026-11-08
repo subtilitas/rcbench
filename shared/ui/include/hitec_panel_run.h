@@ -38,14 +38,18 @@ bool hitec_panel_run_ready(void);
 /** @brief A run begins: no step and no write of it yet, the model's run
  *         flag set (hitec_prog_run_begin()). */
 void hitec_panel_run_begin(void);
-/** @brief CONNECT on the SERVO screen's port for SET_HITEC_SERIES; with
- *         @p supply the PD mini at @p mv and @p ma.
+/** @brief CONNECT on the SERVO screen's port for the run's @p series; with
+ *         @p supply the PD mini at @p mv and @p ma.  The series is the
+ *         run's for its sessions; hitec_panel_run_end() puts back the one
+ *         SET_HITEC_SERIES holds.
+ *  @param series hitec_family_t: HITEC_D or HITEC_CLASSIC.
  *  @param supply true: the session asks the PD mini for @p mv and @p ma.
  *  @param mv     The programming voltage, mV.
  *  @param ma     The current limit, mA.
  *  @return HITEC_PROG_MSG_NONE when taken; HITEC_PROG_MSG_BUSY while the
  *          port is not in PWM; else the model's refusal. */
-hitec_prog_msg_id_t hitec_panel_run_connect(bool supply, uint16_t mv, uint16_t ma);
+hitec_prog_msg_id_t hitec_panel_run_connect(uint8_t series, bool supply,
+                                            uint16_t mv, uint16_t ma);
 /** @brief Write the two end points and nothing else
  *         (hitec_prog_run_write()).
  *  @param left  The left travel.
@@ -80,7 +84,7 @@ bool hitec_panel_run_values(uint16_t value[2]);
 const char *hitec_panel_run_backup(void);
 /** @brief The run is over: the model's run flag and the write switch off
  *         (hitec_prog_run_end()), the programming voltage and current back
- *         to the operator's. */
+ *         to the operator's, the series back to SET_HITEC_SERIES. */
 void hitec_panel_run_end(void);
 #ifdef __cplusplus
 }

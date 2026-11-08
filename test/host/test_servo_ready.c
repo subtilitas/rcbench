@@ -25,7 +25,7 @@
  * - a_refused_hold_has_a_red_row_naming_it
  * - a_press_on_a_row_ends_on_its_release_or_a_cancel
  * - a_tap_on_a_red_zero_row_without_a_reading_names_it
- * - a_tap_on_servo_opens_its_row_of_the_list_unless_armed
+ * - a_tap_on_servo_opens_the_family_list_unless_refused
  * - servo_reads_the_family_the_run_programs
  * - the_sequence_names_its_steps_and_a_start_the_run_refuses
  * - a_refusal_names_its_part_and_switches_every_output_off
@@ -438,10 +438,10 @@ TEST_CASE(every_label_and_state_fits_its_column)
         for (size_t k = 0; k < sizeof(k_val) / sizeof(k_val[0]); ++k) {
             CHECK(gfx_text_cells(ui_tr(k_val[k])) * 10 <= READY_VALUE_W);
         }
-        char t[48];
-        snprintf(t, sizeof(t), "%s %s", TR(SV_LIM_SERVO_HITEC),
-                 ui_setting_option(SET_HITEC_SERIES, 1));
-        CHECK(gfx_text_cells(t) * 10 <= READY_VALUE_W);
+        for (int f = 0; f < (int)SERVO_LIMRUN_FAM_COUNT; ++f) {
+            CHECK(gfx_text_cells(ui_setting_option(SET_LIMIT_FAMILY, f)) * 10
+                  <= READY_VALUE_W);
+        }
         CHECK(gfx_text_cells(TR(RDY_TITLE)) * 10 <= READY_LABEL_W);
     }
     ui_text_set_language(UI_LANG_EN);
@@ -656,31 +656,46 @@ TEST_CASE(a_tap_on_a_red_zero_row_without_a_reading_names_it)
     CHECK_EQ(row_state(RAR_ZERO), (uint8_t)RDY_BAD);
 }
 
-/* A tap on SERVO opens the SETTINGS list scrolled to the SERVO row.  On an
- * ARMED bench the list stays shut (the band's notice: test_menu_openers). */
-TEST_CASE(a_tap_on_servo_opens_its_row_of_the_list_unless_armed)
+/* A tap on SERVO opens the three families over the left column; a pick
+ * is RUDDER AUTO's own and is saved.  Off a PROG PORT and on an ARMED
+ * bench the list stays shut and the band names why. */
+TEST_CASE(a_tap_on_servo_opens_the_family_list_unless_refused)
 {
     to_auto(false);
-    CHECK(!servo_screen_list()->open);
     tap(SV_RDY_X, SV_RDY_ROW_Y(RAR_SERVO));
-    const ui_setlist_t *sl = servo_screen_list();
-    CHECK(sl->open);
-    const gfx_rect_t pane = ui_setlist_pane(sl);
-    const gfx_rect_t row = ui_setlist_row_rect(sl, 4);
-    CHECK(row.y >= pane.y && row.y + row.h <= pane.y + pane.h);
-    CHECK(sl->scroll > 0);
+    CHECK_EQ(servo_screen_family_choices(), -1);
+    CHECK_STR_EQ(servo_screen_family_refused(), TR(SVL_PORT_ONLY));
+
+    settings_set(SET_SERVO_TARGET, 1.0f);
+    servo_screen_set_drive(1u, 13u, true);
+    tap(SV_RDY_X, SV_RDY_ROW_Y(RAR_SERVO));
+    CHECK(!servo_screen_list()->open);
+    CHECK_EQ(servo_screen_family_choices(), 3);
+    CHECK_STR_EQ(servo_screen_family_choice(0), "KST/CHASERVO");
+    CHECK_STR_EQ(servo_screen_family_choice(1), "HITEC D SERIES");
+    CHECK_STR_EQ(servo_screen_family_choice(2), "HITEC CLASSIC");
+    ov_choose(2);
+    CHECK_EQ(servo_screen_family_choices(), -1);
+    CHECK_EQ(servo_screen_rauto_family(), SERVO_RAUTO_FAM_HITEC_C);
+    CHECK_EQ(servo_screen_limit_family(), SERVO_LIMRUN_FAM_KST);
+    CHECK(settings_save_asked());
 
     to_auto(true);
+    settings_set(SET_SERVO_TARGET, 1.0f);
+    servo_screen_set_drive(1u, 13u, true);
     ui_router_set_alert(NULL);
     tap(SV_RDY_X, SV_RDY_ROW_Y(RAR_SERVO));
+    CHECK_EQ(servo_screen_family_choices(), -1);
     CHECK(!servo_screen_list()->open);
+    CHECK_STR_EQ(servo_screen_family_refused(), TR(FOOT_SETTINGS_SAFE));
+    CHECK_EQ(servo_screen_rauto_family(), SERVO_RAUTO_FAM_KST);
 }
 
-/* On a PROG PORT the SERVO row reads KST/CHASERVO, then HITEC with the
- * series once SERVO is stepped, CLASSIC or D SERIES. */
+/* On a PROG PORT the SERVO row reads the family RUDDER AUTO's own value
+ * holds: KST/CHASERVO, HITEC D SERIES or HITEC CLASSIC.  The HITEC page's
+ * series does not move it. */
 TEST_CASE(servo_reads_the_family_the_run_programs)
 {
-    enum { FAM = 4 };
     to_auto(false);
     settings_set(SET_SERVO_TARGET, 1.0f);
     servo_screen_set_drive(1u, 13u, true);
@@ -689,18 +704,20 @@ TEST_CASE(servo_reads_the_family_the_run_programs)
     CHECK_STR_EQ(r.label, TR(SVH_SERVO));
     CHECK_STR_EQ(r.value, TR(SV_LIM_SERVO_KST));
     CHECK(r.fix);
-    tap_settings();
-    sl_step(FAM, +1);
-    settings_set(SET_HITEC_SERIES, (float)HITEC_CLASSIC);
-    r = row_of(RAR_SERVO);
-    CHECK_STR_EQ(r.value, "HITEC CLASSIC");
+    tap(SV_RDY_X, SV_RDY_ROW_Y(RAR_SERVO));
+    ov_choose(2);
+    CHECK_STR_EQ(row_of(RAR_SERVO).value, "HITEC CLASSIC");
     settings_set(SET_HITEC_SERIES, (float)HITEC_D);
+    CHECK_STR_EQ(row_of(RAR_SERVO).value, "HITEC CLASSIC");
+    tap(SV_RDY_X, SV_RDY_ROW_Y(RAR_SERVO));
+    ov_choose(1);
     r = row_of(RAR_SERVO);
     CHECK_STR_EQ(r.value, "HITEC D SERIES");
     CHECK_EQ(r.st, (uint8_t)RDY_OK);
-    sl_step(FAM, +1);
+    tap(SV_RDY_X, SV_RDY_ROW_Y(RAR_SERVO));
+    ov_choose(0);
     CHECK_STR_EQ(row_of(RAR_SERVO).value, TR(SV_LIM_SERVO_KST));
-    settings_set(SET_HITEC_SERIES, (float)HITEC_CLASSIC);
+    settings_cancel_save();
 }
 
 /* A sequence on a PROG PORT: PORT PWM asked and read back, ARM asked,
@@ -946,7 +963,7 @@ int main(void)
     RUN(a_refused_hold_has_a_red_row_naming_it);
     RUN(a_press_on_a_row_ends_on_its_release_or_a_cancel);
     RUN(a_tap_on_a_red_zero_row_without_a_reading_names_it);
-    RUN(a_tap_on_servo_opens_its_row_of_the_list_unless_armed);
+    RUN(a_tap_on_servo_opens_the_family_list_unless_refused);
     RUN(servo_reads_the_family_the_run_programs);
     RUN(the_sequence_names_its_steps_and_a_start_the_run_refuses);
     RUN(a_refusal_names_its_part_and_switches_every_output_off);

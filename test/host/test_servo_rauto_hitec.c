@@ -33,8 +33,9 @@ static float defl_at(uint16_t us)
 }
 
 /**
- * @brief The Hitec bench with the AS5600 on the surface, the SERVO row at
- *        HITEC, RUDDER zeroed and AUTO's box shown.
+ * @brief The Hitec bench with the AS5600 on the surface, RUDDER AUTO's
+ *        SERVO at HITEC D SERIES or CLASSIC, RUDDER zeroed and AUTO's box
+ *        shown.
  * @param classic the HS-5645MG and CLASSIC, else the D485HW
  */
 static void ha_setup(bool classic)
@@ -43,7 +44,6 @@ static void ha_setup(bool classic)
     hl_fresh(classic);
     if (classic) {
         servo_hs5645();
-        settings_set(SET_HITEC_SERIES, (float)HITEC_CLASSIC);
     }
     servo_sim_defaults(&sc);
     sc.stop_lo_us = 700u;
@@ -54,7 +54,11 @@ static void ha_setup(bool classic)
     hl.enc = true;
     settings_set(SET_ENC_EN, 1.0f);
     settings_set(SET_ENC_CENTER, (float)HL_CENTER_COUNT);
-    hl_settings(true, false);                /* SERVO: HITEC */
+    /* RUDDER AUTO's own SERVO; the HITEC page stays at D SERIES and LIMIT
+     * RUN at KST/CHASERVO. */
+    hl_rauto_family(classic ? SERVO_RAUTO_FAM_HITEC_C : SERVO_RAUTO_FAM_HITEC_D);
+    CHECK_EQ(settings_get_int(SET_HITEC_SERIES), (int)HITEC_D);
+    CHECK_EQ(servo_screen_limit_family(), SERVO_LIMRUN_FAM_KST);
     (void)home_tag();
     hl_ms(200u);
     go(SERVO_FN_RAUTO);
@@ -237,6 +241,11 @@ TEST_CASE(a_stop_with_the_first_hitec_write_on_its_way_names_the_backup)
     CHECK_EQ(g_files_saves, 1u);
     CHECK_EQ(g_drv.d_saves, 0u);
     CHECK(servo_screen_rauto_running());
+    /* The run holds the screen: SERVO takes no pick. */
+    CHECK(servo_screen_family_refused() != NULL);
+    tap(SV_RDY_X, SV_RDY_ROW_Y(RAR_SERVO));
+    CHECK_EQ(servo_screen_family_choices(), -1);
+    CHECK_EQ(servo_screen_rauto_family(), SERVO_RAUTO_FAM_HITEC_D);
     press_stop();
     servo_screen_cancel_arm();
     hl.armed = false;

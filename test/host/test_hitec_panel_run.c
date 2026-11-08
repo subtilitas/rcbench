@@ -26,12 +26,12 @@ static hitec_panel_run_t settle(void)
     return r;
 }
 
-/* A run begun and connected on the overlay's bench. */
-static void connect_ok(void)
+/* A run begun and connected on the overlay's bench for @p series. */
+static void connect_ok(uint8_t series)
 {
     hitec_panel_run_begin();
     CHECK(hitec_panel_run_ready());
-    CHECK_EQ(hitec_panel_run_connect(true, 5000u, 1000u),
+    CHECK_EQ(hitec_panel_run_connect(series, true, 5000u, 1000u),
              HITEC_PROG_MSG_NONE);
     CHECK_EQ(hitec_panel_run_poll(), HITEC_PANEL_RUN_BUSY);
     CHECK(!hitec_panel_run_ready());
@@ -51,7 +51,7 @@ TEST_CASE(connect_write_leave_poll_in_order_for_the_d_series)
     open_en();
     servo_d485();
     g_card = true;
-    connect_ok();
+    connect_ok(HITEC_D);
     CHECK(hitec_panel_run_servo(&sv));
     CHECK_EQ(sv.series, HITEC_D);
     CHECK_EQ(sv.value[0], 8192u - 3351u);
@@ -102,9 +102,10 @@ TEST_CASE(the_same_for_a_classic_servo_with_the_balance)
     unsigned sum = 0;
 
     open_en();
-    settings_set(SET_HITEC_SERIES, (float)HITEC_CLASSIC);
     servo_hs5645();
-    connect_ok();
+    /* The run's series, with the HITEC page's at D SERIES. */
+    CHECK_EQ(settings_get_int(SET_HITEC_SERIES), (int)HITEC_D);
+    connect_ok(HITEC_CLASSIC);
     CHECK_EQ(hitec_prog_series(model()), HITEC_CLASSIC);
     CHECK(hitec_panel_run_servo(&sv));
     CHECK_EQ(sv.value[0], 0xA2u);
@@ -126,6 +127,8 @@ TEST_CASE(the_same_for_a_classic_servo_with_the_balance)
     /* No card: no backup file. */
     CHECK_STR_EQ(hitec_panel_run_backup(), "");
     hitec_panel_run_end();
+    /* The end puts the HITEC page's series back. */
+    CHECK_EQ(hitec_prog_series(model()), HITEC_D);
 }
 
 TEST_CASE(no_servo_is_reported_after_a_connect_that_found_none)
@@ -134,7 +137,7 @@ TEST_CASE(no_servo_is_reported_after_a_connect_that_found_none)
     servo_d485();
     hitec_panel_run_begin();
     CHECK(!hitec_panel_run_no_servo());
-    CHECK_EQ(hitec_panel_run_connect(false, 0u, 0u), HITEC_PROG_MSG_NONE);
+    CHECK_EQ(hitec_panel_run_connect(HITEC_D, false, 0u, 0u), HITEC_PROG_MSG_NONE);
     CHECK(!hitec_panel_run_no_servo());
     CHECK_EQ(settle(), HITEC_PANEL_RUN_FAILED);
     CHECK_EQ(msg(), HITEC_PROG_MSG_NO_D);
@@ -145,7 +148,7 @@ TEST_CASE(no_servo_is_reported_after_a_connect_that_found_none)
     CHECK_EQ(settle(), HITEC_PANEL_RUN_OK);
     CHECK(!hitec_panel_run_no_servo());
     /* A NO_D said before the next CONNECT does not count for it. */
-    CHECK_EQ(hitec_panel_run_connect(false, 0u, 0u), HITEC_PROG_MSG_NONE);
+    CHECK_EQ(hitec_panel_run_connect(HITEC_D, false, 0u, 0u), HITEC_PROG_MSG_NONE);
     CHECK_EQ(settle(), HITEC_PANEL_RUN_FAILED);
     CHECK(hitec_panel_run_no_servo());
     hitec_panel_run_end();
@@ -159,7 +162,7 @@ TEST_CASE(a_connect_on_an_armed_bench_is_refused)
     hitec_panel_bench_armed(true);
     prun(50u);
     hitec_panel_run_begin();
-    CHECK_EQ(hitec_panel_run_connect(true, 5000u, 1000u),
+    CHECK_EQ(hitec_panel_run_connect(HITEC_D, true, 5000u, 1000u),
              HITEC_PROG_MSG_NEED_DISARM);
     CHECK_EQ(hitec_panel_run_poll(), HITEC_PANEL_RUN_NONE);
     prun(200u);
@@ -169,7 +172,7 @@ TEST_CASE(a_connect_on_an_armed_bench_is_refused)
     disarm();
     hitec_panel_bench_armed(false);
     prun(50u);
-    CHECK_EQ(hitec_panel_run_connect(true, 5000u, 1000u),
+    CHECK_EQ(hitec_panel_run_connect(HITEC_D, true, 5000u, 1000u),
              HITEC_PROG_MSG_NONE);
     CHECK_EQ(settle(), HITEC_PANEL_RUN_OK);
     /* ARMED asked under the held port: the write is refused, and switched
@@ -191,7 +194,7 @@ TEST_CASE(ready_is_false_while_the_overlay_holds_the_port)
     tap_connect();
     CHECK(!hitec_panel_run_ready());
     hitec_panel_run_begin();
-    CHECK_EQ(hitec_panel_run_connect(true, 5000u, 1000u),
+    CHECK_EQ(hitec_panel_run_connect(HITEC_D, true, 5000u, 1000u),
              HITEC_PROG_MSG_BUSY);
     CHECK_EQ(hitec_panel_run_poll(), HITEC_PANEL_RUN_NONE);
     CHECK_EQ(hitec_prog_leave(model()), HITEC_PROG_MSG_NONE);
@@ -208,7 +211,7 @@ TEST_CASE(the_run_end_gives_the_operator_his_supply_back)
     const uint16_t ma = model()->supply_ma;
 
     hitec_panel_run_begin();
-    CHECK_EQ(hitec_panel_run_connect(true, 5500u, 1500u),
+    CHECK_EQ(hitec_panel_run_connect(HITEC_D, true, 5500u, 1500u),
              HITEC_PROG_MSG_NONE);
     CHECK_EQ(model()->supply_mv, 5500u);
     CHECK_EQ(model()->supply_ma, 1500u);
@@ -216,7 +219,7 @@ TEST_CASE(the_run_end_gives_the_operator_his_supply_back)
     CHECK_EQ(hitec_panel_run_leave(), HITEC_PROG_MSG_NONE);
     CHECK_EQ(settle(), HITEC_PANEL_RUN_OK);
     /* A second session of the run keeps the first values kept. */
-    CHECK_EQ(hitec_panel_run_connect(true, 5200u, 1200u),
+    CHECK_EQ(hitec_panel_run_connect(HITEC_D, true, 5200u, 1200u),
              HITEC_PROG_MSG_NONE);
     CHECK_EQ(settle(), HITEC_PANEL_RUN_OK);
     CHECK_EQ(hitec_panel_run_leave(), HITEC_PROG_MSG_NONE);
@@ -236,7 +239,7 @@ TEST_CASE(a_write_the_servo_does_not_take_fails_and_switches_write_off)
 
     open_en();
     servo_d485();
-    connect_ok();
+    connect_ok(HITEC_D);
     g_drv.d_drop = true;
     CHECK_EQ(hitec_panel_run_write(4000u, 4500u), HITEC_PROG_MSG_NONE);
     CHECK_EQ(settle(), HITEC_PANEL_RUN_FAILED);
@@ -254,7 +257,7 @@ TEST_CASE(a_write_the_servo_does_not_take_fails_and_switches_write_off)
     CHECK(hitec_panel_run_leave() != HITEC_PROG_MSG_NONE);
     CHECK_EQ(hitec_panel_run_poll(), HITEC_PANEL_RUN_NONE);
     /* The step's end counts the link: a CONNECT the link loses fails. */
-    CHECK_EQ(hitec_panel_run_connect(true, 5000u, 1000u),
+    CHECK_EQ(hitec_panel_run_connect(HITEC_D, true, 5000u, 1000u),
              HITEC_PROG_MSG_NONE);
     link_silent();
     CHECK_EQ(settle(), HITEC_PANEL_RUN_FAILED);

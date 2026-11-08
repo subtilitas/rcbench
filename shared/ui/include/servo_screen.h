@@ -637,7 +637,8 @@ int servo_screen_port_choices(void);
 const char *servo_screen_port_choice(int i, bool *refused);
 
 /**
- * @brief Entry @p i's rectangle in the body, for tests.
+ * @brief Entry @p i's rectangle in the body, of the PORT list or the SERVO
+ *        list (one column each), for tests.
  * @param i The entry.
  * @return Its rectangle.
  */
@@ -808,10 +809,27 @@ bool servo_screen_rauto_running(void);
 /** @brief AUTO's phase, for the tests.
  *  @return a servo_rauto_phase_t, as an int */
 int servo_screen_rauto_phase(void);
-/** @brief The servo family a limit run started now takes, by the LIMIT
- *         RUN settings' SERVO row, for the tests.
+/** @brief The servo family a limit run started now takes, LIMIT RUN's
+ *         own SERVO (SET_LIMIT_FAMILY), for the tests.
  *  @return a servo_limrun_family_t, as an int */
 int servo_screen_limit_family(void);
+/** @brief The servo family a RUDDER AUTO run started now takes, RUDDER
+ *         AUTO's own SERVO (SET_RAUTO_FAMILY), for the tests.
+ *  @return a servo_rauto_family_t, as an int */
+int servo_screen_rauto_family(void);
+/** @brief The SERVO choice list a READY card's SERVO row opens, for the
+ *         tests.
+ *  @return its entries' count while it shows, -1 while it does not */
+int servo_screen_family_choices(void);
+/** @brief Entry @p i of the SERVO choice list, for the tests; its
+ *         rectangle is servo_screen_port_choice_rect()'s.
+ *  @param i the entry, 0 for KST/CHASERVO
+ *  @return its label, "" past the last */
+const char *servo_screen_family_choice(int i);
+/** @brief Why the SERVO row of the screen shown takes no pick now, for
+ *         the tests.
+ *  @return the reason, NULL while it takes one */
+const char *servo_screen_family_refused(void);
 /** @brief SERVO PULSES for the session, for the tests.
  *  @return true while it reads 1000-2000 */
 bool servo_screen_limit_pulses(void);
