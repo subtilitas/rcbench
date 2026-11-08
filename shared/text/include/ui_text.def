@@ -6255,6 +6255,12 @@ UI_TEXT(PRR_READ_WHY, 94,
 UI_TEXT(PRR_CONN_WHY, 94,
     "Tap CONNECT in the session.",
     "Tippe in der Sitzung auf VERBINDEN.")
+UI_TEXT(PRR_SERIES_HELD, 94,
+    "Tap LEAVE first: the session keeps its series.",
+    "Tippe zuerst auf VERLASSEN: die Sitzung behält ihre Serie.")
+UI_TEXT(PRR_SERIES_TITLE, 0,
+    "SERIES: THE HITEC SERVO ON THE PORT",
+    "SERIE: DAS HITEC-SERVO AM PORT")
 UI_TEXT(PRR_W_PAGE, 94,
     "Close the page open on the left first.",
     "Schließe zuerst die offene Seite links.")

@@ -224,6 +224,10 @@ SCREENS = {
     # session holds with RELEASE PORT and its outcome.
     "servo-hitec": ("servo-hitec.png", "servo", "dark"),
     "servo-hitec-series": ("servo-hitec-series.png", "servo", "dark"),
+    # The READY card's SERIES row tapped: D SERIES and CLASSIC over the
+    # left column.
+    "servo-hitec-card-series": ("servo-hitec-card-series.png", "servo",
+                                "dark"),
     "servo-hitec-more": ("servo-hitec-more.png", "servo", "dark"),
     "servo-hitec-rx": ("servo-hitec-rx.png", "servo", "dark"),
     "servo-hitec-reading": ("servo-hitec-reading.png", "servo", "dark"),

@@ -1686,8 +1686,10 @@ Taste TEST BEENDEN und beendet den Lauf beim Drücken. Der Verlauf der
 Servoschiene steht im linken Feld unter den Grenzen von SUPPLY.
 
 KST und HITEC behalten die Taste PORT und zeigen an der Stelle des
-Ausgangsfelds eine Karte BEREIT mit drei Zeilen: PORT, die Versorgung, die
-VERBINDEN der Sitzung schaltet, und SERVO, das gelesene Servo. Solange
+Ausgangsfelds eine Karte BEREIT: PORT, die Versorgung, die VERBINDEN der
+Sitzung schaltet, und SERVO, das gelesene Servo; HITEC hat unter PORT
+zusätzlich SERIE, D-SERIE oder KLASSISCH, deren Tippen die beiden über dem
+linken Feld öffnet, solange die Sitzung keinen Port hält. Solange
 die Versorgung EIN zeigt, schaltet ein Tippen auf ihre Zeile sie aus, auch
 unter einem Feld über dem linken Feld. Die Mitte ihrer Fußleiste ist
 WERTE SCHREIBEN der Sitzung; keiner der beiden Bildschirme hat ARM

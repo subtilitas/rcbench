@@ -83,9 +83,10 @@ gfx_rect_t value_rect(int i)
 
 gfx_rect_t choice_rect(int i)
 {
-    /* The PORT and SERVO lists: one column, entries and refusals 60
-     * cells. */
-    if (s.ch.target == CH_PORT || s.ch.target == CH_FAMILY) {
+    /* The PORT, SERVO and SERIES lists: one column, entries and refusals
+     * 60 cells. */
+    if (s.ch.target == CH_PORT || s.ch.target == CH_FAMILY
+        || s.ch.target == CH_SERIES) {
         return (gfx_rect_t){ (int16_t)(OV_X + 10),
                              (int16_t)(OV_Y + 56 + i * 56),
                              (int16_t)(OV_W - 20), UI_TAP_MIN };
@@ -574,6 +575,8 @@ static void choose(int k)
         port_list_pick(v);
     } else if (target == CH_FAMILY) {
         svs_family_pick(id, v);
+    } else if (target == CH_SERIES) {
+        svs_series_pick(v);
     }
     ++s.ctrl_rev;
 }

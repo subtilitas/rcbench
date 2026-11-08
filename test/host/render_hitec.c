@@ -702,6 +702,12 @@ void render_hitec_view(const char *view)
         hseries(-1);
         return;
     }
+    if (strcmp(v, "-card-series") == 0) {
+        /* The READY card's SERIES (its second row): D SERIES and CLASSIC
+         * over the left column. */
+        htap_at(SV_RDY_X, UI_BAND_H + SV_RDY_ROW_Y(1));
+        return;
+    }
     if (strcmp(v, "-more") == 0) {
         htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 2, 0));
         return;
