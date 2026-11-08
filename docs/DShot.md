@@ -296,6 +296,18 @@ A pin handed to the ESC signal wire session is released first: it is a plain
 input, the session sets the line, and the low rest does not apply to it.
 After the session the pin is bound again and rests low.
 
+While the pin rests low, a connected ESC runs its own firmware and sees no
+signal. It is not armed: it gets frames only after ARM. Its tones in that
+time are its own no-signal tones, not a bench fault:
+
+| Firmware | Tone without a signal | Setting that changes it |
+| --- | --- | --- |
+| BLHeli_S, Bluejay | the beacon, after the beacon delay | Beacon Strength, Beacon Delay |
+| AM32 | the start tune, after a restart every 2s | beep volume, 0 to 11, last row of the INPUT tab in the [ESC signal wire](EscWire.md) session; 0 silences every tone, also at power-up and at ARM |
+
+The AM32 row follows the AM32 source (`Src/main.c`, the 2s signal timeout
+while not armed); single AM32 versions are not checked.
+
 Not measured: the rise time of the released line, which depends on the
 pull-up and on the line's capacitance; which idle time an ESC needs before
 its first frame; whether an ESC that restarts on a low line, as AM32 does

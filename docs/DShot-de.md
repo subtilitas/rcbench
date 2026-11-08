@@ -317,6 +317,19 @@ freigegeben: Er ist ein einfacher Eingang, die Session setzt die Leitung, und
 die Low-Ruhe gilt für ihn nicht. Nach der Session wird der Pin wieder
 zugeordnet und ruht low.
 
+Solange der Pin low ruht, läuft ein angeschlossener ESC in seiner eigenen
+Firmware und sieht kein Signal. Scharf ist er nicht: Frames bekommt er erst
+nach ARM. Seine Töne in dieser Zeit sind seine eigenen Kein-Signal-Töne, kein
+Fehler der Bank:
+
+| Firmware | Ton ohne Signal | Einstellung, die ihn ändert |
+| --- | --- | --- |
+| BLHeli_S, Bluejay | der Beacon, nach der Beacon-Verzögerung | Beacon Strength, Beacon Delay |
+| AM32 | die Startmelodie, nach einem Neustart alle 2s | Pieptonlautstärke, 0 bis 11, letzte Zeile im Tab EINGANG der [ESC-Signalleitung](EscWire-de.md); 0 schaltet jeden Ton ab, auch beim Einschalten und bei ARM |
+
+Die AM32-Zeile folgt dem AM32-Quelltext (`Src/main.c`, der Signal-Timeout von 2s
+ohne ARM); einzelne AM32-Versionen sind nicht geprüft.
+
 Nicht gemessen: die Anstiegszeit der losgelassenen Leitung, die vom Pull-up
 und von der Kapazität der Leitung abhängt; welche Idle-Zeit ein ESC vor seinem
 ersten Frame braucht; ob ein ESC, der auf einer Low-Leitung neu startet, wie
