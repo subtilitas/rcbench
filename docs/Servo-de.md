@@ -1209,7 +1209,7 @@ Ihre Einträge, von oben, höchstens 10:
 | `AS5600` | WINKELQUELLE AS5600, gespeichert; die Liste schließt |
 | `AS5600: AUS IN SETUP` (verweigert, gelb) | öffnet SETUP > SENSORS am AS5600; das Home-Tag dort kehrt zurück |
 | der gebundene Sensor, `HC-06 19:29`, wenn die letzte Suche ihn nicht listete | IMU EIN, falls aus, WINKELQUELLE IMU, gespeichert; die Liste schließt |
-| jeder Sensor der letzten Suche, `HC-06 19:29 -50dBm`: der Name (`OHNE NAMEN` ohne einen) auf 12 Zeichen gekürzt, die letzten 5 Zeichen der Adresse, die RSSI (Empfangsfeldstärke) | bindet ihn, wenn er nicht der gebundene ist, IMU EIN, falls aus, WINKELQUELLE IMU, gespeichert; die Liste schließt |
+| jeder Sensor der letzten Suche, `HC-06 19:29 -50dBm`: der Name (`OHNE NAMEN` ohne einen) auf 12 Zeichen gekürzt, die letzten 5 Zeichen der Adresse, die RSSI (Empfangsfeldstärke) | bindet ihn, wenn er nicht der gebundene ist, IMU EIN, falls aus, WINKELQUELLE IMU, gespeichert; die Liste schließt. Solange keine Bindung angenommen wird (kein Sync mit dem C6, die Kalibrierung läuft, die IMU ist aus), ist jeder Sensor außer dem gebundenen verweigert: ein Tippen nennt den Grund im Alarmband und ändert nichts |
 | `KEINE IMU GEFUNDEN` (verweigert) nach einer Suche ohne Fund, oder `SUCHE FEHLGESCHLAGEN: n` | nennt `KEIN SENSOR GEFUNDEN: IST ER AN, KEIN HANDY DRAN?` oder den Code im Alarmband |
 | `IMU SUCHEN` | IMU EIN, falls aus, gespeichert; die Suche startet, sobald Bluetooth LE läuft. Die Liste bleibt offen: der Eintrag zeigt `BLUETOOTH STARTET`, solange der Start läuft, `SUCHE: 10s`, solange die Suche läuft, danach stehen die gefundenen Sensoren oder `KEINE IMU GEFUNDEN` in der Liste. Ohne Sync mit dem C6 ist der Eintrag als `KEIN BLUETOOTH AM C6` verweigert, bei ausgefallenem C6 als `C6 AUSGEFALLEN: NEUSTART` |
 
@@ -1218,7 +1218,8 @@ IMU der gebundene Sensor. Öffnet sich die Liste bei eingeschalteter IMU,
 ohne gebundenen Sensor, ohne Suche seit dem Start und ohne Fehler, startet
 sofort eine Suche. Die Liste folgt dem Zustand der IMU in jedem Bild,
 solange kein Finger auf ihr liegt; eine Wahl bindet den Sensor der
-Adresse, die ihr Eintrag zeigt. Mit 8 gefundenen Sensoren hält die Liste
+Adresse und des Adresstyps (öffentlich oder zufällig), aus denen ihr
+Eintrag gebaut wurde. Mit 8 gefundenen Sensoren hält die Liste
 `AS5600`, die 8 und `IMU SUCHEN` in zwei Spalten zu 5; ein gebundener
 Sensor, den die Suche nicht listete, nimmt den Platz des achten ein.
 
