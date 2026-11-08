@@ -297,9 +297,9 @@ TEST_CASE(auto_programs_at_5v_whatever_prog_v_holds)
 {
     static const float k_v[] = { 6.0f, 4.8f };
 
-    for (int classic = 0; classic < 2; ++classic) {
+    for (int cls = 0; cls < 2; ++cls) {
         for (size_t i = 0; i < 2u; ++i) {
-            ha_setup(classic != 0);
+            ha_setup(cls != 0);
             settings_set(SET_SERVO_PROG_V, k_v[i]);
             g_step_mv = 0u;
             ha_hold_start();
@@ -308,7 +308,7 @@ TEST_CASE(auto_programs_at_5v_whatever_prog_v_holds)
             CHECK(!servo_screen_rauto_running());
             CHECK(strstr(hl.report, "PASS") != NULL);
             CHECK_EQ(g_step_mv, (uint16_t)SERVO_LIMRUN_SUPPLY_MV);
-            if (classic != 0) {
+            if (cls != 0) {
                 CHECK(fabsf(supply_screen_set_v() - 5.0f) < 0.005f);
             }
             CHECK_EQ(hitec_prog_mv(model()),
