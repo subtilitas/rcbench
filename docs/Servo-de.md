@@ -93,7 +93,7 @@ SERVO-Funktionsbildschirms. Der Bildschirm steht in
   bei NUR SUCHE, SERVOPULSE bei BEHALTEN. Die Liste schließt, wenn der
   Prüfstand SAFE verlässt oder die Startschritte beginnen.
 - Die Karte BEREIT an der Stelle der Ausgangskarte, neun Zeilen zu 30px
-  ab y 96: PORT, SERVO, MESSGERÄT, SCHIENE, BEREICH, PROGRAMMIERER, die
+  ab y 96: PORT, SERVO, MESSGERÄT, SCHIENE, BEREICH, PROGRAMMER, die
   Versorgung, PORT-PWM und ARM, je ein Punkt, die Bezeichnung und der
   Zustand. Die Versorgungszeile heißt PROG 5V am Programmierport des
   rbmod-Carriers, PD MINI, wo ein PD mini das Servo speist, sonst
@@ -101,7 +101,7 @@ SERVO-Funktionsbildschirms. Der Bildschirm steht in
   ([AUTO-Endpoints](#auto-endpoints)): grün erfüllt, rot sperrt das Halten
   oder ein Ausgang ist über sie aktiv, gelb erledigt das Halten selbst,
   grau wartet auf die Zeile PORT. An den Ausgängen des Prüfstands zeigt
-  SERVO `NUR SUCHE` in Grau, PROGRAMMIERER und PORT-PWM `--`.
+  SERVO `NUR SUCHE` in Grau, PROGRAMMER und PORT-PWM `--`.
 - Ein Tippen auf PORT öffnet die PORT-Auswahl; auf SERVO die Liste auf
   der Zeile SERVO, an den Ausgängen des Prüfstands nennt das Band `SERVO:
   Nur an einem PROG-PORT: wähle einen mit PORT`; auf ein rotes MESSGERÄT
@@ -151,7 +151,7 @@ Zeile und sperren nichts.
 | MESSGERÄT | `NOCH KEINE INA3221-MESSFENSTER` | der INA3221 ist noch nicht das Messgerät der Servoschiene: seine Einrichtung ist seit weniger als 1000ms bestätigt, oder kein Fenster mit Strom in den letzten 200ms |
 | PD MINI | `TIPPEN: HV-WARNUNG` | der Ausgang des PD mini aus mit dem Sollwert von SUPPLY über 6,0V, an einem PROG-PORT oder auf einer Schiene unter 3,0V. Vor der Schiene genannt, die er tot lässt. Das Halten schaltet ihn nie ein; die HV-Warnung von AUSGANG EIN tut es |
 | SCHIENE | `SERVOVERSORGUNG UNTER 3.0V ODER OHNE MESSWERT` | das letzte INA3221-Fenster enthält keine Schienenspannung, oder ihr Mittel liegt unter 3,0V (`SERVO_LIMRUN_RAIL_MIN_MV`). An einem ausgeschalteten Ausgang werden 0V gemessen, und eine Suche dort fände zwei freie Enden an einem Servo, das sich nie bewegt hat. 3,0V liegen unter den 4,8V, für die Servos üblicherweise angegeben sind, so dass die Schiene einer einzelnen Lithiumzelle noch startet; die Spannung, bei der ein bestimmtes Servo stehen bleibt, ist nicht gemessen. Gelb bei SAFE, wo die Versorgung des Haltens die Schiene speist: PROG 5V am Port des Carriers, ein PD mini mit ausgeschaltetem Ausgang |
-| PROGRAMMIERER | `GESPERRT: SERVOPROGRAMMIERUNG BELEGT DEN PORT` | PORT auf PROG-PORT, und eine Sitzung eines Programmers hält den Port. Vor PORT-PWM genannt: die Sitzung ist der Grund, dass kein Puls läuft, gleich was PORT-PWM sagt |
+| PROGRAMMER | `GESPERRT: SERVOPROGRAMMIERUNG BELEGT DEN PORT` | PORT auf PROG-PORT, und eine Sitzung eines Programmers hält den Port. Vor PORT-PWM genannt: die Sitzung ist der Grund, dass kein Puls läuft, gleich was PORT-PWM sagt |
 | PORT-PWM | `PORT-PWM AUS: DISARM, SCHALTE ES IN OUTPUTS EIN` | PORT auf PROG-PORT mit PORT-PWM aus, der Prüfstand ARMED |
 | PORT-PWM | `PORT-PWM AUS: SCHALTE ES IN OUTPUTS EIN` | dasselbe bei SAFE. Gelb: das Halten schaltet es ein und speichert es |
 | PORT-PWM | `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` | PORT auf PROG-PORT mit PORT-PWM ein, kein Programmer hält den Port, und sein Puls ist noch aus. Ein Puls kommt nur bei SAFE, und das Panel des rbmod-Carriers fordert ihn nur mit PROG 5V ein an. Gelb bei SAFE: die Rückmeldung wartet auf ihn |
@@ -173,7 +173,7 @@ und die erste Zustandszeile nennt sie.
 
 | Zeile | Text | Bedingung |
 | --- | --- | --- |
-| PROGRAMMIERER | `PROGRAMMIEREN: PORT IST NICHT IM PWM-MODUS` | der Programmierer hält den Port, oder der Port ist nicht für einen Lauf bereit |
+| PROGRAMMER | `PROGRAMMIEREN: PORT IST NICHT IM PWM-MODUS` | der Programmierer hält den Port, oder der Port ist nicht für einen Lauf bereit |
 | PD MINI | `PROGRAMMIEREN: PD-MINI-AUSGANG AUS` | ein PD mini antwortet mit ausgeschaltetem Ausgang auf einer anderweitig gespeisten Schiene: die Lesesitzung schaltete ihn neben dem Netzteil ein, das die Schiene speist. Auf einer Schiene unter 3,0V steht er bei SAFE gelb, und das Halten schaltet das PD mini ein |
 | PD MINI | `PROGRAMMIEREN: NETZTEIL AUF UNTER 4.8V EINGESTELLT` | ein PD mini antwortet, und sein Sollwert liegt unter 4,8V |
 | SCHIENE | `PROGRAMMIEREN: SERVOVERSORGUNG UNTER 4.8V` | kein PD mini antwortet, und die Servoschiene liegt im letzten Fenster des INA3221 unter 4,8V oder ist nicht gelesen |
@@ -1681,7 +1681,7 @@ Halten grau, solange:
 | --- | --- | --- |
 | PORT | PORT die Ausgänge des Prüfstands sind oder der Ausgang sonst nicht der Programmierport ist | `AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT`. Vor dem Messgerät genannt: auf dem rbmod-Carrier überwacht kein Kanal die Ausgänge, bis einer als SERVO PWM zugeordnet ist |
 | MESSGERÄT | das Messgerät nicht für den Servostrom eingerichtet, nicht erreichbar oder ohne Messfenster ist | die Zeile des Endlagenlaufs |
-| PROGRAMMIERER | eine Sitzung eines Programmierers den Port hält oder der Programmierer nicht im PWM-Modus ist | `GESPERRT: SERVOPROGRAMMIERUNG BELEGT DEN PORT`, `PROGRAMMIEREN: PORT IST NICHT IM PWM-MODUS` |
+| PROGRAMMER | eine Sitzung eines Programmierers den Port hält oder der Programmierer nicht im PWM-Modus ist | `GESPERRT: SERVOPROGRAMMIERUNG BELEGT DEN PORT`, `PROGRAMMIEREN: PORT IST NICHT IM PWM-MODUS` |
 | PROG 5V, PD MINI, VERSORGUNG | ARMED mit PROG 5V aus, ein Port hält es; ein Sollwert unter 4.8V; eine Schiene unter 4.8V ohne PD mini; kein PD mini und kein PROG 5V, um die Versorgung eines KST/Chaservo- oder klassischen Hitec-Servos aus- und einzuschalten; der Ausgang des PD mini aus mit einem Sollwert über 6.0V | die Zeile des Endlagenlaufs; `TIPPEN: HV-WARNUNG` für den Sollwert über 6.0V, wobei ein Tippen auf die Zeile die HV-Warnung von AUSGANG EIN öffnet, deren eigenes 2s-Halten den Ausgang einschaltet. Das Halten tut das nie: ein PD mini, der schon über 6.0V an ist, gilt als erfüllt, wie AUSGANG EIN bei einem eingeschalteten Ausgang nichts fragt. PROG 5V ist fest 5V und hat keinen Sollwert |
 | PORT-PWM | ARMED mit dem Puls des Ports aus | `PORT-PWM AUS: DISARM, SCHALTE ES IN OUTPUTS EIN`, `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` |
 | BEREICH | PULS MIN über 1000us, PULS MAX unter 2000us oder PULS MITTE nicht strikt zwischen 1000us und 2000us liegt | `PULS MIN BIS MAX MUSS 1000 BIS 2000us ABDECKEN` |

@@ -8,6 +8,12 @@ history is in git.
 
 ### Changed
 
+- The READY card on the SERVO screens (LIVE, SWEEP, RUDDER, TEST, LIMIT
+  RUN, RUDDER AUTO, KST and HITEC) draws each row's state on a raised tag
+  24px high in the button fill, its right end cut at 30° from vertical, so
+  a row reads as a control that takes a tap. The tags of one card share
+  the left edge the widest state needs. The label column is 10 cells wide,
+  and the German label PROGRAMMIERER reads PROGRAMMER.
 - English texts spell center: the CENTER button on SERVO LIVE and RUDDER,
   PULSE CENTER on the servo list, ENC CENTER on RUDDER's list, AS5600 center
   in SETUP > SENSORS, CENTER on the Hitec TRAVEL page, the warnings of the

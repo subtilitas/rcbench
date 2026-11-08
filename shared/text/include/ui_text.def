@@ -10778,7 +10778,7 @@ UI_TEXT(HOLD_HINT_RUDDER_AUTO, 94,
     "Hold 2s: the port and its supply go on, ARM, then AUTO starts.",
     "Halte 2s: Port und Versorgung gehen an, ARM, dann startet AUTO.")
 /* RUDDER AUTO's READY card (servo_ready.c, servo_rudder_auto_ready.c):
- * its title, the row labels (13 cells), the states (20 cells), the band's
+ * its title, the row labels (10 cells), the states (20 cells), the band's
  * line of a row, and ARM + START's steps and failures (servo_start_seq.h).
  * PORT, SERVO, ARM, ARMED, PROG 5V and PD MINI are the bench's own words
  * and stay English. */
@@ -10799,8 +10799,8 @@ UI_TEXT(RDY_RANGE, 0,
     "BEREICH")
 UI_TEXT(RDY_PROG, 0,
     "PROGRAMMER",
-    "PROGRAMMIERER")
-UI_TEXT(RDY_SUPPLY, 13,
+    "PROGRAMMER")
+UI_TEXT(RDY_SUPPLY, 10,
     "SUPPLY",
     "VERSORGUNG")
 UI_TEXT(RDY_PWM, 0,
@@ -10846,9 +10846,9 @@ UI_TEXT(SQ_STILL_LATCHED, 60,
     "STILL LATCHED AFTER %ums",
     "NACH %ums NOCH AUSGELÖST")
 /* LIMIT RUN's READY card and left card (servo_limit_ready.c,
- * servo_limit_card.c): the rail row's label (13 cells), the two ends'
+ * servo_limit_card.c): the rail row's label (10 cells), the two ends'
  * names (27 cells of a 295px cell), the MODE row's help, the guide. */
-UI_TEXT(RDY_RAIL, 13,
+UI_TEXT(RDY_RAIL, 10,
     "RAIL",
     "SCHIENE")
 UI_TEXT(LR_LOW_END, 27,

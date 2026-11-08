@@ -1623,7 +1623,7 @@ oder ein Lauf läuft, und nennt das beim Tippen im Alarmband. LIVE hat
 keine OPTIONEN.
 
 LIVE, SWEEP und RUDER zeigen BEREIT unter der Taste PORT: Zeilen von 30px
-ab y 96, jede mit Punkt, Bezeichnung von 13 Zellen und Zustand von 20.
+ab y 96, jede mit Punkt, Bezeichnung von 10 Zellen und Zustand von 20.
 LIVE und SWEEP haben PORT, VERSORGUNG und ARM; RUDER hat PORT, WINKEL,
 NULLPUNKT, VERSORGUNG und ARM. Unter den Zeilen haben LIVE und SWEEP
 TEMPO, die Bezeichnung bei y 196 und den Regler bei y 220 bis 260. Alle
@@ -1663,8 +1663,12 @@ Schritte schalten ARMED.
 
 RUDER AUTO und ENDLAGENLAUF behalten die Taste PORT und zeigen eine Karte
 BEREIT an der Stelle des Ausgangsfelds: Zeilen von 30px ab y 96, zehn auf
-RUDER AUTO und neun auf ENDLAGENLAUF, jede mit Punkt, Bezeichnung von 13
-Zellen und Zustand von 20, und die Schienenzeile bei y 404. Die Mitte
+RUDER AUTO und neun auf ENDLAGENLAUF, jede mit Punkt, Bezeichnung von 10
+Zellen und Zustand von 20, und die Schienenzeile bei y 404. Jeder Zustand
+steht auf einem erhabenen Schild von 24px Höhe, sein rechtes Ende um 30°
+gegen die Senkrechte geschnitten, und die Schilder einer Karte teilen die
+linke Kante, die der breiteste angezeigte Zustand braucht: sein Text, je
+9px links und rechts und der Schnitt von 14px. Die Mitte
 ihrer Fußleiste ist 2s HALTEN: ARM + START, das PORT-PWM und die
 Versorgung einschaltet, auf ihre Rückmeldung wartet, ARM schaltet und den
 Lauf in einem Halten startet
@@ -2278,7 +2282,7 @@ Die linke Karte, x 18 bis 618 des Inhalts:
 | Zustandszeilen | ab y 178, 24px Abstand, 10 x 20 | Titel und Schritt des Laufs; sonst die Startschritte, ein Fehler oder warum das Halten gesperrt ist; warum der Modus nicht angeboten wird; Urteil, Werte oder Grund, ZURÜCKSPIELEN, die Bereiche oder der Ausgang, die Datei des Berichts; der Hinweis des Modus |
 
 Die neun Zeilen der Karte BEREIT sind PORT, SERVO, MESSGERÄT, SCHIENE,
-BEREICH, PROGRAMMIERER, die Versorgung (PROG 5V, PD MINI oder
+BEREICH, PROGRAMMER, die Versorgung (PROG 5V, PD MINI oder
 VERSORGUNG), PORT-PWM und ARM. 2s HALTEN: ARM + START schaltet PORT-PWM
 und die Versorgung ein, liest sie zurück, schaltet ARM und startet den
 Lauf. Während des Laufs zeigt das Halten LAUF BEENDEN, und OPTIONEN ist

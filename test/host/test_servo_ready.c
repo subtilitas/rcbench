@@ -5,8 +5,9 @@
  *        belongs to exactly one row, in both languages; on each bench
  *        state the gate's text is on its row and no row shows another
  *        row's; the hold refuses on the first red row and names it in the
- *        alert band; the rows ARM + START does itself read amber; a tap on
- *        PORT opens the port list; every label and state fits its column;
+ *        alert band; the rows ARM + START does itself read amber; the
+ *        states sit on tags of one left edge; a tap on PORT opens the port
+ *        list; every label and state fits its column;
  *        a press on a row ends on its release or a cancel; a tap on a red
  *        ZERO row names itself; the sequence's calls name each step and each
  *        failure and switch every output off.
@@ -16,6 +17,7 @@
  * - on_each_bench_the_gate_text_is_on_its_row_alone
  * - the_hold_refuses_on_the_first_red_row_and_names_it
  * - the_rows_the_hold_does_read_amber_only_while_safe
+ * - the_tags_share_the_left_edge_the_widest_state_needs
  * - a_tap_on_port_opens_the_port_list
  * - every_label_and_state_fits_its_column
  * - the_card_takes_the_output_cards_place_on_every_function
@@ -309,6 +311,100 @@ TEST_CASE(the_rows_the_hold_does_read_amber_only_while_safe)
     CHECK(!rauto_ready_row(0, NULL));
 }
 
+/** @brief The width of state @p v as the card shows it: its first 20
+ *         cells, cut after the last whole word in them. */
+static int shown_width(const char *v)
+{
+    size_t cut = gfx_text_prefix(v, READY_VALUE_W / 10);
+    if (v[cut] != '\0') {
+        size_t sp = cut;
+        while (sp > 0u && v[sp] != ' ') {
+            --sp;
+        }
+        cut = (sp > 0u) ? sp : cut;
+    }
+    char t[64];
+    snprintf(t, sizeof(t), "%.*s", (int)cut, v);
+    return gfx_text_width(&gfx_font_10x20, t, 1);
+}
+
+/* Every row's state sits on a tag 24px high, centred on its row and
+ * inside its tap area with its 2px shadow.  The tags share one left edge:
+ * the widest state's text, 9px each side and the 14px slant left of the
+ * states' right edge.  Drawn, a tag's top row is lit to that right edge,
+ * its left column lit, its bottom row dark and ending 14px further left,
+ * its slant in the dim edge with the button fill inside and the shadow
+ * outside, and its text starts 9px right of the left edge. */
+TEST_CASE(the_tags_share_the_left_edge_the_widest_state_needs)
+{
+    to_auto(false);
+    const int n = ready_count();
+    CHECK(n > 1);
+    const gfx_rect_t t0 = ready_tag_rect(0);
+    const int right = t0.x + t0.w;
+    int widest = 0;
+    for (int i = 0; i < n; ++i) {
+        rdy_row_t r;
+        CHECK(ready_row(i, &r));
+        const int w = shown_width(r.value);
+        widest = (w > widest) ? w : widest;
+    }
+    const int left = right - widest - 2 * READY_TAG_PAD - READY_TAG_SLANT;
+    CHECK_EQ(ready_tag_left(), left);
+    for (int i = 0; i < n; ++i) {
+        const gfx_rect_t t = ready_tag_rect(i);
+        const gfx_rect_t a = ready_row_rect(i);
+        CHECK_EQ(t.x, left);
+        CHECK_EQ(t.x + t.w, right);
+        CHECK_EQ(t.h, READY_TAG_H);
+        CHECK_EQ(t.y - a.y, a.y + a.h - (t.y + t.h));
+        CHECK(t.x >= a.x && right + 2 <= a.x + a.w);
+        CHECK(t.y >= a.y && t.y + t.h + 2 <= a.y + a.h);
+    }
+    CHECK_EQ(READY_TAG_SLANT, 14);  /* round(24 * tan(30 degrees)) */
+    CHECK(gfx_rect_empty(ready_tag_rect(n)));
+
+    scr->render(&cv, 0);
+    const gfx_rect_t t = ready_tag_rect(RAR_PORT);
+    const int y = t.y, b = t.y + t.h - 1, k = READY_TAG_SLANT;
+    const gfx_color_t lit = ui_theme_color(UI_C_BEVEL_LIT);
+    CHECK_EQ(gfx_pixel_get(&cv, left, y), lit);
+    CHECK_EQ(gfx_pixel_get(&cv, right - 1, y), lit);
+    CHECK(gfx_pixel_get(&cv, right, y) != lit);
+    CHECK_EQ(gfx_pixel_get(&cv, left, y + 12), lit);
+    CHECK_EQ(gfx_pixel_get(&cv, left + 1, b),
+             ui_theme_color(UI_C_BEVEL_DARK));
+    CHECK_EQ(gfx_pixel_get(&cv, right - k - 1, b),
+             ui_theme_color(UI_C_BEVEL_DARK));
+    /* Row 12 of 24: the slant 7px in, round(14 * 12 / 23). */
+    CHECK_EQ(gfx_pixel_get(&cv, right - 8, y + 12), ui_theme_color(UI_C_GRID));
+    CHECK_EQ(gfx_pixel_get(&cv, right - 9, y + 12),
+             ui_theme_color(UI_C_PANEL_HI));
+    CHECK_EQ(gfx_pixel_get(&cv, right - 7, y + 12), ui_theme_color(UI_C_BG));
+    CHECK_EQ(gfx_pixel_get(&cv, right + 1, y + 2), ui_theme_color(UI_C_BG));
+    CHECK_EQ(gfx_pixel_get(&cv, left + 2, b + 2), ui_theme_color(UI_C_BG));
+    CHECK_EQ(gfx_pixel_get(&cv, right + 2, y + 2), ui_theme_color(UI_C_PANEL));
+    /* The text from 9px right of the left edge, none before it. */
+    rdy_row_t r;
+    CHECK(ready_row(RAR_PORT, &r));
+    const gfx_color_t ink = (r.st == RDY_BAD) ? ui_theme_color(UI_C_DANGER)
+                          : (r.st == RDY_IDLE) ? ui_theme_color(UI_C_TEXT_FAINT)
+                          : (r.st == RDY_SEQ || r.st == RDY_WARN)
+                              ? ui_theme_color(UI_C_WARN)
+                              : ui_theme_color(UI_C_TEXT);
+    int first = -1;
+    for (int x = left; x < right && first < 0; ++x) {
+        for (int yy = y; yy <= b; ++yy) {
+            if (gfx_pixel_get(&cv, x, yy) == ink) {
+                first = x;
+                break;
+            }
+        }
+    }
+    CHECK(first >= left + READY_TAG_PAD);
+    CHECK(first < left + READY_TAG_PAD + 10);
+}
+
 /* A tap on the PORT row opens the choice of OUTPUTS and the four PROG
  * PORTs, as the PORT button does. */
 TEST_CASE(a_tap_on_port_opens_the_port_list)
@@ -320,14 +416,15 @@ TEST_CASE(a_tap_on_port_opens_the_port_list)
     scr->render(&cv, 0);
 }
 
-/* Every label fits its 13 cells and every state the hold reads, ARMED,
+/* Every label fits its 10 cells and every state the hold reads, ARMED,
  * the set and free words fit the 20 the state column has, in both
  * languages. */
 TEST_CASE(every_label_and_state_fits_its_column)
 {
     static const ui_text_id_t k_lab[] = {
         TX_SVH_PORT, TX_SVH_SERVO, TX_RDY_METER, TX_RDY_ANGLE, TX_RDY_ZERO,
-        TX_RDY_RANGE, TX_RDY_PROG, TX_RDY_SUPPLY, TX_RDY_PWM,
+        TX_RDY_RANGE, TX_RDY_PROG, TX_RDY_SUPPLY, TX_RDY_PWM, TX_RDY_RAIL,
+        TX_TST_STEPS,
     };
     static const ui_text_id_t k_val[] = {
         TX_RDY_SEQ_ON, TX_RDY_SEQ_ARM, TX_RDY_ARMING, TX_RDY_SET,
@@ -841,6 +938,7 @@ int main(void)
     RUN(on_each_bench_the_gate_text_is_on_its_row_alone);
     RUN(the_hold_refuses_on_the_first_red_row_and_names_it);
     RUN(the_rows_the_hold_does_read_amber_only_while_safe);
+    RUN(the_tags_share_the_left_edge_the_widest_state_needs);
     RUN(a_tap_on_port_opens_the_port_list);
     RUN(every_label_and_state_fits_its_column);
     RUN(the_card_takes_the_output_cards_place_on_every_function);
