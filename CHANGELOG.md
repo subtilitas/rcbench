@@ -6,6 +6,29 @@ history is in git.
 
 ## Unreleased
 
+## 0.23.10 - 2026-11-08
+
+0.23.10 is a testing release. It removes the stall before `app_main()` in
+which release 0.23.9 stopped in about 1 start of 5 on the ESP32-P4 panel
+(#770). Its minor number, 23, is odd. GitHub publishes it as a pre-release
+and does not mark it as latest. It runs on the ESP32-P4 panel, as 0.23.9
+does; an ESP32-S3 panel stays on the 0.22 line and is not offered it. The
+link protocol is 4.37, as in 0.23.9. The assets are
+`rcbench-panel-p4-v0.23.10.zip`, `rcbench-panel-p4-v0.23.10.bin`,
+`rcbench-iomcu-v0.23.10.zip`, `rcbench-iomcu-rbmod-v0.23.10.zip`,
+`rcbench-c6-2.13.0.bin`, `rcbench-c6-merged-2.13.0.bin` and `SHA256SUMS`.
+
+A bench on 0.23.9 gets 0.23.10 over Wi-Fi: SETUP > UPDATES, RELEASES: TESTING,
+CHECK FOR UPDATES, then hold the install button for 2s. With RELEASES: STABLE the
+check reads `releases/latest`, which names 0.22.1, and offers nothing. At
+link-up the panel offers to update the IOmcu over CAN (Controller Area Network)
+when the IOmcu runs a different build. To set up a new bench, load both boards over USB
+(Universal Serial Bus) as [First run, §1](docs/FirstRun.md#1-flash-both-boards)
+describes.
+
+The entries below cover the 22 pull requests merged since v0.23.9: #750 to
+#771.
+
 ### Changed
 
 - MOTOR & ESC and SUPPLY end in a common footer of three 328 x 48px
@@ -209,6 +232,14 @@ history is in git.
   its clamp stays lower at higher back-feed
   ([Carrier, Rev 1 rework](docs/Carrier.md#rev-1-rework)).
 
+- A further finger on a stop control acts on its press whatever other
+  fingers rest on the glass: SUPPLY's OUTPUT OFF and PROG 5V OFF, the
+  Hitec programmer's MOVE SERVO ON and the searching FIND STOP key, and the
+  supply row of the SERVO screens' READY card. A held tap on a control
+  that a stop ended starts nothing on its release. A slider, the SERVO
+  dial and SPEED follow only the finger that started the drag; a second
+  finger sets SPEED while the first drags the dial.
+
 ### Fixed
 
 - The panel starts without the stall before `app_main()` that 0.23.9
@@ -218,6 +249,12 @@ history is in git.
   10s or the start ended in a store access fault. The build patches that
   wait to one read about every 10us (`firmware/panel/core1_wait.cmake`):
   0 stalls in 60 starts against the release's 11 in 60 in the same hour.
+- The steps of ARM and of START on the SERVO screens start with a
+  FAILSAFE CLEAR step of up to 500ms while the IOmcu's failsafe is latched
+  (`FAULT 01`) and the bench is SAFE. A latched failsafe made the IOmcu
+  refuse the supply step, and the steps ended in a read-back timeout. A
+  failsafe still latched after the step ends the steps at once with its
+  reason in the band.
 - UPDATES' release pane says `Waiting for the C6 radio update to finish.`
   while the C6 radio update runs. It said
   `Waiting for the IOmcu update to finish.` for both updates.
