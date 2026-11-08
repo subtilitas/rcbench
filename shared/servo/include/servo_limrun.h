@@ -224,6 +224,11 @@ extern "C" {
  * lithium cell's rail, 3.0V to 4.2V, still starts.  The voltage a given servo
  * stops moving at is not measured. */
 #define SERVO_LIMRUN_RAIL_MIN_MV  3000
+/** @brief The programmer's supply of every LIMIT RUN and RUDDER AUTO
+ *         session, KST/CHASERVO and Hitec alike, mV: 5.0V, whatever the
+ *         KST and HITEC pages' Programming voltage (SET_SERVO_PROG_V)
+ *         reads.  A PD mini that feeds the servo is set to it by START. */
+#define SERVO_LIMRUN_SUPPLY_MV    5000u
 
 /* ------------------------------------------------------ what it is told */
 

@@ -157,11 +157,6 @@ const char *lim_prog_why(void)
     if (!servo_limrun_running(&s.lim) && lim_pd_feeds() && !s.sup.output) {
         return TR(SV_LIM_PROG_PD_OFF);
     }
-    if (lim_pd_feeds()
-        && supply_screen_set_v() * 1000.0f
-               < (float)KST_PORT_SUPPLY_MIN_MV - 0.5f) {
-        return TR(SV_LIM_PROG_LOW);
-    }
     /* No PD mini to set: an external supply, or the model.  The servo
      * rail as the INA3221's last window read it holds the same 4.8V the
      * IOmcu asks of a PD mini, which it cannot check here.  At the
@@ -280,10 +275,9 @@ static bool lim_apply(const servo_limrun_do_t *d)
         servo_limrun_supply_refused(&s.lim, s.sup.output, test_now());
         again = true;
     } else if (d->connect) {
-        const bool pd = lim_pd_feeds();
-        taken = lim_seam_connect(
-            fam, pd, (uint16_t)lroundf(supply_screen_set_v() * 1000.0f),
-            (uint16_t)lroundf(supply_screen_set_i() * 1000.0f));
+        /* 5.0V, whatever the programmers' own voltage reads; the PD
+         * mini's current limit, or the programmers' without one. */
+        taken = lim_seam_connect(fam, SERVO_LIMRUN_SUPPLY_MV, rsup_ma());
     } else if (d->write) {
         taken = lim_seam_write(fam, d->angle);
     } else if (d->pulses) {
@@ -478,6 +472,11 @@ void lim_begin(void)
     ++s.ctrl_rev;
     ++s.arm_rev;
     if (lim_hold_blocked(NULL) != NULL) {
+        return;
+    }
+    /* The PD mini to 5.0V before the steps switch it on. */
+    if (!rsup_begin()) {
+        s.lim_note = TR(SV_RUN_PD_SET);
         return;
     }
     lim_cfg(&s.lim_cfg);

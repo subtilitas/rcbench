@@ -958,6 +958,14 @@ run's end puts SERIES back into the programmer. D receive (PULL-UP or
 PRECHARGE) is the one setting this page's MORE list and the runs' lists
 share.
 
+A run's sessions program at 5.0V, with or without a PD mini, never at
+PROGRAMMING VOLTAGE (SET_SERVO_PROG_V). With a PD mini feeding the servo,
+START sets it to 5.0V, and it stays at 5.0V after the run
+([Servo: The run's 5.0V](Servo.md#the-runs-50v)). The current limit is
+SUPPLY's SET A with a PD mini, Programming current (SET_SERVO_PROG_I)
+without one. The run's end gives the programmer the voltage and current
+the settings hold, which this page's own sessions use.
+
 A run writes LEFT END and RIGHT END and nothing else, in travel units:
 
 | Series | Left | Right | Unit | A run takes |

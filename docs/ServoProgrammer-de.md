@@ -1311,6 +1311,14 @@ sichert eine eigene Backup-Datei, wie das erste Schreiben jeder Sitzung. Das Pan
 ersten Schreiben des nächsten Laufs oder bis zu einem Neustart im Speicher, und ZURÜCKSPIELEN bietet es als `Werte vor dem Endlagenlauf.` an. Solange der Lauf den Port hält, nennen die Taste PORT
 und das Feld des Laufs ihn: `PROG-PORT 1 GPIO 13`.
 
+Jede Sitzung des Laufs fordert 5000mV, mit und ohne PD mini, was
+PROGRAMMIERSPANNUNG auch hält oder diese Seite beim Öffnen geladen hat
+([Servo: Die 5,0V des Laufs](Servo-de.md#die-50v-des-laufs)). Speist ein
+PD mini das Servo, stellt START es auf 5,0V, und es bleibt nach dem Lauf
+auf 5,0V. Das Ende des Laufs gibt der Programmierung Spannung und Strom
+zurück, die sie vor dem ersten VERBINDEN des Laufs hielt und die die
+eigenen Sitzungen dieser Seite verwenden.
+
 Jede Sitzung des Laufs folgt dem
 [Versorgungszyklus](#der-versorgungszyklus) der Servoprogrammierung. Bei
 eingeschaltetem Ausgang des PD mini schaltet jedes **VERBINDEN** ihn 1s

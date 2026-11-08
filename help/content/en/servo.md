@@ -179,12 +179,12 @@ The limit run searches for mechanical binding at each end of an installed servo'
 1. Tap SETTINGS in the footer, then MODE to choose SEARCH ONLY or SEARCH + PROGRAM.
 2. With PORT on PROG PORT, tap SERVO on the READY card and pick KST/CHASERVO, HITEC D SERIES or HITEC CLASSIC, the programmer the run's sessions go to. The pick is LIMIT RUN's own and is saved; RUDDER AUTO keeps its own. With KST/CHASERVO, set SERVO PULSES to KEEP or 1000-2000. It starts at KEEP.
 3. Tap the home tag to go back to LIMIT RUN.
-4. Hold HOLD 2s: ARM + START in the footer. From SAFE it switches PORT PWM on, then PROG 5V or the PD mini's output, waits up to 1000ms for them to read back ON, arms, waits up to 500ms for ARMED, and starts the run. A tap or a shorter hold starts nothing and shows `Hold 2s to switch the port and its supply on, ARM and start the limit run.` in the alert band.
-5. While the run runs, the hold reads STOP RUN. The state lines show the phase, the side and the pulse. After the run's last command the bench is SAFE again; PROG 5V stays on.
+4. Hold HOLD 2s: ARM + START in the footer. It sets a PD mini to 5.0V. From SAFE it switches PORT PWM on, then PROG 5V or the PD mini's output, waits up to 1000ms for them to read back ON, the PD mini at 5.0V, arms, waits up to 500ms for ARMED, and starts the run. A tap or a shorter hold starts nothing and shows `Hold 2s to switch the port and its supply on, ARM and start the limit run.` in the alert band.
+5. While the run runs, the hold reads STOP RUN. The state lines show the phase, the side and the pulse. After the run's last command the bench is SAFE again; PROG 5V stays on, and a PD mini stays at 5.0V.
 
 The left card shows the mode, then the output and the meter: `OUTPUT PROG PORT 1 GPIO 13, CURRENT INA3221 0x41 CH2` or `OUTPUT SERVO PWM GPIO 2, CURRENT INA3221 0x40 CH1`. LOW END and HIGH END hold the ends the last run found, in us, or `FREE`. The state lines under them name the step under way, why the hold is refused, and the last result with its file.
 
-The READY card on the right lists what the start needs, one row each: PORT, SERVO, METER, RAIL, RANGE, PROGRAMMER, the supply (PROG 5V on the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), PD MINI where the PD mini feeds the servo), PORT PWM and ARM. A green dot is met. A red dot refuses the hold, or marks an output live through the row. Amber reads `START SWITCHES IT ON` or `START ARMS`: the hold does it. Grey waits on PORT. A tap on PORT opens the port choice, on SERVO the three programmers over the left column, on a red METER [Sensors](setup-sensors.md) on the INA3221 that watches the target, on a red PD MINI with `TAP: HV WARNING` OUTPUT ON's HV warning. A tap on another red row, or on the grey hold, names it in the alert band.
+The READY card on the right lists what the start needs, one row each: PORT, SERVO, METER, RAIL, RANGE, PROGRAMMER, the supply (PROG 5V on the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), PD MINI where the PD mini feeds the servo), PORT PWM and ARM. PROG 5V and PD MINI read the run's `5.0V`. A green dot is met. A red dot refuses the hold, or marks an output live through the row. Amber reads `START SWITCHES IT ON` or `START ARMS`: the hold does it. Grey waits on PORT. A tap on PORT opens the port choice, on SERVO the three programmers over the left column, on a red METER [Sensors](setup-sensors.md) on the INA3221 that watches the target, on a red PD MINI with `PD MINI: 5.0V OUTSIDE ITS LIMITS` [SUPPLY](supply.md) > SETTINGS > LIMITS. A tap on another red row, or on the grey hold, names it in the alert band.
 
 The run reads only the INA3221 channel that watches the tester's target. While one of these holds, its row is red, the hold is grey and the first state line says why:
 
@@ -196,7 +196,6 @@ The run reads only the INA3221 channel that watches the tester's target. While o
 | METER | `INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT` | no channel of a fitted INA3221 watches the tester's target in SETUP > SENSORS |
 | METER | `INA3221 OFFLINE` | no link, or the INA3221 does not answer |
 | METER | `NO INA3221 MEASUREMENT WINDOWS YET` | the INA3221 is not the meter yet |
-| PD MINI | `TAP: HV WARNING` | the PD mini's output off with a set point past 6.0V: only OUTPUT ON's HV warning switches it on |
 | RAIL | `SERVO SUPPLY BELOW 3.0V OR NOT READ` | the last INA3221 window has no rail voltage, or less than 3.0V: an output that is off reads 0V. Amber while SAFE where the hold's supply feeds the rail |
 | PROGRAMMER | `LOCKED: SERVO PROGRAMMING USES THE PORT` | PORT is PROG PORT and a programmer session holds the port; named before PORT PWM |
 | PORT PWM | `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS` | PORT is PROG PORT with PORT PWM off, the bench ARMED |
@@ -204,6 +203,11 @@ The run reads only the INA3221 channel that watches the tester's target. While o
 | PORT PWM | `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` | PORT is PROG PORT with PORT PWM on and its pulse still off. Amber while SAFE: the read-back waits for it |
 | RANGE | `CENTER MUST BE BETWEEN PULSE MIN AND MAX` | the pulse range does not hold PULSE CENTER |
 | ARM | `REPORT STILL BEING WRITTEN` | a test or a run is under way, or its report is still going to the card |
+| PD MINI | `PD MINI: 5.0V OUTSIDE ITS LIMITS` | a PD mini feeds the servo and SUPPLY's limits leave out 5.0V; a tap opens SUPPLY > SETTINGS > LIMITS |
+
+### The supply: 5.0V
+
+LIMIT RUN and RUDDER AUTO program at 5.0V. Every programmer session of a run asks 5.0V, KST/Chaservo and Hitec alike, with or without a PD mini. The KST and HITEC pages' Programming voltage does not apply to a run; the pages keep using it. With a PD mini feeding the servo, the hold sets it to 5.0V before anything switches on, and it stays at 5.0V after the run, however the run ended. A PD mini that does not answer with 5.0V fails the start: `PD MINI FAILED: NO READ-BACK IN 1000ms`, and every output goes off.
 
 ### The search
 
@@ -230,9 +234,9 @@ SERVO PULSES at 1000-2000 writes PULSE LOWER 1000.0us and PULSE UPPER 2000.0us i
 
 ### Programming LEFT ANGLE and RIGHT ANGLE
 
-For KST/Chaservo, SEARCH + PROGRAM requires PORT on PROG PORT with PWM active and a way to power-cycle the servo. On a manually wired bench, this means a PD mini with output on and a set point of at least 4.8V. Written settings take effect only after power cycling.
+For KST/Chaservo, SEARCH + PROGRAM requires PORT on PROG PORT with PWM active and a way to power-cycle the servo. On a manually wired bench, this means a PD mini with output on; the hold sets it to 5.0V. Written settings take effect only after power cycling.
 
-Without a PD mini, SEARCH + PROGRAM and SERVO PULSES 1000-2000 are unavailable. The left card shows `PROGRAMMING: NO PD MINI TO SWITCH THE SERVO OFF AND ON`. SEARCH ONLY can run if the INA3221's latest rail voltage is at least 4.8V. With a PD mini present, its output must be on; a non-PWM port or voltage below 4.8V also blocks SEARCH ONLY.
+Without a PD mini, SEARCH + PROGRAM and SERVO PULSES 1000-2000 are unavailable. The left card shows `PROGRAMMING: NO PD MINI TO SWITCH THE SERVO OFF AND ON`. SEARCH ONLY can run if the INA3221's latest rail voltage is at least 4.8V. With a PD mini present, its output must be on; a non-PWM port, or a rail below 4.8V without a PD mini, also blocks SEARCH ONLY.
 
 On the rbmod carrier, PROG 5V supplies the programming port and replaces the PD mini for these power cycles. With it on, SEARCH + PROGRAM and SERVO PULSES are available. With it off, the PROG 5V row reads `START SWITCHES IT ON` while SAFE: the hold switches it on. The PD mini on the servo rails is not used or monitored by this port run.
 

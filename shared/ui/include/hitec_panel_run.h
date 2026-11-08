@@ -39,11 +39,12 @@ bool hitec_panel_run_ready(void);
  *         flag set (hitec_prog_run_begin()). */
 void hitec_panel_run_begin(void);
 /** @brief CONNECT on the SERVO screen's port for the run's @p series; with
- *         @p supply the PD mini at @p mv and @p ma.  The series is the
- *         run's for its sessions; hitec_panel_run_end() puts back the one
- *         SET_HITEC_SERIES holds.
+ *         @p supply at @p mv and @p ma.  The series and the supply are the
+ *         run's for its sessions; hitec_panel_run_end() puts back the ones
+ *         SET_HITEC_SERIES, SET_SERVO_PROG_V and SET_SERVO_PROG_I hold.
  *  @param series hitec_family_t: HITEC_D or HITEC_CLASSIC.
- *  @param supply true: the session asks the PD mini for @p mv and @p ma.
+ *  @param supply true: the session asks for @p mv and @p ma in place of
+ *                SET_SERVO_PROG_V and SET_SERVO_PROG_I.
  *  @param mv     The programming voltage, mV.
  *  @param ma     The current limit, mA.
  *  @return HITEC_PROG_MSG_NONE when taken; HITEC_PROG_MSG_BUSY while the

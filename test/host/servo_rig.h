@@ -170,7 +170,7 @@ enum {
 /* LIMIT RUN's list, row by row (servo_lists.c).  With SERVO at HITEC D
  * SERIES, D RECEIVE is row LL_RX and the rows from SERVO PULSES on move
  * down one. */
-enum { LL_MODE = 0, LL_SERVO, LL_PULSES, LL_PROG_V, LL_PROG_I, LL_WAIT };
+enum { LL_MODE = 0, LL_SERVO, LL_PULSES, LL_PROG_I, LL_WAIT, LL_ROWS };
 enum { LL_RX = 2 };
 /* RUDDER AUTO's list: its SERVO row, and D RECEIVE under it with HITEC D
  * SERIES. */

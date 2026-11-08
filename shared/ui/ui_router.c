@@ -161,7 +161,8 @@ static void guide_close(void);
  * another, whose home tag then returns to the opener.  OUTPUTS opens from the
  * TARGET row of MOTOR & ESC, from SETUP's OUTPUTS tile and from the PORT
  * list's `OUTPUTS: NO PIN` entry on SERVO's LIVE, SWEEP, TEST, LIMIT RUN,
- * RUDDER and RUDDER AUTO; SUPPLY from the caps button of SERVO's TEST; SETUP
+ * RUDDER and RUDDER AUTO; SUPPLY from the caps button of SERVO's TEST and
+ * from the supply row of LIMIT RUN's and RUDDER AUTO's READY cards; SETUP
  * from the ANGLE SOURCE row of RUDDER's and RUDDER AUTO's settings lists,
  * from the red METER row of LIMIT RUN's and RUDDER AUTO's READY cards and
  * from IMU's IMU SETTINGS; SETUP's SD
@@ -185,6 +186,8 @@ static const struct {
     { SCREEN_OUTPUTS, SCREEN_SERVO_RUDDER },
     { SCREEN_OUTPUTS, SCREEN_SERVO_RAUTO },
     { SCREEN_SUPPLY,  SCREEN_SERVO_TEST },
+    { SCREEN_SUPPLY,  SCREEN_SERVO_LIMRUN },
+    { SCREEN_SUPPLY,  SCREEN_SERVO_RAUTO },
     { SCREEN_SETUP,   SCREEN_SERVO_RUDDER },
     { SCREEN_SETUP,   SCREEN_SERVO_RAUTO },
     { SCREEN_SETUP,   SCREEN_SERVO_LIMRUN },

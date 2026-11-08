@@ -753,7 +753,9 @@ static void apply(const servo_seq_do_t *d, const char *refused)
         ++s.power_rev;
     }
     /* Never past a standard servo's rating: that ON is the HV warning's
-     * alone (CK_PD_HV refuses the hold; the read-back then fails). */
+     * alone (TEST's check refuses the hold; the read-back then fails).
+     * LIMIT RUN and RUDDER AUTO set the PD mini to 5.0V at the hold
+     * (servo_run_supply.c). */
     if (d->pd_on && !hv_set_point()) {
         supply_screen_ask_on(SUPPLY_BY_SERVO);
         ++s.sup_rev;
@@ -837,7 +839,9 @@ bool svs_seq_frame(const char *refused)
         .pwm_set = settings_get_bool(SET_SERVO_PORT_PWM),
         .pwm_on  = s.drive_pwm && !prog_reg_servo_holds(),
         .p5_on   = prog5v_box_on(),
-        .pd_on   = s.have_sup && s.sup.online && s.sup.output,
+        /* LIMIT RUN and RUDDER AUTO: on at the run's 5.0V. */
+        .pd_on   = s.have_sup && s.sup.online && s.sup.output
+                   && rsup_read_back(s.sup.set_v),
         .armed   = value_live(),
         .refused = refused != NULL,
         .refused_part = (uint8_t)part_of(refused),

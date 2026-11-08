@@ -51,17 +51,14 @@ enum {
     LK_BUSY,        /**< a report still on its way to the card         */
     LK_TARGET,      /**< OUTPUTS with no SERVO PWM output bound        */
     LK_METER,       /**< the INA3221 channel watching the target       */
-    LK_PD_HV,       /**< the PD mini off, set past 6.0V, and the hold
-                         to switch it on: only OUTPUT ON's HV warning
-                         does.  Before the rail, which it leaves dead   */
     LK_5V,          /**< the carrier's PROG 5V off                     */
     LK_RAIL,        /**< the servo rail under 3.0V or not read         */
     LK_PWM,         /**< the port's pulse off, or a session holding it */
     LK_CENTER,      /**< PULSE CENTER not between PULSE MIN and MAX    */
     LK_HITEC,       /**< a Hitec model's travel past PULSE MIN or MAX  */
     LK_PROG,        /**< the programmer, and the supply it switches    */
-    LK_PD_LOW,      /**< the PD mini set under 4.8V: lim_prog_why()
-                         names it only once its output is on            */
+    LK_PD_5V,       /**< the PD mini's caps leave out the run's 5.0V
+                         (servo_run_supply.c)                           */
     LK_COUNT        /**< the count                                     */
 };
 
@@ -73,14 +70,6 @@ static char s_hitec_why[72];
 static bool pd_output_on(void)
 {
     return s.have_sup && s.sup.online && s.sup.output;
-}
-
-/** @brief Whether the INA3221's last window reads the servo rail at
- *         SERVO_LIMRUN_RAIL_MIN_MV (3.0V) or more.  @return true then */
-static bool rail_live(void)
-{
-    return s.have_win && s.win.voltage
-           && s.win.mean_mv >= (uint16_t)SERVO_LIMRUN_RAIL_MIN_MV;
 }
 
 /**
@@ -157,19 +146,8 @@ static const char *check(int k)
         /* On the programming port every run reads the servo first: the
          * programmer must be free to. */
         return lim_reads() ? lim_prog_why() : NULL;
-    case LK_PD_LOW:
-        return (lim_reads() && lim_pd_feeds()
-                && supply_screen_set_v() * 1000.0f
-                       < (float)KST_PORT_SUPPLY_MIN_MV - 0.5f)
-                   ? TR(SV_LIM_PROG_LOW) : NULL;
-    case LK_PD_HV:
-        /* As OUTPUT ON: an output off whose set point is past a standard
-         * servo's rating goes on only through the HV warning, never by
-         * the hold.  On OUTPUTS the hold switches it only on a dead
-         * rail. */
-        return (lim_pd_feeds() && !pd_output_on() && hv_set_point()
-                && (lim_reads() || !rail_live()))
-                   ? TR(SV_TAP_HV) : NULL;
+    case LK_PD_5V:
+        return rsup_why();
     default:
         return NULL;
     }
@@ -205,8 +183,7 @@ limrun_row_t lim_row_of(const char *why)
     const char *const prog[] = { TR(OUT_PORT_HELD), TR(SV_LIM_PROG_BUSY) };
     const char *const supply[] = {
         ui_servo_str(SERVO_STR_START_PROG_5V), TR(HP_NEED_PD_C),
-        TR(SV_LIM_PROG_PD_OFF), TR(SV_LIM_PROG_LOW), TR(SV_LIM_PROG_NO_PD),
-        TR(SV_TAP_HV),
+        TR(SV_LIM_PROG_PD_OFF), TR(SV_LIM_PROG_NO_PD), TR(SV_RUN_PD_5V),
     };
     const char *const pwm[] = { TR(SV_LIM_PWM_SAFE), TR(SV_LIM_PWM_OFF),
                                 TR(SV_LIM_PWM_OFF_ARMED) };
@@ -276,7 +253,8 @@ bool lim_seq_fixes(const char *why)
     if (lim_fixed_supply()) {
         return !prog5v_box_on() && prog5v_box_live();
     }
-    return lim_pd_feeds() && !pd_output_on() && !hv_set_point();
+    /* START sets the PD mini to 5.0V before the steps switch it on. */
+    return lim_pd_feeds() && !pd_output_on();
 }
 
 const char *lim_hold_blocked(limrun_row_t *row)
@@ -387,9 +365,13 @@ static void met_value(int i, char *b, size_t n, uint8_t *st)
         }
         break;
     case LRR_SUPPLY:
-        if (lim_fixed_supply() || (lim_pd_feeds() && pd_output_on())) {
-            snprintf(b, n, "%s", ui_on_off(1));
-            *st = (uint8_t)RDY_LIVE;
+        /* The run's 5.0V where the bench sets the supply: the carrier's
+         * PROG 5V, or the PD mini START sets; the rail as read else. */
+        if (lim_fixed_supply() || rsup_pd_used()) {
+            rsup_text(b, n);
+            if (lim_fixed_supply() || pd_output_on()) {
+                *st = (uint8_t)RDY_LIVE;
+            }
         } else {
             rail_text(b, n);
         }
@@ -481,11 +463,11 @@ bool lim_ready_row(int i, rdy_row_t *r)
         met_value(i, r->value, sizeof(r->value), &r->st);
     }
     /* The rows a tap fixes: PORT and SERVO always, METER on SETUP, the
-     * PD mini past 6.0V through the HV warning. */
+     * PD mini's caps on SUPPLY's LIMITS. */
     r->fix = (i == LRR_PORT || i == LRR_SERVO)
              || (i == LRR_METER && r->st == (uint8_t)RDY_BAD)
              || (i == LRR_SUPPLY && r->st == (uint8_t)RDY_BAD
-                 && r->why == TR(SV_TAP_HV));
+                 && r->why == TR(SV_RUN_PD_5V));
     return true;
 }
 
@@ -521,11 +503,9 @@ void lim_ready_tap(int i)
         }
         break;
     case LRR_SUPPLY:
-        /* The PD mini off past 6.0V: OUTPUT ON's HV warning, whose own
-         * hold switches it on; the hold here never does. */
-        if (r.st == (uint8_t)RDY_BAD && r.why == TR(SV_TAP_HV)
-            && !s.ov_have) {
-            ask_hv_on();
+        /* The PD mini's caps leave out 5.0V: SUPPLY's LIMITS. */
+        if (r.st == (uint8_t)RDY_BAD && r.why == TR(SV_RUN_PD_5V)) {
+            wb_open_caps();
             return;
         }
         break;

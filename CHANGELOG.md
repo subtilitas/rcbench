@@ -35,6 +35,17 @@ history is in git.
   tap opens the two over the left card and a pick writes the Hitec series
   the next CONNECT enters, the same setting as the SERVO tab's SERIES. The
   row is refused while the page holds the port or a CONNECT is under way.
+- LIMIT RUN and RUDDER AUTO program at 5.0V. Every programmer session of a
+  run, KST/Chaservo and Hitec, asks 5000mV with or without a PD mini; the
+  KST and HITEC pages' Programming voltage (`SET_SERVO_PROG_V`) no longer
+  reaches a run, and LIMIT RUN's list has no Programming voltage row. With
+  a PD mini feeding the servo, START sets it to 5.0V, SET A kept, and the
+  start sequence's read-back waits for the PD mini's reading at 5.0V; the
+  PD mini stays at 5.0V after the run. SUPPLY's limits that leave out 5.0V
+  refuse the hold with `PD MINI: 5.0V OUTSIDE ITS LIMITS` on the supply
+  row, and a tap there opens SUPPLY's settings at OUTPUT LIMITS. The
+  supply row reads `5.0V` for PROG 5V and PD MINI. The `TAP: HV WARNING`
+  and `PROGRAMMING: SUPPLY SET BELOW 4.8V` refusals leave both screens.
 
 ### Fixed
 

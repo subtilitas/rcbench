@@ -78,8 +78,9 @@ screen. The screen is `shared/ui/servo_limit_panel.c`, its left card
 - SETTINGS opens the run's list: MODE (SEARCH ONLY or SEARCH + PROGRAM),
   SERVO (KST/CHASERVO, HITEC D SERIES or HITEC CLASSIC, the programmer the
   run's sessions go to, [Hitec servos](#hitec-servos)), SERVO PULSES (KEEP
-  or 1000-2000) and the programmer's Programming voltage, Programming
-  current and Wait before PWM. With SERVO at HITEC D SERIES, Hitec D
+  or 1000-2000) and the programmer's Programming current and Wait before
+  PWM. The run programs at 5.0V and has no voltage row
+  ([The run's 5.0V](#the-runs-50v)). With SERVO at HITEC D SERIES, Hitec D
   receive (PULL-UP or PRECHARGE) follows SERVO: the same saved setting as
   on the [HITEC page](HitecProgrammer.md). On the bench's outputs MODE,
   SERVO and SERVO PULSES are locked with `On a PROG PORT only: choose one
@@ -97,7 +98,8 @@ screen. The screen is `shared/ui/servo_limit_panel.c`, its left card
   PORT, SERVO, METER, RAIL, RANGE, PROGRAMMER, the supply, PORT PWM and
   ARM, each a dot, the label and the state. The supply row is PROG 5V on
   the rbmod carrier's programming port, PD MINI where a PD mini feeds the
-  servo, SUPPLY otherwise. The colours are RUDDER AUTO's
+  servo, SUPPLY otherwise. PROG 5V and PD MINI read the run's `5.0V`,
+  SUPPLY the rail's mean voltage. The colours are RUDDER AUTO's
   ([AUTO end points](#auto-end-points)): green met, red refuses the hold or
   an output is live through it, amber the hold does it itself, grey waits
   on the PORT row. On the bench's outputs SERVO reads `SEARCH ONLY` in
@@ -108,8 +110,8 @@ screen. The screen is `shared/ui/servo_limit_panel.c`, its left card
   choose one with PORT`; on a red METER it opens SETUP > SENSORS on the
   INA3221 part whose channel watches the tester's target, else on the
   first part fitted, and the home tag there returns to LIMIT RUN; on a red
-  supply row with `TAP: HV WARNING` it opens OUTPUT ON's
-  HV warning. A tap on another red or grey row names it in the alert band,
+  PD MINI with `PD MINI: 5.0V OUTSIDE ITS LIMITS` it opens SUPPLY's
+  settings at OUTPUT LIMITS. A tap on another red or grey row names it in the alert band,
   `LABEL: reason`.
 - HOLD 2s: ARM + START in the footer's middle slot, 328 x 48px, green
   while no row is red. It runs RUDDER AUTO's start sequence: PORT PWM,
@@ -123,7 +125,7 @@ screen. The screen is `shared/ui/servo_limit_panel.c`, its left card
 - After the run's last command the bench switches to SAFE: the footer
   holds no DISARM. After FOUND, FREE or PASS the PROG 5V stays on for the
   next SERVO screen until SERVO is left, and a PD mini's output stays as
-  the run left it. A FAIL switches both off once the programmer's LEAVE
+  the run left it, at 5.0V. A FAIL switches both off once the programmer's LEAVE
   gave the port back ([What ends a limit run](#what-ends-a-limit-run)).
 - While the run runs, the ARM row reads the bench as it is: ARMED with the
   red dot, or SAFE in green while a session of the programmer holds the
@@ -146,20 +148,22 @@ the hold resolves itself read amber on their row and refuse nothing.
 | METER | `INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT` | no channel of a fitted INA3221 watches the tester's target in SETUP > SENSORS, CH2 or CH3 watches it on an IOmcu older than 4.25, an IOmcu older than protocol 4.11, or a SENSE page that does not hold the set-up |
 | METER | `INA3221 OFFLINE` | no link, the part not answering, or its reset count moved |
 | METER | `NO INA3221 MEASUREMENT WINDOWS YET` | the INA3221 is not the servo rail's meter yet: its set-up held for less than 1000ms, or no window with current in the last 200ms |
-| PD MINI | `TAP: HV WARNING` | the PD mini's output off with SUPPLY's set point past 6.0V, on a PROG PORT or on a rail under 3.0V. Named before the rail, which it leaves dead. The hold never switches it on; OUTPUT ON's HV warning does |
 | RAIL | `SERVO SUPPLY BELOW 3.0V OR NOT READ` | the last INA3221 window holds no rail voltage, or its mean is under 3.0V (`SERVO_LIMRUN_RAIL_MIN_MV`). An output that is off reads 0V, and a search there would find two free ends on a servo that never moved. 3.0V lies under the 4.8V servos are commonly specified from, so a single lithium cell's rail still starts; the voltage a given servo stops moving at is not measured. Amber while SAFE where the hold's supply feeds the rail: the PROG 5V on the carrier's port, a PD mini whose output is off |
 | PROGRAMMER | `LOCKED: SERVO PROGRAMMING USES THE PORT` | PORT on PROG PORT and a programmer session holds the port. Named before PORT PWM: the session is why no pulse runs, whatever PORT PWM says |
 | PORT PWM | `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS` | PORT on PROG PORT with PORT PWM off, the bench ARMED |
 | PORT PWM | `PORT PWM OFF: SWITCH IT ON IN OUTPUTS` | the same while SAFE. Amber: the hold switches it on and saves it |
 | PORT PWM | `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` | PORT on PROG PORT with PORT PWM on, no programmer holding the port, and its pulse still off. A pulse comes on only while SAFE, and the rbmod carrier's panel asks for it only with the PROG 5V on. Amber while SAFE: the read-back waits for it |
 | RANGE | `CENTER MUST BE BETWEEN PULSE MIN AND MAX` | PULSE CENTER is not between PULSE MIN and PULSE MAX |
+| PD MINI | `PD MINI: 5.0V OUTSIDE ITS LIMITS` | a PD mini feeds the servo and SUPPLY's permitted set-point range, narrowed by its OUTPUT LIMITS, leaves out 5.0V. A tap on the row opens SUPPLY's settings at OUTPUT LIMITS |
 
 ### Programming the servo's travel limits
 
 SEARCH + PROGRAM is offered for a servo on the programming port: PORT on
-PROG PORT, the port in PWM, and a supply of 4.8V or more. On boards where a PD mini feeds the port, its output must be on and its
-set point is checked. Without that supply, the check uses the servo rail's
-mean voltage in the INA3221's last window. On the rbmod carrier, PROG 5V
+PROG PORT, the port in PWM, and a supply for the run's 5.0V. On boards
+where a PD mini feeds the port, its output must be on, or switched on by
+the hold on a rail under 3.0V, and START sets it to 5.0V. Without a PD
+mini, the servo rail's mean voltage in the INA3221's last window must be
+4.8V or more. On the rbmod carrier, PROG 5V
 must also be on; a PD mini on the other servo outputs does not feed the
 programming port. On the bench's outputs the run searches only: MODE is
 locked in the run's list, and the READY card's SERVO row reads SEARCH ONLY.
@@ -171,7 +175,6 @@ and the first state line names it.
 | --- | --- | --- |
 | PROGRAMMER | `PROGRAMMING: PORT IS NOT IN PWM MODE` | the programmer holds the port, or the port is not ready for a run |
 | PD MINI | `PROGRAMMING: PD MINI OUTPUT OFF` | a PD mini answers with its output off on a rail fed from elsewhere: the read session would switch it on beside the supply that feeds the rail. On a rail under 3.0V it reads amber while SAFE, and the hold switches the PD mini on |
-| PD MINI | `PROGRAMMING: SUPPLY SET BELOW 4.8V` | a PD mini answers and its set point is under 4.8V |
 | RAIL | `PROGRAMMING: SERVO RAIL BELOW 4.8V` | no PD mini answers, and the servo rail in the INA3221's last window is under 4.8V or not read |
 
 A KST or Chaservo servo applies written values after a power cycle
@@ -190,6 +193,38 @@ With a PD mini supplying the port, each CONNECT switches its output off
 for 1s and back on; LEAVE after a write does the same. On the carrier,
 the programming ports' fixed 5V supplies these cycles. The search after
 the write therefore checks the servo with the new values in effect.
+
+#### The run's 5.0V
+
+LIMIT RUN and RUDDER AUTO program at 5.0V (`SERVO_LIMRUN_SUPPLY_MV`,
+`shared/ui/servo_run_supply.c`).
+
+- Every programmer session of a run asks 5000mV, KST/Chaservo and Hitec
+  alike, with or without a PD mini. The KST and HITEC pages' Programming
+  voltage (`SET_SERVO_PROG_V`) never reaches a run, whatever it holds or
+  the KST page loaded at its entry. The pages keep using it, and the run's
+  end gives their programmer the setting's voltage back.
+- The session's current limit is SUPPLY's SET A where a PD mini feeds the
+  servo, the programmers' Programming current (`SET_SERVO_PROG_I`)
+  otherwise.
+- With a PD mini feeding the servo, START sets SUPPLY's set point to 5.0V
+  before the steps begin, SET A kept. An output already on is lowered or
+  raised to 5.0V while on. The PD mini stays at 5.0V after the run, after
+  an end, an abort or an error alike; an error switches every output off
+  as every error does.
+- The read-back step waits for the PD mini's reading to hold 5.0V with its
+  output on. A PD mini that does not answer with 5.0V fails it at 1000ms:
+  `PD MINI FAILED: NO READ-BACK IN 1000ms`, the run does not start, and
+  every output goes off.
+- A permitted set-point range that leaves out 5.0V (SUPPLY's, narrowed by
+  its OUTPUT LIMITS) refuses the hold: PD MINI is red with `PD MINI: 5.0V
+  OUTSIDE ITS LIMITS`, and a tap on the row opens SUPPLY's settings at
+  OUTPUT LIMITS. With the PD mini's output on, SUPPLY opens on its live
+  view and its alert band says why the list stays closed, as for TEST's
+  caps button. Where SUPPLY takes no set point at
+  START, the first state line reads `PD MINI DID NOT TAKE 5.0V` and no
+  step is taken.
+- The carrier's PROG 5V is a fixed 5V and has no set point.
 
 #### The read first
 
@@ -1559,7 +1594,8 @@ link is not authenticated (`SECURITY.md`, the Bluetooth IMU).
   a red ZERO with a reading it takes the zero; on a red
   ANGLE or METER it opens SETUP > SENSORS on the AS5600, the IMU or the
   INA3221 part whose channel watches the tester's target (else the first
-  part fitted). A tap on another red or grey row names it in the alert band,
+  part fitted); on a red PD MINI with `PD MINI: 5.0V OUTSIDE ITS LIMITS` it
+  opens SUPPLY's settings at OUTPUT LIMITS. A tap on another red or grey row names it in the alert band,
   `LABEL: reason`.
 - HOLD 2s: ARM + START in the footer's middle slot, 328 x 48px, green
   while no row is red. It fires the start sequence
@@ -1589,8 +1625,8 @@ The start sequence, each step a state line and the hold's label:
 | --- | --- | --- |
 | FAILSAFE CLEAR | CLEAR to the IOmcu, where STATUS shows FAULT 01 and not FAULT 10 at the hold: the write ARM makes before it arms, with the bench SAFE ([Arm latch](Safety.md#arm-latch)). Shown as step 1 only then | FAULT 01 clear within 500ms; still set at 500ms fails the step |
 | 1 PORT PWM | PORT PWM ON, saved, where the target is a PROG PORT and the setting is OFF | at once |
-| 2 PROG 5V or PD MINI | PROG 5V ON on the rbmod carrier's port; the PD mini's OUTPUT ON where it feeds the servo, at SUPPLY's SET V and SET A | at once |
-| 3 READ-BACK | waits until PROG 5V or the PD mini's output reads back ON, then PORT PWM's bit on the IOmcu (the panel sets it only while SAFE; the pulse itself runs only while ARMED), then for an INA3221 window that began after both. The rows are judged on that window | 1000ms from step 2 for all three; a part that does not read back fails the step, and so does one that reads back only after the 1000ms |
+| 2 PROG 5V or PD MINI | PROG 5V ON on the rbmod carrier's port; the PD mini's OUTPUT ON where it feeds the servo, at SUPPLY's SET V and SET A, SET V the 5.0V START set | at once |
+| 3 READ-BACK | waits until PROG 5V or the PD mini's output reads back ON, the PD mini's reading at 5.0V, then PORT PWM's bit on the IOmcu (the panel sets it only while SAFE; the pulse itself runs only while ARMED), then for an INA3221 window that began after both. The rows are judged on that window | 1000ms from step 2 for all three; a part that does not read back fails the step, and so does one that reads back only after the 1000ms |
 | 4 ARM | ARM, where the bench is SAFE | ARMED within 500ms; an ARMED read only after the 500ms fails the step |
 | 5 START | the run starts on the gate of the table below | at once |
 
@@ -1632,7 +1668,7 @@ while:
 | PORT | PORT is the bench's outputs, or the output is otherwise not the programming port | `AUTO PROGRAMS A SERVO ON THE PROG PORT`. Named before the meter: on the rbmod carrier the outputs have no channel watching them until one is bound as SERVO PWM |
 | METER | the meter is not set up for the servo's current, offline or without windows | the limit run's line |
 | PROGRAMMER | a programmer session holds the port, or the programmer is not in PWM | `LOCKED: SERVO PROGRAMMING USES THE PORT`, `PROGRAMMING: PORT IS NOT IN PWM MODE` |
-| PROG 5V, PD MINI, SUPPLY | ARMED with the PROG 5V off, a port holding it; a set point under 4.8V; a rail under 4.8V without a PD mini; no PD mini or PROG 5V to cycle a KST/Chaservo or classic Hitec servo's supply; the PD mini's output off with a set point past 6.0V | the limit run's line; `TAP: HV WARNING` for the set point past 6.0V, where a tap on the row opens OUTPUT ON's HV warning and its own 2s hold switches the output on. The hold never does: a PD mini already on past 6.0V counts as met, as OUTPUT ON asks nothing of a live output. PROG 5V is a fixed 5V and has no set point |
+| PROG 5V, PD MINI, SUPPLY | ARMED with the PROG 5V off, a port holding it; a rail under 4.8V without a PD mini; no PD mini or PROG 5V to cycle a KST/Chaservo or classic Hitec servo's supply; SUPPLY's permitted range leaving out the run's 5.0V | the limit run's line; `PD MINI: 5.0V OUTSIDE ITS LIMITS` for the range, where a tap on the row opens SUPPLY's settings at OUTPUT LIMITS. START sets the PD mini to 5.0V ([The run's 5.0V](#the-runs-50v)). PROG 5V is a fixed 5V and has no set point |
 | PORT PWM | ARMED with the port's pulse off | `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS`, `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` |
 | RANGE | PULSE MIN is above 1000us, PULSE MAX below 2000us, or PULSE CENTER is not strictly between 1000us and 2000us | `PULSE MIN TO MAX MUST INCLUDE 1000 TO 2000us` |
 | ANGLE | the angle source gives no reading | `ANGLE SOURCE: NO READING` |
@@ -1641,8 +1677,7 @@ while:
 
 A row with a text that refuses reads red even when another of its texts
 is one the hold does: a report still being written shows on ARM in red,
-not `START ARMS`. A PD mini set under 4.8V shows red on PD MINI with its
-output off.
+not `START ARMS`.
 
 Amber on a SAFE bench, done by the hold: `PROG 5V OFF: START SWITCHES IT
 ON` (PROG 5V), `PROGRAMMING: PD MINI OUTPUT OFF` (PD MINI, only

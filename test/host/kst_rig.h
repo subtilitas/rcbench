@@ -69,6 +69,7 @@ typedef struct {
     kst_prog_gate_t gate;      /* what the two tasks share */
     bool cut;                  /* no exchange is made: the link is silent */
     unsigned starts, aborts, fetches;
+    uint16_t enter_mv;         /* the last ENTER's supply_mv, mV */
 
     /* The card. */
     bool card, card_fails, card_silent;
@@ -278,6 +279,9 @@ static inline void rig_frame(void)
             /* A START without its pass is not carried out. */
         } else if (cmd.kind == KST_PROG_CMD_START) {
             g_rig.starts++;
+            if (cmd.req.op == LINK_KST_OP_ENTER) {
+                g_rig.enter_mv = cmd.req.supply_mv;
+            }
             g_rig.answer = kst_link_start(&g_rig.link, &cmd.req);
             g_rig.answer_id = cmd.id;
         } else if (cmd.kind == KST_PROG_CMD_FETCH) {

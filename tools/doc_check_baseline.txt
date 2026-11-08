@@ -3013,7 +3013,6 @@ shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_label are
 shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_message_lines are not documented
 shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_row_live are not documented
 shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_rule_text are not documented
-shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_run_connect are not documented
 shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_run_write are not documented
 shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_safe_at are not documented
 shared/ui/include/kst_panel.h: warning: parameters of member kst_panel_set_hv are not documented
@@ -3041,7 +3040,6 @@ shared/ui/include/kst_panel.h: warning: return type of member kst_panel_revision
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_row_live is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_rule_text is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_run_backup is not documented
-shared/ui/include/kst_panel.h: warning: return type of member kst_panel_run_connect is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_run_leave is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_run_ready is not documented
 shared/ui/include/kst_panel.h: warning: return type of member kst_panel_run_write is not documented

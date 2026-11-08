@@ -54,10 +54,8 @@ enum {
     CK_PWM,         /**< the port's pulse off, or a session holding it */
     CK_RANGE,       /**< PULSE MIN to MAX short of 1000 to 2000us      */
     CK_PROG,        /**< the programmer, and the supply it switches    */
-    CK_PD_LOW,      /**< the PD mini set under 4.8V: lim_prog_why()
-                         names it only once its output is on            */
-    CK_PD_HV,       /**< the PD mini off, set past 6.0V: only OUTPUT ON's
-                         HV warning switches it on                      */
+    CK_PD_5V,       /**< the PD mini's caps leave out the run's 5.0V
+                         (servo_run_supply.c)                           */
     CK_WRITE,       /**< a write able to act                           */
     CK_ANGLE,       /**< a reading of the angle source                 */
     CK_ZERO,        /**< ZERO taken                                    */
@@ -123,17 +121,8 @@ static const char *check(int k)
         /* The programmer free, and a written value able to act: a PD
          * mini, or the carrier's PROG 5V, switches the servo off and on. */
         return lim_prog_why();
-    case CK_PD_LOW:
-        return (lim_pd_feeds()
-                && supply_screen_set_v() * 1000.0f
-                       < (float)KST_PORT_SUPPLY_MIN_MV - 0.5f)
-                   ? TR(SV_LIM_PROG_LOW) : NULL;
-    case CK_PD_HV:
-        /* As OUTPUT ON: an output off whose set point is past a standard
-         * servo's rating goes on only through the HV warning
-         * (ask_hv_on()), never by the hold. */
-        return (lim_pd_feeds() && !pd_output_on() && hv_set_point())
-                   ? TR(SV_TAP_HV) : NULL;
+    case CK_PD_5V:
+        return rsup_why();
     case CK_WRITE:
         return lim_write_why();
     case CK_ANGLE: {
@@ -173,8 +162,8 @@ rauto_row_t rauto_row_of(const char *why)
     const char *const prog[] = { TR(OUT_PORT_HELD), TR(SV_LIM_PROG_BUSY) };
     const char *const supply[] = {
         ui_servo_str(SERVO_STR_START_PROG_5V), TR(HP_NEED_PD_C),
-        TR(SV_LIM_PROG_PD_OFF), TR(SV_LIM_PROG_LOW), TR(SV_LIM_PROG_RAIL),
-        TR(SV_LIM_PROG_NO_PD), TR(SV_TAP_HV),
+        TR(SV_LIM_PROG_PD_OFF), TR(SV_LIM_PROG_RAIL),
+        TR(SV_LIM_PROG_NO_PD), TR(SV_RUN_PD_5V),
     };
     const char *const pwm[] = { TR(SV_LIM_PWM_SAFE), TR(SV_LIM_PWM_OFF),
                                 TR(SV_LIM_PWM_OFF_ARMED) };
@@ -355,9 +344,13 @@ static void met_value(int i, char *b, size_t n, uint8_t *st)
         snprintf(b, n, "%s", TR(RDY_FREE));
         break;
     case RAR_SUPPLY:
-        if (lim_fixed_supply() || lim_pd_feeds()) {
-            snprintf(b, n, "%s", ui_on_off(1));
-            *st = (uint8_t)RDY_LIVE;
+        /* The run's 5.0V where the bench sets the supply: the carrier's
+         * PROG 5V, or the PD mini START sets; the rail as read else. */
+        if (lim_fixed_supply() || rsup_pd_used()) {
+            rsup_text(b, n);
+            if (lim_fixed_supply() || pd_output_on()) {
+                *st = (uint8_t)RDY_LIVE;
+            }
         } else if (s.win.voltage) {
             snprintf(b, n, "%u.%02uV", (unsigned)(s.win.mean_mv / 1000u),
                      (unsigned)((s.win.mean_mv % 1000u) / 10u));
@@ -460,7 +453,7 @@ bool rauto_ready_row(int i, rdy_row_t *r)
              || ((i == RAR_ANGLE || i == RAR_METER || i == RAR_ZERO)
                  && r->st == (uint8_t)RDY_BAD)
              || (i == RAR_SUPPLY && r->st == (uint8_t)RDY_BAD
-                 && r->why == TR(SV_TAP_HV));
+                 && r->why == TR(SV_RUN_PD_5V));
     return true;
 }
 
@@ -503,11 +496,9 @@ void rauto_ready_tap(int i)
         }
         break;
     case RAR_SUPPLY:
-        /* The PD mini off past 6.0V: OUTPUT ON's HV warning, whose own
-         * hold switches it on; the hold here never does. */
-        if (r.st == (uint8_t)RDY_BAD && r.why == TR(SV_TAP_HV)
-            && !s.ov_have) {
-            ask_hv_on();
+        /* The PD mini's caps leave out 5.0V: SUPPLY's LIMITS. */
+        if (r.st == (uint8_t)RDY_BAD && r.why == TR(SV_RUN_PD_5V)) {
+            wb_open_caps();
             return;
         }
         break;

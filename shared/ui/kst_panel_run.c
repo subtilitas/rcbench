@@ -47,8 +47,9 @@ kst_prog_msg_id_t kst_panel_run_connect(bool supply, uint16_t mv,
         k.run.keep_ma = kst_prog_supply_ma(p);
     }
     if (supply) {
-        /* The PD mini's set point as it stands: the ENTER changes
-         * nothing of it. */
+        /* The run's supply (5.0V for LIMIT RUN and RUDDER AUTO): a PD
+         * mini that feeds the servo was set to it at START, so the ENTER
+         * changes nothing of it. */
         kst_prog_supply_set(p, mv, ma);
     }
     kpn_supply_limits(p);
