@@ -482,9 +482,9 @@ TEST_CASE(the_card_takes_the_output_cards_place_on_every_function)
     CHECK(!ready_shown());
     CHECK(!drive_shown());
     CHECK(prog_ready_shown());
-    CHECK_EQ(ready_count(), (int)PRR_COUNT);
+    CHECK_EQ(ready_count(), 3);            /* KST: PORT, supply, SERVO */
     CHECK(ready_row(0, &r));
-    CHECK(!ready_row((int)PRR_COUNT, &r));
+    CHECK(!ready_row(3, &r));
     char b[64];
     CHECK(ready_refusal(b, sizeof(b)) == NULL);
 }

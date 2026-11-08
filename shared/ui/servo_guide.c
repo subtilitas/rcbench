@@ -213,7 +213,8 @@ static void page_prog(ui_help_page_t *p)
     p->must_show = port_rect();
     (void)ui_help_add(p, TR(SVH_PORT), TX_HG_SV_PRG_PORT, p->must_show);
     (void)ui_help_add(p, TR(RDY_TITLE), TX_HG_SV_PRG_READY,
-                      both(ready_row_rect(0), ready_row_rect(PRR_COUNT - 1)));
+                      both(ready_row_rect(0),
+                           ready_row_rect(prog_ready_count() - 1)));
     (void)ui_help_add(p, TR(RDY_METER), TX_HG_SV_PRG_RAIL, ready_rail_rect());
     (void)ui_help_add(p, TR(HG_SV_PRG_WRITE_NAME), TX_HG_SV_PRG_WRITE,
                       s.arm_btn);

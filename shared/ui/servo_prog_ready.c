@@ -3,12 +3,17 @@
  * @brief KST's and HITEC's READY card and the footer's WRITE n VALUES.
  *
  * On KST and HITEC the READY card takes the output card's place
- * (servo_ready_int.h) with three rows and the rail line:
+ * (servo_ready_int.h) with three rows on KST, four on HITEC, and the rail
+ * line:
  *
  *   - PORT: what the tester drives.  Red with OUTPUTS, which no programmer
  *     works on; a red dot while the session holds the port.  A tap opens
  *     the PORT list, which a held port locks with its reason in the alert
  *     band.
+ *   - SERIES, HITEC only: D SERIES or CLASSIC, the series the next CONNECT
+ *     enters (SET_HITEC_SERIES).  A tap opens the two over the left column;
+ *     while the page holds the port it shows the session's series and a
+ *     tap names why it takes no pick.
  *   - the supply the session's CONNECT switches: PROG 5V on the rbmod
  *     carrier, PD MINI where one answers, SUPPLY otherwise.  Amber `ON AT
  *     CONNECT` while it is off, a red dot `ON` while it is on, and then a
@@ -36,9 +41,12 @@
 #include <string.h>
 
 #include "hitec_panel.h"
+#include "hitec_prog.h"
+#include "hitec_wire.h"
 #include "kst_panel.h"
 #include "prog5v_box.h"
 #include "prog_registry.h"
+#include "settings.h"
 #include "supply_screen.h"
 #include "ui_footer.h"
 #include "ui_text.h"
@@ -134,15 +142,68 @@ static void supply_row(const prog_session_t *ps, rdy_row_t *r)
     }
 }
 
+/** @brief HITEC's rows in the card's order: SERIES under PORT. */
+static const uint8_t k_hitec_rows[] = { PRR_PORT, PRR_SERIES, PRR_SUPPLY,
+                                        PRR_SERVO };
+
+int prog_ready_count(void)
+{
+    if (!prog_ready_shown()) {
+        return 0;
+    }
+    return s.fn == SERVO_FN_HITEC ? (int)sizeof(k_hitec_rows) : PRR_SERIES;
+}
+
+int prog_ready_at(prog_ready_row_t kind)
+{
+    for (int i = 0; i < prog_ready_count(); ++i) {
+        if ((s.fn == SERVO_FN_HITEC ? (int)k_hitec_rows[i] : i) == (int)kind) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/**
+ * @brief The kind of row @p i on the card shown.
+ * @param i the row, inside prog_ready_count()
+ * @return a prog_ready_row_t
+ */
+static prog_ready_row_t kind_at(int i)
+{
+    return s.fn == SERVO_FN_HITEC ? (prog_ready_row_t)k_hitec_rows[i]
+                                  : (prog_ready_row_t)i;
+}
+
+/**
+ * @brief HITEC's SERIES: the series the next CONNECT enters, or the
+ *        session's while the page holds the port, when a tap names why.
+ * @param ps the session
+ * @param r  the row
+ */
+static void series_row(const prog_session_t *ps, rdy_row_t *r)
+{
+    r->label = TR(HP_SERIES);
+    r->st = (uint8_t)RDY_OK;
+    const bool held = ps->held || ps->busy;
+    const int series = held ? (int)hitec_prog_series(hitec_panel_model())
+                            : settings_get_int(SET_HITEC_SERIES);
+    snprintf(r->value, sizeof(r->value), "%s",
+             ui_setting_option(SET_HITEC_SERIES,
+                               series == (int)HITEC_CLASSIC ? 0 : 1));
+    r->fix = !held;
+    r->why = held ? TR(PRR_SERIES_HELD) : NULL;
+}
+
 bool prog_ready_row(int i, rdy_row_t *r)
 {
-    if (r == NULL || i < 0 || i >= (int)PRR_COUNT || !prog_ready_shown()) {
+    if (r == NULL || i < 0 || i >= prog_ready_count()) {
         return false;
     }
     memset(r, 0, sizeof(*r));
     prog_session_t ps;
     session_now(&ps);
-    switch ((prog_ready_row_t)i) {
+    switch (kind_at(i)) {
     case PRR_PORT:
         r->label = TR(SVH_PORT);
         r->fix = true;
@@ -154,6 +215,9 @@ bool prog_ready_row(int i, rdy_row_t *r)
             r->st = (uint8_t)(ps.held ? RDY_LIVE : RDY_OK);
             (void)svs_port_line(r->value, sizeof(r->value));
         }
+        return true;
+    case PRR_SERIES:
+        series_row(&ps, r);
         return true;
     case PRR_SUPPLY:
         if (s.drive_target == 0u) {
@@ -192,12 +256,18 @@ void prog_ready_tap(int i)
     if (!prog_ready_row(i, &r)) {
         return;
     }
-    if (i == (int)PRR_PORT) {
+    const prog_ready_row_t kind = kind_at(i);
+    if (kind == PRR_PORT) {
         /* The list, or the lock's reason while the session holds it. */
         port_list_open();
         return;
     }
-    if (i == (int)PRR_SUPPLY && r.st == (uint8_t)RDY_LIVE) {
+    if (kind == PRR_SERIES && r.fix) {
+        /* D SERIES and CLASSIC over the left column (servo_pick.c). */
+        svs_series_open();
+        return;
+    }
+    if (kind == PRR_SUPPLY && r.st == (uint8_t)RDY_LIVE) {
         /* A red dot is an output on: a tap switches it off, as OUTPUT OFF
          * and PROG 5V OFF do; the ports' 5V not while a port holds it. */
         prog_session_t ps;
@@ -212,7 +282,8 @@ void prog_ready_tap(int i)
         ++s.power_rev;
         return;
     }
-    if (r.st == (uint8_t)RDY_OK || r.st == (uint8_t)RDY_LIVE) {
+    if ((r.st == (uint8_t)RDY_OK || r.st == (uint8_t)RDY_LIVE)
+        && r.why == NULL) {
         return;
     }
     char line[128];
@@ -224,8 +295,9 @@ void prog_ready_tap(int i)
 bool prog_ready_stops_at(int x, int y)
 {
     rdy_row_t r;
-    return prog_ready_row((int)PRR_SUPPLY, &r) && r.st == (uint8_t)RDY_LIVE
-           && gfx_rect_contains(ready_row_rect((int)PRR_SUPPLY), x, y);
+    const int i = prog_ready_at(PRR_SUPPLY);
+    return prog_ready_row(i, &r) && r.st == (uint8_t)RDY_LIVE
+           && gfx_rect_contains(ready_row_rect(i), x, y);
 }
 
 /* ---------------------------------------------------------- the footer */

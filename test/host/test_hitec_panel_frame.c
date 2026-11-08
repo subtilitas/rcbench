@@ -31,12 +31,13 @@ static const char *alert(void)
     return a != NULL ? a : "";
 }
 
-/** @brief READY row @p i as the card draws it now. */
-static rdy_row_t row(int i)
+/** @brief READY row of kind @p k (prog_ready_row_t) as the card draws
+ *  it now, wherever HITEC's card puts it. */
+static rdy_row_t row(int k)
 {
     rdy_row_t r;
     memset(&r, 0, sizeof(r));
-    CHECK(ready_row(i, &r));
+    CHECK(ready_row(prog_ready_at((prog_ready_row_t)k), &r));
     return r;
 }
 
@@ -82,7 +83,8 @@ TEST_CASE(the_card_names_the_port_and_outputs_is_red)
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         on_hitec();
         ui_text_set_language((ui_lang_t)lang);
-        CHECK_EQ(ready_count(), (int)PRR_COUNT);
+        CHECK_EQ(ready_count(), 4);     /* PORT, SERIES, supply, SERVO */
+        CHECK_EQ(prog_ready_at(PRR_SERIES), 1);
         rdy_row_t r = row(PRR_PORT);
         CHECK_EQ(r.st, (uint8_t)RDY_OK);
         CHECK(strstr(r.value, "13") != NULL);

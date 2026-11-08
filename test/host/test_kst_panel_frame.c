@@ -102,7 +102,7 @@ TEST_CASE(the_ready_card_follows_the_session)
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         kst_on();
         ui_text_set_language((ui_lang_t)lang);
-        CHECK_EQ(ready_count(), (int)PRR_COUNT);
+        CHECK_EQ(ready_count(), 3);            /* PORT, supply, SERVO */
         rdy_row_t r = row(PRR_PORT);
         CHECK_STR_EQ(r.label, TR(SVH_PORT));
         CHECK_EQ(r.st, (uint8_t)RDY_OK);

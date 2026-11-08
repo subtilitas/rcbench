@@ -181,7 +181,7 @@ int ready_count(void)
         return drive_ready_count();
     }
     if (prog_ready_shown()) {
-        return (int)PRR_COUNT;     /* KST's and HITEC's */
+        return prog_ready_count();     /* KST's and HITEC's */
     }
     return ready_shown() ? fn_now()->count : 0;
 }
@@ -504,7 +504,7 @@ bool ready_down(const touch_event_t *evt)
      * HITEC's supply row while it reads ON asks OFF at once. */
     if (prog_ready_shown()
         && prog_ready_stops_at(evt->point.x, evt->point.y)) {
-        prog_ready_tap((int)PRR_SUPPLY);
+        prog_ready_tap(prog_ready_at(PRR_SUPPLY));
         ++s.ctrl_rev;
         return true;
     }
