@@ -117,7 +117,7 @@ Welcher Endpunkt welche Seite bewegt: bei einem Hitec-Servo der D-Serie mit CW i
 
 Die zweite Zeile nennt das Ergebnis; nach BESTANDEN zeigt sie jeden Endpunkt vorher und nachher so, wie die Programmierseite ihn zeigt, mit Einheit: `Zählwerte` bei einem Hitec-Servo der D-Serie (8192 die Mitte, wie WEG auf der HITEC-Seite), `Rohwert` bei KST und einem Hitec-Classic-Servo. Die dritte nennt den Bericht RUDDRnnn.TXT. Hat ein nicht bestandener Lauf Einstellungen geschrieben oder einen Schreibvorgang abgebrochen, steht dort stattdessen `ZURÜCKSPIELEN IN KST`, bei Hitec `HITEC001 IN DATEIEN LADEN`, bis ein Lesen oder Schreiben auf der KST- oder HITEC-Seite die Werte vor dem Lauf zeigt oder Werte, die der Lauf nicht hinterlassen hat.
 
-Mit der IMU als WINKELQUELLE auf Achse Z (Gieren) und IMU-Algorithmus 6-AXIS zeigt die Zeile WINKEL `IMU-GIEREN BRAUCHT 9-AXIS` in Rot, und das Halten wird verweigert: ohne Magnetometer driftet das Gieren etwa 2,4° in 100s, mehr als TOLERANZ. Ein Tippen auf die Zeile bietet `IMU AUF 9-AXIS SCHALTEN`, `IMU-ACHSE X NEHMEN (ROLLEN)` und `IMU-ACHSE Y NEHMEN (NICKEN)`; eine Wahl setzt und speichert sie. Eine andere Achse oder ein anderer Algorithmus braucht einen neuen NULLPUNKT.
+Mit der IMU als WINKELQUELLE auf Achse Z (Gieren) und IMU-Algorithmus 6-AXIS zeigt die Zeile WINKEL `IMU-GIEREN BENÖTIGT 9-AXIS` in Rot, und das Halten wird verweigert: ohne Magnetometer driftet das Gieren etwa 2,4° in 100s, mehr als TOLERANZ. Ein Tippen auf die Zeile bietet `IMU AUF 9-AXIS SCHALTEN`, `IMU-ACHSE X NEHMEN (ROLLEN)` und `IMU-ACHSE Y NEHMEN (NICKEN)`; eine Wahl setzt und speichert sie. Eine andere Achse oder ein anderer Algorithmus braucht einen neuen NULLPUNKT.
 
 ![Die OPTIONEN von RUDER AUTO](view:servo-rudder-auto-settings)
 

@@ -161,7 +161,7 @@ RUDER AUTO verweigert die IMU-Achse Z, Gieren, solange der IMU-Algorithmus
 BWT901CL auf Gieren driftet 2,4° in 100s (ein Lauf am Prüfstand), gegen
 0,5° Toleranz von RUDER AUTO. Achse X (Rollen) und Y (Nicken) halten sich
 an der Schwerkraft und bleiben in beiden Modi erlaubt. Die Zeile WINKEL
-der BEREIT-Karte zeigt `IMU-GIEREN BRAUCHT 9-AXIS` in Rot, und ARM + START
+der BEREIT-Karte zeigt `IMU-GIEREN BENÖTIGT 9-AXIS` in Rot, und ARM + START
 wird verweigert. Ein Tippen auf die Zeile öffnet die Liste IMU-GIEREN:
 `IMU AUF 9-AXIS SCHALTEN`, `IMU-ACHSE X NEHMEN (ROLLEN)`, `IMU-ACHSE Y
 NEHMEN (NICKEN)`. Eine Wahl schreibt IMU-Algorithmus oder IMU-Achse und
