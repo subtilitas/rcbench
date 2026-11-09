@@ -304,7 +304,7 @@ static void met_value(int i, char *b, size_t n, uint8_t *st)
     b[0] = '\0';
     switch ((test_row_t)i) {
     case TRR_PORT:
-        (void)svs_port_line(b, n);
+        (void)ready_port_line(b, n);
         break;
     case TRR_METER:
         if (running ? rc->meter.kind == (uint8_t)SERVO_TEST_METER_INA3221
@@ -401,18 +401,17 @@ bool test_ready_row(int i, rdy_row_t *r)
                                                     : TR(RDY_SEQ_ARM))
                                 : TR(RDY_SEQ_ON));
     } else if (mine != NULL) {
-        r->st  = (uint8_t)RDY_BAD;
-        r->why = mine;
-        snprintf(r->value, sizeof(r->value), "%s", mine);
+        /* The whole text for the band, its tag on the row. */
+        r->st = (uint8_t)RDY_BAD;
+        ready_set_why(r, mine);
     } else if (!running && i == TRR_PD && pd_real() && !s.sup.output) {
         /* The run's first step switches it on at its own voltage. */
         r->st = (uint8_t)RDY_SEQ;
         snprintf(r->value, sizeof(r->value), "%s", TR(RDY_SEQ_ON));
     } else if (!running && i == TRR_STEPS && test_needs_hv()) {
         /* A step past 6.0V: the HV warning's hold starts it. */
-        r->st  = (uint8_t)RDY_SEQ;
-        r->why = TR(SV_TAP_HV);
-        snprintf(r->value, sizeof(r->value), "%s", TR(SV_TAP_HV));
+        r->st = (uint8_t)RDY_SEQ;
+        ready_set_why(r, TR(SV_TAP_HV));
     } else {
         r->st = (uint8_t)RDY_OK;
         met_value(i, r->value, sizeof(r->value), &r->st);

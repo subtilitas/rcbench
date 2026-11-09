@@ -159,24 +159,27 @@ das Modell des Panels werden abgelehnt, bevor etwas angesteuert wird. Der
 Text gehört zu einer Zeile der Karte BEREIT (`test_servo_limrun_ready`),
 die Zeile ist rot, das Halten grau, und die erste Zustandszeile nennt ihn.
 Bei SAFE stehen die Texte, die das Halten selbst erledigt, gelb auf ihrer
-Zeile und sperren nichts.
+Zeile und sperren nichts. Eine rote Zeile zeigt die Kurzform des Textes,
+wo der Text länger als die 20 Zellen der Zeile ist; das Alarmband und ein
+Tippen auf die Zeile nennen den ganzen Text
+([AUTO-Endpoints](#auto-endpoints)).
 
-| Zeile | Text | Bedingung |
-| --- | --- | --- |
-| PROG 5V | `PROG 5V AUS: START SCHALTET ES EIN` | SAFE auf dem rbmod-Carrier mit PORT auf einem Programmierport und PROG 5V aus. Vor `ZUERST ARM` genannt: der Puls des Ports braucht PROG 5V und kommt nur bei SAFE ([Carrier](Carrier-de.md#der-programmierport)). Gelb: das Halten schaltet es ein |
-| ARM | `ZUERST ARM` | der Prüfstand ist SAFE. Gelb: `START SCHALTET ARMED` |
-| ARM | `BERICHT WIRD NOCH GESCHRIEBEN` | ein automatischer Test oder ein Endlagenlauf läuft, oder sein Bericht geht noch auf die Karte |
-| PORT | `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | PORT auf den Ausgängen des Prüfstands, ohne einen SERVO PWM zugeordneten Ausgang oder mit noch nicht ausgelesener Zuordnung: die Worte der Taste PORT. Vor dem Messgerät genannt: auf dem rbmod-Carrier überwacht ein Kanal eine Schiene, und die Ausgänge liegen erst auf einer Schiene, wenn einer zugeordnet ist ([Carrier: Der Strommonitor](Carrier-de.md#der-strommonitor)) |
-| MESSGERÄT | `INA3221 NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET` | kein Kanal eines bestückten INA3221 überwacht in SETUP > SENSORS das Ziel des Testers, an einem IOmcu älter als 4.25 überwacht CH2 oder CH3 es, ein IOmcu älter als Protokoll 4.11, oder eine SENSE-Page, die die Einrichtung nicht hält |
-| MESSGERÄT | `INA3221 NICHT ERREICHBAR` | kein Link, das Bauteil antwortet nicht, oder sein Reset-Zähler hat sich geändert |
-| MESSGERÄT | `NOCH KEINE INA3221-MESSFENSTER` | der INA3221 ist noch nicht das Messgerät der Servoschiene: seine Einrichtung ist seit weniger als 1000ms bestätigt, oder kein Fenster mit Strom in den letzten 200ms |
-| SCHIENE | `SERVOVERSORGUNG UNTER 3.0V ODER OHNE MESSWERT` | das letzte INA3221-Fenster enthält keine Schienenspannung, oder ihr Mittel liegt unter 3,0V (`SERVO_LIMRUN_RAIL_MIN_MV`). An einem ausgeschalteten Ausgang werden 0V gemessen, und eine Suche dort fände zwei freie Enden an einem Servo, das sich nie bewegt hat. 3,0V liegen unter den 4,8V, für die Servos üblicherweise angegeben sind, so dass die Schiene einer einzelnen Lithiumzelle noch startet; die Spannung, bei der ein bestimmtes Servo stehen bleibt, ist nicht gemessen. Gelb bei SAFE, wo die Versorgung des Haltens die Schiene speist: PROG 5V am Port des Carriers, ein PD mini mit ausgeschaltetem Ausgang. Gelb auch in RÜCKMELDUNG, solange die Versorgung, die die Schritte eingeschaltet haben, die Schiene hochfährt |
-| PROGRAMMER | `GESPERRT: SERVOPROGRAMMIERUNG BELEGT DEN PORT` | PORT auf PROG-PORT, und eine Sitzung eines Programmers hält den Port. Vor PORT-PWM genannt: die Sitzung ist der Grund, dass kein Puls läuft, gleich was PORT-PWM sagt |
-| PORT-PWM | `PORT-PWM AUS: DISARM, SCHALTE ES IN OUTPUTS EIN` | PORT auf PROG-PORT mit PORT-PWM aus, der Prüfstand ARMED |
-| PORT-PWM | `PORT-PWM AUS: SCHALTE ES IN OUTPUTS EIN` | dasselbe bei SAFE. Gelb: das Halten schaltet es ein und speichert es |
-| PORT-PWM | `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` | PORT auf PROG-PORT mit PORT-PWM ein, kein Programmer hält den Port, und sein Puls ist noch aus. Ein Puls kommt nur bei SAFE, und das Panel des rbmod-Carriers fordert ihn nur mit PROG 5V ein an. Gelb bei SAFE: die Rückmeldung wartet auf ihn |
-| BEREICH | `MITTE MUSS ZWISCHEN PULS MIN UND PULS MAX LIEGEN` | PULS MITTE liegt nicht zwischen PULS MIN und PULS MAX |
-| PD MINI | `PD MINI: 5.0V AUSSERHALB SEINER GRENZEN` | ein PD mini speist das Servo, und der erlaubte Sollwertbereich von SUPPLY, eingeengt durch seine AUSGANGSGRENZEN, lässt 5,0V aus. Ein Tippen auf die Zeile öffnet die Einstellungen von SUPPLY bei AUSGANGSGRENZEN |
+| Zeile | Text | Kurzform | Bedingung |
+| --- | --- | --- | --- |
+| PROG 5V | `PROG 5V AUS: START SCHALTET ES EIN` | `PROG 5V AUS` | SAFE auf dem rbmod-Carrier mit PORT auf einem Programmierport und PROG 5V aus. Vor `ZUERST ARM` genannt: der Puls des Ports braucht PROG 5V und kommt nur bei SAFE ([Carrier](Carrier-de.md#der-programmierport)). Gelb: das Halten schaltet es ein |
+| ARM | `ZUERST ARM` | der Text | der Prüfstand ist SAFE. Gelb: `START SCHALTET ARMED` |
+| ARM | `BERICHT WIRD NOCH GESCHRIEBEN` | `SCHREIBT BERICHT` | ein automatischer Test oder ein Endlagenlauf läuft, oder sein Bericht geht noch auf die Karte |
+| PORT | `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | der Text, `PINS NICHT GELESEN` | PORT auf den Ausgängen des Prüfstands, ohne einen SERVO PWM zugeordneten Ausgang oder mit noch nicht ausgelesener Zuordnung: die Worte der Taste PORT. Vor dem Messgerät genannt: auf dem rbmod-Carrier überwacht ein Kanal eine Schiene, und die Ausgänge liegen erst auf einer Schiene, wenn einer zugeordnet ist ([Carrier: Der Strommonitor](Carrier-de.md#der-strommonitor)) |
+| MESSGERÄT | `INA3221 NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET` | `NICHT EINGERICHTET` | kein Kanal eines bestückten INA3221 überwacht in SETUP > SENSORS das Ziel des Testers, an einem IOmcu älter als 4.25 überwacht CH2 oder CH3 es, ein IOmcu älter als Protokoll 4.11, oder eine SENSE-Page, die die Einrichtung nicht hält |
+| MESSGERÄT | `INA3221 NICHT ERREICHBAR` | `NICHT ERREICHBAR` | kein Link, das Bauteil antwortet nicht, oder sein Reset-Zähler hat sich geändert |
+| MESSGERÄT | `NOCH KEINE INA3221-MESSFENSTER` | `NOCH KEINE FENSTER` | der INA3221 ist noch nicht das Messgerät der Servoschiene: seine Einrichtung ist seit weniger als 1000ms bestätigt, oder kein Fenster mit Strom in den letzten 200ms |
+| SCHIENE | `SERVOVERSORGUNG UNTER 3.0V ODER OHNE MESSWERT` | `UNTER 3.0V` | das letzte INA3221-Fenster enthält keine Schienenspannung, oder ihr Mittel liegt unter 3,0V (`SERVO_LIMRUN_RAIL_MIN_MV`). An einem ausgeschalteten Ausgang werden 0V gemessen, und eine Suche dort fände zwei freie Enden an einem Servo, das sich nie bewegt hat. 3,0V liegen unter den 4,8V, für die Servos üblicherweise angegeben sind, so dass die Schiene einer einzelnen Lithiumzelle noch startet; die Spannung, bei der ein bestimmtes Servo stehen bleibt, ist nicht gemessen. Gelb bei SAFE, wo die Versorgung des Haltens die Schiene speist: PROG 5V am Port des Carriers, ein PD mini mit ausgeschaltetem Ausgang. Gelb auch in RÜCKMELDUNG, solange die Versorgung, die die Schritte eingeschaltet haben, die Schiene hochfährt |
+| PROGRAMMER | `GESPERRT: SERVOPROGRAMMIERUNG BELEGT DEN PORT` | `SERVOPROGRAMMIERUNG` | PORT auf PROG-PORT, und eine Sitzung eines Programmers hält den Port. Vor PORT-PWM genannt: die Sitzung ist der Grund, dass kein Puls läuft, gleich was PORT-PWM sagt |
+| PORT-PWM | `PORT-PWM AUS: DISARM, SCHALTE ES IN OUTPUTS EIN` | `PORT-PWM AUS: DISARM` | PORT auf PROG-PORT mit PORT-PWM aus, der Prüfstand ARMED |
+| PORT-PWM | `PORT-PWM AUS: SCHALTE ES IN OUTPUTS EIN` | `PORT-PWM AUS` | dasselbe bei SAFE. Gelb: das Halten schaltet es ein und speichert es |
+| PORT-PWM | `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` | `WARTET AUF SAFE` | PORT auf PROG-PORT mit PORT-PWM ein, kein Programmer hält den Port, und sein Puls ist noch aus. Ein Puls kommt nur bei SAFE, und das Panel des rbmod-Carriers fordert ihn nur mit PROG 5V ein an. Gelb bei SAFE: die Rückmeldung wartet auf ihn |
+| BEREICH | `MITTE MUSS ZWISCHEN PULS MIN UND PULS MAX LIEGEN` | `MITTE AUSSERHALB` | PULS MITTE liegt nicht zwischen PULS MIN und PULS MAX |
+| PD MINI | `PD MINI: 5.0V AUSSERHALB SEINER GRENZEN` | `5.0V NICHT ERLAUBT` | ein PD mini speist das Servo, und der erlaubte Sollwertbereich von SUPPLY, eingeengt durch seine AUSGANGSGRENZEN, lässt 5,0V aus. Ein Tippen auf die Zeile öffnet die Einstellungen von SUPPLY bei AUSGANGSGRENZEN |
 
 ### Die Weggrenzen des Servos programmieren
 
@@ -194,11 +197,11 @@ jeder Lauf mit einer Lesesitzung, deshalb halten die übrigen Bedingungen
 auch NUR SUCHE an: das Halten bleibt grau, die Zeile der Bedingung ist rot,
 und die erste Zustandszeile nennt sie.
 
-| Zeile | Text | Bedingung |
-| --- | --- | --- |
-| PROGRAMMER | `PROGRAMMIEREN: PORT IST NICHT IM PWM-MODUS` | der Programmierer hält den Port, oder der Port ist nicht für einen Lauf bereit |
-| PD MINI | `PROGRAMMIEREN: PD-MINI-AUSGANG AUS` | ein PD mini antwortet mit ausgeschaltetem Ausgang auf einer anderweitig gespeisten Schiene: die Lesesitzung schaltete ihn neben dem Netzteil ein, das die Schiene speist. Auf einer Schiene unter 3,0V steht er bei SAFE gelb, und das Halten schaltet das PD mini ein |
-| SCHIENE | `PROGRAMMIEREN: SERVOVERSORGUNG UNTER 4.8V` | kein PD mini antwortet, und die Servoschiene liegt im letzten Fenster des INA3221 unter 4,8V oder ist nicht gelesen |
+| Zeile | Text | Kurzform | Bedingung |
+| --- | --- | --- | --- |
+| PROGRAMMER | `PROGRAMMIEREN: PORT IST NICHT IM PWM-MODUS` | `NICHT IM PWM-MODUS` | der Programmierer hält den Port, oder der Port ist nicht für einen Lauf bereit |
+| PD MINI | `PROGRAMMIEREN: PD-MINI-AUSGANG AUS` | `PD MINI: AUSGANG AUS` | ein PD mini antwortet mit ausgeschaltetem Ausgang auf einer anderweitig gespeisten Schiene: die Lesesitzung schaltete ihn neben dem Netzteil ein, das die Schiene speist. Auf einer Schiene unter 3,0V steht er bei SAFE gelb, und das Halten schaltet das PD mini ein |
+| SCHIENE | `PROGRAMMIEREN: SERVOVERSORGUNG UNTER 4.8V` | `UNTER 4.8V` | kein PD mini antwortet, und die Servoschiene liegt im letzten Fenster des INA3221 unter 4,8V oder ist nicht gelesen |
 
 Ein KST- oder Chaservo-Servo übernimmt geschriebene Werte nach einem
 Aus- und Einschalten
@@ -207,7 +210,8 @@ Der Lauf kann dafür den PD mini oder die 5V-Versorgung der
 Programmierports auf dem Carrier schalten. Ohne beides sind SUCHEN +
 PROGRAMMIEREN und **SERVOPULSE** auf 1000-2000 nicht verfügbar. Bei ihrer
 Auswahl erscheint
-`PROGRAMMIEREN: KEIN PD MINI ZUM AUS- UND EINSCHALTEN`; der Lauf liest
+`PROGRAMMIEREN: KEIN PD MINI ZUM AUS- UND EINSCHALTEN`, auf seiner
+Zeile `KEIN PD MINI`; der Lauf liest
 das Servo nur aus und sucht. Hitec-Servos der D-Serie starten nach dem
 Schreiben selbst neu und brauchen für diesen Schritt keine schaltbare
 Versorgung, wie unten beschrieben.
@@ -460,13 +464,14 @@ Was anders ist:
   Tabelle, die nicht gemessen sind, und sucht bis zu ihnen: PULS MIN und
   PULS MAX müssen sie enthalten, sonst bleibt 2s HALTEN: ARM + START grau
   und BEREICH rot mit
-  `HITEC: PULS MIN/MAX MUSS 850-2150us ABDECKEN` (KLASSISCH: `900-2100us`).
+  `HITEC: PULS MIN/MAX MUSS 850-2150us ABDECKEN` (KLASSISCH: `900-2100us`),
+  auf der Zeile `BRAUCHT 850-2150us`.
   Der TYP WEIT, 800 bis 2200us, enthält beide. SERVOPULSE wird nicht
   angezeigt.
 - KLASSISCH ohne PD mini oder PROG 5V hält das Halten grau und die
   Versorgungszeile rot mit
   `Klassische Servos brauchen ein PD mini: Der Prüfstand schaltet die
-  Versorgung.`
+  Versorgung.`, auf der Zeile `BRAUCHT EIN PD MINI`.
 - Die 2s Halten von ARM + START sind die Zustimmung, die ÄNDERUNG
   PRÜFEN verlangt: die Schreibvorgänge des Laufs zeigen keine Seite, und
   jeder schaltet SCHREIBEN INS SERVO FREIGEBEN für sich ein und an seinem
@@ -1588,6 +1593,19 @@ verlassen wird.
 Ohne INA3221-Fenster auf der Schiene misst sie nichts: ARM schaltet den PD
 mini auch neben einer Schiene ein, die ein anderes Netzteil speist.
 
+Eine Zeile, deren Text länger als ihre 20 Zellen ist, zeigt die Kurzform
+des Textes, und ein Tippen auf die Zeile nennt den ganzen Text im
+Alarmband:
+
+| Zeile | Text | Kurzform |
+| --- | --- | --- |
+| PROG 5V | `PROG-Ports 5V: von einem Programmierport belegt oder nicht ausgelesen.` | `GESPERRT` |
+| PD MINI | `Servoprogrammierung belegt das Netzteil: Sollwerte und EIN gesperrt.`, dasselbe für die ESC-Programmierung | `SERVOPROGRAMMIERUNG`, `ESC-PROGRAMMIERUNG` |
+| WINKEL | `WINKELQUELLE: KEIN MESSWERT` | `KEIN MESSWERT` |
+| NULLPUNKT | `SETZE DEN NULLPUNKT MIT DEM RUDER IN NEUTRALLAGE` | `NICHT GESETZT` |
+| ARM | `ARMED gesperrt: Die Servoprogrammierung belegt einen Port.`, der Pin der ESC-Programmierung | `SERVOPROGRAMMIERUNG`, `ESC-PROGRAMMIERUNG` |
+| PORT | `PINS NICHT AUSGELESEN`, 21 Zellen | `PINS NICHT GELESEN` |
+
 ## Ruderausschlag
 
 ### Zweck
@@ -1710,8 +1728,16 @@ Bluetooth-IMU).
   Zustand. Grün: erfüllt. Rot: sperrt das Halten, oder ein Ausgang ist
   über sie aktiv (PROG 5V EIN, ARMED). Gelb: das Halten erledigt es selbst
   (`START SCHALTET EIN`, `START SCHALTET ARMED`). Grau: wartet auf die
-  Zeile PORT. Ein Zustand länger als seine 20 Zellen endet nach dem
-  letzten ganzen Wort. Die Schienenzeile unter den Zeilen nennt das
+  Zeile PORT. Der Zustand einer Zeile fasst 20 Zellen: ein Text der
+  Startprüfung, der länger ist, zeigt eine eigene Kurzform, `GIEREN
+  GESPERRT` für `IMU-GIEREN GESPERRT: SCHARNIER AUF X ODER Y`, und das
+  Alarmband und ein Tippen auf die Zeile nennen den ganzen Text. Die
+  Kurzformen sind eine Tabelle, `k_tags` in `shared/ui/servo_ready.c`, für
+  jede Karte BEREIT; `test_servo_ready_tags` hält jeden Text, der eine
+  Zeile erreichen kann, nach seiner Kurzform auf 20 Zellen, auf Englisch
+  und Deutsch. Die Portzeile ist die Zeile der Taste PORT, bis 25 Zellen:
+  auf einer Zeile endet sie nach dem letzten ganzen Wort, `PORT 1 GPIO 13
+  PWM AUS` als `PORT 1 GPIO 13 PWM`. Die Schienenzeile unter den Zeilen nennt das
   Messgerät des Laufs mit Volt und Ampere.
 - Ein Tippen auf PORT öffnet die PORT-Auswahl; auf SERVO die Auswahl
   SERVO, KST/CHASERVO, HITEC D-SERIE und HITEC KLASSISCH über der linken
@@ -1799,18 +1825,18 @@ Die Zeilen sind die Prüfungen des Starts, `rauto_blocked()`
 gehört zu genau einer Zeile (`test_servo_ready`). Eine Zeile ist rot und das
 Halten grau, solange:
 
-| Zeile | Bedingung | Text |
-| --- | --- | --- |
-| PORT | PORT die Ausgänge des Prüfstands sind oder der Ausgang sonst nicht der Programmierport ist | `AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT`. Vor dem Messgerät genannt: auf dem rbmod-Carrier überwacht kein Kanal die Ausgänge, bis einer als SERVO PWM zugeordnet ist |
-| MESSGERÄT | das Messgerät nicht für den Servostrom eingerichtet, nicht erreichbar oder ohne Messfenster ist | die Zeile des Endlagenlaufs |
-| PROGRAMMER | eine Sitzung eines Programmierers den Port hält oder der Programmierer nicht im PWM-Modus ist | `GESPERRT: SERVOPROGRAMMIERUNG BELEGT DEN PORT`, `PROGRAMMIEREN: PORT IST NICHT IM PWM-MODUS` |
-| PROG 5V, PD MINI, VERSORGUNG | ARMED mit PROG 5V aus, ein Port hält es; eine Schiene unter 4.8V ohne PD mini; kein PD mini und kein PROG 5V, um die Versorgung eines KST/Chaservo- oder klassischen Hitec-Servos aus- und einzuschalten; ein erlaubter Bereich von SUPPLY ohne die 5.0V des Laufs | die Zeile des Endlagenlaufs; `PD MINI: 5.0V AUSSERHALB SEINER GRENZEN` für den Bereich, wobei ein Tippen auf die Zeile die Einstellungen von SUPPLY bei AUSGANGSGRENZEN öffnet. START stellt das PD mini auf 5.0V ([Die 5,0V des Laufs](#die-50v-des-laufs)). PROG 5V ist fest 5V und hat keinen Sollwert |
-| PORT-PWM | ARMED mit dem Puls des Ports aus | `PORT-PWM AUS: DISARM, SCHALTE ES IN OUTPUTS EIN`, `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` |
-| BEREICH | PULS MIN über 1000us, PULS MAX unter 2000us oder PULS MITTE nicht strikt zwischen 1000us und 2000us liegt | `PULS MIN BIS MAX MUSS 1000 BIS 2000us ABDECKEN` |
-| WINKEL | die IMU-Achse Z (Gieren) gewählt ist, in 6-AXIS und in 9-AXIS: an einer BWT901CL driftet das Gieren in 6-AXIS 2,4° in 100s und bleibt in 9-AXIS 38° daneben stehen, gegen 0,5° Toleranz. Ein Tippen öffnet die Liste IMU-GIEREN, `IMU-ACHSE X NEHMEN (ROLLEN)`, `IMU-ACHSE Y NEHMEN (NICKEN)`, für einen um 90° gedrehten Sensor, dessen Achse X oder Y das Scharnier ist; eine Wahl schreibt die Einstellung und speichert sie ([IMU](IMU-de.md#die-verbindung)) | `IMU-GIEREN GESPERRT: SCHARNIER AUF X ODER Y` |
-| WINKEL | die Winkelquelle keinen Messwert liefert | `WINKELQUELLE: KEIN MESSWERT` |
-| NULLPUNKT | kein Nullpunkt gesetzt ist | `SETZE DEN NULLPUNKT MIT DEM RUDER IN NEUTRALLAGE` |
-| ARM | ein anderer Lauf läuft oder ein Bericht noch geschrieben wird | die Zeile des Laufs, wie auf TEST |
+| Zeile | Bedingung | Text | Kurzform |
+| --- | --- | --- | --- |
+| PORT | PORT die Ausgänge des Prüfstands sind oder der Ausgang sonst nicht der Programmierport ist | `AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT`. Vor dem Messgerät genannt: auf dem rbmod-Carrier überwacht kein Kanal die Ausgänge, bis einer als SERVO PWM zugeordnet ist | `KEIN PROG-PORT` |
+| MESSGERÄT | das Messgerät nicht für den Servostrom eingerichtet, nicht erreichbar oder ohne Messfenster ist | die Zeile des Endlagenlaufs | die Kurzform des Endlagenlaufs |
+| PROGRAMMER | eine Sitzung eines Programmierers den Port hält oder der Programmierer nicht im PWM-Modus ist | `GESPERRT: SERVOPROGRAMMIERUNG BELEGT DEN PORT`, `PROGRAMMIEREN: PORT IST NICHT IM PWM-MODUS` | `SERVOPROGRAMMIERUNG`, `NICHT IM PWM-MODUS` |
+| PROG 5V, PD MINI, VERSORGUNG | ARMED mit PROG 5V aus, ein Port hält es; eine Schiene unter 4.8V ohne PD mini; kein PD mini und kein PROG 5V, um die Versorgung eines KST/Chaservo- oder klassischen Hitec-Servos aus- und einzuschalten; ein erlaubter Bereich von SUPPLY ohne die 5.0V des Laufs | die Zeile des Endlagenlaufs; `PD MINI: 5.0V AUSSERHALB SEINER GRENZEN` für den Bereich, wobei ein Tippen auf die Zeile die Einstellungen von SUPPLY bei AUSGANGSGRENZEN öffnet. START stellt das PD mini auf 5.0V ([Die 5,0V des Laufs](#die-50v-des-laufs)). PROG 5V ist fest 5V und hat keinen Sollwert | die Kurzform des Endlagenlaufs; `5.0V NICHT ERLAUBT` |
+| PORT-PWM | ARMED mit dem Puls des Ports aus | `PORT-PWM AUS: DISARM, SCHALTE ES IN OUTPUTS EIN`, `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` | `PORT-PWM AUS: DISARM`, `WARTET AUF SAFE` |
+| BEREICH | PULS MIN über 1000us, PULS MAX unter 2000us oder PULS MITTE nicht strikt zwischen 1000us und 2000us liegt | `PULS MIN BIS MAX MUSS 1000 BIS 2000us ABDECKEN` | `BRAUCHT 1000-2000us` |
+| WINKEL | die IMU-Achse Z (Gieren) gewählt ist, in 6-AXIS und in 9-AXIS: an einer BWT901CL driftet das Gieren in 6-AXIS 2,4° in 100s und bleibt in 9-AXIS 38° daneben stehen, gegen 0,5° Toleranz. Ein Tippen öffnet die Liste IMU-GIEREN, `IMU-ACHSE X NEHMEN (ROLLEN)`, `IMU-ACHSE Y NEHMEN (NICKEN)`, für einen um 90° gedrehten Sensor, dessen Achse X oder Y das Scharnier ist; eine Wahl schreibt die Einstellung und speichert sie ([IMU](IMU-de.md#die-verbindung)) | `IMU-GIEREN GESPERRT: SCHARNIER AUF X ODER Y` | `GIEREN GESPERRT` |
+| WINKEL | die Winkelquelle keinen Messwert liefert | `WINKELQUELLE: KEIN MESSWERT` | `KEIN MESSWERT` |
+| NULLPUNKT | kein Nullpunkt gesetzt ist | `SETZE DEN NULLPUNKT MIT DEM RUDER IN NEUTRALLAGE` | `NICHT GESETZT` |
+| ARM | ein anderer Lauf läuft oder ein Bericht noch geschrieben wird | die Zeile des Laufs, wie auf TEST | `TEST LÄUFT`, `SCHREIBT BERICHT`; `ENDLAGENLAUF LÄUFT` ganz |
 
 Eine Zeile mit einem Text, der das Halten sperrt, ist rot, auch wenn ein
 anderer ihrer Texte einer ist, den das Halten erledigt: ein Bericht, der

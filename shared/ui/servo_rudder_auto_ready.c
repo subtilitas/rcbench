@@ -17,9 +17,11 @@
  * one is red and refuses the hold (rauto_hold_blocked()).  On the carrier's
  * port an input supply the PD mini reads low (prog5v_box_input_why()) is
  * the first check, red on the supply row as `INPUT 5.1V < 15V`.  The IMU's
- * yaw, in either ALGORITHM, is red on the ANGLE row as `IMU YAW REFUSED:
- * HINGE ON X OR Y`, and a tap opens the list of the axes that resolve it
- * (angle_fix_open()).
+ * yaw, in either ALGORITHM, is red on the ANGLE row as `YAW REFUSED`, the
+ * tag of `IMU YAW REFUSED: HINGE ON X OR Y`, and a tap opens the list of
+ * the axes that resolve it (angle_fix_open()).  A red row shows the tag
+ * of a text longer than its 20 cells (ready_tag()), the alert band the
+ * whole text.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -327,7 +329,7 @@ static void met_value(int i, char *b, size_t n, uint8_t *st)
     b[0] = '\0';
     switch ((rauto_row_t)i) {
     case RAR_PORT:
-        (void)svs_port_line(b, n);
+        (void)ready_port_line(b, n);
         break;
     case RAR_SERVO: {
         snprintf(b, n, "%s",
@@ -463,13 +465,9 @@ bool rauto_ready_row(int i, rdy_row_t *r)
                  arm ? (s.gate.arm_asked ? TR(RDY_ARMING) : TR(RDY_SEQ_ARM))
                      : TR(RDY_SEQ_ON));
     } else if (mine != NULL) {
-        r->st  = (uint8_t)RDY_BAD;
-        r->why = mine;
-        if (prog5v_box_input_is(mine)) {
-            (void)prog5v_box_input_tag(r->value, sizeof(r->value));
-        } else {
-            snprintf(r->value, sizeof(r->value), "%s", mine);
-        }
+        /* The whole text for the band, its tag on the row. */
+        r->st = (uint8_t)RDY_BAD;
+        ready_set_why(r, mine);
     } else if (i == RAR_PWM && !s.drive_pwm && safe_now()) {
         /* PORT PWM on, the pulse not yet: it comes with the PROG 5V the
          * hold switches, which the read-back waits for. */

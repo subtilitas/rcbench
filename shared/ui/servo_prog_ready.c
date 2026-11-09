@@ -116,8 +116,7 @@ static void supply_row(const prog_session_t *ps, rdy_row_t *r)
             }
         } else if (prog5v_box_input_why() != NULL) {
             r->st = (uint8_t)RDY_BAD;
-            r->why = prog5v_box_input_why();
-            (void)prog5v_box_input_tag(r->value, sizeof(r->value));
+            ready_set_why(r, prog5v_box_input_why());
         } else {
             r->st = (uint8_t)RDY_SEQ;
             r->why = TR(PRR_5V_WHY);
@@ -219,11 +218,10 @@ bool prog_ready_row(int i, rdy_row_t *r)
         r->fix = true;
         if (s.drive_target == 0u) {
             r->st = (uint8_t)RDY_BAD;
-            r->why = TR(KP_NEED_TARGET_2);
-            snprintf(r->value, sizeof(r->value), "%s", TR(PRR_NO_PORT));
+            ready_set_why(r, TR(KP_NEED_TARGET_2));      /* NO PROG PORT */
         } else {
             r->st = (uint8_t)(ps.held ? RDY_LIVE : RDY_OK);
-            (void)svs_port_line(r->value, sizeof(r->value));
+            (void)ready_port_line(r->value, sizeof(r->value));
         }
         return true;
     case PRR_SERIES:
