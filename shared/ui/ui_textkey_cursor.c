@@ -156,7 +156,10 @@ bool ui_textkey_insert(ui_textkey_t *k, const char *s)
     }
     char *at = k->text + k->cur;
     memmove(at + add, at, len - (size_t)k->cur + 1u);
-    memcpy(at, s, add);
+    /* Byte by byte: the gap is filled, the terminator moved above. */
+    for (size_t i = 0; i < add; ++i) {
+        at[i] = s[i];
+    }
     k->len += (int)add;
     k->cur += (int)add;
     follow(k);
