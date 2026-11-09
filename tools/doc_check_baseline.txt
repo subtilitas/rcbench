@@ -3908,10 +3908,8 @@ shared/ui/servo_limit_panel.c: warning: Member lim_signature(void) (function) of
 shared/ui/servo_limit_panel.c: warning: Member lim_step(void) (function) of file servo_limit_panel.c is not documented.
 shared/ui/servo_limit_panel.c: warning: Member lim_tick(void) (function) of file servo_limit_panel.c is not documented.
 shared/ui/servo_screen.c: warning: Member RATES(a) (macro definition) of file servo_screen.c is not documented.
-shared/ui/servo_screen.c: warning: Member SAMPLE_HZ (macro definition) of file servo_screen.c is not documented.
 shared/ui/servo_screen.c: warning: Member half_travel_us(bool below) (function) of file servo_screen.c is not documented.
 shared/ui/servo_screen.c: warning: Member k_cyc_rates[] (variable) of file servo_screen.c is not documented.
-shared/ui/servo_screen.c: warning: Member k_power[PS_COUNT] (variable) of file servo_screen.c is not documented.
 shared/ui/servo_screen.c: warning: Member k_std_rates[] (variable) of file servo_screen.c is not documented.
 shared/ui/servo_screen.c: warning: Member k_tail_rates[] (variable) of file servo_screen.c is not documented.
 shared/ui/servo_screen.c: warning: Member k_types[] (variable) of file servo_screen.c is not documented.

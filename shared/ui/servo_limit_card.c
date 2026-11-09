@@ -51,11 +51,14 @@
 #define LC_LINE_P  24                  /**< Their pitch, px. */
 /** @brief The state lines the card holds at most. */
 #define LC_LINES   8
+/** @brief The plot of what feeds the servo: 4px under eight rows of
+ *         state lines, down to 4px over the card's floor (58px). */
+#define LC_PLOT_Y  (LC_LINE_Y + LC_LINES * LC_LINE_P + 4)
 
 _Static_assert(2 * LC_END_W + LC_END_GAP <= LC_W,
                "the two cells fit the column");
-_Static_assert(LC_LINE_Y + 6 * LC_LINE_P <= CARD_FLOOR,
-               "six state lines end above the footer");
+_Static_assert(LC_PLOT_Y + 48 <= CARD_FLOOR - 4,
+               "eight state lines and a 48px plot end above the footer");
 
 /* --------------------------------------------------------------- texts */
 
@@ -314,7 +317,13 @@ gfx_rect_t lim_ends_rect(void)
 gfx_rect_t lim_lines_rect(void)
 {
     return (gfx_rect_t){ LC_X, (int16_t)(LC_LINE_Y - 2), LC_W,
-                         (int16_t)(CARD_FLOOR - 4 - LC_LINE_Y + 2) };
+                         (int16_t)(LC_LINES * LC_LINE_P + 2) };
+}
+
+gfx_rect_t lim_power_rect(void)
+{
+    return (gfx_rect_t){ LC_X, (int16_t)LC_PLOT_Y, LC_W,
+                         (int16_t)(CARD_FLOOR - 4 - LC_PLOT_Y) };
 }
 
 /**
@@ -400,6 +409,8 @@ void lim_render(gfx_canvas_t *c)
         }
     }
     c->clip = old;
+    /* Under the lines, what feeds the servo as every SERVO plot shows it. */
+    svs_power_view(c, lim_power_rect());
 }
 
 const char *servo_screen_limit_line(int i, char *buf, size_t n)

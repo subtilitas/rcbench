@@ -145,6 +145,46 @@ bool prog5v_box_live(void)
     return (st() == ST_ON || st() == ST_OFF) && held() == PROG5V_HELD_NONE;
 }
 
+void prog5v_box_plot_init(ui_plot_t *p)
+{
+    /* SERVO's rail plot's series: a reading's colours are set as it is
+     * drawn. */
+    static const ui_plot_series_t k_series[3] = {
+        { "V", "V", 0, 2, 5.0f, 0 },
+        { "A", "A", 0, 2, 0.5f, 0 },
+        { "W", "W", 0, 1, 5.0f, 0 },
+    };
+    if (p != NULL) {
+        ui_plot_init(p, k_series, 3, (float)PROG5V_PLOT_COLS / 20.0f);
+    }
+}
+
+void prog5v_box_set_plot(prog5v_box_t *b, ui_plot_t *p)
+{
+    if (b != NULL) {
+        b->plot = p;
+        (void)prog5v_box_last(NULL, NULL, &b->seen_win);
+    }
+}
+
+bool prog5v_box_follow(ui_plot_t *p, uint16_t *seen)
+{
+    uint16_t mv = 0u, n = 0u;
+    int16_t ma = 0;
+    if (seen == NULL || !prog5v_box_last(&mv, &ma, &n) || n == *seen) {
+        return false;
+    }
+    *seen = n;
+    if (p != NULL) {
+        const float v = (float)mv / 1000.0f;
+        const float i = (float)ma / 1000.0f;
+        const float pt[3] = { v, i, v * i };
+        ui_plot_push(p, pt);
+        ui_plot_update_scales(p, PROG5V_PLOT_COLS);
+    }
+    return true;
+}
+
 void prog5v_box_init(prog5v_box_t *b, gfx_rect_t r, prog5v_by_t by)
 {
     if (b == NULL) {
@@ -276,6 +316,10 @@ void prog5v_box_tick(prog5v_box_t *b, float dt_s)
     const uint32_t now = atomic_load(&s_state);
     const uint32_t rd  = atomic_load(&s_read);
     const uint32_t in  = prog5v_box_input_low_mv();
+    /* A new window: a point of the box's plot, and a repaint. */
+    if (prog5v_box_follow(b->plot, &b->seen_win)) {
+        ++b->rev;
+    }
     if (now != b->seen || rd != b->seen_read || in != b->seen_in) {
         b->seen      = now;
         b->seen_read = rd;
@@ -355,12 +399,17 @@ const char *prog5v_box_text(int line, char *buf, size_t n)
         snprintf(buf, n, "--V  --A");
         return buf;
     }
-    /* Hundredths of a volt, rounded; mA as thousandths of an amp. */
-    const unsigned cv = (((rd >> 16) & 0x7FFFu) + 5u) / 10u;
+    /* Hundredths of a volt, rounded; mA as thousandths of an amp; the
+     * product in hundredths of a watt, rounded. */
+    const unsigned mv = (rd >> 16) & 0x7FFFu;
+    const unsigned cv = (mv + 5u) / 10u;
     const int ma = (int16_t)(uint16_t)(rd & 0xFFFFu);
     const unsigned a = (unsigned)abs(ma);
-    snprintf(buf, n, "%u.%02uV  %s%u.%03uA", cv / 100u, cv % 100u,
-             (ma < 0) ? "-" : "", a / 1000u, a % 1000u);
+    const unsigned cw = (unsigned)(((unsigned long)mv * a / 1000u + 5u)
+                                   / 10u);
+    snprintf(buf, n, "%u.%02uV  %s%u.%03uA  %s%u.%02uW", cv / 100u,
+             cv % 100u, (ma < 0) ? "-" : "", a / 1000u, a % 1000u,
+             (ma < 0 && cw != 0u) ? "-" : "", cw / 100u, cw % 100u);
     return buf;
 }
 
@@ -380,12 +429,28 @@ void prog5v_box_render(const prog5v_box_t *b, gfx_canvas_t *c)
     gfx_text(c, b->r.x, y1, prog5v_box_text(0, line, sizeof(line)),
              UI_FONT_FINE, (s == ST_ON) ? ui_theme_color(UI_C_ACCENT)
                                         : ui_theme_color(UI_C_TEXT), 1);
-    gfx_text(c, b->r.x, y1 + 20, prog5v_box_text(1, line, sizeof(line)),
-             UI_FONT_FINE, (prog5v_box_input_low_mv() != 0u)
-                               ? ui_theme_color(UI_C_DANGER)
-                           : (held() != PROG5V_HELD_NONE)
-                               ? ui_theme_color(UI_C_WARN)
-                               : ui_theme_color(UI_C_TEXT_DIM), 1);
+    const int w2 = gfx_text(c, b->r.x, y1 + 20,
+                            prog5v_box_text(1, line, sizeof(line)),
+                            UI_FONT_FINE, (prog5v_box_input_low_mv() != 0u)
+                                              ? ui_theme_color(UI_C_DANGER)
+                                          : (held() != PROG5V_HELD_NONE)
+                                              ? ui_theme_color(UI_C_WARN)
+                                              : ui_theme_color(UI_C_TEXT_DIM),
+                            1);
+    /* The plot of the same windows, 8px right of the line and no nearer
+     * than 22 cells in, where 48px of it fit before the button: a longer
+     * line, the input's warning or the holding port, leaves none. */
+    const gfx_rect_t btn = prog5v_box_button(b);
+    const int px = b->r.x + ((w2 + 8 > PROG5V_BOX_PLOT_DX) ? w2 + 8
+                                                            : PROG5V_BOX_PLOT_DX);
+    if (b->plot != NULL && btn.x - 8 - px >= 48) {
+        b->plot->series[0].color = ui_theme_color(UI_C_VOLT);
+        b->plot->series[1].color = ui_theme_color(UI_C_CURR);
+        b->plot->series[2].color = ui_theme_color(UI_C_POWER);
+        ui_plot_render(b->plot, c,
+                       (gfx_rect_t){ (int16_t)px, (int16_t)(b->r.y + 26),
+                                     (int16_t)(btn.x - 8 - px), 20 });
+    }
     /* OUTPUT ON's colours: green when off, fading to the red of on under
      * the hold.  The box stays where its host puts it, so a copy of the
      * hold draws it: nothing is kept for a ghost. */

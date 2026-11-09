@@ -367,6 +367,7 @@ typedef struct {
     uint32_t        drawn_set[2];       /**< set point revision each frame buffer last drew */
     uint32_t        out_rev;            /**< revision of OUTPUT */
     prog5v_box_t    p5;                 /**< the PROG 5V box on LIVE */
+    ui_plot_t       p5_plot;            /**< the box's plot of the 5V */
     uint32_t        drawn_p5[2];        /**< its revision each buffer drew */
     bool            p5_shown;           /**< it showed at the last tick */
     uint32_t        drawn_out[2];       /**< OUTPUT revision each frame buffer last drew */

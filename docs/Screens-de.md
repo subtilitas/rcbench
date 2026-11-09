@@ -1676,9 +1676,10 @@ nichts. Der neunte Platz bleibt frei.
 Der Hub steuert nichts. Seine Fußleiste zeigt SERVO mit der Portzeile
 darunter, einen leeren mittleren Platz und OPTIONEN, das die Liste des
 Servoprofils öffnet. Solange die 5V der Programmierports EIN lesen, steht
-im mittleren Platz `PROG 5V EIN` in der Warnfarbe: die 5V schalten nur
-die Funktionsbildschirme, und sie bleiben von einem SERVO-Bildschirm zum
-nächsten an. Auf dem Hub ist der Prüfstand SAFE: jedes Verlassen
+im mittleren Platz `PROG 5V EIN 5.02V 0.120A` in der Warnfarbe, das
+letzte Fenster des INA3221-Kanals, der die 5V überwacht, ohne Fenster
+`PROG 5V EIN --V --A`: die 5V schalten nur die Funktionsbildschirme, und
+sie bleiben von einem SERVO-Bildschirm zum nächsten an. Auf dem Hub ist der Prüfstand SAFE: jedes Verlassen
 eines Funktionsbildschirms schaltet auf SAFE.
 
 Das Home-Feld führt eine Ebene hinauf: vom Funktionsbildschirm zum Hub,
@@ -1725,13 +1726,36 @@ wie bei SAFE; eine Spannung über 6.0V wartet auf das 2s-Halten der
 HV-Warnung. Solange ein Programmierport den PD mini hält, sind die Werte
 blass, und Tippen nennt den Grund im Alarmband. Am Programmierport des
 rbmod-Carriers läuft das Servo an den festen PROG 5V: die Zeile zeigt
-`PROG 5V` über `5V FEST` und nimmt kein Tippen an. Die Grafik ist die von
-TEST: Spannung, Strom und Leistung der letzten 9.0s, ein Punkt je
-Messwert, auf den Skalen des Messgeräts der Servoschiene; am
-Programmierport des Carriers die PROG 5V vom INA3221-Kanal, der sie
-überwacht, ein Punkt je 50ms-Fenster, und die Schienenzeile nennt
-`PROG 5V`. Ein neuer Messwert zeichnet nur die Grafik und die
-Schienenzeile neu.
+`PROG 5V` über `5V FEST` und nimmt kein Tippen an. Die Grafik ist die,
+die jeder Funktionsbildschirm zeigt, unten.
+
+Jeder Funktionsbildschirm zeigt dieselbe Grafik dessen, was das Servo
+speist:
+
+| Bildschirm | Ort | Größe |
+| --- | --- | --- |
+| LIVE, SWEEP, RUDER | die SET-Zeile, rechts von SET A | 180 x 48px |
+| KST, HITEC | die Karte BEREIT, 8px unter der letzten Zeile bis 8px über der Schienenzeile | 356 x 172px auf KST, 356 x 142px auf HITEC |
+| TEST | das linke Feld unter den Grenzen von SUPPLY, neben dem Kasten des Laufs, solange er steht | 600 x 170px, 246 x 170px neben dem Kasten |
+| ENDLAGENLAUF | das linke Feld unter acht Zeilen Zustand, y 374 bis 432 | 600 x 58px |
+| RUDER AUTO | das linke Feld rechts von NULLPUNKT und MAX LÖSCHEN, y 240 bis 288 | 260 x 48px |
+
+Eine Legende über der Grafik zeigt Volt, Ampere und Watt,
+`5.02V  0.120A  0.60W`, jeden Wert in der Farbe seiner Kurve, der von
+VOLT, CURR und PWR auf SUPPLY. Der Name des Messgeräts steht links davon,
+wo die Breite beides fasst. Unter 80px Höhe steht die Legende in der
+Schrift 8 x 16 und die Grafik ohne Zeitachse. Ein Punkt je Messwert, 20 in
+der Sekunde: eine Grafik zeigt die letzten Breite / 20 Sekunden, 9.0s auf
+LIVE, 17.8s auf KST, 30.0s auf TEST und ENDLAGENLAUF, 13.0s auf RUDER
+AUTO. Jede Grafik skaliert über die letzten 600 Punkte, 30.0s. Ein neuer
+Messwert zeichnet nur die Grafik und die Schienenzeile neu.
+
+Am Programmierport des rbmod-Carriers lesen Grafik und Schienenzeile die
+PROG 5V: den INA3221-Kanal, der sie überwacht, `INA PROG 5V`, wo die
+Schiene des Carriers den Kanal benennt, `PROG 5V 0x40 CH3`, wo seine
+Adresse es tut. Ohne Fenster dieses Kanals zeigt die Schienenzeile
+`PROG 5V KEIN MESSWERT` und `--V  --A`, die Legende `--V  --A  --W`; die
+Werte des PD mini stehen nie für die PROG 5V.
 
 | Zeile | Grün | Gelb | Rot |
 | --- | --- | --- | --- |
@@ -1784,8 +1808,8 @@ und ein Tippen darauf öffnet die Liste WINKELQUELLE
 PORT-PWM einschaltet, wo der Port es braucht, ARM schaltet und den
 automatischen Test in einem Halten startet; die Stufen des Laufs schalten
 den PD mini bei der Spannung jeder Stufe. Während des Laufs lautet die
-Taste TEST BEENDEN und beendet den Lauf beim Drücken. Der Verlauf der
-Servoschiene steht im linken Feld unter den Grenzen von SUPPLY.
+Taste TEST BEENDEN und beendet den Lauf beim Drücken. Die Grafik dessen,
+was das Servo speist, steht im linken Feld unter den Grenzen von SUPPLY.
 
 KST und HITEC behalten die Taste PORT und zeigen an der Stelle des
 Ausgangsfelds eine Karte BEREIT: PORT, die Versorgung, die VERBINDEN der
@@ -2012,9 +2036,8 @@ Die Schienenzeile der Karte BEREIT bei y 404, auf LIVE, SWEEP und RUDER
 bei y 412, zeigt die Servoschiene, wie ihr Messgerät sie misst: den Namen
 des Messgeräts, dann die Spannung in Hundertstel Volt und den Strom in
 Tausendstel Ampere, `5.02V  0.120A`. STROM auf LIVE zeigt den Strom
-zusätzlich in Hundertsteln. TEST zeigt den Verlauf von Spannung, Strom
-und Leistung unter den Grenzen von SUPPLY, LIVE, SWEEP und RUDER rechts
-von SET A. Kein SERVO-Bildschirm zeigt die Leistung als Zahl.
+zusätzlich in Hundertsteln. Die Legende über der Grafik jedes
+Funktionsbildschirms zeigt die Leistung in Hundertstel Watt, `0.60W`.
 
 | Messgerät der Servoschiene | Name in der Zeile | STROM auf LIVE, die Zeile und der Verlauf auf TEST zeigen |
 | --- | --- | --- |

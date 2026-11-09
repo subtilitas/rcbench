@@ -114,8 +114,13 @@ bool rauto_down(const touch_event_t *evt);
 bool rauto_rest(const touch_event_t *evt);
 /** @brief A press under way dropped, START's hold with it. */
 void rauto_cancel(void);
-/** @brief The box drawn into @p c.  @param c the canvas */
+/** @brief The box drawn into @p c, the plot of what feeds the servo
+ *         right of ZERO and RESET MAX.  @param c the canvas */
 void rauto_render(gfx_canvas_t *c);
+/** @brief The plot of what feeds the servo on ZERO's row, right of ZERO
+ *         and RESET MAX, 260 x 48px.
+ *  @return its rectangle */
+gfx_rect_t rauto_power_rect(void);
 /** @brief HOLD 2s: ARM + START in the footer's middle slot: green while
  *         no READY row refuses it, amber with the step while the sequence
  *         runs, STOP RUN in red while the run does; grey otherwise.
@@ -124,8 +129,8 @@ void rauto_draw_hold(gfx_canvas_t *c);
 /**
  * @brief The face the box's lines are drawn in: the 10 x 20 face while
  *        the lines, each wrapped at a space to 400px and 4px apart, fit
- *        the 88px down to the alert band, else the 8 x 16 face while they
- *        fit there.
+ *        the 136px down to the card's floor, else the 8 x 16 face while they fit
+ *        there.
  * @param t the three lines, "" for one not drawn
  * @param pitch receives the face's row pitch, px; may be NULL
  * @return the face; NULL when neither fits, or for NULL @p t

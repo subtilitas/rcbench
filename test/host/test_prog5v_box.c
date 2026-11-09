@@ -10,8 +10,9 @@
  * reaches with the read ON and lets go with OFF; an OFF asked stands over
  * an ON in the same poll; leaving the screen that switched it on asks OFF,
  * leaving another does not, nor does leaving while a port holds it; the
- * lines in EN and DE, the reading rounded, a negative current, none; the
- * box drawn inside its rect, under a hold and without the switch; NULL
+ * lines in EN and DE, the reading rounded with its watts, a negative
+ * current, none; the box drawn inside its rect, under a hold and without
+ * the switch; its plot one point a window, drawn inside the box; NULL
  * arguments and a press dropped without its UP; a hold let go at 1,999ms
  * shows HOLD_HINT_PROG5V on the band, one at 2,000ms does not.
  *
@@ -299,13 +300,13 @@ TEST_CASE(the_lines_name_the_pin_and_the_reading)
                  "PROG PORTS 5V, GPIO 21: OFF");
     CHECK_STR_EQ(prog5v_box_text(1, buf, sizeof(buf)), "--V  --A");
     prog5v_box_reading(true, 5024u, 120, 1u);
-    CHECK_STR_EQ(prog5v_box_text(1, buf, sizeof(buf)), "5.02V  0.120A");
+    CHECK_STR_EQ(prog5v_box_text(1, buf, sizeof(buf)), "5.02V  0.120A  0.60W");
     prog5v_box_reading(true, 4995u, -3, 2u);
-    CHECK_STR_EQ(prog5v_box_text(1, buf, sizeof(buf)), "5.00V  -0.003A");
+    CHECK_STR_EQ(prog5v_box_text(1, buf, sizeof(buf)), "5.00V  -0.003A  -0.01W");
     prog5v_box_reading(true, 0u, 0, 3u);
-    CHECK_STR_EQ(prog5v_box_text(1, buf, sizeof(buf)), "0.00V  0.000A");
+    CHECK_STR_EQ(prog5v_box_text(1, buf, sizeof(buf)), "0.00V  0.000A  0.00W");
     prog5v_box_reading(true, 32767u, 32767, 4u);
-    CHECK_STR_EQ(prog5v_box_text(1, buf, sizeof(buf)), "32.77V  32.767A");
+    CHECK_STR_EQ(prog5v_box_text(1, buf, sizeof(buf)), "32.77V  32.767A  1073.68W");
     prog5v_box_reading(false, 5000u, 1, 5u);
     CHECK_STR_EQ(prog5v_box_text(1, buf, sizeof(buf)), "--V  --A");
     prog5v_box_publish(ST_ON, 21u, (uint8_t)PROG5V_HELD_NONE);
@@ -365,6 +366,93 @@ TEST_CASE(the_box_is_drawn_inside_its_rect)
     CHECK(BOX_R.w >= PROG5V_BOX_MIN_W);
     prog5v_box_render(NULL, &c);
     prog5v_box_render(&b, NULL);
+}
+
+/* The box's plot takes one point a window, a repeated value included,
+ * none for a window it has, and draws right of the second line inside the
+ * box. */
+TEST_CASE(the_plot_takes_a_point_a_window)
+{
+    static ui_plot_t plot;
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(1024, 600)];
+    guard_canvas_t g;
+    gfx_canvas_t c;
+    guard_canvas_init(&g, &c, px, 1024, 600);
+    fresh(ST_ON);
+    prog5v_box_plot_init(&plot);
+    CHECK_EQ(plot.count, 3);
+    prog5v_box_reading(true, 5000u, 200, 7u);
+    prog5v_box_set_plot(&b, &plot);     /* window 7 is known: no point */
+    uint32_t rev = b.rev;
+    prog5v_box_tick(&b, 0.02f);
+    CHECK_EQ(plot.filled, 0);
+    prog5v_box_reading(true, 5000u, 200, 8u);
+    prog5v_box_tick(&b, 0.02f);
+    CHECK_EQ(plot.filled, 1);
+    CHECK(b.rev != rev);
+    CHECK_NEAR(ui_plot_sample(&plot, 0, 0), 5.0f, 0.001f);
+    CHECK_NEAR(ui_plot_sample(&plot, 1, 0), 0.2f, 0.001f);
+    CHECK_NEAR(ui_plot_sample(&plot, 2, 0), 1.0f, 0.001f);
+    prog5v_box_tick(&b, 0.02f);
+    CHECK_EQ(plot.filled, 1);           /* the same window: no point */
+    prog5v_box_reading(true, 5000u, 200, 9u);
+    prog5v_box_tick(&b, 0.02f);
+    CHECK_EQ(plot.filled, 2);           /* the same value, a new window */
+    /* No reading: no point. */
+    prog5v_box_reading(false, 0u, 0, 10u);
+    prog5v_box_tick(&b, 0.02f);
+    CHECK_EQ(plot.filled, 2);
+    /* The plot inside SUPPLY's 392px box, right of line 2, left of the
+     * button: 72 x 20px.  SERVO's 356px leaves it 36px, under the 48px it
+     * takes. */
+    const gfx_rect_t wide = { 226, 116, 392, PROG5V_BOX_H };
+    prog5v_box_init(&b, wide, PROG5V_BY_SUPPLY);
+    prog5v_box_set_plot(&b, &plot);
+    prog5v_box_reading(true, 5000u, 900, 11u);
+    prog5v_box_tick(&b, 0.02f);
+    gfx_fill_rect(&c, 0, 0, 1024, 600, 0u);
+    prog5v_box_render(&b, &c);
+    const gfx_rect_t btn = prog5v_box_button(&b);
+    CHECK_EQ(btn.x - 8 - (wide.x + PROG5V_BOX_PLOT_DX), 72);
+    int lit = 0;
+    for (int x = wide.x + PROG5V_BOX_PLOT_DX; x < btn.x - 8; ++x) {
+        for (int y = wide.y + 26; y < wide.y + 46; ++y) {
+            const gfx_color_t v = gfx_pixel_get(&c, x, y);
+            lit += v == ui_theme_color(UI_C_VOLT)
+                   || v == ui_theme_color(UI_C_CURR)
+                   || v == ui_theme_color(UI_C_POWER);
+        }
+    }
+    CHECK(lit > 0);
+    /* German's input warning, 27 cells, leaves the plot 24px: none drawn,
+     * nothing over the line. */
+    ui_text_set_language(UI_LANG_DE);
+    prog5v_box_publish_input(5100u);
+    gfx_fill_rect(&c, 0, 0, 1024, 600, 0u);
+    prog5v_box_render(&b, &c);
+    lit = 0;
+    for (int x = wide.x + PROG5V_BOX_PLOT_DX; x < btn.x - 8; ++x) {
+        for (int y = wide.y + 26; y < wide.y + 46; ++y) {
+            const gfx_color_t v = gfx_pixel_get(&c, x, y);
+            lit += v == ui_theme_color(UI_C_VOLT)
+                   || v == ui_theme_color(UI_C_POWER)
+                   || v == ui_theme_color(UI_C_EDGE);
+        }
+    }
+    CHECK_EQ(lit, 0);
+    prog5v_box_publish_input(0u);
+    ui_text_set_language(UI_LANG_EN);
+    /* Without a plot or a box: nothing. */
+    prog5v_box_set_plot(&b, NULL);
+    prog5v_box_reading(true, 5000u, 900, 12u);
+    prog5v_box_tick(&b, 0.02f);
+    CHECK_EQ(plot.filled, 3);
+    uint16_t seen = 0u;
+    CHECK(!prog5v_box_follow(&plot, NULL));
+    CHECK(prog5v_box_follow(NULL, &seen));
+    CHECK_EQ(seen, 12u);
+    prog5v_box_plot_init(NULL);
+    prog5v_box_set_plot(NULL, &plot);
 }
 
 TEST_CASE(an_on_carries_the_cuts_published_as_its_hold_began)
@@ -486,6 +574,7 @@ int main(void)
     RUN(leaving_the_screen_that_switched_it_on_switches_it_off);
     RUN(the_lines_name_the_pin_and_the_reading);
     RUN(the_box_is_drawn_inside_its_rect);
+    RUN(the_plot_takes_a_point_a_window);
     RUN(an_on_carries_the_cuts_published_as_its_hold_began);
     RUN(the_benchs_off_goes_out_whoever_switched_it_on);
     RUN(the_holding_port_is_the_sessions_else_some);

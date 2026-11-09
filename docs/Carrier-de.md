@@ -153,7 +153,9 @@ schaltest du sie im Feld PROG 5V unter LIVE auf SUPPLY: Halte PROG 5V EIN für 2
 PROG 5V AUS. Das ist bei SAFE und ARMED möglich, wie AUSGANG EIN
 des PD mini. Das Feld nennt den Pin,
 `PROG-PORTS 5V, GPIO 21: AUS`, und zeigt das letzte Fenster von 50ms an
-0x40 CH3, `5.02V  0.120A` ([Der Strommonitor](#der-strommonitor)). Solange
+0x40 CH3 mit seiner Leistung, `5.02V  0.120A  0.60W`, und rechts davon
+eine Grafik der Fenster von 72 x 20px
+([Der Strommonitor](#der-strommonitor)). Solange
 die Sitzung eines Programmers die 5V hält, nimmt das Feld keinen Druck an
 und zeigt `BELEGT VON PROG-PORT n`. SUPPLY zeigt den Zustand auch unter
 OUTPUT: `PROG-PORTS 5V, GPIO 21: EIN` oder `AUS`. Jeder Fehler, ein verlorener

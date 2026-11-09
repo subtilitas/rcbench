@@ -249,10 +249,10 @@ static inline gfx_rect_t test_start_rect(void)
 }
 
 /**
- * @brief The rail's plot on TEST, under the caps button: right of the
- *        run's box while it shows, else across the card.  Its meter's
- *        name on its first 24px.
- * @return the plot's place, its name included
+ * @brief The plot of what feeds the servo on TEST, under the caps
+ *        button: right of the run's box while it shows, else across the
+ *        card.  Its V, A and W legend on its first 24px (svs_power_view()).
+ * @return the plot's place, its legend included
  */
 static inline gfx_rect_t test_plot_rect(void)
 {

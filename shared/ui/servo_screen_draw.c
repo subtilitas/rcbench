@@ -793,8 +793,9 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
         /* The READY card's rows when one changed, its rail line as the
          * meter's readings move: on RUDDER AUTO, TEST, LIMIT RUN, KST and
          * HITEC the card draws the line with its rows, on LIVE, SWEEP and
-         * RUDDER it does not.  On TEST the rail's plot moves with the
-         * line, where nothing covers the left card. */
+         * RUDDER it does not.  The plot of what feeds the servo moves
+         * with the line wherever svs_power_rect() places it: KST's and
+         * HITEC's card draws it with its rows. */
         const uint32_t rsig = ready_sig();
         const bool power = s.drawn_power[buf] != s.power_rev;
         const bool rows = s.rdy.drawn[buf] != rsig;
@@ -807,16 +808,16 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
         if (power && (!rows || drive_shown())) {
             clipped(c, ready_rail_rect(), ready_render_rail);
         }
-        /* LIVE, SWEEP and RUDDER: the plot with the line, the SET row as
-         * the set points or what feeds the servo change. */
-        if (power && drive_shown()) {
-            clipped(c, drive_plot_rect(), drive_draw_plot);
+        if (power && !(rows && prog_ready_shown())) {
+            const gfx_rect_t pr = svs_power_rect();
+            if (pr.w > 0) {
+                clipped(c, pr, svs_draw_power);
+            }
         }
+        /* LIVE, SWEEP and RUDDER: the SET row as the set points or what
+         * feeds the servo change. */
         if (sup && drive_shown()) {
             clipped(c, drive_set_row_rect(), drive_draw_set);
-        }
-        if (power && s.fn == SERVO_FN_TEST && !cover && rows_page() < 0) {
-            clipped(c, test_plot_rect(), test_draw_plot);
         }
         s.drawn_sup[buf] = s.sup_rev;
     }

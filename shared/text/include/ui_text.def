@@ -11164,6 +11164,13 @@ UI_TEXT(HG_SV_DRV_PLOT, 0,
 UI_TEXT(SV_P5_FIXED, 0,
     "5V FIXED",
     "5V FEST")
+/* After PROG 5V on the rail line under SERVO's READY card while the servo
+ * is on the rbmod carrier's programming port and the INA3221 channel that
+ * watches the PROG 5V sends no window: the PD mini's values never stand
+ * in for it. */
+UI_TEXT(SV_P5_NO_READ, 13,
+    "NO READING",
+    "KEIN MESSWERT")
 UI_SETTING_LABEL(SET_RUDDER_DEFL_LO,
     "AUTO target at 1000us",
     "AUTO-Soll bei 1000us")

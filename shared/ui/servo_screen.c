@@ -56,9 +56,6 @@
  * (W, H, PAD), which no header included after it may meet. */
 #include "servo_screen_core_int.h"
 
-/* The sample rate of the panel's loop, which is the power plot's time base. */
-#define SAMPLE_HZ 20.0f
-
 /*
  * The profiles the bench drives.  STANDARD PWM is the safe one and the one
  * every restart starts at.  The heli profiles are Rotorflight's for digital
@@ -79,13 +76,6 @@ const servo_type_t k_types[] = {
 };
 _Static_assert(sizeof(k_types) / sizeof(k_types[0]) == TYPE_COUNT,
                "TYPE_COUNT in servo_screen_int.h counts k_types");
-
-/* The power plot's series (PS_*, servo_screen_core_int.h). */
-static const ui_plot_series_t k_power[PS_COUNT] = {
-    { "V", "V", 0, 2, 5.0f, 0 },
-    { "A", "A", 0, 2, 0.5f, 0 },
-    { "W", "W", 0, 1, 5.0f, 0 },
-};
 
 /* The state, its type in servo_screen_int.h. */
 servo_screen_state_t s;
@@ -561,10 +551,15 @@ void svs_reset(void)
     s.lim_sig = lim_signature();
     rauto_init();
 
-    ui_plot_init(&s.power, k_power, PS_COUNT, (float)RC_W / SAMPLE_HZ);
-    /* The PROG 5V's: the same series, time base and scales. */
-    ui_plot_init(&s.p5_power, k_power, PS_COUNT, (float)RC_W / SAMPLE_HZ);
-    (void)prog5v_box_last(NULL, NULL, &s.p5_win);
+    /* The rail's plot and the PROG 5V's: the same series, time base and
+     * scales (PS_*, servo_screen_core_int.h).  The box adds the PROG 5V's
+     * points as it ticks. */
+    _Static_assert(PS_COUNT == 3 && PROG5V_PLOT_COLS >= LCARD_W - 20,
+                   "the rail's plot is the PROG 5V plots' V, A and W, "
+                   "as wide as LIMIT RUN's column");
+    prog5v_box_plot_init(&s.power);
+    prog5v_box_plot_init(&s.p5_power);
+    prog5v_box_set_plot(&s.p5, &s.p5_power);
     svs_lists_init();
     s.fn = (uint8_t)SERVO_FN_LIVE;
     (void)ui_wb_strip_select(&s.wb, UI_WB_LIVE);

@@ -29,12 +29,13 @@
  * servo runs from the fixed PROG 5V: the row reads `PROG 5V`, `5V FIXED`,
  * and takes no press.
  *
- * The plot is TEST's (test_draw_plot()): the series, the time base and the
- * scales of the rail's meter, the PD mini, the INA3221 window or the
- * panel's model.  On the carrier's programming port it plots the PROG 5V
- * from the channel that watches it (prog5v_box_last()), on the same
- * series, time base and scales, and the rail line reads that channel.
- * A new reading repaints the plot and the rail line, each clipped.
+ * The plot is the one every function screen shows (svs_power_view()):
+ * the volts, amps and watts of the rail's meter, the PD mini, the INA3221
+ * window or the panel's model, under their legend.  On the carrier's
+ * programming port it plots the PROG 5V from the channel that watches it,
+ * which the PROG 5V box adds as it ticks (prog5v_box_follow()), and the
+ * rail line reads that channel.  A new reading repaints the plot and the
+ * rail line, each clipped.
  *
  * The SUPPLY row names what feeds the servo: PROG 5V on the rbmod
  * carrier's port, PD MINI where a PD mini answers, SUPPLY where none does.
@@ -644,15 +645,12 @@ bool drive_arm_fired(void)
     return true;
 }
 
-static void p5_follow(void);    /* the plot's PROG 5V, under the card */
-
 /** @brief What ARM's button shows, as one number: a change repaints it. */
 static uint32_t s_arm_sig;
 
 void drive_frame(float dt_s)
 {
     (void)dt_s;
-    p5_follow();
     if (!drive_shown()) {
         return;
     }
@@ -889,72 +887,9 @@ void drive_draw_set(gfx_canvas_t *c)
     }
 }
 
-/** @brief The plot of what feeds the servo: the PROG 5V's on the
- *         carrier's programming port, else the rail meter's.
- *  @return the plot */
-static ui_plot_t *plot_now(void)
-{
-    return (feed_now() == FEED_P5) ? &s.p5_power : &s.power;
-}
-
 void drive_draw_plot(gfx_canvas_t *c)
 {
-    const gfx_rect_t r = drive_plot_rect();
-    gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL));
-    ui_plot_t *p = plot_now();
-    /* Each trace in the colour the readings name it by, as on TEST. */
-    p->series[PS_V].color = ui_theme_color(UI_C_VOLT);
-    p->series[PS_A].color = ui_theme_color(UI_C_CURR);
-    p->series[PS_W].color = ui_theme_color(UI_C_POWER);
-    /* One sample a column: the axis names the 9.0s the 180px show, not
-     * the RC_W columns the time base was made for. */
-    const float span = p->span_s;
-    p->span_s = span * (float)r.w / (float)RC_W;
-    ui_plot_render(p, c, r);
-    p->span_s = span;
-}
-
-bool drive_p5_rail(rail_t *r, const char **name)
-{
-    if (r == NULL || !drive_shown() || feed_now() != FEED_P5) {
-        return false;
-    }
-    memset(r, 0, sizeof(*r));
-    uint16_t mv = 0u;
-    int16_t ma = 0;
-    const bool ok = prog5v_box_last(&mv, &ma, NULL);
-    r->v_ok = ok;
-    r->i_ok = ok;
-    r->v    = (float)mv / 1000.0f;
-    r->i    = (float)ma / 1000.0f;
-    r->p    = r->v * r->i;
-    if (name != NULL) {
-        *name = "PROG 5V";
-    }
-    return true;
-}
-
-/**
- * @brief A new window of the channel that watches the PROG 5V: a point of
- *        its plot, on every SERVO screen so the trace is there when the
- *        servo is on the carrier's port.  Repaints the plot where it shows.
- */
-static void p5_follow(void)
-{
-    uint16_t mv = 0u, n = 0u;
-    int16_t ma = 0;
-    if (!prog5v_box_last(&mv, &ma, &n) || n == s.p5_win) {
-        return;
-    }
-    s.p5_win = n;
-    const float v = (float)mv / 1000.0f;
-    const float i = (float)ma / 1000.0f;
-    const float pt[PS_COUNT] = { v, i, v * i };
-    ui_plot_push(&s.p5_power, pt);
-    ui_plot_update_scales(&s.p5_power, RC_W);
-    if (drive_shown() && feed_now() == FEED_P5) {
-        ++s.power_rev;
-    }
+    svs_power_view(c, drive_plot_rect());
 }
 
 /* ------------------------------------------------------------ for tests */

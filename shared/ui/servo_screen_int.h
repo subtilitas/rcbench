@@ -456,9 +456,9 @@ typedef struct {
     ui_plot_t      power;
     /** @brief The rbmod carrier's PROG 5V, from the channel that watches
      *  it (prog5v_box_last()): the plot of LIVE, SWEEP and RUDDER while
-     *  the servo is on the carrier's programming port. */
+     *  the servo is on the carrier's programming port; the PROG 5V
+     *  box @ref p5 adds its points as it ticks. */
     ui_plot_t      p5_power;
-    uint16_t       p5_win;  /**< the window p5_power took its last point of */
     /** @brief What the SET row and the plot of LIVE, SWEEP and RUDDER show
      *  as one number (drive_frame()): a change repaints them. */
     uint32_t       drv_sig;
@@ -1196,7 +1196,8 @@ void lim_render(gfx_canvas_t *c);
 void lim_draw_hold(gfx_canvas_t *c);
 /** @brief LOW END and HIGH END together.  @return their rectangle */
 gfx_rect_t lim_ends_rect(void);
-/** @brief The state lines' place.  @return its rectangle */
+/** @brief The state lines' place: eight rows of 24px.
+ *  @return its rectangle */
 gfx_rect_t lim_lines_rect(void);
 
 /* --- servo_limit_seam.c: the programmer a run's sessions go to ----------- */
@@ -1792,8 +1793,9 @@ uint32_t foot_sig(void);
 /** @brief The footer's name, port line and SETTINGS, and the PORT button,
  *         on a function screen. @param c the canvas */
 void draw_footer(gfx_canvas_t *c);
-/** @brief Whether the hub names PROG 5V ON in its footer's middle slot: the
- *         ports' 5V reads ON while the hub shows.  @return true then */
+/** @brief Whether the hub names PROG 5V ON and its reading, `PROG 5V ON
+ *         5.02V 0.120A`, in its footer's middle slot: the ports' 5V reads
+ *         ON while the hub shows.  @return true then */
 bool svs_hub_p5_on(void);
 /** @brief The PORT button: PORT and the port line. @param c the canvas */
 void draw_port(gfx_canvas_t *c);

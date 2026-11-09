@@ -34,6 +34,13 @@ extern "C" {
  *        it.
  */
 #define UI_PLOT_HISTORY    UI_PANEL_W
+/**
+ * @brief The least height a plot draws its labels in, px: the time base
+ *        and NOW take its bottom 19px, the focused series' scale and zero
+ *        sit over them, and 60px leaves the traces 41px clear of them.  A
+ *        lower plot draws its grid and traces alone.
+ */
+#define UI_PLOT_LABELS_MIN_H 60
 
 typedef struct {
     const char *name;
@@ -193,7 +200,8 @@ int ui_plot_map_y(const ui_plot_t *p, int series, float value, int y0, int h);
 /**
  * @brief The plot body: grid, traces, the focused series' scale.  One
  *        sample a pixel column, in the first UI_PLOT_HISTORY columns from
- *        the left edge, the newest in the last of them.
+ *        the left edge, the newest in the last of them.  Under
+ *        UI_PLOT_LABELS_MIN_H the grid and the traces only.
  * @param p The plot.
  * @param c Canvas.
  * @param r The plot's box.

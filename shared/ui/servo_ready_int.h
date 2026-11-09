@@ -250,6 +250,40 @@ bool ready_hold_down(const touch_event_t *evt);
  *  @param c the canvas */
 void ready_draw_hold(gfx_canvas_t *c);
 
+/* --- servo_ready.c: the plot of what feeds the servo ---------------------- */
+
+/** @brief A plot of what feeds the servo this tall or taller draws its
+ *         legend in the label face and its plot's labels; a lower one the
+ *         8 x 16 face, px. */
+#define SVS_POWER_FULL_H 80
+
+/**
+ * @brief The plot of what feeds the servo in @p r, the same everywhere:
+ *        its volts, amps and watts as the legend over it, each in its
+ *        trace's colour, the meter's name left of them where the width
+ *        takes both, the plot of the last r.w / 20 seconds under them.
+ *        Under SVS_POWER_FULL_H the legend in the 8 x 16 face and the
+ *        plot without labels.
+ * @param c the canvas
+ * @param r the place, legend included; nothing for an empty one
+ */
+void svs_power_view(gfx_canvas_t *c, gfx_rect_t r);
+/**
+ * @brief Where the screen shown draws svs_power_view(): LIVE's, SWEEP's
+ *        and RUDDER's SET row, KST's and HITEC's READY card under the
+ *        rows, TEST's caps card, LIMIT RUN's and RUDDER AUTO's left card
+ *        under their lines.
+ * @return the place; empty where none shows
+ */
+gfx_rect_t svs_power_rect(void);
+/** @brief svs_power_view() in svs_power_rect().  @param c the canvas */
+void svs_draw_power(gfx_canvas_t *c);
+
+/** @brief LIMIT RUN's plot of what feeds the servo under its eight rows
+ *         of state lines, 600 x 58px (servo_limit_card.c).
+ *  @return its rectangle */
+gfx_rect_t lim_power_rect(void);
+
 /* --- servo_ready.c: the sequence -------------------------------------------- */
 
 /** @brief What a run started now needs switched on: PORT PWM on a PROG
@@ -375,7 +409,8 @@ void test_hold_fired(void);
 void test_frame(float dt_s);
 /** @brief TEST's ARM + START in the footer.  @param c the canvas */
 void test_draw_hold(gfx_canvas_t *c);
-/** @brief The rail's plot under TEST's caps button.  @param c the canvas */
+/** @brief The plot of what feeds the servo under TEST's caps button,
+ *         svs_power_view()'s.  @param c the canvas */
 void test_draw_plot(gfx_canvas_t *c);
 
 /* --- servo_limit_ready.c: LIMIT RUN's gate and rows ------------------------ */

@@ -1557,9 +1557,10 @@ stays free.
 The hub drives nothing. Its footer holds SERVO with the port line under
 it, an empty middle slot and SETTINGS, which opens the servo profile's
 list ([Settings](#settings)). While the programming ports' 5V reads ON,
-the middle slot reads `PROG 5V ON` in the warning colour: the 5V is
-switched on the function screens only, and it stays on from one SERVO
-screen to the next. The bench is SAFE on the hub: every leave of
+the middle slot reads `PROG 5V ON 5.02V 0.120A` in the warning colour, the
+last window of the INA3221 channel that watches the 5V, or
+`PROG 5V ON --V --A` without one: the 5V is switched on the function
+screens only, and it stays on from one SERVO screen to the next. The bench is SAFE on the hub: every leave of
 a function screen switches it to SAFE.
 
 The home tag climbs one level: from a function screen to the hub, from the
@@ -1601,11 +1602,33 @@ a voltage raised past 6.0V waits for the HV warning's 2s hold. While a
 programming port holds the PD mini the values are dim and a tap names the
 hold in the alert band. On the rbmod carrier's programming port the servo
 runs from the fixed PROG 5V: the row reads `PROG 5V` over `5V FIXED` and
-takes no press. The plot is TEST's: voltage, current and power over the
-last 9.0s, one point per reading, on the scales of the servo rail's meter;
-on the carrier's programming port the PROG 5V from the INA3221 channel
-that watches it, one point per 50ms window, and the rail line names
-`PROG 5V`. A new reading repaints the plot and the rail line alone.
+takes no press. The plot is the one every function screen shows, below.
+
+Every function screen shows the same plot of what feeds the servo:
+
+| Screen | Place | Size |
+| --- | --- | --- |
+| LIVE, SWEEP, RUDDER | the SET row, right of SET A | 180 x 48px |
+| KST, HITEC | the READY card, 8px under the last row to 8px over the rail line | 356 x 172px on KST, 356 x 142px on HITEC |
+| TEST | the left card under SUPPLY's caps, beside the run's box while it shows | 600 x 170px, 246 x 170px beside the box |
+| LIMIT RUN | the left card under eight rows of state lines, y 374 to 432 | 600 x 58px |
+| RUDDER AUTO | the left card right of ZERO and RESET MAX, y 240 to 288 | 260 x 48px |
+
+A legend over the plot reads volts, amps and watts, `5.02V  0.120A  0.60W`,
+each in its trace's colour, VOLT's, CURR's and PWR's on SUPPLY. The
+meter's name stands left of them where the width takes both. A view under
+80px tall draws the legend in the 8 x 16 face and the plot without its
+time base. One point per reading, 20 a second: a view shows the last
+width / 20 seconds, 9.0s on LIVE, 17.8s on KST, 30.0s on TEST and LIMIT
+RUN, 13.0s on RUDDER AUTO. Every view scales over the last 600 points,
+30.0s. A new reading repaints the plot and the rail line alone.
+
+On the rbmod carrier's programming port the plot and the rail line read
+the PROG 5V: the INA3221 channel that watches it, named `INA PROG 5V`
+where the carrier's rail names the channel and `PROG 5V 0x40 CH3` where
+its address does. Without a window of that channel the rail line reads
+`PROG 5V NO READING` and `--V  --A`, the legend `--V  --A  --W`; the PD
+mini's values never stand in for the PROG 5V.
 
 | Row | Green | Amber | Red |
 | --- | --- | --- | --- |
@@ -1652,8 +1675,8 @@ ANGLE SOURCE list ([Servo](Servo.md#angle-source)). Its
 footer's middle slot is HOLD 2s: ARM + START, which switches PORT PWM on
 where the port needs it, arms and starts the automatic test in one hold;
 the run's steps switch the PD mini at each step's voltage. During the run
-the slot reads STOP TEST, which ends the run on its press. The plot of the
-servo rail moves to the left card, under SUPPLY's caps.
+the slot reads STOP TEST, which ends the run on its press. The plot of
+what feeds the servo stands in the left card, under SUPPLY's caps.
 
 KST and HITEC keep the PORT button and show a READY card in the output
 card's place: PORT, the supply the session's CONNECT switches, and SERVO,
@@ -1860,9 +1883,8 @@ The READY card's rail line at y 404, y 412 on LIVE, SWEEP and RUDDER,
 shows the servo rail as its meter reads it: the meter's name, then the
 voltage in hundredths of a volt and the current in thousandths of an amp,
 `5.02V  0.120A`. LIVE's CURRENT reading shows the current again, in
-hundredths. TEST plots voltage, current and power under SUPPLY's caps,
-LIVE, SWEEP and RUDDER right of SET A. No SERVO screen shows the power as
-a number.
+hundredths. The legend over each function screen's plot shows the power
+in hundredths of a watt, `0.60W`.
 
 | The servo rail's meter | Name on the line | LIVE's CURRENT, the line and TEST's plot show |
 | --- | --- | --- |

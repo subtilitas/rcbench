@@ -146,7 +146,8 @@ through the PROG_SUPPLY page (link 4.32). The PROG 5V box on SUPPLY's
 LIVE task switches it by hand: PROG 5V ON is a
 2s hold, PROG 5V OFF a tap, taken with the bench SAFE or ARMED, as the PD
 mini's OUTPUT ON is. The box names the pin, `PROG PORTS 5V, GPIO 21: OFF`,
-and shows the last 50ms window of 0x40 CH3, `5.02V  0.120A`
+and shows the last 50ms window of 0x40 CH3 with its power,
+`5.02V  0.120A  0.60W`, and right of it a 72 x 20px plot of the windows
 ([The current monitor](#the-current-monitor)). While a programmer's
 session holds the 5V the box takes no press and reads
 `HELD BY PROG PORT n`. SUPPLY also shows the state under OUTPUT:

@@ -237,15 +237,27 @@ int32_t svs_fixed_of(float x, float per);
  * @return the meter's reading
  */
 rail_t svs_rail_now(void);
+
+/* servo_ready.c: what feeds the servo, drawn */
+
+/** @brief What feeds the servo, as the rail line and every plot of it
+ *         name and read it. */
+typedef struct {
+    rail_t      r;         /**< its reading                                 */
+    char        name[24];  /**< the meter: `PD MINI`, `0x41 CH1`, `PROG 5V 0x40 CH3` */
+    const char *word;      /**< the warning after the name, or NULL         */
+    ui_plot_t  *plot;      /**< its plot: s.power or s.p5_power             */
+} svs_feed_t;
+
 /**
- * @brief The line of readings under the card on LIVE, SWEEP and RUDDER
- *        while the servo is on the rbmod carrier's programming port: the
- *        PROG 5V's, as its plot shows them (servo_drive_ready.c).
- * @param r receives the reading
- * @param name receives the meter's name
- * @return true then; false elsewhere, where the line is the rail meter's
+ * @brief What feeds the servo now.  On the rbmod carrier's programming
+ *        port (lim_fixed_supply()) the PROG 5V: the INA3221 channel that
+ *        watches it, `NO READING` without a window, never the PD mini's
+ *        values.  Elsewhere the rail's meter: the INA3221 window, the PD
+ *        mini, or the panel's model with `SIMULATED`.
+ * @param f receives it; nothing for NULL
  */
-bool drive_p5_rail(rail_t *r, const char **name);
+void svs_feed_now(svs_feed_t *f);
 
 /* servo_screen_touch.c */
 
