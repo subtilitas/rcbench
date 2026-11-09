@@ -395,6 +395,13 @@ void svs_event_body(const touch_event_t *evt)
         if (drive_set_down(evt)) {
             return;
         }
+        /* The type pill under them: its tap opens the profile. */
+        if (drive_shown() && gfx_rect_contains(drive_tag_rect(), px, py)) {
+            if (!modal_open()) {
+                (void)drive_tag_down(evt);
+            }
+            return;
+        }
         if (modal_open() && gfx_rect_contains(overlay_area(), px, py)) {
             /* One press at a time in the panels and the pages. */
             if (!s.ov_have) {

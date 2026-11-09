@@ -460,8 +460,9 @@ TEST_CASE(current_is_locked_without_a_pd_mini_and_under_a_held_supply)
     settings_cancel_save();
 }
 
-/* RUDDER AUTO's list ends in CURRENT and PROG WAIT: SET A as LIMIT RUN's,
- * and the KST programmer's wait before PWM its sessions' LEAVE sends. */
+/* RUDDER AUTO's list holds CURRENT and PROG WAIT after ANGLE SOURCE: SET A
+ * as LIMIT RUN's, and the KST programmer's wait before PWM its sessions'
+ * LEAVE sends. */
 TEST_CASE(rudder_auto_holds_current_and_prog_wait)
 {
     fresh();
@@ -469,7 +470,7 @@ TEST_CASE(rudder_auto_holds_current_and_prog_wait)
     tap_settings();
     const ui_setlist_t *sl = servo_screen_list();
     CHECK(sl->open);
-    CHECK_EQ(ui_setlist_count(sl), RAL_WAIT + 1);
+    CHECK_EQ(ui_setlist_count(sl), RAL_ROWS);
     CHECK_EQ(sl->host->row(RAL_CURRENT).custom->label, TX_SV_CURRENT);
     CHECK_EQ(sl->host->row(RAL_WAIT).kind, (uint8_t)UI_SL_SETTING);
     CHECK_EQ(sl->host->row(RAL_WAIT).id, SET_SERVO_PROG_WAIT);

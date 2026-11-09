@@ -866,15 +866,18 @@ bool ready_rest(const touch_event_t *evt)
     const int i = s.rdy.pressed;
     s.rdy.pressed = -1;
     ++s.ctrl_rev;
+    const gfx_rect_t at = (i == READY_PRESS_TAG) ? drive_tag_rect()
+                                                 : ready_row_rect(i);
     if (!touch_event_is_tap_up(evt)
-        || !gfx_rect_contains(ready_row_rect(i), evt->point.x,
-                              evt->point.y)) {
+        || !gfx_rect_contains(at, evt->point.x, evt->point.y)) {
         return true;
     }
     /* A press that came down elsewhere while the finger was on the row
      * keeps its release: the fix opens nothing over it. */
     if (svs_press_held()) {
         ui_action_refused(TR(FOOT_PRESS_HELD));
+    } else if (i == READY_PRESS_TAG) {
+        drive_tag_tap();
     } else if (drive_shown()) {
         drive_ready_tap(i);
     } else if (prog_ready_shown()) {

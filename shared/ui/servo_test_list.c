@@ -1,7 +1,7 @@
 /**
  * @file
- * @brief TEST's SETTINGS list (ui_setlist.h): the automatic test's 17
- *        rows under four headings, opened by the footer's SETTINGS.
+ * @brief TEST's SETTINGS list (ui_setlist.h): the automatic test's 21
+ *        rows under six headings, opened by the footer's SETTINGS.
  *
  *   - VOLTAGE STEPS, its line the steps a run takes or why none: STEP
  *     4.8V, STEP 6.0V, HV SERVO, STEP 7.4V and STEP 8.4V.  7.4V and 8.4V
@@ -11,12 +11,19 @@
  *   - PASS/FAIL LIMITS, its line a STALL AT no reading can pass: STALL AT,
  *     the idle and holding current, the travel time;
  *   - LENGTH AND TIMING: LENGTH BY, TEST TIME (by time only), MOVEMENTS
- *     (by moves only), DWELL TIME and SETTLING TIME.
+ *     (by moves only), DWELL TIME and SETTLING TIME;
+ *   - RANGE, its line the run's ends in us, in the warning colour while
+ *     they are not either side of PULSE CENTER: RANGE, the share of the
+ *     travel a run covers, and OUTPUT, the profile in force, whose tap
+ *     opens the profile (svs_profile_open()) on PULSE MIN;
+ *   - DUT: the device under test's NAME and REPORT.
  *
- * The list writes nothing to the card on a change: SAVE writes, and the
- * leave warning's DISCARD puts the stored values back through
- * settings_apply_all().  HV SERVO is the profile's session value, as on
- * the hub's list, and RESET TEST puts it off.
+ * RANGE and DWELL TIME are SWEEP's too, NAME and REPORT the hub's: one
+ * setting each, whichever list sets it.  The list writes nothing to the
+ * card on a change: SAVE writes, and the leave warning's DISCARD puts the
+ * stored values back through settings_apply_all().  HV SERVO is the
+ * profile's session value, as on the hub's list, and RESET TEST puts it
+ * off.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -139,6 +146,45 @@ static const ui_setlist_custom_t k_hv = {
     .value_text = hv_value, .step = hv_step,
 };
 
+/* ------------------------------------------------------- RANGE, OUTPUT */
+
+/**
+ * @brief RANGE's line: the ends a run started now takes, `1100-1900us`.
+ * @param out takes it
+ * @param n its size
+ */
+static void ends_line(char *out, size_t n)
+{
+    uint16_t lo = 0u, hi = 0u;
+    test_ends(&lo, &hi);
+    snprintf(out, n, "%u-%uus", (unsigned)lo, (unsigned)hi);
+}
+
+/** @brief Whether the ends refuse a run: not either side of PULSE CENTER.
+ *  @return non-NULL then, for the warning colour */
+static const char *ends_warn(void)
+{
+    uint16_t lo = 0u, hi = 0u;
+    test_ends(&lo, &hi);
+    return (lo < s.center_us && s.center_us < hi) ? NULL : "";
+}
+
+/** @brief RANGE's heading line. */
+static const ui_setlist_custom_t k_ends_line = {
+    .label = TX_RDY_RANGE, .help = TX_COUNT, .value_text = ends_line,
+    .locked = ends_warn,
+};
+
+/** @brief A tap on OUTPUT: the profile, on PULSE MIN. */
+static void output_tap(void) { svs_profile_open(SVS_PROF_MIN); }
+
+/** @brief The OUTPUT row: the profile in force, as the type pill reads
+ *         it; a tap opens the profile. */
+static const ui_setlist_custom_t k_output = {
+    .label = TX_SV_PG_OUTPUT, .help = TX_SVL_OUTPUT_HELP,
+    .value_text = svs_tag_text, .tap = output_tap,
+};
+
 /* ------------------------------------------------------------- the rows */
 
 const ui_setlist_row_t svs_test_rows[SVS_TEST_ROWS] = {
@@ -163,6 +209,13 @@ const ui_setlist_row_t svs_test_rows[SVS_TEST_ROWS] = {
     UI_SL_ROW_SETTING(SET_SERVO_LEN_MOVES),
     UI_SL_ROW_SETTING(SET_SERVO_DWELL_MS),
     UI_SL_ROW_SETTING(SET_SERVO_SETTLE_MS),
+    UI_SL_ROW_HEADING(TX_RDY_RANGE, &k_ends_line),
+    UI_SL_ROW_SETTING(SET_SERVO_TEST_RANGE),
+    UI_SL_ROW_CUSTOM(&k_output),
+    UI_SL_ROW_HEADING(TX_SV_PG_DUT, NULL),
+    { (uint8_t)UI_SL_TEXT, (int8_t)SET_TEXT_DUT_NAME, (setting_id_t)0,
+      TX_COUNT, NULL },
+    UI_SL_ROW_SETTING(SET_SERVO_REPORT),
 };
 
 const char *svs_test_locked(setting_id_t id)

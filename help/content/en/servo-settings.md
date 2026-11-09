@@ -6,7 +6,7 @@ order: 21
 
 # Servo settings
 
-SETTINGS in the footer of a [SERVO](servo.md) screen opens that screen's list. The hub's list is the servo profile every function uses: OUTPUT and DUT (device under test). SWEEP, RUDDER, RUDDER AUTO, LIMIT RUN and HITEC have lists of their own; TEST opens its run's page of rows, KST its EXPERT MODE page; LIVE has none. Use CLOSE at the top right of a run's page or the home tag to return. A function's list opens on a SAFE bench only, and a bench that goes live closes it and any page of rows; the hub's opens at any time. No list opens while a programmer session holds its port, or while a finger is still on another control. A change on a list stays marked unsaved until SAVE in the strip. Tap a number for the keypad, a choice for its list, a switch to toggle it, or NAME for the keyboard.
+SETTINGS in the footer of a [SERVO](servo.md) screen opens that screen's list. The hub's list is the servo profile every function uses: OUTPUT and DUT (device under test); LIVE's SETTINGS opens the same list. SWEEP, TEST, RUDDER, RUDDER AUTO, LIMIT RUN and HITEC have lists of their own, KST its EXPERT MODE page. A tap on the type pill of LIVE, SWEEP and RUDDER opens the profile in the list's place with TYPE in view; a tap on the RANGE row of LIMIT RUN's and RUDDER AUTO's READY cards, or on OUTPUT in TEST's list, opens it with PULSE MIN in view. Use CLOSE at the top right of a run's page or the home tag to return. A function's list opens on a SAFE bench only, and a bench that goes live closes it and any page of rows; the hub's opens at any time. No list opens while a programmer session holds its port, or while a finger is still on another control. A change on a list stays marked unsaved until SAVE in the strip. Tap a number for the keypad, a choice for its list, a switch to toggle it, or NAME for the keyboard.
 
 ## OUTPUT, on the hub's list
 
@@ -60,13 +60,14 @@ OUTPUT's heading line reports the rate status, in the warning colour while the r
 |---|---|---|---|
 | CURVE | SQUARE, SINE, TRIANGLE | SINE | the curve of SWEEP and of the test's moves |
 | SPEED | 0.05 to 5Hz | 0.5Hz | curves a second |
-| RANGE | 10 to 100% | 80% | the share of the travel moved through |
+| RANGE | 10 to 100% | 80% | the share of the travel moved through; the automatic test's Range |
+| Dwell time | 0 to 5000ms | 200ms | held at each end; the automatic test's Dwell time |
 
 ## The automatic test's settings
 
 ![TEST's SETTINGS list](view:servo-test-settings)
 
-SETTINGS in TEST's footer opens the automatic test's list, on a SAFE bench only. It has 17 rows under four headings; each heading's line names what its rows give. A change is kept by SAVE in the strip; leaving with a change asks SAVE or DISCARD. RESET TEST puts every row to its default and HV SERVO off. The list closes as the bench arms or a run starts.
+SETTINGS in TEST's footer, or a tap on RANGE on TEST's READY card, opens the automatic test's list, on a SAFE bench only. It has 21 rows under six headings; each heading's line names what its rows give, RANGE's the run's ends, `1100-1900us`. A change is kept by SAVE in the strip; leaving with a change asks SAVE or DISCARD. RESET TEST puts every row to its default and HV SERVO off. The list closes as the bench arms or a run starts. Range and Dwell time are SWEEP's too, DUT name and Report the hub's: one setting each, whichever list sets it.
 
 | Heading | Setting | Range | Default | What it does |
 |---|---|---|---|---|
@@ -85,6 +86,10 @@ SETTINGS in TEST's footer opens the automatic test's list, on a SAFE bench only.
 | LENGTH AND TIMING | Movements | 1 to 1000 | 20 | the moves of a step; a press with Length by MOVES only |
 | LENGTH AND TIMING | Dwell time | 0 to 5000ms | 200ms | held at each end, by the test and by SWEEP |
 | LENGTH AND TIMING | Settling time | 0 to 10000ms | 500ms | waited after a supply step before measuring |
+| RANGE | Range | 10 to 100% | 80% | the share of the travel the moves cover, either side of PULSE CENTER |
+| RANGE | OUTPUT | the profile | STANDARD PWM 50Hz 1000-2000 | the type, frame rate and pulse range in force; a tap opens the profile |
+| DUT | DUT name | up to 23 characters | SERVO | heads each report |
+| DUT | Report | ON, OFF | ON | a text report beside each test's log |
 
 ![HV SERVO on](view:servo-hv)
 
@@ -110,8 +115,10 @@ SETTINGS in LIMIT RUN's footer opens the list. Off a PROG PORT, MODE, SERVO and 
 | SERVO PULSES | KEEP, 1000-2000 | KEEP | PORT on PROG PORT and SERVO at KST/CHASERVO only: 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0us before the search |
 | CURRENT | SUPPLY's caps | SUPPLY's SET A | the run's current limit, SUPPLY's SET A, where a PD mini feeds the servo: a tap opens SUPPLY's keypad. Without a PD mini `--`, locked: the servo's own supply limits the current |
 | Wait before PWM | 0 to 10000ms | 100ms | from the end of programming to the first pulse |
+| DUT name | up to 23 characters | SERVO | the hub's NAME; heads each report |
+| User logs | ON, OFF | ON | SETUP > SD CARD's: OFF, a run writes no LIMITnnn.TXT |
 
-The list has no voltage: a run programs at 5.0V ([The supply: 5.0V](servo.md#the-supply-5-0v)).
+The list has no voltage: a run programs at 5.0V ([The supply: 5.0V](servo.md#the-supply-5-0v)). RUDDER AUTO's list ends with the same DUT name and User logs. The READY cards of both hold ten rows, the most they have room for, so User logs is a list row there and a card row on TEST only.
 
 ## SUPPLY's caps
 

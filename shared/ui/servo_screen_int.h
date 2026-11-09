@@ -1741,8 +1741,10 @@ enum { FP_NONE = 0, FP_PORT, FP_SETTINGS, FP_TILE };
 
 /* --- servo_test_list.c: TEST's SETTINGS list ------------------------------ */
 
-/** @brief TEST's list rows: four headings and the 17 rows. */
-#define SVS_TEST_ROWS 21
+/** @brief TEST's list rows: six headings and 21 rows. */
+#define SVS_TEST_ROWS 27
+/** @brief TEST's RANGE row, the one its READY card's RANGE opens on. */
+#define SVS_TEST_ROW_RANGE 22
 /** @brief TEST's rows (ui_setlist.h), in the list's order. */
 extern const ui_setlist_row_t svs_test_rows[SVS_TEST_ROWS];
 /** @brief Why a setting of TEST's list takes no press now.
@@ -1781,6 +1783,29 @@ bool svs_list_shown(void);
 bool svs_list_back(void);
 /** @brief A frame of the list, @p dt_s seconds. @param dt_s the frame */
 void svs_list_tick(float dt_s);
+
+/** @brief The profile's rows in the hub's list: OUTPUT, TYPE, FRAME RATE,
+ *         PULSE MIN, CENTER and MAX, TRIM, TRAVEL, REVERSE, HV SERVO, then
+ *         DUT, its NAME and REPORT. */
+enum {
+    SVS_PROF_OUTPUT = 0, /**< the OUTPUT heading             */
+    SVS_PROF_TYPE,       /**< TYPE                           */
+    SVS_PROF_RATE,       /**< FRAME RATE                     */
+    SVS_PROF_MIN,        /**< PULSE MIN                      */
+    SVS_PROF_ROWS = 13   /**< the hub list's rows            */
+};
+/** @brief The profile, the hub's list, opened in the list's place on the
+ *         screen shown and scrolled to @p row, or the refusal of
+ *         svs_list_refused() in the alert band.  On a function screen it
+ *         opens on a SAFE bench only, as the function's own list does.
+ *  @param row an SVS_PROF_* row */
+void svs_profile_open(int row);
+/** @brief Whether the open list is the profile.  @return true then */
+bool svs_profile_shown(void);
+/** @brief The type pill's text: the type, its frame rate and its pulse
+ *         range, `STANDARD PWM  50Hz  1000-2000` (servo_screen_draw.c).
+ *  @param out takes it  @param n its size */
+void svs_tag_text(char *out, size_t n);
 
 /* --- servo_pick.c: the programmer each run writes with ------------------ */
 

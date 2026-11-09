@@ -365,7 +365,7 @@ TEST_CASE(the_list_opens_on_safe_only_and_closes_as_the_bench_arms)
     bench_frames(40u);
     tap_settings();
     CHECK(servo_screen_list()->open);
-    CHECK_EQ(ui_setlist_count(servo_screen_list()), 21);
+    CHECK_EQ(ui_setlist_count(servo_screen_list()), TL_ROWS);
     servo_screen_set_armed(true);
     bench_frames(40u);
     CHECK(!servo_screen_list()->open);

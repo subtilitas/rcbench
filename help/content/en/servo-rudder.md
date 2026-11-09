@@ -97,7 +97,7 @@ The left card holds the readout, the targets, MARGIN and TOLERANCE, ZERO and RES
 
 ### READY
 
-The READY card on the right lists what the start needs, one row each: PORT, SERVO, METER, ANGLE, ZERO, RANGE, PROGRAMMER, the supply (PROG 5V on the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), PD MINI where the PD mini feeds the servo), PORT PWM and ARM. PROG 5V reads the run's `5.0V`, PD MINI the run's `5.0V` and SUPPLY's SET A, `5.0V 2.00A`; a tap on a green or amber PD MINI opens SET A's keypad ([The current limit](servo.md#the-current-limit)). A green dot is met. A red dot refuses the hold, or marks an output live through the row. Amber reads `START SWITCHES IT ON` or `START ARMS`: the hold does it. Grey waits on PORT. A tap on PORT opens the port choice, on SERVO the three families over the left column, on ANGLE the [ANGLE SOURCE list](#the-angle-source), on a red ZERO it takes the zero, on a red METER it opens [Sensors](setup-sensors.md), on a red PD MINI with `PD MINI: 5.0V OUTSIDE ITS LIMITS` [SUPPLY](supply.md) > SETTINGS > LIMITS. A tap on another red row names it in the alert band. The line under the rows is the meter the run reads.
+The READY card on the right lists what the start needs, one row each: PORT, SERVO, METER, ANGLE, ZERO, RANGE, PROGRAMMER, the supply (PROG 5V on the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), PD MINI where the PD mini feeds the servo), PORT PWM and ARM. PROG 5V reads the run's `5.0V`, PD MINI the run's `5.0V` and SUPPLY's SET A, `5.0V 2.00A`; a tap on a green or amber PD MINI opens SET A's keypad ([The current limit](servo.md#the-current-limit)). A green dot is met. A red dot refuses the hold, or marks an output live through the row. Amber reads `START SWITCHES IT ON` or `START ARMS`: the hold does it. Grey waits on PORT. A tap on PORT opens the port choice, on SERVO the three families over the left column, on RANGE the [servo profile](servo-settings.md) on PULSE MIN, on ANGLE the [ANGLE SOURCE list](#the-angle-source), on a red ZERO it takes the zero, on a red METER it opens [Sensors](setup-sensors.md), on a red PD MINI with `PD MINI: 5.0V OUTSIDE ITS LIMITS` [SUPPLY](supply.md) > SETTINGS > LIMITS. A tap on another red row names it in the alert band. The line under the rows is the meter the run reads.
 
 ![On the rbmod carrier, SAFE: PROG 5V, PORT PWM and ARM amber, the hold green](view:servo-rudder-auto-rbmod)
 
@@ -121,7 +121,7 @@ With the IMU as ANGLE SOURCE on AXIS Z (yaw), the ANGLE row reads `IMU YAW REFUS
 
 ![RUDDER AUTO's SETTINGS list](view:servo-rudder-auto-settings)
 
-RUDDER AUTO's SETTINGS list holds the targets, MARGIN, TOLERANCE, SERVO, SERVO PULSES and ANGLE SOURCE, then CURRENT and Wait before PWM as on [LIMIT RUN's list](servo-settings.md#the-limit-run-s-settings): CURRENT is SUPPLY's SET A, and Wait before PWM the KST programmer's wait the run's LEAVE sends.
+RUDDER AUTO's SETTINGS list holds the targets, MARGIN, TOLERANCE, SERVO, SERVO PULSES and ANGLE SOURCE, then CURRENT and Wait before PWM as on [LIMIT RUN's list](servo-settings.md#the-limit-run-s-settings): CURRENT is SUPPLY's SET A, and Wait before PWM the KST programmer's wait the run's LEAVE sends. Then DUT name and User logs: the hub's name, which heads the report, and SETUP > SD CARD's switch. With User logs OFF the run writes neither RUDDRnnn.TXT nor RUDDRnnn.CSV. The READY card holds ten rows, the most it has room for, so User logs is a list row here.
 
 ## What the angle is
 

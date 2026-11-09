@@ -80,6 +80,22 @@ history is in git.
 - A tap on TEST's METER row, while the run would read the PD mini, opens
   SETUP > SENSORS on the INA3221 part that watches the tester's target; the
   home tag returns to TEST.
+- Each SERVO function screen sets the settings it runs on. A tap on the
+  type pill of LIVE, SWEEP and RUDDER opens the servo profile, the hub's
+  list, with TYPE in view; a tap on the RANGE row of LIMIT RUN's and
+  RUDDER AUTO's READY cards, or on OUTPUT in TEST's list, opens it with
+  PULSE MIN in view. LIVE's SETTINGS opens the profile. Each opens on a
+  SAFE bench only.
+- TEST's list adds RANGE (Range and OUTPUT) and DUT (DUT name and
+  Report), and TEST's READY row RANGE opens the list on Range. SWEEP's list
+  adds Dwell time. LIMIT RUN's and RUDDER AUTO's lists add DUT name and
+  User logs. Range, Dwell time, DUT name, Report and User logs stay one
+  setting each, whichever list sets them.
+- TEST's READY card adds LOG: User logs `ON`, or `OFF` in amber. A tap
+  switches and saves it; under a run or its start steps the tap is refused
+  with `LOG: The run keeps its setting. Switch it after the run.`. LIMIT
+  RUN's and RUDDER AUTO's cards hold 10 rows already, so User logs is a
+  list row there.
 
 ### Fixed
 

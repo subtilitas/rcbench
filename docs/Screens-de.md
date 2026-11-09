@@ -301,7 +301,7 @@ Die Aufgabe auf der linken Karte bestimmt die ersten Hilfeseiten:
 | SERVO ENDLAGENLAUF | UNTERES ENDE mit OBERES ENDE und die Zustandszeilen (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
 | SERVO RUDER | LÄNGE, die Fahrtasten, NULLPUNKT und MAX LÖSCHEN (4); AUSSCHLAG, HINTERKANTE und die Statuszeilen (3) |
 | SERVO RUDER AUTO | die Sollwerte, RESERVE und TOLERANZ, NULLPUNKT (3); AUSSCHLAG und HINTERKANTE (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
-| SERVO LIVE, SWEEP und RUDER, SAFE | PORT, BEREIT, die Schienenzeile, ARM und auf SWEEP und RUDER OPTIONEN (4 oder 5); SET V, die Grafik, TEMPO, Typ und die Tasten auf LIVE und SWEEP (5), SET V, die Grafik, Typ und Seitenansicht auf RUDER (4); SET V nicht am Programmierport des rbmod-Carriers |
+| SERVO LIVE, SWEEP und RUDER, SAFE | PORT, BEREIT, die Schienenzeile, ARM und OPTIONEN (5); SET V, die Grafik, TEMPO, Typ und die Tasten auf LIVE und SWEEP (5), SET V, die Grafik, Typ und Seitenansicht auf RUDER (4); SET V nicht am Programmierport des rbmod-Carriers |
 | SERVO KST und HITEC, SAFE | PORT, BEREIT, die Schienenzeile, SCHREIBEN und OPTIONEN (5) |
 | die Listen von SERVO (Hub, SWEEP, RUDER, RUDER AUTO, HITEC) | wie eine Optionsliste |
 | SUPPLY LIVE | GRAFIK und TABELLE, SPANNUNG und STROMBEGRENZUNG (3) |
@@ -1655,10 +1655,10 @@ der Reihenfolge der Nutzung.
 
 | Kachel | Bildschirm | Zeigt |
 | --- | --- | --- |
-| LIVE | LIVE | das Zifferblatt, den Drehknopf, die Anzeigen SOLL-PULSBREITE, GEMESSEN und STROM |
-| SWEEP | SWEEP | das Zifferblatt mit dem Sweep; OPTIONEN öffnet KURVE, TEMPO und BEREICH |
+| LIVE | LIVE | das Zifferblatt, den Drehknopf, die Anzeigen SOLL-PULSBREITE, GEMESSEN und STROM; OPTIONEN öffnet das Servoprofil |
+| SWEEP | SWEEP | das Zifferblatt mit dem Sweep; OPTIONEN öffnet KURVE, TEMPO, BEREICH und HALTEZEIT |
 | TEST | TEST | das Feld AUTOMATISCHER TEST, die Grenzen von SUPPLY, der Verlauf und das Feld des Laufs, die Karte BEREIT an der Stelle des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet die Liste des automatischen Tests |
-| ENDLAGENLAUF | ENDLAGENLAUF | Modus- und Ausgangszeile, UNTERES ENDE und OBERES ENDE und die Zustandszeilen auf der linken Karte, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet MODUS, SERVO, SERVOPULSE, STROM und Warten vor PWM ([Starten](Servo-de.md#starten)) |
+| ENDLAGENLAUF | ENDLAGENLAUF | Modus- und Ausgangszeile, UNTERES ENDE und OBERES ENDE und die Zustandszeilen auf der linken Karte, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet MODUS, SERVO, SERVOPULSE, STROM, Warten vor PWM, den Namen des Prüflings und die Testaufzeichnungen ([Starten](Servo-de.md#starten)) |
 | RUDER | RUDER | Ausschlag in ° und mm, LÄNGE, 1000us, ZENTRIEREN, 2000us, NULLPUNKT und MAX LÖSCHEN ([Ruderausschlag](Servo-de.md#ruderausschlag)) |
 | RUDER AUTO | RUDER AUTO | das Feld von AUTO statt LÄNGE und der Fahrtasten, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste ([AUTO-Endpoints](Servo-de.md#auto-endpoints)) |
 | KST | SERVO > KST | die Programmierung für KST und Chaservo über dem linken Feld, die Karte BEREIT statt des Ausgangsfelds, WERTE SCHREIBEN in der Fußleiste ([Programmierer](#programmierer)) |
@@ -1701,8 +1701,9 @@ Zeile PD MINI. Die Fußleiste bei y
 der Portzeile darunter, ARM oder DISARM (WERTE SCHREIBEN auf KST und
 HITEC) und OPTIONEN.
 OPTIONEN ist grau, solange der Prüfstand nicht SAFE ist oder ein Sweep
-oder ein Lauf läuft, und nennt das beim Tippen im Alarmband. LIVE hat
-keine OPTIONEN.
+oder ein Lauf läuft, und nennt das beim Tippen im Alarmband. Auf LIVE
+öffnet OPTIONEN das Servoprofil, die Liste des Hubs
+([Einstellungen](#einstellungen)).
 
 LIVE, SWEEP und RUDER zeigen BEREIT unter der Taste PORT: Zeilen von 30px
 ab y 96, jede mit Punkt, Bezeichnung von 10 Zellen und Zustand von 20.
@@ -1712,7 +1713,10 @@ SET-Zeile, y 190 bis 238 auf LIVE und SWEEP und y 250 bis 298 auf RUDER:
 SET V und SET A, je 80 x 48px, 8px Abstand, und die Grafik bis zum Ende
 der Spalte, 180 x 48px. Darunter haben LIVE und SWEEP TEMPO, die
 Bezeichnung bei y 244 und den Regler bei y 268 bis 308. Alle drei haben
-die Typzeile bei y 318 bis 350. LIVE hat ZENTRIEREN und FREIGEBEN, SWEEP
+die Typzeile bei y 318 bis 350. Ein Tippen auf die Typzeile öffnet das
+Servoprofil, die Liste des Hubs, an der Stelle der OPTIONEN-Liste mit TYP
+im Blick; es öffnet nur bei SAFE und nennt sonst die Ablehnung im
+Alarmband, wie OPTIONEN. LIVE hat ZENTRIEREN und FREIGEBEN, SWEEP
 hat SWEEP und FREIGEBEN, je 174 x 48px bei y 356. Die Schienenzeile bei
 y 412 nennt das Messgerät dessen, was das Servo speist, und zeigt seine
 Volt und Ampere, `5.02V  0.120A`, ohne Messwert `--V  --A`; mit dem
@@ -1787,9 +1791,9 @@ Schritte schalten ARMED.
 ![LIVE auf dem rbmod-Carrier: PORT-PWM und PROG 5V gelb, ARM schaltet sie ein](img/de/servo-rbmod.png)
 
 RUDER AUTO und ENDLAGENLAUF behalten die Taste PORT und zeigen eine Karte
-BEREIT an der Stelle des Ausgangsfelds: Zeilen von 30px ab y 96, zehn auf
-RUDER AUTO und neun auf ENDLAGENLAUF, jede mit Punkt, Bezeichnung von 10
-Zellen und Zustand von 20, und die Schienenzeile bei y 404. Jeder Zustand
+BEREIT an der Stelle des Ausgangsfelds: Zeilen von 30px ab y 96, je zehn,
+so viele, wie die Karte über der Schienenzeile bei y 404 fasst, jede mit
+Punkt, Bezeichnung von 10 Zellen und Zustand von 20. Jeder Zustand
 steht auf einem erhabenen Schild von 24px Höhe, sein rechtes Ende um 30°
 gegen die Senkrechte geschnitten, und die Schilder einer Karte teilen die
 linke Kante, die der breiteste angezeigte Zustand braucht: sein Text, je
@@ -1799,13 +1803,22 @@ Versorgung einschaltet, auf ihre Rückmeldung wartet, ARM schaltet und den
 Lauf in einem Halten startet
 ([Servo: AUTO-Endpoints](Servo-de.md#auto-endpoints),
 [Servo: Starten](Servo-de.md#starten)). Nichts vom Ausgangsfeld nimmt auf
-einem der beiden Bildschirme einen Druck an.
+einem der beiden Bildschirme einen Druck an. Ein Tippen auf BEREICH, PULS
+MIN bis PULS MAX, öffnet das Servoprofil mit PULS MIN im Blick. Die
+Testaufzeichnungen haben auf keiner der beiden vollen Karten eine Zeile:
+ihre OPTIONEN-Listen führen sie, neben dem Namen des Prüflings.
 
-TEST zeigt an derselben Stelle eine Karte BEREIT: sieben Zeilen ab y 96,
-PORT, MESSGERÄT, WINKEL, PD MINI, STUFEN, BEREICH und ARM, und die
+TEST zeigt an derselben Stelle eine Karte BEREIT: acht Zeilen ab y 96,
+PORT, MESSGERÄT, WINKEL, PD MINI, STUFEN, BEREICH, ARM und LOG, und die
 Schienenzeile bei y 404. WINKEL nennt die Winkelquelle, verweigert nichts,
 und ein Tippen darauf öffnet die Liste WINKELQUELLE
-([Servo](Servo-de.md#winkelquelle)). Die Mitte seiner Fußleiste ist 2s HALTEN: ARM + START, das
+([Servo](Servo-de.md#winkelquelle)). Ein Tippen auf BEREICH öffnet die
+OPTIONEN-Liste von TEST bei ihrer Zeile Bereich. LOG zeigt die
+Testaufzeichnungen: `EIN`, oder `AUS` in Gelb, dann schreibt ein Lauf
+keine Datei. Ein Tippen schaltet sie um und speichert; während eines Laufs
+oder seiner Startschritte wird es mit `LOG: Der Lauf behält seine
+Einstellung. Schalte nach dem Lauf um.` abgelehnt, und die Zeile zeigt den
+Stand vom Start des Laufs. LOG verweigert nichts. Die Mitte seiner Fußleiste ist 2s HALTEN: ARM + START, das
 PORT-PWM einschaltet, wo der Port es braucht, ARM schaltet und den
 automatischen Test in einem Halten startet; die Stufen des Laufs schalten
 den PD mini bei der Spannung jeder Stufe. Während des Laufs lautet die
@@ -2666,14 +2679,28 @@ Eine Änderung gilt bis SPEICHERN als nicht gespeichert.
 | Bildschirm | OPTIONEN öffnet |
 | --- | --- |
 | der Hub | das Servoprofil: AUSGANG mit TYP, PULSRATE, PULS MIN, PULS MITTE, PULS MAX, TRIMMUNG, WEG, UMKEHREN und HV-SERVO; PRÜFLING mit NAME und BERICHT |
-| SWEEP | KURVE, TEMPO und BEREICH |
-| TEST | SPANNUNGSSTUFEN: Stufe 4.8V, Stufe 6.0V, HV-SERVO, Stufe 7.4V, Stufe 8.4V; BROWN-OUT: Brown-out, Brown-out Mindestspannung, Brown-out-Schritt; GRENZWERTE: Blockierschwelle, Ruhestrom max, Haltestrom max, Stellzeit max; DAUER UND ZEITEN: Länge nach, Testzeit, Bewegungen, Haltezeit, Einschwingzeit |
-| ENDLAGENLAUF | MODUS, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, STROM und Warten vor PWM; ein Lauf programmiert mit 5,0V ([Servo](Servo-de.md#die-50v-des-laufs)). STROM ist SET A von SUPPLY, `SET A 2.00A`, ein Tipp sein Tastenfeld; `--` und gesperrt ohne PD mini ([Servo](Servo-de.md#die-strombegrenzung-des-laufs)) |
+| LIVE | das Servoprofil, die Liste des Hubs |
+| SWEEP | KURVE, TEMPO, Bereich und Haltezeit |
+| TEST | SPANNUNGSSTUFEN: Stufe 4.8V, Stufe 6.0V, HV-SERVO, Stufe 7.4V, Stufe 8.4V; BROWN-OUT: Brown-out, Brown-out Mindestspannung, Brown-out-Schritt; GRENZWERTE: Blockierschwelle, Ruhestrom max, Haltestrom max, Stellzeit max; DAUER UND ZEITEN: Länge nach, Testzeit, Bewegungen, Haltezeit, Einschwingzeit; BEREICH: Bereich, AUSGANG; PRÜFLING: Name des Prüflings, Bericht |
+| ENDLAGENLAUF | MODUS, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, STROM, Warten vor PWM, Name des Prüflings und Testaufzeichnungen; ein Lauf programmiert mit 5,0V ([Servo](Servo-de.md#die-50v-des-laufs)). STROM ist SET A von SUPPLY, `SET A 2.00A`, ein Tipp sein Tastenfeld; `--` und gesperrt ohne PD mini ([Servo](Servo-de.md#die-strombegrenzung-des-laufs)) |
 | RUDER | LÄNGE, SENSOR-MITTE und WINKELQUELLE |
-| RUDER AUTO | die Ziele, MARGIN, TOLERANZ, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, WINKELQUELLE, STROM und Warten vor PWM; STROM wie beim ENDLAGENLAUF |
+| RUDER AUTO | die Ziele, MARGIN, TOLERANZ, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, WINKELQUELLE, STROM, Warten vor PWM, Name des Prüflings und Testaufzeichnungen; STROM wie beim ENDLAGENLAUF |
 | SERVO > KST | KST EXPERT MODE, eine Ebene tiefer |
 | HITEC | SERIE und EMPFANG |
-| LIVE | keine Liste |
+
+Bereich und Haltezeit sind je eine Einstellung auf SWEEP und TEST, Name
+des Prüflings und Bericht die des Hubs, Testaufzeichnungen die von SETUP >
+SD CARD: eine Änderung in einer Liste lesen alle anderen Listen, Karten
+und Läufe.
+
+Das Profil öffnet auch von einem Funktionsbildschirm, an der Stelle seiner
+OPTIONEN-Liste: ein Tippen auf die Typzeile von LIVE, SWEEP und RUDER
+öffnet es mit TYP im Blick, ein Tippen auf die Zeile BEREICH der Karten
+BEREIT von ENDLAGENLAUF und RUDER AUTO und auf die Zeile AUSGANG von TEST
+mit PULS MIN im Blick. Seine Leiste nennt SERVO. Es folgt der Liste einer
+Funktion: es öffnet nur bei SAFE und schließt, sobald der Prüfstand scharf
+wird. Das Home-Feld schließt es, und der Funktionsbildschirm erscheint
+wieder.
 
 Die Liste einer Funktion öffnet nur bei SAFE, ohne Sweep und ohne Lauf;
 wird der Prüfstand darunter scharf, schließt sie, ebenso die Zeilen eines
@@ -2703,12 +2730,16 @@ hohen Wertefeld im Abstand von 70px ab y 64. Hinweise und Speicherstatus
 enden 2px über dem Feldboden. SCHLIESSEN oben rechts neben dem Laufnamen
 oder das Home-Feld führt zum Feld des Laufs zurück.
 
-Die Liste des automatischen Tests hat 17 Zeilen unter vier Überschriften.
+Die Liste des automatischen Tests hat 21 Zeilen unter sechs Überschriften.
 Die Zeile jeder Überschrift sagt, was ihre Zeilen gerade bewirken:
 SPANNUNGSSTUFEN die Stufen eines Laufs oder `KEINE STUFE GEWÄHLT` in
 Warnfarbe; BROWN-OUT den Lauf am geltenden Netzteil,
 `Ab 5.00V abwärts in 0.20V-Schritten bis 3.30V, 10 Spannungen`; GRENZWERTE
-ein BLOCKIERT AB, das kein Messwert erreicht, in Warnfarbe. Stufe 7.4V und
+ein BLOCKIERT AB, das kein Messwert erreicht, in Warnfarbe; BEREICH die
+Enden des Laufs, `1100-1900us`, in Warnfarbe, solange sie nicht beiderseits
+von PULS MITTE liegen. AUSGANG unter BEREICH zeigt das Profil wie die
+Typzeile, `STANDARD PWM  50Hz  1000-2000`; ein Tippen öffnet das Profil.
+Stufe 7.4V und
 Stufe 8.4V nehmen bei HV-SERVO AUS keinen Druck an, Testzeit keinen bei
 Länge nach BEWEGUNGEN, Bewegungen keinen bei ZEIT; jede nennt den Grund an
 Stelle ihrer Hilfezeile, `Nur mit HV-SERVO EIN`. TEST ZURÜCKSETZEN setzt
