@@ -232,6 +232,16 @@ const char *svs_seq_label(char *buf, size_t n);
 /** @brief The last failure's line, `PROG 5V FAILED: NO READ-BACK IN
  *         1000ms`, until a hold begins a new one.  @return it, or NULL */
 const char *svs_seq_failure(void);
+/**
+ * @brief Whether @p why is the servo rail read low (SV_LIM_RAIL_LOW,
+ *        SV_LIM_PROG_RAIL) while the sequence's READ-BACK still gives the
+ *        supply it switched on its time to raise the rail
+ *        (SERVO_SEQ_READBACK_MS): the READY card's row reads it amber, as
+ *        a part the steps switch.
+ * @param why a gate text, or NULL
+ * @return true then
+ */
+bool svs_seq_rail_waits(const char *why);
 
 /* --- servo_rudder_auto_ready.c: RUDDER AUTO's rows ------------------------- */
 

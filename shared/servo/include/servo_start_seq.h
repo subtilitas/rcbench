@@ -26,7 +26,11 @@
  *      a reading taken wholly after that (in->reading_from_ms), all within
  *      SERVO_SEQ_READBACK_MS (1000ms) of step 2.  The caller's checks are
  *      judged on that reading: a rail the INA3221 measured with the supply
- *      still off refuses nothing.
+ *      still off refuses nothing.  A supply reads back ON before its
+ *      output has risen, so a refusal that is the servo rail read low
+ *      (in->rail_low) waits for a reading that lifts it until the step's
+ *      1000ms are up, and fails the step only then.  Every other refusal
+ *      fails it on the first reading.
  *   4. ARM: ARM asked where the bench is not ARMED; ARMED within
  *      SERVO_SEQ_ARMED_MS (500ms).
  *   5. RUN: the caller starts its run and says whether it took it
@@ -133,6 +137,9 @@ typedef struct {
     bool pd_on;     /**< the PD mini's output reads back ON               */
     bool armed;     /**< the bench reads ARMED                            */
     bool refused;   /**< a check of the caller's refuses the run now      */
+    bool rail_low;  /**< the refusal is the servo rail read low, which a
+                         supply switched on lifts as its output rises:
+                         READ-BACK gives it until SERVO_SEQ_READBACK_MS */
     uint8_t refused_part; /**< servo_seq_part_t the refusal names;
                                SERVO_SEQ_PART_NONE for the step's own    */
     bool reading;   /**< a reading is in, reading_from_ms set             */

@@ -83,6 +83,12 @@ static struct {
     uint32_t rail_from;
     bool rail_fed;          /* fed from elsewhere: on whatever is off */
     bool rail_dead;         /* a broken feed: off whatever is on */
+    /* The feed's output rises rail_rise ms after the feed reads ON, as
+     * the station's PD mini reads its output ON before the rail has
+     * risen; 0 at once. */
+    uint32_t rail_rise;
+    bool feed_was;
+    uint32_t feed_from;
     /* The IOmcu's failsafe (safety_gate.h): latched (FAULT 01) and the
      * heartbeat distrusted (FAULT 10) as the IOmcu holds them; STATUS
      * shows them after ra_faults().  The supply's and PROG 5V's ON are
@@ -319,7 +325,12 @@ static inline void ra_ms(uint32_t ms)
             g_rig.ms);
         ra.sum += amps;
         ra.n++;
-        const bool rail = ra_rail_on();
+        const bool feed = ra_rail_on();
+        if (feed && !ra.feed_was) {
+            ra.feed_from = g_rig.ms;
+        }
+        ra.feed_was = feed;
+        const bool rail = feed && g_rig.ms - ra.feed_from >= ra.rail_rise;
         if (rail && !ra.rail_was) {
             ra.rail_from = g_rig.ms;
         }

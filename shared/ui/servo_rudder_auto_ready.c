@@ -401,6 +401,17 @@ static bool waits_on_port(int i)
            || i == RAR_RANGE;
 }
 
+/**
+ * @brief Whether a row with @p why reads amber: a part the hold switches,
+ *        or the rail the steps' supply still raises (svs_seq_rail_waits()).
+ * @param why a gate text
+ * @return true then
+ */
+static bool row_amber(const char *why)
+{
+    return rauto_seq_fixes(why) || svs_seq_rail_waits(why);
+}
+
 bool rauto_ready_row(int i, rdy_row_t *r)
 {
     if (r == NULL || i < 0 || i >= (int)RAR_COUNT) {
@@ -424,7 +435,7 @@ bool rauto_ready_row(int i, rdy_row_t *r)
         if (why[k] == NULL || row[k] != (rauto_row_t)i) {
             continue;
         }
-        if (!rauto_seq_fixes(why[k])) {
+        if (!row_amber(why[k])) {
             if (bad == NULL) {
                 bad = why[k];
             }
@@ -443,7 +454,7 @@ bool rauto_ready_row(int i, rdy_row_t *r)
         r->st  = (uint8_t)RDY_IDLE;
         r->why = mine;
         snprintf(r->value, sizeof(r->value), "--");
-    } else if (mine != NULL && rauto_seq_fixes(mine)) {
+    } else if (mine != NULL && row_amber(mine)) {
         r->st  = (uint8_t)RDY_SEQ;
         r->why = mine;
         const bool arm = (i == RAR_ARM);

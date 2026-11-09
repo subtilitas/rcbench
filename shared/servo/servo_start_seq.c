@@ -286,6 +286,11 @@ static bool readback(servo_seq_t *q, uint32_t now_ms,
     if (!settled(q, in)) {
         return false;
     }
+    /* A rail read low while the supply's output rises: the step's time
+     * above judges it. */
+    if (in->refused && in->rail_low) {
+        return false;
+    }
     if (in->refused) {
         fail(q, refused_part(q, in), SERVO_SEQ_WHY_REFUSED, d);
         return false;

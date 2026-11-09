@@ -14,7 +14,10 @@
  * opens SUPPLY's LIMITS.  A PD mini that took no 5.0V at START names that
  * on the run's state lines, and no step is taken.  The start sequence's
  * read-back waits for the PD mini's reading to hold 5.0V with its output
- * on: one that does not answer with it in 1000ms fails the step.
+ * on: one that does not answer with it in 1000ms fails the step.  The PD
+ * mini reads its output ON before the output has risen, so a rail read
+ * under 3.0V after that is judged again on each window until the same
+ * 1000ms are up, and fails the step only then (servo_start_seq.h).
  *
  * SPDX-License-Identifier: MIT
  */

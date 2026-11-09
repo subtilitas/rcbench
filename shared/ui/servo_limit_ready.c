@@ -412,6 +412,17 @@ static void met_value(int i, char *b, size_t n, uint8_t *st)
     }
 }
 
+/**
+ * @brief Whether a row with @p why reads amber: a part the hold switches,
+ *        or the rail the steps' supply still raises (svs_seq_rail_waits()).
+ * @param why a gate text
+ * @return true then
+ */
+static bool row_amber(const char *why)
+{
+    return lim_seq_fixes(why) || svs_seq_rail_waits(why);
+}
+
 bool lim_ready_row(int i, rdy_row_t *r)
 {
     if (r == NULL || i < 0 || i >= (int)LRR_COUNT) {
@@ -449,7 +460,7 @@ bool lim_ready_row(int i, rdy_row_t *r)
         if (row != (limrun_row_t)i) {
             continue;
         }
-        if (!lim_seq_fixes(why)) {
+        if (!row_amber(why)) {
             if (bad == NULL) {
                 bad = why;
             }
@@ -468,7 +479,7 @@ bool lim_ready_row(int i, rdy_row_t *r)
         r->st  = (uint8_t)RDY_IDLE;
         r->why = mine;
         snprintf(r->value, sizeof(r->value), "--");
-    } else if (mine != NULL && lim_seq_fixes(mine)) {
+    } else if (mine != NULL && row_amber(mine)) {
         r->st  = (uint8_t)RDY_SEQ;
         r->why = mine;
         const bool arm = (i == LRR_ARM);
