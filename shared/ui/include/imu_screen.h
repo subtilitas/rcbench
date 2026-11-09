@@ -133,6 +133,14 @@ bool imu_screen_bind(uint8_t i);
  *  @return Whether it is. */
 bool imu_screen_bind_free(void);
 /**
+ * @brief Whether a sensor is bound and holds the link: subscribed, with
+ *        frames or without.  A connected Bluetooth LE sensor does not
+ *        advertise, so no scan lists it.
+ * @param v The view; NULL gives false.
+ * @return true for a bound address and BOUND, CONNECTED or NO FRAMES.
+ */
+bool imu_view_bound_linked(const imu_view_t *v);
+/**
  * @brief Search for sensors: IMU ON in SETUP when it is off (saved), and
  *        the SCAN queued once Bluetooth LE runs and no scan or calibration
  *        does.  A scan already under way, no sync with the C6 and a C6

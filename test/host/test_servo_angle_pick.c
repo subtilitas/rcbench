@@ -4,8 +4,9 @@
  * the SETTINGS list's ANGLE SOURCE row open it on a
  * SAFE bench, with a reading and without; the AS5600 and the IMUs the last
  * scan found as its entries; what a pick sets; SEARCH FOR IMU switching
- * the IMU on and scanning once Bluetooth LE runs; NO IMU FOUND; and the
- * list following the IMU's view while it is open.  The rig is
+ * the IMU on and scanning once Bluetooth LE runs; NO IMU FOUND and NO
+ * OTHER IMU FOUND; RUDDER AUTO's refusal of the IMU's yaw in 6-AXIS and
+ * its IMU YAW list; and the list following the IMU's view while it is open.  The rig is
  * servo_rauto_kst_rig.h; the IMU's view is handed to the IMU screen as the
  * panel hands it over (imu_screen_set()).
  *
@@ -26,6 +27,8 @@
  * - test_and_limit_run_show_the_angle_and_never_refuse_on_it
  * - a_limit_run_shows_whether_it_reads_angles_as_it_started
  * - each_entry_names_the_full_address_and_its_type
+ * - rudder_auto_refuses_imu_yaw_in_6_axis_and_offers_the_fixes
+ * - a_scan_beside_a_linked_sensor_reads_no_other_imu_found
  *
  * SPDX-License-Identifier: MIT
  */
@@ -433,6 +436,111 @@ TEST_CASE(rudder_autos_angle_row_and_list_row_open_the_list)
     CHECK_EQ(angle_pick_count(), 2);
 }
 
+/* RUDDER AUTO on the IMU's yaw, AXIS Z, while the IMU runs 6-AXIS: the
+ * ANGLE row reads `IMU YAW NEEDS 9-AXIS` in red and refuses the hold; a tap
+ * opens the IMU YAW list.  A pick of AXIS X sets and saves it and the row
+ * no longer refuses on yaw; back on Z, SWITCH IMU TO 9-AXIS does the same
+ * with ALGORITHM.  AXIS Y in 6-AXIS, and the AS5600, are not refused. */
+TEST_CASE(rudder_auto_refuses_imu_yaw_in_6_axis_and_offers_the_fixes)
+{
+    safe_on(SERVO_FN_RAUTO, IMU_LINK_CONNECTED);
+    settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_IMU);
+    settings_set(SET_IMU_ALGO, 0.0f);
+    settings_set(SET_IMU_AXIS, 2.0f);
+    servo_screen_set_imu_axis(2u, false);
+    ra_ms(100u);
+    rdy_row_t r;
+    CHECK(rauto_ready_row(RAR_ANGLE, &r));
+    CHECK_EQ(r.st, (uint8_t)RDY_BAD);
+    CHECK(r.why == TR(RA_IMU_YAW));
+    CHECK_STR_EQ(r.value, "IMU YAW NEEDS 9-AXIS");
+    CHECK(r.fix);
+    /* Red: no step of the hold fixes it, so it refuses ARM + START. */
+    CHECK(!rauto_seq_fixes(TR(RA_IMU_YAW)));
+    CHECK_EQ(rauto_row_of(TR(RA_IMU_YAW)), RAR_ANGLE);
+    CHECK(rauto_hold_blocked(NULL) != NULL);
+
+    ev(SV_RDY_X, SV_RDY_ROW_Y((int)RAR_ANGLE), TOUCH_EVENT_DOWN, 2);
+    ev(SV_RDY_X, SV_RDY_ROW_Y((int)RAR_ANGLE), TOUCH_EVENT_UP, 2);
+    CHECK_EQ(angle_pick_count(), 3);
+    bool refused = true;
+    CHECK_STR_EQ(entry(0, &refused), "SWITCH IMU TO 9-AXIS");
+    CHECK(!refused);
+    CHECK_STR_EQ(entry(1, NULL), "USE IMU AXIS X (ROLL)");
+    CHECK_STR_EQ(entry(2, NULL), "USE IMU AXIS Y (PITCH)");
+    tap_entry(1);
+    CHECK_EQ(angle_pick_count(), -1);
+    CHECK_EQ(settings_get_int(SET_IMU_AXIS), 0);
+    CHECK_EQ(settings_get_int(SET_IMU_ALGO), 0);
+    CHECK(settings_save_asked());
+    CHECK(angle_pick_yaw_why() == NULL);
+    CHECK(rauto_ready_row(RAR_ANGLE, &r));
+    CHECK(r.why != TR(RA_IMU_YAW));
+
+    settings_set(SET_IMU_AXIS, 2.0f);
+    servo_screen_set_imu_axis(2u, false);
+    CHECK(angle_pick_yaw_why() == TR(RA_IMU_YAW));
+    ev(SV_RDY_X, SV_RDY_ROW_Y((int)RAR_ANGLE), TOUCH_EVENT_DOWN, 2);
+    ev(SV_RDY_X, SV_RDY_ROW_Y((int)RAR_ANGLE), TOUCH_EVENT_UP, 2);
+    tap_entry(0);
+    CHECK_EQ(settings_get_int(SET_IMU_ALGO), 1);
+    CHECK_EQ(settings_get_int(SET_IMU_AXIS), 2);
+    CHECK(angle_pick_yaw_why() == NULL);
+
+    /* Pitch in 6-AXIS, and the AS5600 whatever the IMU holds. */
+    settings_set(SET_IMU_ALGO, 0.0f);
+    servo_screen_set_imu_axis(1u, false);
+    CHECK(angle_pick_yaw_why() == NULL);
+    servo_screen_set_imu_axis(2u, false);
+    settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_AS5600);
+    CHECK(angle_pick_yaw_why() == NULL);
+    /* On the bench ARMED the list takes no pick. */
+    settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_IMU);
+    ra.armed = true;
+    servo_screen_set_armed(true);
+    ra_ms(100u);
+    angle_fix_choose(0);
+    CHECK_EQ(settings_get_int(SET_IMU_ALGO), 0);
+}
+
+/* A bound sensor that holds the link does not advertise: a scan that lists
+ * nothing reads `NO OTHER IMU FOUND`, the bound sensor's row above it, and
+ * a tap names why; a bound sensor still connecting reads `NO IMU FOUND`. */
+TEST_CASE(a_scan_beside_a_linked_sensor_reads_no_other_imu_found)
+{
+    safe_on(SERVO_FN_RUDDER, IMU_LINK_CONNECTED);
+    snprintf(g_v.bound_addr, sizeof(g_v.bound_addr), "%s",
+             "00:0C:BF:08:19:29 P");
+    snprintf(g_v.bound_name, sizeof(g_v.bound_name), "%s", "WT901BLE68");
+    g_v.err = IMU_ERR_NONE_FOUND;
+    view_now();
+    tap_angle_row();
+    CHECK_EQ(angle_pick_count(), 4);
+    bool refused = false;
+    CHECK(strstr(entry(1, &refused), "00:0C:BF:08:19:29 P") != NULL);
+    CHECK(!refused);
+    CHECK_STR_EQ(entry(2, &refused), "NO OTHER IMU FOUND");
+    CHECK(refused);
+    ui_router_set_alert(NULL);
+    tap_entry(2);
+    CHECK_STR_EQ(ui_router_alert(), TR(IMU_ERR_NONE_OTHER));
+    for (int k = 0; k < 2; ++k) {
+        g_v.link = k == 0 ? IMU_LINK_BOUND : IMU_LINK_NO_FRAMES;
+        view_now();
+        frame();
+        CHECK_STR_EQ(entry(2, NULL), TR(SV_ANG_NONE_OTHER));
+    }
+    g_v.link = IMU_LINK_CONNECTING;
+    view_now();
+    frame();
+    CHECK_STR_EQ(entry(2, NULL), TR(SV_ANG_NONE));
+    imu_view_t none;
+    memset(&none, 0, sizeof(none));
+    CHECK(!imu_view_bound_linked(NULL));
+    none.link = IMU_LINK_CONNECTED;
+    CHECK(!imu_view_bound_linked(&none));
+}
+
 /* A search owed while Bluetooth LE starts is dropped when the IMU goes off
  * before it runs; a search without sync with the C6 or on a C6 that failed
  * is refused, and its entry names the state. */
@@ -785,5 +893,7 @@ int main(void)
     RUN(test_and_limit_run_show_the_angle_and_never_refuse_on_it);
     RUN(a_limit_run_shows_whether_it_reads_angles_as_it_started);
     RUN(each_entry_names_the_full_address_and_its_type);
+    RUN(rudder_auto_refuses_imu_yaw_in_6_axis_and_offers_the_fixes);
+    RUN(a_scan_beside_a_linked_sensor_reads_no_other_imu_found);
     return test_summary("servo_angle_pick");
 }

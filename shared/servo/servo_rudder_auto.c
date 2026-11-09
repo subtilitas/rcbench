@@ -96,7 +96,40 @@ bool servo_rauto_wrote(const servo_rauto_t *r)
 bool servo_rauto_restore(const servo_rauto_t *r)
 {
     return r != NULL && r->state == SERVO_RAUTO_DONE && r->programmed
-        && r->verdict != SERVO_RAUTO_PASS;
+        && r->verdict != SERVO_RAUTO_PASS && !r->restore_off;
+}
+
+void servo_rauto_servo_seen(servo_rauto_t *r, const servo_rauto_servo_t *sv)
+{
+    if (!servo_rauto_restore(r) || sv == NULL || !sv->ok) {
+        return;
+    }
+    const bool kst = r->cfg.family == SERVO_RAUTO_FAM_KST;
+    if (r->seen_base && sv->value[0] == r->base_value[0]
+        && sv->value[1] == r->base_value[1]
+        && (!kst || memcmp(sv->pulse_dus, r->base_pulse,
+                           sizeof(r->base_pulse)) == 0)) {
+        return;
+    }
+    const bool first = !r->seen_base;
+    r->seen_base = true;
+    memcpy(r->base_value, sv->value, sizeof(r->base_value));
+    memcpy(r->base_pulse, sv->pulse_dus, sizeof(r->base_pulse));
+    if (first) {
+        return;
+    }
+    const bool back = sv->value[0] == r->servo.value[0]
+                      && sv->value[1] == r->servo.value[1]
+                      && (!kst || memcmp(sv->pulse_dus, r->servo.pulse_dus,
+                                         sizeof(r->servo.pulse_dus)) == 0);
+    const bool other = !r->left_unknown
+                       && (sv->value[0] != r->cur[0]
+                           || sv->value[1] != r->cur[1]
+                           || (kst && memcmp(sv->pulse_dus, r->pulse_now,
+                                             sizeof(r->pulse_now)) != 0));
+    if (back || other) {
+        r->restore_off = true;
+    }
 }
 
 uint16_t servo_rauto_scaled(uint16_t value, float goal_deg, float measured_deg,
@@ -140,8 +173,9 @@ static void finish(servo_rauto_t *r, servo_rauto_verdict_t v,
     if (r->in_flight) {
         /* A write on its way when the run ended may have landed: RESTORE
          * is offered for it. */
-        r->programmed = true;
-        r->in_flight  = false;
+        r->programmed   = true;
+        r->left_unknown = true;
+        r->in_flight    = false;
     }
     r->state   = SERVO_RAUTO_DONE;
     r->verdict = v;
@@ -789,7 +823,8 @@ static void sent_failed(servo_rauto_t *r, uint32_t now_ms)
 {
     r->in_flight = false;
     ++r->write_ops;
-    r->programmed = true;
+    r->programmed   = true;
+    r->left_unknown = true;
     abort_why(r, SERVO_RAUTO_WHY_WRITE, now_ms);
 }
 

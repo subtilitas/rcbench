@@ -216,6 +216,13 @@ bool imu_screen_bind(uint8_t i)
 
 bool imu_screen_bind_free(void) { return at_free(); }
 
+bool imu_view_bound_linked(const imu_view_t *v)
+{
+    return v != NULL && v->bound_addr[0] != '\0'
+           && (v->link == IMU_LINK_BOUND || v->link == IMU_LINK_CONNECTED
+               || v->link == IMU_LINK_NO_FRAMES);
+}
+
 bool imu_screen_search(void)
 {
     if (ims.v.link == IMU_LINK_C6_FAILED || ims.v.link == IMU_LINK_NO_BT
@@ -308,8 +315,12 @@ static const char *err_text(char *buf, size_t n)
     case IMU_ERR_CONNECT:    snprintf(buf, n, "%s", TR(IMU_ERR_CONNECT)); break;
     case IMU_ERR_NOT_WIT:    snprintf(buf, n, "%s", TR(IMU_ERR_NOT_WIT)); break;
     case IMU_ERR_WRITE:      snprintf(buf, n, "%s", TR(IMU_ERR_WRITE)); break;
-    case IMU_ERR_NONE_FOUND: snprintf(buf, n, "%s", TR(IMU_ERR_NONE_FOUND));
-                             break;
+    case IMU_ERR_NONE_FOUND:
+        /* The bound sensor holds the link and does not advertise. */
+        snprintf(buf, n, "%s", imu_view_bound_linked(&ims.v)
+                                   ? TR(IMU_ERR_NONE_OTHER)
+                                   : TR(IMU_ERR_NONE_FOUND));
+        break;
     case IMU_ERR_SCAN:
         snprintf(buf, n, TR(IMU_ERR_SCAN), (unsigned)ims.v.err_code);
         break;

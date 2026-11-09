@@ -103,7 +103,8 @@
  * no servo) asks LEAVE in place of the output off, so the port comes
  * back.  The values last written stay in the servo; RESTORE on the
  * programming page gives back those before the run after a FAIL or an
- * abort (servo_rauto_restore()).
+ * abort (servo_rauto_restore()), offered until a later read of the
+ * programmer shows them back or otherwise changed (servo_rauto_servo_seen()).
  *
  * The protections, in every phase: a 1ms sample at or above
  * SERVO_LIMRUN_HARD_MA, or a clipped one, ends the run
@@ -336,6 +337,18 @@ typedef struct {
     float    eff_from[2],             /**< the measure before the first, ° */
              eff_expect[2];           /**< the change the model gives for
                                            them, summed, ° */
+    bool     left_unknown;            /**< a write's answer missing at the
+                                           end: what the servo holds is not
+                                           known */
+    bool     seen_base;               /**< base_value and base_pulse hold
+                                           the programmer's servo as first
+                                           seen after the end */
+    uint16_t base_value[2],           /**< its two values */
+             base_pulse[3];           /**< its pulses (KST) */
+    bool     restore_off;             /**< RESTORE no longer offered: a
+                                           later read holds the values
+                                           before the run, or values the
+                                           run did not leave */
 } servo_rauto_t;
 
 /**
@@ -471,11 +484,25 @@ bool servo_rauto_wrote(const servo_rauto_t *r);
 /**
  * @brief RESTORE is offered: the run ended as FAIL or ABORTED with the
  *        servo's values changed, or with a write handed out and its
- *        answer not in (it may have landed).
+ *        answer not in (it may have landed), and no read since shows the
+ *        values put back or changed otherwise (servo_rauto_servo_seen()).
  * @param r Run state; NULL gives false.
- * @return true when DONE, programmed, and not PASS.
+ * @return true when DONE, programmed, not PASS, and not cleared.
  */
 bool servo_rauto_restore(const servo_rauto_t *r);
+/**
+ * @brief The programmer's servo after the run, handed in each frame while
+ *        RESTORE is offered.  The first one handed in is the base: what
+ *        the programmer held at the end.  One that differs from the base
+ *        is a later read or write, and becomes the base.  It clears
+ *        RESTORE when its values (KST: and pulses) are the ones before the
+ *        run, or when they are not the ones the run left; the latter not
+ *        after an end with a write's answer missing, whose values are not
+ *        known.
+ * @param r  Run state; nothing unless servo_rauto_restore().
+ * @param sv The servo; NULL or one not ok is ignored.
+ */
+void servo_rauto_servo_seen(servo_rauto_t *r, const servo_rauto_servo_t *sv);
 /**
  * @brief The outbox: OPEN, the CSV's lines, the report's lines (TXT), END.
  * @param r    Run state; NULL gives NONE.

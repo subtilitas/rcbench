@@ -9,7 +9,8 @@
  * guess is swapped, twice not found is NO_EFFECT; both end pulses on one side
  * of the zero is MAPPING; the KST pulse write comes before any end pulse,
  * Hitec gets none; the report lists every measure and the CSV one row a
- * measure; start refuses what lies outside its ranges; the 32-bit ms wrap
+ * measure; RESTORE cleared by a later read with the values back or
+ * changed; start refuses what lies outside its ranges; the 32-bit ms wrap
  * inside a settle.
  *
  * The rig is servo_rauto_rig.h.
@@ -550,8 +551,51 @@ TEST_CASE(a_check_outside_the_tolerance_writes_that_side_again)
     CHECK_EQ(g.run.writes[0], 2u);
 }
 
+/* RESTORE after a FAIL that changed a value: the programmer's servo as the
+ * run left it keeps it, however often it is seen; a read with the values
+ * before the run clears it, as does one with values the run did not
+ * leave.  After an end with a write's answer missing only the values
+ * before the run clear it. */
+TEST_CASE(restore_goes_once_a_read_shows_the_values_back_or_changed)
+{
+    for (int k = 0; k < 3; ++k) {
+        rig_init(0u);
+        g.cfg.family = SERVO_RAUTO_FAM_HITEC_D;
+        g.v[0] = 138u;
+        g.frozen[1] = true;
+        CHECK(start());
+        run_for(RAUTO_MS);
+        CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_NO_EFFECT);
+        CHECK(servo_rauto_restore(&g.run));
+        servo_rauto_servo_t sv;
+        memset(&sv, 0, sizeof(sv));
+        sv.ok = true;
+        sv.value[0] = 138u;
+        sv.value[1] = 127u;             /* as the run left it */
+        servo_rauto_servo_seen(&g.run, &sv);
+        servo_rauto_servo_seen(&g.run, &sv);
+        CHECK(servo_rauto_restore(&g.run));
+        servo_rauto_servo_seen(&g.run, NULL);
+        sv.ok = false;
+        sv.value[1] = 150u;
+        servo_rauto_servo_seen(&g.run, &sv);
+        CHECK(servo_rauto_restore(&g.run));
+        sv.ok = true;
+        if (k == 2) {
+            g.run.left_unknown = true;
+            sv.value[1] = 140u;         /* neither: kept */
+            servo_rauto_servo_seen(&g.run, &sv);
+            CHECK(servo_rauto_restore(&g.run));
+        }
+        sv.value[1] = k == 1 ? 140u : 150u;
+        servo_rauto_servo_seen(&g.run, &sv);
+        CHECK(!servo_rauto_restore(&g.run));
+    }
+}
+
 int main(void)
 {
+    RUN(restore_goes_once_a_read_shows_the_values_back_or_changed);
     RUN(a_check_outside_the_tolerance_writes_that_side_again);
     RUN(a_first_measure_at_the_tolerance_gives_the_side_its_direction);
     RUN(a_found_register_is_not_tried_again_on_a_later_write);

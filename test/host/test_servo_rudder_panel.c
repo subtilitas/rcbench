@@ -23,6 +23,7 @@
  * - the_imu_reads_in_hundredths_on_the_readout_and_the_max_line
  * - another_source_drops_the_zero_and_the_max
  * - another_imu_axis_drops_the_zero_and_the_max
+ * - another_imu_algorithm_drops_the_zero_and_the_max
  * - another_imu_sign_drops_the_zero_and_the_max
  * - leaving_servo_from_rudder_disarms
  * - the_target_row_names_the_pin_the_buttons_drive
@@ -688,6 +689,22 @@ TEST_CASE(another_imu_axis_drops_the_zero_and_the_max)
     dropped();
 }
 
+/* With the IMU as the source, another ALGORITHM drops the zero and the
+ * MAX: the sensor's fusion changes, 9-AXIS references yaw to the
+ * magnetometer. */
+TEST_CASE(another_imu_algorithm_drops_the_zero_and_the_max)
+{
+    fresh();
+    settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_IMU);
+    settings_set(SET_IMU_ALGO, 0.0f);
+    servo_screen_set_imu_axis(2u, false);
+    to_rudder();
+    zero_and_max();
+    CHECK(rudder_geo()->zeroed);
+    settings_set(SET_IMU_ALGO, 1.0f);
+    dropped();
+}
+
 /* With the IMU as the source, the other SIGN on the same AXIS drops the
  * zero and the MAX, and a render after it draws NO ZERO. */
 TEST_CASE(another_imu_sign_drops_the_zero_and_the_max)
@@ -1147,6 +1164,7 @@ int main(void)
     RUN(the_imu_reads_in_hundredths_on_the_readout_and_the_max_line);
     RUN(another_source_drops_the_zero_and_the_max);
     RUN(another_imu_axis_drops_the_zero_and_the_max);
+    RUN(another_imu_algorithm_drops_the_zero_and_the_max);
     RUN(another_imu_sign_drops_the_zero_and_the_max);
     RUN(a_new_imu_zero_drops_the_zero_and_the_max);
     RUN(leaving_servo_from_rudder_disarms);

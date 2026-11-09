@@ -107,15 +107,17 @@ static float src_defl_now(void)
 /**
  * @brief The source in force as rudder_t's geo_src keeps it: the AS5600,
  *        or the IMU with its AXIS and SIGN.
- * @return 1 the AS5600, 2 + 2 x AXIS + SIGN the IMU
+ * @return 1 the AS5600, 2 + 2 x AXIS + SIGN + 8 for 9-AXIS the IMU
  */
 static uint32_t src_key(void)
 {
     if (enc_src() != SERVO_ANGLE_IMU) {
         return 1u;
     }
-    /* A new IMU zero moves every IMU angle: it is another source too. */
+    /* A new IMU zero moves every IMU angle, and ALGORITHM changes the
+     * sensor's fusion: each is another source too. */
     return 2u + 2u * (s.imu_axis & 3u) + (s.imu_neg ? 1u : 0u)
+           + (settings_get_int(SET_IMU_ALGO) == 1 ? 8u : 0u)
            + 16u * (s.imu_zero_gen & 0x0FFFFFFFu);
 }
 

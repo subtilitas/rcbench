@@ -26,6 +26,13 @@ history is in git.
 
 ### Changed
 
+- RUDDER AUTO refuses the IMU's AXIS Z (yaw) while IMU algorithm is
+  6-AXIS: without the magnetometer yaw drifts 2.4° in 100s on a BWT901CL,
+  against the 0.5° tolerance. The ANGLE row reads `IMU YAW NEEDS 9-AXIS`
+  in red, ARM + START is refused, and a tap offers `SWITCH IMU TO 9-AXIS`,
+  `USE IMU AXIS X (ROLL)` and `USE IMU AXIS Y (PITCH)`, each written and
+  saved as SETUP > SENSORS does. Roll and pitch stay allowed in 6-AXIS.
+  Another IMU algorithm drops RUDDER's zero and MAX, as another axis does.
 - The PROG 5V lost error on the carrier watches a KST or Hitec session's
   5V as well: under a session a finding waits for a PROG_SUPPLY page read
   that still reads GPIO 21 on.
@@ -112,6 +119,16 @@ history is in git.
 
 ### Fixed
 
+- SEARCH FOR IMU beside a bound sensor that holds the link read `NO IMU
+  FOUND` while that sensor's row stood above it: a connected sensor does
+  not advertise, so no scan lists it. The list reads `NO OTHER IMU FOUND`
+  then, the IMU screen `NO OTHER SENSOR FOUND: THE BOUND ONE IS LINKED`.
+- RUDDER AUTO's `LOAD HITEC015 IN FILES` or `RESTORE IN KST` stayed after
+  the servo's values were put back or written otherwise on the HITEC or
+  KST page, until the next run. The line names the report again once a
+  read or write there shows the values before the run, or values the run
+  did not leave; after an end with a write's answer missing, only the
+  values before the run.
 - RUDDER AUTO could program the 1000us side's end point for the 2000us
   side. Trigger: the 1000us side within TOLERANCE at its first measure,
   so its register was never found by a write, and the 2000us side's first

@@ -266,7 +266,9 @@ TEST_CASE(a_stop_with_the_first_hitec_write_on_its_way_names_the_backup)
  * side at 33.3° and its horn deaf to RIGHT END.  RIGHT END is the 2000us
  * side's from the read (CW); its 2 writes leave the side where it was and
  * the run ends FAIL, LEFT END untouched, the bench SAFE and the backup to
- * load named on the third line. */
+ * load named on the third line.  A read on the HITEC page that finds the
+ * values the run left keeps that line; one that finds RIGHT END changed
+ * by another write clears it. */
 TEST_CASE(a_d_series_side_whose_writes_do_not_move_it_fails_after_two)
 {
     char b[96], want[96];
@@ -297,6 +299,32 @@ TEST_CASE(a_d_series_side_whose_writes_do_not_move_it_fails_after_two)
     CHECK(hl.disarms >= 1u);
     CHECK(!hitec_prog_write_on(model()));
     CHECK_EQ(hitec_prog_state(model()), HITEC_PROG_PWM);
+
+    /* The HITEC page reads the servo as the run left it: the hint stays. */
+    const uint16_t left_b0 = g_drv.dreg[0xB0];
+    CHECK_EQ(hitec_prog_connect(model()), HITEC_PROG_MSG_NONE);
+    for (int i = 0; i < 60000 && hitec_prog_state(model()) != HITEC_PROG_HELD;
+         ++i) {
+        hl_ms(1u);
+    }
+    CHECK_EQ(hitec_prog_state(model()), HITEC_PROG_HELD);
+    hl_ms(100u);
+    CHECK_STR_EQ(rauto_line(2, b, sizeof(b)), "LOAD HITEC001 IN FILES");
+    /* Another file written to the servo, read back: values the run did not
+     * leave, and the hint is gone. */
+    g_drv.dreg[0xB0] = (uint16_t)(left_b0 + 100u);
+    CHECK_EQ(hitec_prog_read(model()), HITEC_PROG_MSG_NONE);
+    for (int i = 0; i < 60000 && hitec_prog_state(model()) != HITEC_PROG_HELD;
+         ++i) {
+        hl_ms(1u);
+    }
+    hl_ms(100u);
+    /* The third line names the report again. */
+    const char *rep = TR(RA_FILE);
+    const size_t head = (size_t)(strchr(rep, '%') - rep);
+    CHECK(strncmp(rauto_line(2, b, sizeof(b)), rep, head) == 0);
+    CHECK_EQ(hitec_prog_leave(model()), HITEC_PROG_MSG_NONE);
+    hl_ms(3000u);
 }
 
 /* A D series servo needs no power cycle, so a rail fed from elsewhere

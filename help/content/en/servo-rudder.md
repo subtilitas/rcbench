@@ -56,6 +56,7 @@ A tap on READY's ANGLE row, with a reading or without, opens the ANGLE SOURCE li
 | `AS5600: OFF IN SETUP` | opens the AS5600 entry of [Sensors](setup-sensors.md); the home tag returns here |
 | a sensor, `HC-06 00:0C:BF:08:19:29 P -50dBm`: name, its full address, its type (`P` public, `R` random), the signal; in two columns on two lines | binds it, switches the IMU on and sets ANGLE SOURCE IMU |
 | `NO IMU FOUND` | the last scan found none; the tap names the usual causes in the band |
+| `NO OTHER IMU FOUND` | the last scan found none while the bound sensor is connected: a connected sensor does not advertise, so its row above stays the only one |
 | `SEARCH FOR IMU` | switches the IMU on if it is off and scans for 10s once Bluetooth LE runs; the list stays open and shows `SCANNING: 10s`, then the sensors found |
 
 The source in force is in the accent colour. With the IMU on and no sensor bound, opening the list starts a scan by itself.
@@ -114,7 +115,9 @@ The run reads the servo and, for KST, sets its pulse range to 1000 to 2000us. Fo
 
 Which end point moves which side: on a Hitec D series servo set to CW, LEFT END is the 1000us side and RIGHT END the 2000us side. On every other servo the first write finds it: the end point of the side's name first, the other one when the side does not move. A side that already meets its target gets no write; the other side's first write finds both. Two writes in a row that do not move their side, or move it the wrong way, end the run with `writes do not move the 2000us side` (or the 1000us side). A write counts once its expected change is at least TOLERANCE; it moved the side when the angle changed by half the expected change or by TOLERANCE, whichever is smaller. Every end switches the bench to SAFE and the supply output off. During the run, ZERO and RESET MAX are locked.
 
-The second line shows the result. The third names the report, RUDDRnnn.TXT. If an unsuccessful run wrote settings or interrupted a write, it instead shows `RESTORE IN KST`, or `LOAD HITEC001 IN FILES` for a Hitec servo.
+The second line shows the result. The third names the report, RUDDRnnn.TXT. If an unsuccessful run wrote settings or interrupted a write, it instead shows `RESTORE IN KST`, or `LOAD HITEC001 IN FILES` for a Hitec servo, until a read or write on the KST or HITEC page shows the values before the run or values the run did not leave.
+
+With the IMU as ANGLE SOURCE on AXIS Z (yaw) and IMU algorithm 6-AXIS, the ANGLE row reads `IMU YAW NEEDS 9-AXIS` in red and the hold is refused: without the magnetometer yaw drifts about 2.4° in 100s, more than TOLERANCE. A tap on the row offers `SWITCH IMU TO 9-AXIS`, `USE IMU AXIS X (ROLL)` and `USE IMU AXIS Y (PITCH)`; a pick sets and saves it. Another axis or algorithm needs a new ZERO.
 
 ![RUDDER AUTO's SETTINGS list](view:servo-rudder-auto-settings)
 

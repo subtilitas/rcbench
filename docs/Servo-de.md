@@ -1214,6 +1214,7 @@ Ihre Einträge, von oben, höchstens 10:
 | der gebundene Sensor, `HC-06 00:0C:BF:08:19:29 P`, wenn die letzte Suche ihn nicht listete | IMU EIN, falls aus, WINKELQUELLE IMU, gespeichert; die Liste schließt |
 | jeder Sensor der letzten Suche, `HC-06 00:0C:BF:08:19:29 P -50dBm`: der Name (`OHNE NAMEN` ohne einen) auf 18 Zeichen gekürzt, die ganze Adresse, ihr Typ (`P` öffentlich, `R` zufällig), die RSSI (Empfangsfeldstärke) | bindet ihn, wenn er nicht der gebundene ist, IMU EIN, falls aus, WINKELQUELLE IMU, gespeichert; die Liste schließt. Solange keine Bindung angenommen wird (kein Sync mit dem C6, die Kalibrierung läuft, die IMU ist aus), ist jeder Sensor außer dem gebundenen verweigert: ein Tippen nennt den Grund im Alarmband und ändert nichts |
 | `KEINE IMU GEFUNDEN` (verweigert) nach einer Suche ohne Fund, oder `SUCHE FEHLGESCHLAGEN: n` | nennt `KEIN SENSOR GEFUNDEN: IST ER AN, KEIN HANDY DRAN?` oder den Code im Alarmband |
+| `KEINE ANDERE IMU GEFUNDEN` (verweigert) nach einer Suche ohne Fund, während der gebundene Sensor verbunden ist: ein verbundener Sensor sendet keine Advertisements, seine Zeile bleibt darüber | nennt `KEIN ANDERER SENSOR: DER GEBUNDENE IST VERBUNDEN` im Alarmband |
 | `IMU SUCHEN` | IMU EIN, falls aus, gespeichert; die Suche startet, sobald Bluetooth LE läuft. Die Liste bleibt offen: der Eintrag zeigt `BLUETOOTH STARTET`, solange der Start läuft, `SUCHE: 10s`, solange die Suche läuft, danach stehen die gefundenen Sensoren oder `KEINE IMU GEFUNDEN` in der Liste. Ohne Sync mit dem C6 ist der Eintrag als `KEIN BLUETOOTH AM C6` verweigert, bei ausgefallenem C6 als `C6 AUSGEFALLEN: NEUSTART` |
 
 Der gültige Eintrag steht in der Akzentfarbe: der AS5600, bei WINKELQUELLE
@@ -1788,6 +1789,7 @@ Halten grau, solange:
 | PROG 5V, PD MINI, VERSORGUNG | ARMED mit PROG 5V aus, ein Port hält es; eine Schiene unter 4.8V ohne PD mini; kein PD mini und kein PROG 5V, um die Versorgung eines KST/Chaservo- oder klassischen Hitec-Servos aus- und einzuschalten; ein erlaubter Bereich von SUPPLY ohne die 5.0V des Laufs | die Zeile des Endlagenlaufs; `PD MINI: 5.0V AUSSERHALB SEINER GRENZEN` für den Bereich, wobei ein Tippen auf die Zeile die Einstellungen von SUPPLY bei AUSGANGSGRENZEN öffnet. START stellt das PD mini auf 5.0V ([Die 5,0V des Laufs](#die-50v-des-laufs)). PROG 5V ist fest 5V und hat keinen Sollwert |
 | PORT-PWM | ARMED mit dem Puls des Ports aus | `PORT-PWM AUS: DISARM, SCHALTE ES IN OUTPUTS EIN`, `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` |
 | BEREICH | PULS MIN über 1000us, PULS MAX unter 2000us oder PULS MITTE nicht strikt zwischen 1000us und 2000us liegt | `PULS MIN BIS MAX MUSS 1000 BIS 2000us ABDECKEN` |
+| WINKEL | die IMU-Achse Z (Gieren) gewählt ist, solange der IMU-Algorithmus 6-AXIS ist: kein Magnetometer hält das Gieren, das an einer BWT901CL 2,4° in 100s driftet, gegen 0,5° Toleranz. Ein Tippen öffnet die Liste IMU-GIEREN, `IMU AUF 9-AXIS SCHALTEN`, `IMU-ACHSE X NEHMEN (ROLLEN)`, `IMU-ACHSE Y NEHMEN (NICKEN)`; eine Wahl schreibt die Einstellung und speichert sie ([IMU](IMU-de.md#die-verbindung)) | `IMU-GIEREN BRAUCHT 9-AXIS` |
 | WINKEL | die Winkelquelle keinen Messwert liefert | `WINKELQUELLE: KEIN MESSWERT` |
 | NULLPUNKT | kein Nullpunkt gesetzt ist | `SETZE DEN NULLPUNKT MIT DEM RUDER IN NEUTRALLAGE` |
 | ARM | ein anderer Lauf läuft oder ein Bericht noch geschrieben wird | die Zeile des Laufs, wie auf TEST |
@@ -1867,7 +1869,12 @@ angefragt ist).
   zurückkommen: `ZURÜCKSPIELEN IN KST` bei KST/Chaservo, `HITEC001 IN
   DATEIEN LADEN` mit dem Namen der Backup-Datei bei Hitec, `KEINE
   BACKUP-DATEI`, wo keine gespeichert wurde. Der Lauf schreibt selbst
-  keinen Wert zurück.
+  keinen Wert zurück. Die Zeile nennt wieder den Bericht, sobald ein
+  späteres Lesen oder Schreiben auf der KST- oder HITEC-Seite die Werte vor
+  dem Lauf zeigt oder Werte, die der Lauf nicht hinterlassen hat; ein
+  Lesen mit den Werten, die der Lauf hinterlassen hat, lässt sie stehen.
+  Nach einem Ende mit fehlender Antwort auf ein Schreiben löschen sie nur
+  die Werte vor dem Lauf.
 
 ### Schutz
 

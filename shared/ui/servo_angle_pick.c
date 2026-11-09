@@ -20,7 +20,9 @@
  *     sync with the C6, the calibration running, the IMU off) each but the
  *     bound one is refused, its tap naming why;
  *   - `NO IMU FOUND`, refused, when the last scan listed none, or the
- *     scan's failure with its code;
+ *     scan's failure with its code; `NO OTHER IMU FOUND` while the bound
+ *     sensor holds the link (imu_view_bound_linked()): a connected sensor
+ *     does not advertise, so the scan cannot list it;
  *   - `SEARCH FOR IMU`; refused with the state while Bluetooth LE starts
  *     for it, without sync with the C6, while a scan runs (`SCANNING:
  *     10s`) and on a C6 that failed.
@@ -42,6 +44,15 @@
  * The entries are built from the view the panel hands the IMU screen each
  * frame, whatever screen shows, so the list needs no panel code of its own.
  *
+ * RUDDER AUTO refuses the IMU's yaw, AXIS Z, while ALGORITHM is 6-AXIS
+ * (angle_pick_yaw_why()): without the magnetometer yaw drifts, 2.4° in
+ * 100s on a BWT901CL on the bench, against a tolerance of 0.5°.  Roll and
+ * pitch, X and Y, hold to gravity in either mode.  Its ANGLE row opens the
+ * IMU YAW list then (angle_fix_open()): `SWITCH IMU TO 9-AXIS`, `USE IMU
+ * AXIS X (ROLL)` and `USE IMU AXIS Y (PITCH)`.  A pick writes SET_IMU_ALGO
+ * or SET_IMU_AXIS and saves, as SETUP > SENSORS does; the panel sends the
+ * ALGORITHM to the sensor with its SAVE once connected (imu_sensor.h).
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -50,6 +61,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "imu.h"
 #include "imu_screen.h"
 #include "sensors_pane.h"
 #include "sensors_rows.h"
@@ -283,7 +295,11 @@ static void build(void)
     const bool idle = v->link != IMU_LINK_SCANNING
                       && !imu_screen_search_owed();
     if (found == 0 && idle && v->err == IMU_ERR_NONE_FOUND) {
-        add(TR(SV_ANG_NONE), AP_NONE, true);
+        /* A connected sensor does not advertise: the scan cannot list
+         * the bound one, which stays above. */
+        add(imu_view_bound_linked(v) ? TR(SV_ANG_NONE_OTHER)
+                                     : TR(SV_ANG_NONE),
+            AP_NONE, true);
     } else if (found == 0 && idle && v->err == IMU_ERR_SCAN) {
         snprintf(line, sizeof(line), TR(SV_ANG_SCAN_FAIL),
                  (unsigned)v->err_code);
@@ -428,8 +444,13 @@ void angle_pick_refused(int k)
         ui_router_set_alert(why != NULL ? why : s.ch.labels[k]);
         return;
     }
-    ui_router_set_alert(s.ch.values[k] == AP_NONE ? TR(IMU_ERR_NONE_FOUND)
-                                                  : s.ch.labels[k]);
+    if (s.ch.values[k] == AP_NONE) {
+        ui_router_set_alert(imu_view_bound_linked(imu_screen_view())
+                                ? TR(IMU_ERR_NONE_OTHER)
+                                : TR(IMU_ERR_NONE_FOUND));
+        return;
+    }
+    ui_router_set_alert(s.ch.labels[k]);
 }
 
 bool angle_pick_current(int k)
@@ -447,6 +468,57 @@ bool angle_pick_current(int k)
     }
     return value >= AP_IMU0 && value - AP_IMU0 < (int)v->found_n
            && same_dev(v->bound_addr, &v->found[value - AP_IMU0]);
+}
+
+/** @name The IMU YAW list's values
+ *  @{ */
+#define AF_9AXIS  0   /**< ALGORITHM 9-AXIS */
+#define AF_AXIS_X 1   /**< AXIS X, roll */
+#define AF_AXIS_Y 2   /**< AXIS Y, pitch */
+/** @} */
+
+const char *angle_pick_yaw_why(void)
+{
+    return (enc_src() == SERVO_ANGLE_IMU && s.imu_axis == (uint8_t)IMU_AXIS_Z
+            && settings_get_int(SET_IMU_ALGO) == 0)
+               ? TR(RA_IMU_YAW) : NULL;
+}
+
+void angle_fix_open(void)
+{
+    const char *why = svs_list_refused();
+    if (why != NULL) {
+        ui_action_refused(why);
+        return;
+    }
+    close_panels();
+    open_choice(CH_ANGLE_FIX, SETTING_COUNT, TR(SV_YAW_TITLE));
+    choice_add(TR(SV_YAW_9AXIS), AF_9AXIS);
+    choice_add(TR(SV_YAW_X), AF_AXIS_X);
+    choice_add(TR(SV_YAW_Y), AF_AXIS_Y);
+    servo_invalidate();
+    ++s.ctrl_rev;
+}
+
+void angle_fix_choose(int value)
+{
+    if (svs_list_bench_why() != NULL) {
+        return;
+    }
+    if (value == AF_9AXIS) {
+        settings_set(SET_IMU_ALGO, 1.0f);
+    } else if (value == AF_AXIS_X || value == AF_AXIS_Y) {
+        const uint8_t axis = value == AF_AXIS_X ? (uint8_t)IMU_AXIS_X
+                                                : (uint8_t)IMU_AXIS_Y;
+        settings_set(SET_IMU_AXIS, (float)axis);
+        /* What the panel's settings observer does too: the runs' axis. */
+        servo_screen_set_imu_axis(axis, settings_get_int(SET_IMU_SIGN) == 1);
+    } else {
+        return;
+    }
+    settings_request_save();
+    servo_invalidate();
+    ++s.ctrl_rev;
 }
 
 void angle_pick_run_row(rdy_row_t *r, const char *name, bool reads)
@@ -501,7 +573,9 @@ bool angle_pick_draw_entry(gfx_canvas_t *c, int k, gfx_color_t fill,
 
 int angle_pick_count(void)
 {
-    return (s.ch.open && s.ch.target == CH_ANGLE) ? s.ch.count : -1;
+    return (s.ch.open
+            && (s.ch.target == CH_ANGLE || s.ch.target == CH_ANGLE_FIX))
+               ? s.ch.count : -1;
 }
 
 const char *angle_pick_label(int i, bool *refused)

@@ -56,6 +56,7 @@ Ein Tippen auf die Zeile WINKEL von BEREIT, mit Messwert oder ohne, öffnet bei 
 | `AS5600: AUS IN SETUP` | öffnet den Eintrag AS5600 unter [Sensoren](setup-sensors.md); das Home-Tag kehrt hierher zurück |
 | ein Sensor, `HC-06 00:0C:BF:08:19:29 P -50dBm`: Name, seine ganze Adresse, ihr Typ (`P` öffentlich, `R` zufällig), das Signal; in zwei Spalten auf zwei Zeilen | bindet ihn, schaltet die IMU ein und setzt WINKELQUELLE IMU |
 | `KEINE IMU GEFUNDEN` | die letzte Suche fand keine; das Tippen nennt die üblichen Ursachen im Band |
+| `KEINE ANDERE IMU GEFUNDEN` | die letzte Suche fand keine, während der gebundene Sensor verbunden ist: ein verbundener Sensor sendet keine Advertisements, seine Zeile darüber bleibt die einzige |
 | `IMU SUCHEN` | schaltet die IMU ein, falls aus, und sucht 10s, sobald Bluetooth LE läuft; die Liste bleibt offen und zeigt `SUCHE: 10s`, danach die gefundenen Sensoren |
 
 Die gültige Quelle steht in der Akzentfarbe. Bei eingeschalteter IMU ohne gebundenen Sensor startet das Öffnen der Liste von selbst eine Suche.
@@ -114,7 +115,9 @@ Der Lauf liest das Servo aus und setzt bei KST den Pulsbereich auf 1000 bis 2000
 
 Welcher Endpunkt welche Seite bewegt: bei einem Hitec-Servo der D-Serie mit CW ist LEFT END die 1000us-Seite und RIGHT END die 2000us-Seite. Bei jedem anderen Servo findet es das erste Schreiben: zuerst der Endpunkt mit dem Namen der Seite, der andere, wenn sich die Seite nicht bewegt. Eine Seite, die ihr Ziel schon erreicht, bekommt kein Schreiben; das erste Schreiben der anderen Seite findet beide. Zwei Schreibvorgänge hintereinander, die ihre Seite nicht bewegen oder in die falsche Richtung, beenden den Lauf mit `Schreiben bewegt 2000us-Seite nicht` (oder 1000us-Seite). Ein Schreiben zählt, sobald seine erwartete Änderung mindestens TOLERANZ beträgt; es hat die Seite bewegt, wenn sich der Winkel um die Hälfte der erwarteten Änderung oder um TOLERANZ geändert hat, je nachdem was kleiner ist. Bei jedem Ende schaltet der Prüfstand auf SAFE und der Netzteilausgang aus. Während des Laufs sind NULLPUNKT und MAX LÖSCHEN gesperrt.
 
-Die zweite Zeile nennt das Ergebnis, die dritte den Bericht RUDDRnnn.TXT. Hat ein nicht bestandener Lauf Einstellungen geschrieben oder einen Schreibvorgang abgebrochen, steht dort stattdessen `ZURÜCKSPIELEN IN KST`, bei Hitec `HITEC001 IN DATEIEN LADEN`.
+Die zweite Zeile nennt das Ergebnis, die dritte den Bericht RUDDRnnn.TXT. Hat ein nicht bestandener Lauf Einstellungen geschrieben oder einen Schreibvorgang abgebrochen, steht dort stattdessen `ZURÜCKSPIELEN IN KST`, bei Hitec `HITEC001 IN DATEIEN LADEN`, bis ein Lesen oder Schreiben auf der KST- oder HITEC-Seite die Werte vor dem Lauf zeigt oder Werte, die der Lauf nicht hinterlassen hat.
+
+Mit der IMU als WINKELQUELLE auf Achse Z (Gieren) und IMU-Algorithmus 6-AXIS zeigt die Zeile WINKEL `IMU-GIEREN BRAUCHT 9-AXIS` in Rot, und das Halten wird verweigert: ohne Magnetometer driftet das Gieren etwa 2,4° in 100s, mehr als TOLERANZ. Ein Tippen auf die Zeile bietet `IMU AUF 9-AXIS SCHALTEN`, `IMU-ACHSE X NEHMEN (ROLLEN)` und `IMU-ACHSE Y NEHMEN (NICKEN)`; eine Wahl setzt und speichert sie. Eine andere Achse oder ein anderer Algorithmus braucht einen neuen NULLPUNKT.
 
 ![Die OPTIONEN von RUDER AUTO](view:servo-rudder-auto-settings)
 

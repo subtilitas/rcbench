@@ -567,6 +567,15 @@ void rauto_frame(float dt_s)
     ra_poll();
     ra_step();
     ra_ended();
+    if (servo_rauto_restore(&s.ra.run) && !s.ra.leaving) {
+        /* The programmer's servo after the run: RESTORE goes once a read
+         * shows the values before the run, or values the run did not
+         * leave. */
+        servo_rauto_servo_t sv;
+        memset(&sv, 0, sizeof(sv));
+        ra_servo(s.ra.run.cfg.family, &sv);
+        servo_rauto_servo_seen(&s.ra.run, &sv);
+    }
     const uint32_t sig = rauto_sig();
     if (sig != s.ra.sig) {
         s.ra.sig = sig;
@@ -1015,6 +1024,7 @@ uint32_t rauto_sig(void)
         (uint32_t)r->side, (uint32_t)r->writes[0], (uint32_t)r->writes[1],
         r->sessions, (uint32_t)r->verdict, (uint32_t)r->why,
         (uint32_t)(s.ra.file + 2), s.ra.off ? 1u : 0u, s.ra.pressed,
+        servo_rauto_restore(r) ? 1u : 0u,
         (uint32_t)(uintptr_t)rauto_hold_blocked(NULL),
         (uint32_t)(uintptr_t)s.ra.note,
         (uint32_t)(uintptr_t)svs_seq_failure(),
