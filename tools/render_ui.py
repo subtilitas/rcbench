@@ -624,6 +624,11 @@ SCREENS = {
     "setup-rbmod": ("setup-rbmod.png", "setup", "dark"),
     "layout-rbmod": ("layout-rbmod.png", "layout", "dark"),
     "supply-rbmod": ("supply-rbmod.png", "supply", "dark"),
+    # The carrier's input supply read at 5.1V by the PD mini: SUPPLY's head
+    # line and the PROG 5V box in red; KST's CONNECT refused, its PROG 5V
+    # row red.
+    "supply-rbmod-input": ("supply-rbmod-input.png", "supply", "dark"),
+    "servo-kst-rbmod-input": ("servo-kst-rbmod-input.png", "servo", "dark"),
     # LIVE on the carrier: PORT PWM and PROG 5V amber, ARM switches them
     # on.
     "servo-rbmod": ("servo-rbmod.png", "servo", "dark"),

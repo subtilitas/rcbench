@@ -515,7 +515,7 @@ TEST_CASE(the_type_row_shows_the_guess_until_the_operator_sets_it)
             CHECK_STR_EQ(kst_panel_label(PG_SERVO, 1, 1), TR(KP_TYPE));
             CHECK_STR_EQ(kst_panel_button(PG_SERVO, 1, 1), "--");
             CHECK(!kst_panel_row_live(PG_SERVO, 1, 1));
-            tap(val(PG_SERVO, 0, 0));
+            press_port();
             settle();
             /* Read: the guess, marked, on the row and in amber below. */
             CHECK_STR_EQ(kst_panel_label(PG_SERVO, 1, 0), "SERVO");
@@ -817,7 +817,7 @@ TEST_CASE(a_load_waits_for_a_servo_that_is_read)
     fresh();
     g_rig.sim.reg[0x06] = 0x05u;
     link_up();
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_READ_ONLY);
     (void)fake_card_put(&g_rig.fc, "F", &sv);

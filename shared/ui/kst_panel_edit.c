@@ -18,6 +18,7 @@
 #include "kst_port.h"
 #include "kst_reg.h"
 #include "link_pages.h"
+#include "prog5v_box.h"
 #include "prog_choice.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -405,7 +406,10 @@ void kpn_act(const row_t *r)
     k.card_look = k.card_look || p->fed;
     switch (r->what) {
     case A_PORT:
-        if (st == KST_PROG_PWM) {
+        if (st == KST_PROG_PWM && prog5v_box_input_why() != NULL) {
+            /* The carrier's input low: M7 makes no 5V for the session. */
+            ui_action_refused(prog5v_box_input_why());
+        } else if (st == KST_PROG_PWM) {
             kpn_supply_limits(p);
             (void)kst_prog_connect(p, kpn_port_no());
         } else if (st == KST_PROG_PROGRAMMING) {

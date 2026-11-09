@@ -926,6 +926,15 @@ int hitec_panel_message_lines(const hitec_prog_msg_t *m,
 
 /* ------------------------------------------------------------ the screen */
 
+bool hpn_switches_supply(void)
+{
+    const hitec_prog_t *p = &hp.prog;
+
+    return ui_board_prog_5v_pin() >= 0
+           || hitec_prog_series(p) == (uint8_t)HITEC_CLASSIC
+           || hitec_prog_rail(p);
+}
+
 void hitec_panel_session(prog_session_t *out)
 {
     const hitec_prog_t *p = &hp.prog;
@@ -934,15 +943,14 @@ void hitec_panel_session(prog_session_t *out)
 
     memset(out, 0, sizeof(*out));
     /* The supply the state line names before CONNECT (pwm_line()). */
-    if (ui_board_prog_5v_pin() >= 0) {
+    if (!hpn_switches_supply()) {
+        out->supply = (uint8_t)PROG_SES_AS_IS;
+    } else if (ui_board_prog_5v_pin() >= 0) {
         out->supply = (uint8_t)PROG_SES_5V;
-    } else if (hitec_prog_series(p) == (uint8_t)HITEC_CLASSIC
-               || hitec_prog_rail(p)) {
+    } else {
         out->supply = (uint8_t)PROG_SES_PD_MINI;
         out->mv = hitec_prog_mv(p);
         out->ma = hitec_prog_ma(p);
-    } else {
-        out->supply = (uint8_t)PROG_SES_AS_IS;
     }
     out->held = hitec_panel_holds_port();
     out->busy = st == HITEC_PROG_OPENING || st == HITEC_PROG_ENTERING

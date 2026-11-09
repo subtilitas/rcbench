@@ -422,7 +422,7 @@ TEST_CASE(a_limit_run_programs_the_servo_on_the_programming_port)
         lr_ms(40u);
         program_open();
         CHECK(kst_panel_is_open());
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         settle();
         CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
         CHECK(kst_prog_restore_offered(M, KST_PROG_FROM_RUN));
@@ -475,12 +475,12 @@ TEST_CASE(a_limit_runs_read_session_asks_no_restore)
     lr.armed = false;
     lr_ms(40u);
     program_open();
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     settle();
     CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
     CHECK(kst_panel_holds_port());
     lr_ms(40u);
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     for (int k = 0; k < 4 && kst_panel_editor() == 3; ++k) {
         hold(2.1f);
     }
@@ -1034,7 +1034,7 @@ TEST_CASE(a_session_after_a_limit_run_saves_its_own_backup)
     lr_ms(40u);
     program_open();
     CHECK(kst_panel_is_open());
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     settle();
     CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
     CHECK(kst_prog_restore_offered(M, KST_PROG_FROM_RUN));
@@ -1075,7 +1075,7 @@ TEST_CASE(a_run_write_refused_before_it_is_sent_switches_write_enable_off)
     lr_ms(40u);
     program_open();
     CHECK(kst_panel_is_open());
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     settle();
     CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
     CHECK(kst_prog_range(M, KST_F_LEFT_ANGLE, &lo, &hi));

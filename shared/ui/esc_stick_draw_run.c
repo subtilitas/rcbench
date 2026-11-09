@@ -925,10 +925,13 @@ DRAWER void sp_draw_prompt(gfx_canvas_t *c)
     (void)sp_wrap(c, a.x + 20, y, 22, line, 92, 2,
                   ui_theme_color(UI_C_TEXT_FAINT));
     const bool ready = esc_stick_hand_ready(e);
-    ui_button_font(c, t->hold_btn, TR(SP_HAND_DONE),
+    /* DONE before the power-up is a 2s hold, green fading to the red of
+     * the supply it switches on; the other steps' DONE takes a tap. */
+    ui_hold_button(c, t->hold_btn, TR(SP_HAND_DONE),
                    ready ? ui_theme_color(UI_C_OK)
-                         : ui_theme_color(UI_C_PANEL_SUNK), false, ready,
-                   SP_FONT);
+                         : ui_theme_color(UI_C_PANEL_SUNK),
+                   ui_theme_color(UI_C_DANGER), &s.st.done, t->done_down,
+                   ready, SP_FONT);
     ui_button_font(c, t->cancel_btn, TR(SP_ABORT),
                    ui_theme_color(UI_C_DANGER), false, true, SP_FONT);
 }

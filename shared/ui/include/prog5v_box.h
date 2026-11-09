@@ -23,6 +23,18 @@
  *   OFF and no port holds it; PROG 5V OFF, a tap, while it reads ON and no
  *   port holds it.  It takes no press otherwise and is drawn dimmed.
  *
+ * The carrier's input supply: M7 makes the ports' 5V from the +15V net,
+ * the USB-C input through the PD trigger M6, set to 15V on the carrier.
+ * The PD mini on J8 runs from the same input and reports it.  While a
+ * board with the switch has a PD mini reading under PROG5V_INPUT_MIN_MV
+ * (prog5v_box_input_low_mv()), the box's second line reads
+ * `INPUT 5.1V: NEEDS 15V` in red, PROG 5V ON takes no press and names the
+ * input in the alert band (prog5v_box_input_why()), and the screens that
+ * switch the 5V for a run or a session refuse the same way.  An input that
+ * goes low under the hold ends it with the same text, prog5v_box_ask_on()
+ * asks nothing while it is low, and the control task refuses an ON that
+ * reaches it then (apply_prog5v_cmd()).  No PD mini reading, no warning.
+ *
  * What the box asks goes out as a command (prog5v_box_poll_cmd()); the
  * control task judges an ON as it judges the PD mini's OUTPUT ON.  The box
  * remembers which screen switched the supply on: leaving that screen
@@ -61,6 +73,12 @@ extern "C" {
  *         and the button. */
 #define PROG5V_BOX_MIN_W (27 * 8 + 4 + PROG5V_BOX_BTN_W)
 
+/** @brief The carrier's input supply under this is low, mV.  The PD
+ *         trigger M6 is set to 15V on the carrier; 13500mV is 15V less 10%,
+ *         room for the PD mini's reading and the cable's drop under load.
+ *         A source that gives 5V, 9V or 12V reads under it. */
+#define PROG5V_INPUT_MIN_MV 13500u
+
 /** @brief No port holds the supply. */
 #define PROG5V_HELD_NONE 0xFFu
 /** @brief A port holds it, and the panel does not know which. */
@@ -96,6 +114,7 @@ typedef struct {
     uint32_t    rev;       /**< moves with anything the box shows       */
     uint32_t    seen;      /**< the published state word, last seen     */
     uint32_t    seen_read; /**< the published reading word, last seen   */
+    uint32_t    seen_in;   /**< the low input, last seen                */
     uint32_t    cuts;      /**< the cuts published as the press began   */
 } prog5v_box_t;
 
@@ -139,6 +158,47 @@ uint8_t prog5v_box_held_port(int kst_port, int hitec_port, bool some);
  * @param ma its mean current, mA, signed
  */
 void prog5v_box_reading(bool ok, uint16_t mv, int16_t ma);
+
+/**
+ * @brief Publish the PD mini's input voltage as the SUPPLY page last read
+ *        it (supply_link_input_mv()).
+ * @param vin_mv the input, mV; 0 for none: no PD mini, or none online
+ */
+void prog5v_box_publish_input(uint16_t vin_mv);
+
+/**
+ * @brief The carrier's input supply when it is low: a board with the
+ *        switch (prog5v_box_shown()) and a PD mini reading of its input
+ *        under PROG5V_INPUT_MIN_MV.  Safe from either task: atomic words.
+ * @return the input, mV; 0 while it is not low, without a reading and on a
+ *         board without the switch
+ */
+uint16_t prog5v_box_input_low_mv(void);
+
+/**
+ * @brief The refusal and the warning for a low input, in the language
+ *        showing: `INPUT 5.1V: NEEDS 15V. CHECK THE SUPPLY VOLTAGE`.  One
+ *        buffer, rewritten at each call, so the gates of the screens find
+ *        it by its address (prog5v_box_input_is()).  app_main only.
+ * @return the text; NULL while the input is not low
+ */
+const char *prog5v_box_input_why(void);
+
+/**
+ * @brief Whether @p why is prog5v_box_input_why()'s text.
+ * @param why a gate's text, or NULL
+ * @return true for that buffer's address
+ */
+bool prog5v_box_input_is(const char *why);
+
+/**
+ * @brief The short form for a READY card's tag and SUPPLY's head line:
+ *        `INPUT 5.1V < 15V`.
+ * @param buf where it goes
+ * @param n   its size
+ * @return @p buf; "" while the input is not low; "" for no buffer
+ */
+const char *prog5v_box_input_tag(char *buf, size_t n);
 
 /* ---------------------------------------------------- for the screens */
 

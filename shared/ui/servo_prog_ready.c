@@ -19,7 +19,9 @@
  *     CONNECT` while it is off, a red dot `ON` while it is on, and then a
  *     tap switches it off as OUTPUT OFF and PROG 5V OFF do (the ports' 5V
  *     not while a port holds it); KST with no supply the bench switches
- *     reads `OFF, ON BY HAND` in amber.
+ *     reads `OFF, ON BY HAND` in amber.  The carrier's input supply low
+ *     (prog5v_box_input_low_mv()) reads `INPUT 5.1V < 15V` in red, and
+ *     CONNECT is refused with it.
  *   - SERVO: the servo read, its model or type; amber while the port is
  *     the session's and nothing is read, grey before CONNECT.
  *
@@ -107,7 +109,15 @@ static void supply_row(const prog_session_t *ps, rdy_row_t *r)
         r->label = "PROG 5V";
         if (prog5v_box_on()) {
             r->st = (uint8_t)RDY_LIVE;
-            snprintf(r->value, sizeof(r->value), "%s", ui_on_off(1));
+            /* On from a low input: the input names itself, the tap stays
+             * the OFF. */
+            if (prog5v_box_input_tag(r->value, sizeof(r->value))[0] == '\0') {
+                snprintf(r->value, sizeof(r->value), "%s", ui_on_off(1));
+            }
+        } else if (prog5v_box_input_why() != NULL) {
+            r->st = (uint8_t)RDY_BAD;
+            r->why = prog5v_box_input_why();
+            (void)prog5v_box_input_tag(r->value, sizeof(r->value));
         } else {
             r->st = (uint8_t)RDY_SEQ;
             r->why = TR(PRR_5V_WHY);
@@ -243,7 +253,9 @@ bool prog_ready_row(int i, rdy_row_t *r)
             snprintf(r->value, sizeof(r->value), "%s", TR(PRR_NOT_READ));
         } else {
             r->st = (uint8_t)RDY_IDLE;
-            r->why = TR(PRR_CONN_WHY);
+            /* A tap for a servo the operator powers, else a hold. */
+            r->why = ps.supply == (uint8_t)PROG_SES_AS_IS
+                         ? TR(PRR_CONN_WHY) : TR(PRR_CONN_HOLD_WHY);
             snprintf(r->value, sizeof(r->value), "%s", TR(PRR_NOT_CONN));
         }
         return true;

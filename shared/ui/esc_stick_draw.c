@@ -749,7 +749,8 @@ void esc_stick_panel_render(gfx_canvas_t *c)
     } else {
         sp_draw_device(c);
     }
-    /* The warning closes as HOLD TO RUN fires: the button flashes where
-     * it was. */
+    /* The warning closes as HOLD TO RUN fires, the step as DONE's hold
+     * does: the button flashes where it was. */
     ui_hold_ghost(c, &s.st.hold);
+    ui_hold_ghost(c, &s.st.done);
 }

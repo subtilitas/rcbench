@@ -27,6 +27,7 @@
 #include "hitec_panel_run.h"
 #include "hitec_reg.h"
 #include "kst_panel.h"
+#include "prog5v_box.h"
 #include "servo_limrun.h"
 
 /* Last: its layout macros have short names (W, H, PAD), which no header
@@ -75,6 +76,10 @@ void lim_seam_begin(uint8_t fam)
 
 bool lim_seam_connect(uint8_t fam, uint16_t mv, uint16_t ma)
 {
+    /* The carrier's input low: the session's PROG 5V would not come. */
+    if (prog5v_box_input_why() != NULL) {
+        return false;
+    }
     /* The session's supply is the run's, with or without a PD mini: the
      * programmer's own, loaded from SET_SERVO_PROG_V when its page opened,
      * never reaches a run. */

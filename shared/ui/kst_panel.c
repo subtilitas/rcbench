@@ -711,6 +711,8 @@ void kpn_mode_sync(void)
         kpn_close_editors();
         k.have = false;
         k.pressed = P_NONE;
+        ui_hold_reset(&k.conn);
+        k.conn_due = false;
     }
     k.expert = on;
     for (int p = 0; p < PG_COUNT; ++p) {
@@ -885,7 +887,8 @@ static void model_moved(void)
         /* An editor asks for something of the state it was opened in. */
         if (st != KST_PROG_PROGRAMMING) {
             kpn_close_editors();
-            if (k.pressed != P_TAB) {
+            /* CONNECT's press keeps its hold, for its release to end. */
+            if (k.pressed != P_TAB && k.pressed != P_CONNECT) {
                 k.pressed = P_NONE;
             }
         }
@@ -987,6 +990,21 @@ bool kst_panel_file_late(const char *text, size_t len)
         && kst_panel_file_load(text, len);
 }
 
+/**
+ * @brief Where hold_revision shows: CONNECT while its hold runs or
+ *        flashes, else the warning page's hold button.
+ * @return the rectangle, body pixels
+ */
+static gfx_rect_t kst_panel_hold_rect(void)
+{
+    const row_t *r = kpn_row_at(PG_SERVO, 0, 0);
+
+    if (r != NULL && (k.conn.down || ui_hold_flashing(&k.conn))) {
+        return kpn_value_rect(r);
+    }
+    return kst_panel_apply_rect();
+}
+
 /* The session SERVO > PROGRAM opens from its row (prog_registry.h). */
 const prog_page_set_t kst_panel_pages = {
     .init          = kst_panel_init,
@@ -1002,7 +1020,7 @@ const prog_page_set_t kst_panel_pages = {
     .render        = kst_panel_render,
     .revision      = kst_panel_revision,
     .hold_revision = kst_panel_hold_revision,
-    .hold_rect     = kst_panel_apply_rect,
+    .hold_rect     = kst_panel_hold_rect,
     .leave         = kst_panel_leave,
     .cancel        = kst_panel_cancel,
     .pin           = kst_panel_pin,

@@ -55,6 +55,7 @@
 #include "outputs.h"
 #include "prog_link.h"
 #include "prog5v_box.h"
+#include "prog5v_lost.h"
 #include "prog_supply_link.h"
 #include "safety_gate.h"
 #include "sense_link.h"
@@ -1363,20 +1364,20 @@ void prog_supply_watch_service(void);
 /**
  * @brief Publish to the PROG 5V box the last window of the INA3221 channel
  *        the held map has watching the ports' 5V, and step the PROG 5V
- *        watch with it (prog5v_lost.h): a collapse under the panel's ON is
- *        an error (bench_error_stop()), with one alert and one console
- *        line; control task.
+ *        watch with it (prog5v_lost.h): a 5V that does not come after an
+ *        ON, or collapses under it, is an error (bench_error_stop()), with
+ *        one alert and one console line; control task.
  */
 void prog5v_publish_reading(void);
 /**
- * @brief Whether the panel's ON of the ports' 5V stands, for the PROG 5V
- *        watch: the page reads it on or acknowledged its ON, no
- *        programming port holds it, and the heartbeat edges (a withheld
- *        heartbeat switches it off at the IOmcu before the page reads
- *        so).  Control task only.
- * @return true while it stands
+ * @brief The ON of the ports' 5V for the PROG 5V watch: the page reads it
+ *        on or acknowledged the panel's ON, and the heartbeat edges (a
+ *        withheld heartbeat switches it off at the IOmcu before the page
+ *        reads so); whether a programming port holds it, the cuts and the
+ *        page's reads that showed it on.  Control task only.
+ * @param out receives it
  */
-bool prog5v_panel_on(void);
+void prog5v_watch_on(prog5v_on_t *out);
 
 /* ------------------------------------------------------------- panel_arm.c */
 

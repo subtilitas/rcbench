@@ -835,6 +835,19 @@ bool svs_seq_frame(const char *refused)
         && !(drive_shown() ? drive_seq_need() : svs_seq_need()).pd_mini) {
         refused = TR(RDY_FED_WHY);
     }
+    /* The carrier's PROG 5V: an input gone low since the hold ends the
+     * steps at once, up to and in the read-back, which would otherwise
+     * judge a refusal only on its reading.  An ON asked goes off with the
+     * rest. */
+    const char *low = prog5v_box_input_why();
+    if (low != NULL && s.rdy.need.prog_5v
+        && servo_seq_step_now(&s.rdy.seq) <= SERVO_SEQ_READBACK) {
+        servo_seq_do_t d;
+        servo_seq_abort(&s.rdy.seq, SERVO_SEQ_WHY_REFUSED, &d);
+        apply(&d, low);
+        ++s.arm_rev;
+        return false;
+    }
     const servo_seq_in_t in = {
         .pwm_set = settings_get_bool(SET_SERVO_PORT_PWM),
         .pwm_on  = s.drive_pwm && !prog_reg_servo_holds(),

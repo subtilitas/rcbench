@@ -398,7 +398,9 @@ static void draw_row(gfx_canvas_t *c, int i)
     const gfx_rect_t rr = hpn_row_rect(r);
     const gfx_rect_t vr = hpn_value_rect(r);
     const bool live = hpn_row_live(r);
-    const bool pressed = hp.have && hp.pressed == P_ROW && hp.row == i;
+    const bool pressed = hp.have && (hp.pressed == P_ROW
+                                     || hp.pressed == P_CONNECT)
+                         && hp.row == i;
     char v[HITEC_PANEL_LINE];
     bool warn = false;
 
@@ -426,7 +428,12 @@ static void draw_row(gfx_canvas_t *c, int i)
          * starts it, red while it drives the port (ABORT, LEAVE, the write
          * switch or MOVE SERVO on), amber while the port is let go. */
         if (r->what == A_PORT) {
-            fill = port_fill();
+            /* CONNECT is a 2s hold: green fading to the red of a held
+             * port, flashing as it connects. */
+            ui_hold_button(c, vr, v, port_fill(),
+                           ui_action_fill(UI_ACTION_ACTIVE), &hp.conn,
+                           pressed, live, HP_FONT);
+            return;
         } else if (r->what == A_ENABLE) {
             fill = ui_action_fill(hitec_prog_write_on(&hp.prog)
                                       ? UI_ACTION_ACTIVE

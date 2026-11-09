@@ -857,7 +857,9 @@ static void draw_row(gfx_canvas_t *c, int i)
     const gfx_rect_t rr = kpn_row_rect(r);
     const gfx_rect_t vr = kpn_value_rect(r);
     const bool live = kpn_row_live(r);
-    const bool pressed = k.have && k.pressed == P_ROW && k.row == i;
+    const bool pressed = k.have && (k.pressed == P_ROW
+                                    || k.pressed == P_CONNECT)
+                         && k.row == i;
     gfx_color_t fill = ui_theme_color(UI_C_PANEL_SUNK);
     char v[KST_PANEL_LINE];
 
@@ -879,6 +881,11 @@ static void draw_row(gfx_canvas_t *c, int i)
                               || kpn_leave_waits(p);
             fill = ui_action_fill(held ? UI_ACTION_ACTIVE
                                        : UI_ACTION_AVAILABLE);
+            /* CONNECT is a 2s hold: green fading to the red of a held
+             * port, flashing as it connects. */
+            ui_hold_button(c, vr, v, fill, ui_action_fill(UI_ACTION_ACTIVE),
+                           &k.conn, pressed, live, KP_FONT);
+            return;
         } else if (r->what == A_ENABLE) {
             fill = ui_action_fill(kst_prog_write_enabled(p)
                                       ? UI_ACTION_ACTIVE

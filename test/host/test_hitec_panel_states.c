@@ -91,7 +91,7 @@ TEST_CASE(the_state_line_names_each_entry_and_the_read)
     /* D series with a PD mini. */
     open_en();
     servo_d485();
-    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    press_port();
     reach(HITEC_PROG_ENTERING);
     CHECK_EQ(strcmp(line(), TR(HP_ST_ENTRY_D)), 0);
     CHECK_EQ(strcmp(hitec_panel_value(HITEC_PANEL_SERVO, 0, 0),
@@ -120,7 +120,7 @@ TEST_CASE(the_state_line_names_each_entry_and_the_read)
     /* D series without a PD mini: the servo on its own supply. */
     open_at(SUPPLY_NONE, UI_LANG_EN);
     servo_d485();
-    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    press_port();
     reach(HITEC_PROG_ENTERING);
     CHECK_EQ(strcmp(line(), TR(HP_ST_MODEL)), 0);
     CHECK(strstr(hitec_panel_port_line(1), TR(HP_SUPPLY_AS_IS)) != NULL);
@@ -133,7 +133,7 @@ TEST_CASE(the_state_line_names_each_entry_and_the_read)
     servo_hs5645();
     tap(val(HITEC_PANEL_SERVO, 1, 0));
     tap(hitec_panel_choice_rect(1));
-    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    press_port();
     reach(HITEC_PROG_ENTERING);
     CHECK_EQ(strcmp(line(), TR(HP_ST_ENTRY_C)), 0);
     reach(HITEC_PROG_HELD);
@@ -172,7 +172,7 @@ TEST_CASE(the_state_line_names_clear_leave_and_release)
     open_en();
     servo_d485();
     tap_connect();
-    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    press_port();
     hold(2.1f);
     show();
     if (pstate() == HITEC_PROG_LEAVING) {
@@ -184,7 +184,7 @@ TEST_CASE(the_state_line_names_clear_leave_and_release)
     tap(val(HITEC_PANEL_SERVO, 1, 0));
     tap(hitec_panel_choice_rect(1));
     tap_connect();
-    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    press_port();
     hold(2.1f);
     reach(HITEC_PROG_LEAVING);
     CHECK_EQ(strcmp(line(), TR(HP_ST_LEAVE_C)), 0);
@@ -207,9 +207,9 @@ TEST_CASE(an_abort_in_the_entry_leaves_the_servo_out_of_programming)
 {
     open_en();
     servo_d485();
-    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    press_port();
     reach(HITEC_PROG_ENTERING);
-    tap(val(HITEC_PANEL_SERVO, 0, 0));            /* ABORT */
+    press_port();            /* ABORT */
     reach(HITEC_PROG_HELD);
     CHECK_EQ(strcmp(line(), fmt1(TX_HP_ST_NOT_IN_MODE, 1u)), 0);
     CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 1, 1));
@@ -227,7 +227,7 @@ TEST_CASE(read_all_and_abort_by_their_buttons)
                     TR(KP_ABORT)),
              0);
     prun(200u);
-    tap(val(HITEC_PANEL_SERVO, 0, 0));            /* ABORT */
+    press_port();            /* ABORT */
     reach(HITEC_PROG_HELD);
     CHECK_EQ(msg(), HITEC_PROG_MSG_ABORTED);
     CHECK_EQ(strcmp(said(), TR(HP_ABORTED)), 0);
@@ -244,7 +244,7 @@ TEST_CASE(a_port_without_a_pin_names_the_port_alone)
     show();
     CHECK(strstr(hitec_panel_port_line(0), "PROG PORT 1  ") != NULL);
     CHECK(strstr(hitec_panel_port_line(0), "GPIO") == NULL);
-    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    press_port();
     CHECK_EQ(msg(), HITEC_PROG_MSG_NO_PIN);
 }
 
@@ -290,7 +290,7 @@ TEST_CASE(the_carriers_fixed_5v_is_not_held_to_the_supplys_limits)
         supply_screen_settings_loaded();
         ui_board_set((uint16_t)OUTBIND_BOARD_RBMOD);
         servo_d485();
-        tap(val(HITEC_PANEL_SERVO, 0, 0));
+        press_port();
         CHECK(msg() != HITEC_PROG_MSG_SUPPLY_CAPS);
         CHECK(pstate() != HITEC_PROG_PWM);
         reach(HITEC_PROG_HELD);
@@ -399,7 +399,7 @@ TEST_CASE(a_hold_the_finger_leaves_does_nothing)
     open_en();
     (void)open_as(CH, HITEC_D, HITEC_DRIVE_OPEN_DRAIN);
     reach(HITEC_PROG_OTHER);
-    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    press_port();
     CHECK_EQ(hitec_panel_editor(), 3);
     ev(cx(r), cy(r), TOUCH_EVENT_DOWN);
     CHECK(hitec_panel_has_press(1));

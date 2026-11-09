@@ -579,7 +579,8 @@ void hpn_moved(void)
     if (st != hp.state_seen) {
         /* An editor asks for something of the state it was opened in. */
         hpn_close_editors();
-        if (hp.pressed != P_TAB) {
+        /* CONNECT's press keeps its hold, for its release to end. */
+        if (hp.pressed != P_TAB && hp.pressed != P_CONNECT) {
             hp.pressed = P_NONE;
         }
         hp.state_seen = st;
@@ -659,6 +660,19 @@ bool hitec_panel_file_load(const char *text, size_t len)
     return ok;
 }
 
+/**
+ * @brief Where hold_revision shows: CONNECT while its hold runs or
+ *        flashes, else the page's hold button.
+ * @return the rectangle, body pixels
+ */
+static gfx_rect_t hitec_panel_hold_rect(void)
+{
+    if (hp.conn.down || ui_hold_flashing(&hp.conn)) {
+        return hpn_value_rect(&hpn_rows[0]);
+    }
+    return hitec_panel_apply_rect();
+}
+
 /* The session SERVO > PROGRAM opens from its row (prog_registry.h). */
 const prog_page_set_t hitec_panel_pages = {
     .init          = hitec_panel_init,
@@ -674,7 +688,7 @@ const prog_page_set_t hitec_panel_pages = {
     .render        = hitec_panel_render,
     .revision      = hitec_panel_revision,
     .hold_revision = hitec_panel_hold_revision,
-    .hold_rect     = hitec_panel_apply_rect,
+    .hold_rect     = hitec_panel_hold_rect,
     .leave         = hitec_panel_leave,
     .cancel        = hitec_panel_cancel,
     .pin           = hitec_panel_pin,

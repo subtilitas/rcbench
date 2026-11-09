@@ -103,6 +103,20 @@ static inline gfx_rect_t val(int page, int row, int col)
     return hitec_panel_value_rect(page, row, col);
 }
 
+/* CONNECT, a 2s hold: pressed for 2.5s, the hold and its 300ms flash,
+ * and let go. */
+static inline void hold_connect(void)
+{
+    const gfx_rect_t r = val(HITEC_PANEL_SERVO, 0, 0);
+
+    ev(cx(r), cy(r), TOUCH_EVENT_DOWN);
+    for (int i = 0; i < 125; ++i) {
+        hitec_panel_tick(0.02f);
+    }
+    ev(cx(r), cy(r), TOUCH_EVENT_UP);
+    show();
+}
+
 /* The first line of the message, "" for none. */
 static inline const char *said(void)
 {
@@ -113,13 +127,28 @@ static inline const char *said(void)
                : "";
 }
 
+/* PORT's button as it takes a press: CONNECT, in PWM, held 2s where it
+ * switches a supply on; LEAVE, RELEASE, ABORT, CONNECT of a servo the
+ * operator powers, and a button that takes nothing, tapped. */
+static inline void press_port(void)
+{
+    prog_session_t ps;
+
+    hitec_panel_session(&ps);
+    if (pstate() == HITEC_PROG_PWM && ps.supply != (uint8_t)PROG_SES_AS_IS) {
+        hold_connect();
+    } else {
+        tap(val(HITEC_PANEL_SERVO, 0, 0));
+    }
+}
+
 /* CONNECT by its button, run to HELD. */
 static inline void tap_connect(void)
 {
     CHECK_EQ(strcmp(hitec_panel_value(HITEC_PANEL_SERVO, 0, 0),
                     TR(KP_CONNECT)),
              0);
-    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    hold_connect();
     CHECK(pstate() != HITEC_PROG_PWM);
     settled();
     show();

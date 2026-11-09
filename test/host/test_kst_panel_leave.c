@@ -53,7 +53,7 @@ TEST_CASE(the_current_limit_is_typed_inside_50_to_3000_ma)
     snprintf(want, sizeof(want), TR(KP_STATE_PWM), RIG_PORT + 1u, 5u, 0u,
              3000u);
     CHECK_STR_EQ(status(0), want);
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     settle();
     CHECK_EQ(g_rig.sup_ma, 3000u);
     CHECK_EQ(g_rig.sup_mv, KST_PROG_SUPPLY_MV);
@@ -68,7 +68,7 @@ TEST_CASE(a_supply_that_cannot_give_the_voltage_is_refused_by_name)
         /* A 5.5V source: 5.0V out is 200mV over its cap, 4.8V. */
         g_rig.vin_mv = 4800u + PDMINI_CAP_MV;
         link_up();
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         settle();
         CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_SUPPLY_RANGE);
         CHECK_STR_EQ(said(), TR(KP_R_SUPPLY_RANGE));
@@ -77,7 +77,7 @@ TEST_CASE(a_supply_that_cannot_give_the_voltage_is_refused_by_name)
         /* 4.8V is what it can give. */
         more_input(0);
         type_text("4.8");
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         settle();
         CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
         CHECK_EQ(g_rig.sup_mv, 4800u);
@@ -96,7 +96,7 @@ TEST_CASE(a_supply_that_is_on_under_4_8_v_is_refused_by_name)
         g_rig.sup_mv = KST_PORT_SUPPLY_MIN_MV - 100u;
         g_rig.sup_ma = 800u;
         link_up();
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         settle();
         CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_SUPPLY_LOW);
         CHECK_STR_EQ(said(), TR(KP_R_SUPPLY_LOW));
@@ -115,7 +115,7 @@ TEST_CASE(a_supply_that_is_on_under_4_8_v_is_refused_by_name)
         g_rig.sup_mv = KST_PORT_SUPPLY_MIN_MV;
         g_rig.sup_ma = 3000u;
         link_up();
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         settle();
         CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
         CHECK(g_rig.sup_on);
@@ -135,7 +135,7 @@ TEST_CASE(a_supply_that_does_not_switch_on_ends_the_connect_with_its_line)
         g_rig.rail = true;
         g_rig.rail_deaf = true;
         link_up();
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         settle();
         CHECK_EQ(msg(), KST_PROG_MSG_SES + LINK_KST_RESULT_SUPPLY);
         snprintf(want, sizeof(want), TR(KP_S_SUPPLY),
@@ -156,7 +156,7 @@ TEST_CASE(a_leave_gives_the_port_back_and_switches_no_supply)
         connected();
         base = g_rig.starts;
         CHECK_STR_EQ(kst_panel_button(PG_SERVO, 0, 0), TR(KP_LEAVE));
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         CHECK_EQ(kst_panel_editor(), 3);
         /* The page says where the port goes and that the servo may move. */
         CHECK(warns(TR(KP_LEAVE_1)));
@@ -169,7 +169,7 @@ TEST_CASE(a_leave_gives_the_port_back_and_switches_no_supply)
         settle();
         CHECK_EQ(g_rig.starts, base);
         CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         hold(2.1f);
         CHECK_EQ(kst_panel_editor(), 0);
         /* Until the port reports PWM the tester has no port and the line
@@ -209,7 +209,7 @@ TEST_CASE(a_leave_with_a_pd_mini_keeps_the_supply_on)
         base = g_rig.starts;
         sets = (int)g_rig.sup_sets;
         /* The same page as without a PD mini. */
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         CHECK_EQ(kst_panel_editor(), 3);
         CHECK(warns(TR(KP_LEAVE_1)));
         hold(2.1f);
@@ -234,7 +234,7 @@ TEST_CASE(the_tester_has_no_port_until_the_wait_ends_and_abort_keeps_it)
         g_rig.rail = true;
         connected();
         CHECK(kst_prog_wait_set(M, 5000u));
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         hold(2.1f);
         rig_frames(1000);
         show();
@@ -249,7 +249,7 @@ TEST_CASE(the_tester_has_no_port_until_the_wait_ends_and_abort_keeps_it)
         kst_panel_back();
         show();
         CHECK(kst_panel_is_open());
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         settle();
         CHECK_EQ(msg(), KST_PROG_MSG_LEAVE_CUT);
         CHECK_STR_EQ(said(), TR(KP_M_LEAVE_CUT));
@@ -260,7 +260,7 @@ TEST_CASE(the_tester_has_no_port_until_the_wait_ends_and_abort_keeps_it)
         CHECK(g_rig.sup_on);
         CHECK_STR_EQ(kst_panel_button(PG_SERVO, 0, 0), TR(KP_LEAVE));
         /* The whole wait, then PWM. */
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         hold(2.1f);
         rig_frames(4900);
         CHECK_EQ(kst_prog_state(M), KST_PROG_LEAVING);
@@ -285,13 +285,13 @@ TEST_CASE(a_coprocessor_without_leave_gets_a_stated_message)
         g_rig.rail = true;
         CHECK(rig_link_up((uint16_t)(LINK_MINOR_KST_LEAVE - 1u)));
         show();
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         settle();
         CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
         CHECK(g_rig.sup_on);
         base = g_rig.starts;
         sets = (int)g_rig.sup_sets;
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         hold(2.1f);
         settle();
         CHECK_EQ(msg(), KST_PROG_MSG_LEAVE_SUPPLY);
@@ -321,10 +321,10 @@ TEST_CASE(a_coprocessor_without_leave_gets_a_stated_message)
         ui_text_set_language((ui_lang_t)lang);
         CHECK(rig_link_up((uint16_t)(LINK_MINOR_KST_LEAVE - 1u)));
         show();
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         settle();
         CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         hold(2.1f);
         settle();
         CHECK_EQ(msg(), KST_PROG_MSG_LEFT_NO_WAIT);
@@ -341,7 +341,7 @@ TEST_CASE(stop_and_a_lost_link_while_leaving_keep_the_port_from_the_tester)
     /* STOP with the leave on its way. */
     fresh();
     connected();
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     hold(2.1f);
     CHECK_EQ(kst_prog_state(M), KST_PROG_LEAVING);
     rig_stop(true);
@@ -354,7 +354,7 @@ TEST_CASE(stop_and_a_lost_link_while_leaving_keep_the_port_from_the_tester)
           || msg() == KST_PROG_MSG_REF + (unsigned)LINK_KST_REF_MUST_READ);
     CHECK(kst_prog_in_doubt(M));
     /* The leave of a port that asks for a read applies no wait. */
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     CHECK_EQ(kst_panel_editor(), 3);
     hold(2.1f);
     settle();
@@ -363,14 +363,14 @@ TEST_CASE(stop_and_a_lost_link_while_leaving_keep_the_port_from_the_tester)
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
     CHECK(!kst_prog_have_servo(M));
     /* Stopped, the row says why it does nothing. */
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_STOPPED);
 
     /* The link goes with the leave on its way. */
     fresh();
     connected();
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     hold(2.1f);
     CHECK_EQ(kst_prog_state(M), KST_PROG_LEAVING);
     rig_link_lost();
@@ -378,7 +378,7 @@ TEST_CASE(stop_and_a_lost_link_while_leaving_keep_the_port_from_the_tester)
     CHECK_STR_EQ(status(0), TR(KP_ST_DOWN));
     CHECK_EQ(kst_panel_editor(), 0);
     /* No row asks anything of a link that is down. */
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     tap(val(PG_SERVO, 2, 1));
     CHECK_EQ(kst_panel_editor(), 0);
 }
@@ -535,7 +535,7 @@ TEST_CASE(only_a_leave_offers_the_operators_set_points_back)
     float i = 0.0f;
 
     session_on_the_pd_mini();
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     hold(2.1f);
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_LEFT);

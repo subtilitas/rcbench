@@ -216,6 +216,22 @@ answers, runs the entry sequence and reads all 32 registers. The button
 reads **ABORT** while an operation runs or a leave waits, and **LEAVE** in
 programming mode.
 
+Where the session switches the servo's supply, the carrier's PROG 5V or a
+PD mini that answers, **CONNECT** switches it on and is a 2s hold, with
+OUTPUT ON's fade from green to red
+([Hold buttons](Screens.md#hold-buttons)). The session starts when the hold
+completes, with the finger still down; the release after it acts on
+nothing. A release before 2s sends nothing and shows `Hold 2s to connect
+and switch the port's supply on.` A finger that leaves the button, a lost
+touch or the port leaving PWM ends the hold. The connect goes out on the
+frame after the hold completes, and a touch loss found in between takes it
+back. On the rbmod carrier an input
+supply under 13.5V refuses the press and ends a running hold, with the
+input named ([Carrier, The input supply](Carrier.md#the-input-supply)).
+For a servo the operator powers, with no PD mini, **CONNECT** switches
+nothing on and takes a tap, which sends the entry at once. **ABORT** and
+**LEAVE** take a tap.
+
 ![An operation running](img/servo-kst-working.png)
 
 While a write, a restore or a pairing release runs, the SERVO tab shows
@@ -458,7 +474,7 @@ power cycle of a **LEAVE** by one of 4.30 or later.
 
 | Row | Button | Does |
 | --- | --- | --- |
-| PORT | **CONNECT**, **ABORT**, **LEAVE** | takes the port, ends the running operation, [gives the port back](#leaving) |
+| PORT | **CONNECT** (a 2s hold where it switches a supply on), **ABORT**, **LEAVE** | takes the port, ends the running operation, [gives the port back](#leaving) |
 | SERVO | **READ ALL** | reads the 32 registers, each until 3 of at most 5 reads agree |
 | TYPE | `--`, `V6?`, `V8?`, **V6**, **V8** | [the servo type](#the-servo-type) the operator sets; `V6?` is the guess from 20k_sel |
 | FILES | **CHOOSE** | [saves the servo's values to the card and loads a file](#servo-files) |
@@ -788,7 +804,7 @@ refusal:
 | At the card's answer | Line |
 | --- | --- |
 | the switch is off | `ENABLE WRITE TO SERVO is off.` |
-| the port reads PWM, or another port is held | `No servo connected. Tap CONNECT.` |
+| the port reads PWM, or another port is held | `No servo connected. CONNECT first.` |
 | the port reports an operation running, or its status is not read yet | `Another operation is running.` |
 | the bench is ARMED | `Tap DISARM first. The port cannot be taken over while ARMED.` |
 
@@ -999,7 +1015,7 @@ servo held before the write are then not recoverable from the bench.
 | The card leaves the slot while a page that promises the file is open | the hold sends nothing and the page comes back with the three lines; its own hold of 2s sends the write |
 | The card leaves the slot after the backup file is saved | later writes of the session are sent; the record of the write is kept in memory |
 | **FILES**, save and load without a card | refused: `No card. Nothing saved or written to the servo.` |
-| A card put in, taken out or swapped after the panel started | the panel looks at the slot when the programmer opens and at each tap on **CONNECT**, **READ ALL**, **FILES**, **RESTORE**, **MORE**, **ENABLE WRITE TO SERVO** or the write row: a card put in or swapped is mounted, and one taken out is let go. The look at a mounted card is one SEND_STATUS (CMD13) command. A file request (list, load, save) runs on the card it was asked of; with another card mounted in its place by then, it finds no card. The record of a write goes to the card whose record the programmer read last, never to one mounted in its place before the next look reads that card's record. The tap that finds a new card still reads the card state from before; the next one has it, and an open write page changes to the page with the file |
+| A card put in, taken out or swapped after the panel started | the panel looks at the slot when the programmer opens, at each **CONNECT** and at each tap on **READ ALL**, **FILES**, **RESTORE**, **MORE**, **ENABLE WRITE TO SERVO** or the write row: a card put in or swapped is mounted, and one taken out is let go. The look at a mounted card is one SEND_STATUS (CMD13) command. A file request (list, load, save) runs on the card it was asked of; with another card mounted in its place by then, it finds no card. The record of a write goes to the card whose record the programmer read last, never to one mounted in its place before the next look reads that card's record. The tap that finds a new card still reads the card state from before; the next one has it, and an open write page changes to the page with the file |
 
 A card that cannot be mounted is treated as absent. Writing, restoring
 and releasing pairing follow the no-card procedure above; **FILES** is
@@ -1124,7 +1140,7 @@ session's backup is checked the same way while the servo's values are known.
 
 The session's backup belongs to the servo it was read from. If a read
 differs from the backup in a field that no write in the session was meant
-to change, the panel treats it as a different servo: `This is a different servo. The session backup does not belong to it.` `Tap LEAVE, then CONNECT to start a new session with its own backup.` The write
+to change, the panel treats it as a different servo: `This is a different servo. The session backup does not belong to it.` `LEAVE and CONNECT again to start a new session with its own backup.` The write
 switch goes off, the restore list does not hold the session's backup, and
 no restore of it is sent. **LEAVE** and **CONNECT** begin a session whose
 backup is this servo's. A read of the first servo brings its backup back.
@@ -1428,8 +1444,8 @@ BEFORE PWM** above 0 the message after it reads
 | **ABORT** | the same, without the latch |
 | The link goes | the switch goes off, open pages close; a write under way is [interrupted](#an-interrupted-write) |
 | An error of the bench ([Safety, Errors](Safety.md#errors)), or an operation that ends in a fault of the servo or the wire: no servo, a failed read, a servo that changed, a write that failed, was rolled back or torn, a verify that differs, a driver fault | a write under way ends first, with its read-backs: the IOmcu keeps the supply on until then and 150ms after, 10,000ms at most; the full read after it is cut. Then the controllable servo supply goes off; the port detects this and keeps it off for 1000ms and is in PWM again: `The port ended the session: power off or restart.` An IOmcu older than link 4.31 keeps the supply on ([A programming port's supply](Safety.md#a-programming-ports-supply)) |
-| The IOmcu starts again | its session and backup are gone; `IOmcu restarted. Tap CONNECT, then READ ALL.` and `Switch the servo supply off and on first.`: the port is in PWM, and the servo was not led out of programming mode |
-| The port reads PWM with a servo read, the switch on, a write done or a read asked for, and no command of the programmer put it there | the servo's values, the backup and the switch are gone on the panel; `The port ended the session: power off or restart.` and `Switch the servo supply off and on, then tap CONNECT.` An operation that ended in the same reading keeps its own line |
+| The IOmcu starts again | its session and backup are gone; `IOmcu restarted. CONNECT, then READ ALL.` and `Switch the servo supply off and on first.`: the port is in PWM, and the servo was not led out of programming mode |
+| The port reads PWM with a servo read, the switch on, a write done or a read asked for, and no command of the programmer put it there | the servo's values, the backup and the switch are gone on the panel; `The port ended the session: power off or restart.` and `Switch the servo supply off and on, then CONNECT.` An operation that ended in the same reading keeps its own line |
 | The panel's control task takes no command for 2s | nothing is sent; `No result from the IOmcu. Tap READ ALL.` The command is withdrawn: the control task drops it when it leaves the queue, however late |
 | The IOmcu refuses an exchange of an operation it has taken | the line of the refusal; the values on the panel are not edited, saved or written before a **READ ALL** that ends |
 | 3 exchanges with the IOmcu in a row stay unanswered | `No response from the IOmcu. Tap READ ALL.`; after a read or a verify the values on the panel are not edited, saved or written before a **READ ALL** that ends |

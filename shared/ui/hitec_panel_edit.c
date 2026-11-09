@@ -22,6 +22,7 @@
 #include "hitec_rx_link.h"
 #include "link_pages.h"
 #include "pdmini.h"
+#include "prog5v_box.h"
 #include "prog_choice.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -412,7 +413,10 @@ static void port_act(hitec_prog_t *p)
 {
     const hitec_prog_state_t st = hitec_prog_state(p);
 
-    if (st == HITEC_PROG_PWM) {
+    if (st == HITEC_PROG_PWM && prog5v_box_input_why() != NULL) {
+        /* The carrier's input low: M7 makes no 5V for the session. */
+        ui_action_refused(prog5v_box_input_why());
+    } else if (st == HITEC_PROG_PWM) {
         hpn_supply_caps();
         (void)hitec_prog_connect(p);
     } else if (st == HITEC_PROG_HELD) {

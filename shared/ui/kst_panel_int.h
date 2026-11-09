@@ -115,7 +115,8 @@ extern const int16_t kpn_rule[KST_RULE_COUNT];
 
 enum {
     P_NONE = 0, P_TAB, P_ROW, P_MINUS, P_PLUS, P_KEYPAD, P_CHOICE,
-    P_CHOICE_CANCEL, P_APPLY, P_CANCEL, P_TEXTKEY, P_NOTES, P_PORT
+    P_CHOICE_CANCEL, P_APPLY, P_CANCEL, P_TEXTKEY, P_NOTES, P_PORT,
+    P_CONNECT
 };
 
 enum { C_STRETCH = 0, C_RESTORE, C_MORE, C_FILES, C_TYPE, C_PORT };
@@ -228,6 +229,11 @@ typedef struct {
     /** @brief Revision, counted up when the overlay's picture changes */
     uint32_t rev;
     uint32_t hold_rev;                  /**< revision, counted up when a hold advances */
+    /** @brief CONNECT's 2s hold: it switches the port's supply on */
+    ui_hold_t conn;
+    /** @brief CONNECT's hold completed: it acts on the next tick, after
+     *         that frame's drains, unless a touch loss cancels it first */
+    bool conn_due;
 
     /* A limit run's step of the programmer (kst_panel_run_connect()). */
     struct {
@@ -293,6 +299,13 @@ bool kpn_flag(uint16_t f);
  * @return true when the port is in programming
  */
 bool kpn_programming(void);
+/**
+ * @brief Whether the session switches the servo's supply: the carrier's
+ *        PROG 5V, or a PD mini that answers (LINK_KS_F_RAIL).  CONNECT is
+ *        a 2s hold then, and a tap when the operator powers the servo.
+ * @return true when CONNECT switches a supply on
+ */
+bool kpn_switches_supply(void);
 /** @brief A row's label: its text, or for PORT what it holds now.
  * @param r the row
  * @return the label

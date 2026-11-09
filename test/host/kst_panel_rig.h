@@ -181,6 +181,40 @@ static inline gfx_rect_t val(int page, int row, int col)
     return kst_panel_value_rect(page, row, col);
 }
 
+/* CONNECT, a 2s hold: pressed for 2.5s, the hold and its 300ms flash,
+ * and let go. */
+static inline void hold_connect(void)
+{
+    const gfx_rect_t r = val(PG_SERVO, 0, 0);
+
+    ev(cx(r), cy(r), TOUCH_EVENT_DOWN, 1);
+    ticks(2.5f);
+    ev(cx(r), cy(r), TOUCH_EVENT_UP, 1);
+    show();
+}
+
+/* Whether CONNECT switches a supply on: the session's supply is the
+ * carrier's PROG 5V or a PD mini. */
+static inline bool connect_holds(void)
+{
+    prog_session_t ps;
+
+    kst_panel_session(&ps);
+    return ps.supply != (uint8_t)PROG_SES_AS_IS;
+}
+
+/* PORT's button as it takes a press: CONNECT, in PWM, held 2s where it
+ * switches a supply on; LEAVE, ABORT, CONNECT of a servo the operator
+ * powers, and a button that takes nothing, tapped. */
+static inline void press_port(void)
+{
+    if (kst_prog_state(M) == KST_PROG_PWM && connect_holds()) {
+        hold_connect();
+    } else {
+        tap(val(PG_SERVO, 0, 0));
+    }
+}
+
 static inline void settle(void)
 {
     CHECK(rig_settle());
@@ -224,7 +258,7 @@ static inline void connected(void)
 {
     link_up();
     CHECK_EQ(kst_panel_editor(), 0);
-    tap(val(PG_SERVO, 0, 0));
+    hold_connect();
     settle();
     CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
     CHECK(kst_prog_have_servo(M));

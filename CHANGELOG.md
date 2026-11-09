@@ -6,7 +6,48 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- On the rbmod carrier the panel warns about a low input supply: while the
+  PD mini, which runs from the same input as the +15V net, reads it under
+  13.5V, the alert band shows `INPUT 5.1V: NEEDS 15V. CHECK THE SUPPLY
+  VOLTAGE` once, SUPPLY's head line and the PROG 5V box name the input in
+  red, and the PROG 5V row of the READY card on KST, HITEC, LIMIT RUN and
+  RUDDER AUTO reads `INPUT 5.1V < 15V` in red. PROG 5V ON, a KST or Hitec
+  CONNECT and ARM + START of LIMIT RUN and RUDDER AUTO are refused with
+  that text, and no output is switched. An input that goes low during the
+  2s hold, during ARM's or ARM + START's steps up to the read-back, or
+  before a run's CONNECT ends them the same way, with every output off.
+  Without a PD mini reading there is no warning.
+- After every ON of the carrier's programming-port 5V, the PROG 5V box's,
+  ARM's and a KST or Hitec session's, INA3221 0x40 CH3 must read 4750mV or
+  more within 200ms; otherwise every output goes off with `PROG 5V
+  MISSING: 3.1V AFTER 200ms. CHECK THE SUPPLY VOLTAGE`.
+
 ### Changed
+
+- The PROG 5V lost error on the carrier watches a KST or Hitec session's
+  5V as well: under a session a finding waits for a PROG_SUPPLY page read
+  that still reads GPIO 21 on.
+- CONNECT on the KST and HITEC programmers is a 2s hold, as OUTPUT ON,
+  where the session switches the servo's supply on: the carrier's PROG
+  5V, a PD mini that answers, or a CLASSIC session. A release before 2s
+  sends nothing and shows `Hold 2s to connect and switch the port's supply
+  on.` On the rbmod carrier a low input refuses the press and ends a
+  running hold. For a servo the operator powers, with no PD mini, CONNECT
+  switches nothing on and stays a tap, so the sync keeps its 250ms after
+  the tap. ABORT, LEAVE and RELEASE take a tap. READY's SERVO row says
+  `Hold CONNECT 2s in the session.` where CONNECT holds; the session's
+  messages name CONNECT without a gesture: `No servo connected. CONNECT
+  first.`
+- DONE of a stick run's manual step before a power-up is a 2s hold: the
+  run switches the supply on after it. A release before 2s confirms
+  nothing and shows `Hold 2s to confirm the step before the supply
+  switches on.` The other steps' DONE stays a tap. A touch loss found
+  after DONE's hold completed, before the supply reads on, ends the run
+  with no ON written; CONNECT acts on the frame after its hold completes,
+  so a touch loss found in between takes it back. Every control that
+  switches a voltage, a supply or an output on is a 2s hold.
 
 - The READY card on the SERVO screens (LIVE, SWEEP, RUDDER, TEST, LIMIT
   RUN, RUDDER AUTO, KST and HITEC) draws each row's state on a raised tag
@@ -79,6 +120,11 @@ history is in git.
 
 ### Fixed
 
+- A KST or Hitec CONNECT on the rbmod carrier with an input supply of 5V
+  instead of 15V did nothing and said nothing: M7 cannot make the ports'
+  5V from it. CONNECT is refused with the input named while the PD mini
+  reads it under 13.5V, and a 5V that does not reach 4750mV within 200ms
+  after the session switches it on is an error with every output off.
 - SERVO's PORT list on a board without the carrier, with the binding read
   and no output bound as SERVO PWM, offers a way to bind one: its first
   entry reads `OUTPUTS: NO PIN, OPEN OUTPUTS` and a pick opens OUTPUTS on

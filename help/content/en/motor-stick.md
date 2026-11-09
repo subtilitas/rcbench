@@ -115,7 +115,7 @@ The warning lists the steps due before the power-up. When they do not all fit, A
 
 ![The run waiting for the jumper](view:motor-stick-hand-prompt)
 
-When a manual step is due during a run, a prompt covers the page with DONE and ABORT. DONE is disabled for the first 1000ms. If it is not pressed within 60s, the run ends with NOT CONFIRMED.
+When a manual step is due during a run, a prompt covers the page with DONE and ABORT. DONE is disabled for the first 1000ms. Before a power-up DONE switches the supply on after it, so there it is a 2s hold. If it is not pressed within 60s, the run ends with NOT CONFIRMED.
 
 ![The steps after programming, at the end of a run](view:motor-stick-hand-after)
 

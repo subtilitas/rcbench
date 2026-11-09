@@ -353,7 +353,7 @@ TEST_CASE(a_servo_that_is_not_the_one_of_the_interrupted_write_is_named)
     other_20k(&img);
     memcpy(g_rig.sim.reg, img.r, sizeof(img.r));
     link_up();
-    tap(val(PG_SERVO, 0, 0));           /* CONNECT */
+    press_port();           /* CONNECT */
     settle();
     CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
     CHECK_EQ(kst_prog_port(M), RIG_PORT);
@@ -420,7 +420,7 @@ TEST_CASE(a_servo_that_fits_the_record_is_asked_about)
         /* The twin: the servo as the record's image has it. */
         memcpy(g_rig.sim.reg, M->journal_img.r, sizeof(M->journal_img.r));
         link_up();
-        tap(val(PG_SERVO, 0, 0));           /* CONNECT */
+        press_port();           /* CONNECT */
         settle();
         CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
         CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL_SAME);
@@ -460,7 +460,7 @@ TEST_CASE(a_servo_that_fits_the_record_is_asked_about)
         memcpy(g_rig.sim.reg, M->journal_target.r,
                sizeof(M->journal_target.r));
         link_up();
-        tap(val(PG_SERVO, 0, 0));
+        press_port();
         settle();
         CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL_DONE);
         CHECK_EQ(kst_panel_message_lines(kst_prog_message(M), t), 2);

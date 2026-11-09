@@ -56,6 +56,8 @@ Fehlt eine Voraussetzung, sind alle Bedienelemente gesperrt. Der Reiter nennt de
 
 Der Port arbeitet entweder mit PWM (Pulsweitenmodulation) oder im Programmiermodus. VERBINDEN beendet PWM, stellt bei antwortendem PD mini die Versorgung ein, führt die Einstiegsfolge aus und liest alle 32 Register aus. Danach heißt die Taste VERLASSEN, während eines Vorgangs ABBRECHEN.
 
+Wo die Sitzung die Servoversorgung schaltet, PROG 5V am Carrier oder einen antwortenden PD mini, schaltet VERBINDEN sie ein und ist eine Halte-Taste von 2s. Die Sitzung beginnt, wenn das Halten vollständig ist. Loslassen vor 2s sendet nichts und zeigt `Halte 2s, um zu verbinden und die Versorgung des Ports einzuschalten.` Für ein Servo, das du von Hand einschaltest, nimmt VERBINDEN ein Tippen. VERLASSEN und ABBRECHEN nehmen ein Tippen.
+
 ![Was VERBINDEN stellt](view:servo-kst-options)
 
 Solange der Tester den Port verwendet, stellt WEITERES die bei VERBINDEN angewendeten Werte ein:
@@ -85,6 +87,10 @@ Ab Carrier-Protokoll 4.36 öffnet ein Tipp auf die PORT-Beschriftung vor VERBIND
 
 ![Der KST-Programmer hält die 5V](view:servo-kst-rbmod)
 
+Die festen 5V kommen aus dem Eingang des Carriers, der 15V benötigt. Solange der PD mini diesen Eingang unter 13,5V liest, zeigt die Zeile PROG 5V `EINGANG 5.1V < 15V` in Rot, und VERBINDEN nimmt kein Halten an: Das Band zeigt `EINGANG 5.1V: BENÖTIGT 15V. VERSORGUNGSSPANNUNG PRÜFEN`. Ein Eingang, der während des Haltens niedrig wird, beendet es ebenso. Nachdem VERBINDEN die 5V einschaltet, müssen sie innerhalb von 200ms 4750mV oder mehr lesen; sonst schalten alle Ausgänge aus, mit `PROG 5V FEHLT: 3.1V NACH 200ms. VERSORGUNGSSPANNUNG PRÜFEN`.
+
+![KST mit dem Eingang bei 5,1V: VERBINDEN abgelehnt](view:servo-kst-rbmod-input)
+
 ## Der Versorgungszyklus
 
 KST- und Chaservo-Servos öffnen den Programmiermodus nach dem Einschalten. Geschriebene Werte gelten erst nach dem nächsten Einschalten. Das getestete Chaservo ignorierte VERBINDEN bei durchgehend eingeschalteter Versorgung. Nach einem Schreibvorgang reagierte es erst wieder auf PWM, nachdem die Versorgung aus- und eingeschaltet wurde.
@@ -108,7 +114,7 @@ Bei ausgeschaltetem Ausgang schaltet VERBINDEN ihn ein und öffnet den Programmi
 
 | Zeile | Taste | Wirkung |
 |---|---|---|
-| PORT | VERBINDEN, ABBRECHEN, VERLASSEN | nimmt den Port, beendet den laufenden Vorgang, gibt den Port zurück |
+| PORT | VERBINDEN (2s halten, wo es eine Versorgung einschaltet), ABBRECHEN, VERLASSEN | nimmt den Port, beendet den laufenden Vorgang, gibt den Port zurück |
 | SERVO | ALLES AUSLESEN | liest die 32 Register, jedes, bis 3 von höchstens 5 Lesungen übereinstimmen |
 | TYP | V6?, V8?, V6, V8 | der Servotyp, V6 oder V8, wie der Bediener ihn setzt |
 | DATEIEN | WÄHLEN | speichert die Werte des Servos auf die Karte, lädt eine Datei |

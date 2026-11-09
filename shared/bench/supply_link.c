@@ -531,6 +531,17 @@ void supply_link_state(const supply_link_t *s, uint32_t now_ms,
                  ? (uint8_t)(SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT) : 0u;
 }
 
+uint16_t supply_link_input_mv(const supply_link_t *s, uint32_t now_ms)
+{
+    if (s == NULL) {
+        return 0u;
+    }
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    supply_link_state(s, now_ms, &st);
+    return st.online ? s->regs[LINK_SP_VIN_MV] : 0u;
+}
+
 bool supply_link_blind(const supply_link_t *s, uint32_t now_ms)
 {
     return s != NULL && s->read_any

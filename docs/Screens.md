@@ -470,7 +470,9 @@ end above it.
 ## Hold buttons
 
 A hold button acts after 2s of contact (`UI_HOLD_S`). Releasing it earlier
-sends no command. Instead, the alert band shows a hint for 4s: amber
+sends no command. Every control that switches a voltage, a supply or an
+output on is a hold button; one that switches it off, such as OUTPUT OFF,
+PROG 5V OFF, DISARM, STOP or ABORT, takes a tap. Instead, the alert band shows a hint for 4s: amber
 (`UI_C_WARN`) with dark text, rather than the danger colour. Tap the band
 to dismiss it earlier. The hint fits on one line of at most 97 characters.
 
@@ -495,6 +497,7 @@ replaces a visible hint.
 | ARM on LIVE, SWEEP and RUDDER while it switches PORT PWM or the supply on | `Hold 2s: the port and its supply go on, then ARM.` |
 | OUTPUT ON on SUPPLY and in SERVO's supply box | `Hold 2s to switch the output on.` |
 | PROG 5V ON in the PROG 5V box on SUPPLY, rbmod carrier | `Hold 2s to switch the programming ports' 5V on.` |
+| CONNECT on the KST and HITEC programmers, where the session switches the servo's supply | `Hold 2s to connect and switch the port's supply on.` |
 | APPLY on the HV, frame rate and soft limit warnings of SERVO, KST and Chaservo, and on Hitec pages | `Hold 2s to apply.` |
 | HOLD 2s: ARM + START on TEST | `Hold 2s to arm and start the test.` |
 | HOLD 2s: ARM + START on LIMIT RUN | `Hold 2s to switch the port and its supply on, ARM and start the limit run.` |
@@ -508,6 +511,7 @@ replaces a visible hint.
 | HOLD 2s TO RELEASE | `Hold 2s to release the port.` |
 | HOLD 2s TO REPAIR | `Hold 2s to repair.` |
 | HOLD 2s TO RUN on a stick run's warning | `Hold 2s to run.` |
+| DONE of a stick run's step before a power-up | `Hold 2s to confirm the step before the supply switches on.` |
 | HOLD 2s TO INSTALL on Wi-Fi | `Hold 2s to install.` |
 | HOLD 2s TO DOWNLOAD & INSTALL on UPDATES and in the update reminder | `Hold 2s to download and install.` |
 | HOLD 2s TO UPDATE THE IOMCU on UPDATES, and START on the IOmcu update's question | `Hold 2s to update the IOmcu.` |
@@ -524,8 +528,8 @@ button white, black, then its settled colour, twice, 50ms a phase
 (`UI_HOLD_FLASH_PHASE_MS`), 300ms in all (`UI_HOLD_FLASH_MS`). At 60 frames
 a second a phase is 3 frames. A slower frame ends the phase it falls in and
 no more, so every phase is drawn at any frame rate. The settled colour is
-the one the hold fades to: the danger red for ARM, OUTPUT ON and PROG 5V
-ON; amber for HOLD 2s: ARM + START on TEST, RUDDER AUTO and LIMIT RUN,
+the one the hold fades to: the danger red for ARM, OUTPUT ON, PROG 5V ON,
+the programmers' CONNECT and a stick run's DONE before a power-up; amber for HOLD 2s: ARM + START on TEST, RUDDER AUTO and LIMIT RUN,
 whose sequence waits for ARMED and its read-backs before the run.
 
 - The flash starts with the hold, not with the answer. ARMED, the output
@@ -1303,9 +1307,11 @@ profile; [Stick programming](StickProgramming.md) describes the runs.
 ESC STICK controls normally act on a tap: lift inside the pressed control,
 within 8px of the starting point on each axis. Sliding away or across a
 control does not activate it. Each control accepts one finger at a time.
-Three controls use the press directly:
+Four controls use the press directly:
 
 - HOLD 2s TO RUN: its 2s hold starts at the press.
+- DONE on a manual step's prompt before a power-up: its 2s hold starts at
+  the press, once DONE is lit.
 - ABORT of a stick run, on the run's page and on a manual step's prompt. It
   stops a motor, so it does not wait for the lift, and it answers a second
   finger.
@@ -1801,10 +1807,19 @@ unless a port holds it.
 
 SUPPLY has the PROG 5V box ([Supply](#supply)); see
 [Carrier, The PROG 5V box](Carrier.md#the-prog-5v-box) for its rules.
-Two windows below 3000mV while the box reports ON cause a fault: SAFE,
-all outputs off, and the band message
+After every ON, the box's, ARM's or a session's, the 5V must read 4750mV
+or more within 200ms; otherwise SAFE, all outputs off, and the band
+message `PROG 5V MISSING: 3.1V AFTER 200ms. CHECK THE SUPPLY VOLTAGE`.
+Two windows below 3000mV after that cause the same fault with
 `PROG 5V lost: INA3221 0x40 CH3 read 0.12V while ON. All outputs off.`
-([Carrier, PROG 5V lost](Carrier.md#prog-5v-lost)).
+([Carrier, PROG 5V missing or lost](Carrier.md#prog-5v-missing-or-lost)).
+While the PD mini reads the carrier's input under 13.5V, the PROG 5V
+row of the READY card on KST, HITEC, LIMIT RUN and RUDDER AUTO reads
+`INPUT 5.1V < 15V` in red, and CONNECT and ARM + START are refused with
+`INPUT 5.1V: NEEDS 15V. CHECK THE SUPPLY VOLTAGE`
+([Carrier, The input supply](Carrier.md#the-input-supply)).
+
+![KST with the input at 5.1V: CONNECT refused](img/servo-kst-rbmod-input.png)
 
 ![The KST programmer holding the 5V](img/servo-kst-rbmod.png)
 
@@ -2178,8 +2193,7 @@ KST's and HITEC's frame around the session:
 | footer, right | SETTINGS: KST's KST EXPERT MODE page, HITEC's Hitec series and Hitec D receive; grey while the session holds the port |
 
 A tap on a READY row that is not met names it in the alert band, for
-example `SUPPLY: Switch the servo supply off and on, then tap CONNECT 1s
-later.` A finger on a READY row or on WRITE keeps SETTINGS and the PORT
+example `SUPPLY: Switch the servo supply off and on, then tap CONNECT 1s later.` A finger on a READY row or on WRITE keeps SETTINGS and the PORT
 list shut, as every held press does.
 
 ![KST before CONNECT](img/servo-kst.png)
@@ -2784,6 +2798,16 @@ Leaving SUPPLY turns off 5V switched on by its box unless a port holds it.
 Boards without the switch show neither control.
 
 ![SUPPLY on the carrier](img/supply-rbmod.png)
+
+The PD mini on the carrier runs from the same input as M7. While it reads
+that input under 13.5V, the head line names it in red after the PD mini's
+pins, `INPUT 5.1V < 15V` in place of `ONLINE`, the box's second line reads
+`INPUT 5.1V: NEEDS 15V` in red, and PROG 5V ON takes no hold: the alert
+band reads `INPUT 5.1V: NEEDS 15V. CHECK THE SUPPLY VOLTAGE`. The band
+shows that text once as the reading goes low and takes it back once it is
+13.5V or more ([Carrier, The input supply](Carrier.md#the-input-supply)).
+
+![SUPPLY with the input at 5.1V](img/supply-rbmod-input.png)
 
 ### Supply settings
 

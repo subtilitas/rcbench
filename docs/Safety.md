@@ -124,7 +124,7 @@ either goes.
 | A card write fails during a run, or the final commit or close of the run log or of the automatic test's CSV (comma-separated values) file after it, once a run | SAFE | the port's supply off, after a write that runs ([below](#a-programming-ports-supply)) | off; a port's after its write, 10000ms at most | the panel (`card_faults_follow()`), the IOmcu for the write |
 | The panel's supply trip (CURRENT TRIP or VOLTAGE TRIP on SUPPLY) | SAFE | the port's supply off, after a write that runs | off; a port's after its write, 10000ms at most | the panel, the IOmcu for the write |
 | An INA3221 channel over its limit | SAFE | the port's supply off, after a write that runs | off; a port's after its write, 10000ms at most | the panel, at the 200ms read of `OVER`, with one console line a channel ([Screens](Screens.md#sensors-the-ina3221-parts)); the IOmcu for the write |
-| The carrier's programming-port 5V lost under the panel's ON: 2 new INA3221 windows under 3000mV, 500ms or more after the ON ([Carrier, PROG 5V lost](Carrier.md#prog-5v-lost)) | SAFE | none open: a session's 5V is not watched | off | the panel, with one alert and one console line; the IOmcu for the PROG_SUPPLY OFF |
+| The carrier's programming-port 5V missing or lost under an ON, the panel's or a session's: no INA3221 window of 4750mV or more by 200ms after the ON, or 2 new windows under 3000mV 500ms or more after it ([Carrier, PROG 5V missing or lost](Carrier.md#prog-5v-missing-or-lost)) | SAFE | the session's 5V off, after a write that runs; under a session the finding waits for a page read that still reads GPIO 21 on | off | the panel, with one alert and one console line; the IOmcu for the PROG_SUPPLY OFF |
 | A run's current limit: STALL AT, constant current, 3.0A, 1.0A for 400ms | SAFE | none open: a search is ARMED | off | the SERVO screen |
 | A step of SERVO's start sequence fails on LIVE, SWEEP, RUDDER or RUDDER AUTO: PORT PWM, PROG 5V or the PD mini not read back within 1000ms, not ARMED within 500ms, a tap on the hold, a STOP ([Servo: AUTO end points](Servo.md#auto-end-points)) | SAFE | none open: ARM is refused while a session holds a port | off; PROG 5V off as well | the SERVO screen (`svs_all_off()`) |
 | The PD mini's own protection, its input sagging, no answer, no reading, an ON refused or let go, an output or set point that would not take, an ON taken across lost touch events | SAFE | the port's supply off, after a write that runs | off where it can be switched: the module's protection and a sagging input at once, a write included; the rest after a port's write, 10000ms at most | the IOmcu's driver for the output, the panel for SAFE |
@@ -296,6 +296,16 @@ the servo up. The page follows the SUPPLY page's rules for a port:
   link came up or since an unanswered read, held by a port, or while an
   ON or OFF is owed, as they wait for the PD mini's output
   (`prog_supply_link_live()`).
+- After every ON, the box's, ARM's and a session's, INA3221 0x40 CH3
+  must read 4750mV or more within 200ms, and a later drop under 3000mV
+  for two windows is the same error: every output off
+  ([Carrier, PROG 5V missing or lost](Carrier.md#prog-5v-missing-or-lost)).
+- M7 runs from the +15V net, the carrier's input through the PD trigger
+  M6. While the PD mini on the same input reads it under 13.5V, PROG 5V
+  ON, a KST or Hitec CONNECT and ARM + START of LIMIT RUN and RUDDER AUTO
+  are refused with `INPUT 5.1V: NEEDS 15V. CHECK THE SUPPLY VOLTAGE`, and
+  nothing is switched ([Carrier, The input supply](Carrier.md#the-input-supply)).
+  Without a PD mini reading only the check after the ON applies.
 
 SUPPLY shows its state under OUTPUT: `PROG PORTS 5V, GPIO 21: ON`, `OFF`,
 or `NOT READ` when the last read went unanswered. The core is

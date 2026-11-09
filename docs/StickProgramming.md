@@ -253,7 +253,7 @@ each with the moment it is due:
 | Due | The run |
 | --- | --- |
 | `before_power` | lists it on the warning; completing HOLD 2s TO RUN confirms that it is done. From the second power-up of a run on, it stops before each power-up and asks again |
-| `at_power_up` | stops before each power-up with the supply off and asks; DONE switches the supply on, and the run counts down the hold the profile gives |
+| `at_power_up` | stops before each power-up with the supply off and asks; DONE, a 2s hold, switches the supply on, and the run counts down the hold the profile gives |
 | `before_menu` | asks once the entry has had its time, with the ESC powered and the stick at the power-up position. A step marked `starts_menu` is the action that starts the menu, and the run counts the beeps from the moment it asks (see below); every other one waits for DONE |
 | `during_menu` | cannot know the moment: the profile does not run, `manual step` |
 | `before_power_off` | stops after the store's last move, with the ESC powered and the stick where the store left it, and switches the supply off only on DONE. Nobody touches the ESC: the operator watches it confirm the value (tones, LED) |
@@ -294,7 +294,13 @@ A step asked during the run covers the page: the step, where the supply
 and the stick are, and how long the run waits. DONE goes on; it is dark for
 the first 1000ms (`ESC_STICK_HAND_MIN_MS`), so one tap meant for the step
 before cannot confirm the next, and it is acted on in the next frame, after
-the frame has judged STOP, the switch to ARMED, the link and the supply. ABORT ends the
+the frame has judged STOP, the switch to ARMED, the link and the supply.
+Before a power-up DONE switches the supply on after it, so there it is a
+2s hold with OUTPUT ON's fade from green to red, counted from a press
+after the first 1000ms; a release before 2s shows `Hold 2s to confirm the
+step before the supply switches on.` A touch loss found after that hold
+completes, before the supply reads on, ends the run with the supply off
+and the bench disarmed. The other steps' DONE takes a tap. ABORT ends the
 run, and so does STOP in the band. No DONE within 60s
 (`ESC_STICK_HAND_WAIT_MS`) ends the run with NOT CONFIRMED. While it waits
 the run keeps every rule it keeps elsewhere: a powered wait watches the

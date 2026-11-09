@@ -16,12 +16,15 @@
  * - a_held_port_refuses_a_series_pick_past_the_row
  * - a_pick_outside_the_choices_changes_nothing
  * - the_programmers_card_has_no_rows_elsewhere
+ * - the_prog_5v_row_names_a_low_input_under_the_series_row
  *
  * SPDX-License-Identifier: MIT
  */
 #include "hitec_limit_panel_rig.h"
 
+#include "prog5v_box.h"
 #include "servo_ready_int.h"
+#include "ui_board.h"
 #include "ui_text.h"
 
 /* servo_screen_int.h's press guard and the SERVO and SERIES picks
@@ -215,6 +218,44 @@ TEST_CASE(the_programmers_card_has_no_rows_elsewhere)
     CHECK_EQ(prog_ready_at(PRR_PORT), -1);
 }
 
+/* On the rbmod carrier the third row is PROG 5V: amber before CONNECT, red
+ * with the input named at 5.1V, amber again at 15.0V; the SERVO row asks
+ * for CONNECT's 2s hold, as CONNECT switches PROG 5V on. */
+TEST_CASE(the_prog_5v_row_names_a_low_input_under_the_series_row)
+{
+    on_hitec();
+    ui_board_set(OUTBIND_BOARD_RBMOD);
+    (void)ui_board_apply_pins(NULL);
+    prog5v_box_publish(2u, 21u, (uint8_t)PROG5V_HELD_NONE);
+    hl_ms(20u);
+    CHECK_EQ(prog_ready_at(PRR_SUPPLY), 2);
+    rdy_row_t r;
+    memset(&r, 0, sizeof(r));
+    CHECK(ready_row(prog_ready_at(PRR_SUPPLY), &r));
+    CHECK_STR_EQ(r.label, "PROG 5V");
+    CHECK_EQ(r.st, (uint8_t)RDY_SEQ);
+    memset(&r, 0, sizeof(r));
+    CHECK(ready_row(prog_ready_at(PRR_SERVO), &r));
+    CHECK(r.why != NULL && strcmp(r.why, TR(PRR_CONN_HOLD_WHY)) == 0);
+    prog5v_box_publish_input(5100u);
+    hl_ms(20u);
+    memset(&r, 0, sizeof(r));
+    CHECK(ready_row(prog_ready_at(PRR_SUPPLY), &r));
+    CHECK_EQ(r.st, (uint8_t)RDY_BAD);
+    CHECK_STR_EQ(r.value, "INPUT 5.1V < 15V");
+    CHECK(r.why != NULL
+          && strcmp(r.why, "INPUT 5.1V: NEEDS 15V. CHECK THE SUPPLY VOLTAGE")
+                 == 0);
+    prog5v_box_publish_input(15000u);
+    hl_ms(20u);
+    memset(&r, 0, sizeof(r));
+    CHECK(ready_row(prog_ready_at(PRR_SUPPLY), &r));
+    CHECK_EQ(r.st, (uint8_t)RDY_SEQ);
+    prog5v_box_reset();
+    ui_board_set(OUTBIND_BOARD_PICO_HEADER);
+    (void)ui_board_apply_pins(NULL);
+}
+
 int main(void)
 {
     RUN(the_series_row_shows_and_picks_the_series);
@@ -224,5 +265,6 @@ int main(void)
     RUN(a_held_port_refuses_a_series_pick_past_the_row);
     RUN(a_pick_outside_the_choices_changes_nothing);
     RUN(the_programmers_card_has_no_rows_elsewhere);
+    RUN(the_prog_5v_row_names_a_low_input_under_the_series_row);
     return test_summary("hitec_series_row");
 }

@@ -108,7 +108,7 @@ extern const hpn_row_t hpn_rows[HP_ROW_COUNT];
 /** @brief What a press is on. */
 enum {
     P_NONE = 0, P_TAB, P_ROW, P_KEYPAD, P_CHOICE, P_CHOICE_CANCEL,
-    P_APPLY, P_CANCEL, P_TEXTKEY, P_PORT, P_PLUS, P_MINUS
+    P_APPLY, P_CANCEL, P_TEXTKEY, P_PORT, P_PLUS, P_MINUS, P_CONNECT
 };
 
 /** @brief A position's -/+ keys while MOVE SERVO is on, KST's 56px. */
@@ -199,7 +199,22 @@ typedef struct {
     uint32_t sig;               /**< signature of the last draw           */
     uint32_t rev;               /**< counts the picture's changes         */
     uint32_t hold_rev;          /**< counts a hold's steps                */
+    ui_hold_t conn;             /**< CONNECT's 2s hold: it switches the
+                                     port's supply on                    */
+    bool     conn_due;          /**< CONNECT's hold completed: it acts on
+                                     the next tick, after that frame's
+                                     drains, unless a touch loss cancels
+                                     it first                            */
 } hpn_state_t;
+
+/**
+ * @brief Whether the session switches the servo's supply: the carrier's
+ *        PROG 5V, a PD mini that answers, or CLASSIC, which needs one.
+ *        CONNECT is a 2s hold then, and a tap when the operator powers the
+ *        servo.
+ * @return true when CONNECT switches a supply on
+ */
+bool hpn_switches_supply(void);
 
 /** @brief The state, in hitec_panel.c; the files read it as hp. */
 extern hpn_state_t hitec_panel_h;

@@ -5,6 +5,8 @@
  * port and its GPIO in every state; CLOSE while the port is held opening
  * LEAVE, and a hold of 2s leaving; a port another session holds offering
  * RELEASE PORT; a classic servo with no PD mini refused with its reason;
+ * CONNECT a 2s hold with a PD mini and a tap without one, and taken back
+ * by a touch loss found after its hold completed;
  * the supply's lock while a port is held; the restore question after a
  * LEAVE and after no other end of the hold; every control a tap target above
  * the alert band, every label and value inside its field and every note
@@ -99,7 +101,7 @@ TEST_CASE(the_series_row_and_more_take_no_tap_while_the_port_is_held)
     CHECK_EQ(hitec_panel_editor(), 0);
     CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 1, 1));   /* READ ALL */
     /* LEAVE gives SERIES back. */
-    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    press_port();
     hold(2.1f);
     until(HITEC_PROG_PWM);
     show();
@@ -324,12 +326,55 @@ TEST_CASE(a_classic_connect_without_a_pd_mini_is_refused_with_its_reason)
     open_at(SUPPLY_NONE, UI_LANG_EN);
     tap(val(HITEC_PANEL_SERVO, 1, 0));
     tap(hitec_panel_choice_rect(1));
-    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    press_port();
     CHECK_EQ(msg(), HITEC_PROG_MSG_NEED_PD_C);
     CHECK_EQ(strcmp(said(), TR(HP_NEED_PD_C)), 0);
     CHECK_EQ(pstate(), HITEC_PROG_PWM);
     prun(100u);
     CHECK_EQ(g_cmds, 0u);
+}
+
+/* CONNECT switches a supply on where the session has one, a PD mini here:
+ * a 2s hold, and a tap connects nothing.  A D series servo the operator
+ * powers, with no PD mini, takes a tap that connects at once. */
+TEST_CASE(connect_holds_only_where_it_switches_a_supply_on)
+{
+    prog_session_t ps;
+
+    open_at(SUPPLY_ON, UI_LANG_EN);
+    hitec_panel_session(&ps);
+    CHECK(ps.supply != (uint8_t)PROG_SES_AS_IS);
+    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    CHECK_EQ(pstate(), HITEC_PROG_PWM);
+    hold_connect();
+    CHECK(pstate() != HITEC_PROG_PWM);
+
+    open_at(SUPPLY_NONE, UI_LANG_EN);
+    hitec_panel_session(&ps);
+    CHECK_EQ(ps.supply, (uint8_t)PROG_SES_AS_IS);
+    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    CHECK(pstate() != HITEC_PROG_PWM);
+}
+
+/* CONNECT acts on the tick after its hold completes: a touch loss found in
+ * between (hitec_panel_cancel()) takes it back and nothing is sent. */
+TEST_CASE(a_touch_loss_found_after_connects_hold_connects_nothing)
+{
+    const gfx_rect_t c = (open_at(SUPPLY_ON, UI_LANG_EN),
+                          val(HITEC_PANEL_SERVO, 0, 0));
+
+    const unsigned cmds = g_cmds;
+
+    ev(cx(c), cy(c), TOUCH_EVENT_DOWN);
+    for (int i = 0; i < 8; ++i) {
+        hitec_panel_tick(0.25f);        /* 2.0s: the hold completes */
+    }
+    CHECK_EQ(pstate(), HITEC_PROG_PWM);
+    hitec_panel_cancel();               /* the loss, found late */
+    hitec_panel_tick(0.02f);
+    prun(100u);
+    CHECK_EQ(pstate(), HITEC_PROG_PWM);
+    CHECK_EQ(g_cmds, cmds);
 }
 
 /* ------------------------------------------------------------- PORT row */
@@ -424,7 +469,7 @@ TEST_CASE(a_classic_leave_page_says_the_supply_cycles)
     tap(val(HITEC_PANEL_SERVO, 1, 0));
     tap(hitec_panel_choice_rect(1));
     tap_connect();
-    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    press_port();
     CHECK_EQ(hitec_panel_editor(), 3);
     CHECK_EQ(strcmp(hitec_panel_page_line(1), TR(HP_LEAVE_C)), 0);
     tap(hitec_panel_cancel_rect());
@@ -445,7 +490,7 @@ TEST_CASE(a_port_another_session_holds_offers_release_port)
                     TR(HP_RELEASE)),
              0);
     CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 0, 0));
-    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    press_port();
     CHECK_EQ(hitec_panel_editor(), 3);
     CHECK_EQ(strcmp(hitec_panel_page_line(0), TR(HP_RELEASE)), 0);
     snprintf(want, sizeof(want), TR(HP_RELEASE_1), 1u);
@@ -524,7 +569,7 @@ TEST_CASE(only_a_leave_offers_the_operators_set_points_back)
     CHECK(supply_screen_port_held());
     supply_screen_adopt(5.0f, 1.0f);
     supply_screen_set_output(true);
-    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    press_port();
     hold(2.1f);
     until(HITEC_PROG_PWM);
     prun(50u);
@@ -541,7 +586,7 @@ TEST_CASE(only_a_leave_offers_the_operators_set_points_back)
     until(HITEC_PROG_OTHER);
     show();
     CHECK(!supply_screen_restore_offer(NULL, NULL));
-    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    press_port();
     hold(2.1f);
     until(HITEC_PROG_PWM);
     prun(50u);
@@ -689,7 +734,7 @@ TEST_CASE(every_control_label_value_and_note_fits_in_both_languages)
         until(HITEC_PROG_OTHER);
         check_layout();
         tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-        tap(val(HITEC_PANEL_SERVO, 0, 0));
+        press_port();
         CHECK_EQ(hitec_panel_editor(), 3);
         target(hitec_panel_apply_rect());
         target(hitec_panel_cancel_rect());
@@ -750,6 +795,8 @@ int main(void)
     RUN(connect_reads_the_d485hw_and_the_tabs_show_its_values);
     RUN(before_a_read_the_value_tabs_say_so);
     RUN(a_classic_connect_without_a_pd_mini_is_refused_with_its_reason);
+    RUN(connect_holds_only_where_it_switches_a_supply_on);
+    RUN(a_touch_loss_found_after_connects_hold_connects_nothing);
     RUN(the_port_row_names_the_port_and_its_gpio_in_every_state);
     RUN(close_while_held_opens_leave_and_a_2s_hold_leaves);
     RUN(a_classic_leave_page_says_the_supply_cycles);

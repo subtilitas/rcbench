@@ -288,7 +288,7 @@ mit dem Zeitpunkt, an dem er fällig ist:
 | Fällig | Der Lauf |
 | --- | --- |
 | `before_power` | nennt ihn in der Warnung; mit abgeschlossenem 2s HALTEN ZUM STARTEN bestätigst du, dass er erledigt ist. Ab dem zweiten Einschalten eines Laufs hält er vor jedem Einschalten an und fragt erneut |
-| `at_power_up` | hält vor jedem Einschalten mit ausgeschaltetem Netzteil an und fragt; ERLEDIGT schaltet das Netzteil ein, und der Lauf zählt das Halten herunter, das das Profil nennt |
+| `at_power_up` | hält vor jedem Einschalten mit ausgeschaltetem Netzteil an und fragt; ERLEDIGT, 2s gehalten, schaltet das Netzteil ein, und der Lauf zählt das Halten herunter, das das Profil nennt |
 | `before_menu` | fragt nach Ablauf der Einstiegszeit, mit versorgtem ESC und dem Knüppel in der Einschaltstellung. Ein Schritt mit `starts_menu` ist die Handlung, die das Menü startet, und der Lauf zählt die Pieptöne ab dem Moment, in dem er fragt (siehe unten); jeder andere wartet auf ERLEDIGT |
 | `during_menu` | kann den Zeitpunkt nicht kennen: das Profil läuft nicht, `Handgriff` |
 | `before_power_off` | hält nach der letzten Bewegung des Speicherns an, mit versorgtem ESC und dem Knüppel, wo das Speichern ihn ließ, und schaltet das Netzteil erst auf ERLEDIGT aus. Berühre den ESC nicht; beobachte seine Bestätigung des Werts (Pieptöne, LED) |
@@ -334,7 +334,14 @@ Mit ERLEDIGT setzt du den Lauf fort. Die Taste bleibt die ersten 1000ms
 gesperrt (`ESC_STICK_HAND_MIN_MS`), damit ein Tipp für den vorherigen
 Schritt nicht zugleich den nächsten bestätigt. Sie wirkt im nächsten
 Frame, nachdem STOP, das Schalten auf ARMED, die Verbindung und das Netzteil
-geprüft wurden. ABBRECHEN und STOP im Band beenden den Lauf.
+geprüft wurden. Vor einem Einschalten schaltet ERLEDIGT danach das Netzteil
+ein und ist dort darum eine Halte-Taste von 2s, mit der Überblendung von
+AUSGANG EIN von Grün nach Rot, gezählt ab einem Druck nach den ersten
+1000ms; Loslassen vor 2s zeigt `Halte 2s, um den Schritt vor dem
+Einschalten der Versorgung zu bestätigen.` Ein Berührungsverlust, der nach
+diesem Halten gefunden wird, bevor das Netzteil als eingeschaltet gelesen
+wird, beendet den Lauf mit ausgeschaltetem Netzteil und DISARM. ERLEDIGT
+der anderen Schritte nimmt ein Tippen. ABBRECHEN und STOP im Band beenden den Lauf.
 
 Ohne ERLEDIGT innerhalb von 60s (`ESC_STICK_HAND_WAIT_MS`) endet der Lauf
 mit NICHT BESTÄTIGT. Während des Wartens gelten dieselben Regeln wie sonst:

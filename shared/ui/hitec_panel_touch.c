@@ -14,6 +14,7 @@
 
 #include "hitec_live.h"
 #include "hitec_move.h"
+#include "prog5v_box.h"
 #include "supply_screen.h"
 #include "ui_tabs.h"
 #include "ui_textkey.h"
@@ -117,6 +118,21 @@ static void down(const touch_event_t *evt)
                     || !hpn_find_live(hp.find_right)) {
                     return;
                 }
+            }
+            if (r->kind == K_ACT && r->what == A_PORT
+                && hitec_prog_state(&hp.prog) == HITEC_PROG_PWM
+                && hpn_switches_supply()) {
+                /* CONNECT that switches the port's supply on: a 2s hold,
+                 * and no hold from a low carrier input.  A servo the
+                 * operator powers takes a tap. */
+                if (prog5v_box_input_why() != NULL) {
+                    ui_action_refused(prog5v_box_input_why());
+                    return;
+                }
+                take(evt, P_CONNECT, i);
+                ui_hold_reset(&hp.conn);
+                ui_hold_begin(&hp.conn, TX_HOLD_HINT_CONNECT);
+                return;
             }
             take(evt, P_ROW, i);
             return;
@@ -223,6 +239,22 @@ static void rest(const touch_event_t *evt)
         }
         (void)ui_hold_end(&hp.page.hold, evt, hitec_panel_apply_rect());
         hp.page.down = false;
+        let_go();
+        return;
+    }
+    if (was == P_CONNECT) {
+        const gfx_rect_t vr = hpn_value_rect(&hpn_rows[which]);
+
+        if (!up) {
+            /* A finger that leaves CONNECT abandons its hold. */
+            if (!gfx_rect_contains(vr, x, y) && ui_hold_leave(&hp.conn)) {
+                let_go();
+            }
+            return;
+        }
+        /* The hold has connected, or a short release shows the hint; the
+         * release is no tap on what the button shows now. */
+        (void)ui_hold_end(&hp.conn, evt, vr);
         let_go();
         return;
     }
@@ -385,6 +417,8 @@ void hitec_panel_cancel(void)
     ui_textkey_cancel_press(&hp.tk);
     ui_tabs_cancel(&hp.tabs);
     ui_hold_reset(&hp.page.hold);
+    ui_hold_reset(&hp.conn);
+    hp.conn_due = false;
     hp.page.down = false;
     let_go();
     ++hp.rev;
@@ -398,9 +432,67 @@ void hitec_panel_leave(void)
     hp.open = false;
 }
 
+/**
+ * @brief A frame of CONNECT's hold: it connects on the tick after it
+ *        completes; the port gone from PWM or its row from the page ends
+ *        it, a low carrier input ends it with the reason.
+ *
+ * The connect waits a tick: the frame's drains run between the two, so a
+ * touch loss that the hold completed over is found first, and
+ * hitec_panel_cancel() takes the connect back before its command is
+ * queued.
+ * @param dt_s the frame's time, s
+ */
+static void connect_tick(float dt_s)
+{
+    if (hp.conn_due) {
+        const hpn_row_t *r = &hpn_rows[0];
+
+        hp.conn_due = false;
+        if (hitec_prog_state(&hp.prog) == HITEC_PROG_PWM
+            && hpn_switches_supply() && r->page == hp.tabs.selected
+            && hpn_row_shown(r) && hpn_row_live(r)) {
+            hpn_act(r);         /* refuses a low carrier input itself */
+            hpn_supply_sync();
+        }
+        ++hp.rev;
+    }
+    if (hp.have && hp.pressed == P_CONNECT && !hp.conn.fired) {
+        const hpn_row_t *r = &hpn_rows[hp.row];
+
+        if (hitec_prog_state(&hp.prog) != HITEC_PROG_PWM
+            || !hpn_switches_supply() || hp.page.open
+            || hitec_panel_editor() != 0 || r->page != hp.tabs.selected
+            || !hpn_row_shown(r) || !hpn_row_live(r)) {
+            (void)ui_hold_left(&hp.conn);
+            let_go();
+            ++hp.rev;
+        } else if (prog5v_box_input_why() != NULL) {
+            ui_hold_reset(&hp.conn);
+            let_go();
+            ui_action_refused(prog5v_box_input_why());
+            ++hp.rev;
+        } else {
+            if (ui_hold_tick(&hp.conn, dt_s)) {
+                hp.conn_due = true;
+                ++hp.rev;
+            }
+            ++hp.hold_rev;
+        }
+    }
+    if (ui_hold_flashing(&hp.conn)) {
+        ui_hold_flash_step(&hp.conn, dt_s);
+        ++hp.hold_rev;
+        if (!ui_hold_flashing(&hp.conn)) {
+            ++hp.rev;           /* the row under the flash, whole */
+        }
+    }
+}
+
 void hitec_panel_tick(float dt_s)
 {
     hpn_step_tick(dt_s);
+    connect_tick(dt_s);
     if (hp.page.open && hp.page.down) {
         if (ui_hold_tick(&hp.page.hold, dt_s)) {
             hpn_page_apply();

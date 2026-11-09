@@ -1845,6 +1845,18 @@ UI_TEXT(P5_LOCKED, 94,
 UI_TEXT(P5_HELD_SOME, 27,
     "HELD BY A PROG PORT",
     "BELEGT VON EINEM PROG-PORT")
+/* The carrier's input supply under 13.5V, as the PD mini reads it
+ * (prog5v_box_input_low_mv()): the box's second line, a READY card's tag
+ * and SUPPLY's head line, and the refusal and the band's warning. */
+UI_TEXT(P5_IN_LINE, 0,
+    "INPUT %u.%uV: NEEDS 15V",
+    "EINGANG %u.%uV: BENÖTIGT 15V")
+UI_TEXT(P5_IN_TAG, 20,
+    "INPUT %u.%uV < 15V",
+    "EINGANG %u.%uV < 15V")
+UI_TEXT(P5_IN_WHY, 94,
+    "INPUT %u.%uV: NEEDS 15V. CHECK THE SUPPLY VOLTAGE",
+    "EINGANG %u.%uV: BENÖTIGT 15V. VERSORGUNGSSPANNUNG PRÜFEN")
 UI_TEXT(MO_RESET_PEAKS, 0,
     "RESET PEAKS",
     "SPITZENWERTE ZURÜCKSETZEN")
@@ -5483,6 +5495,9 @@ UI_TEXT(ALERT_P5_TOUCH, 94,
 UI_TEXT(ALERT_P5_LOST, 94,
     "PROG 5V lost: INA3221 0x%02X CH%u read %u.%02uV while ON. All outputs off.",
     "PROG 5V ausgefallen: INA3221 0x%02X CH%u misst %u.%02uV trotz EIN. Alle Ausgänge aus.")
+UI_TEXT(ALERT_P5_MISSING, 94,
+    "PROG 5V MISSING: %u.%uV AFTER %lums. CHECK THE SUPPLY VOLTAGE",
+    "PROG 5V FEHLT: %u.%uV NACH %lums. VERSORGUNGSSPANNUNG PRÜFEN")
 UI_TEXT(ALERT_SUPPLY_CHANGED, 94,
     "Supply changed in SETUP. Output off.",
     "Netzteil in SETUP geändert. Ausgang aus.")
@@ -5769,6 +5784,12 @@ UI_TEXT(HOLD_HINT_OUTPUT_ON, 94,
 UI_TEXT(HOLD_HINT_PROG5V, 94,
     "Hold 2s to switch the programming ports' 5V on.",
     "Halte 2s, um die 5V der Programmierports einzuschalten.")
+UI_TEXT(HOLD_HINT_CONNECT, 94,
+    "Hold 2s to connect and switch the port's supply on.",
+    "Halte 2s, um zu verbinden und die Versorgung des Ports einzuschalten.")
+UI_TEXT(HOLD_HINT_DONE, 94,
+    "Hold 2s to confirm the step before the supply switches on.",
+    "Halte 2s, um den Schritt vor dem Einschalten der Versorgung zu bestätigen.")
 UI_TEXT(HOLD_HINT_APPLY, 94,
     "Hold 2s to apply.",
     "Halte 2s, um zu übernehmen.")
@@ -6293,6 +6314,9 @@ UI_TEXT(PRR_READ_WHY, 94,
 UI_TEXT(PRR_CONN_WHY, 94,
     "Tap CONNECT in the session.",
     "Tippe in der Sitzung auf VERBINDEN.")
+UI_TEXT(PRR_CONN_HOLD_WHY, 94,
+    "Hold CONNECT 2s in the session.",
+    "Halte in der Sitzung 2s VERBINDEN.")
 UI_TEXT(PRR_SERIES_HELD, 94,
     "Tap LEAVE first: the session keeps its series.",
     "Tippe zuerst auf VERLASSEN: die Sitzung behält ihre Serie.")
@@ -6307,7 +6331,7 @@ UI_TEXT(PRR_W_BUSY, 94,
     "Warte: ein Schritt der Sitzung läuft.")
 UI_TEXT(PRR_W_CONNECT, 94,
     "CONNECT and read the servo first.",
-    "Tippe auf VERBINDEN und lies zuerst das Servo aus.")
+    "Zuerst VERBINDEN und das Servo auslesen.")
 UI_TEXT(PRR_W_NONE, 94,
     "No value changed: edit one first.",
     "Kein Wert geändert: ändere zuerst einen.")
@@ -6417,8 +6441,8 @@ UI_TEXT(KP_M_BACKUP_OTHER, 116,
     "This is a different servo. The session backup does not belong to it.",
     "Das ist ein anderes Servo. Das Backup dieser Sitzung gehört nicht dazu.")
 UI_TEXT(KP_M_BACKUP_OTHER_2, 116,
-    "Tap LEAVE, then CONNECT to start a new session with its own backup.",
-    "Tippe auf VERLASSEN, dann auf VERBINDEN. So beginnt eine neue Sitzung mit eigenem Backup.")
+    "LEAVE and CONNECT again to start a new session with its own backup.",
+    "VERLASSEN und erneut VERBINDEN. So beginnt eine neue Sitzung mit eigenem Backup.")
 UI_TEXT(KP_M_STORE_FAILED, 116,
     "Could not save the file to the card. Nothing was written to the servo.",
     "Datei nicht auf Karte gespeichert. Keine Werte ins Servo geschrieben.")
@@ -6687,8 +6711,8 @@ UI_TEXT(KP_M_NEED_READ, 116,
     "Read the servo settings first. Tap READ ALL.",
     "Lies zuerst das Servo aus. Tippe auf ALLES AUSLESEN.")
 UI_TEXT(KP_M_NEED_PORT, 116,
-    "No servo connected. Tap CONNECT.",
-    "Kein Servo verbunden. Tippe auf VERBINDEN.")
+    "No servo connected. CONNECT first.",
+    "Kein Servo verbunden. Zuerst VERBINDEN.")
 UI_TEXT(KP_M_NO_RESTORE, 116,
     "The servo already contains these values.",
     "Das Servo enthält diese Werte bereits.")
@@ -6747,8 +6771,8 @@ UI_TEXT(KP_O_NO_ANSWER, 116,
     "No response from the IOmcu. Tap READ ALL.",
     "Keine Antwort vom IOmcu. Tippe auf ALLES AUSLESEN.")
 UI_TEXT(KP_O_RESTARTED, 116,
-    "IOmcu restarted. Tap CONNECT, then READ ALL.",
-    "IOmcu neu gestartet. Tippe auf VERBINDEN, dann auf ALLES AUSLESEN.")
+    "IOmcu restarted. CONNECT, then READ ALL.",
+    "IOmcu neu gestartet. VERBINDEN, dann ALLES AUSLESEN.")
 UI_TEXT(KP_O_RESTARTED_2, 116,
     "Switch the servo supply off and on first.",
     "Schalte zuerst die Servoversorgung aus und wieder ein.")
@@ -6756,8 +6780,8 @@ UI_TEXT(KP_M_SESSION_ENDED, 116,
     "The port ended the session: power off or restart.",
     "Der Port hat die Sitzung beendet: Versorgung aus oder Neustart.")
 UI_TEXT(KP_M_SESSION_ENDED_2, 116,
-    "Switch the servo supply off and on, then tap CONNECT.",
-    "Schalte die Servoversorgung aus und ein. Tippe dann auf VERBINDEN.")
+    "Switch the servo supply off and on, then CONNECT.",
+    "Schalte die Servoversorgung aus und ein, dann VERBINDEN.")
 UI_TEXT(KP_M_UNKNOWN_CODE, 116,
     "The IOmcu reports code %u. This panel does not recognise it.",
     "IOmcu meldet Code %u. Dieses Panel kennt ihn nicht.")
@@ -6792,8 +6816,8 @@ UI_TEXT(KP_R_UNSAFE, 116,
     "The IOmcu refused: its failsafe is latched. Hold ARM, then DISARM, to clear it.",
     "Vom IOmcu abgelehnt: Sein Failsafe ist ausgelöst. Halte ARM, dann tippe auf DISARM, um ihn aufzuheben.")
 UI_TEXT(KP_R_NOT_PROGRAMMING, 116,
-    "Port not in programming mode. Tap CONNECT.",
-    "Port nicht im Programmiermodus. Tippe auf VERBINDEN.")
+    "Port not in programming mode. CONNECT first.",
+    "Port nicht im Programmiermodus. Zuerst VERBINDEN.")
 UI_TEXT(KP_R_STAGED, 116,
     "Received values were damaged. Nothing was written.",
     "Werte kamen fehlerhaft an. Nichts geschrieben.")
@@ -6825,8 +6849,8 @@ UI_TEXT(KP_S_NO_SERVO, 116,
     "No servo responds. Check the plug, supply and port.",
     "Kein Servo antwortet. Prüfe Stecker, Versorgung und Port.")
 UI_TEXT(KP_S_NOT_IN_MODE, 116,
-    "Servo not in programming mode. Tap LEAVE, then CONNECT.",
-    "Servo nicht im Programmiermodus. Tippe auf VERLASSEN, dann auf VERBINDEN.")
+    "Servo not in programming mode. LEAVE and CONNECT again.",
+    "Servo nicht im Programmiermodus. VERLASSEN und erneut VERBINDEN.")
 UI_TEXT(KP_S_READ, 116,
     "Could not read the servo. Check the plug, then tap READ ALL.",
     "Servo konnte nicht ausgelesen werden. Prüfe den Stecker, dann tippe auf ALLES AUSLESEN.")
@@ -7174,7 +7198,7 @@ UI_TEXT(HP_ST_STOP_LATCHED, 116,
     "Gestoppt. Der Pin ist frei. Halte STOP 2s, um den STOP zurückzusetzen.")
 UI_TEXT(HP_ST_NOT_IN_MODE, 116,
     "Port %u is held. The servo is not in programming mode: LEAVE and CONNECT again.",
-    "Port %u belegt. Servo nicht im Programmiermodus. Tippe auf VERLASSEN, dann auf VERBINDEN.")
+    "Port %u belegt. Servo nicht im Programmiermodus. VERLASSEN und erneut VERBINDEN.")
 UI_TEXT(HP_NO_PAGE, 116,
     "Unavailable: the IOmcu has no Hitec port.",
     "Nicht verfügbar: Der IOmcu hat keinen Hitec-Port.")
@@ -7201,7 +7225,7 @@ UI_TEXT(HP_STOP_LATCHED, 116,
     "Ein STOP ist gesetzt. Halte STOP 2s, um ihn zurückzusetzen.")
 UI_TEXT(HP_NOT_IN_MODE, 116,
     "The servo is not in programming mode. LEAVE and CONNECT again.",
-    "Servo nicht im Programmiermodus. Tippe auf VERLASSEN, dann auf VERBINDEN.")
+    "Servo nicht im Programmiermodus. VERLASSEN und erneut VERBINDEN.")
 UI_TEXT(HP_NO_C, 116,
     "No classic servo answered after power-up. Check plug and series.",
     "Kein klassisches Servo hat nach dem Einschalten geantwortet. Prüfe Stecker und Serie.")

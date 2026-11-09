@@ -504,7 +504,10 @@ Bedienelemente zum Anhalten des Prüfstands enden darüber.
 ## Halte-Tasten
 
 Eine Halte-Taste wirkt nach 2s Berührung (`UI_HOLD_S`). Loslassen vor 2s
-sendet keinen Befehl. Stattdessen erscheint ihr Hinweis für 4s im Alarmband:
+sendet keinen Befehl. Jede Taste, die eine Spannung, eine Versorgung oder
+einen Ausgang einschaltet, ist eine Halte-Taste; eine, die sie ausschaltet,
+etwa AUSGANG AUS, PROG 5V AUS, DISARM, STOP oder ABBRECHEN, nimmt ein
+Tippen. Stattdessen erscheint ihr Hinweis für 4s im Alarmband:
 in Bernsteinfarbe (`UI_C_WARN`) mit dunkler Schrift statt der
 Gefahrenfarbe. Tippe auf das Band, um ihn früher zu löschen. Der Hinweis
 passt in eine Zeile mit höchstens 97 Zeichen.
@@ -532,6 +535,7 @@ ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | ARM auf LIVE, SWEEP und RUDER, wenn es PORT-PWM oder die Versorgung einschaltet | `Halte 2s: Port und Versorgung gehen an, dann ARM.` |
 | AUSGANG EIN auf SUPPLY und im Versorgungsfeld von SERVO | `Halte 2s, um den Ausgang einzuschalten.` |
 | PROG 5V EIN im Feld PROG 5V auf SUPPLY, rbmod-Carrier | `Halte 2s, um die 5V der Programmierports einzuschalten.` |
+| VERBINDEN in den Programmierern für KST und HITEC, wo die Sitzung die Servoversorgung schaltet | `Halte 2s, um zu verbinden und die Versorgung des Ports einzuschalten.` |
 | ÜBERNEHMEN in den Warnungen zu HV, Pulsrate und weichen Grenzen von SERVO, KST und Chaservo und auf den Hitec-Seiten | `Halte 2s, um zu übernehmen.` |
 | 2s HALTEN: ARM + START auf TEST | `Halte 2s, um auf ARMED zu schalten und den Test zu starten.` |
 | 2s HALTEN: ARM + START auf ENDLAGENLAUF | `Halte 2s, um Port und Versorgung einzuschalten, ARM und den Endlagenlauf zu starten.` |
@@ -545,6 +549,7 @@ ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | 2s HALTEN ZUM FREIGEBEN auf PORT FREIGEBEN | `Halte 2s, um den Port freizugeben.` |
 | 2s HALTEN ZUM REPARIEREN | `Halte 2s, um zu reparieren.` |
 | 2s HALTEN ZUM STARTEN in der Warnung eines Stick-Laufs | `Halte 2s, um zu starten.` |
+| ERLEDIGT eines Schritts vor einem Einschalten im Stick-Lauf | `Halte 2s, um den Schritt vor dem Einschalten der Versorgung zu bestätigen.` |
 | 2s HALTEN ZUM INSTALLIEREN auf WI-FI | `Halte 2s, um zu installieren.` |
 | 2s HALTEN: LADEN & INSTALLIEREN auf UPDATES und in der Update-Erinnerung | `Halte 2s, um zu laden und zu installieren.` |
 | 2s HALTEN ZUM IOMCU-UPDATE auf UPDATES und START im Bestätigungsdialog des IOmcu-Updates | `Halte 2s, um den IOmcu zu aktualisieren.` |
@@ -562,8 +567,8 @@ ist: die ganze Taste weiß, schwarz, dann in ihrer neuen Farbe, zweimal,
 (`UI_HOLD_FLASH_MS`). Bei 60 Frames pro Sekunde dauert eine Phase 3 Frames.
 Ein langsamerer Frame beendet nur die Phase, in die er fällt; so wird
 jede Phase bei jeder Bildrate gezeichnet. Die neue Farbe ist die,
-zu der das Halten überblendet: Gefahrenrot bei ARM, AUSGANG EIN und PROG 5V
-EIN; Bernstein bei 2s HALTEN: ARM + START auf TEST, RUDER AUTO und
+zu der das Halten überblendet: Gefahrenrot bei ARM, AUSGANG EIN, PROG 5V
+EIN, VERBINDEN der Programmierer und ERLEDIGT eines Stick-Laufs vor einem Einschalten; Bernstein bei 2s HALTEN: ARM + START auf TEST, RUDER AUTO und
 ENDLAGENLAUF, deren Folge vor dem Lauf auf ARMED und ihre Rückmeldungen
 wartet.
 
@@ -1408,10 +1413,12 @@ die Läufe.
 Die Bedienelemente auf ESC STICK reagieren normalerweise auf einen Tipp:
 Lasse innerhalb des gedrückten Elements los, höchstens 8px vom Aufsetzpunkt
 entfernt auf jeder Achse. Herausgleiten oder Überqueren löst nichts aus.
-Jedes Element nimmt eine Berührung mit einem Finger an. Drei Elemente
+Jedes Element nimmt eine Berührung mit einem Finger an. Vier Elemente
 nutzen das Aufsetzen direkt:
 
 - 2s HALTEN ZUM STARTEN: Das Halten über 2s beginnt mit dem Aufsetzen.
+- ERLEDIGT in der Aufforderung zu einem Handgriff vor einem Einschalten:
+  Das Halten über 2s beginnt mit dem Aufsetzen, sobald ERLEDIGT aktiv ist.
 - ABBRECHEN eines Stick-Laufs, auf der Seite des Laufs und in der Aufforderung
   zu einem Handgriff. Es hält einen Motor an, wartet deshalb nicht auf
   das Abheben und reagiert auch auf einen zweiten Finger.
@@ -1948,11 +1955,20 @@ nicht ausgelesen.` Beim Verlassen von SERVO werden die von ARM oder ARM +
 START eingeschalteten 5V abgeschaltet, außer ein Port hält sie.
 
 SUPPLY zeigt das Feld PROG 5V ([Netzteil](#netzteil)); die Regeln stehen
-unter [Carrier, Das Feld PROG 5V](Carrier-de.md#das-feld-prog-5v). Zwei Fenster
-unter 3000mV bei angezeigtem EIN lösen einen Fehler aus: SAFE, alle
-Ausgänge aus und die Bandmeldung
+unter [Carrier, Das Feld PROG 5V](Carrier-de.md#das-feld-prog-5v). Nach
+jedem ON, dem des Felds, von ARM oder einer Sitzung, müssen die 5V
+innerhalb von 200ms 4750mV oder mehr lesen; sonst SAFE, alle Ausgänge aus
+und die Bandmeldung `PROG 5V FEHLT: 3.1V NACH 200ms. VERSORGUNGSSPANNUNG PRÜFEN`.
+Zwei Fenster unter 3000mV danach lösen denselben Fehler aus, mit
 `PROG 5V ausgefallen: INA3221 0x40 CH3 misst 0.12V trotz EIN. Alle Ausgänge aus.`
-([Carrier, PROG 5V ausgefallen](Carrier-de.md#prog-5v-ausgefallen)).
+([Carrier, PROG 5V fehlt oder ausgefallen](Carrier-de.md#prog-5v-fehlt-oder-ausgefallen)).
+Solange der PD mini den Eingang des Carriers unter 13,5V liest, zeigt die
+Zeile PROG 5V der Karte BEREIT auf KST, HITEC, ENDLAGENLAUF und RUDER AUTO
+`EINGANG 5.1V < 15V` in Rot, und VERBINDEN und ARM + START werden mit
+`EINGANG 5.1V: BENÖTIGT 15V. VERSORGUNGSSPANNUNG PRÜFEN` abgelehnt
+([Carrier, Die Eingangsversorgung](Carrier-de.md#die-eingangsversorgung)).
+
+![KST mit dem Eingang bei 5,1V: VERBINDEN abgelehnt](img/de/servo-kst-rbmod-input.png)
 
 ![Die KST-Programmierung hält die 5V](img/de/servo-kst-rbmod.png)
 
@@ -2357,8 +2373,7 @@ Der Rahmen von KST und HITEC um die Sitzung:
 | Fußleiste, rechts | OPTIONEN: die Seite KST EXPERT MODE, bei HITEC Hitec-Serie und Hitec-D-Empfang; grau, solange die Sitzung den Port hält |
 
 Ein Tippen auf eine nicht erfüllte Zeile von BEREIT nennt sie im
-Alarmband, zum Beispiel `VERSORGUNG: Schalte die Servoversorgung aus und
-ein, tippe dann 1s später auf VERBINDEN.` Ein Finger auf einer Zeile von
+Alarmband, zum Beispiel `VERSORGUNG: Schalte die Servoversorgung aus und ein, tippe dann 1s später auf VERBINDEN.` Ein Finger auf einer Zeile von
 BEREIT oder auf WERTE SCHREIBEN hält OPTIONEN und die Liste PORT zu, wie
 jeder gehaltene Druck.
 
@@ -3037,6 +3052,17 @@ Beim Verlassen schaltet SUPPLY die von seinem Feld eingeschalteten 5V
 aus, außer ein Port hält sie. Platinen ohne Schalter zeigen beides nicht.
 
 ![SUPPLY auf dem Carrier](img/de/supply-rbmod.png)
+
+Der PD mini auf dem Carrier läuft aus demselben Eingang wie M7. Solange er
+diesen Eingang unter 13,5V liest, nennt ihn die Kopfzeile in Rot nach den
+Pins des PD mini, `EINGANG 5.1V < 15V` statt `ONLINE`, die zweite Zeile des
+Felds lautet `EINGANG 5.1V: BENÖTIGT 15V` in Rot, und PROG 5V EIN nimmt kein
+Halten an: das Warnband zeigt `EINGANG 5.1V: BENÖTIGT 15V.
+VERSORGUNGSSPANNUNG PRÜFEN`. Das Band zeigt diesen Text einmal, sobald der
+Messwert niedrig wird, und nimmt ihn zurück, sobald er 13,5V oder mehr
+beträgt ([Carrier, Die Eingangsversorgung](Carrier-de.md#die-eingangsversorgung)).
+
+![SUPPLY mit dem Eingang bei 5,1V](img/de/supply-rbmod-input.png)
 
 ### Netzteil, Optionen
 

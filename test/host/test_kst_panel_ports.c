@@ -58,7 +58,7 @@ TEST_CASE(a_session_runs_on_the_port_the_tester_drives)
     on_port_3(14u);
     snprintf(want, sizeof(want), TR(KP_STATE_PWM_AS_IS), 3u);
     CHECK_STR_EQ(status(0), want);
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     settle();
     CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
     CHECK_EQ(kst_prog_port(M), 2u);
@@ -75,7 +75,7 @@ TEST_CASE(a_session_runs_on_the_port_the_tester_drives)
 TEST_CASE(a_port_without_a_pin_is_refused)
 {
     on_port_3(0u);
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_REF + LINK_KST_REF_NO_PIN);
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
@@ -102,7 +102,7 @@ TEST_CASE(the_program_row_names_the_port_and_its_use)
     prog_registry_set_ports(2u, 0x2u);
     CHECK_EQ(prog_reg_state(rows, n, at, caps), PROG_ROW_LIVE);
     /* The session's own hold keeps the row live. */
-    tap(val(PG_SERVO, 0, 0));
+    press_port();
     settle();
     CHECK(kst_panel_holds_port());
     prog_registry_set_ports(2u, 0x4u);

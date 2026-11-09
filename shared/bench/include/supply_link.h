@@ -350,6 +350,20 @@ void supply_link_state(const supply_link_t *s, uint32_t now_ms,
                        supply_state_t *st);
 
 /**
+ * @brief The PD mini's input voltage as the page last read it (VIN_MV), for
+ *        as long as supply_link_state() takes the module as online: a page
+ *        read younger than SUPPLY_LINK_STALE_MS, the module wired and
+ *        answering.  The IOmcu's driver reads the input every 500ms
+ *        (PDMINI_STATE_MS) whether the output is on or off.
+ *
+ * @param s      The link state.
+ * @param now_ms The time, in ms.
+ * @return The input in mV; 0 for NULL, a module not online and an input
+ *         not yet read.
+ */
+uint16_t supply_link_input_mv(const supply_link_t *s, uint32_t now_ms);
+
+/**
  * @brief Whether the module's readings have stopped at @p now_ms: a page has
  *        been read and its reading count (SAMPLES) has not moved for
  *        SUPPLY_LINK_BLIND_MS or more, counted on the 32-bit millisecond clock
