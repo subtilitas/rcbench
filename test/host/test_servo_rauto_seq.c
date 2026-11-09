@@ -21,6 +21,7 @@
  * - the_run_takes_the_settings_the_hold_fired_on
  * - a_window_measured_before_the_5v_refuses_nothing
  * - a_rail_dead_after_the_5v_fails_naming_prog_5v
+ * - a_rail_rising_after_the_5v_reads_on_starts_the_run
  * - a_pd_mini_off_on_a_rail_fed_from_elsewhere_refuses_the_hold
  * - a_pd_mini_set_low_or_past_6v_runs_at_5v_and_stays_there
  * - a_pd_mini_that_does_not_answer_5v_fails_the_read_back
@@ -381,15 +382,22 @@ TEST_CASE(a_window_measured_before_the_5v_refuses_nothing)
     }
 }
 
-/* PROG 5V reads back ON and the rail stays at 0V: the window begun after
- * it refuses, and the step that failed is PROG 5V's, its rail's line in
- * the band, all off, no ARM. */
+/* PROG 5V reads back ON and the rail stays at 0V: the steps give it the
+ * read-back's 1000ms, the supply row amber, then the step that failed is
+ * PROG 5V's, its rail's line in the band, all off, no ARM. */
 TEST_CASE(a_rail_dead_after_the_5v_fails_naming_prog_5v)
 {
     char want[128];
     carrier_safe_off(40u);
     ra.rail_dead = true;
     ra_hold_start();
+    CHECK(svs_seq_busy());
+    CHECK(svs_seq_failure() == NULL);
+    const rdy_row_t r = row_now(RAR_SUPPLY);
+    CHECK_EQ(r.st, (uint8_t)RDY_SEQ);
+    CHECK_STR_EQ(r.why, TR(SV_LIM_PROG_RAIL));
+    ra_ms(1000u);
+    CHECK(!svs_seq_busy());
     CHECK(!servo_screen_rauto_running());
     CHECK_EQ(ra.arms, 0u);
     snprintf(want, sizeof(want), TR(SQ_FAILED), "PROG 5V",
@@ -400,6 +408,37 @@ TEST_CASE(a_rail_dead_after_the_5v_fails_naming_prog_5v)
     ra.rail_dead = false;
     ra.p5_task = false;
     carrier_done();
+}
+
+/* The 5V reads back ON before the rail has risen, which here comes 100,
+ * 200 and 300ms after it: the supply row reads amber while the read-back
+ * waits, nothing fails, and the run starts. */
+TEST_CASE(a_rail_rising_after_the_5v_reads_on_starts_the_run)
+{
+    for (uint32_t rise = 100u; rise <= 300u; rise += 100u) {
+        carrier_safe_off(40u);
+        ra.rail_rise = rise;
+        ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 1);
+        for (int k = 0; k < 150 && !prog5v_box_on(); ++k) {
+            ra_ms(20u);
+        }
+        CHECK(prog5v_box_on());
+        ra_ms(rise - 40u);
+        CHECK(svs_seq_busy());
+        CHECK(svs_seq_failure() == NULL);
+        CHECK_EQ(row_now(RAR_SUPPLY).st, (uint8_t)RDY_SEQ);
+        ra_ms(400u);
+        ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 1);
+        ra_ms(20u);
+        CHECK(svs_seq_failure() == NULL);
+        CHECK(servo_screen_rauto_running());
+        CHECK_EQ(ra.arms, 1u);
+        rauto_end_now(SERVO_TEST_AB_OPERATOR);
+        ra_ms(2000u);
+        ra.rail_rise = 0u;
+        ra.p5_task = false;
+        carrier_done();
+    }
 }
 
 /* The PD mini answers with its output off while the INA3221 reads the
@@ -766,6 +805,7 @@ int main(void)
     RUN(the_run_takes_the_settings_the_hold_fired_on);
     RUN(a_window_measured_before_the_5v_refuses_nothing);
     RUN(a_rail_dead_after_the_5v_fails_naming_prog_5v);
+    RUN(a_rail_rising_after_the_5v_reads_on_starts_the_run);
     RUN(a_pd_mini_off_on_a_rail_fed_from_elsewhere_refuses_the_hold);
     RUN(a_pd_mini_set_low_or_past_6v_runs_at_5v_and_stays_there);
     RUN(a_pd_mini_that_does_not_answer_5v_fails_the_read_back);

@@ -5,7 +5,8 @@
  *        ARMED's 500ms either side of the limit; the part each failure
  *        names; a part already on not asked again; STOP; the step numbers;
  *        a step's time judged before what it reads; the checks judged on
- *        a reading after the parts; the part a refusal names; FAILSAFE
+ *        a reading after the parts; a rail read low judged at the
+ *        read-back's end; the part a refusal names; FAILSAFE
  *        CLEAR first where the IOmcu's failsafe is latched, its 500ms
  *        either side of the limit, and a supply in the failsafe refused
  *        at once.
@@ -24,6 +25,7 @@
  * - null_and_idle_take_nothing
  * - a_part_or_armed_after_a_stall_past_its_time_fails
  * - the_checks_wait_for_a_reading_after_the_parts
+ * - a_low_rail_waits_for_its_rise_until_the_read_backs_end
  * - a_refusal_names_the_part_the_caller_gives
  * - a_latched_failsafe_is_cleared_first_then_the_steps_run
  * - the_clear_has_500ms_tested_at_499_and_500
@@ -419,6 +421,64 @@ TEST_CASE(a_part_or_armed_after_a_stall_past_its_time_fails)
     CHECK_EQ(servo_seq_why(&q), SERVO_SEQ_WHY_TIMEOUT);
 }
 
+/* The PD mini reads back ON before its output has risen: a refusal that
+ * is the rail read low (rail_low) on readings begun after the parts waits.
+ * A rail that rises at 300ms goes on to ARM; one still low at 999ms waits,
+ * and at 1000ms the step fails, named by the caller's part, refused, all
+ * off.  Without settle nothing raises the rail, and it fails at once. */
+TEST_CASE(a_low_rail_waits_for_its_rise_until_the_read_backs_end)
+{
+    static const servo_seq_need_t k_pd_settle = { true, false, true, true,
+                                                  false };
+    servo_seq_t q;
+    servo_seq_do_t d;
+    for (int stays = 0; stays < 2; ++stays) {
+        servo_seq_in_t in = off();
+        servo_seq_init(&q);
+        (void)servo_seq_begin(&q, &k_pd_settle, 0u);
+        servo_seq_step(&q, 0u, &in, &d);
+        CHECK(d.pd_on);
+        in.pwm_set = in.pd_on = in.pwm_on = true;
+        in.refused = in.rail_low = true;
+        in.refused_part = (uint8_t)SERVO_SEQ_PART_PD_MINI;
+        in.reading = true;
+        in.reading_from_ms = 20u;
+        servo_seq_step(&q, 20u, &in, &d);
+        for (uint32_t t = 40u; t < 1000u; t += 20u) {
+            if (!stays && t == 300u) {
+                in.refused = in.rail_low = false;   /* the rail is up */
+            }
+            in.reading_from_ms = t - 10u;
+            servo_seq_step(&q, t, &in, &d);
+            if (!stays && t == 300u) {
+                CHECK(d.arm);
+                CHECK_EQ(servo_seq_step_now(&q), SERVO_SEQ_ARM);
+                break;
+            }
+            CHECK(nothing(&d));
+            CHECK_EQ(servo_seq_step_now(&q), SERVO_SEQ_READBACK);
+        }
+        if (stays) {
+            servo_seq_step(&q, 999u, &in, &d);
+            CHECK(nothing(&d));
+            servo_seq_step(&q, 1000u, &in, &d);
+            CHECK(d.all_off && !d.arm);
+            CHECK(!servo_seq_busy(&q));
+            CHECK_EQ(servo_seq_part(&q), SERVO_SEQ_PART_PD_MINI);
+            CHECK_EQ(servo_seq_why(&q), SERVO_SEQ_WHY_REFUSED);
+        }
+    }
+    /* No supply switched, nothing to wait for. */
+    servo_seq_in_t in = off();
+    in.pwm_set = in.pd_on = in.pwm_on = true;
+    servo_seq_init(&q);
+    (void)servo_seq_begin(&q, &k_pd, 0u);
+    in.refused = in.rail_low = true;
+    servo_seq_step(&q, 0u, &in, &d);
+    CHECK(d.all_off);
+    CHECK_EQ(servo_seq_why(&q), SERVO_SEQ_WHY_REFUSED);
+}
+
 /* With settle, READ-BACK judges the caller's checks only on a reading
  * that began once every part read ON: a refusal on the window measured
  * before the 5V (from 80ms, the parts at 100ms) waits; on one from 120ms
@@ -698,6 +758,7 @@ int main(void)
     RUN(null_and_idle_take_nothing);
     RUN(a_part_or_armed_after_a_stall_past_its_time_fails);
     RUN(the_checks_wait_for_a_reading_after_the_parts);
+    RUN(a_low_rail_waits_for_its_rise_until_the_read_backs_end);
     RUN(a_refusal_names_the_part_the_caller_gives);
     RUN(a_latched_failsafe_is_cleared_first_then_the_steps_run);
     RUN(the_clear_has_500ms_tested_at_499_and_500);

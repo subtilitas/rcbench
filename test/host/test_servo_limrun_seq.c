@@ -4,7 +4,8 @@
  * servo_start_seq.c): on the rbmod carrier one hold switches PORT PWM and
  * PROG 5V, reads them back, arms and starts the limit run; the read-back's
  * 1000ms and ARMED's 500ms, each failure with every output off and its
- * part named; the PD mini switched on where it feeds a dead rail, refused
+ * part named; the PD mini switched on where it feeds a dead rail, its
+ * rail rising after the PD mini reads ON, a rail that stays dead; refused
  * where the rail is fed from elsewhere or its set point is past 6.0V; a
  * row turning red under the hold that drops it; a press on the hold that
  * stops the steps; a finger on the hold that opens
@@ -27,6 +28,8 @@
  * - a_finger_that_slides_off_arm_start_starts_nothing
  * - the_run_takes_the_settings_the_hold_fired_on
  * - a_rail_dead_after_the_5v_fails_naming_prog_5v
+ * - a_pd_minis_rail_rising_after_its_read_back_starts_the_run
+ * - a_rail_dead_behind_the_pd_mini_fails_at_1000ms_all_off
  * - a_failed_runs_end_leaves_the_bench_safe_and_the_5v_off
  * - a_failed_run_behind_a_pd_mini_switches_it_off
  * - the_arm_row_reads_safe_while_the_session_holds_the_bench_safe
@@ -444,9 +447,9 @@ TEST_CASE(the_run_takes_the_settings_the_hold_fired_on)
     carrier_done();
 }
 
-/* PROG 5V reads back ON and the rail stays at 0V: the window begun after
- * it refuses, and the step that failed is PROG 5V's, the rail's line in
- * the band, all off, no ARM. */
+/* PROG 5V reads back ON and the rail stays at 0V: the steps give it the
+ * read-back's 1000ms, its RAIL row amber, then the step that failed is
+ * PROG 5V's, the rail's line in the band, all off, no ARM. */
 TEST_CASE(a_rail_dead_after_the_5v_fails_naming_prog_5v)
 {
     char want[128];
@@ -454,6 +457,11 @@ TEST_CASE(a_rail_dead_after_the_5v_fails_naming_prog_5v)
     ra.rail_dead = true;
     lim_hold_for(2300u);
     ra_ms(20u);
+    CHECK(svs_seq_busy());
+    CHECK(svs_seq_failure() == NULL);
+    CHECK_EQ(lim_row(LRR_RAIL).st, (uint8_t)RDY_SEQ);
+    ra_ms(1000u);
+    CHECK(!svs_seq_busy());
     CHECK(!servo_screen_limit_running());
     CHECK_EQ(ra.arms, 0u);
     snprintf(want, sizeof(want), TR(SQ_FAILED), "PROG 5V",
@@ -464,6 +472,87 @@ TEST_CASE(a_rail_dead_after_the_5v_fails_naming_prog_5v)
     ra.rail_dead = false;
     ra.p5_task = false;
     carrier_done();
+}
+
+/**
+ * @brief The hold held until the steps switch the PD mini on: the time of
+ *        that ON on the rig's clock.  The finger stays down.
+ * @return the time, ms
+ */
+static uint32_t lim_hold_to_pd_on(void)
+{
+    const unsigned ons = ra.pd_ons;
+    ev(SV_HOLD_X, SV_HOLD_Y, TOUCH_EVENT_DOWN, 1);
+    for (int k = 0; k < 150 && ra.pd_ons == ons; ++k) {
+        ra_ms(20u);
+    }
+    CHECK_EQ(ra.pd_ons, ons + 1u);
+    return g_rig.ms;
+}
+
+/* The station's case on a D485HW: the PD mini reads its output ON before
+ * the rail has risen, which here comes 100, 200 and 300ms after it.  The
+ * rail row reads amber while the read-back waits, nothing fails, and the
+ * run starts. */
+TEST_CASE(a_pd_minis_rail_rising_after_its_read_back_starts_the_run)
+{
+    for (uint32_t rise = 100u; rise <= 300u; rise += 100u) {
+        lim_pd(false);
+        ra.rail_rise = rise;
+        (void)lim_hold_to_pd_on();
+        ra_ms(rise - 40u);
+        CHECK(svs_seq_busy());
+        CHECK(svs_seq_failure() == NULL);
+        const rdy_row_t r = lim_row(LRR_RAIL);
+        CHECK_EQ(r.st, (uint8_t)RDY_SEQ);
+        CHECK_STR_EQ(txt(r.why), TR(SV_LIM_RAIL_LOW));
+        CHECK_STR_EQ(r.value, TR(RDY_SEQ_ON));
+        ra_ms(400u);
+        ev(SV_HOLD_X, SV_HOLD_Y, TOUCH_EVENT_UP, 1);
+        ra_ms(20u);
+        CHECK(svs_seq_failure() == NULL);
+        CHECK(servo_screen_limit_running());
+        CHECK_EQ(ra.arms, 1u);
+        lim_press(2);
+        ra_ms(2000u);
+        CHECK(!servo_screen_limit_running());
+        ra.rail_rise = 0u;
+    }
+}
+
+/* The PD mini reads ON and the rail stays at 0V: at 900ms after the ON
+ * the steps still wait; by 1100ms the read-back's 1000ms are up and the
+ * step fails naming PD MINI and the rail's line.  No ARM, DISARM asked,
+ * the PD mini's output off. */
+TEST_CASE(a_rail_dead_behind_the_pd_mini_fails_at_1000ms_all_off)
+{
+    char want[128];
+    lim_pd(false);
+    ra.rail_dead = true;
+    const unsigned offs = ra.offs;
+    (void)lim_hold_to_pd_on();
+    ra_ms(900u);
+    CHECK(svs_seq_busy());
+    CHECK(svs_seq_failure() == NULL);
+    CHECK(g_rig.sup_on);
+    CHECK_EQ(lim_row(LRR_RAIL).st, (uint8_t)RDY_SEQ);
+    ra_ms(200u);
+    ev(SV_HOLD_X, SV_HOLD_Y, TOUCH_EVENT_UP, 1);
+    CHECK(!svs_seq_busy());
+    CHECK(!servo_screen_limit_running());
+    snprintf(want, sizeof(want), TR(SQ_FAILED), "PD MINI",
+             TR(SV_LIM_RAIL_LOW));
+    CHECK_STR_EQ(txt(svs_seq_failure()), want);
+    ra_ms(100u);
+    CHECK_EQ(ra.arms, 0u);
+    CHECK(ra.disarms >= 1u);
+    CHECK(ra.offs > offs);
+    CHECK(!g_rig.sup_on);
+    /* The PD mini reads its output off: the row as before the hold. */
+    ra_pd_reading(false);
+    ra_ms(100u);
+    CHECK_EQ(lim_row(LRR_RAIL).st, (uint8_t)RDY_SEQ);
+    ra.rail_dead = false;
 }
 
 /** @brief Whether the left card names the verdict LIMITS FAIL.
@@ -613,6 +702,8 @@ int main(void)
     RUN(a_finger_that_slides_off_arm_start_starts_nothing);
     RUN(the_run_takes_the_settings_the_hold_fired_on);
     RUN(a_rail_dead_after_the_5v_fails_naming_prog_5v);
+    RUN(a_pd_minis_rail_rising_after_its_read_back_starts_the_run);
+    RUN(a_rail_dead_behind_the_pd_mini_fails_at_1000ms_all_off);
     RUN(a_failed_runs_end_leaves_the_bench_safe_and_the_5v_off);
     RUN(a_failed_run_behind_a_pd_mini_switches_it_off);
     RUN(the_arm_row_reads_safe_while_the_session_holds_the_bench_safe);

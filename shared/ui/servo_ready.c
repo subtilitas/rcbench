@@ -822,6 +822,25 @@ bool svs_seq_begin(void)
     return true;
 }
 
+/**
+ * @brief Whether @p why is a gate text of the servo rail read low: under
+ *        3.0V (SV_LIM_RAIL_LOW), or under the 4.8V a session asks
+ *        (SV_LIM_PROG_RAIL).
+ * @param why a gate text, or NULL
+ * @return true then
+ */
+static bool rail_low_text(const char *why)
+{
+    return why != NULL
+           && (why == TR(SV_LIM_RAIL_LOW) || why == TR(SV_LIM_PROG_RAIL));
+}
+
+bool svs_seq_rail_waits(const char *why)
+{
+    return rail_low_text(why) && svs_seq_busy() && s.rdy.need.settle
+           && servo_seq_step_now(&s.rdy.seq) == SERVO_SEQ_READBACK;
+}
+
 bool svs_seq_frame(const char *refused)
 {
     if (!svs_seq_busy()) {
@@ -857,6 +876,8 @@ bool svs_seq_frame(const char *refused)
                    && rsup_read_back(s.sup.set_v),
         .armed   = value_live(),
         .refused = refused != NULL,
+        /* The supply reads back ON before its output has risen. */
+        .rail_low = rail_low_text(refused),
         .refused_part = (uint8_t)part_of(refused),
         /* The latest window's start: the end it closed by, less its
          * length. */

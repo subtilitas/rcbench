@@ -170,7 +170,7 @@ Zeile und sperren nichts.
 | MESSGERÄT | `INA3221 NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET` | kein Kanal eines bestückten INA3221 überwacht in SETUP > SENSORS das Ziel des Testers, an einem IOmcu älter als 4.25 überwacht CH2 oder CH3 es, ein IOmcu älter als Protokoll 4.11, oder eine SENSE-Page, die die Einrichtung nicht hält |
 | MESSGERÄT | `INA3221 NICHT ERREICHBAR` | kein Link, das Bauteil antwortet nicht, oder sein Reset-Zähler hat sich geändert |
 | MESSGERÄT | `NOCH KEINE INA3221-MESSFENSTER` | der INA3221 ist noch nicht das Messgerät der Servoschiene: seine Einrichtung ist seit weniger als 1000ms bestätigt, oder kein Fenster mit Strom in den letzten 200ms |
-| SCHIENE | `SERVOVERSORGUNG UNTER 3.0V ODER OHNE MESSWERT` | das letzte INA3221-Fenster enthält keine Schienenspannung, oder ihr Mittel liegt unter 3,0V (`SERVO_LIMRUN_RAIL_MIN_MV`). An einem ausgeschalteten Ausgang werden 0V gemessen, und eine Suche dort fände zwei freie Enden an einem Servo, das sich nie bewegt hat. 3,0V liegen unter den 4,8V, für die Servos üblicherweise angegeben sind, so dass die Schiene einer einzelnen Lithiumzelle noch startet; die Spannung, bei der ein bestimmtes Servo stehen bleibt, ist nicht gemessen. Gelb bei SAFE, wo die Versorgung des Haltens die Schiene speist: PROG 5V am Port des Carriers, ein PD mini mit ausgeschaltetem Ausgang |
+| SCHIENE | `SERVOVERSORGUNG UNTER 3.0V ODER OHNE MESSWERT` | das letzte INA3221-Fenster enthält keine Schienenspannung, oder ihr Mittel liegt unter 3,0V (`SERVO_LIMRUN_RAIL_MIN_MV`). An einem ausgeschalteten Ausgang werden 0V gemessen, und eine Suche dort fände zwei freie Enden an einem Servo, das sich nie bewegt hat. 3,0V liegen unter den 4,8V, für die Servos üblicherweise angegeben sind, so dass die Schiene einer einzelnen Lithiumzelle noch startet; die Spannung, bei der ein bestimmtes Servo stehen bleibt, ist nicht gemessen. Gelb bei SAFE, wo die Versorgung des Haltens die Schiene speist: PROG 5V am Port des Carriers, ein PD mini mit ausgeschaltetem Ausgang. Gelb auch in RÜCKMELDUNG, solange die Versorgung, die die Schritte eingeschaltet haben, die Schiene hochfährt |
 | PROGRAMMER | `GESPERRT: SERVOPROGRAMMIERUNG BELEGT DEN PORT` | PORT auf PROG-PORT, und eine Sitzung eines Programmers hält den Port. Vor PORT-PWM genannt: die Sitzung ist der Grund, dass kein Puls läuft, gleich was PORT-PWM sagt |
 | PORT-PWM | `PORT-PWM AUS: DISARM, SCHALTE ES IN OUTPUTS EIN` | PORT auf PROG-PORT mit PORT-PWM aus, der Prüfstand ARMED |
 | PORT-PWM | `PORT-PWM AUS: SCHALTE ES IN OUTPUTS EIN` | dasselbe bei SAFE. Gelb: das Halten schaltet es ein und speichert es |
@@ -244,6 +244,13 @@ Endlagenlauf und RUDER AUTO programmieren mit 5,0V
   antwortet, lässt ihn nach 1000ms fehlschlagen: `PD MINI FEHLGESCHLAGEN:
   KEINE RÜCKMELDUNG IN 1000ms`, der Lauf startet nicht, und alle Ausgänge
   gehen aus.
+- Das PD mini meldet seinen Ausgang EIN, bevor der Ausgang gestiegen ist:
+  an einem D485HW las der INA3221 die Schiene danach mit 0,10V, 2,48V und
+  4,99V in Bildern im Abstand von 100ms. Die Rückmeldung gibt der Schiene
+  dieselben 1000ms, um 3,0V zu erreichen. Eine Schiene, die nach 1000ms
+  noch unter 3,0V liegt, lässt den Schritt fehlschlagen: `PD MINI
+  FEHLGESCHLAGEN: SERVOVERSORGUNG UNTER 3.0V ODER OHNE MESSWERT`, und alle
+  Ausgänge gehen aus.
 - Ein erlaubter Sollwertbereich ohne 5,0V (der von SUPPLY, eingeengt
   durch seine AUSGANGSGRENZEN) sperrt das Halten: PD MINI ist rot mit
   `PD MINI: 5.0V AUSSERHALB SEINER GRENZEN`, und ein Tippen auf die Zeile
@@ -1750,7 +1757,7 @@ Haltens:
 | FAILSAFE LÖSEN | CLEAR an den IOmcu, wenn STATUS beim Halten FEHLER 01 und nicht FEHLER 10 zeigt: das Schreiben, das ARM vor dem Schalten auf ARMED macht, bei SAFE ([Arm-Latch](Safety-de.md#arm-latch)). Nur dann als Schritt 1 gezeigt | FEHLER 01 erlischt innerhalb von 500ms; noch gesetzt nach 500ms lässt den Schritt fehlschlagen |
 | 1 PORT-PWM | PORT-PWM EIN, gespeichert, wenn das Ziel ein PROG-PORT ist und die Einstellung AUS | sofort |
 | 2 PROG 5V oder PD MINI | PROG 5V EIN am Port des rbmod-Carriers; AUSGANG EIN des PD mini, wo es das Servo speist, mit SOLL V und SOLL A von SUPPLY, SOLL V die 5,0V, die START gestellt hat | sofort |
-| 3 RÜCKMELDUNG | wartet, bis PROG 5V oder der Ausgang des PD mini EIN zurückmeldet, der Messwert des PD mini auf 5,0V, dann das PORT-PWM-Bit des IOmcu (das Panel setzt es nur bei SAFE; der Puls selbst läuft nur bei ARMED), dann auf ein INA3221-Messfenster, das nach beiden begann. Die Zeilen werden an diesem Fenster geprüft | 1000ms ab Schritt 2 für alle drei; ein Teil ohne Rückmeldung lässt den Schritt fehlschlagen, ebenso eines, das erst nach den 1000ms zurückmeldet |
+| 3 RÜCKMELDUNG | wartet, bis PROG 5V oder der Ausgang des PD mini EIN zurückmeldet, der Messwert des PD mini auf 5,0V, dann das PORT-PWM-Bit des IOmcu (das Panel setzt es nur bei SAFE; der Puls selbst läuft nur bei ARMED), dann auf ein INA3221-Messfenster, das nach beiden begann. Die Zeilen werden an diesem Fenster geprüft. Eine niedrige Schiene (`SERVOVERSORGUNG UNTER 3.0V ODER OHNE MESSWERT`, `PROGRAMMIEREN: SERVOVERSORGUNG UNTER 4.8V`) wird an jedem weiteren Fenster geprüft, bis die 1000ms um sind, da der Ausgang der Versorgung erst nach ihrer Rückmeldung EIN steigt; jede andere rote Zeile lässt den Schritt am ersten fehlschlagen | 1000ms ab Schritt 2 für alle drei; ein Teil ohne Rückmeldung lässt den Schritt fehlschlagen, ebenso eines, das erst nach den 1000ms zurückmeldet, oder eine Schiene, die nach 1000ms noch niedrig ist |
 | 4 ARM | ARM, wenn der Prüfstand SAFE ist | ARMED innerhalb von 500ms; ein ARMED, das erst nach den 500ms kommt, lässt den Schritt fehlschlagen |
 | 5 START | der Lauf startet über die Prüfung der Tabelle unten | sofort |
 
@@ -1767,7 +1774,7 @@ Halten, ein STOP oder einen Touch-Verlust. Das Band des Fehlers geht,
 wenn der Bildschirm verlassen wird. Eine rote Zeile nennt den Schritt
 ihres Teils: eine Versorgungszeile nennt PROG 5V oder PD MINI, `PROG 5V
 FEHLGESCHLAGEN: PROGRAMMIEREN: SERVOVERSORGUNG UNTER 4.8V` für eine
-Schiene, die nach der Rückmeldung von 5V EIN niedrig bleibt; die Zeile
+Schiene, die nach der Rückmeldung von 5V EIN die 1000ms der Rückmeldung lang niedrig bleibt; die Zeile
 PORT-PWM nennt PORT PWM; die Zeile ARM nennt ARM. Jeder Fehler fragt DISARM, PROG
 5V AUS und AUSGANG AUS des PD mini an: der Prüfstand endet SAFE mit allen
 Ausgängen aus. Ein Verlassen von RUDER AUTO während der Startfolge beendet

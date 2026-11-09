@@ -139,6 +139,14 @@ history is in git.
 
 ### Fixed
 
+- LIMIT RUN's ARM + START failed with `PD MINI FAILED: SERVO SUPPLY BELOW
+  3.0V OR NOT READ` when the PD mini read its output ON before the rail
+  had risen, and the RAIL row read red for a frame. READ-BACK judges a
+  rail read low on every window until its 1000ms are up: a rail that
+  rises in that time starts the run, one still under 3.0V at 1000ms fails
+  the step with every output off. The same holds for RUDDER AUTO's and
+  LIMIT RUN's `PROGRAMMING: SERVO RAIL BELOW 4.8V` after PROG 5V on the
+  rbmod carrier. While READ-BACK waits the row reads amber.
 - SEARCH FOR IMU beside a bound sensor that holds the link read `NO IMU
   FOUND` while that sensor's row stood above it: a connected sensor does
   not advertise, so no scan lists it. The list reads `NO OTHER IMU FOUND`

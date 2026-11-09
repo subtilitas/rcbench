@@ -152,7 +152,7 @@ the hold resolves itself read amber on their row and refuse nothing.
 | METER | `INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT` | no channel of a fitted INA3221 watches the tester's target in SETUP > SENSORS, CH2 or CH3 watches it on an IOmcu older than 4.25, an IOmcu older than protocol 4.11, or a SENSE page that does not hold the set-up |
 | METER | `INA3221 OFFLINE` | no link, the part not answering, or its reset count moved |
 | METER | `NO INA3221 MEASUREMENT WINDOWS YET` | the INA3221 is not the servo rail's meter yet: its set-up held for less than 1000ms, or no window with current in the last 200ms |
-| RAIL | `SERVO SUPPLY BELOW 3.0V OR NOT READ` | the last INA3221 window holds no rail voltage, or its mean is under 3.0V (`SERVO_LIMRUN_RAIL_MIN_MV`). An output that is off reads 0V, and a search there would find two free ends on a servo that never moved. 3.0V lies under the 4.8V servos are commonly specified from, so a single lithium cell's rail still starts; the voltage a given servo stops moving at is not measured. Amber while SAFE where the hold's supply feeds the rail: the PROG 5V on the carrier's port, a PD mini whose output is off |
+| RAIL | `SERVO SUPPLY BELOW 3.0V OR NOT READ` | the last INA3221 window holds no rail voltage, or its mean is under 3.0V (`SERVO_LIMRUN_RAIL_MIN_MV`). An output that is off reads 0V, and a search there would find two free ends on a servo that never moved. 3.0V lies under the 4.8V servos are commonly specified from, so a single lithium cell's rail still starts; the voltage a given servo stops moving at is not measured. Amber while SAFE where the hold's supply feeds the rail: the PROG 5V on the carrier's port, a PD mini whose output is off. Amber in READ-BACK too, while the supply the steps switched on raises the rail |
 | PROGRAMMER | `LOCKED: SERVO PROGRAMMING USES THE PORT` | PORT on PROG PORT and a programmer session holds the port. Named before PORT PWM: the session is why no pulse runs, whatever PORT PWM says |
 | PORT PWM | `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS` | PORT on PROG PORT with PORT PWM off, the bench ARMED |
 | PORT PWM | `PORT PWM OFF: SWITCH IT ON IN OUTPUTS` | the same while SAFE. Amber: the hold switches it on and saves it |
@@ -220,6 +220,11 @@ LIMIT RUN and RUDDER AUTO program at 5.0V (`SERVO_LIMRUN_SUPPLY_MV`,
   output on. A PD mini that does not answer with 5.0V fails it at 1000ms:
   `PD MINI FAILED: NO READ-BACK IN 1000ms`, the run does not start, and
   every output goes off.
+- The PD mini reads its output ON before the output has risen: on a D485HW
+  the INA3221 read the rail at 0.10V, 2.48V and 4.99V in frames 100ms
+  apart after it. The read-back gives the rail the same 1000ms to read
+  3.0V. A rail still under 3.0V at 1000ms fails the step: `PD MINI FAILED:
+  SERVO SUPPLY BELOW 3.0V OR NOT READ`, and every output goes off.
 - A permitted set-point range that leaves out 5.0V (SUPPLY's, narrowed by
   its OUTPUT LIMITS) refuses the hold: PD MINI is red with `PD MINI: 5.0V
   OUTSIDE ITS LIMITS`, and a tap on the row opens SUPPLY's settings at
@@ -1674,7 +1679,7 @@ The start sequence, each step a state line and the hold's label:
 | FAILSAFE CLEAR | CLEAR to the IOmcu, where STATUS shows FAULT 01 and not FAULT 10 at the hold: the write ARM makes before it arms, with the bench SAFE ([Arm latch](Safety.md#arm-latch)). Shown as step 1 only then | FAULT 01 clear within 500ms; still set at 500ms fails the step |
 | 1 PORT PWM | PORT PWM ON, saved, where the target is a PROG PORT and the setting is OFF | at once |
 | 2 PROG 5V or PD MINI | PROG 5V ON on the rbmod carrier's port; the PD mini's OUTPUT ON where it feeds the servo, at SUPPLY's SET V and SET A, SET V the 5.0V START set | at once |
-| 3 READ-BACK | waits until PROG 5V or the PD mini's output reads back ON, the PD mini's reading at 5.0V, then PORT PWM's bit on the IOmcu (the panel sets it only while SAFE; the pulse itself runs only while ARMED), then for an INA3221 window that began after both. The rows are judged on that window | 1000ms from step 2 for all three; a part that does not read back fails the step, and so does one that reads back only after the 1000ms |
+| 3 READ-BACK | waits until PROG 5V or the PD mini's output reads back ON, the PD mini's reading at 5.0V, then PORT PWM's bit on the IOmcu (the panel sets it only while SAFE; the pulse itself runs only while ARMED), then for an INA3221 window that began after both. The rows are judged on that window. A rail read low (`SERVO SUPPLY BELOW 3.0V OR NOT READ`, `PROGRAMMING: SERVO RAIL BELOW 4.8V`) is judged on each later window until the 1000ms are up, as the supply's output rises after it reads ON; every other red row fails the step on the first | 1000ms from step 2 for all three; a part that does not read back fails the step, and so does one that reads back only after the 1000ms, or a rail still low at 1000ms |
 | 4 ARM | ARM, where the bench is SAFE | ARMED within 500ms; an ARMED read only after the 500ms fails the step |
 | 5 START | the run starts on the gate of the table below | at once |
 
@@ -1688,7 +1693,7 @@ ON, refuses PROG 5V or the PD mini, `<step> FAILED: <reason>` for a row that tur
 the way, `<step> FAILED: STOP` for a tap on the hold, a STOP or a touch
 loss. The failure's band goes when the screen is left. A red row names
 the step of its own part: a supply row names PROG 5V or PD MINI, `PROG 5V FAILED: PROGRAMMING: SERVO RAIL BELOW 4.8V` for a
-rail that stays low after the 5V reads back ON; PORT PWM's row names PORT
+rail that stays low for the read-back's 1000ms after the 5V reads back ON; PORT PWM's row names PORT
 PWM; ARM's names ARM. Every failure asks DISARM, PROG 5V OFF and the PD mini's OUTPUT OFF:
 the bench ends SAFE with every output off. Leaving RUDDER AUTO during the
 sequence ends it as any leave does: SAFE, and the PROG 5V kept for another
