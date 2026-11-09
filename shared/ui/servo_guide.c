@@ -255,13 +255,22 @@ static void page_drive_ready(ui_help_page_t *p)
     }
 }
 
-/** @brief The controls under the rows: SPEED, the type pill and the
- *         buttons on LIVE and SWEEP; the pill and the side view on RUDDER,
- *         which the live half on this side shows from x 496.
+/** @brief The controls under the rows: SET V and SET A and the plot on
+ *         all three; SPEED, the type pill and the buttons on LIVE and
+ *         SWEEP; the pill and the side view on RUDDER, which the live half
+ *         on this side shows from x 496.
  *  @param p The page. */
 static void page_drive_ctl(ui_help_page_t *p)
 {
     card_page(p, TX_HG_SV_TITLE_CARD);
+    /* SET V and SET A where the PD mini feeds the servo; on the carrier's
+     * programming port the row reads the fixed 5V and sets nothing. */
+    if (drive_set_rect(0).w > 0) {
+        (void)ui_help_add(p, "SET V", TX_HG_SV_DRV_SET,
+                          both(drive_set_rect(0), drive_set_rect(1)));
+    }
+    (void)ui_help_add(p, TR(MO_TAB_PLOT), TX_HG_SV_DRV_PLOT,
+                      drive_plot_rect());
     if (rudder_shown()) {
         (void)ui_help_add(p, TR(SV_ROW_TYPE), TX_HG_SV_TYPE,
                           drive_tag_rect());

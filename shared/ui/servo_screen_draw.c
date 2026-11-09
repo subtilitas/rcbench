@@ -798,6 +798,7 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
         const uint32_t rsig = ready_sig();
         const bool power = s.drawn_power[buf] != s.power_rev;
         const bool rows = s.rdy.drawn[buf] != rsig;
+        const bool sup = s.drawn_sup[buf] != s.sup_rev;
         s.drawn_power[buf] = s.power_rev;
         if (rows) {
             s.rdy.drawn[buf] = rsig;
@@ -805,6 +806,14 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
         }
         if (power && (!rows || drive_shown())) {
             clipped(c, ready_rail_rect(), ready_render_rail);
+        }
+        /* LIVE, SWEEP and RUDDER: the plot with the line, the SET row as
+         * the set points or what feeds the servo change. */
+        if (power && drive_shown()) {
+            clipped(c, drive_plot_rect(), drive_draw_plot);
+        }
+        if (sup && drive_shown()) {
+            clipped(c, drive_set_row_rect(), drive_draw_set);
         }
         if (power && s.fn == SERVO_FN_TEST && !cover && rows_page() < 0) {
             clipped(c, test_plot_rect(), test_draw_plot);

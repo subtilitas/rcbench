@@ -65,7 +65,7 @@ overview                         0       0 KiB
 overview-guide                 361      45 KiB
 servo                        2,410     301 KiB
 servo-grip                     589      74 KiB
-servo-current                1,508     188 KiB
+servo-current                1,980     248 KiB
 servo-rudder                 4,101     513 KiB
 servo-test                       0       0 KiB
 servo-kst                        0       0 KiB

@@ -237,6 +237,15 @@ int32_t svs_fixed_of(float x, float per);
  * @return the meter's reading
  */
 rail_t svs_rail_now(void);
+/**
+ * @brief The line of readings under the card on LIVE, SWEEP and RUDDER
+ *        while the servo is on the rbmod carrier's programming port: the
+ *        PROG 5V's, as its plot shows them (servo_drive_ready.c).
+ * @param r receives the reading
+ * @param name receives the meter's name
+ * @return true then; false elsewhere, where the line is the rail meter's
+ */
+bool drive_p5_rail(rail_t *r, const char **name);
 
 /* servo_screen_touch.c */
 

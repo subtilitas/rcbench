@@ -182,6 +182,20 @@ history is in git.
 
 ### Fixed
 
+- LIVE, SWEEP and RUDDER set the PD mini's voltage and current limit
+  again and show the supply's plot. A SET row under the READY rows holds
+  SET V and SET A, 80 x 48px each: a tap opens SUPPLY's keypad inside its
+  OUTPUT LIMITS, a value typed while the output is on asks SUPPLY's
+  question where SETTINGS > KEYPAD asks it, ARMED or SAFE, a voltage
+  raised past 6.0V waits for HV SERVOS ONLY, and a programming port
+  holding the PD mini refuses the tap and names the hold. Right of SET A
+  a 180 x 48px plot shows the volts, amps and watts of the last 9.0s on
+  TEST's series and scales. On the rbmod carrier's programming port the
+  row reads `PROG 5V`, `5V FIXED` and takes no tap, and the plot and the
+  rail line show the INA3221 channel that watches the PROG 5V. OUTPUT ON
+  stays off these screens: ARM's 2s hold switches the supply on. SPEED,
+  the type pill (now 32px tall), the buttons and the rail line move down
+  to make room: the rail line sits at y 412.
 - LIMIT RUN's ARM + START failed with `PD MINI FAILED: SERVO SUPPLY BELOW
   3.0V OR NOT READ` when the PD mini read its output ON before the rail
   had risen, and the RAIL row read red for a frame. READ-BACK judges a

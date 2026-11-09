@@ -433,9 +433,19 @@ gfx_rect_t ready_row_rect(int i)
                          RCARD_W - 8, READY_ROW_H };
 }
 
+/** @brief The rail line's top: under the buttons on LIVE, SWEEP and
+ *         RUDDER.  @return its y in the body */
+static int rail_y(void)
+{
+    return drive_shown() ? DRV_RAIL_Y : READY_RAIL_Y;
+}
+
 gfx_rect_t ready_rail_rect(void)
 {
-    return (gfx_rect_t){ RDY_X, READY_RAIL_Y - 4, RDY_W, 28 };
+    /* Under the buttons the line keeps 4px above and none below: the
+     * card's edge is 4px under it. */
+    return (gfx_rect_t){ RDY_X, (int16_t)(rail_y() - 4), RDY_W,
+                         (int16_t)(drive_shown() ? 24 : 28) };
 }
 
 /**
@@ -582,10 +592,17 @@ static void draw_row(gfx_canvas_t *c, int i, int left)
 void ready_render_rail(gfx_canvas_t *c)
 {
     const gfx_rect_t a = ready_rail_rect();
+    const int y = rail_y();
     gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_PANEL));
     char name[24], line[48];
     (void)sensors_rows_short(name, sizeof(name));
-    const rail_t m = svs_rail_now();
+    /* On the rbmod carrier's programming port LIVE, SWEEP and RUDDER read
+     * the PROG 5V that feeds the servo, as their plot does. */
+    rail_t m;
+    const char *p5 = NULL;
+    if (!drive_p5_rail(&m, &p5)) {
+        m = svs_rail_now();
+    }
     char v[12], i[12];
     if (m.v_ok) {
         snprintf(v, sizeof(v), "%.2fV", (double)m.v);
@@ -598,17 +615,18 @@ void ready_render_rail(gfx_canvas_t *c)
         snprintf(i, sizeof(i), "--A");
     }
     const bool ina = (s.source == SERVO_SOURCE_INA3221);
-    snprintf(line, sizeof(line), "%s", ina ? name : "PD MINI");
-    gfx_text(c, RDY_X, READY_RAIL_Y, line, SV_FONT_LABEL,
+    snprintf(line, sizeof(line), "%s",
+             (p5 != NULL) ? p5 : ina ? name : "PD MINI");
+    gfx_text(c, RDY_X, y, line, SV_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
     /* The panel's model is no measurement: its word after the name. */
-    if (!ina && supply_screen_model()) {
+    if (p5 == NULL && !ina && supply_screen_model()) {
         gfx_text(c, RDY_X + gfx_text_width(SV_FONT_LABEL, line, 1) + SV_CELL,
-                 READY_RAIL_Y, TR(SV_MODELLED), SV_FONT_LABEL,
+                 y, TR(SV_MODELLED), SV_FONT_LABEL,
                  ui_theme_color(UI_C_WARN), 1);
     }
     snprintf(line, sizeof(line), "%s  %s", v, i);
-    gfx_text_in(c, (gfx_rect_t){ RDY_X, READY_RAIL_Y, RDY_W, 20 }, line,
+    gfx_text_in(c, (gfx_rect_t){ RDY_X, (int16_t)y, RDY_W, 20 }, line,
                 SV_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1,
                 GFX_ALIGN_RIGHT);
 }

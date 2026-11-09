@@ -21,10 +21,13 @@
  *     apart from y 64; its CLOSE x 478 to 618, y 12 to 60;
  *   - the output card from SV_RCARD_X, y 62 to 436, its inner column SV_RC_X
  *     and SV_RC_W.  On LIVE, SWEEP and RUDDER: the READY rows, 30px from
- *     y 96; on LIVE and SWEEP SPEED's track at y 220 to 260; the type pill
- *     at y 274 to 318; CENTER (LIVE) or SWEEP (SWEEP) and RELEASE, half of
- *     it each, y 330 to 378; the rail line at y 404.  On TEST, LIMIT RUN,
- *     KST and HITEC the SET row's values and OUTPUT ON at y 174 to 222.
+ *     y 96; the SET row 4px under them, y 190 to 238 on LIVE and SWEEP,
+ *     250 to 298 on RUDDER: SET V and SET A, 80px each from SV_RC_X, 8px
+ *     apart, the plot to the column's end; on LIVE and SWEEP SPEED's track
+ *     at y 268 to 308; the type pill at y 318 to 350; CENTER (LIVE) or
+ *     SWEEP (SWEEP) and RELEASE, half of it each, y 356 to 404; the rail
+ *     line at y 412.  SV_SUP_* name where the output card's SET row and
+ *     OUTPUT ON once were, y 174 to 222: on LIVE the SET row's plot.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -111,13 +114,32 @@
 /** @brief A page of rows' row @p r, the middle of its value. */
 #define SV_LIST_ROW_Y(r)   (109 + 70 * (r))
 
-/** @brief SPEED's label row over its track on LIVE and SWEEP: y 196 to
- *         216. */
-#define SV_SPEED_ROW_Y     196
-/** @brief SPEED's track, its middle row: y 220 to 260. */
-#define SV_SPEED_Y         240
-/** @brief The type pill under the READY rows, y 274 to 318. */
-#define SV_TAG_Y           274
+/** @brief SPEED's label row over its track on LIVE and SWEEP: y 244 to
+ *         264. */
+#define SV_SPEED_ROW_Y     244
+/** @brief SPEED's track, its middle row: y 268 to 308. */
+#define SV_SPEED_Y         288
+/** @brief The type pill under the SET row, y 318 to 350. */
+#define SV_TAG_Y           318
+#define SV_TAG_H           32                 /**< Its height. */
+/** @brief The SET row of LIVE, SWEEP and RUDDER (servo_drive_ready.c):
+ *         its middle row under LIVE's and SWEEP's three READY rows, y 190
+ *         to 238, and under RUDDER's five, y 250 to 298. */
+#define SV_SET_Y           214
+#define SV_SET_RUD_Y       274                /**< The same on RUDDER. */
+/** @brief SET V's box, x SV_RC_X to + 80, its middle. */
+#define SV_SET_V_X         (SV_RC_X + 40)
+/** @brief SET A's box, 88px right of SET V's, its middle. */
+#define SV_SET_A_X         (SV_RC_X + 88 + 40)
+/** @brief The plot right of SET A, 180 x 48px to the column's end: its
+ *         middle. */
+#define SV_PLOT_X          (SV_RC_X + 176 + 90)
+/** @brief Whether (@p x, @p y) is on LIVE's plot. */
+#define SV_IN_PLOT(x, y)   ((x) >= SV_PLOT_X - 90 && (x) < SV_PLOT_X + 90 \
+                            && (y) >= SV_SET_Y - 24 && (y) < SV_SET_Y + 24)
+/** @brief Whether (@p x, @p y) is on LIVE's SET V. */
+#define SV_IN_SET_V(x, y)  ((x) >= SV_SET_V_X - 40 && (x) < SV_SET_V_X + 40 \
+                            && (y) >= SV_SET_Y - 24 && (y) < SV_SET_Y + 24)
 
 /** @brief The left column the keypad, the keyboard and the programmer
  *         cover: OV_X, OV_Y, OV_W and OV_H of servo_screen_int.h, down to
@@ -133,7 +155,7 @@
 /** @brief CENTER on LIVE, SWEEP on SWEEP, and RELEASE on both
  *         (servo_drive_ready.c), 174px each, 8px apart: their row and the
  *         middle of each. */
-#define SV_BTN_Y           (330 + 24)
+#define SV_BTN_Y           (356 + 24)
 #define SV_CENTER_X        (SV_RC_X + 87)            /**< CENTER, LIVE. */
 #define SV_SWEEP_X         (SV_RC_X + 87)            /**< SWEEP, SWEEP. */
 #define SV_RELEASE_X       (SV_RC_X + 182 + 87)      /**< RELEASE. */

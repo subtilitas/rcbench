@@ -23,6 +23,8 @@ enum { ST_NONE = 0, ST_UNKNOWN = 1, ST_OFF = 2, ST_ON = 3 };
 static atomic_uint s_state = (unsigned)PROG5V_HELD_NONE;
 /** @brief bit 31 a reading, mV in bits 16 to 30, mA as int16 in 0 to 15. */
 static atomic_uint s_read;
+/** @brief The reading's window number, as published after the reading. */
+static atomic_uint s_read_win;
 /** @brief The PROG_SUPPLY link's cuts, as published. */
 static atomic_uint s_cuts;
 /** @brief The PD mini's input, mV, as published; 0 for none. */
@@ -63,11 +65,31 @@ uint8_t prog5v_box_held_port(int kst_port, int hitec_port, bool some)
                ? (uint8_t)PROG5V_HELD_SOME : (uint8_t)PROG5V_HELD_NONE;
 }
 
-void prog5v_box_reading(bool ok, uint16_t mv, int16_t ma)
+void prog5v_box_reading(bool ok, uint16_t mv, int16_t ma, uint16_t window)
 {
     atomic_store(&s_read, ok ? (0x80000000u | ((unsigned)(mv & 0x7FFFu) << 16)
                                 | (uint16_t)ma)
                              : 0u);
+    /* After the reading: a reader that sees the number sees a reading at
+     * least as new. */
+    atomic_store(&s_read_win, ok ? window : 0u);
+}
+
+bool prog5v_box_last(uint16_t *mv, int16_t *ma, uint16_t *window)
+{
+    const unsigned n = atomic_load(&s_read_win);
+    const unsigned rd = atomic_load(&s_read);
+    const bool ok = (rd & 0x80000000u) != 0u;
+    if (mv != NULL) {
+        *mv = ok ? (uint16_t)((rd >> 16) & 0x7FFFu) : 0u;
+    }
+    if (ma != NULL) {
+        *ma = ok ? (int16_t)(uint16_t)(rd & 0xFFFFu) : 0;
+    }
+    if (window != NULL) {
+        *window = ok ? (uint16_t)n : 0u;
+    }
+    return ok;
 }
 
 /** @brief The published state, ST_*. */
@@ -419,7 +441,7 @@ void prog5v_box_reset(void)
     memset(&s_cmd, 0, sizeof(s_cmd));
     s_owner = PROG5V_BY_NONE;
     prog5v_box_publish(0u, 0u, (uint8_t)PROG5V_HELD_NONE);
-    prog5v_box_reading(false, 0u, 0);
+    prog5v_box_reading(false, 0u, 0, 0u);
     prog5v_box_publish_cuts(0u);
     prog5v_box_publish_input(0u);
 }

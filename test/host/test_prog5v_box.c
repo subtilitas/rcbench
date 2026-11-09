@@ -298,15 +298,15 @@ TEST_CASE(the_lines_name_the_pin_and_the_reading)
     CHECK_STR_EQ(prog5v_box_text(0, buf, sizeof(buf)),
                  "PROG PORTS 5V, GPIO 21: OFF");
     CHECK_STR_EQ(prog5v_box_text(1, buf, sizeof(buf)), "--V  --A");
-    prog5v_box_reading(true, 5024u, 120);
+    prog5v_box_reading(true, 5024u, 120, 1u);
     CHECK_STR_EQ(prog5v_box_text(1, buf, sizeof(buf)), "5.02V  0.120A");
-    prog5v_box_reading(true, 4995u, -3);
+    prog5v_box_reading(true, 4995u, -3, 2u);
     CHECK_STR_EQ(prog5v_box_text(1, buf, sizeof(buf)), "5.00V  -0.003A");
-    prog5v_box_reading(true, 0u, 0);
+    prog5v_box_reading(true, 0u, 0, 3u);
     CHECK_STR_EQ(prog5v_box_text(1, buf, sizeof(buf)), "0.00V  0.000A");
-    prog5v_box_reading(true, 32767u, 32767);
+    prog5v_box_reading(true, 32767u, 32767, 4u);
     CHECK_STR_EQ(prog5v_box_text(1, buf, sizeof(buf)), "32.77V  32.767A");
-    prog5v_box_reading(false, 5000u, 1);
+    prog5v_box_reading(false, 5000u, 1, 5u);
     CHECK_STR_EQ(prog5v_box_text(1, buf, sizeof(buf)), "--V  --A");
     prog5v_box_publish(ST_ON, 21u, (uint8_t)PROG5V_HELD_NONE);
     CHECK_STR_EQ(prog5v_box_text(0, buf, sizeof(buf)),
@@ -331,7 +331,7 @@ TEST_CASE(the_box_is_drawn_inside_its_rect)
     gfx_canvas_t c;
     guard_canvas_init(&g, &c, px, 1024, 600);
     fresh(ST_OFF);
-    prog5v_box_reading(true, 5010u, 80);
+    prog5v_box_reading(true, 5010u, 80, 6u);
     prog5v_box_render(&b, &c);
     CHECK_EQ(guard_canvas_touched(&g), 0u);
     const uint32_t off = guard_canvas_sum(&g);

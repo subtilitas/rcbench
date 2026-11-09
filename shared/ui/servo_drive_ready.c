@@ -9,11 +9,32 @@
  *   - READY and its rows, 30px each from y 96 (servo_ready.c draws them):
  *     PORT, SUPPLY and ARM on LIVE and SWEEP; PORT, ANGLE, ZERO, SUPPLY
  *     and ARM on RUDDER;
- *   - on LIVE and SWEEP SPEED from y 196, its track at y 220 to 260;
- *   - the type pill, y 274 to 318;
- *   - on LIVE CENTER and RELEASE, on SWEEP SWEEP and RELEASE, y 330 to
- *     378, each half the column;
- *   - the rail line at y 404: the servo rail's meter, its volts and amps.
+ *   - the SET row, 4px under the last row (y 190 to 238 on LIVE and
+ *     SWEEP, 250 to 298 on RUDDER): SET V and SET A, 80 x 48px each, 8px
+ *     apart, and the plot to the column's end, 180 x 48px;
+ *   - on LIVE and SWEEP SPEED from y 244, its track at y 268 to 308;
+ *   - the type pill, y 318 to 350;
+ *   - on LIVE CENTER and RELEASE, on SWEEP SWEEP and RELEASE, y 356 to
+ *     404, each half the column;
+ *   - the rail line at y 412: the meter of what feeds the servo, its
+ *     volts and amps.
+ *
+ * SET V and SET A are SUPPLY's set points, not a copy.  A tap opens the
+ * keypad inside SUPPLY's caps narrowed by its OUTPUT LIMITS
+ * (supply_screen_caps()); a value typed while the output is live asks
+ * SUPPLY's question where SETTINGS, CONFIRM WHILE ON, KEYPAD asks it, and
+ * one raised past 6.0V the HV warning (servo_settings_panel.c).  While a
+ * programming port holds the supply the values are dim and a tap names
+ * the port in the alert band.  On the rbmod carrier's programming port the
+ * servo runs from the fixed PROG 5V: the row reads `PROG 5V`, `5V FIXED`,
+ * and takes no press.
+ *
+ * The plot is TEST's (test_draw_plot()): the series, the time base and the
+ * scales of the rail's meter, the PD mini, the INA3221 window or the
+ * panel's model.  On the carrier's programming port it plots the PROG 5V
+ * from the channel that watches it (prog5v_box_last()), on the same
+ * series, time base and scales, and the rail line reads that channel.
+ * A new reading repaints the plot and the rail line, each clipped.
  *
  * The SUPPLY row names what feeds the servo: PROG 5V on the rbmod
  * carrier's port, PD MINI where a PD mini answers, SUPPLY where none does.
@@ -54,6 +75,7 @@
 #include "servo_limrun.h"
 #include "settings.h"
 #include "supply_screen.h"
+#include "ui_plot.h"
 #include "ui_slider.h"
 #include "ui_text.h"
 #include "ui_theme.h"
@@ -65,19 +87,44 @@
 
 /* ------------------------------------------------------------ the layout */
 
-/** @brief SPEED's label row under LIVE's and SWEEP's three rows. */
-#define DRV_SPEED_Y  (READY_ROW_Y + 3 * READY_ROW_H + 10)
+/** @brief The SET row under @p n READY rows, 4px clear of the last. */
+#define DRV_SET_Y(n) (READY_ROW_Y + (n) * READY_ROW_H + 4)
+#define DRV_SET_H    UI_TAP_MIN /**< The SET row's height, px. */
+/** @brief SET V's and SET A's box: SET V's label in UI_FONT_FINE over the
+ *         value in SV_FONT_LABEL, 20.00V's 6 cells and 10px each side. */
+#define DRV_VAL_W    80
+#define DRV_VAL_GAP  8 /**< Between the two boxes and before the plot. */
+/** @brief The plot, right of the two boxes to the column's end. */
+#define DRV_PLOT_X   (RC_X + 2 * (DRV_VAL_W + DRV_VAL_GAP))
+#define DRV_PLOT_W   (RC_X + RC_W - DRV_PLOT_X) /**< 180px: 9.0s at 20Hz. */
+/** @brief SPEED's label row under LIVE's and SWEEP's SET row. */
+#define DRV_SPEED_Y  (DRV_SET_Y(3) + DRV_SET_H + 6)
 #define DRV_SLIDER_Y (DRV_SPEED_Y + 24) /**< SPEED's track, px. */
-/** @brief The type pill, clear of SPEED's thumb and its shadow. */
-#define DRV_TAG_Y    (DRV_SLIDER_Y + SLIDER_H + UI_SLIDER_OVERHANG + 9)
-#define DRV_BTN_Y    (DRV_TAG_Y + TAG_H + 12) /**< The buttons' row, px. */
+/** @brief The type pill, clear of SPEED's thumb and its shadow, which
+ *         paint UI_SLIDER_OVERHANG + 2px below the track. */
+#define DRV_TAG_Y    (DRV_SLIDER_Y + SLIDER_H + UI_SLIDER_OVERHANG + 5)
+/** @brief The pill's height: its one line of SV_FONT_LABEL and 6px each
+ *         side. */
+#define DRV_TAG_H    32
+#define DRV_BTN_Y    (DRV_TAG_Y + DRV_TAG_H + 6) /**< The buttons' row. */
 /** @brief A button: half the column, 8px apart. */
 #define DRV_BTN_W    ((RC_W - BTN_GAP) / 2)
 
-_Static_assert(DRV_BTN_Y + BTN_H + 8 <= READY_RAIL_Y - 4,
+_Static_assert(DRV_SET_H >= UI_TAP_MIN && DRV_VAL_W >= UI_TAP_MIN,
+               "SET V and SET A are a finger's size");
+_Static_assert(6 * SV_CELL + 2 * 10 <= DRV_VAL_W,
+               "20.00V fits its box with 10px each side");
+_Static_assert(DRV_PLOT_W == 180,
+               "the plot shows 9.0s at 20Hz, as its help says");
+_Static_assert(DRV_SET_Y(3) + DRV_SET_H + 6 <= DRV_SPEED_Y,
+               "LIVE's and SWEEP's SET row ends above SPEED");
+_Static_assert(DRV_SET_Y(5) + DRV_SET_H + 8 <= DRV_TAG_Y,
+               "RUDDER's SET row ends above the type pill");
+_Static_assert(DRV_TAG_H >= 20 + 2 * 6, "the pill holds its line");
+_Static_assert(DRV_BTN_Y + BTN_H + 4 <= DRV_RAIL_Y - 4,
                "the buttons end above the rail line");
-_Static_assert(READY_ROW_Y + 5 * READY_ROW_H + 8 <= DRV_TAG_Y,
-               "RUDDER's five rows end above the type pill");
+_Static_assert(DRV_RAIL_Y + 20 + 4 <= CARD_FLOOR,
+               "the rail line ends inside the card");
 _Static_assert(DRV_BTN_Y + BTN_H <= STOP_FLOOR,
                "PAUSE ends above the alert band");
 
@@ -597,14 +644,24 @@ bool drive_arm_fired(void)
     return true;
 }
 
+static void p5_follow(void);    /* the plot's PROG 5V, under the card */
+
 /** @brief What ARM's button shows, as one number: a change repaints it. */
 static uint32_t s_arm_sig;
 
 void drive_frame(float dt_s)
 {
     (void)dt_s;
+    p5_follow();
     if (!drive_shown()) {
         return;
+    }
+    /* What feeds the servo changed: the SET row and the plot with it. */
+    const uint32_t feed = (uint32_t)feed_now();
+    if (feed != s.drv_sig) {
+        s.drv_sig = feed;
+        ++s.sup_rev;
+        ++s.power_rev;
     }
     /* A row that turns red under the hold drops it, and the band names
      * it: the hold fires only on a bench that may arm. */
@@ -679,7 +736,9 @@ void drive_render_card(gfx_canvas_t *c)
         s.speed.color = ui_theme_color(UI_C_ACCENT);
         ui_slider_render(&s.speed, c);
     }
-    svs_draw_tag(c, (gfx_rect_t){ RC_X, DRV_TAG_Y, RC_W, TAG_H });
+    drive_draw_set(c);
+    drive_draw_plot(c);
+    svs_draw_tag(c, drive_tag_rect());
     if (s.fn == SERVO_FN_LIVE) {
         /* CENTER sets a position: green, dimmed while SAFE. */
         ui_button_font(c, s.center_btn, TR(SV_CENTER_BTN),
@@ -716,7 +775,186 @@ gfx_rect_t drive_speed_rect(void)
 
 gfx_rect_t drive_tag_rect(void)
 {
-    return (gfx_rect_t){ RC_X, DRV_TAG_Y, RC_W, TAG_H };
+    return (gfx_rect_t){ RC_X, DRV_TAG_Y, RC_W, DRV_TAG_H };
+}
+
+/* ------------------------------------------------- the SET row and plot */
+
+/** @brief The SET row's top under the rows of the function shown.
+ *  @return its y in the body */
+static int set_y(void)
+{
+    return DRV_SET_Y(drive_ready_count());
+}
+
+gfx_rect_t drive_set_row_rect(void)
+{
+    if (!drive_shown()) {
+        return (gfx_rect_t){ 0, 0, 0, 0 };
+    }
+    return (gfx_rect_t){ RC_X, (int16_t)set_y(),
+                         (int16_t)(DRV_PLOT_X - DRV_VAL_GAP - RC_X),
+                         DRV_SET_H };
+}
+
+gfx_rect_t drive_set_rect(int k)
+{
+    if (!drive_shown() || feed_now() == FEED_P5 || k < 0 || k > 1) {
+        return (gfx_rect_t){ 0, 0, 0, 0 };
+    }
+    return (gfx_rect_t){ (int16_t)(RC_X + k * (DRV_VAL_W + DRV_VAL_GAP)),
+                         (int16_t)set_y(), DRV_VAL_W, DRV_SET_H };
+}
+
+gfx_rect_t drive_plot_rect(void)
+{
+    if (!drive_shown()) {
+        return (gfx_rect_t){ 0, 0, 0, 0 };
+    }
+    return (gfx_rect_t){ DRV_PLOT_X, (int16_t)set_y(), DRV_PLOT_W,
+                         DRV_SET_H };
+}
+
+bool drive_set_down(const touch_event_t *evt)
+{
+    if (evt == NULL || !drive_shown()) {
+        return false;
+    }
+    for (int k = 0; k < 2; ++k) {
+        if (!gfx_rect_contains(drive_set_rect(k), evt->point.x,
+                               evt->point.y)) {
+            continue;
+        }
+        /* No set point moves under a programming port, and the band says
+         * why. */
+        if (supply_screen_port_held()) {
+            ui_router_set_alert(esc_wire_panel_holds_port()
+                                    ? TR(SUP_HELD_REFUSED_ESC)
+                                    : TR(SUP_HELD_REFUSED));
+            return true;
+        }
+        /* The set points as ARM's steps began, and one press at a time. */
+        if (svs_seq_busy() || s.ov_have) {
+            return true;
+        }
+        /* The run owns the set points while it runs. */
+        test_end_now(SERVO_TEST_AB_OPERATOR);
+        ov_take(evt, (k == 0) ? OP_SUP_V : OP_SUP_I, -1);
+        return true;
+    }
+    return false;
+}
+
+void drive_draw_set(gfx_canvas_t *c)
+{
+    const gfx_rect_t r = drive_set_row_rect();
+    gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL));
+    if (feed_now() == FEED_P5) {
+        /* The carrier's programming port: its 5V is fixed, nothing to
+         * set. */
+        gfx_text_in(c, (gfx_rect_t){ r.x, (int16_t)(r.y + 4), r.w, 16 },
+                    "PROG 5V", UI_FONT_FINE, ui_theme_color(UI_C_TEXT_DIM),
+                    1, GFX_ALIGN_LEFT);
+        gfx_text_in(c, (gfx_rect_t){ r.x, (int16_t)(r.y + 24), r.w, 20 },
+                    TR(SV_P5_FIXED), SV_FONT_LABEL,
+                    ui_theme_color(UI_C_TEXT), 1, GFX_ALIGN_LEFT);
+        return;
+    }
+    char v[12], a[12];
+    snprintf(v, sizeof(v), "%.2fV", (double)supply_screen_set_v());
+    snprintf(a, sizeof(a), "%.2fA", (double)supply_screen_set_i());
+    /* Held by a programming port they take no press, and say so. */
+    const bool held = supply_screen_port_held();
+    const struct {
+        const char *label, *txt;
+        gfx_color_t col;
+        int op;
+    } k[2] = {
+        { "SET V", v, held ? ui_theme_color(UI_C_TEXT_FAINT)
+                           : ui_theme_color(UI_C_VOLT), OP_SUP_V },
+        { "SET A", a, held ? ui_theme_color(UI_C_TEXT_FAINT)
+                           : ui_theme_color(UI_C_CURR), OP_SUP_I },
+    };
+    for (int i = 0; i < 2; ++i) {
+        const gfx_rect_t b = drive_set_rect(i);
+        const bool down = s.ov_have && s.ov_pressed == k[i].op;
+        gfx_fill_round_rect(c, b.x, b.y, b.w, b.h, UI_R_CTL,
+                            down ? ui_theme_color(UI_C_PANEL_HI)
+                                 : ui_theme_color(UI_C_PANEL_SUNK));
+        gfx_text_in(c, (gfx_rect_t){ b.x, (int16_t)(b.y + 4), b.w, 16 },
+                    k[i].label, UI_FONT_FINE,
+                    ui_theme_color(UI_C_TEXT_DIM), 1, GFX_ALIGN_CENTER);
+        gfx_text_in(c, (gfx_rect_t){ b.x, (int16_t)(b.y + 24), b.w, 20 },
+                    k[i].txt, SV_FONT_LABEL, k[i].col, 1, GFX_ALIGN_CENTER);
+    }
+}
+
+/** @brief The plot of what feeds the servo: the PROG 5V's on the
+ *         carrier's programming port, else the rail meter's.
+ *  @return the plot */
+static ui_plot_t *plot_now(void)
+{
+    return (feed_now() == FEED_P5) ? &s.p5_power : &s.power;
+}
+
+void drive_draw_plot(gfx_canvas_t *c)
+{
+    const gfx_rect_t r = drive_plot_rect();
+    gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL));
+    ui_plot_t *p = plot_now();
+    /* Each trace in the colour the readings name it by, as on TEST. */
+    p->series[PS_V].color = ui_theme_color(UI_C_VOLT);
+    p->series[PS_A].color = ui_theme_color(UI_C_CURR);
+    p->series[PS_W].color = ui_theme_color(UI_C_POWER);
+    /* One sample a column: the axis names the 9.0s the 180px show, not
+     * the RC_W columns the time base was made for. */
+    const float span = p->span_s;
+    p->span_s = span * (float)r.w / (float)RC_W;
+    ui_plot_render(p, c, r);
+    p->span_s = span;
+}
+
+bool drive_p5_rail(rail_t *r, const char **name)
+{
+    if (r == NULL || !drive_shown() || feed_now() != FEED_P5) {
+        return false;
+    }
+    memset(r, 0, sizeof(*r));
+    uint16_t mv = 0u;
+    int16_t ma = 0;
+    const bool ok = prog5v_box_last(&mv, &ma, NULL);
+    r->v_ok = ok;
+    r->i_ok = ok;
+    r->v    = (float)mv / 1000.0f;
+    r->i    = (float)ma / 1000.0f;
+    r->p    = r->v * r->i;
+    if (name != NULL) {
+        *name = "PROG 5V";
+    }
+    return true;
+}
+
+/**
+ * @brief A new window of the channel that watches the PROG 5V: a point of
+ *        its plot, on every SERVO screen so the trace is there when the
+ *        servo is on the carrier's port.  Repaints the plot where it shows.
+ */
+static void p5_follow(void)
+{
+    uint16_t mv = 0u, n = 0u;
+    int16_t ma = 0;
+    if (!prog5v_box_last(&mv, &ma, &n) || n == s.p5_win) {
+        return;
+    }
+    s.p5_win = n;
+    const float v = (float)mv / 1000.0f;
+    const float i = (float)ma / 1000.0f;
+    const float pt[PS_COUNT] = { v, i, v * i };
+    ui_plot_push(&s.p5_power, pt);
+    ui_plot_update_scales(&s.p5_power, RC_W);
+    if (drive_shown() && feed_now() == FEED_P5) {
+        ++s.power_rev;
+    }
 }
 
 /* ------------------------------------------------------------ for tests */

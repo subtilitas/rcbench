@@ -112,9 +112,11 @@ _Static_assert(PORT_X == RCARD_X && PORT_W == RCARD_W,
  * plot, SPEED, the type and frame rate in force, and CENTER / SWEEP /
  * RELEASE.  Every row tapped is
  * UI_TAP_MIN or taller.  No function screen draws it: LIVE, SWEEP and
- * RUDDER show READY rows in its place (servo_drive_ready.c), RUDDER AUTO,
- * TEST, LIMIT RUN, KST and HITEC their READY card (servo_ready.c,
- * servo_prog_ready.c).  TEST draws the plot on its left card.
+ * RUDDER show READY rows in its place with a SET row, its plot, SPEED,
+ * the type pill and their buttons under them (servo_drive_ready.c), RUDDER
+ * AUTO, TEST, LIMIT RUN, KST and HITEC their READY card (servo_ready.c,
+ * servo_prog_ready.c).  TEST draws the plot on its left card.  The macros
+ * below keep the widths and the heights the cards still share.
  */
 #define RC_X      (RCARD_X + 12) /**< The output card's inner column, px. */
 #define RC_W      (RCARD_W - 24) /**< Its width: 356px. */
@@ -276,7 +278,7 @@ typedef struct {
 /* What a press is on, in the pages and the panels they open. */
 enum { OP_NONE = 0, OP_ROW, OP_TRIM_DN, OP_TRIM_UP, OP_KEYPAD,
        OP_TEXT, OP_CHOICE, OP_CHOICE_CANCEL, OP_WARN_APPLY, OP_WARN_CANCEL,
-       OP_ASK_APPLY, OP_ASK_CANCEL, OP_TEST_START,
+       OP_SUP_V, OP_SUP_I, OP_ASK_APPLY, OP_ASK_CANCEL, OP_TEST_START,
        OP_LIM_START, OP_RUN_CLOSE, OP_OPEN_CAPS,
        OP_KST_EXPERT };
 
@@ -286,13 +288,14 @@ enum { OP_NONE = 0, OP_ROW, OP_TRIM_DN, OP_TRIM_UP, OP_KEYPAD,
 enum { CH_NONE = 0, CH_TYPE, CH_RATE, CH_ENUM, CH_PORT, CH_FAMILY,
        CH_SERIES, CH_ANGLE, CH_ANGLE_FIX };
 enum { KT_NONE = 0, KT_MIN, KT_CENTER, KT_MAX, KT_TRAVEL, KT_RATE,
-       KT_SETTING, KT_TRIM };
+       KT_SETTING, KT_SUP_V, KT_SUP_I, KT_TRIM };
 
-/* What the question or the HV warning applies: the supply's output
- * switched on, the automatic test started with steps above 6.0V, or the
- * operator's set points back onto the live output a programming port left
- * on (both set points). */
-enum { ASK_ON = 0, ASK_TEST, ASK_RESTORE };
+/* What the question or the HV warning applies: a set point typed on the
+ * SET row of LIVE, SWEEP or RUDDER, the supply's output switched on, the
+ * automatic test started with steps above 6.0V, or the operator's set
+ * points back onto the live output a programming port left on (both set
+ * points). */
+enum { ASK_SET = 0, ASK_ON, ASK_TEST, ASK_RESTORE };
 
 #define CHOICE_MAX 10
 
@@ -451,6 +454,14 @@ typedef struct {
     /* The servo rail's live power, from its meter (rail_now()): the line
      * of readings and the plot under it. */
     ui_plot_t      power;
+    /** @brief The rbmod carrier's PROG 5V, from the channel that watches
+     *  it (prog5v_box_last()): the plot of LIVE, SWEEP and RUDDER while
+     *  the servo is on the carrier's programming port. */
+    ui_plot_t      p5_power;
+    uint16_t       p5_win;  /**< the window p5_power took its last point of */
+    /** @brief What the SET row and the plot of LIVE, SWEEP and RUDDER show
+     *  as one number (drive_frame()): a change repaints them. */
+    uint32_t       drv_sig;
     supply_state_t sup;
     bool           have_sup;
     uint32_t       power_rev;
@@ -499,8 +510,10 @@ typedef struct {
      *  (the rbmod carrier): the PROG 5V box in the power plot's place
      *  (prog5v_box.h). */
     prog5v_box_t p5;
-    /* The question or the HV warning waiting for its answer: OUTPUT ON
-     * with a set point past a standard servo's rating (ASK_ON) and TEST's
+    /* The question or the HV warning waiting for its answer: a set point
+     * typed on the SET row while the output is live or raised past a
+     * standard servo's rating (ASK_SET), OUTPUT ON
+     * with a set point past that rating (ASK_ON) and TEST's
      * steps past it (ASK_TEST), each on the HV warning's two-second hold
      * (hv), the hold the profile warning takes; or the restore question,
      * YES or NO, and the HV warning after a YES past that rating
@@ -508,7 +521,8 @@ typedef struct {
     struct {
         bool      open;
         bool      hv;
-        int       purpose;   /**< ASK_ON, ASK_TEST or ASK_RESTORE      */
+        int       purpose;   /**< ASK_SET, ASK_ON, ASK_TEST or ASK_RESTORE */
+        int       target;    /**< KT_SUP_V or KT_SUP_I: what was typed */
         uint32_t  off_count; /**< supply_screen_off_count() at asking  */
         uint32_t  stops;     /**< the screen's stop count at asking     */
         uint32_t  off_asks;  /**< supply_screen_off_asks() at asking    */

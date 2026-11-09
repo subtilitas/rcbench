@@ -245,7 +245,7 @@ void sense_map_lost(void)
 {
     sense_map_link_lost(&s_sense_map);
     sense_win_link_lost(&s_sense_win);
-    prog5v_box_reading(false, 0u, 0);
+    prog5v_box_reading(false, 0u, 0, 0u);
     publish_held();
     sense_link_set_map(&s_sense_link, false);
     sense_link_set_map_held(&s_sense_link, false);
@@ -391,7 +391,7 @@ void prog5v_publish_reading(void)
             }
         }
     }
-    prog5v_box_reading(w.ok, w.mv, ma);
+    prog5v_box_reading(w.ok, w.mv, ma, w.window);
     prog5v_on_t on;
     prog5v_watch_on(&on);
     if (prog5v_lost_step(&s_p5_lost, &on, now_ms(), &w)) {

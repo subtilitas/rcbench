@@ -50,10 +50,12 @@ LIVE's right card, from the top:
 |---|---|
 | PORT button | what the tester drives, `protocol pins`: `SERVO PWM GPIO 2`, `PROG PORT 1 GPIO 13`, or a warning; a tap opens the list where it is picked ([the PORT button](servo-settings.md#the-port-button)) |
 | READY | one row per check: PORT, SUPPLY and ARM; RUDDER adds ANGLE and ZERO |
+| SET V, SET A | the PD mini's set points; a tap opens SUPPLY's keypad. On the carrier's programming port `PROG 5V`, `5V FIXED` |
+| plot | volts, amps and watts of what feeds the servo over the last 9.0s, right of SET A |
 | SPEED | the rate the bench may move the output, 100% passes the command straight through |
 | type pill | the servo type, frame rate and pulse range in force: `STANDARD PWM  50Hz  1000-2000` |
 | CENTER, RELEASE | SWEEP shows SWEEP and RELEASE |
-| rail line | the servo rail's meter on the left, its volts and amps on the right: `6.00V  0.120A` |
+| rail line | the meter of what feeds the servo on the left, its volts and amps on the right: `6.00V  0.120A` |
 
 A READY row's dot and state are green when met, amber when ARM does it or it needs a look, and red when it refuses ARM. A tap fixes the row where it can, or names it in the alert band.
 
@@ -114,14 +116,15 @@ A reading that did not arrive is `---` in LIVE's CURRENT, `--` on the line and a
 
 ## The supply on SERVO
 
-LIVE, SWEEP and RUDDER have the SUPPLY row and no SET line: ARM switches the supply on, DISARM switches it off. TEST, LIMIT RUN and RUDDER AUTO switch it through their hold and their run. On KST and HITEC the session's CONNECT switches it on, and a tap on the supply row while it reads ON switches it off. No SERVO screen has a SET line: the set points and OUTPUT ON are on SUPPLY.
+LIVE, SWEEP and RUDDER have the SUPPLY row and the SET row: ARM switches the supply on, DISARM switches it off. TEST, LIMIT RUN and RUDDER AUTO switch it through their hold and their run. On KST and HITEC the session's CONNECT switches it on, and a tap on the supply row while it reads ON switches it off. No SERVO screen has OUTPUT ON: it is on SUPPLY.
 
-- A tap on a set point opens the keypad over the left card.
-- OUTPUT ON is a 2s hold, OUTPUT OFF a tap.
+- A tap on SET V or SET A opens SUPPLY's keypad over the left card, inside SUPPLY's OUTPUT LIMITS. OK puts the value on SUPPLY: one set point on both screens.
+- A value typed while the output is on waits for SUPPLY's question where SETTINGS > KEYPAD under CONFIRM WHILE ON asks it, ARMED or SAFE. A voltage raised above 6.0V waits for HV SERVOS ONLY.
+- While a programming port holds the PD mini, SET V and SET A are dim and a tap names the hold in the band.
 - Leaving SERVO switches off an output SERVO switched on.
 - After a programmer's LEAVE that leaves the output on, SERVO asks whether the set points from before the session go back onto it ([Servo programmer](servo-programmer.md)). No other end of a port's hold asks: RELEASE PORT, a STOP, an error, a lost link or a restart leaves the session's set points until the next OFF.
 
-On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) the programming ports have their own 5V rail at GPIO 21. No SERVO screen shows the PROG 5V box; SUPPLY does. On LIVE, SWEEP and RUDDER the SUPPLY row reads PROG 5V and ARM switches it on, on LIMIT RUN and RUDDER AUTO the hold. On KST and HITEC the supply row reads ON while the 5V is on; a tap switches it off.
+On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) the programming ports have their own 5V rail at GPIO 21. No SERVO screen shows the PROG 5V box; SUPPLY does. On LIVE, SWEEP and RUDDER the SUPPLY row reads PROG 5V and ARM switches it on, on LIMIT RUN and RUDDER AUTO the hold. The SET row then reads `PROG 5V`, `5V FIXED` and takes no tap; the plot and the rail line show the INA3221 channel that watches the 5V, `PROG 5V` on the line. On KST and HITEC the supply row reads ON while the 5V is on; a tap switches it off.
 
 While a programming port holds the 5V the tap switches nothing and the band names the lock. Leaving SERVO switches off a rail switched on by ARM or the hold unless a port holds it.
 

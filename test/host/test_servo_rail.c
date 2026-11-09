@@ -23,12 +23,12 @@
  * "STANDARD PWM  50Hz  1000-2000", two spaces between the three parts, the
  * range in microseconds without its unit.  The longest a profile and its
  * keypads allow, a 13-character type, a 3-digit rate and two 4-digit ends,
- * is 32 of the 35 cells the 356px pill holds.  A typed end reaches the row
+ * is 32 of the 35 cells the 356px pill holds, 32px tall on LIVE.  A typed end reaches the row
  * at once.
  */
 #define TAG_BOX_Y SV_TAG_Y
 
-#define TAG_BOX_H 44
+#define TAG_BOX_H SV_TAG_H
 
 static bool tag_reads(const char *text, bool danger)
 {
@@ -93,16 +93,17 @@ TEST_CASE(the_tag_row_carries_the_pulse_range)
 static bool word_reads(const char *word)
 {
     const servo_fn_t was = card_on();
+    const int y = rail_line_y();
     scr->render(&cv, 0);
     card_back(was);
     want_fresh();
     memcpy(want_fb, fb, (size_t)W * H * sizeof(gfx_color_t));
     const int w = gfx_text_width(&gfx_font_10x20, word, 1);
-    gfx_fill_rect(&want_cv, WORD_X, RAIL_LINE_Y, (int16_t)w, 20,
+    gfx_fill_rect(&want_cv, WORD_X, (int16_t)y, (int16_t)w, 20,
                   ui_theme_color(UI_C_PANEL));
-    gfx_text(&want_cv, WORD_X, RAIL_LINE_Y, word, &gfx_font_10x20,
+    gfx_text(&want_cv, WORD_X, y, word, &gfx_font_10x20,
              ui_theme_color(UI_C_WARN), 1);
-    return same_in(fb, want_fb, WORD_X, RAIL_LINE_Y, w, 20);
+    return same_in(fb, want_fb, WORD_X, y, w, 20);
 }
 
 TEST_CASE(the_rail_line_names_the_pd_mini_and_a_modelled_supply)

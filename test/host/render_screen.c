@@ -3606,11 +3606,11 @@ static bool pose_carrier_views(ui_screen_id_t id, const char *view)
     prog5v_box_publish_input(strstr(view, "-input") != NULL ? 5100u : 0u);
     if (strcmp(view, "servo-kst-rbmod") == 0) {
         prog5v_box_publish((uint8_t)PROG_SUPPLY_ON, 21u, 0u);
-        prog5v_box_reading(true, 5018u, 86);
+        prog5v_box_reading(true, 5018u, 86, 1u);
     } else {
         prog5v_box_publish((uint8_t)PROG_SUPPLY_OFF, 21u,
                            (uint8_t)PROG5V_HELD_NONE);
-        prog5v_box_reading(true, 2u, 0);
+        prog5v_box_reading(true, 2u, 0, 2u);
     }
     if (id != SCREEN_OUTPUTS) {
         return false;

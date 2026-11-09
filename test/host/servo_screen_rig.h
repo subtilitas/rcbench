@@ -124,7 +124,8 @@ static inline int sweep_btn_pixels(gfx_color_t col)
 /*
  * Mirrored from servo_ready.c and servo_ready_int.h: the READY card's
  * column and its rail line at y 404, 20px high in the 10 x 20 face over a
- * 28px box from y 400: the meter's name, SIMULATED after it while the
+ * 28px box from y 400; on LIVE, SWEEP and RUDDER at y 412 over a 24px box
+ * from y 408: the meter's name, SIMULATED after it while the
  * panel's model is the supply, and the volts and amps at its right end.
  * LIVE's CURRENT reading, the numerals of the third column along the foot
  * of the left card: right of COMMANDED's 192px and MEASURED's 216px,
@@ -133,6 +134,7 @@ static inline int sweep_btn_pixels(gfx_color_t col)
 #define RAIL_X     SV_RC_X
 #define RAIL_W     SV_RC_W
 #define RAIL_LINE_Y 404
+#define RAIL_DRV_Y  412 /**< The same on LIVE, SWEEP and RUDDER. */
 #define CUR_X      (UI_MARGIN + 12 + 192 + 216)
 #define CUR_Y      384
 #define CUR_W      184
@@ -196,6 +198,15 @@ static inline void card_back(servo_fn_t was)
     }
 }
 
+/** @brief The rail line's top on the function shown: under the buttons on
+ *         LIVE, SWEEP and RUDDER.  @return its y */
+static inline int rail_line_y(void)
+{
+    const servo_fn_t fn = servo_screen_fn();
+    return (fn == SERVO_FN_LIVE || fn == SERVO_FN_SWEEP
+            || fn == SERVO_FN_RUDDER) ? RAIL_DRV_Y : RAIL_LINE_Y;
+}
+
 /** @brief Buffer 0 drawn, and whether the READY card's rail line reads the
  *  meter's name @p label, @p word after it in the warning colour (NULL for
  *  none), and the volts @p v and amps @p a at its right end
@@ -204,23 +215,26 @@ static inline bool rail_line_reads(const char *label, const char *word,
                                    const char *v, const char *a)
 {
     const servo_fn_t was = card_on();
+    const int y = rail_line_y();
+    const bool drv = y == RAIL_DRV_Y;
     scr->render(&cv, 0);
     card_back(was);
     want_fresh();
-    const gfx_rect_t box = { RAIL_X, RAIL_LINE_Y - 4, RAIL_W, 28 };
+    const gfx_rect_t box = { RAIL_X, (int16_t)(y - 4), RAIL_W,
+                             (int16_t)(drv ? 24 : 28) };
     gfx_fill_rect(&want_cv, box.x, box.y, box.w, box.h,
                   ui_theme_color(UI_C_PANEL));
-    gfx_text(&want_cv, RAIL_X, RAIL_LINE_Y, label, &gfx_font_10x20,
+    gfx_text(&want_cv, RAIL_X, y, label, &gfx_font_10x20,
              ui_theme_color(UI_C_TEXT_DIM), 1);
     if (word != NULL) {
         gfx_text(&want_cv,
                  RAIL_X + gfx_text_width(&gfx_font_10x20, label, 1) + 10,
-                 RAIL_LINE_Y, word, &gfx_font_10x20,
+                 y, word, &gfx_font_10x20,
                  ui_theme_color(UI_C_WARN), 1);
     }
     char line[48];
     snprintf(line, sizeof(line), "%s  %s", v, a);
-    gfx_text_in(&want_cv, (gfx_rect_t){ RAIL_X, RAIL_LINE_Y, RAIL_W, 20 },
+    gfx_text_in(&want_cv, (gfx_rect_t){ RAIL_X, (int16_t)y, RAIL_W, 20 },
                 line, &gfx_font_10x20, ui_theme_color(UI_C_TEXT), 1,
                 GFX_ALIGN_RIGHT);
     return same_in(fb, want_fb, box.x, box.y, box.w, box.h);

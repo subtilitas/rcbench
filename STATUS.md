@@ -570,6 +570,11 @@ and ZERO on RUDDER), and their ARM runs the same steps where PORT PWM, PROG 5V o
 mini reads off: never the PD mini past 6.0V or beside a rail an INA3221 reads at 3.0V or
 more, DISARM and a failed step all off, PROG 5V kept between SERVO screens
 (`shared/ui/servo_drive_ready.c`, `test_servo_drive_ready`; host suite only).
+Under their rows a SET row holds SET V and SET A, which open SUPPLY's keypad inside its
+OUTPUT LIMITS through SUPPLY's question and the HV warning, refused while a programming
+port holds the PD mini, and the supply's plot; on the rbmod carrier's programming port the
+row reads `5V FIXED` and the plot and the rail line read the PROG 5V
+(`test_servo_drive_supply`; host suite only).
 RUDDER's and RUDDER AUTO's ANGLE rows open the ANGLE SOURCE list on a SAFE bench: the
 AS5600, the IMUs of the last scan, NO IMU FOUND and SEARCH FOR IMU, which switches the IMU
 on and scans once Bluetooth LE runs; a pick sets the source and binds an IMU
@@ -1438,7 +1443,7 @@ The host suite is 520 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_imu`, `test_imu_filter`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_effect`,
-`test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_angle_pick`, `test_servo_start_seq`,
+`test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_drive_supply`, `test_servo_angle_pick`, `test_servo_start_seq`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`.

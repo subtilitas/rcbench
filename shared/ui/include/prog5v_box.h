@@ -153,11 +153,14 @@ uint8_t prog5v_box_held_port(int kst_port, int hitec_port, bool some);
 /**
  * @brief Publish the last reading of the channel that watches the ports'
  *        5V.
- * @param ok whether there is one
- * @param mv its mean bus voltage, mV
- * @param ma its mean current, mA, signed
+ * @param ok     whether there is one
+ * @param mv     its mean bus voltage, mV
+ * @param ma     its mean current, mA, signed
+ * @param window its window's number (the SENSE_WIN page's WINDOW
+ *               register): a reading whose number moved is a new one,
+ *               the same values or not
  */
-void prog5v_box_reading(bool ok, uint16_t mv, int16_t ma);
+void prog5v_box_reading(bool ok, uint16_t mv, int16_t ma, uint16_t window);
 
 /**
  * @brief Publish the PD mini's input voltage as the SUPPLY page last read
@@ -214,6 +217,17 @@ bool prog5v_box_shown(void);
  * @return true for ON
  */
 bool prog5v_box_on(void);
+
+/**
+ * @brief The last reading of the channel that watches the ports' 5V, as
+ *        published: SERVO's plot of the PROG 5V on the rbmod carrier's
+ *        programming port takes a point each time @p window moves.
+ * @param mv     receives its mean bus voltage, mV; may be NULL
+ * @param ma     receives its mean current, mA, signed; may be NULL
+ * @param window receives its window's number; may be NULL
+ * @return whether there is one; the outputs are 0 without
+ */
+bool prog5v_box_last(uint16_t *mv, int16_t *ma, uint16_t *window);
 
 /**
  * @brief Set a box up on a screen, nothing pressed.

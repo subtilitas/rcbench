@@ -562,6 +562,9 @@ void svs_reset(void)
     rauto_init();
 
     ui_plot_init(&s.power, k_power, PS_COUNT, (float)RC_W / SAMPLE_HZ);
+    /* The PROG 5V's: the same series, time base and scales. */
+    ui_plot_init(&s.p5_power, k_power, PS_COUNT, (float)RC_W / SAMPLE_HZ);
+    (void)prog5v_box_last(NULL, NULL, &s.p5_win);
     svs_lists_init();
     s.fn = (uint8_t)SERVO_FN_LIVE;
     (void)ui_wb_strip_select(&s.wb, UI_WB_LIVE);

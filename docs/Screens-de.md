@@ -301,7 +301,7 @@ Die Aufgabe auf der linken Karte bestimmt die ersten Hilfeseiten:
 | SERVO ENDLAGENLAUF | UNTERES ENDE mit OBERES ENDE und die Zustandszeilen (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
 | SERVO RUDER | LÄNGE, die Fahrtasten, NULLPUNKT und MAX LÖSCHEN (4); AUSSCHLAG, HINTERKANTE und die Statuszeilen (3) |
 | SERVO RUDER AUTO | die Sollwerte, RESERVE und TOLERANZ, NULLPUNKT (3); AUSSCHLAG und HINTERKANTE (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
-| SERVO LIVE, SWEEP und RUDER, SAFE | PORT, BEREIT, die Schienenzeile, ARM und auf SWEEP und RUDER OPTIONEN (4 oder 5); TEMPO, Typ und die Tasten auf LIVE und SWEEP (3), Typ und Seitenansicht auf RUDER (2) |
+| SERVO LIVE, SWEEP und RUDER, SAFE | PORT, BEREIT, die Schienenzeile, ARM und auf SWEEP und RUDER OPTIONEN (4 oder 5); SET V, die Grafik, TEMPO, Typ und die Tasten auf LIVE und SWEEP (5), SET V, die Grafik, Typ und Seitenansicht auf RUDER (4); SET V nicht am Programmierport des rbmod-Carriers |
 | SERVO KST und HITEC, SAFE | PORT, BEREIT, die Schienenzeile, SCHREIBEN und OPTIONEN (5) |
 | die Listen von SERVO (Hub, SWEEP, RUDER, RUDER AUTO, HITEC) | wie eine Optionsliste |
 | SUPPLY LIVE | GRAFIK und TABELLE, SPANNUNG und STROMBEGRENZUNG (3) |
@@ -1692,8 +1692,9 @@ breit und reicht von y 8 bis zum Feldboden bei y 436. Das rechte Feld, x
 636 bis 1016, beginnt mit der Taste PORT (y 8 bis 56). Auf LIVE, SWEEP
 und RUDER trägt es die Zeilen von BEREIT und die Bedienelemente darunter,
 auf TEST, ENDLAGENLAUF, RUDER AUTO, KST und HITEC die Karte BEREIT. Kein
-Funktionsbildschirm hat eine Grafik, eine SOLL-Zeile oder ein Feld PROG
-5V: die Sollwerte und AUSGANG EIN gehören zu SUPPLY. Die Fußleiste bei y
+Funktionsbildschirm hat AUSGANG EIN oder ein Feld PROG 5V: AUSGANG EIN
+gehört zu SUPPLY, und das 2s-Halten von ARM schaltet die Versorgung ein.
+Die Fußleiste bei y
 444 bis 492 hat drei Plätze von 328 x 48px: den Namen der Funktion mit
 der Portzeile darunter, ARM oder DISARM (WERTE SCHREIBEN auf KST und
 HITEC) und OPTIONEN.
@@ -1704,13 +1705,33 @@ keine OPTIONEN.
 LIVE, SWEEP und RUDER zeigen BEREIT unter der Taste PORT: Zeilen von 30px
 ab y 96, jede mit Punkt, Bezeichnung von 10 Zellen und Zustand von 20.
 LIVE und SWEEP haben PORT, VERSORGUNG und ARM; RUDER hat PORT, WINKEL,
-NULLPUNKT, VERSORGUNG und ARM. Unter den Zeilen haben LIVE und SWEEP
-TEMPO, die Bezeichnung bei y 196 und den Regler bei y 220 bis 260. Alle
-drei haben die Typzeile bei y 274 bis 318. LIVE hat ZENTRIEREN und
-FREIGEBEN, SWEEP hat SWEEP und FREIGEBEN, je 174 x 48px bei y 330. Die
-Schienenzeile bei y 404 nennt das Messgerät der Servoschiene und zeigt
-ihre Volt und Ampere, `5.02V  0.120A`, ohne Messwert `--V  --A`; mit dem
+NULLPUNKT, VERSORGUNG und ARM. 4px unter der letzten Zeile folgt die
+SET-Zeile, y 190 bis 238 auf LIVE und SWEEP und y 250 bis 298 auf RUDER:
+SET V und SET A, je 80 x 48px, 8px Abstand, und die Grafik bis zum Ende
+der Spalte, 180 x 48px. Darunter haben LIVE und SWEEP TEMPO, die
+Bezeichnung bei y 244 und den Regler bei y 268 bis 308. Alle drei haben
+die Typzeile bei y 318 bis 350. LIVE hat ZENTRIEREN und FREIGEBEN, SWEEP
+hat SWEEP und FREIGEBEN, je 174 x 48px bei y 356. Die Schienenzeile bei
+y 412 nennt das Messgerät dessen, was das Servo speist, und zeigt seine
+Volt und Ampere, `5.02V  0.120A`, ohne Messwert `--V  --A`; mit dem
 Netzteilmodell des Panels folgt SIMULIERT auf den Namen.
+
+SET V und SET A sind die Sollwerte von SUPPLY, keine Kopie. Tippen öffnet
+das Tastenfeld von SUPPLY, SPANNUNG oder STROMBEGRENZUNG, in den Grenzen von
+SUPPLY, eingeengt durch dessen AUSGANGSGRENZEN. Ein Wert, der bei
+eingeschaltetem Ausgang eingegeben wird, wartet auf die Rückfrage von
+SUPPLY, wo OPTIONEN, RÜCKFRAGE IM BETRIEB, TASTENFELD sie verlangt, bei ARMED
+wie bei SAFE; eine Spannung über 6.0V wartet auf das 2s-Halten der
+HV-Warnung. Solange ein Programmierport den PD mini hält, sind die Werte
+blass, und Tippen nennt den Grund im Alarmband. Am Programmierport des
+rbmod-Carriers läuft das Servo an den festen PROG 5V: die Zeile zeigt
+`PROG 5V` über `5V FEST` und nimmt kein Tippen an. Die Grafik ist die von
+TEST: Spannung, Strom und Leistung der letzten 9.0s, ein Punkt je
+Messwert, auf den Skalen des Messgeräts der Servoschiene; am
+Programmierport des Carriers die PROG 5V vom INA3221-Kanal, der sie
+überwacht, ein Punkt je 50ms-Fenster, und die Schienenzeile nennt
+`PROG 5V`. Ein neuer Messwert zeichnet nur die Grafik und die
+Schienenzeile neu.
 
 | Zeile | Grün | Gelb | Rot |
 | --- | --- | --- | --- |
@@ -1980,19 +2001,20 @@ wird verworfen, wenn in diesem Frame FREIGEBEN wartet.
 
 Die Typzeile auf LIVE, SWEEP und RUDER zeigt den aktiven Typ, die
 Pulsrate und den Pulsbereich. Einstellungen, die ein ungeeignetes Servo
-zerstören können, erscheinen in der Gefahrenfarbe. Die 44px hohe Typzeile
+zerstören können, erscheinen in der Gefahrenfarbe. Die 32px hohe Typzeile
 zeigt `STANDARD PWM  50Hz  1000-2000`: Typ, Pulsrate und PULS MIN bis
 PULS MAX in Mikrosekunden, mit je zwei Leerzeichen. Die längste Zeile, ein
 Typ mit 13 Zeichen bei 560Hz und zwei vierstelligen Endwerten, braucht 32
 der 35 verfügbaren Zeichen. Deshalb trägt der Pulsbereich keine Einheit.
 Eingetragene Pulsbreiten erscheinen sofort.
 
-Die Schienenzeile der Karte BEREIT bei y 404 zeigt die Servoschiene, wie
-ihr Messgerät sie misst: den Namen des Messgeräts, dann die Spannung in
-Hundertstel Volt und den Strom in Tausendstel Ampere, `5.02V  0.120A`.
-STROM auf LIVE zeigt den Strom zusätzlich in Hundertsteln. TEST zeigt den
-Verlauf von Spannung, Strom und Leistung unter den Grenzen von SUPPLY.
-Kein SERVO-Bildschirm zeigt die Leistung als Zahl.
+Die Schienenzeile der Karte BEREIT bei y 404, auf LIVE, SWEEP und RUDER
+bei y 412, zeigt die Servoschiene, wie ihr Messgerät sie misst: den Namen
+des Messgeräts, dann die Spannung in Hundertstel Volt und den Strom in
+Tausendstel Ampere, `5.02V  0.120A`. STROM auf LIVE zeigt den Strom
+zusätzlich in Hundertsteln. TEST zeigt den Verlauf von Spannung, Strom
+und Leistung unter den Grenzen von SUPPLY, LIVE, SWEEP und RUDER rechts
+von SET A. Kein SERVO-Bildschirm zeigt die Leistung als Zahl.
 
 | Messgerät der Servoschiene | Name in der Zeile | STROM auf LIVE, die Zeile und der Verlauf auf TEST zeigen |
 | --- | --- | --- |
