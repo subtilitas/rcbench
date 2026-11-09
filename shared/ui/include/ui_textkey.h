@@ -40,8 +40,20 @@
  * takes the name only when fm_name_check() (fm_name.h) does, as typed.  A
  * refused OK keeps the keyboard open, and its line says why: an empty
  * name, over 59 bytes, one of  " * / : < > ? \ |  , a space or a full
- * stop at an end, a device name.  DEL takes the last character, also one
- * of two bytes.
+ * stop at an end, a device name.
+ *
+ * The file-name keyboard has a cursor, a 2px bar before the character it
+ * stands at.  It opens at the end of the name; ui_textkey_set_cursor()
+ * moves it.  A key types at the cursor, and DEL takes the character before
+ * it, also one of two bytes.  A key that would take the text past its most
+ * is refused, the text and the cursor as they were.  CLR empties the text
+ * and puts the cursor at 0.  "<-" and "->" (UI_TK_LEFT, UI_TK_RIGHT) move
+ * it one character, an ä or a ß one character too.  A tap in the text
+ * field puts it in the gap nearest the tap, at the end right of the text.
+ * The bottom row is SPACE (3 columns), CLR, "<-" and "->" (1 each), CANCEL
+ * and OK (2 each).  A text longer than the field shows the characters
+ * around the cursor; the window moves only as far as the cursor needs.
+ * The cursor works for any @c max_len a caller sets after the open.
  *
  * Opened for the text editor (ui_textkey_open_editor()) it types into a
  * text the caller holds, one key per event: it keeps no text, draws no
@@ -93,6 +105,8 @@ extern "C" {
 #define UI_TEXTKEY_PASS_MIN 8
 /** @brief The longest Wi-Fi network name, in bytes. */
 #define UI_TEXTKEY_SSID_MAX 32
+/** @brief The room between the text field's edges and its text, px. */
+#define UI_TEXTKEY_FIELD_IN 10
 
 /** @brief The keys: forty characters in four rows of ten, then SPACE, CLR,
  *         CANCEL and OK along the bottom. */
@@ -110,7 +124,9 @@ enum {
 #define UI_TK_SHOW UI_TK_KEYS
 /** @brief The editor's bottom row after SHOW: ENTER, "<-", "->" and DONE;
  *         zero size outside the editor, where CLR, CANCEL, OK and SHOW
- *         are zero size in turn.  SPACE is UI_TK_SPACE in both. */
+ *         are zero size in turn.  SPACE is UI_TK_SPACE in both.  The
+ *         file-name keyboard shows "<-" and "->" too, beside its SPACE,
+ *         CLR, CANCEL and OK. */
 enum {
     UI_TK_ENTER = UI_TK_SHOW + 1,    /**< ENTER: a line end              */
     UI_TK_LEFT,                      /**< "<-": the cursor one left      */
@@ -173,6 +189,11 @@ typedef struct {
     char       title[48];   /**< what is typed, top left              */
     char       text[UI_TEXTKEY_PASS_MAX + 1]; /**< the text, '\0'-ended */
     int        len;         /**< bytes in text                        */
+    int        cur;         /**< file name: the cursor, a byte offset
+                                 at the start of a character, 0 to
+                                 @c len                               */
+    int        view;        /**< file name: the first character the
+                                 field shows                          */
     int        max_len;     /**< the most it takes                    */
     bool       refused;     /**< OK on an empty name                  */
     bool       search;      /**< a search pattern: see the top        */
@@ -255,6 +276,103 @@ void ui_textkey_open_wifi(ui_textkey_t *k, gfx_rect_t area,
  */
 void ui_textkey_open_file(ui_textkey_t *k, gfx_rect_t area,
                           const char *title, const char *text);
+
+/**
+ * @brief Put the cursor of a file-name keyboard at byte @p byte of its
+ *        text, and move the field's window so it shows.
+ * @param k    The keyboard; NULL does nothing.
+ * @param byte The byte offset: below 0 is 0, past the text its end, inside
+ *             a character that character's start.
+ */
+void ui_textkey_set_cursor(ui_textkey_t *k, int byte);
+
+/**
+ * @brief Where a file name's cursor starts for a rename: before the last
+ *        full stop, so the extension stays as it is.
+ * @param name The name; NULL is "".
+ * @return The byte offset of the last full stop; the name's length when it
+ *         has none or its only one is the first byte.
+ */
+int ui_textkey_stem_end(const char *name);
+
+/**
+ * @brief Type @p s at the cursor of a file-name keyboard, the cursor after
+ *        it.
+ * @param k The keyboard; NULL does nothing.
+ * @param s The bytes, whole characters.
+ * @return True when typed; false for a NULL keyboard, a NULL or empty
+ *         @p s, and when the text would pass @c max_len bytes or the
+ *         buffer: then the text and the cursor stay as they were.
+ */
+bool ui_textkey_insert(ui_textkey_t *k, const char *s);
+
+/**
+ * @brief DEL on a file-name keyboard: the character before the cursor, all
+ *        its bytes, goes.  At 0 nothing changes.
+ * @param k The keyboard; NULL does nothing.
+ */
+void ui_textkey_backspace(ui_textkey_t *k);
+
+/**
+ * @brief Move the cursor of a file-name keyboard by @p chars characters.
+ * @param k     The keyboard; NULL does nothing.
+ * @param chars Characters to the right, or to the left when negative; it
+ *              stops at either end of the text.
+ */
+void ui_textkey_move(ui_textkey_t *k, int chars);
+
+/**
+ * @brief A tap at @p x in the field of a file-name keyboard: the cursor
+ *        goes to the gap between two shown characters nearest @p x, to the
+ *        end right of the text.
+ * @param k The keyboard; NULL does nothing.
+ * @param x The tap, in the keyboard's coordinates.
+ */
+void ui_textkey_tap_text(ui_textkey_t *k, int x);
+
+/**
+ * @brief The text field: the sunk box under the title, its text 10px in
+ *        from each side.  A tap in it on a file-name keyboard places the
+ *        cursor.
+ * @param k The keyboard.
+ * @return The box, in the keyboard's coordinates; zero size for NULL and
+ *         for the editor's keyboard, which has no field.
+ */
+gfx_rect_t ui_textkey_field_rect(const ui_textkey_t *k);
+
+/**
+ * @brief The field's face: 20 x 36 when UI_TEXTKEY_MAX characters and a
+ *        caret fit the field with 10px each side and the face's height
+ *        fits it, else 16 x 28.
+ * @param k The keyboard.
+ * @return The face; 16 x 28 for NULL.
+ */
+const gfx_font_t *ui_textkey_field_face(const ui_textkey_t *k);
+
+/**
+ * @brief How many characters a file-name keyboard's field shows: the
+ *        cells of ui_textkey_field_face() in the field less 20px, 48 at
+ *        20 x 36 in FILES' 1008px keyboard.
+ * @param k The keyboard.
+ * @return The count, 1 at least; 1 for NULL.
+ */
+int ui_textkey_field_cells(const ui_textkey_t *k);
+
+/**
+ * @brief The first character a file-name keyboard's field shows: @c view,
+ *        moved as little as keeps the cursor shown, and back towards 0
+ *        while the field has room after the text.
+ * @param k The keyboard.
+ * @return The character index, 0 to the text's characters; 0 for NULL.
+ */
+int ui_textkey_view(const ui_textkey_t *k);
+
+/**
+ * @brief The characters of a file-name keyboard's text before its cursor.
+ * @param k The keyboard.
+ * @return The count; 0 for NULL.
+ */
+int ui_textkey_cursor_chars(const ui_textkey_t *k);
 
 /**
  * @brief Open for the text editor; see the top of this file.  Lower case
@@ -341,9 +459,10 @@ ui_textkey_result_t ui_textkey_event(ui_textkey_t *k, const touch_event_t *evt,
  *        area, or at UI_KEYS_FOOT (4px above the alert band, body
  *        coordinates) where the area reaches further.
  * @param k   The keyboard.
- * @param key The key: 0 to UI_TK_OK, UI_TK_SHOW on a password, the
- *            characters from 10, UI_TK_SPACE and UI_TK_ENTER to UI_TK_DONE
- *            in the editor.
+ * @param key The key: 0 to UI_TK_OK, UI_TK_SHOW on a password,
+ *            UI_TK_LEFT and UI_TK_RIGHT on a file name, the characters
+ *            from 10, UI_TK_SPACE and UI_TK_ENTER to UI_TK_DONE in the
+ *            editor.
  * @return Its rectangle; zero size for one out of range or not shown.
  */
 gfx_rect_t ui_textkey_key_rect(const ui_textkey_t *k, int key);
@@ -362,7 +481,8 @@ const char *ui_textkey_label(int key);
  * @return "*" for UI_TK_MARK in a search, "/" for UI_TK_DOT for a folder,
  *         the layer's character on a Wi-Fi keyboard and in the editor, ""
  *         for a blank key and the editor's digit row, the editor's ENTER,
- *         "<-", "->" and DONE, else ui_textkey_label().
+ *         "<-", "->" and DONE, a file name's "<-" and "->", else
+ *         ui_textkey_label().
  */
 const char *ui_textkey_key_label(const ui_textkey_t *k, int key);
 
@@ -393,7 +513,8 @@ const gfx_font_t *ui_textkey_word_font(const ui_textkey_t *k);
  * @brief The whole keyboard over its area: the title and the count in
  *        10 x 20 (8 x 16 where they do not fit side by side), the text in
  *        20 x 36 (16 x 28 in a field narrower than UI_TEXTKEY_MAX
- *        characters and the caret), the character keys in
+ *        characters and the caret; a file name with its cursor as a 2px
+ *        bar in the accent, no caret), the character keys in
  *        ui_textkey_char_font() and the word keys in
  *        ui_textkey_word_font().  The editor's keyboard with a see-through
  *        above 0 blends its fills over what the canvas holds, the labels

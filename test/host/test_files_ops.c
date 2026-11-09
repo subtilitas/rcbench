@@ -16,6 +16,7 @@
  * - an_arm_during_a_copy_stops_it_at_the_next_chunk
  * - move_takes_a_file_across
  * - rename_takes_the_name_typed
+ * - rename_types_before_the_extension_of_a_file
  * - a_name_the_card_refuses_keeps_the_keyboard_open
  * - delete_asks_and_takes_a_runs_report_along
  * - cancel_and_the_home_tag_close_the_question
@@ -232,6 +233,45 @@ TEST_CASE(rename_takes_the_name_typed)
     tk_key(UI_TK_CANCEL);
     CHECK_EQ(files_screen_view(), FILES_VIEW_PANES);
     CHECK(fk_get(&g_h.card, "Bench notes.txt") != NULL);
+}
+
+TEST_CASE(rename_types_before_the_extension_of_a_file)
+{
+    fresh();
+    fk_file(&g_h.card, "MOTOR042.CSV", NULL, 100u);
+    fk_file(&g_h.card, "README", NULL, 10u);
+    fk_dir(&g_h.card, "RUN.2");
+    tap_foot(FS_SPOT_RESCAN);
+    /* A file: the cursor before its last full stop. */
+    CHECK(pick(0, "MOTOR042.CSV"));
+    tap_foot(FS_SPOT_RENAME);
+    CHECK_EQ(files_screen_view(), FILES_VIEW_NAME);
+    tk_type("_kv");
+    tk_key(UI_TK_OK);
+    CHECK_EQ(files_screen_view(), FILES_VIEW_PANES);
+    CHECK(fk_get(&g_h.card, "MOTOR042.CSV") == NULL);
+    CHECK(fk_get(&g_h.card, "MOTOR042_kv.CSV") != NULL);
+    /* No full stop: at the end. */
+    CHECK(pick(0, "README"));
+    tap_foot(FS_SPOT_RENAME);
+    tk_type("2");
+    tk_key(UI_TK_OK);
+    CHECK(fk_get(&g_h.card, "README2") != NULL);
+    /* A folder: at the end, its full stop or not. */
+    CHECK(pick(0, "RUN.2"));
+    tap_foot(FS_SPOT_RENAME);
+    tk_type("b");
+    tk_key(UI_TK_OK);
+    CHECK(fk_get(&g_h.card, "RUN.2b") != NULL);
+    /* "<-" twice and DEL: the cursor before "E2", the "M" goes. */
+    CHECK(pick(0, "README2"));
+    tap_foot(FS_SPOT_RENAME);
+    tk_key(UI_TK_LEFT);
+    tk_key(UI_TK_LEFT);
+    tk_key(UI_TK_DEL);
+    tk_key(UI_TK_OK);
+    CHECK(fk_get(&g_h.card, "READE2") != NULL);
+    draw();
 }
 
 TEST_CASE(a_name_the_card_refuses_keeps_the_keyboard_open)
@@ -719,6 +759,7 @@ int main(void)
     RUN(an_arm_during_a_copy_stops_it_at_the_next_chunk);
     RUN(move_takes_a_file_across);
     RUN(rename_takes_the_name_typed);
+    RUN(rename_types_before_the_extension_of_a_file);
     RUN(a_name_the_card_refuses_keeps_the_keyboard_open);
     RUN(delete_asks_and_takes_a_runs_report_along);
     RUN(delete_names_a_runs_report_only_when_the_card_holds_it);
