@@ -699,6 +699,55 @@ TEST_CASE(imu_off_with_calsw_1_unanswered_sends_the_exit_at_the_next_connection)
     CHECK_EQ(r.nsent, at + 5u);              /* once */
 }
 
+/* The mode the sensor runs, as RUDDER AUTO's yaw gate reads it
+ * (imu_view_t.nine_axis): SETUP's ALGORITHM at the first values.  9-AXIS
+ * asked with the unlock refused: still 6-AXIS, the angles go on.  At the
+ * next connection unlock, AXIS6 and SAVE go and are taken: 9-AXIS. */
+TEST_CASE(nine_axis_counts_once_the_sensor_took_its_save)
+{
+    rig_t r;
+    connected(&r);                                   /* 6-AXIS */
+    imu_view_t v;
+    imu_ctl_view(&r.c, &v);
+    CHECK(!v.nine_axis);
+    r.sim.fail = BSIM_Q_WRITE;
+    r.sim.fail_status = 0x10Eu;
+    const unsigned at = r.nsent;
+    rig_cfg(&r, true, RIG_ADDR, 2, false);           /* 9-AXIS asked */
+    rig_stream(&r, 300u, 20u, 0.0f, 0.0f, 0.0f);
+    CHECK_EQ(r.nsent, at + 1u);
+    CHECK(rig_sent_unlock(&r, at));
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.err, IMU_ERR_WRITE);
+    CHECK_EQ(v.link, IMU_LINK_CONNECTED);
+    CHECK(v.r.valid);
+    CHECK(!v.nine_axis);
+    r.sim.fail = 0u;
+    rig_stream(&r, 1000u, 20u, 0.0f, 0.0f, 0.0f);
+    CHECK_EQ(r.nsent, at + 1u);                      /* held */
+    imu_ctl_view(&r.c, &v);
+    CHECK(!v.nine_axis);
+    bsim_drop(&r.sim, r.t, 0x208u);
+    (void)rig_settle(&r, BLEU_RETRY_MS + 2000u);
+    CHECK(imu_ble_up(&r.c.ble));
+    rig_stream(&r, 1000u, 20u, 0.0f, 0.0f, 0.0f);
+    CHECK_EQ(r.nsent, at + 4u);
+    CHECK(rig_sent_unlock(&r, at + 1u));
+    CHECK(rig_sent_is(&r, at + 2u, WIT_REG_AXIS6, 0u, 0u));
+    CHECK(rig_sent_is(&r, at + 3u, WIT_REG_SAVE, 0u, 0u));
+    imu_ctl_view(&r.c, &v);
+    CHECK(v.nine_axis);
+
+    /* 9-AXIS in SETUP from the start: 9-AXIS at the first values. */
+    rig_t q;
+    rig_init(&q);
+    rig_cfg(&q, true, RIG_ADDR, 2, false);
+    (void)rig_settle(&q, 2000u);
+    rig_stream(&q, 100u, 20u, 1.0f, 2.0f, 3.0f);
+    imu_ctl_view(&q.c, &v);
+    CHECK(v.nine_axis);
+}
+
 /* IMU OFF while the unlock of a RATE and ALGORITHM change waits for its
  * answer: the write fails, and both writes are due again.  Unlock, RATE,
  * AXIS6 and SAVE go at the next connection, with SETUP's values. */
@@ -946,6 +995,7 @@ int main(void)
     RUN(a_device_without_the_service_is_not_a_witmotion_sensor);
     RUN(a_dropped_link_comes_back_and_keeps_the_zero);
     RUN(a_refused_write_drops_the_rest_of_its_group);
+    RUN(nine_axis_counts_once_the_sensor_took_its_save);
     RUN(calibrate_sends_calsw_1_then_after_3s_calsw_0_and_save);
     RUN(calibrate_with_the_frames_lost_ends_failed);
     RUN(calibrate_with_frames_300ms_apart_ends_failed);

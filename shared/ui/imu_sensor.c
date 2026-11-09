@@ -95,6 +95,12 @@ void imu_sensor_values(imu_sensor_t *s, uint8_t rate_code, bool six,
     if (send && s->six != six) {
         s->algo_due = true;
     }
+    if (!send) {
+        /* The first values: the mode the sensor was left in by the SAVE
+         * of an earlier session, as SETUP keeps it. */
+        s->six_held   = six;
+        s->mode_known = true;
+    }
     s->rate_code = rate_code;
     s->six = six;
 }
@@ -209,6 +215,7 @@ void imu_sensor_tick(imu_sensor_t *s, uint32_t now_ms, bool link_up)
         }
         if (s->algo_due) {
             queue(s, b, wit_cmd_axis6(b, s->six), why);
+            s->six_sent = s->six;
         }
         queue_save(s, why);
         s->rsw_due = false;
@@ -292,6 +299,20 @@ void imu_sensor_flush(imu_sensor_t *s)
     s->held = true;
 }
 
+void imu_sensor_written(imu_sensor_t *s)
+{
+    if ((s->sent_for & IMU_OUT_ALGO) == 0u) {
+        return;
+    }
+    for (uint8_t i = 0u; i < s->out_n; ++i) {
+        if ((s->out_for[(s->out_head + i) % IMU_OUTBOX] & IMU_OUT_ALGO) != 0u) {
+            return;                     /* the group's SAVE still to go */
+        }
+    }
+    s->six_held   = s->six_sent;
+    s->mode_known = true;
+}
+
 imu_link_t imu_sensor_link(const imu_sensor_t *s)
 {
     if (s->m.r.valid) {
@@ -305,6 +326,7 @@ void imu_sensor_view(const imu_sensor_t *s, imu_view_t *out)
     out->cal = s->cal;
     out->cal_left_ms = (s->cal == IMU_CAL_RUNNING) ? s->cal_left_ms : 0u;
     out->r = s->m.r;
+    out->nine_axis = s->mode_known && !s->six_held;
 }
 
 void imu_handout_reset(imu_handout_t *h)

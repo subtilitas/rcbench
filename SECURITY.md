@@ -164,6 +164,8 @@ and writes the servo's end points, which the servo keeps. What limits it:
 AUTO runs only ARMED, starts only after its 2s hold at the bench, keeps
 the current and stall guards of every servo run, and ends on STOP. A
 command write the panel sends reaches whichever device holds the link.
+RUDDER's zero taken on the IMU is never saved and is gone at the next
+restart; only a zero on the wired AS5600 is kept.
 
 Two classes of report apply.
 

@@ -41,7 +41,7 @@ LENGTH is the distance from the hinge line to the trailing edge: 0 or 10 to 500m
 | 1000us, 2000us | refused; drawn dimmed | commands that pulse, held to TRAVEL and the pulse range of the type in force |
 | CENTER | refused; drawn dimmed | commands PULSE CENTER plus TRIM |
 | Rotary knob | refused; the turn is not kept | moves the horn from the commanded value, as on LIVE; refused while AUTO runs |
-| ZERO | takes the current angle as the neutral and clears MAX; grey without a reading; the zero is saved with its source and comes back after a restart (not for the IMU's yaw in 6-AXIS); another ANGLE SOURCE, the IMU's other AXIS, SIGN or algorithm, or a ZERO or CLEAR ZERO on the IMU screen, drops the zero and MAX | the same; refused while AUTO runs |
+| ZERO | takes the current angle as the neutral and clears MAX; grey without a reading; a zero on the AS5600 is saved and comes back after a restart; a zero on the IMU lasts until the restart, since its link is not authenticated; another ANGLE SOURCE, the IMU's other AXIS, SIGN or algorithm, or a ZERO or CLEAR ZERO on the IMU screen, drops the zero and MAX | the same; refused while AUTO runs |
 | RESET MAX | clears MAX; the zero stays | the same; refused while AUTO runs |
 
 1000us, CENTER and 2000us act on press. LENGTH, ZERO and RESET MAX act when you release a tap on them. PULSE below the buttons shows the commanded pulse. DISARM, STOP or leaving the screen switches the bench to SAFE. [RUDDER AUTO](#rudder-auto) programs the end points on a screen of its own.
@@ -117,7 +117,7 @@ Which end point moves which side: on a Hitec D series servo set to CW, LEFT END 
 
 The second line shows the result; after a PASS it gives each end point before and after as the programming page shows it, with the unit: `counts` for a Hitec D series servo (8192 the center, as on the HITEC page's TRAVEL), `raw value` for KST and a classic Hitec servo. The third names the report, RUDDRnnn.TXT. If an unsuccessful run wrote settings or interrupted a write, it instead shows `RESTORE IN KST`, or `LOAD HITEC001 IN FILES` for a Hitec servo, until a read or write on the KST or HITEC page shows the values before the run or values the run did not leave.
 
-With the IMU as ANGLE SOURCE on AXIS Z (yaw) and IMU algorithm 6-AXIS, the ANGLE row reads `IMU YAW NEEDS 9-AXIS` in red and the hold is refused: without the magnetometer yaw drifts about 2.4° in 100s, more than TOLERANCE. A tap on the row offers `SWITCH IMU TO 9-AXIS`, `USE IMU AXIS X (ROLL)` and `USE IMU AXIS Y (PITCH)`; a pick sets and saves it. Another axis or algorithm needs a new ZERO.
+With the IMU as ANGLE SOURCE on AXIS Z (yaw) and IMU algorithm 6-AXIS, the ANGLE row reads `IMU YAW NEEDS 9-AXIS` in red and the hold is refused: without the magnetometer yaw drifts about 2.4° in 100s, more than TOLERANCE. A tap on the row offers `SWITCH IMU TO 9-AXIS`, `USE IMU AXIS X (ROLL)` and `USE IMU AXIS Y (PITCH)`; a pick sets and saves it. Yaw opens once the sensor took 9-AXIS, the write and its SAVE; until then, or after a refused write, the row reads `IMU 9-AXIS NOT CONFIRMED` in red and a tap offers the same list. Another axis or algorithm needs a new ZERO.
 
 ![RUDDER AUTO's SETTINGS list](view:servo-rudder-auto-settings)
 

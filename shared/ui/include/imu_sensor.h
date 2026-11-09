@@ -78,6 +78,12 @@ typedef struct {
     uint32_t     cal_left_ms;    /**< as of the last tick */
     bool         rate_due;       /**< RATE to send once connected */
     bool         algo_due;       /**< ALGORITHM to send once connected */
+    bool         mode_known;     /**< six_held holds the sensor's mode */
+    bool         six_held;       /**< the sensor runs 6-AXIS: SETUP's
+                                      ALGORITHM at the first values, then
+                                      each ALGORITHM group it took to its
+                                      SAVE */
+    bool         six_sent;       /**< the ALGORITHM of the group queued */
     bool         rsw_due;        /**< RSW IMU_RSW to send once connected */
     bool         rsw_checked;    /**< this connection's frame types were
                                       held against IMU_RSW */
@@ -209,6 +215,15 @@ bool imu_sensor_quiet(const imu_sensor_t *s);
  * @param s The sensor, not NULL.
  */
 void imu_sensor_flush(imu_sensor_t *s);
+
+/**
+ * @brief The command write in flight was taken.  The SAVE of an ALGORITHM
+ *        group, its last command, makes the group's ALGORITHM the mode the
+ *        sensor runs (six_held); a group cut by a refused write
+ *        (imu_sensor_flush()) leaves the mode as it was.
+ * @param s The sensor, not NULL.
+ */
+void imu_sensor_written(imu_sensor_t *s);
 
 /**
  * @brief The sensor's part of the link state, with its stream flowing.

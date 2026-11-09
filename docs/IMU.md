@@ -141,6 +141,8 @@ pairing or bonding. A BLE device in range that wins the connection to the
 stored address and serves the ISSC service can send angle frames the panel
 takes as the sensor's. RUDDER AUTO's run with ANGLE SOURCE IMU programs end
 points from them. `SECURITY.md` lists this as a current limitation.
+RUDDER's zero on the IMU therefore lasts until the restart and is never
+saved; a zero on the AS5600 is.
 
 RUDDER AUTO refuses the IMU's AXIS Z, yaw, while IMU algorithm is 6-AXIS.
 6-AXIS has no magnetometer to hold yaw: a BWT901CL on yaw drifts 2.4° in
@@ -150,9 +152,14 @@ card's ANGLE row reads `IMU YAW NEEDS 9-AXIS` in red and ARM + START is
 refused. A tap on the row opens the IMU YAW list: `SWITCH IMU TO 9-AXIS`,
 `USE IMU AXIS X (ROLL)`, `USE IMU AXIS Y (PITCH)`. A pick writes IMU
 algorithm or IMU axis and saves it, as SETUP > SENSORS does; the panel
-sends AXIS6 and SAVE once the sensor is connected (below). Yaw drift in
-9-AXIS is not measured. Another IMU algorithm drops RUDDER's zero and MAX,
-as another AXIS or SIGN does.
+sends AXIS6 and SAVE once the sensor is connected (below). Yaw counts as
+9-AXIS only once the sensor took it: SETUP's algorithm at the first
+values of a connection, then each AXIS6 group whose SAVE the sensor's
+module acknowledged. Until then, and after a refused write, which holds
+the group until the next connection while angle frames go on, the ANGLE
+row reads `IMU 9-AXIS NOT CONFIRMED` in red, and a tap opens the same
+list. Yaw drift in 9-AXIS is not measured. Another IMU algorithm drops
+RUDDER's zero and MAX, as another AXIS or SIGN does.
 
 ## The sensor
 

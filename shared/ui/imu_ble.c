@@ -55,6 +55,7 @@ void imu_ble_on(imu_ble_t *l, bool on, uint32_t now_ms)
         l->op_err = IMU_ERR_NONE;
         l->op_code = 0u;
         l->wr_failed = false;
+        l->wr_ok = false;
     }
 }
 
@@ -161,6 +162,9 @@ static void follow_write(imu_ble_t *l)
         l->op_err = IMU_ERR_WRITE;
         l->op_code = l->b.wr_status;
     }
+    if (l->wr_was == BLEU_WR_BUSY && l->b.wr == BLEU_WR_OK) {
+        l->wr_ok = true;
+    }
     l->wr_was = l->b.wr;
 }
 
@@ -184,6 +188,13 @@ bool imu_ble_write_failed(imu_ble_t *l)
 {
     const bool was = l->wr_failed;
     l->wr_failed = false;
+    return was;
+}
+
+bool imu_ble_write_ok(imu_ble_t *l)
+{
+    const bool was = l->wr_ok;
+    l->wr_ok = false;
     return was;
 }
 

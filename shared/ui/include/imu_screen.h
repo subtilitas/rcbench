@@ -92,6 +92,11 @@ typedef struct {
     uint16_t      err_code;        /**< the host stack's status for it */
     imu_cal_t     cal;             /**< the calibration */
     uint32_t      cal_left_ms;     /**< of the 3s hold still */
+    bool          nine_axis;       /**< the sensor runs 9-AXIS as far as
+                                        it confirmed: SETUP's ALGORITHM at
+                                        the start, then each ALGORITHM
+                                        write it took to its SAVE
+                                        (imu_sensor_written()) */
     imu_reading_t r;               /**< the reading */
 } imu_view_t;
 

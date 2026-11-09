@@ -154,7 +154,9 @@ bietet weder Pairing noch Bonding. Ein BLE-Gerät in Reichweite, das die
 Verbindung zur gespeicherten Adresse bekommt und den ISSC-Dienst anbietet,
 kann Winkel-Frames senden, die das Panel als die des Sensors nimmt. Der
 Lauf von RUDER AUTO mit WINKELQUELLE IMU programmiert daraus Endpoints.
-`SECURITY.md` führt das als aktuelle Einschränkung.
+`SECURITY.md` führt das als aktuelle Einschränkung. Der Nullpunkt von
+RUDER an der IMU gilt deshalb bis zum Neustart und wird nie gespeichert;
+ein Nullpunkt am AS5600 schon.
 
 RUDER AUTO verweigert die IMU-Achse Z, Gieren, solange der IMU-Algorithmus
 6-AXIS ist. 6-AXIS hat kein Magnetometer, das das Gieren hält: eine
@@ -166,9 +168,16 @@ wird verweigert. Ein Tippen auf die Zeile öffnet die Liste IMU-GIEREN:
 `IMU AUF 9-AXIS SCHALTEN`, `IMU-ACHSE X NEHMEN (ROLLEN)`, `IMU-ACHSE Y
 NEHMEN (NICKEN)`. Eine Wahl schreibt IMU-Algorithmus oder IMU-Achse und
 speichert sie wie SETUP > SENSOREN; das Panel sendet AXIS6 und
-SAVE, sobald der Sensor verbunden ist (unten). Die Drift des Gierens in
-9-AXIS ist nicht gemessen. Ein anderer IMU-Algorithmus verwirft Nullpunkt
-und MAX von RUDER, wie eine andere Achse oder ein anderes Vorzeichen.
+SAVE, sobald der Sensor verbunden ist (unten). Gieren gilt erst als
+9-AXIS, wenn der Sensor es übernommen hat: der Algorithmus aus SETUP bei
+den ersten Werten einer Verbindung, danach jede AXIS6-Gruppe, deren SAVE
+das Modul des Sensors bestätigt hat. Bis dahin, und nach einem
+abgewiesenen Schreiben, das die Gruppe bis zur nächsten Verbindung
+zurückhält, während die Winkel-Frames weiterlaufen, zeigt die Zeile
+WINKEL `IMU 9-AXIS NICHT BESTÄTIGT` in Rot, und ein Tippen öffnet dieselbe
+Liste. Die Drift des Gierens in 9-AXIS ist nicht gemessen. Ein anderer
+IMU-Algorithmus verwirft Nullpunkt und MAX von RUDER, wie eine andere
+Achse oder ein anderes Vorzeichen.
 
 ## Der Sensor
 
