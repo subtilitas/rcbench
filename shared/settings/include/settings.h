@@ -225,6 +225,9 @@ typedef enum {
     SET_RUDDER_DEFL_HI,
     SET_RUDDER_MARGIN,
     SET_RUDDER_TOL,
+    /* --- RUDDER's saved zero --------------------------------------------- */
+    SET_RUDDER_ZERO_DEG,
+    SET_RUDDER_ZERO_KEY,
 
     SETTING_COUNT
 } setting_id_t;

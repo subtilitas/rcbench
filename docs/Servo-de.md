@@ -1602,9 +1602,20 @@ aus“ ohne Lineal am Modell. Die Geometrie steht in
 - NULLPUNKT speichert seine Referenz relativ zum rohen Zählwert 0 der
   Quelle. Eine spätere Änderung von SENSOR-MITTE verändert den Ausschlag
   deshalb nicht. Änderst du WINKELQUELLE, IMU-Achse oder IMU-Vorzeichen,
-  werden Nullpunkt und MAX verworfen. Dasselbe gilt für NULLPUNKT und
-  NULLPUNKT LÖSCHEN auf der IMU-Seite. Die Anzeige entspricht dann wieder
-  dem Zustand vor dem Setzen des RUDER-Nullpunkts.
+  werden Nullpunkt und MAX verworfen, ebenso bei einem anderen
+  IMU-Algorithmus. Dasselbe gilt für NULLPUNKT und NULLPUNKT LÖSCHEN auf
+  der IMU-Seite. Die Anzeige entspricht dann wieder dem Zustand vor dem
+  Setzen des RUDER-Nullpunkts.
+- Der Nullpunkt übersteht einen Neustart. NULLPUNKT speichert ihn mit
+  seiner Quelle (Einstellungen `rud_zero` und `rud_zero_key`): der AS5600
+  oder die IMU mit Achse, Vorzeichen und Algorithmus. Beim Start kommt der
+  Nullpunkt zurück, solange die gespeicherte Quelle die aktuelle ist; MAX
+  nicht. Eine andere Quelle, Achse, ein anderes Vorzeichen oder ein
+  anderer Algorithmus in den Einstellungen verwirft auch den gespeicherten
+  Nullpunkt; ein Wechsel zurück braucht einen neuen NULLPUNKT. Nicht
+  gespeichert werden das Gieren der IMU in 6-AXIS, das mit dem Sensor neu
+  beginnt, und ein Nullpunkt nach NULLPUNKT oder NULLPUNKT LÖSCHEN auf der
+  IMU-Seite in derselben Sitzung, deren Winkel der Neustart nicht behält.
 - NULLPUNKT nimmt den aktuellen Winkel als Neutrallage der Fläche. Der
   Ausschlag ist der Winkel ab ihr, auf -180 bis unter 180° gefaltet. Vor
   NULLPUNKT ist der Ausschlag der Winkel selbst.

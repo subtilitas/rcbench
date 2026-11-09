@@ -1547,9 +1547,17 @@ the screen is `shared/ui/servo_rudder_panel.c`.
   The first state line names the source, `AS5600` or `IMU X+` with the
   IMU's AXIS and SIGN.
 - ZERO stores its reference relative to the source's raw count 0. Changing
-  ENC CENTER afterwards therefore leaves the measured deflection unchanged. Another ANGLE SOURCE, the IMU's other AXIS or
-  SIGN, or a ZERO or CLEAR ZERO on the IMU screen, drops the zero and MAX:
-  the screen reads as before ZERO.
+  ENC CENTER afterwards therefore leaves the measured deflection unchanged. Another ANGLE SOURCE, the IMU's other AXIS,
+  SIGN or algorithm, or a ZERO or CLEAR ZERO on the IMU screen, drops the
+  zero and MAX: the screen reads as before ZERO.
+- The zero survives a restart. ZERO saves it with its source (settings
+  `rud_zero` and `rud_zero_key`): the AS5600, or the IMU with its AXIS,
+  SIGN and algorithm. At the start the zero comes back while the saved
+  source is the one in force; MAX does not. Another source, AXIS, SIGN or
+  algorithm in the settings drops the saved zero too, so a change back
+  needs a new ZERO. Not saved: the IMU's yaw in 6-AXIS, which starts anew
+  with the sensor, and a zero taken after a ZERO or CLEAR ZERO on the IMU
+  screen in the same session, whose angles the restart does not keep.
 - ZERO takes the current angle as the surface's neutral. The deflection is the
   angle from it, wrapped to -180 up to 180°. Before ZERO the deflection is
   the angle itself.

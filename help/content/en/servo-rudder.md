@@ -41,7 +41,7 @@ LENGTH is the distance from the hinge line to the trailing edge: 0 or 10 to 500m
 | 1000us, 2000us | refused; drawn dimmed | commands that pulse, held to TRAVEL and the pulse range of the type in force |
 | CENTER | refused; drawn dimmed | commands PULSE CENTER plus TRIM |
 | Rotary knob | refused; the turn is not kept | moves the horn from the commanded value, as on LIVE; refused while AUTO runs |
-| ZERO | takes the current angle as the neutral and clears MAX; grey without a reading; another ANGLE SOURCE, the IMU's other AXIS or SIGN, or a ZERO or CLEAR ZERO on the IMU screen, drops the zero and MAX | the same; refused while AUTO runs |
+| ZERO | takes the current angle as the neutral and clears MAX; grey without a reading; the zero is saved with its source and comes back after a restart (not for the IMU's yaw in 6-AXIS); another ANGLE SOURCE, the IMU's other AXIS, SIGN or algorithm, or a ZERO or CLEAR ZERO on the IMU screen, drops the zero and MAX | the same; refused while AUTO runs |
 | RESET MAX | clears MAX; the zero stays | the same; refused while AUTO runs |
 
 1000us, CENTER and 2000us act on press. LENGTH, ZERO and RESET MAX act when you release a tap on them. PULSE below the buttons shows the commanded pulse. DISARM, STOP or leaving the screen switches the bench to SAFE. [RUDDER AUTO](#rudder-auto) programs the end points on a screen of its own.

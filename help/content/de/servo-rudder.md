@@ -41,7 +41,7 @@ LÄNGE ist der Abstand von der Scharnierlinie zur Hinterkante: 0 oder 10 bis 500
 | 1000us, 2000us | gesperrt und gedimmt | gibt diesen Puls vor, begrenzt durch WEG und den Pulsbereich des eingestellten Typs |
 | ZENTRIEREN | gesperrt und gedimmt | gibt PULS MITTE plus TRIMMUNG vor |
 | Drehknopf | gesperrt; Drehungen werden verworfen | bewegt das Horn ausgehend vom Sollwert, wie auf LIVE; bei laufendem AUTO gesperrt |
-| NULLPUNKT | setzt den aktuellen Winkel als Neutrallage und löscht MAX; ohne Messwert grau. Änderungen an WINKELQUELLE, IMU-Achse oder IMU-Vorzeichen sowie NULLPUNKT oder NULLPUNKT LÖSCHEN auf der IMU-Seite verwerfen Nullpunkt und MAX. | ebenso; bei laufendem AUTO gesperrt |
+| NULLPUNKT | setzt den aktuellen Winkel als Neutrallage und löscht MAX; ohne Messwert grau. Der Nullpunkt wird mit seiner Quelle gespeichert und kommt nach einem Neustart zurück (nicht für das Gieren der IMU in 6-AXIS). Änderungen an WINKELQUELLE, IMU-Achse, IMU-Vorzeichen oder IMU-Algorithmus sowie NULLPUNKT oder NULLPUNKT LÖSCHEN auf der IMU-Seite verwerfen Nullpunkt und MAX. | ebenso; bei laufendem AUTO gesperrt |
 | MAX LÖSCHEN | löscht MAX und behält den Nullpunkt | ebenso; bei laufendem AUTO gesperrt |
 
 1000us, ZENTRIEREN und 2000us wirken beim Drücken. LÄNGE, NULLPUNKT und MAX LÖSCHEN wirken, wenn du einen Tipp darauf loslässt. PULS unter den Tasten zeigt den Sollpuls. DISARM, STOP oder das Verlassen der Seite schaltet den Prüfstand auf SAFE. [RUDER AUTO](#ruder-auto) programmiert die Endpunkte auf einer eigenen Seite.

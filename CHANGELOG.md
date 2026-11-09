@@ -26,6 +26,11 @@ history is in git.
 
 ### Changed
 
+- RUDDER's zero survives a restart: ZERO saves it with its source, the
+  AS5600 or the IMU with its AXIS, SIGN and algorithm (`rud_zero`,
+  `rud_zero_key`), and it comes back while that source is in force. A
+  change of source, AXIS, SIGN or algorithm drops the saved zero; the
+  IMU's yaw in 6-AXIS is not saved.
 - RUDDER AUTO bounds each write: a register's new value lies within 50%
   of the model's first estimate for it, value0 x goal / measured0. A value
   past it ends the run as FAIL `end point too far from its estimate`
