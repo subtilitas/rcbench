@@ -92,9 +92,11 @@ TEST_CASE(auto_programs_both_end_points_to_the_goal_and_ends_safe)
     CHECK(ra.offs >= 1u);
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
     CHECK_STR_EQ(rauto_line(2, b, sizeof(b)), "REPORT RUDDR007.TXT");
+    /* KST's raw values, as the KST page shows them, named raw. */
     snprintf(want, sizeof(want), TR(RA_SET), 150u,
              (unsigned)servo(KST_F_LEFT_ANGLE), 150u,
-             (unsigned)servo(KST_F_RIGHT_ANGLE));
+             (unsigned)servo(KST_F_RIGHT_ANGLE),
+             ui_servo_str(SERVO_STR_RA_R_RAW));
     CHECK_STR_EQ(rauto_line(1, b, sizeof(b)), want);
     /* The programmer's run is over: a second START is free once ARMED. */
     CHECK(kst_panel_run_ready());

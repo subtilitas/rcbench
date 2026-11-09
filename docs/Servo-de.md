@@ -1930,6 +1930,23 @@ danach mit der Seite, die jeder bewegt, die Schreibvorgänge und Sitzungen,
 die Backup-Datei und jede Messung mit Registerwert, Winkel und der
 Angabe, ob sie innerhalb der Toleranz liegt.
 
+Endpoints erscheinen so, wie die Programmierseite sie zeigt, mit der
+Einheit in den Registerzeilen des Berichts (`(Zählwerte)`, `(Rohwert)`) und
+in der BESTANDEN-Zeile der Box:
+
+| Servo | Einheit | Beispiel |
+| --- | --- | --- |
+| Hitec D-Serie | Positions-Zählwerte, 8192 die Mitte, wie WEG auf der HITEC-Seite sie unter `ENDE LINKS (ZÄHLWERTE)` und `ENDE RECHTS (ZÄHLWERTE)` zeigt | `LEFT END (0xB2): 3351 vorher, 3466 nachher (Zählwerte)` |
+| Hitec Classic | die rohe Zelle, Einheit unbekannt, wie auf der HITEC-Seite | `LEFT END (CELL 0x14): 162 vorher, 170 nachher (Rohwert)` |
+| KST/Chaservo | der rohe Registerwert, Einheit unbekannt, wie auf der KST-Seite | `LEFT ANGLE:      150 vorher, 92 nachher (Rohwert)` |
+
+Der Lauf selbst rechnet mit dem Abstand jedes Endpoints von NEUTRAL (bei
+der D-Serie 8192 - LEFT END und RIGHT END - 8192); eine Funktion,
+`servo_rauto_reg_of()`, macht daraus den angezeigten Wert, und ein
+Host-Test hält sie gleich dem `hitec_run_to_reg()` des Schreibwegs. Der
+Bericht des ENDLAGENLAUFS nennt einen Endpoint der D-Serie weiter als
+Abstand von NEUTRAL.
+
 ### Grenzen
 
 - Das Modell ist linear: der Ausschlag am Endpuls gilt als proportional zum

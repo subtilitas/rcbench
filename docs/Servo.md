@@ -1833,6 +1833,22 @@ the targets, goals and tolerance, the end points before and after with
 the side each moves, the writes and sessions, the backup file, and every
 measure with its value, its angle and whether it lies within.
 
+End points read as the programming page shows them, with the unit named
+on the report's register lines (`(counts)`, `(raw value)`) and on the box's
+PASS line:
+
+| Servo | Unit | Example |
+| --- | --- | --- |
+| Hitec D series | position counts, 8192 the center, as the HITEC page's TRAVEL shows them under `LEFT END (COUNTS)` and `RIGHT END (COUNTS)` | `LEFT END (0xB2): 3351 before, 3466 after (counts)` |
+| Hitec classic | the raw cell, unit unknown, as on the HITEC page | `LEFT END (CELL 0x14): 162 before, 170 after (raw value)` |
+| KST/Chaservo | the raw register value, unit unknown, as on the KST page | `LEFT ANGLE:     150 before, 92 after (raw value)` |
+
+The run itself works in the distance of each end point from NEUTRAL (on a
+D series servo 8192 - LEFT END and RIGHT END - 8192); one function,
+`servo_rauto_reg_of()`, turns that into the value shown, and a host test
+holds it equal to the write path's `hitec_run_to_reg()`. LIMIT RUN's
+report still names a D series end point by its distance from NEUTRAL.
+
 ### Limits
 
 - The model is linear: the deflection at an end pulse is taken as

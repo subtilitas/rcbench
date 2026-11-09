@@ -249,7 +249,8 @@ TEST_CASE(the_pulse_write_comes_first_on_kst_and_hitec_gets_none)
     CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
     CHECK_EQ(g.pulse_ops, 0u);
     CHECK(in_report("Servo:          DIGITAL, Hitec D"));
-    CHECK(in_report("LEFT END (0xB2): 150 before, 138 after"));
+    /* NEUTRAL 8192 in the rig: the end point at 8192 - travel. */
+    CHECK(in_report("LEFT END (0xB2): 8042 before, 8054 after (counts)"));
 
     rig_init(0u);
     g.cfg.family = SERVO_RAUTO_FAM_HITEC_C;
@@ -288,8 +289,8 @@ TEST_CASE(the_report_lists_every_step_and_the_csv_one_row_a_step)
     CHECK(in_report("Goals:          1000us 27.50°, 2000us 27.50°, tolerance 0.5°"));
     CHECK(in_report("Length:         100mm; goals 1000us 46.2mm"));
     CHECK(in_report("Pulse write:    PULSE LOWER 900.0 -> 1000.0us"));
-    CHECK(in_report("LEFT ANGLE:     150 before, 138 after; moves the 1000us side"));
-    CHECK(in_report("RIGHT ANGLE:    150 before, 138 after; moves the 2000us side"));
+    CHECK(in_report("LEFT ANGLE:     150 before, 138 after (raw value); moves the 1000us side"));
+    CHECK(in_report("RIGHT ANGLE:    150 before, 138 after (raw value); moves the 2000us side"));
     CHECK(in_report("Writes:         1000us side 1, 2000us side 1, at most 8 writes a side; sessions 3"));
     CHECK(in_report("Backup:         the panel's memory only"));
     CHECK(in_report("1000us  write 0  value -  measured 30.00°  goal 27.50°  outside"));

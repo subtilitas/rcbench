@@ -149,6 +149,22 @@ uint16_t servo_rauto_scaled(uint16_t value, float goal_deg, float measured_deg,
     return (uint16_t)lround(v);
 }
 
+uint16_t servo_rauto_reg_of(const servo_rauto_t *r, int g, uint16_t travel)
+{
+    if (r == NULL || r->cfg.family != SERVO_RAUTO_FAM_HITEC_D) {
+        return travel;
+    }
+    const int32_t v = g == 0 ? (int32_t)r->servo.mid - (int32_t)travel
+                             : (int32_t)r->servo.mid + (int32_t)travel;
+    return (uint16_t)(v < 0 ? 0 : v > 0xFFFF ? 0xFFFF : v);
+}
+
+servo_str_t servo_rauto_unit(const servo_rauto_t *r)
+{
+    return (r != NULL && r->cfg.family == SERVO_RAUTO_FAM_HITEC_D)
+               ? SERVO_STR_RA_R_COUNTS : SERVO_STR_RA_R_RAW;
+}
+
 bool servo_rauto_in_cap(uint16_t value0, float goal_deg, float first_deg,
                         uint16_t next)
 {
@@ -565,6 +581,7 @@ static void record(servo_rauto_t *r, float ms, bool within)
     p->side         = s;
     p->n            = r->writes[s];
     p->value        = g >= 0 ? r->cur[g] : 0u;
+    p->reg          = g >= 0 ? (uint8_t)g : 0xFFu;
     p->measured_deg = ms;
     p->goal_deg     = r->goal_deg[s];
     p->within       = within;
@@ -800,7 +817,9 @@ static void first_read(servo_rauto_t *r, const servo_rauto_servo_t *sv,
 {
     if (!sv->ok || sv->lo > sv->hi || sv->value[0] < sv->lo
         || sv->value[1] < sv->lo || sv->value[0] > sv->hi
-        || sv->value[1] > sv->hi) {
+        || sv->value[1] > sv->hi
+        || (r->cfg.family == SERVO_RAUTO_FAM_HITEC_D && sv->mid == 0u)) {
+        /* A D series servo without NEUTRAL has no end point positions. */
         fail(r, SERVO_RAUTO_WHY_NO_SERVO, now_ms);
         return;
     }

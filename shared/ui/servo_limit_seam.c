@@ -152,6 +152,7 @@ static bool hitec_servo(uint8_t fam, servo_limrun_servo_t *sv)
      * same, and the report names the classic cells by it. */
     sv->reversion = !h.cw;
     sv->type = h.series;
+    sv->mid = h.mid;
     (void)servo_limrun_family_pulses(fam, sv->pulse_dus);
     sv->ok = read && h.series == series;
     return sv->ok;

@@ -295,6 +295,7 @@ static void ra_servo(uint8_t fam, servo_rauto_servo_t *sv)
     sv->lo = l.lo_raw;
     sv->hi = l.hi_raw;
     sv->reversion = l.reversion;
+    sv->mid = l.mid;
     if (fam == SERVO_RAUTO_FAM_KST) {
         memcpy(sv->pulse_dus, l.pulse_dus, sizeof(sv->pulse_dus));
     }
@@ -830,9 +831,13 @@ const char *rauto_line(int i, char *buf, size_t n)
             break;
         }
         if (r->verdict == SERVO_RAUTO_PASS) {
-            snprintf(buf, n, TR(RA_SET), (unsigned)r->servo.value[0],
-                     (unsigned)r->cur[0], (unsigned)r->servo.value[1],
-                     (unsigned)r->cur[1]);
+            /* The registers as the programming page shows them. */
+            snprintf(buf, n, TR(RA_SET),
+                     (unsigned)servo_rauto_reg_of(r, 0, r->servo.value[0]),
+                     (unsigned)servo_rauto_reg_of(r, 0, r->cur[0]),
+                     (unsigned)servo_rauto_reg_of(r, 1, r->servo.value[1]),
+                     (unsigned)servo_rauto_reg_of(r, 1, r->cur[1]),
+                     ui_servo_str(servo_rauto_unit(r)));
         } else {
             char why[64];
             why_text(why, sizeof(why));

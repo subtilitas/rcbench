@@ -62,12 +62,14 @@ const hpn_row_t hpn_rows[] = {
     { HITEC_PANEL_MOTION, 2, 0, 1, K_SHOW, HITEC_P_C_RESOLUTION, S_C,
       TX_HP_RESOLUTION, NULL },
 
+    /* The positions' unit in the label: the value's field narrows to its
+     * keys while MOVE SERVO runs. */
     { HITEC_PANEL_TRAVEL, 0, 0, 1, K_SHOW, HITEC_P_D_NEUTRAL, S_D,
-      TX_HP_NEUTRAL, NULL },
+      TX_HP_NEUTRAL_N, NULL },
     { HITEC_PANEL_TRAVEL, 1, 0, 1, K_SHOW, HITEC_P_D_LEFT_END, S_D,
-      TX_HP_END_L, NULL },
+      TX_HP_END_L_N, NULL },
     { HITEC_PANEL_TRAVEL, 2, 0, 1, K_SHOW, HITEC_P_D_RIGHT_END, S_D,
-      TX_HP_END_R, NULL },
+      TX_HP_END_R_N, NULL },
     { HITEC_PANEL_TRAVEL, 3, 0, 1, K_SHOW, HITEC_P_D_DIRECTION, S_D,
       TX_HP_DIRECTION, NULL },
     /* MOVE SERVO: the horn follows the position edited (hitec_move.h). */

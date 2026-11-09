@@ -312,6 +312,8 @@ typedef struct {
                                for a KST or Chaservo servo                */
     /** @brief NEUTRAL, PULSE LOWER and PULSE UPPER, 0.1us. */
     uint16_t pulse_dus[3];
+    /** @brief Hitec D series: NEUTRAL (0xC2) in position counts; else 0. */
+    uint16_t mid;
     /** @brief The file the values before the run are backed up in; "" for the
      *         panel's memory only. */
     char     backup[16];

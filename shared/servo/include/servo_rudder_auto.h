@@ -207,7 +207,13 @@ typedef struct {
     const char *const *text;  /**< SERVO_STR_COUNT entries, NULL English */
 } servo_rauto_cfg_t;
 
-/** @brief The servo as read, in travel units (see IMPL.md 3.5). */
+/**
+ * @brief The servo as read, in travel units (see IMPL.md 3.5): KST's and a
+ *        classic Hitec servo's raw register values; a Hitec D series
+ *        servo's distance of each end point from NEUTRAL, in position
+ *        counts.  The report and the screen show registers as the
+ *        programming pages do (servo_rauto_reg_of()).
+ */
 typedef struct {
     bool     ok;              /**< read, a servo of the family, editable */
     uint16_t value[2];        /**< the two registers' travel values */
@@ -215,6 +221,9 @@ typedef struct {
              hi;              /**< the largest */
     bool     reversion;       /**< REVERSION on */
     uint16_t pulse_dus[3];    /**< KST: NEUTRAL, LOWER, UPPER; else 0 */
+    uint16_t mid;             /**< Hitec D series: NEUTRAL (0xC2) in
+                                   position counts, the travel's origin;
+                                   else 0 */
     char     backup[16];      /**< the backup file; "" for memory only */
 } servo_rauto_servo_t;
 
@@ -273,6 +282,8 @@ typedef struct {
     uint8_t  side;            /**< 0 at 1000us, 1 at 2000us */
     uint8_t  n;               /**< the write's number, 0 the first measure */
     uint16_t value;           /**< the register's travel value in force */
+    uint8_t  reg;             /**< the register value belongs to; 0xFF
+                                   none */
     float    measured_deg;    /**< along the side's direction */
     float    goal_deg;        /**< target x (1 + margin) */
     bool     within;          /**< within the tolerance of the goal */
@@ -556,6 +567,25 @@ bool servo_rauto_report_line(const servo_rauto_t *r, unsigned idx, char *buf, si
  * @return the value for the goal.
  */
 uint16_t servo_rauto_scaled(uint16_t value, float goal_deg, float measured_deg, uint16_t lo, uint16_t hi);
+/**
+ * @brief A register's travel value as the programming page shows it: on a
+ *        Hitec D series servo the end point's position, NEUTRAL - travel
+ *        for LEFT END (register 0) and NEUTRAL + travel for RIGHT END, in
+ *        position counts with 8192 the center (hitec_run_to_reg() writes
+ *        the same); on KST and a classic Hitec servo the raw value itself.
+ * @param r      Run state; NULL gives @p travel.
+ * @param g      The register: 0 LEFT, 1 RIGHT.
+ * @param travel Its travel value.
+ * @return the value shown.
+ */
+uint16_t servo_rauto_reg_of(const servo_rauto_t *r, int g, uint16_t travel);
+/**
+ * @brief The unit of servo_rauto_reg_of()'s values.
+ * @param r Run state; NULL gives the raw one.
+ * @return SERVO_STR_RA_R_COUNTS on a Hitec D series servo, else
+ *         SERVO_STR_RA_R_RAW.
+ */
+servo_str_t servo_rauto_unit(const servo_rauto_t *r);
 /**
  * @brief Whether a register's new value lies within SERVO_RAUTO_CAP_PCT of
  *        the model's first estimate for it, value0 x goal / measured0.

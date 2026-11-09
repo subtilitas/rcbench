@@ -7121,6 +7121,17 @@ UI_TEXT(HP_END_L, 32,
 UI_TEXT(HP_END_R, 32,
     "RIGHT END",
     "ENDE RECHTS")
+/* TRAVEL's D series rows: the positions with their unit, as RUDDER AUTO
+ * names it. */
+UI_TEXT(HP_NEUTRAL_N, 32,
+    "NEUTRAL (COUNTS)",
+    "NEUTRAL (ZÄHLWERTE)")
+UI_TEXT(HP_END_L_N, 32,
+    "LEFT END (COUNTS)",
+    "ENDE LINKS (ZÄHLWERTE)")
+UI_TEXT(HP_END_R_N, 32,
+    "RIGHT END (COUNTS)",
+    "ENDE RECHTS (ZÄHLWERTE)")
 UI_TEXT(HP_DIRECTION, 32,
     "DIRECTION",
     "DREHRICHTUNG")
@@ -10735,6 +10746,15 @@ UI_SERVO_TEXT(SERVO_STR_RA_WHY_NO_EFFECT_LO,
 UI_SERVO_TEXT(SERVO_STR_RA_WHY_NO_EFFECT_HI,
     "writes do not move the 2000us side",
     "Schreiben bewegt 2000us-Seite nicht")
+UI_SERVO_TEXT(SERVO_STR_RA_R_REG,
+    "%s%u before, %u after (%s); %s",
+    "%s%u vorher, %u nachher (%s); %s")
+UI_SERVO_TEXT(SERVO_STR_RA_R_COUNTS,
+    "counts",
+    "Zählwerte")
+UI_SERVO_TEXT(SERVO_STR_RA_R_RAW,
+    "raw value",
+    "Rohwert")
 UI_SERVO_TEXT(SERVO_STR_RA_WHY_CAP,
     "end point too far from its estimate",
     "Endpoint zu weit von der Schätzung")
@@ -10851,8 +10871,8 @@ UI_TEXT(RA_LAST, 50,
     "%s: %s",
     "%s: %s")
 UI_TEXT(RA_SET, 50,
-    "PASS: %u>%u, %u>%u",
-    "BESTANDEN: %u>%u, %u>%u")
+    "PASS: %u>%u, %u>%u %s",
+    "BESTANDEN: %u>%u, %u>%u %s")
 UI_TEXT(RA_FILE, 50,
     "REPORT %s",
     "BERICHT %s")

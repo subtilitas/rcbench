@@ -305,8 +305,12 @@ static bool reg_line(const servo_rauto_t *r, cur_t *c, int g)
     const servo_str_t side = r->reg_side[g] == 0   ? SERVO_STR_RA_R_SIDE_LO
                              : r->reg_side[g] == 1 ? SERVO_STR_RA_R_SIDE_HI
                                                    : SERVO_STR_L_R_SIDE_UNKNOWN;
-    snprintf(c->buf, c->n, LS(L_R_REG), label, (unsigned)r->servo.value[g],
-             (unsigned)r->cur[g], servo_str_in(c->text, side));
+    /* The registers as the programming page shows them, the unit named. */
+    snprintf(c->buf, c->n, LS(RA_R_REG), label,
+             (unsigned)servo_rauto_reg_of(r, g, r->servo.value[g]),
+             (unsigned)servo_rauto_reg_of(r, g, r->cur[g]),
+             servo_str_in(c->text, servo_rauto_unit(r)),
+             servo_str_in(c->text, side));
     return true;
 }
 
@@ -384,7 +388,8 @@ static bool step_lines(const servo_rauto_t *r, cur_t *c)
         const servo_rauto_step_t *p = &r->steps[k];
         char v[8];
         if (p->value != 0u) {
-            snprintf(v, sizeof(v), "%u", (unsigned)p->value);
+            snprintf(v, sizeof(v), "%u",
+                     (unsigned)servo_rauto_reg_of(r, p->reg, p->value));
         } else {
             snprintf(v, sizeof(v), "-");
         }
@@ -422,7 +427,8 @@ static bool csv_line(const servo_rauto_t *r, unsigned idx, char *buf,
     const servo_rauto_step_t *p = &r->steps[idx - 1u];
     char v[8] = "", mm[16] = "", gm[16] = "";
     if (p->value != 0u) {
-        snprintf(v, sizeof(v), "%u", (unsigned)p->value);
+        snprintf(v, sizeof(v), "%u",
+                 (unsigned)servo_rauto_reg_of(r, p->reg, p->value));
     }
     if (r->cfg.len_mm > 0.0f) {
         snprintf(mm, sizeof(mm), "%.2f",

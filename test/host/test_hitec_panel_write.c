@@ -246,7 +246,7 @@ TEST_CASE(a_value_the_keypad_takes_and_the_model_refuses_keeps_the_keypad)
     CHECK_STR_EQ(said(), TR(HP_E_RANGE));
     /* LEFT END above NEUTRAL: refused for the order. */
     hitec_panel_back();
-    tap(row_of(HITEC_PANEL_TRAVEL, TR(HP_END_L)));
+    tap(row_of(HITEC_PANEL_TRAVEL, TR(HP_END_L_N)));
     type("9000");
     CHECK_EQ(hitec_panel_editor(), 1);
     CHECK_STR_EQ(said(), TR(HP_E_ORDER));
@@ -643,7 +643,7 @@ TEST_CASE(each_keypad_opens_on_its_value_or_its_range)
     type("5");
     CHECK_EQ(hitec_image_reg(hitec_prog_draft(model()), 0x32), 5u);
     /* NEUTRAL: counts, on its value. */
-    tap(row_of(HITEC_PANEL_TRAVEL, TR(HP_NEUTRAL)));
+    tap(row_of(HITEC_PANEL_TRAVEL, TR(HP_NEUTRAL_N)));
     CHECK_EQ(hitec_panel_editor(), 1);
     hitec_panel_back();
     /* A classic CENTER in quarter microseconds, read and raw. */

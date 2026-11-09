@@ -102,8 +102,18 @@ TEST_CASE(auto_lands_a_d_series_servo_within_tolerance)
     CHECK(!servo_screen_rauto_running());
     CHECK(strstr(hl.report, "PASS") != NULL);
     CHECK(strstr(hl.report, "Hitec D") != NULL);
-    CHECK(strstr(hl.report, "LEFT END (0xB2): 4841 before") != NULL);
-    CHECK(strstr(hl.report, "RIGHT END (0xB0): 4811 before") != NULL);
+    /* The end points as the HITEC page shows them: positions in counts,
+     * 8192 the center (4841 and 4811 from NEUTRAL). */
+    CHECK(strstr(hl.report, "LEFT END (0xB2): 3351 before") != NULL);
+    CHECK(strstr(hl.report, "RIGHT END (0xB0): 13003 before") != NULL);
+    CHECK(strstr(hl.report, "after (counts); moves the 1000us side") != NULL);
+    {
+        char line[96];
+        snprintf(line, sizeof(line), "%s: 3351>%u, 13003>%u counts",
+                 ui_servo_str(SERVO_STR_PASS), (unsigned)g_drv.dreg[0xB2],
+                 (unsigned)g_drv.dreg[0xB0]);
+        CHECK_STR_EQ(rauto_line(1, b, sizeof(b)), line);
+    }
     CHECK(strstr(hl.report, "Pulse write") == NULL);
     /* Both ends within 0.5° of 22°, moved toward NEUTRAL in counts. */
     CHECK(fabsf(defl_at(1000u) - 22.0f) <= 0.5f);
@@ -284,8 +294,8 @@ TEST_CASE(a_d_series_side_whose_writes_do_not_move_it_fails_after_two)
     CHECK(!servo_screen_rauto_running());
     CHECK(strstr(hl.report, "FAIL - writes do not move the 2000us side")
           != NULL);
-    CHECK(strstr(hl.report, "LEFT END (0xB2): 3178 before, 3178 after; "
-                            "moves the 1000us side") != NULL);
+    CHECK(strstr(hl.report, "LEFT END (0xB2): 5014 before, 5014 after "
+                            "(counts); moves the 1000us side") != NULL);
     CHECK(strstr(hl.report, "Writes:         1000us side 0, 2000us side 2,")
           != NULL);
     CHECK_EQ(g_drv.dreg[0xB2], 8192u - 3178u);

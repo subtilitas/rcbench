@@ -22,6 +22,8 @@
  */
 #include "servo_rauto_rig.h"
 
+#include "hitec_prog_run.h"
+
 /* Both sides 2.5° past the goal, the 1000us side written first: one write
  * a side and PASS on both families; the Hitec D series run knows its
  * registers before the first write. */
@@ -43,8 +45,8 @@ TEST_CASE(both_sides_written_once_pass_on_kst_and_hitec_d)
         CHECK_EQ(g.run.reg_side[0], 0);
         CHECK_EQ(g.run.reg_side[1], 1);
         CHECK(in_report(fam == 0 ? "moves the 1000us side"
-                                 : "LEFT END (0xB2): 150 before, 138 after; "
-                                   "moves the 1000us side"));
+                                 : "LEFT END (0xB2): 8042 before, 8054 after "
+                                   "(counts); moves the 1000us side"));
         CHECK(ended_safe());
     }
 }
@@ -242,8 +244,50 @@ TEST_CASE(a_write_past_50_percent_of_the_estimate_ends_the_run)
     CHECK(in_report("FAIL - end point too far from its estimate"));
 }
 
+/* The units the programming pages show: the bench's D485HW at NEUTRAL
+ * 8192 holds LEFT END 4841 and RIGHT END 4808 counts from NEUTRAL, which
+ * the HITEC page shows as 3351 and 13000 counts; the run seam's
+ * hitec_run_to_reg() writes the same.  KST and a classic Hitec servo show
+ * the raw value itself. */
+TEST_CASE(end_points_show_in_the_programming_pages_units)
+{
+    servo_rauto_t r;
+    servo_rauto_init(&r);
+    r.cfg.family = SERVO_RAUTO_FAM_HITEC_D;
+    r.servo.mid = 8192u;
+    CHECK_EQ(servo_rauto_reg_of(&r, 0, 4841u), 3351u);
+    CHECK_EQ(servo_rauto_reg_of(&r, 1, 4808u), 13000u);
+    CHECK_EQ(servo_rauto_unit(&r), SERVO_STR_RA_R_COUNTS);
+    hitec_run_servo_t h;
+    memset(&h, 0, sizeof(h));
+    h.series = (uint8_t)HITEC_D;
+    h.mid = 8192u;
+    for (uint16_t t = 1u; t < 8192u; t = (uint16_t)(t * 3u)) {
+        CHECK_EQ(servo_rauto_reg_of(&r, 0, t), hitec_run_to_reg(&h, 0u, t));
+        CHECK_EQ(servo_rauto_reg_of(&r, 1, t), hitec_run_to_reg(&h, 1u, t));
+    }
+    r.cfg.family = SERVO_RAUTO_FAM_KST;
+    CHECK_EQ(servo_rauto_reg_of(&r, 0, 150u), 150u);
+    CHECK_EQ(servo_rauto_unit(&r), SERVO_STR_RA_R_RAW);
+    r.cfg.family = SERVO_RAUTO_FAM_HITEC_C;
+    CHECK_EQ(servo_rauto_reg_of(&r, 1, 194u), 194u);
+    CHECK_EQ(servo_rauto_unit(&r), SERVO_STR_RA_R_RAW);
+    CHECK_EQ(servo_rauto_reg_of(NULL, 0, 77u), 77u);
+    CHECK_EQ(servo_rauto_unit(NULL), SERVO_STR_RA_R_RAW);
+    /* A D series servo read without NEUTRAL is no servo to the run. */
+    rig_init(0u);
+    g.cfg.family = SERVO_RAUTO_FAM_HITEC_D;
+    g.no_mid = true;
+    CHECK(start());
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.verdict, SERVO_RAUTO_FAIL);
+    CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_NO_SERVO);
+    CHECK_EQ(g.write_ops, 0u);
+}
+
 int main(void)
 {
+    RUN(end_points_show_in_the_programming_pages_units);
     RUN(the_bound_with_the_run_2_numbers);
     RUN(a_write_past_50_percent_of_the_estimate_ends_the_run);
     RUN(both_sides_written_once_pass_on_kst_and_hitec_d);

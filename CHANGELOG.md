@@ -26,6 +26,13 @@ history is in git.
 
 ### Changed
 
+- RUDDER AUTO's report and box show end points as the programming page
+  does, with the unit named: a Hitec D series servo's in position counts,
+  8192 the center (`LEFT END (0xB2): 3351 before, 3466 after (counts)`,
+  where they read 4841, the distance from NEUTRAL), KST's and a classic
+  Hitec servo's raw value (`(raw value)`). The HITEC page's TRAVEL names the unit in
+  its D series labels: `NEUTRAL (COUNTS)`, `LEFT END (COUNTS)`, `RIGHT END
+  (COUNTS)`.
 - RUDDER's zero survives a restart: ZERO saves it with its source, the
   AS5600 or the IMU with its AXIS, SIGN and algorithm (`rud_zero`,
   `rud_zero_key`), and it comes back while that source is in force. A

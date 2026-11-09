@@ -279,9 +279,14 @@ TEST_CASE(connect_reads_the_d485hw_and_the_tabs_show_its_values)
     tap(hitec_panel_tab_rect(HITEC_PANEL_TRAVEL));
     CHECK_EQ(hitec_panel_page(), HITEC_PANEL_TRAVEL);
     CHECK_EQ(strcmp(hitec_panel_label(HITEC_PANEL_TRAVEL, 0, 0),
-                    TR(HP_NEUTRAL)),
+                    TR(HP_NEUTRAL_N)),
              0);
     CHECK(strstr(hitec_panel_value(HITEC_PANEL_TRAVEL, 0, 0), "8192") != NULL);
+    /* The unit named on NEUTRAL and the end points, as RUDDER AUTO names
+     * it: LEFT END (COUNTS) 3351 on the D485HW. */
+    CHECK_STR_EQ(hitec_panel_label(HITEC_PANEL_TRAVEL, 1, 0),
+                 "LEFT END (COUNTS)");
+    CHECK(strstr(hitec_panel_value(HITEC_PANEL_TRAVEL, 1, 0), "3351") != NULL);
     CHECK(strstr(hitec_panel_value(HITEC_PANEL_TRAVEL, 0, 0), "+0.0") != NULL);
     /* Every value tab: no row reads "--" after a full read. */
     for (int page = HITEC_PANEL_MOTION; page <= HITEC_PANEL_INFO; ++page) {
