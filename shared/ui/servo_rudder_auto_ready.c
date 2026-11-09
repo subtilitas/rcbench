@@ -208,8 +208,7 @@ rauto_row_t rauto_row_of(const char *why)
             }
         }
     }
-    if (why == TR(RA_NO_ANGLE) || why == TR(RA_IMU_YAW)
-        || why == TR(RA_IMU_9_UNCONFIRMED)) {
+    if (why == TR(RA_NO_ANGLE) || why == TR(RA_IMU_YAW)) {
         return RAR_ANGLE;
     }
     if (why == TR(RA_NO_ZERO)) {
@@ -506,8 +505,7 @@ void rauto_ready_tap(int i)
         break;
     case RAR_ANGLE:
         /* The IMU's yaw in 6-AXIS: the list of what resolves it. */
-        if (r.st == (uint8_t)RDY_BAD
-            && (r.why == TR(RA_IMU_YAW) || r.why == TR(RA_IMU_9_UNCONFIRMED))) {
+        if (r.st == (uint8_t)RDY_BAD && r.why == TR(RA_IMU_YAW)) {
             angle_fix_open();
         } else {
             angle_pick_open();

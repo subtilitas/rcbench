@@ -92,11 +92,6 @@ typedef struct {
     uint16_t      err_code;        /**< the host stack's status for it */
     imu_cal_t     cal;             /**< the calibration */
     uint32_t      cal_left_ms;     /**< of the 3s hold still */
-    bool          nine_axis;       /**< the sensor confirmed 9-AXIS on this
-                                        connection: an AXIS6 0 group whose
-                                        SAVE it acknowledged
-                                        (imu_sensor_written()); false at
-                                        each connection's start */
     imu_reading_t r;               /**< the reading */
 } imu_view_t;
 

@@ -485,21 +485,6 @@ TEST_CASE(rudder_auto_refuses_imu_yaw_in_6_axis_and_offers_the_fixes)
     tap_entry(0);
     CHECK_EQ(settings_get_int(SET_IMU_ALGO), 1);
     CHECK_EQ(settings_get_int(SET_IMU_AXIS), 2);
-    /* 9-AXIS set, the sensor not yet in it: still red, the same list. */
-    CHECK(angle_pick_yaw_why() == TR(RA_IMU_9_UNCONFIRMED));
-    CHECK(rauto_ready_row(RAR_ANGLE, &r));
-    CHECK_EQ(r.st, (uint8_t)RDY_BAD);
-    CHECK_STR_EQ(r.value, "IMU 9-AXIS NOT CONFIRMED");
-    CHECK(!rauto_seq_fixes(TR(RA_IMU_9_UNCONFIRMED)));
-    CHECK_EQ(rauto_row_of(TR(RA_IMU_9_UNCONFIRMED)), RAR_ANGLE);
-    ev(SV_RDY_X, SV_RDY_ROW_Y((int)RAR_ANGLE), TOUCH_EVENT_DOWN, 2);
-    ev(SV_RDY_X, SV_RDY_ROW_Y((int)RAR_ANGLE), TOUCH_EVENT_UP, 2);
-    CHECK_EQ(angle_pick_count(), 3);
-    tap_entry(0);
-    CHECK_EQ(angle_pick_count(), -1);
-    /* The sensor took it. */
-    g_v.nine_axis = true;
-    view_now();
     CHECK(angle_pick_yaw_why() == NULL);
 
     /* Pitch in 6-AXIS, and the AS5600 whatever the IMU holds. */

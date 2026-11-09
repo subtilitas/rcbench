@@ -1550,14 +1550,14 @@ the screen is `shared/ui/servo_rudder_panel.c`.
   ENC CENTER afterwards therefore leaves the measured deflection unchanged. Another ANGLE SOURCE, the IMU's other AXIS,
   SIGN or algorithm, or a ZERO or CLEAR ZERO on the IMU screen, drops the
   zero and MAX: the screen reads as before ZERO.
-- A zero on the AS5600 survives a restart. ZERO saves it (settings
-  `rud_zero` and `rud_zero_key`), and at the start it comes back while
-  the AS5600 is ANGLE SOURCE; MAX does not. Another ANGLE SOURCE in the
-  settings drops the saved zero too, so a change back needs a new ZERO.
-- A zero on the IMU lasts until the restart and is never saved. The IMU's
-  BLE (Bluetooth Low Energy) link is not authenticated
-  ([IMU](IMU.md#the-link), `SECURITY.md`): a device in the sensor's place
-  at ZERO must not leave a zero that outlives the session.
+- The zero survives a restart. ZERO saves it with its source (settings
+  `rud_zero` and `rud_zero_key`): the AS5600, or the IMU with its AXIS,
+  SIGN and algorithm. At the start the zero comes back while the saved
+  source is the one in force; MAX does not. Another source, AXIS, SIGN or
+  algorithm in the settings drops the saved zero too, so a change back
+  needs a new ZERO. Not saved: the IMU's yaw in 6-AXIS, which starts anew
+  with the sensor, and a zero taken after a ZERO or CLEAR ZERO on the IMU
+  screen in the same session, whose angles the restart does not keep.
 - ZERO takes the current angle as the surface's neutral. The deflection is the
   angle from it, wrapped to -180 up to 180°. Before ZERO the deflection is
   the angle itself.
@@ -1720,7 +1720,6 @@ while:
 | PORT PWM | ARMED with the port's pulse off | `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS`, `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` |
 | RANGE | PULSE MIN is above 1000us, PULSE MAX below 2000us, or PULSE CENTER is not strictly between 1000us and 2000us | `PULSE MIN TO MAX MUST INCLUDE 1000 TO 2000us` |
 | ANGLE | the IMU's AXIS Z (yaw) while IMU algorithm is 6-AXIS: no magnetometer holds yaw, which drifts 2.4° in 100s on a BWT901CL against the 0.5° tolerance. A tap opens the IMU YAW list, `SWITCH IMU TO 9-AXIS`, `USE IMU AXIS X (ROLL)`, `USE IMU AXIS Y (PITCH)`; a pick writes the setting and saves it ([IMU](IMU.md#the-link)) | `IMU YAW NEEDS 9-AXIS` |
-| ANGLE | the IMU's AXIS Z (yaw) with IMU algorithm 9-AXIS while the sensor has not taken 9-AXIS on this connection: the AXIS6 0 write and its SAVE, sent once on every connection, still to go or refused. A tap opens the same IMU YAW list | `IMU 9-AXIS NOT CONFIRMED` |
 | ANGLE | the angle source gives no reading | `ANGLE SOURCE: NO READING` |
 | ZERO | ZERO is not taken | `SET ZERO WITH THE SURFACE AT NEUTRAL` |
 | ARM | another run runs, or a report is still being written | the run's line, as on TEST |

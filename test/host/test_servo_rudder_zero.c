@@ -1,9 +1,8 @@
 /**
  * @file test_servo_rudder_zero.c
- * @brief SERVO's RUDDER task: the AS5600's zero kept across a restart
- *        (servo_rudder_panel.c, SET_RUDDER_ZERO_DEG and
- *        SET_RUDDER_ZERO_KEY), dropped with another source; an IMU zero
- *        never saved.
+ * @brief SERVO's RUDDER task: the zero kept across a restart, per angle
+ *        source and IMU axis (servo_rudder_panel.c, SET_RUDDER_ZERO_DEG
+ *        and SET_RUDDER_ZERO_KEY), and dropped with a change of either.
  *
  * The AS5600 is on with its center at count 2048; 256 counts are 22.5°.
  * A restart is the settings saved to a store in memory, the screen reset
@@ -11,7 +10,7 @@
  *
  * Cases:
  * - a_zero_survives_a_restart_on_its_source_and_goes_with_another
- * - an_imu_zero_is_gone_after_a_restart
+ * - an_imu_zero_is_saved_per_axis_and_not_for_6_axis_yaw
  *
  * SPDX-License-Identifier: MIT
  */
@@ -154,48 +153,42 @@ TEST_CASE(a_zero_survives_a_restart_on_its_source_and_goes_with_another)
     settings_set_store(NULL);
 }
 
-/* An IMU zero lasts until the restart and is never saved, whatever the
- * axis and algorithm: the IMU's link is not authenticated.  A zero the
- * AS5600 saved goes when the source turns to the IMU; a key a store holds
- * that is not the AS5600's is dropped and restores nothing. */
-TEST_CASE(an_imu_zero_is_gone_after_a_restart)
+/* On the IMU the key names AXIS, SIGN and ALGORITHM: a zero on AXIS X is
+ * saved and comes back after a restart once the panel hands the AXIS over
+ * again; another AXIS in SETUP drops the saved one.  6-AXIS yaw starts
+ * anew with the sensor and is not saved; 9-AXIS yaw is; a zero taken
+ * after an IMU zero is not. */
+TEST_CASE(an_imu_zero_is_saved_per_axis_and_not_for_6_axis_yaw)
 {
-    static const struct { int axis, algo; } k[] = {
-        { 0, 0 }, { 1, 0 }, { 2, 1 },
-    };
-    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
-        s_have_kept = false;
-        fresh();
-        settings_set_store(&k_kept);
-        settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_IMU);
-        settings_set(SET_IMU_AXIS, (float)k[i].axis);
-        settings_set(SET_IMU_ALGO, (float)k[i].algo);
-        servo_screen_set_imu_axis((uint8_t)k[i].axis, false);
-        to_rudder();
-        zero_and_max();
-        CHECK_EQ(settings_get_int(SET_RUDDER_ZERO_KEY), 0);
-        restart();
-        servo_screen_set_imu_axis((uint8_t)k[i].axis, false);
-        dropped();
-    }
-
-    /* AS5600 saved, then the IMU: the saved zero goes. */
     s_have_kept = false;
     fresh();
     settings_set_store(&k_kept);
-    encoder_on();
+    settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_IMU);
+    settings_set(SET_IMU_AXIS, 0.0f);
+    servo_screen_set_imu_axis(0u, false);
     to_rudder();
     zero_and_max();
-    CHECK_EQ(settings_get_int(SET_RUDDER_ZERO_KEY), 1);
-    settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_IMU);
+    CHECK_EQ(settings_get_int(SET_RUDDER_ZERO_KEY), 2);
+    restart();
+    /* Before the panel hands the AXIS over, then after. */
+    servo_screen_set_imu_axis(0u, false);
+    CHECK(rudder_geo()->zeroed);
+    settings_set(SET_IMU_AXIS, 1.0f);
+    servo_screen_set_imu_axis(1u, false);
     dropped();
     CHECK_EQ(settings_get_int(SET_RUDDER_ZERO_KEY), 0);
 
-    /* A key an IMU zero left in an older store: dropped, nothing back. */
-    settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_AS5600);
-    settings_set(SET_RUDDER_ZERO_KEY, 14.0f);
-    settings_set(SET_RUDDER_ZERO_DEG, 12.0f);
-    dropped();
+    settings_set(SET_IMU_AXIS, 2.0f);
+    settings_set(SET_IMU_ALGO, 0.0f);
+    servo_screen_set_imu_axis(2u, false);
+    zero_and_max();
+    CHECK_EQ(settings_get_int(SET_RUDDER_ZERO_KEY), 0);
+    settings_set(SET_IMU_ALGO, 1.0f);
+    zero_and_max();
+    CHECK_EQ(settings_get_int(SET_RUDDER_ZERO_KEY), 2 + 4 + 8);
+
+    servo_screen_set_imu_zero(1u);
+    zero_and_max();
     CHECK_EQ(settings_get_int(SET_RUDDER_ZERO_KEY), 0);
     settings_set_store(NULL);
 }
@@ -203,6 +196,6 @@ TEST_CASE(an_imu_zero_is_gone_after_a_restart)
 int main(void)
 {
     RUN(a_zero_survives_a_restart_on_its_source_and_goes_with_another);
-    RUN(an_imu_zero_is_gone_after_a_restart);
+    RUN(an_imu_zero_is_saved_per_axis_and_not_for_6_axis_yaw);
     return test_summary("servo_rudder_zero");
 }

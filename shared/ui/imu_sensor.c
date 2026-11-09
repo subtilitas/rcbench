@@ -14,7 +14,6 @@ void imu_sensor_init(imu_sensor_t *s)
     memset(s, 0, sizeof(*s));
     imu_init(&s->m);
     s->rate_code = WIT_RATE_50HZ;
-    s->six       = true;           /* SET_IMU_ALGO's default, 6-AXIS */
     s->filter    = (uint8_t)IMU_FILTER_DEFAULT;
 }
 
@@ -155,15 +154,6 @@ void imu_sensor_tick(imu_sensor_t *s, uint32_t now_ms, bool link_up)
         imu_reseed(&s->m);
         rsw_recheck(s);
         s->held = false;    /* what a failed write dropped goes now */
-        /* The stream carries no mode, and the sensor may hold another
-         * since the last SAVE taken: 9-AXIS is written once on each
-         * connection and counts only once its SAVE is acknowledged. */
-        if (!s->six) {
-            s->algo_due = true;
-        }
-    }
-    if (link_up != s->link_was_up) {
-        s->mode_known = false;
     }
     s->link_was_up = link_up;
     /* The stream is RSW's read-back: frames of other types, or no 0x52,
@@ -219,7 +209,6 @@ void imu_sensor_tick(imu_sensor_t *s, uint32_t now_ms, bool link_up)
         }
         if (s->algo_due) {
             queue(s, b, wit_cmd_axis6(b, s->six), why);
-            s->six_sent = s->six;
         }
         queue_save(s, why);
         s->rsw_due = false;
@@ -303,20 +292,6 @@ void imu_sensor_flush(imu_sensor_t *s)
     s->held = true;
 }
 
-void imu_sensor_written(imu_sensor_t *s)
-{
-    if ((s->sent_for & IMU_OUT_ALGO) == 0u) {
-        return;
-    }
-    for (uint8_t i = 0u; i < s->out_n; ++i) {
-        if ((s->out_for[(s->out_head + i) % IMU_OUTBOX] & IMU_OUT_ALGO) != 0u) {
-            return;                     /* the group's SAVE still to go */
-        }
-    }
-    s->six_held   = s->six_sent;
-    s->mode_known = true;
-}
-
 imu_link_t imu_sensor_link(const imu_sensor_t *s)
 {
     if (s->m.r.valid) {
@@ -330,7 +305,6 @@ void imu_sensor_view(const imu_sensor_t *s, imu_view_t *out)
     out->cal = s->cal;
     out->cal_left_ms = (s->cal == IMU_CAL_RUNNING) ? s->cal_left_ms : 0u;
     out->r = s->m.r;
-    out->nine_axis = s->mode_known && !s->six_held;
 }
 
 void imu_handout_reset(imu_handout_t *h)
