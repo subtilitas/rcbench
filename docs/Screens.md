@@ -344,7 +344,7 @@ dialog cannot activate it.
 | --- | --- |
 | Preview | 256 x 150px, each pixel the mean of 4 x 4, top left of the body |
 | Folder and name | `screenshots/` and the name with `.PNG`, under the preview |
-| Keyboard | the file-name keyboard, x 280 to the panel's edge. OK reads SAVE, `SPEICH.` in German |
+| Keyboard | the file-name keyboard with its cursor ([The name keyboard](#the-name-keyboard)), x 280 to the panel's edge, keys of 67 x 74px. OK reads SAVE, `SPEICH.` in German. The words are in 16 x 28, in German in 12 x 24: `ABBRECHEN` has 2 columns of 140px |
 | Band | STOP and the chips stay live. The home tag and the knob do nothing, and "?" does not show |
 
 If any of these conditions stops being true, the popup closes. The image
@@ -658,7 +658,10 @@ shared control determines the fonts and internal spacing.
   word in 20 x 36; the German password's in 16 x 28, as `LEERZEICHEN`
   has two keys of 192px. SERVO's name keyboards, keys of 55 x 72px, draw
   their words in 12 x 24; the ESC STICK search keyboard, keys of
-  59 x 57px, in 16 x 28. The text editor's keyboard has no title row, no
+  59 x 57px, in 16 x 28. FILES' name keyboard, keys of 93 x 72px, draws
+  every word in 20 x 36; the screenshot popup's, keys of 67 x 74px, in
+  16 x 28, in German in 12 x 24. Both have a cursor and `<-` and `->`
+  ([The name keyboard](#the-name-keyboard)). The text editor's keyboard has no title row, no
   field and no digit row: 4 rows of keys of 93 x 56px, every word in
   20 x 36, `123` one more word key
   ([The text editor](#the-text-editor)).
@@ -3911,13 +3914,33 @@ NEW opens a two-row choice above the button: FOLDER and TEXT FILE, each
 
 ![The keyboard for a new text file](img/files-name.png)
 
-RENAME and NEW use the [Wi-Fi](#wi-fi) keyboard across the body. Names
-may contain up to 59 bytes; Ä Ö Ü ä ö ü ß use 2 bytes each. DEL removes a
-whole character. OK refuses invalid names and gives the reason beside
-the title: an empty name (`Enter a name.`), any of `" * / : < > ? \ |`,
-a leading or trailing space or full stop, or a device name such as `CON`,
-`NUL` or `COM1`, alone or before a full stop. CANCEL closes the keyboard
+RENAME and NEW use the [Wi-Fi](#wi-fi) keyboard across the body,
+1008 x 488px with keys of 93 x 72px. Names may contain up to 59 bytes;
+Ä Ö Ü ä ö ü ß use 2 bytes each. OK refuses invalid names and gives the
+reason beside the title: an empty name (`Enter a name.`), any of
+`" * / : < > ? \ |`, a leading or trailing space or full stop, or a
+device name such as `CON`, `NUL` or `COM1`, alone or before a full stop.
+A refused name keeps its text and its cursor. CANCEL closes the keyboard
 without changes.
+
+![RENAME of NOTES.TXT, " 2" typed before the extension](img/files-rename-cursor.png)
+
+The keyboard edits at a cursor, a 2px bar in the accent colour before the
+character it stands at.
+
+| Part | Behaviour |
+| --- | --- |
+| Start | RENAME of a file: before the last full stop, in `NOTES.TXT` before `.TXT`. RENAME of a folder, of a name without a full stop or with its only full stop first, and NEW: at the end |
+| A key | types at the cursor. A key that would take the name past 59 bytes types nothing, and the cursor stays |
+| DEL | removes the whole character before the cursor; nothing at the start |
+| CLR | empties the name, the cursor at the start |
+| `<-` `->` | move the cursor one character; Ä or ß is one character. Nothing at either end |
+| A tap in the text field | puts the cursor in the gap between two characters nearest the tap, half a cell either side; right of the text, at the end |
+| A long name | the field shows 48 characters in 20 x 36. A longer name shows the part around the cursor; the part moves only as far as the cursor needs, and back towards the start while the field has room after the name |
+| Bottom row | SPACE 3 columns, CLR, `<-` and `->` 1 each, CANCEL and OK 2 each |
+
+Every word key is in 20 x 36 in English and in German: `ABBRECHEN`
+needs 188px of the 192px of 2 columns.
 
 ### No card
 

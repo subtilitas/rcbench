@@ -105,7 +105,7 @@ Der Screenshot zeigt die aktuelle Anzeige samt Band und geöffneten Feldern, Lis
 
 Das Speicher-Popup wartet, bis der Prüfstand ruht: SAFE, Netzteilausgang und PROG 5V aus, kein belegter Port, keine Programmiersitzung, kein Sweep, Test, Lauf, Update, FEHLER oder offene Aufzeichnung. Die Verbindung muss bestehen, außer der Prüfstand läuft in der Simulation. Entfällt eine dieser Bedingungen, schließt sich das Popup. Das Bild bleibt gespeichert und wartet, bis alle Bedingungen wieder erfüllt sind.
 
-- Ändere den Namen mit der Tastatur, bis zu 55 Bytes. Die Vorgabe ist `SHOT` mit der nächsten Nummer. Die Endung `.PNG` bleibt fest.
+- Ändere den Namen mit der Tastatur, bis zu 55 Bytes. Die Vorgabe ist `SHOT` mit der nächsten Nummer. Die Endung `.PNG` bleibt fest. `<-`, `->` und ein Tippen in den Namen bewegen den Cursor, wie auf [FILES](files.md).
 - `SPEICH.` schreibt `screenshots/<Name>.PNG` auf die Karte und legt einen fehlenden Ordner an. Bereits vergebene Namen werden abgelehnt; keine Datei wird überschrieben.
 - ABBRECHEN verwirft das Bild. Scheitert das Speichern, etwa bei fehlender oder voller Karte, bleibt das Popup mit dem Bild geöffnet.
 - Die Datei ist ein PNG (Portable Network Graphics) mit 1024 x 600px, das du im Browser oder auf einem PC ansehen kannst. Sie erscheint in [FILES](files.md) und auf der WLAN-Seite.

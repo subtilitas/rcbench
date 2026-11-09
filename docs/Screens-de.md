@@ -371,7 +371,7 @@ nicht bedienen.
 | --- | --- |
 | Vorschau | 256 x 150px, jedes Pixel der Mittelwert von 4 x 4, oben links im Inhalt |
 | Ordner und Name | `screenshots/` und der Name mit `.PNG`, unter der Vorschau |
-| Tastatur | die Dateinamen-Tastatur, x 280 bis zum Panelrand. OK heißt `SPEICH.` |
+| Tastatur | die Dateinamen-Tastatur mit ihrem Cursor ([Die Tastatur für Namen](#die-tastatur-für-namen)), x 280 bis zum Panelrand, Tasten von 67 x 74px. OK heißt `SPEICH.` Die Wörter stehen in 16 x 28, auf Deutsch in 12 x 24: `ABBRECHEN` hat 2 Spalten von 140px |
 | Band | STOP und die Chips bleiben aktiv. Home-Feld und Drehknopf sind inaktiv, "?" ist ausgeblendet |
 
 Entfällt eine der folgenden Bedingungen, schließt sich das Popup. Das Bild
@@ -707,7 +707,11 @@ Zeile zu; das gemeinsame Bedienelement bestimmt Schrift und innere Abstände.
   16 x 28, da `LEERZEICHEN` zwei Tasten von 192px hat. Die
   Namenstastaturen von SERVO, Tasten von 55 x 72px, zeigen ihre Wörter
   in 12 x 24, die Suchtastatur von ESC STICK, Tasten von 59 x 57px, in
-  16 x 28. Die Tastatur des Texteditors hat keine Titelzeile, kein Feld
+  16 x 28. Die Namenstastatur von FILES, Tasten von 93 x 72px, zeigt
+  jedes Wort in 20 x 36, die des Screenshot-Popups, Tasten von
+  67 x 74px, in 16 x 28, auf Deutsch in 12 x 24. Beide haben einen
+  Cursor und `<-` und `->` ([Die Tastatur für Namen](#die-tastatur-für-namen)).
+  Die Tastatur des Texteditors hat keine Titelzeile, kein Feld
   und keine Ziffernreihe: 4 Tastenreihen, Tasten von 93 x 56px, alle
   Wörter in 20 x 36, `123` als weitere Worttaste
   ([Der Texteditor](#der-texteditor)).
@@ -4278,13 +4282,33 @@ NEU öffnet über der Taste eine Auswahl aus ORDNER und TEXTDATEI mit je
 ![Die Tastatur für eine neue Textdatei](img/de/files-name.png)
 
 UMBENENNEN und NEU verwenden die [WLAN](#wlan)-Tastatur über den gesamten
-Körper. Namen dürfen bis zu 59 Bytes enthalten; Ä Ö Ü ä ö ü ß belegen
-je 2 Bytes. DEL entfernt ein ganzes Zeichen. OK lehnt ungültige Namen
-ab und nennt den Grund neben dem Titel: ein leerer Name
+Körper, 1008 x 488px mit Tasten von 93 x 72px. Namen dürfen bis zu 59
+Bytes enthalten; Ä Ö Ü ä ö ü ß belegen je 2 Bytes. OK lehnt ungültige
+Namen ab und nennt den Grund neben dem Titel: ein leerer Name
 (`Gib einen Namen ein.`), eines der Zeichen `" * / : < > ? \ |`, ein
 Leerzeichen oder Punkt am Anfang oder Ende oder ein Gerätename wie
-`CON`, `NUL` oder `COM1`, allein oder vor einem Punkt. ABBRECHEN schließt
-die Tastatur ohne Änderungen.
+`CON`, `NUL` oder `COM1`, allein oder vor einem Punkt. Ein abgelehnter
+Name behält Text und Cursor. ABBRECHEN schließt die Tastatur ohne
+Änderungen.
+
+![UMBENENNEN von NOTES.TXT, " 2" vor der Endung eingegeben](img/de/files-rename-cursor.png)
+
+Die Tastatur schreibt an einem Cursor, einem 2px breiten Strich in der
+Akzentfarbe vor dem Zeichen, an dem er steht.
+
+| Teil | Verhalten |
+| --- | --- |
+| Start | UMBENENNEN einer Datei: vor dem letzten Punkt, in `NOTES.TXT` vor `.TXT`. UMBENENNEN eines Ordners, eines Namens ohne Punkt oder mit seinem einzigen Punkt vorn, und NEU: am Ende |
+| Eine Taste | schreibt am Cursor. Eine Taste, die den Namen über 59 Bytes brächte, schreibt nichts, und der Cursor bleibt |
+| DEL | entfernt das ganze Zeichen vor dem Cursor; am Anfang nichts |
+| CLR | leert den Namen, der Cursor am Anfang |
+| `<-` `->` | bewegen den Cursor um ein Zeichen; Ä oder ß ist ein Zeichen. An beiden Enden nichts |
+| Ein Tippen ins Textfeld | setzt den Cursor in die Lücke zwischen zwei Zeichen, die dem Tippen am nächsten liegt, eine halbe Zelle zu jeder Seite; rechts vom Text ans Ende |
+| Ein langer Name | das Feld zeigt 48 Zeichen in 20 x 36. Ein längerer Name zeigt den Teil um den Cursor; der Teil rückt nur so weit, wie der Cursor es braucht, und zurück zum Anfang, solange das Feld nach dem Namen Platz hat |
+| Untere Reihe | LEERZEICHEN 3 Spalten, CLR, `<-` und `->` je 1, ABBRECHEN und OK je 2 |
+
+Jede Worttaste steht auf Englisch und auf Deutsch in 20 x 36:
+`ABBRECHEN` braucht 188px der 192px von 2 Spalten.
 
 ### Keine Karte
 
