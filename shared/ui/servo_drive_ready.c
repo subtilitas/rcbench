@@ -31,6 +31,10 @@
  * mini off.  Without an INA3221 window on the rail nothing reads it, and
  * ARM switches the PD mini on.
  *
+ * A row whose text is longer than its 20 cells shows the text's tag
+ * (ready_tag()): `ZERO NOT SET` for `SET ZERO WITH THE SURFACE AT
+ * NEUTRAL`.  A tap names the whole text in the alert band.
+ *
  * DISARM switches every output off: the bench to SAFE, the carrier's PROG
  * 5V and the PD mini's output.  A leave switches to SAFE and the PD mini
  * off; PROG 5V stays on between SERVO's screens and goes off when SERVO is
@@ -235,7 +239,9 @@ static void port_row(rdy_row_t *r)
 {
     r->label = TR(SVH_PORT);
     r->fix = true;
-    const bool warn = svs_port_line(r->value, sizeof(r->value));
+    /* The line's whole text where it warns: its tag shows (PINS NOT READ),
+     * the band names the whole. */
+    const char *whole = ready_port_line(r->value, sizeof(r->value));
     const int target = settings_get_int(SET_SERVO_TARGET);
     const bool port = target >= 1 && target <= (int)LINK_PG_PORTS_MAX;
     if (port && s.drive_target != SERVO_SCREEN_TARGET_NO_LINK
@@ -255,8 +261,8 @@ static void port_row(rdy_row_t *r)
         }
         return;
     }
-    r->st  = (uint8_t)(warn ? RDY_WARN : RDY_OK);
-    r->why = warn ? r->value : NULL;
+    r->st  = (uint8_t)(whole != NULL ? RDY_WARN : RDY_OK);
+    r->why = whole;
 }
 
 /**
@@ -331,7 +337,7 @@ static void supply_row(rdy_row_t *r)
         break;
     }
     if (r->value[0] == '\0' && r->why != NULL) {
-        snprintf(r->value, sizeof(r->value), "%s", r->why);
+        ready_set_why(r, r->why);
     }
 }
 
@@ -348,12 +354,11 @@ static void arm_row(rdy_row_t *r)
         return;
     }
     if (svs_arm_locked()) {
-        r->st  = (uint8_t)RDY_BAD;
-        r->why = prog_holds() ? prog_reg_hold_alert()
-                 : servo_limrun_running(&s.lim)
-                     ? ui_servo_str(SERVO_STR_START_LIMIT_RUNS)
-                     : ui_servo_str(SERVO_STR_START_AUTO_RUNS);
-        snprintf(r->value, sizeof(r->value), "%s", r->why);
+        r->st = (uint8_t)RDY_BAD;
+        ready_set_why(r, prog_holds() ? prog_reg_hold_alert()
+                         : servo_limrun_running(&s.lim)
+                             ? ui_servo_str(SERVO_STR_START_LIMIT_RUNS)
+                             : ui_servo_str(SERVO_STR_START_AUTO_RUNS));
         return;
     }
     r->st = (uint8_t)RDY_SEQ;
@@ -380,9 +385,8 @@ static void angle_row(rdy_row_t *r)
         (void)enc_name(r->value, sizeof(r->value));
         return;
     }
-    r->st  = (uint8_t)RDY_WARN;
-    r->why = TR(RA_NO_ANGLE);
-    snprintf(r->value, sizeof(r->value), "%s", r->why);
+    r->st = (uint8_t)RDY_WARN;
+    ready_set_why(r, TR(RA_NO_ANGLE));
 }
 
 /**
@@ -399,9 +403,8 @@ static void zero_row(rdy_row_t *r)
         return;
     }
     r->st  = (uint8_t)RDY_WARN;
-    r->why = TR(RA_NO_ZERO);
     r->fix = enc_shown();
-    snprintf(r->value, sizeof(r->value), "%s", r->why);
+    ready_set_why(r, TR(RA_NO_ZERO));
 }
 
 /**
@@ -448,26 +451,49 @@ const char *drive_hold_blocked(int *row)
     return NULL;
 }
 
-servo_seq_part_t drive_part_of(const char *why)
+drive_row_t drive_row_of(const char *why)
 {
-    const int n = drive_ready_count();
-    for (int i = 0; i < n && why != NULL; ++i) {
-        rdy_row_t r;
-        if (!drive_ready_row(i, &r) || r.why != why) {
-            continue;
-        }
-        switch (kind_of(i)) {
-        case DRR_SUPPLY:
-            return s.rdy.need.prog_5v   ? SERVO_SEQ_PART_PROG_5V
-                   : s.rdy.need.pd_mini ? SERVO_SEQ_PART_PD_MINI
-                                        : SERVO_SEQ_PART_NONE;
-        case DRR_ARM:
-            return SERVO_SEQ_PART_ARM;
-        default:
-            return SERVO_SEQ_PART_NONE;
+    if (why == NULL) {
+        return DRR_COUNT;
+    }
+    /* The texts the rows put in `why` and show as their state, by row.  A
+     * text is the table's own string, so the pointers compare. */
+    const struct {
+        const char *t;
+        drive_row_t row;
+    } k_own[] = {
+        { TR(P5_LOCKED), DRR_SUPPLY },
+        { TR(SUP_HELD_REFUSED), DRR_SUPPLY },
+        { TR(SUP_HELD_REFUSED_ESC), DRR_SUPPLY },
+        { TR(SV_TAP_HV), DRR_SUPPLY },
+        { TR(ALERT_ARM_PROG), DRR_ARM },
+        { TR(ALERT_ARM_ESC), DRR_ARM },
+        { ui_servo_str(SERVO_STR_START_LIMIT_RUNS), DRR_ARM },
+        { ui_servo_str(SERVO_STR_START_AUTO_RUNS), DRR_ARM },
+        { TR(RA_NO_ANGLE), DRR_ANGLE },
+        { TR(RA_NO_ZERO), DRR_ZERO },
+    };
+    for (size_t i = 0; i < sizeof(k_own) / sizeof(k_own[0]); ++i) {
+        if (why == k_own[i].t) {
+            return k_own[i].row;
         }
     }
-    return SERVO_SEQ_PART_NONE;
+    return DRR_COUNT;
+}
+
+servo_seq_part_t drive_part_of(const char *why)
+{
+    /* A refusal is a red row's text: the supply's or ARM's. */
+    switch (drive_row_of(why)) {
+    case DRR_SUPPLY:
+        return s.rdy.need.prog_5v   ? SERVO_SEQ_PART_PROG_5V
+               : s.rdy.need.pd_mini ? SERVO_SEQ_PART_PD_MINI
+                                    : SERVO_SEQ_PART_NONE;
+    case DRR_ARM:
+        return SERVO_SEQ_PART_ARM;
+    default:
+        return SERVO_SEQ_PART_NONE;
+    }
 }
 
 void drive_ready_tap(int i)
