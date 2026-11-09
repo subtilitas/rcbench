@@ -347,14 +347,16 @@ static void plan_write(servo_rauto_t *r, uint8_t s, float ms, uint32_t now_ms)
     int g = reg_of(r, s);
     const bool find = g < 0;
     if (find) {
-        g = 0;                  /* the first register tried first */
+        /* The register of the side's name first, the other one with
+         * REVERSION on: tried, then found by the measure. */
+        g = (int)s ^ (r->servo.reversion ? 1 : 0);
     }
     uint16_t next = 0u;
     bool can = next_value(r, g, ms, r->goal_deg[s], &next);
     if (!can && find) {
-        /* The first register cannot move toward the goal: the side may be
-         * the second one's, which can. */
-        g = 1;
+        /* That register cannot move toward the goal: the side may be the
+         * other one's, which can. */
+        g = 1 - g;
         can = next_value(r, g, ms, r->goal_deg[s], &next);
     }
     if (!can) {
@@ -369,6 +371,15 @@ static void plan_write(servo_rauto_t *r, uint8_t s, float ms, uint32_t now_ms)
         r->map_tries  = 1u;
         r->map_before = ms;
         r->map_expect = expect(r, g, next, ms, r->goal_deg[s]);
+    } else {
+        /* Held to its effect at the side's next measure (judge_effect()). */
+        if (r->eff_writes[s] == 0u) {
+            r->eff_from[s]   = ms;
+            r->eff_expect[s] = 0.0f;
+        }
+        r->eff_expect[s] += expect(r, g, next, ms, r->goal_deg[s]);
+        ++r->eff_writes[s];
+        r->eff_due = true;
     }
     r->side = s;
     go_safe(r, now_ms);
@@ -394,15 +405,18 @@ static bool judge_map(servo_rauto_t *r, float ms, bool within,
         r->map_open = false;
         r->reg_side[r->map_reg]      = (int8_t)s;
         r->reg_side[1u - r->map_reg] = (int8_t)(1u - s);
+        /* The register's later writes are held to their effect from
+         * here. */
+        r->eff_writes[s] = 0u;
         return true;
     }
     if (half > 0.0f && d <= -half) {
         fail(r, SERVO_RAUTO_WHY_MAPPING, now_ms);
         return false;
     }
-    /* It stayed. */
+    /* It stayed.  A second time: neither register moved the side. */
     if (r->map_tries >= 2u) {
-        fail(r, SERVO_RAUTO_WHY_MAPPING, now_ms);
+        fail(r, SERVO_RAUTO_WHY_NO_EFFECT, now_ms);
         return false;
     }
     /* The register is found on the run's first writes of a side: no cap
@@ -423,6 +437,38 @@ static bool judge_map(servo_rauto_t *r, float ms, bool within,
     r->map_expect = expect(r, g, next, ms, r->goal_deg[s]);
     go_safe(r, now_ms);
     return false;
+}
+
+/**
+ * @brief The side measured after a write to its known register: the
+ *        writes since the last one that moved it held to the change the
+ *        model gives for them (servo_rudder_auto.h, "Each write is held to
+ *        its effect").
+ * @param r      Run state.
+ * @param ms     The measure along the side's direction, °.
+ * @param within It lies within the tolerance.
+ * @param now_ms Time, ms.
+ * @return false when the run ended: the writes did not move the side.
+ */
+static bool judge_effect(servo_rauto_t *r, float ms, bool within,
+                         uint32_t now_ms)
+{
+    const uint8_t s = r->side;
+    const float tol = tol_deg(r);
+    const float e = r->eff_expect[s];
+    const float big = fabsf(e);
+    const float along = (ms - r->eff_from[s]) * (e < 0.0f ? -1.0f : 1.0f);
+    const float need = fminf(big / 2.0f, tol);
+    if (within || (big >= tol - RAUTO_EPS_DEG && along >= need)) {
+        r->eff_writes[s] = 0u;
+        return true;
+    }
+    if (r->eff_writes[s] >= SERVO_RAUTO_NO_EFFECT_WRITES
+        && big >= tol - RAUTO_EPS_DEG) {
+        fail(r, SERVO_RAUTO_WHY_NO_EFFECT, now_ms);
+        return false;
+    }
+    return true;
 }
 
 /**
@@ -476,6 +522,12 @@ static void measured(servo_rauto_t *r, float deg, uint32_t now_ms)
     }
     if (r->map_open && !judge_map(r, ms, within, now_ms)) {
         return;
+    }
+    if (r->eff_due) {
+        r->eff_due = false;
+        if (!judge_effect(r, ms, within, now_ms)) {
+            return;
+        }
     }
     if (within) {
         r->verified[s]    = true;
@@ -676,6 +728,12 @@ static void first_read(servo_rauto_t *r, const servo_rauto_servo_t *sv,
     }
     r->read_once = true;
     r->servo     = *sv;
+    if (r->cfg.family == SERVO_RAUTO_FAM_HITEC_D && !sv->reversion) {
+        /* Known: LEFT END (0xB2) at 1000us, RIGHT END (0xB0) at 2000us on
+         * a D series servo set to CW (servo_rudder_auto.h). */
+        r->reg_side[0] = 0;
+        r->reg_side[1] = 1;
+    }
     r->cur[0]    = sv->value[0];
     r->cur[1]    = sv->value[1];
     memcpy(r->pulse_now, sv->pulse_dus, sizeof(r->pulse_now));

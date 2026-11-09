@@ -10726,6 +10726,12 @@ UI_SERVO_TEXT(SERVO_STR_RA_WHY_LIMIT,
 UI_SERVO_TEXT(SERVO_STR_RA_WHY_WRITE_CAP,
     "8 writes per side reached",
     "8 Schreibvorgänge je Seite")
+UI_SERVO_TEXT(SERVO_STR_RA_WHY_NO_EFFECT_LO,
+    "writes do not move the 1000us side",
+    "Schreiben bewegt 1000us-Seite nicht")
+UI_SERVO_TEXT(SERVO_STR_RA_WHY_NO_EFFECT_HI,
+    "writes do not move the 2000us side",
+    "Schreiben bewegt 2000us-Seite nicht")
 UI_SERVO_TEXT(SERVO_STR_RA_R_TITLE,
     "RCBENCH RUDDER AUTO REPORT",
     "RCBENCH RUDER-AUTO-BERICHT")

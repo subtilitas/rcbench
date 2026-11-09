@@ -1819,10 +1819,38 @@ angefragt ist).
   Seiten mit einem Vorzeichen beenden den Lauf mit `Endpoint einer Seite fehlt`.
 - Eine Seite außerhalb der Toleranz bekommt Wert x Sollwert / gemessen,
   begrenzt auf den Bereich des Registers. Ein Wert, der auf den geltenden
-  rundet, geht einen Zählwert zum Sollwert hin. Das erste Schreiben geht an
-  LEFT ANGLE; bewegt sich die Seite nicht um die Hälfte der erwarteten
-  Änderung, geht der Wert an RIGHT ANGLE und LEFT ANGLE zurück. Das
-  gefundene Register bewegt diese Seite, das andere die andere Seite.
+  rundet, geht einen Zählwert zum Sollwert hin.
+- Welches Register welche Seite bewegt. Ein Hitec-Servo der D-Serie mit
+  CW hat LEFT END (0xB2) bei 1000us und RIGHT END (0xB0) bei 2000us, bekannt
+  aus dem Lesen: die Ziellinie der D-Serie legt 1000us zwischen Ziel 400
+  (0xB2) und 3000 (0xC2) (`hitec_live.h`), wie an einem D485HW gemessen. Bei jedem anderen Servo (KST/Chaservo, Hitec Classic, ein
+  Servo der D-Serie mit CCW) ist die Seite nicht bekannt, und das erste
+  Schreiben findet sie. Dieses Schreiben geht an das Register mit dem
+  Namen der Seite (LEFT für 1000us), wenn REVERSION (Hitec: CCW) aus ist,
+  sonst an das andere. Das Register hat die Seite bewegt, wenn sie in der
+  Toleranz landet oder sich um mindestens die Hälfte der erwarteten
+  Änderung zum Sollwert hin bewegt. Die Hälfte in die andere Richtung
+  beendet den Lauf mit `Endpoint einer Seite fehlt`. Bleibt die Seite
+  stehen, bekommt das andere Register den Wert, und das erste geht auf
+  seinen Wert zurück. Bleibt sie wieder stehen, endet der Lauf mit
+  `Schreiben bewegt 1000us-Seite nicht` oder `... 2000us-Seite nicht`. Das
+  gefundene Register bewegt diese Seite, das andere die andere Seite. Eine
+  Seite, die bei ihrer ersten Messung in der Toleranz liegt, bekommt kein
+  Schreiben: das erste Schreiben der anderen Seite findet beide.
+- Jedes Schreiben wird an seiner Wirkung gemessen. E ist die Summe der
+  Änderungen, die das Modell für die Schreibvorgänge einer Seite seit dem
+  letzten erwartet, das sie bewegt hat; O ist die gemessene Änderung seit
+  der Messung vor dem ersten davon. Sie haben die Seite bewegt, wenn sie in
+  der Toleranz landet, oder wenn |E| mindestens die Toleranz ist und O um
+  mindestens |E| / 2 oder die Toleranz, je nachdem was kleiner ist, in
+  Richtung E liegt. Bei 0,5° Toleranz braucht eine erwartete Änderung von
+  2,4° also 0,5°, eine von 0,6° braucht 0,3°. Zwei solche Schreibvorgänge
+  ohne Bewegung der Seite, Bewegungen in die falsche Richtung
+  eingeschlossen, beenden den Lauf mit `Schreiben bewegt 1000us-Seite
+  nicht` oder `... 2000us-Seite nicht`. Schreibvorgänge mit |E| unter der
+  Toleranz werden nicht bewertet: das Rauschen der Winkelquelle hat diese
+  Größe. Aus demselben Grund beendet ein einzelnes Schreiben den Lauf
+  nicht.
 - Jedes Schreiben ist eine Sitzung: das Servo 1000ms auf PULS MITTE
   gehalten, SAFE, VERBINDEN, Schreiben und Kontrolllesen, VERLASSEN mit dem für
   diese Servofamilie nötigen Versorgungszyklus, ARMED und erneutes Messen
@@ -1832,6 +1860,14 @@ angefragt ist).
 - BESTANDEN: beide Seiten innerhalb der Toleranz, jede nach dem letzten
   Schreiben gemessen. Eine Seite außerhalb nach 8 Schreibvorgängen beendet
   den Lauf mit `8 Schreibvorgänge je Seite`.
+- NICHT BESTANDEN endet wie jedes Ende mit losgelassenem Servo, dem
+  Prüfstand in SAFE und den Versorgungen aus (siehe Schutz). Nach einem
+  Lauf mit NICHT BESTANDEN oder ABGEBROCHEN, der einen Wert geändert hat,
+  nennt die dritte Zeile der AUTO-Box, wie die Werte vor dem Lauf
+  zurückkommen: `ZURÜCKSPIELEN IN KST` bei KST/Chaservo, `HITEC001 IN
+  DATEIEN LADEN` mit dem Namen der Backup-Datei bei Hitec, `KEINE
+  BACKUP-DATEI`, wo keine gespeichert wurde. Der Lauf schreibt selbst
+  keinen Wert zurück.
 
 ### Schutz
 
@@ -1878,7 +1914,18 @@ Angabe, ob sie innerhalb der Toleranz liegt.
 - Ein Servo der D-Serie hält bei 1000us nach dem Zielmodell aus
   `hitec_live.h` bei 76,9% des Wegs zu seinem Endpoint an; das ist nicht
   gemessen, der Lauf misst nach jedem Schreiben. Die Zuordnung der
-  D-Serie an einem CCW-Servo ist nicht gemessen.
+  D-Serie an einem CCW-Servo ist nicht gemessen; der Lauf findet sie beim
+  ersten Schreiben.
+- Eine Drift der Winkelquelle in Richtung der erwarteten Änderung sieht
+  aus wie eine bewegte Seite. Eine BWT901CL im 6-Achs-Modus auf Gieren
+  driftet 2,4° in 100s (ein Lauf am Prüfstand). Ein Register, das auf
+  so einer Messung gefunden wurde, wird an den folgenden Schreibvorgängen
+  gemessen: 2 ohne Bewegung der Seite beenden den Lauf. Eine Drift, die
+  mit jedem Schreiben Schritt hält, wird nicht erkannt.
+- Ein Wert bewegt sich nur im Bereich des Registers. Eine Grenze für
+  seine gesamte Änderung gegenüber dem Wert vor dem Lauf gibt es nicht;
+  8 Schreibvorgänge je Seite und die Wirkungsprüfung über 2
+  Schreibvorgänge begrenzen sie.
 
 ## Sweep und TEMPO
 

@@ -16,8 +16,10 @@
  * measure, done when |measured - goal| <= tol, else
  * value = value x goal / measured within lo..hi (a linear servo between
  * neutral and the end), write in a session, move again.  Which register
- * moves which side is found on the first write as the limit run finds it
- * (the side that moved).  The current guard of the limit run holds
+ * moves which side is known from the family and its direction (Hitec D
+ * series set to CW), else found on the first write.  Two writes in a row
+ * that do not move their side end the run.  The current guard of the
+ * limit run holds
  * throughout (SERVO_LIMRUN_HARD_MA, SERVO_LIMRUN_STALL_MA for
  * SERVO_LIMRUN_STALL_MS): a stall before the goal ends the run with
  * SURFACE BINDS AT x°; the angle lost longer than SERVO_GAP_MAX_MS ends it
@@ -55,17 +57,39 @@
  *     (SERVO_RAUTO_WHY_LIMIT), while the side's register is not found yet
  *     only once neither register can move; a side measured outside after
  *     SERVO_RAUTO_WRITES_MAX writes as FAIL (SERVO_RAUTO_WHY_WRITE_CAP).
- *   - The first write goes to the first register (KST LEFT ANGLE), or to
- *     the second where the first cannot move toward the goal, and the
- *     side is measured again.  The side moved when it lands within the
- *     tolerance or travels at least half the change the model gives,
- *     toward it; it moved the wrong way when it travels that far the other
- *     way, which ends the run as FAIL (SERVO_RAUTO_WHY_MAPPING); otherwise
- *     it stayed: the first register goes back to its value and the side's
- *     value, worked out from the second register, goes to that one, and
- *     the side is measured again.  Stayed a second time, the run ends as
- *     FAIL (SERVO_RAUTO_WHY_MAPPING).  The register found moves that side,
- *     the other one the other side.
+ *   - The register of each side.  Known from the read session where the
+ *     family says it: a Hitec D series servo set to CW has LEFT END (0xB2,
+ *     the first register) at 1000us and RIGHT END (0xB0) at 2000us; the
+ *     D series target line puts 1000us between target 400 (0xB2) and 3000
+ *     (0xC2), hitec_live.h, and a D485HW measured so.  Every other family
+ *     and direction (KST, Hitec classic, a D series servo set to CCW) is
+ *     not known: the first write of the side measured first outside the
+ *     tolerance finds it.  That write goes to the register of the side's
+ *     name with REVERSION (Hitec: CCW) off, the other one with it on, or
+ *     to the other register where that one cannot move toward the goal,
+ *     and the side is measured again.  The side moved when it lands
+ *     within the tolerance or travels at least half the change the model
+ *     gives, toward it; it moved the wrong way when it travels that far
+ *     the other way, which ends the run as FAIL (SERVO_RAUTO_WHY_MAPPING);
+ *     otherwise it stayed: the register tried goes back to its value and
+ *     the side's value, worked out from the other register, goes to that
+ *     one, and the side is measured again.  Stayed a second time, neither
+ *     register moved it: the run ends as FAIL
+ *     (SERVO_RAUTO_WHY_NO_EFFECT).  The register found moves that side,
+ *     the other one the other side.  A side within the tolerance at its
+ *     first measure gets no write, so it finds nothing: the other side's
+ *     first write does.
+ *   - Each write is held to its effect.  For the writes of a side since
+ *     the last one that moved it, E is the sum of the changes the model
+ *     gives, O the measured change since the measure before the first of
+ *     them.  They moved the side when it lands within the tolerance, or
+ *     |E| >= tol and O lies along E by at least min(|E| / 2, tol).  Not
+ *     moved after SERVO_RAUTO_NO_EFFECT_WRITES of them with |E| >= tol,
+ *     the run ends as FAIL (SERVO_RAUTO_WHY_NO_EFFECT, WRITE DID NOT MOVE
+ *     THE 1000us or 2000us SIDE); that covers a measure that moves the
+ *     wrong way.  Writes with |E| under the tolerance are not judged: the
+ *     angle source's noise is of that size.  The register-finding write is
+ *     judged as above and starts the count anew once found.
  *   - A write session: the servo held at PULSE CENTER for
  *     SERVO_LIMRUN_RETURN_MS, SAFE asked, CONNECT, the write, LEAVE, ARMED
  *     asked, the written side measured.  A CONNECT that reads other values
@@ -122,6 +146,10 @@ extern "C" {
 
 /** @brief Writes a side takes at most. */
 #define SERVO_RAUTO_WRITES_MAX  8u
+/** @brief Writes in a row whose model change sums to at least the tolerance
+ *         and that do not move their side end the run: one alone can be the
+ *         angle source's noise. */
+#define SERVO_RAUTO_NO_EFFECT_WRITES 2u
 /**
  * @brief The measures a run can take: between two writes at most two (the
  *        written side, then the other side's CHECK), and as many before
@@ -224,6 +252,7 @@ typedef enum {
     SERVO_RAUTO_WHY_ANGLE, SERVO_RAUTO_WHY_NO_SERVO, SERVO_RAUTO_WHY_PROG,
     SERVO_RAUTO_WHY_WRITE, SERVO_RAUTO_WHY_MAPPING, SERVO_RAUTO_WHY_LIMIT,
     SERVO_RAUTO_WHY_WRITE_CAP, SERVO_RAUTO_WHY_BENCH, SERVO_RAUTO_WHY_SUPPLY,
+    SERVO_RAUTO_WHY_NO_EFFECT,
     SERVO_RAUTO_WHY_COUNT,
 } servo_rauto_why_t;
 
@@ -300,6 +329,13 @@ typedef struct {
     uint8_t  map_tries;               /**< registers tried */
     float    map_before;              /**< the side's measure before it */
     float    map_expect;              /**< the change the model gives */
+    bool     eff_due;                 /**< the next measure of side judges
+                                           the writes not yet seen to move
+                                           it */
+    uint8_t  eff_writes[2];           /**< those writes, by side */
+    float    eff_from[2],             /**< the measure before the first, ° */
+             eff_expect[2];           /**< the change the model gives for
+                                           them, summed, ° */
 } servo_rauto_t;
 
 /**

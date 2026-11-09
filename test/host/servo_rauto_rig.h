@@ -1,10 +1,11 @@
 /*
- * The AUTO end points run's rig, for test_servo_rauto.c and
- * test_servo_rauto_guard.c.
+ * The AUTO end points run's rig, for test_servo_rauto.c,
+ * test_servo_rauto_guard.c and test_servo_rauto_effect.c.
  *
  * The rig: a surface on a servo whose deflection at 1000us and at 2000us
  * is linear in the register that moves that side (map[]), dir[] giving
- * each side's sign; between the end pulses and PULSE CENTER the deflection
+ * each side's sign, frozen[] a side no write moves, drift[] an offset
+ * that appears after a number of writes, as an IMU's drift does; between the end pulses and PULSE CENTER the deflection
  * is linear in the pulse.  The surface travels at 200°/s and is still once
  * it moved less than 0.5° for a time, as the IMU path counts still_ms.  A
  * bind on a side holds the surface at that deflection and the servo then
@@ -46,6 +47,12 @@ typedef struct {
     float    resp;               /* a write moves this share of the
                                     linear change: 1 linear               */
     float    bind[2];            /* a bind at this deflection, 0 none     */
+    bool     frozen[2];          /* the side keeps its start deflection
+                                    whatever is written                   */
+    float    drift[2];           /* added along the side's direction once
+                                    drift_from value writes landed, °     */
+    unsigned drift_from;
+    bool     reversion;          /* the servo's REVERSION (Hitec: CCW)    */
     bool     jitter;             /* the surface never still               */
     float    angle;              /* the surface now, °                    */
     float    still_ref;
@@ -105,8 +112,14 @@ static inline float rig_target(uint16_t us)
     float e[2];
     for (int s = 0; s < 2; ++s) {
         const int r = g.map[s];
-        const float lin = g.gain * (float)g.v0[r]
-                          + g.resp * g.gain * ((float)g.v[r] - (float)g.v0[r]);
+        float lin = g.gain * (float)g.v0[r]
+                    + g.resp * g.gain * ((float)g.v[r] - (float)g.v0[r]);
+        if (g.frozen[s]) {
+            lin = g.gain * (float)g.v0[r];
+        }
+        if (g.drift_from > 0u && g.write_ops - g.pulse_ops >= g.drift_from) {
+            lin += g.drift[s];
+        }
         e[s] = g.dir[s] * lin;
     }
     if (us <= 1000u) {
@@ -236,6 +249,7 @@ static inline void programmer(void)
         }
         sv.lo = g.lo;
         sv.hi = g.hi;
+        sv.reversion = g.reversion;
         memcpy(sv.pulse_dus, g.pulses, sizeof(sv.pulse_dus));
         servo_rauto_connected(&g.run, &sv, g.now);
     } else if (op == OP_WRITE) {

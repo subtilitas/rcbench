@@ -6,7 +6,7 @@
  * goal is the target times 1 + margin; a value is clamped to lo and hi and
  * the run fails LIMIT when the goal needs more; eight writes a side end in
  * WRITE_CAP; the first write finds the register of each side and a wrong
- * guess is swapped, twice not found is MAPPING; both end pulses on one side
+ * guess is swapped, twice not found is NO_EFFECT; both end pulses on one side
  * of the zero is MAPPING; the KST pulse write comes before any end pulse,
  * Hitec gets none; the report lists every measure and the CSV one row a
  * measure; start refuses what lies outside its ranges; the 32-bit ms wrap
@@ -187,13 +187,14 @@ TEST_CASE(the_first_write_finds_the_register_of_each_side_and_a_wrong_guess_is_s
     CHECK_EQ(g.run.writes[1], 1u);
     CHECK(in_report("moves the 1000us side"));
 
-    /* A servo whose registers move nothing it is measured on. */
+    /* A servo whose registers move nothing it is measured on: neither
+     * register moved the side. */
     rig_init(0u);
     g.resp = 0.0f;
     CHECK(start());
     run_for(RAUTO_MS);
     CHECK_EQ(g.run.verdict, SERVO_RAUTO_FAIL);
-    CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_MAPPING);
+    CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_NO_EFFECT);
     CHECK_EQ(g.run.writes[0], 2u);
     /* The first register back to its value. */
     CHECK_EQ(g.v[0], 150u);

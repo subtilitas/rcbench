@@ -112,6 +112,23 @@ history is in git.
 
 ### Fixed
 
+- RUDDER AUTO could program the 1000us side's end point for the 2000us
+  side. Trigger: the 1000us side within TOLERANCE at its first measure,
+  so its register was never found by a write, and the 2000us side's first
+  write tried LEFT ANGLE or LEFT END first; an angle change from the
+  angle source's drift (1.4° against 0.5° expected, IMU in 6-axis mode)
+  read as that side moving. The writes after it moved nothing on that side
+  and the run went on to `8 writes per side reached`, LEFT END on a
+  D485HW left at 6627 counts against 4726 before the run. A Hitec D
+  series servo set to CW has its registers from the read: LEFT END at
+  1000us, RIGHT END at 2000us. On every other servo the first write of a
+  side goes to the register of the side's name, the other one with
+  REVERSION (Hitec: CCW) on. Two writes in a row whose expected change
+  sums to TOLERANCE or more and that do not move their side, or move it
+  the wrong way, end the run as FAIL with `writes do not move the 2000us
+  side` (or the 1000us side); so does a side that neither register moves
+  while it is being found. The run ends with every output off, and AUTO's
+  third line offers RESTORE or names the backup file.
 - LIMIT RUN's and RUDDER AUTO's SERVO set to HITEC fell back to
   KST/CHASERVO after a restart and after opening the KST programmer from
   the hub; opening the HITEC programmer set it to HITEC. Both screens
