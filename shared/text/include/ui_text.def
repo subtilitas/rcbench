@@ -10885,6 +10885,9 @@ UI_TEXT(RA_NO_ANGLE, 0,
 UI_TEXT(RA_IMU_YAW, 48,
     "IMU YAW NEEDS 9-AXIS",
     "IMU-GIEREN BENÖTIGT 9-AXIS")
+UI_TEXT(RA_IMU_9_UNCONFIRMED, 48,
+    "IMU 9-AXIS NOT CONFIRMED",
+    "IMU 9-AXIS NICHT BESTÄTIGT")
 UI_TEXT(SV_YAW_TITLE, 58,
     "IMU YAW DRIFTS IN 6-AXIS: PICK A FIX",
     "IMU-GIEREN DRIFTET IN 6-AXIS: ABHILFE WÄHLEN")
@@ -11074,14 +11077,14 @@ UI_SETTING_LABEL(SET_RUDDER_ZERO_DEG,
     "RUDDER zero",
     "RUDER-Nullpunkt")
 UI_SETTING_HELP(SET_RUDDER_ZERO_DEG,
-    "The source's angle ZERO took, kept across a restart",
-    "Winkel der Quelle beim NULLPUNKT, über einen Neustart behalten")
+    "The AS5600's angle ZERO took, kept across a restart",
+    "Winkel des AS5600 beim NULLPUNKT, über einen Neustart behalten")
 UI_SETTING_LABEL(SET_RUDDER_ZERO_KEY,
-    "RUDDER zero source",
-    "RUDER-Nullpunkt Quelle")
+    "RUDDER zero saved",
+    "RUDER-Nullpunkt gespeichert")
 UI_SETTING_HELP(SET_RUDDER_ZERO_KEY,
-    "The source and IMU axis the zero belongs to; 0 none",
-    "Quelle und IMU-Achse des Nullpunkts; 0 keiner")
+    "1 a zero saved on the AS5600; 0 none",
+    "1 ein Nullpunkt am AS5600 gespeichert; 0 keiner")
 
 /* The SERVO workbench's RUDDER task (servo_rudder_panel.c): its tab, the
  * readout of the surface's deflection in ° and in mm at the trailing edge,

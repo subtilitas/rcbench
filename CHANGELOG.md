@@ -33,11 +33,11 @@ history is in git.
   Hitec servo's raw value (`(raw value)`). The HITEC page's TRAVEL names the unit in
   its D series labels: `NEUTRAL (COUNTS)`, `LEFT END (COUNTS)`, `RIGHT END
   (COUNTS)`.
-- RUDDER's zero survives a restart: ZERO saves it with its source, the
-  AS5600 or the IMU with its AXIS, SIGN and algorithm (`rud_zero`,
-  `rud_zero_key`), and it comes back while that source is in force. A
-  change of source, AXIS, SIGN or algorithm drops the saved zero; the
-  IMU's yaw in 6-AXIS is not saved.
+- RUDDER's zero on the AS5600 survives a restart: ZERO saves it
+  (`rud_zero`, `rud_zero_key`), and it comes back while the AS5600 is
+  ANGLE SOURCE. Another source drops the saved zero. A zero on the IMU
+  lasts until the restart and is never saved: its BLE link is not
+  authenticated.
 - RUDDER AUTO bounds each write: a register's new value lies within 50%
   of the model's first estimate for it, value0 x goal / measured0. A value
   past it ends the run as FAIL `end point too far from its estimate`
@@ -48,6 +48,11 @@ history is in git.
   in red, ARM + START is refused, and a tap offers `SWITCH IMU TO 9-AXIS`,
   `USE IMU AXIS X (ROLL)` and `USE IMU AXIS Y (PITCH)`, each written and
   saved as SETUP > SENSORS does. Roll and pitch stay allowed in 6-AXIS.
+  With 9-AXIS set, the panel sends unlock, AXIS6 0 and SAVE once on
+  every connection, one flash write, and yaw opens only once the sensor
+  acknowledged that SAVE; until then, and after a refused write or a
+  restart, the row reads `IMU 9-AXIS NOT CONFIRMED` in red with the same
+  list.
   Another IMU algorithm drops RUDDER's zero and MAX, as another axis does.
 - The PROG 5V lost error on the carrier watches a KST or Hitec session's
   5V as well: under a session a finding waits for a PROG_SUPPLY page read

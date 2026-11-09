@@ -52,6 +52,9 @@
  * AXIS X (ROLL)` and `USE IMU AXIS Y (PITCH)`.  A pick writes SET_IMU_ALGO
  * or SET_IMU_AXIS and saves, as SETUP > SENSORS does; the panel sends the
  * ALGORITHM to the sensor with its SAVE once connected (imu_sensor.h).
+ * With 9-AXIS set and the sensor not yet confirmed in it -- the write still
+ * to go, or refused -- the row reads `IMU 9-AXIS NOT CONFIRMED` and its tap
+ * opens the same list.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -479,9 +482,17 @@ bool angle_pick_current(int k)
 
 const char *angle_pick_yaw_why(void)
 {
-    return (enc_src() == SERVO_ANGLE_IMU && s.imu_axis == (uint8_t)IMU_AXIS_Z
-            && settings_get_int(SET_IMU_ALGO) == 0)
-               ? TR(RA_IMU_YAW) : NULL;
+    if (enc_src() != SERVO_ANGLE_IMU || s.imu_axis != (uint8_t)IMU_AXIS_Z) {
+        return NULL;
+    }
+    if (settings_get_int(SET_IMU_ALGO) == 0) {
+        return TR(RA_IMU_YAW);
+    }
+    /* 9-AXIS asked: yaw only once the sensor took it on this
+     * connection, the ALGORITHM write and its SAVE (imu_view_t.nine_axis).
+     * A refused write may leave the sensor in 6-AXIS while its angles go
+     * on. */
+    return imu_screen_view()->nine_axis ? NULL : TR(RA_IMU_9_UNCONFIRMED);
 }
 
 void angle_fix_open(void)

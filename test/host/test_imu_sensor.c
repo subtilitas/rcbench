@@ -554,10 +554,10 @@ TEST_CASE(a_connection_at_another_rsw_queues_rsw_0x0c_and_save_once)
     CHECK(!s.rsw_due);
     CHECK_EQ(s.out_n, 0u);
 
-    /* RSW and a RATE due: unlock, RSW, RATE, SAVE. */
+    /* RSW and a RATE due, 6-AXIS: unlock, RSW, RATE, SAVE. */
     imu_sensor_init(&s);
-    imu_sensor_values(&s, WIT_RATE_10HZ, false, false);
-    imu_sensor_values(&s, WIT_RATE_200HZ, false, true);
+    imu_sensor_values(&s, WIT_RATE_10HZ, true, false);
+    imu_sensor_values(&s, WIT_RATE_200HZ, true, true);
     imu_sensor_tick(&s, 0u, true);
     s.out_n = IMU_OUTBOX - 1u;                      /* no room: it waits */
     for (unsigned i = 0u; i < 2u; ++i) {

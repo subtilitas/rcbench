@@ -417,10 +417,11 @@ TEST_CASE(a_rate_change_goes_to_the_sensor_once_it_is_connected)
     CHECK(last < r.nsent);
     CHECK(rig_sent_is(&r, last, WIT_REG_AXIS6, six ? 1u : 0u, 0u));
     CHECK(rig_sent_is(&r, r.nsent - 1u, WIT_REG_SAVE, 0u, 0u));
-    /* The first values a controller takes send nothing. */
+    /* The first values a controller takes send nothing in 6-AXIS; 9-AXIS
+     * goes once a connection (nine_axis_is_written_once_per_connection). */
     rig_t q;
     rig_init(&q);
-    rig_cfg(&q, true, RIG_ADDR, 0, false);
+    rig_cfg(&q, true, RIG_ADDR, 0, true);
     (void)rig_settle(&q, 2000u);
     rig_stream(&q, 300u, 20u, 0.0f, 0.0f, 0.0f);
     CHECK_EQ(q.nsent, 0u);
@@ -699,6 +700,103 @@ TEST_CASE(imu_off_with_calsw_1_unanswered_sends_the_exit_at_the_next_connection)
     CHECK_EQ(r.nsent, at + 5u);              /* once */
 }
 
+/* The mode the sensor runs, as RUDDER AUTO's yaw gate reads it
+ * (imu_view_t.nine_axis): unknown at each connection's start, 9-AXIS only
+ * once an AXIS6 0 group's SAVE was acknowledged on that connection.
+ * 9-AXIS asked with the unlock refused: not 9-AXIS, the angles go on, the
+ * group held.  A restart with SETUP at 9-AXIS and the writes still
+ * refused: not 9-AXIS.  The next connection that takes it: 9-AXIS. */
+TEST_CASE(nine_axis_counts_once_the_sensor_took_its_save)
+{
+    rig_t r;
+    connected(&r);                                   /* 6-AXIS */
+    imu_view_t v;
+    imu_ctl_view(&r.c, &v);
+    CHECK(!v.nine_axis);
+    r.sim.fail = BSIM_Q_WRITE;
+    r.sim.fail_status = 0x10Eu;
+    const unsigned at = r.nsent;
+    rig_cfg(&r, true, RIG_ADDR, 2, false);           /* 9-AXIS asked */
+    rig_stream(&r, 300u, 20u, 0.0f, 0.0f, 0.0f);
+    CHECK_EQ(r.nsent, at + 1u);
+    CHECK(rig_sent_unlock(&r, at));
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.err, IMU_ERR_WRITE);
+    CHECK_EQ(v.link, IMU_LINK_CONNECTED);
+    CHECK(v.r.valid);
+    CHECK(!v.nine_axis);
+    r.sim.fail = 0u;
+    rig_stream(&r, 1000u, 20u, 0.0f, 0.0f, 0.0f);
+    CHECK_EQ(r.nsent, at + 1u);                      /* held */
+    imu_ctl_view(&r.c, &v);
+    CHECK(!v.nine_axis);
+    bsim_drop(&r.sim, r.t, 0x208u);
+    (void)rig_settle(&r, BLEU_RETRY_MS + 2000u);
+    CHECK(imu_ble_up(&r.c.ble));
+    rig_stream(&r, 1000u, 20u, 0.0f, 0.0f, 0.0f);
+    CHECK_EQ(r.nsent, at + 4u);
+    CHECK(rig_sent_unlock(&r, at + 1u));
+    CHECK(rig_sent_is(&r, at + 2u, WIT_REG_AXIS6, 0u, 0u));
+    CHECK(rig_sent_is(&r, at + 3u, WIT_REG_SAVE, 0u, 0u));
+    imu_ctl_view(&r.c, &v);
+    CHECK(v.nine_axis);
+
+    /* The failed switch, then a restart: SETUP says 9-AXIS, the sensor
+     * still refuses the writes.  Not 9-AXIS, the angles go on. */
+    rig_t q;
+    rig_init(&q);
+    q.sim.fail = BSIM_Q_WRITE;
+    q.sim.fail_status = 0x10Eu;
+    rig_cfg(&q, true, RIG_ADDR, 2, false);
+    (void)rig_settle(&q, 2000u);
+    rig_stream(&q, 1000u, 20u, 1.0f, 2.0f, 3.0f);
+    CHECK_EQ(q.nsent, 1u);
+    CHECK(rig_sent_unlock(&q, 0u));
+    imu_ctl_view(&q.c, &v);
+    CHECK_EQ(v.link, IMU_LINK_CONNECTED);
+    CHECK(v.r.valid);
+    CHECK(!v.nine_axis);
+}
+
+/* A restart with SETUP at 9-AXIS and a sensor that takes the writes:
+ * unknown until the AXIS6 0 group's SAVE is acknowledged, then 9-AXIS.
+ * Each connection writes it once, one SAVE, and is unknown again until
+ * its SAVE is acknowledged. */
+TEST_CASE(nine_axis_is_written_once_per_connection)
+{
+    rig_t r;
+    on_with_sensor(&r, RIG_ADDR);
+    rig_cfg(&r, true, RIG_ADDR, 2, false);
+    (void)rig_settle(&r, 2000u);
+    CHECK(imu_ble_up(&r.c.ble));
+    imu_view_t v;
+    imu_ctl_view(&r.c, &v);
+    CHECK(!v.nine_axis);                             /* before the ack */
+    rig_stream(&r, 1000u, 20u, 1.0f, 2.0f, 3.0f);
+    CHECK_EQ(r.nsent, 3u);
+    CHECK(rig_sent_unlock(&r, 0u));
+    CHECK(rig_sent_is(&r, 1u, WIT_REG_AXIS6, 0u, 0u));
+    CHECK(rig_sent_is(&r, 2u, WIT_REG_SAVE, 0u, 0u));
+    imu_ctl_view(&r.c, &v);
+    CHECK(v.nine_axis);
+    rig_stream(&r, 1000u, 20u, 1.0f, 2.0f, 3.0f);
+    CHECK_EQ(r.nsent, 3u);                           /* once */
+    bsim_drop(&r.sim, r.t, 0x208u);
+    rig_run(&r, 10u);
+    imu_ctl_view(&r.c, &v);
+    CHECK(!v.nine_axis);
+    (void)rig_settle(&r, BLEU_RETRY_MS + 2000u);
+    CHECK(imu_ble_up(&r.c.ble));
+    imu_ctl_view(&r.c, &v);
+    CHECK(!v.nine_axis);
+    rig_stream(&r, 1000u, 20u, 1.0f, 2.0f, 3.0f);
+    CHECK_EQ(r.nsent, 6u);
+    CHECK(rig_sent_is(&r, 4u, WIT_REG_AXIS6, 0u, 0u));
+    CHECK(rig_sent_is(&r, 5u, WIT_REG_SAVE, 0u, 0u));
+    imu_ctl_view(&r.c, &v);
+    CHECK(v.nine_axis);
+}
+
 /* IMU OFF while the unlock of a RATE and ALGORITHM change waits for its
  * answer: the write fails, and both writes are due again.  Unlock, RATE,
  * AXIS6 and SAVE go at the next connection, with SETUP's values. */
@@ -946,6 +1044,8 @@ int main(void)
     RUN(a_device_without_the_service_is_not_a_witmotion_sensor);
     RUN(a_dropped_link_comes_back_and_keeps_the_zero);
     RUN(a_refused_write_drops_the_rest_of_its_group);
+    RUN(nine_axis_counts_once_the_sensor_took_its_save);
+    RUN(nine_axis_is_written_once_per_connection);
     RUN(calibrate_sends_calsw_1_then_after_3s_calsw_0_and_save);
     RUN(calibrate_with_the_frames_lost_ends_failed);
     RUN(calibrate_with_frames_300ms_apart_ends_failed);

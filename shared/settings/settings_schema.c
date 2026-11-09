@@ -507,8 +507,9 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
      * LE, connects the bound sensor and reads it.  AXIS and SIGN pick the angle the servo runs
      * and RUDDER read (imu_axis_t).  RATE (imu_rate) and ALGORITHM
      * (imu_algo, AXIS6) go to the sensor as a command with SAVE when it is
-     * connected, else when it next connects; a RATE takes effect after a
-     * power cycle of the sensor.  FILTER (imu_filter) is the panel's
+     * connected, else when it next connects; 9-AXIS goes once more on
+     * every connection, since the stream carries no mode.  A RATE takes
+     * effect after a power cycle of the sensor.  FILTER (imu_filter) is the panel's
      * low-pass on the angle, 1 to 50 frames, 1 none (imu.h).
      */
     [SET_IMU_EN] = {
@@ -547,11 +548,11 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
         "rud_tol", "°",
         SET_CAT_SERVO, SET_TYPE_FLOAT, 0.1f, 5.0f, 0.1f, 0.5f, NULL, 0 },
     /*
-     * RUDDER's zero, kept across a restart: the source's angle ZERO took,
-     * and the source it was taken on, 0 for none (servo_rudder_panel.c,
-     * zero_key()): 1 the AS5600, 2 + 2 x IMU AXIS + IMU SIGN + 8 for
-     * 9-AXIS the IMU.  ZERO writes both; a change of source, AXIS, SIGN
-     * or ALGORITHM sets the key to 0.  No SETUP list shows them
+     * RUDDER's zero on the AS5600, kept across a restart: the angle ZERO
+     * took, and 1 for a zero saved, 0 for none (servo_rudder_panel.c).
+     * ZERO on the AS5600 writes both; another source sets the key to 0,
+     * as does any other value a store holds.  An IMU zero is not saved:
+     * its link is not authenticated.  No SETUP list shows them
      * (SET_CAT_SERVO).
      */
     [SET_RUDDER_ZERO_DEG] = {

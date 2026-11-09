@@ -84,8 +84,10 @@ bool angle_pick_draw_entry(gfx_canvas_t *c, int k, gfx_color_t fill,
 /**
  * @brief Why RUDDER AUTO refuses the angle source: the IMU's AXIS Z, yaw,
  *        while ALGORITHM is 6-AXIS, which has no magnetometer to hold it.
- * @return `IMU YAW NEEDS 9-AXIS`; NULL for the AS5600, AXIS X or Y, or
- *         9-AXIS.
+ * @return `IMU YAW NEEDS 9-AXIS` in 6-AXIS; `IMU 9-AXIS NOT CONFIRMED`
+ *         with 9-AXIS set while the sensor has not taken it
+ *         (imu_view_t.nine_axis); NULL for the AS5600, AXIS X or Y, or
+ *         9-AXIS the sensor took.
  */
 const char *angle_pick_yaw_why(void);
 /**
