@@ -59,6 +59,7 @@ SOURCES = [
     "shared/ui/motor_workbench.c",
     "shared/ui/motor_settings_page.c",
     "shared/ui/motor_program_page.c",
+    "shared/ui/motor_logname.c",
     "shared/ui/supply_screen.c",
     "shared/ui/supply_events.c",
     "shared/ui/supply_draw.c",

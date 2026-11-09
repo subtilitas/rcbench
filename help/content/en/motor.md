@@ -10,7 +10,7 @@ MOTOR & ESC drives an ESC (electronic speed controller) and records a run: volta
 
 ## The layout
 
-The top strip has two tasks: LIVE and PROGRAM. Tap a task to switch to it. LIVE retains its selected view, PLOT or TABLE, when you return.
+The top strip has two tasks: LIVE and PROGRAM. Tap a task to switch to it. LIVE retains its selected view, PLOT or TABLE, when you return. RENAME LOG on the right of the strip gives the last MOTOR log a label ([The log of a run](#the-log-of-a-run)).
 
 | Task | The left column |
 |---|---|
@@ -34,6 +34,7 @@ The home tag at the top left moves up one level at a time:
 | the keypad over the settings list | the list; the value is not changed |
 | the settings list | LIVE or PROGRAM, first asking about a change you have not saved |
 | a session on PROGRAM | one level up in the session, then PROGRAM's list |
+| RENAME LOG's keyboard | LIVE or PROGRAM's list; nothing is renamed |
 | LIVE or PROGRAM's list | the menu; the bench switches to SAFE |
 
 ## PROGRAM
@@ -139,6 +140,16 @@ The plot header shows rated kV, measured rpm per volt and EFF. EFF is measured r
 ## The log of a run
 
 When Auto logs is ON under [SETUP](setup.md#sd-card) > SD CARD, each switch to ARMED starts a `MOTORnnn.CSV` file in `BENCH/LOGS` on the panel's SD (Secure Digital) card. With the link up, each answered poll adds a row. One bench produced about 19 rows per second; other benches have not been measured. Switching to SAFE closes the file. Open it in [Logs](logs.md) to plot the run.
+
+![RENAME LOG's keyboard](view:motor-logname)
+
+RENAME LOG gives the MOTOR log closed since the panel started a label behind its number: `MOTOR042.CSV` becomes `MOTOR042_kv1200.CSV`. The run keeps its number and its place in [Logs](logs.md).
+
+- RENAME LOG is a tap. It works while the bench is SAFE, ARM is not held, no log file is open and the log's card is still in the slot. Otherwise it is dimmed, and a tap names the reason in the alert band, such as `No MOTOR log since the start.`
+- The keyboard edits the label alone, up to 46 bytes. It opens with the label the file has. OK on an empty field removes the label.
+- The keyboard covers ARM. CANCEL or the home tag closes it without a change.
+- The alert band says `Log renamed: MOTOR042_kv1200.CSV`, or why not, such as `MOTOR042_kv1200.CSV already exists there.`
+- After a restart the button stays dimmed until the next MOTOR run ends. Rename older logs in [Files](files.md).
 
 ## Related pages
 

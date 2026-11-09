@@ -63,6 +63,7 @@ entries:
     motor_workbench (rcbench_extram_bss)
     motor_settings_page (rcbench_extram_bss)
     motor_program_page (rcbench_extram_bss)
+    motor_logname (rcbench_extram_bss)
     esc_stick_pages (rcbench_extram_bss)
     esc_stick_panel (rcbench_extram_bss)
     esc_stick_list (rcbench_extram_bss)

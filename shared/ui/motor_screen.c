@@ -123,6 +123,7 @@ static void reset(void)
     mwb_reset();
     msp_reset();
     mpp_reset();
+    mln_reset();
     ui_plot_init(&s.plot, mo_series, S_COUNT,
                  (float)PLOT_W / SAMPLE_HZ);
     /* A screen that has just reset has no run behind it and no bench in
@@ -526,7 +527,7 @@ void motor_screen_knob(float span_fraction)
      * On SETTINGS the throttle is out of sight, and the knob moves nothing.
      */
     if (span_fraction == 0.0f || s.slider.dragging || s.knob_finger
-        || mwb_task() != UI_WB_LIVE || msp_shown()
+        || mwb_task() != UI_WB_LIVE || msp_shown() || mln_shown()
         || (s.pending.kind != MOTOR_CMD_NONE
             && s.pending.kind != MOTOR_CMD_THROTTLE)) {
         return;
@@ -584,6 +585,7 @@ static void leave(void)
     msp_close();
     mpp_leave();
     mwb_cancel();
+    mln_close();
     ++s.ctrl_rev;
     ++s.arm_rev;
 }
@@ -609,6 +611,10 @@ static void enter(void)
  */
 static bool back(void)
 {
+    if (mln_shown()) {
+        mln_close();            /* the keyboard first: nothing renamed */
+        return true;
+    }
     if (!msp_back() && !mpp_back()) {
         return false;
     }
@@ -664,6 +670,7 @@ static void cancel(void)
     mwb_cancel();
     msp_cancel();
     mpp_cancel();
+    mln_cancel();
     s.pressed    = 0;
     s.have_press = false;
     ++s.ctrl_rev;
@@ -673,10 +680,14 @@ static void cancel(void)
 /* The title keeps its 11 characters, the one title over 10 (owner's
  * decision): its home tag ends at x 226, over the band's chip row. */
 /**
- * @brief ui_screen_t's covered: the SETTINGS list or a programming page.
+ * @brief ui_screen_t's covered: the SETTINGS list, a programming page or
+ *        RENAME LOG's keyboard.
  * @return true while one is up
  */
-static bool covered(void) { return msp_shown() || mpp_shown() != NULL; }
+static bool covered(void)
+{
+    return msp_shown() || mpp_shown() != NULL || mln_shown();
+}
 
 static const ui_screen_t k_screen = {
     .covered = covered,

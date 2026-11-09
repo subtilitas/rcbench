@@ -233,6 +233,16 @@ A row the cut stops part way through has no line feed; the reader leaves it out 
 it (`log_analysis_t.cut_row`), host-tested at every cut position of a row in
 `test_logwriter`.
 
+RENAME LOG on MOTOR & ESC gives the MOTOR log closed since power-on a label behind its
+number, a FILES rename (`fm_logname_run()` in `shared/files/fm_logname.c`, `test_fm_logname`:
+a taken name, a log renamed elsewhere, the card pulled or swapped, ARMED, a log open, a full
+or write-protected card, a label too long or with a mark FAT refuses). The button and its
+keyboard (`shared/ui/motor_logname.c`, `test_motor_logname`): dimmed with its reason, the
+keyboard over ARM, closed by the home tag and by the bench leaving SAFE, one request per OK.
+The panel's record of the log and the rename on the logger task under the card's job lock
+(`firmware/panel/main/panel_log.c`, `panel_log_rename.c`) are not host-tested; not run on a
+panel.
+
 ### File manager: FILES
 
 Built and tested on the host (`shared/ui/files_screen.c`, `files_draw.c`, `files_events.c`,
@@ -1315,7 +1325,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 517 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 519 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1331,7 +1341,7 @@ The host suite is 517 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_supply_screen_draw`, `test_supply_layout`, `test_prog5v_box`, `test_prog5v_lost`,
 `test_prog5v_wire`, `test_prog5v_servo`, `test_prog5v_supply`, `test_prog5v_input`, `test_prog5v_input_hitec`, `test_pdmini`, `test_motor`,
 `test_motor_draw`, `test_motor_throttle`, `test_motor_arm`, `test_motor_workbench`,
-`test_motor_program`, `test_motor_layout`, `test_value_state`, `test_servo`,
+`test_motor_program`, `test_motor_layout`, `test_motor_logname`, `test_value_state`, `test_servo`,
 `test_servo_knob`, `test_servo_two_drags`, `test_servo_two_drags_sweep`, `test_servo_drag`, `test_servo_repaint`, `test_repaint_parts`,
 `test_frame_work`,
 `test_servo_dial_sweep`, `test_servo_letgo`, `test_servo_curve`, `test_servo_supply`,
@@ -1384,7 +1394,7 @@ The host suite is 517 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_link_restart`, `test_logview`, `test_logview_report`, `test_logview_plot`,
 `test_logview_rank`, `test_logview_pages`, `test_logview_tabs`, `test_logview_delete`,
 `test_logview_touch`, `test_logview_layout`, `test_logview_row`, `test_log_name`,
-`test_log_take`, `test_card_tree`, `test_fm_tree`, `test_fm_ops`, `test_fm_match`,
+`test_log_take`, `test_card_tree`, `test_fm_tree`, `test_fm_ops`, `test_fm_logname`, `test_fm_match`,
 `test_fm_recheck`, `test_fm_req`, `test_files_screen`, `test_files_ops`, `test_files_open`,
 `test_files_view`, `test_files_edit`, `test_files_save`, `test_files_changed`,
 `test_files_rescan`, `test_logs_strip`, `test_textkey_editor`, `test_textkey_see`,

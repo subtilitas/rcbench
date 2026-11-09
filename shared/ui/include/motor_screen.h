@@ -21,6 +21,7 @@
 #include "settings.h"
 #include "ui_keypad.h"
 #include "ui_screen.h"
+#include "ui_textkey.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -301,6 +302,68 @@ void motor_screen_knob_cancel(void);
 
 /** True when a command was waiting; clears it. */
 bool motor_screen_poll_cmd(motor_cmd_t *out);
+
+/*
+ * RENAME LOG, in the strip row on LIVE and PROGRAM's list: the MOTOR log
+ * this bench closed since power-on given a label behind its number,
+ * MOTOR042.CSV to MOTOR042_kv1200.CSV (fm_logname.h).  A tap, live only
+ * while the bench is SAFE with ARM not held, no log file is open, and that
+ * log is on the card mounted now; a tap on the dimmed button says why in
+ * the alert band.  The keyboard it opens covers the body, ARM with it, and
+ * types the label alone, up to LOG_LABEL_MAX bytes; OK on an empty field
+ * gives the plain name back.  The bench leaving SAFE, the home tag and a
+ * way off the screen close it.
+ *
+ * The screen makes no card call: the panel hands the log in each frame
+ * and takes the label OK asked for (motor_screen_log_take()); the logger
+ * renames and the answer comes back through motor_screen_log_done().
+ */
+
+/**
+ * @brief The MOTOR log this bench closed since power-on, as the logger
+ *        records it.
+ * @param name     Its name now; "" or NULL for none since power-on.
+ * @param on_card  The card it was written on is the one mounted now.
+ * @param logging  The logger has a file open: a run, a test's CSV or a
+ *                 report.
+ */
+void motor_screen_set_last_log(const char *name, bool on_card, bool logging);
+
+/**
+ * @brief The label OK asked for, handed over once.  Until
+ *        motor_screen_log_done() the button says the card is busy.
+ * @param label Takes the label; "" for the plain name.
+ * @param n     Bytes at @p label: LOG_LABELLED_SIZE or more.
+ * @return True when a request was waiting.
+ */
+bool motor_screen_log_take(char *label, size_t n);
+
+/**
+ * @brief The answer to the request motor_screen_log_take() handed over, as
+ *        the band's notice: the new name, or why not.
+ * @param err  FM_OK, or the refusal or failure (fm_err_t).
+ * @param name The new name the rename asked for; "" when none was built.
+ */
+void motor_screen_log_done(int err, const char *name);
+
+/**
+ * @brief Whether RENAME LOG's keyboard is open over the body.
+ * @return True while it is.
+ */
+bool motor_screen_logname_shown(void);
+
+/**
+ * @brief Whether RENAME LOG is live: a tap opens the keyboard.
+ * @return False while it is dimmed.
+ */
+bool motor_screen_logname_live(void);
+
+/**
+ * @brief RENAME LOG's keyboard, open or closed, for a test to read its
+ *        title and text and where its keys are.
+ * @return The keyboard; never NULL.
+ */
+const ui_textkey_t *motor_screen_logname_keyboard(void);
 
 void motor_invalidate(void);
 const ui_screen_t *motor_screen(void);

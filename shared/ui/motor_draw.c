@@ -602,6 +602,12 @@ void mo_render(gfx_canvas_t *c, int buffer_index)
     const int buf = buffer_index & 1;
     mo_bind_colours();
 
+    /* RENAME LOG's keyboard covers the body; closing it repaints the
+     * screen whole. */
+    if (mln_render_over(c, buf)) {
+        return;
+    }
+
     /* A session opening or closing repaints the buffer whole. */
     const prog_page_set_t *ps = mpp_shown();
     if ((ps != NULL) != s.drawn_sess_shown[buf]) {
@@ -693,13 +699,15 @@ static void render_body(gfx_canvas_t *c, unsigned bit, int buf)
         s.drawn_title[buf] = tag;
         s.drawn_strip[buf] = UINT32_MAX;
         s.drawn_page[buf]  = UINT32_MAX;
+        mln_forget(buf);
     }
 
-    /* The strip. */
+    /* The strip, and RENAME LOG beside it on its own counter. */
     if (s.drawn_strip[buf] != mwb_revision()) {
         s.drawn_strip[buf] = mwb_revision();
         mwb_render_strip(c);
     }
+    mln_render_button(c, buf);
 
     /* Outside the pane branch, so an arm or a disarm repaints the tag on
      * whichever pane is up.  All three strings are the same length, so this

@@ -10,7 +10,7 @@ MOTOR & ESC steuert einen ESC (Electronic Speed Controller) und zeichnet Spannun
 
 ## Der Aufbau
 
-Die obere Leiste bietet zwei Aufgaben: LIVE und PROGRAMMIEREN. Tippe auf eine Aufgabe, um zu wechseln. LIVE behält dabei die gewählte Ansicht, GRAFIK oder TABELLE.
+Die obere Leiste bietet zwei Aufgaben: LIVE und PROGRAMMIEREN. Tippe auf eine Aufgabe, um zu wechseln. LIVE behält dabei die gewählte Ansicht, GRAFIK oder TABELLE. LOG UMBENENNEN rechts in der Leiste gibt dem letzten MOTOR-Log ein Label ([Das Log eines Laufs](#das-log-eines-laufs)).
 
 | Aufgabe | Linke Spalte |
 |---|---|
@@ -34,6 +34,7 @@ Das Home-Feld oben links führt jeweils eine Ebene zurück:
 | Tastenfeld über der Optionsliste | die Liste; der Wert bleibt unverändert |
 | die Optionsliste | LIVE oder PROGRAMMIEREN; vorher die Frage nach einer ungespeicherten Änderung |
 | Sitzung auf PROGRAMMIEREN | eine Ebene höher in der Sitzung, dann zur Liste von PROGRAMMIEREN |
+| Tastatur von LOG UMBENENNEN | LIVE oder Liste von PROGRAMMIEREN; nichts wird umbenannt |
 | LIVE oder Liste von PROGRAMMIEREN | Menü; der Prüfstand schaltet auf SAFE |
 
 ## Programmieren
@@ -139,6 +140,16 @@ Der Kopf der Grafik zeigt Nenn-kV, gemessene Drehzahl je Volt und WIRK. (geschä
 ## Das Log eines Laufs
 
 Ist Auto-Aufzeichnungen unter [SETUP](setup.md#sd-card) > SD CARD EIN, beginnt jedes Schalten auf ARMED eine Datei `MOTORnnn.CSV` in `BENCH/LOGS` auf der SD-Karte (Secure Digital) des Panels. Bei bestehender Verbindung erzeugt jede beantwortete Abfrage eine Zeile. An einem Prüfstand wurden etwa 19 Zeilen pro Sekunde gemessen; für andere Prüfstände liegen keine Messungen vor. Beim Schalten auf SAFE schließt die Datei. Öffne sie unter [Logs](logs.md), um den Lauf als Grafik anzuzeigen.
+
+![Die Tastatur von LOG UMBENENNEN](view:motor-logname)
+
+LOG UMBENENNEN gibt dem seit dem Start des Panels geschlossenen MOTOR-Log ein Label hinter seiner Nummer: Aus `MOTOR042.CSV` wird `MOTOR042_kv1200.CSV`. Der Lauf behält Nummer und Platz unter [Logs](logs.md).
+
+- LOG UMBENENNEN ist ein Tipp. Es wirkt, solange der Prüfstand SAFE ist, ARM nicht gehalten wird, keine Log-Datei offen ist und die Karte des Logs noch steckt. Sonst ist es gedimmt, und ein Tipp nennt den Grund im Alarmband, etwa `Seit dem Start kein MOTOR-Log.`
+- Die Tastatur bearbeitet nur das Label, höchstens 46 Bytes. Sie öffnet mit dem Label der Datei. OK bei leerem Feld entfernt das Label.
+- Die Tastatur verdeckt ARM. ABBRECHEN oder das Home-Feld schließt sie ohne Änderung.
+- Das Alarmband meldet `Log umbenannt: MOTOR042_kv1200.CSV` oder den Grund, etwa `MOTOR042_kv1200.CSV ist dort bereits vorhanden.`
+- Nach einem Neustart bleibt der Knopf gedimmt, bis der nächste MOTOR-Lauf endet. Ältere Logs benennst du unter [Files](files.md) um.
 
 ## Verwandte Seiten
 

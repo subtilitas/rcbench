@@ -85,7 +85,7 @@ Jede Datei enthält einen Lauf und liegt im Ordner seiner Art. Der Name kennzeic
 
 Der Name richtet sich nach der Seite, deren ARM den Prüfstand aktiviert hat. Das gilt auch bei IOmcu-Versionen vor 0.18.0, die bei jedem Schalten auf ARMED die Gasausgänge mit aktivieren.
 
-Ein Laufname darf hinter seiner Nummer ein Label tragen, etwa `MOTOR042_kv1200.CSV`. Das Label folgt auf ein `_`, hat hinter einem Präfix aus fünf Buchstaben höchstens 46 Bytes und darf Punkte und weitere `_` enthalten. Der Lauf behält Nummer, Art und Platz in der Liste, und der nächste Lauf erhält die Nummer darüber.
+Ein Laufname darf hinter seiner Nummer ein Label tragen, etwa `MOTOR042_kv1200.CSV`; LOG UMBENENNEN auf [Motor und ESC](motor.md#das-log-eines-laufs) schreibt eines. Das Label folgt auf ein `_`, hat hinter einem Präfix aus fünf Buchstaben höchstens 46 Bytes und darf Punkte und weitere `_` enthalten. Der Lauf behält Nummer, Art und Platz in der Liste, und der nächste Lauf erhält die Nummer darüber.
 
 Sind AUTO-AUFZEICHNUNGEN unter [SETUP > SD CARD](setup.md) ausgeschaltet, entsteht keine Datei in `BENCH/LOGS`, und es wird keine Nummer vergeben. Ausgeschaltete TESTAUFZEICHNUNGEN verhindern Dateien in `USER/LOGS`; SERVO zeigt statt des Dateinamens `TESTAUFZEICHNUNGEN AUS`. Nach dem Start eines neuen Panels oder einem Update sind beide Einstellungen eingeschaltet.
 

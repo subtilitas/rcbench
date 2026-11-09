@@ -125,6 +125,9 @@ SCREENS = {
     "shot-full": ("shot-full.png", "shot", "dark"),
     "motor":      ("motor.png",      "motor",      "dark"),
     "motor-held": ("motor-held.png", "motor-held", "dark"),
+    # RENAME LOG's keyboard over the body after a run, on the label the
+    # log carries.
+    "motor-logname": ("motor-logname.png", "motor", "dark"),
     # A linked bench before its first run, no pin bound as a motor.
     "motor-idle": ("motor-idle.png", "motor", "dark"),
     # The same bench with PROG PORT 2 as DSHOT300 on GP14 and no pin bound
