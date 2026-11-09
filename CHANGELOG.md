@@ -42,18 +42,17 @@ history is in git.
   of the model's first estimate for it, value0 x goal / measured0. A value
   past it ends the run as FAIL `end point too far from its estimate`
   before the write, with every output off and RESTORE offered.
-- RUDDER AUTO refuses the IMU's AXIS Z (yaw) while IMU algorithm is
-  6-AXIS: without the magnetometer yaw drifts 2.4° in 100s on a BWT901CL,
-  against the 0.5° tolerance. The ANGLE row reads `IMU YAW NEEDS 9-AXIS`
-  in red, ARM + START is refused, and a tap offers `SWITCH IMU TO 9-AXIS`,
-  `USE IMU AXIS X (ROLL)` and `USE IMU AXIS Y (PITCH)`, each written and
-  saved as SETUP > SENSORS does. Roll and pitch stay allowed in 6-AXIS.
-  With 9-AXIS set, the panel sends unlock, AXIS6 0 and SAVE once on
-  every connection, one flash write, and yaw opens only once the sensor
-  acknowledged that SAVE; until then, and after a refused write or a
-  restart, the row reads `IMU 9-AXIS NOT CONFIRMED` in red with the same
-  list.
-  Another IMU algorithm drops RUDDER's zero and MAX, as another axis does.
+- RUDDER AUTO refuses the IMU's AXIS Z (yaw) in 6-AXIS and in 9-AXIS. On
+  a BWT901CL yaw drifts 2.4° in 100s in 6-AXIS; in 9-AXIS it rose 24°
+  while the rudder moved and settled 38° off with the servo unpowered;
+  the tolerance is 0.5°. The ANGLE row reads `IMU YAW REFUSED: HINGE ON X
+  OR Y` in red, ARM + START is refused, and a tap opens `TURN THE IMU 90°
+  SO THE HINGE IS X OR Y` with `USE IMU AXIS X (ROLL)` and `USE IMU AXIS
+  Y (PITCH)`, each written and saved as SETUP > SENSORS does. Roll and
+  pitch stay allowed in either algorithm. The panel sends IMU algorithm
+  to the sensor only when it changes, with one SAVE; a connection adds no
+  write. Another IMU algorithm drops RUDDER's zero and MAX, as another
+  axis does.
 - The PROG 5V lost error on the carrier watches a KST or Hitec session's
   5V as well: under a session a finding waits for a PROG_SUPPLY page read
   that still reads GPIO 21 on.

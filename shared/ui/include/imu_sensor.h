@@ -17,10 +17,7 @@
  * register and SAVE, queued while the sensor is connected or when it next
  * connects.  RSW IMU_RSW and SAVE go once on a connection whose first
  * IMU_RSW_FRAMES frames show other types than IMU_RSW's: the stream is
- * the read-back, so a sensor that holds IMU_RSW gets no write.  With
- * ALGORITHM 9-AXIS, unlock, AXIS6 0 and SAVE go once on every connection:
- * the stream carries no mode, so the sensor's mode is unknown at each
- * connection until that SAVE is acknowledged (imu_sensor_written()).
+ * the read-back, so a sensor that holds IMU_RSW gets no write.
  *
  * Every function of one sensor is called from one task.  Times are
  * unsigned differences of a free-running 32-bit ms clock.
@@ -81,13 +78,6 @@ typedef struct {
     uint32_t     cal_left_ms;    /**< as of the last tick */
     bool         rate_due;       /**< RATE to send once connected */
     bool         algo_due;       /**< ALGORITHM to send once connected */
-    bool         mode_known;     /**< six_held holds the sensor's mode:
-                                      false at each connection's start
-                                      and end, true once an ALGORITHM
-                                      group's SAVE was acknowledged */
-    bool         six_held;       /**< the sensor runs 6-AXIS, as the last
-                                      acknowledged ALGORITHM group set */
-    bool         six_sent;       /**< the ALGORITHM of the group queued */
     bool         rsw_due;        /**< RSW IMU_RSW to send once connected */
     bool         rsw_checked;    /**< this connection's frame types were
                                       held against IMU_RSW */
@@ -109,8 +99,7 @@ typedef struct {
                                       zero kept, counted */
 } imu_sensor_t;
 
-/** @brief Clear: no reading, nothing held, RATE 50Hz, ALGORITHM 6-AXIS,
- *         IMU FILTER 1.
+/** @brief Clear: no reading, nothing held, RATE 50Hz, IMU FILTER 1.
  *  @param s The sensor, not NULL. */
 void imu_sensor_init(imu_sensor_t *s);
 
@@ -220,15 +209,6 @@ bool imu_sensor_quiet(const imu_sensor_t *s);
  * @param s The sensor, not NULL.
  */
 void imu_sensor_flush(imu_sensor_t *s);
-
-/**
- * @brief The command write in flight was taken.  The SAVE of an ALGORITHM
- *        group, its last command, makes the group's ALGORITHM the mode the
- *        sensor runs (six_held); a group cut by a refused write
- *        (imu_sensor_flush()) leaves the mode as it was.
- * @param s The sensor, not NULL.
- */
-void imu_sensor_written(imu_sensor_t *s);
 
 /**
  * @brief The sensor's part of the link state, with its stream flowing.

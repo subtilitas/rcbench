@@ -144,23 +144,24 @@ points from them. `SECURITY.md` lists this as a current limitation.
 RUDDER's zero on the IMU therefore lasts until the restart and is never
 saved; a zero on the AS5600 is.
 
-RUDDER AUTO refuses the IMU's AXIS Z, yaw, while IMU algorithm is 6-AXIS.
-6-AXIS has no magnetometer to hold yaw: a BWT901CL on yaw drifts 2.4° in
-100s (one bench run), against RUDDER AUTO's 0.5° tolerance. AXIS X (roll)
-and Y (pitch) hold to gravity and stay allowed in either mode. The READY
-card's ANGLE row reads `IMU YAW NEEDS 9-AXIS` in red and ARM + START is
-refused. A tap on the row opens the IMU YAW list: `SWITCH IMU TO 9-AXIS`,
-`USE IMU AXIS X (ROLL)`, `USE IMU AXIS Y (PITCH)`. A pick writes IMU
-algorithm or IMU axis and saves it, as SETUP > SENSORS does; the panel
-sends AXIS6 and SAVE once the sensor is connected (below). The angle
-frames carry no mode, so the sensor's mode is unknown at the start of
-every connection and after a panel restart. With IMU algorithm 9-AXIS
-the panel sends unlock, AXIS6 0 and SAVE once on every connection, and
-yaw counts as 9-AXIS only once the sensor's module acknowledged that
-SAVE. Until then, and after a refused write, which holds the group until
-the next connection while angle frames go on, the ANGLE row reads `IMU
-9-AXIS NOT CONFIRMED` in red, and a tap opens the same list. Yaw drift in 9-AXIS is not measured. Another IMU algorithm drops
-RUDDER's zero and MAX, as another AXIS or SIGN does.
+RUDDER AUTO refuses the IMU's AXIS Z, yaw, in 6-AXIS and in 9-AXIS.
+On a BWT901CL on the bench, against RUDDER AUTO's 0.5° tolerance:
+
+| IMU algorithm | Yaw on a rudder |
+| --- | --- |
+| 6-AXIS | drifts 2.4° in 100s: no magnetometer holds it |
+| 9-AXIS | rose 24° while the rudder moved, fell back, and settled 38° off with the servo unpowered; the servo's magnetic field near the sensor is suspected, not measured |
+
+AXIS X (roll) and Y (pitch) hold to gravity and stay allowed in either
+mode. Mount the sensor so the hinge is its X or Y axis: turned 90° from a
+mount on yaw. With AXIS Z saved, the READY card's ANGLE row reads `IMU
+YAW REFUSED: HINGE ON X OR Y` in red and ARM + START is refused. A tap
+on the row opens the IMU YAW list, titled `TURN THE IMU 90° SO THE HINGE
+IS X OR Y`, with the two axes that work and no other: `USE IMU AXIS X
+(ROLL)`, `USE IMU AXIS Y (PITCH)`. A pick writes IMU axis and saves it,
+as SETUP > SENSORS does. SETUP > SENSORS still offers AXIS Z, which TEST
+and LIMIT RUN read for their angle columns. Another IMU algorithm drops RUDDER's zero and MAX, as another
+AXIS or SIGN does.
 
 ## The sensor
 
@@ -178,7 +179,7 @@ reading valid.
 | RSW, SAVE | `FF AA 02 0C 00`, `FF AA 00 00 00` | once on a connection whose first 8 good frames show other types than 0x52 and 0x53 |
 | CALSW 1, 3s, CALSW 0, SAVE | `FF AA 01 01 00`, `FF AA 01 00 00`, `FF AA 00 00 00` | `HOLD 2s: CALIBRATE`, connected |
 | RATE, SAVE | `FF AA 03 <code> 00`, `FF AA 00 00 00` | a change of IMU rate: 0x06 10Hz, 0x07 20Hz, 0x08 50Hz, 0x09 100Hz, 0x0B 200Hz |
-| AXIS6, SAVE | `FF AA 24 01 00` (6-AXIS) or `FF AA 24 00 00` (9-AXIS), `FF AA 00 00 00` | a change of IMU algorithm; with 9-AXIS also once on every connection |
+| AXIS6, SAVE | `FF AA 24 01 00` (6-AXIS) or `FF AA 24 00 00` (9-AXIS), `FF AA 00 00 00` | a change of IMU algorithm |
 
 Commands go on 8841, 50ms apart, one write in flight, each answered
 within 1,000ms. With WRITE in 8841's properties the panel writes with a
@@ -196,10 +197,6 @@ waits until after CALSW 0 and SAVE. Unlock, the writes and SAVE are queued
 together only when all fit in the 8 command slots. Until then, the change
 waits; the eventual write uses the latest SETUP value. A new RATE takes
 effect after the sensor is switched off and on.
-
-With IMU algorithm 9-AXIS each connection writes the sensor's flash
-once: one SAVE, after AXIS6 0. 6-AXIS adds no write per connection. The
-flash's write endurance is not measured.
 
 RATE goes to the sensor only when it changes, not at each connect: each
 RATE comes with a SAVE to the sensor's flash, and the rate takes effect

@@ -83,22 +83,21 @@ bool angle_pick_draw_entry(gfx_canvas_t *c, int k, gfx_color_t fill,
                            bool refused, bool down);
 /**
  * @brief Why RUDDER AUTO refuses the angle source: the IMU's AXIS Z, yaw,
- *        while ALGORITHM is 6-AXIS, which has no magnetometer to hold it.
- * @return `IMU YAW NEEDS 9-AXIS` in 6-AXIS; `IMU 9-AXIS NOT CONFIRMED`
- *         with 9-AXIS set while the sensor has not taken it
- *         (imu_view_t.nine_axis); NULL for the AS5600, AXIS X or Y, or
- *         9-AXIS the sensor took.
+ *        in 6-AXIS and in 9-AXIS alike; yaw does not follow the surface
+ *        in either.
+ * @return `IMU YAW REFUSED: HINGE ON X OR Y` for AXIS Z; NULL for the
+ *         AS5600, AXIS X or Y.
  */
 const char *angle_pick_yaw_why(void);
 /**
  * @brief The IMU YAW list over the left column, refused as the ANGLE
- *        SOURCE list is: `SWITCH IMU TO 9-AXIS`, `USE IMU AXIS X (ROLL)`,
- *        `USE IMU AXIS Y (PITCH)`.
+ *        SOURCE list is: `USE IMU AXIS X (ROLL)`, `USE IMU AXIS Y
+ *        (PITCH)`; AXIS Z is not offered.
  */
 void angle_fix_open(void);
 /**
- * @brief A pick of the IMU YAW list: SET_IMU_ALGO to 9-AXIS, or SET_IMU_AXIS
- *        to X or Y with the runs' axis (servo_screen_set_imu_axis()), saved.
+ * @brief A pick of the IMU YAW list: SET_IMU_AXIS to X or Y with the
+ *        runs' axis (servo_screen_set_imu_axis()), saved.
  *        Nothing on a bench that is not SAFE.
  * @param value The entry's value.
  */

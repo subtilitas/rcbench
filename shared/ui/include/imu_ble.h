@@ -68,7 +68,6 @@ typedef struct {
     uint16_t    op_code;        /**< its status */
     bleu_wr_t   wr_was;         /**< b.wr as last seen */
     bool        wr_failed;      /**< a write failed, unread */
-    bool        wr_ok;          /**< a write was taken, unread */
 } imu_ble_t;
 
 /** @brief Clear: OFF, nothing bound.  @param l The link, not NULL. */
@@ -154,14 +153,6 @@ bool imu_ble_act(imu_ble_t *l, uint32_t now_ms, bleu_act_t *out);
  * @return true once per failure.
  */
 bool imu_ble_write_failed(imu_ble_t *l);
-
-/**
- * @brief Whether a command write was taken (BLEU_WR_OK) since the last
- *        call; once.
- * @param l The link, not NULL.
- * @return true once per write taken.
- */
-bool imu_ble_write_ok(imu_ble_t *l);
 
 /**
  * @brief The link's part of the link state.

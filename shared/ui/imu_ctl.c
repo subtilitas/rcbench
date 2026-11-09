@@ -122,9 +122,6 @@ void imu_ctl_event(imu_ctl_t *c, const bleu_evt_t *e, uint32_t now_ms)
     if (imu_ble_write_failed(&c->ble)) {
         imu_sensor_flush(&c->sensor);
     }
-    if (imu_ble_write_ok(&c->ble)) {
-        imu_sensor_written(&c->sensor);
-    }
 }
 
 bool imu_ctl_step(imu_ctl_t *c, uint32_t now_ms, bleu_act_t *out)
@@ -137,9 +134,6 @@ bool imu_ctl_step(imu_ctl_t *c, uint32_t now_ms, bleu_act_t *out)
     }
     if (imu_ble_write_failed(&c->ble)) {
         imu_sensor_flush(&c->sensor);
-    }
-    if (imu_ble_write_ok(&c->ble)) {
-        imu_sensor_written(&c->sensor);
     }
     imu_sensor_tick(&c->sensor, now_ms, stream_up(c));
     /* A sensor command on 8841: one write in flight at a time. */

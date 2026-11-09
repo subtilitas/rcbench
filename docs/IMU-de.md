@@ -158,27 +158,27 @@ Lauf von RUDER AUTO mit WINKELQUELLE IMU programmiert daraus Endpoints.
 RUDER an der IMU gilt deshalb bis zum Neustart und wird nie gespeichert;
 ein Nullpunkt am AS5600 schon.
 
-RUDER AUTO verweigert die IMU-Achse Z, Gieren, solange der IMU-Algorithmus
-6-AXIS ist. 6-AXIS hat kein Magnetometer, das das Gieren hält: eine
-BWT901CL auf Gieren driftet 2,4° in 100s (ein Lauf am Prüfstand), gegen
-0,5° Toleranz von RUDER AUTO. Achse X (Rollen) und Y (Nicken) halten sich
-an der Schwerkraft und bleiben in beiden Modi erlaubt. Die Zeile WINKEL
-der BEREIT-Karte zeigt `IMU-GIEREN BENÖTIGT 9-AXIS` in Rot, und ARM + START
-wird verweigert. Ein Tippen auf die Zeile öffnet die Liste IMU-GIEREN:
-`IMU AUF 9-AXIS SCHALTEN`, `IMU-ACHSE X NEHMEN (ROLLEN)`, `IMU-ACHSE Y
-NEHMEN (NICKEN)`. Eine Wahl schreibt IMU-Algorithmus oder IMU-Achse und
-speichert sie wie SETUP > SENSOREN; das Panel sendet AXIS6 und
-SAVE, sobald der Sensor verbunden ist (unten). Die Winkel-Frames tragen
-keinen Modus, also ist der Modus des Sensors zu Beginn jeder Verbindung
-und nach einem Neustart des Panels unbekannt. Mit IMU-Algorithmus 9-AXIS
-sendet das Panel Unlock, AXIS6 0 und SAVE einmal je Verbindung, und
-Gieren gilt erst als 9-AXIS, wenn das Modul des Sensors dieses SAVE
-bestätigt hat. Bis dahin, und nach einem abgewiesenen Schreiben, das die
-Gruppe bis zur nächsten Verbindung zurückhält, während die Winkel-Frames
-weiterlaufen, zeigt die Zeile WINKEL `IMU 9-AXIS NICHT BESTÄTIGT` in Rot,
-und ein Tippen öffnet dieselbe Liste. Die Drift des Gierens in 9-AXIS ist nicht gemessen. Ein anderer
-IMU-Algorithmus verwirft Nullpunkt und MAX von RUDER, wie eine andere
-Achse oder ein anderes Vorzeichen.
+RUDER AUTO verweigert die IMU-Achse Z, Gieren, in 6-AXIS und in 9-AXIS.
+An einer BWT901CL am Prüfstand, gegen 0,5° Toleranz von RUDER AUTO:
+
+| IMU-Algorithmus | Gieren an einem Ruder |
+| --- | --- |
+| 6-AXIS | driftet 2,4° in 100s: kein Magnetometer hält es |
+| 9-AXIS | stieg um 24°, während sich das Ruder bewegte, fiel zurück und blieb bei stromlosem Servo 38° daneben stehen; vermutet wird das Magnetfeld des Servos nahe am Sensor, nicht gemessen |
+
+Achse X (Rollen) und Y (Nicken) halten sich an der Schwerkraft und
+bleiben in beiden Modi erlaubt. Montiere den Sensor so, dass das
+Scharnier seine Achse X oder Y ist: um 90° gedreht gegenüber einer
+Montage auf Gieren. Mit gespeicherter Achse Z zeigt die Zeile WINKEL der
+BEREIT-Karte `IMU-GIEREN GESPERRT: SCHARNIER AUF X ODER Y` in Rot, und
+ARM + START wird verweigert. Ein Tippen auf die Zeile öffnet die Liste
+IMU-GIEREN mit dem Titel `DREHE DIE IMU UM 90°, SCHARNIER AUF X ODER Y`
+und den zwei Achsen, die funktionieren, und keiner anderen: `IMU-ACHSE X
+NEHMEN (ROLLEN)`, `IMU-ACHSE Y NEHMEN (NICKEN)`. Eine Wahl schreibt
+IMU-Achse und speichert sie wie SETUP > SENSOREN. SETUP > SENSOREN bietet
+Achse Z weiter an; TEST und LIMIT RUN lesen sie für ihre Winkelspalten.
+Ein anderer IMU-Algorithmus verwirft Nullpunkt und MAX von RUDER, wie
+eine andere Achse oder ein anderes Vorzeichen.
 
 ## Der Sensor
 
@@ -196,7 +196,7 @@ Messwerts (°C x 100), die kein Bildschirm und keine Konsolenzeile zeigt;
 | RSW, SAVE | `FF AA 02 0C 00`, `FF AA 00 00 00` | einmal je Verbindung, wenn deren erste 8 gültige Frames andere Typen als 0x52 und 0x53 zeigen |
 | CALSW 1, 3s, CALSW 0, SAVE | `FF AA 01 01 00`, `FF AA 01 00 00`, `FF AA 00 00 00` | `2s HALTEN: KALIBRIEREN`, verbunden |
 | RATE, SAVE | `FF AA 03 <code> 00`, `FF AA 00 00 00` | eine Änderung von IMU-Rate: 0x06 10Hz, 0x07 20Hz, 0x08 50Hz, 0x09 100Hz, 0x0B 200Hz |
-| AXIS6, SAVE | `FF AA 24 01 00` (6-AXIS) oder `FF AA 24 00 00` (9-AXIS), `FF AA 00 00 00` | eine Änderung von IMU-Algorithmus; mit 9-AXIS zudem einmal je Verbindung |
+| AXIS6, SAVE | `FF AA 24 01 00` (6-AXIS) oder `FF AA 24 00 00` (9-AXIS), `FF AA 00 00 00` | eine Änderung von IMU-Algorithmus |
 
 Die Befehle gehen auf 8841, im Abstand von 50ms, einer zur Zeit, jeder
 binnen 1 000ms beantwortet. Hat 8841 WRITE, schreibt das Panel mit
@@ -216,10 +216,6 @@ und SAVE. Unlock, die Schreibbefehle und SAVE werden erst gemeinsam
 eingereiht, wenn alle in die 8 Befehlsplätze passen. Bis dahin wartet die
 Änderung; gesendet wird der dann aktuelle Wert aus SETUP. Eine neue RATE
 gilt erst, nachdem der Sensor aus- und wieder eingeschaltet wurde.
-
-Mit IMU-Algorithmus 9-AXIS schreibt jede Verbindung einmal in den Flash
-des Sensors: ein SAVE, nach AXIS6 0. 6-AXIS fügt kein Schreiben je
-Verbindung hinzu. Die Schreibfestigkeit des Flash ist nicht gemessen.
 
 RATE geht nur bei einer Änderung zum Sensor, nicht bei jedem Verbinden:
 jede RATE kommt mit einem SAVE in den Flash des Sensors, und die Rate gilt
