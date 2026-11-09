@@ -1769,6 +1769,12 @@ ARMED is asked).
   `writes do not move the 1000us side` or `... 2000us side`. Writes with
   |E| under the tolerance are not judged: the angle source's noise is of
   that size. One write alone does not end the run, for the same reason.
+- Each write is bounded: a register's new value lies within 50% of the
+  model's first estimate for it, value0 x goal / measured0, with value0 the
+  register's value at the read and measured0 the side's first measure. A
+  value past it ends the run as `end point too far from its estimate`
+  before the write. Example: 150 counts at 30° and a 49.5° goal give an
+  estimate of 247.5 counts and a bound of 124 to 371.
 - Each write is a session: the servo held at PULSE CENTER for 1000ms, SAFE,
   CONNECT, the write and its read-back, LEAVE, including the power cycle when required for the written values
   to take effect, ARMED, and another measurement of the side. The file of
@@ -1834,9 +1840,11 @@ measure with its value, its angle and whether it lies within.
   bench run). A register found on such a measure is held to its effect on
   the next writes: 2 that do not move the side end the run. A drift that
   keeps pace with every write is not detected.
-- A value moves within the register's range only. No cap on its total
-  change from the value before the run exists; 8 writes a side and the
-  2-write effect check bound it.
+- The bound of 50% around the first estimate is chosen, not measured. It
+  is wider than a servo whose response matches the model needs: with the
+  bench's run 2 numbers (LEFT END 4726, first measure 50.02°, goal 49.5°)
+  it runs from 2339 to 7015, and that run's last write, 6627, lies inside
+  it.
 
 ## Sweep and SPEED
 

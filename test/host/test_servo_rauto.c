@@ -153,10 +153,11 @@ TEST_CASE(a_value_is_clamped_to_lo_and_hi_and_the_run_fails_limit_when_the_goal_
 TEST_CASE(eight_writes_a_side_end_in_write_cap)
 {
     /* Each write moves the side 1.9 times the linear change: the error
-     * swings round the goal and shrinks by a tenth a write. */
+     * swings round the goal and shrinks by a tenth a write.  The goal 28°
+     * keeps every value within 50% of the first estimate, 140 counts. */
     rig_init(0u);
     g.resp = 1.9f;
-    g.cfg.target_deg[0] = 20.0f / 1.1f;
+    g.cfg.target_deg[0] = 28.0f / 1.1f;
     g.cfg.tol_ddeg = 1u;
     CHECK(start());
     run_for(RAUTO_MS);

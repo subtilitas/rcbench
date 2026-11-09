@@ -149,6 +149,17 @@ uint16_t servo_rauto_scaled(uint16_t value, float goal_deg, float measured_deg,
     return (uint16_t)lround(v);
 }
 
+bool servo_rauto_in_cap(uint16_t value0, float goal_deg, float first_deg,
+                        uint16_t next)
+{
+    if (!(first_deg > 0.0f)) {
+        return false;
+    }
+    const double est = (double)value0 * (double)goal_deg / (double)first_deg;
+    const double room = est * (double)SERVO_RAUTO_CAP_PCT / 100.0;
+    return fabs((double)next - est) <= room;
+}
+
 /* ------------------------------------------------------------- the end */
 
 /**
@@ -365,6 +376,29 @@ static float expect(const servo_rauto_t *r, int g, uint16_t next, float ms,
 }
 
 /**
+ * @brief The bound on a write: register @p g's new value for side @p s
+ *        within SERVO_RAUTO_CAP_PCT of the model's first estimate, else the
+ *        run ends as FAIL (SERVO_RAUTO_WHY_CAP).
+ * @param r      Run state.
+ * @param g      The register.
+ * @param s      The side.
+ * @param next   The new value.
+ * @param now_ms Time, ms.
+ * @return true within.
+ */
+static bool capped_ok(servo_rauto_t *r, int g, uint8_t s, uint16_t next,
+                      uint32_t now_ms)
+{
+    if (r->have_first[s]
+        && servo_rauto_in_cap(r->servo.value[g], r->goal_deg[s],
+                              r->first_deg[s], next)) {
+        return true;
+    }
+    fail(r, SERVO_RAUTO_WHY_CAP, now_ms);
+    return false;
+}
+
+/**
  * @brief A write session for side @p s next: its value worked out, the
  *        register tried while none is found.
  * @param r      Run state.
@@ -395,6 +429,9 @@ static void plan_write(servo_rauto_t *r, uint8_t s, float ms, uint32_t now_ms)
     }
     if (!can) {
         fail(r, SERVO_RAUTO_WHY_LIMIT, now_ms);
+        return;
+    }
+    if (!capped_ok(r, g, s, next, now_ms)) {
         return;
     }
     r->want[g]     = next;
@@ -459,6 +496,9 @@ static bool judge_map(servo_rauto_t *r, float ms, bool within,
     uint16_t next = 0u;
     if (!next_value(r, g, ms, r->goal_deg[s], &next)) {
         fail(r, SERVO_RAUTO_WHY_LIMIT, now_ms);
+        return false;
+    }
+    if (!capped_ok(r, g, s, next, now_ms)) {
         return false;
     }
     /* The register tried back to its value, the side's value to the
@@ -548,6 +588,10 @@ static void measured(servo_rauto_t *r, float deg, uint32_t now_ms)
     const float ms = r->sign[s] != 0 ? deg * (float)r->sign[s] : fabsf(deg);
     const bool within = fabsf(ms - goal) <= tol + RAUTO_EPS_DEG;
     r->measured_deg[s] = ms;
+    if (!r->have_first[s]) {
+        r->have_first[s] = true;
+        r->first_deg[s]  = ms;
+    }
     record(r, ms, within);
     if (r->sign[s] != 0 && r->sign[s] == r->sign[1u - s]) {
         /* Both end pulses move the surface to the same side. */

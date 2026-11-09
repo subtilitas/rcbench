@@ -26,6 +26,10 @@ history is in git.
 
 ### Changed
 
+- RUDDER AUTO bounds each write: a register's new value lies within 50%
+  of the model's first estimate for it, value0 x goal / measured0. A value
+  past it ends the run as FAIL `end point too far from its estimate`
+  before the write, with every output off and RESTORE offered.
 - RUDDER AUTO refuses the IMU's AXIS Z (yaw) while IMU algorithm is
   6-AXIS: without the magnetometer yaw drifts 2.4° in 100s on a BWT901CL,
   against the 0.5° tolerance. The ANGLE row reads `IMU YAW NEEDS 9-AXIS`

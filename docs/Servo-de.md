@@ -1853,6 +1853,13 @@ angefragt ist).
   Toleranz werden nicht bewertet: das Rauschen der Winkelquelle hat diese
   Größe. Aus demselben Grund beendet ein einzelnes Schreiben den Lauf
   nicht.
+- Jedes Schreiben ist begrenzt: der neue Wert eines Registers liegt
+  innerhalb von 50% der ersten Schätzung des Modells, Wert0 x Sollwert /
+  gemessen0, mit Wert0 dem Wert des Registers beim Lesen und gemessen0 der
+  ersten Messung der Seite. Ein Wert darüber hinaus beendet den Lauf vor
+  dem Schreiben mit `Endpoint zu weit von der Schätzung`. Beispiel: 150
+  Zählwerte bei 30° und 49,5° Sollwert ergeben eine Schätzung von 247,5
+  und eine Grenze von 124 bis 371.
 - Jedes Schreiben ist eine Sitzung: das Servo 1000ms auf PULS MITTE
   gehalten, SAFE, VERBINDEN, Schreiben und Kontrolllesen, VERLASSEN mit dem für
   diese Servofamilie nötigen Versorgungszyklus, ARMED und erneutes Messen
@@ -1929,10 +1936,11 @@ Angabe, ob sie innerhalb der Toleranz liegt.
   so einer Messung gefunden wurde, wird an den folgenden Schreibvorgängen
   gemessen: 2 ohne Bewegung der Seite beenden den Lauf. Eine Drift, die
   mit jedem Schreiben Schritt hält, wird nicht erkannt.
-- Ein Wert bewegt sich nur im Bereich des Registers. Eine Grenze für
-  seine gesamte Änderung gegenüber dem Wert vor dem Lauf gibt es nicht;
-  8 Schreibvorgänge je Seite und die Wirkungsprüfung über 2
-  Schreibvorgänge begrenzen sie.
+- Die Grenze von 50% um die erste Schätzung ist gewählt, nicht gemessen.
+  Sie ist weiter, als ein Servo braucht, das dem Modell folgt: mit den
+  Zahlen von Lauf 2 am Prüfstand (LEFT END 4726, erste Messung 50,02°,
+  Sollwert 49,5°) reicht sie von 2339 bis 7015, und das letzte Schreiben
+  dieses Laufs, 6627, liegt darin.
 
 ## Sweep und TEMPO
 

@@ -18,7 +18,8 @@
  * neutral and the end), write in a session, move again.  Which register
  * moves which side is known from the family and its direction (Hitec D
  * series set to CW), else found on the first write.  Two writes in a row
- * that do not move their side end the run.  The current guard of the
+ * that do not move their side end the run, as does a value more than 50%
+ * from the model's first estimate.  The current guard of the
  * limit run holds
  * throughout (SERVO_LIMRUN_HARD_MA, SERVO_LIMRUN_STALL_MA for
  * SERVO_LIMRUN_STALL_MS): a stall before the goal ends the run with
@@ -90,6 +91,12 @@
  *     wrong way.  Writes with |E| under the tolerance are not judged: the
  *     angle source's noise is of that size.  The register-finding write is
  *     judged as above and starts the count anew once found.
+ *   - A bound on each write: a register's new value lies within
+ *     SERVO_RAUTO_CAP_PCT (50%) of the model's first estimate for it,
+ *     value0 x goal / measured0, value0 the register's value at the read
+ *     and measured0 the side's first measure (servo_rauto_in_cap()).  A
+ *     value past it, the register-finding writes included, ends the run as
+ *     FAIL (SERVO_RAUTO_WHY_CAP) before the write.
  *   - A write session: the servo held at PULSE CENTER for
  *     SERVO_LIMRUN_RETURN_MS, SAFE asked, CONNECT, the write, LEAVE, ARMED
  *     asked, the written side measured.  A CONNECT that reads other values
@@ -147,6 +154,10 @@ extern "C" {
 
 /** @brief Writes a side takes at most. */
 #define SERVO_RAUTO_WRITES_MAX  8u
+/** @brief How far a write may move a register from the model's first
+ *         estimate for it, value0 x goal / measured0 (servo_rauto_in_cap()),
+ *         in % of that estimate. */
+#define SERVO_RAUTO_CAP_PCT 50u
 /** @brief Writes in a row whose model change sums to at least the tolerance
  *         and that do not move their side end the run: one alone can be the
  *         angle source's noise. */
@@ -253,7 +264,7 @@ typedef enum {
     SERVO_RAUTO_WHY_ANGLE, SERVO_RAUTO_WHY_NO_SERVO, SERVO_RAUTO_WHY_PROG,
     SERVO_RAUTO_WHY_WRITE, SERVO_RAUTO_WHY_MAPPING, SERVO_RAUTO_WHY_LIMIT,
     SERVO_RAUTO_WHY_WRITE_CAP, SERVO_RAUTO_WHY_BENCH, SERVO_RAUTO_WHY_SUPPLY,
-    SERVO_RAUTO_WHY_NO_EFFECT,
+    SERVO_RAUTO_WHY_NO_EFFECT, SERVO_RAUTO_WHY_CAP,
     SERVO_RAUTO_WHY_COUNT,
 } servo_rauto_why_t;
 
@@ -345,6 +356,10 @@ typedef struct {
                                            seen after the end */
     uint16_t base_value[2],           /**< its two values */
              base_pulse[3];           /**< its pulses (KST) */
+    bool     have_first[2];           /**< first_deg holds the side's first
+                                           measure */
+    float    first_deg[2];            /**< each side's first measure along
+                                           its direction, ° */
     bool     restore_off;             /**< RESTORE no longer offered: a
                                            later read holds the values
                                            before the run, or values the
@@ -541,6 +556,17 @@ bool servo_rauto_report_line(const servo_rauto_t *r, unsigned idx, char *buf, si
  * @return the value for the goal.
  */
 uint16_t servo_rauto_scaled(uint16_t value, float goal_deg, float measured_deg, uint16_t lo, uint16_t hi);
+/**
+ * @brief Whether a register's new value lies within SERVO_RAUTO_CAP_PCT of
+ *        the model's first estimate for it, value0 x goal / measured0.
+ * @param value0    The register's value at the read.
+ * @param goal_deg  The side's goal, °.
+ * @param first_deg The side's first measure along its direction, °.
+ * @param next      The new value.
+ * @return true within; false past it, or for a first measure of 0 or less.
+ */
+bool servo_rauto_in_cap(uint16_t value0, float goal_deg, float first_deg,
+                        uint16_t next);
 /**
  * @brief Whether a run that ended for @p why ended on an error of the bench:
  *        a current guard, the meter, or the angle source.
