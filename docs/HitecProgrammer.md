@@ -174,7 +174,7 @@ writable value takes a tap while the port is held and not stopped
 | Tab | D series | Classic |
 | --- | --- | --- |
 | MOTION | SPEED, DEAD BAND, SOFT START | SPEED, DEAD BAND, RESOLUTION |
-| TRAVEL | NEUTRAL, LEFT END, RIGHT END in servo counts with degrees (220° over 16383 counts, 8192 the center), DIRECTION, [MOVE SERVO](#move-servo) | CENTER in microseconds, LEFT END, RIGHT END as raw values (unit unknown), DIRECTION |
+| TRAVEL | NEUTRAL, LEFT END, RIGHT END in servo counts with degrees, the unit named in the labels `NEUTRAL (COUNTS)`, `LEFT END (COUNTS)`, `RIGHT END (COUNTS)` (220° over 16383 counts, 8192 the center; RUDDER AUTO shows end points in the same counts), DIRECTION, [MOVE SERVO](#move-servo) | CENTER in microseconds, LEFT END, RIGHT END as raw values (unit unknown), DIRECTION |
 | PROTECT | FAILSAFE (OFF, LIMP, or a position in microseconds), OVERLOAD PROTECTION, SMART SENSOR, SENSITIVITY (raw) | FAILSAFE, FAILSAFE POSITION, OVERLOAD PROTECTION |
 | INFO | MODEL, ID, POSITION, and registers 0x04, 0x22, 0x8A, 0x8C, 0xD4 and 0xD6 raw | MODEL, VERSION, DATE, SERIAL, CHECKSUM |
 

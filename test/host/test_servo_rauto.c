@@ -9,7 +9,8 @@
  * guess is swapped, twice not found is NO_EFFECT; both end pulses on one side
  * of the zero is MAPPING; the KST pulse write comes before any end pulse,
  * Hitec gets none; the report lists every measure and the CSV one row a
- * measure; start refuses what lies outside its ranges; the 32-bit ms wrap
+ * measure; RESTORE cleared by a later read with the values back or
+ * changed; start refuses what lies outside its ranges; the 32-bit ms wrap
  * inside a settle.
  *
  * The rig is servo_rauto_rig.h.
@@ -152,10 +153,11 @@ TEST_CASE(a_value_is_clamped_to_lo_and_hi_and_the_run_fails_limit_when_the_goal_
 TEST_CASE(eight_writes_a_side_end_in_write_cap)
 {
     /* Each write moves the side 1.9 times the linear change: the error
-     * swings round the goal and shrinks by a tenth a write. */
+     * swings round the goal and shrinks by a tenth a write.  The goal 28°
+     * keeps every value within 50% of the first estimate, 140 counts. */
     rig_init(0u);
     g.resp = 1.9f;
-    g.cfg.target_deg[0] = 20.0f / 1.1f;
+    g.cfg.target_deg[0] = 28.0f / 1.1f;
     g.cfg.tol_ddeg = 1u;
     CHECK(start());
     run_for(RAUTO_MS);
@@ -247,7 +249,8 @@ TEST_CASE(the_pulse_write_comes_first_on_kst_and_hitec_gets_none)
     CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
     CHECK_EQ(g.pulse_ops, 0u);
     CHECK(in_report("Servo:          DIGITAL, Hitec D"));
-    CHECK(in_report("LEFT END (0xB2): 150 before, 138 after"));
+    /* NEUTRAL 8192 in the rig: the end point at 8192 - travel. */
+    CHECK(in_report("LEFT END (0xB2): 8042 before, 8054 after (counts)"));
 
     rig_init(0u);
     g.cfg.family = SERVO_RAUTO_FAM_HITEC_C;
@@ -286,8 +289,8 @@ TEST_CASE(the_report_lists_every_step_and_the_csv_one_row_a_step)
     CHECK(in_report("Goals:          1000us 27.50°, 2000us 27.50°, tolerance 0.5°"));
     CHECK(in_report("Length:         100mm; goals 1000us 46.2mm"));
     CHECK(in_report("Pulse write:    PULSE LOWER 900.0 -> 1000.0us"));
-    CHECK(in_report("LEFT ANGLE:     150 before, 138 after; moves the 1000us side"));
-    CHECK(in_report("RIGHT ANGLE:    150 before, 138 after; moves the 2000us side"));
+    CHECK(in_report("LEFT ANGLE:     150 before, 138 after (raw value); moves the 1000us side"));
+    CHECK(in_report("RIGHT ANGLE:    150 before, 138 after (raw value); moves the 2000us side"));
     CHECK(in_report("Writes:         1000us side 1, 2000us side 1, at most 8 writes a side; sessions 3"));
     CHECK(in_report("Backup:         the panel's memory only"));
     CHECK(in_report("1000us  write 0  value -  measured 30.00°  goal 27.50°  outside"));
@@ -550,8 +553,51 @@ TEST_CASE(a_check_outside_the_tolerance_writes_that_side_again)
     CHECK_EQ(g.run.writes[0], 2u);
 }
 
+/* RESTORE after a FAIL that changed a value: the programmer's servo as the
+ * run left it keeps it, however often it is seen; a read with the values
+ * before the run clears it, as does one with values the run did not
+ * leave.  After an end with a write's answer missing only the values
+ * before the run clear it. */
+TEST_CASE(restore_goes_once_a_read_shows_the_values_back_or_changed)
+{
+    for (int k = 0; k < 3; ++k) {
+        rig_init(0u);
+        g.cfg.family = SERVO_RAUTO_FAM_HITEC_D;
+        g.v[0] = 138u;
+        g.frozen[1] = true;
+        CHECK(start());
+        run_for(RAUTO_MS);
+        CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_NO_EFFECT);
+        CHECK(servo_rauto_restore(&g.run));
+        servo_rauto_servo_t sv;
+        memset(&sv, 0, sizeof(sv));
+        sv.ok = true;
+        sv.value[0] = 138u;
+        sv.value[1] = 127u;             /* as the run left it */
+        servo_rauto_servo_seen(&g.run, &sv);
+        servo_rauto_servo_seen(&g.run, &sv);
+        CHECK(servo_rauto_restore(&g.run));
+        servo_rauto_servo_seen(&g.run, NULL);
+        sv.ok = false;
+        sv.value[1] = 150u;
+        servo_rauto_servo_seen(&g.run, &sv);
+        CHECK(servo_rauto_restore(&g.run));
+        sv.ok = true;
+        if (k == 2) {
+            g.run.left_unknown = true;
+            sv.value[1] = 140u;         /* neither: kept */
+            servo_rauto_servo_seen(&g.run, &sv);
+            CHECK(servo_rauto_restore(&g.run));
+        }
+        sv.value[1] = k == 1 ? 140u : 150u;
+        servo_rauto_servo_seen(&g.run, &sv);
+        CHECK(!servo_rauto_restore(&g.run));
+    }
+}
+
 int main(void)
 {
+    RUN(restore_goes_once_a_read_shows_the_values_back_or_changed);
     RUN(a_check_outside_the_tolerance_writes_that_side_again);
     RUN(a_first_measure_at_the_tolerance_gives_the_side_its_direction);
     RUN(a_found_register_is_not_tried_again_on_a_later_write);

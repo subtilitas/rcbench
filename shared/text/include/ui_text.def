@@ -5332,6 +5332,9 @@ UI_TEXT(SV_ANG_SEARCH, 0,
 UI_TEXT(SV_ANG_NONE, 0,
     "NO IMU FOUND",
     "KEINE IMU GEFUNDEN")
+UI_TEXT(SV_ANG_NONE_OTHER, 29,
+    "NO OTHER IMU FOUND",
+    "KEINE ANDERE IMU GEFUNDEN")
 /* The band's reason a sensor of the list takes no pick (94 cells). */
 UI_TEXT(SV_ANG_BIND_CAL, 94,
     "CALIBRATION RUNS: BIND A SENSOR AFTER IT",
@@ -7118,6 +7121,17 @@ UI_TEXT(HP_END_L, 32,
 UI_TEXT(HP_END_R, 32,
     "RIGHT END",
     "ENDE RECHTS")
+/* TRAVEL's D series rows: the positions with their unit, as RUDDER AUTO
+ * names it. */
+UI_TEXT(HP_NEUTRAL_N, 32,
+    "NEUTRAL (COUNTS)",
+    "NEUTRAL (ZÄHLWERTE)")
+UI_TEXT(HP_END_L_N, 32,
+    "LEFT END (COUNTS)",
+    "ENDE LINKS (ZÄHLWERTE)")
+UI_TEXT(HP_END_R_N, 32,
+    "RIGHT END (COUNTS)",
+    "ENDE RECHTS (ZÄHLWERTE)")
 UI_TEXT(HP_DIRECTION, 32,
     "DIRECTION",
     "DREHRICHTUNG")
@@ -10732,6 +10746,18 @@ UI_SERVO_TEXT(SERVO_STR_RA_WHY_NO_EFFECT_LO,
 UI_SERVO_TEXT(SERVO_STR_RA_WHY_NO_EFFECT_HI,
     "writes do not move the 2000us side",
     "Schreiben bewegt 2000us-Seite nicht")
+UI_SERVO_TEXT(SERVO_STR_RA_R_REG,
+    "%s%u before, %u after (%s); %s",
+    "%s%u vorher, %u nachher (%s); %s")
+UI_SERVO_TEXT(SERVO_STR_RA_R_COUNTS,
+    "counts",
+    "Zählwerte")
+UI_SERVO_TEXT(SERVO_STR_RA_R_RAW,
+    "raw value",
+    "Rohwert")
+UI_SERVO_TEXT(SERVO_STR_RA_WHY_CAP,
+    "end point too far from its estimate",
+    "Endpoint zu weit von der Schätzung")
 UI_SERVO_TEXT(SERVO_STR_RA_R_TITLE,
     "RCBENCH RUDDER AUTO REPORT",
     "RCBENCH RUDER-AUTO-BERICHT")
@@ -10845,8 +10871,8 @@ UI_TEXT(RA_LAST, 50,
     "%s: %s",
     "%s: %s")
 UI_TEXT(RA_SET, 50,
-    "PASS: %u>%u, %u>%u",
-    "BESTANDEN: %u>%u, %u>%u")
+    "PASS: %u>%u, %u>%u %s",
+    "BESTANDEN: %u>%u, %u>%u %s")
 UI_TEXT(RA_FILE, 50,
     "REPORT %s",
     "BERICHT %s")
@@ -10856,6 +10882,21 @@ UI_TEXT(RA_BINDS_AT, 48,
 UI_TEXT(RA_NO_ANGLE, 0,
     "ANGLE SOURCE: NO READING",
     "WINKELQUELLE: KEIN MESSWERT")
+UI_TEXT(RA_IMU_YAW, 48,
+    "IMU YAW NEEDS 9-AXIS",
+    "IMU-GIEREN BENÖTIGT 9-AXIS")
+UI_TEXT(SV_YAW_TITLE, 58,
+    "IMU YAW DRIFTS IN 6-AXIS: PICK A FIX",
+    "IMU-GIEREN DRIFTET IN 6-AXIS: ABHILFE WÄHLEN")
+UI_TEXT(SV_YAW_9AXIS, 58,
+    "SWITCH IMU TO 9-AXIS",
+    "IMU AUF 9-AXIS SCHALTEN")
+UI_TEXT(SV_YAW_X, 58,
+    "USE IMU AXIS X (ROLL)",
+    "IMU-ACHSE X NEHMEN (ROLLEN)")
+UI_TEXT(SV_YAW_Y, 58,
+    "USE IMU AXIS Y (PITCH)",
+    "IMU-ACHSE Y NEHMEN (NICKEN)")
 UI_TEXT(RA_NO_ZERO, 48,
     "SET ZERO WITH THE SURFACE AT NEUTRAL",
     "SETZE DEN NULLPUNKT MIT DEM RUDER IN NEUTRALLAGE")
@@ -11029,6 +11070,18 @@ UI_SETTING_LABEL(SET_RUDDER_TOL,
 UI_SETTING_HELP(SET_RUDDER_TOL,
     "Allowed difference between measurement and goal, 0.1 to 5.0°",
     "Zulässige Abweichung vom Soll, 0.1 bis 5.0°")
+UI_SETTING_LABEL(SET_RUDDER_ZERO_DEG,
+    "RUDDER zero",
+    "RUDER-Nullpunkt")
+UI_SETTING_HELP(SET_RUDDER_ZERO_DEG,
+    "The source's angle ZERO took, kept across a restart",
+    "Winkel der Quelle beim NULLPUNKT, über einen Neustart behalten")
+UI_SETTING_LABEL(SET_RUDDER_ZERO_KEY,
+    "RUDDER zero source",
+    "RUDER-Nullpunkt Quelle")
+UI_SETTING_HELP(SET_RUDDER_ZERO_KEY,
+    "The source and IMU axis the zero belongs to; 0 none",
+    "Quelle und IMU-Achse des Nullpunkts; 0 keiner")
 
 /* The SERVO workbench's RUDDER task (servo_rudder_panel.c): its tab, the
  * readout of the surface's deflection in ° and in mm at the trailing edge,
@@ -11279,6 +11332,9 @@ UI_TEXT(IMU_ERR_WRITE, 53,
 UI_TEXT(IMU_ERR_NONE_FOUND, 53,
     "NO SENSOR FOUND: IS IT ON, NO PHONE ON IT?",
     "KEIN SENSOR GEFUNDEN: IST ER AN, KEIN HANDY DRAN?")
+UI_TEXT(IMU_ERR_NONE_OTHER, 53,
+    "NO OTHER SENSOR FOUND: THE BOUND ONE IS LINKED",
+    "KEIN ANDERER SENSOR: DER GEBUNDENE IST VERBUNDEN")
 UI_TEXT(IMU_ERR_SCAN, 53,
     "THE SCAN DID NOT START: CODE %u",
     "DIE SUCHE STARTETE NICHT: CODE %u")

@@ -32,6 +32,7 @@
  * - auto_start_flashes_as_it_fires
  * - auto_enters_at_5v_whatever_the_kst_page_loaded
  * - writes_that_do_not_move_the_2000us_side_end_auto_after_two
+ * - imu_yaw_in_6_axis_alone_refuses_auto
  *
  * SPDX-License-Identifier: MIT
  */
@@ -91,9 +92,11 @@ TEST_CASE(auto_programs_both_end_points_to_the_goal_and_ends_safe)
     CHECK(ra.offs >= 1u);
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
     CHECK_STR_EQ(rauto_line(2, b, sizeof(b)), "REPORT RUDDR007.TXT");
+    /* KST's raw values, as the KST page shows them, named raw. */
     snprintf(want, sizeof(want), TR(RA_SET), 150u,
              (unsigned)servo(KST_F_LEFT_ANGLE), 150u,
-             (unsigned)servo(KST_F_RIGHT_ANGLE));
+             (unsigned)servo(KST_F_RIGHT_ANGLE),
+             ui_servo_str(SERVO_STR_RA_R_RAW));
     CHECK_STR_EQ(rauto_line(1, b, sizeof(b)), want);
     /* The programmer's run is over: a second START is free once ARMED. */
     CHECK(kst_panel_run_ready());
@@ -640,6 +643,29 @@ TEST_CASE(auto_enters_at_5v_whatever_the_kst_page_loaded)
     settings_set(SET_SERVO_PROG_V, settings_def(SET_SERVO_PROG_V)->def);
 }
 
+/* The IMU on the surface, everything else ready: its AXIS Z in 6-AXIS is
+ * the one thing that refuses the hold, `IMU YAW NEEDS 9-AXIS`, and a hold
+ * starts nothing; 9-AXIS takes the refusal away. */
+TEST_CASE(imu_yaw_in_6_axis_alone_refuses_auto)
+{
+    ra_setup_on(true, true, true);
+    CHECK(rauto_blocked() == NULL);
+    settings_set(SET_IMU_ALGO, 0.0f);
+    servo_screen_set_imu_axis(2u, false);
+    ra_ms(100u);
+    CHECK(rauto_blocked() == TR(RA_IMU_YAW));
+    rauto_row_t row = RAR_COUNT;
+    CHECK(rauto_hold_blocked(&row) == TR(RA_IMU_YAW));
+    CHECK_EQ(row, RAR_ANGLE);
+    ra_hold_start();
+    CHECK(!servo_screen_rauto_running());
+    settings_set(SET_IMU_ALGO, 1.0f);
+    ra_ms(100u);
+    CHECK(rauto_blocked() != TR(RA_IMU_YAW));
+    settings_set(SET_IMU_ALGO, 0.0f);
+    servo_screen_set_imu_axis(0u, false);
+}
+
 /* The bench's run 2 (RUDDR023) on KST: LEFT ANGLE at 92 counts gives the
  * 1000us side 22.1°, within at its first measure; the 2000us side's horn
  * is deaf to every write.  KST's registers are not known: RIGHT ANGLE is
@@ -700,5 +726,6 @@ int main(void)
     RUN(auto_start_flashes_as_it_fires);
     RUN(auto_enters_at_5v_whatever_the_kst_page_loaded);
     RUN(writes_that_do_not_move_the_2000us_side_end_auto_after_two);
+    RUN(imu_yaw_in_6_axis_alone_refuses_auto);
     return test_summary("servo_rauto_kst");
 }

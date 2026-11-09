@@ -295,6 +295,7 @@ static void ra_servo(uint8_t fam, servo_rauto_servo_t *sv)
     sv->lo = l.lo_raw;
     sv->hi = l.hi_raw;
     sv->reversion = l.reversion;
+    sv->mid = l.mid;
     if (fam == SERVO_RAUTO_FAM_KST) {
         memcpy(sv->pulse_dus, l.pulse_dus, sizeof(sv->pulse_dus));
     }
@@ -567,6 +568,15 @@ void rauto_frame(float dt_s)
     ra_poll();
     ra_step();
     ra_ended();
+    if (servo_rauto_restore(&s.ra.run) && !s.ra.leaving) {
+        /* The programmer's servo after the run: RESTORE goes once a read
+         * shows the values before the run, or values the run did not
+         * leave. */
+        servo_rauto_servo_t sv;
+        memset(&sv, 0, sizeof(sv));
+        ra_servo(s.ra.run.cfg.family, &sv);
+        servo_rauto_servo_seen(&s.ra.run, &sv);
+    }
     const uint32_t sig = rauto_sig();
     if (sig != s.ra.sig) {
         s.ra.sig = sig;
@@ -821,9 +831,13 @@ const char *rauto_line(int i, char *buf, size_t n)
             break;
         }
         if (r->verdict == SERVO_RAUTO_PASS) {
-            snprintf(buf, n, TR(RA_SET), (unsigned)r->servo.value[0],
-                     (unsigned)r->cur[0], (unsigned)r->servo.value[1],
-                     (unsigned)r->cur[1]);
+            /* The registers as the programming page shows them. */
+            snprintf(buf, n, TR(RA_SET),
+                     (unsigned)servo_rauto_reg_of(r, 0, r->servo.value[0]),
+                     (unsigned)servo_rauto_reg_of(r, 0, r->cur[0]),
+                     (unsigned)servo_rauto_reg_of(r, 1, r->servo.value[1]),
+                     (unsigned)servo_rauto_reg_of(r, 1, r->cur[1]),
+                     ui_servo_str(servo_rauto_unit(r)));
         } else {
             char why[64];
             why_text(why, sizeof(why));
@@ -1015,6 +1029,7 @@ uint32_t rauto_sig(void)
         (uint32_t)r->side, (uint32_t)r->writes[0], (uint32_t)r->writes[1],
         r->sessions, (uint32_t)r->verdict, (uint32_t)r->why,
         (uint32_t)(s.ra.file + 2), s.ra.off ? 1u : 0u, s.ra.pressed,
+        servo_rauto_restore(r) ? 1u : 0u,
         (uint32_t)(uintptr_t)rauto_hold_blocked(NULL),
         (uint32_t)(uintptr_t)s.ra.note,
         (uint32_t)(uintptr_t)svs_seq_failure(),

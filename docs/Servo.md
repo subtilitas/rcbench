@@ -1113,6 +1113,7 @@ refuses it, and a bench that leaves SAFE closes it. The code is
 | the bound sensor, `HC-06 00:0C:BF:08:19:29 P`, when the last scan did not list it | IMU ON when off, ANGLE SOURCE IMU, saved; the list closes |
 | each sensor of the last scan, `HC-06 00:0C:BF:08:19:29 P -50dBm`: the name (`NO NAME` without one) cut to 18 cells, the full address, its type (`P` public, `R` random), the RSSI (received signal strength) | binds it when it is not the bound one, IMU ON when off, ANGLE SOURCE IMU, saved; the list closes. While no bind is taken (no sync with the C6, the calibration running, the IMU off) every sensor but the bound one is refused: a tap names why in the alert band and changes nothing |
 | `NO IMU FOUND` (refused) after a scan that listed none, or `SCAN FAILED: CODE n` | names `NO SENSOR FOUND: IS IT ON, NO PHONE ON IT?` or the code in the alert band |
+| `NO OTHER IMU FOUND` (refused) after a scan that listed none while the bound sensor holds the link: a connected sensor does not advertise, and its row stays above | names `NO OTHER SENSOR FOUND: THE BOUND ONE IS LINKED` in the alert band |
 | `SEARCH FOR IMU` | IMU ON when off, saved; the scan starts once Bluetooth LE runs. The list stays open: the entry reads `STARTING BLUETOOTH` while the start runs, `SCANNING: 10s` while the scan runs, then the sensors found or `NO IMU FOUND` stand in the list. Without sync with the C6 the entry is refused as `NO BLUETOOTH ON C6`, on a failed C6 as `C6 FAILED: RESTART` |
 
 The entry in force is in the accent colour: the AS5600, or with ANGLE
@@ -1546,9 +1547,17 @@ the screen is `shared/ui/servo_rudder_panel.c`.
   The first state line names the source, `AS5600` or `IMU X+` with the
   IMU's AXIS and SIGN.
 - ZERO stores its reference relative to the source's raw count 0. Changing
-  ENC CENTER afterwards therefore leaves the measured deflection unchanged. Another ANGLE SOURCE, the IMU's other AXIS or
-  SIGN, or a ZERO or CLEAR ZERO on the IMU screen, drops the zero and MAX:
-  the screen reads as before ZERO.
+  ENC CENTER afterwards therefore leaves the measured deflection unchanged. Another ANGLE SOURCE, the IMU's other AXIS,
+  SIGN or algorithm, or a ZERO or CLEAR ZERO on the IMU screen, drops the
+  zero and MAX: the screen reads as before ZERO.
+- The zero survives a restart. ZERO saves it with its source (settings
+  `rud_zero` and `rud_zero_key`): the AS5600, or the IMU with its AXIS,
+  SIGN and algorithm. At the start the zero comes back while the saved
+  source is the one in force; MAX does not. Another source, AXIS, SIGN or
+  algorithm in the settings drops the saved zero too, so a change back
+  needs a new ZERO. Not saved: the IMU's yaw in 6-AXIS, which starts anew
+  with the sensor, and a zero taken after a ZERO or CLEAR ZERO on the IMU
+  screen in the same session, whose angles the restart does not keep.
 - ZERO takes the current angle as the surface's neutral. The deflection is the
   angle from it, wrapped to -180 up to 180°. Before ZERO the deflection is
   the angle itself.
@@ -1710,6 +1719,7 @@ while:
 | PROG 5V, PD MINI, SUPPLY | ARMED with the PROG 5V off, a port holding it; a rail under 4.8V without a PD mini; no PD mini or PROG 5V to cycle a KST/Chaservo or classic Hitec servo's supply; SUPPLY's permitted range leaving out the run's 5.0V | the limit run's line; `PD MINI: 5.0V OUTSIDE ITS LIMITS` for the range, where a tap on the row opens SUPPLY's settings at OUTPUT LIMITS. START sets the PD mini to 5.0V ([The run's 5.0V](#the-runs-50v)). PROG 5V is a fixed 5V and has no set point |
 | PORT PWM | ARMED with the port's pulse off | `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS`, `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` |
 | RANGE | PULSE MIN is above 1000us, PULSE MAX below 2000us, or PULSE CENTER is not strictly between 1000us and 2000us | `PULSE MIN TO MAX MUST INCLUDE 1000 TO 2000us` |
+| ANGLE | the IMU's AXIS Z (yaw) while IMU algorithm is 6-AXIS: no magnetometer holds yaw, which drifts 2.4° in 100s on a BWT901CL against the 0.5° tolerance. A tap opens the IMU YAW list, `SWITCH IMU TO 9-AXIS`, `USE IMU AXIS X (ROLL)`, `USE IMU AXIS Y (PITCH)`; a pick writes the setting and saves it ([IMU](IMU.md#the-link)) | `IMU YAW NEEDS 9-AXIS` |
 | ANGLE | the angle source gives no reading | `ANGLE SOURCE: NO READING` |
 | ZERO | ZERO is not taken | `SET ZERO WITH THE SURFACE AT NEUTRAL` |
 | ARM | another run runs, or a report is still being written | the run's line, as on TEST |
@@ -1767,6 +1777,12 @@ ARMED is asked).
   `writes do not move the 1000us side` or `... 2000us side`. Writes with
   |E| under the tolerance are not judged: the angle source's noise is of
   that size. One write alone does not end the run, for the same reason.
+- Each write is bounded: a register's new value lies within 50% of the
+  model's first estimate for it, value0 x goal / measured0, with value0 the
+  register's value at the read and measured0 the side's first measure. A
+  value past it ends the run as `end point too far from its estimate`
+  before the write. Example: 150 counts at 30° and a 49.5° goal give an
+  estimate of 247.5 counts and a bound of 124 to 371.
 - Each write is a session: the servo held at PULSE CENTER for 1000ms, SAFE,
   CONNECT, the write and its read-back, LEAVE, including the power cycle when required for the written values
   to take effect, ARMED, and another measurement of the side. The file of
@@ -1778,7 +1794,11 @@ ARMED is asked).
   a value, the third line of AUTO's box names how the values before the
   run come back: `RESTORE IN KST` for KST/Chaservo, `LOAD HITEC001 IN
   FILES` with the backup file's name for Hitec, `NO BACKUP FILE` where none
-  was saved. The run writes no value back by itself.
+  was saved. The run writes no value back by itself. The line names the
+  report again once a later read or write on the KST or HITEC page shows
+  the values before the run, or values the run did not leave; a read that
+  shows the values the run left keeps it. After an end with a write's
+  answer missing only the values before the run clear it.
 
 ### Protections
 
@@ -1813,6 +1833,22 @@ the targets, goals and tolerance, the end points before and after with
 the side each moves, the writes and sessions, the backup file, and every
 measure with its value, its angle and whether it lies within.
 
+End points read as the programming page shows them, with the unit named
+on the report's register lines (`(counts)`, `(raw value)`) and on the box's
+PASS line:
+
+| Servo | Unit | Example |
+| --- | --- | --- |
+| Hitec D series | position counts, 8192 the center, as the HITEC page's TRAVEL shows them under `LEFT END (COUNTS)` and `RIGHT END (COUNTS)` | `LEFT END (0xB2): 3351 before, 3466 after (counts)` |
+| Hitec classic | the raw cell, unit unknown, as on the HITEC page | `LEFT END (CELL 0x14): 162 before, 170 after (raw value)` |
+| KST/Chaservo | the raw register value, unit unknown, as on the KST page | `LEFT ANGLE:     150 before, 92 after (raw value)` |
+
+The run itself works in the distance of each end point from NEUTRAL (on a
+D series servo 8192 - LEFT END and RIGHT END - 8192); one function,
+`servo_rauto_reg_of()`, turns that into the value shown, and a host test
+holds it equal to the write path's `hitec_run_to_reg()`. LIMIT RUN's
+report still names a D series end point by its distance from NEUTRAL.
+
 ### Limits
 
 - The model is linear: the deflection at an end pulse is taken as
@@ -1828,9 +1864,11 @@ measure with its value, its angle and whether it lies within.
   bench run). A register found on such a measure is held to its effect on
   the next writes: 2 that do not move the side end the run. A drift that
   keeps pace with every write is not detected.
-- A value moves within the register's range only. No cap on its total
-  change from the value before the run exists; 8 writes a side and the
-  2-write effect check bound it.
+- The bound of 50% around the first estimate is chosen, not measured. It
+  is wider than a servo whose response matches the model needs: with the
+  bench's run 2 numbers (LEFT END 4726, first measure 50.02°, goal 49.5°)
+  it runs from 2339 to 7015, and that run's last write, 6627, lies inside
+  it.
 
 ## Sweep and SPEED
 

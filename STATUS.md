@@ -516,7 +516,7 @@ source's angle, the AS5600's or the IMU's, as a control surface's deflection fro
 0.1°, with LENGTH (0 or 10 to 500mm, `rud_len_mm`) the trailing edge's travel L x sin in
 0.1mm, the largest deflection each side until ZERO or RESET MAX, and drives 1000us, CENTER
 and 2000us and takes the knob only while ARMED, its PORT button over the READY rows
-(`test_servo_rudder`, `test_servo_rudder_panel`, `test_rudder_layout`; host suite only). Its
+(`test_servo_rudder`, `test_servo_rudder_panel`, `test_servo_rudder_zero`, `test_rudder_layout`; host suite only). Its
 side view draws the surface at the deflection shown, -90 to +90° with a fixed flap of 62px,
 beyond that at ±90°, dim on the neutral line without a reading, with the MAX and, in AUTO's
 box, the targets dashed (`shared/ui/servo_rudder_flap.c`; `test_servo_rudder_flap`,
@@ -1308,7 +1308,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 515 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 516 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1417,7 +1417,7 @@ The host suite is 515 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_shot_file`, `test_shot`, `test_shot_popup`, `test_wall_clock`, `test_witmotion`,
 `test_servo_angle`, `test_servo_source_angle`, `test_hitec_prog_run` and
 `test_hitec_panel_run`, `test_hitec_panel_move`, `test_hitec_panel_find`, `test_servo_rudder`,
-`test_servo_rudder_panel`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
+`test_servo_rudder_panel`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
 `test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_imu`, `test_imu_filter`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_effect`,
@@ -1965,7 +1965,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_screen_link.c` | 419 | 410 | 97.8% |
 | `shared/ui/servo_screen_touch.c` | 272 | 267 | 98.2% |
 | `shared/ui/servo_screen_draw.c` | 452 | 428 | 94.7% |
-| `shared/ui/servo_settings_panel.c` | 609 | 553 | 90.8% |
+| `shared/ui/servo_settings_panel.c` | 611 | 555 | 90.8% |
 | `shared/ui/servo_settings_draw.c` | 330 | 298 | 90.3% |
 | `shared/ui/servo_test_panel.c` | 462 | 453 | 98.0% |
 | `shared/ui/servo_test_ready.c` | 324 | 318 | 98.2% |
@@ -1973,11 +1973,11 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_limit_panel.c` | 332 | 320 | 96.4% |
 | `shared/ui/servo_limit_ready.c` | 278 | 270 | 97.1% |
 | `shared/ui/servo_limit_card.c` | 200 | 178 | 89.0% |
-| `shared/ui/servo_limit_seam.c` | 89 | 85 | 95.5% |
+| `shared/ui/servo_limit_seam.c` | 90 | 86 | 95.6% |
 | `shared/ui/servo_workbench.c` | 178 | 173 | 97.2% |
-| `shared/ui/servo_rudder_panel.c` | 402 | 399 | 99.2% |
-| `shared/ui/servo_rudder_auto_panel.c` | 574 | 526 | 91.6% |
-| `shared/ui/servo_rudder_auto_ready.c` | 269 | 265 | 98.5% |
+| `shared/ui/servo_rudder_panel.c` | 435 | 432 | 99.3% |
+| `shared/ui/servo_rudder_auto_panel.c` | 582 | 536 | 92.1% |
+| `shared/ui/servo_rudder_auto_ready.c` | 273 | 269 | 98.5% |
 | `shared/ui/servo_ready.c` | 492 | 476 | 96.8% |
 | `shared/ui/servo_prog_ready.c` | 211 | 198 | 93.8% |
 | `shared/ui/servo_drive_ready.c` | 355 | 338 | 95.2% |
@@ -1989,13 +1989,13 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_lists.c` | 192 | 191 | 99.5% |
 | `shared/ui/servo_pick.c` | 99 | 99 | 100.0% |
 | `shared/ui/servo_run_supply.c` | 29 | 28 | 96.5% |
-| `shared/ui/servo_angle_pick.c` | 226 | 220 | 97.3% |
+| `shared/ui/servo_angle_pick.c` | 264 | 255 | 96.6% |
 | `shared/ui/kst_panel.c` | 460 | 449 | 97.6% |
 | `shared/ui/kst_panel_text.c` | 196 | 196 | 100.0% |
 | `shared/ui/kst_panel_warn.c` | 309 | 306 | 99.0% |
 | `shared/ui/kst_panel_edit.c` | 387 | 378 | 97.7% |
 | `shared/ui/kst_panel_touch.c` | 295 | 288 | 97.6% |
-| `shared/ui/kst_panel_run.c` | 154 | 144 | 93.5% |
+| `shared/ui/kst_panel_run.c` | 154 | 148 | 96.1% |
 | `shared/ui/kst_panel_draw.c` | 563 | 561 | 99.6% |
 | `shared/ui/esc_wire_panel.c` | 573 | 544 | 94.9% |
 | `shared/ui/hitec_panel.c` | 271 | 267 | 98.5% |
@@ -2064,7 +2064,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/imu_ctl.c` | 98 | 98 | 100.0% |
 | `shared/ui/imu_ble.c` | 134 | 133 | 99.2% |
 | `shared/ui/imu_sensor.c` | 210 | 210 | 100.0% |
-| `shared/ui/imu_screen.c` | 347 | 339 | 97.7% |
+| `shared/ui/imu_screen.c` | 354 | 346 | 97.7% |
 | `shared/ui/imu_screen_draw.c` | 132 | 131 | 99.2% |
 | `shared/settings/settings.c` | 423 | 416 | 98.3% |
 | `shared/settings/settings_sensors.c` | 150 | 149 | 99.3% |
@@ -2113,8 +2113,8 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/servo/servo_limrun_report.c` | 316 | 313 | 99.0% |
 | `shared/servo/servo_gap.c` | 33 | 33 | 100.0% |
 | `shared/servo/servo_angle.c` | 33 | 33 | 100.0% |
-| `shared/servo/servo_rudder_auto.c` | 501 | 491 | 98.0% |
-| `shared/servo/servo_rudder_auto_report.c` | 246 | 246 | 100.0% |
+| `shared/servo/servo_rudder_auto.c` | 556 | 544 | 97.8% |
+| `shared/servo/servo_rudder_auto_report.c` | 250 | 250 | 100.0% |
 | `shared/servo/servo_limrun_family.c` | 29 | 29 | 100.0% |
 | `shared/servo/servo_start_seq.c` | 203 | 195 | 96.1% |
 | `protocols/openyge/openyge_frame.c` | 172 | 169 | 98.3% |
@@ -2295,7 +2295,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **88515** | **86727** | **98.0%** |
+| **total** | **88667** | **86880** | **98.0%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

@@ -11,8 +11,9 @@
  * register and passes; a register found on a measure an offset fooled
  * ends 2 writes later; a D series servo set to CCW finds its registers on
  * the first write; writes that move a known side the wrong way end after
- * 2; and a run whose writes move both sides still passes on both
- * families.
+ * 2; a run whose writes move both sides still passes on both families;
+ * and the bound of 50% around the model's first estimate, with the bench's
+ * run 2 numbers and on a servo that moves 30% of each write.
  *
  * The rig is servo_rauto_rig.h: 150 counts give 30°, the goals 27.5°, the
  * tolerance 0.5°.
@@ -20,6 +21,8 @@
  * SPDX-License-Identifier: MIT
  */
 #include "servo_rauto_rig.h"
+
+#include "hitec_prog_run.h"
 
 /* Both sides 2.5° past the goal, the 1000us side written first: one write
  * a side and PASS on both families; the Hitec D series run knows its
@@ -42,8 +45,8 @@ TEST_CASE(both_sides_written_once_pass_on_kst_and_hitec_d)
         CHECK_EQ(g.run.reg_side[0], 0);
         CHECK_EQ(g.run.reg_side[1], 1);
         CHECK(in_report(fam == 0 ? "moves the 1000us side"
-                                 : "LEFT END (0xB2): 150 before, 138 after; "
-                                   "moves the 1000us side"));
+                                 : "LEFT END (0xB2): 8042 before, 8054 after "
+                                   "(counts); moves the 1000us side"));
         CHECK(ended_safe());
     }
 }
@@ -199,8 +202,94 @@ TEST_CASE(writes_that_move_a_known_side_the_wrong_way_end_after_two)
     CHECK(servo_rauto_restore(&g.run));
 }
 
+/* The bound on a write with the bench's run 2 numbers: LEFT END 4726 at
+ * the read, the side's first measure 50.02°, a 49.5° goal (which the run's
+ * measures fit with a 0.5° tolerance): the estimate 4676.9, the bound
+ * 2339 to 7015.  The run's last write, 6627, lies inside it: the 2-write
+ * effect check, not the bound, stops that run. */
+TEST_CASE(the_bound_with_the_run_2_numbers)
+{
+    CHECK(servo_rauto_in_cap(4726u, 49.5f, 50.02f, 4677u));
+    CHECK(servo_rauto_in_cap(4726u, 49.5f, 50.02f, 6627u));
+    CHECK(servo_rauto_in_cap(4726u, 49.5f, 50.02f, 7015u));
+    CHECK(!servo_rauto_in_cap(4726u, 49.5f, 50.02f, 7016u));
+    CHECK(servo_rauto_in_cap(4726u, 49.5f, 50.02f, 2339u));
+    CHECK(!servo_rauto_in_cap(4726u, 49.5f, 50.02f, 2338u));
+    CHECK(!servo_rauto_in_cap(4726u, 49.5f, 0.0f, 4726u));
+    CHECK(!servo_rauto_in_cap(4726u, 49.5f, -1.0f, 4726u));
+}
+
+/* A servo whose writes move the side 30% of the linear change, each more
+ * than the effect check asks: 150 counts give 30°, the goal 49.5° (45°
+ * and 10%), the estimate 247.5 counts and the bound 124 to 371.  The
+ * writes go 248, 342, and the third would be 400: FAIL CAP before it, the
+ * register at 342, every output off and RESTORE offered. */
+TEST_CASE(a_write_past_50_percent_of_the_estimate_ends_the_run)
+{
+    rig_init(0u);
+    g.cfg.family = SERVO_RAUTO_FAM_HITEC_D;
+    g.cfg.target_deg[0] = 45.0f;
+    g.cfg.target_deg[1] = 45.0f;
+    g.hi = 400u;
+    g.resp = 0.3f;
+    CHECK(start());
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.verdict, SERVO_RAUTO_FAIL);
+    CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_CAP);
+    CHECK_EQ(servo_rauto_why_str(&g.run), SERVO_STR_RA_WHY_CAP);
+    CHECK_EQ(g.run.writes[0], 2u);
+    CHECK_EQ(g.v[0], 342u);
+    CHECK(ended_safe());
+    CHECK(servo_rauto_restore(&g.run));
+    CHECK(in_report("FAIL - end point too far from its estimate"));
+}
+
+/* The units the programming pages show: the bench's D485HW at NEUTRAL
+ * 8192 holds LEFT END 4841 and RIGHT END 4808 counts from NEUTRAL, which
+ * the HITEC page shows as 3351 and 13000 counts; the run seam's
+ * hitec_run_to_reg() writes the same.  KST and a classic Hitec servo show
+ * the raw value itself. */
+TEST_CASE(end_points_show_in_the_programming_pages_units)
+{
+    servo_rauto_t r;
+    servo_rauto_init(&r);
+    r.cfg.family = SERVO_RAUTO_FAM_HITEC_D;
+    r.servo.mid = 8192u;
+    CHECK_EQ(servo_rauto_reg_of(&r, 0, 4841u), 3351u);
+    CHECK_EQ(servo_rauto_reg_of(&r, 1, 4808u), 13000u);
+    CHECK_EQ(servo_rauto_unit(&r), SERVO_STR_RA_R_COUNTS);
+    hitec_run_servo_t h;
+    memset(&h, 0, sizeof(h));
+    h.series = (uint8_t)HITEC_D;
+    h.mid = 8192u;
+    for (uint16_t t = 1u; t < 8192u; t = (uint16_t)(t * 3u)) {
+        CHECK_EQ(servo_rauto_reg_of(&r, 0, t), hitec_run_to_reg(&h, 0u, t));
+        CHECK_EQ(servo_rauto_reg_of(&r, 1, t), hitec_run_to_reg(&h, 1u, t));
+    }
+    r.cfg.family = SERVO_RAUTO_FAM_KST;
+    CHECK_EQ(servo_rauto_reg_of(&r, 0, 150u), 150u);
+    CHECK_EQ(servo_rauto_unit(&r), SERVO_STR_RA_R_RAW);
+    r.cfg.family = SERVO_RAUTO_FAM_HITEC_C;
+    CHECK_EQ(servo_rauto_reg_of(&r, 1, 194u), 194u);
+    CHECK_EQ(servo_rauto_unit(&r), SERVO_STR_RA_R_RAW);
+    CHECK_EQ(servo_rauto_reg_of(NULL, 0, 77u), 77u);
+    CHECK_EQ(servo_rauto_unit(NULL), SERVO_STR_RA_R_RAW);
+    /* A D series servo read without NEUTRAL is no servo to the run. */
+    rig_init(0u);
+    g.cfg.family = SERVO_RAUTO_FAM_HITEC_D;
+    g.no_mid = true;
+    CHECK(start());
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.verdict, SERVO_RAUTO_FAIL);
+    CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_NO_SERVO);
+    CHECK_EQ(g.write_ops, 0u);
+}
+
 int main(void)
 {
+    RUN(end_points_show_in_the_programming_pages_units);
+    RUN(the_bound_with_the_run_2_numbers);
+    RUN(a_write_past_50_percent_of_the_estimate_ends_the_run);
     RUN(both_sides_written_once_pass_on_kst_and_hitec_d);
     RUN(run_2_writes_the_2000us_side_register_and_passes);
     RUN(hitec_d_writes_that_do_not_move_the_2000us_side_end_after_two);

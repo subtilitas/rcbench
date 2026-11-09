@@ -53,6 +53,7 @@ typedef struct {
                                     drift_from value writes landed, °     */
     unsigned drift_from;
     bool     reversion;          /* the servo's REVERSION (Hitec: CCW)    */
+    bool     no_mid;             /* a D series read without NEUTRAL       */
     bool     jitter;             /* the surface never still               */
     float    angle;              /* the surface now, °                    */
     float    still_ref;
@@ -250,6 +251,8 @@ static inline void programmer(void)
         sv.lo = g.lo;
         sv.hi = g.hi;
         sv.reversion = g.reversion;
+        sv.mid = (g.cfg.family == SERVO_RAUTO_FAM_HITEC_D && !g.no_mid)
+                     ? 8192u : 0u;
         memcpy(sv.pulse_dus, g.pulses, sizeof(sv.pulse_dus));
         servo_rauto_connected(&g.run, &sv, g.now);
     } else if (op == OP_WRITE) {

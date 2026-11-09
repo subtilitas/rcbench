@@ -84,11 +84,11 @@ gfx_rect_t value_rect(int i)
 
 gfx_rect_t choice_rect(int i)
 {
-    /* The PORT, SERVO and SERIES lists: one column, entries and refusals
-     * 60 cells; the ANGLE SOURCE list too while it holds 5 entries or
-     * fewer. */
+    /* The PORT, SERVO, SERIES and IMU YAW lists: one column, entries and
+     * refusals 60 cells; the ANGLE SOURCE list too while it holds 5
+     * entries or fewer. */
     if (s.ch.target == CH_PORT || s.ch.target == CH_FAMILY
-        || s.ch.target == CH_SERIES
+        || s.ch.target == CH_SERIES || s.ch.target == CH_ANGLE_FIX
         || (s.ch.target == CH_ANGLE && s.ch.count <= CHOICE_MAX / 2)) {
         return (gfx_rect_t){ (int16_t)(OV_X + 10),
                              (int16_t)(OV_Y + 56 + i * 56),
@@ -582,6 +582,8 @@ static void choose(int k)
         svs_series_pick(v);
     } else if (target == CH_ANGLE) {
         angle_pick_choose(v);
+    } else if (target == CH_ANGLE_FIX) {
+        angle_fix_choose(v);
     }
     ++s.ctrl_rev;
 }

@@ -107,22 +107,76 @@ static float src_defl_now(void)
 /**
  * @brief The source in force as rudder_t's geo_src keeps it: the AS5600,
  *        or the IMU with its AXIS and SIGN.
- * @return 1 the AS5600, 2 + 2 x AXIS + SIGN the IMU
+ * @return 1 the AS5600, 2 + 2 x AXIS + SIGN + 8 for 9-AXIS the IMU
  */
 static uint32_t src_key(void)
 {
     if (enc_src() != SERVO_ANGLE_IMU) {
         return 1u;
     }
-    /* A new IMU zero moves every IMU angle: it is another source too. */
+    /* A new IMU zero moves every IMU angle, and ALGORITHM changes the
+     * sensor's fusion: each is another source too. */
     return 2u + 2u * (s.imu_axis & 3u) + (s.imu_neg ? 1u : 0u)
+           + (settings_get_int(SET_IMU_ALGO) == 1 ? 8u : 0u)
            + 16u * (s.imu_zero_gen & 0x0FFFFFFFu);
+}
+
+/**
+ * @brief The saved zero's key for the source SETUP names now: 1 the
+ *        AS5600, 2 + 2 x AXIS + SIGN + 8 for 9-AXIS the IMU
+ *        (SET_RUDDER_ZERO_KEY).  From the settings, which hold across a
+ *        restart before the panel hands the IMU's AXIS to the screen.
+ * @return the key
+ */
+static int zero_key(void)
+{
+    if (enc_src() != SERVO_ANGLE_IMU) {
+        return 1;
+    }
+    return 2 + 2 * (settings_get_int(SET_IMU_AXIS) & 3)
+           + (settings_get_int(SET_IMU_SIGN) == 1 ? 1 : 0)
+           + (settings_get_int(SET_IMU_ALGO) == 1 ? 8 : 0);
+}
+
+/**
+ * @brief zero_key() for the source the screen reads now: the IMU's AXIS and
+ *        SIGN as the panel last handed them (servo_screen_set_imu_axis()).
+ *        It differs from zero_key() until the panel hands over a change.
+ * @return the key
+ */
+static int screen_key(void)
+{
+    if (enc_src() != SERVO_ANGLE_IMU) {
+        return 1;
+    }
+    return 2 + 2 * (int)(s.imu_axis & 3u) + (s.imu_neg ? 1 : 0)
+           + (settings_get_int(SET_IMU_ALGO) == 1 ? 8 : 0);
+}
+
+/**
+ * @brief Whether a zero on the source now holds across a restart: the
+ *        AS5600's counts do; the IMU's roll, pitch and 9-AXIS yaw while
+ *        no IMU zero was taken since the start (generation 0), as the
+ *        sensor's own angles do.  6-AXIS yaw starts anew with the sensor.
+ * @return true then
+ */
+static bool zero_keeps(void)
+{
+    if (enc_src() != SERVO_ANGLE_IMU) {
+        return true;
+    }
+    return s.imu_zero_gen == 0u
+           && !(settings_get_int(SET_IMU_AXIS) == 2
+                && settings_get_int(SET_IMU_ALGO) == 0);
 }
 
 /**
  * @brief The zero and the MAX dropped when the source in force is not the
  *        one they were taken from: another sensor's counts, or the IMU's
- *        other AXIS or SIGN, have no relation to them.
+ *        other AXIS or SIGN, have no relation to them.  The saved zero
+ *        goes with a change of the source SETUP names; while it matches
+ *        that source and the one the screen reads, and holds across a
+ *        restart, a dropped zero comes back from it (the MAX does not).
  */
 static void geo_follow_source(void)
 {
@@ -131,6 +185,28 @@ static void geo_follow_source(void)
         servo_rudder_init(&s.rud.geo);
         s.rud.geo_src = k;
     }
+    const int saved = settings_get_int(SET_RUDDER_ZERO_KEY);
+    if (saved != 0 && saved != zero_key()) {
+        settings_set(SET_RUDDER_ZERO_KEY, 0.0f);
+        settings_request_save();
+    } else if (saved != 0 && !s.rud.geo.zeroed && saved == screen_key()
+               && zero_keeps()) {
+        s.rud.geo.zeroed   = true;
+        s.rud.geo.zero_deg = settings_get(SET_RUDDER_ZERO_DEG);
+    }
+}
+
+/**
+ * @brief ZERO: the zero taken now, and saved where it holds across a
+ *        restart (zero_keeps()); else the saved one dropped.
+ */
+static void take_zero(void)
+{
+    servo_rudder_zero(&s.rud.geo, src_abs_now());
+    const bool keep = zero_keeps();
+    settings_set(SET_RUDDER_ZERO_DEG, keep ? s.rud.geo.zero_deg : 0.0f);
+    settings_set(SET_RUDDER_ZERO_KEY, keep ? (float)zero_key() : 0.0f);
+    settings_request_save();
 }
 
 void rudder_angle(void)
@@ -320,7 +396,7 @@ static void act(rudder_ctl_t k)
         break;
     case RUD_C_ZERO:
         if (enc_shown()) {
-            servo_rudder_zero(&s.rud.geo, src_abs_now());
+            take_zero();
         }
         break;
     case RUD_C_RESET:

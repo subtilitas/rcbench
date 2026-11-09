@@ -100,7 +100,12 @@ löscht der erste Start aus nvs.
 Ein neu gebundener Sensor ersetzt den vorigen.
 Eine Suche bei verbundenem Sensor behält die Verbindung; eine Suche während
 eines laufenden Verbindungsaufbaus bricht diesen ab, und die Versuche gehen
-nach der Suche weiter.
+nach der Suche weiter. Ein verbundener Sensor sendet keine Advertisements,
+also listet keine Suche den gebundenen, solange er verbunden ist (BOUND,
+CONNECTED oder NO FRAMES). Eine Suche ohne Fund zeigt dann `KEIN ANDERER
+SENSOR: DER GEBUNDENE IST VERBUNDEN` auf der IMU-Seite und `KEINE ANDERE IMU
+GEFUNDEN` in der Liste WINKELQUELLE von SERVO, die Zeile des gebundenen
+Sensors darüber.
 
 Die Liste WINKELQUELLE von SERVO, von den Zeilen WINKEL auf RUDER und RUDER
 AUTO, listet dieselben Sensoren und bindet auf dieselbe Weise: eine Wahl
@@ -150,6 +155,20 @@ Verbindung zur gespeicherten Adresse bekommt und den ISSC-Dienst anbietet,
 kann Winkel-Frames senden, die das Panel als die des Sensors nimmt. Der
 Lauf von RUDER AUTO mit WINKELQUELLE IMU programmiert daraus Endpoints.
 `SECURITY.md` führt das als aktuelle Einschränkung.
+
+RUDER AUTO verweigert die IMU-Achse Z, Gieren, solange der IMU-Algorithmus
+6-AXIS ist. 6-AXIS hat kein Magnetometer, das das Gieren hält: eine
+BWT901CL auf Gieren driftet 2,4° in 100s (ein Lauf am Prüfstand), gegen
+0,5° Toleranz von RUDER AUTO. Achse X (Rollen) und Y (Nicken) halten sich
+an der Schwerkraft und bleiben in beiden Modi erlaubt. Die Zeile WINKEL
+der BEREIT-Karte zeigt `IMU-GIEREN BENÖTIGT 9-AXIS` in Rot, und ARM + START
+wird verweigert. Ein Tippen auf die Zeile öffnet die Liste IMU-GIEREN:
+`IMU AUF 9-AXIS SCHALTEN`, `IMU-ACHSE X NEHMEN (ROLLEN)`, `IMU-ACHSE Y
+NEHMEN (NICKEN)`. Eine Wahl schreibt IMU-Algorithmus oder IMU-Achse und
+speichert sie wie SETUP > SENSOREN; das Panel sendet AXIS6 und
+SAVE, sobald der Sensor verbunden ist (unten). Die Drift des Gierens in
+9-AXIS ist nicht gemessen. Ein anderer IMU-Algorithmus verwirft Nullpunkt
+und MAX von RUDER, wie eine andere Achse oder ein anderes Vorzeichen.
 
 ## Der Sensor
 

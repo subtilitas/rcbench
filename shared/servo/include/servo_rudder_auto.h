@@ -18,7 +18,8 @@
  * neutral and the end), write in a session, move again.  Which register
  * moves which side is known from the family and its direction (Hitec D
  * series set to CW), else found on the first write.  Two writes in a row
- * that do not move their side end the run.  The current guard of the
+ * that do not move their side end the run, as does a value more than 50%
+ * from the model's first estimate.  The current guard of the
  * limit run holds
  * throughout (SERVO_LIMRUN_HARD_MA, SERVO_LIMRUN_STALL_MA for
  * SERVO_LIMRUN_STALL_MS): a stall before the goal ends the run with
@@ -90,6 +91,12 @@
  *     wrong way.  Writes with |E| under the tolerance are not judged: the
  *     angle source's noise is of that size.  The register-finding write is
  *     judged as above and starts the count anew once found.
+ *   - A bound on each write: a register's new value lies within
+ *     SERVO_RAUTO_CAP_PCT (50%) of the model's first estimate for it,
+ *     value0 x goal / measured0, value0 the register's value at the read
+ *     and measured0 the side's first measure (servo_rauto_in_cap()).  A
+ *     value past it, the register-finding writes included, ends the run as
+ *     FAIL (SERVO_RAUTO_WHY_CAP) before the write.
  *   - A write session: the servo held at PULSE CENTER for
  *     SERVO_LIMRUN_RETURN_MS, SAFE asked, CONNECT, the write, LEAVE, ARMED
  *     asked, the written side measured.  A CONNECT that reads other values
@@ -103,7 +110,8 @@
  * no servo) asks LEAVE in place of the output off, so the port comes
  * back.  The values last written stay in the servo; RESTORE on the
  * programming page gives back those before the run after a FAIL or an
- * abort (servo_rauto_restore()).
+ * abort (servo_rauto_restore()), offered until a later read of the
+ * programmer shows them back or otherwise changed (servo_rauto_servo_seen()).
  *
  * The protections, in every phase: a 1ms sample at or above
  * SERVO_LIMRUN_HARD_MA, or a clipped one, ends the run
@@ -146,6 +154,10 @@ extern "C" {
 
 /** @brief Writes a side takes at most. */
 #define SERVO_RAUTO_WRITES_MAX  8u
+/** @brief How far a write may move a register from the model's first
+ *         estimate for it, value0 x goal / measured0 (servo_rauto_in_cap()),
+ *         in % of that estimate. */
+#define SERVO_RAUTO_CAP_PCT 50u
 /** @brief Writes in a row whose model change sums to at least the tolerance
  *         and that do not move their side end the run: one alone can be the
  *         angle source's noise. */
@@ -195,7 +207,13 @@ typedef struct {
     const char *const *text;  /**< SERVO_STR_COUNT entries, NULL English */
 } servo_rauto_cfg_t;
 
-/** @brief The servo as read, in travel units (see IMPL.md 3.5). */
+/**
+ * @brief The servo as read, in travel units (see IMPL.md 3.5): KST's and a
+ *        classic Hitec servo's raw register values; a Hitec D series
+ *        servo's distance of each end point from NEUTRAL, in position
+ *        counts.  The report and the screen show registers as the
+ *        programming pages do (servo_rauto_reg_of()).
+ */
 typedef struct {
     bool     ok;              /**< read, a servo of the family, editable */
     uint16_t value[2];        /**< the two registers' travel values */
@@ -203,6 +221,9 @@ typedef struct {
              hi;              /**< the largest */
     bool     reversion;       /**< REVERSION on */
     uint16_t pulse_dus[3];    /**< KST: NEUTRAL, LOWER, UPPER; else 0 */
+    uint16_t mid;             /**< Hitec D series: NEUTRAL (0xC2) in
+                                   position counts, the travel's origin;
+                                   else 0 */
     char     backup[16];      /**< the backup file; "" for memory only */
 } servo_rauto_servo_t;
 
@@ -252,7 +273,7 @@ typedef enum {
     SERVO_RAUTO_WHY_ANGLE, SERVO_RAUTO_WHY_NO_SERVO, SERVO_RAUTO_WHY_PROG,
     SERVO_RAUTO_WHY_WRITE, SERVO_RAUTO_WHY_MAPPING, SERVO_RAUTO_WHY_LIMIT,
     SERVO_RAUTO_WHY_WRITE_CAP, SERVO_RAUTO_WHY_BENCH, SERVO_RAUTO_WHY_SUPPLY,
-    SERVO_RAUTO_WHY_NO_EFFECT,
+    SERVO_RAUTO_WHY_NO_EFFECT, SERVO_RAUTO_WHY_CAP,
     SERVO_RAUTO_WHY_COUNT,
 } servo_rauto_why_t;
 
@@ -261,6 +282,8 @@ typedef struct {
     uint8_t  side;            /**< 0 at 1000us, 1 at 2000us */
     uint8_t  n;               /**< the write's number, 0 the first measure */
     uint16_t value;           /**< the register's travel value in force */
+    uint8_t  reg;             /**< the register value belongs to; 0xFF
+                                   none */
     float    measured_deg;    /**< along the side's direction */
     float    goal_deg;        /**< target x (1 + margin) */
     bool     within;          /**< within the tolerance of the goal */
@@ -336,6 +359,22 @@ typedef struct {
     float    eff_from[2],             /**< the measure before the first, ° */
              eff_expect[2];           /**< the change the model gives for
                                            them, summed, ° */
+    bool     left_unknown;            /**< a write's answer missing at the
+                                           end: what the servo holds is not
+                                           known */
+    bool     seen_base;               /**< base_value and base_pulse hold
+                                           the programmer's servo as first
+                                           seen after the end */
+    uint16_t base_value[2],           /**< its two values */
+             base_pulse[3];           /**< its pulses (KST) */
+    bool     have_first[2];           /**< first_deg holds the side's first
+                                           measure */
+    float    first_deg[2];            /**< each side's first measure along
+                                           its direction, ° */
+    bool     restore_off;             /**< RESTORE no longer offered: a
+                                           later read holds the values
+                                           before the run, or values the
+                                           run did not leave */
 } servo_rauto_t;
 
 /**
@@ -471,11 +510,25 @@ bool servo_rauto_wrote(const servo_rauto_t *r);
 /**
  * @brief RESTORE is offered: the run ended as FAIL or ABORTED with the
  *        servo's values changed, or with a write handed out and its
- *        answer not in (it may have landed).
+ *        answer not in (it may have landed), and no read since shows the
+ *        values put back or changed otherwise (servo_rauto_servo_seen()).
  * @param r Run state; NULL gives false.
- * @return true when DONE, programmed, and not PASS.
+ * @return true when DONE, programmed, not PASS, and not cleared.
  */
 bool servo_rauto_restore(const servo_rauto_t *r);
+/**
+ * @brief The programmer's servo after the run, handed in each frame while
+ *        RESTORE is offered.  The first one handed in is the base: what
+ *        the programmer held at the end.  One that differs from the base
+ *        is a later read or write, and becomes the base.  It clears
+ *        RESTORE when its values (KST: and pulses) are the ones before the
+ *        run, or when they are not the ones the run left; the latter not
+ *        after an end with a write's answer missing, whose values are not
+ *        known.
+ * @param r  Run state; nothing unless servo_rauto_restore().
+ * @param sv The servo; NULL or one not ok is ignored.
+ */
+void servo_rauto_servo_seen(servo_rauto_t *r, const servo_rauto_servo_t *sv);
 /**
  * @brief The outbox: OPEN, the CSV's lines, the report's lines (TXT), END.
  * @param r    Run state; NULL gives NONE.
@@ -514,6 +567,36 @@ bool servo_rauto_report_line(const servo_rauto_t *r, unsigned idx, char *buf, si
  * @return the value for the goal.
  */
 uint16_t servo_rauto_scaled(uint16_t value, float goal_deg, float measured_deg, uint16_t lo, uint16_t hi);
+/**
+ * @brief A register's travel value as the programming page shows it: on a
+ *        Hitec D series servo the end point's position, NEUTRAL - travel
+ *        for LEFT END (register 0) and NEUTRAL + travel for RIGHT END, in
+ *        position counts with 8192 the center (hitec_run_to_reg() writes
+ *        the same); on KST and a classic Hitec servo the raw value itself.
+ * @param r      Run state; NULL gives @p travel.
+ * @param g      The register: 0 LEFT, 1 RIGHT.
+ * @param travel Its travel value.
+ * @return the value shown.
+ */
+uint16_t servo_rauto_reg_of(const servo_rauto_t *r, int g, uint16_t travel);
+/**
+ * @brief The unit of servo_rauto_reg_of()'s values.
+ * @param r Run state; NULL gives the raw one.
+ * @return SERVO_STR_RA_R_COUNTS on a Hitec D series servo, else
+ *         SERVO_STR_RA_R_RAW.
+ */
+servo_str_t servo_rauto_unit(const servo_rauto_t *r);
+/**
+ * @brief Whether a register's new value lies within SERVO_RAUTO_CAP_PCT of
+ *        the model's first estimate for it, value0 x goal / measured0.
+ * @param value0    The register's value at the read.
+ * @param goal_deg  The side's goal, °.
+ * @param first_deg The side's first measure along its direction, °.
+ * @param next      The new value.
+ * @return true within; false past it, or for a first measure of 0 or less.
+ */
+bool servo_rauto_in_cap(uint16_t value0, float goal_deg, float first_deg,
+                        uint16_t next);
 /**
  * @brief Whether a run that ended for @p why ended on an error of the bench:
  *        a current guard, the meter, or the angle source.

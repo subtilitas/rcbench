@@ -156,7 +156,8 @@ TEST_CASE(every_servo_keypad_takes_ok_and_refuses_and_cancels)
  * Every number of the schema's servo category has a keypad: on SERVO's
  * pages above, on TEST's list (ui_setlist.h's keypad), or among the
  * programmer's options (voltage, current, PWM wait: test_keypad_rows_kst,
- * and LIMIT RUN's page).
+ * and LIMIT RUN's page).  RUDDER's saved zero and its source are stored
+ * by ZERO, never typed: no keypad.
  */
 TEST_CASE(every_servo_number_has_a_keypad_row)
 {
@@ -168,6 +169,9 @@ TEST_CASE(every_servo_number_has_a_keypad_row)
         SET_SERVO_SETTLE_MS, SET_SERVO_STALL_A, SET_SERVO_IDLE_MAX,
         SET_SERVO_HOLD_MAX, SET_SERVO_TRAVEL_MAX_MS, SET_SERVO_BO_FLOOR,
         SET_SERVO_BO_STEP,
+    };
+    static const setting_id_t k_stored[] = {
+        SET_RUDDER_ZERO_DEG, SET_RUDDER_ZERO_KEY,
     };
     setting_id_t cat[64];
     const int n = settings_in_category(SET_CAT_SERVO, cat, 64);
@@ -185,9 +189,12 @@ TEST_CASE(every_servo_number_has_a_keypad_row)
         for (size_t k = 0; k < sizeof(k_prog) / sizeof(k_prog[0]); ++k) {
             seen += (k_prog[k] == cat[i]) ? 1 : 0;
         }
+        for (size_t k = 0; k < sizeof(k_stored) / sizeof(k_stored[0]); ++k) {
+            seen += (k_stored[k] == cat[i]) ? 1 : 0;
+        }
         CHECK_EQ(seen, 1);
     }
-    CHECK_EQ(numbers, 20);
+    CHECK_EQ(numbers, 22);
 }
 
 int main(void)
