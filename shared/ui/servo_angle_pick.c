@@ -488,9 +488,10 @@ const char *angle_pick_yaw_why(void)
     if (settings_get_int(SET_IMU_ALGO) == 0) {
         return TR(RA_IMU_YAW);
     }
-    /* 9-AXIS asked: yaw only once the sensor took it, the ALGORITHM
-     * write and its SAVE (imu_view_t.nine_axis).  A refused write keeps
-     * the sensor in 6-AXIS while its angles go on. */
+    /* 9-AXIS asked: yaw only once the sensor took it on this
+     * connection, the ALGORITHM write and its SAVE (imu_view_t.nine_axis).
+     * A refused write may leave the sensor in 6-AXIS while its angles go
+     * on. */
     return imu_screen_view()->nine_axis ? NULL : TR(RA_IMU_9_UNCONFIRMED);
 }
 

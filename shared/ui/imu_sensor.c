@@ -14,6 +14,7 @@ void imu_sensor_init(imu_sensor_t *s)
     memset(s, 0, sizeof(*s));
     imu_init(&s->m);
     s->rate_code = WIT_RATE_50HZ;
+    s->six       = true;           /* SET_IMU_ALGO's default, 6-AXIS */
     s->filter    = (uint8_t)IMU_FILTER_DEFAULT;
 }
 
@@ -95,12 +96,6 @@ void imu_sensor_values(imu_sensor_t *s, uint8_t rate_code, bool six,
     if (send && s->six != six) {
         s->algo_due = true;
     }
-    if (!send) {
-        /* The first values: the mode the sensor was left in by the SAVE
-         * of an earlier session, as SETUP keeps it. */
-        s->six_held   = six;
-        s->mode_known = true;
-    }
     s->rate_code = rate_code;
     s->six = six;
 }
@@ -160,6 +155,15 @@ void imu_sensor_tick(imu_sensor_t *s, uint32_t now_ms, bool link_up)
         imu_reseed(&s->m);
         rsw_recheck(s);
         s->held = false;    /* what a failed write dropped goes now */
+        /* The stream carries no mode, and the sensor may hold another
+         * since the last SAVE taken: 9-AXIS is written once on each
+         * connection and counts only once its SAVE is acknowledged. */
+        if (!s->six) {
+            s->algo_due = true;
+        }
+    }
+    if (link_up != s->link_was_up) {
+        s->mode_known = false;
     }
     s->link_was_up = link_up;
     /* The stream is RSW's read-back: frames of other types, or no 0x52,

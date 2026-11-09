@@ -1801,7 +1801,7 @@ Halten grau, solange:
 | PORT-PWM | ARMED mit dem Puls des Ports aus | `PORT-PWM AUS: DISARM, SCHALTE ES IN OUTPUTS EIN`, `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` |
 | BEREICH | PULS MIN über 1000us, PULS MAX unter 2000us oder PULS MITTE nicht strikt zwischen 1000us und 2000us liegt | `PULS MIN BIS MAX MUSS 1000 BIS 2000us ABDECKEN` |
 | WINKEL | die IMU-Achse Z (Gieren) gewählt ist, solange der IMU-Algorithmus 6-AXIS ist: kein Magnetometer hält das Gieren, das an einer BWT901CL 2,4° in 100s driftet, gegen 0,5° Toleranz. Ein Tippen öffnet die Liste IMU-GIEREN, `IMU AUF 9-AXIS SCHALTEN`, `IMU-ACHSE X NEHMEN (ROLLEN)`, `IMU-ACHSE Y NEHMEN (NICKEN)`; eine Wahl schreibt die Einstellung und speichert sie ([IMU](IMU-de.md#die-verbindung)) | `IMU-GIEREN BENÖTIGT 9-AXIS` |
-| WINKEL | die IMU-Achse Z (Gieren) mit IMU-Algorithmus 9-AXIS gewählt ist, solange der Sensor 9-AXIS nicht übernommen hat: das Schreiben von AXIS6 und sein SAVE stehen noch aus oder wurden abgewiesen. Ein Tippen öffnet dieselbe Liste IMU-GIEREN | `IMU 9-AXIS NICHT BESTÄTIGT` |
+| WINKEL | die IMU-Achse Z (Gieren) mit IMU-Algorithmus 9-AXIS gewählt ist, solange der Sensor 9-AXIS auf dieser Verbindung nicht übernommen hat: das Schreiben von AXIS6 0 und sein SAVE, einmal je Verbindung gesendet, stehen noch aus oder wurden abgewiesen. Ein Tippen öffnet dieselbe Liste IMU-GIEREN | `IMU 9-AXIS NICHT BESTÄTIGT` |
 | WINKEL | die Winkelquelle keinen Messwert liefert | `WINKELQUELLE: KEIN MESSWERT` |
 | NULLPUNKT | kein Nullpunkt gesetzt ist | `SETZE DEN NULLPUNKT MIT DEM RUDER IN NEUTRALLAGE` |
 | ARM | ein anderer Lauf läuft oder ein Bericht noch geschrieben wird | die Zeile des Laufs, wie auf TEST |

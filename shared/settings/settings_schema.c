@@ -507,8 +507,9 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
      * LE, connects the bound sensor and reads it.  AXIS and SIGN pick the angle the servo runs
      * and RUDDER read (imu_axis_t).  RATE (imu_rate) and ALGORITHM
      * (imu_algo, AXIS6) go to the sensor as a command with SAVE when it is
-     * connected, else when it next connects; a RATE takes effect after a
-     * power cycle of the sensor.  FILTER (imu_filter) is the panel's
+     * connected, else when it next connects; 9-AXIS goes once more on
+     * every connection, since the stream carries no mode.  A RATE takes
+     * effect after a power cycle of the sensor.  FILTER (imu_filter) is the panel's
      * low-pass on the angle, 1 to 50 frames, 1 none (imu.h).
      */
     [SET_IMU_EN] = {

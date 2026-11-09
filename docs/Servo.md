@@ -1720,7 +1720,7 @@ while:
 | PORT PWM | ARMED with the port's pulse off | `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS`, `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` |
 | RANGE | PULSE MIN is above 1000us, PULSE MAX below 2000us, or PULSE CENTER is not strictly between 1000us and 2000us | `PULSE MIN TO MAX MUST INCLUDE 1000 TO 2000us` |
 | ANGLE | the IMU's AXIS Z (yaw) while IMU algorithm is 6-AXIS: no magnetometer holds yaw, which drifts 2.4° in 100s on a BWT901CL against the 0.5° tolerance. A tap opens the IMU YAW list, `SWITCH IMU TO 9-AXIS`, `USE IMU AXIS X (ROLL)`, `USE IMU AXIS Y (PITCH)`; a pick writes the setting and saves it ([IMU](IMU.md#the-link)) | `IMU YAW NEEDS 9-AXIS` |
-| ANGLE | the IMU's AXIS Z (yaw) with IMU algorithm 9-AXIS while the sensor has not taken 9-AXIS: the AXIS6 write and its SAVE still to go, or refused. A tap opens the same IMU YAW list | `IMU 9-AXIS NOT CONFIRMED` |
+| ANGLE | the IMU's AXIS Z (yaw) with IMU algorithm 9-AXIS while the sensor has not taken 9-AXIS on this connection: the AXIS6 0 write and its SAVE, sent once on every connection, still to go or refused. A tap opens the same IMU YAW list | `IMU 9-AXIS NOT CONFIRMED` |
 | ANGLE | the angle source gives no reading | `ANGLE SOURCE: NO READING` |
 | ZERO | ZERO is not taken | `SET ZERO WITH THE SURFACE AT NEUTRAL` |
 | ARM | another run runs, or a report is still being written | the run's line, as on TEST |
