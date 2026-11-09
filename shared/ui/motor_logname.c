@@ -8,8 +8,9 @@
  * bench is SAFE with ARM not held, no log file is open, and the MOTOR log
  * closed since power-on is on the card mounted now.  Dimmed, a tap says
  * the first reason in that order in the alert band.  The keyboard is
- * FILES' name keyboard over the body; it types the label alone, and its
- * title names the run by its plain name.
+ * FILES' name keyboard over the body, with its cursor: "<-", "->" and a
+ * tap in the field move it, and it opens at the label's end.  It types
+ * the label alone, and its title names the run by its plain name.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -102,9 +103,11 @@ static bool why_not(char *out, size_t n)
 /*
  * The two calls that reach into the name keyboard (ui_textkey.h).  The
  * field takes LOG_LABEL_MAX bytes, the label behind MOTORnnn_ and before
- * .CSV.  OK on an empty field is the plain name: the file keyboard refuses
- * an empty name, so that one release is answered here, by the same rule
- * the keyboard keeps for a key (the contact that pressed OK lifts on it).
+ * .CSV, the cursor working to that most (ui_textkey.h); the open leaves the
+ * cursor at the label's end.  OK on an empty field is the plain name: the
+ * file keyboard refuses an empty name, so that one release is answered
+ * here, by the same rule the keyboard keeps for a key (the contact that
+ * pressed OK lifts on it).
  */
 
 /**

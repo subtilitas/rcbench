@@ -17,6 +17,7 @@
  * - ok_hands_one_request_over_and_the_answer_is_said
  * - an_empty_ok_gives_the_plain_name_back_or_nothing
  * - a_refused_label_keeps_the_keyboard_open
+ * - the_cursor_edits_the_label_where_it_stands
  * - the_settings_list_hides_the_button_and_program_shows_it
  * - closing_the_keyboard_paints_the_screen_as_before
  *
@@ -368,6 +369,66 @@ TEST_CASE(an_empty_ok_gives_the_plain_name_back_or_nothing)
     CHECK(!motor_screen_log_take(label, sizeof(label)));
 }
 
+TEST_CASE(the_cursor_edits_the_label_where_it_stands)
+{
+    fresh();
+    a_log("MOTOR042_kv1200.CSV");
+    tap(MO_LOGBTN_X, LOG_Y);
+    const ui_textkey_t *k = motor_screen_logname_keyboard();
+    /* The cursor starts at the label's end; <- and -> are in the bottom
+     * row. */
+    CHECK_EQ(k->cur, 6);
+    CHECK(ui_textkey_key_rect(k, UI_TK_LEFT).w > 0);
+    CHECK(ui_textkey_key_rect(k, UI_TK_RIGHT).w > 0);
+    CHECK_STR_EQ(ui_textkey_key_label(k, UI_TK_LEFT), "<-");
+    CHECK_STR_EQ(ui_textkey_key_label(k, UI_TK_RIGHT), "->");
+    /* Two to the left, a key types there. */
+    tap_key(UI_TK_LEFT);
+    tap_key(UI_TK_LEFT);
+    CHECK_EQ(k->cur, 4);
+    type_text("x");
+    CHECK_STR_EQ(k->text, "kv12x00");
+    CHECK_EQ(k->cur, 5);
+    /* DEL takes the character before the cursor. */
+    tap_key(UI_TK_DEL);
+    CHECK_STR_EQ(k->text, "kv1200");
+    /* A tap at the field's left edge puts the cursor at 0. */
+    const gfx_rect_t f = ui_textkey_field_rect(k);
+    CHECK(f.w > 0);
+    tap(f.x + UI_TEXTKEY_FIELD_IN, f.y + f.h / 2);
+    CHECK_EQ(k->cur, 0);
+    type_text("a");
+    CHECK_STR_EQ(k->text, "akv1200");
+    /* -> past the end stays at the end; a tap right of the text too. */
+    for (int i = 0; i < 10; ++i) {
+        tap_key(UI_TK_RIGHT);
+    }
+    CHECK_EQ(k->cur, k->len);
+    tap_key(UI_TK_LEFT);
+    tap(f.x + f.w - UI_TEXTKEY_FIELD_IN - 1, f.y + f.h / 2);
+    CHECK_EQ(k->cur, k->len);
+    /* At 46 bytes a key mid-label is refused, cursor and text kept. */
+    tap_key(UI_TK_CLR);
+    for (int i = 0; i < (int)LOG_LABEL_MAX; ++i) {
+        type_text("k");
+    }
+    tap_key(UI_TK_LEFT);
+    const int at = k->cur;
+    type_text("z");
+    CHECK_EQ(k->len, (int)LOG_LABEL_MAX);
+    CHECK_EQ(k->cur, at);
+    CHECK(strchr(k->text, 'z') == NULL);
+    /* OK asks for the label as edited. */
+    tap_key(UI_TK_CLR);
+    type_text("kv");
+    tap_key(UI_TK_LEFT);
+    type_text("1");
+    tap_key(UI_TK_OK);
+    char label[LOG_LABELLED_SIZE];
+    CHECK(motor_screen_log_take(label, sizeof(label)));
+    CHECK_STR_EQ(label, "k1v");
+}
+
 TEST_CASE(a_refused_label_keeps_the_keyboard_open)
 {
     fresh();
@@ -463,6 +524,7 @@ int main(void)
     RUN(ok_hands_one_request_over_and_the_answer_is_said);
     RUN(an_empty_ok_gives_the_plain_name_back_or_nothing);
     RUN(a_refused_label_keeps_the_keyboard_open);
+    RUN(the_cursor_edits_the_label_where_it_stands);
     RUN(the_settings_list_hides_the_button_and_program_shows_it);
     RUN(closing_the_keyboard_paints_the_screen_as_before);
     free(fb);

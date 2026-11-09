@@ -146,7 +146,7 @@ When Auto logs is ON under [SETUP](setup.md#sd-card) > SD CARD, each switch to A
 RENAME LOG gives the MOTOR log closed since the panel started a label behind its number: `MOTOR042.CSV` becomes `MOTOR042_kv1200.CSV`. The run keeps its number and its place in [Logs](logs.md).
 
 - RENAME LOG is a tap. It works while the bench is SAFE, ARM is not held, no log file is open and the log's card is still in the slot. Otherwise it is dimmed, and a tap names the reason in the alert band, such as `No MOTOR log since the start.`
-- The keyboard edits the label alone, up to 46 bytes. It opens with the label the file has. OK on an empty field removes the label.
+- The keyboard edits the label alone, up to 46 bytes. It opens with the label the file has, the cursor at its end; `<-`, `->` and a tap in the text move the cursor. OK on an empty field removes the label.
 - The keyboard covers ARM. CANCEL or the home tag closes it without a change.
 - The alert band says `Log renamed: MOTOR042_kv1200.CSV`, or why not, such as `MOTOR042_kv1200.CSV already exists there.`
 - After a restart the button stays dimmed until the next MOTOR run ends. Rename older logs in [Files](files.md).

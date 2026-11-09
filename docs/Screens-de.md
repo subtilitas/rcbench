@@ -1329,7 +1329,8 @@ Ein Tipp öffnet die [Tastatur für Namen](#die-tastatur-für-namen) über dem
 Inhalt, mit dem einfachen Namen des Laufs im Titel: `NAME FÜR
 MOTOR042.CSV`. Das Feld enthält nur das Label, höchstens 46 Bytes: die 59
 Bytes eines Namens ohne `MOTOR042_` und `.CSV`. Es öffnet mit dem Label der
-Datei oder leer. OK weist ein Label ab wie die Tastatur einen Namen, mit
+Datei oder leer, der Cursor an seinem Ende; `<-`, `->` und ein Tippen ins
+Feld bewegen den Cursor wie bei einem Dateinamen. OK weist ein Label ab wie die Tastatur einen Namen, mit
 dem Grund neben dem Titel: eines der Zeichen `" * / : < > ? \ |`, oder ein
 Leerzeichen oder Punkt am Anfang oder Ende. OK bei leerem Feld gibt einem
 Log mit Label den einfachen Namen zurück; bei einem Log ohne Label schließt

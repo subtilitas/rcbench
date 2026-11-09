@@ -1229,7 +1229,9 @@ MOTOR run ends. [Files](#files) renames older logs.
 A tap opens the [name keyboard](#the-name-keyboard) over the body, titled
 with the run's plain name, `NAME FOR MOTOR042.CSV`. The field holds the
 label alone, up to 46 bytes: the 59 bytes of a name less `MOTOR042_` and
-`.CSV`. It opens with the label the log carries, or empty. OK refuses a
+`.CSV`. It opens with the label the log carries, or empty, the cursor
+at its end; `<-`, `->` and a tap in the field move the cursor as for a
+file name. OK refuses a
 label as the keyboard refuses a name, with the reason beside the title:
 any of `" * / : < > ? \ |`, or a space or full stop at an end. OK on an
 empty field gives a labelled log its plain name back; on a plain log it

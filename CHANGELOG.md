@@ -44,7 +44,8 @@ history is in git.
   button in the strip row on LIVE and PROGRAM's list, gives the MOTOR log
   closed since power-on a label: `MOTOR042.CSV` becomes
   `MOTOR042_kv1200.CSV`. The name keyboard over the body edits the label
-  alone, up to 46 bytes; OK on an empty field gives the plain name back.
+  alone, up to 46 bytes, with its cursor starting at the label's end; OK
+  on an empty field gives the plain name back.
   The button acts only while the bench is SAFE with ARM not held, no log
   file is open and the log's card is still mounted; dimmed, a tap names
   the reason in the alert band. The logger renames the closed file as a
