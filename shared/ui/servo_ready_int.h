@@ -20,8 +20,8 @@
  *     and amps.
  *
  * A tap on a row with a fix takes the fix (the PORT choice list, the
- * SETTINGS list on its row, ZERO, SETUP > SENSORS); a tap on any other row
- * not met names it in the alert band.
+ * SETTINGS list on its row, ZERO, SETUP > SENSORS, SET A's keypad on the
+ * supply row); a tap on any other row not met names it in the alert band.
  *
  * LIVE, SWEEP and RUDDER show their rows the same way over the output
  * card's controls (servo_drive_ready.c): the title and 3 or 5 rows from

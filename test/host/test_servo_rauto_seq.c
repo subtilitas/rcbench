@@ -28,6 +28,7 @@
  * - a_pd_mini_capped_under_5v_refuses_the_hold
  * - a_tap_on_a_red_zero_row_takes_the_zero_while_the_encoder_reads
  * - a_tap_on_a_met_row_opens_and_names_nothing
+ * - a_tap_on_the_supply_row_types_set_a
  * - port_pwm_on_with_the_5v_off_reads_amber_with_no_text_of_its_own
  * - a_run_under_way_keeps_the_angle_row_on_its_source_without_a_reading
  * - a_latched_failsafe_is_cleared_and_the_hold_reaches_the_run
@@ -487,12 +488,21 @@ static void pd_set_to_5v_by_the_hold(float v)
     ra_ms(200u);
     rdy_row_t r = row_now(RAR_SUPPLY);
     CHECK_EQ(r.st, (uint8_t)RDY_SEQ);
+    char amps[16], want[40];
+    snprintf(amps, sizeof(amps), "%.2fA", (double)supply_screen_set_i());
+    snprintf(want, sizeof(want), TR(RDY_SEQ_ON_AT), amps);
+    CHECK_STR_EQ(r.value, want);
     CHECK(rauto_hold_blocked(NULL) == NULL);
     ra_hold_start();
     CHECK(fabsf(supply_screen_set_v() - 5.0f) < 0.005f);
     CHECK_EQ(ra.pd_ons, 1u);
     CHECK(servo_screen_rauto_running());
-    CHECK_STR_EQ(row_now(RAR_SUPPLY).value, "5.0V");
+    snprintf(want, sizeof(want), "5.0V %s", amps);
+    CHECK_STR_EQ(row_now(RAR_SUPPLY).value, want);
+    /* No keypad under the run. */
+    ev(SV_RDY_X, SV_RDY_ROW_Y(RAR_SUPPLY), TOUCH_EVENT_DOWN, 1);
+    ev(SV_RDY_X, SV_RDY_ROW_Y(RAR_SUPPLY), TOUCH_EVENT_UP, 1);
+    CHECK(!servo_screen_keypad()->open);
     rauto_end_now(SERVO_TEST_AB_OPERATOR);
     ra_ms(2000u);
     CHECK(!servo_screen_rauto_running());
@@ -620,13 +630,14 @@ TEST_CASE(a_tap_on_a_red_zero_row_takes_the_zero_while_the_encoder_reads)
 }
 
 /* A met row has no fix and no text: a tap on METER, ANGLE, ZERO, RANGE,
- * PROGRAMMER, SUPPLY, PORT PWM or ARM opens no list and no keypad, names
- * nothing in the band and changes no row. */
+ * PROGRAMMER, PORT PWM or ARM opens no list and no keypad, names nothing
+ * in the band and changes no row.  SUPPLY is the exception: its fix is
+ * SET A's keypad (a_tap_on_the_supply_row_types_set_a). */
 TEST_CASE(a_tap_on_a_met_row_opens_and_names_nothing)
 {
     static const rauto_row_t k_rows[] = {
-        RAR_METER, RAR_ANGLE, RAR_ZERO, RAR_RANGE, RAR_PROG, RAR_SUPPLY,
-        RAR_PWM, RAR_ARM,
+        RAR_METER, RAR_ANGLE, RAR_ZERO, RAR_RANGE, RAR_PROG, RAR_PWM,
+        RAR_ARM,
     };
     ra_setup(true, true);
     ra_ms(200u);
@@ -645,6 +656,59 @@ TEST_CASE(a_tap_on_a_met_row_opens_and_names_nothing)
         CHECK_EQ(after.st, before.st);
         CHECK_STR_EQ(after.value, before.value);
     }
+}
+
+/** @brief @p text typed on the screen's keypad, then OK.
+ *  @param text digits and a point */
+static void kp_type(const char *text)
+{
+    static const ui_key_t digit[10] = {
+        UI_KEY_0, UI_KEY_1, UI_KEY_2, UI_KEY_3, UI_KEY_4,
+        UI_KEY_5, UI_KEY_6, UI_KEY_7, UI_KEY_8, UI_KEY_9,
+    };
+    const ui_keypad_t *kp = servo_screen_keypad();
+    for (const char *p = text; *p != '\0'; ++p) {
+        const ui_key_t k = (*p == '.') ? UI_KEY_DOT : digit[*p - '0'];
+        const gfx_rect_t r = ui_keypad_key_rect(kp, k);
+        ev(r.x + r.w / 2, r.y + r.h / 2, TOUCH_EVENT_DOWN, 1);
+        ev(r.x + r.w / 2, r.y + r.h / 2, TOUCH_EVENT_UP, 1);
+    }
+    const gfx_rect_t ok = ui_keypad_key_rect(kp, UI_KEY_OK);
+    ev(ok.x + ok.w / 2, ok.y + ok.h / 2, TOUCH_EVENT_DOWN, 1);
+    ev(ok.x + ok.w / 2, ok.y + ok.h / 2, TOUCH_EVENT_UP, 1);
+}
+
+/* With a PD mini feeding the servo the met supply row reads the run's
+ * 5.0V and SUPPLY's SET A, `5.0V 2.00A`; a tap opens SET A's keypad within
+ * SUPPLY's caps, and OK sets it, the row following.  A programming port
+ * that holds the supply refuses the keypad. */
+TEST_CASE(a_tap_on_the_supply_row_types_set_a)
+{
+    ra_setup(true, true);
+    ra_ms(200u);
+    rdy_row_t r = row_now(RAR_SUPPLY);
+    char want[40];
+    snprintf(want, sizeof(want), "5.0V %.2fA", (double)supply_screen_set_i());
+    CHECK_STR_EQ(r.value, want);
+    CHECK(r.fix);
+    const supply_caps_t caps = supply_screen_caps();
+    ev(SV_RDY_X, SV_RDY_ROW_Y(RAR_SUPPLY), TOUCH_EVENT_DOWN, 1);
+    ev(SV_RDY_X, SV_RDY_ROW_Y(RAR_SUPPLY), TOUCH_EVENT_UP, 1);
+    const ui_keypad_t *kp = servo_screen_keypad();
+    CHECK(kp->open);
+    CHECK(fabsf(kp->min - caps.i_min) < 0.001f);
+    CHECK(fabsf(kp->max - caps.i_max) < 0.001f);
+    kp_type("1.2");
+    CHECK(!kp->open);
+    ra_ms(200u);
+    CHECK(fabsf(supply_screen_set_i() - 1.2f) < 0.001f);
+    CHECK_STR_EQ(row_now(RAR_SUPPLY).value, "5.0V 1.20A");
+
+    supply_screen_set_port_held(true);
+    ev(SV_RDY_X, SV_RDY_ROW_Y(RAR_SUPPLY), TOUCH_EVENT_DOWN, 1);
+    ev(SV_RDY_X, SV_RDY_ROW_Y(RAR_SUPPLY), TOUCH_EVENT_UP, 1);
+    CHECK(!servo_screen_keypad()->open);
+    supply_screen_set_port_held(false);
 }
 
 /* On the carrier, SAFE, PORT PWM on and PROG 5V off: the pulse comes with
@@ -812,6 +876,7 @@ int main(void)
     RUN(a_pd_mini_capped_under_5v_refuses_the_hold);
     RUN(a_tap_on_a_red_zero_row_takes_the_zero_while_the_encoder_reads);
     RUN(a_tap_on_a_met_row_opens_and_names_nothing);
+    RUN(a_tap_on_the_supply_row_types_set_a);
     RUN(port_pwm_on_with_the_5v_off_reads_amber_with_no_text_of_its_own);
     RUN(a_run_under_way_keeps_the_angle_row_on_its_source_without_a_reading);
     RUN(a_latched_failsafe_is_cleared_and_the_hold_reaches_the_run);

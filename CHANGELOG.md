@@ -66,6 +66,20 @@ history is in git.
   that line. On the SERVO hub the footer reads
   `PROG 5V ON 5.02V 0.120A` while the 5V is on, `--V --A` without a
   reading.
+- The run's current limit, SUPPLY's SET A, is on the screens that run:
+  TEST's PD MINI row reads `ON 2.00A` (amber `ON AT START 2.00A` while the
+  steps switch it on), and LIMIT RUN's and RUDDER AUTO's PD MINI row
+  `5.0V 2.00A`. A tap on the row opens SUPPLY's keypad, CURRENT LIMIT
+  within SUPPLY's caps and OUTPUT LIMITS; with the output on and Confirm
+  keypad on, SUPPLY's question comes first. No keypad opens while a run or
+  its start steps are under way or while a programming port holds the
+  supply. LIMIT RUN's and RUDDER AUTO's lists hold it as CURRENT, `SET A
+  2.00A`, locked as `--` where no PD mini feeds the servo.
+- RUDDER AUTO's list has Wait before PWM, the KST programmer's wait its
+  sessions' LEAVE sends.
+- A tap on TEST's METER row, while the run would read the PD mini, opens
+  SETUP > SENSORS on the INA3221 part that watches the tester's target; the
+  home tag returns to TEST.
 
 ### Fixed
 
@@ -82,6 +96,11 @@ history is in git.
   so does any of them after the refusal.
 
 ### Changed
+
+- LIMIT RUN's list has no Programming current row: without a PD mini the
+  IOmcu stores a session's current limit and applies none, and with one
+  the run takes SET A. The KST and HITEC pages keep Programming current
+  for their own sessions.
 
 - RUDDER AUTO's report and box show end points as the programming page
   does, with the unit named: a Hitec D series servo's in position counts,

@@ -170,11 +170,12 @@ enum {
 /* LIMIT RUN's list, row by row (servo_lists.c).  With SERVO at HITEC D
  * SERIES, D RECEIVE is row LL_RX and the rows from SERVO PULSES on move
  * down one. */
-enum { LL_MODE = 0, LL_SERVO, LL_PULSES, LL_PROG_I, LL_WAIT, LL_ROWS };
+enum { LL_MODE = 0, LL_SERVO, LL_PULSES, LL_CURRENT, LL_WAIT, LL_ROWS };
 enum { LL_RX = 2 };
-/* RUDDER AUTO's list: its SERVO row, and D RECEIVE under it with HITEC D
- * SERIES. */
-enum { RAL_SERVO = 4, RAL_RX = 5 };
+/* RUDDER AUTO's list: its SERVO row, D RECEIVE under it with HITEC D
+ * SERIES, and CURRENT and PROG WAIT, its last two rows without D
+ * RECEIVE. */
+enum { RAL_SERVO = 4, RAL_RX = 5, RAL_CURRENT = 7, RAL_WAIT = 8 };
 
 /* LIMIT RUN's list, from the footer's SETTINGS.  It opens on a SAFE bench
  * only: on an armed one the rig switches to SAFE first, and the home tag

@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "esc_wire_panel.h"
 #include "kst_panel.h"
 #include "outputs.h"
 #include "servo_angle_pick.h"
@@ -131,13 +132,7 @@ static uint16_t max_pulse_for_rate(void)
     return (uint16_t)top;
 }
 
-/**
- * @brief A set point tapped on the SET row of LIVE, SWEEP or RUDDER: the
- *        keypad over the left card, as the settings' is, inside SUPPLY's
- *        caps narrowed by its OUTPUT LIMITS (supply_screen_caps()).
- * @param target KT_SUP_V or KT_SUP_I
- */
-static void open_set_point(int target)
+void svs_set_point_open(int target)
 {
     close_panels();
     const supply_caps_t caps = supply_screen_caps();
@@ -149,6 +144,8 @@ static void open_set_point(int target)
                        supply_screen_set_i(), caps.i_min, caps.i_max, 2);
     }
     s.kp_target = target;
+    ++s.ctrl_rev;
+    ++s.sl_rev;     /* a list under the keypad repaints round it */
     servo_invalidate();
 }
 
@@ -161,6 +158,15 @@ static void open_set_point(int target)
  */
 static void set_point_typed(int target, float typed)
 {
+    /* A programming port that took the supply while the keypad stood:
+     * SUPPLY's own keypad takes nothing then either. */
+    if (supply_screen_port_held()) {
+        ui_action_refused(esc_wire_panel_holds_port()
+                              ? TR(SUP_HELD_REFUSED_ESC)
+                              : TR(SUP_HELD_REFUSED));
+        close_alone();
+        return;
+    }
     const supply_caps_t caps = supply_screen_caps();
     float v = supply_screen_set_v();
     float i = supply_screen_set_i();
@@ -1033,7 +1039,7 @@ void ov_rest(const touch_event_t *evt)
          * as it lifts: the keypad. */
         const int k = (was == OP_SUP_V) ? 0 : 1;
         if (gfx_rect_contains(drive_set_rect(k), x, y)) {
-            open_set_point((k == 0) ? KT_SUP_V : KT_SUP_I);
+            svs_set_point_open((k == 0) ? KT_SUP_V : KT_SUP_I);
         }
         break;
     }

@@ -10967,6 +10967,9 @@ UI_TEXT(RDY_FREE, 0,
 UI_TEXT(RDY_SEQ_ON, 0,
     "START SWITCHES IT ON",
     "START SCHALTET EIN")
+UI_TEXT(RDY_SEQ_ON_AT, 20,
+    "ON AT START %s",
+    "EIN BEI START %s")
 UI_TEXT(RDY_SEQ_ARM, 0,
     "START ARMS",
     "START SCHALTET ARMED")
@@ -11012,6 +11015,12 @@ UI_TEXT(LR_HIGH_END, 27,
 UI_TEXT(SVL_MODE_HELP, 60,
     "SEARCH + PROGRAM writes the ends found into the servo",
     "SUCHEN + PROGRAMMIEREN schreibt die Endlagen ins Servo")
+UI_TEXT(SVL_CURRENT_HELP, 60,
+    "SET A of SUPPLY: the PD mini's current limit in the run",
+    "SET A von SUPPLY: Strombegrenzung des PD mini im Lauf")
+UI_TEXT(SVL_CURRENT_NO_PD, 60,
+    "No PD mini feeds the servo: its own supply limits it",
+    "Kein PD mini speist das Servo: seine Versorgung begrenzt")
 UI_TEXT(HG_SV_LR_LINES_NAME, 0,
     "STATE LINES",
     "ZUSTANDSZEILEN")

@@ -13,7 +13,10 @@
  *        TEST's SETTINGS list opens on SAFE only, closes as the bench
  *        arms, locks the rows that do not apply and puts the stored values
  *        back on DISCARD.  A row outside the card has no state; the METER
- *        and PD MINI rows name the panel's model; a port's PORT PWM off
+ *        and PD MINI rows name the panel's model; PD MINI shows SUPPLY's
+ *        SET A and a tap types it through SUPPLY's keypad and question,
+ *        never under the steps, a run or a held supply; a port's PORT PWM
+ *        off
  *        reads amber on SAFE and red on ARMED; ARM reads ARMING while the
  *        steps wait; a tap on a row takes its fix (the port list, the
  *        list at STEPS, the HV warning) or names it in the band, and does
@@ -47,6 +50,9 @@
  * - a_row_that_turns_red_under_the_hold_drops_it
  * - a_row_that_turns_red_under_the_steps_ends_them_all_off
  * - a_press_outside_the_hold_or_beside_another_is_not_the_holds
+ * - the_pd_row_shows_set_a_and_a_tap_types_it
+ * - set_a_typed_on_a_live_output_waits_for_supplys_question
+ * - set_a_takes_no_tap_under_the_steps_a_run_or_a_held_supply
  *
  * SPDX-License-Identifier: MIT
  */
@@ -444,7 +450,10 @@ TEST_CASE(the_meter_and_pd_rows_name_the_modelled_supply)
     CHECK_STR_EQ(r.value, TR(SV_METER_MODEL));
     CHECK(test_ready_row(TRR_PD, &r));
     CHECK_EQ(r.st, (uint8_t)RDY_OK);
-    CHECK_STR_EQ(r.value, TR(SV_METER_MODEL));
+    char want[40];
+    snprintf(want, sizeof(want), "%s %.2fA", TR(SV_METER_MODEL),
+             (double)supply_screen_set_i());
+    CHECK_STR_EQ(r.value, want);
     CHECK(test_hold_blocked(NULL) == NULL);
     hold_fire();
     bench_frames(100u);
@@ -730,6 +739,135 @@ TEST_CASE(a_press_outside_the_hold_or_beside_another_is_not_the_holds)
     tap(START_X, START_Y);                       /* STOP TEST */
 }
 
+/** @brief The amber PD MINI row's text for SET A @p a in the language
+ *         showing.  @param a the limit, A
+ *  @return the text, in a buffer of the next call */
+static const char *seq_text(float a)
+{
+    static char buf[40];
+    char amps[16];
+    snprintf(amps, sizeof(amps), "%.2fA", (double)a);
+    snprintf(buf, sizeof(buf), TR(RDY_SEQ_ON_AT), amps);
+    return buf;
+}
+
+/* PD MINI shows SUPPLY's SET A, the current limit the steps set: amber
+ * `ON AT START 2.00A` while the output is off (in German `EIN BEI START`),
+ * `ON 1.50A` with the output on; 20 cells at most in both languages.  A tap
+ * opens SUPPLY's keypad over the left column, CURRENT LIMIT in A within
+ * SUPPLY's caps, and OK sets SET A, SET V kept, and the row follows. */
+TEST_CASE(the_pd_row_shows_set_a_and_a_tap_types_it)
+{
+    safe_test();
+    rdy_row_t r;
+    CHECK(test_ready_row(TRR_PD, &r));
+    CHECK_EQ(r.st, (uint8_t)RDY_SEQ);
+    CHECK_STR_EQ(r.value, seq_text(supply_screen_set_i()));
+    CHECK(r.fix);
+    const float v0 = supply_screen_set_v();
+    const supply_caps_t caps = supply_screen_caps();
+    tap_row(TRR_PD);
+    const ui_keypad_t *kp = servo_screen_keypad();
+    CHECK(kp->open);
+    CHECK_STR_EQ(kp->title, TR(SUP_CURRENT_LIMIT));
+    CHECK(fabsf(kp->min - caps.i_min) < 0.001f);
+    CHECK(fabsf(kp->max - caps.i_max) < 0.001f);
+    keys("1.5");
+    CHECK(!kp->open);
+    CHECK(fabsf(supply_screen_set_i() - 1.5f) < 0.001f);
+    CHECK(fabsf(supply_screen_set_v() - v0) < 0.001f);
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        CHECK(test_ready_row(TRR_PD, &r));
+        CHECK_STR_EQ(r.value, seq_text(1.5f));
+        CHECK(gfx_text_cells(r.value) <= 20);
+    }
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(r.value, "EIN BEI START 1.50A");
+    ui_text_set_language(UI_LANG_EN);
+    bench.out = true;
+    bench_frames(300u);
+    CHECK(test_ready_row(TRR_PD, &r));
+    CHECK_EQ(r.st, (uint8_t)RDY_LIVE);
+    CHECK_STR_EQ(r.value, "ON 1.50A");
+    CHECK(r.fix);
+}
+
+/* SET A typed while the output is on waits for SUPPLY's question, as on
+ * SUPPLY with Confirm keypad on: APPLY sets it; CANCEL, and
+ * an output gone off under the question, leave SET A as it was. */
+TEST_CASE(set_a_typed_on_a_live_output_waits_for_supplys_question)
+{
+    safe_test();
+    settings_set(SET_SUPPLY_CONFIRM_KEYS, 1.0f);
+    bench.out = true;
+    bench_frames(300u);
+    const float i0 = supply_screen_set_i();
+    tap_row(TRR_PD);
+    keys("1.1");
+    CHECK(servo_screen_output_held());          /* the question stands */
+    CHECK(fabsf(supply_screen_set_i() - i0) < 0.001f);
+    scr->render(&cv, 0);
+    tap(WARN_APPLY_X, WARN_Y);
+    CHECK(!servo_screen_output_held());
+    CHECK(fabsf(supply_screen_set_i() - 1.1f) < 0.001f);
+
+    tap_row(TRR_PD);
+    keys("0.9");
+    CHECK(servo_screen_output_held());
+    tap(WARN_CANCEL_X, WARN_Y);
+    CHECK(!servo_screen_output_held());
+    CHECK(fabsf(supply_screen_set_i() - 1.1f) < 0.001f);
+
+    tap_row(TRR_PD);
+    keys("0.9");
+    CHECK(servo_screen_output_held());
+    bench.out = false;
+    bench_frames(300u);
+    CHECK(!servo_screen_output_held());
+    CHECK(fabsf(supply_screen_set_i() - 1.1f) < 0.001f);
+}
+
+/* Under the steps and under a run PD MINI opens no keypad, as TEST's other
+ * rows do nothing then; the run's row shows the limit it started with.  A
+ * programming port that holds the supply refuses it too. */
+TEST_CASE(set_a_takes_no_tap_under_the_steps_a_run_or_a_held_supply)
+{
+    safe_test();
+    bench.no_arm = true;
+    hold_fire();
+    CHECK(svs_seq_busy());
+    tap_row(TRR_PD);
+    CHECK(!servo_screen_keypad()->open);
+    tap(START_X, START_Y);                       /* ends the steps */
+    CHECK(!svs_seq_busy());
+
+    bench.no_arm = false;
+    servo_screen_set_armed(true);
+    const float i_run = supply_screen_set_i();
+    hold_fire();
+    bench_frames(100u);
+    CHECK(servo_screen_testing());
+    rdy_row_t r;
+    CHECK(test_ready_row(TRR_PD, &r));
+    char want[24];
+    snprintf(want, sizeof(want), "%.2fA", (double)i_run);
+    CHECK(strstr(r.value, want) != NULL);
+    tap_row(TRR_PD);
+    CHECK(!servo_screen_keypad()->open);
+    tap(START_X, START_Y);                       /* STOP TEST */
+    bench_frames(500u);
+    CHECK(!servo_screen_testing());
+
+    servo_screen_set_armed(false);
+    bench_frames(100u);
+    supply_screen_set_port_held(true);
+    tap_row(TRR_PD);
+    CHECK(!servo_screen_keypad()->open);
+    CHECK(fabsf(supply_screen_set_i() - i_run) < 0.001f);
+    supply_screen_set_port_held(false);
+}
+
 int main(void)
 {
     RUN(every_gate_text_belongs_to_exactly_one_row);
@@ -756,5 +894,8 @@ int main(void)
     RUN(a_row_that_turns_red_under_the_hold_drops_it);
     RUN(a_row_that_turns_red_under_the_steps_ends_them_all_off);
     RUN(a_press_outside_the_hold_or_beside_another_is_not_the_holds);
+    RUN(the_pd_row_shows_set_a_and_a_tap_types_it);
+    RUN(set_a_typed_on_a_live_output_waits_for_supplys_question);
+    RUN(set_a_takes_no_tap_under_the_steps_a_run_or_a_held_supply);
     return test_summary("servo_test_ready");
 }

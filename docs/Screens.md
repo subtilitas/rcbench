@@ -1539,7 +1539,7 @@ SERVO opens on its hub: eight tiles of 328 x 130px in SETUP's grid, at x
 | LIVE | LIVE | the dial, the knob, the readings COMMANDED, MEASURED and CURRENT |
 | SWEEP | SWEEP | the dial with the sweep; SETTINGS opens CURVE, SPEED and RANGE |
 | TEST | TEST | the AUTOMATIC TEST card, SUPPLY's caps, the plot and the run's box, the READY card in place of the output card, HOLD 2s: ARM + START in the footer; SETTINGS opens the automatic test's list |
-| LIMIT RUN | LIMIT RUN | the mode and output lines, LOW END and HIGH END and the state lines on the left card, the READY card in place of the output card, HOLD 2s: ARM + START in the footer; SETTINGS opens MODE, SERVO, SERVO PULSES and the programmer's rows ([Running it](Servo.md#running-it)) |
+| LIMIT RUN | LIMIT RUN | the mode and output lines, LOW END and HIGH END and the state lines on the left card, the READY card in place of the output card, HOLD 2s: ARM + START in the footer; SETTINGS opens MODE, SERVO, SERVO PULSES, CURRENT and Wait before PWM ([Running it](Servo.md#running-it)) |
 | RUDDER | RUDDER | deflection in ° and mm, LENGTH, 1000us, CENTER, 2000us, ZERO and RESET MAX ([Rudder deflection](Servo.md#rudder-deflection)) |
 | RUDDER AUTO | RUDDER AUTO | AUTO's box in place of LENGTH and the drive buttons, the READY card in place of the output card, HOLD 2s: ARM + START in the footer ([AUTO end points](Servo.md#auto-end-points)) |
 | KST | SERVO > KST | the KST and Chaservo programmer over the left card ([Programmer](#programmer)) |
@@ -1574,7 +1574,8 @@ starts with the PORT button (y 8 to 56). On LIVE, SWEEP and RUDDER it
 holds READY's rows and the controls under them; on TEST, LIMIT RUN, RUDDER
 AUTO, KST and HITEC the READY card. No function screen has OUTPUT ON or a
 PROG 5V box: OUTPUT ON is SUPPLY's, and ARM's 2s hold switches the supply
-on. The
+on. TEST, LIMIT RUN and RUDDER AUTO set SUPPLY's SET A through their
+PD MINI row. The
 footer at y 444 to 492 holds three 328 x 48px slots: the function's name
 with the port line under it, ARM or DISARM (WRITE n VALUES on KST and
 HITEC), and SETTINGS. SETTINGS is grey while the
@@ -2150,14 +2151,20 @@ The READY card names what the hold needs, one row each:
 | --- | --- | --- | --- |
 | PORT | the port that drives the servo | PORT PWM off on a SAFE bench | a port held by a programmer; PORT PWM off while ARMED; a programming port of the rbmod carrier, whose 5V is fixed: `PROG PORTS RUN AT 5V FIXED: NO STEPS` |
 | METER | the servo rail's meter | - | - |
-| PD MINI | the supply on | the PD mini off: the run's steps switch it on | no supply answering; the PD mini off with the INA3221 reading 3.0V or more on the rail: `RAIL LIVE WITH THE PD MINI OFF: FED FROM ELSEWHERE` |
+| PD MINI | the output and SUPPLY's SET A, the run's current limit: `ON 2.00A` | `ON AT START 2.00A`: the PD mini off, the run's steps switch it on | no supply answering; the PD mini off with the INA3221 reading 3.0V or more on the rail: `RAIL LIVE WITH THE PD MINI OFF: FED FROM ELSEWHERE` |
 | STEPS | the steps, `4.8-6.0V, BROWN-OUT` | a step above 6.0V: a tap opens HV SERVOS ONLY | no step chosen; a step outside SUPPLY's voltage caps |
 | RANGE | the two ends in us | - | RANGE and TRAVEL place both ends at PULSE CENTER |
 | ARM | ARMED | SAFE: the hold arms | a limit run or RUDDER AUTO runs; a report still being written |
 
 A row reads red whenever one of its texts refuses the hold, and the hold is
 then grey. A tap on PORT opens the port list; a tap on STEPS opens the
-automatic test's list, or HV SERVOS ONLY for a step above 6.0V.
+automatic test's list, or HV SERVOS ONLY for a step above 6.0V. A tap on
+PD MINI, green or amber, opens SET A's keypad within SUPPLY's caps
+([Servo: The run's current limit](Servo.md#the-runs-current-limit)). A tap
+on METER while it reads PD MINI opens SETUP > SENSORS on the INA3221 part
+whose channel watches the tester's target, else the first part fitted, and
+the home tag returns to TEST; reading the INA3221 or the panel's model it opens
+nothing. Neither takes a tap while the run or its steps are under way.
 A red text longer than the row's 20 cells shows a tag: `FIXED 5V: NO
 STEPS`, `NOT ANSWERING`, `FED FROM ELSEWHERE`, `OUTSIDE LIMITS`, `PORT PWM
 OFF: DISARM`, `SERVO PROGRAMMING`, `TEST RUNNING`, `WRITING REPORT`. The
@@ -2166,7 +2173,7 @@ alert band names the whole text
 
 The STALL AT note identifies thresholds no reading can exceed. It shows
 `STALL AT 2.00A cannot be reached: current limit 2.00A` when STALL AT is at
-or above the SET current limit. Otherwise, with the INA3221 as meter and
+or above SUPPLY's SET A. Otherwise, with the INA3221 as meter and
 STALL AT at or above its range, it shows
 `STALL AT 2.00A cannot be reached: INA3221 range 1.638A`. The note does not
 refuse the hold; see
@@ -2244,7 +2251,10 @@ The left card, x 18 to 618 of the body:
 
 The READY card's ten rows are PORT, SERVO, METER, ANGLE, RAIL, RANGE,
 PROGRAMMER, the supply (PROG 5V, PD MINI or SUPPLY), PORT PWM and ARM.
-PROG 5V and PD MINI read the run's `5.0V`. HOLD 2s: ARM + START sets a
+PROG 5V reads the run's `5.0V`, PD MINI the run's `5.0V` and SUPPLY's SET
+A, `5.0V 2.00A`, and a tap on PD MINI opens SET A's keypad
+([Servo: The run's current limit](Servo.md#the-runs-current-limit)).
+HOLD 2s: ARM + START sets a
 PD mini to 5.0V, switches PORT PWM and the supply on, reads them back,
 arms and starts the run ([Servo: The run's 5.0V](Servo.md#the-runs-50v)). While the run runs the hold reads STOP RUN, and
 SETTINGS is grey. Each write switches the bench to SAFE and back to
@@ -2457,9 +2467,9 @@ until SAVE.
 | the hub | the servo profile: OUTPUT with TYPE, FRAME RATE, PULSE MIN, PULSE CENTER, PULSE MAX, TRIM, TRAVEL, REVERSE and HV SERVO; DUT with NAME and REPORT |
 | SWEEP | CURVE, SPEED and RANGE |
 | TEST | VOLTAGE STEPS: Step 4.8V, Step 6.0V, HV SERVO, Step 7.4V, Step 8.4V; BROWN-OUT: Brown-out, Brown-out minimum voltage, Brown-out step; PASS/FAIL LIMITS: Stall threshold, Idle current max, Holding current max, Travel time max; LENGTH AND TIMING: Length by, Test time, Movements, Dwell time, Settling time |
-| LIMIT RUN | MODE, SERVO, Hitec D receive (with SERVO at HITEC D SERIES), SERVO PULSES, Programming current and Wait before PWM; a run programs at 5.0V ([Servo](Servo.md#the-runs-50v)) |
+| LIMIT RUN | MODE, SERVO, Hitec D receive (with SERVO at HITEC D SERIES), SERVO PULSES, CURRENT and Wait before PWM; a run programs at 5.0V ([Servo](Servo.md#the-runs-50v)). CURRENT is SUPPLY's SET A, `SET A 2.00A`, a tap its keypad; `--` and locked without a PD mini ([Servo](Servo.md#the-runs-current-limit)) |
 | RUDDER | LENGTH, ENC CENTER and ANGLE SOURCE |
-| RUDDER AUTO | the targets, MARGIN, TOLERANCE, SERVO, Hitec D receive (with SERVO at HITEC D SERIES), SERVO PULSES and ANGLE SOURCE |
+| RUDDER AUTO | the targets, MARGIN, TOLERANCE, SERVO, Hitec D receive (with SERVO at HITEC D SERIES), SERVO PULSES, ANGLE SOURCE, CURRENT and Wait before PWM; CURRENT as LIMIT RUN's |
 | SERVO > KST | KST EXPERT MODE, one level down |
 | HITEC | SERIES and RECEIVE |
 | LIVE | no list |

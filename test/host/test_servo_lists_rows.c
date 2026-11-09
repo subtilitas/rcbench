@@ -3,8 +3,9 @@
  * @brief The rows of SERVO's SETTINGS lists as the list reads them: the
  *        hub's profile keys and FRAME RATE's list, RESET, RUDDER's ENC
  *        CENTER and ANGLE SOURCE, RUDDER AUTO's SERVO and SERVO PULSES
- *        with the reason each gives while it takes no press, and a list
- *        refused at the hub.
+ *        with the reason each gives while it takes no press, LIMIT RUN's
+ *        and RUDDER AUTO's CURRENT (SUPPLY's SET A) and PROG WAIT, and a
+ *        list refused at the hub.
  *
  * Cases:
  * - the_hubs_keys_step_center_max_travel_and_hv
@@ -18,6 +19,9 @@
  * - servo_pulses_name_their_reason_until_a_pd_mini_feeds
  * - a_finger_on_a_programmer_control_keeps_the_hubs_list_shut
  * - the_servos_name_takes_the_name_keyboard
+ * - current_shows_and_types_set_a_where_a_pd_mini_feeds
+ * - current_is_locked_without_a_pd_mini_and_under_a_held_supply
+ * - rudder_auto_holds_current_and_prog_wait
  *
  * SPDX-License-Identifier: MIT
  */
@@ -368,6 +372,119 @@ TEST_CASE(the_servos_name_takes_the_name_keyboard)
     CHECK_STR_EQ(settings_text(SET_TEXT_DUT_NAME), "MY SERVO 12");
 }
 
+/** @brief A PD mini answering with its output off, the servo rail not
+ *         read: it feeds the servo, and START would switch it on. */
+static void pd_answers(void)
+{
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    st.online = true;
+    st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+    st.samples = 1u;
+    servo_screen_supply(&st);
+}
+
+/** @brief CURRENT's value for SET A @p a, as the row shows it.
+ *  @param a the limit, A @return the text, in a buffer of the next call */
+static const char *set_a_text(float a)
+{
+    static char buf[24];
+    snprintf(buf, sizeof(buf), "SET A %.2fA", (double)a);
+    return buf;
+}
+
+/* With a PD mini feeding the servo, LIMIT RUN's CURRENT reads SUPPLY's SET
+ * A and takes no lock; a tap opens SUPPLY's keypad over the left column,
+ * CURRENT LIMIT in A from the caps' lowest to their highest, and OK sets
+ * SET A, SET V kept.  A value past the caps is refused and SET A stays.
+ * PROG I is no row of the list: no run takes it. */
+TEST_CASE(current_shows_and_types_set_a_where_a_pd_mini_feeds)
+{
+    fresh();
+    pd_answers();
+    go(SERVO_FN_LIMRUN);
+    tap_settings();
+    CHECK(servo_screen_list()->open);
+    CHECK_EQ(servo_screen_list()->host->row(LL_CURRENT).custom->label,
+             TX_SV_CURRENT);
+    CHECK_STR_EQ(value_of(LL_CURRENT), set_a_text(supply_screen_set_i()));
+    CHECK_STR_EQ(why_of(LL_CURRENT), "");
+    const float v0 = supply_screen_set_v();
+    const float i0 = supply_screen_set_i();
+    const supply_caps_t caps = supply_screen_caps();
+    sl_tap(LL_CURRENT);
+    const ui_keypad_t *kp = servo_screen_keypad();
+    CHECK(kp->open);
+    CHECK_STR_EQ(kp->title, TR(SUP_CURRENT_LIMIT));
+    CHECK_STR_EQ(kp->unit, "A");
+    CHECK(fabsf(kp->min - caps.i_min) < 0.001f);
+    CHECK(fabsf(kp->max - caps.i_max) < 0.001f);
+    char past[16];
+    snprintf(past, sizeof(past), "%.0f", (double)(caps.i_max + 1.0f));
+    keys(past);
+    CHECK(kp->open);                    /* refused: past the caps */
+    CHECK(fabsf(supply_screen_set_i() - i0) < 0.001f);
+    key(UI_KEY_CLR);
+    keys("1.25");
+    CHECK(!kp->open);
+    CHECK(fabsf(supply_screen_set_i() - 1.25f) < 0.001f);
+    CHECK(fabsf(supply_screen_set_v() - v0) < 0.001f);
+    CHECK(servo_screen_list()->open);
+    CHECK_STR_EQ(value_of(LL_CURRENT), "SET A 1.25A");
+    settings_cancel_save();
+}
+
+/* Without a PD mini no run sets a current limit: CURRENT reads `--`,
+ * locked with the reason, and a tap opens no keypad.  A programming port
+ * that holds the supply locks it with SUPPLY's own reason. */
+TEST_CASE(current_is_locked_without_a_pd_mini_and_under_a_held_supply)
+{
+    fresh();
+    go(SERVO_FN_LIMRUN);
+    tap_settings();
+    CHECK(servo_screen_list()->open);
+    CHECK_STR_EQ(value_of(LL_CURRENT), "--");
+    CHECK_STR_EQ(why_of(LL_CURRENT), TR(SVL_CURRENT_NO_PD));
+    sl_tap(LL_CURRENT);
+    CHECK(!servo_screen_keypad()->open);
+
+    pd_answers();
+    CHECK_STR_EQ(why_of(LL_CURRENT), "");
+    supply_screen_set_port_held(true);
+    CHECK_STR_EQ(why_of(LL_CURRENT), TR(SUP_HELD_REFUSED));
+    const float i0 = supply_screen_set_i();
+    sl_tap(LL_CURRENT);
+    CHECK(!servo_screen_keypad()->open);
+    CHECK(fabsf(supply_screen_set_i() - i0) < 0.001f);
+    supply_screen_set_port_held(false);
+    settings_cancel_save();
+}
+
+/* RUDDER AUTO's list ends in CURRENT and PROG WAIT: SET A as LIMIT RUN's,
+ * and the KST programmer's wait before PWM its sessions' LEAVE sends. */
+TEST_CASE(rudder_auto_holds_current_and_prog_wait)
+{
+    fresh();
+    go(SERVO_FN_RAUTO);
+    tap_settings();
+    const ui_setlist_t *sl = servo_screen_list();
+    CHECK(sl->open);
+    CHECK_EQ(ui_setlist_count(sl), RAL_WAIT + 1);
+    CHECK_EQ(sl->host->row(RAL_CURRENT).custom->label, TX_SV_CURRENT);
+    CHECK_EQ(sl->host->row(RAL_WAIT).kind, (uint8_t)UI_SL_SETTING);
+    CHECK_EQ(sl->host->row(RAL_WAIT).id, SET_SERVO_PROG_WAIT);
+    CHECK_STR_EQ(value_of(RAL_CURRENT), "--");
+    CHECK_STR_EQ(why_of(RAL_CURRENT), TR(SVL_CURRENT_NO_PD));
+    pd_answers();
+    CHECK_STR_EQ(value_of(RAL_CURRENT), set_a_text(supply_screen_set_i()));
+    sl_tap(RAL_CURRENT);
+    CHECK(servo_screen_keypad()->open);
+    keys("0.5");
+    CHECK(fabsf(supply_screen_set_i() - 0.5f) < 0.001f);
+    CHECK_STR_EQ(value_of(RAL_CURRENT), "SET A 0.50A");
+    settings_cancel_save();
+}
+
 int main(void)
 {
     RUN(the_hubs_keys_step_center_max_travel_and_hv);
@@ -381,5 +498,8 @@ int main(void)
     RUN(servo_pulses_name_their_reason_until_a_pd_mini_feeds);
     RUN(a_finger_on_a_programmer_control_keeps_the_hubs_list_shut);
     RUN(the_servos_name_takes_the_name_keyboard);
+    RUN(current_shows_and_types_set_a_where_a_pd_mini_feeds);
+    RUN(current_is_locked_without_a_pd_mini_and_under_a_held_supply);
+    RUN(rudder_auto_holds_current_and_prog_wait);
     return test_summary("servo_lists_rows");
 }

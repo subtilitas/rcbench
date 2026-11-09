@@ -97,7 +97,7 @@ The left card holds the readout, the targets, MARGIN and TOLERANCE, ZERO and RES
 
 ### READY
 
-The READY card on the right lists what the start needs, one row each: PORT, SERVO, METER, ANGLE, ZERO, RANGE, PROGRAMMER, the supply (PROG 5V on the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), PD MINI where the PD mini feeds the servo), PORT PWM and ARM. PROG 5V and PD MINI read the run's `5.0V`. A green dot is met. A red dot refuses the hold, or marks an output live through the row. Amber reads `START SWITCHES IT ON` or `START ARMS`: the hold does it. Grey waits on PORT. A tap on PORT opens the port choice, on SERVO the three families over the left column, on ANGLE the [ANGLE SOURCE list](#the-angle-source), on a red ZERO it takes the zero, on a red METER it opens [Sensors](setup-sensors.md), on a red PD MINI with `PD MINI: 5.0V OUTSIDE ITS LIMITS` [SUPPLY](supply.md) > SETTINGS > LIMITS. A tap on another red row names it in the alert band. The line under the rows is the meter the run reads.
+The READY card on the right lists what the start needs, one row each: PORT, SERVO, METER, ANGLE, ZERO, RANGE, PROGRAMMER, the supply (PROG 5V on the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), PD MINI where the PD mini feeds the servo), PORT PWM and ARM. PROG 5V reads the run's `5.0V`, PD MINI the run's `5.0V` and SUPPLY's SET A, `5.0V 2.00A`; a tap on a green or amber PD MINI opens SET A's keypad ([The current limit](servo.md#the-current-limit)). A green dot is met. A red dot refuses the hold, or marks an output live through the row. Amber reads `START SWITCHES IT ON` or `START ARMS`: the hold does it. Grey waits on PORT. A tap on PORT opens the port choice, on SERVO the three families over the left column, on ANGLE the [ANGLE SOURCE list](#the-angle-source), on a red ZERO it takes the zero, on a red METER it opens [Sensors](setup-sensors.md), on a red PD MINI with `PD MINI: 5.0V OUTSIDE ITS LIMITS` [SUPPLY](supply.md) > SETTINGS > LIMITS. A tap on another red row names it in the alert band. The line under the rows is the meter the run reads.
 
 ![On the rbmod carrier, SAFE: PROG 5V, PORT PWM and ARM amber, the hold green](view:servo-rudder-auto-rbmod)
 
@@ -120,6 +120,8 @@ The second line shows the result; after a PASS it gives each end point before an
 With the IMU as ANGLE SOURCE on AXIS Z (yaw), the ANGLE row reads `IMU YAW REFUSED: HINGE ON X OR Y` in red and the hold is refused, in 6-AXIS and in 9-AXIS: yaw drifts about 2.4° in 100s in 6-AXIS and settled 38° off in 9-AXIS on the bench, more than TOLERANCE. Roll and pitch hold to gravity. Turn the sensor 90° so the hinge is its X or Y axis. A tap on the row offers `USE IMU AXIS X (ROLL)` and `USE IMU AXIS Y (PITCH)`; a pick sets and saves it. Another axis or algorithm needs a new ZERO.
 
 ![RUDDER AUTO's SETTINGS list](view:servo-rudder-auto-settings)
+
+RUDDER AUTO's SETTINGS list holds the targets, MARGIN, TOLERANCE, SERVO, SERVO PULSES and ANGLE SOURCE, then CURRENT and Wait before PWM as on [LIMIT RUN's list](servo-settings.md#the-limit-run-s-settings): CURRENT is SUPPLY's SET A, and Wait before PWM the KST programmer's wait the run's LEAVE sends.
 
 ## What the angle is
 

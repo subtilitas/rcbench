@@ -78,9 +78,11 @@ screen. The screen is `shared/ui/servo_limit_panel.c`, its left card
 - SETTINGS opens the run's list: MODE (SEARCH ONLY or SEARCH + PROGRAM),
   SERVO (KST/CHASERVO, HITEC D SERIES or HITEC CLASSIC, the programmer the
   run's sessions go to, [Hitec servos](#hitec-servos)), SERVO PULSES (KEEP
-  or 1000-2000) and the programmer's Programming current and Wait before
-  PWM. The run programs at 5.0V and has no voltage row
-  ([The run's 5.0V](#the-runs-50v)). With SERVO at HITEC D SERIES, Hitec D
+  or 1000-2000), CURRENT and the programmer's Wait before PWM. CURRENT is
+  SUPPLY's SET A ([The run's current limit](#the-runs-current-limit)).
+  The run programs at 5.0V and has no voltage row
+  ([The run's 5.0V](#the-runs-50v)), and no Programming current row: no
+  run applies it. With SERVO at HITEC D SERIES, Hitec D
   receive (PULL-UP or PRECHARGE) follows SERVO: the same saved setting as
   on the [HITEC page](HitecProgrammer.md). On the bench's outputs MODE,
   SERVO and SERVO PULSES are locked with `On a PROG PORT only: choose one
@@ -101,8 +103,9 @@ screen. The screen is `shared/ui/servo_limit_panel.c`, its left card
   while the run reads an angle, amber `AS5600 OFF` or `IMU X+ NO READING`
   while it does not. The supply row is PROG 5V on
   the rbmod carrier's programming port, PD MINI where a PD mini feeds the
-  servo, SUPPLY otherwise. PROG 5V and PD MINI read the run's `5.0V`,
-  SUPPLY the rail's mean voltage. The colours are RUDDER AUTO's
+  servo, SUPPLY otherwise. PROG 5V reads the run's `5.0V`, PD MINI the
+  run's `5.0V` and SUPPLY's SET A, `5.0V 2.00A`, amber `ON AT START 2.00A`
+  while the hold switches it on, and SUPPLY the rail's mean voltage. The colours are RUDDER AUTO's
   ([AUTO end points](#auto-end-points)): green met, red refuses the hold or
   an output is live through it, amber the hold does it itself, grey waits
   on the PORT row. On the bench's outputs SERVO reads `SEARCH ONLY` in
@@ -115,8 +118,9 @@ screen. The screen is `shared/ui/servo_limit_panel.c`, its left card
   INA3221 part whose channel watches the tester's target, else on the
   first part fitted, and the home tag there returns to LIMIT RUN; on a red
   PD MINI with `PD MINI: 5.0V OUTSIDE ITS LIMITS` it opens SUPPLY's
-  settings at OUTPUT LIMITS. A tap on another red or grey row names it in the alert band,
-  `LABEL: reason`.
+  settings at OUTPUT LIMITS; on a green or amber PD MINI it opens SET A's
+  keypad ([The run's current limit](#the-runs-current-limit)). A tap on
+  another red or grey row names it in the alert band, `LABEL: reason`.
 - HOLD 2s: ARM + START in the footer's middle slot, 328 x 48px, green
   while no row is red. It runs RUDDER AUTO's start sequence: PORT PWM,
   PROG 5V or the PD mini, the read-back in 1000ms, ARM in 500ms, the start
@@ -213,8 +217,7 @@ LIMIT RUN and RUDDER AUTO program at 5.0V (`SERVO_LIMRUN_SUPPLY_MV`,
   the KST page loaded at its entry. The pages keep using it, and the run's
   end gives their programmer the setting's voltage back.
 - The session's current limit is SUPPLY's SET A where a PD mini feeds the
-  servo, the programmers' Programming current (`SET_SERVO_PROG_I`)
-  otherwise.
+  servo ([The run's current limit](#the-runs-current-limit)).
 - With a PD mini feeding the servo, START sets SUPPLY's set point to 5.0V
   before the steps begin, SET A kept. An output already on is lowered or
   raised to 5.0V while on. The PD mini stays at 5.0V after the run, after
@@ -238,6 +241,43 @@ LIMIT RUN and RUDDER AUTO program at 5.0V (`SERVO_LIMRUN_SUPPLY_MV`,
   START, the first state line reads `PD MINI DID NOT TAKE 5.0V` and no
   step is taken.
 - The carrier's PROG 5V is a fixed 5V and has no set point.
+
+#### The run's current limit
+
+A LIMIT RUN or RUDDER AUTO run, and every step of the automatic test, runs
+at SUPPLY's SET A where a PD mini feeds the servo
+(`shared/ui/servo_run_supply.c`).
+
+- The READY card's PD MINI row shows it after the voltage: `5.0V 2.00A` on
+  LIMIT RUN and RUDDER AUTO, `ON 2.00A` on TEST, amber `ON AT START 2.00A`
+  while the hold or the steps switch the output on. The state stays within
+  its 20 cells in English and German, three digits of mA included
+  (`EIN BEI START 2.125A`).
+- LIMIT RUN's and RUDDER AUTO's SETTINGS lists hold it as CURRENT,
+  `SET A 2.00A`.
+- A tap on the row, green or amber, or on CURRENT opens SUPPLY's keypad
+  over the left column: CURRENT LIMIT in A, two decimals, within SUPPLY's
+  caps narrowed by its OUTPUT LIMITS. OK sets SET A and keeps SET V. A
+  value outside the range keeps the keypad open and names the range.
+- With the output on and SUPPLY's Confirm keypad on (the
+  default), SUPPLY's question comes first: `OUTPUT IS ON`, the change as
+  `2.00 -> 1.50A`, APPLY or CANCEL. An output that goes off under the
+  question takes it away unanswered, as on SUPPLY.
+- The row takes no tap while a run or its start steps are under way, as
+  TEST's other rows take none then; TEST's PD MINI row shows the limit the
+  run started with. A programming port that holds the supply refuses the
+  keypad with `Servo programming holds the supply: set points and ON are
+  locked.`, SUPPLY's own refusal.
+
+Without a PD mini feeding the servo, the external supply's own limit or the
+rbmod carrier's M7 limits the current. A run's session still asks the
+programmers' Programming current (`SET_SERVO_PROG_I`), and the IOmcu
+stores it and applies nothing: it switches no supply it does not hold
+(`shared/outputs/kst_port.c`), and the carrier's PROG 5V takes no current
+limit (`firmware/iomcu/src/iomcu_kst.c`). CURRENT then reads `--`, locked
+with `No PD mini feeds the servo: its own supply limits it`, and the supply
+row shows no current. The KST and HITEC pages set Programming current for
+their own sessions.
 
 #### The read first
 
@@ -686,7 +726,9 @@ fired. Every end of a run, PASS included, switches the bench to SAFE.
 The voltage steps are the run's Step 4.8V and Step 6.0V (TEST's SETTINGS
 list), and with HV SERVO on, Step 7.4V and Step 8.4V. HV SERVO is off at every restart. A run
 with a step above 6.0V starts only through the HV SERVOS ONLY warning held for
-2s. The current limit through the run is the one on the SET line.
+2s. The current limit through the run is SUPPLY's SET A, which the READY
+card's PD MINI row shows and a tap there sets
+([The run's current limit](#the-runs-current-limit)).
 
 Each step runs these phases:
 
@@ -1671,7 +1713,10 @@ link is not authenticated (`SECURITY.md`, the Bluetooth IMU).
   `rud_defl_hi`). With LENGTH set the row shows the trailing edge's mm
   beside the degrees. MARGIN: 0 to 50%, 10% (`rud_margin`). TOLERANCE:
   0.1 to 5.0°, 0.5° (`rud_tol`). A tap opens the keypad. The same four,
-  SERVO and SERVO PULSES are in SETTINGS.
+  SERVO, SERVO PULSES, ANGLE SOURCE, CURRENT and Wait before PWM are in
+  SETTINGS. CURRENT is SUPPLY's SET A, as on LIMIT RUN
+  ([The run's current limit](#the-runs-current-limit)); Wait before PWM is
+  the KST programmer's wait the run's LEAVE sends.
 - The goal of a side is its target x (1 + MARGIN): 20.0° at 10% is 22.0°.
 - The READY card in the output card's place, 380 x 374px: one row per
   check of the start, 30px each, a dot, the label and the state. Green:
@@ -1685,16 +1730,19 @@ link is not authenticated (`SECURITY.md`, the Bluetooth IMU).
   holds every text that can reach a row to 20 cells after its tag, in
   English and German. The port line is the PORT button's line of up to 25
   cells: on a row it is cut after a whole word, `PORT 1 GPIO 13 PWM OFF`
-  as `PORT 1 GPIO 13 PWM`. The rail line under the rows names the meter the run
-  reads with its volts and amps.
+  as `PORT 1 GPIO 13 PWM`. The supply row reads as LIMIT RUN's: PD MINI
+  `5.0V 2.00A` with SUPPLY's SET A where a PD mini feeds the servo. The
+  rail line under the rows names the meter the run reads with its volts
+  and amps.
 - A tap on PORT opens the PORT choice; on SERVO the SERVO choice,
   KST/CHASERVO, HITEC D SERIES and HITEC CLASSIC over the left column; on
   ANGLE the [ANGLE SOURCE list](#angle-source), red or not; on a red ZERO
   with a reading it takes the zero; on a red METER it opens SETUP >
   SENSORS on the INA3221 part whose channel watches the tester's target (else the first
   part fitted); on a red PD MINI with `PD MINI: 5.0V OUTSIDE ITS LIMITS` it
-  opens SUPPLY's settings at OUTPUT LIMITS. A tap on another red or grey row names it in the alert band,
-  `LABEL: reason`.
+  opens SUPPLY's settings at OUTPUT LIMITS; on a green or amber PD MINI it
+  opens SET A's keypad. A tap on another red or grey row names it in the
+  alert band, `LABEL: reason`.
 - HOLD 2s: ARM + START in the footer's middle slot, 328 x 48px, green
   while no row is red. It fires the start sequence
   (`shared/servo/servo_start_seq.c`, shared with the limit run and the

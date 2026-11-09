@@ -23,6 +23,9 @@
  * A red row shows its text's tag where the text is longer than the
  * row's 20 cells (ready_tag()): `NEEDS 850-2150us` for PULSE MIN and MAX
  * short of a Hitec model's travel.
+ * Where a PD mini feeds the servo the supply row shows SUPPLY's SET A,
+ * the run's current limit, after its voltage (`5.0V 2.00A`, `ON AT START
+ * 2.00A`), and a tap there opens SET A's keypad (servo_run_supply.c).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -389,18 +392,22 @@ static void met_value(int i, char *b, size_t n, uint8_t *st)
             *st = (uint8_t)RDY_IDLE;
         }
         break;
-    case LRR_SUPPLY:
+    case LRR_SUPPLY: {
         /* The run's 5.0V where the bench sets the supply: the carrier's
-         * PROG 5V, or the PD mini START sets; the rail as read else. */
+         * PROG 5V, or the PD mini START sets; the rail as read else.  SET A
+         * after it where the PD mini feeds the servo. */
+        char head[16];
         if (lim_fixed_supply() || rsup_pd_used()) {
-            rsup_text(b, n);
+            rsup_text(head, sizeof(head));
             if (lim_fixed_supply() || pd_output_on()) {
                 *st = (uint8_t)RDY_LIVE;
             }
         } else {
-            rail_text(b, n);
+            rail_text(head, sizeof(head));
         }
+        rcur_join(b, n, head, rcur_set_a());
         break;
+    }
     case LRR_PWM:
         if (s.drive_target == 0u) {
             /* OUTPUTS: the pulse comes with ARM, no PORT PWM to switch. */
@@ -502,6 +509,9 @@ bool lim_ready_row(int i, rdy_row_t *r)
         snprintf(r->value, sizeof(r->value), "%s",
                  arm ? (s.gate.arm_asked ? TR(RDY_ARMING) : TR(RDY_SEQ_ARM))
                      : TR(RDY_SEQ_ON));
+        if (i == LRR_SUPPLY) {
+            rcur_seq(r->value, sizeof(r->value), rcur_set_a());
+        }
     } else if (mine != NULL) {
         /* The whole text for the band, its tag on the row. */
         r->st = (uint8_t)RDY_BAD;
@@ -511,11 +521,14 @@ bool lim_ready_row(int i, rdy_row_t *r)
         met_value(i, r->value, sizeof(r->value), &r->st);
     }
     /* The rows a tap fixes: PORT and SERVO always, METER on SETUP, the
-     * PD mini's caps on SUPPLY's LIMITS. */
+     * PD mini's caps on SUPPLY's LIMITS, the supply's current limit on
+     * its keypad while the row is not red and shows one. */
     r->fix = (i == LRR_PORT || i == LRR_SERVO)
              || (i == LRR_METER && r->st == (uint8_t)RDY_BAD)
              || (i == LRR_SUPPLY && r->st == (uint8_t)RDY_BAD
-                 && r->why == TR(SV_RUN_PD_5V));
+                 && r->why == TR(SV_RUN_PD_5V))
+             || (i == LRR_SUPPLY && r->st != (uint8_t)RDY_BAD
+                 && r->st != (uint8_t)RDY_IDLE && rcur_set_a());
     return true;
 }
 
@@ -527,8 +540,15 @@ void lim_ready_tap(int i)
     }
     /* Nothing changes under a run or a sequence: the rows as they
      * started. */
-    if (servo_limrun_running(&s.lim) || svs_seq_busy()
-        || r.st == (uint8_t)RDY_SEQ) {
+    if (servo_limrun_running(&s.lim) || svs_seq_busy()) {
+        return;
+    }
+    /* SET A, the limit the run takes: amber row or met. */
+    if (i == LRR_SUPPLY && r.fix && r.st != (uint8_t)RDY_BAD) {
+        rcur_edit();
+        return;
+    }
+    if (r.st == (uint8_t)RDY_SEQ) {
         return;
     }
     switch ((limrun_row_t)i) {

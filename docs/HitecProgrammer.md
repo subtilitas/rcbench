@@ -970,9 +970,10 @@ A run's sessions program at 5.0V, with or without a PD mini, never at
 PROGRAMMING VOLTAGE (SET_SERVO_PROG_V). With a PD mini feeding the servo,
 START sets it to 5.0V, and it stays at 5.0V after the run
 ([Servo: The run's 5.0V](Servo.md#the-runs-50v)). The current limit is
-SUPPLY's SET A with a PD mini, Programming current (SET_SERVO_PROG_I)
-without one. The run's end gives the programmer the voltage and current
-the settings hold, which this page's own sessions use.
+SUPPLY's SET A with a PD mini, the servo's own supply without one
+([Servo: The run's current limit](Servo.md#the-runs-current-limit)). The
+run's end gives the programmer the voltage and current the settings hold,
+which this page's own sessions use.
 
 A run writes LEFT END and RIGHT END and nothing else, in travel units:
 

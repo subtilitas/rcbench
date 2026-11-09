@@ -16,9 +16,10 @@
  * CURVE, SPEED and RANGE; RUDDER's LENGTH, ENC CENTER (taken from the
  * AS5600's reading) and ANGLE SOURCE (read-only, a tap opens SETUP >
  * SENSORS on it); RUDDER AUTO's targets, MARGIN, TOLERANCE, SERVO, SERVO
- * PULSES and ANGLE SOURCE; LIMIT RUN's MODE, SERVO, SERVO PULSES and the
- * programmer's PROG CURRENT and PROG WAIT (a run programs at 5.0V,
- * servo_run_supply.c); HITEC's SERIES
+ * PULSES, ANGLE SOURCE, CURRENT and PROG WAIT; LIMIT RUN's MODE, SERVO,
+ * SERVO PULSES, CURRENT and PROG WAIT.  CURRENT is SUPPLY's SET A, the
+ * limit a run takes where a PD mini feeds the servo, locked where none
+ * does; a run programs at 5.0V (servo_run_supply.c).  HITEC's SERIES
  * and RECEIVE; TEST's 17 rows of the automatic test (servo_test_list.c).
  * LIMIT RUN's and RUDDER AUTO's SERVO is each screen's own (servo_pick.c);
  * with HITEC D SERIES, D RECEIVE follows it.
@@ -311,7 +312,8 @@ static const ui_setlist_row_t k_rudder_rows[] = {
     UI_SL_ROW_CUSTOM(&k_enc),
     UI_SL_ROW_CUSTOM(&k_src),
 };
-/** @brief RUDDER AUTO's list: the targets, MARGIN, TOLERANCE, the servo, its pulses and ANGLE SOURCE. */
+/** @brief RUDDER AUTO's list: the targets, MARGIN, TOLERANCE, the servo,
+ *         its pulses, ANGLE SOURCE, CURRENT (SET A) and PROG WAIT. */
 static const ui_setlist_row_t k_rauto_rows[] = {
     UI_SL_ROW_SETTING(SET_RUDDER_DEFL_LO),
     UI_SL_ROW_SETTING(SET_RUDDER_DEFL_HI),
@@ -320,6 +322,8 @@ static const ui_setlist_row_t k_rauto_rows[] = {
     UI_SL_ROW_CUSTOM(&svs_family_row),
     UI_SL_ROW_CUSTOM(&k_pulses),
     UI_SL_ROW_CUSTOM(&k_src),
+    UI_SL_ROW_CUSTOM(&rcur_row),
+    UI_SL_ROW_SETTING(SET_SERVO_PROG_WAIT),
 };
 /** @brief RUDDER AUTO's list with its SERVO at HITEC D SERIES: D RECEIVE
  *         under SERVO. */
@@ -332,14 +336,16 @@ static const ui_setlist_row_t k_rauto_d_rows[] = {
     UI_SL_ROW_SETTING(SET_HITEC_RX),
     UI_SL_ROW_CUSTOM(&k_pulses),
     UI_SL_ROW_CUSTOM(&k_src),
+    UI_SL_ROW_CUSTOM(&rcur_row),
+    UI_SL_ROW_SETTING(SET_SERVO_PROG_WAIT),
 };
-/** @brief LIMIT RUN's list: MODE, the servo, its pulses and the
- *         programmer's current limit and wait. */
+/** @brief LIMIT RUN's list: MODE, the servo, its pulses, CURRENT (SET A)
+ *         and the programmer's wait. */
 static const ui_setlist_row_t k_limrun_rows[] = {
     UI_SL_ROW_CUSTOM(&k_mode),
     UI_SL_ROW_CUSTOM(&svs_family_row),
     UI_SL_ROW_CUSTOM(&k_pulses),
-    UI_SL_ROW_SETTING(SET_SERVO_PROG_I),
+    UI_SL_ROW_CUSTOM(&rcur_row),
     UI_SL_ROW_SETTING(SET_SERVO_PROG_WAIT),
 };
 /** @brief LIMIT RUN's list with its SERVO at HITEC D SERIES: D RECEIVE
@@ -349,7 +355,7 @@ static const ui_setlist_row_t k_limrun_d_rows[] = {
     UI_SL_ROW_CUSTOM(&svs_family_row),
     UI_SL_ROW_SETTING(SET_HITEC_RX),
     UI_SL_ROW_CUSTOM(&k_pulses),
-    UI_SL_ROW_SETTING(SET_SERVO_PROG_I),
+    UI_SL_ROW_CUSTOM(&rcur_row),
     UI_SL_ROW_SETTING(SET_SERVO_PROG_WAIT),
 };
 /** @brief HITEC's list: SERIES and D receive. */

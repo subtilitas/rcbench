@@ -22,6 +22,9 @@
  * the axes that resolve it (angle_fix_open()).  A red row shows the tag
  * of a text longer than its 20 cells (ready_tag()), the alert band the
  * whole text.
+ * Where a PD mini feeds the servo the supply row shows SUPPLY's SET A,
+ * the run's current limit, after its voltage (`5.0V 2.00A`, `ON AT START
+ * 2.00A`), and a tap there opens SET A's keypad (servo_run_supply.c).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -362,19 +365,24 @@ static void met_value(int i, char *b, size_t n, uint8_t *st)
     case RAR_PROG:
         snprintf(b, n, "%s", TR(RDY_FREE));
         break;
-    case RAR_SUPPLY:
+    case RAR_SUPPLY: {
         /* The run's 5.0V where the bench sets the supply: the carrier's
-         * PROG 5V, or the PD mini START sets; the rail as read else. */
+         * PROG 5V, or the PD mini START sets; the rail as read else.  SET A
+         * after it where the PD mini feeds the servo. */
+        char head[16] = "";
         if (lim_fixed_supply() || rsup_pd_used()) {
-            rsup_text(b, n);
+            rsup_text(head, sizeof(head));
             if (lim_fixed_supply() || pd_output_on()) {
                 *st = (uint8_t)RDY_LIVE;
             }
         } else if (s.win.voltage) {
-            snprintf(b, n, "%u.%02uV", (unsigned)(s.win.mean_mv / 1000u),
+            snprintf(head, sizeof(head), "%u.%02uV",
+                     (unsigned)(s.win.mean_mv / 1000u),
                      (unsigned)((s.win.mean_mv % 1000u) / 10u));
         }
+        rcur_join(b, n, head, rcur_set_a());
         break;
+    }
     case RAR_PWM:
         snprintf(b, n, "%s", ui_on_off(1));
         if (value_live()) {
@@ -464,6 +472,9 @@ bool rauto_ready_row(int i, rdy_row_t *r)
         snprintf(r->value, sizeof(r->value), "%s",
                  arm ? (s.gate.arm_asked ? TR(RDY_ARMING) : TR(RDY_SEQ_ARM))
                      : TR(RDY_SEQ_ON));
+        if (i == RAR_SUPPLY) {
+            rcur_seq(r->value, sizeof(r->value), rcur_set_a());
+        }
     } else if (mine != NULL) {
         /* The whole text for the band, its tag on the row. */
         r->st = (uint8_t)RDY_BAD;
@@ -478,12 +489,16 @@ bool rauto_ready_row(int i, rdy_row_t *r)
         met_value(i, r->value, sizeof(r->value), &r->st);
     }
     /* The rows a tap fixes: PORT, SERVO and ANGLE (its list) always,
-     * METER on SETUP, ZERO with a reading. */
+     * METER on SETUP, ZERO with a reading, the PD mini's caps on SUPPLY's
+     * LIMITS, SET A on its keypad while the row shows it and is neither
+     * red nor waiting on PORT. */
     r->fix = (i == RAR_PORT || i == RAR_SERVO || i == RAR_ANGLE)
              || ((i == RAR_METER || i == RAR_ZERO)
                  && r->st == (uint8_t)RDY_BAD)
              || (i == RAR_SUPPLY && r->st == (uint8_t)RDY_BAD
-                 && r->why == TR(SV_RUN_PD_5V));
+                 && r->why == TR(SV_RUN_PD_5V))
+             || (i == RAR_SUPPLY && r->st != (uint8_t)RDY_BAD
+                 && r->st != (uint8_t)RDY_IDLE && rcur_set_a());
     return true;
 }
 
@@ -495,8 +510,15 @@ void rauto_ready_tap(int i)
     }
     /* Nothing changes under a run or a sequence: the rows as they
      * started. */
-    if (servo_rauto_running(&s.ra.run) || svs_seq_busy()
-        || r.st == (uint8_t)RDY_SEQ) {
+    if (servo_rauto_running(&s.ra.run) || svs_seq_busy()) {
+        return;
+    }
+    /* SET A, the limit the run's sessions take: amber row or met. */
+    if (i == RAR_SUPPLY && r.fix && r.st != (uint8_t)RDY_BAD) {
+        rcur_edit();
+        return;
+    }
+    if (r.st == (uint8_t)RDY_SEQ) {
         return;
     }
     switch ((rauto_row_t)i) {

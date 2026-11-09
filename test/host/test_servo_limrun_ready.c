@@ -8,7 +8,9 @@
  *        START does itself read amber only while SAFE, a dead rail among
  *        them where the hold's supply feeds it; a tap on the grey hold
  *        names the first red row; SERVO off a PROG PORT names why; the
- *        list holds MODE, SERVO, SERVO PULSES and the programmer's rows.
+ *        supply row shows SUPPLY's SET A where the PD mini feeds the servo
+ *        and a tap types it; the list holds MODE, SERVO, SERVO PULSES,
+ *        CURRENT and PROG WAIT.
  *
  * Cases:
  * - every_gate_text_belongs_to_exactly_one_row
@@ -19,6 +21,7 @@
  * - servo_off_a_prog_port_names_why_and_port_opens_the_list
  * - the_card_and_the_hold_take_the_footer_and_the_output_cards_place
  * - the_list_holds_mode_servo_pulses_and_the_programmers_rows
+ * - the_supply_row_shows_set_a_where_the_pd_mini_feeds_and_types_it
  *
  * SPDX-License-Identifier: MIT
  */
@@ -426,8 +429,8 @@ TEST_CASE(the_card_and_the_hold_take_the_footer_and_the_output_cards_place)
     CHECK(ready_shown());
 }
 
-/* LIMIT RUN's list: MODE, SERVO, SERVO PULSES, PROG CURRENT and PROG
- * WAIT, no PROG VOLTAGE.  On OUTPUTS MODE, SERVO and SERVO PULSES are locked with
+/* LIMIT RUN's list: MODE, SERVO, SERVO PULSES, CURRENT and PROG WAIT, no
+ * PROG VOLTAGE and no PROG CURRENT.  On OUTPUTS MODE, SERVO and SERVO PULSES are locked with
  * the reason; on a PROG PORT behind a PD mini a tap on MODE switches it to
  * SEARCH + PROGRAM. */
 TEST_CASE(the_list_holds_mode_servo_pulses_and_the_programmers_rows)
@@ -442,11 +445,14 @@ TEST_CASE(the_list_holds_mode_servo_pulses_and_the_programmers_rows)
     CHECK_EQ(sl->host->row(0).kind, (int)UI_SL_CUSTOM);
     CHECK_EQ(sl->host->row(1).kind, (int)UI_SL_CUSTOM);
     CHECK_EQ(sl->host->row(2).kind, (int)UI_SL_CUSTOM);
-    CHECK_EQ(sl->host->row(LL_PROG_I).id, SET_SERVO_PROG_I);
+    CHECK_EQ(sl->host->row(LL_CURRENT).kind, (int)UI_SL_CUSTOM);
+    CHECK_EQ(sl->host->row(LL_CURRENT).custom->label, TX_SV_CURRENT);
     CHECK_EQ(sl->host->row(LL_WAIT).id, SET_SERVO_PROG_WAIT);
+    /* No PROG VOLTAGE and no PROG CURRENT: neither reaches a run. */
     for (int i = 0; i < sl->host->count(); ++i) {
         CHECK(sl->host->row(i).kind != (uint8_t)UI_SL_SETTING
-              || sl->host->row(i).id != SET_SERVO_PROG_V);
+              || (sl->host->row(i).id != SET_SERVO_PROG_V
+                  && sl->host->row(i).id != SET_SERVO_PROG_I));
     }
     CHECK_STR_EQ(sl->host->row(0).custom->locked(), TR(SVL_PORT_ONLY));
     sl_tap(LL_MODE);
@@ -468,6 +474,45 @@ TEST_CASE(the_list_holds_mode_servo_pulses_and_the_programmers_rows)
     CHECK(!servo_screen_list()->open);
 }
 
+/* The PD mini feeding the servo, its output on: PD MINI reads the run's
+ * 5.0V and SUPPLY's SET A, `5.0V 2.00A`, with a fix.  A tap opens SET A's
+ * keypad; on the live output OK asks SUPPLY's question, whose APPLY sets
+ * SET A.  On a rail fed from elsewhere, no PD mini answering, SUPPLY reads
+ * the rail alone and a tap opens no keypad. */
+TEST_CASE(the_supply_row_shows_set_a_where_the_pd_mini_feeds_and_types_it)
+{
+    to_ready(false);
+    settings_set(SET_SUPPLY_CONFIRM_KEYS, 1.0f);
+    supply_screen_set_output(true);
+    rdy_row_t r;
+    CHECK(lim_ready_row(LRR_SUPPLY, &r));
+    CHECK_STR_EQ(r.label, "PD MINI");
+    char want[24];
+    snprintf(want, sizeof(want), "5.0V %.2fA", (double)supply_screen_set_i());
+    CHECK_STR_EQ(r.value, want);
+    CHECK(r.fix);
+    tap(SV_RDY_X, SV_RDY_ROW_Y(LRR_SUPPLY));
+    CHECK(servo_screen_keypad()->open);
+    keys("1.75");
+    CHECK(servo_screen_output_held());          /* SUPPLY's question */
+    tap(WARN_APPLY_X, WARN_Y);
+    CHECK(fabsf(supply_screen_set_i() - 1.75f) < 0.001f);
+    CHECK(lim_ready_row(LRR_SUPPLY, &r));
+    CHECK_STR_EQ(r.value, "5.0V 1.75A");
+
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    servo_screen_supply(&st);                   /* no PD mini answers */
+    rail_window(100, 6000u);
+    CHECK(lim_ready_row(LRR_SUPPLY, &r));
+    CHECK_STR_EQ(r.label, TR(RDY_SUPPLY));
+    CHECK_STR_EQ(r.value, "6.00V");
+    CHECK(!r.fix);
+    tap(SV_RDY_X, SV_RDY_ROW_Y(LRR_SUPPLY));
+    CHECK(!servo_screen_keypad()->open);
+    settings_cancel_save();
+}
+
 int main(void)
 {
     RUN(every_gate_text_belongs_to_exactly_one_row);
@@ -478,5 +523,6 @@ int main(void)
     RUN(servo_off_a_prog_port_names_why_and_port_opens_the_list);
     RUN(the_card_and_the_hold_take_the_footer_and_the_output_cards_place);
     RUN(the_list_holds_mode_servo_pulses_and_the_programmers_rows);
+    RUN(the_supply_row_shows_set_a_where_the_pd_mini_feeds_and_types_it);
     return test_summary("servo_limrun_ready");
 }

@@ -1047,8 +1047,8 @@ Die Sitzungen eines Laufs programmieren mit 5,0V, mit und ohne PD mini,
 nie mit PROGRAMMIERSPANNUNG (SET_SERVO_PROG_V). Speist ein PD mini das
 Servo, stellt START es auf 5,0V, und es bleibt nach dem Lauf auf 5,0V
 ([Servo: Die 5,0V des Laufs](Servo-de.md#die-50v-des-laufs)). Die
-Strombegrenzung ist SOLL A von SUPPLY mit PD mini, ohne PD mini der
-Programmierstrom (SET_SERVO_PROG_I). Das Ende des Laufs gibt der
+Strombegrenzung ist SET A von SUPPLY mit PD mini, ohne PD mini die eigene
+Versorgung des Servos ([Servo](Servo-de.md#die-strombegrenzung-des-laufs)). Das Ende des Laufs gibt der
 Programmierung Spannung und Strom der Einstellungen zurück, die die
 eigenen Sitzungen dieser Seite verwenden.
 
