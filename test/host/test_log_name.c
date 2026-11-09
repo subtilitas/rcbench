@@ -32,7 +32,7 @@
 #define CARD_MAX 1400
 
 typedef struct {
-    char names[CARD_MAX][LOG_RUN_NAME_MAX + 8];
+    char names[CARD_MAX][LOG_LABELLED_SIZE];
     int  n;
 } card_t;
 
@@ -791,6 +791,208 @@ TEST_CASE(the_newest_listed_run_is_found_across_prefixes)
     }
 }
 
+/* ------------------------------------------------------------ labels */
+
+/* A label of @p n bytes of 'k'. */
+static void make_label(char *out, size_t cap, size_t n)
+{
+    size_t i = 0u;
+    for (; i < n && i + 1u < cap; ++i) {
+        out[i] = 'k';
+    }
+    out[i] = '\0';
+}
+
+TEST_CASE(a_labelled_name_is_the_same_run)
+{
+    static const struct {
+        const char  *name;
+        int          number;
+        log_prefix_t prefix;
+        bool         report;
+    } k[] = {
+        { "MOTOR042_kv1200.CSV",       42,  LOG_PREFIX_MOTOR, false },
+        { "motor042_kv1200.csv",       42,  LOG_PREFIX_MOTOR, false },
+        { "MOTOR042_x.CSV",            42,  LOG_PREFIX_MOTOR, false },
+        { "MOTOR042_v1.2.CSV",         42,  LOG_PREFIX_MOTOR, false },
+        { "MOTOR042_a_b__c.CSV",       42,  LOG_PREFIX_MOTOR, false },
+        { "MOTOR042_x.CSV.CSV",        42,  LOG_PREFIX_MOTOR, false },
+        { "MOTOR042_2 S 5000mAh.CSV",  42,  LOG_PREFIX_MOTOR, false },
+        { "MOTOR042_Prüfstand.CSV",    42,  LOG_PREFIX_MOTOR, false },
+        { "SERVO007_DS3218.CSV",       7,   LOG_PREFIX_SERVO, false },
+        { "SUPPL999_12V.CSV",          999, LOG_PREFIX_SUPPL, false },
+        { "ATEST001_x.TXT",            1,   LOG_PREFIX_ATEST, true  },
+        { "LIMIT003_left.txt",         3,   LOG_PREFIX_LIMIT, true  },
+        { "RUDDR010_trim.CSV",         10,  LOG_PREFIX_RUDDR, false },
+        { "ESC016_old.CSV",            16,  LOG_PREFIX_ESC,   false },
+        { "BENCH012_old.TXT",          12,  LOG_PREFIX_BENCH, true  },
+    };
+    for (size_t i = 0u; i < sizeof(k) / sizeof(k[0]); ++i) {
+        log_prefix_t p = LOG_PREFIX_COUNT;
+        bool rep = !k[i].report;
+        const int n = log_name_parse(k[i].name, &p, &rep);
+        if (n != k[i].number || p != k[i].prefix || rep != k[i].report
+            || log_name_number(k[i].name) != k[i].number
+            || (log_run_number(k[i].name) >= 0) == k[i].report) {
+            T_FAIL("\"%s\" read as %d, prefix %d", k[i].name, n, (int)p);
+        }
+    }
+    /* The longest label FILES lets a person give, 46 bytes behind MOTOR:
+     * a 59-byte name, still run 42. */
+    char lab[LOG_LABEL_MAX + 2u];
+    char name[LOG_LABELLED_SIZE + 8u];
+    make_label(lab, sizeof(lab), LOG_LABEL_MAX);
+    snprintf(name, sizeof(name), "MOTOR042_%s.CSV", lab);
+    CHECK_EQ((int)strlen(name), (int)LOG_LABELLED_MAX);
+    CHECK_EQ(log_run_number(name), 42);
+    CHECK_EQ((int)LOG_LABEL_MAX, 46);
+
+    /* The shapes around it: no separator, an empty label, something after
+     * the suffix, four digits, another separator, the label before the
+     * number. */
+    static const char *const k_not[] = {
+        "MOTOR042kv.CSV",   "MOTOR042_.CSV",   "MOTOR042_x.CSV.BAK",
+        "MOTOR0420_x.CSV",  "BENCH0123.CSV",   "MOTOR042-x.CSV",
+        "MOTOR042 x.CSV",   "MOTOR042.x.CSV",  "MOTOR_042.CSV",
+        "MOTOR042_x.LOG",   "MOTOR042_x",      "MOTOR042_.TXT",
+        "MOTOR000_x.CSV",   "ESCAPE01_x.CSV",  "MOTOR042_xCSV",
+        "MOTOR42_x.CSV",    "XMOTOR042_x.CSV", "MOTOR042_",
+    };
+    char rep[LOG_RUN_NAME_MAX];
+    for (size_t i = 0u; i < sizeof(k_not) / sizeof(k_not[0]); ++i) {
+        snprintf(rep, sizeof(rep), "x");
+        log_name_report_of(rep, sizeof(rep), k_not[i]);
+        if (log_name_number(k_not[i]) != -1
+            || log_name_parse(k_not[i], NULL, NULL) != -1 || rep[0] != '\0') {
+            T_FAIL("\"%s\" read as a run", k_not[i]);
+        }
+    }
+}
+
+TEST_CASE(a_label_is_written_behind_the_number_and_read_back)
+{
+    char out[LOG_LABELLED_SIZE];
+    char lab[LOG_LABEL_MAX + 4u];
+
+    CHECK(log_name_label(out, sizeof(out), "MOTOR042.CSV", "kv1200"));
+    CHECK_STR_EQ(out, "MOTOR042_kv1200.CSV");
+    /* An old label is replaced, and an empty one gives the plain name. */
+    CHECK(log_name_label(out, sizeof(out), "MOTOR042_kv1200.CSV", "kv900"));
+    CHECK_STR_EQ(out, "MOTOR042_kv900.CSV");
+    CHECK(log_name_label(out, sizeof(out), "MOTOR042_kv1200.CSV", ""));
+    CHECK_STR_EQ(out, "MOTOR042.CSV");
+    CHECK(log_name_label(out, sizeof(out), "MOTOR042_kv1200.CSV", NULL));
+    CHECK_STR_EQ(out, "MOTOR042.CSV");
+    CHECK(log_name_label(out, sizeof(out), "MOTOR042.CSV", "   "));
+    CHECK_STR_EQ(out, "MOTOR042.CSV");
+    /* Spaces at the ends go; inner ones, dots and separators stay. */
+    CHECK(log_name_label(out, sizeof(out), "MOTOR042.CSV", "  2 S v1.2_a "));
+    CHECK_STR_EQ(out, "MOTOR042_2 S v1.2_a.CSV");
+    /* The prefix, the number and the suffix keep the card's spelling. */
+    CHECK(log_name_label(out, sizeof(out), "motor042.csv", "kv"));
+    CHECK_STR_EQ(out, "motor042_kv.csv");
+    CHECK(log_name_label(out, sizeof(out), "ATEST001.TXT", "x"));
+    CHECK_STR_EQ(out, "ATEST001_x.TXT");
+
+    /* 46 bytes fit behind MOTOR042_, 47 do not; behind ESC016_, 48 fit. */
+    make_label(lab, sizeof(lab), LOG_LABEL_MAX);
+    CHECK(log_name_label(out, sizeof(out), "MOTOR042.CSV", lab));
+    CHECK_EQ((int)strlen(out), (int)LOG_LABELLED_MAX);
+    CHECK_EQ(log_run_number(out), 42);
+    make_label(lab, sizeof(lab), LOG_LABEL_MAX + 1u);
+    snprintf(out, sizeof(out), "x");
+    CHECK(!log_name_label(out, sizeof(out), "MOTOR042.CSV", lab));
+    CHECK_STR_EQ(out, "");
+    make_label(lab, sizeof(lab), LOG_LABEL_MAX + 2u);
+    CHECK(log_name_label(out, sizeof(out), "ESC016.CSV", lab));
+    /* Spaces are trimmed first: 46 bytes between spaces fit. */
+    char spaced[LOG_LABEL_MAX + 8u];
+    make_label(lab, sizeof(lab), LOG_LABEL_MAX);
+    snprintf(spaced, sizeof(spaced), "  %s  ", lab);
+    CHECK(log_name_label(out, sizeof(out), "MOTOR042.CSV", spaced));
+
+    /* Not a run, no room, no buffer. */
+    CHECK(!log_name_label(out, sizeof(out), "SWEEP.CSV", "x"));
+    CHECK_STR_EQ(out, "");
+    CHECK(!log_name_label(out, sizeof(out), NULL, "x"));
+    CHECK(!log_name_label(out, sizeof(out), "MOTOR042_.CSV", "x"));
+    char small[LOG_RUN_NAME_MAX + 2u];
+    CHECK(!log_name_label(small, sizeof(small), "MOTOR042.CSV", "kv1"));
+    CHECK(log_name_label(small, sizeof(small), "MOTOR042.CSV", "k"));
+    CHECK_STR_EQ(small, "MOTOR042_k.CSV");
+    CHECK(!log_name_label(NULL, 8u, "MOTOR042.CSV", "x"));
+    CHECK(!log_name_label(out, 0u, "MOTOR042.CSV", "x"));
+
+    /* The label read back: the keyboard opens with it. */
+    CHECK(log_name_label_of(out, sizeof(out), "MOTOR042_kv1200.CSV"));
+    CHECK_STR_EQ(out, "kv1200");
+    CHECK(log_name_label_of(out, sizeof(out), "MOTOR042_v1.2_a.CSV"));
+    CHECK_STR_EQ(out, "v1.2_a");
+    CHECK(log_name_label_of(out, sizeof(out), "MOTOR042.CSV"));
+    CHECK_STR_EQ(out, "");
+    CHECK(log_name_label_of(out, sizeof(out), "esc016_x.csv"));
+    CHECK_STR_EQ(out, "x");
+    CHECK(!log_name_label_of(out, sizeof(out), "SWEEP_920KV.CSV"));
+    CHECK_STR_EQ(out, "");
+    CHECK(!log_name_label_of(small, 3u, "MOTOR042_abc.CSV"));
+    CHECK(!log_name_label_of(NULL, 4u, "MOTOR042_abc.CSV"));
+}
+
+TEST_CASE(labelled_runs_number_rank_and_hold_as_plain_ones)
+{
+    /* The next run is above a labelled highest number. */
+    card_clear();
+    card_put("SERVO040.CSV");
+    card_put("MOTOR041.CSV");
+    card_put("MOTOR042_kv1200.CSV");
+    CHECK_EQ(card_next(), 43);
+    card_put("atest050_x.txt");
+    CHECK_EQ(card_next(), 51);
+
+    /* A mixed list ranks by number whatever carries a label; one number
+     * under two names follows by name. */
+    static const char *const k_order[] = {
+        "MOTOR045_kv.CSV",  "SERVO044.CSV",        "MOTOR043.CSV",
+        "MOTOR042.CSV",     "MOTOR042_kv1200.CSV", "SUPPL041_12V.CSV",
+        "ATEST040.CSV",     "ATEST040_x.TXT",      "MOTOR_kv.CSV",
+        "SWEEP.CSV",
+    };
+    const int n = (int)(sizeof(k_order) / sizeof(k_order[0]));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            const int r = log_name_rank(k_order[i], k_order[j]);
+            if ((i < j && r >= 0) || (i > j && r <= 0) || (i == j && r != 0)) {
+                T_FAIL("%s against %s ranks %d", k_order[i], k_order[j], r);
+            }
+        }
+    }
+
+    /* LOGS keeps and sorts them in that order. */
+    card_clear();
+    for (int i = n - 1; i >= 0; --i) {
+        card_put(k_order[i]);
+    }
+    static log_viewer_file_t set[LOG_VIEWER_MAX_FILES];
+    int files = 0;
+    const int held = list_card(set, LOG_VIEWER_MAX_FILES, 0u, 0u, 0u, &files);
+    CHECK_EQ(held, n);
+    log_select_sort(set, held);
+    for (int i = 0; i < held && i < n; ++i) {
+        CHECK_STR_EQ(set[i].name, k_order[i]);
+    }
+
+    /* An open run's number holds its labelled name too, and a labelled
+     * run's report is its plain one. */
+    CHECK(log_name_busy("MOTOR043_kv.CSV", 43u, 0u, 0u));
+    CHECK(!log_name_busy("MOTOR043_kv.CSV", 44u, 0u, 0u));
+    CHECK(log_name_busy("ATEST040_x.CSV", 0u, 0u, 40u));
+    char rep[LOG_RUN_NAME_MAX];
+    log_name_report_of(rep, sizeof(rep), "ATEST040_x.CSV");
+    CHECK_STR_EQ(rep, "ATEST040.TXT");
+    log_name_report_of(rep, sizeof(rep), "atest040_x.csv");
+    CHECK_STR_EQ(rep, "ATEST040.TXT");
+}
+
 int main(void)
 {
     RUN(every_writer_names_its_runs_and_reads_the_number_back);
@@ -812,5 +1014,8 @@ int main(void)
     RUN(the_file_being_written_is_not_listed_whatever_its_prefix);
     RUN(a_servo_test_whose_report_is_open_keeps_its_csv);
     RUN(the_newest_listed_run_is_found_across_prefixes);
+    RUN(a_labelled_name_is_the_same_run);
+    RUN(a_label_is_written_behind_the_number_and_read_back);
+    RUN(labelled_runs_number_rank_and_hold_as_plain_ones);
     return test_summary("log_name");
 }

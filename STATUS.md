@@ -202,6 +202,10 @@ A file goes to one of two folders and is named by what started it: `BENCH/LOGS` 
 on its first write, and its numbers are one series across every name in it, read by one walk
 and probed name by name before each take (`shared/logfile/log_name.c`,
 `shared/logfile/log_take.c`, host-tested in `test_log_name` and `test_log_take`).
+A name may carry a label behind its number, `MOTOR042_kv1200.CSV` (`log_name_label()`, up to
+46 bytes behind a five-letter prefix); every prefix reads it as the same run, so its kind,
+its rank in LOGS and its number in the series hold (`test_log_name`, `test_log_take`,
+`test_fm_tree`).
 
 SETUP > SD CARD switches each folder's writing off (Auto logs, User logs;
 `test_log_cadence`, `test_servo_test_panel`, `test_servo_limit_panel`) and sets each folder

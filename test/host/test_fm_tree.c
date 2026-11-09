@@ -498,6 +498,14 @@ TEST_CASE(every_kind_has_its_name)
     CHECK_EQ(fm_kind_of("", "X", true), FM_KIND_FOLDER);
     CHECK_EQ(fm_kind_of(CARD_USER_LOGS, "ATEST042.CSV", false), FM_KIND_RUN);
     CHECK_EQ(fm_kind_of(CARD_AUTO_LOGS, "servo007.csv", false), FM_KIND_RUN);
+    /* A label behind the number keeps the kind, in either case. */
+    CHECK_EQ(fm_kind_of(CARD_AUTO_LOGS, "MOTOR042_kv1200.CSV", false),
+             FM_KIND_RUN);
+    CHECK_EQ(fm_kind_of(CARD_AUTO_LOGS, "motor042_v1.2.csv", false),
+             FM_KIND_RUN);
+    CHECK_EQ(fm_kind_of(CARD_AUTO_LOGS, "MOTOR042_.CSV", false), FM_KIND_CSV);
+    CHECK_EQ(fm_kind_of(CARD_USER_LOGS, "LIMIT003_left.TXT", false),
+             FM_KIND_REPORT);
     CHECK_EQ(fm_kind_of(CARD_USER_LOGS, "ATEST042.TXT", false),
              FM_KIND_REPORT);
     CHECK_EQ(fm_kind_of(CARD_KST_CONF, "MY SERVO.TXT", false), FM_KIND_KST);

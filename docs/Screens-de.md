@@ -3424,6 +3424,15 @@ Der Name folgt der Seite, die ARM angefordert hat: Gas-Ausgänge ergeben
 jedem ARM auch die Gas-Ausgänge. ARM auf SERVO schreibt dennoch
 `SERVOnnn.CSV`.
 
+Ein Laufname darf hinter seiner Nummer ein Label tragen:
+`MOTOR042_kv1200.CSV`. Das Label folgt auf ein `_` und hat 1 oder mehr
+Bytes, auch Punkte und weitere `_`. Hinter einem Präfix aus fünf
+Buchstaben hat es höchstens 46 Bytes, damit der ganze Name in die 59
+Bytes passt, die FILES annimmt. Ein Name mit Label ist derselbe Lauf wie
+der Name ohne: Er behält Nummer, Art und Platz in der Liste, und der
+nächste Lauf erhält die Nummer darüber. `MOTOR042kv.CSV`, `MOTOR042_.CSV`
+und `MOTOR0420_x.CSV` sind keine Läufe.
+
 Zwei Schalter unter [Setup](#setup) > SD CARD bestimmen die Aufzeichnung.
 Auto-Aufzeichnungen AUS verhindert Dateien in `BENCH/LOGS` und schließt
 eine laufende Datei beim Ausschalten. Testaufzeichnungen AUS verhindert

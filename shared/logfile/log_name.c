@@ -124,6 +124,11 @@ void log_report_name(char *out, size_t out_size, int number)
  * @brief The number in @p name under @p suffix, any prefix, or -1; @p prefix,
  *        when not NULL, takes the prefix's index.
  *
+ * A run's name has two shapes per prefix: PREFIXnnn and the suffix, or
+ * PREFIXnnn, LOG_LABEL_SEP, a label of 1 or more bytes, and the suffix.
+ * The label may hold any byte the card lists, full stops and further
+ * separators included; the card's own rules keep it a name.
+ *
  * @param name    The file name.
  * @param suffix  The suffix the name must end with.
  * @param prefix  Receives the index of the prefix, or NULL.
@@ -135,15 +140,14 @@ static int numbered(const char *name, const char *suffix, int *prefix)
         return -1;
     }
     /*
-     * A run's name has one shape and one length per prefix.  The length is
-     * taken first, which settles "nothing after the suffix" and puts every
-     * read below inside the name.
+     * The length is taken first, which settles "nothing after the suffix"
+     * and puts every read below inside the name.
      */
     const size_t len = strlen(name);
     for (int k = 0; k < (int)LOG_PREFIX_COUNT; ++k) {
         const size_t plen = strlen(k_prefix[k]);
-        if (len != plen + RUN_DIGITS + SUFFIX_LEN
-            || !prefix_matches(name, k_prefix[k], plen)) {
+        const size_t plain = plen + RUN_DIGITS + SUFFIX_LEN;
+        if (len < plain || !prefix_matches(name, k_prefix[k], plen)) {
             continue;
         }
         const char *p = name + plen;
@@ -157,7 +161,12 @@ static int numbered(const char *name, const char *suffix, int *prefix)
         if (v < LOG_RUN_FIRST || v > LOG_RUN_LAST) {
             return -1;
         }
-        if (log_name_case_cmp(p + RUN_DIGITS, suffix) != 0) {
+        /* Plain: the suffix follows the digits.  Labelled: the separator
+         * follows them, and a byte at least stands before the suffix. */
+        const bool labelled = len > plain + 1u
+                              && p[RUN_DIGITS] == LOG_LABEL_SEP;
+        if ((len != plain && !labelled)
+            || log_name_case_cmp(name + len - SUFFIX_LEN, suffix) != 0) {
             return -1;
         }
         if (prefix != NULL) {
@@ -240,6 +249,85 @@ void log_name_report_of(char *out, size_t out_size, const char *run_name)
         return;
     }
     log_name_build(out, out_size, (log_prefix_t)k, n, true);
+}
+
+/**
+ * @brief Bytes of @p name's prefix and number, PREFIXnnn as the name spells
+ *        them, or 0 for a name that is neither a run log nor a report.
+ *
+ * @param name  The file name.
+ * @return The bytes in front of the label's separator or the suffix.
+ */
+static size_t head_len(const char *name)
+{
+    log_prefix_t k = LOG_PREFIX_COUNT;
+    if (log_name_parse(name, &k, NULL) < 0) {
+        return 0u;
+    }
+    return strlen(k_prefix[k]) + RUN_DIGITS;
+}
+
+bool log_name_label(char *out, size_t out_size, const char *run_name,
+                    const char *label)
+{
+    if (out == NULL || out_size == 0u) {
+        return false;
+    }
+    out[0] = '\0';
+    const size_t head = head_len(run_name);
+    if (head == 0u) {
+        return false;
+    }
+    if (label == NULL) {
+        label = "";
+    }
+    /* Spaces at the label's ends are dropped: FatFs drops them at a name's
+     * ends, and in the middle they are invisible on the button. */
+    while (*label == ' ') {
+        ++label;
+    }
+    size_t lab = strlen(label);
+    while (lab > 0u && label[lab - 1u] == ' ') {
+        --lab;
+    }
+    const size_t total = head + ((lab > 0u) ? 1u + lab : 0u) + SUFFIX_LEN;
+    if (total > LOG_LABELLED_MAX || total >= out_size) {
+        return false;
+    }
+    const char *suffix = run_name + strlen(run_name) - SUFFIX_LEN;
+    memcpy(out, run_name, head);
+    size_t at = head;
+    if (lab > 0u) {
+        out[at++] = LOG_LABEL_SEP;
+        memcpy(out + at, label, lab);
+        at += lab;
+    }
+    memcpy(out + at, suffix, SUFFIX_LEN);
+    out[at + SUFFIX_LEN] = '\0';
+    return true;
+}
+
+bool log_name_label_of(char *out, size_t out_size, const char *name)
+{
+    if (out == NULL || out_size == 0u) {
+        return false;
+    }
+    out[0] = '\0';
+    const size_t head = head_len(name);
+    if (head == 0u) {
+        return false;
+    }
+    const size_t len = strlen(name);
+    if (len == head + SUFFIX_LEN) {
+        return true;                    /* plain: no label */
+    }
+    const size_t lab = len - head - 1u - SUFFIX_LEN;
+    if (lab >= out_size) {
+        return false;
+    }
+    memcpy(out, name + head + 1u, lab);
+    out[lab] = '\0';
+    return true;
 }
 
 bool log_name_busy(const char *name, unsigned open_run, unsigned open_test,

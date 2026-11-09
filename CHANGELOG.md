@@ -34,6 +34,12 @@ history is in git.
   48 characters shows the part around the cursor. The bottom row is
   SPACE 3 columns, CLR, `<-` and `->` 1 each, CANCEL and OK 2 each; the
   screenshot popup's word keys draw in 12 x 24 in German.
+- A run's name may carry a label behind its number,
+  `MOTOR042_kv1200.CSV`: one `_` and 1 or more bytes, up to 46 behind a
+  five-letter prefix. Every prefix (SERVO, MOTOR, SUPPL, ATEST, LIMIT,
+  RUDDR and the older BENCH and ESC) reads it as the same run: LOGS and
+  FILES keep its number, kind and place in the list, DELETE takes its
+  plain report, and the next run takes one above a labelled number.
 
 ### Changed
 
