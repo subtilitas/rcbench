@@ -96,6 +96,10 @@ static struct {
      * with a reading of its own on the next 20ms, unless pd_deaf. */
     bool pd_sent, pd_sent_on, pd_deaf;
     float pd_sent_v;
+    /* The horn's long pulses from hi_reg, whatever the servo holds: a side
+     * no write moves. */
+    bool hi_fixed;
+    uint8_t hi_reg[KST_REG_COUNT];
 } ra;
 
 /** @brief The IOmcu's STATUS faults, read now: the failsafe as the rig's
@@ -309,7 +313,8 @@ static inline void ra_ms(uint32_t ms)
         rig_frame();
         const float amps = servo_sim_step(
             &ra.sv,
-            sim_horn_cmd(g_rig.on_rail ? g_rig.sim.acting : g_rig.sim.reg,
+            sim_horn_cmd(ra.hi_fixed && ra.cmd > 1500u ? ra.hi_reg
+                         : g_rig.on_rail ? g_rig.sim.acting : g_rig.sim.reg,
                          ra.cmd, 4.0f, false),
             g_rig.ms);
         ra.sum += amps;

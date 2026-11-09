@@ -47,6 +47,8 @@ static struct {
     bool pd;                    /* a PD mini answers on the SERVO screen */
     bool pd_out;                /* its output                            */
     bool enc;                   /* the AS5600 reads the surface          */
+    uint16_t b0_fixed;          /* not 0: the horn's 2000us side takes
+                                   this 0xB0, whatever the servo holds    */
     int last_raw;
     uint32_t still_from;
     float sum;
@@ -117,7 +119,11 @@ static inline uint16_t hl_horn(void)
     const float mid = (float)g_drv.dreg[0xC2];
     const float pos = t <= 3000
         ? mid - (float)(3000 - t) * (mid - (float)g_drv.dreg[0xB2]) / 2600.0f
-        : mid + (float)(t - 3000) * ((float)g_drv.dreg[0xB0] - mid) / 2600.0f;
+        : mid + (float)(t - 3000)
+                    * ((float)(hl.b0_fixed != 0u ? hl.b0_fixed
+                                                 : g_drv.dreg[0xB0])
+                       - mid)
+                    / 2600.0f;
     return (uint16_t)lroundf(1500.0f + (pos - mid) * 0.15f);
 }
 

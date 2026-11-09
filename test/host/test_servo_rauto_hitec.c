@@ -1,8 +1,9 @@
 /*
  * AUTO on RUDDER on a Hitec servo (shared/ui/servo_rudder_auto_panel.c
  * through servo_limit_seam.c and the Hitec run seam hitec_panel_run.h):
- * a D series servo landed within the tolerance, a classic servo's 8-bit
- * cells kept within what the servo takes, and the D series save and
+ * a D series servo landed within the tolerance, a D series side whose
+ * writes do not move it ending the run after 2 writes, a classic servo's
+ * 8-bit cells kept within what the servo takes, and the D series save and
  * reboot inside a write's session, READY's SERVO and SUPPLY rows on
  * both families, and the 5.0V every session asks.  The bench is
  * hitec_limit_panel_rig.h,
@@ -260,6 +261,44 @@ TEST_CASE(a_stop_with_the_first_hitec_write_on_its_way_names_the_backup)
     CHECK(!hl.armed);
     CHECK(!hitec_prog_write_on(model()));
 }
+/* The bench's run 2 (RUDDR023) on the D485HW: LEFT END at 3178 counts
+ * gives the 1000us side 22.0°, within at its first measure; the 2000us
+ * side at 33.3° and its horn deaf to RIGHT END.  RIGHT END is the 2000us
+ * side's from the read (CW); its 2 writes leave the side where it was and
+ * the run ends FAIL, LEFT END untouched, the bench SAFE and the backup to
+ * load named on the third line. */
+TEST_CASE(a_d_series_side_whose_writes_do_not_move_it_fails_after_two)
+{
+    char b[96], want[96];
+    ha_setup(false);
+    g_drv.dreg[0xB2] = 8192u - 3178u;
+    hl.b0_fixed = g_drv.dreg[0xB0];
+    hl_ms(100u);
+    CHECK(fabsf(defl_at(1000u) - 22.0f) <= 0.5f);
+    CHECK(fabsf(defl_at(2000u) - 33.3f) <= 0.1f);
+    ha_hold_start();
+    CHECK(servo_screen_rauto_running());
+    ha_run_out();
+    CHECK(!servo_screen_rauto_running());
+    CHECK(strstr(hl.report, "FAIL - writes do not move the 2000us side")
+          != NULL);
+    CHECK(strstr(hl.report, "LEFT END (0xB2): 3178 before, 3178 after; "
+                            "moves the 1000us side") != NULL);
+    CHECK(strstr(hl.report, "Writes:         1000us side 0, 2000us side 2,")
+          != NULL);
+    CHECK_EQ(g_drv.dreg[0xB2], 8192u - 3178u);
+    CHECK(g_drv.dreg[0xB0] < hl.b0_fixed);
+    snprintf(want, sizeof(want), TR(RA_LAST), ui_servo_str(SERVO_STR_FAIL),
+             ui_servo_str(SERVO_STR_RA_WHY_NO_EFFECT_HI));
+    CHECK_STR_EQ(rauto_line(1, b, sizeof(b)), want);
+    CHECK_STR_EQ(rauto_line(2, b, sizeof(b)), "LOAD HITEC001 IN FILES");
+    /* SAFE: the IOmcu drives no pulse; the rail is fed from elsewhere. */
+    CHECK(!hl.armed);
+    CHECK(hl.disarms >= 1u);
+    CHECK(!hitec_prog_write_on(model()));
+    CHECK_EQ(hitec_prog_state(model()), HITEC_PROG_PWM);
+}
+
 /* A D series servo needs no power cycle, so a rail fed from elsewhere
  * passes the gate: READY reads SERVO as HITEC D SERIES, SUPPLY green with
  * the 6.00V the INA3221 measures and nothing live through it, and the hold
@@ -325,6 +364,7 @@ int main(void)
     RUN(auto_on_a_classic_ccw_servo_writes_cell_0x13_for_the_short_pulses);
     RUN(a_d_series_write_counts_the_save_and_reboot_time_in_the_session_cap);
     RUN(a_stop_with_the_first_hitec_write_on_its_way_names_the_backup);
+    RUN(a_d_series_side_whose_writes_do_not_move_it_fails_after_two);
     RUN(a_d_series_servo_on_an_external_rail_reads_the_rail_voltage);
     RUN(auto_programs_at_5v_whatever_prog_v_holds);
     return test_summary("servo_rauto_hitec");

@@ -570,6 +570,7 @@ TEST_CASE(the_words_name_every_reason_and_phase)
         SERVO_STR_L_WHY_WRITE, SERVO_STR_RA_WHY_MAPPING,
         SERVO_STR_RA_WHY_LIMIT, SERVO_STR_RA_WHY_WRITE_CAP,
         SERVO_STR_L_WHY_BENCH, SERVO_STR_L_WHY_SUPPLY,
+        SERVO_STR_RA_WHY_NO_EFFECT_LO,
     };
     r.test_why = SERVO_TEST_AB_STOP;
     for (int k = 0; k < (int)SERVO_RAUTO_WHY_COUNT; ++k) {
@@ -577,6 +578,11 @@ TEST_CASE(the_words_name_every_reason_and_phase)
         CHECK_EQ(servo_rauto_why_str(&r), k_why[k]);
         CHECK(k == 0 || servo_str(servo_rauto_why_str(&r))[0] != '\0');
     }
+    r.why = SERVO_RAUTO_WHY_NO_EFFECT;
+    r.side = 1u;
+    CHECK_EQ(servo_rauto_why_str(&r), SERVO_STR_RA_WHY_NO_EFFECT_HI);
+    CHECK_STR_EQ(servo_str(SERVO_STR_RA_WHY_NO_EFFECT_HI),
+                 "writes do not move the 2000us side");
     r.why = SERVO_RAUTO_WHY_COUNT;
     CHECK_EQ(servo_rauto_why_str(&r), SERVO_STR_AB_NONE);
     static const servo_str_t k_ph[] = {

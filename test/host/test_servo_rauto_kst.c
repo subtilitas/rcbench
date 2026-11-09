@@ -31,6 +31,7 @@
  * - a_session_holding_the_port_is_named_before_port_pwm
  * - auto_start_flashes_as_it_fires
  * - auto_enters_at_5v_whatever_the_kst_page_loaded
+ * - writes_that_do_not_move_the_2000us_side_end_auto_after_two
  *
  * SPDX-License-Identifier: MIT
  */
@@ -639,6 +640,46 @@ TEST_CASE(auto_enters_at_5v_whatever_the_kst_page_loaded)
     settings_set(SET_SERVO_PROG_V, settings_def(SET_SERVO_PROG_V)->def);
 }
 
+/* The bench's run 2 (RUDDR023) on KST: LEFT ANGLE at 92 counts gives the
+ * 1000us side 22.1°, within at its first measure; the 2000us side's horn
+ * is deaf to every write.  KST's registers are not known: RIGHT ANGLE is
+ * tried for the 2000us side, then LEFT ANGLE with RIGHT ANGLE back at 150;
+ * the side stays both times and the run ends FAIL after 2 writes, the
+ * supply's output off, the bench SAFE and RESTORE offered. */
+TEST_CASE(writes_that_do_not_move_the_2000us_side_end_auto_after_two)
+{
+    char b[96], want[96];
+    ra_setup(true, true);
+    kst_image_t img = rig_servo();
+    CHECK(kst_field_set(&img, KST_F_LEFT_ANGLE, 92u));
+    memcpy(g_rig.sim.reg, img.r, sizeof(g_rig.sim.reg));
+    memcpy(g_rig.sim.acting, img.r, sizeof(g_rig.sim.acting));
+    memcpy(ra.hi_reg, img.r, sizeof(ra.hi_reg));
+    ra.hi_fixed = true;
+    ra_ms(100u);
+    ra_hold_start();
+    CHECK(servo_screen_rauto_running());
+    ra_run_out();
+    CHECK(!servo_screen_rauto_running());
+    CHECK(strstr(ra.report, "FAIL - writes do not move the 2000us side")
+          != NULL);
+    CHECK(strstr(ra.report, "Writes:         1000us side 0, 2000us side 2,")
+          != NULL);
+    CHECK_EQ(servo(KST_F_RIGHT_ANGLE), 150u);
+    CHECK(servo(KST_F_LEFT_ANGLE) < 92u);
+    snprintf(want, sizeof(want), TR(RA_LAST), ui_servo_str(SERVO_STR_FAIL),
+             ui_servo_str(SERVO_STR_RA_WHY_NO_EFFECT_HI));
+    CHECK_STR_EQ(rauto_line(1, b, sizeof(b)), want);
+    snprintf(want, sizeof(want), TR(SV_LIM_RESTORE), TR(SVH_KST));
+    CHECK_STR_EQ(rauto_line(2, b, sizeof(b)), want);
+    CHECK(strstr(ra.report, "RESTORE") != NULL);
+    CHECK(!ra.armed);
+    CHECK(ra.disarms >= 1u);
+    CHECK(!g_rig.sup_on);
+    CHECK(ra.offs >= 1u);
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+}
+
 int main(void)
 {
     RUN(auto_programs_both_end_points_to_the_goal_and_ends_safe);
@@ -658,5 +699,6 @@ int main(void)
     RUN(a_session_holding_the_port_is_named_before_port_pwm);
     RUN(auto_start_flashes_as_it_fires);
     RUN(auto_enters_at_5v_whatever_the_kst_page_loaded);
+    RUN(writes_that_do_not_move_the_2000us_side_end_auto_after_two);
     return test_summary("servo_rauto_kst");
 }

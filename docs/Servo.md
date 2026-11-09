@@ -1739,16 +1739,46 @@ ARMED is asked).
   sign end the run as `end point of a side not found`.
 - A side outside the tolerance gets value x goal / measured, held to the
   register's range. A value that rounds to the one in force moves one
-  count toward the goal. The first write goes to LEFT ANGLE; when the side
-  does not move by half the change expected, the value goes to RIGHT ANGLE
-  and LEFT ANGLE back. The register found moves that side, the other one the
-  other side.
+  count toward the goal.
+- Which register moves which side. A Hitec D series servo set to CW has
+  LEFT END (0xB2) at 1000us and RIGHT END (0xB0) at 2000us, known from the
+  read: the D series target line puts 1000us between target 400 (0xB2)
+  and 3000 (0xC2) (`hitec_live.h`), as measured on a D485HW. On every
+  other servo (KST/Chaservo, Hitec classic, a D series servo set to CCW)
+  the side is not known, and the first write finds it. That write goes to
+  the register of the side's name (LEFT for 1000us) with REVERSION (Hitec:
+  CCW) off, to the other one with it on. The register moved the side when
+  the side lands within the tolerance or moves at least half the change
+  expected, toward the goal. Half the change the other way ends the run as
+  `end point of a side not found`. A side that stays gets the other
+  register, and the first one goes back to its value. A side that stays
+  again ends the run as `writes do not move the 1000us side` or
+  `... 2000us side`. The register found moves that side, the other one the
+  other side. A side within the tolerance at its first measure gets no
+  write: the other side's first write finds both.
+- Each write is held to its effect. E is the sum of the changes the model
+  expects for the writes of a side since the last one that moved it, O
+  the measured change since the measure before the first of them. They
+  moved the side when it lands within the tolerance, or when |E| is at
+  least the tolerance and O lies along E by at least |E| / 2 or the
+  tolerance, whichever is smaller. With a 0.5° tolerance an expected
+  change of 2.4° needs 0.5°, one of 0.6° needs 0.3°. Two such writes that
+  did not move the side, including moves the wrong way, end the run as
+  `writes do not move the 1000us side` or `... 2000us side`. Writes with
+  |E| under the tolerance are not judged: the angle source's noise is of
+  that size. One write alone does not end the run, for the same reason.
 - Each write is a session: the servo held at PULSE CENTER for 1000ms, SAFE,
   CONNECT, the write and its read-back, LEAVE, including the power cycle when required for the written values
   to take effect, ARMED, and another measurement of the side. The file of
   the values before the run is saved before the first write.
 - PASS: both sides within the tolerance, each measured after the last
   write. A side outside after 8 writes ends the run as `8 writes per side reached`.
+- A FAIL ends with the servo let go, the bench SAFE and the supplies off,
+  as every end (see Protections). After a FAIL or ABORTED run that changed
+  a value, the third line of AUTO's box names how the values before the
+  run come back: `RESTORE IN KST` for KST/Chaservo, `LOAD HITEC001 IN
+  FILES` with the backup file's name for Hitec, `NO BACKUP FILE` where none
+  was saved. The run writes no value back by itself.
 
 ### Protections
 
@@ -1792,7 +1822,15 @@ measure with its value, its angle and whether it lies within.
 - A D series servo at 1000us stops 76.9% of the way to its end point by
   the target model of `hitec_live.h`, which is not measured; the run
   measures after every write. The D series mapping on a CCW servo is not
-  measured.
+  measured; the run finds it on the first write.
+- A drift of the angle source along the change a write expects reads as a
+  moved side. A BWT901CL in 6-axis mode on yaw drifts 2.4° in 100s (one
+  bench run). A register found on such a measure is held to its effect on
+  the next writes: 2 that do not move the side end the run. A drift that
+  keeps pace with every write is not detected.
+- A value moves within the register's range only. No cap on its total
+  change from the value before the run exists; 8 writes a side and the
+  2-write effect check bound it.
 
 ## Sweep and SPEED
 
