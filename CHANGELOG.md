@@ -24,6 +24,20 @@ history is in git.
   more within 200ms; otherwise every output goes off with `PROG 5V
   MISSING: 3.1V AFTER 200ms. CHECK THE SUPPLY VOLTAGE`.
 
+### Fixed
+
+- A hardware stop button pressed while the bench is ARMED clears when it
+  is released: HWSTOP, or FAULT 10, goes 80 to about 180ms after the line
+  closes, and no later than about 700ms after the press. The panel's stop
+  from the IOmcu withholds the heartbeat for 300ms
+  (`ARMING_STOP_WITHHOLD_MS`) and then edges the line again; the stop
+  stays latched, the bench stays SAFE with every output off, and only a
+  new ARM hold switches to ARMED. Only that stop, the IOmcu's refusal of
+  ARM, has the window: an operator's STOP, a link lost or found, an arm's
+  handshake past its deadline, touch lost under an arm and a stalled
+  render loop withhold the line until an ARM hold or the STOP reset, and
+  so does any of them after the refusal.
+
 ### Changed
 
 - RUDDER AUTO's report and box show end points as the programming page
