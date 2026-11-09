@@ -141,24 +141,27 @@ The run reads the INA3221 and nothing else. The PD mini's readings and the
 panel's model are refused before anything is driven. The text belongs to
 one row of the READY card (`test_servo_limrun_ready`), the row is red, the
 hold is grey and the first state line names it. On a SAFE bench the texts
-the hold resolves itself read amber on their row and refuse nothing.
+the hold resolves itself read amber on their row and refuse nothing. A
+red row shows the line's tag where the line is longer than the row's 20
+cells; the alert band and a tap on the row name the whole line
+([AUTO end points](#auto-end-points)).
 
-| Row | Line | Condition |
-| --- | --- | --- |
-| PROG 5V | `PROG 5V OFF: START SWITCHES IT ON` | SAFE on the rbmod carrier with PORT on a programming port and PROG 5V off. Named before `ARM FIRST`: the port's pulse needs the PROG 5V and comes on only while SAFE ([Carrier](Carrier.md#the-programming-port)). Amber: the hold switches it on |
-| ARM | `ARM FIRST` | the bench is SAFE. Amber: `START ARMS` |
-| ARM | `REPORT STILL BEING WRITTEN` | an automatic test or a limit run is under way, or its report is still going to the card |
-| PORT | `NO SERVO PWM PIN`, `PINS NOT READ` | PORT on the bench's outputs with no output bound as SERVO PWM, or the binding not read yet: the PORT button's own words. Named before the meter: on the rbmod carrier a channel watches a rail, and the outputs are on a rail only once one is bound ([Carrier: The current monitor](Carrier.md#the-current-monitor)) |
-| METER | `INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT` | no channel of a fitted INA3221 watches the tester's target in SETUP > SENSORS, CH2 or CH3 watches it on an IOmcu older than 4.25, an IOmcu older than protocol 4.11, or a SENSE page that does not hold the set-up |
-| METER | `INA3221 OFFLINE` | no link, the part not answering, or its reset count moved |
-| METER | `NO INA3221 MEASUREMENT WINDOWS YET` | the INA3221 is not the servo rail's meter yet: its set-up held for less than 1000ms, or no window with current in the last 200ms |
-| RAIL | `SERVO SUPPLY BELOW 3.0V OR NOT READ` | the last INA3221 window holds no rail voltage, or its mean is under 3.0V (`SERVO_LIMRUN_RAIL_MIN_MV`). An output that is off reads 0V, and a search there would find two free ends on a servo that never moved. 3.0V lies under the 4.8V servos are commonly specified from, so a single lithium cell's rail still starts; the voltage a given servo stops moving at is not measured. Amber while SAFE where the hold's supply feeds the rail: the PROG 5V on the carrier's port, a PD mini whose output is off. Amber in READ-BACK too, while the supply the steps switched on raises the rail |
-| PROGRAMMER | `LOCKED: SERVO PROGRAMMING USES THE PORT` | PORT on PROG PORT and a programmer session holds the port. Named before PORT PWM: the session is why no pulse runs, whatever PORT PWM says |
-| PORT PWM | `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS` | PORT on PROG PORT with PORT PWM off, the bench ARMED |
-| PORT PWM | `PORT PWM OFF: SWITCH IT ON IN OUTPUTS` | the same while SAFE. Amber: the hold switches it on and saves it |
-| PORT PWM | `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` | PORT on PROG PORT with PORT PWM on, no programmer holding the port, and its pulse still off. A pulse comes on only while SAFE, and the rbmod carrier's panel asks for it only with the PROG 5V on. Amber while SAFE: the read-back waits for it |
-| RANGE | `CENTER MUST BE BETWEEN PULSE MIN AND MAX` | PULSE CENTER is not between PULSE MIN and PULSE MAX |
-| PD MINI | `PD MINI: 5.0V OUTSIDE ITS LIMITS` | a PD mini feeds the servo and SUPPLY's permitted set-point range, narrowed by its OUTPUT LIMITS, leaves out 5.0V. A tap on the row opens SUPPLY's settings at OUTPUT LIMITS |
+| Row | Line | Tag | Condition |
+| --- | --- | --- | --- |
+| PROG 5V | `PROG 5V OFF: START SWITCHES IT ON` | `PROG 5V OFF` | SAFE on the rbmod carrier with PORT on a programming port and PROG 5V off. Named before `ARM FIRST`: the port's pulse needs the PROG 5V and comes on only while SAFE ([Carrier](Carrier.md#the-programming-port)). Amber: the hold switches it on |
+| ARM | `ARM FIRST` | the line | the bench is SAFE. Amber: `START ARMS` |
+| ARM | `REPORT STILL BEING WRITTEN` | `WRITING REPORT` | an automatic test or a limit run is under way, or its report is still going to the card |
+| PORT | `NO SERVO PWM PIN`, `PINS NOT READ` | the line | PORT on the bench's outputs with no output bound as SERVO PWM, or the binding not read yet: the PORT button's own words. Named before the meter: on the rbmod carrier a channel watches a rail, and the outputs are on a rail only once one is bound ([Carrier: The current monitor](Carrier.md#the-current-monitor)) |
+| METER | `INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT` | `NOT SET UP` | no channel of a fitted INA3221 watches the tester's target in SETUP > SENSORS, CH2 or CH3 watches it on an IOmcu older than 4.25, an IOmcu older than protocol 4.11, or a SENSE page that does not hold the set-up |
+| METER | `INA3221 OFFLINE` | the line | no link, the part not answering, or its reset count moved |
+| METER | `NO INA3221 MEASUREMENT WINDOWS YET` | `NO WINDOWS YET` | the INA3221 is not the servo rail's meter yet: its set-up held for less than 1000ms, or no window with current in the last 200ms |
+| RAIL | `SERVO SUPPLY BELOW 3.0V OR NOT READ` | `BELOW 3.0V` | the last INA3221 window holds no rail voltage, or its mean is under 3.0V (`SERVO_LIMRUN_RAIL_MIN_MV`). An output that is off reads 0V, and a search there would find two free ends on a servo that never moved. 3.0V lies under the 4.8V servos are commonly specified from, so a single lithium cell's rail still starts; the voltage a given servo stops moving at is not measured. Amber while SAFE where the hold's supply feeds the rail: the PROG 5V on the carrier's port, a PD mini whose output is off. Amber in READ-BACK too, while the supply the steps switched on raises the rail |
+| PROGRAMMER | `LOCKED: SERVO PROGRAMMING USES THE PORT` | `SERVO PROGRAMMING` | PORT on PROG PORT and a programmer session holds the port. Named before PORT PWM: the session is why no pulse runs, whatever PORT PWM says |
+| PORT PWM | `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS` | `PORT PWM OFF: DISARM` | PORT on PROG PORT with PORT PWM off, the bench ARMED |
+| PORT PWM | `PORT PWM OFF: SWITCH IT ON IN OUTPUTS` | `PORT PWM OFF` | the same while SAFE. Amber: the hold switches it on and saves it |
+| PORT PWM | `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` | `WAITING FOR SAFE` | PORT on PROG PORT with PORT PWM on, no programmer holding the port, and its pulse still off. A pulse comes on only while SAFE, and the rbmod carrier's panel asks for it only with the PROG 5V on. Amber while SAFE: the read-back waits for it |
+| RANGE | `CENTER MUST BE BETWEEN PULSE MIN AND MAX` | `CENTER OUT OF RANGE` | PULSE CENTER is not between PULSE MIN and PULSE MAX |
+| PD MINI | `PD MINI: 5.0V OUTSIDE ITS LIMITS` | `5.0V OUTSIDE LIMITS` | a PD mini feeds the servo and SUPPLY's permitted set-point range, narrowed by its OUTPUT LIMITS, leaves out 5.0V. A tap on the row opens SUPPLY's settings at OUTPUT LIMITS |
 
 ### Programming the servo's travel limits
 
@@ -175,18 +178,19 @@ On PROG PORT every run starts with a read session, so the other conditions
 stop SEARCH ONLY as well: the hold stays grey, the condition's row is red
 and the first state line names it.
 
-| Row | Line | Condition |
-| --- | --- | --- |
-| PROGRAMMER | `PROGRAMMING: PORT IS NOT IN PWM MODE` | the programmer holds the port, or the port is not ready for a run |
-| PD MINI | `PROGRAMMING: PD MINI OUTPUT OFF` | a PD mini answers with its output off on a rail fed from elsewhere: the read session would switch it on beside the supply that feeds the rail. On a rail under 3.0V it reads amber while SAFE, and the hold switches the PD mini on |
-| RAIL | `PROGRAMMING: SERVO RAIL BELOW 4.8V` | no PD mini answers, and the servo rail in the INA3221's last window is under 4.8V or not read |
+| Row | Line | Tag | Condition |
+| --- | --- | --- | --- |
+| PROGRAMMER | `PROGRAMMING: PORT IS NOT IN PWM MODE` | `NOT IN PWM MODE` | the programmer holds the port, or the port is not ready for a run |
+| PD MINI | `PROGRAMMING: PD MINI OUTPUT OFF` | `PD MINI OUTPUT OFF` | a PD mini answers with its output off on a rail fed from elsewhere: the read session would switch it on beside the supply that feeds the rail. On a rail under 3.0V it reads amber while SAFE, and the hold switches the PD mini on |
+| RAIL | `PROGRAMMING: SERVO RAIL BELOW 4.8V` | `BELOW 4.8V` | no PD mini answers, and the servo rail in the INA3221's last window is under 4.8V or not read |
 
 A KST or Chaservo servo applies written values after a power cycle
 ([the power cycle](ServoProgrammer.md#the-power-cycle)). The run can
 provide this through a PD mini or the carrier's programming-port 5V.
 Without either, SEARCH + PROGRAM and SERVO PULSES at 1000-2000 are
 unavailable. Choosing either shows
-`PROGRAMMING: NO PD MINI TO SWITCH THE SERVO OFF AND ON`; the run only
+`PROGRAMMING: NO PD MINI TO SWITCH THE SERVO OFF AND ON`, on its row
+`NO PD MINI`; the run only
 reads the servo and searches. Hitec D-series servos use their own restart
 after writing and do not require a switched supply for this step, as
 described below.
@@ -420,11 +424,13 @@ What differs:
   table, which are not measured, and searches out to them: PULSE MIN and
   PULSE MAX must hold them, or HOLD 2s: ARM + START stays grey and RANGE
   red with
-  `HITEC: PULSE MIN/MAX MUST COVER 850-2150us` (CLASSIC: `900-2100us`).
+  `HITEC: PULSE MIN/MAX MUST COVER 850-2150us` (CLASSIC: `900-2100us`),
+  on the row `NEEDS 850-2150us`.
   TYPE WIDE, 800 to 2200us, holds both. SERVO PULSES is not shown.
 - CLASSIC without a PD mini or PROG 5V keeps the hold grey and the supply
   row red with
-  `Classic servos need a PD mini: the bench cycles the supply.`
+  `Classic servos need a PD mini: the bench cycles the supply.`, on the
+  row `NEEDS A PD MINI`.
 - The 2s hold of ARM + START is the consent CHECK THIS CHANGE asks for:
   the run's writes show no page, and each switches ENABLE WRITE TO SERVO on
   for itself and off at its end. A value outside the range is refused, not
@@ -1534,6 +1540,18 @@ is left.
 Without an INA3221 window on the rail nothing reads it: ARM switches the
 PD mini on beside a rail another supply feeds.
 
+A row whose text is longer than its 20 cells shows the text's tag, and a
+tap on the row names the whole text in the alert band:
+
+| Row | Text | Tag |
+| --- | --- | --- |
+| PROG 5V | `PROG ports 5V: held by a programming port, or not read.` | `LOCKED` |
+| PD MINI | `Servo programming holds the supply: set points and ON are locked.`, the same for ESC programming | `SERVO PROGRAMMING`, `ESC PROGRAMMING` |
+| ANGLE | `ANGLE SOURCE: NO READING` | `NO READING` |
+| ZERO | `SET ZERO WITH THE SURFACE AT NEUTRAL` | `ZERO NOT SET` |
+| ARM | `Cannot switch to ARMED: a port is in use by the servo programmer.`, the pin of the ESC programmer | `SERVO PROGRAMMING`, `ESC PROGRAMMING` |
+| PORT | `PINS NOT READ`, in German `PINS NICHT AUSGELESEN`, 21 cells | the line; in German `PINS NICHT GELESEN` |
+
 ## Rudder deflection
 
 ### Purpose
@@ -1639,9 +1657,16 @@ link is not authenticated (`SECURITY.md`, the Bluetooth IMU).
   check of the start, 30px each, a dot, the label and the state. Green:
   met. Red: refuses the hold, or an output is live through it (PROG 5V ON,
   ARMED). Amber: the hold does it itself (`START SWITCHES IT ON`, `START
-  ARMS`). Grey: waits on the PORT row. A state longer than its 20 cells
-  is cut after a whole word. The rail line under the rows names the meter
-  the run reads with its volts and amps.
+  ARMS`). Grey: waits on the PORT row. A row's state holds 20 cells: a
+  gate text longer than that shows a tag of its own, `YAW REFUSED` for
+  `IMU YAW REFUSED: HINGE ON X OR Y`, and the alert band and a tap on the
+  row name the whole text. The tags are one table, `k_tags` in
+  `shared/ui/servo_ready.c`, for every READY card; `test_servo_ready_tags`
+  holds every text that can reach a row to 20 cells after its tag, in
+  English and German. The port line is the PORT button's line of up to 25
+  cells: on a row it is cut after a whole word, `PORT 1 GPIO 13 PWM OFF`
+  as `PORT 1 GPIO 13 PWM`. The rail line under the rows names the meter the run
+  reads with its volts and amps.
 - A tap on PORT opens the PORT choice; on SERVO the SERVO choice,
   KST/CHASERVO, HITEC D SERIES and HITEC CLASSIC over the left column; on
   ANGLE the [ANGLE SOURCE list](#angle-source), red or not; on a red ZERO
@@ -1716,18 +1741,18 @@ The rows are the checks of the start gate, `rauto_blocked()`
 belongs to one row (`test_servo_ready`). A row is red, and the hold grey,
 while:
 
-| Row | Condition | Text |
-| --- | --- | --- |
-| PORT | PORT is the bench's outputs, or the output is otherwise not the programming port | `AUTO PROGRAMS A SERVO ON THE PROG PORT`. Named before the meter: on the rbmod carrier the outputs have no channel watching them until one is bound as SERVO PWM |
-| METER | the meter is not set up for the servo's current, offline or without windows | the limit run's line |
-| PROGRAMMER | a programmer session holds the port, or the programmer is not in PWM | `LOCKED: SERVO PROGRAMMING USES THE PORT`, `PROGRAMMING: PORT IS NOT IN PWM MODE` |
-| PROG 5V, PD MINI, SUPPLY | ARMED with the PROG 5V off, a port holding it; a rail under 4.8V without a PD mini; no PD mini or PROG 5V to cycle a KST/Chaservo or classic Hitec servo's supply; SUPPLY's permitted range leaving out the run's 5.0V | the limit run's line; `PD MINI: 5.0V OUTSIDE ITS LIMITS` for the range, where a tap on the row opens SUPPLY's settings at OUTPUT LIMITS. START sets the PD mini to 5.0V ([The run's 5.0V](#the-runs-50v)). PROG 5V is a fixed 5V and has no set point |
-| PORT PWM | ARMED with the port's pulse off | `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS`, `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` |
-| RANGE | PULSE MIN is above 1000us, PULSE MAX below 2000us, or PULSE CENTER is not strictly between 1000us and 2000us | `PULSE MIN TO MAX MUST INCLUDE 1000 TO 2000us` |
-| ANGLE | the IMU's AXIS Z (yaw), in 6-AXIS and in 9-AXIS: on a BWT901CL yaw drifts 2.4° in 100s in 6-AXIS and settles 38° off in 9-AXIS, against the 0.5° tolerance. A tap opens the IMU YAW list, `USE IMU AXIS X (ROLL)`, `USE IMU AXIS Y (PITCH)`, for a sensor turned 90° so the hinge is its X or Y; a pick writes the setting and saves it ([IMU](IMU.md#the-link)) | `IMU YAW REFUSED: HINGE ON X OR Y` |
-| ANGLE | the angle source gives no reading | `ANGLE SOURCE: NO READING` |
-| ZERO | ZERO is not taken | `SET ZERO WITH THE SURFACE AT NEUTRAL` |
-| ARM | another run runs, or a report is still being written | the run's line, as on TEST |
+| Row | Condition | Text | Tag |
+| --- | --- | --- | --- |
+| PORT | PORT is the bench's outputs, or the output is otherwise not the programming port | `AUTO PROGRAMS A SERVO ON THE PROG PORT`. Named before the meter: on the rbmod carrier the outputs have no channel watching them until one is bound as SERVO PWM | `NO PROG PORT` |
+| METER | the meter is not set up for the servo's current, offline or without windows | the limit run's line | the limit run's tag |
+| PROGRAMMER | a programmer session holds the port, or the programmer is not in PWM | `LOCKED: SERVO PROGRAMMING USES THE PORT`, `PROGRAMMING: PORT IS NOT IN PWM MODE` | `SERVO PROGRAMMING`, `NOT IN PWM MODE` |
+| PROG 5V, PD MINI, SUPPLY | ARMED with the PROG 5V off, a port holding it; a rail under 4.8V without a PD mini; no PD mini or PROG 5V to cycle a KST/Chaservo or classic Hitec servo's supply; SUPPLY's permitted range leaving out the run's 5.0V | the limit run's line; `PD MINI: 5.0V OUTSIDE ITS LIMITS` for the range, where a tap on the row opens SUPPLY's settings at OUTPUT LIMITS. START sets the PD mini to 5.0V ([The run's 5.0V](#the-runs-50v)). PROG 5V is a fixed 5V and has no set point | the limit run's tag; `5.0V OUTSIDE LIMITS` |
+| PORT PWM | ARMED with the port's pulse off | `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS`, `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` | `PORT PWM OFF: DISARM`, `WAITING FOR SAFE` |
+| RANGE | PULSE MIN is above 1000us, PULSE MAX below 2000us, or PULSE CENTER is not strictly between 1000us and 2000us | `PULSE MIN TO MAX MUST INCLUDE 1000 TO 2000us` | `NEEDS 1000-2000us` |
+| ANGLE | the IMU's AXIS Z (yaw), in 6-AXIS and in 9-AXIS: on a BWT901CL yaw drifts 2.4° in 100s in 6-AXIS and settles 38° off in 9-AXIS, against the 0.5° tolerance. A tap opens the IMU YAW list, `USE IMU AXIS X (ROLL)`, `USE IMU AXIS Y (PITCH)`, for a sensor turned 90° so the hinge is its X or Y; a pick writes the setting and saves it ([IMU](IMU.md#the-link)) | `IMU YAW REFUSED: HINGE ON X OR Y` | `YAW REFUSED` |
+| ANGLE | the angle source gives no reading | `ANGLE SOURCE: NO READING` | `NO READING` |
+| ZERO | ZERO is not taken | `SET ZERO WITH THE SURFACE AT NEUTRAL` | `ZERO NOT SET` |
+| ARM | another run runs, or a report is still being written | the run's line, as on TEST | `TEST RUNNING`, `WRITING REPORT`; `LIMIT RUN IS RUNNING` whole |
 
 A row with a text that refuses reads red even when another of its texts
 is one the hold does: a report still being written shows on ARM in red,

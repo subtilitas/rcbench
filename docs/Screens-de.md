@@ -2215,6 +2215,11 @@ Eine Zeile ist rot, sobald einer ihrer Texte das Halten ablehnt; das
 Halten ist dann grau. Ein Tipp auf PORT öffnet die Portliste, ein Tipp auf
 STUFEN die Liste des automatischen Tests oder bei einer Stufe über 6.0V
 NUR HV-SERVOS.
+Ein roter Text, länger als die 20 Zellen der Zeile, zeigt eine Kurzform:
+`5V FEST: OHNE STUFEN`, `ANTWORTET NICHT`, `FREMD GESPEIST`,
+`AUSSERHALB GRENZEN`, `PORT-PWM AUS: DISARM`, `SERVOPROGRAMMIERUNG`,
+`TEST LÄUFT`, `SCHREIBT BERICHT`. Das Alarmband nennt den ganzen Text
+([Servo: AUTO-Endpoints](Servo-de.md#auto-endpoints)).
 
 Der Hinweis zu BLOCKIERT AB nennt unerreichbare Schwellen:
 `BLOCKIERT AB 2.00A unerreichbar: Strombegrenzung 2.00A`, wenn BLOCKIERT AB
