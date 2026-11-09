@@ -17,8 +17,9 @@
  * one is red and refuses the hold (rauto_hold_blocked()).  On the carrier's
  * port an input supply the PD mini reads low (prog5v_box_input_why()) is
  * the first check, red on the supply row as `INPUT 5.1V < 15V`.  The IMU's
- * yaw while the IMU runs 6-AXIS is red on the ANGLE row as `IMU YAW NEEDS
- * 9-AXIS`, and a tap opens the list of what resolves it (angle_fix_open()).
+ * yaw, in either ALGORITHM, is red on the ANGLE row as `IMU YAW REFUSED:
+ * HINGE ON X OR Y`, and a tap opens the list of the axes that resolve it
+ * (angle_fix_open()).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -63,7 +64,7 @@ enum {
     CK_PD_5V,       /**< the PD mini's caps leave out the run's 5.0V
                          (servo_run_supply.c)                           */
     CK_WRITE,       /**< a write able to act                           */
-    CK_YAW,         /**< not the IMU's yaw in 6-AXIS                   */
+    CK_YAW,         /**< not the IMU's yaw                             */
     CK_ANGLE,       /**< a reading of the angle source                 */
     CK_ZERO,        /**< ZERO taken                                    */
     CK_COUNT        /**< the count                                     */
@@ -136,7 +137,7 @@ static const char *check(int k)
     case CK_WRITE:
         return lim_write_why();
     case CK_YAW:
-        /* Yaw without the magnetometer drifts past the tolerance. */
+        /* Yaw does not follow the surface in either ALGORITHM. */
         return angle_pick_yaw_why();
     case CK_ANGLE: {
         float d = 0.0f;
@@ -504,7 +505,7 @@ void rauto_ready_tap(int i)
         }
         break;
     case RAR_ANGLE:
-        /* The IMU's yaw in 6-AXIS: the list of what resolves it. */
+        /* The IMU's yaw: the list of the axes that resolve it. */
         if (r.st == (uint8_t)RDY_BAD && r.why == TR(RA_IMU_YAW)) {
             angle_fix_open();
         } else {

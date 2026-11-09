@@ -27,7 +27,7 @@
  * - test_and_limit_run_show_the_angle_and_never_refuse_on_it
  * - a_limit_run_shows_whether_it_reads_angles_as_it_started
  * - each_entry_names_the_full_address_and_its_type
- * - rudder_auto_refuses_imu_yaw_in_6_axis_and_offers_the_fixes
+ * - rudder_auto_refuses_imu_yaw_in_either_algorithm_and_offers_x_or_y
  * - a_scan_beside_a_linked_sensor_reads_no_other_imu_found
  *
  * SPDX-License-Identifier: MIT
@@ -436,62 +436,64 @@ TEST_CASE(rudder_autos_angle_row_and_list_row_open_the_list)
     CHECK_EQ(angle_pick_count(), 2);
 }
 
-/* RUDDER AUTO on the IMU's yaw, AXIS Z, while the IMU runs 6-AXIS: the
- * ANGLE row reads `IMU YAW NEEDS 9-AXIS` in red and refuses the hold; a tap
- * opens the IMU YAW list.  A pick of AXIS X sets and saves it and the row
- * no longer refuses on yaw; back on Z, SWITCH IMU TO 9-AXIS does the same
- * with ALGORITHM.  AXIS Y in 6-AXIS, and the AS5600, are not refused. */
-TEST_CASE(rudder_auto_refuses_imu_yaw_in_6_axis_and_offers_the_fixes)
+/* RUDDER AUTO on the IMU's yaw, AXIS Z, as SETUP saved it: the ANGLE row
+ * reads `IMU YAW REFUSED: HINGE ON X OR Y` in red and refuses the hold in
+ * 6-AXIS and in 9-AXIS alike.  A tap opens the IMU YAW list, which offers
+ * AXIS X and AXIS Y and nothing else: no AXIS Z, no ALGORITHM.  A pick of
+ * AXIS X sets and saves it and the row no longer refuses on yaw; AXIS Y
+ * does the same.  The AS5600 is not refused whatever the IMU holds. */
+TEST_CASE(rudder_auto_refuses_imu_yaw_in_either_algorithm_and_offers_x_or_y)
 {
     safe_on(SERVO_FN_RAUTO, IMU_LINK_CONNECTED);
     settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_IMU);
-    settings_set(SET_IMU_ALGO, 0.0f);
     settings_set(SET_IMU_AXIS, 2.0f);
     servo_screen_set_imu_axis(2u, false);
-    ra_ms(100u);
-    rdy_row_t r;
-    CHECK(rauto_ready_row(RAR_ANGLE, &r));
-    CHECK_EQ(r.st, (uint8_t)RDY_BAD);
-    CHECK(r.why == TR(RA_IMU_YAW));
-    CHECK_STR_EQ(r.value, "IMU YAW NEEDS 9-AXIS");
-    CHECK(r.fix);
-    /* Red: no step of the hold fixes it, so it refuses ARM + START. */
-    CHECK(!rauto_seq_fixes(TR(RA_IMU_YAW)));
-    CHECK_EQ(rauto_row_of(TR(RA_IMU_YAW)), RAR_ANGLE);
-    CHECK(rauto_hold_blocked(NULL) != NULL);
+    for (int algo = 0; algo <= 1; ++algo) {
+        settings_set(SET_IMU_ALGO, (float)algo);
+        ra_ms(100u);
+        CHECK(angle_pick_yaw_why() == TR(RA_IMU_YAW));
+        rdy_row_t r;
+        CHECK(rauto_ready_row(RAR_ANGLE, &r));
+        CHECK_EQ(r.st, (uint8_t)RDY_BAD);
+        CHECK(r.why == TR(RA_IMU_YAW));
+        CHECK_STR_EQ(r.why, "IMU YAW REFUSED: HINGE ON X OR Y");
+        CHECK(r.fix);
+        /* Red: no step of the hold fixes it, so it refuses ARM + START. */
+        CHECK(!rauto_seq_fixes(TR(RA_IMU_YAW)));
+        CHECK_EQ(rauto_row_of(TR(RA_IMU_YAW)), RAR_ANGLE);
+        CHECK(rauto_hold_blocked(NULL) != NULL);
 
-    ev(SV_RDY_X, SV_RDY_ROW_Y((int)RAR_ANGLE), TOUCH_EVENT_DOWN, 2);
-    ev(SV_RDY_X, SV_RDY_ROW_Y((int)RAR_ANGLE), TOUCH_EVENT_UP, 2);
-    CHECK_EQ(angle_pick_count(), 3);
-    bool refused = true;
-    CHECK_STR_EQ(entry(0, &refused), "SWITCH IMU TO 9-AXIS");
-    CHECK(!refused);
-    CHECK_STR_EQ(entry(1, NULL), "USE IMU AXIS X (ROLL)");
-    CHECK_STR_EQ(entry(2, NULL), "USE IMU AXIS Y (PITCH)");
-    tap_entry(1);
-    CHECK_EQ(angle_pick_count(), -1);
-    CHECK_EQ(settings_get_int(SET_IMU_AXIS), 0);
-    CHECK_EQ(settings_get_int(SET_IMU_ALGO), 0);
-    CHECK(settings_save_asked());
-    CHECK(angle_pick_yaw_why() == NULL);
-    CHECK(rauto_ready_row(RAR_ANGLE, &r));
-    CHECK(r.why != TR(RA_IMU_YAW));
+        ev(SV_RDY_X, SV_RDY_ROW_Y((int)RAR_ANGLE), TOUCH_EVENT_DOWN, 2);
+        ev(SV_RDY_X, SV_RDY_ROW_Y((int)RAR_ANGLE), TOUCH_EVENT_UP, 2);
+        CHECK_EQ(angle_pick_count(), 2);
+        bool refused = true;
+        CHECK_STR_EQ(entry(0, &refused), "USE IMU AXIS X (ROLL)");
+        CHECK(!refused);
+        refused = true;
+        CHECK_STR_EQ(entry(1, &refused), "USE IMU AXIS Y (PITCH)");
+        CHECK(!refused);
+        /* A value the list does not offer takes no pick. */
+        angle_fix_choose(0);
+        angle_fix_choose(3);
+        CHECK_EQ(settings_get_int(SET_IMU_AXIS), 2);
+        CHECK_EQ(settings_get_int(SET_IMU_ALGO), algo);
+        /* The pick hands the runs the axis with SETUP's SIGN. */
+        settings_set(SET_IMU_SIGN, (float)algo);
+        tap_entry(algo);
+        CHECK_EQ(angle_pick_count(), -1);
+        CHECK_EQ(settings_get_int(SET_IMU_AXIS), algo);
+        CHECK_EQ(settings_get_int(SET_IMU_ALGO), algo);
+        CHECK(settings_save_asked());
+        CHECK(angle_pick_yaw_why() == NULL);
+        CHECK(rauto_ready_row(RAR_ANGLE, &r));
+        CHECK(r.why != TR(RA_IMU_YAW));
+        CHECK(strncmp(r.value, algo == 0 ? "IMU X+" : "IMU Y-", 6) == 0);
+        settings_set(SET_IMU_SIGN, 0.0f);
+        settings_set(SET_IMU_AXIS, 2.0f);
+        servo_screen_set_imu_axis(2u, false);
+    }
 
-    settings_set(SET_IMU_AXIS, 2.0f);
-    servo_screen_set_imu_axis(2u, false);
-    CHECK(angle_pick_yaw_why() == TR(RA_IMU_YAW));
-    ev(SV_RDY_X, SV_RDY_ROW_Y((int)RAR_ANGLE), TOUCH_EVENT_DOWN, 2);
-    ev(SV_RDY_X, SV_RDY_ROW_Y((int)RAR_ANGLE), TOUCH_EVENT_UP, 2);
-    tap_entry(0);
-    CHECK_EQ(settings_get_int(SET_IMU_ALGO), 1);
-    CHECK_EQ(settings_get_int(SET_IMU_AXIS), 2);
-    CHECK(angle_pick_yaw_why() == NULL);
-
-    /* Pitch in 6-AXIS, and the AS5600 whatever the IMU holds. */
-    settings_set(SET_IMU_ALGO, 0.0f);
-    servo_screen_set_imu_axis(1u, false);
-    CHECK(angle_pick_yaw_why() == NULL);
-    servo_screen_set_imu_axis(2u, false);
+    /* The AS5600 whatever the IMU holds. */
     settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_AS5600);
     CHECK(angle_pick_yaw_why() == NULL);
     /* On the bench ARMED the list takes no pick. */
@@ -499,8 +501,9 @@ TEST_CASE(rudder_auto_refuses_imu_yaw_in_6_axis_and_offers_the_fixes)
     ra.armed = true;
     servo_screen_set_armed(true);
     ra_ms(100u);
-    angle_fix_choose(0);
-    CHECK_EQ(settings_get_int(SET_IMU_ALGO), 0);
+    angle_fix_choose(1);
+    CHECK_EQ(settings_get_int(SET_IMU_AXIS), 2);
+    settings_set(SET_IMU_ALGO, 0.0f);
 }
 
 /* A bound sensor that holds the link does not advertise: a scan that lists
@@ -893,7 +896,7 @@ int main(void)
     RUN(test_and_limit_run_show_the_angle_and_never_refuse_on_it);
     RUN(a_limit_run_shows_whether_it_reads_angles_as_it_started);
     RUN(each_entry_names_the_full_address_and_its_type);
-    RUN(rudder_auto_refuses_imu_yaw_in_6_axis_and_offers_the_fixes);
+    RUN(rudder_auto_refuses_imu_yaw_in_either_algorithm_and_offers_x_or_y);
     RUN(a_scan_beside_a_linked_sensor_reads_no_other_imu_found);
     return test_summary("servo_angle_pick");
 }

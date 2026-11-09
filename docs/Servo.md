@@ -1550,14 +1550,14 @@ the screen is `shared/ui/servo_rudder_panel.c`.
   ENC CENTER afterwards therefore leaves the measured deflection unchanged. Another ANGLE SOURCE, the IMU's other AXIS,
   SIGN or algorithm, or a ZERO or CLEAR ZERO on the IMU screen, drops the
   zero and MAX: the screen reads as before ZERO.
-- The zero survives a restart. ZERO saves it with its source (settings
-  `rud_zero` and `rud_zero_key`): the AS5600, or the IMU with its AXIS,
-  SIGN and algorithm. At the start the zero comes back while the saved
-  source is the one in force; MAX does not. Another source, AXIS, SIGN or
-  algorithm in the settings drops the saved zero too, so a change back
-  needs a new ZERO. Not saved: the IMU's yaw in 6-AXIS, which starts anew
-  with the sensor, and a zero taken after a ZERO or CLEAR ZERO on the IMU
-  screen in the same session, whose angles the restart does not keep.
+- A zero on the AS5600 survives a restart. ZERO saves it (settings
+  `rud_zero` and `rud_zero_key`), and at the start it comes back while
+  the AS5600 is ANGLE SOURCE; MAX does not. Another ANGLE SOURCE in the
+  settings drops the saved zero too, so a change back needs a new ZERO.
+- A zero on the IMU lasts until the restart and is never saved. The IMU's
+  BLE (Bluetooth Low Energy) link is not authenticated
+  ([IMU](IMU.md#the-link), `SECURITY.md`): a device in the sensor's place
+  at ZERO must not leave a zero that outlives the session.
 - ZERO takes the current angle as the surface's neutral. The deflection is the
   angle from it, wrapped to -180 up to 180°. Before ZERO the deflection is
   the angle itself.
@@ -1719,7 +1719,7 @@ while:
 | PROG 5V, PD MINI, SUPPLY | ARMED with the PROG 5V off, a port holding it; a rail under 4.8V without a PD mini; no PD mini or PROG 5V to cycle a KST/Chaservo or classic Hitec servo's supply; SUPPLY's permitted range leaving out the run's 5.0V | the limit run's line; `PD MINI: 5.0V OUTSIDE ITS LIMITS` for the range, where a tap on the row opens SUPPLY's settings at OUTPUT LIMITS. START sets the PD mini to 5.0V ([The run's 5.0V](#the-runs-50v)). PROG 5V is a fixed 5V and has no set point |
 | PORT PWM | ARMED with the port's pulse off | `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS`, `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` |
 | RANGE | PULSE MIN is above 1000us, PULSE MAX below 2000us, or PULSE CENTER is not strictly between 1000us and 2000us | `PULSE MIN TO MAX MUST INCLUDE 1000 TO 2000us` |
-| ANGLE | the IMU's AXIS Z (yaw) while IMU algorithm is 6-AXIS: no magnetometer holds yaw, which drifts 2.4° in 100s on a BWT901CL against the 0.5° tolerance. A tap opens the IMU YAW list, `SWITCH IMU TO 9-AXIS`, `USE IMU AXIS X (ROLL)`, `USE IMU AXIS Y (PITCH)`; a pick writes the setting and saves it ([IMU](IMU.md#the-link)) | `IMU YAW NEEDS 9-AXIS` |
+| ANGLE | the IMU's AXIS Z (yaw), in 6-AXIS and in 9-AXIS: on a BWT901CL yaw drifts 2.4° in 100s in 6-AXIS and settles 38° off in 9-AXIS, against the 0.5° tolerance. A tap opens the IMU YAW list, `USE IMU AXIS X (ROLL)`, `USE IMU AXIS Y (PITCH)`, for a sensor turned 90° so the hinge is its X or Y; a pick writes the setting and saves it ([IMU](IMU.md#the-link)) | `IMU YAW REFUSED: HINGE ON X OR Y` |
 | ANGLE | the angle source gives no reading | `ANGLE SOURCE: NO READING` |
 | ZERO | ZERO is not taken | `SET ZERO WITH THE SURFACE AT NEUTRAL` |
 | ARM | another run runs, or a report is still being written | the run's line, as on TEST |

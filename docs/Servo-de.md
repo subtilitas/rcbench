@@ -1606,16 +1606,16 @@ aus“ ohne Lineal am Modell. Die Geometrie steht in
   IMU-Algorithmus. Dasselbe gilt für NULLPUNKT und NULLPUNKT LÖSCHEN auf
   der IMU-Seite. Die Anzeige entspricht dann wieder dem Zustand vor dem
   Setzen des RUDER-Nullpunkts.
-- Der Nullpunkt übersteht einen Neustart. NULLPUNKT speichert ihn mit
-  seiner Quelle (Einstellungen `rud_zero` und `rud_zero_key`): der AS5600
-  oder die IMU mit Achse, Vorzeichen und Algorithmus. Beim Start kommt der
-  Nullpunkt zurück, solange die gespeicherte Quelle die aktuelle ist; MAX
-  nicht. Eine andere Quelle, Achse, ein anderes Vorzeichen oder ein
-  anderer Algorithmus in den Einstellungen verwirft auch den gespeicherten
-  Nullpunkt; ein Wechsel zurück braucht einen neuen NULLPUNKT. Nicht
-  gespeichert werden das Gieren der IMU in 6-AXIS, das mit dem Sensor neu
-  beginnt, und ein Nullpunkt nach NULLPUNKT oder NULLPUNKT LÖSCHEN auf der
-  IMU-Seite in derselben Sitzung, deren Winkel der Neustart nicht behält.
+- Ein Nullpunkt am AS5600 übersteht einen Neustart. NULLPUNKT speichert
+  ihn (Einstellungen `rud_zero` und `rud_zero_key`), und beim Start kommt
+  er zurück, solange der AS5600 die WINKELQUELLE ist; MAX nicht. Eine
+  andere WINKELQUELLE in den Einstellungen verwirft auch den gespeicherten
+  Nullpunkt; ein Wechsel zurück braucht einen neuen NULLPUNKT.
+- Ein Nullpunkt an der IMU gilt bis zum Neustart und wird nie
+  gespeichert. Die BLE-Verbindung (Bluetooth Low Energy) der IMU ist nicht
+  authentifiziert ([IMU](IMU-de.md#die-verbindung), `SECURITY.md`): Ein
+  Gerät an der Stelle des Sensors darf beim NULLPUNKT keinen Nullpunkt
+  hinterlassen, der die Sitzung überdauert.
 - NULLPUNKT nimmt den aktuellen Winkel als Neutrallage der Fläche. Der
   Ausschlag ist der Winkel ab ihr, auf -180 bis unter 180° gefaltet. Vor
   NULLPUNKT ist der Ausschlag der Winkel selbst.
@@ -1800,7 +1800,7 @@ Halten grau, solange:
 | PROG 5V, PD MINI, VERSORGUNG | ARMED mit PROG 5V aus, ein Port hält es; eine Schiene unter 4.8V ohne PD mini; kein PD mini und kein PROG 5V, um die Versorgung eines KST/Chaservo- oder klassischen Hitec-Servos aus- und einzuschalten; ein erlaubter Bereich von SUPPLY ohne die 5.0V des Laufs | die Zeile des Endlagenlaufs; `PD MINI: 5.0V AUSSERHALB SEINER GRENZEN` für den Bereich, wobei ein Tippen auf die Zeile die Einstellungen von SUPPLY bei AUSGANGSGRENZEN öffnet. START stellt das PD mini auf 5.0V ([Die 5,0V des Laufs](#die-50v-des-laufs)). PROG 5V ist fest 5V und hat keinen Sollwert |
 | PORT-PWM | ARMED mit dem Puls des Ports aus | `PORT-PWM AUS: DISARM, SCHALTE ES IN OUTPUTS EIN`, `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` |
 | BEREICH | PULS MIN über 1000us, PULS MAX unter 2000us oder PULS MITTE nicht strikt zwischen 1000us und 2000us liegt | `PULS MIN BIS MAX MUSS 1000 BIS 2000us ABDECKEN` |
-| WINKEL | die IMU-Achse Z (Gieren) gewählt ist, solange der IMU-Algorithmus 6-AXIS ist: kein Magnetometer hält das Gieren, das an einer BWT901CL 2,4° in 100s driftet, gegen 0,5° Toleranz. Ein Tippen öffnet die Liste IMU-GIEREN, `IMU AUF 9-AXIS SCHALTEN`, `IMU-ACHSE X NEHMEN (ROLLEN)`, `IMU-ACHSE Y NEHMEN (NICKEN)`; eine Wahl schreibt die Einstellung und speichert sie ([IMU](IMU-de.md#die-verbindung)) | `IMU-GIEREN BENÖTIGT 9-AXIS` |
+| WINKEL | die IMU-Achse Z (Gieren) gewählt ist, in 6-AXIS und in 9-AXIS: an einer BWT901CL driftet das Gieren in 6-AXIS 2,4° in 100s und bleibt in 9-AXIS 38° daneben stehen, gegen 0,5° Toleranz. Ein Tippen öffnet die Liste IMU-GIEREN, `IMU-ACHSE X NEHMEN (ROLLEN)`, `IMU-ACHSE Y NEHMEN (NICKEN)`, für einen um 90° gedrehten Sensor, dessen Achse X oder Y das Scharnier ist; eine Wahl schreibt die Einstellung und speichert sie ([IMU](IMU-de.md#die-verbindung)) | `IMU-GIEREN GESPERRT: SCHARNIER AUF X ODER Y` |
 | WINKEL | die Winkelquelle keinen Messwert liefert | `WINKELQUELLE: KEIN MESSWERT` |
 | NULLPUNKT | kein Nullpunkt gesetzt ist | `SETZE DEN NULLPUNKT MIT DEM RUDER IN NEUTRALLAGE` |
 | ARM | ein anderer Lauf läuft oder ein Bericht noch geschrieben wird | die Zeile des Laufs, wie auf TEST |
