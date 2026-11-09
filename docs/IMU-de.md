@@ -154,21 +154,31 @@ bietet weder Pairing noch Bonding. Ein BLE-Gerät in Reichweite, das die
 Verbindung zur gespeicherten Adresse bekommt und den ISSC-Dienst anbietet,
 kann Winkel-Frames senden, die das Panel als die des Sensors nimmt. Der
 Lauf von RUDER AUTO mit WINKELQUELLE IMU programmiert daraus Endpoints.
-`SECURITY.md` führt das als aktuelle Einschränkung.
+`SECURITY.md` führt das als aktuelle Einschränkung. Der Nullpunkt von
+RUDER an der IMU gilt deshalb bis zum Neustart und wird nie gespeichert;
+ein Nullpunkt am AS5600 schon.
 
-RUDER AUTO verweigert die IMU-Achse Z, Gieren, solange der IMU-Algorithmus
-6-AXIS ist. 6-AXIS hat kein Magnetometer, das das Gieren hält: eine
-BWT901CL auf Gieren driftet 2,4° in 100s (ein Lauf am Prüfstand), gegen
-0,5° Toleranz von RUDER AUTO. Achse X (Rollen) und Y (Nicken) halten sich
-an der Schwerkraft und bleiben in beiden Modi erlaubt. Die Zeile WINKEL
-der BEREIT-Karte zeigt `IMU-GIEREN BENÖTIGT 9-AXIS` in Rot, und ARM + START
-wird verweigert. Ein Tippen auf die Zeile öffnet die Liste IMU-GIEREN:
-`IMU AUF 9-AXIS SCHALTEN`, `IMU-ACHSE X NEHMEN (ROLLEN)`, `IMU-ACHSE Y
-NEHMEN (NICKEN)`. Eine Wahl schreibt IMU-Algorithmus oder IMU-Achse und
-speichert sie wie SETUP > SENSOREN; das Panel sendet AXIS6 und
-SAVE, sobald der Sensor verbunden ist (unten). Die Drift des Gierens in
-9-AXIS ist nicht gemessen. Ein anderer IMU-Algorithmus verwirft Nullpunkt
-und MAX von RUDER, wie eine andere Achse oder ein anderes Vorzeichen.
+RUDER AUTO verweigert die IMU-Achse Z, Gieren, in 6-AXIS und in 9-AXIS.
+An einer BWT901CL am Prüfstand, gegen 0,5° Toleranz von RUDER AUTO:
+
+| IMU-Algorithmus | Gieren an einem Ruder |
+| --- | --- |
+| 6-AXIS | driftet 2,4° in 100s: kein Magnetometer hält es |
+| 9-AXIS | stieg um 24°, während sich das Ruder bewegte, fiel zurück und blieb bei stromlosem Servo 38° daneben stehen; vermutet wird das Magnetfeld des Servos nahe am Sensor, nicht gemessen |
+
+Achse X (Rollen) und Y (Nicken) halten sich an der Schwerkraft und
+bleiben in beiden Modi erlaubt. Montiere den Sensor so, dass das
+Scharnier seine Achse X oder Y ist: um 90° gedreht gegenüber einer
+Montage auf Gieren. Mit gespeicherter Achse Z zeigt die Zeile WINKEL der
+BEREIT-Karte `IMU-GIEREN GESPERRT: SCHARNIER AUF X ODER Y` in Rot, und
+ARM + START wird verweigert. Ein Tippen auf die Zeile öffnet die Liste
+IMU-GIEREN mit dem Titel `DREHE DIE IMU UM 90°, SCHARNIER AUF X ODER Y`
+und den zwei Achsen, die funktionieren, und keiner anderen: `IMU-ACHSE X
+NEHMEN (ROLLEN)`, `IMU-ACHSE Y NEHMEN (NICKEN)`. Eine Wahl schreibt
+IMU-Achse und speichert sie wie SETUP > SENSOREN. SETUP > SENSOREN bietet
+Achse Z weiter an; TEST und LIMIT RUN lesen sie für ihre Winkelspalten.
+Ein anderer IMU-Algorithmus verwirft Nullpunkt und MAX von RUDER, wie
+eine andere Achse oder ein anderes Vorzeichen.
 
 ## Der Sensor
 

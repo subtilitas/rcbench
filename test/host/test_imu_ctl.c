@@ -426,6 +426,43 @@ TEST_CASE(a_rate_change_goes_to_the_sensor_once_it_is_connected)
     CHECK_EQ(q.nsent, 0u);
 }
 
+/* 9-AXIS set in SETUP goes to the sensor once: unlock, AXIS6 0, SAVE.
+ * A dropped link that comes back, and a second one, send nothing: no
+ * ALGORITHM write and no SAVE on a connection with 9-AXIS set.  A restart
+ * with SETUP at 9-AXIS sends nothing either. */
+TEST_CASE(nine_axis_goes_once_and_not_again_on_a_reconnect)
+{
+    rig_t r;
+    connected(&r);                                   /* 6-AXIS */
+    CHECK_EQ(r.nsent, 0u);
+    rig_cfg(&r, true, RIG_ADDR, 2, false);           /* 9-AXIS */
+    rig_stream(&r, 1000u, 20u, 1.0f, 2.0f, 3.0f);
+    CHECK_EQ(r.nsent, 3u);
+    CHECK(rig_sent_unlock(&r, 0u));
+    CHECK(rig_sent_is(&r, 1u, WIT_REG_AXIS6, 0u, 0u));
+    CHECK(rig_sent_is(&r, 2u, WIT_REG_SAVE, 0u, 0u));
+    for (int i = 0; i < 2; ++i) {
+        bsim_drop(&r.sim, r.t, 0x208u);
+        rig_run(&r, 10u);
+        CHECK(!imu_ble_up(&r.c.ble));
+        (void)rig_settle(&r, BLEU_RETRY_MS + 2000u);
+        CHECK(imu_ble_up(&r.c.ble));
+        rig_stream(&r, 1000u, 20u, 1.0f, 2.0f, 3.0f);
+        CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_CONNECTED);
+        CHECK_EQ(r.nsent, 3u);
+        CHECK(!r.c.sensor.algo_due);
+    }
+
+    rig_t q;
+    rig_init(&q);
+    rig_cfg(&q, true, RIG_ADDR, 2, false);
+    (void)rig_settle(&q, 2000u);
+    CHECK(imu_ble_up(&q.c.ble));
+    rig_stream(&q, 1000u, 20u, 1.0f, 2.0f, 3.0f);
+    CHECK_EQ(imu_ctl_link(&q.c), IMU_LINK_CONNECTED);
+    CHECK_EQ(q.nsent, 0u);
+}
+
 /* IMU OFF: the link ends, the list and the errors go, nothing is
  * connected again; ON again connects the bound sensor. */
 TEST_CASE(imu_off_ends_the_link_and_forgets_the_list)
@@ -951,6 +988,7 @@ int main(void)
     RUN(calibrate_with_frames_300ms_apart_ends_failed);
     RUN(a_full_outbox_drops_the_command_past_its_room);
     RUN(a_rate_change_goes_to_the_sensor_once_it_is_connected);
+    RUN(nine_axis_goes_once_and_not_again_on_a_reconnect);
     RUN(imu_off_ends_the_link_and_forgets_the_list);
     RUN(a_stored_address_with_imu_off_connects_without_a_scan_at_imu_on);
     RUN(scan_and_imu_off_clear_the_list_the_hidden_count_and_the_error);

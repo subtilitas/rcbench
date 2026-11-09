@@ -44,14 +44,15 @@
  * The entries are built from the view the panel hands the IMU screen each
  * frame, whatever screen shows, so the list needs no panel code of its own.
  *
- * RUDDER AUTO refuses the IMU's yaw, AXIS Z, while ALGORITHM is 6-AXIS
- * (angle_pick_yaw_why()): without the magnetometer yaw drifts, 2.4° in
- * 100s on a BWT901CL on the bench, against a tolerance of 0.5°.  Roll and
- * pitch, X and Y, hold to gravity in either mode.  Its ANGLE row opens the
- * IMU YAW list then (angle_fix_open()): `SWITCH IMU TO 9-AXIS`, `USE IMU
- * AXIS X (ROLL)` and `USE IMU AXIS Y (PITCH)`.  A pick writes SET_IMU_ALGO
- * or SET_IMU_AXIS and saves, as SETUP > SENSORS does; the panel sends the
- * ALGORITHM to the sensor with its SAVE once connected (imu_sensor.h).
+ * RUDDER AUTO refuses the IMU's yaw, AXIS Z, in either ALGORITHM
+ * (angle_pick_yaw_why()).  On a BWT901CL on the bench yaw drifts 2.4° in
+ * 100s in 6-AXIS, against a tolerance of 0.5°; in 9-AXIS it rose 24° while
+ * the rudder moved, fell back and settled 38° off with the servo
+ * unpowered.  Roll and pitch, X and Y, hold to gravity in either mode: a
+ * sensor turned 90° puts the hinge on X or Y.  The ANGLE row opens
+ * the IMU YAW list then (angle_fix_open()), the axes that work and no
+ * other: `USE IMU AXIS X (ROLL)` and `USE IMU AXIS Y (PITCH)`.  A pick
+ * writes SET_IMU_AXIS and saves, as SETUP > SENSORS does.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -472,15 +473,16 @@ bool angle_pick_current(int k)
 
 /** @name The IMU YAW list's values
  *  @{ */
-#define AF_9AXIS  0   /**< ALGORITHM 9-AXIS */
 #define AF_AXIS_X 1   /**< AXIS X, roll */
 #define AF_AXIS_Y 2   /**< AXIS Y, pitch */
 /** @} */
 
 const char *angle_pick_yaw_why(void)
 {
-    return (enc_src() == SERVO_ANGLE_IMU && s.imu_axis == (uint8_t)IMU_AXIS_Z
-            && settings_get_int(SET_IMU_ALGO) == 0)
+    /* Yaw does not follow the surface in either ALGORITHM: 6-AXIS drifts
+     * without the magnetometer; 9-AXIS settled 38° off on the bench, the
+     * servo's magnetic field suspected. */
+    return (enc_src() == SERVO_ANGLE_IMU && s.imu_axis == (uint8_t)IMU_AXIS_Z)
                ? TR(RA_IMU_YAW) : NULL;
 }
 
@@ -493,7 +495,6 @@ void angle_fix_open(void)
     }
     close_panels();
     open_choice(CH_ANGLE_FIX, SETTING_COUNT, TR(SV_YAW_TITLE));
-    choice_add(TR(SV_YAW_9AXIS), AF_9AXIS);
     choice_add(TR(SV_YAW_X), AF_AXIS_X);
     choice_add(TR(SV_YAW_Y), AF_AXIS_Y);
     servo_invalidate();
@@ -505,17 +506,14 @@ void angle_fix_choose(int value)
     if (svs_list_bench_why() != NULL) {
         return;
     }
-    if (value == AF_9AXIS) {
-        settings_set(SET_IMU_ALGO, 1.0f);
-    } else if (value == AF_AXIS_X || value == AF_AXIS_Y) {
-        const uint8_t axis = value == AF_AXIS_X ? (uint8_t)IMU_AXIS_X
-                                                : (uint8_t)IMU_AXIS_Y;
-        settings_set(SET_IMU_AXIS, (float)axis);
-        /* What the panel's settings observer does too: the runs' axis. */
-        servo_screen_set_imu_axis(axis, settings_get_int(SET_IMU_SIGN) == 1);
-    } else {
+    if (value != AF_AXIS_X && value != AF_AXIS_Y) {
         return;
     }
+    const uint8_t axis = value == AF_AXIS_X ? (uint8_t)IMU_AXIS_X
+                                            : (uint8_t)IMU_AXIS_Y;
+    settings_set(SET_IMU_AXIS, (float)axis);
+    /* What the panel's settings observer does too: the runs' axis. */
+    servo_screen_set_imu_axis(axis, settings_get_int(SET_IMU_SIGN) == 1);
     settings_request_save();
     servo_invalidate();
     ++s.ctrl_rev;

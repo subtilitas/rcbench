@@ -547,11 +547,11 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
         "rud_tol", "°",
         SET_CAT_SERVO, SET_TYPE_FLOAT, 0.1f, 5.0f, 0.1f, 0.5f, NULL, 0 },
     /*
-     * RUDDER's zero, kept across a restart: the source's angle ZERO took,
-     * and the source it was taken on, 0 for none (servo_rudder_panel.c,
-     * zero_key()): 1 the AS5600, 2 + 2 x IMU AXIS + IMU SIGN + 8 for
-     * 9-AXIS the IMU.  ZERO writes both; a change of source, AXIS, SIGN
-     * or ALGORITHM sets the key to 0.  No SETUP list shows them
+     * RUDDER's zero on the AS5600, kept across a restart: the angle ZERO
+     * took, and 1 for a zero saved, 0 for none (servo_rudder_panel.c).
+     * ZERO on the AS5600 writes both; another source sets the key to 0,
+     * as does any other value a store holds.  An IMU zero is not saved:
+     * its link is not authenticated.  No SETUP list shows them
      * (SET_CAT_SERVO).
      */
     [SET_RUDDER_ZERO_DEG] = {

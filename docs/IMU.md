@@ -141,18 +141,27 @@ pairing or bonding. A BLE device in range that wins the connection to the
 stored address and serves the ISSC service can send angle frames the panel
 takes as the sensor's. RUDDER AUTO's run with ANGLE SOURCE IMU programs end
 points from them. `SECURITY.md` lists this as a current limitation.
+RUDDER's zero on the IMU therefore lasts until the restart and is never
+saved; a zero on the AS5600 is.
 
-RUDDER AUTO refuses the IMU's AXIS Z, yaw, while IMU algorithm is 6-AXIS.
-6-AXIS has no magnetometer to hold yaw: a BWT901CL on yaw drifts 2.4° in
-100s (one bench run), against RUDDER AUTO's 0.5° tolerance. AXIS X (roll)
-and Y (pitch) hold to gravity and stay allowed in either mode. The READY
-card's ANGLE row reads `IMU YAW NEEDS 9-AXIS` in red and ARM + START is
-refused. A tap on the row opens the IMU YAW list: `SWITCH IMU TO 9-AXIS`,
-`USE IMU AXIS X (ROLL)`, `USE IMU AXIS Y (PITCH)`. A pick writes IMU
-algorithm or IMU axis and saves it, as SETUP > SENSORS does; the panel
-sends AXIS6 and SAVE once the sensor is connected (below). Yaw drift in
-9-AXIS is not measured. Another IMU algorithm drops RUDDER's zero and MAX,
-as another AXIS or SIGN does.
+RUDDER AUTO refuses the IMU's AXIS Z, yaw, in 6-AXIS and in 9-AXIS.
+On a BWT901CL on the bench, against RUDDER AUTO's 0.5° tolerance:
+
+| IMU algorithm | Yaw on a rudder |
+| --- | --- |
+| 6-AXIS | drifts 2.4° in 100s: no magnetometer holds it |
+| 9-AXIS | rose 24° while the rudder moved, fell back, and settled 38° off with the servo unpowered; the servo's magnetic field near the sensor is suspected, not measured |
+
+AXIS X (roll) and Y (pitch) hold to gravity and stay allowed in either
+mode. Mount the sensor so the hinge is its X or Y axis: turned 90° from a
+mount on yaw. With AXIS Z saved, the READY card's ANGLE row reads `IMU
+YAW REFUSED: HINGE ON X OR Y` in red and ARM + START is refused. A tap
+on the row opens the IMU YAW list, titled `TURN THE IMU 90° SO THE HINGE
+IS X OR Y`, with the two axes that work and no other: `USE IMU AXIS X
+(ROLL)`, `USE IMU AXIS Y (PITCH)`. A pick writes IMU axis and saves it,
+as SETUP > SENSORS does. SETUP > SENSORS still offers AXIS Z, which TEST
+and LIMIT RUN read for their angle columns. Another IMU algorithm drops RUDDER's zero and MAX, as another
+AXIS or SIGN does.
 
 ## The sensor
 
