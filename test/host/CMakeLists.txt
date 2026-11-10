@@ -193,6 +193,7 @@ endforeach()
 # RUDDER's suites reach the task's layout and state through
 # servo_rudder_int.h, AUTO's box through servo_rudder_auto_int.h; the menu
 # openers' suite taps AUTO's READY rows by their enum (servo_ready_int.h).
+# SERVO's lists suite reads the supply's hold through esc_wire_int.h.
 foreach(suite servo_rudder_panel servo_rudder_zero rudder_layout keypad_rows_servo
         servo_rauto_kst servo_rauto_panel servo_rauto_hitec servo_rudder_flap
         rudder_flap_view servo_ready servo_rauto_seq servo_limrun_ready
@@ -200,7 +201,7 @@ foreach(suite servo_rudder_panel servo_rudder_zero rudder_layout keypad_rows_ser
         servo_ready_tags servo_limit_hitec servo_drive_supply servo_power_view
         servo_family_pick hitec_series_row
         kst_panel_frame hitec_panel_frame prog5v_servo servo_supply prog5v_input servo_hub
-        servo_angle_pick servo_settings_rows servo_profile_live)
+        servo_angle_pick servo_settings_rows servo_profile_live servo_lists_rows)
     target_include_directories(test_${suite} PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/../../shared/ui")
 endforeach()

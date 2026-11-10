@@ -34,11 +34,18 @@
  * - a_latched_failsafe_is_cleared_and_the_hold_reaches_the_run
  * - a_read_that_finds_no_servo_ends_with_the_pd_mini_off
  * - the_arm_row_reads_safe_while_the_read_session_holds_the_bench_safe
+ * - set_a_names_the_rudder_auto_run_under_the_steps_and_the_run
  *
  * SPDX-License-Identifier: MIT
  */
 #include "servo_rauto_kst_rig.h"
 #include "ui_setlist.h"
+
+/* servo_screen_int.h's current-limit helpers, which this suite does not
+ * take in whole. */
+bool rcur_set_a(void);
+const char *rcur_why(void);
+void rcur_edit(void);
 
 /* The owner's case on the rbmod carrier: SAFE, PORT PWM off, PROG 5V off.
  * READY reads PROG 5V and PORT PWM START SWITCHES IT ON and ARM START
@@ -855,6 +862,44 @@ TEST_CASE(the_arm_row_reads_safe_while_the_read_session_holds_the_bench_safe)
     CHECK(!servo_screen_rauto_running());
 }
 
+/* On the carrier with no PD mini the start steps name the run, not the
+ * missing PD mini; behind a PD mini SET A applies, and the run names itself
+ * too.  Under neither does rcur_edit() open the keypad. */
+TEST_CASE(set_a_names_the_rudder_auto_run_under_the_steps_and_the_run)
+{
+    carrier_safe_off(800u);
+    CHECK(!rcur_set_a());
+    CHECK_STR_EQ(rcur_why(), TR(SVL_CURRENT_NO_PD));
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 1);
+    ra_ms(2100u);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 1);
+    CHECK(svs_seq_busy());
+    CHECK_STR_EQ(rcur_why(), ui_servo_str(SERVO_STR_START_AUTO_RUNS));
+    rcur_edit();
+    CHECK(!servo_screen_keypad()->open);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 2);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 2);
+    CHECK(!svs_seq_busy());
+    ra_ms(1500u);
+    ra.p5_task = false;
+    carrier_done();
+
+    ra_setup(true, true);
+    ra_ms(200u);
+    CHECK(rcur_set_a());
+    CHECK(rcur_why() == NULL);
+    const float i0 = supply_screen_set_i();
+    ra_hold_start();
+    CHECK(servo_screen_rauto_running());
+    CHECK_STR_EQ(rcur_why(), ui_servo_str(SERVO_STR_START_AUTO_RUNS));
+    rcur_edit();
+    CHECK(!servo_screen_keypad()->open);
+    CHECK(fabsf(supply_screen_set_i() - i0) < 0.001f);
+    rauto_end_now(SERVO_TEST_AB_OPERATOR);
+    ra_ms(2000u);
+    CHECK(!servo_screen_rauto_running());
+}
+
 int main(void)
 {
     RUN(on_the_carrier_one_hold_switches_port_pwm_and_5v_arms_and_starts);
@@ -882,5 +927,6 @@ int main(void)
     RUN(a_latched_failsafe_is_cleared_and_the_hold_reaches_the_run);
     RUN(a_read_that_finds_no_servo_ends_with_the_pd_mini_off);
     RUN(the_arm_row_reads_safe_while_the_read_session_holds_the_bench_safe);
+    RUN(set_a_names_the_rudder_auto_run_under_the_steps_and_the_run);
     return test_summary("servo_rauto_seq");
 }
