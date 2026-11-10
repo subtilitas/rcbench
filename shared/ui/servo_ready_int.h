@@ -251,7 +251,7 @@ bool ready_hold_down(const touch_event_t *evt);
  *  @param c the canvas */
 void ready_draw_hold(gfx_canvas_t *c);
 
-/* --- servo_ready.c: the plot of what feeds the servo ---------------------- */
+/* --- servo_power_view.c: the plot of what feeds the servo ----------------- */
 
 /** @brief A plot of what feeds the servo this tall or taller draws its
  *         legend in the label face and its plot's labels; a lower one the
