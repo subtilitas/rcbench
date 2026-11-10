@@ -343,6 +343,23 @@ static void lr_start(void)
     lr_start_with(true);
 }
 
+/**
+ * @brief Whether a state line of LIMIT RUN's card reads @p text whole
+ *        (servo_screen_limit_line()).
+ * @param text the line
+ * @return true when one does
+ */
+static bool lr_card_line(const char *text)
+{
+    for (int i = 0; i < 8; ++i) {
+        char b[96];
+        if (strcmp(servo_screen_limit_line(i, b, sizeof(b)), text) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static void lr_run_out(void)
 {
     for (int i = 0; i < 1200 && servo_screen_limit_running(); ++i) {
@@ -787,7 +804,8 @@ TEST_CASE(a_pd_mini_heard_first_in_a_session_gets_no_connect)
 /* No PD mini behind the servo: the run cannot switch it off and on, and a
  * written value would act only after that.  SEARCH+PROG and SERVO PULSES
  * are not offered and say why; the run reads and searches, writes nothing
- * and saves no backup. */
+ * and saves no backup.  The card names the port it drove in the language
+ * of the moment. */
 TEST_CASE(without_a_pd_mini_a_limit_run_writes_nothing)
 {
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
@@ -813,6 +831,17 @@ TEST_CASE(without_a_pd_mini_a_limit_run_writes_nothing)
         CHECK(memcmp(was.r, g_rig.sim.reg, sizeof(was.r)) == 0);
         CHECK_STR_EQ(TR(SV_LIM_PROG_NO_PD),
                      ui_tr_in((ui_lang_t)lang, TX_SV_LIM_PROG_NO_PD));
+        /* Under the verdict the port the run drove, in the language the
+         * card is read in: a change of language after the run rewords it,
+         * PROG PORT 1 GPIO 13 or PROG-PORT 1 GPIO 13. */
+        for (int now = 0; now < (int)UI_LANG_COUNT; ++now) {
+            ui_text_set_language((ui_lang_t)now);
+            char want[48];
+            snprintf(want, sizeof(want),
+                     ui_tr_in((ui_lang_t)now, TX_SV_TARGET_PN_PIN),
+                     (unsigned)(1u + RIG_PORT), (unsigned)RIG_PIN);
+            CHECK(lr_card_line(want));
+        }
     }
     ui_text_set_language(UI_LANG_EN);
 }

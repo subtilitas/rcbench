@@ -508,6 +508,12 @@ static bool lim_start(void)
         s.lim_note = TR(SV_LIM_REFUSED);
         return false;
     }
+    /* The same output for the card, which words it at each draw. */
+    s.lim_out.target = s.drive_target;
+    s.lim_out.gpio   = s.drive_pin;
+    s.lim_out.pwm    = s.drive_pwm;
+    s.lim_out.known  = s.pins_known;
+    s.lim_out.pins   = s.pins;
     s.lim_changes = s.changes;
     s.lim_safe_due = false;
     if (c.read) {

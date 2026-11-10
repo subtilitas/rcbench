@@ -462,7 +462,7 @@ TEST_CASE(a_recorded_run_with_spells_of_constant_current_passes)
     CHECK(strstr(g_rp_report, "Result:         PASS\n") != NULL);
     CHECK(strstr(g_rp_report, "Stall threshold  highest 0.390A, STALL AT "
                               "3.00A: PASS\n") != NULL);
-    CHECK(strstr(g_rp_report, "STALL AT 3.00A cannot be reached: current "
+    CHECK(strstr(g_rp_report, "STALL AT 3.00A must be below current "
                               "limit 2.00A\n") != NULL);
 }
 

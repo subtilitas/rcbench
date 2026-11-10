@@ -36,7 +36,7 @@
 
 /** @brief The stall note a STALL AT of 2.00A at a limit of 2.00A gives. */
 #define STALL_NOTE_SHIPPED \
-    "STALL AT 2.00A cannot be reached: current limit 2.00A"
+    "STALL AT 2.00A must be below current limit 2.00A"
 
 /** @brief A fresh bench on TEST with its SETTINGS list open (the bench is
  *         put to SAFE for it). */

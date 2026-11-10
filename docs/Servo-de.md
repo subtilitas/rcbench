@@ -1076,8 +1076,8 @@ PWM-Frame misst, verwendet der Lauf nicht.
 | 1s über BLOCKIERT AB | Messwerte über BLOCKIERT AB über 1000ms (`SERVO_TEST_STALL_ABORT_MS`) ohne einen bei oder unter dem Wert, in jeder Phase und im Brown-out-Lauf | der Lauf endet, `1s über BLOCKIERT AB` |
 | 1s Konstantstrom | das Netzteil meldet in jedem Messwert Konstantstrom (CC, constant current), 1000ms (`SERVO_TEST_CC_ABORT_MS`) ab dem ersten | der Lauf endet, `1s im Konstantstrom`, gleich wie BLOCKIERT AB steht |
 | Konstantstrom unter 1s | | nichts endet und nichts fällt durch; die Berichtszeile `Konstantstrom` nennt die Zahl solcher Messwerte und die längste Folge vom ersten bis zum letzten |
-| BLOCKIERT AB bei oder über der Strombegrenzung | beim Start des Laufs | der Lauf startet. Die Karte AUTOMATISCHER TEST und der Bericht sagen `BLOCKIERT AB 3.00A unerreichbar: Strombegrenzung 2.00A` |
-| BLOCKIERT AB bei oder über dem Bereich des INA3221 | beim Start des Laufs mit dem INA3221 als Messgerät | der Lauf startet. Die Karte AUTOMATISCHER TEST und der Bericht sagen `BLOCKIERT AB 2.00A unerreichbar: INA3221-Bereich 1.638A` |
+| BLOCKIERT AB bei oder über der Strombegrenzung | beim Start des Laufs | der Lauf startet. Die Karte AUTOMATISCHER TEST und der Bericht sagen `BLOCKIERT AB 3.00A muss unter Strombegrenzung 2.00A sein` |
+| BLOCKIERT AB bei oder über dem Bereich des INA3221 | beim Start des Laufs mit dem INA3221 als Messgerät | der Lauf startet. Die Karte AUTOMATISCHER TEST und der Bericht sagen `BLOCKIERT AB 2.00A muss unter INA3221-Bereich 1.638A sein` |
 
 - Jeder Vergleich eines Stroms mit RUHESTROM, HALTESTROM und BLOCKIERT AB
   geschieht in ganzen mA, im Urteil wie im Bericht: ein Messwert von 0,050A
@@ -1098,7 +1098,7 @@ PWM-Frame misst, verwendet der Lauf nicht.
   2,00A ist BLOCKIERT AB unerreichbar. Ein Servo am Anschlag, das weniger
   zieht als die Grenze des Netzteils und mehr als 1,638A, liest sich den
   ganzen Lauf als 1,638A; der Bericht hat dann die Zeile `Übersteuert` und
-  die Zeile `unerreichbar`. BLOCKIERT AB auf 1,60A oder tiefer oder ein
+  die Zeile `muss unter`. BLOCKIERT AB auf 1,60A oder tiefer oder ein
   Shunt von 0,05Ω legt BLOCKIERT AB in den Bereich.
 
 Nicht gemessen: was der PD mini mit einem Servo am Anschlag meldet

@@ -700,7 +700,7 @@ TEST_CASE(a_run_started_under_the_ina3221_reads_its_windows)
     CHECK(bench.csv - 1u + 40u >= bench.wins - wins0);
     /* The default STALL AT, 2.00A, is at the supply's 2.00A limit and
      * under this shunt's range. */
-    CHECK(strstr(bench.report, "STALL AT 2.00A cannot be reached: current "
+    CHECK(strstr(bench.report, "STALL AT 2.00A must be below current "
                            "limit 2.00A\n") != NULL);
     CHECK(strstr(bench.report, "INA3221 range") == NULL);
 }
@@ -978,7 +978,7 @@ TEST_CASE(a_stalled_servo_at_the_shipped_limits_ends_the_run)
         CHECK(bench.released);
         CHECK(strstr(bench.report, "Result:         ABORTED - constant current "
                                "for 1s\n") != NULL);
-        CHECK(strstr(bench.report, "STALL AT 2.00A cannot be reached: current "
+        CHECK(strstr(bench.report, "STALL AT 2.00A must be below current "
                                "limit 2.00A\n") != NULL);
     }
 }

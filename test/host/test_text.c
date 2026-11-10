@@ -576,7 +576,7 @@ TEST_CASE(a_runs_reasons_fit_where_the_screen_draws_them)
         }
         char line[SERVO_TEST_LINE_MAX];
         snprintf(line, sizeof(line),
-                 servo_str_in(table, SERVO_STR_R_LIM_STALL_LIMIT), 5.0, 3.0);
+                 servo_str_in(table, SERVO_STR_R_LIM_STALL_LIMIT), 5.0, 10.0);
         CHECK(cells_of(line) <= 58);
         snprintf(line, sizeof(line),
                  servo_str_in(table, SERVO_STR_R_LIM_STALL_RANGE), 5.0,

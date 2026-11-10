@@ -7,7 +7,8 @@
  * The button is a tap: renaming switches no power.  It is live while the
  * bench is SAFE with ARM not held, no log file is open, and the MOTOR log
  * closed since power-on is on the card mounted now.  Dimmed, a tap says
- * the first reason in that order in the alert band.  The keyboard is
+ * the first reason in that order in the alert band; that alert goes once
+ * the button is live again or the keyboard opens.  The keyboard is
  * FILES' name keyboard over the body, with its cursor: "<-", "->" and a
  * tap in the field move it, and it opens at the label's end.  It types
  * the label alone, and its title names the run by its plain name.
@@ -55,6 +56,9 @@ static struct {
     uint32_t     drawn[2];    /**< rev each framebuffer shows              */
     bool         drawn_open[2]; /**< the keyboard shown in each one        */
     uint32_t     drawn_key[2];  /**< the keyboard's revision in each one   */
+    uint32_t     refusal;     /**< the band's number of the last dimmed
+                                   tap's alert, 0 none
+                                   (ui_router_alert_number())             */
 } g; /**< RENAME LOG's state */
 
 /**
@@ -96,6 +100,28 @@ static bool why_not(char *out, size_t n)
         snprintf(out, n, "%s", why);
     }
     return false;
+}
+
+/**
+ * @brief Say why a tap on the dimmed button does nothing, in the alert
+ *        band, and note the alert's number so that it can go once the
+ *        reason is over.
+ * @param why The reason.
+ */
+static void refuse(const char *why)
+{
+    ui_router_set_alert(why);
+    g.refusal = ui_router_alert_number();
+}
+
+/**
+ * @brief Clear the last dimmed tap's alert if the band still shows it: its
+ *        reason is over.  Another alert, set since, stays.
+ */
+static void refusal_over(void)
+{
+    (void)ui_router_withdraw_alert(g.refusal);
+    g.refusal = 0u;
 }
 
 /* ---------------------------------------------------------- the keyboard */
@@ -154,6 +180,7 @@ static void open_keyboard(void)
     (void)log_name_label(plain, sizeof(plain), g.last, "");
     (void)log_name_label_of(label, sizeof(label), g.last);
     snprintf(title, sizeof(title), TR(MO_TK_LOG), plain);
+    refusal_over();
     key_open(title, label);
     g.down = false;
     ++g.rev;
@@ -228,7 +255,7 @@ bool mln_event(const touch_event_t *evt)
             if (why_not(why, sizeof(why))) {
                 open_keyboard();
             } else {
-                ui_router_set_alert(why);
+                refuse(why);
             }
         }
     }
@@ -263,6 +290,9 @@ void mln_tick(void)
         ui_textkey_close(&g.k);
     }
     const bool live = why_not(NULL, 0u);
+    if (live) {
+        refusal_over();         /* SAFE again, the log closed, ... */
+    }
     if (live != g.live) {
         g.live = live;
         ++g.rev;
@@ -346,9 +376,13 @@ void motor_screen_log_done(int err, const char *name)
     ++g.rev;
     switch ((fm_err_t)err) {
     case FM_OK:
+        /* A success is a notice: the dimmed tap's "busy" while the logger
+         * renamed is over, and would hold the notice back. */
         snprintf(g.last, sizeof(g.last), "%s", nm);
         snprintf(line, sizeof(line), TR(MO_LOG_RENAMED), nm);
-        break;
+        refusal_over();
+        ui_router_set_notice(line);
+        return;
     case FM_ERR_NOT_FOUND:
     case FM_ERR_NO_CARD:
     case FM_ERR_CARD_GONE:

@@ -11,6 +11,7 @@
  * Cases:
  * - the_button_lies_in_the_strip_row_clear_of_the_tabs_and_the_rail
  * - a_dimmed_tap_says_why_and_opens_nothing
+ * - the_dimmed_taps_alert_goes_once_its_reason_is_over
  * - a_live_tap_opens_the_keyboard_on_the_label
  * - the_keyboard_covers_arm_and_the_knob
  * - the_home_tag_and_leaving_safe_close_the_keyboard
@@ -188,6 +189,46 @@ TEST_CASE(a_dimmed_tap_says_why_and_opens_nothing)
     CHECK(!motor_screen_logname_shown());
 }
 
+/* The alert of a dimmed tap goes when its reason is over: the bench back
+ * to SAFE, or the keyboard opening.  An alert set since stays. */
+TEST_CASE(the_dimmed_taps_alert_goes_once_its_reason_is_over)
+{
+    fresh();
+    a_log("MOTOR042.CSV");
+    ui_router_set_alert(NULL);
+    /* ARMED: the tap says so; SAFE again, the band clears. */
+    motor_screen_set_armed(true);
+    scr->tick(TICK_S);
+    tap(MO_LOGBTN_X, LOG_Y);
+    CHECK_STR_EQ(alert(), TR(FM_GATE_ARMED));
+    scr->tick(TICK_S);
+    CHECK_STR_EQ(alert(), TR(FM_GATE_ARMED));   /* while it holds */
+    motor_screen_set_armed(false);
+    scr->tick(TICK_S);
+    CHECK(motor_screen_logname_live());
+    CHECK(ui_router_alert() == NULL);
+    /* SAFE with the tap before a tick: the keyboard opens without the
+     * ARMED alert over it. */
+    motor_screen_set_armed(true);
+    scr->tick(TICK_S);
+    tap(MO_LOGBTN_X, LOG_Y);
+    CHECK_STR_EQ(alert(), TR(FM_GATE_ARMED));
+    motor_screen_set_armed(false);
+    tap(MO_LOGBTN_X, LOG_Y);
+    CHECK(motor_screen_logname_shown());
+    CHECK(ui_router_alert() == NULL);
+    tap_key(UI_TK_CANCEL);
+    /* Another alert set after the tap stays when the bench is SAFE. */
+    motor_screen_set_armed(true);
+    scr->tick(TICK_S);
+    tap(MO_LOGBTN_X, LOG_Y);
+    ui_router_set_alert("other");
+    motor_screen_set_armed(false);
+    scr->tick(TICK_S);
+    CHECK_STR_EQ(alert(), "other");
+    ui_router_set_alert(NULL);
+}
+
 TEST_CASE(a_live_tap_opens_the_keyboard_on_the_label)
 {
     fresh();
@@ -292,11 +333,15 @@ TEST_CASE(ok_hands_one_request_over_and_the_answer_is_said)
     CHECK(!motor_screen_logname_live());
     tap(MO_LOGBTN_X, LOG_Y);
     CHECK_STR_EQ(alert(), TR(MO_LOG_BUSY));
-    /* Renamed: the notice names the new file. */
+    /* Renamed: the notice names the new file.  It is a notice, amber, not
+     * a red alert, and the busy alert of the tap before does not hold it
+     * back. */
+    CHECK(!ui_router_alert_is_notice());
     motor_screen_log_done(FM_OK, "MOTOR042_kv1200.CSV");
     char want[UI_ALERT_MAX];
     snprintf(want, sizeof(want), TR(MO_LOG_RENAMED), "MOTOR042_kv1200.CSV");
     CHECK_STR_EQ(alert(), want);
+    CHECK(ui_router_alert_is_notice());
     /* Pressed again: the label it carries now. */
     a_log("MOTOR042_kv1200.CSV");
     tap(MO_LOGBTN_X, LOG_Y);
@@ -314,6 +359,7 @@ TEST_CASE(ok_hands_one_request_over_and_the_answer_is_said)
     motor_screen_log_done(FM_ERR_EXISTS, "MOTOR042_kv1200x.CSV");
     snprintf(want, sizeof(want), TR(FM_E_EXISTS), "MOTOR042_kv1200x.CSV");
     CHECK_STR_EQ(alert(), want);
+    CHECK(!ui_router_alert_is_notice());    /* a refusal stays red */
     motor_screen_log_done(FM_ERR_CARD_GONE, "MOTOR042_kv1200x.CSV");
     snprintf(want, sizeof(want), TR(MO_LOG_MISSING), "MOTOR042_kv1200.CSV");
     CHECK_STR_EQ(alert(), want);
@@ -557,6 +603,7 @@ int main(void)
     settings_init();
     RUN(the_button_lies_in_the_strip_row_clear_of_the_tabs_and_the_rail);
     RUN(a_dimmed_tap_says_why_and_opens_nothing);
+    RUN(the_dimmed_taps_alert_goes_once_its_reason_is_over);
     RUN(a_live_tap_opens_the_keyboard_on_the_label);
     RUN(the_keyboard_covers_arm_and_the_knob);
     RUN(the_home_tag_and_leaving_safe_close_the_keyboard);

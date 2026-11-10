@@ -793,6 +793,16 @@ typedef struct {
     const char *lim_note;    /**< why the last START was refused, or NULL */
     uint32_t  lim_changes;   /**< the meter's change count at the start */
     uint32_t  lim_sig;       /**< lim_signature() as last drawn         */
+    /* What the run drives, as lim_start() read it: the card words it in
+     * the language of the moment (servo_target_line()), the report in the
+     * run's (servo_limrun_cfg_t's output). */
+    struct {
+        uint8_t  target;     /**< 0 the outputs, 1 + n programming port n */
+        uint8_t  gpio;       /**< that port's GPIO, or SERVO_SCREEN_NO_PIN */
+        bool     pwm;        /**< that port renders its pulse             */
+        bool     known;      /**< a binding was read                      */
+        uint64_t pins;       /**< the SERVO PWM GPIOs, bit n = GPIO n     */
+    } lim_out;               /**< what the run drives, as lim_start() read it */
     /* The outbox the logger last peeked, PEEK_*, and whose files' number
      * comes back (servo_screen_test_files()). */
     uint8_t   peek_from;     /**< the outbox last peeked, PEEK_*     */

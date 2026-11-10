@@ -982,8 +982,8 @@ the run.
 | STALL AT for 1s | readings above STALL AT for 1000ms (`SERVO_TEST_STALL_ABORT_MS`) without one at or under it, in any phase and in the brown-out walk | the run ends, `above STALL AT for 1s` |
 | Constant current for 1s | the supply reports constant current (CC) in every reading for 1000ms (`SERVO_TEST_CC_ABORT_MS`) from the first | the run ends, `constant current for 1s`, whatever STALL AT is |
 | Constant current for less than 1s | | nothing ends and nothing fails; the report's `Const. current` line gives the number of such readings and the longest stretch from a first to a last |
-| STALL AT at or above the current limit | at the run's start | the run starts. The AUTOMATIC TEST card and the report say `STALL AT 3.00A cannot be reached: current limit 2.00A` |
-| STALL AT at or above the INA3221's range | at the run's start with the INA3221 as the meter | the run starts. The AUTOMATIC TEST card and the report say `STALL AT 2.00A cannot be reached: INA3221 range 1.638A` |
+| STALL AT at or above the current limit | at the run's start | the run starts. The AUTOMATIC TEST card and the report say `STALL AT 3.00A must be below current limit 2.00A` |
+| STALL AT at or above the INA3221's range | at the run's start with the INA3221 as the meter | the run starts. The AUTOMATIC TEST card and the report say `STALL AT 2.00A must be below INA3221 range 1.638A` |
 
 - Every comparison of a current with IDLE CURRENT, HOLDING CURRENT and STALL AT
   is made in whole mA, in the verdict and in the report alike: a reading of
@@ -1001,7 +1001,7 @@ the run.
 - With the INA3221 on its 0.1Ω shunt and STALL AT at its default 2.00A,
   STALL AT cannot be reached. A servo on a stop that draws less than the
   supply's limit and more than 1.638A reads 1.638A for the whole run; the
-  report then has the `Clipped` line and the `cannot be reached` line.
+  report then has the `Clipped` line and the `must be below` line.
   STALL AT at 1.60A or lower, or a shunt of 0.05Ω, puts STALL AT inside
   the range.
 
@@ -1443,7 +1443,7 @@ Idle current     highest 0.004A, limit OFF: not checked
 Holding current  highest 0.001A, limit OFF: not checked
 Travel time      longest 989ms, limit 800ms: upper bound, not checked against the limit
 Stall threshold  highest 0.077A, STALL AT 2.00A: PASS
-STALL AT 2.00A cannot be reached: current limit 2.00A
+STALL AT 2.00A must be below current limit 2.00A
 Moves arrived    0 late: PASS
 Moves seen       0 unseen: PASS
 Brown-out start  movement seen at 5.00V: PASS

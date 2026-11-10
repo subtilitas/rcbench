@@ -10092,15 +10092,15 @@ UI_SERVO_TEXT(SERVO_STR_R_NEGATIVE,
     "Strom in Ruhe negativ: Richtung des "
     "Shunts")
 UI_SERVO_TEXT(SERVO_STR_R_LIM_STALL_LIMIT,
-    "STALL AT %.2fA cannot be reached: "
+    "STALL AT %.2fA must be below "
     "current limit %.2fA",
-    "BLOCKIERT AB %.2fA unerreichbar: "
-    "Strombegrenzung %.2fA")
+    "BLOCKIERT AB %.2fA muss unter "
+    "Strombegrenzung %.2fA sein")
 UI_SERVO_TEXT(SERVO_STR_R_LIM_STALL_RANGE,
-    "STALL AT %.2fA cannot be reached: "
+    "STALL AT %.2fA must be below "
     "INA3221 range %.3fA",
-    "BLOCKIERT AB %.2fA unerreichbar: "
-    "INA3221-Bereich %.3fA")
+    "BLOCKIERT AB %.2fA muss unter "
+    "INA3221-Bereich %.3fA sein")
 UI_SERVO_TEXT(SERVO_STR_R_UNM_POSITION_INA,
     "Position: the horn position is not "
     "measured. All results are based on current "
