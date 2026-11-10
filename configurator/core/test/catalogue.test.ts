@@ -922,7 +922,7 @@ test('src: guide, photo and page rules', () => {
   // An owner statement is named by a date of the list.
   const stated = copy();
   assert.deepEqual(stated.parts.find((p) => p.id === 'usbtap')?.src, { kind: 'owner', date: '2026-10-11' });
-  assert.deepEqual(OWNER_STATEMENTS, ['2026-10-11', '2026-10-21']);
+  assert.deepEqual(OWNER_STATEMENTS, ['2026-10-11', '2026-10-21', '2026-11-10']);
   stated.parts[4]!.src = { kind: 'owner', date: '2026-10-11' };
   assert.deepEqual(checkSrc(stated, null).findings, []);
   stated.parts[4]!.src = { kind: 'owner', date: '2026-10-12' };

@@ -224,7 +224,7 @@ buy". A row:
 
 Row ids: `copro` has the row without an id and `osoyoo`; `usb` has `cable`
 and `charger`; `wire` has `pair`, `jumper` and `dmm`; `ina228` has `matek`
-and `xt90`; `tap` has `resistor` and `zener`; `usbtap` has `board` and
+and `xt90`; `tap` has `resistor`, `zener` and `pulldown`; `usbtap` has `board` and
 `cable`. Every other part has 1 row without an id. A row added later takes a
 new id, so the tokens of the other rows stay.
 
@@ -448,4 +448,7 @@ Line coverage of the resolver, the groups and the motor simulator, measured by `
 - DC jack of the Osoyoo breakout board, plug size: the product page names the socket DC005-2.1. The 2.1mm pin follows from that name. The 5.5mm outer diameter is the usual size of that socket family; no vendor source states it.
 - SI2302 (Q3) of the Osoyoo breakout board above 12V: its gate sits at PWRIN through R7 with no clamp and its source at GND (schematic REV 1.0), so its gate-source voltage is the input voltage at every input. The datasheet linked on the product page rates the gate-source voltage at ±12V (absolute maximum). Above 12V Q3 is outside that rating; the print of 16V and the vendor limit of 18V are above it. The data keeps the range at 7 to 12V.
 - ESC STICK programming: `docs/StickProgramming.md` at `v0.23.10` runs it on ESC power B (PD mini). An owner statement of 2026-10-11 says that programming an ESC needs no power. The data keeps the PD mini as needed bench hardware; what powers the ESC during programming is stated as unknown in the check entry `esc-programming-power`.
+- Phase tap: the 4.7kΩ series resistor, the 3.0V zener diode, cathode at GPIO 22 and anode at GND, and the 8.2kΩ pull-down beside it are an owner statement of 2026-11-10. With the zener diode at 3.0V the resistor carries 3.6mA and dissipates 62mW at 20V on the phase, 4.7mA and 105mW at 25.2V. The pull-down takes 0.37mA of that, the zener diode 3.3mA (9.8mW) at 20V and 4.4mA (13mW) at 25.2V. These figures are computed from the values, not measured.
+- Phase tap pull-down: erratum RP2350-E9 of the RP2350 datasheet (A2 stepping) states that a Bank 0 input with the internal pull-down on latches at about 2.2V when nothing drives it, and recommends an external pull-down of 8.2kΩ or less. With the 4.7kΩ series resistor the pin sits at 0.636 times the phase voltage: 2.0V, the input threshold, at 3.1V on the phase, so a 1S pack at 4.2V reads high. From about 4.7V on the phase the 3.0V zener diode clamps the pin. These figures are derived from the datasheet, not measured.
+- Phase tap on the rbmod carrier: the carrier fixes the tap pin at GPIO 22 on connector J9 (`shared/outputs/out_board_rbmod.c`). The carrier is not in the data. Whether J9 carries the resistor, the zener diode and the pull-down is not stated in the repository.
 - 9 check entries of kind `unknown` state each open point in the text of a setup.

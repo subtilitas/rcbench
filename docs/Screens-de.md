@@ -6186,7 +6186,12 @@ nimmt an, dass er mit der Pulsbreite des Servos steigt.
 Der Phasenabgriff erfasst die Pieptöne eines ESC an einer Motorphase. Ein GPIO
 des IOmcu liest die Phase über einen Vorwiderstand und eine
 Zener-Klemme; der IOmcu misst die Zeiten der Flanken am Pin und meldet
-Länge und Tonhöhe jedes Pieptons. Die Verdrahtung steht nicht im Bauhandbuch.
+Länge und Tonhöhe jedes Pieptons. Der
+[Bench configurator](https://subtilitas.github.io/rcbench/#v=1&f=tap&l=de)
+listet die Teile und zeichnet die Verdrahtung: 4,7kΩ in Reihe von der Phase
+zum Pin, eine 3,0V-Z-Diode vom Pin nach GND, Kathode am Pin, und ein
+Pull-down von 8,2kΩ vom Pin nach GND. Auf dem
+[rbmod-Carrier](Carrier-de.md#pins) ist der Pin GPIO 22 an Stecker J9.
 Der Abgriff ist ein Eingang: er treibt nichts, und der IOmcu nimmt eine
 Änderung in ARMED wie in SAFE an. Seine Zeilen folgen den
 Pins des Busses:

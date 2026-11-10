@@ -526,6 +526,7 @@ function ina228Xt90(d: Dwg): void {
 
 // ---------------------------------------------------------------- phase tap
 function tap(d: Dwg): void {
+  // 4.7kΩ, 5%: yellow, violet, red, gold.
   const bands: Array<[number, string]> = [[0.2, '#e2c21f'], [0.34, '#7d3fb0'], [0.48, '#c8261d'], [0.8, '#c9a54a']];
   d.add(d.axial(42, 66, 258, 66, { len: 84, wd: 24, colour: '#d9c39a', bands }));
   d.add(d.eye(42, 66, 7), d.eye(258, 66, 7));

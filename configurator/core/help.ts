@@ -50,8 +50,8 @@ export const FUNCTION_HELP: Readonly<Partial<Record<FunctionId, Text>>> = Object
     'Ändert ESC-Einstellungen über das Gasknüppelmenü; 24 der 72 ESC-Profile sind ausführbar. Der Prüfstand fährt die im Profil festgelegten Gasstellungen an und zählt Menüpieptöne als Pulse im Versorgungsstrom des PD mini. Verwende Lastwiderstände oder einen fest montierten Motor ohne Propeller.',
   ),
   tap: t(
-    'Measures the pitch and duration of ESC beeps on phase A through the phase tap. The motor simulator replaces the motor.',
-    'Erfasst Tonhöhe und Dauer der ESC-Pieptöne an Phase A über den Phasenabgriff. Der Motorsimulator ersetzt den Motor.',
+    'Measures the pitch and duration of ESC beeps on phase A through the phase tap: a 4.7kΩ resistor from the phase to GPIO 22, and a 3.0V zener diode and an 8.2kΩ pull-down from GPIO 22 to GND. The motor simulator replaces the motor. The panel switches the tap on under SETUP → SENSORS → PHASE TAP.',
+    'Erfasst Tonhöhe und Dauer der ESC-Pieptöne an Phase A über den Phasenabgriff: ein Widerstand von 4,7kΩ von der Phase zu GPIO 22 sowie eine 3,0V-Z-Diode und ein Pull-down von 8,2kΩ von GPIO 22 nach GND. Der Motorsimulator ersetzt den Motor. Das Panel schaltet den Abgriff unter SETUP → SENSORS → PHASENABGRIFF ein.',
   ),
   supply: t(
     'The panel sets the PD mini output: 1 to 20V, 0.05 to 3A (vendor values, not measured). Output voltage must stay at least 0.7V below the module input voltage. The bench reads the module every 102 to 106ms.',
