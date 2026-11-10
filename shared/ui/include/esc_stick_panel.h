@@ -73,14 +73,45 @@ void esc_stick_panel_set_throttle(bool read, uint8_t channels);
 void esc_stick_panel_supply(const supply_state_t *st);
 
 /**
- * The phase tap as the control task last read it (tone_link_readout()),
- * every frame.  While the tap is enabled on SETUP a stick run's page
+ * @brief The phase tap as the control task last read it (tone_link_readout()),
+ *        every frame.
+ *
+ * While the tap is enabled on SETUP a stick run's page
  * shows it: its state, the last window's pitch, the last beeps, and the
  * counts of beeps lost and beeps not read.  The pitch and the lost count
- * read "--" while tone_readout_t.read is false.  Read only: the run still
- * counts its beeps from the supply current.
+ * read "--" while tone_readout_t.read is false.
+ *
+ * A run started while the capture runs (TONE_STATE_RUNNING, read) counts
+ * its beeps from the tap: each frame hands the run the tap's state and the
+ * beeps that came in since the last frame, oldest first.  More than
+ * TONE_LINK_SHOWN beeps between two frames leave a number out, and the run
+ * ends with BEEP LOST.
+ *
+ * @param r  The readout; NULL changes nothing.
  */
 void esc_stick_panel_tone(const tone_readout_t *r);
+
+/** @brief The INA3221's window period, ms (SENSE_WIN_A and SENSE_WIN_B). */
+#define ESC_STICK_PANEL_WINDOW_MS 50u
+
+/**
+ * @brief One window of the INA3221 channel in the ESC's supply line, each
+ *        window once, in order: the lowest channel of a fitted part with a
+ *        shunt that watches SUPPLY on SETUP > SENSORS.
+ *
+ * A run started with no running tap counts its beeps from these windows
+ * while one has come in within ESC_STICK_STALE_MS; with neither source RUN
+ * is refused.  The windows are timed by their number, ESC_STICK_PANEL_
+ * WINDOW_MS apart on the IOmcu's clock.
+ *
+ * @param channel     The channel, 0 to 11: 0x40 + channel / 3, CH channel % 3 + 1.
+ * @param window      The window's number, modulo 65536.
+ * @param max_ma      Its highest current, mA; a sample at the top of the
+ *                    range is given as INT16_MAX.
+ * @param current_ok  It holds current samples.
+ */
+void esc_stick_panel_meter(unsigned channel, uint16_t window, int32_t max_ma,
+                           bool current_ok);
 
 /** A command a stick run asks for, oldest first; true when there was one. */
 bool esc_stick_panel_poll_cmd(motor_cmd_t *out);

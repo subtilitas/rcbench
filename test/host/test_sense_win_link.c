@@ -185,6 +185,43 @@ TEST_CASE(the_last_window_of_a_channel_is_its_pages_last_read)
     CHECK(!sense_win_link_last(&s, 11u, &mv, &ma, NULL));
 }
 
+/* The stick run's channel: the highest current of its last window, its
+ * number, and a clipped sample as the top of the range. */
+TEST_CASE(the_peak_of_a_channels_last_window_is_its_highest_current)
+{
+    sense_win_link_init(&s);
+    int32_t ma = 9;
+    uint16_t win = 0u;
+    bool cur = false;
+    CHECK(!sense_win_link_peak(&s, 1u, &ma, &win, &cur));   /* no link */
+    sense_win_link_came_up(&s, 25u);
+    sense_win_link_want(&s, 0x0Fu);
+    CHECK(!sense_win_link_peak(&s, 1u, &ma, &win, &cur));   /* nothing read */
+    uint16_t a[LINK_SX_COUNT];
+    uint16_t b[LINK_SX_COUNT];
+    page_regs(a, 70u, (uint16_t)(LINK_SX_E_CURRENT | LINK_SX_E_VOLTAGE), 750);
+    page_regs(b, 70u, 0u, 0);
+    a[LINK_SX_E(2, LINK_SX_E_FLAGS)] = LINK_SX_E_VOLTAGE;
+    a[LINK_SX_E(3, LINK_SX_E_FLAGS)] =
+        (uint16_t)(LINK_SX_E_CURRENT | LINK_SX_E_CLIP_HI);
+    CHECK(read_one(0u, a, NULL));
+    CHECK(read_one(0u, b, NULL));
+    CHECK(sense_win_link_peak(&s, 1u, &ma, &win, &cur));
+    CHECK_EQ(ma, 850);
+    CHECK_EQ(win, 70u);
+    CHECK(cur);
+    CHECK(sense_win_link_peak(&s, 2u, &ma, NULL, &cur));     /* no current */
+    CHECK(!cur);
+    CHECK(sense_win_link_peak(&s, 3u, &ma, NULL, NULL));     /* clipped */
+    CHECK_EQ(ma, INT16_MAX);
+    CHECK(!sense_win_link_peak(&s, 6u, &ma, NULL, NULL));    /* not read */
+    CHECK(!sense_win_link_peak(&s, 12u, &ma, NULL, NULL));
+    CHECK(sense_win_link_peak(&s, 0u, NULL, NULL, NULL));
+    CHECK(!sense_win_link_peak(NULL, 0u, &ma, NULL, NULL));
+    sense_win_link_lost(&s);
+    CHECK(!sense_win_link_peak(&s, 1u, &ma, NULL, NULL));
+}
+
 /* A page no longer wanted, BAD_PAGE, and a lost link forget what was
  * read. */
 TEST_CASE(a_page_gone_forgets_its_reads)
@@ -466,6 +503,7 @@ int main(void)
     RUN(the_pages_a_map_needs_are_read_in_turn);
     RUN(a_window_takes_the_channels_of_its_own_number);
     RUN(the_last_window_of_a_channel_is_its_pages_last_read);
+    RUN(the_peak_of_a_channels_last_window_is_its_highest_current);
     RUN(a_page_gone_forgets_its_reads);
     RUN(the_read_before_answers_for_its_window);
     RUN(the_reads_keep_their_rate_across_the_clock_wrap);

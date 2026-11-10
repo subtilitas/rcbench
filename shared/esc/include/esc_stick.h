@@ -1,19 +1,24 @@
 /**
  * @file
  * @brief Stick programming: an ESC (electronic speed controller) programmed
- *        through its throttle-stick menu, with the beeps counted in the supply
- *        current.
+ *        through its throttle-stick menu, with the beeps counted from the
+ *        phase tap or from an INA3221 channel in the ESC's supply line.
  *
  * The ESC is powered from the bench supply with a resistor load in place
  * of the motor, or a motor mounted solid with no propeller.  It sounds its
- * menu through the load or the windings, so each beep is a pulse in the
- * supply current.  The engine drives the throttle to the
- * profile's positions, switches the supply, counts the pulses into groups
+ * menu through the load or the windings.  A run counts each beep from one
+ * source, chosen at its start and kept for the whole run
+ * (esc_stick_src_t): the phase tap's beeps, each with its start and length
+ * on the IOmcu's clock, or an INA3221 channel's 50ms windows, in which a
+ * beep is a pulse in the current.  The supply's own readings decide only
+ * whether the ESC is powered: the PD mini reads every 100 to 152ms, too
+ * slowly for a beep of 128ms.  The engine drives the throttle to the
+ * profile's positions, switches the supply, counts the beeps into groups
  * and moves the throttle on the group that names the wanted item or value.
  *
- * Pure C, no I/O (input/output): the caller hands over each supply reading
- * and the bench's state, and reads back what the throttle, the arm and the
- * supply are to be.  It sends nothing itself, so every move it asks for
+ * Pure C, no I/O (input/output): the caller hands over each supply reading,
+ * each window or beep of the source, and the bench's state, and reads back
+ * what the throttle, the arm and the supply are to be.  It sends nothing itself, so every move it asks for
  * goes through the same arming, output and supply paths an operator's
  * does, and a STOP or a disarm reaches the ESC without the engine.
  *
@@ -360,6 +365,8 @@ typedef enum {
     ESC_DET_PULSE,     /**< a pulse ended                                */
     ESC_DET_GROUP,     /**< a group ended: count and valid say what      */
     ESC_DET_STUCK,     /**< the current has stayed high past a beep      */
+    ESC_DET_LATE,      /**< a tap beep belongs to a group already ended:
+                            the group was ended early, as by a missed beep */
 } esc_det_event_t;
 
 /**
@@ -382,6 +389,9 @@ typedef struct {
     uint8_t  long_equals_short;  /**< 0: every beep is short             */
 
     bool     counting;           /**< else only the floor is tracked     */
+    bool     tap;                /**< fed beeps (esc_det_beep()), not
+                                      readings: the last beep's end counts
+                                      toward the quiet while not counting */
     bool     seeded;                    /**< whether floor_x16 has its first reading */
     int32_t  floor_x16;          /**< the idle current, mA x 16          */
     bool     have_prev;                 /**< whether prev_ms holds a reading time */
@@ -448,6 +458,37 @@ esc_det_event_t esc_det_reading(esc_det_t *d, uint32_t t_ms, int32_t ma,
  */
 int32_t esc_det_floor_ma(const esc_det_t *d);
 
+/**
+ * @brief One beep the phase tap heard, from @p start_ms for @p len_ms on the
+ *        tap's clock, into the same groups as esc_det_reading()'s pulses.
+ *
+ * The length is measured, not estimated from readings: a beep shorter than
+ * BEEP MIN or longer than LONG MAX, or a silence before it shorter than GAP
+ * MIN, spoils its group.  LONG tells a long beep from a short one, as for a
+ * pulse.  The caller first ends the group under way at the beep's start with
+ * esc_det_quiet(), so a beep a GROUP GAP after the one before opens a group
+ * of its own.  While no group may open (esc_det_count()) a beep that follows
+ * less than GROUP GAP of quiet is the tail of a group already sounding and
+ * opens none; one that follows a group esc_det_quiet() ended less than GROUP
+ * GAP before is ESC_DET_LATE and opens none either.
+ *
+ * @param d         The detector.
+ * @param start_ms  The beep's first rise, ms on the tap's clock.
+ * @param len_ms    Its length, ms.
+ * @return ESC_DET_PULSE for a beep counted, ESC_DET_LATE, or ESC_DET_NONE.
+ */
+esc_det_event_t esc_det_beep(esc_det_t *d, uint32_t start_ms, uint32_t len_ms);
+
+/**
+ * @brief Quiet on the tap until @p t_ms, on the tap's clock: the group under
+ *        way ends once GROUP GAP has passed since its last beep ended.
+ *
+ * @param d     The detector.
+ * @param t_ms  Time up to which no beep has begun, ms on the tap's clock.
+ * @return ESC_DET_GROUP when a group ended, else ESC_DET_NONE.
+ */
+esc_det_event_t esc_det_quiet(esc_det_t *d, uint32_t t_ms);
+
 /* ------------------------------------------------------------ the run */
 
 /**
@@ -498,6 +539,9 @@ typedef enum {
     ESC_STICK_R_TOUCH,        /**< touch lost before the arm was taken   */
     ESC_STICK_R_USER,         /**< ABORT pressed                         */
     ESC_STICK_R_LEFT,         /**< the screen was left                   */
+    ESC_STICK_R_TAP_LOST,     /**< the phase tap lost a beep             */
+    ESC_STICK_R_TAP_STOP,     /**< the phase tap's capture stopped       */
+    ESC_STICK_R_METER,        /**< no INA3221 window for ESC_STICK_STALE_MS */
 } esc_stick_reason_t;
 
 /**
@@ -571,6 +615,57 @@ typedef struct {
                                   the module read, not what was asked      */
     bool     online;         /**< the supply answers                       */
 } esc_stick_sample_t;
+
+/**
+ * @brief Where a run counts the ESC's beeps from, chosen at its start and kept
+ *        for the whole run.
+ */
+typedef enum {
+    ESC_STICK_SRC_NONE = 0,   /**< none: esc_stick_start() refuses        */
+    ESC_STICK_SRC_TAP,        /**< the phase tap's beeps: esc_stick_tap()
+                                   and esc_stick_tap_beep()              */
+    ESC_STICK_SRC_METER,      /**< an INA3221 channel in the ESC's supply
+                                   line: esc_stick_meter()                */
+} esc_stick_src_t;
+
+/**
+ * @brief One window of the INA3221 channel in the ESC's supply line.
+ *
+ * @p seq is the window's number, modulo 65536: a step of more than one is a
+ * window the panel never saw.  @p at_ms is when it closed on the IOmcu's
+ * clock, counted on by the caller across the number's wrap, so the beeps are
+ * timed by the IOmcu and not by the panel's poll.
+ */
+typedef struct {
+    uint32_t seq;            /**< the window's number                     */
+    uint32_t at_ms;          /**< when it closed, ms on the IOmcu's clock */
+    int32_t  ma;             /**< its highest current, mA                 */
+    bool     current_ok;     /**< it holds current samples                */
+    uint32_t rx_ms;          /**< the bench time the panel had it, ms     */
+} esc_stick_meter_t;
+
+/**
+ * @brief The phase tap's state, as the panel last read it.
+ */
+typedef struct {
+    bool     running;        /**< the capture runs, by a fresh status read */
+    uint32_t lost;           /**< beeps lost so far: the IOmcu's count, the
+                                  panel's missed count, and 1 for an
+                                  overrun of the capture                  */
+    uint16_t newest;         /**< the newest beep's number, 0 for none    */
+} esc_stick_tap_t;
+
+/**
+ * @brief One beep the phase tap heard.
+ */
+typedef struct {
+    uint16_t seq;            /**< its number, 1 to 65535, then 1 again    */
+    uint32_t start_ms;       /**< its first rise, ms since the capture
+                                  started, on the IOmcu's clock          */
+    uint32_t len_ms;         /**< its length, ms                          */
+    uint32_t rx_ms;          /**< the bench time the panel had it, ms: the
+                                  time of the step that follows           */
+} esc_stick_beep_t;
 
 /**
  * @brief What the bench is to do, after a step.
@@ -669,13 +764,31 @@ typedef struct {
                                              ESC's store or confirmation  */
     uint32_t             pulses;        /**< pulses begun this run: the
                                              detector's rises            */
+
+    esc_stick_src_t      src;           /**< where the beeps come from   */
+    /* The meter (ESC_STICK_SRC_METER) as its newest window had it. */
+    bool                 have_meter;    /**< a window since the start    */
+    uint32_t             m_seq;         /**< its number                  */
+    uint32_t             m_at_ms;       /**< its time, the IOmcu's clock */
+    uint32_t             m_rx_ms;       /**< the bench time it came in   */
+    bool                 m_have;        /**< one since this power-up     */
+    /* The phase tap (ESC_STICK_SRC_TAP). */
+    bool                 tap_base;      /**< tap_lost0 and tap_seq set   */
+    uint32_t             tap_lost0;     /**< its lost count at the start */
+    uint16_t             tap_seq;       /**< the last beep's number      */
+    uint32_t             tap_ok_ms;     /**< the last status that ran    */
+    bool                 tap_rx;        /**< a beep has come in          */
+    uint32_t             tap_end;       /**< its end, the tap's clock    */
+    uint32_t             tap_rx_ms;     /**< the bench time it came in   */
 } esc_stick_t;
 
 /**
  * @brief Start a run.  @p mv and @p ma are the supply's set points, already
  *        held to the caps by the caller.
  *
- * Refused with @p why when esc_stick_check() refuses, and the run stays idle.
+ * Refused with @p why when esc_stick_check() refuses or @p src is
+ * ESC_STICK_SRC_NONE, and the run stays idle.  The beeps are counted from
+ * @p src for the whole run.
  *
  * @param e   The run to start.
  * @param p   The profile.
@@ -684,6 +797,7 @@ typedef struct {
  * @param t   The timing.
  * @param mv  Supply set point, mV.
  * @param ma  Supply current limit, mA.
+ * @param src Where the beeps are counted from.
  * @param b   The bench state at the start.
  * @param why Receives the reason when refused, or NULL.
  * @return true when the run started.
@@ -691,15 +805,62 @@ typedef struct {
 bool esc_stick_start(esc_stick_t *e, const esc_profile_t *p,
                      const esc_stick_change_t *ch, size_t n,
                      const esc_stick_timing_t *t, uint32_t mv, uint32_t ma,
-                     const esc_stick_bench_t *b, const char **why);
+                     esc_stick_src_t src, const esc_stick_bench_t *b,
+                     const char **why);
 
 /**
- * @brief One supply sample, as it arrives.
+ * @brief One supply sample, as it arrives: whether the output is on, off or
+ *        gone, for the power rules.  No beep is counted from it.
  *
  * @param e  The run.
  * @param s  The sample.
  */
 void esc_stick_sample(esc_stick_t *e, const esc_stick_sample_t *s);
+
+/**
+ * @brief One window of the INA3221 channel in the ESC's supply line, as it
+ *        arrives: the beeps of a run counting from the meter.
+ *
+ * Ignored by a run counting from the tap.  A window later than the shorter of
+ * BEEP MIN and GAP MIN after the one before, one the panel never saw, or one
+ * without current samples is late, and ESC_STICK_LATE_RUN late windows in a
+ * row end the run with ESC_STICK_R_RATE.  No new window for ESC_STICK_STALE_MS
+ * while the ESC is powered, or before it is, ends it with ESC_STICK_R_METER.
+ *
+ * @param e  The run.
+ * @param m  The window.
+ */
+void esc_stick_meter(esc_stick_t *e, const esc_stick_meter_t *m);
+
+/**
+ * @brief The phase tap's state, every frame: a run counting from the tap ends
+ *        with ESC_STICK_R_TAP_STOP when the capture does not run, or no state
+ *        has said it runs for ESC_STICK_STALE_MS, and with
+ *        ESC_STICK_R_TAP_LOST when the lost count moves.
+ *
+ * The first call after esc_stick_start() takes the lost count and the newest
+ * beep's number as the run's base.  Ignored by a run counting from the meter.
+ *
+ * @param e   The run.
+ * @param st  The tap's state.
+ */
+void esc_stick_tap(esc_stick_t *e, const esc_stick_tap_t *st);
+
+/**
+ * @brief One beep the phase tap heard, in the order of its numbers.
+ *
+ * A number other than the one after the last beep taken ends the run with
+ * ESC_STICK_R_TAP_LOST: a beep that never reached the run.  A group ends
+ * GROUP GAP after its last beep ended, timed from the bench time that beep
+ * came in: a group is ended late by the link's delay, not early.  A beep that
+ * still belongs to a group ended so breaks the order, as a late reading does.
+ * Ignored by a run counting from the meter, and before the first
+ * esc_stick_tap().
+ *
+ * @param e  The run.
+ * @param b  The beep.
+ */
+void esc_stick_tap_beep(esc_stick_t *e, const esc_stick_beep_t *b);
 
 /**
  * @brief Advance to @p b->now_ms and judge the bench.

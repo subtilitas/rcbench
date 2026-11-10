@@ -342,6 +342,44 @@ void sense_win_service(void)
     }
 }
 
+/*
+ * The INA3221 channel in the ESC's supply line for a stick run: the lowest
+ * channel of a fitted part with a shunt that the held map has watching
+ * SUPPLY, its last window queued once by number.
+ */
+void stick_meter_publish(void)
+{
+    static bool     s_sent;
+    static uint8_t  s_ch;
+    static uint16_t s_win;
+    if (!sense_map_link_in_force(&s_sense_map)) {
+        return;
+    }
+    const unsigned en = s_sense_map.held[LINK_SM_ENABLE];
+    for (unsigned c = 0u; c < LINK_SM_CHANNELS; ++c) {
+        if ((en & (1u << (c / 3u))) == 0u
+            || s_sense_map.held[LINK_SM_SHUNT(c)] == 0u
+            || s_sense_map.held[LINK_SM_WATCH(c)] != LINK_SM_WATCH_SUPPLY) {
+            continue;
+        }
+        stick_meter_item_t item = { .channel = (uint8_t)c };
+        if (!sense_win_link_peak(&s_sense_win, c, &item.max_ma, &item.window,
+                                 &item.current)
+            || (s_sent && s_ch == c && s_win == item.window)) {
+            return;
+        }
+        s_sent = true;
+        s_ch = (uint8_t)c;
+        s_win = item.window;
+        if (xQueueSend(s_meter_q, &item, 0) != pdTRUE) {
+            stick_meter_item_t stale;
+            (void)xQueueReceive(s_meter_q, &stale, 0);
+            (void)xQueueSend(s_meter_q, &item, 0);
+        }
+        return;
+    }
+}
+
 /** @brief The console's tag. */
 static const char *TAG = "rcbench";
 

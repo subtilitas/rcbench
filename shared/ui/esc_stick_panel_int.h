@@ -286,6 +286,15 @@ typedef struct {
 
     /* The phase tap, as the control task last read it. */
     tone_readout_t tone;                /**< the phase tap's reading */
+    uint16_t tap_fed;                   /**< the last beep handed to the run */
+
+    /* The INA3221 channel in the ESC's supply line, as its last window
+     * came in. */
+    bool     m_have;                    /**< a window has come in        */
+    uint8_t  m_ch;                      /**< its channel, 0 to 11        */
+    uint16_t m_win;                     /**< its number                  */
+    uint32_t m_at;                      /**< its time, counted on, ms    */
+    uint32_t m_rx;                      /**< bench time it came in, ms   */
 } sp_state_t;
 /** @brief The state, esc_stick_s, in esc_stick_panel.c, so its .bss stays
  *         where psram_bss.lf puts esc_stick_panel's.  The files read it
@@ -322,6 +331,18 @@ void sp_supply(uint32_t *mv, uint32_t *ma);
  * @return true when the supply reads off
  */
 bool sp_supply_reads_off(void);
+/** @brief Where a run started now counts its beeps from: the phase tap
+ *         while its capture runs, else the INA3221 channel in the ESC's
+ *         supply line while its windows come in, else none.
+ * @return The source, ESC_STICK_SRC_NONE for none
+ */
+esc_stick_src_t sp_source(void);
+/** @brief The INA3221 channel in the ESC's supply line, as SENSORS names
+ *         it: "INA 0x40 CH2".
+ * @param buf  Receives the name.
+ * @param n    Its size.
+ */
+void sp_meter_name(char *buf, size_t n);
 /** @brief Whether the warning asks a step at an unpowered ESC of the
  *         operator and may not, as the supply does not read off.
  * @return true when the warning is gated

@@ -169,6 +169,29 @@ bool sense_win_link_last(const sense_win_link_t *s, unsigned c, uint16_t *mv,
                          int16_t *ma, uint16_t *window);
 
 /**
+ * @brief Channel @p c's last window as its page was last read, for a reader
+ *        that takes each window once by its number: its highest current and
+ *        whether it holds current samples.  The stick run's beeps on the
+ *        channel in the ESC's supply line.
+ *
+ * A window with a current sample at the top of the range gives INT16_MAX:
+ * the page leaves clipped samples out of the figures, and the current was at
+ * least the range's top.
+ *
+ * @param s       The link state.
+ * @param c       The channel, 0 to 11.
+ * @param max_ma  Receives the highest current, mA, signed; NULL is ignored.
+ * @param window  Receives the window's number; NULL is ignored.
+ * @param current Receives whether the window holds current samples; NULL is
+ *                ignored.
+ * @return true when the page's last read holds a closed window in which @p c
+ *         is read (current or voltage samples); false otherwise, for no link,
+ *         no page, @p c past 11 and @p s NULL.
+ */
+bool sense_win_link_peak(const sense_win_link_t *s, unsigned c,
+                         int32_t *max_ma, uint16_t *window, bool *current);
+
+/**
  * @brief Each channel's highest current of the windows read since the last
  *        call, and cleared: the figure the IOmcu judges a limit by
  *        (SENSE_LIMIT), for the console line of a limit passed.

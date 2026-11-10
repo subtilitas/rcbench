@@ -6,6 +6,23 @@ history is in git.
 
 ## Unreleased
 
+### Changed
+
+- ESC STICK counts the ESC's beeps from the phase tap or from an INA3221
+  channel, no longer from the PD mini's current. The PD mini reads every 100
+  to 152ms, and a Flycolor FlyDragon Lite 40A sounds short beeps of 127.9ms.
+  A run takes its source at RUN and keeps it: the phase tap while its capture
+  runs, else the lowest INA3221 channel with a shunt that watches SUPPLY
+  while its 50ms windows come in. With neither, RUN is refused with `No beep
+  source. Switch the phase tap on, or set an INA3221 channel to SUPPLY, on
+  SENSORS.` The tap's beeps go into the groups with the IOmcu's own start
+  times and lengths. The PD mini still powers the ESC, and its readings still
+  decide every power rule. The run's page and the warning name the source
+  ([Stick programming](docs/StickProgramming.md#where-the-beeps-come-from)).
+- A run ends with BEEP LOST when a tap beep number is missing, with TAP
+  STOPPED when the tap's capture stops, and with INA3221 LOST when no window
+  of the channel comes for 1000ms. READING RATE judges the INA3221's windows.
+
 ## 0.23.11 - 2026-11-11
 
 0.23.11 is a testing release. It adds the input-supply check of the rbmod

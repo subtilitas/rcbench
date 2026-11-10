@@ -19,10 +19,12 @@
  *     is passed, and the menu's next loop is used.
  *   - Listening starts on a quiet line: no group is counted until GROUP GAP
  *     of quiet, so the first group heard is whole and not the tail of one.
- *   - A reading that comes later than the shortest beep or gap allows
+ *   - A meter window that comes later than the shortest beep or gap allows
  *     breaks the order too, since a beep may have fallen in the hole.
- *     ESC_STICK_LATE_RUN late readings in a row end the run: the supply
- *     reads too slowly for the timing the settings describe.
+ *     ESC_STICK_LATE_RUN late windows in a row end the run: the meter
+ *     reads too slowly for the timing the settings describe.  The tap
+ *     numbers its beeps instead: one missing, or a capture that stops,
+ *     ends the run.
  *
  * A run ends safely in one step when it is aborted: throttle to its rest,
  * supply off, disarmed.  A run that ends as planned, or cycles the power
@@ -352,6 +354,21 @@ static void power_on(esc_stick_t *e)
 }
 
 /**
+ * @brief Whether the meter speaks for the beeps now: a run counting from it has
+ *        had a window within ESC_STICK_STALE_MS.  Always true for the tap, whose
+ *        state esc_stick_step() judges.
+ *
+ * @param e  The run.
+ * @return false when the run counts from a meter that has gone quiet.
+ */
+static bool meter_fresh(const esc_stick_t *e)
+{
+    return e->src != ESC_STICK_SRC_METER
+           || (e->have_meter
+               && since(e->now_ms, e->m_rx_ms) <= ESC_STICK_STALE_MS);
+}
+
+/**
  * @brief The supply comes on once every step due before it is done.
  *
  * A step at an unpowered ESC is asked for, and the supply switched on, only
@@ -371,6 +388,11 @@ static void before_power(esc_stick_t *e, unsigned from)
     /* Off, by a reading new enough to say so now. */
     if (since(e->now_ms, e->read_ms) > ESC_STICK_STALE_MS) {
         finish(e, ESC_STICK_ABORTED, ESC_STICK_R_STALE);
+        return;
+    }
+    /* And nothing is powered that the run could not hear. */
+    if (!meter_fresh(e)) {
+        finish(e, ESC_STICK_ABORTED, ESC_STICK_R_METER);
         return;
     }
     const int i = hand_due(e, from, false);
@@ -726,13 +748,17 @@ static void on_group(esc_stick_t *e, uint8_t count, bool valid)
 bool esc_stick_start(esc_stick_t *e, const esc_profile_t *p,
                      const esc_stick_change_t *ch, size_t n,
                      const esc_stick_timing_t *t, uint32_t mv, uint32_t ma,
-                     const esc_stick_bench_t *b, const char **why)
+                     esc_stick_src_t src, const esc_stick_bench_t *b,
+                     const char **why)
 {
     if (e == NULL || b == NULL) {
         return esc_stick_no(why, "no run");
     }
     if (!esc_stick_check(p, ch, n, t, why)) {
         return false;
+    }
+    if (src != ESC_STICK_SRC_TAP && src != ESC_STICK_SRC_METER) {
+        return esc_stick_no(why, "no beep source");
     }
     memset(e, 0, sizeof(*e));
     e->p = p;
@@ -760,6 +786,12 @@ bool esc_stick_start(esc_stick_t *e, const esc_profile_t *p,
     e->off_asked_ms = b->now_ms;
     e->off_since_known = false;
     e->entry_wait = esc_stick_entry_ms(e);
+    e->src = src;
+    e->det.tap = src == ESC_STICK_SRC_TAP;
+    /* The source's clocks start with the run: no window or tap state yet
+     * is no older than the run. */
+    e->m_rx_ms = b->now_ms;
+    e->tap_ok_ms = b->now_ms;
     enter(e, ESC_STICK_ARMING);
     return true;
 }
@@ -876,65 +908,177 @@ void esc_stick_sample(esc_stick_t *e, const esc_stick_sample_t *s)
     if (!fresh) {
         return;
     }
-    const uint16_t step = (uint16_t)(s->seq - e->seq);
     e->seq = s->seq;
-    const uint32_t iv = since(s->at_ms, e->read_ms);
-    const bool had_reading = e->have_reading;
     e->read_ms = s->at_ms;
-    e->ma = s->ma;
-    if (!powered_phase(e->phase)) {
+    e->have_reading = e->have_reading || powered_phase(e->phase);
+}
+
+/**
+ * @brief Whether a phase counts groups: ITEMS or VALUES.
+ *
+ * @param ph  The phase.
+ * @return true while the menu's groups are judged.
+ */
+static bool menu_phase(esc_stick_phase_t ph)
+{
+    return ph == ESC_STICK_ITEMS || ph == ESC_STICK_VALUES;
+}
+
+/**
+ * @brief What the detector said of a reading or a beep, acted on.
+ *
+ * @param e   The run.
+ * @param ev  The detector's event.
+ */
+static void on_event(esc_stick_t *e, esc_det_event_t ev)
+{
+    switch (ev) {
+    case ESC_DET_PULSE:
+        e->heard_ms = e->now_ms;
+        break;
+    case ESC_DET_STUCK:
+        finish(e, ESC_STICK_ABORTED, ESC_STICK_R_HIGH);
+        break;
+    case ESC_DET_GROUP:
+        if (menu_phase(e->phase)) {
+            on_group(e, e->det.count, e->det.valid);
+        }
+        break;
+    case ESC_DET_LATE:
+        e->prev = 0u;   /* the group before was cut: no order across it */
+        break;
+    default:
+        break;
+    }
+}
+
+void esc_stick_meter(esc_stick_t *e, const esc_stick_meter_t *m)
+{
+    if (!esc_stick_running(e) || m == NULL || e->src != ESC_STICK_SRC_METER
+        || (e->have_meter && m->seq == e->m_seq)) {
+        return;
+    }
+    const bool had = e->have_meter;
+    const uint16_t step = (uint16_t)(m->seq - e->m_seq);
+    const uint32_t iv = since(m->at_ms, e->m_at_ms);
+    e->have_meter = true;
+    e->m_seq = m->seq;
+    e->m_at_ms = m->at_ms;
+    e->m_rx_ms = m->rx_ms;
+    e->ma = m->ma;
+    if (!powered_phase(e->phase) || !had) {
         e->iv_ms = 0u;
         e->late_run = 0u;
         return;
     }
-    e->have_reading = true;
+    const bool had_reading = e->m_have;
+    e->m_have = true;
     if (!had_reading) {
         return;     /* the first of this power-up: no interval yet */
     }
     e->iv_ms = iv;
-    /* A reading without a current is a reading missed, and so is one the
-     * supply took and the panel never saw. */
-    const bool late = iv > esc_stick_read_max_ms(&e->t) || !s->current_ok
+    /* A window without a current is a window missed, and so is one the
+     * IOmcu closed and the panel never saw. */
+    const bool late = iv > esc_stick_read_max_ms(&e->t) || !m->current_ok
                       || step > 1u;
     e->late_run = late ? e->late_run + 1u : 0u;
     if (e->late_run >= ESC_STICK_LATE_RUN) {
         finish(e, ESC_STICK_ABORTED, ESC_STICK_R_RATE);
         return;
     }
-    if (!s->current_ok) {
+    if (!m->current_ok) {
         e->prev = 0u;
         return;
     }
     if (e->phase == ESC_STICK_ENTRY
-        && since(s->at_ms, e->on_ms) < ESC_STICK_SETTLE_MS) {
+        && since(e->now_ms, e->on_ms) < ESC_STICK_SETTLE_MS) {
         return;     /* the input capacitors, not the ESC */
     }
     const bool was_high = e->det.high;
-    const esc_det_event_t ev = esc_det_reading(&e->det, s->at_ms, s->ma,
+    const esc_det_event_t ev = esc_det_reading(&e->det, m->at_ms, m->ma,
                                                late);
     if (!was_high && e->det.high) {
         e->pulses++;
     }
-    const bool menu = e->phase == ESC_STICK_ITEMS
-                      || e->phase == ESC_STICK_VALUES;
-    if (late && menu) {
+    if (late && menu_phase(e->phase)) {
         e->prev = 0u;   /* a beep may have fallen in the hole */
     }
-    switch (ev) {
-    case ESC_DET_PULSE:
-        e->heard_ms = s->at_ms;
-        break;
-    case ESC_DET_STUCK:
-        finish(e, ESC_STICK_ABORTED, ESC_STICK_R_HIGH);
-        break;
-    case ESC_DET_GROUP:
-        if (menu) {
-            on_group(e, e->det.count, e->det.valid);
-        }
-        break;
-    default:
-        break;
+    on_event(e, ev);
+}
+
+void esc_stick_tap(esc_stick_t *e, const esc_stick_tap_t *st)
+{
+    if (!esc_stick_running(e) || st == NULL || e->src != ESC_STICK_SRC_TAP) {
+        return;
     }
+    if (!e->tap_base) {
+        e->tap_base = true;
+        e->tap_lost0 = st->lost;
+        e->tap_seq = st->newest;
+    }
+    if (!st->running) {
+        finish(e, ESC_STICK_ABORTED, ESC_STICK_R_TAP_STOP);
+        return;
+    }
+    e->tap_ok_ms = e->now_ms;
+    if (st->lost != e->tap_lost0) {
+        finish(e, ESC_STICK_ABORTED, ESC_STICK_R_TAP_LOST);
+    }
+}
+
+/**
+ * @brief The beep number after @p seq: 1 to 65535, then 1 again.
+ *
+ * @param seq  A beep number, 0 for none yet.
+ * @return The number the next beep carries.
+ */
+static uint16_t tap_next(uint16_t seq)
+{
+    return (seq == 65535u) ? 1u : (uint16_t)(seq + 1u);
+}
+
+/**
+ * @brief The tap's clock now: the last beep's end, and the bench time since it
+ *        came in.  Never ahead of the tap: the beep came in after it ended.
+ *
+ * @param e  The run.
+ * @return The tap's time, ms.
+ */
+static uint32_t tap_now(const esc_stick_t *e)
+{
+    return e->tap_end + since(e->now_ms, e->tap_rx_ms);
+}
+
+void esc_stick_tap_beep(esc_stick_t *e, const esc_stick_beep_t *b)
+{
+    if (!esc_stick_running(e) || b == NULL || e->src != ESC_STICK_SRC_TAP
+        || !e->tap_base) {
+        return;
+    }
+    if (b->seq != tap_next(e->tap_seq)) {
+        finish(e, ESC_STICK_ABORTED, ESC_STICK_R_TAP_LOST);
+        return;
+    }
+    e->tap_seq = b->seq;
+    e->tap_rx = true;
+    e->tap_end = b->start_ms + b->len_ms;
+    e->tap_rx_ms = b->rx_ms;
+    if (!powered_phase(e->phase)) {
+        return;
+    }
+    if (menu_phase(e->phase)
+        && esc_det_quiet(&e->det, b->start_ms) == ESC_DET_GROUP) {
+        /* The group under way ended GROUP GAP before this beep began, and
+         * only this beep shows it: the link held the beeps back past the
+         * ESC's pause, and a move now would come after the next group has
+         * begun.  Judged as unclear, never acted on. */
+        on_group(e, e->det.count, false);
+    }
+    const esc_det_event_t ev = esc_det_beep(&e->det, b->start_ms, b->len_ms);
+    if (ev == ESC_DET_PULSE) {
+        e->pulses++;
+    }
+    on_event(e, ev);
 }
 
 void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
@@ -956,6 +1100,12 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
         e->link_seen = true;
     } else if (e->link_seen) {
         finish(e, ESC_STICK_ABORTED, ESC_STICK_R_LINK);
+        return;
+    }
+    /* The tap counts only while its capture is seen running. */
+    if (e->src == ESC_STICK_SRC_TAP
+        && since(e->now_ms, e->tap_ok_ms) > ESC_STICK_STALE_MS) {
+        finish(e, ESC_STICK_ABORTED, ESC_STICK_R_TAP_STOP);
         return;
     }
     if (e->phase == ESC_STICK_ARMING) {
@@ -986,6 +1136,10 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
         }
         if (since(e->now_ms, e->read_ms) > ESC_STICK_STALE_MS) {
             finish(e, ESC_STICK_ABORTED, ESC_STICK_R_STALE);
+            return;
+        }
+        if (!meter_fresh(e)) {
+            finish(e, ESC_STICK_ABORTED, ESC_STICK_R_METER);
             return;
         }
     }
@@ -1037,12 +1191,14 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
             e->on_ms = e->now_ms;
             e->read_ms = e->now_ms;   /* the stale clock starts here */
             e->have_reading = false;
+            e->m_have = false;
             e->late_run = 0u;
             e->entries++;
             /* This power-up's wait, kept for it and for the result after
              * the change it makes is done. */
             e->entry_wait = esc_stick_entry_ms(e);
             esc_det_init(&e->det, &e->t, e->det.long_equals_short);
+            e->det.tap = e->src == ESC_STICK_SRC_TAP;
             esc_det_floor_only(&e->det);
             enter(e, ESC_STICK_ENTRY);
         } else if (in_phase >= ESC_STICK_POWER_WAIT_MS) {
@@ -1056,6 +1212,13 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
         break;
     case ESC_STICK_ITEMS:
     case ESC_STICK_VALUES:
+        if (e->src == ESC_STICK_SRC_TAP && e->tap_rx) {
+            /* Quiet on the tap up to now, on its clock. */
+            on_event(e, esc_det_quiet(&e->det, tap_now(e)));
+            if (!esc_stick_running(e) || !menu_phase(e->phase)) {
+                break;
+            }
+        }
         if (e->hand_menu) {
             /* Listening while the action is asked for: the ESC is silent
              * until it is done, so SILENCE and TIMEOUT run from then. */

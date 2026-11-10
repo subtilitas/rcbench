@@ -141,6 +141,7 @@ static bool poll_bench(bench_state_t *bench)
          * one, and a row of the ring finds its window on them. */
         sense_win_service();
         prog5v_publish_reading();
+        stick_meter_publish();
         /* And the channels' limits, armed or not: an alert only. */
         sense_limit_service();
         /* And the phase tap's: an input, taken armed or not. */

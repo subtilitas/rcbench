@@ -1447,8 +1447,11 @@ replaced by a resistor load. Hold HOLD 2s TO RUN for 2s to start:
 ![The warning](img/motor-stick-warning.png)
 
 RUN stays closed and shows a reason beside the button if no throttle pin
-is assigned, the output bindings have not been read or the supply is the
-panel's model. Any of these conditions also closes an open warning
+is assigned, the output bindings have not been read, the supply is the
+panel's model, or the run has no beep source: neither the phase tap runs
+nor an INA3221 channel that watches SUPPLY delivers windows
+(`No beep source. Switch the phase tap on, or set an INA3221 channel to SUPPLY, on SENSORS.`).
+Any of these conditions also closes an open warning
 ([Before a run](StickProgramming.md#before-a-run)).
 
 Profiles requiring a physical action at the ESC, such as fitting or removing
@@ -1469,8 +1472,11 @@ position until DONE:
 
 ![The run waiting for the ESC's confirmation](img/motor-stick-hand-end.png)
 
-While it runs, the page shows the phase, the beeps of the group under way
-and the last group. ABORT, the home tag, STOP and leaving the screen end it
+While it runs, the page shows the phase, the beeps of the group under way,
+the last group and the beep source: `BEEPS FROM THE PHASE TAP`, or the
+INA3221 channel with its current, its floor and its window interval,
+`INA 0x40 CH2   CURRENT 750mA   BASELINE 150mA   EVERY 50ms`
+([Where the beeps come from](StickProgramming.md#where-the-beeps-come-from)). ABORT, the home tag, STOP and leaving the screen end it
 with the throttle at MIN, the supply off and the bench SAFE. The stack light's
 green is on while a beep is detected, for at least 150ms:
 
@@ -1479,8 +1485,9 @@ green is on while a beep is detected, for at least 150ms:
 When the phase tap is enabled in SETUP, the run page adds a read-only line
 below current. It shows the tap's state, pitch from its latest 8ms window,
 counts of beeps lost by the IOmcu or missed by the panel, and the last four
-beeps with number, duration in ms and mean pitch in Hz. The run still
-counts beeps from supply current.
+beeps with number, duration in ms and mean pitch in Hz. A run started
+while the capture runs counts these beeps; the source stays the run's to
+its end.
 
 ![A run with the phase tap running](img/motor-stick-tone.png)
 
@@ -5518,6 +5525,11 @@ part shows only its enable row.
 | 0x40 CH1 watches | NONE, OUT 1 to OUT 8, PORT 1 to 4, SUPPLY | OUT 1 for 0x40 CH1, NONE for every other channel | what the channel's shunt is in: an output channel, a programming port, or the supply rail |
 | 0x40 CH1 shunt | OFF, 5.0 to 1000.0mΩ, 0.1mΩ steps | 100.0 | OFF: the channel is not read. The DAOKAI's R100 reads to 1.64A |
 | 0x40 CH1 limit | OFF, 10 to 32767mA, 10mA steps on the arrows | OFF | a 50ms window whose highest current passes it is said on the band, and the bench switches to SAFE with the supply output off ([Safety, Errors](Safety.md#errors)). OFF: no limit |
+
+The lowest channel of a fitted part with a shunt that watches SUPPLY is
+ESC STICK's beep source while the phase tap does not run: its shunt has to
+be in the line from the supply output to the ESC
+([Stick programming](StickProgramming.md#where-the-beeps-come-from)).
 
 A tap on a shunt's value opens the keypad ([Keys and the list](#keys-and-the-list)).
 44.4mΩ from the 100.0 default is five keys, `4`, `4`, `.`, `4` and OK,

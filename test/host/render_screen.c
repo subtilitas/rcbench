@@ -1908,6 +1908,13 @@ typedef struct {
     float     pct;
     uint32_t  now, next, seq, stops, pressed;
     bool      no_watch;     /* nobody taps DONE before the power-off */
+    uint32_t  wnext;        /* the INA3221's next window, 50ms on   */
+    uint16_t  wseq;
+    /* The phase tap's beeps, from the ESC's current, newest first. */
+    bool      high;
+    uint32_t  rise;
+    uint16_t  made;
+    tone_beep_t beeps[TONE_LINK_SHOWN];
 } stick_rig_t;
 
 /* Whether the last step of a stick run left the bench armed: the band says
@@ -1937,27 +1944,43 @@ static void stick_step(stick_rig_t *r)
     motor_screen_set_armed(r->armed);   /* the output strip's SAFE/ARMED */
     s_stick_armed = r->armed;
     if (s_tone_fed) {
-        /* The tap running on a phase that sounds 1523.4Hz, and the last
-         * four beeps it reported. */
+        /* The tap running, its last window at 2090.0Hz, and the last four
+         * beeps it reported: the ESC's beeps, 2090.0Hz short and 1866.0Hz
+         * long, the pitches the tap measured on a Flycolor FlyDragon. */
         tone_readout_t t;
         memset(&t, 0, sizeof(t));
         t.state = TONE_STATE_RUNNING;
         t.read = true;
         t.tone = true;
-        t.win_freq_dhz = 15234u;
-        t.win_periods = 12u;
+        t.win_freq_dhz = 20900u;
+        t.win_periods = 16u;
         t.lost = 0u;
-        t.n = TONE_LINK_SHOWN;
-        for (unsigned i = 0u; i < TONE_LINK_SHOWN; ++i) {
-            t.beeps[i].seq = (uint16_t)(41u - i);
-            t.beeps[i].len_dms = (uint16_t)(2003u - 11u * i);
-            t.beeps[i].freq_dhz = (uint16_t)(15234u - 7u * i);
-            t.beeps[i].bursts = 1u;
-        }
+        t.n = (uint8_t)((r->made < TONE_LINK_SHOWN) ? r->made
+                                                     : TONE_LINK_SHOWN);
+        memcpy(t.beeps, r->beeps, sizeof(t.beeps));
         esc_stick_panel_tone(&t);
     }
     const int32_t ma = esc_sim_step(&r->sim, r->now, r->on,
                                     r->armed ? r->pct : -1.0f);
+    const bool high = r->on && ma > 450;
+    if (high && !r->high) {
+        r->rise = r->now;
+    } else if (!high && r->high) {
+        memmove(&r->beeps[1], &r->beeps[0],
+                (TONE_LINK_SHOWN - 1u) * sizeof(r->beeps[0]));
+        const uint32_t len = r->now - r->rise;
+        r->made++;
+        r->beeps[0] = (tone_beep_t){
+            .seq = r->made, .start_ms = r->rise,
+            .len_dms = (uint16_t)(len * 10u),
+            .freq_dhz = (len < 500u) ? 20900u : 18660u, .bursts = 1u };
+    }
+    r->high = high;
+    if (r->now >= r->wnext) {
+        /* The INA3221 channel in the ESC's supply line, 0x40 CH2. */
+        esc_stick_panel_meter(1u, ++r->wseq, r->on ? ma : 0, true);
+        r->wnext = r->now + ESC_STICK_PANEL_WINDOW_MS;
+    }
     if (r->now >= r->next) {
         supply_state_t st;
         memset(&st, 0, sizeof(st));
@@ -2025,6 +2048,9 @@ static void stick_supply_off(void)
         supply_screen_push(&st);
         esc_stick_panel_supply(&st);
     }
+    /* And a window of the INA3221 channel in the ESC's supply line, 0x40
+     * CH2: the beep source the run counts from. */
+    esc_stick_panel_meter(1u, 1u, 0, true);
     esc_stick_panel_bench(300u, false, 0u, 0u, false);
     ui_router_tick(0.02f);
 }
@@ -3256,6 +3282,15 @@ static void pose_motor_tools(ui_screen_id_t id, const char *view)
                 || strcmp(view, "motor-stick-done") == 0
                 || strcmp(view, "motor-stick-aborted") == 0
                 || strcmp(view, "motor-stick-failed") == 0;
+            if (s_tone_fed) {
+                /* The tap's capture running before RUN, no beep yet: the
+                 * run counts from it. */
+                tone_readout_t t;
+                memset(&t, 0, sizeof(t));
+                t.state = TONE_STATE_RUNNING;
+                t.read = true;
+                esc_stick_panel_tone(&t);
+            }
             if (runs || strcmp(view, "motor-stick-warning") == 0) {
                 tap(RS_RUN_X, UI_BAND_H + RS_RUN_CY);      /* RUN: the warning */
             }
@@ -3275,14 +3310,21 @@ static void pose_motor_tools(ui_screen_id_t id, const char *view)
                 memset(&rig, 0, sizeof(rig));
                 esc_sim_init(&rig.sim, esc_stick_panel_stick()->p, NULL);
                 const esc_stick_t *run = esc_stick_panel_stick();
+                uint32_t pulses = 0u;   /* the run's count a step before */
                 for (int ms = 0; ms < 400000 && esc_stick_running(run);
                      ++ms) {
                     stick_step(&rig);
-                    /* Inside a beep, so the green light is on. */
-                    if ((strcmp(view, "motor-stick-run") == 0
-                         || strcmp(view, "motor-stick-tone") == 0)
+                    const bool beep_in = run->pulses != pulses;
+                    pulses = run->pulses;
+                    /* Inside a beep, so the green light is on: a pulse in
+                     * the current, or a beep the tap has just handed
+                     * over. */
+                    if (((strcmp(view, "motor-stick-run") == 0
+                          && run->det.high)
+                         || (strcmp(view, "motor-stick-tone") == 0
+                             && beep_in))
                         && run->phase == ESC_STICK_ITEMS && run->groups >= 4u
-                        && esc_stick_beeps(run) >= 2u && run->det.high) {
+                        && esc_stick_beeps(run) >= 2u) {
                         break;
                     }
                     if (strcmp(view, "motor-stick-aborted") == 0

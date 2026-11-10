@@ -197,7 +197,45 @@ static const char *sp_bench_why(void)
     if (t->throttle_mask == 0u) {
         return TR(SP_NO_THROTTLE);
     }
+    if (sp_source() == ESC_STICK_SRC_NONE) {
+        return TR(SP_NO_SOURCE);
+    }
     return NULL;
+}
+
+/*
+ * Where a run started now counts its beeps from: the phase tap while its
+ * capture runs by a fresh status read, else the INA3221 channel in the
+ * ESC's supply line while a window of it came in within ESC_STICK_STALE_MS,
+ * else none.  The PD mini's own readings are no source: it reads every
+ * 100 to 152ms, slower than a beep of 128ms.
+ */
+esc_stick_src_t sp_source(void)
+{
+    if (s.tone.state == TONE_STATE_RUNNING && s.tone.read) {
+        return ESC_STICK_SRC_TAP;
+    }
+    if (s.m_have
+        && (int32_t)(s.st.now_ms - s.m_rx) <= (int32_t)ESC_STICK_STALE_MS) {
+        return ESC_STICK_SRC_METER;
+    }
+    return ESC_STICK_SRC_NONE;
+}
+
+/**
+ * @brief The tap's state as the run takes it: the capture running by a fresh
+ *        read, the beeps lost (the IOmcu's count, the panel's missed count and
+ *        1 for an overrun), and the newest beep's number.
+ * @param r  The tap's readout.
+ * @return The state for esc_stick_tap().
+ */
+static esc_stick_tap_t sp_tap_state(const tone_readout_t *r)
+{
+    esc_stick_tap_t st;
+    st.running = r->state == TONE_STATE_RUNNING && r->read;
+    st.lost = (uint32_t)r->lost + r->missed + (r->overrun ? 1u : 0u);
+    st.newest = (r->n > 0u) ? r->beeps[0].seq : 0u;
+    return st;
 }
 
 static bool sp_plan(esc_stick_change_t *ch, size_t *n,
@@ -440,9 +478,17 @@ static void sp_start(void)
     const esc_stick_bench_t b = { t->now_ms, t->armed, t->stops,
                                   t->link_up, t->pressed };
     const char *why = NULL;
-    if (!esc_stick_start(&t->run, t->p, ch, n, &tm, mv, ma, &b, &why)) {
+    const esc_stick_src_t src = sp_source();
+    if (!esc_stick_start(&t->run, t->p, ch, n, &tm, mv, ma, src, &b, &why)) {
         snprintf(t->note, sizeof(t->note), "%s", sp_why_text(why));
         return;
+    }
+    if (src == ESC_STICK_SRC_TAP) {
+        /* The tap's beeps so far are the run's base: it counts the ones
+         * that come after. */
+        const esc_stick_tap_t st = sp_tap_state(&s.tone);
+        esc_stick_tap(&t->run, &st);
+        s.tap_fed = st.newest;
     }
     t->runs++;
     t->shown = true;
@@ -753,9 +799,58 @@ void esc_stick_panel_set_throttle(bool read, uint8_t channels)
 
 void esc_stick_panel_tone(const tone_readout_t *r)
 {
-    if (r != NULL) {
-        s.tone = *r;
+    if (r == NULL) {
+        return;
     }
+    s.tone = *r;
+    stick_t *t = &s.st;
+    if (!esc_stick_running(&t->run) || t->run.src != ESC_STICK_SRC_TAP) {
+        return;
+    }
+    const esc_stick_tap_t st = sp_tap_state(r);
+    esc_stick_tap(&t->run, &st);
+    /* The beeps after the last one handed over, oldest first: a number the
+     * readout no longer holds is one the run never gets, and it ends. */
+    for (unsigned i = (r->n < TONE_LINK_SHOWN) ? r->n : TONE_LINK_SHOWN;
+         i-- > 0u && esc_stick_running(&t->run);) {
+        const tone_beep_t *b = &r->beeps[i];
+        const unsigned ahead = (s.tap_fed == 0u)
+            ? 1u : ((unsigned)b->seq + 65535u - s.tap_fed) % 65535u;
+        if (ahead == 0u || ahead > 32767u) {
+            continue;                   /* taken before */
+        }
+        const esc_stick_beep_t x = { b->seq, b->start_ms,
+                                     ((uint32_t)b->len_dms + 5u) / 10u,
+                                     t->now_ms };
+        esc_stick_tap_beep(&t->run, &x);
+        s.tap_fed = b->seq;
+    }
+    sp_follow();        /* a beep can end the run */
+}
+
+void esc_stick_panel_meter(unsigned channel, uint16_t window, int32_t max_ma,
+                           bool current_ok)
+{
+    /* Counted on across the number's wrap, ESC_STICK_PANEL_WINDOW_MS a
+     * window on the IOmcu's clock; another channel starts the count again. */
+    if (!s.m_have || channel != s.m_ch) {
+        s.m_at = (uint32_t)window * ESC_STICK_PANEL_WINDOW_MS;
+    } else {
+        s.m_at += (uint32_t)(uint16_t)(window - s.m_win)
+                  * ESC_STICK_PANEL_WINDOW_MS;
+    }
+    s.m_have = true;
+    s.m_ch = (uint8_t)channel;
+    s.m_win = window;
+    s.m_rx = s.st.now_ms;
+    stick_t *t = &s.st;
+    if (!esc_stick_running(&t->run)) {
+        return;
+    }
+    const esc_stick_meter_t m = { window, s.m_at, max_ma, current_ok,
+                                  t->now_ms };
+    esc_stick_meter(&t->run, &m);
+    sp_follow();        /* a window can end the run */
 }
 
 void esc_stick_panel_supply(const supply_state_t *st)

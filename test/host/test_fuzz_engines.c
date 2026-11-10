@@ -406,7 +406,8 @@ static bool one_stick_run(uint32_t seed, unsigned id)
     uint32_t now = rnd();
     esc_stick_bench_t b = { now, false, rnd(), true, rnd() };
     const char *why = NULL;
-    if (!esc_stick_start(&es, p, ch, n, &t, 7600u, 1000u, &b, &why)) {
+    if (!esc_stick_start(&es, p, ch, n, &t, 7600u, 1000u,
+                         ESC_STICK_SRC_METER, &b, &why)) {
         return false;
     }
     const uint32_t stops0 = b.stops;
@@ -485,6 +486,10 @@ static bool one_stick_run(uint32_t seed, unsigned id)
             }
             s.ma = ma;
             esc_stick_sample(&es, &s);
+            /* The meter's window, as the supply's reading. */
+            const esc_stick_meter_t m = { s.seq, s.at_ms, s.ma,
+                                          s.current_ok, now };
+            esc_stick_meter(&es, &m);
         }
         if (esc_stick_hand(&es) != NULL && upto(100u) == 0u) {
             (void)esc_stick_confirm(&es);

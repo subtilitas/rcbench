@@ -105,10 +105,15 @@ static inline void hold_for(float seconds)
     press(TOUCH_EVENT_UP, HOLD_X, HOLD_Y);
 }
 
+/** @brief The INA3221 channel the panel's runs count from: 0x40 CH2. */
+#define RIG_METER_CH 1u
+
 /** @brief The supply reading off for 300ms: its own state off, the current at
- * 0, as the warning needs before it asks for a step at the ESC. */
+ * 0, as the warning needs before it asks for a step at the ESC; and a window of
+ * the INA3221 channel in the ESC's supply line, the beep source. */
 static inline void supply_reads_off(void)
 {
+    esc_stick_panel_meter(RIG_METER_CH, 1u, 0, true);
     for (uint32_t t = 0; t <= 300u; t += 100u) {
         supply_state_t st;
         memset(&st, 0, sizeof(st));
@@ -243,6 +248,11 @@ typedef struct {
     int32_t   extra_ma;
     bool      no_watch;       /* nobody taps DONE once the ESC has
                                  confirmed (before_power_off) */
+    bool      no_meter;       /* the INA3221's windows stop          */
+    uint32_t  wnext;          /* the next window closes here          */
+    uint16_t  wseq;           /* its number                           */
+    uint16_t  wstep;          /* numbers a window on; 0 is 1: more is
+                                 windows the panel never saw          */
 } rig_t;
 
 /** @brief One step of the modelled bench: applies the motor and supply commands the panel posted and moves the supply's flags. */
@@ -301,6 +311,13 @@ static inline void rig_step(rig_t *r)
         st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
         esc_stick_panel_supply(&st);
         r->next = r->now + ((r->every != 0u) ? r->every : 50u);
+    }
+    if (r->now >= r->wnext && !r->silent && !r->no_meter) {
+        /* The INA3221 channel in the ESC's line: a window every 50ms. */
+        r->wseq = (uint16_t)(r->wseq + ((r->wstep != 0u) ? r->wstep : 1u));
+        esc_stick_panel_meter(RIG_METER_CH, r->wseq,
+                              r->module_on ? ma + r->extra_ma : 0, true);
+        r->wnext = r->now + ESC_STICK_PANEL_WINDOW_MS;
     }
     scr->tick(0.001f);
     /* The operator watching the ESC confirm taps DONE once it counts. */
