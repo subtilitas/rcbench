@@ -451,6 +451,7 @@ apart: both are a line with no edges.
 | --- | --- |
 | The line opens | no edge for 150ms (`HEARTBEAT_MAX_GAP_MS`): the IOmcu stops trusting the line, switches its outputs to SAFE, sets its arm latch and sets STATUS bit 10, LINK_FAULT_HEARTBEAT. The PD mini output goes off |
 | The band | FAULT 10; with SETUP > PANEL > Hardware stop ON, a red HWSTOP chip in FAULT's place. The setting changes the band and nothing else |
+| Pressed while ARMED | the IOmcu refuses the panel's next write of ARM with NOT_ARMED, 50 to 55ms after it stops trusting the line. The panel latches a stop from the far end: its bank SAFE, the command at 0, a run ended, every output off, the arm chip SAFE. It withholds its own heartbeat for 300ms (`ARMING_STOP_WITHHOLD_MS`), then edges the line again; the stop stays latched, so nothing switches to ARMED without a new hold |
 | The line closes | the first edge ends a gap over 150ms and counts as a bad interval; 4 good intervals of 20ms later the IOmcu trusts the line and clears bit 10, 80 to 100ms after the line closes. The bit is not latched |
 | The band again | the panel reads STATUS every 500ms, at the first 50ms poll past 500ms, so reads are 500 to 555ms apart. While the band shows HWSTOP it reads STATUS at every 50ms poll instead, 50 to 55ms apart, and the first read without bit 10 ends that (`status_poll.h`). The frame after the read draws the band without the bit, at about 60Hz. HWSTOP goes 80 to about 180ms after the line closes; FAULT 10, with the setting OFF, 80 to about 680ms |
 | ARM | refused until an operator holds ARM for 2s: the IOmcu's arm latch stays set until CLEAR, which the panel writes once STATUS reads bit 10 clear ([The first switch to ARMED after a stop](#the-first-switch-to-armed-after-a-stop)) |
@@ -464,6 +465,14 @@ second, 72 CAN frames, while HWSTOP stands ([Link](Link.md#refused-frames)). A
 button's contact bounce adds its own length: each bounce interval under 4ms
 counts as noise and starts the 4 good intervals again. The bounce of a
 given button is not measured.
+
+Pressed while ARMED, the panel's 300ms window starts up to about 210ms
+after the press: 150ms for the IOmcu, 55ms to the next write of ARM, a 5ms
+pass. A button released before the window ends, up to about 510ms after the
+press, leaves HWSTOP until about 700ms after the press. These times are
+computed, not measured. A press shorter than 150ms, less the time since the
+last edge, leaves no gap the IOmcu sees, and nothing stops. Host-tested in
+`test_safety_gate`, the press held 200ms to 2s at 55 phases of the poll.
 
 While the panel's own STOP is latched, while its reset runs and for 1000ms
 after it (`STOP_LATCH_GRACE_MS`), the panel withholds the line itself and
@@ -557,7 +566,11 @@ each AUTO rate within 3500ms.
 
 ### The first switch to ARMED after a stop
 
-The heartbeat is withheld while a stop is latched. A switch to ARMED clears the panel's
+The heartbeat is withheld while a stop is latched. A stop from the IOmcu's
+refusal of ARM alone withholds it for 300ms (`ARMING_STOP_WITHHOLD_MS`),
+twice the IOmcu's 150ms ceiling, then the line edges again while the stop
+stays latched ([Hardware stop button](#hardware-stop-button)). A switch to
+ARMED clears the panel's
 latch, the heartbeat resumes, and the IOmcu's monitor needs five edges
 before it trusts the line: 100 to 125ms at the control task's 5ms period.
 The panel waits 100ms, then reads the STATUS fault register once per pass

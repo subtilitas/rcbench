@@ -565,6 +565,8 @@ static uint32_t T0;               /* where a scenario starts it            */
 static bool     w_line;           /* the level of the panel's safety line  */
 static uint32_t w_glitch_at;      /* 0: none.  The line reads inverted for
                                      this one millisecond                  */
+static bool     w_hwstop;         /* a hardware stop button breaks the line:
+                                     the IOmcu's pull-down reads it low    */
 typedef enum { WIRE_LOST, WIRE_BUS_OFF, WIRE_RETX } wire_t;
 static wire_t   w_wire;
 static uint32_t w_unanswered;     /* exchanges that ended with no answer   */
@@ -595,6 +597,9 @@ static unsigned        d_arm_frames;     /* writes carrying ARM != 0        */
 
 static bool d_line(void)
 {
+    if (w_hwstop) {
+        return false;
+    }
     return (w_glitch_at != 0u && T == w_glitch_at) ? !w_line : w_line;
 }
 
@@ -727,6 +732,11 @@ static unsigned        p_quiet_release, p_quiet_clear, p_quiet_frame;
 static uint32_t        p_write_quiet_at, p_stop_at, p_any_quiet_at;
 static bool            p_write_quiet, p_stop_seen, p_any_quiet;
 static uint32_t        p_servo_next;     /* the 100ms servo refresh */
+/* The heartbeat as the pump asked for it: the level last asked, when it
+ * last went from edging to withheld, and how long the last withheld
+ * stretch lasted. */
+static bool            p_beat_was;
+static uint32_t        p_beat_off_at, p_last_off_ms;
 /* How late each exchange of the arm's handshake is answered, once: 1 the
  * servo release, 2 CLEAR, 3 the frame that arms.  The request reaches the
  * IOmcu on time; its answer is what takes long. */
@@ -800,7 +810,15 @@ static void p_pump(void)
         arming_touch_seen(&p_arm, T);
     }
     arming_touch_poll(&p_arm, T);
-    w_line = heartbeat_gen_step(&p_gen, T, arming_heartbeat(&p_arm, T));
+    const bool beat = arming_heartbeat(&p_arm, T);
+    if (!beat && p_beat_was) {
+        p_beat_off_at = T;
+    }
+    if (beat && !p_beat_was) {
+        p_last_off_ms = (uint32_t)(T - p_beat_off_at);
+    }
+    p_beat_was = beat;
+    w_line = heartbeat_gen_step(&p_gen, T, beat);
 }
 
 static bool step_ms(const link_msg_t *req, link_msg_t *reply)
@@ -1233,6 +1251,7 @@ static void world_init(uint32_t t0)
     T = t0;
     w_line = false;
     w_glitch_at = 0;
+    w_hwstop = false;
     w_wire = WIRE_LOST;
     e_reset_on = e_boot_on = false;
     d_up = false;
@@ -1267,6 +1286,9 @@ static void world_init(uint32_t t0)
     p_write_quiet = p_stop_seen = p_any_quiet = false;
     p_poll_stage = p_any_quiet_stage = 0;
     p_servo_next = t0;
+    p_beat_was = false;
+    p_beat_off_at = t0;
+    p_last_off_ms = 0;
     memset(w_slow_ms, 0, sizeof(w_slow_ms));
     p_arm_expired = 0;
     p_clear_sent = 0;
@@ -1984,6 +2006,158 @@ TEST_CASE(a_gate_that_may_not_arm_reports_no_roles)
     CHECK_EQ(g.roles, LINK_ARM_SURFACE);
 }
 
+/* The STATUS fault bitmap as the IOmcu would answer a read now. */
+static uint16_t d_faults(void)
+{
+    uint16_t state = 0u, faults = 0u;
+    safety_gate_status(&d_beat, &d_dev, d_control, &state, &faults);
+    return faults;
+}
+
+/* Runs on from @p from, a pass at a time, up to @p end, and returns the
+ * first time the IOmcu's STATUS reads without LINK_FAULT_HEARTBEAT, or 0. */
+static uint32_t heartbeat_fault_clears(uint32_t from, uint32_t end)
+{
+    run_until(from);
+    for (uint32_t t = from; t <= end; ++t) {
+        run_until(t);
+        if ((d_faults() & (uint16_t)LINK_FAULT_HEARTBEAT) == 0u) {
+            return (uint32_t)(T - T0);
+        }
+    }
+    return 0u;
+}
+
+TEST_CASE(a_hardware_stop_pressed_while_armed_clears_on_release)
+{
+    /* Armed at 70%; the button is pressed at 3s and released at 4s. */
+    armed_at_70(0, WIRE_LOST);
+    run_until(2990);
+    CHECK(d_drives_70());
+    run_until(3000);
+    w_hwstop = true;
+    run_until(3990);
+    /* The IOmcu has failed safe and latched; the panel finished a stop
+     * from the far end: its bank disarmed, the command at zero, no
+     * operator's STOP standing. */
+    CHECK(!outputs_driving(&d_bank));
+    CHECK(link_dev_arm_latched(&d_dev));
+    CHECK((d_faults() & (uint16_t)LINK_FAULT_HEARTBEAT) != 0u);
+    CHECK_EQ(d_beat_disarms, 1u);
+    CHECK_EQ(p_far_end_stops, 1u);
+    CHECK(!outputs_armed(&p_out));
+    CHECK_EQ(p_throttle, 0u);
+    CHECK(arming_stopped(&p_arm));
+    CHECK(!arming_held(&p_arm));
+    /* The panel's line goes again after the window, under the button. */
+    CHECK(p_beat_was);
+    CHECK(p_last_off_ms >= ARMING_STOP_WITHHOLD_MS);
+    CHECK(p_last_off_ms < ARMING_STOP_WITHHOLD_MS + 10u);
+    const unsigned frames = d_arm_frames;   /* none after the stop */
+
+    /* Released: the IOmcu trusts the line within five edges. */
+    run_until(4000);
+    w_hwstop = false;
+    const uint32_t cleared = heartbeat_fault_clears(4000, 6000);
+    CHECK(cleared != 0u);
+    CHECK(cleared <= 4000u + HEARTBEAT_PERIOD_MS + HEARTBEAT_SETTLE_MS);
+    /* And the bench stays SAFE: nothing armed again, no ARM = 1 written,
+     * the IOmcu's latch and the panel's stop both stand. */
+    run_until(6000);
+    CHECK(d_beat.alive);
+    CHECK_EQ(d_faults(), 0u);
+    CHECK(!outputs_driving(&d_bank));
+    CHECK_EQ(d_arm_edges, 1u);
+    CHECK_EQ(d_arm_frames, frames);
+    CHECK(link_dev_arm_latched(&d_dev));
+    CHECK(arming_stopped(&p_arm));
+    CHECK(!outputs_armed(&p_out));
+
+    /* An ARM hold of its own arms from nothing: CLEAR, then ARM. */
+    op_at(2, 6000, OP_ARM, 0);
+    run_until(7000);
+    CHECK_EQ(d_arm_edges, 2u);
+    CHECK_EQ(p_clear_sent, 2u);
+    CHECK_EQ(p_arm_refused + p_arm_gave_up, 0u);
+    CHECK(outputs_driving(&d_bank));
+    CHECK_EQ(outputs_actual(&d_bank, 0), 0);
+}
+
+TEST_CASE(a_hardware_stop_clears_on_release_at_every_phase_and_length)
+{
+    /* Pressed at each of 55 phases of the poll, held for 200ms to 2s.  The
+     * fault clears within the IOmcu's five edges of the release, or of
+     * the end of the panel's window when the release came inside it;
+     * nothing arms again. */
+    static const uint32_t holds[] = { 200, 299, 300, 301, 500, 2000 };
+    unsigned late = 0, never = 0, armed = 0, not_safe = 0;
+    for (unsigned h = 0; h < sizeof(holds) / sizeof(holds[0]); ++h) {
+        for (uint32_t ph = 0; ph < 55u; ++ph) {
+            armed_at_70(0, WIRE_LOST);
+            const uint32_t press = 3000u + ph;
+            const uint32_t release = press + holds[h];
+            run_until(press);
+            w_hwstop = true;
+            run_until(release);
+            w_hwstop = false;
+            const uint32_t cleared =
+                heartbeat_fault_clears(release, release + 3000u);
+            /* The IOmcu doubts the line HEARTBEAT_MAX_GAP_MS after the
+             * last edge before the press and the far-end stop lands at the
+             * poll after that; the line edges again
+             * ARMING_STOP_WITHHOLD_MS after the stop, a pass later at
+             * most.  The IOmcu trusts it at the fifth edge after that or
+             * after the release, whichever is later: one period for the
+             * first edge and HEARTBEAT_SETTLE_MS for the rest. */
+            const uint32_t stop_at = (uint32_t)(p_stop_at - T0);
+            const uint32_t back = stop_at + ARMING_STOP_WITHHOLD_MS + 5u;
+            const uint32_t from = (release > back) ? release : back;
+            never += cleared == 0u || !p_stop_seen;
+            late += cleared != 0u
+                    && cleared > from + HEARTBEAT_PERIOD_MS
+                                 + HEARTBEAT_SETTLE_MS;
+            /* The stop itself: the ceiling and one poll after the press. */
+            late += p_stop_seen
+                    && stop_at > press + HEARTBEAT_MAX_GAP_MS + 60u;
+            run_until(release + 4000u);
+            armed += d_arm_edges != 1u || outputs_driving(&d_bank)
+                     || outputs_armed(&p_out);
+            not_safe += !(arming_stopped(&p_arm) && !arming_held(&p_arm)
+                          && p_throttle == 0u);
+        }
+    }
+    CHECK_EQ(never, 0u);
+    CHECK_EQ(late, 0u);
+    CHECK_EQ(armed, 0u);
+    CHECK_EQ(not_safe, 0u);
+}
+
+TEST_CASE(a_hardware_stop_pressed_while_safe_clears_on_release)
+{
+    world_init(0);
+    w_wire = WIRE_LOST;
+    d_boot();
+    run_until(2000);
+    CHECK(p_link_up);
+    CHECK_EQ(d_faults(), 0u);
+    w_hwstop = true;
+    run_until(3000);
+    CHECK((d_faults() & (uint16_t)LINK_FAULT_HEARTBEAT) != 0u);
+    /* Nothing was armed, so the panel has nothing to stop: its line edges
+     * all along. */
+    CHECK_EQ(p_far_end_stops, 0u);
+    CHECK(!arming_stopped(&p_arm));
+    CHECK(p_beat_was);
+    w_hwstop = false;
+    const uint32_t cleared = heartbeat_fault_clears(3000, 4000);
+    CHECK(cleared != 0u);
+    CHECK(cleared <= 3000u + HEARTBEAT_PERIOD_MS + HEARTBEAT_SETTLE_MS);
+    run_until(4000);
+    CHECK_EQ(d_faults(), 0u);
+    CHECK_EQ(d_arm_edges, 0u);
+    CHECK(!outputs_driving(&d_bank));
+}
+
 int main(void)
 {
     RUN(a_hold_refuses_a_nonzero_arm_and_nothing_else);
@@ -2018,5 +2192,8 @@ int main(void)
     RUN(a_keep_alive_nobody_answers_stops_the_panel_in_that_poll);
     RUN(any_exchange_nobody_answers_stops_an_armed_panel_at_once);
     RUN(a_slow_handshake_is_given_up_at_the_deadline_and_left_latched);
+    RUN(a_hardware_stop_pressed_while_armed_clears_on_release);
+    RUN(a_hardware_stop_clears_on_release_at_every_phase_and_length);
+    RUN(a_hardware_stop_pressed_while_safe_clears_on_release);
     return test_summary("safety_gate");
 }
