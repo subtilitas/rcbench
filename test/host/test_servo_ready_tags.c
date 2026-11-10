@@ -25,6 +25,7 @@
 #include "servo_screen_rig.h"
 
 #include "servo_ready_int.h"
+#include "supply_screen.h"
 #include "ui_text.h"
 
 /**
@@ -293,15 +294,21 @@ static bool rows_fit(void)
 }
 
 /* Every function with READY rows, on the benches the cards meet most: a
- * fresh SAFE bench on OUTPUTS, ARMED, a PROG PORT with its pulse off and
- * on, a report on its way, no link.  Every row fits its 20 cells and a
- * red row shows its text's state, in both languages. */
+ * fresh SAFE bench on OUTPUTS, SET A at the top of SUPPLY's caps, ARMED,
+ * a PROG PORT with its pulse off and on, a report on its way, no link.
+ * Every row fits its 20 cells and a red row shows its text's state, in
+ * both languages. */
 TEST_CASE(every_row_of_every_card_fits_its_cells)
 {
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
         for (int fn = SERVO_FN_LIVE; fn < SERVO_FN_COUNT; ++fn) {
             to_fn((servo_fn_t)fn, false);
+            CHECK(rows_fit());
+            /* SET A at the top of SUPPLY's caps on the supply rows of
+             * TEST, LIMIT RUN and RUDDER AUTO: `EIN BEI START 5.00A`. */
+            supply_screen_put(supply_screen_set_v(),
+                              supply_screen_caps().i_max);
             CHECK(rows_fit());
             to_fn((servo_fn_t)fn, true);
             CHECK(rows_fit());

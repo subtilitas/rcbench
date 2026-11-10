@@ -108,7 +108,7 @@ SETTINGS in LIMIT RUN's footer opens the list. Off a PROG PORT, MODE, SERVO and 
 | SERVO | KST/CHASERVO, HITEC D SERIES, HITEC CLASSIC | KST/CHASERVO | PORT on PROG PORT only: the programmer and series the run's sessions go to ([Hitec servos](servo.md#hitec-servos)); a tap opens the three. LIMIT RUN's own, apart from RUDDER AUTO's; the same as the READY card's SERVO row |
 | Hitec D receive | PULL-UP, PRECHARGE | PULL-UP | shown under SERVO at HITEC D SERIES only: how the IOmcu receives a D series answer; the HITEC page's setting |
 | SERVO PULSES | KEEP, 1000-2000 | KEEP | PORT on PROG PORT and SERVO at KST/CHASERVO only: 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0us before the search |
-| Programming current | 0.05 to 3.000A | 1.000A | the session's current limit where no PD mini feeds the servo; with one, the run keeps SUPPLY's current limit |
+| CURRENT | SUPPLY's caps | SUPPLY's SET A | the run's current limit, SUPPLY's SET A, where a PD mini feeds the servo: a tap opens SUPPLY's keypad. Without a PD mini `--`, locked: the servo's own supply limits the current |
 | Wait before PWM | 0 to 10000ms | 100ms | from the end of programming to the first pulse |
 
 The list has no voltage: a run programs at 5.0V ([The supply: 5.0V](servo.md#the-supply-5-0v)).

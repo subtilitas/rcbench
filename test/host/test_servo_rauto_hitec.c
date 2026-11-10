@@ -341,8 +341,9 @@ TEST_CASE(a_d_series_side_whose_writes_do_not_move_it_fails_after_two)
  * passes the gate: READY reads SERVO as HITEC D SERIES, SUPPLY green with
  * the 6.00V the INA3221 measures and nothing live through it, and the hold
  * is offered with nothing for it to switch on.  On the classic servo's bench
- * the PD mini feeds it: SERVO reads HITEC CLASSIC, PD MINI the run's 5.0V, in
- * red as an output that is live through it. */
+ * the PD mini feeds it: SERVO reads HITEC CLASSIC, PD MINI the run's 5.0V
+ * and SUPPLY's SET A, in red as an output that is live through it.  The
+ * external rail's row has no SET A: no run sets its current limit. */
 TEST_CASE(a_d_series_servo_on_an_external_rail_reads_the_rail_voltage)
 {
     rdy_row_t r;
@@ -363,7 +364,9 @@ TEST_CASE(a_d_series_servo_on_an_external_rail_reads_the_rail_voltage)
     CHECK(rauto_ready_row(RAR_SUPPLY, &r));
     CHECK_STR_EQ(r.label, "PD MINI");
     CHECK_EQ(r.st, (uint8_t)RDY_LIVE);
-    CHECK_STR_EQ(r.value, "5.0V");
+    char want[24];
+    snprintf(want, sizeof(want), "5.0V %.2fA", (double)supply_screen_set_i());
+    CHECK_STR_EQ(r.value, want);
 }
 
 /* SET_SERVO_PROG_V at 6.0V and at 4.8V: AUTO's sessions ask 5000mV, on

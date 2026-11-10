@@ -959,6 +959,18 @@ bool target_locked(const ov_row_t *r);
 void ask_hv_on(void);
 void ask_apply(void);
 /**
+ * @brief A set point's keypad, SET V or SET A, over the left card inside
+ *        SUPPLY's caps narrowed by its OUTPUT LIMITS (supply_screen_caps()):
+ *        the one path of the SET row of LIVE, SWEEP and RUDDER and of SET A
+ *        on TEST's, LIMIT RUN's and RUDDER AUTO's PD MINI rows and lists.
+ *        OK puts the value typed, SUPPLY's question first while the output
+ *        is live and SETTINGS, CONFIRM WHILE ON, KEYPAD is on, the HV
+ *        warning first for a voltage raised past 6.0V; a programming port
+ *        that holds the supply by then refuses it.
+ * @param target KT_SUP_V or KT_SUP_I
+ */
+void svs_set_point_open(int target);
+/**
  * @brief The question after a programming port let go of a live output at
  *        its own set points (supply_screen_restore_offer()): asked once no
  *        panel, press or OUTPUT ON hold stands, none inside a limit run,
@@ -1256,6 +1268,41 @@ uint16_t rsup_ma(void);
 /** @brief The run's supply as the READY cards show it, `5.0V`.
  *  @param b where it goes @param n its size */
 void rsup_text(char *b, size_t n);
+
+/** @brief Whether a run of the function shown runs at SUPPLY's SET A: on
+ *         TEST always, on LIMIT RUN and RUDDER AUTO where a PD mini feeds
+ *         the servo (rsup_pd_used()).  Without one a session's limit is
+ *         stored and not applied, and the servo's own supply limits it.
+ *  @return true then; false on every other function */
+bool rcur_set_a(void);
+/** @brief A current limit as a row shows it: `2.00A`, `0.125A` where
+ *         the mA need three digits.
+ *  @param b where it goes @param n its size @param a the limit, A */
+void rcur_amps(char *b, size_t n, float a);
+/** @brief A row's value with SET A after it, `5.0V 2.00A`; @p head alone
+ *         without @p set_a.
+ *  @param b where it goes @param n its size
+ *  @param head what the row shows before it, "" for none
+ *  @param set_a whether the run takes SET A (rcur_set_a()) */
+void rcur_join(char *b, size_t n, const char *head, bool set_a);
+/** @brief An amber supply row's value with SET A: `ON AT START 2.00A`;
+ *         RDY_SEQ_ON's text without @p set_a.
+ *  @param b where it goes @param n its size
+ *  @param set_a whether the run takes SET A (rcur_set_a()) */
+void rcur_seq(char *b, size_t n, bool set_a);
+/** @brief Why SET A takes no edit from the function shown now: a run or
+ *         its start steps under way, no PD mini feeding the servo, or a
+ *         programming port holding the supply.
+ *  @return the reason, NULL while it takes one */
+const char *rcur_why(void);
+/** @brief SET A edited from a READY card or a list: the SET row's keypad
+ *         (svs_set_point_open(KT_SUP_I)); rcur_why() in the alert band
+ *         instead while it refuses. */
+void rcur_edit(void);
+/** @brief The CURRENT row of LIMIT RUN's and RUDDER AUTO's lists: SET A
+ *         where a PD mini feeds the servo, a tap its keypad; `--`, locked
+ *         with the reason, where none does. */
+extern const ui_setlist_custom_t rcur_row;
 /** @brief The two travel values, in the family's units.
  *  @param fam the family
  *  @param v LEFT and RIGHT

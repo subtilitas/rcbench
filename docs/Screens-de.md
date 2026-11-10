@@ -1658,7 +1658,7 @@ der Reihenfolge der Nutzung.
 | LIVE | LIVE | das Zifferblatt, den Drehknopf, die Anzeigen SOLL-PULSBREITE, GEMESSEN und STROM |
 | SWEEP | SWEEP | das Zifferblatt mit dem Sweep; OPTIONEN öffnet KURVE, TEMPO und BEREICH |
 | TEST | TEST | das Feld AUTOMATISCHER TEST, die Grenzen von SUPPLY, der Verlauf und das Feld des Laufs, die Karte BEREIT an der Stelle des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet die Liste des automatischen Tests |
-| ENDLAGENLAUF | ENDLAGENLAUF | Modus- und Ausgangszeile, UNTERES ENDE und OBERES ENDE und die Zustandszeilen auf der linken Karte, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet MODUS, SERVO, SERVOPULSE und die Zeilen des Programmierers ([Starten](Servo-de.md#starten)) |
+| ENDLAGENLAUF | ENDLAGENLAUF | Modus- und Ausgangszeile, UNTERES ENDE und OBERES ENDE und die Zustandszeilen auf der linken Karte, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet MODUS, SERVO, SERVOPULSE, STROM und Warten vor PWM ([Starten](Servo-de.md#starten)) |
 | RUDER | RUDER | Ausschlag in ° und mm, LÄNGE, 1000us, ZENTRIEREN, 2000us, NULLPUNKT und MAX LÖSCHEN ([Ruderausschlag](Servo-de.md#ruderausschlag)) |
 | RUDER AUTO | RUDER AUTO | das Feld von AUTO statt LÄNGE und der Fahrtasten, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste ([AUTO-Endpoints](Servo-de.md#auto-endpoints)) |
 | KST | SERVO > KST | die Programmierung für KST und Chaservo über dem linken Feld, die Karte BEREIT statt des Ausgangsfelds, WERTE SCHREIBEN in der Fußleiste ([Programmierer](#programmierer)) |
@@ -1695,7 +1695,8 @@ und RUDER trägt es die Zeilen von BEREIT und die Bedienelemente darunter,
 auf TEST, ENDLAGENLAUF, RUDER AUTO, KST und HITEC die Karte BEREIT. Kein
 Funktionsbildschirm hat AUSGANG EIN oder ein Feld PROG 5V: AUSGANG EIN
 gehört zu SUPPLY, und das 2s-Halten von ARM schaltet die Versorgung ein.
-Die Fußleiste bei y
+TEST, ENDLAGENLAUF und RUDER AUTO setzen SET A von SUPPLY über ihre
+Zeile PD MINI. Die Fußleiste bei y
 444 bis 492 hat drei Plätze von 328 x 48px: den Namen der Funktion mit
 der Portzeile darunter, ARM oder DISARM (WERTE SCHREIBEN auf KST und
 HITEC) und OPTIONEN.
@@ -2323,7 +2324,7 @@ Die Karte BEREIT nennt, was das Halten braucht, eine Zeile je Teil:
 | --- | --- | --- | --- |
 | PORT | der Port, der das Servo ansteuert | PORT-PWM aus bei SAFE | ein Port, den eine Programmierung hält; PORT-PWM aus bei ARMED; ein Programmierport des rbmod-Carriers mit festen 5V: `PROG-PORTS LAUFEN MIT FESTEN 5V: KEINE STUFEN` |
 | MESSGERÄT | das Messgerät der Servoschiene | - | - |
-| PD MINI | die Versorgung ein | der PD mini aus: die Stufen des Laufs schalten ihn ein | kein Netzteil antwortet; der PD mini aus, während der INA3221 3.0V oder mehr auf der Schiene misst: `SCHIENE UNTER SPANNUNG BEI PD MINI AUS: FREMD GESPEIST` |
+| PD MINI | der Ausgang und SET A von SUPPLY, die Strombegrenzung des Laufs: `EIN 2.00A` | `EIN BEI START 2.00A`: der PD mini aus, die Stufen des Laufs schalten ihn ein | kein Netzteil antwortet; der PD mini aus, während der INA3221 3.0V oder mehr auf der Schiene misst: `SCHIENE UNTER SPANNUNG BEI PD MINI AUS: FREMD GESPEIST` |
 | STUFEN | die Stufen, `4.8-6.0V, BROWN-OUT` | eine Stufe über 6.0V: ein Tipp öffnet NUR HV-SERVOS | keine Stufe gewählt; eine Stufe außerhalb der Spannungsgrenzen von SUPPLY |
 | BEREICH | die beiden Enden in us | - | BEREICH und WEG legen beide Enden auf PULS MITTE |
 | ARM | ARMED | SAFE: das Halten schaltet ARMED | ein Endlagenlauf oder RUDER AUTO läuft; ein Bericht wird noch geschrieben |
@@ -2331,7 +2332,14 @@ Die Karte BEREIT nennt, was das Halten braucht, eine Zeile je Teil:
 Eine Zeile ist rot, sobald einer ihrer Texte das Halten ablehnt; das
 Halten ist dann grau. Ein Tipp auf PORT öffnet die Portliste, ein Tipp auf
 STUFEN die Liste des automatischen Tests oder bei einer Stufe über 6.0V
-NUR HV-SERVOS.
+NUR HV-SERVOS. Ein Tipp auf PD MINI, grün oder gelb, öffnet das Tastenfeld
+von SET A innerhalb der Grenzen von SUPPLY
+([Servo: Die Strombegrenzung des Laufs](Servo-de.md#die-strombegrenzung-des-laufs)).
+Ein Tipp auf MESSGERÄT, solange es PD MINI zeigt, öffnet SETUP > SENSORS
+an dem INA3221, dessen Kanal das Ziel des Testers überwacht, sonst am
+ersten bestückten, und der Home-Tag führt zu TEST zurück; zeigt es den
+INA3221 oder das Modell des Panels, öffnet er nichts. Beide nehmen kein Tippen,
+solange der Lauf oder seine Schritte laufen.
 Ein roter Text, länger als die 20 Zellen der Zeile, zeigt eine Kurzform:
 `5V FEST: OHNE STUFEN`, `ANTWORTET NICHT`, `FREMD GESPEIST`,
 `AUSSERHALB GRENZEN`, `PORT-PWM AUS: DISARM`, `SERVOPROGRAMMIERUNG`,
@@ -2340,7 +2348,7 @@ Ein roter Text, länger als die 20 Zellen der Zeile, zeigt eine Kurzform:
 
 Der Hinweis zu BLOCKIERT AB nennt unerreichbare Schwellen:
 `BLOCKIERT AB 2.00A unerreichbar: Strombegrenzung 2.00A`, wenn BLOCKIERT AB
-mindestens so hoch wie die Strombegrenzung unter SOLL ist. Andernfalls,
+mindestens so hoch wie SET A von SUPPLY ist. Andernfalls,
 bei INA3221 als Messgerät und einer Schwelle mindestens in Höhe seines
 Messbereichs, erscheint
 `BLOCKIERT AB 2.00A unerreichbar: INA3221-Bereich 1.638A`.
@@ -2425,8 +2433,11 @@ Die linke Karte, x 18 bis 618 des Inhalts:
 
 Die zehn Zeilen der Karte BEREIT sind PORT, SERVO, MESSGERÄT, WINKEL,
 SCHIENE, BEREICH, PROGRAMMER, die Versorgung (PROG 5V, PD MINI oder
-VERSORGUNG), PORT-PWM und ARM. PROG 5V und PD MINI zeigen die `5.0V` des
-Laufs. 2s HALTEN: ARM + START stellt ein PD mini auf 5,0V, schaltet
+VERSORGUNG), PORT-PWM und ARM. PROG 5V zeigt die `5.0V` des Laufs, PD
+MINI die `5.0V` des Laufs und SET A von SUPPLY, `5.0V 2.00A`, und ein
+Tipp auf PD MINI öffnet das Tastenfeld von SET A
+([Servo: Die Strombegrenzung des Laufs](Servo-de.md#die-strombegrenzung-des-laufs)).
+2s HALTEN: ARM + START stellt ein PD mini auf 5,0V, schaltet
 PORT-PWM und die Versorgung ein, liest sie zurück, schaltet ARM und
 startet den Lauf ([Servo: Die 5,0V des Laufs](Servo-de.md#die-50v-des-laufs)). Während des Laufs zeigt das Halten LAUF BEENDEN, und OPTIONEN ist
 grau. Für jedes Schreiben schaltet der Lauf selbst auf SAFE und zurück auf
@@ -2657,9 +2668,9 @@ Eine Änderung gilt bis SPEICHERN als nicht gespeichert.
 | der Hub | das Servoprofil: AUSGANG mit TYP, PULSRATE, PULS MIN, PULS MITTE, PULS MAX, TRIMMUNG, WEG, UMKEHREN und HV-SERVO; PRÜFLING mit NAME und BERICHT |
 | SWEEP | KURVE, TEMPO und BEREICH |
 | TEST | SPANNUNGSSTUFEN: Stufe 4.8V, Stufe 6.0V, HV-SERVO, Stufe 7.4V, Stufe 8.4V; BROWN-OUT: Brown-out, Brown-out Mindestspannung, Brown-out-Schritt; GRENZWERTE: Blockierschwelle, Ruhestrom max, Haltestrom max, Stellzeit max; DAUER UND ZEITEN: Länge nach, Testzeit, Bewegungen, Haltezeit, Einschwingzeit |
-| ENDLAGENLAUF | MODUS, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, Programmierstrom und Warten vor PWM; ein Lauf programmiert mit 5,0V ([Servo](Servo-de.md#die-50v-des-laufs)) |
+| ENDLAGENLAUF | MODUS, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, STROM und Warten vor PWM; ein Lauf programmiert mit 5,0V ([Servo](Servo-de.md#die-50v-des-laufs)). STROM ist SET A von SUPPLY, `SET A 2.00A`, ein Tipp sein Tastenfeld; `--` und gesperrt ohne PD mini ([Servo](Servo-de.md#die-strombegrenzung-des-laufs)) |
 | RUDER | LÄNGE, SENSOR-MITTE und WINKELQUELLE |
-| RUDER AUTO | die Ziele, MARGIN, TOLERANZ, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE und WINKELQUELLE |
+| RUDER AUTO | die Ziele, MARGIN, TOLERANZ, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, WINKELQUELLE, STROM und Warten vor PWM; STROM wie beim ENDLAGENLAUF |
 | SERVO > KST | KST EXPERT MODE, eine Ebene tiefer |
 | HITEC | SERIE und EMPFANG |
 | LIVE | keine Liste |

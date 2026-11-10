@@ -441,6 +441,11 @@ TEST_CASE(every_label_and_state_fits_its_column)
             CHECK(gfx_text_cells(ui_setting_option(SET_LIMIT_FAMILY, f)) * 10
                   <= READY_VALUE_W);
         }
+        /* The supply row's amber state with SET A at its widest, mA in
+         * three digits: `ON AT START 2.125A`, 20 cells at most. */
+        char seq[40];
+        snprintf(seq, sizeof(seq), TR(RDY_SEQ_ON_AT), "2.125A");
+        CHECK(gfx_text_cells(seq) <= 20);
         CHECK(gfx_text_cells(TR(RDY_TITLE)) * 10 <= READY_LABEL_W);
     }
     ui_text_set_language(UI_LANG_EN);

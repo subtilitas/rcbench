@@ -84,10 +84,12 @@ SERVO-Funktionsbildschirms. Der Bildschirm steht in
 - OPTIONEN öffnet die Liste des Laufs: MODUS (NUR SUCHE oder SUCHEN +
   PROGRAMMIEREN), SERVO (KST/CHASERVO, HITEC D-SERIE oder HITEC
   KLASSISCH, der Programmierer, an den die Sitzungen des Laufs gehen,
-  [Hitec-Servos](#hitec-servos)), SERVOPULSE (BEHALTEN oder 1000-2000) und
-  den Programmierstrom und Warten vor PWM des Programmierers. Der Lauf
-  programmiert mit 5,0V und hat keine Zeile für die Spannung
-  ([Die 5,0V des Laufs](#die-50v-des-laufs)). Mit SERVO auf HITEC D-SERIE folgt unter SERVO der
+  [Hitec-Servos](#hitec-servos)), SERVOPULSE (BEHALTEN oder 1000-2000),
+  STROM und Warten vor PWM des Programmierers. STROM ist SET A von SUPPLY
+  ([Die Strombegrenzung des Laufs](#die-strombegrenzung-des-laufs)). Der
+  Lauf programmiert mit 5,0V und hat keine Zeile für die Spannung
+  ([Die 5,0V des Laufs](#die-50v-des-laufs)) und keine für den
+  Programmierstrom: kein Lauf wendet ihn an. Mit SERVO auf HITEC D-SERIE folgt unter SERVO der
   Hitec-D-Empfang (PULL-UP oder PRECHARGE), dieselbe gespeicherte
   Einstellung wie auf der [HITEC-Seite](HitecProgrammer-de.md). An den
   Ausgängen des Prüfstands sind MODUS, SERVO und SERVOPULSE gesperrt mit
@@ -111,8 +113,10 @@ SERVO-Funktionsbildschirms. Der Bildschirm steht in
   Winkelquelle und verweigert nichts: grün, solange der Lauf einen Winkel
   liest, gelb `AS5600 AUS` oder `IMU X+ KEIN MESSWERT`, solange nicht. Die Versorgungszeile heißt PROG 5V am Programmierport des
   rbmod-Carriers, PD MINI, wo ein PD mini das Servo speist, sonst
-  VERSORGUNG. PROG 5V und PD MINI zeigen die `5.0V` des Laufs, VERSORGUNG
-  die mittlere Spannung der Schiene. Die Farben sind die von RUDER AUTO
+  VERSORGUNG. PROG 5V zeigt die `5.0V` des Laufs, PD MINI die `5.0V` des
+  Laufs und SET A von SUPPLY, `5.0V 2.00A`, gelb `EIN BEI START 2.00A`,
+  solange das Halten es einschaltet, und VERSORGUNG die mittlere Spannung
+  der Schiene. Die Farben sind die von RUDER AUTO
   ([AUTO-Endpoints](#auto-endpoints)): grün erfüllt, rot sperrt das Halten
   oder ein Ausgang ist über sie aktiv, gelb erledigt das Halten selbst,
   grau wartet auf die Zeile PORT. An den Ausgängen des Prüfstands zeigt
@@ -126,9 +130,11 @@ SERVO-Funktionsbildschirms. Der Bildschirm steht in
   Testers überwacht, sonst am ersten bestückten, und das Home-Feld dort
   führt zum ENDLAGENLAUF zurück; auf ein rotes PD MINI mit
   `PD MINI: 5.0V AUSSERHALB SEINER GRENZEN` öffnet es die Einstellungen von
-  SUPPLY bei AUSGANGSGRENZEN. Ein Tippen
-  auf eine andere rote oder graue Zeile nennt sie im Alarmband, `ZEILE:
-  Grund`.
+  SUPPLY bei AUSGANGSGRENZEN; auf ein grünes oder gelbes PD MINI öffnet es
+  das Tastenfeld von SET A
+  ([Die Strombegrenzung des Laufs](#die-strombegrenzung-des-laufs)). Ein
+  Tippen auf eine andere rote oder graue Zeile nennt sie im Alarmband,
+  `ZEILE: Grund`.
 - 2s HALTEN: ARM + START in der Mitte der Fußleiste, 328 x 48px, grün,
   solange keine Zeile rot ist. Es startet die Startfolge von RUDER AUTO:
   PORT-PWM, PROG 5V oder das PD mini, die Rückmeldung in 1000ms, ARM in
@@ -235,11 +241,10 @@ Endlagenlauf und RUDER AUTO programmieren mit 5,0V
   hält und was die KST-Seite beim Öffnen geladen hat. Die Seiten nutzen
   sie weiter, und das Ende des Laufs gibt ihrem Programmierer die
   Spannung der Einstellung zurück.
-- Die Stromgrenze der Sitzung ist SOLL A von SUPPLY, wo ein PD mini das
-  Servo speist, sonst der Programmierstrom der Programmierer
-  (`SET_SERVO_PROG_I`).
+- Die Stromgrenze der Sitzung ist SET A von SUPPLY, wo ein PD mini das
+  Servo speist ([Die Strombegrenzung des Laufs](#die-strombegrenzung-des-laufs)).
 - Speist ein PD mini das Servo, stellt START den Sollwert von SUPPLY vor
-  den Schritten auf 5,0V, SOLL A bleibt. Ein schon eingeschalteter
+  den Schritten auf 5,0V, SET A bleibt. Ein schon eingeschalteter
   Ausgang wird eingeschaltet auf 5,0V gesenkt oder angehoben. Das PD mini
   bleibt nach dem Lauf auf 5,0V, nach Ende, Abbruch und Fehler gleich;
   ein Fehler schaltet wie jeder Fehler alle Ausgänge aus.
@@ -265,6 +270,47 @@ Endlagenlauf und RUDER AUTO programmieren mit 5,0V
   zeigt die erste Zustandszeile `PD MINI HAT 5.0V NICHT ÜBERNOMMEN`, und
   kein Schritt wird getan.
 - PROG 5V des Carriers ist fest 5V und hat keinen Sollwert.
+
+#### Die Strombegrenzung des Laufs
+
+Ein Lauf von ENDLAGENLAUF und RUDER AUTO und jede Stufe des automatischen
+Tests laufen mit SET A von SUPPLY, wo ein PD mini das Servo speist
+(`shared/ui/servo_run_supply.c`).
+
+- Die Zeile PD MINI der Karte BEREIT zeigt sie nach der Spannung:
+  `5.0V 2.00A` auf ENDLAGENLAUF und RUDER AUTO, `EIN 2.00A` auf TEST, gelb
+  `EIN BEI START 2.00A`, solange das Halten oder die Stufen den Ausgang
+  einschalten. Der Zustand bleibt in Englisch und Deutsch in seinen 20
+  Zellen, auch mit drei Stellen mA (`EIN BEI START 2.125A`).
+- Die Listen OPTIONEN von ENDLAGENLAUF und RUDER AUTO führen sie als
+  STROM, `SET A 2.00A`.
+- Ein Tippen auf die Zeile, grün oder gelb, oder auf STROM öffnet das
+  Tastenfeld von SUPPLY über der linken Spalte: STROMBEGRENZUNG in A, zwei
+  Nachkommastellen, innerhalb der Grenzen von SUPPLY, eingeengt durch
+  seine AUSGANGSGRENZEN. OK setzt SET A und behält SET V. Ein Wert
+  außerhalb des Bereichs lässt das Tastenfeld offen und nennt den Bereich.
+- Bei eingeschaltetem Ausgang und Rückfrage Tastenfeld von
+  SUPPLY an (die Vorgabe) kommt zuerst die Frage von SUPPLY: `AUSGANG IST
+  EINGESCHALTET`, die Änderung als `2.00 -> 1.50A`, ÜBERNEHMEN oder
+  ABBRECHEN. Ein Ausgang, der unter der Frage ausgeht, nimmt sie
+  unbeantwortet mit, wie auf SUPPLY.
+- Die Zeile nimmt kein Tippen, solange ein Lauf oder seine Startschritte
+  laufen, wie die anderen Zeilen von TEST dann keines nehmen; die Zeile
+  PD MINI von TEST zeigt die Grenze, mit der der Lauf begann. Belegt ein
+  Programmierport das Netzteil, lehnt das Tastenfeld mit
+  `Servoprogrammierung belegt das Netzteil: Sollwerte und EIN gesperrt.`
+  ab, der Ablehnung von SUPPLY.
+
+Speist kein PD mini das Servo, begrenzt die eigene Grenze der externen
+Versorgung oder M7 des rbmod-Carriers den Strom. Die Sitzung eines Laufs
+fragt weiter den Programmierstrom der Programmierer (`SET_SERVO_PROG_I`)
+an, und der IOmcu speichert ihn und wendet nichts an: er schaltet keine
+Versorgung, die er nicht hält (`shared/outputs/kst_port.c`), und PROG 5V
+des Carriers nimmt keine Strombegrenzung
+(`firmware/iomcu/src/iomcu_kst.c`). STROM zeigt dann `--`, gesperrt mit
+`Kein PD mini speist das Servo: seine Versorgung begrenzt`, und die Zeile
+der Versorgung zeigt keinen Strom. Die KST- und die HITEC-Seite stellen
+den Programmierstrom für ihre eigenen Sitzungen.
 
 #### Zuerst lesen
 
@@ -747,7 +793,9 @@ die unten genannten Konstanten stehen in `servo_test.h`.
 
 Die Spannungsstufen sind Stufe 4.8V und Stufe 6.0V des Laufs (Liste OPTIONEN von TEST), und mit HV-SERVO an Stufe 7.4V und Stufe 8.4V. HV-SERVO ist nach jedem Neustart aus. Ein
 Lauf mit einer Stufe über 6,0V startet nur über die Warnung NUR HV-SERVOS,
-2s gehalten. Die Strombegrenzung im Lauf ist die der Zeile SOLL.
+2s gehalten. Die Strombegrenzung im Lauf ist SET A von SUPPLY, die die
+Zeile PD MINI der Karte BEREIT zeigt und ein Tippen dort setzt
+([Die Strombegrenzung des Laufs](#die-strombegrenzung-des-laufs)).
 
 Jede Stufe durchläuft diese Phasen:
 
@@ -1740,8 +1788,12 @@ Bluetooth-IMU).
   (Einstellungen `rud_defl_lo`, `rud_defl_hi`). Mit gesetzter LÄNGE zeigt
   die Zeile die mm an der Hinterkante neben den Grad. RESERVE: 0 bis 50%,
   10% (`rud_margin`). TOLERANZ: 0,1 bis 5,0°, vorgegeben 0,5°
-  (`rud_tol`). Ein Tippen öffnet das Tastenfeld. Dieselben vier, SERVO und
-  SERVO-PULSE stehen in OPTIONEN.
+  (`rud_tol`). Ein Tippen öffnet das Tastenfeld. Dieselben vier, SERVO,
+  SERVO-PULSE, WINKELQUELLE, STROM und Warten vor PWM stehen in OPTIONEN.
+  STROM ist SET A von SUPPLY, wie auf ENDLAGENLAUF
+  ([Die Strombegrenzung des Laufs](#die-strombegrenzung-des-laufs));
+  Warten vor PWM ist die Wartezeit des KST-Programmierers, die VERLASSEN
+  des Laufs sendet.
 - Der Zielwert einer Seite ist der eingegebene Ausschlag x (1 + RESERVE):
   20,0° bei 10% ergeben 22,0°.
 - Die Karte BEREIT an der Stelle der Ausgangskarte, 380 x 374px: eine
@@ -1758,7 +1810,9 @@ Bluetooth-IMU).
   Zeile erreichen kann, nach seiner Kurzform auf 20 Zellen, auf Englisch
   und Deutsch. Die Portzeile ist die Zeile der Taste PORT, bis 25 Zellen:
   auf einer Zeile endet sie nach dem letzten ganzen Wort, `PORT 1 GPIO 13
-  PWM AUS` als `PORT 1 GPIO 13 PWM`. Die Schienenzeile unter den Zeilen nennt das
+  PWM AUS` als `PORT 1 GPIO 13 PWM`. Die Zeile der Versorgung zeigt wie
+  beim Endlagenlauf: PD MINI `5.0V 2.00A` mit SET A von SUPPLY, wo ein PD
+  mini das Servo speist. Die Schienenzeile unter den Zeilen nennt das
   Messgerät des Laufs mit Volt und Ampere.
 - Ein Tippen auf PORT öffnet die PORT-Auswahl; auf SERVO die Auswahl
   SERVO, KST/CHASERVO, HITEC D-SERIE und HITEC KLASSISCH über der linken
@@ -1768,8 +1822,9 @@ Bluetooth-IMU).
   INA3221, dessen Kanal
   das Ziel des Testers überwacht (sonst am ersten bestückten); auf ein
   rotes PD MINI mit `PD MINI: 5.0V AUSSERHALB SEINER GRENZEN` öffnet es die
-  Einstellungen von SUPPLY bei AUSGANGSGRENZEN. Ein Tippen auf eine
-  andere rote oder graue Zeile nennt sie im Alarmband, `ZEILE: Grund`.
+  Einstellungen von SUPPLY bei AUSGANGSGRENZEN; auf ein grünes oder gelbes
+  PD MINI das Tastenfeld von SET A. Ein Tippen auf eine andere rote oder
+  graue Zeile nennt sie im Alarmband, `ZEILE: Grund`.
 - 2s HALTEN: ARM + START in der Mitte der Fußleiste, 328 x 48px, grün,
   solange keine Zeile rot ist. Es startet die Startfolge
   (`shared/servo/servo_start_seq.c`, gemeinsam mit dem Endlagenlauf und
@@ -1803,7 +1858,7 @@ Haltens:
 | --- | --- | --- |
 | FAILSAFE LÖSEN | CLEAR an den IOmcu, wenn STATUS beim Halten FEHLER 01 und nicht FEHLER 10 zeigt: das Schreiben, das ARM vor dem Schalten auf ARMED macht, bei SAFE ([Arm-Latch](Safety-de.md#arm-latch)). Nur dann als Schritt 1 gezeigt | FEHLER 01 erlischt innerhalb von 500ms; noch gesetzt nach 500ms lässt den Schritt fehlschlagen |
 | 1 PORT-PWM | PORT-PWM EIN, gespeichert, wenn das Ziel ein PROG-PORT ist und die Einstellung AUS | sofort |
-| 2 PROG 5V oder PD MINI | PROG 5V EIN am Port des rbmod-Carriers; AUSGANG EIN des PD mini, wo es das Servo speist, mit SOLL V und SOLL A von SUPPLY, SOLL V die 5,0V, die START gestellt hat | sofort |
+| 2 PROG 5V oder PD MINI | PROG 5V EIN am Port des rbmod-Carriers; AUSGANG EIN des PD mini, wo es das Servo speist, mit SET V und SET A von SUPPLY, SET V die 5,0V, die START gestellt hat | sofort |
 | 3 RÜCKMELDUNG | wartet, bis PROG 5V oder der Ausgang des PD mini EIN zurückmeldet, der Messwert des PD mini auf 5,0V, dann das PORT-PWM-Bit des IOmcu (das Panel setzt es nur bei SAFE; der Puls selbst läuft nur bei ARMED), dann auf ein INA3221-Messfenster, das nach beiden begann. Die Zeilen werden an diesem Fenster geprüft. Eine niedrige Schiene (`SERVOVERSORGUNG UNTER 3.0V ODER OHNE MESSWERT`, `PROGRAMMIEREN: SERVOVERSORGUNG UNTER 4.8V`) wird an jedem weiteren Fenster geprüft, bis die 1000ms um sind, da der Ausgang der Versorgung erst nach ihrer Rückmeldung EIN steigt; jede andere rote Zeile lässt den Schritt am ersten fehlschlagen | 1000ms ab Schritt 2 für alle drei; ein Teil ohne Rückmeldung lässt den Schritt fehlschlagen, ebenso eines, das erst nach den 1000ms zurückmeldet, oder eine Schiene, die nach 1000ms noch niedrig ist |
 | 4 ARM | ARM, wenn der Prüfstand SAFE ist | ARMED innerhalb von 500ms; ein ARMED, das erst nach den 500ms kommt, lässt den Schritt fehlschlagen |
 | 5 START | der Lauf startet über die Prüfung der Tabelle unten | sofort |

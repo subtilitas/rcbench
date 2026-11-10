@@ -12,8 +12,11 @@
  *   - PORT: OUTPUTS, or a PROG PORT off the rbmod carrier, and its pulse.
  *     The carrier's ports run at a fixed 5V and take no steps;
  *   - METER: the INA3221 channel, the PD mini or the panel's model, the
- *     meter the run reads to its end;
- *   - PD MINI: answering, and not beside a rail fed from elsewhere: with
+ *     meter the run reads to its end.  On the PD mini a tap opens SETUP >
+ *     SENSORS on the INA3221 (wb_open_meter());
+ *   - PD MINI: its output and SUPPLY's SET A, the current limit the steps
+ *     set (`ON 2.00A`), a tap SET A's keypad (rcur_edit()); answering,
+ *     and not beside a rail fed from elsewhere: with
  *     its output off an INA3221 window that reads the rail at 3.0V or
  *     more (SERVO_LIMRUN_RAIL_MIN_MV) is fed by another supply, which the
  *     steps would switch the PD mini on beside;
@@ -275,6 +278,18 @@ const char *test_hold_blocked(test_row_t *row)
     return NULL;
 }
 
+/**
+ * @brief Whether a tap on METER opens SETUP > SENSORS: no run under way,
+ *        and one started now would read the PD mini, not the INA3221 nor
+ *        the panel's model.
+ * @return true then
+ */
+static bool meter_opens(void)
+{
+    return !servo_test_running(&s.test) && !test_on_ina_now()
+           && !supply_screen_model();
+}
+
 /** @brief Each row's label; PD MINI and ARM are the bench's own words. */
 static const char *row_label(int i)
 {
@@ -320,16 +335,21 @@ static void met_value(int i, char *b, size_t n, uint8_t *st)
             snprintf(b, n, "PD MINI");
         }
         break;
-    case TRR_PD:
-        if (supply_screen_model()) {
-            snprintf(b, n, "%s", TR(SV_METER_MODEL));
-        } else {
-            snprintf(b, n, "%s", ui_on_off(s.sup.output));
-        }
+    case TRR_PD: {
+        /* The output and SET A, the limit the steps set: the run's own
+         * while it runs. */
+        char a[16];
+        rcur_amps(a, sizeof(a), running ? rc->i_limit
+                                        : supply_screen_set_i());
+        snprintf(b, n, "%s %s",
+                 supply_screen_model() ? TR(SV_METER_MODEL)
+                                       : ui_on_off(s.sup.output),
+                 a);
         if (s.sup.output) {
             *st = (uint8_t)RDY_LIVE;
         }
         break;
+    }
     case TRR_STEPS:
         if (running) {
             test_steps_text(b, n, rc->steps_v, rc->step_count,
@@ -405,9 +425,10 @@ bool test_ready_row(int i, rdy_row_t *r)
         r->st = (uint8_t)RDY_BAD;
         ready_set_why(r, mine);
     } else if (!running && i == TRR_PD && pd_real() && !s.sup.output) {
-        /* The run's first step switches it on at its own voltage. */
+        /* The run's first step switches it on at its own voltage, at
+         * SET A. */
         r->st = (uint8_t)RDY_SEQ;
-        snprintf(r->value, sizeof(r->value), "%s", TR(RDY_SEQ_ON));
+        rcur_seq(r->value, sizeof(r->value), true);
     } else if (!running && i == TRR_STEPS && test_needs_hv()) {
         /* A step past 6.0V: the HV warning's hold starts it. */
         r->st = (uint8_t)RDY_SEQ;
@@ -416,10 +437,14 @@ bool test_ready_row(int i, rdy_row_t *r)
         r->st = (uint8_t)RDY_OK;
         met_value(i, r->value, sizeof(r->value), &r->st);
     }
-    /* The rows a tap fixes: PORT always, STEPS refused or past 6.0V. */
+    /* The rows a tap fixes: PORT always, STEPS refused or past 6.0V,
+     * PD MINI's SET A on its keypad unless a text refuses, METER on SETUP
+     * while the run would not read the INA3221 nor the model. */
     r->fix = (i == TRR_PORT)
              || (i == TRR_STEPS && (r->st == (uint8_t)RDY_BAD
-                                    || r->why == TR(SV_TAP_HV)));
+                                    || r->why == TR(SV_TAP_HV)))
+             || (i == TRR_PD && r->st != (uint8_t)RDY_BAD)
+             || (i == TRR_METER && meter_opens());
     return true;
 }
 
@@ -440,6 +465,14 @@ void test_ready_tap(int i)
     }
     if (i == TRR_ANGLE) {
         angle_pick_open();
+        return;
+    }
+    if (i == TRR_PD && r.fix) {
+        rcur_edit();                /* SET A, the steps' current limit */
+        return;
+    }
+    if (i == TRR_METER && r.fix) {
+        wb_open_meter();            /* SETUP > SENSORS, the INA3221 */
         return;
     }
     if (i == TRR_STEPS && r.fix) {

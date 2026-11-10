@@ -3,8 +3,8 @@
  * @brief The menu's openers through the router: SERVO's caps button to SUPPLY's
  * LIMITS, DUT's AS5600 button to SENSORS, UPDATES' and LOGS' buttons to WI-FI
  * and the TARGET row from a programmer asking for a port, RUDDER AUTO's READY
- * rows ANGLE and METER and LIMIT RUN's METER to SENSORS on the part that
- * watches the target, the ANGLE SOURCE list's AS5600 entry from RUDDER,
+ * rows ANGLE and METER, LIMIT RUN's METER and TEST's METER on the PD mini
+ * to SENSORS on the part that watches the target, the ANGLE SOURCE list's AS5600 entry from RUDDER,
  * RUDDER AUTO, TEST and LIMIT RUN to SENSORS, PORT's `OUTPUTS: NO PIN`
  * entry to OUTPUTS on SERVO PWM, and the READY row SERVO's refusal on an
  * ARMED bench.  Each one's way back by the home tag, its refusal while the
@@ -413,6 +413,41 @@ TEST_CASE(limit_runs_red_meter_row_opens_sensors_and_the_tag_returns)
              servo_fn_screen_id(SERVO_FN_LIMRUN));
     tap_home();
     CHECK_EQ(ui_router_current(), servo_fn_screen_id(SERVO_FN_LIMRUN));
+}
+
+/* TEST's METER row never refuses: on the PD mini, the meter a run reads
+ * without the INA3221, a tap opens SENSORS on the INA3221 part whose
+ * channel watches the target (0x41's CH1 on OUT 1 here) and the home tag
+ * returns to TEST; on the panel's model it opens nothing. */
+TEST_CASE(tests_meter_row_on_the_pd_mini_opens_sensors_and_the_tag_returns)
+{
+    start();
+    settings_set(SET_INA_FIT(0), 1.0f);
+    settings_set(SET_INA_FIT(1), 1.0f);
+    settings_set(SET_INA_W(0), (float)SENS_W_NONE);
+    settings_set(SET_INA_W(3), (float)SENS_W_OUT_1);
+    (void)settings_save();
+    supply_screen_set_model(true);
+    servo_on(SERVO_FN_TEST);
+    rdy_row_t r;
+    CHECK(test_ready_row(TRR_METER, &r));
+    CHECK_STR_EQ(r.value, TR(SV_METER_MODEL));
+    CHECK(!r.fix);
+    tap(SV_RDY_X, UI_BAND_H + SV_RDY_ROW_Y((int)TRR_METER));
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO_TEST);
+
+    supply_screen_set_model(false);
+    CHECK(test_ready_row(TRR_METER, &r));
+    CHECK_EQ(r.st, (uint8_t)RDY_OK);
+    CHECK_STR_EQ(r.value, "PD MINI");
+    CHECK(r.fix);
+    tap(SV_RDY_X, UI_BAND_H + SV_RDY_ROW_Y((int)TRR_METER));
+    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+    CHECK_EQ(settings_screen_category(), (int)SET_CAT_SENSORS);
+    CHECK_EQ(sensors_pane_selected(), SENS_ENTRY_INA3221_0 + 1);
+    CHECK_EQ(ui_router_parent(SCREEN_SETUP), SCREEN_SERVO_TEST);
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO_TEST);
 }
 
 /* The METER row opens the part whose channel watches the target: 0x41 when
@@ -845,6 +880,7 @@ int main(void)
     RUN(a_red_angle_or_meter_row_opens_its_entry_and_the_tag_returns);
     RUN(limit_runs_red_meter_row_opens_sensors_and_the_tag_returns);
     RUN(the_meter_row_opens_the_part_that_watches_the_target);
+    RUN(tests_meter_row_on_the_pd_mini_opens_sensors_and_the_tag_returns);
     RUN(port_outputs_with_no_pin_opens_outputs_and_the_tag_returns);
     RUN(a_run_cards_angle_row_reaches_setup_and_the_tag_returns);
     RUN(the_servo_row_refuses_while_armed_and_names_why);

@@ -121,6 +121,7 @@ LIVE, SWEEP and RUDDER have the SUPPLY row and the SET row: ARM switches the sup
 - A tap on SET V or SET A opens SUPPLY's keypad over the left card, inside SUPPLY's OUTPUT LIMITS. OK puts the value on SUPPLY: one set point on both screens.
 - A value typed while the output is on waits for SUPPLY's question where SETTINGS > KEYPAD under CONFIRM WHILE ON asks it, ARMED or SAFE. A voltage raised above 6.0V waits for HV SERVOS ONLY.
 - While a programming port holds the PD mini, SET V and SET A are dim and a tap names the hold in the band.
+- The current limit, SUPPLY's SET A, is on TEST's, LIMIT RUN's and RUDDER AUTO's READY card: a tap on PD MINI opens its keypad over the left card ([The current limit](#the-current-limit)).
 - Leaving SERVO switches off an output SERVO switched on.
 - After a programmer's LEAVE that leaves the output on, SERVO asks whether the set points from before the session go back onto it ([Servo programmer](servo-programmer.md)). No other end of a port's hold asks: RELEASE PORT, a STOP, an error, a lost link or a restart leaves the session's set points until the next OFF.
 
@@ -129,6 +130,15 @@ On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) the p
 While a programming port holds the 5V the tap switches nothing and the band names the lock. Leaving SERVO switches off a rail switched on by ARM or the hold unless a port holds it.
 
 While PROG 5V is ON, two windows below 3000mV indicate a 5V failure. One possible cause is a braking servo feeding energy back until M7 latches off on overvoltage. The bench switches to SAFE, all outputs switch off, and the band shows `PROG 5V lost: INA3221 0x40 CH3 read 0.12V while ON. All outputs off.` ARM, the hold or PROG 5V ON on SUPPLY switches it on again. This monitoring is inactive without an INA3221 channel watching PROG 5V or while a programmer holds a port.
+
+### The current limit
+
+The automatic test, the limit run and RUDDER AUTO run at SUPPLY's SET A where a PD mini feeds the servo. The READY card's PD MINI row shows it after the voltage: `ON 2.00A` on TEST, `5.0V 2.00A` on LIMIT RUN and RUDDER AUTO, amber `ON AT START 2.00A` while the hold or the steps switch the output on. LIMIT RUN's and RUDDER AUTO's lists hold it as CURRENT, `SET A 2.00A`.
+
+- A tap on the row, green or amber, or on CURRENT opens SUPPLY's keypad: CURRENT LIMIT in A within SUPPLY's caps and OUTPUT LIMITS. OK sets SET A; SET V stays.
+- With the output on, SUPPLY's question comes first, as on SUPPLY: `OUTPUT IS ON`, APPLY or CANCEL.
+- No keypad while a run or its start steps are under way, or while a programming port holds the supply.
+- Without a PD mini the servo's own supply limits the current: CURRENT reads `--`, locked, and no row shows a current. The Programming current of the KST and HITEC pages applies to their sessions only.
 
 ![LIVE on the carrier: ARM switches PORT PWM and PROG 5V on](view:servo-rbmod)
 
@@ -153,6 +163,8 @@ A finger on the dial, CENTER, RELEASE, STOP, a switch to SAFE and leaving the sc
 Hold HOLD 2s: ARM + START in TEST's footer for 2s to run the selected supply-voltage steps. From SAFE the hold switches PORT PWM on where the port needs it, arms the bench and starts the run; the run's steps switch the PD mini on at each step's voltage. Every end of a run, PASS included, switches the bench to SAFE. Each step measures current at rest, moving and holding, and times travel. The brown-out walk finds the voltage at which movement stops.
 
 The READY card in place of the output card names what the hold needs: PORT, METER, ANGLE, PD MINI, STEPS, RANGE and ARM. ANGLE names the angle source the test reads, amber `AS5600 OFF` or `IMU X+ NO READING` when it reads none; it refuses nothing, and a tap on it opens the [ANGLE SOURCE list](servo-rudder.md#the-angle-source). Green is met, amber is done by the hold, red refuses it and greys the hold. A tap on the grey hold names the first red row in the alert band, for example `STEPS: NO STEP CHOSEN`. Red reasons include `SUPPLY NOT ANSWERING`, `RANGE TOO SMALL`, `STEP OUTSIDE VOLTAGE LIMITS`, `REPORT STILL BEING WRITTEN` and `RAIL LIVE WITH THE PD MINI OFF: FED FROM ELSEWHERE`: the INA3221 reads 3.0V or more on the rail with the PD mini's output off. Carrier programming ports have fixed 5V power, so supply steps cannot reach them: `PROG PORTS RUN AT 5V FIXED: NO STEPS`. The bench has 500ms to report ARMED; past that the sequence fails as `ARM: ...` with every output off.
+
+PD MINI shows the output and SUPPLY's SET A, the current limit of every step: `ON 2.00A`, amber `ON AT START 2.00A` while the steps switch it on. A tap on it opens SET A's keypad ([The current limit](#the-current-limit)). METER names the meter the run reads; while it reads PD MINI a tap opens [Sensors](setup-sensors.md) on the INA3221 that watches the target, and the home tag returns to TEST.
 
 ![TEST and its run card](view:servo-test)
 
@@ -187,7 +199,7 @@ The limit run searches for mechanical binding at each end of an installed servo'
 
 The left card shows the mode, then the output and the meter: `OUTPUT PROG PORT 1 GPIO 13, CURRENT INA3221 0x41 CH2` or `OUTPUT SERVO PWM GPIO 2, CURRENT INA3221 0x40 CH1`. LOW END and HIGH END hold the ends the last run found, in us, or `FREE`. The state lines under them name the step under way, why the hold is refused, and the last result with its file.
 
-The READY card on the right lists what the start needs, one row each: PORT, SERVO, METER, ANGLE, RAIL, RANGE, PROGRAMMER, the supply (PROG 5V on the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), PD MINI where the PD mini feeds the servo), PORT PWM and ARM. PROG 5V and PD MINI read the run's `5.0V`. A green dot is met. A red dot refuses the hold, or marks an output live through the row. Amber reads `START SWITCHES IT ON` or `START ARMS`: the hold does it. Grey waits on PORT. A tap on PORT opens the port choice, on SERVO the three programmers over the left column, on ANGLE the [ANGLE SOURCE list](servo-rudder.md#the-angle-source), which refuses nothing, on a red METER [Sensors](setup-sensors.md) on the INA3221 that watches the target, on a red PD MINI with `PD MINI: 5.0V OUTSIDE ITS LIMITS` [SUPPLY](supply.md) > SETTINGS > LIMITS. A tap on another red row, or on the grey hold, names it in the alert band.
+The READY card on the right lists what the start needs, one row each: PORT, SERVO, METER, ANGLE, RAIL, RANGE, PROGRAMMER, the supply (PROG 5V on the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), PD MINI where the PD mini feeds the servo), PORT PWM and ARM. PROG 5V reads the run's `5.0V`, PD MINI the run's `5.0V` and SUPPLY's SET A, `5.0V 2.00A`; a tap on a green or amber PD MINI opens SET A's keypad ([The current limit](#the-current-limit)). A green dot is met. A red dot refuses the hold, or marks an output live through the row. Amber reads `START SWITCHES IT ON` or `START ARMS`: the hold does it. Grey waits on PORT. A tap on PORT opens the port choice, on SERVO the three programmers over the left column, on ANGLE the [ANGLE SOURCE list](servo-rudder.md#the-angle-source), which refuses nothing, on a red METER [Sensors](setup-sensors.md) on the INA3221 that watches the target, on a red PD MINI with `PD MINI: 5.0V OUTSIDE ITS LIMITS` [SUPPLY](supply.md) > SETTINGS > LIMITS. A tap on another red row, or on the grey hold, names it in the alert band.
 
 The run reads only the INA3221 channel that watches the tester's target. While one of these holds, its row is red, the hold is grey and the first state line says why:
 

@@ -248,8 +248,10 @@ TEST_CASE(a_pd_mini_off_on_a_rail_fed_from_elsewhere_refuses_the_hold)
 }
 
 /* The PD mini off with SUPPLY's set point at 8.4V: PD MINI's row is
- * amber and reads 5.0V, the hold is offered.  START sets the PD mini to
- * 5.0V before its ON; after a STOP it stays at 5.0V, the output off. */
+ * amber and reads SET A, `ON AT START 2.00A`, the hold is offered.  START
+ * sets the PD mini to 5.0V before its ON, and the row reads the run's
+ * 5.0V and SET A; a tap there opens no keypad while the run runs.  After
+ * a STOP it stays at 5.0V, the output off. */
 TEST_CASE(a_pd_mini_set_past_6v_runs_at_5v_and_stays_there)
 {
     lim_pd(false);
@@ -260,13 +262,23 @@ TEST_CASE(a_pd_mini_set_past_6v_runs_at_5v_and_stays_there)
     ra_ms(200u);
     rdy_row_t r = lim_row(LRR_SUPPLY);
     CHECK_EQ(r.st, (uint8_t)RDY_SEQ);
+    char amps[16], want[40];
+    snprintf(amps, sizeof(amps), "%.2fA", (double)supply_screen_set_i());
+    snprintf(want, sizeof(want), TR(RDY_SEQ_ON_AT), amps);
+    CHECK_STR_EQ(r.value, want);
+    CHECK(r.fix);
     CHECK(lim_hold_blocked(NULL) == NULL);
     lim_hold_for(2300u);
     ra_ms(20u);
     CHECK(fabsf(supply_screen_set_v() - 5.0f) < 0.005f);
     CHECK_EQ(ra.pd_ons, 1u);
     CHECK(servo_screen_limit_running());
-    CHECK_STR_EQ(lim_row(LRR_SUPPLY).value, "5.0V");
+    snprintf(want, sizeof(want), "5.0V %s", amps);
+    CHECK_STR_EQ(lim_row(LRR_SUPPLY).value, want);
+    ev(SV_RDY_X, SV_RDY_ROW_Y(LRR_SUPPLY), TOUCH_EVENT_DOWN, 1);
+    ev(SV_RDY_X, SV_RDY_ROW_Y(LRR_SUPPLY), TOUCH_EVENT_UP, 1);
+    CHECK(!servo_screen_keypad()->open);
+    CHECK(servo_screen_limit_running());
     lim_press(2);
     ra_ms(2000u);
     CHECK(!servo_screen_limit_running());
