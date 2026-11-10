@@ -6,6 +6,32 @@ history is in git.
 
 ## Unreleased
 
+## 0.23.11 - 2026-11-11
+
+0.23.11 is a testing release. It adds the input-supply check of the rbmod
+carrier, labels in log names with RENAME LOG on MOTOR & ESC, a cursor in the
+name keyboard, the plot of the servo supply on every SERVO function screen
+and the ESC STICK profile for the Flycolor FlyDragon Lite Plus. LIMIT RUN and
+RUDDER AUTO program at 5.0V and refuse the IMU's yaw axis. Its minor number,
+23, is odd. GitHub publishes it as a pre-release and does not mark it as
+latest. It runs on the ESP32-P4 panel, as 0.23.10 does; an ESP32-S3 panel
+stays on the 0.22 line and is not offered it. The link protocol is 4.37, as
+in 0.23.10. The assets are
+`rcbench-panel-p4-v0.23.11.zip`, `rcbench-panel-p4-v0.23.11.bin`,
+`rcbench-iomcu-v0.23.11.zip`, `rcbench-iomcu-rbmod-v0.23.11.zip`,
+`rcbench-c6-2.13.0.bin`, `rcbench-c6-merged-2.13.0.bin` and `SHA256SUMS`.
+
+A bench on 0.23.10 gets 0.23.11 over Wi-Fi: SETUP > UPDATES, RELEASES: TESTING,
+CHECK FOR UPDATES, then hold the install button for 2s. With RELEASES: STABLE the
+check reads `releases/latest`, which names 0.22.1, and offers nothing. At
+link-up the panel offers to update the IOmcu over CAN (Controller Area Network)
+when the IOmcu runs a different build. To set up a new bench, load both boards over USB
+(Universal Serial Bus) as [First run, §1](docs/FirstRun.md#1-flash-both-boards)
+describes.
+
+The entries below cover the 26 pull requests merged since v0.23.10: #773 to
+#798.
+
 ### Added
 
 - On the rbmod carrier the panel warns about a low input supply: while the
@@ -108,24 +134,6 @@ history is in git.
   startup mode, PWM frequency, voltage cutoff option and running mode.
   25 of the 73 profiles run; at 20V the list opens 24.
 
-### Fixed
-
-- LIMIT RUN's card names the output of the last run, such as
-  `PROG PORT 1 GPIO 13`, in the language selected now: after a change of
-  SETUP > PANEL > Language the line follows on the next frame, as the
-  card's other lines do. The report keeps the language of the run.
-- A hardware stop button pressed while the bench is ARMED clears when it
-  is released: HWSTOP, or FAULT 10, goes 80 to about 180ms after the line
-  closes, and no later than about 700ms after the press. The panel's stop
-  from the IOmcu withholds the heartbeat for 300ms
-  (`ARMING_STOP_WITHHOLD_MS`) and then edges the line again; the stop
-  stays latched, the bench stays SAFE with every output off, and only a
-  new ARM hold switches to ARMED. Only that stop, the IOmcu's refusal of
-  ARM, has the window: an operator's STOP, a link lost or found, an arm's
-  handshake past its deadline, touch lost under an arm and a stalled
-  render loop withhold the line until an ARM hold or the STOP reset, and
-  so does any of them after the refusal.
-
 ### Changed
 
 - The STALL AT note on TEST and in the servo test's report states the
@@ -219,8 +227,8 @@ history is in git.
   row is refused while the page holds the port or a CONNECT is under way.
 - LIMIT RUN and RUDDER AUTO program at 5.0V. Every programmer session of a
   run, KST/Chaservo and Hitec, asks 5000mV with or without a PD mini; the
-  KST and HITEC pages' Programming voltage (`SET_SERVO_PROG_V`) no longer
-  reaches a run, and LIMIT RUN's list has no Programming voltage row. With
+  KST and HITEC pages' Programming voltage settings (`SET_SERVO_PROG_V`) do not
+  reach a run, and LIMIT RUN's list has no Programming voltage row. With
   a PD mini feeding the servo, START sets it to 5.0V, SET A kept, and the
   start sequence's read-back waits for the PD mini's reading at 5.0V; the
   PD mini stays at 5.0V after the run. SUPPLY's limits that leave out 5.0V
@@ -253,8 +261,24 @@ history is in git.
 
 ### Fixed
 
-- LIVE, SWEEP and RUDDER set the PD mini's voltage and current limit
-  again and show the supply's plot. A SET row under the READY rows holds
+- LIMIT RUN's card names the output of the last run, such as
+  `PROG PORT 1 GPIO 13`, in the language selected in SETUP > PANEL >
+  Language: after a change of that setting the line follows on the next
+  frame, as the card's other lines do. The report keeps the language of the run.
+- A hardware stop button pressed while the bench is ARMED clears when it
+  is released: HWSTOP, or FAULT 10, goes 80 to about 180ms after the line
+  closes, and no later than about 700ms after the press. The panel's stop
+  from the IOmcu withholds the heartbeat for 300ms
+  (`ARMING_STOP_WITHHOLD_MS`) and then edges the line again; the stop
+  stays latched, the bench stays SAFE with every output off, and only a
+  new ARM hold switches to ARMED. Only that stop, the IOmcu's refusal of
+  ARM, has the window: an operator's STOP, a link lost or found, an arm's
+  handshake past its deadline, touch lost under an arm and a stalled
+  render loop withhold the line until an ARM hold or the STOP reset, and
+  so does any of them after the refusal.
+
+- LIVE, SWEEP and RUDDER set the PD mini's voltage and current limit and
+  show the supply's plot. A SET row under the READY rows holds
   SET V and SET A, 80 x 48px each: a tap opens SUPPLY's keypad inside its
   OUTPUT LIMITS, a value typed while the output is on asks SUPPLY's
   question where SETTINGS > KEYPAD asks it, ARMED or SAFE, a voltage
@@ -265,7 +289,7 @@ history is in git.
   row reads `PROG 5V`, `5V FIXED` and takes no tap, and the plot and the
   rail line show the INA3221 channel that watches the PROG 5V. OUTPUT ON
   stays off these screens: ARM's 2s hold switches the supply on. SPEED,
-  the type pill (now 32px tall), the buttons and the rail line move down
+  the type pill (32px tall), the buttons and the rail line move down
   to make room: the rail line sits at y 412.
 - On the rbmod carrier's programming port the rail line and the plot of
   every SERVO function screen read the PROG 5V's INA3221 channel. Without
@@ -285,7 +309,7 @@ history is in git.
   then, the IMU screen `NO OTHER SENSOR FOUND: THE BOUND ONE IS LINKED`.
 - RUDDER AUTO's `LOAD HITEC015 IN FILES` or `RESTORE IN KST` stayed after
   the servo's values were put back or written otherwise on the HITEC or
-  KST page, until the next run. The line names the report again once a
+  KST page, until the next run. The line names the report once a
   read or write there shows the values before the run, or values the run
   did not leave; after an end with a write's answer missing, only the
   values before the run.
@@ -311,8 +335,6 @@ history is in git.
   the hub; opening the HITEC programmer set it to HITEC. Both screens
   shared that one value. Each screen's SERVO changes only by a pick on
   that screen.
-
-### Fixed
 
 - A red READY row on RUDDER AUTO, LIMIT RUN, TEST, LIVE, SWEEP, RUDDER,
   KST and HITEC cut a gate text longer than its 20 cells after a whole

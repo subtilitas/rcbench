@@ -1375,14 +1375,14 @@ const functions: Fn[] = [
   {
     id: 'link', group: 'bench',
     name: t('CAN link at 1Mbit/s with an echo self-test at every start', 'CAN-Verbindung mit 1Mbit/s und Echo-Selbsttest bei jedem Start'),
-    needs: [], src: repo('STATUS.md', 615, 'CAN drivers (TWAI on the panel, XL2515 on the IOmcu) and the echo self-test'),
+    needs: [], src: repo('STATUS.md', 666, 'CAN drivers (TWAI on the panel, XL2515 on the IOmcu) and the echo self-test'),
   },
   {
     id: 'interlock', group: 'bench',
     name: t('ARM by a 2s hold, DISARM and the heartbeat interlock', 'ARM durch 2s Halten, DISARM und Heartbeat-Verriegelung'),
     // Arming works on the bring-up bench. The decision to arm is tested on
     // the host only.
-    needs: [], src: repo('STATUS.md', 672, 'The decision to switch to ARMED is `shared/safety/safety_gate.c`'),
+    needs: [], src: repo('STATUS.md', 729, 'The decision to switch to ARMED is `shared/safety/safety_gate.c`'),
   },
   {
     id: 'stop', group: 'bench',
@@ -1392,23 +1392,23 @@ const functions: Fn[] = [
   {
     id: 'bind', group: 'bench',
     name: t('Assign protocols to pads on the OUTPUTS screen', 'Protokolle auf der Seite OUTPUTS den Pads zuordnen'),
-    needs: [], src: repo('STATUS.md', 735, 'Ticking or unticking a pin writes the binding and reads it back'),
+    needs: [], src: repo('STATUS.md', 792, 'Ticking or unticking a pin writes the binding and reads it back'),
   },
   {
     id: 'signals', group: 'bench',
     name: t('Send PWM and DShot signals on assigned pads', 'PWM- und DShot-Signale auf zugeordneten Pads ausgeben'),
-    needs: [], src: repo('STATUS.md', 706, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
+    needs: [], src: repo('STATUS.md', 763, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
   },
   {
     id: 'sweep', group: 'bench',
     name: t('Servo signal: sweep (square, sine, triangle) and frame rates other than 50Hz', 'Servosignal: Sweep (Rechteck, Sinus, Dreieck) und eine andere Pulsrate als 50Hz'),
     needs: [],
-    src: repo('STATUS.md', 419, 'a sweep (square, sine or triangle, run by the IOmcu)'),
+    src: repo('STATUS.md', 436, 'a sweep (square, sine or triangle, run by the IOmcu)'),
   },
   {
     id: 'ppm', group: 'bench',
     name: t('Send a PPM signal with 8 channels on 1 pad', 'PPM-Signal mit 8 Kanälen auf 1 Pad ausgeben'),
-    needs: [], src: repo('STATUS.md', 706, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
+    needs: [], src: repo('STATUS.md', 763, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
   },
   {
     id: 'settings', group: 'bench',
@@ -1423,42 +1423,42 @@ const functions: Fn[] = [
   },
   {
     id: 'profiles', group: 'bench',
-    name: t('Browse and search the ESC profiles: 72 families, 451 models', 'ESC-Profile durchsuchen: 72 Familien, 451 Modelle'),
+    name: t('Browse and search the ESC profiles: 73 families, 457 models', 'ESC-Profile durchsuchen: 73 Familien, 457 Modelle'),
     // No statement of a run of the list on a panel.
-    needs: [], src: repo('STATUS.md', 1100, '72 families, 451 models, from 153 manuals'),
+    needs: [], src: repo('STATUS.md', 1158, '73 families, 457 models, from 154 manuals'),
   },
   {
     id: 'wifi', group: 'bench',
     name: t('Panel update and card files in a browser over Wi-Fi', 'Panel-Update und Kartendateien im Browser über WLAN'),
     // The WI-FI screen. The upload works with no card; the file
     // list then says the card is missing (docs/Screens.md, "Wi-Fi").
-    needs: [], src: repo('STATUS.md', 282, 'Panel firmware update and card files over Wi-Fi'),
+    needs: [], src: repo('STATUS.md', 299, 'Panel firmware update and card files over Wi-Fi'),
   },
   {
     id: 'canupdate', group: 'bench',
     name: t('IOmcu firmware update over CAN from the panel', 'Firmware-Update des IOmcu über CAN vom Panel'),
-    needs: [], src: repo('STATUS.md', 683, 'IOmcu firmware update over CAN'),
+    needs: [], src: repo('STATUS.md', 740, 'IOmcu firmware update over CAN'),
   },
   {
     id: 'servo', group: 'servo',
     name: t('Drive a servo', 'Servo ansteuern'),
-    needs: [], drives: 'servo', src: repo('STATUS.md', 706, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
+    needs: [], drives: 'servo', src: repo('STATUS.md', 763, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
   },
   {
     id: 'servotest', group: 'servo',
     name: t('Automatic servo test', 'Automatischer Servotest'),
     // The test reads the current of the PD mini (docs/Servo.md, line 606).
-    needs: ['pdmini'], drives: 'servo', src: repo('docs/Servo.md', 606, 'the supply feeding the servo: the PD mini'),
+    needs: ['pdmini'], drives: 'servo', src: repo('docs/Servo.md', 714, 'the supply feeding the servo: the PD mini'),
   },
   {
     id: 'servocur', group: 'servo',
     name: t('Servo current from 1ms samples', 'Servostrom aus 1-ms-Abtastwerten'),
-    needs: ['ina3221'], drives: 'servo', src: repo('STATUS.md', 783, 'Current monitors (INA228, INA3221)'),
+    needs: ['ina3221'], drives: 'servo', src: repo('STATUS.md', 840, 'Current monitors (INA228, INA3221)'),
   },
   {
     id: 'angle', group: 'servo',
     name: t('Angle of the servo horn', 'Winkel des Ruderhorns'),
-    needs: ['as5600'], drives: 'servo', src: repo('STATUS.md', 960, 'Output encoder (AS5600)'),
+    needs: ['as5600'], drives: 'servo', src: repo('STATUS.md', 1017, 'Output encoder (AS5600)'),
   },
   {
     id: 'servoprog', group: 'servo',
@@ -1473,12 +1473,12 @@ const functions: Fn[] = [
   {
     id: 'esc', group: 'esc',
     name: t('Drive an ESC and motor', 'ESC und Motor ansteuern'),
-    needs: [], drives: 'esc', src: repo('STATUS.md', 706, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
+    needs: [], drives: 'esc', src: repo('STATUS.md', 763, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
   },
   {
     id: 'escpow', group: 'esc',
     name: t('ESC voltage, current, energy', 'Spannung, Strom, Energie des ESC'),
-    needs: ['ina228'], drives: 'esc', src: repo('STATUS.md', 783, 'Current monitors (INA228, INA3221)'),
+    needs: ['ina228'], drives: 'esc', src: repo('STATUS.md', 840, 'Current monitors (INA228, INA3221)'),
   },
   {
     id: 'stick', group: 'esc',
@@ -1486,17 +1486,17 @@ const functions: Fn[] = [
     // The bench powers the ESC from the PD mini and counts the beeps from the
     // supply current (docs/StickProgramming.md, line 6).
     needs: ['pdmini'], drives: 'esc', forces: { escPower: 'pd' },
-    src: repo('STATUS.md', 1110, 'PROGRAM runs 24 of the 72 profiles'),
+    src: repo('STATUS.md', 1168, 'PROGRAM runs 25 of the 73 profiles'),
   },
   {
     id: 'tap', group: 'esc',
     name: t('Detect ESC beeps with the phase tap', 'ESC-Pieptöne mit dem Phasenabgriff erfassen'),
-    needs: ['sim', 'tap'], drives: 'esc', src: repo('STATUS.md', 1027, 'Phase tap (ESC tones)'),
+    needs: ['sim', 'tap'], drives: 'esc', src: repo('STATUS.md', 1085, 'Phase tap (ESC tones)'),
   },
   {
     id: 'supply', group: 'bench',
     name: t('Bench-controlled power supply, 1 to 20V', 'Vom Prüfstand gesteuertes Netzteil, 1 bis 20V'),
-    needs: ['pdmini'], src: repo('STATUS.md', 576, 'the IOmcu runs it on a PIO UART on'),
+    needs: ['pdmini'], src: repo('STATUS.md', 627, 'the IOmcu runs it on a PIO UART on'),
   },
   {
     id: 'logs', group: 'bench',
@@ -1727,18 +1727,18 @@ const checks: Check[] = [
     id: 'prog-supply-pd', kind: 'note',
     text: t('Servo programmer with the PD mini: CONNECT switches an output that is off on at the programming voltage, 4.8 to 6.0V in steps of 0.1V, up to 8.4V with HV SERVO on, and at the current limit, 50 to 3000mA. The defaults are 5.0V and 1000mA. An output that is already on runs at the lower of its voltage and the programming voltage and at the lower of the two current limits; CONNECT raises neither. An output that is on under 4.8V is not programmed until it is raised. STOP switches the supply off.', 'Servoprogrammierung mit dem PD mini: VERBINDEN schaltet einen ausgeschalteten Ausgang mit der Programmierspannung ein, 4,8 bis 6,0V in Schritten von 0,1V, bis 8,4V mit HV-SERVO auf EIN, und mit der Strombegrenzung, 50 bis 3000mA. Voreingestellt sind 5,0V und 1000mA. Ein Ausgang, der schon an ist, läuft mit der kleineren der beiden Spannungen und der kleineren der beiden Strombegrenzungn; VERBINDEN erhöht keinen der beiden Werte. Ein Ausgang, der unter 4,8V an ist, wird erst programmiert, wenn er erhöht ist. STOP schaltet die Versorgung ab.'),
     when: { all: [SERVO_PROG, { has: 'pdmini' }] },
-    src: repo(PROGRAMMER, 336, '4.8 to 6.0V in 0.1V; up to 8.4V with HV SERVO on'),
+    src: repo(PROGRAMMER, 352, '4.8 to 6.0V in 0.1V; up to 8.4V with HV SERVO on'),
   },
   {
     id: 'prog-supply-own', kind: 'note',
     text: t('Servo programmer without the PD mini: the programming voltage and the current limit are stored and not applied. The servo runs from the supply of the variant "Servo power". STOP switches no supply.', 'Servoprogrammierung ohne den PD mini: Programmierspannung und Strombegrenzung werden gespeichert und nicht angewendet. Das Servo läuft an der Versorgung der Variante „Servoversorgung“. STOP schaltet keine Versorgung.'),
     when: { all: [SERVO_PROG, { not: { has: 'pdmini' } }] },
-    src: repo(PROGRAMMER, 450, 'Without a PD mini the voltage and the current limit are stored and not'),
+    src: repo(PROGRAMMER, 466, 'Without a PD mini the voltage and the current limit are stored and not'),
   },
   {
     id: 'prog-level', kind: 'unknown',
     text: t('Servo reply level on GPIO 13: not measured; at most 5V and typically 3.3V. GPIO 13 is rated for 5.5V while the IOmcu is powered and 3.63V while unpowered. Power the IOmcu before the servo supply.', 'Pegel der Servoantwort an GPIO 13: nicht gemessen; höchstens 5V und typisch 3,3V. GPIO 13 ist bei versorgtem IOmcu für 5,5V und ohne Versorgung für 3,63V ausgelegt. Schalte den IOmcu vor der Servoversorgung ein.'),
-    when: SERVO_PROG, src: repo(PROGRAMMER, 313, 'The level is not measured. GPIO 13 is rated 5.5V while the'),
+    when: SERVO_PROG, src: repo(PROGRAMMER, 329, 'The level is not measured. GPIO 13 is rated 5.5V while the'),
   },
   {
     id: 'servo-bench-supply', kind: 'note',
