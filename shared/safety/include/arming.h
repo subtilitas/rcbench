@@ -13,10 +13,17 @@
  *     the reset (stop_latch.h): an arm is refused while it stands.  A stop
  *     from the far end, the link or an arm's handshake clears with an
  *     explicit arm, or with the reset.
- *   - The heartbeat is suppressed while a stop is latched, and the
- *     IOmcu refuses to arm while the heartbeat is not trusted.  An arm
- *     therefore clears the latch FIRST and waits for the line to settle
- *     before the write, or the two conditions deadlock each other.
+ *   - The heartbeat is suppressed while a stop is latched.  The one
+ *     exception is the IOmcu's refusal of ARM (arming_stop_from_far_end()):
+ *     the line is withheld for ARMING_STOP_WITHHOLD_MS, long enough for the
+ *     IOmcu's monitor to doubt it and set its arm latch, and then edges
+ *     again while the latch here stands, so nothing arms without an
+ *     explicit arm.  A hardware stop button pressed under an armed bench
+ *     is that refusal; withheld for ever, the line would keep the IOmcu's
+ *     heartbeat fault, the band's HWSTOP, after the button is released.
+ *   - The IOmcu refuses to arm while the heartbeat is not trusted.  An
+ *     arm therefore clears the latch FIRST and waits for the line to
+ *     settle before the write, or the two conditions deadlock each other.
  *   - A stop during that wait wins.  The arm is abandoned, not queued.
  *   - With a far end to ask, the wait ends when the far end reports the
  *     line trusted and not when a fixed time is up: the monitor needs five
@@ -52,6 +59,26 @@ extern "C" {
  *        bench is disarmed and refused an arm.
  */
 #define ARMING_TOUCH_DEAD_MS 500u
+
+/**
+ * @brief How long the heartbeat stays withheld after the IOmcu refused ARM
+ *        (arming_stop_from_far_end()): 300ms, twice HEARTBEAT_MAX_GAP_MS
+ *        (150ms).
+ *
+ * The IOmcu's monitor doubts the line after HEARTBEAT_MAX_GAP_MS of
+ * silence, zeroes ARM and THROTTLE and sets its arm latch on that edge;
+ * only CLEAR releases the latch.  The window counts from the pass that
+ * first withholds the line, so the silence the IOmcu sees is at least this
+ * long.  After it the line edges again while the stop stays latched here:
+ * ARM = 0 is what the panel writes, and only an explicit arm
+ * (arming_request_arm_ask()) clears the latch.
+ *
+ * Every other stop withholds the line until an arm or the reset: an
+ * operator's STOP, the link lost or found, an arm's handshake past its
+ * deadline, arming_stop() (touch lost under an arm, a stalled render
+ * loop).  One of them on top of the refusal does as well.
+ */
+#define ARMING_STOP_WITHHOLD_MS 300u
 
 /**
  * @brief How long past the settle the panel waits for the far end to report the
@@ -193,6 +220,21 @@ typedef struct {
      *        counted in `stops` instead.
      */
     uint32_t refused_ask;
+    /**
+     * @brief The latch stands for the IOmcu's refusal of ARM and for
+     *        nothing else: arming_heartbeat() lets the line go again after
+     *        ARMING_STOP_WITHHOLD_MS.  Any other stop, an arm and the reset
+     *        clear it.
+     */
+    bool     far_only;
+    /**
+     * @brief The stop count the heartbeat's withhold window was taken for,
+     *        by arming_heartbeat(); a stop counted since starts a new one.
+     */
+    uint32_t beat_stops;
+    /** @brief When that window began: the pass that first withheld the
+     *         line for the stop, ms. */
+    uint32_t beat_off_ms;
 } arming_t;
 
 /**
@@ -645,7 +687,12 @@ arming_hs_t arming_handshake_step(arming_t *a, arming_hs_at_t at,
 bool arming_stop_unserved(const arming_t *a, uint32_t *served);
 
 /**
- * @brief The IOmcu disarmed us: a NACK on a control write, or a failsafe.
+ * @brief The IOmcu disarmed us: a NACK on a control write of ARM.
+ *
+ * Latched like any stop, and the one whose heartbeat goes again after
+ * ARMING_STOP_WITHHOLD_MS (arming_t.far_only), unless the latch already
+ * stood for another stop.  The link's and the handshake's stops are not
+ * this call: they withhold the line until an arm or the reset.
  *
  * @param a Policy state.
  */
@@ -735,11 +782,19 @@ arming_action_t arming_step(arming_t *a, uint32_t now_ms);
 /**
  * @brief Whether the heartbeat may edge.
  *
- * @param a Policy state.
+ * Not while touch is dead and not while a stop is latched, except after the
+ * IOmcu's refusal of ARM alone (arming_t.far_only): then not for
+ * ARMING_STOP_WITHHOLD_MS.  That window starts at the first call that finds
+ * the stop, which is the pass that drives the line low; a newer refusal
+ * starts it again, and any other stop withholds the line until an arm or
+ * the reset.  The latch itself stands after the window: arming_stopped()
+ * stays true until an arm or the reset.
+ *
+ * @param a Policy state; the window's start is kept in it.
  * @param now_ms Current time, in milliseconds.
  * @return true when the heartbeat may edge.
  */
-bool arming_heartbeat(const arming_t *a, uint32_t now_ms);
+bool arming_heartbeat(arming_t *a, uint32_t now_ms);
 
 /**
  * @brief Seconds of the current run, or of the last one once it has ended.

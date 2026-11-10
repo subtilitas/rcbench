@@ -7,6 +7,13 @@
 
 #include <string.h>
 
+#include "heartbeat.h"
+
+/* The window outlasts the IOmcu's ceiling twice over, so its monitor has
+ * doubted the line and latched before the line edges again. */
+_Static_assert(ARMING_STOP_WITHHOLD_MS >= 2u * HEARTBEAT_MAX_GAP_MS,
+               "ARMING_STOP_WITHHOLD_MS must outlast HEARTBEAT_MAX_GAP_MS");
+
 void arming_init(arming_t *a, uint32_t now_ms, uint32_t settle_ms)
 {
     if (a == NULL) {
@@ -80,11 +87,12 @@ void arming_stop(arming_t *a)
     if (a == NULL) {
         return;
     }
-    a->stopped = true;
+    a->stopped  = true;
+    a->far_only = false;
     ++a->stops;
     /* A stop during the settle wins: the arm is abandoned, not deferred to
      * whenever the line happens to become trustworthy. */
-    a->arming  = false;
+    a->arming   = false;
 }
 
 bool arming_stopped(const arming_t *a)
@@ -120,9 +128,10 @@ void arming_stop_release(arming_t *a)
     /* An armed bench is not undone here: a stop that stands has disarmed
      * it at the step after it (ARMING_ACT_DISARM), and the reset is
      * confirmed only on a bench that reads SAFE. */
-    a->held    = false;
-    a->stopped = false;
-    a->arming  = false;
+    a->held     = false;
+    a->stopped  = false;
+    a->far_only = false;
+    a->arming   = false;
 }
 
 uint32_t arming_pressed_count(const arming_t *a)
@@ -167,6 +176,7 @@ void arming_request_arm_ask(arming_t *a, uint32_t now_ms, uint8_t roles,
      * the latch cleared.
      */
     a->stopped         = false;
+    a->far_only        = false;
     a->arming          = true;
     a->settle_until_ms = now_ms + a->settle_ms;
     /* The far end's word is asked for afresh: one given for an earlier arm
@@ -217,14 +227,30 @@ uint32_t arming_refused_ask(const arming_t *a)
     return (a != NULL) ? a->refused_ask : 0u;
 }
 
-void arming_stop_from_far_end(arming_t *a)
+/**
+ * @brief A stop the far end, the link or a handshake makes: latched, the bank
+ *        and an arm waiting given up.  Any of them but the IOmcu's own
+ *        refusal withholds the heartbeat until an arm or the reset.
+ * @param a Policy state; nothing for NULL.
+ * @param refused true for the IOmcu's refusal of ARM, the one stop whose
+ *        line goes again after ARMING_STOP_WITHHOLD_MS
+ */
+static void stop_far(arming_t *a, bool refused)
 {
     if (a != NULL) {
-        a->stopped = true;
+        /* A latch that already stands for another reason keeps it: the
+         * refusal on top of a lost link withholds for ever as well. */
+        a->far_only = refused && (!a->stopped || a->far_only);
+        a->stopped  = true;
         ++a->stops;
-        a->arming  = false;
-        a->armed   = false;
+        a->arming   = false;
+        a->armed    = false;
     }
+}
+
+void arming_stop_from_far_end(arming_t *a)
+{
+    stop_far(a, true);
 }
 
 bool arming_handshake_open(arming_t *a, uint32_t now_ms, bool cleared)
@@ -238,7 +264,7 @@ bool arming_handshake_open(arming_t *a, uint32_t now_ms, bool cleared)
     if (cleared) {
         /* The far end's latch is released and nothing on the wire sets it
          * again: the line is withheld, and its monitor does. */
-        arming_stop_from_far_end(a);
+        stop_far(a, false);
     } else {
         arming_refused(a);
     }
@@ -254,7 +280,7 @@ bool arming_write_failed(arming_t *a, bool answered)
         arming_refused(a);
         return false;
     }
-    arming_stop_from_far_end(a);
+    stop_far(a, false);
     return true;
 }
 
@@ -352,7 +378,7 @@ bool arming_link_lost(arming_t *a, bool bank_armed)
     if (!arming_link_needed(a, bank_armed)) {
         return false;
     }
-    arming_stop_from_far_end(a);
+    stop_far(a, false);
     return true;
 }
 
@@ -361,7 +387,7 @@ bool arming_link_found(arming_t *a, bool bank_armed)
     if (a == NULL || !(bank_armed || a->armed)) {
         return false;
     }
-    arming_stop_from_far_end(a);
+    stop_far(a, false);
     return true;
 }
 
@@ -502,12 +528,30 @@ arming_action_t arming_step(arming_t *a, uint32_t now_ms)
     return act;
 }
 
-bool arming_heartbeat(const arming_t *a, uint32_t now_ms)
+bool arming_heartbeat(arming_t *a, uint32_t now_ms)
 {
-    if (a == NULL) {
+    if (a == NULL || arming_touch_dead(a, now_ms) || a->held) {
         return false;
     }
-    return !a->stopped && !arming_touch_dead(a, now_ms);
+    if (!a->stopped) {
+        return true;
+    }
+    if (!a->far_only) {
+        return false;   /* withheld until an arm or the reset */
+    }
+    /*
+     * The IOmcu's refusal of ARM alone: the line is withheld long enough
+     * for the IOmcu to fail safe and latch, then edges again.  Withheld for
+     * ever, the IOmcu's heartbeat fault never clears -- a hardware stop
+     * button pressed under an armed bench is that refusal, and HWSTOP
+     * would stand after the release with no way to clear it but an arm.
+     */
+    if (a->beat_stops != a->stops) {
+        a->beat_stops  = a->stops;
+        a->beat_off_ms = now_ms;
+        return false;
+    }
+    return (uint32_t)(now_ms - a->beat_off_ms) >= ARMING_STOP_WITHHOLD_MS;
 }
 
 uint32_t arming_run_seconds(const arming_t *a)
