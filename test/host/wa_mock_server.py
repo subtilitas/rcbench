@@ -93,6 +93,10 @@ LOCKED_FILES = {"BENCH/KST/CONF": ("KST.TXT", "KST.NEW"),
 FAULT_FILES = ("BENCH/RCBENCH.LOG", "BENCH/RCBENCH.OLD", "BENCH/RCBENCH.TMP")
 RUN_PREFIXES = ("ATEST", "LIMIT", "SERVO", "MOTOR", "SUPPL", "RUDDR",
                 "BENCH", "ESC")
+# A run's log or report (log_name.h): a prefix, a number from 001 to 999, an
+# optional label behind "_", and the suffix, in any case.
+RUN_NAME = re.compile("(" + "|".join(RUN_PREFIXES)
+                      + r")(\d{3})(?:_.+)?\.(CSV|TXT)", re.S | re.I)
 
 REASONS = {400: "Bad Request", 403: "Forbidden", 404: "Not Found",
            409: "Conflict", 412: "Precondition Failed",
@@ -251,17 +255,31 @@ def kind_of(dirpath: str, name: str, is_dir: bool) -> str:
     path = f"{dirpath}/{name}" if dirpath else name
     if any(fold(path) == fold(f) for f in FAULT_FILES):
         return "FAULT"
-    up = name.upper()
-    for pre in RUN_PREFIXES:
-        m = re.fullmatch(re.escape(pre) + r"(\d{3})\.(CSV|TXT)", up)
-        if m and int(m.group(1)) >= 1:
-            return "RUN" if m.group(2) == "CSV" else "REPORT"
+    m = RUN_NAME.fullmatch(name)
+    if m and int(m.group(2)) >= 1:
+        return "RUN" if m.group(3).upper() == "CSV" else "REPORT"
     low = name.lower()
     if low.endswith(".txt"):
         return "KST" if fold(dirpath) == "BENCH/KST/CONF" else "TEXT"
     if low.endswith(".json"):
         return "PROFILE" if fold(dirpath) == "BENCH/ESC/CONF" else "JSON"
     return "CSV" if low.endswith(".csv") else "OTHER"
+
+
+def report_of(name: str) -> str:
+    """The report a run log takes along, as log_name_report_of() names it.
+
+    Args:
+        name: A run log's name, plain or labelled.
+
+    Returns:
+        The prefix and the number in upper case and ".TXT", a label left
+        out: MOTOR042_kv.CSV takes MOTOR042.TXT; "" for any other name.
+    """
+    m = RUN_NAME.fullmatch(name)
+    if not m or int(m.group(2)) < 1 or m.group(3).upper() != "CSV":
+        return ""
+    return f"{m.group(1).upper()}{m.group(2)}.TXT"
 
 
 def eol_word(data: bytes) -> str:
@@ -1402,8 +1420,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         folder, _, name = found[0].rpartition("/")
         card.remove(found[0])
         if not is_dir and kind_of(folder, name, False) == "RUN":
-            report = card.find(f"{folder}/{name.rpartition('.')[0]}.TXT"
-                               if folder else f"{name.rpartition('.')[0]}.TXT")
+            report = card.find(f"{folder}/{report_of(name)}"
+                               if folder else report_of(name))
             if report and not report[1]:
                 card.remove(report[0])
         self.json(200, {"path": folder, "created": False, "note": ""})

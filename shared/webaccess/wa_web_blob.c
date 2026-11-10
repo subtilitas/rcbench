@@ -589,7 +589,7 @@ const char *const wa_web_hl_js[] = {
     NULL,
 };
 
-/** @brief write.js, 11501 bytes. */
+/** @brief write.js, 11612 bytes. */
 const char *const wa_web_write_js[] = {
     "var RcbWr = (function () {\n"
     "'use strict';\n"
@@ -600,12 +600,17 @@ const char *const wa_web_write_js[] = {
     "return k + '=' + fields[k];\n"
     "}).join('&');\n"
     "}\n"
+    "var RUN_NAME =\n"
+    "/^(ATEST|LIMIT|SERVO|MOTOR|SUPPL|RUDDR|BENCH|ESC)(\\d{3})(_[\\s\\S]+)\?\\.CSV$/i;\n"
     "function reportOf(e) {\n"
     "if (e.d || e.k !== 'RUN') {\n"
     "return '';\n"
     "}\n"
-    "var i = e.n.lastIndexOf('.');\n"
-    "return (i > 0 \? e.n.slice(0, i) : e.n).toUpperCase() + '.TXT';\n"
+    "var m = RUN_NAME.exec(e.n);\n"
+    "if (!m || m[2] === '000') {\n"
+    "return '';\n"
+    "}\n"
+    "return m[1].toUpperCase() + m[2] + '.TXT';\n"
     "}\n"
     "function attach(c) {\n"
     "var F = c.F;\n"
@@ -678,13 +683,13 @@ const char *const wa_web_write_js[] = {
     "ui.go.disabled = false;\n"
     "ui.cancel.disabled = false;\n"
     "ui.box.hidden = false;\n"
-    "}\n"
+    "}\n",
     "function codeEnd() {\n"
     "ui.codeFor = null;\n"
     "ui.codeGo.disabled = false;\n"
     "}\n"
     "function closeBox() {\n"
-    "ui.box.hidden = true;\n",
+    "ui.box.hidden = true;\n"
     "ui.goFn = null;\n"
     "codeEnd();\n"
     "}\n"
@@ -769,12 +774,12 @@ const char *const wa_web_write_js[] = {
     "return new Promise(function (done) {\n"
     "var x = new XMLHttpRequest();\n"
     "x.open('GET', '/api/info\?path=' + F.encPath(path) + '&dir=0&mount=' +\n"
-    "mount + '&etag=1');\n"
+    "mount + '&etag=1');\n",
     "x.onload = function () {\n"
     "var j;\n"
     "try {\n"
     "j = JSON.parse(x.responseText);\n"
-    "} catch (e) {\n",
+    "} catch (e) {\n"
     "j = { error: 'HTTP', text: TX.noans + ' HTTP ' + x.status };\n"
     "}\n"
     "if (x.status === 200 && !j.error) {\n"
@@ -859,10 +864,10 @@ const char *const wa_web_write_js[] = {
     "return;\n"
     "}\n"
     "codeEnd();\n"
-    "if (next === 'SAVE') {\n"
+    "if (next === 'SAVE') {\n",
     "mine.again();\n"
     "} else if (next === 'ASK') {\n"
-    "ui.err.textContent = TX.codewrong;\n",
+    "ui.err.textContent = TX.codewrong;\n"
     "ui.codeIn.select();\n"
     "} else {\n"
     "ui.err.textContent = TX.noans;\n"
@@ -950,8 +955,8 @@ const char *const wa_web_write_js[] = {
     "});\n"
     "}\n"
     "function rename() {\n"
-    "var s = selected();\n"
-    "named(TX.tkname, s.e.n, TX.rename, function (n, again) {\n",
+    "var s = selected();\n",
+    "named(TX.tkname, s.e.n, TX.rename, function (n, again) {\n"
     "post('rename', { from: F.encPath(F.join(s.p.path, s.e.n)),\n"
     "to: F.encPath(F.join(s.p.path, n)), dir: s.e.d \? 1 : 0,\n"
     "mount: mountOf(s.p) }).then(function (a) {\n"
@@ -1016,11 +1021,11 @@ const char *const wa_web_write_js[] = {
     "ui.file = c.el('input');\n"
     "ui.file.type = 'file';\n"
     "ui.file.hidden = true;\n"
-    "ui.file.addEventListener('change', function () {\n"
+    "ui.file.addEventListener('change', function () {\n",
     "if (ui.file.files && ui.file.files.length === 1) {\n"
     "upload(ui.file.files[0]);\n"
     "}\n"
-    "});\n",
+    "});\n"
     "row.appendChild(ui.file);\n"
     "c.ui.foot.parentNode.insertBefore(row, c.ui.foot.nextSibling);\n"
     "ui.box = c.el('div', 'box wbox');\n"

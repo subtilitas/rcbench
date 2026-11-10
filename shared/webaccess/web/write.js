@@ -47,14 +47,23 @@ var RcbWr = (function () {
     }).join('&');
   }
 
-  // The report a run log takes along (log_name_report_of()): its name with
-  // ".TXT", in upper case; '' for any other entry.
+  // A run log's name (log_name.h): a writer's prefix, a number from 001 to
+  // 999, an optional label behind "_", and ".CSV", in any case.
+  var RUN_NAME =
+    /^(ATEST|LIMIT|SERVO|MOTOR|SUPPL|RUDDR|BENCH|ESC)(\d{3})(_[\s\S]+)?\.CSV$/i;
+
+  // The report a run log takes along, as log_name_report_of() names it:
+  // the prefix and the number in upper case and ".TXT", a label left out,
+  // so MOTOR042_kv.CSV takes MOTOR042.TXT; '' for any other entry.
   function reportOf(e) {
     if (e.d || e.k !== 'RUN') {
       return '';
     }
-    var i = e.n.lastIndexOf('.');
-    return (i > 0 ? e.n.slice(0, i) : e.n).toUpperCase() + '.TXT';
+    var m = RUN_NAME.exec(e.n);
+    if (!m || m[2] === '000') {
+      return '';
+    }
+    return m[1].toUpperCase() + m[2] + '.TXT';
   }
 
   function attach(c) {
