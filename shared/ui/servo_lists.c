@@ -37,8 +37,11 @@
  *
  * A function's list opens on a SAFE bench only, with no sweep and no run;
  * a bench that goes live under it closes it, the profile opened on a
- * function screen included.  The hub's opens at any time: the hub drives
- * nothing.
+ * function screen included, with the keypad, choice list, warning or
+ * set point question a row opened over it, nothing in them taken.  A
+ * change of the profile asked in the frame the bench goes live is refused
+ * the same way (svs_profile_refused()).  The hub's opens at any time: the
+ * hub drives nothing.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -491,6 +494,11 @@ static void list_changed(setting_id_t id)
  */
 static void list_reset(void)
 {
+    /* Nothing on a bench gone live under the list in the frame of the
+     * hold: the list's rule, the profile's included. */
+    if (svs_profile_refused()) {
+        return;
+    }
     const fn_rows_t *r = rows_now();
     setting_id_t ids[24] = { 0 };
     int k = 0;
@@ -597,6 +605,16 @@ const char *svs_list_bench_why(void)
     return NULL;
 }
 
+bool svs_profile_refused(void)
+{
+    const char *why = svs_list_bench_why();
+    if (why == NULL) {
+        return false;
+    }
+    ui_action_refused(why);
+    return true;
+}
+
 const char *svs_list_refused(void)
 {
     if (svs_press_held()) {
@@ -670,13 +688,50 @@ bool svs_list_back(void)
     return true;
 }
 
+/**
+ * @brief The editors a row of the list opened over it, shut without
+ *        applying: the screen's keypad (the profile's pulses, TRIM, TRAVEL,
+ *        a custom RATE; CURRENT's SET A), its keyboard, its choice list
+ *        (TYPE, RATE), the profile's warning and a typed set point's
+ *        question.  A question the list did not open -- OUTPUT ON's HV
+ *        warning, a restore, TEST's -- stays, and so does its press.
+ */
+static void close_list_editors(void)
+{
+    const bool keep_ask = s.ask.open && s.ask.purpose != ASK_SET;
+    if (s.ov_have
+        && !(keep_ask && (s.ov_pressed == OP_ASK_APPLY
+                          || s.ov_pressed == OP_ASK_CANCEL))) {
+        ov_let_go();
+    }
+    ui_keypad_close(&s.kp);
+    ui_textkey_close(&s.tk);
+    s.kp_target = KT_NONE;
+    s.ch.open   = false;
+    s.warn.open = false;
+    s.warn.down = false;
+    ui_hold_reset(&s.warn.hold);
+    if (!keep_ask) {
+        s.ask.open = false;
+        s.ask.down = false;
+        ui_hold_reset(&s.ask.hold);
+    }
+    ++s.ctrl_rev;
+}
+
 void svs_list_tick(float dt_s)
 {
     /* A list or a page of rows closes as the bench goes live under it, a
      * run starts or a session takes its port: the screen's output shows
-     * again, and a press on a row is dropped with its page. */
+     * again, and a press on a row is dropped with its page.  The editors
+     * a row opened over the list close with it, nothing typed or picked
+     * in them taken: the profile opened on a function screen is SAFE-only
+     * through its keypad, its choice list and its warning too. */
     if ((s.sl.open || ui_setlist_covered(&s.sl) || s.run_list != RL_NONE)
         && svs_list_bench_why() != NULL) {
+        if (s.sl.open || ui_setlist_covered(&s.sl)) {
+            close_list_editors();
+        }
         svs_list_close();
         if (s.run_list != RL_NONE) {
             s.run_list = RL_NONE;

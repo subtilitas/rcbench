@@ -589,6 +589,10 @@ servo profile in place on a SAFE bench; TEST's RANGE row opens TEST's list on Ra
 SWEEP shares, as Dwell time; TEST's list holds DUT name and Report, LIMIT RUN's and RUDDER
 AUTO's DUT name and User logs; TEST's READY card switches User logs on its LOG row, refused
 under a run (`shared/ui/servo_lists.c`, `test_servo_settings_rows`; host suite only).
+A bench that goes live under the profile a function opened closes it with its keypad,
+choice list and warning, nothing in them taken, and an OK, pick or hold completed in that
+frame is refused; LIMIT RUN's CURRENT keypad closes with its list; the hub's profile takes
+an OK on an armed bench (`test_servo_profile_live`; host suite only).
 RUDDER's and RUDDER AUTO's ANGLE rows open the ANGLE SOURCE list on a SAFE bench: the
 AS5600, the IMUs of the last scan, NO IMU FOUND and SEARCH FOR IMU, which switches the IMU
 on and scans once Bluetooth LE runs; a pick sets the source and binds an IMU
@@ -1344,7 +1348,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 523 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 524 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1457,7 +1461,7 @@ The host suite is 523 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_imu`, `test_imu_filter`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_effect`,
-`test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_drive_supply`, `test_servo_power_view`, `test_servo_settings_rows`, `test_servo_angle_pick`, `test_servo_start_seq`,
+`test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_drive_supply`, `test_servo_power_view`, `test_servo_settings_rows`, `test_servo_profile_live`, `test_servo_angle_pick`, `test_servo_start_seq`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`.

@@ -1766,6 +1766,12 @@ const char *svs_list_refused(void);
  *         port, or on a function screen a bench that is not SAFE, a run, a
  *         sweep.  @return the reason, NULL for none */
 const char *svs_list_bench_why(void);
+/** @brief Whether a change of the servo profile is refused now, by the
+ *         list's own rule (svs_list_bench_why()): on a function screen a
+ *         bench that is not SAFE, a run or a sweep; anywhere a session
+ *         holding its port.  The reason then goes to the band.
+ *  @return true when refused */
+bool svs_profile_refused(void);
 /** @brief Whether a finger holds a press anywhere on the screen: a hold,
  *         a tap's control, a panel's press, the dial, SPEED or a
  *         programmer's session.  @return true then */

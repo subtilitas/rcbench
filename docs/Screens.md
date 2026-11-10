@@ -2495,8 +2495,11 @@ place: a tap on the type pill of LIVE, SWEEP and RUDDER opens it with TYPE
 in view, a tap on the RANGE row of LIMIT RUN's and RUDDER AUTO's READY
 cards and on TEST's OUTPUT row with PULSE MIN in view. Its strip names
 SERVO. It follows a function's list: it opens on a SAFE bench only and
-closes as the bench goes live. The home tag closes it and the function
-screen shows again.
+closes as the bench goes live, with the keypad, choice list or warning a
+row opened over it; nothing typed, picked or held there is taken, and an
+OK, a pick or a completed hold in the frame the bench goes live is
+refused with `SETTINGS open on a SAFE bench only. Switch to SAFE first.`
+The home tag closes it and the function screen shows again.
 
 A function's list opens on a SAFE bench only, with no sweep and no run;
 a bench that goes live under it closes it, and so does a run's or KST's

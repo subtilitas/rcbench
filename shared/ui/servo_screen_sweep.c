@@ -899,7 +899,9 @@ void svs_tick_body(float dt_s)
             s.warn.open = false;
             s.warn.down = false;
             ov_let_go();
-            apply_profile(s.warn.type, s.warn.hz);
+            if (!svs_profile_refused()) {
+                apply_profile(s.warn.type, s.warn.hz);
+            }
         }
     }
 

@@ -85,7 +85,9 @@ history is in git.
   list, with TYPE in view; a tap on the RANGE row of LIMIT RUN's and
   RUDDER AUTO's READY cards, or on OUTPUT in TEST's list, opens it with
   PULSE MIN in view. LIVE's SETTINGS opens the profile. Each opens on a
-  SAFE bench only.
+  SAFE bench only and closes as the bench goes live, with the keypad,
+  choice list or warning a row opened over it: nothing typed, picked or
+  held there is taken.
 - TEST's list adds RANGE (Range and OUTPUT) and DUT (DUT name and
   Report), and TEST's READY row RANGE opens the list on Range. SWEEP's list
   adds Dwell time. LIMIT RUN's and RUDDER AUTO's lists add DUT name and
