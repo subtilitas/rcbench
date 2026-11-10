@@ -23,6 +23,17 @@ history is in git.
   ARM's and a KST or Hitec session's, INA3221 0x40 CH3 must read 4750mV or
   more within 200ms; otherwise every output goes off with `PROG 5V
   MISSING: 3.1V AFTER 200ms. CHECK THE SUPPLY VOLTAGE`.
+- The name keyboard of FILES (RENAME, NEW FOLDER, NEW TEXT FILE) and of
+  the screenshot popup edits at a cursor, a 2px bar. `<-` and `->` in the
+  bottom row move it one character, Ä or ß one character too; a tap in
+  the text field puts it in the nearest gap. A key types at the cursor,
+  DEL takes the character before it, and a key past 59 bytes types
+  nothing with the cursor kept. RENAME of a file starts with the cursor
+  before the last full stop (`NOTES` before `.TXT`); a folder or a name
+  without a full stop starts at the end. A name longer than the field's
+  48 characters shows the part around the cursor. The bottom row is
+  SPACE 3 columns, CLR, `<-` and `->` 1 each, CANCEL and OK 2 each; the
+  screenshot popup's word keys draw in 12 x 24 in German.
 
 ### Fixed
 

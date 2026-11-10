@@ -105,7 +105,7 @@ The screenshot captures the current display, including the band and any open box
 
 The save popup waits until the bench is idle: SAFE, supply output and PROG 5V off, no held port, programming session, sweep, test, run, update, FAULT or open log. The link must be up unless the bench is simulated. If any of these conditions changes, the popup closes and the picture waits until they are met again.
 
-- Use the keyboard to edit the name, up to 55 bytes. The default is `SHOT` followed by the next number. The `.PNG` extension stays fixed.
+- Use the keyboard to edit the name, up to 55 bytes. The default is `SHOT` followed by the next number. The `.PNG` extension stays fixed. `<-`, `->` and a tap in the name move the cursor, as on [FILES](files.md).
 - SAVE writes `screenshots/<name>.PNG` to the card, creating the folder if needed. Existing names are refused; no file is overwritten.
 - CANCEL discards the picture. If saving fails, for example because the card is missing or full, the popup stays open and retains the picture.
 - The file is a 1024 x 600px PNG (Portable Network Graphics), viewable in a browser or on a PC. It appears in [FILES](files.md) and on the Wi-Fi page.

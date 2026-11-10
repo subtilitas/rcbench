@@ -18,6 +18,7 @@ set(SRCS
     ui_keypad.c
     ui_setting_keypad.c
     ui_textkey.c
+    ui_textkey_cursor.c
     ui_shot.c
     shot_gate.c
     shot_hold.c

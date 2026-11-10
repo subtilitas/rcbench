@@ -821,6 +821,9 @@ void fs_foot(fs_foot_t b)
     case FS_RENAME:
         s.name_for = FS_NAME_RENAME;
         ui_textkey_open_file(&s.tk, FS_TK_AREA, TR(FM_TK_RENAME), name);
+        if (!e->is_dir) {          /* before the extension: MOTOR042|.CSV */
+            ui_textkey_set_cursor(&s.tk, ui_textkey_stem_end(name));
+        }
         s.view = FILES_VIEW_NAME;
         break;
     case FS_DELETE:

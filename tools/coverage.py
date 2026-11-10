@@ -108,6 +108,7 @@ TRACKED = [
     "shared/ui/ui_keypad.c",
     "shared/ui/ui_setting_keypad.c",
     "shared/ui/ui_textkey.c",
+    "shared/ui/ui_textkey_cursor.c",
     "shared/ui/ui_shot.c",
     "shared/ui/shot_gate.c",
     "shared/ui/shot_hold.c",

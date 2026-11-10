@@ -625,7 +625,7 @@ void render_files_pose(const char *view)
     if (is(view, "files") || is(view, "files-armed")
         || is(view, "files-new") || is(view, "files-info")
         || is(view, "files-rename") || is(view, "files-logging")
-        || is(view, "files-name")) {
+        || is(view, "files-name") || is(view, "files-rename-cursor")) {
         pick(0, "NOTES.TXT");
     }
     if (is(view, "files-logging")) {
@@ -648,6 +648,9 @@ void render_files_pose(const char *view)
         foot(FS_SPOT_INFO);
     } else if (is(view, "files-rename")) {
         foot(FS_SPOT_RENAME);
+    } else if (is(view, "files-rename-cursor")) {
+        foot(FS_SPOT_RENAME);       /* the cursor before ".TXT" */
+        type(" 2");
     } else if (is(view, "files-delete")) {
         pick(1, "ATEST005.CSV");
         foot(FS_SPOT_DELETE);
