@@ -157,25 +157,30 @@ static inline void open_sweep(void)     { go(SERVO_FN_SWEEP); }
 /* KST's session, and the home tag over it: the session's way back. */
 static inline void open_kst(void)       { go(SERVO_FN_KST); }
 static inline void close_kst(void)      { (void)scr->back(); }
-/* TEST's SETTINGS list (servo_test_list.c), row by row: four headings
- * and the automatic test's 17 rows. */
+/* TEST's SETTINGS list (servo_test_list.c), row by row: six headings
+ * and the automatic test's 21 rows. */
 enum {
     TL_H_STEPS = 0, TL_STEP_48, TL_STEP_60, TL_HV, TL_STEP_74, TL_STEP_84,
     TL_H_BO, TL_BROWNOUT, TL_BO_FLOOR, TL_BO_STEP,
     TL_H_LIMITS, TL_STALL, TL_IDLE, TL_HOLD, TL_TRAVEL,
     TL_H_LENGTH, TL_LEN_BY, TL_LEN_S, TL_MOVES, TL_DWELL, TL_SETTLE,
+    TL_H_RANGE, TL_RANGE, TL_OUTPUT, TL_H_DUT, TL_NAME, TL_REPORT, TL_ROWS,
 };
 
 
 /* LIMIT RUN's list, row by row (servo_lists.c).  With SERVO at HITEC D
  * SERIES, D RECEIVE is row LL_RX and the rows from SERVO PULSES on move
  * down one. */
-enum { LL_MODE = 0, LL_SERVO, LL_PULSES, LL_CURRENT, LL_WAIT, LL_ROWS };
+enum { LL_MODE = 0, LL_SERVO, LL_PULSES, LL_CURRENT, LL_WAIT, LL_NAME,
+       LL_LOG, LL_ROWS };
 enum { LL_RX = 2 };
 /* RUDDER AUTO's list: its SERVO row, D RECEIVE under it with HITEC D
- * SERIES, and CURRENT and PROG WAIT, its last two rows without D
- * RECEIVE. */
-enum { RAL_SERVO = 4, RAL_RX = 5, RAL_CURRENT = 7, RAL_WAIT = 8 };
+ * SERIES; without D RECEIVE CURRENT and PROG WAIT, then DUT NAME and USER
+ * LOGS last. */
+enum { RAL_SERVO = 4, RAL_RX = 5, RAL_CURRENT = 7, RAL_WAIT = 8,
+       RAL_NAME = 9, RAL_LOG = 10, RAL_ROWS = 11 };
+/* SWEEP's list: CURVE, SPEED, RANGE and DWELL TIME. */
+enum { SWL_CURVE = 0, SWL_SPEED, SWL_RANGE, SWL_DWELL, SWL_ROWS };
 
 /* LIMIT RUN's list, from the footer's SETTINGS.  It opens on a SAFE bench
  * only: on an armed one the rig switches to SAFE first, and the home tag

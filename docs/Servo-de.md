@@ -85,10 +85,13 @@ SERVO-Funktionsbildschirms. Der Bildschirm steht in
   PROGRAMMIEREN), SERVO (KST/CHASERVO, HITEC D-SERIE oder HITEC
   KLASSISCH, der Programmierer, an den die Sitzungen des Laufs gehen,
   [Hitec-Servos](#hitec-servos)), SERVOPULSE (BEHALTEN oder 1000-2000),
-  STROM und Warten vor PWM des Programmierers. STROM ist SET A von SUPPLY
-  ([Die Strombegrenzung des Laufs](#die-strombegrenzung-des-laufs)). Der
-  Lauf programmiert mit 5,0V und hat keine Zeile für die Spannung
-  ([Die 5,0V des Laufs](#die-50v-des-laufs)) und keine für den
+  STROM, Warten vor PWM des Programmierers, den Namen des Prüflings und
+  die Testaufzeichnungen. STROM ist SET A von SUPPLY ([Die Strombegrenzung
+  des Laufs](#die-strombegrenzung-des-laufs)). Der Name ist der des Hubs,
+  die Testaufzeichnungen die von SETUP > SD CARD: je eine Einstellung,
+  welche Liste sie auch setzt; die Karte BEREIT hat keinen Platz für eine
+  Zeile LOG. Der Lauf programmiert mit 5,0V und hat keine Zeile für die
+  Spannung ([Die 5,0V des Laufs](#die-50v-des-laufs)) und keine für den
   Programmierstrom: kein Lauf wendet ihn an. Mit SERVO auf HITEC D-SERIE folgt unter SERVO der
   Hitec-D-Empfang (PULL-UP oder PRECHARGE), dieselbe gespeicherte
   Einstellung wie auf der [HITEC-Seite](HitecProgrammer-de.md). An den
@@ -122,7 +125,8 @@ SERVO-Funktionsbildschirms. Der Bildschirm steht in
   grau wartet auf die Zeile PORT. An den Ausgängen des Prüfstands zeigt
   SERVO `NUR SUCHE` in Grau, PROGRAMMER und PORT-PWM `--`.
 - Ein Tippen auf PORT öffnet die PORT-Auswahl; auf WINKEL die
-  [Liste WINKELQUELLE](#winkelquelle); auf SERVO die Auswahl
+  [Liste WINKELQUELLE](#winkelquelle); auf BEREICH das Servoprofil, die
+  Liste des Hubs, mit PULS MIN im Blick, nur bei SAFE; auf SERVO die Auswahl
   SERVO, KST/CHASERVO, HITEC D-SERIE und HITEC KLASSISCH über der linken
   Spalte, an den Ausgängen des Prüfstands nennt das Band `SERVO:
   Nur an einem PROG-PORT: wähle einen mit PORT`; auf ein rotes MESSGERÄT
@@ -791,7 +795,11 @@ die unten genannten Konstanten stehen in `servo_test.h`.
 
 ### Verfahren
 
-Die Spannungsstufen sind Stufe 4.8V und Stufe 6.0V des Laufs (Liste OPTIONEN von TEST), und mit HV-SERVO an Stufe 7.4V und Stufe 8.4V. HV-SERVO ist nach jedem Neustart aus. Ein
+Die Spannungsstufen sind Stufe 4.8V und Stufe 6.0V des Laufs (Liste OPTIONEN von TEST), und mit HV-SERVO an Stufe 7.4V und Stufe 8.4V. HV-SERVO ist nach jedem Neustart aus. Die
+Enden des Laufs liegen um Bereich des Wegs beiderseits von PULS MITTE:
+Bereich in der Liste von TEST ist die Einstellung von SWEEP, und AUSGANG
+darunter öffnet das Servoprofil. Haltezeit ist ebenfalls die von SWEEP,
+Name des Prüflings und Bericht die des Hubs. Ein
 Lauf mit einer Stufe über 6,0V startet nur über die Warnung NUR HV-SERVOS,
 2s gehalten. Die Strombegrenzung im Lauf ist SET A von SUPPLY, die die
 Zeile PD MINI der Karte BEREIT zeigt und ein Tippen dort setzt
@@ -1447,7 +1455,10 @@ PRÜFLING) `ATESTnnn.TXT`. Die Nummer gehört zu einer Reihe mit den
 `LIMITnnn.TXT` der Endlagenläufe in diesem Ordner
 ([Logs](Screens-de.md#logs)). Mit Testaufzeichnungen AUS unter SETUP > SD CARD,
 gelesen beim Start des Laufs, schreibt der Lauf keine Datei, und das Ergebnis
-nennt `TESTAUFZEICHNUNGEN AUS`. Ein Lauf ist eine CSV: das eigene
+nennt `TESTAUFZEICHNUNGEN AUS`. Die Karte BEREIT von TEST zeigt sie in
+ihrer Zeile LOG, `EIN` oder `AUS` in Gelb; ein Tippen dort schaltet und
+speichert sie wie SETUP > SD CARD und wird abgelehnt, solange ein Lauf
+oder seine Startschritte laufen. Ein Lauf ist eine CSV: das eigene
 Laufaufzeichnung des Prüfstands in ARMED schreibt keine Zeile, solange ein Lauf
 läuft. Seine Zeitspalte springt über den Lauf, und seine Zeilen beginnen
 wieder, wenn der Lauf endet. Eine Nummer, die nur ein
@@ -1789,11 +1800,13 @@ Bluetooth-IMU).
   die Zeile die mm an der Hinterkante neben den Grad. RESERVE: 0 bis 50%,
   10% (`rud_margin`). TOLERANZ: 0,1 bis 5,0°, vorgegeben 0,5°
   (`rud_tol`). Ein Tippen öffnet das Tastenfeld. Dieselben vier, SERVO,
-  SERVO-PULSE, WINKELQUELLE, STROM und Warten vor PWM stehen in OPTIONEN.
-  STROM ist SET A von SUPPLY, wie auf ENDLAGENLAUF
-  ([Die Strombegrenzung des Laufs](#die-strombegrenzung-des-laufs));
-  Warten vor PWM ist die Wartezeit des KST-Programmierers, die VERLASSEN
-  des Laufs sendet.
+  SERVO-PULSE, WINKELQUELLE, STROM, Warten vor PWM, der Name des
+  Prüflings und die Testaufzeichnungen stehen in OPTIONEN. STROM ist SET A
+  von SUPPLY, wie auf ENDLAGENLAUF ([Die Strombegrenzung des
+  Laufs](#die-strombegrenzung-des-laufs)); Warten vor PWM ist die
+  Wartezeit des KST-Programmierers, die VERLASSEN des Laufs sendet. Der
+  Name ist der des Hubs, die Testaufzeichnungen die von SETUP > SD CARD;
+  die Karte BEREIT hat keinen Platz für eine Zeile LOG.
 - Der Zielwert einer Seite ist der eingegebene Ausschlag x (1 + RESERVE):
   20,0° bei 10% ergeben 22,0°.
 - Die Karte BEREIT an der Stelle der Ausgangskarte, 380 x 374px: eine
@@ -1816,7 +1829,8 @@ Bluetooth-IMU).
   Messgerät des Laufs mit Volt und Ampere.
 - Ein Tippen auf PORT öffnet die PORT-Auswahl; auf SERVO die Auswahl
   SERVO, KST/CHASERVO, HITEC D-SERIE und HITEC KLASSISCH über der linken
-  Spalte; auf einen roten NULLPUNKT mit Messwert setzt es den
+  Spalte; auf BEREICH das Servoprofil, die Liste des Hubs, mit PULS MIN im
+  Blick, nur bei SAFE; auf einen roten NULLPUNKT mit Messwert setzt es den
   Nullpunkt; auf WINKEL die [Liste WINKELQUELLE](#winkelquelle), rot oder
   nicht; auf ein rotes MESSGERÄT öffnet es SETUP > SENSORS an dem
   INA3221, dessen Kanal
@@ -2081,7 +2095,10 @@ Abstand von NEUTRAL.
 
 ## Sweep und TEMPO
 
-SWEEP auf der Seite SWEEP von SERVO fährt das Servo die Kurve aus deren OPTIONEN ab.
+SWEEP auf der Seite SWEEP von SERVO fährt das Servo die Kurve aus deren
+OPTIONEN ab, mit deren Tempo in Hz über deren Bereich, an jedem Ende für
+die Haltezeit gehalten. Bereich und Haltezeit sind je eine Einstellung mit
+der Liste von TEST.
 TEMPO auf der rechten Karte begrenzt, wie schnell sich der Ausgang bewegen
 darf. Ist TEMPO langsamer als die schnellste Änderung, die die Kurve
 verlangt, bestimmt TEMPO die Bewegung statt der Kurve, und die Zeile von

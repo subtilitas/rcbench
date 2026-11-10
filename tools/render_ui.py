@@ -1077,8 +1077,10 @@ FIT_ONLY = {
     # KST's and HITEC's guide: the READY card and the footer's WRITE.
     "help-servo-kst":   (None, "servo", "dark"),
     "help-servo-hitec": (None, "servo", "dark"),
-    # TEST's guide at its READY page, and TEST's list at its end.
+    # TEST's guide at its READY page, and TEST's list at LENGTH AND TIMING
+    # and at its end.
     "help-servo-test-2": (None, "servo", "dark"),
+    "servo-test-settings-length": (None, "servo", "dark"),
     "servo-test-settings-end": (None, "servo", "dark"),
     # SUPPLY's TABLE; LIVE with a programming port holding the supply; and
     # SETTINGS with the PD mini's RESET PD MINI and the longest save line.

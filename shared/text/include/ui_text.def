@@ -5194,8 +5194,8 @@ UI_TEXT(HG_SV_RA_START, 0,
     "Hold 2s: PORT PWM and the supply on, read back in 1000ms, ARM, then the run. A tap stops it, all off.",
     "Halte 2s: PORT-PWM, Versorgung, Rückmeldung in 1000ms, ARM, dann der Lauf. Tippen stoppt, alles aus.")
 UI_TEXT(HG_SV_TYPE, 0,
-    "The servo type, frame rate and pulse range in force. SETTINGS sets them on OUTPUT.",
-    "Aktiver Servotyp, Pulsrate und Pulsbereich. OPTIONEN stellt sie auf AUSGANG ein.")
+    "The servo type, frame rate and pulse range in force. A tap opens the SERVO profile on TYPE, on a SAFE bench.",
+    "Aktiver Servotyp, Pulsrate und Pulsbereich. Tippen öffnet das SERVO-Profil bei TYP, nur bei SAFE.")
 UI_TEXT(HG_SV_PLOT, 0,
     "Voltage, current and power of the servo rail over the last 17.8s. The line above names the meter.",
     "Spannung, Strom und Leistung der Servoschiene der letzten 17.8s. Die Zeile darüber nennt das Messgerät.")
@@ -5338,6 +5338,9 @@ UI_TEXT(SVL_ANGLE_SOURCE, 0,
 UI_TEXT(SVL_ANGLE_HELP, 0,
     "A tap lists the AS5600 and the IMUs found",
     "Ein Tippen listet den AS5600 und die gefundenen IMUs")
+UI_TEXT(SVL_OUTPUT_HELP, 0,
+    "The SERVO profile; a tap opens it on PULSE MIN",
+    "Das SERVO-Profil; Tippen öffnet es bei PULS MIN")
 /* The ANGLE SOURCE list (servo_angle_pick.c): its title and its entries,
  * 27 cells of 10 x 20 in a column of two. */
 UI_TEXT(SV_ANG_TITLE, 0,
@@ -9196,8 +9199,8 @@ UI_SETTING_LABEL(SET_LOG_USER,
     "User logs",
     "Testaufzeichnungen")
 UI_SETTING_HELP(SET_LOG_USER,
-    "AUTOMATIC TEST, LIMIT RUN",
-    "AUTOMATISCHER TEST, ENDLAGENLAUF")
+    "AUTOMATIC TEST, LIMIT RUN, RUDDER AUTO",
+    "AUTOMATISCHER TEST, ENDLAGENLAUF, RUDER AUTO")
 UI_SETTING_LABEL(SET_WEB_WRITES,
     "Browser writes",
     "Schreiben per Browser")
@@ -10949,6 +10952,12 @@ UI_TEXT(RDY_ZERO, 0,
 UI_TEXT(RDY_RANGE, 0,
     "RANGE",
     "BEREICH")
+UI_TEXT(RDY_LOG, 10,
+    "LOG",
+    "LOG")
+UI_TEXT(RDY_LOG_RUN, 60,
+    "The run keeps its setting. Switch it after the run.",
+    "Der Lauf behält seine Einstellung. Schalte nach dem Lauf um.")
 UI_TEXT(RDY_PROG, 0,
     "PROGRAMMER",
     "PROGRAMMER")

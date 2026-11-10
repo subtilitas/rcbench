@@ -4158,9 +4158,12 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
         if (strcmp(view, "servo-brownout") == 0) {
             /* TEST's list scrolled to its BROWN-OUT heading, row 6. */
             ui_setlist_scroll_to((ui_setlist_t *)servo_screen_list(), 6);
+        } else if (strcmp(view, "servo-test-settings-length") == 0) {
+            /* ... to its LENGTH AND TIMING heading, row 15, ... */
+            ui_setlist_scroll_to((ui_setlist_t *)servo_screen_list(), 15);
         } else if (strcmp(view, "servo-test-settings-end") == 0) {
-            /* ... and to its last row, SETTLING TIME. */
-            ui_setlist_scroll_to((ui_setlist_t *)servo_screen_list(), 20);
+            /* ... and to its last row, REPORT under DUT. */
+            ui_setlist_scroll_to((ui_setlist_t *)servo_screen_list(), 26);
         } else if (strcmp(view, "servo-warning") == 0) {
             servo_list_tap(1, UI_SL_PART_VALUE);      /* TYPE */
             tap(165, UI_BAND_H + 256);                /* HELI CYCLIC */

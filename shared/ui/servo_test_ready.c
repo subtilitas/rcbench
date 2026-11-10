@@ -23,8 +23,13 @@
  *   - STEPS: a step or the brown-out walk chosen, each step inside
  *     SUPPLY's caps.  A step past 6.0V reads `TAP: HV WARNING`: the hold
  *     is then a tap that opens the HV warning, whose own 2s hold fires;
- *   - RANGE: the run's ends either side of PULSE CENTER;
- *   - ARM: ARMED, no limit run or AUTO under way, no report on its way.
+ *   - RANGE: the run's ends either side of PULSE CENTER.  A tap opens
+ *     TEST's list on its RANGE row;
+ *   - ARM: ARMED, no limit run or AUTO under way, no report on its way;
+ *   - LOG: USER LOGS, ON or OFF, amber while OFF: a run then writes no
+ *     file.  A tap switches it and saves it, the one setting SETUP > SD
+ *     CARD, LIMIT RUN's and RUDDER AUTO's lists show; under a run or the
+ *     steps a tap is refused, the run keeps the state it started with.
  *
  * The hold fixes NOT ARMED and a port's PORT PWM off on a SAFE bench
  * itself (amber, `START ARMS`, `START SWITCHES IT ON`); every other text
@@ -300,6 +305,7 @@ static const char *row_label(int i)
     case TRR_PD:    return "PD MINI";
     case TRR_STEPS: return TR(TST_STEPS);
     case TRR_RANGE: return TR(RDY_RANGE);
+    case TRR_LOG:   return TR(RDY_LOG);
     default:        return "ARM";
     }
 }
@@ -394,6 +400,17 @@ bool test_ready_row(int i, rdy_row_t *r)
                            running ? rc->enc_on : enc_on_now());
         return true;
     }
+    if (i == TRR_LOG) {
+        /* USER LOGS, as the run under way started; no check of the gate
+         * belongs to it.  OFF is amber: the run writes no file. */
+        const bool on = servo_test_running(&s.test)
+                            ? !s.test_off
+                            : settings_get_bool(SET_LOG_USER);
+        r->st  = (uint8_t)(on ? RDY_OK : RDY_WARN);
+        r->fix = true;
+        snprintf(r->value, sizeof(r->value), "%s", ui_on_off(on));
+        return true;
+    }
     /* The row's first text that refuses the hold, else its first the hold
      * does: an amber text never hides a red one of the same row. */
     const char *bad = NULL, *seq = NULL;
@@ -437,10 +454,10 @@ bool test_ready_row(int i, rdy_row_t *r)
         r->st = (uint8_t)RDY_OK;
         met_value(i, r->value, sizeof(r->value), &r->st);
     }
-    /* The rows a tap fixes: PORT always, STEPS refused or past 6.0V,
-     * PD MINI's SET A on its keypad unless a text refuses, METER on SETUP
-     * while the run would not read the INA3221 nor the model. */
-    r->fix = (i == TRR_PORT)
+    /* The rows a tap fixes: PORT and RANGE always, STEPS refused or past
+     * 6.0V, PD MINI's SET A on its keypad unless a text refuses, METER on
+     * SETUP while the run would not read the INA3221 nor the model. */
+    r->fix = (i == TRR_PORT || i == TRR_RANGE)
              || (i == TRR_STEPS && (r->st == (uint8_t)RDY_BAD
                                     || r->why == TR(SV_TAP_HV)))
              || (i == TRR_PD && r->st != (uint8_t)RDY_BAD)
@@ -448,10 +465,46 @@ bool test_ready_row(int i, rdy_row_t *r)
     return true;
 }
 
+/** @brief A tap on LOG: USER LOGS switched and saved; refused in the alert
+ *         band under a run or the steps, which keep the state they
+ *         started with. */
+static void log_tap(void)
+{
+    if (servo_test_running(&s.test) || svs_seq_busy()) {
+        char line[128];
+        snprintf(line, sizeof(line), TR(RDY_BAND), TR(RDY_LOG),
+                 TR(RDY_LOG_RUN));
+        ui_router_set_alert(line);
+        return;
+    }
+    settings_set(SET_LOG_USER, settings_get_bool(SET_LOG_USER) ? 0.0f : 1.0f);
+    settings_request_save();
+    ++s.test_rev;
+    ++s.ctrl_rev;
+}
+
+/** @brief A tap on RANGE: TEST's list on its RANGE row, or why the list
+ *         stays shut in the alert band. */
+static void range_tap(void)
+{
+    if (svs_list_refused() != NULL) {
+        ui_action_refused(svs_list_refused());
+        return;
+    }
+    svs_list_open();
+    if (svs_list_shown()) {
+        ui_setlist_scroll_to(&s.sl, SVS_TEST_ROW_RANGE);
+    }
+}
+
 void test_ready_tap(int i)
 {
     rdy_row_t r;
     if (!test_ready_row(i, &r)) {
+        return;
+    }
+    if (i == TRR_LOG) {
+        log_tap();
         return;
     }
     /* Nothing changes under a run or the steps: the rows as they
@@ -473,6 +526,10 @@ void test_ready_tap(int i)
     }
     if (i == TRR_METER && r.fix) {
         wb_open_meter();            /* SETUP > SENSORS, the INA3221 */
+        return;
+    }
+    if (i == TRR_RANGE) {
+        range_tap();
         return;
     }
     if (i == TRR_STEPS && r.fix) {

@@ -139,7 +139,7 @@ static const servo_state_t k_servo[] = {
       { 5, 2 } },
     { "LIVE", SERVO_FN_LIVE, false, 3, 0,
       { TX_HG_SV_TITLE_LIVE, TX_HG_SV_TITLE_DRV_READY, TX_HG_SV_TITLE_CARD },
-      { 3, 4, 5 } },
+      { 3, 5, 5 } },
     { "SWEEP", SERVO_FN_SWEEP, false, 3, 0,
       { TX_HG_SV_TITLE_SWEEP, TX_HG_SV_TITLE_DRV_READY, TX_HG_SV_TITLE_CARD },
       { 3, 5, 5 } },

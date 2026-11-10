@@ -238,7 +238,7 @@ int32_t svs_fixed_of(float x, float per);
  */
 rail_t svs_rail_now(void);
 
-/* servo_ready.c: what feeds the servo, drawn */
+/* servo_power_view.c: what feeds the servo, drawn */
 
 /** @brief What feeds the servo, as the rail line and every plot of it
  *         name and read it. */
@@ -258,6 +258,14 @@ typedef struct {
  * @param f receives it; nothing for NULL
  */
 void svs_feed_now(svs_feed_t *f);
+/**
+ * @brief The feed's volts, amps and watts as the rail line and the legend
+ *        show them: `5.02V`, `0.120A`, `0.60W`; `--V`, `--A`, `--W` for
+ *        one that did not arrive.
+ * @param f the feed
+ * @param t receives the three, 16 bytes each
+ */
+void svs_feed_values(const svs_feed_t *f, char t[3][16]);
 
 /* servo_screen_touch.c */
 

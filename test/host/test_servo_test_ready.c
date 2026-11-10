@@ -53,6 +53,7 @@
  * - the_pd_row_shows_set_a_and_a_tap_types_it
  * - set_a_typed_on_a_live_output_waits_for_supplys_question
  * - set_a_takes_no_tap_under_the_steps_a_run_or_a_held_supply
+ * - set_a_names_the_test_run_under_the_steps_and_the_run
  *
  * SPDX-License-Identifier: MIT
  */
@@ -77,10 +78,13 @@
 
 #include "servo_ready_int.h"
 
-/* servo_screen_int.h's press and list guards, which this suite does not
- * take in whole. */
+/* servo_screen_int.h's press and list guards and current-limit helpers,
+ * which this suite does not take in whole. */
 bool svs_press_held(void);
 const char *svs_list_refused(void);
+bool rcur_set_a(void);
+const char *rcur_why(void);
+void rcur_edit(void);
 
 /** @brief A text TEST's gate returns, and the row it belongs to. */
 typedef struct {
@@ -365,7 +369,7 @@ TEST_CASE(the_list_opens_on_safe_only_and_closes_as_the_bench_arms)
     bench_frames(40u);
     tap_settings();
     CHECK(servo_screen_list()->open);
-    CHECK_EQ(ui_setlist_count(servo_screen_list()), 21);
+    CHECK_EQ(ui_setlist_count(servo_screen_list()), TL_ROWS);
     servo_screen_set_armed(true);
     bench_frames(40u);
     CHECK(!servo_screen_list()->open);
@@ -868,6 +872,48 @@ TEST_CASE(set_a_takes_no_tap_under_the_steps_a_run_or_a_held_supply)
     supply_screen_set_port_held(false);
 }
 
+/* rcur_why() and rcur_edit() on TEST: under the steps and under the run
+ * SET A is refused with the run's reason, and the edit opens no keypad and
+ * leaves SET A as it is; with neither, nothing is refused and the edit
+ * opens the keypad. */
+TEST_CASE(set_a_names_the_test_run_under_the_steps_and_the_run)
+{
+    safe_test();
+    CHECK(rcur_why() == NULL);
+    const float i0 = supply_screen_set_i();
+
+    bench.no_arm = true;
+    hold_fire();
+    CHECK(svs_seq_busy());
+    CHECK(!servo_screen_testing());
+    CHECK_STR_EQ(rcur_why(), ui_servo_str(SERVO_STR_START_TEST_RUNS));
+    ui_router_set_alert(NULL);
+    rcur_edit();
+    CHECK(!servo_screen_keypad()->open);
+    tap(START_X, START_Y);                       /* ends the steps */
+    CHECK(!svs_seq_busy());
+    CHECK(rcur_why() == NULL);
+
+    bench.no_arm = false;
+    servo_screen_set_armed(true);
+    hold_fire();
+    bench_frames(100u);
+    CHECK(servo_screen_testing());
+    CHECK_STR_EQ(rcur_why(), ui_servo_str(SERVO_STR_START_TEST_RUNS));
+    rcur_edit();
+    CHECK(!servo_screen_keypad()->open);
+    CHECK(fabsf(supply_screen_set_i() - i0) < 0.001f);
+    tap(START_X, START_Y);                       /* STOP TEST */
+    bench_frames(500u);
+    CHECK(!servo_screen_testing());
+
+    servo_screen_set_armed(false);
+    bench_frames(100u);
+    CHECK(rcur_why() == NULL);
+    rcur_edit();
+    CHECK(servo_screen_keypad()->open);
+}
+
 int main(void)
 {
     RUN(every_gate_text_belongs_to_exactly_one_row);
@@ -897,5 +943,6 @@ int main(void)
     RUN(the_pd_row_shows_set_a_and_a_tap_types_it);
     RUN(set_a_typed_on_a_live_output_waits_for_supplys_question);
     RUN(set_a_takes_no_tap_under_the_steps_a_run_or_a_held_supply);
+    RUN(set_a_names_the_test_run_under_the_steps_and_the_run);
     return test_summary("servo_test_ready");
 }

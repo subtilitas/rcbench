@@ -22,15 +22,29 @@
  * - current_shows_and_types_set_a_where_a_pd_mini_feeds
  * - current_is_locked_without_a_pd_mini_and_under_a_held_supply
  * - rudder_auto_holds_current_and_prog_wait
+ * - set_a_reads_in_two_or_three_decimals_and_joins_a_rows_value
+ * - set_a_applies_on_test_and_where_a_pd_mini_feeds_a_programmer_run
+ * - set_a_typed_under_a_port_that_took_the_supply_is_refused
+ * - set_a_names_the_esc_wire_session_that_holds_the_supply
  *
  * SPDX-License-Identifier: MIT
  */
 
 #include "servo_screen_rig.h"
 
+#include "esc_wire_int.h"
 #include "kst_panel.h"
 #include "servo_limrun.h"
 #include "servo_rudder_auto.h"
+
+/* servo_screen_int.h's current-limit helpers, which this suite does not
+ * take in whole. */
+bool rcur_set_a(void);
+void rcur_amps(char *b, size_t n, float a);
+void rcur_join(char *b, size_t n, const char *head, bool set_a);
+void rcur_seq(char *b, size_t n, bool set_a);
+const char *rcur_why(void);
+void rcur_edit(void);
 
 /** @brief The open list's row @p i as the list reads it.
  *  @param i the row @return its hooks */
@@ -460,8 +474,9 @@ TEST_CASE(current_is_locked_without_a_pd_mini_and_under_a_held_supply)
     settings_cancel_save();
 }
 
-/* RUDDER AUTO's list ends in CURRENT and PROG WAIT: SET A as LIMIT RUN's,
- * and the KST programmer's wait before PWM its sessions' LEAVE sends. */
+/* RUDDER AUTO's list holds CURRENT and PROG WAIT after ANGLE SOURCE: SET A
+ * as LIMIT RUN's, and the KST programmer's wait before PWM its sessions'
+ * LEAVE sends. */
 TEST_CASE(rudder_auto_holds_current_and_prog_wait)
 {
     fresh();
@@ -469,7 +484,7 @@ TEST_CASE(rudder_auto_holds_current_and_prog_wait)
     tap_settings();
     const ui_setlist_t *sl = servo_screen_list();
     CHECK(sl->open);
-    CHECK_EQ(ui_setlist_count(sl), RAL_WAIT + 1);
+    CHECK_EQ(ui_setlist_count(sl), RAL_ROWS);
     CHECK_EQ(sl->host->row(RAL_CURRENT).custom->label, TX_SV_CURRENT);
     CHECK_EQ(sl->host->row(RAL_WAIT).kind, (uint8_t)UI_SL_SETTING);
     CHECK_EQ(sl->host->row(RAL_WAIT).id, SET_SERVO_PROG_WAIT);
@@ -483,6 +498,145 @@ TEST_CASE(rudder_auto_holds_current_and_prog_wait)
     CHECK(fabsf(supply_screen_set_i() - 0.5f) < 0.001f);
     CHECK_STR_EQ(value_of(RAL_CURRENT), "SET A 0.50A");
     settings_cancel_save();
+}
+
+/* A current limit shows as `2.00A`, and `0.125A` where its mA are no
+ * multiple of 10; it rounds to the mA, and a limit of 0 or less reads
+ * 0.00A.  A row's value takes SET A after its head, and the head alone
+ * without it; an empty head leaves the amps with no space before them; the
+ * amber supply row reads `ON AT START` with the amps, or RDY_SEQ_ON's text
+ * without them. */
+TEST_CASE(set_a_reads_in_two_or_three_decimals_and_joins_a_rows_value)
+{
+    char b[32];
+    rcur_amps(b, sizeof(b), 2.0f);
+    CHECK_STR_EQ(b, "2.00A");
+    rcur_amps(b, sizeof(b), 1.5f);
+    CHECK_STR_EQ(b, "1.50A");
+    rcur_amps(b, sizeof(b), 0.125f);
+    CHECK_STR_EQ(b, "0.125A");
+    rcur_amps(b, sizeof(b), 12.345f);
+    CHECK_STR_EQ(b, "12.345A");
+    rcur_amps(b, sizeof(b), 0.1234f);        /* rounds to 123mA */
+    CHECK_STR_EQ(b, "0.123A");
+    rcur_amps(b, sizeof(b), 0.0004f);        /* under half a mA */
+    CHECK_STR_EQ(b, "0.00A");
+    rcur_amps(b, sizeof(b), 0.0f);
+    CHECK_STR_EQ(b, "0.00A");
+    rcur_amps(b, sizeof(b), -1.0f);
+    CHECK_STR_EQ(b, "0.00A");
+
+    fresh();
+    supply_screen_adopt(5.0f, 1.75f);
+    CHECK(fabsf(supply_screen_set_i() - 1.75f) < 0.001f);
+    rcur_join(b, sizeof(b), "5.0V", true);
+    CHECK_STR_EQ(b, "5.0V 1.75A");
+    rcur_join(b, sizeof(b), "ON", true);
+    CHECK_STR_EQ(b, "ON 1.75A");
+    rcur_join(b, sizeof(b), "", true);
+    CHECK_STR_EQ(b, "1.75A");
+    rcur_join(b, sizeof(b), "5.0V", false);
+    CHECK_STR_EQ(b, "5.0V");
+    rcur_join(b, sizeof(b), "", false);
+    CHECK_STR_EQ(b, "");
+    rcur_seq(b, sizeof(b), true);
+    char want[40];
+    snprintf(want, sizeof(want), TR(RDY_SEQ_ON_AT), "1.75A");
+    CHECK_STR_EQ(b, want);
+    rcur_seq(b, sizeof(b), false);
+    CHECK_STR_EQ(b, TR(RDY_SEQ_ON));
+}
+
+/* TEST's steps always set SET A; LIMIT RUN's and RUDDER AUTO's sessions
+ * only where a PD mini feeds the servo; no other function has a run.  Each
+ * says why it takes no edit: no PD mini on the two runs and on every other
+ * function; none while it applies. */
+TEST_CASE(set_a_applies_on_test_and_where_a_pd_mini_feeds_a_programmer_run)
+{
+    fresh();
+    go(SERVO_FN_TEST);
+    CHECK(rcur_set_a());
+    CHECK(rcur_why() == NULL);
+    const servo_fn_t others[] = { SERVO_FN_LIVE, SERVO_FN_KST };
+    for (unsigned k = 0; k < sizeof(others) / sizeof(others[0]); ++k) {
+        go(others[k]);
+        CHECK(!rcur_set_a());
+        CHECK_STR_EQ(rcur_why(), TR(SVL_CURRENT_NO_PD));
+    }
+    const servo_fn_t runs[] = { SERVO_FN_LIMRUN, SERVO_FN_RAUTO };
+    for (unsigned k = 0; k < sizeof(runs) / sizeof(runs[0]); ++k) {
+        fresh();
+        go(runs[k]);
+        CHECK(!rcur_set_a());
+        CHECK_STR_EQ(rcur_why(), TR(SVL_CURRENT_NO_PD));
+        pd_answers();
+        CHECK(rcur_set_a());
+        CHECK(rcur_why() == NULL);
+    }
+}
+
+/* A programming port that takes the supply while SET A's keypad stands:
+ * OK is refused with SUPPLY's reason, the keypad shuts and SET A stays.  A
+ * value that snaps to SET A as it is shuts the keypad and changes nothing. */
+TEST_CASE(set_a_typed_under_a_port_that_took_the_supply_is_refused)
+{
+    fresh();
+    pd_answers();
+    go(SERVO_FN_LIMRUN);
+    supply_screen_adopt(5.0f, 1.5f);
+    const float v0 = supply_screen_set_v();
+    rcur_edit();
+    CHECK(servo_screen_keypad()->open);
+    keys("1.5");
+    CHECK(!servo_screen_keypad()->open);        /* the same value: no change */
+    CHECK(fabsf(supply_screen_set_i() - 1.5f) < 0.001f);
+
+    rcur_edit();
+    CHECK(servo_screen_keypad()->open);
+    supply_screen_set_port_held(true);
+    keys("0.5");
+    CHECK(!servo_screen_keypad()->open);
+    CHECK(fabsf(supply_screen_set_i() - 1.5f) < 0.001f);
+    CHECK(fabsf(supply_screen_set_v() - v0) < 0.001f);
+    supply_screen_set_port_held(false);
+}
+
+/* The ESC signal-wire session holds the supply on the carrier as its own
+ * word: SET A's row is locked with SUPPLY's ESC reason, a tap opens nothing,
+ * and a value typed under a keypad that stood when the session took the
+ * supply is refused.  The KST and Hitec ports give SUPPLY's other reason. */
+TEST_CASE(set_a_names_the_esc_wire_session_that_holds_the_supply)
+{
+    fresh();
+    pd_answers();
+    go(SERVO_FN_RAUTO);
+    supply_screen_adopt(5.0f, 1.5f);
+    CHECK(rcur_why() == NULL);
+    rcur_edit();
+    CHECK(servo_screen_keypad()->open);
+
+    const esc_link_readout_t rd = ewp_s.prog.f.rd;
+    ewp_s.prog.f.rd.known = true;
+    ewp_s.prog.f.rd.held = true;     /* the session has the pin */
+    CHECK(esc_wire_panel_holds_port());
+    supply_screen_set_ports_own(true);
+    supply_screen_set_page_held(true);
+    CHECK(supply_screen_port_held());
+    CHECK_STR_EQ(rcur_why(), TR(SUP_HELD_REFUSED_ESC));
+    keys("0.5");
+    CHECK(!servo_screen_keypad()->open);
+    CHECK(fabsf(supply_screen_set_i() - 1.5f) < 0.001f);
+
+    rcur_edit();
+    CHECK(!servo_screen_keypad()->open);
+    supply_screen_set_page_held(false);
+    supply_screen_set_ports_own(false);
+    ewp_s.prog.f.rd = rd;
+    CHECK(!esc_wire_panel_holds_port());
+    supply_screen_set_port_held(true);
+    CHECK_STR_EQ(rcur_why(), TR(SUP_HELD_REFUSED));
+    supply_screen_set_port_held(false);
+    CHECK(rcur_why() == NULL);
 }
 
 int main(void)
@@ -501,5 +655,9 @@ int main(void)
     RUN(current_shows_and_types_set_a_where_a_pd_mini_feeds);
     RUN(current_is_locked_without_a_pd_mini_and_under_a_held_supply);
     RUN(rudder_auto_holds_current_and_prog_wait);
+    RUN(set_a_reads_in_two_or_three_decimals_and_joins_a_rows_value);
+    RUN(set_a_applies_on_test_and_where_a_pd_mini_feeds_a_programmer_run);
+    RUN(set_a_typed_under_a_port_that_took_the_supply_is_refused);
+    RUN(set_a_names_the_esc_wire_session_that_holds_the_supply);
     return test_summary("servo_lists_rows");
 }

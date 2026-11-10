@@ -429,10 +429,10 @@ TEST_CASE(the_card_and_the_hold_take_the_footer_and_the_output_cards_place)
     CHECK(ready_shown());
 }
 
-/* LIMIT RUN's list: MODE, SERVO, SERVO PULSES, CURRENT and PROG WAIT, no
- * PROG VOLTAGE and no PROG CURRENT.  On OUTPUTS MODE, SERVO and SERVO PULSES are locked with
- * the reason; on a PROG PORT behind a PD mini a tap on MODE switches it to
- * SEARCH + PROGRAM. */
+/* LIMIT RUN's list: MODE, SERVO, SERVO PULSES, CURRENT, PROG WAIT, DUT
+ * NAME and USER LOGS, no PROG VOLTAGE and no PROG CURRENT.  On OUTPUTS
+ * MODE, SERVO and SERVO PULSES are locked with the reason; on a PROG PORT
+ * behind a PD mini a tap on MODE switches it to SEARCH + PROGRAM. */
 TEST_CASE(the_list_holds_mode_servo_pulses_and_the_programmers_rows)
 {
     to_ready(false);
@@ -448,6 +448,9 @@ TEST_CASE(the_list_holds_mode_servo_pulses_and_the_programmers_rows)
     CHECK_EQ(sl->host->row(LL_CURRENT).kind, (int)UI_SL_CUSTOM);
     CHECK_EQ(sl->host->row(LL_CURRENT).custom->label, TX_SV_CURRENT);
     CHECK_EQ(sl->host->row(LL_WAIT).id, SET_SERVO_PROG_WAIT);
+    CHECK_EQ(sl->host->row(LL_NAME).kind, (int)UI_SL_TEXT);
+    CHECK_EQ(sl->host->row(LL_NAME).text, (int)SET_TEXT_DUT_NAME);
+    CHECK_EQ(sl->host->row(LL_LOG).id, SET_LOG_USER);
     /* No PROG VOLTAGE and no PROG CURRENT: neither reaches a run. */
     for (int i = 0; i < sl->host->count(); ++i) {
         CHECK(sl->host->row(i).kind != (uint8_t)UI_SL_SETTING

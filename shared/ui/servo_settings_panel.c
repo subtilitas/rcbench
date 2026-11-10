@@ -558,7 +558,7 @@ static int profile_row(int kind)
 void svs_profile_edit(int kind)
 {
     const int i = profile_row(kind);
-    if (i >= 0) {
+    if (i >= 0 && !svs_profile_refused()) {
         edit_row(i);
         servo_invalidate();
     }
@@ -577,6 +577,9 @@ static int clamp_int(int v, int lo, int hi)
 void svs_profile_step(int kind, int dir)
 {
     unsigned lo = 0u, hi = 0u;
+    if (svs_profile_refused()) {
+        return;
+    }
     dir = (dir < 0) ? -1 : 1;
     switch (kind) {
     case R_MIN:
@@ -641,6 +644,12 @@ static void choose(int k)
     const int target = s.ch.target;
     const setting_id_t id = s.ch.id;
     s.ch.open = false;
+    /* The profile's TYPE and RATE: none on a bench gone live under the
+     * list in the frame of the pick. */
+    if ((target == CH_TYPE || target == CH_RATE) && svs_profile_refused()) {
+        ++s.ctrl_rev;
+        return;
+    }
     if (target == CH_TYPE) {
         ask_profile(v, k_types[v].default_hz);
     } else if (target == CH_RATE) {
@@ -683,6 +692,15 @@ static void keypad_done(ui_keypad_result_t r, float v)
         } else {
             close_alone();
         }
+        ++s.ctrl_rev;
+        return;
+    }
+    /* The profile's numbers: none on a bench gone live under the list in
+     * the frame of the OK. */
+    const bool profile = target == KT_MIN || target == KT_CENTER
+                         || target == KT_MAX || target == KT_TRAVEL
+                         || target == KT_RATE || target == KT_TRIM;
+    if (r == UI_KEYPAD_OK && profile && svs_profile_refused()) {
         ++s.ctrl_rev;
         return;
     }

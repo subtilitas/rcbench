@@ -6,7 +6,7 @@ order: 21
 
 # Servo-Optionen
 
-OPTIONEN in der Fußleiste eines [SERVO](servo.md)-Bildschirms öffnet die Liste dieses Bildschirms. Die Liste des Hubs ist das Servoprofil aller Funktionen: AUSGANG und PRÜFLING. SWEEP, RUDER, RUDER AUTO, ENDLAGENLAUF und HITEC haben eigene Listen; TEST öffnet die Zeilen seines Laufs, KST seine Seite EXPERT MODE; LIVE hat keine. SCHLIESSEN oben rechts in den Zeilen eines Laufs oder das Home-Feld führt zurück. Die Liste einer Funktion öffnet nur bei SAFE; wird der Prüfstand scharf, schließen sie und jede Seite mit Zeilen. Die des Hubs öffnet jederzeit. Keine Liste öffnet, solange eine Sitzung ihren Port hält oder ein Finger noch auf einem anderen Bedienelement liegt. Eine Änderung in einer Liste gilt bis SPEICHERN in der Leiste als nicht gespeichert. Tippe auf eine Zahl für das Tastenfeld, auf eine Auswahl für deren Liste, auf einen Schalter zum Umschalten oder auf NAME für die Tastatur.
+OPTIONEN in der Fußleiste eines [SERVO](servo.md)-Bildschirms öffnet die Liste dieses Bildschirms. Die Liste des Hubs ist das Servoprofil aller Funktionen: AUSGANG und PRÜFLING; OPTIONEN auf LIVE öffnet dieselbe Liste. SWEEP, TEST, RUDER, RUDER AUTO, ENDLAGENLAUF und HITEC haben eigene Listen, KST seine Seite EXPERT MODE. Ein Tippen auf die Typzeile von LIVE, SWEEP und RUDER öffnet das Profil an der Stelle der Liste mit TYP im Blick; ein Tippen auf die Zeile BEREICH der Karten BEREIT von ENDLAGENLAUF und RUDER AUTO oder auf AUSGANG in der Liste von TEST öffnet es mit PULS MIN im Blick. SCHLIESSEN oben rechts in den Zeilen eines Laufs oder das Home-Feld führt zurück. Die Liste einer Funktion öffnet nur bei SAFE; wird der Prüfstand scharf, schließen sie und jede Seite mit Zeilen, samt Tastenfeld, Auswahl oder Warnung darüber; was dort getippt oder gewählt ist, gilt nicht. Die des Hubs öffnet jederzeit. Keine Liste öffnet, solange eine Sitzung ihren Port hält oder ein Finger noch auf einem anderen Bedienelement liegt. Eine Änderung in einer Liste gilt bis SPEICHERN in der Leiste als nicht gespeichert. Tippe auf eine Zahl für das Tastenfeld, auf eine Auswahl für deren Liste, auf einen Schalter zum Umschalten oder auf NAME für die Tastatur.
 
 ## AUSGANG, in der Liste des Hubs
 
@@ -60,13 +60,14 @@ Die Kopfzeile von AUSGANG zeigt den Status der Pulsrate, in Warnfarbe, solange d
 |---|---|---|---|
 | KURVE | RECHTECK, SINUS, DREIECK | SINUS | die Kurve von SWEEP und der Bewegungen des Tests |
 | TEMPO | 0,05 bis 5Hz | 0,5Hz | Kurvenzyklen pro Sekunde |
-| BEREICH | 10 bis 100% | 80% | der Anteil des Wegs, der durchfahren wird |
+| BEREICH | 10 bis 100% | 80% | der Anteil des Wegs, der durchfahren wird; der Bereich des automatischen Tests |
+| Haltezeit | 0 bis 5000ms | 200ms | an jedem Ende gehalten; die Haltezeit des automatischen Tests |
 
 ## Die Optionen des automatischen Tests
 
 ![Die Liste OPTIONEN von TEST](view:servo-test-settings)
 
-OPTIONEN in der Fußleiste von TEST öffnet die Liste des automatischen Tests, nur bei SAFE. Sie hat 17 Zeilen unter vier Überschriften; die Zeile jeder Überschrift sagt, was ihre Zeilen gerade bewirken. SPEICHERN in der Leiste behält eine Änderung; wer mit einer Änderung geht, wird nach SPEICHERN oder VERWERFEN gefragt. TEST ZURÜCKSETZEN setzt jede Zeile auf ihre Vorgabe und HV-SERVO auf AUS. Die Liste schließt, sobald der Prüfstand ARMED schaltet oder ein Lauf startet.
+OPTIONEN in der Fußleiste von TEST oder ein Tippen auf BEREICH auf der Karte BEREIT von TEST öffnet die Liste des automatischen Tests, nur bei SAFE. Sie hat 21 Zeilen unter sechs Überschriften; die Zeile jeder Überschrift sagt, was ihre Zeilen gerade bewirken, die von BEREICH die Enden des Laufs, `1100-1900us`. SPEICHERN in der Leiste behält eine Änderung; wer mit einer Änderung geht, wird nach SPEICHERN oder VERWERFEN gefragt. TEST ZURÜCKSETZEN setzt jede Zeile auf ihre Vorgabe und HV-SERVO auf AUS. Die Liste schließt, sobald der Prüfstand ARMED schaltet oder ein Lauf startet. Bereich und Haltezeit sind auch die von SWEEP, Name des Prüflings und Bericht die des Hubs: je eine Einstellung, welche Liste sie auch setzt.
 
 | Überschrift | Option | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|---|
@@ -85,6 +86,10 @@ OPTIONEN in der Fußleiste von TEST öffnet die Liste des automatischen Tests, n
 | DAUER UND ZEITEN | Bewegungen | 1 bis 1000 | 20 | die Bewegungen einer Stufe; ein Druck nur bei Länge nach BEWEGUNGEN |
 | DAUER UND ZEITEN | Haltezeit | 0 bis 5000ms | 200ms | an jedem Ende gehalten, im Test und bei SWEEP |
 | DAUER UND ZEITEN | Einschwingzeit | 0 bis 10000ms | 500ms | Wartezeit nach einer Netzteilstufe vor dem Messen |
+| BEREICH | Bereich | 10 bis 100% | 80% | der Anteil des Wegs, den die Bewegungen beiderseits von PULS MITTE abdecken |
+| BEREICH | AUSGANG | das Profil | STANDARD PWM 50Hz 1000-2000 | Typ, Pulsrate und Pulsbereich in Kraft; ein Tippen öffnet das Profil |
+| PRÜFLING | Name des Prüflings | bis 23 Zeichen | SERVO | steht über jedem Bericht |
+| PRÜFLING | Bericht | EIN, AUS | EIN | ein Textbericht zu jeder Testaufzeichnung |
 
 ![HV-SERVO eingeschaltet](view:servo-hv)
 
@@ -110,8 +115,10 @@ OPTIONEN in der Fußleiste von ENDLAGENLAUF öffnet die Liste. Außerhalb eines 
 | SERVOPULSE | BEHALTEN, 1000-2000 | BEHALTEN | Nur bei PORT auf PROG PORT und SERVO KST/CHASERVO. 1000-2000 setzt PULSE LOWER und PULSE UPPER vor der Suche auf 1000,0 und 2000,0us. |
 | STROM | Grenzen von SUPPLY | SET A von SUPPLY | die Strombegrenzung des Laufs, SET A von SUPPLY, wo ein PD mini das Servo speist: ein Tippen öffnet das Tastenfeld von SUPPLY. Ohne PD mini `--`, gesperrt: die eigene Versorgung des Servos begrenzt den Strom |
 | Warten vor PWM | 0 bis 10000ms | 100ms | vom Ende des Programmierens bis zum ersten Puls |
+| Name des Prüflings | bis 23 Zeichen | SERVO | NAME des Hubs; steht über jedem Bericht |
+| Testaufzeichnungen | EIN, AUS | EIN | die von SETUP > SD CARD: AUS, ein Lauf schreibt kein LIMITnnn.TXT |
 
-Die Liste hat keine Spannung: ein Lauf programmiert mit 5,0V ([Die Versorgung: 5,0V](servo.md#die-versorgung-5-0v)).
+Die Liste hat keine Spannung: ein Lauf programmiert mit 5,0V ([Die Versorgung: 5,0V](servo.md#die-versorgung-5-0v)). Die Liste von RUDER AUTO endet mit denselben Zeilen Name des Prüflings und Testaufzeichnungen. Die Karten BEREIT beider Seiten haben zehn Zeilen, so viele, wie sie fassen; die Testaufzeichnungen sind dort eine Zeile der Liste und nur auf TEST eine Zeile der Karte.
 
 ## Die Grenzen von SUPPLY
 

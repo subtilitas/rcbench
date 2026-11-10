@@ -538,17 +538,25 @@ static void draw_readings(gfx_canvas_t *c)
     cur_value(c);
 }
 
+void svs_tag_text(char *out, size_t n)
+{
+    snprintf(out, n, "%s  %uHz  %u-%u", type()->name, (unsigned)s.frame_hz,
+             (unsigned)s.min_us, (unsigned)s.max_us);
+}
+
 /* The longest pill, a 13-character type, 560Hz and two 4-digit ends, is
  * 32 of its 35 cells. */
 void svs_draw_tag(gfx_canvas_t *c, gfx_rect_t r)
 {
     const bool danger = in_force_dangerous();
-    const gfx_color_t fill = danger ? ui_theme_color(UI_C_DANGER)
-                                    : ui_theme_color(UI_C_PANEL_SUNK);
+    gfx_color_t fill = danger ? ui_theme_color(UI_C_DANGER)
+                              : ui_theme_color(UI_C_PANEL_SUNK);
+    if (s.rdy.pressed == READY_PRESS_TAG) {
+        fill = gfx_lerp(fill, GFX_WHITE, 60);   /* a finger on it */
+    }
     gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, UI_R_CTL, fill);
     char line[40];
-    snprintf(line, sizeof(line), "%s  %uHz  %u-%u", type()->name,
-             (unsigned)s.frame_hz, (unsigned)s.min_us, (unsigned)s.max_us);
+    svs_tag_text(line, sizeof(line));
     gfx_text_in(c, r, line, SV_FONT_LABEL,
                 danger ? GFX_WHITE : ui_theme_color(UI_C_TEXT), 1,
                 GFX_ALIGN_CENTER);

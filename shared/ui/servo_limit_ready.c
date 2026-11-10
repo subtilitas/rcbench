@@ -520,10 +520,10 @@ bool lim_ready_row(int i, rdy_row_t *r)
         r->st = (uint8_t)RDY_OK;
         met_value(i, r->value, sizeof(r->value), &r->st);
     }
-    /* The rows a tap fixes: PORT and SERVO always, METER on SETUP, the
-     * PD mini's caps on SUPPLY's LIMITS, the supply's current limit on
+    /* The rows a tap fixes: PORT, SERVO and RANGE always, METER on SETUP,
+     * the PD mini's caps on SUPPLY's LIMITS, the supply's current limit on
      * its keypad while the row is not red and shows one. */
-    r->fix = (i == LRR_PORT || i == LRR_SERVO)
+    r->fix = (i == LRR_PORT || i == LRR_SERVO || i == LRR_RANGE)
              || (i == LRR_METER && r->st == (uint8_t)RDY_BAD)
              || (i == LRR_SUPPLY && r->st == (uint8_t)RDY_BAD
                  && r->why == TR(SV_RUN_PD_5V))
@@ -557,6 +557,10 @@ void lim_ready_tap(int i)
         return;
     case LRR_ANGLE:
         angle_pick_open();
+        return;
+    case LRR_RANGE:
+        /* The pulses are the profile's: its list, on PULSE MIN. */
+        svs_profile_open(SVS_PROF_MIN);
         return;
     case LRR_SERVO:
         if (!lim_reads()) {

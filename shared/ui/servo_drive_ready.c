@@ -13,7 +13,8 @@
  *     SWEEP, 250 to 298 on RUDDER): SET V and SET A, 80 x 48px each, 8px
  *     apart, and the plot to the column's end, 180 x 48px;
  *   - on LIVE and SWEEP SPEED from y 244, its track at y 268 to 308;
- *   - the type pill, y 318 to 350;
+ *   - the type pill, y 318 to 350: a tap opens the servo profile on TYPE
+ *     in the SETTINGS list's place (drive_tag_down(), svs_profile_open());
  *   - on LIVE CENTER and RELEASE, on SWEEP SWEEP and RELEASE, y 356 to
  *     404, each half the column;
  *   - the rail line at y 412: the meter of what feeds the servo, its
@@ -890,6 +891,28 @@ void drive_draw_set(gfx_canvas_t *c)
 void drive_draw_plot(gfx_canvas_t *c)
 {
     svs_power_view(c, drive_plot_rect());
+}
+
+bool drive_tag_down(const touch_event_t *evt)
+{
+    if (evt == NULL || !drive_shown()
+        || !gfx_rect_contains(drive_tag_rect(), evt->point.x,
+                              evt->point.y)) {
+        return false;
+    }
+    /* The profile opens over the screen: not under a press held anywhere,
+     * whose release the list would take. */
+    if (s.rdy.pressed < 0 && !svs_press_held()) {
+        s.rdy.pressed  = READY_PRESS_TAG;
+        s.rdy.press_id = evt->point.id;
+        ++s.ctrl_rev;
+    }
+    return true;
+}
+
+void drive_tag_tap(void)
+{
+    svs_profile_open(SVS_PROF_TYPE);
 }
 
 /* ------------------------------------------------------------ for tests */

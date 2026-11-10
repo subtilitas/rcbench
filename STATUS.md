@@ -477,7 +477,7 @@ the supply stepped through 4.8 and 6.0V, and 7.4 and 8.4V with HV SERVO on (sess
 through the HV warning's 2s hold), idle, moving and holding current and the travel time at
 each, a brown-out walk from 5.0V, or the cap if lower, down by STEP to LOWEST VOLTAGE (0.1
 to 1.0V and 2.0 to 4.8V, 0.2V and 3.0V by default, up to 31 voltages; set under BROWN-OUT
-on TEST's 17-row SETTINGS list and kept in NVS; `test_servo_brownout` at the ranges' ends, a
+on TEST's 21-row SETTINGS list and kept in NVS; `test_servo_brownout` at the ranges' ends, a
 floor off the grid, at or above the start and under the supply's lowest set point, a cap
 under 5.0V; `test_servo_brownout_page` for the list's rows, their keypads and the heading's
 walk line, the settings over a restart and a run started from the screen; `test_servo_test_list`
@@ -583,6 +583,16 @@ reads `PROG 5V NO READING` and `--V  --A`, never the PD mini's values. The PROG 
 SUPPLY adds the watts and a plot of its windows, the SERVO hub's footer the PROG 5V's
 reading (`test_servo_power_view`, `test_prog5v_box`, `test_prog5v_servo`; host suite
 only).
+Each function screen sets its settings on itself: the type pill of LIVE, SWEEP and RUDDER,
+LIVE's SETTINGS, LIMIT RUN's and RUDDER AUTO's RANGE rows and TEST's OUTPUT row open the
+servo profile in place on a SAFE bench; TEST's RANGE row opens TEST's list on Range, which
+SWEEP shares, as Dwell time; TEST's list holds DUT name and Report, LIMIT RUN's and RUDDER
+AUTO's DUT name and User logs; TEST's READY card switches User logs on its LOG row, refused
+under a run (`shared/ui/servo_lists.c`, `test_servo_settings_rows`; host suite only).
+A bench that goes live under the profile a function opened closes it with its keypad,
+choice list and warning, nothing in them taken, and an OK, pick or hold completed in that
+frame is refused; LIMIT RUN's CURRENT keypad closes with its list; the hub's profile takes
+an OK on an armed bench (`test_servo_profile_live`; host suite only).
 RUDDER's and RUDDER AUTO's ANGLE rows open the ANGLE SOURCE list on a SAFE bench: the
 AS5600, the IMUs of the last scan, NO IMU FOUND and SEARCH FOR IMU, which switches the IMU
 on and scans once Bluetooth LE runs; a pick sets the source and binds an IMU
@@ -1338,7 +1348,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 522 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 524 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1451,7 +1461,7 @@ The host suite is 522 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_imu`, `test_imu_filter`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_effect`,
-`test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_drive_supply`, `test_servo_power_view`, `test_servo_angle_pick`, `test_servo_start_seq`,
+`test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_drive_supply`, `test_servo_power_view`, `test_servo_settings_rows`, `test_servo_profile_live`, `test_servo_angle_pick`, `test_servo_start_seq`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`.
@@ -1999,34 +2009,35 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_pinlist.c` | 62 | 62 | 100.0% |
 | `shared/ui/ui_board.c` | 56 | 56 | 100.0% |
 | `shared/ui/servo_screen.c` | 374 | 363 | 97.1% |
-| `shared/ui/servo_screen_sweep.c` | 506 | 483 | 95.5% |
+| `shared/ui/servo_screen_sweep.c` | 507 | 484 | 95.5% |
 | `shared/ui/servo_screen_link.c` | 419 | 410 | 97.8% |
-| `shared/ui/servo_screen_touch.c` | 274 | 269 | 98.2% |
-| `shared/ui/servo_screen_draw.c` | 457 | 433 | 94.8% |
-| `shared/ui/servo_settings_panel.c` | 674 | 612 | 90.8% |
+| `shared/ui/servo_screen_touch.c` | 278 | 273 | 98.2% |
+| `shared/ui/servo_screen_draw.c` | 462 | 437 | 94.6% |
+| `shared/ui/servo_settings_panel.c` | 683 | 626 | 91.7% |
 | `shared/ui/servo_settings_draw.c` | 348 | 316 | 90.8% |
 | `shared/ui/servo_test_panel.c` | 463 | 454 | 98.1% |
-| `shared/ui/servo_test_ready.c` | 325 | 319 | 98.2% |
-| `shared/ui/servo_test_list.c` | 43 | 43 | 100.0% |
+| `shared/ui/servo_test_ready.c` | 356 | 348 | 97.8% |
+| `shared/ui/servo_test_list.c` | 53 | 49 | 92.5% |
 | `shared/ui/servo_limit_panel.c` | 332 | 320 | 96.4% |
-| `shared/ui/servo_limit_ready.c` | 292 | 284 | 97.3% |
+| `shared/ui/servo_limit_ready.c` | 295 | 287 | 97.3% |
 | `shared/ui/servo_limit_card.c` | 203 | 181 | 89.2% |
 | `shared/ui/servo_limit_seam.c` | 90 | 86 | 95.6% |
-| `shared/ui/servo_workbench.c` | 178 | 173 | 97.2% |
+| `shared/ui/servo_workbench.c` | 178 | 174 | 97.8% |
 | `shared/ui/servo_rudder_panel.c` | 418 | 415 | 99.3% |
 | `shared/ui/servo_rudder_auto_panel.c` | 585 | 539 | 92.1% |
-| `shared/ui/servo_rudder_auto_ready.c` | 283 | 278 | 98.2% |
-| `shared/ui/servo_ready.c` | 641 | 619 | 96.6% |
+| `shared/ui/servo_rudder_auto_ready.c` | 287 | 282 | 98.3% |
+| `shared/ui/servo_ready.c` | 549 | 533 | 97.1% |
+| `shared/ui/servo_power_view.c` | 95 | 89 | 93.7% |
 | `shared/ui/servo_prog_ready.c` | 209 | 196 | 93.8% |
-| `shared/ui/servo_drive_ready.c` | 436 | 416 | 95.4% |
+| `shared/ui/servo_drive_ready.c` | 449 | 428 | 95.3% |
 | `shared/ui/servo_rudder_flap.c` | 101 | 99 | 98.0% |
 | `shared/ui/servo_guide.c` | 172 | 168 | 97.7% |
 | `shared/ui/servo_fn.c` | 83 | 82 | 98.8% |
 | `shared/ui/servo_hub.c` | 202 | 196 | 97.0% |
 | `shared/ui/servo_footer.c` | 161 | 158 | 98.1% |
-| `shared/ui/servo_lists.c` | 192 | 191 | 99.5% |
+| `shared/ui/servo_lists.c` | 243 | 240 | 98.8% |
 | `shared/ui/servo_pick.c` | 99 | 99 | 100.0% |
-| `shared/ui/servo_run_supply.c` | 82 | 75 | 91.5% |
+| `shared/ui/servo_run_supply.c` | 82 | 81 | 98.8% |
 | `shared/ui/servo_angle_pick.c` | 260 | 252 | 96.9% |
 | `shared/ui/kst_panel.c` | 460 | 449 | 97.6% |
 | `shared/ui/kst_panel_text.c` | 196 | 196 | 100.0% |
@@ -2334,7 +2345,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **89585** | **87772** | **98.0%** |
+| **total** | **89719** | **87908** | **98.0%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

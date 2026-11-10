@@ -385,8 +385,10 @@ SETUP > SENSORS zeigt diese Zeilen ohne Tasten zum Bearbeiten:
   1kHz gelesen. Der Endlagenlauf meldet dann `KEIN SERVO-PWM-PIN` und RUDER
   AUTO `AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT`, jeweils vor jeder
   Zeile zum INA3221 ([Servo](Servo-de.md#auto-endpoints)).
-- SERVO und der Endlagenlauf benennen das Messgerät nach seiner Schiene:
-  `INA SCHIENE A` über dem Plot, `INA3221 SCHIENE A` auf der Karte TEST.
+- SERVO benennt das Messgerät nach seiner Schiene: `INA SCHIENE A` in der
+  Schienenzeile unter jeder BEREIT-Karte und über dem Plot der Schiene,
+  `INA3221 SCHIENE A` in der Zeile MESSGERÄT der Karten TEST, ENDLAGENLAUF
+  und RUDER AUTO.
   Das Band nennt die Schiene eines Kanals über seiner Grenze:
   `INA3221 0x40 CH2 (SCHIENE A) über der Grenze von 0.80A.`. Die Zeile
   ÜBERWACHT VON jedes Programmierports nennt CH3, `INA3221 PROG 5V`. Die

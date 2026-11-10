@@ -20,8 +20,9 @@
  *     and amps.
  *
  * A tap on a row with a fix takes the fix (the PORT choice list, the
- * SETTINGS list on its row, ZERO, SETUP > SENSORS, SET A's keypad on the
- * supply row); a tap on any other row not met names it in the alert band.
+ * SETTINGS list on its row, the servo profile on RANGE, ZERO, SETUP >
+ * SENSORS, SET A's keypad on the supply row); TEST's LOG switches USER
+ * LOGS; a tap on any other row not met names it in the alert band.
  *
  * LIVE, SWEEP and RUDDER show their rows the same way over the output
  * card's controls (servo_drive_ready.c): the title and 3 or 5 rows from
@@ -250,7 +251,7 @@ bool ready_hold_down(const touch_event_t *evt);
  *  @param c the canvas */
 void ready_draw_hold(gfx_canvas_t *c);
 
-/* --- servo_ready.c: the plot of what feeds the servo ---------------------- */
+/* --- servo_power_view.c: the plot of what feeds the servo ----------------- */
 
 /** @brief A plot of what feeds the servo this tall or taller draws its
  *         legend in the label face and its plot's labels; a lower one the
@@ -381,6 +382,8 @@ typedef enum {
     TRR_STEPS,     /**< the steps chosen and inside the caps              */
     TRR_RANGE,     /**< the ends either side of PULSE CENTER              */
     TRR_ARM,       /**< ARMED, or a run or a report in the way            */
+    TRR_LOG,       /**< USER LOGS ON or OFF, a tap switches it; never a
+                        refusal                                          */
     TRR_COUNT      /**< the count                                         */
 } test_row_t;
 
@@ -553,6 +556,16 @@ bool drive_set_down(const touch_event_t *evt);
 void drive_draw_set(gfx_canvas_t *c);
 /** @brief The plot repainted alone.  @param c the canvas */
 void drive_draw_plot(gfx_canvas_t *c);
+/** @brief svs_ready_t's pressed for a press on the type pill: past every
+ *         row. */
+#define READY_PRESS_TAG READY_ROWS_MAX
+/** @brief A DOWN on the type pill on LIVE, SWEEP or RUDDER: its tap, on
+ *         the release, opens the profile on TYPE.  @param evt the DOWN
+ *  @return whether it landed on the pill */
+bool drive_tag_down(const touch_event_t *evt);
+/** @brief The type pill's tap: the profile on TYPE, or why it stays shut
+ *         in the alert band. */
+void drive_tag_tap(void);
 /** @brief The profile in force, its frame rate and pulse range, in the
  *         danger colour for one that can destroy a servo not made for it
  *         (servo_screen_draw.c).  @param c the canvas @param r the pill */

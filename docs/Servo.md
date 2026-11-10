@@ -78,9 +78,11 @@ screen. The screen is `shared/ui/servo_limit_panel.c`, its left card
 - SETTINGS opens the run's list: MODE (SEARCH ONLY or SEARCH + PROGRAM),
   SERVO (KST/CHASERVO, HITEC D SERIES or HITEC CLASSIC, the programmer the
   run's sessions go to, [Hitec servos](#hitec-servos)), SERVO PULSES (KEEP
-  or 1000-2000), CURRENT and the programmer's Wait before PWM. CURRENT is
-  SUPPLY's SET A ([The run's current limit](#the-runs-current-limit)).
-  The run programs at 5.0V and has no voltage row
+  or 1000-2000), CURRENT, the programmer's Wait before PWM, DUT name and
+  User logs. CURRENT is SUPPLY's SET A ([The run's current
+  limit](#the-runs-current-limit)). DUT name is the hub's, User logs SETUP
+  > SD CARD's: one setting each, whichever list sets it; the READY card has
+  no room for a LOG row. The run programs at 5.0V and has no voltage row
   ([The run's 5.0V](#the-runs-50v)), and no Programming current row: no
   run applies it. With SERVO at HITEC D SERIES, Hitec D
   receive (PULL-UP or PRECHARGE) follows SERVO: the same saved setting as
@@ -111,7 +113,9 @@ screen. The screen is `shared/ui/servo_limit_panel.c`, its left card
   on the PORT row. On the bench's outputs SERVO reads `SEARCH ONLY` in
   grey, PROGRAMMER and PORT PWM `--`.
 - A tap on PORT opens the PORT choice; on ANGLE the
-  [ANGLE SOURCE list](#angle-source); on SERVO the SERVO choice,
+  [ANGLE SOURCE list](#angle-source); on RANGE the servo profile, the
+  hub's list, with PULSE MIN in view, on a SAFE bench only; on SERVO the
+  SERVO choice,
   KST/CHASERVO, HITEC D SERIES and HITEC CLASSIC over the left column,
   on the bench's outputs the band names `SERVO: On a PROG PORT only:
   choose one with PORT`; on a red METER it opens SETUP > SENSORS on the
@@ -724,7 +728,10 @@ fired. Every end of a run, PASS included, switches the bench to SAFE.
 ### Method
 
 The voltage steps are the run's Step 4.8V and Step 6.0V (TEST's SETTINGS
-list), and with HV SERVO on, Step 7.4V and Step 8.4V. HV SERVO is off at every restart. A run
+list), and with HV SERVO on, Step 7.4V and Step 8.4V. HV SERVO is off at every restart. The
+run's ends are RANGE of the travel either side of PULSE CENTER: Range on
+TEST's list is SWEEP's setting, and OUTPUT under it opens the servo
+profile. Dwell time is SWEEP's too, DUT name and Report the hub's. A run
 with a step above 6.0V starts only through the HV SERVOS ONLY warning held for
 2s. The current limit through the run is SUPPLY's SET A, which the READY
 card's PD MINI row shows and a tap there sets
@@ -1327,8 +1334,11 @@ A run takes the next run number of the folder `USER/LOGS`, and the SD card's
 own task writes its files there: `ATESTnnn.CSV`, one row per reading of the
 run's meter, and with DUT's REPORT on, `ATESTnnn.TXT`. The number belongs to
 one series with the limit runs' `LIMITnnn.TXT` in that folder
-([Logs](Screens.md#logs)). With User logs OFF on SETUP > SD CARD, read at
-the run's start, the run writes no file and the result names `USER LOGS OFF`. A run is
+([Logs](Screens.md#logs)). With User logs OFF, read at the run's start,
+the run writes no file and the result names `USER LOGS OFF`. TEST's READY
+card shows User logs on its LOG row, `ON` or `OFF` in amber; a tap there
+switches and saves it, as SETUP > SD CARD does, and is refused while a
+run or its start steps are under way. A run is
 one CSV: the run log of a bench in ARMED writes no row while a run is under
 way. Its time column steps over the run and its rows start again when the
 run ends. A number carried by a
@@ -1713,10 +1723,12 @@ link is not authenticated (`SECURITY.md`, the Bluetooth IMU).
   `rud_defl_hi`). With LENGTH set the row shows the trailing edge's mm
   beside the degrees. MARGIN: 0 to 50%, 10% (`rud_margin`). TOLERANCE:
   0.1 to 5.0°, 0.5° (`rud_tol`). A tap opens the keypad. The same four,
-  SERVO, SERVO PULSES, ANGLE SOURCE, CURRENT and Wait before PWM are in
-  SETTINGS. CURRENT is SUPPLY's SET A, as on LIMIT RUN
-  ([The run's current limit](#the-runs-current-limit)); Wait before PWM is
-  the KST programmer's wait the run's LEAVE sends.
+  SERVO, SERVO PULSES, ANGLE SOURCE, CURRENT, Wait before PWM, DUT name
+  and User logs are in SETTINGS. CURRENT is SUPPLY's SET A, as on LIMIT
+  RUN ([The run's current limit](#the-runs-current-limit)); Wait before
+  PWM is the KST programmer's wait the run's LEAVE sends. DUT name is the
+  hub's, User logs SETUP > SD CARD's; the READY card has no room for a LOG
+  row.
 - The goal of a side is its target x (1 + MARGIN): 20.0° at 10% is 22.0°.
 - The READY card in the output card's place, 380 x 374px: one row per
   check of the start, 30px each, a dot, the label and the state. Green:
@@ -1736,6 +1748,8 @@ link is not authenticated (`SECURITY.md`, the Bluetooth IMU).
   and amps.
 - A tap on PORT opens the PORT choice; on SERVO the SERVO choice,
   KST/CHASERVO, HITEC D SERIES and HITEC CLASSIC over the left column; on
+  RANGE the servo profile, the hub's list, with PULSE MIN in view, on a
+  SAFE bench only; on
   ANGLE the [ANGLE SOURCE list](#angle-source), red or not; on a red ZERO
   with a reading it takes the zero; on a red METER it opens SETUP >
   SENSORS on the INA3221 part whose channel watches the tester's target (else the first
@@ -1970,7 +1984,9 @@ report still names a D series end point by its distance from NEUTRAL.
 
 ## Sweep and SPEED
 
-SWEEP on SERVO's SWEEP screen drives the servo through its SETTINGS list's curve.
+SWEEP on SERVO's SWEEP screen drives the servo through its SETTINGS list's
+curve at its Speed in Hz over its Range, held for Dwell time at each end. Range and Dwell time are
+one setting each with TEST's list.
 SPEED on the right card limits how fast the output may move. When SPEED is
 slower than the fastest change the curve asks for, SPEED shapes the motion
 instead of the curve, and SPEED's row reads SPEED LIMITS THE SWEEP in the

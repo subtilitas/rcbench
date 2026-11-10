@@ -488,11 +488,12 @@ bool rauto_ready_row(int i, rdy_row_t *r)
         r->st = (uint8_t)RDY_OK;
         met_value(i, r->value, sizeof(r->value), &r->st);
     }
-    /* The rows a tap fixes: PORT, SERVO and ANGLE (its list) always,
-     * METER on SETUP, ZERO with a reading, the PD mini's caps on SUPPLY's
-     * LIMITS, SET A on its keypad while the row shows it and is neither
-     * red nor waiting on PORT. */
-    r->fix = (i == RAR_PORT || i == RAR_SERVO || i == RAR_ANGLE)
+    /* The rows a tap fixes: PORT, SERVO and ANGLE (its list) and RANGE
+     * (the servo profile) always, METER on SETUP, ZERO with a reading, the
+     * PD mini's caps on SUPPLY's LIMITS, SET A on its keypad while the row
+     * shows it and is neither red nor waiting on PORT. */
+    r->fix = (i == RAR_PORT || i == RAR_SERVO || i == RAR_ANGLE
+              || i == RAR_RANGE)
              || ((i == RAR_METER || i == RAR_ZERO)
                  && r->st == (uint8_t)RDY_BAD)
              || (i == RAR_SUPPLY && r->st == (uint8_t)RDY_BAD
@@ -528,6 +529,10 @@ void rauto_ready_tap(int i)
     case RAR_SERVO:
         /* The three families over the left column (servo_pick.c). */
         svs_family_open();
+        return;
+    case RAR_RANGE:
+        /* The pulses are the profile's: its list, on PULSE MIN. */
+        svs_profile_open(SVS_PROF_MIN);
         return;
     case RAR_ZERO:
         if (r.st == (uint8_t)RDY_BAD && enc_shown()) {

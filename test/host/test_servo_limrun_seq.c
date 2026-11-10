@@ -34,11 +34,18 @@
  * - a_failed_run_behind_a_pd_mini_switches_it_off
  * - the_arm_row_reads_safe_while_the_session_holds_the_bench_safe
  * - the_steps_failure_band_goes_with_its_screen
+ * - set_a_names_the_limit_run_under_the_steps_and_the_run
  *
  * SPDX-License-Identifier: MIT
  */
 #include "servo_rauto_kst_rig.h"
 #include "ui_setlist.h"
+
+/* servo_screen_int.h's current-limit helpers, which this suite does not
+ * take in whole. */
+bool rcur_set_a(void);
+const char *rcur_why(void);
+void rcur_edit(void);
 
 /** @brief LIMIT RUN's row @p i, its state and value. */
 static rdy_row_t lim_row(int i)
@@ -699,6 +706,41 @@ TEST_CASE(the_steps_failure_band_goes_with_its_screen)
     carrier_done();
 }
 
+/* Behind a PD mini SET A applies to LIMIT RUN, and it takes no edit while
+ * the start steps wait nor while the run runs: rcur_why() names the run, and
+ * rcur_edit() opens no keypad and leaves SET A as it is. */
+TEST_CASE(set_a_names_the_limit_run_under_the_steps_and_the_run)
+{
+    lim_pd(true);
+    CHECK(rcur_set_a());
+    CHECK(rcur_why() == NULL);
+    const float i0 = supply_screen_set_i();
+
+    ra.no_arm = true;
+    lim_hold_for(2060u);
+    CHECK(svs_seq_busy());
+    CHECK(!servo_screen_limit_running());
+    CHECK_STR_EQ(txt(rcur_why()), ui_servo_str(SERVO_STR_START_LIMIT_RUNS));
+    rcur_edit();
+    CHECK(!servo_screen_keypad()->open);
+    lim_press(2);                               /* ends the steps */
+    CHECK(!svs_seq_busy());
+    ra.no_arm = false;
+    lim_pd(true);                               /* the steps ended it off */
+    CHECK(rcur_why() == NULL);
+
+    lim_hold_for(2300u);
+    ra_ms(20u);
+    CHECK(servo_screen_limit_running());
+    CHECK_STR_EQ(txt(rcur_why()), ui_servo_str(SERVO_STR_START_LIMIT_RUNS));
+    rcur_edit();
+    CHECK(!servo_screen_keypad()->open);
+    CHECK(fabsf(supply_screen_set_i() - i0) < 0.001f);
+    lim_press(3);
+    ra_ms(2000u);
+    CHECK(!servo_screen_limit_running());
+}
+
 int main(void)
 {
     RUN(on_the_carrier_one_hold_switches_port_pwm_and_5v_arms_and_starts);
@@ -720,5 +762,6 @@ int main(void)
     RUN(a_failed_run_behind_a_pd_mini_switches_it_off);
     RUN(the_arm_row_reads_safe_while_the_session_holds_the_bench_safe);
     RUN(the_steps_failure_band_goes_with_its_screen);
+    RUN(set_a_names_the_limit_run_under_the_steps_and_the_run);
     return test_summary("servo_limrun_seq");
 }

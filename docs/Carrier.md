@@ -368,8 +368,9 @@ SETUP > SENSORS shows these rows without editing keys:
   then reads `NO SERVO PWM PIN` and RUDDER AUTO
   `AUTO PROGRAMS A SERVO ON THE PROG PORT`, each before any line about the
   INA3221 ([Servo](Servo.md#auto-end-points)).
-- SERVO and the limit run name the meter by its rail: `INA RAIL A` over
-  the plot, `INA3221 RAIL A` on the TEST card. The band names the rail of
+- SERVO names the meter by its rail: `INA RAIL A` on the rail line under
+  each READY card and over the rail's plot, `INA3221 RAIL A` on the METER
+  row of the TEST, LIMIT RUN and RUDDER AUTO cards. The band names the rail of
   a channel over its limit:
   `INA3221 0x40 CH2 (SERVO RAIL A) over its 0.80A limit.`. Each
   programming port's WATCHED BY line names CH3, `INA3221 PROG 5V`. The run

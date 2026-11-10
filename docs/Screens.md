@@ -280,7 +280,7 @@ on the left card decides the first pages:
 | SERVO LIMIT RUN | LOW END with HIGH END, and the state lines (2); PORT, READY, the rail line, ARM + START and SETTINGS (5) |
 | SERVO RUDDER | LENGTH, the drive buttons, ZERO and RESET MAX (4); DEFLECTION, TRAILING EDGE and the state lines (3) |
 | SERVO RUDDER AUTO | the targets, MARGIN and TOLERANCE, ZERO (3); DEFLECTION and TRAILING EDGE (2); PORT, READY, the rail line, ARM + START and SETTINGS (5) |
-| SERVO LIVE, SWEEP and RUDDER, SAFE | PORT, READY, the rail line, ARM, and SETTINGS on SWEEP and RUDDER (4 or 5); SET V, the plot, SPEED, the type and the buttons on LIVE and SWEEP (5), SET V, the plot, the type and the side view on RUDDER (4); SET V not on the rbmod carrier's programming port |
+| SERVO LIVE, SWEEP and RUDDER, SAFE | PORT, READY, the rail line, ARM and SETTINGS (5); SET V, the plot, SPEED, the type and the buttons on LIVE and SWEEP (5), SET V, the plot, the type and the side view on RUDDER (4); SET V not on the rbmod carrier's programming port |
 | SERVO KST and HITEC, SAFE | PORT, READY, the rail line, WRITE and SETTINGS (5) |
 | SERVO's lists (the hub, SWEEP, RUDDER, RUDDER AUTO, HITEC) | as a settings list |
 | SUPPLY LIVE | PLOT and TABLE, VOLTAGE and CURRENT LIMIT (3) |
@@ -1536,10 +1536,10 @@ SERVO opens on its hub: eight tiles of 328 x 130px in SETUP's grid, at x
 
 | Tile | Screen | Shows |
 | --- | --- | --- |
-| LIVE | LIVE | the dial, the knob, the readings COMMANDED, MEASURED and CURRENT |
-| SWEEP | SWEEP | the dial with the sweep; SETTINGS opens CURVE, SPEED and RANGE |
+| LIVE | LIVE | the dial, the knob, the readings COMMANDED, MEASURED and CURRENT; SETTINGS opens the servo profile |
+| SWEEP | SWEEP | the dial with the sweep; SETTINGS opens CURVE, SPEED, RANGE and DWELL TIME |
 | TEST | TEST | the AUTOMATIC TEST card, SUPPLY's caps, the plot and the run's box, the READY card in place of the output card, HOLD 2s: ARM + START in the footer; SETTINGS opens the automatic test's list |
-| LIMIT RUN | LIMIT RUN | the mode and output lines, LOW END and HIGH END and the state lines on the left card, the READY card in place of the output card, HOLD 2s: ARM + START in the footer; SETTINGS opens MODE, SERVO, SERVO PULSES, CURRENT and Wait before PWM ([Running it](Servo.md#running-it)) |
+| LIMIT RUN | LIMIT RUN | the mode and output lines, LOW END and HIGH END and the state lines on the left card, the READY card in place of the output card, HOLD 2s: ARM + START in the footer; SETTINGS opens MODE, SERVO, SERVO PULSES, CURRENT, Wait before PWM, DUT NAME and USER LOGS ([Running it](Servo.md#running-it)) |
 | RUDDER | RUDDER | deflection in ° and mm, LENGTH, 1000us, CENTER, 2000us, ZERO and RESET MAX ([Rudder deflection](Servo.md#rudder-deflection)) |
 | RUDDER AUTO | RUDDER AUTO | AUTO's box in place of LENGTH and the drive buttons, the READY card in place of the output card, HOLD 2s: ARM + START in the footer ([AUTO end points](Servo.md#auto-end-points)) |
 | KST | SERVO > KST | the KST and Chaservo programmer over the left card ([Programmer](#programmer)) |
@@ -1580,7 +1580,8 @@ footer at y 444 to 492 holds three 328 x 48px slots: the function's name
 with the port line under it, ARM or DISARM (WRITE n VALUES on KST and
 HITEC), and SETTINGS. SETTINGS is grey while the
 bench is not SAFE, while a sweep or a run is under way, and names that in
-the alert band on a tap. LIVE has no SETTINGS.
+the alert band on a tap. On LIVE SETTINGS opens the servo profile, the
+hub's list ([Settings](#settings)).
 
 LIVE, SWEEP and RUDDER show READY under the PORT button: rows of 30px from
 y 96, each a dot, a label of 10 cells and a state of 20. LIVE and SWEEP
@@ -1589,7 +1590,10 @@ The SET row follows 4px under the last row, y 190 to 238 on LIVE and
 SWEEP and y 250 to 298 on RUDDER: SET V and SET A, 80 x 48px each, 8px
 apart, and the plot to the column's end, 180 x 48px. Under it LIVE and
 SWEEP have SPEED, its label at y 244 and its track at y 268 to 308. All
-three have the type pill at y 318 to 350. LIVE has CENTER and RELEASE,
+three have the type pill at y 318 to 350. A tap on the pill opens the
+servo profile, the hub's list, in the SETTINGS list's place with TYPE in
+view; it opens on a SAFE bench only and names the refusal in the alert
+band otherwise, as SETTINGS does. LIVE has CENTER and RELEASE,
 SWEEP has SWEEP and RELEASE, each 174 x 48px at y 356. The rail line at
 y 412 names the meter of what feeds the servo and reads its volts and
 amps, `5.02V  0.120A`, or `--V  --A` without a reading; with the panel's
@@ -1657,9 +1661,9 @@ the PD mini, and the steps arm.
 ![LIVE on the rbmod carrier: PORT PWM and PROG 5V amber, ARM switches them on](img/servo-rbmod.png)
 
 RUDDER AUTO and LIMIT RUN keep the PORT button and show a READY card in
-the output card's place: rows of 30px from y 96, ten on RUDDER AUTO and
-nine on LIMIT RUN, each a dot, a label of 10 cells and a state of 20, and
-the rail line at y 404. Each state sits on a raised tag 24px high, its
+the output card's place: rows of 30px from y 96, ten on each, the most
+the card holds above the rail line at y 404, each a dot, a label of 10
+cells and a state of 20. Each state sits on a raised tag 24px high, its
 right end cut at 30° from vertical, and the tags of one card share the
 left edge the widest state shown needs: its text, 9px each side and the
 14px cut. Their footer's middle slot is HOLD 2s: ARM +
@@ -1667,12 +1671,20 @@ START, which switches PORT PWM and the supply on, waits for their
 read-back, arms and starts the run in one hold
 ([Servo: AUTO end points](Servo.md#auto-end-points),
 [Servo: Running it](Servo.md#running-it)). Nothing of the output card
-takes a press on either screen.
+takes a press on either screen. A tap on RANGE, PULSE MIN to PULSE MAX,
+opens the servo profile with PULSE MIN in view. USER LOGS has no row on
+either card, which is full: their SETTINGS lists hold it, beside DUT
+NAME.
 
-TEST shows a READY card in the same place: seven rows from y 96, PORT,
-METER, ANGLE, PD MINI, STEPS, RANGE and ARM, and the rail line at y 404.
-ANGLE names the angle source, refuses nothing, and a tap on it opens the
-ANGLE SOURCE list ([Servo](Servo.md#angle-source)). Its
+TEST shows a READY card in the same place: eight rows from y 96, PORT,
+METER, ANGLE, PD MINI, STEPS, RANGE, ARM and LOG, and the rail line at y
+404. ANGLE names the angle source, refuses nothing, and a tap on it opens
+the ANGLE SOURCE list ([Servo](Servo.md#angle-source)). A tap on RANGE
+opens TEST's SETTINGS list on its RANGE row. LOG reads USER LOGS: `ON`,
+or `OFF` in amber, where a run writes no file. A tap switches it and saves
+it; under a run or its start steps the tap is refused with `LOG: The run
+keeps its setting. Switch it after the run.`, and the row reads the state
+the run started with. LOG refuses nothing. Its
 footer's middle slot is HOLD 2s: ARM + START, which switches PORT PWM on
 where the port needs it, arms and starts the automatic test in one hold;
 the run's steps switch the PD mini at each step's voltage. During the run
@@ -2465,14 +2477,29 @@ until SAVE.
 | Screen | SETTINGS opens |
 | --- | --- |
 | the hub | the servo profile: OUTPUT with TYPE, FRAME RATE, PULSE MIN, PULSE CENTER, PULSE MAX, TRIM, TRAVEL, REVERSE and HV SERVO; DUT with NAME and REPORT |
-| SWEEP | CURVE, SPEED and RANGE |
-| TEST | VOLTAGE STEPS: Step 4.8V, Step 6.0V, HV SERVO, Step 7.4V, Step 8.4V; BROWN-OUT: Brown-out, Brown-out minimum voltage, Brown-out step; PASS/FAIL LIMITS: Stall threshold, Idle current max, Holding current max, Travel time max; LENGTH AND TIMING: Length by, Test time, Movements, Dwell time, Settling time |
-| LIMIT RUN | MODE, SERVO, Hitec D receive (with SERVO at HITEC D SERIES), SERVO PULSES, CURRENT and Wait before PWM; a run programs at 5.0V ([Servo](Servo.md#the-runs-50v)). CURRENT is SUPPLY's SET A, `SET A 2.00A`, a tap its keypad; `--` and locked without a PD mini ([Servo](Servo.md#the-runs-current-limit)) |
+| LIVE | the servo profile, the hub's list |
+| SWEEP | CURVE, SPEED, Range and Dwell time |
+| TEST | VOLTAGE STEPS: Step 4.8V, Step 6.0V, HV SERVO, Step 7.4V, Step 8.4V; BROWN-OUT: Brown-out, Brown-out minimum voltage, Brown-out step; PASS/FAIL LIMITS: Stall threshold, Idle current max, Holding current max, Travel time max; LENGTH AND TIMING: Length by, Test time, Movements, Dwell time, Settling time; RANGE: Range, OUTPUT; DUT: DUT name, Report |
+| LIMIT RUN | MODE, SERVO, Hitec D receive (with SERVO at HITEC D SERIES), SERVO PULSES, CURRENT, Wait before PWM, DUT name and User logs; a run programs at 5.0V ([Servo](Servo.md#the-runs-50v)). CURRENT is SUPPLY's SET A, `SET A 2.00A`, a tap its keypad; `--` and locked without a PD mini ([Servo](Servo.md#the-runs-current-limit)) |
 | RUDDER | LENGTH, ENC CENTER and ANGLE SOURCE |
-| RUDDER AUTO | the targets, MARGIN, TOLERANCE, SERVO, Hitec D receive (with SERVO at HITEC D SERIES), SERVO PULSES, ANGLE SOURCE, CURRENT and Wait before PWM; CURRENT as LIMIT RUN's |
+| RUDDER AUTO | the targets, MARGIN, TOLERANCE, SERVO, Hitec D receive (with SERVO at HITEC D SERIES), SERVO PULSES, ANGLE SOURCE, CURRENT, Wait before PWM, DUT name and User logs; CURRENT as LIMIT RUN's |
 | SERVO > KST | KST EXPERT MODE, one level down |
 | HITEC | SERIES and RECEIVE |
-| LIVE | no list |
+
+Range and Dwell time are one setting each on SWEEP and TEST, DUT name and
+Report the hub's, User logs SETUP > SD CARD's: a change on one list is
+what every other list, card and run reads.
+
+The profile opens from a function screen too, in its SETTINGS list's
+place: a tap on the type pill of LIVE, SWEEP and RUDDER opens it with TYPE
+in view, a tap on the RANGE row of LIMIT RUN's and RUDDER AUTO's READY
+cards and on TEST's OUTPUT row with PULSE MIN in view. Its strip names
+SERVO. It follows a function's list: it opens on a SAFE bench only and
+closes as the bench goes live, with the keypad, choice list or warning a
+row opened over it; nothing typed, picked or held there is taken, and an
+OK, a pick or a completed hold in the frame the bench goes live is
+refused with `SETTINGS open on a SAFE bench only. Switch to SAFE first.`
+The home tag closes it and the function screen shows again.
 
 A function's list opens on a SAFE bench only, with no sweep and no run;
 a bench that goes live under it closes it, and so does a run's or KST's
@@ -2500,11 +2527,15 @@ from y 64. Notes and save status end 2px above the card floor. CLOSE at
 the upper right, beside the run's name, or the home tag returns to the
 card.
 
-The automatic test's list has 17 rows under four headings. Each heading's
+The automatic test's list has 21 rows under six headings. Each heading's
 line names what its rows give: VOLTAGE STEPS the steps a run takes, or
 `NO STEP CHOSEN` in the warning colour; BROWN-OUT the walk on the supply
 in force, `From 5.00V down in 0.20V steps to 3.30V, 10 voltages`;
-PASS/FAIL LIMITS a STALL AT no reading can pass, in the warning colour.
+PASS/FAIL LIMITS a STALL AT no reading can pass, in the warning colour;
+RANGE the run's ends, `1100-1900us`, in the warning colour while they are
+not either side of PULSE CENTER. OUTPUT under RANGE reads the profile as
+the type pill does, `STANDARD PWM  50Hz  1000-2000`; a tap opens the
+profile.
 Step 7.4V and Step 8.4V take no press with HV SERVO off, Test time none
 while Length by is MOVES, Movements none while it is TIME; each names why
 in place of its help line, `With HV SERVO on only`. RESET TEST puts every row to its default

@@ -11,24 +11,37 @@
  * force only after its warning is held for 2s, as before.  Those rows are
  * custom rows over servo_settings_panel.c's editors: a tap on a pulse,
  * TRIM or TRAVEL opens the keypad over the left column, its keys step it.
+ * The profile is one list wherever it opens: LIVE's SETTINGS opens it, and
+ * a tap on the type pill of LIVE, SWEEP and RUDDER, on the RANGE row of
+ * LIMIT RUN's and RUDDER AUTO's READY cards or on TEST's OUTPUT row opens
+ * it in the function's list's place (svs_profile_open()), scrolled to the
+ * row the tap names.
  *
  * A function's list holds how that screen runs its function: SWEEP's
- * CURVE, SPEED and RANGE; RUDDER's LENGTH, ENC CENTER (taken from the
- * AS5600's reading) and ANGLE SOURCE (read-only, a tap opens SETUP >
- * SENSORS on it); RUDDER AUTO's targets, MARGIN, TOLERANCE, SERVO, SERVO
- * PULSES, ANGLE SOURCE, CURRENT and PROG WAIT; LIMIT RUN's MODE, SERVO,
- * SERVO PULSES, CURRENT and PROG WAIT.  CURRENT is SUPPLY's SET A, the
- * limit a run takes where a PD mini feeds the servo, locked where none
- * does; a run programs at 5.0V (servo_run_supply.c).  HITEC's SERIES
- * and RECEIVE; TEST's 17 rows of the automatic test (servo_test_list.c).
+ * CURVE, SPEED, RANGE and DWELL TIME; RUDDER's LENGTH, ENC CENTER (taken
+ * from the AS5600's reading) and ANGLE SOURCE (read-only, a tap opens
+ * SETUP > SENSORS on it); RUDDER AUTO's targets, MARGIN, TOLERANCE, SERVO,
+ * SERVO PULSES, ANGLE SOURCE, CURRENT, PROG WAIT, DUT NAME and USER LOGS;
+ * LIMIT RUN's MODE, SERVO, SERVO PULSES, CURRENT, PROG WAIT, DUT NAME and
+ * USER LOGS.  CURRENT is SUPPLY's SET A, the limit a run takes where a PD
+ * mini feeds the servo, locked where none does; a run programs at 5.0V
+ * (servo_run_supply.c).  HITEC's SERIES and RECEIVE; TEST's rows of the
+ * automatic test (servo_test_list.c).  RANGE, DWELL TIME, DUT NAME, REPORT
+ * and USER LOGS are one setting each, whichever list sets them.  USER
+ * LOGS is a list row on LIMIT RUN and RUDDER AUTO: their READY cards hold
+ * READY_ROWS_MAX rows already.
  * LIMIT RUN's and RUDDER AUTO's SERVO is each screen's own (servo_pick.c);
  * with HITEC D SERIES, D RECEIVE follows it.
- * KST opens its EXPERT MODE page, which keeps its 2s hold; LIVE has no
- * list.
+ * KST opens its EXPERT MODE page, which keeps its 2s hold; LIVE's list is
+ * the profile.
  *
  * A function's list opens on a SAFE bench only, with no sweep and no run;
- * a bench that goes live under it closes it.  The hub's opens at any time:
- * the hub drives nothing.
+ * a bench that goes live under it closes it, the profile opened on a
+ * function screen included, with the keypad, choice list, warning or
+ * set point question a row opened over it, nothing in them taken.  A
+ * change of the profile asked in the frame the bench goes live is refused
+ * the same way (svs_profile_refused()).  The hub's opens at any time: the
+ * hub drives nothing.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -42,6 +55,7 @@
 #include "settings.h"
 #include "ui_setlist.h"
 #include "ui_text.h"
+#include "ui_widgets.h"
 
 /* Last: the layout macros of the headers it includes have short names
  * (W, H, PAD), which no header included after it may meet. */
@@ -160,6 +174,12 @@ static const ui_setlist_custom_t k_hv = {
     .value_text = hv_value, .step = hv_step,
 };
 
+/** @brief The DUT NAME row: the device under test's name, typed on the
+ *         name keyboard. */
+#define ROW_DUT_NAME                                                         \
+    { (uint8_t)UI_SL_TEXT, (int8_t)SET_TEXT_DUT_NAME, (setting_id_t)0,       \
+      TX_COUNT, NULL }
+
 /** @brief The hub's rows: the profile, then the device under test. */
 static const ui_setlist_row_t k_hub_rows[] = {
     UI_SL_ROW_HEADING(TX_SV_PG_OUTPUT, &k_out_line),
@@ -173,10 +193,12 @@ static const ui_setlist_row_t k_hub_rows[] = {
     UI_SL_ROW_CUSTOM(&k_reverse),
     UI_SL_ROW_CUSTOM(&k_hv),
     UI_SL_ROW_HEADING(TX_SV_PG_DUT, NULL),
-    { (uint8_t)UI_SL_TEXT, (int8_t)SET_TEXT_DUT_NAME, (setting_id_t)0,
-      TX_COUNT, NULL },
+    ROW_DUT_NAME,
     UI_SL_ROW_SETTING(SET_SERVO_REPORT),
 };
+
+_Static_assert(sizeof(k_hub_rows) / sizeof(k_hub_rows[0]) == SVS_PROF_ROWS,
+               "SVS_PROF_ROWS counts the hub's rows");
 
 /* ------------------------------------------- the functions' own rows */
 
@@ -300,11 +322,13 @@ static const ui_setlist_custom_t k_mode = {
     .value_text = mode_value, .tap = mode_tap, .locked = mode_locked,
 };
 
-/** @brief SWEEP's list: CURVE, SPEED and RANGE. */
+/** @brief SWEEP's list: CURVE, SPEED, RANGE and DWELL TIME, the last two
+ *         TEST's too. */
 static const ui_setlist_row_t k_sweep_rows[] = {
     UI_SL_ROW_SETTING(SET_SERVO_CURVE),
     UI_SL_ROW_SETTING(SET_SERVO_TEST_HZ),
     UI_SL_ROW_SETTING(SET_SERVO_TEST_RANGE),
+    UI_SL_ROW_SETTING(SET_SERVO_DWELL_MS),
 };
 /** @brief RUDDER's list: LENGTH, ENC CENTER and ANGLE SOURCE. */
 static const ui_setlist_row_t k_rudder_rows[] = {
@@ -313,7 +337,8 @@ static const ui_setlist_row_t k_rudder_rows[] = {
     UI_SL_ROW_CUSTOM(&k_src),
 };
 /** @brief RUDDER AUTO's list: the targets, MARGIN, TOLERANCE, the servo,
- *         its pulses, ANGLE SOURCE, CURRENT (SET A) and PROG WAIT. */
+ *         its pulses, ANGLE SOURCE, CURRENT (SET A), PROG WAIT, DUT NAME
+ *         and USER LOGS. */
 static const ui_setlist_row_t k_rauto_rows[] = {
     UI_SL_ROW_SETTING(SET_RUDDER_DEFL_LO),
     UI_SL_ROW_SETTING(SET_RUDDER_DEFL_HI),
@@ -324,6 +349,8 @@ static const ui_setlist_row_t k_rauto_rows[] = {
     UI_SL_ROW_CUSTOM(&k_src),
     UI_SL_ROW_CUSTOM(&rcur_row),
     UI_SL_ROW_SETTING(SET_SERVO_PROG_WAIT),
+    ROW_DUT_NAME,
+    UI_SL_ROW_SETTING(SET_LOG_USER),
 };
 /** @brief RUDDER AUTO's list with its SERVO at HITEC D SERIES: D RECEIVE
  *         under SERVO. */
@@ -338,15 +365,19 @@ static const ui_setlist_row_t k_rauto_d_rows[] = {
     UI_SL_ROW_CUSTOM(&k_src),
     UI_SL_ROW_CUSTOM(&rcur_row),
     UI_SL_ROW_SETTING(SET_SERVO_PROG_WAIT),
+    ROW_DUT_NAME,
+    UI_SL_ROW_SETTING(SET_LOG_USER),
 };
-/** @brief LIMIT RUN's list: MODE, the servo, its pulses, CURRENT (SET A)
- *         and the programmer's wait. */
+/** @brief LIMIT RUN's list: MODE, the servo, its pulses, CURRENT (SET A),
+ *         the programmer's wait, DUT NAME and USER LOGS. */
 static const ui_setlist_row_t k_limrun_rows[] = {
     UI_SL_ROW_CUSTOM(&k_mode),
     UI_SL_ROW_CUSTOM(&svs_family_row),
     UI_SL_ROW_CUSTOM(&k_pulses),
     UI_SL_ROW_CUSTOM(&rcur_row),
     UI_SL_ROW_SETTING(SET_SERVO_PROG_WAIT),
+    ROW_DUT_NAME,
+    UI_SL_ROW_SETTING(SET_LOG_USER),
 };
 /** @brief LIMIT RUN's list with its SERVO at HITEC D SERIES: D RECEIVE
  *         under SERVO. */
@@ -357,6 +388,8 @@ static const ui_setlist_row_t k_limrun_d_rows[] = {
     UI_SL_ROW_CUSTOM(&k_pulses),
     UI_SL_ROW_CUSTOM(&rcur_row),
     UI_SL_ROW_SETTING(SET_SERVO_PROG_WAIT),
+    ROW_DUT_NAME,
+    UI_SL_ROW_SETTING(SET_LOG_USER),
 };
 /** @brief HITEC's list: SERIES and D receive. */
 static const ui_setlist_row_t k_hitec_rows[] = {
@@ -373,9 +406,11 @@ typedef struct {
 /** @brief A fn_rows_t of table @p a. */
 #define ROWS(a) { (a), (int)(sizeof(a) / sizeof((a)[0])) }
 
-/** @brief Each function's rows; none for LIVE and the pages' functions. */
+/** @brief Each function's rows: LIVE's are the profile, the pages'
+ *         functions have none. */
 static const fn_rows_t k_rows_of[SERVO_FN_COUNT] = {
     [SERVO_FN_HUB]    = ROWS(k_hub_rows),
+    [SERVO_FN_LIVE]   = ROWS(k_hub_rows),
     [SERVO_FN_SWEEP]  = ROWS(k_sweep_rows),
     [SERVO_FN_TEST]   = { svs_test_rows, SVS_TEST_ROWS },
     [SERVO_FN_RUDDER] = ROWS(k_rudder_rows),
@@ -391,11 +426,26 @@ static const fn_rows_t k_limrun_d = ROWS(k_limrun_d_rows);
 /** @brief RUDDER AUTO's rows with D RECEIVE. */
 static const fn_rows_t k_rauto_d = ROWS(k_rauto_d_rows);
 
-/** @brief The function the list is open for, its rows: LIMIT RUN's and
- *         RUDDER AUTO's with D RECEIVE while their SERVO is HITEC D
- *         SERIES.  @return the rows */
+/** @brief Whether a function screen shows the profile in its list's place:
+ *         svs_profile_open() sets it, svs_list_open() and svs_list_close()
+ *         clear it. */
+static bool s_profile;
+
+/** @brief Whether the open list is the profile: the hub's, LIVE's, or the
+ *         one svs_profile_open() opened.  @return true then */
+static bool profile_shown(void)
+{
+    return s.fn == SERVO_FN_HUB || s.fn == SERVO_FN_LIVE || s_profile;
+}
+
+/** @brief The function the list is open for, its rows: the profile where
+ *         it shows, LIMIT RUN's and RUDDER AUTO's with D RECEIVE while
+ *         their SERVO is HITEC D SERIES.  @return the rows */
 static const fn_rows_t *rows_now(void)
 {
+    if (profile_shown()) {
+        return &k_rows_of[SERVO_FN_HUB];
+    }
     if (svs_family_d_receive()) {
         return s.fn == SERVO_FN_RAUTO ? &k_rauto_d : &k_limrun_d;
     }
@@ -411,8 +461,12 @@ static ui_setlist_row_t list_row(int i)
     return ui_setlist_table_row(rows_now()->rows, rows_now()->n, i);
 }
 
-/** @brief The strip's name: the function's. */
-static const char *list_name(void) { return svs_fn_name((servo_fn_t)s.fn); }
+/** @brief The strip's name: the function's; SERVO's over the profile,
+ *         wherever it opened. */
+static const char *list_name(void)
+{
+    return svs_fn_name(profile_shown() ? SERVO_FN_HUB : (servo_fn_t)s.fn);
+}
 
 /** @brief The line under the name: the port the screen drives. */
 static bool list_line(char *out, size_t n, bool *warn)
@@ -440,6 +494,11 @@ static void list_changed(setting_id_t id)
  */
 static void list_reset(void)
 {
+    /* Nothing on a bench gone live under the list in the frame of the
+     * hold: the list's rule, the profile's included. */
+    if (svs_profile_refused()) {
+        return;
+    }
     const fn_rows_t *r = rows_now();
     setting_id_t ids[24] = { 0 };
     int k = 0;
@@ -449,10 +508,10 @@ static void list_reset(void)
         }
     }
     settings_reset_rows(ids, k);
-    if (s.fn == SERVO_FN_TEST) {
+    if (s.fn == SERVO_FN_TEST && !s_profile) {
         s.test_hv = false;      /* TEST's HV SERVO row, off as at a restart */
     }
-    if (s.fn == SERVO_FN_HUB) {
+    if (profile_shown()) {
         s.trim_us = 0;
         s.travel_deg = 90.0f;
         s.reverse = false;
@@ -468,7 +527,8 @@ static void list_reset(void)
  *         steps.  @param id the setting @return the reason, or NULL */
 static const char *list_locked(setting_id_t id)
 {
-    return (s.fn == SERVO_FN_TEST) ? svs_test_locked(id) : NULL;
+    return (s.fn == SERVO_FN_TEST && !s_profile) ? svs_test_locked(id)
+                                                 : NULL;
 }
 
 /** @brief A change the list shows: its count moves. */
@@ -497,6 +557,7 @@ static const ui_setlist_host_t k_host = {
 
 void svs_lists_init(void)
 {
+    s_profile = false;
     ui_setlist_init(&s.sl, &k_host);
 }
 
@@ -544,6 +605,16 @@ const char *svs_list_bench_why(void)
     return NULL;
 }
 
+bool svs_profile_refused(void)
+{
+    const char *why = svs_list_bench_why();
+    if (why == NULL) {
+        return false;
+    }
+    ui_action_refused(why);
+    return true;
+}
+
 const char *svs_list_refused(void)
 {
     if (svs_press_held()) {
@@ -557,6 +628,7 @@ void svs_list_open(void)
     if (!svs_list_offered() || svs_list_refused() != NULL) {
         return;
     }
+    s_profile = false;
     close_panels();
     switch ((servo_fn_t)s.fn) {
     case SERVO_FN_KST:
@@ -574,6 +646,7 @@ void svs_list_open(void)
 
 void svs_list_close(void)
 {
+    s_profile = false;
     if (s.sl.open || ui_setlist_covered(&s.sl)) {
         ui_setlist_close(&s.sl);
         ++s.sl_rev;
@@ -582,6 +655,25 @@ void svs_list_close(void)
 }
 
 bool svs_list_shown(void) { return s.sl.open; }
+
+void svs_profile_open(int row)
+{
+    const char *why = svs_list_refused();
+    if (why != NULL) {
+        ui_action_refused(why);
+        return;
+    }
+    close_panels();
+    s_profile = s.fn != SERVO_FN_HUB && s.fn != SERVO_FN_LIVE;
+    ui_setlist_init(&s.sl, &k_host);
+    ui_setlist_open(&s.sl);
+    ui_setlist_scroll_to(&s.sl, (row > 0 && row < SVS_PROF_ROWS) ? row : 0);
+    ++s.sl_rev;
+    ++s.ctrl_rev;
+    servo_invalidate();
+}
+
+bool svs_profile_shown(void) { return s.sl.open && profile_shown(); }
 
 bool svs_list_back(void)
 {
@@ -596,13 +688,50 @@ bool svs_list_back(void)
     return true;
 }
 
+/**
+ * @brief The editors a row of the list opened over it, shut without
+ *        applying: the screen's keypad (the profile's pulses, TRIM, TRAVEL,
+ *        a custom RATE; CURRENT's SET A), its keyboard, its choice list
+ *        (TYPE, RATE), the profile's warning and a typed set point's
+ *        question.  A question the list did not open -- OUTPUT ON's HV
+ *        warning, a restore, TEST's -- stays, and so does its press.
+ */
+static void close_list_editors(void)
+{
+    const bool keep_ask = s.ask.open && s.ask.purpose != ASK_SET;
+    if (s.ov_have
+        && !(keep_ask && (s.ov_pressed == OP_ASK_APPLY
+                          || s.ov_pressed == OP_ASK_CANCEL))) {
+        ov_let_go();
+    }
+    ui_keypad_close(&s.kp);
+    ui_textkey_close(&s.tk);
+    s.kp_target = KT_NONE;
+    s.ch.open   = false;
+    s.warn.open = false;
+    s.warn.down = false;
+    ui_hold_reset(&s.warn.hold);
+    if (!keep_ask) {
+        s.ask.open = false;
+        s.ask.down = false;
+        ui_hold_reset(&s.ask.hold);
+    }
+    ++s.ctrl_rev;
+}
+
 void svs_list_tick(float dt_s)
 {
     /* A list or a page of rows closes as the bench goes live under it, a
      * run starts or a session takes its port: the screen's output shows
-     * again, and a press on a row is dropped with its page. */
+     * again, and a press on a row is dropped with its page.  The editors
+     * a row opened over the list close with it, nothing typed or picked
+     * in them taken: the profile opened on a function screen is SAFE-only
+     * through its keypad, its choice list and its warning too. */
     if ((s.sl.open || ui_setlist_covered(&s.sl) || s.run_list != RL_NONE)
         && svs_list_bench_why() != NULL) {
+        if (s.sl.open || ui_setlist_covered(&s.sl)) {
+            close_list_editors();
+        }
         svs_list_close();
         if (s.run_list != RL_NONE) {
             s.run_list = RL_NONE;
