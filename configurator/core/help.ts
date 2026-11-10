@@ -46,8 +46,8 @@ export const FUNCTION_HELP: Readonly<Partial<Record<FunctionId, Text>>> = Object
     'Erfasst Versorgungsspannung und Strom des ESC mit dem INA228 mit jeweils 500 Messwerten pro Sekunde und summiert die verbrauchte Energie.',
   ),
   stick: t(
-    'Changes ESC settings through the throttle-stick menu; 24 of the 72 ESC profiles are runnable. The bench selects the throttle positions defined by the profile and counts menu beeps as pulses in the PD mini supply current. Use a resistive load or a securely mounted motor without a propeller.',
-    'Ändert ESC-Einstellungen über das Gasknüppelmenü; 24 der 72 ESC-Profile sind ausführbar. Der Prüfstand fährt die im Profil festgelegten Gasstellungen an und zählt Menüpieptöne als Pulse im Versorgungsstrom des PD mini. Verwende Lastwiderstände oder einen fest montierten Motor ohne Propeller.',
+    'Changes ESC settings through the throttle-stick menu; 25 of the 73 ESC profiles are runnable. The bench selects the throttle positions defined by the profile and counts menu beeps as pulses in the PD mini supply current. Use a resistive load or a securely mounted motor without a propeller.',
+    'Ändert ESC-Einstellungen über das Gasknüppelmenü; 25 der 73 ESC-Profile sind ausführbar. Der Prüfstand fährt die im Profil festgelegten Gasstellungen an und zählt Menüpieptöne als Pulse im Versorgungsstrom des PD mini. Verwende Lastwiderstände oder einen fest montierten Motor ohne Propeller.',
   ),
   tap: t(
     'Measures the pitch and duration of ESC beeps on phase A through the phase tap: a 4.7kΩ resistor from the phase to GPIO 22, and a 3.0V zener diode and an 8.2kΩ pull-down from GPIO 22 to GND. The motor simulator replaces the motor. The panel switches the tap on under SETUP → SENSORS → PHASE TAP.',
