@@ -462,14 +462,14 @@ TEST_CASE(a_stall_at_no_reading_can_pass_is_said_and_not_refused)
         h_out();
         CHECK_EQ(h.t.why, SERVO_TEST_AB_NONE);
         char want[96];
-        snprintf(want, sizeof(want), "STALL AT %.2fA cannot be reached: "
+        snprintf(want, sizeof(want), "STALL AT %.2fA must be below "
                  "current limit %.2fA\n", (double)k_case[k].stall,
                  (double)k_case[k].limit);
         CHECK_EQ(strstr(h.out.report, want) != NULL, k_case[k].by_limit);
-        snprintf(want, sizeof(want), "STALL AT %.2fA cannot be reached: "
+        snprintf(want, sizeof(want), "STALL AT %.2fA must be below "
                  "INA3221 range 1.638A\n", (double)k_case[k].stall);
         CHECK_EQ(strstr(h.out.report, want) != NULL, k_case[k].by_range);
-        CHECK_EQ(strstr(h.out.report, "cannot be reached") != NULL,
+        CHECK_EQ(strstr(h.out.report, "must be below") != NULL,
                  k_case[k].by_limit || k_case[k].by_range);
     }
     CHECK(!servo_test_stall_unreachable(NULL, NULL, NULL));
@@ -484,11 +484,11 @@ TEST_CASE(a_stall_at_no_reading_can_pass_is_said_and_not_refused)
     CHECK_STR_EQ(note, "");
     c.stall_a = 1.65f;
     CHECK(servo_test_stall_note(&c, note, sizeof(note)));
-    CHECK_STR_EQ(note, "STALL AT 1.65A cannot be reached: INA3221 range "
+    CHECK_STR_EQ(note, "STALL AT 1.65A must be below INA3221 range "
                        "1.638A");
     c.stall_a = 2.0f;
     CHECK(servo_test_stall_note(&c, note, sizeof(note)));
-    CHECK_STR_EQ(note, "STALL AT 2.00A cannot be reached: current limit "
+    CHECK_STR_EQ(note, "STALL AT 2.00A must be below current limit "
                        "2.00A");
     CHECK(!servo_test_stall_note(&c, NULL, 0u));
     CHECK(!servo_test_stall_note(&c, note, 0u));

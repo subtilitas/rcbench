@@ -48,9 +48,11 @@ history is in git.
   on an empty field gives the plain name back.
   The button acts only while the bench is SAFE with ARM not held, no log
   file is open and the log's card is still mounted; dimmed, a tap names
-  the reason in the alert band. The logger renames the closed file as a
-  FILES rename under the card's job lock (100ms wait), and the alert band
-  says `Log renamed: MOTOR042_kv1200.CSV` or why not. After a power cycle
+  the reason in the alert band until the button is live again or the
+  keyboard opens. The logger renames the closed file as a FILES rename
+  under the card's job lock (100ms wait), and the alert band says
+  `Log renamed: MOTOR042_kv1200.CSV` as an amber notice for 4s, or why
+  not in red. After a power cycle
   the button stays dimmed until the next MOTOR run ends.
 
 - Every SERVO function screen shows the plot of what feeds the servo, one
@@ -108,6 +110,10 @@ history is in git.
 
 ### Fixed
 
+- LIMIT RUN's card names the output of the last run, such as
+  `PROG PORT 1 GPIO 13`, in the language selected now: after a change of
+  SETUP > PANEL > Language the line follows on the next frame, as the
+  card's other lines do. The report keeps the language of the run.
 - A hardware stop button pressed while the bench is ARMED clears when it
   is released: HWSTOP, or FAULT 10, goes 80 to about 180ms after the line
   closes, and no later than about 700ms after the press. The panel's stop
@@ -122,6 +128,13 @@ history is in git.
 
 ### Changed
 
+- The STALL AT note on TEST and in the servo test's report states the
+  rule: `STALL AT 2.00A must be below current limit 2.00A` and
+  `STALL AT 2.00A must be below INA3221 range 1.638A`, German
+  `BLOCKIERT AB 2.00A muss unter Strombegrenzung 2.00A sein` and
+  `BLOCKIERT AB 2.00A muss unter INA3221-Bereich 1.638A sein`. It shows
+  while STALL AT is at or above the limit or the range, and replaces
+  `STALL AT 2.00A cannot be reached: current limit 2.00A`.
 - LIMIT RUN's list has no Programming current row: without a PD mini the
   IOmcu stores a session's current limit and applies none, and with one
   the run takes SET A. The KST and HITEC pages keep Programming current

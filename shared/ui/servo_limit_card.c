@@ -258,9 +258,14 @@ static void result_lines(lc_lines_t *L)
                  (unsigned)r->cfg.min_us, (unsigned)r->cfg.max_us);
         add(L, UI_C_TEXT_DIM, b);
     } else {
-        /* The output the ends were found on, as the run named it at its
-         * start: not the target now, which may have changed since. */
-        add(L, UI_C_TEXT_DIM, r->cfg.output);
+        /* The output the ends were found on, as the run read it at its
+         * start: not the target now, which may have changed since.  Worded
+         * now, so that it follows a change of language as the other lines
+         * do. */
+        (void)servo_target_line(b, sizeof(b), s.lim_out.target,
+                                s.lim_out.gpio, s.lim_out.pwm, s.lim_out.pins,
+                                s.lim_out.known);
+        add(L, UI_C_TEXT_DIM, b);
     }
     lim_file_name(b, sizeof(b));
     add(L, UI_C_TEXT_DIM, b);

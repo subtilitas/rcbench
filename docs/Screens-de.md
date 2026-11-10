@@ -1322,6 +1322,10 @@ Sonst ist er gedimmt, und ein Tipp nennt den ersten Grund im Alarmband:
 | seit dem Einschalten kein MOTOR-Log | `Seit dem Start kein MOTOR-Log.`; bei Auto-Aufzeichnungen AUS `AUTO-AUFZEICHNUNGEN AUS unter SD CARD.` |
 | die Karte seit dem Lauf entnommen oder getauscht | `MOTOR042.CSV ist nicht auf der Karte.` |
 
+Die Meldung verschwindet, sobald der Knopf wieder aktiv ist, etwa wenn der
+Prüfstand wieder SAFE ist, und wenn die Tastatur öffnet. Eine seither
+gesetzte Meldung bleibt.
+
 Ein Aus- und Einschalten vergisst das Log: Der Knopf bleibt gedimmt, bis
 der nächste MOTOR-Lauf endet. Ältere Logs benennt [Files](#files) um.
 
@@ -1347,8 +1351,9 @@ höchstens 100ms darauf. Das Umbenennen ist ein Umbenennen von FILES: SAFE
 ohne offene Log-Datei, die Namensregeln, und kein vorhandener Name wird
 überschrieben. FatFs läuft auf diesem Panel ohne Dateisperre
 (`CONFIG_FATFS_FS_LOCK` 0), und eine offen umbenannte Datei verlöre ihre
-späteren Zeilen; die Sperre hält das Log geschlossen. Die Antwort ist eine
-Meldung im Alarmband:
+späteren Zeilen; die Sperre hält das Log geschlossen. Die Antwort erscheint
+im Alarmband: ein Umbenennen als Mitteilung, 4s in Bernstein, jedes andere
+Ergebnis als rote Meldung für 30s.
 
 | Ergebnis | Meldung |
 | --- | --- |
@@ -2360,11 +2365,11 @@ Ein roter Text, länger als die 20 Zellen der Zeile, zeigt eine Kurzform:
 ([Servo: AUTO-Endpoints](Servo-de.md#auto-endpoints)).
 
 Der Hinweis zu BLOCKIERT AB nennt unerreichbare Schwellen:
-`BLOCKIERT AB 2.00A unerreichbar: Strombegrenzung 2.00A`, wenn BLOCKIERT AB
+`BLOCKIERT AB 2.00A muss unter Strombegrenzung 2.00A sein`, wenn BLOCKIERT AB
 mindestens so hoch wie SET A von SUPPLY ist. Andernfalls,
 bei INA3221 als Messgerät und einer Schwelle mindestens in Höhe seines
 Messbereichs, erscheint
-`BLOCKIERT AB 2.00A unerreichbar: INA3221-Bereich 1.638A`.
+`BLOCKIERT AB 2.00A muss unter INA3221-Bereich 1.638A sein`.
 Der Hinweis lehnt das Halten nicht ab; siehe
 [Blockieren und Konstantstrom](Servo-de.md#blockieren-und-konstantstrom).
 

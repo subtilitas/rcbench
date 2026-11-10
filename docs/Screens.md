@@ -1223,6 +1223,10 @@ Otherwise it is dimmed, and a tap shows the first reason in the alert band:
 | no MOTOR log since power-on | `No MOTOR log since the start.`; with Auto logs OFF, `AUTO LOGS OFF on SD CARD.` |
 | the card pulled or swapped since the run | `MOTOR042.CSV is not on the card.` |
 
+The alert clears once the button is live again, for example when the
+bench returns to SAFE, and when the keyboard opens. An alert set since
+stays.
+
 A power cycle forgets the log: the button stays dimmed until the next
 MOTOR run ends. [Files](#files) renames older logs.
 
@@ -1247,10 +1251,11 @@ FILES and the browser's writes share, and waits up to 100ms for it. The
 rename is a FILES rename: SAFE with no log file open, the name rules, and
 no existing name overwritten. FatFs on this panel runs without its file
 lock (`CONFIG_FATFS_FS_LOCK` 0), and a renamed open file would lose its
-later rows; the gate keeps the log closed. The answer is a notice in the
-alert band:
+later rows; the gate keeps the log closed. The answer shows in the alert
+band: a rename as a notice, amber for 4s, every other result as a red
+alert for 30s.
 
-| Result | Alert |
+| Result | Band |
 | --- | --- |
 | renamed | `Log renamed: MOTOR042_kv1200.CSV` |
 | the name is taken | `MOTOR042_kv1200.CSV already exists there.` |
@@ -2184,10 +2189,10 @@ alert band names the whole text
 ([Servo: AUTO end points](Servo.md#auto-end-points)).
 
 The STALL AT note identifies thresholds no reading can exceed. It shows
-`STALL AT 2.00A cannot be reached: current limit 2.00A` when STALL AT is at
+`STALL AT 2.00A must be below current limit 2.00A` when STALL AT is at
 or above SUPPLY's SET A. Otherwise, with the INA3221 as meter and
 STALL AT at or above its range, it shows
-`STALL AT 2.00A cannot be reached: INA3221 range 1.638A`. The note does not
+`STALL AT 2.00A must be below INA3221 range 1.638A`. The note does not
 refuse the hold; see
 [Stall and constant current](Servo.md#stall-and-constant-current).
 
