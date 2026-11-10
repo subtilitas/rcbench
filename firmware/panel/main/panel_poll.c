@@ -159,6 +159,10 @@ static bool poll_bench(bench_state_t *bench)
              * The IOmcu is in failsafe, has lost the heartbeat or
              * holds its arm latch -- it started again, or the line was
              * distrusted for a moment.  A stop latches at this end too.
+             * Its heartbeat goes again after ARMING_STOP_WITHHOLD_MS
+             * (300ms), the latch standing: a hardware stop button opened
+             * the line, and its release must clear the IOmcu's
+             * heartbeat fault, HWSTOP on the band.
              */
             arming_stop_from_far_end(&s_arm);
             far_end_stop_here();

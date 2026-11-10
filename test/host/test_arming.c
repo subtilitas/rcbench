@@ -2112,6 +2112,213 @@ TEST_CASE(a_role_switch_restarts_the_run_clock)
 /* The settle the docs state is 100ms. */
 _Static_assert(HEARTBEAT_SETTLE_MS == 100u, "the role switch settles 100 ms");
 
+/* The window the docs state is 300ms, twice the IOmcu's ceiling. */
+_Static_assert(ARMING_STOP_WITHHOLD_MS == 300u, "the stop window is 300 ms");
+
+/* Touch answering at every millisecond up to @p t; returns the first time
+ * from @p from on that the heartbeat may edge, or 0. */
+static uint32_t beat_back(uint32_t from, uint32_t to)
+{
+    for (uint32_t t = from; t <= to; ++t) {
+        arming_touch_seen(&a, t);
+        if (arming_heartbeat(&a, t)) {
+            return t;
+        }
+    }
+    return 0u;
+}
+
+/*
+ * A stop from the far end -- a hardware stop button breaks the line under
+ * an armed bench, and the IOmcu refuses the next ARM -- withholds the line
+ * for the window and then lets it edge, so the IOmcu's heartbeat fault
+ * clears when the button is released.  The latch stands: no arm without
+ * an explicit one.
+ */
+TEST_CASE(a_far_end_stop_withholds_the_line_for_the_window_only)
+{
+    arming_init(&a, 0, SETTLE_MS);
+    uint32_t t = arm_by(100);
+    arming_stop_from_far_end(&a);
+    CHECK(!arming_heartbeat(&a, t));
+    CHECK_EQ(beat_back(t, t + 2000u), t + ARMING_STOP_WITHHOLD_MS);
+    t += ARMING_STOP_WITHHOLD_MS;
+    /* The latch outlives the window: the bench is SAFE, nothing arms. */
+    for (int i = 0; i < 20; ++i) {
+        t += 100;
+        arming_touch_seen(&a, t);
+        CHECK_EQ(arming_step(&a, t), ARMING_ACT_NONE);
+        CHECK(arming_stopped(&a));
+        CHECK(!a.armed);
+        CHECK(!arming_held(&a));
+        CHECK(arming_heartbeat(&a, t));
+    }
+    /* An arm of its own is taken. */
+    arming_request_arm(&a, t);
+    CHECK(!arming_stopped(&a));
+    t += SETTLE_MS;
+    arming_touch_seen(&a, t);
+    CHECK_EQ(arming_step(&a, t), ARMING_ACT_ARM);
+}
+
+/* Armed at 100ms, then stopped by kind @p kind: 0 arming_stop() (touch
+ * lost under an arm, a stalled render loop), 1 the link lost, 2 the link
+ * found under a bank armed with none, 3 a write nobody answered, 4 an
+ * exchange nobody answered, 5 an arm's handshake past its deadline after
+ * CLEAR.  Returns the time of the stop. */
+static uint32_t stopped_by(int kind)
+{
+    arming_init(&a, 0, SETTLE_MS);
+    arming_set_line_wait(&a, ARMING_LINE_WAIT_MS);
+    uint32_t t = 100u;
+    arming_request_arm(&a, t);
+    t += SETTLE_MS;
+    arming_touch_seen(&a, t);
+    arming_line_report(&a, true);
+    CHECK_EQ(arming_step(&a, t), ARMING_ACT_ARM);
+    switch (kind) {
+    case 0:
+        arming_stop(&a);
+        CHECK_EQ(arming_step(&a, t), ARMING_ACT_DISARM);
+        break;
+    case 1:
+        CHECK(arming_link_lost(&a, true));
+        break;
+    case 2:
+        CHECK(arming_link_found(&a, true));
+        break;
+    case 3:
+        CHECK(arming_write_failed(&a, false));
+        break;
+    case 4:
+        CHECK_EQ(arming_exchange_unanswered(&a, true, true),
+                 ARMING_QUIET_STOP);
+        break;
+    default:
+        t += ARMING_LINE_WAIT_MS + 1u;
+        arming_touch_seen(&a, t);
+        CHECK(!arming_handshake_open(&a, t, true));
+        break;
+    }
+    CHECK(arming_stopped(&a));
+    CHECK(!a.armed);
+    return t;
+}
+
+/* Every stop but the IOmcu's refusal withholds the line past the window,
+ * until an arm. */
+TEST_CASE(every_other_stop_withholds_the_line_until_an_arm)
+{
+    for (int kind = 0; kind <= 5; ++kind) {
+        uint32_t t = stopped_by(kind);
+        if (beat_back(t, t + 5000u) != 0u) {
+            T_FAIL("stop kind %d: the line went again", kind);
+        }
+        t += 5000u;
+        CHECK(arming_stopped(&a));
+        arming_request_arm(&a, t);
+        CHECK(arming_heartbeat(&a, t));
+    }
+}
+
+/* A refusal followed by any other stop, inside the window or after it,
+ * withholds the line for ever; so does a refusal on top of another stop. */
+TEST_CASE(another_stop_after_a_refusal_withholds_for_ever)
+{
+    static const uint32_t after[] = { 0, 100, 299, 300, 1000 };
+    for (unsigned i = 0; i < sizeof(after) / sizeof(after[0]); ++i) {
+        for (int kind = 0; kind <= 1; ++kind) {
+            arming_init(&a, 0, SETTLE_MS);
+            uint32_t t = arm_by(100);
+            arming_stop_from_far_end(&a);
+            CHECK(!arming_heartbeat(&a, t));
+            t += after[i];
+            CHECK_EQ(beat_back(t - after[i], t) != 0u,
+                     after[i] >= ARMING_STOP_WITHHOLD_MS);
+            if (kind == 0) {
+                arming_stop(&a);
+            } else {
+                /* The link going under an arm that waits. */
+                a.arming = true;
+                CHECK(arming_link_lost(&a, false));
+            }
+            if (beat_back(t, t + 5000u) != 0u) {
+                T_FAIL("refusal, then stop kind %d %ums later: the line "
+                       "went again", kind, (unsigned)after[i]);
+            }
+        }
+    }
+
+    /* The other order: the link lost, then the refusal. */
+    arming_init(&a, 0, SETTLE_MS);
+    uint32_t t = arm_by(100);
+    CHECK(arming_link_lost(&a, true));
+    arming_stop_from_far_end(&a);
+    CHECK_EQ(beat_back(t, t + 5000u), 0u);
+
+    /* And a second refusal starts the window again. */
+    arming_init(&a, 0, SETTLE_MS);
+    t = arm_by(100);
+    arming_stop_from_far_end(&a);
+    CHECK_EQ(beat_back(t, t + 1000u), t + ARMING_STOP_WITHHOLD_MS);
+    t += 1000u;
+    arming_stop_from_far_end(&a);
+    CHECK_EQ(beat_back(t, t + 1000u), t + ARMING_STOP_WITHHOLD_MS);
+}
+
+/* The window counts from the pass that first withholds the line, not from
+ * the stop: the silence the IOmcu sees is never shorter. */
+TEST_CASE(the_window_starts_at_the_first_withheld_pass)
+{
+    arming_init(&a, 0, SETTLE_MS);
+    uint32_t t = arm_by(100);
+    arming_stop_from_far_end(&a);
+    t += 40;                                 /* a pass held up 40ms */
+    CHECK_EQ(beat_back(t, t + 2000u), t + ARMING_STOP_WITHHOLD_MS);
+}
+
+/* A newer stop inside the window starts it again. */
+TEST_CASE(a_stop_inside_the_window_starts_it_again)
+{
+    arming_init(&a, 0, SETTLE_MS);
+    uint32_t t = arm_by(100);
+    arming_stop_from_far_end(&a);
+    CHECK(!arming_heartbeat(&a, t));
+    t += 200;
+    arming_touch_seen(&a, t);
+    arming_stop_from_far_end(&a);
+    CHECK_EQ(beat_back(t, t + 2000u), t + ARMING_STOP_WITHHOLD_MS);
+}
+
+/* An operator's STOP withholds the line until its reset, window or not,
+ * and a far-end stop on top of it does not shorten that. */
+TEST_CASE(an_operator_stop_withholds_the_line_until_its_reset)
+{
+    arming_init(&a, 0, SETTLE_MS);
+    uint32_t t = arm_by(100);
+    arming_stop_pressed(&a);
+    arming_stop_from_far_end(&a);
+    CHECK_EQ(beat_back(t, t + 5000u), 0u);
+    t += 5000;
+    arming_stop_release(&a);
+    arming_touch_seen(&a, t);
+    CHECK(arming_heartbeat(&a, t));
+    CHECK(!arming_stopped(&a));
+}
+
+/* Dead touch withholds the line whatever the window says. */
+TEST_CASE(dead_touch_withholds_the_line_past_the_window)
+{
+    arming_init(&a, 0, SETTLE_MS);
+    uint32_t t = arm_by(100);
+    arming_stop_from_far_end(&a);
+    CHECK(!arming_heartbeat(&a, t));
+    t += ARMING_TOUCH_DEAD_MS + ARMING_STOP_WITHHOLD_MS;
+    CHECK(!arming_heartbeat(&a, t));
+    arming_touch_seen(&a, t);
+    CHECK(arming_heartbeat(&a, t));
+}
+
 int main(void)
 {
     RUN(a_stop_latches_until_an_explicit_arm);
@@ -2168,5 +2375,12 @@ int main(void)
     RUN(the_same_roles_again_do_not_disarm);
     RUN(a_stop_during_a_role_switch_arms_nothing);
     RUN(other_roles_while_settling_replace_the_arm);
+    RUN(a_far_end_stop_withholds_the_line_for_the_window_only);
+    RUN(every_other_stop_withholds_the_line_until_an_arm);
+    RUN(another_stop_after_a_refusal_withholds_for_ever);
+    RUN(the_window_starts_at_the_first_withheld_pass);
+    RUN(a_stop_inside_the_window_starts_it_again);
+    RUN(an_operator_stop_withholds_the_line_until_its_reset);
+    RUN(dead_touch_withholds_the_line_past_the_window);
     return test_summary("arming");
 }

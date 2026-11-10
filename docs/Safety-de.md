@@ -485,6 +485,7 @@ kann beides nicht unterscheiden: In beiden Fällen kommen keine Flanken.
 | --- | --- |
 | Die Leitung öffnet | 150ms keine Flanke (`HEARTBEAT_MAX_GAP_MS`): Der IOmcu misstraut der Leitung, schaltet seine Ausgänge auf SAFE, setzt seinen Arm-Latch und setzt STATUS-Bit 10, LINK_FAULT_HEARTBEAT. Der PD-mini-Ausgang geht aus |
 | Das Band | FEHLER 10; mit SETUP > PANEL > Hardware-STOP auf EIN ein roter Chip HWSTOP an der Stelle von FEHLER. Die Einstellung ändert das Band und sonst nichts |
+| Gedrückt bei ARMED | der IOmcu lehnt das nächste Schreiben von ARM durch das Panel mit NOT_ARMED ab, 50 bis 55ms nachdem er der Leitung misstraut. Das Panel rastet einen Stopp vom IOmcu ein: seine Bank SAFE, das Kommando auf 0, ein Lauf beendet, alle Ausgänge aus, der Arm-Chip SAFE. Es hält seinen eigenen Heartbeat 300ms an (`ARMING_STOP_WITHHOLD_MS`) und lässt die Leitung dann wieder flanken; der Stopp bleibt eingerastet, also schaltet nichts ohne neues Halten auf ARMED |
 | Die Leitung schließt | die erste Flanke beendet eine Lücke über 150ms und zählt als schlechter Abstand; 4 gute Abstände von 20ms später vertraut der IOmcu der Leitung und löscht Bit 10, 80 bis 100ms nachdem die Leitung schließt. Das Bit rastet nicht ein |
 | Das Band wieder | das Panel liest STATUS alle 500ms, bei der ersten 50ms-Abfrage nach 500ms, also im Abstand von 500 bis 555ms. Solange das Band HWSTOP zeigt, liest es STATUS stattdessen bei jeder 50ms-Abfrage, im Abstand von 50 bis 55ms, und das erste Lesen ohne Bit 10 beendet das (`status_poll.h`). Das Bild nach dem Lesen zeichnet das Band ohne das Bit, mit etwa 60Hz. HWSTOP verschwindet 80 bis etwa 180ms nachdem die Leitung schließt; FEHLER 10, mit AUS, 80 bis etwa 680ms |
 | ARM | gesperrt, bis jemand ARM 2s hält: Der Arm-Latch des IOmcu bleibt bis CLEAR gesetzt, und das Panel schreibt CLEAR, sobald STATUS Bit 10 als gelöscht liest ([Das erste Schalten auf ARMED nach einem Stopp](#das-erste-schalten-auf-armed-nach-einem-stopp)) |
@@ -499,6 +500,15 @@ Sekunde hinzu, 72 CAN-Frames ([Link](Link-de.md#abgelehnte-frames)). Das
 Prellen eines Tasters kommt mit seiner eigenen Dauer hinzu: Jeder
 Prellabstand unter 4ms gilt als Rauschen und startet die 4 guten Abstände
 neu. Das Prellen eines bestimmten Tasters ist nicht gemessen.
+
+Bei ARMED gedrückt beginnen die 300ms des Panels bis etwa 210ms nach dem
+Drücken: 150ms für den IOmcu, 55ms bis zum nächsten Schreiben von ARM, ein
+Durchlauf von 5ms. Ein Taster, der vor dem Ende der 300ms gelöst wird, bis
+etwa 510ms nach dem Drücken, lässt HWSTOP bis etwa 700ms nach dem Drücken
+stehen. Diese Zeiten sind berechnet, nicht gemessen. Ein Druck kürzer als
+150ms abzüglich der Zeit seit der letzten Flanke lässt keine Lücke, die der
+IOmcu sieht, und nichts stoppt. Auf dem Host getestet in `test_safety_gate`,
+der Druck 200ms bis 2s gehalten in 55 Phasen der Abfrage.
 
 Solange der eigene STOP des Panels eingerastet ist, während sein Lösen läuft
 und 1000ms danach (`STOP_LATCH_GRACE_MS`), hält das Panel die Leitung selbst
@@ -604,6 +614,10 @@ nach Beginn des Wartens aus, und bei jeder AUTO-Rate binnen 3500ms.
 ### Das erste Schalten auf ARMED nach einem Stopp
 
 Der Heartbeat wird zurückgehalten, solange ein Stopp eingerastet ist. Ein
+Stopp allein aus der Ablehnung von ARM durch den IOmcu hält ihn 300ms an
+(`ARMING_STOP_WITHHOLD_MS`), das Doppelte der 150ms-Grenze des IOmcu; dann
+flankt die Leitung wieder, und der Stopp bleibt eingerastet
+([STOP-Taster am Prüfstand](#stop-taster-am-prüfstand)). Ein
 Schalten auf ARMED löst den Stopp am Panel, der Heartbeat läuft wieder, und der Monitor
 des IOmcu braucht fünf Flanken, bevor er der Leitung vertraut: 100 bis
 125ms bei den 5ms der Control-Task. Das Panel wartet 100ms, liest dann
