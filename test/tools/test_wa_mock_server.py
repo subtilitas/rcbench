@@ -341,6 +341,34 @@ def test_deleting_a_run_log_takes_its_report_along(api):
     assert "ATEST003.TXT" not in api.json("GET", "/__mock/tree")[2]["files"]
 
 
+def test_a_labelled_run_takes_its_plain_report_as_the_panel_does(api):
+    """ATEST042_x.CSV takes ATEST042.TXT, and ATEST042_X.TXT stays."""
+    for name in ("ATEST042_x.CSV", "ATEST042.TXT", "ATEST042_X.TXT"):
+        api.call("POST", "/__mock/put", json.dumps(
+            {"path": name, "text": "x"}).encode())
+    assert api.form("delete", path="ATEST042_x.CSV", dir=0)[0] == 200
+    files = api.json("GET", "/__mock/tree")[2]["files"]
+    assert "ATEST042.TXT" not in files
+    assert "ATEST042_X.TXT" in files
+
+
+@pytest.mark.parametrize(("name", "kind", "report"), [
+    ("MOTOR042.CSV", "RUN", "MOTOR042.TXT"),
+    ("motor042_kv1200.csv", "RUN", "MOTOR042.TXT"),
+    ("MOTOR042_v1.2_a.CSV", "RUN", "MOTOR042.TXT"),
+    ("Esc016_old.Csv", "RUN", "ESC016.TXT"),
+    ("ATEST001_x.TXT", "REPORT", ""),
+    ("MOTOR042_.CSV", "CSV", ""),
+    ("MOTOR042kv.CSV", "CSV", ""),
+    ("MOTOR0420_x.CSV", "CSV", ""),
+    ("MOTOR000.CSV", "CSV", ""),
+])
+def test_run_names_read_as_log_name_c_reads_them(name, kind, report):
+    """kind_of() and report_of() read a name as log_name.c does."""
+    assert m.kind_of("", name, False) == kind
+    assert m.report_of(name) == report
+
+
 def test_the_key_of_a_name_with_a_slash_is_refused(api):
     """A key of the list is a name, never a path."""
     s, _, b = api.json("GET", "/api/list?go=next&key=a%2Fb")

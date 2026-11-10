@@ -347,6 +347,41 @@ TEST_CASE(a_change_by_files_walks_the_folder_again)
     CHECK_EQ(g.walks, 3u);
 }
 
+TEST_CASE(a_labelled_run_keeps_its_number_from_the_next_run)
+{
+    /* RENAME LOG gives MOTOR042.CSV a label.  The number stays taken: a
+     * fresh walk, a walk after a change by FILES, and a series that never
+     * walked again all hand out 043. */
+    fresh();
+    put("BENCH", true);
+    put("BENCH/LOGS", true);
+    put_file(CARD_AUTO_LOGS, "SERVO041.CSV");
+    put_file(CARD_AUTO_LOGS, "MOTOR042_kv1200.CSV");
+    CHECK_EQ(take(CARD_AUTO_LOGS, LOG_PREFIX_MOTOR, false, NULL), 43);
+    CHECK_EQ(g.walks, 1u);
+    /* 043 renamed while the series is remembered: 044 next, no walk. */
+    drop("BENCH/LOGS/MOTOR043.CSV");
+    put_file(CARD_AUTO_LOGS, "MOTOR043_a.b_c.CSV");
+    CHECK_EQ(take(CARD_AUTO_LOGS, LOG_PREFIX_MOTOR, false, NULL), 44);
+    CHECK_EQ(g.walks, 1u);
+    /* The rename counts as a change by FILES: walked again, still above
+     * every labelled number. */
+    drop("BENCH/LOGS/MOTOR044.CSV");
+    put_file(CARD_AUTO_LOGS, "motor044_x.csv");
+    log_series_forget_all();
+    CHECK_EQ(take(CARD_AUTO_LOGS, LOG_PREFIX_MOTOR, false, NULL), 45);
+    CHECK_EQ(g.walks, 2u);
+    CHECK(has("BENCH/LOGS/MOTOR045.CSV"));
+    /* A name that only looks labelled takes no number. */
+    fresh();
+    put("BENCH", true);
+    put("BENCH/LOGS", true);
+    put_file(CARD_AUTO_LOGS, "MOTOR900_.CSV");
+    put_file(CARD_AUTO_LOGS, "MOTOR900kv.CSV");
+    put_file(CARD_AUTO_LOGS, "MOTOR0900_x.CSV");
+    CHECK_EQ(take(CARD_AUTO_LOGS, LOG_PREFIX_MOTOR, false, NULL), 1);
+}
+
 TEST_CASE(both_kinds_in_one_folder_are_one_series)
 {
     fresh();
@@ -650,6 +685,7 @@ int main(void)
     RUN(numbers_998_and_999_are_taken_and_then_the_folder_is_full);
     RUN(each_folder_is_walked_once_until_a_take_fails);
     RUN(a_change_by_files_walks_the_folder_again);
+    RUN(a_labelled_run_keeps_its_number_from_the_next_run);
     RUN(both_kinds_in_one_folder_are_one_series);
     RUN(a_third_folder_gives_up_one_series_and_walks_it_again);
     RUN(a_file_named_bench_stops_the_folder_and_takes_no_number);

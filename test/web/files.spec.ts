@@ -22,7 +22,7 @@ const IDS = [
   'ED_SAVED', 'ED_Q_CHANGED', 'ED_READ_AGAIN', 'ED_OVERWRITE', 'SET_SAVE',
   'SET_LEAVE_TITLE', 'SET_STAY', 'P_FM_UPLOAD', 'P_FM_REPLACE',
   'P_FM_REPLACE_Q', 'P_FM_DOWNLOAD', 'P_API_CHANGED', 'P_API_NOT_EMPTY',
-  'P_API_ARMED', 'P_API_WRITES_OFF', 'P_API_WRITES_HOLD',
+  'P_API_ARMED', 'P_API_WRITES_OFF', 'P_API_WRITES_HOLD', 'FM_DELETE_REPORT',
 ];
 
 const REPORT = 'ATEST001.TXT';
@@ -380,6 +380,29 @@ for (const lang of LANGS) {
       await expect(fm.msg).toHaveText(fm.t('LOG_DELETED', 'HELLO.TXT'));
       await expect(fm.row(0, 'HELLO.TXT')).toHaveCount(0);
       expect(Object.keys((await fm.tree()).files)).not.toContain('HELLO.TXT');
+    });
+
+    test('a labelled run is deleted with its plain report, named in the question', async ({ page }) => {
+      let fm = await open(page, lang);
+      // A test's run given a label, its report, and a file named like a
+      // labelled report, which is no run's report and stays.
+      for (const path of ['ATEST042_x.CSV', 'ATEST042.TXT', 'ATEST042_X.TXT']) {
+        const r = await mock.post('/__mock/put', { data: { path, text: 't_ms,volt\n0,6.0\n' } });
+        expect(r.ok()).toBe(true);
+      }
+      await page.goto('/');
+      fm = new Fm(page, lang);
+      await expect(fm.row(0, 'ATEST042_x.CSV')).toBeVisible();
+      await fm.select(0, 'ATEST042_x.CSV');
+      await fm.bar('LOG_DELETE').click();
+      await expect(page.locator('.wbox .card')).toContainText(fm.t('FM_DELETE_REPORT', 'ATEST042.TXT'));
+      await expect(page.locator('.wbox .card')).not.toContainText(fm.t('FM_DELETE_REPORT', 'ATEST042_X.TXT'));
+      await fm.dialog('LOG_DELETE').click();
+      await expect(fm.msg).toHaveText(fm.t('LOG_DELETED', 'ATEST042_x.CSV'));
+      const files = Object.keys((await fm.tree()).files);
+      expect(files).not.toContain('ATEST042_x.CSV');
+      expect(files).not.toContain('ATEST042.TXT');
+      expect(files).toContain('ATEST042_X.TXT');
     });
 
     test('a folder that holds a file is not deleted and the box says why', async ({ page }) => {

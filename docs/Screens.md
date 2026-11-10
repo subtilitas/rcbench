@@ -3144,6 +3144,14 @@ throttle outputs writes `MOTORnnn`, an arm that asks for the surfaces writes
 `SERVOnnn`. An IOmcu older than protocol 4.18 arms the throttle outputs with
 every arm; a switch to ARMED from SERVO still writes `SERVOnnn.CSV`.
 
+A run's name may carry a label behind its number: `MOTOR042_kv1200.CSV`.
+The label follows one `_` and holds 1 or more bytes, full stops and
+further `_` included. Behind a five-letter prefix it holds at most 46
+bytes, so the whole name stays within the 59 bytes FILES takes. A labelled
+name is the same run as its plain name: it keeps its number, its kind and
+its place in the list, and the next run takes one above it.
+`MOTOR042kv.CSV`, `MOTOR042_.CSV` and `MOTOR0420_x.CSV` are not runs.
+
 Two switches on [Setup](#setup) > SD CARD decide what is written. Auto logs
 OFF writes nothing to `BENCH/LOGS`; switched off during a run, it ends that
 run's file. User logs OFF writes nothing to `USER/LOGS`; a test keeps the

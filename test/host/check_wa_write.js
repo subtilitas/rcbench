@@ -142,6 +142,7 @@ function rig(mode) {
     ui: { foot },
   };
   r.c = c;
+  r.RcbWr = ctx.RcbWr;
   r.wr = ctx.RcbWr.attach(c);
   // The box is the root's last child; its parts by what they are.
   const box = c.root.kids[c.root.kids.length - 1];
@@ -411,6 +412,39 @@ async function replaceReadsTheEtagFromInfo() {
   }
 }
 
+// reportOf() names the report as log_name_report_of() does: the prefix
+// and the number in upper case, a label left out.
+function theReportOfARunIsItsPlainNumber() {
+  const reportOf = rig('OPEN').RcbWr.reportOf;
+  const run = n => ({ n, d: false, k: 'RUN' });
+  const want = [
+    ['ATEST042.CSV', 'ATEST042.TXT'],
+    ['atest042.csv', 'ATEST042.TXT'],
+    ['ATEST042_x.CSV', 'ATEST042.TXT'],
+    ['atest042_X.csv', 'ATEST042.TXT'],
+    ['MOTOR042_kv1200.CSV', 'MOTOR042.TXT'],
+    ['MOTOR042_v1.2_a.CSV', 'MOTOR042.TXT'],
+    ['MOTOR042_x.CSV.CSV', 'MOTOR042.TXT'],
+    ['SERVO007_2 S.CSV', 'SERVO007.TXT'],
+    ['Esc016_old.Csv', 'ESC016.TXT'],
+    ['BENCH999.CSV', 'BENCH999.TXT'],
+    ['LIMIT003_left.CSV', 'LIMIT003.TXT'],
+    ['SUPPL041_12V.CSV', 'SUPPL041.TXT'],
+    ['RUDDR010_trim.CSV', 'RUDDR010.TXT'],
+    // Not a run log: no report.
+    ['MOTOR042_.CSV', ''], ['MOTOR042kv.CSV', ''], ['MOTOR0420_x.CSV', ''],
+    ['MOTOR000.CSV', ''], ['MOTOR042_x.TXT', ''], ['SWEEP.CSV', ''],
+  ];
+  for (const [n, rep] of want) {
+    check(reportOf(run(n)) === rep,
+      `reportOf(${n}) is "${reportOf(run(n))}", not "${rep}"`);
+  }
+  check(reportOf({ n: 'ATEST042_x.CSV', d: false, k: 'CSV' }) === '',
+    'a CSV the panel does not call a run takes no report');
+  check(reportOf({ n: 'ATEST042', d: true, k: 'FOLDER' }) === '',
+    'a folder takes no report');
+}
+
 async function aFixedFolderTakesDeleteAndNoRenameOrMove() {
   const r = rig('OPEN');
   const e = r.c.selected().e;
@@ -433,6 +467,7 @@ async function aFixedFolderTakesDeleteAndNoRenameOrMove() {
   await aRefusalAfterTheCodeKeepsTheBox();
   await replaceReadsTheEtagFromInfo();
   await aFixedFolderTakesDeleteAndNoRenameOrMove();
+  theReportOfARunIsItsPlainNumber();
   if (fails.length > 0) {
     console.error(fails.slice(0, 20).join('\n'));
     console.error(`${fails.length} of ${n} cases differ`);

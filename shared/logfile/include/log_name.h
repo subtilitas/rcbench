@@ -25,8 +25,16 @@
  * holds them numbers above them.  SERVOnnn.CSV therefore means a servo test
  * in the root and an ARMED run armed on SERVO in BENCH/LOGS.
  *
- * Every name is a FAT (File Allocation Table) 8.3 name: at most 8
- * characters, a dot and 3.  The numbers are one series per folder, across
+ * A run's name may carry a label behind its number: MOTOR042_kv1200.CSV.
+ * The label follows one LOG_LABEL_SEP and holds 1 or more bytes, full stops
+ * and further separators included; RENAME LOG on MOTOR & ESC writes it
+ * (log_name_label()), and FILES or a computer may.  A labelled name is the
+ * same run as its plain name: the same writer, number, kind and rank.
+ * "MOTOR042kv.CSV", "MOTOR042_.CSV" and "MOTOR0420_x.CSV" are not runs.
+ *
+ * Every name the logger writes is a FAT (File Allocation Table) 8.3 name:
+ * at most 8 characters, a dot and 3.  A labelled name is a long name of at
+ * most LOG_LABELLED_MAX bytes.  The numbers are one series per folder, across
  * every prefix, so a number names one run in a folder whichever writer made
  * it.  The panel takes one above the highest number the folder already
  * holds under any prefix, so a higher number is a later run without
@@ -73,6 +81,29 @@ extern "C" {
  *        terminator.
  */
 #define LOG_RUN_NAME_MAX 13
+
+/**
+ * @brief What stands between a run's number and its label:
+ *        MOTOR042_kv1200.CSV.
+ */
+#define LOG_LABEL_SEP '_'
+
+/**
+ * @brief Bytes of a labelled name at most: FM_NAME_MAX of fm_name.h, the
+ *        longest name FILES lets a person give.
+ */
+#define LOG_LABELLED_MAX 59u
+
+/**
+ * @brief Room for a labelled name and its terminator.
+ */
+#define LOG_LABELLED_SIZE (LOG_LABELLED_MAX + 1u)
+
+/**
+ * @brief Bytes of a label behind a 5-letter prefix at most: 59 - 9
+ *        ("MOTOR042_") - 4 (".CSV") = 46.
+ */
+#define LOG_LABEL_MAX (LOG_LABELLED_MAX - 9u - 4u)
 
 /**
  * @brief Which writer a run's name says made it.
@@ -160,9 +191,10 @@ void log_run_name(char *out, size_t out_size, int number);
  *
  * Case is ignored, so a card taken to a computer and written back in lower
  * case still lists in run order.  The name has to be one of the prefixes,
- * exactly three digits in range, and the suffix, with nothing after it:
- * "BENCH12.CSV", "BENCH000.CSV", "SERVO001.CSV.BAK" and "ESCAPE01.CSV" are
- * not run logs.
+ * exactly three digits in range, an optional label (LOG_LABEL_SEP and 1 or
+ * more bytes), and the suffix, with nothing after it: "BENCH12.CSV",
+ * "BENCH000.CSV", "SERVO001.CSV.BAK", "ESCAPE01.CSV" and "BENCH0123.CSV"
+ * are not run logs, "MOTOR042_kv1200.CSV" is run 42.
  *
  * @param name  The file name.
  * @return The run number, or -1.
@@ -254,13 +286,47 @@ int log_name_next(int highest);
  *        and number, ".TXT", in upper case.
  *
  * An empty string when @p run_name is not a run log.  Deleting a run deletes
- * this file with it.
+ * this file with it.  A label is not carried over: ATEST042_x.CSV goes with
+ * ATEST042.TXT, as ATEST042.CSV does.
  *
  * @param out       Receives the name.
  * @param out_size  Size of @p out, bytes.
  * @param run_name  The run log's file name.
  */
 void log_name_report_of(char *out, size_t out_size, const char *run_name);
+
+/**
+ * @brief Write run log or report @p run_name with label @p label:
+ *        "MOTOR042.CSV" and "kv1200" give "MOTOR042_kv1200.CSV".
+ *
+ * A label @p run_name carries already is replaced.  Spaces at the label's
+ * ends are dropped, and an empty label (or NULL) gives the plain name.  The
+ * prefix, the number and the suffix keep @p run_name's spelling.  The label's
+ * characters are not checked here: a rename checks the whole name with
+ * fm_name_check().
+ *
+ * @param out       Receives the name; an empty string when refused.
+ * @param out_size  Size of @p out, bytes.
+ * @param run_name  A run log's or a report's name, plain or labelled.
+ * @param label     The label; may be NULL.
+ * @return false for a @p run_name that is neither, a result over
+ *         LOG_LABELLED_MAX bytes (a label over LOG_LABEL_MAX behind a
+ *         5-letter prefix), or an @p out without room.
+ */
+bool log_name_label(char *out, size_t out_size, const char *run_name,
+                    const char *label);
+
+/**
+ * @brief Write the label of run log or report @p name: "kv1200" of
+ *        "MOTOR042_kv1200.CSV", "" of "MOTOR042.CSV".
+ *
+ * @param out       Receives the label; an empty string when refused.
+ * @param out_size  Size of @p out, bytes.
+ * @param name      The name.
+ * @return false for a name that is neither a run log nor a report, or an
+ *         @p out without room.
+ */
+bool log_name_label_of(char *out, size_t out_size, const char *name);
 
 /**
  * @brief Whether @p name is a file the logger is still writing, or one whose
