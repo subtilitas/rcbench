@@ -35,8 +35,11 @@ The module has two parts.
   1s to end a beep, a lowest tone of at least 50Hz.
 - The driver takes 1 PIO (programmable input/output) state machine and 1 DMA
   channel, and serves 1 pin. The pin is an input with its pull-down on.
-- The input sees the phase through a series resistor of 4.7kΩ and a
-  clamp. The module does not drive the pin.
+- The input sees the phase through a series resistor of 4.7kΩ, a 3.0V
+  zener clamp to GND and an 8.2kΩ pull-down to GND. The internal
+  pull-down alone does not hold an open pin low on the A2 stepping of the
+  RP2350: erratum RP2350-E9 latches the pin at about 2.2V. The module does
+  not drive the pin.
 - `tone_cap_start()` and `tone_cap_stop()` are called from one core, the
   ring reader from the other. A capture is paused and the reader's
   acknowledgement awaited before it is stopped.

@@ -104,6 +104,14 @@ function owner(date: string): Src {
 const OWNER = owner('2026-10-11');
 
 /**
+ * The values of the phase tap: 4.7kΩ in series, a 3.0V zener diode with its
+ * cathode at the pin, and 8.2kΩ from the pin to GND. The pull-down follows
+ * erratum RP2350-E9 of the RP2350 datasheet: with the internal pull-down on,
+ * an undriven Bank 0 input of the A2 stepping latches at about 2.2V.
+ */
+const TAP_VALUES = owner('2026-11-10');
+
+/**
  * A row of the parts list. `maker` null: a generic or modelled part, and
  * `order` is its spec. `page` is the product page of the maker.
  */
@@ -660,9 +668,12 @@ const parts: Part[] = [
   },
   {
     id: 'tap',
-    name: t('Phase tap: resistor 4.7kΩ 0.25W, zener diode 3.0V', 'Phasenabgriff: Widerstand 4,7kΩ 0,25W, Z-Diode 3,0V'),
+    name: t('Phase tap: resistor 4.7kΩ 0.25W, zener diode 3.0V, pull-down 8.2kΩ', 'Phasenabgriff: Widerstand 4,7kΩ 0,25W, Z-Diode 3,0V, Pull-down 8,2kΩ'),
     short: t('Phase tap', 'Phasenabgriff'),
-    role: t('Measures the pitch and duration of ESC beeps on phase A.', 'Erfasst Tonhöhe und Dauer der ESC-Pieptöne an Phase A.'),
+    role: t(
+      'Measures the pitch and duration of ESC beeps on phase A. The 4.7kΩ resistor runs from phase A to GPIO 22 (pad 29). The 3.0V zener diode and the 8.2kΩ pull-down run from the pad to GND (pad 28).',
+      'Erfasst Tonhöhe und Dauer der ESC-Pieptöne an Phase A. Der Widerstand von 4,7kΩ führt von Phase A zu GPIO 22 (Pad 29). Die 3,0V-Z-Diode und der Pull-down von 8,2kΩ führen vom Pad nach GND (Pad 28).',
+    ),
     locked: false,
     selectable: true,
     release: 'released',
@@ -672,10 +683,20 @@ const parts: Part[] = [
       pin('OUT', t('resistor, end 2', 'Widerstand, Ende 2'), guide('tap')),
     ],
     buy: [
-      buy(null, t('Resistor 4.7kΩ, 0.25W', 'Widerstand 4,7kΩ, 0,25W'), t('In series from phase A to the tap pin. 4.7kΩ, not 47kΩ.', 'In Reihe von Phase A zum Abgriff-Pin. 4,7kΩ, nicht 47kΩ.'), { id: 'resistor' }),
-      buy(null, t('Zener diode 3.0V', 'Z-Diode 3,0V'), t('Zener voltage 3.0V; the type code on the body often reads 3V0.', 'Z-Spannung 3,0V; der Typcode auf dem Gehäuse lautet oft 3V0.'), { id: 'zener' }),
+      buy(null, t('Resistor 4.7kΩ, 0.25W', 'Widerstand 4,7kΩ, 0,25W'), t(
+        'In series from phase A to the tap pin. 4.7kΩ, not 47kΩ: bands yellow, violet, red. At 20V on the phase it carries 3.6mA and dissipates 62mW, at 25.2V 4.7mA and 105mW.',
+        'In Reihe von Phase A zum Abgriff-Pin. 4,7kΩ, nicht 47kΩ: Ringe gelb, violett, rot. Bei 20V an der Phase führt er 3,6mA und setzt 62mW um, bei 25,2V 4,7mA und 105mW.',
+      ), { id: 'resistor' }),
+      buy(null, t('Zener diode 3.0V', 'Z-Diode 3,0V'), t(
+        'Through-hole: BZX55C3V0 or BZX79-C3V0, DO-35, 500mW. SMD (surface mount): BZX84-C3V0, SOT-23. Not 4.7V: an RP2350 input takes up to 5.5V only while IOVDD is at 3.3V, about 3.6V with IOVDD off.',
+        'Bedrahtet: BZX55C3V0 oder BZX79-C3V0, DO-35, 500mW. SMD (oberflächenmontiert): BZX84-C3V0, SOT-23. Nicht 4,7V: Ein RP2350-Eingang verträgt bis 5,5V nur, solange IOVDD an 3,3V liegt, ohne IOVDD etwa 3,6V.',
+      ), { id: 'zener' }),
+      buy(null, t('Resistor 8.2kΩ, 0.25W', 'Widerstand 8,2kΩ, 0,25W'), t(
+        'Pull-down from the tap pin to GND, beside the zener diode. Bands grey, red, red. Erratum RP2350-E9: the internal pull-down does not hold an open pin low; the erratum asks for 8.2kΩ or less. With the 4.7kΩ resistor the pin reads high from about 3.1V on the phase.',
+        'Pull-down vom Abgriff-Pin nach GND, neben der Z-Diode. Ringe grau, rot, rot. Erratum RP2350-E9: Der interne Pull-down hält einen offenen Pin nicht auf Low; das Erratum verlangt 8,2kΩ oder weniger. Mit dem Widerstand von 4,7kΩ liest der Pin ab etwa 3,1V an der Phase High.',
+      ), { id: 'pulldown' }),
     ],
-    src: guide('parts'),
+    src: TAP_VALUES,
   },
   {
     id: 'usbtap',
@@ -1222,7 +1243,7 @@ const wires: Wire[] = [
   },
   {
     n: 52, kind: 'wire', a: 'pad.29', b: 'tap.OUT', net: 'tap', cls: 'phase',
-    signal: t('tap signal, 3.22V or less', 'Abgriffsignal, höchstens 3,22V'),
+    signal: t('tap signal, held at 3.0V by the zener diode', 'Abgriffsignal, von der Z-Diode auf 3,0V gehalten'),
     note: t('Keep the lead shorter than 30cm. GPIO 22 must not drive an output while the tap is enabled.', 'Halte die Leitung kürzer als 30cm. GPIO 22 darf keinen Ausgang treiben, solange der Abgriff eingeschaltet ist.'),
     when: { has: 'tap' }, stage: 5, route: { kind: 'R', lane: 4 }, pin: 'default',
     src: repo(SETTINGS_SCHEMA, 162, 'the pin GP22 (pad 29)'),
@@ -1230,9 +1251,12 @@ const wires: Wire[] = [
   {
     n: 53, kind: 'component', a: 'pad.29', b: 'pad.28', net: 'tap', netB: 'gnd', cls: 'phase',
     signal: t('zener clamp', 'Z-Dioden-Klemme'),
-    note: t('3.0V Zener diode across the two adjacent pads, band (cathode) to GPIO 22.', '3,0V-Z-Diode über die zwei benachbarten Pads, Ring (Kathode) an GPIO 22.'),
+    note: t(
+      '3.0V Zener diode across the two adjacent pads, band (cathode) to GPIO 22, anode to GND. The 8.2kΩ pull-down of the phase tap runs across the same 2 pads.',
+      '3,0V-Z-Diode über die zwei benachbarten Pads, Ring (Kathode) an GPIO 22, Anode an GND. Der Pull-down von 8,2kΩ des Phasenabgriffs liegt über denselben 2 Pads.',
+    ),
     when: { has: 'tap' }, stage: 5, route: { kind: 'Z' }, pin: 'default',
-    src: guide('wires'),
+    src: TAP_VALUES,
   },
   {
     n: 54, kind: 'stub', a: 'as5600.GPO', b: null,

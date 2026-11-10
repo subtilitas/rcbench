@@ -679,6 +679,8 @@ file names no stage, so the checks follow the stages as one list.
   gate-source voltage exceeds the ±12V rating of its datasheet. The print of 16V and the vendor limit of 18V are
   above that.
 - What powers an ESC during programming other than ESC STICK is not stated.
+- The rbmod carrier is not in the data: the page plans the RP2350-CAN wired by hand or on the Osoyoo breakout
+  board. On the carrier the tap pin is GPIO 22 on connector J9.
 - 8 of 20 parts have a picture. MATEK board, servo, ESC, PD charger, microSD card, motor simulator, phase tap,
   DC supply of the Osoyoo breakout board and cables: no picture.
 - Photo `02-pd-mini`: the left third is out of focus.

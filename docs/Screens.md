@@ -5679,7 +5679,11 @@ rise with the servo's pulse width.
 The phase tap detects an ESC's beeps on one motor phase. One IOmcu
 GPIO reads the phase through a series resistor and a zener clamp; the
 IOmcu times the pin's edges and reports each beep's length and pitch.
-The wiring is not in the build guide. The tap is an input and drives nothing. The IOmcu accepts changes in
+The [bench configurator](https://subtilitas.github.io/rcbench/#v=1&f=tap)
+lists the parts and draws the wiring: 4.7kΩ in series from the phase to
+the pin, a 3.0V zener diode from the pin to GND, cathode at the pin, and
+an 8.2kΩ pull-down from the pin to GND. On
+the [rbmod carrier](Carrier.md#pins) the pin is GPIO 22 on connector J9. The tap is an input and drives nothing. The IOmcu accepts changes in
 either the ARMED or SAFE state. Its rows:
 
 | Setting | Range | Default | |
