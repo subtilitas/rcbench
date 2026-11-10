@@ -1155,7 +1155,7 @@ Built and tested; not wired in. The implementation is pursued in a separate repo
 
 ### ESC programming profiles
 
-72 families, 451 models, from 153 manuals; compiled in from `shared/esc/profiles/*.json` and
+73 families, 457 models, from 154 manuals; compiled in from `shared/esc/profiles/*.json` and
 replaced or extended by `/BENCH/ESC/CONF/*.json` on the card at start-up. The reader and the
 registry are tested on the host. Every profile is unverified and carries no beep timing. The
 nine profiles for YGE ESCs name where the stick rests while the menu sounds
@@ -1165,7 +1165,7 @@ nine profiles for YGE ESCs name where the stick rests while the menu sounds
 
 Built and tested on the host against a simulated ESC (`shared/esc/esc_stick.c`,
 `esc_stick_rules.c`, `esc_det.c`, `esc_stick_read.c`, `esc_sim.c`): ESC STICK on MOTOR & ESC
-> PROGRAM runs 24 of the 72 profiles (13 two-stage, 11 one-stage; at 20V the list opens 23,
+> PROGRAM runs 25 of the 73 profiles (14 two-stage, 11 one-stage; at 20V the list opens 24,
 one needing 22.8V, and refuses 4 more model rows of families that open, each needing 22.8V;
 4 model rows that state no voltage rating open with a warning from a warning held for 2s
 (PROPELLER REMOVED? MOTOR SECURED?: a resistor load or a motor mounted solid without

@@ -98,6 +98,13 @@ history is in git.
   with `LOG: The run keeps its setting. Switch it after the run.`. LIMIT
   RUN's and RUDDER AUTO's cards hold 10 rows already, so User logs is a
   list row there.
+- ESC STICK has a profile for the Flycolor FlyDragon Lite Plus (Lite+)
+  20A, 30A, 40A and 50A (2-4S) and 30A and 40A 6S (3-6S),
+  `flycolor-flydragon-lite-plus`. The menu is two-stage with 10 items in
+  short and long beeps. It opens at full throttle before power-on, 7000ms
+  to the menu. It sets brake, battery type, low voltage threshold, timing,
+  startup mode, PWM frequency, voltage cutoff option and running mode.
+  25 of the 73 profiles run; at 20V the list opens 24.
 
 ### Fixed
 

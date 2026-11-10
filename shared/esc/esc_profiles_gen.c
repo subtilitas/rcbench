@@ -347,6 +347,92 @@ static const esc_item_t p_eflite_pro_sbec_7menu_items[] = {
       0u, NULL, "" },
 };
 
+/* flycolor-flydragon-lite-plus */
+static const char *const p_flycolor_flydragon_lite_plus_steps[] = {
+    "Switch the transmitter on; set the throttle to maximum",
+    "Connect battery",
+    "Wait 2000ms: two short beeps",
+    "Wait 5000ms more: special tone 12321, programming mode entered",
+};
+static const esc_model_t p_flycolor_flydragon_lite_plus_models[] = {
+    { "FlyDragon Lite+ 20A", 2u, 4u, false, 16800u, 20u, 0u },
+    { "FlyDragon Lite+ 30A", 2u, 4u, false, 16800u, 30u, 0u },
+    { "FlyDragon Lite+ 40A", 2u, 4u, false, 16800u, 40u, 0u },
+    { "FlyDragon Lite+ 50A", 2u, 4u, false, 16800u, 50u, 0u },
+    { "FlyDragon Lite+ 30A 6S", 3u, 6u, false, 25200u, 30u, 0u },
+    { "FlyDragon Lite+ 40A 6S", 3u, 6u, false, 25200u, 40u, 0u },
+};
+static const esc_value_t p_flycolor_flydragon_lite_plus_v0[] = {
+    { "no brake", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "soft", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "heavy", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "very heavy", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+};
+static const esc_value_t p_flycolor_flydragon_lite_plus_v1[] = {
+    { "LiPo", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "NiCd / NiMH", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+};
+static const esc_value_t p_flycolor_flydragon_lite_plus_v2[] = {
+    { "low (2.8V/cell; Ni 50%)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "medium (3.0V/cell; Ni 65%)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "high (3.2V/cell; Ni 75%)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+};
+static const esc_value_t p_flycolor_flydragon_lite_plus_v3[] = {
+    { "0deg", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.75deg", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.5deg", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "11.25deg", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "15deg", 5u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "18.75deg", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "22.5deg", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "26.25deg", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+};
+static const esc_value_t p_flycolor_flydragon_lite_plus_v4[] = {
+    { "normal (no delay to full)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "soft (6s to full)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "very soft (12s to full)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+};
+static const esc_value_t p_flycolor_flydragon_lite_plus_v5[] = {
+    { "16kHz", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8kHz", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+};
+static const esc_value_t p_flycolor_flydragon_lite_plus_v6[] = {
+    { "reduce, then cut off", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "cut off at once", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+};
+static const esc_value_t p_flycolor_flydragon_lite_plus_v7[] = {
+    { "forward", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "forward and reverse", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+};
+static const esc_value_t p_flycolor_flydragon_lite_plus_v8[] = {
+    { "restore defaults", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+};
+static const esc_value_t p_flycolor_flydragon_lite_plus_v9[] = {
+    { "exit programming", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+};
+static const esc_item_t p_flycolor_flydragon_lite_plus_items[] = {
+    { "Brake", "brake", 1u, 4u, p_flycolor_flydragon_lite_plus_v0,
+      0u, NULL, "" },
+    { "Battery type", "battery_type", 2u, 2u, p_flycolor_flydragon_lite_plus_v1,
+      0u, NULL, "" },
+    { "Low voltage threshold", "cutoff_voltage", 3u, 3u, p_flycolor_flydragon_lite_plus_v2,
+      0u, NULL, "" },
+    { "Timing", "timing", 4u, 8u, p_flycolor_flydragon_lite_plus_v3,
+      0u, NULL, "" },
+    { "Startup mode", "startup", 5u, 3u, p_flycolor_flydragon_lite_plus_v4,
+      0u, NULL, "" },
+    { "PWM frequency", "pwm_freq", 6u, 2u, p_flycolor_flydragon_lite_plus_v5,
+      0u, NULL, "" },
+    { "Voltage cutoff option", "cutoff_type", 7u, 2u, p_flycolor_flydragon_lite_plus_v6,
+      0u, NULL, "" },
+    { "Running mode", "reverse", 8u, 2u, p_flycolor_flydragon_lite_plus_v7,
+      0u, NULL, "" },
+    { "Restore factory default", "reset", 9u, 1u, p_flycolor_flydragon_lite_plus_v8,
+      0u, NULL, "" },
+    { "Exit", "exit", 10u, 1u, p_flycolor_flydragon_lite_plus_v9,
+      0u, NULL, "" },
+};
+
 /* graupner-brushless-control-t */
 static const char *const p_graupner_brushless_control_t_steps[] = {
     "Calibrate the stick range as described (full throttle, melody at about 10s, motor off within 4s, melody) up to step 4 or 5.",
@@ -4346,6 +4432,15 @@ const esc_profile_t esc_profiles_builtin[] = {
       ESC_THR_MID, 0u, ESC_THR_NONE, 0u, ESC_THR_NONE, ESC_THR_NONE, ESC_THR_NONE,
       0u, 0u, 0u, 0u, -1, false, false,
       3u, p_eflite_pro_sbec_7menu_steps, 4u, p_eflite_pro_sbec_7menu_models, 7u, p_eflite_pro_sbec_7menu_items,
+      0u, NULL },
+    { "flycolor-flydragon-lite-plus", "Flycolor",
+      "FlyDragon Lite Plus 20A-50A and 6S, 10-item menu", "FlyDragon Lite Plus 20A-50A und 6S, Men\303\274 mit 10 Punkten",
+      ESC_SCHEME_SHORT_LONG, ESC_ENC_SHORT_LONG, ESC_ANNOUNCE_ITEM_THEN_VALUE, ESC_AUTO_FULL,
+      "",
+      ESC_THR_MAX, false, 7000u,
+      ESC_THR_MIN, 3000u, ESC_THR_MAX, 0u, ESC_THR_NONE, ESC_THR_NONE, ESC_THR_NONE,
+      5u, 0u, 0u, 0u, -1, false, false,
+      4u, p_flycolor_flydragon_lite_plus_steps, 6u, p_flycolor_flydragon_lite_plus_models, 10u, p_flycolor_flydragon_lite_plus_items,
       0u, NULL },
     { "graupner-brushless-control-t", "Graupner",
       "Brushless Control +T (HoTT)", "",

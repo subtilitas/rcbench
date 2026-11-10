@@ -310,7 +310,7 @@ TEST_CASE(the_search_filters_the_list_with_every_key)
     esc_stick_panel_bench(0u, false, 0u, 0u, false);
     open_stick();
     CHECK_EQ(esc_stick_panel_level(), 0);
-    CHECK_EQ(listed(), 20);                  /* the makers */
+    CHECK_EQ(listed(), 21);                  /* the makers */
     CHECK_STR_EQ(esc_stick_panel_search(), "");
     tap(LIST_DN_X, LIST_CY);                 /* a page down first */
     int top = 0;
@@ -324,7 +324,7 @@ TEST_CASE(the_search_filters_the_list_with_every_key)
     (void)esc_stick_panel_listed(&top);
     CHECK_EQ(top, 0);                        /* back to the top */
     const int after_s = listed();
-    CHECK(after_s > 3 && after_s < 20);
+    CHECK(after_s > 3 && after_s < 21);
     find_type("KY*V2");
     CHECK_STR_EQ(esc_stick_panel_search(), "SKY*V2");
     CHECK_EQ(listed(), 1);                   /* Hobbywing alone */
@@ -380,7 +380,7 @@ TEST_CASE(the_search_filters_the_list_with_every_key)
     /* X clears it. */
     tap(FIND_CLR_X, FIND_Y);
     CHECK_STR_EQ(esc_stick_panel_search(), "");
-    CHECK_EQ(listed(), 20);
+    CHECK_EQ(listed(), 21);
     CHECK(!esc_stick_panel_typing());
 }
 
@@ -411,7 +411,7 @@ TEST_CASE(ok_keeps_the_search_cancel_restores_it_and_empty_clears_it)
     tap(FIND_X, FIND_Y);
     find_type("#\n");                        /* CLR, OK: empty */
     CHECK_STR_EQ(esc_stick_panel_search(), "");
-    CHECK_EQ(listed(), 20);
+    CHECK_EQ(listed(), 21);
 
     /* The search holds its most, sixteen. */
     tap(FIND_X, FIND_Y);
@@ -494,7 +494,7 @@ TEST_CASE(the_header_fits_at_the_registrys_most)
     tap(FIND_X, FIND_Y);
     find_type("*");
     const int makers = listed();
-    CHECK_EQ(makers, 20 + (int)ESC_PROFILE_MAX_OVERRIDES);
+    CHECK_EQ(makers, 21 + (int)ESC_PROFILE_MAX_OVERRIDES);
     for (int i = 0; i < 20; ++i) {
         tap(LIST_DN_X, LIST_CY);
     }
