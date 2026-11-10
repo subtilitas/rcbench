@@ -457,6 +457,7 @@ TEST_CASE(rudder_auto_refuses_imu_yaw_in_either_algorithm_and_offers_x_or_y)
         CHECK_EQ(r.st, (uint8_t)RDY_BAD);
         CHECK(r.why == TR(RA_IMU_YAW));
         CHECK_STR_EQ(r.why, "IMU YAW REFUSED: HINGE ON X OR Y");
+        CHECK_STR_EQ(r.value, "YAW REFUSED");          /* its tag */
         CHECK(r.fix);
         /* Red: no step of the hold fixes it, so it refuses ARM + START. */
         CHECK(!rauto_seq_fixes(TR(RA_IMU_YAW)));
