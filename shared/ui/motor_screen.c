@@ -94,6 +94,10 @@ void motor_invalidate(void)
     s.drawn_sess[1]  = UINT32_MAX;
     s.drawn_ostrip[0] = UINT32_MAX;
     s.drawn_ostrip[1] = UINT32_MAX;
+    /* And RENAME LOG's button and keyboard, which keep their own record:
+     * the router invalidates after it drew over the body, a help bubble
+     * over the open keyboard among them. */
+    mln_invalidate();
 }
 
 /* The palette is not a compile-time constant -- it changes with the theme --

@@ -184,8 +184,7 @@ void mln_reset(void)
 {
     memset(&g, 0, sizeof(g));
     g.k.pressed = -1;
-    g.drawn[0] = g.drawn[1] = UINT32_MAX;
-    g.drawn_key[0] = g.drawn_key[1] = UINT32_MAX;
+    mln_invalidate();
 }
 
 bool mln_shown(void)
@@ -268,6 +267,12 @@ void mln_tick(void)
         g.live = live;
         ++g.rev;
     }
+}
+
+void mln_invalidate(void)
+{
+    g.drawn[0] = g.drawn[1] = UINT32_MAX;
+    g.drawn_key[0] = g.drawn_key[1] = UINT32_MAX;
 }
 
 void mln_forget(int buf)

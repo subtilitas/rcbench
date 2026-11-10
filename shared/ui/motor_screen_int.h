@@ -322,6 +322,12 @@ void mln_cancel(void);
  */
 void mln_tick(void);
 /**
+ * @brief Nothing RENAME LOG drew is on the glass any more (the screen's
+ *        motor_invalidate()): the button and the open keyboard are drawn
+ *        again in both framebuffers, whatever their revisions say.
+ */
+void mln_invalidate(void);
+/**
  * @brief Framebuffer @p buf was painted whole: the button is drawn again.
  * @param buf The framebuffer, 0 or 1.
  */

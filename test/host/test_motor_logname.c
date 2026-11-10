@@ -20,6 +20,7 @@
  * - the_cursor_edits_the_label_where_it_stands
  * - the_settings_list_hides_the_button_and_program_shows_it
  * - closing_the_keyboard_paints_the_screen_as_before
+ * - an_invalidate_repaints_the_open_keyboard_and_the_button
  *
  * SPDX-License-Identifier: MIT
  */
@@ -513,6 +514,44 @@ TEST_CASE(closing_the_keyboard_paints_the_screen_as_before)
     free(before);
 }
 
+TEST_CASE(an_invalidate_repaints_the_open_keyboard_and_the_button)
+{
+    /* The router invalidates the screen when what it drew over the body
+     * goes, a status chip's help bubble among them: the next frame paints
+     * the keyboard again although no key changed it. */
+    const size_t bytes = (size_t)W * H * sizeof(gfx_color_t);
+    gfx_color_t *drawn = malloc(bytes);
+    REQUIRE_ALLOC(drawn);
+    fresh();
+    a_log("MOTOR042_kv1200.CSV");
+    tap(MO_LOGBTN_X, LOG_Y);
+    CHECK(motor_screen_logname_shown());
+    scr->render(&cv, 0);
+    memcpy(drawn, fb, bytes);
+    gfx_fill_rect(&cv, 300, 100, 400, 250, ui_theme_color(UI_C_ACCENT));
+    CHECK(memcmp(drawn, fb, bytes) != 0);
+    motor_invalidate();
+    scr->render(&cv, 0);
+    CHECK(memcmp(drawn, fb, bytes) == 0);
+    /* The other framebuffer too. */
+    scr->render(&cv, 1);
+    gfx_fill_rect(&cv, 300, 100, 400, 250, ui_theme_color(UI_C_ACCENT));
+    motor_invalidate();
+    scr->render(&cv, 1);
+    CHECK(memcmp(drawn, fb, bytes) == 0);
+    /* RENAME LOG in the strip row, with the keyboard closed. */
+    tap_key(UI_TK_CANCEL);
+    scr->tick(TICK_S);
+    scr->render(&cv, 0);
+    memcpy(drawn, fb, bytes);
+    gfx_fill_rect(&cv, MO_LOGBTN_L, 8, MO_LOGBTN_R - MO_LOGBTN_L + 1, 40,
+                  ui_theme_color(UI_C_ACCENT));
+    motor_invalidate();
+    scr->render(&cv, 0);
+    CHECK(memcmp(drawn, fb, bytes) == 0);
+    free(drawn);
+}
+
 int main(void)
 {
     settings_init();
@@ -527,6 +566,7 @@ int main(void)
     RUN(the_cursor_edits_the_label_where_it_stands);
     RUN(the_settings_list_hides_the_button_and_program_shows_it);
     RUN(closing_the_keyboard_paints_the_screen_as_before);
+    RUN(an_invalidate_repaints_the_open_keyboard_and_the_button);
     free(fb);
     return test_summary("motor_logname");
 }
