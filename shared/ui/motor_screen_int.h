@@ -276,3 +276,74 @@ void msp_render(gfx_canvas_t *c);
  * @return True: the line is always there.
  */
 bool mo_target_line(char *out, size_t n, bool *warn);
+
+/* --- motor_logname.c: RENAME LOG and its keyboard ------------------------- */
+
+/**
+ * @brief RENAME LOG in the strip row, right of LIVE | PROGRAM: 180 x 40px,
+ *        its right edge the left column's (x 449 to 629).
+ */
+#define MO_LOG_W 180
+#define MO_LOG_X (LEFT_X + LEFT_W - MO_LOG_W) /**< Its left edge: x 449. */
+_Static_assert(MO_LOG_X >= MO_STRIP_X + 2 * MO_TAB_W + MO_TAB_GAP + 3,
+               "RENAME LOG starts right of the strip's trough");
+_Static_assert(MO_LOG_X + MO_LOG_W == LEFT_X + LEFT_W
+                   && MO_LOG_X + MO_LOG_W < RIGHT_X,
+               "RENAME LOG ends with the left column, left of the rail");
+
+/**
+ * @brief Laid out: the keyboard closed, no press, no log, no request.
+ */
+void mln_reset(void);
+/**
+ * @brief Whether the keyboard is open: it covers the body.
+ * @return True while it is.
+ */
+bool mln_shown(void);
+/**
+ * @brief A touch event: the open keyboard takes every one; else a press on
+ *        RENAME LOG is the button's.  Call it only where the button shows:
+ *        LIVE and PROGRAM's list.
+ * @param evt The event.
+ * @return True when the event was the keyboard's or the button's.
+ */
+bool mln_event(const touch_event_t *evt);
+/**
+ * @brief The keyboard closes, nothing renamed; the button's press drops.
+ */
+void mln_close(void);
+/**
+ * @brief Touch events lost: the button's and the keyboard's press drop.
+ */
+void mln_cancel(void);
+/**
+ * @brief A frame: a bench that leaves SAFE closes the keyboard, and the
+ *        button follows whether it is live.
+ */
+void mln_tick(void);
+/**
+ * @brief Nothing RENAME LOG drew is on the glass any more (the screen's
+ *        motor_invalidate()): the button and the open keyboard are drawn
+ *        again in both framebuffers, whatever their revisions say.
+ */
+void mln_invalidate(void);
+/**
+ * @brief Framebuffer @p buf was painted whole: the button is drawn again.
+ * @param buf The framebuffer, 0 or 1.
+ */
+void mln_forget(int buf);
+/**
+ * @brief RENAME LOG into the strip row, when its look changed since
+ *        framebuffer @p buf last showed it.
+ * @param c   The canvas.
+ * @param buf The framebuffer, 0 or 1.
+ */
+void mln_render_button(gfx_canvas_t *c, int buf);
+/**
+ * @brief The keyboard over the body while it is open.  Closing it repaints
+ *        the screen whole (motor_invalidate()).
+ * @param c   The canvas.
+ * @param buf The framebuffer, 0 or 1.
+ * @return True while the keyboard is open: nothing else is drawn.
+ */
+bool mln_render_over(gfx_canvas_t *c, int buf);

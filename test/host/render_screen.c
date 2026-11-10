@@ -2753,6 +2753,7 @@ static void pose_motor_supply(ui_screen_id_t id, const char *view,
          * sample left it and the panel says it is holding one; SETTINGS'
          * views are of a SAFE bench after a run, but the one ARMED. */
         if (strcmp(view, "motor-held") == 0
+            || strcmp(view, "motor-logname") == 0
             || strncmp(view, "motor-settings", 14) == 0) {
             motor_screen_set_armed(false);
         }
@@ -4250,6 +4251,12 @@ static void pose_shown_views(const char *view)
             tap(home.x + home.w / 2, home.y + home.h / 2);
         }
     }
+    /* RENAME LOG's keyboard after a run: the log carries a label, which
+     * the field opens with. */
+    if (strcmp(view, "motor-logname") == 0) {
+        motor_screen_set_last_log("MOTOR042_kv1200.CSV", true, false);
+        tap(MO_LOGBTN_X, UI_BAND_H + MO_TAB_Y);            /* RENAME LOG */
+    }
 }
 
 /**
@@ -4575,6 +4582,7 @@ int main(int argc, char **argv)
     st.mode      = ui_band_mode(st.link_up);
     st.armed     = (id == SCREEN_MOTOR
                     && strcmp(view, "motor-held") != 0
+                    && strcmp(view, "motor-logname") != 0
                     && strcmp(view, "motor-idle") != 0
                     && strcmp(view, "motor-port") != 0
                     && !mo_prog

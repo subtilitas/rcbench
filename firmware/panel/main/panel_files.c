@@ -503,15 +503,8 @@ static char s_job_run_dir[CARD_DIR_MAX];
 /** @brief The folder of s_job_marks' test. */
 static char s_job_test_dir[CARD_DIR_MAX];
 
-/**
- * @brief The bench now: the control task's snapshot and the logger's open
- *        files, into a task's own marks.
- * @param out       takes the bench
- * @param marks     takes the open files; outlives the bench's use
- * @param run_dir   takes their run's folder, CARD_DIR_MAX bytes
- * @param test_dir  takes their test's folder, CARD_DIR_MAX bytes
- */
-static void bench_into(fm_bench_t *out, log_marks_t *marks, char *run_dir,
+/* The control task's snapshot and the logger's open files (panel.h). */
+void panel_files_bench(fm_bench_t *out, log_marks_t *marks, char *run_dir,
                        char *test_dir)
 {
     snap_lock();
@@ -532,7 +525,7 @@ static void bench_into(fm_bench_t *out, log_marks_t *marks, char *run_dir,
 static void job_bench(fm_bench_t *out, void *ctx)
 {
     (void)ctx;
-    bench_into(out, &s_job_marks, s_job_run_dir, s_job_test_dir);
+    panel_files_bench(out, &s_job_marks, s_job_run_dir, s_job_test_dir);
 }
 
 /** @brief The logger's open files as the page's server last read them. */
@@ -545,7 +538,7 @@ static char s_web_test_dir[CARD_DIR_MAX];
 void panel_files_web_bench(fm_bench_t *out, void *ctx)
 {
     (void)ctx;
-    bench_into(out, &s_web_marks, s_web_run_dir, s_web_test_dir);
+    panel_files_bench(out, &s_web_marks, s_web_run_dir, s_web_test_dir);
 }
 
 const fm_io_t *panel_files_card(void)

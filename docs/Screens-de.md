@@ -865,7 +865,9 @@ Registerkarte ist 150 x 40px groß und beginnt bei y 8 des Inhalts; die
 Seite darunter beginnt bei y 56. Die Menükachel öffnet immer LIVE. Tippe
 auf eine Registerkarte, um die Aufgabe zu wechseln. Das fügt keine
 Navigationsebene hinzu und lässt die gewählte LIVE-Ansicht GRAFIK oder
-TABELLE unverändert.
+TABELLE unverändert. LOG UMBENENNEN steht auf LIVE und auf der Liste von
+PROGRAMMIEREN in derselben Zeile, 180 x 40px von x 449 bis zum Rand der
+linken Spalte bei x 629 ([LOG UMBENENNEN](#log-umbenennen)).
 
 | Aufgabe | Die linke Spalte, 620px |
 | --- | --- |
@@ -901,6 +903,7 @@ Das Home-Feld führt eine Navigationsebene zurück:
 | dem Tastenfeld über der Optionsliste | der Liste; der Wert bleibt unverändert |
 | der Optionsliste | LIVE oder PROGRAMMIEREN, über die Warnung beim Verlassen, solange eine Änderung ungeschrieben ist |
 | einer Sitzung auf PROGRAMMIEREN | eine Ebene höher in der Sitzung; von ihrer obersten Ebene zur Liste von PROGRAMMIEREN ([Programmieren](#programmieren)) |
+| der Tastatur von LOG UMBENENNEN | LIVE oder der Liste von PROGRAMMIEREN; nichts wird umbenannt |
 | LIVE oder der Liste von PROGRAMMIEREN | dem Menü; der Prüfstand schaltet auf SAFE |
 
 ### ZIEL nennt das Protokoll und die Pins
@@ -1291,6 +1294,71 @@ einer aus SENSE abgeleiteten Zuordnung behält die Datei `ch1` bis `ch3`.
 Solange die Ausgangsgruppe angesteuert wird, lässt sich die Zuordnung
 nicht schreiben; die Spalten bleiben daher über den gesamten Lauf gleich.
 LOGS gruppiert `out`, `port` und `supply` unter INA3221.
+
+### LOG UMBENENNEN
+
+![Die Tastatur von LOG UMBENENNEN](img/de/motor-logname.png)
+
+LOG UMBENENNEN gibt dem MOTOR-Log, das dieser Prüfstand seit dem
+Einschalten geschlossen hat, ein Label hinter seiner Nummer: Aus
+`MOTOR042.CSV` wird `MOTOR042_kv1200.CSV`. Der Lauf behält Nummer, Art und
+Platz unter [Logs](#logs), und der nächste Lauf erhält die Nummer darüber.
+
+LOG UMBENENNEN ist ein Tipp, kein Halten: Umbenennen schaltet keinen
+Ausgang. Der Knopf ist aktiv, solange alles davon gilt:
+
+- der Prüfstand ist SAFE, und ARM wird nicht gehalten;
+- keine Log-Datei ist offen: kein Lauf, keine CSV und kein Bericht eines Tests;
+- seit dem Einschalten wurde ein MOTOR-Log geschlossen;
+- die Karte, auf die das Log geschrieben wurde, ist noch eingebunden.
+
+Sonst ist er gedimmt, und ein Tipp nennt den ersten Grund im Alarmband:
+
+| Bedingung | Meldung |
+| --- | --- |
+| ARMED, oder ARM gehalten | `Prüfstand ARMED. Die Karte ist nur lesbar.` |
+| eine Log-Datei offen | `Ein Lauf wird aufgezeichnet. Die Karte ist nur lesbar.` |
+| eine Umbenennung läuft | `Die Karte ist belegt. Gleich noch einmal umbenennen.` |
+| seit dem Einschalten kein MOTOR-Log | `Seit dem Start kein MOTOR-Log.`; bei Auto-Aufzeichnungen AUS `AUTO-AUFZEICHNUNGEN AUS unter SD CARD.` |
+| die Karte seit dem Lauf entnommen oder getauscht | `MOTOR042.CSV ist nicht auf der Karte.` |
+
+Ein Aus- und Einschalten vergisst das Log: Der Knopf bleibt gedimmt, bis
+der nächste MOTOR-Lauf endet. Ältere Logs benennt [Files](#files) um.
+
+Ein Tipp öffnet die [Tastatur für Namen](#die-tastatur-für-namen) über dem
+Inhalt, mit dem einfachen Namen des Laufs im Titel: `NAME FÜR
+MOTOR042.CSV`. Das Feld enthält nur das Label, höchstens 46 Bytes: die 59
+Bytes eines Namens ohne `MOTOR042_` und `.CSV`. Es öffnet mit dem Label der
+Datei oder leer, der Cursor an seinem Ende; `<-`, `->` und ein Tippen ins
+Feld bewegen den Cursor wie bei einem Dateinamen. OK weist ein Label ab wie die Tastatur einen Namen, mit
+dem Grund neben dem Titel: eines der Zeichen `" * / : < > ? \ |`, oder ein
+Leerzeichen oder Punkt am Anfang oder Ende. OK bei leerem Feld gibt einem
+Log mit Label den einfachen Namen zurück; bei einem Log ohne Label schließt
+es die Tastatur ohne Änderung. ABBRECHEN und das Home-Feld schließen die
+Tastatur ohne Änderung.
+
+Die Tastatur verdeckt ARM und das Gas. Der Prüfstand bleibt SAFE, der
+Drehknopf wirkt nicht, und ein Schalten auf ARMED von anderer Stelle
+schließt die Tastatur. Das Band mit STOP bleibt sichtbar.
+
+Die Logger-Task des Panels benennt die Datei unter der Auftragssperre der
+Karte um, die FILES und die Schreibzugriffe des Browsers teilen, und wartet
+höchstens 100ms darauf. Das Umbenennen ist ein Umbenennen von FILES: SAFE
+ohne offene Log-Datei, die Namensregeln, und kein vorhandener Name wird
+überschrieben. FatFs läuft auf diesem Panel ohne Dateisperre
+(`CONFIG_FATFS_FS_LOCK` 0), und eine offen umbenannte Datei verlöre ihre
+späteren Zeilen; die Sperre hält das Log geschlossen. Die Antwort ist eine
+Meldung im Alarmband:
+
+| Ergebnis | Meldung |
+| --- | --- |
+| umbenannt | `Log umbenannt: MOTOR042_kv1200.CSV` |
+| der Name ist belegt | `MOTOR042_kv1200.CSV ist dort bereits vorhanden.` |
+| die Datei anderswo umbenannt oder gelöscht, die Karte entnommen oder getauscht | `MOTOR042.CSV ist nicht auf der Karte.` |
+| eine volle oder schreibgeschützte Karte | `Die Karte oder der Ordner ist voll.` oder `Die Karte ist schreibgeschützt.` |
+| die Auftragssperre länger als 100ms belegt | `Die Karte ist belegt. Gleich noch einmal umbenennen.` |
+
+Ein weiterer Tipp auf LOG UMBENENNEN ändert oder entfernt das Label.
 
 ### MOTOR & ESC, Optionen
 
@@ -3430,7 +3498,8 @@ jedem ARM auch die Gas-Ausgänge. ARM auf SERVO schreibt dennoch
 `SERVOnnn.CSV`.
 
 Ein Laufname darf hinter seiner Nummer ein Label tragen:
-`MOTOR042_kv1200.CSV`. Das Label folgt auf ein `_` und hat 1 oder mehr
+`MOTOR042_kv1200.CSV`. [LOG UMBENENNEN](#log-umbenennen) auf Motor & ESC
+schreibt eines; FILES und ein PC können es auch. Das Label folgt auf ein `_` und hat 1 oder mehr
 Bytes, auch Punkte und weitere `_`. Hinter einem Präfix aus fünf
 Buchstaben hat es höchstens 46 Bytes, damit der ganze Name in die 59
 Bytes passt, die FILES annimmt. Ein Name mit Label ist derselbe Lauf wie
@@ -4303,7 +4372,8 @@ Namen ab und nennt den Grund neben dem Titel: ein leerer Name
 Leerzeichen oder Punkt am Anfang oder Ende oder ein Gerätename wie
 `CON`, `NUL` oder `COM1`, allein oder vor einem Punkt. Ein abgelehnter
 Name behält Text und Cursor. ABBRECHEN schließt die Tastatur ohne
-Änderungen.
+Änderungen. LOG UMBENENNEN auf Motor & ESC öffnet dieselbe Tastatur für
+das Label eines Laufs ([LOG UMBENENNEN](#log-umbenennen)).
 
 ![UMBENENNEN von NOTES.TXT, " 2" vor der Endung eingegeben](img/de/files-rename-cursor.png)
 

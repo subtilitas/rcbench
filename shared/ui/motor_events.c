@@ -115,8 +115,8 @@ bool mo_safe_at(int x, int y)
     if (ps != NULL) {
         return prog_ps_safe_at(ps, x, y);
     }
-    if (msp_shown()) {
-        return false;           /* the list covers DISARM */
+    if (msp_shown() || mln_shown()) {
+        return false;           /* the list or the keyboard covers DISARM */
     }
     return s.gate.armed && gfx_rect_contains(s.arm_rect, x, y);
 }
@@ -124,6 +124,12 @@ bool mo_safe_at(int x, int y)
 void mo_event(const touch_event_t *evt)
 {
     if (evt == NULL) {
+        return;
+    }
+    /* RENAME LOG's keyboard covers the body, ARM with it: every press is
+     * the keyboard's. */
+    if (mln_shown()) {
+        (void)mln_event(evt);
         return;
     }
     /* A session on PROGRAM covers the body, the strip row and the rail with
@@ -142,6 +148,17 @@ void mo_event(const touch_event_t *evt)
             motor_invalidate();
             ++s.ctrl_rev;
             ++s.arm_rev;
+        }
+        return;
+    }
+    /* RENAME LOG in the strip row, on LIVE and PROGRAM's list: a press on
+     * it is its own, dimmed or live. */
+    if (mln_event(evt)) {
+        if (mln_shown()) {
+            mo_end_drag();
+            ui_tabs_cancel(&s.tabs);
+            mwb_cancel();
+            mpp_cancel_press();
         }
         return;
     }
@@ -393,6 +410,7 @@ void mo_tick(float dt_s)
         ++s.ctrl_rev;
         ++s.arm_rev;
     }
+    mln_tick();
     mpp_armed(!mo_bench_safe());
     mpp_tick(dt_s);
 }

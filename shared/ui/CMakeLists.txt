@@ -42,6 +42,7 @@ set(SRCS
     motor_workbench.c
     motor_settings_page.c
     motor_program_page.c
+    motor_logname.c
     supply_screen.c
     supply_events.c
     supply_draw.c

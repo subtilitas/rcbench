@@ -1860,6 +1860,26 @@ UI_TEXT(P5_IN_WHY, 94,
 UI_TEXT(MO_RESET_PEAKS, 0,
     "RESET PEAKS",
     "SPITZENWERTE ZURÜCKSETZEN")
+/* RENAME LOG in the strip row, the title of its keyboard (the run's plain
+ * name), and its notices in the alert band. */
+UI_TEXT(MO_LOG_RENAME, 0,
+    "RENAME LOG",
+    "LOG UMBENENNEN")
+UI_TEXT(MO_TK_LOG, 0,
+    "NAME FOR %s",
+    "NAME FÜR %s")
+UI_TEXT(MO_LOG_RENAMED, 94,
+    "Log renamed: %s",
+    "Log umbenannt: %s")
+UI_TEXT(MO_LOG_NONE, 94,
+    "No MOTOR log since the start.",
+    "Seit dem Start kein MOTOR-Log.")
+UI_TEXT(MO_LOG_MISSING, 94,
+    "%s is not on the card.",
+    "%s ist nicht auf der Karte.")
+UI_TEXT(MO_LOG_BUSY, 94,
+    "The card is busy. Rename again in a moment.",
+    "Die Karte ist belegt. Gleich noch einmal umbenennen.")
 
 /* -------------------------------------------------------------- SUPPLY */
 UI_TEXT(SUP_VOLTAGE, 0,

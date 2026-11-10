@@ -33,6 +33,7 @@
 #include "coproc_update_screen.h"
 #include "endpoints_link.h"
 #include "files_screen.h"
+#include "fm_logname.h"
 #include "esc_card.h"
 #include "esc_link.h"
 #include "esc_prog.h"
@@ -463,6 +464,17 @@ bool panel_files_lock(uint32_t wait_ms);
 void panel_files_unlock(bool wrote);
 
 /**
+ * @brief The bench now: ARMED or an arm asked, the IOmcu link and the
+ *        logger's open files, into a task's own marks.
+ * @param out       takes the bench
+ * @param marks     takes the open files; outlives the bench's use
+ * @param run_dir   takes their run's folder, CARD_DIR_MAX bytes
+ * @param test_dir  takes their test's folder, CARD_DIR_MAX bytes
+ */
+void panel_files_bench(fm_bench_t *out, log_marks_t *marks, char *run_dir,
+                       char *test_dir);
+
+/**
  * @brief The bench for the page server's task: ARMED, the IOmcu link and
  *        the logger's open files now, into marks of that task's own.
  * @param out  takes the bench
@@ -594,6 +606,35 @@ void log_set_folder(log_folder_t kind, const char *dir);
  * viewer's card_busy(): @p run_dir and @p test_dir take CARD_DIR_MAX bytes
  * and @p marks points into them. */
 void log_open_marks(log_marks_t *marks, char *run_dir, char *test_dir);
+
+/**
+ * @brief The MOTOR run log the logger closed last since power-on: its
+ *        folder, its name now and the mount it was written on; name "" for
+ *        none.  Any task.
+ * @param out  takes the record
+ */
+void log_last_motor(fm_logname_t *out);
+
+/**
+ * @brief The MOTOR log closed last carries @p name now: RENAME LOG renamed
+ *        it.  The logger task's.
+ * @param name  its new name
+ */
+void log_last_motor_named(const char *name);
+
+/**
+ * @brief RENAME LOG's request, run on the logger task when one waits: the
+ *        MOTOR log closed last renamed under the card's job lock
+ *        (panel_log_rename.c).
+ */
+void log_rename_serve(void);
+
+/**
+ * @brief RENAME LOG in the render loop: the record handed to MOTOR & ESC,
+ *        its request handed to the logger and the answer back.  No card
+ *        call is made here.
+ */
+void motor_log_ui_service(void);
 
 /**
  * @brief Whether the logger may write a fault log line now: one queued in

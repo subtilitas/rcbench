@@ -8,7 +8,7 @@
  * screen's suites and render_screen.c.
  *
  *   - the strip: LIVE, PROGRAM from x 9, 150px each, 4px apart, y 8 to
- *     48;
+ *     48; RENAME LOG x 449 to 629 in the same row;
  *   - LIVE's telemetry card from y 56: PLOT | TABLE from x 18, 200px for
  *     the two, y 82 to 122;
  *   - the THROTTLE card from y 294: the step keys 72 x 48px at x 18 and
@@ -30,6 +30,11 @@
 #define MO_TAB_Y          28            /**< The strip's tabs. */
 /** @brief The strip's tab @p i: 0 LIVE, 1 PROGRAM. */
 #define MO_TAB_X(i)       (9 + (i) * 154 + 75)
+
+/** @brief RENAME LOG, in the strip row at x 449 to 629. */
+#define MO_LOGBTN_X       539
+#define MO_LOGBTN_L       449           /**< Its left edge. */
+#define MO_LOGBTN_R       628           /**< Its right column. */
 
 #define MO_PANE_Y         102           /**< PLOT | TABLE. */
 #define MO_PLOT_TAB_X     68            /**< PLOT. */

@@ -134,6 +134,47 @@ static char s_dir_open[LOG_FOLDERS][CARD_DIR_MAX] = { CARD_AUTO_LOGS,
 static char s_dir_took[LOG_FOLDERS][CARD_DIR_MAX] = { CARD_AUTO_LOGS,
                                                       CARD_USER_LOGS };
 
+/** @brief The open run's kind.  The logger task's own. */
+static log_run_kind_t s_log_open_kind;
+/** @brief The open run's file as RENAME LOG names it once closed: its
+ *         name, folder and mount.  The logger task's own. */
+static fm_logname_t   s_log_open;
+/**
+ * @brief The MOTOR log closed last since power-on (fm_logname.h), name ""
+ *        for none: written by this task at a close and a rename, read by
+ *        the render loop each frame.  Under s_dir_mux: 88 bytes, not one
+ *        word.
+ */
+static fm_logname_t   s_log_last;
+
+void log_last_motor(fm_logname_t *out)
+{
+    taskENTER_CRITICAL(&s_dir_mux);
+    *out = s_log_last;
+    taskEXIT_CRITICAL(&s_dir_mux);
+}
+
+void log_last_motor_named(const char *name)
+{
+    taskENTER_CRITICAL(&s_dir_mux);
+    snprintf(s_log_last.name, sizeof(s_log_last.name), "%s", name);
+    taskEXIT_CRITICAL(&s_dir_mux);
+}
+
+/**
+ * @brief The run's file is closed, or let go: a MOTOR run's is the log
+ *        RENAME LOG renames.  The logger task's.
+ */
+static void log_remember(void)
+{
+    if (s_log_open_kind == LOG_RUN_MOTOR && s_log_open.name[0] != '\0') {
+        taskENTER_CRITICAL(&s_dir_mux);
+        s_log_last = s_log_open;
+        taskEXIT_CRITICAL(&s_dir_mux);
+    }
+    s_log_open.name[0] = '\0';
+}
+
 void log_set_folder(log_folder_t kind, const char *dir)
 {
     if (kind < 0 || kind >= LOG_FOLDERS || dir == NULL) {
@@ -442,6 +483,11 @@ static void log_open(uint32_t run, log_run_kind_t kind)
                                                 : TR(ALERT_CARD_FULL));
         return;
     }
+    s_log_open_kind = kind;
+    log_name_build(s_log_open.name, sizeof(s_log_open.name), run_prefix(kind),
+                   number, false);
+    memcpy(s_log_open.dir, dir, CARD_DIR_MAX);
+    s_log_open.mount = s_series_mount;  /* the take's (take()) */
     const log_sink_t sink = { .write = file_write, .flush = file_flush,
                               .ctx = s_log_file };
     log_writer_init(&s_log, &sink);
@@ -490,6 +536,7 @@ static void log_close(void)
         ESP_LOGI(TAG, "%u rows written", (unsigned)s_log.rows);
     }
     s_log_file = NULL;
+    log_remember();
     /*
      * And only now is the run something the viewer may read.  The length of a
      * FAT file lives in its directory entry, and f_close is what writes it --
@@ -514,6 +561,7 @@ static void log_drop(void)
              (unsigned)s_log.rows);
     (void)storage_fclose(s_log_file);
     s_log_file = NULL;
+    log_remember();
     atomic_store(&s_log_open_run, 0u);
 }
 
@@ -1002,6 +1050,9 @@ void log_task(void *arg)
         hitec_record_write();
         hitec_card_serve();
         esc_card_serve();
+        /* And RENAME LOG's request, when one waits: refused while any log
+         * file is open, so a rename never meets a file this task writes. */
+        log_rename_serve();
         /* One pass done: a step a new build's trial waits for. */
         atomic_store(&s_trial_logger_ran, true);
     }

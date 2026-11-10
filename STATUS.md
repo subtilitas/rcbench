@@ -233,6 +233,16 @@ A row the cut stops part way through has no line feed; the reader leaves it out 
 it (`log_analysis_t.cut_row`), host-tested at every cut position of a row in
 `test_logwriter`.
 
+RENAME LOG on MOTOR & ESC gives the MOTOR log closed since power-on a label behind its
+number, a FILES rename (`fm_logname_run()` in `shared/files/fm_logname.c`, `test_fm_logname`:
+a taken name, a log renamed elsewhere, the card pulled or swapped, ARMED, a log open, a full
+or write-protected card, a label too long or with a mark FAT refuses). The button and its
+keyboard (`shared/ui/motor_logname.c`, `test_motor_logname`): dimmed with its reason, the
+keyboard over ARM, closed by the home tag and by the bench leaving SAFE, one request per OK.
+The panel's record of the log and the rename on the logger task under the card's job lock
+(`firmware/panel/main/panel_log.c`, `panel_log_rename.c`) are not host-tested; not run on a
+panel.
+
 ### File manager: FILES
 
 Built and tested on the host (`shared/ui/files_screen.c`, `files_draw.c`, `files_events.c`,
@@ -1315,7 +1325,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 518 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 520 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1331,7 +1341,7 @@ The host suite is 518 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_supply_screen_draw`, `test_supply_layout`, `test_prog5v_box`, `test_prog5v_lost`,
 `test_prog5v_wire`, `test_prog5v_servo`, `test_prog5v_supply`, `test_prog5v_input`, `test_prog5v_input_hitec`, `test_pdmini`, `test_motor`,
 `test_motor_draw`, `test_motor_throttle`, `test_motor_arm`, `test_motor_workbench`,
-`test_motor_program`, `test_motor_layout`, `test_value_state`, `test_servo`,
+`test_motor_program`, `test_motor_layout`, `test_motor_logname`, `test_value_state`, `test_servo`,
 `test_servo_knob`, `test_servo_two_drags`, `test_servo_two_drags_sweep`, `test_servo_drag`, `test_servo_repaint`, `test_repaint_parts`,
 `test_frame_work`,
 `test_servo_dial_sweep`, `test_servo_letgo`, `test_servo_curve`, `test_servo_supply`,
@@ -1384,7 +1394,7 @@ The host suite is 518 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_link_restart`, `test_logview`, `test_logview_report`, `test_logview_plot`,
 `test_logview_rank`, `test_logview_pages`, `test_logview_tabs`, `test_logview_delete`,
 `test_logview_touch`, `test_logview_layout`, `test_logview_row`, `test_log_name`,
-`test_log_take`, `test_card_tree`, `test_fm_tree`, `test_fm_ops`, `test_fm_match`,
+`test_log_take`, `test_card_tree`, `test_fm_tree`, `test_fm_ops`, `test_fm_logname`, `test_fm_match`,
 `test_fm_recheck`, `test_fm_req`, `test_files_screen`, `test_files_ops`, `test_files_open`,
 `test_files_view`, `test_files_edit`, `test_files_save`, `test_files_changed`,
 `test_files_rescan`, `test_logs_strip`, `test_textkey_editor`, `test_textkey_see`,
@@ -1896,8 +1906,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 926 committed screenshots to the current render,
-463 in English and the same 463 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` holds 928 committed screenshots to the current render,
+464 in English and the same 464 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -1951,12 +1961,13 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_value_ask.c` | 8 | 8 | 100.0% |
 | `shared/ui/splash_screen.c` | 72 | 69 | 95.8% |
 | `shared/ui/overview_screen.c` | 147 | 142 | 96.6% |
-| `shared/ui/motor_screen.c` | 281 | 274 | 97.5% |
-| `shared/ui/motor_events.c` | 206 | 202 | 98.1% |
-| `shared/ui/motor_draw.c` | 378 | 366 | 96.8% |
+| `shared/ui/motor_screen.c` | 289 | 282 | 97.6% |
+| `shared/ui/motor_events.c` | 217 | 213 | 98.2% |
+| `shared/ui/motor_draw.c` | 382 | 370 | 96.9% |
 | `shared/ui/motor_workbench.c` | 172 | 165 | 95.9% |
 | `shared/ui/motor_settings_page.c` | 87 | 87 | 100.0% |
 | `shared/ui/motor_program_page.c` | 174 | 169 | 97.1% |
+| `shared/ui/motor_logname.c` | 179 | 173 | 96.7% |
 | `shared/ui/supply_screen.c` | 521 | 512 | 98.3% |
 | `shared/ui/supply_events.c` | 323 | 321 | 99.4% |
 | `shared/ui/supply_draw.c` | 413 | 394 | 95.4% |
@@ -2037,7 +2048,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/log_viewer_events.c` | 451 | 439 | 97.3% |
 | `shared/ui/logs_strip.c` | 40 | 37 | 92.5% |
 | `shared/ui/log_select.c` | 56 | 56 | 100.0% |
-| `shared/ui/files_screen.c` | 693 | 668 | 96.4% |
+| `shared/ui/files_screen.c` | 693 | 669 | 96.5% |
 | `shared/ui/layout_screen.c` | 141 | 140 | 99.3% |
 | `shared/ui/files_draw.c` | 341 | 330 | 96.8% |
 | `shared/ui/files_events.c` | 228 | 227 | 99.6% |
@@ -2098,6 +2109,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/files/fm_rules.c` | 180 | 179 | 99.4% |
 | `shared/files/fm_tree.c` | 194 | 193 | 99.5% |
 | `shared/files/fm_ops.c` | 499 | 493 | 98.8% |
+| `shared/files/fm_logname.c` | 26 | 24 | 92.3% |
 | `shared/files/fm_req.c` | 89 | 88 | 98.9% |
 | `shared/files/fm_crc.c` | 6 | 6 | 100.0% |
 | `shared/files/png_enc.c` | 217 | 217 | 100.0% |
@@ -2309,7 +2321,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **88949** | **87161** | **98.0%** |
+| **total** | **89177** | **87382** | **98.0%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

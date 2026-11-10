@@ -85,7 +85,7 @@ One file is one run, in the folder of its kind. Its name says what started it:
 
 The name follows the screen whose ARM armed the bench, also on an IOmcu older than 0.18.0, which arms the throttle outputs with every switch to ARMED.
 
-A run's name may carry a label behind its number, such as `MOTOR042_kv1200.CSV`. The label follows one `_`, holds up to 46 bytes behind a five-letter prefix, and may hold full stops and further `_`. The run keeps its number, its kind and its place in the list, and the next run takes one above it.
+A run's name may carry a label behind its number, such as `MOTOR042_kv1200.CSV`; RENAME LOG on [Motor and ESC](motor.md#the-log-of-a-run) writes one. The label follows one `_`, holds up to 46 bytes behind a five-letter prefix, and may hold full stops and further `_`. The run keeps its number, its kind and its place in the list, and the next run takes one above it.
 
 AUTO LOGS off on [SETUP > SD CARD](setup.md) writes no file to `BENCH/LOGS` and takes no number; USER LOGS off writes none to `USER/LOGS`, and the SERVO screen names `USER LOGS OFF` in place of the file. Both are on after a start from a new panel or an update.
 

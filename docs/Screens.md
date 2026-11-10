@@ -801,7 +801,9 @@ MOTOR & ESC has two tasks along the top: LIVE and PROGRAM (German `LIVE`,
 `PROGRAMMIEREN`). Each tab is 150 x 40px, starting at body y 8; the page
 below starts at y 56. The menu tile always opens LIVE. Tap a tab to switch
 tasks. This does not add a navigation level or change LIVE's selected
-view, PLOT or TABLE.
+view, PLOT or TABLE. RENAME LOG (German `LOG UMBENENNEN`) stands in the
+same row on LIVE and on PROGRAM's list, 180 x 40px from x 449 to the left
+column's edge at x 629 ([RENAME LOG](#rename-log)).
 
 | Task | The left column, 620px |
 | --- | --- |
@@ -835,6 +837,7 @@ The home tag moves up one navigation level:
 | the keypad over the settings list | the list; the value is not changed |
 | the settings list | LIVE or PROGRAM, through the leave warning while a change is unwritten |
 | a session on PROGRAM | one level up in the session; from its top, PROGRAM's list ([PROGRAM](#program)) |
+| RENAME LOG's keyboard | LIVE or PROGRAM's list; nothing is renamed |
 | LIVE or PROGRAM's list | the menu; the bench switches to SAFE |
 
 ### TARGET names the protocol and the pins
@@ -1192,6 +1195,70 @@ The map takes effect once the IOmcu confirms it is in force. With a map
 derived from SENSE, the file retains `ch1` through `ch3`. The map cannot
 be written while the output bank drives, so columns remain fixed for the
 whole run. LOGS groups `out`, `port` and `supply` columns under INA3221.
+
+### RENAME LOG
+
+![RENAME LOG's keyboard](img/motor-logname.png)
+
+RENAME LOG gives the MOTOR log this bench closed since power-on a label
+behind its number: `MOTOR042.CSV` becomes `MOTOR042_kv1200.CSV`. The run
+keeps its number, its kind and its place in [Logs](#logs), and the next
+run takes one above it.
+
+RENAME LOG is a tap, not a hold: renaming switches no output. It is live
+while all of these hold:
+
+- the bench is SAFE and ARM is not held;
+- no log file is open: no run, no test's CSV or report;
+- a MOTOR log was closed since power-on;
+- the card that log was written to is still mounted.
+
+Otherwise it is dimmed, and a tap shows the first reason in the alert band:
+
+| Condition | Alert |
+| --- | --- |
+| ARMED, or ARM held | `Bench ARMED. The card is read-only.` |
+| a log file open | `A run is being logged. The card is read-only.` |
+| a rename under way | `The card is busy. Rename again in a moment.` |
+| no MOTOR log since power-on | `No MOTOR log since the start.`; with Auto logs OFF, `AUTO LOGS OFF on SD CARD.` |
+| the card pulled or swapped since the run | `MOTOR042.CSV is not on the card.` |
+
+A power cycle forgets the log: the button stays dimmed until the next
+MOTOR run ends. [Files](#files) renames older logs.
+
+A tap opens the [name keyboard](#the-name-keyboard) over the body, titled
+with the run's plain name, `NAME FOR MOTOR042.CSV`. The field holds the
+label alone, up to 46 bytes: the 59 bytes of a name less `MOTOR042_` and
+`.CSV`. It opens with the label the log carries, or empty, the cursor
+at its end; `<-`, `->` and a tap in the field move the cursor as for a
+file name. OK refuses a
+label as the keyboard refuses a name, with the reason beside the title:
+any of `" * / : < > ? \ |`, or a space or full stop at an end. OK on an
+empty field gives a labelled log its plain name back; on a plain log it
+closes the keyboard and changes nothing. CANCEL and the home tag close the
+keyboard without a change.
+
+The keyboard covers ARM and the throttle. The bench stays SAFE, the knob
+does nothing, and a switch to ARMED from elsewhere closes the keyboard.
+The band with STOP stays visible.
+
+The panel's logger task renames the file under the card's job lock that
+FILES and the browser's writes share, and waits up to 100ms for it. The
+rename is a FILES rename: SAFE with no log file open, the name rules, and
+no existing name overwritten. FatFs on this panel runs without its file
+lock (`CONFIG_FATFS_FS_LOCK` 0), and a renamed open file would lose its
+later rows; the gate keeps the log closed. The answer is a notice in the
+alert band:
+
+| Result | Alert |
+| --- | --- |
+| renamed | `Log renamed: MOTOR042_kv1200.CSV` |
+| the name is taken | `MOTOR042_kv1200.CSV already exists there.` |
+| the file renamed or deleted elsewhere, the card pulled or swapped | `MOTOR042.CSV is not on the card.` |
+| a full or write-protected card | `The card or the folder is full.` or `The card is write-protected.` |
+| the job lock held for more than 100ms | `The card is busy. Rename again in a moment.` |
+
+Tap RENAME LOG again to change or remove the label.
 
 ### MOTOR & ESC settings
 
@@ -3145,8 +3212,9 @@ throttle outputs writes `MOTORnnn`, an arm that asks for the surfaces writes
 every arm; a switch to ARMED from SERVO still writes `SERVOnnn.CSV`.
 
 A run's name may carry a label behind its number: `MOTOR042_kv1200.CSV`.
-The label follows one `_` and holds 1 or more bytes, full stops and
-further `_` included. Behind a five-letter prefix it holds at most 46
+[RENAME LOG](#rename-log) on Motor & ESC writes one; FILES and a computer
+may too. The label follows one `_` and holds 1 or more bytes, full stops
+and further `_` included. Behind a five-letter prefix it holds at most 46
 bytes, so the whole name stays within the 59 bytes FILES takes. A labelled
 name is the same run as its plain name: it keeps its number, its kind and
 its place in the list, and the next run takes one above it.
@@ -3934,7 +4002,8 @@ reason beside the title: an empty name (`Enter a name.`), any of
 `" * / : < > ? \ |`, a leading or trailing space or full stop, or a
 device name such as `CON`, `NUL` or `COM1`, alone or before a full stop.
 A refused name keeps its text and its cursor. CANCEL closes the keyboard
-without changes.
+without changes. RENAME LOG on Motor & ESC opens the same keyboard for a
+run log's label ([RENAME LOG](#rename-log)).
 
 ![RENAME of NOTES.TXT, " 2" typed before the extension](img/files-rename-cursor.png)
 

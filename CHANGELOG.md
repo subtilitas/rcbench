@@ -40,6 +40,18 @@ history is in git.
   RUDDR and the older BENCH and ESC) reads it as the same run: LOGS and
   FILES keep its number, kind and place in the list, DELETE takes its
   plain report, and the next run takes one above a labelled number.
+- RENAME LOG on MOTOR & ESC (German `LOG UMBENENNEN`), a 180 x 40px tap
+  button in the strip row on LIVE and PROGRAM's list, gives the MOTOR log
+  closed since power-on a label: `MOTOR042.CSV` becomes
+  `MOTOR042_kv1200.CSV`. The name keyboard over the body edits the label
+  alone, up to 46 bytes, with its cursor starting at the label's end; OK
+  on an empty field gives the plain name back.
+  The button acts only while the bench is SAFE with ARM not held, no log
+  file is open and the log's card is still mounted; dimmed, a tap names
+  the reason in the alert band. The logger renames the closed file as a
+  FILES rename under the card's job lock (100ms wait), and the alert band
+  says `Log renamed: MOTOR042_kv1200.CSV` or why not. After a power cycle
+  the button stays dimmed until the next MOTOR run ends.
 
 ### Fixed
 

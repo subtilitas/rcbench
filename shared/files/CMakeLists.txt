@@ -20,6 +20,7 @@ set(SRCS
     fm_rules.c
     fm_tree.c
     fm_ops.c
+    fm_logname.c
     fm_req.c
     fm_crc.c
     png_enc.c
