@@ -6,7 +6,10 @@
  * The card draws the rows the function gives (RUDDER AUTO's:
  * servo_rudder_auto_ready.c, TEST's: servo_test_ready.c, LIMIT RUN's:
  * servo_limit_ready.c, through one table of each function's calls) and
- * takes their taps.  The sequence is
+ * takes their taps.  A row's state holds 20 cells: a gate text longer
+ * shows its tag from one table (k_tags, ready_tag()), `YAW REFUSED` for
+ * `IMU YAW REFUSED: HINGE ON X OR Y`, and keeps the whole text in the
+ * row's `why` for the alert band and a tap.  The sequence is
  * servo_start_seq.h's steps done on the bench the way a finger does them:
  * PORT PWM on as OUTPUTS' segment sets it, PROG 5V on as its box's hold
  * asks it, the PD mini's output on as SUPPLY's OUTPUT ON, ARM as ARM's
@@ -58,6 +61,163 @@ _Static_assert(18 + READY_LABEL_W + READY_TAG_GAP
                    + (READY_VALUE_W / SV_CELL) * SV_CELL + TAG_EXTRA
                    <= RDY_W,
                "a tag round a whole state stays clear of the labels");
+_Static_assert(READY_VALUE_W / SV_CELL == READY_VALUE_CELLS,
+               "a state's cells are its column's");
+
+/* ------------------------------------------------------------- the tags */
+
+/**
+ * @brief Whether @p why is the carrier's input supply read low
+ *        (prog5v_box_input_why()), and its volts and tenths.
+ * @param why a gate text
+ * @param v receives the volts and the tenths
+ * @return true then
+ */
+static bool p5_in_nums(const char *why, unsigned v[2])
+{
+    if (!prog5v_box_input_is(why)) {
+        return false;
+    }
+    const unsigned mv = prog5v_box_input_low_mv();
+    v[0] = mv / 1000u;
+    v[1] = (mv % 1000u) / 100u;
+    return true;
+}
+
+/**
+ * @brief The carrier's input tag: `INPUT 5.1V < 15V`.
+ * @param b receives it
+ * @param n its size
+ * @param v the volts and the tenths
+ */
+static void p5_in_tag(char *b, size_t n, const unsigned v[2])
+{
+    snprintf(b, n, TR(P5_IN_TAG), v[0], v[1]);
+}
+
+/**
+ * @brief The Hitec range's tag: `NEEDS 850-2150us`.
+ * @param b receives it
+ * @param n its size
+ * @param v the lower and the upper pulse, us
+ */
+static void hitec_tag(char *b, size_t n, const unsigned v[2])
+{
+    snprintf(b, n, TR(RDY_TAG_HITEC_RANGE), v[0], v[1]);
+}
+
+/** @brief A UI_TEXT gate text and its tag. */
+#define TAG_UI(full, tag) \
+    { RDY_TXT_UI, TX_##full, TX_##tag, { 0, 0 }, NULL, NULL }
+/** @brief A servo text of the gate and its tag. */
+#define TAG_SV(full, tag) \
+    { RDY_TXT_SERVO, SERVO_STR_##full, TX_##tag, { 0, 0 }, NULL, NULL }
+
+/** @brief Every gate text a READY row can show that is longer than
+ *         READY_VALUE_CELLS in a language, and the tag the row shows. */
+static const rdy_tag_t k_tags[] = {
+    TAG_SV(START_PROG_5V, RDY_TAG_5V_OFF),
+    TAG_SV(START_TEST_RUNS, RDY_TAG_TEST_RUNS),
+    TAG_SV(START_BUSY, RDY_TAG_BUSY),
+    TAG_SV(START_PROG_STEPS, RDY_TAG_FIXED_5V),
+    TAG_SV(START_NO_SUPPLY, RDY_TAG_NO_ANSWER),
+    TAG_SV(START_ABOVE_CAP, RDY_TAG_STEP_CAP),
+    TAG_UI(RA_PROG_PORT, PRR_NO_PORT),
+    TAG_UI(SV_LIM_PROG_PORT, PRR_NO_PORT),
+    TAG_UI(KP_NEED_TARGET_2, PRR_NO_PORT),
+    TAG_UI(SV_TARGET_UNREAD, RDY_TAG_PINS_UNREAD),
+    TAG_UI(SV_LIM_INA_SETUP, RDY_TAG_INA_SETUP),
+    TAG_UI(SV_LIM_INA_OFFLINE, RDY_TAG_INA_OFFLINE),
+    TAG_UI(SV_LIM_INA_NO_WIN, RDY_TAG_INA_NO_WIN),
+    TAG_UI(OUT_PORT_HELD, RDY_TAG_SERVO_PROG),
+    TAG_UI(SUP_HELD_REFUSED, RDY_TAG_SERVO_PROG),
+    TAG_UI(ALERT_ARM_PROG, RDY_TAG_SERVO_PROG),
+    TAG_UI(SUP_HELD_REFUSED_ESC, RDY_TAG_ESC_PROG),
+    TAG_UI(ALERT_ARM_ESC, RDY_TAG_ESC_PROG),
+    TAG_UI(SV_LIM_PWM_SAFE, RDY_TAG_WAIT_SAFE),
+    TAG_UI(SV_LIM_PWM_OFF, RDY_TAG_PWM_OFF),
+    TAG_UI(SV_LIM_PWM_OFF_ARMED, RDY_TAG_PWM_DISARM),
+    TAG_UI(RA_RANGE, RDY_TAG_RANGE),
+    TAG_UI(SV_LIM_REFUSED, RDY_TAG_CENTER),
+    TAG_UI(SV_LIM_PROG_BUSY, RDY_TAG_NOT_PWM),
+    TAG_UI(HP_NEED_PD_C, RDY_TAG_NEEDS_PD),
+    TAG_UI(SV_LIM_PROG_PD_OFF, RDY_TAG_PD_OFF),
+    TAG_UI(SV_LIM_PROG_RAIL, RDY_TAG_BELOW_4V8),
+    TAG_UI(SV_LIM_RAIL_LOW, RDY_TAG_BELOW_3V),
+    TAG_UI(SV_RUN_PD_5V, RDY_TAG_PD_5V),
+    TAG_UI(SV_LIM_PROG_NO_PD, RDY_TAG_NO_PD),
+    TAG_UI(TST_RAIL_FED, RDY_FED),
+    TAG_UI(P5_LOCKED, RDY_TAG_LOCKED),
+    TAG_UI(RA_IMU_YAW, RDY_TAG_YAW),
+    TAG_UI(RA_NO_ANGLE, RDY_TAG_NO_READING),
+    TAG_UI(RA_NO_ZERO, RDY_TAG_NO_ZERO),
+    /* The formatted ones: PULSE MIN and MAX short of a Hitec model's
+     * travel, pulses up to 6553us (65535 tenths); the carrier's input
+     * under PROG5V_INPUT_MIN_MV. */
+    { RDY_TXT_FMT, TX_SV_LIM_HITEC_RANGE, TX_RDY_TAG_HITEC_RANGE,
+      { 6553u, 6553u }, lim_hitec_nums, hitec_tag },
+    { RDY_TXT_FMT, TX_P5_IN_WHY, TX_P5_IN_TAG,
+      { PROG5V_INPUT_MIN_MV / 1000u, 9u }, p5_in_nums, p5_in_tag },
+};
+
+const rdy_tag_t *ready_tags(size_t *n)
+{
+    if (n != NULL) {
+        *n = sizeof(k_tags) / sizeof(k_tags[0]);
+    }
+    return k_tags;
+}
+
+const char *ready_tag(const char *why, char *buf, size_t n)
+{
+    if (buf == NULL || n == 0u) {
+        return "";
+    }
+    buf[0] = '\0';
+    if (why == NULL) {
+        return buf;
+    }
+    for (size_t i = 0; i < sizeof(k_tags) / sizeof(k_tags[0]); ++i) {
+        const rdy_tag_t *t = &k_tags[i];
+        if (t->src == (uint8_t)RDY_TXT_FMT) {
+            unsigned v[2] = { 0u, 0u };
+            if (t->nums(why, v)) {
+                t->fmt(buf, n, v);
+                return buf;
+            }
+            continue;
+        }
+        const char *full = (t->src == (uint8_t)RDY_TXT_SERVO)
+                               ? ui_servo_str((servo_str_t)t->full)
+                               : ui_tr((ui_text_id_t)t->full);
+        if (why == full) {
+            snprintf(buf, n, "%s", ui_tr(t->tag));
+            return buf;
+        }
+    }
+    snprintf(buf, n, "%s", why);
+    return buf;
+}
+
+void ready_set_why(rdy_row_t *r, const char *why)
+{
+    r->why = why;
+    (void)ready_tag(why, r->value, sizeof(r->value));
+}
+
+const char *ready_port_line(char *b, size_t n)
+{
+    if (!svs_port_line(b, n)) {
+        return NULL;
+    }
+    /* The bench's outputs with their pins not read: LIMIT RUN's gate
+     * text, its tag on every card (servo_target_line()). */
+    if (s.drive_target == 0u && !s.pins_known) {
+        (void)ready_tag(TR(SV_TARGET_UNREAD), b, n);
+        return TR(SV_TARGET_UNREAD);
+    }
+    return b;
+}
 
 /* ------------------------------------------------------------ the card */
 
@@ -340,7 +500,7 @@ int ready_tag_left(void)
         rdy_row_t r;
         if (ready_row(i, &r)) {
             char v[64];
-            cut_value(r.value, READY_VALUE_W / SV_CELL, v, sizeof(v));
+            cut_value(r.value, READY_VALUE_CELLS, v, sizeof(v));
             const int w = gfx_text_width(SV_FONT_LABEL, v, 1);
             widest = (w > widest) ? w : widest;
         }
@@ -414,7 +574,7 @@ static void draw_row(gfx_canvas_t *c, int i, int left)
     draw_tag(c, left, a.y + (READY_ROW_H - READY_TAG_H) / 2,
              s.rdy.pressed == i);
     char v[64];
-    cut_value(r.value, READY_VALUE_W / SV_CELL, v, sizeof(v));
+    cut_value(r.value, READY_VALUE_CELLS, v, sizeof(v));
     gfx_text(c, left + READY_TAG_PAD, ty, v, SV_FONT_LABEL,
              value_color(r.st), 1);
 }

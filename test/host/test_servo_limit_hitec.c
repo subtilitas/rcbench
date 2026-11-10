@@ -10,6 +10,7 @@
  */
 #include "hitec_limit_panel_rig.h"
 
+#include "servo_ready_int.h"
 #include "ui_text.h"
 
 /* Row @p i of the open list. */
@@ -89,6 +90,18 @@ TEST_CASE(a_hitec_start_is_refused_before_a_drive_where_it_cannot_run)
     CHECK(servo_screen_limit_blocked() != NULL);
     CHECK_STR_EQ(servo_screen_limit_blocked(), want);
     CHECK_STR_EQ(want, "HITEC: PULSE MIN/MAX MUST COVER 850-2150us");
+    /* The RANGE row shows its tag with the model's pulses; the band and a
+     * tap keep the whole text. */
+    rdy_row_t r;
+    CHECK(lim_ready_row(LRR_RANGE, &r));
+    CHECK_EQ(r.st, (uint8_t)RDY_BAD);
+    CHECK_STR_EQ(r.why, want);
+    CHECK_STR_EQ(r.value, "NEEDS 850-2150us");
+    ui_text_set_language(UI_LANG_DE);
+    CHECK(lim_ready_row(LRR_RANGE, &r));
+    CHECK_STR_EQ(r.value, "BRAUCHT 850-2150us");
+    CHECK_STR_EQ(r.why, "HITEC: PULS MIN/MAX MUSS 850-2150us ABDECKEN");
+    ui_text_set_language(UI_LANG_EN);
     hl_hold_start();
     CHECK(!servo_screen_limit_running());
     CHECK_EQ(g_drv.d_writes, 0u);

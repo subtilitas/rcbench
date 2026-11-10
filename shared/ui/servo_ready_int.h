@@ -52,6 +52,7 @@
 #include "servo_start_seq.h"
 #include "servo_test.h"
 #include "touch_types.h"
+#include "ui_text.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -71,6 +72,9 @@ extern "C" {
 #define READY_LABEL_W 100
 /** @brief The state's column, px: 20 cells of 10px. */
 #define READY_VALUE_W 204
+/** @brief The cells a state shows, READY_VALUE_W in cells of 10px: a gate
+ *         text longer shows its tag (ready_tag()). */
+#define READY_VALUE_CELLS 20
 /** @brief A state's tag: its height, px, centred on the row. */
 #define READY_TAG_H 24
 /** @brief The room left and right of the state's text in its tag, px. */
@@ -129,6 +133,56 @@ typedef struct {
 } svs_ready_t;
 
 /* --- servo_ready.c: the card ---------------------------------------------- */
+
+/* --- servo_ready.c: a row's tag -------------------------------------------- */
+
+/** @brief Where a gate text of the tag table comes from. */
+typedef enum {
+    RDY_TXT_UI = 0, /**< a UI_TEXT entry, as TR() gives it            */
+    RDY_TXT_SERVO,  /**< a servo text, as ui_servo_str() gives it     */
+    RDY_TXT_FMT,    /**< a UI_TEXT format of two numbers, in a buffer
+                         its owner keeps                               */
+} rdy_txt_t;
+
+/** @brief A gate text longer than a row's READY_VALUE_CELLS and the tag
+ *         the row shows for it: the alert band and a tap keep the text. */
+typedef struct {
+    uint8_t      src;    /**< rdy_txt_t                                   */
+    uint16_t     full;   /**< the text: a ui_text_id_t, a servo_str_t for
+                              RDY_TXT_SERVO                               */
+    ui_text_id_t tag;    /**< the tag; for RDY_TXT_FMT a format of the
+                              text's two numbers                          */
+    uint16_t     max[2]; /**< RDY_TXT_FMT: the largest each number takes */
+    /** @brief RDY_TXT_FMT: whether @p why is the text, and its numbers. */
+    bool (*nums)(const char *why, unsigned v[2]);
+    /** @brief RDY_TXT_FMT: the tag of numbers @p v into @p buf, @p n bytes. */
+    void (*fmt)(char *buf, size_t n, const unsigned v[2]);
+} rdy_tag_t;
+
+/** @brief The tag table: every gate text a READY row can show that is
+ *         longer than READY_VALUE_CELLS in a language.
+ *  @param n receives its count  @return the table */
+const rdy_tag_t *ready_tags(size_t *n);
+/**
+ * @brief The state a row shows for gate text @p why: its tag from the
+ *        table, else the text itself.  Texts compare by pointer, the
+ *        table's entry for the language showing.
+ * @param why the gate text, or NULL for ""
+ * @param buf receives the state @param n its size
+ * @return @p buf
+ */
+const char *ready_tag(const char *why, char *buf, size_t n);
+/** @brief Row @p r's reason @p why: its whole text in `why`, its tag in
+ *         `value`.  @param r the row @param why the gate text */
+void ready_set_why(rdy_row_t *r, const char *why);
+/**
+ * @brief The port line as a PORT row shows it: svs_port_line(), with the
+ *        tag of a gate text longer than the row (PINS NOT READ).
+ * @param b receives the state @param n its size
+ * @return the line's whole text where it is a warning: the gate text
+ *         where @p b holds its tag, else @p b; NULL for no warning
+ */
+const char *ready_port_line(char *b, size_t n);
 
 /** @brief The card and the sequence at the screen's start. */
 void ready_init(void);
@@ -363,6 +417,11 @@ void lim_ready_tap(int i);
 /** @brief lim_write_why() less the PROG 5V the hold switches on: why a run
  *         started by the hold writes nothing.  @return the line, or NULL */
 const char *lim_write_why_held(void);
+/** @brief Whether @p why is the gate's Hitec range text, PULSE MIN and MAX
+ *         short of the model's travel, and the two pulses it names.
+ *  @param why a gate text  @param v receives the pulses, us
+ *  @return true then */
+bool lim_hitec_nums(const char *why, unsigned v[2]);
 
 /* --- servo_drive_ready.c: LIVE's, SWEEP's and RUDDER's rows -------------- */
 
@@ -387,6 +446,11 @@ int drive_ready_count(void);
 /** @brief Card row @p i as drawn now.  @param i the row
  *  @param r receives it  @return false past the last */
 bool drive_ready_row(int i, rdy_row_t *r);
+/** @brief The row a text the card shows as a row's state belongs to.
+ *  @param why a text drive_ready_row() puts in a row's `why`
+ *  @return the row; DRR_COUNT for a text of none, or one whose row shows
+ *          its own state */
+drive_row_t drive_row_of(const char *why);
 /** @brief The first row that refuses ARM, and its text.
  *  @param row receives its card row; may be NULL
  *  @return the text; NULL when ARM may be held */

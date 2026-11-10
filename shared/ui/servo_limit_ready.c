@@ -20,6 +20,9 @@
  * OUTPUTS the hold leaves it off.  On the carrier's port an input supply
  * the PD mini reads low (prog5v_box_input_why()) is the first check, red
  * on the supply row as `INPUT 5.1V < 15V`: M7 makes no 5V from it.
+ * A red row shows its text's tag where the text is longer than the
+ * row's 20 cells (ready_tag()): `NEEDS 850-2150us` for PULSE MIN and MAX
+ * short of a Hitec model's travel.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -68,6 +71,8 @@ enum {
 
 /** @brief LK_HITEC's text, with the model's pulses in it. */
 static char s_hitec_why[72];
+/** @brief Those pulses, us: the lower, the upper. */
+static unsigned s_hitec_us[2];
 
 /** @brief Whether the PD mini answers with its output on.
  *  @return true then */
@@ -141,9 +146,10 @@ static const char *check(int k)
         if (lim_reads() && servo_limrun_family_pulses(lim_family(), p)
             && (s.min_us * 10u > p[SERVO_LIMRUN_P_LOWER]
                 || s.max_us * 10u < p[SERVO_LIMRUN_P_UPPER])) {
+            s_hitec_us[0] = (unsigned)(p[SERVO_LIMRUN_P_LOWER] / 10u);
+            s_hitec_us[1] = (unsigned)(p[SERVO_LIMRUN_P_UPPER] / 10u);
             snprintf(s_hitec_why, sizeof(s_hitec_why), TR(SV_LIM_HITEC_RANGE),
-                     (unsigned)(p[SERVO_LIMRUN_P_LOWER] / 10u),
-                     (unsigned)(p[SERVO_LIMRUN_P_UPPER] / 10u));
+                     s_hitec_us[0], s_hitec_us[1]);
             return s_hitec_why;
         }
         return NULL;
@@ -169,6 +175,16 @@ const char *lim_blocked(void)
         }
     }
     return NULL;
+}
+
+bool lim_hitec_nums(const char *why, unsigned v[2])
+{
+    if (why == NULL || why != s_hitec_why) {
+        return false;
+    }
+    v[0] = s_hitec_us[0];
+    v[1] = s_hitec_us[1];
+    return true;
 }
 
 /* -------------------------------------------------------------- the rows */
@@ -344,7 +360,7 @@ static void met_value(int i, char *b, size_t n, uint8_t *st)
     b[0] = '\0';
     switch ((limrun_row_t)i) {
     case LRR_PORT:
-        (void)svs_port_line(b, n);
+        (void)ready_port_line(b, n);
         break;
     case LRR_SERVO: {
         if (!reads_now()) {
@@ -487,13 +503,9 @@ bool lim_ready_row(int i, rdy_row_t *r)
                  arm ? (s.gate.arm_asked ? TR(RDY_ARMING) : TR(RDY_SEQ_ARM))
                      : TR(RDY_SEQ_ON));
     } else if (mine != NULL) {
-        r->st  = (uint8_t)RDY_BAD;
-        r->why = mine;
-        if (prog5v_box_input_is(mine)) {
-            (void)prog5v_box_input_tag(r->value, sizeof(r->value));
-        } else {
-            snprintf(r->value, sizeof(r->value), "%s", mine);
-        }
+        /* The whole text for the band, its tag on the row. */
+        r->st = (uint8_t)RDY_BAD;
+        ready_set_why(r, mine);
     } else {
         r->st = (uint8_t)RDY_OK;
         met_value(i, r->value, sizeof(r->value), &r->st);

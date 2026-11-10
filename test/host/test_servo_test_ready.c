@@ -488,7 +488,7 @@ TEST_CASE(a_port_without_its_pulse_reads_amber_on_safe_and_red_armed)
     CHECK(test_ready_row(TRR_PORT, &r));
     CHECK_EQ(r.st, (uint8_t)RDY_BAD);
     CHECK(r.why == TR(SV_LIM_PWM_OFF_ARMED));
-    CHECK_STR_EQ(r.value, TR(SV_LIM_PWM_OFF_ARMED));
+    CHECK_STR_EQ(r.value, TR(RDY_TAG_PWM_DISARM));     /* its tag */
     CHECK(test_hold_blocked(&row) == TR(SV_LIM_PWM_OFF_ARMED));
     CHECK_EQ(row, TRR_PORT);
 

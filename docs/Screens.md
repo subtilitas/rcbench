@@ -2117,6 +2117,11 @@ The READY card names what the hold needs, one row each:
 A row reads red whenever one of its texts refuses the hold, and the hold is
 then grey. A tap on PORT opens the port list; a tap on STEPS opens the
 automatic test's list, or HV SERVOS ONLY for a step above 6.0V.
+A red text longer than the row's 20 cells shows a tag: `FIXED 5V: NO
+STEPS`, `NOT ANSWERING`, `FED FROM ELSEWHERE`, `OUTSIDE LIMITS`, `PORT PWM
+OFF: DISARM`, `SERVO PROGRAMMING`, `TEST RUNNING`, `WRITING REPORT`. The
+alert band names the whole text
+([Servo: AUTO end points](Servo.md#auto-end-points)).
 
 The STALL AT note identifies thresholds no reading can exceed. It shows
 `STALL AT 2.00A cannot be reached: current limit 2.00A` when STALL AT is at

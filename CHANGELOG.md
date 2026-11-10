@@ -74,8 +74,8 @@ history is in git.
 - RUDDER AUTO refuses the IMU's AXIS Z (yaw) in 6-AXIS and in 9-AXIS. On
   a BWT901CL yaw drifts 2.4° in 100s in 6-AXIS; in 9-AXIS it rose 24°
   while the rudder moved and settled 38° off with the servo unpowered;
-  the tolerance is 0.5°. The ANGLE row reads `IMU YAW REFUSED: HINGE ON X
-  OR Y` in red, ARM + START is refused, and a tap opens `TURN THE IMU 90°
+  the tolerance is 0.5°. The ANGLE row reads `YAW REFUSED` in red, the
+  alert band `IMU YAW REFUSED: HINGE ON X OR Y`, ARM + START is refused, and a tap opens `TURN THE IMU 90°
   SO THE HINGE IS X OR Y` with `USE IMU AXIS X (ROLL)` and `USE IMU AXIS
   Y (PITCH)`, each written and saved as SETUP > SENSORS does. Roll and
   pitch stay allowed in either algorithm. The panel sends IMU algorithm
@@ -211,6 +211,18 @@ history is in git.
 
 ### Fixed
 
+- A red READY row on RUDDER AUTO, LIMIT RUN, TEST, LIVE, SWEEP, RUDDER,
+  KST and HITEC cut a gate text longer than its 20 cells after a whole
+  word: `IMU YAW REFUSED:`, `SET ZERO WITH THE`, in German `IMU-GIEREN
+  GESPERRT:`. Each such text has a tag of 20 cells or fewer in English and
+  German, its own text entry, which the row shows: `YAW REFUSED`, `ZERO
+  NOT SET`, `BELOW 3.0V`, `NEEDS 850-2150us` for a Hitec model's travel.
+  The alert band and a tap on the row keep the whole text. One table in
+  `servo_ready.c` holds the tags for every card, and
+  `test_servo_ready_tags` fails on a text that can reach a row and is
+  longer than 20 cells after its tag. The PORT row's port line is the PORT
+  button's line of up to 25 cells, and a row still cuts it after a whole
+  word: `PORT 1 GPIO 13 PWM OFF` reads `PORT 1 GPIO 13 PWM`.
 - A KST or Hitec CONNECT on the rbmod carrier with an input supply of 5V
   instead of 15V did nothing and said nothing: M7 cannot make the ports'
   5V from it. CONNECT is refused with the input named while the PD mini
