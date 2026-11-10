@@ -39,7 +39,7 @@ Unavailable buttons are dimmed. Tap one to see the reason above the button row.
 | RESCAN | looks at the card slot and reads each pane again at the page it shows. The top row and the selected entry stay; when the selected entry has gone from the card, nothing is selected, as after DELETE |
 | COPY | copies the selected file into the other pane's folder. Folders are not copied |
 | MOVE | moves the selected file or folder into the other pane's folder |
-| RENAME | opens the keyboard with the entry's name |
+| RENAME | opens the keyboard with the entry's name, the cursor before a file's extension and at the end of a folder's name |
 | DELETE | asks first. A run's CSV file takes its report along. A folder is deleted only when it is empty |
 | NEW | FOLDER or TEXT FILE, then the keyboard for the name |
 | INFO | name, folder, kind, size or entries, time and rule |
@@ -53,6 +53,13 @@ An existing name is never overwritten: `NOTES.TXT already exists there.` A copy 
 ![The keyboard for a new text file](view:files-name)
 
 The keyboard accepts names of up to 59 bytes; each of Ä Ö Ü ä ö ü ß uses 2 bytes. OK rejects empty names, any of `" * / : < > ? \ |`, leading or trailing spaces or full stops, and device names such as `CON` or `COM1`. The reason appears beside the title.
+
+![RENAME with " 2" typed before the extension](view:files-rename-cursor)
+
+- A key types at the cursor, the bar in the name. DEL takes the character before it.
+- `<-` and `->` move the cursor one character; Ä or ß is one character. A tap in the name puts the cursor in the nearest gap, a tap right of the name at its end.
+- CLR empties the name. A key that would take the name past 59 bytes types nothing.
+- A name longer than the field's 48 characters shows the part around the cursor.
 
 ## The text viewer
 

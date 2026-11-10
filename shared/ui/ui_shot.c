@@ -314,7 +314,7 @@ void ui_shot_poll(void)
                            SHOT_PREFIX, number);
             (void)snprintf(s.tk.text, sizeof(s.tk.text), "%s", s.fallback);
             s.tk.len = (int)strlen(s.tk.text);
-            ++s.tk.revision;
+            ui_textkey_set_cursor(&s.tk, s.tk.len);   /* a render shows it */
         }
         return;
     }

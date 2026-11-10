@@ -579,6 +579,8 @@ SCREENS = {
     "files-info-folder": ("files-info-folder.png", "files", "dark"),
     "files-new": ("files-new.png", "files", "dark"),
     "files-name": ("files-name.png", "files", "dark"),
+    # RENAME of NOTES.TXT with " 2" typed at the cursor, before ".TXT".
+    "files-rename-cursor": ("files-rename-cursor.png", "files", "dark"),
     "files-nocard": ("files-nocard.png", "files", "dark"),
     "files-paged": ("files-paged.png", "files", "dark"),
     "files-conf": ("files-conf.png", "files", "dark"),

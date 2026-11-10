@@ -39,7 +39,7 @@ Nicht verfügbare Tasten sind gedimmt. Tippe darauf, um den Grund über der Tast
 | AKTUALISIEREN | Prüft den Karteneinschub und liest beide Spalten auf ihrer aktuellen Seite neu ein. Oberste Zeile und Auswahl bleiben erhalten. Fehlt der gewählte Eintrag auf der Karte, wird die Auswahl wie nach LÖSCHEN aufgehoben. |
 | KOPIEREN | Kopiert die gewählte Datei in den Ordner der anderen Spalte. Ordner werden nicht kopiert. |
 | VERSCHIEBEN | Verschiebt die gewählte Datei oder den gewählten Ordner in den Ordner der anderen Spalte. |
-| UMBENENNEN | Öffnet die Tastatur mit dem Namen des Eintrags. |
+| UMBENENNEN | Öffnet die Tastatur mit dem Namen des Eintrags, den Cursor bei einer Datei vor der Endung, bei einem Ordner am Ende. |
 | LÖSCHEN | Fragt vor dem Löschen nach. Beim Löschen einer Lauf-CSV wird der zugehörige Bericht mitgelöscht. Ordner müssen leer sein. |
 | NEU | Bietet ORDNER oder TEXTDATEI und öffnet danach die Tastatur für den Namen. |
 | INFO | Zeigt Name, Ordner, Art, Größe oder Anzahl der Einträge, Zeit und Regel. |
@@ -53,6 +53,13 @@ Ein vorhandener Name wird nie überschrieben: `NOTES.TXT ist dort bereits vorhan
 ![Die Tastatur für eine neue Textdatei](view:files-name)
 
 Die Tastatur nimmt Namen mit bis zu 59 Bytes an; Ä Ö Ü ä ö ü ß belegen je 2 Bytes. OK lehnt leere Namen, eines der Zeichen `" * / : < > ? \ |`, Leerzeichen oder Punkte am Anfang oder Ende sowie Gerätenamen wie `CON` oder `COM1` ab. Der Grund erscheint neben dem Titel.
+
+![UMBENENNEN mit " 2" vor der Endung eingegeben](view:files-rename-cursor)
+
+- Eine Taste schreibt am Cursor, dem Strich im Namen. DEL nimmt das Zeichen vor ihm.
+- `<-` und `->` bewegen den Cursor um ein Zeichen; Ä oder ß ist ein Zeichen. Ein Tippen in den Namen setzt den Cursor in die nächste Lücke, ein Tippen rechts vom Namen an sein Ende.
+- CLR leert den Namen. Eine Taste, die den Namen über 59 Bytes brächte, schreibt nichts.
+- Ein Name, der länger ist als die 48 Zeichen des Feldes, zeigt den Teil um den Cursor.
 
 ## Der Textbetrachter
 

@@ -240,7 +240,10 @@ file open (`fm_gate()`), the bench's folders, the servo programmer's record and 
 the logger writes refused by `fm_rules.c`; a copy stops before its next 16KiB chunk on
 CANCEL, ARMED or a run that starts logging. Opens from LOGS and from SETUP; OPEN hands a CSV
 file in LOGS' three folders to LOGS and opens a text file, a report among them, in the
-read-only text viewer.
+read-only text viewer. The name keyboard of RENAME, NEW and the screenshot popup edits at a
+cursor (`shared/ui/ui_textkey_cursor.c`; `test_textkey_cursor`, `test_files_ops`): `<-` and
+`->`, a tap in the field, typing and DEL at the cursor, a window of 48 characters that
+follows it, RENAME of a file starting before the last full stop.
 
 The requests run on the panel's task `cardjob` (`firmware/panel/main/panel_files.c`), not
 host-tested; after each job the logger forgets its folders' numbering
@@ -1308,7 +1311,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 517 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 518 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1381,7 +1384,7 @@ The host suite is 517 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_fm_recheck`, `test_fm_req`, `test_files_screen`, `test_files_ops`, `test_files_open`,
 `test_files_view`, `test_files_edit`, `test_files_save`, `test_files_changed`,
 `test_files_rescan`, `test_logs_strip`, `test_textkey_editor`, `test_textkey_see`,
-`test_files_layout`, `test_fault_log`, `test_logwriter`, `test_servo_runlog`,
+`test_textkey_cursor`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_servo_runlog`,
 `test_servo_runlog_cols`, `test_servo_log_figures`, `test_log_cadence`, `test_perf_watch`,
 `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`,
 `test_kst_pio`, `test_kst_port`, `test_kst_port_cut`, `test_kst_link`, `test_prog_port`,
@@ -1474,6 +1477,12 @@ every printable character on one of its 4 layers, the digits one layer key away.
 `test_textkey_see` holds Keyboard see-through: the steps OFF, 25% and 50%, the default, a
 save and a restart, a stored value off the list, the share of the text behind that shows
 through keys and gaps, opaque labels, and the opaque keyboard of every other kind.
+`test_textkey_cursor` holds the file-name keyboard's cursor: typing and DEL at the start, the
+middle and the end, `<-` and `->` over Ä and ß, a key refused at 59 bytes with the cursor
+kept, CLR and an empty name, field taps left of, inside and right of the text and on German
+letters, a press slid off and a second contact, the window of a 59-character name, the bar
+before its cell, the start before the last full stop, a refused name's text and cursor kept,
+the bottom row's columns and faces, and the keyboards with no cursor.
 `test_menu_openers` drives the openers through the router: SERVO's caps and AS5600 buttons,
 UPDATES' and LOGS' buttons and SETUP's tile to WI-FI and TARGET in a programmer asking for a
 port; each one's way back to the task and page it was tapped on, the refusal while ARMED, a
@@ -1883,8 +1892,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 924 committed screenshots to the current render,
-462 in English and the same 462 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` holds 926 committed screenshots to the current render,
+463 in English and the same 463 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -1953,7 +1962,8 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/prog_choice.c` | 127 | 126 | 99.2% |
 | `shared/ui/ui_keypad.c` | 290 | 288 | 99.3% |
 | `shared/ui/ui_setting_keypad.c` | 118 | 115 | 97.5% |
-| `shared/ui/ui_textkey.c` | 523 | 509 | 97.3% |
+| `shared/ui/ui_textkey.c` | 579 | 565 | 97.6% |
+| `shared/ui/ui_textkey_cursor.c` | 111 | 109 | 98.2% |
 | `shared/ui/ui_shot.c` | 245 | 245 | 100.0% |
 | `shared/ui/shot_gate.c` | 59 | 59 | 100.0% |
 | `shared/ui/shot_hold.c` | 67 | 67 | 100.0% |
@@ -2023,7 +2033,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/log_viewer_events.c` | 451 | 439 | 97.3% |
 | `shared/ui/logs_strip.c` | 40 | 37 | 92.5% |
 | `shared/ui/log_select.c` | 56 | 56 | 100.0% |
-| `shared/ui/files_screen.c` | 691 | 666 | 96.4% |
+| `shared/ui/files_screen.c` | 693 | 668 | 96.4% |
 | `shared/ui/layout_screen.c` | 141 | 140 | 99.3% |
 | `shared/ui/files_draw.c` | 341 | 330 | 96.8% |
 | `shared/ui/files_events.c` | 228 | 227 | 99.6% |
@@ -2295,7 +2305,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **88714** | **86927** | **98.0%** |
+| **total** | **88883** | **87094** | **98.0%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

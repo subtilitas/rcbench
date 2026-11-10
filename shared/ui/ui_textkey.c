@@ -85,6 +85,13 @@ static const int k_search_span[] = { 3, 2, 3, 2 };
  *         SHOW: where each starts, two columns each, SHOW second from the
  *         left. */
 static const int k_secret_col[] = { 0, 4, 6, 8, 2 };
+/** @brief The file name's bottom row, in key order SPACE, CLR, CANCEL, OK,
+ *         "<-", "->": the column each starts at, and its span. */
+static const int k_file_col[] = { 0, 3, 6, 8, 4, 5 };
+/** @brief How many columns each of them spans. */
+static const int k_file_span[] = { 3, 1, 2, 2, 1, 1 };
+/** @brief The press on the text field, a file name's: no key. */
+#define TK_FIELD UI_TK_ALL
 /** @brief The editor's bottom row, in key order SPACE, ENTER, "<-", "->",
  *         DONE: the column each starts at, and its span. */
 static const int k_editor_col[] = { 2, 0, 6, 7, 8 };
@@ -186,6 +193,7 @@ void ui_textkey_open_file(ui_textkey_t *k, gfx_rect_t area,
     memcpy(k->text, (text != NULL) ? text : "", keep);
     k->text[keep] = '\0';
     k->len = (int)keep;
+    ui_textkey_set_cursor(k, k->len);
 }
 
 void ui_textkey_open_editor(ui_textkey_t *k, gfx_rect_t area)
@@ -346,6 +354,9 @@ const char *ui_textkey_key_label(const ui_textkey_t *k, int key)
     if (k != NULL && k->editor) {
         return editor_label(k, key);
     }
+    if (k != NULL && k->file && (key == UI_TK_LEFT || key == UI_TK_RIGHT)) {
+        return (key == UI_TK_LEFT) ? "<-" : "->";
+    }
     if (k != NULL && k->wifi) {
         if (key == UI_TK_SHOW) {
             return k->secret ? (k->show ? TR(TK_HIDE) : TR(TK_SHOW)) : "";
@@ -387,10 +398,13 @@ gfx_rect_t ui_textkey_key_rect(const ui_textkey_t *k, int key)
 {
     const bool secret = k != NULL && k->wifi && k->secret;
     const bool editor = k != NULL && k->editor;
-    const int last = editor ? UI_TK_DONE : secret ? UI_TK_SHOW : UI_TK_KEYS - 1;
+    const bool file = k != NULL && k->file && !editor;
+    const int last = editor ? UI_TK_DONE : file ? UI_TK_RIGHT
+                     : secret ? UI_TK_SHOW : UI_TK_KEYS - 1;
     if (k == NULL || key < 0 || key > last
         || (editor && key >= UI_TEXTKEY_CHARS && editor_slot(key) < 0)
-        || (editor && key < TK_EDITOR_FIRST)) {
+        || (editor && key < TK_EDITOR_FIRST)
+        || (file && key > UI_TK_OK && key < UI_TK_LEFT)) {
         return (gfx_rect_t){ 0, 0, 0, 0 };
     }
     const int left   = k->area.x + TK_PAD;
@@ -418,6 +432,13 @@ gfx_rect_t ui_textkey_key_rect(const ui_textkey_t *k, int key)
         row  = rows - 1;
         col  = k_editor_col[e];
         span = k_editor_span[e];
+    } else if (file) {
+        /* SPACE, CLR, CANCEL and OK, then "<-" and "->": 0 to 5. */
+        const int f = (key >= UI_TK_LEFT) ? key - UI_TK_LEFT + 4
+                                          : key - UI_TEXTKEY_CHARS;
+        row  = TK_ROWS - 1;
+        col  = k_file_col[f];
+        span = k_file_span[f];
     } else if (secret) {
         row  = TK_ROWS - 1;
         col  = k_secret_col[key - UI_TEXTKEY_CHARS];
@@ -439,13 +460,17 @@ gfx_rect_t ui_textkey_key_rect(const ui_textkey_t *k, int key)
 }
 
 /**
- * @brief @p ch after the text, while it is shorter than its most.
+ * @brief @p ch after the text, or at a file name's cursor, while it is
+ *        shorter than its most.
  * @param k  The keyboard.
  * @param ch The character.
  */
 static void add(ui_textkey_t *k, char ch)
 {
-    if (k->len < k->max_len) {
+    if (k->file) {
+        const char one[2] = { ch, '\0' };
+        (void)ui_textkey_insert(k, one);
+    } else if (k->len < k->max_len) {
         k->text[k->len++] = ch;
         k->text[k->len] = '\0';
     }
@@ -503,13 +528,14 @@ static ui_textkey_result_t press(ui_textkey_t *k, int key, char *out,
     if (k->editor) {
         return editor_press(k, key);
     }
+    if (k->file && (key == UI_TK_LEFT || key == UI_TK_RIGHT)) {
+        ui_textkey_move(k, (key == UI_TK_LEFT) ? -1 : 1);
+        return UI_TEXTKEY_NONE;
+    }
     if (key == UI_TK_DEL) {
-        /* A file name's last character, also one of two bytes. */
-        while (k->file && k->len > 1
-               && ((unsigned char)k->text[k->len - 1] & 0xC0u) == 0x80u) {
-            k->text[--k->len] = '\0';
-        }
-        if (k->len > 0) {
+        if (k->file) {
+            ui_textkey_backspace(k);   /* before the cursor, all its bytes */
+        } else if (k->len > 0) {
             k->text[--k->len] = '\0';
         }
         return UI_TEXTKEY_NONE;
@@ -544,6 +570,8 @@ static ui_textkey_result_t press(ui_textkey_t *k, int key, char *out,
     case UI_TK_CLR:
         k->len = 0;
         k->text[0] = '\0';
+        k->cur = 0;
+        k->view = 0;
         return UI_TEXTKEY_NONE;
     case UI_TK_CANCEL:
         ui_textkey_close(k);
@@ -631,6 +659,13 @@ ui_textkey_result_t ui_textkey_event(ui_textkey_t *k, const touch_event_t *evt,
                 break;
             }
         }
+        /* A file name's text field takes a press too: it places the
+         * cursor. */
+        if (k->pressed < 0 && k->file && !k->editor
+            && gfx_rect_contains(ui_textkey_field_rect(k), x, y)) {
+            k->pressed  = TK_FIELD;
+            k->press_id = evt->point.id;
+        }
         ++k->revision;
         return UI_TEXTKEY_NONE;
     }
@@ -643,8 +678,14 @@ ui_textkey_result_t ui_textkey_event(ui_textkey_t *k, const touch_event_t *evt,
     ++k->revision;
     /* A press that slid off its key is not a press on it, and neither is
      * a release the finger did not make. */
-    if (!touch_event_is_tap_up(evt)
-        || !gfx_rect_contains(ui_textkey_key_rect(k, key), x, y)) {
+    const gfx_rect_t on = (key == TK_FIELD) ? ui_textkey_field_rect(k)
+                                            : ui_textkey_key_rect(k, key);
+    if (!touch_event_is_tap_up(evt) || !gfx_rect_contains(on, x, y)) {
+        return UI_TEXTKEY_NONE;
+    }
+    if (key == TK_FIELD) {
+        k->refused = false;
+        ui_textkey_tap_text(k, x);
         return UI_TEXTKEY_NONE;
     }
     return press(k, key, out, n);
@@ -686,20 +727,32 @@ static const char *file_why(uint8_t why)
     }
 }
 
-/**
- * @brief The face of the text field: 20 x 36 when UI_TEXTKEY_MAX
- *        characters and the caret fit @p box with 10px each side and the
- *        face's height fits it, else 16 x 28.  A Wi-Fi text longer than the
- *        field shows its end in either.
- * @param box The field.
- * @return The face.
- */
-static const gfx_font_t *entry_face(gfx_rect_t box)
+gfx_rect_t ui_textkey_field_rect(const ui_textkey_t *k)
+{
+    if (k == NULL || k->editor) {
+        return (gfx_rect_t){ 0, 0, 0, 0 };
+    }
+    const gfx_rect_t a = k->area;
+    return (gfx_rect_t){ (int16_t)(a.x + TK_PAD),
+                         (int16_t)(a.y + TK_HDR + TK_GAP),
+                         (int16_t)(a.w - 2 * TK_PAD), TK_ENTRY_H };
+}
+
+const gfx_font_t *ui_textkey_field_face(const ui_textkey_t *k)
 {
     const gfx_font_t *big = &gfx_font_20x36;
-    return ((UI_TEXTKEY_MAX + 1) * big->width + 20 <= box.w
+    const gfx_rect_t box = ui_textkey_field_rect(k);
+    return ((UI_TEXTKEY_MAX + 1) * big->width + 2 * UI_TEXTKEY_FIELD_IN
+                <= box.w
             && big->height <= box.h)
                ? big : &gfx_font_16x28;
+}
+
+int ui_textkey_field_cells(const ui_textkey_t *k)
+{
+    const int cells = (ui_textkey_field_rect(k).w - 2 * UI_TEXTKEY_FIELD_IN)
+                      / ui_textkey_field_face(k)->width;
+    return (cells < 1) ? 1 : cells;
 }
 
 /**
@@ -783,6 +836,8 @@ const gfx_font_t *ui_textkey_word_font(const ui_textkey_t *k)
 }
 
 static void draw_field(const ui_textkey_t *k, gfx_canvas_t *c);
+static void draw_file_text(const ui_textkey_t *k, gfx_canvas_t *c,
+                           gfx_rect_t in, const gfx_font_t *ef);
 static void draw_keys(const ui_textkey_t *k, gfx_canvas_t *c);
 static void draw_glass(const ui_textkey_t *k, gfx_canvas_t *c);
 
@@ -844,19 +899,24 @@ static void draw_field(const ui_textkey_t *k, gfx_canvas_t *c)
                            : ui_theme_color(UI_C_TEXT_DIM),
                 1, GFX_ALIGN_RIGHT);
 
-    const gfx_rect_t box = { (int16_t)(a.x + TK_PAD),
-                             (int16_t)(a.y + TK_HDR + TK_GAP),
-                             (int16_t)(a.w - 2 * TK_PAD), TK_ENTRY_H };
+    const gfx_rect_t box = ui_textkey_field_rect(k);
     gfx_fill_rect(c, box.x, box.y, box.w, box.h,
                   ui_theme_color(UI_C_PANEL_SUNK));
     /* The text in 20 x 36, or in 16 x 28 where a name of UI_TEXTKEY_MAX
      * characters and the caret would not fit the field. */
-    const gfx_font_t *ef = entry_face(box);
+    const gfx_font_t *ef = ui_textkey_field_face(k);
+    const gfx_rect_t in = { (int16_t)(box.x + UI_TEXTKEY_FIELD_IN), box.y,
+                            (int16_t)(box.w - 2 * UI_TEXTKEY_FIELD_IN),
+                            box.h };
     char shown[UI_TEXTKEY_PASS_MAX + 2];
+    if (k->file) {
+        draw_file_text(k, c, in, ef);
+        return;
+    }
     if (k->wifi) {
         /* A password as "*" unless shown; the end of a text longer than
          * the field, a cell of the face a character. */
-        int fit = (box.w - 20) / ef->width - 1;
+        int fit = ui_textkey_field_cells(k) - 1;
         fit = (fit < 1) ? 1 : fit;
         const int from = (k->len > fit) ? k->len - fit : 0;
         int n = 0;
@@ -868,9 +928,38 @@ static void draw_field(const ui_textkey_t *k, gfx_canvas_t *c)
     } else {
         snprintf(shown, sizeof(shown), "%s_", k->text);   /* the caret */
     }
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)(box.x + 10), box.y,
-                                 (int16_t)(box.w - 20), box.h },
-                shown, ef, ui_theme_color(UI_C_TEXT), 1, GFX_ALIGN_LEFT);
+    gfx_text_in(c, in, shown, ef, ui_theme_color(UI_C_TEXT), 1,
+                GFX_ALIGN_LEFT);
+}
+
+/**
+ * @brief A file name's text: the window of ui_textkey_field_cells()
+ *        characters from ui_textkey_view(), cut between two characters,
+ *        and the cursor as the text editor draws it, a 2px bar in the
+ *        accent before its cell, under the text so a glyph stays whole.
+ * @param k  The keyboard, opened for a file name.
+ * @param c  Canvas.
+ * @param in The field less its 10px each side.
+ * @param ef The field's face.
+ */
+static void draw_file_text(const ui_textkey_t *k, gfx_canvas_t *c,
+                           gfx_rect_t in, const gfx_font_t *ef)
+{
+    const int view = ui_textkey_view(k);
+    const char *from = k->text;
+    for (int i = 0; i < view && *from != '\0'; ++i) {
+        (void)gfx_utf8_next(&from);
+    }
+    char shown[UI_TEXTKEY_PASS_MAX + 1];
+    const size_t cut = gfx_text_prefix(from, ui_textkey_field_cells(k));
+    memcpy(shown, from, cut);
+    shown[cut] = '\0';
+    const int cell = ui_textkey_cursor_chars(k) - view;
+    gfx_fill_rect(c, in.x + cell * ef->width - 1,
+                  in.y + (in.h - ef->height) / 2, 2, ef->height,
+                  ui_theme_color(UI_C_ACCENT));
+    gfx_text_in(c, in, shown, ef, ui_theme_color(UI_C_TEXT), 1,
+                GFX_ALIGN_LEFT);
 }
 
 /**
