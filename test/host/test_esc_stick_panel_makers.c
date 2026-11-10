@@ -26,7 +26,7 @@ TEST_CASE(makers_are_alphabetical_and_count_their_models)
     esc_stick_panel_bench(0u, false, 0u, 0u, false);
     open_stick();
     CHECK_EQ(esc_stick_panel_level(), 0);
-    CHECK_EQ(listed(), 20);
+    CHECK_EQ(listed(), 21);
     for (int i = 1; i < listed(); ++i) {
         const char *a = esc_stick_panel_maker_at(i - 1);
         const char *b = esc_stick_panel_maker_at(i);
@@ -44,7 +44,7 @@ TEST_CASE(makers_are_alphabetical_and_count_their_models)
         }
     }
     CHECK_STR_EQ(esc_stick_panel_maker_at(0), "Align");
-    CHECK(esc_stick_panel_maker_at(20) == NULL);
+    CHECK(esc_stick_panel_maker_at(21) == NULL);
     /* Kontronik's models: every model of its 22 families. */
     open_maker("Kontronik");
     CHECK_EQ(esc_stick_panel_level(), 1);
@@ -244,7 +244,7 @@ TEST_CASE(a_card_profile_joins_its_maker)
     CHECK(esc_profiles_override(&other, NULL));
     esc_stick_panel_bench(0u, false, 0u, 0u, false);
     open_stick();
-    CHECK_EQ(listed(), 21);
+    CHECK_EQ(listed(), 22);
     CHECK_STR_EQ(esc_stick_panel_maker_at(1), "Bench Test");
     open_maker("Kontronik");
     unsigned models = 0;

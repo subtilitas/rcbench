@@ -7,26 +7,26 @@ family of ESCs through its throttle-stick menu. It defines the menu entry
 procedure, the beep pattern for announcing numbers, and the available
 items and values. [Stick programming](StickProgramming.md) uses this data:
 you choose an ESC and the values to change, and the bench drives the
-throttle and counts the beeps in the supply current. It can run 24 of the
-72 profiles.
+throttle and counts the beeps in the supply current. It can run 25 of the
+73 profiles.
 
 ## What is in the set
 
 | | Count |
 | --- | --- |
-| Profiles (families) | 72 |
-| Models | 451 |
-| Brands | 20 |
-| Menu items | 360 |
+| Profiles (families) | 73 |
+| Models | 457 |
+| Brands | 21 |
+| Menu items | 370 |
 
 | Who can run a profile | Profiles | Models |
 | --- | --- | --- |
-| The bench alone: throttle signal and power | 44 | 340 |
+| The bench alone: throttle signal and power | 45 | 346 |
 | A person sets a jumper, presses a button or reads an LED | 26 | 108 |
 | of those, with the steps listed in `manual` | 24 | 88 |
 | Nobody: the manual gives no usable procedure | 2 | 3 |
 
-Every profile is `"verified": false`. The profiles come from 153 manuals and
+Every profile is `"verified": false`. The profiles come from 154 manuals and
 were written without an ESC on a bench. No manual states a beep length, a
 gap or a loop time in milliseconds, so the corresponding timing fields
 remain null until a bench recording supplies measurements.
@@ -98,8 +98,8 @@ and the English shows in German too. The crumb, the model rows and the
 pop-ups of ESC STICK show `family_de` where it exists and the interface is
 German, and `family` otherwise. Brand and model names and the terms that stay
 English (`brushed`, `brushless`, `sensorless`, `BEC`, `OPTO`, `ESC`) are the
-same in both. A family of names and those terms only has no `family_de`: 36
-of the 72 profiles of record give one. The search field matches `family`, in
+same in both. A family of names and those terms only has no `family_de`: 37
+of the 73 profiles of record give one. The search field matches `family`, in
 both languages.
 
 ### Fields the panel reads

@@ -105,7 +105,7 @@ die ihren Hersteller über 512 Modelle brächte, also führt ein Hersteller
 höchstens 512 Modelle.
 
 Unter der Liste steht, dass kein Profil geprüft ist. Die Anzahl rechts
-daneben bezieht sich auf die gezeigte Ebene: `1-9/20 Hersteller, 6 ausführbar` (die Hersteller mit einem laufenden Modell) oder `1-9 von 82, 40
+daneben bezieht sich auf die gezeigte Ebene: `1-7/21 Hersteller, 7 ausführbar` (die Hersteller mit einem laufenden Modell) oder `1-9 von 82, 40
 ausführbar` für die Modelle eines Herstellers.
 
 ![Die Hersteller](img/de/motor-stick.png)
@@ -673,9 +673,9 @@ höchstens bis 3,0A; jedes Modell im Satz, das einen Strom nennt, ist für
 
 ## Welche Profile laufen
 
-Der Ablauf unterstützt 24 der 72 Profile: 13
+Der Ablauf unterstützt 25 der 73 Profile: 14
 zweistufige und 11 einstufige. Mit den 20V des PD mini und den
-vorgegebenen Grenzen öffnet die Liste 23 davon:
+vorgegebenen Grenzen öffnet die Liste 24 davon:
 hobbywing-skywalker-v2-hv-opto braucht 22,8V. Auch 4 Modellzeilen von
 Familien, die sich öffnen, werden bei 20V abgelehnt, jede mit 22,8V:
 FLYFUN 130A und 160A HV OPTO V5 sowie Gecko 120A und 150A OPTO HV. 4

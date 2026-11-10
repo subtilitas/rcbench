@@ -90,7 +90,7 @@ file that would take its maker past 512 models, so a maker lists at most 512
 models.
 
 The line under the rows says no profile is verified, and the count at its
-right counts the level: `1-9 of 20 makers, 6 can run` (the makers with a
+right counts the level: `1-7 of 21 makers, 7 can run` (the makers with a
 model that runs) or `1-9 of 82, 40 can run` for a maker's models.
 
 ![The makers](img/motor-stick.png)
@@ -598,8 +598,8 @@ rated 4A or more, so only a card profile can meet that rule.
 
 ## Which profiles run
 
-24 of the 72 profiles are of a kind the engine runs: 13 two-stage and 11
-one-stage. With the PD mini's 20V and the default caps the list opens 23 of
+25 of the 73 profiles are of a kind the engine runs: 14 two-stage and 11
+one-stage. With the PD mini's 20V and the default caps the list opens 24 of
 them: hobbywing-skywalker-v2-hv-opto needs 22.8V. 4 model rows of families
 that open are refused at 20V too, each needing 22.8V: FLYFUN 130A and
 160A HV OPTO V5, and Gecko 120A and 150A OPTO HV. 4 rows open with the

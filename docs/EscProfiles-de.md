@@ -8,26 +8,26 @@ Es legt den Einstieg ins Menü, die Pieptonfolgen zur Ausgabe von Zahlen
 sowie die verfügbaren Menüpunkte und Werte fest. Die
 [Stick-Programmierung](StickProgramming-de.md) verwendet diese Daten: Du
 wählst einen ESC und die zu ändernden Werte; der Prüfstand steuert das Gas
-und zählt die Pieptöne im Versorgungsstrom. Er kann 24 der 72 Profile
+und zählt die Pieptöne im Versorgungsstrom. Er kann 25 der 73 Profile
 ausführen.
 
 ## Was im Satz steht
 
 | | Anzahl |
 | --- | --- |
-| Profile (Familien) | 72 |
-| Modelle | 451 |
-| Marken | 20 |
-| Menüpunkte | 360 |
+| Profile (Familien) | 73 |
+| Modelle | 457 |
+| Marken | 21 |
+| Menüpunkte | 370 |
 
 | Wer ein Profil ausführen kann | Profile | Modelle |
 | --- | --- | --- |
-| Der Prüfstand allein: Gassignal und Versorgung | 44 | 340 |
+| Der Prüfstand allein: Gassignal und Versorgung | 45 | 346 |
 | Ein Mensch setzt einen Jumper, drückt einen Taster oder liest eine LED | 26 | 108 |
 | davon mit den Schritten in `manual` | 24 | 88 |
 | Niemand: das Handbuch nennt kein brauchbares Verfahren | 2 | 3 |
 
-Jedes Profil ist `"verified": false`. Die Profile stammen aus 153
+Jedes Profil ist `"verified": false`. Die Profile stammen aus 154
 Handbüchern und sind ohne ESC am Prüfstand entstanden. Kein Handbuch nennt
 eine Pieptondauer, eine Pause oder eine Schleifenzeit in Millisekunden. Die
 zugehörigen Zeitfelder bleiben deshalb null, bis eine Aufzeichnung am
@@ -104,7 +104,7 @@ Modellzeilen und die Pop-ups von ESC STICK zeigen `family_de`, wo es existiert
 und die Oberfläche auf Deutsch eingestellt ist, sonst `family`. Marken- und
 Modellnamen und die Begriffe, die englisch bleiben (`brushed`, `brushless`,
 `sensorless`, `BEC`, `OPTO`, `ESC`), sind in beiden gleich. Eine Familie, die
-nur aus Namen und diesen Begriffen besteht, hat kein `family_de`: 36 der 72
+nur aus Namen und diesen Begriffen besteht, hat kein `family_de`: 37 der 73
 Profile geben eines an. Das Suchfeld vergleicht `family`, in beiden Sprachen.
 
 ### Felder, die das Panel liest
