@@ -228,12 +228,20 @@ void supply_screen_limits_changed(void);
 /*
  * For another screen that sets the supply: SERVO, beside the servo the
  * supply feeds.  The set points and the output stay this screen's, one of
- * each; what SERVO switches on or puts back lands here as if it were
- * done here.
+ * each; what SERVO types, switches on or puts back lands here as if it
+ * were done here.
  */
 
 /** The set points' range: the supply's caps narrowed by the operator's. */
 supply_caps_t supply_screen_caps(void);
+
+/**
+ * @brief Whether a set point typed now waits for a question before it
+ *        reaches the supply: the output live or an ON on its way, and
+ *        SETTINGS, CONFIRM WHILE ON, KEYPAD on.
+ * @return true then
+ */
+bool supply_screen_typed_asks(void);
 
 /** Both set points, typed elsewhere and confirmed where they needed it;
  *  snapped to the caps. */

@@ -65,7 +65,7 @@ overview                         0       0 KiB
 overview-guide                 361      45 KiB
 servo                        2,410     301 KiB
 servo-grip                     589      74 KiB
-servo-current                1,508     188 KiB
+servo-current                1,980     248 KiB
 servo-rudder                 4,101     513 KiB
 servo-test                       0       0 KiB
 servo-kst                        0       0 KiB
@@ -403,7 +403,7 @@ its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,464 | 2,688 |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,480 | 2,672 |
 | `control` | `control_task` | 6,144 | 3,648 | 1,456 |
 | `runlog` | `log_task` | 6,656 | 3,824 | 1,792 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |

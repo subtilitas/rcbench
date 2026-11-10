@@ -18,7 +18,7 @@ The hub holds eight tiles, each opening a screen of its own:
 |---|---|
 | LIVE | the horn's angle, the dial, and the readings COMMANDED, MEASURED and CURRENT along its foot |
 | SWEEP | the dial with SWEEP; its list sets CURVE, SPEED and RANGE ([Servo settings](servo-settings.md)) |
-| TEST | the AUTOMATIC TEST card with a summary line, the last result and its file; SUPPLY's caps, read-only; the rail's plot and the run's box under them; the READY card and HOLD 2s: ARM + START |
+| TEST | the AUTOMATIC TEST card with a summary line, the last result and its file; SUPPLY's caps, read-only; the supply's plot and the run's box under them; the READY card and HOLD 2s: ARM + START |
 | LIMIT RUN | the ends the last run found, its state lines, the READY card and HOLD 2s: ARM + START |
 | RUDDER | the control surface's deflection in ° and mm, LENGTH, the buttons 1000us, CENTER and 2000us, ZERO and RESET MAX ([Rudder deflection](servo-rudder.md)) |
 | RUDDER AUTO | AUTO's box, which programs KST, Chaservo or Hitec end points to the deflection entered |
@@ -26,7 +26,7 @@ The hub holds eight tiles, each opening a screen of its own:
 
 KST and HITEC are grey while the IOmcu lacks their capability or another session holds the port; a tap names the reason. The hub's footer shows SERVO with the port line and SETTINGS, which opens the servo profile every function uses ([Servo settings](servo-settings.md)). The hub drives nothing: the bench is SAFE there.
 
-The home tag goes from a function screen to the hub, and from the hub to the menu. Leaving a function screen switches the bench to SAFE. The PROG 5V on the carrier stays on from one SERVO screen to another and goes off when SERVO is left; on the hub the footer reads `PROG 5V ON` in the warning colour while it is on.
+The home tag goes from a function screen to the hub, and from the hub to the menu. Leaving a function screen switches the bench to SAFE. The PROG 5V on the carrier stays on from one SERVO screen to another and goes off when SERVO is left; on the hub the footer reads `PROG 5V ON 5.02V 0.120A` in the warning colour while it is on, `--V --A` without a reading.
 
 LIVE, SWEEP and RUDDER show the PORT button and READY's rows on the right, with the controls under them. TEST, LIMIT RUN, RUDDER AUTO, KST and HITEC show the PORT button and the READY card. The footer holds the function's name with the port line, ARM (HOLD 2s: ARM + START on TEST, LIMIT RUN and RUDDER AUTO, the session's WRITE n VALUES on KST and HITEC), and SETTINGS for the screen's list; LIVE has no list. Every control is 48px (7.2mm) tall or taller. The rotary knob moves the horn on LIVE, SWEEP, RUDDER and RUDDER AUTO only.
 
@@ -50,10 +50,12 @@ LIVE's right card, from the top:
 |---|---|
 | PORT button | what the tester drives, `protocol pins`: `SERVO PWM GPIO 2`, `PROG PORT 1 GPIO 13`, or a warning; a tap opens the list where it is picked ([the PORT button](servo-settings.md#the-port-button)) |
 | READY | one row per check: PORT, SUPPLY and ARM; RUDDER adds ANGLE and ZERO |
+| SET V, SET A | the PD mini's set points; a tap opens SUPPLY's keypad. On the carrier's programming port `PROG 5V`, `5V FIXED` |
+| plot | volts, amps and watts of what feeds the servo over the last 9.0s, right of SET A, under a legend such as `5.02V  0.120A  0.60W` |
 | SPEED | the rate the bench may move the output, 100% passes the command straight through |
 | type pill | the servo type, frame rate and pulse range in force: `STANDARD PWM  50Hz  1000-2000` |
 | CENTER, RELEASE | SWEEP shows SWEEP and RELEASE |
-| rail line | the servo rail's meter on the left, its volts and amps on the right: `6.00V  0.120A` |
+| rail line | the meter of what feeds the servo on the left, its volts and amps on the right: `6.00V  0.120A` |
 
 A READY row's dot and state are green when met, amber when ARM does it or it needs a look, and red when it refuses ARM. A tap fixes the row where it can, or names it in the alert band.
 
@@ -114,14 +116,15 @@ A reading that did not arrive is `---` in LIVE's CURRENT, `--` on the line and a
 
 ## The supply on SERVO
 
-LIVE, SWEEP and RUDDER have the SUPPLY row and no SET line: ARM switches the supply on, DISARM switches it off. TEST, LIMIT RUN and RUDDER AUTO switch it through their hold and their run. On KST and HITEC the session's CONNECT switches it on, and a tap on the supply row while it reads ON switches it off. No SERVO screen has a SET line: the set points and OUTPUT ON are on SUPPLY.
+LIVE, SWEEP and RUDDER have the SUPPLY row and the SET row: ARM switches the supply on, DISARM switches it off. TEST, LIMIT RUN and RUDDER AUTO switch it through their hold and their run. On KST and HITEC the session's CONNECT switches it on, and a tap on the supply row while it reads ON switches it off. No SERVO screen has OUTPUT ON: it is on SUPPLY.
 
-- A tap on a set point opens the keypad over the left card.
-- OUTPUT ON is a 2s hold, OUTPUT OFF a tap.
+- A tap on SET V or SET A opens SUPPLY's keypad over the left card, inside SUPPLY's OUTPUT LIMITS. OK puts the value on SUPPLY: one set point on both screens.
+- A value typed while the output is on waits for SUPPLY's question where SETTINGS > KEYPAD under CONFIRM WHILE ON asks it, ARMED or SAFE. A voltage raised above 6.0V waits for HV SERVOS ONLY.
+- While a programming port holds the PD mini, SET V and SET A are dim and a tap names the hold in the band.
 - Leaving SERVO switches off an output SERVO switched on.
 - After a programmer's LEAVE that leaves the output on, SERVO asks whether the set points from before the session go back onto it ([Servo programmer](servo-programmer.md)). No other end of a port's hold asks: RELEASE PORT, a STOP, an error, a lost link or a restart leaves the session's set points until the next OFF.
 
-On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) the programming ports have their own 5V rail at GPIO 21. No SERVO screen shows the PROG 5V box; SUPPLY does. On LIVE, SWEEP and RUDDER the SUPPLY row reads PROG 5V and ARM switches it on, on LIMIT RUN and RUDDER AUTO the hold. On KST and HITEC the supply row reads ON while the 5V is on; a tap switches it off.
+On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) the programming ports have their own 5V rail at GPIO 21. No SERVO screen shows the PROG 5V box; SUPPLY does. On LIVE, SWEEP and RUDDER the SUPPLY row reads PROG 5V and ARM switches it on, on LIMIT RUN and RUDDER AUTO the hold. The SET row then reads `PROG 5V`, `5V FIXED` and takes no tap; the plot and the rail line show the INA3221 channel that watches the 5V, such as `INA PROG 5V` on the line. Without a reading of that channel the line reads `PROG 5V NO READING` and `--V  --A`, never the PD mini's values. On KST and HITEC the supply row reads ON while the 5V is on; a tap switches it off.
 
 While a programming port holds the 5V the tap switches nothing and the band names the lock. Leaving SERVO switches off a rail switched on by ARM or the hold unless a port holds it.
 

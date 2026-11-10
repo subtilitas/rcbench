@@ -68,7 +68,7 @@ overview                         0       0 KiB
 overview-guide                 361      45 KiB
 servo                        2,410     301 KiB
 servo-grip                     589      74 KiB
-servo-current                1,508     188 KiB
+servo-current                1,980     248 KiB
 servo-rudder                 4,101     513 KiB
 servo-test                       0       0 KiB
 servo-kst                        0       0 KiB
@@ -430,7 +430,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 464 | 2 688 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 480 | 2 672 |
 | `control` | `control_task` | 6 144 | 3 648 | 1 456 |
 | `runlog` | `log_task` | 6 656 | 3 824 | 1 792 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |

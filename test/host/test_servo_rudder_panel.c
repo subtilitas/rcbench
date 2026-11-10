@@ -1010,8 +1010,8 @@ TEST_CASE(the_guide_marks_rudder_and_leaves_the_port_button_in_view)
     CHECK(ui_help_page(scr, false, 3, &p));
     CHECK(!p.armed_ok);
     CHECK_EQ(p.title, TX_HG_SV_TITLE_CARD);
-    /* The type pill and the side view. */
-    CHECK_EQ(p.count, 2);
+    /* SET V and SET A, the plot, the type pill and the side view. */
+    CHECK_EQ(p.count, 4);
     CHECK(ui_help_page(scr, false, 2, &p));
     CHECK_EQ(p.title, TX_HG_SV_TITLE_DRV_READY);
     /* PORT, the READY rows, the rail line, ARM and SETTINGS. */

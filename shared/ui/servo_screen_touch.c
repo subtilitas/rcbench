@@ -390,6 +390,11 @@ void svs_event_body(const touch_event_t *evt)
             }
             return;
         }
+        /* Their SET row: SET V and SET A open the keypad on release, over
+         * a panel as well, which the keypad replaces. */
+        if (drive_set_down(evt)) {
+            return;
+        }
         if (modal_open() && gfx_rect_contains(overlay_area(), px, py)) {
             /* One press at a time in the panels and the pages. */
             if (!s.ov_have) {

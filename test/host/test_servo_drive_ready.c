@@ -80,8 +80,8 @@ static void pd_off_on_live(void)
 }
 
 /* LIVE and SWEEP show PORT, SUPPLY and ARM, RUDDER PORT, ANGLE, ZERO,
- * SUPPLY and ARM, over the output card; the SET row and OUTPUT ON are not
- * there.  Off on a SAFE bench, the PD mini's row reads ARM SWITCHES IT ON
+ * SUPPLY and ARM, over the output card; OUTPUT ON and the PROG 5V box are
+ * not there (the SET row is test_servo_drive_supply's).  Off on a SAFE bench, the PD mini's row reads ARM SWITCHES IT ON
  * in amber and ARM HOLD 2s; KST shows none of these rows and has no ARM
  * that switches the supply. */
 TEST_CASE(each_screen_names_its_rows_and_shows_no_supply_box)
@@ -99,8 +99,8 @@ TEST_CASE(each_screen_names_its_rows_and_shows_no_supply_box)
     CHECK_STR_EQ(r.value, TR(RDY_ARM_HOLD));
     CHECK(drive_hold_blocked(NULL) == NULL);
     CHECK(servo_screen_arm_switches());
-    /* Where the SET row's OUTPUT ON was, the SPEED row's panel: no green
-     * button. */
+    /* Where the output card's OUTPUT ON was, the SET row's plot: no
+     * green button. */
     scr->render(&cv, 0);
     CHECK(gfx_pixel_get(&cv, SV_SUP_OUT_X, SV_SUP_Y)
           != ui_theme_color(UI_C_OK));

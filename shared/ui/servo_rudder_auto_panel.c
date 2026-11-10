@@ -51,10 +51,18 @@
 #define RA_LINE_GAP 4                    /**< Between two lines, px. */
 /** @brief The room the lines take, down to the card's floor: 136px. */
 #define RA_LINES_H (CARD_FLOOR - RA_LINE_Y)
+/** @brief The plot of what feeds the servo: on ZERO's row, right of ZERO
+ *         and RESET MAX (2 x 160px and their gaps), to 10px inside the
+ *         card's right edge: 260 x 48px, over the side view. */
+#define RA_PLOT_X (RA_X + 2 * 160 + 2 * RA_GAP)
+#define RA_PLOT_Y (RA_ROW2_Y + UI_TAP_MIN + 12) /**< ZERO's row. */
+#define RA_PLOT_W (PAD + LCARD_W - 10 - RA_PLOT_X) /**< 260px. */
 
 _Static_assert(2 * RA_HALF_W + RA_GAP == RA_W, "two halves fill the column");
 _Static_assert(RA_LINES_H >= RA_LINES * 20 + (RA_LINES - 1) * RA_LINE_GAP,
                "three lines of one row each fit above the footer");
+_Static_assert(RA_PLOT_Y + UI_TAP_MIN <= RA_LINE_Y - 4,
+               "the plot ends above the side view and the lines");
 
 /* The families are the limit run's, value for value: one SERVO row and one
  * seam serve both runs. */
@@ -114,6 +122,12 @@ gfx_rect_t rauto_lines_rect(void)
 {
     return (gfx_rect_t){ RA_X, (int16_t)(RA_LINE_Y - 2), RUD_SIDE_W,
                          (int16_t)(RA_LINES_H + 2) };
+}
+
+gfx_rect_t rauto_power_rect(void)
+{
+    return (gfx_rect_t){ (int16_t)RA_PLOT_X, (int16_t)RA_PLOT_Y,
+                         (int16_t)RA_PLOT_W, UI_TAP_MIN };
 }
 
 bool servo_screen_rauto_running(void)
@@ -948,6 +962,9 @@ void rauto_render(gfx_canvas_t *c)
         }
     }
     c->clip = old;
+    /* Right of ZERO and RESET MAX, what feeds the servo as every SERVO
+     * plot shows it. */
+    svs_power_view(c, rauto_power_rect());
 }
 
 void rauto_draw_hold(gfx_canvas_t *c)

@@ -520,6 +520,27 @@ TEST_CASE(the_right_edge_label_follows_the_running_state)
     CHECK_EQ(lit, 0);
 }
 
+/* NOW needs UI_PLOT_LABELS_MIN_H: a plot 1px lower draws grid and traces
+ * alone, nothing in NOW's place. */
+TEST_CASE(a_low_plot_draws_no_labels)
+{
+    ui_plot_t p;
+    ui_plot_init(&p, k_series, 2, 24.0f);
+    for (int h = UI_PLOT_LABELS_MIN_H - 1; h <= UI_PLOT_LABELS_MIN_H; ++h) {
+        const gfx_rect_t body = { 40, 10, 700, (int16_t)h };
+        canvas();
+        ui_plot_render(&p, &cv, body);     /* empty, running: NOW */
+        int lit = 0;
+        for (int y = body.y + h - 19; y < body.y + h - 3; ++y) {
+            for (int x = body.x + body.w - 60; x < body.x + body.w - 4; ++x) {
+                lit += fb[y * W + x] == ui_theme_color(UI_C_TEXT_DIM)
+                       || fb[y * W + x] == ui_theme_color(UI_C_TEXT_FAINT);
+            }
+        }
+        CHECK(h < UI_PLOT_LABELS_MIN_H ? lit == 0 : lit > 0);
+    }
+}
+
 TEST_CASE(the_plot_renders_without_running_off_the_canvas)
 {
     canvas();
@@ -1292,6 +1313,7 @@ int main(void)
     RUN(the_scale_never_falls_below_the_series_floor);
     RUN(a_legend_tap_cycles_focus_then_hidden);
     RUN(map_y_is_the_right_way_up_and_clamps);
+    RUN(a_low_plot_draws_no_labels);
     RUN(the_plot_renders_without_running_off_the_canvas);
     RUN(a_press_on_the_track_commands_nothing);
     RUN(a_drag_moves_by_how_far_it_travelled);

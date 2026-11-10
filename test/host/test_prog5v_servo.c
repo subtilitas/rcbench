@@ -3,7 +3,8 @@
  * @brief The ports' 5V on SERVO, which shows no PROG 5V box: KST's supply
  *        row switches it off or names the lock; the ON RUDDER AUTO's ARM +
  *        START asks (prog5v_box_ask_on()) is SERVO's until SERVO is left;
- *        the hub names it in its footer.  The box's hold, lock, slide and
+ *        the hub names it and its reading in its footer.  The box's hold,
+ *        lock, slide and
  *        stop are SUPPLY's (test_prog5v_supply, test_prog5v_box); ARM's
  *        5V across SERVO's screens is test_servo_drive_ready's.
  *
@@ -130,8 +131,8 @@ TEST_CASE(the_5v_rudder_autos_hold_asks_is_servos_and_goes_with_the_hub)
 }
 
 /* The hub shows no PROG 5V box: while the ports' 5V reads ON, PROG 5V ON
- * stands in the footer's middle slot in the warning colour; OFF leaves the
- * slot empty. */
+ * and the INA3221 channel's reading stand in the footer's middle slot in
+ * the warning colour, `--V --A` without one; OFF leaves the slot empty. */
 static int hold_slot_warn_pixels(void)
 {
     const gfx_rect_t r = ui_footer_rect(UI_FOOTER_HOLD);
@@ -144,12 +145,45 @@ static int hold_slot_warn_pixels(void)
     return n;
 }
 
+/* Whether the slot's warning-colour pixels are @p t's, centred in the
+ * 12 x 24 face. */
+static bool hold_slot_reads(const char *t)
+{
+    const gfx_rect_t r = ui_footer_rect(UI_FOOTER_HOLD);
+    want_fresh();
+    gfx_fill_rect(&want_cv, r.x, r.y, r.w, r.h, 0u);
+    gfx_text_in(&want_cv, r, t, &gfx_font_12x24, ui_theme_color(UI_C_WARN),
+                1, GFX_ALIGN_CENTER);
+    const gfx_color_t warn = ui_theme_color(UI_C_WARN);
+    for (int y = r.y; y < r.y + r.h; ++y) {
+        for (int x = r.x; x < r.x + r.w; ++x) {
+            if ((gfx_pixel_get(&cv, x, y) == warn)
+                != (gfx_pixel_get(&want_cv, x, y) == warn)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 TEST_CASE(the_hub_names_prog_5v_on_in_its_footer)
 {
     fresh_p5(ST_ON);
     go(SERVO_FN_HUB);
     scr->render(&cv, 0);
     CHECK(hold_slot_warn_pixels() > 100);
+    CHECK(hold_slot_reads("PROG 5V ON --V --A"));
+    /* A window: its reading, repainted without a call for it. */
+    prog5v_box_reading(true, 5020u, 120, 1u);
+    scr->tick(0.02f);
+    scr->render(&cv, 0);
+    CHECK(hold_slot_reads("PROG 5V ON 5.02V 0.120A"));
+    ui_text_set_language(UI_LANG_DE);
+    servo_invalidate();
+    scr->render(&cv, 0);
+    CHECK(hold_slot_reads("PROG 5V EIN 5.02V 0.120A"));
+    ui_text_set_language(UI_LANG_EN);
+    servo_invalidate();
     prog5v_box_publish(ST_OFF, 21u, (uint8_t)PROG5V_HELD_NONE);
     scr->tick(0.02f);
     scr->render(&cv, 0);

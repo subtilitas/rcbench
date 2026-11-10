@@ -454,7 +454,8 @@ static void draw_hv(gfx_canvas_t *c)
                                             : ui_theme_color(UI_C_TEXT_DIM),
                                     SV_FONT_BODY);
     }
-    if (s.ask.purpose == ASK_RESTORE && supply_screen_output_on()) {
+    if ((s.ask.purpose == ASK_SET || s.ask.purpose == ASK_RESTORE)
+        && supply_screen_output_on()) {
         (void)wrap_text(c, a.x + 20, y + 8, WARN_PITCH, TR(SV_HV_LIVE),
                         WARN_CELLS, ui_theme_color(UI_C_WARN), SV_FONT_BODY);
     }
@@ -533,19 +534,39 @@ static void draw_restore(gfx_canvas_t *c)
 }
 
 /**
- * @brief The HV warning while one stands, else the question after a
- *        programming port let go of a live output.  OUTPUT ON past a
- *        standard servo's rating and TEST's steps past it always ask
- *        through the HV warning.
+ * @brief The HV warning while one stands; else the question after a
+ *        programming port let go of a live output, or SUPPLY's question
+ *        before a set point typed on the SET row changes a live output,
+ *        with its words: the change reaches the load at once.  OUTPUT ON
+ *        past a standard servo's rating and TEST's steps past it always
+ *        ask through the HV warning.
  * @param c the canvas
  */
 static void draw_ask(gfx_canvas_t *c)
 {
     if (s.ask.hv) {
         draw_hv(c);
-    } else {
-        draw_restore(c);
+        return;
     }
+    if (s.ask.purpose == ASK_RESTORE) {
+        draw_restore(c);
+        return;
+    }
+    const gfx_rect_t a = overlay_area();
+    gfx_draw_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_WARN));
+    gfx_text(c, a.x + 20, a.y + WARN_TITLE_DY, TR(SUP_OUTPUT_IS_ON),
+             SV_FONT_HEAD, ui_theme_color(UI_C_WARN), 1);
+    gfx_text(c, a.x + 20, a.y + WARN_WHAT_DY, TR(SUP_ASK_WHY),
+             SV_FONT_BODY, ui_theme_color(UI_C_TEXT_DIM), 1);
+    (void)draw_changes(c, a.x + 20, a.y + WARN_LINE_DY + 10);
+    ui_button_font(c, warn_apply_rect(), TR(SUP_APPLY),
+                   ui_theme_color(UI_C_WARN),
+                   s.ov_have && s.ov_pressed == OP_ASK_APPLY, true,
+                   SV_FONT_LABEL);
+    ui_button_font(c, warn_cancel_rect(), TR(CANCEL),
+                   ui_theme_color(UI_C_PANEL_SUNK),
+                   s.ov_have && s.ov_pressed == OP_ASK_CANCEL, true,
+                   SV_FONT_LABEL);
 }
 
 /**

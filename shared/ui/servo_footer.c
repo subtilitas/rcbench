@@ -29,6 +29,7 @@
 #include "link_pages.h"
 #include "out_bind.h"
 #include "outputs_screen.h"
+#include "prog5v_box.h"
 #include "prog_choice.h"
 #include "settings.h"
 #include "ui_footer.h"
@@ -86,12 +87,40 @@ void draw_port(gfx_canvas_t *c)
                 GFX_ALIGN_RIGHT);
 }
 
+/**
+ * @brief The hub's middle slot while the ports' 5V is on: `PROG 5V ON
+ *        5.02V 0.120A`, the INA3221 channel's last window; `--V --A`
+ *        without one.
+ * @param buf receives the line
+ * @param n   its size, bytes
+ * @return @p buf; "" while svs_hub_p5_on() is false
+ */
+static const char *hub_p5_line(char *buf, size_t n)
+{
+    buf[0] = '\0';
+    if (!svs_hub_p5_on()) {
+        return buf;
+    }
+    uint16_t mv = 0u;
+    int16_t ma = 0;
+    if (prog5v_box_last(&mv, &ma, NULL)) {
+        snprintf(buf, n, "%s %.2fV %.3fA", TR(P5_ON), (double)mv / 1000.0,
+                 (double)ma / 1000.0);
+    } else {
+        snprintf(buf, n, "%s --V --A", TR(P5_ON));
+    }
+    return buf;
+}
+
 uint32_t foot_sig(void)
 {
     char line[48];
     uint32_t h = 2166136261u;
     const bool warn = svs_port_line(line, sizeof(line));
     for (const char *p = line; *p != '\0'; ++p) {
+        h = (h ^ (uint8_t)*p) * 16777619u;
+    }
+    for (const char *p = hub_p5_line(line, sizeof(line)); *p != '\0'; ++p) {
         h = (h ^ (uint8_t)*p) * 16777619u;
     }
     h = (h ^ s.fp_rev) * 16777619u;
@@ -122,10 +151,11 @@ void draw_footer(gfx_canvas_t *c)
         draw_port(c);
     } else if (svs_hub_p5_on()) {
         /* The ports' 5V stays on across SERVO's screens: the hub, which
-         * shows no PROG 5V box, names it in the middle slot. */
-        gfx_text_in(c, ui_footer_rect(UI_FOOTER_HOLD), TR(P5_ON),
-                    &gfx_font_12x24, ui_theme_color(UI_C_WARN), 1,
-                    GFX_ALIGN_CENTER);
+         * shows no PROG 5V box, names it and its reading in the middle
+         * slot. */
+        gfx_text_in(c, ui_footer_rect(UI_FOOTER_HOLD),
+                    hub_p5_line(line, sizeof(line)), &gfx_font_12x24,
+                    ui_theme_color(UI_C_WARN), 1, GFX_ALIGN_CENTER);
     }
     if (svs_list_offered()) {
         ui_footer_settings(c, s.fp_pressed == FP_SETTINGS,

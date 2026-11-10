@@ -19,6 +19,7 @@
 
 #include "imu.h"
 #include "outputs.h"
+#include "prog5v_box.h"
 #include "servo_limrun.h"
 #include "ui_plot.h"
 #include "ui_text.h"
@@ -423,7 +424,7 @@ static void rail_plot(void)
         (r.v_ok && r.i_ok) ? r.p : NAN,
     };
     ui_plot_push(&s.power, v);
-    ui_plot_update_scales(&s.power, RC_W);
+    ui_plot_update_scales(&s.power, PROG5V_PLOT_COLS);
     ++s.power_rev;
 }
 

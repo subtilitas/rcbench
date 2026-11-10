@@ -10,15 +10,18 @@
  * HITEC's supply row switches it off.  It is made of the controls those screens have: two lines of
  * text and a button with OUTPUT ON's 2s hold.
  *
- *   PROG PORTS 5V, GPIO 21: OFF   [ PROG 5V ON  ]
- *   5.02V  0.120A
+ *   PROG PORTS 5V, GPIO 21: OFF          [ PROG 5V ON  ]
+ *   5.02V  0.120A  0.60W  ~plot~
  *
  * - The first line names the pin it drives and the state the PROG_SUPPLY
  *   page reads: ON, OFF or NOT READ.
  * - The second line is the INA3221 channel that watches the ports' 5V
- *   (the carrier's 0x40 CH3), its last 50ms window; `--V  --A` without
- *   one.  While a programming port holds the supply it reads
- *   `HELD BY PROG PORT n` instead.
+ *   (the carrier's 0x40 CH3), its last 50ms window: volts, amps and their
+ *   product in watts; `--V  --A` without one.  While a programming port
+ *   holds the supply it reads `HELD BY PROG PORT n` instead.  Right of it,
+ *   from 22 cells in, or 8px past a longer line, to 8px before the button,
+ *   the box's plot of the same windows (prog5v_box_set_plot()), 20px tall:
+ *   grid and traces, no labels; none where under 48px remain.
  * - The button: PROG 5V ON, a 2s hold (UI_HOLD_S), while the supply reads
  *   OFF and no port holds it; PROG 5V OFF, a tap, while it reads ON and no
  *   port holds it.  It takes no press otherwise and is drawn dimmed.
@@ -58,6 +61,7 @@
 
 #include "gfx.h"
 #include "touch_types.h"
+#include "ui_plot.h"
 #include "ui_text.h"     /* before ui_widgets.h: ui_theme.h names UI_TEXT */
 #include "ui_widgets.h"
 
@@ -72,6 +76,13 @@ extern "C" {
 /** @brief The box's least width, px: the 8 x 16 lines' 27 cells, a gap
  *         and the button. */
 #define PROG5V_BOX_MIN_W (27 * 8 + 4 + PROG5V_BOX_BTN_W)
+/** @brief The plot's left edge in the box: line 2's longest, 22 cells. */
+#define PROG5V_BOX_PLOT_DX (22 * 8)
+/** @brief The columns a PROG 5V plot and SERVO's rail plot span and scale
+ *         over: the widest view of them, LIMIT RUN's 600px column, 30.0s
+ *         at 20 points a second.  A narrower view shows the newest of
+ *         them on the same scales. */
+#define PROG5V_PLOT_COLS 600
 
 /** @brief The carrier's input supply under this is low, mV.  The PD
  *         trigger M6 is set to 15V on the carrier; 13500mV is 15V less 10%,
@@ -116,6 +127,8 @@ typedef struct {
     uint32_t    seen_read; /**< the published reading word, last seen   */
     uint32_t    seen_in;   /**< the low input, last seen                */
     uint32_t    cuts;      /**< the cuts published as the press began   */
+    ui_plot_t  *plot;      /**< the host's plot of the 5V, or NULL      */
+    uint16_t    seen_win;  /**< the window @ref plot took its last point of */
 } prog5v_box_t;
 
 /* --------------------------------------------- from the control task */
@@ -153,11 +166,14 @@ uint8_t prog5v_box_held_port(int kst_port, int hitec_port, bool some);
 /**
  * @brief Publish the last reading of the channel that watches the ports'
  *        5V.
- * @param ok whether there is one
- * @param mv its mean bus voltage, mV
- * @param ma its mean current, mA, signed
+ * @param ok     whether there is one
+ * @param mv     its mean bus voltage, mV
+ * @param ma     its mean current, mA, signed
+ * @param window its window's number (the SENSE_WIN page's WINDOW
+ *               register): a reading whose number moved is a new one,
+ *               the same values or not
  */
-void prog5v_box_reading(bool ok, uint16_t mv, int16_t ma);
+void prog5v_box_reading(bool ok, uint16_t mv, int16_t ma, uint16_t window);
 
 /**
  * @brief Publish the PD mini's input voltage as the SUPPLY page last read
@@ -216,6 +232,17 @@ bool prog5v_box_shown(void);
 bool prog5v_box_on(void);
 
 /**
+ * @brief The last reading of the channel that watches the ports' 5V, as
+ *        published: SERVO's plot of the PROG 5V on the rbmod carrier's
+ *        programming port takes a point each time @p window moves.
+ * @param mv     receives its mean bus voltage, mV; may be NULL
+ * @param ma     receives its mean current, mA, signed; may be NULL
+ * @param window receives its window's number; may be NULL
+ * @return whether there is one; the outputs are 0 without
+ */
+bool prog5v_box_last(uint16_t *mv, int16_t *ma, uint16_t *window);
+
+/**
  * @brief Set a box up on a screen, nothing pressed.
  * @param b  the box; nothing for NULL
  * @param r  where it is drawn, PROG5V_BOX_H tall and PROG5V_BOX_MIN_W wide
@@ -223,6 +250,32 @@ bool prog5v_box_on(void);
  * @param by the screen
  */
 void prog5v_box_init(prog5v_box_t *b, gfx_rect_t r, prog5v_by_t by);
+
+/**
+ * @brief The volts, amps and watts series, one time base and floors of
+ *        5V, 0.5A and 5W: SERVO's rail plot and every PROG 5V plot, so
+ *        both draw on the same scales.  The plot starts empty and running.
+ * @param p the plot; nothing for NULL
+ */
+void prog5v_box_plot_init(ui_plot_t *p);
+
+/**
+ * @brief Give a box the host's plot of the ports' 5V: prog5v_box_tick()
+ *        adds a point of each new window to it, and prog5v_box_render()
+ *        draws it right of the second line.
+ * @param b the box
+ * @param p the plot, made by prog5v_box_plot_init(); NULL for none
+ */
+void prog5v_box_set_plot(prog5v_box_t *b, ui_plot_t *p);
+
+/**
+ * @brief Add a point of the channel's newest window to @p p unless the
+ *        window is the one @p seen names.
+ * @param p    the plot; nothing for NULL
+ * @param seen the window last taken, updated
+ * @return true when a new window arrived, a point added or not
+ */
+bool prog5v_box_follow(ui_plot_t *p, uint16_t *seen);
 
 /**
  * @brief The button's rect: the box's right end.

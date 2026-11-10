@@ -355,6 +355,10 @@ void ui_plot_render(const ui_plot_t *p, gfx_canvas_t *c, gfx_rect_t r)
         }
     }
 
+    /* The labels need their rows: a plot under them is grid and traces. */
+    if (r.h < UI_PLOT_LABELS_MIN_H) {
+        return;
+    }
     if (p->focus >= 0 && p->focus < p->count && !p->hidden[p->focus]) {
         char top[24];
         snprintf(top, sizeof(top), "%.*f%s",

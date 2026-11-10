@@ -99,7 +99,7 @@ An output another screen switched on stays as it is when SUPPLY is left. The out
 
 On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), the PD mini feeds the servo rails. The programming ports have a separate 5V supply switched by GPIO 21. At the foot of the CONTROL card, its status reads `PROG PORTS 5V, GPIO 21: ON`, `OFF`, or `NOT READ` if the IOmcu does not answer. KST and Hitec programming sessions control this rail. The PD mini remains under operator control: OUTPUT ON and its set points remain available.
 
-The PROG 5V box beside PLOT and TABLE controls the programming rail manually, while SAFE or ARMED. Hold PROG 5V ON for 2s to switch it on; tap PROG 5V OFF to switch it off. Early release shows `Hold 2s to switch the programming ports' 5V on.` The box shows the pin status, such as `PROG PORTS 5V, GPIO 21: OFF`, and the last INA3221 window for 0x40 CH3, such as `5.02V  0.120A`.
+The PROG 5V box beside PLOT and TABLE controls the programming rail manually, while SAFE or ARMED. Hold PROG 5V ON for 2s to switch it on; tap PROG 5V OFF to switch it off. Early release shows `Hold 2s to switch the programming ports' 5V on.` The box shows the pin status, such as `PROG PORTS 5V, GPIO 21: OFF`, and the last INA3221 window for 0x40 CH3 with its power, such as `5.02V  0.120A  0.60W`. Right of that line a 72 x 20px plot shows the same windows over the last 30s.
 
 While a programmer holds a port, the box reads `HELD BY PROG PORT n` and accepts no press. Leaving SUPPLY switches off a 5V rail enabled by this box, unless a port holds it. Errors switch it off too, after an active servo-memory write finishes, with a maximum wait of 10000ms.
 

@@ -451,8 +451,9 @@ TEST_CASE(drags_and_samples_leave_both_buffers_as_a_full_redraw_would)
 }
 
 /* The supply is the servo rail's meter here: a sample whose current differs
- * in the digits shown repaints the rail line under LIVE's READY rows, and
- * LIVE's CURRENT reading at the foot of the left card, and nothing else. */
+ * in the digits shown repaints the rail line under LIVE's buttons, the plot
+ * right of the SET row, and LIVE's CURRENT reading at the foot of the left
+ * card, and nothing else. */
 TEST_CASE(a_supply_sample_repaints_only_the_power_plot_and_the_current_row)
 {
     fresh();
@@ -472,21 +473,24 @@ TEST_CASE(a_supply_sample_repaints_only_the_power_plot_and_the_current_row)
     st.i = 1.5f; st.p = 9.0f;
     servo_screen_supply(&st);
     scr->render(&cv, 0);
-    int outside = 0, inside = 0, in_row = 0;
+    int outside = 0, inside = 0, in_row = 0, in_plot = 0;
     for (int y = 0; y < H; ++y) {
         for (int x = 0; x < W; ++x) {
             if (fb[y * W + x] == was[y * W + x]) {
                 continue;
             }
             const bool rc = x >= SV_RC_X && x < SV_RC_X + SV_RC_W;
-            const bool in = rc && y >= 400 && y < 428;
+            const bool in = rc && y >= 408 && y < 432;
             const bool row = x >= 416 && x < 610 && y >= 384 && y < 428;
-            if (in) { ++inside; } else if (row) { ++in_row; } else { ++outside; }
+            const bool plot = SV_IN_PLOT(x, y);
+            if (in) { ++inside; } else if (row) { ++in_row; }
+            else if (plot) { ++in_plot; } else { ++outside; }
         }
     }
     free(was);
     CHECK(inside > 0);
     CHECK(in_row > 0);
+    CHECK(in_plot > 0);
     CHECK_EQ(outside, 0);
     servo_screen_supply(NULL);
 }
@@ -985,11 +989,11 @@ TEST_CASE(the_horn_travels_and_breathes_as_a_full_redraw_would)
 
 /* ------------------------------------------------- the supply, from SERVO */
 
-/* SERVO sets no set point and has no OUTPUT ON: SET V, SET A and OUTPUT
- * ON / OFF are SUPPLY's (test_supply_*).  LIVE, SWEEP and RUDDER show the
- * supply as a READY row whose ARM switches it on (test_servo_drive_ready),
- * KST and HITEC as a row whose tap switches it off (test_kst_panel_frame).
- * These cases take LIVE's PD MINI row. */
+/* SERVO has no OUTPUT ON: OUTPUT ON / OFF are SUPPLY's (test_supply_*).
+ * LIVE, SWEEP and RUDDER show the supply as a READY row whose ARM switches
+ * it on (test_servo_drive_ready) and SUPPLY's set points on their SET row
+ * (test_servo_drive_supply), KST and HITEC as a row whose tap switches it
+ * off (test_kst_panel_frame).  These cases take LIVE's PD MINI row. */
 
 /** @brief LIVE, a PD mini answering at @p v and 1.0A, its output
  *         @p on. */
@@ -1014,7 +1018,8 @@ static void pd_on_live(float v, bool on)
 }
 
 /* A set point changed on SUPPLY, or a cap that moved it, is drawn on
- * LIVE's PD MINI row on the next frame, without a full repaint. */
+ * LIVE's PD MINI row and SET V on the next frame, without a full
+ * repaint. */
 TEST_CASE(a_set_point_changed_on_supply_is_redrawn_here)
 {
     pd_on_live(5.0f, true);
@@ -1025,16 +1030,21 @@ TEST_CASE(a_set_point_changed_on_supply_is_redrawn_here)
     supply_screen_put(5.5f, 1.0f);
     scr->tick(0.025f);
     scr->render(&cv, 0);
-    int changed = 0;
+    int changed = 0, set = 0;
     for (int y = 0; y < H; ++y) {
         for (int x = 0; x < W; ++x) {
             if (fb[(size_t)y * W + x] != before[(size_t)y * W + x]) {
-                CHECK(y >= SV_DRV_ROW_Y(1) - 15 && y < SV_DRV_ROW_Y(1) + 15);
+                const bool row = y >= SV_DRV_ROW_Y(1) - 15
+                                 && y < SV_DRV_ROW_Y(1) + 15;
+                const bool v = SV_IN_SET_V(x, y);
+                CHECK(row || v);
                 ++changed;
+                set += v ? 1 : 0;
             }
         }
     }
     CHECK(changed > 0);
+    CHECK(set > 0);
     free(before);
 }
 

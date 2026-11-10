@@ -25,9 +25,10 @@
  *
  * LIVE, SWEEP and RUDDER show their rows the same way over the output
  * card's controls (servo_drive_ready.c): the title and 3 or 5 rows from
- * y 96, SPEED, the type pill and the buttons under them, the rail line at
- * y 404.  Their footer's middle slot is ARM, which switches the supply on
- * first through the same sequence where a part reads off.
+ * y 96, the SET row with SET V, SET A and the supply's plot, SPEED, the
+ * type pill and the buttons under them, the rail line at y 412.  Their
+ * footer's middle slot is ARM, which switches the supply on first through
+ * the same sequence where a part reads off.
  *
  * The footer's middle slot is the function's one hold, HOLD 2s: ARM +
  * START.  It fires the sequence (servo_start_seq.h): PORT PWM, PROG 5V or
@@ -68,6 +69,8 @@ extern "C" {
 #define READY_ROW_Y 96
 /** @brief The rail line's top, y in the body. */
 #define READY_RAIL_Y 404
+/** @brief The same on LIVE, SWEEP and RUDDER, under their buttons. */
+#define DRV_RAIL_Y 412
 /** @brief The label's column, px: 10 cells of 10px. */
 #define READY_LABEL_W 100
 /** @brief The state's column, px: 20 cells of 10px. */
@@ -247,6 +250,40 @@ bool ready_hold_down(const touch_event_t *evt);
  *  @param c the canvas */
 void ready_draw_hold(gfx_canvas_t *c);
 
+/* --- servo_ready.c: the plot of what feeds the servo ---------------------- */
+
+/** @brief A plot of what feeds the servo this tall or taller draws its
+ *         legend in the label face and its plot's labels; a lower one the
+ *         8 x 16 face, px. */
+#define SVS_POWER_FULL_H 80
+
+/**
+ * @brief The plot of what feeds the servo in @p r, the same everywhere:
+ *        its volts, amps and watts as the legend over it, each in its
+ *        trace's colour, the meter's name left of them where the width
+ *        takes both, the plot of the last r.w / 20 seconds under them.
+ *        Under SVS_POWER_FULL_H the legend in the 8 x 16 face and the
+ *        plot without labels.
+ * @param c the canvas
+ * @param r the place, legend included; nothing for an empty one
+ */
+void svs_power_view(gfx_canvas_t *c, gfx_rect_t r);
+/**
+ * @brief Where the screen shown draws svs_power_view(): LIVE's, SWEEP's
+ *        and RUDDER's SET row, KST's and HITEC's READY card under the
+ *        rows, TEST's caps card, LIMIT RUN's and RUDDER AUTO's left card
+ *        under their lines.
+ * @return the place; empty where none shows
+ */
+gfx_rect_t svs_power_rect(void);
+/** @brief svs_power_view() in svs_power_rect().  @param c the canvas */
+void svs_draw_power(gfx_canvas_t *c);
+
+/** @brief LIMIT RUN's plot of what feeds the servo under its eight rows
+ *         of state lines, 600 x 58px (servo_limit_card.c).
+ *  @return its rectangle */
+gfx_rect_t lim_power_rect(void);
+
 /* --- servo_ready.c: the sequence -------------------------------------------- */
 
 /** @brief What a run started now needs switched on: PORT PWM on a PROG
@@ -372,7 +409,8 @@ void test_hold_fired(void);
 void test_frame(float dt_s);
 /** @brief TEST's ARM + START in the footer.  @param c the canvas */
 void test_draw_hold(gfx_canvas_t *c);
-/** @brief The rail's plot under TEST's caps button.  @param c the canvas */
+/** @brief The plot of what feeds the servo under TEST's caps button,
+ *         svs_power_view()'s.  @param c the canvas */
 void test_draw_plot(gfx_canvas_t *c);
 
 /* --- servo_limit_ready.c: LIMIT RUN's gate and rows ------------------------ */
@@ -495,6 +533,26 @@ void drive_draw_arm(gfx_canvas_t *c);
 gfx_rect_t drive_speed_rect(void);
 /** @brief The type pill under the rows.  @return its rectangle */
 gfx_rect_t drive_tag_rect(void);
+/** @brief SET V (@p k 0) or SET A (@p k 1) on the SET row of LIVE, SWEEP
+ *         and RUDDER: a tap opens the keypad.  @param k the value
+ *  @return its box; empty off those screens and on the rbmod carrier's
+ *          programming port, whose 5V is fixed */
+gfx_rect_t drive_set_rect(int k);
+/** @brief The SET row less its plot: SET V and SET A, or the fixed 5V.
+ *  @return its rectangle; empty off LIVE, SWEEP and RUDDER */
+gfx_rect_t drive_set_row_rect(void);
+/** @brief The plot on the SET row's right.  @return its rectangle; empty
+ *         off LIVE, SWEEP and RUDDER */
+gfx_rect_t drive_plot_rect(void);
+/** @brief A DOWN on SET V or SET A: the press, whose release on the same
+ *         box opens the keypad (ov_rest()); or the refusal in the alert
+ *         band while a programming port holds the supply.
+ *  @param evt the DOWN  @return whether it landed on either box */
+bool drive_set_down(const touch_event_t *evt);
+/** @brief The SET row repainted alone.  @param c the canvas */
+void drive_draw_set(gfx_canvas_t *c);
+/** @brief The plot repainted alone.  @param c the canvas */
+void drive_draw_plot(gfx_canvas_t *c);
 /** @brief The profile in force, its frame rate and pulse range, in the
  *         danger colour for one that can destroy a servo not made for it
  *         (servo_screen_draw.c).  @param c the canvas @param r the pill */

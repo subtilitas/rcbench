@@ -1552,6 +1552,26 @@ tap on the row names the whole text in the alert band:
 | ARM | `Cannot switch to ARMED: a port is in use by the servo programmer.`, the pin of the ESC programmer | `SERVO PROGRAMMING`, `ESC PROGRAMMING` |
 | PORT | `PINS NOT READ`, in German `PINS NICHT AUSGELESEN`, 21 cells | the line; in German `PINS NICHT GELESEN` |
 
+### SET V, SET A and the plot
+
+Under the READY rows of LIVE, SWEEP and RUDDER the SET row holds the PD
+mini's set points and the supply's plot
+([Screens](Screens.md#servo)):
+
+| Part | Does | Limits |
+| --- | --- | --- |
+| SET V, SET A | a tap opens SUPPLY's VOLTAGE or CURRENT LIMIT keypad; OK puts the value on SUPPLY | SUPPLY's caps narrowed by its OUTPUT LIMITS. With the output live and SETTINGS, CONFIRM WHILE ON, KEYPAD on, SUPPLY's question first, ARMED or SAFE. A voltage raised past 6.0V: the HV warning's 2s hold first. Refused, the reason in the alert band, while a programming port holds the PD mini |
+| plot | voltage, current and power of what feeds the servo, the last 9.0s, 180 x 48px, under a legend `5.02V  0.120A  0.60W` | the plot every function screen shows ([Screens](Screens.md#servo)): KST and HITEC under their READY rows, TEST under SUPPLY's caps, LIMIT RUN under its state lines, RUDDER AUTO right of ZERO and RESET MAX |
+
+On the rbmod carrier's programming port the servo runs from the fixed
+PROG 5V. The row reads `PROG 5V` over `5V FIXED` in place of SET V and
+SET A and takes no press. The plot and the rail line read the INA3221
+channel that watches the PROG 5V (the carrier's 0x40 CH3), one point per
+50ms window. Without a window of that channel the rail line reads
+`PROG 5V NO READING` and `--V  --A`, the plot takes no point, and the PD
+mini's values never stand in. OUTPUT ON stays SUPPLY's: on these screens ARM's
+2s hold switches the supply on.
+
 ## Rudder deflection
 
 ### Purpose

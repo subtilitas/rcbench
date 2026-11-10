@@ -232,6 +232,9 @@ static void reset(void)
     forget_drawn();
     prog5v_box_init(&s.p5, (gfx_rect_t){ P5_X, P5_Y, P5_W, PROG5V_BOX_H },
                     PROG5V_BY_SUPPLY);
+    /* The box's plot of the 5V, SERVO's series and scales. */
+    prog5v_box_plot_init(&s.p5_plot);
+    prog5v_box_set_plot(&s.p5, &s.p5_plot);
     const supply_caps_t caps = SUPPLY_CAPS_PPS_DEFAULT;
     s.caps = caps;
     /* Nothing limited and no trip until the settings are read, which is
@@ -561,6 +564,8 @@ supply_limits_t supply_screen_limits(void)
 supply_caps_t supply_screen_caps(void) { return s.eff; }
 
 const ui_keypad_t *supply_screen_keypad(void) { return &s.kp; }
+
+bool supply_screen_typed_asks(void) { return sup_confirm_needed(FROM_KEYPAD); }
 
 /**
  * @brief The operator's set points as the caps take them now.

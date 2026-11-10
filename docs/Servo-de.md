@@ -1606,6 +1606,27 @@ Alarmband:
 | ARM | `ARMED gesperrt: Die Servoprogrammierung belegt einen Port.`, der Pin der ESC-Programmierung | `SERVOPROGRAMMIERUNG`, `ESC-PROGRAMMIERUNG` |
 | PORT | `PINS NICHT AUSGELESEN`, 21 Zellen | `PINS NICHT GELESEN` |
 
+### SET V, SET A und die Grafik
+
+Unter den Zeilen von BEREIT auf LIVE, SWEEP und RUDER trägt die SET-Zeile
+die Sollwerte des PD mini und die Grafik der Versorgung
+([Bildschirme](Screens-de.md#servo)):
+
+| Teil | Tut | Grenzen |
+| --- | --- | --- |
+| SET V, SET A | Tippen öffnet das Tastenfeld SPANNUNG oder STROMBEGRENZUNG von SUPPLY; OK setzt den Wert auf SUPPLY | die Grenzen von SUPPLY, eingeengt durch dessen AUSGANGSGRENZEN. Bei eingeschaltetem Ausgang und OPTIONEN, RÜCKFRAGE IM BETRIEB, TASTENFELD EIN erst die Rückfrage von SUPPLY, bei ARMED wie bei SAFE. Eine Spannung über 6.0V: erst das 2s-Halten der HV-Warnung. Abgewiesen, der Grund im Alarmband, solange ein Programmierport den PD mini hält |
+| Grafik | Spannung, Strom und Leistung dessen, was das Servo speist, die letzten 9.0s, 180 x 48px, unter einer Legende `5.02V  0.120A  0.60W` | die Grafik, die jeder Funktionsbildschirm zeigt ([Bildschirme](Screens-de.md#servo)): KST und HITEC unter den Zeilen von BEREIT, TEST unter den Grenzen von SUPPLY, ENDLAGENLAUF unter seinen Zustandszeilen, RUDER AUTO rechts von NULLPUNKT und MAX LÖSCHEN |
+
+Am Programmierport des rbmod-Carriers läuft das Servo an den festen PROG
+5V. Die Zeile zeigt `PROG 5V` über `5V FEST` an Stelle von SET V und SET A
+und nimmt kein Tippen an. Grafik und Schienenzeile lesen den
+INA3221-Kanal, der die PROG 5V überwacht (0x40 CH3 des Carriers), ein
+Punkt je 50ms-Fenster. Ohne Fenster dieses Kanals zeigt die
+Schienenzeile `PROG 5V KEIN MESSWERT` und `--V  --A`, die Grafik nimmt
+keinen Punkt, und die Werte des PD mini stehen nie dafür. AUSGANG EIN bleibt bei
+SUPPLY: auf diesen Bildschirmen schaltet das 2s-Halten von ARM die
+Versorgung ein.
+
 ## Ruderausschlag
 
 ### Zweck

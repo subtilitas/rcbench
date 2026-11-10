@@ -53,6 +53,20 @@ history is in git.
   says `Log renamed: MOTOR042_kv1200.CSV` or why not. After a power cycle
   the button stays dimmed until the next MOTOR run ends.
 
+- Every SERVO function screen shows the plot of what feeds the servo, one
+  widget with a legend of volts, amps and watts in the traces' colours
+  (`5.02V  0.120A  0.60W`): KST and HITEC under their READY rows (356px
+  wide), TEST under SUPPLY's caps, LIMIT RUN under its state lines
+  (600 x 58px), RUDDER AUTO right of ZERO and RESET MAX (260 x 48px), and
+  LIVE, SWEEP and RUDDER right of SET A. A new reading repaints the plot
+  and the rail line alone. The plots span 30.0s over 600 columns and scale
+  over the same 600 points; a narrower one shows the newest of them.
+- The PROG 5V box on SUPPLY shows the watts of the window,
+  `5.02V  0.120A  0.60W`, and a 72 x 20px plot of the windows right of
+  that line. On the SERVO hub the footer reads
+  `PROG 5V ON 5.02V 0.120A` while the 5V is on, `--V --A` without a
+  reading.
+
 ### Fixed
 
 - A hardware stop button pressed while the bench is ARMED clears when it
@@ -182,6 +196,24 @@ history is in git.
 
 ### Fixed
 
+- LIVE, SWEEP and RUDDER set the PD mini's voltage and current limit
+  again and show the supply's plot. A SET row under the READY rows holds
+  SET V and SET A, 80 x 48px each: a tap opens SUPPLY's keypad inside its
+  OUTPUT LIMITS, a value typed while the output is on asks SUPPLY's
+  question where SETTINGS > KEYPAD asks it, ARMED or SAFE, a voltage
+  raised past 6.0V waits for HV SERVOS ONLY, and a programming port
+  holding the PD mini refuses the tap and names the hold. Right of SET A
+  a 180 x 48px plot shows the volts, amps and watts of the last 9.0s on
+  TEST's series and scales. On the rbmod carrier's programming port the
+  row reads `PROG 5V`, `5V FIXED` and takes no tap, and the plot and the
+  rail line show the INA3221 channel that watches the PROG 5V. OUTPUT ON
+  stays off these screens: ARM's 2s hold switches the supply on. SPEED,
+  the type pill (now 32px tall), the buttons and the rail line move down
+  to make room: the rail line sits at y 412.
+- On the rbmod carrier's programming port the rail line and the plot of
+  every SERVO function screen read the PROG 5V's INA3221 channel. Without
+  a window of it the line reads `PROG 5V NO READING` and `--V  --A`
+  instead of the rail meter's values, which could be the PD mini's.
 - LIMIT RUN's ARM + START failed with `PD MINI FAILED: SERVO SUPPLY BELOW
   3.0V OR NOT READ` when the PD mini read its output ON before the rail
   had risen, and the RAIL row read red for a frame. READ-BACK judges a

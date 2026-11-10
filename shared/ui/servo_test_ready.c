@@ -601,18 +601,5 @@ void test_draw_hold(gfx_canvas_t *c)
 
 void test_draw_plot(gfx_canvas_t *c)
 {
-    const gfx_rect_t r = test_plot_rect();
-    gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL));
-    char name[24];
-    (void)sensors_rows_short(name, sizeof(name));
-    gfx_text(c, r.x, r.y, (s.source == SERVO_SOURCE_INA3221) ? name
-                                                             : "PD MINI",
-             SV_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
-    /* Each trace in the colour the readings name it by. */
-    s.power.series[PS_V].color = ui_theme_color(UI_C_VOLT);
-    s.power.series[PS_A].color = ui_theme_color(UI_C_CURR);
-    s.power.series[PS_W].color = ui_theme_color(UI_C_POWER);
-    ui_plot_render(&s.power, c,
-                   (gfx_rect_t){ r.x, (int16_t)(r.y + 24), r.w,
-                                 (int16_t)(r.h - 24) });
+    svs_power_view(c, test_plot_rect());
 }
