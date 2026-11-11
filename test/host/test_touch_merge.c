@@ -24,8 +24,8 @@
 #include "ui_screen.h"
 #include "ui_theme.h"
 
-/* main.c: touch younger than this is touch seen. */
-#define PANEL_TOUCH_FRESH_MS 200u
+/* panel_control.c: touch younger than this is touch seen. */
+#define PANEL_TOUCH_FRESH_MS ARMING_TOUCH_FRESH_MS
 
 static touch_point_t pt(uint8_t id, int x, int y)
 {
