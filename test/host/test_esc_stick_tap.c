@@ -225,9 +225,10 @@ TEST_CASE(a_meter_that_goes_quiet_mid_run_ends_the_run)
 }
 
 /*
- * Beeps held back on the link past a group's end: the group is ended
- * early, as by a missed beep, the beep that still belonged to it breaks
- * the order, and the run stores what was asked all the same.
+ * Beeps held back on the link for 900ms, the tap's status read 40ms old:
+ * a group ends only once every beep the status holds has come in, one
+ * whose end only the next beep shows is judged unclear and not acted on,
+ * and the run stores what was asked all the same.
  */
 TEST_CASE(beeps_held_back_past_a_groups_end_store_nothing_wrong)
 {
@@ -251,9 +252,129 @@ TEST_CASE(beeps_held_back_past_a_groups_end_store_nothing_wrong)
     CHECK(unclear > 0u);        /* the held-back beeps were noticed */
     r.tap_lag = 60u;
     run_for(600000u);
-    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    if (r.e.phase != ESC_STICK_DONE) {
+        T_FAIL("ended %s", esc_stick_reason_text(r.e.reason));
+    }
     CHECK_EQ(esc_sim_stored(&r.sim, 4), 7);
     CHECK_EQ(esc_sim_stored(&r.sim, 6), 2);
+}
+
+/*
+ * Codex's case on #800: default timing, 250ms short beeps with 500ms
+ * between the beeps of a group, the tap's beeps handed over 60ms after
+ * they end.  The gap plus the next beep, 750ms, is longer than GROUP GAP
+ * (700ms): a group may end only on the capture's word that nothing sounds,
+ * never on the time since the last beep came in, or it ends under the next
+ * beep.  The tap run stores item 3's value as the meter run does.
+ */
+static void codex_case(esc_stick_src_t src)
+{
+    rig(FLYDRAGON);
+    esc_sim_cfg_t c;
+    esc_sim_defaults(&c);
+    c.beep_ms = 250u;
+    c.gap_ms = 500u;
+    esc_sim_init(&r.sim, r.p, &c);
+    r.src = src;
+    r.tap_lag = 60u;
+}
+
+TEST_CASE(a_beep_sounding_at_the_group_gap_keeps_the_group_open)
+{
+    esc_stick_change_t ch[1];
+    codex_case(ESC_STICK_SRC_METER);
+    ch[0] = change(3, 1);
+    CHECK(start(ch, 1));
+    run_for(600000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 3), 1);
+
+    codex_case(ESC_STICK_SRC_TAP);
+    ch[0] = change(3, 1);
+    CHECK(start(ch, 1));
+    run_until_phase(ESC_STICK_ITEMS, 60000u);
+    /* Each group the ESC sounded is heard whole: items 2 and 3 and the
+     * value groups follow their predecessor. */
+    uint32_t seen = r.e.groups;
+    unsigned whole = 0u;
+    for (int i = 0; i < 600000 && esc_stick_running(&r.e); ++i) {
+        tick();
+        if (r.e.groups != seen) {
+            seen = r.e.groups;
+            whole += (r.e.last_valid && r.e.last_in_order) ? 1u : 0u;
+        }
+    }
+    if (r.e.phase != ESC_STICK_DONE) {
+        T_FAIL("ended %s", esc_stick_reason_text(r.e.reason));
+    }
+    CHECK_EQ(esc_sim_stored(&r.sim, 3), 1);
+    CHECK(whole >= 2u);
+    ended_safe();
+}
+
+/*
+ * The deadline passes while a beep sounds: a status past the last beep's
+ * end plus GROUP GAP keeps the group open while it says a beep is under
+ * way or its window held a tone, and while it holds a beep the run has not
+ * taken; the beep, when it comes, joins the group, and only a quiet status
+ * with every beep taken ends it.
+ */
+TEST_CASE(a_status_past_the_deadline_with_a_beep_under_way_ends_nothing)
+{
+    flydragon(ESC_STICK_SRC_TAP, 100u);
+    esc_stick_change_t c[2];
+    const size_t n = two_changes(c);
+    CHECK(start(c, n));
+    run_until_phase(ESC_STICK_ITEMS, 60000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_ITEMS);
+    /* From here the run hears only what the test hands it, on a tap
+     * clock well after anything the simulation sounded. */
+    const uint32_t t0 = r.e.tap_end + 5000u;
+    uint16_t seq = r.e.tap_seq;
+    const uint32_t gg = r.t.group_gap_ms;
+    esc_stick_tap_t st = { .running = true, .lost = r.tap_lost,
+                           .newest = seq, .quiet = true, .head = seq };
+    /* A short beep, 128ms: a group opens. */
+    seq = (uint16_t)(seq + 1u);
+    const esc_stick_beep_t a = { seq, t0, 128u };
+    esc_stick_tap_beep(&r.e, &a);
+    CHECK(r.e.det.group_open);
+    CHECK_EQ(esc_stick_beeps(&r.e), 1u);
+    const uint32_t groups = r.e.groups;
+    /* Past its end plus GROUP GAP, a beep under way: open. */
+    st.window = (uint16_t)((t0 + 128u + gg + 40u) / 8u);
+    st.head = seq;
+    st.quiet = false;
+    esc_stick_tap(&r.e, &st);
+    CHECK(r.e.det.group_open);
+    CHECK_EQ(r.e.groups, groups);
+    /* Quiet, but the IOmcu holds a beep the run has not taken: open. */
+    st.quiet = true;
+    st.head = (uint16_t)(seq + 1u);
+    esc_stick_tap(&r.e, &st);
+    CHECK(r.e.det.group_open);
+    CHECK_EQ(r.e.groups, groups);
+    /* That beep: it began 500ms after the first ended, so it is the
+     * group's second. */
+    seq = (uint16_t)(seq + 1u);
+    const esc_stick_beep_t b = { seq, t0 + 128u + 500u, 128u };
+    esc_stick_tap_beep(&r.e, &b);
+    CHECK(r.e.det.group_open);
+    CHECK_EQ(esc_stick_beeps(&r.e), 2u);
+    CHECK_EQ(r.e.groups, groups);
+    /* Quiet, every beep taken, but the window ends before the second
+     * beep's end plus GROUP GAP: open. */
+    st.head = seq;
+    st.window = (uint16_t)((t0 + 128u + 500u + 128u + gg - 16u) / 8u);
+    esc_stick_tap(&r.e, &st);
+    CHECK(r.e.det.group_open);
+    /* Past it: the group of 2 ends. */
+    st.window = (uint16_t)((t0 + 128u + 500u + 128u + gg + 8u) / 8u);
+    esc_stick_tap(&r.e, &st);
+    CHECK(!r.e.det.group_open);
+    CHECK_EQ(r.e.groups, groups + 1u);
+    CHECK_EQ(r.e.last_count, 2u);
+    CHECK(r.e.last_valid);
 }
 
 int main(void)
@@ -267,5 +388,7 @@ int main(void)
     RUN(a_tap_state_that_stops_coming_ends_the_run);
     RUN(a_meter_that_goes_quiet_mid_run_ends_the_run);
     RUN(beeps_held_back_past_a_groups_end_store_nothing_wrong);
+    RUN(a_beep_sounding_at_the_group_gap_keeps_the_group_open);
+    RUN(a_status_past_the_deadline_with_a_beep_under_way_ends_nothing);
     return test_summary("esc_stick_tap");
 }

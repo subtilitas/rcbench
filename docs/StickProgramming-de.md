@@ -592,17 +592,25 @@ versorgt den ESC weiterhin, und seine Messwerte entscheiden weiterhin jede
 Netzteilregel des Laufs: Ausgang an, Ausgang aus mit dem Strom unten, KEINE
 MESSWERTE und NETZTEIL BLEIBT EIN.
 
-**Der Abgriff.** Jeder Frame übergibt dem Lauf den Zustand des Abgriffs und
-die Pieptöne, die seit dem Frame davor ankamen, den ältesten zuerst. In die
-Gruppen gehen die Zeiten des IOmcu, nicht der Zeitpunkt, zu dem das Panel
-den Piepton las. Eine Gruppe endet GRUPPENPAUSE nach dem Ende ihres letzten
-Pieptons, gezählt ab dem Moment, in dem dieser Piepton am Panel ankam: das
-Ende kommt um die Verzögerung der Verbindung zu spät, nie zu früh. Ein
-Piepton, der ankommt, nachdem seine Gruppe so beendet wurde (die Verbindung
-hielt ihn länger zurück als GRUPPENPAUSE minus die Pause davor), unterbricht
-die Reihenfolge wie ein später Messwert; der zu früh beendeten Gruppe
-fehlen Pieptöne, und die Reihenfolgeregel übergeht sie wie bei einem
-verlorenen Piepton. Eine Gruppe, deren Ende erst der nächste Piepton zeigt,
+**Der Abgriff.** Jeder Frame übergibt dem Lauf die Pieptöne, die seit dem
+Frame davor ankamen, den ältesten zuerst, und danach den Status des
+Abgriffs. In die Gruppen gehen die Zeiten des IOmcu, nicht der Zeitpunkt,
+zu dem das Panel den Piepton las. Eine Gruppe endet nur auf einen Status,
+der sagt, dass nichts klingt, gelesen alle 40ms (`TONE_LINK_READ_MS`):
+
+- kein Piepton im Gang (Bit 3 der Flags von TONE gelöscht) und kein Ton im
+  letzten 8-ms-Fenster (Bit 4 gelöscht);
+- die neueste Pieptonnummer ist der letzte Piepton, den der Lauf übernommen
+  hat, also ist kein Piepton, den der IOmcu abgeschlossen hat, noch auf dem
+  Weg zum Panel;
+- dieses Fenster endet GRUPPENPAUSE oder mehr nach dem Ende des letzten
+  Pieptons, auf der Uhr des IOmcu.
+
+Ein Piepton, der GRUPPENPAUSE nach dem vorigen noch klingt, hält seine
+Gruppe offen und kommt in sie, wenn er ankommt. Das Ende kommt so spät wie
+das Statuslesen, das die Stille zeigt, durch die Altersgrenze des Status
+unter 500ms, und nie vor der Stille. Eine Gruppe, deren Ende erst der
+nächste Piepton zeigt, weil vor diesem Piepton kein solcher Status ankam,
 gilt als unklar, und auf sie wird nicht reagiert: eine Bewegung käme dann
 erst, wenn die nächste Gruppe schon begonnen hat. Die Tonhöhe
 wird angezeigt und nicht benutzt. Ein Lauf, der am Abgriff zählt, endet:
@@ -913,7 +921,11 @@ und nach dem des Ablaufs speichert keinen anderen Wert als den verlangten.
 `test_esc_stick_tap` lässt das Profil des FlyDragon mit den Längen des
 Abgriffs laufen, 127,9ms und 383,7ms, am Abgriff und in INA3221-Fenstern,
 mit Netzteil-Messwerten alle 152ms, und beendet Läufe bei einem verlorenen
-Piepton, einer angehaltenen Erfassung und einem verstummten INA3221.
+Piepton, einer angehaltenen Erfassung und einem verstummten INA3221. Er
+lässt kurze Pieptöne von 250ms mit 500ms Abstand laufen, mit dem nächsten
+Piepton länger als GRUPPENPAUSE, vom Abgriff 60ms verspätet übergeben, und
+hält eine Gruppe offen, solange ein Status nach GRUPPENPAUSE einen Piepton
+im Gang oder einen noch nicht übernommenen zeigt.
 `test_esc_stick_panel_source` prüft die Wahl der Quelle durch das Panel und
 die Ablehnung ohne beide.
 
@@ -924,9 +936,9 @@ die Ablehnung ohne beide.
   7,6V über 4,7kΩ und eine 3,0-V-Zenerdiode an GPIO 22, ohne verlorenen
   Piepton; kein Lauf hat an ihm gezählt. Kein Lauf hat an einem
   INA3221-Kanal gezählt.
-- Wie oft das Panel auf dem Prüfstand ein INA3221-Fenster verpasst oder die
-  Pieptöne des Abgriffs über das Ende einer Gruppe hinaus zurückhält, ist
-  nicht gemessen.
+- Wie oft das Panel auf dem Prüfstand ein INA3221-Fenster verpasst, oder
+  wie lange der Status des Abgriffs nach einer Gruppe braucht, bis er die
+  Stille zeigt, ist nicht gemessen.
 - Ein Piepton kürzer als etwa 100ms, oder eine Pause zwischen zwei
   Pieptönen kürzer als etwa 100ms, kann mit seinem Nachbarn in ein
   50-ms-Fenster des INA3221 fallen und wird nicht getrennt von ihm gesehen.

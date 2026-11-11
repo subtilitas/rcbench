@@ -533,17 +533,26 @@ between two readings. The PD mini still powers the ESC, and its readings
 still decide every power rule of the run: the output on, the output off
 with the current down, NO READINGS and SUPPLY STAYS ON.
 
-**The tap.** Each frame hands the run the tap's state and the beeps that
-came in since the frame before, oldest first. The beep's own times from
+**The tap.** Each frame hands the run the beeps that came in since the
+frame before, oldest first, then the tap's status. The beep's own times from
 the IOmcu go into the groups, not the time the panel read it. A group ends
-GROUP GAP after its last beep ended, counted from the moment that beep came
-in on the panel: the end is late by the link's delay, never early. A beep
-that comes in after its group was ended this way (the link held it back
-for longer than GROUP GAP less the gap before it) breaks the order, as a
-late reading does; the group ended early is short of beeps, and the order
-rule passes it as it passes a missed beep. A group whose end only the next
-beep shows is judged unclear and not acted on: a move then would come after
-the next group has begun. The pitch is shown and not used. A run
+only on a status that says nothing sounds, read every 40ms
+(`TONE_LINK_READ_MS`):
+
+- no beep under way (TONE's flags bit 3 clear) and no tone in the last 8ms
+  window (bit 4 clear);
+- the newest beep number is the last beep the run has taken, so no beep
+  the IOmcu has finished is still on its way to the panel;
+- that window ends GROUP GAP or more after the last beep ended, on the
+  IOmcu's clock.
+
+A beep still sounding GROUP GAP after the one before keeps its group open,
+and joins it when it comes in. The end comes as late as the status read
+that shows the silence, under 500ms by the status's age limit, and never
+before the silence. A group whose end only the next beep shows, because no
+such status came in before that beep, is judged unclear and not acted on:
+a move then would come after the next group has begun. The pitch is shown
+and not used. A run
 counting from the tap ends:
 
 - with BEEP LOST when a beep number is missing: the IOmcu's lost count or
@@ -819,7 +828,10 @@ engine's own entry time stores no value other than the one asked for.
 `test_esc_stick_tap` runs the FlyDragon's profile at the tap's lengths,
 127.9ms and 383.7ms, from the tap and from INA3221 windows, with the
 supply read every 152ms, and ends runs on a lost beep, a capture that stops
-and a meter that stops. `test_esc_stick_panel_source` holds the panel's
+and a meter that stops. It runs 250ms short beeps 500ms apart, longer than
+GROUP GAP with the next beep, from the tap handed over 60ms late, and holds
+a group open while a status past GROUP GAP shows a beep under way or one
+not yet taken. `test_esc_stick_panel_source` holds the panel's
 choice of the source and the refusal with neither.
 
 ## Current limitations
@@ -828,8 +840,9 @@ choice of the source and the refusal with neither.
   heard one ESC, a Flycolor FlyDragon Lite 40A at 7.6V through 4.7kΩ and a
   3.0V zener on GPIO 22, with no beep lost; no run has counted from it.
   No run has counted from an INA3221 channel.
-- How often the panel misses an INA3221 window, or holds the tap's beeps
-  back past a group's end, on the bench is not measured.
+- How often the panel misses an INA3221 window on the bench, or how long
+  the tap's status takes to show the silence after a group, is not
+  measured.
 - A beep shorter than about 100ms, or a gap between two beeps shorter than
   about 100ms, can fall inside one 50ms INA3221 window with its neighbour and
   is not seen apart from it.

@@ -1944,16 +1944,20 @@ static void stick_step(stick_rig_t *r)
     motor_screen_set_armed(r->armed);   /* the output strip's SAFE/ARMED */
     s_stick_armed = r->armed;
     if (s_tone_fed) {
-        /* The tap running, its last window at 2090.0Hz, and the last four
-         * beeps it reported: the ESC's beeps, 2090.0Hz short and 1866.0Hz
-         * long, the pitches the tap measured on a Flycolor FlyDragon. */
+        /* The tap running, its last 8ms window at 2090.0Hz while the ESC
+         * beeps, the newest beep's number, and the last four beeps it
+         * reported: the ESC's beeps, 2090.0Hz short and 1866.0Hz long, the
+         * pitches the tap measured on a Flycolor FlyDragon. */
         tone_readout_t t;
         memset(&t, 0, sizeof(t));
         t.state = TONE_STATE_RUNNING;
         t.read = true;
-        t.tone = true;
-        t.win_freq_dhz = 20900u;
-        t.win_periods = 16u;
+        t.beep = r->high;
+        t.tone = r->high;
+        t.window = (uint16_t)(r->now / 8u - 1u);
+        t.head = r->made;
+        t.win_freq_dhz = r->high ? 20900u : 0u;
+        t.win_periods = r->high ? 16u : 0u;
         t.lost = 0u;
         t.n = (uint8_t)((r->made < TONE_LINK_SHOWN) ? r->made
                                                      : TONE_LINK_SHOWN);

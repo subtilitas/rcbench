@@ -16,7 +16,9 @@ history is in git.
   while its 50ms windows come in. With neither, RUN is refused with `No beep
   source. Switch the phase tap on, or set an INA3221 channel to SUPPLY, on
   SENSORS.` The tap's beeps go into the groups with the IOmcu's own start
-  times and lengths. The PD mini still powers the ESC, and its readings still
+  times and lengths. A tap group ends only on a tap status that shows no
+  beep under way, no tone in its last 8ms window and every beep taken, with
+  that window ending GROUP GAP or more after the last beep. The PD mini still powers the ESC, and its readings still
   decide every power rule. The run's page and the warning name the source
   ([Stick programming](docs/StickProgramming.md#where-the-beeps-come-from)).
 - A run ends with BEEP LOST when a tap beep number is missing, with TAP

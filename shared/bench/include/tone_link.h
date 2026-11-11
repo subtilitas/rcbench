@@ -217,8 +217,8 @@ typedef enum {
 typedef struct {
     tone_state_t state;
     /**
-     * @brief The state and the seven values below come from a status read
-     *        younger than TONE_LINK_STALE_MS; false, and the seven 0, while
+     * @brief The state and the nine values below come from a status read
+     *        younger than TONE_LINK_STALE_MS; false, and the nine 0, while
      *        none  speaks for the page: no link, no page, no read yet, a read
      *        that  old, a read whose FLAGS say the tap runs while its WINDOW
      *        has not  moved for TONE_LINK_WINDOW_STALE_MS, or a page that holds
@@ -234,6 +234,10 @@ typedef struct {
     uint16_t win_periods;     /**< the tone periods in the last window  */
     uint16_t lost;            /**< beeps the IOmcu dropped        */
     uint16_t glitches;        /**< lows it ignored as too short         */
+    uint16_t window;          /**< the last closed 8ms window's number,
+                                   modulo 65536, on the capture's clock */
+    uint16_t head;            /**< the newest beep's number the IOmcu
+                                   holds, 0 before the first            */
     uint32_t missed;          /**< beeps the panel did not read         */
     uint8_t  n;               /**< beeps held below                     */
     tone_beep_t beeps[TONE_LINK_SHOWN];   /**< newest first             */

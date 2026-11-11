@@ -1006,6 +1006,23 @@ void esc_stick_meter(esc_stick_t *e, const esc_stick_meter_t *m)
     on_event(e, ev);
 }
 
+/**
+ * @brief The end of tap window @p window, ms on the tap's clock: the one of
+ *        the times its number gives, modulo 65536 windows, nearest the last
+ *        beep's end.
+ *
+ * @param e       The run; a beep has come in.
+ * @param window  The window's number, modulo 65536.
+ * @return The window's end, ms on the tap's clock.
+ */
+static uint32_t tap_window_end(const esc_stick_t *e, uint16_t window)
+{
+    const uint32_t wrap = 65536u * ESC_STICK_TAP_WINDOW_MS;
+    const uint32_t end = ((uint32_t)window + 1u) * ESC_STICK_TAP_WINDOW_MS;
+    const uint32_t d = (end - e->tap_end) % wrap;
+    return (d < wrap / 2u) ? e->tap_end + d : e->tap_end - (wrap - d);
+}
+
 void esc_stick_tap(esc_stick_t *e, const esc_stick_tap_t *st)
 {
     if (!esc_stick_running(e) || st == NULL || e->src != ESC_STICK_SRC_TAP) {
@@ -1023,6 +1040,15 @@ void esc_stick_tap(esc_stick_t *e, const esc_stick_tap_t *st)
     e->tap_ok_ms = e->now_ms;
     if (st->lost != e->tap_lost0) {
         finish(e, ESC_STICK_ABORTED, ESC_STICK_R_TAP_LOST);
+        return;
+    }
+    /* Silence the capture saw, up to the end of its last closed window:
+     * no beep under way, no tone in the window, and every beep it holds
+     * taken.  Only that ends a group; the time since the last beep came in
+     * does not, as the tap reports a beep once it has ended. */
+    if (st->quiet && st->head == e->tap_seq && e->tap_rx
+        && powered_phase(e->phase)) {
+        on_event(e, esc_det_quiet(&e->det, tap_window_end(e, st->window)));
     }
 }
 
@@ -1035,18 +1061,6 @@ void esc_stick_tap(esc_stick_t *e, const esc_stick_tap_t *st)
 static uint16_t tap_next(uint16_t seq)
 {
     return (seq == 65535u) ? 1u : (uint16_t)(seq + 1u);
-}
-
-/**
- * @brief The tap's clock now: the last beep's end, and the bench time since it
- *        came in.  Never ahead of the tap: the beep came in after it ended.
- *
- * @param e  The run.
- * @return The tap's time, ms.
- */
-static uint32_t tap_now(const esc_stick_t *e)
-{
-    return e->tap_end + since(e->now_ms, e->tap_rx_ms);
 }
 
 void esc_stick_tap_beep(esc_stick_t *e, const esc_stick_beep_t *b)
@@ -1062,16 +1076,15 @@ void esc_stick_tap_beep(esc_stick_t *e, const esc_stick_beep_t *b)
     e->tap_seq = b->seq;
     e->tap_rx = true;
     e->tap_end = b->start_ms + b->len_ms;
-    e->tap_rx_ms = b->rx_ms;
     if (!powered_phase(e->phase)) {
         return;
     }
     if (menu_phase(e->phase)
         && esc_det_quiet(&e->det, b->start_ms) == ESC_DET_GROUP) {
         /* The group under way ended GROUP GAP before this beep began, and
-         * only this beep shows it: the link held the beeps back past the
-         * ESC's pause, and a move now would come after the next group has
-         * begun.  Judged as unclear, never acted on. */
+         * only this beep shows it: no quiet state came between the two, and
+         * a move now would come after the next group has begun.  Judged as
+         * unclear, never acted on. */
         on_group(e, e->det.count, false);
     }
     const esc_det_event_t ev = esc_det_beep(&e->det, b->start_ms, b->len_ms);
@@ -1212,13 +1225,6 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
         break;
     case ESC_STICK_ITEMS:
     case ESC_STICK_VALUES:
-        if (e->src == ESC_STICK_SRC_TAP && e->tap_rx) {
-            /* Quiet on the tap up to now, on its clock. */
-            on_event(e, esc_det_quiet(&e->det, tap_now(e)));
-            if (!esc_stick_running(e) || !menu_phase(e->phase)) {
-                break;
-            }
-        }
         if (e->hand_menu) {
             /* Listening while the action is asked for: the ESC is silent
              * until it is done, so SILENCE and TIMEOUT run from then. */

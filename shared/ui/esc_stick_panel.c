@@ -225,7 +225,9 @@ esc_stick_src_t sp_source(void)
 /**
  * @brief The tap's state as the run takes it: the capture running by a fresh
  *        read, the beeps lost (the IOmcu's count, the panel's missed count and
- *        1 for an overrun), and the newest beep's number.
+ *        1 for an overrun), the newest beep the panel has read, and the
+ *        status read's evidence of silence: no beep under way, no tone in the
+ *        last window, that window's number and the IOmcu's newest beep.
  * @param r  The tap's readout.
  * @return The state for esc_stick_tap().
  */
@@ -235,6 +237,9 @@ static esc_stick_tap_t sp_tap_state(const tone_readout_t *r)
     st.running = r->state == TONE_STATE_RUNNING && r->read;
     st.lost = (uint32_t)r->lost + r->missed + (r->overrun ? 1u : 0u);
     st.newest = (r->n > 0u) ? r->beeps[0].seq : 0u;
+    st.quiet = r->read && !r->beep && !r->tone;
+    st.window = r->window;
+    st.head = r->head;
     return st;
 }
 
@@ -807,10 +812,9 @@ void esc_stick_panel_tone(const tone_readout_t *r)
     if (!esc_stick_running(&t->run) || t->run.src != ESC_STICK_SRC_TAP) {
         return;
     }
-    const esc_stick_tap_t st = sp_tap_state(r);
-    esc_stick_tap(&t->run, &st);
     /* The beeps after the last one handed over, oldest first: a number the
-     * readout no longer holds is one the run never gets, and it ends. */
+     * readout no longer holds is one the run never gets, and it ends.  Then
+     * the state, whose silence counts only once they are all taken. */
     for (unsigned i = (r->n < TONE_LINK_SHOWN) ? r->n : TONE_LINK_SHOWN;
          i-- > 0u && esc_stick_running(&t->run);) {
         const tone_beep_t *b = &r->beeps[i];
@@ -820,12 +824,14 @@ void esc_stick_panel_tone(const tone_readout_t *r)
             continue;                   /* taken before */
         }
         const esc_stick_beep_t x = { b->seq, b->start_ms,
-                                     ((uint32_t)b->len_dms + 5u) / 10u,
-                                     t->now_ms };
+                                     ((uint32_t)b->len_dms + 5u) / 10u };
         esc_stick_tap_beep(&t->run, &x);
         s.tap_fed = b->seq;
     }
-    sp_follow();        /* a beep can end the run */
+    const esc_stick_tap_t st = sp_tap_state(r);
+    esc_stick_tap(&t->run, &st);
+    sp_follow();        /* a beep, or the silence after a group, can move
+                           the stick or end the run */
 }
 
 void esc_stick_panel_meter(unsigned channel, uint16_t window, int32_t max_ma,

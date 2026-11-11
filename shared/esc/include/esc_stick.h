@@ -644,15 +644,31 @@ typedef struct {
     uint32_t rx_ms;          /**< the bench time the panel had it, ms     */
 } esc_stick_meter_t;
 
+/** @brief The phase tap's window, ms: the IOmcu closes one every 8ms. */
+#define ESC_STICK_TAP_WINDOW_MS 8u
+
 /**
  * @brief The phase tap's state, as the panel last read it.
+ *
+ * @p quiet, @p window and @p head are one status read's: the capture saw no
+ * beep under way and no tone in its last closed window, numbered @p window,
+ * and held beeps up to @p head.  Silence is known up to the end of that
+ * window, on the tap's clock, once every beep up to @p head has reached the
+ * run.
  */
 typedef struct {
     bool     running;        /**< the capture runs, by a fresh status read */
     uint32_t lost;           /**< beeps lost so far: the IOmcu's count, the
                                   panel's missed count, and 1 for an
                                   overrun of the capture                  */
-    uint16_t newest;         /**< the newest beep's number, 0 for none    */
+    uint16_t newest;         /**< the newest beep the panel has read, 0
+                                  for none: the run's base               */
+    bool     quiet;          /**< no run of bursts under way (FLAGS bit 3)
+                                  and the last window silent (bit 4)     */
+    uint16_t window;         /**< the last closed window's number, modulo
+                                  65536, ESC_STICK_TAP_WINDOW_MS each    */
+    uint16_t head;           /**< the newest beep's number the IOmcu holds,
+                                  0 for none                              */
 } esc_stick_tap_t;
 
 /**
@@ -663,8 +679,6 @@ typedef struct {
     uint32_t start_ms;       /**< its first rise, ms since the capture
                                   started, on the IOmcu's clock          */
     uint32_t len_ms;         /**< its length, ms                          */
-    uint32_t rx_ms;          /**< the bench time the panel had it, ms: the
-                                  time of the step that follows           */
 } esc_stick_beep_t;
 
 /**
@@ -779,7 +793,6 @@ typedef struct {
     uint32_t             tap_ok_ms;     /**< the last status that ran    */
     bool                 tap_rx;        /**< a beep has come in          */
     uint32_t             tap_end;       /**< its end, the tap's clock    */
-    uint32_t             tap_rx_ms;     /**< the bench time it came in   */
 } esc_stick_t;
 
 /**
@@ -841,6 +854,13 @@ void esc_stick_meter(esc_stick_t *e, const esc_stick_meter_t *m);
  * The first call after esc_stick_start() takes the lost count and the newest
  * beep's number as the run's base.  Ignored by a run counting from the meter.
  *
+ * The state is the run's only evidence of silence on the tap: the tap reports
+ * a beep once it has ended, so the time since the last one came in says
+ * nothing about one sounding now.  While the menu is counted, a group ends
+ * only on a state that is @p quiet, whose @p head is the last beep the run
+ * has taken, and whose window ends GROUP GAP or more after that beep's end,
+ * on the tap's clock.
+ *
  * @param e   The run.
  * @param st  The tap's state.
  */
@@ -850,12 +870,12 @@ void esc_stick_tap(esc_stick_t *e, const esc_stick_tap_t *st);
  * @brief One beep the phase tap heard, in the order of its numbers.
  *
  * A number other than the one after the last beep taken ends the run with
- * ESC_STICK_R_TAP_LOST: a beep that never reached the run.  A group ends
- * GROUP GAP after its last beep ended, timed from the bench time that beep
- * came in: a group is ended late by the link's delay, not early.  A beep that
- * still belongs to a group ended so breaks the order, as a late reading does.
- * Ignored by a run counting from the meter, and before the first
- * esc_stick_tap().
+ * ESC_STICK_R_TAP_LOST: a beep that never reached the run.  The group
+ * under way ends at the beep only when it began GROUP GAP or more after the
+ * last one ended and no quiet state (esc_stick_tap()) has ended it before: a
+ * move then would come after the next group has begun, so that group is
+ * judged unclear and not acted on.  Ignored by a run counting from the meter,
+ * and before the first esc_stick_tap().
  *
  * @param e  The run.
  * @param b  The beep.

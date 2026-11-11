@@ -74,8 +74,13 @@ typedef struct {
     int32_t  win_max;
     /* The phase tap: each beep the ESC sounds, from its current's edges,
      * handed over tap_lag ms after it ended, on the tap's clock (the
-     * bench's less tap_skew), numbered 1 on. */
+     * bench's less tap_skew), numbered 1 on; and its status as the IOmcu
+     * had it tap_status_lag ms before (40ms: a read on the last poll): the
+     * last closed 8ms window, whether a beep was under way, whether the
+     * window held a tone, and the newest beep's number.  tap_hist holds
+     * whether the ESC sounded, a byte a ms. */
     uint32_t tap_lag;
+    uint32_t tap_status_lag;
     uint32_t tap_skew;
     bool     tap_stop;        /* the capture stops                    */
     uint32_t tap_lost;        /* the lost count the tap reports       */
@@ -86,6 +91,7 @@ typedef struct {
     esc_stick_beep_t tap_q[16];
     uint32_t tap_due[16];
     unsigned tap_n;
+    uint8_t  tap_hist[2048];
 } rig_t;
 
 static rig_t r;
@@ -143,6 +149,7 @@ static inline void rig_at(const char *id, uint32_t t0)
     r.online = true;
     r.read_iv = 50u;
     r.lcg = 7u;
+    r.tap_status_lag = 40u;
 }
 
 static inline void rig(const char *id)
@@ -192,7 +199,7 @@ static inline void rig_tap(int32_t ma, bool powered)
     } else if (!high && r.tap_high && r.tap_n < 16u) {
         r.tap_made = (r.tap_made == 65535u) ? 1u : (uint16_t)(r.tap_made + 1u);
         const esc_stick_beep_t b = { r.tap_made, r.tap_rise - r.tap_skew,
-                                     rig_tap_len(r.now - r.tap_rise), 0u };
+                                     rig_tap_len(r.now - r.tap_rise) };
         if (b.seq != r.tap_drop) {
             r.tap_q[r.tap_n] = b;
             r.tap_due[r.tap_n] = r.now + r.tap_lag;
@@ -200,16 +207,39 @@ static inline void rig_tap(int32_t ma, bool powered)
         }
     }
     r.tap_high = high;
-    const esc_stick_tap_t st = { !r.tap_stop, r.tap_lost, r.tap_made };
-    esc_stick_tap(&r.e, &st);
+    r.tap_hist[r.now % 2048u] = high ? 1u : 0u;
     while (r.tap_n > 0u && (int32_t)(r.now - r.tap_due[0]) >= 0) {
-        r.tap_q[0].rx_ms = r.now;       /* the step of this tick follows */
         esc_stick_tap_beep(&r.e, &r.tap_q[0]);
         memmove(&r.tap_q[0], &r.tap_q[1], (r.tap_n - 1u) * sizeof(r.tap_q[0]));
         memmove(&r.tap_due[0], &r.tap_due[1],
                 (r.tap_n - 1u) * sizeof(r.tap_due[0]));
         r.tap_n--;
     }
+    /* The status, tap_status_lag old: the window closed by then, and
+     * whether a beep sounded at that moment or in that window.  It holds
+     * every beep that had ended by then, handed over or not. */
+    const uint32_t then = r.now - r.tap_status_lag;
+    const uint32_t w = (then - r.tap_skew) / ESC_STICK_TAP_WINDOW_MS - 1u;
+    const uint32_t w_end = (w + 1u) * ESC_STICK_TAP_WINDOW_MS + r.tap_skew;
+    bool tone = false;
+    for (uint32_t k = 1u; k <= ESC_STICK_TAP_WINDOW_MS; ++k) {
+        tone = tone || r.tap_hist[(w_end - k) % 2048u] != 0u;
+    }
+    uint16_t head = r.tap_made;
+    for (unsigned i = 0u; i < r.tap_n; ++i) {
+        const uint32_t fall = r.tap_q[i].start_ms + r.tap_q[i].len_ms
+                              + r.tap_skew;
+        if ((int32_t)(fall - then) > 0) {
+            head--;                     /* it ended after the status */
+        }
+    }
+    const esc_stick_tap_t st = {
+        .running = !r.tap_stop, .lost = r.tap_lost,
+        .newest = (uint16_t)(r.tap_made - r.tap_n),
+        .quiet = r.tap_hist[then % 2048u] == 0u && !tone,
+        .window = (uint16_t)w, .head = head,
+    };
+    esc_stick_tap(&r.e, &st);
 }
 
 /* One millisecond of an INA3221 channel read through its windows: the
