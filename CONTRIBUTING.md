@@ -432,8 +432,10 @@ request and a new one does.
 
 - `tools/doc_check.py --check` runs Doxygen 1.18.0 with the `Doxyfile`
   and compares its warnings with `tools/doc_check_baseline.txt`. A
-  baseline line is a file and a message without the line number; code
-  that moves inside a file changes no line. In a pull request CI passes
+  baseline line is a file, a message and, after a tab, the text of the
+  line the warning names, without the line number: code that moves inside
+  a file changes no line, and a gap fixed in one place does not cancel the
+  same message new on another line of the file. In a pull request CI passes
   `--base origin/<base branch>` (on a branch run by hand, `--base origin/main`), and these warnings fail, listed or not:
   - every warning in a C file the pull request adds;
   - in a C file it changes, every warning on a line it adds or rewrites
