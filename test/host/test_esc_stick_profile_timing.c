@@ -77,14 +77,19 @@ TEST_CASE(the_flydragon_profile_states_its_measured_beeps)
     CHECK_EQ(p->gap_ms, 0u);            /* not measured */
     CHECK_EQ(p->group_gap_ms, 0u);
     CHECK(esc_stick_profile_beeps(p));
-    /* No other profile of record states a beep length. */
+    /* The FlyDragon Lite's profile states the same lengths, from the same
+     * ESC; no other profile of record states a beep length. */
+    const esc_profile_t *lite = esc_profiles_find("flycolor-flydragon-lite");
+    CHECK(lite != NULL);
+    CHECK_EQ(lite->beep_ms, 128u);
+    CHECK_EQ(lite->long_ms, 384u);
     unsigned stated = 0u;
     for (size_t i = 0; i < esc_profiles_count(); ++i) {
         const esc_profile_t *q = esc_profiles_at(i);
         stated += (q->beep_ms != 0u || q->long_ms != 0u || q->gap_ms != 0u
                    || q->group_gap_ms != 0u) ? 1u : 0u;
     }
-    CHECK_EQ(stated, 1u);
+    CHECK_EQ(stated, 2u);
 }
 
 /*

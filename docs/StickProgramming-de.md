@@ -779,10 +779,10 @@ dort, damit die Werte des gewählten Punkts ihren Platz behalten. Die Liste
 OPTIONEN behält die Einstellungen, wie sie gespeichert sind; ihre
 Hilfezeilen sagen, dass sie gelten, wo das Profil keine Länge nennt.
 
-1 Profil nennt Pieptonlängen: `flycolor-flydragon-lite-plus`, `beep_ms`
-128 und `long_ms` 384, vom Phasenabgriff an einem Flycolor FlyDragon Lite 40A
+2 Profile nennen Pieptonlängen: `flycolor-flydragon-lite` und
+`flycolor-flydragon-lite-plus`, `beep_ms` 128 und `long_ms` 384, vom Phasenabgriff an einem Flycolor FlyDragon Lite 40A
 an 7,6V (kurze Pieptöne 127,9ms bei 2090Hz, lange 383,7ms bei 1866Hz, kein
-Piepton verloren). Sein Lauf nimmt:
+Piepton verloren). Ein Lauf auf einem der beiden nimmt:
 
 | Wert | Aus | ms | Abstand zu den gemessenen Pieptönen |
 | --- | --- | --- | --- |
@@ -839,9 +839,9 @@ höchstens bis 3,0A; jedes Modell im Satz, das einen Strom nennt, ist für
 
 ## Welche Profile laufen
 
-Der Ablauf unterstützt 25 der 73 Profile: 14
+Der Ablauf unterstützt 26 der 74 Profile: 15
 zweistufige und 11 einstufige. Mit den 20V des PD mini und den
-vorgegebenen Grenzen öffnet die Liste 24 davon:
+vorgegebenen Grenzen öffnet die Liste 25 davon:
 hobbywing-skywalker-v2-hv-opto braucht 22,8V. Auch 4 Modellzeilen von
 Familien, die sich öffnen, werden bei 20V abgelehnt, jede mit 22,8V:
 FLYFUN 130A und 160A HV OPTO V5 sowie Gecko 120A und 150A OPTO HV. 4
@@ -1012,7 +1012,8 @@ Regel die Marke nicht kennt, endet bei Punkt 1 mit ZEITLIMIT. Mit ihr
 werden die Punkte 1 und 2 im zweiten Durchlauf gewählt, am Abgriff und in
 INA3221-Fenstern. Eine fremde Gruppe nach dem höchsten Punkt wird
 übergangen, eine zweite bricht die Folge. Ein Profil ohne das Feld und
-eine Werteschleife übergehen keine.
+eine Werteschleife übergehen keine. Das Profil des FlyDragon Lite speichert
+am 40A, dessen Punkt 8 4 Werte hat, Punkt 8 Wert 4 und Punkt 1 Wert 2.
 
 ## Aktuelle Einschränkungen
 
@@ -1021,14 +1022,14 @@ eine Werteschleife übergehen keine.
   7,6V über 4,7kΩ und eine 3,0-V-Zenerdiode an GPIO 22, ohne verlorenen
   Piepton; kein Lauf hat an ihm gezählt. Kein Lauf hat an einem
   INA3221-Kanal gezählt.
-- Das FlyDragon-Profil nennt keine Pause. Eine Aufnahme eines FlyDragon
+- Die beiden FlyDragon-Profile nennen keine Pause. Eine Aufnahme eines FlyDragon
   Lite 40A vom 2026-11-11 zeigt 146 bis 150ms zwischen den Pieptönen einer
-  Gruppe und 3,23s zwischen den Gruppen; kein Lauf hat sie genutzt. Sein
-  Lauf nimmt PAUSE MIN 64ms aus dem kurzen Piepton von 128ms (die Hälfte) und behält
+  Gruppe und 3,23s zwischen den Gruppen; kein Lauf hat sie genutzt. Ein
+  Lauf auf einem der beiden nimmt PAUSE MIN 64ms aus dem kurzen Piepton von 128ms (die Hälfte) und behält
   GRUPPENPAUSE 700ms aus den Einstellungen: eine Pause zwischen zwei
   Gruppen von höchstens 700ms verbindet sie zu einer, und eine Pause in
   einer Gruppe über 700ms teilt sie. So oder so verletzen die Gruppen die
-  Reihenfolge, und der Lauf endet mit ZEITLIMIT. Seine Pieptonlängen stammen
+  Reihenfolge, und der Lauf endet mit ZEITLIMIT. Die Pieptonlängen stammen
   von einem FlyDragon Lite 40A; kein FlyDragon Lite Plus ist gemessen.
 - Wie oft das Panel auf dem Prüfstand ein INA3221-Fenster verpasst, oder
   wie lange der Status des Abgriffs nach einer Gruppe braucht, bis er die

@@ -34,7 +34,7 @@ TEST_CASE(the_profiles_the_engine_runs_are_the_counted_menus)
         }
     }
     /* docs/StickProgramming.md gives these counts. */
-    CHECK_EQ(two, 14);
+    CHECK_EQ(two, 15);
     CHECK_EQ(one, 11);
 
     const char *why = NULL;
@@ -558,7 +558,7 @@ TEST_CASE(twenty_volts_leave_out_one_family_and_six_models)
             }
         }
     }
-    CHECK_EQ(runs, 25u);
+    CHECK_EQ(runs, 26u);
     CHECK_EQ(families, 1u);
     CHECK_EQ(rows, 6u);
 }

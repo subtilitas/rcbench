@@ -343,7 +343,6 @@ static void start_marker(esc_sim_t *s, uint32_t at)
     s->pulse_n = 1u;
     s->pulse_i = 0u;
     s->menu_group = false;
-    s->sounding = 0u;
     start_beep(s, at);
 }
 

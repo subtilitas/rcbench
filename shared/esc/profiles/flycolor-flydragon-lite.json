@@ -1,0 +1,422 @@
+{
+  "id": "flycolor-flydragon-lite",
+  "brand": "Flycolor",
+  "family": "FlyDragon Lite 40A 2-4S and 60A-120A 3-6S, 10-item menu",
+  "family_de": "FlyDragon Lite 40A 2-4S und 60A-120A 3-6S, Menü mit 10 Punkten",
+  "models": [
+    {
+      "name": "FlyDragon Lite 40A",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 40,
+      "bec": null,
+      "firmware_note": null,
+      "spec_source": "the ESC's label, photographed by the tester: 'FlyDragon Lite 40A 2-4S 5V 3A' (BEC 5V/3A; v_max_mv is 4.2V per cell, not stated). The manual lists no 40A.",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "FlyDragon Lite 60A",
+      "cells_min": 3,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 60,
+      "bec": null,
+      "firmware_note": null,
+      "spec_source": "manual-lite.pdf p.2 (02 Specifications: con. current, LiPo cells, BEC 5V/6V/7.4V 5A by switch; v_max_mv is 4.2V per cell, not stated)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "FlyDragon Lite 80A",
+      "cells_min": 3,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 80,
+      "bec": null,
+      "firmware_note": null,
+      "spec_source": "manual-lite.pdf p.2 (02 Specifications: con. current, LiPo cells, BEC 5V/6V/7.4V 5A by switch; v_max_mv is 4.2V per cell, not stated)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "FlyDragon Lite 100A",
+      "cells_min": 3,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 100,
+      "bec": null,
+      "firmware_note": null,
+      "spec_source": "manual-lite.pdf p.2 (02 Specifications: con. current, LiPo cells, BEC 5V/6V/7.4V 5A by switch; v_max_mv is 4.2V per cell, not stated)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "FlyDragon Lite 120A",
+      "cells_min": 3,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 120,
+      "bec": null,
+      "firmware_note": null,
+      "spec_source": "manual-lite.pdf p.2 (02 Specifications: con. current, LiPo cells, BEC 5V/6V/7.4V 5A by switch; v_max_mv is 4.2V per cell, not stated)",
+      "cell_type": "lipo"
+    }
+  ],
+  "sources": [
+    {
+      "file": "manual-lite.pdf",
+      "pages": "2",
+      "language": "en",
+      "url": null,
+      "edition": "251400-1111 V1.2 (footer of page 2)"
+    },
+    {
+      "file": "manual-lite.pdf",
+      "pages": "1",
+      "language": "zh",
+      "url": null,
+      "edition": "251400-1111 V1.2"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": "",
+  "scheme": {
+    "type": "short_long",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": 7000,
+      "confirm_signal": "Two short beeps 2s after power-up, then the special tone 12321 5s later",
+      "steps": [
+        "Switch the transmitter on; set the throttle to maximum",
+        "Connect battery",
+        "Wait 2000ms: two short beeps",
+        "Wait 5000ms more: special tone 12321, programming mode entered"
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "short_long",
+      "long_equals_short": 5,
+      "beep_ms": 128,
+      "long_ms": 384,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "loop_marker": true,
+      "description": "The item loop is the special tone 12321, then 10 item tones: items 1-4 are 1-4 short beeps, items 5-9 are 1 long beep plus 0-4 short, item 10 is 2 long. After an item is entered its value tones loop, value N sounded the same way, with no 12321 between value loops. The manual: 'Usually, 1 long tone equals 5 short tones'."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": 3000,
+      "description": "Item: move the throttle to the zero position within 3s after the desired item tone (the Chinese text: 3秒内; the English text gives no time). Item 9 gives 5s."
+    },
+    "value_select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Value: move the throttle to the top position after the desired value tone; special tone 1212 confirms the value is stored. The window length is not stated."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Leave the throttle unchanged and wait for the next tone."
+    },
+    "confirm_signal": "Special tone (written 1212) after a value is stored.",
+    "exit": "Item 10 (2 long beeps) then throttle to the zero position within 3000ms: special tone 765765. Or, after a stored value, throttle to the zero position within 3000ms. Or disconnect the battery.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": "Item 9 (1 long + 4 short beeps) 'Restore default settings': throttle to the zero position within 5000ms, special tone 12321.",
+    "description": "Throttle at maximum, then battery on. Two short beeps after 2s and the special tone 12321 after 5s more mark programming mode. The ESC loops 12321 and 10 item tones; throttle to minimum on the desired item enters it. Value tones then loop; throttle to maximum on the desired tone stores it (tone 1212). Waiting returns to the item loop."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Brake",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "no brake",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "soft"
+        },
+        {
+          "number": 3,
+          "name": "heavy"
+        },
+        {
+          "number": 4,
+          "name": "very heavy"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2 (05 Programming parameter)"
+    },
+    {
+      "number": 2,
+      "name": "Battery type",
+      "key": "battery_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "LiPo",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "NiCd / NiMH"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    },
+    {
+      "number": 3,
+      "name": "Cutoff voltage",
+      "key": "cutoff_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "low (2.8V/cell; Ni 50%)"
+        },
+        {
+          "number": 2,
+          "name": "medium (3.0V/cell; Ni 65%)",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "high (3.2V/cell; Ni 75%)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    },
+    {
+      "number": 4,
+      "name": "Timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "0deg"
+        },
+        {
+          "number": 2,
+          "name": "3.75deg"
+        },
+        {
+          "number": 3,
+          "name": "7.5deg"
+        },
+        {
+          "number": 4,
+          "name": "11.25deg"
+        },
+        {
+          "number": 5,
+          "name": "15deg",
+          "default": true
+        },
+        {
+          "number": 6,
+          "name": "18.75deg"
+        },
+        {
+          "number": 7,
+          "name": "22.5deg"
+        },
+        {
+          "number": 8,
+          "name": "26.25deg"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    },
+    {
+      "number": 5,
+      "name": "Startup mode",
+      "key": "startup",
+      "values": [
+        {
+          "number": 1,
+          "name": "normal (no delay to full)",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "soft (6s to full)"
+        },
+        {
+          "number": 3,
+          "name": "very soft (12s to full)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    },
+    {
+      "number": 6,
+      "name": "PWM frequency",
+      "key": "pwm_freq",
+      "values": [
+        {
+          "number": 1,
+          "name": "12kHz",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "8kHz"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    },
+    {
+      "number": 7,
+      "name": "Voltage cutoff option",
+      "key": "cutoff_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "reduce, then cut off",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "cut off at once"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    },
+    {
+      "number": 8,
+      "name": "Battery cells",
+      "key": "cell_count",
+      "values": [
+        {
+          "number": 1,
+          "name": "automatic",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "2S"
+        },
+        {
+          "number": 3,
+          "name": "3S"
+        },
+        {
+          "number": 4,
+          "name": "4S"
+        }
+      ],
+      "applies_to": [
+        "FlyDragon Lite 40A"
+      ],
+      "source_page": "2 (values 1-4: the value loop measured on the 40A 2-4S, 2026-11-11; labels from the manual's list)"
+    },
+    {
+      "number": 8,
+      "name": "Battery cells",
+      "key": "cell_count",
+      "values": [
+        {
+          "number": 1,
+          "name": "automatic",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "2S"
+        },
+        {
+          "number": 3,
+          "name": "3S"
+        },
+        {
+          "number": 4,
+          "name": "4S"
+        },
+        {
+          "number": 5,
+          "name": "5S"
+        },
+        {
+          "number": 6,
+          "name": "6S"
+        }
+      ],
+      "applies_to": [
+        "FlyDragon Lite 60A",
+        "FlyDragon Lite 80A",
+        "FlyDragon Lite 100A",
+        "FlyDragon Lite 120A"
+      ],
+      "source_page": "2"
+    },
+    {
+      "number": 9,
+      "name": "Restore default settings",
+      "key": "reset",
+      "values": [
+        {
+          "number": 1,
+          "name": "restore defaults"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    },
+    {
+      "number": 10,
+      "name": "Exit",
+      "key": "exit",
+      "values": [
+        {
+          "number": 1,
+          "name": "exit programming"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    }
+  ],
+  "unknowns": [
+    "The manual states no beep duration, gap between beeps or gap between groups. beep_ms and long_ms are measured (see notes). The gaps are read from one recording of 2026-11-11 (see notes) and are not stated in gap_ms or group_gap_ms.",
+    "Whether each item or value tone sounds once or several times before the next is not stated.",
+    "The window for the value move (throttle to maximum after a value tone) is not stated.",
+    "The window for the item move: the Chinese text gives 3s; the English text gives no time.",
+    "Whether the value loop starts at value 1 or at the stored value is not stated.",
+    "Whether the item loop restarts at item 1 or continues after a stored value is not stated, nor how long the ESC waits before it returns to the item loop.",
+    "Restore default settings answers with the tone 12321, the same as the loop's marker; with the throttle kept at the zero position the ESC then loops the values of item 1 (Brake), with the throttle at the top it loops the items again. How a stick run reads that 12321 is not measured.",
+    "Entry passes the throttle-range calibration's first step: the two short beeps at 2s mean 'full throttle position memorized' in section 04.2. Whether entering programming mode keeps that point is not stated.",
+    "The value labels of item 8 on the 40A 2-4S (automatic, 2S, 3S, 4S) are the first 4 of the manual's list for the 60A-120A; the ESC sounds 4 values and the manual states no list for it.",
+    "The 60A-120A models are not measured; their item 8 has the manual's 6 values.",
+    "BEC type (linear or switching) is not stated; the input voltage limit is not stated as a number."
+  ],
+  "notes": [
+    "Measured on one FlyDragon Lite 40A 2-4S over the phase tap: on 2026-11-10 at 7.6V, short beeps 127.9ms at 2090Hz and long beeps 383.7ms at 1866Hz, no beep lost; on 2026-11-11 from a video's audio, 146-150ms between the beeps of a group and 3.23s between item groups.",
+    "loop_marker: the special tone 12321 (5 notes of 160ms at about 2090, 2343 and 2625Hz, no gap, about 808ms in all) sounds before every pass of the item loop, 2.03s before item 1; the manual lists it at the head of the item loop. The value loops have no melody.",
+    "Item 8 on the 40A 2-4S, measured on 2026-11-11 from a video's audio: the value loop plays exactly 4 values (1, 2, 3, 4, then 1 again), value beeps 160ms at about 2213Hz and 120ms apart, 3.2s between value groups, the first value 1.9s after the item group.",
+    "The manual covers the 60A, 80A, 100A and 120A, 3-6S, with a 5V/6V/7.4V 5A BEC set by switch. The 40A 2-4S, BEC 5V/3A, is taken from its label; its menu is the manual's with item 8 cut to 4 values.",
+    "Against the FlyDragon Lite Plus (flycolor-flydragon-lite-plus): item 8 is Battery cells, not Running mode, item 6 offers 12kHz and 8kHz, not 16kHz and 8kHz, and item 9 answers with 12321, not 765765.",
+    "Battery cells applies to LiPo only (the manual: 'Available for Lipo battery only').",
+    "v_max_mv is the cell count times 4.2V; the manual and the label state cells, not a voltage.",
+    "Battery type value 2 is written 'NiCb/NiMh' in the English text; the Chinese text gives 镍氢/镍隔.",
+    "Low voltage threshold default: medium, 3.0V per LiPo cell, 65% of the Ni pack's start voltage. The manual's 4S example: 11.2V low, 12.0V medium, 12.8V high.",
+    "Timing: the English text lists 'Low (0/3.75/11.25/15/18.75deg)' for most inner rotor motors and 'High (22.5/26.25deg)' for 6-pole and higher outer rotor motors; 7.5deg is in neither list.",
+    "Trouble shooting: 2 long and 2 short beeps after power-up mean the throttle channel is reversed and the ESC entered programming mode.",
+    "The menu table names item 9 'Restore factory defaule'; section 05 names it 'Restore default settings'."
+  ],
+  "schema": 1,
+  "verified": false
+}

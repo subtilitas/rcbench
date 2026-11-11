@@ -347,6 +347,112 @@ static const esc_item_t p_eflite_pro_sbec_7menu_items[] = {
       0u, NULL, "" },
 };
 
+/* flycolor-flydragon-lite */
+static const char *const p_flycolor_flydragon_lite_steps[] = {
+    "Switch the transmitter on; set the throttle to maximum",
+    "Connect battery",
+    "Wait 2000ms: two short beeps",
+    "Wait 5000ms more: special tone 12321, programming mode entered",
+};
+static const esc_model_t p_flycolor_flydragon_lite_models[] = {
+    { "FlyDragon Lite 40A", 2u, 4u, false, 16800u, 40u, 0u },
+    { "FlyDragon Lite 60A", 3u, 6u, false, 25200u, 60u, 0u },
+    { "FlyDragon Lite 80A", 3u, 6u, false, 25200u, 80u, 0u },
+    { "FlyDragon Lite 100A", 3u, 6u, false, 25200u, 100u, 0u },
+    { "FlyDragon Lite 120A", 3u, 6u, false, 25200u, 120u, 0u },
+};
+static const esc_value_t p_flycolor_flydragon_lite_v0[] = {
+    { "no brake", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "soft", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "heavy", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "very heavy", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+};
+static const esc_value_t p_flycolor_flydragon_lite_v1[] = {
+    { "LiPo", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "NiCd / NiMH", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+};
+static const esc_value_t p_flycolor_flydragon_lite_v2[] = {
+    { "low (2.8V/cell; Ni 50%)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "medium (3.0V/cell; Ni 65%)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "high (3.2V/cell; Ni 75%)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+};
+static const esc_value_t p_flycolor_flydragon_lite_v3[] = {
+    { "0deg", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.75deg", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.5deg", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "11.25deg", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "15deg", 5u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "18.75deg", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "22.5deg", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "26.25deg", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+};
+static const esc_value_t p_flycolor_flydragon_lite_v4[] = {
+    { "normal (no delay to full)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "soft (6s to full)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "very soft (12s to full)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+};
+static const esc_value_t p_flycolor_flydragon_lite_v5[] = {
+    { "12kHz", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8kHz", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+};
+static const esc_value_t p_flycolor_flydragon_lite_v6[] = {
+    { "reduce, then cut off", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "cut off at once", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+};
+static const esc_value_t p_flycolor_flydragon_lite_v7[] = {
+    { "automatic", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "2S", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3S", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "4S", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+};
+static const char *const p_flycolor_flydragon_lite_a7[] = {
+    "FlyDragon Lite 40A",
+};
+static const esc_value_t p_flycolor_flydragon_lite_v8[] = {
+    { "automatic", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "2S", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3S", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "4S", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5S", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6S", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+};
+static const char *const p_flycolor_flydragon_lite_a8[] = {
+    "FlyDragon Lite 60A",
+    "FlyDragon Lite 80A",
+    "FlyDragon Lite 100A",
+    "FlyDragon Lite 120A",
+};
+static const esc_value_t p_flycolor_flydragon_lite_v9[] = {
+    { "restore defaults", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+};
+static const esc_value_t p_flycolor_flydragon_lite_v10[] = {
+    { "exit programming", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+};
+static const esc_item_t p_flycolor_flydragon_lite_items[] = {
+    { "Brake", "brake", 1u, 4u, p_flycolor_flydragon_lite_v0,
+      0u, NULL, "" },
+    { "Battery type", "battery_type", 2u, 2u, p_flycolor_flydragon_lite_v1,
+      0u, NULL, "" },
+    { "Cutoff voltage", "cutoff_voltage", 3u, 3u, p_flycolor_flydragon_lite_v2,
+      0u, NULL, "" },
+    { "Timing", "timing", 4u, 8u, p_flycolor_flydragon_lite_v3,
+      0u, NULL, "" },
+    { "Startup mode", "startup", 5u, 3u, p_flycolor_flydragon_lite_v4,
+      0u, NULL, "" },
+    { "PWM frequency", "pwm_freq", 6u, 2u, p_flycolor_flydragon_lite_v5,
+      0u, NULL, "" },
+    { "Voltage cutoff option", "cutoff_type", 7u, 2u, p_flycolor_flydragon_lite_v6,
+      0u, NULL, "" },
+    { "Battery cells", "cell_count", 8u, 4u, p_flycolor_flydragon_lite_v7,
+      1u, p_flycolor_flydragon_lite_a7, "" },
+    { "Battery cells", "cell_count", 8u, 6u, p_flycolor_flydragon_lite_v8,
+      4u, p_flycolor_flydragon_lite_a8, "" },
+    { "Restore default settings", "reset", 9u, 1u, p_flycolor_flydragon_lite_v9,
+      0u, NULL, "" },
+    { "Exit", "exit", 10u, 1u, p_flycolor_flydragon_lite_v10,
+      0u, NULL, "" },
+};
+
 /* flycolor-flydragon-lite-plus */
 static const char *const p_flycolor_flydragon_lite_plus_steps[] = {
     "Switch the transmitter on; set the throttle to maximum",
@@ -4432,6 +4538,15 @@ const esc_profile_t esc_profiles_builtin[] = {
       ESC_THR_MID, 0u, ESC_THR_NONE, 0u, ESC_THR_NONE, ESC_THR_NONE, ESC_THR_NONE,
       0u, 0u, 0u, 0u, 0u, -1, false, false, false,
       3u, p_eflite_pro_sbec_7menu_steps, 4u, p_eflite_pro_sbec_7menu_models, 7u, p_eflite_pro_sbec_7menu_items,
+      0u, NULL },
+    { "flycolor-flydragon-lite", "Flycolor",
+      "FlyDragon Lite 40A 2-4S and 60A-120A 3-6S, 10-item menu", "FlyDragon Lite 40A 2-4S und 60A-120A 3-6S, Men\303\274 mit 10 Punkten",
+      ESC_SCHEME_SHORT_LONG, ESC_ENC_SHORT_LONG, ESC_ANNOUNCE_ITEM_THEN_VALUE, ESC_AUTO_FULL,
+      "",
+      ESC_THR_MAX, false, 7000u,
+      ESC_THR_MIN, 3000u, ESC_THR_MAX, 0u, ESC_THR_NONE, ESC_THR_NONE, ESC_THR_NONE,
+      5u, 128u, 384u, 0u, 0u, -1, true, false, false,
+      4u, p_flycolor_flydragon_lite_steps, 5u, p_flycolor_flydragon_lite_models, 11u, p_flycolor_flydragon_lite_items,
       0u, NULL },
     { "flycolor-flydragon-lite-plus", "Flycolor",
       "FlyDragon Lite Plus 20A-50A and 6S, 10-item menu", "FlyDragon Lite Plus 20A-50A und 6S, Men\303\274 mit 10 Punkten",

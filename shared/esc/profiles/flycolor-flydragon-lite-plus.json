@@ -370,7 +370,7 @@
   "notes": [
     "beep_ms 128 and long_ms 384 are measured on one FlyDragon Lite 40A (2-4S) at 7.6V over the phase tap on 2026-11-10: short beeps 127.9ms at 2090Hz, long beeps 383.7ms at 1866Hz, no beep lost. That recording gives no gaps. No FlyDragon Lite Plus is measured.",
     "loop_marker is measured on one FlyDragon Lite 40A over the phase tap on 2026-11-11: the special tone 12321 (5 notes of 160ms at about 2090, 2343 and 2625Hz, no gap, about 808ms in all) sounds before every pass of the item loop, not only at entry. Item 10 (2 long beeps), 3.23s, the melody, 2.03s, item 1. Gaps inside a group are 146-150ms, gaps between item groups 3.23s. The value loops have no melody: a 3-value loop wrapped from 3 to 1. The Lite Plus manual does not mention the melody between passes; no FlyDragon Lite Plus is measured.",
-    "The manual is for the FlyDragon Lite Plus (Lite+) series. It states that, against the earlier FlyDragon Lite, the Plus adds the running modes (item 8). The menu of the earlier FlyDragon Lite is not in this manual: on it items 9 and 10 may sound one number lower.",
+    "The manual is for the FlyDragon Lite Plus (Lite+) series. It states that, against the earlier FlyDragon Lite, the Plus adds the running modes (item 8). The earlier FlyDragon Lite has its own profile, flycolor-flydragon-lite: its item 8 is Battery cells, in place of Running mode.",
     "v_max_mv is the cell count times 4.2V; the manual states cells (2-4S, 3-6S), not a voltage.",
     "Battery type value 2 is written 'NiCb/NiMh' in the English text; the Chinese text gives 镍氢/镍镉 (NiMH/NiCd).",
     "Low voltage threshold default: medium, 3.0V per LiPo cell, 65% of the Ni pack's start voltage. The manual's 4S example: 11.2V low, 12.0V medium, 12.8V high.",

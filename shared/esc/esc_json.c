@@ -1051,7 +1051,6 @@ static void decode(dec_t *d, esc_profile_t *p)
     /* The sound between two passes of the item loop: absent or null,
      * none. */
     const int64_t lm = member(d, (uint32_t)an, "loop_marker");
-    p->loop_marker = false;
     if (lm >= 0 && d->t[lm].type != T_NULL) {
         if (d->t[lm].type != T_TRUE && d->t[lm].type != T_FALSE) {
             FAIL(d, "scheme.announce.loop_marker: not a boolean");

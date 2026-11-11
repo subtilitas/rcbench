@@ -702,10 +702,10 @@ it states none, the lines are left out there, so the picked item's values
 keep their room. The SETTINGS list keeps the settings as
 stored; their help lines say they apply where the profile gives none.
 
-1 profile states beep lengths: `flycolor-flydragon-lite-plus`, `beep_ms`
-128 and `long_ms` 384, from the phase tap on one Flycolor FlyDragon Lite
+2 profiles state beep lengths: `flycolor-flydragon-lite` and
+`flycolor-flydragon-lite-plus`, `beep_ms` 128 and `long_ms` 384, from the phase tap on one Flycolor FlyDragon Lite
 40A at 7.6V (short beeps 127.9ms at 2090Hz, long beeps 383.7ms at 1866Hz,
-no beep lost). Its run uses:
+no beep lost). A run on either uses:
 
 | Value | From | ms | Margin to the measured beeps |
 | --- | --- | --- | --- |
@@ -756,8 +756,8 @@ rated 4A or more, so only a card profile can meet that rule.
 
 ## Which profiles run
 
-25 of the 73 profiles are of a kind the engine runs: 14 two-stage and 11
-one-stage. With the PD mini's 20V and the default caps the list opens 24 of
+26 of the 74 profiles are of a kind the engine runs: 15 two-stage and 11
+one-stage. With the PD mini's 20V and the default caps the list opens 25 of
 them: hobbywing-skywalker-v2-hv-opto needs 22.8V. 4 model rows of families
 that open are refused at 20V too, each needing 22.8V: FLYFUN 130A and
 160A HV OPTO V5, and Gecko 120A and 150A OPTO HV. 4 rows open with the
@@ -909,7 +909,8 @@ the 808ms marker. A run whose rule does not know the marker ends item 1
 with TIMEOUT. With it, items 1 and 2 are selected on the second pass, from
 the tap and from INA3221 windows. One foreign group after the highest item
 passes and a second breaks the order. A profile without the field, and a
-value loop, let none pass.
+value loop, let none pass. The FlyDragon Lite's profile stores item 8
+value 4 and item 1 value 2 on the 40A, whose item 8 has 4 values.
 
 ## Current limitations
 
@@ -917,13 +918,13 @@ value loop, let none pass.
   heard one ESC, a Flycolor FlyDragon Lite 40A at 7.6V through 4.7kΩ and a
   3.0V zener on GPIO 22, with no beep lost; no run has counted from it.
   No run has counted from an INA3221 channel.
-- The FlyDragon profile states no gap. One recording of a FlyDragon Lite
+- The two FlyDragon profiles state no gap. One recording of a FlyDragon Lite
   40A on 2026-11-11 shows 146 to 150ms between the beeps of a group and
-  3.23s between groups; no run has used them. Its run takes GAP MIN
+  3.23s between groups; no run has used them. A run on either takes GAP MIN
   64ms from the 128ms short beep (half of it) and keeps GROUP GAP 700ms from
   the settings: a pause between two groups of 700ms or less joins them into
   one, and a gap inside a group longer than 700ms splits it. Either way the
-  groups break the order, and the run ends with TIMEOUT. Its beep lengths
+  groups break the order, and the run ends with TIMEOUT. The beep lengths
   come from one FlyDragon Lite 40A; no FlyDragon Lite Plus is measured.
 - How often the panel misses an INA3221 window on the bench, or how long
   the tap's status takes to show the silence after a group, is not

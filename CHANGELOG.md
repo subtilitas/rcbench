@@ -12,6 +12,11 @@ history is in git.
   one sound that is no item between the highest item and the lowest of each
   pass of its item loop. Absent, null or `false`: none
   ([ESC profiles](docs/EscProfiles.md)).
+- ESC profile `flycolor-flydragon-lite` for the FlyDragon Lite: the 40A
+  2-4S from its label and measured on one ESC, and the 60A to 120A 3-6S
+  from manual 251400-1111 V1.2. Item 8 is Battery cells, with 4 values on
+  the 40A and 6 on the others. The profile states `beep_ms` 128, `long_ms`
+  384 and `loop_marker`. 74 profiles, 462 models; ESC STICK runs 26.
 
 ### Changed
 

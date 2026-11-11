@@ -7,32 +7,32 @@ family of ESCs through its throttle-stick menu. It defines the menu entry
 procedure, the beep pattern for announcing numbers, and the available
 items and values. [Stick programming](StickProgramming.md) uses this data:
 you choose an ESC and the values to change, and the bench drives the
-throttle and counts the beeps in the supply current. It can run 25 of the
-73 profiles.
+throttle and counts the beeps in the supply current. It can run 26 of the
+74 profiles.
 
 ## What is in the set
 
 | | Count |
 | --- | --- |
-| Profiles (families) | 73 |
-| Models | 457 |
+| Profiles (families) | 74 |
+| Models | 462 |
 | Brands | 21 |
-| Menu items | 370 |
+| Menu items | 381 |
 
 | Who can run a profile | Profiles | Models |
 | --- | --- | --- |
-| The bench alone: throttle signal and power | 45 | 346 |
+| The bench alone: throttle signal and power | 46 | 351 |
 | A person sets a jumper, presses a button or reads an LED | 26 | 108 |
 | of those, with the steps listed in `manual` | 24 | 88 |
 | Nobody: the manual gives no usable procedure | 2 | 3 |
 
-Every profile is `"verified": false`. The profiles come from 154 manuals and
+Every profile is `"verified": false`. The profiles come from 155 manuals and
 were written without an ESC on a bench. No manual states a beep length, a
 gap or a loop time in milliseconds. The timing fields are stated only where
-a bench measured them: 1 profile, `flycolor-flydragon-lite-plus`, gives
-`beep_ms` 128 and `long_ms` 384 from the phase tap on one FlyDragon Lite
-40A. Every other timing field is null. The same profile sets
-`loop_marker`: the FlyDragon Lite 40A sounds its 12321 melody, about 808ms,
+a bench measured them: 2 profiles, `flycolor-flydragon-lite` and
+`flycolor-flydragon-lite-plus`, give `beep_ms` 128 and `long_ms` 384 from
+the phase tap on one FlyDragon Lite 40A. Every other timing field is null.
+The same 2 profiles set `loop_marker`: the FlyDragon Lite 40A sounds its 12321 melody, about 808ms,
 before every pass of its item loop.
 
 ## Where profiles live
@@ -102,8 +102,8 @@ and the English shows in German too. The crumb, the model rows and the
 pop-ups of ESC STICK show `family_de` where it exists and the interface is
 German, and `family` otherwise. Brand and model names and the terms that stay
 English (`brushed`, `brushless`, `sensorless`, `BEC`, `OPTO`, `ESC`) are the
-same in both. A family of names and those terms only has no `family_de`: 37
-of the 73 profiles of record give one. The search field matches `family`, in
+same in both. A family of names and those terms only has no `family_de`: 38
+of the 74 profiles of record give one. The search field matches `family`, in
 both languages.
 
 ### Fields the panel reads
@@ -125,7 +125,7 @@ both languages.
 | `scheme.announce.gap_ms` | silence between two beeps of a group in ms: 0 to 60000, or null |
 | `scheme.announce.group_gap_ms` | silence between two groups in ms: 0 to 60000, or null |
 | `scheme.announce.repeat` | 0 to 255: 0 repeats until a choice is made, null not known |
-| `scheme.announce.loop_marker` | `true`: one sound that is no item, such as a melody, sits between the highest item and the lowest of each pass of the item loop. Absent, null or `false`: none. Stick programming lets that one sound pass in the item loop of a two-stage menu; the value loops and one-stage menus are read without it. Set in 1 profile, `flycolor-flydragon-lite-plus` |
+| `scheme.announce.loop_marker` | `true`: one sound that is no item, such as a melody, sits between the highest item and the lowest of each pass of the item loop. Absent, null or `false`: none. Stick programming lets that one sound pass in the item loop of a two-stage menu; the value loops and one-stage menus are read without it. Set in 2 profiles, `flycolor-flydragon-lite` and `flycolor-flydragon-lite-plus` |
 | `scheme.select.throttle`, `scheme.skip.throttle` | `min`, `mid`, `max`, `none` |
 | `scheme.listen` | where the stick rests while the menu sounds: `{"throttle": "min"}`, `mid` or `max`. Absent or null: where the entry left it. Set in the 9 profiles for YGE ESCs, whose menu sounds with the stick at minimum after a maximum entry; stick programming runs such a profile only when `hold_ms` gives the entry's length |
 | `scheme.store` | the move that stores a selection once the ESC has answered it: `{"throttle": "min"}`, `mid` or `max`. Absent or null: the selection move itself stores the value. Set in the 8 mode setups of YGE ESCs, where the stick back to minimum stores the mode |
@@ -237,7 +237,7 @@ differently.
   entry gestures are as the manuals state them, and some manuals disagree
   with each other; each profile's `notes` names the conflicts.
 - The beep fields (`beep_ms`, `long_ms`, `gap_ms`, `group_gap_ms`) are
-  stated only where measured: `beep_ms` and `long_ms` in 1 profile, from 1
+  stated only where measured: `beep_ms` and `long_ms` in 2 profiles, from 1
   ESC. Stick programming takes BEEP MIN, LONG and LONG MAX from them, GAP
   MIN and GROUP GAP from the gaps, GAP MIN from half the short beep where
   no gap is stated and that is lower, and its settings where a field is
