@@ -715,8 +715,10 @@ screen's lock in `test_supply_screen_home`; an ON the page refuses under a port'
 `supply_link_keep()`, also in `test_supply_keep`), the model switched off whoever holds a
 port, a reading fault the port keeps acted on once while it stands, a failed final commit or
 close of the run log or the automatic test's CSV counted once a run
-(`error_card_close_edge()`), OUTPUT OFF and STOP TEST leaving the bench ARMED; the one-line
-calls into it in those files are not host-tested.
+(`error_card_close_edge()`), OUTPUT OFF and STOP TEST leaving the bench ARMED. The order
+`panel_supply.c` carries an act out in, the STOP latch first and then one step per field, is
+`error_act_steps()` in `test_error_steps`; the one-line calls into it in those files are not
+host-tested.
 
 The IOmcu switches a PD mini left on off before the rest of its start-up
 (`supply_boot_off()`; the rule `supply_page_boot_owed()` and `pdmini_hurry()` host-tested in
@@ -1348,7 +1350,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 528 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 529 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1388,7 +1390,7 @@ The host suite is 528 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_outputs_hw_ports`, `test_outstore`, `test_outstore_range`, `test_can_timing`, `test_can_selftest`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_stop_latch`, `test_stop_hold`,
 `test_safety_gate`, `test_flash_gate`, `test_reset_cause`, `test_boot_diag`, `test_touch_loss`,
-`test_frame_watch`, `test_error_stop`, `test_error_sites`, `test_servo_limit`,
+`test_frame_watch`, `test_error_stop`, `test_error_sites`, `test_error_steps`, `test_servo_limit`,
 `test_servo_limrun`, `test_servo_limrun_gaps`, `test_servo_limrun_abort`,
 `test_servo_limrun_error`, `test_servo_limrun_report`, `test_servo_sync`,
 `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_brownout`,
@@ -2675,7 +2677,10 @@ core that does not draw. Nothing exercises it deliberately: its files, `main.c`,
 `panel_art.c` and `panel_update.c` (the IOmcu's update), are not in the host suite. The
 `runlog` task beside it (`panel_log.c`), which owns every write to the card, is in the same
 position. The rules it drives are in `shared/safety/arming.c` under `test_arming`, the link-loss
-stop and the wait for the far end's word on the heartbeat included.
+stop, the wait for the far end's word on the heartbeat and the 300ms a disarm nobody takes
+may withhold it (`disarm_hold_ends()`) included. The numbering and the eviction of the render
+loop's touch queue are `touch_put_begin()` and `touch_put_next()` in
+`shared/safety/touch_loss.c`, under `test_touch_loss`.
 
 **Next evidence or work:** a session with both boards: press ARM, drag the throttle while the screen is busy, press
 STOP, unplug the link, and confirm the heartbeat's period on a scope at the panel's

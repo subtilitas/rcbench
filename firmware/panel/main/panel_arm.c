@@ -53,17 +53,9 @@ static uint16_t pct_to_span(float pct)
 
 /* The stop count this task has already let go for; see service_arming(). */
 static uint32_t    s_stops_served;
-/*
- * When the outstanding disarm started holding the safety line down, and how
- * long that may go on for.
- *
- * Twice HEARTBEAT_MAX_GAP_MS (150ms), so a far end that never answers has
- * certainly failed safe by then and the line can go back up: a disarm nobody
- * can deliver must not hold it down for ever.
- */
-#define DISARM_INHIBIT_MS (2u * HEARTBEAT_MAX_GAP_MS)
-static bool        s_disarm_timing;   /**< whether s_disarm_since means anything */
-static uint32_t    s_disarm_since;
+/** @brief When the outstanding disarm started holding the safety line down;
+ *         it may for ARMING_DISARM_INHIBIT_MS (disarm_hold_ends()). */
+static disarm_hold_t s_disarm_hold;
 
 static uint16_t pct_to_hundredths(float pct)
 {
@@ -212,26 +204,15 @@ static void service_disarm(bool link_up)
     }
 
     if (atomic_load(&s_disarm_request)) {
-        if (!s_disarm_timing) {
-            s_disarm_timing = true;
-            s_disarm_since  = now_ms();
-        }
+        disarm_hold_seen(&s_disarm_hold, now_ms());
         const bool told = disarm_here(link_up);
         /*
-         * The request stands until the far end has taken it, because the
-         * heartbeat is withheld while it stands and clearing it first would
-         * put the line back up during the very transaction meant to deliver
-         * it -- with the far end still armed if that transaction is lost.
-         *
-         * Or until the line has been down long enough that the far end has
-         * failed safe on its own account, which is the same outcome by the
-         * other route and stops a disarm nobody can deliver from holding the
-         * line down for ever.
+         * The request stands until the far end has taken it, or until the
+         * line has been down long enough that the far end has failed safe
+         * on its own account (disarm_hold_ends()).
          */
-        if (told
-            || (uint32_t)(now_ms() - s_disarm_since) >= DISARM_INHIBIT_MS) {
+        if (disarm_hold_ends(&s_disarm_hold, told, now_ms())) {
             atomic_store(&s_disarm_request, false);
-            s_disarm_timing = false;
         }
         owed = true;
     }
@@ -779,7 +760,7 @@ void drain_commands(bool link_up, bench_state_t *bench)
         if (arms) {
             control_pump();
             if (!arm_watch_take_ok(pc.loss_gen, atomic_load(&s_loss_gen),
-                                   s_lost_notice_seq, pc.consumed_seq)) {
+                                   s_tq_tx.lost_notice, pc.consumed_seq)) {
                 arming_refuse_ask(&s_arm, ask);
                 continue;
             }

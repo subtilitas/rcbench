@@ -480,7 +480,6 @@ firmware/panel/main/main.c: warning: Member s_log_kind (variable) of file main.c
 firmware/panel/main/main.c: warning: Member s_log_run_ctr (variable) of file main.c is not documented.
 firmware/panel/main/main.c: warning: Member s_log_t (variable) of file main.c is not documented.
 firmware/panel/main/main.c: warning: Member s_loss_gen (variable) of file main.c is not documented.
-firmware/panel/main/main.c: warning: Member s_lost_notice_seq (variable) of file main.c is not documented.
 firmware/panel/main/main.c: warning: Member s_out (variable) of file main.c is not documented.
 firmware/panel/main/main.c: warning: Member s_outputs_read (variable) of file main.c is not documented.
 firmware/panel/main/main.c: warning: Member s_outputs_read_fresh (variable) of file main.c is not documented.
@@ -689,7 +688,6 @@ firmware/panel/main/panel.h: warning: Member s_log_open_run (variable) of file p
 firmware/panel/main/panel.h: warning: Member s_log_run_now (variable) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member s_log_t (variable) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member s_loss_gen (variable) of file panel.h is not documented.
-firmware/panel/main/panel.h: warning: Member s_lost_notice_seq (variable) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member s_mismatch (variable) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member s_out (variable) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member s_outputs_read (variable) of file panel.h is not documented.
@@ -815,7 +813,6 @@ firmware/panel/main/panel.h: warning: Member wifi_service(bool armed, uint32_t s
 firmware/panel/main/panel.h: warning: Member win (variable) of struct servo_win_item_t is not documented.
 firmware/panel/main/panel.h: warning: Member wiring_of(unsigned word) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member write_regs(link_host_t *host, uint8_t page, uint8_t offset, uint8_t count, const uint16_t *regs, link_msg_t *reply) (function) of file panel.h is not documented.
-firmware/panel/main/panel_arm.c: warning: Member DISARM_INHIBIT_MS (macro definition) of file panel_arm.c is not documented.
 firmware/panel/main/panel_arm.c: warning: Member apply_motor_cmd(const motor_cmd_t *mc, bool link_up, bench_state_t *bench) (function) of file panel_arm.c is not documented.
 firmware/panel/main/panel_arm.c: warning: Member arm_watch_service(bool link_up) (function) of file panel_arm.c is not documented.
 firmware/panel/main/panel_arm.c: warning: Member control_setup(telemetry_sim_t *sim, bench_state_t *bench) (function) of file panel_arm.c is not documented.
@@ -823,7 +820,6 @@ firmware/panel/main/panel_arm.c: warning: Member disarm_here(bool link_up) (func
 firmware/panel/main/panel_arm.c: warning: Member drain_commands(bool link_up, bench_state_t *bench) (function) of file panel_arm.c is not documented.
 firmware/panel/main/panel_arm.c: warning: Member pct_to_hundredths(float pct) (function) of file panel_arm.c is not documented.
 firmware/panel/main/panel_arm.c: warning: Member pct_to_span(float pct) (function) of file panel_arm.c is not documented.
-firmware/panel/main/panel_arm.c: warning: Member s_disarm_since (variable) of file panel_arm.c is not documented.
 firmware/panel/main/panel_arm.c: warning: Member s_stops_served (variable) of file panel_arm.c is not documented.
 firmware/panel/main/panel_arm.c: warning: Member s_totals (variable) of file panel_arm.c is not documented.
 firmware/panel/main/panel_arm.c: warning: Member s_totals_ms (variable) of file panel_arm.c is not documented.

@@ -2319,6 +2319,70 @@ TEST_CASE(dead_touch_withholds_the_line_past_the_window)
     CHECK(arming_heartbeat(&a, t));
 }
 
+/* ------------------------------------------- a disarm nobody takes */
+
+/* The window the docs state is 300ms, twice the IOmcu's ceiling. */
+_Static_assert(ARMING_DISARM_INHIBIT_MS == 300u,
+               "a disarm withholds the line for 300 ms at most");
+
+/* The far end takes the disarm: the request ends in that pass, and the
+ * next request opens a window of its own. */
+TEST_CASE(a_disarm_taken_ends_its_request_at_once)
+{
+    disarm_hold_t h = { 0 };
+    disarm_hold_seen(&h, 1000u);
+    CHECK(!disarm_hold_ends(&h, false, 1000u));
+    CHECK(disarm_hold_ends(&h, true, 1010u));
+    CHECK(!h.timing);
+
+    disarm_hold_seen(&h, 5000u);
+    CHECK_EQ(h.since, 5000u);
+    CHECK(!disarm_hold_ends(&h, false, 5000u + ARMING_DISARM_INHIBIT_MS - 1u));
+    CHECK(disarm_hold_ends(&h, false, 5000u + ARMING_DISARM_INHIBIT_MS));
+}
+
+/* Nobody takes it: the request stands for the window from the first look
+ * and ends at its last millisecond, whatever the passes in between.  A
+ * look inside the window, the exchange's 1000ms wait included, does not
+ * move its start. */
+TEST_CASE(a_disarm_nobody_takes_ends_at_the_window)
+{
+    disarm_hold_t h = { 0 };
+    disarm_hold_seen(&h, 200u);
+    for (uint32_t t = 200u; t < 200u + ARMING_DISARM_INHIBIT_MS; t += 7u) {
+        disarm_hold_seen(&h, t);
+        CHECK(!disarm_hold_ends(&h, false, t));
+    }
+    CHECK_EQ(h.since, 200u);
+    CHECK(disarm_hold_ends(&h, false, 200u + ARMING_DISARM_INHIBIT_MS));
+    CHECK(!h.timing);
+
+    /* One pass whose exchange waited 1000ms: the window has gone by. */
+    disarm_hold_seen(&h, 9000u);
+    CHECK(disarm_hold_ends(&h, false, 10000u));
+}
+
+/* The window across the clock's wrap. */
+TEST_CASE(the_disarm_window_runs_across_the_wrap)
+{
+    disarm_hold_t h = { 0 };
+    const uint32_t t0 = 0xFFFFFF00u;
+    disarm_hold_seen(&h, t0);
+    CHECK(!disarm_hold_ends(&h, false, t0 + ARMING_DISARM_INHIBIT_MS - 1u));
+    CHECK(disarm_hold_ends(&h, false, t0 + ARMING_DISARM_INHIBIT_MS));
+}
+
+/* Without a look the window never started, so only the far end's answer
+ * ends a request; NULL ends nothing. */
+TEST_CASE(a_disarm_window_needs_its_first_look)
+{
+    disarm_hold_t h = { 0 };
+    CHECK(!disarm_hold_ends(&h, false, 100000u));
+    CHECK(disarm_hold_ends(&h, true, 100000u));
+    disarm_hold_seen(NULL, 0u);
+    CHECK(!disarm_hold_ends(NULL, true, 0u));
+}
+
 int main(void)
 {
     RUN(a_stop_latches_until_an_explicit_arm);
@@ -2382,5 +2446,9 @@ int main(void)
     RUN(a_stop_inside_the_window_starts_it_again);
     RUN(an_operator_stop_withholds_the_line_until_its_reset);
     RUN(dead_touch_withholds_the_line_past_the_window);
+    RUN(a_disarm_taken_ends_its_request_at_once);
+    RUN(a_disarm_nobody_takes_ends_at_the_window);
+    RUN(the_disarm_window_runs_across_the_wrap);
+    RUN(a_disarm_window_needs_its_first_look);
     return test_summary("arming");
 }

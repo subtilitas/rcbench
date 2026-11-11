@@ -226,7 +226,8 @@ static error_bench_t error_bench(void)
 }
 
 /**
- * @brief What an error asks (error_sites.h), done from here, in order.
+ * @brief What an error asks (error_sites.h), done from here as the steps
+ *        error_act_steps() lists, in their order.
  *
  * The disarm is a request, the way a screen's DISARM is one, because this
  * runs inside an exchange's wait as well.  The request withholds the
@@ -241,29 +242,31 @@ static error_bench_t error_bench(void)
  */
 static void error_act(error_act_t a)
 {
-    /* An error sends a STOP's reset that is not yet resumed back to
-     * LATCHED: the operator holds STOP again once the error is dealt
-     * with. */
-    if (a.off_first || a.disarm || a.supply_off || a.cut || a.prog_off) {
-        (void)stop_latch_error(&s_stop_latch);
-    }
-    if (a.off_first) {
-        supply_switch(false);
-    }
-    if (a.disarm) {
-        atomic_store(&s_disarm_request, true);
-    }
-    if (a.supply_off) {
-        supply_switch(false);
-    }
-    if (a.cut) {
-        supply_link_cut(&s_supply_link);
-    }
-    if (a.prog_off) {
-        /* The cut counts: a PROG 5V ON queued or collected before this
-         * error is refused, even after its OFF is acknowledged. */
-        prog_supply_link_cut(&s_psup_link);
-        prog5v_box_publish_cuts(prog_supply_link_cuts(&s_psup_link));
+    error_step_t steps[ERROR_STEPS_MAX];
+    const uint8_t n = error_act_steps(&a, steps);
+    for (uint8_t i = 0u; i < n; ++i) {
+        switch (steps[i]) {
+        case ERROR_STEP_STOP_LATCH:
+            (void)stop_latch_error(&s_stop_latch);
+            break;
+        case ERROR_STEP_SUPPLY_OFF:
+            supply_switch(false);
+            break;
+        case ERROR_STEP_DISARM:
+            atomic_store(&s_disarm_request, true);
+            break;
+        case ERROR_STEP_CUT:
+            supply_link_cut(&s_supply_link);
+            break;
+        case ERROR_STEP_PROG_OFF:
+            /* The cut counts: a PROG 5V ON queued or collected before this
+             * error is refused, even after its OFF is acknowledged. */
+            prog_supply_link_cut(&s_psup_link);
+            prog5v_box_publish_cuts(prog_supply_link_cuts(&s_psup_link));
+            break;
+        default:
+            break;
+        }
     }
 }
 
@@ -430,7 +433,7 @@ void apply_supply_cmd(const panel_cmd_t *pc)
             && pc->supply_offs == atomic_load(&s_supply_offs)
             && pc->pdmini_edits == atomic_load(&s_pdmini_edits)
             && arm_watch_take_ok(pc->loss_gen, atomic_load(&s_loss_gen),
-                                 s_lost_notice_seq, pc->consumed_seq)) {
+                                 s_tq_tx.lost_notice, pc->consumed_seq)) {
             /* At the set points stored before this ON was queued. */
             supply_follow_set();
             supply_switch(true);
@@ -479,7 +482,7 @@ void apply_prog5v_cmd(const panel_cmd_t *pc)
         && pc->resets == atomic_load(&s_stop_resets)
         && pc->prog5v_offs == atomic_load(&s_prog5v_offs)
         && arm_watch_take_ok(pc->loss_gen, atomic_load(&s_loss_gen),
-                             s_lost_notice_seq, pc->consumed_seq)
+                             s_tq_tx.lost_notice, pc->consumed_seq)
         && prog_supply_link_ask_on(&s_psup_link, c->cuts)) {
         const uint32_t gen = atomic_load(&s_psup_gen) + 1u;
         atomic_store(&s_psup_gen, gen);
