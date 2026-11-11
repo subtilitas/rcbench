@@ -315,8 +315,9 @@ extern sp_state_t esc_stick_s;
  * @return the changes written to @p ch
  */
 size_t sp_changes(esc_stick_change_t *ch, size_t *picked);
-/** @brief The timing as the settings hold it, the profile's own entry
- *         where it states one.
+/** @brief The timing a run uses: the settings', with the profile's own
+ *         entry and beep and gap lengths where it states them
+ *         (esc_stick_profile_timing()).
  * @param t the timing, written
  */
 void sp_timing(esc_stick_timing_t *t);

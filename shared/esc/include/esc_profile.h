@@ -273,6 +273,11 @@ typedef struct {
     esc_throttle_t     store_throttle;
     uint8_t            long_equals_short;  /**< 0 unless short_long      */
     uint32_t           beep_ms;            /**< 0: not known             */
+    /**
+     * @brief A long beep's length in a short_long profile, ms; 0 where not
+     *        known.  Stated only together with beep_ms, and longer.
+     */
+    uint32_t           long_ms;
     uint32_t           gap_ms;             /**< 0: not known             */
     uint32_t           group_gap_ms;       /**< 0: not known             */
     int16_t            repeat;             /**< -1 not known, 0 until a

@@ -1348,7 +1348,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 526 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 527 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1408,7 +1408,7 @@ The host suite is 526 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_coproc_update_screen`, `test_upd_coproc`, `test_upd_layout`, `test_text`,
 `test_openyge_frame`, `test_openyge_status`, `test_openyge_params`, `test_esc_profiles`, `test_esc_profile_family`,
 `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`,
-`test_esc_stick_entry`, `test_esc_stick_tap`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`,
+`test_esc_stick_entry`, `test_esc_stick_tap`, `test_esc_stick_profile_timing`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`,
 `test_sense_parts`, `test_sense_map`, `test_sense_limit`, `test_sense_svc`,
 `test_sense_trace_feed`, `test_sense_trace`, `test_sense_trace_next`,
 `test_sense_trace_setup`, `test_sense_trace_lines`, `test_tone`, `test_edge_ring`,
@@ -2724,14 +2724,18 @@ channel that watches SUPPLY, and is refused with neither; the PD mini's current,
 100 to 152ms, is no source. The phase tap has heard one ESC, a Flycolor FlyDragon Lite 40A at
 7.6V: short beeps of 127.9ms at 2090Hz and long beeps of 383.7ms at 1866Hz, no beep lost. Its
 gaps between beeps and between groups are not measured, and no run has counted from the tap
-or from an INA3221 channel. The defaults (BEEP MIN 200ms, LONG 500ms) do not fit that ESC.
+or from an INA3221 channel. The defaults (BEEP MIN 200ms, LONG 500ms) do not fit that ESC; its
+profile states the two lengths (`beep_ms` 128, `long_ms` 384), and a run on it takes BEEP MIN
+64ms, LONG 256ms and LONG MAX 768ms from them, and GAP MIN 64ms, half the short beep, under the
+default 200ms. GROUP GAP stays the setting's 700ms; a pause between groups of 700ms or less, or a
+gap inside a group over 700ms, ends the run with TIMEOUT.
 
 The ESC's tones after a selection are not decoded, so DONE does not say the ESC stored
 anything.
 
-**Next evidence or work:** one stick run of the FlyDragon from the phase tap with BEEP MIN
-100ms and LONG 250ms, checked afterwards with the ESC's program card; the gaps between its
-beeps and between its groups from the tap's beep list; one run from an INA3221 channel in the
+**Next evidence or work:** one stick run of the FlyDragon from the phase tap at the default
+settings, checked afterwards with the ESC's program card; the gaps between its beeps and
+between its groups, for `gap_ms` and `group_gap_ms`; one run from an INA3221 channel in the
 ESC's supply line.
 
 ### The German interface

@@ -113,7 +113,8 @@
       "what": "item_then_value",
       "encoding": "short_long",
       "long_equals_short": 5,
-      "beep_ms": null,
+      "beep_ms": 128,
+      "long_ms": 384,
       "gap_ms": null,
       "group_gap_ms": null,
       "repeat": null,
@@ -352,7 +353,7 @@
     }
   ],
   "unknowns": [
-    "Beep duration, gap between beeps and gap between groups in ms are not stated.",
+    "The manual states no beep duration, gap between beeps or gap between groups. beep_ms and long_ms are measured (see notes); the gaps are not measured.",
     "Whether each item or value tone sounds once or several times before the next is not stated.",
     "The window for the value move (throttle to maximum after a value tone) is not stated.",
     "The window for the item move: the Chinese text gives 3s; the English item box gives no time.",
@@ -366,6 +367,7 @@
     "BEC type (linear or switching) is not stated; the input voltage limit is not stated as a number."
   ],
   "notes": [
+    "beep_ms 128 and long_ms 384 are measured on one FlyDragon Lite 40A (2-4S) at 7.6V over the phase tap on 2026-11-10: short beeps 127.9ms at 2090Hz, long beeps 383.7ms at 1866Hz, no beep lost. The gap between beeps and the gap between groups are not measured. No FlyDragon Lite Plus is measured.",
     "The manual is for the FlyDragon Lite Plus (Lite+) series. It states that, against the earlier FlyDragon Lite, the Plus adds the running modes (item 8). The menu of the earlier FlyDragon Lite is not in this manual: on it items 9 and 10 may sound one number lower.",
     "v_max_mv is the cell count times 4.2V; the manual states cells (2-4S, 3-6S), not a voltage.",
     "Battery type value 2 is written 'NiCb/NiMh' in the English text; the Chinese text gives 镍氢/镍镉 (NiMH/NiCd).",

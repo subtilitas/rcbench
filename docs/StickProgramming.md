@@ -619,16 +619,10 @@ one.
 ## The settings
 
 Open SETTINGS in the footer of a profile's page. These values are stored
-with the other settings on SAVE. None is measured. THRESHOLD and
-HYSTERESIS apply to the INA3221 only.
-
-The defaults do not fit the one ESC the tap has heard, a Flycolor FlyDragon
-Lite 40A at 7.6V: short beeps of 127.9ms at 2090Hz and long beeps of
-383.7ms at 1866Hz. With LONG at 500ms its long beeps count as short, and
-with BEEP MIN at 200ms its short beeps spoil their groups. For it BEEP MIN
-has to be under 127ms and LONG between 128 and 383ms, for example BEEP MIN
-100ms and LONG 250ms. Its gaps between beeps and between groups are not
-measured.
+with the other settings on SAVE. No default is measured. THRESHOLD and
+HYSTERESIS apply to the INA3221 only. Where the profile states a beep or
+gap length, the value it fixes comes from the profile, not from the
+setting ([Timing from the profile](#timing-from-the-profile)).
 
 | Setting | Default | Range | What it is |
 | --- | --- | --- | --- |
@@ -652,6 +646,67 @@ LONG at or under BEEP MIN, LONG MAX at or under LONG, GROUP GAP at or under
 GAP MIN, THRESHOLD at or under HYSTERESIS, ENTERING MENU at or under 500ms, or
 GROUP GAP plus the shorter of BEEP MIN and GAP MIN at or over the profile's
 `within_ms` for its select or value move.
+
+### Timing from the profile
+
+A profile can state the lengths of its beeps and gaps
+(`scheme.announce.beep_ms`, `long_ms`, `gap_ms`, `group_gap_ms`; see
+[ESC profiles](EscProfiles.md)). Where it states one, the run takes the
+values that length fixes from it, and the settings' values do not apply.
+Where it states none, the run uses the settings unchanged. Each value sits
+between the two lengths it tells apart, with a factor of 2, or half the
+distance between them, to spare on either side:
+
+| Profile states | Value | Rule |
+| --- | --- | --- |
+| `beep_ms` S (and in a `short_long` profile `long_ms` L) | BEEP MIN | S / 2 |
+| | LONG | (S + L) / 2; without long beeps 2 x S |
+| | LONG MAX | 2 x L; without long beeps 4 x S |
+| `gap_ms` G | GAP MIN | G / 2 |
+| `beep_ms` S, no `gap_ms` | GAP MIN | the setting or S / 2, the lower |
+| `group_gap_ms` GG | GROUP GAP | (G + GG) / 2, with G as 0 where `gap_ms` is null |
+
+Values are in ms, rounded down. A `short_long` profile with `beep_ms` but
+no `long_ms` sets none of the three. The run holds the result to the same
+rules as the settings and refuses it, unchanged, where it breaks one
+(above), with the same reason a setting typed by hand gets.
+
+GAP MIN only rejects a gap too short to be real. Where a profile states
+its beep lengths but no gap, the run takes half the short beep when that
+is under the setting: no menu's gap is plausibly under half its own short
+beep. The phase tap reports each beep's start and end from the IOmcu's
+capture, its bursts already merged, so a gap it reports is a silence
+between two beeps. For the FlyDragon this is 64ms against the default
+200ms, which its gap, if as short as its 128ms beep, would fall under.
+From the INA3221, 64ms stays above the 50ms window, so READING RATE (a
+window later than the shorter of BEEP MIN and GAP MIN) does not trip.
+
+The card across the top of a run and of its result shows the values the
+run tells its beeps apart by, BEEP MIN and LONG, after the supply and the
+entry time, marked "(profile)" when the profile's lengths set them and
+"(setting)" when the settings do. It leaves GAP MIN out: in German the line
+has no room for it. The profile page's side column shows all three where
+the profile states its beep lengths, for the FlyDragon
+`BEEP MIN 64ms  LONG 256ms` and under it `GAP MIN 64ms (profile)`; where
+it states none, the lines are left out there, so the picked item's values
+keep their room. The SETTINGS list keeps the settings as
+stored; their help lines say they apply where the profile gives none.
+
+1 profile states beep lengths: `flycolor-flydragon-lite-plus`, `beep_ms`
+128 and `long_ms` 384, from the phase tap on one Flycolor FlyDragon Lite
+40A at 7.6V (short beeps 127.9ms at 2090Hz, long beeps 383.7ms at 1866Hz,
+no beep lost). Its run uses:
+
+| Value | From | ms | Margin to the measured beeps |
+| --- | --- | --- | --- |
+| BEEP MIN | 128 / 2 | 64 | 63.9ms under the 127.9ms short |
+| LONG | (128 + 384) / 2 | 256 | 128.1ms over the short, 127.7ms under the 383.7ms long |
+| LONG MAX | 2 x 384 | 768 | 384.3ms over the long |
+| GAP MIN | 128 / 2, under the default 200 | 64 | its gaps are not measured; a 128ms gap, as long as its short beep, is 64ms over it |
+| GROUP GAP | the setting | 700 by default | not measured |
+
+LONG MAX at 768ms also sets CURRENT STAYS HIGH, on the INA3221 only, to one
+pulse longer than 1536ms.
 
 ## The supply
 
@@ -833,6 +888,11 @@ GROUP GAP with the next beep, from the tap handed over 60ms late, and holds
 a group open while a status past GROUP GAP shows a beep under way or one
 not yet taken. `test_esc_stick_panel_source` holds the panel's
 choice of the source and the refusal with neither.
+`test_esc_stick_profile_timing` holds the values a profile's lengths give
+(64, 256 and 768ms and GAP MIN 64ms for the FlyDragon), runs the FlyDragon from the tap with
+every setting at its default and 128ms gaps to DONE, runs the same ESC
+under a profile that states no lengths, which keeps the settings (GAP MIN
+200ms) and stores nothing, and refuses stated lengths that break the timing rules.
 
 ## Current limitations
 
@@ -840,6 +900,12 @@ choice of the source and the refusal with neither.
   heard one ESC, a Flycolor FlyDragon Lite 40A at 7.6V through 4.7kΩ and a
   3.0V zener on GPIO 22, with no beep lost; no run has counted from it.
   No run has counted from an INA3221 channel.
+- The FlyDragon profile's gaps are not measured. Its run takes GAP MIN
+  64ms from the 128ms short beep (half of it) and keeps GROUP GAP 700ms from
+  the settings: a pause between two groups of 700ms or less joins them into
+  one, and a gap inside a group longer than 700ms splits it. Either way the
+  groups break the order, and the run ends with TIMEOUT. Its beep lengths
+  come from one FlyDragon Lite 40A; no FlyDragon Lite Plus is measured.
 - How often the panel misses an INA3221 window on the bench, or how long
   the tap's status takes to show the silence after a group, is not
   measured.

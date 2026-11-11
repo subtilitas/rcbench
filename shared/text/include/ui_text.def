@@ -4031,8 +4031,8 @@ UI_TEXT(SP_ONE_STAGE, 10,
     "ONE-STAGE",
     "EINSTUFIG")
 UI_TEXT(SP_UNVERIFIED_ALL, 0,
-    "No profiles are verified. No ESC recordings are available.",
-    "Kein Profil ist geprüft. Es gibt keine ESC-Aufzeichnungen.")
+    "No profiles are verified. No stick run has been recorded.",
+    "Kein Profil ist geprüft. Kein Stick-Lauf ist aufgezeichnet.")
 UI_TEXT(SP_WHY_STOP, 96,
     "STOP was pressed.",
     "STOP wurde gedrückt.")
@@ -4354,8 +4354,8 @@ UI_TEXT(SP_TIMING_TITLE, 0,
     "TIMING UND ERKENNUNG")
 /* Beside TIMING AND DETECTION on ESC STICK's SETTINGS list. */
 UI_TEXT(SP_TIMING_NOTE, 0,
-    "Defaults, not measured: no ESC recordings exist.",
-    "Vorgaben, keine Messwerte: keine ESC-Aufzeichnungen.")
+    "Defaults, not measured. Measured lengths in a profile win.",
+    "Vorgaben, nicht gemessen. Gemessene Längen im Profil gehen vor.")
 UI_TEXT(SP_CHANGE, 0,
     "CHANGE",
     "ÄNDERN")
@@ -4416,6 +4416,12 @@ UI_TEXT(SP_FROM_PROFILE_MARK, 0,
 UI_TEXT(SP_FROM_SETTING_MARK, 14,
     "(setting)",
     "(Einstellung)")
+UI_TEXT(SP_TIMING_LINE, 0,
+    "BEEP MIN %ums  LONG %ums%s",
+    "PIEPTON MIN %ums  LANG %ums%s")
+UI_TEXT(SP_TIMING_GAP, 0,
+    "GAP MIN %ums%s",
+    "PAUSE MIN %ums%s")
 UI_TEXT(SP_WARN_TITLE, 0,
     "PROPELLER REMOVED? MOTOR SECURED?",
     "PROPELLER AB? MOTOR GESICHERT?")
@@ -9134,32 +9140,32 @@ UI_SETTING_LABEL(SET_STICK_BEEP_MIN,
     "Beep min",
     "Piepton min")
 UI_SETTING_HELP(SET_STICK_BEEP_MIN,
-    "Shortest beep the ESC sounds",
-    "Kürzester Piepton des ESC")
+    "Shortest beep the ESC sounds, if the profile gives none",
+    "Kürzester Piepton des ESC, falls im Profil nicht angegeben")
 UI_SETTING_LABEL(SET_STICK_GAP_MIN,
     "Gap min",
     "Pause min")
 UI_SETTING_HELP(SET_STICK_GAP_MIN,
-    "Shortest silence between two beeps",
-    "Kürzeste Pause zwischen zwei Pieptönen")
+    "Shortest silence between beeps, if the profile gives none",
+    "Kürzeste Pause zwischen Pieptönen, falls im Profil nicht angegeben")
 UI_SETTING_LABEL(SET_STICK_LONG,
     "Long",
     "Lang")
 UI_SETTING_HELP(SET_STICK_LONG,
-    "Minimum duration of a long beep",
-    "Mindestdauer eines langen Pieptons")
+    "Minimum duration of a long beep, if the profile gives none",
+    "Mindestdauer langer Pieptöne, falls im Profil nicht angegeben")
 UI_SETTING_LABEL(SET_STICK_LONG_MAX,
     "Long max",
     "Lang max")
 UI_SETTING_HELP(SET_STICK_LONG_MAX,
-    "A longer pulse does not count as a beep",
-    "Ein längerer Puls zählt nicht als Piepton")
+    "A longer pulse is no beep, if the profile gives none",
+    "Ein längerer Puls ist kein Piepton, falls im Profil nicht angegeben")
 UI_SETTING_LABEL(SET_STICK_GROUP_GAP,
     "Group gap",
     "Gruppenpause")
 UI_SETTING_HELP(SET_STICK_GROUP_GAP,
-    "Silence that ends a group of beeps",
-    "Pause, die eine Pieptongruppe beendet")
+    "Silence that ends a group, if the profile gives none",
+    "Pause, die eine Gruppe beendet, falls im Profil nicht angegeben")
 UI_SETTING_LABEL(SET_STICK_ENTRY,
     "Entry",
     "Einstieg")

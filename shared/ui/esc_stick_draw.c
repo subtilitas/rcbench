@@ -484,8 +484,36 @@ static int sp_device_lines(gfx_canvas_t *c, int x, int y, int cells,
              (unsigned)(tm.entry_ms % 1000u / 100u),
              (p->entry_hold_ms != 0u) ? sp_mark(TX_SP_FROM_PROFILE_MARK)
                                       : sp_mark(TX_SP_FROM_SETTING_MARK));
-    y += LINE_P * sp_wrap(c, x, y, LINE_P, line, cells, split ? 2 : 1,
-                          ui_theme_color(UI_C_TEXT_FAINT));
+    /* The beep lengths the run tells apart by, and where they come from:
+     * the profile's measured ones win over the settings.  The side column
+     * shows them only where the profile states them, so the picked item's
+     * values keep their room, with GAP MIN on a line of its own; the run's
+     * device card always, without GAP MIN, for which its line has no room
+     * in German. */
+    const esc_stick_timing_t *rt =
+        (esc_stick_running(&t->run) || t->shown) ? &t->run.t : &tm;
+    const bool from_profile = esc_stick_profile_beeps(p);
+    const char *mark = from_profile ? sp_mark(TX_SP_FROM_PROFILE_MARK)
+                                    : sp_mark(TX_SP_FROM_SETTING_MARK);
+    char beeps[64];
+    const gfx_color_t faint = ui_theme_color(UI_C_TEXT_FAINT);
+    if (split) {
+        y += LINE_P * sp_wrap(c, x, y, LINE_P, line, cells, 2, faint);
+        if (from_profile) {
+            snprintf(beeps, sizeof(beeps), TR(SP_TIMING_LINE),
+                     (unsigned)rt->beep_min_ms, (unsigned)rt->long_ms, "");
+            y += LINE_P * sp_wrap(c, x, y, LINE_P, beeps, cells, 1, faint);
+            snprintf(beeps, sizeof(beeps), TR(SP_TIMING_GAP),
+                     (unsigned)rt->gap_min_ms, mark);
+            y += LINE_P * sp_wrap(c, x, y, LINE_P, beeps, cells, 1, faint);
+        }
+    } else {
+        snprintf(beeps, sizeof(beeps), TR(SP_TIMING_LINE),
+                 (unsigned)rt->beep_min_ms, (unsigned)rt->long_ms, mark);
+        const size_t used = strlen(line);
+        snprintf(line + used, sizeof(line) - used, "   %s", beeps);
+        y += LINE_P * sp_wrap(c, x, y, LINE_P, line, cells, 1, faint);
+    }
     return y;
 }
 

@@ -80,13 +80,14 @@ def dump(p):
                                 ANN.index(p["announce"]),
                                 AUTO.index(p["auto"])))
     o.append(hx(p["note"]))
-    o.append("|%d %d %u|%d %u|%d %u|%d %d %d|%u %u %u %u %d %d %d|" % (
+    o.append("|%d %d %u|%d %u|%d %u|%d %d %d|%u %u %u %u %u %d %d %d|" % (
         THR.index(p["entry_thr"]), b(p["entry_after"]), p["hold"],
         THR.index(p["select_thr"]), p["select_ms"],
         THR.index(p["vsel_thr"]), p["vsel_ms"],
         THR.index(p["skip_thr"]), THR.index(p["listen_thr"]),
         THR.index(p["store_thr"]),
-        p["les"], p["beep"], p["gap"], p["ggap"], p["repeat"], b(p["one"]),
+        p["les"], p["beep"], p["long"], p["gap"], p["ggap"], p["repeat"],
+        b(p["one"]),
         b(p["verified"])))
     o.append("S%u" % len(p["steps"]))
     o += [hx(s) for s in p["steps"]]
@@ -185,7 +186,8 @@ def home(rng, d, key):
 
 
 # The most each whole number may be, by its key; hold_ms by where it is.
-MOST = {"within_ms": 60000, "beep_ms": 60000, "gap_ms": 60000,
+MOST = {"within_ms": 60000, "beep_ms": 60000, "long_ms": 60000,
+        "gap_ms": 60000,
         "group_gap_ms": 60000, "repeat": 255, "long_equals_short": 255,
         "cells_min": 255, "cells_max": 255, "v_max_mv": 1000000,
         "v_min_mv": 1000000, "current_a": 65535, "entry_hold_ms": 600000,

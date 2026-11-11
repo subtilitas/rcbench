@@ -30,8 +30,9 @@ ausführen.
 Jedes Profil ist `"verified": false`. Die Profile stammen aus 154
 Handbüchern und sind ohne ESC am Prüfstand entstanden. Kein Handbuch nennt
 eine Pieptondauer, eine Pause oder eine Schleifenzeit in Millisekunden. Die
-zugehörigen Zeitfelder bleiben deshalb null, bis eine Aufzeichnung am
-Prüfstand Messwerte liefert.
+Zeitfelder stehen nur dort, wo ein Prüfstand sie gemessen hat: 1 Profil,
+`flycolor-flydragon-lite-plus`, nennt `beep_ms` 128 und `long_ms` 384 vom
+Phase-Tap an einem FlyDragon Lite 40A. Jedes andere Zeitfeld ist null.
 
 ## Wo Profile liegen
 
@@ -121,7 +122,10 @@ Profile geben eines an. Das Suchfeld vergleicht `family`, in beiden Sprachen.
 | `scheme.announce.what` | `item`, `value`, `item_then_value` |
 | `scheme.announce.encoding` | `count`, `short_long`, `melody`, `yes_no` |
 | `scheme.announce.long_equals_short` | kurze Pieptöne je langem; Pflicht bei `short_long` |
-| `scheme.announce.beep_ms`, `gap_ms`, `group_gap_ms` | 0 bis 60000, oder null |
+| `scheme.announce.beep_ms` | Dauer eines kurzen Pieptons in ms: 0 bis 60000, oder null, wenn nicht gemessen |
+| `scheme.announce.long_ms` | Dauer eines langen Pieptons in ms: 0 bis 60000, oder null. Nur bei `short_long`, länger als `beep_ms` und nur zusammen mit ihm |
+| `scheme.announce.gap_ms` | Pause zwischen zwei Pieptönen einer Gruppe in ms: 0 bis 60000, oder null |
+| `scheme.announce.group_gap_ms` | Pause zwischen zwei Gruppen in ms: 0 bis 60000, oder null |
 | `scheme.announce.repeat` | 0 bis 255: 0 wiederholt bis zur Auswahl, null unbekannt |
 | `scheme.select.throttle`, `scheme.skip.throttle` | `min`, `mid`, `max`, `none` |
 | `scheme.listen` | Knüppelstellung während der Pieptonfolge des Menüs: `{"throttle": "min"}`, `mid` oder `max`. Fehlt es oder ist es null, bleibt die Knüppelstellung vom Einstieg erhalten. Gesetzt in den 9 Profilen für YGE-ESCs, deren Menü nach einem Einstieg bei Maximum mit dem Knüppel auf Minimum läuft; die Stick-Programmierung führt ein solches Profil nur aus, wenn `hold_ms` die Länge des Einstiegs nennt |
@@ -241,9 +245,14 @@ Kartenleser verschieden lesen.
   Standardwerte und Einstiegsgesten sind so, wie die Handbücher sie angeben,
   und manche Handbücher widersprechen einander; die `notes` jedes Profils
   nennen die Widersprüche.
-- Die Pieptonfelder (`beep_ms`, `gap_ms`, `group_gap_ms`) sind in jedem
-  Profil null, und die Stick-Programmierung liest sie nicht: ihre Zeiten
-  kommen aus ihren Einstellungen.
+- Die Pieptonfelder (`beep_ms`, `long_ms`, `gap_ms`, `group_gap_ms`) stehen
+  nur dort, wo gemessen: `beep_ms` und `long_ms` in 1 Profil, von 1 ESC.
+  Die Stick-Programmierung nimmt PIEPTON MIN, LANG und LANG MAX aus ihnen,
+  PAUSE MIN und GRUPPENPAUSE aus den Pausen, PAUSE MIN aus dem halben
+  kurzen Piepton, wo keine Pause genannt und er kleiner ist, und ihre
+  Einstellungen, wo ein Feld null ist; siehe
+  [Stick-Programmierung](StickProgramming-de.md#zeiten-aus-dem-profil). Kein
+  Profil nennt eine Pause.
 - Das Netzteil des Prüfstands ist der PD mini mit höchstens 20V. ESCs, deren
   Mindesteingang darüber liegt, etwa YGE Opto und Navy ab 6S, brauchen eine
   externe Versorgung.

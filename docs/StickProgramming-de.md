@@ -689,17 +689,11 @@ Die Regeln unten gelten für beide Quellen, außer wo eine Regel eine nennt.
 ## Die Einstellungen
 
 Öffne OPTIONEN in der Fußleiste der Seite eines Profils. Diese Werte werden
-mit SPEICHERN mit den anderen Einstellungen gespeichert. Keiner davon ist
-gemessen. SCHWELLE und HYSTERESE gelten nur für den INA3221.
-
-Die Vorgaben passen nicht zu dem einen ESC, den der Abgriff gehört hat,
-einem Flycolor FlyDragon Lite 40A an 7,6V: kurze Pieptöne von 127,9ms bei
-2090Hz und lange von 383,7ms bei 1866Hz. Mit LANG bei 500ms zählen seine
-langen Pieptöne als kurze, und mit PIEPTON MIN bei 200ms machen seine
-kurzen ihre Gruppen ungültig. Für ihn muss PIEPTON MIN unter 127ms und LANG
-zwischen 128 und 383ms liegen, zum Beispiel PIEPTON MIN 100ms und LANG
-250ms. Seine Pausen zwischen Pieptönen und zwischen Gruppen sind nicht
-gemessen.
+mit SPEICHERN mit den anderen Einstellungen gespeichert. Keine Vorgabe ist
+gemessen. SCHWELLE und HYSTERESE gelten nur für den INA3221. Wo das Profil
+eine Piepton- oder Pausenlänge nennt, kommt der Wert, den sie festlegt, aus
+dem Profil und nicht aus der Einstellung
+([Zeiten aus dem Profil](#zeiten-aus-dem-profil)).
 
 | Einstellung | Vorgabe | Bereich | Was sie ist |
 | --- | --- | --- | --- |
@@ -723,6 +717,72 @@ widersprechen: LANG höchstens PIEPTON MIN, LANG MAX höchstens LANG, GRUPPENPAU
 höchstens PAUSE MIN, SCHWELLE höchstens HYSTERESE, MENÜEINSTIEG höchstens 500ms,
 oder GRUPPENPAUSE plus das Kürzere von PIEPTON MIN und PAUSE MIN mindestens das
 `within_ms` des Profils für seine Auswahl- oder Wertbewegung.
+
+### Zeiten aus dem Profil
+
+Ein Profil kann die Längen seiner Pieptöne und Pausen nennen
+(`scheme.announce.beep_ms`, `long_ms`, `gap_ms`, `group_gap_ms`; siehe
+[ESC-Profile](EscProfiles-de.md)). Wo es eine nennt, nimmt der Lauf die
+Werte, die diese Länge festlegt, aus dem Profil, und die Werte der
+Einstellungen gelten nicht. Wo es keine nennt, nimmt der Lauf die
+Einstellungen unverändert. Jeder Wert liegt zwischen den beiden Längen, die
+er trennt, mit einem Faktor 2 oder dem halben Abstand Reserve zu jeder
+Seite:
+
+| Das Profil nennt | Wert | Regel |
+| --- | --- | --- |
+| `beep_ms` S (und in einem `short_long`-Profil `long_ms` L) | PIEPTON MIN | S / 2 |
+| | LANG | (S + L) / 2; ohne lange Pieptöne 2 x S |
+| | LANG MAX | 2 x L; ohne lange Pieptöne 4 x S |
+| `gap_ms` G | PAUSE MIN | G / 2 |
+| `beep_ms` S, kein `gap_ms` | PAUSE MIN | die Einstellung oder S / 2, der kleinere Wert |
+| `group_gap_ms` GG | GRUPPENPAUSE | (G + GG) / 2, mit G als 0, wo `gap_ms` null ist |
+
+Die Werte sind in ms, abgerundet. Ein `short_long`-Profil mit `beep_ms`,
+aber ohne `long_ms` legt keinen der drei fest. Der Lauf misst das Ergebnis
+an denselben Regeln wie die Einstellungen und lehnt es unverändert ab, wo
+es eine verletzt (oben), mit demselben Grund wie eine von Hand
+eingegebene Einstellung.
+
+PAUSE MIN weist nur eine Pause ab, die zu kurz ist, um echt zu sein. Nennt
+ein Profil seine Pieptonlängen, aber keine Pause, nimmt der Lauf den halben
+kurzen Piepton, wenn er unter der Einstellung liegt: Eine Menüpause unter
+der Hälfte des eigenen kurzen Pieptons ist nicht plausibel. Der
+Phasenabgriff meldet Anfang und Ende jedes Pieptons aus der Erfassung des
+IOmcu, seine Pulspakete schon zusammengefasst, also ist eine Pause, die er
+meldet, Stille zwischen zwei Pieptönen. Für den FlyDragon sind das 64ms
+statt der Vorgabe von 200ms, unter die seine Pause fiele, wenn sie so kurz
+ist wie sein Piepton von 128ms. Am INA3221 bleiben 64ms über dem Fenster
+von 50ms, also löst MESSRATE (ein Fenster später als das Kürzere von
+PIEPTON MIN und PAUSE MIN) nicht aus.
+
+Die Karte oben über einem Lauf und seinem Ergebnis zeigt die Werte, an
+denen der Lauf seine Pieptöne unterscheidet, PIEPTON MIN und LANG, hinter
+Netzteil und Einstiegszeit, mit "(Profil)", wenn die Längen des Profils sie
+festlegen, und mit "(Einstellung)", wenn die Einstellungen es tun. PAUSE
+MIN fehlt dort: Auf Deutsch hat die Zeile keinen Platz dafür. Die
+Seitenspalte der Seite eines Profils zeigt alle drei, wo das Profil seine
+Pieptonlängen nennt, für den FlyDragon `PIEPTON MIN 64ms  LANG 256ms` und
+darunter `PAUSE MIN 64ms (Profil)`; wo es keine nennt, fehlen die Zeilen
+dort, damit die Werte des gewählten Punkts ihren Platz behalten. Die Liste
+OPTIONEN behält die Einstellungen, wie sie gespeichert sind; ihre
+Hilfezeilen sagen, dass sie gelten, wo das Profil keine Länge nennt.
+
+1 Profil nennt Pieptonlängen: `flycolor-flydragon-lite-plus`, `beep_ms`
+128 und `long_ms` 384, vom Phasenabgriff an einem Flycolor FlyDragon Lite 40A
+an 7,6V (kurze Pieptöne 127,9ms bei 2090Hz, lange 383,7ms bei 1866Hz, kein
+Piepton verloren). Sein Lauf nimmt:
+
+| Wert | Aus | ms | Abstand zu den gemessenen Pieptönen |
+| --- | --- | --- | --- |
+| PIEPTON MIN | 128 / 2 | 64 | 63,9ms unter dem kurzen von 127,9ms |
+| LANG | (128 + 384) / 2 | 256 | 128,1ms über dem kurzen, 127,7ms unter dem langen von 383,7ms |
+| LANG MAX | 2 x 384 | 768 | 384,3ms über dem langen |
+| PAUSE MIN | 128 / 2, unter der Vorgabe 200 | 64 | seine Pausen sind nicht gemessen; eine Pause von 128ms, so lang wie sein kurzer Piepton, liegt 64ms darüber |
+| GRUPPENPAUSE | die Einstellung | 700 als Vorgabe | nicht gemessen |
+
+LANG MAX bei 768ms legt auch STROM BLEIBT HOCH fest, nur am INA3221: ein
+Puls länger als 1536ms.
 
 ## Das Netzteil
 
@@ -927,7 +987,13 @@ Piepton länger als GRUPPENPAUSE, vom Abgriff 60ms verspätet übergeben, und
 hält eine Gruppe offen, solange ein Status nach GRUPPENPAUSE einen Piepton
 im Gang oder einen noch nicht übernommenen zeigt.
 `test_esc_stick_panel_source` prüft die Wahl der Quelle durch das Panel und
-die Ablehnung ohne beide.
+die Ablehnung ohne beide. `test_esc_stick_profile_timing` prüft die Werte,
+die die Längen eines Profils ergeben (64, 256 und 768ms und PAUSE MIN 64ms für den
+FlyDragon), lässt den FlyDragon am Abgriff mit allen Einstellungen auf
+ihren Vorgaben und Pausen von 128ms bis FERTIG laufen, lässt denselben ESC
+unter einem Profil ohne Längen laufen, das die Einstellungen (PAUSE MIN 200ms) behält und
+nichts speichert, und lehnt genannte Längen ab, die die Zeitregeln
+verletzen.
 
 ## Aktuelle Einschränkungen
 
@@ -936,6 +1002,13 @@ die Ablehnung ohne beide.
   7,6V über 4,7kΩ und eine 3,0-V-Zenerdiode an GPIO 22, ohne verlorenen
   Piepton; kein Lauf hat an ihm gezählt. Kein Lauf hat an einem
   INA3221-Kanal gezählt.
+- Die Pausen des FlyDragon-Profils sind nicht gemessen. Sein Lauf nimmt
+  PAUSE MIN 64ms aus dem kurzen Piepton von 128ms (die Hälfte) und behält
+  GRUPPENPAUSE 700ms aus den Einstellungen: eine Pause zwischen zwei
+  Gruppen von höchstens 700ms verbindet sie zu einer, und eine Pause in
+  einer Gruppe über 700ms teilt sie. So oder so verletzen die Gruppen die
+  Reihenfolge, und der Lauf endet mit ZEITLIMIT. Seine Pieptonlängen stammen
+  von einem FlyDragon Lite 40A; kein FlyDragon Lite Plus ist gemessen.
 - Wie oft das Panel auf dem Prüfstand ein INA3221-Fenster verpasst, oder
   wie lange der Status des Abgriffs nach einer Gruppe braucht, bis er die
   Stille zeigt, ist nicht gemessen.
