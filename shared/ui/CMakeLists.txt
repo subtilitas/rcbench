@@ -21,6 +21,7 @@ set(SRCS
     ui_textkey_cursor.c
     ui_shot.c
     shot_gate.c
+    screen_dim.c
     shot_hold.c
     stop_hold.c
     ui_pinlist.c

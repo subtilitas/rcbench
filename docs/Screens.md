@@ -5004,10 +5004,11 @@ by default, shows the heartbeat fault as HWSTOP in place of FAULT 10
 
 ![PANEL scrolled to Hardware stop, stored ON](img/setup-hw-stop.png)
 
-Eight settings are stored without affecting firmware operation. Units and
-Dim after appear under PANEL; Cells, Capacity and Internal R appear on
-MOTOR & ESC. Vibration, Optical tacho and Tacho pin have stored keys but no
-SENSORS entry. Ramp limit affects only the modeled bench's slew rate.
+Seven settings are stored without affecting firmware operation. Cells,
+Capacity and Internal R appear on MOTOR & ESC. Units has a stored key but no
+PANEL row; a value stored earlier is loaded and saved again unchanged.
+Vibration, Optical tacho and Tacho pin have stored keys but no SENSORS
+entry. Ramp limit affects only the modeled bench's slew rate.
 
 ### Keys and the list
 
@@ -5215,6 +5216,40 @@ ESP32-P4's system time ([Building](Building.md#the-panels-clock)).
   day. Run logs count their time column from the run's start, and the
   reports (ATESTnnn.TXT, LIMITnnn.TXT) carry no date: the file's stamp is
   their date.
+
+### PANEL: Dim after
+
+Dim after turns the backlight down when nobody touches the panel and the
+bench is idle.
+
+| Setting | Range | Default |
+| --- | --- | --- |
+| Dim after | 0 to 60min in steps of 5 | 0 |
+
+- After the set minutes without a touch event, the backlight's PWM
+  (pulse-width modulation) duty on GPIO32 drops from 100% to 20%. 0 never
+  dims. How much light 20% duty gives is not measured.
+- It dims only while the bench is idle, by the same facts as the
+  screenshot's popup ([The popup](#the-popup)): SAFE with no arm waiting,
+  the supply and PROG 5V off, no port held, no programming session, card
+  job, sweep, test, limit run, ESC STICK run, update, FAULT bit, fault log
+  write or open log. A frame that finds any of them sets 100% at once and
+  starts the minutes again. An ARMED bench or an output that is on is never
+  behind a dim screen.
+- Any touch event sets 100% and starts the minutes again.
+- The press that comes down on a dim screen only wakes it. Its DOWN, MOVEs
+  and UP reach no screen, so it opens, steps or switches nothing. A second
+  finger that comes down while the first rests is a normal press.
+- A press on STOP always counts: on a dim screen it stops the bench at its
+  DOWN, as on a lit one, and wakes the screen. The panel's control task
+  applies it before the render loop sees it.
+- A contact that rested on the glass while the screen dimmed keeps its
+  owner: its next MOVE or UP wakes the screen and reaches the screen it
+  pressed.
+- A turn of the rotary knob does not wake the screen.
+- The rule is `shared/ui/screen_dim.c`, held by `test_screen_dim`; the
+  render loop sets the duty with `board_backlight_percent()` when it
+  changes.
 
 ### PANEL: the rotary knob
 

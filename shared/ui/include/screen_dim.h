@@ -1,0 +1,100 @@
+/**
+ * @file
+ * @brief Dim after: when the panel's backlight dims, what wakes it and which
+ *        touch events a wake keeps from the screens.
+ *
+ * The backlight drops to SCREEN_DIM_PCT after SETUP > PANEL's Dim after
+ * (SET_DIM_AFTER, minutes) without a touch event, and only while the bench
+ * is idle as the screenshot popup's gate decides it (shot_gate.h): SAFE, no
+ * output on, no session, run, update, FAULT bit or recording.  0 minutes
+ * never dims.  A frame that finds the bench not idle restores
+ * SCREEN_FULL_PCT at once and starts the minutes again, so an output that
+ * comes on is never driven behind a dim screen.
+ *
+ * Any touch event restores SCREEN_FULL_PCT and starts the minutes again.
+ * A press that comes down on a dim screen only wakes it: that contact's
+ * DOWN, MOVEs and UP reach no screen, so the press cannot act on a control
+ * the operator could not see.  A press on the band's STOP is the exception
+ * and always goes on: the control task has already applied it, and the
+ * router latches it and consumes the control task's marker for it
+ * (panel_control.c).  A contact that came down before the screen dimmed,
+ * and every press after the wake, go on as usual.
+ *
+ * The firmware calls screen_dim_touch() for each event before the router
+ * and sets the backlight to what screen_dim_step() returns.  Pure C, no
+ * ESP-IDF (Espressif Internet-of-Things Development Framework).  Render
+ * task only.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+#pragma once
+
+#include <stdbool.h>
+#include <stdint.h>
+
+#include "shot_gate.h"
+#include "touch_types.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/** @brief The backlight's PWM (pulse-width modulation) duty awake, %. */
+#define SCREEN_FULL_PCT 100u
+/** @brief The backlight's PWM duty dimmed, %.  The light it gives is not
+ *         measured. */
+#define SCREEN_DIM_PCT  20u
+/** @brief The milliseconds of one minute of Dim after. */
+#define SCREEN_DIM_MS_PER_MIN 60000u
+
+/** @brief The state of the rule. */
+typedef struct {
+    uint32_t last_ms;                    /**< the last touch, or the last
+                                              frame that kept it awake     */
+    bool     dimmed;                     /**< the backlight is dim         */
+    uint8_t  held[TOUCH_MAX_POINTS];     /**< contacts whose press woke it */
+    uint8_t  held_n;                     /**< entries of held in use       */
+} screen_dim_t;
+
+/**
+ * @brief Awake, nothing held, the minutes counted from @p now_ms.
+ * @param d       the state
+ * @param now_ms  the clock, ms
+ */
+void screen_dim_init(screen_dim_t *d, uint32_t now_ms);
+
+/**
+ * @brief Once a frame, after the frame's touch: the backlight's duty.
+ * @param d          the state
+ * @param now_ms     the clock, ms; wraps after 2^32ms
+ * @param dim_after  SET_DIM_AFTER, minutes; 0 or less never dims
+ * @param facts      this frame's facts of the screenshot gate; NULL is
+ *                   a bench that is not idle
+ * @return SCREEN_DIM_PCT or SCREEN_FULL_PCT
+ */
+unsigned screen_dim_step(screen_dim_t *d, uint32_t now_ms, int dim_after,
+                         const shot_facts_t *facts);
+
+/**
+ * @brief One touch event, before the router: wakes the screen and says
+ *        whether the event goes on.
+ * @param d          the state
+ * @param evt        the event; NULL goes nowhere and changes nothing
+ * @param stop_live  a STOP is drawn to press (ui_router_stop_live())
+ * @param now_ms     the clock, ms
+ * @return true when the router takes the event; false for a press that
+ *         came down on a dim screen off STOP, its MOVEs and its UP
+ */
+bool screen_dim_touch(screen_dim_t *d, const touch_event_t *evt,
+                      bool stop_live, uint32_t now_ms);
+
+/**
+ * @brief Whether the backlight is dim.
+ * @param d  the state
+ * @return true between the step that dimmed it and the next wake
+ */
+bool screen_dim_is_dim(const screen_dim_t *d);
+
+#ifdef __cplusplus
+}
+#endif

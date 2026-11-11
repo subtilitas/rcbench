@@ -10,6 +10,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "shot_gate.h"
+
 /** @brief What the frame loop read of the bench for this frame's gate. */
 typedef struct {
     bool     armed;        /**< the snapshot's ARMED                       */
@@ -28,6 +30,8 @@ void panel_shot_init(void);
 
 /**
  * @brief The gate's facts for this frame, to the router.
- * @param in  what the frame loop read
+ * @param in     what the frame loop read
+ * @param facts  takes the facts, for Dim after (backlight_service()); may
+ *               be NULL
  */
-void panel_shot_frame(const panel_shot_in_t *in);
+void panel_shot_frame(const panel_shot_in_t *in, shot_facts_t *facts);

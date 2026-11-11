@@ -59,6 +59,7 @@
 #include "prog5v_lost.h"
 #include "prog_supply_link.h"
 #include "safety_gate.h"
+#include "shot_gate.h"
 #include "sense_link.h"
 #include "sense_map_link.h"
 #include "servo_link.h"
@@ -1504,6 +1505,12 @@ knob_turn_t knob_take(void);
 void knob_apply(const knob_turn_t *turn, bool frame_lost);
 void flush_screen_commands(uint32_t stops_now);
 bool drain_touch(uint32_t stops_now);
+/**
+ * @brief Once a frame, after the frame's touch: the backlight at the duty
+ *        Dim after gives (screen_dim_step()), set only when it changes.
+ * @param facts  this frame's facts of the screenshot gate (panel_shot_frame())
+ */
+void backlight_service(const shot_facts_t *facts);
 void outputs_apply(const outbind_t *b);
 
 /* ------------------------------------------------------------- panel_art.c */

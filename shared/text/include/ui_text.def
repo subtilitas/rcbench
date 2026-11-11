@@ -1652,8 +1652,8 @@ UI_TEXT(HG_SET_VALUE_NAME, 0,
     "VALUE FIELD",
     "WERTFELD")
 UI_TEXT(HG_SET_PANEL, 0,
-    "This panel: theme, brightness, rotation, language, units, time zone and the knob.",
-    "Dieses Panel: Design, Helligkeit, Drehung, Sprache, Einheiten, Zeitzone und Drehknopf.")
+    "This panel: theme, brightness, rotation, language, time zone, dimming and the knob.",
+    "Dieses Panel: Design, Helligkeit, Drehung, Sprache, Zeitzone, Dimmen und Drehknopf.")
 UI_TEXT(HG_SET_SENSORS, 0,
     "The IOmcu's sensor bus, INA228, INA3221, AS5600 and phase tap, and the panel's Bluetooth IMU.",
     "Sensorbus, INA228, INA3221, AS5600 und Phasenabgriff des IOmcu sowie die Bluetooth-IMU des Panels.")
@@ -8444,8 +8444,8 @@ UI_SETTING_LABEL(SET_DIM_AFTER,
     "Dim after",
     "Dimmen nach")
 UI_SETTING_HELP(SET_DIM_AFTER,
-    "0 keeps full brightness",
-    "0 = dauerhaft volle Helligkeit")
+    "Backlight to 20% when idle and untouched; 0 never",
+    "Licht auf 20% bei Ruhe ohne Touch; 0 = nie")
 UI_SETTING_LABEL(SET_PLOT_PAN,
     "One finger pans",
     "Ein Finger schiebt")

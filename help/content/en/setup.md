@@ -110,17 +110,14 @@ No warning shows when nothing is unsaved, when a save is asked (`WHEN IDLE`), or
 | Contrast | 60 to 140%, steps of 5 | 100 | pushes colours away from mid grey |
 | Screen rotation | NORMAL, 180° | NORMAL | turns picture and touch by 180°, from the next frame; locked while ARMED |
 | Language | ENGLISH, DEUTSCH | ENGLISH | the interface language, from the next frame, without a restart |
-| Units | METRIC, IMPERIAL | METRIC | stored; no screen uses it in this release |
 | Time zone | UTC, LONDON, BERLIN, HELSINKI, NEW YORK, CHICAGO, DENVER, LOS ANGELES, TOKYO, SYDNEY | BERLIN | the zone file dates are written and shown in, daylight saving included |
-| Dim after | 0 to 60min, steps of 5 | 0 | stored; no screen uses it in this release |
+| Dim after | 0 to 60min, steps of 5 | 0 | the minutes without a touch on an idle bench before the backlight drops to 20%; 0 never dims ([Dim after](#dim-after)) |
 | One finger pans | ON, OFF | OFF | one finger pans a zoomed plot on [Logs](logs.md#the-plot) |
 | Rotary knob | ON, OFF | OFF | an MT6701 at 0x06 on a bus of its own, IO30 and IO31 of header P3 (I2C: Inter-Integrated Circuit), turns the throttle on MOTOR & ESC or the horn on SERVO |
 | Knob range | 90 to 720°, steps of 10 | 270 | the knob angle that moves the slider across its whole span |
 | Keyboard transparency | OFF, 25%, 50% | OFF | how much of the text shows through the text editor's keyboard on [Files](files.md#the-text-editor); other keyboards stay opaque |
 | Demo mode | ON, OFF | OFF | hides the SIMULATION watermark from the next frame; the band still says SIM and the tiles still say SIMULATED. The panel draws the watermark only while no IOmcu answers, so the setting changes nothing on a bench with an IOmcu |
 | Hardware stop | ON, OFF | OFF | for a bench with a stop button in the heartbeat line: the band shows the heartbeat fault as a red HWSTOP chip in place of FAULT 10 ([HWSTOP](band.md#hwstop)). A broken cable shows HWSTOP too. What the bench does on the fault stays the same |
-
-The backlight is on while the panel runs. No setting switches it.
 
 Screen rotation uses the ESP32-P4's PPA (pixel-processing accelerator) to rotate each outgoing frame and its touch coordinates together. A contact at (x, y) in NORMAL maps to (1023 - x, 599 - y) at 180°. Touch injector contacts are not rotated. The setting's row has no keys while ARMED.
 
@@ -135,6 +132,16 @@ A software restart preserves the clock. FAT stores timestamps in local time at t
 ![Time zone set to LOS ANGELES](view:setup-time-zone)
 
 ![SETUP in the light theme](view:setup-light)
+
+### Dim after
+
+After the set minutes without a touch, the backlight's PWM (pulse-width modulation) duty drops from 100% to 20%. 0, the default, never dims. How much light 20% duty gives is not measured.
+
+- The screen dims only while the bench is idle, by the same rules as the screenshot's popup: SAFE, nothing on, no session, run, test, update or FAULT. ARMED, an output that comes on or a FAULT sets 100% at once.
+- A touch sets 100% and starts the minutes again.
+- The first press on a dim screen only wakes it: it opens, steps or switches nothing. Press again to act.
+- A press on STOP always stops the bench, dim or not, and wakes the screen.
+- A turn of the rotary knob does not wake the screen.
 
 ### The rotary knob
 
