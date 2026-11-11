@@ -208,15 +208,6 @@ bool hitec_pio_clock(uint32_t sys_hz, uint8_t family, hitec_pio_clock_t *out);
 uint32_t hitec_pio_bit_ns(const hitec_pio_clock_t *clock);
 
 /**
- * @brief @p cycles state machine cycles of @p clock, in ns, rounded down.
- *
- * @param clock   Divider and counts.
- * @param cycles  State machine cycle count.
- * @return cycles converted to ns, rounded down.
- */
-uint32_t hitec_pio_cycles_ns(const hitec_pio_clock_t *clock, uint64_t cycles);
-
-/**
  * @brief The word stream for @p xfer on a line with @p drive (hitec_drive_t).
  *
  * Returns the number of words written to @p words, at most HITEC_PIO_TX_WORDS,

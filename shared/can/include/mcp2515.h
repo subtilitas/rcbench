@@ -1,5 +1,6 @@
-/*
- * The MCP2515's register map and frame layout, from the datasheet.
+/**
+ * @file
+ * @brief The MCP2515's register map and frame layout, from the datasheet.
  *
  * Everything here is arithmetic or a constant: no SPI (Serial Peripheral
  * Interface), no pins, no delays.  It is host-tested, and the driver that
@@ -111,15 +112,6 @@ bool mcp2515_unpack_id(const uint8_t in[4], uint32_t *id);
  * to @p buf.  False when no buffer holds a frame.
  */
 typedef bool (*mcp2515_fetch_fn)(void *ctx, uint8_t buf[13]);
-
-/**
- * Turn the 13 registers of one receive buffer into a frame.
- *
- * False for a frame this link does not carry: an 11-bit identifier, a remote
- * frame (bit 6 of the DLC register, RTR) whose data registers hold stale
- * bytes, or a length above 8.
- */
-bool mcp2515_decode_rx(const uint8_t buf[13], link_can_frame_t *f);
 
 /**
  * The next frame this link carries.  A buffer @p fetch hands over and
