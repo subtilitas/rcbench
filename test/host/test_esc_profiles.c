@@ -115,6 +115,7 @@ static void same(const esc_profile_t *a, const esc_profile_t *b)
     CHECK_EQ(a->gap_ms, b->gap_ms);
     CHECK_EQ(a->group_gap_ms, b->group_gap_ms);
     CHECK_EQ(a->repeat, b->repeat);
+    CHECK_EQ(a->loop_marker, b->loop_marker);
     CHECK_EQ(a->one_change_per_entry, b->one_change_per_entry);
     CHECK_EQ(a->verified, b->verified);
     CHECK_EQ(a->step_count, b->step_count);
@@ -757,6 +758,7 @@ TEST_CASE(a_profile_reads_into_every_field)
     CHECK_EQ(p.repeat, -1);                     /* null: not known */
     CHECK_EQ(p.beep_ms, 0);
     CHECK_EQ(p.long_ms, 0);                     /* absent: not known */
+    CHECK_EQ(p.loop_marker, false);             /* absent: none */
     CHECK_EQ(p.one_change_per_entry, false);
     CHECK_EQ(p.step_count, 2);
     CHECK_STR_EQ(p.steps[1], "Power on");
@@ -902,6 +904,31 @@ TEST_CASE(a_short_long_menu_reads_its_beep_lengths)
     free(j);
 }
 
+/* The sound between two passes of the item loop: true, false, and null
+ * as absent. */
+TEST_CASE(the_loop_marker_reads_as_a_boolean)
+{
+    static const struct {
+        const char *to;
+        bool        want;
+    } k[] = {
+        { "\"beep_ms\": null, \"loop_marker\": true,", true },
+        { "\"beep_ms\": null, \"loop_marker\": false,", false },
+        { "\"beep_ms\": null, \"loop_marker\": null,", false },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        char *j = subst("\"beep_ms\": null,", k[i].to);
+        esc_profile_t p;
+        void *block = NULL;
+        CHECK(esc_profile_parse(j, strlen(j), &p, &block, NULL, 0));
+        if (block != NULL) {
+            CHECK_EQ(p.loop_marker, k[i].want);
+        }
+        free(block);
+        free(j);
+    }
+}
+
 TEST_CASE(escapes_become_the_characters_they_name)
 {
     char *j = subst("\"Test 30\"", "\"T\\u00fcst \\\"30\\\" \\/ \\u20ac\"");
@@ -1032,6 +1059,11 @@ TEST_CASE(a_broken_profile_is_refused_with_its_place_named)
           "                \"long_equals_short\": 5, \"beep_ms\": 128,"
           " \"long_ms\": 384,",
           "scheme.announce.long_ms: only for short_long" },
+        { "\"beep_ms\": null,", "\"beep_ms\": null, \"loop_marker\": 1,",
+          "scheme.announce.loop_marker: not a boolean" },
+        { "\"beep_ms\": null,",
+          "\"beep_ms\": null, \"loop_marker\": \"true\",",
+          "scheme.announce.loop_marker: not a boolean" },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         char *j = subst(k[i].from, k[i].to);
@@ -1580,6 +1612,7 @@ int main(void)
     RUN(a_maker_holds_at_most_its_models);
     RUN(a_value_reads_its_moves_after_the_selection);
     RUN(a_manual_step_the_generator_refuses_is_refused_here_too);
+    RUN(the_loop_marker_reads_as_a_boolean);
     RUN(escapes_become_the_characters_they_name);
     RUN(control_escapes_and_a_surrogate_pair_are_read);
     RUN(escaped_keys_and_values_read_as_their_plain_spelling);

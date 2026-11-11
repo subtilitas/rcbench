@@ -303,6 +303,10 @@ def check(path: pathlib.Path) -> dict:
     want(cpe in ("one", "many"), f"{w}.scheme.changes_per_entry",
          "not one or many")
     rep = num(a, "repeat", f"{w}.scheme.announce", 255)
+    # The sound between two passes of the item loop: absent or null, none.
+    marker = a.get("loop_marker")
+    want(marker is None or isinstance(marker, bool),
+         f"{w}.scheme.announce.loop_marker", "not a boolean")
     # The beep lengths: a long beep's only in a short_long profile, only
     # beside the short beep's and longer than it; a short_long profile
     # states the two together or neither.
@@ -353,6 +357,7 @@ def check(path: pathlib.Path) -> dict:
         "gap": num(a, "gap_ms", f"{w}.scheme.announce", 60000) or 0,
         "ggap": num(a, "group_gap_ms", f"{w}.scheme.announce", 60000) or 0,
         "repeat": -1 if rep is None else rep,
+        "marker": "true" if marker else "false",
         "one": "true" if cpe == "one" else "false",
         "verified": "true" if d["verified"] else "false",
         "steps": steps, "models": [], "items": [], "manual": manual,
@@ -542,7 +547,7 @@ def emit(profiles: list[dict]) -> str:
             f" {p['listen_thr']}, {p['store_thr']},\n"
             f"      {p['les']}u, {p['beep']}u, {p['long']}u, {p['gap']}u,"
             f" {p['ggap']}u,"
-            f" {p['repeat']}, {p['one']}, {p['verified']},\n"
+            f" {p['repeat']}, {p['marker']}, {p['one']}, {p['verified']},\n"
             f"      {len(p['steps'])}u, {n}_steps,"
             f" {len(p['models'])}u, {n}_models,"
             f" {len(p['items'])}u, {items},\n"
@@ -759,6 +764,9 @@ def self_test() -> list[str]:
         "long_ms on counted beeps": lengths("128", "384", "count"),
         "long_ms 60001": lengths("128", "60001"),
         "long_ms a string": lengths("128", '"384"'),
+        "loop_marker 1": at(beeps, beeps + ' "loop_marker": 1,'),
+        "loop_marker a string": at(beeps, beeps + ' "loop_marker": "true",'),
+        "loop_marker an object": at(beeps, beeps + ' "loop_marker": {},'),
     }
     accept = {
         "plain": base.encode("utf-8"),
@@ -847,6 +855,9 @@ def self_test() -> list[str]:
         "beep and long lengths": lengths("128", "384"),
         "no beep lengths": lengths("null", "null"),
         "beep_ms on counted beeps": lengths("128", "null", "count"),
+        "loop_marker true": at(beeps, beeps + ' "loop_marker": true,'),
+        "loop_marker false": at(beeps, beeps + ' "loop_marker": false,'),
+        "loop_marker null": at(beeps, beeps + ' "loop_marker": null,'),
     }
     bad = []
     with tempfile.TemporaryDirectory() as tmp:

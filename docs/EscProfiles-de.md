@@ -8,31 +8,33 @@ Es legt den Einstieg ins Menü, die Pieptonfolgen zur Ausgabe von Zahlen
 sowie die verfügbaren Menüpunkte und Werte fest. Die
 [Stick-Programmierung](StickProgramming-de.md) verwendet diese Daten: Du
 wählst einen ESC und die zu ändernden Werte; der Prüfstand steuert das Gas
-und zählt die Pieptöne im Versorgungsstrom. Er kann 25 der 73 Profile
+und zählt die Pieptöne im Versorgungsstrom. Er kann 26 der 74 Profile
 ausführen.
 
 ## Was im Satz steht
 
 | | Anzahl |
 | --- | --- |
-| Profile (Familien) | 73 |
-| Modelle | 457 |
+| Profile (Familien) | 74 |
+| Modelle | 462 |
 | Marken | 21 |
-| Menüpunkte | 370 |
+| Menüpunkte | 381 |
 
 | Wer ein Profil ausführen kann | Profile | Modelle |
 | --- | --- | --- |
-| Der Prüfstand allein: Gassignal und Versorgung | 45 | 346 |
+| Der Prüfstand allein: Gassignal und Versorgung | 46 | 351 |
 | Ein Mensch setzt einen Jumper, drückt einen Taster oder liest eine LED | 26 | 108 |
 | davon mit den Schritten in `manual` | 24 | 88 |
 | Niemand: das Handbuch nennt kein brauchbares Verfahren | 2 | 3 |
 
-Jedes Profil ist `"verified": false`. Die Profile stammen aus 154
+Jedes Profil ist `"verified": false`. Die Profile stammen aus 155
 Handbüchern und sind ohne ESC am Prüfstand entstanden. Kein Handbuch nennt
 eine Pieptondauer, eine Pause oder eine Schleifenzeit in Millisekunden. Die
-Zeitfelder stehen nur dort, wo ein Prüfstand sie gemessen hat: 1 Profil,
-`flycolor-flydragon-lite-plus`, nennt `beep_ms` 128 und `long_ms` 384 vom
-Phase-Tap an einem FlyDragon Lite 40A. Jedes andere Zeitfeld ist null.
+Zeitfelder stehen nur dort, wo ein Prüfstand sie gemessen hat: 2 Profile,
+`flycolor-flydragon-lite` und `flycolor-flydragon-lite-plus`, nennen
+`beep_ms` 128 und `long_ms` 384 vom Phase-Tap an einem FlyDragon Lite 40A.
+Jedes andere Zeitfeld ist null. Dieselben 2 Profile setzen `loop_marker`: Der FlyDragon Lite 40A spielt seine
+Melodie 12321, etwa 808ms lang, vor jedem Durchlauf seiner Punkteschleife.
 
 ## Wo Profile liegen
 
@@ -105,7 +107,7 @@ Modellzeilen und die Pop-ups von ESC STICK zeigen `family_de`, wo es existiert
 und die Oberfläche auf Deutsch eingestellt ist, sonst `family`. Marken- und
 Modellnamen und die Begriffe, die englisch bleiben (`brushed`, `brushless`,
 `sensorless`, `BEC`, `OPTO`, `ESC`), sind in beiden gleich. Eine Familie, die
-nur aus Namen und diesen Begriffen besteht, hat kein `family_de`: 37 der 73
+nur aus Namen und diesen Begriffen besteht, hat kein `family_de`: 38 der 74
 Profile geben eines an. Das Suchfeld vergleicht `family`, in beiden Sprachen.
 
 ### Felder, die das Panel liest
@@ -127,6 +129,7 @@ Profile geben eines an. Das Suchfeld vergleicht `family`, in beiden Sprachen.
 | `scheme.announce.gap_ms` | Pause zwischen zwei Pieptönen einer Gruppe in ms: 0 bis 60000, oder null |
 | `scheme.announce.group_gap_ms` | Pause zwischen zwei Gruppen in ms: 0 bis 60000, oder null |
 | `scheme.announce.repeat` | 0 bis 255: 0 wiederholt bis zur Auswahl, null unbekannt |
+| `scheme.announce.loop_marker` | `true`: Zwischen dem höchsten und dem niedrigsten Punkt jedes Durchlaufs der Punkteschleife steht ein Ton, der kein Punkt ist, etwa eine Melodie. Fehlt das Feld, ist es null oder `false`: keiner. Die Stick-Programmierung lässt diesen einen Ton in der Punkteschleife eines zweistufigen Menüs durch; die Werteschleifen und einstufige Menüs liest sie ohne ihn. Gesetzt in 2 Profilen, `flycolor-flydragon-lite` und `flycolor-flydragon-lite-plus` |
 | `scheme.select.throttle`, `scheme.skip.throttle` | `min`, `mid`, `max`, `none` |
 | `scheme.listen` | Knüppelstellung während der Pieptonfolge des Menüs: `{"throttle": "min"}`, `mid` oder `max`. Fehlt es oder ist es null, bleibt die Knüppelstellung vom Einstieg erhalten. Gesetzt in den 9 Profilen für YGE-ESCs, deren Menü nach einem Einstieg bei Maximum mit dem Knüppel auf Minimum läuft; die Stick-Programmierung führt ein solches Profil nur aus, wenn `hold_ms` die Länge des Einstiegs nennt |
 | `scheme.store` | die Bewegung, die eine Auswahl speichert, nachdem der ESC sie beantwortet hat: `{"throttle": "min"}`, `mid` oder `max`. Fehlt es oder ist es null, speichert bereits die Auswahlbewegung den Wert. Gesetzt in den 8 Mode-Setups der YGE-ESCs, wo der Knüppel zurück auf Minimum den Modus speichert |
@@ -246,7 +249,7 @@ Kartenleser verschieden lesen.
   und manche Handbücher widersprechen einander; die `notes` jedes Profils
   nennen die Widersprüche.
 - Die Pieptonfelder (`beep_ms`, `long_ms`, `gap_ms`, `group_gap_ms`) stehen
-  nur dort, wo gemessen: `beep_ms` und `long_ms` in 1 Profil, von 1 ESC.
+  nur dort, wo gemessen: `beep_ms` und `long_ms` in 2 Profilen, von 1 ESC.
   Die Stick-Programmierung nimmt PIEPTON MIN, LANG und LANG MAX aus ihnen,
   PAUSE MIN und GRUPPENPAUSE aus den Pausen, PAUSE MIN aus dem halben
   kurzen Piepton, wo keine Pause genannt und er kleiner ist, und ihre

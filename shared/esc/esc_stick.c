@@ -233,6 +233,7 @@ static void listen(esc_stick_t *e, esc_stick_phase_t ph)
     e->prev = 0u;
     e->prev_trusted = false;
     e->run = 0u;
+    e->marker_passed = false;
     e->heard_ms = e->now_ms;
     esc_det_count(&e->det);
 }
@@ -678,6 +679,24 @@ static void selected(esc_stick_t *e)
 }
 
 /**
+ * @brief Whether a group that is not in order is the item loop's marker: the
+ *        one sound a loop_marker profile makes between the loop's highest
+ *        item and its lowest.
+ *
+ * Only in the item loop, only right after its highest number reached in
+ * order, and once: a second group out of order there breaks the order as
+ * in any other profile.
+ *
+ * @param e  The run; the group is not in order.
+ * @return true when the group passes without touching the order.
+ */
+static bool loop_marker(const esc_stick_t *e)
+{
+    return e->p->loop_marker && e->phase == ESC_STICK_ITEMS
+           && !e->marker_passed && e->prev == e->hi && e->prev_trusted;
+}
+
+/**
  * @brief Judge one counted group of beeps.
  *
  * Acts on the group only when it is in order and the group before it was
@@ -694,22 +713,29 @@ static void on_group(esc_stick_t *e, uint8_t count, bool valid)
     e->last_valid = valid;
     e->last_in_order = false;
     e->last_trusted = false;
+    const uint8_t prev = e->prev;
+    bool in_order = false;
+    if (valid && prev != 0u && count == prev) {
+        /* The same again: only where the profile repeats its groups, after
+         * a group that was in order, and no more often than it repeats. */
+        in_order = e->p->repeat > 0 && e->prev_trusted
+                   && (int)e->run < e->p->repeat;
+    } else if (valid && prev != 0u) {
+        in_order = (unsigned)count == (unsigned)prev + 1u
+                   || (count == e->lo && prev == e->hi);
+    }
+    if (!in_order && loop_marker(e)) {
+        /* The marker, valid or not: the order waits for the loop's
+         * lowest, as if the marker had not sounded. */
+        e->marker_passed = true;
+        return;
+    }
+    e->marker_passed = false;
     if (!valid) {
         e->prev = 0u;
         e->prev_trusted = false;
         e->run = 0u;
         return;
-    }
-    const uint8_t prev = e->prev;
-    bool in_order = false;
-    if (prev != 0u && count == prev) {
-        /* The same again: only where the profile repeats its groups, after
-         * a group that was in order, and no more often than it repeats. */
-        in_order = e->p->repeat > 0 && e->prev_trusted
-                   && (int)e->run < e->p->repeat;
-    } else if (prev != 0u) {
-        in_order = (unsigned)count == (unsigned)prev + 1u
-                   || (count == e->lo && prev == e->hi);
     }
     const bool act = in_order && e->prev_trusted;
     e->run = (prev != 0u && count == prev && e->run < 255u)

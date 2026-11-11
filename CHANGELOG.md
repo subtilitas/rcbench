@@ -6,6 +6,35 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- Profile field `scheme.announce.loop_marker`: `true` where the ESC sounds
+  one sound that is no item between the highest item and the lowest of each
+  pass of its item loop. Absent, null or `false`: none
+  ([ESC profiles](docs/EscProfiles.md)).
+- ESC profile `flycolor-flydragon-lite` for the FlyDragon Lite: the 40A
+  2-4S from its label and measured on one ESC, and the 60A to 120A 3-6S
+  from manual 251400-1111 V1.2. Item 8 is Battery cells, with 4 values on
+  the 40A and 6 on the others. The profile states `beep_ms` 128, `long_ms`
+  384 and `loop_marker`. 74 profiles, 462 models; ESC STICK runs 26.
+
+### Changed
+
+- The simulated ESC sounds an 808ms tone before each pass of its item loop
+  where the profile sets `loop_marker`.
+
+### Fixed
+
+- ESC STICK selects items 1 and 2 of a Flycolor FlyDragon. The ESC sounds
+  its 12321 melody, about 808ms, before every pass of its item loop; the
+  order rule took it for a group out of order, so item 1 never followed
+  item 10 and the run ended with TIMEOUT after 180s. In a profile with
+  `loop_marker` the item loop lets one group out of order pass right after
+  its highest item; a second breaks the order, and the value loops let
+  none pass. The FlyDragon Lite Plus profile sets the field, from one
+  FlyDragon Lite 40A recorded on 2026-11-11
+  ([Stick programming](docs/StickProgramming.md#how-the-beeps-are-counted)).
+
 ## 0.23.12 - 2026-11-11
 
 0.23.12 is a testing release. It counts the beeps of an ESC STICK run from the

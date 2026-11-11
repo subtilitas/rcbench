@@ -786,6 +786,9 @@ typedef struct {
     uint8_t              prev;          /**< 0: no group to follow       */
     bool                 prev_trusted;  /**< prev was reached in order   */
     uint8_t              run;           /**< groups of prev in a row     */
+    bool                 marker_passed; /**< the item loop's marker
+                                             (loop_marker) let pass
+                                             after prev                  */
     uint8_t              lo, hi;        /**< the loop's lowest, highest  */
     uint32_t             groups;        /**< groups heard this run       */
     uint8_t              last_count;
