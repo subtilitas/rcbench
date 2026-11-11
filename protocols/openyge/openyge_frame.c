@@ -1,6 +1,9 @@
 /**
  * @file
- * @brief SPDX-License-Identifier: MIT
+ * @brief The OpenYGE frame: CRC, byte-by-byte decoder, telemetry and control parsing,
+ *        and the encoders for a telemetry request and a parameter write.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #include "openyge.h"
