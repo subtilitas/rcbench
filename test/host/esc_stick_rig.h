@@ -62,6 +62,36 @@ typedef struct {
     unsigned on_n;
     bool     no_watch;        /* nobody taps DONE once the ESC has
                                  confirmed (before_power_off)         */
+
+    /* Where the run counts the beeps from: the meter by default, its
+     * windows the supply's readings (same times, numbers and current),
+     * or with win_ms an INA3221 window every win_ms holding the highest
+     * current of its milliseconds. */
+    esc_stick_src_t src;
+    bool     meter_stop;      /* the meter's windows stop             */
+    uint32_t win_ms;
+    uint32_t win_next, win_seq;
+    int32_t  win_max;
+    /* The phase tap: each beep the ESC sounds, from its current's edges,
+     * handed over tap_lag ms after it ended, on the tap's clock (the
+     * bench's less tap_skew), numbered 1 on; and its status as the IOmcu
+     * had it tap_status_lag ms before (40ms: a read on the last poll): the
+     * last closed 8ms window, whether a beep was under way, whether the
+     * window held a tone, and the newest beep's number.  tap_hist holds
+     * whether the ESC sounded, a byte a ms. */
+    uint32_t tap_lag;
+    uint32_t tap_status_lag;
+    uint32_t tap_skew;
+    bool     tap_stop;        /* the capture stops                    */
+    uint32_t tap_lost;        /* the lost count the tap reports       */
+    uint16_t tap_drop;        /* this beep number never arrives       */
+    bool     tap_high;
+    uint32_t tap_rise;
+    uint16_t tap_made;        /* beeps numbered so far                */
+    esc_stick_beep_t tap_q[16];
+    uint32_t tap_due[16];
+    unsigned tap_n;
+    uint8_t  tap_hist[2048];
 } rig_t;
 
 static rig_t r;
@@ -119,6 +149,7 @@ static inline void rig_at(const char *id, uint32_t t0)
     r.online = true;
     r.read_iv = 50u;
     r.lcg = 7u;
+    r.tap_status_lag = 40u;
 }
 
 static inline void rig(const char *id)
@@ -137,9 +168,98 @@ static inline bool start(const esc_stick_change_t *ch, size_t n)
     const esc_stick_bench_t b = bench();
     const char *why = NULL;
     const bool ok = esc_stick_start(&r.e, r.p, ch, n, &r.t, 7600u, 1000u,
+                                    (r.src == ESC_STICK_SRC_NONE)
+                                        ? ESC_STICK_SRC_METER : r.src,
                                     &b, &why);
     r.next_read = r.now;
+    r.win_next = r.now;
+    r.win_max = INT32_MIN;
     return ok;
+}
+
+/* The tap's length of a beep the simulation sounded for @p ms: the
+ * lengths the tap measured on a Flycolor FlyDragon Lite 40A, 127.9ms and
+ * 383.7ms, for the simulation's 128ms and 384ms, in whole ms as the panel
+ * hands them over. */
+static inline uint32_t rig_tap_len(uint32_t ms)
+{
+    const uint32_t dms = (ms == 128u) ? 1279u : (ms == 384u) ? 3837u
+                                                             : ms * 10u;
+    return (dms + 5u) / 10u;
+}
+
+/* One millisecond of the phase tap: an edge of the ESC's current makes a
+ * beep, and the beeps due are handed over in order. */
+static inline void rig_tap(int32_t ma, bool powered)
+{
+    const bool high = powered
+        && ma > (int32_t)(r.sim.c.idle_ma + r.sim.c.beep_ma / 2u);
+    if (high && !r.tap_high) {
+        r.tap_rise = r.now;
+    } else if (!high && r.tap_high && r.tap_n < 16u) {
+        r.tap_made = (r.tap_made == 65535u) ? 1u : (uint16_t)(r.tap_made + 1u);
+        const esc_stick_beep_t b = { r.tap_made, r.tap_rise - r.tap_skew,
+                                     rig_tap_len(r.now - r.tap_rise) };
+        if (b.seq != r.tap_drop) {
+            r.tap_q[r.tap_n] = b;
+            r.tap_due[r.tap_n] = r.now + r.tap_lag;
+            r.tap_n++;
+        }
+    }
+    r.tap_high = high;
+    r.tap_hist[r.now % 2048u] = high ? 1u : 0u;
+    while (r.tap_n > 0u && (int32_t)(r.now - r.tap_due[0]) >= 0) {
+        esc_stick_tap_beep(&r.e, &r.tap_q[0]);
+        memmove(&r.tap_q[0], &r.tap_q[1], (r.tap_n - 1u) * sizeof(r.tap_q[0]));
+        memmove(&r.tap_due[0], &r.tap_due[1],
+                (r.tap_n - 1u) * sizeof(r.tap_due[0]));
+        r.tap_n--;
+    }
+    /* The status, tap_status_lag old: the window closed by then, and
+     * whether a beep sounded at that moment or in that window.  It holds
+     * every beep that had ended by then, handed over or not. */
+    const uint32_t then = r.now - r.tap_status_lag;
+    const uint32_t w = (then - r.tap_skew) / ESC_STICK_TAP_WINDOW_MS - 1u;
+    const uint32_t w_end = (w + 1u) * ESC_STICK_TAP_WINDOW_MS + r.tap_skew;
+    bool tone = false;
+    for (uint32_t k = 1u; k <= ESC_STICK_TAP_WINDOW_MS; ++k) {
+        tone = tone || r.tap_hist[(w_end - k) % 2048u] != 0u;
+    }
+    uint16_t head = r.tap_made;
+    for (unsigned i = 0u; i < r.tap_n; ++i) {
+        const uint32_t fall = r.tap_q[i].start_ms + r.tap_q[i].len_ms
+                              + r.tap_skew;
+        if ((int32_t)(fall - then) > 0) {
+            head--;                     /* it ended after the status */
+        }
+    }
+    const esc_stick_tap_t st = {
+        .running = !r.tap_stop, .lost = r.tap_lost,
+        .newest = (uint16_t)(r.tap_made - r.tap_n),
+        .quiet = r.tap_hist[then % 2048u] == 0u && !tone,
+        .window = (uint16_t)w, .head = head,
+    };
+    esc_stick_tap(&r.e, &st);
+}
+
+/* One millisecond of an INA3221 channel read through its windows: the
+ * highest current of each window, handed over as it closes. */
+static inline void rig_window(int32_t ma)
+{
+    if (ma > r.win_max) {
+        r.win_max = ma;
+    }
+    if ((int32_t)(r.now - r.win_next) < 0) {
+        return;
+    }
+    r.win_seq++;
+    const esc_stick_meter_t m = { r.win_seq, r.now, r.win_max, true,
+                                  r.now };
+    if (!r.meter_stop) {
+        esc_stick_meter(&r.e, &m);
+    }
+    r.win_max = INT32_MIN;
+    r.win_next = r.now + r.win_ms;
 }
 
 /* One millisecond of bench. */
@@ -173,6 +293,11 @@ static inline void tick(void)
     }
     last_pct = pct;
     const int32_t ma = esc_sim_step(&r.sim, r.now, r.supply_on, pct);
+    if (r.e.src == ESC_STICK_SRC_TAP) {
+        rig_tap(ma, r.supply_on);
+    } else if (r.win_ms != 0u) {
+        rig_window((r.supply_on ? ma : r.off_ma) + r.extra_ma);
+    }
     if (!r.readings_stop && (int32_t)(r.now - r.next_read) >= 0) {
         r.seq += 1u + r.skip;
         esc_stick_sample_t s = {
@@ -182,6 +307,12 @@ static inline void tick(void)
             .reported_on = r.supply_on, .online = r.online,
         };
         esc_stick_sample(&r.e, &s);
+        if (r.win_ms == 0u && !r.meter_stop) {
+            /* The meter's windows as the supply's readings. */
+            const esc_stick_meter_t m = { s.seq, s.at_ms, s.ma,
+                                          s.current_ok, r.now };
+            esc_stick_meter(&r.e, &m);
+        }
         if (r.no_current > 0u) {
             r.no_current--;
         }

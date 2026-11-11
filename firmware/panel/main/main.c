@@ -294,6 +294,7 @@ QueueHandle_t     s_supply_q;  /**< control task -> app_main */
 /* The output encoder's readings (servo_test_enc_t), each once. */
 QueueHandle_t     s_enc_q;     /**< control task -> app_main */
 QueueHandle_t     s_win_q;     /**< control task -> app_main */
+QueueHandle_t     s_meter_q;   /**< control task -> app_main */
 SemaphoreHandle_t s_snap_lock;
 
 /* What the screen reads (panel_snap_t, panel.h). */
@@ -902,6 +903,7 @@ void app_main(void)
     s_supply_q  = xQueueCreate(SAMPLE_Q_LEN, sizeof(supply_item_t));
     s_enc_q     = xQueueCreate(SAMPLE_Q_LEN, sizeof(servo_test_enc_t));
     s_win_q     = xQueueCreate(SAMPLE_Q_LEN, sizeof(servo_win_item_t));
+    s_meter_q   = xQueueCreate(SAMPLE_Q_LEN, sizeof(stick_meter_item_t));
     s_log_q     = xQueueCreate(LOG_Q_LEN, sizeof(log_row_t));
     s_note_q    = xQueueCreate(LOG_NOTE_Q_LEN, LOG_NOTE_MAX);
     s_console_q = xQueueCreate(CONSOLE_Q_LEN, sizeof(link_report_in_t));
@@ -918,6 +920,7 @@ void app_main(void)
                      && s_hitec_q != NULL && s_esc_q != NULL
                      && s_sample_q != NULL && s_supply_q != NULL
                      && s_enc_q != NULL && s_win_q != NULL
+                     && s_meter_q != NULL
                      && s_log_q != NULL && s_test_q != NULL
                      && s_note_q != NULL && s_note_mx != NULL
                      && s_console_q != NULL

@@ -139,7 +139,24 @@ typedef struct {
     uint32_t          dropped_at;
 } servo_win_item_t;
 extern QueueHandle_t     s_win_q;     /**< control task -> app_main */
-extern SemaphoreHandle_t s_snap_lock;
+
+/**
+ * @brief One window of the INA3221 channel in the ESC's supply line, for a
+ *        stick run counting its beeps from them (esc_stick_panel_meter()).
+ *
+ * Each number once and in order.  Full means the renderer is SAMPLE_Q_LEN
+ * windows behind, and the oldest is dropped: the run sees the gap in the
+ * numbers.
+ */
+typedef struct {
+    uint8_t  channel;           /**< 0 to 11                              */
+    uint16_t window;            /**< the window's number                  */
+    int32_t  max_ma;            /**< its highest current, mA; INT16_MAX
+                                     for a sample at the range's top      */
+    bool     current;           /**< it holds current samples             */
+} stick_meter_item_t;
+extern QueueHandle_t     s_meter_q;   /**< control task -> app_main */
+extern SemaphoreHandle_t s_snap_lock; /**< guards s_snap (panel_snap_t) */
 
 /*
  * The IOmcu's update as the render side needs it: an offer, numbered,
@@ -1410,6 +1427,13 @@ void prog_supply_watch_service(void);
  *        one alert and one console line; control task.
  */
 void prog5v_publish_reading(void);
+/**
+ * @brief Queue to the stick run the last window of the INA3221 channel in the
+ *        ESC's supply line, each window once: the lowest channel of a fitted
+ *        part with a shunt that the held map has watching SUPPLY; control
+ *        task.
+ */
+void stick_meter_publish(void);
 /**
  * @brief The ON of the ports' 5V for the PROG 5V watch: the page reads it
  *        on or acknowledged the panel's ON, and the heartbeat edges (a

@@ -903,6 +903,8 @@ void tone_link_readout(const tone_link_t *t, uint32_t now_ms,
         r->win_periods  = t->status[ST(LINK_TN_WIN_PERIODS)];
         r->lost         = t->status[ST(LINK_TN_LOST)];
         r->glitches     = t->status[ST(LINK_TN_GLITCHES)];
+        r->window       = t->status[ST(LINK_TN_WINDOW)];
+        r->head         = t->status[ST(LINK_TN_BEEP_HEAD)];
     }
 }
 

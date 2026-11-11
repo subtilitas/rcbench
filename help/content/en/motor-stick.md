@@ -6,19 +6,22 @@ order: 12
 
 # ESC STICK
 
-ESC STICK configures an ESC (electronic speed controller) through its throttle-stick menu. The bench powers the ESC from the PD mini supply, moves the throttle to the positions specified by the profile, and counts menu beeps as pulses in the supply current. Open `ESCs via throttle stick` under MOTOR & ESC > [PROGRAM](motor.md#program). The session fills the width below the output strip.
+ESC STICK configures an ESC (electronic speed controller) through its throttle-stick menu. The bench powers the ESC from the PD mini supply, moves the throttle to the positions specified by the profile, and counts menu beeps from the phase tap or from an INA3221 channel in the ESC's supply line. Open `ESCs via throttle stick` under MOTOR & ESC > [PROGRAM](motor.md#program). The session fills the width below the output strip.
 
 No ESC has been recorded and no profile is verified. All beep timings are configurable defaults. DONE means the selection movements were made at counted groups; it does not confirm that the ESC stored the changes.
 
 ## Before a run
 
 1. Take the propeller off. A run moves the throttle to MAX and back while the ESC is powered. In rare cases a motor may start and run.
-2. Leave the motor on the ESC, mounted solid, or fit a resistor load across the motor leads in its place. The beeps are counted from the current either way.
-3. Connect the ESC's signal lead to a pin bound as a throttle on [Outputs](outputs.md): MOTOR PWM or a DShot entry.
-4. Connect the ESC's power leads to the supply output. Enable the PD mini on [SUPPLY's PD mini settings](supply.md#pd-mini-rows).
-5. Switch the supply output off.
+2. Leave the motor on the ESC, mounted solid, or fit a resistor load across the motor leads in its place.
+3. Give the run a beep source: wire the phase tap to one motor lead and switch it on under SETUP, SENSORS, or put an INA3221 channel's shunt in the line from the supply output to the ESC and set the channel's row, such as `0x40 CH2 watches`, to SUPPLY.
+4. Connect the ESC's signal lead to a pin bound as a throttle on [Outputs](outputs.md): MOTOR PWM or a DShot entry.
+5. Connect the ESC's power leads to the supply output. Enable the PD mini on [SUPPLY's PD mini settings](supply.md#pd-mini-rows).
+6. Switch the supply output off.
 
-RUN remains unavailable until these requirements are met. The line beside it explains why, for example `No throttle pin assigned. Assign one on OUTPUTS.` or `Supply is simulated. RUN needs a PD mini.` RUN requires a supply reading no older than 1000ms, with the output off and current at or below 20mA for 200ms.
+RUN remains unavailable until these requirements are met. The line beside it explains why, for example `No throttle pin assigned. Assign one on OUTPUTS.` `Supply is simulated. RUN needs a PD mini.` or `No beep source. Switch the phase tap on, or set an INA3221 channel to SUPPLY, on SENSORS.` RUN requires a supply reading no older than 1000ms, with the output off and current at or below 20mA for 200ms.
+
+A run counts from the phase tap when the tap's capture runs at RUN, and from the INA3221 channel otherwise. The source stays the run's to its end. The PD mini's own current is no source: it reads every 100 to 152ms, slower than a short beep of 128ms. Its readings still decide the power rules.
 
 ## Makers and models
 
@@ -73,13 +76,13 @@ RUN opens a warning over the whole screen: PROPELLER REMOVED? MOTOR SECURED?. It
 
 ![A run counting item groups](view:motor-stick-run)
 
-The run switches the bench to ARMED MOTOR. The page shows its phase, the current group's beep count, the last group and whether it was in sequence, and the current relative to its floor. ABORT, the home tag, STOP or leaving the screen ends the run: throttle at MIN, supply off, bench SAFE. After ABORT or the home tag, the result remains on the page.
+The run switches the bench to ARMED MOTOR. The page shows its phase, the current group's beep count, the last group and whether it was in sequence, and where the beeps come from: `BEEPS FROM THE PHASE TAP`, or the INA3221 channel with its current relative to its floor. ABORT, the home tag, STOP or leaving the screen ends the run: throttle at MIN, supply off, bench SAFE. After ABORT or the home tag, the result remains on the page.
 
 The stack light's green is lit while a beep is detected, for at least 150ms.
 
 ![A run with the phase tap running](view:motor-stick-tone)
 
-With the phase tap enabled on SETUP, SENSORS, the page adds a read-only readout: the tap's state, the pitch of its last 8ms window, the counts of beeps lost and not read, and the last 4 beeps with number, length in ms and pitch in Hz. The run still counts its beeps from the supply current.
+With the phase tap enabled on SETUP, SENSORS, the page adds a read-only readout: the tap's state, the pitch of its last 8ms window, the counts of beeps lost and not read, and the last 4 beeps with number, length in ms and pitch in Hz. A run started while the capture runs counts these beeps. It ends with BEEP LOST when a beep number is missing and with TAP STOPPED when the capture stops; one counting from the INA3221 ends with INA3221 LOST when no window comes for 1000ms.
 
 | Tap state | Meaning |
 |---|---|

@@ -206,6 +206,36 @@ bool sense_win_link_last(const sense_win_link_t *s, unsigned c, uint16_t *mv,
     return true;
 }
 
+bool sense_win_link_peak(const sense_win_link_t *s, unsigned c,
+                         int32_t *max_ma, uint16_t *window, bool *current)
+{
+    if (s == NULL || !s->up || !s->page || c >= LINK_SM_CHANNELS) {
+        return false;
+    }
+    const unsigned p = c / LINK_SX_PER_PAGE;
+    const unsigned k = c % LINK_SX_PER_PAGE;
+    const uint16_t *r = s->regs[p];
+    if (!s->have[p] || (r[LINK_SX_FLAGS] & LINK_SX_HAVE) == 0u) {
+        return false;
+    }
+    const uint16_t f = r[LINK_SX_E(k, LINK_SX_E_FLAGS)];
+    if ((f & (LINK_SX_E_CURRENT | LINK_SX_E_VOLTAGE)) == 0u) {
+        return false;           /* off, or its part not online */
+    }
+    if (max_ma != NULL) {
+        *max_ma = ((f & LINK_SX_E_CLIP_HI) != 0u)
+                      ? (int32_t)INT16_MAX
+                      : (int32_t)(int16_t)r[LINK_SX_E(k, LINK_SX_E_MAX_MA)];
+    }
+    if (window != NULL) {
+        *window = r[LINK_SX_WINDOW];
+    }
+    if (current != NULL) {
+        *current = (f & LINK_SX_E_CURRENT) != 0u;
+    }
+    return true;
+}
+
 bool sense_win_link_window(const sense_win_link_t *s, uint16_t window,
                            bench_chw_t *out)
 {

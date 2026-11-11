@@ -458,9 +458,16 @@ void panel_frame_loop(void)
             servo_screen_source_dropped(sup_item.dropped,
                                         sup_item.dropped_at);
             servo_screen_supply_at(&sup, sup_item.source, sup_item.changes);
-            /* And a stick run, which counts beeps in every reading. */
+            /* And a stick run, whose power rules judge every reading. */
             esc_stick_panel_supply(&sup);
             supply_seen = sup.output;
+        }
+        /* The INA3221 channel in the ESC's supply line: a stick run's beeps
+         * where the phase tap does not run. */
+        stick_meter_item_t meter;
+        while (xQueueReceive(s_meter_q, &meter, 0) == pdTRUE) {
+            esc_stick_panel_meter(meter.channel, meter.window, meter.max_ma,
+                                  meter.current);
         }
         /* The simulated ESC follows the run, while the model is the
          * supply; see escsim_load(). */

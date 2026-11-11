@@ -32,6 +32,9 @@ const char *esc_stick_reason_text(esc_stick_reason_t r)
     case ESC_STICK_R_HAND:        return "NOT CONFIRMED";
     case ESC_STICK_R_USER:        return "ABORTED";
     case ESC_STICK_R_LEFT:        return "SCREEN LEFT";
+    case ESC_STICK_R_TAP_LOST:    return "BEEP LOST";
+    case ESC_STICK_R_TAP_STOP:    return "TAP STOPPED";
+    case ESC_STICK_R_METER:       return "INA3221 LOST";
     }
     return "?";
 }
@@ -68,6 +71,9 @@ bool esc_stick_reason_is_fault(esc_stick_reason_t r)
     case ESC_STICK_R_TIMEOUT:
     case ESC_STICK_R_HAND:          /* no DONE: not chosen either    */
     case ESC_STICK_R_TOUCH:         /* events lost, not chosen       */
+    case ESC_STICK_R_TAP_LOST:
+    case ESC_STICK_R_TAP_STOP:
+    case ESC_STICK_R_METER:
         return true;
     }
     return true;        /* a value outside the list is not as expected */

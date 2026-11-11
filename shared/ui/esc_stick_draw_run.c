@@ -146,6 +146,9 @@ static const char *sp_reason_help(esc_stick_reason_t r)
     case ESC_STICK_R_TOUCH:       return TR(SP_WHY_TOUCH);
     case ESC_STICK_R_USER:        return TR(SP_WHY_USER);
     case ESC_STICK_R_LEFT:        return TR(SP_WHY_LEFT);
+    case ESC_STICK_R_TAP_LOST:    return TR(SP_WHY_TAP_LOST);
+    case ESC_STICK_R_TAP_STOP:    return TR(SP_WHY_TAP_STOP);
+    case ESC_STICK_R_METER:       return TR(SP_WHY_METER);
     default:                      return "";
     }
 }
@@ -199,6 +202,9 @@ static const char *sp_reason_text(esc_stick_reason_t r)
     case ESC_STICK_R_HAND:        return TR(SP_R_HAND);
     case ESC_STICK_R_USER:        return TR(SP_R_USER);
     case ESC_STICK_R_LEFT:        return TR(SP_R_LEFT);
+    case ESC_STICK_R_TAP_LOST:    return TR(SP_R_TAP_LOST);
+    case ESC_STICK_R_TAP_STOP:    return TR(SP_R_TAP_STOP);
+    case ESC_STICK_R_METER:       return TR(SP_R_METER);
     }
     return "?";
 }
@@ -255,6 +261,13 @@ static uint32_t sp_hold_ms(const esc_profile_t *p)
         }
     }
     return hold;
+}
+
+/* The INA3221 channel the run counts from, as SENSORS names it. */
+void sp_meter_name(char *buf, size_t n)
+{
+    snprintf(buf, n, "INA 0x%02X CH%u", 0x40u + s.m_ch / 3u,
+             (unsigned)(s.m_ch % 3u) + 1u);
 }
 
 /** @brief The phase tap's state as its readout is worded. */
@@ -491,8 +504,16 @@ DRAWER void sp_draw_progress(gfx_canvas_t *c)
              (unsigned)e->entries, sp_pos(e->out.throttle_pct),
              ui_on_off(e->out.supply_on));
     gfx_text(c, PAD + 12, y0 + 3 * pitch, line, SP_FONT, dim, 1);
-    snprintf(line, sizeof(line), TR(SP_CURRENT), (int)e->ma,
-             (int)esc_det_floor_ma(&e->det), (unsigned)e->iv_ms);
+    /* Where the beeps come from: the tap, whose readout follows, or the
+     * INA3221 channel with its current, floor and window interval. */
+    if (e->src == ESC_STICK_SRC_TAP) {
+        snprintf(line, sizeof(line), "%s", TR(SP_SRC_TAP));
+    } else {
+        char name[16];
+        sp_meter_name(name, sizeof(name));
+        snprintf(line, sizeof(line), TR(SP_CURRENT), name, (int)e->ma,
+                 (int)esc_det_floor_ma(&e->det), (unsigned)e->iv_ms);
+    }
     gfx_text(c, PAD + 12, y0 + 4 * pitch, line, SP_FONT, dim, 1);
     sp_draw_tone(c, y0 + 5 * pitch, pitch);
     /* After the lines, so a line that reached under it would show as
@@ -754,15 +775,24 @@ DRAWER void sp_draw_warning(gfx_canvas_t *c)
     const gfx_rect_t a = sp_panel(c, TR(SP_WARN_TITLE));
     static const ui_text_id_t k_lines[] = {
         TX_SP_WARN_1, TX_SP_WARN_2, TX_SP_WARN_3, TX_SP_WARN_4,
-        TX_SP_WARN_5,
     };
-    const int n = (int)(sizeof(k_lines) / sizeof(k_lines[0]));
-    for (int i = 0; i < n; ++i) {
+    const int n = (int)(sizeof(k_lines) / sizeof(k_lines[0])) + 1;
+    for (int i = 0; i < n - 1; ++i) {
         gfx_text(c, a.x + 20, a.y + 68 + i * 22, ui_tr(k_lines[i]),
                  SP_FONT,
                  ui_theme_color(UI_C_TEXT), 1);
     }
     char line[128];
+    /* The last line names where the run will count the beeps from. */
+    if (sp_source() == ESC_STICK_SRC_TAP) {
+        snprintf(line, sizeof(line), "%s", TR(SP_WARN_5));
+    } else {
+        char name[16];
+        sp_meter_name(name, sizeof(name));
+        snprintf(line, sizeof(line), TR(SP_WARN_5_INA), name);
+    }
+    gfx_text(c, a.x + 20, a.y + 68 + (n - 1) * 22, line, SP_FONT,
+             ui_theme_color(UI_C_TEXT), 1);
     /* A profile with manual steps gives up the blank line above its name
      * to the steps below. */
     const int top = a.y + 68 + ((t->p->manual_count > 0u) ? n : n + 1) * 22;

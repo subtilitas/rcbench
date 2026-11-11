@@ -197,7 +197,7 @@ TEST_CASE(every_end_draws_its_reason)
         ESC_STICK_R_NOT_ARMED, ESC_STICK_R_NO_POWER, ESC_STICK_R_STALE,
         ESC_STICK_R_RATE, ESC_STICK_R_TIMEOUT, ESC_STICK_R_NO_BEEPS,
         ESC_STICK_R_HIGH, ESC_STICK_R_SUPPLY_OFF, ESC_STICK_R_SUPPLY_LOST,
-        ESC_STICK_R_DISARMED, ESC_STICK_R_LINK,
+        ESC_STICK_R_DISARMED, ESC_STICK_R_LINK, ESC_STICK_R_METER,
     };
     for (size_t k = 0; k < sizeof(want) / sizeof(want[0]); ++k) {
         fresh();
@@ -222,7 +222,7 @@ TEST_CASE(every_end_draws_its_reason)
         case ESC_STICK_R_NO_POWER:  r.no_power = true;        break;
         case ESC_STICK_R_TIMEOUT:   r.sim.c.extra = 1u;       break;
         case ESC_STICK_R_NO_BEEPS:  r.sim.c.mute = true;      break;
-        case ESC_STICK_R_RATE:      r.every = 400u;           break;
+        case ESC_STICK_R_RATE:      r.wstep = 8u;             break;
         default: break;
         }
         for (int i = 0; i < 12000; ++i) {
@@ -235,6 +235,7 @@ TEST_CASE(every_end_draws_its_reason)
         case ESC_STICK_R_SUPPLY_LOST: r.offline = true;         break;
         case ESC_STICK_R_DISARMED:    r.no_arm = true; r.armed = false; break;
         case ESC_STICK_R_LINK:        r.link_lost = true;       break;
+        case ESC_STICK_R_METER:       r.no_meter = true;        break;
         default: break;
         }
         rig_run(&r, 200000u);

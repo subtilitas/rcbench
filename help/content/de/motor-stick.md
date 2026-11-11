@@ -6,19 +6,22 @@ order: 12
 
 # ESC STICK
 
-ESC STICK stellt einen ESC (Electronic Speed Controller) über sein Gasknüppel-Menü ein. Der Prüfstand versorgt ihn aus dem PD mini, fährt die Gaspositionen des Profils an und zählt die Menütöne als Pulse im Netzteilstrom. Öffne `ESCs per Gasknüppel` unter MOTOR & ESC > [PROGRAMMIEREN](motor.md#programmieren). Die Sitzung füllt die Breite unter dem Ausgangsstreifen.
+ESC STICK stellt einen ESC (Electronic Speed Controller) über sein Gasknüppel-Menü ein. Der Prüfstand versorgt ihn aus dem PD mini, fährt die Gaspositionen des Profils an und zählt die Menütöne am Phasenabgriff oder an einem INA3221-Kanal in der Versorgungsleitung des ESC. Öffne `ESCs per Gasknüppel` unter MOTOR & ESC > [PROGRAMMIEREN](motor.md#programmieren). Die Sitzung füllt die Breite unter dem Ausgangsstreifen.
 
 Kein ESC wurde aufgezeichnet, und kein Profil ist geprüft. Alle Pieptonzeiten sind einstellbare Vorgaben. FERTIG bedeutet, dass die Auswahlbewegungen bei den gezählten Gruppen ausgeführt wurden. Es bestätigt nicht, dass der ESC die Änderungen gespeichert hat.
 
 ## Vor einem Lauf
 
 1. Nimm den Propeller ab. Während der ESC versorgt ist, fährt der Lauf Gas auf MAX und zurück. In seltenen Fällen kann der Motor anlaufen und drehen.
-2. Lass den fest montierten Motor am ESC angeschlossen oder ersetze ihn durch einen Lastwiderstand an den Motorleitungen. In beiden Fällen werden die Pieptöne aus dem Strom gezählt.
-3. Verbinde die ESC-Signalleitung mit einem unter [Ausgänge](outputs.md) als Gas zugeordneten Pin: MOTOR PWM oder ein DShot-Eintrag.
-4. Verbinde die ESC-Versorgungsleitungen mit dem Netzteilausgang. Aktiviere den PD mini [im Reiter PD MINI auf SUPPLY](supply.md#zeilen-des-pd-mini).
-5. Schalte den Netzteilausgang aus.
+2. Lass den fest montierten Motor am ESC angeschlossen oder ersetze ihn durch einen Lastwiderstand an den Motorleitungen.
+3. Gib dem Lauf eine Pieptonquelle: schließe den Phasenabgriff an eine Motorleitung an und schalte ihn unter SETUP, SENSORS ein, oder lege den Shunt eines INA3221-Kanals in die Leitung vom Netzteilausgang zum ESC und stelle die Zeile des Kanals, etwa `0x40 CH2 misst`, auf NETZTEIL.
+4. Verbinde die ESC-Signalleitung mit einem unter [Ausgänge](outputs.md) als Gas zugeordneten Pin: MOTOR PWM oder ein DShot-Eintrag.
+5. Verbinde die ESC-Versorgungsleitungen mit dem Netzteilausgang. Aktiviere den PD mini [im Reiter PD MINI auf SUPPLY](supply.md#zeilen-des-pd-mini).
+6. Schalte den Netzteilausgang aus.
 
-START bleibt gesperrt, bis diese Voraussetzungen erfüllt sind. Die Zeile daneben nennt den Grund, etwa `Kein Gas-Pin zugeordnet. Ordne einen auf der Seite OUTPUTS zu.` oder `Netzteil ist simuliert. START benötigt einen PD mini.` START benötigt einen höchstens 1000ms alten Netzteilmesswert: Ausgang aus und Strom für 200ms höchstens 20mA.
+START bleibt gesperrt, bis diese Voraussetzungen erfüllt sind. Die Zeile daneben nennt den Grund, etwa `Kein Gas-Pin zugeordnet. Ordne einen auf der Seite OUTPUTS zu.` `Netzteil ist simuliert. START benötigt einen PD mini.` oder `Keine Pieptonquelle. Schalte unter SENSORS den Phasenabgriff ein oder stelle einen INA3221-Kanal auf NETZTEIL.` START benötigt einen höchstens 1000ms alten Netzteilmesswert: Ausgang aus und Strom für 200ms höchstens 20mA.
+
+Ein Lauf zählt am Phasenabgriff, wenn dessen Erfassung bei START läuft, sonst am INA3221-Kanal. Die Quelle bleibt die des Laufs bis zu seinem Ende. Der Strom des PD mini selbst ist keine Quelle: er misst alle 100 bis 152ms, langsamer als ein kurzer Piepton von 128ms. Seine Messwerte entscheiden weiterhin die Netzteilregeln.
 
 ## Hersteller und Modelle
 
@@ -73,13 +76,13 @@ START öffnet die bildschirmfüllende Warnung PROPELLER AB? MOTOR GESICHERT? mit
 
 ![Ein Lauf zählt Punktgruppen](view:motor-stick-run)
 
-Der Lauf schaltet den Prüfstand auf ARMED MOTOR. Die Seite zeigt Phase, Pieptonzahl der laufenden Gruppe, letzte Gruppe mit Prüfung der Reihenfolge und Strom relativ zum Grundwert. ABBRECHEN, das Home-Feld, STOP oder das Verlassen der Seite beendet den Lauf: Gas auf MIN, Netzteil aus, Prüfstand SAFE. Nach ABBRECHEN oder dem Home-Feld bleibt das Ergebnis sichtbar.
+Der Lauf schaltet den Prüfstand auf ARMED MOTOR. Die Seite zeigt Phase, Pieptonzahl der laufenden Gruppe, letzte Gruppe mit Prüfung der Reihenfolge und woher die Pieptöne kommen: `PIEPTÖNE VOM PHASENABGRIFF`, oder den INA3221-Kanal mit seinem Strom relativ zum Grundwert. ABBRECHEN, das Home-Feld, STOP oder das Verlassen der Seite beendet den Lauf: Gas auf MIN, Netzteil aus, Prüfstand SAFE. Nach ABBRECHEN oder dem Home-Feld bleibt das Ergebnis sichtbar.
 
 Die grüne Leuchte der Signalsäule leuchtet bei einem erkannten Piepton mindestens 150ms lang.
 
 ![Ein Lauf mit laufendem Phasenabgriff](view:motor-stick-tone)
 
-Ist der Phasenabgriff unter SETUP, SENSORS aktiviert, ergänzt die Seite eine reine Anzeige. Sie zeigt Zustand, Tonhöhe des letzten Fensters von 8ms, Anzahl verlorener und nicht ausgelesener Pieptöne sowie die letzten 4 Töne mit Nummer, Länge in ms und Tonhöhe in Hz. Der Lauf zählt die Pieptöne weiterhin aus dem Netzteilstrom.
+Ist der Phasenabgriff unter SETUP, SENSORS aktiviert, ergänzt die Seite eine reine Anzeige. Sie zeigt Zustand, Tonhöhe des letzten Fensters von 8ms, Anzahl verlorener und nicht ausgelesener Pieptöne sowie die letzten 4 Töne mit Nummer, Länge in ms und Tonhöhe in Hz. Ein Lauf, der startet, während die Erfassung läuft, zählt diese Pieptöne. Er endet mit PIEPTON VERLOREN, wenn eine Pieptonnummer fehlt, und mit ABGRIFF ANGEHALTEN, wenn die Erfassung anhält; einer, der am INA3221 zählt, endet mit INA3221 VERLOREN, wenn 1000ms lang kein Fenster kommt.
 
 | Zustand des Abgriffs | Bedeutung |
 |---|---|

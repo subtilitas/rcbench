@@ -7,9 +7,11 @@ sein Gasknüppel-Menü ein. Der Prüfstand versorgt den ESC aus dem PD mini,
 mit einem Lastwiderstand anstelle des Motors oder einem fest montierten
 Motor ohne Propeller. Er bewegt das Gas in die
 Stellungen, die das [ESC-Profil](EscProfiles-de.md) nennt, und zählt die
-Pieptöne des Menüs als Pulse im Versorgungsstrom. Auf dem Bildschirm ist es
-ESC STICK, die Zeile STICK-MENÜ von MOTOR & ESC > PROGRAMMIEREN
-([Programmieren](Screens-de.md#programmieren)).
+Pieptöne des Menüs am Phasenabgriff oder an einem INA3221-Kanal in der
+Versorgungsleitung des ESC
+([Woher die Pieptöne kommen](#woher-die-pieptöne-kommen)). Auf dem
+Bildschirm ist es ESC STICK, die Zeile STICK-MENÜ von MOTOR & ESC >
+PROGRAMMIEREN ([Programmieren](Screens-de.md#programmieren)).
 
 Was nicht bekannt oder geprüft ist:
 
@@ -30,23 +32,30 @@ Was nicht bekannt oder geprüft ist:
    Programmiermenü und treibt nicht, aber in seltenen Fällen kann ein Motor
    anlaufen und drehen.
 2. Lasse entweder den fest montierten Motor am ESC angeschlossen oder
-   verbinde stattdessen einen Lastwiderstand mit den Motorleitungen des ESC. Die Pieptöne
-   werden in beiden Fällen aus dem Strom gezählt. Der Wert des Widerstands
-   ist nicht festgelegt. Er muss
+   verbinde stattdessen einen Lastwiderstand mit den Motorleitungen des ESC.
+   Der Wert des Widerstands ist nicht festgelegt. Er muss
    den Strom bei der Spannung des Laufs unter dessen Strombegrenzung
    halten. Wie gut Pieptöne durch die Wicklungen eines Motors im Strom zu
    lesen sind, ist nicht gemessen.
-3. Schließe die Signalleitung des ESC an einen Pin an, der auf OUTPUTS
+3. Gib dem Lauf eine Pieptonquelle. Schließe entweder den
+   [Phasenabgriff](Screens-de.md#sensors-der-phasenabgriff) an eine
+   Motorleitung an und schalte ihn unter SETUP > SENSORS ein, oder lege den
+   Shunt eines INA3221-Kanals in die Leitung vom Netzteil-Ausgang zum ESC
+   und stelle die Zeile des Kanals, etwa `0x40 CH2 misst`, auf NETZTEIL
+   ([SENSORS: die INA3221-Bausteine](Screens-de.md#sensors-die-ina3221-bausteine)).
+   Ohne beide wird START abgelehnt
+   (`Keine Pieptonquelle. Schalte unter SENSORS den Phasenabgriff ein oder stelle einen INA3221-Kanal auf NETZTEIL.`).
+4. Schließe die Signalleitung des ESC an einen Pin an, der auf OUTPUTS
    als Gasausgang zugeordnet ist. Ein Lauf steuert jeden Kanal mit dieser
    Rolle, ebenso wie MOTOR & ESC. START wird abgelehnt, solange kein Pin
    als Gasausgang zugeordnet ist (`Kein Gas-Pin zugeordnet. Ordne einen auf der Seite OUTPUTS zu.`) und solange das Panel
    die Zuordnung noch nicht vom IOmcu ausgelesen hat (`Ausgangszuordnung nicht ausgelesen. Gas-Pin unbekannt.`).
-4. Schließe die Versorgungsleitungen des ESC an den Netzteil-Ausgang an.
+5. Schließe die Versorgungsleitungen des ESC an den Netzteil-Ausgang an.
    Als Netzteil dient der PD mini. Ist er auf SETUP abgeschaltet, verwendet
    das Panel seine Netzteilsimulation, die keine Hardware schaltet,
    und START wird abgelehnt mit `Netzteil ist simuliert. START benötigt einen PD mini.`. Ein Grund, der entsteht, während die Warnung PROPELLER AB? MOTOR GESICHERT? offen ist, schließt sie, und die Zeile neben START
    nennt den Grund.
-5. Schalte den Netzteil-Ausgang aus. START wird abgelehnt, wenn der Ausgang
+6. Schalte den Netzteil-Ausgang aus. START wird abgelehnt, wenn der Ausgang
    an ist oder eine Einschaltanforderung aussteht. Dasselbe gilt, wenn das
    Netzteil im neuesten Messwert EIN meldet oder mehr als 20mA
    (`ESC_STICK_OFF_MA`) durch den Ausgang fließen. Die Zeile neben START
@@ -224,7 +233,9 @@ ESC aus dem Netzteil und bewegt das Gas auf MAX und zurück, um durch das
 Programmiermenü zu schalten. In seltenen Fällen kann ein Motor anlaufen und
 drehen, deshalb muss ein angeschlossener Motor fest montiert sein und darf
 keinen Propeller tragen; ein Lastwiderstand anstelle des Motors geht
-ebenso. Die Pieptöne werden aus dem Strom gezählt. Darunter stehen das
+ebenso. Ihre letzte Zeile nennt, woher der Lauf die Pieptöne zählt:
+`Die Pieptöne werden am Phasenabgriff gezählt.` oder
+`Die Pieptöne werden anhand des Stroms an INA 0x40 CH2 gezählt.` Darunter stehen das
 Profil, die Sollwerte des Netzteils mit der Zahl der Änderungen und die
 Zeile, dass das Profil ungeprüft und jede Pieptonzeit ein Vorgabewert ist.
 
@@ -239,8 +250,10 @@ es keinen Stopp aufheben kann, der danach kam.
 ![Die Warnung](img/de/motor-stick-warning.png)
 
 Während des Laufs zeigt die Seite die Phase, die Pieptöne der laufenden
-Gruppe, die letzte Gruppe und ob sie in der Reihenfolge war, und den Strom
-im Vergleich zu seinem Grundwert. ABBRECHEN beendet den Lauf, ebenso das Home-Feld im
+Gruppe, die letzte Gruppe und ob sie in der Reihenfolge war, und woher die
+Pieptöne kommen: `PIEPTÖNE VOM PHASENABGRIFF`, oder der INA3221-Kanal mit
+seinem Strom im Vergleich zu seinem Grundwert und dem Abstand seiner Fenster,
+`INA 0x40 CH2   STROM 750mA   GRUNDSTROM 150mA   ALLE 50ms`. ABBRECHEN beendet den Lauf, ebenso das Home-Feld im
 Band, STOP im Band und das Verlassen des Bildschirms. Das Home-Feld beendet ihn
 wie ABBRECHEN, und das Ergebnis bleibt auf der Seite. ZURÜCK und OPTIONEN sind
 nicht verfügbar. Die
@@ -254,8 +267,7 @@ Seite unter der Stromzeile eine reine Anzeige des Abgriffs: seinen Zustand,
 die Tonhöhe seines letzten 8-ms-Fensters, die Zähler der verlorenen
 Pieptöne und der nicht gelesenen Pieptöne, und die letzten vier Pieptöne mit Nummer, Länge in ms und Tonhöhe in Hz
 ([die Zeilen und Zustände des Abgriffs](Screens-de.md#sensors-der-phasenabgriff)).
-Der Lauf zählt seine Pieptöne aus dem Netzteilstrom; die Pieptöne
-des Abgriffs benutzt er nicht.
+Ein Lauf, der startet, während die Erfassung läuft, zählt diese Pieptöne.
 
 ![Ein Lauf mit laufendem Phasenabgriff](img/de/motor-stick-tone.png)
 
@@ -493,6 +505,8 @@ Rechts auf der Ablaufkarte und dem Ergebnis steht eine Signalsäule: Rot
   seine Gruppe später reagiert wird oder nicht. Ein Puls, kürzer als ein
   Frame, ist trotzdem zu sehen: Grün bleibt mindestens 150ms
   (`ESC_STICK_BEEP_LIGHT_MS`) an, ab dem Frame, der den Puls zuerst sieht.
+  Am Phasenabgriff ist jeder Piepton, der beim Lauf ankommt, ein solcher
+  Puls: Grün leuchtet 150ms ab dem Frame, der ihn übergibt, nach seinem Ende.
   Auf dem Ergebnis ist Grün aus.
 - **Rot** leuchtet auf einem Ergebnis, dessen Lauf endete, weil etwas nicht
   wie erwartet war, und bleibt bis OK an. Die Gründe stehen unter
@@ -559,20 +573,88 @@ Gaskanäle und das Netzteil über
 das eigene ON und OFF von SUPPLY. Nichts umgeht STOP oder die Regeln zum
 Schalten auf ARMED.
 
+## Woher die Pieptöne kommen
+
+Ein Lauf legt seine Quelle beim Start fest und behält sie bis zu seinem
+Ende. Er wechselt die Quelle nicht, während er läuft.
+
+| Quelle | Genutzt, wenn START den Lauf beginnt | Jeder Piepton ist |
+| --- | --- | --- |
+| der Phasenabgriff | der Abgriff ist unter SETUP > SENSORS eingeschaltet und seine Erfassung läuft: Bit 0 der Flags von TONE, aus einem Statuslesen, das jünger als 500ms ist, mit einer Fensternummer, die sich innerhalb von 1500ms bewegt hat | ein Piepton, den der IOmcu an der Motorleitung gemessen hat: sein erster Anstieg in ms seit dem Start der Erfassung und seine Länge auf 0,1ms, auf der Uhr des IOmcu |
+| ein INA3221-Kanal | der Abgriff läuft nicht, und ein Fenster des niedrigsten Kanals eines bestückten Bausteins mit Shunt, der NETZTEIL misst, kam innerhalb der letzten 1000ms (`ESC_STICK_STALE_MS`) an | ein Puls in den 50-ms-Fenstern des Kanals, der höchste Strom jedes Fensters |
+| keine | keins von beiden | START wird abgelehnt |
+
+Der Strom des PD mini selbst ist keine Quelle. Er misst alle 100 bis 152ms
+(MESSWERTE ALLE der Seite SUPPLY, 152ms auf dem Prüfstand, der es gemessen
+hat), und ein kurzer Piepton des Flycolor FlyDragon Lite 40A dauert
+127,9ms: ein Piepton kann zwischen zwei Messwerte fallen. Der PD mini
+versorgt den ESC weiterhin, und seine Messwerte entscheiden weiterhin jede
+Netzteilregel des Laufs: Ausgang an, Ausgang aus mit dem Strom unten, KEINE
+MESSWERTE und NETZTEIL BLEIBT EIN.
+
+**Der Abgriff.** Jeder Frame übergibt dem Lauf die Pieptöne, die seit dem
+Frame davor ankamen, den ältesten zuerst, und danach den Status des
+Abgriffs. In die Gruppen gehen die Zeiten des IOmcu, nicht der Zeitpunkt,
+zu dem das Panel den Piepton las. Eine Gruppe endet nur auf einen Status,
+der sagt, dass nichts klingt, gelesen alle 40ms (`TONE_LINK_READ_MS`):
+
+- kein Piepton im Gang (Bit 3 der Flags von TONE gelöscht) und kein Ton im
+  letzten 8-ms-Fenster (Bit 4 gelöscht);
+- die neueste Pieptonnummer ist der letzte Piepton, den der Lauf übernommen
+  hat, also ist kein Piepton, den der IOmcu abgeschlossen hat, noch auf dem
+  Weg zum Panel;
+- dieses Fenster endet GRUPPENPAUSE oder mehr nach dem Ende des letzten
+  Pieptons, auf der Uhr des IOmcu.
+
+Ein Piepton, der GRUPPENPAUSE nach dem vorigen noch klingt, hält seine
+Gruppe offen und kommt in sie, wenn er ankommt. Das Ende kommt so spät wie
+das Statuslesen, das die Stille zeigt, durch die Altersgrenze des Status
+unter 500ms, und nie vor der Stille. Eine Gruppe, deren Ende erst der
+nächste Piepton zeigt, weil vor diesem Piepton kein solcher Status ankam,
+gilt als unklar, und auf sie wird nicht reagiert: eine Bewegung käme dann
+erst, wenn die nächste Gruppe schon begonnen hat. Die Tonhöhe
+wird angezeigt und nicht benutzt. Ein Lauf, der am Abgriff zählt, endet:
+
+- mit PIEPTON VERLOREN, wenn eine Pieptonnummer fehlt: der Verlustzähler
+  des IOmcu oder der Zähler der verpassten Pieptöne des Panels steigt, die
+  Erfassung läuft über, oder zwischen zwei Frames kamen mehr als 4
+  Pieptöne an (die Anzeige hält die neuesten 4);
+- mit ABGRIFF ANGEHALTEN, wenn ein Statuslesen sagt, dass die Erfassung
+  nicht läuft, oder keines, das jünger als 500ms ist, sagt, dass sie läuft,
+  oder 1000ms lang kein Zustand des Abgriffs beim Lauf ankam.
+
+**Der INA3221.** Die Fenster werden nach ihrer Nummer getaktet, 50ms
+auseinander auf der Uhr des IOmcu. Der IOmcu liest jeden Kanal mit Shunt
+außer dem 1-kHz-Servokanal reihum, einen je Millisekunde: 1000 / n Messwerte
+je Sekunde für jeden von n solchen Kanälen, 4ms auseinander bei 4 davon,
+11ms bei allen 11. Jeder Messwert ist eine Wandlung von 140µs für die
+Shuntspannung und 140µs für die Busspannung, Mittelung 1
+(`INA3221_CONFIG_BENCH_ALL`, 0x7007); ein Fenster enthält also 4 bis 50
+Messwerte, und sein höchster Strom zeigt einen Piepton an jeder Stelle
+darin. Ein Messwert am oberen Ende des Bereichs, 1,638A an einem
+0,1-Ω-Shunt, zählt als hoher. Ein Lauf, der am INA3221 zählt, endet mit
+INA3221 VERLOREN, wenn 1000ms lang kein neues Fenster ankam, während der
+ESC versorgt ist oder bevor er versorgt wird.
+
 ## Wie die Pieptöne gezählt werden
 
-- **Grundwert.** Während MENÜEINSTIEG, ab 500ms nach dem Einschalten, ist der
+Die Regeln unten gelten für beide Quellen, außer wo eine Regel eine nennt.
+
+- **Grundwert.** Nur INA3221. Während MENÜEINSTIEG, ab 500ms nach dem Einschalten, ist der
   Grundwert der niedrigste gelesene Strom. Ein Piepton kann ihn nicht
   anheben. Während das Menü gezählt wird, folgt der Grundwert ruhigen
   Messwerten um 1/16 des Unterschieds je Messwert.
-- **Piepton.** Ein Messwert über Grundwert plus SCHWELLE beginnt einen
-  Puls; einer unter Grundwert plus SCHWELLE minus HYSTERESE beendet ihn.
-- **Längen in Messwerten.** Die Mindestzahl der Messwerte ergibt sich aus
+- **Piepton.** INA3221: ein Fenster über Grundwert plus SCHWELLE beginnt einen
+  Puls; eines unter Grundwert plus SCHWELLE minus HYSTERESE beendet ihn.
+  Abgriff: jeder Piepton, den der IOmcu meldet.
+- **Längen.** INA3221, in Fenstern: Die Mindestzahl der Fenster ergibt sich aus
   PIEPTON MIN beziehungsweise PAUSE MIN und dem längsten beobachteten
-  Messabstand. Enthält ein Puls oder eine Pause zu wenige Messwerte, wird
-  die Gruppe ungültig. Dasselbe gilt, wenn erster und letzter Messwert
-  eines Pulses mehr als LANG MAX auseinanderliegen. Ein Puls ab LANG zählt
-  als langer Piepton. Er macht die Gruppe ungültig, wenn das Profil keine
+  Abstand. Enthält ein Puls oder eine Pause zu wenige Fenster, wird
+  die Gruppe ungültig. Dasselbe gilt, wenn erstes und letztes Fenster
+  eines Pulses mehr als LANG MAX auseinanderliegen. Abgriff, gemessen: ein
+  Piepton kürzer als PIEPTON MIN oder länger als LANG MAX, oder eine Stille
+  davor kürzer als PAUSE MIN, macht seine Gruppe ungültig. In beiden Fällen
+  zählt ein Piepton ab LANG als langer Piepton. Er macht die Gruppe ungültig, wenn das Profil keine
   langen Pieptöne vorsieht oder wenn er nach einem kurzen Piepton folgt.
 - **Gruppe.** Stille von GRUPPENPAUSE nach dem letzten Puls beendet eine
   Gruppe. Ihre Zahl sind die kurzen Pieptöne plus `long_equals_short` für
@@ -594,16 +676,29 @@ Schalten auf ARMED.
   Auswahl braucht einen verlorenen Piepton in jeder von drei Gruppen
   hintereinander, oder, in einem Menü mit wiederholten Gruppen, eine ganz
   verlorene Gruppe und einen verlorenen Piepton in der nächsten.
-- **Späte Messwerte.** Ein Messwert, der mehr als das Kürzere von PIEPTON MIN
-  und PAUSE MIN nach dem vorigen kommt, ist spät, ebenso einer, dessen Zähler
-  einen übersprungenen Messwert zeigt: er macht die zugehörige Gruppe ungültig
-  und unterbricht die bestätigte Reihenfolge. 3 späte Messwerte hintereinander
-  beenden den Lauf mit MESSRATE.
+- **Späte Fenster.** Nur INA3221. Ein Fenster, das mehr als das Kürzere von PIEPTON MIN
+  und PAUSE MIN nach dem vorigen kommt, ist spät, ebenso eines, dessen Nummer
+  ein übersprungenes Fenster zeigt, oder eines ohne Stromwerte: es macht die
+  zugehörige Gruppe ungültig und unterbricht die bestätigte Reihenfolge. 3
+  späte Fenster hintereinander beenden den Lauf mit MESSRATE. Die Fenster
+  liegen 50ms auseinander; spät werden sie also nur bei PIEPTON MIN oder
+  PAUSE MIN unter 50ms oder bei Fenstern, die das Panel nicht rechtzeitig
+  abholt. Der Abgriff hat diese Regel nicht: seine Pieptöne sind nummeriert,
+  und ein fehlender beendet den Lauf.
 
 ## Die Einstellungen
 
 Öffne OPTIONEN in der Fußleiste der Seite eines Profils. Diese Werte werden
 mit SPEICHERN mit den anderen Einstellungen gespeichert. Keiner davon ist
+gemessen. SCHWELLE und HYSTERESE gelten nur für den INA3221.
+
+Die Vorgaben passen nicht zu dem einen ESC, den der Abgriff gehört hat,
+einem Flycolor FlyDragon Lite 40A an 7,6V: kurze Pieptöne von 127,9ms bei
+2090Hz und lange von 383,7ms bei 1866Hz. Mit LANG bei 500ms zählen seine
+langen Pieptöne als kurze, und mit PIEPTON MIN bei 200ms machen seine
+kurzen ihre Gruppen ungültig. Für ihn muss PIEPTON MIN unter 127ms und LANG
+zwischen 128 und 383ms liegen, zum Beispiel PIEPTON MIN 100ms und LANG
+250ms. Seine Pausen zwischen Pieptönen und zwischen Gruppen sind nicht
 gemessen.
 
 | Einstellung | Vorgabe | Bereich | Was sie ist |
@@ -620,8 +715,8 @@ gemessen.
 | Ausschaltzeit | 3000ms | 500 bis 20000ms | Netzteil aus zwischen zwei Einstiegen |
 | Stille | 10000ms | 1000 bis 60000ms | endet der Zeitraum ohne Piepton, wird der Lauf beendet |
 | Zeitlimit | 180000ms | 5000 bis 600000ms | endet der Zeitraum ohne Auswahl einer gewünschten Gruppe, wird der Lauf beendet |
-| Schwelle | 100mA | 10 bis 2000mA | über dem Grundwert: ein Piepton |
-| Hysterese | 40mA | 0 bis 1000mA | unter der Schwelle minus diesem Wert: Stille |
+| Schwelle | 100mA | 10 bis 2000mA | über dem Grundwert: ein Piepton (INA3221) |
+| Hysterese | 40mA | 0 bis 1000mA | unter der Schwelle minus diesem Wert: Stille (INA3221) |
 
 Ein Lauf wird abgelehnt, nicht angepasst, wenn die Einstellungen sich
 widersprechen: LANG höchstens PIEPTON MIN, LANG MAX höchstens LANG, GRUPPENPAUSE
@@ -736,8 +831,11 @@ Liste.
 | VERBINDUNG VERLOREN | der IOmcu antwortete irgendwann während des Laufs und hörte auf | an |
 | NETZTEIL AUS | der Ausgang ging aus: eine Abschaltung, oder ein ON, das das Netzteil fallen ließ | an |
 | NETZTEIL ANTWORTET NICHT | das Netzteil hört auf zu antworten | an |
-| KEINE MESSWERTE | der Messwertzähler 1000ms unverändert | an |
-| MESSRATE | 3 späte Messwerte hintereinander | an |
+| KEINE MESSWERTE | der Messwertzähler des Netzteils 1000ms unverändert | an |
+| MESSRATE | 3 späte INA3221-Fenster hintereinander | an |
+| INA3221 VERLOREN | 1000ms kein neues Fenster des INA3221-Kanals, während der ESC versorgt ist oder gleich versorgt wird | an |
+| PIEPTON VERLOREN | der Phasenabgriff hat einen Piepton verloren, oder ein Piepton kam nicht beim Lauf an | an |
+| ABGRIFF ANGEHALTEN | die Erfassung des Phasenabgriffs hat angehalten, oder kein Statuslesen sagt, dass sie läuft | an |
 | WEITERHIN SAFE | nicht ARMED innerhalb von 3000ms | an |
 | EINSCHALTEN NICHT BESTÄTIGT | der Ausgang nicht innerhalb von 3000ms als an gemeldet | an |
 | NETZTEIL BLEIBT EIN | das Netzteil meldet den Ausgang nicht innerhalb von 3000ms nach der Anforderung des Laufs aus, mit dem Strom unten (beim Start, vor einem Einschalten oder am Ende), oder ein Messwert mit Ausgang an oder Strom oben, während nach einem Schritt an einem stromlosen ESC gefragt wird | an |
@@ -778,19 +876,19 @@ Panel liest die Seite alle 100ms (`SUPPLY_LINK_READ_MS`) innerhalb seines
 Poll-Takts von 50ms. Neue Messwerte kommen daher mit Abständen von 100 bis
 150ms an; zwischen zwei Seitenabfragen kann der Zähler um 2 steigen.
 
-Ein Sprung um mehr als 1 bedeutet, dass das Panel einen Messwert verpasst
-hat, und zählt als verspätete Messung. Bleibt der Zähler stehen, fehlen
+Bleibt der Zähler stehen, fehlen
 neue Messwerte: Nach 1000ms folgt KEINE MESSWERTE, unabhängig davon, wie
-aktuell die gelesene Protokollseite ist. Ein Piepton oder eine Lücke kürzer als etwa
-200ms kann zwischen zwei Messwerte des Moduls fallen und ungesehen
-bleiben; die Reihenfolgeregel übergeht dann die Gruppe, statt die Nummer
-darunter zu wählen. PIEPTON MIN und PAUSE MIN stehen deshalb auf 200ms. Ob der
+aktuell die gelesene Protokollseite ist. Diese Messwerte entscheiden nur die
+Netzteilregeln. Ein Piepton oder eine Lücke kürzer als etwa 200ms kann
+zwischen zwei davon fallen; deshalb wird aus ihnen kein Piepton gezählt. Ob der
 Strom des Moduls ein Augenblickswert oder ein Mittel über sein Intervall
 ist, ist nicht bekannt.
 
-Pieptöne aus der Zeit zu zählen, in der der Strom erhöht bleibt, würde auch
-Pieptöne kürzer als ein Messwert erfassen, braucht aber die Periode der
-Pieptöne, die nicht gemessen ist. Es wird nicht gemacht.
+Ein INA3221-Fenster ist neu, wenn seine Nummer steigt. Das Panel liest
+SENSE_WIN_A oder SENSE_WIN_B in jedem Poll von 50ms, höchstens alle 40ms,
+und reiht jedes Fenster des Kanals einmal ein; eine Nummer, die um mehr als
+1 steigt, ist ein Fenster, das das Panel nie gesehen hat, und zählt als spät.
+Wie oft das Panel auf dem Prüfstand ein Fenster verpasst, ist nicht gemessen.
 
 ## Simulation
 
@@ -813,17 +911,37 @@ Folge 1500ms später.
 
 Die Host-Suiten `test_esc_stick`, `test_esc_stick_entry` und
 `test_esc_stick_hand` lassen den Ablauf von Ende zu Ende gegen die
-Simulation laufen: zwei- und einstufige Menüs, wiederholte Gruppen, eine
+Simulation laufen, mit dem INA3221 als Quelle: zwei- und einstufige Menüs, wiederholte Gruppen, eine
 Ruhestellung, Ein- und Ausschalten zwischen Änderungen, Messwerte 100 bis
 190ms auseinander, 30mA Rauschen, ein verlorener Piepton in einer Gruppe,
 ein Menü mit einem Punkt mehr als das Profil, ein ESC, der nie piept, und
 jeder Weg, auf dem ein Lauf endet. Ein Durchlauf mit einem verlorenen
 Piepton in jeder der ersten zehn Gruppen gegen ESC-Einstiege 2000ms vor
 und nach dem des Ablaufs speichert keinen anderen Wert als den verlangten.
+`test_esc_stick_tap` lässt das Profil des FlyDragon mit den Längen des
+Abgriffs laufen, 127,9ms und 383,7ms, am Abgriff und in INA3221-Fenstern,
+mit Netzteil-Messwerten alle 152ms, und beendet Läufe bei einem verlorenen
+Piepton, einer angehaltenen Erfassung und einem verstummten INA3221. Er
+lässt kurze Pieptöne von 250ms mit 500ms Abstand laufen, mit dem nächsten
+Piepton länger als GRUPPENPAUSE, vom Abgriff 60ms verspätet übergeben, und
+hält eine Gruppe offen, solange ein Status nach GRUPPENPAUSE einen Piepton
+im Gang oder einen noch nicht übernommenen zeigt.
+`test_esc_stick_panel_source` prüft die Wahl der Quelle durch das Panel und
+die Ablehnung ohne beide.
 
 ## Aktuelle Einschränkungen
 
 - Die Vorgaben und die Reihenfolgeregel sind an echten Pieptönen nicht erprobt.
+  Der Abgriff hat einen ESC gehört, einen Flycolor FlyDragon Lite 40A an
+  7,6V über 4,7kΩ und eine 3,0-V-Zenerdiode an GPIO 22, ohne verlorenen
+  Piepton; kein Lauf hat an ihm gezählt. Kein Lauf hat an einem
+  INA3221-Kanal gezählt.
+- Wie oft das Panel auf dem Prüfstand ein INA3221-Fenster verpasst, oder
+  wie lange der Status des Abgriffs nach einer Gruppe braucht, bis er die
+  Stille zeigt, ist nicht gemessen.
+- Ein Piepton kürzer als etwa 100ms, oder eine Pause zwischen zwei
+  Pieptönen kürzer als etwa 100ms, kann mit seinem Nachbarn in ein
+  50-ms-Fenster des INA3221 fallen und wird nicht getrennt von ihm gesehen.
 - Ein ESC, der eine Auswahl ignoriert, gibt weiter seine Punkte aus, die der
   Lauf dann als Werte zählt: er kann FERTIG melden, ohne dass etwas
   gespeichert ist.

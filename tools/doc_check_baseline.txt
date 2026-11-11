@@ -496,7 +496,6 @@ firmware/panel/main/main.c: warning: Member s_servo_pins (variable) of file main
 firmware/panel/main/main.c: warning: Member s_servo_pins_known (variable) of file main.c is not documented.
 firmware/panel/main/main.c: warning: Member s_servo_testing (variable) of file main.c is not documented.
 firmware/panel/main/main.c: warning: Member s_snap (variable) of file main.c is not documented.
-firmware/panel/main/main.c: warning: Member s_snap_lock (variable) of file main.c is not documented.
 firmware/panel/main/main.c: warning: Member s_stop_request (variable) of file main.c is not documented.
 firmware/panel/main/main.c: warning: Member s_supply_ack (variable) of file main.c is not documented.
 firmware/panel/main/main.c: warning: Member s_supply_baud (variable) of file main.c is not documented.
@@ -717,7 +716,6 @@ firmware/panel/main/panel.h: warning: Member s_servo_pins_known (variable) of fi
 firmware/panel/main/panel.h: warning: Member s_servo_source (variable) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member s_servo_testing (variable) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member s_snap (variable) of file panel.h is not documented.
-firmware/panel/main/panel.h: warning: Member s_snap_lock (variable) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member s_stop_request (variable) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member s_supply (variable) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member s_supply_ack (variable) of file panel.h is not documented.
@@ -2972,7 +2970,6 @@ shared/ui/include/esc_stick_panel.h: warning: parameters of member esc_stick_pan
 shared/ui/include/esc_stick_panel.h: warning: parameters of member esc_stick_panel_set_throttle are not documented
 shared/ui/include/esc_stick_panel.h: warning: parameters of member esc_stick_panel_step_text are not documented
 shared/ui/include/esc_stick_panel.h: warning: parameters of member esc_stick_panel_supply are not documented
-shared/ui/include/esc_stick_panel.h: warning: parameters of member esc_stick_panel_tone are not documented
 shared/ui/include/esc_stick_panel.h: warning: parameters of member esc_stick_panel_why_text are not documented
 shared/ui/include/esc_stick_panel.h: warning: parameters of member esc_stick_panel_wrap_lines are not documented
 shared/ui/include/esc_stick_panel.h: warning: return type of member esc_stick_panel_entry_shown is not documented

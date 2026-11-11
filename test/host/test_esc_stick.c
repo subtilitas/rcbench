@@ -387,6 +387,10 @@ TEST_CASE(readings_the_panel_never_saw_are_late)
                                  .reported_on = true,
                                  .online = true };
         esc_stick_sample(&r.e, &x);
+        /* The meter goes on: the supply's count alone has stopped. */
+        const esc_stick_meter_t m = { frozen + (uint32_t)i + 1u, r.now, 150,
+                                      true, r.now };
+        esc_stick_meter(&r.e, &m);
         const esc_stick_bench_t b = bench();
         esc_stick_step(&r.e, &b);
         r.now++;

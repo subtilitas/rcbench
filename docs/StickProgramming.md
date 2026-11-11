@@ -6,9 +6,11 @@ Stick programming sets an ESC (electronic speed controller) through its
 throttle-stick menu. The bench powers the ESC from the PD mini supply, with
 a resistor load in place of the motor or a motor mounted solid with no
 propeller. It moves the throttle to the positions the
-[ESC profile](EscProfiles.md) names, and counts the menu's beeps as pulses
-in the supply current. On the screen it is ESC STICK, the STICK MENU row of
-MOTOR & ESC > PROGRAM ([PROGRAM](Screens.md#program)).
+[ESC profile](EscProfiles.md) names, and counts the menu's beeps from the
+phase tap or from an INA3221 channel in the ESC's supply line
+([Where the beeps come from](#where-the-beeps-come-from)). On the screen it
+is ESC STICK, the STICK MENU row of MOTOR & ESC > PROGRAM
+([PROGRAM](Screens.md#program)).
 
 What it does not know:
 
@@ -27,21 +29,29 @@ What it does not know:
    the ESC is powered. The ESC is in its programming menu then, not
    driving, but in rare cases a motor may start and run.
 2. Either leave the motor on the ESC, mounted solid, or fit a resistor load
-   across the ESC's motor leads in its place. The beeps are counted from
-   the current either way. The resistor's value is not specified. It has to keep the current under the run's
+   across the ESC's motor leads in its place. The resistor's value is not
+   specified. It has to keep the current under the run's
    current limit at the run's voltage. How well beeps through a motor's
    windings read in the current is not measured.
-3. Connect the ESC's signal lead to a pin bound with the throttle role on
+3. Give the run a beep source. Either wire the
+   [phase tap](Screens.md#sensors-the-phase-tap) to one motor lead and
+   switch it on under SETUP > SENSORS, or put the shunt of an INA3221
+   channel in the line from the supply output to the ESC and set the
+   channel's row, such as `0x40 CH2 watches`, to SUPPLY
+   ([SENSORS: the INA3221 parts](Screens.md#sensors-the-ina3221-parts)).
+   RUN is refused with neither
+   (`No beep source. Switch the phase tap on, or set an INA3221 channel to SUPPLY, on SENSORS.`).
+4. Connect the ESC's signal lead to a pin bound with the throttle role on
    the OUTPUTS screen. A run commands every channel bound as a throttle, as
    MOTOR & ESC does. RUN is refused while the binding binds no pin as
    a throttle (`No throttle pin assigned. Assign one on OUTPUTS.`) and while the
    panel has not read the binding from the IOmcu (`Output assignment not read. Throttle pin unknown.`).
-4. Connect the ESC's power leads to the supply output. The supply is the PD
+5. Connect the ESC's power leads to the supply output. The supply is the PD
    mini: with the PD mini disabled on SETUP the panel's supply model takes
    its place and switches nothing, and RUN is refused with `Supply is simulated. RUN needs a PD mini.`. A reason that arises while the warning
    PROPELLER REMOVED? MOTOR SECURED? is open closes it, and the line beside RUN
    names the reason.
-5. Switch the supply's output off. A run that finds it on or on its way is
+6. Switch the supply's output off. A run that finds it on or on its way is
    refused, and so is one whose supply reads live: its own state on, or
    more than 20mA (`ESC_STICK_OFF_MA`) through the output, in its newest
    reading. The line beside RUN says to switch it off first. RUN also
@@ -195,7 +205,9 @@ RUN opens a warning over the whole screen, titled PROPELLER REMOVED? MOTOR SECUR
 moves its throttle to MAX and back to step through the programming menu. In
 rare cases a motor may start and run, so a connected motor must be mounted
 solid and carry no propeller; a resistor load in place of the motor works
-as well. The beeps are counted from the current. Below that stand the
+as well. Its last line names where the run will count the beeps from:
+`Beeps are counted from the phase tap.` or
+`Beeps are counted from the current on INA 0x40 CH2.` Below that stand the
 profile, the supply's set points with the number of changes, and the line
 that the profile is unverified and every beep time a default.
 
@@ -209,8 +221,11 @@ it.
 ![The warning](img/motor-stick-warning.png)
 
 During the run the page shows the phase, the beeps in the group under way,
-the last group and whether it was in order, and the current against its
-floor. ABORT ends the run, and so do the band's home tag, STOP in the band
+the last group and whether it was in order, and where the beeps come from:
+`BEEPS FROM THE PHASE TAP`, or the INA3221 channel with its current against
+its floor and the interval of its windows,
+`INA 0x40 CH2   CURRENT 750mA   BASELINE 150mA   EVERY 50ms`. ABORT ends
+the run, and so do the band's home tag, STOP in the band
 and leaving the screen. The home tag ends it as ABORT does, and the result
 stays on the page. BACK and SETTINGS are not offered. The stack light beside the beep
 count is described [below](#the-stack-light).
@@ -220,9 +235,8 @@ count is described [below](#the-stack-light).
 With the phase tap enabled on SETUP under SENSORS the page adds a
 read-only readout of the tap under the current line: its state, the pitch of
 its last 8ms window, the counts of beeps lost and beeps not read, and the
-last four beeps with their number, length in ms and pitch in Hz ([the tap's rows and states](Screens.md#sensors-the-phase-tap)). The
-run counts its beeps from the supply current; it does not use the
-tap's beeps.
+last four beeps with their number, length in ms and pitch in Hz ([the tap's rows and states](Screens.md#sensors-the-phase-tap)). A
+run started while the capture runs counts these beeps.
 
 ![A run with the phase tap running](img/motor-stick-tone.png)
 
@@ -438,7 +452,9 @@ things, drawn as a signal tower: red over green on a light grey base.
   floor plus THRESHOLD less HYSTERESIS. Every pulse lights it, whether its
   group is later acted on or not. A pulse shorter than a frame still shows:
   green stays on at least 150ms (`ESC_STICK_BEEP_LIGHT_MS`) from the frame
-  that first sees the pulse. Green is dark on the result.
+  that first sees the pulse. From the phase tap every beep that reaches the
+  run is such a pulse: green is on for 150ms from the frame that hands it
+  over, after the beep has ended. Green is dark on the result.
 - **Red** is lit on a result whose run ended because something was not as
   expected, and stays on until OK. The reasons are listed under
   [How a run ends](#how-a-run-ends). It stays dark on DONE and on the ends
@@ -499,18 +515,82 @@ Every move is sent through the same paths as the commands on MOTOR & ESC: ARM th
 policy, THROTTLE onto the throttle channels, and the supply through SUPPLY's
 own ON and OFF. Nothing bypasses STOP or the rules for switching to ARMED.
 
+## Where the beeps come from
+
+A run takes its source when it starts and keeps it to its end. It does not
+switch sources while it runs.
+
+| Source | Used when RUN starts the run | Each beep is |
+| --- | --- | --- |
+| the phase tap | the tap is on under SETUP > SENSORS and its capture runs: TONE's flags bit 0, by a status read younger than 500ms, with the window number moved within 1500ms | one beep the IOmcu timed on the motor lead: its first rise in ms since the capture started and its length to 0.1ms, on the IOmcu's clock |
+| an INA3221 channel | the tap does not run, and a window of the lowest channel of a fitted part with a shunt that watches SUPPLY came in within the last 1000ms (`ESC_STICK_STALE_MS`) | a pulse in the channel's 50ms windows, the highest current of each |
+| none | neither | RUN is refused |
+
+The PD mini's own current is no source. It reads every 100 to 152ms (the
+SUPPLY page's READINGS EVERY, 152ms on the bench that measured it), and a
+short beep of the Flycolor FlyDragon Lite 40A is 127.9ms: a beep can fall
+between two readings. The PD mini still powers the ESC, and its readings
+still decide every power rule of the run: the output on, the output off
+with the current down, NO READINGS and SUPPLY STAYS ON.
+
+**The tap.** Each frame hands the run the beeps that came in since the
+frame before, oldest first, then the tap's status. The beep's own times from
+the IOmcu go into the groups, not the time the panel read it. A group ends
+only on a status that says nothing sounds, read every 40ms
+(`TONE_LINK_READ_MS`):
+
+- no beep under way (TONE's flags bit 3 clear) and no tone in the last 8ms
+  window (bit 4 clear);
+- the newest beep number is the last beep the run has taken, so no beep
+  the IOmcu has finished is still on its way to the panel;
+- that window ends GROUP GAP or more after the last beep ended, on the
+  IOmcu's clock.
+
+A beep still sounding GROUP GAP after the one before keeps its group open,
+and joins it when it comes in. The end comes as late as the status read
+that shows the silence, under 500ms by the status's age limit, and never
+before the silence. A group whose end only the next beep shows, because no
+such status came in before that beep, is judged unclear and not acted on:
+a move then would come after the next group has begun. The pitch is shown
+and not used. A run
+counting from the tap ends:
+
+- with BEEP LOST when a beep number is missing: the IOmcu's lost count or
+  the panel's missed count moves, the capture overruns, or more than 4
+  beeps came in between two frames (the readout holds the newest 4);
+- with TAP STOPPED when a status read says the capture does not run, or
+  none younger than 500ms says it does, or no tap state has reached the run
+  for 1000ms.
+
+**The INA3221.** The windows are timed by their number, 50ms apart on the
+IOmcu's clock. The IOmcu reads every channel with a shunt except the 1kHz
+servo channel in turn, one a millisecond: 1000 / n readings a second each for
+n such channels, 4ms apart with 4 of them, 11ms apart with all 11. Each
+reading is one conversion of 140µs of shunt voltage and 140µs of bus voltage,
+averaging 1 (`INA3221_CONFIG_BENCH_ALL`, 0x7007), so a window holds 4 to 50
+readings and its highest current shows a beep anywhere in it. A sample at the
+top of the range, 1.638A on a 0.1Ω shunt, counts as a high one. A run
+counting from the INA3221 ends with INA3221 LOST when no new window has come
+in for 1000ms while the ESC is powered or before it is powered.
+
 ## How the beeps are counted
 
-- **Floor.** During ENTERING MENU, from 500ms after power-on, the floor is the
+The rules below are the same for both sources, except where a rule names
+one.
+
+- **Floor.** INA3221 only. During ENTERING MENU, from 500ms after power-on, the floor is the
   lowest current read. A beep cannot raise it. While the menu is counted, the
   floor follows quiet readings by 1/16 of the difference each.
-- **Beep.** A reading above the floor plus THRESHOLD starts a pulse; one
-  below the floor plus THRESHOLD less HYSTERESIS ends it.
-- **Lengths in readings.** A pulse that holds fewer readings than BEEP MIN
+- **Beep.** INA3221: a window above the floor plus THRESHOLD starts a pulse; one
+  below the floor plus THRESHOLD less HYSTERESIS ends it. The tap: every
+  beep the IOmcu reports.
+- **Lengths.** INA3221, in windows: a pulse that holds fewer windows than BEEP MIN
   must hold at the longest interval seen, or a gap between two pulses that
   holds fewer than GAP MIN must, spoils its group. A pulse whose first and
-  last readings are further apart than LONG MAX spoils its group. A pulse
-  measured at LONG or longer is a long beep; in a profile without long beeps
+  last windows are further apart than LONG MAX spoils its group. The tap,
+  measured: a beep shorter than BEEP MIN or longer than LONG MAX, or a
+  silence before it shorter than GAP MIN, spoils its group. Either way a
+  beep at LONG or longer is a long beep; in a profile without long beeps
   it spoils its group, and so does a long beep after a short one.
 - **Group.** Silence of GROUP GAP after the last pulse ends a group. Its
   count is the short beeps, plus `long_equals_short` for each long one.
@@ -528,14 +608,27 @@ own ON and OFF. Nothing bypasses STOP or the rules for switching to ARMED.
   and the next loop is used; a wrong selection needs a missed beep in each
   of three groups in a row, or, in a menu that repeats its groups, a whole
   group lost and a beep missed in the next.
-- **Late readings.** A reading more than the shorter of BEEP MIN and GAP MIN
-  after the one before is late, and so is one whose count says a reading
-  was skipped: it spoils the group it falls in and breaks the order. 3 late readings in a row end the run with READING RATE.
+- **Late windows.** INA3221 only. A window more than the shorter of BEEP MIN and GAP MIN
+  after the one before is late, and so is one whose number says a window
+  was skipped, or one without current samples: it spoils the group it falls
+  in and breaks the order. 3 late windows in a row end the run with READING
+  RATE. The windows are 50ms apart, so only BEEP MIN or GAP MIN under 50ms,
+  or windows the panel does not take in time, make them late. The tap has
+  no such rule: its beeps are numbered, and a missing one ends the run.
 
 ## The settings
 
 Open SETTINGS in the footer of a profile's page. These values are stored
-with the other settings on SAVE. None is measured.
+with the other settings on SAVE. None is measured. THRESHOLD and
+HYSTERESIS apply to the INA3221 only.
+
+The defaults do not fit the one ESC the tap has heard, a Flycolor FlyDragon
+Lite 40A at 7.6V: short beeps of 127.9ms at 2090Hz and long beeps of
+383.7ms at 1866Hz. With LONG at 500ms its long beeps count as short, and
+with BEEP MIN at 200ms its short beeps spoil their groups. For it BEEP MIN
+has to be under 127ms and LONG between 128 and 383ms, for example BEEP MIN
+100ms and LONG 250ms. Its gaps between beeps and between groups are not
+measured.
 
 | Setting | Default | Range | What it is |
 | --- | --- | --- | --- |
@@ -551,8 +644,8 @@ with the other settings on SAVE. None is measured.
 | Off time | 3000ms | 500 to 20000ms | supply off between two entries |
 | Silence | 10000ms | 1000 to 60000ms | no beep for this long ends the run |
 | Timeout | 180000ms | 5000 to 600000ms | the wanted group not acted on in this long ends the run |
-| Threshold | 100mA | 10 to 2000mA | above the floor: a beep |
-| Hysteresis | 40mA | 0 to 1000mA | below the threshold less this: silence |
+| Threshold | 100mA | 10 to 2000mA | above the floor: a beep (INA3221) |
+| Hysteresis | 40mA | 0 to 1000mA | below the threshold less this: silence (INA3221) |
 
 A run is refused, not adjusted, when the settings contradict themselves:
 LONG at or under BEEP MIN, LONG MAX at or under LONG, GROUP GAP at or under
@@ -655,8 +748,11 @@ A profile corrected on the SD card is listed with its correction.
 | LINK LOST | the IOmcu answered at some time during the run and stopped answering | lit |
 | SUPPLY OFF | the output went off: a trip, or an ON the supply let go | lit |
 | SUPPLY NOT ANSWERING | the supply stopped answering | lit |
-| NO READINGS | the reading count unmoved for 1000ms | lit |
-| READING RATE | 3 late readings in a row | lit |
+| NO READINGS | the supply's reading count unmoved for 1000ms | lit |
+| READING RATE | 3 late INA3221 windows in a row | lit |
+| INA3221 LOST | no new window of the INA3221 channel for 1000ms, with the ESC powered or about to be | lit |
+| BEEP LOST | the phase tap lost a beep, or a beep did not reach the run | lit |
+| TAP STOPPED | the phase tap's capture stopped, or no status read says it runs | lit |
 | POWER NOT CONFIRMED | the output not reported on within 3000ms | lit |
 | SUPPLY STAYS ON | the supply not reporting its output off, with the current down, within 3000ms of the run asking it off (at the start, before a power-up or at the end) or a reading with the output on or the current up while a step at an unpowered ESC is asked | lit |
 | TOUCH SIGNAL LOST | touch events lost while the run's ARM was not yet taken, or the bench not yet ARMED | lit |
@@ -685,24 +781,24 @@ hold before switching to ARMED.
 
 ## The read rate
 
-A reading is new when the supply's reading count moves: for the PD mini,
+A supply reading is new when the supply's reading count moves: for the PD mini,
 SAMPLES on the SUPPLY page, the IOmcu's count of output readings the
 module answered. Its time is the page read that first showed the count. The
 PD mini reads its output every 100ms (`PDMINI_DISPLAY_MS`), and the panel
 reads the page every 100ms (`SUPPLY_LINK_READ_MS`) on its 50ms poll, so
 new readings arrive 100 to 150ms apart and the count can move by 2 between
-two page reads. A count that moves by more than 1 is a reading the panel
-never saw, and is late. A count that stops is readings that stop: NO
-READINGS after 1000ms, however fresh the page itself is. A beep or gap
-shorter than about 200ms can fall between two module readings and not be
-seen; the order rule then passes the group rather than selecting the number
-below. BEEP MIN and GAP MIN default to 200ms for this reason. Whether the
+two page reads. A count that stops is readings that stop: NO
+READINGS after 1000ms, however fresh the page itself is. These readings
+decide the power rules only. A beep or gap shorter than about 200ms can fall
+between two of them, which is why no beep is counted from them. Whether the
 module's current is an instant reading or an average over its interval is
 not known.
 
-Counting beeps from the time the current stays raised would cover beeps
-shorter than a reading, but needs the beep's period, which is not measured.
-It is not done.
+An INA3221 window is new when its number moves. The panel reads SENSE_WIN_A
+or SENSE_WIN_B on every 50ms poll, at most every 40ms, and queues each
+window of the channel once; a number that moves by more than 1 is a window
+the panel never saw, and is late. How often the panel misses a window on the
+bench is not measured.
 
 ## Simulation
 
@@ -721,17 +817,35 @@ does (`wait_hand`): the menu waits for the action, answers it with three
 beeps and starts the series 1500ms later.
 
 The host suites `test_esc_stick`, `test_esc_stick_entry` and
-`test_esc_stick_hand` run the engine against the simulation end to end:
+`test_esc_stick_hand` run the engine against the simulation end to end,
+with the INA3221 as the source:
 two-stage and one-stage menus, repeated groups, a rest position, power
 cycles between changes, readings 100 to 190ms apart, noise of 30mA, a
 beep lost from a group, a menu one item longer than the profile, an ESC
 that never beeps, and each way a run can end. A sweep of a lost beep in
 each of the first ten groups against ESC entries 2000ms either side of the
 engine's own entry time stores no value other than the one asked for.
+`test_esc_stick_tap` runs the FlyDragon's profile at the tap's lengths,
+127.9ms and 383.7ms, from the tap and from INA3221 windows, with the
+supply read every 152ms, and ends runs on a lost beep, a capture that stops
+and a meter that stops. It runs 250ms short beeps 500ms apart, longer than
+GROUP GAP with the next beep, from the tap handed over 60ms late, and holds
+a group open while a status past GROUP GAP shows a beep under way or one
+not yet taken. `test_esc_stick_panel_source` holds the panel's
+choice of the source and the refusal with neither.
 
 ## Current limitations
 
-- The defaults and the order rule are untested on real beeps.
+- The defaults and the order rule are untested on real beeps. The tap has
+  heard one ESC, a Flycolor FlyDragon Lite 40A at 7.6V through 4.7kΩ and a
+  3.0V zener on GPIO 22, with no beep lost; no run has counted from it.
+  No run has counted from an INA3221 channel.
+- How often the panel misses an INA3221 window on the bench, or how long
+  the tap's status takes to show the silence after a group, is not
+  measured.
+- A beep shorter than about 100ms, or a gap between two beeps shorter than
+  about 100ms, can fall inside one 50ms INA3221 window with its neighbour and
+  is not seen apart from it.
 
 - An ESC that ignores a selection keeps sounding its items, which the run
   then counts as values: it can report DONE with nothing stored.

@@ -3982,6 +3982,9 @@ UI_TEXT(SP_BIND_NOT_READ, 146,
 UI_TEXT(SP_NO_THROTTLE, 146,
     "No throttle pin assigned. Assign one on OUTPUTS.",
     "Kein Gas-Pin zugeordnet. Ordne einen auf der Seite OUTPUTS zu.")
+UI_TEXT(SP_NO_SOURCE, 146,
+    "No beep source. Switch the phase tap on, or set an INA3221 channel to SUPPLY, on SENSORS.",
+    "Keine Pieptonquelle. Schalte unter SENSORS den Phasenabgriff ein oder stelle einen INA3221-Kanal auf NETZTEIL.")
 UI_TEXT(SP_KST_HELD, 146,
     "Servo programmer is using a port. Tap LEAVE on SERVO first.",
     "Servoprogrammierung belegt einen Port. Tippe zuerst auf SERVO auf VERLASSEN.")
@@ -4084,6 +4087,15 @@ UI_TEXT(SP_WHY_USER, 96,
 UI_TEXT(SP_WHY_LEFT, 96,
     "The screen was left during the run.",
     "Die Seite wurde während des Laufs verlassen.")
+UI_TEXT(SP_WHY_TAP_LOST, 96,
+    "The phase tap lost a beep, or a beep did not reach the panel.",
+    "Der Phasenabgriff hat einen Piepton verloren, oder einer kam nicht am Panel an.")
+UI_TEXT(SP_WHY_TAP_STOP, 96,
+    "The phase tap capture stopped during the run.",
+    "Die Erfassung des Phasenabgriffs hat während des Laufs angehalten.")
+UI_TEXT(SP_WHY_METER, 96,
+    "No new INA3221 window for 1000ms.",
+    "Seit 1000ms kein neues INA3221-Fenster.")
 UI_TEXT(SP_PH_READY, 34,
     "READY",
     "BEREIT")
@@ -4183,6 +4195,15 @@ UI_TEXT(SP_R_USER, 34,
 UI_TEXT(SP_R_LEFT, 34,
     "SCREEN LEFT",
     "SEITE VERLASSEN")
+UI_TEXT(SP_R_TAP_LOST, 34,
+    "BEEP LOST",
+    "PIEPTON VERLOREN")
+UI_TEXT(SP_R_TAP_STOP, 34,
+    "TAP STOPPED",
+    "ABGRIFF ANGEHALTEN")
+UI_TEXT(SP_R_METER, 34,
+    "INA3221 LOST",
+    "INA3221 VERLOREN")
 UI_TEXT(SP_RUN, 0,
     "RUN",
     "LAUF")
@@ -4250,8 +4271,11 @@ UI_TEXT(SP_STATS, 0,
     "GROUPS %u   POWER-UPS %u   THROTTLE %s   SUPPLY %s",
     "GRUPPEN %u   EINSCHALTUNGEN %u   GAS %s   NETZTEIL %s")
 UI_TEXT(SP_CURRENT, 0,
-    "CURRENT %dmA   BASELINE %dmA   READINGS EVERY %ums",
-    "STROM %dmA   GRUNDSTROM %dmA   MESSWERTE ALLE %ums")
+    "%s   CURRENT %dmA   BASELINE %dmA   EVERY %ums",
+    "%s   STROM %dmA   GRUNDSTROM %dmA   ALLE %ums")
+UI_TEXT(SP_SRC_TAP, 0,
+    "BEEPS FROM THE PHASE TAP",
+    "PIEPTÖNE VOM PHASENABGRIFF")
 UI_TEXT(SP_TONE_HEAD, 0,
     "TONE  %s   PITCH %s   LOST %s   MISSED %u",
     "ABGRIFF %s   TONHÖHE %s   VERLOREN %s   VERPASST %u")
@@ -4407,9 +4431,12 @@ UI_TEXT(SP_WARN_3, 0,
 UI_TEXT(SP_WARN_4, 0,
     "and remove the propeller. A resistor load can replace the motor.",
     "und entferne den Propeller. Ein Lastwiderstand kann den Motor ersetzen.")
-UI_TEXT(SP_WARN_5, 0,
-    "Beeps are detected and counted from the current.",
-    "Die Pieptöne werden anhand des Stroms erkannt und gezählt.")
+UI_TEXT(SP_WARN_5, 90,
+    "Beeps are counted from the phase tap.",
+    "Die Pieptöne werden am Phasenabgriff gezählt.")
+UI_TEXT(SP_WARN_5_INA, 0,
+    "Beeps are counted from the current on %s.",
+    "Die Pieptöne werden anhand des Stroms an %s gezählt.")
 UI_TEXT(SP_WARN_SUPPLY, 96,
     "SUPPLY %u.%02uV  %u.%02uA   %u CHANGE",
     "NETZTEIL %u.%02uV  %u.%02uA   %u ÄNDERUNG")

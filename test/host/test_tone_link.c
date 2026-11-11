@@ -1593,6 +1593,10 @@ TEST_CASE(the_readout_follows_the_flags)
     CHECK_EQ(r.win_periods, 12u);
     CHECK_EQ(r.lost, 3u);
     CHECK_EQ(r.glitches, 65535u);
+    /* The window and the newest beep's number, for a stick run's watermark
+     * of silence. */
+    CHECK_EQ(r.window, fk.window);
+    CHECK_EQ(r.head, fk.head);
     CHECK_EQ(tone_link_flags(&tl) & LINK_TN_TONE, LINK_TN_TONE);
 
     /* The counters wrap in 16 bits. */
@@ -1658,6 +1662,8 @@ static void check_unread(const tone_readout_t *r)
     CHECK_EQ(r->win_periods, 0u);
     CHECK_EQ(r->lost, 0u);
     CHECK_EQ(r->glitches, 0u);
+    CHECK_EQ(r->window, 0u);
+    CHECK_EQ(r->head, 0u);
 }
 
 TEST_CASE(a_status_that_stops_coming_is_no_longer_running)

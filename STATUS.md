@@ -1348,7 +1348,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 524 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 526 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1375,7 +1375,7 @@ The host suite is 524 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_analyser`,
 `test_esc_stick_panel`, `test_esc_stick_panel_phases`, `test_esc_stick_panel_list`,
 `test_esc_stick_panel_steps`, `test_esc_stick_panel_makers`, `test_esc_stick_panel_hold`,
-`test_esc_stick_panel_touch`, `test_esc_stick_panel_home`, `test_esc_stick_panel_keypad`,
+`test_esc_stick_panel_touch`, `test_esc_stick_panel_home`, `test_esc_stick_panel_keypad`, `test_esc_stick_panel_source`,
 `test_esc_stick_layout`, `test_balance`, `test_battery`, `test_instruments_layout`,
 `test_settings`, `test_settings_screen`, `test_settings_gesture`, `test_settings_pins_hub`,
 `test_settings_carrier`, `test_sensors_carrier`, `test_sensors_pane`, `test_settings_leave`,
@@ -1408,7 +1408,7 @@ The host suite is 524 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_coproc_update_screen`, `test_upd_coproc`, `test_upd_layout`, `test_text`,
 `test_openyge_frame`, `test_openyge_status`, `test_openyge_params`, `test_esc_profiles`, `test_esc_profile_family`,
 `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`,
-`test_esc_stick_entry`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`,
+`test_esc_stick_entry`, `test_esc_stick_tap`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`,
 `test_sense_parts`, `test_sense_map`, `test_sense_limit`, `test_sense_svc`,
 `test_sense_trace_feed`, `test_sense_trace`, `test_sense_trace_next`,
 `test_sense_trace_setup`, `test_sense_trace_lines`, `test_tone`, `test_edge_ring`,
@@ -2060,12 +2060,12 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/balance_screen.c` | 383 | 383 | 100.0% |
 | `shared/ui/battery_screen.c` | 223 | 218 | 97.8% |
 | `shared/ui/esc_stick_pages.c` | 117 | 112 | 95.7% |
-| `shared/ui/esc_stick_panel.c` | 518 | 499 | 96.3% |
+| `shared/ui/esc_stick_panel.c` | 573 | 553 | 96.5% |
 | `shared/ui/esc_stick_list.c` | 299 | 286 | 95.7% |
 | `shared/ui/esc_stick_touch.c` | 301 | 297 | 98.7% |
 | `shared/ui/esc_stick_settings.c` | 71 | 69 | 97.2% |
 | `shared/ui/esc_stick_draw.c` | 419 | 407 | 97.1% |
-| `shared/ui/esc_stick_draw_run.c` | 576 | 532 | 92.4% |
+| `shared/ui/esc_stick_draw_run.c` | 595 | 547 | 91.9% |
 | `shared/ui/log_viewer_screen.c` | 325 | 316 | 97.2% |
 | `shared/ui/log_viewer_load.c` | 234 | 212 | 90.6% |
 | `shared/ui/log_viewer_draw.c` | 420 | 407 | 96.9% |
@@ -2173,10 +2173,10 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/esc/esc_json.c` | 606 | 564 | 93.1% |
 | `shared/esc/esc_json_lex.c` | 292 | 285 | 97.6% |
 | `shared/esc/esc_registry.c` | 168 | 166 | 98.8% |
-| `shared/esc/esc_stick.c` | 551 | 539 | 97.8% |
+| `shared/esc/esc_stick.c` | 632 | 615 | 97.3% |
 | `shared/esc/esc_stick_rules.c` | 284 | 263 | 92.6% |
-| `shared/esc/esc_det.c` | 132 | 130 | 98.5% |
-| `shared/esc/esc_stick_read.c` | 72 | 69 | 95.8% |
+| `shared/esc/esc_det.c` | 183 | 168 | 91.8% |
+| `shared/esc/esc_stick_read.c` | 75 | 69 | 92.0% |
 | `shared/esc/esc_sim.c` | 367 | 343 | 93.5% |
 | `shared/servo/servo_sim.c` | 126 | 124 | 98.4% |
 | `protocols/sbus/sbus.c` | 55 | 54 | 98.2% |
@@ -2296,10 +2296,10 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/bench/sense_link.c` | 607 | 593 | 97.7% |
 | `shared/bench/sense_link_view.c` | 268 | 264 | 98.5% |
 | `shared/bench/sense_map_link.c` | 343 | 331 | 96.5% |
-| `shared/bench/sense_win_link.c` | 165 | 165 | 100.0% |
+| `shared/bench/sense_win_link.c` | 184 | 184 | 100.0% |
 | `shared/bench/sense_limit_link.c` | 201 | 201 | 100.0% |
 | `shared/bench/servo_source.c` | 108 | 108 | 100.0% |
-| `shared/bench/tone_link.c` | 451 | 446 | 98.9% |
+| `shared/bench/tone_link.c` | 453 | 448 | 98.9% |
 | `shared/bench/status_poll.c` | 9 | 9 | 100.0% |
 | `shared/bench/endpoints_link.c` | 80 | 80 | 100.0% |
 | `shared/bench/hitec_rx_link.c` | 57 | 57 | 100.0% |
@@ -2345,7 +2345,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **89739** | **87928** | **98.0%** |
+| **total** | **89969** | **88132** | **98.0%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -2719,19 +2719,20 @@ console's lines beside it.
 ### Stick programming's beep timing
 
 The engine, ESC STICK on MOTOR & ESC > PROGRAM and the simulated ESC are tested on the host
-only. No ESC's menu has been recorded, so the beep and gap lengths, the long beep, the gap
-between groups, the idle current and the current a beep adds are defaults chosen to be
-plausible, and the simulated ESC sounds numbers made up to match them. The PD mini is read
-100 to 150ms apart at the panel, and whether its current is an instant reading or an average
-is not known: a beep shorter than about 200ms may not be seen.
+only. A run counts the beeps from the phase tap while its capture runs, else from an INA3221
+channel that watches SUPPLY, and is refused with neither; the PD mini's current, read every
+100 to 152ms, is no source. The phase tap has heard one ESC, a Flycolor FlyDragon Lite 40A at
+7.6V: short beeps of 127.9ms at 2090Hz and long beeps of 383.7ms at 1866Hz, no beep lost. Its
+gaps between beeps and between groups are not measured, and no run has counted from the tap
+or from an INA3221 channel. The defaults (BEEP MIN 200ms, LONG 500ms) do not fit that ESC.
 
 The ESC's tones after a selection are not decoded, so DONE does not say the ESC stored
 anything.
 
-**Next evidence or work:** one ESC of a profile the engine runs, on the PD mini with a resistor load, and once with a
-motor mounted solid without propeller: a recording of its menu's current at the fastest rate
-available, the module's read interval, and one run of each kind (two-stage, one-stage)
-checked afterwards with the ESC's program card.
+**Next evidence or work:** one stick run of the FlyDragon from the phase tap with BEEP MIN
+100ms and LONG 250ms, checked afterwards with the ESC's program card; the gaps between its
+beeps and between its groups from the tap's beep list; one run from an INA3221 channel in the
+ESC's supply line.
 
 ### The German interface
 

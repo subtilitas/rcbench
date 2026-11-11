@@ -1559,8 +1559,11 @@ Propeller tragen. Alternativ ersetzt ein Lastwiderstand den Motor. Halte
 ![Die Warnung](img/de/motor-stick-warning.png)
 
 START öffnet nichts, wenn kein Gas-Pin zugeordnet ist, die
-Ausgangszuordnung nicht ausgelesen wurde oder das Netzteil aus dem
-Panelmodell stammt. Die Zeile daneben nennt den Grund. Jede dieser
+Ausgangszuordnung nicht ausgelesen wurde, das Netzteil aus dem
+Panelmodell stammt oder der Lauf keine Pieptonquelle hat: weder läuft der
+Phasenabgriff, noch liefert ein INA3221-Kanal, der NETZTEIL misst, Fenster
+(`Keine Pieptonquelle. Schalte unter SENSORS den Phasenabgriff ein oder stelle einen INA3221-Kanal auf NETZTEIL.`).
+Die Zeile daneben nennt den Grund. Jede dieser
 Bedingungen schließt auch eine offene Warnung
 ([Vor einem Lauf](StickProgramming-de.md#vor-einem-lauf)).
 
@@ -1583,8 +1586,11 @@ bis ERLEDIGT gedrückt wird:
 
 ![Der Lauf wartet auf die Bestätigung des ESCs](img/de/motor-stick-hand-end.png)
 
-Während des Laufs zeigt die Seite Phase, Pieptöne der aktuellen Gruppe und
-die letzte Gruppe. ABBRECHEN, Home-Feld, STOP und Verlassen der Seite
+Während des Laufs zeigt die Seite Phase, Pieptöne der aktuellen Gruppe,
+die letzte Gruppe und die Pieptonquelle: `PIEPTÖNE VOM PHASENABGRIFF`, oder
+den INA3221-Kanal mit seinem Strom, seinem Grundwert und dem Abstand seiner
+Fenster, `INA 0x40 CH2   STROM 750mA   GRUNDSTROM 150mA   ALLE 50ms`
+([Woher die Pieptöne kommen](StickProgramming-de.md#woher-die-pieptöne-kommen)). ABBRECHEN, Home-Feld, STOP und Verlassen der Seite
 beenden den Lauf: Gas auf MIN, Netzteil aus, Prüfstand SAFE. Grün an der
 Signalsäule zeigt einen erkannten Piepton für mindestens 150ms:
 
@@ -1594,8 +1600,9 @@ Bei eingeschaltetem Phasenabgriff unter SETUP ergänzt die Laufseite eine
 reine Anzeige unter der Stromzeile. Sie zeigt den Zustand des Abgriffs,
 die Tonhöhe im letzten 8ms-Fenster, die Anzahl vom IOmcu verlorener und
 vom Panel verpasster Pieptöne sowie die letzten vier Pieptöne mit Nummer,
-Dauer in ms und mittlerer Tonhöhe in Hz. Der Lauf zählt seine Pieptöne
-weiterhin aus dem Netzteilstrom.
+Dauer in ms und mittlerer Tonhöhe in Hz. Ein Lauf, der startet, während
+die Erfassung läuft, zählt diese Pieptöne; die Quelle bleibt die des Laufs
+bis zu seinem Ende.
 
 ![Ein Lauf mit laufendem Phasenabgriff](img/de/motor-stick-tone.png)
 
@@ -6008,6 +6015,11 @@ Kanal. Bei einem unbestückten Baustein bleiben sie ausgeblendet.
 | 0x40 CH1 misst | KEINE, AUSGANG 1 bis AUSGANG 8, PORT 1 bis 4, NETZTEIL | AUSGANG 1 für 0x40 CH1, KEINE für jeden anderen Kanal | worin der Shunt des Kanals liegt: ein Ausgangskanal, ein Programmierport oder die Versorgungsschiene |
 | 0x40 CH1 Shunt | AUS, 5,0 bis 1000,0mΩ, Schritte von 0,1mΩ | 100,0 | AUS: der Kanal wird nicht gelesen. Der R100 des DAOKAI misst bis 1,64A |
 | 0x40 CH1 Grenze | AUS, 10 bis 32767mA, Schritte von 10mA mit den Pfeilen | AUS | ein 50ms-Fenster, dessen höchster Strom sie überschreitet, wird auf dem Band gesagt, und der Prüfstand schaltet auf SAFE mit dem Ausgang des Netzteils aus ([Sicherheit, Fehler](Safety-de.md#fehler)). AUS: keine Grenze |
+
+Der niedrigste Kanal eines bestückten Bausteins mit Shunt, der NETZTEIL
+misst, ist die Pieptonquelle von ESC STICK, solange der Phasenabgriff nicht
+läuft: sein Shunt muss in der Leitung vom Netzteil-Ausgang zum ESC liegen
+([Stick-Programmierung](StickProgramming-de.md#woher-die-pieptöne-kommen)).
 
 Ein Tipp auf den Wert eines Shunts öffnet das Tastenfeld
 ([Tasten und Liste](#tasten-und-liste)). 44,4mΩ vom Standardwert 100,0
