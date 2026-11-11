@@ -751,8 +751,10 @@ After the BUY the IOmcu erases the old slot's first sector, and owes the erase u
 holds when it fails or the gate is shut. The panel carries the image when built with
 `RCBENCH_IOMCU_BIN`, checks the IOmcu's build by SHA-256 at link-up and offers the update on
 a question that takes the 2s hold. `test_link_update` runs both ends over the link layer
-against a simulated flash and boot ROM; `test_coproc_update_screen` the question and the
-progress, with CANCEL and the home tag as the only declines and a forced screen over the
+against a simulated flash and boot ROM. Which slot runs, which one the update writes, the
+trial, where a write lands and when a BUY counts are `fw_slots.h` (`test_fw_slots`); the boot
+ROM's calls in `firmware/iomcu/src/update_hw.c` are not host-tested.
+`test_coproc_update_screen` runs the question and the progress, with CANCEL and the home tag as the only declines and a forced screen over the
 question declining nothing; `test_upd_coproc` SETUP > UPDATES' IOmcu section, whose 2s hold
 starts the same update, also after a declined question.
 
@@ -1308,8 +1310,8 @@ rcbench/
 | Module | panel | iomcu | host |
 | --- | :-: | :-: | :-: |
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `files` · `sbus` | yes | | yes |
-| `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` | yes | yes | yes |
-| `artwork` · `esc` · `fwupdate` · `webaccess` · `clock` | yes | | yes |
+| `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` · `fwupdate` | yes | yes | yes |
+| `artwork` · `esc` · `webaccess` · `clock` | yes | | yes |
 | `openyge` · `ppm` · `i2c_txq` | | yes | yes |
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |
 | `escwire` | yes | yes | yes |
@@ -1348,7 +1350,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 528 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 529 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1446,7 +1448,7 @@ The host suite is 528 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_hitec_panel_file`, `test_page_console`, `test_kst_card`, `test_prog_link`,
 `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`,
 `test_wifi_kept`, `test_wifi_layout`, `test_fw_image`, `test_fw_c6`, `test_fw_install`, `test_fw_trial`,
-`test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_wa_session`,
+`test_fw_slots`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_wa_session`,
 `test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_channel`, `test_wa_fetch_task`,
 `test_upd_screen`, `test_upd_settings`, `test_upd_c6`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`,
 `test_wa_page`, `test_wa_page_de`, `test_wa_hl`, `test_wa_edit`, `test_wa_mdns`,

@@ -116,12 +116,6 @@ firmware/iomcu/src/tone_core1.c: warning: Member s_started (variable) of file to
 firmware/iomcu/src/tone_core1.c: warning: Member s_status (variable) of file tone_core1.c is not documented.
 firmware/iomcu/src/tone_core1.c: warning: Member s_status_seq (variable) of file tone_core1.c is not documented.
 firmware/iomcu/src/tone_core1.c: warning: Member s_taken_seq (variable) of file tone_core1.c is not documented.
-firmware/iomcu/src/update_hw.c: warning: Member s_busy(void) (variable) of file update_hw.c is not documented.
-firmware/iomcu/src/update_hw.c: warning: Member s_buy_rc (variable) of file update_hw.c is not documented.
-firmware/iomcu/src/update_hw.c: warning: Member s_io (variable) of file update_hw.c is not documented.
-firmware/iomcu/src/update_hw.c: warning: Member s_slot (variable) of file update_hw.c is not documented.
-firmware/iomcu/src/update_hw.c: warning: Member s_target_off (variable) of file update_hw.c is not documented.
-firmware/iomcu/src/update_hw.c: warning: Member s_upd (variable) of file update_hw.c is not documented.
 firmware/panel/components/art_flash/art_flash_esp.c: warning: Member ART_FLASH_CHUNK (macro definition) of file art_flash_esp.c is not documented.
 firmware/panel/components/art_flash/art_flash_esp.c: warning: Member TAG (variable) of file art_flash_esp.c is not documented.
 firmware/panel/components/art_flash/art_flash_esp.c: warning: Member breathe(void) (function) of file art_flash_esp.c is not documented.

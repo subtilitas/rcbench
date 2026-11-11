@@ -3,7 +3,10 @@
  * @brief The firmware update on this board.
  *
  * See update_hw.h and the update
- * section of link_pages.h.
+ * section of link_pages.h.  The rules -- which slot runs, which one is
+ * written, the trial, where a write lands, when a BUY counts -- are
+ * shared/fwupdate/fw_slots.c, host-tested; this file makes the boot ROM's
+ * and the flash's calls.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -21,6 +24,7 @@
 #include "hardware/flash.h"
 #include "pico/bootrom.h"
 
+#include "fw_slots.h"
 #include "link_update_dev.h"
 #include "out_store.h"
 
@@ -35,20 +39,38 @@ _Static_assert(IOMCU_SLOT_BYTES % FLASH_SECTOR_SIZE == 0u,
                "partitions.json: a slot is not whole sectors");
 _Static_assert(LINK_UPD_SECTOR_BYTES == FLASH_SECTOR_SIZE,
                "the update's sector is not the flash's");
+/* fw_slots.h reads the boot ROM's words with its own copies of these. */
+_Static_assert(FW_SLOTS_PT_INFO_HEADER
+                   == (PT_INFO_PARTITION_LOCATION_AND_FLAGS
+                       | PT_INFO_SINGLE_PARTITION),
+               "fw_slots.h: the location query's header differs");
+_Static_assert(FW_SLOTS_LOC_FIRST_SECTOR_BITS
+                   == PICOBIN_PARTITION_LOCATION_FIRST_SECTOR_BITS
+               && FW_SLOTS_LOC_FIRST_SECTOR_LSB
+                      == PICOBIN_PARTITION_LOCATION_FIRST_SECTOR_LSB
+               && FW_SLOTS_LOC_LAST_SECTOR_BITS
+                      == PICOBIN_PARTITION_LOCATION_LAST_SECTOR_BITS
+               && FW_SLOTS_LOC_LAST_SECTOR_LSB
+                      == PICOBIN_PARTITION_LOCATION_LAST_SECTOR_LSB,
+               "fw_slots.h: the partition location fields differ");
+_Static_assert(FW_SLOTS_BUY_PENDING == BOOT_TBYB_AND_UPDATE_FLAG_BUY_PENDING,
+               "fw_slots.h: the BUY_PENDING flag differs");
 
+/** @brief The update's state: the pages, the session, the owed erase. */
 static link_update_dev_t s_upd;
+/** @brief The flash and boot ROM callbacks s_upd calls. */
 static link_update_io_t  s_io;
+/** @brief Returns true while flash may not be written; NULL for never. */
 static bool            (*s_busy)(void);
-static uint32_t          s_target_off;   /* the slot written, from flash 0 */
-/** @brief Offset of the running image's slot from the start of flash */
-static uint32_t          s_running_off;
-static int               s_slot = -1;
+/** @brief The slots of this boot, from fw_slots_choose(). */
+static fw_slots_t        s_slots = { .slot = -1 };
 
 /**
  * @brief The boot ROM's BUY needs 4KiB to rewrite the sector holding the flag.
  */
 static uint32_t s_buy_work[FLASH_SECTOR_SIZE / sizeof(uint32_t)];
-static int      s_buy_rc;
+/** @brief The last BUY's answer, written inside the flash window. */
+static fw_slots_buy_t s_buy;
 
 /**
  * @brief Erases a sector of the slot being written.
@@ -61,10 +83,11 @@ static int      s_buy_rc;
 static bool io_erase(void *ctx, uint32_t off)
 {
     (void)ctx;
-    if (off >= IOMCU_SLOT_BYTES) {
+    uint32_t addr;
+    if (!fw_slots_target(&s_slots, off, &addr)) {
         return false;
     }
-    return out_store_flash_erase(s_target_off + off);
+    return out_store_flash_erase(addr);
 }
 
 /**
@@ -79,11 +102,11 @@ static bool io_erase(void *ctx, uint32_t off)
 static bool io_program(void *ctx, uint32_t off, const uint8_t *data)
 {
     (void)ctx;
-    if (off >= IOMCU_SLOT_BYTES) {
+    uint32_t addr;
+    if (!fw_slots_target(&s_slots, off, &addr)) {
         return false;
     }
-    return out_store_flash_program(s_target_off + off, data,
-                                   FLASH_SECTOR_SIZE);
+    return out_store_flash_program(addr, data, FLASH_SECTOR_SIZE);
 }
 
 /**
@@ -111,7 +134,8 @@ static void buy_in_window(void *arg)
     (void)arg;
     rom_explicit_buy_fn buy =
         (rom_explicit_buy_fn)rom_func_lookup_inline(ROM_FUNC_EXPLICIT_BUY);
-    s_buy_rc = buy((uint8_t *)s_buy_work, sizeof(s_buy_work));
+    fw_slots_buy_answer(&s_buy,
+                        buy((uint8_t *)s_buy_work, sizeof(s_buy_work)));
 }
 
 /**
@@ -123,8 +147,9 @@ static void buy_in_window(void *arg)
 static bool io_buy(void *ctx)
 {
     (void)ctx;
-    s_buy_rc = -1;
-    return out_store_flash_call(buy_in_window, NULL) && s_buy_rc == 0;
+    fw_slots_buy_begin(&s_buy);
+    const bool ran = out_store_flash_call(buy_in_window, NULL);
+    return fw_slots_buy_taken(&s_buy, ran);
 }
 
 /**
@@ -139,42 +164,26 @@ static void io_restart(void *ctx)
     /* A flash update boot of the slot just written: the boot ROM prefers
      * the partition that starts at p0, and starts its image on trial. */
     (void)rom_reboot(REBOOT2_FLAG_REBOOT_TYPE_FLASH_UPDATE, 10u,
-                     XIP_BASE + s_target_off, 0u);
+                     fw_slots_update_base(&s_slots, XIP_BASE), 0u);
     for (;;) {
         tight_loop_contents();
     }
 }
 
 /**
- * @brief Where partition @p n of the table the boot ROM holds starts and how
- * many bytes it spans; false without one.
+ * @brief Partition @p n of the table the boot ROM holds.
  *
  * @param n  Partition number, 0 or 1.
- * @param start  Receives the start offset in bytes from flash 0.
- * @param bytes  Receives the length of the partition, in bytes.
- * @return True when the boot ROM holds the partition.
+ * @return The partition; found is false without one.
  */
-static bool partition_at(unsigned n, uint32_t *start, uint32_t *bytes)
+static fw_slots_part_t partition_at(unsigned n)
 {
-    uint32_t buf[3];
+    uint32_t buf[FW_SLOTS_PT_INFO_WORDS];
     const int rc = rom_get_partition_table_info(
-        buf, 3u, PT_INFO_PARTITION_LOCATION_AND_FLAGS
-                 | PT_INFO_SINGLE_PARTITION | (n << 24));
-    if (rc != 3
-        || buf[0] != (PT_INFO_PARTITION_LOCATION_AND_FLAGS
-                      | PT_INFO_SINGLE_PARTITION)) {
-        return false;
-    }
-    const uint32_t first = (buf[1] & PICOBIN_PARTITION_LOCATION_FIRST_SECTOR_BITS)
-                           >> PICOBIN_PARTITION_LOCATION_FIRST_SECTOR_LSB;
-    const uint32_t last = (buf[1] & PICOBIN_PARTITION_LOCATION_LAST_SECTOR_BITS)
-                          >> PICOBIN_PARTITION_LOCATION_LAST_SECTOR_LSB;
-    if (last < first) {
-        return false;
-    }
-    *start = first * FLASH_SECTOR_SIZE;
-    *bytes = (last - first + 1u) * FLASH_SECTOR_SIZE;
-    return true;
+        buf, FW_SLOTS_PT_INFO_WORDS,
+        PT_INFO_PARTITION_LOCATION_AND_FLAGS | PT_INFO_SINGLE_PARTITION
+            | (n << 24));
+    return fw_slots_partition(rc, buf, FLASH_SECTOR_SIZE);
 }
 
 void update_hw_init(bool (*busy)(void))
@@ -183,32 +192,25 @@ void update_hw_init(bool (*busy)(void))
     s_io = (link_update_io_t){ io_erase, io_program, io_gate, io_buy,
                                io_restart, NULL };
 
-    uint16_t slot = LINK_UPD_SLOT_NONE;
     boot_info_t info;
     memset(&info, 0, sizeof(info));
-    const bool have_info = rom_get_boot_info(&info);
-    uint32_t a = 0u, a_bytes = 0u, b = 0u, b_bytes = 0u;
-    /* The table this build was made for, or none: an image cannot tell a
-     * table written for another layout from damage, and writes into neither. */
-    const bool table = partition_at(0u, &a, &a_bytes)
-                       && partition_at(1u, &b, &b_bytes)
-                       && a == IOMCU_SLOT_A_OFFSET && b == IOMCU_SLOT_B_OFFSET
-                       && a_bytes == IOMCU_SLOT_BYTES
-                       && b_bytes == IOMCU_SLOT_BYTES;
-    if (have_info && table && (info.partition == 0 || info.partition == 1)) {
-        s_slot = info.partition;
-        slot = (uint16_t)info.partition;
-        if ((info.tbyb_and_update_info & BOOT_TBYB_AND_UPDATE_FLAG_BUY_PENDING)
-            != 0u) {
-            slot |= LINK_UPD_SLOT_TRIAL;
-        }
-    }
-    s_running_off = (s_slot == 1) ? IOMCU_SLOT_B_OFFSET : IOMCU_SLOT_A_OFFSET;
-    s_target_off  = (s_slot == 1) ? IOMCU_SLOT_A_OFFSET : IOMCU_SLOT_B_OFFSET;
+    fw_slots_boot_t boot;
+    boot.have_info = rom_get_boot_info(&info);
+    boot.partition = info.partition;
+    boot.tbyb = info.tbyb_and_update_info;
+    boot.p0 = partition_at(0u);
+    boot.p1 = partition_at(1u);
+    const fw_slots_layout_t layout = {
+        IOMCU_SLOT_A_OFFSET, IOMCU_SLOT_B_OFFSET, IOMCU_SLOT_BYTES,
+        FLASH_SECTOR_SIZE,
+    };
+    fw_slots_choose(&s_slots, &layout, &boot);
     link_update_dev_init(&s_upd, &s_io,
-                         (const uint8_t *)(FLASH_READ_BASE + s_running_off),
-                         (const uint8_t *)(FLASH_READ_BASE + s_target_off),
-                         IOMCU_SLOT_BYTES, slot);
+                         (const uint8_t *)(FLASH_READ_BASE
+                                           + s_slots.running_off),
+                         (const uint8_t *)(FLASH_READ_BASE
+                                           + s_slots.target_off),
+                         IOMCU_SLOT_BYTES, s_slots.link_slot);
 }
 
 void update_hw_ctl_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
@@ -254,7 +256,7 @@ bool update_hw_refuses_arm(uint8_t off, uint8_t n, const uint16_t *in)
 
 int update_hw_slot(void)
 {
-    return s_slot;
+    return s_slots.slot;
 }
 
 bool update_hw_on_trial(void)

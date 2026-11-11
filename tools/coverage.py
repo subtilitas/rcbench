@@ -440,6 +440,7 @@ TRACKED = [
     "shared/fwupdate/fw_boot.c",
     "shared/fwupdate/fw_trial.c",
     "shared/fwupdate/fw_c6.c",
+    "shared/fwupdate/fw_slots.c",
     "shared/webaccess/wa_session.c",
     "shared/webaccess/wa_fetch.c",
     "shared/webaccess/wa_text.c",

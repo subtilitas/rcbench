@@ -30,7 +30,7 @@ rcbench/
     can/                  bit timing for both controllers · MCP2515 registers · echo self-test
     esc/                  ESC programming profiles, their JSON reader and registry
     sense/                INA228 and INA3221 current monitor drivers
-    fwupdate/             panel firmware image check · upload staging · installer
+    fwupdate/             panel firmware image check · upload staging · installer · IOmcu update slots and BUY
     webaccess/            Wi-Fi session · card listing and ZIP stream · the page · mDNS
     clock/                wall clock rules: real date or not · file stamps · time zones · the NTP request
     text/                 the interface's words, every language in one table (header only)
@@ -87,8 +87,8 @@ in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 | Module | panel | iomcu | host |
 | --- | :-: | :-: | :-: |
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `files` · `sbus` | yes | | yes |
-| `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` | yes | yes | yes |
-| `artwork` · `esc` · `fwupdate` · `webaccess` · `clock` | yes | | yes |
+| `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` · `fwupdate` | yes | yes | yes |
+| `artwork` · `esc` · `webaccess` · `clock` | yes | | yes |
 | `openyge` · `ppm` · `i2c_txq` | | yes | yes |
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |
 | `escwire` | yes | yes | yes |
