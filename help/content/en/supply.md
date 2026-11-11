@@ -18,7 +18,7 @@ The footer at the bottom has three slots:
 |---|---|
 | SUPPLY | the screen's name; under it the source: `PD MINI TX GPIO 12 RX GPIO 13`, `PD MINI NO PINS` or `SIMULATED`, in the warning colour with no pins or no answer |
 | OUTPUT ON / OFF | switches the output ([OUTPUT ON and OFF](#output-on-and-off)) |
-| SETTINGS | opens the settings list ([SETTINGS](#settings)); grey while the output is on |
+| OPTIONS | opens the settings list ([OPTIONS](#options)); grey while the output is on |
 
 The home tag returns one level. In a confirmation dialog, it discards the change like CANCEL. In a keypad, it closes the editor without changing the value. In the settings list, it closes the list, first asking about a change you have not saved. From LIVE with nothing open, it returns to the menu.
 
@@ -109,11 +109,11 @@ The programming ports' 5V comes from the carrier's input, which needs 15V. The P
 
 ![SUPPLY with the input at 5.1V](view:supply-rbmod-input)
 
-## SETTINGS
+## OPTIONS
 
 ![The supply's settings](view:supply-settings)
 
-SETTINGS in the footer opens one list over the whole screen: the caps, the start values, the trips and the questions, then the PD mini's wiring. It opens with the output off only; with the output on, the band reads `SETTINGS open with the output off only. Switch it off first.` An output that goes on while the list is open closes it.
+OPTIONS in the footer opens one list over the whole screen: the caps, the start values, the trips and the questions, then the PD mini's wiring. It opens with the output off only; with the output on, the band reads `OPTIONS open with the output off only. Switch it off first.` An output that goes on while the list is open closes it.
 
 The list works as SETUP's: `-` and `+` step a value, `<` and `>` flip a switch, a tap on a number opens the keypad, and a drag scrolls. The OUTPUT LIMITS heading shows the set-point range in force. The bottom strip reads `[SUPPLY] [RESET SUPPLY] [SAVE]`; SUPPLY keeps the source line under it.
 

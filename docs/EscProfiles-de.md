@@ -8,7 +8,8 @@ Es legt den Einstieg ins Menü, die Pieptonfolgen zur Ausgabe von Zahlen
 sowie die verfügbaren Menüpunkte und Werte fest. Die
 [Stick-Programmierung](StickProgramming-de.md) verwendet diese Daten: Du
 wählst einen ESC und die zu ändernden Werte; der Prüfstand steuert das Gas
-und zählt die Pieptöne im Versorgungsstrom. Er kann 26 der 74 Profile
+und zählt die Pieptöne am Phasenabgriff oder an einem INA3221-Kanal in der
+Versorgungsleitung des ESC. Er kann 26 der 74 Profile
 ausführen.
 
 ## Was im Satz steht
