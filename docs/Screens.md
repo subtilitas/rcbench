@@ -6012,7 +6012,8 @@ answers again, the hold is RECONNECT instead
 
 ### No IOmcu answered
 
-A silent bus on which no IOmcu answered the status request either is a
+A silent bus on which no IOmcu answered either status request, the one
+before the echo run or the one after it, is a
 panel on its own: powered before the IOmcu, or with the IOmcu not yet
 wired. The screen says so instead of naming a fault, and a tap leaves it.
 
@@ -6030,7 +6031,8 @@ wired. The screen says so instead of naming a fault, and a tap leaves it.
   other report.
 
 Frames that came back altered or went missing, and a silent echo run from
-an IOmcu that answered its status, keep the 2s hold: they point at the
+an IOmcu that answered a status request before or after it, keep the 2s
+hold: they point at the
 wiring or the firmware.
 
 ### A link that stops

@@ -506,16 +506,17 @@ TEST_CASE(a_tap_leaves_a_bus_on_which_no_iomcu_answered)
 }
 
 /*
- * Only the silent start-up test with no status answer takes the tap.  A
- * silent echo run from an IOmcu that answered its status, frames altered or
- * lost, and a link that stopped are faults, and keep the 2s hold.
+ * Only the silent start-up test with no answer to either status request
+ * takes the tap.  A silent echo run from an IOmcu that answered its status
+ * before the run or after it, frames altered or lost, and a link that
+ * stopped are faults, and keep the 2s hold.
  */
 TEST_CASE(every_other_report_keeps_the_hold)
 {
     CHECK(busfault_no_iomcu(&k_noio));
     CHECK(!busfault_no_iomcu(NULL));
-    busfault_report_t k[5];
-    for (size_t i = 0; i < 5u; ++i) {
+    busfault_report_t k[6];
+    for (size_t i = 0; i < 6u; ++i) {
         k[i] = k_noio;
     }
     k[0].have_remote = true;
@@ -523,7 +524,10 @@ TEST_CASE(every_other_report_keeps_the_hold)
     k[2].verdict = CAN_SELFTEST_LOSSY;
     k[3].verdict = CAN_SELFTEST_DROPPED;
     k[4].kind = BUSFAULT_LINK_LOST;
-    for (size_t i = 0; i < 5u; ++i) {
+    /* The IOmcu answered the status request before the echo run and was
+     * silent after it: it went quiet, which is a fault. */
+    k[5].remote_seen = true;
+    for (size_t i = 0; i < 6u; ++i) {
         CHECK(!busfault_no_iomcu(&k[i]));
         fresh();
         busfault_screen_set(&k[i]);
@@ -534,6 +538,30 @@ TEST_CASE(every_other_report_keeps_the_hold)
         hold(HOLD_TICKS);
         CHECK_EQ(busfault_screen_take_exit(), BUSFAULT_EXIT_SIMULATION);
     }
+}
+
+/*
+ * The IOmcu answered the status request before the echo run, then nothing
+ * came back and the status request after it went unanswered: an IOmcu that
+ * went quiet.  The screen names the silent bus as a fault, red, and keeps
+ * the 2s hold.
+ */
+TEST_CASE(an_iomcu_that_answered_before_the_run_keeps_the_hold)
+{
+    busfault_report_t quiet = k_noio;
+    quiet.remote_seen = true;
+    CHECK(!busfault_no_iomcu(&quiet));
+    CHECK_STR_EQ(busfault_headline(&quiet), TR(CAN_SILENT));
+    fresh();
+    busfault_screen_set(&quiet);
+    (void)heading_face();
+    CHECK_EQ(s_px[4 * SCREEN_W + SCREEN_W - 4], ui_theme_color(UI_C_DANGER));
+    down(ack_cx(), ack_cy());
+    up(ack_cx(), ack_cy());
+    CHECK_EQ(busfault_screen_take_exit(), BUSFAULT_EXIT_NONE);
+    down(ack_cx(), ack_cy());
+    hold(HOLD_TICKS);
+    CHECK_EQ(busfault_screen_take_exit(), BUSFAULT_EXIT_SIMULATION);
 }
 
 /* RECONNECT, once the link answers, is the hold on every report. */
@@ -595,6 +623,7 @@ int main(void)
     RUN(a_cancelled_gesture_acknowledges_nothing);
     RUN(a_tap_leaves_a_bus_on_which_no_iomcu_answered);
     RUN(every_other_report_keeps_the_hold);
+    RUN(an_iomcu_that_answered_before_the_run_keeps_the_hold);
     RUN(reconnect_stays_a_hold_where_no_iomcu_answered);
     RUN(no_iomcu_has_its_own_heading_and_an_amber_bar);
     return test_summary("busfault_screen");

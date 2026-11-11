@@ -100,11 +100,15 @@ typedef struct {
     uint32_t       timeouts;   /**< and how many got no answer             */
 
     bool     have_remote; /**< the IOmcu answered a status request */
+    /** @brief The IOmcu answered either status request, the one before
+     *         the echo run or the one after it: an IOmcu that answered
+     *         and then went quiet is a fault, not a missing IOmcu. */
+    bool     remote_seen;
     bool     remote_up;   /**< and said its own controller came up       */
-    uint8_t  remote_tx_errors;
-    uint8_t  remote_rx_errors;
-    uint8_t  remote_flags;
-    uint16_t remote_overflows;
+    uint8_t  remote_tx_errors; /**< the IOmcu's transmit error counter */
+    uint8_t  remote_rx_errors; /**< its receive error counter          */
+    uint8_t  remote_flags;     /**< its controller's flags             */
+    uint16_t remote_overflows; /**< frames it dropped for want of a buffer */
 } busfault_report_t;
 
 /** @brief The time the link answers without a break before RECONNECT is
@@ -120,12 +124,13 @@ typedef enum {
 
 /**
  * @brief Whether @p r is a start-up test on which no IOmcu answered: the
- *        SILENT verdict, and no answer to the status request either.
+ *        SILENT verdict, and no answer to either status request, the one
+ *        before the echo run (remote_seen) or the one after (have_remote).
  *
  * The screen then names no fault but the missing IOmcu, and a tap on its
  * button leaves it; RECONNECT, once the link answers, stays a hold.  Every
- * other verdict, and a silent echo run from an IOmcu that did answer its
- * status, is a wiring or firmware fault and keeps the hold.
+ * other verdict, and a silent echo run from an IOmcu that answered either
+ * status request, is a wiring or firmware fault and keeps the hold.
  * @param r The report; NULL is false.
  * @return true for a bus on which nothing answered at all.
  */

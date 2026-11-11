@@ -6544,7 +6544,8 @@ Antwortet die Verbindung wieder, ist die Haltetaste stattdessen NEUVERBINDEN
 
 ### Kein IOmcu hat geantwortet
 
-Ein stiller Bus, auf dem auch kein IOmcu die Statusanfrage beantwortet hat,
+Ein stiller Bus, auf dem kein IOmcu eine der beiden Statusanfragen
+beantwortet hat, die vor dem Echo-Lauf oder die danach,
 ist ein Panel allein: vor dem IOmcu eingeschaltet, oder der IOmcu ist noch
 nicht verdrahtet. Der Bildschirm sagt das, statt einen Fehler zu nennen,
 und ein Tippen verlässt ihn.
@@ -6564,7 +6565,8 @@ und ein Tippen verlässt ihn.
   jedem anderen Befund das Halten für 2s.
 
 Frames, die verändert zurückkamen oder verloren gingen, und ein stiller
-Echo-Lauf eines IOmcu, der seinen Status beantwortet hat, behalten das
+Echo-Lauf eines IOmcu, der eine Statusanfrage davor oder danach
+beantwortet hat, behalten das
 Halten für 2s: Sie weisen auf die Verdrahtung oder die Firmware.
 
 ### Ein Link, der abreißt

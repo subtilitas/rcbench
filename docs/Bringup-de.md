@@ -135,7 +135,8 @@ Halte die Taste am unteren Rand zwei Sekunden lang, um die Seite zu
 verlassen. Geste und Überblendung entsprechen ARM. Die Haltebedingung soll verhindern, dass eine kurze Berührung,
 etwa durch einen Ärmel, den Fehlerbildschirm schließt.
 
-Ein stiller Bus, auf dem auch kein IOmcu die Statusanfrage beantwortet hat,
+Ein stiller Bus, auf dem kein IOmcu eine der beiden Statusanfragen
+beantwortet hat, die vor dem Echo-Lauf oder die danach,
 gilt nicht als Fehler. Das ist ein Panel, das allein versorgt ist, oder ein
 IOmcu, der noch nicht verdrahtet ist. Die Leiste ist bernsteinfarben und zeigt `KEIN
 IOMCU`, die Überschrift lautet `Kein IOmcu hat geantwortet.`, und die
@@ -144,7 +145,7 @@ REIHENFOLGE`. Ein Tippen auf `TIPPEN ZUM FORTFAHREN` führt ins Menü in der
 Simulation. Der Startbildschirm markiert die CAN-Zeile mit derselben
 Überschrift als Warnung. Frames, die verändert zurückkamen oder verloren
 gingen, behalten das Halten, ebenso ein stiller Echo-Lauf eines IOmcu, der
-seinen Status beantwortet hat.
+eine Statusanfrage davor oder danach beantwortet hat.
 
 ![Kein IOmcu hat geantwortet](img/de/busfault-silent.png)
 

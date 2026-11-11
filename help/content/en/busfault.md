@@ -32,13 +32,13 @@ With the bench switched off, measure about 60Ω across CANH and CANL. A reading 
 
 ![No IOmcu answered](view:busfault-silent)
 
-A silent bus on which no IOmcu answered the status request either is a panel on its own: powered before the IOmcu, or with the IOmcu not yet wired. The screen names no fault then.
+A silent bus on which no IOmcu answered either status request, the one before the echo run or the one after it, is a panel on its own: powered before the IOmcu, or with the IOmcu not yet wired. The screen names no fault then.
 
 - The bar is amber and reads NO IOMCU. The heading reads `No IOmcu answered.`
 - The checks of the silent bus stand under IF AN IOMCU IS CONNECTED, CHECK IN THIS ORDER.
 - A tap on TAP TO CONTINUE leads to the menu in simulation.
 
-Frames that came back altered or went missing, and a silent test with an IOmcu that answered its status, keep the 2s hold.
+Frames that came back altered or went missing, and a silent test with an IOmcu that answered a status request before or after it, keep the 2s hold.
 
 ## A link that stops
 

@@ -261,7 +261,8 @@ const busfault_report_t *busfault_screen_report(void)
 bool busfault_no_iomcu(const busfault_report_t *r)
 {
     return r != NULL && r->kind == BUSFAULT_SELFTEST
-           && r->verdict == CAN_SELFTEST_SILENT && !r->have_remote;
+           && r->verdict == CAN_SELFTEST_SILENT && !r->have_remote
+           && !r->remote_seen;
 }
 
 const char *busfault_headline(const busfault_report_t *r)

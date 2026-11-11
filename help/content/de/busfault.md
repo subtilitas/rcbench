@@ -32,13 +32,13 @@ Miss bei ausgeschaltetem Prüfstand etwa 60Ω zwischen CANH und CANL. Ein Messwe
 
 ![Kein IOmcu hat geantwortet](view:busfault-silent)
 
-Ein stiller Bus, auf dem auch kein IOmcu die Statusanfrage beantwortet hat, ist ein Panel allein: vor dem IOmcu eingeschaltet, oder der IOmcu ist noch nicht verdrahtet. Die Seite nennt dann keinen Fehler.
+Ein stiller Bus, auf dem kein IOmcu eine der beiden Statusanfragen beantwortet hat, die vor dem Echo-Lauf oder die danach, ist ein Panel allein: vor dem IOmcu eingeschaltet, oder der IOmcu ist noch nicht verdrahtet. Die Seite nennt dann keinen Fehler.
 
 - Der Balken ist bernsteinfarben und zeigt KEIN IOMCU. Die Überschrift lautet `Kein IOmcu hat geantwortet.`
 - Die Prüfungen des stillen Busses stehen unter IST EIN IOMCU ANGESCHLOSSEN, PRÜFE IN DIESER REIHENFOLGE.
 - Ein Tippen auf TIPPEN ZUM FORTFAHREN führt ins Menü in der Simulation.
 
-Frames, die verändert zurückkamen oder verloren gingen, und ein stiller Test mit einem IOmcu, der seinen Status beantwortet hat, behalten das Halten für 2s.
+Frames, die verändert zurückkamen oder verloren gingen, und ein stiller Test mit einem IOmcu, der eine Statusanfrage davor oder danach beantwortet hat, behalten das Halten für 2s.
 
 ## Ein Link, der abbricht
 
