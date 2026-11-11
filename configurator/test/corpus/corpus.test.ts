@@ -44,6 +44,26 @@ const OBJECTS = CATALOGUE.parts.filter((p) => p.testObject === true).map((p) => 
  */
 const RETIRED = corpus.ids.owned.filter((id) => !now.owned.includes(id) && !OBJECTS.includes(id));
 
+/**
+ * Stored entries whose setup changes because ESC STICK programming needs a beep
+ * source: the phase tap parts under the default value of `stickBeep`. The
+ * entry stays as stored; the parts and the enabled functions it is held to are
+ * these. A link that names `stick` (alone, or through ESC power B with the PD
+ * mini) draws the parts `sim` and `tap`; a link that reaches the PD mini by
+ * ESC power B alone no longer enables `stick`.
+ */
+const BEEP_SOURCE: Readonly<Record<string, { parts?: readonly string[]; enabled: readonly string[] }>> = {
+  'page-f-stick': { parts: ['panel', 'copro', 'usb', 'wire', 'esc', 'pdmini', 'charger', 'sim', 'tap', 'usbtap'], enabled: ['esc', 'stick', 'tap', 'supply'] },
+  'page-esc-pd': { enabled: ['esc', 'supply'] },
+  'page-stick-esc': { parts: ['panel', 'copro', 'usb', 'wire', 'esc', 'pdmini', 'charger', 'sim', 'tap', 'usbtap'], enabled: ['esc', 'stick', 'tap', 'supply'] },
+  'page-stick-escpow': {
+    parts: ['panel', 'copro', 'usb', 'wire', 'esc', 'pdmini', 'charger', 'pull', 'ina228', 'sim', 'tap', 'usbtap'],
+    enabled: ['esc', 'escpow', 'stick', 'tap', 'supply'],
+  },
+  'hand-order': { enabled: ['servo', 'servotest', 'esc', 'supply', 'logs'] },
+  'hand-repeats': { enabled: ['servo', 'servotest', 'esc', 'supply', 'logs'] },
+};
+
 /** An outcome reduced to the ids the corpus starts with, and to the option keys `stored` holds. */
 function inCorpusIds(o: Outcome, stored: Outcome): Outcome {
   const keys = Object.keys(stored.options) as OptionKey[];
@@ -155,6 +175,11 @@ for (const entry of corpus.entries) {
       parts: reduced.parts.filter((id) => corpus.ids.parts.includes(id) && (kept || !names.includes(id))),
       enabled: reduced.enabled.filter((id) => corpus.ids.functions.includes(id)),
     };
+    const beep = BEEP_SOURCE[entry.name];
+    if (beep) {
+      if (beep.parts) expected.parts = [...beep.parts];
+      expected.enabled = [...beep.enabled];
+    }
     const got = inCorpusIds(rest, entry.expect);
     if (expected.canonical === null) {
       // The page writes the function for the part: the hash differs, the setup it gives is the same.
@@ -170,6 +195,13 @@ for (const entry of corpus.entries) {
     if (kept) assert.deepEqual(actualWires, wires[entry.name], 'the wires differ: see README.md, "When a wire of the catalogue changes"');
   });
 }
+
+test('the entries held to the beep source rule are stored in the first 164 entries, unedited', () => {
+  const first = corpus.entries.slice(0, 164).map((e) => e.name);
+  for (const name of Object.keys(BEEP_SOURCE)) assert.ok(first.includes(name), name);
+  // The stored outcome of such an entry is the one from before the rule: no `tap` function enabled by `stick` alone.
+  assert.deepEqual(corpus.entries.find((e) => e.name === 'page-f-stick')?.expect.parts, ['panel', 'copro', 'usb', 'wire', 'esc', 'pdmini', 'charger', 'usbtap']);
+});
 
 test('malformed input falls back to the base setup', () => {
   // The entries whose hash carries no selection the page can read. A "have it" tick the page keeps is a selection.

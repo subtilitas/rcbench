@@ -26,7 +26,7 @@ Entries by name:
 
 | Prefix | Count | Input |
 |---|---:|---|
-| `page-` | 61 | Hashes the page writes. 12 of them are added after the start: 2 for the option token `servo5v`, 3 for the function `servoprog`, 1 for the part `dcsup`, 3 for the key `h`, 3 for the key `m` of the motor simulator. |
+| `page-` | 62 | Hashes the page writes. 13 of them are added after the start: 2 for the option token `servo5v`, 1 for the option token `stickina`, 3 for the function `servoprog`, 1 for the part `dcsup`, 3 for the key `h`, 3 for the key `m` of the motor simulator. |
 | `hand-` | 11 | Well-formed hashes in another spelling: other key order, repeated ids, default tokens. 1 of them is added after the start: the default values of the key `m`. |
 | `bad-empty`, `bad-number-sign`, `bad-two-number-signs` | 3 | No hash, the number sign alone, two number signs. |
 | `bad-cut-` | 14 | A link cut short. |
@@ -62,6 +62,13 @@ A hash of 64kB is stored as a recipe `{ prefix, unit, count, suffix }`.
 6. An option key added to the catalogue changes no entry. The tests compare
    the options in the keys the entry stores. A key the entry does not store
    has its default value.
+
+7. One exception to rule 2: ESC STICK programming needs a beep source. A
+   link that names `stick` without the token `stickina` resolves with the
+   parts `sim` and `tap`, and a link that reaches the PD mini through ESC
+   power B alone no longer enables `stick`. The 6 stored entries this changes
+   stay as stored; `BEEP_SOURCE` in `corpus.test.ts` holds each of them to the
+   parts and the enabled functions of the new rule.
 
 ## Add an entry
 

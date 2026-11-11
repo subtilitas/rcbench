@@ -37,7 +37,7 @@ import type {
 import { CATALOGUE } from '../../catalogue.ts';
 import { holds } from '../../cond.ts';
 import { plainDrive } from '../../groups.ts';
-import { OPTION_KEYS, OPTION_VALUES, resolve } from '../../resolve.ts';
+import { OPTION_KEYS, OPTION_VALUES, fnNeeds, resolve } from '../../resolve.ts';
 import {
   CASE_LIMIT, MIXED, OPTION_SETS, SEED, enumerate, generator, sample, shuffled, spaceOf, subset,
 } from './space.ts';
@@ -128,6 +128,7 @@ function assertSetup(catalogue: Catalogue, { selection, where }: Case, random: (
       ina228Board: selection.options.ina228Board,
       connection: selection.options.connection,
       servoPower: selection.options.servoPower,
+      stickBeep: selection.options.stickBeep,
       servoPort: selection.options.servoPort,
     },
   };
@@ -154,7 +155,7 @@ function assertSetup(catalogue: Catalogue, { selection, where }: Case, random: (
       } else if (reason.kind === 'function') {
         const fn = FUNCTIONS.get(reason.id);
         assert.ok(fn && chosen.has(fn.id), `${p.part.id} names the function ${reason.id}, which is not chosen, for ${where}`);
-        assert.ok(fn.needs.includes(p.part.id) || fn.drives === p.part.id,
+        assert.ok(fnNeeds(fn, options).includes(p.part.id) || fn.drives === p.part.id,
           `${p.part.id} names the function ${reason.id}, which neither needs nor drives it, for ${where}`);
         assert.equal(fn.drives === p.part.id, p.part.testObject === true, `${p.part.id} and the function ${reason.id} disagree on the test object for ${where}`);
       } else if (reason.kind === 'rule') {
@@ -184,12 +185,12 @@ function assertSetup(catalogue: Catalogue, { selection, where }: Case, random: (
   for (const f of setup.functions) {
     for (const id of f.missing) {
       assert.ok(PARTS.has(id), `${f.fn.id} misses ${id}, which is no part, for ${where}`);
-      assert.ok(f.fn.needs.includes(id) && !present.has(id), `${f.fn.id} misses ${id} wrongly for ${where}`);
+      assert.ok(fnNeeds(f.fn, options).includes(id) && !present.has(id), `${f.fn.id} misses ${id} wrongly for ${where}`);
     }
     const unmet = OPTION_KEYS.filter((key) => f.fn.forces?.[key] !== undefined && f.fn.forces[key] !== options[key]);
     const loose = f.fn.drives !== undefined && !present.has(f.fn.drives);
     if (f.enabled) {
-      assert.ok(f.fn.needs.every((id) => present.has(id)), `${f.fn.id} is enabled without its parts for ${where}`);
+      assert.ok(fnNeeds(f.fn, options).every((id) => present.has(id)), `${f.fn.id} is enabled without its parts for ${where}`);
       assert.deepEqual(unmet, [], `${f.fn.id} is enabled against an option for ${where}`);
       assert.ok(!loose, `${f.fn.id} is enabled without the test object ${f.fn.drives} for ${where}`);
     } else {

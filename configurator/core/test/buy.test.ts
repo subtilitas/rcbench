@@ -23,8 +23,8 @@ function errors(findings: Finding[]): string[] {
 }
 
 test('the option sets are every combination of the option values', () => {
-  assert.equal(SETS.length, 32);
-  assert.equal(new Set(SETS.map((o) => JSON.stringify(o))).size, 32);
+  assert.equal(SETS.length, 64);
+  assert.equal(new Set(SETS.map((o) => JSON.stringify(o))).size, 64);
 });
 
 test('every part has a row for every set of options, with order and check in English and German', () => {

@@ -24,7 +24,8 @@ export const MIXED = 25_000;
 export const OPTION_SETS: ReadonlyArray<Options> = OPTION_VALUES.connection.flatMap((connection) =>
   OPTION_VALUES.ina228Board.flatMap((ina228Board) =>
     OPTION_VALUES.escPower.flatMap((escPower) =>
-      OPTION_VALUES.servoPower.map((servoPower) => ({ connection, ina228Board, escPower, servoPower, servoPort: 'outputs' as const })))));
+      OPTION_VALUES.servoPower.flatMap((servoPower) =>
+        OPTION_VALUES.stickBeep.map((stickBeep) => ({ connection, ina228Board, escPower, servoPower, stickBeep, servoPort: 'outputs' as const }))))));
 
 /** mulberry32: a 32-bit generator with a fixed sequence per seed. */
 export function generator(seed: number): () => number {

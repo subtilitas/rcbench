@@ -11,7 +11,7 @@
 import type {
   Catalogue, Cond, Fn, FunctionId, OptionKey, Options, PartId, Selection, Setup,
 } from '../contract.ts';
-import { DEFAULT_OPTIONS, OPTION_KEYS, OPTION_VALUES, resolve } from './resolve.ts';
+import { DEFAULT_OPTIONS, OPTION_KEYS, OPTION_VALUES, fnNeeds, resolve } from './resolve.ts';
 
 /** A needed part that exists as one of several boards. */
 export type GroupVariant = { part: PartId; option: OptionKey; values: string[] };
@@ -271,17 +271,19 @@ export function removalEffect(catalogue: Catalogue, selection: Selection, partId
 
   const locked = new Set(baseParts(catalogue));
   const selectable = new Set(catalogue.parts.filter((p) => p.selectable).map((p) => p.id));
-  const needs = new Map(catalogue.functions.map((f) => [f.id, f.needs]));
+  const fns = new Map(catalogue.functions.map((f) => [f.id, f]));
+  /** The parts function `id` needs under `options`. */
+  const needsOf = (id: FunctionId, options: Record<OptionKey, string>): PartId[] => fnNeeds(fns.get(id) as Fn, options);
   const drives = new Map(catalogue.functions.map((f) => [f.id, f.drives]));
   const objects = new Set(testObjects(catalogue));
   /** The selection without the parts of `gone`, under `options`. */
   const without = (gone: Set<PartId>, options: Record<OptionKey, string>): Selection => {
-    const stay = new Set(start.functions.filter((id) => !(needs.get(id) as PartId[]).some((p) => gone.has(p))));
+    const stay = new Set(start.functions.filter((id) => !needsOf(id, options).some((p) => gone.has(p))));
     const kept = new Set(start.owned);
     const freed = new Set<PartId>();
     for (const id of start.functions) {
       if (stay.has(id)) continue;
-      for (const p of needs.get(id) as PartId[]) if (selectable.has(p)) kept.add(p);
+      for (const p of needsOf(id, options)) if (selectable.has(p)) kept.add(p);
       const object = drives.get(id);
       if (object !== undefined) freed.add(object);
     }
@@ -338,7 +340,7 @@ export function removalEffect(catalogue: Catalogue, selection: Selection, partId
       const option = setup.options.find((o) => o.key === key) as Setup['options'][number];
       if (option.forcedBy !== null) {
         // A variant a function forces changes when that function goes off with one of its parts.
-        for (const id of needs.get(option.forcedBy) as PartId[]) parts.add(id);
+        for (const id of needsOf(option.forcedBy, options)) parts.add(id);
         continue;
       }
       for (const value of OPTION_VALUES[key] as ReadonlyArray<string>) {
@@ -402,6 +404,7 @@ export function deselectEffect(catalogue: Catalogue, selection: Selection, fnId:
   const on = enabled(after);
   const base = new Set(baseParts(catalogue));
   const objects = new Set(testObjects(catalogue));
+  const needed = fnNeeds(fn, Object.fromEntries(before.options.map((o) => [o.key, o.value])) as Options);
   return {
     fn: fnId,
     changed: true,
@@ -410,7 +413,7 @@ export function deselectEffect(catalogue: Catalogue, selection: Selection, fnId:
     functionsOff: before.functions.filter((f) => f.enabled && f.fn.id !== fnId && !on.has(f.fn.id)).map((f) => f.fn.id),
     partsOut: was.filter((id) => !is.includes(id) && !objects.has(id)),
     partsIn: is.filter((id) => !was.includes(id)),
-    partsStay: is.filter((id) => fn.needs.includes(id) && !base.has(id)),
+    partsStay: is.filter((id) => needed.includes(id) && !base.has(id)),
     objectsOut: was.filter((id) => !is.includes(id) && objects.has(id)),
   };
 }

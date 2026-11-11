@@ -15,7 +15,7 @@ evidence are marked as unknown.
 | --- | --- |
 | `../contract.ts` | The types shared by the core and the page. |
 | `../release.ts` | `VERSION` and `TAG`, read from the `version` field of `../package.json`. The data, the page and the checks import them. |
-| `catalogue.ts` | The data: 20 parts of which 2 are test objects and 1 is modelled, 40 pads, 66 wires, 24 functions of which 12 run on every setup, 7 rules, 43 check entries, 8 power sources, 5 stages, 7 safety notes, 9 pin defaults, 11 pictures on 7 parts. All text is in English and German. |
+| `catalogue.ts` | The data: 20 parts of which 2 are test objects and 1 is modelled, 40 pads, 66 wires, 24 functions of which 12 run on every setup, 7 rules, 44 check entries, 8 power sources, 5 stages, 7 safety notes, 9 pin defaults, 11 pictures on 7 parts. All text is in English and German. |
 | `resolve.ts` | `resolve(catalogue, selection)` returns the setup: parts with the reason for each, functions, options, wires, check entries, power sources. |
 | `cond.ts` | Evaluates the condition of a wire, a rule or a check entry. |
 | `groups.ts` | `groups(catalogue)` groups the functions by the bench hardware they need. `removalEffect` and `deselectEffect` return what leaves a setup with a part or a function. |
@@ -42,6 +42,7 @@ testing: the servo or ESC. All other parts are bench hardware.
 | `Part.yours` | The visitor brings the part: its spec follows the test object. 4 parts: the test objects `servo` and `esc`, the servo supply `ssup` and the ESC battery `batt`. A test object is brought with or without the field. The modelled DC supply `dcsup` is not brought: the parts list gives its spec as a row to buy. |
 | `Part.buy` | The rows of the parts list. See "Parts list". |
 | `Fn.needs` | The bench hardware the function needs. It holds no test object. |
+| `Fn.needsBy` | Further bench hardware, by the value of one option: `{ option, parts }`, where `parts` maps a value to the part ids. `fnNeeds(fn, options)` in `resolve.ts` returns `needs` and the parts for the value. 1 function: `stick`. |
 | `Fn.drives` | The test object the function acts on. The resolver adds it with the function, so its pins and wires are in the setup. |
 
 9 functions drive a test object. 3 of them need no bench hardware beyond the
@@ -91,6 +92,16 @@ protects the VIN terminal and H4 only. The gate of Q3 sits at PWRIN through
 R7, so above 12V its gate-source voltage exceeds the ±12V of its datasheet.
 The current the supply must deliver is not stated.
 
+The option `stickBeep` is `tap` (default) or `ina3221`. It names what counts
+the beeps of ESC STICK programming: the phase tap, or a channel of an INA3221
+set to SUPPLY in the ESC supply line. The panel refuses a run with neither;
+the current of the PD mini is no source, as the module is read every 100 to
+152ms. The page shows the option while the PD mini feeds an ESC, and the hash
+holds the token `stickina` for `ina3221`. The function `stick` needs the PD
+mini and, through `needsBy`, the parts `sim` and `tap` under `tap` or the part
+`ina3221` under `ina3221`. The check entry `stick-ina3221` says that the
+drawing holds no wire for the INA3221 in the ESC line.
+
 The option `servoPort` is `outputs` (default) or `prog`. It is never shown
 and the hash holds no token for it: the function `servoprog` forces `prog`.
 With `outputs` the servo signal is wire 7, from pad 4 (GPIO 2), a slot of
@@ -118,10 +129,10 @@ those records throws a `TypeError`. The setup owns its output arrays.
 
 The order of work:
 
-1. Locked parts.
-2. Parts needed by the chosen functions, and the test object each of them drives.
-3. Owned parts. A test object and the T-plug (`usbtap`, which only the rule `pd-tplug` adds) are not selectable and go to `ignored`; the page removes the id of a former tick from the owned parts before it resolves, so none is reported.
-4. Options forced by a chosen function. Functions are read in catalogue order; the first one that forces an option names it.
+1. Options forced by a chosen function. Functions are read in catalogue order; the first one that forces an option names it.
+2. Locked parts.
+3. Parts needed by the chosen functions under the options of step 1, `needs` and `needsBy`, and the test object each of them drives.
+4. Owned parts. A test object and the T-plug (`usbtap`, which only the rule `pd-tplug` adds) are not selectable and go to `ignored`; the page removes the id of a former tick from the owned parts before it resolves, so none is reported.
 5. Rules, once each, in array order.
 6. Wires, check entries and power sources whose condition holds.
 7. Functions: `enabled` is true when no needed part is missing, every forced option holds and the test object the function drives is connected. A function with `needs: []` and without `drives` runs on the panel and the IOmcu alone and is enabled in every setup.
@@ -198,8 +209,16 @@ fails it. With `CONFIGURATOR_BEFORE_TAG=1` and no tag, a `HEAD` whose
 firmware header names 0.23.12 is read in place of the tag; the variable is
 for a clone that holds every tag, as the Configurator workflow's does.
 
-The type check needs the TypeScript compiler and the Node.js type
-declarations. Neither is a dependency of this folder:
+To type-check the core, run `npm run typecheck` in `configurator/`. It runs
+`tsc --noEmit` with `../tsconfig.json`, which includes this folder, and uses
+the compiler and the Node.js type declarations of the `devDependencies` of
+`../package.json`. `tsc -p core/tsconfig.json` alone reports "Cannot find
+module 'node:fs'" errors, because this folder has no dependency on
+`typescript` or `@types/node`. `core/tsconfig.json` adds
+`noUncheckedIndexedAccess`; the root configuration does not.
+
+The type check of this folder alone needs the TypeScript compiler and the
+Node.js type declarations. Neither is a dependency of this folder:
 
 ```sh
 npm install --no-save --no-package-lock --prefix "$TMP_TOOLS" typescript@7.0.2 @types/node@24.19.2
@@ -327,8 +346,8 @@ The 7 pin rules:
 
 The suite runs 2 full sweeps and 1 seeded sample through the resolver:
 
-- 256 sets of the 8 selectable parts times 16 option combinations: 4096 setups.
-- 4096 sets of the 12 functions with a tick times 16 option combinations: 65536 setups. The option combinations hold `servoPort: outputs`; the function `servoprog` sets `prog`.
+- 256 sets of the 8 selectable parts times 32 option combinations: 8192 setups.
+- 4096 sets of the 12 functions with a tick times 32 option combinations: 131072 setups. The option combinations hold `servoPort: outputs`; the function `servoprog` sets `prog`.
 - 2000 mixed selections from a fixed seed.
 
 Each setup is checked for: the same result on a second call, no exception, no
@@ -363,7 +382,7 @@ The data is checked for its power paths:
 
 - 4096 sets of functions times 2 values of `escPower`, each part of each setup removed.
 - 256 sets of owned parts times 2 values of `escPower`, each part of each setup removed.
-- 1500 mixed selections from a fixed seed under all 16 option combinations.
+- 1500 mixed selections from a fixed seed under all 32 option combinations.
 - 4096 sets of functions, each function deselected.
 
 Each removal is checked for: no refusal for a part of the bench beyond the
@@ -425,9 +444,9 @@ Line coverage of the resolver, the groups and the motor simulator, measured by `
 <!-- coverage:begin -->
 | File | Lines run | Lines | Line coverage |
 | --- | ---: | ---: | ---: |
-| `resolve.ts` | 215 | 215 | 100.0% |
+| `resolve.ts` | 227 | 227 | 100.0% |
 | `cond.ts` | 51 | 51 | 100.0% |
-| `groups.ts` | 416 | 416 | 100.0% |
+| `groups.ts` | 419 | 419 | 100.0% |
 | `sim.ts` | 120 | 120 | 100.0% |
 <!-- coverage:end -->
 
