@@ -282,6 +282,15 @@ typedef struct {
     uint32_t           group_gap_ms;       /**< 0: not known             */
     int16_t            repeat;             /**< -1 not known, 0 until a
                                                 choice is made           */
+    /**
+     * @brief One sound that is no item sits between the highest item and the
+     *        lowest of each pass of the item loop (the FlyDragon's 12321
+     *        melody); false where none is known.
+     *
+     * Stick programming lets that one sound pass in the item loop without
+     * breaking the order; the value loops are read as without it.
+     */
+    bool               loop_marker;
     bool               one_change_per_entry;  /**< whether one change ends a programming entry */
     bool               verified;           /**< a bench run confirmed it */
     uint8_t            step_count;      /**< number of operator actions in steps */

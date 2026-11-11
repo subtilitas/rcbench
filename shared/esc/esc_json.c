@@ -1048,6 +1048,17 @@ static void decode(dec_t *d, esc_profile_t *p)
     (void)get_num(d, (uint32_t)an, "repeat", "scheme.announce", 0, 255, true,
                   &v);
     p->repeat = (int16_t)v;
+    /* The sound between two passes of the item loop: absent or null,
+     * none. */
+    const int64_t lm = member(d, (uint32_t)an, "loop_marker");
+    p->loop_marker = false;
+    if (lm >= 0 && d->t[lm].type != T_NULL) {
+        if (d->t[lm].type != T_TRUE && d->t[lm].type != T_FALSE) {
+            FAIL(d, "scheme.announce.loop_marker: not a boolean");
+            return;
+        }
+        p->loop_marker = d->t[lm].type == T_TRUE;
+    }
 
     const int64_t st = get_obj(d, (uint32_t)e, "steps", "scheme.entry", T_ARR);
     if (st < 0) {

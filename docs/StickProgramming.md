@@ -608,6 +608,16 @@ one.
   and the next loop is used; a wrong selection needs a missed beep in each
   of three groups in a row, or, in a menu that repeats its groups, a whole
   group lost and a beep missed in the next.
+- **Loop marker.** Where the profile sets `loop_marker`
+  ([ESC profiles](EscProfiles.md)), the ESC sounds one sound that is no
+  item between the item loop's highest number and its lowest, such as the
+  FlyDragon's 12321 melody. In the item loop, one group out of order right
+  after the highest number, reached in order, passes: it neither breaks
+  the order nor counts toward it, and the group after it is in order only
+  as the loop's lowest. A second group out of order breaks the order. The
+  value loops let no group pass. A wrong selection of the lowest item then
+  also follows from the marker or that item lost whole and a beep missed
+  in the group after it.
 - **Late windows.** INA3221 only. A window more than the shorter of BEEP MIN and GAP MIN
   after the one before is late, and so is one whose number says a window
   was skipped, or one without current samples: it spoils the group it falls
@@ -863,7 +873,7 @@ the model code also contains the following ESC simulation. During a stick run th
 (`shared/esc/esc_sim.c`) following the profile: power-on at the entry
 position enters the menu after the profile's `hold_ms` (3000ms without
 one), groups loop with 250ms beeps, 250ms gaps, 800ms long beeps and
-1500ms between groups, at 150mA idle and 600mA more per beep. These values are simulation assumptions, not measurements. Where the profile names a store move, a selection
+1500ms between groups, at 150mA idle and 600mA more per beep. These values are simulation assumptions, not measurements. A profile with `loop_marker` sounds one 808ms tone before each pass of its item loop, the first included. Where the profile names a store move, a selection
 is kept only once the stick makes it. An item keyed `exit` leaves the menu
 when it is selected, and one keyed `reset` clears what was stored. The
 model's samples arrive every 50ms. The panel's model does not model a
@@ -893,6 +903,13 @@ choice of the source and the refusal with neither.
 every setting at its default and 128ms gaps to DONE, runs the same ESC
 under a profile that states no lengths, which keeps the settings (GAP MIN
 200ms) and stores nothing, and refuses stated lengths that break the timing rules.
+`test_esc_stick_marker` runs the FlyDragon as the tap heard it on
+2026-11-11: 128ms and 384ms beeps 148ms apart, 3230ms between groups and
+the 808ms marker. A run whose rule does not know the marker ends item 1
+with TIMEOUT. With it, items 1 and 2 are selected on the second pass, from
+the tap and from INA3221 windows. One foreign group after the highest item
+passes and a second breaks the order. A profile without the field, and a
+value loop, let none pass.
 
 ## Current limitations
 
@@ -900,7 +917,9 @@ under a profile that states no lengths, which keeps the settings (GAP MIN
   heard one ESC, a Flycolor FlyDragon Lite 40A at 7.6V through 4.7kΩ and a
   3.0V zener on GPIO 22, with no beep lost; no run has counted from it.
   No run has counted from an INA3221 channel.
-- The FlyDragon profile's gaps are not measured. Its run takes GAP MIN
+- The FlyDragon profile states no gap. One recording of a FlyDragon Lite
+  40A on 2026-11-11 shows 146 to 150ms between the beeps of a group and
+  3.23s between groups; no run has used them. Its run takes GAP MIN
   64ms from the 128ms short beep (half of it) and keeps GROUP GAP 700ms from
   the settings: a pause between two groups of 700ms or less joins them into
   one, and a gap inside a group longer than 700ms splits it. Either way the
@@ -917,7 +936,10 @@ under a profile that states no lengths, which keeps the settings (GAP MIN
   then counts as values: it can report DONE with nothing stored.
 - A menu longer or shorter than its profile never has its lowest number
   acted on, because the loop's highest is not the one heard before it; the
-  run ends with TIMEOUT.
+  run ends with TIMEOUT. So does an ESC that sounds a marker between two
+  passes of its item loop when its profile does not set `loop_marker`. The
+  marker is measured on one FlyDragon Lite 40A; whether other ESCs sound
+  one is not known.
 - A selection needs three groups in a row in order, so it costs at least one
   pass of the loop: up to about two loops when the wanted number is the
   loop's lowest. A two-stage menu whose value loop starts at the stored

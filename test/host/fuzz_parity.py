@@ -80,14 +80,14 @@ def dump(p):
                                 ANN.index(p["announce"]),
                                 AUTO.index(p["auto"])))
     o.append(hx(p["note"]))
-    o.append("|%d %d %u|%d %u|%d %u|%d %d %d|%u %u %u %u %u %d %d %d|" % (
+    o.append("|%d %d %u|%d %u|%d %u|%d %d %d|%u %u %u %u %u %d %d %d %d|" % (
         THR.index(p["entry_thr"]), b(p["entry_after"]), p["hold"],
         THR.index(p["select_thr"]), p["select_ms"],
         THR.index(p["vsel_thr"]), p["vsel_ms"],
         THR.index(p["skip_thr"]), THR.index(p["listen_thr"]),
         THR.index(p["store_thr"]),
         p["les"], p["beep"], p["long"], p["gap"], p["ggap"], p["repeat"],
-        b(p["one"]),
+        b(p["marker"]), b(p["one"]),
         b(p["verified"])))
     o.append("S%u" % len(p["steps"]))
     o += [hx(s) for s in p["steps"]]
@@ -137,7 +137,7 @@ ADDED = ["family_de", "after_select", "entry_throttle", "entry_hold_ms",
          "hold_ms", "starts_menu", "locks", "action_de", "default",
          "applies_to", "applies_when", "cell_type", "v_min_mv", "manual",
          "listen", "store", "value_select", "repeat", "long_equals_short",
-         "within_ms", "throttle", "when", "number"]
+         "within_ms", "throttle", "when", "number", "loop_marker"]
 
 
 def paths(v, at=()):
@@ -168,6 +168,9 @@ def home(rng, d, key):
         found = [d]
     elif key in ("listen", "store", "value_select"):
         found = [d.get("scheme")]
+    elif key == "loop_marker":
+        scheme = d.get("scheme")
+        found = [scheme.get("announce")] if isinstance(scheme, dict) else []
     elif key in ("after_select", "entry_throttle", "entry_hold_ms",
                  "default"):
         found = [v for it in items for v in dicts(it.get("values"))]

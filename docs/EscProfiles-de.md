@@ -33,6 +33,8 @@ eine Pieptondauer, eine Pause oder eine Schleifenzeit in Millisekunden. Die
 Zeitfelder stehen nur dort, wo ein Prüfstand sie gemessen hat: 1 Profil,
 `flycolor-flydragon-lite-plus`, nennt `beep_ms` 128 und `long_ms` 384 vom
 Phase-Tap an einem FlyDragon Lite 40A. Jedes andere Zeitfeld ist null.
+Dasselbe Profil setzt `loop_marker`: Der FlyDragon Lite 40A spielt seine
+Melodie 12321, etwa 808ms lang, vor jedem Durchlauf seiner Punkteschleife.
 
 ## Wo Profile liegen
 
@@ -127,6 +129,7 @@ Profile geben eines an. Das Suchfeld vergleicht `family`, in beiden Sprachen.
 | `scheme.announce.gap_ms` | Pause zwischen zwei Pieptönen einer Gruppe in ms: 0 bis 60000, oder null |
 | `scheme.announce.group_gap_ms` | Pause zwischen zwei Gruppen in ms: 0 bis 60000, oder null |
 | `scheme.announce.repeat` | 0 bis 255: 0 wiederholt bis zur Auswahl, null unbekannt |
+| `scheme.announce.loop_marker` | `true`: Zwischen dem höchsten und dem niedrigsten Punkt jedes Durchlaufs der Punkteschleife steht ein Ton, der kein Punkt ist, etwa eine Melodie. Fehlt das Feld, ist es null oder `false`: keiner. Die Stick-Programmierung lässt diesen einen Ton in der Punkteschleife eines zweistufigen Menüs durch; die Werteschleifen und einstufige Menüs liest sie ohne ihn. Gesetzt in 1 Profil, `flycolor-flydragon-lite-plus` |
 | `scheme.select.throttle`, `scheme.skip.throttle` | `min`, `mid`, `max`, `none` |
 | `scheme.listen` | Knüppelstellung während der Pieptonfolge des Menüs: `{"throttle": "min"}`, `mid` oder `max`. Fehlt es oder ist es null, bleibt die Knüppelstellung vom Einstieg erhalten. Gesetzt in den 9 Profilen für YGE-ESCs, deren Menü nach einem Einstieg bei Maximum mit dem Knüppel auf Minimum läuft; die Stick-Programmierung führt ein solches Profil nur aus, wenn `hold_ms` die Länge des Einstiegs nennt |
 | `scheme.store` | die Bewegung, die eine Auswahl speichert, nachdem der ESC sie beantwortet hat: `{"throttle": "min"}`, `mid` oder `max`. Fehlt es oder ist es null, speichert bereits die Auswahlbewegung den Wert. Gesetzt in den 8 Mode-Setups der YGE-ESCs, wo der Knüppel zurück auf Minimum den Modus speichert |

@@ -37,6 +37,7 @@ void esc_sim_defaults(esc_sim_cfg_t *c)
     c->gap_ms    = 250u;
     c->long_ms   = 800u;
     c->pause_ms  = 1500u;
+    c->marker_ms = 808u;    /* the FlyDragon's 12321, as the tap heard it */
     c->idle_ma   = 150u;
     c->beep_ma   = 600u;
     c->seed      = 1u;
@@ -221,6 +222,7 @@ static void build_loop(esc_sim_t *s)
     s->loop_n = 0u;
     s->loop_i = 0u;
     s->rep = 0u;
+    s->marked = false;
     const esc_profile_t *p = s->p;
     if (s->mode == ESC_SIM_ITEMS) {
         for (unsigned i = 0; i < p->item_count; ++i) {
@@ -259,7 +261,14 @@ static void build_loop(esc_sim_t *s)
  */
 static uint32_t pulse_ms(const esc_sim_t *s)
 {
-    return s->pulse[s->pulse_i] ? s->c.long_ms : s->c.beep_ms;
+    switch (s->pulse[s->pulse_i]) {
+    case 0u:
+        return s->c.beep_ms;
+    case 1u:
+        return s->c.long_ms;
+    default:
+        return s->c.marker_ms;
+    }
 }
 
 /**
@@ -322,6 +331,23 @@ static void start_group(esc_sim_t *s, uint32_t at, uint8_t n, bool menu,
 }
 
 /**
+ * @brief The item loop's marker: one tone of marker_ms, no menu entry, so
+ *        no move answers it.
+ *
+ * @param s   The simulator.
+ * @param at  Time the tone starts, ms.
+ */
+static void start_marker(esc_sim_t *s, uint32_t at)
+{
+    s->pulse[0] = 2u;
+    s->pulse_n = 1u;
+    s->pulse_i = 0u;
+    s->menu_group = false;
+    s->sounding = 0u;
+    start_beep(s, at);
+}
+
+/**
  * @brief Sound the next group of the loop.
  *
  * @param s   The simulator.
@@ -333,6 +359,13 @@ static void sound_next(esc_sim_t *s, uint32_t at)
         s->seg = SEG_NONE;
         return;
     }
+    if (s->mode == ESC_SIM_ITEMS && s->p->loop_marker && s->loop_i == 0u
+        && s->rep == 0u && !s->marked) {
+        s->marked = true;
+        start_marker(s, at);
+        return;
+    }
+    s->marked = false;
     const uint8_t n = s->loop[s->loop_i];
     const unsigned reps = (s->p->repeat > 0) ? (unsigned)s->p->repeat : 1u;
     s->rep++;

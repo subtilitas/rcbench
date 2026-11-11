@@ -676,6 +676,17 @@ Die Regeln unten gelten für beide Quellen, außer wo eine Regel eine nennt.
   Auswahl braucht einen verlorenen Piepton in jeder von drei Gruppen
   hintereinander, oder, in einem Menü mit wiederholten Gruppen, eine ganz
   verlorene Gruppe und einen verlorenen Piepton in der nächsten.
+- **Schleifenmarke.** Setzt das Profil `loop_marker`
+  ([ESC-Profile](EscProfiles-de.md)), spielt der ESC zwischen der höchsten
+  und der niedrigsten Nummer der Punkteschleife einen Ton, der kein Punkt
+  ist, etwa die Melodie 12321 des FlyDragon. In der Punkteschleife wird
+  eine Gruppe, die nicht zur Folge passt, direkt nach der in Reihenfolge
+  erreichten höchsten Nummer übergangen: Sie bricht die Folge nicht und
+  zählt nicht für sie, und die Gruppe danach passt nur als niedrigste
+  Nummer der Schleife. Eine zweite Gruppe außer der Folge bricht sie. Die
+  Werteschleifen übergehen keine Gruppe. Eine falsche Auswahl der
+  niedrigsten Nummer entsteht dann auch, wenn die Marke oder diese Nummer
+  ganz verloren geht und in der Gruppe danach ein Piepton fehlt.
 - **Späte Fenster.** Nur INA3221. Ein Fenster, das mehr als das Kürzere von PIEPTON MIN
   und PAUSE MIN nach dem vorigen kommt, ist spät, ebenso eines, dessen Nummer
   ein übersprungenes Fenster zeigt, oder eines ohne Stromwerte: es macht die
@@ -960,7 +971,7 @@ dieses Modells ein simulierter ESC (`shared/esc/esc_sim.c`), der dem Profil
 folgt: Einschalten in der Einstiegsstellung betritt das Menü nach dem
 `hold_ms` des Profils (3000ms ohne), Gruppen laufen mit 250ms Pieptönen,
 250ms Lücken, 800ms langen Pieptönen und 1500ms zwischen Gruppen, bei
-150mA Ruhestrom und 600mA mehr je Piepton. Diese Werte sind Annahmen für die Simulation, keine Messwerte. Wo das Profil eine Speicherbewegung nennt, wird eine Auswahl
+150mA Ruhestrom und 600mA mehr je Piepton. Diese Werte sind Annahmen für die Simulation, keine Messwerte. Ein Profil mit `loop_marker` spielt vor jedem Durchlauf seiner Punkteschleife einen Ton von 808ms, auch vor dem ersten. Wo das Profil eine Speicherbewegung nennt, wird eine Auswahl
 erst behalten, wenn der Knüppel sie macht. Ein Punkt mit dem Schlüssel
 `exit` verlässt das Menü, wenn er gewählt wird, und einer mit `reset` löscht,
 was gespeichert war. Die Messwerte des Modells kommen alle 50ms. Das Modell
@@ -994,6 +1005,14 @@ ihren Vorgaben und Pausen von 128ms bis FERTIG laufen, lässt denselben ESC
 unter einem Profil ohne Längen laufen, das die Einstellungen (PAUSE MIN 200ms) behält und
 nichts speichert, und lehnt genannte Längen ab, die die Zeitregeln
 verletzen.
+`test_esc_stick_marker` lässt den FlyDragon so laufen, wie ihn der Abgriff
+am 2026-11-11 gehört hat: Pieptöne von 128ms und 384ms mit 148ms Abstand,
+3230ms zwischen den Gruppen und die Marke von 808ms. Ein Lauf, dessen
+Regel die Marke nicht kennt, endet bei Punkt 1 mit ZEITLIMIT. Mit ihr
+werden die Punkte 1 und 2 im zweiten Durchlauf gewählt, am Abgriff und in
+INA3221-Fenstern. Eine fremde Gruppe nach dem höchsten Punkt wird
+übergangen, eine zweite bricht die Folge. Ein Profil ohne das Feld und
+eine Werteschleife übergehen keine.
 
 ## Aktuelle Einschränkungen
 
@@ -1002,8 +1021,10 @@ verletzen.
   7,6V über 4,7kΩ und eine 3,0-V-Zenerdiode an GPIO 22, ohne verlorenen
   Piepton; kein Lauf hat an ihm gezählt. Kein Lauf hat an einem
   INA3221-Kanal gezählt.
-- Die Pausen des FlyDragon-Profils sind nicht gemessen. Sein Lauf nimmt
-  PAUSE MIN 64ms aus dem kurzen Piepton von 128ms (die Hälfte) und behält
+- Das FlyDragon-Profil nennt keine Pause. Eine Aufnahme eines FlyDragon
+  Lite 40A vom 2026-11-11 zeigt 146 bis 150ms zwischen den Pieptönen einer
+  Gruppe und 3,23s zwischen den Gruppen; kein Lauf hat sie genutzt. Sein
+  Lauf nimmt PAUSE MIN 64ms aus dem kurzen Piepton von 128ms (die Hälfte) und behält
   GRUPPENPAUSE 700ms aus den Einstellungen: eine Pause zwischen zwei
   Gruppen von höchstens 700ms verbindet sie zu einer, und eine Pause in
   einer Gruppe über 700ms teilt sie. So oder so verletzen die Gruppen die
@@ -1020,7 +1041,11 @@ verletzen.
   gespeichert ist.
 - Bei einem Menü, das länger oder kürzer als sein Profil ist, wird auf die
   niedrigste Nummer nie reagiert, weil die höchste der Schleife nicht die
-  davor gehörte ist; der Lauf endet mit ZEITLIMIT.
+  davor gehörte ist; der Lauf endet mit ZEITLIMIT. Ebenso bei einem ESC,
+  der zwischen zwei Durchläufen seiner Punkteschleife eine Marke spielt,
+  wenn sein Profil `loop_marker` nicht setzt. Die Marke ist an einem
+  FlyDragon Lite 40A gemessen; ob andere ESCs eine spielen, ist nicht
+  bekannt.
 - Eine Auswahl braucht drei Gruppen hintereinander in Reihenfolge und
   kostet also mindestens einen Durchgang der Schleife: bis zu etwa zwei
   Schleifen, wenn die gewünschte Nummer die niedrigste ist. Ein

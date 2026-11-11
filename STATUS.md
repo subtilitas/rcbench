@@ -1348,7 +1348,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 527 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 528 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1408,7 +1408,7 @@ The host suite is 527 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_coproc_update_screen`, `test_upd_coproc`, `test_upd_layout`, `test_text`,
 `test_openyge_frame`, `test_openyge_status`, `test_openyge_params`, `test_esc_profiles`, `test_esc_profile_family`,
 `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`,
-`test_esc_stick_entry`, `test_esc_stick_tap`, `test_esc_stick_profile_timing`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`,
+`test_esc_stick_entry`, `test_esc_stick_tap`, `test_esc_stick_profile_timing`, `test_esc_stick_marker`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`,
 `test_sense_parts`, `test_sense_map`, `test_sense_limit`, `test_sense_svc`,
 `test_sense_trace_feed`, `test_sense_trace`, `test_sense_trace_next`,
 `test_sense_trace_setup`, `test_sense_trace_lines`, `test_tone`, `test_edge_ring`,
@@ -2730,11 +2730,19 @@ profile states the two lengths (`beep_ms` 128, `long_ms` 384), and a run on it t
 default 200ms. GROUP GAP stays the setting's 700ms; a pause between groups of 700ms or less, or a
 gap inside a group over 700ms, ends the run with TIMEOUT.
 
+A recording of the same ESC on 2026-11-11 shows its 12321 melody, about 808ms, before every
+pass of its item loop and none in a value loop, 146 to 150ms between the beeps of a group and
+3.23s between groups. A run whose order rule does not know the melody never selects items 1 and
+2: the melody stands between items 10 and 1, and the run ends with TIMEOUT after 180s. The
+profile sets `loop_marker`, and the run lets that one sound pass in the item loop; this is held
+on the host by `test_esc_stick_marker`, not by a run on the ESC.
+
 The ESC's tones after a selection are not decoded, so DONE does not say the ESC stored
 anything.
 
 **Next evidence or work:** one stick run of the FlyDragon from the phase tap at the default
-settings, checked afterwards with the ESC's program card; the gaps between its beeps and
+settings, checked afterwards with the ESC's program card; one run that selects item 1 or 2,
+over the melody; the gaps between its beeps and
 between its groups, for `gap_ms` and `group_gap_ms`; one run from an INA3221 channel in the
 ESC's supply line.
 

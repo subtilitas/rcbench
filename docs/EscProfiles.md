@@ -31,7 +31,9 @@ were written without an ESC on a bench. No manual states a beep length, a
 gap or a loop time in milliseconds. The timing fields are stated only where
 a bench measured them: 1 profile, `flycolor-flydragon-lite-plus`, gives
 `beep_ms` 128 and `long_ms` 384 from the phase tap on one FlyDragon Lite
-40A. Every other timing field is null.
+40A. Every other timing field is null. The same profile sets
+`loop_marker`: the FlyDragon Lite 40A sounds its 12321 melody, about 808ms,
+before every pass of its item loop.
 
 ## Where profiles live
 
@@ -123,6 +125,7 @@ both languages.
 | `scheme.announce.gap_ms` | silence between two beeps of a group in ms: 0 to 60000, or null |
 | `scheme.announce.group_gap_ms` | silence between two groups in ms: 0 to 60000, or null |
 | `scheme.announce.repeat` | 0 to 255: 0 repeats until a choice is made, null not known |
+| `scheme.announce.loop_marker` | `true`: one sound that is no item, such as a melody, sits between the highest item and the lowest of each pass of the item loop. Absent, null or `false`: none. Stick programming lets that one sound pass in the item loop of a two-stage menu; the value loops and one-stage menus are read without it. Set in 1 profile, `flycolor-flydragon-lite-plus` |
 | `scheme.select.throttle`, `scheme.skip.throttle` | `min`, `mid`, `max`, `none` |
 | `scheme.listen` | where the stick rests while the menu sounds: `{"throttle": "min"}`, `mid` or `max`. Absent or null: where the entry left it. Set in the 9 profiles for YGE ESCs, whose menu sounds with the stick at minimum after a maximum entry; stick programming runs such a profile only when `hold_ms` gives the entry's length |
 | `scheme.store` | the move that stores a selection once the ESC has answered it: `{"throttle": "min"}`, `mid` or `max`. Absent or null: the selection move itself stores the value. Set in the 8 mode setups of YGE ESCs, where the stick back to minimum stores the mode |

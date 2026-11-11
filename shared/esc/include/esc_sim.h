@@ -10,7 +10,9 @@
  * the entry position, or at a position a value is programmed from (its
  * entry_throttle), enters the menu; the groups loop, a move to the select
  * position after a group selects it, and in a two-stage menu a move to the
- * value_select position after a value group stores the value.  Where the
+ * value_select position after a value group stores the value.  A profile
+ * with loop_marker sounds one tone of marker_ms before each pass of its item
+ * loop, the first included.  Where the
  * profile names a store move, or the value moves after its selection
  * (after_select), the selection waits for each in order and is lost if the
  * power goes first.  An item keyed exit leaves the menu when it is
@@ -45,6 +47,8 @@ typedef struct {
     uint32_t gap_ms;      /**< silence between two beeps of a group      */
     uint32_t long_ms;     /**< a long beep, and the stored tone          */
     uint32_t pause_ms;    /**< silence between two groups                */
+    uint32_t marker_ms;   /**< the loop marker's one tone, where the
+                               profile sets loop_marker                  */
     uint32_t entry_ms;    /**< power on to the first group; 0: the
                                profile's hold, or 3000ms without one     */
     uint32_t window_ms;   /**< how long after a group a move selects it;
@@ -98,12 +102,15 @@ typedef struct {
     uint8_t loop_n,                         /**< groups in the loop                    */
             loop_i,                         /**< group sounding                        */
             rep;                            /**< repeats done                          */
-    uint8_t              pulse[ESC_SIM_PULSE_MAX];  /**< 1 long, 0 short   */
+    uint8_t              pulse[ESC_SIM_PULSE_MAX];  /**< 1 long, 0 short,
+                                                         2 the marker      */
     uint8_t pulse_n,                        /**< pulses in the group                   */
             pulse_i;                        /**< index of the pulse sounding           */
     uint8_t              seg;          /**< esc_sim.c's seg_t               */
     uint32_t             seg_end;      /**< when the current segment ends   */
     bool                 menu_group;   /**< the group is a menu entry       */
+    bool                 marked;       /**< this pass of the item loop
+                                            has had its marker              */
     uint8_t              sounding;     /**< its number                      */
     uint8_t              ended;        /**< the last menu group to end      */
     uint32_t             ended_ms;     /**< when that group ended           */
