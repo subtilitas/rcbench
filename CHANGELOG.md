@@ -6,6 +6,30 @@ history is in git.
 
 ## Unreleased
 
+## 0.23.12 - 2026-11-11
+
+0.23.12 is a testing release. It counts the beeps of an ESC STICK run from the
+phase tap or an INA3221 channel, takes a stick run's beep timing from the ESC
+profile where the profile states it, and adds the field `long_ms` to the ESC
+profiles. Its minor number, 23, is odd. GitHub publishes it as a pre-release
+and does not mark it as latest. It runs on the ESP32-P4 panel, as 0.23.11
+does; an ESP32-S3 panel stays on the 0.22 line and is not offered it. The
+link protocol is 4.37, unchanged from 0.23.11. The assets are
+`rcbench-panel-p4-v0.23.12.zip`, `rcbench-panel-p4-v0.23.12.bin`,
+`rcbench-iomcu-v0.23.12.zip`, `rcbench-iomcu-rbmod-v0.23.12.zip`,
+`rcbench-c6-2.13.0.bin`, `rcbench-c6-merged-2.13.0.bin` and `SHA256SUMS`.
+
+A bench on 0.23.11 gets 0.23.12 over Wi-Fi: SETUP > UPDATES, RELEASES: TESTING,
+CHECK FOR UPDATES, then hold the install button for 2s. With RELEASES: STABLE the
+check reads `releases/latest`, which names 0.22.1, and offers nothing. At
+link-up the panel offers to update the IOmcu over CAN (Controller Area Network)
+when the IOmcu runs a different build. To set up a new bench, load both boards over USB
+(Universal Serial Bus) as [First run, §1](docs/FirstRun.md#1-flash-both-boards)
+describes.
+
+The entries below cover the 2 pull requests merged since v0.23.11: #800 to
+#801.
+
 ### Added
 
 - Profile field `scheme.announce.long_ms`: a long beep's length in ms, 0 to
@@ -15,17 +39,18 @@ history is in git.
 ### Changed
 
 - ESC STICK counts the ESC's beeps from the phase tap or from an INA3221
-  channel, no longer from the PD mini's current. The PD mini reads every 100
-  to 152ms, and a Flycolor FlyDragon Lite 40A sounds short beeps of 127.9ms.
-  A run takes its source at RUN and keeps it: the phase tap while its capture
-  runs, else the lowest INA3221 channel with a shunt that watches SUPPLY
-  while its 50ms windows come in. With neither, RUN is refused with `No beep
-  source. Switch the phase tap on, or set an INA3221 channel to SUPPLY, on
-  SENSORS.` The tap's beeps go into the groups with the IOmcu's own start
-  times and lengths. A tap group ends only on a tap status that shows no
-  beep under way, no tone in its last 8ms window and every beep taken, with
-  that window ending GROUP GAP or more after the last beep. The PD mini still powers the ESC, and its readings still
-  decide every power rule. The run's page and the warning name the source
+  channel; the PD mini's current does not count them. The PD mini reads
+  every 100 to 152ms, and a Flycolor FlyDragon Lite 40A sounds short beeps
+  of 127.9ms. A run takes its source at RUN and keeps it: the phase tap
+  while its capture runs, else the lowest INA3221 channel with a shunt that
+  watches SUPPLY while its 50ms windows come in. With neither, RUN is
+  refused with `No beep source. Switch the phase tap on, or set an INA3221
+  channel to SUPPLY, on SENSORS.` The tap's beeps go into the groups with
+  the IOmcu's own start times and lengths. A tap group ends only on a tap
+  status that shows no beep under way, no tone in its last 8ms window and
+  every beep taken, with that window ending GROUP GAP or more after the
+  last beep. The PD mini powers the ESC, and its readings decide every
+  power rule. The run's page and the warning name the source
   ([Stick programming](docs/StickProgramming.md#where-the-beeps-come-from)).
 - A run ends with BEEP LOST when a tap beep number is missing, with TAP
   STOPPED when the tap's capture stops, and with INA3221 LOST when no window
