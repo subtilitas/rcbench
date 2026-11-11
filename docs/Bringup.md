@@ -28,8 +28,9 @@ every 3s:
 `requests served` counts link page requests sent by the panel and
 answered by the IOmcu. `self-test echoes` counts probe frames and is 0
 unless the panel's CAN self-test is running. `tx_drop` counts reply
-frames abandoned after 1000 attempts to use a full transmit buffer; the
-panel then waits for its exchange to time out. Together, the first two
+frames not sent because the transmit buffer stayed full for 1,000us,
+together with the rest of their reply; the panel then waits for its
+exchange to time out. Together, the first two
 counters indicate which end has stopped:
 
 | Requests | Panel says | Reading |

@@ -31,9 +31,9 @@ alle 3s wiederholt:
 `requests served` zählt Link-Page-Anfragen, die das Panel gesendet und der
 IOmcu beantwortet hat. `self-test echoes` zählt Testframes und steht auf
 0, solange der CAN-Selbsttest des Panels nicht läuft. `tx_drop` zählt
-Antwortframes, deren Übertragung nach 1000 Versuchen bei vollem
-Sendepuffer aufgegeben wurde. Das Panel wartet dann bis zum Timeout
-seines Austauschs. Die ersten beiden Zähler zeigen zusammen, welche
+Antwortframes, die nicht gesendet wurden, weil der Sendepuffer 1000us lang
+voll blieb, zusammen mit dem Rest ihrer Antwort. Das Panel wartet dann bis
+zum Timeout seines Austauschs. Die ersten beiden Zähler zeigen zusammen, welche
 Seite ausfällt:
 
 | Requests | Panel zeigt | Lesart |
