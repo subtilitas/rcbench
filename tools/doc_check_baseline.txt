@@ -1687,9 +1687,6 @@ shared/bench/include/tone_link.h: warning: Member status_ms (variable) of struct
 shared/bench/include/tone_link.h: warning: Member want[LINK_TN_CONFIG_COUNT] (variable) of struct tone_link_t is not documented.
 shared/bench/include/tone_link.h: warning: Member want_set (variable) of struct tone_link_t is not documented.
 shared/bench/knob.c: warning: Member knob_poll_regs[KNOB_POLL_READS] (variable) of file knob.c is not documented.
-shared/bench/kst_card.c: warning: Member s_file (variable) of file kst_card.c is not documented.
-shared/bench/kst_card.c: warning: Member s_load (variable) of file kst_card.c is not documented.
-shared/bench/kst_card.c: warning: Member s_text[KST_FILE_MAX] (variable) of file kst_card.c is not documented.
 shared/bench/kst_link.c: warning: Member RES(reg) (macro definition) of file kst_link.c is not documented.
 shared/bench/kst_link.c: warning: Member RESULTS_N (macro definition) of file kst_link.c is not documented.
 shared/bench/kst_link.c: warning: Member STAGE_WINDOWS (macro definition) of file kst_link.c is not documented.
