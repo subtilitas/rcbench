@@ -76,6 +76,11 @@ python3 tools/mutate.py               # what the suite misses in the changed lin
 # After a panel build on ESP-IDF v6.1 for the ESP32-P4: the image against
 # the smaller of its two update slots.
 python3 tools/image_slot.py firmware/panel/build
+# Before a panel build: a firmware/panel/sdkconfig left from an older build
+# against sdkconfig.defaults, which ESP-IDF reads only when no sdkconfig
+# exists. A difference means the local build is not CI's: delete the file,
+# or build with -D SDKCONFIG=<build folder>/sdkconfig.
+python3 tools/check_sdkconfig.py --check
 # After an IOmcu build: the stacks of its two cores, and core 0's row
 # in docs/Performance.md.
 python3 tools/stack_check.py --iomcu firmware/iomcu/build --check-doc
@@ -95,6 +100,8 @@ cppcheck -j "$(nproc)" --error-exitcode=1 --std=c11 \
              | sed 's|/include/.*|/include|; s|^|-I|' | sort -u) \
          $(git ls-files 'shared/**/*.c' 'protocols/**/*.c' | grep -v -e gfx_font -e /rp2350/) \
          $(git ls-files 'test/host/*.c')
+# clang-tidy 22.1.8, as in CI (another release finds other things):
+#   python3 -m pip install --user clang-tidy==22.1.8
 cmake -S test/host -B test/host/build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 git ls-files 'shared/**/*.c' 'protocols/**/*.c' 'test/host/*.c' \
     | grep -v -e gfx_font -e /rp2350/ -e test/host/render_screen.c -e test/host/bench_frame.c \
@@ -113,6 +120,10 @@ ctest, the sanitizer run, the coverage check, the checks that hold prose and
 generated files to the tree, and the frame-cost ceilings. The job named
 `Host suite, coverage and the checks that hold prose to the tree` ends last
 and fails when any of them does not succeed; the branch ruleset requires it.
+The upload of the coverage report to Codecov runs in a job of its own that
+the required job does not need: an outage of Codecov fails that job and
+blocks no merge. The coverage gate is `coverage.py --check`, which runs
+offline in the required set.
 The coverage table and the README figures are gcov's counts for the gcc of
 that runner. A machine with another gcc writes a different table; write the
 committed one from the `coverage` artifact of a CI run:
