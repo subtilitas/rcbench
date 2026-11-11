@@ -20,6 +20,8 @@ The arm chip identifies the outputs enabled by switching to ARMED:
 | Chip | Outputs that drive |
 | --- | --- |
 | SAFE | none |
+| SAFE PROG 2 (amber) | the programming port a KST or HITEC session holds, PROG PORT 1 to 4; `SAFE PROG` while a held port's number is not known. The port stays held after SERVO is left, and ARM is refused until LEAVE |
+| SAFE MOVE (amber) | the servo MOVE SERVO on the HITEC page moves on the held port, while the bench is SAFE ([MOVE SERVO](HitecMove.md)) |
 | ARMED MOTOR | the throttle outputs, from MOTOR & ESC's ARM or a stick run on its PROGRAM; no surface and no programming port |
 | ARMED SERVO | the surfaces and a pulsing PROG PORT, from SERVO; no throttle output |
 | ARMED | every bound output, on an IOmcu older than protocol 4.18 |
@@ -143,6 +145,8 @@ says to flash both boards from one release.
 
 ![The SAFE box](img/band-safe.png)
 
+![SAFE PROG 2 and its box](img/band-safe-prog.png)
+
 ![The ARMED MOTOR box](img/band-armed.png)
 
 ### HWSTOP
@@ -165,6 +169,19 @@ default, and OFF the band shows FAULT 10.
   to about 180ms after the line closes, with no ARM.
 - While the panel's own STOP is latched, while its reset runs and for
   1000ms after it, the band leaves out bit 10, as HWSTOP and as FAULT 10.
+
+### An ARM the IOmcu refuses
+
+The alert of a refused or given-up switch is built from the IOmcu's fault
+bits at the refusal (`ui_band_arm_refused()`): the heartbeat bit from the
+last line read of the attempt, the other bits as the band shows them.
+
+| Bits | Alert |
+| --- | --- |
+| HEARTBEAT, Hardware stop OFF | `ARM refused: IOmcu gets no heartbeat. Check wire IO28 to GPIO 3 or stop button (FAULT 10).` |
+| HEARTBEAT, Hardware stop ON | `ARM refused: HWSTOP. Release the stop button or check its wire, IO28 to GPIO 3.` |
+| another bit | `The IOmcu refused to switch to ARMED. Tap FAULT for the reason.` |
+| none | `The IOmcu refused to switch to ARMED.` |
 
 ## The screen guide
 
@@ -490,6 +507,8 @@ replaces a visible hint.
   including one caused by an error. An alert stays through both.
 - The bus-fault screen has no band. Its hold shows the hint in place of
   its 64px bar, amber with dark text, for 4s. A tap on the bar closes it.
+- `TAP TO CONTINUE` on the bus-fault screen, shown when no IOmcu
+  answered, is a tap: it leads to the menu in simulation and shows no hint.
 
 | Button | Hint |
 | --- | --- |
@@ -1337,6 +1356,19 @@ registry as SERVO (`shared/ui/prog_registry.c`,
 reads `THROTTLE OUTPUT >`: it drives the throttle pins, uses no programming
 port and requires no IOmcu capability. The other row opens the signal-wire
 session described below.
+
+While a run cannot start on the bench as it stands, the row names the first
+reason in place of `THROTTLE OUTPUT`, in the warning colour, and still opens
+ESC STICK: its profiles read without the bench. The maker list shows the same
+tag right of `ESC STICK` in its header. The order is RUN's
+([ESC STICK](#esc-stick)):
+
+| Tag | Stands while |
+| --- | --- |
+| `RUN NEEDS A PD MINI` | the supply is the panel's model |
+| `THROTTLE PIN NOT READ` | the output binding is not read |
+| `NO THROTTLE PIN` | no pin is bound as a throttle |
+| `NO BEEP SOURCE` | neither the phase tap runs nor an INA3221 channel on SUPPLY reads |
 
 Group headings appear only when a list has more than 8 rows. The output
 card stays visible on the right while the list is open.
@@ -2367,7 +2399,8 @@ for the other three. The tester waits for readback confirmation.
 
 While the programmer holds a port, the home tag opens LEAVE
 PROGRAMMING. During transitions into or out of programming it does nothing.
-Leaving SERVO preserves the held port. A held session that is not shown
+Leaving SERVO preserves the held port, and the band's arm chip names it on
+every screen: `SAFE PROG 2` in amber. A held session that is not shown
 opens again on its own screen: from another SERVO function screen the
 panel goes there. KST and HITEC have no ARM. ARM is disabled on the
 other SERVO screens and on MOTOR & ESC; pressing it shows
@@ -5970,14 +6003,35 @@ a check wraps onto. The three notes follow from y 432. The right column,
 `HOLD 2s TO ACKNOWLEDGE` runs 976 x 56px across the foot, 16px above the
 panel's edge.
 
-![Nothing came back](img/busfault-silent.png)
-
 Leaving it takes a two-second hold, the ARM gesture and the same fade.
 Acknowledging repairs nothing: the bench runs in simulation, nothing drives an
 output, and the test runs again at the next start-up. There is no band and no
 STOP, because the bench cannot switch to ARMED behind it. Once the link
 answers again, the hold is RECONNECT instead
 ([A link that answers again](#a-link-that-answers-again)).
+
+### No IOmcu answered
+
+A silent bus on which no IOmcu answered the status request either is a
+panel on its own: powered before the IOmcu, or with the IOmcu not yet
+wired. The screen says so instead of naming a fault, and a tap leaves it.
+
+![No IOmcu answered](img/busfault-silent.png)
+
+- The bar is amber and reads `NO IOMCU`.
+- The heading reads `No IOmcu answered.` and the meaning `The panel runs
+  its simulation. No output is driven.`
+- The checks of the silent bus stand under `IF AN IOMCU IS CONNECTED,
+  CHECK IN THIS ORDER`.
+- `TAP TO CONTINUE` takes a tap: the release over the button leads to the
+  menu in simulation. A release off the button does nothing.
+- The splash marks the CAN line as a warning with `No IOmcu answered.`
+- RECONNECT, once the link answers for 1000ms, is the 2s hold as on every
+  other report.
+
+Frames that came back altered or went missing, and a silent echo run from
+an IOmcu that answered its status, keep the 2s hold: they point at the
+wiring or the firmware.
 
 ### A link that stops
 
@@ -6079,6 +6133,16 @@ supply's output is off, the panel's Wi-Fi radio is wholly off and no install
 of a panel image is under way. A START request made while the radio is active or a panel installation is
 running is consumed without starting an update. The question opens again
 once both have ended.
+
+While something holds the question back, the alert names it in place of
+`Update it on UPDATES.`. It is said once per offer on the first screen with a
+band, and again when the question waits for something else:
+
+| The question waits for | Alert |
+| --- | --- |
+| SAFE and the supply output off | `IOmcu runs a different build. Its update question opens once SAFE with the supply off.` |
+| the panel's Wi-Fi off | `IOmcu runs a different build. Its update question opens once the panel's Wi-Fi is off.` |
+| the panel's install to end | `IOmcu runs a different build. Its update question opens after the panel firmware install.` |
 
 ![The IOmcu update question](img/coproc-update.png)
 

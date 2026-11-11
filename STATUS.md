@@ -1929,8 +1929,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 928 committed screenshots to the current render,
-464 in English and the same 464 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` holds 930 committed screenshots to the current render,
+465 in English and the same 465 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -2401,20 +2401,6 @@ two orders of magnitude below 19ms on serial NOR flash, or roughly 200 to 2,000u
 
 **Next evidence or work:** a board: the page program and erase windows from the console lines, the overrun count across
 sixteen saves, the heartbeat after a window, and a power cut mid-save.
-
-### A held programming port is named on SERVO and SUPPLY only
-
-The rule is in [CONTRIBUTING.md](CONTRIBUTING.md#the-active-output). SERVO names its target on
-every function screen and under the pages, their keypads and the programmers (the PORT
-button and the footer's port line, `PROG PORT n GPIO m`). MOTOR & ESC names its throttle pins. The KST and Hitec programmers and the ESC wire
-screens name their port and pin. ARM names the roles it drives
-([Safety](docs/Safety.md#deliberate-behaviours)). One case does not meet the rule. Leaving SERVO
-while a programmer holds a port leaves the output SERVO switched on running
-([Screens, SERVO](docs/Screens.md#servo)). On the rbmod carrier the PROG 5V box on SUPPLY then
-reads `HELD BY PROG PORT n`. The status band and every other screen do not name the held port.
-On SERVO the PORT button, the port line and KST's and HITEC's PORT row name it.
-
-**Next evidence or work:** the held port named in the status band.
 
 ### Betaflight logs are listed nowhere
 

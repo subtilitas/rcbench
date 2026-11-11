@@ -258,6 +258,31 @@ const busfault_report_t *busfault_screen_report(void)
     return s.have ? &s.r : NULL;
 }
 
+bool busfault_no_iomcu(const busfault_report_t *r)
+{
+    return r != NULL && r->kind == BUSFAULT_SELFTEST
+           && r->verdict == CAN_SELFTEST_SILENT && !r->have_remote;
+}
+
+const char *busfault_headline(const busfault_report_t *r)
+{
+    if (busfault_no_iomcu(r)) {
+        return TR(BF_NOIO_TEXT);
+    }
+    return busfault_verdict_text(r != NULL ? r->verdict
+                                           : CAN_SELFTEST_RUNNING);
+}
+
+/**
+ * @brief Whether the button takes a tap now: the report showing is a bus on
+ *        which no IOmcu answered, and RECONNECT is not offered.
+ * @return true while a tap on the button leaves the screen.
+ */
+static bool tap_leaves(void)
+{
+    return s.have && !s.back && busfault_no_iomcu(&s.r);
+}
+
 /* ------------------------------------------------------------ what to say */
 
 /*
@@ -420,7 +445,7 @@ static bool in_ack(int16_t x, int16_t y)
  */
 static void hint_on_release(const touch_event_t *up)
 {
-    if (s.pressed && !s.fired && touch_event_is_tap_up(up)
+    if (s.pressed && !s.fired && !tap_leaves() && touch_event_is_tap_up(up)
         && in_ack(up->point.x, up->point.y)) {
         s.hint_id = s.back ? (int)TX_HOLD_HINT_RECONNECT
                            : (int)TX_HOLD_HINT_ACKNOWLEDGE;
@@ -430,8 +455,23 @@ static void hint_on_release(const touch_event_t *up)
 }
 
 /**
- * @brief One touch event: a press on the button starts the hold, a press
- *        on the hint closes it.
+ * @brief A tap on the button while it takes one (tap_leaves()): the
+ *        press's own release, on the button, leaves for the simulation.
+ * @param up The release.
+ */
+static void tap_on_release(const touch_event_t *up)
+{
+    if (s.pressed && !s.fired && tap_leaves() && touch_event_is_tap_up(up)
+        && in_ack(up->point.x, up->point.y)) {
+        s.fired    = true;
+        s.exit     = BUSFAULT_EXIT_SIMULATION;
+        s.flash_ms = UI_HOLD_FLASH_MS;
+    }
+}
+
+/**
+ * @brief One touch event: a press on the button starts the hold or, where
+ *        the button takes a tap, the tap; a press on the hint closes it.
  * @param evt The event, panel coordinates.
  */
 static void event(const touch_event_t *evt)
@@ -471,6 +511,7 @@ static void event(const touch_event_t *evt)
     default:
         if (s.have_press && evt->point.id == s.press_id) {
             hint_on_release(evt);
+            tap_on_release(evt);
             s.have_press = false;
             s.pressed    = false;
             s.held_s     = 0.0f;
@@ -492,7 +533,7 @@ static void tick(float dt_s)
             s.drawn_mask = 0;   /* the bar comes back */
         }
     }
-    if (s.pressed && !s.fired) {
+    if (s.pressed && !s.fired && !tap_leaves()) {
         s.held_s += ui_hold_credit(dt_s);
         if (s.held_s >= UI_HOLD_S) {
             /*
@@ -570,6 +611,9 @@ static gfx_color_t ack_fill(void)
 {
     if (s.flash_ms > 0) {
         return ui_hold_flash(ui_theme_color(UI_C_OK), s.flash_ms);
+    }
+    if (tap_leaves()) {
+        return ui_theme_color(UI_C_PANEL_HI);  /* a tap has no fill to fade */
     }
     return ui_hold_fill(ui_theme_color(UI_C_DANGER),
                         ui_theme_color(UI_C_OK), s.held_s);
@@ -763,14 +807,20 @@ static void draw_bar(gfx_canvas_t *c, bool lost)
                  BF_FONT_BODY, ui_theme_color(UI_C_TEXT_ON_LIGHT), 1);
         return;
     }
+    /* A bus on which nothing answered is not a fault yet: the warning's
+     * amber, not the danger's red. */
+    const bool noio = tap_leaves();
     gfx_fill_rect(c, 0, 0, W, BAR_H,
-                  ui_theme_color(s.back ? UI_C_OK : UI_C_DANGER));
+                  ui_theme_color(s.back ? UI_C_OK
+                                 : noio ? UI_C_WARN : UI_C_DANGER));
     const int hh = gfx_text_height(BF_FONT_HEAD, 1);
     gfx_text(c, COL_X, (BAR_H - hh) / 2,
              s.back ? TR(BF_TITLE_BACK)
+             : noio ? TR(BF_NOIO_TITLE)
              : lost ? "LINK LOST" : "CAN BUS FAULT",
              BF_FONT_HEAD,
-             s.back ? ui_theme_color(UI_C_TEXT_ON_LIGHT) : GFX_WHITE, 1);
+             (s.back || noio) ? ui_theme_color(UI_C_TEXT_ON_LIGHT)
+                              : GFX_WHITE, 1);
 }
 
 /**
@@ -809,17 +859,20 @@ static void render(gfx_canvas_t *c, int buffer_index)
         gfx_text(c, COL_X, VERDICT_Y,
                  s.back ? TR(BF_BACK_TEXT)
                  : lost ? bus_text(s.r.bus)
-                        : busfault_verdict_text(s.r.verdict),
+                        : busfault_headline(&s.r),
                  BF_FONT_HEAD,
                  ui_theme_color(s.back ? UI_C_OK : UI_C_TEXT), 1);
         (void)wrap_text(c, COL_X, COLS_Y,
                         s.back ? TR(BF_BACK_MEANS)
                         : lost ? bus_meaning(s.r.bus)
+                        : tap_leaves() ? TR(BF_NOIO_MEANS)
                                : meaning_of(s.r.verdict),
                         COL_CELLS, ui_theme_color(UI_C_TEXT_DIM));
 
         gfx_text(c, COL_X, HEAD_Y,
-                 (lost || s.back) ? TR(BF_HEAD_MEANS) : TR(BF_HEAD_CHECK),
+                 (lost || s.back) ? TR(BF_HEAD_MEANS)
+                 : tap_leaves()   ? TR(BF_NOIO_HEAD)
+                                  : TR(BF_HEAD_CHECK),
                  BF_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1);
 
         const char *checks[LIST_MAX] = { 0 };
@@ -889,11 +942,12 @@ static void render(gfx_canvas_t *c, int buffer_index)
      * would be a step in the fade.
      */
     ui_button_font(c, gfx_rect_make(ACK_X, ACK_Y, ACK_W, ACK_H),
-                   s.fired  ? TR(BF_ACKNOWLEDGED)
-                   : s.back ? TR(BF_HOLD_RECONNECT)
-                            : TR(BF_HOLD),
+                   s.fired       ? TR(BF_ACKNOWLEDGED)
+                   : s.back      ? TR(BF_HOLD_RECONNECT)
+                   : tap_leaves() ? TR(BF_TAP_CONTINUE)
+                                  : TR(BF_HOLD),
                    ack_fill(),
-                   false, true, BF_FONT_LABEL);
+                   tap_leaves() && s.pressed, true, BF_FONT_LABEL);
 }
 
 /*

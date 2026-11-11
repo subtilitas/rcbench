@@ -22,6 +22,8 @@ Der Arm-Chip nennt die Ausgänge, die beim Wechsel auf ARMED aktiv werden:
 | Chip | Angesteuerte Ausgänge |
 | --- | --- |
 | SAFE | keine |
+| SAFE PROG 2 (bernsteinfarben) | der Programmierport, den eine KST- oder HITEC-Sitzung belegt, PROG-PORT 1 bis 4; `SAFE PROG`, solange die Nummer eines belegten Ports nicht bekannt ist. Der Port bleibt belegt, wenn SERVO verlassen wird, und ARM ist bis VERLASSEN gesperrt |
+| SAFE MOVE (bernsteinfarben) | das Servo, das SERVO BEWEGEN auf der HITEC-Seite am belegten Port bewegt, während der Prüfstand SAFE ist ([SERVO BEWEGEN](HitecMove-de.md)) |
 | ARMED MOTOR | die Gas-Ausgänge, durch ARM auf MOTOR & ESC oder einen Stick-Lauf unter PROGRAMMIEREN; kein Ruder und kein Programmierport |
 | ARMED SERVO | die Ruder und ein pulsender PROG-PORT, aktiviert auf SERVO; kein Gas-Ausgang |
 | ARMED | alle zugeordneten Ausgänge, bei einem IOmcu älter als Protokoll 4.18 |
@@ -156,6 +158,8 @@ zu flashen.
 
 ![Der Kasten von SAFE](img/de/band-safe.png)
 
+![SAFE PROG 2 und sein Kasten](img/de/band-safe-prog.png)
+
 ![Der Kasten von ARMED MOTOR](img/de/band-armed.png)
 
 ### HWSTOP
@@ -182,6 +186,20 @@ standardmäßig AUS, und mit AUS zeigt das Band FEHLER 10.
 - Solange der eigene STOP des Panels eingerastet ist, während sein Lösen
   läuft und 1000ms danach lässt das Band Bit 10 weg, als HWSTOP und als
   FEHLER 10.
+
+### Ein ARM, das der IOmcu ablehnt
+
+Der Alarm eines abgelehnten oder aufgegebenen Schaltens entsteht aus den
+Fehlerbits des IOmcu zum Zeitpunkt der Ablehnung (`ui_band_arm_refused()`):
+das Heartbeat-Bit aus dem letzten Lesen der Leitung dieses Versuchs, die
+anderen Bits so, wie das Band sie zeigt.
+
+| Bits | Alarm |
+| --- | --- |
+| HEARTBEAT, Hardware-STOP AUS | `ARM abgelehnt: IOmcu ohne Heartbeat. Prüfe Leitung IO28-GPIO 3 oder STOP-Taster (FEHLER 10).` |
+| HEARTBEAT, Hardware-STOP EIN | `ARM abgelehnt: HWSTOP. Löse den STOP-Taster oder prüfe seine Leitung, IO28 zu GPIO 3.` |
+| ein anderes Bit | `Der IOmcu hat den Wechsel zu ARMED abgelehnt. Tippe auf FEHLER für den Grund.` |
+| keines | `Der IOmcu hat den Wechsel zu ARMED abgelehnt.` |
 
 ## Die Bildschirmhilfe
 
@@ -528,6 +546,9 @@ ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 - Die Busfehler-Seite hat kein Statusband. Ihre Haltetaste zeigt den
   Hinweis anstelle ihres Balkens von 64px, bernsteinfarben mit dunkler
   Schrift, für 4s. Ein Tipp auf den Balken schließt ihn.
+- `TIPPEN ZUM FORTFAHREN` auf der Busfehler-Seite, wenn kein IOmcu
+  geantwortet hat, ist ein Tippen: Es führt ins Menü in der Simulation und
+  zeigt keinen Hinweis.
 
 | Taste | Hinweis |
 | --- | --- |
@@ -1441,6 +1462,20 @@ Tabelle wie SERVO (`shared/ui/prog_registry.c`,
 STICK-MENÜ. Rechts steht `GASAUSGANG >`: Das Verfahren verwendet die
 Gas-Pins, keinen Programmierport, und benötigt keine Fähigkeit des IOmcu.
 Die zweite Zeile öffnet die unten beschriebene Signalleitungs-Sitzung.
+
+Solange auf dem Prüfstand, wie er ist, kein Lauf starten kann, nennt die
+Zeile den ersten Grund anstelle von `GASAUSGANG`, in der Warnfarbe, und
+öffnet ESC STICK trotzdem: Seine Profile lesen sich ohne den Prüfstand. Die
+Herstellerliste zeigt dasselbe Kennzeichen in ihrer Kopfzeile rechts von
+`ESC STICK`. Die Reihenfolge ist die von START
+([ESC STICK](#esc-stick)):
+
+| Kennzeichen | Steht, solange |
+| --- | --- |
+| `START BRAUCHT PD MINI` | das Netzteil das Modell des Panels ist |
+| `GAS-PIN NICHT GELESEN` | die Ausgangszuordnung nicht gelesen ist |
+| `KEIN GAS-PIN` | kein Pin als Gas zugeordnet ist |
+| `KEINE PIEPTONQUELLE` | weder der Phasenabgriff läuft noch ein INA3221-Kanal auf NETZTEIL liest |
 
 Gruppenüberschriften erscheinen erst bei mehr als 8 Zeilen. Das
 Ausgangsfeld bleibt rechts neben der Liste sichtbar.
@@ -2556,7 +2591,8 @@ die anderen drei KEINE an. Der Tester wartet auf die Auslesebestätigung.
 Solange ein Port gehalten wird, öffnet das Home-Feld
 PROGRAMMIERMODUS VERLASSEN. Während des Wechsels in den Programmiermodus
 oder zurück hat es keine Wirkung. Das Verlassen von SERVO erhält den
-gehaltenen Port. Eine gehaltene Sitzung, die nicht sichtbar ist, öffnet
+gehaltenen Port, und der Arm-Chip des Bands nennt ihn auf jeder Seite:
+`SAFE PROG 2` in Bernsteinfarbe. Eine gehaltene Sitzung, die nicht sichtbar ist, öffnet
 auf ihrem eigenen Bildschirm wieder: von einem anderen
 SERVO-Funktionsbildschirm wechselt das Panel dorthin. KST und HITEC haben
 kein ARM. Auf den anderen SERVO-Bildschirmen und auf MOTOR & ESC ist ARM
@@ -6498,8 +6534,6 @@ Hinweise. Die rechte Spalte, 240px ab x 760, trägt die Zähler in der
 Schrift 10 x 20px. `2s HALTEN ZUM BESTÄTIGEN` läuft 976 x 56px über den
 Fuß, 16px über dem Rand des Panels.
 
-![Es kam nichts zurück](img/de/busfault-silent.png)
-
 Halte die Bestätigungstaste zwei Sekunden lang, um den Bildschirm zu
 verlassen. Sie verwendet dieselbe Geste und Füllung wie ARM. Die Bestätigung
 behebt den Fehler nicht: Der Prüfstand läuft in Simulation, kein Ausgang
@@ -6507,6 +6541,31 @@ wird angesteuert, und beim nächsten Start läuft der Test erneut. Band und
 STOP fehlen, weil der Prüfstand hinter diesem Bildschirm nicht ARMED sein kann.
 Antwortet die Verbindung wieder, ist die Haltetaste stattdessen NEUVERBINDEN
 ([Eine Verbindung, die wieder antwortet](#eine-verbindung-die-wieder-antwortet)).
+
+### Kein IOmcu hat geantwortet
+
+Ein stiller Bus, auf dem auch kein IOmcu die Statusanfrage beantwortet hat,
+ist ein Panel allein: vor dem IOmcu eingeschaltet, oder der IOmcu ist noch
+nicht verdrahtet. Der Bildschirm sagt das, statt einen Fehler zu nennen,
+und ein Tippen verlässt ihn.
+
+![Kein IOmcu hat geantwortet](img/de/busfault-silent.png)
+
+- Der Balken ist bernsteinfarben und zeigt `KEIN IOMCU`.
+- Die Überschrift lautet `Kein IOmcu hat geantwortet.`, die Bedeutung
+  `Das Panel läuft in seiner Simulation. Kein Ausgang wird angesteuert.`
+- Die Prüfungen des stillen Busses stehen unter `IST EIN IOMCU
+  ANGESCHLOSSEN, PRÜFE IN DIESER REIHENFOLGE`.
+- `TIPPEN ZUM FORTFAHREN` nimmt ein Tippen: Das Loslassen über der Taste
+  führt ins Menü in der Simulation. Loslassen neben der Taste tut nichts.
+- Der Startbildschirm markiert die CAN-Zeile mit `Kein IOmcu hat
+  geantwortet.` als Warnung.
+- NEUVERBINDEN, sobald die Verbindung 1000ms lang antwortet, ist wie bei
+  jedem anderen Befund das Halten für 2s.
+
+Frames, die verändert zurückkamen oder verloren gingen, und ein stiller
+Echo-Lauf eines IOmcu, der seinen Status beantwortet hat, behalten das
+Halten für 2s: Sie weisen auf die Verdrahtung oder die Firmware.
 
 ### Ein Link, der abreißt
 
@@ -6618,6 +6677,16 @@ die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE ist, der
 Ausgang der Versorgung aus, der Funk des Panels ganz aus und
 keine Installation eines Panel-Images im Gang. Ein START bei noch aktivem WLAN oder laufender Panel-Installation wird
 verworfen. Die Frage erscheint erneut, sobald beide Hindernisse entfallen.
+
+Solange etwas die Frage zurückhält, nennt der Alarm es anstelle von
+`Aktualisiere ihn auf UPDATES.`. Er erscheint einmal je Angebot auf der
+ersten Seite mit Band und erneut, wenn die Frage auf etwas anderes wartet:
+
+| Die Frage wartet auf | Alarm |
+| --- | --- |
+| SAFE und Netzteilausgang aus | `IOmcu nutzt einen anderen Build. Die Update-Frage öffnet bei SAFE und Netzteilausgang aus.` |
+| das WLAN des Panels aus | `IOmcu nutzt einen anderen Build. Die Update-Frage öffnet, sobald das WLAN des Panels aus ist.` |
+| das Ende der Panel-Installation | `IOmcu nutzt einen anderen Build. Die Update-Frage öffnet nach der Panel-Installation.` |
 
 ![Die Frage zum IOmcu-Update](img/de/coproc-update.png)
 

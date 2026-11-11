@@ -20,6 +20,13 @@
  * answered for BUSFAULT_BACK_MS without a break the hold is RECONNECT: the
  * menu, on the live bench, SAFE.  A drop takes RECONNECT back.
  *
+ * One start-up verdict leaves with a tap instead: a silent bus on which no
+ * IOmcu answered a status request either (busfault_no_iomcu()).  That is
+ * the panel powered on its own, the IOmcu not yet fitted or not yet wired,
+ * and the screen says so in its own words: no IOmcu answered, the panel
+ * runs its simulation.  Frames that came back altered or went missing are a
+ * wiring fault, and keep the hold.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -104,12 +111,34 @@ typedef struct {
  *         offered: 1000ms of the band's LINK. */
 #define BUSFAULT_BACK_MS 1000u
 
-/** @brief Which hold left the screen. */
+/** @brief Which hold or tap left the screen. */
 typedef enum {
     BUSFAULT_EXIT_NONE = 0,    /**< none has completed since the last read */
     BUSFAULT_EXIT_SIMULATION,  /**< the acknowledgement, the link silent   */
     BUSFAULT_EXIT_RECONNECT,   /**< RECONNECT, the link answering          */
 } busfault_exit_t;
+
+/**
+ * @brief Whether @p r is a start-up test on which no IOmcu answered: the
+ *        SILENT verdict, and no answer to the status request either.
+ *
+ * The screen then names no fault but the missing IOmcu, and a tap on its
+ * button leaves it; RECONNECT, once the link answers, stays a hold.  Every
+ * other verdict, and a silent echo run from an IOmcu that did answer its
+ * status, is a wiring or firmware fault and keeps the hold.
+ * @param r The report; NULL is false.
+ * @return true for a bus on which nothing answered at all.
+ */
+bool busfault_no_iomcu(const busfault_report_t *r);
+
+/**
+ * @brief The report's heading in the language showing: "No IOmcu
+ *        answered." for busfault_no_iomcu(), otherwise the verdict
+ *        (busfault_verdict_text()).  For the splash's CAN line as well.
+ * @param r The start-up test's report; NULL reads as running.
+ * @return A static string.
+ */
+const char *busfault_headline(const busfault_report_t *r);
 
 /**
  * @brief Hand the screen what to show.  The hold, the hint and the link's

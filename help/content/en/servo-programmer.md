@@ -45,7 +45,7 @@ A tap on a row that is not met names it in the alert band. The footer's middle s
 - IOmcu 0.17.0 or later (protocol 4.15, including LEAVE).
 - A servo connected to an IOmcu programming port, PROG PORT 1 to 4, with a pin and FUNCTION SERVO PWM. On a manually wired board, port 1 defaults to GPIO 13, pad 17; set other pins in each PROG PORT entry on Outputs. Carrier pins are fixed; see [The port and the supply](#the-port-and-the-supply).
 - SERVO TESTER set to that port: PORT 1, PORT 2, PORT 3 or PORT 4. The [PORT button](servo-settings.md#the-port-button) on the other function screens picks it. On a carrier with protocol 4.36 or later, you can also choose it from the programmer's PORT row.
-- A SAFE bench. While ARMED, CONNECT is refused with `Tap DISARM first. The port cannot be taken over while ARMED.` While the port is held, no screen can switch the bench to ARMED.
+- A SAFE bench. While ARMED, CONNECT is refused with `Tap DISARM first. The port cannot be taken over while ARMED.` While the port is held, no screen can switch the bench to ARMED, and the band's arm chip reads `SAFE PROG 1` to `SAFE PROG 4` in amber on every screen, SERVO left or not.
 
 ![An IOmcu without the programming port](view:servo-kst-nopage)
 ![The standard outputs are the target](view:servo-kst-target)
@@ -267,6 +267,7 @@ MOVE SERVO on the Hitec programmer's TRAVEL tab moves a D series servo's horn to
 - NEUTRAL, LEFT END and RIGHT END get `-` and `+` keys of 8 counts, 0.11°, repeating while held. The horn follows the row last stepped, its label in the accent colour; it starts on NEUTRAL. A tap on the value opens the keypad.
 - The horn moves 2.0° at most a pass and stays inside the reach of the stored end points, 2606 to 13743 on a factory D485HW.
 - A horn that lags more than 2.0° on 2 passes, a current at 80% of the current limit for 0.4s, or an AS5600 angle that does not follow moves the horn back 1.0° and ends the loop: `Servo blocked at 6000. Moved back to 6167.`
+- While it is on, the band's arm chip reads `SAFE MOVE` in amber.
 - A tap on ON, a tab change or the home tag ends it: target 3000, a restart of the servo, and a read held against the start, about 2.6s in the host model. `MOVE SERVO is OFF. The stored values read back unchanged.`
 - STOP, a switch to SAFE at the bench, a lost link, the supply going off and a failed read end it at once with every output off.
 

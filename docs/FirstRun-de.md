@@ -136,6 +136,9 @@ Stepping A2 ist [unten](#die-partitionstabelle-des-iomcu) beschrieben.
 Du kannst zuerst das Panel installieren. An einem IOmcu ohne Partitionstabelle zeigt
 das Panel `IOmcu kann nicht über CAN aktualisiert werden. Installiere die Firmware einmal über USB.`, bis Schritt 2 erledigt ist; der Link läuft
 solange.
+Startet das Panel, ohne dass ein IOmcu am Bus antwortet, öffnet es
+`KEIN IOMCU` statt des Menüs; ein Tippen auf `TIPPEN ZUM FORTFAHREN` führt
+ins Menü in der Simulation ([Den Link in Betrieb nehmen](Bringup-de.md#der-bus-fehler-bildschirm)).
 
 ### Der IOmcu über CAN
 
@@ -150,7 +153,10 @@ sich beide Platinen vor und nach dem Update.
    Image, das es trägt, findet einen anderen Build, und das Band meldet
    `IOmcu nutzt einen anderen Build. Aktualisiere ihn auf UPDATES.`.
 2. Die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE, der
-   Netzteil-Ausgang ausgeschaltet und das WLAN des Panels aus ist. Sie nennt die
+   Netzteil-Ausgang ausgeschaltet und das WLAN des Panels aus ist. Hält
+   eines davon sie zurück, nennt die Zeile im Band es, etwa `IOmcu nutzt
+   einen anderen Build. Die Update-Frage öffnet, sobald das WLAN des Panels
+   aus ist.`. Sie nennt die
    Version auf dem IOmcu und die Version im Panel. Halte START 2s. Nach
    ABBRECHEN kannst du stattdessen `2s HALTEN ZUM IOMCU-UPDATE` auf
    SETUP > UPDATES halten. Der
@@ -443,8 +449,8 @@ Noch ist keine Last an einem Ausgang angeschlossen. Dieser Schritt prüft die
 Verriegelung, nicht einen Pin.
 
 1. **Heartbeat-Draht abgezogen** → Das Schalten auf ARMED muss **verweigert** werden. Der
-   IOmcu antwortet `NOT_ARMED`, weil `!beat.alive`. Das Panel zeigt die
-   Verweigerung.
+   IOmcu antwortet `NOT_ARMED`, weil `!beat.alive`. Das Panel zeigt
+   `ARM abgelehnt: IOmcu ohne Heartbeat. Prüfe Leitung IO28-GPIO 3 oder STOP-Taster (FEHLER 10).`
 2. **Heartbeat-Draht gesteckt, Panel ARMED** → der IOmcu nimmt es an.
 3. **Heartbeat-Draht in ARMED ziehen** → muss binnen **150ms**
    auf SAFE fallen.

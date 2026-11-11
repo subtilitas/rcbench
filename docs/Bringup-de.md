@@ -131,11 +131,22 @@ steigendem Aufwand geordnet. Die rechte Spalte zeigt die Zähler beider
 Seiten. `zurück` ist grün, sobald ein Frame zurückkam. `BUS OFF` heißt,
 dass das Panel keine Frames sendet.
 
-![Es kam nichts zurück](img/de/busfault-silent.png)
-
 Halte die Taste am unteren Rand zwei Sekunden lang, um die Seite zu
 verlassen. Geste und Überblendung entsprechen ARM. Die Haltebedingung soll verhindern, dass eine kurze Berührung,
 etwa durch einen Ärmel, den Fehlerbildschirm schließt.
+
+Ein stiller Bus, auf dem auch kein IOmcu die Statusanfrage beantwortet hat,
+gilt nicht als Fehler. Das ist ein Panel, das allein versorgt ist, oder ein
+IOmcu, der noch nicht verdrahtet ist. Die Leiste ist bernsteinfarben und zeigt `KEIN
+IOMCU`, die Überschrift lautet `Kein IOmcu hat geantwortet.`, und die
+Prüfungen stehen unter `IST EIN IOMCU ANGESCHLOSSEN, PRÜFE IN DIESER
+REIHENFOLGE`. Ein Tippen auf `TIPPEN ZUM FORTFAHREN` führt ins Menü in der
+Simulation. Der Startbildschirm markiert die CAN-Zeile mit derselben
+Überschrift als Warnung. Frames, die verändert zurückkamen oder verloren
+gingen, behalten das Halten, ebenso ein stiller Echo-Lauf eines IOmcu, der
+seinen Status beantwortet hat.
+
+![Kein IOmcu hat geantwortet](img/de/busfault-silent.png)
 
 Die Bestätigung behebt den Fehler nicht und schaltet den Test nicht ab.
 Der Prüfstand läuft in der Simulation und steuert keinen Ausgang an.
