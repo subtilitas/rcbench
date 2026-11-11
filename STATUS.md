@@ -2722,9 +2722,9 @@ The engine, ESC STICK on MOTOR & ESC > PROGRAM and the simulated ESC are tested 
 only. A run counts the beeps from the phase tap while its capture runs, else from an INA3221
 channel that watches SUPPLY, and is refused with neither; the PD mini's current, read every
 100 to 152ms, is no source. The phase tap has heard one ESC, a Flycolor FlyDragon Lite 40A at
-7.6V: short beeps of 127.9ms at 2090Hz and long beeps of 383.7ms at 1866Hz, no beep lost. Its
-gaps between beeps and between groups are not measured, and no run has counted from the tap
-or from an INA3221 channel. The defaults (BEEP MIN 200ms, LONG 500ms) do not fit that ESC; its
+7.6V: short beeps of 127.9ms at 2090Hz and long beeps of 383.7ms at 1866Hz, no beep lost. On
+2026-11-11 runs counted from the tap and stored item 5 twice and item 3 on that ESC; no run has
+counted from an INA3221 channel. The defaults (BEEP MIN 200ms, LONG 500ms) do not fit that ESC; its
 profile states the two lengths (`beep_ms` 128, `long_ms` 384), and a run on it takes BEEP MIN
 64ms, LONG 256ms and LONG MAX 768ms from them, and GAP MIN 64ms, half the short beep, under the
 default 200ms. GROUP GAP stays the setting's 700ms; a pause between groups of 700ms or less, or a

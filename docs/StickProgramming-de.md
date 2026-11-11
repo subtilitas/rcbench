@@ -1017,14 +1017,15 @@ am 40A, dessen Punkt 8 4 Werte hat, Punkt 8 Wert 4 und Punkt 1 Wert 2.
 
 ## Aktuelle Einschränkungen
 
-- Die Vorgaben und die Reihenfolgeregel sind an echten Pieptönen nicht erprobt.
-  Der Abgriff hat einen ESC gehört, einen Flycolor FlyDragon Lite 40A an
+- Der Abgriff hat an einem ESC gezählt, einem Flycolor FlyDragon Lite 40A an
   7,6V über 4,7kΩ und eine 3,0-V-Zenerdiode an GPIO 22, ohne verlorenen
-  Piepton; kein Lauf hat an ihm gezählt. Kein Lauf hat an einem
-  INA3221-Kanal gezählt.
+  Piepton: am 2026-11-11 speicherten Läufe Punkt 5 zweimal und Punkt 3, mit
+  dem Profil FlyDragon Lite Plus; Punkt 1, 2 und 8 endeten vor der
+  Schleifenmarke und dem Profil FlyDragon Lite mit ZEITLIMIT. Kein Lauf hat
+  an einem INA3221-Kanal gezählt.
 - Die beiden FlyDragon-Profile nennen keine Pause. Eine Aufnahme eines FlyDragon
   Lite 40A vom 2026-11-11 zeigt 146 bis 150ms zwischen den Pieptönen einer
-  Gruppe und 3,23s zwischen den Gruppen; kein Lauf hat sie genutzt. Ein
+  Gruppe und 3,23s zwischen den Gruppen; Läufe mit der Vorgabe GRUPPENPAUSE 700ms zählen sie. Ein
   Lauf auf einem der beiden nimmt PAUSE MIN 64ms aus dem kurzen Piepton von 128ms (die Hälfte) und behält
   GRUPPENPAUSE 700ms aus den Einstellungen: eine Pause zwischen zwei
   Gruppen von höchstens 700ms verbindet sie zu einer, und eine Pause in

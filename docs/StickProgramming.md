@@ -914,13 +914,14 @@ value 4 and item 1 value 2 on the 40A, whose item 8 has 4 values.
 
 ## Current limitations
 
-- The defaults and the order rule are untested on real beeps. The tap has
-  heard one ESC, a Flycolor FlyDragon Lite 40A at 7.6V through 4.7kΩ and a
-  3.0V zener on GPIO 22, with no beep lost; no run has counted from it.
-  No run has counted from an INA3221 channel.
+- The tap has counted on one ESC, a Flycolor FlyDragon Lite 40A at 7.6V
+  through 4.7kΩ and a 3.0V zener on GPIO 22, with no beep lost: on
+  2026-11-11 runs stored item 5 twice and item 3, on the FlyDragon Lite Plus
+  profile; items 1, 2 and 8 ended with TIMEOUT before the loop marker and
+  the FlyDragon Lite profile. No run has counted from an INA3221 channel.
 - The two FlyDragon profiles state no gap. One recording of a FlyDragon Lite
   40A on 2026-11-11 shows 146 to 150ms between the beeps of a group and
-  3.23s between groups; no run has used them. A run on either takes GAP MIN
+  3.23s between groups; runs with the default GROUP GAP 700ms count them. A run on either takes GAP MIN
   64ms from the 128ms short beep (half of it) and keeps GROUP GAP 700ms from
   the settings: a pause between two groups of 700ms or less joins them into
   one, and a gap inside a group longer than 700ms splits it. Either way the
