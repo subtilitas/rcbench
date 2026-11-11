@@ -188,9 +188,14 @@ bool sp_model_cols(const esc_profile_t *p, int model, int row_w,
     } else if (runs) {
         char items[24];
         const esc_stick_kind_t kind = esc_stick_kind(p, NULL);
+        /* The model's own items: an item listed once per group of models
+         * (applies_to) counts once for each model it applies to. */
+        unsigned n = 0u;
+        for (unsigned i = 0; i < p->item_count; ++i) {
+            n += esc_item_applies(p, i, model) ? 1u : 0u;
+        }
         snprintf(items, sizeof(items),
-                 (p->item_count == 1u) ? TR(SP_ITEM) : TR(SP_ITEMS),
-                 (unsigned)p->item_count);
+                 (n == 1u) ? TR(SP_ITEM) : TR(SP_ITEMS), n);
         snprintf(out->right, sizeof(out->right), "%s%s%s  %s",
                  esc_profiles_is_override(p) ? TR(SP_CARD) : "",
                  esc_profiles_is_override(p) ? "  " : "", items,

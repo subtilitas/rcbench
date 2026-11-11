@@ -11,6 +11,7 @@
  * - the_fullest_pages_end_above_their_footers
  * - the_longest_labels_fit_their_controls_in_every_language
  * - a_model_row_shows_its_family_beside_the_tag
+ * - a_model_row_counts_the_items_of_its_model
  * - the_spots_the_suites_tap_lie_on_their_controls
  *
  * SPDX-License-Identifier: MIT
@@ -25,6 +26,9 @@
 #include "ui_text.h"
 
 #include "stick_spots.h"
+#include "supply.h"
+#include "supply_screen.h"
+#include "settings.h"
 
 /* Last: its layout macros have short names (W, H, PAD) and s names the
  * session's state. */
@@ -286,6 +290,35 @@ TEST_CASE(a_model_row_shows_its_family_beside_the_tag)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* A model row counts the model's own items: the FlyDragon Lite lists item 8
+ * once per group of models, and each model has 10 items, not 11. */
+TEST_CASE(a_model_row_counts_the_items_of_its_model)
+{
+    fresh();
+    const int row_w = s.st.rows[0].w;
+    /* A supply up to 28V within the settings' limits: every model runs, so
+     * its row shows the item count, not a reason. */
+    settings_set(SET_SUPPLY_V_MAX, 28.0f);
+    supply_screen_limits_changed();
+    supply_caps_t caps = SUPPLY_CAPS_PPS_DEFAULT;
+    caps.v_max = 28.0f;
+    supply_screen_set_caps(&caps);
+    const esc_profile_t *p = esc_profiles_find("flycolor-flydragon-lite");
+    CHECK(p != NULL);
+    CHECK(p == NULL || p->item_count == 11u);
+    for (int m = 0; p != NULL && m < (int)p->model_count; ++m) {
+        sp_model_cols_t col;
+        (void)sp_model_cols(p, m, row_w, &col);
+        if (strstr(col.right, "10 ITEMS") == NULL) {
+            T_FAIL("%s: \"%s\"", p->models[m].name, col.right);
+        }
+    }
+    settings_reset_all();
+    supply_screen_limits_changed();
+    const supply_caps_t pps = SUPPLY_CAPS_PPS_DEFAULT;
+    supply_screen_set_caps(&pps);
+}
+
 /* The places the suites and render_ui tap (stick_spots.h) lie on the
  * controls they name. */
 TEST_CASE(the_spots_the_suites_tap_lie_on_their_controls)
@@ -329,6 +362,7 @@ int main(void)
     RUN(the_fullest_pages_end_above_their_footers);
     RUN(the_longest_labels_fit_their_controls_in_every_language);
     RUN(a_model_row_shows_its_family_beside_the_tag);
+    RUN(a_model_row_counts_the_items_of_its_model);
     RUN(the_spots_the_suites_tap_lie_on_their_controls);
     return test_summary("esc_stick_layout");
 }
