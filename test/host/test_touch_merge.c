@@ -344,6 +344,14 @@ TEST_CASE(an_injected_stop_stops)
 /* What the panel passes: four good intervals, plus one (test_arming.c). */
 #define SETTLE_MS (HEARTBEAT_GOOD_RUN * HEARTBEAT_PERIOD_MS + HEARTBEAT_PERIOD_MS)
 
+/* The two numbers that make touch dead, written out: the panel reads a
+ * poll's age against the first and the policy counts the second. */
+TEST_CASE(the_touch_windows_are_200ms_and_500ms)
+{
+    CHECK_EQ(ARMING_TOUCH_FRESH_MS, 200u);
+    CHECK_EQ(ARMING_TOUCH_DEAD_MS, 500u);
+}
+
 /*
  * The glass answers every 10ms throughout; the injector stops at 1000ms.
  * Touch reads as seen until its age reaches 200ms, and ARMING_TOUCH_DEAD_MS
@@ -938,6 +946,7 @@ TEST_CASE(mapping_no_points_or_no_map_changes_nothing)
 int main(void)
 {
     RUN(glass_first_and_injected_ids_marked);
+    RUN(the_touch_windows_are_200ms_and_500ms);
     RUN(a_full_frame_drops_injected_points_never_glass);
     RUN(a_source_with_no_report_keeps_its_set);
     RUN(three_failed_reads_drop_the_injected_contacts);
