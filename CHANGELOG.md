@@ -6,6 +6,12 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- Profile field `scheme.announce.long_ms`: a long beep's length in ms, 0 to
+  60000 or null, in a `short_long` profile only, longer than `beep_ms` and
+  stated together with it ([ESC profiles](docs/EscProfiles.md)).
+
 ### Changed
 
 - ESC STICK counts the ESC's beeps from the phase tap or from an INA3221
@@ -24,6 +30,20 @@ history is in git.
 - A run ends with BEEP LOST when a tap beep number is missing, with TAP
   STOPPED when the tap's capture stops, and with INA3221 LOST when no window
   of the channel comes for 1000ms. READING RATE judges the INA3221's windows.
+- A stick run takes its timing from the profile where the profile states
+  it: BEEP MIN half the short beep, LONG midway between the short and the
+  long beep, LONG MAX twice the long beep, GAP MIN half the gap (without
+  a gap, the lower of the setting and half the short beep) and GROUP GAP
+  midway between the gap and the group gap. The settings apply where
+  the profile states nothing. The run's top card shows BEEP MIN and LONG,
+  marked (profile) or (setting); the profile page shows them where the
+  profile states its beep lengths
+  ([Stick programming](docs/StickProgramming.md#timing-from-the-profile)).
+- The Flycolor FlyDragon Lite Plus profile states `beep_ms` 128 and
+  `long_ms` 384, measured over the phase tap on one FlyDragon Lite 40A. Its
+  run uses BEEP MIN 64ms, GAP MIN 64ms, LONG 256ms and LONG MAX 768ms
+  with every setting at its default. Its gaps are not measured: GROUP GAP
+  stays the setting's 700ms.
 
 ## 0.23.11 - 2026-11-11
 

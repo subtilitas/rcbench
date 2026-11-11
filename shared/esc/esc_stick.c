@@ -754,6 +754,13 @@ bool esc_stick_start(esc_stick_t *e, const esc_profile_t *p,
     if (e == NULL || b == NULL) {
         return esc_stick_no(why, "no run");
     }
+    if (t == NULL) {
+        return esc_stick_check(p, ch, n, t, why);   /* refused, with why */
+    }
+    /* The profile's stated lengths over the settings, checked as they are. */
+    esc_stick_timing_t pt = *t;
+    (void)esc_stick_profile_timing(p, &pt);
+    t = &pt;
     if (!esc_stick_check(p, ch, n, t, why)) {
         return false;
     }

@@ -973,6 +973,9 @@ FIT_ONLY = {
     # a model that runs and its family, 97 cells in German, cut to whole
     # words.
     "motor-stick-crumb": (None, "motor", "dark"),
+    # ESC STICK > Flycolor > FlyDragon Lite+ 40A: BEEP MIN and LONG from
+    # the profile's measured beep lengths in the side column.
+    "motor-stick-flydragon": (None, "motor", "dark"),
     # A tap on ARM and on OUTPUT ON, released before 2s: the button's hint
     # in the alert band.
     "hold-hint-arm":    (None, "motor", "dark"),

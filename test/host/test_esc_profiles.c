@@ -111,6 +111,7 @@ static void same(const esc_profile_t *a, const esc_profile_t *b)
     CHECK_EQ(a->store_throttle, b->store_throttle);
     CHECK_EQ(a->long_equals_short, b->long_equals_short);
     CHECK_EQ(a->beep_ms, b->beep_ms);
+    CHECK_EQ(a->long_ms, b->long_ms);
     CHECK_EQ(a->gap_ms, b->gap_ms);
     CHECK_EQ(a->group_gap_ms, b->group_gap_ms);
     CHECK_EQ(a->repeat, b->repeat);
@@ -755,6 +756,7 @@ TEST_CASE(a_profile_reads_into_every_field)
     CHECK_EQ(p.skip_throttle, ESC_THR_NONE);
     CHECK_EQ(p.repeat, -1);                     /* null: not known */
     CHECK_EQ(p.beep_ms, 0);
+    CHECK_EQ(p.long_ms, 0);                     /* absent: not known */
     CHECK_EQ(p.one_change_per_entry, false);
     CHECK_EQ(p.step_count, 2);
     CHECK_STR_EQ(p.steps[1], "Power on");
@@ -868,6 +870,33 @@ TEST_CASE(a_menu_reads_the_move_that_stores)
     CHECK(esc_profile_parse(j, strlen(j), &p, &block, NULL, 0));
     if (block != NULL) {
         CHECK_EQ(p.store_throttle, ESC_THR_MIN);
+    }
+    free(block);
+    free(j);
+}
+
+/* The beep lengths: a short and a long beep, as the FlyDragon's profile
+ * states them, read into beep_ms and long_ms. */
+TEST_CASE(a_short_long_menu_reads_its_beep_lengths)
+{
+    char *j = subst("\"beep_ms\": null,",
+                    "\"beep_ms\": 128, \"long_ms\": 384,");
+    esc_profile_t p;
+    void *block = NULL;
+    CHECK(esc_profile_parse(j, strlen(j), &p, &block, NULL, 0));
+    if (block != NULL) {
+        CHECK_EQ(p.beep_ms, 128u);
+        CHECK_EQ(p.long_ms, 384u);
+        CHECK_EQ(p.gap_ms, 0u);
+    }
+    free(block);
+    free(j);
+    /* null is not known, as an absent field. */
+    j = subst("\"beep_ms\": null,", "\"beep_ms\": null, \"long_ms\": null,");
+    block = NULL;
+    CHECK(esc_profile_parse(j, strlen(j), &p, &block, NULL, 0));
+    if (block != NULL) {
+        CHECK_EQ(p.long_ms, 0u);
     }
     free(block);
     free(j);
@@ -989,6 +1018,20 @@ TEST_CASE(a_broken_profile_is_refused_with_its_place_named)
         { "{\"number\": 2, \"name\": \"Timing\"",
           "{\"number\": 1, \"name\": \"Timing\"",
           "items: number 1 twice" },
+        { "\"beep_ms\": null,", "\"beep_ms\": 128,",
+          "scheme.announce.long_ms: needed with beep_ms" },
+        { "\"beep_ms\": null,", "\"beep_ms\": null, \"long_ms\": 384,",
+          "scheme.announce.long_ms: needs beep_ms" },
+        { "\"beep_ms\": null,", "\"beep_ms\": 384, \"long_ms\": 384,",
+          "scheme.announce.long_ms: not above beep_ms" },
+        { "\"beep_ms\": null,", "\"beep_ms\": 128, \"long_ms\": 60001,",
+          "scheme.announce.long_ms: outside" },
+        { "\"encoding\": \"short_long\",\n"
+          "                \"long_equals_short\": 5, \"beep_ms\": null,",
+          "\"encoding\": \"count\",\n"
+          "                \"long_equals_short\": 5, \"beep_ms\": 128,"
+          " \"long_ms\": 384,",
+          "scheme.announce.long_ms: only for short_long" },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         char *j = subst(k[i].from, k[i].to);
@@ -1530,6 +1573,7 @@ int main(void)
     RUN(a_two_stage_menu_reads_its_value_select_move);
     RUN(a_menu_reads_where_the_stick_rests);
     RUN(a_menu_reads_the_move_that_stores);
+    RUN(a_short_long_menu_reads_its_beep_lengths);
     RUN(a_profile_reads_its_manual_steps);
     RUN(a_value_reads_the_stick_position_it_is_set_from);
     RUN(a_value_reads_its_own_entry_time);

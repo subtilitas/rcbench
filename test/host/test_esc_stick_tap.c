@@ -27,8 +27,10 @@
  * The FlyDragon's menu at the tap's lengths: 128ms short and 384ms long
  * beeps (the simulation's whole ms for 127.9ms and 383.7ms), 128ms between
  * the beeps of a group and 1500ms between groups -- the gaps are not
- * measured.  The timing a run needs for them: a beep from 100ms, LONG at
- * 250ms between the two lengths, LONG MAX 600ms, GROUP GAP 700ms.
+ * measured.  The profile states the two lengths, and the run takes BEEP
+ * MIN 64ms, LONG 256ms and LONG MAX 768ms from them, and GAP MIN as the
+ * lower of the one set here and half the short beep, 64ms; GROUP GAP is
+ * 700ms.
  */
 static void flydragon(esc_stick_src_t src, uint32_t gap_min_ms)
 {
@@ -41,10 +43,7 @@ static void flydragon(esc_stick_src_t src, uint32_t gap_min_ms)
     c.pause_ms = 1500u;
     esc_sim_init(&r.sim, r.p, &c);
     r.src = src;
-    r.t.beep_min_ms = 100u;
     r.t.gap_min_ms = gap_min_ms;
-    r.t.long_ms = 250u;
-    r.t.long_max_ms = 600u;
     r.t.group_gap_ms = 700u;
     r.tap_lag = 60u;            /* the panel has a beep 60ms after its end */
     r.tap_skew = 123456u;       /* the tap's clock is its own */
@@ -90,7 +89,8 @@ TEST_CASE(a_supply_read_every_152_ms_does_not_refuse_a_tap_run)
     CHECK_EQ(esc_sim_stored(&r.sim, 4), 7);
     CHECK_EQ(esc_sim_stored(&r.sim, 6), 2);
 
-    /* The same readings as the meter's windows: late for BEEP MIN 100ms. */
+    /* The same readings as the meter's windows: late for the 64ms BEEP MIN
+     * the profile's lengths give. */
     flydragon(ESC_STICK_SRC_METER, 100u);
     r.read_iv = 152u;
     CHECK(start(c, n));
@@ -265,11 +265,19 @@ TEST_CASE(beeps_held_back_past_a_groups_end_store_nothing_wrong)
  * they end.  The gap plus the next beep, 750ms, is longer than GROUP GAP
  * (700ms): a group may end only on the capture's word that nothing sounds,
  * never on the time since the last beep came in, or it ends under the next
- * beep.  The tap run stores item 3's value as the meter run does.
+ * beep.  The tap run stores item 3's value as the meter run does.  The
+ * FlyDragon's menu under a copy of its profile without the beep lengths it
+ * states, so the run takes the default timing and not the profile's.
  */
+static esc_profile_t g_unmeasured;
+
 static void codex_case(esc_stick_src_t src)
 {
     rig(FLYDRAGON);
+    g_unmeasured = *r.p;
+    g_unmeasured.beep_ms = 0u;
+    g_unmeasured.long_ms = 0u;
+    r.p = &g_unmeasured;
     esc_sim_cfg_t c;
     esc_sim_defaults(&c);
     c.beep_ms = 250u;

@@ -141,8 +141,9 @@ size_t sp_changes(esc_stick_change_t *ch, size_t *picked)
     return n;
 }
 
-/* The timing as the settings hold it.  The entry is the profile's own where
- * it states one: the manual's number, not the bench's guess. */
+/* The timing a run uses: the settings', with the profile's own values where
+ * it states them -- the entry, the manual's number, and the beep and gap
+ * lengths (esc_stick_profile_timing()), measured, not the bench's guess. */
 void sp_timing(esc_stick_timing_t *t)
 {
     const esc_profile_t *p = s.st.p;
@@ -160,6 +161,7 @@ void sp_timing(esc_stick_timing_t *t)
     t->timeout_ms    = (uint32_t)settings_get_int(SET_STICK_TIMEOUT);
     t->threshold_ma  = (uint32_t)settings_get_int(SET_STICK_THRESHOLD);
     t->hysteresis_ma = (uint32_t)settings_get_int(SET_STICK_HYST);
+    (void)esc_stick_profile_timing(p, t);
 }
 
 /* The supply's set points for a run, mV and mA: VOLTAGE, or the profile's

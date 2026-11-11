@@ -54,7 +54,7 @@ SUCHE filtert die angezeigte Listenebene. Die Tastatur erscheint rechts; jede Ei
 
 Die Profilseite listet die Menüpunkte. Jeder beginnt mit BEHALTEN und bleibt damit unverändert. Wähle mit `-` und `+` einen Wert; die Tasten stoppen an beiden Enden der Liste. AKTION, KEINE EINSTELLUNG markiert Aktionen wie das Zurücksetzen. KEINE AUSWAHL steht bei einem Punkt mit nur einem Wert. Jede Seite zeigt 5 Punkte.
 
-Die rechte Spalte enthält ÄNDERN, den angezeigten Bereich und die Blättertasten `^` und `v`. Dazu kommen gegebenenfalls MANUELLER EINGRIFF NÖTIG, Menüart, Netzteilspannung und Strom für den Lauf, Einstiegszeit sowie Werte und Vorgabe des gewählten Punkts. START zeigt die Anzahl gewählter Werte.
+Die rechte Spalte enthält ÄNDERN, den angezeigten Bereich und die Blättertasten `^` und `v`. Dazu kommen gegebenenfalls MANUELLER EINGRIFF NÖTIG, Menüart, Netzteilspannung und Strom für den Lauf, Einstiegszeit sowie Werte und Vorgabe des gewählten Punkts. Nennt das Profil gemessene Pieptonlängen, zeigt sie auch PIEPTON MIN, LANG und PAUSE MIN mit "(Profil)": Der Lauf nimmt sie statt der Einstellungen. Die obere Karte eines Laufs zeigt PIEPTON MIN und LANG bei jedem Lauf, mit "(Profil)" oder "(Einstellung)". START zeigt die Anzahl gewählter Werte.
 
 Die Fußleiste lautet `[ESC STICK] [START n] [OPTIONEN]`; während eines Laufs steht in der Mitte ABBRECHEN, danach OK. Ein Hinweis über der Fußleiste sagt, warum START nicht starten kann, oder dass das Profil nicht geprüft ist.
 
@@ -62,7 +62,7 @@ OPTIONEN öffnet die Liste mit den Netzteileinstellungen und den Pieptonzeiten. 
 
 ![Die Optionsliste](view:motor-stick-timing)
 
-Keine der Zeiten ist gemessen. Spannung 0,0V nimmt die Spannung aus der Zellenzahl des Profils. Eine Änderung gilt sofort; SPEICHERN in der Leiste der Liste behält sie, und ESC STICK ZURÜCKSETZEN setzt die 14 Einstellungen auf ihre Vorgaben.
+Die Vorgaben sind nicht gemessen. Nennt ein Profil seine Pieptonlängen, nimmt der Lauf PIEPTON MIN, LANG und LANG MAX daraus statt aus diesen Einstellungen, und PAUSE MIN, wo der halbe kurze Piepton kleiner ist. Spannung 0,0V nimmt die Spannung aus der Zellenzahl des Profils. Eine Änderung gilt sofort; SPEICHERN in der Leiste der Liste behält sie, und ESC STICK ZURÜCKSETZEN setzt die 14 Einstellungen auf ihre Vorgaben.
 
 Ändere eine Einstellung mit `-` und `+` oder tippe auf ihren Wert, um das Tastenfeld zu öffnen. Es zeigt Name, Bereich und Einheit; die Zahl der Nachkommastellen entspricht der Schrittweite. OK rundet auf den nächsten Schritt: Aus 1,23A werden 1,25A. Bei Werten außerhalb des Bereichs bleibt das Tastenfeld offen und hebt den Bereich in der Warnfarbe hervor. ABBRECHEN oder das Home-Feld verwirft die Eingabe; die Liste bleibt offen. Das Home-Feld schließt die Liste, bei ungespeicherter Änderung mit Rückfrage.
 

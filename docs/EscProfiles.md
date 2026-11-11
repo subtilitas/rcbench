@@ -28,8 +28,10 @@ throttle and counts the beeps in the supply current. It can run 25 of the
 
 Every profile is `"verified": false`. The profiles come from 154 manuals and
 were written without an ESC on a bench. No manual states a beep length, a
-gap or a loop time in milliseconds, so the corresponding timing fields
-remain null until a bench recording supplies measurements.
+gap or a loop time in milliseconds. The timing fields are stated only where
+a bench measured them: 1 profile, `flycolor-flydragon-lite-plus`, gives
+`beep_ms` 128 and `long_ms` 384 from the phase tap on one FlyDragon Lite
+40A. Every other timing field is null.
 
 ## Where profiles live
 
@@ -116,7 +118,10 @@ both languages.
 | `scheme.announce.what` | `item`, `value`, `item_then_value` |
 | `scheme.announce.encoding` | `count`, `short_long`, `melody`, `yes_no` |
 | `scheme.announce.long_equals_short` | short beeps per long beep; required for `short_long` |
-| `scheme.announce.beep_ms`, `gap_ms`, `group_gap_ms` | 0 to 60000, or null |
+| `scheme.announce.beep_ms` | a short beep's length in ms: 0 to 60000, or null when not measured |
+| `scheme.announce.long_ms` | a long beep's length in ms: 0 to 60000, or null. `short_long` only, longer than `beep_ms`, and stated together with it |
+| `scheme.announce.gap_ms` | silence between two beeps of a group in ms: 0 to 60000, or null |
+| `scheme.announce.group_gap_ms` | silence between two groups in ms: 0 to 60000, or null |
 | `scheme.announce.repeat` | 0 to 255: 0 repeats until a choice is made, null not known |
 | `scheme.select.throttle`, `scheme.skip.throttle` | `min`, `mid`, `max`, `none` |
 | `scheme.listen` | where the stick rests while the menu sounds: `{"throttle": "min"}`, `mid` or `max`. Absent or null: where the entry left it. Set in the 9 profiles for YGE ESCs, whose menu sounds with the stick at minimum after a maximum entry; stick programming runs such a profile only when `hold_ms` gives the entry's length |
@@ -228,9 +233,14 @@ differently.
 - Item and value numbers, defaults and
   entry gestures are as the manuals state them, and some manuals disagree
   with each other; each profile's `notes` names the conflicts.
-- The beep fields (`beep_ms`, `gap_ms`, `group_gap_ms`) are null in every
-  profile and stick programming does not read them: its timing comes from
-  its settings.
+- The beep fields (`beep_ms`, `long_ms`, `gap_ms`, `group_gap_ms`) are
+  stated only where measured: `beep_ms` and `long_ms` in 1 profile, from 1
+  ESC. Stick programming takes BEEP MIN, LONG and LONG MAX from them, GAP
+  MIN and GROUP GAP from the gaps, GAP MIN from half the short beep where
+  no gap is stated and that is lower, and its settings where a field is
+  null;
+  see [Stick programming](StickProgramming.md#timing-from-the-profile). No
+  profile states a gap.
 - The bench supply is the PD mini, at most 20V. ESCs whose minimum input is
   above that, such as 6S-and-up YGE Opto and Navy models, need an external
   supply.

@@ -303,6 +303,19 @@ def check(path: pathlib.Path) -> dict:
     want(cpe in ("one", "many"), f"{w}.scheme.changes_per_entry",
          "not one or many")
     rep = num(a, "repeat", f"{w}.scheme.announce", 255)
+    # The beep lengths: a long beep's only in a short_long profile, only
+    # beside the short beep's and longer than it; a short_long profile
+    # states the two together or neither.
+    beep = num(a, "beep_ms", f"{w}.scheme.announce", 60000) or 0
+    long_ms = num(a, "long_ms", f"{w}.scheme.announce", 60000) or 0
+    want(not long_ms or enc == "ESC_ENC_SHORT_LONG",
+         f"{w}.scheme.announce.long_ms", "only for short_long")
+    want(not long_ms or bool(beep), f"{w}.scheme.announce.long_ms",
+         "needs beep_ms")
+    want(not long_ms or long_ms > beep, f"{w}.scheme.announce.long_ms",
+         "not above beep_ms")
+    want(enc != "ESC_ENC_SHORT_LONG" or not beep or bool(long_ms),
+         f"{w}.scheme.announce.long_ms", "needed with beep_ms")
 
     # The German family beside it: absent or null, none; else as the
     # manual steps' German, 1 to FAMILY_DE_MAX bytes.
@@ -335,7 +348,8 @@ def check(path: pathlib.Path) -> dict:
         pick(sto, "throttle", f"{w}.scheme.store",
              {k: v for k, v in THROTTLE.items() if k != "none"}),
         "les": les or 0,
-        "beep": num(a, "beep_ms", f"{w}.scheme.announce", 60000) or 0,
+        "beep": beep,
+        "long": long_ms,
         "gap": num(a, "gap_ms", f"{w}.scheme.announce", 60000) or 0,
         "ggap": num(a, "group_gap_ms", f"{w}.scheme.announce", 60000) or 0,
         "repeat": -1 if rep is None else rep,
@@ -526,7 +540,8 @@ def emit(profiles: list[dict]) -> str:
             f"      {p['select_thr']}, {p['select_ms']}u,"
             f" {p['vsel_thr']}, {p['vsel_ms']}u, {p['skip_thr']},"
             f" {p['listen_thr']}, {p['store_thr']},\n"
-            f"      {p['les']}u, {p['beep']}u, {p['gap']}u, {p['ggap']}u,"
+            f"      {p['les']}u, {p['beep']}u, {p['long']}u, {p['gap']}u,"
+            f" {p['ggap']}u,"
             f" {p['repeat']}, {p['one']}, {p['verified']},\n"
             f"      {len(p['steps'])}u, {n}_steps,"
             f" {len(p['models'])}u, {n}_models,"
@@ -575,6 +590,14 @@ def self_test() -> list[str]:
                                 f'"store": {{"throttle": "{store}"}}, '
                                 '"select": {', 1)
         return text.encode("utf-8")
+
+    beeps = ('"encoding": "melody",\n      "long_equals_short": null,\n'
+             '      "beep_ms": null,')
+
+    def lengths(beep: str, long_: str, enc: str = "short_long") -> bytes:
+        """The base with @enc, 5 shorts a long, and the beep lengths."""
+        return at(beeps, f'"encoding": "{enc}",\n      "long_equals_short": '
+                  f'5,\n      "beep_ms": {beep}, "long_ms": {long_},')
 
     fam = '"family": "RCE-BL15X (T-REX 250)",'
     jumper = '{"when": "before_power", "action": "Fit the jumper."}'
@@ -729,6 +752,13 @@ def self_test() -> list[str]:
         "manual before off starts": man(
             '[{"when": "before_power_off", "action": "x", '
             '"starts_menu": true}]'),
+        "long_ms without beep_ms": lengths("null", "384"),
+        "long_ms at beep_ms": lengths("128", "128"),
+        "long_ms under beep_ms": lengths("384", "128"),
+        "beep_ms without long_ms": lengths("128", "null"),
+        "long_ms on counted beeps": lengths("128", "384", "count"),
+        "long_ms 60001": lengths("128", "60001"),
+        "long_ms a string": lengths("128", '"384"'),
     }
     accept = {
         "plain": base.encode("utf-8"),
@@ -814,6 +844,9 @@ def self_test() -> list[str]:
                                 '\\u00fc",'),
         "manual de escaped": man('[{"when": "before_menu", "action": "x", '
                                  '"action_de": "Br\\u00fccke ab"}]'),
+        "beep and long lengths": lengths("128", "384"),
+        "no beep lengths": lengths("null", "null"),
+        "beep_ms on counted beeps": lengths("128", "null", "count"),
     }
     bad = []
     with tempfile.TemporaryDirectory() as tmp:

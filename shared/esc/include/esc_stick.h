@@ -22,8 +22,9 @@
  * goes through the same arming, output and supply paths an operator's
  * does, and a STOP or a disarm reaches the ESC without the engine.
  *
- * No ESC has been recorded.  Every time in esc_stick_timing_t is a default
- * standing in for a measurement, not a measurement; see
+ * The defaults in esc_stick_timing_t are not measured.  A profile that
+ * states its beep lengths replaces BEEP MIN, LONG and LONG MAX with values
+ * taken from them (esc_stick_profile_timing()); see
  * docs/StickProgramming.md.
  *
  * SPDX-License-Identifier: MIT
@@ -107,8 +108,9 @@ extern "C" {
 /**
  * @brief How the beeps are timed and told apart from the ESC's idle current.
  *
- * None of it is measured: the defaults are guesses, kept as settings so a bench
- * recording can replace them without a build.
+ * The defaults are not measured; they are settings, so a bench recording
+ * can replace them without a build.  A profile's stated lengths replace the
+ * values they fix (esc_stick_profile_timing()).
  */
 typedef struct {
     uint32_t beep_min_ms;    /**< shortest beep the ESC sounds            */
@@ -354,6 +356,41 @@ esc_throttle_t esc_stick_change_entry(const esc_profile_t *p,
  */
 bool esc_stick_check(const esc_profile_t *p, const esc_stick_change_t *ch,
                      size_t n, const esc_stick_timing_t *t, const char **why);
+
+/**
+ * @brief Whether @p p states the beep lengths a run takes BEEP MIN, LONG and
+ *        LONG MAX from: beep_ms, and in a short_long profile long_ms as well.
+ *
+ * @param p  The profile, or NULL.
+ * @return true when the profile's beep lengths replace those three settings.
+ */
+bool esc_stick_profile_beeps(const esc_profile_t *p);
+
+/**
+ * @brief The timing a run on @p p uses: @p t, the settings' timing, with every
+ *        value the profile's stated lengths fix put in its place.
+ *
+ * Each value sits between the lengths it tells apart, with a factor of 2 or
+ * half the distance to spare:
+ *
+ *   - beep lengths stated (esc_stick_profile_beeps()), short S and long L:
+ *     BEEP MIN = S / 2, LONG = (S + L) / 2, LONG MAX = 2 x L.  In a profile
+ *     without long beeps, LONG = 2 x S and LONG MAX = 4 x S.
+ *   - gap_ms stated, G: GAP MIN = G / 2.  Not stated, with the beep
+ *     lengths stated: GAP MIN = the setting or S / 2, the lower; no menu's
+ *     gap is plausibly under half its short beep.
+ *   - group_gap_ms stated, GG: GROUP GAP = (G + GG) / 2, with G as 0 where
+ *     gap_ms is not stated.
+ *
+ * Values in ms, rounded down.  A value the profile does not fix keeps the
+ * setting.  The result is not checked here: esc_stick_check() holds it to
+ * the same rules as the settings.  Applying it twice gives the same timing.
+ *
+ * @param p  The profile, or NULL for none.
+ * @param t  The settings' timing; receives the run's.
+ * @return true when the profile fixed any value.
+ */
+bool esc_stick_profile_timing(const esc_profile_t *p, esc_stick_timing_t *t);
 
 /* ---------------------------------------------------------- the beeps */
 
@@ -799,15 +836,17 @@ typedef struct {
  * @brief Start a run.  @p mv and @p ma are the supply's set points, already
  *        held to the caps by the caller.
  *
- * Refused with @p why when esc_stick_check() refuses or @p src is
- * ESC_STICK_SRC_NONE, and the run stays idle.  The beeps are counted from
- * @p src for the whole run.
+ * The run uses @p t with the values the profile's stated lengths fix in
+ * their place (esc_stick_profile_timing()): where the profile states them,
+ * they win over the settings.  Refused with @p why when esc_stick_check()
+ * refuses that timing or @p src is ESC_STICK_SRC_NONE, and the run stays
+ * idle.  The beeps are counted from @p src for the whole run.
  *
  * @param e   The run to start.
  * @param p   The profile.
  * @param ch  The changes to make, in order.
  * @param n   Number of changes in @p ch.
- * @param t   The timing.
+ * @param t   The settings' timing.
  * @param mv  Supply set point, mV.
  * @param ma  Supply current limit, mA.
  * @param src Where the beeps are counted from.

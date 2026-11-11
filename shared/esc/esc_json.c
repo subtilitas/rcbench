@@ -1019,6 +1019,25 @@ static void decode(dec_t *d, esc_profile_t *p)
     p->beep_ms = get_num(d, (uint32_t)an, "beep_ms", "scheme.announce", 0,
                          60000, true, &v) ? (uint32_t)v : 0u;
     v = 0;
+    p->long_ms = get_num(d, (uint32_t)an, "long_ms", "scheme.announce", 0,
+                         60000, true, &v) ? (uint32_t)v : 0u;
+    /* A long beep's length only in a short_long profile, only beside the
+     * short beep's and longer than it; a short_long profile states the
+     * two together or neither. */
+    if (!d->failed && p->long_ms != 0u) {
+        if (p->encoding != ESC_ENC_SHORT_LONG) {
+            FAIL(d, "scheme.announce.long_ms: only for short_long");
+        } else if (p->beep_ms == 0u) {
+            FAIL(d, "scheme.announce.long_ms: needs beep_ms");
+        } else if (p->long_ms <= p->beep_ms) {
+            FAIL(d, "scheme.announce.long_ms: not above beep_ms");
+        }
+    }
+    if (!d->failed && p->encoding == ESC_ENC_SHORT_LONG && p->beep_ms != 0u
+        && p->long_ms == 0u) {
+        FAIL(d, "scheme.announce.long_ms: needed with beep_ms");
+    }
+    v = 0;
     p->gap_ms = get_num(d, (uint32_t)an, "gap_ms", "scheme.announce", 0,
                         60000, true, &v) ? (uint32_t)v : 0u;
     v = 0;

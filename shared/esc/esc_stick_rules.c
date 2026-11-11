@@ -499,6 +499,53 @@ bool esc_stick_no(const char **why, const char *text)
     return false;
 }
 
+bool esc_stick_profile_beeps(const esc_profile_t *p)
+{
+    return p != NULL && p->beep_ms != 0u
+           && (p->encoding != ESC_ENC_SHORT_LONG || p->long_ms > p->beep_ms);
+}
+
+bool esc_stick_profile_timing(const esc_profile_t *p, esc_stick_timing_t *t)
+{
+    if (p == NULL || t == NULL) {
+        return false;
+    }
+    bool fixed = false;
+    if (esc_stick_profile_beeps(p)) {
+        const uint32_t s = p->beep_ms;
+        t->beep_min_ms = s / 2u;
+        if (p->encoding == ESC_ENC_SHORT_LONG) {
+            t->long_ms = (s + p->long_ms) / 2u;
+            t->long_max_ms = 2u * p->long_ms;
+        } else {
+            t->long_ms = 2u * s;
+            t->long_max_ms = 4u * s;
+        }
+        fixed = true;
+    }
+    if (p->gap_ms != 0u) {
+        t->gap_min_ms = p->gap_ms / 2u;
+        fixed = true;
+    } else if (esc_stick_profile_beeps(p) && p->beep_ms / 2u < t->gap_min_ms) {
+        /*
+         * No gap stated: GAP MIN only rejects a gap too short to be real,
+         * and no menu's gap is plausibly under half its own short beep --
+         * 64ms for the FlyDragon's 128ms, under the default 200ms that
+         * would spoil a 128ms gap.  The tap reports each beep's start and
+         * end from the IOmcu's capture, its bursts already merged; for the
+         * INA3221, 64ms stays above the 50ms window, so READING RATE (a
+         * window later than the shorter of BEEP MIN and GAP MIN) does not
+         * trip.  A setting already lower stays.
+         */
+        t->gap_min_ms = p->beep_ms / 2u;
+    }
+    if (p->group_gap_ms != 0u) {
+        t->group_gap_ms = (p->gap_ms + p->group_gap_ms) / 2u;
+        fixed = true;
+    }
+    return fixed;
+}
+
 bool esc_stick_check(const esc_profile_t *p, const esc_stick_change_t *ch,
                      size_t n, const esc_stick_timing_t *t, const char **why)
 {

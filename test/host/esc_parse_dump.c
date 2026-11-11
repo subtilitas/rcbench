@@ -37,13 +37,13 @@ static void dump(const esc_profile_t *p)
     printf("|%d %d %d %d|", p->scheme, p->encoding, p->announce,
            p->automatable);
     hx(p->automatable_note);
-    printf("|%d %d %u|%d %u|%d %u|%d %d %d|%u %u %u %u %d %d %d|",
+    printf("|%d %d %u|%d %u|%d %u|%d %d %d|%u %u %u %u %u %d %d %d|",
            p->entry_throttle, p->entry_after_power,
            (unsigned)p->entry_hold_ms, p->select_throttle,
            (unsigned)p->select_within_ms, p->value_select_throttle,
            (unsigned)p->value_select_within_ms, p->skip_throttle,
            p->listen_throttle, p->store_throttle, p->long_equals_short,
-           (unsigned)p->beep_ms, (unsigned)p->gap_ms,
+           (unsigned)p->beep_ms, (unsigned)p->long_ms, (unsigned)p->gap_ms,
            (unsigned)p->group_gap_ms, p->repeat, p->one_change_per_entry,
            p->verified);
     printf("S%u", p->step_count);

@@ -3202,6 +3202,11 @@ static void pose_motor_tools(ui_screen_id_t id, const char *view)
              * TIMING. */
             stick_open_model("Sunrise", "sunrise-pro",
                              "Sunrise PRO HV 180A OPTO");
+        } else if (strcmp(view, "motor-stick-flydragon") == 0) {
+            /* A profile that states its beep lengths: BEEP MIN and LONG
+             * from it in the side column, marked as the profile's. */
+            stick_open_model("Flycolor", "flycolor-flydragon-lite-plus",
+                             "FlyDragon Lite+ 40A");
         } else if (strcmp(view, "motor-stick-greatplanes") == 0) {
             /* Great Planes' models: the C Series refused for a menu
              * entered after power-on, beside the MANUAL tag. */
