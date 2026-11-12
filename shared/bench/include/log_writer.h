@@ -149,6 +149,9 @@ bool log_writer_header(log_writer_t *w);
  * @brief Append one sample at @p t_s seconds, and commit when the row completes
  *        an interval.
  *
+ * The row's `throttle (%)` cell, after `rpm`, is @p b's commanded throttle
+ * (bench_state_set_throttle()) to 0.1%, empty when @p b has none.
+ *
  * False means one of two things, and log_writer_failed() tells them apart:
  *
  *   A write or the commit after it failed.  log_writer_failed() is true and
@@ -293,13 +296,14 @@ void log_servo_unpack(uint32_t packed, bool row_modelled, log_servo_t *out);
  * @brief Append one sample of a run ARMED from SERVO: log_writer_row()'s row
  *        with voltage, current, power, charge and energy from @p rail.
  *
- * The header is the motor run's with `pulse (us);angle (deg)` before
- * `source`, so both files read by one rule.  The
- * supply's cells are written as a supply file writes them: voltage and power
- * to 0.01, current to 0.001, charge to 1mAh, energy to 0.01Wh; a cell rail
- * has no reading or total of is empty, and so are all five with @p rail
- * NULL.  rpm, the temperatures, the INA228's and the ESC's columns, the
- * INA3221 window and source are @p b's, as log_writer_row() writes them.
+ * The header is the motor run's without `throttle (%)` and with
+ * `pulse (us);angle (deg)` before `source`, so both files read by one rule.
+ * The supply's cells are written as a supply file writes them: voltage
+ * and power to 0.01, current to 0.001, charge to 1mAh, energy to 0.01Wh; a
+ * cell rail has no reading or total of is empty, and so are all five with
+ * @p rail NULL.  rpm, the temperatures, the INA228's and the ESC's
+ * columns, the INA3221 window and source are @p b's, as log_writer_row()
+ * writes them.
  * The pulse is written in whole us and the angle to 0.1deg, each empty when
  * @p sv has none, and both with @p sv NULL.  Same returns, commits and latch
  * as log_writer_row().

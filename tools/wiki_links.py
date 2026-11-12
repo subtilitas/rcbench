@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rewrite docs/ links for the GitHub wiki.
+r"""Rewrite docs/ links for the GitHub wiki.
 
 A wiki page is addressed by its title with no extension, so a link written
 as `[Screens](Screens.md)` downloads the file instead of opening the page.
@@ -44,7 +44,7 @@ absolute path and a bare anchor are left as they are.
 - Text in a code span, in a fenced code block (``` or ~~~), in a URI or
   email autolink (`<https://...>`) and after a backslash-escaped `[` or
   `![` is not a link and stays as written.  Backslash escapes are read left
-  to right, so `\\\\` before a backtick leaves the backtick to open a code
+  to right, so `\\` before a backtick leaves the backtick to open a code
   span.  A fence opens at 0 to 3 spaces of indent, also after block quote
   markers (`> ```), and ends where its block quote ends.  An image may stand
   in link text; a `]` after a backslash does not close the text.  A line
@@ -73,7 +73,7 @@ form given:
   write the definition at the top level, 0 to 3 spaces in.
 - A definition-shaped line right after a paragraph line, `text` then
   `[ref]: ../README.md`, is paragraph text in CommonMark but is rewritten.
-  Put a blank line in front of a definition, or write `\\[` for text.
+  Put a blank line in front of a definition, or write `\[` for text.
 - A definition label over two lines, `[Foo` then `  bar]: ../README.md`, is
   not seen.  A page that uses it fails; write the label on one line.
 - A raw HTML block (`<pre>`, `<div>`, `<!-- -->` at the start of a line) is
@@ -179,11 +179,13 @@ BLANK = re.compile(r"\n[ \t]*\n")
 
 
 def _fences(text: str) -> str:
-    """`text` with fenced code blocks blanked.  A fence closes on a fence of
-    the same kind, at least as long, behind the same number of block quote
-    markers.  A fence inside a block quote also ends where the quote ends,
-    on a line with fewer markers; a fence outside one ends at the end of
-    the page."""
+    """`text` with fenced code blocks blanked.
+
+    A fence closes on a fence of the same kind, at least as long, behind the
+    same number of block quote markers.  A fence inside a block quote also ends
+    where the quote ends, on a line with fewer markers; a fence outside one
+    ends at the end of the page.
+    """
     out: list[str] = []
     fence = ""
     depth = 0
@@ -216,8 +218,10 @@ def _blank(chars: list[str], start: int, end: int) -> None:
 
 
 def mask(text: str) -> str:
-    """`text` with code, autolinks and escaped openers blanked, same length
-    and same line endings, so offsets found in the result hold in `text`.
+    """`text` with code, autolinks and escaped openers blanked.
+
+    The result has the same length and line endings, so offsets found in it
+    hold in `text`.
 
     Fenced code blocks go first.  The rest is read left to right, as a
     CommonMark parser reads inline text: a backslash escapes the
@@ -225,7 +229,8 @@ def mask(text: str) -> str:
     email autolink is blanked whole; a run of backticks opens a code span
     that the next run of the same length closes, within one paragraph, and
     the span is blanked.  A run with no closer is literal.  An escaped
-    backtick is literal, and the rest of its run may still open a span."""
+    backtick is literal, and the rest of its run may still open a span.
+    """
     s = _fences(text)
     out = list(s)
     n = len(s)
@@ -259,8 +264,10 @@ def mask(text: str) -> str:
 
 
 def _close(masked: str, i: int) -> int | None:
-    """Index of the `]` that closes the `[` at `i`, to any depth of
-    nesting, or None.  A blank line ends the search."""
+    """Index of the `]` that closes the `[` at `i`, or None.
+
+    The search goes to any depth of nesting.  A blank line ends it.
+    """
     depth = 0
     n = len(masked)
     while i < n:
@@ -285,24 +292,38 @@ def _close(masked: str, i: int) -> int | None:
 
 
 def norm(label: str) -> str:
-    """A reference label as CommonMark compares it: folded case, each run
-    of spaces, tabs and line endings as one space, none at the ends.  Other
-    white space, a no-break space (U+00A0) among it, stays as it is."""
+    """A reference label as CommonMark compares it.
+
+    Folded case, each run of spaces, tabs and line endings as one space, none
+    at the ends.  Other white space, a no-break space (U+00A0) among it, stays
+    as it is.
+    """
     return re.sub(r"[ \t\r\n]+", " ", label).strip(" ").casefold()
 
 
 class Link:
-    """One inline link or image: its span in the page, whether it is an
-    image, its label and the match of the part from `(` on."""
+    """One inline link or image.
+
+    Its span in the page, whether it is an image, its label and the match of
+    the part from `(` on.
+    """
 
     def __init__(self, start, bang, label, m):
+        """A link or image at offset @p start.
+
+        It is an image when @p bang is set; @p label is its label and @p m its
+        match.
+        """
         self.start, self.bang, self.label, self.m = start, bang, label, m
 
 
 def find_links(text: str, masked: str) -> tuple[list[Link], set[str]]:
-    """The inline links of a page in order, and the normalised labels that
+    """The inline links of a page and the labels an image uses by reference.
+
+    The inline links of a page in order, and the normalised labels that
     an image uses by reference: `![alt][label]`, `![label][]` or
-    `![label]`."""
+    `![label]`.
+    """
     links: list[Link] = []
     images: set[str] = set()
     i = 0
@@ -340,29 +361,39 @@ def _group(text: str, m: re.Match, name: str) -> str | None:
 
 
 def outside(path: str) -> bool:
-    """True when the normalised `path` is `..` or climbs with `../`.  A name
-    that merely starts with two dots, `..notes.md`, is inside."""
+    """True when the normalised `path` is `..` or climbs with `../`.
+
+    A name that merely starts with two dots, `..notes.md`, is inside.
+    """
     return path == ".." or path.startswith("../")
 
 
 def split_query(target: str) -> tuple[str, str]:
-    """`target` as (path, tail): the tail starts at the first `?` or `#` and
-    is kept verbatim, the path is the part that names a file."""
+    """`target` as (path, tail).
+
+    The tail starts at the first `?` or `#` and is kept verbatim, the path is
+    the part that names a file.
+    """
     m = re.match(r"([^?#]*)(.*)", target, re.S)
     return m.group(1), m.group(2)
 
 
 def leaves_docs(target: str, reldir: str) -> bool:
-    """True when `target`, written in docs/<reldir>, is outside docs/.  A
-    query string or fragment is not part of the path."""
+    """True when `target`, written in docs/<reldir>, is outside docs/.
+
+    A query string or fragment is not part of the path.
+    """
     path = split_query(target)[0]
     return outside(posixpath.normpath(posixpath.join(reldir, path)))
 
 
 def convert(target: str, reldir: str, root: Path, image: bool) -> str | None:
-    """The wiki form of one relative `target`, or None when it climbs above
+    """The wiki form of one relative `target`, or None.
+
+    The wiki form of one relative `target`, or None when it climbs above
     the repository and is left for the check.  Only the path is normalised;
-    a query string or fragment is appended as written."""
+    a query string or fragment is appended as written.
+    """
     path, query = split_query(target)
     joined = posixpath.normpath(posixpath.join(reldir, path))
     if not outside(joined):
@@ -381,9 +412,12 @@ def convert(target: str, reldir: str, root: Path, image: bool) -> str | None:
 
 
 def rewrite(text: str, reldir: str = "", root: Path = ROOT) -> str:
-    """Translate the links of one page.  `reldir` is the page's directory
-    relative to docs/, in POSIX form, empty for a page at the top.  `root`
-    is the repository the targets are looked up in."""
+    """Translate the links of one page.
+
+    `reldir` is the page's directory relative to docs/, in POSIX form, empty
+    for a page at the top.  `root` is the repository the targets are looked up
+    in.
+    """
     masked = mask(text)
     links, images = find_links(text, masked)
     edits: list[tuple[int, int, str]] = []
@@ -421,8 +455,10 @@ def rewrite(text: str, reldir: str = "", root: Path = ROOT) -> str:
 
 
 def targets(text: str):
-    """Every relative target of an inline link or a definition line, code
-    left out."""
+    """Every relative target of an inline link or a definition line.
+
+    Code is left out.
+    """
     masked = mask(text)
     for link in find_links(text, masked)[0]:
         yield _group(text, link.m, "target")
@@ -440,12 +476,14 @@ SCHEME = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*:")
 
 def judge(href: str, image: bool, reldir: str = "",
           pages: set[str] | None = None) -> str | None:
-    """Why `href` is wrong on a wiki page, or None.  A link is an absolute
-    URL, an anchor or a page name with no `.md` that stays in docs/.  A
-    name that ends in `.md` is a page title when `pages`, the mirrored page
-    names without their last `.md`, holds it.  An
-    image inside docs/ stays relative; one above docs/ is a `/raw/main/`
-    URL, and no other repository URL serves an image."""
+    """Why `href` is wrong on a wiki page, or None.
+
+    A link is an absolute URL, an anchor or a page name with no `.md` that
+    stays in docs/.  A name that ends in `.md` is a page title when `pages`,
+    the mirrored page names without their last `.md`, holds it.  An image
+    inside docs/ stays relative; one above docs/ is a `/raw/main/` URL, and no
+    other repository URL serves an image.
+    """
     if SCHEME.match(href):
         if href.startswith(REPO + "/"):
             kind = href[len(REPO) + 1:].split("/", 1)[0]
@@ -467,11 +505,14 @@ def judge(href: str, image: bool, reldir: str = "",
 
 def verify_text(text: str, reldir: str = "",
                 pages: set[str] | None = None) -> list[tuple[int, str, str]]:
-    """Every link and image of a page that a wiki cannot open, as (line,
+    """Every link and image of a page that a wiki cannot open.
+
+    Every link and image of a page that a wiki cannot open, as (line,
     href, reason).  The page is read by a CommonMark parser, not by this
     file's scanner, so a construct the rewriter does not see still counts.
     A link that shares a definition with an image may have the image's
-    `/raw/main/` form, as in `gate`.  `pages` is as in `judge`."""
+    `/raw/main/` form, as in `gate`.  `pages` is as in `judge`.
+    """
     from markdown_it import MarkdownIt
 
     lines = text.splitlines()
@@ -516,8 +557,10 @@ def verify_text(text: str, reldir: str = "",
 
 
 def _line(lines: list[str], first: int, last: int, needle: str) -> int:
-    """The 1-based line that holds `needle`: in lines first to last, else
-    anywhere on the page, else `first`."""
+    """The 1-based line that holds `needle`.
+
+    In lines first to last, else anywhere on the page, else `first`.
+    """
     needle = needle.strip().split("\n")[0][:60]
     if needle:
         for n in [*range(first, min(last, len(lines))), *range(len(lines))]:
@@ -528,9 +571,12 @@ def _line(lines: list[str], first: int, last: int, needle: str) -> int:
 
 def wiki_hrefs(md, href: str, image: bool, reldir: str,
                root: Path) -> set[str]:
-    """The hrefs the rewrite gives a parsed link or image `href`, as the
+    """The hrefs the rewrite gives a parsed link or image `href`.
+
+    The hrefs the rewrite gives a parsed link or image `href`, as the
     parser writes them: the rule of `convert` on the part before `#`,
-    tried on the target as parsed and with its percent escapes decoded."""
+    tried on the target as parsed and with its percent escapes decoded.
+    """
     if not href or SCHEME.match(href) or href.startswith(("#", "/")):
         return {href}
     path, hash_, anchor = href.partition("#")
@@ -552,7 +598,9 @@ HREF = {("link_open", "href"), ("image", "src")}
 
 def gate(before: str, after: str, reldir: str = "",
          root: Path = ROOT) -> list[tuple[int, str, str, str]]:
-    """Every difference between a page and its rewrite as a CommonMark
+    """Every difference between a page and its rewrite, as a parser reads them.
+
+    Every difference between a page and its rewrite as a CommonMark
     parser reads them, as (line, what, before, after).  Both pages are
     parsed with markdown-it-py and their tokens are walked side by side.
     Each token matches in every field of `FIELDS` and every attribute, but
@@ -561,7 +609,8 @@ def gate(before: str, after: str, reldir: str = "",
     A link that shares a definition with an image may have the image's
     `raw` form.  A missed link and altered prose both show here.  At the
     first token that differs in kind the walk stops: what follows no
-    longer pairs up."""
+    longer pairs up.
+    """
     from markdown_it import MarkdownIt
 
     md = MarkdownIt("commonmark")
@@ -659,6 +708,10 @@ def verify_tree(root: Path) -> int:
 
 
 def main(argv: list[str]) -> int:
+    """Rewrite the links under the folder in argv, or check them.
+
+    Return the exit status.
+    """
     check = "--check" in argv
     verify = "--verify" in argv
     args = [a for a in argv[1:] if not a.startswith("-")]

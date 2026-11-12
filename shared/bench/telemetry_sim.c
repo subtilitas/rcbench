@@ -77,6 +77,8 @@ void telemetry_sim_step(telemetry_sim_t *s, float throttle_pct, float dt_s,
     out->temp_motor = s->temp_motor;
     out->charge_mah = s->drawn_mah;
     out->energy_wh  = s->drawn_wh;
+    /* The row's throttle is the one the model ran at. */
+    bench_state_set_throttle(out, throttle_pct);
 
     if (!out->valid) {
         out->voltage_min = voltage;

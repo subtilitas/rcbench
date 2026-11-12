@@ -76,6 +76,8 @@ void telemetry_sim_init(telemetry_sim_t *s, const telemetry_sim_cfg_t *cfg);
  *
  * Peaks are accumulated into @p out as the IOmcu accumulates them for
  * the BENCH page, so the screen sees the same behaviour from both sources.
+ * The throttle the model runs at is @p out's commanded throttle
+ * (bench_state_set_throttle()), clamped to 0 to 100%.
  *
  * @param s            The model.
  * @param throttle_pct The throttle, in percent.

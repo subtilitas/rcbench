@@ -141,6 +141,8 @@ The plot header shows rated kV, measured rpm per volt and EFF. EFF is measured r
 
 When Auto logs is ON under [SETUP](setup.md#sd-card) > SD CARD, each switch to ARMED starts a `MOTORnnn.CSV` file in `BENCH/LOGS` on the panel's SD (Secure Digital) card. With the link up, each answered poll adds a row. One bench produced about 19 rows per second; other benches have not been measured. Switching to SAFE closes the file. Open it in [Logs](logs.md) to plot the run.
 
+Each sample's row holds the throttle the panel commands beside `rpm` and `power`: column `throttle (%)`, 0 to 100% to 0.1%, for PWM and DShot outputs alike. It is 0.0 while the motor is not ARMED. A row that holds only an INA3221 window has it empty.
+
 ![RENAME LOG's keyboard](view:motor-logname)
 
 RENAME LOG gives the MOTOR log closed since the panel started a label behind its number: `MOTOR042.CSV` becomes `MOTOR042_kv1200.CSV`. The run keeps its number and its place in [Logs](logs.md).

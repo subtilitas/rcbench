@@ -1,4 +1,6 @@
-"""image_slot.py: the OTA slots a partition table holds and the image
+"""image_slot.py: the OTA slots of a partition table.
+
+The OTA slots a partition table holds and the image
 against them.
 
 SPDX-License-Identifier: MIT
@@ -47,20 +49,24 @@ TWO = table(entry(1, 2, 0x9000, 0x6000, "nvs"),
 
 
 def test_the_ota_slots_are_read_by_type_and_subtype():
+    """The OTA slots are read by type and subtype."""
     assert im.ota_slots(TWO) == {"ota_0": SLOT, "ota_1": SLOT}
 
 
 def test_an_application_that_is_not_an_ota_slot_is_not_one():
+    """An application that is not an OTA slot is not one."""
     t = table(entry(0, 0x00, 0x10000, SLOT, "factory"))
     assert im.ota_slots(t) == {}
 
 
 def test_a_table_that_ends_at_the_checksum_is_read_to_there():
+    """A table that ends at the checksum is read to there."""
     t = TWO + entry(0, 0x12, 0x800000, SLOT, "ota_2")
     assert list(im.ota_slots(t)) == ["ota_0", "ota_1"]
 
 
 def test_an_image_that_fits_passes_and_one_that_does_not_fails():
+    """An image that fits passes and one that does not fails."""
     slots = im.ota_slots(TWO)
     assert im.problems(SLOT, slots) == []               # fills the slot
     assert im.problems(SLOT + 1, slots) == [
@@ -70,22 +76,26 @@ def test_an_image_that_fits_passes_and_one_that_does_not_fails():
 
 
 def test_one_slot_or_none_fails():
+    """One slot or none fails."""
     assert "has 1 OTA" in im.problems(1, {"ota_0": SLOT})[0]
     assert "has 0 OTA" in im.problems(1, {})[0]
 
 
 def test_slots_of_two_sizes_fail_and_the_smaller_bounds_the_image():
+    """Slots of two sizes fail and the smaller bounds the image."""
     out = im.problems(SLOT, {"ota_0": SLOT, "ota_1": SLOT - 16})
     assert out[0].startswith("the OTA slots differ in size")
     assert "smallest OTA slot holds" in out[1]
 
 
 def test_main_reports_a_missing_build(tmp_path, capsys):
+    """Main reports a missing build."""
     assert im.main(["image_slot.py", str(tmp_path)]) == 1
     assert "build the panel first" in capsys.readouterr().err
 
 
 def test_main_checks_a_built_tree(tmp_path, capsys):
+    """Main checks a built tree."""
     (tmp_path / "partition_table").mkdir()
     (tmp_path / im.TABLE).write_bytes(TWO)
     (tmp_path / im.IMAGE).write_bytes(b"\0" * 1000)
@@ -96,4 +106,5 @@ def test_main_checks_a_built_tree(tmp_path, capsys):
 
 
 def test_the_entry_layout_is_32_bytes():
+    """The entry layout is 32 bytes."""
     assert im.ENTRY.size == 32 == struct.calcsize("<HBBII16sI")

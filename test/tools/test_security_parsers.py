@@ -18,11 +18,13 @@ TABLE = """# Security
 
 
 def empty_exclusions(monkeypatch):
+    """Empty the NOT_UNTRUSTED and FORCED tables."""
     monkeypatch.setattr(sp, "NOT_UNTRUSTED", {})
     monkeypatch.setattr(sp, "FORCED", {})
 
 
 def tree(tmp_path, headers, rows):
+    """A tree of @p headers and a SECURITY.md that lists @p rows."""
     for rel, body in headers.items():
         h = tmp_path / rel
         h.parent.mkdir(parents=True, exist_ok=True)
@@ -33,10 +35,12 @@ def tree(tmp_path, headers, rows):
 
 
 def test_the_real_tree_agrees():
+    """The real tree agrees."""
     assert sp.problems() == []
 
 
 def test_matching_table_passes(tmp_path, monkeypatch):
+    """Matching table passes."""
     empty_exclusions(monkeypatch)
     root = tree(tmp_path,
                 {"protocols/a/include/a.h": "bool a_frame_parse(int x);\n"},
@@ -45,6 +49,7 @@ def test_matching_table_passes(tmp_path, monkeypatch):
 
 
 def test_missing_row_is_reported(tmp_path, monkeypatch):
+    """Missing row is reported."""
     empty_exclusions(monkeypatch)
     root = tree(tmp_path,
                 {"protocols/a/include/a.h": "bool a_decode_byte(int x);\n"},
@@ -55,6 +60,7 @@ def test_missing_row_is_reported(tmp_path, monkeypatch):
 
 
 def test_row_without_parser_is_reported(tmp_path, monkeypatch):
+    """Row without parser is reported."""
     empty_exclusions(monkeypatch)
     root = tree(tmp_path,
                 {"protocols/b/include/b.h": "int b_sum(int x);\n"},
@@ -65,6 +71,7 @@ def test_row_without_parser_is_reported(tmp_path, monkeypatch):
 
 
 def test_comment_lines_do_not_count(tmp_path, monkeypatch):
+    """Comment lines do not count."""
     empty_exclusions(monkeypatch)
     root = tree(tmp_path,
                 {"shared/c/include/c.h":
@@ -74,6 +81,7 @@ def test_comment_lines_do_not_count(tmp_path, monkeypatch):
 
 
 def test_pointer_return_and_rx_and_feed_count(tmp_path, monkeypatch):
+    """Pointer return and rx and feed count."""
     empty_exclusions(monkeypatch)
     root = tree(tmp_path,
                 {"protocols/d/include/d.h": "void d_rx(int x);\n",
@@ -83,6 +91,7 @@ def test_pointer_return_and_rx_and_feed_count(tmp_path, monkeypatch):
 
 
 def test_not_untrusted_entries_are_checked(tmp_path, monkeypatch):
+    """Not untrusted entries are checked."""
     monkeypatch.setattr(sp, "FORCED", {})
     monkeypatch.setattr(sp, "NOT_UNTRUSTED",
                         {"shared/f": "r", "shared/g": "r"})
@@ -95,12 +104,14 @@ def test_not_untrusted_entries_are_checked(tmp_path, monkeypatch):
 
 
 def test_check_exit_codes(capsys):
+    """Check exit codes."""
     assert sp.main(["--check"]) == 0
     assert sp.main([]) == 0
     assert "protocols/kst" in capsys.readouterr().out
 
 
 def test_page_handlers_and_utf8_decoder_count(tmp_path, monkeypatch):
+    """Page handlers and UTF-8 decoder count."""
     empty_exclusions(monkeypatch)
     root = tree(tmp_path,
                 {"shared/h/include/h.h": "uint8_t h_page_write(int x);\n",
@@ -115,6 +126,7 @@ def test_page_handlers_and_utf8_decoder_count(tmp_path, monkeypatch):
 
 def test_names_that_only_contain_the_suffix_do_not_count(tmp_path,
                                                          monkeypatch):
+    """Names that only contain the suffix do not count."""
     empty_exclusions(monkeypatch)
     root = tree(tmp_path,
                 {"shared/m/include/m.h":
@@ -127,11 +139,13 @@ def test_names_that_only_contain_the_suffix_do_not_count(tmp_path,
 
 
 def test_the_exclusion_table_is_empty():
+    """The exclusion table is empty."""
     assert sp.NOT_UNTRUSTED == {}
 
 
 def test_names_without_an_underscore_before_the_suffix_do_not_count(
         tmp_path, monkeypatch):
+    """Names without an underscore before the suffix do not count."""
     empty_exclusions(monkeypatch)
     root = tree(tmp_path,
                 {"shared/n/include/n.h":
@@ -142,6 +156,7 @@ def test_names_without_an_underscore_before_the_suffix_do_not_count(
 
 
 def test_an_excluded_candidate_needs_no_row(tmp_path, monkeypatch):
+    """An excluded candidate needs no row."""
     empty_exclusions(monkeypatch)
     monkeypatch.setattr(sp, "NOT_UNTRUSTED", {"shared/f": "r"})
     root = tree(tmp_path,
@@ -151,6 +166,7 @@ def test_an_excluded_candidate_needs_no_row(tmp_path, monkeypatch):
 
 
 def test_check_fails_with_the_problems_on_stderr(monkeypatch, capsys):
+    """Check fails with the problems on stderr."""
     monkeypatch.setattr(sp, "problems", lambda root=sp.REPO: ["x", "y"])
     assert sp.main(["--check"]) == 1
     assert capsys.readouterr().err == ("security_parsers: x\n"
@@ -158,6 +174,7 @@ def test_check_fails_with_the_problems_on_stderr(monkeypatch, capsys):
 
 
 def test_listing_adds_forced_and_drops_excluded(monkeypatch, capsys):
+    """Listing adds forced and drops excluded."""
     monkeypatch.setattr(sp, "candidates",
                         lambda root=sp.REPO: {"shared/f", "shared/g"})
     monkeypatch.setattr(sp, "NOT_UNTRUSTED", {"shared/f": "r"})
@@ -167,6 +184,7 @@ def test_listing_adds_forced_and_drops_excluded(monkeypatch, capsys):
 
 
 def test_forced_module_needs_a_row(tmp_path, monkeypatch):
+    """Forced module needs a row."""
     empty_exclusions(monkeypatch)
     monkeypatch.setattr(sp, "FORCED", {"shared/p": "r", "shared/q": "r"})
     root = tree(tmp_path,
@@ -178,6 +196,7 @@ def test_forced_module_needs_a_row(tmp_path, monkeypatch):
 
 
 def test_stale_forced_entries_fail(tmp_path, monkeypatch):
+    """Stale forced entries fail."""
     empty_exclusions(monkeypatch)
     monkeypatch.setattr(sp, "FORCED", {"shared/r": "r", "shared/s": "r"})
     root = tree(tmp_path,
@@ -189,6 +208,7 @@ def test_stale_forced_entries_fail(tmp_path, monkeypatch):
 
 
 def test_a_forced_module_cannot_also_be_excluded(tmp_path, monkeypatch):
+    """A forced module cannot also be excluded."""
     empty_exclusions(monkeypatch)
     monkeypatch.setattr(sp, "FORCED", {"shared/t": "r"})
     monkeypatch.setattr(sp, "NOT_UNTRUSTED", {"shared/t": "r"})
@@ -201,11 +221,13 @@ def test_a_forced_module_cannot_also_be_excluded(tmp_path, monkeypatch):
 
 
 def test_settings_and_touch_are_forced():
+    """Settings and touch are forced."""
     assert set(sp.FORCED) == {"shared/settings", "shared/touch"}
     assert all(reason.strip() for reason in sp.FORCED.values())
 
 
 def test_a_row_joined_with_and_names_both_modules(tmp_path, monkeypatch):
+    """A row joined with and names both modules."""
     empty_exclusions(monkeypatch)
     monkeypatch.setattr(sp, "FORCED", {"shared/b": "r"})
     root = tree(tmp_path,
@@ -218,6 +240,7 @@ def test_a_row_joined_with_and_names_both_modules(tmp_path, monkeypatch):
 
 
 def test_unpack_counts_with_and_without_a_suffix(tmp_path, monkeypatch):
+    """Unpack counts with and without a suffix."""
     empty_exclusions(monkeypatch)
     root = tree(tmp_path,
                 {"shared/u/include/u.h": "void u_unpack(int x);\n",
@@ -229,6 +252,7 @@ def test_unpack_counts_with_and_without_a_suffix(tmp_path, monkeypatch):
 
 def test_a_forced_module_the_name_rule_finds_is_reported_once(
         tmp_path, monkeypatch):
+    """A forced module the name rule finds is reported once."""
     empty_exclusions(monkeypatch)
     monkeypatch.setattr(sp, "FORCED", {"shared/s": "r"})
     root = tree(tmp_path,
@@ -242,6 +266,7 @@ def test_a_forced_module_the_name_rule_finds_is_reported_once(
 
 def test_a_missing_input_parsing_section_lists_nothing(tmp_path,
                                                        monkeypatch):
+    """A missing input parsing section lists nothing."""
     empty_exclusions(monkeypatch)
     root = tree(tmp_path,
                 {"shared/w/include/w.h": "void w_frame_parse(int x);\n"},
@@ -253,6 +278,7 @@ def test_a_missing_input_parsing_section_lists_nothing(tmp_path,
 
 
 def test_module_names_may_hold_digits(tmp_path, monkeypatch):
+    """Module names may hold digits."""
     empty_exclusions(monkeypatch)
     root = tree(tmp_path,
                 {"shared/gt911/include/gt911.h":

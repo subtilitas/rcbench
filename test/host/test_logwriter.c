@@ -132,7 +132,7 @@ TEST_CASE(a_written_run_reads_back)
     log_csv_opts_default(&opts);
     log_analysis_t an;
     CHECK_EQ(log_csv_analyse(&src, &opts, &an), LOG_OK);
-    CHECK_EQ(an.n_columns, 23);
+    CHECK_EQ(an.n_columns, 24);
     CHECK_EQ(an.row_count, 120);
     /* Detected, not assumed: the file never says which convention it uses. */
     CHECK_EQ(an.delimiter, ';');
@@ -191,8 +191,8 @@ TEST_CASE(a_column_nothing_measured_is_empty_rather_than_zero)
     b.voltage = 0.0f;
     CHECK(log_writer_row(&w, 1.0f, &b));
 
-    /* The row after the header: time;voltage;current;power;rpm;esc;motor;
-     * charge;energy;ina voltage;ina current;esc current */
+    /* The row after the header: time;voltage;current;power;rpm;throttle;
+     * esc;motor;charge;energy;ina voltage;ina current;esc current */
     const char *p = strchr(g_mem.buf, '\n');
     CHECK(p != NULL);
     ++p;
@@ -203,10 +203,10 @@ TEST_CASE(a_column_nothing_measured_is_empty_rather_than_zero)
     if (nl != NULL) { *nl = '\0'; }
 
     /* Voltage, current and power answered for nothing; the motor's
-     * temperature has no sensor; and with no current there is no charge or
-     * energy to count.  Six empty cells, and the ones that did answer carry
-     * numbers. */
-    CHECK_STR_EQ(got, "1.000;;;;11419;46.3;;;;;;;;;;;;;;;;;measured");
+     * temperature has no sensor; with no current there is no charge or
+     * energy to count; and the sample carries no throttle.  Seven empty
+     * cells, and the ones that did answer carry numbers. */
+    CHECK_STR_EQ(got, "1.000;;;;11419;;46.3;;;;;;;;;;;;;;;;;measured");
 }
 
 TEST_CASE(charge_and_energy_are_written_only_when_counted)
@@ -231,7 +231,7 @@ TEST_CASE(charge_and_energy_are_written_only_when_counted)
     snprintf(got, sizeof(got), "%s", p);
     char *nl = strchr(got, '\n');
     if (nl != NULL) { *nl = '\0'; }
-    CHECK_STR_EQ(got, "1.000;;10.00;;;;;5;;;;10.00;;;;;;;;;;;measured");
+    CHECK_STR_EQ(got, "1.000;;10.00;;;;;;5;;;;10.00;;;;;;;;;;;measured");
 }
 
 TEST_CASE(the_values_survive_the_round_trip)
@@ -335,8 +335,8 @@ TEST_CASE(the_sources_survive_the_round_trip)
     CHECK(strstr(g_mem.buf, ";ina voltage (V);ina current (A);"
                             "esc current (A);window;") != NULL);
     static const char k_rows[] =
-        "1.000;24.31;31.20;758;;;;;;24.31;31.20;36.75;;;;;;;;;;;measured\n"
-        "1.050;24.10;40.05;0;;;;;;;;40.05;;;;;;;;;;;measured\n";
+        "1.000;24.31;31.20;758;;;;;;;24.31;31.20;36.75;;;;;;;;;;;measured\n"
+        "1.050;24.10;40.05;0;;;;;;;;;40.05;;;;;;;;;;;measured\n";
     const char *row = strchr(g_mem.buf, '\n') + 1;
     CHECK_STR_EQ(row, k_rows);
 
@@ -347,13 +347,13 @@ TEST_CASE(the_sources_survive_the_round_trip)
     log_csv_opts_default(&opts);
     log_analysis_t an;
     CHECK_EQ(log_csv_analyse(&src, &opts, &an), LOG_OK);
-    CHECK_EQ(an.n_columns, 23);
+    CHECK_EQ(an.n_columns, 24);
     CHECK_EQ(an.ragged_rows, 0);
 
     log_source_t src2;
     log_mem_ctx_t ctx2;
     log_source_memory(&src2, &ctx2, g_mem.buf, g_mem.len);
-    const int cols[3] = { 9, 10, 11 };
+    const int cols[3] = { 10, 11, 12 };
     log_data_t data;
     CHECK_EQ(log_csv_build(&src2, &an, cols, 3, &data), LOG_OK);
     CHECK_EQ(data.count, 2);
@@ -397,8 +397,8 @@ TEST_CASE(each_window_goes_into_one_row)
     CHECK(strstr(g_mem.buf, ";window;ch1 current (A);ch1 max (A);"
                             "ch1 voltage (V);ch2 current (A)") != NULL);
     static const char k_rows[] =
-        "1.000;;;;;;;;;;;;812;0.412;1.638;5.874;;;;;;;measured\n"
-        "1.050;;;;;;;;;;;;;;;;;;;;;;measured\n";
+        "1.000;;;;;;;;;;;;;812;0.412;1.638;5.874;;;;;;;measured\n"
+        "1.050;;;;;;;;;;;;;;;;;;;;;;;measured\n";
     const char *row = strchr(g_mem.buf, '\n') + 1;
     CHECK_STR_EQ(row, k_rows);
 
@@ -409,12 +409,12 @@ TEST_CASE(each_window_goes_into_one_row)
     log_csv_opts_default(&opts);
     log_analysis_t an;
     CHECK_EQ(log_csv_analyse(&src, &opts, &an), LOG_OK);
-    CHECK_EQ(an.n_columns, 23);
+    CHECK_EQ(an.n_columns, 24);
     CHECK_EQ(an.ragged_rows, 0);
     log_source_t src2;
     log_mem_ctx_t ctx2;
     log_source_memory(&src2, &ctx2, g_mem.buf, g_mem.len);
-    const int cols[3] = { 13, 14, 15 };
+    const int cols[3] = { 14, 15, 16 };
     log_data_t data;
     CHECK_EQ(log_csv_build(&src2, &an, cols, 3, &data), LOG_OK);
     CHECK_STR_EQ(data.field[0].name, "ch1 current");
@@ -982,8 +982,8 @@ static void read_log(log_read_t *r)
         if (sample) {
             ++r->with_sample;
         }
-        if (cell[12][0] != '\0') {
-            const long win = atol(cell[12]);
+        if (cell[13][0] != '\0') {
+            const long win = atol(cell[13]);
             ++r->with_window;
             if (r->last >= 0 && ((r->last + 1) & 0xFFFF) != win) {
                 ++r->stepped;
@@ -992,18 +992,18 @@ static void read_log(log_read_t *r)
                 r->first = win;
             }
             r->last = win;
-            if (cell[13][0] == '\0') {
+            if (cell[14][0] == '\0') {
                 ++r->no_current;
-            } else if (lround(atof(cell[13]) * 1000.0)
+            } else if (lround(atof(cell[14]) * 1000.0)
                        != chain_mean_ma((uint16_t)win)) {
                 ++r->wrong;
             }
-            if ((cell[13][0] == '\0') != (cell[14][0] == '\0')) {
+            if ((cell[14][0] == '\0') != (cell[15][0] == '\0')) {
                 ++r->half;
             }
-            if (cell[15][0] == '\0') {
+            if (cell[16][0] == '\0') {
                 ++r->no_voltage;
-            } else if (atof(cell[15]) == 0.0) {
+            } else if (atof(cell[16]) == 0.0) {
                 ++r->zero_v;
             }
             if (!sample) {
@@ -1090,7 +1090,7 @@ TEST_CASE(a_bench_log_has_one_row_for_every_window_at_a_53_ms_poll)
     log_csv_opts_default(&opts);
     log_analysis_t an;
     CHECK_EQ(log_csv_analyse(&src, &opts, &an), LOG_OK);
-    CHECK_EQ(an.n_columns, 23);
+    CHECK_EQ(an.n_columns, 24);
     CHECK_EQ(an.ragged_rows, 0);
     CHECK_EQ(an.time_index, 0);
     CHECK_EQ(an.row_count, (int)r.rows);
@@ -1235,13 +1235,13 @@ TEST_CASE(a_window_without_voltage_samples_has_an_empty_voltage_cell)
 
     char want[512];
     snprintf(want, sizeof(want),
-             ";;;;;;;;;;;;%u;0.412;0.412;;;;;;;;measured\n"
-             ";;;;;;;;;;;;%u;;;5.874;;;;;;;measured\n"
-             ";;;;;;;;;;;;%u;;;;;;;;;;measured\n"
-             ";;;;;;;;;;;;%u;-0.003;-0.003;6.000;;;;;;;measured\n"
-             ";;;;;;;;;;;;%u;0.000;0.000;0.000;;;;;;;measured\n"
-             ";;;;;;;;;;;;%u;0.077;0.077;;;;;;;;measured\n"
-             ";;;;;;;;;;;;%u;0.080;0.080;6.000;;;;;;;measured\n",
+             ";;;;;;;;;;;;;%u;0.412;0.412;;;;;;;;measured\n"
+             ";;;;;;;;;;;;;%u;;;5.874;;;;;;;measured\n"
+             ";;;;;;;;;;;;;%u;;;;;;;;;;measured\n"
+             ";;;;;;;;;;;;;%u;-0.003;-0.003;6.000;;;;;;;measured\n"
+             ";;;;;;;;;;;;;%u;0.000;0.000;0.000;;;;;;;measured\n"
+             ";;;;;;;;;;;;;%u;0.077;0.077;;;;;;;;measured\n"
+             ";;;;;;;;;;;;;%u;0.080;0.080;6.000;;;;;;;measured\n",
              (unsigned)n0, (unsigned)(uint16_t)(n0 + 1u),
              (unsigned)(uint16_t)(n0 + 2u), (unsigned)(uint16_t)(n0 + 3u),
              (unsigned)(uint16_t)(n0 + 4u), (unsigned)(uint16_t)(n0 + 5u),

@@ -34,7 +34,7 @@
 /* The RP2350's XIP (execute in place) window. */
 #define XIP        0x10000000u
 
-static const fw_slots_layout_t k_layout = { A_OFF, B_OFF, SLOT, SECTOR };
+static const fw_slots_layout_t k_layout = { A_OFF, B_OFF, SLOT };
 
 /* The location word of a partition from @p start, @p bytes long, with the
  * permission and family bits above the sector fields set, as the boot ROM
@@ -303,8 +303,7 @@ static uint16_t slot_register(const fw_slots_t *s, link_update_dev_t *u)
 TEST_CASE(the_update_reports_the_chosen_slot_and_holds_arm_on_trial)
 {
     static link_update_dev_t u;
-    const fw_slots_layout_t small = { 0u, 16u * SECTOR, 16u * SECTOR,
-                                      SECTOR };
+    const fw_slots_layout_t small = { 0u, 16u * SECTOR, 16u * SECTOR };
     fw_slots_t s;
     fw_slots_boot_t b = boot_of(1, FW_SLOTS_BUY_PENDING);
     b.p0 = part(0u, 16u * SECTOR);

@@ -331,7 +331,7 @@ TEST_CASE(a_motor_row_is_unchanged)
     CHECK(log_writer_row(&w, 1.0f, &b));
     char got[LOG_WRITER_LINE_MAX];
     line_of(1u, got, sizeof(got));
-    CHECK_STR_EQ(got, "1.000;;;;11419;46.3;;;;;;;;;;;;;;;;;measured");
+    CHECK_STR_EQ(got, "1.000;;;;11419;;46.3;;;;;;;;;;;;;;;;;measured");
 
     b = bench_empty();
     b.flags = (uint16_t)LINK_BN_CURRENT_OK;
@@ -341,14 +341,14 @@ TEST_CASE(a_motor_row_is_unchanged)
     log_writer_t w2 = writer();
     CHECK(log_writer_row(&w2, 1.0f, &b));
     line_of(1u, got, sizeof(got));
-    CHECK_STR_EQ(got, "1.000;;10.00;;;;;5;;;;10.00;;;;;;;;;;;measured");
+    CHECK_STR_EQ(got, "1.000;;10.00;;;;;;5;;;;10.00;;;;;;;;;;;measured");
 }
 
-TEST_CASE(a_servo_file_has_the_motor_files_columns_and_two_more)
+TEST_CASE(a_servo_file_has_the_motor_files_columns_but_throttle_and_two_more)
 {
-    /* The motor file's header, with the pulse and the angle before
-     * `source`: LOGS, the card reader and the tools read both by one rule.
-     * With CH1 to CH3, and with a sensor map's groups. */
+    /* The motor file's header without `throttle (%)`, with the pulse and
+     * the angle before `source`: LOGS, the card reader and the tools read
+     * both by one rule.  With CH1 to CH3, and with a sensor map's groups. */
     for (int by_map = 0; by_map < 2; ++by_map) {
         log_cols_t cols;
         memset(&cols, 0, sizeof(cols));
@@ -357,12 +357,18 @@ TEST_CASE(a_servo_file_has_the_motor_files_columns_and_two_more)
         cols.ch[1] = 4u;
         snprintf(cols.name[0], sizeof(cols.name[0]), "port 1");
         snprintf(cols.name[1], sizeof(cols.name[1]), "supply");
-        const bench_state_t b = bench_empty();
+        bench_state_t b = bench_empty();
+        bench_state_set_throttle(&b, 25.0f);
         log_writer_t w = writer();
         log_writer_set_cols(&w, by_map ? &cols : NULL);
         CHECK(log_writer_row(&w, 1.0f, &b));
         char motor[512];
         line_of(0u, motor, sizeof(motor));
+        /* The throttle comes out; a SERVO run arms no motor. */
+        char *const thr = strstr(motor, "throttle (%);");
+        CHECK(thr != NULL);
+        memmove(thr, thr + strlen("throttle (%);"),
+                strlen(thr + strlen("throttle (%);")) + 1u);
         log_writer_t w2 = writer();
         log_writer_set_cols(&w2, by_map ? &cols : NULL);
         CHECK(log_writer_servo_row(&w2, 1.0f, &b, NULL, NULL));
@@ -374,6 +380,9 @@ TEST_CASE(a_servo_file_has_the_motor_files_columns_and_two_more)
                  (int)keep, motor);
         CHECK_STR_EQ(servo, want);
         CHECK(strncmp(motor + keep, "source", 6) == 0);
+        /* And the row of a sample with a throttle has no cell of it. */
+        line_of(1u, servo, sizeof(servo));
+        CHECK(strstr(servo, "25.0") == NULL);
     }
 }
 
@@ -422,7 +431,7 @@ int main(void)
     RUN(a_servo_row_keeps_the_bench_columns);
     RUN(the_supply_totals_count_from_the_arm_while_driving);
     RUN(a_motor_row_is_unchanged);
-    RUN(a_servo_file_has_the_motor_files_columns_and_two_more);
+    RUN(a_servo_file_has_the_motor_files_columns_but_throttle_and_two_more);
     RUN(a_servo_run_reads_back_with_its_supply_columns);
     return test_summary("servo_runlog");
 }

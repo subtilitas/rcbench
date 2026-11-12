@@ -9,8 +9,10 @@ import check_sizes as cs
 
 
 def lines(n, head=b""):
-    """A text file of n lines, starting with head; every line but the head's
-    is code in a .c file."""
+    """A text file of n lines, starting with head.
+
+    Every line but the head's is code in a .c file.
+    """
     body = head + b"x\n" * (n - head.count(b"\n"))
     assert body.count(b"\n") == n
     return body
@@ -20,16 +22,19 @@ CI = "      - run: python3 tools/gen_font.py --check\n"
 
 
 def run(files, listing, ci=CI):
+    """The result of check_sizes.check() for @p files and @p listing."""
     return cs.check(files, listing, ci)
 
 
 def test_a_listed_file_over_the_line_passes():
+    """A listed file over the line passes."""
     report, fails = run({"a.c": lines(1001)}, "a.c | none | one screen\n")
     assert fails == []
     assert report == [("a.c", 1001, "one screen")]
 
 
 def test_a_file_over_the_line_that_is_not_listed_fails():
+    """A file over the line that is not listed fails."""
     _, fails = run({"a.c": lines(1001), "b.c": lines(1000)}, "")
     assert fails == ["a.c is 1,001 code lines, over 1,000, and not in "
                      "check_sizes.txt: split it, or list it with the reason "
@@ -38,12 +43,14 @@ def test_a_file_over_the_line_that_is_not_listed_fails():
 
 @pytest.mark.parametrize("n", [1000, 999, 0])
 def test_a_listed_file_at_or_under_the_line_fails(n):
+    """A listed file at or under the line fails."""
     _, fails = run({"a.c": lines(n)}, "a.c | none | why\n")
     assert fails == [f"check_sizes.txt:1: a.c is {n:,} code lines, at or "
                      f"under 1,000; take it out"]
 
 
 def test_a_listed_file_not_in_the_tree_fails():
+    """A listed file not in the tree fails."""
     _, fails = run({}, "\n# comment\ngone.c | none | why\n")
     assert fails == ["check_sizes.txt:3: gone.c is not a text file in the "
                      "tree; take it out"]
@@ -52,6 +59,7 @@ def test_a_listed_file_not_in_the_tree_fails():
 @pytest.mark.parametrize("n, ok", [(2322, True), (2522, True), (2321, False),
                                    (2523, False)])
 def test_a_recorded_figure_holds_within_its_tolerance(n, ok):
+    """A recorded figure holds within its tolerance."""
     _, fails = run({"main.c": lines(n)}, "main.c | 2,422 +-100 | why\n")
     if ok:
         assert fails == []
@@ -61,11 +69,13 @@ def test_a_recorded_figure_holds_within_its_tolerance(n, ok):
 
 
 def test_a_figure_with_no_tolerance_holds_exactly():
+    """A figure with no tolerance holds exactly."""
     assert run({"a.c": lines(1393)}, "a.c | 1393 +-0 | why\n")[1] == []
     assert len(run({"a.c": lines(1394)}, "a.c | 1393 +-0 | why\n")[1]) == 1
 
 
 def test_an_exclusion_covers_its_files_and_must_cover_one():
+    """An exclusion covers its files and must cover one."""
     files = {"hardware/research/r1/a.json": lines(5000),
              "test/host/fixtures/a.csv": lines(1735)}
     listing = ("exclude hardware/research/* | records\n"
@@ -79,12 +89,14 @@ def test_an_exclusion_covers_its_files_and_must_cover_one():
 
 
 def test_an_exclusion_does_not_cover_a_file_under_the_line():
+    """An exclusion does not cover a file under the line."""
     files = {"a.json": lines(10), "b.json": lines(1001)}
     _, fails = run(files, "exclude *.json | data\n")
     assert fails == []
 
 
 def test_a_binary_file_is_not_counted():
+    """A binary file is not counted."""
     _, fails = run({"a.png": b"\0" + b"\n" * 5000}, "")
     assert fails == []
     assert cs.count("a.png", b"\0\n\n") is None
@@ -111,6 +123,7 @@ GEN = 'OUT = "shared/gfx/gfx_font8x16.c"\nap.add_argument("--check")\n'
 
 
 def test_a_generated_file_is_the_generators(generator):
+    """A generated file is the generators."""
     generator(GEN)
     files = {"shared/gfx/gfx_font8x16.c": lines(1763, GEN_HEAD)}
     report, fails = run(files, "")
@@ -119,6 +132,7 @@ def test_a_generated_file_is_the_generators(generator):
 
 
 def test_a_generated_file_in_the_list_fails(generator):
+    """A generated file in the list fails."""
     generator(GEN)
     files = {"shared/gfx/gfx_font8x16.c": lines(1763, GEN_HEAD)}
     _, fails = run(files, "shared/gfx/gfx_font8x16.c | none | font\n")
@@ -136,6 +150,7 @@ def test_a_generated_file_in_the_list_fails(generator):
      "ci.yml does not run tools/gen_font.py --check"),
 ])
 def test_a_claim_to_be_generated_is_checked(generator, gen, ci, says):
+    """A claim to be generated is checked."""
     if gen is not None:
         generator(gen)
     files = {"shared/gfx/gfx_font8x16.c": lines(1763, GEN_HEAD)}
@@ -145,6 +160,7 @@ def test_a_claim_to_be_generated_is_checked(generator, gen, ci, says):
 
 
 def test_the_claim_counts_only_in_the_head(generator):
+    """The claim counts only in the head."""
     generator(GEN)
     head = b"x\n" * cs.HEAD_LINES + GEN_HEAD
     _, fails = run({"shared/gfx/gfx_font8x16.c": lines(1763, head)}, "")
@@ -159,17 +175,20 @@ def test_the_claim_counts_only_in_the_head(generator):
     ("a.c|none|why", "an entry is 'path | lines | reason'"),
 ])
 def test_a_malformed_line_fails(line, says):
+    """A malformed line fails."""
     _, fails = run({"a.c": lines(1001)}, line + "\n")
     assert fails[0].startswith(f"check_sizes.txt:1: {says}")
 
 
 def test_a_path_listed_twice_fails():
+    """A path listed twice fails."""
     _, fails = run({"a.c": lines(1001)},
                    "a.c | none | why\na.c | none | again\n")
     assert fails == ["check_sizes.txt:2: a.c is listed twice"]
 
 
 def test_the_report_is_longest_first():
+    """The report is longest first."""
     files = {"a.c": lines(1001), "b.c": lines(3000), "c.c": lines(2000)}
     listing = "a.c | none | a\nb.c | none | b\nc.c | none | c\n"
     report, _ = run(files, listing)
@@ -189,6 +208,7 @@ def test_the_tree_agrees_with_the_list():
 
 
 def test_the_repositorys_generated_files_are_recognised():
+    """The repository's generated files are recognised."""
     ci = cs.CI.read_text(encoding="utf-8")
     for path in ("shared/esc/esc_profiles_gen.c",
                  "shared/gfx/gfx_font16x28.c", "shared/gfx/gfx_font8x16.c"):
@@ -198,6 +218,7 @@ def test_the_repositorys_generated_files_are_recognised():
 
 
 def test_check_exits_1_on_a_failure(monkeypatch, capsys):
+    """Check exits 1 on a failure."""
     monkeypatch.setattr(cs, "tracked", lambda: [])
     monkeypatch.setattr(cs, "check",
                         lambda files, listing, ci: ([], ["broken"]))
@@ -214,12 +235,14 @@ def code(path, text):
 
 
 def test_blank_lines_do_not_count():
+    """Blank lines do not count."""
     assert code("a.c", "\n\nint a;\n   \t\n\nint b;\n\n") == 2
     assert code("a.c", "") == 0
     assert code("a.md", "one\n\n  \ntwo\n") == 2
 
 
 def test_a_comment_only_block_does_not_count():
+    """A comment only block does not count."""
     text = ("/* one\n"
             "   two\n"
             "   three */\n"
@@ -231,6 +254,7 @@ def test_a_comment_only_block_does_not_count():
 
 
 def test_a_line_with_code_and_a_trailing_comment_counts():
+    """A line with code and a trailing comment counts."""
     text = ("int a; // why\n"
             "int b; /* why */\n"
             "/* lead */ int c;\n"
@@ -244,6 +268,7 @@ def test_a_line_with_code_and_a_trailing_comment_counts():
 
 
 def test_a_string_holding_a_comment_opener_is_code():
+    """A string holding a comment opener is code."""
     text = ('const char *a = "/* not a comment";\n'
             'const char *b = "// nor this";\n'
             "int c = '\"'; // the quote is a character\n"
@@ -254,15 +279,18 @@ def test_a_string_holding_a_comment_opener_is_code():
 
 
 def test_an_unterminated_string_ends_at_the_line():
+    """An unterminated string ends at the line."""
     assert code("a.c", 'x = "open\n/* c */\nint a;\n') == 2
 
 
 def test_a_line_comment_ends_at_a_backslash_free_newline():
+    """A line comment ends at a backslash free newline."""
     assert code("a.c", "// one \\\n   still comment\nint a;\n") == 1
     assert code("a.c", "// one\nint a;\n") == 1
 
 
 def test_a_doxygen_header_does_not_count():
+    """A Doxygen header does not count."""
     text = ("/**\n"
             " * @file\n"
             " * @brief What the file does.\n"
@@ -280,6 +308,7 @@ def test_a_doxygen_header_does_not_count():
 
 
 def test_a_template_literal_counts_every_line_in_typescript():
+    """A template literal counts every line in TypeScript."""
     text = ("const a = `one\n"
             "// not a comment\n"
             "/* nor this */\n"
@@ -290,6 +319,7 @@ def test_a_template_literal_counts_every_line_in_typescript():
 
 
 def test_a_python_docstring_does_not_count():
+    """A Python docstring does not count."""
     text = ('"""Module docstring.\n'
             '\n'
             'More of it.\n'
@@ -320,6 +350,7 @@ def test_a_python_docstring_does_not_count():
 
 
 def test_python_strings_that_are_not_docstrings_count():
+    """Python strings that are not docstrings count."""
     text = ('x = 1\n'
             '"""a string statement after code is not a docstring\n'
             'and its second line counts"""\n')
@@ -327,15 +358,18 @@ def test_python_strings_that_are_not_docstrings_count():
 
 
 def test_python_that_does_not_parse_counts_by_hash_and_blank():
+    """Python that does not parse counts by hash and blank."""
     assert code("a.py", "def f(:\n# c\n\n    x\n") == 2
 
 
 def test_other_kinds_count_non_blank_lines():
+    """Other kinds count non blank lines."""
     assert code("a.json", '{\n\n  "a": 1\n}\n') == 3
     assert code("a.yml", "# c\n\na: 1\n") == 2
 
 
 def test_a_file_of_1200_lines_with_900_code_lines_passes():
+    """A file of 1200 lines with 900 code lines passes."""
     body = "int a;\n" * 900 + "// comment\n" * 200 + "\n" * 100
     files = {"a.c": body.encode()}
     assert body.count("\n") == 1200
@@ -344,12 +378,14 @@ def test_a_file_of_1200_lines_with_900_code_lines_passes():
 
 
 def test_a_file_over_the_line_in_code_fails_with_comments_after():
+    """A file over the line in code fails with comments after."""
     files = {"a.c": ("int a;\n" * 1001 + "// c\n").encode()}
     _, fails = run(files, "")
     assert len(fails) == 1 and "1,001 code lines" in fails[0]
 
 
 def test_a_listed_file_that_falls_under_the_line_in_code_fails():
+    """A listed file that falls under the line in code fails."""
     body = "int a;\n" * 900 + "// comment\n" * 200
     _, fails = run({"a.c": body.encode()}, "a.c | none | why\n")
     assert fails == ["check_sizes.txt:1: a.c is 900 code lines, at or "
