@@ -4,7 +4,9 @@
  * FlyDragon Lite 40A at 7.6V (short beeps 127.9ms, long beeps 383.7ms),
  * a run counting from an INA3221 channel's 50ms windows at the same
  * lengths, and the ends a source gives: a beep lost, a capture that
- * stops, a meter that stops.
+ * stops, a meter that stops.  Beeps handed to the run one by one: one that
+ * alone shows a group's end, one of a group already ended, one before the
+ * power-up.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -132,6 +134,13 @@ TEST_CASE(a_run_without_a_beep_source_is_refused)
                            ESC_STICK_SRC_NONE, &b, &why));
     CHECK_STR_EQ(why, "no beep source");
     CHECK(!esc_stick_running(&r.e));
+
+    /* No timing at all: refused by the rules, with their reason. */
+    why = NULL;
+    CHECK(!esc_stick_start(&r.e, r.p, c, n, NULL, 7600u, 1000u,
+                           ESC_STICK_SRC_TAP, &b, &why));
+    CHECK(why != NULL);
+    CHECK(!esc_stick_running(&r.e));
 }
 
 /* A beep number that never arrives: the count would be one short. */
@@ -147,6 +156,7 @@ TEST_CASE(a_beep_lost_mid_run_ends_the_run)
     run_for(60000u);
     CHECK_EQ(r.e.reason, ESC_STICK_R_TAP_LOST);
     CHECK(esc_stick_reason_is_fault(r.e.reason));
+    CHECK_STR_EQ(esc_stick_reason_text(r.e.reason), "BEEP LOST");
     ended_safe();
 
     /* The tap's own lost count moving says the same. */
@@ -174,6 +184,7 @@ TEST_CASE(a_tap_that_stops_mid_run_ends_the_run)
     tick();
     CHECK_EQ(r.e.reason, ESC_STICK_R_TAP_STOP);
     CHECK(esc_stick_reason_is_fault(r.e.reason));
+    CHECK_STR_EQ(esc_stick_reason_text(r.e.reason), "TAP STOPPED");
     ended_safe();
 }
 
@@ -211,6 +222,7 @@ TEST_CASE(a_meter_that_goes_quiet_mid_run_ends_the_run)
     CHECK_EQ(r.e.reason, ESC_STICK_R_METER);
     CHECK(r.now - from <= ESC_STICK_STALE_MS + 60u);
     CHECK(esc_stick_reason_is_fault(r.e.reason));
+    CHECK_STR_EQ(esc_stick_reason_text(r.e.reason), "INA3221 LOST");
     ended_safe();
 
     /* And before a power-up nothing is powered that the run cannot hear. */
@@ -385,6 +397,110 @@ TEST_CASE(a_status_past_the_deadline_with_a_beep_under_way_ends_nothing)
     CHECK(r.e.last_valid);
 }
 
+/* The FlyDragon's run in ITEMS, from where on it hears only what the case
+ * hands it, on a tap clock 5000ms after anything the simulation sounded.
+ * @return The tap's clock to start from. */
+static uint32_t hand_fed_items(void)
+{
+    flydragon(ESC_STICK_SRC_TAP, 100u);
+    esc_stick_change_t c[2];
+    const size_t n = two_changes(c);
+    CHECK(start(c, n));
+    run_until_phase(ESC_STICK_ITEMS, 60000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_ITEMS);
+    return r.e.tap_end + 5000u;
+}
+
+/* A beep that begins GROUP GAP after the one before with no quiet state
+ * between them: only this beep shows the group's end, so that group is
+ * judged unclear and not acted on, and the beep opens the next group. */
+TEST_CASE(a_beep_that_alone_shows_a_groups_end_judges_it_unclear)
+{
+    const uint32_t t0 = hand_fed_items();
+    const uint32_t gg = r.t.group_gap_ms;
+    uint16_t seq = (uint16_t)(r.e.tap_seq + 1u);
+    const esc_stick_beep_t a = { seq, t0, 128u };
+    esc_stick_tap_beep(&r.e, &a);
+    CHECK(r.e.det.group_open);
+    const uint32_t groups = r.e.groups;
+    seq = (uint16_t)(seq + 1u);
+    const esc_stick_beep_t b = { seq, t0 + 128u + gg + 100u, 128u };
+    esc_stick_tap_beep(&r.e, &b);
+    CHECK_EQ(r.e.groups, groups + 1u);
+    CHECK_EQ(r.e.last_count, 1u);
+    CHECK(!r.e.last_valid);
+    CHECK(r.e.det.group_open);              /* b's own group */
+    CHECK(esc_stick_running(&r.e));
+}
+
+/* A beep that began less than GROUP GAP after a group the quiet state
+ * ended belonged to that group: the run drops the order across it and
+ * waits for a whole quiet before the next group. */
+TEST_CASE(a_beep_of_a_group_already_ended_drops_the_order)
+{
+    const uint32_t t0 = hand_fed_items();
+    const uint32_t gg = r.t.group_gap_ms;
+    uint16_t seq = r.e.tap_seq;
+    esc_stick_tap_t st = { .running = true, .lost = r.tap_lost,
+                           .newest = seq, .quiet = true, .head = seq };
+    /* Two short beeps 500ms apart, and the quiet past GROUP GAP: a
+     * group of 2. */
+    seq = (uint16_t)(seq + 1u);
+    const esc_stick_beep_t a = { seq, t0, 128u };
+    esc_stick_tap_beep(&r.e, &a);
+    seq = (uint16_t)(seq + 1u);
+    const esc_stick_beep_t b = { seq, t0 + 628u, 128u };
+    esc_stick_tap_beep(&r.e, &b);
+    const uint32_t b_end = t0 + 628u + 128u;
+    st.head = seq;
+    st.window = (uint16_t)((b_end + gg + 8u) / 8u);
+    esc_stick_tap(&r.e, &st);
+    CHECK(!r.e.det.group_open);
+    CHECK_EQ(r.e.last_count, 2u);
+    CHECK(r.e.last_valid);
+    CHECK_EQ(r.e.prev, 2u);
+    /* A beep handed over late, begun 600ms after b ended. */
+    seq = (uint16_t)(seq + 1u);
+    const esc_stick_beep_t late = { seq, b_end + gg - 100u, 128u };
+    const uint32_t groups = r.e.groups;
+    esc_stick_tap_beep(&r.e, &late);
+    CHECK_EQ(r.e.prev, 0u);
+    CHECK(r.e.det.wait_quiet);
+    CHECK(!r.e.det.group_open);
+    CHECK_EQ(r.e.groups, groups);
+    CHECK(esc_stick_running(&r.e));
+}
+
+/* A beep before the first tap state, which names the beep numbers already
+ * heard, is ignored; one before the supply is on is taken in order and
+ * counts nowhere. */
+TEST_CASE(a_beep_before_the_power_up_is_taken_and_not_counted)
+{
+    flydragon(ESC_STICK_SRC_TAP, 100u);
+    esc_stick_change_t c[2];
+    const size_t n = two_changes(c);
+    CHECK(start(c, n));
+    const esc_stick_beep_t early = { 1u, 500u, 128u };
+    esc_stick_tap_beep(&r.e, &early);
+    esc_stick_tap_beep(&r.e, NULL);
+    CHECK(!r.e.tap_rx);
+    CHECK(esc_stick_running(&r.e));
+    const esc_stick_tap_t st = { .running = true, .lost = r.tap_lost,
+                                 .newest = 7u, .quiet = true, .head = 7u };
+    esc_stick_tap(&r.e, &st);
+    CHECK(r.e.tap_base);
+    CHECK(r.e.phase < ESC_STICK_ENTRY);
+    const esc_stick_beep_t b = { 8u, 1000u, 128u };
+    esc_stick_tap_beep(&r.e, &b);
+    CHECK_EQ(r.e.tap_seq, 8u);
+    CHECK(r.e.tap_rx);
+    CHECK_EQ(r.e.pulses, 0u);
+    CHECK(!r.e.det.group_open);
+    /* The detector never saw it: no fall to start a quiet from. */
+    CHECK(!r.e.det.fell);
+    CHECK(esc_stick_running(&r.e));
+}
+
 int main(void)
 {
     RUN(the_tap_counts_the_groups_and_the_value_is_stored);
@@ -398,5 +514,8 @@ int main(void)
     RUN(beeps_held_back_past_a_groups_end_store_nothing_wrong);
     RUN(a_beep_sounding_at_the_group_gap_keeps_the_group_open);
     RUN(a_status_past_the_deadline_with_a_beep_under_way_ends_nothing);
+    RUN(a_beep_that_alone_shows_a_groups_end_judges_it_unclear);
+    RUN(a_beep_of_a_group_already_ended_drops_the_order);
+    RUN(a_beep_before_the_power_up_is_taken_and_not_counted);
     return test_summary("esc_stick_tap");
 }

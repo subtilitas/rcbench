@@ -467,17 +467,46 @@ static void prg_add_row(ui_help_page_t *p, int pg, const char *label,
     }
 }
 
-/** @brief KST's or HITEC's SERVO tab: the tabs, CONNECT, the read, TYPE or
- *         SERIES (FILES on HITEC once its CONNECT opened the port), the
- *         notes.
+/**
+ * @brief The text of the port's button as it reads: CONNECT; LEAVE once
+ *        CONNECT holds the port, whose way back to PWM differs on KST and
+ *        HITEC; ABORT while an operation runs; on HITEC WAIT while the port
+ *        changes hands or the horn moves, and RELEASE PORT while another
+ *        session holds the port.
+ * @param label The button's label as it is drawn.
+ * @param kst   The session is KST's.
+ * @return The text.
+ */
+static ui_text_id_t prg_port_text(const char *label, bool kst)
+{
+    if (strcmp(label, TR(KP_LEAVE)) == 0) {
+        return kst ? TX_HG_KST_LEAVE : TX_HG_HT_LEAVE;
+    }
+    if (strcmp(label, TR(KP_ABORT)) == 0) {
+        return kst ? TX_HG_KST_ABORT : TX_HG_HT_ABORT;
+    }
+    if (strcmp(label, TR(KP_WAIT)) == 0) {
+        return TX_HG_HT_WAIT;
+    }
+    if (strcmp(label, TR(HP_RELEASE)) == 0) {
+        return TX_HG_HT_RELEASE;
+    }
+    return TX_HG_PRG_CONNECT;
+}
+
+/** @brief KST's or HITEC's SERVO tab: the tabs, CONNECT (LEAVE once it
+ *         holds the port), the read, TYPE or SERIES (FILES on HITEC once
+ *         its CONNECT opened the port), the notes.
+ *         The port's button takes the text of what it reads
+ *         (prg_port_text()).
  *  @param p The page. */
 static void page_prg_connect(ui_help_page_t *p)
 {
     const bool kst = prg_kst();
     prg_page_init(p, kst ? TX_HG_KST_TITLE_CONNECT : TX_HG_HT_TITLE_CONNECT);
     prg_add_tabs(p, PRG_PG_CONNECT);
-    prg_add_row(p, PRG_PG_CONNECT, prg_button(PRG_TAB_SERVO, 0, 0),
-                TX_HG_PRG_CONNECT, 0, 0);
+    const char *port = prg_button(PRG_TAB_SERVO, 0, 0);
+    prg_add_row(p, PRG_PG_CONNECT, port, prg_port_text(port, kst), 0, 0);
     if (kst) {
         prg_add_row(p, PRG_PG_CONNECT, prg_button(PRG_TAB_SERVO, 1, 0),
                     TX_HG_PRG_READ, 1, 0);

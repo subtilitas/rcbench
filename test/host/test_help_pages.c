@@ -13,6 +13,9 @@
  * - every_page_of_every_screen_fits: also PREV and NEXT in one place on
  *   every page, over no marked control, chip, "?" or STOP
  * - the_screen_draws_nothing_under_the_dock
+ * - an_umlaut_label_moves_the_text_by_its_cells: the text after a German
+ *   label with an umlaut starts where it starts after an ASCII label of
+ *   the same cells
  *
  * SPDX-License-Identifier: MIT
  */
@@ -293,6 +296,50 @@ TEST_CASE(the_screen_draws_nothing_under_the_dock)
     }
 }
 
+/* A label's text starts two cells after the label's last character: a
+ * German label with an umlaut (2 UTF-8 bytes, 1 cell) puts it where an
+ * ASCII label of the same 4 cells does, not 1 cell later. */
+TEST_CASE(an_umlaut_label_moves_the_text_by_its_cells)
+{
+    static gfx_color_t plain[(size_t)W * H];
+    ui_text_set_language(UI_LANG_DE);
+    ui_help_page_t p;
+    memset(&p, 0, sizeof(p));
+    p.title = TX_HG_OV_TITLE_LEFT;
+    p.side = UI_HELP_DOCK_RIGHT;
+    p.count = 1;
+    p.item[0] = (ui_help_item_t){ "MENU", TX_HG_OV_SERVO,
+                                  gfx_rect_make(20, 20, 200, 80),
+                                  UI_HELP_AT_LEFT };
+    gfx_canvas_t c2;
+    gfx_canvas_init(&c2, plain, W, H, W);
+    gfx_clear(&c2, 0);
+    ui_help_render_dock(&c2, &p, 0, 1, false, UI_HELP_HIT_NONE);
+    p.item[0].label = "MEN\xc3\x9c";
+    fresh();
+    ui_help_render_dock(&cv, &p, 0, 1, false, UI_HELP_HIT_NONE);
+    ui_text_set_language(UI_LANG_EN);
+
+    /* The first row of the item, from the text's first cell (badge 28px,
+     * 8px gap, 4 label cells and 2 spaces of 10px) to the dock's pad. */
+    const gfx_rect_t d = ui_help_dock_rect(p.side);
+    const int x0 = d.x + 16 + 36 + 6 * 10;
+    const int y0 = d.y + 36 + 8;
+    int diff = 0;
+    int ink = 0;
+    for (int y = y0; y < y0 + 20; ++y) {
+        for (int x = x0; x < d.x + d.w - 16; ++x) {
+            diff += fb[(size_t)y * W + x] != plain[(size_t)y * W + x];
+            ink += plain[(size_t)y * W + x] == ui_theme_color(UI_C_TEXT);
+        }
+    }
+    CHECK(ink > 0);
+    if (diff != 0) {
+        T_FAIL("%d pixels of the text after MEN\xc3\x9c differ from after MENU",
+               diff);
+    }
+}
+
 int main(void)
 {
     RUN(the_dock_and_the_live_half_split_the_body);
@@ -301,5 +348,6 @@ int main(void)
     RUN(the_page_set_key_follows_the_titles);
     RUN(every_page_of_every_screen_fits);
     RUN(the_screen_draws_nothing_under_the_dock);
+    RUN(an_umlaut_label_moves_the_text_by_its_cells);
     return test_summary("help_pages");
 }
