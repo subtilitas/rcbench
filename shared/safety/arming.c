@@ -17,6 +17,8 @@
  * doubted the line and latched before the line edges again. */
 _Static_assert(ARMING_STOP_WITHHOLD_MS >= 2u * HEARTBEAT_MAX_GAP_MS,
                "ARMING_STOP_WITHHOLD_MS must outlast HEARTBEAT_MAX_GAP_MS");
+_Static_assert(ARMING_DISARM_INHIBIT_MS == 2u * HEARTBEAT_MAX_GAP_MS,
+               "ARMING_DISARM_INHIBIT_MS is twice HEARTBEAT_MAX_GAP_MS");
 
 void arming_init(arming_t *a, uint32_t now_ms, uint32_t settle_ms)
 {
@@ -547,4 +549,26 @@ bool arming_heartbeat(arming_t *a, uint32_t now_ms)
 uint32_t arming_run_seconds(const arming_t *a)
 {
     return (a != NULL) ? a->run_seconds : 0u;
+}
+
+void disarm_hold_seen(disarm_hold_t *h, uint32_t now_ms)
+{
+    if (h != NULL && !h->timing) {
+        h->timing = true;
+        h->since  = now_ms;
+    }
+}
+
+bool disarm_hold_ends(disarm_hold_t *h, bool told, uint32_t now_ms)
+{
+    if (h == NULL) {
+        return false;
+    }
+    const bool timed_out = h->timing
+        && (uint32_t)(now_ms - h->since) >= ARMING_DISARM_INHIBIT_MS;
+    if (told || timed_out) {
+        h->timing = false;
+        return true;
+    }
+    return false;
 }

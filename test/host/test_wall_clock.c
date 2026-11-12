@@ -163,7 +163,7 @@ TEST_CASE(the_zones_are_settings_options_in_the_same_order)
     CHECK_STR_EQ(ui_setting_option(SET_TIME_ZONE, 2), "BERLIN");
     ui_text_set_language(UI_LANG_EN);
     CHECK_STR_EQ(ui_setting_label(SET_TIME_ZONE), "Time zone");
-    /* PANEL lists it after Units. */
+    /* PANEL lists it after Language: Units shows no row. */
     setting_id_t ids[32];
     const int n = settings_in_category(SET_CAT_APP, ids, 32);
     int at = -1;
@@ -173,7 +173,7 @@ TEST_CASE(the_zones_are_settings_options_in_the_same_order)
         }
     }
     CHECK(at > 0);
-    CHECK_EQ(at > 0 ? ids[at - 1] : SETTING_COUNT, SET_UNITS);
+    CHECK_EQ(at > 0 ? ids[at - 1] : SETTING_COUNT, SET_LANGUAGE);
     /* Out of range: Berlin. */
     CHECK_STR_EQ(wall_zone_posix(-1), wall_zone_posix(WALL_ZONE_DEFAULT));
     CHECK_STR_EQ(wall_zone_posix(WALL_ZONE_COUNT),

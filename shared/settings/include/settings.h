@@ -27,7 +27,8 @@ extern "C" {
 
 typedef enum {
     SET_CAT_APP = 0,     /**< theme, brightness, rotation, language,
-                              units, time zone, plot                   */
+                              time zone, dimming, plot; units hold a
+                              key and show no row                      */
     SET_CAT_CARD,        /**< the SD card: which logs are written     */
     SET_CAT_SENSORS,     /**< what the IOmcu reads: the sensor bus, the
                               INA228, the INA3221 parts (settings_sensors.h),

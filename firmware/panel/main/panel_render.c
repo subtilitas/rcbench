@@ -2,7 +2,8 @@
  * @file
  * @brief The render side's services, once a frame on app_main: the programmer's
  * model, the supply's levels, the servo test's lines, the rotary knob, the
- * touch drain and the screens' commands on their way to the control task.
+ * touch drain, the backlight's Dim after and the screens' commands on their
+ * way to the control task.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -14,6 +15,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 
+#include "board.h"
 #include "esc_wire_panel.h"
 #include "hitec_panel.h"
 #include "knob.h"
@@ -23,6 +25,7 @@
 #include "motor_screen.h"
 #include "panel.h"
 #include "esc_stick_panel.h"
+#include "screen_dim.h"
 #include "servo_link.h"
 #include "servo_screen.h"
 #include "settings.h"
@@ -584,12 +587,36 @@ static void touch_stream_broke(uint32_t stops_now, uint32_t cur,
 }
 
 /**
+ * @brief Dim after's state (screen_dim.h): render loop only.  Zeroed, it is
+ *        awake with the minutes counted from 0ms, as screen_dim_init() at
+ *        0ms leaves it.
+ */
+static screen_dim_t s_dim;
+/** @brief The duty the backlight was last set to, %: display_init()'s. */
+static unsigned s_backlight_pct = SCREEN_FULL_PCT;
+
+void backlight_service(const shot_facts_t *facts)
+{
+    const unsigned pct = screen_dim_step(&s_dim, now_ms(),
+                                         settings_get_int(SET_DIM_AFTER),
+                                         facts);
+    if (pct == s_backlight_pct) {
+        return;
+    }
+    /* Tried again next frame if the LEDC refuses. */
+    if (board_backlight_percent((int)pct) == ESP_OK) {
+        s_backlight_pct = pct;
+    }
+}
+
+/**
  * @brief Hand the screens what the control task saw of the panel.  Render
  *        loop only.
  * @param stops_now the stop count the commands flushed here carry
+ * @param facts this frame's facts of the screenshot gate, for Dim after
  * @return whether the stream was found broken
  */
-bool drain_touch(uint32_t stops_now)
+bool drain_touch(uint32_t stops_now, const shot_facts_t *facts)
 {
     bool lost = false;
     /*
@@ -618,6 +645,17 @@ bool drain_touch(uint32_t stops_now)
             lost = true;
         }
         if (item.lost) {
+            continue;
+        }
+        /*
+         * Dim after: any event wakes the backlight, and a press that came
+         * down on a dim screen reaches no screen, its MOVEs and UP neither.
+         * A press on STOP goes on: the control task applied it already, and
+         * the router latches it and consumes the marker for it.  So does
+         * every press of a frame whose facts say the bench is not idle.
+         */
+        if (!screen_dim_touch(&s_dim, &item.evt, ui_router_stop_live(),
+                              facts, now_ms())) {
             continue;
         }
         const ui_screen_id_t before = ui_router_current();

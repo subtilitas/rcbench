@@ -105,6 +105,22 @@ extern "C" {
 #define ARMING_LINE_WAIT_MS 200u
 
 /**
+ * @brief How long after its first look a disarm that nobody takes stops
+ *        holding its request: 300ms, twice HEARTBEAT_MAX_GAP_MS (150ms).
+ *
+ * The request is cleared after the pass's disarm exchange returns, and that
+ * exchange can wait LINK_HOST_TIMEOUT_MS (1000ms): the heartbeat stays
+ * withheld until the later of the two.
+ *
+ * The panel withholds the heartbeat while a disarm request stands, and the
+ * request stands until the far end has taken the disarm (disarm_hold_ends()).
+ * A far end that never answers has failed safe on its own account by then,
+ * so the line goes up again: a disarm nobody can deliver does not hold it
+ * down for ever.
+ */
+#define ARMING_DISARM_INHIBIT_MS 300u
+
+/**
  * @brief What an exchange with the far end that ended unanswered means; see
  *        arming_exchange_unanswered().
  */
@@ -815,6 +831,44 @@ bool arming_heartbeat(arming_t *a, uint32_t now_ms);
  * @return Seconds of the current run, or of the last one.
  */
 uint32_t arming_run_seconds(const arming_t *a);
+
+/**
+ * @brief A disarm request and the window it may withhold the heartbeat for.
+ *
+ * The panel's control task looks at a standing disarm request once a pass,
+ * writes the disarm to the far end, and then asks whether the request
+ * ends.  The window counts from the first look at the request, before that
+ * write, whose exchange can wait up to LINK_HOST_TIMEOUT_MS (1000ms).
+ */
+typedef struct {
+    bool     timing;   /**< a request stands and since means anything  */
+    uint32_t since;    /**< the first look at the standing request, ms */
+} disarm_hold_t;
+
+/**
+ * @brief A standing disarm request was looked at: the window starts at the
+ *        first look and later looks leave it where it is.
+ *
+ * @param h      The request's window; nothing to do for NULL.
+ * @param now_ms Current time, in milliseconds.
+ */
+void disarm_hold_seen(disarm_hold_t *h, uint32_t now_ms);
+
+/**
+ * @brief Whether a standing disarm request ends: the far end took the
+ *        disarm, or ARMING_DISARM_INHIBIT_MS have passed since the first
+ *        look (disarm_hold_seen()).  The request stands otherwise, because
+ *        the heartbeat is withheld while it stands, and ending it first
+ *        would put the line back up during the exchange meant to deliver
+ *        it.  An ended request closes the window; the next request opens a
+ *        new one.  The clock wraps at 2^32 milliseconds.
+ *
+ * @param h      The request's window.
+ * @param told   The far end acknowledged the disarm in this pass.
+ * @param now_ms Current time, in milliseconds.
+ * @return true to clear the request; false for NULL.
+ */
+bool disarm_hold_ends(disarm_hold_t *h, bool told, uint32_t now_ms);
 
 #ifdef __cplusplus
 }
