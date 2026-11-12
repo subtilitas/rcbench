@@ -2010,10 +2010,10 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/touch/touch_map.c` | 128 | 128 | 100.0% |
 | `shared/touch/touch_merge.c` | 165 | 165 | 100.0% |
 | `shared/ui/ui_theme.c` | 47 | 46 | 97.9% |
-| `shared/ui/ui_widgets.c` | 409 | 401 | 98.0% |
+| `shared/ui/ui_widgets.c` | 422 | 414 | 98.1% |
 | `shared/ui/ui_icons.c` | 189 | 189 | 100.0% |
 | `shared/ui/ui_band.c` | 385 | 372 | 96.6% |
-| `shared/ui/ui_help.c` | 259 | 249 | 96.1% |
+| `shared/ui/ui_help.c` | 265 | 255 | 96.2% |
 | `shared/ui/help_outputs.c` | 74 | 72 | 97.3% |
 | `shared/ui/help_setup.c` | 85 | 81 | 95.3% |
 | `shared/ui/help_logs.c` | 54 | 53 | 98.2% |
@@ -2053,15 +2053,15 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_textkey.c` | 579 | 565 | 97.6% |
 | `shared/ui/ui_textkey_cursor.c` | 111 | 109 | 98.2% |
 | `shared/ui/ui_shot.c` | 245 | 245 | 100.0% |
-| `shared/ui/shot_gate.c` | 59 | 59 | 100.0% |
-| `shared/ui/screen_dim.c` | 52 | 52 | 100.0% |
+| `shared/ui/shot_gate.c` | 63 | 63 | 100.0% |
+| `shared/ui/screen_dim.c` | 103 | 101 | 98.1% |
 | `shared/ui/shot_hold.c` | 67 | 67 | 100.0% |
 | `shared/ui/stop_hold.c` | 45 | 45 | 100.0% |
 | `shared/ui/ui_pinlist.c` | 62 | 62 | 100.0% |
 | `shared/ui/ui_board.c` | 56 | 56 | 100.0% |
 | `shared/ui/servo_screen.c` | 374 | 363 | 97.1% |
-| `shared/ui/servo_screen_sweep.c` | 507 | 484 | 95.5% |
-| `shared/ui/servo_screen_link.c` | 419 | 410 | 97.8% |
+| `shared/ui/servo_screen_sweep.c` | 508 | 485 | 95.5% |
+| `shared/ui/servo_screen_link.c` | 424 | 415 | 97.9% |
 | `shared/ui/servo_screen_touch.c` | 278 | 273 | 98.2% |
 | `shared/ui/servo_screen_draw.c` | 462 | 437 | 94.6% |
 | `shared/ui/servo_settings_panel.c` | 683 | 626 | 91.7% |
@@ -2074,7 +2074,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_limit_card.c` | 206 | 184 | 89.3% |
 | `shared/ui/servo_limit_seam.c` | 90 | 86 | 95.6% |
 | `shared/ui/servo_workbench.c` | 178 | 174 | 97.8% |
-| `shared/ui/servo_rudder_panel.c` | 418 | 415 | 99.3% |
+| `shared/ui/servo_rudder_panel.c` | 479 | 474 | 99.0% |
 | `shared/ui/servo_rudder_auto_panel.c` | 585 | 539 | 92.1% |
 | `shared/ui/servo_rudder_auto_ready.c` | 287 | 282 | 98.3% |
 | `shared/ui/servo_ready.c` | 549 | 533 | 97.1% |
@@ -2082,7 +2082,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_prog_ready.c` | 209 | 196 | 93.8% |
 | `shared/ui/servo_drive_ready.c` | 449 | 428 | 95.3% |
 | `shared/ui/servo_rudder_flap.c` | 101 | 99 | 98.0% |
-| `shared/ui/servo_guide.c` | 297 | 292 | 98.3% |
+| `shared/ui/servo_guide.c` | 310 | 305 | 98.4% |
 | `shared/ui/servo_fn.c` | 83 | 82 | 98.8% |
 | `shared/ui/servo_hub.c` | 202 | 196 | 97.0% |
 | `shared/ui/servo_footer.c` | 161 | 158 | 98.1% |
@@ -2094,7 +2094,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/kst_panel_text.c` | 196 | 196 | 100.0% |
 | `shared/ui/kst_panel_warn.c` | 309 | 306 | 99.0% |
 | `shared/ui/kst_panel_edit.c` | 387 | 378 | 97.7% |
-| `shared/ui/kst_panel_touch.c` | 295 | 288 | 97.6% |
+| `shared/ui/kst_panel_touch.c` | 288 | 281 | 97.6% |
 | `shared/ui/kst_panel_run.c` | 154 | 148 | 96.1% |
 | `shared/ui/kst_panel_draw.c` | 564 | 562 | 99.7% |
 | `shared/ui/esc_wire_panel.c` | 575 | 546 | 95.0% |
@@ -2106,7 +2106,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/hitec_panel_draw.c` | 284 | 283 | 99.7% |
 | `shared/ui/hitec_panel_file.c` | 230 | 230 | 100.0% |
 | `shared/ui/hitec_panel_run.c` | 107 | 107 | 100.0% |
-| `shared/ui/hitec_panel_move.c` | 219 | 214 | 97.7% |
+| `shared/ui/hitec_panel_move.c` | 211 | 206 | 97.6% |
 | `shared/ui/analyser_screen.c` | 258 | 257 | 99.6% |
 | `shared/ui/balance_screen.c` | 383 | 383 | 100.0% |
 | `shared/ui/battery_screen.c` | 223 | 218 | 97.8% |
@@ -2115,8 +2115,8 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/esc_stick_list.c` | 299 | 286 | 95.7% |
 | `shared/ui/esc_stick_touch.c` | 301 | 297 | 98.7% |
 | `shared/ui/esc_stick_settings.c` | 71 | 69 | 97.2% |
-| `shared/ui/esc_stick_draw.c` | 446 | 427 | 95.7% |
-| `shared/ui/esc_stick_draw_run.c` | 595 | 547 | 91.9% |
+| `shared/ui/esc_stick_draw.c` | 446 | 434 | 97.3% |
+| `shared/ui/esc_stick_draw_run.c` | 595 | 551 | 92.6% |
 | `shared/ui/esc_stick_guide.c` | 72 | 71 | 98.6% |
 | `shared/ui/log_viewer_screen.c` | 325 | 316 | 97.2% |
 | `shared/ui/log_viewer_load.c` | 234 | 212 | 90.6% |
@@ -2226,10 +2226,10 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/esc/esc_json.c` | 625 | 583 | 93.3% |
 | `shared/esc/esc_json_lex.c` | 292 | 285 | 97.6% |
 | `shared/esc/esc_registry.c` | 168 | 166 | 98.8% |
-| `shared/esc/esc_stick.c` | 645 | 627 | 97.2% |
+| `shared/esc/esc_stick.c` | 645 | 633 | 98.1% |
 | `shared/esc/esc_stick_rules.c` | 309 | 288 | 93.2% |
-| `shared/esc/esc_det.c` | 183 | 168 | 91.8% |
-| `shared/esc/esc_stick_read.c` | 75 | 69 | 92.0% |
+| `shared/esc/esc_det.c` | 183 | 181 | 98.9% |
+| `shared/esc/esc_stick_read.c` | 75 | 72 | 96.0% |
 | `shared/esc/esc_sim.c` | 388 | 365 | 94.1% |
 | `shared/servo/servo_sim.c` | 126 | 124 | 98.4% |
 | `protocols/sbus/sbus.c` | 55 | 54 | 98.2% |
@@ -2362,7 +2362,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/bench/log_writer.c` | 307 | 295 | 96.1% |
 | `shared/bench/log_cols.c` | 53 | 53 | 100.0% |
 | `shared/bench/log_cadence.c` | 50 | 50 | 100.0% |
-| `shared/bench/perf_watch.c` | 66 | 66 | 100.0% |
+| `shared/bench/perf_watch.c` | 68 | 68 | 100.0% |
 | `shared/bench/imu.c` | 160 | 160 | 100.0% |
 | `shared/sense/sense_bus.c` | 133 | 132 | 99.2% |
 | `shared/sense/ina228.c` | 200 | 200 | 100.0% |
@@ -2400,7 +2400,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **91101** | **89255** | **98.0%** |
+| **total** | **91242** | **89425** | **98.0%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
