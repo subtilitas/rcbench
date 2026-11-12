@@ -50,35 +50,53 @@ extern "C" {
 
 /** What the screen draws, as a copy. */
 typedef struct {
-    wa_t            w;
-    wa_conf_t       conf;
+    wa_t            w;  /**< The session's state. */
+    wa_conf_t       conf;  /**< The kept settings. */
     bool            save_failed;  /**< the settings' last write failed */
+    /** @brief The name the access point and the page show. */
     char            name[WA_NAME_MAX];
+    /**
+     * @brief The access point's channel; 0 when the session is not an access
+     *        point.
+     */
     uint8_t         channel;
-    bool            scanned;
-    wa_scan_t       scan;
-    fw_up_state_t   up;
-    fw_err_t        up_err;
-    uint32_t        received;
-    uint32_t        total;
+    bool            scanned;  /**< Whether a scan has run. */
+    wa_scan_t       scan;  /**< The scan's result. */
+    fw_up_state_t   up;  /**< The upload's state. */
+    fw_err_t        up_err;  /**< The upload's error. */
+    uint32_t        received;  /**< Bytes of the image received. */
+    uint32_t        total;  /**< Bytes the upload announced. */
     fw_image_info_t info;      /**< of a staged image         */
     fw_offer_t      offer;     /**< of a staged image         */
+    /** @brief Milliseconds before the idle time-out ends the session. */
     uint32_t        idle_left_ms;
     bool            down;      /**< the radio is wholly off   */
 } wifi_access_state_t;
 
 /**
- * Read the kept home network and set up the task.  @p slot is the largest
- * image taken, @p running the build that runs.  The radio stays off.
- * On a failure nothing is kept, and no other call of this file may be
- * made: the panel runs without Wi-Fi until the next start.
+ * @brief Read the kept home network and set up the task.  @p slot is the
+ *        largest image taken, @p running the build that runs.  The radio
+ *        stays off. On a failure nothing is kept, and no other call of this
+ *        file may be made: the panel runs without Wi-Fi until the next start.
+ * @param slot the largest image taken, bytes
+ * @param running the build that runs
+ * @return ESP_OK; otherwise the error that stopped the set-up
  */
 esp_err_t wifi_access_init(uint32_t slot, const fw_image_info_t *running);
 
-/** The page's language. */
+/**
+ * @brief The page's language.
+ * @param de true for German, false for English
+ */
 void wifi_access_set_german(bool de);
 
-/** Start in @p mode unless @p gate says why not; see wa_start(). */
+/**
+ * @brief Start in @p mode unless @p gate says why not; see wa_start().
+ * @param mode what the session is for
+ * @param gate wa_gate()'s answer
+ * @return WA_OFF_NONE when the radio comes up; otherwise the reason it stays
+ *         off (wa_start())
+ */
 wa_off_t wifi_access_start(wa_mode_t mode, wa_off_t gate);
 
 /**
@@ -98,6 +116,10 @@ void wifi_access_close(wa_off_t why);
  */
 bool wifi_access_tick(wa_off_t gate, bool stop, bool may_write);
 
+/**
+ * @brief The session's state, as a copy.
+ * @param out takes the state
+ */
 void wifi_access_get(wifi_access_state_t *out);
 
 /**
@@ -121,10 +143,19 @@ bool wifi_access_down(void);
  */
 void wifi_access_end_linger(void);
 
-/** Keep a home network; false when wa_conf_set_net() refuses it. */
+/**
+ * @brief Keep a home network; false when wa_conf_set_net() refuses it.
+ * @param ssid the network's name
+ * @param pass its password
+ * @return true when the network was kept
+ */
 bool wifi_access_save_net(const char *ssid, const char *pass);
 /** FORGET: no home network, the access code on. */
 void wifi_access_forget(void);
+/**
+ * @brief Switch the access code the page asks for on or off.
+ * @param on true to ask for the code
+ */
 void wifi_access_set_code(bool on);
 
 /**
@@ -141,8 +172,13 @@ bool wifi_access_set_kept(wa_kept_t which, const char *value);
 void wifi_access_discard(void);
 
 /**
- * Take the staged image for the installer: it stays where it is, and
- * nothing drops it, until wifi_access_release().  False when none waits.
+ * @brief Take the staged image for the installer: it stays where it is, and
+ *        nothing drops it, until wifi_access_release().  False when none
+ *        waits.
+ * @param img takes the image, which stays until wifi_access_release()
+ * @param bytes takes its size
+ * @param info takes its header information
+ * @return true when an image was taken
  */
 bool wifi_access_take(const uint8_t **img, uint32_t *bytes,
                       fw_image_info_t *info);
@@ -150,30 +186,44 @@ bool wifi_access_take(const uint8_t **img, uint32_t *bytes,
 void wifi_access_release(void);
 
 /**
- * Start @p job (wa_fetch_start()) for release @p want (DOWNLOAD only) on
- * channel @p ch (CHECK: which releases it looks at) unless @p gate says
- * why not.  WA_GOT_NONE: the radio comes up in
- * WA_MODE_FETCH and the job runs; otherwise it has ended at once.  A
- * DOWNLOAD drops an image the page left staged first; while one is taken,
- * or the last job's task has not ended yet, it is BLOCKED for BUSY.
- * Refused on a session another screen runs: the caller starts no job
- * while WI-FI is open.
+ * @brief Start @p job (wa_fetch_start()) for release @p want (DOWNLOAD only)
+ *        on channel @p ch (CHECK: which releases it looks at) unless @p gate
+ *        says why not.  WA_GOT_NONE: the radio comes up in WA_MODE_FETCH and
+ *        the job runs; otherwise it has ended at once.  A DOWNLOAD drops an
+ *        image the page left staged first; while one is taken, or the last
+ *        job's task has not ended yet, it is BLOCKED for BUSY. Refused on a
+ *        session another screen runs: the caller starts no job while WI-FI is
+ *        open.
+ * @param job what to fetch
+ * @param want the release to download; DOWNLOAD only
+ * @param ch the channel CHECK looks at
+ * @param gate the gate's answer
+ * @return WA_GOT_NONE when the job runs; otherwise how it ended at once
  */
 wa_got_t wifi_access_fetch_start(wa_job_t job, fw_version_t want,
                                  wa_channel_t ch, wa_why_t gate);
 
 /**
- * Once a frame, after wifi_access_tick(): @p abort as wa_fetch_tick()
- * takes it.  Moves the job on, ends it, switches the radio off when it has
- * ended, and starts the task that talks to GitHub once joined.
+ * @brief Once a frame, after wifi_access_tick(): @p abort as wa_fetch_tick()
+ *        takes it.  Moves the job on, ends it, switches the radio off when it
+ *        has ended, and starts the task that talks to GitHub once joined.
+ * @param abort the reason to end the job, as wa_fetch_tick() takes it
  */
 void wifi_access_fetch_tick(wa_why_t abort);
 
-/** The job, as a copy. */
+/**
+ * @brief The job, as a copy.
+ * @param out takes the job
+ */
 void wifi_access_fetch_get(wa_fetch_t *out);
 
-/** Whether a home network is kept, and its name into @p ssid of @p n
- *  bytes (empty for none). */
+/**
+ * @brief Whether a home network is kept, and its name into @p ssid of @p n
+ *         bytes (empty for none).
+ * @param ssid takes the network's name; empty for none
+ * @param n bytes in @p ssid
+ * @return true when a home network is kept
+ */
 bool wifi_access_home(char *ssid, size_t n);
 
 /**

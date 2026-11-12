@@ -34,7 +34,7 @@
 #include "ui_card_text.h"
 #include "ui_text.h"
 
-static const char *TAG = "rcbench";
+static const char *TAG = "rcbench";  /**< ESP-IDF log tag. */
 
 /*
  * A run is written while the bench is armed and closed when it disarms; that
@@ -59,16 +59,16 @@ static const char *TAG = "rcbench";
  * from under one.
  */
 
-/*
- * How long the logger waits for a row before looking at the run again.  It
- * bounds how long after the disarm the file is closed and how often a run
- * whose rows have stopped is offered a commit.
+/**
+ * @brief How long the logger waits for a row before looking at the run again.
+ *        It bounds how long after the disarm the file is closed and how often
+ *        a run whose rows have stopped is offered a commit.
  */
 #define LOG_TICK_MS    20u
-/*
- * A run whose rows have stopped -- the far end gone quiet with the bench
- * still armed -- is committed anyway once this long has passed since the last
- * row, so its tail is not held for the rest of the run.
+/**
+ * @brief A run whose rows have stopped -- the far end gone quiet with the
+ *        bench still armed -- is committed anyway once this long has passed
+ *        since the last row, so its tail is not held for the rest of the run.
  */
 #define LOG_QUIET_MS   1000u
 
@@ -93,26 +93,30 @@ SemaphoreHandle_t s_note_mx;
 atomic_uint s_log_run_now;
 
 /* The logger task's own, from here down: nothing else reads or writes them. */
+/** @brief The open log file; NULL when no run is open or its open failed. */
 static FILE        *s_log_file;
-/*
- * Which run this task has a file open for, or 0 for none.  Not the same
- * question as whether a file is open: a card that is full or unwritable
- * leaves s_log_file NULL, and reading the run's existence off that pointer
- * would make every pass look like a fresh run and run the whole file-name
- * scan again for as long as the run lasted.  A failed open is a run
- * without a log, not a retry.
+/**
+ * @brief Which run this task has a file open for, or 0 for none.  Not the
+ *        same question as whether a file is open: a card that is full or
+ *        unwritable leaves s_log_file NULL, and reading the run's existence
+ *        off that pointer would make every pass look like a fresh run and run
+ *        the whole file-name scan again for as long as the run lasted.  A
+ *        failed open is a run without a log, not a retry.
  */
 static uint32_t     s_log_run_id;
-/*
- * Where each folder's numbering got to (log_take.h): one directory read
- * at the first run a folder takes since the start, or since a take in it
- * failed, puts it above every number the folder carries; after that it
- * starts from what it handed out last.  The logger task's own.
+/**
+ * @brief Where each folder's numbering got to (log_take.h): one directory
+ *        read at the first run a folder takes since the start, or since a
+ *        take in it failed, puts it above every number the folder carries;
+ *        after that it starts from what it handed out last.  The logger
+ *        task's own.
  */
 static log_series_set_t s_series;
-/* The mount s_series numbers the folders of (storage_mount_count()):
- * another mount is another card, or the same card edited elsewhere, and
- * every folder is walked again.  The logger task's own. */
+/**
+ * @brief The mount s_series numbers the folders of (storage_mount_count()):
+ *        another mount is another card, or the same card edited elsewhere,
+ *        and every folder is walked again.  The logger task's own.
+ */
 static unsigned s_series_mount;
 
 /*
@@ -124,13 +128,21 @@ static unsigned s_series_mount;
  * a kind changes only while that kind has no file open: a run is closed
  * before the next is opened, and a test's CSV and report share one take.
  */
+/** @brief Guards s_dir_want, s_dir_open and the open markers' folders. */
 static portMUX_TYPE s_dir_mux = portMUX_INITIALIZER_UNLOCKED;
+/**
+ * @brief The folder each kind's next file goes to, as the setting names it.
+ */
 static char s_dir_want[LOG_FOLDERS][CARD_DIR_MAX] = { CARD_AUTO_LOGS,
                                                       CARD_USER_LOGS };
+/** @brief The folder each kind's open file was opened in. */
 static char s_dir_open[LOG_FOLDERS][CARD_DIR_MAX] = { CARD_AUTO_LOGS,
                                                       CARD_USER_LOGS };
-/* The folders this task took last; a change forgets every folder's
- * numbering, so the next take walks its folder.  The logger task's own. */
+/**
+ * @brief The folders this task took last; a change forgets every folder's
+ *        numbering, so the next take walks its folder.  The logger task's
+ *        own.
+ */
 static char s_dir_took[LOG_FOLDERS][CARD_DIR_MAX] = { CARD_AUTO_LOGS,
                                                       CARD_USER_LOGS };
 
@@ -185,8 +197,10 @@ void log_set_folder(log_folder_t kind, const char *dir)
     taskEXIT_CRITICAL(&s_dir_mux);
 }
 
-/* The folder of @p kind's next file, into @p dir (CARD_DIR_MAX), marked as
- * the folder its file is opened in.  The logger task's. */
+/**
+ * @brief The folder of @p kind's next file, into @p dir (CARD_DIR_MAX),
+ *        marked as the folder its file is opened in.  The logger task's.
+ */
 static void folder_take(log_folder_t kind, char *dir)
 {
     taskENTER_CRITICAL(&s_dir_mux);
@@ -226,20 +240,23 @@ atomic_uint s_card_faults;
 
 /* ------------------------------------------- the card, for log_take() */
 
-/* What a create opens and which open marker it sets. */
+/** @brief What a create opens and which open marker it sets. */
 typedef struct {
-    FILE       **fp;
-    atomic_uint *mark;
-    int          tab;          /* log_viewer_tab_t of the folder */
-    bool         held;         /* the volume is held for the take */
+    FILE       **fp;  /**< The file the create opens into. */
+    atomic_uint *mark;  /**< The open marker the create sets. */
+    int          tab;          /**< log_viewer_tab_t of the folder */
+    bool         held;         /**< the volume is held for the take */
 } take_ctx_t;
 
+/**
+ * @brief log_take()'s mounted hook: whether the volume is held for the take.
+ */
 static bool take_mounted(void *ctx)
 {
     return ((const take_ctx_t *)ctx)->held;
 }
 
-/* "/sdcard/<dir>", or "/sdcard/<dir>/<name>" with a name. */
+/** @brief "/sdcard/<dir>", or "/sdcard/<dir>/<name>" with a name. */
 static void take_path(const char *dir, const char *name, char *path, size_t n)
 {
     if (name == NULL) {
@@ -274,30 +291,33 @@ card_dir_t panel_card_make_dir(void *ctx, const char *level)
                                                            : CARD_DIR_FAILED;
 }
 
+/** @brief log_take()'s make_dir hook: make one folder level. */
 static bool take_make_dir(void *ctx, const char *dir)
 {
     return panel_card_make_dir(ctx, dir) == CARD_DIR_OK;
 }
 
+/** @brief The visitor and its context while take_walk() reads a folder. */
 typedef struct {
-    log_take_visit_fn visit;
-    void *ctx;
+    log_take_visit_fn visit;  /**< The visitor log_take() passed. */
+    void *ctx;  /**< The visitor's context. */
 } take_walk_t;
 
+/** @brief storage_walk()'s callback: hand one entry to the visitor. */
 static void take_walk_entry(const storage_entry_t *entry, void *ctx)
 {
     const take_walk_t *w = (const take_walk_t *)ctx;
     w->visit(entry->name, w->ctx);
 }
 
-/*
- * The folder's runs and the reports beside them, and its folders, which
- * take a number as a file does.  This runs on the runlog task, so the
- * directory read costs the card's own latency and nothing else: the
- * control task beats the safety line and hit-tests STOP on its own
- * schedule while this runs.  What it costs is the first row of a run,
- * which waits in the queue until the scan finishes; a folder holding 400
- * runs is one directory read, not 400 opens.
+/**
+ * @brief The folder's runs and the reports beside them, and its folders,
+ *        which take a number as a file does.  This runs on the runlog task,
+ *        so the directory read costs the card's own latency and nothing else:
+ *        the control task beats the safety line and hit-tests STOP on its own
+ *        schedule while this runs.  What it costs is the first row of a run,
+ *        which waits in the queue until the scan finishes; a folder holding
+ *        400 runs is one directory read, not 400 opens.
  */
 static bool take_walk(void *ctx, const char *dir, log_take_visit_fn visit,
                       void *visit_ctx)
@@ -307,7 +327,9 @@ static bool take_walk(void *ctx, const char *dir, log_take_visit_fn visit,
     return storage_walk(dir, ".csv .txt", take_walk_entry, &w, NULL) >= 0;
 }
 
-/* One card transaction: FAT looks the name up from the folder's start. */
+/**
+ * @brief One card transaction: FAT looks the name up from the folder's start.
+ */
 static bool take_exists(void *ctx, const char *dir, const char *name)
 {
     (void)ctx;
@@ -317,6 +339,10 @@ static bool take_exists(void *ctx, const char *dir, const char *name)
     return stat(path, &st) == 0;
 }
 
+/**
+ * @brief log_take()'s create hook: claim run @p number's marker, then open
+ *        the file.
+ */
 static bool take_create(void *ctx, const char *dir, const char *name,
                         int number)
 {
@@ -344,8 +370,9 @@ static bool take_create(void *ctx, const char *dir, const char *name,
     return true;
 }
 
-/*
- * Run @p number's file in @p dir under @p prefix, opened into @p fp with
+/**
+ * @brief Run @p number's file in @p dir under @p prefix, opened into @p fp
+ *        with
  * @p mark set: log_take() over the card.
  */
 static log_take_t take(const char *dir, log_prefix_t prefix, bool report,
@@ -380,7 +407,7 @@ static log_take_t take(const char *dir, log_prefix_t prefix, bool report,
     return r;
 }
 
-/* The band's word for a take that wrote no file. */
+/** @brief The band's word for a take that wrote no file. */
 static void take_alert(log_take_t r, const char *dir, const char *other)
 {
     if (r == LOG_TAKE_NO_FOLDER) {
@@ -392,17 +419,22 @@ static void take_alert(log_take_t r, const char *dir, const char *other)
     }
 }
 
+/** @brief The writer of the open run's file (log_writer.h). */
 static log_writer_t s_log;
+/**
+ * @brief When the open run's last row arrived, or the run opened, now_ms().
+ */
 static uint32_t     s_log_last_row_ms;
 
+/** @brief log_writer's write hook: write @p len bytes to the open file. */
 static int file_write(void *ctx, const void *data, size_t len)
 {
     FILE *f = (FILE *)ctx;
     return (int)fwrite(data, 1, len, f);
 }
 
-/*
- * Make the rows the file already holds survive a power cut.
+/**
+ * @brief Make the rows the file already holds survive a power cut.
  *
  * fflush() moves them out of the C library's buffer and no further.  FAT
  * (file allocation table) keeps a file's length in its directory entry and
@@ -420,7 +452,7 @@ static bool file_flush(void *ctx)
     return fflush(f) == 0 && fsync(fileno(f)) == 0;
 }
 
-/* A run kind's name: MOTORnnn, SERVOnnn or SUPPLnnn (log_name.h). */
+/** @brief A run kind's name: MOTORnnn, SERVOnnn or SUPPLnnn (log_name.h). */
 static log_prefix_t run_prefix(log_run_kind_t kind)
 {
     switch (kind) {
@@ -431,10 +463,10 @@ static log_prefix_t run_prefix(log_run_kind_t kind)
     }
 }
 
-/*
- * Open the run's file in AUTO LOG FOLDER, on the logger task: MOTORnnn.CSV
- * for a run armed on MOTOR & ESC or ESC STICK, SERVOnnn.CSV for one armed
- * on SERVO, SUPPLnnn.CSV for a supply run.
+/**
+ * @brief Open the run's file in AUTO LOG FOLDER, on the logger task:
+ *        MOTORnnn.CSV for a run armed on MOTOR & ESC or ESC STICK,
+ *        SERVOnnn.CSV for one armed on SERVO, SUPPLnnn.CSV for a supply run.
  *
  * Every probe is a card transaction and the loop can make hundreds of them,
  * which is why the scan is here and not on the task that beats the safety
@@ -497,6 +529,10 @@ static void log_open(uint32_t run, log_run_kind_t kind)
     log_writer_set_cols(&s_log, sense_log_cols(&cols) ? &cols : NULL);
 }
 
+/**
+ * @brief Close the open run's file and forget the run; report a short log on
+ *        the band.
+ */
 static void log_close(void)
 {
     s_log_run_id = 0u;
@@ -547,13 +583,14 @@ static void log_close(void)
     atomic_store(&s_log_open_run, 0u);
 }
 
-/*
- * The run's card is gone (storage_check() after a failed write): the file
- * is closed now, best effort, rather than at the run's end, so the volume
- * can be let go and the next look finds the card in the slot.  FatFs
- * refuses the close of a volume found gone without card traffic.  The run
- * goes on unrecorded: ALERT_CARD_ROWS_PAST has said so, and its later rows
- * are dropped against s_log_run_id, which stays the run's.
+/**
+ * @brief The run's card is gone (storage_check() after a failed write): the
+ *        file is closed now, best effort, rather than at the run's end, so
+ *        the volume can be let go and the next look finds the card in the
+ *        slot.  FatFs refuses the close of a volume found gone without card
+ *        traffic.  The run goes on unrecorded: ALERT_CARD_ROWS_PAST has said
+ *        so, and its later rows are dropped against s_log_run_id, which stays
+ *        the run's.
  */
 static void log_drop(void)
 {
@@ -590,14 +627,15 @@ atomic_int  s_test_file;
 atomic_bool s_test_report;
 
 /* The logger task's own. */
-static FILE    *s_test_fp;
-static int      s_test_num;
-static bool     s_test_txt;      /* s_test_fp is the report               */
+static FILE    *s_test_fp;  /**< The open test file, the CSV or the report. */
+static int      s_test_num;  /**< The run number of the open test file. */
+static bool     s_test_txt;      /**< s_test_fp is the report */
 static log_prefix_t s_test_prefix; /**< the open run's writer            */
-static unsigned s_test_lines;    /* since the last commit                 */
+static unsigned s_test_lines;    /**< lines since the last commit */
+/** @brief Whether the test's files had a failed write or close. */
 static bool     s_test_failed;
-static bool     s_test_txt_bad;  /* a write or the close of the report failed */
-static char     s_test_dir[CARD_DIR_MAX];   /* the folder of the run's files */
+static bool     s_test_txt_bad;  /**< a write or the close of the report failed */
+static char     s_test_dir[CARD_DIR_MAX];   /**< the folder of the run's files */
 /** @brief The open test file's path, for the console lines. */
 static char     s_test_path[64];
 /** @brief The lines written to the open test file. */
@@ -797,7 +835,7 @@ static void test_write(const test_line_t *l)
 
 /* -------------------------------------------- the fault log (fault_log.h) */
 
-/* Whether log_note() holds the volume for its line. */
+/** @brief Whether log_note() holds the volume for its line. */
 static bool s_note_held;
 /** @brief Set from before the logger takes a queued line until the last
  *         one is written (log_fault_busy()). */
@@ -823,15 +861,17 @@ void log_fault_unlock(void)
     }
 }
 
+/** @brief fault_log.h's mounted hook: whether log_note() holds the volume. */
 static bool note_mounted(void *ctx)
 {
     (void)ctx;
     return s_note_held;
 }
 
-/* "/sdcard/BENCH/RCBENCH.LOG" and the like: a path from the root. */
+/** @brief "/sdcard/BENCH/RCBENCH.LOG" and the like: a path from the root. */
 #define NOTE_PATH_MAX (sizeof(STORAGE_MOUNT_POINT) + CARD_DIR_MAX)
 
+/** @brief fault_log.h's size hook: the size of @p path in bytes. */
 static int32_t note_size(void *ctx, const char *path)
 {
     (void)ctx;
@@ -852,6 +892,10 @@ static int32_t note_size(void *ctx, const char *path)
     return (st.size > (uint64_t)INT32_MAX) ? INT32_MAX : (int32_t)st.size;
 }
 
+/**
+ * @brief fault_log.h's remove hook: remove @p path; a missing file counts as
+ *        removed.
+ */
 static bool note_remove(void *ctx, const char *path)
 {
     (void)ctx;
@@ -860,6 +904,7 @@ static bool note_remove(void *ctx, const char *path)
     return unlink(full) == 0 || errno == ENOENT;
 }
 
+/** @brief fault_log.h's rename hook: rename @p from to @p to. */
 static bool note_rename(void *ctx, const char *from, const char *to)
 {
     (void)ctx;
@@ -870,8 +915,10 @@ static bool note_rename(void *ctx, const char *from, const char *to)
     return rename(a, b) == 0;
 }
 
-/* Opened and closed around the line, so that each line is on the card
- * before the next fault can happen. */
+/**
+ * @brief Opened and closed around the line, so that each line is on the card
+ *        before the next fault can happen.
+ */
 static bool note_append(void *ctx, const char *path, const char *line)
 {
     (void)ctx;
@@ -887,7 +934,7 @@ static bool note_append(void *ctx, const char *path, const char *line)
     return ok;
 }
 
-/* One line to BENCH/RCBENCH.LOG, whatever AUTO LOGS says. */
+/** @brief One line to BENCH/RCBENCH.LOG, whatever AUTO LOGS says. */
 static void log_note(const char *line)
 {
     static const fault_log_io_t io = {

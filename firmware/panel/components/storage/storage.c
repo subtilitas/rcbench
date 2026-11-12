@@ -38,18 +38,23 @@
 #include "sd_pwr_ctrl_by_on_chip_ldo.h"
 #include "sdmmc_cmd.h"
 
-static const char *TAG = "storage";
-/* The tag of ESP-IDF's FAT-on-SD mount (components/fatfs/vfs/
- * vfs_fat_sdmmc.c). */
+static const char *TAG = "storage";  /**< ESP-IDF log tag. */
+/**
+ * @brief The tag of ESP-IDF's FAT-on-SD mount (components/fatfs/vfs/
+ *        vfs_fat_sdmmc.c).
+ */
 #define STORAGE_IDF_MOUNT_TAG "vfs_fat_sdmmc"
-/* The tags of ESP-IDF's FAT-on-SD disk I/O (components/fatfs/diskio/
- * diskio_sdmmc.c) and SD commands (components/sdmmc/sdmmc_cmd.c): a card
- * looked at and found gone logs at E level under both. */
+/**
+ * @brief The tags of ESP-IDF's FAT-on-SD disk I/O (components/fatfs/diskio/
+ *        diskio_sdmmc.c) and SD commands (components/sdmmc/sdmmc_cmd.c): a
+ *        card looked at and found gone logs at E level under both.
+ */
 #define STORAGE_IDF_DISKIO_TAG "diskio_sdmmc"
+/** @brief The tag of ESP-IDF's SD command layer. */
 #define STORAGE_IDF_CMD_TAG    "sdmmc_cmd"
 
-/*
- * Who touches the card, and when it may be unmounted.
+/**
+ * @brief Who touches the card, and when it may be unmounted.
  *
  * Three tasks reach the card: app_main, which renders (LOGS, the servo
  * programmer's record, the start-up), the runlog task (every write) and
@@ -69,28 +74,33 @@ static const char *TAG = "storage";
  * so that the control task and every frame can ask without waiting.
  */
 static struct {
-    sdmmc_card_t *card;
+    sdmmc_card_t *card;  /**< The SD card; NULL when none is mounted. */
     sd_pwr_ctrl_handle_t pwr;   /**< the card's supply, on-chip LDO channel
                                      4: made once, kept until
                                      storage_deinit() */
-    bool mounted;
-    /* Found gone while held: unmounted at the last release. */
+    bool mounted;  /**< Whether a volume is mounted; under s.lock. */
+    /** @brief Found gone while held: unmounted at the last release. */
     bool lost;
+    /** @brief Holds taken by storage_hold() and not yet released. */
     unsigned holds;
-    SemaphoreHandle_t lock;
-    atomic_bool usable;                 /* mounted && !lost */
-    atomic_int state_now;               /* card_state_t while not usable */
-    atomic_uint mounts;                 /* mounts that worked */
-    /* The volume label, or the CID's product name without one: 11 FAT
-     * label characters take up to 33 bytes in UTF-8. */
+    SemaphoreHandle_t lock;  /**< Guards the volume's state. */
+    atomic_bool usable;                 /**< mounted && !lost */
+    atomic_int state_now;               /**< card_state_t while not usable */
+    atomic_uint mounts;                 /**< mounts that worked */
+    /**
+     * @brief The volume label, or the CID's product name without one: 11 FAT
+     *        label characters take up to 33 bytes in UTF-8.
+     */
     char name[40];
-    /* The FatFs drive of the mounted card, "0:", for f_readdir(). */
+    /** @brief The FatFs drive of the mounted card, "0:", for f_readdir(). */
     char drive[8];
-    char status[48];
-} s;
+    char status[48];  /**< The text storage_status() returns. */
+} s;  /**< The volume's state. */
 
-/* The lock, made at the first storage_init() or storage_check(): the
- * splash's, on app_main, before any task that reaches the card exists. */
+/**
+ * @brief The lock, made at the first storage_init() or storage_check(): the
+ *        splash's, on app_main, before any task that reaches the card exists.
+ */
 static bool lock_ready(void)
 {
     if (s.lock == NULL) {
@@ -99,42 +109,39 @@ static bool lock_ready(void)
     return s.lock != NULL;
 }
 
+/** @brief Take s.lock. */
 static void lock(void)
 {
     (void)xSemaphoreTake(s.lock, portMAX_DELAY);
 }
 
+/** @brief Give s.lock back. */
 static void unlock(void)
 {
     (void)xSemaphoreGive(s.lock);
 }
 
+/** @brief Store the card's state for the readers without the lock. */
 static void set_state(card_state_t state)
 {
     atomic_store(&s.state_now, (int)state);
 }
 
-/* What the readers without the lock see: usable last, after the name. */
+/**
+ * @brief What the readers without the lock see: usable last, after the name.
+ */
 static void publish(void)
 {
     atomic_store(&s.usable, s.mounted && !s.lost);
 }
 
-/*
- * The card's name: its volume label, e.g. "UNITEST", or the product name in
- * its CID (card identification register), e.g. "SC16G", when the volume has
- * no label or it does not read.
- *
- * Read once per mount, here, and kept: f_getlabel() reads the root
- * directory from its first sector until it meets the label's entry.  A
- * formatter writes that entry first, so a labelled card costs one 512-byte
- * sector read; a card without a label is read to the directory's end, 16
- * entries per sector, about 125 sectors for 999 runs and their reports.
+/**
+ * @brief The name's writes and copies, a few bytes each: the render loop
+ *        copies it every frame while another task's mount can write it.
  */
-/* The name's writes and copies, a few bytes each: the render loop copies
- * it every frame while another task's mount can write it. */
 static portMUX_TYPE s_name_mux = portMUX_INITIALIZER_UNLOCKED;
 
+/** @brief Set the volume's name under s_name_mux. */
 static void name_set(const char *name)
 {
     taskENTER_CRITICAL(&s_name_mux);
@@ -142,6 +149,17 @@ static void name_set(const char *name)
     taskEXIT_CRITICAL(&s_name_mux);
 }
 
+/**
+ * @brief The card's name: its volume label, e.g. "UNITEST", or the product
+ *        name in its CID (card identification register), e.g. "SC16G", when
+ *        the volume has no label or it does not read.
+ *
+ * Read once per mount, here, and kept: f_getlabel() reads the root
+ * directory from its first sector until it meets the label's entry.  A
+ * formatter writes that entry first, so a labelled card costs one 512-byte
+ * sector read; a card without a label is read to the directory's end, 16
+ * entries per sector, about 125 sectors for 999 runs and their reports.
+ */
 static void read_name(void)
 {
     name_set(s.card->cid.name);
@@ -162,11 +180,11 @@ static void read_name(void)
     }
 }
 
-/*
- * The mounted volume's format, for the mount's log line: FAT12, FAT16,
- * FAT32 or exFAT.  After the mount's fat_usage(), whose f_getfree() counts a
- * FAT32 volume's free clusters once per mount when the volume does not say;
- * this call then reads the count FatFs keeps.
+/**
+ * @brief The mounted volume's format, for the mount's log line: FAT12, FAT16,
+ *        FAT32 or exFAT.  After the mount's fat_usage(), whose f_getfree()
+ *        counts a FAT32 volume's free clusters once per mount when the volume
+ *        does not say; this call then reads the count FatFs keeps.
  */
 static const char *volume_format(void)
 {
@@ -277,6 +295,7 @@ static void mount_failed(esp_err_t err, const sdmmc_host_t *host,
     }
 }
 
+/** @brief Read the volume's total and free bytes from FatFs. */
 static bool fat_usage(uint64_t *total, uint64_t *freebytes)
 {
     uint64_t t = 0;
@@ -417,12 +436,12 @@ static void unmount_locked(void)
     s.drive[0] = '\0';
 }
 
-/*
- * The mounted volume is not to be used again: its card is gone
- * (CARD_STATE_NONE) or fails its reads (CARD_STATE_UNREADABLE).  Under
- * s.lock.  The state is stored before the flag the readers without the
- * lock go by.  Unmounted at once when nothing holds it, at the last
- * release otherwise.
+/**
+ * @brief The mounted volume is not to be used again: its card is gone
+ *        (CARD_STATE_NONE) or fails its reads (CARD_STATE_UNREADABLE).  Under
+ *        s.lock.  The state is stored before the flag the readers without the
+ *        lock go by.  Unmounted at once when nothing holds it, at the last
+ *        release otherwise.
  */
 static void drop_locked(card_state_t state)
 {
@@ -434,9 +453,9 @@ static void drop_locked(card_state_t state)
     }
 }
 
-/*
- * The card the volume was mounted from does not answer: taken out or
- * swapped.  @p fr is what FatFs said; @p how the call that found it.
+/**
+ * @brief The card the volume was mounted from does not answer: taken out or
+ *        swapped.  @p fr is what FatFs said; @p how the call that found it.
  */
 static void lose_locked(int fr, const char *how)
 {
@@ -450,10 +469,10 @@ static void lose_locked(int fr, const char *how)
     drop_locked(CARD_STATE_NONE);
 }
 
-/*
- * Whether the mounted card still answers: one SEND_STATUS (CMD13) through
- * FatFs, under its volume lock, so it does not cut into a read or a write
- * another task has under way.
+/**
+ * @brief Whether the mounted card still answers: one SEND_STATUS (CMD13)
+ *        through FatFs, under its volume lock, so it does not cut into a read
+ *        or a write another task has under way.
  *
  * FatFs asks the disk's status at the start of every call, and ESP-IDF's
  * SD status only sends CMD13 while its check is on; it is on for this call
@@ -485,8 +504,10 @@ static int probe_locked(void)
     return (int)fr;
 }
 
-/* FatFs's answers that say the card stopped answering rather than that a
- * name or the volume's contents are wrong. */
+/**
+ * @brief FatFs's answers that say the card stopped answering rather than that
+ *        a name or the volume's contents are wrong.
+ */
 static bool removal_shaped(int fr)
 {
     return fr == (int)FR_DISK_ERR || fr == (int)FR_NOT_READY
@@ -678,16 +699,16 @@ uint64_t storage_free_bytes(void)
     return ok ? f : 0;
 }
 
-/*
- * A read of the mounted card failed with @p fr.  Under s.lock, with the
- * caller's hold given back.  A failure that does not say the card stopped
- * answering leaves the volume as it is.  One that does is asked about
- * (probe_locked()): a card that does not answer is taken out or swapped
- * (lose_locked()).  One that answers fails its reads on its own: it is
- * unreadable and let go, and not mounted again by this call, so a card
- * that fails every read costs one mount per look and not a loop.  An
- * answer that says neither, such as FatFs's volume lock not taken in
- * time, leaves the volume as it is.
+/**
+ * @brief A read of the mounted card failed with @p fr.  Under s.lock, with
+ *        the caller's hold given back.  A failure that does not say the card
+ *        stopped answering leaves the volume as it is.  One that does is
+ *        asked about (probe_locked()): a card that does not answer is taken
+ *        out or swapped (lose_locked()).  One that answers fails its reads on
+ *        its own: it is unreadable and let go, and not mounted again by this
+ *        call, so a card that fails every read costs one mount per look and
+ *        not a loop.  An answer that says neither, such as FatFs's volume
+ *        lock not taken in time, leaves the volume as it is.
  *
  * @return whether the volume was let go for a card gone and may be
  *         mounted again now.

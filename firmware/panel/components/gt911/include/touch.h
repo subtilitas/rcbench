@@ -65,42 +65,57 @@ esp_err_t touch_init(const touch_config_t *cfg);
 esp_err_t touch_deinit(void);
 
 /**
- * Copy the current contact set.  Returns the number of active contacts,
- * which may exceed @p max (only @p max of them are written).
+ * @brief Copy the current contact set.  Returns the number of active
+ *        contacts, which may exceed @p max (only @p max of them are written).
+ * @param out takes up to @p max contacts
+ * @param max capacity of @p out
+ * @return the number of active contacts
  */
 int touch_snapshot(touch_point_t *out, int max);
 
-/** True when at least one finger is down; fills @p out if given. */
+/**
+ * @brief True when at least one finger is down; fills @p out if given.
+ * @param out takes the first contact when not NULL
+ * @return true when at least one finger is down
+ */
 bool touch_pressed(touch_point_t *out);
 
 /**
- * Pop the next input event.  @p timeout_ms of 0 polls, UINT32_MAX blocks.
- * Returns false when nothing arrived in time.
+ * @brief Pop the next input event.  @p timeout_ms of 0 polls, UINT32_MAX
+ *        blocks. Returns false when nothing arrived in time.
  *
  * @p seq, when not NULL, receives the event's number.  The driver numbers
  * every event it offers to its queue, from 1 and in order, whether or not the
  * queue kept it, so a number skipped is an event the queue dropped because
  * nobody collected it.  touch_loss.h turns the numbers into losses.
+ * @param out takes the event
+ * @param seq takes the event's number; may be NULL
+ * @param timeout_ms 0 polls, UINT32_MAX blocks
+ * @return true when an event arrived in time
  */
 bool touch_wait_event(touch_event_t *out, uint32_t *seq, uint32_t timeout_ms);
 
 /**
- * The number of the last event the driver offered to its queue, stored after
- * the offer.  Read before draining the queue: an event up to it that the
- * drain did not deliver was dropped, which a loss at the end of the stream,
- * with no later event to show the gap, needs.
+ * @brief The number of the last event the driver offered to its queue, stored
+ *        after the offer.  Read before draining the queue: an event up to it
+ *        that the drain did not deliver was dropped, which a loss at the end
+ *        of the stream, with no later event to show the gap, needs.
+ * @return the number of the last event offered
  */
 uint32_t touch_published(void);
 
 /** Drop any queued events (useful after a screen change). */
 void touch_flush_events(void);
 
-/** I2C address the controller answered on, or 0 before init. */
+/**
+ * @brief I2C address the controller answered on, or 0 before init.
+ * @return the address, 0 before init
+ */
 uint16_t touch_i2c_address(void);
 
 /**
- * Milliseconds since the controller last answered a read, or UINT32_MAX when
- * touch never came up.
+ * @brief Milliseconds since the controller last answered a read, or
+ *        UINT32_MAX when touch never came up.
  *
  * "Answered" means the I2C (Inter-Integrated Circuit) transaction succeeded,
  * not that a finger was down.  An untouched panel is healthy and reports an
@@ -109,6 +124,8 @@ uint16_t touch_i2c_address(void);
  *
  * An application that can act on input, and only on input, treats a large
  * age as a fault rather than as quiet.
+ * @return milliseconds since the last answered read; UINT32_MAX when touch
+ *         never came up
  */
 uint32_t touch_age_ms(void);
 

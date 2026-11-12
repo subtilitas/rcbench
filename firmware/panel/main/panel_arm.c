@@ -42,6 +42,10 @@
 #include "ui_band.h"
 #include "ui_text.h"
 
+/**
+ * @brief A percentage, 0 to 100, as a position in OUT_SPAN units; values
+ *        outside the range clamp.
+ */
 static uint16_t pct_to_span(float pct)
 {
     if (!(pct > 0.0f)) {
@@ -53,12 +57,19 @@ static uint16_t pct_to_span(float pct)
     return (uint16_t)((pct * (float)OUT_SPAN / 100.0f) + 0.5f);
 }
 
-/* The stop count this task has already let go for; see service_arming(). */
+/**
+ * @brief The stop count this task has already let go for; see
+ *        service_arming().
+ */
 static uint32_t    s_stops_served;
 /** @brief When the outstanding disarm started holding the safety line down;
  *         it may for ARMING_DISARM_INHIBIT_MS (disarm_hold_ends()). */
 static disarm_hold_t s_disarm_hold;
 
+/**
+ * @brief A percentage, 0 to 100, as hundredths of throttle travel, 0 to
+ *        LINK_THROTTLE_MAX; values outside the range clamp.
+ */
 static uint16_t pct_to_hundredths(float pct)
 {
     if (!(pct > 0.0f)) {
@@ -188,8 +199,9 @@ void arm_watch_service(bool link_up)
  * IOmcu's control page only while the link is up.  The flag is the
  * control loop's own and is published nowhere this could read it.
  */
-/*
- * A disarm that was asked for, whether or not its queue entry survived.
+/**
+ * @brief A disarm that was asked for, whether or not its queue entry
+ *        survived.
  *
  * Doing it twice is doing it once: the policy, the bank and the far end all
  * take the same state again.  Called between queue entries as well as before
@@ -534,8 +546,8 @@ void service_arming(bool link_up)
     }
 }
 
-/*
- * The outputs screen's choice, onto the IOmcu's two output pages.
+/**
+ * @brief The outputs screen's choice, onto the IOmcu's two output pages.
  *
  * Leaves what became of it in s_outputs_result, which app_main hands to the
  * screen; screen state is app_main's alone.  True when a page may have been
@@ -596,9 +608,9 @@ bool disarm_here(bool link_up)
     return control_write(false, &ack);
 }
 
-/*
- * One motor command.  Arming is asked of the policy rather than done here;
- * the throttle is a channel command like any other.
+/**
+ * @brief One motor command.  Arming is asked of the policy rather than done
+ *        here; the throttle is a channel command like any other.
  */
 static void apply_motor_cmd(const motor_cmd_t *mc, bool link_up,
                             bench_state_t *bench)

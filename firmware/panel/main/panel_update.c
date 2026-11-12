@@ -43,7 +43,7 @@
 #include "wifi_access.h"
 #include "wifi_screen.h"
 
-static const char *TAG = "rcbench";
+static const char *TAG = "rcbench";  /**< ESP-IDF log tag. */
 
 /*
  * The panel's own update.  An install about to write the flash asks the
@@ -61,7 +61,15 @@ atomic_bool s_fw_quiet_ack;
  * trial (s_cu_busy).  Each side stores its own flag before it reads the
  * other's, so of two starting at once at least one sees the other.
  */
+/**
+ * @brief The panel's own download or install runs, from INSTALL's hold until
+ *        its write has failed; render side stores.
+ */
 static atomic_bool s_fw_installing;
+/**
+ * @brief The IOmcu's update or the BUY of an image on trial runs; control
+ *        task stores.
+ */
 static atomic_bool s_cu_busy;
 /* False when wifi_access_init() failed: no call into wifi_access then. */
 bool        s_wifi_ok;
@@ -152,11 +160,14 @@ static bool cu_any_image(void)
     return false;
 }
 
-/* Steps run back to back in one pass of the control task while an update
- * sends: a block is 9 exchanges, and the pass's own work and its 5ms
- * delay come between two slices. */
+/**
+ * @brief Steps run back to back in one pass of the control task while an
+ *        update sends: a block is 9 exchanges, and the pass's own work and
+ *        its 5ms delay come between two slices.
+ */
 #define CU_SLICE_MS 20u
 
+/** @brief What the IOmcu's update is doing; control task only. */
 typedef enum {
     CU_IDLE = 0,
     CU_CHECKING,    /* does it run the carried build: link_uph_check()   */
@@ -166,32 +177,44 @@ typedef enum {
     CU_CONFIRMING,  /* an image found on trial is bought                 */
 } cu_state_t;
 
-/* Control task only. */
+/** @brief Control task only. */
 static link_uph_t s_cu;
-static cu_state_t s_cu_state;
-static cu_version_t s_cu_running;
-static bool       s_cu_missed;     /* the update's last exchange went unanswered */
-static bool       s_cu_took_down;  /* the update has taken the link down  */
+static cu_state_t s_cu_state;  /**< The state of the IOmcu's update. */
+static cu_version_t s_cu_running;  /**< The version the IOmcu runs. */
+static bool       s_cu_missed;     /**< the update's last exchange went unanswered */
+static bool       s_cu_took_down;  /**< the update has taken the link down */
+/** @brief STARTs the control task has taken. */
 static uint32_t   s_cu_starts_taken;
-/* CANCEL holds for the version it was given for, until the panel restarts. */
+/**
+ * @brief CANCEL holds for the version it was given for, until the panel
+ *        restarts.
+ */
 static bool         s_cu_declined;
+/** @brief The version the decline was given for. */
 static cu_version_t s_cu_declined_for;
-/* Render side -> control task: STARTs given on the question, and the offer
- * the question was declined for (its offer_gen; 0 none). */
+/**
+ * @brief Render side -> control task: STARTs given on the question, and the
+ *        offer the question was declined for (its offer_gen; 0 none).
+ */
 static atomic_uint s_cu_starts;
+/**
+ * @brief The offer the question was declined for, its offer_gen; 0 for none.
+ */
 static atomic_uint s_cu_declined_gen;
-/* Control task: the offer_gen of the offer published last. */
+/** @brief Control task: the offer_gen of the offer published last. */
 static uint32_t    s_cu_offer_gen;
 
-/* Control task: every change of s_cu_state, and with it s_cu_busy. */
+/** @brief Control task: every change of s_cu_state, and with it s_cu_busy. */
 static void cu_enter(cu_state_t st)
 {
     s_cu_state = st;
     atomic_store(&s_cu_busy, st == CU_UPDATING || st == CU_CONFIRMING);
 }
 
-/* Control task: what UPDATES' IOmcu section reads of the last build
- * check. */
+/**
+ * @brief Control task: what UPDATES' IOmcu section reads of the last build
+ *        check.
+ */
 static void cu_publish_check(cu_check_t check)
 {
     snap_lock();
@@ -212,18 +235,20 @@ bool cu_may_start(void)
 bool panel_cu_busy(void) { return atomic_load(&s_cu_busy); }
 
 
+/** @brief The version of the IOmcu image this build carries. */
 static cu_version_t cu_carried(void)
 {
     return (cu_version_t){ RCBENCH_VERSION_MAJOR, RCBENCH_VERSION_MINOR,
                            RCBENCH_VERSION_PATCH };
 }
 
-/*
- * The update's own wire: exchange() after the bus has been asked back.  An
- * IOmcu that restarts answers nothing for a few hundred milliseconds,
- * and a transmitter nobody acknowledges is off the bus in about 4ms and
- * does not come back on its own (probe_identity()).  Asked only after an
- * exchange went unanswered, so a block costs no status read.
+/**
+ * @brief The update's own wire: exchange() after the bus has been asked back.
+ *        An IOmcu that restarts answers nothing for a few hundred
+ *        milliseconds, and a transmitter nobody acknowledges is off the bus
+ *        in about 4ms and does not come back on its own (probe_identity()).
+ *        Asked only after an exchange went unanswered, so a block costs no
+ *        status read.
  */
 static bool cu_port_exchange(void *ctx, link_host_t *host,
                              const link_msg_t *req, link_msg_t *reply)
@@ -237,10 +262,15 @@ static bool cu_port_exchange(void *ctx, link_host_t *host,
     return !s_cu_missed;
 }
 
+/** @brief The update's link port: cu_port_exchange() and the clock. */
 static const link_port_t k_cu_port = {
     cu_port_exchange, port_now, NULL, port_between,
 };
 
+/**
+ * @brief Publish whether an update is on offer, with the running version, to
+ *        the snapshot.
+ */
 static void cu_publish_offer(bool offered)
 {
     snap_lock();
@@ -254,6 +284,7 @@ static void cu_publish_offer(bool offered)
     snap_unlock();
 }
 
+/** @brief The screen's step for a link_uph_t phase. */
 static cu_step_t cu_step_of(uint8_t phase)
 {
     switch (phase) {
@@ -271,8 +302,10 @@ static cu_step_t cu_step_of(uint8_t phase)
     }
 }
 
-/* An active update withdraws the offer in the same snapshot that shows its
- * START taken. */
+/**
+ * @brief An active update withdraws the offer in the same snapshot that shows
+ *        its START taken.
+ */
 static void cu_publish_progress(bool active)
 {
     snap_lock();
@@ -322,7 +355,7 @@ void cu_link_up(const link_msg_t *reply)
     cu_publish_check(CU_CHECK_RUNNING);
 }
 
-/* Why an update stopped, in the alert's words. */
+/** @brief Why an update stopped, in the alert's words. */
 static void cu_alert_failed(void)
 {
     char why[48];
@@ -353,7 +386,7 @@ static void cu_alert_failed(void)
     control_alert(line);
 }
 
-/* The check has ended: what it found decides the offer. */
+/** @brief The check has ended: what it found decides the offer. */
 static void cu_checked(void)
 {
     switch (s_cu.result) {
@@ -406,10 +439,12 @@ static void cu_checked(void)
     }
 }
 
-/* The update has ended: the link goes back to the poll, which finds the
- * IOmcu again by its identity.  A frame of its own: inlined, its
- * alert buffers sit in cu_service()'s frame, above poll_far_end() on the
- * control task's deepest chain. */
+/**
+ * @brief The update has ended: the link goes back to the poll, which finds
+ *        the IOmcu again by its identity.  A frame of its own: inlined, its
+ *        alert buffers sit in cu_service()'s frame, above poll_far_end() on
+ *        the control task's deepest chain.
+ */
 static __attribute__((noinline)) void cu_ended(void)
 {
     if (s_cu.result == LINK_UPH_UPDATED) {
@@ -567,9 +602,12 @@ bool cu_service(bool *link_up, bench_state_t *bench,
 
 /* ------------------------------------------------- Wi-Fi and the update */
 
-/* Whether a run's log, or a servo run's CSV or report, is open or about
- * to be: a servo run under way, an OPEN queued for the logger and not yet
- * answered, and the file from its open to its close, without a gap. */
+/**
+ * @brief Whether a run's log, or a servo run's CSV or report, is open or
+ *        about to be: a servo run under way, an OPEN queued for the logger
+ *        and not yet answered, and the file from its open to its close,
+ *        without a gap.
+ */
 static bool run_open_now(void)
 {
     return atomic_load(&s_log_run_now) != 0u
@@ -586,7 +624,7 @@ bool panel_run_open(void)
     return run_open_now();
 }
 
-/* Whether flash may be written now, and if not why: see fw_gate(). */
+/** @brief Whether flash may be written now, and if not why: see fw_gate(). */
 static fw_gate_t fw_gate_now(bool armed)
 {
     return fw_gate(armed, supplies_live_or_coming(), run_open_now(),
@@ -594,7 +632,10 @@ static fw_gate_t fw_gate_now(bool armed)
                    atomic_load(&s_cu_busy) || panel_c6_busy());
 }
 
-/* The update screen, drawn now: the install's loop runs no router tick. */
+/**
+ * @brief The update screen, drawn now: the install's loop runs no router
+ *        tick.
+ */
 static void update_frame(update_state_t st, const char *version,
                          uint32_t written, uint32_t total)
 {
@@ -608,8 +649,8 @@ static void update_frame(update_state_t st, const char *version,
     }
 }
 
-/*
- * INSTALL: the 2s hold completed on the question.
+/**
+ * @brief INSTALL: the 2s hold completed on the question.
  *
  * In order: the update screen, the radio off and waited for, the image
  * checked once more against the slot and the running build, the gate once
@@ -685,9 +726,9 @@ static void fw_install_run(void)
     update_frame(UPDATE_FAILED, info.version_text, in.done, bytes);
 }
 
-/*
- * The WI-FI screen without Wi-Fi: it says so and offers nothing, and
- * what it asks for is dropped.
+/**
+ * @brief The WI-FI screen without Wi-Fi: it says so and offers nothing, and
+ *        what it asks for is dropped.
  */
 static void wifi_unavailable_service(void)
 {
@@ -862,9 +903,9 @@ void wifi_service(bool armed, uint32_t stops_now)
 
 /* ------------------------------------------- GitHub: check and download */
 
-/*
- * SETUP > UPDATES, the start-up check and the reminder (upd_screen.h), on
- * wifi_access's fetch jobs (wa_fetch.h).
+/**
+ * @brief SETUP > UPDATES, the start-up check and the reminder (upd_screen.h),
+ *        on wifi_access's fetch jobs (wa_fetch.h).
  *
  * A check needs what the radio needs: SAFE, the supply off, no log run,
  * and neither a panel install nor the IOmcu's update.  A download
@@ -874,9 +915,13 @@ void wifi_service(bool armed, uint32_t stops_now)
  * opening, for CANCEL, and for its gate closing.
  */
 static upd_driver_t s_upd;
-static uint32_t     s_upd_boot_gen;   /* the start-up check's job; 0 none */
-static bool         s_upd_dl;         /* a download, from its hold to its end */
+static uint32_t     s_upd_boot_gen;   /**< the start-up check's job; 0 none */
+static bool         s_upd_dl;         /**< a download, from its hold to its end */
 
+/**
+ * @brief The Wi-Fi reason (WA_WHY_*) a flash gate state stands for;
+ *        WA_WHY_NONE for an open gate.
+ */
 static wa_why_t why_of_fw_gate(fw_gate_t g)
 {
     switch (g) {
@@ -890,6 +935,9 @@ static wa_why_t why_of_fw_gate(fw_gate_t g)
     }
 }
 
+/**
+ * @brief The reason UPDATES' check may not run now, WA_WHY_NONE when it may.
+ */
 static wa_why_t upd_check_gate(bool armed)
 {
     return wa_fetch_gate(armed, supplies_live_or_coming(), run_open_now(),
@@ -897,13 +945,16 @@ static wa_why_t upd_check_gate(bool armed)
                          atomic_load(&s_fw_installing));
 }
 
-/* SETUP > UPDATES' RELEASES, now: 1 is TESTING. */
+/** @brief SETUP > UPDATES' RELEASES, now: 1 is TESTING. */
 static wa_channel_t upd_channel(void)
 {
     return (wa_channel_t)(settings_get_int(SET_UPD_CHANNEL) == 1);
 }
 
-/* @p unsafe: ARMED, an arm waiting, or the supply's output on or coming. */
+/**
+ * @brief @p unsafe: ARMED, an arm waiting, or the supply's output on or
+ *        coming.
+ */
 static upd_feed_t upd_feed_now(bool armed, bool unsafe, const cu_snap_t *cs,
                                const wa_fetch_t *f, bool have_net)
 {
@@ -939,6 +990,7 @@ void upd_remind_service(bool armed, bool unsafe, const cu_snap_t *cs)
     upd_remind_drive(&s_upd, &feed);
 }
 
+/** @brief Write a firmware version as text. */
 static void upd_ver_text(fw_version_t v, char *out, size_t n)
 {
     char t[FW_REL_VER_TEXT];

@@ -40,7 +40,7 @@
 #include "freertos/task.h"
 #include "gfx_turn.h"
 
-static const char *TAG = "display";
+static const char *TAG = "display";  /**< ESP-IDF log tag. */
 
 /**
  * @brief Two frame buffers, always: the DPI panel scans one while the CPU

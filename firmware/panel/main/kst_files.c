@@ -23,6 +23,7 @@
 #define PATH_MAX_LEN (sizeof(STORAGE_MOUNT_POINT) + sizeof(CARD_KST_CONF) \
                       + STORAGE_NAME_MAX + 2u)
 
+/** @brief Write the full path of the servo files' folder into @p out. */
 static void dir_path(char *out, size_t out_size)
 {
     snprintf(out, out_size, "%s/%s", STORAGE_MOUNT_POINT, CARD_KST_CONF);
@@ -34,8 +35,10 @@ void kst_files_path(const char *name, char *out, size_t out_size)
              name);
 }
 
-/* 1: a directory of that name is there; 0: nothing has the name; -1: the
- * card does not say, or a file has the name. */
+/**
+ * @brief 1: a directory of that name is there; 0: nothing has the name; -1:
+ *        the card does not say, or a file has the name.
+ */
 static int dir_state(void)
 {
     char path[PATH_MAX_LEN];
@@ -48,8 +51,10 @@ static int dir_state(void)
     return errno == ENOENT ? 0 : -1;
 }
 
-/* The folder made, each level that is missing (card_make_dirs()), or the
- * answer of the first level that cannot be. */
+/**
+ * @brief The folder made, each level that is missing (card_make_dirs()), or
+ *        the answer of the first level that cannot be.
+ */
 static card_dir_t make_dir(void)
 {
     if (dir_state() > 0) {
@@ -63,18 +68,26 @@ bool kst_files_dir(void)
     return make_dir() == CARD_DIR_OK;
 }
 
-/* Whether a failed call says that the card takes no file: it is write
- * protected, or access is refused. */
+/**
+ * @brief Whether a failed call says that the card takes no file: it is write
+ *        protected, or access is refused.
+ */
 static bool denied(int err)
 {
     return err == EROFS || err == EACCES || err == EPERM;
 }
 
-/* Whether the caller holds the volume (kst_files_io()): not whether one
- * is mounted now, which another task can change between the two.  The
- * runlog task's own, set per request. */
+/**
+ * @brief Whether the caller holds the volume (kst_files_io()): not whether
+ *        one is mounted now, which another task can change between the two.
+ *        The runlog task's own, set per request.
+ */
 static bool s_held;
 
+/**
+ * @brief servo_store_io_t's mounted hook: whether the caller holds the
+ *        volume.
+ */
 static bool io_mounted(void *ctx)
 {
     (void)ctx;
@@ -87,6 +100,7 @@ typedef struct {
     void *ctx;                   /**< its context       */
 } walk_t;
 
+/** @brief storage_walk()'s callback: pass one entry to the store's visit. */
 static void walk_entry(const storage_entry_t *entry, void *ctx)
 {
     const walk_t *w = ctx;
@@ -115,8 +129,12 @@ static bool io_walk(void *ctx, servo_store_visit_fn visit, void *visit_ctx)
     return storage_walk(CARD_KST_CONF, ".txt", walk_entry, &w, NULL) >= 0;
 }
 
-/* storage_stat() rather than stat(): stat()'s 32-bit st_size reads a file
- * of 4GiB and more as a small one. */
+/**
+ * @brief servo_store_io_t's size hook: the size of @p name in bytes.
+ *
+ * The size comes from storage_stat() rather than stat(): stat()'s 32-bit
+ * st_size reads a file of 4GiB and more as a small one.
+ */
 static int32_t io_size(void *ctx, const char *name)
 {
     char path[PATH_MAX_LEN];
@@ -131,6 +149,10 @@ static int32_t io_size(void *ctx, const char *name)
     return (int32_t)st.size;
 }
 
+/**
+ * @brief servo_store_io_t's read hook: read @p name into @p buf, at most @p
+ *        cap bytes.
+ */
 static int32_t io_read(void *ctx, const char *name, char *buf, size_t cap)
 {
     char path[PATH_MAX_LEN];

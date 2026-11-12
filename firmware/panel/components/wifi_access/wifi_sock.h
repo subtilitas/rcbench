@@ -20,17 +20,24 @@
 #include "esp_err.h"
 #include "wa_send.h"
 
+/** @brief One request's socket and the radio's abort flag. */
 typedef struct {
     int                fd;      /**< the request's socket       */
     const atomic_bool *abort;   /**< true: the radio goes off   */
 } wifi_sock_t;
 
-/** The sink of @p c, which must outlive it. */
+/**
+ * @brief The sink of @p c, which must outlive it.
+ * @param c the request's socket
+ * @return the sink that sends on @p c
+ */
 wa_sink_t wifi_sock_sink(wifi_sock_t *c);
 
 /**
- * A send that failed: the connection on @p fd is reset when the server
- * closes it, not closed in order.  Returns ESP_FAIL, which closes it.
+ * @brief A send that failed: the connection on @p fd is reset when the server
+ *        closes it, not closed in order.  Returns ESP_FAIL, which closes it.
+ * @param fd the socket
+ * @return ESP_FAIL, which closes the connection
  */
 esp_err_t wifi_sock_drop(int fd);
 

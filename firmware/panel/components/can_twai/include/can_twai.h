@@ -33,10 +33,21 @@ esp_err_t can_twai_start(uint32_t bitrate);
  *         not running. */
 void can_twai_stop(void);
 
-/** Queue one frame. @p timeout_ms of 0 does not block. */
+/**
+ * @brief Queue one frame. @p timeout_ms of 0 does not block.
+ * @param f the frame
+ * @param timeout_ms milliseconds to wait for room in the queue; 0 does not
+ *        block
+ * @return true when the frame was queued
+ */
 bool can_twai_send(const link_can_frame_t *f, uint32_t timeout_ms);
 
-/** Take one frame, if one arrives within @p timeout_ms. */
+/**
+ * @brief Take one frame, if one arrives within @p timeout_ms.
+ * @param f takes the frame
+ * @param timeout_ms milliseconds to wait for a frame
+ * @return true when a frame arrived
+ */
 bool can_twai_recv(link_can_frame_t *f, uint32_t timeout_ms);
 
 /** What the controller is doing, as can_twai_recover() found it. */
@@ -57,24 +68,32 @@ typedef enum {
  * without this call every later transmit fails and the link is gone until the
  * panel is power-cycled. Call it while the link is down; it takes one step
  * per call and never blocks.
+ * @return the controller's state after this step
  */
 can_twai_health_t can_twai_recover(void);
 
 /**
- * The same reading without acting on it.
+ * @brief The same reading without acting on it.
  *
  * For anything that reports the controller's state rather than repairing it,
  * so a diagnosis does not start a recovery as a side effect of being looked
  * at.
+ * @return the controller's state
  */
 can_twai_health_t can_twai_health(void);
 
 /**
- * Bus error counters, for the report. Any pointer may be NULL.
+ * @brief Bus error counters, for the report. Any pointer may be NULL.
  *
  * False when the controller is not running or its status would not read; the
  * outputs are then left as the caller set them, because zeros would read as a
  * healthy bus.
+ * @param tx_err Out: the transmit error counter; may be NULL
+ * @param rx_err Out: the receive error counter; may be NULL
+ * @param bus_err Out: bus errors counted; may be NULL
+ * @param bus_off Out: whether the controller is off the bus; may be NULL
+ * @return true when the counters were read; false when the controller is not
+ *         running or its status would not read
  */
 bool can_twai_errors(uint32_t *tx_err, uint32_t *rx_err, uint32_t *bus_err,
                      bool *bus_off);
