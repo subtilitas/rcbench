@@ -27,6 +27,7 @@ Attributes:
     VIDEO: The directory of the player, its packages and the storyboards.
     PANEL: The panel's display in pixels, the range of a step's target.
     FRAME: The video frame in pixels, the range of a label's position.
+    BEDS: The music beds of tools/video_audio.py.
     ANCHORS: The named points of the case model a label can point at.
     CONNECTORS: The headers of the case model and their position count.
 
@@ -53,6 +54,7 @@ FRAME = (1920, 1080)
 ANCHORS = ("display", "rbmod", "pdmini", "J1", "J2", "xt60", "usbc",
            "estop", "side", "plug")
 CONNECTORS = {"J1": 4, "J2": 4}
+BEDS = ("pads", "bach-prelude", "pachelbel-canon")
 ACTIONS = ("tap", "hold")
 STYLES = ("ok", "warn", "muted")
 
@@ -236,11 +238,18 @@ def check(board: dict) -> list:
         errors.append("steps must be a count of 0 or more")
         steps = 0
     voice = board.get("voice")
-    if voice is not None and not (isinstance(voice, dict)
-                                  and isinstance(voice.get("name"), str)):
-        errors.append("voice needs a name, a voice of the speaker")
-    if board.get("music", "pads") not in ("pads", "bach-prelude"):
-        errors.append("music must be pads or bach-prelude")
+    if voice is not None and not (
+            isinstance(voice, dict)
+            and (isinstance(voice.get("name"), str) or "blend" in voice)):
+        errors.append("voice needs a name or a blend of the speaker's "
+                      "voices")
+    if board.get("music", "pads") not in BEDS:
+        errors.append(f"music must be one of {', '.join(BEDS)}")
+    blend = (voice or {}).get("blend")
+    if blend is not None and not (
+            isinstance(blend, dict) and blend
+            and all(_number(part) and part > 0 for part in blend.values())):
+        errors.append("voice blend holds a positive part per voice")
     chapters = board.get("chapters")
     if chapters is not None and not (
             isinstance(chapters, list) and len(chapters) == steps
@@ -433,6 +442,9 @@ def main() -> int:
     ap.add_argument("--stills", metavar="T,T,...",
                     help="write one PNG per time in seconds instead of "
                          "the video")
+    ap.add_argument("--music", metavar="BED,BED,...",
+                    help="the bed in place of the storyboard's; with more "
+                         "than one, a video per bed, the bed in its name")
     ap.add_argument("--no-voice", action="store_true",
                     help="leave the narration out")
     ap.add_argument("--jobs", type=int, default=1,
@@ -455,6 +467,9 @@ def main() -> int:
                 print(f"{path.name}: {line}", file=sys.stderr)
             failed = failed or bool(errors)
         return 1 if failed else 0
+    for bed in (args.music or "").split(","):
+        if bed and bed not in BEDS:
+            ap.error(f"--music takes {', '.join(BEDS)}")
     if not args.storyboard:
         ap.error("name a storyboard: "
                  + ", ".join(p.stem for p in storyboards()))
@@ -503,16 +518,26 @@ def main() -> int:
                 status = _capture(cmd, board, silent, args.fps,
                                   max(1, args.jobs))
             server.shutdown()
-        if status == 0 and sound:
+        beds = args.music.split(",") if args.music else [None]
+        outs = [out if len(beds) == 1 else
+                out.with_name(f"{out.stem}-{bed}{out.suffix}")
+                for bed in beds]
+        for bed, target in zip(beds, outs, strict=True):
+            if status != 0 or not sound:
+                break
             import video_audio
 
+            if bed is not None:
+                board["music"] = bed
             track = shots / "track.wav"
             video_audio.render(board, track, clips)
             status = subprocess.run(
                 ["ffmpeg", "-v", "error", "-y", "-i", str(silent),
                  "-i", str(track), "-c:v", "copy", "-c:a", "aac",
                  "-b:a", "192k", "-shortest", "-movflags", "+faststart",
-                 str(out)]).returncode
+                 str(target)]).returncode
+        if sound:
+            out = outs[-1] if len(outs) == 1 else out.parent
     if status == 0:
         print(out)
     return 1 if status else 0

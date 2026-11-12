@@ -30,7 +30,7 @@ step shorter than its sentence is stretched, and the bed is lowered by
 tree: `kokoro-v1.0.onnx` and `voices-v1.0.bin` from the release
 `model-files-v1.0` of `github.com/thewh1teagle/kokoro-onnx` go into
 `tools/video/tts/` or the directory `RCBENCH_TTS_DIR` names. A speech
-recogniser (Whisper small.en) returned the 88 lines of `features` with
+recogniser (Whisper small.en) returned the lines of `features` with
 their words and names; the voice has not been judged by ear.
 
 The screens are drawn by the host renderer (`tools/render_ui.py`) from the
@@ -45,6 +45,8 @@ python3 tools/make_video.py kst-rbmod              # build/video/kst-rbmod.mp4
 python3 tools/make_video.py features               # build/video/features.mp4
 python3 tools/make_video.py kst-rbmod --stills 2.5,40 -o /tmp/stills
 python3 tools/make_video.py features --jobs 3      # frames in 3 parts at once
+python3 tools/make_video.py features --music bach-prelude,pachelbel-canon
+                                                   # one video per bed
 python3 tools/make_video.py features --no-voice    # no narrator, lengths as written
 python3 tools/make_video.py features --no-sound    # the picture alone
 python3 tools/video_voice.py features              # the lines as spoken
@@ -57,7 +59,7 @@ and its model for the narration, Node.js with the `playwright` package and
 its Chromium, and ffmpeg. `--check` needs only Python; the
 pytest case `test/tools/test_make_video.py` runs it in CI (continuous
 integration). The 100.4s of `kst-rbmod` are 3012 frames. `features` is
-414.4s as written and 638s with its narration, 19150 frames; the render time on a software rasteriser is not measured.
+694s with its narration, 20814 frames; the render time on a software rasteriser is not measured.
 
 ## Files
 
@@ -68,7 +70,7 @@ integration). The 100.4s of `kst-rbmod` are 3012 frames. `features` is
 | `player/case3d.js` | the case model, its connectors and its named points |
 | `player/capture.js` | steps the player through the frames and pipes them to ffmpeg |
 | `storyboards/kst-rbmod.json` | programming a KST servo on the rbmod carrier, 8 steps, 100.4s |
-| `storyboards/features.json` | every screen of the bench in 8 chapters: where it opens from and what it does, narrated, 638s |
+| `storyboards/features.json` | every screen of the bench in 8 chapters: where it opens from and what it does on the rbmod carrier, narrated, 694s |
 | `../video_audio.py` | the sound track of a storyboard as a WAV file |
 | `../video_voice.py` | the narration: the lines, the speaker, the room each line needs |
 
@@ -84,8 +86,8 @@ Top level:
 | `lang` | `en` or `de`: the language the renderer draws the screens in |
 | `brand` | the line beside `rcbench` at the top left |
 | `steps` | the count of step marks at the bottom left |
-| `music` | optional: `pads`, the default bed, or `bach-prelude`, J. S. Bach's Prelude in C major BWV 846 on the same voices, one bar every 4s. The composition is in the public domain and no recording is used; bars 33 and 34 keep the pattern of the other bars so that the piece loops |
-| `voice` | optional `{name, lang, speed}`: the narrator, a voice of Kokoro such as `af_heart` with `en-us`, or `bm_george` with `en-gb` |
+| `music` | optional: `pads`, the default bed; `bach-prelude`, J. S. Bach's Prelude in C major BWV 846 on the same voices, one bar every 4s; or `pachelbel-canon`, Johann Pachelbel's Canon in D major, its ground bass at 2s a note under three of the violin's variations. Both compositions are in the public domain and no recording is used; the notes are set down in `tools/video_audio.py`. Bars 33 and 34 of the prelude keep the pattern of the other bars so that the piece loops |
+| `voice` | optional `{name, lang, speed}`: the narrator, a voice of Kokoro such as `af_heart` with `en-us`, or `bm_george` with `en-gb`. `blend` in place of `name` mixes voices by weight: `{"af_heart": 0.6, "af_nicole": 0.4}` |
 | `chapters` | optional: one name per step; the names replace the step marks, each with a bar that fills while its chapter runs |
 | `words` | optional: `tap`, `hold`, `pos`, `gpio`, the player's own words, for another language |
 | `scenes` | the scenes in order; each fades in and out over 0.45s |
@@ -170,7 +172,9 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
   case's CAD (computer-aided design) views; every other dimension is
   estimated. J2's row order is assumed to match J1's and is not
   confirmed.
-- One board is modelled: the rbmod carrier in this case.
+- One board is modelled: the rbmod carrier in this case. `features` shows
+  that build only: the board wired by hand, its pin drawing and the
+  Hitec MOVE SERVO, which needs a PD mini on the port, are not in it.
 - The XT60 socket's function is not stated in the tree; the video names
   the socket and its place only.
 - The sound and the narrator's voice have not been judged by ear.

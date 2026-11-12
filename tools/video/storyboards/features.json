@@ -616,7 +616,7 @@
      ]
     },
     {
-     "view": "servo-hub",
+     "view": "servo-hub-rbmod",
      "dur": 5.0,
      "n": 3,
      "kicker": "03 · Servo",
@@ -844,7 +844,7 @@
      "text": "The AS5600 encoder on the horn or a Bluetooth IMU on the surface."
     },
     {
-     "view": "servo-rudder-auto",
+     "view": "servo-rudder-auto-rbmod",
      "dur": 5.0,
      "n": 3,
      "kicker": "03 · Servo",
@@ -857,7 +857,7 @@
      "text": "Programs a servo's end points for a set deflection, on the programming port."
     },
     {
-     "view": "servo-kst-tune",
+     "view": "servo-kst-tune-rbmod",
      "dur": 6.4,
      "n": 3,
      "kicker": "03 · Servo",
@@ -873,10 +873,11 @@
       "Backup to the card before the first write",
       "Every written value is read back"
      ],
-     "say": "K S T and Cha servo. The programmer reads 32 registers over the signal wire. Edits stay a draft until you write them."
+     "say": "K S T and Cha servo. The programmer reads 32 registers over the signal wire. Edits stay a draft until you write them.",
+     "screen": "servo"
     },
     {
-     "view": "servo-kst-files",
+     "view": "servo-kst-files-rbmod",
      "dur": 4.4,
      "n": 3,
      "kicker": "03 · Servo",
@@ -887,10 +888,11 @@
       "FILES"
      ],
      "title": "Servo files",
-     "text": "A servo's settings are saved to the card and loaded into another servo of the same type."
+     "text": "A servo's settings are saved to the card and loaded into another servo of the same type.",
+     "screen": "servo"
     },
     {
-     "view": "servo-kst-restore-list",
+     "view": "servo-kst-restore-list-rbmod",
      "dur": 4.4,
      "n": 3,
      "kicker": "03 · Servo",
@@ -901,10 +903,11 @@
       "RESTORE"
      ],
      "title": "RESTORE",
-     "text": "The session's first read is kept as a backup. A restore writes it back."
+     "text": "The session's first read is kept as a backup. A restore writes it back.",
+     "screen": "servo"
     },
     {
-     "view": "servo-kst-journal",
+     "view": "servo-kst-journal-rbmod",
      "dur": 4.4,
      "n": 3,
      "kicker": "03 · Servo",
@@ -920,7 +923,8 @@
       424,
       612,
       48
-     ]
+     ],
+     "screen": "servo"
     },
     {
      "view": "servo-hitec",
@@ -935,47 +939,6 @@
      "title": "Hitec",
      "text": "D series and classic HS-5xxx and HS-7xxx servos, with backup, limit checks and a write switch.",
      "say": "High tech. D series and classic servos, with backup, limit checks and a write switch."
-    },
-    {
-     "view": "servo-hitec-move-on",
-     "dur": 4.4,
-     "n": 3,
-     "kicker": "03 · Servo",
-     "path": [
-      "HOME",
-      "SERVO",
-      "HITEC",
-      "TRAVEL"
-     ],
-     "title": "MOVE SERVO",
-     "text": "The horn follows the value being edited while the bench stays SAFE. It needs a PD mini with its output on.",
-     "focus": [
-      8,
-      362,
-      598,
-      44
-     ]
-    },
-    {
-     "view": "servo-hitec-move-found",
-     "dur": 4.4,
-     "n": 3,
-     "kicker": "03 · Servo",
-     "path": [
-      "HOME",
-      "SERVO",
-      "HITEC",
-      "TRAVEL"
-     ],
-     "title": "FIND STOP",
-     "text": "Searches the mechanical stop of one side and sets that end 1.0° inside it, in the edits.",
-     "focus": [
-      8,
-      308,
-      598,
-      44
-     ],
-     "say": "Find stop. It searches the mechanical stop of one side and sets that end one degree inside it."
     },
     {
      "view": "servo-hitec-backup-file",
@@ -1017,7 +980,7 @@
      ]
     },
     {
-     "view": "supply",
+     "view": "supply-rbmod",
      "dur": 7.4,
      "n": 4,
      "kicker": "04 · Supply",
@@ -1026,7 +989,7 @@
       "SUPPLY"
      ],
      "title": "USB-PD supply",
-     "text": "Voltage and current limit are set on the panel. The output is switched there.",
+     "text": "Voltage and current limit of the PD mini are set on the panel. PROG 5V switches the programming ports' own 5 V.",
      "points": [
       "V, A and W plotted and logged"
      ],
@@ -1072,19 +1035,7 @@
        "d": 110
       }
      ],
-     "say": "U S B P D supply. Voltage and current limit are set on the panel, and the output is switched there."
-    },
-    {
-     "view": "supply-rbmod",
-     "dur": 4.4,
-     "n": 4,
-     "kicker": "04 · Supply",
-     "path": [
-      "HOME",
-      "SUPPLY"
-     ],
-     "title": "On the rbmod carrier",
-     "text": "The programming ports have their own fixed 5 V. PROG 5V switches it and shows its reading."
+     "say": "U S B P D supply. Voltage and current limit of the P D mini are set on the panel. Prog 5 volt switches the programming ports' own supply."
     },
     {
      "dur": 3.0,
@@ -1302,7 +1253,7 @@
      }
     },
     {
-     "view": "setup",
+     "view": "setup-rbmod",
      "dur": 3.8,
      "n": 7,
      "kicker": "07 · Wi-Fi & updates",
@@ -1448,7 +1399,7 @@
      ]
     },
     {
-     "view": "setup",
+     "view": "setup-rbmod",
      "dur": 5.0,
      "n": 8,
      "kicker": "08 · Setup",
@@ -1457,7 +1408,7 @@
       "SETUP"
      ],
      "title": "SETUP",
-     "text": "Panel, sensors, outputs, SD card, Wi-Fi, updates and the Bluetooth IMU."
+     "text": "Panel, sensors, outputs, SD card, Wi-Fi, updates, the Bluetooth IMU and the carrier's layout."
     },
     {
      "view": "setup-application",
@@ -1509,20 +1460,7 @@
       "OUTPUTS"
      ],
      "title": "OUTPUTS",
-     "text": "A protocol for each pin of J2: PWM, PPM, DShot or bidirectional DShot."
-    },
-    {
-     "view": "outputs-full",
-     "dur": 4.4,
-     "n": 8,
-     "kicker": "08 · Setup",
-     "path": [
-      "HOME",
-      "SETUP",
-      "OUTPUTS"
-     ],
-     "title": "The board to scale",
-     "text": "On a board wired by hand the screen draws the module and where each lead goes."
+     "text": "A protocol for each pin of J2: servo PWM, motor PWM or DShot."
     },
     {
      "view": "layout-rbmod",
@@ -1548,20 +1486,7 @@
       "SENSORS"
      ],
      "title": "SENSORS",
-     "text": "Current monitors INA228 and INA3221, the AS5600 angle encoder, the phase tap and the IMU."
-    },
-    {
-     "view": "setup-sensors-ina228",
-     "dur": 4.4,
-     "n": 8,
-     "kicker": "08 · Setup",
-     "path": [
-      "HOME",
-      "SETUP",
-      "SENSORS"
-     ],
-     "title": "Current monitors",
-     "text": "Address, shunt value and maximum current of each monitor."
+     "text": "The carrier's INA3221 current monitor, the AS5600 angle encoder, the phase tap and the IMU."
     },
     {
      "view": "setup-tap",
@@ -1670,8 +1595,12 @@
   }
  ],
  "voice": {
-  "name": "af_heart",
+  "blend": {
+   "af_heart": 0.6,
+   "af_nicole": 0.4
+  },
   "lang": "en-us",
-  "speed": 1.0
- }
+  "speed": 0.94
+ },
+ "music": "bach-prelude"
 }

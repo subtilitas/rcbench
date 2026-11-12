@@ -435,9 +435,10 @@ at -3dBFS (decibels relative to full scale); its balance has not been judged by 
 storyboard and fails on a field the player would not draw; `test/tools/test_make_video.py`
 runs it. Two storyboards: `kst-rbmod`, programming a KST servo on the rbmod carrier, 8 steps,
 100.4s, and `features`, every screen of the bench in 8 chapters, where it opens from and what
-it does, narrated, 638s. `tools/video_voice.py` speaks a storyboard with Kokoro, a
+it does on the rbmod carrier, narrated, 694s, with Bach's Prelude in C major or Pachelbel's
+Canon in D major as its bed. `tools/video_voice.py` speaks a storyboard with Kokoro, a
 text-to-speech model that runs on the machine and whose files are not in the tree; a speech
-recogniser returned the 88 lines with their words, and the voice has not been judged by ear.
+recogniser returned the lines with their words, and the voice has not been judged by ear.
 The
 renderer draws the KST views on the carrier (`servo-kst-STATE-rbmod`) and MOTOR & ESC's plot
 with an IOmcu answering (`motor-plot`) for them (`test/host/render_screen.c`). The case model is a mockup: outer size, connector order and

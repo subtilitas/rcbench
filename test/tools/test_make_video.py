@@ -122,10 +122,11 @@ def test_a_hold_sounds_for_its_two_seconds():
 
 
 def test_the_music_is_a_known_bed():
-    """A storyboard names pads or the prelude, nothing else."""
+    """A storyboard names one of the beds, nothing else."""
     board = _board()
     board["music"] = "bach-prelude"
     assert make_video.check(board) == []
+    assert make_video.BEDS == video_audio.BEDS
     board["music"] = "drums"
     assert any("music" in e for e in make_video.check(board))
 

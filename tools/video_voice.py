@@ -185,8 +185,15 @@ def narrate(board: dict) -> tuple:
     voice = board["voice"]
     speaker = Kokoro(str(files[0]), str(files[1]))
 
+    # A blend is the weighted mean of the voices' style vectors.
+    style = voice.get("name")
+    if "blend" in voice:
+        whole = sum(voice["blend"].values())
+        style = sum(speaker.get_voice_style(name) * (part / whole)
+                    for name, part in voice["blend"].items())
+
     def say(text):
-        raw, rate = speaker.create(text, voice=voice["name"],
+        raw, rate = speaker.create(text, voice=style,
                                    speed=voice.get("speed", 1.0),
                                    lang=voice.get("lang", "en-us"))
         raw = np.asarray(raw, dtype=float)

@@ -17,6 +17,11 @@ domain; the notes are set down here from the piece's harmony, 5 a bar,
 and no recording is used.  Bars 33 and 34 keep the pattern of the other
 bars in place of Bach's two free bars, so that the piece loops.
 
+"pachelbel-canon" is the Canon in D major of Johann Pachelbel (1653 to
+1706): its ground bass of 8 notes, 2s a note, under the chords and three
+of the violin's variations, which enter one after another.  It is in the
+public domain as well, and set down here in the same way.
+
 events() needs Python only.  render() needs numpy.
 
 Attributes:
@@ -28,6 +33,10 @@ Attributes:
     LEVEL: The loudest sample, as a part of full scale.
     PRELUDE: The 5 notes of each bar of BWV 846, as MIDI note numbers.
     PRELUDE_BAR_S: Seconds one bar of the prelude lasts.
+    CANON: The canon's ground: a bass note and three pad notes per
+        chord.
+    CANON_LINES: Three variations of the canon: 8 notes, 8 notes and 32.
+    CANON_NOTE_S: Seconds one note of the ground lasts.
     BEDS: The names a storyboard's "music" takes.
 
 SPDX-License-Identifier: MIT
@@ -60,7 +69,19 @@ PRELUDE = (
     (36, 47, 55, 59, 65), (36, 48, 52, 55, 60),
 )
 PRELUDE_BAR_S = 4.0
-BEDS = ("pads", "bach-prelude")
+CANON = (
+    (50, (57, 62, 66)), (45, (57, 61, 64)), (47, (59, 62, 66)),
+    (42, (57, 61, 66)), (43, (59, 62, 67)), (38, (57, 62, 66)),
+    (43, (59, 62, 67)), (45, (57, 61, 64)),
+)
+CANON_LINES = (
+    (78, 76, 74, 73, 71, 69, 71, 73),
+    (74, 73, 71, 69, 67, 66, 67, 64),
+    (62, 66, 69, 67, 66, 62, 66, 64, 62, 59, 62, 69, 67, 71, 69, 67,
+     66, 62, 64, 73, 74, 78, 81, 69, 71, 67, 69, 66, 62, 74, 74, 73),
+)
+CANON_NOTE_S = 2.0
+BEDS = ("pads", "bach-prelude", "pachelbel-canon")
 CHORDS = (
     (38, (57, 61, 64, 66)),     # D maj7
     (42, (57, 61, 64, 68)),     # F sharp m7
@@ -208,8 +229,43 @@ def render(board: dict, path: pathlib.Path, clips=()) -> float:
     soft = tuple((k, k ** -1.7) for k in range(1, 7))
     pluck = ((1, 1.0), (2, 0.28), (3, 0.08))
     order = (0, 2, 1, 3, 2, 3, 1, 2)
-    prelude = board.get("music", "pads") == "bach-prelude"
-    bars = 0 if prelude else int(total / BAR_S) + 1
+    bed = board.get("music", "pads")
+    prelude, canon = bed == "bach-prelude", bed == "pachelbel-canon"
+    bars = int(total / BAR_S) + 1 if bed == "pads" else 0
+    # The canon: the ground alone once, then the variations in turn over
+    # it, the long ones on a soft sustained voice, the third plucked.
+    rounds = int(total / (8 * CANON_NOTE_S)) + 1 if canon else 0
+    for rnd in range(rounds):
+        r0 = rnd * 8 * CANON_NOTE_S
+        with_lines = ((), (0,), (0, 1), (1, 2), (0, 2))[
+            0 if rnd == 0 else 1 + (rnd - 1) % 4]
+        for k, (bass, notes) in enumerate(CANON):
+            t0 = r0 + k * CANON_NOTE_S
+            env = swell(CANON_NOTE_S + 1.6, 0.7, 1.7)
+            for note in notes:
+                for cents, pan in ((-5, -0.6), (6, 0.6)):
+                    sig, _ = tone(hz(note) * 2 ** (cents / 1200),
+                                  CANON_NOTE_S + 1.6, soft)
+                    put(music, t0, sig * env, pan, 0.024)
+            sig, _ = tone(hz(bass), CANON_NOTE_S + 1.6,
+                          ((1, 1.0), (2, 0.25), (3, 0.06)))
+            put(music, t0, sig * env, 0.0, 0.085)
+            for line in with_lines:
+                if line == 2:
+                    for q in range(4):
+                        note = CANON_LINES[2][k * 4 + q]
+                        sig, t = tone(hz(note), 1.8, pluck)
+                        sig *= np.exp(-t / 0.4) * np.minimum(1.0, t / 0.012)
+                        at = t0 + q * CANON_NOTE_S / 4
+                        put(music, at, sig, 0.45, 0.06)
+                        put(music, at + 0.375, sig, -0.5, 0.018)
+                    continue
+                sig, t = tone(hz(CANON_LINES[line][k]), CANON_NOTE_S + 0.9,
+                              ((1, 1.0), (2, 0.22), (3, 0.07)))
+                sig *= swell(CANON_NOTE_S + 0.9, 0.3, 1.0)
+                sig *= 1.0 + 0.05 * np.sin(2 * np.pi * 4.6 * t)
+                put(music, t0, sig, -0.35 if line == 0 else 0.35,
+                    0.05 if line == 0 else 0.04)
     # The prelude: each bar's 5 notes as Bach breaks them, 1 2 3 4 5 3 4 5
     # twice, on plucked voices; the bar's lowest note held under them and
     # its chord as a quiet pad.  The last bar is the closing C major.
@@ -266,6 +322,9 @@ def render(board: dict, path: pathlib.Path, clips=()) -> float:
             put(music, tb + 0.75, sig, -0.6, vel * 0.18)
 
     def chord_at(t):
+        if canon:
+            notes = CANON[int(max(t, 0.0) / CANON_NOTE_S) % len(CANON)][1]
+            return notes + (notes[0] + 12,)
         if prelude:
             bar = int(max(t - 1.0, 0.0) / PRELUDE_BAR_S)
             if bar >= count - 1:
