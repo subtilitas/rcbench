@@ -42,24 +42,29 @@ extern "C" {
 /** Folders below the root a walk goes into. */
 #define WA_WALK_DEPTH 16u
 
+/** @brief One entry of a folder. */
 typedef struct {
-    char     name[WA_NAME_BYTES];
-    bool     dir;
+    char     name[WA_NAME_BYTES];  /**< the entry's name */
+    bool     dir;     /**< a folder */
     uint64_t size;    /**< bytes; 0 for a folder              */
     int64_t  mtime;   /**< seconds since 1970, as the card has it */
 } wa_dirent_t;
 
 /** The card, by paths relative to its root ("" is the root). */
 typedef struct {
+    /** @brief Open the folder @p path: a handle, NULL when it cannot be opened. */
     void   *(*opendir)(void *ctx, const char *path);
     /** The next entry: 1, 0 at the end, -1 on an error. */
     int     (*readdir)(void *ctx, void *dir, wa_dirent_t *out);
+    /** @brief Close a folder's handle. */
     void    (*closedir)(void *ctx, void *dir);
+    /** @brief Open the file @p path: a handle, NULL when it cannot be opened. */
     void   *(*open)(void *ctx, const char *path);
     /** Up to @p len bytes: how many, 0 at the end, -1 on an error. */
     int32_t (*read)(void *ctx, void *file, uint8_t *dst, uint32_t len);
+    /** @brief Close a file's handle. */
     void    (*close)(void *ctx, void *file);
-    void    *ctx;
+    void    *ctx;  /**< passed to each function */
     /** @brief Whether the walk is to end now, asked before every entry;
      *         NULL never. */
     bool    (*stopped)(void *ctx);
@@ -74,6 +79,7 @@ typedef enum {
     WA_WALK_ERROR,    /**< a folder could not be read part way           */
 } wa_walk_ev_t;
 
+/** @brief One folder of a walk. */
 typedef struct {
     void    *dir;     /**< the level's open handle, or NULL              */
     uint32_t len;     /**< bytes of the path up to this folder           */

@@ -13,18 +13,21 @@
 #include <stdbool.h>
 #include <string.h>
 
+/** @brief The record type A: an IPv4 address. */
 #define TYPE_A     1u
-#define TYPE_ANY   255u
-#define CLASS_IN   1u
-#define CLASS_QU   0x8000u   /* in a question: answer by unicast       */
+#define TYPE_ANY   255u  /**< the record type of a question for any record */
+#define CLASS_IN   1u    /**< the Internet class */
+#define CLASS_QU   0x8000u   /**< in a question: answer by unicast       */
 #define CLASS_FLUSH 0x8000u  /**< in an answer: this replaces the cache */
 #define LEGACY_TTL 10u       /**< TTL (time to live) of a legacy answer, s */
 
+/** @brief The big-endian 16-bit value at @p p. */
 static uint16_t get16(const uint8_t *p)
 {
     return (uint16_t)((p[0] << 8) | p[1]);
 }
 
+/** @brief Write @p v as a big-endian 16-bit value at @p p; return the byte after it. */
 static uint8_t *put16(uint8_t *p, uint32_t v)
 {
     p[0] = (uint8_t)(v >> 8);
@@ -32,15 +35,23 @@ static uint8_t *put16(uint8_t *p, uint32_t v)
     return p + 2;
 }
 
+/** @brief @p c in lower case. */
 static char lower(char c)
 {
     return (c >= 'A' && c <= 'Z') ? (char)(c - 'A' + 'a') : c;
 }
 
-/*
- * Compare the name at @p at in the message with host.local, following
- * compression pointers; *next is set to the byte after the name where it
- * started.  -1 malformed, 0 another name, 1 this one.
+/**
+ * @brief Compare the name at @p at in the message with host.local, following
+ *        compression pointers; *next is set to the byte after the name where
+ *        it started.
+ *
+ * @param m The message.
+ * @param n The message's length, in bytes.
+ * @param at The offset of the name.
+ * @param host The name, without ".local".
+ * @param next Receives the offset after the name.
+ * @return -1 malformed, 0 another name, 1 this one.
  */
 static int name_is(const uint8_t *m, size_t n, size_t at, const char *host,
                    size_t *next)
@@ -97,6 +108,7 @@ static int name_is(const uint8_t *m, size_t n, size_t at, const char *host,
     }
 }
 
+/** @brief Write host.local as labels at @p p; return the byte after it. */
 static uint8_t *put_name(uint8_t *p, const char *host)
 {
     const size_t h = strlen(host);
@@ -110,6 +122,18 @@ static uint8_t *put_name(uint8_t *p, const char *host)
     return p;
 }
 
+/**
+ * @brief Build a response with one A record for host.local.
+ *
+ * @param id The message ID.
+ * @param question Repeat the question in the response.
+ * @param ttl The record's time to live, in s.
+ * @param host The name, without ".local".
+ * @param ip The IPv4 address, four bytes.
+ * @param out Receives the response.
+ * @param cap The size of @p out, in bytes.
+ * @return The response's length in bytes, 0 when it does not fit.
+ */
 static size_t answer(uint16_t id, bool question, uint32_t ttl,
                      const char *host, const uint8_t ip[4], uint8_t *out,
                      size_t cap)

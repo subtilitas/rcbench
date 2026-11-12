@@ -75,6 +75,7 @@ extern "C" {
  *  job's budget. */
 #define WA_FETCH_OP_MS        10000u
 
+/** @brief The two jobs. */
 typedef enum {
     WA_JOB_CHECK = 0,
     WA_JOB_DOWNLOAD,
@@ -86,6 +87,7 @@ typedef enum {
     WA_CH_TESTING,     /**< the newest release, testing or stable        */
 } wa_channel_t;
 
+/** @brief Where a job stands. */
 typedef enum {
     WA_PH_IDLE = 0,    /**< no job since the start                      */
     WA_PH_JOINING,     /**< the radio joins and takes an address        */
@@ -142,19 +144,20 @@ typedef enum {
                             write, so no download either                */
 } wa_why_t;
 
+/** @brief The state of the current job, ended or not. */
 typedef struct {
-    wa_job_t      job;
+    wa_job_t      job;       /**< which job */
     wa_channel_t  channel;  /**< CHECK: the releases it looked at         */
-    wa_phase_t    phase;
-    wa_got_t      got;
+    wa_phase_t    phase;    /**< where it stands */
+    wa_got_t      got;      /**< how it ended, once phase is ENDED */
     wa_why_t      why;      /**< BLOCKED, ABORTED                         */
     wa_join_err_t join;     /**< JOIN                                     */
     fw_rel_err_t  rel;      /**< UNEXPECTED, SUMS, and IMAGE by length    */
     fw_err_t      img;      /**< IMAGE                                    */
     int           status;   /**< REFUSED, LIMIT: the HTTP status          */
     uint32_t      gen;      /**< jobs started                             */
-    uint32_t      start_ms;
-    fw_version_t  running;
+    uint32_t      start_ms; /**< when it started, ms */
+    fw_version_t  running;  /**< the build that runs */
     fw_version_t  found;    /**< NEWER, CURRENT, UNVERSIONED, PAST_LINE;
                                  the release
                                  a DOWNLOAD fetches                       */
@@ -165,10 +168,25 @@ typedef struct {
     bool          owe_run;  /**< joined: the runner starts                */
 } wa_fetch_t;
 
-/** No job; @p running is the build that runs. */
+/**
+ * @brief No job; @p running is the build that runs.
+ *
+ * @param f The job state to clear.
+ * @param running The version of the running build.
+ */
 void wa_fetch_init(wa_fetch_t *f, fw_version_t running);
 
-/** The gate as wa_gate() takes it, plus the panel's own two. */
+/**
+ * @brief The gate as wa_gate() takes it, plus the panel's own two.
+ *
+ * @param armed The bench is ARMED, or an arm waits.
+ * @param supply The supply's output is on or coming on.
+ * @param run A log run is open.
+ * @param coproc The IOmcu's update runs.
+ * @param installing A panel install runs.
+ * @return WA_WHY_ARMED, else WA_WHY_SUPPLY, WA_WHY_RUN, WA_WHY_INSTALL or
+ *         WA_WHY_COPROC, the first that holds; WA_WHY_NONE when none does.
+ */
 wa_why_t wa_fetch_gate(bool armed, bool supply, bool run, bool coproc,
                        bool installing);
 
@@ -192,30 +210,54 @@ wa_why_t wa_fetch_start_gate(wa_why_t gate, bool taken, bool task_alive,
                              bool other);
 
 /**
- * Start @p job at @p now_ms for release @p want (DOWNLOAD; ignored by
- * CHECK) on channel @p ch (CHECK; kept by DOWNLOAD too).  WA_GOT_NONE and
- * JOINING: the platform starts the radio in WA_MODE_FETCH.  Otherwise the
- * job has ended at once: NO_NET without @p have_net, BLOCKED for @p gate or
- * for a job already running (why).
+ * @brief Start @p job at @p now_ms for release @p want (DOWNLOAD; ignored by
+ *        CHECK) on channel @p ch (CHECK; kept by DOWNLOAD too).
+ *
+ * WA_GOT_NONE and JOINING: the platform starts the radio in WA_MODE_FETCH.
+ * Otherwise the job has ended at once: NO_NET without @p have_net, BLOCKED
+ * for @p gate or for a job already running (why).
+ *
+ * @param f The job state.
+ * @param job The job to start.
+ * @param want The release a DOWNLOAD fetches.
+ * @param ch The channel a CHECK looks at.
+ * @param have_net A home network is kept.
+ * @param gate The gate, WA_WHY_NONE for none.
+ * @param now_ms The current time, in ms.
+ * @return WA_GOT_NONE when the job started, else how it ended at once.
  */
 wa_got_t wa_fetch_start(wa_fetch_t *f, wa_job_t job, fw_version_t want,
                         wa_channel_t ch, bool have_net, wa_why_t gate,
                         uint32_t now_ms);
 
 /**
- * Whether the last job is a CHECK that found a release to offer on channel
- * @p now: ended NEWER, and run on @p now.  A check on the other channel
- * offers nothing: RELEASES changed after it.
+ * @brief Whether the last job is a CHECK that found a release to offer on
+ *        channel @p now: ended NEWER, and run on @p now.
+ *
+ * A check on the other channel offers nothing: RELEASES changed after it.
+ *
+ * @param f The job state.
+ * @param now The channel SETUP > UPDATES names now.
+ * @return true when a release is offered.
  */
 bool wa_fetch_offers(const wa_fetch_t *f, wa_channel_t now);
 
 /**
- * Whether the last job is a CHECK that ended on another channel than
- * @p now: its result is not shown, as if no check had run.
+ * @brief Whether the last job is a CHECK that ended on another channel than
+ *        @p now: its result is not shown, as if no check had run.
+ *
+ * @param f The job state.
+ * @param now The channel SETUP > UPDATES names now.
+ * @return true when the result is not shown.
  */
 bool wa_fetch_stale(const wa_fetch_t *f, wa_channel_t now);
 
-/** Whether a job runs: joining to checking. */
+/**
+ * @brief Whether a job runs: joining to checking.
+ *
+ * @param f The job state.
+ * @return true while a job runs.
+ */
 bool wa_fetch_busy(const wa_fetch_t *f);
 
 /**
@@ -227,44 +269,90 @@ bool wa_fetch_busy(const wa_fetch_t *f);
 bool wa_fetch_has_found(const wa_fetch_t *f);
 
 /**
- * Once a frame, after wa_tick(): @p abort as the UI loop sees it now
- * (WA_WHY_NONE for none), @p w the session.  Ends the job for an abort, for
- * the session going off under it and for the budget; moves JOINING on once
- * the session has its address.  The platform reads owe_off and owe_run
- * after it.
+ * @brief Once a frame, after wa_tick(): end the job for an abort, for the
+ *        session going off under it and for the budget; move JOINING on once
+ *        the session has its address.
+ *
+ * The platform reads owe_off and owe_run after it.
+ *
+ * @param f The job state.
+ * @param now_ms The current time, in ms.
+ * @param abort The abort as the UI loop sees it now, WA_WHY_NONE for none.
+ * @param w The session.
  */
 void wa_fetch_tick(wa_fetch_t *f, uint32_t now_ms, wa_why_t abort,
                    const wa_t *w);
 
-/** End the job now for @p why; nothing when none runs. */
+/**
+ * @brief End the job now for @p why; nothing when none runs.
+ *
+ * @param f The job state.
+ * @param why The reason.
+ */
 void wa_fetch_abort(wa_fetch_t *f, wa_why_t why);
 
 /**
- * ms of the budget left at @p now_ms for the phase under way; 0 when it is
- * spent or no job runs.
+ * @brief The budget left at @p now_ms for the phase under way.
+ *
+ * @param f The job state.
+ * @param now_ms The current time, in ms.
+ * @return The budget left, in ms; 0 when it is spent or no job runs.
  */
 uint32_t wa_fetch_left(const wa_fetch_t *f, uint32_t now_ms);
 
-/** True once after the job ended: the radio goes off. */
+/**
+ * @brief True once after the job ended: the radio goes off.
+ *
+ * @param f The job state.
+ * @return true once, after the job ended.
+ */
 bool wa_fetch_take_off(wa_fetch_t *f);
-/** True once after the join: the runner starts. */
+/**
+ * @brief True once after the join: the runner starts.
+ *
+ * @param f The job state.
+ * @return true once, after the join.
+ */
 bool wa_fetch_take_run(wa_fetch_t *f);
 
-/** What the runner ends with. */
+/** @brief What the runner ends with. */
 typedef struct {
-    wa_got_t     got;
-    wa_why_t     why;
-    fw_rel_err_t rel;
-    fw_err_t     img;
-    int          status;
-    fw_version_t found;
+    wa_got_t     got;     /**< how the job ended */
+    wa_why_t     why;     /**< BLOCKED, ABORTED */
+    fw_rel_err_t rel;     /**< UNEXPECTED, SUMS, and IMAGE by length */
+    fw_err_t     img;     /**< IMAGE */
+    int          status;  /**< REFUSED, LIMIT: the HTTP status */
+    fw_version_t found;   /**< the release found or fetched */
 } wa_fetch_res_t;
 
-/* What the runner reports, each for job @p gen; a report for another job,
- * or for one that has ended, is dropped. */
+/**
+ * @brief The runner reports a phase begun.  A report for another job, or for
+ *        one that has ended, is dropped.
+ *
+ * @param f The job state.
+ * @param gen The job the report is for.
+ * @param ph The phase begun.
+ */
 void wa_fetch_on_phase(wa_fetch_t *f, uint32_t gen, wa_phase_t ph);
+/**
+ * @brief The runner reports the image's bytes so far.  A report for another
+ *        job, or for one that has ended, is dropped.
+ *
+ * @param f The job state.
+ * @param gen The job the report is for.
+ * @param done The bytes received.
+ * @param total The bytes announced.
+ */
 void wa_fetch_on_bytes(wa_fetch_t *f, uint32_t gen, uint32_t done,
                        uint32_t total);
+/**
+ * @brief The runner reports the end of the job.  A report for another job, or
+ *        for one that has ended, is dropped.
+ *
+ * @param f The job state.
+ * @param gen The job the report is for.
+ * @param r What the runner ends with.
+ */
 void wa_fetch_on_end(wa_fetch_t *f, uint32_t gen, const wa_fetch_res_t *r);
 
 /* ---------------------------------------------------------- the runner */
@@ -284,7 +372,7 @@ typedef struct {
     bool    loc_cut;    /**< the Location was longer than the buffer    */
 } wa_http_head_t;
 
-/** The HTTP client: one request at a time, the platform's. */
+/** @brief The HTTP client: one request at a time, the platform's. */
 typedef struct {
     /**
      * GET @p url, waiting @p timeout_ms at most for each step; with @p api
@@ -301,13 +389,14 @@ typedef struct {
      *  chunk only: a body closed before it is below 0. */
     int32_t (*read)(void *ctx, uint8_t *dst, uint32_t n,
                     uint32_t timeout_ms);
-    void    (*close)(void *ctx);
-    void    *ctx;
+    void    (*close)(void *ctx);  /**< ends the request */
+    void    *ctx;                 /**< passed to each function */
 } wa_http_t;
 
+/** @brief What a runner needs: the client, the clock, the budget and scratch. */
 typedef struct {
-    const wa_http_t *http;
-    uint32_t (*now)(void *ctx);
+    const wa_http_t *http;   /**< the HTTP client */
+    uint32_t (*now)(void *ctx);   /**< the clock, in ms */
     /** Whether the job has been ended from outside; asked between steps. */
     bool     (*stopped)(void *ctx);
     /** A phase begun, and the image's bytes so far; may be NULL. */
@@ -316,12 +405,12 @@ typedef struct {
     /** A buffer of @p bytes for the image, in PSRAM on the panel; NULL for
      *  none.  The runner keeps it in @p up; the platform frees it. */
     uint8_t *(*alloc)(void *ctx, uint32_t bytes);
-    void     *ctx;
+    void     *ctx;           /**< passed to each function */
 
     uint32_t  start_ms;      /**< the job's                               */
     uint32_t  budget_ms;     /**< from start_ms                           */
     uint32_t  slot;          /**< the largest image taken, in bytes       */
-    fw_version_t running;
+    fw_version_t running;    /**< the running build */
     bool      running_ok;    /**< running parsed from the build's version */
     wa_channel_t channel;    /**< CHECK                                   */
 
@@ -329,17 +418,26 @@ typedef struct {
     char     *url;           /**< FW_REL_URL_MAX + 1 bytes                */
     char     *loc;           /**< FW_REL_URL_MAX + 1 bytes                */
     uint8_t  *io;            /**< a read's piece                          */
-    uint32_t  io_cap;
+    uint32_t  io_cap;        /**< the size of io, in bytes */
     char     *sums;          /**< FW_REL_SUMS_MAX bytes                   */
     fw_upload_t *up;         /**< DOWNLOAD: the image, staged on success  */
 } wa_run_t;
 
-/** CHECK, from the join on.  NEWER, CURRENT, UNVERSIONED, or why not. */
+/**
+ * @brief CHECK, from the join on.  NEWER, CURRENT, UNVERSIONED, or why not.
+ *
+ * @param r The runner.
+ * @param out Receives the result.
+ */
 void wa_run_check(const wa_run_t *r, wa_fetch_res_t *out);
 
 /**
- * DOWNLOAD of release @p v, from the join on.  STAGED with the image in
- * r->up, or why not with r->up not staged.
+ * @brief DOWNLOAD of release @p v, from the join on.  STAGED with the image in
+ *        r->up, or why not with r->up not staged.
+ *
+ * @param r The runner.
+ * @param v The release to fetch.
+ * @param out Receives the result.
  */
 void wa_run_download(const wa_run_t *r, fw_version_t v, wa_fetch_res_t *out);
 

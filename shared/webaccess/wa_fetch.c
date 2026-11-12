@@ -64,6 +64,12 @@ bool wa_fetch_offers(const wa_fetch_t *f, wa_channel_t now)
            && f->got == WA_GOT_NEWER && !wa_fetch_stale(f, now);
 }
 
+/**
+ * @brief The budget of the job's phase.
+ *
+ * @param f The job state.
+ * @return The budget, in ms.
+ */
 static uint32_t budget(const wa_fetch_t *f)
 {
     if (f->job == WA_JOB_CHECK) {
@@ -73,6 +79,7 @@ static uint32_t budget(const wa_fetch_t *f)
                                        : WA_FETCH_DOWNLOAD_MS;
 }
 
+/** @brief End the job with @p got, and @p why for BLOCKED and ABORTED. */
 static void end(wa_fetch_t *f, wa_got_t got, wa_why_t why)
 {
     if (got == WA_GOT_TIMEOUT) {
@@ -134,7 +141,7 @@ void wa_fetch_abort(wa_fetch_t *f, wa_why_t why)
     }
 }
 
-/* The session went off under the job: why, in the job's words. */
+/** @brief The session went off under the job: end it with the reason in the job's words. */
 static void session_off(wa_fetch_t *f, const wa_t *w)
 {
     switch (w->off) {
@@ -201,6 +208,7 @@ bool wa_fetch_take_run(wa_fetch_t *f)
     return owe;
 }
 
+/** @brief Whether a report for job @p gen belongs to the job that runs past the join. */
 static bool mine(const wa_fetch_t *f, uint32_t gen)
 {
     return gen == f->gen && wa_fetch_busy(f) && f->phase != WA_PH_JOINING;
@@ -254,17 +262,20 @@ void wa_fetch_on_end(wa_fetch_t *f, uint32_t gen, const wa_fetch_res_t *r)
 
 /* ---------------------------------------------------------- the runner */
 
+/** @brief The budget the runner has left, in ms. */
 static uint32_t run_left(const wa_run_t *r)
 {
     const uint32_t spent = (uint32_t)(r->now(r->ctx) - r->start_ms);
     return (spent >= r->budget_ms) ? 0u : r->budget_ms - spent;
 }
 
+/** @brief One step's wait: @p left, at most WA_FETCH_OP_MS. */
 static uint32_t op_ms(uint32_t left)
 {
     return (left < WA_FETCH_OP_MS) ? left : WA_FETCH_OP_MS;
 }
 
+/** @brief Pass a phase and the image's bytes to the runner's report callback, if any. */
 static void report(const wa_run_t *r, wa_phase_t ph, uint32_t done,
                    uint32_t total)
 {
@@ -273,13 +284,14 @@ static void report(const wa_run_t *r, wa_phase_t ph, uint32_t done,
     }
 }
 
+/** @brief Set the result's @p got and @p rel. */
 static void res(wa_fetch_res_t *out, wa_got_t got, fw_rel_err_t rel)
 {
     out->got = got;
     out->rel = rel;
 }
 
-/* What a step that cannot go on says: the budget, an abort, or @p got. */
+/** @brief What a step that cannot go on says: an abort, the budget, or @p got. */
 static void failed(const wa_run_t *r, wa_fetch_res_t *out, wa_got_t got,
                    fw_rel_err_t rel)
 {
@@ -292,22 +304,30 @@ static void failed(const wa_run_t *r, wa_fetch_res_t *out, wa_got_t got,
     }
 }
 
-/* Where a fetched body goes. */
+/** @brief Where a fetched body goes. */
 typedef struct {
-    /* The announced size, already within the cap: false refuses it, with
-     * the result in @p out. */
+    /**
+     * @brief The announced size, already within the cap: false refuses it,
+     *        with the result in @p out.
+     */
     bool (*begin)(const wa_run_t *r, void *ctx, uint32_t bytes,
                   wa_fetch_res_t *out);
+    /** @brief A piece of the body: @p n bytes, @p done so far of @p total. */
     void (*add)(const wa_run_t *r, void *ctx, const uint8_t *d, uint32_t n,
                 uint32_t done, uint32_t total);
-    void *ctx;
-    uint32_t cap;
-    wa_got_t bad;   /* a body out of form, or refused: UNEXPECTED or SUMS */
+    void *ctx;      /**< passed to begin and add */
+    uint32_t cap;   /**< the most body bytes taken */
+    wa_got_t bad;   /**< a body out of form, or refused: UNEXPECTED or SUMS */
 } sink_t;
 
-/*
- * GET r->url, following at most FW_REL_HOPS_MAX redirects to the allowed
- * hosts, into @p k.  True with the whole body taken; false with @p out set.
+/**
+ * @brief GET r->url, following at most FW_REL_HOPS_MAX redirects to the
+ *        allowed hosts, into @p k.
+ *
+ * @param r The runner.
+ * @param k Where the body goes.
+ * @param out Receives the result when the body is not taken.
+ * @return true with the whole body taken; false with @p out set.
  */
 static bool fetch(const wa_run_t *r, const sink_t *k, wa_fetch_res_t *out)
 {
@@ -621,11 +641,12 @@ void wa_run_check(const wa_run_t *r, wa_fetch_res_t *out)
     found(r, out, v);
 }
 
-/* SHA256SUMS into r->sums. */
+/** @brief The sink of SHA256SUMS, which goes into r->sums. */
 typedef struct {
-    uint32_t n;
+    uint32_t n;   /**< bytes taken */
 } sums_t;
 
+/** @brief Start SHA256SUMS: nothing taken yet. */
 static bool sums_begin(const wa_run_t *r, void *ctx, uint32_t bytes,
                        wa_fetch_res_t *out)
 {
@@ -636,6 +657,7 @@ static bool sums_begin(const wa_run_t *r, void *ctx, uint32_t bytes,
     return true;
 }
 
+/** @brief Take a piece of SHA256SUMS into r->sums. */
 static void sums_add(const wa_run_t *r, void *ctx, const uint8_t *d,
                      uint32_t n, uint32_t done, uint32_t total)
 {
@@ -646,7 +668,7 @@ static void sums_add(const wa_run_t *r, void *ctx, const uint8_t *d,
     s->n = done;
 }
 
-/* The image into r->up. */
+/** @brief Start the image: take a buffer for it into r->up, or end the job. */
 static bool image_begin(const wa_run_t *r, void *ctx, uint32_t bytes,
                         wa_fetch_res_t *out)
 {
@@ -667,6 +689,7 @@ static bool image_begin(const wa_run_t *r, void *ctx, uint32_t bytes,
     return true;
 }
 
+/** @brief Take a piece of the image into r->up. */
 static void image_add(const wa_run_t *r, void *ctx, const uint8_t *d,
                       uint32_t n, uint32_t done, uint32_t total)
 {

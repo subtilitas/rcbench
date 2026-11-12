@@ -34,14 +34,15 @@
 extern "C" {
 #endif
 
-/** The paths the page uses. */
+/** @brief The paths the page uses. */
 #define WA_URL_CODE    "/code"
-#define WA_URL_UPDATE  "/update"
-#define WA_URL_FILE    "/card/"
-#define WA_URL_ZIP     "/card.zip"
-/** The cookie that carries the access code. */
+#define WA_URL_UPDATE  "/update"  /**< the firmware upload */
+#define WA_URL_FILE    "/card/"   /**< a file of the card, by path */
+#define WA_URL_ZIP     "/card.zip" /**< the whole card as a ZIP file */
+/** @brief The cookie that carries the access code. */
 #define WA_COOKIE      "rcbench_code"
 
+/** @brief What the page shows of the panel. */
 typedef struct {
     const char *name;      /**< "rcbench-1A2B"                        */
     const char *version;   /**< the panel firmware running            */
@@ -51,7 +52,13 @@ typedef struct {
                                 for none                              */
 } wa_page_info_t;
 
-/** The code form; @p wrong adds that the last code was wrong. */
+/**
+ * @brief The code form; @p wrong adds that the last code was wrong.
+ *
+ * @param o The output.
+ * @param pi The page's name, version, slot, language and highlighter.
+ * @param wrong The last code was wrong.
+ */
 void wa_page_code(wa_out_t *o, const wa_page_info_t *pi, bool wrong);
 
 /**
@@ -64,9 +71,15 @@ void wa_page_code(wa_out_t *o, const wa_page_info_t *pi, bool wrong);
 void wa_page_main(wa_out_t *o, const wa_page_info_t *pi, const wa_fs_t *fs);
 
 /**
- * The text an upload's response carries: @p e as fw_upload_end() or
- * fw_upload_begin() gave it, and for FW_OK the version received in
- * @p info, which @p same says is the build that runs.
+ * @brief The text an upload's response carries: @p e as fw_upload_end() or
+ *        fw_upload_begin() gave it, and for FW_OK the version received in
+ *        @p info, which @p same says is the build that runs.
+ *
+ * @param o The output.
+ * @param de German texts.
+ * @param e The upload's result.
+ * @param info The image received; read for FW_OK.
+ * @param same The image is the build that runs.
  */
 void wa_page_upload_result(wa_out_t *o, bool de, fw_err_t e,
                            const fw_image_info_t *info, bool same);
