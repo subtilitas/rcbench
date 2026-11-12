@@ -136,6 +136,10 @@ def events(board: dict) -> list:
             for a, b in zip(lid, lid[1:], strict=False):
                 if a[1] != b[1]:
                     found.append((start + a[0], "low", 0))
+            # A component of the model takes its seat: a soft tap.
+            for keys in scene.get("parts", {}).values():
+                if keys and keys[-1][1] == 0:
+                    found.append((start + keys[-1][0] - 0.08, "tap", 0))
             if "pinout" in scene:
                 found.append((start + scene["pinout"]["from"], "pop", 0))
             if "servo" in scene:

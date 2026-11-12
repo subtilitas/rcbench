@@ -173,6 +173,17 @@ function drawCase(sc, lt, a, pulse, ui) {
   m.cam.position.copy(v(1));
   m.cam.lookAt(v(2));
   m.setLid(track(sc.lid, lt));
+  if (sc.parts && m.setParts) {
+    // How far out each component stands at this time: a key track each.
+    m.setParts(Object.fromEntries(Object.entries(sc.parts).map(
+      ([name, keys]) => [name, track(keys, lt)])));
+  }
+  if (m.clearGlow) {
+    m.clearGlow();
+    for (const l of sc.labels || []) {
+      if (l.glow) m.setGlow(l.glow, win(lt, l.from, l.to));
+    }
+  }
   if (sc.servo) {
     const s = sc.servo;
     m.setServo(ramp(lt, s.appear, s.appear + .6),

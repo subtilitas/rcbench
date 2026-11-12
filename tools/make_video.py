@@ -28,6 +28,7 @@ Attributes:
     PANEL: The panel's display in pixels, the range of a step's target.
     FRAME: The video frame in pixels, the range of a label's position.
     BEDS: The music beds of tools/video_audio.py.
+    UNITS: The components of the cad model that a scene can move.
     ANCHORS: The named points of the case model a label can point at.
     CONNECTORS: The headers of the case model and their position count.
 
@@ -52,7 +53,10 @@ VIDEO = REPO / "tools" / "video"
 PANEL = (1024, 600)
 FRAME = (1920, 1080)
 ANCHORS = ("display", "rbmod", "pdmini", "J1", "J2", "xt60", "usbc",
-           "estop", "side", "plug", "panel", "powerbank")
+           "estop", "side", "plug", "panel", "powerbank", "case", "mcu",
+           "ina", "buck", "trigger")
+UNITS = ("lid", "bank", "estop", "xt60", "usbc", "pdmini", "mcu", "ina",
+         "buck", "trigger", "rbmod", "case")
 CONNECTORS = {"J1": 4, "J2": 4}
 BEDS = ("pads", "bach-prelude", "pachelbel-canon")
 ACTIONS = ("tap", "hold")
@@ -114,6 +118,11 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
             errors.append(f"{at}: title is missing")
         if label.get("style", "ok") not in STYLES:
             errors.append(f"{at}: style must be one of {', '.join(STYLES)}")
+    for name, keys in scene.get("parts", {}).items():
+        if name not in UNITS:
+            errors.append(f"{where} parts: {name} is not one of "
+                          f"{', '.join(UNITS)}")
+        _keys(keys, 2, f"{where} parts {name}", errors)
     cues = scene.get("say", [])
     last = -1.0
     for cue in cues if isinstance(cues, list) else [None]:

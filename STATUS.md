@@ -443,7 +443,8 @@ The
 renderer draws the KST views on the carrier (`servo-kst-STATE-rbmod`) and MOTOR & ESC's plot
 with an IOmcu answering (`motor-plot`) for them (`test/host/render_screen.c`). `features` draws the case from its CAD (computer-aided design) assembly, which
 `tools/video_cad.py` converts from a STEP file that is not in the tree; its colours are set
-by part name. `kst-rbmod` draws a mockup of boxes whose size is estimated, and J2's row order
+by part name, and its components fly in and seat one after another, held in the air while a
+label names each. `kst-rbmod` draws a mockup of boxes whose size is estimated, and J2's row order
 there is not confirmed. A render is not run in CI.
 
 [Videos from storyboards](tools/video/README.md).

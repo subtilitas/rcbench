@@ -16,27 +16,27 @@
  "scenes": [
   {
    "type": "case",
-   "dur": 35.5,
+   "dur": 47,
    "display": {
     "view": "overview"
    },
    "title": {
     "from": 0.3,
-    "to": 6.0,
+    "to": 5.0,
     "kicker": "rcbench",
     "heading": "Motor, ESC and<br>servo test bench",
     "text": "A 7 inch touch panel and an RP2350 IOmcu,<br>linked by CAN at 1 Mbit/s."
    },
    "chips": [
     {
-     "from": 6.6,
-     "to": 16.4,
+     "from": 5.2,
+     "to": 37.8,
      "n": "i",
-     "text": "Inside the case"
+     "text": "How it goes together"
     },
     {
-     "from": 17.6,
-     "to": 35,
+     "from": 38.4,
+     "to": 46.6,
      "n": "i",
      "text": "The connector wall"
     }
@@ -45,96 +45,148 @@
     [
      0,
      [
-      -330,
-      215,
-      330
+      -420,
+      300,
+      460
      ],
      [
-      -95,
+      -60,
+      30,
+      0
+     ]
+    ],
+    [
+     4.6,
+     [
+      -360,
+      270,
+      470
+     ],
+     [
+      -40,
+      25,
+      0
+     ]
+    ],
+    [
+     8.6,
+     [
+      -300,
+      250,
+      500
+     ],
+     [
+      -20,
       20,
       0
      ]
     ],
     [
-     5.6,
+     10.4,
      [
-      -280,
-      240,
-      330
+      -520,
+      230,
+      170
      ],
      [
-      -80,
-      22,
+      -50,
+      30,
       0
      ]
     ],
     [
-     7,
+     14.4,
      [
-      -190,
-      270,
-      300
-     ],
-     [
-      0,
-      40,
-      0
-     ]
-    ],
-    [
-     8.8,
-     [
-      -120,
-      330,
+      -500,
+      250,
       260
-     ],
-     [
-      5,
-      58,
-      0
-     ]
-    ],
-    [
-     15,
-     [
-      -90,
-      340,
-      260
-     ],
-     [
-      8,
-      58,
-      0
-     ]
-    ],
-    [
-     18.4,
-     [
-      -150,
-      100,
-      330
      ],
      [
       -45,
-      26,
-      45
+      30,
+      0
      ]
     ],
     [
-     24.6,
+     16.2,
      [
-      -125,
-      94,
-      330
+      -250,
+      360,
+      430
      ],
      [
-      -38,
-      26,
-      45
+      -40,
+      70,
+      0
      ]
     ],
     [
-     26.6,
+     20.2,
+     [
+      -170,
+      380,
+      450
+     ],
+     [
+      -30,
+      75,
+      0
+     ]
+    ],
+    [
+     22.4,
+     [
+      20,
+      430,
+      540
+     ],
+     [
+      80,
+      110,
+      0
+     ]
+    ],
+    [
+     30.2,
+     [
+      200,
+      420,
+      500
+     ],
+     [
+      90,
+      100,
+      0
+     ]
+    ],
+    [
+     33,
+     [
+      80,
+      400,
+      470
+     ],
+     [
+      0,
+      110,
+      0
+     ]
+    ],
+    [
+     37,
+     [
+      20,
+      360,
+      460
+     ],
+     [
+      0,
+      70,
+      0
+     ]
+    ],
+    [
+     39,
      [
       90,
       94,
@@ -147,7 +199,7 @@
      ]
     ],
     [
-     33,
+     45,
      [
       104,
       88,
@@ -160,7 +212,7 @@
      ]
     ],
     [
-     35.5,
+     47,
      [
       40,
       380,
@@ -173,107 +225,173 @@
      ]
     ]
    ],
-   "lid": [
-    [
-     6.6,
-     0
-    ],
-    [
-     8.2,
-     48
-    ],
-    [
-     14.8,
-     48
-    ],
-    [
-     16.4,
-     0
-    ]
-   ],
    "labels": [
     {
-     "from": 8.4,
-     "to": 14.8,
-     "anchor": "display",
+     "from": 4.8,
+     "to": 8.2,
+     "anchor": "case",
      "at": [
-      110,
-      150
+      1330,
+      250
      ],
      "size": "sm",
-     "title": "Panel · ESP32-P4",
-     "text": "Interface, settings, SD card and Wi-Fi. 1024 x 600 pixels.",
-     "side": "r"
+     "title": "Case",
+     "text": "Holds every board. Closed at the back.",
+     "glow": "case"
     },
     {
-     "from": 8.4,
-     "to": 14.8,
-     "anchor": "rbmod",
-     "at": [
-      1420,
-      600
-     ],
-     "size": "sm",
-     "title": "rbmod carrier · RP2350",
-     "text": "The IOmcu: outputs, measurements and every protocol with timing."
-    },
-    {
-     "from": 8.4,
-     "to": 14.8,
-     "anchor": "pdmini",
-     "at": [
-      70,
-      690
-     ],
-     "size": "sm",
-     "title": "PD mini",
-     "text": "USB-PD supply for the servo rails, set from the panel.",
-     "side": "r"
-    },
-    {
-     "from": 18.8,
-     "to": 24.8,
-     "anchor": "xt60",
-     "at": [
-      150,
-      330
-     ],
-     "size": "sm",
-     "title": "XT60 socket",
-     "text": "Yellow, at the left end of the wall.",
-     "side": "b",
-     "style": "muted"
-    },
-    {
-     "from": 18.8,
-     "to": 24.8,
-     "anchor": "usbc",
-     "at": [
-      900,
-      300
-     ],
-     "size": "sm",
-     "title": "USB-C socket",
-     "text": "Power input of the bench.",
-     "side": "b",
-     "style": "ok"
-    },
-    {
-     "from": 18.8,
-     "to": 24.8,
+     "from": 5.2,
+     "to": 8.2,
      "anchor": "powerbank",
      "at": [
-      1300,
+      1330,
       760
      ],
      "size": "sm",
      "title": "Power bank",
      "text": "Under the case.",
+     "glow": "bank",
      "style": "muted"
     },
     {
-     "from": 27.0,
-     "to": 33.2,
+     "from": 11.0,
+     "to": 14.0,
+     "anchor": "estop",
+     "at": [
+      1340,
+      170
+     ],
+     "size": "sm",
+     "title": "Emergency stop",
+     "text": "M16 button on the back wall.",
+     "glow": "estop"
+    },
+    {
+     "from": 11.3,
+     "to": 14.2,
+     "anchor": "xt60",
+     "at": [
+      150,
+      640
+     ],
+     "size": "sm",
+     "title": "XT60 socket",
+     "text": "",
+     "side": "r",
+     "glow": "xt60",
+     "style": "muted"
+    },
+    {
+     "from": 11.6,
+     "to": 14.4,
+     "anchor": "usbc",
+     "at": [
+      1330,
+      760
+     ],
+     "size": "sm",
+     "title": "USB-C socket",
+     "text": "Power input of the bench.",
+     "glow": "usbc",
+     "style": "ok"
+    },
+    {
+     "from": 16.4,
+     "to": 19.8,
+     "anchor": "pdmini",
+     "at": [
+      1350,
+      330
+     ],
+     "size": "sm",
+     "title": "PD mini",
+     "text": "USB-PD supply for the servo rails, set from the panel.",
+     "glow": "pdmini"
+    },
+    {
+     "from": 22.8,
+     "to": 30.2,
+     "anchor": "rbmod",
+     "at": [
+      90,
+      740
+     ],
+     "size": "sm",
+     "title": "rbmod carrier",
+     "text": "Fixes every lead of the IOmcu to a pin.",
+     "side": "r",
+     "glow": "rbmod"
+    },
+    {
+     "from": 23.6,
+     "to": 29.0,
+     "anchor": "mcu",
+     "at": [
+      90,
+      170
+     ],
+     "size": "sm",
+     "title": "RP2350-CAN module",
+     "text": "The IOmcu: outputs, measurements, protocols.",
+     "side": "r",
+     "glow": "mcu"
+    },
+    {
+     "from": 24.4,
+     "to": 29.2,
+     "anchor": "ina",
+     "at": [
+      1440,
+      680
+     ],
+     "size": "sm",
+     "title": "INA3221",
+     "text": "Current monitor of the rails.",
+     "glow": "ina"
+    },
+    {
+     "from": 25.2,
+     "to": 29.4,
+     "anchor": "buck",
+     "at": [
+      1420,
+      150
+     ],
+     "size": "sm",
+     "title": "5 V converters",
+     "text": "For the programming ports and the module.",
+     "glow": "buck"
+    },
+    {
+     "from": 26.0,
+     "to": 29.6,
+     "anchor": "trigger",
+     "at": [
+      1440,
+      420
+     ],
+     "size": "sm",
+     "title": "USB-C PD trigger",
+     "text": "Sets the input voltage.",
+     "glow": "trigger"
+    },
+    {
+     "from": 33.2,
+     "to": 36.8,
+     "anchor": "display",
+     "at": [
+      110,
+      200
+     ],
+     "size": "sm",
+     "title": "Panel · ESP32-P4",
+     "text": "7 inch touch display, 1024 x 600 pixels.",
+     "side": "r",
+     "glow": "lid"
+    },
+    {
+     "from": 39.4,
+     "to": 45.0,
      "anchor": "J2",
      "at": [
       330,
@@ -285,8 +403,8 @@
      "side": "b"
     },
     {
-     "from": 27.0,
-     "to": 33.2,
+     "from": 39.4,
+     "to": 45.0,
      "anchor": "J1",
      "at": [
       1370,
@@ -305,19 +423,241 @@
      "text": "This is R C bench: a test bench for motors, E S Cs and servos."
     },
     {
-     "at": 7.4,
-     "text": "Inside the case: the touch panel, the R B mod carrier with the I O M C U, and the P D mini supply."
+     "at": 5.4,
+     "text": "It starts with the case, and a power bank underneath."
     },
     {
-     "at": 18.4,
-     "text": "On the connector wall: the X T 60 socket, and the U S B C socket for power."
+     "at": 10.2,
+     "text": "Then the emergency stop, the X T 60 socket, and the U S B C socket for power."
     },
     {
-     "at": 26.6,
-     "text": "J 2 carries the outputs for servos and E S Cs. J 1 holds the four programming ports."
+     "at": 16.0,
+     "text": "The P D mini is the supply for the servo rails."
+    },
+    {
+     "at": 21.6,
+     "text": "The R B mod carrier brings the I O M C U, a current monitor, two 5 volt converters and the U S B P D trigger."
+    },
+    {
+     "at": 32.0,
+     "text": "Last comes the touch panel: a seven inch display on an E S P 32 P 4."
+    },
+    {
+     "at": 38.4,
+     "text": "On the connector wall, J 2 carries the outputs for servos and E S Cs, and J 1 the four programming ports."
     }
    ],
-   "model": "cad"
+   "model": "cad",
+   "parts": {
+    "case": [
+     [
+      0.6,
+      1
+     ],
+     [
+      3.0,
+      0
+     ]
+    ],
+    "bank": [
+     [
+      1.6,
+      1
+     ],
+     [
+      4.4,
+      0.45
+     ],
+     [
+      8.4,
+      0.45
+     ],
+     [
+      9.4,
+      0
+     ]
+    ],
+    "estop": [
+     [
+      9.2,
+      1
+     ],
+     [
+      10.6,
+      0.35
+     ],
+     [
+      14.0,
+      0.35
+     ],
+     [
+      15.0,
+      0
+     ]
+    ],
+    "xt60": [
+     [
+      9.4,
+      1
+     ],
+     [
+      10.8,
+      0.35
+     ],
+     [
+      14.2,
+      0.35
+     ],
+     [
+      15.2,
+      0
+     ]
+    ],
+    "usbc": [
+     [
+      9.6,
+      1
+     ],
+     [
+      11.0,
+      0.35
+     ],
+     [
+      14.4,
+      0.35
+     ],
+     [
+      15.4,
+      0
+     ]
+    ],
+    "pdmini": [
+     [
+      14.8,
+      1
+     ],
+     [
+      16.2,
+      0.4
+     ],
+     [
+      19.8,
+      0.4
+     ],
+     [
+      20.8,
+      0
+     ]
+    ],
+    "rbmod": [
+     [
+      20.6,
+      1
+     ],
+     [
+      22.2,
+      0.45
+     ],
+     [
+      30.4,
+      0.45
+     ],
+     [
+      31.6,
+      0
+     ]
+    ],
+    "mcu": [
+     [
+      20.6,
+      1
+     ],
+     [
+      22.6,
+      0.5
+     ],
+     [
+      28.8,
+      0.5
+     ],
+     [
+      29.8,
+      0
+     ]
+    ],
+    "ina": [
+     [
+      20.9,
+      1
+     ],
+     [
+      22.9,
+      0.5
+     ],
+     [
+      29.0,
+      0.5
+     ],
+     [
+      30.0,
+      0
+     ]
+    ],
+    "buck": [
+     [
+      21.2,
+      1
+     ],
+     [
+      23.2,
+      0.5
+     ],
+     [
+      29.2,
+      0.5
+     ],
+     [
+      30.2,
+      0
+     ]
+    ],
+    "trigger": [
+     [
+      21.5,
+      1
+     ],
+     [
+      23.5,
+      0.5
+     ],
+     [
+      29.4,
+      0.5
+     ],
+     [
+      30.4,
+      0
+     ]
+    ],
+    "lid": [
+     [
+      31.4,
+      1
+     ],
+     [
+      33.0,
+      0.4
+     ],
+     [
+      36.8,
+      0.4
+     ],
+     [
+      38.0,
+      0
+     ]
+    ]
+   }
   },
   {
    "type": "tour",
