@@ -1,5 +1,8 @@
-/*
- * The IOmcu's drawing of its own board, on a screen.
+/**
+ * @file
+ * @brief The IOmcu's drawing of its own board, on a screen: the check against
+ *        the panel's catalogue and the drawing into a box.
+ *
  * See board_drawing.h.
  *
  * SPDX-License-Identifier: MIT

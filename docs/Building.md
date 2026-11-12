@@ -34,6 +34,7 @@ rcbench/
     webaccess/            Wi-Fi session · card listing and ZIP stream · the page · mDNS
     clock/                wall clock rules: real date or not · file stamps · time zones · the NTP request
     text/                 the interface's words, every language in one table (header only)
+    mstime/               wrap-safe comparisons of a 32-bit millisecond counter (header only)
   protocols/              one module per external interface: a pure C core, its RP2350 pin driver in rp2350/, a README.md
     dshot/                DShot frames · GCR decode · eRPM · PIO driver, plain and bidirectional
     ppm/                  PPM frame layout · PIO and DMA driver
@@ -87,7 +88,7 @@ in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 | Module | panel | iomcu | host |
 | --- | :-: | :-: | :-: |
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `files` · `sbus` | yes | | yes |
-| `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` | yes | yes | yes |
+| `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` · `mstime` | yes | yes | yes |
 | `artwork` · `esc` · `fwupdate` · `webaccess` · `clock` | yes | | yes |
 | `openyge` · `ppm` · `i2c_txq` | | yes | yes |
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |

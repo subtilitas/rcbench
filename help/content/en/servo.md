@@ -24,11 +24,11 @@ The hub holds eight tiles, each opening a screen of its own:
 | RUDDER AUTO | AUTO's box, which programs KST, Chaservo or Hitec end points to the deflection entered |
 | KST, HITEC | the programmer for that make, over the left card ([Servo programmer](servo-programmer.md)) |
 
-KST and HITEC are grey while the IOmcu lacks their capability or another session holds the port; a tap names the reason. The hub's footer shows SERVO with the port line and SETTINGS, which opens the servo profile every function uses ([Servo settings](servo-settings.md)). The hub drives nothing: the bench is SAFE there.
+KST and HITEC are grey while the IOmcu lacks their capability or another session holds the port; a tap names the reason. The hub's footer shows SERVO with the port line and OPTIONS, which opens the servo profile every function uses ([Servo settings](servo-settings.md)). The hub drives nothing: the bench is SAFE there.
 
 The home tag goes from a function screen to the hub, and from the hub to the menu. Leaving a function screen switches the bench to SAFE. The PROG 5V on the carrier stays on from one SERVO screen to another and goes off when SERVO is left; on the hub the footer reads `PROG 5V ON 5.02V 0.120A` in the warning colour while it is on, `--V --A` without a reading.
 
-LIVE, SWEEP and RUDDER show the PORT button and READY's rows on the right, with the controls under them. TEST, LIMIT RUN, RUDDER AUTO, KST and HITEC show the PORT button and the READY card. The footer holds the function's name with the port line, ARM (HOLD 2s: ARM + START on TEST, LIMIT RUN and RUDDER AUTO, the session's WRITE n VALUES on KST and HITEC), and SETTINGS for the screen's list; LIVE's is the servo profile. Every control is 48px (7.2mm) tall or taller. The rotary knob moves the horn on LIVE, SWEEP, RUDDER and RUDDER AUTO only.
+LIVE, SWEEP and RUDDER show the PORT button and READY's rows on the right, with the controls under them. TEST, LIMIT RUN, RUDDER AUTO, KST and HITEC show the PORT button and the READY card. The footer holds the function's name with the port line, ARM (HOLD 2s: ARM + START on TEST, LIMIT RUN and RUDDER AUTO, the session's WRITE n VALUES on KST and HITEC), and OPTIONS for the screen's list; LIVE's is the servo profile. Every control is 48px (7.2mm) tall or taller. The rotary knob moves the horn on LIVE, SWEEP, RUDDER and RUDDER AUTO only.
 
 ## At rest
 
@@ -119,7 +119,7 @@ A reading that did not arrive is `---` in LIVE's CURRENT, `--` on the line and a
 LIVE, SWEEP and RUDDER have the SUPPLY row and the SET row: ARM switches the supply on, DISARM switches it off. TEST, LIMIT RUN and RUDDER AUTO switch it through their hold and their run. On KST and HITEC the session's CONNECT switches it on, and a tap on the supply row while it reads ON switches it off. No SERVO screen has OUTPUT ON: it is on SUPPLY.
 
 - A tap on SET V or SET A opens SUPPLY's keypad over the left card, inside SUPPLY's OUTPUT LIMITS. OK puts the value on SUPPLY: one set point on both screens.
-- A value typed while the output is on waits for SUPPLY's question where SETTINGS > KEYPAD under CONFIRM WHILE ON asks it, ARMED or SAFE. A voltage raised above 6.0V waits for HV SERVOS ONLY.
+- A value typed while the output is on waits for SUPPLY's question where OPTIONS > KEYPAD under CONFIRM WHILE ON asks it, ARMED or SAFE. A voltage raised above 6.0V waits for HV SERVOS ONLY.
 - While a programming port holds the PD mini, SET V and SET A are dim and a tap names the hold in the band.
 - The current limit, SUPPLY's SET A, is on TEST's, LIMIT RUN's and RUDDER AUTO's READY card: a tap on PD MINI opens its keypad over the left card ([The current limit](#the-current-limit)).
 - Leaving SERVO switches off an output SERVO switched on.
@@ -148,13 +148,13 @@ Standard servos are rated for 4.8 to 6.0V. A voltage raised from 6.0V or below t
 
 ## SWEEP and PAUSE
 
-SWEEP follows the CURVE on the SWEEP screen's SETTINGS list (square, sine or triangle), at SPEED from 0.05 to 5Hz and RANGE from 10 to 100% of travel. The IOmcu times the curve independently of link timing. During motion the button reads PAUSE. Tap it to hold the current position; it then reads PAUSED. Tap again to resume from that point.
+SWEEP follows the CURVE on the SWEEP screen's OPTIONS list (square, sine or triangle), at SPEED from 0.05 to 5Hz and RANGE from 10 to 100% of travel. The IOmcu times the curve independently of link timing. During motion the button reads PAUSE. Tap it to hold the current position; it then reads PAUSED. Tap again to resume from that point.
 
 ![A paused sweep](view:servo-paused)
 
 ![SPEED LIMITS THE SWEEP](view:servo-sweep)
 
-`SPEED LIMITS THE SWEEP` replaces SPEED's label, in the warning colour, while SPEED is slower than the fastest change the curve asks for. The curve then moves as ramps. Raise SPEED, or lower SETTINGS > SWEEP's SPEED or RANGE. With the SWEEP page's defaults (sine, 0.5Hz, RANGE 80%) and TRAVEL 90° each way it clears at SPEED 63%.
+`SPEED LIMITS THE SWEEP` replaces SPEED's label, in the warning colour, while SPEED is slower than the fastest change the curve asks for. The curve then moves as ramps. Raise SPEED, or lower OPTIONS > SWEEP's SPEED or RANGE. With the SWEEP page's defaults (sine, 0.5Hz, RANGE 80%) and TRAVEL 90° each way it clears at SPEED 63%.
 
 A finger on the dial, CENTER, RELEASE, STOP, a switch to SAFE and leaving the screen end a sweep.
 
@@ -187,11 +187,11 @@ The box keeps the result until CLOSE; the card keeps its LAST line until the nex
 
 ## The limit run
 
-The limit run searches for mechanical binding at each end of an installed servo's travel. It can then reduce the servo's LEFT ANGLE and RIGHT ANGLE so it stops before binding. The LIMIT RUN tile on the hub opens its screen; SETTINGS in the footer opens the [run's list](servo-settings.md#the-limit-run-s-settings).
+The limit run searches for mechanical binding at each end of an installed servo's travel. It can then reduce the servo's LEFT ANGLE and RIGHT ANGLE so it stops before binding. The LIMIT RUN tile on the hub opens its screen; OPTIONS in the footer opens the [run's list](servo-settings.md#the-limit-run-s-settings).
 
 ![The limit run, ready](view:servo-limrun-ready)
 
-1. Tap SETTINGS in the footer, then MODE to choose SEARCH ONLY or SEARCH + PROGRAM.
+1. Tap OPTIONS in the footer, then MODE to choose SEARCH ONLY or SEARCH + PROGRAM.
 2. With PORT on PROG PORT, tap SERVO on the READY card and pick KST/CHASERVO, HITEC D SERIES or HITEC CLASSIC, the programmer the run's sessions go to. The pick is LIMIT RUN's own and is saved; RUDDER AUTO keeps its own. With KST/CHASERVO, set SERVO PULSES to KEEP or 1000-2000. It starts at KEEP.
 3. Tap the home tag to go back to LIMIT RUN.
 4. Hold HOLD 2s: ARM + START in the footer. It sets a PD mini to 5.0V. From SAFE it switches PORT PWM on, then PROG 5V or the PD mini's output, waits up to 1000ms for them to read back ON, the PD mini at 5.0V, arms, waits up to 500ms for ARMED, and starts the run. A tap or a shorter hold starts nothing and shows `Hold 2s to switch the port and its supply on, ARM and start the limit run.` in the alert band.
@@ -199,7 +199,7 @@ The limit run searches for mechanical binding at each end of an installed servo'
 
 The left card shows the mode, then the output and the meter: `OUTPUT PROG PORT 1 GPIO 13, CURRENT INA3221 0x41 CH2` or `OUTPUT SERVO PWM GPIO 2, CURRENT INA3221 0x40 CH1`. LOW END and HIGH END hold the ends the last run found, in us, or `FREE`. The state lines under them name the step under way, why the hold is refused, and the last result with its file.
 
-The READY card on the right lists what the start needs, one row each: PORT, SERVO, METER, ANGLE, RAIL, RANGE, PROGRAMMER, the supply (PROG 5V on the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), PD MINI where the PD mini feeds the servo), PORT PWM and ARM. PROG 5V reads the run's `5.0V`, PD MINI the run's `5.0V` and SUPPLY's SET A, `5.0V 2.00A`; a tap on a green or amber PD MINI opens SET A's keypad ([The current limit](#the-current-limit)). A green dot is met. A red dot refuses the hold, or marks an output live through the row. Amber reads `START SWITCHES IT ON` or `START ARMS`: the hold does it. Grey waits on PORT. A tap on PORT opens the port choice, on SERVO the three programmers over the left column, on RANGE the [servo profile](servo-settings.md) on PULSE MIN, on ANGLE the [ANGLE SOURCE list](servo-rudder.md#the-angle-source), which refuses nothing, on a red METER [Sensors](setup-sensors.md) on the INA3221 that watches the target, on a red PD MINI with `PD MINI: 5.0V OUTSIDE ITS LIMITS` [SUPPLY](supply.md) > SETTINGS > LIMITS. A tap on another red row, or on the grey hold, names it in the alert band.
+The READY card on the right lists what the start needs, one row each: PORT, SERVO, METER, ANGLE, RAIL, RANGE, PROGRAMMER, the supply (PROG 5V on the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), PD MINI where the PD mini feeds the servo), PORT PWM and ARM. PROG 5V reads the run's `5.0V`, PD MINI the run's `5.0V` and SUPPLY's SET A, `5.0V 2.00A`; a tap on a green or amber PD MINI opens SET A's keypad ([The current limit](#the-current-limit)). A green dot is met. A red dot refuses the hold, or marks an output live through the row. Amber reads `START SWITCHES IT ON` or `START ARMS`: the hold does it. Grey waits on PORT. A tap on PORT opens the port choice, on SERVO the three programmers over the left column, on RANGE the [servo profile](servo-settings.md) on PULSE MIN, on ANGLE the [ANGLE SOURCE list](servo-rudder.md#the-angle-source), which refuses nothing, on a red METER [Sensors](setup-sensors.md) on the INA3221 that watches the target, on a red PD MINI with `PD MINI: 5.0V OUTSIDE ITS LIMITS` [SUPPLY](supply.md) > OPTIONS > LIMITS. A tap on another red row, or on the grey hold, names it in the alert band.
 
 The run reads only the INA3221 channel that watches the tester's target. While one of these holds, its row is red, the hold is grey and the first state line says why:
 
@@ -208,7 +208,7 @@ The run reads only the INA3221 channel that watches the tester's target. While o
 | PROG 5V | `PROG 5V OFF: START SWITCHES IT ON` | SAFE on the rbmod carrier with PORT on a programming port and PROG 5V off. Amber: the hold switches it on |
 | ARM | `ARM FIRST` | the bench is SAFE. Amber: the hold arms |
 | PORT | `NO SERVO PWM PIN`, `PINS NOT READ` | PORT is the bench's outputs, and no output is bound as SERVO PWM, or the binding is not read yet |
-| METER | `INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT` | no channel of a fitted INA3221 watches the tester's target in SETUP > SENSORS |
+| METER | `SERVO CURRENT METER (INA3221) NOT SET UP` | no channel of a fitted INA3221 watches the tester's target in SETUP > SENSORS |
 | METER | `INA3221 OFFLINE` | no link, or the INA3221 does not answer |
 | METER | `NO INA3221 MEASUREMENT WINDOWS YET` | the INA3221 is not the meter yet |
 | RAIL | `SERVO SUPPLY BELOW 3.0V OR NOT READ` | the last INA3221 window has no rail voltage, or less than 3.0V: an output that is off reads 0V. Amber while SAFE where the hold's supply feeds the rail |
@@ -218,7 +218,7 @@ The run reads only the INA3221 channel that watches the tester's target. While o
 | PORT PWM | `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` | PORT is PROG PORT with PORT PWM on and its pulse still off. Amber while SAFE: the read-back waits for it |
 | RANGE | `CENTER MUST BE BETWEEN PULSE MIN AND MAX` | the pulse range does not hold PULSE CENTER |
 | ARM | `REPORT STILL BEING WRITTEN` | a test or a run is under way, or its report is still going to the card |
-| PD MINI | `PD MINI: 5.0V OUTSIDE ITS LIMITS` | a PD mini feeds the servo and SUPPLY's limits leave out 5.0V; a tap opens SUPPLY > SETTINGS > LIMITS |
+| PD MINI | `PD MINI: 5.0V OUTSIDE ITS LIMITS` | a PD mini feeds the servo and SUPPLY's limits leave out 5.0V; a tap opens SUPPLY > OPTIONS > LIMITS |
 
 ### The supply: 5.0V
 

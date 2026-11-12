@@ -293,6 +293,17 @@ static DRAWER void sp_draw_list(gfx_canvas_t *c)
     }
     sp_cut(trail, sizeof(trail), SP_TRAIL_CELLS);
     draw_crumb(c, trail);
+    /* The maker list's header names the first refusal that stands against
+     * every run, in the warning colour, right of the trail. */
+    const char *tag = esc_stick_panel_bench_tag();
+    if (t->level == 0 && tag != NULL) {
+        const int x = pg.back.x + pg.back.w + 16
+                      + gfx_text_width(SP_FONT_CRUMB, trail, 1) + 24;
+        gfx_text_in(c, (gfx_rect_t){ (int16_t)x, CRUMB_Y,
+                                     (int16_t)(SP_FIND_X - 8 - x), CRUMB_H },
+                    tag, SP_FONT, ui_theme_color(UI_C_WARN), 1,
+                    GFX_ALIGN_LEFT);
+    }
     sp_draw_find(c);
     ui_button_font(c, t->list_up, "^", ui_theme_color(UI_C_PANEL_HI), false,
                    t->scroll > 0, SP_FONT);

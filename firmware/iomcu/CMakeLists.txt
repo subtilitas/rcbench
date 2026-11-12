@@ -29,6 +29,7 @@ pico_sdk_init()
 # The same directories the panel registers as ESP-IDF (Espressif
 # Internet-of-Things Development Framework) components and the host suite
 # builds with plain gcc.  One source list, three build systems.
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/mstime" mstime)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/link"  link)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/bench" bench)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/outputs" outputs)

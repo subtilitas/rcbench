@@ -135,7 +135,13 @@ wa_conf_err_t wa_conf_set_kept(wa_conf_t *c, wa_kept_t which,
     return WA_CONF_OK;
 }
 
-void wa_conf_forget_net(wa_conf_t *c)
+/**
+ * @brief FORGET HOME NETWORK in memory: the network goes and the code switch
+ *        is back on, as wa_conf_defaults(); the two kept values stay, and
+ *        each goes back to RANDOM by its own button.
+ * @param c The settings.
+ */
+static void wa_conf_forget_net(wa_conf_t *c)
 {
     wa_conf_t kept;
     wa_conf_defaults(&kept);

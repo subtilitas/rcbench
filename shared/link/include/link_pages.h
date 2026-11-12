@@ -962,7 +962,7 @@ enum {
      *
      * A frame is refused when its receive buffer holds no frame the link
      * carries (an 11-bit identifier, a remote frame, a DLC above 8:
-     * mcp2515_decode_rx()) or when link_can_decode() refuses it (an unknown op,
+     * the MCP2515 receive decoder) or when link_can_decode() refuses it (an unknown op,
      * a count past a page, a DLC that disagrees with the count).  Self-test
      * frames are answered, not refused.  0 at power-up and at every restart;
      * nothing clears it over the link.

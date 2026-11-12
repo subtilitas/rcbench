@@ -130,7 +130,6 @@ firmware/panel/components/art_flash/art_flash_esp.c: warning: Member part_erase(
 firmware/panel/components/art_flash/art_flash_esp.c: warning: Member part_read(void *ctx, uint32_t off, void *dst, uint32_t len) (function) of file art_flash_esp.c is not documented.	static bool part_read(void *ctx, uint32_t off, void *dst, uint32_t len)
 firmware/panel/components/art_flash/art_flash_esp.c: warning: Member part_write(void *ctx, uint32_t off, const void *src, uint32_t len) (function) of file art_flash_esp.c is not documented.	static bool part_write(void *ctx, uint32_t off, const void *src, uint32_t len)
 firmware/panel/components/art_flash/art_flash_esp.c: warning: Member s_part (variable) of file art_flash_esp.c is not documented.	static const esp_partition_t *s_part;
-firmware/panel/components/art_flash/include/art_flash_esp.h: file has no @file block
 firmware/panel/components/art_flash/include/art_flash_esp.h: warning: return type of member art_flash_esp is not documented	* The store's view of the `boardart` partition, or NULL when there is none.
 firmware/panel/components/board/board.c: warning: Member TAG (variable) of file board.c is not documented.	static const char *TAG = "board";
 firmware/panel/components/board/include/board_pins.h: warning: Member BOARD_TOUCH_I2C_ADDR_ALT (macro definition) of file board_pins.h is not documented.	#define BOARD_TOUCH_I2C_ADDR_ALT 0x14
@@ -149,10 +148,16 @@ firmware/panel/components/fw_ota/fw_ota.c: warning: Member h (variable) of struc
 firmware/panel/components/fw_ota/fw_ota.c: warning: Member next (variable) of struct ota_ctx_t is not documented.	uint32_t next; /* esp_ota_write() appends: the offset */
 firmware/panel/components/fw_ota/fw_ota.c: warning: Member open (variable) of struct ota_ctx_t is not documented.	bool open;
 firmware/panel/components/fw_ota/fw_ota.c: warning: Member part (variable) of struct ota_ctx_t is not documented.	const esp_partition_t *part;
-firmware/panel/components/gt911/gt911.c: file has no @file block
 firmware/panel/components/gt911/gt911.c: warning: Compound gt911_dev_t is not documented.	struct gt911_dev_t {
+firmware/panel/components/gt911/gt911.c: warning: Member GT911_ADDR_PRIMARY (macro definition) of file gt911.c is not documented.	#define GT911_ADDR_PRIMARY 0x5D
+firmware/panel/components/gt911/gt911.c: warning: Member GT911_ADDR_SECONDARY (macro definition) of file gt911.c is not documented.	#define GT911_ADDR_SECONDARY 0x14
+firmware/panel/components/gt911/gt911.c: warning: Member GT911_I2C_TIMEOUT_MS (macro definition) of file gt911.c is not documented.	#define GT911_I2C_TIMEOUT_MS 100
+firmware/panel/components/gt911/gt911.c: warning: Member TAG (variable) of file gt911.c is not documented.	static const char *TAG = "gt911";
 firmware/panel/components/gt911/gt911.c: warning: Member addr (variable) of struct gt911_dev_t is not documented.	uint16_t addr;
 firmware/panel/components/gt911/gt911.c: warning: Member dev (variable) of struct gt911_dev_t is not documented.	i2c_master_dev_handle_t dev;
+firmware/panel/components/gt911/gt911.c: warning: Member gt911_del(gt911_handle_t h) (function) of file gt911.c is not documented.	esp_err_t gt911_del(gt911_handle_t h)
+firmware/panel/components/gt911/gt911.c: warning: Member reg_read(gt911_handle_t h, uint16_t reg, uint8_t *buf, size_t len) (function) of file gt911.c is not documented.	static esp_err_t reg_read(gt911_handle_t h, uint16_t reg, uint8_t *buf, size_t len)
+firmware/panel/components/gt911/gt911.c: warning: Member reg_write8(gt911_handle_t h, uint16_t reg, uint8_t value) (function) of file gt911.c is not documented.	static esp_err_t reg_write8(gt911_handle_t h, uint16_t reg, uint8_t value)
 firmware/panel/components/gt911/include/gt911.h: warning: Compound gt911_config_t is not documented.	typedef struct {
 firmware/panel/components/gt911/include/gt911.h: warning: Member GT911_POINT_STRIDE (macro definition) of file gt911.h is not documented.	#define GT911_POINT_STRIDE 8
 firmware/panel/components/gt911/include/gt911.h: warning: Member GT911_REG_COMMAND (macro definition) of file gt911.h is not documented.	#define GT911_REG_COMMAND 0x8040
@@ -265,7 +270,6 @@ firmware/panel/components/storage/storage.c: warning: Member volume_format(void)
 firmware/panel/components/storage/storage_list.c: warning: Compound walk_buf_t is not documented.	typedef struct {
 firmware/panel/components/storage/storage_list.c: warning: Member dir (variable) of struct walk_buf_t is not documented.	FF_DIR dir;
 firmware/panel/components/storage/storage_list.c: warning: Member info (variable) of struct walk_buf_t is not documented.	FILINFO info;
-firmware/panel/components/storage/storage_priv.h: file has no @file block
 firmware/panel/components/storage/storage_priv.h: warning: parameters of member storage_read_end are not documented	* The end of a read made under storage_hold(): the hold given back, and
 firmware/panel/components/storage/storage_priv.h: warning: return type of member storage_drive is not documented	/** The FatFs drive of the mounted volume, "0:", or "" with none. Read
 firmware/panel/components/wifi_access/include/wifi_access.h: warning: Member channel (variable) of struct wifi_access_state_t is not documented.	uint8_t channel;
@@ -421,11 +425,16 @@ firmware/panel/components/wifi_access/wifi_access.c: warning: Member want (varia
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member wifi_access_get(wifi_access_state_t *out) (function) of file wifi_access.c is not documented.	void wifi_access_get(wifi_access_state_t *out)
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member wifi_access_set_code(bool on) (function) of file wifi_access.c is not documented.	void wifi_access_set_code(bool on)
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member worker (variable) of struct [struct].s is not documented.	TaskHandle_t worker;
-firmware/panel/components/wifi_access/wifi_sock.c: file has no @file block
-firmware/panel/components/wifi_access/wifi_sock.h: file has no @file block
+firmware/panel/components/wifi_access/wifi_sock.c: warning: Member sock_now(void *ctx) (function) of file wifi_sock.c is not documented.	static uint32_t sock_now(void *ctx)
+firmware/panel/components/wifi_access/wifi_sock.c: warning: Member sock_put(void *ctx, const uint8_t *p, uint32_t n) (function) of file wifi_sock.c is not documented.	static int32_t sock_put(void *ctx, const uint8_t *p, uint32_t n)
+firmware/panel/components/wifi_access/wifi_sock.c: warning: Member sock_stop(void *ctx) (function) of file wifi_sock.c is not documented.	static bool sock_stop(void *ctx)
+firmware/panel/components/wifi_access/wifi_sock.c: warning: Member sock_wait(void *ctx, uint32_t wait_ms) (function) of file wifi_sock.c is not documented.	static wa_wait_t sock_wait(void *ctx, uint32_t wait_ms)
+firmware/panel/components/wifi_access/wifi_sock.c: warning: Member wait_for(int fd, fd_set *rd, uint32_t wait_ms) (function) of file wifi_sock.c is not documented.	static int wait_for(int fd, fd_set *rd, uint32_t wait_ms)
 firmware/panel/components/wifi_access/wifi_sock.h: warning: Compound wifi_sock_t is not documented.	typedef struct {
-firmware/panel/components/wifi_access/wifi_sock.h: warning: Member abort (variable) of struct wifi_sock_t is not documented.	const atomic_bool *abort; /* true: the radio goes off */
-firmware/panel/components/wifi_access/wifi_sock.h: warning: Member fd (variable) of struct wifi_sock_t is not documented.	int fd; /* the request's socket */
+firmware/panel/components/wifi_access/wifi_sock.h: warning: parameters of member wifi_sock_drop are not documented	* A send that failed: the connection on @p fd is reset when the server
+firmware/panel/components/wifi_access/wifi_sock.h: warning: parameters of member wifi_sock_sink are not documented	/** The sink of @p c, which must outlive it. */
+firmware/panel/components/wifi_access/wifi_sock.h: warning: return type of member wifi_sock_drop is not documented	* A send that failed: the connection on @p fd is reset when the server
+firmware/panel/components/wifi_access/wifi_sock.h: warning: return type of member wifi_sock_sink is not documented	/** The sink of @p c, which must outlive it. */
 firmware/panel/main/knob_task.c: warning: Member TAG (variable) of file knob_task.c is not documented.	static const char *TAG = "knob";
 firmware/panel/main/knob_task.c: warning: Member knob_read(uint8_t reg, uint8_t *byte) (function) of file knob_task.c is not documented.	static bool knob_read(uint8_t reg, uint8_t *byte)
 firmware/panel/main/knob_task.c: warning: Member s_dev (variable) of file knob_task.c is not documented.	static i2c_master_dev_handle_t s_dev;
@@ -585,7 +594,6 @@ firmware/panel/main/panel.h: warning: Member esc_profiles_load(void) (function) 
 firmware/panel/main/panel.h: warning: Member evt (variable) of struct touch_item_t is not documented.	touch_event_t evt;
 firmware/panel/main/panel.h: warning: Member exchange(link_host_t *host, const link_msg_t *req, link_msg_t *reply) (function) of file panel.h is not documented.	bool exchange(link_host_t *host, const link_msg_t *req, link_msg_t *reply);
 firmware/panel/main/panel.h: warning: Member far_end_stop_here(void) (function) of file panel.h is not documented.	void far_end_stop_here(void);
-firmware/panel/main/panel.h: warning: Member far_line_trusted(bool *answered) (function) of file panel.h is not documented.	static inline bool far_line_trusted(bool *answered)
 firmware/panel/main/panel.h: warning: Member flush_screen_commands(uint32_t stops_now) (function) of file panel.h is not documented.	void flush_screen_commands(uint32_t stops_now);
 firmware/panel/main/panel.h: warning: Member hitec_rx_service(void) (function) of file panel.h is not documented.	void hitec_rx_service(void);
 firmware/panel/main/panel.h: warning: Member k_card_io (variable) of file panel.h is not documented.	extern const log_viewer_io_t k_card_io;
@@ -1753,8 +1761,48 @@ shared/can/include/can_timing.h: warning: parameters of member mcp2515_encode_ti
 shared/can/include/can_timing.h: warning: return type of member can_timing_max_bitrate is not documented	/** The highest rate this controller can reach exactly, or 0 if none. */
 shared/can/include/can_timing.h: warning: return type of member can_timing_solve is not documented	* Solve for the segmentation closest to @p target_permille that hits
 shared/can/include/can_timing.h: warning: return type of member mcp2515_encode_timing is not documented	* Encode a solution into CNF1..CNF3.
-shared/can/include/mcp2515.h: file has no @file block
-shared/can/mcp2515.c: file has no @file block
+shared/can/include/mcp2515.h: warning: Member MCP2515_CANCTRL (macro definition) of file mcp2515.h is not documented.	#define MCP2515_CANCTRL 0x0Fu
+shared/can/include/mcp2515.h: warning: Member MCP2515_CANINTE (macro definition) of file mcp2515.h is not documented.	#define MCP2515_CANINTE 0x2Bu
+shared/can/include/mcp2515.h: warning: Member MCP2515_CANINTF (macro definition) of file mcp2515.h is not documented.	#define MCP2515_CANINTF 0x2Cu
+shared/can/include/mcp2515.h: warning: Member MCP2515_CANSTAT (macro definition) of file mcp2515.h is not documented.	#define MCP2515_CANSTAT 0x0Eu
+shared/can/include/mcp2515.h: warning: Member MCP2515_CMD_BIT_MODIFY (macro definition) of file mcp2515.h is not documented.	#define MCP2515_CMD_BIT_MODIFY 0x05u
+shared/can/include/mcp2515.h: warning: Member MCP2515_CMD_READ (macro definition) of file mcp2515.h is not documented.	#define MCP2515_CMD_READ 0x03u
+shared/can/include/mcp2515.h: warning: Member MCP2515_CMD_READ_STATUS (macro definition) of file mcp2515.h is not documented.	#define MCP2515_CMD_READ_STATUS 0xA0u
+shared/can/include/mcp2515.h: warning: Member MCP2515_CMD_RESET (macro definition) of file mcp2515.h is not documented.	#define MCP2515_CMD_RESET 0xC0u
+shared/can/include/mcp2515.h: warning: Member MCP2515_CMD_RTS_TXB0 (macro definition) of file mcp2515.h is not documented.	#define MCP2515_CMD_RTS_TXB0 0x81u
+shared/can/include/mcp2515.h: warning: Member MCP2515_CMD_RX_STATUS (macro definition) of file mcp2515.h is not documented.	#define MCP2515_CMD_RX_STATUS 0xB0u
+shared/can/include/mcp2515.h: warning: Member MCP2515_CMD_WRITE (macro definition) of file mcp2515.h is not documented.	#define MCP2515_CMD_WRITE 0x02u
+shared/can/include/mcp2515.h: warning: Member MCP2515_EFLG (macro definition) of file mcp2515.h is not documented.	#define MCP2515_EFLG 0x2Du
+shared/can/include/mcp2515.h: warning: Member MCP2515_EFLG_OVR (macro definition) of file mcp2515.h is not documented.	#define MCP2515_EFLG_OVR (MCP2515_EFLG_RX0OVR | MCP2515_EFLG_RX1OVR)
+shared/can/include/mcp2515.h: warning: Member MCP2515_EFLG_RX0OVR (macro definition) of file mcp2515.h is not documented.	#define MCP2515_EFLG_RX0OVR 0x40u
+shared/can/include/mcp2515.h: warning: Member MCP2515_EFLG_RX1OVR (macro definition) of file mcp2515.h is not documented.	#define MCP2515_EFLG_RX1OVR 0x80u
+shared/can/include/mcp2515.h: warning: Member MCP2515_EFLG_TXBO (macro definition) of file mcp2515.h is not documented.	#define MCP2515_EFLG_TXBO 0x20u
+shared/can/include/mcp2515.h: warning: Member MCP2515_INTF_ERR (macro definition) of file mcp2515.h is not documented.	#define MCP2515_INTF_ERR 0x20u
+shared/can/include/mcp2515.h: warning: Member MCP2515_INTF_RX0 (macro definition) of file mcp2515.h is not documented.	#define MCP2515_INTF_RX0 0x01u
+shared/can/include/mcp2515.h: warning: Member MCP2515_INTF_RX1 (macro definition) of file mcp2515.h is not documented.	#define MCP2515_INTF_RX1 0x02u
+shared/can/include/mcp2515.h: warning: Member MCP2515_INTF_TX0 (macro definition) of file mcp2515.h is not documented.	#define MCP2515_INTF_TX0 0x04u
+shared/can/include/mcp2515.h: warning: Member MCP2515_MODE_CONFIG (macro definition) of file mcp2515.h is not documented.	#define MCP2515_MODE_CONFIG 0x80u
+shared/can/include/mcp2515.h: warning: Member MCP2515_MODE_LISTEN (macro definition) of file mcp2515.h is not documented.	#define MCP2515_MODE_LISTEN 0x60u
+shared/can/include/mcp2515.h: warning: Member MCP2515_MODE_LOOPBACK (macro definition) of file mcp2515.h is not documented.	#define MCP2515_MODE_LOOPBACK 0x40u
+shared/can/include/mcp2515.h: warning: Member MCP2515_MODE_MASK (macro definition) of file mcp2515.h is not documented.	#define MCP2515_MODE_MASK 0xE0u
+shared/can/include/mcp2515.h: warning: Member MCP2515_MODE_NORMAL (macro definition) of file mcp2515.h is not documented.	#define MCP2515_MODE_NORMAL 0x00u
+shared/can/include/mcp2515.h: warning: Member MCP2515_MODE_SLEEP (macro definition) of file mcp2515.h is not documented.	#define MCP2515_MODE_SLEEP 0x20u
+shared/can/include/mcp2515.h: warning: Member MCP2515_REC (macro definition) of file mcp2515.h is not documented.	#define MCP2515_REC 0x1Du
+shared/can/include/mcp2515.h: warning: Member MCP2515_RXB0CTRL (macro definition) of file mcp2515.h is not documented.	#define MCP2515_RXB0CTRL 0x60u
+shared/can/include/mcp2515.h: warning: Member MCP2515_RXB0SIDH (macro definition) of file mcp2515.h is not documented.	#define MCP2515_RXB0SIDH 0x61u
+shared/can/include/mcp2515.h: warning: Member MCP2515_RXB1CTRL (macro definition) of file mcp2515.h is not documented.	#define MCP2515_RXB1CTRL 0x70u
+shared/can/include/mcp2515.h: warning: Member MCP2515_RXB1SIDH (macro definition) of file mcp2515.h is not documented.	#define MCP2515_RXB1SIDH 0x71u
+shared/can/include/mcp2515.h: warning: Member MCP2515_RXF0SIDH (macro definition) of file mcp2515.h is not documented.	#define MCP2515_RXF0SIDH 0x00u
+shared/can/include/mcp2515.h: warning: Member MCP2515_RXM0SIDH (macro definition) of file mcp2515.h is not documented.	#define MCP2515_RXM0SIDH 0x20u
+shared/can/include/mcp2515.h: warning: Member MCP2515_TEC (macro definition) of file mcp2515.h is not documented.	#define MCP2515_TEC 0x1Cu
+shared/can/include/mcp2515.h: warning: Member MCP2515_TXB0CTRL (macro definition) of file mcp2515.h is not documented.	#define MCP2515_TXB0CTRL 0x30u
+shared/can/include/mcp2515.h: warning: parameters of member mcp2515_pack_id are not documented	* Pack a 29-bit extended identifier into SIDH, SIDL, EID8, EID0.
+shared/can/include/mcp2515.h: warning: parameters of member mcp2515_recv_next are not documented	* The next frame this link carries. A buffer @p fetch hands over and
+shared/can/include/mcp2515.h: warning: parameters of member mcp2515_unpack_id are not documented	* Recover the identifier from those four registers.
+shared/can/include/mcp2515.h: warning: return type of member mcp2515_pack_id is not documented	* Pack a 29-bit extended identifier into SIDH, SIDL, EID8, EID0.
+shared/can/include/mcp2515.h: warning: return type of member mcp2515_recv_next is not documented	* The next frame this link carries. A buffer @p fetch hands over and
+shared/can/include/mcp2515.h: warning: return type of member mcp2515_unpack_id is not documented	* Recover the identifier from those four registers.
+shared/can/mcp2515.c: warning: Member ID_MAX (macro definition) of file mcp2515.c is not documented.	#define ID_MAX 0x1FFFFFFFu
 shared/esc/esc_json.c: warning: Member k_announce[] (variable) of file esc_json.c is not documented.	static const char *const k_announce[] = { "item", "value",
 shared/esc/esc_json.c: warning: Member k_auto[] (variable) of file esc_json.c is not documented.	static const char *const k_auto[] = { "full", "assisted", "none" };
 shared/esc/esc_json.c: warning: Member k_cells[] (variable) of file esc_json.c is not documented.	static const char *const k_cells[] = { "lipo", "nimh" };
@@ -1829,7 +1877,12 @@ shared/fwupdate/fw_release.c: warning: Member scan_open(fw_rel_scan_t *s, bool a
 shared/fwupdate/fw_release.c: warning: Member scan_tag(fw_rel_scan_t *s) (function) of file fw_release.c is not documented.	static void scan_tag(fw_rel_scan_t *s)
 shared/fwupdate/fw_release.c: warning: Member scan_value(fw_rel_scan_t *s, uint8_t ch) (function) of file fw_release.c is not documented.	static void scan_value(fw_rel_scan_t *s, uint8_t ch)
 shared/fwupdate/fw_release.c: warning: Member url_bytes(const char *s, size_t n) (function) of file fw_release.c is not documented.	static bool url_bytes(const char *s, size_t n)
-shared/fwupdate/fw_sha256.c: file has no @file block
+shared/fwupdate/fw_sha256.c: warning: Member compress(fw_sha256_t *s, const uint8_t *p) (function) of file fw_sha256.c is not documented.	static void compress(fw_sha256_t *s, const uint8_t *p)
+shared/fwupdate/fw_sha256.c: warning: Member fw_sha256_add(fw_sha256_t *s, const void *data, size_t n) (function) of file fw_sha256.c is not documented.	void fw_sha256_add(fw_sha256_t *s, const void *data, size_t n)
+shared/fwupdate/fw_sha256.c: warning: Member fw_sha256_done(fw_sha256_t *s, uint8_t out[FW_SHA256_BYTES]) (function) of file fw_sha256.c is not documented.	void fw_sha256_done(fw_sha256_t *s, uint8_t out[FW_SHA256_BYTES])
+shared/fwupdate/fw_sha256.c: warning: Member fw_sha256_init(fw_sha256_t *s) (function) of file fw_sha256.c is not documented.	void fw_sha256_init(fw_sha256_t *s)
+shared/fwupdate/fw_sha256.c: warning: Member k_round[64] (variable) of file fw_sha256.c is not documented.	static const uint32_t k_round[64] = {
+shared/fwupdate/fw_sha256.c: warning: Member ror(uint32_t x, unsigned n) (function) of file fw_sha256.c is not documented.	static uint32_t ror(uint32_t x, unsigned n)
 shared/fwupdate/include/fw_image.h: warning: Member bytes (variable) of struct fw_image_info_t is not documented.	uint32_t bytes;
 shared/fwupdate/include/fw_image.h: warning: Member elf_sha[FW_SHA256_BYTES] (variable) of struct fw_image_info_t is not documented.	uint8_t elf_sha[FW_SHA256_BYTES];
 shared/fwupdate/include/fw_image.h: warning: Member major (variable) of struct fw_version_t is not documented.	uint16_t major;
@@ -2810,7 +2863,10 @@ shared/ui/battery_screen.c: warning: Member b (variable) of struct [struct].s is
 shared/ui/battery_screen.c: warning: Member drawn[2] (variable) of struct [struct].s is not documented.	uint32_t drawn[2];
 shared/ui/battery_screen.c: warning: Member drawn_mask (variable) of struct [struct].s is not documented.	unsigned drawn_mask;
 shared/ui/battery_screen.c: warning: Member rev (variable) of struct [struct].s is not documented.	uint32_t rev;
-shared/ui/board_drawing.c: file has no @file block
+shared/ui/board_drawing.c: warning: Member SL(v) (macro definition) of file board_drawing.c is not documented.	#define SL(v) board_drawing_scale((uint32_t)(v), w, fw)
+shared/ui/board_drawing.c: warning: Member SX(v) (macro definition) of file board_drawing.c is not documented.	#define SX(v) (x + board_drawing_scale((uint32_t)(v), w, fw))
+shared/ui/board_drawing.c: warning: Member SY(v) (macro definition) of file board_drawing.c is not documented.	#define SY(v) (y + board_drawing_scale((uint32_t)(v), h, fh))
+shared/ui/board_drawing.c: warning: Member say(const char **why, const char *reason) (function) of file board_drawing.c is not documented.	static bool say(const char **why, const char *reason)
 shared/ui/busfault_screen.c: warning: Member ACK_W (macro definition) of file busfault_screen.c is not documented.	#define ACK_W (W - 2 * COL_X)
 shared/ui/busfault_screen.c: warning: Member ACK_X (macro definition) of file busfault_screen.c is not documented.	#define ACK_X COL_X
 shared/ui/busfault_screen.c: warning: Member COL_X (macro definition) of file busfault_screen.c is not documented.	#define COL_X 24
@@ -2906,7 +2962,6 @@ shared/ui/esc_stick_panel.c: warning: Member esc_stick_panel_model(void) (functi
 shared/ui/esc_stick_panel.c: warning: Member esc_stick_panel_result_more(void) (function) of file esc_stick_panel.c is not documented.	const char *esc_stick_panel_result_more(void)
 shared/ui/esc_stick_panel.c: warning: Member esc_stick_panel_row(int i, int *model) (function) of file esc_stick_panel.c is not documented.	const esc_profile_t *esc_stick_panel_row(int i, int *model)
 shared/ui/esc_stick_panel.c: warning: Member esc_stick_panel_typing(void) (function) of file esc_stick_panel.c is not documented.	bool esc_stick_panel_typing(void) { return s.st.tk.open; }
-shared/ui/esc_stick_panel.c: warning: Member sp_bench_why(void) (function) of file esc_stick_panel.c is not documented.	static const char *sp_bench_why(void)
 shared/ui/esc_stick_panel.c: warning: Member sp_drop_drive(void) (function) of file esc_stick_panel.c is not documented.	static bool sp_drop_drive(void)
 shared/ui/esc_stick_panel.c: warning: Member sp_plan(esc_stick_change_t *ch, size_t *n, esc_stick_timing_t *t, uint32_t *mv, uint32_t *ma) (function) of file esc_stick_panel.c is not documented.	static bool sp_plan(esc_stick_change_t *ch, size_t *n,
 shared/ui/esc_stick_panel.c: warning: Member sp_push(motor_cmd_kind_t kind, float value) (function) of file esc_stick_panel.c is not documented.	static void sp_push(motor_cmd_kind_t kind, float value)
@@ -2929,10 +2984,6 @@ shared/ui/include/busfault_screen.h: warning: Member corrupt (variable) of struc
 shared/ui/include/busfault_screen.h: warning: Member echoed (variable) of struct busfault_report_t is not documented.	uint32_t echoed;
 shared/ui/include/busfault_screen.h: warning: Member kind (variable) of struct busfault_report_t is not documented.	busfault_kind_t kind;
 shared/ui/include/busfault_screen.h: warning: Member lost (variable) of struct busfault_report_t is not documented.	uint32_t lost;
-shared/ui/include/busfault_screen.h: warning: Member remote_flags (variable) of struct busfault_report_t is not documented.	uint8_t remote_flags;
-shared/ui/include/busfault_screen.h: warning: Member remote_overflows (variable) of struct busfault_report_t is not documented.	uint16_t remote_overflows;
-shared/ui/include/busfault_screen.h: warning: Member remote_rx_errors (variable) of struct busfault_report_t is not documented.	uint8_t remote_rx_errors;
-shared/ui/include/busfault_screen.h: warning: Member remote_tx_errors (variable) of struct busfault_report_t is not documented.	uint8_t remote_tx_errors;
 shared/ui/include/busfault_screen.h: warning: Member rx_errors (variable) of struct busfault_report_t is not documented.	uint32_t rx_errors;
 shared/ui/include/busfault_screen.h: warning: Member sent (variable) of struct busfault_report_t is not documented.	uint32_t sent;
 shared/ui/include/busfault_screen.h: warning: Member verdict (variable) of struct busfault_report_t is not documented.	can_selftest_verdict_t verdict;
@@ -3129,7 +3180,9 @@ shared/ui/include/outputs_screen.h: warning: return type of member outputs_scree
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_port_shown is not documented	/** The PROG PORT entry shown, 0 for port 1, or -1 for a protocol. */
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_read_state is not documented	/** The state of the last reading; BIND_READ_OK after a set_binding(). */
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_reason is not documented	* The line under the protocol that says why no pin can be ticked, or why the
-shared/ui/include/overview_screen.h: file has no @file block
+shared/ui/include/overview_screen.h: warning: Member overview_invalidate(void) (function) of file overview_screen.h is not documented.	void overview_invalidate(void);
+shared/ui/include/overview_screen.h: warning: Member overview_screen(void) (function) of file overview_screen.h is not documented.	const ui_screen_t *overview_screen(void);
+shared/ui/include/overview_screen.h: warning: Member overview_screen_tile_line(int slot) (function) of file overview_screen.h is not documented.	const char *overview_screen_tile_line(int slot);
 shared/ui/include/overview_screen.h: warning: parameters of member overview_screen_set_supply_real are not documented	/** Whether SUPPLY drives the PD mini; the tile is marked MODELLED while it
 shared/ui/include/overview_screen.h: warning: parameters of member overview_screen_tile are not documented	/** The screen the tile in slot @p slot opens, row by row from the top
 shared/ui/include/overview_screen.h: warning: parameters of member overview_screen_tile_name are not documented	/** The tile's name and its line in the language in force, NULL for an
@@ -3355,12 +3408,11 @@ shared/ui/include/ui_band.h: warning: return type of member ui_band_mode is not 
 shared/ui/include/ui_band.h: warning: return type of member ui_band_mode_inject is not documented	* INJECT: the mode a panel built with RCBENCH_TOUCH_INJECTOR names in place
 shared/ui/include/ui_band.h: warning: return type of member ui_band_stop_rect is not documented	/** Where STOP is, in panel coordinates. The router hit-tests it. */
 shared/ui/include/ui_band.h: warning: return type of member ui_link_refused_label is not documented	* The label for the IOmcu's refused link frames, "Rejected link
-shared/ui/include/ui_card_text.h: file has no @file block
+shared/ui/include/ui_card_text.h: warning: Member ui_card_at_t (enumeration) of file ui_card_text.h is not documented.	typedef enum {
 shared/ui/include/ui_card_text.h: warning: parameters of member ui_card_text are not documented	/** ui_card_text_id() in the language showing. */
 shared/ui/include/ui_card_text.h: warning: parameters of member ui_card_text_id are not documented	* The text ID for @p state at @p at. CARD_STATE_MOUNTED and a state out
 shared/ui/include/ui_card_text.h: warning: return type of member ui_card_text is not documented	/** ui_card_text_id() in the language showing. */
 shared/ui/include/ui_card_text.h: warning: return type of member ui_card_text_id is not documented	* The text ID for @p state at @p at. CARD_STATE_MOUNTED and a state out
-shared/ui/include/ui_hero.h: file has no @file block
 shared/ui/include/ui_hero.h: warning: Compound ui_hero_def_t is not documented.	typedef struct {
 shared/ui/include/ui_hero.h: warning: Member color (variable) of struct ui_hero_def_t is not documented.	gfx_color_t color;
 shared/ui/include/ui_hero.h: warning: Member decimals (variable) of struct ui_hero_def_t is not documented.	int decimals;
@@ -4597,7 +4649,16 @@ shared/webaccess/wa_fetch.c: warning: Member sums_begin(const wa_run_t *r, void 
 shared/webaccess/wa_fetch.c: warning: Member wa_fetch_on_bytes(wa_fetch_t *f, uint32_t gen, uint32_t done, uint32_t total) (function) of file wa_fetch.c is not documented.	void wa_fetch_on_bytes(wa_fetch_t *f, uint32_t gen, uint32_t done,
 shared/webaccess/wa_fetch.c: warning: Member wa_fetch_on_end(wa_fetch_t *f, uint32_t gen, const wa_fetch_res_t *r) (function) of file wa_fetch.c is not documented.	void wa_fetch_on_end(wa_fetch_t *f, uint32_t gen, const wa_fetch_res_t *r)
 shared/webaccess/wa_fetch.c: warning: Member wa_fetch_on_phase(wa_fetch_t *f, uint32_t gen, wa_phase_t ph) (function) of file wa_fetch.c is not documented.	void wa_fetch_on_phase(wa_fetch_t *f, uint32_t gen, wa_phase_t ph)
-shared/webaccess/wa_mdns.c: file has no @file block
+shared/webaccess/wa_mdns.c: warning: Member CLASS_IN (macro definition) of file wa_mdns.c is not documented.	#define CLASS_IN 1u
+shared/webaccess/wa_mdns.c: warning: Member CLASS_QU (macro definition) of file wa_mdns.c is not documented.	#define CLASS_QU 0x8000u /* in a question: answer by unicast */
+shared/webaccess/wa_mdns.c: warning: Member TYPE_A (macro definition) of file wa_mdns.c is not documented.	#define TYPE_A 1u
+shared/webaccess/wa_mdns.c: warning: Member TYPE_ANY (macro definition) of file wa_mdns.c is not documented.	#define TYPE_ANY 255u
+shared/webaccess/wa_mdns.c: warning: Member answer(uint16_t id, bool question, uint32_t ttl, const char *host, const uint8_t ip[4], uint8_t *out, size_t cap) (function) of file wa_mdns.c is not documented.	static size_t answer(uint16_t id, bool question, uint32_t ttl,
+shared/webaccess/wa_mdns.c: warning: Member get16(const uint8_t *p) (function) of file wa_mdns.c is not documented.	static uint16_t get16(const uint8_t *p)
+shared/webaccess/wa_mdns.c: warning: Member lower(char c) (function) of file wa_mdns.c is not documented.	static char lower(char c)
+shared/webaccess/wa_mdns.c: warning: Member name_is(const uint8_t *m, size_t n, size_t at, const char *host, size_t *next) (function) of file wa_mdns.c is not documented.	static int name_is(const uint8_t *m, size_t n, size_t at, const char *host,
+shared/webaccess/wa_mdns.c: warning: Member put16(uint8_t *p, uint32_t v) (function) of file wa_mdns.c is not documented.	static uint8_t *put16(uint8_t *p, uint32_t v)
+shared/webaccess/wa_mdns.c: warning: Member put_name(uint8_t *p, const char *host) (function) of file wa_mdns.c is not documented.	static uint8_t *put_name(uint8_t *p, const char *host)
 shared/webaccess/wa_page.c: warning: Member firmware(wa_out_t *o, const wa_page_info_t *pi) (function) of file wa_page.c is not documented.	static void firmware(wa_out_t *o, const wa_page_info_t *pi)
 shared/webaccess/wa_text.c: warning: Member PUT(ch) (macro definition) of file wa_text.c is not documented.	#define PUT(ch) \
 shared/webaccess/wa_text.c: warning: Member check_name(const char *s, size_t n) (function) of file wa_text.c is not documented.	static wa_path_err_t check_name(const char *s, size_t n)
@@ -4654,11 +4715,15 @@ testbench/touch-injector/core/include/inj_line_id.h: warning: Member verdict (va
 testbench/touch-injector/core/include/inj_line_id.h: warning: parameters of member inj_line_classify are not documented	* Classify @p n edges taken over @p samples samples at @p rate_ksps
 testbench/touch-injector/core/include/inj_line_id.h: warning: parameters of member inj_wiring_name are not documented	/** The verdict's word: ok, swapped, idle, low, noise, or none. */
 testbench/touch-injector/core/include/inj_line_id.h: warning: return type of member inj_wiring_name is not documented	/** The verdict's word: ok, swapped, idle, low, noise, or none. */
-testbench/touch-injector/core/inj_line_id.c: file has no @file block
 testbench/touch-injector/core/inj_line_id.c: warning: Compound cls_t is not documented.	typedef struct {
 testbench/touch-injector/core/inj_line_id.c: warning: Compound pend_t is not documented.	typedef struct {
+testbench/touch-injector/core/inj_line_id.c: warning: Member BOTH (macro definition) of file inj_line_id.c is not documented.	#define BOTH (INJ_LINE_GP4 | INJ_LINE_GP5)
+testbench/touch-injector/core/inj_line_id.c: warning: Member NONE (macro definition) of file inj_line_id.c is not documented.	#define NONE 0u
+testbench/touch-injector/core/inj_line_id.c: warning: Member apply(cls_t *c, uint32_t t, uint8_t line, uint8_t level) (function) of file inj_line_id.c is not documented.	static void apply(cls_t *c, uint32_t t, uint8_t line, uint8_t level)
 testbench/touch-injector/core/inj_line_id.c: warning: Member at (variable) of struct pend_t is not documented.	uint32_t at;
 testbench/touch-injector/core/inj_line_id.c: warning: Member edges[2] (variable) of struct cls_t is not documented.	uint32_t edges[2];
+testbench/touch-injector/core/inj_line_id.c: warning: Member end_tx(cls_t *c) (function) of file inj_line_id.c is not documented.	static void end_tx(cls_t *c)
+testbench/touch-injector/core/inj_line_id.c: warning: Member flush(cls_t *c, pend_t p[2], uint32_t t) (function) of file inj_line_id.c is not documented.	static void flush(cls_t *c, pend_t p[2], uint32_t t)
 testbench/touch-injector/core/inj_line_id.c: warning: Member high_since (variable) of struct cls_t is not documented.	uint32_t high_since; /* when s last became BOTH */
 testbench/touch-injector/core/inj_line_id.c: warning: Member idle (variable) of struct cls_t is not documented.	uint32_t idle; /* samples of both-high that make idle */
 testbench/touch-injector/core/inj_line_id.c: warning: Member in_tx (variable) of struct cls_t is not documented.	bool in_tx;

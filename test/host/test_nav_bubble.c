@@ -5,6 +5,7 @@
  *
  * Cases:
  * - the_armed_chip_names_the_role
+ * - the_safe_chip_names_a_held_port_and_a_move
  * - the_band_renders_the_role_of_the_arm
  * - the_fault_chip_text_reads_on_its_fill_in_both_themes
  * - a_tap_on_each_chip_opens_its_bubble
@@ -33,6 +34,8 @@
  */
 
 #include "nav_rig.h"
+
+#include "prog5v_box.h"
 
 /* The band's chip names the role an arm covers: the motor's, the servo's,
  * or ARMED alone for both, as an arm with no link names no role. */
@@ -459,6 +462,9 @@ TEST_CASE(the_widest_chip_row_clears_the_home_tag)
                                 if (!armed && ro > 0) {
                                     continue;
                                 }
+                                /* SAFE also with PROG PORT 4 held, a
+                                 * port held with no number, and MOVE. */
+                                for (int pr = 0; pr < (armed ? 1 : 4); ++pr) {
                                 ui_bench_status_t st;
                                 memset(&st, 0, sizeof(st));
                                 st.link_up     = up != 0;
@@ -467,6 +473,11 @@ TEST_CASE(the_widest_chip_row_clears_the_home_tag)
                                 st.armed_roles = roles[ro];
                                 st.faults      = fault ? 0x7Fu : 0u;
                                 st.run_seconds = runs[k];
+                                st.prog_port   = (pr == 1) ? 4u
+                                                 : (pr == 2)
+                                                     ? (uint8_t)UI_PROG_PORT_SOME
+                                                     : 0u;
+                                st.prog_moving = pr == 3;
                                 const int left = chips_left(&st);
                                 least = left < least ? left : least;
                                 if (left - 2 < end) {
@@ -476,6 +487,7 @@ TEST_CASE(the_widest_chip_row_clears_the_home_tag)
                                            "tag ends at %d", id, lang, up,
                                            armed, (unsigned)roles[ro], fault,
                                            (unsigned long)runs[k], left, end);
+                                }
                                 }
                             }
                         }
@@ -603,6 +615,68 @@ TEST_CASE(the_link_bubble_follows_the_link)
     follows(&down, &up, UI_BAND_CHIP_LINK);
     follows(&up, &down, UI_BAND_CHIP_MODE);
     follows(&down, &up, UI_BAND_CHIP_MODE);
+}
+
+/*
+ * SAFE names what a SAFE bench still drives: PROG PORT n while a programmer
+ * holds it, PROG with its number not known, MOVE while MOVE SERVO drives.
+ * A wider chip than SAFE, on the warning's amber with the dark text, and a
+ * bubble with a paragraph more.  A latched STOP and an arm read as without.
+ */
+TEST_CASE(the_safe_chip_names_a_held_port_and_a_move)
+{
+    ui_bench_status_t safe = k_all_chips;
+    gfx_rect_t plain, plain_help;
+    REQUIRE(ui_band_chip_rect(&safe, UI_BAND_CHIP_ARMED, &plain));
+    REQUIRE(ui_band_help_rect(&safe, UI_BAND_CHIP_ARMED, &plain_help));
+    CHECK(!ui_band_safe_drives(&safe));
+    gfx_color_t fill, ink;
+    REQUIRE(ui_band_chip_colors(&safe, UI_BAND_CHIP_ARMED, &fill, &ink));
+    CHECK(fill != ui_theme_color(UI_C_WARN));
+
+    for (int k = 0; k < 4; ++k) {
+        ui_bench_status_t st = k_all_chips;
+        st.prog_port = (k == 0) ? 2u : (k == 1) ? 4u
+                       : (k == 2) ? (uint8_t)UI_PROG_PORT_SOME : 0u;
+        st.prog_moving = k == 3;
+        CHECK(ui_band_safe_drives(&st));
+        gfx_rect_t r, help;
+        REQUIRE(ui_band_chip_rect(&st, UI_BAND_CHIP_ARMED, &r));
+        REQUIRE(ui_band_help_rect(&st, UI_BAND_CHIP_ARMED, &help));
+        CHECK(r.w > plain.w);
+        CHECK(help.h > plain_help.h);
+        REQUIRE(ui_band_chip_colors(&st, UI_BAND_CHIP_ARMED, &fill,
+                                         &ink));
+        CHECK_EQ(fill, ui_theme_color(UI_C_WARN));
+        CHECK_EQ(ink, ui_theme_color(UI_C_TEXT_ON_LIGHT));
+
+        /* A latched STOP reads STOP, an arm its role: neither names it. */
+        ui_bench_status_t stop = st;
+        stop.stop_latched = true;
+        CHECK(!ui_band_safe_drives(&stop));
+        REQUIRE(ui_band_chip_colors(&stop, UI_BAND_CHIP_ARMED, &fill,
+                                         NULL));
+        CHECK_EQ(fill, ui_theme_color(UI_C_DANGER));
+        ui_bench_status_t armed = st;
+        armed.armed = true;
+        CHECK(!ui_band_safe_drives(&armed));
+    }
+    /* SAFE MOVE wins over the port it moves on. */
+    ui_bench_status_t both = k_all_chips;
+    both.prog_port = 2u;
+    both.prog_moving = true;
+    ui_bench_status_t move = k_all_chips;
+    move.prog_moving = true;
+    gfx_rect_t rb, rm;
+    REQUIRE(ui_band_chip_rect(&both, UI_BAND_CHIP_ARMED, &rb));
+    REQUIRE(ui_band_chip_rect(&move, UI_BAND_CHIP_ARMED, &rm));
+    CHECK_EQ(rb.w, rm.w);
+
+    /* The status's port from the control task's word. */
+    CHECK_EQ(ui_band_prog_port(0u), 1u);
+    CHECK_EQ(ui_band_prog_port(3u), 4u);
+    CHECK_EQ(ui_band_prog_port(PROG5V_HELD_SOME), UI_PROG_PORT_SOME);
+    CHECK_EQ(ui_band_prog_port(PROG5V_HELD_NONE), 0u);
 }
 
 /*
@@ -943,6 +1017,7 @@ TEST_CASE(a_knob_turn_closes_the_bubble_and_moves_nothing)
 int main(void)
 {
     RUN(the_armed_chip_names_the_role);
+    RUN(the_safe_chip_names_a_held_port_and_a_move);
     RUN(the_band_renders_the_role_of_the_arm);
     RUN(the_fault_chip_text_reads_on_its_fill_in_both_themes);
     RUN(a_tap_on_each_chip_opens_its_bubble);

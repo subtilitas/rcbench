@@ -107,7 +107,7 @@ One German word per English concept, on every screen and in the report.
 | reading | Messwert |
 | EFF (the drivetrain estimate on MOTOR & ESC, LIVE) | WIRK. |
 | setting (a SETUP entry) | Einstellung |
-| SETTINGS (a screen's own settings) | OPTIONEN |
+| OPTIONS (a screen's own settings) | OPTIONEN |
 | save, reset, apply, close | speichern, zurücksetzen, übernehmen, schließen |
 | cancel, abort | abbrechen |
 | hold to … | … halten |
@@ -315,7 +315,7 @@ lines is left with conflict markers.
 python3 tools/render_ui.py --fit
 ```
 
-builds the renderer with `GFX_TEXT_TRACE`, draws all 646 views in English and
+builds the renderer with `GFX_TEXT_TRACE`, draws all 650 views in English and
 in German, and fails when a string in either language
 
 - is wider than the box `gfx_text_in()` was given,
@@ -363,7 +363,7 @@ pages, supply commands and board markings that share a word with a label.
 
 ## Adding a language
 
-A language is one more column in every entry of the table: 3,507 entries
+A language is one more column in every entry of the table: 3,527 entries
 with an ID and 105 options, 10 of them with an empty English.
 
 1. Add the column to every entry of `shared/text/include/ui_text.def`, and
