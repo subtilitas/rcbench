@@ -15,6 +15,8 @@
  * - the_steps_stop_at_travel_and_at_the_pulse_range
  * - the_keys_move_nothing_while_safe_and_are_drawn_as_the_drive_buttons
  * - the_shared_repeat_steps_at_0_45s_then_8hz_then_30hz
+ * - a_drive_button_under_a_second_finger_ends_a_held_step
+ * - a_down_with_the_held_steps_own_id_ends_it
  *
  * SPDX-License-Identifier: MIT
  */
@@ -393,6 +395,55 @@ TEST_CASE(the_shared_repeat_steps_at_0_45s_then_8hz_then_30hz)
     CHECK_EQ(held, 0.0f);
 }
 
+/* ---------------------------------------------------- second fingers */
+
+/* +10us held by one finger, 1000us tapped by a second: 1000us is
+ * commanded and stays, the held key steps no more. */
+TEST_CASE(a_drive_button_under_a_second_finger_ends_a_held_step)
+{
+    static const rudder_ctl_t drv[3] = { RUD_C_1000, RUD_C_CENTER,
+                                         RUD_C_2000 };
+    static const uint16_t want[3] = { 1000u, 1500u, 2000u };
+    for (int i = 0; i < 3; ++i) {
+        armed_rudder();
+        tap_on(RUD_C_CENTER);
+        (void)taken();
+        down_on(RUD_C_PLUS);
+        ticks(20);
+        const gfx_rect_t d = rudder_rect(drv[i]);
+        ev(d.x + d.w / 2, d.y + d.h / 2, TOUCH_EVENT_DOWN, 2);
+        ev(d.x + d.w / 2, d.y + d.h / 2, TOUCH_EVENT_UP, 2);
+        CHECK_EQ(servo_screen_commanded(), want[i]);
+        (void)taken();
+        ticks(39);
+        CHECK_EQ(servo_screen_commanded(), want[i]);
+        CHECK_EQ(taken().kind, SERVO_CMD_NONE);
+        up_on(RUD_C_PLUS);
+        CHECK_EQ(taken().kind, SERVO_CMD_NONE);
+    }
+}
+
+/* -10us held, its UP lost: a DOWN of the same id elsewhere on the card
+ * ends the press, and the repeats stop. */
+TEST_CASE(a_down_with_the_held_steps_own_id_ends_it)
+{
+    armed_rudder();
+    tap_on(RUD_C_CENTER);
+    (void)taken();
+    down_on(RUD_C_MINUS);
+    CHECK_EQ(servo_screen_commanded(), 1490u);
+    const gfx_rect_t r = rudder_readout_rect();
+    ev(r.x + 20, r.y + 20, TOUCH_EVENT_DOWN, 1);
+    ticks(78);
+    CHECK_EQ(servo_screen_commanded(), 1490u);
+    ev(r.x + 20, r.y + 20, TOUCH_EVENT_UP, 1);
+    /* The same id down on the key again: a fresh press, one step. */
+    down_on(RUD_C_MINUS);
+    ev(r.x + 20, r.y + 20, TOUCH_EVENT_DOWN, 1);
+    ticks(39);
+    CHECK_EQ(servo_screen_commanded(), 1480u);
+}
+
 int main(void)
 {
     RUN(the_step_keys_show_without_a_working_knob_and_hide_with_one);
@@ -401,5 +452,7 @@ int main(void)
     RUN(the_steps_stop_at_travel_and_at_the_pulse_range);
     RUN(the_keys_move_nothing_while_safe_and_are_drawn_as_the_drive_buttons);
     RUN(the_shared_repeat_steps_at_0_45s_then_8hz_then_30hz);
+    RUN(a_drive_button_under_a_second_finger_ends_a_held_step);
+    RUN(a_down_with_the_held_steps_own_id_ends_it);
     return test_summary("servo_rudder_steps");
 }

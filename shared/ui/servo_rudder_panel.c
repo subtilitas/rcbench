@@ -456,7 +456,16 @@ void rudder_zero(void)
 
 void rudder_down(const touch_event_t *evt)
 {
-    if (evt == NULL || !rudder_shown() || rauto_down(evt)) {
+    if (evt == NULL) {
+        return;
+    }
+    /* A DOWN with the held step key's own id: the contact's UP was lost,
+     * and the press it latched ends here. */
+    if (is_step((rudder_ctl_t)s.rud.pressed)
+        && evt->point.id == s.rud.press_id) {
+        step_end();
+    }
+    if (!rudder_shown() || rauto_down(evt)) {
         return;
     }
     for (int k = RUD_C_LENGTH; k < RUD_C_COUNT; ++k) {
@@ -465,6 +474,11 @@ void rudder_down(const touch_event_t *evt)
             continue;
         }
         if (k == RUD_C_1000 || k == RUD_C_CENTER || k == RUD_C_2000) {
+            /* A second finger on a drive button takes the horn from a
+             * held step key, whose repeats end. */
+            if (is_step((rudder_ctl_t)s.rud.pressed)) {
+                step_end();
+            }
             drive((rudder_ctl_t)k);
         } else if (is_step((rudder_ctl_t)k)) {
             /* A step on the press, then the repeats while it is held. */
