@@ -30,7 +30,7 @@ rcbench/
     can/                  Bit Timing für beide Controller · MCP2515-Register · Echo-Selbsttest
     esc/                  ESC-Programmierprofile, ihr JSON-Leser und die Registry
     sense/                Treiber für die Strommonitore INA228 und INA3221
-    fwupdate/             Prüfung des Panel-Firmware-Images · Upload-Puffer · Installer
+    fwupdate/             Prüfung des Panel-Firmware-Images · Upload-Puffer · Installer · Update-Slots und BUY des IOmcu
     webaccess/            WLAN-Sitzung · Kartenliste und ZIP-Strom · die Seite · mDNS
     clock/                Regeln der Uhr: echtes Datum oder nicht · Zeitstempel · Zeitzonen · die NTP-Anfrage
     text/                 die Wörter der Oberfläche, alle Sprachen in einer Tabelle (nur Header)
@@ -89,8 +89,8 @@ als INTERFACE-Bibliothek `rcbench_<modul>_rp2350`. Includes sind flach:
 | Modul | panel | iomcu | host |
 | --- | :-: | :-: | :-: |
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `files` · `sbus` | ja | | ja |
-| `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` · `mstime` | ja | ja | ja |
-| `artwork` · `esc` · `fwupdate` · `webaccess` · `clock` | ja | | ja |
+| `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` · `mstime` · `fwupdate` | ja | ja | ja |
+| `artwork` · `esc` · `webaccess` · `clock` | ja | | ja |
 | `openyge` · `ppm` · `i2c_txq` | | ja | ja |
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | ja | ja | ja |
 | `escwire` | ja | ja | ja |
