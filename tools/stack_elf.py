@@ -1,7 +1,8 @@
-"""The part of tools/stack_check.py both its halves share: the reader of a
-32-bit little-endian ELF (Executable and Linkable Format) file, the deepest
-chain through a call graph, and what both read out of C source and out of
-the tables in the docs.
+"""The part of tools/stack_check.py both its halves share.
+
+The reader of a 32-bit little-endian ELF (Executable and Linkable Format) file,
+the deepest chain through a call graph, and what both read out of C source and
+out of the tables in the docs.
 
 stack_check.py holds the panel's task stacks to their deepest call chain
 and stack_iomcu.py the IOmcu's two; stack_check.py's docstring says
@@ -19,14 +20,16 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def die(msg: str) -> None:
+    """Exit with @p msg, prefixed with the tool name."""
     sys.exit(f"stack_check: {msg}")
 
 
 # --------------------------------------------------------------- the ELF --
 
 class Elf:
-    """The sections with contents, and the symbol table, of a 32-bit
-    little-endian ELF.
+    """The sections with contents and the symbol table of a 32-bit ELF.
+
+    The ELF (Executable and Linkable Format) file is little-endian.
 
     Attributes:
         data: The file's bytes.
@@ -82,6 +85,10 @@ class Elf:
                                      shndx == 0xFFF1))
 
     def read(self, addr: int, n: int) -> bytes | None:
+        """The @p n bytes at address @p addr, or None.
+
+        None when no section holds them.
+        """
         for base, off, size in self.sections:
             if base <= addr and addr + n <= base + size:
                 return self.data[off + addr - base: off + addr - base + n]
@@ -98,6 +105,7 @@ EM_XTENSA = 94
 # The low @p bits bits of @p v as a signed number: a branch's offset, in
 # the panel's decoder and in the IOmcu's.
 def sext(v: int, bits: int) -> int:
+    """@p v as a signed number of @p bits bits."""
     return v - (1 << bits) if v & (1 << (bits - 1)) else v
 
 
@@ -124,10 +132,11 @@ def call_args(text: str, start: int) -> list | None:
 # -------------------------------------------------------- the call graph --
 
 class Graph:
-    """The deepest chain through a call graph, under one rule for
-    recursion: a function already on the chain is not entered again.  A
-    chain through a cycle so runs round it at most once, and the depth is
-    the largest sum of frames over every chain with no function twice.
+    """The deepest chain through a call graph, under one rule for recursion.
+
+    A function already on the chain is not entered again.  A chain through a
+    cycle so runs round it at most once, and the depth is the largest sum of
+    frames over every chain with no function twice.
 
     That sum does not split at a function inside a cycle: how far a chain
     gets from there depends on which of the cycle's functions are already
@@ -141,7 +150,8 @@ class Graph:
 
     groups() is iterative.  depth() and _through() recurse, two Python
     frames for every function of a chain; main() raises the recursion
-    limit to 20000, and the deepest panel chain is 31 functions."""
+    limit to 20000, and the deepest panel chain is 31 functions.
+    """
 
     # The visits to functions of one group a search from one entry into it
     # makes before it fails: about 1s.  The panel's largest group, 10
@@ -149,6 +159,10 @@ class Graph:
     VISIT_CAP = 1_000_000
 
     def __init__(self, funcs: dict, names: dict) -> None:
+        """A call graph of the functions @p funcs.
+
+        @p names maps addresses to names.
+        """
         self.funcs = funcs
         self.names = names          # address -> name, ROM included
         self.memo = {}              # address -> depth entered from outside
@@ -156,12 +170,15 @@ class Graph:
         self._group = None          # address -> its component, a frozenset
 
     def label(self, addr: int) -> str:
+        """The name of the function at @p addr, or its address as hex."""
         f = self.funcs.get(addr)
         return f.name if f else self.names.get(addr, f"0x{addr:08x}")
 
     def groups(self) -> dict:
-        """address -> the strongly connected component it lies in, read
-        once with Tarjan's algorithm."""
+        """Address -> the strongly connected component it lies in.
+
+        Read once with Tarjan's algorithm.
+        """
         if self._group is not None:
             return self._group
         index, low, stack, on, group = {}, {}, [], set(), {}
@@ -205,8 +222,7 @@ class Graph:
         return group
 
     def depth(self, addr: int) -> tuple:
-        """(bytes, [(frame, depth from here, address)]) of the deepest
-        chain from @p addr."""
+        """(bytes, [(frame, depth, address)]) of the chain at @p addr."""
         if addr in self.memo:
             return self.memo[addr]
         f = self.funcs.get(addr)
@@ -219,10 +235,13 @@ class Graph:
 
     def _through(self, addr: int, group: frozenset, on: set,
                  count: list) -> tuple:
-        """The deepest chain from @p addr, which lies in @p group, entering
+        """The deepest chain from @p addr, which lies in @p group.
+
+        The deepest chain from @p addr, which lies in @p group, entering
         no function of the group in @p on again; @p count holds the visits
         this entry into the group has made, and the function it entered
-        at."""
+        at.
+        """
         count[0] += 1
         self.visits += 1
         if count[0] > self.VISIT_CAP:
@@ -245,9 +264,11 @@ class Graph:
         return (f.frame + best, [(f.frame, f.frame + best, addr)] + chain)
 
     def recursion(self, seen: set) -> list:
-        """The cycles among @p seen, one line each: the functions of every
-        strongly connected component of more than one function, and every
-        function that calls itself."""
+        """The cycles among @p seen, one line each.
+
+        The functions of every strongly connected component of more than one
+        function, and every function that calls itself.
+        """
         group = self.groups()
         out = set()
         for a in seen:
@@ -257,6 +278,7 @@ class Graph:
         return sorted(out)
 
     def reach(self, root: int) -> set:
+        """The set of addresses of the functions that @p root reaches."""
         seen, todo = set(), [root]
         while todo:
             a = todo.pop()
@@ -269,9 +291,12 @@ class Graph:
 # ------------------------------------------------ the tables in the docs --
 
 def doc_rows(text: str, header: str) -> dict | None:
-    """{first cell's quoted name: [the numbers of the cells after the
+    """{first cell's quoted name: [numbers of the cells after the second]}.
+
+    {first cell's quoted name: [the numbers of the cells after the
     second]} for the table under @p header; None without the table.  A
-    number is written 8,192 in English and 8 192 in German."""
+    number is written 8,192 in English and 8 192 in German.
+    """
     if header not in text:
         return None
     rows = {}

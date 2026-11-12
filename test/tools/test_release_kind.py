@@ -1,4 +1,6 @@
-"""release_kind.py: an odd minor number is a testing release, published as
+"""release_kind.py: the kind of a release tag.
+
+An odd minor number is a testing release, published as
 a pre-release; an even one is a stable release, marked latest.
 
 SPDX-License-Identifier: MIT
@@ -15,6 +17,7 @@ TOOL = rk.__file__
 
 
 def run(*args):
+    """Run release_kind.py with @p args and capture its output."""
     return subprocess.run([sys.executable, TOOL, *args],
                           capture_output=True, text=True, check=False)
 
@@ -32,6 +35,7 @@ def run(*args):
     ("v65535.65534.65535", "stable"),
 ])
 def test_the_minor_number_names_the_kind(tag, kind):
+    """The minor number names the kind."""
     testing = kind == "testing"
     assert rk.is_testing(tag) is testing
     assert rk.outputs(tag) == [
@@ -42,6 +46,7 @@ def test_the_minor_number_names_the_kind(tag, kind):
 
 
 def test_the_patch_number_does_not_change_the_kind():
+    """The patch number does not change the kind."""
     for patch in range(0, 12):
         assert rk.is_testing(f"v0.21.{patch}")
         assert not rk.is_testing(f"v0.22.{patch}")
@@ -71,6 +76,7 @@ def test_the_patch_number_does_not_change_the_kind():
     "v0.٢١.0",           # digits outside ASCII
 ])
 def test_a_tag_out_of_form_is_refused(tag):
+    """A tag out of form is refused."""
     with pytest.raises(ValueError):
         rk.parse(tag)
     result = run(tag)
@@ -80,6 +86,7 @@ def test_a_tag_out_of_form_is_refused(tag):
 
 
 def test_the_command_prints_the_lines_for_github_output():
+    """The command prints the lines for github output."""
     result = run("v0.21.0")
     assert result.returncode == 0
     assert result.stdout == "kind=testing\nprerelease=true\nlatest=false\n"
@@ -89,6 +96,7 @@ def test_the_command_prints_the_lines_for_github_output():
 
 
 def test_no_tag_is_exit_2():
+    """No tag is exit 2."""
     assert run().returncode == 2
 
 
@@ -106,6 +114,7 @@ def test_an_older_stable_tag_is_not_marked_latest():
 
 
 def test_every_full_release_counts_and_malformed_tags_do_not():
+    """Every full release counts and malformed tags do not."""
     # Full releases from before the rule carry odd minor numbers (0.19.0);
     # a newer one of them keeps the latest mark as well.
     assert not rk.is_latest("v0.18.2", ["v0.19.0"])
@@ -117,6 +126,7 @@ def test_every_full_release_counts_and_malformed_tags_do_not():
 
 
 def test_the_command_compares_with_the_published_tags():
+    """The command compares with the published tags."""
     result = run("v0.22.0", "v0.20.0", "v0.24.0")
     assert result.returncode == 0
     assert result.stdout == "kind=stable\nprerelease=false\nlatest=false\n"

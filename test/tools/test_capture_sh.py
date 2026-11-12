@@ -43,11 +43,16 @@ def rows(name, bits):
 
 
 def listing(channels):
+    """The sigrok listing text of @p channels, a list of (name, bits)."""
     lines = [r for name, bits in channels for r in rows(name, bits)]
     return "\n".join(lines) + "\n"
 
 
 def run(tmp_path, text, timeout=60, stub=STUB):
+    """Run capture.sh in @p tmp_path on the bits @p text.
+
+    A stub sigrok-cli supplies the samples.
+    """
     host = tmp_path / "testbench" / "host"
     host.mkdir(parents=True)
     (tmp_path / "testbench" / "captures").mkdir()
@@ -70,6 +75,7 @@ def run(tmp_path, text, timeout=60, stub=STUB):
 
 
 def never_changed(stderr):
+    """The channels named by the never-changed warning, or None."""
     m = re.fullmatch(
         r"warning: never changed: (.*) -- probe, threshold or ground\n",
         stderr)
@@ -80,36 +86,43 @@ N = 1000
 
 
 def test_a_flat_channel_is_named_high_or_low(tmp_path):
+    """A flat channel is named high or low."""
     err = run(tmp_path, listing([("D0", "1" * N), ("D1", "0" * N)]))
     assert never_changed(err) == {"D0", "D1"}
 
 
 def test_a_toggling_channel_is_not_named(tmp_path):
+    """A toggling channel is not named."""
     assert run(tmp_path, listing([("D0", "01" * (N // 2))])) == ""
 
 
 def test_a_change_at_the_last_sample_counts(tmp_path):
+    """A change at the last sample counts."""
     err = run(tmp_path, listing([("D2", "0" * (N - 1) + "1"),
                                  ("D3", "1" * (N - 1) + "0")]))
     assert err == ""
 
 
 def test_a_change_at_the_first_sample_counts(tmp_path):
+    """A change at the first sample counts."""
     assert run(tmp_path, listing([("D2", "1" + "0" * (N - 1))])) == ""
 
 
 def test_an_empty_capture_is_reported(tmp_path):
+    """An empty capture is reported."""
     err = run(tmp_path, "")
     assert err.startswith("warning: no samples in the capture")
 
 
 def test_a_failed_read_back_is_reported_and_the_path_is_printed(tmp_path):
+    """A failed read back is reported and the path is printed."""
     err = run(tmp_path, "", stub=STUB_FAILING)
     assert err.startswith("warning: read-back of ")
     assert "device gone" in err
 
 
 def test_only_the_flat_channels_among_several_are_named(tmp_path):
+    """Only the flat channels among several are named."""
     err = run(tmp_path, listing([("D0", "1" * N), ("D1", "01" * (N // 2)),
                                  ("D4", "0" * N),
                                  ("D10", "1" * 500 + "0" * 500)]))
@@ -117,12 +130,15 @@ def test_only_the_flat_channels_among_several_are_named(tmp_path):
 
 
 def test_a_channel_name_with_digits_is_not_a_level(tmp_path):
+    """A channel name with digits is not a level."""
     assert never_changed(run(tmp_path, listing([("D10", "1" * N)]))) == {"D10"}
 
 
 def test_4_million_samples_are_checked_within_20_seconds(tmp_path):
-    """The check is linear in the samples: 4 M samples of one channel take
-    about 1s."""
+    """The check is linear in the samples.
+
+    4 M samples of one channel take about 1s.
+    """
     n = 4_000_000
     err = run(tmp_path, listing([("D0", "1" * n)]), timeout=20)
     assert never_changed(err) == {"D0"}

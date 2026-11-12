@@ -1,4 +1,6 @@
-"""psram_bss.py: the objects a linker fragment maps to PSRAM and where the
+"""psram_bss.py: the objects a linker fragment maps to PSRAM.
+
+The objects a linker fragment maps to PSRAM and where the
 linker map places their .bss.
 
 SPDX-License-Identifier: MIT
@@ -54,11 +56,13 @@ GOOD = FRAGMENT.replace("    picker_screen (noflash)\n", "")
 
 
 def test_the_fragment_names_the_objects_its_scheme_maps():
+    """The fragment names the objects its scheme maps."""
     assert pb.named(GOOD) == ([("libui.a", "servo_screen"),
                                ("libbench.a", "kst_card")], [])
 
 
 def test_an_entry_in_another_form_is_a_stray():
+    """An entry in another form is a stray."""
     stray = GOOD.replace(
         "    servo_screen (rcbench_extram_bss)\n",
         "    servo_screen (rcbench_extram_bss)\n"
@@ -79,6 +83,7 @@ def test_an_entry_in_another_form_is_a_stray():
 
 
 def test_the_map_sums_bss_and_common_per_section_and_object():
+    """The map sums BSS and common per section and object."""
     placed = pb.bss_by_object(MAP)
     assert placed[".ext_ram.bss"] == {("libui.a", "servo_screen"): 0x7388,
                                       ("libbench.a", "kst_card"): 0x10}
@@ -87,10 +92,12 @@ def test_the_map_sums_bss_and_common_per_section_and_object():
 
 
 def test_a_build_with_every_named_object_in_psram_passes():
+    """A build with every named object in PSRAM passes."""
     assert pb.problems(pb.named(GOOD)[0], pb.bss_by_object(MAP)) == []
 
 
 def test_an_object_left_in_internal_ram_fails():
+    """An object left in internal RAM fails."""
     placed = pb.bss_by_object(MAP.replace(
         f" COMMON         0x48007388       0x10 {BENCH}\n", "").replace(
         " *(.bss .bss.*)\n", f" .bss.t         0x0 0x40 {BENCH}\n"))
@@ -101,6 +108,7 @@ def test_an_object_left_in_internal_ram_fails():
 
 
 def test_an_object_with_bss_on_both_sides_fails():
+    """An object with BSS on both sides fails."""
     placed = pb.bss_by_object(MAP)
     placed[".dram0.bss"][("libui.a", "servo_screen")] = 8
     assert pb.problems(pb.named(GOOD)[0], placed) == [
@@ -108,6 +116,7 @@ def test_an_object_with_bss_on_both_sides_fails():
 
 
 def test_a_fragment_on_another_scheme_names_nothing_and_fails():
+    """A fragment on another scheme names nothing and fails."""
     other = GOOD.replace("(rcbench_extram_bss)", "(extram_bss)")
     assert pb.named(other)[0] == []
     assert pb.problems([], pb.bss_by_object(MAP)) == [
@@ -115,10 +124,12 @@ def test_a_fragment_on_another_scheme_names_nothing_and_fails():
 
 
 def test_a_map_without_the_memory_map_places_nothing():
+    """A map without the memory map places nothing."""
     assert pb.bss_by_object("Discarded input sections\n") == {}
 
 
 def test_main_reads_a_build_directory(tmp_path, capsys, monkeypatch):
+    """Main reads a build directory."""
     (tmp_path / pb.MAP).write_text(MAP)
     fragment = tmp_path / "psram_bss.lf"
     fragment.write_text(GOOD)

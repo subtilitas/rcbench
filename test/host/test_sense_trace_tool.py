@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
-"""tools/sense_trace.py against the synthetic console log.
+r"""tools/sense_trace.py against the synthetic console log.
 
 Run by ctest (the `sense_trace_tool` test) with the two host programs the
 suite builds:
@@ -47,7 +47,7 @@ number.
 Regenerate the fixtures after a change that moves them:
 
     <build>/sense_trace_gen /tmp/sim.log /tmp/sim.csv
-    tr -d '\\r' < /tmp/sim.log > test/host/fixtures/sense-trace-sim.log
+    tr -d '\r' < /tmp/sim.log > test/host/fixtures/sense-trace-sim.log
     cp /tmp/sim.csv test/host/fixtures/sense-trace-sim.csv
 """
 
@@ -72,17 +72,23 @@ SETTINGS = [(n, band) for n in (1, 4, 8) for band in ("0.02", "0.05", "0.10")]
 
 
 def check(cond: bool, what: str) -> None:
+    """Raise AssertionError with @p what unless @p cond holds."""
     if not cond:
         raise AssertionError(what)
 
 
 def tool(*args: str) -> subprocess.CompletedProcess:
+    """Run tools/sense_trace.py with the replay program and @p args."""
     return subprocess.run(
         [sys.executable, str(TOOL), "--replay", str(ARGS.replay), *args],
         capture_output=True, text=True)
 
 
 def work(name: str, text: str | None = None) -> pathlib.Path:
+    """The path @p name in the work folder.
+
+    Write @p text to it as ASCII when given.
+    """
     path = ARGS.work / name
     path.parent.mkdir(parents=True, exist_ok=True)
     if text is not None:
@@ -91,11 +97,13 @@ def work(name: str, text: str | None = None) -> pathlib.Path:
 
 
 def is_sample(line: str) -> bool:
+    """Whether @p line is a sample line of a trace."""
     got = sense_trace.read_line(line)
     return got is not None and got[0] == "s"
 
 
 def fixture_log() -> str:
+    """The text of the simulated console log fixture."""
     return (ARGS.fixtures / "sense-trace-sim.log").read_text("ascii")
 
 
@@ -113,6 +121,7 @@ def setting_rows(out: str, after: str) -> dict[tuple[int, str], list[str]]:
 # --- the cases ---------------------------------------------------------------
 
 def the_fixtures_are_what_the_generator_writes() -> None:
+    """The fixtures are what the generator writes."""
     log, csv = work("gen/sim.log"), work("gen/sim.csv")
     subprocess.run([str(ARGS.gen), str(log), str(csv)], check=True)
     raw = log.read_bytes()
@@ -133,6 +142,7 @@ def the_fixtures_are_what_the_generator_writes() -> None:
 
 
 def the_report_on_the_fixture() -> None:
+    """The report on the fixture."""
     out_dir = work("report")
     r = tool(str(ARGS.fixtures / "sense-trace-sim.log"), "--servo-csv",
              str(ARGS.fixtures / "sense-trace-sim.csv"), "--out",
@@ -201,6 +211,7 @@ def the_report_on_the_fixture() -> None:
 
 
 def cr_lf_and_lf_read_the_same() -> None:
+    """CR LF and LF read the same."""
     lf = work("eol/lf.log", fixture_log())
     crlf = work("eol/crlf.log", fixture_log().replace("\n", "\r\n"))
     a = tool(str(lf), "--no-csv")
@@ -212,6 +223,7 @@ def cr_lf_and_lf_read_the_same() -> None:
 
 
 def a_log_cut_off_inside_a_trace() -> None:
+    """A log cut off inside a trace."""
     lines = fixture_log().splitlines()
     cut = work("cut.log", "\n".join(lines[:-1]) + "\n")
     r = tool(str(cut))
@@ -224,6 +236,7 @@ def a_log_cut_off_inside_a_trace() -> None:
 
 
 def a_missing_line_does_not_match_the_end_line() -> None:
+    """A missing line does not match the end line."""
     lines = fixture_log().splitlines()
     at = next(k for k, line in enumerate(lines) if line == "10,302")
     r = tool(str(work("short.log",
@@ -254,6 +267,7 @@ def a_missing_line_does_not_match_the_end_line() -> None:
 
 
 def a_trace_that_starts_inside_another() -> None:
+    """A trace that starts inside another."""
     lines = fixture_log().splitlines()
     end = next(k for k, line in enumerate(lines) if line.startswith("$Z"))
     r = tool(str(work("nested.log",
@@ -267,6 +281,7 @@ def a_trace_that_starts_inside_another() -> None:
 
 
 def dropped_records_are_counted_against_the_end_line() -> None:
+    """Dropped records are counted against the end line."""
     lines = fixture_log().splitlines()
     at = next(k for k, line in enumerate(lines) if line == "10,302")
     end = next(k for k, line in enumerate(lines) if line.startswith("$Z"))
@@ -288,6 +303,7 @@ def dropped_records_are_counted_against_the_end_line() -> None:
 
 
 def a_log_with_no_trace() -> None:
+    """A log with no trace."""
     r = tool(str(work("none.log", "rcbench-iomcu: CAN up\n10,300\nv6000\n")))
     check(r.returncode == 1, f"exit {r.returncode}")
     # A sample line and a voltage line with no trace around them are a
@@ -301,6 +317,7 @@ def a_log_with_no_trace() -> None:
 
 
 def another_version_and_a_trace_without_a_shunt() -> None:
+    """Another version and a trace without a shunt."""
     text = ("$T v=4 n=7 trig=key t=100 ms=10 len=10000\n"
             "$H dt_us=1000 shunt_uohm=0 cfg=0x0000 on=0 rst=0\n"
             "$K t=100\n"
@@ -330,9 +347,12 @@ def another_version_and_a_trace_without_a_shunt() -> None:
 
 def synthetic(t0: int, moves: list[tuple[int, int]], edges: bool = False,
               high: int = 2000, edge_after: int = 120) -> str:
-    """A trace at @p t0: 0.12A held, and after each (ms, us) command a
-    burst of @p high codes for 100ms.  With @p edges an edge line
-    @p edge_after tenths of a ms after each command line's time."""
+    """A trace at @p t0.
+
+    0.12A held, and after each (ms, us) command a burst of @p high codes for
+    100ms.  With @p edges an edge line @p edge_after tenths of a ms after each
+    command line's time.
+    """
     out = [f"$T v=2 n=1 trig=cmd t={t0} ms=0 len=4000",
            "$H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1 rst=0"]
     n = 0
@@ -353,6 +373,7 @@ def synthetic(t0: int, moves: list[tuple[int, int]], edges: bool = False,
 
 
 def times_run_across_the_wrap_of_the_count() -> None:
+    """Times run across the wrap of the count."""
     # The trigger 20ms before the 0.1ms count wraps; the second command
     # 1s after it.
     t0 = (1 << 32) - 200
@@ -379,6 +400,7 @@ def times_run_across_the_wrap_of_the_count() -> None:
 
 
 def clipped_samples_are_said_and_time_no_arrival() -> None:
+    """Clipped samples are said and time no arrival."""
     r = tool(str(work("clip.log", synthetic(1000, [(0, 1900)], high=4095))),
              "--no-csv")
     check(r.returncode == 0, f"exit {r.returncode}: {r.stderr}")
@@ -402,8 +424,10 @@ def clipped_samples_are_said_and_time_no_arrival() -> None:
 
 
 def a_clipped_sample_is_marked_in_the_csv() -> None:
-    """Each end code and the code next to it, at the top and the bottom:
-    the end codes are clipped rows, the codes inside are values."""
+    """Each end code and the code next to it, at the top and the bottom.
+
+    The end codes are clipped rows, the codes inside are values.
+    """
     for high, clip in ((4095, "1"), (4094, "0"), (-4096, "-1"),
                        (-4095, "0")):
         log = work(f"csv{high}.log", synthetic(1000, [(0, 1900)], high=high))
@@ -423,6 +447,7 @@ def a_clipped_sample_is_marked_in_the_csv() -> None:
 
 
 def edge_lines_are_the_moves_when_there_are_any() -> None:
+    """Edge lines are the moves when there are any."""
     text = synthetic(1000, [(0, 1900), (1000, 1100)], edges=True)
     r = tool(str(work("edge.log", text)), "--no-csv")
     check(r.returncode == 0, f"exit {r.returncode}: {r.stderr}")
@@ -435,6 +460,7 @@ def edge_lines_are_the_moves_when_there_are_any() -> None:
 
 
 def an_edge_takes_the_command_line_nearest_to_it() -> None:
+    """An edge takes the command line nearest to it."""
     # A command line's time one frame late: 20ms after its edge.  The
     # edge still has its channel and pulse, and with them the level its
     # end was held at.
@@ -456,6 +482,7 @@ def an_edge_takes_the_command_line_nearest_to_it() -> None:
 
 
 def a_command_with_no_edge_line_is_a_move() -> None:
+    """A command with no edge line is a move."""
     # Three commands, an edge line for the first and the third: the
     # second is a move at its command line's time.
     lines = synthetic(1000, [(0, 1900), (1000, 1100), (2000, 1900)],
@@ -488,6 +515,7 @@ def a_command_with_no_edge_line_is_a_move() -> None:
 
 
 def edges_and_commands_are_paired_as_many_as_can_be() -> None:
+    """Edges and commands are paired as many as can be."""
     limit = 300
     pair = sense_trace.pair_near
     # Commands at 80 and 115ms, edges at 100 and 140ms: the nearest
@@ -535,6 +563,7 @@ def edges_and_commands_are_paired_as_many_as_can_be() -> None:
 
 
 def commands_within_30_ms_are_not_replayed() -> None:
+    """Commands within 30ms are not replayed."""
     # Two outputs commanded in one frame, and one alone 1s later.
     lines = synthetic(1000, [(0, 1900), (1000, 1100)]).splitlines()
     at = next(k for k, line in enumerate(lines) if line.startswith("$C"))
@@ -564,10 +593,12 @@ def commands_within_30_ms_are_not_replayed() -> None:
 def outputs_log(cmds: list[tuple[int, int, int]], drawing: tuple = (2,),
                 ends: tuple = (), edges: tuple = (),
                 trig: str = "cmd") -> str:
-    """A trace of several outputs on the one shunt: 0.12A held, and
-    after each (ms, channel, us) command of a channel in @p drawing a
-    burst of 0.8A for 100ms.  @p ends are (ms, channel, us) $D lines,
-    @p edges the ms of edge lines."""
+    """A trace of several outputs on the one shunt.
+
+    0.12A held, and after each (ms, channel, us) command of a channel in @p
+    drawing a burst of 0.8A for 100ms.  @p ends are (ms, channel, us) $D lines,
+    @p edges the ms of edge lines.
+    """
     t0 = 1000
     out = [f"$T v=2 n=1 trig={trig} t={t0} ms=0 len=4000",
            "$H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1 rst=0"]
@@ -597,12 +628,15 @@ REFUSED = "another command within 30 ms, the current is of both"
 
 
 def body(r: subprocess.CompletedProcess, drop: int = 1) -> list[str]:
-    """A report without its first @p drop lines: the log's, which has
-    the path, and with 2 the line on the loaded channels."""
+    """A report without its first @p drop lines.
+
+    The log's, which has the path, and with 2 the line on the loaded channels.
+    """
     return r.stdout.splitlines()[drop:]
 
 
 def without_loaded_channel_the_report_is_the_one_of_record() -> None:
+    """Without loaded channel the report is the one of record."""
     # fixtures/sense-trace-sim.report.txt is the report on the fixtures,
     # named as they are in their directory, with no --loaded-channel.
     want = (ARGS.fixtures / "sense-trace-sim.report.txt").read_text("ascii")
@@ -629,6 +663,7 @@ ONE = [(0, 2, 1900), (1000, 2, 1100), (2000, 2, 1900)]
 
 
 def a_loaded_channel_leaves_out_the_other_channels_commands() -> None:
+    """A loaded channel leaves out the other channels commands."""
     # Three outputs that start in one frame, then two commanded in every
     # frame, and a servo on one of them.
     both = sorted(ONE + [(at, 3, us) for at, _, us in ONE] + [(0, 1, 1000)])
@@ -661,6 +696,7 @@ def a_loaded_channel_leaves_out_the_other_channels_commands() -> None:
 
 
 def a_command_of_another_channel_30_ms_before_and_after_a_move() -> None:
+    """A command of another channel 30ms before and after a move."""
     # Channel 3 commanded 30ms before the first move, 30ms after the
     # second, 1ms before the third and 31ms after the fourth: within
     # the 30ms each time but the last.
@@ -689,6 +725,7 @@ def a_command_of_another_channel_30_ms_before_and_after_a_move() -> None:
 
 
 def two_loaded_channels_in_one_frame_are_still_not_replayed() -> None:
+    """Two loaded channels in one frame are still not replayed."""
     both = sorted(ONE + [(at, 3, us) for at, _, us in ONE[:2]]
                   + [(0, 1, 1000)])
     log = str(work("loaded-both.log", outputs_log(both, drawing=(2, 3))))
@@ -721,6 +758,7 @@ def two_loaded_channels_in_one_frame_are_still_not_replayed() -> None:
 
 
 def a_loaded_channel_with_no_command_in_the_log() -> None:
+    """A loaded channel with no command in the log."""
     log = str(work("absent.log", outputs_log(ONE)))
     r = tool(log, "--no-csv", LOADED, "5")
     check(r.returncode == 0 and r.stderr == "",
@@ -756,6 +794,7 @@ def a_loaded_channel_with_no_command_in_the_log() -> None:
 
 
 def a_loaded_channel_is_a_channel_as_a_command_line_writes_it() -> None:
+    """A loaded channel is a channel as a command line writes it."""
     log = str(work("value.log", outputs_log(ONE)))
     for value in ("-1", "65536", "2.0", "02", "+2", "1_0", " 2", "2 ",
                   "0x2", "x", "", "2,3", "-0", "99999999999999999999"):
@@ -785,6 +824,7 @@ def a_loaded_channel_is_a_channel_as_a_command_line_writes_it() -> None:
 
 
 def lines_that_end_and_stamp_another_channels_command_are_left_out() -> None:
+    """Lines that end and stamp another channel's command are left out."""
     # Channel 2's command is slewed and ends at 1950us; channel 3's too,
     # at 1150us, and its $D line is no end of channel 2's command.
     cmds = [(0, 2, 1900), (500, 3, 1100), (1000, 2, 1100)]
@@ -835,6 +875,7 @@ def lines_that_end_and_stamp_another_channels_command_are_left_out() -> None:
 
 
 def the_traces_alone_say_which_settings_time_every_move() -> None:
+    """The traces alone say which settings time every move."""
     r = tool(str(ARGS.fixtures / "sense-trace-sim.log"), "--no-csv")
     check(r.returncode == 0, f"exit {r.returncode}: {r.stderr}")
     out = r.stdout
@@ -870,6 +911,7 @@ def the_traces_alone_say_which_settings_time_every_move() -> None:
 
 
 def a_trace_with_trigger_lines_not_written_is_not_replayed() -> None:
+    """A trace with trigger lines not written is not replayed."""
     lines = synthetic(1000, [(0, 1900), (1000, 1100)]).splitlines()
     lines[-1] = lines[-1].replace("ml=0", "ml=1")
     r = tool(str(work("ml.log", "\n".join(lines) + "\n")), "--no-csv")
@@ -883,6 +925,7 @@ def a_trace_with_trigger_lines_not_written_is_not_replayed() -> None:
 
 
 def a_move_with_records_missing_inside_it_is_not_replayed() -> None:
+    """A move with records missing inside it is not replayed."""
     lines = synthetic(1000, [(0, 1900), (1000, 1100)]).splitlines()
     # 3 records dropped 50ms into the first move's burst.
     first = next(k for k, line in enumerate(lines) if line == "10,2000")
@@ -912,6 +955,7 @@ def gap(lines: list[str], at: int) -> list[str]:
 
 
 def records_missing_at_the_ends_of_a_moves_samples() -> None:
+    """Records missing at the ends of a move's samples."""
     lines = synthetic(1000, [(0, 1900), (1000, 1100)]).splitlines()
     cmd2 = next(k for k, line in enumerate(lines)
                 if line.startswith("$C") and "us=1100" in line)
@@ -949,6 +993,7 @@ def records_missing_at_the_ends_of_a_moves_samples() -> None:
 
 
 def a_move_the_part_went_offline_in_is_not_replayed() -> None:
+    """A move the part went offline in is not replayed."""
     lines = synthetic(1000, [(0, 1900), (1000, 1100)]).splitlines()
     first = next(k for k, line in enumerate(lines) if line == "10,2000")
     # Offline 50ms into the first burst, back 30ms of samples later.
@@ -965,6 +1010,7 @@ def a_move_the_part_went_offline_in_is_not_replayed() -> None:
 
 
 def settings_are_compared_on_the_moves_both_time() -> None:
+    """Settings are compared on both times of a move."""
     # Two moves: a burst of 100ms, and one of a single sample 0.04A
     # above the level, which a mean of 4 samples does not lift past the
     # threshold of 0.020A: the second is timed by filter 1 alone.
@@ -997,6 +1043,7 @@ def settings_are_compared_on_the_moves_both_time() -> None:
 
 
 def a_slewed_command_ends_at_its_d_line() -> None:
+    """A slewed command ends at its D line."""
     # Three commands on a slewed channel: each $C line has the slew's
     # first pulse, each $D line the pulse it ended at.
     moves = [(0, 1501), (1000, 1799), (2000, 1101)]
@@ -1043,9 +1090,11 @@ def a_slewed_command_ends_at_its_d_line() -> None:
 
 
 def let_go_log(version: int, cmd: str | None, t0: int = 1000) -> str:
-    """Two commands of channel 2 at 0 and 1000ms; the first slews to
-    1700us and is let go at 980ms, 20ms before the second.  Its $D
-    line names @p cmd as its command (version 3), or none."""
+    """Two commands of channel 2 at 0 and 1000ms.
+
+    The first slews to 1700us and is let go at 980ms, 20ms before the second.
+    Its $D line names @p cmd as its command (version 3), or none.
+    """
     lines = synthetic(t0, [(0, 1501), (1000, 1101)]).splitlines()
     lines[0] = lines[0].replace("v=2", f"v={version}")
     at = next(k for k, line in enumerate(lines) if line.startswith("$C"))
@@ -1057,6 +1106,7 @@ def let_go_log(version: int, cmd: str | None, t0: int = 1000) -> str:
 
 
 def a_d_line_ends_the_command_it_names() -> None:
+    """A D line ends the command it names."""
     # Version 3: the $D line is the first command's end, also with its
     # command's time across the wrap of the 0.1ms count.
     for t0 in (1000, (1 << 32) - 200):
@@ -1119,6 +1169,7 @@ def a_d_line_ends_the_command_it_names() -> None:
 
 
 def a_move_with_no_end_reads_cut_and_one_unseen_unseen() -> None:
+    """A move with no end reads cut and one unseen unseen."""
     # The second command 50ms into the first move's burst; the third
     # with no burst at all.
     text = synthetic(1000, [(0, 1900), (63, 1100), (2000, 1900)])
@@ -1135,6 +1186,7 @@ def a_move_with_no_end_reads_cut_and_one_unseen_unseen() -> None:
 
 
 def a_tail_of_vertical_tab_or_form_feed_is_a_cut_row() -> None:
+    """A tail of vertical tab or form feed is a cut row."""
     whole = (ARGS.fixtures / "sense-trace-sim.csv").read_bytes()
     path = work("tail.csv")
     for tail, want in ((b" \t\r", False), (b"\x0b", True), (b"\x0c", True),
@@ -1146,6 +1198,7 @@ def a_tail_of_vertical_tab_or_form_feed_is_a_cut_row() -> None:
 
 
 def a_csv_row_without_its_line_feed_is_left_out() -> None:
+    """A CSV row without its line feed is left out."""
     whole = (ARGS.fixtures / "sense-trace-sim.csv").read_bytes()
     check(whole.endswith(b"\n"), "the fixture ends on its line feed")
     last = whole.rindex(b"\n", 0, len(whole) - 1) + 1
@@ -1185,6 +1238,7 @@ def a_csv_row_without_its_line_feed_is_left_out() -> None:
 
 
 def the_servo_csv_pairs_by_time() -> None:
+    """The servo CSV pairs by time."""
     log = str(ARGS.fixtures / "sense-trace-sim.log")
     rows = (ARGS.fixtures / "sense-trace-sim.csv").read_text().splitlines()
     # Two rows of four equally spaced moves fit one move along as well.
@@ -1252,6 +1306,7 @@ def the_servo_csv_pairs_by_time() -> None:
 
 
 def the_offset_that_pairs_the_most_is_found_between_the_obvious() -> None:
+    """The offset that pairs the most is found between the obvious."""
     class At:
         def __init__(self, abs_s: float) -> None:
             self.abs_s = abs_s
@@ -1269,6 +1324,7 @@ def the_offset_that_pairs_the_most_is_found_between_the_obvious() -> None:
 
 
 def an_offset_that_puts_rows_at_the_tolerance_itself_is_tried() -> None:
+    """An offset that puts rows at the tolerance itself is tried."""
     class At:
         def __init__(self, abs_s: float) -> None:
             self.abs_s = abs_s
@@ -1302,6 +1358,7 @@ def an_offset_that_puts_rows_at_the_tolerance_itself_is_tried() -> None:
 
 
 def offsets_that_give_rows_to_other_moves_are_two_answers() -> None:
+    """Offsets that give rows to other moves are two answers."""
     class At:
         def __init__(self, abs_s: float) -> None:
             self.abs_s = abs_s
@@ -1360,6 +1417,7 @@ def offsets_that_give_rows_to_other_moves_are_two_answers() -> None:
 
 
 def pairing_arguments_are_checked() -> None:
+    """Pairing arguments are checked."""
     log = str(ARGS.fixtures / "sense-trace-sim.log")
     csv = str(ARGS.fixtures / "sense-trace-sim.csv")
     for bad in ("0", "-1", "nan", "inf", "-inf", "60000.001", "1e308"):
@@ -1397,6 +1455,7 @@ def pairing_arguments_are_checked() -> None:
 
 
 def a_capital_end_reason_is_a_problem() -> None:
+    """A capital end reason is a problem."""
     text = synthetic(1000, [(0, 1900), (1000, 1100)])
     for letter, words in (("T", "its time"), ("K", "the console"),
                           ("S", "a changed set-up")):
@@ -1416,6 +1475,7 @@ def a_capital_end_reason_is_a_problem() -> None:
 
 
 def a_restart_of_the_coprocessor_is_a_clock_of_its_own() -> None:
+    """A restart of the coprocessor is a clock of its own."""
     # Two boots in one log: the second numbers its traces from 1 again
     # and its clock starts low.
     a = synthetic(900000, [(0, 1900), (1000, 1100), (2500, 1900)])
@@ -1562,6 +1622,7 @@ def a_restart_of_the_coprocessor_is_a_clock_of_its_own() -> None:
 
 
 def a_floor_is_a_current_above_zero() -> None:
+    """A floor is a current above zero."""
     log = str(ARGS.fixtures / "sense-trace-sim.log")
     # The replay takes the threshold as whole uA: below 1uA it is 0,
     # and past 1000A it is no current of a servo.
@@ -1584,6 +1645,7 @@ def a_floor_is_a_current_above_zero() -> None:
 
 
 def a_replay_that_cannot_run_is_exit_2() -> None:
+    """A replay that cannot run is exit 2."""
     r = subprocess.run(
         [sys.executable, str(TOOL), "--replay",
          str(ARGS.work / "no-such-program"), "--no-csv",
@@ -1788,9 +1850,11 @@ NOT_WHOLE = [
 
 
 def judged(text: str) -> tuple[bool, list]:
-    """What the tool makes of a log, short of the replay: whether it
-    reports damage, and every value a report is made from.  The replay's
-    answer follows from the moves' levels and samples."""
+    """What the tool makes of a log, short of the replay.
+
+    Whether it reports damage, and every value a report is made from.  The
+    replay's answer follows from the moves' levels and samples.
+    """
     traces, other, stray = sense_trace.parse_log(text)
     damaged = bool(stray) or not traces
     result: list = [other]
@@ -1827,6 +1891,7 @@ def counted(lines: list[str], lost: int = 0) -> list[str]:
 
 
 def every_line_type_has_one_grammar() -> None:
+    """Every line type has one grammar."""
     for line, kind in WHOLE.items():
         got = sense_trace.read_line(line)
         check(got is not None and got[0] == kind, f"{line!r}: {got}")
@@ -1846,6 +1911,7 @@ def every_line_type_has_one_grammar() -> None:
 
 
 def the_longest_line_of_each_type_is_62_characters() -> None:
+    """The longest line of each type is 62 characters."""
     # The console's line is 64 bytes with CR LF.  The ranges of the
     # numbers keep each type within it: no line the grammar reads is
     # longer.
@@ -1865,6 +1931,7 @@ def the_longest_line_of_each_type_is_62_characters() -> None:
 
 
 def a_line_that_is_no_line_of_a_trace_is_damage() -> None:
+    """A line that is no line of a trace is damage."""
     lines = fixture_log().splitlines()
     move = next(k for k, line in enumerate(lines) if line.startswith("$C"))
     text = "\n".join(lines[:move] + ["hello", ""] + lines[move:]) + "\n"
@@ -1889,6 +1956,7 @@ def a_line_that_is_no_line_of_a_trace_is_damage() -> None:
 
 
 def a_command_line_without_its_channel_and_pulse_is_damage() -> None:
+    """A command line without its channel and pulse is damage."""
     text = synthetic(1000, [(0, 1900), (1000, 1100)], edges=True)
     whole = "$C t=1000 ch=2 us=1900"
     check(whole in text, "the command line is there")
@@ -1915,6 +1983,7 @@ def a_command_line_without_its_channel_and_pulse_is_damage() -> None:
 
 
 def a_line_end_is_lf_or_cr_lf_and_nothing_is_taken_off_a_line() -> None:
+    """A line end is LF or CR LF and nothing is taken off a line."""
     text = synthetic(1000, [(0, 1900)])
 
     def run(name: str, raw: str) -> subprocess.CompletedProcess:
@@ -1951,6 +2020,7 @@ def a_line_end_is_lf_or_cr_lf_and_nothing_is_taken_off_a_line() -> None:
 
 
 def a_trace_has_one_set_up_line_before_its_records() -> None:
+    """A trace has one set up line before its records."""
     text = synthetic(1000, [(0, 1900)])
     lines = text.splitlines()
     r = tool(str(work("h2.log", with_line(text, 40, lines[1]))), "--no-csv")
@@ -1994,6 +2064,7 @@ def a_trace_has_one_set_up_line_before_its_records() -> None:
 
 
 def a_trace_length_and_a_sample_period_are_version_2s() -> None:
+    """A trace length and a sample period are version 2's."""
     text = synthetic(1000, [(0, 1900)])
     for was, bad, said in (
             (" len=4000\n", " len=400\n",
@@ -2020,6 +2091,7 @@ def a_trace_length_and_a_sample_period_are_version_2s() -> None:
 
 
 def samples_lie_in_the_order_of_time_with_one_voltage_each() -> None:
+    """Samples lie in the order of time with one voltage each."""
     lines = synthetic(1000, [(0, 1900)]).splitlines()
     # The first sample's time is from the trigger and lies before it.
     check(lines[2] == "-600,300", lines[2])
@@ -2044,6 +2116,7 @@ def samples_lie_in_the_order_of_time_with_one_voltage_each() -> None:
 
 
 def a_state_line_that_changes_nothing_is_damage() -> None:
+    """A state line that changes nothing is damage."""
     text = synthetic(1000, [(0, 1900)])
     # The set-up line says online, reset count 0.
     r = tool(str(work("s-same.log", with_line(text, 400, "$S on=1 rst=0"))),
@@ -2070,6 +2143,7 @@ def a_state_line_that_changes_nothing_is_damage() -> None:
 
 
 def lines_of_a_trace_outside_a_trace_are_damage() -> None:
+    """Lines of a trace outside a trace are damage."""
     lines = fixture_log().splitlines()
     start = next(k for k, line in enumerate(lines) if line.startswith("$T"))
     end = next(k for k, line in enumerate(lines) if line.startswith("$Z"))
@@ -2103,6 +2177,7 @@ def lines_of_a_trace_outside_a_trace_are_damage() -> None:
 # --- the windows a move's levels are taken from ------------------------------
 
 def moves_of(text: str) -> list:
+    """The moves of the one trace in @p text."""
     traces, _, stray = sense_trace.parse_log(text)
     check(len(traces) == 1 and not stray, "one trace")
     sense_trace.check(traces[0])
@@ -2111,6 +2186,7 @@ def moves_of(text: str) -> list:
 
 
 def clipped_samples_in_a_level_are_the_last_value_before_the_end() -> None:
+    """Clipped samples in a level are the last value before the end."""
     lines = synthetic(1000, [(0, 1900), (1000, 1100)]).splitlines()
     cmd1 = next(k for k, line in enumerate(lines) if line.startswith("$C"))
     cmd2 = next(k for k, line in enumerate(lines)
@@ -2160,8 +2236,10 @@ def clipped_samples_in_a_level_are_the_last_value_before_the_end() -> None:
 
 
 def three_moves() -> tuple[list[str], list[int]]:
-    """A trace of three moves, out, back and out, and the lines of its
-    command lines."""
+    """A trace of three moves, out, back and out.
+
+    Returns its lines and the line numbers of its command lines.
+    """
     lines = synthetic(1000, [(0, 1900), (1000, 1100),
                              (2000, 1900)]).splitlines()
     return lines, [k for k, line in enumerate(lines)
@@ -2169,16 +2247,20 @@ def three_moves() -> tuple[list[str], list[int]]:
 
 
 def whys(text: str) -> list[str]:
+    """The reason each move of @p text is not replayed."""
     return [mv.why_not for mv in moves_of(text)]
 
 
 def records_missing_in_a_level_window_stop_each_move_that_needs_it() -> None:
+    """Records missing in a level window stop each move that needs it."""
     lines, cmd = three_moves()
     check(whys("\n".join(lines) + "\n") == ["", "", ""], "whole")
 
     def lost(at: int) -> list[str]:
-        """Why each move is not replayed with the 3 samples before line
-        @p at dropped."""
+        """Why each move is not replayed.
+
+        The 3 samples before line @p at are dropped.
+        """
         code = lines[at].split(",")[1]
         body = counted(lines[:at - 3] + ["$L n=3", f"40,{code}"]
                        + lines[at + 1:], lost=3)
@@ -2230,6 +2312,7 @@ def records_missing_in_a_level_window_stop_each_move_that_needs_it() -> None:
 
 
 def a_state_change_in_a_level_window_stops_each_move_that_needs_it() -> None:
+    """A state change in a level window stops each move that needs it."""
     lines, cmd = three_moves()
 
     def changed(at: int) -> list[str]:
@@ -2253,6 +2336,7 @@ def a_state_change_in_a_level_window_stops_each_move_that_needs_it() -> None:
 
 
 def a_trace_that_starts_at_its_first_command_has_no_idle_level() -> None:
+    """A trace that starts at its first command has no idle level."""
     lines = synthetic(1000, [(0, 1900), (1000, 1100)]).splitlines()
     cmd1 = next(k for k, line in enumerate(lines) if line.startswith("$C"))
     check(lines[cmd1 + 1] == "10,300", lines[cmd1 + 1])
@@ -2274,6 +2358,7 @@ def a_trace_that_starts_at_its_first_command_has_no_idle_level() -> None:
 
 
 def a_replay_that_answers_fewer_moves_than_sent_is_exit_2() -> None:
+    """A replay that answers fewer moves than sent is exit 2."""
     log = str(ARGS.fixtures / "sense-trace-sim.log")
     for name, script, lines in (
             ("one", "cat > /dev/null\n"
@@ -2289,6 +2374,7 @@ def a_replay_that_answers_fewer_moves_than_sent_is_exit_2() -> None:
 
 
 def a_file_that_cannot_be_read_or_written_is_exit_2() -> None:
+    """A file that cannot be read or written is exit 2."""
     log = str(ARGS.fixtures / "sense-trace-sim.log")
     r = tool(log, "--no-csv", "--servo-csv", str(ARGS.work / "no-such.csv"))
     check(r.returncode == 2 and r.stderr.startswith("sense_trace: ")
@@ -2305,9 +2391,11 @@ def a_file_that_cannot_be_read_or_written_is_exit_2() -> None:
 # --- a line cut at each byte -------------------------------------------------
 
 def every_type_log() -> str:
-    """A log with every type of line: a key trace with voltages, state
-    changes and dropped records, and a command trace with an edge line, a
-    slewed command and a console line inside it."""
+    """A log with every type of line.
+
+    A key trace with voltages, state changes and dropped records, and a command
+    trace with an edge line, a slewed command and a console line inside it.
+    """
     key = ["$T v=3 n=7 trig=key t=50000 ms=5000 len=10000",
            "$H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1 rst=12",
            "$K t=50012"]
@@ -2348,8 +2436,10 @@ def every_type_log() -> str:
 
 
 def last_number_cut(whole: str, cut: str) -> bool:
-    """Whether @p cut is the line @p whole with digits off its last
-    number and nothing else changed: a whole line of the same type."""
+    """Whether @p cut is @p whole with digits taken off its last number.
+
+    Nothing else changed: a whole line of the same type.
+    """
     a = sense_trace.read_line(whole)
     b = sense_trace.read_line(cut)
     return (a is not None and b is not None and a[0] == b[0]
@@ -2358,6 +2448,7 @@ def last_number_cut(whole: str, cut: str) -> bool:
 
 
 def a_line_cut_at_any_byte_is_damage_or_changes_nothing() -> None:
+    """A line cut at any byte is damage or changes nothing."""
     text = every_type_log()
     damaged, whole = judged(text)
     check(not damaged, "the log is whole")
@@ -2415,6 +2506,7 @@ UNSEEN_CUTS = 545
 
 
 def a_fixture_line_cut_at_any_byte_is_no_other_line() -> None:
+    """A fixture line cut at any byte is no other line."""
     # Every line of the fixture at every length: no whole line, or the
     # line with digits off its last number.  Never a line of another
     # type, and never one with another field changed.
@@ -2527,6 +2619,7 @@ CASES = [
 
 
 def main() -> int:
+    """Run every case and return the exit status."""
     global ARGS
     ap = argparse.ArgumentParser()
     ap.add_argument("--replay", type=pathlib.Path, required=True)

@@ -1,4 +1,6 @@
-"""stack_iomcu.py: the Thumb decoder, a function's frame, the strstr()
+"""stack_iomcu.py: the Thumb decoder, frames, needles and core 0's row.
+
+The Thumb decoder, a function's frame, the strstr()
 needles, and core 0's row in the docs.
 
 SPDX-License-Identifier: MIT
@@ -40,10 +42,12 @@ import stack_iomcu as si
     (0x10000000, 0x2307, 0, (2, None, None)),            # movs r3, #7
 ])
 def test_thumb_decodes(pc, hw1, hw2, want):
+    """Thumb decodes."""
     assert si.thumb(pc, hw1, hw2) == want
 
 
 def test_code_spans_leave_the_literal_pools_out():
+    """Code spans leave the literal pools out."""
     marks = [(0x100, "t"), (0x120, "d"), (0x128, "t"), (0x140, "d")]
     assert si.code_spans(0x100, 0x48, marks) == [(0x100, 0x120),
                                                  (0x128, 0x140)]
@@ -56,11 +60,16 @@ class Image:
     """What analyse_thumb() asks of an ELF: bytes at an address."""
 
     def __init__(self, base, halfwords, data=None):
+        """An image of @p halfwords at @p base with the data words @p data."""
         self.base = base
         self.code = b"".join(struct.pack("<H", h) for h in halfwords)
         self.data = data or {}
 
     def read(self, addr, n):
+        """The @p n bytes at @p addr, or None.
+
+        None when the image does not hold them.
+        """
         if addr in self.data:
             return struct.pack("<I", self.data[addr])[:n]
         off = addr - self.base
@@ -70,12 +79,14 @@ class Image:
 
 
 def analyse(halfwords, installers=frozenset(), data=None):
+    """Analyse the Thumb code in @p halfwords."""
     image = Image(0x1000, halfwords, data)
     return si.analyse_thumb(image, 0x1000, 2 * len(halfwords), "f",
                             [(0x1000, "t")], set(installers))
 
 
 def test_a_frame_is_the_lowest_the_stack_pointer_goes():
+    """A frame is the lowest the stack pointer goes."""
     f = analyse([
         0xB510,             # push {r4, lr}        8
         0xB082,             # sub sp, #8          16
@@ -89,6 +100,7 @@ def test_a_frame_is_the_lowest_the_stack_pointer_goes():
 
 
 def test_a_block_after_a_return_starts_at_the_lowest_point():
+    """A block after a return starts at the lowest point."""
     f = analyse([
         0xB510,             # push {r4, lr}        8
         0xBD10,             # pop {r4, pc}
@@ -100,17 +112,20 @@ def test_a_block_after_a_return_starts_at_the_lowest_point():
 
 
 def test_a_jump_out_of_the_function_is_a_call():
+    """A jump out of the function is a call."""
     f = analyse([0xB510, 0xE7FE - 0x100])       # push; b far below
     assert f.tails == 1 and len(f.calls) == 1
     assert all(not 0x1000 <= c < 0x1004 for c in f.calls)
 
 
 def test_calls_through_a_register_are_counted():
+    """Calls through a register are counted."""
     f = analyse([0xB510, 0x4798, 0x4718])       # push; blx r3; bx r3
     assert f.callx == 2
 
 
 def test_an_installed_handler_is_read_from_the_literal():
+    """An installed handler is read from the literal."""
     # ldr r1, [pc, #4]; bl 0x1100: the literal at 0x1008 is the handler.
     f = analyse([0x4901, 0xF000, 0xF87D], installers={0x1100},
                 data={0x1008: 0x2001})
@@ -119,11 +134,13 @@ def test_an_installed_handler_is_read_from_the_literal():
 
 
 def test_an_install_without_a_literal_is_counted_as_unread():
+    """An install without a literal is counted as unread."""
     f = analyse([0xF000, 0xF87E], installers={0x1100})
     assert f.handlers == set() and f.unread == 1
 
 
 def test_a_handler_loaded_on_one_of_two_paths_is_not_taken_as_read():
+    """A handler loaded on one of two paths is not taken as read."""
     # ldr r1, [pc, #8]; cbz r0, join; ldr r1, [pc, #8]; join: bl 0x1100.
     # Two handlers reach the call; the tool reads neither and says so.
     f = analyse([0x4902, 0xB100, 0x4902, 0xF000, 0xF87B],
@@ -133,6 +150,7 @@ def test_a_handler_loaded_on_one_of_two_paths_is_not_taken_as_read():
 
 
 def test_an_installer_reached_by_a_tail_jump_installs_its_handler():
+    """An installer reached by a tail jump installs its handler."""
     # ldr r1, [pc, #4]; b.w 0x1100
     f = analyse([0x4901, 0xF000, 0xB87D], installers={0x1100},
                 data={0x1008: 0x2001})
@@ -142,6 +160,7 @@ def test_an_installer_reached_by_a_tail_jump_installs_its_handler():
 
 
 def test_a_comment_that_names_strstr_is_not_a_call(tmp_path, monkeypatch):
+    """A comment that names strstr is not a call."""
     src = tmp_path / "a.c"
     src.write_text('/* strstr() is slow */\n// strstr(a, b)\n'
                    'char *p = strstr(s, "CAN");\n', encoding="utf-8")
@@ -157,15 +176,19 @@ def test_no_strstr_needle_is_long():
 
 
 def test_both_pages_carry_core_0s_row_of_the_coprocessor_table():
+    """Both pages carry core 0's row of the coprocessor table."""
     for page, header, name in si.IOMCU_PERFORMANCE:
         said = si.doc_rows(page.read_text(encoding="utf-8"), header)
         assert said and len(said[name]) == 4, page.name
 
 
 def said_core0():
-    """Core 0's row as Performance.md gives it, and the count of calls
+    """Core 0's row and its call count in Performance.md.
+
+    Core 0's row as Performance.md gives it, and the count of calls
     through a register its prose gives: a measurement the docs agree
-    with."""
+    with.
+    """
     page, header, name = si.IOMCU_PERFORMANCE[0]
     text = page.read_text(encoding="utf-8")
     row = si.doc_rows(text, header)[name]
@@ -178,6 +201,7 @@ CORE1 = ("core 1", "core1_main", 1, 2, 3, 4, 5)
 
 
 def test_core_0s_row_is_held_to_the_measurement():
+    """Core 0's row is held to the measurement."""
     said, calls = said_core0()
     assert si.check_iomcu_doc([("core 0", "main", *said, calls),
                                CORE1]) == []
@@ -194,8 +218,10 @@ def test_core_0s_row_is_held_to_the_measurement():
 
 
 def test_the_count_of_calls_through_a_register_is_held_on_every_page():
-    """The count drifted from 137 to 133 under a green CI once: the table
-    was held and the sentence was not."""
+    """The count drifted from 137 to 133 under a green CI once.
+
+    The table was held and the sentence was not.
+    """
     said, calls = said_core0()
     out = si.check_iomcu_doc([("core 0", "main", *said, calls + 4), CORE1])
     assert out == [
@@ -204,6 +230,7 @@ def test_the_count_of_calls_through_a_register_is_held_on_every_page():
 
 
 def test_every_prose_pattern_finds_its_sentence_once():
+    """Every prose pattern finds its sentence once."""
     for page, pattern, names in si.IOMCU_PROSE:
         text = " ".join(page.read_text(encoding="utf-8").split())
         found = re.findall(pattern, text)
@@ -213,6 +240,7 @@ def test_every_prose_pattern_finds_its_sentence_once():
 
 
 def test_a_page_without_the_sentence_fails(tmp_path, monkeypatch):
+    """A page without the sentence fails."""
     page = tmp_path / "Performance.md"
     page.write_text("137 such calls are reachable from `main`;\n",
                     encoding="utf-8")
@@ -224,6 +252,7 @@ def test_a_page_without_the_sentence_fails(tmp_path, monkeypatch):
 
 
 def test_a_sentence_given_twice_fails(tmp_path, monkeypatch):
+    """A sentence given twice fails."""
     page = tmp_path / "Performance.md"
     line = "133 such calls are reachable from `main` in the image CI builds"
     page.write_text(f"{line}.\n{line}.\n", encoding="utf-8")
@@ -233,6 +262,7 @@ def test_a_sentence_given_twice_fails(tmp_path, monkeypatch):
 
 
 def test_the_sentence_is_read_across_a_line_break(tmp_path, monkeypatch):
+    """The sentence is read across a line break."""
     page = tmp_path / "Performance-de.md"
     page.write_text("liest: 1 133 solche Aufrufe sind von `main` aus\n"
                     "  erreichbar, im Image, das CI baut (gcc);\n",
@@ -247,9 +277,11 @@ def test_the_sentence_is_read_across_a_line_break(tmp_path, monkeypatch):
 @pytest.mark.parametrize("text, value", [
     ("8,192", 8192), ("8 192", 8192), ("8\u202f192", 8192), ("133", 133)])
 def test_a_number_in_either_language(text, value):
+    """A number in either language."""
     assert si.number(text) == value
 
 
 def test_a_run_that_did_not_measure_core_0_does_not_hold_its_row():
+    """A run that did not measure core 0 does not hold its row."""
     assert si.check_iomcu_doc([CORE1]) == [
         "core 0 is not measured; its row in the docs is not held"]

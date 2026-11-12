@@ -24,18 +24,23 @@ _STDERR = []
 
 
 def pytest_configure(config):
+    """Keep a duplicate of file descriptor 2 for the case timeout."""
     _STDERR.append(os.dup(2))
 
 
 def pytest_unconfigure(config):
+    """Close the duplicate of file descriptor 2."""
     os.close(_STDERR.pop())
 
 
 @pytest.fixture
 def no_hang():
-    """A case that runs longer than CASE_LIMIT_S writes the stack of every
-    thread to stderr and ends the test process with exit status 1, so a
-    scan that loops forever fails the run instead of hanging it."""
+    """A case that outlasts CASE_LIMIT_S fails the run.
+
+    It writes the stack of every thread to stderr and ends the test process
+    with exit status 1, so a scan that loops forever fails the run instead of
+    hanging it.
+    """
     faulthandler.dump_traceback_later(CASE_LIMIT_S, exit=True,
                                       file=_STDERR[0])
     yield
@@ -43,8 +48,11 @@ def no_hang():
 
 
 def skip_or_fail(reason):
-    """Skip a case whose tool is missing; fail it when CI is set, because a
-    skipped case exits 0 and the gate it stands for is then not run."""
+    """Skip a case whose tool is missing.
+
+    Fail it when CI is set, because a skipped case exits 0 and the gate it
+    stands for is then not run.
+    """
     import os
 
     import pytest

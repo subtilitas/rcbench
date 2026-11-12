@@ -100,6 +100,7 @@ REPOSITORY_URL = "https://github.com/subtilitas/rcbench"
 
 @dataclass
 class Heading:
+    """A heading of a help page with its level, text, anchor and line."""
     level: int
     text: str
     slug: str
@@ -108,6 +109,7 @@ class Heading:
 
 @dataclass
 class Link:
+    """A link of a help page: its target page, anchor and line."""
     page: str | None    # target id; None for a link within the page
     anchor: str | None
     line: int
@@ -115,6 +117,7 @@ class Link:
 
 @dataclass
 class Page:
+    """One help page of one language, with what the checks read from it."""
     path: pathlib.Path
     lang: str
     id: str
@@ -133,6 +136,7 @@ class Problems(list):
     """Problems as `path:line: message`, in the order found."""
 
     def add(self, path, line, message):
+        """Record a problem at @p path and @p line as "path:line: message"."""
         try:
             shown = pathlib.Path(path).resolve().relative_to(REPO)
         except ValueError:
@@ -143,8 +147,7 @@ class Problems(list):
 # ------------------------------------------------------------------ inputs
 
 def screen_names(header: pathlib.Path = SCREEN_HEADER) -> list[str]:
-    """The SCREEN_* names of the router's enum, in order, without
-    SCREEN_COUNT."""
+    """The SCREEN_* names of the router's enum, in order, but SCREEN_COUNT."""
     text = header.read_text(encoding="utf-8")
     m = re.search(r"typedef\s+enum\s*\{(.*?)\}\s*ui_screen_id_t\s*;",
                   text, re.S)
@@ -171,12 +174,15 @@ def view_files() -> dict[str, str]:
 
 
 def image_path(img_root: pathlib.Path, lang: str, filename: str):
+    """The path of the image @p filename for @p lang under @p img_root."""
     return img_root / LANG_DIR[lang] / filename
 
 
 def png_size(path: pathlib.Path) -> tuple[int, int] | None:
-    """Width and height from the IHDR chunk, or None for a file that is not
-    a PNG."""
+    """Width and height from the IHDR chunk.
+
+    None for a file that is not a PNG.
+    """
     with open(path, "rb") as f:
         head = f.read(24)
     if len(head) < 24 or head[:8] != b"\x89PNG\r\n\x1a\n" \
@@ -196,12 +202,14 @@ LINK_TARGET = re.compile(
     r"|#(?P<anchor>[^\s#]+))\Z")
 
 def underscore_emphasis(text: str) -> str | None:
-    """The first span of _ or __ emphasis in @p text, or None.  A run of
-    underscores opens when no letter, digit or backslash stands before it
-    and a character other than a space follows; a later run closes when a
+    """The first span of _ or __ emphasis in @p text, or None.
+
+    A run of underscores opens when no letter, digit or backslash stands before
+    it and a character other than a space follows; a later run closes when a
     character other than a space stands before it and no letter or digit
-    follows.  The text between may hold underscores of its own (_a_b_).
-    One pass over the text."""
+    follows.  The text between may hold underscores of its own (_a_b_).  One
+    pass over the text.
+    """
     opener = -1
     i, n = 0, len(text)
     while i < n:
@@ -227,14 +235,19 @@ def underscore_emphasis(text: str) -> str | None:
 
 
 def slugify(text: str) -> str:
-    """The anchor of a heading: lower case, every run of characters other
-    than letters and digits as one '-', none at either end."""
+    """The anchor of a heading.
+
+    Lower case, every run of characters other than letters and digits as one
+    '-', none at either end.
+    """
     return re.sub(r"[\W_]+", "-", text.lower()).strip("-")
 
 
 def text_of(rendered: str) -> str:
-    """The visible text of rendered inline HTML: the tags dropped, the
-    entities decoded."""
+    """The visible text of rendered inline HTML.
+
+    The tags dropped, the entities decoded.
+    """
     return html.unescape(re.sub(r"<[^>]*>", "", rendered))
 
 
@@ -242,13 +255,19 @@ class Inline:
     """Renders one run of inline Markdown, reporting problems to a page."""
 
     def __init__(self, page: Page, problems: Problems):
+        """Render the inline text of @p page.
+
+        Problems go to @p problems.
+        """
         self.page = page
         self.problems = problems
 
     def fail(self, line, message):
+        """Record a problem at @p line of the page."""
         self.problems.add(self.page.path, line, message)
 
     def render(self, text: str, line: int, in_link: bool = False) -> str:
+        """The HTML of the inline text @p text found at @p line."""
         outside_code = re.sub(r"`[^`]*`", "", text)
         # A link target is an address, not text: an underscore in it is
         # no emphasis.  The target ends where _link() ends it.
@@ -311,8 +330,10 @@ class Inline:
         return "".join(out)
 
     def _link(self, text, i, close, line, out, in_link) -> int:
-        """A link at text[i] == '['; returns the index after it.  A '['
-        that does not open a link is the character itself."""
+        """A link at text[i] == '['; returns the index after it.
+
+        A '[' that does not open a link is the character itself.
+        """
         if close < 0 or close + 1 >= len(text) \
                 or text[close + 1] not in "([":
             out.append("[")
@@ -351,9 +372,11 @@ class Inline:
 
     @staticmethod
     def _target_end(text, k) -> int:
-        """The index of the ) that closes a link target starting at
-        text[k], or -1.  Parentheses inside nest to any depth; an escaped
-        character is part of the target, not a delimiter."""
+        """The index of the ) that closes a link target, or -1.
+
+        The target starts at text[k].  Parentheses inside nest to any depth; an
+        escaped character is part of the target, not a delimiter.
+        """
         depth = 0
         while k < len(text):
             if text[k] == "\\" and k + 1 < len(text) \
@@ -387,10 +410,13 @@ class Inline:
 
     @staticmethod
     def _brackets(text) -> dict[int, int]:
-        """Each [ that a ] closes, to the index of that ], in one pass: the
+        """Each [ that a ] closes, to the index of that ].
+
+        Each [ that a ] closes, to the index of that ], in one pass: the
         brackets in between are counted, so a link inside a label reaches
         the in_link check.  An escaped bracket, or one inside a code span,
-        is no bracket."""
+        is no bracket.
+        """
         match, stack, j = {}, [], 0
         while j < len(text):
             if text[j] == "\\":
@@ -438,8 +464,10 @@ SEPARATOR_CELL = re.compile(r"(?=.{3}):?-+:?\Z")
 
 
 def starts_block(line: str) -> str | None:
-    """The kind of block a line opens, for lines that cannot sit inside
-    another block, or None for a plain line."""
+    """The kind of block a line opens, or None for a plain line.
+
+    It covers lines that cannot sit inside another block.
+    """
     s = line.lstrip()
     if s.startswith("#"):
         return "heading"
@@ -453,8 +481,11 @@ def starts_block(line: str) -> str | None:
 
 
 def split_cells(row: str) -> list[str]:
-    """The cells of a row that starts and ends with '|', split on every
-    '|' not escaped with a backslash; an escaped one stays in its cell."""
+    """The cells of a row that starts and ends with '|'.
+
+    The row is split on every '|' not escaped with a backslash; an escaped one
+    stays in its cell.
+    """
     inner = row[1:-1]
     cells, cur, i = [], [], 0
     while i < len(inner):
@@ -479,6 +510,10 @@ class Renderer:
 
     def __init__(self, page: Page, problems: Problems,
                  views: dict[str, str], img_root: pathlib.Path):
+        """Render @p page.
+
+        Views are looked up in @p views and images under @p img_root.
+        """
         self.page = page
         self.problems = problems
         self.views = views
@@ -488,13 +523,13 @@ class Renderer:
         self.root = "../" if LANG_DIR[page.lang] else ""
 
     def fail(self, line, message):
+        """Record a problem at @p line of the page."""
         self.problems.add(self.page.path, line, message)
 
     # The header -----------------------------------------------------------
 
     def header(self, lines: list[str]) -> int:
-        """Reads the header block; returns the index of the first body
-        line."""
+        """Reads the header block; returns the index of the first body line."""
         if not lines or lines[0].rstrip() != "---":
             self.fail(1, "the file starts with a header block: ---, "
                          "screen:, title:, order:, ---")
@@ -549,6 +584,7 @@ class Renderer:
     # The body -------------------------------------------------------------
 
     def body(self, lines: list[str], start: int) -> None:
+        """Render the body lines from index @p start on."""
         i, n = start, len(lines)
         first = True
         while i < n:
@@ -588,6 +624,7 @@ class Renderer:
             i = j
 
     def heading(self, line: str, num: int, first: bool) -> None:
+        """Render the heading @p line found at line @p num."""
         s = line.lstrip()
         m = HEADING.match(s)
         if line != s:
@@ -624,8 +661,7 @@ class Renderer:
 
     @staticmethod
     def outside_format(line: str) -> str | None:
-        """The problem with a line that starts a block outside the format,
-        or None."""
+        """The problem with a line that starts an unsupported block."""
         s = line.lstrip()
         if re.match(r"(```|~~~)", s):
             return "a fenced code block is outside the format; use `code` " \
@@ -639,6 +675,7 @@ class Renderer:
         return None
 
     def block(self, block: list[str], num: int) -> None:
+        """Render one block of lines that starts at line @p num."""
         first = block[0]
         s = first.lstrip()
         problem = self.outside_format(first)
@@ -664,6 +701,7 @@ class Renderer:
             self.paragraph(block, num)
 
     def paragraph(self, block, num) -> None:
+        """Render a paragraph that starts at line @p num."""
         for k, line in enumerate(block):
             if k and re.fullmatch(r"\s*(=+|-+)\s*", line):
                 self.fail(num + k, "a setext heading (=== or --- under a "
@@ -687,6 +725,7 @@ class Renderer:
         self.out.append(html_)
 
     def list(self, block, num) -> None:
+        """Render a list that starts at line @p num."""
         ordered = NUMBER.match(block[0]) is not None
         items: list[list[tuple[str, int]]] = []
         start = 1
@@ -730,6 +769,7 @@ class Renderer:
         self.out.append(f"<{tag}{attr}>" + "".join(lis) + f"</{tag}>")
 
     def table(self, block, num) -> None:
+        """Render a table that starts at line @p num."""
         for k, line in enumerate(block):
             if not line.startswith("|"):
                 self.fail(num + k, "a table row starts with |")
@@ -780,6 +820,7 @@ class Renderer:
                         + "</table></div>")
 
     def images(self, block, num) -> None:
+        """Render a block of images that starts at line @p num."""
         figures = []
         for k, line in enumerate(block):
             if line != line.lstrip():
@@ -812,6 +853,7 @@ class Renderer:
                         + "</div>")
 
     def figure(self, name, caption, num) -> str:
+        """The HTML figure of the view @p name with @p caption."""
         filename = self.views.get(name)
         size = None
         if filename is None:
@@ -971,8 +1013,10 @@ def first_difference(a: list, b: list) -> int:
 
 
 def compare(en: Page, de: Page, problems: Problems) -> None:
-    """The English and German page of one id: same header facts, same
-    heading levels, same views, each in order."""
+    """The English and German page of one id.
+
+    Same header facts, same heading levels, same views, each in order.
+    """
     if en.screen != de.screen:
         problems.add(de.path, 1, f"screen {de.screen!r} differs from the "
                                  f"English {en.screen!r}")
@@ -1007,17 +1051,22 @@ def compare(en: Page, de: Page, problems: Problems) -> None:
 # ------------------------------------------------------------------ output
 
 def template(name: str, site: pathlib.Path = SITE) -> string.Template:
+    """The HTML template file @p name under @p site."""
     return string.Template((site / name).read_text(encoding="utf-8"))
 
 
 def sorted_pages(pages: dict[str, Page]) -> list[Page]:
+    """The pages in menu order: by order, then id."""
     return sorted(pages.values(), key=lambda p: (p.order, p.id))
 
 
 def render_page(page: Page, siblings: dict[str, Page],
                 site: pathlib.Path = SITE, counterpart: bool = True) -> str:
-    """One page.  Without a counterpart in the other language (a preview
-    of one file) the language switch goes to the other language's index."""
+    """One page.
+
+    Without a counterpart in the other language (a preview of one file) the
+    language switch goes to the other language's index.
+    """
     lang = page.lang
     other = "de" if lang == "en" else "en"
     words = CHROME[lang]
@@ -1054,6 +1103,7 @@ def render_page(page: Page, siblings: dict[str, Page],
 
 def render_index(lang: str, pages: dict[str, Page],
                  site: pathlib.Path = SITE) -> str:
+    """The index page of @p lang listing @p pages."""
     other = "de" if lang == "en" else "en"
     words = CHROME[lang]
     root = "../" if LANG_DIR[lang] else ""
@@ -1089,9 +1139,11 @@ SENTINEL = ".help-site"
 
 
 def refuse_out(out: pathlib.Path) -> None:
-    """Raises SystemExit when @p out may not be emptied: the repository,
-    a folder that holds it or a source of the help, or a folder with
-    content this tool did not write."""
+    """Raises SystemExit when @p out may not be emptied.
+
+    The repository, a folder that holds it or a source of the help, or a folder
+    with content this tool did not write.
+    """
     o = out.resolve()
     for source in (REPO, CONTENT, SITE, IMG):
         if source == o or source.is_relative_to(o):
@@ -1106,10 +1158,12 @@ def refuse_out(out: pathlib.Path) -> None:
 def write(out: pathlib.Path, pages: dict[str, dict[str, Page]],
           views: dict[str, str], img_root: pathlib.Path = IMG,
           site: pathlib.Path = SITE, index: bool = True) -> int:
-    """Writes the site into @p out, which is emptied first.  Returns the
-    number of files written.  @p out is refused when it holds the
-    repository or a source folder of the help, or when it exists, is not
-    empty and was not written by this tool (no SENTINEL file)."""
+    """Writes the site into @p out, which is emptied first.
+
+    Returns the number of files written.  @p out is refused when it holds the
+    repository or a source folder of the help, or when it exists, is not empty
+    and was not written by this tool (no SENTINEL file).
+    """
     refuse_out(out)
     if out.exists():
         shutil.rmtree(out)
@@ -1155,6 +1209,10 @@ def run(content: pathlib.Path, screens: list[str], views: dict[str, str],
 
 
 def main(argv=None) -> int:
+    """Build the help site, or check it with --check.
+
+    Return the exit status.
+    """
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--out", type=pathlib.Path, default=DEFAULT_OUT,
                     help="the build folder, emptied first "

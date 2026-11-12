@@ -58,7 +58,7 @@ class DrawingError(ValueError):
 
 
 def link_crc(data: bytes) -> int:
-    """CCITT polynomial 0x1021, seeded zero: link_crc() in link_crc.c."""
+    """CCITT polynomial 0x1021, seeded zero, as in link_crc.c."""
     crc = 0
     for b in data:
         crc ^= b << 8
@@ -69,7 +69,7 @@ def link_crc(data: bytes) -> int:
 
 
 def link_fnv1a32(data: bytes) -> int:
-    """FNV-1a, 32 bits: link_fnv1a32(LINK_FNV_INIT, ...) in link_crc.c."""
+    """FNV-1a, 32 bits, as in link_crc.c with the LINK_FNV_INIT seed."""
     h = 0x811C9DC5
     for b in data:
         h ^= b
@@ -253,6 +253,7 @@ def render(name: str, src: str, drawing: dict) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Write the board drawing C files, or check them with --check."""
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--check", action="store_true",
                     help="check without writing; fail if a committed file "

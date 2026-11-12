@@ -1,5 +1,4 @@
-"""mutate.py: which lines, which mutants, and a run that leaves nothing
-behind.
+"""mutate.py: which lines, which mutants, and a run that leaves nothing behind.
 
 SPDX-License-Identifier: MIT
 """
@@ -41,6 +40,7 @@ diff --git a/shared/a/new.h b/shared/a/new.h
 
 
 def test_changed_lines_are_the_new_side_of_every_hunk():
+    """Changed lines are the new side of every hunk."""
     assert mu.changed_lines(DIFF) == {
         "shared/a/a.c": {10, 11, 12, 42},
         "shared/a/new.h": {1, 2},
@@ -48,6 +48,7 @@ def test_changed_lines_are_the_new_side_of_every_hunk():
 
 
 def test_mask_blanks_comments_and_literals_and_keeps_columns():
+    """Mask blanks comments and literals and keeps columns."""
     text = 'a < b; /* c < d */ s = "e < f"; // g < h\nc = \'<\'; i > j;\n'
     masked = mu.mask(text)
     assert len(masked) == len(text)
@@ -58,23 +59,27 @@ def test_mask_blanks_comments_and_literals_and_keeps_columns():
 
 
 def test_mask_follows_a_comment_over_lines():
+    """Mask follows a comment over lines."""
     masked = mu.mask("x = 1; /* a < b\n   c > d */ y >= 2;\n")
     assert [line.rstrip() for line in masked.split("\n")] == [
         "x = 1;", " " * len("   c > d */") + " y >= 2;", ""]
 
 
 def test_mask_keeps_an_escaped_quote_inside_a_string():
+    """Mask keeps an escaped quote inside a string."""
     assert mu.mask(r'p("a\"<b"); q < r;') == (
         "p(" + " " * len(r'"a\"<b"') + "); q < r;")
 
 
 def kinds(line):
+    """The (kind, before, after) of every mutant of @p line."""
     return [(m.kind, m.before, m.after)
             for m in mu.line_mutants("f.c", 1, line, mu.mask(line))]
 
 
 @pytest.mark.parametrize("op, flipped", list(mu.FLIP.items()))
 def test_every_comparison_flips_to_its_neighbour(op, flipped):
+    """Every comparison flips to its neighbour."""
     assert ("flip", op, flipped) in kinds(f"    if (a {op} b) {{")
 
 
@@ -90,17 +95,20 @@ def test_every_comparison_flips_to_its_neighbour(op, flipped):
     "    total += n;",
 ])
 def test_no_mutant_where_there_is_no_comparison_bound_or_store(line):
+    """No mutant where there is no comparison bound or store."""
     assert [k for k in kinds(line) if k[0] != "drop"] == []
     if "->" not in line:
         assert kinds(line) == []
 
 
 def test_an_integer_beside_a_comparison_moves_by_one():
+    """An integer beside a comparison moves by one."""
     assert kinds("    if (n > 5u) {") == [
         ("bound", "5u", "4u"), ("bound", "5u", "6u"), ("flip", ">", ">=")]
 
 
 def test_zero_does_not_go_below_zero_and_hex_keeps_its_width():
+    """Zero does not go below zero and hex keeps its width."""
     assert ("bound", "0", "1") in kinds("    if (n == 0) {")
     assert not any(a == "-1" for _, _, a in kinds("    if (n == 0) {"))
     assert ("bound", "0x0F", "0x10") in kinds("    if (0x0F < n) {")
@@ -108,6 +116,7 @@ def test_zero_does_not_go_below_zero_and_hex_keeps_its_width():
 
 
 def test_a_constant_beside_a_comparison_moves_by_one():
+    """A constant beside a comparison moves by one."""
     out = kinds("    if (gap > HEARTBEAT_MAX_GAP_MS) {")
     assert ("bound", "HEARTBEAT_MAX_GAP_MS",
             "(HEARTBEAT_MAX_GAP_MS + 1)") in out
@@ -116,12 +125,14 @@ def test_a_constant_beside_a_comparison_moves_by_one():
 
 
 def test_null_a_call_and_a_float_are_no_bounds():
+    """Null a call and a float are no bounds."""
     assert kinds("    if (m == NULL) {") == [("flip", "==", "!=")]
     assert kinds("    if (n < MAX(a)) {") == [("flip", "<", "<=")]
     assert kinds("    if (v < 0.05f) {") == [("flip", "<", "<=")]
 
 
 def test_a_define_of_an_integer_moves_by_one():
+    """A define of an integer moves by one."""
     assert kinds("#define LINK_DEV_SILENCE_MS 200u") == [
         ("bound", "200u", "199u"), ("bound", "200u", "201u")]
     assert kinds("#define NAME other_name") == []
@@ -135,6 +146,7 @@ def test_a_define_of_an_integer_moves_by_one():
     "    *out = 0;",
 ])
 def test_a_store_that_outlives_the_statement_is_dropped(line):
+    """A store that outlives the statement is dropped."""
     out = [m for m in mu.line_mutants("f.c", 1, line, mu.mask(line))
            if m.kind == "drop"]
     assert len(out) == 1
@@ -150,10 +162,12 @@ def test_a_store_that_outlives_the_statement_is_dropped(line):
     "    m->value = f(a,",
 ])
 def test_what_is_no_whole_store_is_not_dropped(line):
+    """What is no whole store is not dropped."""
     assert not [k for k in kinds(line) if k[0] == "drop"]
 
 
 def test_a_mutant_changes_one_place_on_its_line():
+    """A mutant changes one place on its line."""
     line = "    if (a < b && c < d) {"
     out = mu.line_mutants("f.c", 7, line, mu.mask(line))
     assert [m.text for m in out] == [
@@ -162,6 +176,7 @@ def test_a_mutant_changes_one_place_on_its_line():
 
 
 def test_file_mutants_take_only_the_lines_asked_for():
+    """File mutants take only the lines asked for."""
     text = "a < b;\n/* c < d */\ne > f;\n"
     assert [m.line for m in mu.file_mutants("f.c", text)] == [1, 3]
     assert [m.line for m in mu.file_mutants("f.c", text, {3})] == [3]
@@ -169,6 +184,7 @@ def test_file_mutants_take_only_the_lines_asked_for():
 
 
 def test_pick_is_even_and_the_same_every_time():
+    """Pick is even and the same every time."""
     all_ = [mu.Mutant("f.c", n, 0, "flip", "<", "<=", "") for n in range(10)]
     assert mu.pick(all_, 0) == all_
     assert mu.pick(all_, 20) == all_
@@ -177,6 +193,7 @@ def test_pick_is_even_and_the_same_every_time():
 
 
 def test_the_summary_lists_the_survivors():
+    """The summary lists the survivors."""
     results = [
         {"path": "shared/a.c", "line": 3, "kind": "flip", "before": "<",
          "after": "<=", "result": "survived"},
@@ -270,6 +287,7 @@ def tiny(tmp_path, monkeypatch):
 
 
 def test_a_run_kills_reports_and_leaves_no_trace(tiny, capsys):
+    """A run kills reports and leaves no trace."""
     repo, scratch, git = tiny
     before = (repo / "shared" / "limit" / "limit.c").read_bytes()
     out = repo.parent / "out.json"
@@ -301,6 +319,7 @@ def test_a_run_kills_reports_and_leaves_no_trace(tiny, capsys):
 
 
 def test_a_ceiling_on_survivors_sets_the_exit_code(tiny):
+    """A ceiling on survivors sets the exit code."""
     assert mu.main(["--files", "shared/limit/limit.c",
                     "--max-survivors", "3"]) == 0
     assert mu.main(["--files", "shared/limit/limit.c",
@@ -308,6 +327,7 @@ def test_a_ceiling_on_survivors_sets_the_exit_code(tiny):
 
 
 def test_only_the_lines_a_change_touches_are_mutated(tiny, capsys):
+    """Only the lines a change touches are mutated."""
     repo, scratch, git = tiny
     git("checkout", "-q", "-b", "work")
     path = repo / "shared" / "limit" / "limit.c"
@@ -319,6 +339,7 @@ def test_only_the_lines_a_change_touches_are_mutated(tiny, capsys):
 
 
 def test_a_suite_that_fails_unmutated_stops_the_run(tiny, capsys):
+    """A suite that fails unmutated stops the run."""
     repo, scratch, git = tiny
     path = repo / "test" / "host" / "test_limit.c"
     path.write_text(path.read_text().replace("== 1 &&", "== 7 &&"))
@@ -328,6 +349,7 @@ def test_a_suite_that_fails_unmutated_stops_the_run(tiny, capsys):
 
 
 def test_a_mutant_that_does_not_build_is_neither_killed_nor_survived(tiny):
+    """A mutant that does not build is neither killed nor survived."""
     repo, scratch, git = tiny
     bench = mu.Bench(scratch / "copy", 2, 120)
     bench.copy()
@@ -347,11 +369,13 @@ def test_a_mutant_that_does_not_build_is_neither_killed_nor_survived(tiny):
 
 
 def test_the_tools_own_tree_is_never_the_copy():
+    """The tool's own tree is never the copy."""
     assert mu.REPO == pathlib.Path(mu.__file__).resolve().parent.parent
     assert set(mu.MUTATED) <= set(mu.COPIED)
 
 
 def test_a_protocol_core_is_mutated_and_its_pin_driver_is_not():
+    """A protocol core is mutated and its pin driver is not."""
     core = mu.candidates("unused", [str(mu.REPO / "protocols/ppm/ppm.c")])
     assert core and {m.path for m in core} == {"protocols/ppm/ppm.c"}
     assert mu.candidates(
