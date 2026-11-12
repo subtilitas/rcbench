@@ -5,7 +5,8 @@
  * setting while it is OFF, the STOP latch's grace over both, the setting
  * kept by its key, and the chip and its box at the band's width in both
  * languages.  The IOmcu's side is held as well: the bit clears with the
- * line and no CLEAR, while the arm latch waits for one.
+ * line and no CLEAR, while the arm latch waits for one.  An ARM the IOmcu
+ * refuses names the heartbeat wire and the stop button from the same bit.
  *
  * Cases:
  * - off_the_band_is_as_without_the_setting
@@ -24,6 +25,7 @@
  * - the_reads_go_fast_on_the_edge_and_slow_at_the_clear
  * - off_the_reads_stay_at_500ms_through_the_fault
  * - the_box_frames_are_red_for_hwstop_and_an_arm_and_accent_otherwise
+ * - an_arm_refusal_names_its_cause_from_the_bits
  *
  * SPDX-License-Identifier: MIT
  */
@@ -845,6 +847,36 @@ TEST_CASE(the_box_frames_are_red_for_hwstop_and_an_arm_and_accent_otherwise)
     CHECK(box_frame(&st, UI_BAND_CHIP_ARMED, red) > 0);
 }
 
+/*
+ * An ARM the IOmcu refused names its cause from the STATUS bits at the
+ * refusal: the heartbeat bit names the wire IO28 to GPIO 3 and the stop
+ * button, under HWSTOP with the setting ON and under FAULT 10 without it;
+ * another bit sends the operator to the FAULT chip; no bit is the bare
+ * refusal, with no chip to tap.  Each alert fits the alert band in both
+ * languages.
+ */
+TEST_CASE(an_arm_refusal_names_its_cause_from_the_bits)
+{
+    CHECK_EQ(ui_band_arm_refused(BEAT, false), TX_ALERT_ARM_HEARTBEAT);
+    CHECK_EQ(ui_band_arm_refused((uint16_t)(BEAT | LINK_FAULT_LINK_SILENT),
+                                 false), TX_ALERT_ARM_HEARTBEAT);
+    CHECK_EQ(ui_band_arm_refused(BEAT, true), TX_ALERT_ARM_HWSTOP);
+    CHECK_EQ(ui_band_arm_refused((uint16_t)LINK_FAULT_LINK_SILENT, true),
+             TX_ALERT_ARM_REFUSED_FAULT);
+    CHECK_EQ(ui_band_arm_refused((uint16_t)LINK_FAULT_STORE_OFF, false),
+             TX_ALERT_ARM_REFUSED_FAULT);
+    CHECK_EQ(ui_band_arm_refused(0u, false), TX_ALERT_ARM_REFUSED);
+    CHECK_EQ(ui_band_arm_refused(0u, true), TX_ALERT_ARM_REFUSED);
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        const char *hb = ui_tr(TX_ALERT_ARM_HEARTBEAT);
+        CHECK(strstr(hb, "IO28") != NULL && strstr(hb, "GPIO 3") != NULL);
+        CHECK(strstr(hb, " 10)") != NULL);
+        CHECK(strstr(ui_tr(TX_ALERT_ARM_HWSTOP), "HWSTOP") != NULL);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 int main(void)
 {
     RUN(off_the_band_is_as_without_the_setting);
@@ -863,5 +895,6 @@ int main(void)
     RUN(the_reads_go_fast_on_the_edge_and_slow_at_the_clear);
     RUN(off_the_reads_stay_at_500ms_through_the_fault);
     RUN(the_box_frames_are_red_for_hwstop_and_an_arm_and_accent_otherwise);
+    RUN(an_arm_refusal_names_its_cause_from_the_bits);
     return test_summary("band_hwstop");
 }

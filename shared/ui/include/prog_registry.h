@@ -340,6 +340,22 @@ const char *prog_reg_cap_name(uint16_t bit);
 bool prog_reg_detail(const prog_reg_row_t *rows, size_t n, size_t i,
                      uint16_t caps, char *out, size_t size);
 
+/**
+ * @brief Why live row @p i's session cannot run as the bench stands, in
+ *        place of its detail: ESC STICK's first standing refusal
+ *        (esc_stick_panel_bench_tag()).  The row stays live, its text in
+ *        the warning colour: its profiles read without the bench.
+ * @param rows  the registry's rows
+ * @param n     rows at @p rows
+ * @param i     the row
+ * @param caps  the IOmcu's capability bits
+ * @param out   takes at most @p size - 1 characters, "" for none
+ * @param size  bytes at @p out
+ * @return whether a warning stands
+ */
+bool prog_reg_warning(const prog_reg_row_t *rows, size_t n, size_t i,
+                      uint16_t caps, char *out, size_t size);
+
 /* -------------------------------------------------------- the list model */
 
 /** An entry of a list: a row, or the heading of the rows under it. */

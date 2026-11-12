@@ -576,9 +576,12 @@ before it trusts the line: 100 to 125ms at the control task's 5ms period.
 The panel waits 100ms, then reads the STATUS fault register once per pass
 until the heartbeat bit reads clear, and only then writes CLEAR and the frame
 that switches to ARMED. If the bit has not cleared 300ms after the hold completed, the
-panel gives the switch up with `The IOmcu refused to switch to ARMED.` and writes nothing,
+panel gives the switch up and writes nothing,
 so the IOmcu's latch stays set. An answer that comes back later than
 those 300ms is not used, whatever it says.
+
+The alert names the cause from the IOmcu's fault bits at the refusal
+([Screens, An ARM the IOmcu refuses](Screens.md#an-arm-the-iomcu-refuses)).
 
 The same 300ms deadline applies to the writes that follow. The panel asks the
 deadline again before CLEAR and before the frame that switches to ARMED, because the
@@ -1049,6 +1052,8 @@ The rule:
   STOP switches the PD mini off, and with it the servo. The PD mini's own
   current limit is the hard ceiling. The rbmod carrier's fixed 5V has no
   current reading: MOVE SERVO is refused there.
+- The band's arm chip reads `SAFE MOVE` in amber on every screen while MOVE
+  SERVO is on, `SAFE PROG n` while the port is held (`ui_band_safe_drives()`).
 - The knob moves nothing while MOVE SERVO is on: the `-`/`+` keys and the
   keypad edit the position, the knob rule of a SAFE bench stays.
 - FIND STOP runs inside MOVE SERVO's loop and its consent: it drives the

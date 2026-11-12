@@ -6,7 +6,7 @@ order: 100
 
 # IOmcu update
 
-Each panel firmware image includes an IOmcu image. The panel offers it whenever the connected IOmcu runs a different build. It checks at every link-up over the CAN (Controller Area Network) bus, comparing SHA-256 (Secure Hash Algorithm, 256 bits) digests rather than version numbers. A mismatch raises the alert `IOmcu runs a different build. Update it on UPDATES.`.
+Each panel firmware image includes an IOmcu image. The panel offers it whenever the connected IOmcu runs a different build. It checks at every link-up over the CAN (Controller Area Network) bus, comparing SHA-256 (Secure Hash Algorithm, 256 bits) digests rather than version numbers. A mismatch raises the alert `IOmcu runs a different build. Update it on UPDATES.`. While the bench is not SAFE with the supply off, the Wi-Fi is on or a panel install runs, the alert names that instead, such as `IOmcu runs a different build. Its update question opens once the panel's Wi-Fi is off.`, and again when the question waits for something else.
 
 ## The question
 

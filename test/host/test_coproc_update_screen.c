@@ -739,6 +739,76 @@ TEST_CASE(every_view_renders_inside_its_canvas)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/*
+ * The band line of an offer names what the question waits for: SAFE and
+ * the supply off, the panel's Wi-Fi off, or the panel's install to end, in
+ * that order.  Said once per offer on the first frame with a band, again
+ * when it waits for something else, and plain when nothing holds it back.
+ */
+TEST_CASE(the_offer_line_names_what_the_question_waits_for)
+{
+    CHECK_EQ(coproc_update_offer_text(CU_WAIT_NONE), TX_ALERT_CU_OFFER);
+    CHECK_EQ(coproc_update_offer_text(CU_WAIT_UNSAFE), TX_ALERT_CU_OFFER_SAFE);
+    CHECK_EQ(coproc_update_offer_text(CU_WAIT_RADIO), TX_ALERT_CU_OFFER_WIFI);
+    CHECK_EQ(coproc_update_offer_text(CU_WAIT_INSTALL),
+             TX_ALERT_CU_OFFER_INSTALL);
+
+    drive_fresh();
+    g_feed.radio_up = true;
+    g_feed.installing = true;
+    CHECK_EQ(coproc_update_wait(&g_feed, true), CU_WAIT_UNSAFE);
+    CHECK_EQ(coproc_update_wait(&g_feed, false), CU_WAIT_RADIO);
+    g_feed.radio_up = false;
+    CHECK_EQ(coproc_update_wait(&g_feed, false), CU_WAIT_INSTALL);
+    g_feed.installing = false;
+    CHECK_EQ(coproc_update_wait(&g_feed, false), CU_WAIT_NONE);
+
+    /* Under the splash nothing is said; the menu says the Wi-Fi. */
+    drive_fresh();
+    ui_router_goto(SCREEN_SPLASH);
+    g_feed.offered = true;
+    g_feed.offer_gen = 1u;
+    g_feed.radio_up = true;
+    (void)frame();
+    CHECK(ui_router_alert() == NULL);
+    ui_router_goto(SCREEN_OVERVIEW);
+    (void)frame();
+    CHECK_STR_EQ(ui_router_alert(), TR(ALERT_CU_OFFER_WIFI));
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+
+    /* Said once: cleared, the same wait says nothing again. */
+    ui_router_set_alert(NULL);
+    (void)frame();
+    CHECK(ui_router_alert() == NULL);
+
+    /* Another wait is said; its end opens the question, not a line. */
+    g_feed.radio_up = false;
+    g_feed.installing = true;
+    (void)frame();
+    CHECK_STR_EQ(ui_router_alert(), TR(ALERT_CU_OFFER_INSTALL));
+    ui_router_set_alert(NULL);
+    g_feed.installing = false;
+    (void)frame();
+    CHECK(ui_router_alert() == NULL);
+    CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
+
+    /* Nothing in the way: the plain line, and the question. */
+    drive_fresh();
+    g_feed.offered = true;
+    g_feed.offer_gen = 1u;
+    (void)frame();
+    CHECK_STR_EQ(ui_router_alert(), TR(ALERT_CU_OFFER));
+    CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
+
+    /* ARMED: SAFE and the supply off. */
+    drive_fresh();
+    g_feed.offered = true;
+    g_feed.offer_gen = 1u;
+    cu_hand_t h;
+    coproc_update_drive(&g_drv, &g_feed, true, &h);
+    CHECK_STR_EQ(ui_router_alert(), TR(ALERT_CU_OFFER_SAFE));
+}
+
 int main(void)
 {
     RUN(older_compares_major_then_minor_then_patch);
@@ -775,5 +845,6 @@ int main(void)
     RUN(an_offer_that_goes_closes_the_question_and_declines_nothing);
     RUN(start_runs_the_progress_and_the_end_returns_to_the_menu);
     RUN(the_driver_takes_no_null);
+    RUN(the_offer_line_names_what_the_question_waits_for);
     return test_summary("coproc_update_screen");
 }

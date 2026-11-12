@@ -593,7 +593,6 @@ firmware/panel/main/panel.h: warning: Member esc_profiles_load(void) (function) 
 firmware/panel/main/panel.h: warning: Member evt (variable) of struct touch_item_t is not documented.
 firmware/panel/main/panel.h: warning: Member exchange(link_host_t *host, const link_msg_t *req, link_msg_t *reply) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member far_end_stop_here(void) (function) of file panel.h is not documented.
-firmware/panel/main/panel.h: warning: Member far_line_trusted(bool *answered) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member flush_screen_commands(uint32_t stops_now) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member hitec_rx_service(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member k_card_io (variable) of file panel.h is not documented.
@@ -2962,7 +2961,6 @@ shared/ui/esc_stick_panel.c: warning: Member esc_stick_panel_model(void) (functi
 shared/ui/esc_stick_panel.c: warning: Member esc_stick_panel_result_more(void) (function) of file esc_stick_panel.c is not documented.
 shared/ui/esc_stick_panel.c: warning: Member esc_stick_panel_row(int i, int *model) (function) of file esc_stick_panel.c is not documented.
 shared/ui/esc_stick_panel.c: warning: Member esc_stick_panel_typing(void) (function) of file esc_stick_panel.c is not documented.
-shared/ui/esc_stick_panel.c: warning: Member sp_bench_why(void) (function) of file esc_stick_panel.c is not documented.
 shared/ui/esc_stick_panel.c: warning: Member sp_drop_drive(void) (function) of file esc_stick_panel.c is not documented.
 shared/ui/esc_stick_panel.c: warning: Member sp_plan(esc_stick_change_t *ch, size_t *n, esc_stick_timing_t *t, uint32_t *mv, uint32_t *ma) (function) of file esc_stick_panel.c is not documented.
 shared/ui/esc_stick_panel.c: warning: Member sp_push(motor_cmd_kind_t kind, float value) (function) of file esc_stick_panel.c is not documented.
@@ -2985,10 +2983,6 @@ shared/ui/include/busfault_screen.h: warning: Member corrupt (variable) of struc
 shared/ui/include/busfault_screen.h: warning: Member echoed (variable) of struct busfault_report_t is not documented.
 shared/ui/include/busfault_screen.h: warning: Member kind (variable) of struct busfault_report_t is not documented.
 shared/ui/include/busfault_screen.h: warning: Member lost (variable) of struct busfault_report_t is not documented.
-shared/ui/include/busfault_screen.h: warning: Member remote_flags (variable) of struct busfault_report_t is not documented.
-shared/ui/include/busfault_screen.h: warning: Member remote_overflows (variable) of struct busfault_report_t is not documented.
-shared/ui/include/busfault_screen.h: warning: Member remote_rx_errors (variable) of struct busfault_report_t is not documented.
-shared/ui/include/busfault_screen.h: warning: Member remote_tx_errors (variable) of struct busfault_report_t is not documented.
 shared/ui/include/busfault_screen.h: warning: Member rx_errors (variable) of struct busfault_report_t is not documented.
 shared/ui/include/busfault_screen.h: warning: Member sent (variable) of struct busfault_report_t is not documented.
 shared/ui/include/busfault_screen.h: warning: Member verdict (variable) of struct busfault_report_t is not documented.
