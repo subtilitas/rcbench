@@ -30,18 +30,20 @@
 extern "C" {
 #endif
 
-#define STORAGE_MOUNT_POINT "/sdcard"
+#define STORAGE_MOUNT_POINT "/sdcard"  /**< Where the card is mounted. */
+/** @brief Bytes of a file name the listing keeps, with the terminator. */
 #define STORAGE_NAME_MAX 64
 
-/*
- * A file's size is 64-bit: an exFAT (extended File Allocation Table) volume
- * holds files of 4GiB and more.  FAT12, FAT16 and FAT32 stop at
- * 4GiB less 1 byte.
+/**
+ * @brief One directory entry, handed to a storage_visit_fn.
+ *
+ * The size is 64-bit: an exFAT (extended File Allocation Table) volume holds
+ * files of 4GiB and more. FAT12, FAT16 and FAT32 stop at 4GiB less 1 byte.
  */
 typedef struct {
-    char name[STORAGE_NAME_MAX];
-    uint64_t size;
-    bool is_dir;
+    char name[STORAGE_NAME_MAX];  /**< The entry's name. */
+    uint64_t size;  /**< Bytes; 0 for a folder. */
+    bool is_dir;  /**< Whether the entry is a folder. */
     /** @brief FAT's date stamp in bits 31..16 and its time stamp in bits
      *         15..0, as the directory read returns them (FatFs FILINFO
      *         fdate, ftime): no lookup and no mktime() per entry.
@@ -53,7 +55,7 @@ typedef struct {
 /** What storage_stat() reads of one name. */
 typedef struct {
     uint64_t size;      /**< bytes; 0 for a folder */
-    bool is_dir;
+    bool is_dir;  /**< Whether the name is a folder. */
     int64_t mtime;      /**< local time as mktime() reads FAT's stamp */
 } storage_stat_t;
 
@@ -104,22 +106,35 @@ card_state_t storage_check(void);
  */
 bool storage_hold(void);
 
-/** storage_hold() of the volume of mount @p mount (storage_mount_count())
- *  only: false once another volume is mounted, so a name read from one
- *  card is not opened or deleted on the next. */
+/**
+ * @brief storage_hold() of the volume of mount @p mount
+ *        (storage_mount_count()) only: false once another volume is mounted,
+ *        so a name read from one card is not opened or deleted on the next.
+ * @param mount a number storage_mount_count() gave
+ * @return true when the volume is held; false once another volume is mounted
+ */
 bool storage_hold_mount(unsigned mount);
 
 /** The end of a storage_hold() that answered true.  The last release of a
  *  volume whose card was found gone lets the volume go. */
 void storage_release(void);
 
-/** fopen() under a hold that the file keeps until storage_fclose(); NULL,
- *  with no hold kept, when nothing is mounted or the open fails. */
+/**
+ * @brief fopen() under a hold that the file keeps until storage_fclose();
+ *        NULL, with no hold kept, when nothing is mounted or the open fails.
+ * @param path the full path, under STORAGE_MOUNT_POINT
+ * @param mode the fopen() mode
+ * @return the file, or NULL
+ */
 FILE *storage_fopen(const char *path, const char *mode);
 
-/** fclose() of a storage_fopen() file, and its hold given back.  The
- *  close is made also on a card found gone: FatFs refuses it without card
- *  traffic, and the handle and its descriptor are freed. */
+/**
+ * @brief fclose() of a storage_fopen() file, and its hold given back.  The
+ *        close is made also on a card found gone: FatFs refuses it without
+ *        card traffic, and the handle and its descriptor are freed.
+ * @param f a file storage_fopen() returned; NULL gives EOF
+ * @return the result of fclose(), EOF for a NULL file
+ */
 int storage_fclose(FILE *f);
 
 /** @brief Unmount and switch the card's supply off.  Safe to call when
@@ -128,24 +143,39 @@ int storage_fclose(FILE *f);
  *  card's use: nothing may still be open, and no hold is waited for. */
 void storage_deinit(void);
 
-/** A volume is mounted and its card was not found gone.  Lock-free. */
+/**
+ * @brief A volume is mounted and its card was not found gone.  Lock-free.
+ * @return true while a volume is mounted
+ */
 bool storage_mounted(void);
 
-/** The mounts that worked since the start: another number after a
- *  storage_check() is another volume, the same card's or a new one's.
- *  Lock-free. */
+/**
+ * @brief The mounts that worked since the start: another number after a
+ *         storage_check() is another volume, the same card's or a new one's.
+ *         Lock-free.
+ * @return the number of mounts that worked since the start
+ */
 unsigned storage_mount_count(void);
 
-/** Card size and free space in bytes; 0 when nothing is mounted. */
+/**
+ * @brief The card's size in bytes; 0 when nothing is mounted.
+ * @return the size in bytes
+ */
 uint64_t storage_total_bytes(void);
+/**
+ * @brief The card's free space in bytes; 0 when nothing is mounted.
+ * @return the free space in bytes
+ */
 uint64_t storage_free_bytes(void);
 
 /**
- * The card's name, into @p out of @p n bytes (40 hold every name): its
- * volume label, or the product name in its CID (card identification
- * register) when it has no label.  Read once per mount.  "" when nothing
- * is mounted.  A copy, so that a mount on another task cannot change it
- * under the caller.
+ * @brief The card's name, into @p out of @p n bytes (40 hold every name): its
+ *        volume label, or the product name in its CID (card identification
+ *        register) when it has no label.  Read once per mount.  "" when
+ *        nothing is mounted.  A copy, so that a mount on another task cannot
+ *        change it under the caller.
+ * @param out takes the name
+ * @param n bytes in @p out
  */
 void storage_card_name(char *out, size_t n);
 
@@ -158,17 +188,21 @@ void storage_card_name(char *out, size_t n);
 const char *storage_status(void);
 
 /**
- * What the slot holds as the last mount or look found it, or
- * CARD_STATE_MOUNTED while a volume is mounted.  CARD_STATE_NONE before the
- * first try, after storage_deinit() and for a card found gone.
- * CARD_STATE_UNREADABLE for a card that mounted, answers and fails a read.
- * Lock-free: the control task and every frame may ask.
+ * @brief What the slot holds as the last mount or look found it, or
+ *        CARD_STATE_MOUNTED while a volume is mounted.  CARD_STATE_NONE
+ *        before the first try, after storage_deinit() and for a card found
+ *        gone. CARD_STATE_UNREADABLE for a card that mounted, answers and
+ *        fails a read. Lock-free: the control task and every frame may ask.
+ * @return the slot's state
  */
 card_state_t storage_card_state(void);
 
 /** Called once per matching entry, in the order the volume holds them. */
 typedef void (*storage_visit_fn)(const storage_entry_t *entry, void *ctx);
 
+/**
+ * @brief Called once per directory entry read by a walk, before any filter.
+ */
 typedef void (*storage_tick_fn)(void);
 
 /** storage_walk()'s answer for a folder that is not there. */
@@ -247,8 +281,8 @@ int storage_walk_counted(const char *dir, const char *suffixes,
                          storage_tick_fn tick, unsigned *left_out);
 
 /**
- * @brief The size, kind and time of one file or folder, by its full path under
- * STORAGE_MOUNT_POINT, e.g. "/sdcard/BENCH/RCBENCH.LOG".
+ * @brief The size, kind and time of one file or folder, by its full path
+ *        under STORAGE_MOUNT_POINT, e.g. "/sdcard/BENCH/RCBENCH.LOG".
  *
  * FatFs's own f_stat(), for its 64-bit size.  stat() through the VFS
  * (virtual file system) puts the size in st_size, an off_t of 32 bits on
@@ -258,6 +292,8 @@ int storage_walk_counted(const char *dir, const char *suffixes,
  * A failure that says the card is gone lets the volume go as
  * storage_walk() does, without mounting again.
  *
+ * @param path the full path, under STORAGE_MOUNT_POINT
+ * @param out takes the size, kind and time
  * @return ESP_OK; ESP_ERR_NOT_FOUND when the volume has no such name;
  *         ESP_ERR_INVALID_STATE when nothing is mounted or @p path is not
  *         under the mount point; ESP_ERR_NO_MEM; ESP_FAIL when the card
@@ -316,7 +352,13 @@ int storage_dir_read(storage_dir_t *d, char *name, size_t cap,
  */
 void storage_dir_close(storage_dir_t *d);
 
-/** Full path for a name inside @p dir, ready for fopen(). */
+/**
+ * @brief Full path for a name inside @p dir, ready for fopen().
+ * @param dir the folder, relative to the mount point
+ * @param name the file name
+ * @param out takes the path
+ * @param out_size bytes in @p out
+ */
 void storage_path(const char *dir, const char *name, char *out, size_t out_size);
 
 #ifdef __cplusplus
