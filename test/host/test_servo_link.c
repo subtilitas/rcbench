@@ -1062,8 +1062,60 @@ TEST_CASE(the_tester_port_is_put_back_at_rest_after_a_session)
     CHECK_EQ(prog_link_target(&prog), 1u);
 }
 
+/* ------------------------------------------------------------ the instance */
+
+/*
+ * What a reader sees before the first servo_link_init(): the rate not
+ * known, and nothing owed, asked, read or handed to the screen.
+ */
+static void check_boot_state(void)
+{
+    uint16_t seq  = 0u;
+    uint32_t kept = 0u;
+    CHECK_EQ(servo_link_hz_sent(), SERVO_HZ_UNKNOWN);
+    CHECK_EQ(servo_link_rate_shown(), 0u);
+    CHECK(!servo_link_release_owed());
+    CHECK(!servo_link_binding_known());
+    CHECK(!servo_link_sweep_able());
+    CHECK(!servo_link_surfaces());
+    CHECK(!servo_link_take_release());
+    CHECK(!servo_link_take_sweep_refused());
+    CHECK(!servo_link_take_hold_lost(&seq));
+    CHECK(!servo_link_take_sweep_held(&seq, &kept));
+    CHECK(!servo_link_take_sweep_start());
+    const servo_link_start_t st = servo_link_sweep_start();
+    CHECK_EQ(st.start_seq, 0u);
+    CHECK_EQ(st.start_ms, 0u);
+    CHECK_EQ(st.frozen_ms, 0u);
+}
+
+/* Run first: every servo_link_init() hands back the state the image starts
+ * in, whatever the session before it left. */
+TEST_CASE(each_init_starts_from_the_state_the_image_boots_in)
+{
+    check_boot_state();
+
+    up(6u, 0x01u);
+    bus.nack_rate = true;
+    servo_cmd_t heli = pos(1500u);
+    heli.frame_hz = 333u;
+    servo_link_apply(heli, true, 0u);
+    bus.nack_rate = false;
+    servo_link_apply(sweep(7u, false), true, 0u);
+    servo_link_ask_release();
+    servo_link_ask_hold();
+    CHECK(servo_link_binding_known());
+    CHECK(servo_link_sweep_able());
+    CHECK(servo_link_take_sweep_start());
+    CHECK(servo_link_rate_shown() != 0u);
+
+    servo_link_init(&k_ctx);
+    check_boot_state();
+}
+
 int main(void)
 {
+    RUN(each_init_starts_from_the_state_the_image_boots_in);
     RUN(a_coprocessor_before_4_2_has_no_sweep_and_a_hold_sends_nothing);
     RUN(the_first_command_after_link_up_writes_a_stop_first);
     RUN(a_resume_before_4_6_starts_the_curve_over_and_says_so);
