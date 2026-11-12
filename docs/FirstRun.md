@@ -2,6 +2,46 @@
 
 <sub>**English** · [Deutsch](FirstRun-de.md)</sub>
 
+## Quick start from the release assets
+
+These steps take a bench from its parts to the menu with no instrument. The
+numbered sections below are the bring-up protocol: they measure what the
+quick start takes for granted, and sections 6 to 8 need an oscilloscope.
+
+1. **Parts.** Choose the functions in the
+   [bench configurator](https://subtilitas.github.io/rcbench/). Its parts
+   list, wiring diagram and pin-to-pin table are for that set-up.
+2. **The link.** Three wires from the panel's CAN header H11 to the IOmcu's
+   CAN module: CAN H, CAN L and GND, with the 120Ω termination on at both
+   ends ([Link: Wiring](Link.md#wiring)). Then the heartbeat wire: IO28 of
+   the panel's header P3 to the IOmcu's GPIO 3
+   ([§3](#3-the-heartbeat-wire)). Without it the IOmcu refuses ARMED.
+3. **Download** the assets of a release from
+   [GitHub](https://github.com/subtilitas/rcbench/releases).
+   `sha256sum -c SHA256SUMS` prints `OK` for each file.
+4. **Flash the IOmcu** over USB with `rcbench-iomcu-install.uf2`, on the
+   rbmod carrier `rcbench-iomcu-rbmod-install.uf2`
+   ([§1 step 2](#from-the-release-assets)).
+5. **Flash the panel** over USB with `rcbench-panel-merged.bin` at 0x0
+   ([§1 step 3](#from-the-release-assets)).
+6. **Power both boards** as the configurator's wiring shows. The splash
+   shows `LINK  OK  CAN 1Mbit/s` and hands over to the menu
+   ([§2](#2-the-link-before-anything-else)). A bus-fault screen in its place
+   names the verdict
+   ([Bringing up the link](Bringup.md#the-bus-fault-screen)).
+7. **SETUP > OUTPUTS** shows the IOmcu's pins: the board drawing it serves,
+   or the grid on the rbmod carrier
+   ([§4](#4-first-link-up-the-board-drawing)).
+8. **ARM with nothing connected to an output.** On SETUP > OUTPUTS bind one
+   pin to `MOTOR PWM` or a DShot protocol. Open MOTOR & ESC and hold ARM for
+   2s: the band reads ARMED MOTOR. Tap DISARM. A refusal by the IOmcu here
+   points at the heartbeat wire. [§5](#5-arm-with-nothing-connected) tests
+   the interlock in full.
+
+---
+
+## The bring-up protocol
+
 This procedure checks both powered boards with the heartbeat wire fitted.
 Measure each value below with an instrument. Every step gives the expected
 result and says what to record if the result differs.
@@ -443,6 +483,8 @@ Every one of these is host-tested. **None of the numbers below has been seen on 
 
 ## 6. First pin on an instrument
 
+**With an oscilloscope.** The quick start skips this step.
+
 Use a **servo**, not the ESC. A servo is the forgiving case and the one the
 scope reads most easily.
 
@@ -460,9 +502,11 @@ compare register. The second of a pair is refused rather than muxed onto the
 first one's pulse width. The OUTPUTS page carries no bit saying "bound", so
 the screen goes on looking configured while the lead produces no pulse.
 
-On the panel: **SETUP > OUTPUTS**, choose `SERVO PWM`, tick one pin. Or
-**SETUP > OUTPUTS**, choose `SERVO PWM` in its list and tap one key on the
-board drawing — grounds are marked `G`, rails carry their voltage.
+On the panel: **SETUP > OUTPUTS**, choose `SERVO PWM` in its list. On a
+board with a drawing, tap the pin's key on the drawing
+([board view](Screens.md#the-board-view)); grounds are marked `G`, rails
+carry their voltage. Otherwise tick the pin's cell
+([grid view](Screens.md#the-grid-view)).
 
 **Scope the pin before connecting the servo.**
 
@@ -493,6 +537,8 @@ what happens to a bound pin the servo screen is not holding.
 
 ## 7. The numbers nobody has measured
 
+**With an oscilloscope.** The quick start skips this step.
+
 Written from the specification, exercised only against frames the same code
 builds. Record real values for each:
 
@@ -508,6 +554,8 @@ builds. Record real values for each:
 ---
 
 ## 8. Current monitors (INA228, INA3221)
+
+**With an oscilloscope.** The quick start skips this step.
 
 The IOmcu's core 1 reads an INA228 in the ESC's power path and an
 INA3221 on the servo rail over I2C (Inter-Integrated Circuit) at 400kHz,
@@ -792,7 +840,7 @@ pressed, with no Enter.
 5. Servo at rest: new log file. Connect the servo, press ARM, leave it at the
    center, supply on at 4.80V. Press `t` and wait for the `$Z` line.
 6. Moves, in the same log: on the SERVO screen's TEST task, switch to
-   SAFE and open SETTINGS. Set Length by to MOVES, Movements 20, Dwell time
+   SAFE and open OPTIONS. Set Length by to MOVES, Movements 20, Dwell time
    1000ms, Step 4.8V on and every other step and Brown-out off, and SAVE.
    Hold HOLD 2s: ARM + START. The trace runs from the first
    move to 4s after the last; wait for its `$Z` line, then close PuTTY.
@@ -913,7 +961,7 @@ answer whether an arrival is the horn's.
 **Part B: with the AS5600.** The same moves with the encoder on the shaft.
 
 1. SETUP > SENSORS: `AS5600` ON, with the bank SAFE. On SERVO's
-   RUDDER screen, SETTINGS, with the servo at its neutral, tap ENC CENTER.
+   RUDDER screen, OPTIONS, with the servo at its neutral, tap ENC CENTER.
 2. Repeat part A's steps 5 to 7.
 3. Keep each log together with its test's `ATESTnnn.CSV` from the SD card's
    `USER/LOGS` folder.

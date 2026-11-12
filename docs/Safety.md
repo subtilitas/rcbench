@@ -641,7 +641,7 @@ a third time after the ARMED frame is acknowledged. If an edit arrived
 during that frame, it writes ARM = 0 in the next exchange: the IOmcu is ARMED at rest
 on the range it held for that one exchange (time not measured), and the
 panel's bank does not switch to ARMED. The panel's own screens cannot
-publish an edit there: the two SETTINGS rows lock while ARM is held and
+publish an edit there: the two OPTIONS rows lock while ARM is held and
 while an ARM waits for its answer. SETUP's DISCARD, which can revert an
 unsaved value, is on another screen and takes no tap while the bench is
 ARMED, and leaving MOTOR & ESC or SERVO switches the bench to SAFE.
@@ -666,7 +666,7 @@ ARMED.
 An edit at time 0 is synchronized at the first poll at or after 300ms: a
 poll at 299ms leaves it pending; a poll at 300ms processes it. The time is taken modulo
 2^32ms, so the rest runs across the wrap of the millisecond clock. The
-SETTINGS rows for the two values lock while ARM is held, and the hold takes
+OPTIONS rows for the two values lock while ARM is held, and the hold takes
 2s, so an edit made before the press is normally synchronized during the hold.
 
 With no link the panel's own bank switches to ARMED and nothing is written.

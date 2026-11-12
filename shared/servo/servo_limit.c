@@ -9,6 +9,8 @@
 
 #include <string.h>
 
+#include "mstime.h"
+
 /*
  * How many positions feed the free-running baseline before the knee test is
  * allowed to fire.
@@ -19,19 +21,6 @@
  * positions average that away and are over within three steps of travel.
  */
 #define BASELINE_STEPS 3u
-
-/**
- * @brief Tell whether a millisecond span has elapsed.
- *
- * @param now  Current time, ms.
- * @param then Start of the span, ms.
- * @param ms   Span length, ms.
- * @return true when now - then is at least ms, across a counter wrap.
- */
-static inline bool elapsed(uint32_t now, uint32_t then, uint32_t ms)
-{
-    return (uint32_t)(now - then) >= ms;
-}
 
 /**
  * @brief Clamp a pulse width to the search travel and the pulse range.
@@ -263,7 +252,8 @@ uint16_t servo_limit_step(servo_limit_t *lf, float current_a, uint32_t now_ms)
         if (!lf->elevated) {
             lf->elevated          = true;
             lf->elevated_since_ms = now_ms;
-        } else if (elapsed(now_ms, lf->elevated_since_ms, lf->cfg.stall_ms)) {
+        } else if (mstime_elapsed(now_ms, lf->elevated_since_ms,
+                                  lf->cfg.stall_ms)) {
             finish(lf, SERVO_LIMIT_FAULT, SERVO_LIMIT_FAULT_STALL);
             return lf->cmd_us;
         }
@@ -272,7 +262,7 @@ uint16_t servo_limit_step(servo_limit_t *lf, float current_a, uint32_t now_ms)
     }
 
     if (!lf->measuring) {
-        if (elapsed(now_ms, lf->phase_start_ms, lf->cfg.settle_ms)) {
+        if (mstime_elapsed(now_ms, lf->phase_start_ms, lf->cfg.settle_ms)) {
             lf->measuring      = true;
             lf->phase_start_ms = now_ms;
             lf->sum_a          = 0.0;
@@ -284,7 +274,7 @@ uint16_t servo_limit_step(servo_limit_t *lf, float current_a, uint32_t now_ms)
     lf->sum_a += (double)current_a;
     ++lf->samples;
 
-    if (elapsed(now_ms, lf->phase_start_ms, lf->cfg.measure_ms)
+    if (mstime_elapsed(now_ms, lf->phase_start_ms, lf->cfg.measure_ms)
         && lf->samples > 0) {
         const float avg = (float)(lf->sum_a / (double)lf->samples);
         judge(lf, avg);

@@ -36,7 +36,7 @@ The right card is the READY card, with three rows on KST, four on HITEC, and the
 - The supply CONNECT switches: PROG 5V on the rbmod carrier, PD MINI where one answers, SUPPLY otherwise. Amber `ON AT CONNECT` while off. A red dot and `ON` while on; a tap then switches it off, as OUTPUT OFF does. Without a supply the bench switches: amber `OFF, ON BY HAND`.
 - SERVO: `NOT CONNECTED` before CONNECT, `NOT READ` with the port held, then the servo's type, `V6?` while it is 20k_sel's guess.
 
-A tap on a row that is not met names it in the alert band. The footer's middle slot is the session's WRITE n VALUES from any tab, the same as the session's own button. It is grey before CONNECT and the read, with no value changed and while a page is open; a tap names why. KST has no ARM. SETTINGS opens KST EXPERT MODE's page; it is grey while the session holds the port.
+A tap on a row that is not met names it in the alert band. The footer's middle slot is the session's WRITE n VALUES from any tab, the same as the session's own button. It is grey before CONNECT and the read, with no value changed and while a page is open; a tap names why. KST has no ARM. OPTIONS opens KST EXPERT MODE's page; it is grey while the session holds the port.
 
 ## What it needs
 

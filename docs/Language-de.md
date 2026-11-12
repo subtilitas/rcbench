@@ -109,7 +109,7 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | reading | Messwert |
 | EFF (die Schätzung des Antriebsstrangs auf MOTOR & ESC, LIVE) | WIRK. |
 | setting (ein Eintrag in SETUP) | Einstellung |
-| SETTINGS (die eigenen Einstellungen einer Seite) | OPTIONEN |
+| OPTIONS (die eigenen Einstellungen einer Seite) | OPTIONEN |
 | save, reset, apply, close | speichern, zurücksetzen, übernehmen, schließen |
 | cancel, abort | abbrechen |
 | hold to … | … halten |

@@ -208,7 +208,7 @@ Der Lauf verwendet ausschließlich den INA3221-Kanal für das Testerziel. Solang
 | PROG 5V | `PROG 5V AUS: START SCHALTET ES EIN` | SAFE auf dem rbmod-Carrier mit PORT auf einem Programmierport und PROG 5V aus. Gelb: das Halten schaltet es ein |
 | ARM | `ZUERST ARM` | der Prüfstand ist SAFE. Gelb: das Halten schaltet ARM |
 | PORT | `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | PORT sind die Ausgänge des Prüfstands, und kein Ausgang ist als SERVO PWM zugeordnet, oder die Zuordnung ist noch nicht ausgelesen |
-| MESSGERÄT | `INA3221 NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET` | kein Kanal eines bestückten INA3221 überwacht in SETUP > SENSORS das Ziel des Testers |
+| MESSGERÄT | `SERVOSTROMMESSER (INA3221) NICHT EINGERICHTET` | kein Kanal eines bestückten INA3221 überwacht in SETUP > SENSORS das Ziel des Testers |
 | MESSGERÄT | `INA3221 NICHT ERREICHBAR` | keine Verbindung, oder der INA3221 antwortet nicht |
 | MESSGERÄT | `NOCH KEINE INA3221-MESSFENSTER` | der INA3221 ist noch nicht das Messgerät |
 | SCHIENE | `SERVOVERSORGUNG UNTER 3.0V ODER OHNE MESSWERT` | das letzte INA3221-Fenster hat keine Schienenspannung oder weniger als 3,0V: ein ausgeschalteter Ausgang liest 0V. Gelb bei SAFE, wo die Versorgung des Haltens die Schiene speist |

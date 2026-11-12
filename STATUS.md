@@ -388,7 +388,7 @@ and every frame over a simulated bench (`ui_band_key()`, `test_frame_work`).
 Built and tested on the host (`shared/ui/ui_help.c`, the router's guide in `ui_router.c`;
 `test_help_router`, `test_help_pages`): "?" in the band opens numbered marks and a dock with
 up to 5 controls a page, 3 rows each. The menu has 4 pages. SERVO has 12 pages over its
-tasks and SETTINGS' pages with 47 items (`shared/ui/servo_guide.c`), SUPPLY 3 with 12 items
+tasks and OPTIONS' pages with 47 items (`shared/ui/servo_guide.c`), SUPPLY 3 with 12 items
 on LIVE and the settings list's 2 with 7 (`shared/ui/supply_guide.c`, `ui_setlist.c`);
 `test_help_guides` holds them. A page whose dock would cover OUTPUT OFF, STOP TEST or STOP
 RUN is not offered while that control shows; SUPPLY's OUTPUT OFF, in the footer's middle
@@ -424,7 +424,7 @@ SAFE, the slider, its `-1` and `+1` steps and the rotary knob are refused and th
 host suite only).
 
 MOTOR & ESC and SUPPLY end in the common footer (`shared/ui/ui_footer.c`): the screen's name
-with what it drives, the 2s hold, and SETTINGS, which opens the settings list
+with what it drives, the 2s hold, and OPTIONS, which opens the settings list
 (`shared/ui/ui_setlist.c`, SETUP's category list as a widget) only while the screen drives
 nothing; the list closes when its screen goes live. SETUP draws its own list through the same
 widget (`test_footer`, `test_setlist`, `test_motor_workbench`, `test_supply_pdmini`; host
@@ -444,7 +444,7 @@ goes from a function screen to the hub and from the hub to the menu, and the hub
 nothing (`test_servo_hub`). KST and HITEC are grey with their reason while the IOmcu does
 not report the capability or another session holds the port, from one table
 (`prog_registry.h`, `test_prog_registry`). Every function screen has the footer name and
-port line, ARM and SETTINGS, and a PORT button over the right card that names the target as
+port line, ARM and OPTIONS, and a PORT button over the right card that names the target as
 `protocol pins` and opens the choice of OUTPUTS and the 4 programming ports, locked while ARMED or ARM
 is asked, and while the programmer holds the port (`test_servo_port_button`,
 `test_servo_workbench`). No list, page of rows or PORT list opens while a finger holds
@@ -457,7 +457,7 @@ session holds the port (`test_hitec_series_row`), and the session's WRITE n VALU
 place of ARM; their sessions have no CLOSE, the home tag is the way back
 (`servo_prog_ready.c`, `test_kst_panel_frame`, `test_hitec_panel_frame`).
 
-The hub's SETTINGS list sets the type (STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI
+The hub's OPTIONS list sets the type (STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI
 TAIL 760), the frame rate, the pulse widths, trim, travel and reverse for the session under
 OUTPUT, and the device under test in NVS; SWEEP's list sets its curve; each run's settings
 open from its card on TEST and LIMIT RUN, and SUPPLY's caps show there read-only; a heli type or a rate above 60Hz is applied
@@ -477,7 +477,7 @@ the supply stepped through 4.8 and 6.0V, and 7.4 and 8.4V with HV SERVO on (sess
 through the HV warning's 2s hold), idle, moving and holding current and the travel time at
 each, a brown-out walk from 5.0V, or the cap if lower, down by STEP to LOWEST VOLTAGE (0.1
 to 1.0V and 2.0 to 4.8V, 0.2V and 3.0V by default, up to 31 voltages; set under BROWN-OUT
-on TEST's 21-row SETTINGS list and kept in NVS; `test_servo_brownout` at the ranges' ends, a
+on TEST's 21-row OPTIONS list and kept in NVS; `test_servo_brownout` at the ranges' ends, a
 floor off the grid, at or above the start and under the supply's lowest set point, a cap
 under 5.0V; `test_servo_brownout_page` for the list's rows, their keypads and the heading's
 walk line, the settings over a restart and a run started from the screen; `test_servo_test_list`
@@ -584,7 +584,7 @@ SUPPLY adds the watts and a plot of its windows, the SERVO hub's footer the PROG
 reading (`test_servo_power_view`, `test_prog5v_box`, `test_prog5v_servo`; host suite
 only).
 Each function screen sets its settings on itself: the type pill of LIVE, SWEEP and RUDDER,
-LIVE's SETTINGS, LIMIT RUN's and RUDDER AUTO's RANGE rows and TEST's OUTPUT row open the
+LIVE's OPTIONS, LIMIT RUN's and RUDDER AUTO's RANGE rows and TEST's OUTPUT row open the
 servo profile in place on a SAFE bench; TEST's RANGE row opens TEST's list on Range, which
 SWEEP shares, as Dwell time; TEST's list holds DUT name and Report, LIMIT RUN's and RUDDER
 AUTO's DUT name and User logs; TEST's READY card switches User logs on its LOG row, refused
@@ -1172,7 +1172,8 @@ one needing 22.8V, and refuses 4 more model rows of families that open, each nee
 propeller), switching to ARMED and moving the throttle through the MOTOR screen's commands
 and switching the supply through SUPPLY's.
 
-Beeps are counted from the supply current with hysteresis from a quiet line, lengths judged
+Beeps are counted from the phase tap or from an INA3221 channel in the ESC's supply line
+([beep timing](#stick-programmings-beep-timing)), with hysteresis from a quiet line, lengths judged
 in readings, and a group acted on only when it and the one before it are in the menu's
 order; a sweep of lost beeps against entry times stores no wrong value in the simulation. A
 planned end switches the supply off before the stick moves. The list shows the makers, then
@@ -1308,7 +1309,7 @@ rcbench/
 | Module | panel | iomcu | host |
 | --- | :-: | :-: | :-: |
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `files` · `sbus` | yes | | yes |
-| `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` | yes | yes | yes |
+| `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` · `mstime` | yes | yes | yes |
 | `artwork` · `esc` · `fwupdate` · `webaccess` · `clock` | yes | | yes |
 | `openyge` · `ppm` · `i2c_txq` | | yes | yes |
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |
@@ -1348,7 +1349,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 528 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 529 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1454,7 +1455,7 @@ The host suite is 528 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_wa_api_write`, `test_sense_i2c`, `test_storage`, `test_storage_swap`, `test_text_buf`,
 `test_text_hl`, `test_text_hl_limrun`, `test_i2c_txq`, `test_i2c_txq_calls`,
 `test_i2c_txq_wire`, `test_sense_txq`, `test_sense_txq_svc`, `test_fm_name`, `test_png_enc`,
-`test_shot_file`, `test_shot`, `test_shot_popup`, `test_wall_clock`, `test_witmotion`,
+`test_shot_file`, `test_shot`, `test_shot_popup`, `test_wall_clock`, `test_mstime`, `test_witmotion`,
 `test_servo_angle`, `test_servo_source_angle`, `test_hitec_prog_run` and
 `test_hitec_panel_run`, `test_hitec_panel_move`, `test_hitec_panel_find`, `test_servo_rudder`,
 `test_servo_rudder_panel`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
@@ -2138,8 +2139,8 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/files/fm_crc.c` | 6 | 6 | 100.0% |
 | `shared/files/png_enc.c` | 217 | 217 | 100.0% |
 | `shared/files/shot_file.c` | 133 | 133 | 100.0% |
-| `shared/safety/heartbeat.c` | 58 | 58 | 100.0% |
-| `shared/safety/arming.c` | 262 | 257 | 98.1% |
+| `shared/safety/heartbeat.c` | 56 | 56 | 100.0% |
+| `shared/safety/arming.c` | 259 | 254 | 98.1% |
 | `shared/safety/safety_gate.c` | 69 | 69 | 100.0% |
 | `shared/safety/flash_gate.c` | 4 | 4 | 100.0% |
 | `shared/safety/reset_cause.c` | 61 | 61 | 100.0% |
@@ -2149,9 +2150,9 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/safety/error_stop.c` | 14 | 14 | 100.0% |
 | `shared/safety/error_sites.c` | 69 | 69 | 100.0% |
 | `shared/safety/prog5v_lost.c` | 110 | 110 | 100.0% |
-| `shared/safety/stop_latch.c` | 147 | 145 | 98.6% |
-| `shared/servo/servo_limit.c` | 142 | 136 | 95.8% |
-| `shared/servo/servo_sync.c` | 183 | 177 | 96.7% |
+| `shared/safety/stop_latch.c` | 145 | 143 | 98.6% |
+| `shared/servo/servo_limit.c` | 141 | 135 | 95.7% |
+| `shared/servo/servo_sync.c` | 181 | 175 | 96.7% |
 | `shared/servo/servo_sweep.c` | 118 | 114 | 96.6% |
 | `shared/servo/servo_move.c` | 145 | 145 | 100.0% |
 | `shared/servo/servo_test.c` | 809 | 796 | 98.4% |
@@ -2243,7 +2244,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/bench/hitec_card.c` | 278 | 277 | 99.6% |
 | `shared/bench/hitec_card_run.c` | 113 | 113 | 100.0% |
 | `shared/bench/kst_prog.c` | 1390 | 1367 | 98.3% |
-| `shared/bench/kst_prog_card.c` | 321 | 306 | 95.3% |
+| `shared/bench/kst_prog_card.c` | 313 | 306 | 97.8% |
 | `shared/bench/kst_prog_file.c` | 150 | 146 | 97.3% |
 | `shared/bench/kst_card.c` | 137 | 133 | 97.1% |
 | `shared/bench/prog_link.c` | 297 | 297 | 100.0% |
@@ -2253,7 +2254,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/link/link_bringup.c` | 163 | 163 | 100.0% |
 | `shared/link/link_can.c` | 112 | 111 | 99.1% |
 | `shared/link/link_crc.c` | 13 | 13 | 100.0% |
-| `shared/link/link_dev.c` | 169 | 165 | 97.6% |
+| `shared/link/link_dev.c` | 168 | 164 | 97.6% |
 | `shared/link/link_host.c` | 169 | 165 | 97.6% |
 | `shared/link/link_artxfer.c` | 94 | 93 | 98.9% |
 | `shared/link/link_drawing.c` | 141 | 141 | 100.0% |
@@ -2345,7 +2346,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **90068** | **88224** | **98.0%** |
+| **total** | **90049** | **88213** | **98.0%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

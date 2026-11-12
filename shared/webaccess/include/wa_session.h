@@ -204,14 +204,6 @@ wa_conf_err_t wa_kept_check(const char *value, size_t len);
 wa_conf_err_t wa_conf_set_kept(wa_conf_t *c, wa_kept_t which,
                                const char *value, size_t len);
 
-/**
- * @brief FORGET HOME NETWORK in memory: the network goes and the code switch
- *        is back on, as wa_conf_defaults(); the two kept values stay, and
- *        each goes back to RANDOM by its own button.
- * @param c The settings.
- */
-void wa_conf_forget_net(wa_conf_t *c);
-
 /** @brief The store a wa_conf_t is kept in. */
 typedef struct {
     /** Fill @p out; false when nothing is kept. */
@@ -297,8 +289,8 @@ void wa_pending_change(wa_pending_t *p);
 void wa_pending_forget(wa_pending_t *p);
 
 /**
- * @brief FORGET of @p c, in memory and owed to the store: wa_conf_forget_net()
- *        and an erase; with a kept value a save instead, which removes the
+ * @brief FORGET of @p c, in memory and owed to the store: the network goes
+ *        (FORGET HOME NETWORK in memory) and an erase; with a kept value a save instead, which removes the
  *        network's keys and at no moment leaves the value out of the store.
  * @param c The settings.
  * @param p The writes owed.

@@ -627,8 +627,8 @@ Halten läuft vom verfügbaren Grün zur Farbe, die die Taste danach hält.
 Ein Tipp auf ein graues 2s HALTEN: ARM + START zeigt die erste rote Zeile
 der Karte BEREIT im Alarmband als Mitteilung, 4s in Bernstein, wie der
 Hinweis einer Halte-Taste: `PORT: AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT`
-auf RUDER AUTO, `STUFEN: KEINE STUFE GEWÄHLT` auf TEST, `MESSGERÄT: INA3221
-NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET` auf ENDLAGENLAUF; die
+auf RUDER AUTO, `STUFEN: KEINE STUFE GEWÄHLT` auf TEST, `MESSGERÄT: SERVOSTROMMESSER
+(INA3221) NICHT EINGERICHTET` auf ENDLAGENLAUF; die
 Zustandszeile der Karte sagt dasselbe.
 
 ## Marken im Menü
@@ -644,8 +644,8 @@ Instrumente RECEIVER, BATTERY und BALANCE. Die letzte Spalte enthält LOGS
 
 Eine vierte Prüfstandsseite oder ein viertes Instrument lässt den Build
 für dieses Raster mit 4 Spalten scheitern (`shared/ui/overview_screen.c`).
-Die Programmierung hat keine eigene Kachel. Du erreichst sie über
-PROGRAMMIEREN auf MOTOR & ESC und SERVO.
+Die Programmierung hat keine eigene Kachel. ESCs: MOTOR & ESC >
+PROGRAMMIEREN. Servos: die Kacheln KST und HITEC auf SERVO.
 
 Unter jedem Kachelnamen steht eine Beschreibung mit bis zu 2 Zeilen von
 je 22 Zeichen und 8px Abstand zu den Seitenrändern:
@@ -799,8 +799,9 @@ OUTPUTS haben keine Fußleiste.
 | Mitte | die eine 2s-Haltetaste der Seite: ARM / DISARM, AUSGANG EIN / AUS ([Halte-Tasten](#halte-tasten)) |
 | rechts | OPTIONEN, eine neutrale Taste mit dem Schieberegler-Symbol von SETUP |
 
-OPTIONEN öffnet die Optionsliste der Seite über dem ganzen Inhalt. Sie
-öffnet nur, solange die Seite nichts ansteuert. MOTOR & ESC braucht einen
+OPTIONEN öffnet die Optionsliste der Seite über dem ganzen Inhalt. Die
+Kachel SETUP im Menü enthält die Einstellungen des ganzen Prüfstands,
+OPTIONEN die eigenen dieser Seite. Die Liste öffnet nur, solange die Seite nichts ansteuert. MOTOR & ESC braucht einen
 Prüfstand in SAFE ohne gehaltenes ARM, SUPPLY einen ausgeschalteten Ausgang
 ohne unterwegs befindliches EIN, ESC STICK einen Prüfstand in SAFE ohne
 Lauf, UPDATES keine laufende Suche und keinen laufenden Download. Sonst
@@ -6290,7 +6291,7 @@ wie bei den Strommonitoren:
 
 | Meldung | Wann |
 | --- | --- |
-| `IOmcu hat keine TONE-Page. Phasenabgriff nicht ausgelesen.` | der Abgriff ist eingeschaltet und der IOmcu spricht ein Protokoll älter als 4.8; gesagt beim Link-Aufbau und wenn der Abgriff eingeschaltet wird, während er antwortet |
+| `Phasenabgriff nicht ausgelesen: Der IOmcu hat keine TONE-Page.` | der Abgriff ist eingeschaltet und der IOmcu spricht ein Protokoll älter als 4.8; gesagt beim Link-Aufbau und wenn der Abgriff eingeschaltet wird, während er antwortet |
 | `Phasenabgriff an GPIO 22, 400 bis 6500Hz abgelehnt. Prüfe SENSORS.` | der IOmcu lehnte den ersten Frame ab: der Pin ist nicht erlaubt, der Tonbereich nicht einer, den er nimmt (der höchste Ton nicht über dem tiefsten, oder die Pause kürzer als die Periode des tiefsten Tons), oder er führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet). Ein Pin, den ein Ausgang, der Sensorbus, der PD mini oder ein Programmierport hält, wird als belegt abgelehnt (BUSY, Protokoll 4.17): alle 5s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Jede andere Ablehnung wird erst nach der nächsten Änderung unter SETUP SENSORS oder dem Link-Aufbau erneut geschrieben. Von einem IOmcu mit 4.16 oder älter, der für beides BAD_VALUE sagt, wird der Frame alle 5s erneut angeboten, wenn sein Tonbereich und seine Pause gültig sind ([Link](Link-de.md#ein-belegter-pin-am-phasenabgriff)) |
 | `Phasenabgriff: Sprung, Pause oder Perioden abgelehnt. Prüfe SENSORS.` | der IOmcu lehnte den zweiten Frame ab; nicht erneut geschrieben, bis sich ein Wert ändert |
 | `Pin GPIO 22 für den Phasenabgriff ist belegt. Erfassung läuft nicht.` | der IOmcu meldet den Pin als abgelehnt, aus einem von zwei Gründen. Eine im Flash gehaltene Einstellung traf bei seinem Start auf eine Bindung: der erste Frame wird alle 5s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Der IOmcu führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet, Protokoll 4.17): kein Pin ist gebunden, und einen freizugeben ändert nichts. Das nächste Angebot des ersten Frames wird ohne weitere Meldung mit BAD_VALUE abgelehnt, und der Frame wird erst nach der nächsten Änderung unter SETUP SENSORS oder dem Link-Aufbau erneut angeboten; nur ein Neustart des IOmcu lässt den Abgriff laufen. Das Band sagt `Phasenabgriff an GPIO 22, 400 bis 6500Hz abgelehnt. Prüfe SENSORS.` nur für eine andere Einstellung als die, die der IOmcu behalten hat, geschrieben beim Link-Aufbau vor dem ersten Lesen des Status oder weniger als 5s, nachdem der Pin zuerst als nicht frei gemeldet oder zuletzt angeboten wurde; eine spätere Änderung geht als stilles Angebot hinaus |
@@ -6429,7 +6430,7 @@ vorherigen gespeichert. Das Medium kann daher neue und alte Werte enthalten.
 Welche davon gespeichert sind, kann der Bildschirm nicht bestimmen. Ein
 Panel, dessen NVS gar nicht hochkam, lehnt jedes Schreiben der Sitzung ab,
 schreibt nichts und sagt das zusätzlich einmal auf dem Splash als
-`NVS nicht verfügbar`.
+`Speicher (NVS) nicht verfügbar`.
 
 Ungespeicherte Werte gelten bis zum Ausschalten oder Neustart des Panels.
 Das Verlassen des Bildschirms speichert sie nicht.

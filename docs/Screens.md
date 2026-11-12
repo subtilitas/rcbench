@@ -291,17 +291,17 @@ on the left card decides the first pages:
 
 | Screen and task | Pages, items |
 | --- | --- |
-| SERVO hub | LIVE, LIMIT RUN, RUDDER and KST's tiles and the port line (5); a tile and SETTINGS (2) |
+| SERVO hub | LIVE, LIMIT RUN, RUDDER and KST's tiles and the port line (5); a tile and OPTIONS (2) |
 | SERVO LIVE and SWEEP | the horn's angle, the dial and the readings (3) |
-| SERVO TEST | the AUTOMATIC TEST card, the caps and the plot (3); PORT, READY, the rail line, ARM + START and SETTINGS (5) |
-| SERVO LIMIT RUN | LOW END with HIGH END, and the state lines (2); PORT, READY, the rail line, ARM + START and SETTINGS (5) |
+| SERVO TEST | the AUTOMATIC TEST card, the caps and the plot (3); PORT, READY, the rail line, ARM + START and OPTIONS (5) |
+| SERVO LIMIT RUN | LOW END with HIGH END, and the state lines (2); PORT, READY, the rail line, ARM + START and OPTIONS (5) |
 | SERVO RUDDER | LENGTH, the drive buttons, ZERO and RESET MAX (4); DEFLECTION, TRAILING EDGE and the state lines (3) |
-| SERVO RUDDER AUTO | the targets, MARGIN and TOLERANCE, ZERO (3); DEFLECTION and TRAILING EDGE (2); PORT, READY, the rail line, ARM + START and SETTINGS (5) |
-| SERVO LIVE, SWEEP and RUDDER, SAFE | PORT, READY, the rail line, ARM and SETTINGS (5); SET V, the plot, SPEED, the type and the buttons on LIVE and SWEEP (5), SET V, the plot, the type and the side view on RUDDER (4); SET V not on the rbmod carrier's programming port |
-| SERVO KST and HITEC, SAFE | PORT, READY, the rail line, WRITE and SETTINGS (5) |
+| SERVO RUDDER AUTO | the targets, MARGIN and TOLERANCE, ZERO (3); DEFLECTION and TRAILING EDGE (2); PORT, READY, the rail line, ARM + START and OPTIONS (5) |
+| SERVO LIVE, SWEEP and RUDDER, SAFE | PORT, READY, the rail line, ARM and OPTIONS (5); SET V, the plot, SPEED, the type and the buttons on LIVE and SWEEP (5), SET V, the plot, the type and the side view on RUDDER (4); SET V not on the rbmod carrier's programming port |
+| SERVO KST and HITEC, SAFE | PORT, READY, the rail line, WRITE and OPTIONS (5) |
 | SERVO's lists (the hub, SWEEP, RUDDER, RUDDER AUTO, HITEC) | as a settings list |
 | SUPPLY LIVE | PLOT and TABLE, VOLTAGE and CURRENT LIMIT (3) |
-| SUPPLY LIVE, the rail | the range and the four reading cards (5); the set points' values, RESET PEAKS, OUTPUT ON and SETTINGS (4) |
+| SUPPLY LIVE, the rail | the range and the four reading cards (5); the set points' values, RESET PEAKS, OUTPUT ON and OPTIONS (4) |
 | a settings list (MOTOR & ESC, SUPPLY, SERVO) | a row, the strip's name and RESET name (3); a row's `-`, value and `+`, and SAVE (4) |
 
 A page whose dock would cover a control that stops an output is left out
@@ -583,8 +583,8 @@ the available green to the colour the button holds next.
 A tap on a grey HOLD 2s: ARM + START puts the first red row of the READY
 card in the alert band as a notice, amber for 4s, as a hold's hint: `PORT:
 AUTO PROGRAMS A SERVO ON THE PROG PORT` on RUDDER AUTO, `STEPS: NO STEP
-CHOSEN` on TEST, `METER: INA3221 NOT SET UP TO MEASURE SERVO SUPPLY
-CURRENT` on LIMIT RUN; the card's state line says the same.
+CHOSEN` on TEST, `METER: SERVO CURRENT METER (INA3221) NOT SET
+UP` on LIMIT RUN; the card's state line says the same.
 
 ## Menu marks
 
@@ -597,8 +597,8 @@ SERVO and SUPPLY; the second contains the instruments RECEIVER, BATTERY
 and BALANCE. The last column has LOGS above SETUP.
 
 The 4-column layout rejects a fourth workbench or instrument at build time
-(`shared/ui/overview_screen.c`). Programming is reached through the PROGRAM
-task on MOTOR & ESC and SERVO, with no separate menu tile.
+(`shared/ui/overview_screen.c`). Programming has no separate menu tile.
+ESCs: MOTOR & ESC > PROGRAM. Servos: the KST and HITEC tiles of SERVO.
 
 Below each tile name, the description uses up to 2 rows of 22 characters,
 with 8px clearance at each side:
@@ -659,7 +659,7 @@ shared control determines the fonts and internal spacing.
   all of them fit their keys with 6px each side. `CANCEL` needs a key of
   132px for 20 x 36. German `ABBRECHEN` needs 192px for 20 x 36, 156px
   for 16 x 28, 120px for 12 x 24 and 102px for 10 x 20, so the German
-  keypads of SERVO, SUPPLY and MOTOR & ESC's SETTINGS draw their words in
+  keypads of SERVO, SUPPLY and MOTOR & ESC's OPTIONS draw their words in
   12 x 24.
 - **Keyboard.** A title row of 32px, the text field of 52px, then 5 rows
   of keys 6px apart. The title and the count are in 10 x 20, or in 8 x 16
@@ -710,7 +710,7 @@ A keypad or a keyboard whose area reaches further paints its whole area
 and stops its keys there, so an alert covers no key. On SERVO the keypads'
 keys are then 145 x 88px and the keyboards' 55 x 72px; on SUPPLY the
 keypad's are 145 x 76px; on the ESC STICK search keyboard 59 x 57px; on
-MOTOR & ESC's SETTINGS the keypad's are 145 x 89px; on BALANCE the blade
+MOTOR & ESC's OPTIONS the keypad's are 145 x 89px; on BALANCE the blade
 count's keypad's are 242 x 72px.
 
 ## The footer and the settings list
@@ -721,7 +721,7 @@ The screens below end in the same footer: three slots of
 columns. A screen with the footer keeps its own controls above body
 y 436.
 
-| Screen | Middle slot | SETTINGS opens |
+| Screen | Middle slot | OPTIONS opens |
 | --- | --- | --- |
 | MOTOR & ESC | ARM / DISARM | the list of the 8 motor, pack and throttle-output settings |
 | SUPPLY | OUTPUT ON / OFF | the list of the supply's limits and the PD mini's wiring |
@@ -740,16 +740,17 @@ footer.
 | --- | --- |
 | left | the screen's name in 12 x 24 and, under it in 10 x 20, what it drives: `DSHOT300 GPIO 0`, `PD MINI TX GPIO 12 RX GPIO 13`, `SIMULATED`; in the warning colour while it drives nothing, `NO MOTOR PIN` |
 | middle | the screen's one 2s hold: ARM / DISARM, OUTPUT ON / OFF ([Hold buttons](#hold-buttons)) |
-| right | SETTINGS (German `OPTIONEN`), a neutral button with SETUP's sliders icon |
+| right | OPTIONS (German `OPTIONEN`), a neutral button with SETUP's sliders icon |
 
-SETTINGS opens the screen's settings list over the whole body. It opens
-only while the screen drives nothing. MOTOR & ESC needs a SAFE bench with
+OPTIONS opens the screen's settings list over the whole body. The SETUP
+tile on the menu holds the bench-wide settings; OPTIONS holds this screen's
+own. It opens only while the screen drives nothing. MOTOR & ESC needs a SAFE bench with
 ARM not held; SUPPLY needs the output off and no ON on its way; ESC STICK
 needs a SAFE bench and no run; UPDATES needs no check and no download
 running. Otherwise the button is grey and a tap puts
-`SETTINGS open on a SAFE bench only. Switch to SAFE first.`,
-`SETTINGS open with the output off only. Switch it off first.` or
-`SETTINGS open with no check or download running.` in the alert band. An output that goes live under an open list closes it.
+`OPTIONS open on a SAFE bench only. Switch to SAFE first.`,
+`OPTIONS open with the output off only. Switch it off first.` or
+`OPTIONS open with no check or download running.` in the alert band. An output that goes live under an open list closes it.
 
 The list is SETUP's category list ([Keys and the list](#keys-and-the-list)):
 
@@ -829,9 +830,9 @@ column's edge at x 629 ([RENAME LOG](#rename-log)).
 | LIVE | the plot or the table over the throttle |
 | PROGRAM | the list of ESC programmers; a row opens its session over the whole body ([PROGRAM](#program)) |
 
-The footer reads `[MOTOR & ESC] [ARM / DISARM] [SETTINGS]`
+The footer reads `[MOTOR & ESC] [ARM / DISARM] [OPTIONS]`
 ([The footer and the settings list](#the-footer-and-the-settings-list)).
-Its left slot names TARGET's protocol and pins; SETTINGS opens the 8 ESC
+Its left slot names TARGET's protocol and pins; OPTIONS opens the 8 ESC
 settings ([MOTOR & ESC settings](#motor--esc-settings)).
 
 MOTOR & ESC uses two columns, like SERVO: a 620px task area on the left and
@@ -1286,9 +1287,9 @@ Tap RENAME LOG again to change or remove the label.
 
 ### MOTOR & ESC settings
 
-![SETTINGS](img/motor-settings.png)
+![OPTIONS](img/motor-settings.png)
 
-The footer's SETTINGS opens the 8 motor, pack and throttle-output settings
+The footer's OPTIONS opens the 8 motor, pack and throttle-output settings
 (`SET_CAT_ESC`) as a settings list, in schema order under three headings
 ([The footer and the settings list](#the-footer-and-the-settings-list)):
 
@@ -1309,7 +1310,7 @@ OK accepts an in-range value and rounds it to the setting's step, such as
 range in the warning colour. CANCEL or the home tag closes the keypad
 without changing the value.
 
-![The keypad over SETTINGS](img/motor-settings-keypad.png)
+![The keypad over OPTIONS](img/motor-settings-keypad.png)
 
 Idle pulse must stay at least 100us below Full pulse
 (`LINK_CC_THROTTLE_GAP_US`). Their keypad ranges overlap: 800 to 1600us
@@ -1433,7 +1434,7 @@ with its labels, rows and buttons in the 10 x 20 face:
 | list | 7 rows a page, 48px tall at a 56px pitch from y 84, 984px wide; a model's name in 30 characters; the footer line ends 4px above the alert band |
 | profile's page | the parameter card on the left, 660px, y 84 to 388: 5 rows a page, 48px tall at a 56px pitch, each with its number, its name (up to 23 characters), its value in a 250px column and `-` and `+` of 48 x 48px, 8px between any two; the note across the body on up to 2 lines from y 396 |
 | side column | 340px right of the parameter card: CHANGE, the rows shown and `^` and `v` of 48 x 48px; MANUAL INTERVENTION REQUIRED, 310 x 48px; then how the profile's menu works, the supply and the entry time, BEEP MIN, LONG and GAP MIN where the profile states its beep lengths, and the picked row's help, wrapped to 31 characters a line |
-| footer | y 444 to 492, 4px above the alert band ([The footer and the settings list](#the-footer-and-the-settings-list)): `[ESC STICK] [RUN n / ABORT / OK] [SETTINGS]` on a profile's page, its run and its result |
+| footer | y 444 to 492, 4px above the alert band ([The footer and the settings list](#the-footer-and-the-settings-list)): `[ESC STICK] [RUN n / ABORT / OK] [OPTIONS]` on a profile's page, its run and its result |
 | run and result | the device card across the body from y 84 with its two lines (the second: the supply, the entry time, BEEP MIN and LONG with their source), the run's card under it from y 136 to 388 with the stack light at its right, two help lines from y 394, and the footer; a result's MANUAL INTERVENTION REQUIRED, 330 x 48px, left of the stack light at x 614 to 944, y 244 to 292; the change lines beside it end 12px to its left, and the lines from the seventh on run under it |
 | warning, manual steps, prompt | a panel over the pages and the footer from y 28, its title in the 20 x 36 face, its lines at a 22px pitch, its buttons 48px tall ending 4px above the footer, so a second tap on RUN's place lands on none of them |
 
@@ -1548,15 +1549,15 @@ DONE, a pressed STOP, ABORT, the home tag or leaving the screen
 
 ![Ended by the supply](img/motor-stick-failed.png)
 
-The footer's SETTINGS opens the settings list
+The footer's OPTIONS opens the settings list
 ([The footer and the settings list](#the-footer-and-the-settings-list)):
 Voltage and Current limit under SUPPLY, the beep timings under TIMING AND
-DETECTION. None of them is measured. SETTINGS takes a press on a SAFE
+DETECTION. None of them is measured. OPTIONS takes a press on a SAFE
 bench with no run under way; otherwise it is grey and a tap puts
-`SETTINGS open on a SAFE bench only. Switch to SAFE first.` in the alert
+`OPTIONS open on a SAFE bench only. Switch to SAFE first.` in the alert
 band. A bench that arms under the open list closes it.
 
-![The SETTINGS list](img/motor-stick-timing.png)
+![The OPTIONS list](img/motor-stick-timing.png)
 
 The list covers the whole body, the output strip included; its strip reads
 `[ESC STICK] [RESET ESC STICK] [SAVE]`. A tap on a number's value opens the
@@ -1580,10 +1581,10 @@ SERVO opens on its hub: eight tiles of 328 x 130px in SETUP's grid, at x
 
 | Tile | Screen | Shows |
 | --- | --- | --- |
-| LIVE | LIVE | the dial, the knob, the readings COMMANDED, MEASURED and CURRENT; SETTINGS opens the servo profile |
-| SWEEP | SWEEP | the dial with the sweep; SETTINGS opens CURVE, SPEED, RANGE and DWELL TIME |
-| TEST | TEST | the AUTOMATIC TEST card, SUPPLY's caps, the plot and the run's box, the READY card in place of the output card, HOLD 2s: ARM + START in the footer; SETTINGS opens the automatic test's list |
-| LIMIT RUN | LIMIT RUN | the mode and output lines, LOW END and HIGH END and the state lines on the left card, the READY card in place of the output card, HOLD 2s: ARM + START in the footer; SETTINGS opens MODE, SERVO, SERVO PULSES, CURRENT, Wait before PWM, DUT NAME and USER LOGS ([Running it](Servo.md#running-it)) |
+| LIVE | LIVE | the dial, the knob, the readings COMMANDED, MEASURED and CURRENT; OPTIONS opens the servo profile |
+| SWEEP | SWEEP | the dial with the sweep; OPTIONS opens CURVE, SPEED, RANGE and DWELL TIME |
+| TEST | TEST | the AUTOMATIC TEST card, SUPPLY's caps, the plot and the run's box, the READY card in place of the output card, HOLD 2s: ARM + START in the footer; OPTIONS opens the automatic test's list |
+| LIMIT RUN | LIMIT RUN | the mode and output lines, LOW END and HIGH END and the state lines on the left card, the READY card in place of the output card, HOLD 2s: ARM + START in the footer; OPTIONS opens MODE, SERVO, SERVO PULSES, CURRENT, Wait before PWM, DUT NAME and USER LOGS ([Running it](Servo.md#running-it)) |
 | RUDDER | RUDDER | deflection in ° and mm, LENGTH, 1000us, CENTER, 2000us, ZERO and RESET MAX ([Rudder deflection](Servo.md#rudder-deflection)) |
 | RUDDER AUTO | RUDDER AUTO | AUTO's box in place of LENGTH and the drive buttons, the READY card in place of the output card, HOLD 2s: ARM + START in the footer ([AUTO end points](Servo.md#auto-end-points)) |
 | KST | SERVO > KST | the KST and Chaservo programmer over the left card ([Programmer](#programmer)) |
@@ -1599,7 +1600,7 @@ names the reason in the alert band and opens nothing. The ninth slot
 stays free.
 
 The hub drives nothing. Its footer holds SERVO with the port line under
-it, an empty middle slot and SETTINGS, which opens the servo profile's
+it, an empty middle slot and OPTIONS, which opens the servo profile's
 list ([Settings](#settings)). While the programming ports' 5V reads ON,
 the middle slot reads `PROG 5V ON 5.02V 0.120A` in the warning colour, the
 last window of the INA3221 channel that watches the 5V, or
@@ -1622,9 +1623,9 @@ on. TEST, LIMIT RUN and RUDDER AUTO set SUPPLY's SET A through their
 PD MINI row. The
 footer at y 444 to 492 holds three 328 x 48px slots: the function's name
 with the port line under it, ARM or DISARM (WRITE n VALUES on KST and
-HITEC), and SETTINGS. SETTINGS is grey while the
+HITEC), and OPTIONS. OPTIONS is grey while the
 bench is not SAFE, while a sweep or a run is under way, and names that in
-the alert band on a tap. On LIVE SETTINGS opens the servo profile, the
+the alert band on a tap. On LIVE OPTIONS opens the servo profile, the
 hub's list ([Settings](#settings)).
 
 LIVE, SWEEP and RUDDER show READY under the PORT button: rows of 30px from
@@ -1635,9 +1636,9 @@ SWEEP and y 250 to 298 on RUDDER: SET V and SET A, 80 x 48px each, 8px
 apart, and the plot to the column's end, 180 x 48px. Under it LIVE and
 SWEEP have SPEED, its label at y 244 and its track at y 268 to 308. All
 three have the type pill at y 318 to 350. A tap on the pill opens the
-servo profile, the hub's list, in the SETTINGS list's place with TYPE in
+servo profile, the hub's list, in the OPTIONS list's place with TYPE in
 view; it opens on a SAFE bench only and names the refusal in the alert
-band otherwise, as SETTINGS does. LIVE has CENTER and RELEASE,
+band otherwise, as OPTIONS does. LIVE has CENTER and RELEASE,
 SWEEP has SWEEP and RELEASE, each 174 x 48px at y 356. The rail line at
 y 412 names the meter of what feeds the servo and reads its volts and
 amps, `5.02V  0.120A`, or `--V  --A` without a reading; with the panel's
@@ -1646,7 +1647,7 @@ model as the supply, SIMULATED follows the name.
 SET V and SET A are SUPPLY's set points, not a copy. A tap opens SUPPLY's
 keypad, VOLTAGE or CURRENT LIMIT, inside SUPPLY's caps narrowed by its
 OUTPUT LIMITS. A value typed while the output is live waits for SUPPLY's
-question where SETTINGS, CONFIRM WHILE ON, KEYPAD asks it, ARMED or SAFE;
+question where OPTIONS, CONFIRM WHILE ON, KEYPAD asks it, ARMED or SAFE;
 a voltage raised past 6.0V waits for the HV warning's 2s hold. While a
 programming port holds the PD mini the values are dim and a tap names the
 hold in the alert band. On the rbmod carrier's programming port the servo
@@ -1717,14 +1718,14 @@ read-back, arms and starts the run in one hold
 [Servo: Running it](Servo.md#running-it)). Nothing of the output card
 takes a press on either screen. A tap on RANGE, PULSE MIN to PULSE MAX,
 opens the servo profile with PULSE MIN in view. USER LOGS has no row on
-either card, which is full: their SETTINGS lists hold it, beside DUT
+either card, which is full: their OPTIONS lists hold it, beside DUT
 NAME.
 
 TEST shows a READY card in the same place: eight rows from y 96, PORT,
 METER, ANGLE, PD MINI, STEPS, RANGE, ARM and LOG, and the rail line at y
 404. ANGLE names the angle source, refuses nothing, and a tap on it opens
 the ANGLE SOURCE list ([Servo](Servo.md#angle-source)). A tap on RANGE
-opens TEST's SETTINGS list on its RANGE row. LOG reads USER LOGS: `ON`,
+opens TEST's OPTIONS list on its RANGE row. LOG reads USER LOGS: `ON`,
 or `OFF` in amber, where a run writes no file. A tap switches it and saves
 it; under a run or its start steps the tap is refused with `LOG: The run
 keeps its setting. Switch it after the run.`, and the row reads the state
@@ -2044,7 +2045,7 @@ screens use the same values; changing either screen updates the other.
 - A tap on a set point opens the keypad over the left card. A value outside
   the caps is brought inside them, as on SUPPLY.
 - While the output is on, a typed set point waits for SUPPLY's question,
-  OUTPUT IS ON, with APPLY and CANCEL, unless SUPPLY's SETTINGS, CONFIRM
+  OUTPUT IS ON, with APPLY and CANCEL, unless SUPPLY's OPTIONS, CONFIRM
   WHILE ON, KEYPAD is off. The question goes, unanswered, when the output
   goes off or on STOP. An APPLY tapped in the same frame as STOP applies
   nothing, though the supply reports the output off a sample later.
@@ -2313,7 +2314,7 @@ A, `5.0V 2.00A`, and a tap on PD MINI opens SET A's keypad
 HOLD 2s: ARM + START sets a
 PD mini to 5.0V, switches PORT PWM and the supply on, reads them back,
 arms and starts the run ([Servo: The run's 5.0V](Servo.md#the-runs-50v)). While the run runs the hold reads STOP RUN, and
-SETTINGS is grey. Each write switches the bench to SAFE and back to
+OPTIONS is grey. Each write switches the bench to SAFE and back to
 ARMED; the ARM row reads SAFE while a session holds the bench SAFE.
 After the run's last command the bench switches to SAFE. STOP,
 SAFE, link loss, leaving the screen, an automatic-test abort condition or
@@ -2372,10 +2373,10 @@ KST's and HITEC's frame around the session:
 | READY card, SERVO | grey `NOT CONNECTED` before CONNECT, amber `IN PROGRESS` while a step runs, amber `NOT READ` with the port held and no servo read, the servo's model (Hitec) or type (KST, `V6?` for 20k_sel's guess) once read |
 | rail line | the meter's volts and amps, under the rows |
 | footer, middle | the session's WRITE n VALUES, from any tab: the same tap as the session's own button, which opens ENABLE WRITE's page first while the switch is off. Grey, naming why on a tap, before CONNECT and the read, with no value changed, while a step runs, and while a page of the session or of SERVO is open |
-| footer, right | SETTINGS: KST's KST EXPERT MODE page, HITEC's Hitec series and Hitec D receive; grey while the session holds the port |
+| footer, right | OPTIONS: KST's KST EXPERT MODE page, HITEC's Hitec series and Hitec D receive; grey while the session holds the port |
 
 A tap on a READY row that is not met names it in the alert band, for
-example `SUPPLY: Switch the servo supply off and on, then tap CONNECT 1s later.` A finger on a READY row or on WRITE keeps SETTINGS and the PORT
+example `SUPPLY: Switch the servo supply off and on, then tap CONNECT 1s later.` A finger on a READY row or on WRITE keeps OPTIONS and the PORT
 list shut, as every held press does.
 
 ![KST before CONNECT](img/servo-kst.png)
@@ -2513,13 +2514,13 @@ A stop found sets that end in the draft:
 
 ### Settings
 
-The footer's SETTINGS opens the list of the screen it sits on, in
+The footer's OPTIONS opens the list of the screen it sits on, in
 SETUP's list form ([the footer and the settings list](#the-footer-and-the-settings-list)): 48px rows, `-`
 and `+` keys where a value steps, a `>` where a tap opens a choice, the
 strip with the screen's name, RESET and SAVE. A change is marked unsaved
 until SAVE.
 
-| Screen | SETTINGS opens |
+| Screen | OPTIONS opens |
 | --- | --- |
 | the hub | the servo profile: OUTPUT with TYPE, FRAME RATE, PULSE MIN, PULSE CENTER, PULSE MAX, TRIM, TRAVEL, REVERSE and HV SERVO; DUT with NAME and REPORT |
 | LIVE | the servo profile, the hub's list |
@@ -2535,7 +2536,7 @@ Range and Dwell time are one setting each on SWEEP and TEST, DUT name and
 Report the hub's, User logs SETUP > SD CARD's: a change on one list is
 what every other list, card and run reads.
 
-The profile opens from a function screen too, in its SETTINGS list's
+The profile opens from a function screen too, in its OPTIONS list's
 place: a tap on the type pill of LIVE, SWEEP and RUDDER opens it with TYPE
 in view, a tap on the RANGE row of LIMIT RUN's and RUDDER AUTO's READY
 cards and on TEST's OUTPUT row with PULSE MIN in view. Its strip names
@@ -2543,12 +2544,12 @@ SERVO. It follows a function's list: it opens on a SAFE bench only and
 closes as the bench goes live, with the keypad, choice list or warning a
 row opened over it; nothing typed, picked or held there is taken, and an
 OK, a pick or a completed hold in the frame the bench goes live is
-refused with `SETTINGS open on a SAFE bench only. Switch to SAFE first.`
+refused with `OPTIONS open on a SAFE bench only. Switch to SAFE first.`
 The home tag closes it and the function screen shows again.
 
 A function's list opens on a SAFE bench only, with no sweep and no run;
 a bench that goes live under it closes it, and so does a run's or KST's
-page of rows. The run card's own SETTINGS follows the same rule and is
+page of rows. The run card's own OPTIONS follows the same rule and is
 grey while it refuses. The hub's list opens at any time: the hub drives
 nothing. No list opens while a programmer session holds its port
 (`LOCKED: SERVO PROGRAMMING USES THE PORT`), or while a finger is still
@@ -2760,7 +2761,7 @@ link was down reaches the IOmcu only after the reset succeeds.
 OUTPUT settings, HV SERVO, and LIMIT RUN's MODE and SERVO PULSES last for
 the session.
 SWEEP, automatic-test and DUT settings, plus TARGET, are saved in NVS. A
-change on a SETTINGS list is marked unsaved until the strip's SAVE. A
+change on a OPTIONS list is marked unsaved until the strip's SAVE. A
 change on LIMIT RUN's page and a PORT pick request a write at once; it runs
 on the first idle frame ([Keeping the values](#keeping-the-values)).
 LIMIT RUN's page shows `SAVED`, `SAVE PENDING`, `NOT SAVED` or
@@ -2798,11 +2799,11 @@ one GPIO gives `PD MINI NO PINS`. With the module disabled, the panel uses
 its supply model. The header reads `SIMULATED: SWITCH ON IN PD MINI` and
 the menu tile is marked SIMULATED.
 
-The footer reads `[SUPPLY] [OUTPUT ON / OFF] [SETTINGS]`
+The footer reads `[SUPPLY] [OUTPUT ON / OFF] [OPTIONS]`
 ([The footer and the settings list](#the-footer-and-the-settings-list)).
 The line under SUPPLY names the source: `PD MINI TX GPIO 12 RX GPIO 13`,
 `PD MINI NO PINS` or `SIMULATED`, in the warning colour with no pins or
-while the PD mini does not answer. SETTINGS opens the 9 supply settings and
+while the PD mini does not answer. OPTIONS opens the 9 supply settings and
 the PD mini's wiring as one list ([Supply settings](#supply-settings)).
 The menu tile opens the screen with the list closed.
 
@@ -2853,7 +2854,7 @@ until power is cycled; its required margin has not been measured.
 
 The cap is 0.2V above the output cut-off line (below), allowing input
 voltage to fall 0.2V under load before a set point at the cap causes a
-cut-off. SETTINGS caps further narrow both ranges. Sliders follow the
+cut-off. OPTIONS caps further narrow both ranges. Sliders follow the
 active supply; tap a track to set the value under the finger.
 
 **Tap VOLT, CURR or a set-point value box to open the keypad.** It covers
@@ -2874,7 +2875,7 @@ as a second finger tapping the home tag or a lost touch, no dialog opens
 and the slider returns. With the output off, no confirmation is requested.
 
 STOP closes the dialog unanswered. APPLY in the same frame as STOP
-(about 50ms) applies nothing. SETTINGS can disable confirmation separately
+(about 50ms) applies nothing. OPTIONS can disable confirmation separately
 for the slider and keypad.
 
 ![The question](img/supply-confirm.png)
@@ -3013,7 +3014,7 @@ shows that text once as the reading goes low and takes it back once it is
 
 ### Supply settings
 
-The footer's SETTINGS opens one settings list
+The footer's OPTIONS opens one settings list
 ([The footer and the settings list](#the-footer-and-the-settings-list)):
 the 9 supply settings under OUTPUT LIMITS, AFTER RESTART, TRIPS and
 CONFIRM WHILE ON, then the PD mini's wiring under PD MINI
@@ -3067,7 +3068,7 @@ below the limit to switch off a load that draws too much for too long.
 
 The output stays off at a restart, whatever the start values.
 
-With the PD mini active, SETTINGS offers RESET PD MINI. It switches the
+With the PD mini active, OPTIONS offers RESET PD MINI. It switches the
 output off and sends SYSTEM_RESET, allowing a module showing ERR after
 an excessive set point to restart without unplugging it. About 1s later,
 the driver requests the module's identity again. Whether reset clears
@@ -3118,7 +3119,7 @@ changed. The PD mini switch disables the module.
 
 The IOmcu rejects reserved pins, output pins, sensor-bus or phase-tap pins,
 and the other PD mini pin. The alert is
-`PD mini pins rejected. Check them in SUPPLY's SETTINGS.` For example, RX on
+`PD mini pins rejected. Check them in SUPPLY's OPTIONS.` For example, RX on
 GPIO 17 is refused when Sensor SDA is GPIO 16, because SCL is then GPIO 17.
 The alert clears once a read confirms the requested wiring, immediately
 if a pin is changed back to the value the page still holds.
@@ -3203,7 +3204,7 @@ by up to three lines of 12 x 24 explanation. BUS, RATE, FRAMES, RESYNC
 and BAD TAIL use 26px rows. CH17 and CH18 have 36px lamps that light when
 the channel is set; they are not interactive. CHANNELS and RAW DATA are
 150 x 48px tabs. RAW DATA shows the last frame's bytes, eight per row,
-and decoder counts in 8 x 16. The cards end at body y 436 on the footer, which names the screen and holds no hold and no SETTINGS ([The footer and the settings list](#the-footer-and-the-settings-list)).
+and decoder counts in 8 x 16. The cards end at body y 436 on the footer, which names the screen and holds no hold and no OPTIONS ([The footer and the settings list](#the-footer-and-the-settings-list)).
 
 No firmware feeds RECEIVER (see [Receiver buses](Receivers.md)); the
 screen shows NO SIGNAL.
@@ -3230,7 +3231,7 @@ The plot card is 640px wide, the right card 360px. A bar is at most 48px
 wide and reaches 148px either side of the mean. Under each bar the cell's
 number and its voltage are in 12 x 24 up to 11 cells and in 10 x 20 from 12 to
 14. The verdict is in 20 x 36, its line in up to two lines of 12 x 24, the six
-rows 28px each, the note in 10 x 20. The cards end at body y 436 on the footer, which names the screen and holds no hold and no SETTINGS ([The footer and the settings list](#the-footer-and-the-settings-list)).
+rows 28px each, the note in 10 x 20. The cards end at body y 436 on the footer, which names the screen and holds no hold and no OPTIONS ([The footer and the settings list](#the-footer-and-the-settings-list)).
 
 Measure under load. At rest a weak cell reads like the others.
 
@@ -3281,9 +3282,9 @@ list state and its home tag returns here. WI-FI is absent during the
 DELETE dialog and file views. File messages occupy up to two 37-character
 lines between WI-FI and DELETE.
 
-The footer under the file list reads `[LOGS] [ ] [SETTINGS]`
+The footer under the file list reads `[LOGS] [ ] [OPTIONS]`
 ([The footer and the settings list](#the-footer-and-the-settings-list)).
-LOGS has no hold in the middle slot. SETTINGS opens the SD CARD list of
+LOGS has no hold in the middle slot. OPTIONS opens the SD CARD list of
 [Setup](#setup), with the log switches and folders; its home tag returns
 here. The import view, the plot, the report and the DELETE dialog keep
 the full body and show no footer.
@@ -3731,9 +3732,9 @@ footer. RESCAN (140 x 48px) is at the left, as on [Logs](#logs), followed
 by COPY, MOVE, RENAME, DELETE, NEW, INFO and OPEN (118 x 48px each). OPEN
 is at the right margin; buttons are 6px apart.
 
-The footer under the panes reads `[FILES] [ ] [SETTINGS]`
+The footer under the panes reads `[FILES] [ ] [OPTIONS]`
 ([The footer and the settings list](#the-footer-and-the-settings-list)).
-SETTINGS opens the SD CARD list of [Setup](#setup); its home tag returns
+OPTIONS opens the SD CARD list of [Setup](#setup); its home tag returns
 here. The text viewer, the editor, the keyboard, INFO and the questions
 keep the full body and show no footer.
 
@@ -4980,7 +4981,7 @@ over its name in the 12 x 24px face, and a line in the 10 x 20px face.
   says what it holds, `CURRENT, ANGLE, PHASE TAP`. A tap opens the category's
   list.
   The pack, motor and throttle-output settings are on
-  MOTOR & ESC > SETTINGS
+  MOTOR & ESC > OPTIONS
   ([MOTOR & ESC settings](#motor--esc-settings)).
 - Four screens of their own: OUTPUTS ([Outputs](#outputs)), WI-FI
   ([Wi-Fi](#wi-fi)), UPDATES ([Updates](#updates)) and IMU
@@ -5161,7 +5162,7 @@ panel mounted upside down.
 - Locked while ARMED: the row has no keys, and RESET CATEGORY and DISCARD
   leave the value unchanged. A turn moves every control away from the finger, STOP
   included. This follows the same rule as Idle pulse and Full pulse on MOTOR & ESC,
-  SETTINGS: changes require a SAFE bench.
+  OPTIONS: changes require a SAFE bench.
 
 ### PANEL: Time zone and the clock
 
@@ -5785,7 +5786,7 @@ current monitors:
 
 | Message | When |
 | --- | --- |
-| `IOmcu has no TONE page. Phase tap not read.` | the tap is enabled and the IOmcu speaks a protocol older than 4.8; said at the link-up, and when the tap is enabled while it answers |
+| `Phase tap not read: the IOmcu has no TONE page.` | the tap is enabled and the IOmcu speaks a protocol older than 4.8; said at the link-up, and when the tap is enabled while it answers |
 | `Phase tap on GPIO 22, 400 to 6500Hz rejected. Check SENSORS.` | the IOmcu refused the first frame: the pin is not allowed, the tone range is not one it takes (the highest tone not above the lowest, or the gap shorter than the lowest tone's period), or it runs no capture since its boot (core 1 not started). A pin that an output, the sensor bus, the PD mini or a programming port holds is refused as busy (BUSY, protocol 4.17): offered again every 5s without another message, so freeing the pin lets the tap start. Any other refusal is written again only after the next change on SETUP SENSORS or link-up. From a 4.16 or older IOmcu, which says BAD_VALUE for both, the frame is offered again every 5s when its tone range and gap are valid ([Link](Link.md#a-busy-pin-on-the-phase-tap)) |
 | `Phase tap split, gap or periods rejected. Check SENSORS.` | the IOmcu refused the second frame; not written again until a value changes |
 | `Phase tap pin GPIO 22 is in use. Capture not running.` | the IOmcu reports the pin refused, for one of two causes. A set-up it kept in flash met a binding at its boot: the first frame is offered again every 5s without another message, so freeing the pin lets the tap start. The IOmcu runs no capture since its boot (core 1 not started, protocol 4.17): no pin is bound and freeing one changes nothing. The next offer of the first frame is refused with BAD_VALUE without another message, and the frame is not offered again until the next change on SETUP SENSORS or link-up; only a restart of the IOmcu lets the tap run. The band says `Phase tap on GPIO 22, 400 to 6500Hz rejected. Check SENSORS.` only for a set-up other than the one the IOmcu kept, written at link-up before the first status read or less than 5s after the pin was first reported not free or last offered; a change made later goes out as a quiet offer |
@@ -5814,7 +5815,7 @@ default), ALGORITHM (6-AXIS or 9-AXIS) and ANGLE SOURCE. The screen's
 controls, left, 460 x 56px at a 64px pitch from body y 16: SCAN FOR SENSORS,
 then ZERO and CLEAR ZERO side by side. The footer
 ([The footer and the settings list](#the-footer-and-the-settings-list))
-reads `[IMU] [HOLD 2s: CALIBRATE] [SETTINGS]`; SETTINGS opens SENSORS on
+reads `[IMU] [HOLD 2s: CALIBRATE] [OPTIONS]`; OPTIONS opens SENSORS on
 the IMU entry, and its home tag comes back. The card on the right, x 484 to
 1016, body y 16 to 436, names the bound sensor and
 its address with its type, the C6's firmware, the state, the angles X, Y and Z from the
@@ -5851,7 +5852,7 @@ a run ([Servo procedures](Servo.md)).
   the run: a test keeps the state it started with. With it OFF, TEST's run
   card and run box and LIMIT RUN's state lines read `USER LOGS OFF` where
   the files would be named.
-- REPORT under DUT on the SERVO hub's SETTINGS list decides, with User logs ON, whether
+- REPORT under DUT on the SERVO hub's OPTIONS list decides, with User logs ON, whether
   `ATESTnnn.TXT` is written.
 - The fault log, `BENCH/RCBENCH.LOG`, is written whatever the two say.
 - [Logs](#logs) gives the names and the numbering.
@@ -5911,7 +5912,7 @@ was already written: the values are set key by key and a failure part way
 through leaves the earlier keys committed, so the medium can hold a mix of the
 new values and the old. The screen cannot say which. A panel whose NVS could
 not be brought up at all refuses every write of the session, writes nothing,
-and says so once more on the splash as `NVS unavailable`.
+and says so once more on the splash as `storage (NVS) unavailable`.
 
 Unsaved values remain active until the panel restarts or is switched off.
 Leaving the screen does not save them.
@@ -5940,7 +5941,7 @@ of 24px each in the 10 x 20px face, as `name: stored -> now`. A value is written
 writes it, with its unit; a string, the DUT (device under test) name, as it
 is. Values set on other screens, such as SERVO's settings, ESC STICK's or
 MOTOR & ESC's, are listed too: they are in the same set and the same save
-keeps them. A change on MOTOR & ESC, SETTINGS asks for that save itself. The
+keeps them. A change on MOTOR & ESC, OPTIONS asks for that save itself. The
 lines follow the schema's order, the strings after the values. With more
 than 10 changes, 9 lines show and the tenth reads `and 3 more` for 12.
 
@@ -6232,18 +6233,18 @@ of the same size, from body y 380. Under the card the C6 RADIO row: one
 line at body y 348 and its hold, 532 x 56px, beside the IOmcu's
 ([The C6 radio](#the-c6-radio)). The footer
 ([The footer and the settings list](#the-footer-and-the-settings-list))
-reads `[UPDATES] [HOLD 2s TO DOWNLOAD & INSTALL] [SETTINGS]`; the middle
+reads `[UPDATES] [HOLD 2s TO DOWNLOAD & INSTALL] [OPTIONS]`; the middle
 slot is empty until a check finds a newer release.
 
 | Control | Action |
 | --- | --- |
 | `CHECK FOR UPDATES` | Asks GitHub once. `CANCEL` on the same key while the check runs. |
 | `HOLD 2s TO DOWNLOAD & INSTALL` | In the footer's middle slot once a check found a newer release. Downloads, checks and installs it. |
-| `SETTINGS` | Opens the list of Reminder at start and Releases. Grey while a check or a download runs or a finger holds the download; a tap then puts `SETTINGS open with no check or download running.` in the alert band. A check that starts under the open list closes it. |
+| `OPTIONS` | Opens the list of Reminder at start and Releases. Grey while a check or a download runs or a finger holds the download; a tap then puts `OPTIONS open with no check or download running.` in the alert band. A check that starts under the open list closes it. |
 | `HOLD 2s TO UPDATE THE IOMCU` | Starts the IOmcu's update from the image this panel carries ([The IOmcu](#the-iomcu)). |
 | `HOLD 2s TO UPDATE THE C6 RADIO` | Sends the C6 radio's image this panel carries to the board's ESP32-C6 ([The C6 radio](#the-c6-radio)). |
 
-![UPDATES' SETTINGS list](img/updates-settings.png)
+![UPDATES' OPTIONS list](img/updates-settings.png)
 
 | Setting | Values | Default | Effect |
 | --- | --- | --- | --- |
@@ -6536,7 +6537,7 @@ gone and the menu shows.
 | Control | Action |
 | --- | --- |
 | `NOT NOW` | Closes the reminder until the next start of the panel. Leaving it by the HOME tag does the same. |
-| `NEVER REMIND ME` | Switches Reminder at start off and asks for the save, which happens at the next moment the settings may be written ([Keeping the values](#keeping-the-values)). UPDATES' SETTINGS list switches it on again. |
+| `NEVER REMIND ME` | Switches Reminder at start off and asks for the save, which happens at the next moment the settings may be written ([Keeping the values](#keeping-the-values)). UPDATES' OPTIONS list switches it on again. |
 | `HOLD 2s TO DOWNLOAD & INSTALL` | The same hold as on UPDATES. |
 
 The start-up check shows nothing when it finds no newer release or fails.
@@ -6647,7 +6648,7 @@ The MOTOR & ESC throttle drives every channel bound as a motor — MOTOR PWM
 and the DShot entries — and leaves the servo channels alone.
 
 A MOTOR PWM channel sends 0% throttle as the Idle pulse and 100% as the
-Full pulse: 1000us and 2000us by default, set under MOTOR & ESC, SETTINGS, in
+Full pulse: 1000us and 2000us by default, set under MOTOR & ESC, OPTIONS, in
 steps of 10us (Idle pulse 800 to 1600us, Full pulse 1400 to 2400us). The
 two settings reach the channels bound as a motor and no others: a SERVO PWM
 channel keeps 1000 to 2000us, or the range the SERVO screen sends for the
@@ -7299,7 +7300,7 @@ BALANCE, TEST RIG and AIRCRAFT are tabs of 150 x 48px. The rotor's card is
 PROPELLER and EDF are 162 x 48px, the blade count's `-` and `+` 56 x 48px,
 the count's tap area 114 x 48px, the four readings rows of 28px. The notes
 and the rules' two lines are in 8 x 16; the rules' heads, the labels and the
-drawings' callouts in 10 x 20. The rules stand 55px apart. The cards end at body y 436 on the footer, which names the screen and holds no hold and no SETTINGS ([The footer and the settings list](#the-footer-and-the-settings-list)). The
+drawings' callouts in 10 x 20. The rules stand 55px apart. The cards end at body y 436 on the footer, which names the screen and holds no hold and no OPTIONS ([The footer and the settings list](#the-footer-and-the-settings-list)). The
 blade count's keypad covers both cards and the footer.
 
 ## Unknown screen ids

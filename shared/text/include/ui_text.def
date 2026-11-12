@@ -96,7 +96,7 @@ UI_TEXT(CANCEL, 0,
 UI_TEXT(SPACE, 0,
     "SPACE",
     "LEERZEICHEN")
-/* A workbench's first task (ui_workbench.h); TEST, PROGRAM and SETTINGS
+/* A workbench's first task (ui_workbench.h); TEST, PROGRAM and OPTIONS
  * reuse SV_PG_TEST, KP_PROGRAM and SUP_SETTINGS. */
 UI_TEXT(WB_LIVE, 0,
     "LIVE",
@@ -420,8 +420,8 @@ UI_TEXT(HG_OV_MOTOR, 0,
     "Drives an ESC and records voltage, current, power and rpm. PROGRAM sets up the ESC.",
     "Steuert den ESC, zeichnet Spannung, Strom, Leistung und Drehzahl auf. PROGRAMMIEREN stellt ihn ein.")
 UI_TEXT(HG_OV_SERVO, 0,
-    "Drives a servo and measures its current. TEST runs the automatic test, PROGRAM programs the servo.",
-    "Steuert ein Servo und misst den Strom. TEST startet den Servotest, PROGRAMMIEREN die Servoprogrammierung.")
+    "Drives a servo and measures its current. TEST runs the automatic test, KST and HITEC program the servo.",
+    "Steuert ein Servo und misst den Strom. TEST startet den Servotest, KST und HITEC programmieren das Servo.")
 UI_TEXT(HG_OV_SUPPLY, 0,
     "Sets and switches the PD mini supply and records its voltage and current.",
     "Stellt und schaltet das PD-mini-Netzteil und zeichnet Spannung und Strom auf.")
@@ -447,8 +447,8 @@ UI_TEXT(HG_OV_ARM, 0,
     "What the bench drives now: SAFE drives nothing. A tap on a chip of the band explains it.",
     "Was der Prüfstand ansteuert: bei SAFE nichts. Tippe für eine Erklärung auf ein Feld im Statusband.")
 UI_TEXT(HG_OV_GUIDE, 0,
-    "Opens the guide for this screen, if available. PREV and NEXT turn the pages. Tap elsewhere to close it.",
-    "Öffnet die Hilfe, falls vorhanden. VORIGE und NÄCHSTE blättern. Tippe daneben zum Schließen.")
+    "Opens this screen's guide. PREV and NEXT turn pages, a tap elsewhere closes it. The home tag goes up one level.",
+    "Öffnet die Hilfe. VORIGE, NÄCHSTE blättern, ein Tipp daneben schließt. Das Home-Feld führt eine Ebene zurück.")
 UI_TEXT(HG_OV_TITLE_SHOT, 30,
     "MENU: TAKING A SCREENSHOT",
     "MENÜ: SCREENSHOT AUFNEHMEN")
@@ -1967,32 +1967,32 @@ UI_TEXT(SUP_ONLINE, 0,
 UI_TEXT(SUP_NOT_ANSWERING, 26,
     "NOT ANSWERING",
     "ANTWORTET NICHT")
-/* The footer's SETTINGS (ui_footer.h), on every screen that has a list. */
+/* The footer's OPTIONS (ui_footer.h), on every screen that has a list. */
 UI_TEXT(FOOT_SETTINGS, 0,
-    "SETTINGS",
+    "OPTIONS",
     "OPTIONEN")
-/* The alert band on a tap on SETTINGS while the screen drives its output:
+/* The alert band on a tap on OPTIONS while the screen drives its output:
  * the list would cover DISARM or OUTPUT OFF. */
 UI_TEXT(FOOT_SETTINGS_SAFE, 94,
-    "SETTINGS open on a SAFE bench only. Switch to SAFE first.",
+    "OPTIONS open on a SAFE bench only. Switch to SAFE first.",
     "OPTIONEN nur bei SAFE. Schalte zuerst auf SAFE.")
 UI_TEXT(FOOT_PRESS_HELD, 60,
     "A finger is still on another control. Lift it first.",
     "Ein Finger hält noch ein anderes Element. Lass es erst los.")
 UI_TEXT(FOOT_SETTINGS_ON, 94,
-    "SETTINGS open with the output off only. Switch it off first.",
+    "OPTIONS open with the output off only. Switch it off first.",
     "OPTIONEN nur bei Ausgang aus. Schalte ihn zuerst aus.")
-/* The alert band on a tap on UPDATES' SETTINGS while a check or a
+/* The alert band on a tap on UPDATES' OPTIONS while a check or a
  * download runs, or a finger holds the download. */
 UI_TEXT(FOOT_SETTINGS_BUSY, 94,
-    "SETTINGS open with no check or download running.",
+    "OPTIONS open with no check or download running.",
     "OPTIONEN nur ohne laufende Suche oder Download.")
 /* The settings list's screen guide (ui_setlist.h). */
 UI_TEXT(HG_SL_TITLE_ROWS, 0,
-    "SETTINGS: ROWS",
+    "OPTIONS: ROWS",
     "OPTIONEN: ZEILEN")
 UI_TEXT(HG_SL_TITLE_VALUES, 0,
-    "SETTINGS: VALUES",
+    "OPTIONS: VALUES",
     "OPTIONEN: WERTE")
 UI_TEXT(HG_SL_HEAD, 0,
     "The screen's name and what it drives. The home tag closes the list; with a change not saved it asks first.",
@@ -2002,7 +2002,7 @@ UI_TEXT(HG_SL_RESET, 0,
     "Setzt die Werte dieser Liste auf die Vorgaben, keine anderen. SPEICHERN behält sie.")
 /* A workbench strip tab's label (ui_workbench.c), 112px. */
 UI_TEXT(SUP_SETTINGS, 11,
-    "SETTINGS",
+    "OPTIONS",
     "OPTIONEN")
 UI_TEXT(SUP_MODE, 0,
     "MODE",
@@ -2064,7 +2064,7 @@ UI_TEXT(SUP_APPLY, 0,
     "APPLY",
     "ÜBERNEHMEN")
 UI_TEXT(SUP_ASK_OFF, 0,
-    "Turn off this prompt under SETTINGS > CONFIRM WHILE ON.",
+    "Turn off this prompt under OPTIONS > CONFIRM WHILE ON.",
     "Schalte die Rückfrage unter OPTIONEN > RÜCKFRAGE IM BETRIEB aus.")
 UI_TEXT(SUP_TAG_LIVE, 0,
     "LIVE OUTPUT",
@@ -2176,8 +2176,8 @@ UI_TEXT(LOG_ERR_ARG, 64,
     "Invalid argument.",
     "Ungültiges Argument.")
 UI_TEXT(LOG_ERR_UNKNOWN, 64,
-    "Unknown error.",
-    "Unbekannter Fehler.")
+    "Unknown error. Tap RESCAN or reinsert the card.",
+    "Unbekannter Fehler. AKTUALISIEREN oder Karte neu einstecken.")
 UI_TEXT(LOG_DELETE_TITLE, 0,
     "DELETE FROM CARD",
     "VON KARTE LÖSCHEN")
@@ -3562,8 +3562,8 @@ UI_TEXT(EW_REF_WRITING, 100,
     "Writing is in progress. Wait for it to finish.",
     "Schreiben läuft. Warte, bis es abgeschlossen ist.")
 UI_TEXT(EW_REF_OTHER, 100,
-    "The IOmcu refused.",
-    "Der IOmcu lehnte ab.")
+    "The IOmcu refused the request: PIN BACK, then CONNECT.",
+    "Der IOmcu lehnte die Anfrage ab: PIN ZURÜCK, dann VERBINDEN.")
 UI_TEXT(EW_SES_SILENT, 100,
     "No answer. Check the wiring, the power and ENTRY HOLD.",
     "Keine Antwort. Prüfe Verkabelung, Versorgung und EINSTIEGSZEIT.")
@@ -3604,8 +3604,8 @@ UI_TEXT(EW_SES_BACKUP, 100,
     "This backup belongs to another ESC.",
     "Dieses Backup gehört zu einem anderen ESC.")
 UI_TEXT(EW_SES_OTHER, 100,
-    "The session ended with an error.",
-    "Die Sitzung endete mit einem Fehler.")
+    "The session ended with an error: PIN BACK, then CONNECT.",
+    "Die Sitzung endete mit einem Fehler: PIN ZURÜCK, dann VERBINDEN.")
 /* A row's help line, from the firmware's settings as the specification gives them. */
 UI_TEXT(EW_HS_09, 100,
     "Startup power, 0.031 to 1.50.",
@@ -4378,12 +4378,14 @@ UI_TEXT(SP_MORE, 96,
 UI_TEXT(SP_MORE_UNSURE, 96,
     "AND %u MORE, %u COMPLETED, %u UNCERTAIN",
     "UND %u WEITERE, %u AUSGEFÜHRT, %u UNKLAR")
+/* Under a DONE result: DONE says the sequence ran, not that the ESC
+ * stored a value. */
 UI_TEXT(SP_TONES_1, 0,
-    "The ESC's confirmation tones are not checked after a selection.",
-    "Die Bestätigungstöne des ESC werden nach der Auswahl nicht geprüft.")
+    "Sequence complete. The ESC's tones after a selection are not checked.",
+    "Ablauf vollständig. Die Töne des ESC nach einer Auswahl werden nicht geprüft.")
 UI_TEXT(SP_TONES_2, 0,
-    "Listen for them, or read the ESC settings with its programming card.",
-    "Höre auf die Töne oder lies den ESC mit seiner Programmierkarte aus.")
+    "Check each value on the ESC or with its programming card.",
+    "Prüfe jeden Wert am ESC oder mit seiner Programmierkarte.")
 UI_TEXT(SP_SAFE_NOW, 0,
     "Throttle MIN, supply off, bench SAFE.",
     "Gas auf MIN, Netzteil aus, Prüfstand auf SAFE.")
@@ -4445,10 +4447,10 @@ UI_TEXT(SP_COUNTED, 30,
     "GEZÄHLTE PIEPTÖNE")
 UI_TEXT(SP_ONE_CHANGE, 39,
     "ONE CHANGE PER POWER-UP",
-    "EINE ÄNDERUNG PRO EINSCHALTEN")
+    "EIN WERT PRO EINSCHALTEN")
 UI_TEXT(SP_MANY_CHANGES, 39,
     "MULTIPLE CHANGES PER POWER-UP",
-    "MEHRERE ÄNDERUNGEN PRO EINSCHALTEN")
+    "MEHRERE WERTE PRO EINSCHALTEN")
 UI_TEXT(SP_SUPPLY_ENTRY, 0,
     "SUPPLY %u.%02uV  %u.%02uA   ENTRY %u.%us%s",
     "NETZTEIL %u.%02uV  %u.%02uA   EINSTIEG %u.%us%s")
@@ -4976,8 +4978,8 @@ UI_TEXT(SV_LIM_RUNNING, 58,
     "RUNNING: %s",
     "LÄUFT: %s")
 UI_TEXT(SV_LIM_INA_SETUP, 58,
-    "INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT",
-    "INA3221 NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET")
+    "SERVO CURRENT METER (INA3221) NOT SET UP",
+    "SERVOSTROMMESSER (INA3221) NICHT EINGERICHTET")
 UI_TEXT(SV_LIM_INA_OFFLINE, 58,
     "INA3221 OFFLINE",
     "INA3221 NICHT ERREICHBAR")
@@ -5352,7 +5354,7 @@ UI_TEXT(HG_SVH_TITLE_TILES, 0,
     "SERVO: FUNCTIONS",
     "SERVO: FUNKTIONEN")
 UI_TEXT(HG_SVH_TITLE_FOOTER, 0,
-    "SERVO: TILES AND SETTINGS",
+    "SERVO: TILES AND OPTIONS",
     "SERVO: KACHELN UND OPTIONEN")
 UI_TEXT(HG_SVH_DRIVE, 0,
     "LIVE and SWEEP drive the servo by the dial, the knob and the curve.",
@@ -5705,7 +5707,7 @@ UI_TEXT(ALERT_SUPPLY_REFUSED_FAILSAFE, 94,
     "Supply refused to switch on: IOmcu failsafe latched. Hold ARM, then DISARM.",
     "Netzteil bleibt aus: IOmcu-Failsafe ausgelöst. Halte ARM, dann tippe DISARM.")
 UI_TEXT(ALERT_PDMINI_PINS, 94,
-    "PD mini pins rejected. Check them in SUPPLY's SETTINGS.",
+    "PD mini pins rejected. Check them in SUPPLY's OPTIONS.",
     "PD-mini-Pins abgelehnt. Prüfe sie in den OPTIONEN von SUPPLY.")
 UI_TEXT(ALERT_PDMINI_SWITCH, 94,
     "PD mini output could not be switched.",
@@ -5810,8 +5812,8 @@ UI_TEXT(ALERT_STORE_OFF, 94,
     "IOmcu storage unavailable. Settings will be lost at restart.",
     "IOmcu-Speicher nicht verfügbar. Einstellungen gehen beim Neustart verloren.")
 UI_TEXT(ALERT_NO_TONE_PAGE, 94,
-    "IOmcu has no TONE page. Phase tap not read.",
-    "IOmcu hat keine TONE-Page. Phasenabgriff nicht ausgelesen.")
+    "Phase tap not read: the IOmcu has no TONE page.",
+    "Phasenabgriff nicht ausgelesen: Der IOmcu hat keine TONE-Page.")
 UI_TEXT(ALERT_TONE_PIN, 94,
     "Phase tap on GPIO %u, %u to %uHz rejected. Check SENSORS.",
     "Phasenabgriff an GPIO %u, %u bis %uHz abgelehnt. Prüfe SENSORS.")
@@ -6074,8 +6076,8 @@ UI_TEXT(SPLASH_CARD_UNREADABLE, 47,
     "unreadable",
     "nicht lesbar")
 UI_TEXT(SPLASH_NVS_MISSING, 47,
-    "NVS unavailable",
-    "NVS nicht verfügbar")
+    "storage (NVS) unavailable",
+    "Speicher (NVS) nicht verfügbar")
 UI_TEXT(SPLASH_NOT_OPENED, 47,
     "not opened",
     "nicht geöffnet")
@@ -9173,10 +9175,10 @@ UI_SETTING_HELP(SET_LIMIT_FAMILY,
     "Der Programmierer, mit dem LIMIT RUN die Endpunkte schreibt")
 UI_SETTING_LABEL(SET_RAUTO_FAMILY,
     "RUDDER AUTO servo",
-    "RUDDER AUTO Servo")
+    "RUDER AUTO Servo")
 UI_SETTING_HELP(SET_RAUTO_FAMILY,
     "The programmer RUDDER AUTO writes the end points with",
-    "Der Programmierer, mit dem RUDDER AUTO die Endpunkte schreibt")
+    "Der Programmierer, mit dem RUDER AUTO die Endpunkte schreibt")
 UI_SETTING_LABEL(SET_ESCW_BY_HAND,
     "ESC signal wire: manual power",
     "ESC-Signalleitung: Strom von Hand")
