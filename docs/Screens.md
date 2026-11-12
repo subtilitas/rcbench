@@ -1130,9 +1130,11 @@ written to 0.1%. It is the same figure for PWM and DShot outputs:
 - It is 0.0 while the motor is not ARMED.
 - A row that holds only a window has it empty.
 
-A MOTOR file without `throttle` has `esc` after `rpm`. LOGS reads it and
-plots the same four columns first in both forms: `voltage`, `current`,
-`power` and `rpm`.
+A MOTOR file without `throttle` has `esc` after `rpm`, and LOGS reads it.
+In both forms LOGS selects the first 4 numeric columns. With `rpm`
+measured these are `voltage`, `current`, `power` and `rpm`. Without rpm
+telemetry, as from a PWM ESC, `throttle` is the fourth in a file that has
+it.
 
 A SERVO file, from a switch to ARMED on SERVO, has no `throttle` column:
 the switch arms no motor. It has two more columns before `source`:

@@ -1222,9 +1222,11 @@ es derselbe Wert:
 - Solange der Motor nicht ARMED ist, steht 0.0 darin.
 - Eine Zeile, die nur ein Fenster hält, hat die Zelle leer.
 
-Eine MOTOR-Datei ohne `throttle` hat `esc` direkt nach `rpm`. LOGS liest
-sie und zeigt in beiden Formen zuerst dieselben vier Spalten: `voltage`,
-`current`, `power` und `rpm`.
+Eine MOTOR-Datei ohne `throttle` hat `esc` direkt nach `rpm`, und LOGS
+liest sie. In beiden Formen wählt LOGS die ersten 4 Zahlenspalten. Mit
+gemessener rpm sind das `voltage`, `current`, `power` und `rpm`. Ohne
+rpm-Telemetrie, etwa von einem PWM-ESC, ist `throttle` in einer Datei mit
+dieser Spalte die vierte.
 
 Eine durch ARM auf SERVO begonnene SERVO-Datei hat keine Spalte
 `throttle`: Dieses ARM schaltet keinen Motor. Vor `source` hat sie zwei
