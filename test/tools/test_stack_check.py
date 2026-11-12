@@ -323,8 +323,8 @@ def servo_callers():
                          re.S | re.M):
         body = m.group(2)
         calls = {f"port.{f}"
-                 for f in re.findall(r"\bs_ctx->port->(\w+)\(", body)}
-        calls |= set(re.findall(r"\bs_ctx->(\w+)\(", body))
+                 for f in re.findall(r"\bs_link\.ctx->port->(\w+)\(", body)}
+        calls |= set(re.findall(r"\bs_link\.ctx->(\w+)\(", body))
         if calls:
             out[m.group(1)] = calls
     return out
