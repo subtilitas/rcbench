@@ -95,19 +95,25 @@
  *         characters. */
 #define AP_ADDR_LEN 19
 
-/** @brief The entries as last drawn: a hash of their labels, values and
- *         refusals, so a rebuild repaints only when one changed. */
-static uint32_t s_sig;
+/** @brief The sensor entries as last built, beside the choice in s.ch. */
+typedef struct {
+    /** @brief The entries as last drawn: a hash of their labels, values and
+     *         refusals, so a rebuild repaints only when one changed. */
+    uint32_t sig;
+    /** @brief The address of each sensor entry as built, and its type below:
+     *         a pick binds the sensor of that address and type in the view
+     *         of its release, whose found list may have changed under a
+     *         finger. */
+    char     addr[IMU_FOUND_MAX][IMU_ADDR_MAX];
+    /** @brief Each sensor entry's address type: 0 public, 1 random. */
+    uint8_t  type[IMU_FOUND_MAX];
+    /** @brief Where each entry's address starts in its label: 0 on an entry
+     *         that names no sensor. */
+    uint8_t  split[CHOICE_MAX];
+} ap_entries_t;
 
-/** @brief The address of each sensor entry as built, and its type below:
- *         a pick binds the sensor of that address and type in the view of
- *         its release, whose found list may have changed under a finger. */
-static char s_addr[IMU_FOUND_MAX][IMU_ADDR_MAX];
-/** @brief Each sensor entry's address type: 0 public, 1 random. */
-static uint8_t s_type[IMU_FOUND_MAX];
-/** @brief Where each entry's address starts in its label: 0 on an entry that
- *         names no sensor. */
-static uint8_t s_split[CHOICE_MAX];
+/** @brief The one instance. */
+static ap_entries_t s_ap;
 
 /**
  * @brief Whether the bound sensor is scanned device @p d.  The bound
@@ -254,7 +260,7 @@ static void build(void)
     const imu_view_t *v = imu_screen_view();
     s.ch.count = 0;
     s.ch.refused = 0u;
-    memset(s_split, 0, sizeof(s_split));
+    memset(s_ap.split, 0, sizeof(s_ap.split));
     if (settings_get_bool(SET_ENC_EN)) {
         add("AS5600", AP_AS5600, false);
     } else {
@@ -274,7 +280,7 @@ static void build(void)
                                         bound_type,
                                         127, line, sizeof(line));
         add(line, AP_BOUND, false);
-        s_split[s.ch.count - 1] = at;
+        s_ap.split[s.ch.count - 1] = at;
     }
     /* SEARCH FOR IMU keeps the last place: 1 + 8 + 1 fill CHOICE_MAX, and
      * a bound sensor beside 8 found drops the eighth. */
@@ -289,9 +295,9 @@ static void build(void)
             sizeof(line));
         add(line, AP_IMU0 + i,
             bind_off && !same_dev(v->bound_addr, &v->found[i]));
-        s_split[s.ch.count - 1] = at;
-        snprintf(s_addr[i], sizeof(s_addr[i]), "%s", v->found[i].addr);
-        s_type[i] = v->found[i].addr_type;
+        s_ap.split[s.ch.count - 1] = at;
+        snprintf(s_ap.addr[i], sizeof(s_ap.addr[i]), "%s", v->found[i].addr);
+        s_ap.type[i] = v->found[i].addr_type;
     }
     const bool idle = v->link != IMU_LINK_SCANNING
                       && !imu_screen_search_owed();
@@ -327,7 +333,7 @@ static uint32_t entries_sig(void)
 /** @brief The list repainted with its entries' new hash kept. */
 static void repaint(void)
 {
-    s_sig = entries_sig();
+    s_ap.sig = entries_sig();
     servo_invalidate();
     ++s.ctrl_rev;
 }
@@ -388,7 +394,7 @@ void angle_pick_follow(void)
         return;
     }
     build();
-    if (entries_sig() != s_sig) {
+    if (entries_sig() != s_ap.sig) {
         repaint();
     }
 }
@@ -410,7 +416,7 @@ void angle_pick_choose(int value)
         set_source(SERVO_ANGLE_IMU);
     } else if (value >= AP_IMU0 && value - AP_IMU0 < (int)IMU_FOUND_MAX) {
         const int k = value - AP_IMU0;
-        const int i = find_sensor(v, s_addr[k], s_type[k]);
+        const int i = find_sensor(v, s_ap.addr[k], s_ap.type[k]);
         if (i >= 0 && !same_dev(v->bound_addr, &v->found[i])
             && !imu_screen_bind((uint8_t)i)) {
             /* No bind taken now: nothing changes, the list stays, the
@@ -539,7 +545,7 @@ void angle_pick_run_row(rdy_row_t *r, const char *name, bool reads)
 bool angle_pick_draw_entry(gfx_canvas_t *c, int k, gfx_color_t fill,
                            bool refused, bool down)
 {
-    if (k < 0 || k >= s.ch.count || s_split[k] == 0u) {
+    if (k < 0 || k >= s.ch.count || s_ap.split[k] == 0u) {
         return false;
     }
     const gfx_rect_t r = choice_rect(k);
@@ -548,7 +554,7 @@ bool angle_pick_draw_entry(gfx_canvas_t *c, int k, gfx_color_t fill,
     if (gfx_text_width(SV_FONT_LABEL, label, 1) <= r.w - 20) {
         return false;
     }
-    const size_t at = s_split[k];
+    const size_t at = s_ap.split[k];
     const char *addr = label + at;
     const size_t alen = text_len(addr, AP_ADDR_LEN);
     char top[sizeof(s.ch.labels[0])];

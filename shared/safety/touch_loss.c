@@ -50,6 +50,66 @@ uint32_t touch_seq_tail(touch_seq_rx_t *rx, uint32_t published)
     return missed;
 }
 
+void touch_seq_tx_init(touch_seq_tx_t *tx)
+{
+    if (tx != NULL) {
+        tx->seq         = 0u;
+        tx->lost_notice = 0u;
+    }
+}
+
+uint32_t touch_seq_tx_next(const touch_seq_tx_t *tx)
+{
+    return (tx != NULL) ? tx->seq + 1u : 1u;
+}
+
+touch_put_op_t touch_put_begin(touch_seq_tx_t *tx, touch_put_t *put,
+                               bool lost)
+{
+    if (tx == NULL || put == NULL) {
+        return TOUCH_PUT_DONE;
+    }
+    put->seq  = ++tx->seq;
+    put->step = (uint8_t)TOUCH_PUT_SEND;
+    put->sent = false;
+    put->kept = false;
+    if (lost) {
+        tx->lost_notice = put->seq;
+    }
+    return TOUCH_PUT_SEND;
+}
+
+touch_put_op_t touch_put_next(touch_put_t *put, bool ok)
+{
+    if (put == NULL) {
+        return TOUCH_PUT_DONE;
+    }
+    switch ((touch_put_op_t)put->step) {
+    case TOUCH_PUT_SEND:
+        if (ok) {
+            put->kept = true;
+            put->step = (uint8_t)TOUCH_PUT_PUBLISH;
+        } else if (!put->sent) {
+            /* Full: the oldest entry goes, then one more send. */
+            put->sent = true;
+            put->step = (uint8_t)TOUCH_PUT_EVICT;
+        } else {
+            put->step = (uint8_t)TOUCH_PUT_PUBLISH;
+        }
+        break;
+    case TOUCH_PUT_EVICT:
+        /* Whether or not anything came off: the consumer may have made
+         * the room. */
+        put->step = (uint8_t)TOUCH_PUT_SEND;
+        break;
+    case TOUCH_PUT_PUBLISH:
+    default:
+        put->step = (uint8_t)TOUCH_PUT_DONE;
+        break;
+    }
+    return (touch_put_op_t)put->step;
+}
+
 bool arm_watch_take_ok(uint32_t loss_gen_stamp, uint32_t loss_gen_now,
                        uint32_t lost_notice_seq, uint32_t consumed_seq)
 {

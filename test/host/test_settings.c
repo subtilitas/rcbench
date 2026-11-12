@@ -37,8 +37,9 @@ TEST_CASE(every_schema_row_is_internally_consistent)
             T_FAIL("no definition for id %d", i);
             continue;
         }
-        /* In no category: the four INA3221 keys of 0.21, kept. */
-        const bool kept = i >= SET_INA3221_EN && i <= SET_INA3221_CH;
+        /* In no category: the four INA3221 keys of 0.21 and Units, kept. */
+        const bool kept = (i >= SET_INA3221_EN && i <= SET_INA3221_CH)
+                          || i == SET_UNITS;
         if (d->cat < 0 || d->cat > SET_CAT_COUNT
             || (d->cat == SET_CAT_COUNT) != kept) {
             T_FAIL("%s: category %d out of range", d->key, (int)d->cat);
@@ -303,8 +304,9 @@ TEST_CASE(categories_partition_every_setting)
         CHECK(settings_category_name((setting_cat_t)c)[0] != '\0');
         total += n;
     }
-    /* And the four INA3221 keys of 0.21, in none (settings_sensors.h). */
-    CHECK_EQ(total + 4, SETTING_COUNT);
+    /* And the four INA3221 keys of 0.21 (settings_sensors.h) and Units,
+     * in none. */
+    CHECK_EQ(total + 5, SETTING_COUNT);
 
     setting_id_t ids[96];
     int n = settings_in_category(SET_CAT_APP, ids, 96);
@@ -315,6 +317,35 @@ TEST_CASE(categories_partition_every_setting)
     /* A buffer smaller than the category still reports the true count. */
     setting_id_t small[2];
     CHECK_EQ(settings_in_category(SET_CAT_APP, small, 2), n);
+}
+
+/*
+ * Units: no screen reads it, so PANEL shows no row for it.  The key stays:
+ * a stored value loads, is saved again, and RESET CATEGORY on PANEL leaves
+ * it.
+ */
+TEST_CASE(units_keep_their_stored_value_and_show_no_row)
+{
+    setting_id_t ids[96];
+    const int n = settings_in_category(SET_CAT_APP, ids, 96);
+    for (int i = 0; i < n; ++i) {
+        CHECK(ids[i] != SET_UNITS);
+    }
+    CHECK_EQ(settings_def(SET_UNITS)->cat, SET_CAT_COUNT);
+    CHECK_STR_EQ(settings_def(SET_UNITS)->key, "units");
+
+    fresh_model();
+    settings_set_store(&s_mem_store);
+    settings_set(SET_UNITS, 1.0f);
+    CHECK(settings_save());
+    settings_init();
+    CHECK_EQ(settings_get_int(SET_UNITS), 1);
+    settings_reset(SET_CAT_APP);
+    CHECK_EQ(settings_get_int(SET_UNITS), 1);
+    settings_set(SET_THEME, 1.0f);
+    CHECK(settings_save());
+    CHECK_EQ(s_saved[SET_UNITS], 1.0f);
+    settings_set_store(NULL);
 }
 
 TEST_CASE(value_text_renders_every_type)
@@ -1194,6 +1225,7 @@ int main(void)
     RUN(enums_and_booleans_cycle);
     RUN(steps_follow_the_schema);
     RUN(categories_partition_every_setting);
+    RUN(units_keep_their_stored_value_and_show_no_row);
     RUN(value_text_renders_every_type);
     RUN(store_round_trips_and_coerces_stale_values);
     RUN(a_stored_usable_releases_setting_loads_as_stable);
