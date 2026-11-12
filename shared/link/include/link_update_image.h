@@ -58,11 +58,11 @@ int32_t link_update_tbyb_byte(const uint8_t *img, uint32_t len);
  * it is).
  */
 typedef struct {
-    link_sha256_t sha;
-    uint32_t      pos;
-    uint32_t      len;
-    int32_t       flag_at;
-    bool          flag_set;
+    link_sha256_t sha;  /**< the SHA-256 state */
+    uint32_t      pos;  /**< bytes fed so far */
+    uint32_t      len;  /**< bytes to feed in all */
+    int32_t       flag_at;  /**< the byte holding the TBYB flag, -1 for none */
+    bool          flag_set;  /**< the flag is set when that byte is read */
 } link_image_hash_t;
 
 /**

@@ -55,20 +55,20 @@ extern "C" {
 typedef struct {
     /* The outstanding question, kept so an answer to an older one cannot be
      * mistaken for an answer to this one. */
-    bool     pending;
-    uint8_t  op;
-    uint8_t  page;
-    uint8_t  offset;
-    uint8_t  count;
+    bool     pending;  /**< a request is outstanding */
+    uint8_t  op;  /**< its op */
+    uint8_t  page;  /**< its page */
+    uint8_t  offset;  /**< its first register */
+    uint8_t  count;  /**< its register count */
 
     uint32_t sent_ms;      /**< when the outstanding request went out */
-    uint32_t last_reply_ms;
-    bool     escalated;
+    uint32_t last_reply_ms;  /**< when the last reply arrived, ms */
+    bool     escalated;  /**< the silence passed LINK_HOST_TIMEOUT_MS */
 
-    uint32_t polls;
-    uint32_t replies;
+    uint32_t polls;  /**< requests sent */
+    uint32_t replies;  /**< requests answered */
     uint32_t mismatches; /**< answers to questions nobody is still asking */
-    uint32_t nacks;
+    uint32_t nacks;  /**< requests answered with a NACK */
     uint32_t timeouts;   /**< requests abandoned at the escalation           */
     /** @brief Requests answered after their repeat was sent, modulo 2^32. */
     uint32_t retried;
@@ -91,7 +91,7 @@ typedef struct {
      * and no continuation to wait for: the window asked for is known here,
      * and a bit is set as each part of it lands.
      */
-    uint16_t acc[LINK_MAX_REGS];
+    uint16_t acc[LINK_MAX_REGS];  /**< the registers of the reply, as they land */
     uint32_t acc_seen;   /**< bit per register within the request's window */
 
     /**
