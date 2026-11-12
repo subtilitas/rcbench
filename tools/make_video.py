@@ -225,6 +225,8 @@ def check(board: dict) -> list:
     if not isinstance(steps, int) or steps < 0:
         errors.append("steps must be a count of 0 or more")
         steps = 0
+    if board.get("music", "pads") not in ("pads", "bach-prelude"):
+        errors.append("music must be pads or bach-prelude")
     chapters = board.get("chapters")
     if chapters is not None and not (
             isinstance(chapters, list) and len(chapters) == steps

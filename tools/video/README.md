@@ -67,6 +67,7 @@ Top level:
 | `lang` | `en` or `de`: the language the renderer draws the screens in |
 | `brand` | the line beside `rcbench` at the top left |
 | `steps` | the count of step marks at the bottom left |
+| `music` | optional: `pads`, the default bed, or `bach-prelude`, J. S. Bach's Prelude in C major BWV 846 on the same voices, one bar every 4s. The composition is in the public domain and no recording is used; bars 33 and 34 keep the pattern of the other bars so that the piece loops |
 | `chapters` | optional: one name per step; the names replace the step marks, each with a bar that fills while its chapter runs |
 | `words` | optional: `tap`, `hold`, `pos`, `gpio`, the player's own words, for another language |
 | `scenes` | the scenes in order; each fades in and out over 0.45s |

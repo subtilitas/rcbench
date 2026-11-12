@@ -9,6 +9,14 @@ generator.
 
     python3 tools/video_audio.py features -o /tmp/features.wav
 
+A storyboard's "music" names the bed: "pads", the default, or
+"bach-prelude", the Prelude in C major BWV 846 of J. S. Bach (1685 to
+1750) from the first book of the Well-Tempered Clavier, played by the
+same soft voices at one bar every 4s.  The composition is in the public
+domain; the notes are set down here from the piece's harmony, 5 a bar,
+and no recording is used.  Bars 33 and 34 keep the pattern of the other
+bars in place of Bach's two free bars, so that the piece loops.
+
 events() needs Python only.  render() needs numpy.
 
 Attributes:
@@ -18,6 +26,9 @@ Attributes:
     CHORDS: The loop: a bass note and four pad notes per chord, as MIDI
         (Musical Instrument Digital Interface) note numbers.
     LEVEL: The loudest sample, as a part of full scale.
+    PRELUDE: The 5 notes of each bar of BWV 846, as MIDI note numbers.
+    PRELUDE_BAR_S: Seconds one bar of the prelude lasts.
+    BEDS: The names a storyboard's "music" takes.
 
 SPDX-License-Identifier: MIT
 """
@@ -34,6 +45,22 @@ RATE = 44100
 BAR_S = 8.0
 BEAT_S = 0.5
 LEVEL = 0.5
+PRELUDE = (
+    (60, 64, 67, 72, 76), (60, 62, 69, 74, 77), (59, 62, 67, 74, 77),
+    (60, 64, 67, 72, 76), (60, 64, 69, 76, 81), (60, 62, 66, 69, 74),
+    (59, 62, 67, 74, 79), (59, 60, 64, 67, 72), (57, 60, 64, 67, 72),
+    (50, 57, 62, 66, 72), (55, 59, 62, 67, 71), (55, 58, 64, 67, 73),
+    (53, 57, 62, 69, 74), (53, 56, 62, 65, 71), (52, 55, 60, 67, 72),
+    (52, 53, 57, 60, 65), (50, 53, 57, 60, 65), (43, 50, 55, 59, 65),
+    (48, 52, 55, 60, 64), (48, 55, 58, 60, 64), (41, 53, 57, 60, 64),
+    (42, 48, 57, 60, 63), (44, 53, 59, 60, 62), (43, 53, 55, 59, 62),
+    (43, 52, 55, 60, 64), (43, 50, 55, 60, 65), (43, 50, 55, 59, 65),
+    (43, 51, 57, 60, 66), (43, 52, 55, 60, 67), (43, 50, 55, 60, 65),
+    (43, 50, 55, 59, 65), (36, 48, 55, 58, 64), (36, 48, 53, 57, 60),
+    (36, 47, 55, 59, 65), (36, 48, 52, 55, 60),
+)
+PRELUDE_BAR_S = 4.0
+BEDS = ("pads", "bach-prelude")
 CHORDS = (
     (38, (57, 61, 64, 66)),     # D maj7
     (42, (57, 61, 64, 68)),     # F sharp m7
@@ -178,7 +205,34 @@ def render(board: dict, path: pathlib.Path) -> float:
     soft = tuple((k, k ** -1.7) for k in range(1, 7))
     pluck = ((1, 1.0), (2, 0.28), (3, 0.08))
     order = (0, 2, 1, 3, 2, 3, 1, 2)
-    bars = int(total / BAR_S) + 1
+    prelude = board.get("music", "pads") == "bach-prelude"
+    bars = 0 if prelude else int(total / BAR_S) + 1
+    # The prelude: each bar's 5 notes as Bach breaks them, 1 2 3 4 5 3 4 5
+    # twice, on plucked voices; the bar's lowest note held under them and
+    # its chord as a quiet pad.  The last bar is the closing C major.
+    step = PRELUDE_BAR_S / 16.0
+    count = int((total - 6.0) / PRELUDE_BAR_S) if prelude else 0
+    for bar in range(count):
+        t0 = 1.0 + bar * PRELUDE_BAR_S
+        notes = PRELUDE[-1] if bar == count - 1 else PRELUDE[
+            bar % (len(PRELUDE) - 1)]
+        env = swell(PRELUDE_BAR_S + 2.0, 1.2, 2.4)
+        for j, note in enumerate(notes):
+            for cents, pan in ((-5, -0.6), (6, 0.6)):
+                sig, t = tone(hz(note) * 2 ** (cents / 1200),
+                              PRELUDE_BAR_S + 2.0, soft)
+                put(music, t0, sig * env, pan, 0.016 if j else 0.03)
+        sig, _ = tone(hz(notes[0] - 12), PRELUDE_BAR_S + 2.0,
+                      ((1, 1.0), (2, 0.18)))
+        put(music, t0, sig * env, 0.0, 0.05)
+        for k in range(16):
+            note = notes[(0, 1, 2, 3, 4, 2, 3, 4)[k % 8]]
+            long = 1.4 if k % 8 < 2 else 0.45
+            sig, t = tone(hz(note), 2.4, pluck)
+            sig *= np.exp(-t / long) * np.minimum(1.0, t / 0.012)
+            pan = -0.5 + (note - 36) / 45.0
+            put(music, t0 + k * step, sig, pan, 0.085)
+            put(music, t0 + k * step + 0.375, sig, -pan, 0.02)
     for bar in range(bars):
         t0 = bar * BAR_S
         bass, notes = CHORDS[bar % len(CHORDS)]
@@ -209,6 +263,11 @@ def render(board: dict, path: pathlib.Path) -> float:
             put(music, tb + 0.75, sig, -0.6, vel * 0.18)
 
     def chord_at(t):
+        if prelude:
+            bar = int(max(t - 1.0, 0.0) / PRELUDE_BAR_S)
+            if bar >= count - 1:
+                return PRELUDE[-1][1:]
+            return PRELUDE[bar % (len(PRELUDE) - 1)][1:]
         return CHORDS[int(max(t, 0.0) / BAR_S) % len(CHORDS)][1]
 
     bell = ((1, 1.0), (2.76, 0.16), (5.4, 0.05))

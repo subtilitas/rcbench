@@ -118,3 +118,20 @@ def test_a_hold_sounds_for_its_two_seconds():
     assert len(holds) == len(done) == 4
     assert all(abs(d - h - 2.03) < 1e-6 for h, d in zip(holds, done,
                                                         strict=True))
+
+
+def test_the_music_is_a_known_bed():
+    """A storyboard names pads or the prelude, nothing else."""
+    board = _board()
+    board["music"] = "bach-prelude"
+    assert make_video.check(board) == []
+    board["music"] = "drums"
+    assert any("music" in e for e in make_video.check(board))
+
+
+def test_the_prelude_has_its_bars():
+    """35 bars of 5 notes, from C major to C major."""
+    assert len(video_audio.PRELUDE) == 35
+    assert all(len(bar) == 5 for bar in video_audio.PRELUDE)
+    assert video_audio.PRELUDE[0] == (60, 64, 67, 72, 76)
+    assert {n % 12 for n in video_audio.PRELUDE[-1]} == {0, 4, 7}
