@@ -309,6 +309,9 @@ void perf_frame(int screen, uint32_t draw_us, bool flip_timed_out,
     case PERF_LINE_WINDOW:
         window_line();
         break;
+    case PERF_LINE_DIM:
+        backlight_line();
+        break;
     case PERF_LINE_LOW:
     default:
         low_line();

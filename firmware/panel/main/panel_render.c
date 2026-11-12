@@ -609,6 +609,14 @@ void backlight_service(const shot_facts_t *facts)
     }
 }
 
+void backlight_line(void)
+{
+    char line[SCREEN_DIM_LINE_MAX];
+    (void)screen_dim_line(&s_dim, now_ms(), settings_get_int(SET_DIM_AFTER),
+                          line, sizeof(line));
+    ESP_LOGI(TAG, "%s, PWM %u%%", line, s_backlight_pct);
+}
+
 /**
  * @brief Hand the screens what the control task saw of the panel.  Render
  *        loop only.

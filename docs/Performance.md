@@ -302,12 +302,15 @@ panel therefore prints at most one of these lines a frame:
 
 - every 300 frames, 5.0s at 60.4fps and 9.9s at 30.2fps, the rate line;
 - on the frame after it, the window line;
+- on the frame after that, Dim after's line
+  ([PANEL: Dim after](Screens.md#panel-dim-after)), at most 101 bytes;
 - on the frames between, one line of the lows while one is due: the stack
   scan's time, the internal heap, then one stack.
 
 ```text
 I (…) rcbench: <f> fps  DRAW <n> us  WAIT <n> us  TURN <n> us  VSYNC <f> Hz  FLIP TIMEOUTS <n>  TOUCHLOST <panel>/<driver>
 I (…) rcbench: frames <n> on <title> #<id>: DRAW <min>/<mean>/<max> WAIT <min>/<mean>/<max> TURN <min>/<mean>/<max> us
+I (…) rcbench: dim: after <min>min <dim|awake>, <s>s since <cause>, PWM <pct>%
 ```
 
 The two lines are 110 to 135 bytes, by the counters' digits and the

@@ -5353,10 +5353,14 @@ bench is idle.
 - It dims only while the bench is idle, by the same facts as the
   screenshot's popup ([The popup](#the-popup)): SAFE with no arm waiting,
   the supply and PROG 5V off, no port held, no programming session, card
-  job, sweep, test, limit run, ESC STICK run, update, FAULT bit, fault log
-  write or open log. A frame that finds any of them sets 100% at once and
-  starts the minutes again. An ARMED bench or an output that is on is never
-  behind a dim screen.
+  job, sweep, test, limit run, ESC STICK run, update, FAULT bit or open
+  log. A frame that finds any of them sets 100% at once and starts the
+  minutes again. An ARMED bench or an output that is on is never behind a
+  dim screen.
+- A line on its way to the card's fault log does not count. The popup
+  waits for it, so the screenshot and the line do not share the card. The
+  link report writes one every 60s while the link to the IOmcu is up and
+  every 5s while it is down.
 - Any touch event sets 100% and starts the minutes again.
 - The press that comes down on a dim screen only wakes it. Its DOWN, MOVEs
   and UP reach no screen, so it opens, steps or switches nothing. A second
@@ -5374,6 +5378,19 @@ bench is idle.
 - The rule is `shared/ui/screen_dim.c`, held by `test_screen_dim`; the
   render loop sets the duty with `board_backlight_percent()` when it
   changes.
+- The console prints the rule's state every 300 frames, 5.0s at 60.4fps
+  ([Performance](Performance.md#on-the-board)):
+
+  ```text
+  I (…) rcbench: dim: after 5min awake, 37s since touch UP id 0x81 injector, PWM 100%
+  ```
+
+  The setting, dim or awake, the whole seconds since the minutes last
+  started, what started them, and the duty last set. The cause is
+  `start`, `touch <DOWN|MOVE|UP> id 0x<id> <glass|injector>`, `busy
+  <fact>` with the popup's first fact that is not idle (`armed`, `supply`,
+  `recording` and the others), or `off` for 0 minutes. A track id with bit
+  0x80 set is a contact of the touch injector beside the glass.
 
 ### PANEL: the rotary knob
 

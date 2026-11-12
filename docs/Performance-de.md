@@ -323,12 +323,15 @@ Zeilen je Frame aus:
 
 - alle 300 Frames, 5,0s bei 60,4fps und 9,9s bei 30,2fps, die Ratenzeile;
 - im Frame danach die Fensterzeile;
+- im Frame darauf die Zeile von `Dimmen nach`
+  ([PANEL: Dimmen nach](Screens-de.md#panel-dimmen-nach)), höchstens 101 Bytes;
 - in den Frames dazwischen eine Zeile der Tiefststände, solange eine fällig
   ist: die Zeit des Stack-Scans, der interne Heap, dann ein Stack.
 
 ```text
 I (…) rcbench: <f> fps  DRAW <n> us  WAIT <n> us  TURN <n> us  VSYNC <f> Hz  FLIP TIMEOUTS <n>  TOUCHLOST <panel>/<driver>
 I (…) rcbench: frames <n> on <title> #<id>: DRAW <min>/<mean>/<max> WAIT <min>/<mean>/<max> TURN <min>/<mean>/<max> us
+I (…) rcbench: dim: after <min>min <dim|awake>, <s>s since <cause>, PWM <pct>%
 ```
 
 Die beiden Zeilen sind 110 bis 135 Bytes lang, je nach den Stellen der Zähler
