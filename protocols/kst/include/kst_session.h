@@ -181,7 +181,7 @@ typedef struct {
                                   kst_session_power_cycled(); valid with
                                   has_backup */
     kst_fingerprint_t fingerprint;  /**< of the last image read */
-    kst_stats_t stats;
+    kst_stats_t stats;       /**< counts of the transactions */
     kst_reply_t last_reply;  /**< of the last transaction */
     uint32_t bad_regs;       /**< bit n: register n has no 3 equal reads */
     uint32_t wrote_regs;     /**< bit n: the session sent a write of
@@ -213,41 +213,41 @@ typedef struct {
                                   kst_session_init() */
 
     /* --- private ----------------------------------------------------------- */
-    kst_driver_t drv;
+    kst_driver_t drv;        /**< the wire driver */
     kst_plan_t plan;         /**< the running plan; between operations the
                                   planner's work space */
     kst_plan_job_t job;      /**< the planning job of the operation */
     kst_image_t expect;      /**< verify: expected; write: image so far */
     kst_image_t read;        /**< result of the read passes */
-    kst_frame_t frame;
-    uint8_t vals[KST_READ_PASSES_MAX][KST_REG_COUNT];
-    uint32_t vals_ok[KST_READ_PASSES_MAX];
+    kst_frame_t frame;       /**< the frame of the running transaction */
+    uint8_t vals[KST_READ_PASSES_MAX][KST_REG_COUNT];   /**< the values of each read pass */
+    uint32_t vals_ok[KST_READ_PASSES_MAX];   /**< bit n: pass i read register n */
     uint32_t t_mark;         /**< clock at the end of the last window */
     uint32_t t_gap;          /**< wait from t_mark before the next frame */
-    uint32_t t_start;
-    uint32_t t_limit;
+    uint32_t t_start;        /**< clock at the start of the running transaction */
+    uint32_t t_limit;        /**< the longest the transaction can take, us */
     int16_t undo;            /**< step being rolled back */
-    int16_t undo_stop;
-    uint8_t op;
-    uint8_t phase;
-    uint8_t t_state;
-    uint8_t t_expect;
-    uint8_t t_frame;
+    int16_t undo_stop;       /**< the step after which the roll-back stops */
+    uint8_t op;              /**< the running operation; none when idle */
+    uint8_t phase;           /**< where the operation stands */
+    uint8_t t_state;         /**< where the transaction stands: gap, busy or idle */
+    uint8_t t_expect;        /**< kst_expect_t of the transaction */
+    uint8_t t_frame;         /**< 1: the transaction sends a frame */
     uint8_t t_reg;           /**< the register of the frame */
-    uint8_t fault;
-    uint8_t abort;
-    uint8_t reading;
-    uint8_t read_result;
-    uint8_t pass;
-    uint8_t passes;
-    uint8_t reg;
-    uint8_t attempt;
-    uint8_t first_ok;
-    uint8_t dirty;
-    uint8_t unseen;          /* a write ended with the servo not read */
-    uint8_t cycled;          /* the supply was off under the running
+    uint8_t fault;           /**< 1: the driver failed */
+    uint8_t abort;           /**< 1: an abort was asked for */
+    uint8_t reading;         /**< 1: a read of the registers runs */
+    uint8_t read_result;     /**< kst_ses_t of the read */
+    uint8_t pass;            /**< the read pass under way */
+    uint8_t passes;          /**< read passes to make */
+    uint8_t reg;             /**< the register the read is at */
+    uint8_t attempt;         /**< tries of the write under way */
+    uint8_t first_ok;        /**< 1: the first read-back matched */
+    uint8_t dirty;           /**< 1: the servo may hold part of a plan */
+    uint8_t unseen;          /**< a write ended with the servo not read */
+    uint8_t cycled;          /**< the supply was off under the running
                                 operation */
-    uint8_t undone;
+    uint8_t undone;          /**< 1: the roll-back reached its first step */
     uint8_t confirm;         /**< the running restore may be unchecked */
 } kst_session_t;
 

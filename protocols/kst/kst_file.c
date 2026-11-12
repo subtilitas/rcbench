@@ -75,9 +75,9 @@ static uint32_t crc_add(uint32_t crc, unsigned byte)
  * overflow at the end.
  */
 typedef struct {
-    char *out;
-    size_t cap;
-    size_t n;
+    char *out;   /**< the buffer */
+    size_t cap;  /**< its size, bytes */
+    size_t n;    /**< characters the text has, also past the buffer */
 } buf_t;
 
 /**
@@ -729,7 +729,7 @@ static kst_file_err_t read_verified(cur_t *c, kst_file_t *f)
 
 /** @brief State of a write that applies edits to a file's lines. */
 typedef struct {
-    kst_file_t *f;
+    kst_file_t *f;        /**< the file being edited */
     unsigned rows_left;   /**< lines of the register block still to come */
     bool has_block;                     /**< whether a register block was seen */
     kst_type_t stated;    /**< by the type line */

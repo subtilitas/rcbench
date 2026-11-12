@@ -53,7 +53,7 @@ extern "C" {
 
 /** @brief The servo decodes 5 address bits: registers 0x00 to 0x1F. */
 #define KST_REG_COUNT 32u
-#define KST_REG_MAX   0x1Fu
+#define KST_REG_MAX   0x1Fu   /**< the highest register address */
 
 /* --- bit timing ----------------------------------------------------------- */
 
@@ -73,7 +73,7 @@ extern "C" {
  * The decoder predicts each mid-cell edge with it.
  */
 #define KST_SERVO_CELL_NS      51150u
-#define KST_SERVO_HALF_CELL_NS 25575u
+#define KST_SERVO_HALF_CELL_NS 25575u   /**< the servo's half-cell, ns */
 
 #define KST_FRAME_BITS  27u   /**< master to servo */
 #define KST_REPLY_BITS  11u   /**< servo to master */
@@ -86,7 +86,7 @@ extern "C" {
 
 /** @brief Longest level sequence: the sync burst, 64 highs and 63 lows. */
 #define KST_FRAME_MAX_HALF_CELLS 127u
-#define KST_FRAME_LEVEL_BYTES    16u
+#define KST_FRAME_LEVEL_BYTES    16u   /**< bytes of a level sequence: 127 half-cells, one bit each */
 
 /* --- line handling, for the driver ---------------------------------------- */
 
@@ -102,12 +102,12 @@ extern "C" {
 
 /** @brief After a read frame and after a sync burst: measured 437 to 439us. */
 #define KST_READ_ACCEPT_MIN_NS 350000u
-#define KST_READ_ACCEPT_MAX_NS 600000u
+#define KST_READ_ACCEPT_MAX_NS 600000u   /**< the latest reply start accepted, ns */
 /** @brief Capture length after a read frame or a sync burst, 1.5ms. */
 #define KST_READ_WINDOW_NS     1500000u
 /** @brief After a write frame: measured 3687 to 3714us. */
 #define KST_WRITE_ACCEPT_MIN_NS 3300000u
-#define KST_WRITE_ACCEPT_MAX_NS 4200000u
+#define KST_WRITE_ACCEPT_MAX_NS 4200000u   /**< the latest reply start accepted, ns */
 /** @brief Capture length after a write frame, 8ms. */
 #define KST_WRITE_WINDOW_NS     8000000u
 
@@ -128,7 +128,7 @@ extern "C" {
  * The servo's clock tolerance over temperature and supply is not measured.
  */
 #define KST_RX_HALF_CELL_MIN_NS 24300u
-#define KST_RX_HALF_CELL_MAX_NS 26900u
+#define KST_RX_HALF_CELL_MAX_NS 26900u   /**< the longest mean half-cell accepted, ns */
 /**
  * @brief After a last bit 1 the line is low within 100us of the nominal end.
  *

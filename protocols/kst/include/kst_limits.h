@@ -139,6 +139,7 @@ typedef enum {
 
 /** @brief A set of rules, bit n for rule n. */
 typedef uint64_t kst_rules_t;
+/** @brief The bit of rule @p rule in a kst_rules_t. */
 #define KST_RULE_BIT(rule) ((kst_rules_t)1 << (rule))
 
 /** @brief The hard rules as a set. */
