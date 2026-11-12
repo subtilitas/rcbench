@@ -541,8 +541,9 @@ static void exchange_unanswered(void)
  * The same report, on its way to the card.
  *
  * A tester can send a file; a tester cannot send a console this board does
- * not have.  Only while the link is down and only at link_report()'s 5s
- * cadence, so the volume is a few hundred bytes a minute.
+ * not have.  At link_report()'s cadence: every 5s while the link is down
+ * and every 60s while it is up, so the volume is a few hundred bytes a
+ * minute at most.
  *
  * Handed to the logger task rather than written here.  This runs on the task
  * that beats the safety line, and an append is three card transactions --
