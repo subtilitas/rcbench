@@ -11,8 +11,10 @@
  * bind, and leaves ports on other slices, parked ports and DShot ports; the
  * extended-telemetry ask (DSHOT_CMD_EDT_ENABLE with the telemetry bit) goes
  * out in place of stop frames, DSHOT_CMD_REPEATS of them, never in place of
- * a throttle, and never on a plain DShot slot or a DShot port; NULL
- * arguments change nothing.
+ * a throttle, and never on a plain DShot slot or a DShot port; a moved
+ * rate rebinds a slot at the new rate, the last slot and a port on
+ * OUT_MAX_PIN bind, a returned slot takes the bank's rate; NULL arguments
+ * change nothing.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -415,6 +417,47 @@ TEST_CASE(ports_exchanging_pins_let_both_go_before_either_binds)
     CHECK_EQ(out_render_ports_bound(&g_r), 3u);
 }
 
+/*
+ * A rate that moved is a slot that moved: rebound at the new rate.  The last
+ * slot binds like the first.  A slot returned on its own binds at the bank's
+ * rate; an empty one binds nothing.  A port on OUT_MAX_PIN is held, one
+ * above it is not.
+ */
+TEST_CASE(rates_and_the_ends_of_the_ranges_bind_as_asked)
+{
+    fresh();
+    slot(0u, OUT_DRIVER_PWM, 4u, 0u);
+    slot(7u, OUT_DRIVER_PWM, 9u, 7u);
+    out_render_apply(&g_r, &g_o, g_rate, 0xFFu);
+    CHECK(out_render_bound(&g_r, 0u));
+    CHECK(out_render_bound(&g_r, 7u));
+    CHECK(find(EV_BIND, 9u, 0u) < LOG_MAX);
+
+    g_rate[0] = 333u;
+    g_n = 0u;
+    out_render_apply(&g_r, &g_o, g_rate, 0xFFu);
+    CHECK_EQ(find(EV_RELEASE, 4u, 0u), 0u);
+    CHECK_EQ(find(EV_BIND, 4u, 0u), 1u);
+    CHECK_EQ(g_r.shadow[0].rate_hz, 333u);
+    CHECK_EQ(g_n, 2u);
+
+    /* Returned alone: at the bank's rate, not the one it left with. */
+    out_render_apply(&g_r, &g_o, g_rate, (uint8_t)~1u);
+    CHECK(!out_render_bound(&g_r, 0u));
+    g_rate[0] = 400u;
+    g_n = 0u;
+    CHECK(out_render_return_slot(&g_r, &g_o, g_rate, 0u));
+    CHECK_EQ(g_n, 1u);
+    CHECK_EQ(g_r.shadow[0].rate_hz, 400u);
+    /* An empty slot returned binds nothing. */
+    g_n = 0u;
+    CHECK(!out_render_return_slot(&g_r, &g_o, g_rate, 3u));
+    CHECK_EQ(g_n, 0u);
+
+    ports(OUT_MAX_PIN, OUT_MAX_PIN + 1u, 0u, 0u);
+    CHECK_EQ(out_render_ports_bound(&g_r), 1u);
+}
+
 /* The sends on @p pin from log entry @p from on, into @p v and @p tel, at
  * most @p max; the count. */
 static unsigned sends(uint8_t pin, unsigned from, uint16_t *v, bool *tel,
@@ -580,6 +623,7 @@ int main(void)
     RUN(a_pio_slot_bound_anew_lets_every_dshot_port_go_first);
     RUN(a_pwm_slot_lets_the_ports_on_its_slice_go_right_before_its_bind);
     RUN(ports_exchanging_pins_let_both_go_before_either_binds);
+    RUN(rates_and_the_ends_of_the_ranges_bind_as_asked);
     RUN(the_edt_ask_goes_out_in_place_of_stop_frames);
     RUN(the_edt_ask_never_replaces_a_throttle);
     RUN(plain_dshot_slots_and_dshot_ports_never_ask);
