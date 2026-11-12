@@ -177,11 +177,17 @@ not host-tested.
 Built: a run is written while ARMED, or while the supply's output is on with the bench SAFE,
 in the format the viewer reads. The log of a bench in ARMED has one row per sample the
 control task takes (an answered BENCH read with the link up, a 50ms model step with it down)
-and its time column is the wall time since the switch to ARMED; a run armed from SERVO takes
+and its time column is the wall time since the switch to ARMED; a MOTOR file writes
+`throttle (%)` after `rpm` to 0.1%: the THROTTLE in force at the IOmcu when the sample was
+read, the last one it acknowledged and 0 under an ARM of 0 or of the surfaces alone, or with
+the link down the throttle the model runs at (`bench_throttle_t`, `bench_state_set_throttle()`
+in `shared/bench/bench_state.c`; host-tested in `test_log_throttle`, with a file without the
+column read as before; the panel's calls in `panel_poll.c` and `panel_link.c` are not
+host-tested); a run armed from SERVO takes
 `voltage`, `current`, `power`, `charge` and `energy` from the servo rail's meter (the
 INA3221 channel's newest window while it is the meter, the supply's last reading otherwise)
-and the panel's count of it since the arm, and writes `pulse (us)` and `angle (deg)` before
-`source`: the pulse shown in COMMANDED and the angle from the selected AS5600 or IMU shown in MEASURED, handed from the
+and the panel's count of it since the arm, has no `throttle` column, and writes `pulse (us)`
+and `angle (deg)` before `source`: the pulse shown in COMMANDED and the angle from the selected AS5600 or IMU shown in MEASURED, handed from the
 render side in one atomic word; a figure whose source is not the row's is an empty cell
 (`log_writer_servo_row()`, `log_rail_take()`, `log_rail_take_ina()`, `log_rail_count()`,
 `log_servo_pack()` in `shared/bench/log_writer.c`, `servo_screen_log_pulse()`,
@@ -1382,7 +1388,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 538 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 539 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1433,7 +1439,7 @@ The host suite is 538 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_supply_page`, `test_supply_hold`, `test_supply_boot`, `test_sense_page`,
 `test_sense_i228_setup`, `test_supply_link`, `test_supply_keep`, `test_sense_link`,
 `test_sense_link_view`, `test_sense_map_link`, `test_sense_win_link`,
-`test_sense_limit_link`, `test_log_cols`, `test_sense_windows`, `test_servo_source`,
+`test_sense_limit_link`, `test_log_cols`, `test_log_throttle`, `test_sense_windows`, `test_servo_source`,
 `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`, `test_dshot_cadence`, `test_out_dshot`, `test_ppm`,
 `test_outbind`, `test_board_fix`, `test_outputs_screen`, `test_outputs_screen_draw`,
 `test_outputs_screen_off`, `test_outputs_screen_port`, `test_outputs_screen_carrier`,
@@ -2307,7 +2313,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/link/link_update_host.c` | 444 | 441 | 99.3% |
 | `shared/artwork/art_store.c` | 193 | 187 | 96.9% |
 | `shared/artwork/art_fetch.c` | 81 | 81 | 100.0% |
-| `shared/bench/bench_state.c` | 220 | 216 | 98.2% |
+| `shared/bench/bench_state.c` | 247 | 243 | 98.4% |
 | `shared/outputs/outputs.c` | 230 | 227 | 98.7% |
 | `shared/outputs/outputs_pages.c` | 312 | 303 | 97.1% |
 | `shared/outputs/out_bind.c` | 562 | 549 | 97.7% |
@@ -2328,7 +2334,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/outputs/sense_map.c` | 197 | 196 | 99.5% |
 | `shared/outputs/sense_limit.c` | 36 | 36 | 100.0% |
 | `shared/outputs/tone_page.c` | 257 | 257 | 100.0% |
-| `shared/bench/telemetry_sim.c` | 47 | 44 | 93.6% |
+| `shared/bench/telemetry_sim.c` | 48 | 45 | 93.8% |
 | `shared/bench/supply.c` | 170 | 168 | 98.8% |
 | `protocols/pdmini/pdmini.c` | 296 | 292 | 98.7% |
 | `protocols/pdmini/pdmini_codec.c` | 41 | 39 | 95.1% |
@@ -2347,7 +2353,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/bench/hitec_rx_link.c` | 57 | 57 | 100.0% |
 | `shared/bench/knob.c` | 47 | 47 | 100.0% |
 | `shared/bench/panel_i2c.c` | 10 | 10 | 100.0% |
-| `shared/bench/log_writer.c` | 300 | 288 | 96.0% |
+| `shared/bench/log_writer.c` | 307 | 295 | 96.1% |
 | `shared/bench/log_cols.c` | 53 | 53 | 100.0% |
 | `shared/bench/log_cadence.c` | 50 | 50 | 100.0% |
 | `shared/bench/perf_watch.c` | 66 | 66 | 100.0% |
