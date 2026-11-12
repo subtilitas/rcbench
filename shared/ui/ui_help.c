@@ -331,6 +331,23 @@ static size_t row_len(const char *s, int cells)
 }
 
 /**
+ * @brief The cells the first @p len bytes of @p s take: its code points,
+ *        so a two-byte umlaut takes one cell as it does when drawn.
+ * @param s   The text.
+ * @param len Its bytes to count.
+ * @return The cells.
+ */
+static int cells_n(const char *s, size_t len)
+{
+    const char *at = s;
+    int n = 0;
+    while ((size_t)(at - s) < len && gfx_utf8_next(&at) != 0u) {
+        ++n;
+    }
+    return n;
+}
+
+/**
  * @brief Draw @p len bytes of @p s at (@p x, @p y) in @p col.
  * @param c   The canvas.
  * @param x   The left edge.
@@ -381,8 +398,8 @@ static int wrap(gfx_canvas_t *c, int x, int y, const char *t, size_t lead,
                 ++rest;
             }
             if (rest < len) {
-                text_n(c, x + 10 * (int)rest, y + rows * PITCH, at + rest,
-                       len - rest, UI_TEXT);
+                text_n(c, x + 10 * cells_n(at, rest), y + rows * PITCH,
+                       at + rest, len - rest, UI_TEXT);
             }
         }
         ++rows;
