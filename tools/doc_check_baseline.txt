@@ -1075,15 +1075,6 @@ firmware/panel/main/panel_update.c: warning: Member update_frame(update_state_t 
 firmware/panel/main/panel_update.c: warning: Member why_of_fw_gate(fw_gate_t g) (function) of file panel_update.c is not documented.	static wa_why_t why_of_fw_gate(fw_gate_t g)
 firmware/panel/main/panel_update.c: warning: Member wifi_service(bool armed, uint32_t stops_now) (function) of file panel_update.c is not documented.	void wifi_service(bool armed, uint32_t stops_now)
 firmware/panel/main/panel_update.c: warning: Member wifi_unavailable_service(void) (function) of file panel_update.c is not documented.	static void wifi_unavailable_service(void)
-protocols/ppm/include/ppm.h: warning: Compound ppm_cfg_t is not documented.	typedef struct {
-protocols/ppm/include/ppm.h: warning: Member PPM_CFG_DEFAULT() (macro definition) of file ppm.h is not documented.	#define PPM_CFG_DEFAULT() \
-protocols/ppm/include/ppm.h: warning: Member PPM_CHANNEL_MAX_US (macro definition) of file ppm.h is not documented.	#define PPM_CHANNEL_MAX_US 2500u
-protocols/ppm/include/ppm.h: warning: Member PPM_DEFAULT_FRAME_US (macro definition) of file ppm.h is not documented.	#define PPM_DEFAULT_FRAME_US 22500u
-protocols/ppm/include/ppm.h: warning: Member PPM_DEFAULT_MARK_US (macro definition) of file ppm.h is not documented.	#define PPM_DEFAULT_MARK_US 300u
-protocols/ppm/ppm.c: warning: Member k_default (variable) of file ppm.c is not documented.	static const ppm_cfg_t k_default = {
-protocols/ppm/rp2350/out_ppm.c: warning: Member have_last (variable) of struct ppm_out_t is not documented.	bool have_last;
-protocols/ppm/rp2350/out_ppm.c: warning: Member last_us[PPM_MAX_CHANNELS] (variable) of struct ppm_out_t is not documented.	uint16_t last_us[PPM_MAX_CHANNELS];
-protocols/ppm/rp2350/out_ppm.c: warning: Member restart (variable) of struct ppm_out_t is not documented.	const uint32_t *restart;
 protocols/sbus/include/sbus.h: warning: Member SBUS_RAW_MAX (macro definition) of file sbus.h is not documented.	#define SBUS_RAW_MAX 2047u
 protocols/sbus/include/sbus.h: warning: Member frames (variable) of struct sbus_decoder_t is not documented.	uint32_t frames;
 shared/bench/include/bench_state.h: warning: Member BENCH_EDT_STALE_MS (macro definition) of file bench_state.h is not documented.	#define BENCH_EDT_STALE_MS 2000u

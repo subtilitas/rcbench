@@ -9,6 +9,7 @@
 
 #include "ppm.h"
 
+/** @brief The timing a NULL configuration stands for. */
 static const ppm_cfg_t k_default = {
     .mark_us     = PPM_DEFAULT_MARK_US,
     .frame_us    = PPM_DEFAULT_FRAME_US,

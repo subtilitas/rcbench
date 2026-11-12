@@ -49,12 +49,18 @@ typedef struct {
 
     uint32_t buf[PPM_MAX_RUNS];   /**< run counts, see RUN_TO_COUNT() */
     uint32_t words;               /**< runs in buf */
-    /* The widths the buffer currently holds, so a service pass that has
-     * nothing new to say does not rewrite a frame that is being played. */
+    /**
+     * @brief The widths the buffer currently holds, so a service pass that
+     *        has nothing new to say does not rewrite a frame that is being
+     *        played.
+     */
     uint16_t last_us[PPM_MAX_CHANNELS];
-    bool     have_last;
-    /* What the control channel writes back into the data channel: the buffer
-     * address, in a word of its own so the DMA has somewhere to read it. */
+    bool     have_last;   /**< last_us holds the widths of a frame */
+    /**
+     * @brief What the control channel writes back into the data channel: the
+     *        buffer address, in a word of its own so the DMA has somewhere to
+     *        read it.
+     */
     const uint32_t *restart;
 } ppm_out_t;
 
