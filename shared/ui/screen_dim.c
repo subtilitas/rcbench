@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include "gfx.h"
+#include "mstime.h"
 #include "ui_band.h"
 
 void screen_dim_init(screen_dim_t *d, uint32_t now_ms)
@@ -33,9 +34,8 @@ unsigned screen_dim_step(screen_dim_t *d, uint32_t now_ms, int dim_after,
         d->last_ms = now_ms;
         return SCREEN_FULL_PCT;
     }
-    /* Wrap-safe: the difference of two unsigned stamps. */
     const uint32_t limit = (uint32_t)dim_after * SCREEN_DIM_MS_PER_MIN;
-    if ((uint32_t)(now_ms - d->last_ms) >= limit) {
+    if (mstime_elapsed(now_ms, d->last_ms, limit)) {
         d->dimmed = true;
     }
     return d->dimmed ? SCREEN_DIM_PCT : SCREEN_FULL_PCT;
