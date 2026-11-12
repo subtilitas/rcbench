@@ -141,7 +141,7 @@ Der Kopf der Grafik zeigt Nenn-kV, gemessene Drehzahl je Volt und WIRK. (geschä
 
 Ist Auto-Aufzeichnungen unter [SETUP](setup.md#sd-card) > SD CARD EIN, beginnt jedes Schalten auf ARMED eine Datei `MOTORnnn.CSV` in `BENCH/LOGS` auf der SD-Karte (Secure Digital) des Panels. Bei bestehender Verbindung erzeugt jede beantwortete Abfrage eine Zeile. An einem Prüfstand wurden etwa 19 Zeilen pro Sekunde gemessen; für andere Prüfstände liegen keine Messungen vor. Beim Schalten auf SAFE schließt die Datei. Öffne sie unter [Logs](logs.md), um den Lauf als Grafik anzuzeigen.
 
-Jede Zeile hält neben `rpm` und `power` das Gas, das das Panel vorgibt: Spalte `throttle (%)`, 0 bis 100% auf 0,1%, für PWM- und DShot-Ausgänge gleich. Solange der Motor nicht ARMED ist, steht 0.0 darin.
+Die Zeile jeder Abtastung hält neben `rpm` und `power` das Gas, das das Panel vorgibt: Spalte `throttle (%)`, 0 bis 100% auf 0,1%, für PWM- und DShot-Ausgänge gleich. Solange der Motor nicht ARMED ist, steht 0.0 darin. Eine Zeile, die nur ein INA3221-Fenster hält, hat die Zelle leer.
 
 ![Die Tastatur von LOG UMBENENNEN](view:motor-logname)
 
