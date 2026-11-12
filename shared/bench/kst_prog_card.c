@@ -582,19 +582,6 @@ void kst_prog_run_close(kst_prog_t *p)
     p->run_own = false;
 }
 
-void kst_prog_run_drop(kst_prog_t *p)
-{
-    p->run_hold = false;
-    p->run_own = false;
-    p->run_written = false;
-    p->run_backup[0] = '\0';
-}
-
-const kst_image_t *kst_prog_run_image(const kst_prog_t *p)
-{
-    return p->run_hold ? &p->run_img : NULL;
-}
-
 const char *kst_prog_run_backup(const kst_prog_t *p)
 {
     return p->run_hold ? p->run_backup : "";

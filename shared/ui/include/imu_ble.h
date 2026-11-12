@@ -107,10 +107,6 @@ bool imu_ble_set_addr(imu_ble_t *l, const char *text, uint32_t now_ms);
  *  @return Whether it is. */
 bool imu_ble_bound(const imu_ble_t *l);
 
-/** @brief Whether SCAN may start: ON, synced, no scan running.
- *  @param l The link, not NULL.  @return Whether it may. */
-bool imu_ble_ready(const imu_ble_t *l);
-
 /** @brief SCAN: the list, the hidden count and the last scan's or write's
  *         error cleared, then a scan of BLEU_SCAN_MS.
  *  @param l The link, not NULL.  @param now_ms The clock.

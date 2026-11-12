@@ -61,6 +61,18 @@ extern "C" {
 #define ARMING_TOUCH_DEAD_MS 500u
 
 /**
+ * @brief How long after the touch controller last answered a poll its answer
+ *        still counts as touch seen.
+ *
+ * The panel's control loop reads touch_age_ms() against this value and calls
+ * arming_touch_seen() while the age is under it.  Touch is dead
+ * ARMING_TOUCH_DEAD_MS after the last time it was seen, so a controller that
+ * stops answering disarms the bench at most
+ * ARMING_TOUCH_FRESH_MS + ARMING_TOUCH_DEAD_MS (700ms) after its last answer.
+ */
+#define ARMING_TOUCH_FRESH_MS 200u
+
+/**
  * @brief How long the heartbeat stays withheld after the IOmcu refused ARM
  *        (arming_stop_from_far_end()): 300ms, twice HEARTBEAT_MAX_GAP_MS
  *        (150ms).

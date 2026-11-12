@@ -43,6 +43,9 @@ test/host/test_sense_trace_tool.py | none | the cases of one tool
 test/tools/test_check_protocols.py | none | the cases of one tool
 test/host/render_screen.c | none | F11: one view table
 
+# Workflows.
+.github/workflows/ci.yml | 1038 +-100 | one workflow: a job's needs: reaches the jobs of its own file only, and the job the branch ruleset requires joins the host jobs; every comment line counts in YAML
+
 # The configurator.
 configurator/core/catalogue.ts | none | one catalogue; its largest table is 696 lines
 configurator/core/test/catalogue.test.ts | none | row 33 moved the Osoyoo strip and coverage cases out; the catalogue's cases stay

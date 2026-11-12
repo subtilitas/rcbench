@@ -284,11 +284,14 @@ bool bring_up(void)
      */
     if (link_open) {
         s_bus_ok = can_selftest_run(CAN_SELFTEST_MS, &s_busfault);
+        /* A bus on which no IOmcu answered is a panel on its own, which
+         * runs its simulation: a warning, not a failure. */
         splash_screen_set(SPLASH_STEP_LINK,
-                          s_bus_ok ? SPLASH_OK : SPLASH_FAIL,
+                          s_bus_ok ? SPLASH_OK
+                          : busfault_no_iomcu(&s_busfault) ? SPLASH_WARN
+                                                           : SPLASH_FAIL,
                           s_bus_ok ? "CAN 1Mbit/s"
-                                   : busfault_verdict_text(
-                                         s_busfault.verdict));
+                                   : busfault_headline(&s_busfault));
         if (!s_bus_ok) {
             busfault_screen_set(&s_busfault);
         }

@@ -1089,8 +1089,9 @@ static void check_boot_state(void)
     CHECK_EQ(st.frozen_ms, 0u);
 }
 
-/* Run first: every servo_link_init() hands back the state the image starts
- * in, whatever the session before it left. */
+/* Run first: after a session, servo_link_init() hands back the boot state
+ * the public getters show (rate sent and shown, release, binding, sweep,
+ * surfaces).  Members no getter shows are not checked here. */
 TEST_CASE(each_init_starts_from_the_state_the_image_boots_in)
 {
     check_boot_state();

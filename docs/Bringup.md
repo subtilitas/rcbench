@@ -28,8 +28,9 @@ every 3s:
 `requests served` counts link page requests sent by the panel and
 answered by the IOmcu. `self-test echoes` counts probe frames and is 0
 unless the panel's CAN self-test is running. `tx_drop` counts reply
-frames abandoned after 1000 attempts to use a full transmit buffer; the
-panel then waits for its exchange to time out. Together, the first two
+frames not sent because the transmit buffer stayed full for 1,000us,
+together with the rest of their reply; the panel then waits for its
+exchange to time out. Together, the first two
 counters indicate which end has stopped:
 
 | Requests | Panel says | Reading |
@@ -125,11 +126,21 @@ of increasing effort, and the right-hand column shows both ends'
 counters. `returned` is green if any frame came back; `BUS OFF` means
 the panel has stopped transmitting.
 
-![Nothing came back](img/busfault-silent.png)
-
 To leave this screen, hold the button across the bottom for two seconds.
 It uses the same gesture and fade as ARM. The hold is intended to prevent a brief
 contact, such as a sleeve touching the screen, from dismissing the fault.
+
+A silent bus on which no IOmcu answered either status request, the one
+before the echo run or the one after it, is not
+treated as a fault. That is a panel powered on its own, or an IOmcu not yet
+wired. The bar is amber and reads `NO IOMCU`, the heading reads `No IOmcu
+answered.`, and the checks are listed under `IF AN IOMCU IS CONNECTED, CHECK
+IN THIS ORDER`. A tap on `TAP TO CONTINUE` leads to the menu in simulation.
+The splash marks the CAN line as a warning with the same heading. Frames that
+came back altered or went missing keep the hold, and so does a silent echo
+run from an IOmcu that answered a status request before or after it.
+
+![No IOmcu answered](img/busfault-silent.png)
 
 Acknowledging does not repair anything and does not disable the test: the
 bench runs in simulation, nothing drives an output, and the test runs again at

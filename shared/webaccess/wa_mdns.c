@@ -1,5 +1,9 @@
-/*
- * The panel's mDNS answer. See wa_mdns.h.
+/**
+ * @file
+ * @brief The panel's mDNS (multicast Domain Name System) answer: reading a
+ *        query and writing the reply.
+ *
+ * See wa_mdns.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -13,8 +17,8 @@
 #define TYPE_ANY   255u
 #define CLASS_IN   1u
 #define CLASS_QU   0x8000u   /* in a question: answer by unicast       */
-#define CLASS_FLUSH 0x8000u  /* in an answer: this replaces the cache  */
-#define LEGACY_TTL 10u
+#define CLASS_FLUSH 0x8000u  /**< in an answer: this replaces the cache */
+#define LEGACY_TTL 10u       /**< TTL (time to live) of a legacy answer, s */
 
 static uint16_t get16(const uint8_t *p)
 {

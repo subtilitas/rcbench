@@ -25,6 +25,12 @@ export type Options = {
   /** Plus of the servo: a supply of the visitor, or the bench itself. */
   servoPower: 'external' | 'bench';
   /**
+   * What counts the beeps of ESC STICK programming: the phase tap, or a
+   * channel of an INA3221 in the ESC supply line. Read by the function that
+   * needs a beep source.
+   */
+  stickBeep: 'tap' | 'ina3221';
+  /**
    * The pin of the servo signal: a pad bound under OUTPUTS, or the
    * programming port of the IOmcu. No visitor choice and no hash
    * token: the function that programs a servo forces it.
@@ -178,6 +184,7 @@ export type Wire = {
  * A function of the bench.
  *
  * - `needs`: the bench hardware it needs. No test object.
+ * - `needsBy`: further hardware it needs, by the value of one option.
  * - `drives`: the test object it acts on. A chosen function brings that test
  *   object and its wires into the setup.
  */
@@ -186,6 +193,7 @@ export type Fn = {
   group: 'servo' | 'esc' | 'bench';
   name: Text;
   needs: PartId[];
+  needsBy?: { option: OptionKey; parts: Record<string, PartId[]> };
   drives?: PartId;
   forces?: Partial<Options>;
   src: Src;
@@ -304,6 +312,6 @@ export type Core = {
   CATALOGUE: Catalogue;
   /** Pure and total. Never throws. Output arrays are in catalogue order. */
   resolve: (catalogue: Catalogue, selection: Selection) => Setup;
-  /** Default options: pads, matek, battery, external, outputs. */
+  /** Default options: pads, matek, battery, external, tap, outputs. */
   DEFAULT_OPTIONS: Options;
 };

@@ -28,6 +28,7 @@
 #include <stdint.h>
 
 #include "ui_screen.h"
+#include "ui_text.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -138,13 +139,40 @@ typedef struct {
     bool         installing;    /**< an install of a panel image under way  */
 } cu_feed_t;
 
+/** @brief What keeps the question from opening on an offer, in the order
+ *         of cu_sec_t's reasons. */
+typedef enum {
+    CU_WAIT_NONE = 0,  /**< nothing: it opens on the menu              */
+    CU_WAIT_UNSAFE,    /**< ARMED, an arm waiting, the supply on        */
+    CU_WAIT_RADIO,     /**< the panel's radio is not wholly off        */
+    CU_WAIT_INSTALL,   /**< an install of a panel image is under way   */
+} cu_wait_t;
+
 /** What the driver keeps between frames. */
 typedef struct {
     uint32_t shown_gen;         /**< the offer the question opened for      */
     uint32_t starts_sent;       /**< STARTs handed to the update side       */
     bool     from_updates;      /**< the last update started from UPDATES;
                                      the question's opening clears it      */
+    uint32_t said_gen;          /**< the offer the band line was said for   */
+    uint8_t  said_wait;         /**< the cu_wait_t it named                 */
 } cu_driver_t;
+
+/**
+ * @brief What keeps the question from opening on @p f's offer now.
+ * @param f      The update as the application knows it this frame.
+ * @param unsafe ARMED, an arm waiting, or the supply's output on or coming.
+ * @return The first reason that holds, CU_WAIT_NONE for none.
+ */
+cu_wait_t coproc_update_wait(const cu_feed_t *f, bool unsafe);
+
+/**
+ * @brief The band line of an offer: that the IOmcu runs another build, and
+ *        what the question waits for.
+ * @param w What it waits for.
+ * @return The alert's text ID: ALERT_CU_OFFER for CU_WAIT_NONE.
+ */
+ui_text_id_t coproc_update_offer_text(cu_wait_t w);
 
 /** What one frame hands to the update side. */
 typedef struct {
@@ -184,6 +212,11 @@ cu_sec_t coproc_update_section(const cu_driver_t *d, const cu_feed_t *f,
  * panel install under way.  Its offer replaced while it shows (another
  * offer_gen, the withdrawal between two frames), it takes the new versions and
  * clears both latches.
+ *
+ * The band line of an offer: once per offer, on the first frame a screen
+ * with a band shows, ALERT_CU_OFFER, or the line that names what the
+ * question waits for (coproc_update_offer_text()); again each time it waits
+ * for something else, never for the opening itself.
  *
  * And UPDATES' section: its state (coproc_update_section()) and the two
  * versions go to upd_screen_set_coproc() every frame, and a completed hold
