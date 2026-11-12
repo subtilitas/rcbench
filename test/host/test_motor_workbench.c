@@ -292,7 +292,7 @@ TEST_CASE(the_strip_reads_live_program_and_a_tile_opens_live)
      * SETTINGS and OPTIONEN. */
     CHECK_STR_EQ(TR(WB_LIVE), "LIVE");
     CHECK_STR_EQ(TR(KP_PROGRAM), "PROGRAM");
-    CHECK_STR_EQ(TR(FOOT_SETTINGS), "SETTINGS");
+    CHECK_STR_EQ(TR(FOOT_SETTINGS), "OPTIONS");
     ui_text_set_language(UI_LANG_DE);
     CHECK_STR_EQ(TR(WB_LIVE), "LIVE");
     CHECK_STR_EQ(TR(KP_PROGRAM), "PROGRAMMIEREN");

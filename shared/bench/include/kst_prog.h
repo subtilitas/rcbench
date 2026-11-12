@@ -1442,19 +1442,6 @@ void kst_prog_run_written(kst_prog_t *p);
  */
 void kst_prog_run_close(kst_prog_t *p);
 /**
- * @brief Nothing held.
- *
- * @param p The programmer state.
- */
-void kst_prog_run_drop(kst_prog_t *p);
-/**
- * @brief The servo the run held, or NULL.
- *
- * @param p The programmer state.
- * @return The held image, or NULL when no run holds one.
- */
-const kst_image_t *kst_prog_run_image(const kst_prog_t *p);
-/**
  * @brief The file of that servo; "" for none: no card, or the first write not
  *        ended yet.
  *

@@ -25,6 +25,8 @@
 #include "esc_stick_panel.h"
 #include "esc_wire_panel.h"
 #include "flash_gate.h"
+#include "hitec_move.h"
+#include "hitec_panel.h"
 #include "knob.h"
 #include "motor_screen.h"
 #include "outputs_pages.h"
@@ -631,6 +633,9 @@ void panel_frame_loop(void)
                                      | (servo_armed_now ? UI_ARMED_SERVO
                                                         : 0u)),
             .faults      = faults,
+            .prog_port   = ui_band_prog_port(
+                (uint8_t)atomic_load(&s_prog_band)),
+            .prog_moving = hitec_prog_move_on(hitec_panel_model()),
             .run_seconds = run_seconds,
 #ifdef RCBENCH_TOUCH_INJECTOR
             /* A build with the touch injector names an attached one where the

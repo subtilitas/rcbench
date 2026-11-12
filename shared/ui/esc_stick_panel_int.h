@@ -262,6 +262,9 @@ typedef struct {
          sup_gate;                          /**< whether the supply gates a step */
     /** @brief What a result last showed of the supply's off state */
     bool                 sup_off_drawn;
+    /** @brief The bench tag the list last drew
+     *         (esc_stick_panel_bench_tag()), NULL for none. */
+    const char          *tag_drawn;
     uint32_t sup_at,                        /**< bench time of the newest reading, ms */
              sup_off_since;                 /**< bench time the output began reading off, ms */
     /** @brief Per profile, one bit: its manual steps were shown */

@@ -1,6 +1,9 @@
 /**
  * @file
- * @brief SPDX-License-Identifier: MIT
+ * @brief The reset of the panel's STOP as one state machine, from a hold of STOP
+ *        to the heartbeat sent again and CLEAR written.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #include "stop_latch.h"
@@ -9,29 +12,7 @@
 #include <string.h>
 
 #include "link_pages.h"
-
-/**
- * @brief Wrap-safe: true from the millisecond @p deadline_ms on, for half
- *        the range.
- * @param now_ms      Current time, in milliseconds.
- * @param deadline_ms The deadline.
- * @return true at the deadline and after it.
- */
-static bool reached(uint32_t now_ms, uint32_t deadline_ms)
-{
-    return (int32_t)(deadline_ms - now_ms) <= 0;
-}
-
-/**
- * @brief Wrap-safe: true from the millisecond after @p deadline_ms on.
- * @param now_ms      Current time, in milliseconds.
- * @param deadline_ms The deadline.
- * @return true after the deadline.
- */
-static bool past(uint32_t now_ms, uint32_t deadline_ms)
-{
-    return (int32_t)(deadline_ms - now_ms) < 0;
-}
+#include "mstime.h"
 
 /**
  * @brief Whether a reset is under way and not yet resumed.
@@ -74,7 +55,7 @@ static bool follow(stop_latch_t *l, const stop_latch_in_t *in)
     if (in->breaks != l->breaks_seen) {
         l->breaks_seen = in->breaks;
         /* The later of the two events counts for the next hold. */
-        if (!l->event_known || reached(in->break_ms, l->event_ms)) {
+        if (!l->event_known || mstime_reached(in->break_ms, l->event_ms)) {
             l->event_ms = in->break_ms;
         }
         l->event_known = true;
@@ -91,7 +72,7 @@ static bool follow(stop_latch_t *l, const stop_latch_in_t *in)
     if (in->pressed != l->pressed_seen) {
         l->pressed_seen = in->pressed;
         l->seen_ms      = in->now_ms;
-        if (!l->event_known || reached(in->press_ms, l->event_ms)) {
+        if (!l->event_known || mstime_reached(in->press_ms, l->event_ms)) {
             l->event_ms = in->press_ms;
         }
         l->event_known = true;
@@ -198,7 +179,8 @@ static stop_latch_act_t done(stop_latch_t *l, const stop_latch_in_t *in)
 static void take_hold(stop_latch_t *l, const stop_latch_in_t *in)
 {
     if (l->event_known
-        && !reached(in->hold_ms, l->event_ms + STOP_LATCH_HOLD_SEEN_MS)) {
+        && !mstime_reached(in->hold_ms,
+                           l->event_ms + STOP_LATCH_HOLD_SEEN_MS)) {
         ++l->refused;
         return;
     }
@@ -233,7 +215,7 @@ stop_latch_act_t stop_latch_run(stop_latch_t *l, stop_latch_in_t *in,
     case STOP_LATCH_HOLD_DONE:
         /* A controller that went silent in the hold's last moment counts as
          * a break by now. */
-        if (reached(in->now_ms, l->hold_ms + STOP_LATCH_FRESH_MS)) {
+        if (mstime_reached(in->now_ms, l->hold_ms + STOP_LATCH_FRESH_MS)) {
             l->ask_ms = in->now_ms;
             ask(l, in, io);
             if (l->state == STOP_LATCH_HOLD_DONE) {
@@ -244,14 +226,14 @@ stop_latch_act_t stop_latch_run(stop_latch_t *l, stop_latch_in_t *in,
     case STOP_LATCH_ASKING:
         /* The bound first: a reading that came back past it is an exchange
          * that came back late, and it resets nothing. */
-        if (past(in->now_ms, l->ask_ms + STOP_LATCH_CONFIRM_MS)) {
+        if (mstime_past(in->now_ms, l->ask_ms + STOP_LATCH_CONFIRM_MS)) {
             l->state = STOP_LATCH_LATCHED;
             return STOP_LATCH_GIVE_UP;
         }
         if (l->read_off
-            && reached(in->now_ms, l->seen_ms + STOP_LATCH_FLOOR_MS)) {
+            && mstime_reached(in->now_ms, l->seen_ms + STOP_LATCH_FLOOR_MS)) {
             l->state = STOP_LATCH_CONFIRMED;
-        } else if (reached(in->now_ms, l->read_ms + STOP_LATCH_ASK_MS)) {
+        } else if (mstime_reached(in->now_ms, l->read_ms + STOP_LATCH_ASK_MS)) {
             ask(l, in, io);
         }
         break;
@@ -303,7 +285,8 @@ uint16_t stop_latch_faults(const stop_latch_t *l, uint32_t now_ms,
             && (l->state == STOP_LATCH_RESUMED
                 || l->state == STOP_LATCH_CLEAR_WRITTEN
                 || (l->grace
-                    && !past(now_ms, l->grace_ms + STOP_LATCH_GRACE_MS))));
+                    && !mstime_past(now_ms,
+                                    l->grace_ms + STOP_LATCH_GRACE_MS))));
     return hide ? (uint16_t)(faults & (uint16_t)~LINK_FAULT_HEARTBEAT)
                 : faults;
 }

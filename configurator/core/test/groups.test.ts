@@ -10,7 +10,7 @@ import {
   alwaysOn, baseParts, deselectEffect, groups, plainDrive, removalEffect, removalIsPlain, testObjects,
 } from '../groups.ts';
 import type { Removal } from '../groups.ts';
-import { DEFAULT_OPTIONS, OPTION_VALUES, resolve } from '../resolve.ts';
+import { DEFAULT_OPTIONS, OPTION_VALUES, fnNeeds, resolve } from '../resolve.ts';
 
 const SRC: Src = { kind: 'page' };
 const text = (s: string) => ({ en: s, de: s });
@@ -51,6 +51,7 @@ function select(functions: string[] = [], owned: string[] = [], options: Partial
 
 const BASE = [part('panel', { locked: true, selectable: false }), part('copro', { locked: true, selectable: false })];
 
+const optionsOf = (setup: Setup): Options => Object.fromEntries(setup.options.map((o) => [o.key, o.value])) as Options;
 const partIds = (setup: Setup): string[] => setup.parts.map((p) => p.part.id);
 const on = (setup: Setup): string[] => setup.functions.filter((f) => f.enabled).map((f) => f.fn.id);
 const off = (effect: Removal): string[] => effect.functionsOff.map((f) => f.id);
@@ -60,7 +61,8 @@ const off = (effect: Removal): string[] => effect.functionsOff.map((f) => f.id);
 const OPTION_SETS: Options[] = OPTION_VALUES.connection.flatMap((connection) =>
   OPTION_VALUES.ina228Board.flatMap((ina228Board) =>
     OPTION_VALUES.escPower.flatMap((escPower) =>
-      OPTION_VALUES.servoPower.map((servoPower) => ({ connection, ina228Board, escPower, servoPower, servoPort: 'outputs' as const })))));
+      OPTION_VALUES.servoPower.flatMap((servoPower) =>
+        OPTION_VALUES.stickBeep.map((stickBeep) => ({ connection, ina228Board, escPower, servoPower, stickBeep, servoPort: 'outputs' as const }))))));
 
 // ---------------------------------------------------------------------------
 // groups
@@ -130,6 +132,16 @@ test('groups: a variant that adds no part is an empty alternative', () => {
     [rule('battery', { all: [{ has: 'esc' }, { opt: 'escPower', is: 'battery' }] }, 'batt')],
   );
   assert.deepEqual(groups(c)[0]?.oneOf, [['batt'], []]);
+});
+
+test('groups of the data file: the parts a function takes by an option value are no extras of its group', () => {
+  const group = groups(CATALOGUE).find((g) => g.functions.includes('stick'));
+  assert.deepEqual(group?.parts, ['pdmini']);
+  assert.deepEqual(group?.also, ['charger', 'usbtap']);
+  assert.deepEqual(group?.oneOf, []);
+  // The parts of both values are the function's own.
+  const by = (CATALOGUE.functions.find((f) => f.id === 'stick') as Fn).needsBy;
+  assert.deepEqual(by?.parts, { tap: ['sim', 'tap'], ina3221: ['ina3221'] });
 });
 
 test('groups of the data file: every function is in exactly one group, keyed by its needs', () => {
@@ -807,7 +819,7 @@ function assertRemovals(selection: Selection): number {
     assert.ok(effect.functionsOn.every((f) => !selection.functions.includes(f) && !PLAIN.has(f)), what);
     // A function goes off only because one of its parts leaves or its variant changes.
     for (const f of effect.functionsOff) {
-      const needs = (CATALOGUE.functions.find((x) => x.id === f.id) as Fn).needs;
+      const needs = fnNeeds(CATALOGUE.functions.find((x) => x.id === f.id) as Fn, optionsOf(before));
       assert.ok(needs.some((p) => p === id || effect.partsOut.includes(p)) || effect.options.length > 0, `${what}: ${f.id}`);
       assert.equal(f.chosen, selection.functions.includes(f.id), `${what}: ${f.id}`);
     }
@@ -957,7 +969,7 @@ test('sweep over the data file: deselecting a function is the selection without 
       const drives = (CATALOGUE.functions.find((f) => f.id === id) as Fn).drives;
       const still = effect.selection.functions.some((f) => CATALOGUE.functions.find((x) => x.id === f)?.drives === drives);
       assert.deepEqual(effect.objectsOut, drives !== undefined && !still ? [drives] : [], what);
-      const needs = (CATALOGUE.functions.find((f) => f.id === id) as Fn).needs.filter((p) => !LOCKED.has(p));
+      const needs = fnNeeds(CATALOGUE.functions.find((f) => f.id === id) as Fn, optionsOf(before)).filter((p) => !LOCKED.has(p));
       // Each part of the function either stays or leaves.
       assert.deepEqual([...effect.partsStay, ...effect.partsOut.filter((p) => needs.includes(p))].sort(), [...needs].sort(), what);
       // Ticking it again gives the setup before.

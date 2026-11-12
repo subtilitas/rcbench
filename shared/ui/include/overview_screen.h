@@ -1,5 +1,7 @@
-/*
- * The feature menu: eight tiles in 4 x 2, each in a fixed place by kind.
+/**
+ * @file
+ * @brief The feature menu: eight tiles in 4 x 2, each in a fixed place by kind.
+ *
  * Row 1: the workbenches MOTOR & ESC (electronic speed controller), SERVO
  * and SUPPLY, which drive outputs and can ARM.  Row 2: the instruments
  * RECEIVER, BATTERY and BALANCE, which only read.  The last column: LOGS

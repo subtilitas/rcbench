@@ -54,8 +54,8 @@
  *
  * The bench console build sends them through the console's output: none lands
  * inside a console line that leaves in pieces, and none waits for the host.
- * Every other build prints them, and printf() waits for the host for up to 500
- * ms (PICO_STDIO_USB_STDOUT_TIMEOUT_US).
+ * Every other build prints them, and printf() waits for the host for up to
+ * 1,000us (PICO_STDIO_USB_STDOUT_TIMEOUT_US, iomcu_report.c).
  */
 #if IOMCU_CONSOLE
 #define IOMCU_SAY console_hw_say
@@ -957,8 +957,9 @@ int main(void)
          * One clock per pass is the rule and it holds because a pass is
          * short.  Two things in this one are not.  A flash window stops this
          * core for about 19ms with interrupts off.  can_report() prints to a
-         * USB host, which blocks for as long as the host takes, up to 500ms
-         * (outside the bench console build, see IOMCU_SAY).  Everything
+         * USB host, which waits for room in the transmit buffer for up to
+         * 1,000us after the host last took bytes (outside the bench console
+         * build, see IOMCU_SAY).  Everything
          * below measures elapsed time across whichever of them just ran:
          * s_last_rx_ms is what the next pass's quiet-bus guard subtracts
          * from, so a frame collected after one of them and stamped with a

@@ -18,6 +18,7 @@ two.
 
 | Task | Page |
 | --- | --- |
+| Go from the parts to the menu with the release assets, no instrument needed | [Quick start](FirstRun.md#quick-start-from-the-release-assets) |
 | Feature list | [What this is for](Manifest.md) |
 | Choose the parts of a bench and wire them | [Bench configurator](https://subtilitas.github.io/rcbench/) (web page: parts list, shopping list with manufacturer pages and web search links, wiring diagram and pin-to-pin table for the selected setup) |
 | Build and flash both boards | [Building](Building.md) |

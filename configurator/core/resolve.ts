@@ -6,7 +6,7 @@
 // Output arrays are in catalogue order, never in input order.
 
 import type {
-  Catalogue, Cond, OptionKey, Options, PartId, Reason, ResolvedFunction, ResolvedOption,
+  Catalogue, Cond, Fn, OptionKey, Options, PartId, Reason, ResolvedFunction, ResolvedOption,
   ResolvedPart, ResolvedPower, Selection, Setup, Unknown,
 } from '../contract.ts';
 import { holds } from './cond.ts';
@@ -20,6 +20,7 @@ export const OPTION_VALUES: { readonly [K in OptionKey]: ReadonlyArray<Options[K
   ina228Board: Object.freeze(['matek', 'xt90'] as const),
   escPower: Object.freeze(['battery', 'pd'] as const),
   servoPower: Object.freeze(['external', 'bench'] as const),
+  stickBeep: Object.freeze(['tap', 'ina3221'] as const),
   servoPort: Object.freeze(['outputs', 'prog'] as const),
 });
 
@@ -27,7 +28,7 @@ export const OPTION_VALUES: { readonly [K in OptionKey]: ReadonlyArray<Options[K
 export const PICTURES_MAX = 2;
 
 export const OPTION_KEYS: ReadonlyArray<OptionKey> = Object.freeze(
-  ['connection', 'ina228Board', 'escPower', 'servoPower', 'servoPort'] as const,
+  ['connection', 'ina228Board', 'escPower', 'servoPower', 'stickBeep', 'servoPort'] as const,
 );
 
 export const DEFAULT_OPTIONS: Options = Object.freeze({
@@ -35,20 +36,23 @@ export const DEFAULT_OPTIONS: Options = Object.freeze({
   ina228Board: 'matek',
   escPower: 'battery',
   servoPower: 'external',
+  stickBeep: 'tap',
   servoPort: 'outputs',
 });
 
 /**
  * The setups that show an option. `null`: every setup. `false`: no setup; a
  * function forces the value. The servo supply is a choice while a servo is
- * connected and no PD mini feeds it. The pin of the servo signal follows the
- * function that programs a servo.
+ * connected and no PD mini feeds it. The beep source is a choice while the
+ * PD mini feeds an ESC: ESC STICK programming reads it. The pin of the servo
+ * signal follows the function that programs a servo.
  */
 const OPTION_WHEN: { readonly [K in OptionKey]: Cond | null | false } = {
   connection: null,
   ina228Board: { has: 'ina228' },
   escPower: { has: 'esc' },
   servoPower: { all: [{ has: 'servo' }, { not: { has: 'pdmini' } }] },
+  stickBeep: { all: [{ has: 'esc' }, { has: 'pdmini' }, { opt: 'escPower', is: 'pd' }] },
   servoPort: false,
 };
 
@@ -60,6 +64,13 @@ function describe(value: unknown): string {
   } catch {
     return '?';
   }
+}
+
+/** The hardware `fn` needs under `options`: its own `needs` and the part list its `needsBy` names for the option value. */
+export function fnNeeds(fn: Fn, options: Options | Record<OptionKey, string>): PartId[] {
+  const by = fn.needsBy;
+  const extra = by ? by.parts[options[by.option]] ?? [] : [];
+  return [...fn.needs, ...extra];
 }
 
 function list(value: unknown): unknown[] {
@@ -106,6 +117,26 @@ export function resolve(catalogue: Catalogue, selection: Selection): Setup {
     else ignored.add(describe(value));
   }
 
+  // Forced options: chosen functions in catalogue order; the first function
+  // that forces an option names it.
+  const forcedBy: Record<OptionKey, string | null> = {
+    connection: null,
+    ina228Board: null,
+    escPower: null,
+    servoPower: null,
+    stickBeep: null,
+    servoPort: null,
+  };
+  for (const fn of catalogue.functions) {
+    if (!chosen.has(fn.id) || !fn.forces) continue;
+    for (const key of OPTION_KEYS) {
+      const value = fn.forces[key];
+      if (value === undefined || forcedBy[key] !== null) continue;
+      (options as Record<OptionKey, string>)[key] = value;
+      forcedBy[key] = fn.id;
+    }
+  }
+
   // Reasons per part. Insertion follows the order of work: locked parts,
   // parts and test objects of chosen functions, owned parts, then rules.
   // An id the catalogue does not hold adds nothing; a function that needs it
@@ -124,30 +155,11 @@ export function resolve(catalogue: Catalogue, selection: Selection): Setup {
   }
   for (const fn of catalogue.functions) {
     if (!chosen.has(fn.id)) continue;
-    for (const id of fn.needs) add(id, { kind: 'function', id: fn.id });
+    for (const id of fnNeeds(fn, options)) add(id, { kind: 'function', id: fn.id });
     if (fn.drives !== undefined) add(fn.drives, { kind: 'function', id: fn.id });
   }
   for (const part of catalogue.parts) {
     if (owned.has(part.id)) add(part.id, { kind: 'owned' });
-  }
-
-  // Forced options: chosen functions in catalogue order; the first function
-  // that forces an option names it.
-  const forcedBy: Record<OptionKey, string | null> = {
-    connection: null,
-    ina228Board: null,
-    escPower: null,
-    servoPower: null,
-    servoPort: null,
-  };
-  for (const fn of catalogue.functions) {
-    if (!chosen.has(fn.id) || !fn.forces) continue;
-    for (const key of OPTION_KEYS) {
-      const value = fn.forces[key];
-      if (value === undefined || forcedBy[key] !== null) continue;
-      (options as Record<OptionKey, string>)[key] = value;
-      forcedBy[key] = fn.id;
-    }
   }
 
   const ctx = { has: (id: PartId): boolean => reasons.has(id), options };
@@ -176,7 +188,7 @@ export function resolve(catalogue: Catalogue, selection: Selection): Setup {
     .map((c) => ({ id: c.id, text: c.text }));
 
   const functions: ResolvedFunction[] = catalogue.functions.map((fn) => {
-    const missing = fn.needs.filter((id) => !reasons.has(id));
+    const missing = fnNeeds(fn, options).filter((id) => !reasons.has(id));
     const forces = fn.forces ?? {};
     const optionsHold = OPTION_KEYS.every(
       (key) => forces[key] === undefined || forces[key] === options[key],

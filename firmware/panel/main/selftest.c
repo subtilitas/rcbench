@@ -260,6 +260,9 @@ bool can_selftest_run(uint32_t ms, busfault_report_t *out)
         out->bus_errors = bus_err;
         out->bus_off    = bus_off;
         out->have_remote = have_remote;
+        /* Either answer: one before the run and none after is an IOmcu
+         * that went quiet, a fault rather than a missing IOmcu. */
+        out->remote_seen = have_before || have_remote;
         if (have_remote) {
             out->remote_up        = remote.up;
             out->remote_tx_errors = remote.tx_errors;

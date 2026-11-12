@@ -870,8 +870,8 @@ bool control_arm(link_msg_t *reply);
 bool poles_service(void);
 void endpoints_service(bool far_disarmed);
 
-/*
- * Whether the far end trusts the heartbeat, asked of its STATUS page.
+/**
+ * @brief Whether the far end trusts the heartbeat, asked of its STATUS page.
  *
  * An arm waits for this before CLEAR is written.  The heartbeat is withheld
  * while a stop is latched, and after it resumes the far end's monitor needs
@@ -881,14 +881,22 @@ void endpoints_service(bool far_disarmed);
  *
  * @p answered is false when nobody answered.  That exchange has then waited
  * LINK_HOST_TIMEOUT_MS (1000ms), past the arm's whole bound, and it is the
- * link that is gone and not the line that is distrusted.
+ * link that is gone and not the line that is distrusted.  @p faults, where
+ * not NULL, takes the fault bitmap the answer carried, and is left as it is
+ * without one: the alert of an arm given up names its cause from it.
+ * @param answered takes whether anybody answered
+ * @param faults   takes the fault bitmap of a DATA answer; may be NULL
+ * @return true when the answer clears the heartbeat bit
  */
-static inline bool far_line_trusted(bool *answered)
+static inline bool far_line_trusted(bool *answered, uint16_t *faults)
 {
     link_msg_t st = { 0 };
     *answered = read_regs(&s_host, LINK_PAGE_STATUS, LINK_ST_FAULTS, 1u, &st);
-    return *answered && st.op == LINK_OP_DATA
-           && safety_gate_line_trusted(st.regs[0]);
+    const bool data = *answered && st.op == LINK_OP_DATA;
+    if (data && faults != NULL) {
+        *faults = st.regs[0];
+    }
+    return data && safety_gate_line_trusted(st.regs[0]);
 }
 
 void far_end_stop_here(void);
@@ -963,6 +971,11 @@ void prog_ports_to_screens(void);
  * (prog_link_hitec_held()), for the PROGRAM list's PORT IN USE. */
 #define DRIVE_HELD_SHIFT 20u
 extern atomic_uint    s_drive;
+/** @brief The programming port a servo programmer holds, for the band's
+ *         SAFE chip: prog5v_box_held_port() of the KST and Hitec sessions,
+ *         0 to 3, PROG5V_HELD_SOME or PROG5V_HELD_NONE.  Written by
+ *         kst_port_look() on the control task, read by the frame. */
+extern atomic_uint    s_prog_band;
 /** @brief Whether a servo programmer, KST or Hitec, has a port or an
  *         operation under way: the bench takes no arm then, and no PD mini
  *         change on a board whose ports run from it
@@ -1123,6 +1136,12 @@ void publish_snapshot(const bench_state_t *bench, bool link_up,
 /* The IOmcu's STATUS fault bitmap at its last read, LINK_FAULT_* bits.
  * Control task only. */
 uint16_t far_end_faults(void);
+/**
+ * @brief The bitmap as the band shows it: far_end_faults() with the STOP
+ *        latch's grace applied (stop_latch_faults()).  Control task only.
+ * @return LINK_FAULT_* bits
+ */
+uint16_t far_end_faults_shown(void);
 /**
  * @brief STATUS read now, outside the poll's 500ms period: after a CLEAR,
  *        so the bitmap the screens see follows it.  Control task only.

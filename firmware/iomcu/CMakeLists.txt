@@ -29,6 +29,7 @@ pico_sdk_init()
 # The same directories the panel registers as ESP-IDF (Espressif
 # Internet-of-Things Development Framework) components and the host suite
 # builds with plain gcc.  One source list, three build systems.
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/mstime" mstime)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/link"  link)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/bench" bench)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/outputs" outputs)
@@ -157,13 +158,7 @@ endif()
 if(IOMCU_CONSOLE)
     target_sources(rcbench-iomcu PRIVATE src/console_hw.c src/ewline_console.c)
     target_link_libraries(rcbench-iomcu pico_rand)
-    # The USB serial transmit buffer: 1024 bytes in place of the SDK's 64
-    # at full speed, 960 bytes more RAM, so one pass hands over up to the
-    # 400 bytes console_hw.c takes at a time.  The console does not depend
-    # on it: with 64 bytes a longer line leaves in pieces over several
-    # passes.
-    target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_CONSOLE=1
-                               CFG_TUD_CDC_TX_BUFSIZE=1024)
+    target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_CONSOLE=1)
 else()
     target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_CONSOLE=0)
 endif()
@@ -266,6 +261,25 @@ target_link_libraries(rcbench-iomcu
 #
 pico_enable_stdio_usb(rcbench-iomcu 1)
 pico_enable_stdio_uart(rcbench-iomcu 0)
+#
+# A printf() to a USB host that has the port open and stops reading must not
+# hold the main loop, which samples the heartbeat (150ms without an edge
+# switches every output off).  The SDK waits up to 500,000us by default for
+# room in the transmit buffer; here it waits up to 1,000us after the host last
+# took bytes, and then drops the rest of the line.  With a host that is stuck,
+# the call that fills the buffer waits up to 1,000us once; every later call
+# finds no room and returns at once.  iomcu_report.c asserts both figures
+# below.
+#
+# The transmit buffer is 2,048 bytes in place of the SDK's 64 at full speed,
+# 1,984 bytes more RAM.  The 3s report of iomcu_report.c is at most 1,489
+# bytes with every field at its widest, so it fits whole into a buffer the
+# host emptied since the last report: a host that reads gets every line and
+# no printf() waits.  The bench console build hands over up to the 400 bytes
+# console_hw.c takes at a time.
+target_compile_definitions(rcbench-iomcu PRIVATE
+    PICO_STDIO_USB_STDOUT_TIMEOUT_US=1000
+    CFG_TUD_CDC_TX_BUFSIZE=2048)
 
 # The flash layout is written once, in partitions.json: the boot ROM's
 # partition table, which the install UF2 (USB Flashing Format) below puts at

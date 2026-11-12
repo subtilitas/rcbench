@@ -370,13 +370,6 @@ void ui_setlist_draw_save(ui_setlist_t *sl, gfx_canvas_t *c);
 void ui_setlist_draw_warning(ui_setlist_t *sl, gfx_canvas_t *c);
 
 /**
- * @brief The open choice list over the rows, if one is open.
- * @param sl The list.
- * @param c  The canvas.
- */
-void ui_setlist_draw_choices(const ui_setlist_t *sl, gfx_canvas_t *c);
-
-/**
  * @brief Line @p i of the warning: a change as "name: saved -> now", or
  *        past UI_SL_WARN_LINES - 1 changes their count.
  * @param sl   The list.

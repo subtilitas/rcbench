@@ -7,7 +7,8 @@ family of ESCs through its throttle-stick menu. It defines the menu entry
 procedure, the beep pattern for announcing numbers, and the available
 items and values. [Stick programming](StickProgramming.md) uses this data:
 you choose an ESC and the values to change, and the bench drives the
-throttle and counts the beeps in the supply current. It can run 26 of the
+throttle and counts the beeps from the phase tap or from an INA3221 channel
+in the ESC's supply line. It can run 26 of the
 74 profiles.
 
 ## What is in the set

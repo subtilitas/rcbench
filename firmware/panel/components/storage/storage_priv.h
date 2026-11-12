@@ -1,7 +1,9 @@
-/*
- * What storage_list.c needs of storage.c: the drive of the mounted
- * volume, and the end of a read made under a hold.  Not for callers
- * outside the component.
+/**
+ * @file
+ * @brief What storage_list.c needs of storage.c: the drive of the mounted
+ *        volume, and the end of a read made under a hold.
+ *
+ * Not for callers outside the component.
  *
  * SPDX-License-Identifier: MIT
  */
