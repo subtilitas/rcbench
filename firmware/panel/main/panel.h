@@ -1299,7 +1299,9 @@ extern atomic_bool s_supply_real;
  * touch_loss.h. */
 extern atomic_uint s_drv_gaps;
 extern atomic_uint s_tq_published;
-extern uint32_t    s_lost_notice_seq;
+/** @brief s_touch_q's producer: the numbers offered and the last loss
+ *         notice's (touch_loss.h); the control task's alone. */
+extern touch_seq_tx_t s_tq_tx;
 extern atomic_uint s_loss_gen;
 extern atomic_uint s_arm_ack;
 /** @brief The render loop's progress, for the control task's watchdog; see

@@ -1,8 +1,8 @@
 /*
  * Where the panel's control task finds an error, and what it does there
  * (shared/safety/error_sites.c), with the steps the control task takes
- * for each act as firmware/panel/main/panel_supply.c's error_act() takes
- * them.
+ * for each act as error_act_steps() lists them and
+ * firmware/panel/main/panel_supply.c's error_act() takes them.
  *
  * Under test, every site against every bench: error_sites_stop() for an
  * error found elsewhere and an ON across lost touch events, the counters'
@@ -102,23 +102,23 @@ static void supply_off(void)
     g.on = false;
 }
 
-/* error_act(): the steps in their order.  DISARM is a request: the bench
- * stays as it is until the control task serves it. */
+/* error_act(): the steps error_act_steps() lists, in their order.  DISARM
+ * is a request: the bench stays as it is until the control task serves
+ * it.  The STOP latch and the PROG_SUPPLY page are the cases' own below. */
 static void act(error_act_t e)
 {
-    if (e.off_first) {
-        supply_off();
-    }
-    if (e.disarm) {
-        ++g.disarms;
-    }
-    if (e.supply_off) {
-        supply_off();
-    }
-    if (e.cut) {
-        ++g.cuts;
-        if (g.link != NULL) {
-            supply_link_cut(g.link);
+    error_step_t steps[ERROR_STEPS_MAX];
+    const uint8_t n = error_act_steps(&e, steps);
+    for (uint8_t i = 0u; i < n; ++i) {
+        if (steps[i] == ERROR_STEP_SUPPLY_OFF) {
+            supply_off();
+        } else if (steps[i] == ERROR_STEP_DISARM) {
+            ++g.disarms;
+        } else if (steps[i] == ERROR_STEP_CUT) {
+            ++g.cuts;
+            if (g.link != NULL) {
+                supply_link_cut(g.link);
+            }
         }
     }
 }

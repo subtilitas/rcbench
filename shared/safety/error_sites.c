@@ -146,6 +146,35 @@ bool error_sites_page_keeps(const error_bench_t *b, bool far_off)
     return error_sites_keeps(&on);
 }
 
+uint8_t error_act_steps(const error_act_t *a,
+                        error_step_t steps[ERROR_STEPS_MAX])
+{
+    if (a == NULL || steps == NULL) {
+        return 0u;
+    }
+    uint8_t n = 0u;
+    if (a->off_first || a->disarm || a->supply_off || a->cut
+        || a->prog_off) {
+        steps[n++] = ERROR_STEP_STOP_LATCH;
+    }
+    if (a->off_first) {
+        steps[n++] = ERROR_STEP_SUPPLY_OFF;
+    }
+    if (a->disarm) {
+        steps[n++] = ERROR_STEP_DISARM;
+    }
+    if (a->supply_off) {
+        steps[n++] = ERROR_STEP_SUPPLY_OFF;
+    }
+    if (a->cut) {
+        steps[n++] = ERROR_STEP_CUT;
+    }
+    if (a->prog_off) {
+        steps[n++] = ERROR_STEP_PROG_OFF;
+    }
+    return n;
+}
+
 bool error_card_rows_edge(bool open, bool was_failed, bool failed)
 {
     return open && !was_failed && failed;
