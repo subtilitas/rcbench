@@ -11,8 +11,14 @@
  * button in view: on RUDDER AUTO, TEST and LIMIT RUN the READY card's
  * page, on LIVE, SWEEP and RUDDER the READY rows' page and the controls'
  * page under them.  On KST and HITEC, whose session fills the left card,
- * the READY card's page with WRITE n VALUES is the only one.  No page is
- * offered while ARMED: either dock covers part of DISARM in the footer's
+ * the session's pages come first, the dock on the right: on the SERVO tab
+ * two, CONNECT and the read, then the files, the write switch and WRITE;
+ * on another tab one, its values.  They are not offered while the READY
+ * card's supply row switches a live output off, which their dock would
+ * cover, or while an editor of the session is open.  The READY card's
+ * page with WRITE n VALUES follows.  While Hitec's MOVE SERVO drives the
+ * horn no page is offered: its ON, x 468 to 618 on TRAVEL, lies under
+ * the right dock from x 536 and under the left dock's last 20px to x 488.  No page is offered while ARMED: either dock covers part of DISARM in the footer's
  * middle slot.  A page whose dock would cover a control that stops an
  * output is not offered while that control shows: a READY card's page
  * while a run, a limit run or AUTO runs, or while ARM's steps run (the
@@ -23,8 +29,12 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include <stdio.h>
 #include <string.h>
 
+#include "hitec_move.h"
+#include "hitec_panel.h"
+#include "kst_panel.h"
 #include "settings.h"
 #include "ui_footer.h"
 #include "ui_help.h"
@@ -38,6 +48,31 @@
 
 /** @brief The most pages a state offers: a task's two and the card's two. */
 #define GUIDE_MAX 4
+
+/** @brief The SERVO tab of either programmer: KST's page 0, HITEC_PANEL_SERVO. */
+#define PRG_TAB_SERVO 0
+
+/** @brief The rows a programmer's tab holds at most: 5. */
+#define PRG_ROWS 5
+
+/** @brief The tabs of either programmer: 5, KST's LOCKED included. */
+#define PRG_TABS 5
+
+/** @brief A session's page: CONNECT and the read, the files and WRITE, or a
+ *         tab's values. */
+enum { PRG_PG_CONNECT = 0, PRG_PG_WRITE, PRG_PG_VALUES, PRG_PG_COUNT };
+
+/** @brief The bytes a session's label is kept in: 40, a German row label
+ *         of 29 characters and its umlauts. */
+#define PRG_LABEL 40
+
+/**
+ * @brief The labels of the session's pages, copied: KST's and HITEC's
+ *        accessors return a buffer their next call writes over, and a page
+ *        holds its labels while the guide shows it.  A slot per page and
+ *        item, so building one page leaves another's labels as they were.
+ */
+static char s_prg_label[PRG_PG_COUNT][UI_HELP_ITEMS][PRG_LABEL];
 
 /** @brief A page's builder: fills @p out, a zeroed page. */
 typedef void (*guide_fn)(ui_help_page_t *out);
@@ -222,6 +257,336 @@ static void page_prog(ui_help_page_t *p)
                       ui_footer_rect(UI_FOOTER_SETTINGS));
 }
 
+/* ------------------------------------------------- the programmers' pages */
+
+/**
+ * @brief Whether the session shown is KST's, not HITEC's.
+ * @return True on KST.
+ */
+static bool prg_kst(void)
+{
+    return s.fn == SERVO_FN_KST;
+}
+
+/**
+ * @brief A tab of the session shown, as its accessors give it.
+ * @param page The tab.
+ * @return Its rect; empty for a tab not shown.
+ */
+static gfx_rect_t prg_tab(int page)
+{
+    return prg_kst() ? kst_panel_tab_rect(page) : hitec_panel_tab_rect(page);
+}
+
+/**
+ * @brief A row's control on a tab of the session shown.
+ * @param page The tab.
+ * @param row  The row, from the top.
+ * @param col  The column, 0 or 1.
+ * @return Its rect; empty for no row there.
+ */
+static gfx_rect_t prg_value(int page, int row, int col)
+{
+    return prg_kst() ? kst_panel_value_rect(page, row, col)
+                     : hitec_panel_value_rect(page, row, col);
+}
+
+/**
+ * @brief The text on a row's button, or the value it shows.
+ * @param page The tab.
+ * @param row  The row.
+ * @param col  The column.
+ * @return The text; "" for no row there.
+ */
+static const char *prg_button(int page, int row, int col)
+{
+    const char *t = prg_kst() ? kst_panel_button(page, row, col)
+                              : hitec_panel_value(page, row, col);
+    return (t != NULL) ? t : "";
+}
+
+/**
+ * @brief A row's label as it is drawn.
+ * @param page The tab.
+ * @param row  The row.
+ * @param col  The column.
+ * @return The label; "" for no row there.
+ */
+static const char *prg_label(int page, int row, int col)
+{
+    const char *t = prg_kst() ? kst_panel_label(page, row, col)
+                              : hitec_panel_label(page, row, col);
+    return (t != NULL) ? t : "";
+}
+
+/**
+ * @brief The tab shown of the session shown.
+ * @return The tab: PRG_TAB_SERVO, or a tab of values.
+ */
+static int prg_page(void)
+{
+    return prg_kst() ? kst_panel_page() : hitec_panel_page();
+}
+
+/**
+ * @brief Whether the READY card's supply row reads ON: a tap on it
+ *        switches a live output off (prog_ready_stops_at()).
+ * @return True then.
+ */
+static bool prg_supply_live(void)
+{
+    rdy_row_t r;
+    return prog_ready_row(prog_ready_at(PRR_SUPPLY), &r)
+           && r.st == (uint8_t)RDY_LIVE;
+}
+
+/**
+ * @brief Whether HITEC's MOVE SERVO drives the horn: its ON, the tap that
+ *        stops it, spans x 468 to 618 on TRAVEL, under either dock.
+ * @return True while the loop runs on HITEC.
+ */
+static bool prg_moving(void)
+{
+    return !prg_kst() && hitec_prog_move_on(hitec_panel_model());
+}
+
+/**
+ * @brief Whether the session's own pages are offered: its overlay open
+ *        with no keypad, list, page or keyboard over it; and no output
+ *        live through the READY card's supply row, the PD mini or PROG
+ *        5V, whose OFF the dock on the right covers.
+ * @return True when they are.
+ */
+static bool prg_guided(void)
+{
+    if (prg_kst() ? (!kst_panel_is_open() || kst_panel_editor() != 0)
+                  : (!hitec_panel_is_open() || hitec_panel_editor() != 0)) {
+        return false;
+    }
+    return !prg_supply_live() && !supply_screen_output_live()
+           && !(prog5v_box_shown() && prog5v_box_on());
+}
+
+/**
+ * @brief A session's page: the dock on the right, over the READY card,
+ *        not for ARMED.
+ * @param p     The page.
+ * @param title Its title.
+ */
+static void prg_page_init(ui_help_page_t *p, ui_text_id_t title)
+{
+    p->title = title;
+    p->side = UI_HELP_DOCK_RIGHT;
+    p->armed_ok = false;
+}
+
+/**
+ * @brief Add an item to session page @p pg, its label copied to the
+ *        page's slot for it, its badge in the corner @p at.
+ * @param p     The page.
+ * @param pg    The page's slots, PRG_PG_*.
+ * @param label The control's name.
+ * @param text  What it does.
+ * @param r     Where it is.
+ * @param at    The badge's corner: UI_HELP_AT_RIGHT for the tabs and the
+ *              notes, whose text starts at their left edge.
+ */
+static void prg_add_at(ui_help_page_t *p, int pg, const char *label,
+                       ui_text_id_t text, gfx_rect_t r, ui_help_at_t at)
+{
+    if (p->count >= UI_HELP_ITEMS || label == NULL || label[0] == '\0') {
+        return;
+    }
+    char *slot = s_prg_label[pg][p->count];
+    snprintf(slot, PRG_LABEL, "%s", label);
+    (void)ui_help_add_at(p, slot, text, r, at);
+}
+
+/**
+ * @brief prg_add_at() with the badge in the top-left corner.
+ * @param p     The page.
+ * @param pg    The page's slots, PRG_PG_*.
+ * @param label The control's name.
+ * @param text  What it does.
+ * @param r     Where it is.
+ */
+static void prg_add(ui_help_page_t *p, int pg, const char *label,
+                    ui_text_id_t text, gfx_rect_t r)
+{
+    prg_add_at(p, pg, label, text, r, UI_HELP_AT_LEFT);
+}
+
+/**
+ * @brief The tabs, as one rect across the tabs shown.
+ * @param p  The page.
+ * @param pg The page's slots, PRG_PG_*.
+ */
+static void prg_add_tabs(ui_help_page_t *p, int pg)
+{
+    gfx_rect_t all = prg_tab(PRG_TAB_SERVO);
+    for (int t = PRG_TAB_SERVO + 1; t < PRG_TABS; ++t) {
+        const gfx_rect_t r = prg_tab(t);
+        if (r.w > 0) {
+            all = both(all, r);
+        }
+    }
+    prg_add_at(p, pg, TR(HG_PRG_TABS_NAME), TX_HG_PRG_TABS, all,
+               UI_HELP_AT_RIGHT);
+}
+
+/**
+ * @brief The notes and the message under the rows, where any is drawn.
+ * @param p  The page.
+ * @param pg The page's slots, PRG_PG_*.
+ */
+static void prg_add_notes(ui_help_page_t *p, int pg)
+{
+    const gfx_rect_t r = prg_kst() ? kst_panel_notes_drawn()
+                                   : hitec_panel_notes_drawn();
+    if (r.w > 0 && r.h > 0) {
+        prg_add_at(p, pg, TR(HG_PRG_NOTES_NAME), TX_HG_PRG_NOTES, r,
+                   UI_HELP_AT_RIGHT);
+    }
+}
+
+/**
+ * @brief A control of the SERVO tab, under the name @p label.
+ * @param p     The page.
+ * @param pg    The page's slots, PRG_PG_*.
+ * @param label The name.
+ * @param text  What it does.
+ * @param row   The row on the SERVO tab.
+ * @param col   The column.
+ */
+static void prg_add_row(ui_help_page_t *p, int pg, const char *label,
+                        ui_text_id_t text, int row, int col)
+{
+    const gfx_rect_t r = prg_value(PRG_TAB_SERVO, row, col);
+    if (r.w > 0) {
+        prg_add(p, pg, label, text, r);
+    }
+}
+
+/** @brief KST's or HITEC's SERVO tab: the tabs, CONNECT, the read, TYPE or
+ *         SERIES (FILES on HITEC once its CONNECT opened the port), the
+ *         notes.
+ *  @param p The page. */
+static void page_prg_connect(ui_help_page_t *p)
+{
+    const bool kst = prg_kst();
+    prg_page_init(p, kst ? TX_HG_KST_TITLE_CONNECT : TX_HG_HT_TITLE_CONNECT);
+    prg_add_tabs(p, PRG_PG_CONNECT);
+    prg_add_row(p, PRG_PG_CONNECT, prg_button(PRG_TAB_SERVO, 0, 0),
+                TX_HG_PRG_CONNECT, 0, 0);
+    if (kst) {
+        prg_add_row(p, PRG_PG_CONNECT, prg_button(PRG_TAB_SERVO, 1, 0),
+                    TX_HG_PRG_READ, 1, 0);
+        prg_add_row(p, PRG_PG_CONNECT, prg_label(PRG_TAB_SERVO, 1, 1),
+                    TX_HG_KST_TYPE, 1, 1);
+    } else {
+        /* SERIES until this panel's CONNECT opened the port, FILES in its
+         * place then: the text follows the row shown. */
+        prg_add_row(p, PRG_PG_CONNECT, prg_label(PRG_TAB_SERVO, 1, 0),
+                    hitec_panel_files_shown() ? TX_HG_HT_FILES
+                                              : TX_HG_HT_SERIES, 1, 0);
+        prg_add_row(p, PRG_PG_CONNECT, prg_button(PRG_TAB_SERVO, 1, 1),
+                    TX_HG_PRG_READ, 1, 1);
+    }
+    prg_add_notes(p, PRG_PG_CONNECT);
+}
+
+/** @brief KST's or HITEC's SERVO tab, its lower rows: FILES and MORE on
+ *         KST, MORE and AFTER STOP on HITEC; the write switch, RESTORE and
+ *         WRITE n VALUES.
+ *  @param p The page. */
+static void page_prg_write(ui_help_page_t *p)
+{
+    const bool kst = prg_kst();
+    prg_page_init(p, kst ? TX_HG_KST_TITLE_WRITE : TX_HG_HT_TITLE_WRITE);
+    if (kst) {
+        prg_add_row(p, PRG_PG_WRITE, prg_label(PRG_TAB_SERVO, 2, 0),
+                    TX_HG_KST_FILES, 2, 0);
+        prg_add_row(p, PRG_PG_WRITE, prg_label(PRG_TAB_SERVO, 2, 1),
+                    TX_HG_KST_MORE, 2, 1);
+    } else {
+        prg_add_row(p, PRG_PG_WRITE, prg_label(PRG_TAB_SERVO, 2, 0),
+                    TX_HG_HT_MORE, 2, 0);
+        prg_add_row(p, PRG_PG_WRITE, prg_label(PRG_TAB_SERVO, 2, 1),
+                    TX_HG_HT_CLEAR, 2, 1);
+    }
+    prg_add_row(p, PRG_PG_WRITE, prg_label(PRG_TAB_SERVO, 3, 0),
+                TX_HG_PRG_ENABLE, 3, 0);
+    prg_add_row(p, PRG_PG_WRITE, prg_label(PRG_TAB_SERVO, 4, 0),
+                kst ? TX_HG_KST_RESTORE : TX_HG_HT_RESTORE, 4, 0);
+    prg_add_row(p, PRG_PG_WRITE, prg_button(PRG_TAB_SERVO, 4, 1),
+                TX_HG_PRG_WRITE, 4, 1);
+}
+
+/** @brief A tab of values: the tabs, its first value shown on a row
+ *         without keys, the keys of its first stepped row on KST, MOVE
+ *         SERVO on HITEC's TRAVEL, the notes.  A stepped row is marked
+ *         whole, keys and value, so its badge sits clear of the value's.
+ *  @param p The page. */
+static void page_prg_values(ui_help_page_t *p)
+{
+    const bool kst = prg_kst();
+    const int tab = prg_page();
+    prg_page_init(p, kst ? TX_HG_KST_TITLE_VALUES : TX_HG_HT_TITLE_VALUES);
+    prg_add_tabs(p, PRG_PG_VALUES);
+    bool value = false, keys = false;
+    for (int k = 0; k < 2 * PRG_ROWS; ++k) {
+        const int row = k / 2, col = k % 2;
+        const gfx_rect_t r = prg_value(tab, row, col);
+        if (r.w <= 0 || (!kst && tab == HITEC_PANEL_TRAVEL && row == 4)) {
+            continue;
+        }
+        /* A stepped row, wide in column 0, has its value between its
+         * keys, right of the minus key; any other row's value starts
+         * where the keys would. */
+        const gfx_rect_t minus = (kst && col == 0)
+                                     ? kst_panel_step_rect(tab, row, false)
+                                     : r;
+        if (minus.x < r.x) {
+            if (!keys) {
+                prg_add(p, PRG_PG_VALUES, "- +", TX_HG_PRG_STEP,
+                        both(minus, kst_panel_step_rect(tab, row, true)));
+                keys = true;
+            }
+        } else if (!value) {
+            prg_add(p, PRG_PG_VALUES, prg_label(tab, row, col),
+                    TX_HG_PRG_VALUE, r);
+            value = true;
+        }
+    }
+    if (!kst && tab == HITEC_PANEL_TRAVEL) {
+        const gfx_rect_t mv = hitec_panel_value_rect(tab, 4, 0);
+        if (mv.w > 0) {
+            prg_add(p, PRG_PG_VALUES, prg_label(tab, 4, 0), TX_HG_HT_MOVE,
+                    mv);
+        }
+    }
+    prg_add_notes(p, PRG_PG_VALUES);
+}
+
+/**
+ * @brief The session's pages offered now, before the READY card's.
+ * @param out The builders, two at most.
+ * @return Their count.
+ */
+static int prg_pages(guide_fn out[2])
+{
+    if (!prg_guided()) {
+        return 0;
+    }
+    if (prg_page() == PRG_TAB_SERVO) {
+        out[0] = page_prg_connect;
+        out[1] = page_prg_write;
+        return 2;
+    }
+    out[0] = page_prg_values;
+    return 1;
+}
+
 /* ------------------------------------------------- the output card's pages */
 
 /** @brief A right card's page: the dock on the left, the PORT button
@@ -299,8 +664,14 @@ static int pages_now(guide_fn out[GUIDE_MAX])
         return 0;
     }
     int n = 0;
-    /* KST and HITEC: the READY card's page with WRITE n VALUES only. */
+    /* KST and HITEC: the session's pages, then the READY card's with
+     * WRITE n VALUES; none while MOVE SERVO's ON, which stops the horn,
+     * sits under either dock. */
     if (prog_ready_shown()) {
+        if (prg_moving()) {
+            return 0;
+        }
+        n = prg_pages(out);
         out[n++] = page_prog;
         return n;
     }

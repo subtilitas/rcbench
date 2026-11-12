@@ -53,7 +53,7 @@ Solange es an ist:
    einem Frame von 16ms und 132ms bei einem von 33ms.
 3. NEUTRAL, ENDE LINKS und ENDE RECHTS zeigen Tasten `-` und `+` mit
    56 x 48px um den Wert. Eine Taste ändert beim Drücken um 8 Zählwerte
-   (0.11°), wiederholt nach 0.45s mit 8Hz und ab 1.8s mit 30Hz und macht
+   (0.11°), wiederholt nach 0.45s mit 8Hz und ab 2.25s mit 30Hz und macht
    ihre Zeile zur verfolgten; deren Name steht in der Akzentfarbe. Ein
    Tippen auf den Wert öffnet das Tastenfeld. Das Halten ist die
    Zustimmung, die ÄNDERUNG PRÜFEN verlangt: diese Änderungen öffnen keine

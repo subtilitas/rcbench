@@ -13,6 +13,8 @@
  * above the band, in English and German, for both series.  On the rbmod
  * carrier at 4.36 the PORT row's label opens PROGP01 to PROGP04, the entry
  * taken is SERVO TESTER, and the list stays shut while the bench is ARMED.
+ * The SERVO screen's guide names SERIES or FILES as the row shows it, a
+ * CONNECT on its way included.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -22,6 +24,7 @@
 #include "prog_choice.h"
 #include "servo_screen.h"
 #include "ui_board.h"
+#include "ui_help.h"
 
 /* The PORT row's label, left of its CONNECT button. */
 static void tap_port_label(void)
@@ -53,6 +56,52 @@ TEST_CASE(on_the_carrier_the_port_row_chooses_the_port)
 }
 
 /* --------------------------------------------------------------- series */
+
+/* The SERVO screen's guide over the SERVO tab: its CONNECT page marks the
+ * second row with the text of the row shown.  While CONNECT's request
+ * opens the port the port is held and the row still reads SERIES; FILES
+ * takes its place once the port is this panel's. */
+TEST_CASE(the_guide_names_series_or_files_as_the_row_shows)
+{
+    const ui_screen_t *sv = servo_fn_screen(SERVO_FN_HITEC);
+    ui_help_page_t p;
+    int i;
+
+    sv->reset();
+    open_at(SUPPLY_NONE, UI_LANG_EN);
+    servo_d485();
+    servo_screen_show_fn(SERVO_FN_HITEC);
+    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    for (unsigned n = 0; n < 1000u && pstate() != HITEC_PROG_OPENING; ++n) {
+        pms();
+    }
+    CHECK_EQ(pstate(), HITEC_PROG_OPENING);
+    CHECK(hitec_panel_holds_port());
+    CHECK(!hitec_panel_files_shown());
+    CHECK_STR_EQ(hitec_panel_label(HITEC_PANEL_SERVO, 1, 0), TR(HP_SERIES));
+    CHECK(sv->help_count() >= 1);
+    CHECK(sv->help_page(0, &p));
+    CHECK_EQ(p.title, TX_HG_HT_TITLE_CONNECT);
+    for (i = 0; i < p.count && strcmp(p.item[i].label, TR(HP_SERIES)) != 0;
+         ++i) {
+    }
+    CHECK(i < p.count);
+    if (i < p.count) {
+        CHECK_EQ(p.item[i].text, TX_HG_HT_SERIES);
+    }
+    settled();
+    show();
+    CHECK(hitec_panel_files_shown());
+    CHECK_STR_EQ(hitec_panel_label(HITEC_PANEL_SERVO, 1, 0), TR(KP_FILES));
+    CHECK(sv->help_page(0, &p));
+    for (i = 0; i < p.count && strcmp(p.item[i].label, TR(KP_FILES)) != 0;
+         ++i) {
+    }
+    CHECK(i < p.count);
+    if (i < p.count) {
+        CHECK_EQ(p.item[i].text, TX_HG_HT_FILES);
+    }
+}
 
 TEST_CASE(the_series_is_chosen_before_connect_and_kept_in_the_settings)
 {
@@ -810,6 +859,7 @@ int main(void)
     RUN(the_screenshot_gate_reads_the_hold_of_the_port);
     RUN(a_held_ports_reading_moves_the_page_as_its_state_line_shows_it);
     RUN(the_series_is_chosen_before_connect_and_kept_in_the_settings);
+    RUN(the_guide_names_series_or_files_as_the_row_shows);
     RUN(on_the_carrier_the_port_row_chooses_the_port);
     RUN(the_series_row_and_more_take_no_tap_while_the_port_is_held);
     RUN(hitec_d_receive_is_set_on_more_in_pwm);

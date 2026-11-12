@@ -5,11 +5,11 @@
  * help-overview is the menu's guide at page 1, help-overview-2 to
  * help-overview-4 its other pages, each opened and turned by taps through
  * the router as a person does.  help-setup, help-outputs, help-logs,
- * help-files, help-servo, help-supply, help-motor, help-imu and their
- * states' views open the guide over the view render_help_base() names,
- * posed as that view is: SERVO's on a task or SETTINGS' page, SUPPLY's
- * with the output off and MOTOR & ESC's SAFE, as their pages are offered
- * only then.  help-band-worst is MOTOR & ESC's band
+ * help-files, help-servo, help-supply, help-motor, help-imu, help-wifi,
+ * help-updates and their states' views open the guide over the view
+ * render_help_base() names, posed as that view is: SERVO's on a task or
+ * SETTINGS' page, SUPPLY's with the output off and MOTOR & ESC's SAFE, as
+ * their pages are offered only then.  help-band-worst is MOTOR & ESC's band
  * with the widest row of chips test_nav_bubble finds: a clock of 10 hours,
  * ARMED MOTOR, FAULT 7F, BENCH and LINK.
  *
@@ -68,7 +68,10 @@ static const struct {
     { "help-servo-rudder", "servo-rudder" },
     { "help-servo-rudder-auto", "servo-rudder-auto-safe" },
     { "help-servo-kst", "servo-kst" },
+    { "help-servo-kst-tune", "servo-kst-tune" },
     { "help-servo-hitec", "servo-hitec" },
+    { "help-servo-hitec-travel", "servo-hitec-travel" },
+    { "help-servo-hitec-read", "servo-hitec-read" },
     { "help-servo-output", "servo-settings" },
     { "help-servo-sweep", "servo-sweep-page" },
     { "help-servo-sweepfn", "servo-sweep-safe" },
@@ -77,6 +80,13 @@ static const struct {
     { "help-supply", "supply-off" },
     { "help-supply-settings", "supply-settings-off" },
     { "help-supply-pdmini", "supply-pdmini" },
+    { "help-wifi", "wifi" },
+    { "help-wifi-ap", "wifi-ap" },
+    { "help-wifi-joined", "wifi-joined" },
+    { "help-wifi-hold", "wifi-writes-hold" },
+    { "help-updates", "updates" },
+    { "help-updates-newer", "updates-newer" },
+    { "help-updates-settings", "updates-settings" },
     { "help-motor", "motor-held" },
     { "help-motor-program", "motor-program" },
     { "help-motor-settings", "motor-settings" },

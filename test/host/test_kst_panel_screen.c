@@ -22,6 +22,7 @@
  * - a_label_under_the_wrong_row_name_fails
  * - a_tap_asks_for_a_look_once
  * - a_lost_touch_stream_on_the_screen_drops_the_programmers_hold
+ * - a_list_over_the_session_leaves_the_guide_its_ready_page
  *
  * SPDX-License-Identifier: MIT
  */
@@ -30,6 +31,7 @@
 #include "kst_panel_screen_rig.h"
 #include "prog_choice.h"
 #include "ui_board.h"
+#include "ui_help.h"
 
 /* The PORT row carries what CONNECT asks of the supply, where the bench
  * sets the supply; the labels of the rows that are no register's name are
@@ -900,6 +902,30 @@ TEST_CASE(a_lost_touch_stream_on_the_screen_drops_the_programmers_hold)
     CHECK(!kst_prog_write_enabled(M));
 }
 
+/* The screen guide over the session: its two pages of the SERVO tab and
+ * the READY card's.  MORE's list over the left card takes the session's
+ * pages, whose dock would sit beside it on the right; the READY card's
+ * stays.  The tag closes the list, and the pages come back. */
+TEST_CASE(a_list_over_the_session_leaves_the_guide_its_ready_page)
+{
+    ui_help_page_t p;
+
+    fresh_screen();
+    link_up();
+    program_open();
+    CHECK_EQ(scr->help_count(), 3);
+    CHECK(scr->help_page(0, &p));
+    CHECK_EQ(p.title, TX_HG_KST_TITLE_CONNECT);
+    tap(val(PG_SERVO, 2, 1));
+    CHECK_EQ(kst_panel_editor(), 2);
+    CHECK_EQ(scr->help_count(), 1);
+    CHECK(scr->help_page(0, &p));
+    CHECK_EQ(p.title, TX_HG_SV_TITLE_PRG);
+    CHECK(scr->back());
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_EQ(scr->help_count(), 3);
+}
+
 int main(void)
 {
     RUN(the_supplys_controls_are_held_for_as_long_as_the_port);
@@ -921,5 +947,6 @@ int main(void)
     RUN(a_label_under_the_wrong_row_name_fails);
     RUN(a_tap_asks_for_a_look_once);
     RUN(a_lost_touch_stream_on_the_screen_drops_the_programmers_hold);
+    RUN(a_list_over_the_session_leaves_the_guide_its_ready_page);
     return test_summary("kst_panel_screen");
 }
