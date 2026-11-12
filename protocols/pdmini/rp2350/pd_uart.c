@@ -16,13 +16,17 @@
 
 /** @brief Driver state of the UART: the claimed machines and the pins. */
 static struct {
-    bool    open;
-    bool    attached;
-    PIO     tx_pio, rx_pio;
-    uint    tx_sm, rx_sm;
-    uint    tx_off, rx_off;
-    uint8_t tx, rx;
-} s;
+    bool    open;     /**< the machines are claimed */
+    bool    attached; /**< the pins are on the UART */
+    PIO     tx_pio /**< the transmitter's PIO block */,
+            rx_pio /**< the receiver's PIO block */;
+    uint    tx_sm /**< the transmitter's state machine */,
+            rx_sm /**< the receiver's state machine */;
+    uint    tx_off /**< the transmitter's program offset */,
+            rx_off /**< the receiver's program offset */;
+    uint8_t tx /**< the transmit GPIO */,
+            rx /**< the receive GPIO */;
+} s; /**< the UART's state */
 
 /**
  * @brief A pin at rest: an input with a pull-down, driven by nothing here.

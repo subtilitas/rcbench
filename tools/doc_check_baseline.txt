@@ -1075,45 +1075,6 @@ firmware/panel/main/panel_update.c: warning: Member update_frame(update_state_t 
 firmware/panel/main/panel_update.c: warning: Member why_of_fw_gate(fw_gate_t g) (function) of file panel_update.c is not documented.	static wa_why_t why_of_fw_gate(fw_gate_t g)
 firmware/panel/main/panel_update.c: warning: Member wifi_service(bool armed, uint32_t stops_now) (function) of file panel_update.c is not documented.	void wifi_service(bool armed, uint32_t stops_now)
 firmware/panel/main/panel_update.c: warning: Member wifi_unavailable_service(void) (function) of file panel_update.c is not documented.	static void wifi_unavailable_service(void)
-protocols/pdmini/include/pdmini.h: warning: Member PDMINI_I_MAX_MA (macro definition) of file pdmini.h is not documented.	#define PDMINI_I_MAX_MA 3000u
-protocols/pdmini/include/pdmini.h: warning: Member PDMINI_I_MIN_MA (macro definition) of file pdmini.h is not documented.	#define PDMINI_I_MIN_MA 50u
-protocols/pdmini/include/pdmini.h: warning: Member PDMINI_V_MAX_MV (macro definition) of file pdmini.h is not documented.	#define PDMINI_V_MAX_MV 20000u
-protocols/pdmini/include/pdmini.h: warning: Member cmd (variable) of struct pdmini_t is not documented.	uint8_t cmd;
-protocols/pdmini/include/pdmini.h: warning: Member data_at (variable) of struct pdmini_t is not documented.	uint32_t data_at;
-protocols/pdmini/include/pdmini.h: warning: Member deadline (variable) of struct pdmini_t is not documented.	uint32_t deadline;
-protocols/pdmini/include/pdmini.h: warning: Member en_at (variable) of struct pdmini_t is not documented.	uint32_t en_at;
-protocols/pdmini/include/pdmini.h: warning: Member held_off (variable) of struct pdmini_t is not documented.	bool held_off; /* switched off for set points that would not
-protocols/pdmini/include/pdmini.h: warning: Member identified (variable) of struct pdmini_t is not documented.	bool identified;
-protocols/pdmini/include/pdmini.h: warning: Member io (variable) of struct pdmini_t is not documented.	pdmini_io_t io;
-protocols/pdmini/include/pdmini.h: warning: Member last_display (variable) of struct pdmini_t is not documented.	uint32_t last_display, last_state, last_input, last_identify, last_slot;
-protocols/pdmini/include/pdmini.h: warning: Member last_identify (variable) of struct pdmini_t is not documented.	uint32_t last_display, last_state, last_input, last_identify, last_slot;
-protocols/pdmini/include/pdmini.h: warning: Member last_input (variable) of struct pdmini_t is not documented.	uint32_t last_display, last_state, last_input, last_identify, last_slot;
-protocols/pdmini/include/pdmini.h: warning: Member last_slot (variable) of struct pdmini_t is not documented.	uint32_t last_display, last_state, last_input, last_identify, last_slot;
-protocols/pdmini/include/pdmini.h: warning: Member last_state (variable) of struct pdmini_t is not documented.	uint32_t last_display, last_state, last_input, last_identify, last_slot;
-protocols/pdmini/include/pdmini.h: warning: Member on_step (variable) of struct pdmini_t is not documented.	uint8_t on_step; /* reads before an ON: 1 data asked, 2 data
-protocols/pdmini/include/pdmini.h: warning: Member phase (variable) of struct pdmini_t is not documented.	enum { PD_IDLE, PD_ATTACH, PD_WAIT, PD_GAP } phase;
-protocols/pdmini/include/pdmini.h: warning: Member polled_late (variable) of struct pdmini_t is not documented.	bool polled_late; /* the last job a reading that went before
-protocols/pdmini/include/pdmini.h: warning: Member req[8] (variable) of struct pdmini_t is not documented.	uint8_t req[8];
-protocols/pdmini/include/pdmini.h: warning: Member req_n (variable) of struct pdmini_t is not documented.	size_t req_n;
-protocols/pdmini/include/pdmini.h: warning: Member rx[72] (variable) of struct pdmini_t is not documented.	uint8_t rx[72];
-protocols/pdmini/include/pdmini.h: warning: Member rx_n (variable) of struct pdmini_t is not documented.	size_t rx_n;
-protocols/pdmini/include/pdmini.h: warning: Member sag_reads (variable) of struct pdmini_t is not documented.	uint8_t sag_reads; /* input reads in a row under a live output's
-protocols/pdmini/include/pdmini.h: warning: Member st (variable) of struct pdmini_t is not documented.	pdmini_status_t st;
-protocols/pdmini/include/pdmini.h: warning: Member want_ma (variable) of struct pdmini_t is not documented.	uint16_t want_mv, want_ma;
-protocols/pdmini/include/pdmini.h: warning: Member want_mv (variable) of struct pdmini_t is not documented.	uint16_t want_mv, want_ma;
-protocols/pdmini/include/pdmini.h: warning: Member want_output (variable) of struct pdmini_t is not documented.	bool want_output;
-protocols/pdmini/include/pdmini.h: warning: Member who_failed (variable) of struct pdmini_t is not documented.	uint16_t who_failed; /* WHO_AM_I without a valid answer: a count
-protocols/pdmini/rp2350/pd_uart.c: warning: Member attached (variable) of struct [struct].s is not documented.	bool attached;
-protocols/pdmini/rp2350/pd_uart.c: warning: Member open (variable) of struct [struct].s is not documented.	bool open;
-protocols/pdmini/rp2350/pd_uart.c: warning: Member rx (variable) of struct [struct].s is not documented.	uint8_t tx, rx;
-protocols/pdmini/rp2350/pd_uart.c: warning: Member rx_off (variable) of struct [struct].s is not documented.	uint tx_off, rx_off;
-protocols/pdmini/rp2350/pd_uart.c: warning: Member rx_pio (variable) of struct [struct].s is not documented.	PIO tx_pio, rx_pio;
-protocols/pdmini/rp2350/pd_uart.c: warning: Member rx_sm (variable) of struct [struct].s is not documented.	uint tx_sm, rx_sm;
-protocols/pdmini/rp2350/pd_uart.c: warning: Member s (variable) of file pd_uart.c is not documented.	} s;
-protocols/pdmini/rp2350/pd_uart.c: warning: Member tx (variable) of struct [struct].s is not documented.	uint8_t tx, rx;
-protocols/pdmini/rp2350/pd_uart.c: warning: Member tx_off (variable) of struct [struct].s is not documented.	uint tx_off, rx_off;
-protocols/pdmini/rp2350/pd_uart.c: warning: Member tx_pio (variable) of struct [struct].s is not documented.	PIO tx_pio, rx_pio;
-protocols/pdmini/rp2350/pd_uart.c: warning: Member tx_sm (variable) of struct [struct].s is not documented.	uint tx_sm, rx_sm;
 protocols/phase_tap/include/edge_ring.h: warning: Member EDGE_COUNT_MASK (macro definition) of file edge_ring.h is not documented.	#define EDGE_COUNT_MASK 0x7FFFFFFFu
 protocols/phase_tap/include/tone.h: warning: Member b_bursts (variable) of struct tone_t is not documented.	uint32_t b_n, b_bursts;
 protocols/phase_tap/include/tone.h: warning: Member b_flags (variable) of struct tone_t is not documented.	uint8_t b_flags;
