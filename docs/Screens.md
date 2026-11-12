@@ -186,8 +186,9 @@ last line read of the attempt, the other bits as the band shows them.
 ## The screen guide
 
 "?" in the status band opens the current screen's guide. Numbered marks
-identify its controls, and a dock explains each one. The menu, SUPPLY,
-SERVO with KST and HITEC, OUTPUTS, SETUP, LOGS, FILES, WI-FI and UPDATES
+identify its controls, and a dock explains each one. The menu, MOTOR &
+ESC with ESC STICK, SUPPLY, SERVO with KST and HITEC, OUTPUTS, SETUP, LOGS,
+FILES, IMU, WI-FI and UPDATES
 have guides; the other screens have no "?". Keypads, keyboards, open lists, boxes, warnings and confirmation
 dialogs also have no "?".
 
@@ -237,8 +238,8 @@ chip, "?" or STOP. The home tag returns when the guide closes.
 - A knob turn moves nothing while the guide is open, and the guide stays
   open.
 - Leaving the screen closes the guide, and so does a change of the
-  screen's pages: another task or tab, and on SUPPLY and SERVO the switch
-  between SAFE and ARMED, the supply's output switching on or off and a
+  screen's pages: another task or tab, and on SUPPLY, SERVO and MOTOR &
+  ESC the switch between SAFE and ARMED, the supply's output switching on or off and a
   run starting. A link lost or back leaves it open; the names on its page
   follow the state.
 - While ARMED the guide offers only the pages whose dock covers no control
@@ -316,7 +317,7 @@ on the left card decides the first pages:
 | SERVO's lists (the hub, SWEEP, RUDDER, RUDDER AUTO, HITEC) | as a settings list |
 | SUPPLY LIVE | PLOT and TABLE, VOLTAGE and CURRENT LIMIT (3) |
 | SUPPLY LIVE, the rail | the range and the four reading cards (5); the set points' values, RESET PEAKS, OUTPUT ON and OPTIONS (4) |
-| a settings list (MOTOR & ESC, SUPPLY, SERVO) | a row, the strip's name and RESET name (3); a row's `-`, value and `+`, and SAVE (4) |
+| a settings list (MOTOR & ESC, ESC STICK, SUPPLY, SERVO) | a row, the strip's name and RESET name (3); a row's `-`, value and `+`, and SAVE (4) |
 
 A page whose dock would cover a control that stops an output is left out
 while that control shows:
@@ -339,6 +340,47 @@ while that control shows:
   A list, keypad, page or keyboard of the KST or HITEC session leaves the
   READY page only. SUPPLY offers none over its keypad or the question about
   a live output.
+
+### MOTOR & ESC's, ESC STICK's and IMU's guides
+
+![MOTOR & ESC's guide at page 1 on LIVE](img/help-motor.png)
+
+MOTOR & ESC's first page marks the left column with the dock on the
+right; its second marks the rail with the dock on the left and keeps
+TARGET in view. ESC STICK's pages replace them while the session is open
+(`shared/ui/esc_stick_guide.c`). IMU drives no output, so both its pages
+show while ARMED.
+
+| Screen and state | Pages, items |
+| --- | --- |
+| MOTOR & ESC LIVE, SAFE | LIVE and PROGRAM, the telemetry card, THROTTLE and RENAME LOG (4); TARGET, the readings, RESET PEAKS, ARM and OPTIONS (5) |
+| MOTOR & ESC PROGRAM's list, SAFE | LIVE and PROGRAM, the two rows and RENAME LOG (4); the rail's page as on LIVE (5) |
+| ESC STICK, makers or models | BACK and the first row (2); SEARCH, `^` and `v`, and the count under the rows (3) |
+| ESC STICK, a profile | BACK, the first item and the note under the card (3); the first item's `-` and `+`, the side column's `^` and `v`, MANUAL INTERVENTION REQUIRED where the profile has manual steps, RUN and OPTIONS (4 or 5) |
+| ESC STICK's OPTIONS | as a settings list |
+| IMU | SCAN FOR SENSORS, ZERO and CLEAR ZERO (3); the sensor's lines, X Y Z, the RATE line, HOLD 2s: CALIBRATE and OPTIONS (5) |
+
+![ESC STICK's guide at page 1 on a profile](img/help-motor-stick.png)
+
+The note under a profile's card names why RUN does not start: no
+throttle pin, the binding not read, the panel's model of the supply, no
+beep source, the supply on or not read off, a rating of the model, a
+programmer that holds a port ([ESC STICK](#esc-stick)). The guide's item
+for it is there whether or not a reason stands.
+
+Either dock covers part of the footer's middle slot, x 348 to 676:
+
+- MOTOR & ESC offers no page unless the bench is SAFE as the screen sees
+  it: not ARMED, no ARM asked and unanswered, no DISARM unanswered. There
+  the slot is DISARM.
+- ESC STICK offers no profile page while ARMED, while a run is under way
+  or its result shows, as the slot is ABORT or OK then. The list's pages
+  cover no control that stops an output and show while ARMED.
+- No page over RENAME LOG's keyboard, the signal-wire session, ESC
+  STICK's search keyboard, its RUN warning or its manual steps, or IMU's
+  found list.
+
+![IMU's guide at page 1](img/help-imu.png)
 
 ## Screenshot
 

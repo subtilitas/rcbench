@@ -145,6 +145,8 @@ bool msp_back(void)
 
 uint32_t msp_revision(void) { return p.rev; }
 
+const ui_setlist_t *msp_list(void) { return &p.sl; }
+
 void msp_tick(float dt_s, bool safe)
 {
     if (p.safe != safe) {

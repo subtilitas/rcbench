@@ -103,9 +103,8 @@ TEST_CASE(the_chip_shows_where_the_screen_has_pages)
     /* The chip's sunk fill at its left end, inside the round. */
     CHECK(px_is(g.x + g.w / 2, g.y + 2, ui_theme_color(UI_C_PANEL_SUNK)));
 
-    /* MOTOR & ESC has no pages yet: no chip, the band's fill in its
-     * place. */
-    ui_router_goto(SCREEN_MOTOR);
+    /* BATTERY has no pages: no chip, the band's fill in its place. */
+    ui_router_goto(SCREEN_BATTERY);
     CHECK(!ui_router_guide_shown());
     ui_router_render(&cv, 0);
     CHECK(px_is(g.x + g.w / 2, g.y + 2, ui_theme_color(UI_C_PANEL)));

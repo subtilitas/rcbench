@@ -54,6 +54,7 @@ A scan takes 10s. It lists the devices that advertise the WitMotion sensor's ser
 
 ## Related pages
 
+- [The screen guide](band.md#the-screen-guide): "?" in the band opens this screen's guide.
 - [Sensors](setup-sensors.md)
 - [Servo settings](servo-settings.md)
 - [Setup](setup.md)

@@ -45,6 +45,7 @@ set(SRCS
     motor_settings_page.c
     motor_program_page.c
     motor_logname.c
+    motor_guide.c
     supply_screen.c
     supply_events.c
     supply_draw.c
@@ -113,6 +114,7 @@ set(SRCS
     esc_stick_settings.c
     esc_stick_draw.c
     esc_stick_draw_run.c
+    esc_stick_guide.c
     log_viewer_screen.c
     log_viewer_load.c
     log_viewer_draw.c
@@ -159,6 +161,7 @@ set(SRCS
     imu_sensor.c
     imu_screen.c
     imu_screen_draw.c
+    imu_guide.c
     files_draw.c
     files_events.c
     files_text.c

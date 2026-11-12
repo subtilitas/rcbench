@@ -688,6 +688,8 @@ static const ui_screen_t k_screen = {
     .cancel  = cancel,
     .render  = ims_render,
     .back    = back,
+    .help_count = imu_help_count,
+    .help_page  = imu_help_page,
 };
 
 /** @brief The IMU screen (imu_screen.h). @return The screen. */

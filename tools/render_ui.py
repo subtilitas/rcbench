@@ -126,6 +126,11 @@ SCREENS = {
     "help-servo-kst": ("help-servo-kst.png", "servo", "dark"),
     "help-wifi": ("help-wifi.png", "wifi", "dark"),
     "help-updates": ("help-updates.png", "updates", "dark"),
+    # MOTOR & ESC's guide at page 1 on LIVE after a run, ESC STICK's on a
+    # profile's page and the IMU screen's on a connected sensor.
+    "help-motor": ("help-motor.png", "motor", "dark"),
+    "help-motor-stick": ("help-motor-stick.png", "motor", "dark"),
+    "help-imu": ("help-imu.png", "imu", "dark"),
     # The screenshot's popup over the menu, a save under way and a card that
     # was full.
     "shot-popup": ("shot-popup.png", "shot", "dark"),
@@ -974,6 +979,22 @@ FIT_ONLY = {
     "help-supply-settings-2":  (None, "supply", "dark"),
     "help-supply-pdmini":      (None, "supply", "dark"),
     "help-supply-pdmini-2":    (None, "supply", "dark"),
+    # MOTOR & ESC's guide: the rail's page, PROGRAM's and the OPTIONS
+    # list's; ESC STICK's on the makers, a maker's models, a profile with
+    # manual steps and the OPTIONS list; the IMU screen's card page.
+    "help-motor-2":            (None, "motor", "dark"),
+    "help-motor-program":      (None, "motor", "dark"),
+    "help-motor-program-2":    (None, "motor", "dark"),
+    "help-motor-settings":     (None, "motor", "dark"),
+    "help-motor-settings-2":   (None, "motor", "dark"),
+    "help-motor-stick-2":      (None, "motor", "dark"),
+    "help-motor-stick-list":   (None, "motor", "dark"),
+    "help-motor-stick-list-2": (None, "motor", "dark"),
+    "help-motor-stick-models": (None, "motor", "dark"),
+    "help-motor-stick-hand-2": (None, "motor", "dark"),
+    "help-motor-stick-timing": (None, "motor", "dark"),
+    "help-motor-stick-timing-2": (None, "motor", "dark"),
+    "help-imu-2":              (None, "imu", "dark"),
     # ESC STICK > Great Planes: model rows with the MANUAL tag and the
     # longest reason beside their family.
     "motor-stick-greatplanes": (None, "motor", "dark"),
@@ -1210,16 +1231,17 @@ OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot",
                  "files-edit-see50"} | {
     name for name in (*SCREENS, *FIT_ONLY) if name.startswith("band-")}
 
-# The screen guide's views over SETUP, OUTPUTS, LOGS, FILES, SERVO, SUPPLY,
-# WI-FI and UPDATES: the dock takes half the body, so the screen's strings
-# on the other half are cut at its edge and the marks are drawn over them
-# by design.  The fit check measures their dock, band and marks; the
-# screen's own strings are measured in the view each opens over
-# (render_help_base() in test/host/render_help.c).
+# The screen guide's views over SETUP, OUTPUTS, LOGS, FILES, SERVO,
+# SUPPLY, MOTOR & ESC, IMU, WI-FI and UPDATES: the dock takes half the
+# body, so the screen's strings on the other half are cut at its edge and
+# the marks are drawn over them by design.  The fit check measures their
+# dock, band and marks; the screen's own strings are measured in the view
+# each opens over (render_help_base() in test/host/render_help.c).
 GUIDE_VIEWS = {name for name in (*SCREENS, *FIT_ONLY)
                if name.startswith(("help-setup", "help-outputs", "help-logs",
                                    "help-files", "help-servo", "help-supply",
-                                   "help-wifi", "help-updates"))}
+                                   "help-motor", "help-imu", "help-wifi",
+                                   "help-updates"))}
 
 # English overflows the layout has for a time: (view, string, finding), word
 # for word as --fit prints them; none today.  Each is a defect of the
