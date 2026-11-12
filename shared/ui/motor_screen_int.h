@@ -201,6 +201,14 @@ bool mpp_pressed(void);
 void mpp_cancel_press(void);
 /* Bumped when the list's look changes. */
 uint32_t mpp_revision(void);
+/**
+ * @brief The @p k-th row PROGRAM's list shows, headings not counted.
+ * @param k   The row, from 0.
+ * @param r   Takes its rect.
+ * @param row Takes its registry row.
+ * @return False past the last row shown.
+ */
+bool mpp_row(int k, gfx_rect_t *r, const prog_reg_row_t **row);
 void mpp_render_page(gfx_canvas_t *c);
 /* The output strip above a full-width session (motor_output_strip()), and
  * a number that changes whenever its text does. */
@@ -259,6 +267,12 @@ void msp_tick(float dt_s, bool safe);
  * @return The revision.
  */
 uint32_t msp_revision(void);
+struct ui_setlist;
+/**
+ * @brief The list, for the guide's pages over it (ui_setlist_help_page()).
+ * @return The list.
+ */
+const struct ui_setlist *msp_list(void);
 /**
  * @brief The list over the body.
  * @param c The canvas.

@@ -1,8 +1,9 @@
 /**
  * @file
  * @brief The IMU screen's state and geometry, shared by imu_screen.c (the
- *        model, the touches and the texts) and imu_screen_draw.c (the
- *        drawing).  Private to those two files.
+ *        model, the touches and the texts), imu_screen_draw.c (the
+ *        drawing) and imu_guide.c (the guide's pages).  Private to those
+ *        three files.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -146,6 +147,19 @@ bool ims_row_shown(int row);
  * @return @p buf.
  */
 const char *ims_line(int i, char *buf, size_t n, gfx_color_t *ink);
+struct ui_help_page;
+/**
+ * @brief ui_screen_t's help_count (imu_guide.c): the main view's pages.
+ * @return 2, 0 over the found list.
+ */
+int imu_help_count(void);
+/**
+ * @brief ui_screen_t's help_page: page @p i of imu_help_count()'s.
+ * @param i   The page, from 0.
+ * @param out The page, filled.
+ * @return False past the last page.
+ */
+bool imu_help_page(int i, struct ui_help_page *out);
 /**
  * @brief Draw the screen.
  * @param c            The body's canvas.

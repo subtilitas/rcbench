@@ -705,6 +705,8 @@ static const ui_screen_t k_screen = {
     .render = mo_render,
     .back   = back,
     .safe_at = mo_safe_at,
+    .help_count = mo_help_count,
+    .help_page  = mo_help_page,
 };
 
 const ui_screen_t *motor_screen(void) { return &k_screen; }

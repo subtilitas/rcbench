@@ -19,6 +19,7 @@
 
 #include "nav_rig.h"
 
+#include "battery_screen.h"
 #include "ui_help.h"
 
 #include "help_check.h"
@@ -164,7 +165,7 @@ TEST_CASE(armed_offers_only_armed_pages_and_says_so)
     CHECK(!ui_help_armed_note(overview_screen(), true));
     CHECK_EQ(ui_help_count(overview_screen(), true), 4);
     /* A screen without a guide. */
-    CHECK_EQ(ui_help_count(motor_screen(), false), 0);
+    CHECK_EQ(ui_help_count(battery_screen(), false), 0);
     CHECK_EQ(ui_help_count(NULL, false), 0);
 
     /* The note takes its rows above the items and is drawn in the warning

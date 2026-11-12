@@ -312,6 +312,24 @@ void mo_event(const touch_event_t *evt);
  */
 void mo_tick(float dt_s);
 
+/* --- motor_guide.c ------------------------------------------------------ */
+
+struct ui_help_page;
+
+/**
+ * @brief ui_screen_t's help_count: the guide's pages as the screen is now.
+ * @return The pages, 0 where the guide has none.
+ */
+int mo_help_count(void);
+/**
+ * @brief ui_screen_t's help_page: page @p i of those mo_help_count()
+ *        counts.
+ * @param i   The page, from 0.
+ * @param out The page, filled.
+ * @return False past the last page.
+ */
+bool mo_help_page(int i, struct ui_help_page *out);
+
 /* --- motor_draw.c ------------------------------------------------------- */
 
 /**
