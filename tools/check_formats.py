@@ -99,6 +99,7 @@ def literals_from_report() -> str:
 
 
 def main() -> int:
+    """Compile shared/ with literal texts; return the exit status."""
     cc = shutil.which("cc") or shutil.which("gcc")
     if cc is None:
         sys.exit("no C compiler on PATH")

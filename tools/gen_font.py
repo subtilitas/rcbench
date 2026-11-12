@@ -118,6 +118,7 @@ const gfx_font_t {name} = {{
 
 
 def pick_font() -> str:
+    """The first font of FONT_CANDIDATES that exists; exits when none does."""
     for path in FONT_CANDIDATES:
         if pathlib.Path(path).exists():
             return path
@@ -203,6 +204,7 @@ def clipped(spec) -> dict:
 
 
 def emit(spec, glyphs) -> str:
+    """The C source of the font @p spec with its @p glyphs."""
     name, w, h, first, last, size, dx, dy, thr, out, extra = spec
     bpr = w
     note = (" and %d more listed in s_extra" % len(extra)) if extra else ""
@@ -229,6 +231,7 @@ def emit(spec, glyphs) -> str:
 
 
 def preview(spec, glyphs, chars) -> None:
+    """Print the glyphs of @p chars as ASCII art."""
     name, w = spec[0], spec[1]
     for ch in chars:
         code = ord(ch)
@@ -242,6 +245,7 @@ def preview(spec, glyphs, chars) -> None:
 
 
 def main() -> int:
+    """Write the font tables, preview them, or check them with --check."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--preview", metavar="FONT",
                     help="print ASCII art for one font instead of writing")

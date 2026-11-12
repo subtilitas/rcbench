@@ -85,6 +85,7 @@ def table(text: str) -> set[str]:
 
 
 def problems(root: pathlib.Path = REPO) -> list[str]:
+    """The differences between the parsers under @p root and SECURITY.md."""
     named = candidates(root)
     forced = set(FORCED)
     found = named | forced
@@ -111,6 +112,7 @@ def problems(root: pathlib.Path = REPO) -> list[str]:
 
 
 def main(argv: list[str]) -> int:
+    """List the parser modules, or with --check report the differences."""
     if "--check" not in argv:
         modules = (candidates() | set(FORCED)) - set(NOT_UNTRUSTED)
         for mod in sorted(modules):

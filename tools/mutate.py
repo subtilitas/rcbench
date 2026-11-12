@@ -92,6 +92,7 @@ DEFAULT_TIMEOUT_S = 300
 
 @dataclass(frozen=True, order=True)
 class Mutant:
+    """One change of one source line."""
     path: str       # relative to the repository
     line: int       # 1-based
     column: int     # 0-based, where the changed text starts
@@ -101,6 +102,7 @@ class Mutant:
     text: str       # the whole mutated line
 
     def label(self) -> str:
+        """The mutant as one line of text for the report."""
         return (f"{self.path}:{self.line}  {self.kind}  "
                 f"`{self.before}` -> `{self.after}`")
 
@@ -111,8 +113,10 @@ HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
 
 
 def changed_lines(diff: str) -> dict[str, set[int]]:
-    """{path: line numbers} of the lines a unified diff adds or changes,
-    read from its hunk headers; the diff is made with -U0."""
+    """{path: line numbers} of the lines a unified diff adds or changes.
+
+    Read from its hunk headers; the diff is made with -U0.
+    """
     out: dict[str, set[int]] = {}
     path = None
     for line in diff.splitlines():
@@ -128,9 +132,11 @@ def changed_lines(diff: str) -> dict[str, set[int]]:
 
 
 def mask(text: str) -> str:
-    """@p text with every comment, string literal and character literal
-    blanked to spaces, line breaks kept, so a column in the result is the
-    same column in the source."""
+    """@p text with every comment and literal blanked to spaces.
+
+    String and character literals are blanked too.  Line breaks are kept, so a
+    column in the result is the same column in the source.
+    """
     out = []
     i, n = 0, len(text)
     state = "code"
@@ -200,8 +206,7 @@ STORE = re.compile(
 
 
 def step(literal: str, suffix: str, delta: int) -> str | None:
-    """@p literal plus @p delta in the base it is written in; None below
-    zero."""
+    """@p literal plus @p delta in its own base; None below zero."""
     value = int(literal, 0) if literal[:2].lower() == "0x" else int(literal)
     value += delta
     if value < 0:
@@ -215,8 +220,7 @@ def step(literal: str, suffix: str, delta: int) -> str | None:
 
 
 def operand_mutants(match: re.Match[str]) -> list[tuple]:
-    """(column, before, after) for the operand @p match found, plus 1 and
-    minus 1."""
+    """(column, before, after) for @p match, plus 1 and minus 1."""
     out = []
     if match.group(1) is not None:
         column = match.start(1)
@@ -234,8 +238,11 @@ def operand_mutants(match: re.Match[str]) -> list[tuple]:
 
 
 def line_mutants(path: str, number: int, raw: str, code: str) -> list[Mutant]:
-    """Every mutant of one line: @p raw is the line, @p code the same line
-    with comments and literals blanked."""
+    """Every mutant of one line.
+
+    @p raw is the line, @p code the same line with comments and literals
+    blanked.
+    """
     found: list[tuple[str, int, str, str]] = []
     stripped = code.lstrip()
     if stripped.startswith("#"):
@@ -294,6 +301,7 @@ def pick(mutants: list[Mutant], limit: int) -> list[Mutant]:
 
 
 def apply(text: str, mutant: Mutant) -> str:
+    """@p text with the line of @p mutant replaced by its mutated line."""
     lines = text.split("\n")
     lines[mutant.line - 1] = mutant.text
     return "\n".join(lines)
@@ -306,6 +314,7 @@ class Stop(Exception):
 
 
 def git(*args: str) -> str:
+    """The output of git with @p args; raises Stop when it fails."""
     proc = subprocess.run(["git", *args], cwd=REPO, capture_output=True,
                           text=True)
     if proc.returncode != 0:
@@ -314,9 +323,11 @@ def git(*args: str) -> str:
 
 
 def run(cmd: list[str], cwd: pathlib.Path, timeout: float) -> tuple:
-    """(exit code or None when stopped at @p timeout, output).  The command
-    runs in its own process group, so a stop takes the compiler or the test
-    it started along."""
+    """(exit code or None when stopped at @p timeout, output).
+
+    The command runs in its own process group, so a stop takes the compiler or
+    the test it started along.
+    """
     proc = subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT, text=True,
                             start_new_session=True)
@@ -337,10 +348,13 @@ FAILED_TEST = re.compile(r"^\s*\d+/\d+ Test\s+#\d+: (\S+) .*\*\*\*", re.M)
 
 
 class Bench:
-    """A copy of the host build's sources with a configured build beside
-    it."""
+    """A copy of the host build's sources with a configured build beside it."""
 
     def __init__(self, root: pathlib.Path, jobs: int, timeout: float) -> None:
+        """A copy of the tree under @p root.
+
+        It is built and tested with @p jobs jobs and a @p timeout limit.
+        """
         self.root = root
         self.build = root / "build"
         self.jobs = jobs
@@ -350,6 +364,7 @@ class Bench:
         self.dirty = False
 
     def copy(self) -> None:
+        """Copy the tracked and untracked files into the bench."""
         names = git("ls-files", "-z", "--cached", "--others",
                     "--exclude-standard", "--", *COPIED).split("\0")
         for name in names:
@@ -360,6 +375,7 @@ class Bench:
                 shutil.copy2(src, dst)
 
     def configure(self) -> None:
+        """Configure the host suite in the bench."""
         code, out = run(["cmake", "-S", str(self.root / "test" / "host"),
                          "-B", str(self.build), "-DCMAKE_BUILD_TYPE=Debug"],
                         self.root, self.timeout)
@@ -367,17 +383,21 @@ class Bench:
             raise Stop("the copy does not configure:\n" + out[-2000:])
 
     def compile(self) -> tuple:
+        """Build the host suite in the bench."""
         return run(["cmake", "--build", str(self.build), "-j",
                     str(self.jobs)], self.root, self.timeout)
 
     def test(self) -> tuple:
+        """Run the host suite in the bench and stop at the first failure."""
         return run(["ctest", "--test-dir", str(self.build), "-j",
                     str(self.jobs), "--stop-on-failure", "--timeout",
                     str(int(self.timeout))], self.root, self.timeout)
 
     def judge(self, mutant: Mutant) -> tuple[str, str]:
-        """("killed" | "survived" | "nobuild", detail) for one mutant.  The
-        copy holds the original again afterwards."""
+        """("killed" | "survived" | "nobuild", detail) for one mutant.
+
+        The copy holds the original again afterwards.
+        """
         path = self.root / mutant.path
         original = path.read_text(encoding="utf-8")
         if self.dirty:
@@ -456,6 +476,7 @@ def summary(results: list[dict], not_run: int, seconds: float) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Mutate the changed lines and return the exit status."""
     ap = argparse.ArgumentParser(
         description=__doc__.split("\n")[0],
         formatter_class=argparse.RawDescriptionHelpFormatter)

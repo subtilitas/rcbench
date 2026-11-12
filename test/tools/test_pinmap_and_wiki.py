@@ -1,5 +1,4 @@
-"""pinmap_check.py and wiki_links.py: the checks one map and one page
-exercise.
+"""pinmap_check.py and wiki_links.py: the checks one map and one page exercise.
 
 SPDX-License-Identifier: MIT
 """
@@ -13,15 +12,18 @@ FUNCTIONS = {2: {"SPI0_SCLK", "UART0_CTS", "I2C1_SDA"},
 
 
 def chip(*pins):
+    """A chip entry named main with @p pins."""
     return {"chip": "main", "pins": list(pins)}
 
 
 def pin(gpio, function, **more):
+    """A pin entry for @p gpio with @p function and the fields of @p more."""
     return {"gpio": gpio, "signal": f"signal {gpio}", "function": function,
             **more}
 
 
 def test_a_map_the_silicon_can_serve_has_no_failure():
+    """A map the silicon can serve has no failure."""
     fails, used = pm.check_chip(chip(
         pin(2, "I2C1_SDA", bus="sensors"),
         pin(3, "I2C1_SCL", bus="sensors"),
@@ -30,12 +32,14 @@ def test_a_map_the_silicon_can_serve_has_no_failure():
 
 
 def test_a_function_the_pin_does_not_have_fails():
+    """A function the pin does not have fails."""
     fails, _ = pm.check_chip(chip(pin(2, "UART1_TX", bus="u")), FUNCTIONS)
     assert fails == ["main GPIO2 (signal 2): UART1_TX is not a function of "
                      "GPIO2"]
 
 
 def test_a_pin_used_twice_fails():
+    """A pin used twice fails."""
     fails, used = pm.check_chip(chip(pin(10, "SIO"), pin(10, "SIO")),
                                 FUNCTIONS)
     assert fails == ["main GPIO10 (signal 10): also used by signal 10"]
@@ -43,6 +47,7 @@ def test_a_pin_used_twice_fails():
 
 
 def test_adc_outside_its_pins_and_an_external_signal_past_39_fail():
+    """ADC outside its pins and an external signal past 39 fail."""
     fails, _ = pm.check_chip(chip(pin(5, "ADC"),
                                   pin(41, "SIO", external=True)), FUNCTIONS)
     assert fails == [
@@ -52,6 +57,7 @@ def test_adc_outside_its_pins_and_an_external_signal_past_39_fail():
 
 
 def test_an_i2c_bus_of_one_pin_and_a_bus_of_two_instances_fail():
+    """An I2C bus of one pin and a bus of two instances fail."""
     fails, _ = pm.check_chip(chip(pin(2, "I2C1_SDA", bus="a")), FUNCTIONS)
     assert fails == ["main bus a: an I2C bus has 2 pins, not 1"]
     fails, _ = pm.check_chip(chip(pin(2, "SPI0_SCLK", bus="b"),
@@ -60,6 +66,7 @@ def test_an_i2c_bus_of_one_pin_and_a_bus_of_two_instances_fail():
 
 
 def test_a_pio_pin_names_its_protocol_and_a_block_fits_one_window():
+    """A PIO pin names its protocol and a block fits one window."""
     fails, _ = pm.check_chip(chip(pin(4, "PIO0"),
                                   pin(40, "PIO0", protocol="dshot")),
                              FUNCTIONS)
@@ -69,16 +76,19 @@ def test_a_pio_pin_names_its_protocol_and_a_block_fits_one_window():
 
 
 def test_a_page_link_loses_its_extension_and_keeps_its_anchor():
+    """A page link loses its extension and keeps its anchor."""
     assert wl.rewrite("[a](Screens.md) [b](Link-de.md#protokoll)") == (
         "[a](Screens) [b](Link-de#protokoll)")
 
 
 def test_urls_images_and_absolute_paths_are_left_alone():
+    """URLs images and absolute paths are left alone."""
     text = "[a](https://example.com/x.md) ![i](img/a.png) [r](/abs/x.md)"
     assert wl.rewrite(text) == text
 
 
 def test_the_rewrite_changes_only_the_copy_it_is_given(tmp_path):
+    """The rewrite changes only the copy it is given."""
     page = tmp_path / "Home.md"
     page.write_text("[a](Screens.md)\n", encoding="utf-8")
     assert wl.main(["wiki_links.py", "--check", str(tmp_path)]) == 0
@@ -91,45 +101,54 @@ R = "https://github.com/subtilitas/rcbench"
 
 
 def test_a_file_above_docs_becomes_a_repository_url():
+    """A file above docs becomes a repository URL."""
     assert wl.rewrite("[n](../NOTICE) [r](../README.md#x)") == (
         f"[n]({R}/blob/main/NOTICE) [r]({R}/blob/main/README.md#x)")
 
 
 def test_a_directory_above_docs_becomes_a_tree_url():
+    """A directory above docs becomes a tree URL."""
     assert wl.rewrite("[d](../protocols/kst/)") == (
         f"[d]({R}/tree/main/protocols/kst/)")
 
 
 def test_a_title_and_a_link_text_over_two_lines_survive():
+    """A title and a link text over two lines survive."""
     text = '[a\nb](../README.md "the readme")'
     assert wl.rewrite(text) == f'[a\nb]({R}/blob/main/README.md "the readme")'
 
 
 def test_an_image_above_docs_becomes_a_raw_url():
+    """An image above docs becomes a raw URL."""
     assert wl.rewrite("![i](../img/a.png)") == f"![i]({R}/raw/main/img/a.png)"
 
 
 def test_an_image_inside_docs_is_unchanged():
+    """An image inside docs is unchanged."""
     assert wl.rewrite("![i](img/a.png)") == "![i](img/a.png)"
 
 
 def test_a_subdirectory_page_resolves_against_its_own_directory():
+    """A subdirectory page resolves against its own directory."""
     assert wl.rewrite("[a](../Home.md) [b](../../README.md)", "sub") == (
         f"[a](../Home) [b]({R}/blob/main/README.md)")
 
 
 def test_nested_climbing_that_lands_in_the_repository():
+    """Nested climbing that lands in the repository."""
     assert wl.rewrite("[a](../../src/x.c)", "sub") == (
         f"[a]({R}/blob/main/src/x.c)")
 
 
 def test_a_target_above_the_repository_fails_the_check(tmp_path, capsys):
+    """A target above the repository fails the check."""
     (tmp_path / "Home.md").write_text("[a](../../x.md)\n", encoding="utf-8")
     assert wl.main(["wiki_links.py", str(tmp_path)]) == 1
     assert "leaves docs/" in capsys.readouterr().err
 
 
 def test_a_converted_tree_leaves_nothing_behind(tmp_path):
+    """A converted tree leaves nothing behind."""
     (tmp_path / "Home.md").write_text(
         "[a](../README.md#x)\n[b](Screens.md)\n[c](../NOTICE)\n",
         encoding="utf-8")
@@ -138,18 +157,21 @@ def test_a_converted_tree_leaves_nothing_behind(tmp_path):
 
 
 def test_a_target_in_angle_brackets_is_rewritten_and_keeps_them():
+    """A target in angle brackets is rewritten and keeps them."""
     assert wl.rewrite("[n](<../Legal Notice.md#a b>)") == (
         f"[n](<{R}/blob/main/Legal Notice.md#a b>)")
     assert wl.rewrite("[s](<Servo Page.md>)") == "[s](<Servo Page>)"
 
 
 def test_a_target_in_angle_brackets_above_the_repository_fails(tmp_path):
+    """A target in angle brackets above the repository fails."""
     (tmp_path / "Home.md").write_text("[a](<../../x y.md>)\n",
                                       encoding="utf-8")
     assert wl.main(["wiki_links.py", str(tmp_path)]) == 1
 
 
 def test_a_directory_without_a_slash_becomes_a_tree_url(tmp_path):
+    """A directory without a slash becomes a tree URL."""
     (tmp_path / "protocols" / "kst").mkdir(parents=True)
     (tmp_path / "NOTICE").write_text("n\n", encoding="utf-8")
     text = "[k](../protocols/kst) [n](../NOTICE) [r](..)"
@@ -159,11 +181,13 @@ def test_a_directory_without_a_slash_becomes_a_tree_url(tmp_path):
 
 
 def test_a_directory_of_this_repository_is_found_by_default():
+    """A directory of this repository is found by default."""
     assert wl.rewrite("[k](../protocols/kst)") == (
         f"[k]({R}/tree/main/protocols/kst/)")
 
 
 def test_spaces_inside_the_parentheses_are_rewritten_and_kept():
+    """Spaces inside the parentheses are rewritten and kept."""
     assert wl.rewrite("[n]( ../README.md)") == f"[n]( {R}/blob/main/README.md)"
     assert wl.rewrite('[n](\t<../a b.md> "t" )') == (
         f'[n](\t<{R}/blob/main/a b.md> "t" )')
@@ -171,11 +195,13 @@ def test_spaces_inside_the_parentheses_are_rewritten_and_kept():
 
 
 def test_a_spaced_target_above_the_repository_fails(tmp_path):
+    """A spaced target above the repository fails."""
     (tmp_path / "Home.md").write_text("[a]( ../../x.md)\n", encoding="utf-8")
     assert wl.main(["wiki_links.py", str(tmp_path)]) == 1
 
 
 def test_a_reference_definition_is_rewritten_like_a_link():
+    """A reference definition is rewritten like a link."""
     text = ("[notice][legal] [s][s]\n\n"
             "[legal]: ../README.md#x\n"
             '[s]: Screens.md "t"\n'
@@ -190,11 +216,13 @@ def test_a_reference_definition_is_rewritten_like_a_link():
 
 
 def test_a_definition_of_a_url_or_an_anchor_is_unchanged():
+    """A definition of a URL or an anchor is unchanged."""
     text = "[a]: https://x.org/a.md\n[b]: #top\n[c]: /abs.md\n"
     assert wl.rewrite(text) == text
 
 
 def test_a_definition_above_the_repository_is_stranded(tmp_path, capsys):
+    """A definition above the repository is stranded."""
     assert wl.stranded("[a]: ../README.md\n[b]: Screens\n") == ["../README.md"]
     (tmp_path / "Home.md").write_text("[a]: ../../x.md\n", encoding="utf-8")
     assert wl.main(["wiki_links.py", str(tmp_path)]) == 1
@@ -202,6 +230,7 @@ def test_a_definition_above_the_repository_is_stranded(tmp_path, capsys):
 
 
 def test_a_title_in_single_quotes_or_parentheses_stays():
+    """A title in single quotes or parentheses stays."""
     assert wl.rewrite("[s](Screens.md 'x') [t](Screens.md (y))") == (
         "[s](Screens 'x') [t](Screens (y))")
     assert wl.rewrite("[n](../README.md 'x')") == (
@@ -209,11 +238,13 @@ def test_a_title_in_single_quotes_or_parentheses_stays():
 
 
 def test_a_name_starting_with_two_dots_is_a_page_inside_docs():
+    """A name starting with two dots is a page inside docs."""
     assert wl.rewrite("[a](..notes.md)") == "[a](..notes)"
     assert wl.stranded("[a](..notes)") == []
 
 
 def test_a_dotted_name_above_docs_is_inside_the_repository(tmp_path):
+    """A dotted name above docs is inside the repository."""
     assert wl.rewrite("[a](../..config)") == f"[a]({R}/blob/main/..config)"
     assert wl.stranded(wl.rewrite("[a](../..config)")) == []
     (tmp_path / "Home.md").write_text("[a](../..config)\n", encoding="utf-8")
@@ -221,12 +252,14 @@ def test_a_dotted_name_above_docs_is_inside_the_repository(tmp_path):
 
 
 def test_a_name_starting_with_two_dots_is_not_above_the_repository():
+    """A name starting with two dots is not above the repository."""
     # From docs/sub, ../../..x resolves to the repository's ..x.
     assert wl.rewrite("[a](../../..x)", "sub") == f"[a]({R}/blob/main/..x)"
     assert wl.rewrite("[a](../../../x)", "sub") == "[a](../../../x)"
 
 
 def test_parentheses_in_a_bare_target_are_kept():
+    """Parentheses in a bare target are kept."""
     assert wl.rewrite("[api](../API_(v2).md)") == (
         f"[api]({R}/blob/main/API_(v2).md)")
     assert wl.rewrite("[api](API_(v2).md#x 'T')") == "[api](API_(v2)#x 'T')"
@@ -236,6 +269,7 @@ def test_parentheses_in_a_bare_target_are_kept():
 
 
 def test_code_spans_fences_and_escaped_openers_are_left_alone():
+    """Code spans fences and escaped openers are left alone."""
     text = ("`[x](../NOTICE)` and ``a ` [x](../NOTICE) ``\n"
             "\\[x](../NOTICE)\n"
             "```\n[x](../NOTICE)\n[d]: ../README.md\n```\n"
@@ -249,17 +283,20 @@ def test_code_spans_fences_and_escaped_openers_are_left_alone():
 
 
 def test_an_escaped_backslash_does_not_escape_the_opener():
+    """An escaped backslash does not escape the opener."""
     assert wl.rewrite("\\\\[x](../NOTICE)") == (
         f"\\\\[x]({R}/blob/main/NOTICE)")
 
 
 def test_an_unclosed_fence_runs_to_the_end_of_the_page():
+    """An unclosed fence runs to the end of the page."""
     text = "[a](../NOTICE)\n```\n[b](../NOTICE)\n"
     assert wl.rewrite(text) == (
         f"[a]({R}/blob/main/NOTICE)\n```\n[b](../NOTICE)\n")
 
 
 def test_verify_ignores_code_and_fails_on_a_real_survivor(tmp_path, capsys):
+    """Verify ignores code and fails on a real survivor."""
     page = tmp_path / "Home.md"
     page.write_text("`[x](../NOTICE)`\n```\n[a](B.md)\n```\n",
                     encoding="utf-8")
@@ -273,6 +310,7 @@ def test_verify_ignores_code_and_fails_on_a_real_survivor(tmp_path, capsys):
 
 
 def test_an_image_by_reference_gets_the_raw_url():
+    """An image by reference gets the raw URL."""
     text = ("![logo][Asset] ![Pic][] ![shot] [l][doc]\n\n"
             "[asset]: ../hardware/logo.png\n"
             "[pic]: ../hardware/pic.png\n"
@@ -286,11 +324,13 @@ def test_an_image_by_reference_gets_the_raw_url():
 
 
 def test_a_definition_used_by_an_image_and_a_link_is_raw():
+    """A definition used by an image and a link is raw."""
     out = wl.rewrite("![a][x] [b][x]\n\n[x]: ../hardware/a.png\n")
     assert f"[x]: {R}/raw/main/hardware/a.png" in out
 
 
 def test_brackets_in_a_label_nest_to_any_depth():
+    """Brackets in a label nest to any depth."""
     assert wl.rewrite("[outer [middle [inner]]](../README.md)") == (
         f"[outer [middle [inner]]]({R}/blob/main/README.md)")
     assert wl.rewrite("![a [b [c]]](../hardware/x.png)") == (
@@ -298,6 +338,7 @@ def test_brackets_in_a_label_nest_to_any_depth():
 
 
 def test_a_scheme_with_plus_dash_or_dot_is_a_url():
+    """A scheme with plus dash or dot is a URL."""
     text = ("[a](git+https://x.org/a.md) [b](svn+ssh://x/b.md) "
             "[c](a-b.c://x/d.md)\n\n[d]: git+https://x.org/e.md\n")
     assert wl.rewrite(text) == text
@@ -305,6 +346,7 @@ def test_a_scheme_with_plus_dash_or_dot_is_a_url():
 
 
 def test_a_definition_target_and_title_on_later_lines():
+    """A definition target and title on later lines."""
     text = ("[legal]:\n  ../README.md\n  'title'\n"
             "[b]: ../NOTICE\n  \"t\"\n"
             "[c]:\n<../a b.md>\n"
@@ -319,6 +361,7 @@ def test_a_definition_target_and_title_on_later_lines():
 
 
 def test_an_image_in_a_link_is_rewritten_too():
+    """An image in a link is rewritten too."""
     out = wl.rewrite("[![logo](../hardware/logo.png)](Screens.md)")
     assert out == f"[![logo]({R}/raw/main/hardware/logo.png)](Screens)"
     out = wl.rewrite("[![logo][a]](Screens.md)\n\n[a]: ../hardware/l.png\n")
@@ -326,6 +369,7 @@ def test_an_image_in_a_link_is_rewritten_too():
 
 
 def test_an_escaped_image_marker_makes_a_link_not_an_image():
+    """An escaped image marker makes a link not an image."""
     assert wl.rewrite(r"\![doc](../README.md)") == (
         rf"\![doc]({R}/blob/main/README.md)")
     out = wl.rewrite("\\![asset]\n\n[asset]: ../README.md\n")
@@ -335,6 +379,7 @@ def test_an_escaped_image_marker_makes_a_link_not_an_image():
 
 
 def test_a_fence_in_a_block_quote_hides_its_links():
+    """A fence in a block quote hides its links."""
     text = "> ```\n> [x](../NOTICE)\n> ```\n[y](../NOTICE)\n"
     assert wl.rewrite(text) == (
         f"> ```\n> [x](../NOTICE)\n> ```\n[y]({R}/blob/main/NOTICE)\n")
@@ -343,17 +388,20 @@ def test_a_fence_in_a_block_quote_hides_its_links():
 
 
 def test_an_external_image_does_not_claim_a_definition():
+    """An external image does not claim a definition."""
     text = ("![manual](https://example.com/logo.png)\n"
             "[manual]\n\n[manual]: ../README.md\n")
     assert f"[manual]: {R}/blob/main/README.md" in wl.rewrite(text)
 
 
 def test_an_escaped_bracket_stays_in_the_link_text():
+    """An escaped bracket stays in the link text."""
     assert wl.rewrite(r"[a \] b](Screens.md)") == r"[a \] b](Screens)"
     assert wl.rewrite(r"[a \\](Screens.md)") == r"[a \\](Screens)"
 
 
 def test_a_fence_indented_four_spaces_is_code_not_a_fence():
+    """A fence indented four spaces is code not a fence."""
     text = "    ```\n[x](../NOTICE)\n"
     assert wl.rewrite(text) == f"    ```\n[x]({R}/blob/main/NOTICE)\n"
     three = "   ```\n[x](../NOTICE)\n"
@@ -361,12 +409,14 @@ def test_a_fence_indented_four_spaces_is_code_not_a_fence():
 
 
 def test_a_line_ending_may_follow_the_opening_parenthesis():
+    """A line ending may follow the opening parenthesis."""
     assert wl.rewrite("[notice](\n../NOTICE)") == (
         f"[notice](\n{R}/blob/main/NOTICE)")
     assert wl.rewrite("[a](\n  Screens.md\n)") == "[a](\n  Screens\n)"
 
 
 def test_verify_reads_the_page_with_a_parser(tmp_path, capsys):
+    """Verify reads the page with a parser."""
     def verdict(text):
         (tmp_path / "Home.md").write_text(text, encoding="utf-8")
         return wl.main(["wiki_links.py", "--verify", str(tmp_path)])
@@ -387,6 +437,7 @@ def test_verify_reads_the_page_with_a_parser(tmp_path, capsys):
 
 
 def test_verify_judges_references_and_subdirectories():
+    """Verify judges references and subdirectories."""
     assert wl.verify_text("[a][b]\n\n[b]: C.md\n")[0][1] == "C.md"
     assert wl.verify_text("[a](Sub/P.md)\n", "")[0][1] == "Sub/P.md"
     assert wl.verify_text("[a](../P)\n", "sub") == []
@@ -406,11 +457,13 @@ def converted(tmp_path, text):
 
 
 def gated(text):
+    """The rewrite of @p text and the verdict of the gate on it."""
     out = wl.rewrite(text)
     return out, wl.gate(text, out)
 
 
 def test_the_gate_passes_a_rewrite_of_every_kind():
+    """The gate passes a rewrite of every kind."""
     text = ("[a](Screens.md#x) [b](<Servo Page.md> 't') ![i](img/a.png)\n"
             "[n](../NOTICE) [d](../protocols/kst) ![l](../hardware/l.png)\n"
             "[api](../API_\\(v2\\).md) [r][x] ![s][x]\n\n"
@@ -420,6 +473,7 @@ def test_the_gate_passes_a_rewrite_of_every_kind():
 
 
 def test_the_gate_fails_on_a_missed_link_and_on_altered_text():
+    """The gate fails on a missed link and on altered text."""
     text = "Text.\n\n[a](../NOTICE) and `code`\n"
     missed = text
     assert wl.gate(text, missed) == [(
@@ -431,6 +485,7 @@ def test_the_gate_fails_on_a_missed_link_and_on_altered_text():
 
 
 def test_a_failing_gate_names_page_line_and_both_values(tmp_path, capsys):
+    """A failing gate names page line and both values."""
     code, page = converted(tmp_path, "Intro.\n\n> [ref]: ../README.md\n\n"
                            "[ref]\n")
     assert code == 1
@@ -444,22 +499,26 @@ def test_a_failing_gate_names_page_line_and_both_values(tmp_path, capsys):
 # One case for each construct of review round 7.
 
 def test_r7_a_fence_indented_four_spaces_keeps_the_next_link():
+    """R7 a fence indented four spaces keeps the next link."""
     out, diffs = gated("    ```\n[x](Screens.md)\n")
     assert out == "    ```\n[x](Screens)\n" and diffs == []
 
 
 def test_r7_a_line_ending_before_the_destination():
+    """R7 a line ending before the destination."""
     out, diffs = gated("[notice](\n../README.md)\n")
     assert out == f"[notice](\n{R}/blob/main/README.md)\n" and diffs == []
 
 
 def test_r7_a_label_over_two_lines_fails_the_gate(tmp_path, capsys):
+    """R7 a label over two lines fails the gate."""
     text = "[Foo\n  bar]: ../README.md\n\n[Baz][Foo bar]\n"
     assert converted(tmp_path, text)[0] == 1
     assert "Home.md:2: link_open href" in capsys.readouterr().err
 
 
 def test_r7_a_link_in_a_raw_html_block_fails_the_gate(tmp_path, capsys):
+    """R7 a link in a raw HTML block fails the gate."""
     text = "<pre>\n[x](../NOTICE)\n</pre>\n"
     code, page = converted(tmp_path, text)
     assert code == 1
@@ -468,6 +527,7 @@ def test_r7_a_link_in_a_raw_html_block_fails_the_gate(tmp_path, capsys):
 
 
 def test_r7_an_escaped_backslash_leaves_the_backtick_to_open_a_span():
+    """R7 an escaped backslash leaves the backtick to open a span."""
     text = "\\\\`[x](../NOTICE)` [y](../NOTICE)\n"
     out, diffs = gated(text)
     assert out == f"\\\\`[x](../NOTICE)` [y]({R}/blob/main/NOTICE)\n"
@@ -482,6 +542,7 @@ def test_r7_an_escaped_backslash_leaves_the_backtick_to_open_a_span():
 
 def test_r7_a_definition_line_in_a_paragraph_fails_the_gate(tmp_path,
                                                              capsys):
+    """R7 a definition line in a paragraph fails the gate."""
     text = "paragraph\n[ref]: ../README.md\n\n[ref]\n"
     code, page = converted(tmp_path, text)
     assert code == 1
@@ -492,6 +553,7 @@ def test_r7_a_definition_line_in_a_paragraph_fails_the_gate(tmp_path,
 
 
 def test_r7_a_definition_in_a_container_fails_the_gate(tmp_path, capsys):
+    """R7 a definition in a container fails the gate."""
     for text in ("[ref]\n\n> [ref]: ../README.md\n",
                  "[ref]\n\n- [ref]: ../README.md\n"):
         assert converted(tmp_path, text)[0] == 1, text
@@ -499,6 +561,7 @@ def test_r7_a_definition_in_a_container_fails_the_gate(tmp_path, capsys):
 
 
 def test_r7_a_uri_autolink_is_left_whole():
+    """R7 a URI autolink is left whole."""
     text = ("<http://example.com/[x](../NOTICE)> <a@b.org> "
             "[y](../NOTICE)\n")
     out, diffs = gated(text)
@@ -508,6 +571,7 @@ def test_r7_a_uri_autolink_is_left_whole():
 
 
 def test_r7_a_no_break_space_is_not_label_white_space(tmp_path, capsys):
+    """R7 a no break space is not label white space."""
     text = "![img][a\u00a0b] [doc][a b]\n\n[a b]: ../README.md\n"
     assert wl.norm("a\u00a0b") != wl.norm("a b") == wl.norm(" A\t\nb ")
     # CommonMark leaves the image undefined; the link gets the blob form.
@@ -518,6 +582,7 @@ def test_r7_a_no_break_space_is_not_label_white_space(tmp_path, capsys):
 
 
 def test_r7_a_quoted_fence_ends_with_its_block_quote():
+    """R7 a quoted fence ends with its block quote."""
     for text in ("> ```\n> code\n\n[x](../NOTICE)\n",
                  "> ```\n> code\n[x](../NOTICE)\n",
                  ">> ~~~\n>> code\n> [x](../NOTICE)\n"):
@@ -531,6 +596,7 @@ def test_r7_a_quoted_fence_ends_with_its_block_quote():
 
 
 def test_r7_a_blank_line_before_a_title_ends_the_link():
+    """R7 a blank line before a title ends the link."""
     text = '[x](Screens.md\n\n"title")\n'
     assert gated(text) == (text, [])
     out, diffs = gated('[x](Screens.md\n"title")\n')
@@ -540,6 +606,7 @@ def test_r7_a_blank_line_before_a_title_ends_the_link():
 
 
 def test_verify_permits_a_link_that_shares_a_definition_with_an_image():
+    """Verify permits a link that shares a definition with an image."""
     text = "![a][x] [b][x]\n\n[x]: ../hardware/a.png\n"
     out = wl.rewrite(text)
     assert f"[x]: {R}/raw/main/hardware/a.png" in out
@@ -548,6 +615,7 @@ def test_verify_permits_a_link_that_shares_a_definition_with_an_image():
 
 
 def test_a_query_string_stays_out_of_the_directory_probe(tmp_path):
+    """A query string stays out of the directory probe."""
     (tmp_path / "protocols" / "kst").mkdir(parents=True)
     (tmp_path / "docs").mkdir()
     out = wl.rewrite("[d][k] [i](../protocols/kst?tab=readme)\n\n"
@@ -558,6 +626,7 @@ def test_a_query_string_stays_out_of_the_directory_probe(tmp_path):
 
 
 def test_a_query_string_is_not_normalised_with_the_path(tmp_path):
+    """A query string is not normalised with the path."""
     (tmp_path / "protocols" / "kst").mkdir(parents=True)
     (tmp_path / "docs").mkdir()
     out = wl.rewrite(
@@ -569,11 +638,13 @@ def test_a_query_string_is_not_normalised_with_the_path(tmp_path):
 
 
 def test_a_query_string_does_not_decide_whether_a_target_leaves_docs():
+    """A query string does not decide whether a target leaves docs."""
     assert not wl.leaves_docs("page.md?a=/../../x", "")
     assert wl.leaves_docs("../README.md?a=b", "")
 
 
 def test_verify_accepts_a_page_whose_title_ends_in_md(tmp_path, capsys):
+    """Verify accepts a page whose title ends in .md."""
     (tmp_path / "Guide.md.md").write_text("x\n", encoding="utf-8")
     (tmp_path / "Home.md").write_text("[g](Guide.md.md)\n", encoding="utf-8")
     assert wl.main(["wiki_links.py", str(tmp_path)]) == 0
