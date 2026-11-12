@@ -41,10 +41,10 @@ bool fw_ota_running(fw_image_info_t *out)
 
 /** @brief One write into the slot that is not running. */
 typedef struct {
-    const esp_partition_t *part;
-    esp_ota_handle_t       h;
-    bool                   open;
-    uint32_t               next;    /* esp_ota_write() appends: the offset */
+    const esp_partition_t *part;  /**< The slot that is not running. */
+    esp_ota_handle_t       h;  /**< The handle esp_ota_begin() returned. */
+    bool                   open;  /**< Whether the handle is open. */
+    uint32_t               next;    /**< esp_ota_write() appends: the offset */
 } ota_ctx_t;
 
 /** @brief The write under way; one at a time. */

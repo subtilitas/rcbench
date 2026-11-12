@@ -31,15 +31,19 @@
 #include "touch_merge.h"
 #endif
 
-static const char *TAG = "touch";
+static const char *TAG = "touch";  /**< ESP-IDF log tag. */
 
+/**
+ * @brief The touch driver's state: the controller, its task and queue, and
+ *        the contact set.
+ */
 typedef struct {
-    bool initialised;
-    volatile bool stop;
+    bool initialised;  /**< Whether touch_init() completed. */
+    volatile bool stop;  /**< Set to end the task. */
 
-    gt911_handle_t gt911;
-    touch_config_t cfg;
-    touch_map_t map;
+    gt911_handle_t gt911;  /**< The controller. */
+    touch_config_t cfg;  /**< The configuration touch_init() took. */
+    touch_map_t map;  /**< The controller's coordinate map. */
 #ifdef RCBENCH_TOUCH_INJECTOR
     /** @brief What the controller gt911_new() found is: the glass, or the
      *  touch injector alone at 0x14 (touch_merge_role()). */
@@ -48,53 +52,58 @@ typedef struct {
     touch_map_t inject_map;
 #endif
 
-    TaskHandle_t task;
-    QueueHandle_t events;
-    SemaphoreHandle_t lock;
+    TaskHandle_t task;  /**< The polling task. */
+    QueueHandle_t events;  /**< The queue of queued_t events. */
+    SemaphoreHandle_t lock;  /**< Guards points and point_count. */
 
-    touch_point_t points[TOUCH_MAX_POINTS];
-    uint8_t point_count;
+    touch_point_t points[TOUCH_MAX_POINTS];  /**< The current contacts. */
+    uint8_t point_count;  /**< Contacts in points. */
 
-    touch_tracker_t tracker;
+    touch_tracker_t tracker;  /**< Turns contacts into events. */
 
-    /*
-     * When the controller last answered, in milliseconds.  32 bits because
-     * an aligned 32-bit load is atomic on the ESP32-P4, so the application
-     * reads it from its own task without the lock, and unsigned subtraction
-     * stays correct across the 49-day wrap.
+    /**
+     * @brief When the controller last answered, in milliseconds.  32 bits
+     *        because an aligned 32-bit load is atomic on the ESP32-P4, so the
+     *        application reads it from its own task without the lock, and
+     *        unsigned subtraction stays correct across the 49-day wrap.
      *
      * "Answered" means the I2C (Inter-Integrated Circuit) read succeeded,
      * not that a finger was down; an untouched panel is healthy.
      */
     volatile uint32_t last_ok_ms;
 
-    /*
-     * Every event offered to the queue is numbered, from 1, by this task --
-     * the queue's one producer -- whether or not the queue keeps it.  The
-     * consumer finds a dropped event as a gap in the numbers (touch_loss.h),
-     * on the first event after it and before that event is handled, so no
-     * count published on one core has to be read in time on the other.
+    /**
+     * @brief Every event offered to the queue is numbered, from 1, by this
+     *        task -- the queue's one producer -- whether or not the queue
+     *        keeps it.  The consumer finds a dropped event as a gap in the
+     *        numbers (touch_loss.h), on the first event after it and before
+     *        that event is handled, so no count published on one core has to
+     *        be read in time on the other.
      *
      * seq is this task's alone.  published is the number of the last event
      * offered, stored after the offer, for a loss at the end of the stream
      * with nothing after it to show the gap.
      */
     uint32_t    seq;
+    /**
+     * @brief The number of the last event offered, stored after the offer.
+     */
     atomic_uint published;
 } touch_state_t;
 
-/* What the queue carries: the event and its number. */
+/** @brief What the queue carries: the event and its number. */
 typedef struct {
-    touch_event_t evt;
-    uint32_t      seq;
+    touch_event_t evt;  /**< The event. */
+    uint32_t      seq;  /**< Its number. */
 } queued_t;
 
+/** @brief Milliseconds since boot, truncated to 32 bits. */
 static uint32_t now_ms(void)
 {
     return (uint32_t)(esp_timer_get_time() / 1000);
 }
 
-static touch_state_t s_touch;
+static touch_state_t s_touch;  /**< The driver's one instance. */
 
 /** @brief Run the tracker over @p pts and queue its events, numbered. */
 static void publish(const touch_point_t *pts, int count)
@@ -148,6 +157,10 @@ static void crop_and_publish(touch_point_t *pts, int count)
     publish(pts, touch_map_crop(pts, count, BOARD_UI_H_RES, BOARD_UI_V_RES));
 }
 
+/**
+ * @brief Read the controller every poll_interval_ms and publish its contacts
+ *        until touch_deinit().
+ */
 static void touch_task(void *arg)
 {
     (void)arg;

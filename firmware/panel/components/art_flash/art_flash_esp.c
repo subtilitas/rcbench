@@ -19,8 +19,9 @@
 #include "esp_partition.h"
 #include "spi_flash_mmap.h"   /* SPI_FLASH_SEC_SIZE */
 
-static const char *TAG = "artflash";
+static const char *TAG = "artflash";  /**< ESP-IDF log tag. */
 
+/** @brief The boardart partition, NULL when the table has none. */
 static const esp_partition_t *s_part;
 
 /*
@@ -43,16 +44,22 @@ static const esp_partition_t *s_part;
  * milliseconds, which fits inside the heartbeat's 150ms ceiling with room;
  * a whole slot does not.
  */
-/* One erase granule. Written in terms of the platform's own constant so the
- * two cannot drift if it changes. */
+/**
+ * @brief One erase granule. Written in terms of the platform's own constant
+ *        so the two cannot drift if it changes.
+ */
 #define ART_FLASH_CHUNK SPI_FLASH_SEC_SIZE
 
-/* Let whatever was waiting run, and let the cache come back on. */
+/** @brief Let whatever was waiting run, and let the cache come back on. */
 static void breathe(void)
 {
     vTaskDelay(pdMS_TO_TICKS(2));
 }
 
+/**
+ * @brief art_flash_t's read hook: read @p len bytes at @p off of the
+ *        partition, one sector at a time.
+ */
 static bool part_read(void *ctx, uint32_t off, void *dst, uint32_t len)
 {
     (void)ctx;
@@ -75,6 +82,10 @@ static bool part_read(void *ctx, uint32_t off, void *dst, uint32_t len)
     return true;
 }
 
+/**
+ * @brief art_flash_t's erase hook: erase @p len bytes at @p off, one sector
+ *        at a time with a pause between.
+ */
 static bool part_erase(void *ctx, uint32_t off, uint32_t len)
 {
     (void)ctx;
@@ -95,6 +106,10 @@ static bool part_erase(void *ctx, uint32_t off, uint32_t len)
     return true;
 }
 
+/**
+ * @brief art_flash_t's write hook: write @p len bytes at @p off, one sector
+ *        at a time with a pause between.
+ */
 static bool part_write(void *ctx, uint32_t off, const void *src, uint32_t len)
 {
     (void)ctx;

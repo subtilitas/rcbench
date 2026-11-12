@@ -16,17 +16,19 @@
 #include "esp_check.h"
 #include "esp_log.h"
 
-static const char *TAG = "gt911";
+static const char *TAG = "gt911";  /**< ESP-IDF log tag. */
 
-#define GT911_I2C_TIMEOUT_MS 100
-#define GT911_ADDR_PRIMARY   0x5D
-#define GT911_ADDR_SECONDARY 0x14
+#define GT911_I2C_TIMEOUT_MS 100  /**< Timeout of one I2C transaction, ms. */
+#define GT911_ADDR_PRIMARY   0x5D  /**< The controller's first address. */
+#define GT911_ADDR_SECONDARY 0x14  /**< The controller's second address. */
 
+/** @brief One GT911 on an I2C bus. */
 struct gt911_dev_t {
-    i2c_master_dev_handle_t dev;
-    uint16_t addr;
+    i2c_master_dev_handle_t dev;  /**< The controller's I2C device handle. */
+    uint16_t addr;  /**< The address the controller answered on. */
 };
 
+/** @brief Read @p len bytes from the 16-bit register @p reg. */
 static esp_err_t reg_read(gt911_handle_t h, uint16_t reg, uint8_t *buf, size_t len)
 {
     uint8_t addr[2] = { (uint8_t)(reg >> 8), (uint8_t)(reg & 0xFF) };
@@ -34,6 +36,7 @@ static esp_err_t reg_read(gt911_handle_t h, uint16_t reg, uint8_t *buf, size_t l
                                        GT911_I2C_TIMEOUT_MS);
 }
 
+/** @brief Write one byte to the 16-bit register @p reg. */
 static esp_err_t reg_write8(gt911_handle_t h, uint16_t reg, uint8_t value)
 {
     uint8_t payload[3] = { (uint8_t)(reg >> 8), (uint8_t)(reg & 0xFF), value };
