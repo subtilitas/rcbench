@@ -87,6 +87,15 @@ TEST_CASE(every_control_is_a_finger_tall_inside_the_card_and_apart)
     CHECK_EQ(c.x - (a.x + a.w), 10);
     CHECK_EQ(b.x - (c.x + c.w), 10);
     CHECK_EQ(rudder_rect(RUD_C_ZERO).y, rudder_rect(RUD_C_RESET).y);
+    /* -10us and +10us in the ZERO row's third slot, 10px apart. */
+    const gfx_rect_t z = rudder_rect(RUD_C_RESET);
+    const gfx_rect_t m = rudder_rect(RUD_C_MINUS);
+    const gfx_rect_t p = rudder_rect(RUD_C_PLUS);
+    CHECK_EQ(m.y, z.y);
+    CHECK_EQ(p.y, z.y);
+    CHECK_EQ(m.x - (z.x + z.w), 10);
+    CHECK_EQ(p.x - (m.x + m.w), 10);
+    CHECK_EQ(p.x + p.w, b.x + b.w);
 }
 
 /**

@@ -397,6 +397,8 @@ knob_turn_t knob_take(void)
     const bool on = settings_get_bool(SET_KNOB_EN);
     knob_task_set_enabled(on);
     const int steps = knob_task_take();
+    /* RUDDER's step keys stand in for a knob that does not answer. */
+    servo_screen_set_knob(on && knob_task_answers());
     motor_screen_knob_frame();
     servo_screen_knob_frame();
     return (knob_turn_t){ .steps = on ? steps : 0,

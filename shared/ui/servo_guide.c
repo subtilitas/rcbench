@@ -163,7 +163,8 @@ static void page_limrun(ui_help_page_t *p)
                          lim_lines_rect(), UI_HELP_AT_RIGHT);
 }
 
-/** @brief RUDDER: LENGTH, the drive buttons, ZERO and RESET MAX.
+/** @brief RUDDER: LENGTH, the drive buttons, ZERO, RESET MAX and, without
+ *         a knob that answers, -10us and +10us.
  *  @param p The page. */
 static void page_rudder(ui_help_page_t *p)
 {
@@ -176,6 +177,11 @@ static void page_rudder(ui_help_page_t *p)
                       rudder_rect(RUD_C_ZERO));
     (void)ui_help_add(p, TR(RUD_RESET_MAX), TX_HG_SV_RUD_RESET,
                       rudder_rect(RUD_C_RESET));
+    if (rudder_steps_shown()) {
+        (void)ui_help_add(p, TR(RUD_STEP_MINUS), TX_HG_SV_RUD_STEP,
+                          both(rudder_rect(RUD_C_MINUS),
+                               rudder_rect(RUD_C_PLUS)));
+    }
 }
 
 /** @brief RUDDER's readings: DEFLECTION, TRAILING EDGE and the state

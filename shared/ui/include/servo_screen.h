@@ -516,6 +516,16 @@ void servo_screen_set_surfaces(bool any);
 void servo_screen_set_enc_held(bool held);
 
 /**
+ * @brief Whether the rotary knob answers: the MT6701 at 0x06 acknowledged
+ *        its last poll (knob_task.h), every 10ms while it answers and
+ *        every 100ms while it does not.  RUDDER shows its step keys while
+ *        SETUP > PANEL's Rotary knob is OFF or this is false; the panel
+ *        tells it every frame, and the screen starts at false.
+ * @param answers the last poll answered, with the knob's setting on
+ */
+void servo_screen_set_knob(bool answers);
+
+/**
  * @brief The IMU's AXIS and SIGN, as SETUP > SENSORS > IMU sets them: the
  *        name a run with ANGLE SOURCE IMU gives its report and CSV
  *        ("IMU X+").  The angle itself comes in through

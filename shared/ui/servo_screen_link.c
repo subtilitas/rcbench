@@ -833,6 +833,14 @@ void servo_screen_sweep_refused(void)
     }
 }
 
+void servo_screen_set_knob(bool answers)
+{
+    if (answers != s.knob_answers) {
+        s.knob_answers = answers;
+        ++s.ctrl_rev;                   /* RUDDER's step keys go or come */
+    }
+}
+
 void servo_screen_set_bench_armed(bool armed)
 {
     s.bench_armed = armed;
