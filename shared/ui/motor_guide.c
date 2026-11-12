@@ -58,15 +58,28 @@ static gfx_rect_t log_rect(void)
     return (gfx_rect_t){ MO_LOG_X, MO_STRIP_Y, MO_LOG_W, MO_STRIP_H };
 }
 
-/** @brief LIVE: the tabs, the telemetry card, the throttle and RENAME LOG.
+/** @brief LIVE: the tabs, PLOT | TABLE, the throttle and RENAME LOG.
+ *
+ *  PLOT | TABLE is marked 8px wider than its two tabs, so the badge at its
+ *  right end sits past TABLE's label and left of the poll rate at x 232.
+ *  The throttle's mark is its row of keys and track, the badge at the
+ *  live half's edge over the track's empty end, clear of the card's tag
+ *  and of the readout above it.
  *  @param p The page. */
 static void page_live(ui_help_page_t *p)
 {
     column_page(p, TX_HG_MO_TITLE_LIVE);
-    (void)ui_help_add(p, TR(MO_TAB_PLOT), TX_HG_MO_PLOT,
-                      (gfx_rect_t){ LEFT_X, UP_Y, LEFT_W, UP_H });
-    (void)ui_help_add(p, TR(MO_THROTTLE), TX_HG_MO_THROTTLE,
-                      (gfx_rect_t){ LEFT_X, LO_Y, LEFT_W, LO_H });
+    gfx_rect_t tabs = s.tabs.rect[0];
+    const gfx_rect_t last = s.tabs.rect[s.tabs.count - 1];
+    tabs.w = (int16_t)(last.x + last.w + 8 - tabs.x);
+    (void)ui_help_add_at(p, TR(MO_TAB_PLOT), TX_HG_MO_PLOT, tabs,
+                         UI_HELP_AT_RIGHT);
+    (void)ui_help_add_at(p, TR(MO_THROTTLE), TX_HG_MO_THROTTLE,
+                         (gfx_rect_t){ s.down_rect.x, s.down_rect.y,
+                                       (int16_t)(s.up_rect.x + s.up_rect.w
+                                                 - s.down_rect.x),
+                                       s.down_rect.h },
+                         UI_HELP_AT_RIGHT);
     (void)ui_help_add(p, TR(MO_LOG_RENAME), TX_HG_MO_LOG, log_rect());
 }
 
@@ -81,9 +94,11 @@ static void page_program(ui_help_page_t *p)
         if (!mpp_row(k, &r, &row)) {
             break;
         }
-        (void)ui_help_add(p, ui_tr(row->name),
-                          (row->page_set == &esc_stick_pages)
-                              ? TX_HG_MO_STICK : TX_HG_MO_WIRE, r);
+        /* The badge at the row's right end, clear of its name. */
+        (void)ui_help_add_at(p, ui_tr(row->name),
+                             (row->page_set == &esc_stick_pages)
+                                 ? TX_HG_MO_STICK : TX_HG_MO_WIRE,
+                             r, UI_HELP_AT_RIGHT);
     }
     (void)ui_help_add(p, TR(MO_LOG_RENAME), TX_HG_MO_LOG, log_rect());
 }

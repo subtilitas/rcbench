@@ -45,8 +45,12 @@ static void ctl_page(ui_help_page_t *p)
 {
     p->title = TX_HG_IM_TITLE_CTL;
     p->side = UI_HELP_DOCK_RIGHT;
+    /* SCAN's fill is the badge's accent: marked from the body's corner,
+     * so the badge's disc stands mostly on the margin left of and above
+     * the button. */
+    const gfx_rect_t scan = imu_screen_row_rect(IMS_ROW_SCAN);
     (void)ui_help_add(p, TR(IMU_SCAN), TX_HG_IM_SCAN,
-                      imu_screen_row_rect(IMS_ROW_SCAN));
+                      gfx_rect_make(0, 0, scan.x + scan.w, scan.y + scan.h));
     (void)ui_help_add(p, TR(IMU_ZERO), TX_HG_IM_ZERO,
                       imu_screen_row_rect(IMS_ROW_ZERO));
     (void)ui_help_add(p, TR(IMU_UNZERO), TX_HG_IM_UNZERO,

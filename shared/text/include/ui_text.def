@@ -2143,7 +2143,7 @@ UI_TEXT(HG_MO_ARM, 0,
     "Halte 2s für ARM der Gas-Pins; DISARM ist ein Tippen. Eine Ablehnung nennt den Grund im Alarmband.")
 UI_TEXT(HG_MO_OPTIONS, 0,
     "Pack, motor and the throttle's pulses, SAFE only. Idle pulse stays 100us or more under Full pulse.",
-    "Akku, Motor und die Pulse des Gases, nur bei SAFE. Leerlaufpuls bleibt 100us oder mehr unter Vollpuls.")
+    "Akku, Motor und die Pulse des Gases, nur bei SAFE. Leerlaufpuls bleibt 100us oder mehr unter Vollgaspuls.")
 UI_TEXT(HG_ES_TITLE_LIST, 0,
     "ESC STICK: MAKERS AND MODELS",
     "ESC STICK: HERSTELLER UND MODELLE")
@@ -2214,8 +2214,8 @@ UI_TEXT(HG_IM_ZERO, 0,
     "Takes the angles now as zero. With ANGLE SOURCE IMU it clears RUDDER's zero and MAX.",
     "Nimmt die Winkel jetzt als Nullpunkt. Mit WINKELQUELLE IMU löscht er Nullpunkt und MAX von RUDER.")
 UI_TEXT(HG_IM_UNZERO, 0,
-    "Angles from the sensor's own zero again.",
-    "Winkel wieder vom eigenen Nullpunkt des Sensors.")
+    "Angles from the sensor's own zero again. With ANGLE SOURCE IMU it clears RUDDER's zero and MAX.",
+    "Winkel wieder vom Sensor-Nullpunkt. Mit WINKELQUELLE IMU löscht das Nullpunkt und MAX von RUDER.")
 UI_TEXT(HG_IM_CARD, 0,
     "The bound sensor and its address, the C6's firmware and the link's state.",
     "Der gebundene Sensor mit Adresse, die Firmware des C6 und der Zustand der Verbindung.")
