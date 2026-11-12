@@ -496,6 +496,8 @@ TEST_CASE(a_beep_before_the_power_up_is_taken_and_not_counted)
     CHECK(r.e.tap_rx);
     CHECK_EQ(r.e.pulses, 0u);
     CHECK(!r.e.det.group_open);
+    /* The detector never saw it: no fall to start a quiet from. */
+    CHECK(!r.e.det.fell);
     CHECK(esc_stick_running(&r.e));
 }
 
