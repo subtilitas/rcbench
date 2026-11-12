@@ -66,25 +66,6 @@ firmware/iomcu/src/out_store.c: warning: Member s_page (variable) of file out_st
 firmware/iomcu/src/out_store.c: warning: Member s_refused_ms (variable) of file out_store.c is not documented.	static uint32_t s_refused_ms;
 firmware/iomcu/src/out_store.c: warning: Member s_saved (variable) of file out_store.c is not documented.	static out_store_t s_saved;
 firmware/iomcu/src/out_store.c: warning: Member s_want (variable) of file out_store.c is not documented.	static out_store_t s_want;
-firmware/iomcu/src/outputs_hw.c: warning: Member DSHOT_PERIOD_US (macro definition) of file outputs_hw.c is not documented.	#define DSHOT_PERIOD_US (1000000u / DSHOT_UPDATE_HZ)
-firmware/iomcu/src/outputs_hw.c: warning: Member bound (variable) of struct port_state_t is not documented.	bool bound; /* the pin is held: bound, or parked */
-firmware/iomcu/src/outputs_hw.c: warning: Member bound (variable) of struct slot_state_t is not documented.	bool bound;
-firmware/iomcu/src/outputs_hw.c: warning: Member edt (variable) of struct slot_state_t is not documented.	dshot_edt_t edt;
-firmware/iomcu/src/outputs_hw.c: warning: Member edt[DSHOT_TELEM_KINDS] (variable) of struct telem_t is not documented.	uint16_t edt[DSHOT_TELEM_KINDS];
-firmware/iomcu/src/outputs_hw.c: warning: Member edt_ms[DSHOT_TELEM_KINDS] (variable) of struct telem_t is not documented.	uint32_t edt_ms[DSHOT_TELEM_KINDS];
-firmware/iomcu/src/outputs_hw.c: warning: Member erpm (variable) of struct telem_t is not documented.	uint32_t erpm;
-firmware/iomcu/src/outputs_hw.c: warning: Member erpm_ms (variable) of struct telem_t is not documented.	uint32_t erpm_ms;
-firmware/iomcu/src/outputs_hw.c: warning: Member have_edt[DSHOT_TELEM_KINDS] (variable) of struct telem_t is not documented.	bool have_edt[DSHOT_TELEM_KINDS];
-firmware/iomcu/src/outputs_hw.c: warning: Member have_erpm (variable) of struct telem_t is not documented.	bool have_erpm;
-firmware/iomcu/src/outputs_hw.c: warning: Member next_us (variable) of struct slot_state_t is not documented.	uint32_t next_us; /* DShot only: when the next frame is due */
-firmware/iomcu/src/outputs_hw.c: warning: Member pwm_have (variable) of struct slot_state_t is not documented.	bool pwm_have;
-firmware/iomcu/src/outputs_hw.c: warning: Member pwm_last (variable) of struct slot_state_t is not documented.	uint16_t pwm_last;
-firmware/iomcu/src/outputs_hw.c: warning: Member s_edge_ready (variable) of file outputs_hw.c is not documented.	static bool s_edge_ready;
-firmware/iomcu/src/outputs_hw.c: warning: Member s_edge_us (variable) of file outputs_hw.c is not documented.	static uint64_t s_edge_us;
-firmware/iomcu/src/outputs_hw.c: warning: Member s_port[LINK_PG_PORTS_MAX] (variable) of file outputs_hw.c is not documented.	static port_state_t s_port[LINK_PG_PORTS_MAX];
-firmware/iomcu/src/outputs_hw.c: warning: Member s_shadow[OUT_MAX_SLOTS] (variable) of file outputs_hw.c is not documented.	static out_slot_t s_shadow[OUT_MAX_SLOTS];
-firmware/iomcu/src/outputs_hw.c: warning: Member s_state[OUT_MAX_SLOTS] (variable) of file outputs_hw.c is not documented.	static slot_state_t s_state[OUT_MAX_SLOTS];
-firmware/iomcu/src/outputs_hw.c: warning: Member s_telem[OUT_MAX_SLOTS] (variable) of file outputs_hw.c is not documented.	static telem_t s_telem[OUT_MAX_SLOTS];
 firmware/iomcu/src/sense_core1.c: warning: Member s_cmd (variable) of file sense_core1.c is not documented.	static sense_cmd_t s_cmd;
 firmware/iomcu/src/sense_core1.c: warning: Member s_lock (variable) of file sense_core1.c is not documented.	static spin_lock_t *s_lock;
 firmware/iomcu/src/sense_core1.c: warning: Member s_order (variable) of file sense_core1.c is not documented.	static sense_cmd_t s_order; /* core 0 writes, core 1 copies */

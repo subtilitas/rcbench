@@ -446,6 +446,7 @@ ASSERTED = {
     "ppm": {
         "firmware/iomcu/src/outputs_hw.c": (
             "OUT_PPM_MAX_PINS >= OUT_MAX_SLOTS",
+            "PPM_MAX_CHANNELS == OUT_RENDER_PPM_MAX",
             "PPM_CHANNEL_MIN_US == OUT_FLOOR_US "
             "&& PPM_CHANNEL_MAX_US == OUT_CEILING_US",
         ),

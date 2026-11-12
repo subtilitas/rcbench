@@ -780,7 +780,13 @@ Built; the frame arithmetic, the group code, the reply sampler and the GPIO-to-P
 fold are host-tested. `test_out_dshot` runs the DShot pin driver on a fake of the pico-sdk
 calls it makes: a pin that sends no frames is driven low in both modes, and a bidirectional
 frame never starts from a low line. `test_outputs_hw` holds the 1000µs between the release
-of a bidirectional pin and its first frame. No instrument has been on any output pin.
+of a bidirectional pin and its first frame. The binding order and the rendering are
+`shared/outputs/out_render.c`; `test_out_render` runs it over a log of the pin calls and
+holds the reporting slot (the lowest-numbered bound bidirectional slot), the release of every
+moved slot and port before any bind, the DShot ports let go before a slot on PIO
+(programmable input/output) binds, the SERVO PWM ports on a PWM slot's slice let go right
+before its bind, and the extended-telemetry ask sent in place of stop frames only. No
+instrument has been on any output pin.
 [Reference](docs/DShot.md).
 
 ### S.BUS decoder
@@ -1349,7 +1355,7 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 | --- | --- | --- |
 | `ci.yml` | push, pull request, tag `v*`, manual | on Ubuntu 26.04: the host suite in five parallel jobs, joined by the job the branch ruleset requires; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check`; the Codecov upload in a job of its own that no required check needs, which fails when the upload fails; the font, screenshot, fit, translated-format, docs and wiki-link checks; `check_protocols.py --check`; clang-tidy 22.1.8 and cppcheck 2.17.1 over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff with its docstring (D) rules; the pytest cases of the tools (`test/tools/`); `tools/doc_check.py --check`, the Doxygen comments of the C sources against `tools/doc_check_baseline.txt`, which on a pull request also fails on any warning in a C file the pull request adds or on a line it changes, on a C file it changes that has no `@file` block with a `@brief`, and on a comment block without `@brief` it adds or edits; on a pull request `tools/mutate.py` on the changed lines of `shared/` and of the cores under `protocols/`, which reports survivors and does not fail on one; the panel build on ESP-IDF (Espressif Internet-of-Things Development Framework) v6.1 for the ESP32-P4, with the check of the generated sdkconfig against `sdkconfig.defaults`, of the image against its update slot, of the embedded IOmcu image, of the touch injector and of exFAT, and a second build without the injector; the pico-sdk build of the IOmcu with `pinmap_check.py` and the stack check of its two cores, a second build with `-DSENSE_TRACE=ON`, with the same stack check, that fails when the default image holds a trace symbol, and a third with `-DIOMCU_CONSOLE=ON`, with the same stack check, that fails when the default image holds a console symbol; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/`, manual | waits for the CI run on the same commit (`tools/ci_gate.py`, at most 5400s) and publishes `docs/` to the GitHub wiki when it passed |
-| `mutation.yml` | Sunday 03:17 UTC, manual | every mutant of the lines of `shared/safety` and `shared/outputs` (6140 mutants in 79 files) in 6 parallel shards of files, no mutant limit, no mutant started after 18000s in a shard; the mutants left then are reported as not run; does not fail on a survivor; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
+| `mutation.yml` | Sunday 03:17 UTC, manual | every mutant of the lines of `shared/safety` and `shared/outputs` (6400 mutants in 81 files) in 6 parallel shards of files, no mutant limit, no mutant started after 18000s in a shard; the mutants left then are reported as not run; does not fail on a survivor; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
 | `release.yml` | tag `v*`, manual for a tag | waits for the CI run on the tagged commit and, when it passed, builds both images, packages them with checksums, creates a release, a pre-release for an odd minor number (`tools/release_kind.py`); beside that, without holding the release back, runs the configurator data check (`configurator/core/tools/check-annotate.sh --warn-only`) and shows each warning, such as a release tag newer than the configurator data, as an annotation and in the run summary |
 | `pages.yml` | pull request and push to `main` touching `configurator/`, `help/`, `docs/img/`, the help generator, the `Doxyfile` or `tools/install_doxygen.sh`; a push to `main` touching the C sources as well | type check, tests, data check, size budget and Playwright browser tests of the configurator; the web help; the C API (application programming interface) reference built by Doxygen 1.18.0; on a push to `main` it publishes the built page to GitHub Pages, with the help under `help/` and the API reference under `api/`. A run that changes only the C sources, the `Doxyfile` or `tools/install_doxygen.sh` builds the configurator page without its checks and runs no Playwright test |
 
@@ -1363,7 +1369,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 532 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 533 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1400,7 +1406,7 @@ The host suite is 532 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_link_loopback`, `test_link_bringup`, `test_link_read_split`, `test_link_retry`, `test_link_can`,
 `test_link_sha256`, `test_link_update`, `test_link_artxfer`, `test_link_drawing`,
 `test_art_store`, `test_art_fetch`, `test_outputs`, `test_outputs_hw`,
-`test_outputs_hw_ports`, `test_outstore`, `test_outstore_range`, `test_can_timing`, `test_can_selftest`,
+`test_outputs_hw_ports`, `test_out_render`, `test_outstore`, `test_outstore_range`, `test_can_timing`, `test_can_selftest`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_stop_latch`, `test_stop_hold`,
 `test_safety_gate`, `test_flash_gate`, `test_reset_cause`, `test_boot_diag`, `test_touch_loss`,
 `test_frame_watch`, `test_error_stop`, `test_error_sites`, `test_error_steps`, `test_servo_limit`,
@@ -1487,7 +1493,7 @@ feeds the router, one screen or one widget frames of contacts through
 the tracker does not emit. `test/host/tick_wrap.h` runs a case with the clock started at
 tick 0 and again a chosen number of ms before the 32-bit millisecond count wraps at 2^32ms,
 and a failure names the start it happened at. `test_outputs_hw` builds the IOmcu's output
-layer, `firmware/iomcu/src/outputs_hw.c`, over fake pin drivers and the two pico-sdk clocks
+layer, `firmware/iomcu/src/outputs_hw.c` with `shared/outputs/out_render.c`, over fake pin drivers and the two pico-sdk clocks
 in `test/host/pico_stub/pico/stdlib.h`, and holds the age of an ESC's last reading across
 that wrap.
 
@@ -1951,7 +1957,7 @@ known (none listed). `image_slot.py` holds the panel image to the smaller of its
 slots.
 
 `stack_check.py --iomcu` holds each IOmcu core's deepest chain, one interrupt and 256 bytes
-to the core's stack: core 0 reaches 1516 of 4096 with 528 for an interrupt. `stack_check.py`
+to the core's stack: core 0 reaches 1520 of 4096 with 528 for an interrupt. `stack_check.py`
 holds each panel task's deepest chain on the ESP32-P4, decoded from its RISC-V code, and
 1024 bytes to the task's stack; the main task reaches 5424 of 8192. `frame_cost.py` holds 27
 modes to ceilings of L2 fills under the P4's caches; the bench frame has no ceiling while
@@ -2295,6 +2301,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/outputs/out_store_range.c` | 10 | 10 | 100.0% |
 | `shared/outputs/out_store_rec.c` | 72 | 72 | 100.0% |
 | `shared/outputs/out_stage.c` | 66 | 66 | 100.0% |
+| `shared/outputs/out_render.c` | 276 | 273 | 98.9% |
 | `shared/outputs/bind_link.c` | 72 | 72 | 100.0% |
 | `shared/outputs/servo_cmd.c` | 22 | 22 | 100.0% |
 | `shared/outputs/servo_link.c` | 563 | 530 | 94.1% |
@@ -2362,7 +2369,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **90364** | **88527** | **98.0%** |
+| **total** | **90640** | **88800** | **98.0%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -2593,8 +2600,8 @@ stop, a pulled cable, the input lowered under a live set point in 0.5V steps.
 
 ### IOmcu core 0's stack
 
-`stack_check.py --iomcu` measures 1516 bytes for the deepest chain and 528 for one interrupt
-on the 4096-byte stack, 1796 bytes above the 256-byte margin. The figures are those of the
+`stack_check.py --iomcu` measures 1520 bytes for the deepest chain and 528 for one interrupt
+on the 4096-byte stack, 1792 bytes above the 256-byte margin. The figures are those of the
 image CI builds with arm-none-eabi-gcc 14.2.1, and `stack_check.py --iomcu --check-doc`
 holds them. The depth is a lower bound: 251 calls through a register are not followed. The
 stack has no guard (`PICO_USE_STACK_GUARDS` is off). Not measured on hardware. An image
