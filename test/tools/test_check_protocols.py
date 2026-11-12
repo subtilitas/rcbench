@@ -27,13 +27,16 @@ needs_compilers = pytest.mark.skipif(
 
 
 def test_compilers_exist_when_CI_is_set():
-    """The cases marked needs_compilers skip without them; in CI that is a
-    failure, not a pass."""
+    """The cases marked needs_compilers skip without them.
+
+    In CI that is a failure, not a pass.
+    """
     if os.environ.get("CI") and not HAVE_COMPILERS:
         pytest.fail("CI is set and no C and C++ compiler is on PATH")
 
 
 def header(body, extra_includes=""):
+    """A header with an include guard, @p extra_includes and @p body."""
     return ("#pragma once\n#include <stdint.h>\n" + extra_includes
             + GUARD_OPEN + body + GUARD_CLOSE)
 
@@ -81,15 +84,18 @@ def static(m):
 
 
 def test_a_module_with_every_part_passes_the_static_rules(tmp_path):
+    """A module with every part passes the static rules."""
     assert static(module(tmp_path)) == []
 
 
 def test_a_module_without_a_driver_passes(tmp_path):
+    """A module without a driver passes."""
     assert static(module(tmp_path, driver=False)) == []
 
 
 @needs_compilers
 def test_a_module_with_every_part_passes_the_whole_check(tmp_path):
+    """A module with every part passes the whole check."""
     module(tmp_path)
     module(tmp_path, "other", driver=False)
     assert cp.check(tmp_path / "protocols") == []
@@ -97,11 +103,13 @@ def test_a_module_with_every_part_passes_the_whole_check(tmp_path):
 
 @needs_compilers
 def test_the_tree_holds_the_rule():
+    """The tree holds the rule."""
     assert cp.modules() != []
     assert cp.check() == []
 
 
 def test_includes_reads_both_forms_and_skips_comments():
+    """Includes reads both forms and skips comments."""
     text = ('#include <stdint.h>\n  #  include "a.h"\n'
             '/* #include "gone.h" */\n// #include <unistd.h>\n'
             '/*\n#include "block.h"\n*/\n#include "b.h"\n')
@@ -110,6 +118,7 @@ def test_includes_reads_both_forms_and_skips_comments():
 
 
 def test_a_header_of_the_project_is_flagged(tmp_path):
+    """A header of the project is flagged."""
     m = module(tmp_path)
     c = m / "wire.c"
     c.write_text('#include "link_crc.h"\n' + c.read_text())
@@ -119,6 +128,7 @@ def test_a_header_of_the_project_is_flagged(tmp_path):
 
 
 def test_a_header_of_another_module_is_flagged(tmp_path):
+    """A header of another module is flagged."""
     module(tmp_path, "other", driver=False)
     m = module(tmp_path)
     h = m / "include" / "wire.h"
@@ -129,8 +139,11 @@ def test_a_header_of_another_module_is_flagged(tmp_path):
 
 
 def test_a_path_include_that_leaves_the_module_is_flagged(tmp_path):
-    """The name is flagged by its path, also when the file it reaches has
-    the name of a header of the module."""
+    """A name is flagged by its path.
+
+    This holds also when the file it reaches has the name of a header of the
+    module.
+    """
     m = module(tmp_path)
     for target in ("../other/include/x.h", "../include/wire.h",
                    "/usr/include/wire.h", "..\\other\\x.h"):
@@ -143,8 +156,10 @@ def test_a_path_include_that_leaves_the_module_is_flagged(tmp_path):
 
 
 def test_stdatomic_and_threads_are_standard_headers(tmp_path):
-    """Both are C11 headers, and the ARM GNU 14.2 newlib of the RP2350
-    build ships both."""
+    """Both C11 headers are accepted.
+
+    The ARM GNU 14.2 newlib of the RP2350 build ships both.
+    """
     m = module(tmp_path)
     c = m / "wire.c"
     c.write_text("#include <stdatomic.h>\n#include <threads.h>\n"
@@ -153,6 +168,7 @@ def test_stdatomic_and_threads_are_standard_headers(tmp_path):
 
 
 def test_a_system_header_outside_the_standard_is_flagged(tmp_path):
+    """A system header outside the standard is flagged."""
     m = module(tmp_path)
     c = m / "wire.c"
     c.write_text("#include <unistd.h>\n" + c.read_text())
@@ -169,6 +185,7 @@ def test_an_own_header_in_angle_brackets_is_flagged(tmp_path):
 
 
 def test_an_sdk_header_in_the_core_is_flagged(tmp_path):
+    """An SDK header in the core is flagged."""
     m = module(tmp_path)
     c = m / "wire.c"
     c.write_text('#include "hardware/pio.h"\n' + c.read_text())
@@ -178,6 +195,7 @@ def test_an_sdk_header_in_the_core_is_flagged(tmp_path):
 
 
 def test_the_core_does_not_include_its_driver(tmp_path):
+    """The core does not include its driver."""
     m = module(tmp_path)
     c = m / "wire.c"
     c.write_text('#include "wire_pin.h"\n' + c.read_text())
@@ -187,6 +205,7 @@ def test_the_core_does_not_include_its_driver(tmp_path):
 
 
 def test_an_sdk_header_in_a_drivers_header_is_flagged(tmp_path):
+    """An SDK header in a driver's header is flagged."""
     m = module(tmp_path)
     h = m / cp.DRIVER / "wire_pin.h"
     h.write_text('#include "hardware/pio.h"\n' + h.read_text())
@@ -196,6 +215,7 @@ def test_an_sdk_header_in_a_drivers_header_is_flagged(tmp_path):
 
 
 def test_the_generated_header_of_a_program_that_is_not_there(tmp_path):
+    """The generated header of a program that is not there."""
     m = module(tmp_path)
     c = m / cp.DRIVER / "wire_pin.c"
     c.write_text('#include "elsewhere.pio.h"\n' + c.read_text())
@@ -204,6 +224,7 @@ def test_the_generated_header_of_a_program_that_is_not_there(tmp_path):
 
 
 def test_a_driver_takes_no_header_outside_the_sdk_folders(tmp_path):
+    """A driver takes no header outside the SDK folders."""
     m = module(tmp_path)
     c = m / cp.DRIVER / "wire_pin.c"
     c.write_text('#include "tusb.h"\n#include "outputs.h"\n' + c.read_text())
@@ -211,6 +232,7 @@ def test_a_driver_takes_no_header_outside_the_sdk_folders(tmp_path):
 
 
 def test_an_include_in_the_pio_programs_c_block_is_read(tmp_path):
+    """An include in the PIO program's C block is read."""
     m = module(tmp_path)
     pio = m / cp.DRIVER / "wire.pio"
     pio.write_text(pio.read_text() + '% c-sdk {\n#include "hardware/clocks.h"'
@@ -222,12 +244,14 @@ def test_an_include_in_the_pio_programs_c_block_is_read(tmp_path):
 
 @pytest.mark.parametrize("part", ["README.md", "CMakeLists.txt"])
 def test_a_missing_part_is_flagged(tmp_path, part):
+    """A missing part is flagged."""
     m = module(tmp_path)
     (m / part).unlink()
     assert cp.layout_problems(m) == ["protocols/wire/ has no " + part]
 
 
 def test_a_module_without_a_header_or_a_core_is_flagged(tmp_path):
+    """A module without a header or a core is flagged."""
     m = module(tmp_path)
     (m / "include" / "wire.h").unlink()
     (m / "wire.c").unlink()
@@ -237,6 +261,7 @@ def test_a_module_without_a_header_or_a_core_is_flagged(tmp_path):
 
 
 def test_a_driver_folder_without_its_parts_is_flagged(tmp_path):
+    """A driver folder without its parts is flagged."""
     m = module(tmp_path)
     (m / cp.DRIVER / "wire.pio").unlink()
     (m / cp.DRIVER / "wire_pin.h").unlink()
@@ -247,6 +272,7 @@ def test_a_driver_folder_without_its_parts_is_flagged(tmp_path):
 
 def test_a_driver_without_a_pio_program_passes_when_the_readme_says_so(
         tmp_path):
+    """A driver without a PIO program passes when the readme says so."""
     m = module(tmp_path)
     (m / cp.DRIVER / "wire.pio").unlink()
     pin = m / cp.DRIVER / "wire_pin.c"
@@ -260,6 +286,7 @@ def test_a_driver_without_a_pio_program_passes_when_the_readme_says_so(
 
 
 def test_no_pio_program_inside_a_fence_or_a_comment_does_not_count(tmp_path):
+    """No PIO program inside a fence or a comment does not count."""
     m = module(tmp_path)
     (m / cp.DRIVER / "wire.pio").unlink()
     readme = m / "README.md"
@@ -272,6 +299,7 @@ def test_no_pio_program_inside_a_fence_or_a_comment_does_not_count(tmp_path):
 
 
 def test_no_pio_program_excuses_only_the_pio_program(tmp_path):
+    """No PIO program excuses only the PIO program."""
     m = module(tmp_path)
     (m / cp.DRIVER / "wire.pio").unlink()
     (m / cp.DRIVER / "wire_pin.h").unlink()
@@ -281,6 +309,7 @@ def test_no_pio_program_excuses_only_the_pio_program(tmp_path):
 
 
 def test_a_requirement_on_another_component_is_flagged(tmp_path):
+    """A requirement on another component is flagged."""
     m = module(tmp_path)
     (m / "CMakeLists.txt").write_text(
         "idf_component_register(SRCS wire.c INCLUDE_DIRS include\n"
@@ -291,6 +320,7 @@ def test_a_requirement_on_another_component_is_flagged(tmp_path):
 
 
 def test_a_library_of_another_module_is_flagged(tmp_path):
+    """A library of another module is flagged."""
     m = module(tmp_path)
     cm = m / cp.DRIVER / "CMakeLists.txt"
     cm.write_text(cm.read_text() + "target_link_libraries("
@@ -311,6 +341,7 @@ def test_a_module_whose_name_begins_with_this_ones_is_another(tmp_path):
 
 
 def test_a_cmake_comment_is_not_read(tmp_path):
+    """A CMake comment is not read."""
     m = module(tmp_path)
     cm = m / "CMakeLists.txt"
     cm.write_text("# No REQUIRES, and not rcbench_link.\n" + cm.read_text())
@@ -319,6 +350,7 @@ def test_a_cmake_comment_is_not_read(tmp_path):
 
 @needs_compilers
 def test_a_header_without_the_guard_is_flagged(tmp_path):
+    """A header without the guard is flagged."""
     m = module(tmp_path, driver=False)
     (m / "include" / "wire.h").write_text(
         "#pragma once\n#include <stdint.h>\n"
@@ -329,6 +361,7 @@ def test_a_header_without_the_guard_is_flagged(tmp_path):
 
 @needs_compilers
 def test_a_header_that_is_not_cxx_is_flagged(tmp_path):
+    """A header that is not C++ is flagged."""
     m = module(tmp_path, driver=False)
     (m / "include" / "wire.h").write_text(
         header("void wire_make(int new);\n"))
@@ -340,6 +373,7 @@ def test_a_header_that_is_not_cxx_is_flagged(tmp_path):
 
 @needs_compilers
 def test_a_header_that_needs_another_included_first_is_flagged(tmp_path):
+    """A header that needs another included first is flagged."""
     m = module(tmp_path, driver=False)
     (m / "include" / "wire.h").write_text(
         "#pragma once\n" + GUARD_OPEN
@@ -352,6 +386,7 @@ def test_a_header_that_needs_another_included_first_is_flagged(tmp_path):
 
 @needs_compilers
 def test_a_header_without_an_include_guard_is_flagged(tmp_path):
+    """A header without an include guard is flagged."""
     m = module(tmp_path, driver=False)
     (m / "include" / "wire.h").write_text(
         "#include <stdint.h>\n" + GUARD_OPEN
@@ -362,6 +397,7 @@ def test_a_header_without_an_include_guard_is_flagged(tmp_path):
 
 @needs_compilers
 def test_a_drivers_header_is_compiled_with_the_core_on_its_path(tmp_path):
+    """A driver's header is compiled with the core on its path."""
     m = module(tmp_path)
     assert cp.header_problems(m, *cp.compilers()) == []
     (m / cp.DRIVER / "wire_pin.h").write_text(
@@ -372,6 +408,7 @@ def test_a_drivers_header_is_compiled_with_the_core_on_its_path(tmp_path):
 
 
 def test_main_refuses_an_argument_it_does_not_know():
+    """Main refuses an argument it does not know."""
     with pytest.raises(SystemExit):
         cp.main(["--fix"])
 
@@ -379,6 +416,7 @@ def test_main_refuses_an_argument_it_does_not_know():
 @needs_compilers
 def test_main_fails_on_a_broken_module_and_names_it(tmp_path, monkeypatch,
                                                     capsys):
+    """Main fails on a broken module and names it."""
     m = module(tmp_path)
     (m / "README.md").unlink()
     monkeypatch.setattr(cp, "PROTOCOLS", tmp_path / "protocols")
@@ -387,6 +425,7 @@ def test_main_fails_on_a_broken_module_and_names_it(tmp_path, monkeypatch,
 
 
 def test_main_fails_when_there_is_no_module(tmp_path, monkeypatch):
+    """Main fails when there is no module."""
     monkeypatch.setattr(cp, "PROTOCOLS", tmp_path / "protocols")
     with pytest.raises(SystemExit):
         cp.main(["--check"])
@@ -396,6 +435,7 @@ def test_main_fails_when_there_is_no_module(tmp_path, monkeypatch):
 # equal by an assertion in the caller.
 
 def caller(tmp_path, text, rel="shared/use/use.c"):
+    """Write a caller file with @p text; return its path."""
     f = tmp_path / rel
     f.parent.mkdir(parents=True, exist_ok=True)
     f.write_text(text)
@@ -403,10 +443,12 @@ def caller(tmp_path, text, rel="shared/use/use.c"):
 
 
 def asserted_problems(tmp_path, listed):
+    """The problems of the static assertions against @p listed."""
     return cp.assertion_problems(tmp_path / "protocols", listed)
 
 
 def test_public_names_are_macros_and_enumerators(tmp_path):
+    """Public names are macros and enumerators."""
     m = module(tmp_path, driver=False)
     (m / "include" / "wire.h").write_text(header(
         "#define WIRE_MAX 8\n"
@@ -415,6 +457,7 @@ def test_public_names_are_macros_and_enumerators(tmp_path):
 
 
 def test_a_listed_assertion_in_the_caller_passes(tmp_path):
+    """A listed assertion in the caller passes."""
     m = module(tmp_path, driver=False)
     (m / "include" / "wire.h").write_text(header("#define WIRE_MAX 8\n"))
     rel = caller(tmp_path, "#define USE_MAX 8\n"
@@ -424,6 +467,7 @@ def test_a_listed_assertion_in_the_caller_passes(tmp_path):
 
 
 def test_an_assertion_the_list_does_not_name_is_flagged(tmp_path):
+    """An assertion the list does not name is flagged."""
     m = module(tmp_path, driver=False)
     (m / "include" / "wire.h").write_text(header("#define WIRE_MAX 8\n"))
     rel = caller(tmp_path, '_Static_assert(WIRE_MAX == 8, "limit");\n')
@@ -432,6 +476,7 @@ def test_an_assertion_the_list_does_not_name_is_flagged(tmp_path):
 
 
 def test_a_listed_file_without_the_assertion_is_flagged(tmp_path):
+    """A listed file without the assertion is flagged."""
     m = module(tmp_path, driver=False)
     (m / "include" / "wire.h").write_text(header("#define WIRE_MAX 8\n"))
     rel = caller(tmp_path, "int use(void) { return WIRE_MAX; }\n")
@@ -441,6 +486,7 @@ def test_a_listed_file_without_the_assertion_is_flagged(tmp_path):
 
 
 def two_assertions(tmp_path):
+    """A module and a caller with two static assertions; the caller's path."""
     m = module(tmp_path, driver=False)
     (m / "include" / "wire.h").write_text(header(
         "#define WIRE_MAX 8\n#define WIRE_MIN 1\n"))
@@ -452,11 +498,13 @@ LISTED_TWO = ("WIRE_MAX == 8", "WIRE_MIN == 1")
 
 
 def test_an_unchanged_tree_with_two_assertions_in_a_file_passes(tmp_path):
+    """An unchanged tree with two assertions in a file passes."""
     rel = two_assertions(tmp_path)
     assert asserted_problems(tmp_path, {"wire": {rel: LISTED_TWO}}) == []
 
 
 def test_removing_one_listed_assertion_of_a_file_fails(tmp_path):
+    """Removing one listed assertion of a file fails."""
     rel = two_assertions(tmp_path)
     (tmp_path / rel).write_text('_Static_assert(WIRE_MAX == 8, "max");\n')
     out = asserted_problems(tmp_path, {"wire": {rel: LISTED_TWO}})
@@ -465,12 +513,14 @@ def test_removing_one_listed_assertion_of_a_file_fails(tmp_path):
 
 
 def test_a_new_assertion_in_a_listed_file_fails(tmp_path):
+    """A new assertion in a listed file fails."""
     rel = two_assertions(tmp_path)
     out = asserted_problems(tmp_path, {"wire": {rel: LISTED_TWO[:1]}})
     assert len(out) == 1 and "does not list" in out[0]
 
 
 def test_a_changed_condition_fails_and_a_changed_message_does_not(tmp_path):
+    """A changed condition fails and a changed message does not."""
     rel = two_assertions(tmp_path)
     (tmp_path / rel).write_text(
         '_Static_assert(WIRE_MAX == 8, "other text");\n'
@@ -480,6 +530,7 @@ def test_a_changed_condition_fails_and_a_changed_message_does_not(tmp_path):
 
 
 def test_an_assertion_in_a_comment_does_not_count(tmp_path):
+    """An assertion in a comment does not count."""
     m = module(tmp_path, driver=False)
     (m / "include" / "wire.h").write_text(header("#define WIRE_MAX 8\n"))
     rel = caller(tmp_path, '/* _Static_assert(WIRE_MAX == 8, "x"); */\n')
@@ -488,6 +539,7 @@ def test_an_assertion_in_a_comment_does_not_count(tmp_path):
 
 
 def test_an_assertion_on_the_projects_own_names_is_not_the_modules(tmp_path):
+    """An assertion on the project's own names is not the modules."""
     m = module(tmp_path, driver=False)
     (m / "include" / "wire.h").write_text(header("#define WIRE_MAX 8\n"))
     caller(tmp_path, '_Static_assert(USE_A < USE_B, "order");\n')
@@ -495,10 +547,12 @@ def test_an_assertion_on_the_projects_own_names_is_not_the_modules(tmp_path):
 
 
 def test_the_tree_lists_every_assertion_on_a_module_constant():
+    """The tree lists every assertion on a module constant."""
     assert cp.assertion_problems(cp.PROTOCOLS, cp.ASSERTED) == []
 
 
 def test_a_readme_without_an_interface_heading_is_flagged(tmp_path):
+    """A readme without an interface heading is flagged."""
     m = module(tmp_path)
     (m / "README.md").write_text("# wire\n\n## Use\n")
     assert cp.readme_problems(m) == [
@@ -506,6 +560,7 @@ def test_a_readme_without_an_interface_heading_is_flagged(tmp_path):
 
 
 def test_a_comment_in_a_fenced_block_is_no_heading(tmp_path):
+    """A comment in a fenced block is no heading."""
     m = module(tmp_path)
     (m / "README.md").write_text(
         "# wire\n\n```cmake\n# Interface library\n```\n\n"
@@ -519,12 +574,14 @@ def test_a_comment_in_a_fenced_block_is_no_heading(tmp_path):
 
 
 def test_a_driver_interface_heading_counts(tmp_path):
+    """A driver interface heading counts."""
     m = module(tmp_path)
     (m / "README.md").write_text("# wire\n\n## Driver interface\n")
     assert cp.readme_problems(m) == []
 
 
 def test_a_readme_naming_a_brand_needs_a_trademarks_heading(tmp_path):
+    """A readme naming a brand needs a trademarks heading."""
     m = module(tmp_path)
     readme = m / "README.md"
     readme.write_text(readme.read_text() + "Works with Futaba, S.BUS.\n")
@@ -536,6 +593,7 @@ def test_a_readme_naming_a_brand_needs_a_trademarks_heading(tmp_path):
 
 
 def test_a_closing_hash_sequence_is_no_part_of_the_heading(tmp_path):
+    """A closing hash sequence is no part of the heading."""
     m = module(tmp_path)
     readme = m / "README.md"
     readme.write_text("# wire #\n\n## Interface ##\n\nWorks with Futaba.\n"
@@ -545,6 +603,7 @@ def test_a_closing_hash_sequence_is_no_part_of_the_heading(tmp_path):
 
 
 def test_a_brand_inside_a_longer_word_is_not_a_brand(tmp_path):
+    """A brand inside a longer word is not a brand."""
     m = module(tmp_path)
     readme = m / "README.md"
     readme.write_text(readme.read_text() + "The KSTART byte, DShotty.\n")
@@ -552,6 +611,7 @@ def test_a_brand_inside_a_longer_word_is_not_a_brand(tmp_path):
 
 
 def test_a_module_without_a_driver_says_so_in_its_readme(tmp_path):
+    """A module without a driver says so in its readme."""
     m = module(tmp_path, driver=False)
     (m / "README.md").write_text("# wire\n\n## Interface\n")
     assert cp.readme_problems(m) == [
@@ -560,6 +620,7 @@ def test_a_module_without_a_driver_says_so_in_its_readme(tmp_path):
 
 
 def test_no_pin_driver_inside_a_fenced_block_does_not_count(tmp_path):
+    """No pin driver inside a fenced block does not count."""
     m = module(tmp_path, driver=False)
     (m / "README.md").write_text(
         "# wire\n\n## Interface\n\n```text\nno pin driver\n```\n")
@@ -569,11 +630,13 @@ def test_no_pin_driver_inside_a_fenced_block_does_not_count(tmp_path):
 
 
 def test_a_module_with_a_driver_needs_no_such_sentence(tmp_path):
+    """A module with a driver needs no such sentence."""
     m = module(tmp_path)
     assert cp.readme_problems(m) == []
 
 
 def test_a_missing_readme_is_the_layout_rules_finding(tmp_path):
+    """A missing readme is the layout rules finding."""
     m = module(tmp_path)
     (m / "README.md").unlink()
     assert cp.readme_problems(m) == []
@@ -583,6 +646,7 @@ def test_a_missing_readme_is_the_layout_rules_finding(tmp_path):
 @pytest.mark.parametrize("text", [
     "DShot300 and S.BUS2.\n", "works with FUTABA.\n", "the futaba radio\n"])
 def test_a_brand_with_a_suffix_or_in_other_case_is_a_brand(tmp_path, text):
+    """A brand with a suffix or in other case is a brand."""
     m = module(tmp_path)
     readme = m / "README.md"
     readme.write_text(readme.read_text() + text)
@@ -591,6 +655,7 @@ def test_a_brand_with_a_suffix_or_in_other_case_is_a_brand(tmp_path, text):
 
 
 def test_an_html_comment_is_no_heading_and_no_sentence(tmp_path):
+    """An HTML comment is no heading and no sentence."""
     m = module(tmp_path, driver=False)
     (m / "README.md").write_text(
         "# wire\n\n<!--\n## Interface\nno pin driver\n-->\n")
@@ -601,6 +666,7 @@ def test_an_html_comment_is_no_heading_and_no_sentence(tmp_path):
 
 
 def test_an_emphasised_heading_counts(tmp_path):
+    """An emphasised heading counts."""
     m = module(tmp_path)
     (m / "README.md").write_text(
         "# wire\n\n## **Interface**\n\nFutaba.\n\n## `_Trademarks_`\n")
@@ -614,6 +680,7 @@ def test_an_emphasised_heading_counts(tmp_path):
     '#if __has_include_next(<x.h>)', '#include H', '#include FILE_NAME(x)',
     '#include "..\\x.h"', '#include "\\x.h"', '#include "a.h" x'])
 def test_an_include_bypass_is_flagged(tmp_path, line):
+    """An include bypass is flagged."""
     m = module(tmp_path)
     c = m / "wire.c"
     c.write_text(line + "\n" + c.read_text().split("\n", 1)[1])
@@ -621,6 +688,7 @@ def test_an_include_bypass_is_flagged(tmp_path, line):
 
 
 def test_includes_reads_continuations_digraphs_and_literal_slashes():
+    """Includes reads continuations digraphs and literal slashes."""
     text = ('#include_next <a.h>\n#import "b.h"\n%:include "c.h"\n'
             '#include \\\n  "d.h"\n#include "e//f.h" // tail\n'
             '#define H "g.h"\n#include H\n'
@@ -631,11 +699,13 @@ def test_includes_reads_continuations_digraphs_and_literal_slashes():
 
 
 def test_a_string_with_slashes_does_not_hide_the_next_include():
+    """A string with slashes does not hide the next include."""
     text = 'const char *u = "http://x";\n#include "a.h"\n'
     assert cp.includes(text) == [('"', "a.h")]
 
 
 def write_core(m, text, encoding="utf-8"):
+    """Write the core file wire.c as @p text in @p encoding."""
     (m / "wire.c").write_bytes(text.encode(encoding))
 
 
@@ -645,6 +715,7 @@ def write_core(m, text, encoding="utf-8"):
     '%:\n',
     '  # \t\n'])
 def test_a_bare_directive_line_is_flagged(tmp_path, text):
+    """A bare directive line is flagged."""
     m = module(tmp_path)
     write_core(m, text)
     problems = cp.include_problems(m)
@@ -653,10 +724,12 @@ def test_a_bare_directive_line_is_flagged(tmp_path, text):
 
 
 def test_a_bare_hash_inside_a_comment_or_string_is_not_a_directive():
+    """A bare hash inside a comment or string is not a directive."""
     assert cp.includes('/*\n#\n*/\nchar *s = "#";\n') == []
 
 
 def test_a_bom_does_not_hide_the_first_include(tmp_path):
+    """A BOM does not hide the first include."""
     m = module(tmp_path)
     write_core(m, '\ufeff#include "../../shared/x.h"\n')
     assert any("a .. component" in p for p in cp.include_problems(m))
@@ -666,12 +739,14 @@ def test_a_bom_does_not_hide_the_first_include(tmp_path):
     '\f#include "../x.h"', '#\finclude "../x.h"', '#\vinclude "../x.h"',
     '#include\f"../x.h"'])
 def test_form_feed_and_vertical_tab_are_directive_white_space(line):
+    """Form feed and vertical tab are directive white space."""
     assert cp.includes(line + "\n") == [('"', "../x.h")]
 
 
 @pytest.mark.parametrize("line", [
     '??=include "../x.h"', '  ??= include <a.h>', '??=define A 1'])
 def test_a_trigraph_directive_is_flagged(tmp_path, line):
+    """A trigraph directive is flagged."""
     m = module(tmp_path)
     write_core(m, line + "\n")
     problems = cp.include_problems(m)
@@ -680,6 +755,7 @@ def test_a_trigraph_directive_is_flagged(tmp_path, line):
 
 
 def test_has_include_is_refused_as_an_operator_only():
+    """Has include is refused as an operator only."""
     assert cp.includes("#if __has_include(<x.h>)\n") == [
         ("?", "__has_include")]
     assert cp.includes("#if __has_include_next (<x.h>)\n") == [
@@ -698,6 +774,7 @@ def test_has_include_is_refused_as_an_operator_only():
 
 
 def test_a_fence_opener_with_a_backtick_in_its_info_is_no_fence(tmp_path):
+    """A fence opener with a backtick in its info is no fence."""
     m = module(tmp_path)
     (m / "README.md").write_text(
         "# wire\n\n```inline``` text\n\n## Interface\n")
@@ -708,6 +785,7 @@ def test_a_fence_opener_with_a_backtick_in_its_info_is_no_fence(tmp_path):
 
 
 def test_a_fence_marker_inside_an_html_comment_opens_nothing(tmp_path):
+    """A fence marker inside an HTML comment opens nothing."""
     m = module(tmp_path)
     (m / "README.md").write_text(
         "# wire\n\n<!--\n```\n-->\n\n## Interface\n")
@@ -718,6 +796,7 @@ def test_a_fence_marker_inside_an_html_comment_opens_nothing(tmp_path):
     "Trademarks and notices", "Trademarks:", "[Trademarks](#t)",
     "**Trademark** notice", "TRADEMARKS"])
 def test_a_heading_that_contains_trademark_counts(tmp_path, heading):
+    """A heading that contains trademark counts."""
     m = module(tmp_path)
     (m / "README.md").write_text(
         "# wire\n\n## Interface\n\nFutaba.\n\n## %s\n" % heading)
@@ -725,6 +804,7 @@ def test_a_heading_that_contains_trademark_counts(tmp_path, heading):
 
 
 def test_a_brand_in_a_path_or_a_code_block_needs_the_heading(tmp_path):
+    """A brand in a path or a code block needs the heading."""
     m = module(tmp_path)
     readme = m / "README.md"
     for text in ("See protocols/dshot/README.md.\n",
@@ -734,6 +814,7 @@ def test_a_brand_in_a_path_or_a_code_block_needs_the_heading(tmp_path):
 
 
 def test_a_raw_string_hides_no_include(tmp_path):
+    """A raw string hides no include."""
     m = module(tmp_path)
     c = m / "wire.c"
     c.write_text(c.read_text()
@@ -745,6 +826,7 @@ def test_a_raw_string_hides_no_include(tmp_path):
 
 @pytest.mark.parametrize("prefix", ["", "u8", "u", "U", "L"])
 def test_a_raw_string_is_one_literal(prefix):
+    """A raw string is one literal."""
     text = prefix + 'R"d(/* "#include "x.h" )d" ;\n#include "a.h"\n/* */\n'
     assert cp.includes(text) == [('"', "a.h")]
     assert cp.includes(prefix + 'R"(__has_include(x))";\n') == []
@@ -754,12 +836,15 @@ def test_a_raw_string_is_one_literal(prefix):
 
 
 def test_an_identifier_ending_in_r_before_a_string_is_no_raw_string():
-    """`FOOR"x("` is an identifier and a string; the comment after it runs
-    to the next `*/`, as the compiler reads it."""
+    """`FOOR"x("` is an identifier and a string.
+
+    The comment after it runs to the next `*/`, as the compiler reads it.
+    """
     assert cp.includes('FOOR"x(" /* )x";\n#include "a.h"\n/* */\n') == []
 
 
 def test_a_digit_separator_hides_no_include_in_a_header(tmp_path):
+    """A digit separator hides no include in a header."""
     m = module(tmp_path, driver=False)
     h = m / "include" / "wire.h"
     h.write_text(h.read_text() + "#ifdef __cplusplus\n"
@@ -775,22 +860,26 @@ def test_a_digit_separator_hides_no_include_in_a_header(tmp_path):
                                     "1e+3'1", ".5'5", "0x1p+4", "1e-x'y",
                                     "0x1p-a'b", "1E+z'0"])
 def test_a_number_with_separators_is_one_token(number):
+    """A number with separators is one token."""
     text = "int k = %s + sizeof \"'/*\";\n#include \"a.h\"\n// */\n" % number
     assert cp.includes(text) == [('"', "a.h")]
 
 
 def test_a_character_literal_with_a_prefix_is_not_a_number():
+    """A character literal with a prefix is not a number."""
     text = "x = u8'a'; y = '/*';\n#include \"a.h\"\n/* */\n"
     assert cp.includes(text) == [('"', "a.h")]
 
 
 def pio_with(m, text):
+    """The include problems of a module whose wire.pio holds @p text."""
     pio = m / cp.DRIVER / "wire.pio"
     pio.write_text(text)
     return cp.include_problems(m)
 
 
 def test_a_semicolon_comment_in_a_pio_file_hides_no_include(tmp_path):
+    """A semicolon comment in a PIO file hides no include."""
     m = module(tmp_path)
     found = pio_with(
         m, ".program t\n; see /* below\n    nop\n% c-sdk {\n"
@@ -799,6 +888,7 @@ def test_a_semicolon_comment_in_a_pio_file_hides_no_include(tmp_path):
 
 
 def test_a_semicolon_in_a_pio_c_block_starts_no_pio_comment(tmp_path):
+    """A semicolon in a PIO C block starts no PIO comment."""
     m = module(tmp_path)
     found = pio_with(
         m, ".program t\n    nop\n% c-sdk {\nint a; /* x */ int b;\n"
@@ -812,11 +902,13 @@ def test_a_semicolon_in_a_pio_c_block_starts_no_pio_comment(tmp_path):
 
 
 def test_a_semicolon_comment_in_a_pio_file_may_name_an_include(tmp_path):
+    """A semicolon comment in a PIO file may name an include."""
     m = module(tmp_path)
     assert pio_with(m, '.program t\n; #include "../x.h"\n    nop\n') == []
 
 
 def test_a_semicolon_in_a_c_file_is_no_comment():
+    """A semicolon in a C file is no comment."""
     assert cp.includes('int a; /* x */ int b;\n#include "a.h"\n') == [
         ('"', "a.h")]
 
@@ -838,8 +930,10 @@ def test_a_brand_in_an_identifier_or_file_name_is_a_brand(tmp_path, text):
 @pytest.mark.parametrize("text", ["the KSTART byte\n", "DShotty\n",
                                   "AKST and FutabaX\n", "KstSession\n"])
 def test_a_brand_next_to_a_letter_is_no_brand(tmp_path, text):
-    """A brand joined to a word without a separator is part of that word,
-    also in a CamelCase identifier."""
+    """A brand joined to a word is part of that word.
+
+    This holds also in a CamelCase identifier.
+    """
     m = module(tmp_path)
     readme = m / "README.md"
     readme.write_text(readme.read_text() + text)
@@ -847,6 +941,7 @@ def test_a_brand_next_to_a_letter_is_no_brand(tmp_path, text):
 
 
 def library_header(m, body):
+    """The header problems of a module whose public header holds @p body."""
     (m / "include" / "wire.h").write_text(header(body))
     return cp.header_problems(m, *cp.compilers())
 
@@ -858,9 +953,12 @@ def library_header(m, body):
     ("static inline int wire_f(int a, int b) { return a; }\n",
      "-Werror=unused-parameter")])
 def test_a_warning_fails_the_header(tmp_path, body, flag):
-    """-Wall alone finds the first, -Wextra the second, -Werror makes both
-    an error.  The message names the compiler's error line, not the
-    `In file included` line before it."""
+    """Each compiler flag turns a header problem into a finding.
+
+    -Wall alone finds the first, -Wextra the second, -Werror makes both an
+    error. The message names the compiler's error line, not the `In file
+    included` line before it.
+    """
     m = module(tmp_path, driver=False)
     found = library_header(m, body)
     assert found, flag
@@ -871,10 +969,12 @@ def test_a_warning_fails_the_header(tmp_path, body, flag):
 
 @needs_compilers
 def test_the_flags_are_wall_wextra_werror():
+    """The flags are wall wextra werror."""
     assert cp.WARNINGS == ("-Wall", "-Wextra", "-Werror")
 
 
 def test_callers_under_build_and_managed_components_are_not_read(tmp_path):
+    """Callers under build and managed components are not read."""
     m = module(tmp_path, driver=False)
     (m / "include" / "wire.h").write_text(header("#define WIRE_MAX 8\n"))
     for rel in ("shared/build_x/a.c", "firmware/managed_components/b/b.c",
@@ -894,6 +994,7 @@ def test_callers_under_build_and_managed_components_are_not_read(tmp_path):
     "```\n``` text\n## Interface\n```\n",
     "```\n## Interface\n"])
 def test_a_fence_closes_only_on_a_matching_bare_fence(tmp_path, readme):
+    """A fence closes only on a matching bare fence."""
     m = module(tmp_path)
     (m / "README.md").write_text("# wire\n\n" + readme)
     assert cp.readme_problems(m) == [
@@ -904,6 +1005,7 @@ def test_a_fence_closes_only_on_a_matching_bare_fence(tmp_path, readme):
     "```\n```\n## Interface\n", "```\n````\n## Interface\n",
     "~~~~\n~~~~~\n## Interface\n", "```\n```  \n## Interface\n"])
 def test_a_matching_fence_closes(tmp_path, readme):
+    """A matching fence closes."""
     m = module(tmp_path)
     (m / "README.md").write_text("# wire\n\n" + readme)
     assert cp.readme_problems(m) == []
@@ -912,6 +1014,7 @@ def test_a_matching_fence_closes(tmp_path, readme):
 @pytest.mark.parametrize("sentence", [
     "No Pin Driver", "NO PIN DRIVER", "no  pin\ndriver", "no\tpin driver"])
 def test_no_pin_driver_is_read_in_any_case_and_spacing(tmp_path, sentence):
+    """No pin driver is read in any case and spacing."""
     m = module(tmp_path, driver=False)
     (m / "README.md").write_text("# wire\n\n## Interface\n\n%s.\n"
                                  % sentence)
@@ -922,6 +1025,7 @@ def test_no_pin_driver_is_read_in_any_case_and_spacing(tmp_path, sentence):
     "idf_component_register(SRCS wire.c PRIV_REQUIRES driver)\n",
     "idf_component_register(SRCS wire.c REQUIRES driver)\n"])
 def test_requires_and_priv_requires_are_flagged(tmp_path, text):
+    """Requires and priv requires are flagged."""
     m = module(tmp_path)
     (m / "CMakeLists.txt").write_text(text)
     assert cp.cmake_problems(m) == [
@@ -932,12 +1036,14 @@ def test_requires_and_priv_requires_are_flagged(tmp_path, text):
 @pytest.mark.parametrize("heading", [
     "Inter**face**", "Inter_face_", "Inter`face`", "[Inter](x)face"])
 def test_markup_inside_a_word_of_a_heading_is_stripped(tmp_path, heading):
+    """Markup inside a word of a heading is stripped."""
     m = module(tmp_path)
     (m / "README.md").write_text("# wire\n\n## %s\n" % heading)
     assert cp.readme_problems(m) == []
 
 
 def test_a_crlf_line_continuation_joins_the_include():
+    """A CRLF line continuation joins the include."""
     assert cp.includes('#include \\\r\n  "../x.h"\r\n') == [
         ('"', "../x.h")]
 
@@ -976,15 +1082,19 @@ X_H = '#include "../../../shared/x.h"\n'
     "% c-sdk {\n/*\n%}\n.program t\n    nop\n% c-sdk {\n" + X_H
     + "// */\n%}\n"])
 def test_a_pio_file_is_read_as_pioasm_lexes_it(tmp_path, text):
+    """A PIO file is read as pioasm lexes it."""
     m = module(tmp_path)
     found = pio_with(m, text)
     assert len(found) == 1 and "x.h" in found[0], text
 
 
 def test_a_pio_c_block_reads_c_to_its_end(tmp_path):
-    """Inside a block every line is C: a `;` on the second line of a
-    three-line block starts no PIO comment, so its `/*` hides the include
-    below it.  After `%}` a `;` comment is PIO again."""
+    """Inside a block every line is C.
+
+    A `;` on the second line of a three-line block starts no PIO comment, so
+    its `/*` hides the include below it.  After `%}` a `;` comment is PIO
+    again.
+    """
     m = module(tmp_path)
     assert pio_with(
         m, ".program t\n    nop\n% c-sdk {\nint a = 1;\nint b; /* open\n"
@@ -1000,9 +1110,12 @@ def test_a_pio_c_block_reads_c_to_its_end(tmp_path):
 
 
 def test_pio_c_code_is_the_header_pioasm_writes():
-    """Checked against pioasm 2.3.0 `-o c-sdk`: the text after the last `{`
-    of a block start is the first line, blank lines go, a block name is
-    trimmed and compared in its case, and each block ends with a newline."""
+    """Checked against pioasm 2.3.0 `-o c-sdk`.
+
+    The text after the last `{` of a block start is the first line, blank lines
+    go, a block name is trimmed and compared in its case, and each block ends
+    with a newline.
+    """
     text = ('% c-sdk {\n#include "glob.h"\n%}\n.PROGRAM t\n    nop\n'
             '% c-sdk { int z = 1;\n#include "a.h"\n\n   \n%}  \n'
             '% {\n#include "b.h"\n%}\n%c-sdk{\n#include "c.h"\n%}\n'
@@ -1014,9 +1127,12 @@ def test_pio_c_code_is_the_header_pioasm_writes():
 
 
 def test_a_c_file_is_read_with_the_rules_of_iso_c(tmp_path):
-    """ISO C reads `0x1'2'` as a number and a character literal, and
+    """The include is outside a comment under ISO C and inside one under C++.
+
+    ISO C reads `0x1'2'` as a number and a character literal, and
     `R"( "( )"` as `R` and two strings: the include is outside a comment
-    there, under the C++ rules it is not."""
+    there, under the C++ rules it is not.
+    """
     m = module(tmp_path)
     c = m / "wire.c"
     c.write_text(c.read_text() + "#define RCB_IGNORE(...)\n"
@@ -1041,8 +1157,10 @@ def test_an_exponent_sign_continues_the_number():
 
 
 def test_a_line_continuation_inside_a_raw_string_is_not_joined():
-    """C++ keeps the backslash and the newline in the raw string, so
-    `)\\` + newline + `x"` does not end it and the `/*` is inside it."""
+    r"""C++ keeps the backslash and the newline in a raw string.
+
+    So `)\` + newline + `x"` does not end it and the `/*` is inside it.
+    """
     text = ('const char *s = R"x( )\\\nx" /* )x";\n'
             '#include "../outside.h"\n// */\n')
     assert cp.includes(text) == [('"', "../outside.h")]
@@ -1056,8 +1174,11 @@ def test_a_line_continuation_inside_a_raw_string_is_not_joined():
 @pytest.mark.parametrize("blank", [" ", "\t", "\f", "\v", " \t "])
 def test_blanks_between_backslash_and_newline_join_the_lines(tmp_path,
                                                              blank):
-    """GCC and Clang join `\\`, blanks, newline: `*\\ ` + newline + `/`
-    closes the comment, and the include below it is read."""
+    r"""GCC and Clang join `\`, blanks, newline.
+
+    `*\ ` + newline + `/` closes the comment, and the include below it is
+    read.
+    """
     m = module(tmp_path)
     c = m / "wire.c"
     c.write_text(c.read_text() + "/* note *\\" + blank + "\n/\n"
@@ -1067,6 +1188,7 @@ def test_blanks_between_backslash_and_newline_join_the_lines(tmp_path,
 
 
 def test_a_lone_cr_ends_a_line_of_c(tmp_path):
+    """A lone CR ends a line of C."""
     m = module(tmp_path)
     write_core(m, '// x\r#include "../../outside.h"\n')
     found = cp.include_problems(m)
@@ -1074,8 +1196,10 @@ def test_a_lone_cr_ends_a_line_of_c(tmp_path):
 
 
 def test_a_lone_cr_in_a_pio_block_is_part_of_the_line(tmp_path):
-    """pioasm reads `%}` + CR + `*/` as one line of C, which closes the
-    comment: the include after it is in the generated header."""
+    """`%}` + CR + `*/` is one line of C in pioasm.
+
+    It closes the comment: the include after it is in the generated header.
+    """
     m = module(tmp_path)
     (m / cp.DRIVER / "wire.pio").write_bytes(
         b'.program wire_tx\n    nop\n% c-sdk {\n/*\n%}\r*/\n'
@@ -1085,8 +1209,11 @@ def test_a_lone_cr_in_a_pio_block_is_part_of_the_line(tmp_path):
 
 
 def test_a_crlf_pio_file_ends_its_block_at_percent_brace(tmp_path):
-    """`%}` + CRLF ends the block, so the `; /*` after it is a PIO
-    comment and the include in the next block is C."""
+    """`%}` + CRLF ends a PIO code block.
+
+    The `; /*` after it is a PIO comment and the include in the next block is
+    C.
+    """
     m = module(tmp_path)
     (m / cp.DRIVER / "wire.pio").write_bytes(
         b".program p\r\n    nop\r\n% c-sdk {\r\nint a;\r\n%}\r\n; /*\r\n"
@@ -1097,8 +1224,10 @@ def test_a_crlf_pio_file_ends_its_block_at_percent_brace(tmp_path):
 
 @pytest.mark.parametrize("blank", ["\v", "\f", "\r"])
 def test_a_block_name_is_trimmed_of_spaces_and_tabs_only(blank):
-    """pioasm 2.3.0 trims a block name of spaces and tabs; `c-sdk` + VT,
-    FF or CR is a block of an unknown type and is not written."""
+    """The pioasm 2.3.0 tool trims a block name of spaces and tabs.
+
+    `c-sdk` + VT, FF or CR is a block of an unknown type and is not written.
+    """
     assert cp.pio_c_code(".program p\n    nop\n% c-sdk" + blank + "{\n"
                          '#include "x.h"\n%}\n') == ""
     assert cp.pio_c_code(".program p\n    nop\n%" + blank + "{\n"
@@ -1109,8 +1238,10 @@ def test_a_block_name_is_trimmed_of_spaces_and_tabs_only(blank):
     "#if 0\ndon't /* worry\n#endif\n#include \"../../outside.h\"\n/* */\n",
     '#if 0\n"open /* string\n#endif\n#include "../../outside.h"\n/* */\n'])
 def test_an_unterminated_literal_runs_to_the_line_end(tmp_path, text):
-    """GCC lexes a `'` or `"` without its closing quote to the line end,
-    so the `/*` after it opens no comment."""
+    """A `'` or `"` without its closing quote runs to the line end.
+
+    GCC lexes it so, and the `/*` after it opens no comment.
+    """
     m = module(tmp_path)
     write_core(m, text)
     found = cp.include_problems(m)
@@ -1133,6 +1264,7 @@ def test_a_backslash_trigraph_is_flagged(tmp_path, text):
 @pytest.mark.parametrize("tri", ["??=", "??/", "??'", "??(", "??)", "??!",
                                  "??<", "??>", "??-"])
 def test_every_trigraph_is_flagged_anywhere(tmp_path, tri):
+    """Every trigraph is flagged anywhere."""
     m = module(tmp_path)
     write_core(m, "/* " + tri + ' */\nconst char *s = "' + tri + '";\n')
     problems = cp.include_problems(m)
@@ -1141,13 +1273,16 @@ def test_every_trigraph_is_flagged_anywhere(tmp_path, tri):
 
 
 def test_a_quote_trigraph_fails_the_file_it_reads_differently():
-    """ISO C11 reads `??'"'/*"` as `^` and the string `"'/*"`, so the
-    include below is live there and hidden under the other standards."""
+    """ISO C11 reads `??'"'/*"` as `^` and the string `"'/*"`.
+
+    The include below is live there and hidden under the other standards.
+    """
     assert cp.includes("#if 0\n??'\"'/*\"\n#endif\n" + OUT
                        + "#if 0\n*/\n#endif\n") == [("??", "??'")]
 
 
 def test_each_trigraph_is_listed_and_a_lone_question_mark_pair_is_not():
+    """Each trigraph is listed and a lone question mark pair is not."""
     assert cp.includes("/* ??/ */\n/* ??/ */\n") == [("??", "??/"),
                                                      ("??", "??/")]
     assert cp.includes("/* ??' ??= */\n") == [("??", "??'"), ("??", "??=")]
@@ -1157,6 +1292,7 @@ def test_each_trigraph_is_listed_and_a_lone_question_mark_pair_is_not():
 
 
 def test_a_trigraph_in_the_c_of_a_pio_file_is_flagged(tmp_path):
+    """A trigraph in the C of a PIO file is flagged."""
     m = module(tmp_path)
     assert pio_with(m, ".program t\n; ??'\n    nop\n") == []
     found = pio_with(m, ".program t\n    nop\n% c-sdk {\n// ??'\n%}\n")
@@ -1168,8 +1304,11 @@ def test_a_trigraph_in_the_c_of_a_pio_file_is_flagged(tmp_path):
     (b'#include <stdint.h>\n\x00\\\n#include "../../outside.h"\n', 2),
     (b"int a;\r\n/* \x00 */\r\n", 2), (b"int a;\r\r/* \x00 */\r", 3)])
 def test_a_nul_byte_fails_the_file(tmp_path, data, line):
-    """GCC reads a NUL as a blank: a backslash, NUL, newline joins the
-    lines, and the include after it is live.  The file fails."""
+    """GCC reads a NUL as a blank.
+
+    A backslash, NUL, newline joins the lines, and the include after it is
+    live.  The file fails.
+    """
     m = module(tmp_path)
     (m / "wire.c").write_bytes(data)
     problems = cp.include_problems(m)
@@ -1178,6 +1317,7 @@ def test_a_nul_byte_fails_the_file(tmp_path, data, line):
 
 
 def test_a_nul_byte_in_a_pio_file_fails_it(tmp_path):
+    """A NUL byte in a PIO file fails it."""
     m = module(tmp_path)
     (m / cp.DRIVER / "wire.pio").write_bytes(b".program t\n; \x00\n    nop\n")
     assert cp.include_problems(m) == [
@@ -1211,11 +1351,13 @@ VIEW_ONLY = {
 
 
 def test_the_check_reads_six_sets_of_literal_rules():
+    """The check reads six sets of literal rules."""
     assert sorted(cp.LITERAL_VIEWS) == sorted(VIEW_ONLY)
 
 
 @pytest.mark.parametrize("view", list(VIEW_ONLY))
 def test_each_literal_view_finds_an_include_the_others_do_not(view):
+    """Each literal view finds an include the others do not."""
     text = VIEW_ONLY[view]
     assert cp.includes(text) == [('"', "b.h")]
     for other in VIEW_ONLY:
@@ -1228,12 +1370,15 @@ def test_each_literal_view_finds_an_include_the_others_do_not(view):
     'R"(a)" /*"\n#include "b.h"\n*/\n',
     'R"(a)"/*"\n#include "b.h"\n*/\n'])
 def test_the_text_after_a_raw_string_is_read_from_its_end(text):
-    """The scan resumes right after the raw string's closing `"`, also when
-    a line continuation follows it: the `/*` is a comment."""
+    """The scan resumes after the raw string's closing `"`.
+
+    This holds also when a line continuation follows it: the `/*` is a comment.
+    """
     assert cp.includes(text) == []
 
 
 def test_a_repeated_include_is_listed_each_time():
+    """A repeated include is listed each time."""
     assert cp.includes('#include "a.h"\n#include "a.h"\n') == [
         ('"', "a.h"), ('"', "a.h")]
 
@@ -1465,6 +1610,7 @@ DIFF_PIO = [
 
 
 def compiler_runs(header):
+    """The (compiler, language, standard) runs, with C++ when @p header."""
     runs = [(GCC, "c", std) for std in C_STDS]
     if header:
         runs += [(GXX, "c++", std) for std in ("-std=c++11", "-std=c++17")]
@@ -1497,8 +1643,10 @@ needs_gcc = pytest.mark.skipif(not (GCC and GXX),
     ("-std=c++14", False)])
 def test_cxx11_alone_reads_the_raw_string_after_a_delimited_name(
         tmp_path, std, found):
-    """The C++11 text of VIEW_ONLY: g++ 13 includes the file in C++11 only,
-    and the check finds it."""
+    """The C++11 text of VIEW_ONLY.
+
+    g++ 13 includes the file in C++11 only, and the check finds it.
+    """
     text = VIEW_ONLY[(True, False, False)].replace(
         '#include "b.h"', '#include "../outside.h"')
     src = tmp_path / "d" / "case.h"
@@ -1523,6 +1671,7 @@ LITERAL_SUFFIX_R = tuple('R"(a" /* ")"\n' + q + 'R"(" \'/*)" /*\'\n' + OUT
 
 @pytest.mark.parametrize("text", LITERAL_SUFFIX_R)
 def test_a_literal_suffix_r_is_read_as_a_raw_string(text):
+    """A literal suffix r is read as a raw string."""
     assert cp.includes(text) == []
 
 
@@ -1530,6 +1679,7 @@ def test_a_literal_suffix_r_is_read_as_a_raw_string(text):
 @pytest.mark.parametrize("text", LITERAL_SUFFIX_R)
 def test_gcc_reads_the_include_after_a_literal_suffix_r_in_cxx(tmp_path,
                                                                 text):
+    """GCC reads the include after a literal suffix r in C++."""
     src = tmp_path / "d" / "case.h"
     src.parent.mkdir()
     src.write_text(text)
@@ -1546,6 +1696,7 @@ def test_gcc_reads_the_include_after_a_literal_suffix_r_in_cxx(tmp_path,
 @needs_gcc
 @pytest.mark.parametrize("kind, text", DIFF_C)
 def test_the_check_agrees_with_the_compilers(tmp_path, kind, text):
+    """The check agrees with the compilers."""
     src = tmp_path / "d" / ("case." + kind)
     src.parent.mkdir()
     src.write_bytes(text.encode())
@@ -1557,6 +1708,7 @@ def test_the_check_agrees_with_the_compilers(tmp_path, kind, text):
 @pytest.mark.skipif(PIOASM is None, reason="no pioasm (set PIOASM)")
 @pytest.mark.parametrize("text", DIFF_PIO)
 def test_the_check_agrees_with_pioasm(tmp_path, text):
+    """The check agrees with pioasm."""
     src = tmp_path / "d" / "case.pio"
     src.parent.mkdir()
     src.write_bytes(text.encode())
@@ -1570,8 +1722,10 @@ def test_the_check_agrees_with_pioasm(tmp_path, text):
 
 @pytest.mark.parametrize("text", list(PIO_EXPECTED))
 def test_a_pio_file_gives_the_c_pioasm_writes(text):
-    """The expectations of PIO_EXPECTED, checked against pioasm 2.3.0 and
-    gcc by test_the_check_agrees_with_pioasm."""
+    """The expectations of PIO_EXPECTED.
+
+    Checked against pioasm 2.3.0 and gcc by test_the_check_agrees_with_pioasm.
+    """
     found = ('"', "../outside.h") in cp.includes(text, pio=True)
     assert found == PIO_EXPECTED[text], text
 
@@ -1618,13 +1772,17 @@ def test_a_pio_file_gives_the_c_pioasm_writes(text):
       for line, found in UNICODE_DIGITS.items()]])
 def test_literals_numbers_and_raw_strings_end_where_gcc_ends_them(text,
                                                                   found):
-    """The expectations of the DIFF_C cases on raw string prefixes and
-    delimiters, escapes, unterminated literals and numbers, checked
-    against gcc by test_the_check_agrees_with_the_compilers."""
+    """The expectations of the DIFF_C cases.
+
+    The cases cover raw string prefixes and delimiters, escapes, unterminated
+    literals and numbers, checked against gcc by
+    test_the_check_agrees_with_the_compilers.
+    """
     assert (('"', "../outside.h") in cp.includes(text)) == found, text
 
 
 def test_an_angle_operand_with_slashes_is_one_token(tmp_path):
+    """An angle operand with slashes is one token."""
     assert cp.includes("#include <hardware//pio.h>\n") == [
         ("<", "hardware//pio.h")]
     assert cp.includes("int x;\n#include <hardware//pio.h>\n") == [
@@ -1638,6 +1796,7 @@ def test_an_angle_operand_with_slashes_is_one_token(tmp_path):
 @pytest.mark.parametrize("name", [
     "/x.h", "\\x.h", "../x.h", "..\\x.h", "a/../x.h", "a\\..\\x.h"])
 def test_a_parent_or_absolute_path_is_named_as_one(tmp_path, name):
+    """A parent or absolute path is named as one."""
     m = module(tmp_path)
     c = m / "wire.c"
     c.write_text(c.read_text() + f'#include "{name}"\n')
@@ -1647,9 +1806,12 @@ def test_a_parent_or_absolute_path_is_named_as_one(tmp_path, name):
 
 
 def test_an_include_is_read_exactly():
-    """A token after the operand makes the operand unresolved, a line of
+    """Tokens after an include operand and lines of only `#`.
+
+    A token after the operand makes the operand unresolved, a line of
     only `#` is named by its `#`, and a `__has_include(` inside an include
-    operand is part of the file name."""
+    operand is part of the file name.
+    """
     assert cp.includes('#include "a.h" x\n') == [("?", '"a.h" x')]
     assert cp.includes('#include "a.h" /* x */\n') == [('"', "a.h")]
     assert cp.includes("  #  \n%: \t\n") == [("#", "#"), ("#", "%:")]
@@ -1661,6 +1823,7 @@ def test_an_include_is_read_exactly():
     "#if 0\n#importer \"../outside.h\"\n#endif\n",
     "#define foo__has_include(x) 1\n#if foo__has_include(x)\n#endif\n"])
 def test_a_longer_word_is_no_directive_and_no_call(text):
+    """A longer word is no directive and no call."""
     assert cp.includes(text) == []
 
 
@@ -1674,9 +1837,12 @@ def test_a_longer_word_is_no_directive_and_no_call(text):
     "  ```\n## Interface\n  ```\n",
     "  ~~~\n## Interface\n  ~~~\n"])
 def test_a_line_commonmark_reads_as_no_heading_is_none(tmp_path, readme):
-    """An unclosed comment runs to the end, a comment keeps its line
+    """How a README comment, heading and fence are read.
+
+    An unclosed comment runs to the end, a comment keeps its line
     breaks, a heading has 0 to 3 spaces of indent, 1 to 6 `#` and a blank
-    after them, and a fence has 0 to 3 spaces of indent."""
+    after them, and a fence has 0 to 3 spaces of indent.
+    """
     m = module(tmp_path)
     (m / "README.md").write_text(readme)
     assert cp.readme_problems(m) == [
@@ -1690,8 +1856,10 @@ def test_a_line_commonmark_reads_as_no_heading_is_none(tmp_path, readme):
     "    ```\n## Interface\n    ```\n"])
 def test_a_line_commonmark_reads_as_no_fence_hides_nothing(tmp_path,
                                                           readme):
-    """`~~` and a fence indented 4 spaces open no block, and the `.` of
-    S.BUS matches only a dot."""
+    """`~~` and a fence indented 4 spaces open no block.
+
+    The `.` of S.BUS matches only a dot.
+    """
     m = module(tmp_path)
     (m / "README.md").write_text(readme)
     assert cp.readme_problems(m) == [], readme
@@ -1700,6 +1868,7 @@ def test_a_line_commonmark_reads_as_no_fence_hides_nothing(tmp_path,
 @pytest.mark.parametrize("sentence", ["casino pin driver",
                                       "no pin drivers"])
 def test_no_pin_driver_is_matched_as_whole_words(tmp_path, sentence):
+    """No pin driver is matched as whole words."""
     m = module(tmp_path, driver=False)
     (m / "README.md").write_text("# Interface\n%s\n" % sentence)
     assert len(cp.readme_problems(m)) == 1, sentence
@@ -1749,10 +1918,13 @@ CONTINUED_BODIES = tuple(
     # line: the `#if` is in the body of F, and GCC 13 evaluates the call.
     *[(text, "__has_include") for text in CONTINUED_BODIES]])
 def test_the_name_has_include_outside_a_literal_fails(text, name):
-    """GCC evaluates a macro that stands for `__has_include` as the call, so
+    """A name that stands for `__has_include` fails outside a literal.
+
+    GCC evaluates a macro that stands for `__has_include` as the call, so
     the name fails wherever it stands outside a literal, except as the
     operand of a `defined` term on an `#if` line of nothing but such terms
-    and `( ) ! & |`."""
+    and `( ) ! & |`.
+    """
     assert cp.includes(text) == [("?", name)]
 
 
@@ -1782,9 +1954,11 @@ def test_the_name_has_include_outside_a_literal_fails(text, name):
     "#if defined(__has_include) /*\n*/ || defined(X)\n#endif\n",
     "#ifdef /*\n*/ __has_include\n#endif\n"])
 def test_has_include_as_the_operand_of_defined_or_ifdef_passes(text):
-    """`defined`, `#ifdef`, `#ifndef`, `#elifdef` and `#elifndef` test the
-    name as a macro and include nothing; a longer identifier is another
-    name."""
+    """A test of the name as a macro includes nothing.
+
+    `defined`, `#ifdef`, `#ifndef`, `#elifdef` and `#elifndef` test the name as
+    a macro; a longer identifier is another name.
+    """
     assert cp.includes(text) == []
 
 
@@ -1792,8 +1966,10 @@ def test_has_include_as_the_operand_of_defined_or_ifdef_passes(text):
 @pytest.mark.parametrize("text", CONTINUED_BODIES)
 def test_gcc_evaluates_has_include_in_a_body_a_comment_continues(tmp_path,
                                                                   text):
-    """GCC 13 reads each body of CONTINUED_BODIES as one line and evaluates
-    `__has_include` when F is expanded in an `#if`."""
+    """GCC 13 reads each body of CONTINUED_BODIES as one line.
+
+    It evaluates `__has_include` when F is expanded in an `#if`.
+    """
     src = tmp_path / "d" / "case.h"
     src.parent.mkdir()
     src.write_text(text + "#if F(a, )\n#error rcb_evaluated\n#endif\n")
@@ -1805,12 +1981,15 @@ def test_gcc_evaluates_has_include_in_a_body_a_comment_continues(tmp_path,
 
 
 def test_python_word_characters_outside_the_identifier_ranges():
-    """Of the characters outside ASCII that Python's `\\w` matches, U+2E2F
-    is the only one outside cp.EXTENDED_RANGES: a check on `\\w` in place of
+    r"""U+2E2F is the only `\w` character outside cp.EXTENDED_RANGES.
+
+    Of the characters outside ASCII that Python's `\w` matches, U+2E2F
+    is the only one outside cp.EXTENDED_RANGES: a check on `\w` in place of
     the ranges would join it to a name.  The size of the set follows the
     Unicode version of the interpreter (133,485 under Unicode 14.0, 137,873
     under 15.0, 142,877 under 16.0), so only its relation to the ranges is
-    checked; it holds under all three."""
+    checked; it holds under all three.
+    """
     ranges = cp.EXTENDED_RANGES
     word = [c for c in range(0x80, 0x110000)
             if re.match(r"\w", chr(c))]
@@ -1819,9 +1998,12 @@ def test_python_word_characters_outside_the_identifier_ranges():
 
 
 def range_edges():
-    """The first and last character of each range of cp.EXTENDED_RANGES and
-    the characters next to them outside it, without surrogates and ASCII:
-    148 characters, 77 of them inside, as {character: in a range}."""
+    """The edge characters of cp.EXTENDED_RANGES, as {character: in a range}.
+
+    They are the first and last character of each range and the characters next
+    to them outside it, without surrogates and ASCII: 148 characters, 77 of
+    them inside.
+    """
     edges = set()
     for lo, hi in cp.EXTENDED_RANGES:
         edges |= {lo - 1, lo, hi, hi + 1}
@@ -1831,6 +2013,7 @@ def range_edges():
 
 
 def test_the_range_edges_hold_both_sides():
+    """The range edges hold both sides."""
     edges = range_edges()
     assert len(edges) == 148
     assert sum(edges.values()) == 77
@@ -1842,8 +2025,10 @@ def test_the_range_edges_hold_both_sides():
     ("g++", "c++", "-std=c++17"), ("g++", "c++", "-std=gnu++23")])
 def test_gcc_takes_the_range_edges_into_an_identifier(tmp_path, compiler,
                                                       lang, std):
-    """GCC accepts `a<ch>` as an identifier without a diagnostic exactly for
-    the characters of cp.EXTENDED_RANGES, at each range edge."""
+    """GCC accepts `a<ch>` as an identifier only for cp.EXTENDED_RANGES.
+
+    The check covers each range edge, and GCC gives no diagnostic.
+    """
     edges = range_edges()
     src = tmp_path / "edges.h"
     src.write_text("".join("#ifdef a%s\n#endif\n" % chr(c) for c in edges),
@@ -1858,6 +2043,7 @@ def test_gcc_takes_the_range_edges_into_an_identifier(tmp_path, compiler,
 
 
 def test_a_has_include_alias_fails_the_module(tmp_path):
+    """A has include alias fails the module."""
     m = module(tmp_path)
     c = m / "wire.c"
     c.write_text(c.read_text() + "#define PROBE __has_include\n"
@@ -1868,6 +2054,7 @@ def test_a_has_include_alias_fails_the_module(tmp_path):
 
 
 def include_next_problems(m, rel, line):
+    """The include problems after @p line is put at the top of @p rel."""
     f = m / rel
     f.write_text(line + "\n" + f.read_text())
     return cp.include_problems(m)
@@ -1884,9 +2071,12 @@ def include_next_problems(m, rel, line):
     ("rp2350/wire_pin.c", '#include_next "wire.pio.h"'),
     ("rp2350/wire_pin.c", '#include_next "wire.h"')])
 def test_include_next_of_a_module_header_fails(tmp_path, rel, line):
-    """`#include_next` searches the include path after the directory the
+    """`#include_next` searches the path after the directory of the file.
+
+    `#include_next` searches the include path after the directory the
     file was found in: it reaches the next file of that name, the
-    consuming project's or a system header, never the module's own."""
+    consuming project's or a system header, never the module's own.
+    """
     m = module(tmp_path)
     name = line.split(None, 1)[1]
     assert include_next_problems(m, rel, line) == [
@@ -1901,11 +2091,13 @@ def test_include_next_of_a_module_header_fails(tmp_path, rel, line):
     ("rp2350/wire_pin.c", "#include_next <pico.h>")])
 def test_include_next_of_a_standard_or_sdk_header_passes(tmp_path, rel,
                                                          line):
+    """Include next of a standard or SDK header passes."""
     m = module(tmp_path)
     assert include_next_problems(m, rel, line) == []
 
 
 def test_include_next_of_an_sdk_header_in_a_drivers_header_fails(tmp_path):
+    """Include next of an SDK header in a driver's header fails."""
     m = module(tmp_path)
     assert include_next_problems(
         m, "rp2350/wire_pin.h", "#include_next <hardware/pio.h>") == [
@@ -1914,13 +2106,16 @@ def test_include_next_of_an_sdk_header_in_a_drivers_header_fails(tmp_path):
 
 
 def test_a_macro_include_next_is_unresolved():
+    """A macro include next is unresolved."""
     assert cp.includes("#include_next H\n") == [("?", "H")]
     assert cp.includes('#include_next "a.h" x\n') == [("?", '"a.h" x')]
 
 
 def within(seconds, fn, *args):
-    """fn(*args), or a failure after @p seconds: a scan that loops forever
-    fails the case instead of hanging the suite."""
+    """fn(*args), or a failure after @p seconds.
+
+    A scan that loops forever fails the case instead of hanging the suite.
+    """
     out = []
 
     def run():
@@ -1952,6 +2147,7 @@ def within(seconds, fn, *args):
     # A `%` that opens no block.
     (".program p\n%x\n", [])])
 def test_a_pio_file_is_read_to_its_end(text, found):
+    """A PIO file is read to its end."""
     assert within(5, cp.includes, text, True) == found
 
 
@@ -1965,6 +2161,7 @@ def test_a_pio_file_is_read_to_its_end(text, found):
     # A block start needs a name character between `%` and `{`.
     ('.program p\n%{\n#include "../x.h"\n%}\n', False)])
 def test_pio_comments_and_block_starts(text, found):
+    """PIO comments and block starts."""
     assert within(5, cp.includes, text, True) == (
         [('"', "../x.h")] if found else [])
 
@@ -1987,6 +2184,7 @@ def test_pio_comments_and_block_starts(text, found):
     # A raw string after three continuations is matched where it stands.
     ('a\\\nb\\\nc\\\nd R"(x)"\n/* c\n#include "../x.h"\n*/\n', False)])
 def test_comment_literal_and_number_tokens(text, found):
+    """Comment literal and number tokens."""
     want = {True: [('"', "../x.h")], False: [],
             "?": [("?", "__has_include")]}[found]
     assert cp.includes(text) == want
@@ -2007,6 +2205,7 @@ def test_comment_literal_and_number_tokens(text, found):
     ("<!-- a ->\n# Interface\n-->\n", False)])
 def test_fences_and_comments_end_where_commonmark_ends_them(tmp_path, readme,
                                                             found):
+    """Fences and comments end where CommonMark ends them."""
     m = module(tmp_path)
     (m / "README.md").write_text("# Title\n\n" + readme)
     assert cp.readme_problems(m) == (
@@ -2018,6 +2217,7 @@ def test_fences_and_comments_end_where_commonmark_ends_them(tmp_path, readme,
     ("nopin driver", False), ("no pindriver", False)])
 def test_no_pin_driver_takes_white_space_between_its_words(tmp_path,
                                                            sentence, found):
+    """No pin driver takes white space between its words."""
     m = module(tmp_path, driver=False)
     (m / "README.md").write_text("# Interface\nThe module has %s.\n"
                                  % sentence)
@@ -2028,6 +2228,7 @@ def test_no_pin_driver_takes_white_space_between_its_words(tmp_path,
     ("The kst-tool is supported.\n", "kst"), ("The --kst tool.\n", "kst"),
     ("KST-compatible.\n", "KST"), ("docs/futaba-notes\n", "futaba")])
 def test_a_brand_next_to_a_hyphen_is_a_brand(tmp_path, text, brand):
+    """A brand next to a hyphen is a brand."""
     m = module(tmp_path)
     (m / "README.md").write_text("# Interface\n" + text)
     assert cp.readme_problems(m) == [

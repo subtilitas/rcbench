@@ -212,11 +212,44 @@ anderen Rate oder einem anderen Modus zugeordnet ist. Der bisherige
 Ausgang läuft weiter. Gib den Pin vor einer Zuordnung mit anderen
 Einstellungen frei.
 
-Frames gehen mit 1kHz hinaus. Diese Rate steht nicht auf der Leitung: das
+Frames sind mit 1kHz fällig. Diese Rate steht nicht auf der Leitung: das
 Ratenfeld der OUTPUTS-Page ist bei DShot eine Bitrate und keine Frame Rate, der
 Prüfstand wählt sie also. 1kHz ist das Zwanzigfache der 50Hz, mit denen der
 IOmcu misst, das Fünfzigfache der 20Hz, mit denen das Panel pollt, und liegt
 weit innerhalb des Signal-Timeouts jedes ESC.
+
+Die Fälligkeiten bilden ein festes Raster im Abstand von 1000µs
+(`OUT_RENDER_DSHOT_PERIOD_US`). Die Hauptschleife des IOmcu sendet einen Frame
+im ersten Durchlauf ab seiner Fälligkeit, ein Frame geht also um bis zu einen
+Durchlauf zu spät hinaus. Ein später Frame verschiebt keinen späteren Frame.
+Zwei Regeln begrenzen das Raster (`OUT_RENDER_DSHOT_MIN_US`, 500µs):
+
+- ein Frame, der mehr als 500µs zu spät hinausgeht, legt die nächste
+  Fälligkeit 500µs nach sich;
+- ein Durchlauf nach einem Stillstand von einer Periode oder mehr sendet einen
+  Frame und nicht einen für jede verpasste Fälligkeit, und die nächste
+  Fälligkeit liegt 500µs danach.
+
+Der Abstand zweier Frames ist 1000µs plus die Verspätung des zweiten minus die
+des ersten, auf jeden späten Frame folgt also ein Abstand unter 1000µs. Bei der
+Fälligkeitsprüfung ist der Abstand nie kleiner als 500µs. Am Pin kann er um
+die Zeit von der Fälligkeitsprüfung bis zum Eintreffen des Frames im PIO-FIFO
+(First In First Out) kürzer sein: ein Interrupt auf Core 0 dazwischen, etwa
+der des USB-Stacks (Universal Serial Bus), verzögert diesen Frame und nicht
+den nächsten. `test_dshot_cadence` hält das Raster, die 500µs, den Stillstand
+und den Überlauf der 32-Bit-Mikrosekundenuhr fest.
+
+Die Pins bekommen 1000 Frames pro Sekunde, solange kein Durchlauf mehr als
+500µs zu spät kommt. Zwei Arten von Durchlauf sind länger:
+
+| Durchlauf | Dauer | Code |
+| --- | --- | --- |
+| Eine Link-Anfrage, deren Antwort mehr als einen CAN-Frame hat, bis zu 8 Frames für 32 Register | bis zu 155µs für jeden Frame nach dem ersten: der Controller hat einen Sendepuffer, und jeder Frame wartet, bis der vorige bei 1Mbit/s die Arbitrierung gewonnen hat; bis zu 1085µs für 8 Frames; aus den Bitzahlen gerechnet, nicht gemessen | `can_service()` in `firmware/iomcu/src/iomcu_can.c` |
+| Der Konsolenbericht alle 3s, bis zu 1489 Byte | nicht gemessen; jedes `printf()` wartet bis zu 1000µs auf Platz im USB-Sendepuffer | `can_report()` in `firmware/iomcu/src/iomcu_report.c` |
+
+Jeder solche Durchlauf kostet die Frames, die in ihm fällig werden. Frames pro
+Sekunde und die Abstände zwischen Frames an einem Pin sind mit dem Raster
+nicht gemessen.
 
 **Während der Prüfstand nicht treibt, wird nichts gesendet.** Keine Frames heißt
 keine Flanken, und ein ESC stoppt nach seinem eigenen Timeout auf Stille. Stattdessen ausdrückliche Nullen zu senden hielte ihn armed und wartend, und so soll
@@ -296,22 +329,24 @@ Invertierung, die die Zuordnung gesetzt und zurückgelesen hat, bleibt stehen.
 Der Pull-up kommt erst, wenn der Pin low getrieben wird, damit die Zuordnung
 kein High zeigt.
 
-Bei ARM geht die Leitung einen Frame-Abstand vor dem ersten Frame auf ihren
+Bei ARM geht die Leitung mindestens 500µs vor dem ersten Frame auf ihren
 High-Idle zurück:
 
 | Schritt | Zeit | Code |
 | --- | --- | --- |
 | Der erste fällige Durchlauf des Laufs lässt den Pin auf seinen Pull-up los und sendet nichts | 0 | `service_dshot()` in `shared/outputs/out_render.c` ruft `out_render_hw_dshot_wake()`, das `out_dshot_wake()` ruft (`firmware/iomcu/src/outputs_hw.c`) |
-| Der erste Frame: die erste der zehn Wiederholungen von `DSHOT_CMD_EDT_ENABLE` bei Gas null | 1000µs oder später, ein Frame-Abstand bei 1kHz (`OUT_RENDER_DSHOT_PERIOD_US`) | `out_dshot_send()` |
+| Der erste Frame: die erste der zehn Wiederholungen von `DSHOT_CMD_EDT_ENABLE` bei Gas null | die nächste Fälligkeit: 1000µs nach der Fälligkeit des Wake-Durchlaufs (`OUT_RENDER_DSHOT_PERIOD_US`) und mindestens 500µs nach dem Wake (`OUT_RENDER_DSHOT_MIN_US`) | `out_dshot_send()` |
 | Der Befehl nach der Anfrage | 11ms nach Laufbeginn | `service_dshot()` |
 
-Der ESC sieht die Leitung einen ganzen Frame-Abstand lang high, bevor der
-erste Frame kommt, so wie vor jedem anderen Frame des Laufs. Der Wake-Durchlauf
+Der ESC sieht die Leitung 500µs oder länger high, bevor der erste Frame
+kommt: 1000µs abzüglich der Länge des Durchlaufs, der scharf schaltet, weil
+die Fälligkeit des Wake-Durchlaufs die Uhr des letzten unscharfen
+Durchlaufs ist. Der Wake-Durchlauf
 sendet keinen Frame, also behält die Anfrage alle zehn Wiederholungen.
 `out_dshot_send()` lässt einen Pin, der noch low ruht, los und sendet nichts,
 also beginnt kein Frame auf einer Low-Leitung. `test_out_dshot` hält den Pegel
-des Pads bei jedem Schritt fest, `test_outputs_hw` die 1000µs, auch über den
-Überlauf der 32-Bit-Mikrosekundenuhr.
+des Pads bei jedem Schritt fest, `test_outputs_hw` die 1000µs nach einem
+pünktlichen Wake, auch über den Überlauf der 32-Bit-Mikrosekundenuhr.
 
 Ein Pin, den die ESC-Signalleitungs-Session übernimmt, wird vorher
 freigegeben: Er ist ein einfacher Eingang, die Session setzt die Leitung, und
@@ -488,13 +523,16 @@ ist über diesen einen ESC hinaus unbestätigt:
 - ob der Hinweis "mindestens 35ms warten" in der Spezifikation zu Command 13
   oder zu Command 12 (Save Settings) gehört. Die Tabelle lässt beide Lesarten
   zu, und der Prüfstand wartet in keinem Fall: auf die zehnte Wiederholung
-  einer Anfrage folgt beim nächsten 1-ms-Takt das Throttle oder ein weiterer
+  einer Anfrage folgt bei der nächsten Fälligkeit das Throttle oder ein weiterer
   Frame mit Throttle null. Das klärt der Text der Spezifikation und keine
   Platine;
 - jedes Bit-Timing, gegen die Toleranz eines echten ESC statt gegen die
   Spezifikation;
-- die Low-Ruhe eines gestoppten bidirektionalen Pins und das Loslassen 1000µs
-  vor dem ersten Frame, und ob ein ESC danach sein Arming abschließt.
+- die Low-Ruhe eines gestoppten bidirektionalen Pins und das Loslassen 500µs
+  bis 1000µs vor dem ersten Frame, und ob ein ESC danach sein Arming
+  abschließt;
+- die Frame Rate und die Abstände zwischen Frames an einem Pin mit dem
+  Fälligkeitsraster.
 
 ## Wo der Code liegt
 

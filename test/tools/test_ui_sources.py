@@ -1,6 +1,7 @@
-"""ui_sources.py against shared/ui/CMakeLists.txt: every file the panel
-builds there is in SOURCES or in EXCLUDED, so a screen split into more
-files reaches render_ui.py and frame_cost.py.
+"""ui_sources.py against shared/ui/CMakeLists.txt.
+
+Every file the panel builds there is in SOURCES or in EXCLUDED, so a screen
+split into more files reaches render_ui.py and frame_cost.py.
 
 SPDX-License-Identifier: MIT
 """
@@ -56,11 +57,13 @@ def missing(built, sources, excluded):
 
 
 def test_the_parser_reads_the_srcs_block():
+    """The parser reads the srcs block."""
     text = "set(SRCS\n    a.c\n    b_c.c\n)\nset(OTHER x.c)\n"
     assert panel_ui_sources(text) == [f"{UI}/a.c", f"{UI}/b_c.c"]
 
 
 def test_a_comment_and_a_dash_are_read():
+    """A comment and a dash are read."""
     text = ("set(SRCS\n    # the screens\n    a.c  # the first\n"
             "    b-c.c\n)\n")
     assert panel_ui_sources(text) == [f"{UI}/a.c", f"{UI}/b-c.c"]
@@ -68,17 +71,20 @@ def test_a_comment_and_a_dash_are_read():
 
 @pytest.mark.parametrize("line", ["${EXTRA}", "a.c b.c", "a.h"])
 def test_a_line_it_cannot_read_fails(line):
+    """A line it cannot read fails."""
     with pytest.raises(AssertionError, match="does not read"):
         panel_ui_sources(f"set(SRCS\n    a.c\n    {line}\n)\n")
 
 
 def test_a_file_in_neither_list_is_reported():
+    """A file in neither list is reported."""
     built = [f"{UI}/a.c", f"{UI}/a_draw.c", f"{UI}/b.c"]
     assert missing(built, [f"{UI}/a.c"], {f"{UI}/b.c": "why"}) == [
         f"{UI}/a_draw.c"]
 
 
 def test_every_panel_ui_file_is_listed_or_excluded():
+    """Every panel UI file is listed or excluded."""
     text = (REPO / UI / "CMakeLists.txt").read_text()
     built = panel_ui_sources(text)
     assert len(built) > 50
@@ -86,6 +92,7 @@ def test_every_panel_ui_file_is_listed_or_excluded():
 
 
 def test_an_exclusion_names_a_built_file_the_list_leaves_out():
+    """An exclusion names a built file the list leaves out."""
     built = panel_ui_sources((REPO / UI / "CMakeLists.txt").read_text())
     for path, why in ui_sources.EXCLUDED.items():
         assert path in built, f"{path} is excluded but not built"
@@ -94,6 +101,7 @@ def test_an_exclusion_names_a_built_file_the_list_leaves_out():
 
 
 def test_every_source_exists_once():
+    """Every source exists once."""
     assert len(set(ui_sources.SOURCES)) == len(ui_sources.SOURCES)
     for path in ui_sources.SOURCES:
         assert (REPO / path).is_file(), path

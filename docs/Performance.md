@@ -404,8 +404,8 @@ its stack less 1024 bytes.
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
 | `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,512 | 2,640 |
-| `control` | `control_task` | 6,144 | 3,632 | 1,472 |
-| `runlog` | `log_task` | 6,656 | 3,824 | 1,792 |
+| `control` | `control_task` | 6,144 | 3,664 | 1,440 |
+| `runlog` | `log_task` | 6,656 | 3,840 | 1,776 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
 | `imu` | `imu_task`, the Bluetooth IMU's link: SETUP's values, the host stack's events and the actions to NimBLE (`panel_imu.c`) | 4,096 | 1,888 | 1,168 |
 | `blestart` | `ble_start_task`, the C6's link, its controller requests, the host's start and the wait for its sync, then gone (`panel_ble.c`) | 4,096 | 1,200 | 1,856 |

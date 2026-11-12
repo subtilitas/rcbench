@@ -65,10 +65,12 @@ MAN = list(g.MANUAL.values())
 
 
 def hx(s):
+    """@p s as the quoted hex of its UTF-8 bytes."""
     return "'" + s.encode("utf-8").hex() + "'"
 
 
 def b(x):
+    """1 for the string "true", else 0."""
     return 1 if x == "true" else 0
 
 
@@ -141,6 +143,7 @@ ADDED = ["family_de", "after_select", "entry_throttle", "entry_hold_ms",
 
 
 def paths(v, at=()):
+    """Yield the path of every node of @p v, with at most 6 list items each."""
     yield at
     if isinstance(v, dict):
         for k, x in v.items():
@@ -151,12 +154,14 @@ def paths(v, at=()):
 
 
 def get(v, at):
+    """The node of @p v at the path @p at."""
     for k in at:
         v = v[k]
     return v
 
 
 def dicts(v):
+    """The dict items of @p v when it is a list, else an empty list."""
     return [x for x in v if isinstance(x, dict)] \
         if isinstance(v, list) else []
 
@@ -198,6 +203,7 @@ MOST = {"within_ms": 60000, "beep_ms": 60000, "long_ms": 60000,
 
 
 def assisted(d):
+    """Mark the profile @p d as assisted, with a note."""
     d["automatable"] = "assisted"
     d.setdefault("automatable_note", "x")
 
@@ -267,6 +273,7 @@ def at_a_limit(rng, d, model_names):
 
 
 def mutate(rng, d, model_names):
+    """Change one node of the profile @p d at random, using @p rng."""
     ps = [p for p in paths(d) if p and p[0] not in ("sources", "notes")]
     at = rng.choice(ps)
     parent = get(d, at[:-1])
@@ -319,10 +326,12 @@ def mutate(rng, d, model_names):
 
 
 def nest(n):
+    """@p n nested JSON arrays around the number 1."""
     return b"[" * n + b"1" + b"]" * n
 
 
 def members(n):
+    """A JSON object with @p n members."""
     return b"{" + b", ".join(b'"k%d": 1' % i for i in range(n)) + b"}"
 
 
@@ -408,8 +417,10 @@ def edit_text(rng, raw):
 
 
 def make(rng, bases, out, count):
-    """The cases of one seed, written under @p out: their paths, in order,
-    None for a case whose text no file can hold."""
+    """The cases of one seed, written under @p out.
+
+    Their paths, in order, None for a case whose text no file can hold.
+    """
     made = []
     for n in range(count):
         src = rng.choice(bases)
@@ -444,8 +455,10 @@ def make(rng, bases, out, count):
 
 
 def run_seed(parse_dump, seed, count):
-    """The differences of one seed, as text, and how many cases both ends
-    took and both refused."""
+    """The differences of one seed, as text.
+
+    Also the number of cases both ends took and both refused.
+    """
     rng = random.Random(seed)
     bases = sorted((REPO / "shared" / "esc" / "profiles").glob("*.json"))
     problems = []
@@ -496,12 +509,15 @@ def run_seed(parse_dump, seed, count):
 
 
 def least(count):
-    """The fewest of @count cases that reach each verdict in a run that
-    compares something: 1 in 20, and 1 at least."""
+    """The fewest cases of @count that reach each verdict.
+
+    Applies to a run that compares something: 1 in 20, and 1 at least.
+    """
     return max(1, count // 20)
 
 
 def main(argv=None):
+    """Run the seeds and return the exit status."""
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("parse_dump", help="the esc_parse_dump binary")
     ap.add_argument("--seed", type=int, action="append",

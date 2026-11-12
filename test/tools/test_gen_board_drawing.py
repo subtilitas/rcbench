@@ -1,8 +1,11 @@
 # SPDX-License-Identifier: MIT
-"""tools/gen_board_drawing.py: the board drawing the IOmcu serves is
+"""tools/gen_board_drawing.py: the IOmcu's board drawing.
+
+The board drawing the IOmcu serves is
 the configurator's panel drawing, laid out as link_pages.h says, and a
 drawing the panel would refuse is refused here with the generator's own
-error."""
+error.
+"""
 
 import copy
 import json
@@ -20,6 +23,7 @@ C_FILE = REPO / "firmware" / "iomcu" / "src" / "board_drawing_rp2350_can.c"
 
 
 def panel():
+    """The panel drawing as parsed JSON."""
     return json.loads(PANEL.read_text(encoding="utf-8"))
 
 
@@ -31,16 +35,19 @@ def c_bytes(text):
 
 
 def c_const(text, name):
+    """The value of the C constant @p name in @p text."""
     m = re.search(rf"{name}\s*=\s*(0x[0-9A-F]+|\d+)u", text)
     assert m, name
     return int(m.group(1), 0)
 
 
 def test_the_checked_in_file_is_what_the_generator_writes():
+    """The checked in file is what the generator writes."""
     assert g.main(["--check"]) == 0
 
 
 def test_the_checksums_are_the_links_own():
+    """The checksums are the link's own."""
     # The check values of CRC-16/XMODEM and FNV-1a 32 over "123456789":
     # link_crc() seeds zero, link_fnv1a32() seeds LINK_FNV_INIT.
     assert g.link_crc(b"123456789") == 0x31C3
@@ -49,6 +56,7 @@ def test_the_checksums_are_the_links_own():
 
 
 def test_the_c_file_carries_the_payload_and_its_sums():
+    """The C file carries the payload and its sums."""
     text = C_FILE.read_text(encoding="utf-8")
     payload = g.encode(panel())
     assert c_bytes(text) == payload
@@ -61,6 +69,7 @@ def test_the_c_file_carries_the_payload_and_its_sums():
 
 
 def test_the_payload_is_laid_out_as_link_pages_says():
+    """The payload is laid out as link pages says."""
     d = panel()
     b = g.encode(d)
     pads, shapes = len(d["pads"]), len(d["shapes"])
@@ -92,16 +101,19 @@ def test_the_payload_is_laid_out_as_link_pages_says():
     ("#00ff00", 0x07E0), ("#0000ff", 0x001F), ("#1f4f97", 0x1A72),
 ])
 def test_a_colour_is_rgb565(colour, want):
+    """A colour is RGB565."""
     assert g.rgb565(colour) == want
 
 
 def change(fn):
+    """A copy of the panel drawing after @p fn changed it."""
     d = panel()
     fn(d)
     return d
 
 
 def pad(i, **kv):
+    """A change that updates the fields of pad @p i with @p kv."""
     def fn(d):
         d["pads"][i].update(kv)
     return fn
@@ -119,18 +131,21 @@ def shape(of, **kv):
 
 
 def top(**kv):
+    """A change that updates the top-level fields with @p kv."""
     def fn(d):
         d.update(kv)
     return fn
 
 
 def drop(key):
+    """A change that removes the top-level field @p key."""
     def fn(d):
         del d[key]
     return fn
 
 
 def many_shapes(d):
+    """A change that gives the drawing one shape more than the limit."""
     d["shapes"] = [copy.deepcopy(d["shapes"][0])
                    for _ in range(g.MAX_SHAPES + 1)]
 
@@ -149,12 +164,14 @@ def many_shapes(d):
     shape("disc", colour="#fff"),
 ], ids=lambda f: getattr(f, "__name__", "change"))
 def test_a_drawing_the_panel_would_refuse_is_refused(fn):
+    """A drawing the panel would refuse is refused."""
     with pytest.raises(g.DrawingError):
         g.encode(change(fn))
 
 
 @pytest.mark.parametrize("record", [None, 1, "x", []])
 def test_a_record_that_is_not_an_object_is_refused(record):
+    """A record that is not an object is refused."""
     d = panel()
     d["pads"][3] = record
     with pytest.raises(g.DrawingError):
@@ -162,6 +179,7 @@ def test_a_record_that_is_not_an_object_is_refused(record):
 
 
 def test_a_ring_touching_the_edge_is_inside():
+    """A ring touching the edge is inside."""
     d = panel()
     r = d["ringRadius"]
     d["pads"][0]["x"] = r
@@ -170,6 +188,7 @@ def test_a_ring_touching_the_edge_is_inside():
 
 def test_check_finds_a_file_that_drifted_or_is_missing(tmp_path,
                                                       monkeypatch):
+    """Check finds a file that drifted or is missing."""
     src = tmp_path / "panel.json"
     src.write_text(PANEL.read_text(encoding="utf-8"), encoding="utf-8")
     dst = tmp_path / "out.c"

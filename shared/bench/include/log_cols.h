@@ -5,9 +5,9 @@
  *        after what it watches: FAST's channel first, then the others in
  *        channel order, at most LOG_COLS_GROUPS of them.
  *
- * The reader takes 24 columns (LOG_MAX_COLUMNS), and the bench file's other
- * columns are 14 of them, so a channel past the third watching one is not
- * logged.
+ * The reader takes 25 columns (LOG_MAX_COLUMNS).  A MOTOR file's other
+ * columns are 15 of them and a SERVO file's 16, so a channel past the
+ * third watching one is not logged.
  *
  * A channel takes a group when its part is enabled, its shunt is not 0
  * and its WATCH is not NONE.  The group is "<target> current (A);
@@ -32,8 +32,9 @@ extern "C" {
 
 #define LOG_COLS_MAX     LINK_SM_CHANNELS
 /**
- * @brief The groups a file carries: its 14 other columns and 3 groups of 3 make
- *        23 of the 24 the reader takes.
+ * @brief The groups a file carries: a MOTOR file's 15 other columns and 3
+ *        groups of 3 make 24, and a SERVO file's 16 and 9 make the 25 the
+ *        reader takes (LOG_MAX_COLUMNS).
  */
 #define LOG_COLS_GROUPS  3u
 /** @brief "supply 0x43 ch3" and its terminator. */

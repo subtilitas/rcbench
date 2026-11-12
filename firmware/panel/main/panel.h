@@ -843,6 +843,15 @@ static inline bool write_regs(link_host_t *host, uint8_t page, uint8_t offset,
  * count and the throttle's endpoints.  See panel_link.c. */
 extern uint16_t s_arm_value;
 
+/**
+ * @brief A control page write of ARM @p arm and s_throttle_hundredths, and
+ *        whether the IOmcu acknowledged it, for the log's throttle
+ *        (bench_throttle_written()).  Control task only.
+ * @param acked true when the IOmcu acknowledged the write
+ * @param arm   the ARM written
+ */
+void control_throttle_written(bool acked, uint16_t arm);
+
 /*
  * ARM and THROTTLE, the write every 50ms poll and every disarm makes.
  *
@@ -862,8 +871,11 @@ static inline bool control_write(bool armed, link_msg_t *reply)
      * non-zero ARM is refused while it is armed (LINK_MINOR_ARM_ROLE). */
     const uint16_t regs[2] = { armed ? s_arm_value : 0u,
                                s_throttle_hundredths };
-    return write_regs(&s_host, LINK_PAGE_CONTROL, LINK_CT_ARM, 2u, regs, reply)
-           && reply->op == LINK_OP_ACK;
+    const bool ok = write_regs(&s_host, LINK_PAGE_CONTROL, LINK_CT_ARM, 2u,
+                               regs, reply)
+                    && reply->op == LINK_OP_ACK;
+    control_throttle_written(ok, regs[0]);
+    return ok;
 }
 
 bool control_arm(link_msg_t *reply);
@@ -1118,6 +1130,9 @@ static inline void prog_drive_publish(void)
 extern atomic_ullong s_throttle_pins;
 extern atomic_bool   s_throttle_pins_known;
 extern atomic_uint   s_throttle_proto;
+/* The THROTTLE in force at the IOmcu, for the log's rows.  Control task
+ * only. */
+extern bench_throttle_t s_bench_throttle;
 
 /* The OUTPUTS page as the IOmcu holds it; the OUTPUTS screen's write
  * asks for one straight afterwards. */

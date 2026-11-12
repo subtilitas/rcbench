@@ -24,8 +24,10 @@ HEADER = "---\nscreen: {screen}\ntitle: {title}\norder: {order}\n---\n\n"
 
 @pytest.fixture
 def tree(tmp_path):
-    """A content tree and an image tree of its own, so the tests do not
-    depend on what help/content/ holds today."""
+    """A content tree and an image tree of its own.
+
+    The tests do not depend on what help/content/ holds today.
+    """
     img = tmp_path / "img"
     (img / "de").mkdir(parents=True)
     for name in ("servo.png", "servo-ina.png", "motor.png", "only-en.png"):
@@ -38,6 +40,7 @@ def tree(tmp_path):
 
 
 def put(tree, lang, pid, body, screen=None, title="T", order=1):
+    """Write one help page in @p lang under @p tree and return its path."""
     if screen is None:
         screen = pid.upper() if pid in ("servo", "motor") else "none"
     path = tree / "content" / lang / f"{pid}.md"
@@ -47,6 +50,10 @@ def put(tree, lang, pid, body, screen=None, title="T", order=1):
 
 
 def both(tree, pid, body, body_de=None, **kw):
+    """Write the page @p pid in English and German.
+
+    @p body_de defaults to @p body.
+    """
     put(tree, "en", pid, body, **kw)
     put(tree, "de", pid, body if body_de is None else body_de, **kw)
 
@@ -63,12 +70,14 @@ def render(tree, body, lang="en", header=None):
 
 
 def ok(tree, body, lang="en"):
+    """Render @p body, assert no problem and return the page body."""
     page, problems = render(tree, body, lang)
     assert list(problems) == []
     return page.body
 
 
 def fails(tree, body, pattern, line=None, header=None):
+    """Render @p body and assert a problem that matches @p pattern."""
     _, problems = render(tree, body, header=header)
     assert problems, f"no problem for {body!r}"
     assert any(re.search(pattern, p) for p in problems), list(problems)
@@ -78,12 +87,14 @@ def fails(tree, body, pattern, line=None, header=None):
 
 
 def run(tree):
+    """Run the help check over the content and image trees of @p tree."""
     return hs.run(tree / "content", SCREENS, VIEWS, tree / "img")
 
 
 # ---------------------------------------------------------- the subset
 
 def test_headings_carry_anchors(tree):
+    """Headings carry anchors."""
     html = ok(tree, "# Servo\n\n## Run a test\n\n### Lösen und Halten\n")
     assert '<h1 id="servo">Servo</h1>' in html
     assert '<h2 id="run-a-test">Run a test</h2>' in html
@@ -91,10 +102,12 @@ def test_headings_carry_anchors(tree):
 
 
 def test_lines_of_a_paragraph_join(tree):
+    """Lines of a paragraph join."""
     assert ok(tree, "one\ntwo\n\nthree\n") == "<p>one two</p>\n<p>three</p>"
 
 
 def test_bold_code_and_escapes(tree):
+    """Bold code and escapes."""
     html = ok(tree, r"**ARM** then `SAFE **x**` and \*star\* \_u\_" "\n")
     assert "<strong>ARM</strong>" in html
     assert "<code>SAFE **x**</code>" in html
@@ -102,26 +115,31 @@ def test_bold_code_and_escapes(tree):
 
 
 def test_an_underscore_inside_a_word_is_text(tree):
+    """An underscore inside a word is text."""
     assert "SCREEN_SERVO" in ok(tree, "SCREEN_SERVO and a_b_c\n")
 
 
 def test_lists(tree):
+    """Lists."""
     html = ok(tree, "- a\n- b\n  continued\n\n3. x\n4. y\n")
     assert "<ul><li>a</li><li>b continued</li></ul>" in html
     assert '<ol start="3"><li>x</li><li>y</li></ol>' in html
 
 
 def test_a_table_with_alignment(tree):
+    """A table with alignment."""
     html = ok(tree, "| a | b | c |\n|---|:-:|--:|\n| 1 | `x\\|y` | 3 |\n")
     assert '<th class="c">b</th>' in html and '<td class="r">3</td>' in html
     assert "<code>x|y</code>" in html
 
 
 def test_a_table_without_body_rows(tree):
+    """A table without body rows."""
     assert "<thead>" in ok(tree, "| a |\n|---|\n")
 
 
 def test_links(tree):
+    """Links."""
     html = ok(tree, "## Here\n\n[a](https://example.com/x?y=1&z=2) "
                     "[b](motor.md) [c](motor.md#run) [d](#here) "
                     "[e](index.md)\n")
@@ -134,99 +152,119 @@ def test_links(tree):
 
 
 def test_a_link_target_keeps_balanced_parentheses(tree):
+    """A link target keeps balanced parentheses."""
     html = ok(tree, "[spec](https://example.com/Foo_(bar)) after\n")
     assert '<a href="https://example.com/Foo_(bar)" ' in html
     assert "</a> after" in html
 
 
 def test_an_escaped_parenthesis_in_a_link_target(tree):
+    """An escaped parenthesis in a link target."""
     html = ok(tree, "[x](https://example.com/a\\)b) after\n")
     assert '<a href="https://example.com/a)b" ' in html
     assert "</a> after" in html
 
 
 def test_a_heading_link_with_an_escaped_bracket_gets_its_label_anchor(tree):
+    """A heading link with an escaped bracket gets its label anchor."""
     html = ok(tree, "## [A\\]B](https://example.com)\n\n[x](#a-b)\n")
     assert '<h2 id="a-b">' in html
 
 
 def test_an_underscore_in_a_deeply_nested_link_target_is_no_emphasis(tree):
+    """An underscore in a deeply nested link target is no emphasis."""
     html = ok(tree, "[x](https://example.com/a_(_b_(c)))\n")
     assert 'href="https://example.com/a_(_b_(c))"' in html
 
 
 def test_an_escaped_backslash_at_a_line_end_is_no_hard_break(tree):
+    """An escaped backslash at a line end is no hard break."""
     ok(tree, "first \\\\\nsecond\n")
 
 
 def test_trailing_spaces_on_the_last_line_pass(tree):
+    """Trailing spaces on the last line pass."""
     ok(tree, "only line  \n")
 
 
 def test_an_underscore_in_a_link_target_is_no_emphasis(tree):
+    """An underscore in a link target is no emphasis."""
     html = ok(tree, "[x](https://example.com/_private_)\n")
     assert 'href="https://example.com/_private_"' in html
 
 
 def test_a_cell_ending_in_a_literal_backslash(tree):
+    """A cell ending in a literal backslash."""
     html = ok(tree, "| Path |\n|---|\n| C:\\\\|\n")
     assert "C:\\</td>" in html
 
 
 def test_a_heading_anchor_keeps_the_marks_of_a_code_span(tree):
+    """A heading anchor keeps the marks of a code span."""
     html = ok(tree, "## `C**D`\n\n[x](#c-d)\n")
     assert '<h2 id="c-d"><code>C**D</code></h2>' in html
 
 
 def test_a_heading_anchor_drops_a_link_target_but_not_code(tree):
+    """A heading anchor drops a link target but not code."""
     html = ok(tree, "## `[a](b)` and [c](https://x.example)\n\n"
                     "[x](#a-b-and-c)\n")
     assert '<h2 id="a-b-and-c">' in html
 
 
 def test_a_nested_link_names_its_line(tree):
+    """A nested link names its line."""
     fails(tree, "## X\n\n## Y\n\n[a [b](#x)](#y)\n",
           "a link inside a link", line=11)
 
 
 def test_a_bracket_in_a_code_span_does_not_close_a_label(tree):
+    """A bracket in a code span does not close a label."""
     html = ok(tree, "## A\n\n[x `]` y](#a)\n")
     assert '<a href="#a">x <code>]</code> y</a>' in html
 
 
 def test_a_bracket_in_a_code_span_does_not_open_a_label(tree):
+    """A bracket in a code span does not open a label."""
     html = ok(tree, "`[` [x](https://x.example)\n")
     assert '<code>[</code> <a href="https://x.example"' in html
 
 
 def test_brackets_inside_a_link_label_stay_text(tree):
+    """Brackets inside a link label stay text."""
     html = ok(tree, "[see [1] here](https://x.example)\n")
     assert ">see [1] here</a>" in html
 
 
 def test_an_image_alt_keeps_the_marks_of_a_code_span(tree):
+    """An image alt keeps the marks of a code span."""
     html = ok(tree, "![The `C**D` key](view:motor)\n")
     assert 'alt="The C**D key"' in html
 
 
 def test_a_heading_without_an_anchor_fails(tree):
+    """A heading without an anchor fails."""
     fails(tree, "## ???\n", "no letter or digit for its anchor")
 
 
 def test_an_unindented_line_after_a_list_fails(tree):
+    """An unindented line after a list fails."""
     fails(tree, "- item\nparagraph\n", "leave a blank line after a list",
           line=8)
 
 
 def test_an_indented_line_continues_a_list_item(tree):
+    """An indented line continues a list item."""
     assert "<li>item more</li>" in ok(tree, "- item\n  more\n")
 
 
 def test_a_bracket_without_a_target_is_text(tree):
+    """A bracket without a target is text."""
     assert "[1] and [x]" in ok(tree, "[1] and [x]\n")
 
 
 def test_one_image(tree):
+    """One image."""
     html = ok(tree, "![The **SERVO** screen](view:servo)\n")
     assert ('<div class="shot"><figure><a href="img/servo.png">'
             '<img src="img/servo.png"') in html
@@ -236,18 +274,21 @@ def test_one_image(tree):
 
 
 def test_images_in_one_block_form_a_row(tree):
+    """Images in one block form a row."""
     html = ok(tree, "![a](view:servo)\n![b](view:servo-ina)\n")
     assert html.startswith('<div class="shots">')
     assert html.count("<figure>") == 2
 
 
 def test_a_german_page_takes_the_german_image(tree):
+    """A German page takes the German image."""
     page, problems = render(tree, "![a](view:servo)\n", lang="de")
     assert list(problems) == []
     assert 'src="../img/de/servo.png"' in page.body
 
 
 def test_the_views_are_recorded_in_order(tree):
+    """The views are recorded in order."""
     page, _ = render(tree, "![a](view:servo-ina)\n\n![b](view:servo)\n")
     assert [v for v, _ in page.views] == ["servo-ina", "servo"]
 
@@ -255,6 +296,7 @@ def test_the_views_are_recorded_in_order(tree):
 # ------------------------------------------------------------ hostile input
 
 def test_html_in_text_is_escaped(tree):
+    """HTML in text is escaped."""
     html = ok(tree, '<script>alert("x")</script> & <b onclick=1>\n\n'
                     "- <img src=x onerror=1>\n\n"
                     "| <i>h</i> |\n|---|\n| <a href=x>c</a> |\n\n"
@@ -266,12 +308,14 @@ def test_html_in_text_is_escaped(tree):
 
 
 def test_html_in_a_caption_is_escaped(tree):
+    """HTML in a caption is escaped."""
     html = ok(tree, '![<img src=x onerror=1> "q"](view:servo)\n')
     assert "<img src=x" not in html
     assert 'alt="&lt;img src=x onerror=1&gt; &quot;q&quot;"' in html
 
 
 def test_a_link_target_cannot_break_out_of_its_attribute(tree):
+    """A link target cannot break out of its attribute."""
     fails(tree, '[a](https://x.example/"onmouseover="1)\n', "link target")
 
 
@@ -280,62 +324,76 @@ def test_a_link_target_cannot_break_out_of_its_attribute(tree):
     "data:text/html,x", "view:servo", "MOTOR.md", "",
 ])
 def test_a_link_target_outside_the_format_fails(tree, target):
+    """A link target outside the format fails."""
     fails(tree, f"[a]({target})\n", "link target", line=7)
 
 
 def test_an_unclosed_table_row_fails(tree):
+    """An unclosed table row fails."""
     fails(tree, "| a | b |\n|---|---|\n| 1 | 2\n", "unclosed table row",
           line=9)
 
 
 def test_a_row_ending_in_an_escaped_pipe_is_unclosed(tree):
+    """A row ending in an escaped pipe is unclosed."""
     fails(tree, "| a |\n|---|\n| 1 \\|\n", "unclosed table row")
 
 
 def test_a_table_without_separator_fails(tree):
+    """A table without separator fails."""
     fails(tree, "| a | b |\n| 1 | 2 |\n", "separator", line=8)
 
 
 def test_a_table_of_one_row_fails(tree):
+    """A table of one row fails."""
     fails(tree, "| a | b |\n", "separator")
 
 
 def test_a_row_with_another_cell_count_fails(tree):
+    """A row with another cell count fails."""
     fails(tree, "| a | b |\n|---|---|\n| 1 | 2 | 3 |\n", "3 cells", line=9)
 
 
 def test_a_table_row_that_does_not_start_with_a_pipe_fails(tree):
+    """A table row that does not start with a pipe fails."""
     fails(tree, "| a |\n|---|\nx |\n", "starts with \\|")
 
 
 def test_an_image_without_view_fails(tree):
+    """An image without view fails."""
     fails(tree, "![a](servo.png)\n", "takes view:", line=7)
     fails(tree, "![a](https://x.example/a.png)\n", "takes view:")
 
 
 def test_an_image_inside_text_fails(tree):
+    """An image inside text fails."""
     fails(tree, "see ![a](view:servo) here\n", "line of its own", line=7)
 
 
 def test_text_in_a_block_of_images_fails(tree):
+    """Text in a block of images fails."""
     fails(tree, "![a](view:servo)\nand text\n", "one !\\[caption\\]",
           line=8)
 
 
 def test_an_image_without_caption_fails(tree):
+    """An image without caption fails."""
     fails(tree, "![](view:servo)\n", "no caption")
 
 
 def test_an_unknown_view_fails(tree):
+    """An unknown view fails."""
     fails(tree, "![a](view:nothing)\n", "not in render_ui.py")
 
 
 def test_a_view_without_a_german_image_fails(tree):
+    """A view without a German image fails."""
     page, problems = render(tree, "![a](view:only-en)\n", lang="de")
     assert any("docs/img/de/only-en.png" in p for p in problems)
 
 
 def test_a_view_whose_file_is_not_a_png_fails(tree):
+    """A view whose file is not a PNG fails."""
     (tree / "img" / "motor.png").write_bytes(b"GIF89a")
     fails(tree, "![a](view:motor)\n", "not a PNG")
 
@@ -394,10 +452,12 @@ def test_a_view_whose_file_is_not_a_png_fails(tree):
     ("##\n", "empty heading|space after"),
 ])
 def test_outside_the_subset_fails(tree, body, pattern):
+    """Outside the subset fails."""
     fails(tree, body, pattern)
 
 
 def test_an_empty_screen_fails(tree):
+    """An empty screen fails."""
     fails(tree, "text\n", "the screen is empty",
           header="---\nscreen:\ntitle: T\norder: 1\n---\n")
 
@@ -408,10 +468,12 @@ def test_an_empty_screen_fails(tree):
     "`_a_` in code\n",
 ])
 def test_underscores_that_are_no_emphasis_pass(tree, body):
+    """Underscores that are no emphasis pass."""
     ok(tree, body)
 
 
 def test_a_problem_names_its_line(tree):
+    """A problem names its line."""
     _, problems = render(tree, "fine\n\nfine\n**open\n")
     assert len(problems) == 1
     assert problems[0].endswith(":10: unclosed **")
@@ -430,10 +492,12 @@ def test_a_problem_names_its_line(tree):
     ("---\nscreen: none\nnot a key\norder: 1\n---\n", "key: value"),
 ])
 def test_a_bad_header_fails(tree, header, pattern):
+    """A bad header fails."""
     fails(tree, "text\n", pattern, header=header)
 
 
 def test_a_very_long_line_renders_in_linear_time(tree):
+    """A very long line renders in linear time."""
     # 200,000 characters of every mark that starts a scan: brackets that
     # never close, underscores, escapes, unclosed backticks last.
     chunk = "word [x _y_z \\* **b** `c` [l](#t) "
@@ -451,6 +515,7 @@ def test_a_very_long_line_renders_in_linear_time(tree):
 
 
 def test_bytes_that_are_not_utf8_fail(tree):
+    """Bytes that are not UTF-8 fail."""
     path = tree / "content" / "en" / "page.md"
     path.write_bytes(b"---\xff\n")
     problems = hs.Problems()
@@ -459,6 +524,7 @@ def test_bytes_that_are_not_utf8_fail(tree):
 
 
 def test_crlf_line_ends_read_as_lf(tree):
+    """CRLF line ends read as LF."""
     page, problems = render(tree, "# A\r\n\r\ntext\r\n",
                             header="---\r\nscreen: none\r\ntitle: T\r\n"
                                    "order: 1\r\n---\r\n")
@@ -469,18 +535,21 @@ def test_crlf_line_ends_read_as_lf(tree):
 # ---------------------------------------------------------- across pages
 
 def full(tree):
+    """Write a complete servo and motor page pair in both languages."""
     both(tree, "servo", "# Servo\n\nLead.\n\n## Run\n\n![a](view:servo)\n"
                         "\n[motor](motor.md#hold)\n", order=2)
     both(tree, "motor", "## Hold\n\n![m](view:motor)\n", order=1)
 
 
 def test_a_complete_tree_passes(tree):
+    """A complete tree passes."""
     full(tree)
     _, problems = run(tree)
     assert list(problems) == []
 
 
 def test_a_screen_without_a_page_fails_in_each_language(tree):
+    """A screen without a page fails in each language."""
     full(tree)
     (tree / "content" / "de" / "motor.md").unlink()
     _, problems = run(tree)
@@ -489,6 +558,7 @@ def test_a_screen_without_a_page_fails_in_each_language(tree):
 
 
 def test_a_screen_page_must_name_its_screen(tree):
+    """A screen page must name its screen."""
     full(tree)
     put(tree, "de", "servo", "# Servo\n\nLead.\n\n## Run\n\n"
                              "![a](view:servo)\n\n[motor](motor.md#hold)\n",
@@ -498,6 +568,7 @@ def test_a_screen_page_must_name_its_screen(tree):
 
 
 def test_index_is_not_a_page_id(tree):
+    """Index is not a page id."""
     full(tree)
     both(tree, "index", "text\n")
     _, problems = run(tree)
@@ -505,12 +576,14 @@ def test_index_is_not_a_page_id(tree):
 
 
 def test_the_splash_needs_no_page(tree):
+    """The splash needs no page."""
     full(tree)
     _, problems = run(tree)
     assert not any("SPLASH" in p for p in problems)
 
 
 def test_an_extra_page_needs_its_counterpart(tree):
+    """An extra page needs its counterpart."""
     full(tree)
     put(tree, "en", "servo-programmer", "text\n")
     _, problems = run(tree)
@@ -518,6 +591,7 @@ def test_an_extra_page_needs_its_counterpart(tree):
 
 
 def test_a_screen_page_is_named_after_its_screen(tree):
+    """A screen page is named after its screen."""
     full(tree)
     both(tree, "servo-x", "text\n", screen="SERVO")
     _, problems = run(tree)
@@ -527,6 +601,7 @@ def test_a_screen_page_is_named_after_its_screen(tree):
 
 
 def test_an_unknown_screen_fails(tree):
+    """An unknown screen fails."""
     full(tree)
     both(tree, "nothing", "text\n", screen="NOTHING")
     _, problems = run(tree)
@@ -534,6 +609,7 @@ def test_an_unknown_screen_fails(tree):
 
 
 def test_heading_structures_that_differ_fail(tree):
+    """Heading structures that differ fail."""
     full(tree)
     both(tree, "motor", "## Hold\n\n![m](view:motor)\n",
          body_de="## Halten\n\n### Mehr\n\n![m](view:motor)\n")
@@ -543,6 +619,7 @@ def test_heading_structures_that_differ_fail(tree):
 
 
 def test_a_missing_title_heading_in_one_language_fails(tree):
+    """A missing title heading in one language fails."""
     full(tree)
     both(tree, "motor", "# Motor\n\n## Hold\n\n![m](view:motor)\n",
          body_de="## Hold\n\n![m](view:motor)\n")
@@ -551,6 +628,7 @@ def test_a_missing_title_heading_in_one_language_fails(tree):
 
 
 def test_view_lists_that_differ_fail(tree):
+    """View lists that differ fail."""
     full(tree)
     both(tree, "motor", "## Hold\n\n![m](view:motor)\n",
          body_de="## Hold\n\n![m](view:servo)\n")
@@ -560,6 +638,7 @@ def test_view_lists_that_differ_fail(tree):
 
 
 def test_a_view_missing_in_one_language_fails(tree):
+    """A view missing in one language fails."""
     full(tree)
     both(tree, "motor", "## Hold\n\n![m](view:motor)\n\n![s](view:servo)\n",
          body_de="## Hold\n\n![m](view:motor)\n")
@@ -568,6 +647,7 @@ def test_a_view_missing_in_one_language_fails(tree):
 
 
 def test_order_and_screen_agree_across_languages(tree):
+    """Order and screen agree across languages."""
     full(tree)
     put(tree, "de", "motor", "## Hold\n\n![m](view:motor)\n", order=7)
     _, problems = run(tree)
@@ -575,6 +655,7 @@ def test_order_and_screen_agree_across_languages(tree):
 
 
 def test_a_link_to_a_missing_page_fails(tree):
+    """A link to a missing page fails."""
     full(tree)
     both(tree, "motor", "## Hold\n\n![m](view:motor)\n\n[x](gone.md)\n")
     _, problems = run(tree)
@@ -582,6 +663,7 @@ def test_a_link_to_a_missing_page_fails(tree):
 
 
 def test_a_link_to_a_missing_anchor_fails(tree):
+    """A link to a missing anchor fails."""
     full(tree)
     both(tree, "motor", "## Hold\n\n![m](view:motor)\n\n[x](servo.md#nope)\n")
     _, problems = run(tree)
@@ -589,6 +671,7 @@ def test_a_link_to_a_missing_anchor_fails(tree):
 
 
 def test_the_index_has_no_anchors(tree):
+    """The index has no anchors."""
     full(tree)
     both(tree, "motor", "## Hold\n\n![m](view:motor)\n\n[x](index.md#a)\n")
     _, problems = run(tree)
@@ -596,6 +679,7 @@ def test_the_index_has_no_anchors(tree):
 
 
 def test_files_that_are_not_pages(tree):
+    """Files that are not pages."""
     full(tree)
     (tree / "content" / "en" / "_draft.md").write_text("anything")
     (tree / "content" / "en" / "notes.txt").write_text("x")
@@ -604,6 +688,7 @@ def test_files_that_are_not_pages(tree):
 
 
 def test_a_missing_language_folder_fails(tree):
+    """A missing language folder fails."""
     full(tree)
     for p in (tree / "content" / "de").iterdir():
         p.unlink()
@@ -615,6 +700,7 @@ def test_a_missing_language_folder_fails(tree):
 # ---------------------------------------------------------------- inputs
 
 def test_the_screen_list_is_the_router_enum():
+    """The screen list is the router enum."""
     names = hs.screen_names()
     assert names[0] == "SCREEN_SPLASH"
     assert "SCREEN_COPROC_UPDATE" in names and "SCREEN_COUNT" not in names
@@ -622,6 +708,7 @@ def test_the_screen_list_is_the_router_enum():
 
 
 def test_comments_in_the_enum_are_not_screens(tmp_path):
+    """Comments in the enum are not screens."""
     h = tmp_path / "ui_screen.h"
     h.write_text("typedef enum {\n SCREEN_A = 0,\n /* SCREEN_OLD */\n"
                  " SCREEN_B, // SCREEN_C\n SCREEN_COUNT\n} ui_screen_id_t;\n")
@@ -629,12 +716,14 @@ def test_comments_in_the_enum_are_not_screens(tmp_path):
 
 
 def test_every_view_has_its_images():
+    """Every view has its images."""
     for name, filename in hs.view_files().items():
         for lang in hs.LANGS:
             assert hs.image_path(hs.IMG, lang, filename).is_file(), name
 
 
 def test_the_example_page_renders(tmp_path):
+    """The example page renders."""
     example = hs.CONTENT / "en" / "_example.md"
     if not example.exists():
         pytest.skip("no _example.md")
@@ -645,6 +734,7 @@ def test_the_example_page_renders(tmp_path):
 # ---------------------------------------------------------------- output
 
 def test_the_site(tree):
+    """The site."""
     full(tree)
     pages, problems = run(tree)
     assert list(problems) == []
@@ -680,6 +770,7 @@ def test_the_site(tree):
 
 
 def test_a_page_without_a_title_heading_gets_one(tree):
+    """A page without a title heading gets one."""
     full(tree)
     pages, _ = run(tree)
     hs.write(tree / "out", pages, VIEWS, tree / "img")
@@ -690,6 +781,7 @@ def test_a_page_without_a_title_heading_gets_one(tree):
 
 
 def test_the_pages_load_nothing_from_elsewhere_and_run_no_script(tree):
+    """The pages load nothing from elsewhere and run no script."""
     full(tree)
     pages, _ = run(tree)
     out = tree / "out"
@@ -704,6 +796,7 @@ def test_the_pages_load_nothing_from_elsewhere_and_run_no_script(tree):
 
 
 def test_a_rebuild_empties_the_folder_first(tree):
+    """A rebuild empties the folder first."""
     full(tree)
     pages, _ = run(tree)
     out = tree / "out"
@@ -714,6 +807,7 @@ def test_a_rebuild_empties_the_folder_first(tree):
 
 
 def test_a_folder_the_tool_did_not_write_is_kept(tree):
+    """A folder the tool did not write is kept."""
     full(tree)
     pages, _ = run(tree)
     out = tree / "mine"
@@ -727,6 +821,7 @@ def test_a_folder_the_tool_did_not_write_is_kept(tree):
 @pytest.mark.parametrize("out", [hs.REPO, hs.REPO / "help", hs.CONTENT,
                                  hs.REPO / "docs", hs.REPO.parent])
 def test_an_output_folder_holding_sources_is_refused(tree, out):
+    """An output folder holding sources is refused."""
     full(tree)
     pages, _ = run(tree)
     with pytest.raises(SystemExit, match="choose an output folder"):
@@ -735,6 +830,7 @@ def test_an_output_folder_holding_sources_is_refused(tree, out):
 
 
 def test_a_preview_navigates_only_to_files_it_writes(tmp_path):
+    """A preview navigates only to files it writes."""
     out = tmp_path / "out"
     assert hs.main(["--page", str(hs.CONTENT / "en" / "servo.md"),
                     "--out", str(out)]) == 0
@@ -756,6 +852,7 @@ def test_a_preview_navigates_only_to_files_it_writes(tmp_path):
 
 
 def test_check_writes_nothing(tmp_path, monkeypatch):
+    """Check writes nothing."""
     monkeypatch.setattr(hs, "run", lambda *a: ({"en": {}, "de": {}},
                                                hs.Problems()))
     out = tmp_path / "out"
@@ -764,6 +861,7 @@ def test_check_writes_nothing(tmp_path, monkeypatch):
 
 
 def test_a_problem_writes_nothing(tmp_path, monkeypatch):
+    """A problem writes nothing."""
     problems = hs.Problems()
     problems.add(pathlib.Path("x.md"), 3, "bad")
     monkeypatch.setattr(hs, "run", lambda *a: ({"en": {}, "de": {}},

@@ -28,15 +28,18 @@ TABLE = {
     ("RATIO", 0.02), ("PIN", 6), ("CAST", 7),
 ])
 def test_a_constant_is_a_number_an_alias_or_arithmetic(name, value):
+    """A constant is a number an alias or arithmetic."""
     assert cd.constant(name, TABLE) == pytest.approx(value)
 
 
 @pytest.mark.parametrize("name", ["TWICE", "TEXT", "MISSING"])
 def test_what_is_not_one_number_is_unknown(name):
+    """What is not one number is unknown."""
     assert cd.constant(name, TABLE) is None
 
 
 def test_a_number_is_read_as_its_language_writes_it():
+    """A number is read as its language writes it."""
     assert cd.doc_number("15,600", german=False) == 15600
     assert cd.doc_number("0.020", german=False) == pytest.approx(0.02)
     assert cd.doc_number("15 600", german=True) == 15600
@@ -48,11 +51,13 @@ def test_a_number_is_read_as_its_language_writes_it():
 
 @pytest.fixture
 def tree(tmp_path, monkeypatch):
+    """A temporary tree that check_docs reads as the repository."""
     monkeypatch.setattr(cd, "REPO", tmp_path)
     return tmp_path
 
 
 def facts(tree, text, fact):
+    """The problems check_facts finds in @p text for one fact."""
     (tree / "Page.md").write_text(text, encoding="utf-8")
     problems = []
     cd.check_facts(problems, facts=[fact], table=TABLE)
@@ -64,21 +69,25 @@ FACT = ("Page.md", rf"edges every {cd.N} ms and waits {cd.N} ms",
 
 
 def test_a_statement_that_agrees_passes(tree):
+    """A statement that agrees passes."""
     assert facts(tree, "It edges every 20 ms and\nwaits 80 ms.", FACT) == []
 
 
 def test_a_statement_that_disagrees_fails(tree):
+    """A statement that disagrees fails."""
     out = facts(tree, "It edges every 25 ms and waits 80 ms.", FACT)
     assert out == ["Page.md: says 25 in 'edges every 25 ms and waits 80 "
                    "ms'; PERIOD_MS makes it 20"]
 
 
 def test_a_statement_that_is_gone_fails(tree):
+    """A statement that is gone fails."""
     out = facts(tree, "It edges now and then.", FACT)
     assert len(out) == 1 and out[0].startswith("Page.md: no statement")
 
 
 def test_a_constant_with_two_values_fails(tree):
+    """A constant with two values fails."""
     out = facts(tree, "limit 5 ms", ("Page.md", rf"limit {cd.N} ms",
                                      ("TWICE",)))
     assert out == ["Page.md: TWICE is not a constant with one value in "
@@ -86,24 +95,28 @@ def test_a_constant_with_two_values_fails(tree):
 
 
 def test_a_factor_changes_the_unit(tree):
+    """A factor changes the unit."""
     fact = ("Page.md", rf"after {cd.N} s", (("SETTLE_MS", 0.001),))
     assert facts(tree, "after 0.1 s", fact) == []
     assert len(facts(tree, "after 1 s", fact)) == 1
 
 
 def test_every_fact_has_one_value_per_group():
+    """Every fact has one value per group."""
     for page, pattern, wants in cd.FACTS:
         assert re.compile(pattern).groups == len(wants), (page, pattern)
         assert (cd.REPO / page).is_file(), page
 
 
 def test_the_tree_meets_every_fact():
+    """The tree meets every fact."""
     problems = []
     cd.check_facts(problems)
     assert problems == []
 
 
 def test_defines_reads_a_value_and_marks_a_conflict(tree):
+    """Defines reads a value and marks a conflict."""
     (tree / "shared").mkdir()
     (tree / "firmware").mkdir()
     (tree / "shared" / "a.h").write_text(
@@ -119,6 +132,7 @@ def test_defines_reads_a_value_and_marks_a_conflict(tree):
 
 
 def rows(tree, text, name="Servo.md"):
+    """The problems the constant-table check finds in a page of @p text."""
     page = tree / name
     page.write_text(text, encoding="utf-8")
     problems = []
@@ -127,6 +141,7 @@ def rows(tree, text, name="Servo.md"):
 
 
 def test_a_constant_row_is_held_to_its_header(tree):
+    """A constant row is held to its header."""
     good = "| `PERIOD_MS` | 20 ms | the period |\n"
     assert rows(tree, good) == []
     out = rows(tree, "| `PERIOD_MS` | 25 ms | the period |\n")
@@ -134,11 +149,13 @@ def test_a_constant_row_is_held_to_its_header(tree):
 
 
 def test_a_german_constant_row_uses_a_comma(tree):
+    """A German constant row uses a comma."""
     assert rows(tree, "| `RATIO` | 0,020 A | x |\n", "Servo-de.md") == []
     assert len(rows(tree, "| `RATIO` | 0,030 A | x |\n", "Servo-de.md")) == 1
 
 
 def test_a_row_that_names_no_constant_is_left_alone(tree):
+    """A row that names no constant is left alone."""
     assert rows(tree, "| `WAITING` | 500 ms | a label |\n") == []
 
 
@@ -171,6 +188,7 @@ After the table.
 
 
 def test_ci_ceilings_reads_every_call():
+    """CI ceilings reads every call."""
     assert cd.ci_ceilings(CI) == [
         (frozenset({"frame", "sim", "supply"}), 15600),
         (frozenset({"servo"}), 17000),
@@ -181,6 +199,7 @@ def test_ci_ceilings_reads_every_call():
 
 
 def ceilings(tree, doc, ci=CI):
+    """The problems the ceiling check finds in a Performance page."""
     page = tree / "Performance.md"
     page.write_text(doc, encoding="utf-8")
     problems = []
@@ -189,42 +208,50 @@ def ceilings(tree, doc, ci=CI):
 
 
 def test_a_ceiling_table_that_matches_ci_passes(tree):
+    """A ceiling table that matches CI passes."""
     assert ceilings(tree, DOC) == []
 
 
 def test_a_changed_ceiling_fails(tree):
+    """A changed ceiling fails."""
     out = ceilings(tree, DOC.replace("15,600", "15,700"))
     assert out == ["Performance.md: the ceiling table gives '`frame`, "
                    "`sim`, `supply`' as 15700; ci.yml holds it to 15600"]
 
 
 def test_a_changed_count_fails(tree):
+    """A changed count fails."""
     out = ceilings(tree, DOC.replace("the three per", "the four per"))
     assert len(out) == 2            # the row fits no call; a call has no row
 
 
 def test_a_mode_ci_holds_and_the_table_omits_fails(tree):
+    """A mode CI holds and the table omits fails."""
     out = ceilings(tree, DOC.replace("| `servo-grip` | 4,000 | c |\n", ""))
     assert out == ["Performance.md: the ceiling table has no row for "
                    "servo-grip, which ci.yml holds to 4000"]
 
 
 def test_a_missing_table_fails(tree):
+    """A missing table fails."""
     out = ceilings(tree, "no table here")
     assert out == [f"Performance.md: no table headed '{HEADER}'"]
 
 
 def test_a_table_with_no_ceiling_in_ci_fails(tree):
+    """A table with no ceiling in CI fails."""
     out = ceilings(tree, DOC, ci="      - name: x\n        run: true\n")
     assert out == ["Performance.md: has the ceiling table, and ci.yml has "
                    "no frame_cost.py call with --max-lines"]
 
 
 def test_no_table_and_no_ceiling_in_ci_passes(tree):
+    """No table and no ceiling in CI passes."""
     assert ceilings(tree, "no table here", ci="run: true\n") == []
 
 
 def test_the_tree_passes_the_new_checks():
+    """The tree passes the new checks."""
     problems = []
     cd.check_constant_tables(problems)
     cd.check_ceilings(problems)
@@ -233,6 +260,7 @@ def test_the_tree_passes_the_new_checks():
 
 
 def modules_tree(tree, shared, protocols, listed):
+    """The problems the module list check finds for a tree of modules."""
     for root, names in (("shared", shared), ("protocols", protocols)):
         for name in names:
             (tree / root / name).mkdir(parents=True)
@@ -246,6 +274,7 @@ def modules_tree(tree, shared, protocols, listed):
 
 
 def test_the_tree_lists_the_modules_of_both_roots(tree, monkeypatch):
+    """The tree lists the modules of both roots."""
     monkeypatch.setattr(cd, "DOCS", tree / "docs")
     assert modules_tree(tree, ["gfx"], ["ppm"], ["gfx", "ppm"]) == []
     assert cd.shared_modules() == ["gfx", "ppm"]
@@ -253,12 +282,14 @@ def test_the_tree_lists_the_modules_of_both_roots(tree, monkeypatch):
 
 
 def test_a_protocol_module_the_tree_omits_fails(tree, monkeypatch):
+    """A protocol module the tree omits fails."""
     monkeypatch.setattr(cd, "DOCS", tree / "docs")
     assert modules_tree(tree, ["gfx"], ["ppm", "kst"], ["gfx", "ppm"]) == [
         "Building.md: the tree omits protocols/kst/"]
 
 
 def test_one_name_in_both_roots_fails(tree, monkeypatch):
+    """One name in both roots fails."""
     monkeypatch.setattr(cd, "DOCS", tree / "docs")
     out = modules_tree(tree, ["ppm"], ["ppm"], ["ppm"])
     assert out == ["protocols/ppm/ and shared/ppm/ share a name; the builds "
@@ -266,12 +297,14 @@ def test_one_name_in_both_roots_fails(tree, monkeypatch):
 
 
 def test_a_tree_without_protocols_is_read(tree, monkeypatch):
+    """A tree without protocols is read."""
     monkeypatch.setattr(cd, "DOCS", tree / "docs")
     assert modules_tree(tree, ["gfx"], [], []) == [
         "Building.md: the tree omits shared/gfx/"]
 
 
 def suite_tree(tree, status):
+    """The problems the suite check finds for a STATUS.md of @p status."""
     host = tree / "test" / "host"
     host.mkdir(parents=True)
     (host / "CMakeLists.txt").write_text(
@@ -286,12 +319,14 @@ NAMED = "`test_gfx` `test_kst_wire` `test_kst_reg`\n"
 
 
 def test_every_count_of_binaries_agrees_with_cmake(tree):
+    """Every count of binaries agrees with CMake."""
     assert suite_tree(
         tree, "The suite is 3 binaries. Of the 2 `test_kst_*` binaries, 1 "
         "runs.\n" + NAMED) == []
 
 
 def test_a_second_count_of_binaries_is_checked_too(tree):
+    """A second count of binaries is checked too."""
     out = suite_tree(
         tree, "The suite is 3 binaries.\nAnother page says 4 binaries.\n"
         + NAMED)
@@ -299,6 +334,7 @@ def test_a_second_count_of_binaries_is_checked_too(tree):
 
 
 def test_a_count_of_one_prefix_is_checked(tree):
+    """A count of one prefix is checked."""
     out = suite_tree(
         tree, "The suite is 3 binaries. Of the 5 `test_kst_*` binaries.\n"
         + NAMED)
@@ -306,6 +342,7 @@ def test_a_count_of_one_prefix_is_checked(tree):
 
 
 def test_spdx_covers_the_tool_scripts(tree):
+    """SPDX covers the tool scripts."""
     for rel, text in (("shared/a.c", "/* SPDX-License-Identifier: MIT */\n"),
                       ("tools/ok.py", "# SPDX-License-Identifier: MIT\n"),
                       ("tools/bad.py", "x = 1\n"),
@@ -325,10 +362,13 @@ def test_spdx_covers_the_tool_scripts(tree):
 
 
 def sdk_tree(tree, **change):
-    """ci.yml, release.yml and the build and performance pages, agreeing on
+    """The CI files and pages that agree on pico-sdk 2.3.0 and ESP-IDF v6.1.
+
+    ci.yml, release.yml and the build and performance pages, agreeing on
     pico-sdk 2.3.0 and ESP-IDF v6.1, the panel job named as the ruleset
     requires it, unless a name in @p change
-    replaces its text."""
+    replaces its text.
+    """
     files = {
         ".github/workflows/ci.yml":
             "env:\n  PICO_SDK_TAG: '2.3.0'\n"
@@ -362,6 +402,7 @@ def sdk_tree(tree, **change):
 
 
 def test_sdk_tags_that_agree_pass(tree):
+    """SDK tags that agree pass."""
     assert sdk_tree(tree) == []
 
 
@@ -388,6 +429,7 @@ def test_sdk_tags_that_agree_pass(tree):
      "ruleset requires 'Panel (ESP-IDF v6.1, ESP32-P4)'"),
 ])
 def test_a_copy_that_differs_is_named(tree, rel, old, new, said):
+    """A copy that differs is named."""
     out = sdk_tree(tree, **{rel: [(old, new)]})
     assert len(out) == 1 and said in out[0]
 
@@ -397,14 +439,14 @@ def test_a_copy_that_differs_is_named(tree, rel, old, new, said):
     ("docs/Building-de.md", "CI baut v6.1", "CI baut das neueste"),
 ])
 def test_a_page_without_the_esp_idf_statement_is_named(tree, rel, old, new):
+    """A page without the ESP-IDF statement is named."""
     out = sdk_tree(tree, **{rel: [(old, new)]})
     page = rel.split("/")[-1]
     assert len(out) == 1 and f"ESP-IDF statement in {page}" in out[0]
 
 
 def test_two_esp_idf_versions_in_ci_are_named(tree):
-    """The build without the injector builds the same ESP-IDF as the
-    first one."""
+    """The build without the injector names the same ESP-IDF as the first."""
     ci = {".github/workflows/ci.yml": [
         ("          esp_idf_version: v6.1\n"
          "          esp_idf_version: v6.1\n",
@@ -416,6 +458,7 @@ def test_two_esp_idf_versions_in_ci_are_named(tree):
 
 
 def test_a_ci_without_a_panel_build_is_named(tree):
+    """A CI without a panel build is named."""
     ci = {".github/workflows/ci.yml": [
         ("          esp_idf_version: v6.1\n"
          "          esp_idf_version: v6.1\n", "")]}
@@ -423,12 +466,14 @@ def test_a_ci_without_a_panel_build_is_named(tree):
 
 
 def test_the_tree_holds_the_sdk_tags():
+    """The tree holds the SDK tags."""
     problems = []
     cd.check_sdk_tags(problems)
     assert problems == []
 
 
 def test_only_a_help_image_block_counts_a_view_as_shown(tmp_path, monkeypatch):
+    """Only a help image block counts a view as shown."""
     help_root, img = tmp_path / "help", tmp_path / "img"
     for lang in ("en", "de"):
         (help_root / lang).mkdir(parents=True)
@@ -487,6 +532,7 @@ def test_a_view_named_in_both_tables_counts_once(tree):
 
 
 def test_a_renderer_without_a_screens_table_has_no_count(tree):
+    """A renderer without a screens table has no count."""
     _render_ui_stub(tree, "FIT_ONLY = {}\n")
     assert cd.render_ui_views() == -1
 

@@ -453,7 +453,7 @@ pin budget is 27 to 32 GPIO (general-purpose input/output).
 | `tools/pages_changes.py` | decides whether a run of `pages.yml` is a full one, with the configurator's tests and browser tests, or builds the configurator page, the help and the API reference only: full when a changed path is under `configurator/`, `help/` or `docs/img/`, or is `pages.yml`, `rcbench_version.h`, `ui_screen.h`, `tools/help_site.py` or `tools/render_ui.py`; a push counts its changes from the newest successful push run of `pages.yml` on `main`, and is full when there is none |
 | `test/tools/` | pytest cases for the tools above and for the file manager's mock server: `python3 -m pytest test/tools` |
 | `test/host/wa_page_dump.c`, `test/host/wa_mock_server.py`, `test/web/` | the browser test of the Wi-Fi page's file manager, below |
-| `.clang-tidy`, `.cppcheck-suppress`, `ruff.toml` | static analysis and lint configuration; every finding is an error. `ruff.toml` lists the files excused some docstring (D) codes; each listed file is excused the codes on its line; delete a code when its file is fixed |
+| `.clang-tidy`, `.cppcheck-suppress`, `ruff.toml` | static analysis and lint configuration; every finding is an error. `ruff.toml` selects the docstring (D) rules; no file is excused them |
 
 `doc_check.py` needs Doxygen 1.18.0 and stops with exit code 2 on another
 release: `tools/install_doxygen.sh 1.18.0 <SHA-256 from ci.yml> PREFIX`

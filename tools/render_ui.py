@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Render every screen on the host and save it as a PNG (Portable Network
-Graphics) image.
+"""Render every screen on the host and save it as a PNG image.
+
+A PNG (Portable Network Graphics) image is written for each screen.
 
 The UI (user interface) code has no ESP-IDF (Espressif Internet-of-Things
 Development Framework) dependency, so the host build links the rasteriser,
@@ -868,6 +869,10 @@ INCLUDES = ui_sources.INCLUDES
 
 
 def build(tmp: pathlib.Path, trace: bool = False) -> pathlib.Path:
+    """Build the screen renderer and return its path.
+
+    With @p trace the renderer records the text it draws.
+    """
     exe = tmp / ("render_trace" if trace else "render_screen")
     # With the touch injector's texts, as the host suite builds: the
     # band-inject view draws INJECT's bubble and --fit measures it.
@@ -885,6 +890,7 @@ def build(tmp: pathlib.Path, trace: bool = False) -> pathlib.Path:
 
 
 def render_one(exe, tmp, name, screen, theme, lang="en", trace=None):
+    """Render one view in @p lang and return it as an RGB image."""
     ppm = tmp / f"{name}-{lang}.ppm"
     # The view name as well as the screen: three log goldens are all the
     # same screen in different states, and the renderer needs to know
@@ -1262,18 +1268,23 @@ KNOWN_OVERFLOWS = set()
 
 
 class Rect:
+    """An axis-aligned rectangle of integer pixels."""
     def __init__(self, x, y, w, h):
+        """A rectangle at (@p x, @p y) of @p w by @p h pixels."""
         self.x, self.y, self.w, self.h = x, y, w, h
 
     @property
     def r(self):
+        """The right edge, exclusive."""
         return self.x + self.w
 
     @property
     def b(self):
+        """The bottom edge, exclusive."""
         return self.y + self.h
 
     def inter(self, o):
+        """The overlap with @p o, or None when there is none."""
         x0, y0 = max(self.x, o.x), max(self.y, o.y)
         x1, y1 = min(self.r, o.r), min(self.b, o.b)
         if x1 <= x0 or y1 <= y0:
@@ -1281,16 +1292,21 @@ class Rect:
         return Rect(x0, y0, x1 - x0, y1 - y0)
 
     def covers(self, o):
+        """Whether this rectangle holds all of @p o."""
         return (self.x <= o.x and self.y <= o.y and self.r >= o.r
                 and self.b >= o.b)
 
     def holds(self, px, py):
+        """Whether the pixel (@p px, @p py) lies inside."""
         return self.x <= px < self.r and self.y <= py < self.b
 
 
 def read_trace(path: pathlib.Path):
-    """The traced frame: its strings and shapes in drawing order, and the
-    table IDs looked up while the view was set up and drawn."""
+    """The traced frame.
+
+    Its strings and shapes in drawing order, and the table IDs looked up while
+    the view was set up and drawn.
+    """
     items, used = [], set()
     for line in path.read_text(encoding="utf-8").splitlines():
         if line.startswith("U "):
@@ -1310,8 +1326,11 @@ def read_trace(path: pathlib.Path):
 
 
 def ink(t, s):
-    """The part of a string's box its characters cover: the box less the
-    cells of its leading and trailing spaces, which a padded label carries."""
+    """The part of a string's box its characters cover.
+
+    The box less the cells of its leading and trailing spaces, which a padded
+    label carries.
+    """
     n = len(s)
     if n == 0 or not s.strip():
         return None
@@ -1324,9 +1343,10 @@ def ink(t, s):
 
 
 def painted_over(items, i, vis, s):
-    """The first fill drawn after string i that covers part of its ink, as
-    a Rect, unless the same string is drawn again in the same place after
-    that fill."""
+    """The first fill drawn after string i that covers part of its ink.
+
+    None when the same string is drawn again in the same place after that fill.
+    """
     t = items[i][1]
     k = ink(t, s)
     if k is None:
@@ -1351,8 +1371,10 @@ def painted_over(items, i, vis, s):
 
 
 def guide_live(items):
-    """The half of the body a guide's screen draws in, as a Rect: the half
-    its dock's web line is not on."""
+    """The half of the body a guide's screen draws in, as a Rect.
+
+    The half its dock's web line is not on.
+    """
     for it in items:
         if it[0] == "T" and it[4].startswith(("More: ", "Mehr: ")):
             left = it[1].x < 512
@@ -1361,11 +1383,13 @@ def guide_live(items):
 
 
 def fit_problems(items, overlay=False, guide=False):
-    """What overflows, as (string, problem) pairs.  Width only: a language
-    changes how long a string is, not how tall.  With @p overlay, a string
-    a later fill covers is not a finding.  With @p guide, a string the
-    screen draws inside the guide's live half is not measured: the view it
-    opens over measures it."""
+    """What overflows, as (string, problem) pairs.
+
+    Width only: a language changes how long a string is, not how tall.  With @p
+    overlay, a string a later fill covers is not a finding.  With @p guide, a
+    string the screen draws inside the guide's live half is not measured: the
+    view it opens over measures it.
+    """
     problems = []
     drawn = []          # (index, visible rect, string)
     live = guide_live(items) if guide else None
@@ -1428,7 +1452,8 @@ def judge(findings, known, views):
     number from the data, say -- and is the layout's, not the
     translation's.  Returns ([(tag, lang, view, string, why)], [stale])
     where tag is "FAIL" or "known" and stale is every entry of @p known for
-    a view in @p views that English did not produce."""
+    a view in @p views that English did not produce.
+    """
     english = {(v, s, w) for lang, v, s, w in findings if lang == "en"}
     judged = [("known" if (view, s, why) in known else "FAIL",
                lang, view, s, why) for lang, view, s, why in findings]
@@ -1437,11 +1462,14 @@ def judge(findings, known, views):
 
 
 def fit(views, langs) -> int:
-    """Render every view in every language with the trace on and report
+    """Render every view in every language and report overflowing strings.
+
+    Render every view in every language with the trace on and report
     every string that overflows.  An overflow fails in either language,
     except the English ones in KNOWN_OVERFLOWS and their German copies.  A
     table string with no declared width has to be drawn by some view, or
-    nothing measures it."""
+    nothing measures it.
+    """
     failed = False
     with tempfile.TemporaryDirectory() as td:
         tmp = pathlib.Path(td)
@@ -1494,6 +1522,10 @@ LANGS = {"en": ".", "de": "de"}
 
 
 def main() -> int:
+    """Render the screens, or check them with --check or --fit.
+
+    Return the exit status.
+    """
     ap = argparse.ArgumentParser()
     ap.add_argument("screens", nargs="*",
                     help=f"subset of {', '.join(SCREENS)} (default: all)")

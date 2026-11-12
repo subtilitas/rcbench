@@ -46,6 +46,7 @@ CHIPS = ("main", "measurement")
 
 
 def funcsel(sdk):
+    """{GPIO: set of function names} read from the pico-sdk register header."""
     text = open(os.path.join(sdk, REGS), encoding="utf-8").read()
     table = {}
     pattern = (r"#define IO_BANK0_GPIO(\d+)_CTRL_FUNCSEL_VALUE_(\w+)"
@@ -56,6 +57,7 @@ def funcsel(sdk):
 
 
 def instance(function):
+    """The serial block instance of @p function, such as SPI0, or None."""
     m = re.match(r"(SPI\d|UART\d|I2C\d)_", function)
     return m.group(1) if m else None
 
@@ -64,6 +66,7 @@ SERIAL = ("i2c", "spi", "uart")
 
 
 def check_chip(chip, table):
+    """The problems in the pin entries of @p chip against @p table."""
     fails = []
     name = chip.get("chip", "?")
     seen = {}
@@ -133,6 +136,7 @@ def check_chip(chip, table):
 
 
 def main():
+    """Check the pin map file and return the exit status."""
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("pinmap")
     ap.add_argument("--sdk", default=os.environ.get(

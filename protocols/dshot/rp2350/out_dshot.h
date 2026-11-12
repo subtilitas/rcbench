@@ -92,7 +92,8 @@ void out_dshot_release(uint8_t pin);
  * On a bidirectional pin this also arms the receiver for the reply.  A
  * bidirectional pin at its low rest is woken instead (out_dshot_wake()) and
  * this call sends nothing, so no frame starts from a low line; call
- * out_dshot_wake() one frame period ahead to keep the frame.
+ * out_dshot_wake() at least OUT_RENDER_DSHOT_MIN_US (500us) and up to one
+ * frame period ahead to keep the frame.
  *
  * @param pin        GPIO number of a bound output; other values do nothing.
  * @param value      Frame value, 0..2047, used as given.
@@ -122,14 +123,14 @@ void out_dshot_stop(uint8_t pin);
  * @brief Take a bidirectional pin from its low rest to the high idle its
  *        frames start from.
  *
- * The line is released onto its pull-up and no frame is sent.  Call it one
- * frame period before the first frame of a run: the ESC then sees the line
- * high for as long as it sees it between any two frames of the run.  A pin
+ * The line is released onto its pull-up and no frame is sent.  Call it at
+ * least OUT_RENDER_DSHOT_MIN_US (500us) and up to one frame period before
+ * the first frame of a run, so the ESC sees the line high before it.  A pin
  * not at rest, a plain DShot pin and a pin not bound are left as they are.
  *
  * @param pin  GPIO number of a bound output; other values do nothing.
  * @return     true when the line was released here, so the first frame is
- *             one frame period away; false when nothing changed.
+ *             500us to one frame period away; false when nothing changed.
  */
 bool out_dshot_wake(uint8_t pin);
 

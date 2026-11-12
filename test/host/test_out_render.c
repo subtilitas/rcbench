@@ -601,9 +601,10 @@ TEST_CASE(a_watched_channel_stamps_its_first_changed_pulse_once)
 /*
  * A DShot slot's due time follows the clock while it sits disarmed: armed
  * again after 40 minutes, more than half the 71.6-minute microsecond wrap,
- * it frames on the first pass.  Armed, the frames are 1000us apart: none at
- * 999us, one at 1000us.  A pass 2^31us after the due time reads as not due,
- * which is why the due time follows the clock while disarmed.
+ * it frames on the first pass.  Armed, the due times are 1000us apart from
+ * the last disarmed pass: the first frame 1us after it, the next 999us
+ * after that and not at 998us.  A pass 2^31us after the due time reads as
+ * not due, which is why the due time follows the clock while disarmed.
  */
 TEST_CASE(a_dshot_slot_is_due_at_once_after_a_long_disarm)
 {
@@ -619,7 +620,7 @@ TEST_CASE(a_dshot_slot_is_due_at_once_after_a_long_disarm)
     g_us += 1u;
     out_render_service(&g_r, &g_o);
     CHECK_EQ(count(EV_SEND), 1u);
-    g_us += OUT_RENDER_DSHOT_PERIOD_US - 1u;
+    g_us += OUT_RENDER_DSHOT_PERIOD_US - 2u;
     out_render_service(&g_r, &g_o);
     CHECK_EQ(count(EV_SEND), 1u);
     g_us += 1u;
