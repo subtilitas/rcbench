@@ -98,3 +98,29 @@ shot_wait_t shot_gate(const shot_facts_t *f)
     }
     return SHOT_IDLE;
 }
+
+const char *shot_wait_name(shot_wait_t w)
+{
+    static const char *const k_names[SHOT_WAIT_COUNT] = {
+        [SHOT_IDLE] = "idle",
+        [SHOT_WAIT_LINK] = "link",
+        [SHOT_WAIT_ARMED] = "armed",
+        [SHOT_WAIT_STOP] = "stop",
+        [SHOT_WAIT_SUPPLY] = "supply",
+        [SHOT_WAIT_PROG5V] = "prog5v",
+        [SHOT_WAIT_PORT] = "port",
+        [SHOT_WAIT_SESSION] = "session",
+        [SHOT_WAIT_PROGRAM_IO] = "program_io",
+        [SHOT_WAIT_MOTION] = "motion",
+        [SHOT_WAIT_TEST] = "test",
+        [SHOT_WAIT_STICK] = "stick",
+        [SHOT_WAIT_UPDATE] = "update",
+        [SHOT_WAIT_FAULT] = "fault",
+        [SHOT_WAIT_CARD_FAULT] = "card_fault",
+        [SHOT_WAIT_RECORDING] = "recording",
+    };
+    if ((unsigned)w >= (unsigned)SHOT_WAIT_COUNT || k_names[w] == NULL) {
+        return "?";
+    }
+    return k_names[w];
+}

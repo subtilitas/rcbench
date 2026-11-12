@@ -5840,11 +5840,14 @@ Panel berührt und der Prüfstand ruht.
   wie beim Popup des Screenshots ([Das Popup](#das-popup)): SAFE ohne
   wartendes ARM, Netzteil und PROG 5V aus, kein Port gehalten, keine
   Programmiersitzung, kein Kartenauftrag, kein Sweep, kein Test, kein
-  LIMIT RUN, kein ESC-STICK-Lauf, kein Update, kein FAULT-Bit, kein
-  Schreiben ins Fehlerprotokoll und keine offene Aufzeichnung. Ein Frame,
-  der eine davon findet, setzt sofort 100% und startet die Minuten neu. Ein
-  Prüfstand bei ARMED oder ein eingeschalteter Ausgang steht nie hinter
-  einem gedimmten Bild.
+  LIMIT RUN, kein ESC-STICK-Lauf, kein Update, kein FAULT-Bit und keine
+  offene Aufzeichnung. Ein Frame, der eine davon findet, setzt sofort 100%
+  und startet die Minuten neu. Ein Prüfstand bei ARMED oder ein
+  eingeschalteter Ausgang steht nie hinter einem gedimmten Bild.
+- Eine Zeile auf dem Weg ins Fehlerprotokoll der Karte zählt nicht. Das
+  Popup wartet auf sie, damit Screenshot und Zeile die Karte nicht
+  gleichzeitig nutzen. Der Link-Bericht schreibt eine alle 60s, solange
+  die Verbindung zum IOmcu steht, und alle 5s, solange sie fehlt.
 - Jedes Touch-Ereignis setzt 100% und startet die Minuten neu.
 - Der Druck, der auf einem gedimmten Bild aufsetzt, weckt es nur. Sein
   DOWN, seine MOVEs und sein UP erreichen keine Seite, er öffnet, stellt
@@ -5863,6 +5866,21 @@ Panel berührt und der Prüfstand ruht.
 - Die Regel ist `shared/ui/screen_dim.c`, gehalten von `test_screen_dim`;
   die Render-Schleife setzt das Tastverhältnis mit
   `board_backlight_percent()`, wenn es sich ändert.
+- Die Konsole gibt den Zustand der Regel alle 300 Frames aus, 5,0s bei
+  60,4fps ([Leistung](Performance-de.md#auf-dem-board)):
+
+  ```text
+  I (…) rcbench: dim: after 5min awake, 37s since touch UP id 0x81 injector, PWM 100%
+  ```
+
+  Die Einstellung, gedimmt (`dim`) oder hell (`awake`), die ganzen
+  Sekunden, seit die Minuten zuletzt neu starteten, was sie neu startete,
+  und das zuletzt gesetzte Tastverhältnis. Die Ursache ist `start`,
+  `touch <DOWN|MOVE|UP> id 0x<id> <glass|injector>`, `busy <Bedingung>`
+  mit der ersten Bedingung des Popups, die nicht ruht (`armed`, `supply`,
+  `recording` und die anderen), oder `off` bei 0 Minuten. Eine Track-ID
+  mit gesetztem Bit 0x80 ist ein Kontakt des Touch-Injektors neben dem
+  Glas.
 
 ### PANEL: der Drehknopf
 

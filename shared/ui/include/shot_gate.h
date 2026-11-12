@@ -108,6 +108,16 @@ void shot_facts_read(const shot_bench_t *b, shot_facts_t *out);
 shot_wait_t shot_gate(const shot_facts_t *f);
 
 /**
+ * @brief A shot_wait_t's name for the console: "idle", "link", "armed",
+ *        "stop", "supply", "prog5v", "port", "session", "program_io",
+ *        "motion", "test", "stick", "update", "fault", "card_fault",
+ *        "recording".
+ * @param w  the fact
+ * @return the name; "?" for a value outside the enum
+ */
+const char *shot_wait_name(shot_wait_t w);
+
+/**
  * @brief Whether the popup may stand.
  * @param f  the facts; NULL is false
  * @return true only when shot_gate() answers SHOT_IDLE

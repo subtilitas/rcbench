@@ -10,6 +10,8 @@
  * - zero_minutes_never_dims
  * - it_dims_at_the_minutes_and_not_a_millisecond_before
  * - a_busy_bench_never_dims_and_wakes_at_once
+ * - the_link_reports_card_line_never_keeps_it_lit
+ * - a_press_while_a_card_line_is_written_only_wakes_it
  * - an_armed_bench_or_an_output_on_keeps_it_lit
  * - a_touch_wakes_it_and_starts_the_minutes_again
  * - the_press_that_wakes_it_reaches_no_screen
@@ -21,9 +23,12 @@
  * - lost_releases_never_let_a_waking_press_through
  * - the_clock_wraps
  * - null_is_refused
+ * - the_line_names_what_started_the_minutes
+ * - the_line_fits_its_buffer
  *
  * SPDX-License-Identifier: MIT
  */
+#include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -35,6 +40,7 @@
 #include "settings.h"
 #include "shot_gate.h"
 #include "splash_screen.h"
+#include "touch_merge.h"
 #include "ui_band.h"
 #include "ui_screen.h"
 #include "ui_text.h"
@@ -170,6 +176,9 @@ TEST_CASE(it_dims_at_the_minutes_and_not_a_millisecond_before)
 TEST_CASE(a_busy_bench_never_dims_and_wakes_at_once)
 {
     for (size_t off = 0u; off < sizeof(shot_facts_t); ++off) {
+        if (off == offsetof(shot_facts_t, no_card_fault)) {
+            continue;   /* the_link_reports_card_line_never_keeps_it_lit */
+        }
         screen_dim_t d;
         shot_facts_t busy = idle_facts();
         *((bool *)&busy + off) = false;
@@ -193,6 +202,66 @@ TEST_CASE(a_busy_bench_never_dims_and_wakes_at_once)
     screen_dim_t d;
     dimmed(&d);
     CHECK_EQ(screen_dim_step(&d, 6u * MIN_MS, 5, NULL), SCREEN_FULL_PCT);
+}
+
+/*
+ * The panel's link report hands the logger a line for the card's fault log
+ * every 60s while the link is up (panel_control.c, link_report()), and
+ * log_fault_busy() is true from the hand-over until the line is on the
+ * card.  The screenshot's gate waits for it; Dim after does not, or a
+ * bench that sits untouched never reaches 5 minutes.  As the panel reads
+ * it: a frame every 60s whose bench has the line out, the frames between
+ * without.
+ */
+TEST_CASE(the_link_reports_card_line_never_keeps_it_lit)
+{
+    const shot_bench_t quiet = { .read = true, .link_up = true };
+    shot_bench_t noting = quiet;
+    noting.fault_log_out = true;
+    shot_facts_t idle;
+    shot_facts_t note;
+    shot_facts_read(&quiet, &idle);
+    shot_facts_read(&noting, &note);
+    /* The screenshot's gate still waits for the line. */
+    CHECK_EQ(shot_gate(&note), SHOT_WAIT_CARD_FAULT);
+    CHECK(screen_dim_idle(&note));
+    CHECK_EQ(screen_dim_wait(&note), SHOT_IDLE);
+
+    screen_dim_t d;
+    screen_dim_init(&d, 0u);
+    unsigned pct = SCREEN_FULL_PCT;
+    /* Frames 20ms apart for 5 minutes; a report every 60s, its line out
+     * for 3 frames. */
+    for (uint32_t t = 20u; t <= 5u * MIN_MS; t += 20u) {
+        const bool out = (t % MIN_MS) < 60u;
+        pct = screen_dim_step(&d, t, 5, out ? &note : &idle);
+        if (t < 5u * MIN_MS) {
+            CHECK_EQ(pct, SCREEN_FULL_PCT);
+        }
+    }
+    CHECK_EQ(pct, SCREEN_DIM_PCT);
+    /* A line out on a dim screen leaves it dim. */
+    CHECK_EQ(screen_dim_step(&d, 6u * MIN_MS, 5, &note), SCREEN_DIM_PCT);
+    CHECK(screen_dim_is_dim(&d));
+}
+
+/* A press on a dim screen while the line is written is a press on an idle
+ * bench: it only wakes the screen. */
+TEST_CASE(a_press_while_a_card_line_is_written_only_wakes_it)
+{
+    const gfx_rect_t tile = overview_screen_tile_rect(0);
+    const int x = tile.x + tile.w / 2;
+    const int y = UI_BAND_H + tile.y + tile.h / 2;
+    const uint32_t t = 6u * MIN_MS;
+    router_on_menu();
+    shot_facts_t note = idle_facts();
+    note.no_card_fault = false;
+    screen_dim_t d;
+    dimmed(&d);
+    CHECK(!feed_in(&d, ev(TOUCH_EVENT_DOWN, 1u, x, y), &note, t));
+    CHECK(!screen_dim_is_dim(&d));
+    CHECK(!feed_in(&d, ev(TOUCH_EVENT_UP, 1u, x, y), &note, t + 80u));
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 }
 
 /* The bench as the panel reads it: ARMED, an arm waiting, the supply or the
@@ -307,6 +376,9 @@ TEST_CASE(a_busy_frame_never_swallows_a_press)
     const int y = UI_BAND_H + tile.y + tile.h / 2;
     const uint32_t t = 6u * MIN_MS;
     for (size_t off = 0u; off <= sizeof(shot_facts_t); ++off) {
+        if (off == offsetof(shot_facts_t, no_card_fault)) {
+            continue;   /* a_press_while_a_card_line_is_written_only_wakes_it */
+        }
         router_on_menu();
         screen_dim_t d;
         dimmed(&d);
@@ -419,11 +491,110 @@ TEST_CASE(null_is_refused)
     CHECK(!screen_dim_is_dim(NULL));
 }
 
+/** @brief screen_dim_line() of @p d at @p now with @p minutes, in @p buf. */
+static const char *line_of(const screen_dim_t *d, uint32_t now, int minutes)
+{
+    static char buf[SCREEN_DIM_LINE_MAX];
+    CHECK(screen_dim_line(d, now, minutes, buf, sizeof(buf)) > 0u);
+    return buf;
+}
+
+/*
+ * The console's line: the setting, dim or awake, the seconds since the
+ * minutes started and what started them, each of the four causes.
+ */
+TEST_CASE(the_line_names_what_started_the_minutes)
+{
+    screen_dim_t d;
+    const shot_facts_t f = idle_facts();
+    screen_dim_init(&d, 1000u);
+    CHECK_STR_EQ(line_of(&d, 38999u, 5), "dim: after 5min awake, 37s since start");
+
+    touch_event_t e = ev(TOUCH_EVENT_UP, (uint8_t)(1u | TOUCH_MERGE_INJECT_ID),
+                         10, 10);
+    (void)screen_dim_touch(&d, &e, false, &f, 2000u);
+    CHECK_STR_EQ(line_of(&d, 2000u + 37000u, 5),
+                 "dim: after 5min awake, 37s since touch UP id 0x81 injector");
+    e = ev(TOUCH_EVENT_DOWN, 0u, 10, 10);
+    (void)screen_dim_touch(&d, &e, false, &f, 3000u);
+    CHECK_STR_EQ(line_of(&d, 3000u, 5),
+                 "dim: after 5min awake, 0s since touch DOWN id 0x00 glass");
+    e = ev(TOUCH_EVENT_MOVE, 4u, 10, 10);
+    (void)screen_dim_touch(&d, &e, false, &f, 3000u);
+    CHECK_STR_EQ(line_of(&d, 3000u, 5),
+                 "dim: after 5min awake, 0s since touch MOVE id 0x04 glass");
+
+    /* A busy frame names the gate's first fact; the card's line is none. */
+    shot_facts_t busy = idle_facts();
+    busy.safe = false;
+    busy.no_card_fault = false;
+    (void)screen_dim_step(&d, 4000u, 5, &busy);
+    CHECK_STR_EQ(line_of(&d, 64999u, 5),
+                 "dim: after 5min awake, 60s since busy armed");
+    busy = idle_facts();
+    busy.no_recording = false;
+    busy.no_card_fault = false;
+    (void)screen_dim_step(&d, 4000u, 5, &busy);
+    CHECK_STR_EQ(line_of(&d, 4000u, 5),
+                 "dim: after 5min awake, 0s since busy recording");
+    (void)screen_dim_step(&d, 4000u, 5, NULL);
+    CHECK_STR_EQ(line_of(&d, 4000u, 5),
+                 "dim: after 5min awake, 0s since busy link");
+
+    /* 0 minutes. */
+    (void)screen_dim_step(&d, 5000u, 0, &f);
+    CHECK_STR_EQ(line_of(&d, 5000u, 0), "dim: after 0min awake, 0s since off");
+
+    /* Dim: the cause stays the last one that started the minutes. */
+    CHECK_EQ(screen_dim_step(&d, 5000u + 5u * MIN_MS, 5, &f), SCREEN_DIM_PCT);
+    CHECK_STR_EQ(line_of(&d, 5000u + 6u * MIN_MS, 5),
+                 "dim: after 5min dim, 360s since off");
+}
+
+/* The longest line fits SCREEN_DIM_LINE_MAX; a short buffer is cut and
+ * terminated; NULL writes nothing. */
+TEST_CASE(the_line_fits_its_buffer)
+{
+    screen_dim_t d;
+    const shot_facts_t f = idle_facts();
+    screen_dim_init(&d, 0u);
+    touch_event_t e = ev(TOUCH_EVENT_MOVE, 0xFFu, 10, 10);
+    (void)screen_dim_touch(&d, &e, false, &f, 0u);
+    char buf[SCREEN_DIM_LINE_MAX];
+    const size_t n = screen_dim_line(&d, UINT32_MAX, INT32_MIN, buf,
+                                     sizeof(buf));
+    CHECK_EQ(n, strlen(buf));
+    CHECK(n < sizeof(buf));
+    CHECK_STR_EQ(buf, "dim: after -2147483648min awake, 4294967s since "
+                      "touch MOVE id 0xff injector");
+    char small[8];
+    CHECK_EQ(screen_dim_line(&d, 0u, 5, small, sizeof(small)), 7u);
+    CHECK_STR_EQ(small, "dim: af");
+    CHECK_EQ(screen_dim_line(NULL, 0u, 5, buf, sizeof(buf)), 0u);
+    CHECK_EQ(screen_dim_line(&d, 0u, 5, NULL, 4u), 0u);
+    CHECK_EQ(screen_dim_line(&d, 0u, 5, buf, 0u), 0u);
+    /* Every fact of the gate has a name. */
+    for (int w = 0; w < (int)SHOT_WAIT_COUNT; ++w) {
+        CHECK(strcmp(shot_wait_name((shot_wait_t)w), "?") != 0);
+    }
+    CHECK_STR_EQ(shot_wait_name(SHOT_WAIT_COUNT), "?");
+    CHECK_STR_EQ(shot_wait_name(SHOT_WAIT_CARD_FAULT), "card_fault");
+    /* A cause outside the enum reads as the start. */
+    d.why = 0xEEu;
+    CHECK_STR_EQ(line_of(&d, 0u, 5), "dim: after 5min awake, 0s since start");
+    d.why = (uint8_t)SCREEN_DIM_WHY_TOUCH;
+    d.why_type = 9u;
+    CHECK_STR_EQ(line_of(&d, 0u, 5),
+                 "dim: after 5min awake, 0s since touch ? id 0xff injector");
+}
+
 int main(void)
 {
     RUN(zero_minutes_never_dims);
     RUN(it_dims_at_the_minutes_and_not_a_millisecond_before);
     RUN(a_busy_bench_never_dims_and_wakes_at_once);
+    RUN(the_link_reports_card_line_never_keeps_it_lit);
+    RUN(a_press_while_a_card_line_is_written_only_wakes_it);
     RUN(an_armed_bench_or_an_output_on_keeps_it_lit);
     RUN(a_touch_wakes_it_and_starts_the_minutes_again);
     RUN(the_press_that_wakes_it_reaches_no_screen);
@@ -435,5 +606,7 @@ int main(void)
     RUN(lost_releases_never_let_a_waking_press_through);
     RUN(the_clock_wraps);
     RUN(null_is_refused);
+    RUN(the_line_names_what_started_the_minutes);
+    RUN(the_line_fits_its_buffer);
     return test_summary("screen_dim");
 }

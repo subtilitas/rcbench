@@ -1547,6 +1547,12 @@ bool drain_touch(uint32_t stops_now, const shot_facts_t *facts);
  * @param facts  this frame's facts of the screenshot gate (panel_shot_frame())
  */
 void backlight_service(const shot_facts_t *facts);
+/**
+ * @brief Print Dim after's state on the console, one line
+ *        (screen_dim_line()).  Render loop only; the console's schedule
+ *        calls it once every PERF_WINDOW_FRAMES frames (panel_perf.h).
+ */
+void backlight_line(void);
 void outputs_apply(const outbind_t *b);
 
 /* ------------------------------------------------------------- panel_art.c */
