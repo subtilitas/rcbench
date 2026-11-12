@@ -73,12 +73,6 @@
  *         alert band's top: 4px, as every screen's footer. */
 #define FOOT_GAP 4
 
-/* The plus and minus keys repeat as SETUP's do. */
-#define REPEAT_DELAY_S 0.45f            /**< delay before the first repeat, 0.45s */
-#define REPEAT_SLOW_HZ 8.0f             /**< repeat rate after the delay, 8Hz */
-#define REPEAT_FAST_S  1.8f             /**< time from the first repeat until the fast rate, 1.8s: fast 2.25s after the press */
-#define REPEAT_FAST_HZ 30.0f            /**< repeat rate once fast, 30Hz */
-
 enum { PG_SERVO = 0, PG_TUNE, PG_PULSE, PG_FAILSAFE, PG_LOCKED, PG_COUNT };
 
 enum { K_FIELD = 0, K_STEP, K_LOCKED, K_ACT };
