@@ -72,10 +72,14 @@ enum {
     LK_COUNT        /**< the count                                     */
 };
 
-/** @brief LK_HITEC's text, with the model's pulses in it. */
-static char s_hitec_why[72];
-/** @brief Those pulses, us: the lower, the upper. */
-static unsigned s_hitec_us[2];
+/** @brief LK_HITEC's text and the pulses it was built from. */
+typedef struct {
+    char     why[72]; /**< the text, with the model's pulses in it */
+    unsigned us[2];   /**< those pulses, us: the lower, the upper   */
+} lk_hitec_t;
+
+/** @brief The one instance. */
+static lk_hitec_t s_hitec;
 
 /** @brief Whether the PD mini answers with its output on.
  *  @return true then */
@@ -149,11 +153,11 @@ static const char *check(int k)
         if (lim_reads() && servo_limrun_family_pulses(lim_family(), p)
             && (s.min_us * 10u > p[SERVO_LIMRUN_P_LOWER]
                 || s.max_us * 10u < p[SERVO_LIMRUN_P_UPPER])) {
-            s_hitec_us[0] = (unsigned)(p[SERVO_LIMRUN_P_LOWER] / 10u);
-            s_hitec_us[1] = (unsigned)(p[SERVO_LIMRUN_P_UPPER] / 10u);
-            snprintf(s_hitec_why, sizeof(s_hitec_why), TR(SV_LIM_HITEC_RANGE),
-                     s_hitec_us[0], s_hitec_us[1]);
-            return s_hitec_why;
+            s_hitec.us[0] = (unsigned)(p[SERVO_LIMRUN_P_LOWER] / 10u);
+            s_hitec.us[1] = (unsigned)(p[SERVO_LIMRUN_P_UPPER] / 10u);
+            snprintf(s_hitec.why, sizeof(s_hitec.why), TR(SV_LIM_HITEC_RANGE),
+                     s_hitec.us[0], s_hitec.us[1]);
+            return s_hitec.why;
         }
         return NULL;
     }
@@ -182,11 +186,11 @@ const char *lim_blocked(void)
 
 bool lim_hitec_nums(const char *why, unsigned v[2])
 {
-    if (why == NULL || why != s_hitec_why) {
+    if (why == NULL || why != s_hitec.why) {
         return false;
     }
-    v[0] = s_hitec_us[0];
-    v[1] = s_hitec_us[1];
+    v[0] = s_hitec.us[0];
+    v[1] = s_hitec.us[1];
     return true;
 }
 
@@ -207,7 +211,7 @@ limrun_row_t lim_row_of(const char *why)
     const char *const meter[] = { TR(SV_LIM_INA_SETUP), TR(SV_LIM_INA_OFFLINE),
                                   TR(SV_LIM_INA_NO_WIN) };
     const char *const rail[] = { TR(SV_LIM_RAIL_LOW), TR(SV_LIM_PROG_RAIL) };
-    const char *const range[] = { TR(SV_LIM_REFUSED), s_hitec_why };
+    const char *const range[] = { TR(SV_LIM_REFUSED), s_hitec.why };
     const char *const prog[] = { TR(OUT_PORT_HELD), TR(SV_LIM_PROG_BUSY) };
     const char *const supply[] = {
         ui_servo_str(SERVO_STR_START_PROG_5V), TR(HP_NEED_PD_C),

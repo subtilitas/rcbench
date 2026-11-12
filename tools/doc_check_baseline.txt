@@ -2318,21 +2318,8 @@ shared/outputs/page_console.c: warning: Member window (variable) of struct hitec
 shared/outputs/prog_port.c: warning: Member REG(port, r) (macro definition) of file prog_port.c is not documented.	#define REG(port, r) LINK_PG_REG(port, r)
 shared/outputs/sense_page.c: warning: Member I3221_FULL_SCALE_UV (macro definition) of file sense_page.c is not documented.	#define I3221_FULL_SCALE_UV 163800uL
 shared/outputs/sense_page.c: warning: Member MA_MAX (macro definition) of file sense_page.c is not documented.	#define MA_MAX 32767u
-shared/outputs/servo_link.c: warning: Member SERVO_BIND_HZ (macro definition) of file servo_link.c is not documented.	#define SERVO_BIND_HZ 50u /* the binding's SERVO PWM rate */
 shared/outputs/servo_link.c: warning: Member SERVO_MAX_US (macro definition) of file servo_link.c is not documented.	#define SERVO_MAX_US 2000u
 shared/outputs/servo_link.c: warning: Member SERVO_MIN_US (macro definition) of file servo_link.c is not documented.	#define SERVO_MIN_US 1000u
-shared/outputs/servo_link.c: warning: Member s_servo_curve_ms (variable) of file servo_link.c is not documented.	static uint32_t s_servo_curve_ms; /* when the far end last took it */
-shared/outputs/servo_link.c: warning: Member s_servo_holding (variable) of file servo_link.c is not documented.	static bool s_servo_holding; /* LINK_SV_HOLD in force there */
-shared/outputs/servo_link.c: warning: Member s_servo_hz_refused (variable) of file servo_link.c is not documented.	static uint16_t s_servo_hz_refused; /* the last rate it refused; 0 none */
-shared/outputs/servo_link.c: warning: Member s_servo_hz_sent (variable) of file servo_link.c is not documented.	static uint16_t s_servo_hz_sent = SERVO_HZ_UNKNOWN; /* acknowledged; 0 own */
-shared/outputs/servo_link.c: warning: Member s_servo_next_ms (variable) of file servo_link.c is not documented.	static uint32_t s_servo_next_ms;
-shared/outputs/servo_link.c: warning: Member s_servo_rate_page (variable) of file servo_link.c is not documented.	static bool s_servo_rate_page;
-shared/outputs/servo_link.c: warning: Member s_servo_rate_shown (variable) of file servo_link.c is not documented.	static atomic_uint s_servo_rate_shown; /* (servo_rate_state_t << 16) | Hz */
-shared/outputs/servo_link.c: warning: Member s_servo_release_request (variable) of file servo_link.c is not documented.	static atomic_bool s_servo_release_request;
-shared/outputs/servo_link.c: warning: Member s_servo_sweeping (variable) of file servo_link.c is not documented.	static bool s_servo_sweeping;
-shared/outputs/servo_link.c: warning: Member s_sweep_held_kept (variable) of file servo_link.c is not documented.	static atomic_uint s_sweep_held_kept;
-shared/outputs/servo_link.c: warning: Member s_sweep_held_new (variable) of file servo_link.c is not documented.	static atomic_bool s_sweep_held_new;
-shared/outputs/servo_link.c: warning: Member s_sweep_held_seq (variable) of file servo_link.c is not documented.	static atomic_uint s_sweep_held_seq;
 shared/safety/include/arming.h: warning: Compound arming_t is not documented.	typedef struct {
 shared/safety/include/arming.h: warning: Member armed (variable) of struct arming_t is not documented.	bool armed;
 shared/safety/include/arming.h: warning: Member handshake_bounded (variable) of struct arming_t is not documented.	bool handshake_bounded;
@@ -3954,8 +3941,6 @@ shared/ui/servo_screen.c: warning: Member post(servo_cmd_kind_t kind, uint16_t u
 shared/ui/servo_screen.c: warning: Member reissue(void) (function) of file servo_screen.c is not documented.	void reissue(void)
 shared/ui/servo_screen.c: warning: Member release(void) (function) of file servo_screen.c is not documented.	void release(void)
 shared/ui/servo_screen.c: warning: Member s (variable) of file servo_screen.c is not documented.	servo_screen_state_t s;
-shared/ui/servo_screen.c: warning: Member s_testing_last (variable) of file servo_screen.c is not documented.	static bool s_testing_last;
-shared/ui/servo_screen.c: warning: Member s_testing_told(bool running) (variable) of file servo_screen.c is not documented.	static void (*s_testing_told)(bool running);
 shared/ui/servo_screen.c: warning: Member test_tell(void) (function) of file servo_screen.c is not documented.	void test_tell(void)
 shared/ui/servo_screen.c: warning: Member us_to_deg_f(float us) (function) of file servo_screen.c is not documented.	float us_to_deg_f(float us)
 shared/ui/servo_screen_int.h: warning: Compound ov_row_t is not documented.	typedef struct {

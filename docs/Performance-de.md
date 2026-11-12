@@ -431,7 +431,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
 | `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 512 | 2 640 |
-| `control` | `control_task` | 6 144 | 3 648 | 1 456 |
+| `control` | `control_task` | 6 144 | 3 632 | 1 472 |
 | `runlog` | `log_task` | 6 656 | 3 824 | 1 792 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
 | `imu` | `imu_task`, die Verbindung der Bluetooth-IMU: die Werte aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_imu.c`) | 4 096 | 1 888 | 1 168 |
