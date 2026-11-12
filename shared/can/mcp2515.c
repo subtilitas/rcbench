@@ -24,7 +24,7 @@
  * The three-bit gap in SIDL is the end of the standard 11-bit layout; the
  * extended bits are fitted around it.
  */
-#define ID_MAX 0x1FFFFFFFu
+#define ID_MAX 0x1FFFFFFFu /**< the largest 29-bit identifier */
 
 bool mcp2515_pack_id(uint32_t id, uint8_t out[4])
 {

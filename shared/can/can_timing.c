@@ -68,7 +68,9 @@ void can_timing_limits_twai(can_timing_limits_t *out)
     out->tq_max    = 25;
 }
 
-/* Distance from the target sample point, for choosing between splits. */
+/**
+ * @brief Distance from the target sample point, for choosing between splits.
+ */
 static uint32_t sp_error(uint8_t tseg1, uint8_t tq, uint16_t target)
 {
     const uint32_t sp = ((uint32_t)(1u + tseg1) * 1000u) / tq;

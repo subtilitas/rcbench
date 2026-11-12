@@ -78,21 +78,22 @@ typedef enum {
     CAN_SELFTEST_DROPPED,
 } can_selftest_verdict_t;
 
+/** @brief The self-test's counters and the probe being waited for. */
 typedef struct {
-    uint32_t sent;
+    uint32_t sent; /**< probes sent */
     uint32_t echoed;      /**< came back, and correct */
-    uint32_t timed_out;
+    uint32_t timed_out; /**< probes not answered within timeout_ms */
     uint32_t corrupt;     /**< came back wrong: the worst of the three */
     uint32_t stale;       /**< an echo of something not outstanding */
 
     uint16_t seq;         /**< next sequence number to send */
     uint16_t outstanding; /**< the one being waited for */
-    bool     waiting;
-    uint32_t sent_ms;
-    uint32_t timeout_ms;
+    bool     waiting; /**< a probe is outstanding */
+    uint32_t sent_ms; /**< when the outstanding probe was sent, ms */
+    uint32_t timeout_ms; /**< how long a probe is waited for, ms */
 
-    uint32_t rtt_min_us;
-    uint32_t rtt_max_us;
+    uint32_t rtt_min_us; /**< shortest round trip of a correct echo, us */
+    uint32_t rtt_max_us; /**< longest round trip of a correct echo, us */
 
     /**
      * Bus errors counted by the local controller, filled in by the caller
@@ -189,8 +190,8 @@ const char *can_selftest_hint(can_selftest_verdict_t v);
 
 /* ----------------------------------------------- the far end's own numbers */
 
-/*
- * The IOmcu's view of the bus, carried across the bus in one 8-byte
+/**
+ * @brief The IOmcu's view of the bus, carried across the bus in one 8-byte
  * frame on the self-test page at the lowest priority, so one console shows
  * both ends of a fault.
  *

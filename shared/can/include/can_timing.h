@@ -43,22 +43,23 @@ extern "C" {
 typedef struct {
     uint32_t clock_hz;   /**< the clock the prescaler divides */
     uint16_t div_min;    /**< smallest prescaler divisor, as an actual divisor */
-    uint16_t div_max;
+    uint16_t div_max; /**< largest prescaler divisor */
     uint16_t div_step;   /**< 1, or 2 where the controller doubles internally */
     uint8_t  tseg1_min;  /**< propagation + phase 1 */
-    uint8_t  tseg1_max;
+    uint8_t  tseg1_max; /**< largest tseg1, quanta */
     uint8_t  tseg2_min;  /**< phase 2 */
-    uint8_t  tseg2_max;
-    uint8_t  sjw_max;
+    uint8_t  tseg2_max; /**< largest tseg2, quanta */
+    uint8_t  sjw_max; /**< largest synchronization jump width, quanta */
     uint8_t  tq_min;     /**< total quanta a bit may have, sync included */
-    uint8_t  tq_max;
+    uint8_t  tq_max; /**< most quanta a bit may have */
 } can_timing_limits_t;
 
+/** @brief A bit timing that makes the asked rate exactly. */
 typedef struct {
     uint16_t div;        /**< the prescaler divisor actually used */
-    uint8_t  tseg1;
-    uint8_t  tseg2;
-    uint8_t  sjw;
+    uint8_t  tseg1; /**< propagation + phase 1, quanta */
+    uint8_t  tseg2; /**< phase 2, quanta */
+    uint8_t  sjw; /**< synchronization jump width, quanta */
     uint8_t  tq;         /**< 1 + tseg1 + tseg2 */
     uint32_t bitrate_hz; /**< achieved, and equal to what was asked */
     uint16_t sample_permille; /**< where in the bit it samples, 0..1000 */
@@ -82,21 +83,35 @@ typedef struct {
 #define CAN_SAMPLE_POINT_LINK 750
 
 /**
- * Solve for the segmentation closest to @p target_permille that hits
+ * @brief Solve for the segmentation closest to @p target_permille that hits
  * @p bitrate exactly.
  *
- * False when no combination does, which means the source clock cannot make
- * the rate.
+ * @param lim              What the controller can be asked for.
+ * @param bitrate          The bit rate, bit/s.
+ * @param target_permille  The sample point to come closest to, 0..1000.
+ * @param out              Receives the solution.
+ * @return false when no combination does, which means the source clock cannot
+ *         make the rate; true otherwise.
  */
 bool can_timing_solve(const can_timing_limits_t *lim, uint32_t bitrate,
                       uint16_t target_permille, can_timing_t *out);
 
-/** The highest rate this controller can reach exactly, or 0 if none. */
+/**
+ * @brief The highest rate this controller can reach exactly.
+ *
+ * @param lim  What the controller can be asked for.
+ * @return The rate, bit/s, or 0 if none.
+ */
 uint32_t can_timing_max_bitrate(const can_timing_limits_t *lim);
 
 /* ------------------------------------------------- the two controllers */
 
-/** The IOmcu's XL2515 (MCP2515-compatible), given its crystal. */
+/**
+ * @brief The IOmcu's XL2515 (MCP2515-compatible), given its crystal.
+ *
+ * @param out         Filled with the limits.
+ * @param crystal_hz  The crystal's frequency, Hz.
+ */
 void can_timing_limits_mcp2515(can_timing_limits_t *out, uint32_t crystal_hz);
 
 /**
@@ -108,19 +123,21 @@ void can_timing_limits_twai(can_timing_limits_t *out);
 
 /* --------------------------------------------------- MCP2515 registers */
 
-#define MCP2515_CNF1 0x2A
-#define MCP2515_CNF2 0x29
-#define MCP2515_CNF3 0x28
+#define MCP2515_CNF1 0x2A /**< bit timing register 1 */
+#define MCP2515_CNF2 0x29 /**< bit timing register 2 */
+#define MCP2515_CNF3 0x28 /**< bit timing register 3 */
 
 /**
- * Encode a solution into CNF1..CNF3.
- *
- * @p cnf receives three bytes in register order CNF1, CNF2, CNF3.
+ * @brief Encode a solution into CNF1..CNF3.
  *
  * tseg1 is split into propagation and phase-1 segments here, because that
  * split is the MCP2515's business: both are 1..8 quanta, and the bus does
- * not care where the boundary falls.  Returns false if the solution cannot
- * be expressed; a tseg1 of 17 or more has no legal split.
+ * not care where the boundary falls.
+ *
+ * @param t    The solution.
+ * @param cnf  Receives three bytes in register order CNF1, CNF2, CNF3.
+ * @return false if the solution cannot be expressed (a tseg1 of 17 or more
+ *         has no legal split); true otherwise.
  */
 bool mcp2515_encode_timing(const can_timing_t *t, uint8_t cnf[3]);
 
