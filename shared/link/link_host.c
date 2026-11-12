@@ -19,18 +19,7 @@
 
 #include <string.h>
 
-/**
- * @brief Test whether a timeout has elapsed, across the 32-bit millisecond wrap.
- *
- * @param now The current time, in ms.
- * @param then The time the wait started, in ms.
- * @param ms The timeout, in ms.
- * @return true when at least ms milliseconds have passed since then.
- */
-static bool elapsed(uint32_t now, uint32_t then, uint32_t ms)
-{
-    return (uint32_t)(now - then) >= ms;
-}
+#include "mstime.h"
 
 void link_host_init(link_host_t *h, uint32_t now_ms)
 {
@@ -337,7 +326,8 @@ bool link_host_tick(link_host_t *h, uint32_t now_ms)
      * one, and a caller whose only loop exit is this function returning true
      * never leaves it.
      */
-    if (h->pending && elapsed(now_ms, h->sent_ms, LINK_HOST_TIMEOUT_MS)) {
+    if (h->pending
+        && mstime_elapsed(now_ms, h->sent_ms, LINK_HOST_TIMEOUT_MS)) {
         h->pending = false;
         ++h->timeouts;
         acted = true;
@@ -349,7 +339,7 @@ bool link_host_tick(link_host_t *h, uint32_t now_ms)
      * when nothing has been answered for 1s.
      */
     if (!h->escalated
-        && elapsed(now_ms, h->last_reply_ms, LINK_HOST_TIMEOUT_MS)) {
+        && mstime_elapsed(now_ms, h->last_reply_ms, LINK_HOST_TIMEOUT_MS)) {
         h->escalated = true;
         acted = true;
     }
@@ -359,10 +349,11 @@ bool link_host_tick(link_host_t *h, uint32_t now_ms)
 bool link_host_retry(link_host_t *h, uint32_t now_ms, link_msg_t *out)
 {
     if (h == NULL || out == NULL || !h->pending || !h->retry_ok
-        || h->retry_sent || !elapsed(now_ms, h->sent_ms, LINK_HOST_RETRY_MS)) {
+        || h->retry_sent
+        || !mstime_elapsed(now_ms, h->sent_ms, LINK_HOST_RETRY_MS)) {
         return false;
     }
-    if (elapsed(now_ms, h->sent_ms, LINK_HOST_RETRY_LAST_MS)) {
+    if (mstime_elapsed(now_ms, h->sent_ms, LINK_HOST_RETRY_LAST_MS)) {
         /* Too late to keep the far end from going quiet: the request waits
          * out its timeout as an unnumbered one does. */
         h->retry_ok = false;

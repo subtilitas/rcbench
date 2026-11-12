@@ -570,7 +570,7 @@ core's chain, one interrupt and a margin of 256 bytes exceed its stack.
 
 | Core | Entry | Stack (bytes) | Deepest chain (bytes) | One interrupt (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| core 0 | `main` | 4,096 | 1,512 | 528 | 1,800 |
+| core 0 | `main` | 4,096 | 1,516 | 528 | 1,796 |
 | core 1 | `core1_main` | 4,096 | 644 | 528 | 2,668 |
 
 Measured on the image CI builds, pico-sdk 2.3.0 with arm-none-eabi-gcc
@@ -583,7 +583,7 @@ the image with the runner's packaged one. The frames named below are those
 of the same build.
 
 Core 0's deepest chain is a request that binds an output and fails in the
-pico-sdk: `main` (256 bytes), `can_service` (352), `link_dev_dispatch`,
+pico-sdk: `main` (256 bytes), `can_service` (360), `link_dev_dispatch`,
 `slots_write`, `slots_take`, `ports_apply`, `slots_rerate`,
 `outputs_hw_apply_only`, `out_render_apply`, `out_render_hw_bind`,
 `out_dshot_bind`, the
@@ -614,7 +614,12 @@ of planner time. All times are for 150MHz, computed in an emulator from
 the instructions executed with ARM GNU 14.2 at -O3, and not measured on
 hardware. The time of a pass with the link, the heartbeat and the outputs
 in it is not measured. The heartbeat gap that switches every output off is
-150ms.
+150ms. Two waits of a pass are bounded in time. A `printf()` to the USB
+console waits at most 1,000us for room in the 2,048-byte transmit buffer
+after the host last took bytes, then drops the rest of the line; a host
+that holds the port open and stops reading costs that wait once. A reply
+frame on CAN waits at most 1,000us for the controller's transmit buffer;
+after that the rest of the reply is abandoned and counted as `tx_drop`.
 
 Each depth is a lower bound:
 

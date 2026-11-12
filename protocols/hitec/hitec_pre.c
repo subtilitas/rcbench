@@ -138,8 +138,17 @@ uint32_t hitec_pre_words(const hitec_pre_timing_t *t, uint32_t window_us,
 
 /* --- the decoder ---------------------------------------------------------- */
 
-void hitec_pre_dec_init(hitec_pre_dec_t *d, const hitec_pre_timing_t *t,
-                        uint32_t window_us, uint8_t max_rx)
+/**
+ * @brief Prepare @p d for a window of @p window_us and up to @p max_rx bytes (1
+ *        to HITEC_RX_MAX).
+ *
+ * @param d          Decoder to prepare.
+ * @param t          Counts of the clock.
+ * @param window_us  Window, in us.
+ * @param max_rx     Bytes to receive, 1 to HITEC_RX_MAX.
+ */
+static void hitec_pre_dec_init(hitec_pre_dec_t *d, const hitec_pre_timing_t *t,
+                               uint32_t window_us, uint8_t max_rx)
 {
     if (d == NULL) {
         return;
@@ -200,8 +209,23 @@ static void dec_byte(hitec_pre_dec_t *d, const hitec_pre_timing_t *t,
     }
 }
 
-bool hitec_pre_dec_feed(hitec_pre_dec_t *d, const hitec_pre_timing_t *t,
-                        const uint32_t *words, uint32_t n_words)
+/**
+ * @brief Decode the samples of the first @p n_words words of @p words that it
+ *        has not seen.
+ *
+ * @p words is the whole buffer from sample 0; a call may pass the same words
+ * again with more after them.  Returns true once the decoder has ended (max_rx
+ * bytes or the window).  A start bit whose samples are not all in waits for the
+ * next call.
+ *
+ * @param d        Decoder state.
+ * @param t        Counts of the clock.
+ * @param words    Sample words, from sample 0.
+ * @param n_words  Words of the buffer that are written.
+ * @return true once the decoder has ended.
+ */
+static bool hitec_pre_dec_feed(hitec_pre_dec_t *d, const hitec_pre_timing_t *t,
+                               const uint32_t *words, uint32_t n_words)
 {
     uint32_t avail;
 
@@ -254,7 +278,13 @@ bool hitec_pre_dec_feed(hitec_pre_dec_t *d, const hitec_pre_timing_t *t,
     return true;
 }
 
-void hitec_pre_dec_close(hitec_pre_dec_t *d)
+/**
+ * @brief No more samples come: a decoder that has not ended ends with
+ *        HITEC_PRE_END_SHORT, dropping a byte whose samples are not all in.
+ *
+ * @param d  Decoder state.
+ */
+static void hitec_pre_dec_close(hitec_pre_dec_t *d)
 {
     if (d != NULL && d->phase != (uint8_t)HITEC_PRE_DEC_DONE) {
         dec_end(d, HITEC_PRE_END_SHORT);

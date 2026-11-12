@@ -1,5 +1,8 @@
-/*
- * The page server's raw sends on its socket.  See wifi_sock.h.
+/**
+ * @file
+ * @brief The page server's raw sends on its socket.
+ *
+ * See wifi_sock.h.
  *
  * SPDX-License-Identifier: MIT
  */

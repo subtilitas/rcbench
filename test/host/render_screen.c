@@ -49,6 +49,8 @@
 #include "sensors_rows.h"
 #include "settings_sensors.h"
 #include "settings_screen.h"
+#include "hitec_move.h"
+#include "hitec_panel.h"
 #include "hitec_rx_link.h"
 #include "balance_screen.h"
 #include "battery_screen.h"
@@ -2681,6 +2683,13 @@ static void band_view(const char *view, ui_bench_status_t *st)
          * chip reading STOP, and its box. */
         chip = UI_BAND_CHIP_ARMED;
         st->stop_latched = true;
+    } else if (strncmp(view, "band-safe-", 10) == 0) {
+        /* SAFE with PROG PORT 2 held by a programmer (-prog), one whose
+         * number is not known (-any), or MOVE SERVO driving (-move). */
+        chip = UI_BAND_CHIP_ARMED;
+        st->prog_port = (strcmp(view, "band-safe-any") == 0)
+                            ? (uint8_t)UI_PROG_PORT_SOME : 2u;
+        st->prog_moving = strcmp(view, "band-safe-move") == 0;
     } else if (strncmp(view, "band-armed", 10) == 0
                || strcmp(view, "band-safe") == 0) {
         chip = UI_BAND_CHIP_ARMED;
@@ -3448,13 +3457,17 @@ static void pose_bench_views(ui_screen_id_t id, const char *view)
             .remote_tx_errors = 0, .remote_rx_errors = 31,
             .remote_flags = 0x40, .remote_overflows = 0,
         };
-        if (strcmp(view, "busfault-silent") == 0) {
+        if (strncmp(view, "busfault-silent", 15) == 0) {
+            /* No IOmcu answered: the tap's screen.  -answered: the IOmcu
+             * answered its status and no echo came back, the hold's. */
+            const bool answered = strcmp(view, "busfault-silent-answered") == 0;
             const busfault_report_t q = {
                 .kind = BUSFAULT_SELFTEST,
                 .verdict = CAN_SELFTEST_SILENT,
                 .sent = 1310, .echoed = 0, .corrupt = 0, .lost = 1310,
                 .tx_errors = 128, .rx_errors = 0, .bus_errors = 0,
-                .bus_off = true, .have_remote = false,
+                .bus_off = true, .have_remote = answered,
+                .remote_up = answered,
             };
             r = q;
         } else if (strcmp(view, "busfault-lost") == 0) {
@@ -4657,6 +4670,9 @@ int main(int argc, char **argv)
     /* An arm covers the role of the screen that asked for it. */
     st.armed_roles = !st.armed ? 0u
                      : (id == SCREEN_MOTOR) ? UI_ARMED_MOTOR : UI_ARMED_SERVO;
+    /* MOVE SERVO on the HITEC page drives while SAFE, and the SAFE chip
+     * says so, as on the panel (panel_frame.c). */
+    st.prog_moving = hitec_prog_move_on(hitec_panel_model());
     ui_router_set_status(&st);
     if (id == SCREEN_COPROC_UPDATE) {
         /* The question as a link-up poses it: an IOmcu on 0.21.2 and

@@ -1,6 +1,9 @@
 /**
  * @file
- * @brief SPDX-License-Identifier: MIT
+ * @brief The OpenYGE parameter cache: values observed on the wire, the write window,
+ *        how complete the set is, and the RPM figures derived from it.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #include "openyge.h"

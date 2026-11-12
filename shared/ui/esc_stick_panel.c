@@ -181,28 +181,68 @@ void sp_supply(uint32_t *mv, uint32_t *ma)
  * the operator's to change.
  */
 
-/*
- * Why the bench cannot carry a run, or NULL: the supply is the panel's
- * model and switches nothing, the output binding is not read, or it binds
- * no pin as a throttle.  The stick has no pin to move then, or the ESC no
- * supply to be powered from.
+/** @brief What stands against every run of the bench as it is, in the
+ *         order a run is refused for it. */
+typedef enum {
+    SP_BENCH_OK = 0,   /**< nothing                                  */
+    SP_BENCH_MODEL,    /**< the supply is the panel's model          */
+    SP_BENCH_BIND,     /**< the output binding is not read           */
+    SP_BENCH_THROTTLE, /**< no pin is bound as a throttle            */
+    SP_BENCH_SOURCE,   /**< no beep source: no tap, no INA3221 window */
+} sp_bench_t;
+
+/**
+ * @brief The first of sp_bench_t's refusals that stands now.
+ * @return It, SP_BENCH_OK for none.
  */
-static const char *sp_bench_why(void)
+static sp_bench_t sp_bench_block(void)
 {
     const stick_t *t = &s.st;
     if (supply_screen_model()) {
-        return TR(SP_SUPPLY_MODEL);
+        return SP_BENCH_MODEL;
     }
     if (!t->bind_read) {
-        return TR(SP_BIND_NOT_READ);
+        return SP_BENCH_BIND;
     }
     if (t->throttle_mask == 0u) {
-        return TR(SP_NO_THROTTLE);
+        return SP_BENCH_THROTTLE;
     }
     if (sp_source() == ESC_STICK_SRC_NONE) {
-        return TR(SP_NO_SOURCE);
+        return SP_BENCH_SOURCE;
     }
-    return NULL;
+    return SP_BENCH_OK;
+}
+
+/**
+ * @brief Why the bench cannot carry a run: the supply is the panel's model
+ *        and switches nothing, the output binding is not read, it binds no
+ *        pin as a throttle, or no beep source reads.  The stick has no pin
+ *        to move then, the ESC no supply to be powered from, or the run no
+ *        beeps to count.
+ * @return RUN's note for the first that stands, NULL for none.
+ */
+static const char *sp_bench_why(void)
+{
+    switch (sp_bench_block()) {
+    case SP_BENCH_MODEL:    return TR(SP_SUPPLY_MODEL);
+    case SP_BENCH_BIND:     return TR(SP_BIND_NOT_READ);
+    case SP_BENCH_THROTTLE: return TR(SP_NO_THROTTLE);
+    case SP_BENCH_SOURCE:   return TR(SP_NO_SOURCE);
+    case SP_BENCH_OK:
+    default:                return NULL;
+    }
+}
+
+const char *esc_stick_panel_bench_tag(void)
+{
+    switch (sp_bench_block()) {
+    case SP_BENCH_MODEL:    return TR(SP_TAG_SUPPLY_MODEL);
+    case SP_BENCH_BIND:     return TR(SP_TAG_BIND_NOT_READ);
+    case SP_BENCH_THROTTLE: return TR(SP_TAG_NO_THROTTLE);
+    case SP_BENCH_SOURCE:   return TR(SP_TAG_NO_SOURCE);
+    case SP_BENCH_OK:
+    default:                return NULL;
+    }
 }
 
 /*
@@ -601,6 +641,15 @@ void esc_stick_panel_tick(float dt_s)
         const bool off = sp_supply_reads_off();
         if (off != t->sup_off_drawn) {
             t->sup_off_drawn = off;
+            ++pg.rev;
+        }
+    }
+    if (pg.stage == STAGE_LIST) {
+        /* The maker list's header names the first standing refusal; it
+         * follows the bench, which changes elsewhere. */
+        const char *tag = esc_stick_panel_bench_tag();
+        if (tag != t->tag_drawn) {
+            t->tag_drawn = tag;
             ++pg.rev;
         }
     }

@@ -9,18 +9,7 @@
 
 #include <string.h>
 
-/**
- * @brief Tell whether a millisecond span has elapsed.
- *
- * @param now  Current time, ms.
- * @param then Start of the span, ms.
- * @param ms   Span length, ms.
- * @return true when now - then is at least ms, across a counter wrap.
- */
-static inline bool elapsed(uint32_t now, uint32_t then, uint32_t ms)
-{
-    return (uint32_t)(now - then) >= ms;
-}
+#include "mstime.h"
 
 void servo_sync_defaults(servo_sync_cfg_t *cfg, uint16_t center_us)
 {
@@ -293,8 +282,8 @@ void servo_sync_step(servo_sync_t *sy, float total_a, uint32_t now_ms,
         if (total_a >= sy->cfg.hard_limit_a || total_a != total_a) {
             finish(sy, SERVO_SYNC_FAULT, SERVO_SYNC_FAULT_OVERCURRENT);
         } else if (!sy->measuring) {
-            if (elapsed(now_ms, sy->phase_start_ms,
-                        (uint32_t)sy->cfg.settle_ms + sy->travel_ms)) {
+            if (mstime_elapsed(now_ms, sy->phase_start_ms,
+                               (uint32_t)sy->cfg.settle_ms + sy->travel_ms)) {
                 sy->measuring      = true;
                 sy->phase_start_ms = now_ms;
                 sy->sum_a          = 0.0;
@@ -303,7 +292,7 @@ void servo_sync_step(servo_sync_t *sy, float total_a, uint32_t now_ms,
         } else {
             sy->sum_a += (double)total_a;
             ++sy->samples;
-            if (elapsed(now_ms, sy->phase_start_ms, sy->cfg.measure_ms)
+            if (mstime_elapsed(now_ms, sy->phase_start_ms, sy->cfg.measure_ms)
                 && sy->samples > 0) {
                 sy->scan_a[sy->point] =
                     (float)(sy->sum_a / (double)sy->samples);

@@ -162,3 +162,23 @@ export function namesLater(entry: Pick<Entry, 'hash'>, corpus: Corpus): boolean 
   const parsed = parseHash(hashOf(entry), DEFAULT_OPTIONS);
   return [...parsed.selection.functions, ...parsed.selection.owned].some((id) => later.has(id));
 }
+
+/**
+ * Stored entries whose setup changes because ESC STICK programming needs a beep
+ * source: the phase tap parts under the default value of `stickBeep`. The
+ * entry stays as stored; the parts and the enabled functions it is held to are
+ * these. A link that names `stick` (alone, or through ESC power B with the PD
+ * mini) draws the parts `sim` and `tap`; a link that reaches the PD mini by
+ * ESC power B alone no longer enables `stick`.
+ */
+export const BEEP_SOURCE: Readonly<Record<string, { parts?: readonly string[]; enabled: readonly string[] }>> = {
+  'page-f-stick': { parts: ['panel', 'copro', 'usb', 'wire', 'esc', 'pdmini', 'charger', 'sim', 'tap', 'usbtap'], enabled: ['esc', 'stick', 'tap', 'supply'] },
+  'page-esc-pd': { enabled: ['esc', 'supply'] },
+  'page-stick-esc': { parts: ['panel', 'copro', 'usb', 'wire', 'esc', 'pdmini', 'charger', 'sim', 'tap', 'usbtap'], enabled: ['esc', 'stick', 'tap', 'supply'] },
+  'page-stick-escpow': {
+    parts: ['panel', 'copro', 'usb', 'wire', 'esc', 'pdmini', 'charger', 'pull', 'ina228', 'sim', 'tap', 'usbtap'],
+    enabled: ['esc', 'escpow', 'stick', 'tap', 'supply'],
+  },
+  'hand-order': { enabled: ['servo', 'servotest', 'esc', 'supply', 'logs'] },
+  'hand-repeats': { enabled: ['servo', 'servotest', 'esc', 'supply', 'logs'] },
+};

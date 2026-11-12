@@ -19,9 +19,10 @@ set(SRCS heartbeat.c arming.c touch_loss.c safety_gate.c flash_gate.c
          stop_latch.c)
 
 if(ESP_PLATFORM)
-    idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include REQUIRES link)
+    idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include REQUIRES link
+                           PRIV_REQUIRES mstime)
 else()
     add_library(rcbench_safety STATIC ${SRCS})
     target_include_directories(rcbench_safety PUBLIC include)
-    target_link_libraries(rcbench_safety PUBLIC rcbench_link)
+    target_link_libraries(rcbench_safety PUBLIC rcbench_link PRIVATE rcbench_mstime)
 endif()

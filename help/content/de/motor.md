@@ -41,7 +41,7 @@ Das Home-Feld oben links führt jeweils eine Ebene zurück:
 
 ![Die Liste von PROGRAMMIEREN](view:motor-program)
 
-PROGRAMMIEREN bietet zwei Wege zur ESC-Programmierung. `ESCs per Gasknüppel` unter STICK-MENÜ öffnet [ESC STICK](motor-stick.md) und steuert die als Gas zugeordneten Pins. `AM32, Bluejay, BLHeli_S, ESCape32` unter SIGNALLEITUNG öffnet die [Programmierung über die Signalleitung](motor-wire.md). Diese Zeile bleibt gedimmt, bis der IOmcu die benötigte Fähigkeit meldet.
+PROGRAMMIEREN bietet zwei Wege zur ESC-Programmierung. `ESCs per Gasknüppel` unter STICK-MENÜ öffnet [ESC STICK](motor-stick.md) und steuert die als Gas zugeordneten Pins. `AM32, Bluejay, BLHeli_S, ESCape32` unter SIGNALLEITUNG öffnet die [Programmierung über die Signalleitung](motor-wire.md). Diese Zeile bleibt gedimmt, bis der IOmcu die benötigte Fähigkeit meldet. Solange der Prüfstand keinen Stick-Lauf tragen kann, nennt die Gasknüppel-Zeile den ersten Grund in der Warnfarbe, etwa `START BRAUCHT PD MINI` oder `KEINE PIEPTONQUELLE`, und öffnet ESC STICK trotzdem; die Herstellerliste zeigt dasselbe Kennzeichen in ihrer Kopfzeile.
 
 ESC STICK verdeckt beide Spalten und die Fußleiste. Anstelle der Reiter erscheint ein einzeiliger Ausgangsstreifen:
 

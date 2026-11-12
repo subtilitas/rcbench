@@ -13,6 +13,7 @@
 
 #include "gfx.h"
 #include "ui_screen.h"
+#include "ui_text.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -115,6 +116,42 @@ bool ui_link_refused_label(const ui_bench_status_t *st, char *out, size_t n);
  * @return true while HWSTOP shows.
  */
 bool ui_band_hwstop(const ui_bench_status_t *st);
+
+/**
+ * @brief The status's prog_port from a held port as prog5v_box_held_port()
+ *        gives it.
+ * @param held 0 to 3, PROG5V_HELD_SOME or PROG5V_HELD_NONE.
+ * @return 1 to 4, UI_PROG_PORT_SOME, or 0 for none.
+ */
+uint8_t ui_band_prog_port(uint8_t held);
+
+/**
+ * @brief Whether the SAFE chip names what a SAFE bench still drives: MOVE
+ *        SERVO on the HITEC page (`SAFE MOVE`), else the programming port a
+ *        programmer holds (`SAFE PROG n`, `SAFE PROG` with its number not
+ *        known), on the warning's amber.  A latched STOP and an arm read
+ *        as without it.
+ * @param st The bench status; NULL is false.
+ * @return true while the chip reads more than SAFE.
+ */
+bool ui_band_safe_drives(const ui_bench_status_t *st);
+
+/**
+ * @brief The alert for a switch to ARMED the IOmcu refused, built from its
+ *        STATUS fault bitmap at the refusal.
+ *
+ * LINK_FAULT_HEARTBEAT is the usual cause on a bench being built: the wire
+ * from IO28 of the panel's P3 to GPIO 3 of the IOmcu is open, or the stop
+ * button in it is pressed.  The alert names both and the chip the band
+ * shows for it, HWSTOP with SETUP > PANEL > Hardware stop ON (the rule of
+ * ui_band_hwstop()), FAULT 10 otherwise.  Any other bit stands on the FAULT
+ * chip, and the alert sends the operator there.  With no bit set the alert
+ * is the bare refusal: there is no chip to tap.
+ * @param faults  The IOmcu's STATUS fault bitmap (link_fault_t bits).
+ * @param hw_stop SETUP > PANEL > Hardware stop (SET_HW_STOP).
+ * @return The alert's text ID.
+ */
+ui_text_id_t ui_band_arm_refused(uint16_t faults, bool hw_stop);
 
 /**
  * Where @p chip is drawn for @p st, in panel coordinates, into @p out (which
