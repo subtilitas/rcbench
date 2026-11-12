@@ -155,6 +155,7 @@ LOG UMBENENNEN gibt dem seit dem Start des Panels geschlossenen MOTOR-Log ein La
 
 ## Verwandte Seiten
 
+- [Die Bildschirmhilfe](band.md#die-bildschirmhilfe): "?" im Band öffnet die Hilfe dieser Seite.
 - [Motor-Optionen](motor-settings.md): Akku, Nenn-kV, Motorpole, Leerlaufpuls und Vollgaspuls.
 - [ESC STICK](motor-stick.md): ESC über sein Gasknüppel-Menü programmieren.
 - [Ausgänge](outputs.md): Pins für die Gassteuerung.

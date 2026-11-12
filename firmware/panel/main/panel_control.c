@@ -122,10 +122,6 @@ static void beat(bool alive)
 atomic_bool s_stop_live;
 /* The driver's queue, numbered (touch_loss.h); see s_drv_gaps, main.c. */
 static touch_seq_rx_t s_drv_rx = { .next = 1u };  /**< touch_seq_rx_init() */
-/**
- * @brief S_touch_q's numbers, this task's alone; see s_tq_published, main.c.
- */
-static uint32_t    s_tq_seq;
 /** @brief The render loop's watchdog, this task's alone; see
  *         render_watch(). */
 static frame_watch_t s_frame_watch;
@@ -179,21 +175,23 @@ static void render_watch(void)
  * wait; this is what makes the line say so.
  */
 /**
- * @brief Offer one item to s_touch_q, numbered.  Returns whether the queue holds it.
+ * @brief Offer one item to s_touch_q, numbered, as touch_put_begin() and
+ *        touch_put_next() ask: a send, and on a full queue the oldest entry
+ *        off and one more send, then the number published.
  *
  * The consumer is behind when the send fails.  The oldest entry is dropped
- * and the newest kept, which is what the GT911's own event queue and the
- * command queue do -- but which of the two is lost is not what makes this
- * safe, and no choice is safe on its own: a release that never arrives
- * leaves a screen holding a press, a DOWN that never arrives orphans the
- * release after it, and the MOVE where a finger leaves ARM is what abandons
- * the hold.  What makes it safe is that the dropped entry's number is
- * missing from what the render loop takes, and it drops the gesture before
- * it handles the next event (touch_loss.h).  Nothing is counted here.
+ * and the newest kept, as the GT911's own event queue and the command queue
+ * do.  No choice of which is lost is safe on its own: a release that never
+ * arrives leaves a screen holding a press, a DOWN that never arrives
+ * orphans the release after it, and the MOVE where a finger leaves ARM is
+ * what abandons the hold.  What makes it safe is that the dropped entry's
+ * number is missing from what the render loop takes, and it drops the
+ * gesture before it handles the next event (touch_loss.h).  Nothing is
+ * counted here.
  *
- * The retry runs whether or not the receive took anything: the render loop
- * can empty the queue between the failed send and the receive, and then
- * there is room without anything having been evicted.
+ * @param evt  The event; NULL for a loss notice.
+ * @param lost The item is a loss notice.
+ * @return Whether the queue holds the item.
  */
 static bool touch_q_put(const touch_event_t *evt, bool lost)
 {
@@ -203,18 +201,22 @@ static bool touch_q_put(const touch_event_t *evt, bool lost)
         it.evt = *evt;
     }
     it.lost = lost;
-    it.seq  = ++s_tq_seq;
-    bool kept = (xQueueSend(s_touch_q, &it, 0) == pdTRUE);
-    if (!kept) {
-        touch_item_t stale;
-        (void)xQueueReceive(s_touch_q, &stale, 0);
-        kept = (xQueueSend(s_touch_q, &it, 0) == pdTRUE);
+    touch_put_t put;
+    touch_put_op_t op = touch_put_begin(&s_tq_tx, &put, lost);
+    it.seq = put.seq;
+    while (op != TOUCH_PUT_DONE) {
+        bool ok = true;
+        if (op == TOUCH_PUT_SEND) {
+            ok = (xQueueSend(s_touch_q, &it, 0) == pdTRUE);
+        } else if (op == TOUCH_PUT_EVICT) {
+            touch_item_t stale;
+            ok = (xQueueReceive(s_touch_q, &stale, 0) == pdTRUE);
+        } else {
+            atomic_store(&s_tq_published, put.seq);
+        }
+        op = touch_put_next(&put, ok);
     }
-    atomic_store(&s_tq_published, it.seq);
-    if (lost) {
-        s_lost_notice_seq = it.seq;
-    }
-    return kept;
+    return put.kept;
 }
 
 /**
@@ -326,7 +328,7 @@ void control_pump(void)
          * nobody saw is consumed by the next stop the backstop really does
          * have to apply, and that stop would be ignored.
          */
-        const uint32_t mark = s_tq_seq + 1u;
+        const uint32_t mark = touch_seq_tx_next(&s_tq_tx);
         if (counted_here) {
             atomic_store(&s_stop_counted, (unsigned)mark);
         }

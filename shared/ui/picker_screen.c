@@ -23,15 +23,11 @@
 #include "picker_screen_int.h"
 
 /** @brief The screen's state; picker_screen_int.h names it s. */
-pk_state_t pk_s;
-
-/** @brief The GPIOs the IOmcu's programming ports are bound to,
- *         PICKER_NO_PIN for none.  Kept out of `s` so a reset of the
- *         screen does not forget them. */
-static uint8_t g_prog_pins[LINK_PG_PORTS_MAX] = {
-    PICKER_NO_PIN, PICKER_NO_PIN, PICKER_NO_PIN, PICKER_NO_PIN
+pk_state_t pk_s = {
+    .prog_pins = { PICKER_NO_PIN, PICKER_NO_PIN, PICKER_NO_PIN,
+                   PICKER_NO_PIN },
 };
-_Static_assert(LINK_PG_PORTS_MAX == 4u, "g_prog_pins' initialiser");
+_Static_assert(LINK_PG_PORTS_MAX == 4u, "prog_pins' initialiser");
 
 /**
  * @brief Count a change: every framebuffer's picture is stale.
@@ -150,8 +146,8 @@ void picker_screen_set_prog_ports(uint8_t count, const uint8_t *pins)
     for (uint8_t n = 0; n < LINK_PG_PORTS_MAX; ++n) {
         const uint8_t pin = (pins != NULL && n < count) ? pins[n]
                                                          : PICKER_NO_PIN;
-        moved = moved || pin != g_prog_pins[n];
-        g_prog_pins[n] = pin;
+        moved = moved || pin != s.prog_pins[n];
+        s.prog_pins[n] = pin;
     }
     if (moved) {
         pk_touched();
@@ -219,7 +215,7 @@ bool pk_prog_taken(uint8_t index)
     }
     const uint8_t gpio = outbind_pins(s.bind.board)[index].gpio;
     for (uint8_t n = 0; n < LINK_PG_PORTS_MAX; ++n) {
-        if (g_prog_pins[n] != PICKER_NO_PIN && g_prog_pins[n] == gpio) {
+        if (s.prog_pins[n] != PICKER_NO_PIN && s.prog_pins[n] == gpio) {
             return true;
         }
     }
@@ -306,12 +302,12 @@ picker_pin_t picker_screen_pin(uint8_t index, char *holder, size_t cap)
      * held by the pin it clashes with.  outbind_pwm_clash_ports() takes the
      * ports' pins as the IOmcu reads them, PICKER_NO_PIN being no pin. */
     if (outbind_pwm_clash_ports(&s.bind, index,
-                                outputs_pwm_pins(g_prog_pins),
+                                outputs_pwm_pins(s.prog_pins),
                                 LINK_PG_PORTS_MAX, NULL)
         != OUTBIND_CLASH_NONE) {
         if (holder != NULL) {
             (void)outputs_clash_label(&s.bind, index,
-                                      outputs_pwm_pins(g_prog_pins),
+                                      outputs_pwm_pins(s.prog_pins),
                                       LINK_PG_PORTS_MAX, holder, cap);
         }
         return PICKER_PIN_HELD;
@@ -407,7 +403,7 @@ bool picker_screen_reason(char *buf, size_t cap)
     }
     return outputs_reason_of(&s.bind, buf, cap)
            || outputs_clash_reason(&s.bind, s.refused,
-                                   outputs_pwm_pins(g_prog_pins),
+                                   outputs_pwm_pins(s.prog_pins),
                                    LINK_PG_PORTS_MAX, buf, cap);
 }
 
@@ -575,7 +571,7 @@ static void event(const touch_event_t *evt)
     if (st != PICKER_PIN_FREE && st != PICKER_PIN_TICKED) {
         if (st == PICKER_PIN_HELD
             && outbind_pwm_clash_ports(&s.bind, (uint8_t)was,
-                                       outputs_pwm_pins(g_prog_pins),
+                                       outputs_pwm_pins(s.prog_pins),
                                        LINK_PG_PORTS_MAX, NULL)
                    != OUTBIND_CLASH_NONE) {
             s.refused = was;
@@ -593,7 +589,11 @@ static void event(const touch_event_t *evt)
 /** @brief Forget everything: no binding, no list, no cat. */
 static void reset(void)
 {
+    uint8_t pins[LINK_PG_PORTS_MAX];
+
+    memcpy(pins, s.prog_pins, sizeof(pins));
     memset(&s, 0, sizeof(s));
+    memcpy(s.prog_pins, pins, sizeof(pins));
     outbind_init(&s.bind);
     s.hit = -1;
     s.refused = -1;

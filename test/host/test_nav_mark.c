@@ -10,6 +10,7 @@
  * - the_simulation_mark_follows_the_canvas_it_is_given
  * - switching_the_mark_invalidates_the_cached_chrome
  * - the_menu_marks_what_is_not_fitted
+ * - the_supply_word_outlives_a_start_of_the_screens
  * - demo_mode_is_off_by_default_and_the_mark_is_drawn
  * - demo_mode_hides_the_mark_and_keeps_the_sim_chip
  * - demo_mode_switched_back_off_draws_the_mark_on_the_next_frame
@@ -366,6 +367,38 @@ TEST_CASE(the_menu_marks_what_is_not_fitted)
     CHECK_EQ(again, full);
 }
 
+/* The control task's word on the supply holds whichever screen is up: a
+ * start of the screens clears the menu's presses and keeps the word. */
+TEST_CASE(the_supply_word_outlives_a_start_of_the_screens)
+{
+    fresh();
+    to_overview();
+
+    ui_bench_status_t st = *ui_router_status();
+    st.capabilities = 0;
+    ui_router_set_status(&st);
+    overview_screen_set_supply_real(false);
+    ui_router_render(&cv, 0);
+    int marked = 0;
+    for (int i = 0; i < W * H; ++i) {
+        if (fb[i] == ui_theme_color(UI_C_PANEL_SUNK)) { ++marked; }
+    }
+    overview_screen_set_supply_real(true);
+    ui_router_init();
+    to_overview();
+    ui_router_set_status(&st);
+    ui_router_render(&cv, 0);
+    int real = 0;
+    for (int i = 0; i < W * H; ++i) {
+        if (fb[i] == ui_theme_color(UI_C_PANEL_SUNK)) { ++real; }
+    }
+    if (real >= marked) {
+        T_FAIL("a start of the screens lost the PD mini's word: %d then %d",
+               marked, real);
+    }
+    overview_screen_set_supply_real(false);
+}
+
 /* ---------------------------------------------------------------- demo mode */
 
 #define BUF_PX ((size_t)W * H)
@@ -657,6 +690,7 @@ int main(void)
     RUN(the_simulation_mark_follows_the_canvas_it_is_given);
     RUN(switching_the_mark_invalidates_the_cached_chrome);
     RUN(the_menu_marks_what_is_not_fitted);
+    RUN(the_supply_word_outlives_a_start_of_the_screens);
     RUN(demo_mode_is_off_by_default_and_the_mark_is_drawn);
     RUN(demo_mode_hides_the_mark_and_keeps_the_sim_chip);
     RUN(demo_mode_switched_back_off_draws_the_mark_on_the_next_frame);

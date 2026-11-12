@@ -55,14 +55,6 @@
 /* The screen's state; settings_screen_int.h names it s. */
 stg_state_t stg_s;
 
-/*
- * The rows the IOmcu does not hold, as the control task last said.
- * Outside s: what the IOmcu holds does not change when the screen
- * is reset.
- */
-static uint16_t s_sense_unheld;
-/** @brief The tap's rows the IOmcu does not hold, TONE_LINK_ROWS_*. */
-static uint8_t  s_tone_unheld;
 
 void settings_screen_invalidate(void)
 {
@@ -88,9 +80,9 @@ void settings_apply_all(void)
 
 void settings_screen_set_unheld(uint16_t sense_rows, uint8_t tone_rows)
 {
-    if (sense_rows != s_sense_unheld || tone_rows != s_tone_unheld) {
-        s_sense_unheld = sense_rows;
-        s_tone_unheld  = tone_rows;
+    if (sense_rows != s.sense_unheld || tone_rows != s.tone_unheld) {
+        s.sense_unheld = sense_rows;
+        s.tone_unheld  = tone_rows;
         settings_screen_invalidate();
     }
 }
@@ -142,7 +134,7 @@ bool settings_screen_unheld(setting_id_t id)
     default:
         break;
     }
-    return (s_sense_unheld & sense) != 0u || (s_tone_unheld & tone) != 0u;
+    return (s.sense_unheld & sense) != 0u || (s.tone_unheld & tone) != 0u;
 }
 
 static const ui_setlist_host_t k_host;
@@ -551,7 +543,12 @@ static const ui_setlist_host_t k_host = {
  */
 static void reset(void)
 {
+    const uint16_t sense_unheld = s.sense_unheld;
+    const uint8_t tone_unheld = s.tone_unheld;
+
     memset(&s, 0, sizeof(s));
+    s.sense_unheld = sense_unheld;
+    s.tone_unheld = tone_unheld;
     ui_setlist_init(&s.sl, &k_host);
     s.cat = SET_CAT_APP;
     sensors_pane_select(SENS_ENTRY_BUS);

@@ -739,12 +739,9 @@ int kst_panel_editor(void)
 
 /* --------------------------------------------------------------- the caller */
 
-/** @brief Not part of k: a start of the screens leaves it. */
-static kst_prog_gate_t *s_gate;
-
 void kst_panel_gate(kst_prog_gate_t *g)
 {
-    s_gate = g;
+    k.gate = g;
     kst_prog_gate_set(&k.prog, g);
 }
 
@@ -761,10 +758,13 @@ static bool holds_setting(setting_id_t id)
 
 void kst_panel_init(gfx_rect_t area)
 {
+    kst_prog_gate_t *const gate = k.gate;
+
     memset(&k, 0, sizeof(k));
+    k.gate = gate;
     kst_prog_init(&k.prog);
     settings_set_hold(holds_setting);
-    kst_prog_gate_set(&k.prog, s_gate);
+    kst_prog_gate_set(&k.prog, k.gate);
     k.area = area;
     kpn_mode_sync();
     k.kp.pressed = -1;

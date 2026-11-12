@@ -56,29 +56,40 @@ static const struct {
     [SET_TEXT_IMU_NAME]     = { "imu_name", "", SET_CAT_COUNT },
 };
 
-static struct {
-    float values[SETTING_COUNT];
+/** @brief The values, the copy the medium holds, the store and the hooks. */
+typedef struct {
+    float values[SETTING_COUNT];  /**< the values in force */
+    /** @brief The strings in force */
     char  texts[SETTING_TEXT_COUNT][SETTINGS_TEXT_MAX];
-    /*
-     * What the medium holds, as far as the panel knows: the values and
-     * strings settings_init() loaded, or the last successful save wrote.
+    /**
+     * @brief What the medium holds, as far as the panel knows: the values
+     *        settings_init() loaded, or the last successful save wrote.
+     *
      * A changed setting is one that differs from this copy.  stored_sure
      * is false after a refused save: a refusal part way leaves the keys
      * written before it, so the medium can hold a mix and the copy is no
      * longer known to be it.
      */
     float stored[SETTING_COUNT];
+    /** @brief The strings the medium holds, as stored holds the values */
     char  stored_texts[SETTING_TEXT_COUNT][SETTINGS_TEXT_MAX];
-    bool  stored_sure;
-    bool  dirty;
-    bool     save_asked;   /* asked for, not yet taken */
-    bool     save_failed;  /* the last attempt did not reach the medium */
-    const settings_store_t *store;
-    settings_observer_fn observer;
-    settings_text_observer_fn text_observer;
-    settings_hold_fn hold;
+    bool  stored_sure;   /**< stored and stored_texts are the medium's */
+    bool  dirty;         /**< the medium may differ from what is in force */
+    bool     save_asked;   /**< asked for, not yet taken */
+    bool     save_failed;  /**< the last attempt did not reach the medium */
+    const settings_store_t *store;           /**< the medium */
+    settings_observer_fn observer;           /**< told of a value's change */
+    settings_text_observer_fn text_observer; /**< told of a string's change */
+    settings_hold_fn hold;     /**< says whether a setting is held */
     settings_armed_fn armed;   /**< says whether the bench is ARMED */
-} s;
+    /** @brief The pins a board solders, over the settings that name them:
+     *         fix_on[id] says whether fix[id] stands for the value */
+    bool  fix_on[SETTING_COUNT];
+    float fix[SETTING_COUNT];  /**< the fixed values */
+} settings_state_t;
+
+/** @brief The settings' one instance. */
+static settings_state_t s;
 
 /*
  * Whether value @p i is off its stored value by a step of its grid or more.
@@ -480,35 +491,30 @@ void settings_init(void)
     }
 }
 
-/** @brief The pins a board solders, over the settings that name them:
- *         s_fix_on[id] says whether s_fix[id] stands for the value. */
-static bool  s_fix_on[SETTING_COUNT];
-static float s_fix[SETTING_COUNT];  /**< The fixed values. */
-
 bool settings_fix(setting_id_t id, int value)
 {
     if (id < 0 || id >= SETTING_COUNT) {
         return false;
     }
     const float was = settings_get(id);
-    s_fix_on[id] = true;
-    s_fix[id] = (float)value;
+    s.fix_on[id] = true;
+    s.fix[id] = (float)value;
     return settings_get(id) != was;
 }
 
 bool settings_unfix(setting_id_t id)
 {
-    if (id < 0 || id >= SETTING_COUNT || !s_fix_on[id]) {
+    if (id < 0 || id >= SETTING_COUNT || !s.fix_on[id]) {
         return false;
     }
     const float was = settings_get(id);
-    s_fix_on[id] = false;
+    s.fix_on[id] = false;
     return settings_get(id) != was;
 }
 
 bool settings_fixed(setting_id_t id)
 {
-    return id >= 0 && id < SETTING_COUNT && s_fix_on[id];
+    return id >= 0 && id < SETTING_COUNT && s.fix_on[id];
 }
 
 float settings_get(setting_id_t id)
@@ -516,7 +522,7 @@ float settings_get(setting_id_t id)
     if (id < 0 || id >= SETTING_COUNT) {
         return 0.0f;
     }
-    return s_fix_on[id] ? s_fix[id] : s.values[id];
+    return s.fix_on[id] ? s.fix[id] : s.values[id];
 }
 
 int settings_get_int(setting_id_t id)

@@ -6,11 +6,12 @@
  * esc_stick_panel.c, the state, a run and the application's side;
  * esc_stick_list.c, the profile list and its texts; esc_stick_touch.c,
  * the presses; esc_stick_draw.c, the list and a profile's pages drawn;
- * and esc_stick_draw_run.c, a run, the RUN warning and the manual steps
- * drawn.  The pages' own layout, the state they read and write, and the
- * functions one calls of another, all prefixed sp_.  The seam with the
+ * esc_stick_draw_run.c, a run, the RUN warning and the manual steps
+ * drawn; and esc_stick_guide.c, the guide's pages.  The pages' own
+ * layout, the state they read and write, and the functions one calls of
+ * another, all prefixed sp_.  The seam with the
  * page set, esc_stick_pages.c, is esc_stick_int.h, which this header
- * includes.  Nothing outside these five files includes this header; the
+ * includes.  Nothing outside these six files includes this header; the
  * interface is esc_stick_panel.h.
  *
  * SPDX-License-Identifier: MIT
@@ -304,7 +305,7 @@ typedef struct {
  *         as s, the name it had as the one file's static: the object's
  *         own name keeps it apart from the SERVO screen's s. */
 extern sp_state_t esc_stick_s;
-/** @brief Short name for esc_stick_s inside the five stick-class files. */
+/** @brief Short name for esc_stick_s inside the six stick-class files. */
 #define s esc_stick_s
 
 /* --- the functions one file calls of another ---------------------------- */

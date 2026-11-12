@@ -281,6 +281,9 @@ typedef struct {
     ui_cat_pick_t cat;         /**< the pose and spot picked             */
     gfx_rect_t    cat_drawn;  /**< the box drawn last, empty for none */
     int           cat_view;   /**< the selection the pick was last held to */
+    /** @brief The GPIOs the IOmcu's programming ports are bound to,
+     *         PICKER_NO_PIN for none.  A reset of the screen keeps them. */
+    uint8_t       prog_pins[LINK_PG_PORTS_MAX];
 } pk_state_t;
 
 /* Defined in picker_screen.c. */

@@ -134,5 +134,6 @@ When the supply goes off before the ESC confirmed, the result marks the change U
 
 ## Related pages
 
+- [The screen guide](band.md#the-screen-guide): "?" in the band opens this screen's guide.
 - [Motor and ESC](motor.md#program): PROGRAM and the output strip.
 - [Stick programming](https://github.com/subtilitas/rcbench/blob/main/docs/StickProgramming.md): profiles, timings and every rule of a run.

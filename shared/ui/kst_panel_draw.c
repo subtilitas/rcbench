@@ -494,11 +494,6 @@ int kst_panel_pack_notes(const int *rows, const bool *standing, int count,
 }
 
 /**
- * @brief Static: the message's lines, written on the UI task's deepest path.
- */
-static char s_msg[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
-
-/**
  * @brief Where the notes go: their rows from the first note's place to the
  *        message, the page each takes, and where the shown page puts each line.
  */
@@ -506,7 +501,9 @@ typedef struct {
     note_t n[NOTES_MAX];                /**< the notes, in their order down the page */
     int    count;                       /**< notes used */
     int    rows[NOTES_MAX];             /**< rows each note takes */
-    int    lines;                       /**< the message's lines in s_msg */
+    /** @brief The message's lines */
+    char   msg[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
+    int    lines;                       /**< the message's lines in msg */
     int    msg_rows;                    /**< rows the message takes */
     int    top;                         /**< the first note's place */
     int    bottom;                      /**< the lowest row the notes may reach */
@@ -521,8 +518,9 @@ typedef struct {
 } notes_plan_t;
 
 /**
- * @brief Static: the notes are planned on the UI task's deepest path.  One plan
- *        serves the draw and every query; none of them calls another.
+ * @brief Static: the notes and the message's lines are planned on the UI
+ *        task's deepest path.  One plan serves the draw and every query; none
+ *        of them calls another.
  */
 static notes_plan_t s_plan;
 
@@ -536,12 +534,12 @@ static void plan_notes(notes_plan_t *p)
     uint32_t sig = 2166136261u;
 
     p->count = page_notes(p->n);
-    p->lines = message_shown(s_msg);
+    p->lines = message_shown(p->msg);
     p->msg_rows = 0;
     p->bottom = kpn_notes_foot();
     p->top = p->bottom;
     for (int i = 0; i < p->lines; ++i) {
-        p->msg_rows += kst_panel_text_rows(s_msg[i]);
+        p->msg_rows += kst_panel_text_rows(p->msg[i]);
     }
     for (int i = 0; i < p->count; ++i) {
         const int at = k.area.y + NOTE_Y + p->n[i].slot * LINE_H;
@@ -662,7 +660,7 @@ static void layout_notes(notes_plan_t *p)
     p->msg_y = y;
     p->msg_shown = 0;
     while (p->msg_shown < p->lines) {
-        const int rows = kst_panel_text_rows(s_msg[p->msg_shown]);
+        const int rows = kst_panel_text_rows(p->msg[p->msg_shown]);
 
         if (y + rows * LINE_H > p->bottom) {
             break;
@@ -699,7 +697,8 @@ static void draw_notes(gfx_canvas_t *c)
     }
     y = p->msg_y;
     for (int i = 0; i < p->msg_shown; ++i) {
-        y = kpn_text_rows(c, k.area.x + 10, y, s_msg[i], level_color(m->level));
+        y = kpn_text_rows(c, k.area.x + 10, y, p->msg[i],
+                          level_color(m->level));
     }
 }
 
@@ -766,7 +765,7 @@ gfx_rect_t kst_panel_notes_drawn(void)
         top = s_plan.msg_y;
     }
     for (int i = 0; i < s_plan.msg_shown; ++i) {
-        y += kst_panel_text_rows(s_msg[i]) * LINE_H;
+        y += kst_panel_text_rows(s_plan.msg[i]) * LINE_H;
     }
     for (int i = 0; i < s_plan.count; ++i) {
         const int end = s_plan.y[i] + s_plan.rows[i] * LINE_H;

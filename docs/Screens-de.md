@@ -205,8 +205,8 @@ anderen Bits so, wie das Band sie zeigt.
 
 "?" im Statusband öffnet die Hilfe zur aktuellen Seite. Nummerierte Marken
 kennzeichnen die Bedienelemente; ein Hilfefeld erklärt ihre Funktion.
-Das Menü, SUPPLY, SERVO, OUTPUTS, SETUP, LOGS und FILES haben eine Hilfe,
-die anderen Seiten haben kein "?". Auch Tastenfelder, Tastaturen, offene
+Das Menü, MOTOR & ESC mit ESC STICK, SUPPLY, SERVO, OUTPUTS, SETUP, LOGS,
+FILES und IMU haben eine Hilfe, die anderen Seiten haben kein "?". Auch Tastenfelder, Tastaturen, offene
 Listen, Boxen, Warnungen und Bestätigungsdialoge zeigen kein "?".
 
 ![Die Hilfe des Menüs auf Seite 1](img/de/help-overview.png)
@@ -257,8 +257,8 @@ wieder.
   Eine Haltegeste auf ARM wird abgebrochen.
 - Der Drehknopf bewegt bei geöffneter Hilfe nichts und schließt sie nicht.
 - Das Verlassen der Seite oder ein Wechsel ihrer Hilfeseiten schließt die
-  Hilfe: eine andere Aufgabe oder ein anderer Tab, und auf SUPPLY und SERVO
-  der Wechsel zwischen SAFE und ARMED, das Ein- oder Ausschalten des
+  Hilfe: eine andere Aufgabe oder ein anderer Tab, und auf SUPPLY, SERVO und
+  MOTOR & ESC der Wechsel zwischen SAFE und ARMED, das Ein- oder Ausschalten des
   Netzteilausgangs und der Start eines Laufs. Verbindungsverlust und
   Rückkehr der Verbindung lassen sie offen. Ihre Beschriftungen folgen dem
   Zustand.
@@ -324,7 +324,7 @@ Die Aufgabe auf der linken Karte bestimmt die ersten Hilfeseiten:
 | die Listen von SERVO (Hub, SWEEP, RUDER, RUDER AUTO, HITEC) | wie eine Optionsliste |
 | SUPPLY LIVE | GRAFIK und TABELLE, SPANNUNG und STROMBEGRENZUNG (3) |
 | SUPPLY LIVE, die rechte Spalte | der Bereich und die vier Messwertkarten (5); die Sollwerte, SPITZENWERTE ZURÜCKSETZEN, AUSGANG EIN und OPTIONEN (4) |
-| eine Optionsliste (MOTOR & ESC, SUPPLY, SERVO) | eine Zeile, der Name der Leiste und Name ZURÜCKSETZEN (3); `-`, Wert und `+` einer Zeile und SPEICHERN (4) |
+| eine Optionsliste (MOTOR & ESC, ESC STICK, SUPPLY, SERVO) | eine Zeile, der Name der Leiste und Name ZURÜCKSETZEN (3); `-`, Wert und `+` einer Zeile und SPEICHERN (4) |
 
 Eine Hilfeseite, deren Hilfefeld ein Bedienelement zum Anhalten eines
 Ausgangs verdecken würde, fehlt, solange dieses Element sichtbar ist:
@@ -345,6 +345,51 @@ Ausgangs verdecken würde, fehlt, solange dieses Element sichtbar ist:
   Optionen eines Laufs; über einer Liste bietet es die Seiten der
   Optionsliste. SUPPLY bietet keine über seinem Tastenfeld oder der
   Rückfrage zu einem aktiven Ausgang.
+
+### Die Hilfe von MOTOR & ESC, ESC STICK und IMU
+
+![Die Hilfe von MOTOR & ESC auf Seite 1 in LIVE](img/de/help-motor.png)
+
+Die erste Hilfeseite von MOTOR & ESC markiert die linke Spalte, mit dem
+Hilfefeld rechts; die zweite markiert die rechte Spalte, mit dem
+Hilfefeld links, und lässt ZIEL sichtbar. Die Hilfeseiten von ESC STICK
+ersetzen sie, solange die Sitzung offen ist
+(`shared/ui/esc_stick_guide.c`). IMU steuert keinen Ausgang an, daher
+erscheinen beide Hilfeseiten auch bei ARMED.
+
+| Seite und Zustand | Hilfeseiten, Einträge |
+| --- | --- |
+| MOTOR & ESC LIVE, SAFE | LIVE und PROGRAMMIEREN, die Telemetriekarte, GAS und LOG UMBENENNEN (4); ZIEL, die Messwerte, SPITZENWERTE ZURÜCKSETZEN, ARM und OPTIONEN (5) |
+| MOTOR & ESC, Liste von PROGRAMMIEREN, SAFE | LIVE und PROGRAMMIEREN, die beiden Zeilen und LOG UMBENENNEN (4); die rechte Spalte wie bei LIVE (5) |
+| ESC STICK, Hersteller oder Modelle | ZURÜCK und die erste Zeile (2); SUCHE, `^` und `v` und die Anzahl unter den Zeilen (3) |
+| ESC STICK, ein Profil | ZURÜCK, der erste Punkt und der Hinweis unter der Karte (3); `-` und `+` des ersten Punkts, `^` und `v` der Seitenspalte, MANUELLER EINGRIFF NÖTIG bei einem Profil mit Handgriffen, START und OPTIONEN (4 oder 5) |
+| OPTIONEN von ESC STICK | wie eine Optionsliste |
+| IMU | SENSOREN SUCHEN, NULLPUNKT und NULLPUNKT LÖSCHEN (3); die Zeilen des Sensors, X Y Z, die Zeile RATE, 2s HALTEN: KALIBRIEREN und OPTIONEN (5) |
+
+![Die Hilfe von ESC STICK auf Seite 1 bei einem Profil](img/de/help-motor-stick.png)
+
+Der Hinweis unter der Karte eines Profils nennt, warum START nicht geht:
+kein Gas-Pin, die Zuordnung nicht gelesen, das Modell des Netzteils im
+Panel, keine Pieptonquelle, das Netzteil an oder nicht als aus gelesen,
+ein Grenzwert des Modells, eine Servoprogrammierung, die einen Port hält
+([ESC STICK](#esc-stick)). Der Eintrag der Hilfe dafür steht da, ob ein
+Grund vorliegt oder nicht.
+
+Jedes Hilfefeld verdeckt einen Teil des mittleren Felds der Fußleiste,
+x 348 bis 676:
+
+- MOTOR & ESC bietet Hilfeseiten nur bei SAFE, wie die Seite ihn sieht:
+  nicht ARMED, kein unbeantwortetes ARM, kein unbeantwortetes DISARM.
+  Dort ist das Feld DISARM.
+- ESC STICK bietet keine Hilfeseite zu einem Profil bei ARMED, während
+  eines Laufs oder solange sein Ergebnis steht, denn das Feld ist dann
+  ABBRECHEN oder OK. Die Hilfeseiten der Liste verdecken kein
+  Bedienelement zum Anhalten und erscheinen auch bei ARMED.
+- Keine Hilfeseite über der Tastatur von LOG UMBENENNEN, der Sitzung über
+  die Signalleitung, der Tastatur der Suche, der Warnung vor dem Start
+  oder den Handgriffen von ESC STICK oder der Fundliste von IMU.
+
+![Die Hilfe von IMU auf Seite 1](img/de/help-imu.png)
 
 ## Screenshot
 

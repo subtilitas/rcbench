@@ -19,9 +19,6 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-/** @brief The board view is drawn, not this grid (outputs_view.c). */
-static bool s_board_view;
-
 /** @brief The screen's width: the panel's 1024px. */
 #define SCREEN_W UI_PANEL_W
 #define SCREEN_H UI_BODY_H    /**< The body under the band: 540px. */
@@ -144,6 +141,8 @@ static struct {
     bool      chrome_valid[MAX_FBS];
     uint32_t  drawn_gen;
     uint32_t  gen;          /* bumped by anything that changes the picture */
+    bool      board_view;   /**< the board view is drawn, not this grid
+                                 (outputs_view.c) */
 } s;
 
 static void touched(void)
@@ -391,7 +390,7 @@ static gfx_rect_t pop_row_rect(int i)
 
 static gfx_rect_t clear_rect(void)
 {
-    return s_board_view ? gfx_rect_make(OB_CLR_X, OB_CLR_Y, OB_CLR_W, OB_CLR_H)
+    return s.board_view ? gfx_rect_make(OB_CLR_X, OB_CLR_Y, OB_CLR_W, OB_CLR_H)
                         : gfx_rect_make(COL_X, CLR_Y, COL_W, CLR_H);
 }
 
@@ -476,8 +475,8 @@ gfx_rect_t outputs_grid_rect(outputs_grid_part_t part)
 
 void outputs_screen_set_board_view(bool board)
 {
-    if (board != s_board_view) {
-        s_board_view = board;
+    if (board != s.board_view) {
+        s.board_view = board;
         drop_clear_hold();
         s.open = false;
         s.hit_kind = HIT_NONE;
@@ -490,7 +489,6 @@ void outputs_screen_set_board_view(bool board)
 static void reset(void)
 {
     memset(&s, 0, sizeof(s));
-    s_board_view = false;
     outbind_init(&s.bind);
     s.confirmed = s.bind;
     s.read = BIND_READ_OK;
@@ -959,9 +957,9 @@ void outputs_unbind_draw(gfx_canvas_t *c)
     /* Centered, 10px in from either end: on the grid in the label face, two
      * lines at most; on the narrower board view's key in 8 x 16, four. */
     const char *label = TR(OUT_HOLD_UNBIND);
-    const gfx_font_t *font = s_board_view ? OU_FONT_FINE : OU_FONT_LABEL;
-    const int pitch = s_board_view ? OB_WHY_FINE : OU_LINE;
-    const int most = s_board_view ? 4 : 2;
+    const gfx_font_t *font = s.board_view ? OU_FONT_FINE : OU_FONT_LABEL;
+    const int pitch = s.board_view ? OB_WHY_FINE : OU_LINE;
+    const int most = s.board_view ? 4 : 2;
     const int h = gfx_text_height(font, 1);
     const gfx_rect_t in = gfx_rect_make(k.x + 10, k.y, k.w - 20, h);
     const gfx_color_t ink = !ui_hold_flashing(&s.clear) ? UI_TEXT

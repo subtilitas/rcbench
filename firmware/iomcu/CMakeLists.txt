@@ -63,6 +63,10 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/escwire" escwire)
 # bus runs on them (src/sense_i2c.c).
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/i2c_txq" i2c_txq)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/can"     can)
+# The rules of the two update slots (fw_slots.c), which src/update_hw.c
+# runs on the boot ROM.  The panel's update files beside them are not
+# called here; the linker takes no other object from the library.
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/fwupdate" fwupdate)
 
 add_executable(rcbench-iomcu
     src/main.c
@@ -252,6 +256,7 @@ target_link_libraries(rcbench-iomcu
     rcbench_servo
     rcbench_openyge
     rcbench_can
+    rcbench_fwupdate
 )
 #
 # Diagnostics go out over USB (Universal Serial Bus) CDC (communications

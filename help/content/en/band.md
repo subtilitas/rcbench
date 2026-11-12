@@ -116,7 +116,7 @@ The save popup waits until the bench is idle: SAFE, supply output and PROG 5V of
 
 ![The menu's guide at page 1](view:help-overview)
 
-"?", 8px left of STOP, opens the guide for the current screen. The menu, SUPPLY, SERVO, OUTPUTS, SETUP, LOGS and FILES have guides; the other screens have no "?" control. Each guide page marks up to 5 controls with numbered badges and corner brackets. A 480 x 488px dock on one half of the screen lists their names and functions, using at most 3 rows per control. The other half continues running. The dock's last row gives the address of this help.
+"?", 8px left of STOP, opens the guide for the current screen. The menu, MOTOR & ESC with ESC STICK, SUPPLY, SERVO, OUTPUTS, SETUP, LOGS, FILES and IMU have guides; the other screens have no "?" control. Each guide page marks up to 5 controls with numbered badges and corner brackets. A 480 x 488px dock on one half of the screen lists their names and functions, using at most 3 rows per control. The other half continues running. The dock's last row gives the address of this help.
 
 - PREV and NEXT turn the guide pages. They replace the home tag in the band and stay in the same position on every page. Repeated taps at the same position keep turning pages. CLOSE at the bottom of the dock, or "?", closes the guide.
 - Tapping elsewhere closes the guide without acting on the screen below.
@@ -127,6 +127,12 @@ The save popup waits until the bench is idle: SAFE, supply output and PROG 5V of
 
 ![SERVO's guide at page 1 on LIVE](view:help-servo)
 ![SUPPLY's guide at page 1 on LIVE](view:help-supply)
+
+MOTOR & ESC has a page for LIVE or PROGRAM's list with the dock on the right, then the rail's page with the dock on the left: TARGET, the readings, RESET PEAKS, ARM and OPTIONS. Either dock covers part of ARM and DISARM, so MOTOR & ESC offers no page unless the bench is SAFE. Over ESC STICK the guide has two pages on the list of makers or models and two on a profile: BACK, an item and the note that says why RUN does not start, then the steppers, MANUAL INTERVENTION REQUIRED, RUN and OPTIONS. A run, its result, the RUN warning, the manual steps and the search keyboard have no pages. IMU has two pages, both shown while ARMED: SCAN FOR SENSORS, ZERO and CLEAR ZERO, then the card, HOLD 2s: CALIBRATE and OPTIONS.
+
+![MOTOR & ESC's guide at page 1 on LIVE](view:help-motor)
+![ESC STICK's guide at page 1 on a profile](view:help-motor-stick)
+![IMU's guide at page 1](view:help-imu)
 
 OUTPUTS, SETUP, LOGS and FILES have a set of pages for each state: the tiles, a list and SENSORS on SETUP, the board view, a PROG PORT entry and the grid view on OUTPUTS, the file list, the import view and the plot on LOGS, the panes on FILES. Their dock takes the right half on page 1. A control the dock covers in part is marked where it shows. These screens drive no output, so all their pages show while ARMED.
 

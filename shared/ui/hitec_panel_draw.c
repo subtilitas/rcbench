@@ -42,17 +42,20 @@ typedef struct {
     note_t n[NOTES_MAX];          /**< the notes, from the top         */
     int    count;                 /**< notes used                      */
     int    y[NOTES_MAX];          /**< each note's top; -1 not drawn   */
-    int    lines;                 /**< the message's lines             */
+    /** @brief The notes' own texts */
+    char   buf[3][HITEC_PANEL_LINE];
+    /** @brief The message's lines */
+    char   msg[HITEC_PANEL_MSG_LINES][HITEC_PANEL_LINE];
+    int    lines;                 /**< the message's lines in msg      */
     int    msg_y;                 /**< the message's top               */
     int    top;                   /**< the first note's top            */
     int    foot;                  /**< under the last line drawn       */
 } plan_t;
 
-/** @brief Static: the message's lines, written on the UI task's path. */
-static char s_msg[HITEC_PANEL_MSG_LINES][HITEC_PANEL_LINE];
-/** @brief Static: the notes' own texts. */
-static char s_buf[3][HITEC_PANEL_LINE];
-/** @brief Static: one plan serves the draw and every query. */
+/**
+ * @brief Static: the notes, their texts and the message's lines are planned
+ *        on the UI task's path.  One plan serves the draw and every query.
+ */
 static plan_t s_plan;
 
 /**
@@ -124,8 +127,8 @@ static void servo_notes(plan_t *p)
     const hitec_model_t *m = hitec_prog_model(pr);
     const gfx_color_t faint = ui_theme_color(UI_C_TEXT_FAINT);
 
-    hpn_state_line(s_buf[0], sizeof(s_buf[0]));
-    note(p, s_buf[0], ui_theme_color(hitec_prog_stopped(pr)
+    hpn_state_line(p->buf[0], sizeof(p->buf[0]));
+    note(p, p->buf[0], ui_theme_color(hitec_prog_stopped(pr)
                                          ? UI_C_WARN : UI_C_TEXT));
     if (st == HITEC_PROG_NO_PAGE) {
         note(p, TR(HP_NO_PAGE_2), faint);
@@ -146,8 +149,8 @@ static void servo_notes(plan_t *p)
                        : m->layout == (uint8_t)HITEC_LAYOUT_HS7 ? "HS-7955TG"
                                                                : "HS-5645MG";
 
-        snprintf(s_buf[1], sizeof(s_buf[1]), TR(HP_LAYOUT_GUESS), as);
-        note(p, s_buf[1], ui_theme_color(UI_C_WARN));
+        snprintf(p->buf[1], sizeof(p->buf[1]), TR(HP_LAYOUT_GUESS), as);
+        note(p, p->buf[1], ui_theme_color(UI_C_WARN));
     }
     if (hitec_prog_mv_capped(pr)
         && (st == HITEC_PROG_PWM || pr->owned)) {
@@ -244,21 +247,21 @@ static void plan(plan_t *p)
     } else {
         value_notes(p);
     }
-    n = hitec_panel_message_lines(hitec_prog_message(&hp.prog), s_msg);
+    n = hitec_panel_message_lines(hitec_prog_message(&hp.prog), p->msg);
     /* A message line that says what a note says is said once; the
      * message's other lines stay, in their order. */
     for (int i = 0; i < n; ++i) {
         bool said = false;
 
         for (int j = 0; j < p->count; ++j) {
-            said = said || strcmp(s_msg[i], p->n[j].s) == 0;
+            said = said || strcmp(p->msg[i], p->n[j].s) == 0;
         }
         if (!said) {
-            memmove(s_msg[p->lines++], s_msg[i], sizeof(s_msg[0]));
+            memmove(p->msg[p->lines++], p->msg[i], sizeof(p->msg[0]));
         }
     }
     for (int i = 0; i < p->lines; ++i) {
-        msg_rows += hitec_panel_text_rows(s_msg[i]);
+        msg_rows += hitec_panel_text_rows(p->msg[i]);
     }
     p->top = rows_foot();
     p->msg_y = hpn_notes_foot() - msg_rows * HP_LINE_H;
@@ -295,7 +298,7 @@ static void draw_notes(gfx_canvas_t *c)
     }
     y = p->msg_y;
     for (int i = 0; i < p->lines; ++i) {
-        y = hpn_text_rows(c, hp.area.x + 10, y, s_msg[i],
+        y = hpn_text_rows(c, hp.area.x + 10, y, p->msg[i],
                           level_color(m->level));
     }
 }
@@ -308,7 +311,7 @@ const char *hitec_panel_note(int i)
             return s_plan.n[j].s;
         }
     }
-    return i >= 0 && i < s_plan.lines ? s_msg[i] : NULL;
+    return i >= 0 && i < s_plan.lines ? s_plan.msg[i] : NULL;
 }
 
 gfx_rect_t hitec_panel_notes_drawn(void)

@@ -573,8 +573,8 @@ static void draw_trace_band(gfx_canvas_t *band, int k, int band_y0, int rows)
 {
     gfx_color_t col = ui_theme_color(lv_series_color[k]);
     for (int x = 0; x < PV_W; ++x) {
-        int y0 = lv_span[k][x][0];
-        int y1 = lv_span[k][x][1];
+        int y0 = lv_plot.span[k][x][0];
+        int y1 = lv_plot.span[k][x][1];
         if (y0 == PV_EMPTY || y1 < band_y0 || y0 >= band_y0 + rows) {
             continue;
         }
@@ -642,8 +642,8 @@ static void render_plot(gfx_canvas_t *c)
 
         char lo[10];
         char hi[10];
-        ui_fmt(lo, sizeof(lo), lv_lo[k], 0);
-        ui_fmt(hi, sizeof(hi), lv_hi[k], 0);
+        ui_fmt(lo, sizeof(lo), lv_plot.lo[k], 0);
+        ui_fmt(hi, sizeof(hi), lv_plot.hi[k], 0);
         snprintf(line, sizeof(line), "%s-%s", lo, hi);
         gfx_text(c, chip.x + 12, chip.y + 24, line, LV_FONT_FINE,
                  UI_TEXT_FAINT, 1);
@@ -658,13 +658,13 @@ static void render_plot(gfx_canvas_t *c)
         if (rows > PV_BAND) {
             rows = PV_BAND;
         }
-        gfx_canvas_init(&band, lv_band, PV_W, rows, PV_W);
+        gfx_canvas_init(&band, lv_plot.band, PV_W, rows, PV_W);
         gfx_clear(&band, UI_PANEL_SUNK);
         draw_grid_band(&band, PV_Y + by, rows);
         for (int k = 0; k < s.data.n_fields; ++k) {
             draw_trace_band(&band, k, PV_Y + by, rows);
         }
-        gfx_blit(c, PV_X, PV_Y + by, lv_band, PV_W, rows, PV_W);
+        gfx_blit(c, PV_X, PV_Y + by, lv_plot.band, PV_W, rows, PV_W);
     }
 
     int cx = cursor_x();
@@ -672,10 +672,10 @@ static void render_plot(gfx_canvas_t *c)
         gfx_vline(c, cx, PV_Y, PV_H, UI_TEXT_DIM);
         for (int k = 0; k < s.data.n_fields; ++k) {
             int x = cx - PV_X;
-            if (lv_span[k][x][0] == PV_EMPTY) {
+            if (lv_plot.span[k][x][0] == PV_EMPTY) {
                 continue;
             }
-            int y = (lv_span[k][x][0] + lv_span[k][x][1]) / 2;
+            int y = (lv_plot.span[k][x][0] + lv_plot.span[k][x][1]) / 2;
             gfx_fill_circle(c, cx, y, 3, ui_theme_color(lv_series_color[k]));
         }
     }
