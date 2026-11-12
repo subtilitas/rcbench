@@ -61,7 +61,7 @@ typedef enum {
 
 /** @brief Which readings arrived; an absent one is drawn and logged empty. */
 #define SUPPLY_OK_VOLTAGE 0x01u
-#define SUPPLY_OK_CURRENT 0x02u
+#define SUPPLY_OK_CURRENT 0x02u  /**< the current reading arrived */
 
 /**
  * @brief A supply's readings, set points, mode and trip state.
@@ -102,14 +102,14 @@ typedef struct {
 
     /* The run's extremes, from the output's switch-on: how far the voltage
      * sagged, and the most current and power it gave. */
-    float         v_min;
-    float         i_max;
-    float         p_max;
+    float         v_min;  /**< lowest voltage since the output came on, V */
+    float         i_max;  /**< highest current since then, A */
+    float         p_max;  /**< highest power since then, W */
     bool          sag_seeded; /**< v_min is a reading yet                */
 
     /* What the run delivered, counted by the panel (supply_count_totals). */
-    float         charge_mah;
-    float         energy_wh;
+    float         charge_mah;  /**< charge delivered, mAh */
+    float         energy_wh;  /**< energy delivered, Wh */
     uint8_t       counted;    /**< BENCH_COUNTED_* from bench_state.h    */
 } supply_state_t;
 
@@ -153,8 +153,8 @@ typedef enum {
  *        first reading seen over it, for the trips.
  */
 typedef struct {
-    float over_i_s;
-    float over_v_s;
+    float over_i_s;  /**< seconds the current has been over its threshold */
+    float over_v_s;  /**< seconds the voltage has been over its threshold */
     bool  i_over;         /**< the last current that arrived was over  */
     bool  v_over;         /**< the last voltage that arrived was over  */
     float i_at;           /**< the threshold the current's count is for */
@@ -253,16 +253,16 @@ void supply_count_totals(supply_state_t *s, float dt_s);
  * resistance (CV).  Deterministic, so a screenshot is the same every time.
  */
 #define SUPPLY_SIM_LOAD_OHMS  6.0f
-#define SUPPLY_SIM_PERIOD_S   3.0f
-#define SUPPLY_SIM_BURST_S    0.6f
-#define SUPPLY_SIM_BURST_A    1.4f
-#define SUPPLY_SIM_SOURCE_OHMS 0.05f
+#define SUPPLY_SIM_PERIOD_S   3.0f  /**< seconds between two bursts */
+#define SUPPLY_SIM_BURST_S    0.6f  /**< seconds a burst lasts */
+#define SUPPLY_SIM_BURST_A    1.4f  /**< the burst's current, A */
+#define SUPPLY_SIM_SOURCE_OHMS 0.05f  /**< the source's resistance, Ω */
 
 /**
  * @brief The state of the supply model.
  */
 typedef struct {
-    supply_caps_t caps;
+    supply_caps_t caps;  /**< what the modelled supply supports */
     float         t;          /**< time since the output came on, s      */
     float set_v,                            /**< voltage set point, V                  */
           set_i;                            /**< current limit set point, A            */

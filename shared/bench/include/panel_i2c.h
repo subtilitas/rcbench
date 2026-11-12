@@ -68,6 +68,7 @@ typedef struct {
 
 /** @brief The ranges, in rising address order. */
 extern const panel_i2c_range_t panel_i2c_reserved_table[];
+/** @brief The number of entries of panel_i2c_reserved_table. */
 extern const unsigned panel_i2c_reserved_count;
 
 /**

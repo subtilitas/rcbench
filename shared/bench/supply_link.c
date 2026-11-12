@@ -12,13 +12,13 @@
 #include <stddef.h>
 #include <string.h>
 
-/* The page's own bounds on the set points (shared/outputs/supply_page.c):
+/** @brief The page's own bounds on the set points (shared/outputs/supply_page.c):
  * it refuses more and stores less as the module's least, so both ends are
  * kept here and a read-back matches what was written. */
 #define PAGE_MIN_MV  1000u
-#define PAGE_MAX_MV 20000u
-#define PAGE_MIN_MA    50u
-#define PAGE_MAX_MA  3000u
+#define PAGE_MAX_MV 20000u  /**< the highest voltage, mV */
+#define PAGE_MIN_MA    50u  /**< the lowest current, mA */
+#define PAGE_MAX_MA  3000u  /**< the highest current, mA */
 
 void supply_link_init(supply_link_t *s)
 {

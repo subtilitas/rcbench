@@ -12,11 +12,11 @@
 #include <stddef.h>
 #include <string.h>
 
-/* The ID and FLAGS registers a status read takes: 26 to 30. */
+/** @brief The ID and FLAGS registers a status read takes: 26 to 30. */
 #define STATUS_AT ((uint8_t)LINK_SM_ID_0)
-#define STATUS_N  ((uint8_t)(LINK_SM_FLAGS - LINK_SM_ID_0 + 1))
+#define STATUS_N  ((uint8_t)(LINK_SM_FLAGS - LINK_SM_ID_0 + 1))  /**< the number of registers */
 
-/* The bit of each event, by its index in ev_parts. */
+/** @brief The bit of each event, by its index in ev_parts. */
 static const uint8_t k_ev[4] = {
     SENSE_MAP_LINK_EV_REFUSED, SENSE_MAP_LINK_EV_DARK,
     SENSE_MAP_LINK_EV_SILENT,  SENSE_MAP_LINK_EV_WRONG,

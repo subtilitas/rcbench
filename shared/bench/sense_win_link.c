@@ -11,10 +11,11 @@
 
 #include <string.h>
 
+/** @brief The page of each of the two window registers. */
 static const uint8_t k_page[2] = { LINK_PAGE_SENSE_WIN_A,
                                    LINK_PAGE_SENSE_WIN_B };
 
-#define NONE 0xFFu
+#define NONE 0xFFu  /**< no page selected */
 
 void sense_win_link_init(sense_win_link_t *s)
 {

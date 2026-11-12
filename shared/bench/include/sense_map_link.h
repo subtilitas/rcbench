@@ -68,8 +68,8 @@ extern "C" {
 /** @brief An event handed out has the alert band this long before the next. */
 #define SENSE_MAP_LINK_EVENT_GAP_MS SENSE_LINK_EVENT_GAP_MS
 
-#define SENSE_MAP_LINK_ACK       SENSE_LINK_ACK
-#define SENSE_MAP_LINK_NO_ANSWER SENSE_LINK_NO_ANSWER
+#define SENSE_MAP_LINK_ACK       SENSE_LINK_ACK  /**< an ACK or a DATA frame came */
+#define SENSE_MAP_LINK_NO_ANSWER SENSE_LINK_NO_ANSWER  /**< no answer came */
 
 /** @brief Things the caller tells the operator about, each once. */
 enum {
@@ -133,10 +133,11 @@ typedef enum {
  * @brief One exchange the SENSE_MAP link asks the caller to make.
  */
 typedef struct {
-    sense_map_link_op_kind_t kind;
-    bool     write;
-    uint8_t  page;
-    uint8_t  off, n;
+    sense_map_link_op_kind_t kind;  /**< which exchange */
+    bool     write;  /**< a write of regs; otherwise a read */
+    uint8_t  page;  /**< link_page_id_t */
+    uint8_t  off,                    /**< first register of the page */
+             n;                      /**< registers */
     const uint16_t *regs;     /**< a write's registers, n of them           */
 } sense_map_link_op_t;
 
@@ -148,7 +149,7 @@ typedef struct {
     bool     page;            /**< it has SENSE_MAP (4.25)                  */
     bool     known;           /**< the page has been read since link-up     */
 
-    bool     want_set;
+    bool     want_set;  /**< a set-up is asked */
     uint16_t want[LINK_SM_KEPT];  /**< as it is to be written               */
     uint8_t  dark;                      /**< parts left out because the settings leave them dark */
     uint8_t  clash;           /**< parts left out for the INA228's address  */
@@ -156,24 +157,24 @@ typedef struct {
     bool     nobus;           /**< every part left out: no sensor bus       */
     uint32_t want_ms;                   /**< when want was set, ms */
 
-    uint16_t held[LINK_SM_KEPT];
+    uint16_t held[LINK_SM_KEPT];  /**< the page's registers as read or written */
     bool     refused;         /**< the page refused want                    */
     bool     reread;          /**< a write was taken: SENSE to be read again */
     bool     forced;          /**< FLAGS' IN_FORCE as last read, or a write
                                    taken since                              */
     uint32_t setup_ms;        /**< when the map in force was taken or read  */
 
-    sense_map_link_op_kind_t pending;
-    bool     asked;
-    uint32_t asked_ms;
+    sense_map_link_op_kind_t pending;  /**< the exchange in flight */
+    bool     asked;  /**< a status read is in flight */
+    uint32_t asked_ms;  /**< when it was asked, ms */
     bool     have_status;     /**< IDs and FLAGS read under this map        */
     uint16_t ids[LINK_SM_PARTS];        /**< per part, the ID read */
     uint16_t wrong_id[LINK_SM_PARTS];  /**< the ID a WRONG event names    */
     uint16_t flags;                     /**< FLAGS as last read */
     uint16_t was_flags;                 /**< FLAGS before that read */
 
-    bool     silent_told[LINK_SM_PARTS];
-    bool     online_seen[LINK_SM_PARTS];
+    bool     silent_told[LINK_SM_PARTS];  /**< per part: its SILENT event was raised */
+    bool     online_seen[LINK_SM_PARTS];  /**< per part: it has been seen online */
     uint8_t  ev_parts[4];     /**< per event bit, the parts it names        */
     uint8_t  events;                    /**< events pending, a bit each */
     bool     told;            /**< an event was handed out at told_ms       */

@@ -43,7 +43,7 @@ typedef struct {
      * written the file reads as 0 bytes whatever the data sectors hold.
      */
     bool (*flush)(void *ctx);
-    void *ctx;
+    void *ctx;  /**< passed to write and flush */
 } log_sink_t;
 
 /** @brief The longest bench row, terminator included. */
@@ -53,8 +53,8 @@ typedef struct {
  * @brief A log writer: its sink, its counts and its latched failure.
  */
 typedef struct {
-    log_sink_t sink;
-    uint32_t   rows;
+    log_sink_t sink;  /**< where the bytes go */
+    uint32_t   rows;  /**< rows written */
     uint32_t   pending;      /**< rows written since the last commit */
     float      last_s;       /**< t_s of the last row written */
     float      committed_s;  /**< t_s of the row the last commit ended at */
@@ -65,7 +65,7 @@ typedef struct {
      *        CH3.
      */
     bool       by_map;
-    log_cols_t cols;
+    log_cols_t cols;  /**< the INA3221 column groups when by_map is set */
     /**
      * @brief A bench row as it is built: up to 25 cells, here rather than on the
      *        stack of the task that writes the card.
@@ -88,8 +88,9 @@ typedef struct {
  * durable for as long as the sink takes.  The price is one commit per second per
  * run.
  */
+/** @brief Rows written after which the writer commits. */
 #define LOG_WRITER_FLUSH_ROWS 20u
-#define LOG_WRITER_FLUSH_S    1.0f
+#define LOG_WRITER_FLUSH_S    1.0f  /**< Seconds of the run's clock after which the writer commits. */
 
 /**
  * @brief Semicolon as the separator, full stop as the decimal point.
@@ -111,7 +112,7 @@ typedef struct {
  * without it ends at the previous column.
  */
 #define LOG_WRITER_SRC_MEASURED "measured"
-#define LOG_WRITER_SRC_MODEL    "model"
+#define LOG_WRITER_SRC_MODEL    "model"  /**< the last column of a row the panel's model produced */
 
 /**
  * @brief Sets up a writer on a sink.

@@ -93,8 +93,9 @@ extern "C" {
 
 /** @brief Where the PD mini is wired, as SUPPLY's PD MINI tab has it. */
 typedef struct {
-    bool    en;
-    int8_t  tx, rx;   /**< IOmcu GPIO; -1 not set          */
+    bool    en;  /**< the wiring is enabled */
+    int8_t  tx,       /**< the IOmcu GPIO of the UART TX pin; -1 not set */
+            rx;       /**< the IOmcu GPIO of the UART RX pin; -1 not set */
     uint8_t baud;     /**< the module's UART Baudrate, 0 to 6, 7 AUTO */
 } supply_wiring_t;
 
@@ -102,7 +103,7 @@ typedef struct {
  * @brief What came of a write or a read: ACK or DATA, a NACK's reason, or none.
  */
 #define SUPPLY_LINK_NO_ANSWER (-1)
-#define SUPPLY_LINK_ACK       0
+#define SUPPLY_LINK_ACK       0  /**< an ACK or a DATA frame came */
 
 /** @brief Things the caller tells the operator about, each once. */
 enum {
@@ -134,51 +135,54 @@ typedef enum {
  */
 typedef struct {
     /* What is asked. */
-    supply_wiring_t want;
-    bool     on;
-    uint16_t mv, ma;
+    supply_wiring_t want;  /**< the wiring asked */
+    bool     on;  /**< the output is asked on */
+    uint16_t mv,                  /**< the voltage asked, mV */
+             ma;                  /**< the current limit asked, mA */
 
     /* What the page holds, as written and acknowledged since the last
      * time it was known. */
-    bool     wired;          /* page.wiring holds `want` as it was then */
-    bool     wire_wait;      /* page.wiring acknowledged, not yet read held */
-    supply_wiring_t page;
-    bool     refused;        /* `want` was refused; not written again   */
+    bool     wired;          /**< page.wiring holds `want` as it was then */
+    bool     wire_wait;      /**< page.wiring acknowledged, not yet read held */
+    supply_wiring_t page;  /**< the wiring the page holds */
+    bool     refused;        /**< `want` was refused; not written again   */
     bool     wire_busy;      /**< a port's hold answered BUSY: written again
                                   once a read shows the hold over        */
-    bool     commanded;      /* the page holds page_on, page_mv, page_ma */
-    bool     page_on;
-    uint16_t page_mv, page_ma;
+    bool     commanded;      /**< the page holds page_on, page_mv, page_ma */
+    bool     page_on;  /**< the output the page holds is on */
+    uint16_t page_mv,             /**< the voltage the page holds, mV */
+             page_ma;             /**< the current limit the page holds, mA */
 
     /* The write in flight. */
-    supply_link_write_t pending;
-    uint16_t out[LINK_SP_FLAGS];
+    supply_link_write_t pending;  /**< which write is in flight */
+    uint16_t out[LINK_SP_FLAGS];  /**< the registers of that write */
 
     /* The last read. */
-    uint16_t regs[LINK_SP_COUNT];
-    bool     read_any;
-    bool     asked;          /* a read was asked for since it was known */
-    uint32_t read_ms;
-    uint32_t asked_ms;       /* when the last read was asked for        */
+    uint16_t regs[LINK_SP_COUNT];  /**< the registers of the last read */
+    bool     read_any;  /**< regs holds a read */
+    bool     asked;          /**< a read was asked for since it was known */
+    uint32_t read_ms;  /**< when the last read answered, ms */
+    uint32_t asked_ms;       /**< when the last read was asked for        */
     /* The module's readings: SAMPLES as last read, and the page read that
      * first showed it.  A page read whose SAMPLES did not move brings no
      * new reading -- a display read on the IOmcu that was slow or
      * failed -- however fresh the page itself is. */
-    uint16_t samples_seen;
-    uint32_t sample_ms;
+    uint16_t samples_seen;  /**< SAMPLES as last read */
+    uint32_t sample_ms;  /**< when SAMPLES last moved, ms */
 
-    uint16_t events;
-    uint8_t  found;          /* the rate AUTO last reported, 7 none    */
+    uint16_t events;  /**< events not yet handed out, SUPPLY_LINK_EV_* bits */
+    uint8_t  found;          /**< the rate AUTO last reported, 7 none    */
     /* The input and the set point, in mV, on the read that first showed
      * the output switched off for a sagging input (FLAGS bit 10). */
-    uint16_t sag_vin_mv, sag_set_mv;
-    bool     reset_owed;     /* a module restart asked, not yet written */
-    bool     port_held;      /* the last read had LINK_SP_PORT set      */
-    bool     judge;          /* set points refused on an output that is
+    uint16_t sag_vin_mv,          /**< the input voltage then, mV */
+             sag_set_mv;          /**< the set point then, mV */
+    bool     reset_owed;     /**< a module restart asked, not yet written */
+    bool     port_held;      /**< the last read had LINK_SP_PORT set      */
+    bool     judge;          /**< set points refused on an output that is
                                 on: the next read says by whom           */
     bool     off_owed;       /**< an OFF asked by supply_link_cut(), not
                                   yet answered */
-    bool     adopted;        /* on, mv, ma were taken from the page and
+    bool     adopted;        /**< on, mv, ma were taken from the page and
                                 not yet handed out                      */
     bool     kept;           /**< the page's command left to the port
                                   that holds it (supply_link_keep()),
@@ -494,8 +498,9 @@ void supply_link_sag(const supply_link_t *s, uint16_t *vin_mv,
  * not yet stored its word, or one undone, is a move too.
  */
 typedef struct {
-    bool     seen;
-    unsigned edits, word;
+    bool     seen;  /**< the wiring has been followed once */
+    unsigned edits,   /**< the edit count of the settings */
+             word;    /**< the wiring word of the settings */
 } supply_link_follow_t;
 
 /**
