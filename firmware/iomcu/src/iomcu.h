@@ -270,7 +270,8 @@ extern bool s_beat_level;
 extern bool     s_can_up;
 extern uint32_t s_can_echoes;
 extern uint32_t s_can_overflows;
-/** @brief Reply frames dropped after 1000 spins on a full transmit buffer. */
+/** @brief Reply frames not sent because the transmit buffer stayed full
+ * for IOMCU_CAN_TX_WAIT_US (iomcu_can.c), and the rest of their reply. */
 extern uint32_t s_can_tx_dropped;
 
 /**

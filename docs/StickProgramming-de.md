@@ -273,7 +273,9 @@ Ein Lauf, der startet, während die Erfassung läuft, zählt diese Pieptöne.
 
 Das Ergebnis bleibt bis OK: welche Auswahlen getroffen wurden, und bei einem
 abgebrochenen Lauf der Grund. Bei mehr als fünf Änderungen zählt die letzte
-Zeile den Rest.
+Zeile den Rest. Unter FERTIG sagen zwei Zeilen, dass der Ablauf vollständig
+ist und die Töne des ESC nicht geprüft werden: Prüfe jeden Wert am ESC oder
+mit seiner Programmierkarte.
 
 ![Fertig](img/de/motor-stick-done.png)
 

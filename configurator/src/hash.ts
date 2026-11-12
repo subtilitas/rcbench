@@ -37,6 +37,7 @@ const TOKENS: ReadonlyArray<readonly [string, keyof Options, string]> = [
   ['xt90', 'ina228Board', 'xt90'],
   ['pd', 'escPower', 'pd'],
   ['servo5v', 'servoPower', 'bench'],
+  ['stickina', 'stickBeep', 'ina3221'],
 ];
 
 /** Resistance as a token: "470r", "1k", "4k7". */

@@ -1,5 +1,8 @@
-/*
- * SHA-256. See fw_sha256.h.
+/**
+ * @file
+ * @brief SHA-256 (Secure Hash Algorithm, 256 bit) in portable C.
+ *
+ * See fw_sha256.h.
  *
  * SPDX-License-Identifier: MIT
  */

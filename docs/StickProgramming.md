@@ -227,7 +227,7 @@ its floor and the interval of its windows,
 `INA 0x40 CH2   CURRENT 750mA   BASELINE 150mA   EVERY 50ms`. ABORT ends
 the run, and so do the band's home tag, STOP in the band
 and leaving the screen. The home tag ends it as ABORT does, and the result
-stays on the page. BACK and SETTINGS are not offered. The stack light beside the beep
+stays on the page. BACK and OPTIONS are not offered. The stack light beside the beep
 count is described [below](#the-stack-light).
 
 ![A run counting item groups, a beep under way](img/motor-stick-run.png)
@@ -241,7 +241,9 @@ run started while the capture runs counts these beeps.
 ![A run with the phase tap running](img/motor-stick-tone.png)
 
 The result stays until OK: which selections were made, and for an aborted
-run the reason. Past five changes the last line counts the rest.
+run the reason. Past five changes the last line counts the rest. Under
+DONE two lines say that the sequence is complete and that the ESC's tones
+are not checked: check each value on the ESC or with its programming card.
 
 ![Done](img/motor-stick-done.png)
 
@@ -249,7 +251,7 @@ run the reason. Past five changes the last line counts the rest.
 
 ![Ended by the supply: SUPPLY OFF, red lit](img/motor-stick-failed.png)
 
-The footer's SETTINGS opens the settings below, on a SAFE bench with no
+The footer's OPTIONS opens the settings below, on a SAFE bench with no
 run under way. SAVE in the list's strip asks for them to be saved; the save
 is taken while the bench is SAFE and the supply's output is off.
 
@@ -628,7 +630,7 @@ one.
 
 ## The settings
 
-Open SETTINGS in the footer of a profile's page. These values are stored
+Open OPTIONS in the footer of a profile's page. These values are stored
 with the other settings on SAVE. No default is measured. THRESHOLD and
 HYSTERESIS apply to the INA3221 only. Where the profile states a beep or
 gap length, the value it fixes comes from the profile, not from the
@@ -699,7 +701,7 @@ has no room for it. The profile page's side column shows all three where
 the profile states its beep lengths, for the FlyDragon
 `BEEP MIN 64ms  LONG 256ms` and under it `GAP MIN 64ms (profile)`; where
 it states none, the lines are left out there, so the picked item's values
-keep their room. The SETTINGS list keeps the settings as
+keep their room. The OPTIONS list keeps the settings as
 stored; their help lines say they apply where the profile gives none.
 
 2 profiles state beep lengths: `flycolor-flydragon-lite` and

@@ -2,6 +2,48 @@
 
 <sub>[English](FirstRun.md) · **Deutsch**</sub>
 
+## Schnellstart aus den Release-Assets
+
+Diese Schritte bringen einen Prüfstand ohne Messgerät von den Teilen bis zum
+Menü. Die nummerierten Abschnitte unten sind das Inbetriebnahmeprotokoll: Sie
+messen nach, was der Schnellstart voraussetzt, und die Abschnitte 6 bis 8
+brauchen ein Oszilloskop.
+
+1. **Teile.** Wähle die Funktionen im
+   [Bench configurator](https://subtilitas.github.io/rcbench/). Seine
+   Teileliste, Verdrahtungszeichnung und Pin-zu-Pin-Tabelle gelten für
+   diesen Aufbau.
+2. **Der Link.** Drei Leitungen vom CAN-Stecker H11 des Panels zum
+   CAN-Modul des IOmcu: CAN H, CAN L und GND, mit eingeschaltetem
+   120Ω-Abschluss an beiden Enden ([Link: Verkabelung](Link-de.md#verkabelung)).
+   Dann die Heartbeat-Leitung: IO28 des Steckers P3 am Panel an GPIO 3 des
+   IOmcu ([§3](#3-der-heartbeat-draht)). Ohne sie lehnt der IOmcu ARMED ab.
+3. **Lade** die Assets eines Release von
+   [GitHub](https://github.com/subtilitas/rcbench/releases) herunter.
+   `sha256sum -c SHA256SUMS` gibt für jede Datei `OK` aus.
+4. **Flashe den IOmcu** über USB mit `rcbench-iomcu-install.uf2`, auf dem
+   rbmod-Carrier mit `rcbench-iomcu-rbmod-install.uf2`
+   ([§1 Schritt 2](#aus-den-release-assets)).
+5. **Flashe das Panel** über USB mit `rcbench-panel-merged.bin` an 0x0
+   ([§1 Schritt 3](#aus-den-release-assets)).
+6. **Schalte beide Platinen ein**, wie die Verdrahtung des Konfigurators es
+   zeigt. Der Startbildschirm zeigt `VERBINDUNG  OK  CAN 1Mbit/s` und
+   wechselt zum Menü ([§2](#2-der-link-vor-allem-anderen)). Erscheint statt
+   dessen ein Bus-Fehler-Bildschirm, nennt er den Befund
+   ([Den Link in Betrieb nehmen](Bringup-de.md#der-bus-fehler-bildschirm)).
+7. **SETUP > OUTPUTS** zeigt die Pins des IOmcu: die Zeichnung der Platine,
+   die er liefert, oder auf dem rbmod-Carrier das Raster
+   ([§4](#4-erster-link-aufbau-die-zeichnung-der-platine)).
+8. **ARM ohne angeschlossenen Ausgang.** Ordne auf SETUP > OUTPUTS einen Pin
+   `MOTOR PWM` oder einem DShot-Protokoll zu. Öffne MOTOR & ESC und halte ARM
+   2s: Das Band zeigt ARMED MOTOR. Tippe DISARM. Lehnt der IOmcu hier ab,
+   deutet das auf die Heartbeat-Leitung.
+   [§5](#5-armen-ohne-angeschlossene-last) prüft die Verriegelung vollständig.
+
+---
+
+## Das Inbetriebnahmeprotokoll
+
 Dieses Verfahren prüft beide eingeschalteten Platinen mit angeschlossener
 Heartbeat-Leitung. Miss jeden der folgenden Werte mit einem Messgerät.
 Jeder Schritt nennt das erwartete Ergebnis und die Angaben, die du bei einer
@@ -136,6 +178,9 @@ Stepping A2 ist [unten](#die-partitionstabelle-des-iomcu) beschrieben.
 Du kannst zuerst das Panel installieren. An einem IOmcu ohne Partitionstabelle zeigt
 das Panel `IOmcu kann nicht über CAN aktualisiert werden. Installiere die Firmware einmal über USB.`, bis Schritt 2 erledigt ist; der Link läuft
 solange.
+Startet das Panel, ohne dass ein IOmcu am Bus antwortet, öffnet es
+`KEIN IOMCU` statt des Menüs; ein Tippen auf `TIPPEN ZUM FORTFAHREN` führt
+ins Menü in der Simulation ([Den Link in Betrieb nehmen](Bringup-de.md#der-bus-fehler-bildschirm)).
 
 ### Der IOmcu über CAN
 
@@ -150,7 +195,10 @@ sich beide Platinen vor und nach dem Update.
    Image, das es trägt, findet einen anderen Build, und das Band meldet
    `IOmcu nutzt einen anderen Build. Aktualisiere ihn auf UPDATES.`.
 2. Die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE, der
-   Netzteil-Ausgang ausgeschaltet und das WLAN des Panels aus ist. Sie nennt die
+   Netzteil-Ausgang ausgeschaltet und das WLAN des Panels aus ist. Hält
+   eines davon sie zurück, nennt die Zeile im Band es, etwa `IOmcu nutzt
+   einen anderen Build. Die Update-Frage öffnet, sobald das WLAN des Panels
+   aus ist.`. Sie nennt die
    Version auf dem IOmcu und die Version im Panel. Halte START 2s. Nach
    ABBRECHEN kannst du stattdessen `2s HALTEN ZUM IOMCU-UPDATE` auf
    SETUP > UPDATES halten. Der
@@ -443,8 +491,8 @@ Noch ist keine Last an einem Ausgang angeschlossen. Dieser Schritt prüft die
 Verriegelung, nicht einen Pin.
 
 1. **Heartbeat-Draht abgezogen** → Das Schalten auf ARMED muss **verweigert** werden. Der
-   IOmcu antwortet `NOT_ARMED`, weil `!beat.alive`. Das Panel zeigt die
-   Verweigerung.
+   IOmcu antwortet `NOT_ARMED`, weil `!beat.alive`. Das Panel zeigt
+   `ARM abgelehnt: IOmcu ohne Heartbeat. Prüfe Leitung IO28-GPIO 3 oder STOP-Taster (FEHLER 10).`
 2. **Heartbeat-Draht gesteckt, Panel ARMED** → der IOmcu nimmt es an.
 3. **Heartbeat-Draht in ARMED ziehen** → muss binnen **150ms**
    auf SAFE fallen.
@@ -461,6 +509,8 @@ Jeder dieser Punkte ist host-getestet. **Keine der Zahlen unten wurde an einem M
 ---
 
 ## 6. Erster Pin an einem Messgerät
+
+**Mit einem Oszilloskop.** Der Schnellstart überspringt diesen Schritt.
 
 Verwende für diesen Schritt ein **Servo**. Sein PWM-Signal lässt sich am
 Oszilloskop leichter prüfen als das Signal für den ESC.
@@ -482,10 +532,11 @@ verweigert, statt auf die Pulsbreite des ersten gemuxt zu werden. Die
 OUTPUTS-Seite führt kein Bit mit, das „gebunden“ sagt, der Bildschirm sieht
 also weiter konfiguriert aus, während die Leitung keinen Impuls liefert.
 
-Öffne am Panel **SETUP > OUTPUTS**, wähle `SERVO PWM` und markiere einen
-Pin. Alternativ wählst du dort `SERVO PWM` in der Liste und tippst eine
-Taste auf der Platinenzeichnung an. Masseanschlüsse sind mit `G` markiert,
-Versorgungspins mit ihrer Spannung.
+Öffne am Panel **SETUP > OUTPUTS** und wähle `SERVO PWM` in der Liste. Bei
+einer Platine mit Zeichnung tippst du die Taste des Pins auf der Zeichnung an
+([Platinenansicht](Screens-de.md#die-platinenansicht)); Masseanschlüsse sind
+mit `G` markiert, Versorgungspins mit ihrer Spannung. Sonst markierst du das
+Feld des Pins ([Rasteransicht](Screens-de.md#die-rasteransicht)).
 
 **Miss den Pin, bevor du das Servo anschließt.**
 
@@ -518,6 +569,8 @@ hält.
 
 ## 7. Die Zahlen, die niemand gemessen hat
 
+**Mit einem Oszilloskop.** Der Schnellstart überspringt diesen Schritt.
+
 Die folgenden Eigenschaften sind anhand der Spezifikation implementiert
 und nur mit Frames geprüft, die derselbe Code erzeugt. Notiere für jede
 einen gemessenen Wert:
@@ -536,6 +589,8 @@ einen gemessenen Wert:
 ---
 
 ## 8. Strommonitore (INA228, INA3221)
+
+**Mit einem Oszilloskop.** Der Schnellstart überspringt diesen Schritt.
 
 Core 1 des IOmcu liest einen INA228 im Leistungspfad des ESC und
 einen INA3221 an der Servoversorgung über I2C (Inter-Integrated Circuit) mit

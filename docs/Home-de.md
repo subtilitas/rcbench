@@ -18,6 +18,7 @@ Network) mit 1Mbit/s verbindet die beiden.
 
 | Aufgabe | Seite |
 | --- | --- |
+| Mit den Release-Assets von den Teilen bis zum Menü, ohne Messgerät | [Schnellstart](FirstRun-de.md#schnellstart-aus-den-release-assets) |
 | Funktionsliste | [Worum es geht](Manifest-de.md) |
 | Die Teile eines Prüfstands auswählen und verkabeln | [Bench configurator](https://subtilitas.github.io/rcbench/) (Webseite: Teileliste, Einkaufsliste mit Herstellerseiten und Links zur Websuche, Verdrahtungszeichnung und Pin-zu-Pin-Tabelle für den gewählten Aufbau) |
 | Beide Platinen bauen und flashen | [Bauen](Building-de.md) |
