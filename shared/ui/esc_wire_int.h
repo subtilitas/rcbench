@@ -148,6 +148,9 @@ typedef struct {
     uint32_t   hold_rev;  /**< changes while a hold fills                     */
     uint32_t   sig;       /**< what the page showed at the last feed          */
     esc_prog_t prog;      /**< the model                                      */
+    /** @brief The gate esc_wire_panel_gate() sets; the page set's init keeps
+     *         it, so a start of the screens leaves it */
+    esc_prog_gate_t *gate;
     /* The connect page's values. */
     esc_wire_target_t targets[ESC_WIRE_TARGETS]; /**< what can be programmed  */
     uint8_t    target_count; /**< entries of @c targets                       */

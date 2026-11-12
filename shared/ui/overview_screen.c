@@ -184,26 +184,28 @@ static struct {
     int      pressed;      /**< index, or -1                              */
     uint8_t  press_id;
     bool     have_press;
+    /** @brief The control task's word on the supply: it holds whichever
+     *         screen is up, so a start of the screens keeps it */
+    bool     supply_real;
 } s;
-
-/* Outside s, which entering the screen clears: the control task's word on
- * the supply holds whichever screen is up. */
-static bool s_supply_real;
 
 void overview_invalidate(void) { s.drawn_mask = 0; }
 
 void overview_screen_set_supply_real(bool real)
 {
-    if (s_supply_real != real) {
-        s_supply_real = real;
+    if (s.supply_real != real) {
+        s.supply_real = real;
         overview_invalidate();
     }
 }
 
 static void reset(void)
 {
+    const bool supply_real = s.supply_real;
+
     memset(&s, 0, sizeof(s));
     s.pressed = -1;
+    s.supply_real = supply_real;
 }
 
 static gfx_rect_t tile_rect(int i)
@@ -237,7 +239,7 @@ static bool mark_rect(int i, gfx_rect_t *out)
      * modelled.  No mark: the hardware is fitted. */
     const uint16_t have = ui_router_status()->capabilities;
     const bool modelled = t->model_only
-                          && !(t->id == SCREEN_SUPPLY && s_supply_real);
+                          && !(t->id == SCREEN_SUPPLY && s.supply_real);
     const bool fitted = !modelled
                         && ((t->needs == 0) || ((have & t->needs) == t->needs));
     if (fitted) {

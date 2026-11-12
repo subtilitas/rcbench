@@ -84,7 +84,8 @@ _Static_assert(FN_Y + SEG_DY + SEG_H + 4 + FN_ROWS_MAX * FN_ROW_H + 8 + 4
 _Static_assert(WHY_Y + 2 * OU_LINE + 20 <= OU_FOOT,
                "the reason's third line ends above the alert band");
 
-static struct {
+/** @brief The entry's state, one instance per image. */
+typedef struct {
     int       port;         /**< the entry shown, or -1 for a protocol    */
     bool      fn_open;      /**< the FUNCTION list is open                */
     int       fn_hit;       /**< pressed: -1 none, 0 the face, 1 + row    */
@@ -96,10 +97,12 @@ static struct {
     uint32_t  sig;          /**< what the column last showed              */
     uint32_t  view_rev;     /**< port_view_revision() last drawn          */
     uint32_t  rev;          /**< bumped by every change it draws          */
-} p = { .port = -1 };  /**< The entry's state. */
+    /** @brief The label of the channel that watches each port, "" for none */
+    char      watch[LINK_PG_PORTS_MAX][WATCH_LEN];
+} entry_state_t;
 
-/* The label of the channel that watches each port, "" for none. */
-static char g_watch[LINK_PG_PORTS_MAX][WATCH_LEN];
+/** @brief The entry's one instance. */
+static entry_state_t p = { .port = -1 };
 
 void outputs_port_touched(void)
 {
@@ -115,8 +118,8 @@ void outputs_screen_set_port_watch(uint8_t port, const char *label)
     }
     char next[WATCH_LEN];
     snprintf(next, sizeof(next), "%s", (label != NULL) ? label : "");
-    if (strcmp(next, g_watch[port]) != 0) {
-        memcpy(g_watch[port], next, sizeof(next));
+    if (strcmp(next, p.watch[port]) != 0) {
+        memcpy(p.watch[port], next, sizeof(next));
         outputs_port_touched();
     }
 }
@@ -640,8 +643,8 @@ void outputs_port_draw(gfx_canvas_t *c, gfx_rect_t dd, bool pressed,
         ui_choice_face(c, fn_face(), fn_name, p.fn_hit == 0, p.fn_open);
     }
 
-    if (g_watch[p.port][0] != '\0') {
-        snprintf(buf, sizeof(buf), TR(OUT_PORT_WATCHED), g_watch[p.port]);
+    if (p.watch[p.port][0] != '\0') {
+        snprintf(buf, sizeof(buf), TR(OUT_PORT_WATCHED), p.watch[p.port]);
     } else {
         snprintf(buf, sizeof(buf), "%s", TR(OUT_PORT_WATCH_NONE));
     }
@@ -767,8 +770,8 @@ void outputs_port_draw_board(gfx_canvas_t *c, const char *why)
                  UI_TEXT_FAINT, 1);
     }
 
-    if (g_watch[p.port][0] != '\0') {
-        snprintf(buf, sizeof(buf), TR(OUT_PORT_WATCHED), g_watch[p.port]);
+    if (p.watch[p.port][0] != '\0') {
+        snprintf(buf, sizeof(buf), TR(OUT_PORT_WATCHED), p.watch[p.port]);
     } else {
         snprintf(buf, sizeof(buf), "%s", TR(OUT_PORT_WATCH_NONE));
     }

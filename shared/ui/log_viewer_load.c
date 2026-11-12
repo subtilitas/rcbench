@@ -217,9 +217,9 @@ void lv_compute_spans(void)
 {
     /* Zero rather than return: leaving the arrays alone would let the previous
      * file's trace be drawn under this file's legend. */
-    memset(lv_span, 0, sizeof(lv_span));
-    memset(lv_lo, 0, sizeof(lv_lo));
-    memset(lv_hi, 0, sizeof(lv_hi));
+    memset(lv_plot.span, 0, sizeof(lv_plot.span));
+    memset(lv_plot.lo, 0, sizeof(lv_plot.lo));
+    memset(lv_plot.hi, 0, sizeof(lv_plot.hi));
     if (!s.have_data || s.data.count <= 0) {
         return;
     }
@@ -259,8 +259,8 @@ void lv_compute_spans(void)
                 hi = 0.0f;
             }
         }
-        lv_lo[k] = lo;
-        lv_hi[k] = hi;
+        lv_plot.lo[k] = lo;
+        lv_plot.hi[k] = hi;
         float span = hi - lo;
 
         const float *v = s.data.value[k] + base;
@@ -303,8 +303,8 @@ void lv_compute_spans(void)
                  * before a column's first number: drawn as nothing rather
                  * than as a line along the bottom of the scale.
                  */
-                lv_span[k][x][0] = PV_EMPTY;
-                lv_span[k][x][1] = PV_EMPTY;
+                lv_plot.span[k][x][0] = PV_EMPTY;
+                lv_plot.span[k][x][1] = PV_EMPTY;
                 continue;
             }
 
@@ -324,21 +324,21 @@ void lv_compute_spans(void)
             if (y_lo < PV_Y) {
                 y_lo = PV_Y;
             }
-            lv_span[k][x][0] = (int16_t)y_hi;
-            lv_span[k][x][1] = (int16_t)y_lo;
+            lv_plot.span[k][x][0] = (int16_t)y_hi;
+            lv_plot.span[k][x][1] = (int16_t)y_lo;
         }
 
         /* Join neighbouring columns so the trace is a line rather than a
          * dotted row of marks: each column reaches the one before it.  An
          * empty column joins nothing, so a gap stays a gap. */
         for (int x = 1; x < PV_W; ++x) {
-            if (lv_span[k][x][0] == PV_EMPTY || lv_span[k][x - 1][0] == PV_EMPTY) {
+            if (lv_plot.span[k][x][0] == PV_EMPTY || lv_plot.span[k][x - 1][0] == PV_EMPTY) {
                 continue;
             }
-            if (lv_span[k][x][0] > lv_span[k][x - 1][1]) {
-                lv_span[k][x][0] = (int16_t)(lv_span[k][x - 1][1]);
-            } else if (lv_span[k][x][1] < lv_span[k][x - 1][0]) {
-                lv_span[k][x][1] = (int16_t)(lv_span[k][x - 1][0]);
+            if (lv_plot.span[k][x][0] > lv_plot.span[k][x - 1][1]) {
+                lv_plot.span[k][x][0] = (int16_t)(lv_plot.span[k][x - 1][1]);
+            } else if (lv_plot.span[k][x][1] < lv_plot.span[k][x - 1][0]) {
+                lv_plot.span[k][x][1] = (int16_t)(lv_plot.span[k][x - 1][0]);
             }
         }
     }

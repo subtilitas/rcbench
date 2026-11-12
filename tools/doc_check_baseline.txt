@@ -2194,10 +2194,6 @@ shared/logfile/log_csv.c: warning: Member TAIL_LIMIT (macro definition) of file 
 shared/logfile/log_csv.c: warning: Member fields[LOG_MAX_COLUMNS] (variable) of struct row_buf_t is not documented.	char *fields[LOG_MAX_COLUMNS];
 shared/logfile/log_csv.c: warning: Member k_time_names[] (variable) of file log_csv.c is not documented.	static const char *const k_time_names[] = {
 shared/logfile/log_csv.c: warning: Member n (variable) of struct row_buf_t is not documented.	int n;
-shared/logfile/log_csv.c: warning: Member s_alloc(size_t) (variable) of file log_csv.c is not documented.	static void *(*s_alloc)(size_t) = malloc;
-shared/logfile/log_csv.c: warning: Member s_free(void *) (variable) of file log_csv.c is not documented.	static void (*s_free)(void *) = free;
-shared/logfile/log_csv.c: warning: Member s_row (variable) of file log_csv.c is not documented.	static row_buf_t s_row;
-shared/logfile/log_csv.c: warning: Member s_tally[LOG_MAX_COLUMNS] (variable) of file log_csv.c is not documented.	static log_unit_tally_t s_tally[LOG_MAX_COLUMNS];
 shared/logfile/log_csv.c: warning: Member store[LOG_ROW_MAX] (variable) of struct row_buf_t is not documented.	char store[LOG_ROW_MAX];
 shared/logfile/log_csv.c: warning: Member total (variable) of struct row_buf_t is not documented.	int total;
 shared/logfile/log_numbers.c: warning: Member k_time_units[] (variable) of file log_numbers.c is not documented.	};
@@ -2289,11 +2285,6 @@ shared/outputs/include/tone_page.h: warning: Member seen_lost (variable) of stru
 shared/outputs/include/tone_page.h: warning: Member win_freq_dhz (variable) of struct tone_page_t is not documented.	uint16_t window, win_freq_dhz, win_periods;
 shared/outputs/include/tone_page.h: warning: Member win_periods (variable) of struct tone_page_t is not documented.	uint16_t window, win_freq_dhz, win_periods;
 shared/outputs/include/tone_page.h: warning: Member window (variable) of struct tone_page_t is not documented.	uint16_t window, win_freq_dhz, win_periods;
-shared/outputs/out_bind.c: warning: Member s_have_learned (variable) of file out_bind.c is not documented.	static bool s_have_learned;
-shared/outputs/out_bind.c: warning: Member s_learned (variable) of file out_bind.c is not documented.	static outbind_board_t s_learned;
-shared/outputs/out_bind.c: warning: Member s_learned_name[16] (variable) of file out_bind.c is not documented.	static char s_learned_name[16];
-shared/outputs/out_bind.c: warning: Member s_learned_pads[LINK_PAD_SLOTS] (variable) of file out_bind.c is not documented.	static outbind_pad_t s_learned_pads[LINK_PAD_SLOTS];
-shared/outputs/out_bind.c: warning: Member s_learned_shape (variable) of file out_bind.c is not documented.	static outbind_shape_t s_learned_shape;
 shared/outputs/page_console.c: warning: Member RUN_AT(reg) (macro definition) of file page_console.c is not documented.	#define RUN_AT(reg) ((reg) - LINK_HT_DATA)
 shared/outputs/page_console.c: warning: Member TOKENS_MAX (macro definition) of file page_console.c is not documented.	#define TOKENS_MAX 40u
 shared/outputs/page_console.c: warning: Member answer (variable) of struct hitec_args_t is not documented.	uint32_t lead, gap, window, rx, answer, mv, ma, off;
@@ -2750,17 +2741,11 @@ shared/settings/settings.c: warning: Member def (variable) of struct [struct].k_
 shared/settings/settings.c: warning: Member defaults(bool held) (function) of file settings.c is not documented.	static void defaults(bool held)
 shared/settings/settings.c: warning: Member derive(void) (function) of file settings.c is not documented.	static bool derive(void)
 shared/settings/settings.c: warning: Member differs_from_stored(void) (function) of file settings.c is not documented.	static bool differs_from_stored(void)
-shared/settings/settings.c: warning: Member dirty (variable) of struct [struct].s is not documented.	bool dirty;
-shared/settings/settings.c: warning: Member hold (variable) of struct [struct].s is not documented.	settings_hold_fn hold;
 shared/settings/settings.c: warning: Member k_text_defs[SETTING_TEXT_COUNT] (variable) of file settings.c is not documented.	};
 shared/settings/settings.c: warning: Member key (variable) of struct [struct].k_text_defs is not documented.	const char *key;
 shared/settings/settings.c: warning: Member mark_dirty(void) (function) of file settings.c is not documented.	static void mark_dirty(void)
 shared/settings/settings.c: warning: Member notify_changed(int id, float before) (function) of file settings.c is not documented.	static void notify_changed(int id, float before)
-shared/settings/settings.c: warning: Member observer (variable) of struct [struct].s is not documented.	settings_observer_fn observer;
 shared/settings/settings.c: warning: Member pin_takes(setting_id_t id, int pin) (function) of file settings.c is not documented.	static bool pin_takes(setting_id_t id, int pin)
-shared/settings/settings.c: warning: Member s (variable) of file settings.c is not documented.	} s;
-shared/settings/settings.c: warning: Member save_asked (variable) of struct [struct].s is not documented.	bool save_asked; /* asked for, not yet taken */
-shared/settings/settings.c: warning: Member save_failed (variable) of struct [struct].s is not documented.	bool save_failed; /* the last attempt did not reach the medium */
 shared/settings/settings.c: warning: Member settings_def(setting_id_t id) (function) of file settings.c is not documented.	const setting_def_t *settings_def(setting_id_t id)
 shared/settings/settings.c: warning: Member settings_get(setting_id_t id) (function) of file settings.c is not documented.	float settings_get(setting_id_t id)
 shared/settings/settings.c: warning: Member settings_get_bool(setting_id_t id) (function) of file settings.c is not documented.	bool settings_get_bool(setting_id_t id)
@@ -2770,16 +2755,9 @@ shared/settings/settings.c: warning: Member settings_set_observer(settings_obser
 shared/settings/settings.c: warning: Member settings_set_store(const settings_store_t *store) (function) of file settings.c is not documented.	void settings_set_store(const settings_store_t *store)
 shared/settings/settings.c: warning: Member settings_set_text_observer(settings_text_observer_fn fn) (function) of file settings.c is not documented.	void settings_set_text_observer(settings_text_observer_fn fn)
 shared/settings/settings.c: warning: Member snap_to_step(const setting_def_t *d, float v) (function) of file settings.c is not documented.	static float snap_to_step(const setting_def_t *d, float v)
-shared/settings/settings.c: warning: Member store (variable) of struct [struct].s is not documented.	const settings_store_t *store;
-shared/settings/settings.c: warning: Member stored[SETTING_COUNT] (variable) of struct [struct].s is not documented.	float stored[SETTING_COUNT];
-shared/settings/settings.c: warning: Member stored_sure (variable) of struct [struct].s is not documented.	bool stored_sure;
-shared/settings/settings.c: warning: Member stored_texts[SETTING_TEXT_COUNT][SETTINGS_TEXT_MAX] (variable) of struct [struct].s is not documented.	char stored_texts[SETTING_TEXT_COUNT][SETTINGS_TEXT_MAX];
 shared/settings/settings.c: warning: Member take_stored(void) (function) of file settings.c is not documented.	static void take_stored(void)
-shared/settings/settings.c: warning: Member text_observer (variable) of struct [struct].s is not documented.	settings_text_observer_fn text_observer;
 shared/settings/settings.c: warning: Member text_to(int i, const char *text) (function) of file settings.c is not documented.	static bool text_to(int i, const char *text)
-shared/settings/settings.c: warning: Member texts[SETTING_TEXT_COUNT][SETTINGS_TEXT_MAX] (variable) of struct [struct].s is not documented.	char texts[SETTING_TEXT_COUNT][SETTINGS_TEXT_MAX];
 shared/settings/settings.c: warning: Member value_differs(int i) (function) of file settings.c is not documented.	static bool value_differs(int i)
-shared/settings/settings.c: warning: Member values[SETTING_COUNT] (variable) of struct [struct].s is not documented.	float values[SETTING_COUNT];
 shared/settings/settings_sensors.c: warning: Member AT(id) (macro definition) of file settings_sensors.c is not documented.	#define AT(id) ((int)(id) - (int)SET_INA_FIT_0)
 shared/settings/settings_sensors.c: warning: Member CH_ROWS(a, ch, watch_def) (macro definition) of file settings_sensors.c is not documented.	#define CH_ROWS(a, ch, watch_def) \
 shared/settings/settings_sensors.c: warning: Member FIT_ROW(a) (macro definition) of file settings_sensors.c is not documented.	#define FIT_ROW(a) \
@@ -3735,12 +3713,6 @@ shared/ui/motor_workbench.c: warning: Member target_with_ports(char *out, size_t
 shared/ui/motor_workbench.c: warning: Member trow (variable) of struct [struct].w is not documented.	ui_target_row_t trow;
 shared/ui/motor_workbench.c: warning: Member w (variable) of file motor_workbench.c is not documented.	} w;
 shared/ui/motor_workbench.c: warning: Member wb (variable) of struct [struct].w is not documented.	ui_wb_strip_t wb;
-shared/ui/outputs_port.c: warning: Member g_held[OUTPUTS_IFACE_COUNT] (variable) of file outputs_port.c is not documented.	static atomic_int g_held[OUTPUTS_IFACE_COUNT];
-shared/ui/outputs_port.c: warning: Member g_open_kind (variable) of file outputs_port.c is not documented.	static uint8_t g_open_kind = OPEN_OVERVIEW;
-shared/ui/outputs_port.c: warning: Member g_open_value (variable) of file outputs_port.c is not documented.	static uint8_t g_open_value;
-shared/ui/outputs_port.c: warning: Member g_port_count (variable) of file outputs_port.c is not documented.	static uint8_t g_port_count = OUTPUTS_PORTS_UNKNOWN;
-shared/ui/outputs_port.c: warning: Member g_port_pin[LINK_PG_PORTS_MAX] (variable) of file outputs_port.c is not documented.	static uint8_t g_port_pin[LINK_PG_PORTS_MAX] = {
-shared/ui/outputs_port.c: warning: Member g_prog_gpio (variable) of file outputs_port.c is not documented.	static uint8_t g_prog_gpio = OUTPUTS_NO_PIN;
 shared/ui/outputs_port.c: warning: Member held_byte(int v) (function) of file outputs_port.c is not documented.	static int held_byte(int v)
 shared/ui/outputs_port.c: warning: Member outputs_iface_read(uint64_t pins[OUTPUTS_IFACE_COUNT]) (function) of file outputs_port.c is not documented.	void outputs_iface_read(uint64_t pins[OUTPUTS_IFACE_COUNT])
 shared/ui/outputs_port.c: warning: Member outputs_port_forget_open(void) (function) of file outputs_port.c is not documented.	void outputs_port_forget_open(void)
@@ -3759,7 +3731,6 @@ shared/ui/outputs_port_entry.c: warning: Member fn_locked(void) (function) of fi
 shared/ui/outputs_port_entry.c: warning: Member fn_pwm(void) (function) of file outputs_port_entry.c is not documented.	static bool fn_pwm(void)
 shared/ui/outputs_port_entry.c: warning: Member fn_row(int i) (function) of file outputs_port_entry.c is not documented.	static gfx_rect_t fn_row(int i)
 shared/ui/outputs_port_entry.c: warning: Member fn_rows(void) (function) of file outputs_port_entry.c is not documented.	static int fn_rows(void)
-shared/ui/outputs_port_entry.c: warning: Member g_watch[LINK_PG_PORTS_MAX][WATCH_LEN] (variable) of file outputs_port_entry.c is not documented.	static char g_watch[LINK_PG_PORTS_MAX][WATCH_LEN];
 shared/ui/outputs_port_entry.c: warning: Member held(void) (function) of file outputs_port_entry.c is not documented.	static bool held(void)
 shared/ui/outputs_port_entry.c: warning: Member known(void) (function) of file outputs_port_entry.c is not documented.	static bool known(void) { return port_view_has((uint8_t)p.port); }
 shared/ui/outputs_port_entry.c: warning: Member outputs_port_back(void) (function) of file outputs_port_entry.c is not documented.	bool outputs_port_back(void)
@@ -3863,7 +3834,6 @@ shared/ui/overview_screen.c: warning: Member press_id (variable) of struct [stru
 shared/ui/overview_screen.c: warning: Member render(gfx_canvas_t *c, int buffer_index) (function) of file overview_screen.c is not documented.	static void render(gfx_canvas_t *c, int buffer_index)
 shared/ui/overview_screen.c: warning: Member reset(void) (function) of file overview_screen.c is not documented.	static void reset(void)
 shared/ui/overview_screen.c: warning: Member s (variable) of file overview_screen.c is not documented.	} s;
-shared/ui/overview_screen.c: warning: Member s_supply_real (variable) of file overview_screen.c is not documented.	static bool s_supply_real;
 shared/ui/overview_screen.c: warning: Member tile_at(int x, int y) (function) of file overview_screen.c is not documented.	static int tile_at(int x, int y)
 shared/ui/overview_screen.c: warning: Member tile_in(int i) (function) of file overview_screen.c is not documented.	static const tile_t *tile_in(int i)
 shared/ui/overview_screen.c: warning: Member tile_rect(int i) (function) of file overview_screen.c is not documented.	static gfx_rect_t tile_rect(int i)
@@ -3910,14 +3880,9 @@ shared/ui/prog_registry.c: warning: Member prog_ps_revision(const prog_page_set_
 shared/ui/prog_registry.c: warning: Member prog_ps_safe_at(const prog_page_set_t *ps, int x, int y) (function) of file prog_registry.c is not documented.	PROG_ONE_CALL bool prog_ps_safe_at(const prog_page_set_t *ps, int x, int y)
 shared/ui/prog_registry.c: warning: Member prog_ps_tick(const prog_page_set_t *ps, float dt_s) (function) of file prog_registry.c is not documented.	PROG_ONE_CALL void prog_ps_tick(const prog_page_set_t *ps, float dt_s)
 shared/ui/prog_registry.c: warning: Member prog_view_init(prog_view_t *v, gfx_rect_t area) (function) of file prog_registry.c is not documented.	void prog_view_init(prog_view_t *v, gfx_rect_t area)
-shared/ui/prog_registry.c: warning: Member s_count (variable) of file prog_registry.c is not documented.	static size_t s_count = sizeof(k_rows) / sizeof(k_rows[0]);
-shared/ui/prog_registry.c: warning: Member s_held (variable) of file prog_registry.c is not documented.	static uint8_t s_held;
-shared/ui/prog_registry.c: warning: Member s_rows (variable) of file prog_registry.c is not documented.	static const prog_reg_row_t *s_rows = k_rows;
-shared/ui/prog_registry.c: warning: Member s_tester_port (variable) of file prog_registry.c is not documented.	static uint8_t s_tester_port = PROG_REG_NO_PORT;
 shared/ui/prog_registry.c: warning: Member same_list(const prog_reg_row_t *a, const prog_reg_row_t *b) (function) of file prog_registry.c is not documented.	static bool same_list(const prog_reg_row_t *a, const prog_reg_row_t *b)
 shared/ui/prog_registry.c: warning: Member shown_from(const prog_view_t *v, const prog_list_t *l, int top) (function) of file prog_registry.c is not documented.	static int shown_from(const prog_view_t *v, const prog_list_t *l, int top)
 shared/ui/sensors_rows.c: warning: Member fitted(int a) (function) of file sensors_rows.c is not documented.	static bool fitted(int a)
-shared/ui/sensors_rows.c: warning: Member s_status (variable) of file sensors_rows.c is not documented.	static uint16_t s_status;
 shared/ui/sensors_rows.c: warning: Member sensors_rows_state_color(int a) (function) of file sensors_rows.c is not documented.	gfx_color_t sensors_rows_state_color(int a)
 shared/ui/servo_limit_panel.c: warning: Member lim_apply(const servo_limrun_do_t *d) (function) of file servo_limit_panel.c is not documented.	static bool lim_apply(const servo_limrun_do_t *d)
 shared/ui/servo_limit_panel.c: warning: Member lim_begin(void) (function) of file servo_limit_panel.c is not documented.	void lim_begin(void)
@@ -4258,7 +4223,6 @@ shared/ui/servo_workbench_int.h: warning: Member wb_task(void) (function) of fil
 shared/ui/settings_rows.c: warning: Member entries(setting_cat_t cat, settings_row_t *out, int max) (function) of file settings_rows.c is not documented.	static int entries(setting_cat_t cat, settings_row_t *out, int max)
 shared/ui/settings_screen.c: warning: Member hold(ui_screen_id_t to) (function) of file settings_screen.c is not documented.	static bool hold(ui_screen_id_t to)
 shared/ui/settings_screen.c: warning: Member s_screen (variable) of file settings_screen.c is not documented.	static const ui_screen_t s_screen = {
-shared/ui/settings_screen.c: warning: Member s_sense_unheld (variable) of file settings_screen.c is not documented.	static uint16_t s_sense_unheld;
 shared/ui/settings_screen.c: warning: Member settings_screen(void) (function) of file settings_screen.c is not documented.	const ui_screen_t *settings_screen(void)
 shared/ui/settings_screen.c: warning: Member settings_screen_invalidate(void) (function) of file settings_screen.c is not documented.	void settings_screen_invalidate(void)
 shared/ui/settings_screen.c: warning: Member tile_at(int x, int y) (function) of file settings_screen.c is not documented.	static int tile_at(int x, int y)
@@ -4281,8 +4245,6 @@ shared/ui/ui_band.c: warning: Member k_bits[] (variable) of file ui_band.c is no
 shared/ui/ui_band.c: warning: Member line_len(const char *s, int cells) (function) of file ui_band.c is not documented.	static size_t line_len(const char *s, int cells)
 shared/ui/ui_band.c: warning: Member name (variable) of struct [struct].k_bits is not documented.	const char *name;
 shared/ui/ui_band.c: warning: Member never (variable) of struct [struct].k_bits is not documented.	bool never;
-shared/ui/ui_band.c: warning: Member s_line[400] (variable) of file ui_band.c is not documented.	static char s_line[400];
-shared/ui/ui_band.c: warning: Member s_para[640] (variable) of file ui_band.c is not documented.	static char s_para[640];
 shared/ui/ui_band.c: warning: Member text (variable) of struct [struct].k_bits is not documented.	ui_text_id_t text;
 shared/ui/ui_keypad.c: warning: Member digits_after_point(const ui_keypad_t *k) (function) of file ui_keypad.c is not documented.	static int digits_after_point(const ui_keypad_t *k)
 shared/ui/ui_keypad.c: warning: Member k_labels[UI_KEY_COUNT] (variable) of file ui_keypad.c is not documented.	static const char *const k_labels[UI_KEY_COUNT] = {
@@ -4374,36 +4336,23 @@ shared/ui/ui_widgets.c: warning: Member tag_width(const char *title, bool chevro
 shared/ui/ui_widgets.c: warning: Member ui_choice_face(gfx_canvas_t *c, gfx_rect_t r, const char *text, bool pressed, bool open) (function) of file ui_widgets.c is not documented.	void ui_choice_face(gfx_canvas_t *c, gfx_rect_t r, const char *text,
 shared/ui/upd_screen.c: warning: Member aborted_text(upd_why_t why) (function) of file upd_screen.c is not documented.	static const char *aborted_text(upd_why_t why)
 shared/ui/upd_screen.c: warning: Member act(int hit) (function) of file upd_screen.c is not documented.	static void act(int hit)
-shared/ui/upd_screen.c: warning: Member answered (variable) of struct [struct].s_rem is not documented.	bool answered; /* IGNORE NOW, NEVER REMIND ME or the hold */
 shared/ui/upd_screen.c: warning: Member blocked_text(upd_why_t why, char *out, size_t n, char *second, size_t n2) (function) of file upd_screen.c is not documented.	static void blocked_text(upd_why_t why, char *out, size_t n, char *second,
 shared/ui/upd_screen.c: warning: Member cancel(void) (function) of file upd_screen.c is not documented.	static void cancel(void)
 shared/ui/upd_screen.c: warning: Member cancel_allowed(void) (function) of file upd_screen.c is not documented.	static bool cancel_allowed(void)
 shared/ui/upd_screen.c: warning: Member check_allowed(void) (function) of file upd_screen.c is not documented.	static bool check_allowed(void)
-shared/ui/upd_screen.c: warning: Member coproc_allowed(void) (function) of file upd_screen.c is not documented.	static bool coproc_allowed(void) { return s_cu.sec == CU_SEC_READY; }
-shared/ui/upd_screen.c: warning: Member cu_hold (variable) of struct [struct].s is not documented.	ui_hold_t cu_hold; /* UPDATE IOMCU */
 shared/ui/upd_screen.c: warning: Member cu_version_text(char *out, size_t n, bool known, cu_version_t v) (function) of file upd_screen.c is not documented.	static void cu_version_text(char *out, size_t n, bool known, cu_version_t v)
 shared/ui/upd_screen.c: warning: Member download_allowed(void) (function) of file upd_screen.c is not documented.	static bool download_allowed(void)
-shared/ui/upd_screen.c: warning: Member drawn_mask (variable) of struct [struct].s is not documented.	unsigned drawn_mask;
-shared/ui/upd_screen.c: warning: Member drawn_mask (variable) of struct [struct].s_rem is not documented.	unsigned drawn_mask;
 shared/ui/upd_screen.c: warning: Member drop_holds_if_gone(void) (function) of file upd_screen.c is not documented.	static void drop_holds_if_gone(void)
 shared/ui/upd_screen.c: warning: Member enter(void) (function) of file upd_screen.c is not documented.	static void enter(void)
 shared/ui/upd_screen.c: warning: Member event(const touch_event_t *evt) (function) of file upd_screen.c is not documented.	static void event(const touch_event_t *evt)
 shared/ui/upd_screen.c: warning: Member have_newer(void) (function) of file upd_screen.c is not documented.	static bool have_newer(void)
-shared/ui/upd_screen.c: warning: Member have_press (variable) of struct [struct].s is not documented.	bool have_press;
-shared/ui/upd_screen.c: warning: Member have_press (variable) of struct [struct].s_rem is not documented.	bool have_press;
-shared/ui/upd_screen.c: warning: Member hit (variable) of struct [struct].s is not documented.	int hit;
-shared/ui/upd_screen.c: warning: Member hit (variable) of struct [struct].s_rem is not documented.	int hit;
 shared/ui/upd_screen.c: warning: Member hit_at(int x, int y) (function) of file upd_screen.c is not documented.	static int hit_at(int x, int y)
-shared/ui/upd_screen.c: warning: Member hold (variable) of struct [struct].s is not documented.	ui_hold_t hold; /* DOWNLOAD & INSTALL */
-shared/ui/upd_screen.c: warning: Member hold (variable) of struct [struct].s_rem is not documented.	ui_hold_t hold;
 shared/ui/upd_screen.c: warning: Member hold_fill(const ui_hold_t *h) (function) of file upd_screen.c is not documented.	static gfx_color_t hold_fill(const ui_hold_t *h)
 shared/ui/upd_screen.c: warning: Member join_text(const upd_view_t *v) (function) of file upd_screen.c is not documented.	static const char *join_text(const upd_view_t *v)
 shared/ui/upd_screen.c: warning: Member k_remind (variable) of file upd_screen.c is not documented.	static const ui_screen_t k_remind = {
 shared/ui/upd_screen.c: warning: Member k_screen (variable) of file upd_screen.c is not documented.	static const ui_screen_t k_screen = {
 shared/ui/upd_screen.c: warning: Member leave(void) (function) of file upd_screen.c is not documented.	static void leave(void)
 shared/ui/upd_screen.c: warning: Member phase_text(upd_phase_t ph) (function) of file upd_screen.c is not documented.	static const char *phase_text(upd_phase_t ph)
-shared/ui/upd_screen.c: warning: Member press_id (variable) of struct [struct].s is not documented.	uint8_t press_id;
-shared/ui/upd_screen.c: warning: Member press_id (variable) of struct [struct].s_rem is not documented.	uint8_t press_id;
 shared/ui/upd_screen.c: warning: Member r_cancel(void) (function) of file upd_screen.c is not documented.	static void r_cancel(void)
 shared/ui/upd_screen.c: warning: Member r_enter(void) (function) of file upd_screen.c is not documented.	static void r_enter(void)
 shared/ui/upd_screen.c: warning: Member r_event(const touch_event_t *evt) (function) of file upd_screen.c is not documented.	static void r_event(const touch_event_t *evt)
@@ -4414,17 +4363,10 @@ shared/ui/upd_screen.c: warning: Member r_tick(float dt_s) (function) of file up
 shared/ui/upd_screen.c: warning: Member rel_text(const upd_view_t *v) (function) of file upd_screen.c is not documented.	static const char *rel_text(const upd_view_t *v)
 shared/ui/upd_screen.c: warning: Member reset(void) (function) of file upd_screen.c is not documented.	static void reset(void)
 shared/ui/upd_screen.c: warning: Member result_colour(void) (function) of file upd_screen.c is not documented.	static gfx_color_t result_colour(void)
-shared/ui/upd_screen.c: warning: Member s (variable) of file upd_screen.c is not documented.	} s;
-shared/ui/upd_screen.c: warning: Member s_cu (variable) of file upd_screen.c is not documented.	static upd_cu_view_t s_cu;
-shared/ui/upd_screen.c: warning: Member s_cu_req (variable) of file upd_screen.c is not documented.	static bool s_cu_req;
-shared/ui/upd_screen.c: warning: Member s_rem (variable) of file upd_screen.c is not documented.	} s_rem;
-shared/ui/upd_screen.c: warning: Member s_req (variable) of file upd_screen.c is not documented.	static unsigned s_req;
-shared/ui/upd_screen.c: warning: Member s_v (variable) of file upd_screen.c is not documented.	static upd_view_t s_v;
 shared/ui/upd_screen.c: warning: Member tick(float dt_s) (function) of file upd_screen.c is not documented.	static void tick(float dt_s)
 shared/ui/upd_screen.c: warning: Member touched(void) (function) of file upd_screen.c is not documented.	static void touched(void)
 shared/ui/upd_screen.c: warning: Member upd_remind_screen(void) (function) of file upd_screen.c is not documented.	const ui_screen_t *upd_remind_screen(void) { return &k_remind; }
 shared/ui/upd_screen.c: warning: Member upd_screen(void) (function) of file upd_screen.c is not documented.	const ui_screen_t *upd_screen(void) { return &k_screen; }
-shared/ui/upd_screen.c: warning: Member yield (variable) of struct [struct].s_rem is not documented.	bool yield; /* the driver takes it down: not an answer */
 shared/ui/wifi_screen.c: warning: Member act(int hit) (function) of file wifi_screen.c is not documented.	static void act(int hit)
 shared/ui/wifi_screen.c: warning: Member back(void) (function) of file wifi_screen.c is not documented.	static bool back(void)
 shared/ui/wifi_screen.c: warning: Member drop_hold_if_gone(void) (function) of file wifi_screen.c is not documented.	static void drop_hold_if_gone(void)

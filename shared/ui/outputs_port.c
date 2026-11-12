@@ -35,15 +35,37 @@
 #include "outputs_screen_int.h"
 #include "port_view.h"
 
-/* The GPIO the IOmcu's programming port 1 is bound to, or none. */
-static uint8_t g_prog_gpio = OUTPUTS_NO_PIN;
-/* The ports the IOmcu reports, OUTPUTS_PORTS_UNKNOWN while not known, and
- * the pins of ports 2 to 4 (port 1's is g_prog_gpio). */
-static uint8_t g_port_count = OUTPUTS_PORTS_UNKNOWN;
-static uint8_t g_port_pin[LINK_PG_PORTS_MAX] = {
-    OUTPUTS_NO_PIN, OUTPUTS_NO_PIN, OUTPUTS_NO_PIN, OUTPUTS_NO_PIN
+/** @brief What the next entry opens on: the overview, a protocol, or a port. */
+enum { OPEN_OVERVIEW = 0, OPEN_PROTO, OPEN_PORT };
+
+/** @brief What the entries and the board view share, one instance per image. */
+typedef struct {
+    /** @brief The GPIO the IOmcu's programming port 1 is bound to, or none */
+    uint8_t    prog_gpio;
+    /** @brief The ports the IOmcu reports, OUTPUTS_PORTS_UNKNOWN while not
+     *         known */
+    uint8_t    port_count;
+    /** @brief The pins of ports 2 to 4 (port 1's is prog_gpio) */
+    uint8_t    port_pin[LINK_PG_PORTS_MAX];
+    /**
+     * @brief Set by the control task (panel_poll.c), read by the task that
+     *        draws: 0 while what the page holds is not known, else bit 0 set
+     *        and each pin + 1 in bits 8 to 15 and 16 to 23, 0 for none
+     */
+    atomic_int held[OUTPUTS_IFACE_COUNT];
+    uint8_t    open_kind;   /**< what the next entry opens on: OPEN_* */
+    uint8_t    open_value;  /**< the protocol or the port it opens on */
+} ports_state_t;
+
+/** @brief The shared state's one instance. */
+static ports_state_t op = {
+    .prog_gpio  = OUTPUTS_NO_PIN,
+    .port_count = OUTPUTS_PORTS_UNKNOWN,
+    .port_pin   = { OUTPUTS_NO_PIN, OUTPUTS_NO_PIN, OUTPUTS_NO_PIN,
+                    OUTPUTS_NO_PIN },
+    .open_kind  = OPEN_OVERVIEW,
 };
-_Static_assert(LINK_PG_PORTS_MAX == 4u, "g_port_pin's initialiser");
+_Static_assert(LINK_PG_PORTS_MAX == 4u, "op.port_pin's initialiser");
 
 static void touched(void)
 {
@@ -52,19 +74,19 @@ static void touched(void)
 
 void outputs_screen_set_prog_pin(uint8_t gpio)
 {
-    if (gpio != g_prog_gpio) {
-        g_prog_gpio = gpio;
+    if (gpio != op.prog_gpio) {
+        op.prog_gpio = gpio;
         touched();
     }
 }
 
 uint8_t outputs_screen_port_entries(void)
 {
-    if (g_port_count == OUTPUTS_PORTS_UNKNOWN) {
+    if (op.port_count == OUTPUTS_PORTS_UNKNOWN) {
         return 1u;
     }
-    return (g_port_count > LINK_PG_PORTS_MAX) ? (uint8_t)LINK_PG_PORTS_MAX
-                                              : g_port_count;
+    return (op.port_count > LINK_PG_PORTS_MAX) ? (uint8_t)LINK_PG_PORTS_MAX
+                                              : op.port_count;
 }
 
 uint8_t outputs_screen_port_pin(uint8_t port)
@@ -72,19 +94,19 @@ uint8_t outputs_screen_port_pin(uint8_t port)
     if (port >= outputs_screen_port_entries()) {
         return OUTPUTS_NO_PIN;
     }
-    return (port == 0u) ? g_prog_gpio : g_port_pin[port];
+    return (port == 0u) ? op.prog_gpio : op.port_pin[port];
 }
 
 void outputs_screen_set_prog_ports(uint8_t count, const uint8_t *pins)
 {
     const bool known = count != OUTPUTS_PORTS_UNKNOWN;
-    bool moved = count != g_port_count;
-    g_port_count = count;
+    bool moved = count != op.port_count;
+    op.port_count = count;
     for (uint8_t n = 1; n < LINK_PG_PORTS_MAX; ++n) {
         const uint8_t pin = (known && pins != NULL && n < count)
                                 ? pins[n] : OUTPUTS_NO_PIN;
-        moved = moved || pin != g_port_pin[n];
-        g_port_pin[n] = pin;
+        moved = moved || pin != op.port_pin[n];
+        op.port_pin[n] = pin;
     }
     /* Port 1's pin while the count is not known: the PIN register's, as
      * outputs_screen_set_prog_pin() was given it. */
@@ -106,11 +128,6 @@ void outputs_screen_set_prog_ports(uint8_t count, const uint8_t *pins)
 
 /* ---------------------------------------- SENSORS and SUPPLY's PD MINI */
 
-/* Set by the control task (panel_poll.c), read by the task that draws:
- * 0 while what the page holds is not known, else bit 0 set and each pin
- * + 1 in bits 8 to 15 and 16 to 23, 0 for none. */
-static atomic_int g_held[OUTPUTS_IFACE_COUNT];
-
 /* Pin @p v + 1 in a byte, 0 for none and anything past the mask. */
 static int held_byte(int v)
 {
@@ -123,7 +140,7 @@ void outputs_screen_set_iface_held(outputs_iface_t which, bool known,
     if (which <= OUTPUTS_IFACE_NONE || which >= OUTPUTS_IFACE_COUNT) {
         return;
     }
-    atomic_store(&g_held[which],
+    atomic_store(&op.held[which],
                  known ? (1 | (held_byte(pin_a) << 8)
                           | (held_byte(pin_b) << 16))
                        : 0);
@@ -160,7 +177,7 @@ static uint64_t pin_bit(int v)
 uint64_t outputs_iface_pins(outputs_iface_t which)
 {
     if (which > OUTPUTS_IFACE_NONE && which < OUTPUTS_IFACE_COUNT) {
-        const int held = atomic_load(&g_held[which]);
+        const int held = atomic_load(&op.held[which]);
         if (held != 0) {
             return pin_bit(((held >> 8) & 0xff) - 1)
                    | pin_bit(((held >> 16) & 0xff) - 1);
@@ -266,32 +283,27 @@ bool outputs_port_holds(uint8_t gpio)
 
 /* --------------------------------------------------- the entry opened on */
 
-/* What the next entry opens on: the overview, a protocol, or a port. */
-enum { OPEN_OVERVIEW = 0, OPEN_PROTO, OPEN_PORT };
-static uint8_t g_open_kind = OPEN_OVERVIEW;
-static uint8_t g_open_value;
-
 void outputs_screen_open_on(uint8_t proto)
 {
-    g_open_kind  = OPEN_PROTO;
-    g_open_value = proto;
+    op.open_kind  = OPEN_PROTO;
+    op.open_value = proto;
 }
 
 void outputs_screen_open_on_port(uint8_t port)
 {
-    g_open_kind  = OPEN_PORT;
-    g_open_value = port;
+    op.open_kind  = OPEN_PORT;
+    op.open_value = port;
 }
 
 void outputs_port_forget_open(void)
 {
-    g_open_kind = OPEN_OVERVIEW;
+    op.open_kind = OPEN_OVERVIEW;
 }
 
 void outputs_port_open(void)
 {
-    const uint8_t kind = g_open_kind, value = g_open_value;
-    g_open_kind = OPEN_OVERVIEW;
+    const uint8_t kind = op.open_kind, value = op.open_value;
+    op.open_kind = OPEN_OVERVIEW;
     if (kind == OPEN_PORT && value < outputs_screen_port_entries()) {
         outputs_screen_select_port(value);
     } else if (kind == OPEN_PROTO && value < OUTBIND_PROTOS) {

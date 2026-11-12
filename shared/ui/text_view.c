@@ -31,16 +31,8 @@
 
 /** @brief The viewer's state; text_view_int.h names it tv. */
 tv_state_t tv_s;
-/** @brief The text over s_mem and s_ends. */
-text_buf_t tv_tb;
-
-/** @brief The file's bytes, 1MiB, in PSRAM on the panel (psram_bss.lf). */
-static uint8_t s_mem[TEXT_BUF_FILE_MAX];
-/** @brief Its line index, 256KiB, in PSRAM on the panel. */
-static uint32_t s_ends[TEXT_BUF_ENDS_MAX];
-/** @brief The file as loaded or last saved, for DISCARD: 1MiB, in PSRAM
- *         on the panel. */
-uint8_t tv_orig[TEXT_BUF_FILE_MAX];
+/** @brief The text and its buffers, in PSRAM on the panel (psram_bss.lf). */
+tv_text_t tv_text;
 
 /* -------------------------------------------------------------- words */
 
@@ -62,14 +54,20 @@ static const char *const k_marks[] = { "--", "[not loaded]" };
 /** @brief The entries of array @p a. */
 #define N_OF(a) (sizeof(a) / sizeof((a)[0]))
 
-/** @brief The OK words in every language. */
-static const char *s_ok[N_OF(k_ok) * UI_LANG_COUNT];
-/** @brief The FAIL words in every language. */
-static const char *s_fail[N_OF(k_fail) * UI_LANG_COUNT];
-/** @brief The WARN words in every language, and the marks. */
-static const char *s_warn[N_OF(k_warn) * UI_LANG_COUNT + N_OF(k_marks)];
-/** @brief The three lists, built at the first call of text_view_words(). */
-static text_hl_words_t s_words;
+/** @brief The highlighter's words, built at the first call of
+ *         text_view_words(). */
+typedef struct {
+    /** @brief The OK words in every language */
+    const char *ok[N_OF(k_ok) * UI_LANG_COUNT];
+    /** @brief The FAIL words in every language */
+    const char *fail[N_OF(k_fail) * UI_LANG_COUNT];
+    /** @brief The WARN words in every language, and the marks */
+    const char *warn[N_OF(k_warn) * UI_LANG_COUNT + N_OF(k_marks)];
+    text_hl_words_t words;  /**< the three lists */
+} hl_words_t;
+
+/** @brief The highlighter's words, one instance. */
+static hl_words_t s_hl;
 
 /**
  * @brief @p ids in every language into @p out.
@@ -92,19 +90,19 @@ static size_t fill_words(const char **out, const servo_str_t *ids, size_t n)
 
 const text_hl_words_t *text_view_words(void)
 {
-    if (s_words.ok == NULL) {
-        s_words.ok = s_ok;
-        s_words.ok_n = fill_words(s_ok, k_ok, N_OF(k_ok));
-        s_words.fail = s_fail;
-        s_words.fail_n = fill_words(s_fail, k_fail, N_OF(k_fail));
-        size_t w = fill_words(s_warn, k_warn, N_OF(k_warn));
+    if (s_hl.words.ok == NULL) {
+        s_hl.words.ok = s_hl.ok;
+        s_hl.words.ok_n = fill_words(s_hl.ok, k_ok, N_OF(k_ok));
+        s_hl.words.fail = s_hl.fail;
+        s_hl.words.fail_n = fill_words(s_hl.fail, k_fail, N_OF(k_fail));
+        size_t w = fill_words(s_hl.warn, k_warn, N_OF(k_warn));
         for (size_t i = 0u; i < N_OF(k_marks); ++i) {
-            s_warn[w++] = k_marks[i];
+            s_hl.warn[w++] = k_marks[i];
         }
-        s_words.warn = s_warn;
-        s_words.warn_n = w;
+        s_hl.words.warn = s_hl.warn;
+        s_hl.words.warn_n = w;
     }
-    return &s_words;
+    return &s_hl.words;
 }
 
 /* ----------------------------------------------------------- the file */
@@ -123,7 +121,7 @@ void text_view_reset(void)
 {
     memset(&tv, 0, sizeof(tv));
     tv.press = TV_HIT_NONE;
-    (void)text_buf_init(&tv_tb, s_mem, sizeof(s_mem), s_ends, N_OF(s_ends));
+    (void)text_buf_init(&tv_text.tb, tv_text.mem, sizeof(tv_text.mem), tv_text.ends, N_OF(tv_text.ends));
 }
 
 bool text_view_fits(uint64_t size)
@@ -148,14 +146,14 @@ void text_view_begin(const char *dir, const char *name, uint64_t size)
 
 uint8_t *text_view_load_area(size_t *cap)
 {
-    if (tv_tb.mem == NULL) {
-        (void)text_buf_init(&tv_tb, s_mem, sizeof(s_mem), s_ends,
-                            N_OF(s_ends));
+    if (tv_text.tb.mem == NULL) {
+        (void)text_buf_init(&tv_text.tb, tv_text.mem, sizeof(tv_text.mem), tv_text.ends,
+                            N_OF(tv_text.ends));
     }
     if (cap != NULL) {
-        *cap = text_buf_room(&tv_tb);
+        *cap = text_buf_room(&tv_text.tb);
     }
-    return text_buf_load_area(&tv_tb);
+    return text_buf_load_area(&tv_text.tb);
 }
 
 void text_view_loaded(fm_err_t err, size_t len)
@@ -166,13 +164,13 @@ void text_view_loaded(fm_err_t err, size_t len)
     tv.top_line = 0u;
     tv.top_row = 0u;
     if (err != FM_OK) {
-        (void)text_buf_init(&tv_tb, s_mem, sizeof(s_mem), s_ends,
-                            N_OF(s_ends));
+        (void)text_buf_init(&tv_text.tb, tv_text.mem, sizeof(tv_text.mem), tv_text.ends,
+                            N_OF(tv_text.ends));
         tv.err = err;
         tv.state = TEXT_VIEW_FAILED;
         return;
     }
-    const text_buf_err_t r = text_buf_load_done(&tv_tb, len);
+    const text_buf_err_t r = text_buf_load_done(&tv_text.tb, len);
     if (r != TEXT_BUF_OK) {
         tv.tb_err = r;
         tv.state = TEXT_VIEW_FAILED;
@@ -290,12 +288,12 @@ size_t text_view_lines(void)
     }
     /* A line end at the file's end starts no line of its own, unless the
      * editor's cursor is to stand on it. */
-    return tv.edit ? text_buf_lines(&tv_tb) : text_buf_lines_viewed(&tv_tb);
+    return tv.edit ? text_buf_lines(&tv_text.tb) : text_buf_lines_viewed(&tv_text.tb);
 }
 
 size_t tv_rows_of(size_t line)
 {
-    const size_t r = text_buf_rows(&tv_tb, line, text_view_cells());
+    const size_t r = text_buf_rows(&tv_text.tb, line, text_view_cells());
     return (r > 0u) ? r : 1u;
 }
 

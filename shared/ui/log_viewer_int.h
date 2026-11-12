@@ -472,18 +472,22 @@ extern lv_state_t lv_s;
 
 /** @brief Colour id of each plot series. */
 extern const ui_color_id_t lv_series_color[LOG_MAX_SERIES];
-/* Filled by lv_compute_spans() (log_viewer_load.c). */
 /**
- * @brief Per series and pixel column, the plot's minimum and maximum row,
- *        filled by lv_compute_spans().
+ * @brief The plot's traces, filled by lv_compute_spans()
+ *        (log_viewer_load.c).  The screen's reset leaves them.
  */
-extern int16_t lv_span[LOG_MAX_SERIES][PV_W][2];
-/** @brief One band of PV_BAND rows of the plot, drawn at a time. */
-extern gfx_color_t lv_band[PV_W * PV_BAND];
-/** @brief Per series, the lowest value in the window. */
-extern float lv_lo[LOG_MAX_SERIES];
-/** @brief Per series, the highest value in the window. */
-extern float lv_hi[LOG_MAX_SERIES];
+typedef struct {
+    /** @brief Per series and pixel column, the plot's minimum and maximum
+     *         row */
+    int16_t     span[LOG_MAX_SERIES][PV_W][2];
+    /** @brief One band of PV_BAND rows of the plot, drawn at a time */
+    gfx_color_t band[PV_W * PV_BAND];
+    float       lo[LOG_MAX_SERIES]; /**< per series, the lowest value in the window */
+    float       hi[LOG_MAX_SERIES]; /**< per series, the highest value in the window */
+} lv_plot_t;
+
+/** @brief The plot's traces. */
+extern lv_plot_t lv_plot;
 /** @brief Folder tab shown for each tab index. */
 extern const log_viewer_tab_t lv_tab_at[LOG_TAB_COUNT];
 

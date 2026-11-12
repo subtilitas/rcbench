@@ -20,11 +20,20 @@ _Static_assert(SERVO_STORE_PRESET_MAX <= HITEC_CARD_NAME_MAX,
 /** @brief The length of the extension the store adds. */
 #define EXT_LEN (sizeof(SERVO_STORE_EXT) - 1u)
 
-/* One request at a time: the text of a file and the folder's names. */
-/** @brief A file's text, one byte past the longest so a larger one shows. */
-static char s_text[HITEC_CARD_FILE_MAX + 1u];
-/** @brief The names of one walk. */
-static servo_store_entry_t s_list[HITEC_CARD_LIST_MAX];
+/** @brief The working memory of one request. */
+typedef struct {
+    /** @brief A file's text, one byte past the longest so a larger one
+     *         shows */
+    char                text[HITEC_CARD_FILE_MAX + 1u];
+    /** @brief The names of one walk */
+    servo_store_entry_t list[HITEC_CARD_LIST_MAX];
+} card_work_t;
+
+/**
+ * @brief The working memory, static and not on the stack: one request at a
+ *        time.  No request reads what an earlier one left in it.
+ */
+static card_work_t s_work;
 
 /**
  * @brief A result of the store as hitec_card.h names it.
@@ -85,8 +94,8 @@ static void save(const servo_store_io_t *io, const hitec_card_req_t *req,
 {
     char base[HITEC_CARD_NAME_MAX];
     servo_store_t r = SERVO_STORE_OK;
-    const size_t len = hitec_card_file_text(&req->image, req->backup, s_text,
-                                            sizeof(s_text));
+    const size_t len = hitec_card_file_text(&req->image, req->backup, s_work.text,
+                                            sizeof(s_work.text));
 
     if (len == 0u) {
         done->result = HITEC_CARD_DONE_WRITE;
@@ -99,7 +108,7 @@ static void save(const servo_store_io_t *io, const hitec_card_req_t *req,
         base[sizeof(base) - 1u] = '\0';
     }
     if (r == SERVO_STORE_OK) {
-        r = servo_store_save(io, base, s_text, len, NULL);
+        r = servo_store_save(io, base, s_work.text, len, NULL);
     }
     done->result = store_result(r, true);
     if (r == SERVO_STORE_OK) {
@@ -122,9 +131,9 @@ static void model_of(const servo_store_io_t *io, const char *name,
     size_t len = 0;
 
     out[0] = '\0';
-    if (servo_store_load(io, name, s_text, sizeof(s_text), &len)
+    if (servo_store_load(io, name, s_work.text, sizeof(s_work.text), &len)
             != SERVO_STORE_OK
-        || hitec_card_file_parse(s_text, len, &img, out, NULL, NULL)
+        || hitec_card_file_parse(s_work.text, len, &img, out, NULL, NULL)
                != HITEC_CARD_OK) {
         out[0] = '\0';
     }
@@ -156,7 +165,7 @@ static void list(const servo_store_io_t *io, const hitec_card_req_t *req,
 
         size_t past;
 
-        r = servo_store_list_after(io, from, s_list, cap, &count, &total,
+        r = servo_store_list_after(io, from, s_work.list, cap, &count, &total,
                                    NULL);
         /* The page is in this walk's names, or the folder ends in it. */
         if (r != SERVO_STORE_OK || want <= cap || count < cap) {
@@ -168,7 +177,7 @@ static void list(const servo_store_io_t *io, const hitec_card_req_t *req,
          * HITEC_CARD_FILES or more and past is 1 or more. */
         past = skip < count ? skip : count;
         skip -= past;
-        memcpy(after, s_list[past - 1u].name, sizeof(after));
+        memcpy(after, s_work.list[past - 1u].name, sizeof(after));
         from = after;
     }
     done->result = store_result(r, false);
@@ -177,8 +186,8 @@ static void list(const servo_store_io_t *io, const hitec_card_req_t *req,
     }
     done->total = total < 0xFFFFu ? (uint16_t)total : 0xFFFFu;
     for (at = skip; at < count && done->count < HITEC_CARD_FILES; ++at) {
-        base_of(s_list[at].name, done->names[done->count]);
-        model_of(io, s_list[at].name, done->models[done->count]);
+        base_of(s_work.list[at].name, done->names[done->count]);
+        model_of(io, s_work.list[at].name, done->models[done->count]);
         done->count++;
     }
     if (servo_store_preset(io, done->name, sizeof(done->name))
@@ -212,7 +221,7 @@ static void load(const servo_store_io_t *io, const hitec_card_req_t *req,
         done->result = HITEC_CARD_DONE_READ;
         return;
     }
-    r = servo_store_load(io, file, s_text, HITEC_CARD_FILE_MAX, &len);
+    r = servo_store_load(io, file, s_work.text, HITEC_CARD_FILE_MAX, &len);
     if (r == SERVO_STORE_TOO_LARGE) {
         done->result = HITEC_CARD_DONE_BAD;
         done->parse = (uint8_t)HITEC_CARD_ERR_HEADER;
@@ -222,7 +231,7 @@ static void load(const servo_store_io_t *io, const hitec_card_req_t *req,
     if (r != SERVO_STORE_OK) {
         return;
     }
-    done->parse = (uint8_t)hitec_card_file_parse(s_text, len, &done->image,
+    done->parse = (uint8_t)hitec_card_file_parse(s_work.text, len, &done->image,
                                                  done->model, &line, &kind);
     done->line = (uint16_t)line;
     if (done->parse != (uint8_t)HITEC_CARD_OK) {
