@@ -2348,6 +2348,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/fwupdate/fw_boot.c` | 53 | 53 | 100.0% |
 | `shared/fwupdate/fw_trial.c` | 29 | 29 | 100.0% |
 | `shared/fwupdate/fw_c6.c` | 159 | 159 | 100.0% |
+| `shared/fwupdate/fw_slots.c` | 47 | 47 | 100.0% |
 | `shared/webaccess/wa_session.c` | 432 | 430 | 99.5% |
 | `shared/webaccess/wa_fetch.c` | 427 | 415 | 97.2% |
 | `shared/webaccess/wa_text.c` | 343 | 341 | 99.4% |
