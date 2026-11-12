@@ -70,7 +70,7 @@ test('the exported tables are frozen: a write by a caller throws and changes no 
   // The arrays of a setup are its own.
   before.wires.length = 0;
   before.options[0]!.value = 'osoyoo';
-  assert.deepEqual(DEFAULT_OPTIONS, { connection: 'pads', ina228Board: 'matek', escPower: 'battery', servoPower: 'external', servoPort: 'outputs' });
+  assert.deepEqual(DEFAULT_OPTIONS, { connection: 'pads', ina228Board: 'matek', escPower: 'battery', servoPower: 'external', stickBeep: 'tap', servoPort: 'outputs' });
   const after = resolve(CATALOGUE, select(['esc']));
   assert.deepEqual(after.wires.map((w) => w.n), [1, 2, 3, 4, 11, 12, 13, 14, 15]);
   assert.equal(after.options[0]!.value, 'pads');
@@ -80,7 +80,7 @@ test('the exported tables are frozen: a write by a caller throws and changes no 
 test('the index exports the catalogue, the resolver and the default options', () => {
   assert.equal(core.CATALOGUE, CATALOGUE);
   assert.equal(core.resolve, resolve);
-  assert.deepEqual(core.DEFAULT_OPTIONS, { connection: 'pads', ina228Board: 'matek', escPower: 'battery', servoPower: 'external', servoPort: 'outputs' });
+  assert.deepEqual(core.DEFAULT_OPTIONS, { connection: 'pads', ina228Board: 'matek', escPower: 'battery', servoPower: 'external', stickBeep: 'tap', servoPort: 'outputs' });
   for (const key of OPTION_KEYS) assert.equal(OPTION_VALUES[key][0], DEFAULT_OPTIONS[key]);
 });
 
@@ -115,6 +115,7 @@ test('empty selection: the locked parts and the wires 1 to 4', () => {
     { key: 'ina228Board', value: 'matek', visible: false, forcedBy: null },
     { key: 'escPower', value: 'battery', visible: false, forcedBy: null },
     { key: 'servoPower', value: 'external', visible: false, forcedBy: null },
+    { key: 'stickBeep', value: 'tap', visible: false, forcedBy: null },
     { key: 'servoPort', value: 'outputs', visible: false, forcedBy: null },
   ]);
   // The logic has its power source; no test object is connected.
@@ -377,24 +378,55 @@ test('a function that drives a test object needs bench hardware only', () => {
   assert.deepEqual(one.functions.filter((f) => f.enabled && f.fn.drives !== undefined).map((f) => f.fn.id), ['servo', 'angle']);
 });
 
-test('STICK programming: enabled with ESC power B only', () => {
+test('STICK programming: enabled with ESC power B and a beep source', () => {
   const battery = resolve(CATALOGUE, select(['esc'], ['pdmini']));
-  assert.deepEqual(fn(battery, 'stick').missing, []);
+  assert.deepEqual(fn(battery, 'stick').missing, ['sim', 'tap']);
   assert.equal(fn(battery, 'stick').enabled, false);
   assert.ok(partIds(battery).includes('batt'));
   assert.ok(!battery.checks.some((c) => c.id === 'esc-programming-power'));
 
+  // The PD mini alone is no beep source: its current is read every 100 to 152ms.
   const pd = resolve(CATALOGUE, select(['esc'], ['pdmini'], { escPower: 'pd' }));
   // The open point of the supply during programming is listed with the function.
   assert.ok(pd.unknown.some((u) => u.id === 'esc-programming-power'));
-  assert.equal(fn(pd, 'stick').enabled, true);
+  assert.deepEqual(fn(pd, 'stick').missing, ['sim', 'tap']);
+  assert.equal(fn(pd, 'stick').enabled, false);
   assert.equal(option(pd, 'escPower').forcedBy, null);
+
+  // With a beep source of the chosen variant the function runs.
+  const tap = resolve(CATALOGUE, select(['esc'], ['pdmini', 'sim', 'tap'], { escPower: 'pd' }));
+  assert.equal(fn(tap, 'stick').enabled, true);
+  const ina = resolve(CATALOGUE, select(['esc'], ['pdmini', 'ina3221'], { escPower: 'pd', stickBeep: 'ina3221' }));
+  assert.equal(fn(ina, 'stick').enabled, true);
+  // A source of the other variant does not count.
+  const wrong = resolve(CATALOGUE, select(['esc'], ['pdmini', 'ina3221'], { escPower: 'pd' }));
+  assert.deepEqual(fn(wrong, 'stick').missing, ['sim', 'tap']);
+  assert.equal(fn(wrong, 'stick').enabled, false);
 
   // Chosen, it forces the option over the value of the selection.
   const chosen = resolve(CATALOGUE, select(['stick'], [], { escPower: 'battery' }));
   assert.deepEqual(option(chosen, 'escPower'), { key: 'escPower', value: 'pd', visible: true, forcedBy: 'stick' });
   assert.ok(!partIds(chosen).includes('batt'));
   assert.deepEqual(chosen.ignored, []);
+});
+
+test('STICK programming: the beep source variant names the parts the function brings', () => {
+  const tap = resolve(CATALOGUE, select(['stick']));
+  assert.deepEqual(option(tap, 'stickBeep'), { key: 'stickBeep', value: 'tap', visible: true, forcedBy: null });
+  assert.deepEqual(partIds(tap).filter((id) => ['pdmini', 'sim', 'tap', 'ina3221'].includes(id)), ['pdmini', 'sim', 'tap']);
+  assert.deepEqual(part(tap, 'tap').addedBy, [{ kind: 'function', id: 'stick' }]);
+  assert.deepEqual(fn(tap, 'stick').missing, []);
+
+  const ina = resolve(CATALOGUE, select(['stick'], [], { stickBeep: 'ina3221' }));
+  assert.deepEqual(partIds(ina).filter((id) => ['pdmini', 'sim', 'tap', 'ina3221'].includes(id)), ['pdmini', 'ina3221']);
+  assert.deepEqual(part(ina, 'ina3221').addedBy, [{ kind: 'function', id: 'stick' }]);
+  assert.equal(fn(ina, 'stick').enabled, true);
+  assert.deepEqual(ina.ignored, []);
+
+  // The variant is a choice only while the PD mini feeds an ESC.
+  assert.equal(option(resolve(CATALOGUE, select()), 'stickBeep').visible, false);
+  assert.equal(option(resolve(CATALOGUE, select(['esc'])), 'stickBeep').visible, false);
+  assert.equal(option(resolve(CATALOGUE, select(['esc'], ['pdmini'], { escPower: 'pd' })), 'stickBeep').visible, true);
 });
 
 test('two functions forcing one option: the first in catalogue order names it', () => {
@@ -411,7 +443,7 @@ test('two functions forcing one option: the first in catalogue order names it', 
 
 test('option visibility follows the parts of the setup', () => {
   const none = resolve(CATALOGUE, select());
-  assert.deepEqual(none.options.map((o) => o.visible), [true, false, false, false, false]);
+  assert.deepEqual(none.options.map((o) => o.visible), [true, false, false, false, false, false]);
   assert.equal(option(resolve(CATALOGUE, select([], ['ina228'])), 'ina228Board').visible, true);
   assert.equal(option(resolve(CATALOGUE, select(['escpow'])), 'ina228Board').visible, true);
   assert.equal(option(resolve(CATALOGUE, select(['esc'])), 'escPower').visible, true);
@@ -535,7 +567,7 @@ test('an ESC is connected with signal and ground only, under every variant', () 
 
 test('an option keeps its value while it is not visible', () => {
   const setup = resolve(CATALOGUE, select([], [], { ina228Board: 'xt90', escPower: 'pd', connection: 'osoyoo' }));
-  assert.deepEqual(setup.options.map((o) => o.value), ['osoyoo', 'xt90', 'pd', 'external', 'outputs']);
+  assert.deepEqual(setup.options.map((o) => o.value), ['osoyoo', 'xt90', 'pd', 'external', 'tap', 'outputs']);
   assert.deepEqual(setup.checks.map((c) => c.id), [
     'can-60', 'panel-terminals', 'same-release', 'osoyoo-labels', 'osoyoo-terminals', 'strip-parts', 'strip-load', 'strip-level',
   ]);
@@ -768,7 +800,7 @@ test('duplicate ids count once', () => {
 test('option values outside the type fall back to the default and are listed', () => {
   const bad = { functions: ['esc'], owned: [], options: { connection: 'bus', ina228Board: 7, escPower: 'PD' } };
   const setup = resolve(CATALOGUE, bad as unknown as Selection);
-  assert.deepEqual(setup.options.map((o) => o.value), ['pads', 'matek', 'battery', 'external', 'outputs']);
+  assert.deepEqual(setup.options.map((o) => o.value), ['pads', 'matek', 'battery', 'external', 'tap', 'outputs']);
   assert.deepEqual(setup.ignored, ['7', 'PD', 'bus']);
   const servo = resolve(CATALOGUE, { functions: ['servo'], owned: [], options: { servoPower: 'usb' } } as unknown as Selection);
   assert.deepEqual(option(servo, 'servoPower'), { key: 'servoPower', value: 'external', visible: true, forcedBy: null });
@@ -776,12 +808,12 @@ test('option values outside the type fall back to the default and are listed', (
 
   // A missing option is the default and is not listed.
   const partial = resolve(CATALOGUE, { functions: [], owned: [], options: { escPower: 'pd' } } as unknown as Selection);
-  assert.deepEqual(partial.options.map((o) => o.value), ['pads', 'matek', 'pd', 'external', 'outputs']);
+  assert.deepEqual(partial.options.map((o) => o.value), ['pads', 'matek', 'pd', 'external', 'tap', 'outputs']);
   assert.deepEqual(partial.ignored, []);
 
   // null is a value outside the type.
   const nulls = resolve(CATALOGUE, { functions: [], owned: [], options: { escPower: null } } as unknown as Selection);
-  assert.deepEqual(nulls.options.map((o) => o.value), ['pads', 'matek', 'battery', 'external', 'outputs']);
+  assert.deepEqual(nulls.options.map((o) => o.value), ['pads', 'matek', 'battery', 'external', 'tap', 'outputs']);
   assert.deepEqual(nulls.ignored, ['null']);
 });
 
@@ -814,9 +846,9 @@ test('the resolver changes neither the catalogue nor the selection', () => {
   assert.deepEqual(first, second);
   assert.notEqual(first, second);
   assert.notEqual(first.parts, second.parts);
-  assert.deepEqual(selection.options, { connection: 'pads', ina228Board: 'matek', escPower: 'battery', servoPower: 'external', servoPort: 'outputs' });
+  assert.deepEqual(selection.options, { connection: 'pads', ina228Board: 'matek', escPower: 'battery', servoPower: 'external', stickBeep: 'tap', servoPort: 'outputs' });
   // DEFAULT_OPTIONS is not the object the resolver writes forced values into.
-  assert.deepEqual(DEFAULT_OPTIONS, { connection: 'pads', ina228Board: 'matek', escPower: 'battery', servoPower: 'external', servoPort: 'outputs' });
+  assert.deepEqual(DEFAULT_OPTIONS, { connection: 'pads', ina228Board: 'matek', escPower: 'battery', servoPower: 'external', stickBeep: 'tap', servoPort: 'outputs' });
 });
 
 test('output is in catalogue order for any input order', () => {
@@ -841,6 +873,7 @@ test('an empty catalogue resolves to an empty setup', () => {
       { key: 'ina228Board', value: 'matek', visible: false, forcedBy: null },
       { key: 'escPower', value: 'battery', visible: false, forcedBy: null },
       { key: 'servoPower', value: 'external', visible: false, forcedBy: null },
+      { key: 'stickBeep', value: 'tap', visible: false, forcedBy: null },
       { key: 'servoPort', value: 'outputs', visible: false, forcedBy: null },
     ],
   });

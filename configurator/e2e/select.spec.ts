@@ -510,7 +510,9 @@ for (const size of SIZES) {
       await expect(warning).toContainText('All functions remain available.');
       await expect(warning).toContainText('Variant that changes: ESC power B.');
       await expect(warning).toContainText(`Parts added: ${['pdmini', 'charger', 'usbtap'].map((id) => short(id)).join(', ')}.`);
-      await expect(warning).toContainText(`Functions enabled: ${fnName('stick')}, ${fnName('supply')}.`);
+      // ESC STICK programming needs a beep source as well: the PD mini alone does not enable it.
+      await expect(warning).toContainText(`Functions enabled: ${fnName('supply')}.`);
+      await expect(warning).not.toContainText(fnName('stick'));
       await expect(page.locator('#rm-yes')).toHaveText('Remove part');
       await page.keyboard.press('Shift+Tab');
       await page.keyboard.press('Enter');
