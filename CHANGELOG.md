@@ -10,9 +10,9 @@ history is in git.
 
 - Column `throttle (%)` in the MOTOR run log, after `rpm`: the throttle
   the panel commands at the sample, 0 to 100% to 0.1%, for PWM and DShot
-  outputs. On a measured row it is the THROTTLE the IOmcu is sent, on a
-  modelled row the throttle the model runs at, and 0.0 while the motor is
-  not ARMED. A MOTOR file has 24 columns with 3 INA3221 groups. SERVO
+  outputs. On a measured row it is the THROTTLE in force at the IOmcu
+  when the sample was read, the last one it acknowledged; on a modelled
+  row the throttle the model runs at; 0.0 while the motor is not ARMED. A MOTOR file has 24 columns with 3 INA3221 groups. SERVO
   files are unchanged. LOGS reads files without the column
   ([Screens](docs/Screens.md#table-and-what-the-esc-says)).
 

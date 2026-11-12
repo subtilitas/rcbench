@@ -1,9 +1,10 @@
 /*
  * A MOTOR file's commanded throttle (`throttle (%)`, after `rpm`): on an
- * IOmcu's sample the THROTTLE it is sent, 0 while the motor is not ARMED
- * (bench_state_set_throttle_sent()), on the model's the throttle it runs
- * at; written by log_writer_row() to 0.1%, read back by the reader as
- * column "throttle" in % and grouped as Motor.  A file written without the
+ * IOmcu's sample the THROTTLE in force when it was read, the last one the
+ * IOmcu acknowledged, 0 under an ARM that arms no motor (bench_throttle_t);
+ * on the model's the throttle it runs at.  log_writer_row() writes it to
+ * 0.1%, and the reader reads it back as column "throttle" in %, grouped as
+ * Motor.  A file written without the
  * column reads as before.
  *
  * SPDX-License-Identifier: MIT
@@ -200,36 +201,98 @@ TEST_CASE(the_throttle_is_clamped_and_one_not_finite_is_none)
     CHECK_STR_EQ(got, "0.1");
 }
 
-TEST_CASE(an_iomcu_sample_takes_the_throttle_it_is_sent)
+/*
+ * One poll of the control task as the panel makes it: the sample is asked
+ * (bench_throttle_sample()), read, then the control page is written with
+ * the THROTTLE a command of this pass set, then the row is taken.
+ */
+typedef struct {
+    bool acked;           /* the IOmcu acknowledges the control write */
+    bool throttle_armed;  /* the ARM written arms the throttle outputs */
+    uint16_t hundredths;  /* the THROTTLE written */
+} pass_t;
+
+static float pass_row(bench_throttle_t *t, const pass_t *p)
 {
+    bench_throttle_sample(t);
+    bench_state_t b = measured(5000.0f);   /* the BENCH read */
+    bench_throttle_written(t, p->acked, p->throttle_armed, p->hundredths);
+    bench_throttle_to_row(t, &b);
+    return b.throttle_ok ? b.throttle_pct : -1.0f;
+}
+
+TEST_CASE(a_throttle_written_in_one_pass_is_on_the_next_passes_row)
+{
+    bench_throttle_t t;
+    bench_throttle_reset(&t);
     /* LINK_CT_THROTTLE is in 0.01% steps, the same for PWM and DShot. */
-    bench_state_t b = measured(8000.0f);
-    bench_state_set_throttle_sent(&b, true, 4250u);
-    CHECK(b.throttle_ok);
-    CHECK_NEAR(b.throttle_pct, 42.5f, 1e-4f);
-    bench_state_set_throttle_sent(&b, true, (uint16_t)LINK_THROTTLE_MAX);
-    CHECK_NEAR(b.throttle_pct, 100.0f, 1e-4f);
-    bench_state_set_throttle_sent(&b, true, 12000u);
-    CHECK_NEAR(b.throttle_pct, 100.0f, 1e-4f);
-    bench_state_set_throttle_sent(&b, true, 1u);
-    CHECK_NEAR(b.throttle_pct, 0.01f, 1e-5f);
-    /* Not ARMED: 0%, a figure and not an empty cell. */
-    bench_state_set_throttle_sent(&b, false, 4250u);
-    CHECK(b.throttle_ok);
-    CHECK_NEAR(b.throttle_pct, 0.0f, 1e-6f);
+    const pass_t up = { true, true, 4250u };
+    CHECK_NEAR(pass_row(&t, &up), 0.0f, 1e-6f);    /* sampled before */
+    CHECK_NEAR(pass_row(&t, &up), 42.5f, 1e-4f);
+    const pass_t more = { true, true, 7000u };
+    CHECK_NEAR(pass_row(&t, &more), 42.5f, 1e-4f);
+    CHECK_NEAR(pass_row(&t, &more), 70.0f, 1e-4f);
+    /* Past LINK_THROTTLE_MAX is held to it; one step is 0.01%. */
+    const pass_t over = { true, true, 12000u };
+    (void)pass_row(&t, &over);
+    CHECK_NEAR(pass_row(&t, &over), 100.0f, 1e-4f);
+    const pass_t step = { true, true, 1u };
+    (void)pass_row(&t, &step);
+    CHECK_NEAR(pass_row(&t, &step), 0.01f, 1e-5f);
+}
+
+TEST_CASE(a_refused_or_unanswered_write_keeps_the_throttle_in_force)
+{
+    bench_throttle_t t;
+    bench_throttle_reset(&t);
+    const pass_t on = { true, true, 3000u };
+    (void)pass_row(&t, &on);
+    CHECK_NEAR(pass_row(&t, &on), 30.0f, 1e-4f);
+    /* A NACK, or no answer: the IOmcu holds what it held. */
+    const pass_t refused = { false, true, 9000u };
+    CHECK_NEAR(pass_row(&t, &refused), 30.0f, 1e-4f);
+    CHECK_NEAR(pass_row(&t, &refused), 30.0f, 1e-4f);
+    const pass_t refused_off = { false, false, 0u };
+    CHECK_NEAR(pass_row(&t, &refused_off), 30.0f, 1e-4f);
+    CHECK_NEAR(pass_row(&t, &refused_off), 30.0f, 1e-4f);
+    /* Answered again: in force from the row after. */
+    const pass_t back = { true, true, 9000u };
+    CHECK_NEAR(pass_row(&t, &back), 30.0f, 1e-4f);
+    CHECK_NEAR(pass_row(&t, &back), 90.0f, 1e-4f);
+}
+
+TEST_CASE(an_arm_of_0_written_puts_0_in_force)
+{
+    bench_throttle_t t;
+    bench_throttle_reset(&t);
+    const pass_t on = { true, true, 6000u };
+    (void)pass_row(&t, &on);
+    CHECK_NEAR(pass_row(&t, &on), 60.0f, 1e-4f);
+    /* The poll writes ARM = 0 (a stop, a disarm asked, a release owed)
+     * while the panel's THROTTLE still reads 60%: 0 is in force, a figure
+     * and not an empty cell. */
+    const pass_t held = { true, false, 6000u };
+    CHECK_NEAR(pass_row(&t, &held), 60.0f, 1e-4f);
+    CHECK_NEAR(pass_row(&t, &held), 0.0f, 1e-6f);
+    /* A row of a measured sample with 0 in force reads 0.0. */
     log_writer_t w = writer();
+    bench_state_t b = measured(0.0f);
+    bench_throttle_sample(&t);
+    bench_throttle_to_row(&t, &b);
     CHECK(log_writer_row(&w, 0.0f, &b));
-    bench_state_set_throttle_sent(&b, true, 3333u);
-    CHECK(log_writer_row(&w, 0.05f, &b));
     char got[32];
     cell_of(1u, 5u, got, sizeof(got));
     CHECK_STR_EQ(got, "0.0");
-    cell_of(2u, 5u, got, sizeof(got));
-    CHECK_STR_EQ(got, "33.3");
-    char line[LOG_WRITER_LINE_MAX];
-    line_of(2u, line, sizeof(line));
-    CHECK(strstr(line, ";measured") != NULL);
-    bench_state_set_throttle_sent(NULL, true, 100u);
+    /* The link's edge: nothing in force until a write is acknowledged. */
+    (void)pass_row(&t, &on);
+    bench_throttle_reset(&t);
+    CHECK_NEAR(pass_row(&t, &on), 0.0f, 1e-6f);
+    /* NULL does nothing. */
+    bench_throttle_reset(NULL);
+    bench_throttle_written(NULL, true, true, 100u);
+    bench_throttle_sample(NULL);
+    bench_throttle_to_row(NULL, &b);
+    bench_throttle_to_row(&t, NULL);
 }
 
 TEST_CASE(the_model_writes_the_throttle_it_runs_at)
@@ -360,7 +423,9 @@ int main(void)
 {
     RUN(a_motor_row_carries_the_commanded_throttle);
     RUN(the_throttle_is_clamped_and_one_not_finite_is_none);
-    RUN(an_iomcu_sample_takes_the_throttle_it_is_sent);
+    RUN(a_throttle_written_in_one_pass_is_on_the_next_passes_row);
+    RUN(a_refused_or_unanswered_write_keeps_the_throttle_in_force);
+    RUN(an_arm_of_0_written_puts_0_in_force);
     RUN(the_model_writes_the_throttle_it_runs_at);
     RUN(a_row_of_a_window_alone_has_no_throttle);
     RUN(a_file_without_the_throttle_column_still_reads);

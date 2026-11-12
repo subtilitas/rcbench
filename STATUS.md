@@ -178,11 +178,12 @@ Built: a run is written while ARMED, or while the supply's output is on with the
 in the format the viewer reads. The log of a bench in ARMED has one row per sample the
 control task takes (an answered BENCH read with the link up, a 50ms model step with it down)
 and its time column is the wall time since the switch to ARMED; a MOTOR file writes
-`throttle (%)` after `rpm` to 0.1%: the THROTTLE the IOmcu is sent while the motor is ARMED
-and 0 otherwise, or with the link down the throttle the model runs at
-(`bench_state_set_throttle_sent()`, `bench_state_set_throttle()` in
-`shared/bench/bench_state.c`; host-tested in `test_log_throttle`, with a file without the
-column read as before; the panel's call in `panel_poll.c` is not host-tested); a run armed from SERVO takes
+`throttle (%)` after `rpm` to 0.1%: the THROTTLE in force at the IOmcu when the sample was
+read, the last one it acknowledged and 0 under an ARM of 0 or of the surfaces alone, or with
+the link down the throttle the model runs at (`bench_throttle_t`, `bench_state_set_throttle()`
+in `shared/bench/bench_state.c`; host-tested in `test_log_throttle`, with a file without the
+column read as before; the panel's calls in `panel_poll.c` and `panel_link.c` are not
+host-tested); a run armed from SERVO takes
 `voltage`, `current`, `power`, `charge` and `energy` from the servo rail's meter (the
 INA3221 channel's newest window while it is the meter, the supply's last reading otherwise)
 and the panel's count of it since the arm, has no `throttle` column, and writes `pulse (us)`

@@ -1117,9 +1117,14 @@ shows.
 `throttle` is the throttle the panel commands at the sample, 0 to 100%,
 written to 0.1%. It is the same figure for PWM and DShot outputs:
 
-- On a `measured` row it is the THROTTLE the IOmcu is sent, in 0.01%
-  steps. The IOmcu drives it without Ramp limit. The delay from the
-  command to the pin is not measured.
+- On a `measured` row it is the THROTTLE in force at the IOmcu when the
+  panel read the sample, in 0.01% steps: the last one the IOmcu
+  acknowledged. The IOmcu drives it without Ramp limit. A throttle the
+  panel writes after that read, in the same poll, is on the next row. A
+  write the IOmcu refuses or does not answer changes nothing. A write of
+  ARM = 0, such as after STOP, puts 0 in force. The delay from the write
+  to the pin is not measured. A failsafe the IOmcu enters on its own,
+  without a write, is not seen.
 - On a `model` row it is the throttle the model runs at: the command after
   Ramp limit.
 - It is 0.0 while the motor is not ARMED.

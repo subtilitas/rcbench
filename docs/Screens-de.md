@@ -1208,10 +1208,15 @@ auf MOTOR & ESC.
 vorgibt, 0 bis 100%, geschrieben auf 0,1%. Für PWM- und DShot-Ausgänge ist
 es derselbe Wert:
 
-- In einer `measured`-Zeile ist es das THROTTLE, das der IOmcu
-  geschickt bekommt, in Schritten von 0,01%. Der IOmcu gibt es ohne
-  Rampengrenze aus. Die Verzögerung vom Befehl bis zum Pin ist nicht
-  gemessen.
+- In einer `measured`-Zeile ist es das THROTTLE, das beim IOmcu gilt,
+  als das Panel die Abtastung liest, in Schritten von 0,01%: das letzte,
+  das der IOmcu bestätigt hat. Der IOmcu gibt es ohne Rampengrenze aus.
+  Ein Gas, das das Panel nach diesem Lesen in derselben Abfrage schreibt,
+  steht in der nächsten Zeile. Ein Schreiben, das der IOmcu ablehnt oder
+  nicht beantwortet, ändert nichts. Ein Schreiben von ARM = 0, etwa nach
+  STOP, setzt 0. Die Verzögerung vom Schreiben bis zum Pin ist nicht
+  gemessen. Einen Failsafe, den der IOmcu ohne Schreiben selbst einnimmt,
+  sieht das Panel nicht.
 - In einer `model`-Zeile ist es das Gas, mit dem das Modell läuft: der
   Befehl nach der Rampengrenze.
 - Solange der Motor nicht ARMED ist, steht 0.0 darin.

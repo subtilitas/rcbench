@@ -178,10 +178,37 @@ void bench_state_set_throttle(bench_state_t *b, float pct)
     b->throttle_ok  = true;
 }
 
-void bench_state_set_throttle_sent(bench_state_t *b, bool armed,
-                                   uint16_t hundredths)
+void bench_throttle_reset(bench_throttle_t *t)
 {
-    bench_state_set_throttle(b, armed ? (float)hundredths / 100.0f : 0.0f);
+    if (t != NULL) {
+        t->in_force = 0u;
+        t->sampled  = 0u;
+    }
+}
+
+void bench_throttle_written(bench_throttle_t *t, bool acked,
+                            bool throttle_armed, uint16_t hundredths)
+{
+    if (t == NULL || !acked) {
+        return;   /* refused or unanswered: what was in force still is */
+    }
+    const uint16_t h = (hundredths > LINK_THROTTLE_MAX)
+                       ? (uint16_t)LINK_THROTTLE_MAX : hundredths;
+    t->in_force = throttle_armed ? h : 0u;
+}
+
+void bench_throttle_sample(bench_throttle_t *t)
+{
+    if (t != NULL) {
+        t->sampled = t->in_force;
+    }
+}
+
+void bench_throttle_to_row(const bench_throttle_t *t, bench_state_t *b)
+{
+    if (t != NULL) {
+        bench_state_set_throttle(b, (float)t->sampled / 100.0f);
+    }
 }
 
 void bench_state_reset_peaks(bench_state_t *b)

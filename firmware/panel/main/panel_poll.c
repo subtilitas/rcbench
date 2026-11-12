@@ -76,6 +76,9 @@ static void iface_pins_publish(bool up)
  */
 static bool poll_bench(bench_state_t *bench)
 {
+    /* The sample's throttle is the one in force as it is read, not the
+     * one this poll's control write sends after it. */
+    bench_throttle_sample(&s_bench_throttle);
     const bool answered = read_bench(&s_host, bench);
     if (answered) {
         link_msg_t ack = { 0 };
@@ -400,6 +403,8 @@ void read_outputs_binding(void)
  */
 static void link_came_up(const link_msg_t *reply)
 {
+    /* Nothing in force until a control write is acknowledged. */
+    bench_throttle_reset(&s_bench_throttle);
     /*
      * Who answered, before anything is decoded against it.
      *
@@ -682,6 +687,8 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
         } else if (*link_up) {
             /* The edge: it was up until this poll. */
             atomic_store(&s_link_lost_ms, now_ms());
+            /* The far end fails safe on its own silence. */
+            bench_throttle_reset(&s_bench_throttle);
             /* The identity probes go unnumbered: whoever answers next may
              * be an IOmcu older than 4.37, which refuses a numbered frame,
              * or the image an update has just started. */
@@ -840,6 +847,10 @@ static void servo_window_take(bench_state_t *bench)
     }
 }
 
+/** @brief The THROTTLE in force at the IOmcu (bench_throttle_t), for the
+ *         log's rows.  Zero-initialised: nothing in force. */
+bench_throttle_t s_bench_throttle;
+
 /** @brief The pulse and the angle the render side last handed over
  *         (log_servo_pack()), none until it does. */
 atomic_uint s_servo_log = 0x8000u;
@@ -893,15 +904,13 @@ void advance_model_and_log(bool link_up, float emitted,
         *new_sample = true;
     }
     /*
-     * The log's `throttle (%)`: on the IOmcu's sample the THROTTLE it is
-     * sent, which it drives unramped; on the model's the throttle the model
-     * ran at, after Ramp limit, which telemetry_sim_step() set.  0 while
-     * the motor is not ARMED.
+     * The log's `throttle (%)`: on the IOmcu's sample the THROTTLE in force
+     * when it was read, which the IOmcu drives unramped; on the model's the
+     * throttle the model ran at, after Ramp limit, which
+     * telemetry_sim_step() set.
      */
     if (link_up) {
-        bench_state_set_throttle_sent(
-            bench, outputs_role_armed(&s_out, OUT_ROLE_THROTTLE),
-            s_throttle_hundredths);
+        bench_throttle_to_row(&s_bench_throttle, bench);
     }
     /*
      * The run's totals, from the sample either source just wrote, over the
