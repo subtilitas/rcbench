@@ -25,6 +25,7 @@
 extern "C" {
 #endif
 
+/** @brief The groups SETUP lists settings in. */
 typedef enum {
     SET_CAT_APP = 0,     /**< theme, brightness, rotation, language,
                               time zone, dimming, plot; units hold a
@@ -55,6 +56,7 @@ typedef enum {
  */
 #define SET_CAT_SETUP_COUNT SET_CAT_ESC
 
+/** @brief How a value is kept, stepped and shown. */
 typedef enum {
     SET_TYPE_INT = 0,
     SET_TYPE_FLOAT,
@@ -257,10 +259,11 @@ typedef struct {
 /** Called after any value actually changes, so the app can act on it. */
 typedef void (*settings_observer_fn)(setting_id_t id);
 
-/*
- * A few short strings beside the numbers, kept by the same store and saved
- * by the same request.  A string holds up to SETTINGS_TEXT_MAX - 1
- * characters.
+/**
+ * @brief The string settings: a few short strings beside the numbers, kept by
+ * the same store and saved by the same request.
+ *
+ * A string holds up to SETTINGS_TEXT_MAX - 1 characters.
  */
 typedef enum {
     SET_TEXT_DUT_NAME = 0,   /**< the device under test, for the report */
@@ -273,39 +276,67 @@ typedef enum {
     SETTING_TEXT_COUNT
 } setting_text_id_t;
 
+/** @brief Bytes of a string setting, the terminator included. */
 #define SETTINGS_TEXT_MAX 24
 
 /** Called after a string actually changes, as settings_observer_fn is
  *  for a value: an edit, a discard, a reset and the load at start-up. */
 typedef void (*settings_text_observer_fn)(setting_text_id_t id);
 
+/** @brief The medium the settings are kept on. */
 typedef struct {
+    /** @brief Read the values.  @p count is SETTING_COUNT; true when read. */
     bool (*load)(float *values, int count);
-    /*
+    /**
+     * @brief Write the values.  @p count is SETTING_COUNT.
+     *
      * True only if every value reached the medium.  A store that cannot
      * say so cannot be believed: the model keeps the edit and the screen
      * goes on offering the write, rather than reporting a save that did
      * not happen and refusing the retry that would notice.
      */
     bool (*save)(const float *values, int count);
-    /* The strings, under the same rules; NULL in a store that keeps none,
-     * which then keeps them for the session only. */
+    /**
+     * @brief Read the strings, under the same rules.  @p count is
+     * SETTING_TEXT_COUNT.
+     *
+     * NULL in a store that keeps none, which then keeps them for the session
+     * only.
+     */
     bool (*load_text)(char (*texts)[SETTINGS_TEXT_MAX], int count);
+    /** @brief Write the strings, under the same rules as save(). */
     bool (*save_text)(const char (*texts)[SETTINGS_TEXT_MAX], int count);
 } settings_store_t;
 
-/** Reset to defaults, then load from the store if one is set. */
+/** @brief Reset to defaults, then load from the store if one is set. */
 void settings_init(void);
 
+/**
+ * @brief Set the medium.
+ * @param store  The store; NULL for none.
+ */
 void settings_set_store(const settings_store_t *store);
+/**
+ * @brief Set who is told of a changed value.
+ * @param fn  Called after a value changes; NULL for none.
+ */
 void settings_set_observer(settings_observer_fn fn);
+/**
+ * @brief Set who is told of a changed string.
+ * @param fn  Called after a string changes; NULL for none.
+ */
 void settings_set_text_observer(settings_text_observer_fn fn);
 
-/** Whether a setting is held: something in use depends on the value as it
- *  is. */
+/** @brief Whether a setting is held: something in use depends on the value as
+ *  it is. */
 typedef bool (*settings_hold_fn)(setting_id_t id);
-/** Who says which settings are held, or NULL for none.  Asked at every
- *  change, so a hold begins and ends with what it names. */
+/**
+ * @brief Who says which settings are held.
+ *
+ * Asked at every change, so a hold begins and ends with what it names.
+ *
+ * @param fn  The source; NULL for none.
+ */
 void settings_set_hold(settings_hold_fn fn);
 /**
  * @brief Whether @p id is held now: settings_set(), settings_adjust(),
@@ -347,11 +378,22 @@ void settings_set_armed(settings_armed_fn fn);
  */
 bool settings_safe_only(setting_id_t id);
 
+/**
+ * @brief A setting's schema row.
+ * @param id  The setting.
+ * @return The row; NULL for an id out of range.
+ */
 const setting_def_t *settings_def(setting_id_t id);
 
-/** Whether @p id follows another setting: settings_set() and
- *  settings_adjust() leave it, and SETUP draws its row without keys.
- *  Sensor SCL, which is the GPIO after Sensor SDA. */
+/**
+ * @brief Whether @p id follows another setting.
+ *
+ * settings_set() and settings_adjust() leave it, and SETUP draws its row
+ * without keys.  Sensor SCL is derived: the GPIO after Sensor SDA.
+ *
+ * @param id  The setting.
+ * @return true for Sensor SCL.
+ */
 bool settings_derived(setting_id_t id);
 
 /**
@@ -414,31 +456,67 @@ const char *settings_help(setting_id_t id);
  */
 int settings_option_list(setting_id_t id);
 
+/**
+ * @brief A setting's value.
+ * @param id  The setting.
+ * @return The value, or the one settings_fix() holds it at; 0 for an id out
+ *         of range.
+ */
 float settings_get(setting_id_t id);
+/**
+ * @brief A setting's value as an int, rounded.
+ * @param id  The setting.
+ * @return The value; 0 for an id out of range.
+ */
 int   settings_get_int(setting_id_t id);
+/**
+ * @brief A setting's value as a bool.
+ * @param id  The setting.
+ * @return true when the value is not 0.
+ */
 bool  settings_get_bool(setting_id_t id);
 
-/** Clamped to the schema; enums wrap. Fires the observer when it changes.
- *  A derived setting and a held one are left as they are. */
+/**
+ * @brief Set a value, fitted to the schema.
+ *
+ * A number is clamped to its range and snapped to its step, and an enum or a
+ * pin out of its range takes the default.  Fires the observer when the value
+ * changes.  A derived setting and a held one are left as they are.
+ *
+ * @param id     The setting.
+ * @param value  The value.
+ */
 void settings_set(setting_id_t id, float value);
-/** Step by @p steps increments.  A number stops at its range's ends.
- *  Booleans and enums cycle (settings_cycles()), except the INA228 and
- *  INA3221 addresses, which stop at the first and the last of their list.
- *  Sensor SDA steps from one value settings_sense_sda_valid() takes to the
- *  next and stops at the first and the last.  PD mini TX and PD mini RX
- *  step over the GPIO the other holds, so a step never sets them to one
- *  pin; with that GPIO at the end of the range the step stays where it
- *  is.  -1, not wired, is a step for both. */
+/**
+ * @brief Step a value by @p steps increments.
+ *
+ * A number stops at its range's ends.  Booleans and enums cycle
+ * (settings_cycles()), except the INA228 and INA3221 addresses, which stop at
+ * the first and the last of their list.  Sensor SDA steps from one value
+ * settings_sense_sda_valid() takes to the next and stops at the first and the
+ * last.  PD mini TX and PD mini RX step over the GPIO the other holds, so a
+ * step never sets them to one pin; with that GPIO at the end of the range the
+ * step stays where it is.  -1, not wired, is a step for both.
+ *
+ * @param id     The setting.
+ * @param steps  Increments, negative for down.
+ */
 void settings_adjust(setting_id_t id, int steps);
 
-/** Whether settings_adjust() wraps @p id round from one end to the other:
- *  a switch or a choice, drawn with < and > keys.  False for a number and
- *  for the monitors' addresses, which stop at their ends and are drawn
- *  with - and + keys; false for an id out of range. */
+/**
+ * @brief Whether settings_adjust() wraps @p id round from one end to the
+ * other: a switch or a choice, drawn with < and > keys.
+ *
+ * False for a number and for the monitors' addresses, which stop at their ends
+ * and are drawn with - and + keys.
+ *
+ * @param id  The setting.
+ * @return true when it wraps; false for an id out of range.
+ */
 bool settings_cycles(setting_id_t id);
 
 /**
- * Whether Sensor SDA takes @p gpio: -1, the bus's pins not set, or an
+ * @brief Whether Sensor SDA takes @p gpio: -1, the bus's pins not set, or an
  * IOmcu GPIO the sensor bus can have its SDA on with SCL on the GPIO
  * after it.  That is one I2C block's pair, link_sn_pins_pair() -- the rule
  * the IOmcu's SENSE page judges a write by -- on two pins the
@@ -446,6 +524,9 @@ bool settings_cycles(setting_id_t id);
  * mask the IOmcu reserves at boot.  0, 4, 6, 14, 16, 18, 20 and 26.
  * A pin an output, the supply or the phase tap holds is not known here;
  * the page refuses it and SETUP marks the row.
+ *
+ * @param gpio  An IOmcu GPIO number, or -1.
+ * @return true when Sensor SDA takes it.
  */
 bool settings_sense_sda_valid(int gpio);
 
@@ -463,15 +544,22 @@ bool settings_sense_sda_valid(int gpio);
 bool settings_tap_pin_valid(int gpio);
 
 /**
- * Whether PD mini TX and PD mini RX hold one GPIO, 0 or above.  The steps
- * never set that; a stored set-up can hold it.  The panel writes such a
- * wiring to the SUPPLY page disabled (supply_link.c), so the PD mini
+ * @brief Whether PD mini TX and PD mini RX hold one GPIO, 0 or above.
+ *
+ * The steps never set that; a stored set-up can hold it.  The panel writes
+ * such a wiring to the SUPPLY page disabled (supply_link.c), so the PD mini
  * stays off, and SETUP marks both rows.
+ *
+ * @return true when both hold the same GPIO.
  */
 bool settings_pdmini_same_pin(void);
 
-/** Restore one category, or all of them, to the schema defaults: its
- *  values and its strings (settings_text_category()). */
+/**
+ * @brief Restore one category to the schema defaults: its values and its
+ * strings (settings_text_category()).
+ *
+ * @param cat  The category.
+ */
 void settings_reset(setting_cat_t cat);
 /**
  * @brief Settings back to their defaults, as settings_reset() does for a
@@ -481,9 +569,20 @@ void settings_reset(setting_cat_t cat);
  * @param n   How many.
  */
 void settings_reset_rows(const setting_id_t *ids, int n);
+/**
+ * @brief Restore every value and string to the schema defaults; a held row
+ * stays.
+ */
 void settings_reset_all(void);
 
-/** Ids in a category, in schema order.  Returns how many there are. */
+/**
+ * @brief The ids in a category, in schema order.
+ *
+ * @param cat  The category.
+ * @param out  Receives the ids, up to @p max of them; may be NULL.
+ * @param max  Capacity of @p out.
+ * @return How many ids the category has, also past @p max.
+ */
 int settings_in_category(setting_cat_t cat, setting_id_t *out, int max);
 
 /**
@@ -515,18 +614,41 @@ const char *settings_value_text(setting_id_t id, char *buf, size_t n);
 const char *settings_value_text_of(setting_id_t id, float value, char *buf,
                                    size_t n);
 
-/** The category a string is set in on SETUP, or SET_CAT_COUNT for one
- *  set elsewhere: the DUT name, on SERVO > SETTINGS. */
+/**
+ * @brief The category a string is set in on SETUP.
+ * @param id  The string.
+ * @return The category, or SET_CAT_COUNT for one set elsewhere: the DUT name,
+ *         on SERVO > SETTINGS.
+ */
 setting_cat_t settings_text_category(setting_text_id_t id);
-/** The strings of @p cat, in id order.  Returns how many there are. */
+/**
+ * @brief The strings of @p cat, in id order.
+ * @param cat  The category.
+ * @param out  Receives the ids, up to @p max of them; may be NULL.
+ * @param max  Capacity of @p out.
+ * @return How many strings the category has.
+ */
 int settings_texts_in_category(setting_cat_t cat, setting_text_id_t *out,
                                int max);
 
-/** A string setting.  Never NULL. */
+/**
+ * @brief A string setting.
+ * @param id  The string.
+ * @return The text; "" for an id out of range.  Never NULL.
+ */
 const char *settings_text(setting_text_id_t id);
-/** Its NVS key, 15 characters or fewer.  NULL for an id out of range. */
+/**
+ * @brief A string's NVS key, 15 characters or fewer.
+ * @param id  The string.
+ * @return The key; NULL for an id out of range.
+ */
 const char *settings_text_key(setting_text_id_t id);
-/** Set it, cut to SETTINGS_TEXT_MAX - 1 characters; an edit like any other. */
+/**
+ * @brief Set a string, cut to SETTINGS_TEXT_MAX - 1 characters; an edit like
+ * any other.
+ * @param id    The string.
+ * @param text  The text.
+ */
 void settings_set_text(setting_text_id_t id, const char *text);
 
 /**
@@ -554,14 +676,22 @@ int settings_forget_retired(settings_forget_fn forget);
 const char *settings_retired_key(int i);
 
 #ifdef ESP_PLATFORM
-/** NVS-backed store; pass to settings_set_store() before settings_init(). */
+/**
+ * @brief NVS-backed store; pass to settings_set_store() before
+ * settings_init().
+ * @return The store.
+ */
 const settings_store_t *settings_nvs_store(void);
 #endif
 
 /**
- * Whether the values in force differ from the stored copy, or the copy is
- * not known to be the medium: true after a refused save until a save
- * succeeds.  An edit back to the stored value leaves it false.
+ * @brief Whether the values in force differ from the stored copy, or the copy
+ * is not known to be the medium.
+ *
+ * True after a refused save until a save succeeds.  An edit back to the
+ * stored value leaves it false.
+ *
+ * @return true when there is something to write.
  */
 bool settings_dirty(void);
 
@@ -574,40 +704,66 @@ bool settings_dirty(void);
  * the copy as it was.
  */
 
-/** The stored value of @p id; 0 for an id out of range. */
+/**
+ * @brief The stored value of @p id.
+ * @param id  The setting.
+ * @return The value; 0 for an id out of range.
+ */
 float settings_stored(setting_id_t id);
-/** The stored string of @p id; "" for an id out of range.  Never NULL. */
+/**
+ * @brief The stored string of @p id.
+ * @param id  The string.
+ * @return The text; "" for an id out of range.  Never NULL.
+ */
 const char *settings_stored_text(setting_text_id_t id);
-/** Whether the value of @p id in force differs from its stored value. */
+/**
+ * @brief Whether the value of @p id in force differs from its stored value.
+ * @param id  The setting.
+ * @return true when it differs.
+ */
 bool settings_differs(setting_id_t id);
-/** Whether the string of @p id differs from its stored string. */
+/**
+ * @brief Whether the string of @p id differs from its stored string.
+ * @param id  The string.
+ * @return true when it differs.
+ */
 bool settings_text_differs(setting_text_id_t id);
-/** How many values and strings differ from their stored ones. */
+/**
+ * @brief How many values and strings differ from their stored ones.
+ * @return The count.
+ */
 int settings_changes(void);
 
 /**
- * Put every changed value and string back to its stored one, by
+ * @brief Put every changed value and string back to its stored one, by
  * settings_set() and settings_set_text(): the observer hears each value
  * that moves as it hears an edit by hand, in schema order.  A held value is
  * left, as settings_set() leaves it; a derived one follows its source.
  * After a refused save, when the medium can hold part of that write, it
  * also asks for a save (settings_request_save()), so a restart loads the
- * values put back.  Returns how many values and strings still differ: the
- * held ones.
+ * values put back.
+ *
+ * @return How many values and strings still differ: the held ones.
  */
 int settings_discard(void);
 
-/** Persist through the store and clear the dirty flag. */
-/*
- * Write the values through the store.  True if the store took them.  False
- * if there is no store, or the store refused: the values stay dirty, the
+/**
+ * @brief Write the values through the store and clear the dirty flag.
+ *
+ * If there is no store, or the store refused, the values stay dirty, the
  * request is answered so the button offers the write again, and
  * settings_save_failed() stands until the next successful save or the next
  * edit.
+ *
+ * @return true if the store took them.
  */
 bool settings_save(void);
 
-/** Whether the last attempt failed and nothing has been written since. */
+/**
+ * @brief Whether the last attempt failed and nothing has been written since.
+ * @return true after a failed save, until a save succeeds or a value is
+ *         edited.
+ */
 bool settings_save_failed(void);
 
 /* ------------------------------------------------------- asking to save */
@@ -623,14 +779,20 @@ bool settings_save_failed(void);
  */
 void settings_request_save(void);
 
-/** Whether a save has been asked for and not yet taken. */
+/**
+ * @brief Whether a save has been asked for and not yet taken.
+ * @return true while one stands.
+ */
 bool settings_save_asked(void);
 
 /**
- * Take the save if one was asked for and @p safe says now will do.
+ * @brief Take the save if one was asked for and @p safe says now will do.
  *
- * Returns true when it wrote. Call it wherever the application knows the
- * bench is idle -- an armed bench is not the moment to stop both cores.
+ * Call it wherever the application knows the bench is idle -- an armed bench
+ * is not the moment to stop both cores.
+ *
+ * @param safe  true when a flash write is survivable now.
+ * @return true when it wrote.
  */
 bool settings_save_tick(bool safe);
 

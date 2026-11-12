@@ -59,7 +59,9 @@ extern "C" {
  *        and LIMIT.  @p a is 0 to 3, @p c 0 to 11.
  */
 #define SET_INA_FIT(a) ((setting_id_t)(SET_INA_FIT_0 + (int)(a)))
+/** @brief Channel @p c's WATCHES row, 0 to 11. */
 #define SET_INA_W(c)   ((setting_id_t)(SET_INA_CH_0 + (int)(c) * SET_INA_CH_ROWS))
+/** @brief Channel @p c's SHUNT row, 0 to 11. */
 #define SET_INA_SH(c)  ((setting_id_t)(SET_INA_CH_0 + (int)(c) * SET_INA_CH_ROWS + 1))
 /** @brief Channel @p c's LIMIT row, 0 to 11. */
 #define SET_INA_LIM(c) ((setting_id_t)(SET_INA_CH_0 + (int)(c) * SET_INA_CH_ROWS + 2))
@@ -92,18 +94,33 @@ _Static_assert(SET_INA_PARTS == (int)LINK_SM_PARTS
                && SET_INA_CHANNELS == (int)LINK_SM_CHANNELS,
                "SENSORS has the parts and channels SENSE_MAP has");
 
-/** The schema row of @p id: a SENSORS row, or one of the four kept keys of
- *  0.21; NULL for any other id. */
+/**
+ * @brief The schema row of @p id.
+ * @param id  The setting.
+ * @return A SENSORS row, or one of the four kept keys of 0.21; NULL for any
+ *         other id.
+ */
 const setting_def_t *settings_sensors_def(setting_id_t id);
 
-/** Whether @p id is a SENSORS row. */
+/**
+ * @brief Whether @p id is a SENSORS row.
+ * @param id  The setting.
+ * @return true for a SENSORS row.
+ */
 bool settings_sensors_row(setting_id_t id);
 
-/** The part, 0 to 3, a SENSORS row belongs to; -1 for any other id. */
+/**
+ * @brief The part a SENSORS row belongs to.
+ * @param id  The setting.
+ * @return The part, 0 to 3; -1 for any other id.
+ */
 int settings_sensors_part(setting_id_t id);
 
-/** The SENSE_MAP WATCH value of WATCHES option @p option; NONE for one out
- *  of range. */
+/**
+ * @brief The SENSE_MAP WATCH value of a WATCHES option.
+ * @param option  The option, SENS_W_*.
+ * @return The value; NONE for one out of range.
+ */
 uint16_t settings_sensors_watch_code(int option);
 
 /**
@@ -122,20 +139,23 @@ int settings_sensors_watch_option(uint16_t code);
 uint16_t settings_sensors_limit_ma(int c);
 
 /**
- * Before the store is read: every SENSORS value set to NAN, a value no
+ * @brief Before the store is read: set every SENSORS value to NAN, a value no
  * store holds, so settings_sensors_migrate() can tell a key the store did
- * not have.  @p values is the model's array of SETTING_COUNT.
+ * not have.
+ * @param values  The model's array of SETTING_COUNT.
  */
 void settings_sensors_unset(float *values);
 
 /**
- * After the store is read and its values coerced: every SENSORS value
- * still NAN seeded from the old INA3221 keys and the servo tester's
- * target, as the file comment says.  Returns how many were seeded.
+ * @brief After the store is read and its values coerced: seed every SENSORS
+ * value still NAN from the old INA3221 keys and the servo tester's target, as
+ * the file comment says.
+ * @param values  The model's array of SETTING_COUNT.
+ * @return How many were seeded.
  */
 int settings_sensors_migrate(float *values);
 
-/** The map the SENSORS rows make, with the frame an older IOmcu takes. */
+/** @brief The map the SENSORS rows make, with the frame an older IOmcu takes. */
 typedef struct {
     /** SENSE_MAP registers 0 to 25 as asked. */
     uint16_t regs[LINK_SM_KEPT];
@@ -155,9 +175,9 @@ typedef struct {
      *        to read; the frame then holds 0x40,
      *  100.0mOhm and CH1, values the page takes. */
     bool     one_on;
-    uint8_t  one_addr;
-    uint16_t one_dmohm;
-    uint8_t  one_ch;
+    uint8_t  one_addr;    /**< that part's I2C address, 0x40 + the part */
+    uint16_t one_dmohm;   /**< the shunt, 0.1mOhm */
+    uint8_t  one_ch;      /**< the channels read, bit 0 for CH1 */
 } settings_sensors_map_t;
 
 /**
@@ -185,11 +205,17 @@ void settings_sensors_map(settings_sensors_map_t *m);
  */
 bool settings_sensors_set_tester_rail(uint16_t code);
 
-/** settings_sensors_map()'s FAST: the channel watching the servo tester's
- *  target, LINK_SM_FAST_NONE for none. */
+/**
+ * @brief settings_sensors_map()'s FAST: the channel watching the servo
+ * tester's target.
+ * @return The channel; LINK_SM_FAST_NONE for none.
+ */
 uint8_t settings_sensors_fast(void);
 
-/** The fitted parts: bit a for 0x40 + a. */
+/**
+ * @brief The fitted parts.
+ * @return A bit mask: bit a for 0x40 + a.
+ */
 uint8_t settings_sensors_fitted(void);
 
 /**
