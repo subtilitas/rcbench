@@ -1,0 +1,20 @@
+<!doctype html>
+<!-- The video player: draws one frame of a storyboard for a given time.
+     tools/video/make_video.py serves it and capture.js screenshots it.
+     SPDX-License-Identifier: MIT -->
+<html><head><meta charset="utf-8"><title>rcbench video</title>
+<script type="importmap">{"imports":{"three":"/node_modules/three/build/three.module.js","three/addons/":"/node_modules/three/examples/jsm/"}}</script>
+<link rel="stylesheet" href="player.css">
+</head><body>
+<div id="bg"></div><div id="grid"></div>
+<canvas id="gl" width="1920" height="1080"></canvas>
+<div id="title"><div class="k"></div><h1></h1><p></p></div>
+<div id="dev"><img id="s0" alt=""><img id="s1" alt=""></div>
+<div id="pin"></div>
+<div id="bubs"></div>
+<svg id="ov" viewBox="0 0 1920 1080"></svg>
+<div id="end"><h2></h2><ol></ol><p></p></div>
+<div id="top"><div id="brand"></div><div id="chip"><span class="n" id="cn"></span><span id="ct"></span></div></div>
+<div id="dots"></div><div id="bar"></div>
+<script type="module" src="player.js"></script>
+</body></html>

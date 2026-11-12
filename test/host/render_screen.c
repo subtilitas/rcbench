@@ -1031,6 +1031,14 @@ static void hub_view(const char *view)
  * The programmer on SERVO, driven by taps against the simulated servo of
  * kst_sim.h on programming port 1, on KST's screen, which opens the
  * session.  Geometry from kst_panel.h.
+ *
+ * A view with a state before -rbmod, servo-kst-read-rbmod, is that state
+ * on the rbmod carrier with an IOmcu of protocol 4.36: the PORT row names
+ * PROGP01 and the session switches PROG 5V.  tools/video draws its
+ * storyboards from these; no page shows them.  Four states exist for them
+ * only: -idle before CONNECT, -portlist with the READY card's PORT list
+ * open, -typed with the type set as 20k_sel suggests, and -edited with
+ * three values changed and the write switch off.
  */
 static void kst_view(const char *view)
 {
@@ -1045,6 +1053,17 @@ static void kst_view(const char *view)
 
     snprintf(vb, sizeof(vb), "%.*s",
              (int)(expert_off ? fl - (sizeof(k_off) - 1u) : fl), full);
+    const size_t vl = strlen(vb);
+    const bool carrier = vl > 6u && strcmp(vb + vl - 6u, "-rbmod") == 0;
+
+    if (carrier) {
+        vb[vl - 6u] = '\0';
+    }
+    const bool portlist = carrier && strcmp(vb, "-portlist") == 0;
+
+    if (carrier && (portlist || strcmp(vb, "-idle") == 0)) {
+        vb[0] = '\0';
+    }
     const char *v = vb;
     const bool nopage = strcmp(v, "-nopage") == 0;
     const bool cut = strcmp(v, "-doubt") == 0 || strcmp(v, "-journal") == 0
@@ -1095,6 +1114,9 @@ static void kst_view(const char *view)
         const gfx_rect_t r = ui_setlist_row_part(sl, 3, UI_SL_PART_PLUS);
         tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);   /* HV SERVO */
     }
+    if (carrier) {
+        prog_choice_set_far_minor(LINK_MINOR_CARRIER_PWM);
+    }
     ui_router_goto(SCREEN_SERVO_KST);
     /* The tester's drive as the control task reports it: PORT 1 on GP13
      * when SERVO's target is the programmer's port, as program_view() sets
@@ -1106,6 +1128,12 @@ static void kst_view(const char *view)
                                true);
     }
     ui_router_tick(0.02f);
+    if (portlist) {
+        /* The READY card's PORT row. */
+        tap(700, 171);
+        ui_router_tick(0.02f);
+        return;
+    }
     if (v[0] == '\0' || nopage || strcmp(v, "-target") == 0
         || strcmp(v, "-supply") == 0 || strcmp(v, "-supply-on") == 0) {
         return;
@@ -1183,7 +1211,12 @@ static void kst_view(const char *view)
     ktype(strcmp(v, "-type-set") == 0
               ? (kst_prog_type_guess(kst_panel_model()) == 6u ? 8u : 6u)
               : kst_prog_type_guess(kst_panel_model()));
-    if (strcmp(v, "-type-set") == 0) {
+    if (strcmp(v, "-type-set") == 0 || strcmp(v, "-typed") == 0) {
+        return;
+    }
+    if (strcmp(v, "-edited") == 0) {
+        kedits();
+        ui_router_tick(0.02f);
         return;
     }
     if (strcmp(v, "-swapped") == 0) {
@@ -3637,7 +3670,9 @@ static void pose_analyser_views(ui_screen_id_t id, const char *view)
  *        layout-rbmod: LAYOUT with the same binding.  supply-rbmod:
  *        SUPPLY with the PROG PORTS 5V line and the PROG 5V box.
  *        servo-rbmod: LIVE on PROG PORT 1, PROG 5V off.  servo-kst-rbmod:
- *        the KST programmer, the box held by PROG PORT 1.  The -input
+ *        the KST programmer, the box held by PROG PORT 1.  A KST view
+ *        with a state before -rbmod holds the box the same way, except
+ *        -idle and -portlist, which are before CONNECT.  The -input
  *        views: the carrier's input supply read at 5.1V by the PD mini,
  *        supply-rbmod-input SUPPLY with it, servo-kst-rbmod-input KST's
  *        CONNECT refused and its PROG 5V row red.  setup-sensors-rbmod:
@@ -3668,7 +3703,11 @@ static bool pose_carrier_views(ui_screen_id_t id, const char *view)
      * session on PROG PORT 1 holds it on. */
     supply_screen_set_prog_5v((uint8_t)PROG_SUPPLY_OFF, 21u);
     prog5v_box_publish_input(strstr(view, "-input") != NULL ? 5100u : 0u);
-    if (strcmp(view, "servo-kst-rbmod") == 0) {
+    if (strcmp(view, "servo-kst-rbmod") == 0
+        || (strncmp(view, "servo-kst-", 10) == 0
+            && strstr(view, "-input") == NULL
+            && strstr(view, "-idle-") == NULL
+            && strstr(view, "-portlist-") == NULL)) {
         prog5v_box_publish((uint8_t)PROG_SUPPLY_ON, 21u, 0u);
         prog5v_box_reading(true, 5018u, 86, 1u);
     } else {

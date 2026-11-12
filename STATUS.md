@@ -423,6 +423,21 @@ contact together with an injector contact.
 
 [Screenshot](docs/Screens.md#screenshot).
 
+### Videos from storyboards
+
+`tools/make_video.py` renders a storyboard, a JSON file under
+`tools/video/storyboards/`, into an MP4 video of 1920 x 1080 pixels at 30 frames per
+second: the case as a three.js model with labels, the panel's screens as the host renderer
+draws them with pointer bubbles and tap and hold marks, and a recap. `--check` reads every
+storyboard and fails on a field the player would not draw; `test/tools/test_make_video.py`
+runs it. One storyboard: `kst-rbmod`, programming a KST servo on the rbmod carrier, 8 steps,
+100.4s. The renderer draws the KST views on the carrier for it (`servo-kst-STATE-rbmod`,
+`test/host/render_screen.c`). The case model is a mockup: outer size, connector order and
+J1's pin order follow the case's CAD (computer-aided design) views, the other dimensions
+are estimated, and J2's row order is not confirmed. A render is not run in CI.
+
+[Videos from storyboards](tools/video/README.md).
+
 ### Dim after
 
 Built and tested on the host (`shared/ui/screen_dim.c`; `test_screen_dim`):
@@ -1312,6 +1327,7 @@ rcbench/
   .github/workflows/      ci · docs · pages · release
   docs/                   the wiki source, English and German
   tools/                  generators, checks and analysis scripts
+  tools/video/            the video player, the case model and the storyboards
   test/tools/             pytest cases for the tools
   test/host/              one suite over shared/ and protocols/;
                           fixtures/ holds the CSV corpus
