@@ -30,14 +30,22 @@ static const char k_kst_head[] = "KST servo configuration, format ";
 /** @brief The first line of an ESC settings file (ew_file.h). */
 static const char k_esc_head[] = "ESC settings backup, format ";
 
-/** @brief DISCARD on the host's question: TEXT_VIEW_LEAVE is to be taken. */
-static bool s_leave;
-/** @brief READ AGAIN was tapped: the host reads the file again. */
-static bool s_reload;
-/** @brief The save under way took a KST file's checksum line out. */
-static bool s_kst_cut;
-/** @brief The save under way put `edited` in an ESC file's checksum line. */
-static bool s_esc_edited;
+/** @brief What the keys leave for the host and for the save's answer,
+ *         apart from tv: text_view_reset() does not take it back. */
+typedef struct {
+    /** @brief DISCARD on the host's question: TEXT_VIEW_LEAVE is to be
+     *         taken */
+    bool leave;
+    bool reload;      /**< READ AGAIN was tapped: the host reads the file again */
+    /** @brief The save under way took a KST file's checksum line out */
+    bool kst_cut;
+    /** @brief The save under way put `edited` in an ESC file's checksum
+     *         line */
+    bool esc_edited;
+} keys_state_t;
+
+/** @brief The keys' flags, one instance. */
+static keys_state_t s_keys;
 
 /* ------------------------------------------------------------- the rules */
 
@@ -69,7 +77,7 @@ bool text_view_keyboard(void)
 
 bool text_view_dirty(void)
 {
-    return tv.edit && text_buf_dirty(&tv_tb);
+    return tv.edit && text_buf_dirty(&tv_text.tb);
 }
 
 bool text_view_saving(void)
@@ -84,9 +92,9 @@ text_view_ask_t text_view_ask(void)
 
 size_t text_view_cursor(size_t *line)
 {
-    const size_t pos = text_buf_cursor(&tv_tb);
+    const size_t pos = text_buf_cursor(&tv_text.tb);
     if (line != NULL) {
-        *line = text_buf_line_of(&tv_tb, pos);
+        *line = text_buf_line_of(&tv_text.tb, pos);
     }
     return pos;
 }
@@ -104,7 +112,7 @@ static size_t cursor_place(size_t *row, size_t *col)
     const unsigned width = text_view_cells();
     size_t line = 0u;
     size_t cell = 0u;
-    text_buf_cell_of(&tv_tb, text_buf_cursor(&tv_tb), width, &line, &cell);
+    text_buf_cell_of(&tv_text.tb, text_buf_cursor(&tv_text.tb), width, &line, &cell);
     size_t r = cell / width;
     /* At the end of a full row the cursor stands after its last cell. */
     if (r >= tv_rows_of(line)) {
@@ -169,12 +177,12 @@ static void tap_cursor(int x, int y)
     size_t row = 0u;
     const size_t line = tv_line_at(k, &row);
     if (line >= text_view_lines()) {
-        text_buf_set_cursor(&tv_tb, text_buf_len(&tv_tb));
+        text_buf_set_cursor(&tv_text.tb, text_buf_len(&tv_text.tb));
     } else {
         int col = (x - TV_TEXT_X + cw / 2) / cw;
         col = (col < 0) ? 0 : (col > (int)width) ? (int)width : col;
-        text_buf_set_cursor(&tv_tb,
-                            text_buf_pos_at(&tv_tb, line,
+        text_buf_set_cursor(&tv_text.tb,
+                            text_buf_pos_at(&tv_text.tb, line,
                                             row * width + (size_t)col,
                                             width));
     }
@@ -189,7 +197,7 @@ static void tap_cursor(int x, int y)
  */
 static void keep_original(void)
 {
-    tv.orig_len = text_buf_read(&tv_tb, 0u, tv_orig, TEXT_BUF_FILE_MAX);
+    tv.orig_len = text_buf_read(&tv_text.tb, 0u, tv_text.orig, TEXT_BUF_FILE_MAX);
 }
 
 /** @brief Open the keyboard, the cursor's row on the smaller screen. */
@@ -209,11 +217,11 @@ bool text_view_edit(void)
     keep_original();
     tv.edit = true;
     tv.note = TV_NOTE_NONE;
-    s_kst_cut = false;
+    s_keys.kst_cut = false;
     /* The cursor starts on the top row when it is off the screen. */
     int cell = 0;
     if (tv_cursor_at(&cell) < 0) {
-        text_buf_set_cursor(&tv_tb, text_buf_line_start(&tv_tb, tv.top_line));
+        text_buf_set_cursor(&tv_text.tb, text_buf_line_start(&tv_text.tb, tv.top_line));
     }
     keyboard_open();
     return true;
@@ -243,17 +251,17 @@ static void refused(text_buf_err_t r)
  */
 static bool discard(void)
 {
-    const text_buf_err_t err = text_buf_restore(&tv_tb, tv_orig, tv.orig_len);
+    const text_buf_err_t err = text_buf_restore(&tv_text.tb, tv_text.orig, tv.orig_len);
     if (err != TEXT_BUF_OK) {
         refused(err);
         ++tv.rev;
         return false;
     }
-    text_buf_set_cursor(&tv_tb, text_buf_line_start(&tv_tb, tv.top_line));
+    text_buf_set_cursor(&tv_text.tb, text_buf_line_start(&tv_text.tb, tv.top_line));
     tv_clamp_top();
     tv.note = TV_NOTE_NONE;
-    s_kst_cut = false;              /* the checksum line is back */
-    s_esc_edited = false;
+    s_keys.kst_cut = false;              /* the checksum line is back */
+    s_keys.esc_edited = false;
     ++tv.rev;
     return true;
 }
@@ -287,7 +295,7 @@ bool text_view_back(void)
     if (tv.saving) {
         return true;                          /* the save finishes first */
     }
-    if (text_buf_dirty(&tv_tb)) {
+    if (text_buf_dirty(&tv_text.tb)) {
         tv.ask = TEXT_VIEW_ASK_BACK;
         ++tv.rev;
         return true;
@@ -319,20 +327,20 @@ static void answer_discard(void)
         edit_leave();
     } else if (ask == TEXT_VIEW_ASK_OPEN) {
         edit_leave();
-        s_leave = true;
+        s_keys.leave = true;
     }
 }
 
 text_view_result_t tv_edit_take(void)
 {
-    if (s_reload) {
-        s_reload = false;
+    if (s_keys.reload) {
+        s_keys.reload = false;
         return TEXT_VIEW_RELOAD;
     }
-    if (!s_leave) {
+    if (!s_keys.leave) {
         return TEXT_VIEW_NONE;
     }
-    s_leave = false;
+    s_keys.leave = false;
     return TEXT_VIEW_LEAVE;
 }
 
@@ -358,20 +366,20 @@ static void key_acts(ui_textkey_result_t r)
     text_buf_err_t err = TEXT_BUF_OK;
     switch (r) {
     case UI_TEXTKEY_TYPED:
-        err = text_buf_insert(&tv_tb, (uint8_t)tv.kb.typed);
+        err = text_buf_insert(&tv_text.tb, (uint8_t)tv.kb.typed);
         break;
     case UI_TEXTKEY_ENTER:
-        err = text_buf_insert_eol(&tv_tb);
+        err = text_buf_insert_eol(&tv_text.tb);
         break;
     case UI_TEXTKEY_BACKSPACE:
-        (void)text_buf_delete_before(&tv_tb);
+        (void)text_buf_delete_before(&tv_text.tb);
         break;
     case UI_TEXTKEY_LEFT:
-        (void)text_buf_left(&tv_tb);
+        (void)text_buf_left(&tv_text.tb);
         break;
     case UI_TEXTKEY_RIGHT:
     default:
-        (void)text_buf_right(&tv_tb);
+        (void)text_buf_right(&tv_text.tb);
         break;
     }
     if (err != TEXT_BUF_OK) {
@@ -453,7 +461,7 @@ static void question_event(const touch_event_t *e)
          * the question when the save ends. */
         if (tv.ask == TEXT_VIEW_ASK_CHANGED) {
             tv.ask = TEXT_VIEW_ASK_NONE;    /* READ AGAIN: the host's */
-            s_reload = true;
+            s_keys.reload = true;
             ++tv.rev;
         } else {
             answer_discard();
@@ -497,7 +505,7 @@ text_view_result_t tv_edit_button(int hit)
         if (tv.saving) {
             return TEXT_VIEW_NONE;
         }
-        if (!text_buf_dirty(&tv_tb)) {
+        if (!text_buf_dirty(&tv_text.tb)) {
             tv_say(TX_ED_NO_CHANGES);
             return TEXT_VIEW_NONE;
         }
@@ -505,8 +513,8 @@ text_view_result_t tv_edit_button(int hit)
             tv_say_err(tv.save_err);
             return TEXT_VIEW_NONE;
         }
-        s_kst_cut = kst_cut() || s_kst_cut;   /* a refused SAVE cut it */
-        s_esc_edited = esc_edited() || s_esc_edited;
+        s_keys.kst_cut = kst_cut() || s_keys.kst_cut;   /* a refused SAVE cut it */
+        s_keys.esc_edited = esc_edited() || s_keys.esc_edited;
         if (nul_ahead()) {
             tv_say(TX_ED_NUL_AHEAD);
             ++tv.rev;
@@ -518,7 +526,7 @@ text_view_result_t tv_edit_button(int hit)
         tv_say(TX_ED_SAVING);
         return TEXT_VIEW_SAVE;
     case TV_HIT_EDIT:                         /* REVERT */
-        if (!tv.saving && text_buf_dirty(&tv_tb)) {
+        if (!tv.saving && text_buf_dirty(&tv_text.tb)) {
             tv.ask = TEXT_VIEW_ASK_REVERT;
             ++tv.rev;
         }
@@ -582,19 +590,19 @@ static bool esc_edited(void)
 {
     static const char k_word[] = "edited";
     size_t len = 0u;
-    const char *head = text_buf_line(&tv_tb, 0u, &len);
+    const char *head = text_buf_line(&tv_text.tb, 0u, &len);
     const size_t hn = sizeof(k_esc_head) - 1u;
 
     if (head == NULL || len < hn || memcmp(head, k_esc_head, hn) != 0) {
         return false;
     }
-    const size_t cur = text_buf_cursor(&tv_tb);
+    const size_t cur = text_buf_cursor(&tv_text.tb);
     size_t last = 0u;
     size_t marks = 0u;
     bool last_edited = false;
 
-    for (size_t i = 1u; i < text_buf_lines(&tv_tb); ++i) {
-        const char *b = text_buf_line(&tv_tb, i, &len);
+    for (size_t i = 1u; i < text_buf_lines(&tv_text.tb); ++i) {
+        const char *b = text_buf_line(&tv_text.tb, i, &len);
 
         if (b == NULL || line_blank(b, len)) {
             continue;
@@ -614,39 +622,39 @@ static bool esc_edited(void)
     }
     /* Every word out, from the bottom, so the lines above keep their numbers. */
     for (size_t i = last + 1u; i-- > 1u;) {
-        const char *b = text_buf_line(&tv_tb, i, &len);
+        const char *b = text_buf_line(&tv_text.tb, i, &len);
 
         if (b == NULL || (!line_word_is(b, len, "checksum")
                           && !line_word_is(b, len, k_word))) {
             continue;
         }
-        const size_t end = text_buf_len(&tv_tb) - len;
+        const size_t end = text_buf_len(&tv_text.tb) - len;
         bool more = true;
 
-        text_buf_set_cursor(&tv_tb, text_buf_line_start(&tv_tb, i));
-        while (more && text_buf_len(&tv_tb) > end) {
-            more = text_buf_delete_after(&tv_tb);
+        text_buf_set_cursor(&tv_text.tb, text_buf_line_start(&tv_text.tb, i));
+        while (more && text_buf_len(&tv_text.tb) > end) {
+            more = text_buf_delete_after(&tv_text.tb);
         }
         /* The line's own end, so no empty line stays where it was. */
-        (void)text_buf_delete_after(&tv_tb);
+        (void)text_buf_delete_after(&tv_text.tb);
     }
     /* Behind the last line that is left and is not blank. */
-    size_t at = text_buf_lines(&tv_tb);
+    size_t at = text_buf_lines(&tv_text.tb);
 
     while (at-- > 1u) {
-        const char *b = text_buf_line(&tv_tb, at, &len);
+        const char *b = text_buf_line(&tv_text.tb, at, &len);
 
         if (b != NULL && !line_blank(b, len)) {
             break;
         }
     }
-    (void)text_buf_line(&tv_tb, at, &len);
-    text_buf_set_cursor(&tv_tb, text_buf_line_start(&tv_tb, at) + len);
-    (void)text_buf_insert_eol(&tv_tb);
+    (void)text_buf_line(&tv_text.tb, at, &len);
+    text_buf_set_cursor(&tv_text.tb, text_buf_line_start(&tv_text.tb, at) + len);
+    (void)text_buf_insert_eol(&tv_text.tb);
     for (size_t k = 0u; k + 1u < sizeof(k_word); ++k) {
-        (void)text_buf_insert(&tv_tb, (uint32_t)k_word[k]);
+        (void)text_buf_insert(&tv_text.tb, (uint32_t)k_word[k]);
     }
-    text_buf_set_cursor(&tv_tb, cur < text_buf_len(&tv_tb) ? cur : text_buf_len(&tv_tb));
+    text_buf_set_cursor(&tv_text.tb, cur < text_buf_len(&tv_text.tb) ? cur : text_buf_len(&tv_text.tb));
     tv_clamp_top();
     return true;
 }
@@ -660,7 +668,7 @@ static bool esc_edited(void)
 static bool is_sum_line(size_t line)
 {
     size_t len = 0u;
-    const char *b = text_buf_line(&tv_tb, line, &len);
+    const char *b = text_buf_line(&tv_text.tb, line, &len);
     return b != NULL && kst_file_checksum_line(b, len);
 }
 
@@ -672,31 +680,31 @@ static bool is_sum_line(size_t line)
 static bool kst_cut(void)
 {
     size_t len = 0u;
-    const char *head = text_buf_line(&tv_tb, 0u, &len);
+    const char *head = text_buf_line(&tv_text.tb, 0u, &len);
     const size_t hn = sizeof(k_kst_head) - 1u;
     if (head == NULL || len < hn || memcmp(head, k_kst_head, hn) != 0) {
         return false;
     }
     bool cut = false;
     size_t i = 1u;
-    while (i < text_buf_lines(&tv_tb)) {
+    while (i < text_buf_lines(&tv_text.tb)) {
         if (!is_sum_line(i)) {
             ++i;
             continue;
         }
-        const size_t lines = text_buf_lines(&tv_tb);
-        const size_t from = text_buf_line_start(&tv_tb, i);
-        const size_t to = (i + 1u < lines) ? text_buf_line_start(&tv_tb, i + 1u)
-                                           : text_buf_len(&tv_tb);
-        size_t cur = text_buf_cursor(&tv_tb);
-        const size_t end = text_buf_len(&tv_tb) - (to - from);
-        text_buf_set_cursor(&tv_tb, from);
+        const size_t lines = text_buf_lines(&tv_text.tb);
+        const size_t from = text_buf_line_start(&tv_text.tb, i);
+        const size_t to = (i + 1u < lines) ? text_buf_line_start(&tv_text.tb, i + 1u)
+                                           : text_buf_len(&tv_text.tb);
+        size_t cur = text_buf_cursor(&tv_text.tb);
+        const size_t end = text_buf_len(&tv_text.tb) - (to - from);
+        text_buf_set_cursor(&tv_text.tb, from);
         bool more = true;
-        while (more && text_buf_len(&tv_tb) > end) {
-            more = text_buf_delete_after(&tv_tb);   /* one unit a call */
+        while (more && text_buf_len(&tv_text.tb) > end) {
+            more = text_buf_delete_after(&tv_text.tb);   /* one unit a call */
         }
         cur = (cur >= to) ? cur - (to - from) : (cur > from) ? from : cur;
-        text_buf_set_cursor(&tv_tb, cur);
+        text_buf_set_cursor(&tv_text.tb, cur);
         cut = true;
         if (!more) {
             break;                  /* nothing more to take: never spins */
@@ -758,11 +766,11 @@ text_view_result_t text_view_tick(float dt_s)
  */
 static bool nul_ahead(void)
 {
-    const size_t bom = text_buf_bom(&tv_tb) ? TEXT_BUF_BOM_LEN : 0u;
-    const size_t len = text_buf_len(&tv_tb);
+    const size_t bom = text_buf_bom(&tv_text.tb) ? TEXT_BUF_BOM_LEN : 0u;
+    const size_t len = text_buf_len(&tv_text.tb);
     const size_t n = (len < TEXT_BUF_PROBE - bom) ? len : TEXT_BUF_PROBE - bom;
     for (size_t i = 0u; i < n; ++i) {
-        if (text_buf_byte(&tv_tb, i) == 0u) {
+        if (text_buf_byte(&tv_text.tb, i) == 0u) {
             return true;
         }
     }
@@ -773,19 +781,19 @@ size_t text_view_save_len(void)
 {
     /* The card's task reads the text while this task draws it: no line
      * read may move the gap from here on. */
-    text_buf_settle(&tv_tb);
+    text_buf_settle(&tv_text.tb);
     tv.saving = true;
     tv_say(TX_ED_SAVING);
-    return text_buf_size(&tv_tb);
+    return text_buf_size(&tv_text.tb);
 }
 
 size_t text_view_fill(void *ctx, uint64_t at, uint8_t *dst, size_t cap)
 {
     (void)ctx;
-    if (at >= (uint64_t)text_buf_size(&tv_tb)) {
+    if (at >= (uint64_t)text_buf_size(&tv_text.tb)) {
         return 0u;
     }
-    return text_buf_read(&tv_tb, (size_t)at, dst, cap);
+    return text_buf_read(&tv_text.tb, (size_t)at, dst, cap);
 }
 
 text_view_result_t text_view_saved(fm_err_t err, bool stopped,
@@ -794,15 +802,15 @@ text_view_result_t text_view_saved(fm_err_t err, bool stopped,
     tv.saving = false;
     text_view_result_t out = TEXT_VIEW_NONE;
     if (err == FM_OK) {
-        text_buf_saved(&tv_tb);
-        tv.size = text_buf_size(&tv_tb);    /* the header: as saved */
+        text_buf_saved(&tv_text.tb);
+        tv.size = text_buf_size(&tv_text.tb);    /* the header: as saved */
         keep_original();
-        tv_say(s_kst_cut ? TX_ED_SAVED_KST
-               : s_esc_edited ? TX_ED_SAVED_EW
+        tv_say(s_keys.kst_cut ? TX_ED_SAVED_KST
+               : s_keys.esc_edited ? TX_ED_SAVED_EW
                : restart ? TX_ED_SAVED_ESC
                          : TX_ED_SAVED);
-        s_kst_cut = false;          /* a failed save keeps it for the next */
-        s_esc_edited = false;
+        s_keys.kst_cut = false;          /* a failed save keeps it for the next */
+        s_keys.esc_edited = false;
         /* A question asked while it saved has no changes left to lose:
          * what it held goes on. */
         const text_view_ask_t ask = tv.ask;
@@ -854,7 +862,7 @@ const char *text_view_note(char *out, size_t n)
         } else {
             snprintf(out, n, "%s", ui_tr(tv.note_id));
         }
-    } else if (tv.edit && tv.save_err != FM_OK && text_buf_dirty(&tv_tb)) {
+    } else if (tv.edit && tv.save_err != FM_OK && text_buf_dirty(&tv_text.tb)) {
         files_err_text(tv.save_err, tv.name, out, n);   /* why SAVE is shut */
     }
     return out;

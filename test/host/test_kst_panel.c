@@ -27,6 +27,7 @@
  * - the_fetched_backup_redraws_restore
  * - a_locked_session_found_at_the_start_is_enabled_and_restored
  * - a_read_under_a_locked_session_shows_the_servo_and_keeps_the_lock
+ * - the_start_gate_outlives_a_start_of_the_screens
  *
  * SPDX-License-Identifier: MIT
  */
@@ -645,6 +646,26 @@ TEST_CASE(a_read_under_a_locked_session_shows_the_servo_and_keeps_the_lock)
     restore_locked();
 }
 
+/* ------------------------------------------------------------ the caller */
+
+/* The gate is set once at boot; every start of the screens wipes the
+ * overlay's state and hands the same gate to the new session. */
+TEST_CASE(the_start_gate_outlives_a_start_of_the_screens)
+{
+    fresh();
+    CHECK(M->gate == &g_rig.gate);
+    kst_panel_init(AREA);
+    CHECK(M->gate == &g_rig.gate);
+    kst_panel_init(AREA);
+    CHECK(M->gate == &g_rig.gate);
+    kst_panel_gate(NULL);
+    CHECK(M->gate == NULL);
+    kst_panel_init(AREA);
+    CHECK(M->gate == NULL);
+    kst_panel_gate(&g_rig.gate);
+    CHECK(M->gate == &g_rig.gate);
+}
+
 int main(void)
 {
     RUN(without_a_link_nothing_on_the_servo_tab_takes_a_tap);
@@ -660,5 +681,6 @@ int main(void)
     RUN(the_fetched_backup_redraws_restore);
     RUN(a_locked_session_found_at_the_start_is_enabled_and_restored);
     RUN(a_read_under_a_locked_session_shows_the_servo_and_keeps_the_lock);
+    RUN(the_start_gate_outlives_a_start_of_the_screens);
     return test_summary("kst_panel");
 }

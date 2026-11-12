@@ -29,19 +29,26 @@ _Static_assert(UPD_C6_BTN_Y + UPD_C6_BTN_H <= UI_FOOTER_FLOOR,
 _Static_assert(UPD_C6_X + UPD_C6_W <= UI_PANEL_W - UI_MARGIN,
                "the C6 row keeps the margin");
 
-static upd_c6_view_t s_v;     /**< what the row shows */
-static bool          s_req;   /**< the hold completed, not yet taken */
+/** @brief The row's one press. */
+typedef struct {
+    bool      have;     /**< a press is on the row */
+    uint8_t   id;       /**< its contact */
+    bool      live;     /**< it began on a live hold */
+    ui_hold_t hold;     /**< the 2s hold */
+} c6_press_t;
 
-/** @brief The row's press. */
-static struct {
-    bool      have;     /**< a press is on the row                     */
-    uint8_t   id;       /**< its contact                               */
-    bool      live;     /**< it began on a live hold                   */
-    ui_hold_t hold;     /**< the 2s hold                               */
-} s;                    /**< the row's one press                      */
+/** @brief The C6 RADIO row's state, one instance per image. */
+typedef struct {
+    upd_c6_view_t v;        /**< what the row shows */
+    bool          req;      /**< the hold completed, not yet taken */
+    c6_press_t    p;        /**< the row's one press */
+} c6_state_t;
+
+/** @brief The row's one instance. */
+static c6_state_t c6;
 
 /** @brief Whether the hold may run now. @return true while READY */
-static bool live(void) { return s_v.row == FW_C6_ROW_READY; }
+static bool live(void) { return c6.v.row == FW_C6_ROW_READY; }
 
 gfx_rect_t upd_c6_rect(void)
 {
@@ -52,23 +59,23 @@ void upd_c6_set(const upd_c6_view_t *v)
 {
     /* As upd_screen_set(): padding costs a repaint at most. */
     /* NOLINTNEXTLINE(bugprone-suspicious-memory-comparison) */
-    if (v == NULL || memcmp(v, &s_v, sizeof(s_v)) == 0) {
+    if (v == NULL || memcmp(v, &c6.v, sizeof(c6.v)) == 0) {
         return;
     }
-    s_v = *v;
-    if (!live() && s.have && s.live) {
-        (void)ui_hold_left(&s.hold);
-        s.have = false;
+    c6.v = *v;
+    if (!live() && c6.p.have && c6.p.live) {
+        (void)ui_hold_left(&c6.p.hold);
+        c6.p.have = false;
     }
     upd_screen_invalidate();
 }
 
-const upd_c6_view_t *upd_c6_view(void) { return &s_v; }
+const upd_c6_view_t *upd_c6_view(void) { return &c6.v; }
 
 bool upd_c6_take(void)
 {
-    const bool was = s_req;
-    s_req = false;
+    const bool was = c6.req;
+    c6.req = false;
     return was;
 }
 
@@ -141,7 +148,7 @@ void upd_c6_label(const upd_c6_view_t *v, char *out, size_t n)
     }
 }
 
-bool upd_c6_pressed(void) { return s.have; }
+bool upd_c6_pressed(void) { return c6.p.have; }
 
 bool upd_c6_event(const touch_event_t *evt, bool other)
 {
@@ -151,28 +158,28 @@ bool upd_c6_event(const touch_event_t *evt, bool other)
     const int x = evt->point.x, y = evt->point.y;
     const gfx_rect_t r = upd_c6_rect();
     if (evt->type == TOUCH_EVENT_DOWN) {
-        if (other || s.have || !gfx_rect_contains(r, x, y)) {
+        if (other || c6.p.have || !gfx_rect_contains(r, x, y)) {
             return false;
         }
-        s.have = true;
-        s.id = evt->point.id;
-        s.live = live();
-        if (s.live) {
-            ui_hold_begin(&s.hold, TX_HOLD_HINT_C6_UPDATE);
+        c6.p.have = true;
+        c6.p.id = evt->point.id;
+        c6.p.live = live();
+        if (c6.p.live) {
+            ui_hold_begin(&c6.p.hold, TX_HOLD_HINT_C6_UPDATE);
         }
         upd_screen_invalidate();
         return true;
     }
-    if (!s.have || evt->point.id != s.id) {
+    if (!c6.p.have || evt->point.id != c6.p.id) {
         return false;
     }
     if (evt->type == TOUCH_EVENT_MOVE) {
         /* Sliding off abandons it, as on every held control. */
         if (!gfx_rect_contains(r, x, y)) {
-            if (s.live) {
-                (void)ui_hold_leave(&s.hold);
+            if (c6.p.live) {
+                (void)ui_hold_leave(&c6.p.hold);
             }
-            s.have = false;
+            c6.p.have = false;
             upd_screen_invalidate();
         }
         return true;
@@ -180,55 +187,55 @@ bool upd_c6_event(const touch_event_t *evt, bool other)
     if (evt->type != TOUCH_EVENT_UP) {
         return true;
     }
-    s.have = false;
+    c6.p.have = false;
     upd_screen_invalidate();
-    if (s.live) {
+    if (c6.p.live) {
         /* The hold acts when it completes; the release only ends it. */
-        (void)ui_hold_end(&s.hold, evt, r);
+        (void)ui_hold_end(&c6.p.hold, evt, r);
         return true;
     }
     /* A tap on a grey hold: why, on the band. */
     if (touch_event_is_tap_up(evt) && gfx_rect_contains(r, x, y)) {
-        ui_router_set_notice(upd_c6_reason(&s_v));
+        ui_router_set_notice(upd_c6_reason(&c6.v));
     }
     return true;
 }
 
 bool upd_c6_tick(float dt_s)
 {
-    const bool moving = s.hold.down || s.hold.flash_ms > 0;
-    ui_hold_flash_step(&s.hold, dt_s);
-    if (s.have && s.live && live() && ui_hold_tick(&s.hold, dt_s)) {
-        s_req = true;
-        ui_hold_reached(&s.hold);
+    const bool moving = c6.p.hold.down || c6.p.hold.flash_ms > 0;
+    ui_hold_flash_step(&c6.p.hold, dt_s);
+    if (c6.p.have && c6.p.live && live() && ui_hold_tick(&c6.p.hold, dt_s)) {
+        c6.req = true;
+        ui_hold_reached(&c6.p.hold);
     }
     return moving;
 }
 
-bool upd_c6_flashing(void) { return s.hold.flash_ms > 0; }
+bool upd_c6_flashing(void) { return c6.p.hold.flash_ms > 0; }
 
 void upd_c6_drop(void)
 {
-    if (s.have && s.live) {
-        (void)ui_hold_left(&s.hold);
+    if (c6.p.have && c6.p.live) {
+        (void)ui_hold_left(&c6.p.hold);
     }
-    s.have = false;
-    ui_hold_reset(&s.hold);
+    c6.p.have = false;
+    ui_hold_reset(&c6.p.hold);
 }
 
 void upd_c6_render(gfx_canvas_t *c)
 {
     char line[96];
-    upd_c6_line(&s_v, line, sizeof(line));
+    upd_c6_line(&c6.v, line, sizeof(line));
     gfx_text_in(c, gfx_rect_make(UPD_C6_X, UPD_C6_LINE_Y, UPD_C6_W,
                                  gfx_text_height(C6_FONT, 1)),
                 line, C6_FONT,
-                (s_v.row == FW_C6_ROW_LINK_FAILED) ? UI_WARN : UI_TEXT, 1,
+                (c6.v.row == FW_C6_ROW_LINK_FAILED) ? UI_WARN : UI_TEXT, 1,
                 GFX_ALIGN_LEFT);
-    upd_c6_label(&s_v, line, sizeof(line));
+    upd_c6_label(&c6.v, line, sizeof(line));
     gfx_color_t fill = UI_PANEL_HI;
     if (live()) {
-        fill = ui_hold_button_fill(UI_PANEL_HI, UI_OK, &s.hold);
+        fill = ui_hold_button_fill(UI_PANEL_HI, UI_OK, &c6.p.hold);
     }
     ui_button_font(c, upd_c6_rect(), line, fill, false, live(), C6_FONT);
 }

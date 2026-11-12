@@ -93,12 +93,15 @@ _Static_assert(UI_HELP_ITEMS * UI_HELP_ROWS * PITCH
                    <= WEB_Y - ITEM_GAP - (DOCK_Y + HEAD_H + ITEM_GAP),
                "five items of three rows fit above the web line");
 
-/** @brief An item's label and text as the dock shows them.  Static: the
- *         guide is drawn by the render loop alone, and the render task's
- *         stack is budgeted. */
-static char s_text[400];
-/** @brief One row of s_text, or of another text the dock draws. */
-static char s_row[200];
+/** @brief The dock's text buffers.  Static: the guide is drawn by the
+ *         render loop alone, and the render task's stack is budgeted. */
+typedef struct {
+    char text[400];  /**< an item's label and text as the dock shows them */
+    char row[200];   /**< one row of text, or of another text the dock draws */
+} dock_buf_t;
+
+/** @brief The dock's buffers. */
+static dock_buf_t s_dock;
 
 int ui_help_count(const ui_screen_t *scr, bool armed)
 {
@@ -339,10 +342,10 @@ static size_t row_len(const char *s, int cells)
 static void text_n(gfx_canvas_t *c, int x, int y, const char *s, size_t len,
                    gfx_color_t col)
 {
-    const size_t k = (len < sizeof(s_row)) ? len : sizeof(s_row) - 1u;
-    memcpy(s_row, s, k);
-    s_row[k] = '\0';
-    gfx_text(c, x, y, s_row, UI_FONT_BAND, col, 1);
+    const size_t k = (len < sizeof(s_dock.row)) ? len : sizeof(s_dock.row) - 1u;
+    memcpy(s_dock.row, s, k);
+    s_dock.row[k] = '\0';
+    gfx_text(c, x, y, s_dock.row, UI_FONT_BAND, col, 1);
 }
 
 /**
@@ -392,7 +395,7 @@ static int wrap(gfx_canvas_t *c, int x, int y, const char *t, size_t lead,
 }
 
 /**
- * @brief Item @p i of @p p as the dock shows it, label first, into s_text.
+ * @brief Item @p i of @p p as the dock shows it, label first, into s_dock.text.
  * @param p The page.
  * @param i The item.
  * @return The label's bytes at its start.
@@ -400,7 +403,7 @@ static int wrap(gfx_canvas_t *c, int x, int y, const char *t, size_t lead,
 static size_t item_text(const ui_help_page_t *p, int i)
 {
     const char *label = (p->item[i].label != NULL) ? p->item[i].label : "";
-    snprintf(s_text, sizeof(s_text), "%s  %s", label,
+    snprintf(s_dock.text, sizeof(s_dock.text), "%s  %s", label,
              ui_tr(p->item[i].text));
     return strlen(label);
 }
@@ -411,7 +414,7 @@ int ui_help_item_rows(const ui_help_page_t *p, int i)
         return 0;
     }
     const size_t lead = item_text(p, i);
-    return wrap(NULL, 0, 0, s_text, lead, CELLS, 0);
+    return wrap(NULL, 0, 0, s_dock.text, lead, CELLS, 0);
 }
 
 /**
@@ -523,7 +526,7 @@ void ui_help_render_dock(gfx_canvas_t *c, const ui_help_page_t *p, int n,
         badge(c, gfx_rect_make(x, y - (BADGE - 20) / 2, BADGE, BADGE),
               i + 1);
         const size_t lead = item_text(p, i);
-        y += wrap(c, x + TEXT_DX, y, s_text, lead, CELLS, UI_ACCENT) * PITCH
+        y += wrap(c, x + TEXT_DX, y, s_dock.text, lead, CELLS, UI_ACCENT) * PITCH
              + ITEM_GAP;
     }
     (void)wrap(c, x, WEB_Y, TR(HG_WEB), 0, CELLS_FULL, 0);

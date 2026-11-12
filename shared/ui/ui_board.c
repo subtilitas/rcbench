@@ -13,17 +13,25 @@
 #include "link_pages.h"
 #include "settings_sensors.h"
 
-/** @brief The board last recorded. */
-static atomic_uint_least16_t s_board;
+/** @brief The board's record, one instance per image. */
+typedef struct {
+    atomic_uint_least16_t board;    /**< the board last recorded */
+    /** @brief The board ui_board_apply_pins() applied last; 0xFFFF before
+     *         any */
+    uint16_t              applied;
+} board_state_t;
+
+/** @brief The record's one instance. */
+static board_state_t ub = { .applied = 0xFFFFu };
 
 void ui_board_set(uint16_t board)
 {
-    atomic_store(&s_board, board);
+    atomic_store(&ub.board, board);
 }
 
 uint16_t ui_board(void)
 {
-    return (uint16_t)atomic_load(&s_board);
+    return (uint16_t)atomic_load(&ub.board);
 }
 
 const outbind_roles_t *ui_board_roles(void)
@@ -62,16 +70,13 @@ static void apply_ina(const outbind_roles_t *r, ui_board_changed_fn changed)
     }
 }
 
-/** @brief The board ui_board_apply_pins() applied last; 0xFFFF before any. */
-static uint16_t s_applied = 0xFFFFu;
-
 bool ui_board_apply_pins(ui_board_changed_fn changed)
 {
     const uint16_t board = ui_board();
-    if (board == s_applied) {
+    if (board == ub.applied) {
         return false;
     }
-    s_applied = board;
+    ub.applied = board;
     const outbind_roles_t *r = outbind_roles(board);
     static const setting_id_t k_ids[] = {
         SET_SENSE_SDA, SET_SENSE_SCL, SET_TONE_PIN, SET_PDMINI_TX,

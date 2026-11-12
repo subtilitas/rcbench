@@ -6,7 +6,8 @@
  *
  * The control task (firmware/panel/main/panel_supply.c) fills an
  * error_bench_t with the bench as it is, calls the function for the site,
- * and carries out the error_act_t it returns, in the order of its fields:
+ * and carries out the error_act_t it returns as the steps error_act_steps()
+ * lists, in their order:
  *
  *     error_sites_stop()      an error found elsewhere: an INA3221 channel
  *                             over its limit, a SUPPLY page event that is
@@ -91,6 +92,24 @@ typedef struct {
     bool prog_off;    /**< the PROG_SUPPLY page's OFF, written whatever
                            the panel reads (prog_supply_link_cut())     */
 } error_act_t;
+
+/** @brief One step of an error's act, as the control task carries it out. */
+typedef enum {
+    ERROR_STEP_STOP_LATCH = 0, /**< a STOP's reset not yet resumed goes back
+                                    to LATCHED (stop_latch_error()): the
+                                    operator holds STOP again once the
+                                    error is dealt with                    */
+    ERROR_STEP_SUPPLY_OFF,     /**< the supply's output off               */
+    ERROR_STEP_DISARM,         /**< DISARM requested                      */
+    ERROR_STEP_CUT,            /**< the SUPPLY page's OFF, written whatever
+                                    the panel reads (supply_link_cut())   */
+    ERROR_STEP_PROG_OFF,       /**< the PROG_SUPPLY page's OFF, written
+                                    whatever the panel reads
+                                    (prog_supply_link_cut())             */
+} error_step_t;
+
+/** @brief The most steps one act takes (error_act_steps()). */
+#define ERROR_STEPS_MAX 6u
 
 /** @brief Which reading fault error_sites_reading() found. */
 typedef enum {
@@ -191,6 +210,23 @@ error_reading_t error_sites_reading(const error_bench_t *b, bool online,
  *         not have reached the panel yet; false for NULL.
  */
 bool error_sites_page_keeps(const error_bench_t *b, bool far_off);
+
+/**
+ * @brief The steps of an act, in the order the control task takes them.
+ *
+ * Any act at all sends a STOP's reset that is not yet resumed back to
+ * LATCHED first.  Then the output off when the act asks it first
+ * (error_act_t.off_first), DISARM, the output off, the SUPPLY page's OFF
+ * and the PROG_SUPPLY page's OFF.  The output off can be listed twice; the
+ * second finds the output off and does nothing.
+ *
+ * @param a     The act; no steps for NULL.
+ * @param steps Receives the steps; ERROR_STEPS_MAX entries.  No steps for
+ *              NULL.
+ * @return How many steps @p steps holds, 0 to ERROR_STEPS_MAX.
+ */
+uint8_t error_act_steps(const error_act_t *a,
+                        error_step_t steps[ERROR_STEPS_MAX]);
 
 /**
  * @brief Whether the run log's writes failed in this pass: a card fault

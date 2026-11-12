@@ -457,16 +457,19 @@ atomic_uint           s_drv_gaps;
 
 /*
  * s_touch_q, from the control task to the render loop.  The control task is
- * its one producer and numbers what it offers; s_tq_published is the last
- * number offered, stored after the offer.  A loss the control task found in
- * the driver's stream travels down this queue as an item of its own, so the
- * render loop meets it in order, ahead of the events that followed the gap;
- * s_lost_notice_seq is the number of the latest such item, for the check on
- * an arm (touch_loss.h, arm_watch_take_ok()).  Both control-task values.
- * The item is touch_item_t, in panel.h.
+ * its one producer and numbers what it offers (s_tq_tx, touch_put_begin());
+ * s_tq_published is the last number offered, stored after the offer.  A
+ * loss the control task found in the driver's stream travels down this
+ * queue as an item of its own, so the render loop meets it in order, ahead
+ * of the events that followed the gap; s_tq_tx.lost_notice is the number of
+ * the latest such item, for the check on an arm (touch_loss.h,
+ * arm_watch_take_ok()).  s_tq_tx is the control task's alone.  The item is
+ * touch_item_t, in panel.h.
  */
 atomic_uint        s_tq_published;
-uint32_t           s_lost_notice_seq;
+/** @brief s_touch_q's producer: the numbers offered and the last loss
+ *         notice's (touch_loss.h); the control task's alone. */
+touch_seq_tx_t     s_tq_tx;
 
 /*
  * The render loop's side.  s_loss_gen counts the times it dropped the

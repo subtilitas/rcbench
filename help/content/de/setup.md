@@ -110,17 +110,14 @@ Die Warnung entfällt, wenn keine ungespeicherten Werte vorliegen, bereits eine 
 | Kontrast | 60 bis 140%, Schritte von 5 | 100 | verstärkt den Abstand der Farben zum Mittelgrau |
 | Bilddrehung | NORMAL, 180° | NORMAL | dreht Bild und Touch um 180°, ab dem nächsten Frame; gesperrt bei ARMED |
 | Sprache | ENGLISH, DEUTSCH | ENGLISH | die Sprache der Oberfläche, ab dem nächsten Frame, ohne Neustart |
-| Einheiten | METRISCH, IMPERIAL | METRISCH | gespeichert; keine Seite nutzt sie in diesem Release |
 | Zeitzone | UTC, LONDON, BERLIN, HELSINKI, NEW YORK, CHICAGO, DENVER, LOS ANGELES, TOKYO, SYDNEY | BERLIN | die Zone, in der Dateidaten geschrieben und gezeigt werden, Sommerzeit eingeschlossen |
-| Dimmen nach | 0 bis 60min, Schritte von 5 | 0 | gespeichert; keine Seite nutzt es in diesem Release |
+| Dimmen nach | 0 bis 60min, Schritte von 5 | 0 | die Minuten ohne Touch bei ruhendem Prüfstand, bis die Beleuchtung auf 20% sinkt; 0 dimmt nie ([Dimmen nach](#dimmen-nach)) |
 | Ein Finger schiebt | EIN, AUS | AUS | ein Finger verschiebt eine vergrößerte Grafik unter [Logs](logs.md#die-grafik) |
 | Drehknopf | EIN, AUS | AUS | ein MT6701 unter 0x06 an einem eigenen Bus, IO30 und IO31 des Headers P3 (I2C: Inter-Integrated Circuit), ändert Gas auf MOTOR & ESC oder das Horn auf SERVO |
 | Drehknopfbereich | 90 bis 720°, Schritte von 10 | 270 | der Knopfwinkel, der den Regler über seinen ganzen Weg bewegt |
 | Tastaturtransparenz | AUS, 25%, 50% | AUS | wie viel des Texts durch die Tastatur des Texteditors auf [Files](files.md#der-texteditor) scheint; andere Tastaturen bleiben deckend |
 | Demo-Modus | EIN, AUS | AUS | blendet das Wasserzeichen SIMULATION ab dem nächsten Bild aus; das Band zeigt weiter SIM, und die Kacheln zeigen weiter SIMULIERT. Das Panel zeichnet das Wasserzeichen nur, solange kein IOmcu antwortet, die Einstellung ändert also nichts an einem Prüfstand mit IOmcu |
 | Hardware-STOP | EIN, AUS | AUS | für einen Prüfstand mit STOP-Taster in der Heartbeat-Leitung: Das Band zeigt den Heartbeat-Fehler als roten Chip HWSTOP statt FEHLER 10 ([HWSTOP](band.md#hwstop)). Ein unterbrochenes Kabel zeigt ebenfalls HWSTOP. Was der Prüfstand bei dem Fehler tut, bleibt gleich |
-
-Die Hintergrundbeleuchtung ist an, solange das Panel läuft. Keine Einstellung schaltet sie.
 
 Bilddrehung dreht jeden ausgegebenen Frame über den PPA (Pixel-Processing Accelerator) des ESP32-P4 und passt die Touch-Koordinaten an. Ein Kontakt bei (x, y) unter NORMAL liegt bei 180° an (1023 - x, 599 - y). Kontakte des Touch-Injectors werden nicht gedreht. Bei ARMED hat die Einstellungszeile keine Tasten.
 
@@ -135,6 +132,16 @@ Ein Software-Neustart erhält die Uhrzeit. FAT speichert Zeitstempel als Ortszei
 ![Zeitzone auf LOS ANGELES](view:setup-time-zone)
 
 ![SETUP im hellen Design](view:setup-light)
+
+### Dimmen nach
+
+Nach den eingestellten Minuten ohne Touch sinkt das Tastverhältnis der PWM (Pulsweitenmodulation) der Hintergrundbeleuchtung von 100% auf 20%. 0, die Vorgabe, dimmt nie. Wie viel Licht 20% Tastverhältnis geben, ist nicht gemessen.
+
+- Gedimmt wird nur, solange der Prüfstand ruht, nach denselben Regeln wie beim Popup des Screenshots: SAFE, nichts eingeschaltet, keine Sitzung, kein Lauf, kein Test, kein Update und kein FAULT. ARMED, ein Ausgang, der einschaltet, oder ein FAULT setzt sofort 100%.
+- Ein Touch setzt 100% und startet die Minuten neu.
+- Der erste Druck auf ein gedimmtes Bild weckt es nur: Er öffnet, stellt und schaltet nichts. Ein zweiter Druck wirkt. Solange der Prüfstand nicht ruht, wirkt jeder Druck.
+- Ein Druck auf STOP stoppt den Prüfstand immer, gedimmt oder nicht, und weckt das Bild.
+- Eine Drehung des Drehknopfs weckt das Bild nicht.
 
 ### Der Drehknopf
 

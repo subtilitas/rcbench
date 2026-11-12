@@ -64,11 +64,16 @@ typedef struct {
     uint8_t id;    /**< its track id       */
 } write_press_t;
 
-/** @brief The contact on the footer's WRITE, none while not pressed. */
-static write_press_t g_write;
+/** @brief What the footer and the rows keep between calls. */
+typedef struct {
+    /** @brief The contact on the footer's WRITE, none while not pressed. */
+    write_press_t write;
+    /** @brief A why-text built from numbers, which the row points at. */
+    char          why[96];
+} prog_ready_t;
 
-/** @brief A why-text built from numbers, which the row points at. */
-static char g_why[96];
+/** @brief The one instance. */
+static prog_ready_t s_pr;
 
 bool prog_ready_shown(void)
 {
@@ -130,10 +135,10 @@ static void supply_row(const prog_session_t *ps, rdy_row_t *r)
             snprintf(r->value, sizeof(r->value), "%s", ui_on_off(1));
         } else {
             r->st = (uint8_t)RDY_SEQ;
-            snprintf(g_why, sizeof(g_why), TR(PRR_PD_WHY),
+            snprintf(s_pr.why, sizeof(s_pr.why), TR(PRR_PD_WHY),
                      (unsigned)(ps->mv / 1000u),
                      (unsigned)(ps->mv % 1000u / 100u), (unsigned)ps->ma);
-            r->why = g_why;
+            r->why = s_pr.why;
             snprintf(r->value, sizeof(r->value), "%s", TR(PRR_AT_CONNECT));
         }
         return;
@@ -341,7 +346,7 @@ void prog_draw_write(gfx_canvas_t *c)
     ui_button_font(c, s.arm_btn, ps.write[0] != '\0' ? ps.write : "--",
                    ui_action_fill(live ? UI_ACTION_AVAILABLE
                                        : UI_ACTION_REFUSED),
-                   g_write.down, live, SV_FONT_LABEL);
+                   s_pr.write.down, live, SV_FONT_LABEL);
 }
 
 uint32_t prog_write_sig(void)
@@ -356,11 +361,11 @@ uint32_t prog_write_sig(void)
         h = (h ^ (uint8_t)*p) * 16777619u;
     }
     h = (h ^ (write_why(&ps) == NULL ? 1u : 0u)
-         ^ (g_write.down ? 2u : 0u)) * 16777619u;
+         ^ (s_pr.write.down ? 2u : 0u)) * 16777619u;
     return h;
 }
 
-bool prog_write_pressed(void) { return g_write.down; }
+bool prog_write_pressed(void) { return s_pr.write.down; }
 
 bool prog_write_down(const touch_event_t *evt)
 {
@@ -369,9 +374,9 @@ bool prog_write_down(const touch_event_t *evt)
         return false;
     }
     /* One contact owns the button, from its DOWN to its UP. */
-    if (!g_write.down) {
-        g_write.down = true;
-        g_write.id = evt->point.id;
+    if (!s_pr.write.down) {
+        s_pr.write.down = true;
+        s_pr.write.id = evt->point.id;
         ++s.fp_rev;
     }
     return true;
@@ -379,13 +384,13 @@ bool prog_write_down(const touch_event_t *evt)
 
 bool prog_write_rest(const touch_event_t *evt)
 {
-    if (evt == NULL || !g_write.down || evt->point.id != g_write.id) {
+    if (evt == NULL || !s_pr.write.down || evt->point.id != s_pr.write.id) {
         return false;
     }
     if (evt->type != TOUCH_EVENT_UP) {
         return true;
     }
-    g_write.down = false;
+    s_pr.write.down = false;
     ++s.fp_rev;
     if (!touch_event_is_tap_up(evt) || !prog_ready_shown()
         || !gfx_rect_contains(s.arm_btn, evt->point.x, evt->point.y)) {
@@ -415,8 +420,8 @@ bool prog_write_rest(const touch_event_t *evt)
 
 void prog_ready_reset(void)
 {
-    if (g_write.down) {
-        g_write.down = false;
+    if (s_pr.write.down) {
+        s_pr.write.down = false;
         ++s.fp_rev;
     }
 }

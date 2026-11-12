@@ -13,29 +13,31 @@
 
 #include "ui_text.h"
 
-/** @brief The view the screens draw. */
-static port_view_t      g_view = {
-    .count = PORT_VIEW_UNKNOWN,
-    .pin   = { PORT_VIEW_NO_PIN, PORT_VIEW_NO_PIN, PORT_VIEW_NO_PIN,
-               PORT_VIEW_NO_PIN },
-    .func  = { PORT_VIEW_FN_UNKNOWN, PORT_VIEW_FN_UNKNOWN,
-               PORT_VIEW_FN_UNKNOWN, PORT_VIEW_FN_UNKNOWN },
+/** @brief The ports as the screens see them, one instance per image. */
+typedef struct {
+    port_view_t      view;      /**< the view the screens draw */
+    uint32_t         rev;       /**< counts the changes of what they draw */
+    port_view_ask_fn ask_fn;    /**< where an ask goes */
+    uint8_t          seq;       /**< the last ask's number */
+    uint8_t          ask_state; /**< where it stands: a prog_link_ask_state_t */
+    uint8_t          ask_wait;  /**< what it waits on: a prog_link_wait_t */
+    uint8_t          ask_port;  /**< its port */
+    uint8_t          ask_kind;  /**< its kind: a prog_link_ask_kind_t */
+} port_view_state_t;
+
+/** @brief The view's one instance. */
+static port_view_state_t pv = {
+    .view = {
+        .count = PORT_VIEW_UNKNOWN,
+        .pin   = { PORT_VIEW_NO_PIN, PORT_VIEW_NO_PIN, PORT_VIEW_NO_PIN,
+                   PORT_VIEW_NO_PIN },
+        .func  = { PORT_VIEW_FN_UNKNOWN, PORT_VIEW_FN_UNKNOWN,
+                   PORT_VIEW_FN_UNKNOWN, PORT_VIEW_FN_UNKNOWN },
+    },
+    .ask_state = (uint8_t)PROG_LINK_ASK_IDLE,
+    .ask_wait  = (uint8_t)PROG_LINK_WAIT_NONE,
 };
-_Static_assert(LINK_PG_PORTS_MAX == 4u, "g_view's initialiser");
-/** @brief Counts the changes of what the screens draw. */
-static uint32_t         g_rev;
-/** @brief Where an ask goes. */
-static port_view_ask_fn g_ask;
-/** @brief The last ask's number. */
-static uint8_t          g_seq;
-/** @brief Where it stands: a prog_link_ask_state_t. */
-static uint8_t          g_ask_state = (uint8_t)PROG_LINK_ASK_IDLE;
-/** @brief What it waits on: a prog_link_wait_t. */
-static uint8_t          g_ask_wait  = (uint8_t)PROG_LINK_WAIT_NONE;
-/** @brief Its port. */
-static uint8_t          g_ask_port;
-/** @brief Its kind: a prog_link_ask_kind_t. */
-static uint8_t          g_ask_kind;
+_Static_assert(LINK_PG_PORTS_MAX == 4u, "pv.view's initialiser");
 
 void port_view_unknown(port_view_t *v)
 {
@@ -52,25 +54,25 @@ void port_view_unknown(port_view_t *v)
 
 void port_view_set(const port_view_t *v)
 {
-    if (v != NULL && memcmp(v, &g_view, sizeof(g_view)) != 0) {
-        g_view = *v;
-        ++g_rev;
+    if (v != NULL && memcmp(v, &pv.view, sizeof(pv.view)) != 0) {
+        pv.view = *v;
+        ++pv.rev;
     }
 }
 
-const port_view_t *port_view_get(void) { return &g_view; }
+const port_view_t *port_view_get(void) { return &pv.view; }
 
-uint32_t port_view_revision(void) { return g_rev; }
+uint32_t port_view_revision(void) { return pv.rev; }
 
 bool port_view_has(uint8_t port)
 {
-    return g_view.count != PORT_VIEW_UNKNOWN && port < g_view.count
+    return pv.view.count != PORT_VIEW_UNKNOWN && port < pv.view.count
            && port < LINK_PG_PORTS_MAX;
 }
 
 uint8_t port_view_func(uint8_t port)
 {
-    return port_view_has(port) ? g_view.func[port]
+    return port_view_has(port) ? pv.view.func[port]
                                : (uint8_t)PORT_VIEW_FN_UNKNOWN;
 }
 
@@ -98,47 +100,47 @@ const char *port_view_fn_name(uint8_t fn)
     }
 }
 
-void port_view_set_ask(port_view_ask_fn fn) { g_ask = fn; }
+void port_view_set_ask(port_view_ask_fn fn) { pv.ask_fn = fn; }
 
 bool port_view_ask(uint8_t port, prog_link_ask_kind_t kind, uint16_t value)
 {
-    if (g_ask == NULL || !port_view_has(port)
+    if (pv.ask_fn == NULL || !port_view_has(port)
         || (kind == PROG_LINK_ASK_FUNC
-            && (!g_view.has_func
-                || value >= (g_view.has_dshot
+            && (!pv.view.has_func
+                || value >= (pv.view.has_dshot
                                  ? (uint16_t)LINK_PG_FN_COUNT
                                  : (uint16_t)LINK_PG_FN_COUNT_V426)))) {
         return false;
     }
     /* 1 to 255: 0 stands for no ask in the word that carries it. */
-    const uint8_t seq = (g_seq == 0xFFu) ? 1u : (uint8_t)(g_seq + 1u);
-    if (!g_ask(seq, port, kind, value)) {
+    const uint8_t seq = (pv.seq == 0xFFu) ? 1u : (uint8_t)(pv.seq + 1u);
+    if (!pv.ask_fn(seq, port, kind, value)) {
         return false;
     }
-    g_seq       = seq;
-    g_ask_state = (uint8_t)PROG_LINK_ASK_WAITING;
-    g_ask_wait  = (uint8_t)PROG_LINK_WAIT_NONE;
-    g_ask_port  = port;
-    g_ask_kind  = (uint8_t)kind;
-    ++g_rev;
+    pv.seq       = seq;
+    pv.ask_state = (uint8_t)PROG_LINK_ASK_WAITING;
+    pv.ask_wait  = (uint8_t)PROG_LINK_WAIT_NONE;
+    pv.ask_port  = port;
+    pv.ask_kind  = (uint8_t)kind;
+    ++pv.rev;
     return true;
 }
 
 void port_view_set_ask_state(uint8_t seq, prog_link_ask_state_t st)
 {
-    if (seq != g_seq || g_ask_state == (uint8_t)PROG_LINK_ASK_IDLE
-        || (uint8_t)st == g_ask_state || st == PROG_LINK_ASK_IDLE) {
+    if (seq != pv.seq || pv.ask_state == (uint8_t)PROG_LINK_ASK_IDLE
+        || (uint8_t)st == pv.ask_state || st == PROG_LINK_ASK_IDLE) {
         return;
     }
-    g_ask_state = (uint8_t)st;
-    ++g_rev;
+    pv.ask_state = (uint8_t)st;
+    ++pv.rev;
 }
 
 void port_view_set_ask_wait(prog_link_wait_t wait)
 {
-    if ((uint8_t)wait != g_ask_wait) {
-        g_ask_wait = (uint8_t)wait;
-        ++g_rev;
+    if ((uint8_t)wait != pv.ask_wait) {
+        pv.ask_wait = (uint8_t)wait;
+        ++pv.rev;
     }
 }
 
@@ -150,7 +152,7 @@ void port_view_set_ask_wait(prog_link_wait_t wait)
  */
 static const char *wait_line(void)
 {
-    switch ((prog_link_wait_t)g_ask_wait) {
+    switch ((prog_link_wait_t)pv.ask_wait) {
     case PROG_LINK_WAIT_READ:  return TR(OUT_PORT_WAIT_READ);
     case PROG_LINK_WAIT_KST:   return TR(OUT_PORT_WAIT_KST);
     case PROG_LINK_WAIT_HITEC: return TR(OUT_PORT_WAIT_HITEC);
@@ -165,15 +167,15 @@ static const char *wait_line(void)
 prog_link_ask_state_t port_view_ask_state(uint8_t *port, uint8_t *kind)
 {
     if (port != NULL) {
-        *port = g_ask_port;
+        *port = pv.ask_port;
     }
     if (kind != NULL) {
-        *kind = g_ask_kind;
+        *kind = pv.ask_kind;
     }
-    return (prog_link_ask_state_t)g_ask_state;
+    return (prog_link_ask_state_t)pv.ask_state;
 }
 
-uint8_t port_view_ask_seq(void) { return g_seq; }
+uint8_t port_view_ask_seq(void) { return pv.seq; }
 
 bool port_view_ask_line(uint8_t port, char *buf, size_t cap)
 {
@@ -181,11 +183,11 @@ bool port_view_ask_line(uint8_t port, char *buf, size_t cap)
         return false;
     }
     buf[0] = '\0';
-    if (port != g_ask_port) {
+    if (port != pv.ask_port) {
         return false;
     }
     const char *line = NULL;
-    switch ((prog_link_ask_state_t)g_ask_state) {
+    switch ((prog_link_ask_state_t)pv.ask_state) {
     case PROG_LINK_ASK_WAITING: line = wait_line();              break;
     case PROG_LINK_ASK_REFUSED: line = TR(OUT_PORT_ASK_REFUSED); break;
     case PROG_LINK_ASK_LOST:    line = TR(OUT_PORT_ASK_LOST);    break;

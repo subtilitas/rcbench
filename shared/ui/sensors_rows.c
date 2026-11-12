@@ -18,42 +18,50 @@
 #include "ui_text.h"
 #include "ui_theme.h"
 
-/* The parts' states as the control task last said.  Outside any screen's
- * state: what the IOmcu reads does not change when SETUP is reset. */
-static uint16_t s_status;
+/**
+ * @brief The parts' states as the control task and the panel last said, one
+ *        instance per image.  Outside any screen's state: what the IOmcu
+ *        reads does not change when SETUP is reset.
+ */
+typedef struct {
+    uint16_t    status;   /**< the parts' states word */
+    sens_part_t i228;     /**< the INA228's state */
+    /** @brief The limits' marks: bits 0 to 11 the channels, 12 to 15
+     *         sense_limit_st_t */
+    uint16_t    limits;
+    imu_link_t  imu;      /**< the IMU's state */
+    uint16_t    imu_dhz;  /**< its rate, 0.1Hz */
+    bool        imu_cal;  /**< the IMU's calibration runs */
+} rows_state_t;
+
+/** @brief The parts' states, one instance. */
+static rows_state_t sr = { .imu = IMU_LINK_OFF };
 
 void sensors_rows_set_status(uint16_t word)
 {
-    if (word != s_status) {
-        s_status = word;
+    if (word != sr.status) {
+        sr.status = word;
         settings_screen_invalidate();
     }
 }
 
-/** @brief The INA228's state as the control task last said; see s_status. */
-static sens_part_t s_i228;
-
 void sensors_rows_set_i228(sens_part_t st)
 {
-    if (st != s_i228) {
-        s_i228 = st;
+    if (st != sr.i228) {
+        sr.i228 = st;
         settings_screen_invalidate();
     }
 }
 
 sens_part_t sensors_rows_i228(void)
 {
-    return s_i228;
+    return sr.i228;
 }
-
-/** @brief The limits' marks as the control task last said: bits 0 to 11
- *         the channels, 12 to 15 sense_limit_st_t. */
-static uint16_t s_limits;
 
 void sensors_rows_set_limits(uint16_t word)
 {
-    if (word != s_limits) {
-        s_limits = word;
+    if (word != sr.limits) {
+        sr.limits = word;
         settings_screen_invalidate();
     }
 }
@@ -79,7 +87,7 @@ sens_part_t sensors_rows_status(int a)
     if (a < 0 || a >= SET_INA_PARTS) {
         return SENS_PART_UNKNOWN;
     }
-    return SENS_PART_OF(s_status, (unsigned)a);
+    return SENS_PART_OF(sr.status, (unsigned)a);
 }
 
 static bool fitted(int a)
@@ -156,7 +164,7 @@ bool sensors_rows_unheld(setting_id_t id)
         break;
     }
     int c = 0;
-    return limit_row(id, &c) && (s_limits & (1u << c)) != 0u;
+    return limit_row(id, &c) && (sr.limits & (1u << c)) != 0u;
 }
 
 const char *sensors_rows_why(setting_id_t id)
@@ -169,7 +177,7 @@ const char *sensors_rows_why(setting_id_t id)
     default:                  break;
     }
     int c = 0;
-    if (limit_row(id, &c) && (s_limits >> 12) == SENSE_LIMIT_ST_OLD) {
+    if (limit_row(id, &c) && (sr.limits >> 12) == SENSE_LIMIT_ST_OLD) {
         return TR(SET_SENS_LIM_OLD);
     }
     return TR(SET_UNHELD);
@@ -414,32 +422,24 @@ void sensors_rows_publish_watch(void)
 
 /* ------------------------------------------------- the Bluetooth IMU */
 
-/** @brief The IMU's state as the panel last said; see s_status. */
-static imu_link_t s_imu = IMU_LINK_OFF;
-/** @brief Its rate, 0.1Hz. */
-static uint16_t s_imu_dhz;
-
 void sensors_rows_set_imu(imu_link_t link, uint16_t rate_dhz)
 {
     /* The rate is shown in whole Hz: a change under 1Hz repaints nothing. */
-    if (link != s_imu || (rate_dhz + 5u) / 10u != (s_imu_dhz + 5u) / 10u) {
+    if (link != sr.imu || (rate_dhz + 5u) / 10u != (sr.imu_dhz + 5u) / 10u) {
         settings_screen_invalidate();
     }
-    s_imu = link;
-    s_imu_dhz = rate_dhz;
+    sr.imu = link;
+    sr.imu_dhz = rate_dhz;
 }
-
-/** @brief The IMU's calibration runs, as the panel last said. */
-static bool s_imu_cal;
 
 void sensors_rows_set_imu_cal(bool running)
 {
-    s_imu_cal = running;
+    sr.imu_cal = running;
 }
 
 imu_link_t sensors_rows_imu(void)
 {
-    return s_imu;
+    return sr.imu;
 }
 
 const char *sensors_rows_imu_word(imu_link_t link, uint16_t rate_dhz,
@@ -471,9 +471,9 @@ const char *sensors_rows_imu_word(imu_link_t link, uint16_t rate_dhz,
 const char *sensors_rows_imu_state(char *buf, size_t n, gfx_color_t *ink)
 {
     if (ink != NULL) {
-        *ink = sensors_rows_imu_color(s_imu);
+        *ink = sensors_rows_imu_color(sr.imu);
     }
-    return sensors_rows_imu_word(s_imu, s_imu_dhz, buf, n);
+    return sensors_rows_imu_word(sr.imu, sr.imu_dhz, buf, n);
 }
 
 gfx_color_t sensors_rows_imu_color(imu_link_t link)
@@ -495,14 +495,14 @@ const char *sensors_rows_imu_notice(setting_id_t id)
     if (!settings_get_bool(SET_IMU_EN)) {
         return NULL;
     }
-    const bool now = s_imu == IMU_LINK_CONNECTED;
+    const bool now = sr.imu == IMU_LINK_CONNECTED;
     if (id == SET_IMU_RATE) {
         return !now ? TR(IMU_RATE_LATER)
-               : s_imu_cal ? TR(IMU_RATE_AFTER_CAL) : TR(IMU_RATE_SAVED);
+               : sr.imu_cal ? TR(IMU_RATE_AFTER_CAL) : TR(IMU_RATE_SAVED);
     }
     if (id == SET_IMU_ALGO) {
         return !now ? TR(IMU_ALGO_LATER)
-               : s_imu_cal ? TR(IMU_ALGO_AFTER_CAL) : TR(IMU_ALGO_SAVED);
+               : sr.imu_cal ? TR(IMU_ALGO_AFTER_CAL) : TR(IMU_ALGO_SAVED);
     }
     return NULL;
 }
