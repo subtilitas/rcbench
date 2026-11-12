@@ -467,17 +467,23 @@ static void prg_add_row(ui_help_page_t *p, int pg, const char *label,
     }
 }
 
-/** @brief KST's or HITEC's SERVO tab: the tabs, CONNECT, the read, TYPE or
- *         SERIES (FILES on HITEC once its CONNECT opened the port), the
- *         notes.
+/** @brief KST's or HITEC's SERVO tab: the tabs, CONNECT (LEAVE once it
+ *         holds the port), the read, TYPE or SERIES (FILES on HITEC once
+ *         its CONNECT opened the port), the notes.
  *  @param p The page. */
 static void page_prg_connect(ui_help_page_t *p)
 {
     const bool kst = prg_kst();
     prg_page_init(p, kst ? TX_HG_KST_TITLE_CONNECT : TX_HG_HT_TITLE_CONNECT);
     prg_add_tabs(p, PRG_PG_CONNECT);
-    prg_add_row(p, PRG_PG_CONNECT, prg_button(PRG_TAB_SERVO, 0, 0),
-                TX_HG_PRG_CONNECT, 0, 0);
+    /* The port's button reads LEAVE once CONNECT holds the port: the text
+     * is LEAVE's, whose way back to PWM differs on KST and HITEC. */
+    const char *port = prg_button(PRG_TAB_SERVO, 0, 0);
+    const ui_text_id_t port_text =
+        (strcmp(port, TR(KP_LEAVE)) != 0) ? TX_HG_PRG_CONNECT
+        : kst                             ? TX_HG_KST_LEAVE
+                                          : TX_HG_HT_LEAVE;
+    prg_add_row(p, PRG_PG_CONNECT, port, port_text, 0, 0);
     if (kst) {
         prg_add_row(p, PRG_PG_CONNECT, prg_button(PRG_TAB_SERVO, 1, 0),
                     TX_HG_PRG_READ, 1, 0);

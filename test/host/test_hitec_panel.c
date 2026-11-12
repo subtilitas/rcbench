@@ -14,7 +14,8 @@
  * carrier at 4.36 the PORT row's label opens PROGP01 to PROGP04, the entry
  * taken is SERVO TESTER, and the list stays shut while the bench is ARMED.
  * The SERVO screen's guide names SERIES or FILES as the row shows it, a
- * CONNECT on its way included.
+ * CONNECT on its way included, and gives the port's button LEAVE's text
+ * once it reads LEAVE, in English and German.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -101,6 +102,36 @@ TEST_CASE(the_guide_names_series_or_files_as_the_row_shows)
     if (i < p.count) {
         CHECK_EQ(p.item[i].text, TX_HG_HT_FILES);
     }
+}
+
+/* The guide's CONNECT page marks the port's button with the text of what
+ * it does: CONNECT's before the port is held, LEAVE's once the button
+ * reads LEAVE, in both languages. */
+TEST_CASE(the_guide_gives_leave_its_own_text)
+{
+    static const ui_lang_t k_lang[] = { UI_LANG_EN, UI_LANG_DE };
+    const ui_screen_t *sv = servo_fn_screen(SERVO_FN_HITEC);
+    ui_help_page_t p;
+
+    for (size_t l = 0; l < sizeof(k_lang) / sizeof(k_lang[0]); ++l) {
+        sv->reset();
+        open_at(SUPPLY_NONE, k_lang[l]);
+        servo_d485();
+        servo_screen_show_fn(SERVO_FN_HITEC);
+        CHECK(sv->help_page(0, &p));
+        CHECK(p.count > 1);
+        CHECK_STR_EQ(p.item[1].label, TR(KP_CONNECT));
+        CHECK_EQ(p.item[1].text, TX_HG_PRG_CONNECT);
+        tap(val(HITEC_PANEL_SERVO, 0, 0));
+        settled();
+        show();
+        CHECK_EQ(pstate(), HITEC_PROG_HELD);
+        CHECK(sv->help_page(0, &p));
+        CHECK(p.count > 1);
+        CHECK_STR_EQ(p.item[1].label, TR(KP_LEAVE));
+        CHECK_EQ(p.item[1].text, TX_HG_HT_LEAVE);
+    }
+    ui_text_set_language(UI_LANG_EN);
 }
 
 TEST_CASE(the_series_is_chosen_before_connect_and_kept_in_the_settings)
@@ -860,6 +891,7 @@ int main(void)
     RUN(a_held_ports_reading_moves_the_page_as_its_state_line_shows_it);
     RUN(the_series_is_chosen_before_connect_and_kept_in_the_settings);
     RUN(the_guide_names_series_or_files_as_the_row_shows);
+    RUN(the_guide_gives_leave_its_own_text);
     RUN(on_the_carrier_the_port_row_chooses_the_port);
     RUN(the_series_row_and_more_take_no_tap_while_the_port_is_held);
     RUN(hitec_d_receive_is_set_on_more_in_pwm);

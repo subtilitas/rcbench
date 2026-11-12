@@ -1118,6 +1118,8 @@ FIT_ONLY = {
     "help-servo-kst-3":   (None, "servo", "dark"),
     "help-servo-kst-tune":   (None, "servo", "dark"),
     "help-servo-kst-tune-2": (None, "servo", "dark"),
+    # KST's SERVO tab after a read: LEAVE in CONNECT's place.
+    "help-servo-kst-read":   (None, "servo", "dark"),
     "help-servo-hitec":   (None, "servo", "dark"),
     "help-servo-hitec-2": (None, "servo", "dark"),
     "help-servo-hitec-3": (None, "servo", "dark"),

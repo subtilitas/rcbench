@@ -6653,6 +6653,9 @@ UI_TEXT(HG_KST_FILES, 0,
 UI_TEXT(HG_KST_MORE, 0,
     "In PWM the supply CONNECT sets. In programming VERIFY and DISCARD EDITS.",
     "In PWM die Versorgung für VERBINDEN. Beim Programmieren PRÜFEN und ÄNDERUNGEN VERWERFEN.")
+UI_TEXT(HG_KST_LEAVE, 0,
+    "Its page's 2s hold gives the port back to PWM. The supply stays; one the bench switches is off 1s after a write.",
+    "2s Halten auf seiner Seite gibt den Port an PWM. Versorgung bleibt; vom Prüfstand nach Schreiben 1s aus.")
 UI_TEXT(HG_KST_RESTORE, 0,
     "Writes a backup back: the session's first read, or the values before an interrupted write.",
     "Spielt eine Sicherung zurück: den ersten Lesestand oder die Werte vor einem abgebrochenen Schreiben.")
@@ -6674,6 +6677,9 @@ UI_TEXT(HG_HT_FILES, 0,
 UI_TEXT(HG_HT_MORE, 0,
     "The supply CONNECT sets. With the port held DISCARD EDITS; on CLASSIC REPAIR CHECKSUM and FACTORY DEFAULT.",
     "Versorgung für VERBINDEN. Port gehalten: ÄNDERUNGEN VERWERFEN; CLASSIC: PRÜFSUMME REPARIEREN, WERKSEINSTELLUNG.")
+UI_TEXT(HG_HT_LEAVE, 0,
+    "Its page's 2s hold gives the port back to PWM. The supply stays; on CLASSIC it is off for about 760ms.",
+    "2s Halten auf seiner Seite gibt den Port an PWM zurück. Versorgung bleibt, bei CLASSIC etwa 760ms aus.")
 UI_TEXT(HG_HT_CLEAR, 0,
     "CLEAR goes on with the read after a switch to SAFE stopped it.",
     "AUFHEBEN setzt das Lesen fort, nachdem ein Wechsel zu SAFE es gestoppt hat.")

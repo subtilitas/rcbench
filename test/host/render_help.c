@@ -69,6 +69,7 @@ static const struct {
     { "help-servo-rudder-auto", "servo-rudder-auto-safe" },
     { "help-servo-kst", "servo-kst" },
     { "help-servo-kst-tune", "servo-kst-tune" },
+    { "help-servo-kst-read", "servo-kst-read" },
     { "help-servo-hitec", "servo-hitec" },
     /* After CONNECT on a servo powered by hand: with the PD mini's output
      * live the guide offers no session page (servo_guide.c). */
