@@ -6,7 +6,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#define GFX_INL_FORCE   /* gfx_int.h: force the primitives inline (see there) */
+#define GFX_INL_FORCE   /**< gfx_int.h: force the primitives inline (see there) */
 #include "gfx_int.h"
 #include "gfx_subpixel.h"
 #include "gfx_work.h"
@@ -16,8 +16,8 @@
 #include <math.h>
 #include <string.h>
 
-#define GFX_MIN(a, b) ((a) < (b) ? (a) : (b))
-#define GFX_MAX(a, b) ((a) > (b) ? (a) : (b))
+#define GFX_MIN(a, b) ((a) < (b) ? (a) : (b)) /**< the smaller of two values */
+#define GFX_MAX(a, b) ((a) > (b) ? (a) : (b)) /**< the larger of two values */
 
 /* The nesting depth of the fit check's hold (gfx_int.h); gfx_text.c counts it
  * too. */
@@ -34,14 +34,22 @@ unsigned long gfx_work(void)
 }
 #endif
 
-/* The framebuffer is in PSRAM (pseudo-static random-access memory) behind a
+/**
+ * @brief A 32-bit word that may alias the pixel buffer.
+ *
+ * The framebuffer is in PSRAM (pseudo-static random-access memory) behind a
  * write-back, write-allocate cache with 64-byte lines, so every byte written
  * costs two bytes on the bus: the line is fetched before it is overwritten,
  * then written back.  Filling a span 32 bits at a time halves the store count
  * and lets the write buffer coalesce.  may_alias keeps this legal without
- * disabling strict aliasing globally. */
+ * disabling strict aliasing globally.
+ */
 typedef uint32_t gfx_u32_alias __attribute__((may_alias));
 
+/**
+ * @brief Fills @p n pixels from @p p with one color, 32 bits at a time where
+ *        the alignment allows.
+ */
 static inline void fill_span(gfx_color_t *p, int n, gfx_color_t color)
 {
     if (n <= 0) {
@@ -438,6 +446,7 @@ void gfx_fill_circle(gfx_canvas_t *c, int cx, int cy, int r, gfx_color_t color)
     }
 }
 
+/** @brief Limits a corner radius to 0 and half the shorter edge. */
 static int clamp_radius(int w, int h, int r)
 {
     int limit = GFX_MIN(w, h) / 2;
@@ -539,11 +548,13 @@ void gfx_draw_round_rect(gfx_canvas_t *c, int x, int y, int w, int h,
 
 /* ------------------------------------------------------------- chamfers */
 
-/*
- * Half the shorter edge, not all of it.  Two cuts share every edge, so a limit
- * of min(w, h) lets tl + tr exceed w: the fill then drops whole rows and the
- * outline hands a negative length to gfx_hline, whose documented backwards run
- * draws it outside the rectangle.  Round rects already clamp this way.
+/**
+ * @brief Limit a corner cut to 0 and half the shorter edge.
+ *
+ * Half, not all of it.  Two cuts share every edge, so a limit of min(w, h)
+ * lets tl + tr exceed w: the fill then drops whole rows and the outline hands
+ * a negative length to gfx_hline, whose documented backwards run draws it
+ * outside the rectangle.  Round rects already clamp this way.
  */
 static int clamp_cut(int w, int h, int cut)
 {
@@ -744,8 +755,12 @@ static void cov_blend(gfx_canvas_t *c, int x, int y, gfx_color_t col, float cov)
     *p = (cov >= 1.0f) ? col : gfx_lerp(*p, col, (uint8_t)(cov * 255.0f));
 }
 
-/* The box to walk, already intersected with the clip.  False if nothing of
- * it survives, so the caller can skip the shape entirely. */
+/**
+ * @brief The box to walk, already intersected with the clip.
+ *
+ * Returns false if nothing of it survives, so the caller can skip the shape
+ * entirely.
+ */
 static bool cov_box(const gfx_canvas_t *c, float cx, float cy, float reach,
                     int *x0, int *y0, int *x1, int *y1)
 {
@@ -1245,6 +1260,10 @@ static bool arc_dir_in(const arc_dirs_t *w, float a_deg)
     return u <= w->span;
 }
 
+/**
+ * @brief Draws an arc, or an arc faded into @p into at both ends over @p
+ *        fade_deg; see gfx_arc_fade().
+ */
 static void arc_walk(gfx_canvas_t *c, int cx, int cy, int r, int thickness,
                      float a0_deg, float a1_deg, gfx_color_t col,
                      gfx_color_t into, float fade_deg)
