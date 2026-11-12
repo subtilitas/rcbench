@@ -117,12 +117,6 @@ firmware/iomcu/src/tone_core1.c: warning: Member s_started (variable) of file to
 firmware/iomcu/src/tone_core1.c: warning: Member s_status (variable) of file tone_core1.c is not documented.	static tone_status_t s_status; /* core 1 writes, core 0 copies */
 firmware/iomcu/src/tone_core1.c: warning: Member s_status_seq (variable) of file tone_core1.c is not documented.	static volatile uint32_t s_status_seq;
 firmware/iomcu/src/tone_core1.c: warning: Member s_taken_seq (variable) of file tone_core1.c is not documented.	static uint32_t s_taken_seq;
-firmware/iomcu/src/update_hw.c: warning: Member s_busy(void) (variable) of file update_hw.c is not documented.	static bool (*s_busy)(void);
-firmware/iomcu/src/update_hw.c: warning: Member s_buy_rc (variable) of file update_hw.c is not documented.	static int s_buy_rc;
-firmware/iomcu/src/update_hw.c: warning: Member s_io (variable) of file update_hw.c is not documented.	static link_update_io_t s_io;
-firmware/iomcu/src/update_hw.c: warning: Member s_slot (variable) of file update_hw.c is not documented.	static int s_slot = -1;
-firmware/iomcu/src/update_hw.c: warning: Member s_target_off (variable) of file update_hw.c is not documented.	static uint32_t s_target_off; /* the slot written, from flash 0 */
-firmware/iomcu/src/update_hw.c: warning: Member s_upd (variable) of file update_hw.c is not documented.	static link_update_dev_t s_upd;
 firmware/panel/components/art_flash/art_flash_esp.c: warning: Member ART_FLASH_CHUNK (macro definition) of file art_flash_esp.c is not documented.	#define ART_FLASH_CHUNK SPI_FLASH_SEC_SIZE
 firmware/panel/components/art_flash/art_flash_esp.c: warning: Member TAG (variable) of file art_flash_esp.c is not documented.	static const char *TAG = "artflash";
 firmware/panel/components/art_flash/art_flash_esp.c: warning: Member breathe(void) (function) of file art_flash_esp.c is not documented.	static void breathe(void)
@@ -490,7 +484,6 @@ firmware/panel/main/main.c: warning: Member s_log_kind (variable) of file main.c
 firmware/panel/main/main.c: warning: Member s_log_run_ctr (variable) of file main.c is not documented.	static uint32_t s_log_run_ctr;
 firmware/panel/main/main.c: warning: Member s_log_t (variable) of file main.c is not documented.	float s_log_t;
 firmware/panel/main/main.c: warning: Member s_loss_gen (variable) of file main.c is not documented.	atomic_uint s_loss_gen;
-firmware/panel/main/main.c: warning: Member s_lost_notice_seq (variable) of file main.c is not documented.	uint32_t s_lost_notice_seq;
 firmware/panel/main/main.c: warning: Member s_out (variable) of file main.c is not documented.	outputs_t s_out;
 firmware/panel/main/main.c: warning: Member s_outputs_read (variable) of file main.c is not documented.	bind_reading_t s_outputs_read;
 firmware/panel/main/main.c: warning: Member s_outputs_read_fresh (variable) of file main.c is not documented.	bool s_outputs_read_fresh; /* both under s_snap_lock */
@@ -698,7 +691,6 @@ firmware/panel/main/panel.h: warning: Member s_log_open_run (variable) of file p
 firmware/panel/main/panel.h: warning: Member s_log_run_now (variable) of file panel.h is not documented.	extern atomic_uint s_log_run_now;
 firmware/panel/main/panel.h: warning: Member s_log_t (variable) of file panel.h is not documented.	extern float s_log_t;
 firmware/panel/main/panel.h: warning: Member s_loss_gen (variable) of file panel.h is not documented.	extern atomic_uint s_loss_gen;
-firmware/panel/main/panel.h: warning: Member s_lost_notice_seq (variable) of file panel.h is not documented.	extern uint32_t s_lost_notice_seq;
 firmware/panel/main/panel.h: warning: Member s_mismatch (variable) of file panel.h is not documented.	extern link_uph_mismatch_t s_mismatch;
 firmware/panel/main/panel.h: warning: Member s_out (variable) of file panel.h is not documented.	extern outputs_t s_out;
 firmware/panel/main/panel.h: warning: Member s_outputs_read (variable) of file panel.h is not documented.	extern bind_reading_t s_outputs_read;
@@ -824,7 +816,6 @@ firmware/panel/main/panel.h: warning: Member wifi_service(bool armed, uint32_t s
 firmware/panel/main/panel.h: warning: Member win (variable) of struct servo_win_item_t is not documented.	sense_link_win_t win;
 firmware/panel/main/panel.h: warning: Member wiring_of(unsigned word) (function) of file panel.h is not documented.	static inline supply_wiring_t wiring_of(unsigned word)
 firmware/panel/main/panel.h: warning: Member write_regs(link_host_t *host, uint8_t page, uint8_t offset, uint8_t count, const uint16_t *regs, link_msg_t *reply) (function) of file panel.h is not documented.	static inline bool write_regs(link_host_t *host, uint8_t page, uint8_t offset,
-firmware/panel/main/panel_arm.c: warning: Member DISARM_INHIBIT_MS (macro definition) of file panel_arm.c is not documented.	#define DISARM_INHIBIT_MS (2u * HEARTBEAT_MAX_GAP_MS)
 firmware/panel/main/panel_arm.c: warning: Member apply_motor_cmd(const motor_cmd_t *mc, bool link_up, bench_state_t *bench) (function) of file panel_arm.c is not documented.	static void apply_motor_cmd(const motor_cmd_t *mc, bool link_up,
 firmware/panel/main/panel_arm.c: warning: Member arm_watch_service(bool link_up) (function) of file panel_arm.c is not documented.	void arm_watch_service(bool link_up)
 firmware/panel/main/panel_arm.c: warning: Member control_setup(telemetry_sim_t *sim, bench_state_t *bench) (function) of file panel_arm.c is not documented.	void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
@@ -832,7 +823,6 @@ firmware/panel/main/panel_arm.c: warning: Member disarm_here(bool link_up) (func
 firmware/panel/main/panel_arm.c: warning: Member drain_commands(bool link_up, bench_state_t *bench) (function) of file panel_arm.c is not documented.	void drain_commands(bool link_up, bench_state_t *bench)
 firmware/panel/main/panel_arm.c: warning: Member pct_to_hundredths(float pct) (function) of file panel_arm.c is not documented.	static uint16_t pct_to_hundredths(float pct)
 firmware/panel/main/panel_arm.c: warning: Member pct_to_span(float pct) (function) of file panel_arm.c is not documented.	static uint16_t pct_to_span(float pct)
-firmware/panel/main/panel_arm.c: warning: Member s_disarm_since (variable) of file panel_arm.c is not documented.	static uint32_t s_disarm_since;
 firmware/panel/main/panel_arm.c: warning: Member s_stops_served (variable) of file panel_arm.c is not documented.	static uint32_t s_stops_served;
 firmware/panel/main/panel_arm.c: warning: Member s_totals (variable) of file panel_arm.c is not documented.	bench_totals_t s_totals;
 firmware/panel/main/panel_arm.c: warning: Member s_totals_ms (variable) of file panel_arm.c is not documented.	uint32_t s_totals_ms;
@@ -1687,9 +1677,6 @@ shared/bench/include/tone_link.h: warning: Member status_ms (variable) of struct
 shared/bench/include/tone_link.h: warning: Member want[LINK_TN_CONFIG_COUNT] (variable) of struct tone_link_t is not documented.	uint16_t want[LINK_TN_CONFIG_COUNT];
 shared/bench/include/tone_link.h: warning: Member want_set (variable) of struct tone_link_t is not documented.	bool want_set;
 shared/bench/knob.c: warning: Member knob_poll_regs[KNOB_POLL_READS] (variable) of file knob.c is not documented.	const uint8_t knob_poll_regs[KNOB_POLL_READS] = {
-shared/bench/kst_card.c: warning: Member s_file (variable) of file kst_card.c is not documented.	static kst_file_t s_file;
-shared/bench/kst_card.c: warning: Member s_load (variable) of file kst_card.c is not documented.	static kst_file_load_t s_load;
-shared/bench/kst_card.c: warning: Member s_text[KST_FILE_MAX] (variable) of file kst_card.c is not documented.	static char s_text[KST_FILE_MAX];
 shared/bench/kst_link.c: warning: Member RES(reg) (macro definition) of file kst_link.c is not documented.	#define RES(reg) ((unsigned)(reg) - (unsigned)LINK_KS_FAIL)
 shared/bench/kst_link.c: warning: Member RESULTS_N (macro definition) of file kst_link.c is not documented.	#define RESULTS_N ((unsigned)LINK_KS_IMAGE - (unsigned)LINK_KS_FAIL)
 shared/bench/kst_link.c: warning: Member STAGE_WINDOWS (macro definition) of file kst_link.c is not documented.	#define STAGE_WINDOWS 6u

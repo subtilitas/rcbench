@@ -86,6 +86,97 @@ uint32_t touch_seq_take(touch_seq_rx_t *rx, uint32_t seq);
  */
 uint32_t touch_seq_tail(touch_seq_rx_t *rx, uint32_t published);
 
+/* ------------------------------------------------------- the producer */
+
+/**
+ * @brief The producer's side of one numbered stream.
+ *
+ * The panel's control task is the one producer of the render loop's touch
+ * queue.  It numbers every item it offers, keeps the number of the last loss
+ * notice for the arm's check (arm_watch_take_ok()), and offers each item as
+ * the steps touch_put_begin() and touch_put_next() name.  The numbers wrap
+ * at 2^32 (touch_seq_rx_t).
+ */
+typedef struct {
+    uint32_t seq;          /**< the number of the last item offered; 0 none */
+    uint32_t lost_notice;  /**< the number of the last loss notice; 0 none  */
+} touch_seq_tx_t;
+
+/**
+ * @brief The queue operation an offer asks for next.
+ *
+ * The queue holds a bounded number of items and nothing here waits.  A full
+ * queue drops its oldest entry and keeps the newest, as the GT911's own event
+ * queue does.  Which of the two is lost does not make this safe: the dropped
+ * item's number is missing from what the consumer takes, and the consumer
+ * drops its gestures before it handles the next item (touch_seq_take()).
+ */
+typedef enum {
+    TOUCH_PUT_SEND = 0,  /**< send the item, without waiting; report whether
+                              the queue took it                            */
+    TOUCH_PUT_EVICT,     /**< take the oldest entry off, without waiting   */
+    TOUCH_PUT_PUBLISH,   /**< publish the item's number (touch_put_t.seq)
+                              to the consumer, whatever the queue kept     */
+    TOUCH_PUT_DONE,      /**< the offer is over; touch_put_t.kept says
+                              whether the queue holds the item            */
+} touch_put_op_t;
+
+/** @brief One offer under way: its number, its step and its outcome. */
+typedef struct {
+    uint32_t seq;    /**< the item's number                              */
+    uint8_t  step;   /**< the touch_put_op_t asked last                  */
+    bool     sent;   /**< a send has been asked before the current one   */
+    bool     kept;   /**< the queue holds the item                       */
+} touch_put_t;
+
+/**
+ * @brief Nothing offered yet: the first item takes the number 1.
+ *
+ * @param tx Producer state to initialise.
+ */
+void touch_seq_tx_init(touch_seq_tx_t *tx);
+
+/**
+ * @brief The number the next offer takes, known before the offer: the STOP
+ *        mark of a press is set before the press is offered.
+ *
+ * @param tx Producer state.
+ * @return The next number; 1 for a NULL @p tx.
+ */
+uint32_t touch_seq_tx_next(const touch_seq_tx_t *tx);
+
+/**
+ * @brief Start an offer: number the item and ask for the first send.
+ *
+ * Every offer takes a number, whether or not the queue keeps the item.  A
+ * loss notice's number is kept as touch_seq_tx_t.lost_notice.
+ *
+ * @param tx   Producer state; receives the number.
+ * @param put  The offer; receives the number and its first step.
+ * @param lost The item is a loss notice, not an event.
+ * @return TOUCH_PUT_SEND; TOUCH_PUT_DONE, with nothing numbered, for a NULL
+ *         @p tx or @p put.
+ */
+touch_put_op_t touch_put_begin(touch_seq_tx_t *tx, touch_put_t *put,
+                               bool lost);
+
+/**
+ * @brief The operation after the one asked last, from its outcome.
+ *
+ * A send the queue refused asks for the oldest entry off and then for one
+ * more send, whether or not the eviction took anything: the consumer can
+ * empty the queue between the refused send and the eviction, and then there
+ * is room with nothing evicted.  A second refused send ends with the item
+ * not kept.  The number is published after the sends, kept or not.
+ *
+ * @param put The offer.
+ * @param ok  The outcome of the operation asked last: the queue took the
+ *            item (TOUCH_PUT_SEND) or an entry came off (TOUCH_PUT_EVICT);
+ *            ignored after TOUCH_PUT_PUBLISH.
+ * @return The next operation; TOUCH_PUT_DONE for a NULL @p put.
+ */
+touch_put_op_t touch_put_next(touch_put_t *put, bool ok);
+
 /* ------------------------------------------------------------ the STOP mark */
 
 /**

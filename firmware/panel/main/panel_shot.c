@@ -278,7 +278,7 @@ void panel_shot_init(void)
     ui_shot_bind(&k_io);
 }
 
-void panel_shot_frame(const panel_shot_in_t *in)
+void panel_shot_frame(const panel_shot_in_t *in, shot_facts_t *facts)
 {
     const unsigned drive = atomic_load(&s_drive);
     const shot_bench_t b = {
@@ -312,4 +312,7 @@ void panel_shot_frame(const panel_shot_in_t *in)
     shot_facts_t f;
     shot_facts_read(&b, &f);
     ui_router_shot_set_idle(shot_gate_idle(&f));
+    if (facts != NULL) {
+        *facts = f;
+    }
 }
