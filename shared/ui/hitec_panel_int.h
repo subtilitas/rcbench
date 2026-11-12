@@ -608,7 +608,7 @@ int hpn_move_notes(const char **s, gfx_color_t *color, int max);
 int hpn_move_lines(const hitec_prog_msg_t *m,
                    char out[HITEC_PANEL_MSG_LINES][HITEC_PANEL_LINE]);
 /** @brief The repeat of a -/+ key held, as KST's: 0.45s, then 8Hz, 30Hz
- *         after 1.8s.
+ *         from 2.25s after the press.
  * @param dt_s the frame's time, s
  */
 void hpn_step_tick(float dt_s);

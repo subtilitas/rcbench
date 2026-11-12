@@ -497,6 +497,13 @@ bool hitec_panel_holds_port(void)
     return hitec_prog_holds_port(&hp.prog);
 }
 
+bool hitec_panel_files_shown(void)
+{
+    const hpn_row_t *r = hpn_row_at(HITEC_PANEL_SERVO, 1, 0);
+
+    return r != NULL && r->kind == K_ACT && r->what == A_FILES;
+}
+
 uint8_t hitec_panel_pin(void)
 {
     const uint8_t pin = hitec_prog_pin(&hp.prog);

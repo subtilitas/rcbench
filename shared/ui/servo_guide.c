@@ -15,9 +15,10 @@
  * two, CONNECT and the read, then the files, the write switch and WRITE;
  * on another tab one, its values.  They are not offered while the READY
  * card's supply row switches a live output off, which their dock would
- * cover, while an editor of the session is open, or while Hitec's MOVE
- * SERVO drives the horn.  The READY card's page with WRITE n VALUES
- * follows.  No page is offered while ARMED: either dock covers part of DISARM in the footer's
+ * cover, or while an editor of the session is open.  The READY card's
+ * page with WRITE n VALUES follows.  While Hitec's MOVE SERVO drives the
+ * horn no page is offered: its ON, x 468 to 618 on TRAVEL, lies under
+ * the right dock from x 536 and under the left dock's last 20px to x 488.  No page is offered while ARMED: either dock covers part of DISARM in the footer's
  * middle slot.  A page whose dock would cover a control that stops an
  * output is not offered while that control shows: a READY card's page
  * while a run, a limit run or AUTO runs, or while ARM's steps run (the
@@ -340,18 +341,26 @@ static bool prg_supply_live(void)
 }
 
 /**
+ * @brief Whether HITEC's MOVE SERVO drives the horn: its ON, the tap that
+ *        stops it, spans x 468 to 618 on TRAVEL, under either dock.
+ * @return True while the loop runs on HITEC.
+ */
+static bool prg_moving(void)
+{
+    return !prg_kst() && hitec_prog_move_on(hitec_panel_model());
+}
+
+/**
  * @brief Whether the session's own pages are offered: its overlay open
- *        with no keypad, list, page or keyboard over it; no output live
- *        through the READY card's supply row, the PD mini or PROG 5V,
- *        whose OFF the dock on the right covers; and on HITEC no MOVE
- *        SERVO driving the horn.
+ *        with no keypad, list, page or keyboard over it; and no output
+ *        live through the READY card's supply row, the PD mini or PROG
+ *        5V, whose OFF the dock on the right covers.
  * @return True when they are.
  */
 static bool prg_guided(void)
 {
     if (prg_kst() ? (!kst_panel_is_open() || kst_panel_editor() != 0)
-                  : (!hitec_panel_is_open() || hitec_panel_editor() != 0
-                     || hitec_prog_move_on(hitec_panel_model()))) {
+                  : (!hitec_panel_is_open() || hitec_panel_editor() != 0)) {
         return false;
     }
     return !prg_supply_live() && !supply_screen_output_live()
@@ -459,7 +468,8 @@ static void prg_add_row(ui_help_page_t *p, int pg, const char *label,
 }
 
 /** @brief KST's or HITEC's SERVO tab: the tabs, CONNECT, the read, TYPE or
- *         SERIES (FILES on HITEC while it holds the port), the notes.
+ *         SERIES (FILES on HITEC once its CONNECT opened the port), the
+ *         notes.
  *  @param p The page. */
 static void page_prg_connect(ui_help_page_t *p)
 {
@@ -474,11 +484,11 @@ static void page_prg_connect(ui_help_page_t *p)
         prg_add_row(p, PRG_PG_CONNECT, prg_label(PRG_TAB_SERVO, 1, 1),
                     TX_HG_KST_TYPE, 1, 1);
     } else {
-        /* SERIES until the session holds the port; FILES in its place
-         * then. */
+        /* SERIES until this panel's CONNECT opened the port, FILES in its
+         * place then: the text follows the row shown. */
         prg_add_row(p, PRG_PG_CONNECT, prg_label(PRG_TAB_SERVO, 1, 0),
-                    hitec_panel_holds_port() ? TX_HG_HT_FILES
-                                             : TX_HG_HT_SERIES, 1, 0);
+                    hitec_panel_files_shown() ? TX_HG_HT_FILES
+                                              : TX_HG_HT_SERIES, 1, 0);
         prg_add_row(p, PRG_PG_CONNECT, prg_button(PRG_TAB_SERVO, 1, 1),
                     TX_HG_PRG_READ, 1, 1);
     }
@@ -655,8 +665,12 @@ static int pages_now(guide_fn out[GUIDE_MAX])
     }
     int n = 0;
     /* KST and HITEC: the session's pages, then the READY card's with
-     * WRITE n VALUES. */
+     * WRITE n VALUES; none while MOVE SERVO's ON, which stops the horn,
+     * sits under either dock. */
     if (prog_ready_shown()) {
+        if (prg_moving()) {
+            return 0;
+        }
         n = prg_pages(out);
         out[n++] = page_prog;
         return n;

@@ -127,7 +127,7 @@ Das Speicher-Popup wartet, bis der Prüfstand ruht: SAFE, Netzteilausgang und PR
 ![Die Hilfe von SERVO auf Seite 1 in LIVE](view:help-servo)
 ![Die Hilfe von SUPPLY auf Seite 1 in LIVE](view:help-supply)
 
-Auf KST und HITEC kommen zuerst die Hilfeseiten der Sitzung, mit dem Hilfefeld rechts: auf dem Reiter SERVO VERBINDEN und das Auslesen, dann die Dateien, die Schreibfreigabe und n WERTE SCHREIBEN; auf einem anderen Reiter seine Werte. Danach folgt die Hilfeseite zur Karte BEREIT, mit dem Hilfefeld links. Die Hilfeseiten der Sitzung fehlen, solange die Zeile der Versorgung in der Karte BEREIT EIN zeigt, solange eine Liste, ein Tastenfeld, eine Seite oder eine Tastatur der Sitzung offen ist und auf HITEC, solange SERVO BEWEGEN das Ruderhorn fährt.
+Auf KST und HITEC kommen zuerst die Hilfeseiten der Sitzung, mit dem Hilfefeld rechts: auf dem Reiter SERVO VERBINDEN und das Auslesen, dann die Dateien, die Schreibfreigabe und n WERTE SCHREIBEN; auf einem anderen Reiter seine Werte. Danach folgt die Hilfeseite zur Karte BEREIT, mit dem Hilfefeld links. Die Hilfeseiten der Sitzung fehlen, solange die Zeile der Versorgung in der Karte BEREIT EIN zeigt und solange eine Liste, ein Tastenfeld, eine Seite oder eine Tastatur der Sitzung offen ist. Auf HITEC gibt es keine Hilfeseite, solange SERVO BEWEGEN das Ruderhorn fährt: Jedes Hilfefeld verdeckt einen Teil seines EIN.
 
 ![Die Hilfe von KST auf Seite 1](view:help-servo-kst)
 

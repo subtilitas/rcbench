@@ -6442,8 +6442,8 @@ UI_TEXT(HG_PRG_VALUE, 0,
     "The servo's value, or the edit WRITE n VALUES sends. A tap on a live value edits it.",
     "Wert des Servos oder die Änderung für SCHREIBEN. Tippen ändert einen aktiven Wert.")
 UI_TEXT(HG_PRG_STEP, 0,
-    "Step the value. A held key repeats, faster after 1.8s.",
-    "Ändern den Wert schrittweise. Gehalten wiederholt die Taste, ab 1.8s schneller.")
+    "Step the value. A held key repeats, faster after 2.25s.",
+    "Ändern den Wert schrittweise. Gehalten wiederholt die Taste, ab 2.25s schneller.")
 UI_TEXT(HG_KST_TITLE_CONNECT, 0,
     "KST: CONNECT AND READ",
     "KST: VERBINDEN UND LESEN")
@@ -6481,8 +6481,8 @@ UI_TEXT(HG_HT_FILES, 0,
     "Saves the values to BENCH/HITEC/CONF on the card, or loads a file into the edits.",
     "Sichert die Werte nach BENCH/HITEC/CONF auf der Karte oder lädt eine Datei in die Änderungen.")
 UI_TEXT(HG_HT_MORE, 0,
-    "The supply CONNECT sets. With the port held DISCARD EDITS; on CLASSIC a repair and FACTORY DEFAULT.",
-    "Die Versorgung für VERBINDEN. Bei gehaltenem Port Änderungen verwerfen; bei CLASSIC Reparatur und Werkszustand.")
+    "The supply CONNECT sets. With the port held DISCARD EDITS; on CLASSIC REPAIR CHECKSUM and FACTORY DEFAULT.",
+    "Versorgung für VERBINDEN. Port gehalten: ÄNDERUNGEN VERWERFEN; CLASSIC: PRÜFSUMME REPARIEREN, WERKSEINSTELLUNG.")
 UI_TEXT(HG_HT_CLEAR, 0,
     "CLEAR goes on with the read after a switch to SAFE stopped it.",
     "AUFHEBEN setzt das Lesen fort, nachdem ein Wechsel zu SAFE es gestoppt hat.")

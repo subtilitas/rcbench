@@ -5,8 +5,7 @@
  * refuses, the -/+ keys of the positions with their repeat, the keypad
  * between them, the live lines that name the port the loop drives, and the
  * ways off: a tap on ON, a tab change, CLOSE and the home tag, a STOP; and
- * the SERVO screen's guide, which offers no page of the tab while the loop
- * runs.  The overlay's bench is hitec_panel_rig.h, its servo follows the
+ * the SERVO screen's guide, which offers no page while the loop runs.  The overlay's bench is hitec_panel_rig.h, its servo follows the
  * target.
  *
  * SPDX-License-Identifier: MIT
@@ -391,10 +390,11 @@ TEST_CASE(a_bind_is_said_in_both_languages)
 }
 
 /* The SERVO screen's guide over HITEC on TRAVEL: its tab of values and the
- * READY card's page.  While MOVE SERVO drives the horn, the values' page,
- * whose dock covers part of ON, goes; once the loop is off it comes
- * back. */
-TEST_CASE(move_servo_on_takes_the_guides_page_of_the_tab)
+ * READY card's page.  The left dock, the READY card's, reaches over the
+ * left end of MOVE SERVO's ON and the right dock over the rest, so while
+ * the loop drives the horn no page is offered; once the loop is off both
+ * come back. */
+TEST_CASE(move_servo_on_takes_every_page_of_the_guide)
 {
     const ui_screen_t *sv = servo_fn_screen(SERVO_FN_HITEC);
     sv->reset();
@@ -404,10 +404,19 @@ TEST_CASE(move_servo_on_takes_the_guides_page_of_the_tab)
     CHECK_EQ(sv->help_count(), 2);
     CHECK(sv->help_page(0, &p));
     CHECK_EQ(p.title, TX_HG_HT_TITLE_VALUES);
-    move_on();
-    CHECK_EQ(sv->help_count(), 1);
-    CHECK(sv->help_page(0, &p));
+    CHECK(sv->help_page(1, &p));
     CHECK_EQ(p.title, TX_HG_SV_TITLE_PRG);
+    move_on();
+    /* ON in panel coordinates, under both docks. */
+    gfx_rect_t on = hitec_panel_value_rect(HITEC_PANEL_TRAVEL, MOVE_ROW, 0);
+    on.y = (int16_t)(on.y + UI_BAND_H);
+    for (int side = 0; side < 2; ++side) {
+        const gfx_rect_t d = ui_help_dock_rect((ui_help_side_t)side);
+        CHECK(on.x < d.x + d.w && d.x < on.x + on.w && on.y < d.y + d.h
+              && d.y < on.y + on.h);
+    }
+    CHECK_EQ(sv->help_count(), 0);
+    CHECK(!sv->help_page(0, &p));
     tap(val(HITEC_PANEL_TRAVEL, MOVE_ROW, 0));
     move_ended();
     CHECK_EQ(sv->help_count(), 2);
@@ -432,6 +441,6 @@ int main(void)
     RUN(a_screen_change_switches_it_off);
     RUN(a_stop_ends_it_and_the_keys_go);
     RUN(a_bind_is_said_in_both_languages);
-    RUN(move_servo_on_takes_the_guides_page_of_the_tab);
+    RUN(move_servo_on_takes_every_page_of_the_guide);
     return test_summary("hitec_panel_move");
 }

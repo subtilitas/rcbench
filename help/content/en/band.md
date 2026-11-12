@@ -126,7 +126,7 @@ The save popup waits until the bench is idle: SAFE, supply output and PROG 5V of
 ![SERVO's guide at page 1 on LIVE](view:help-servo)
 ![SUPPLY's guide at page 1 on LIVE](view:help-supply)
 
-On KST and HITEC the session's pages come first, with the dock on the right: on the SERVO tab CONNECT and the read, then the files, the write switch and WRITE n VALUES; on another tab its values. The READY card's page follows, with the dock on the left. The session's pages are left out while the READY card's supply row reads ON, while a list, keypad, page or keyboard of the session is open, and on HITEC while MOVE SERVO drives the horn.
+On KST and HITEC the session's pages come first, with the dock on the right: on the SERVO tab CONNECT and the read, then the files, the write switch and WRITE n VALUES; on another tab its values. The READY card's page follows, with the dock on the left. The session's pages are left out while the READY card's supply row reads ON and while a list, keypad, page or keyboard of the session is open. On HITEC no page is offered while MOVE SERVO drives the horn: either dock covers part of its ON.
 
 ![KST's guide at page 1](view:help-servo-kst)
 

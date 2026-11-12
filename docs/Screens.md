@@ -308,8 +308,9 @@ while that control shows:
   switches a live output off; their READY page takes the dock on the left,
   off the card. The session's pages take the dock on the right, over the
   card: they are left out while the supply row reads ON, the supply
-  output is on or PROG 5V is on, and on HITEC while MOVE SERVO drives the
-  horn, whose ON the dock covers in part. LIVE, SWEEP and RUDDER offer their pages with the output on,
+  output is on or PROG 5V is on. On HITEC no page is offered while MOVE
+  SERVO drives the horn: its ON, x 468 to 618, lies under the right dock
+  from x 536 and under the left dock's last 20px. LIVE, SWEEP and RUDDER offer their pages with the output on,
   but none while ARM's steps run. SUPPLY's OUTPUT OFF, the footer's
   middle slot, lies under either dock, so SUPPLY offers no page then.
 - SERVO's function screens offer no page while ARMED: either dock covers
@@ -2473,7 +2474,7 @@ position being edited while the bench stays SAFE
 ([MOVE SERVO on the Hitec programmer](HitecMove.md)). A tap on OFF opens its
 page; HOLD 2s TO MOVE switches it on. While it is on, NEUTRAL, LEFT END and
 RIGHT END show 56 x 48px `-` and `+` keys around a 148px value; a key steps
-8 counts on the press and repeats after 0.45s at 8Hz, at 30Hz from 1.8s.
+8 counts on the press and repeats after 0.45s at 8Hz, at 30Hz from 2.25s.
 The label of the followed row is in the accent colour. The notes show the
 port and its GPIO, `POSITION 3344 (-65.1°)` with the AS5600 angle and the
 supply current, the reach and the end point's note. A tap on ON, a tab

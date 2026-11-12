@@ -330,8 +330,9 @@ Ausgangs verdecken würde, fehlt, solange dieses Element sichtbar ist:
   Hilfeseite zu BEREIT dockt links an, neben der Karte. Die Hilfeseiten
   der Sitzung docken rechts an, über der Karte: Sie fehlen, solange die
   Zeile der Versorgung EIN zeigt, der Ausgang der Versorgung oder PROG 5V
-  eingeschaltet ist, und auf HITEC, solange SERVO BEWEGEN das Ruderhorn
-  fährt, dessen EIN das Hilfefeld zum Teil verdeckt. LIVE, SWEEP und RUDER
+  eingeschaltet ist. Auf HITEC gibt es keine Hilfeseite, solange SERVO
+  BEWEGEN das Ruderhorn fährt: Sein EIN, x 468 bis 618, liegt ab x 536
+  unter dem rechten Hilfefeld und mit 20px unter dem linken. LIVE, SWEEP und RUDER
   bieten ihre Hilfeseiten auch bei eingeschaltetem Ausgang, aber keine,
   solange die Schritte von ARM laufen. AUSGANG AUS von SUPPLY, das mittlere Feld
   der Fußleiste, liegt unter jedem Hilfefeld; SUPPLY bietet dann keine
@@ -2673,7 +2674,7 @@ SAFE bleibt ([SERVO BEWEGEN in der Hitec-Programmierung](HitecMove-de.md)). Ein
 Tippen auf AUS öffnet seine Seite; 2s HALTEN ZUM BEWEGEN schaltet es ein.
 Solange es an ist, zeigen NEUTRAL, ENDE LINKS und ENDE RECHTS Tasten `-`
 und `+` mit 56 x 48px um einen 148px breiten Wert; eine Taste ändert beim
-Drücken um 8 Zählwerte und wiederholt nach 0.45s mit 8Hz, ab 1.8s mit
+Drücken um 8 Zählwerte und wiederholt nach 0.45s mit 8Hz, ab 2.25s mit
 30Hz. Der Name der verfolgten Zeile steht in der Akzentfarbe. Die
 Hinweise zeigen Port und GPIO, `POSITION 3344 (-65.1°)` mit dem
 AS5600-Winkel und dem Versorgungsstrom, die Reichweite und den Hinweis zur
