@@ -1678,14 +1678,20 @@ the screen is `shared/ui/servo_rudder_panel.c`.
   ARMED. The PORT button and the READY card's PORT row name the pin they
   drive.
 - -10us and +10us move the commanded pulse 10us (`RUD_STEP_US`) from the
-  pulse driven, about 0.9° on a servo with 11us a degree. They sit right of
+  commanded pulse, about 0.9° on a servo with 11us a degree. At SPEED
+  under 100% the commanded pulse can lead the horn. They sit right of
   RESET MAX, x 358 to 433 and 443 to 518, y 240 to 288, 75 x 48px each,
   while SETUP > PANEL's Rotary knob is OFF or the MT6701 at 0x06 did not
-  answer its last poll; a knob that answers hides them. A press steps once;
+  answer its last poll; a knob that answers hides them. The MT6701 reports
+  no magnet status over I2C, so a sensor that answers with no magnet over it
+  counts as a knob that answers: the keys stay hidden, and Rotary knob OFF
+  brings them back. A press steps once;
   a hold repeats after 0.45s at 8 steps a second and from 2.25s at 30, the
-  repeat of the programmers' `-` and `+` keys. The pulse is held to the
-  type's pulse range and, as an angle, to TRAVEL, so a hold stops where
-  1000us or 2000us stop. The pulse stays after the release. They act only
+  repeat of the programmers' `-` and `+` keys. A hold stops at TRAVEL or
+  at PULSE MIN or MAX, whichever comes first. On a type whose pulse range
+  reaches past 1000 to 2000us, WIDE or HELI CYCLIC, that is past the pulse
+  1000us or 2000us drives: -10us held at TRAVEL 90 on WIDE ends at 800us.
+  The pulse stays after the release. They act only
   while ARMED and are drawn as the drive buttons: green while ARMED, grey
   while SAFE. The knob's last poll is read every frame; a poll it misses
   shows the keys until the next one answers, 100ms later at the soonest.

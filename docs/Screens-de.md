@@ -2131,7 +2131,7 @@ Die Bedienelemente verhalten sich je nach Zustand so:
 | --- | --- | --- |
 | Das Zifferblatt | abgelehnt: kein Befehl, Horn und SOLL-PULSBREITE bleiben | fordert die Stellung unter dem Finger an |
 | Drehknopf | abgelehnt; die Drehung wird nicht gespeichert | bewegt das Horn vom befohlenen Wert aus |
-| -10us, +10us auf RUDER, solange `Drehknopf` AUS ist oder der Knopf nicht antwortet | abgelehnt; gedimmt gezeichnet | verschiebt den Puls um 10us vom befohlenen Wert aus, Halten wiederholt; begrenzt auf WEG und den Pulsbereich |
+| -10us, +10us auf RUDER, solange `Drehknopf` AUS ist oder der Knopf nicht antwortet | abgelehnt; gedimmt gezeichnet | verschiebt den Puls um 10us vom befohlenen Wert aus, Halten wiederholt; ein Halten endet an WEG oder an PULS MIN oder MAX, je nachdem, was zuerst kommt |
 | ZENTRIEREN | abgelehnt; gedimmt gezeichnet | fordert PULS MITTE plus TRIMMUNG an |
 | SWEEP, PAUSE, PAUSIERT | abgelehnt; gedimmt gezeichnet | startet, pausiert und setzt den Sweep fort |
 | FREIGEBEN | sendet die Freigabe; der gezeigte Wert bleibt | zentriert die Ruderflächen; der gezeigte Wert wird zur Ruhelage |
@@ -5950,7 +5950,10 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
   nicht gemessen: 0x00 bis 0x07 sind auf dieser Platine nicht gescannt.
 - Ohne antwortenden Knopf zeigt RUDER an seiner Stelle -10us und +10us:
   solange `Drehknopf` AUS ist oder EIN und die letzte Abfrage unbeantwortet
-  blieb ([Ruderausschlag](Servo-de.md#ruderausschlag)).
+  blieb ([Ruderausschlag](Servo-de.md#ruderausschlag)). Ein Sensor, der
+  ohne Magnet darüber antwortet, gilt als antwortend, da er keinen
+  Magnetstatus meldet: die Tasten bleiben ausgeblendet, bis `Drehknopf` AUS
+  ist.
 - Der Knopf ist an Hardware nicht gemessen: seine Drehrichtung, sein Rauschen
   und sein Verhalten ohne Magnet darüber.
 

@@ -291,6 +291,19 @@ TEST_CASE(a_tap_beep_of_a_group_already_ended_is_late)
     CHECK(det.group_open);
 }
 
+/* A beep that starts a whole GROUP GAP after the last fall opens a group:
+ * the gap is late only below GROUP GAP. */
+TEST_CASE(a_tap_beep_a_whole_group_gap_after_the_fall_opens_a_group)
+{
+    tap_fresh();
+    (void)esc_det_quiet(&det, 0u);
+    (void)esc_det_quiet(&det, 700u);
+    CHECK_EQ(esc_det_beep(&det, 1000u, 250u), ESC_DET_PULSE);
+    CHECK_EQ(esc_det_quiet(&det, 1950u), ESC_DET_GROUP);       /* 700ms on */
+    CHECK_EQ(esc_det_beep(&det, 1950u, 250u), ESC_DET_PULSE);  /* 700ms on */
+    CHECK(det.group_open);
+}
+
 int main(void)
 {
     RUN(beeps_make_a_group_that_silence_ends);
@@ -304,5 +317,6 @@ int main(void)
     RUN(tap_beeps_open_a_group_only_after_a_whole_quiet);
     RUN(the_tap_quiet_starts_at_the_first_quiet_state);
     RUN(a_tap_beep_of_a_group_already_ended_is_late);
+    RUN(a_tap_beep_a_whole_group_gap_after_the_fall_opens_a_group);
     return test_summary("esc_det");
 }
