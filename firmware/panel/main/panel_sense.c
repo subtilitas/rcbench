@@ -39,9 +39,18 @@
  * another's address.  Written by the settings observer on app_main, read
  * once a poll by the control task.
  */
+/**
+ * @brief Guards the set-ups below and the log columns s_cols and s_cols_map.
+ */
 static portMUX_TYPE     s_sense_mux = portMUX_INITIALIZER_UNLOCKED;
+/** @brief The current monitors' set-up as the settings stand. */
 static sense_setup_t    s_sense_want;
+/** @brief The SENSE_MAP page's set-up as the settings stand. */
 static sense_map_want_t s_map_want;
+/**
+ * @brief The mirror part of the map for an IOmcu older than 4.25
+ *        (settings_sensors.h); 0xFF until published.
+ */
 static uint8_t          s_map_mirror = 0xFFu;
 
 void publish_sense(void)
@@ -107,23 +116,27 @@ atomic_uint s_sense_parts;
  *         word.  Control task writes, app_main reads. */
 atomic_uint s_sense_i228;
 
-/* The map alert posted and not yet seen taken: its number in the alert
- * slot (0 none) and its event and part.  Control task only. */
+/**
+ * @brief The map alert posted and not yet seen taken: its number in the alert
+ *        slot (0 none) and its event and part.  Control task only.
+ */
 static uint32_t s_map_alert_gen;
-static uint8_t  s_map_alert_ev;
-static uint8_t  s_map_alert_part;
-/* The last REFUSED or DARK alert posted, withdrawn once its cause is over
- * (sense_map_link_event_stands()).  Control task only. */
+static uint8_t  s_map_alert_ev;  /**< The event of that alert. */
+static uint8_t  s_map_alert_part;  /**< The part that alert names. */
+/**
+ * @brief The last REFUSED or DARK alert posted, withdrawn once its cause is
+ *        over (sense_map_link_event_stands()).  Control task only.
+ */
 static uint32_t s_map_setup_gen;
-static uint8_t  s_map_setup_ev;
-static uint8_t  s_map_setup_part;
+static uint8_t  s_map_setup_ev;  /**< The event of that alert. */
+static uint8_t  s_map_setup_part;  /**< The part that alert names. */
 
-/*
- * What the SENSE_MAP page said that the operator is told, one event at a
- * time into a free alert slot, the next no sooner than
- * SENSE_MAP_LINK_EVENT_GAP_MS later, and followed until a frame has taken
- * it, as sense_link_alerts() does for SENSE.  A refused or dark map's
- * alert goes once the map no longer has that cause.
+/**
+ * @brief What the SENSE_MAP page said that the operator is told, one event at
+ *        a time into a free alert slot, the next no sooner than
+ *        SENSE_MAP_LINK_EVENT_GAP_MS later, and followed until a frame has
+ *        taken it, as sense_link_alerts() does for SENSE.  A refused or dark
+ *        map's alert goes once the map no longer has that cause.
  */
 static void map_alerts(void)
 {
@@ -190,14 +203,23 @@ static void map_alerts(void)
     }
 }
 
-/* SENSE_WIN_A and SENSE_WIN_B (4.25), for the log.  Control task only. */
+/**
+ * @brief SENSE_WIN_A and SENSE_WIN_B (4.25), for the log.  Control task only.
+ */
 static sense_win_link_t s_sense_win;
 
-/* The log's INA3221 columns as the map the IOmcu holds makes them, for the
- * log task's next file: s_cols_map false without a map read (an IOmcu
- * older than 4.25, or not read yet), and CH1 to CH3 then.  Written by the
- * control task, read by the log task, under s_sense_mux. */
+/**
+ * @brief The log's INA3221 columns as the map the IOmcu holds makes them, for
+ *        the log task's next file: s_cols_map false without a map read (an
+ *        IOmcu older than 4.25, or not read yet), and CH1 to CH3 then.
+ *        Written by the control task, read by the log task, under
+ *        s_sense_mux.
+ */
 static log_cols_t s_cols;
+/**
+ * @brief Whether the columns come from a map read; false for an IOmcu older
+ *        than 4.25 or before the first read.
+ */
 static bool       s_cols_map;
 
 bool sense_log_cols(log_cols_t *out)
@@ -211,9 +233,12 @@ bool sense_log_cols(log_cols_t *out)
     return map;
 }
 
-/* The held map's columns and pages, after every SENSE_MAP exchange: only
- * a map in force, as one derived from SENSE watches nothing and would give
- * a file no INA3221 column, where SERVO_SENSE's CH1 to CH3 read. */
+/**
+ * @brief The held map's columns and pages, after every SENSE_MAP exchange:
+ *        only a map in force, as one derived from SENSE watches nothing and
+ *        would give a file no INA3221 column, where SERVO_SENSE's CH1 to CH3
+ *        read.
+ */
 static void publish_held(void)
 {
     const bool map = sense_map_link_in_force(&s_sense_map);

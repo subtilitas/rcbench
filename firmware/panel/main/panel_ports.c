@@ -15,13 +15,20 @@
 #include "port_view.h"
 #include "prog_registry.h"
 
+/**
+ * @brief The mail box between the control task's view of the PROG ports and
+ *        the screens (port_mail.h).
+ */
 static port_mail_t s_mail = PORT_MAIL_INIT;
 
 void prog_ports_publish(void) { port_mail_publish(&s_mail, &s_prog_link); }
 
 void prog_ports_lost(void) { port_mail_lost(&s_mail); }
 
-/* port_view's ask hook. */
+/**
+ * @brief port_view's hook for a screen's ask of a PROG port: post it to
+ *        s_mail.
+ */
 static bool ask_post(uint8_t seq, uint8_t port, prog_link_ask_kind_t kind,
                      uint16_t value)
 {

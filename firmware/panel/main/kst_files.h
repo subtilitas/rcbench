@@ -32,11 +32,19 @@ extern "C" {
  */
 const servo_store_io_t *kst_files_io(bool held);
 
-/** Make the folder, each missing level of it.  False when it is not
- *  there afterwards. */
+/**
+ * @brief Make the folder, each missing level of it.  False when it is not
+ *         there afterwards.
+ * @return true when the folder is there afterwards
+ */
 bool kst_files_dir(void);
 
-/** The full path of @p name inside the directory, ready for fopen(). */
+/**
+ * @brief The full path of @p name inside the directory, ready for fopen().
+ * @param name a file name of the store
+ * @param out takes the path
+ * @param out_size bytes in @p out
+ */
 void kst_files_path(const char *name, char *out, size_t out_size);
 
 #ifdef __cplusplus

@@ -18,7 +18,7 @@
 #include "freertos/task.h"
 #include "knob.h"
 
-static const char *TAG = "knob";
+static const char *TAG = "knob";  /**< ESP-IDF log tag. */
 
 /**
  * @brief The longest one transaction waits, in milliseconds.
@@ -31,18 +31,23 @@ static const char *TAG = "knob";
  */
 #define KNOB_I2C_TIMEOUT_MS 5
 
-static atomic_bool s_on;
+static atomic_bool s_on;  /**< Whether the sensor is polled. */
+/** @brief Steps turned since the last knob_task_take(). */
 static atomic_int  s_steps;
 /** @brief The knob's own bus; NULL when it did not come up. */
 static i2c_master_bus_handle_t s_bus;
-static i2c_master_dev_handle_t s_dev;
-/* Written by knob_task_attach() before the task exists, then the task's. */
+static i2c_master_dev_handle_t s_dev;  /**< The sensor's device on s_bus. */
+/**
+ * @brief Written by knob_task_attach() before the task exists, then the
+ *        task's.
+ */
 static knob_t s_knob;
 
-/*
- * One register per transaction, Angle[13:6] at 0x03 first and Angle[5:0] at
- * 0x04 second, as the MT6701 datasheet's figure 20 reads them, then 0x03
- * again to catch a high byte that moved in between (knob.h).
+/**
+ * @brief One register per transaction, Angle[13:6] at 0x03 first and
+ *        Angle[5:0] at 0x04 second, as the MT6701 datasheet's figure 20 reads
+ *        them, then 0x03 again to catch a high byte that moved in between
+ *        (knob.h).
  */
 static bool knob_read(uint8_t reg, uint8_t *byte)
 {

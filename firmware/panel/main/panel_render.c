@@ -34,7 +34,7 @@
 #include "touch_loss.h"
 #include "ui_screen.h"
 
-static const char *TAG = "rcbench";
+static const char *TAG = "rcbench";  /**< ESP-IDF log tag. */
 
 /*
  * The programmer's model, once a frame: what the control task last
@@ -198,10 +198,10 @@ void hitec_ui_service(void)
  */
 void flush_screen_commands(uint32_t stops_now);
 
-/*
- * Queue a command, and do not lose it.  Every command is already taken from
- * its screen by the time it gets here, so a refused send is a discarded
- * disarm or a throttle that never arrives.
+/**
+ * @brief Queue a command, and do not lose it.  Every command is already taken
+ *        from its screen by the time it gets here, so a refused send is a
+ *        discarded disarm or a throttle that never arrives.
  */
 static void send_cmd(const panel_cmd_t *in)
 {
@@ -272,9 +272,9 @@ static void send_cmd(const panel_cmd_t *in)
     }
 }
 
-/*
- * The render loop's record of s_touch_q: what it has taken, and the losses it
- * found there, for the frame log.  Render loop only.
+/**
+ * @brief The render loop's record of s_touch_q: what it has taken, and the
+ *        losses it found there, for the frame log.  Render loop only.
  */
 static touch_seq_rx_t s_tq_rx = { .next = 1u };    /* touch_seq_rx_init() */
 unsigned              s_tq_lost;
@@ -404,6 +404,10 @@ knob_turn_t knob_take(void)
                           .navigations = ui_router_navigations() };
 }
 
+/**
+ * @brief Withdraw the knob's command posted in the last frame, when this
+ *        frame's first drain finds a touch loss.
+ */
 static void knob_withdraw(void)
 {
     motor_screen_knob_cancel();

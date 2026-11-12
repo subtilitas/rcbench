@@ -24,10 +24,10 @@
 #include "panel.h"
 #include "picker_screen.h"
 
-static const char *TAG = "rcbench";
+static const char *TAG = "rcbench";  /**< ESP-IDF log tag. */
 
-/*
- * Fetching the board's drawing, a slice of a poll at a time.
+/**
+ * @brief Fetching the board's drawing, a slice of a poll at a time.
  *
  * Up to LINK_DRAW_MAX_BYTES (5328 bytes) over a link that carries sixty-two
  * bytes a transaction is up to 86 round trips.  Doing them in a loop would
@@ -37,9 +37,11 @@ static const char *TAG = "rcbench";
 #define ART_SLICE_MS 15u
 
 const art_flash_t        *s_artflash;
+/** @brief The fetch's sequence state (shared/artwork). */
 static art_fetch_t        s_artfetch;
+/** @brief The buffer the fetch fills, in PSRAM. */
 static uint8_t           *s_artbuf;
-static uint16_t           s_artboard;
+static uint16_t           s_artboard;  /**< The board the fetch is for. */
 bool                      s_artbusy;
 
 /*
@@ -63,11 +65,11 @@ bool                      s_artbusy;
  * scan-out reads PSRAM by DMA and its interrupt runs regardless
  * (CONFIG_LCD_DSI_ISR_CACHE_SAFE).
  */
-static uint8_t     *s_keepbuf;      /* the keeper's, once handed over */
-static art_entry_t  s_keepentry;
-static art_keep_t   s_keep;         /* control task only */
+static uint8_t     *s_keepbuf;      /**< the keeper's buffer, once handed over */
+static art_entry_t  s_keepentry;  /**< The flash entry the keep writes. */
+static art_keep_t   s_keep;         /**< the keep's sequence state; control task only */
 atomic_bool         s_keeping;      /* set and cleared by the control task */
-static bool         s_keep_waited;  /* the wait is logged once a keep */
+static bool         s_keep_waited;  /**< whether the wait is logged; once a keep */
 
 /*
  * The drawing the picker may show, published by the control task and copied
@@ -85,15 +87,22 @@ static bool         s_keep_waited;  /* the wait is logged once a keep */
  */
 SemaphoreHandle_t        s_draw_lock;
 uint8_t                 *s_drawpub;        /* LINK_DRAW_MAX_BYTES, PSRAM */
-static uint32_t          s_drawpub_bytes;  /* 0: nothing to show; lock */
-static uint16_t          s_drawpub_board;  /* lock */
+static uint32_t          s_drawpub_bytes;  /**< bytes of s_drawpub, 0 for nothing to show; under s_draw_lock */
+static uint16_t          s_drawpub_board;  /**< the board of s_drawpub; under s_draw_lock */
+/**
+ * @brief Publications of a drawing, counted; the UI task re-asks when it
+ *        moves.
+ */
 static atomic_uint       s_draw_gen;
 uint8_t                 *s_drawshow;       /* the UI task's copy, PSRAM */
-static unsigned          s_draw_seen;      /* UI task only */
+static unsigned          s_draw_seen;      /**< the publication the UI task last asked for; UI task only */
 
 /* ------------------------------------------------------ the board drawing */
 
-/* Publish @p bytes of @p src for @p board, or nothing for a NULL @p src. */
+/**
+ * @brief Publish @p bytes of @p src for @p board, or nothing for a NULL @p
+ *        src.
+ */
 static void draw_publish(uint16_t board, const uint8_t *src, uint32_t bytes)
 {
     if (s_draw_lock == NULL || s_drawpub == NULL) {
@@ -149,6 +158,7 @@ void drawing_follow(void)
     }
 }
 
+/** @brief End the keep: free its buffer and clear s_keeping. */
 static void art_keep_end(void)
 {
     heap_caps_free(s_keepbuf);
@@ -215,6 +225,7 @@ void art_stop(const char *why)
  * shared/artwork, where the suite runs it against a device in memory and can
  * stop the link at a chosen transaction; this is the two calls it needs.
  */
+/** @brief The fetch's read of a page over the link. */
 static bool art_link_read(void *ctx, uint8_t page, uint8_t count,
                           uint16_t *regs)
 {
@@ -229,6 +240,7 @@ static bool art_link_read(void *ctx, uint8_t page, uint8_t count,
     return true;
 }
 
+/** @brief The fetch's write of one register over the link. */
 static bool art_link_write(void *ctx, uint8_t page, uint8_t reg,
                            uint16_t value)
 {
@@ -238,6 +250,7 @@ static bool art_link_write(void *ctx, uint8_t page, uint8_t reg,
            && ack.op != LINK_OP_NACK;
 }
 
+/** @brief The fetch's transport: the two link calls it needs. */
 static const art_transport_t s_art_link = {
     art_link_read, art_link_write, NULL,
 };
@@ -302,7 +315,9 @@ void art_begin(uint16_t board)
              (unsigned)board, (unsigned)bytes, (unsigned long)key.hash);
 }
 
-/* It arrived and it is the drawing it claimed.  Show it, then keep it. */
+/**
+ * @brief It arrived and it is the drawing it claimed.  Show it, then keep it.
+ */
 static void art_finish(void)
 {
     s_artbusy = false;

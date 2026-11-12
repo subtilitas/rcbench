@@ -158,7 +158,7 @@ void publish_throttle_ramp(void)
 #include "panel_main.h"
 #include "panel_trial.h"
 
-static const char *TAG = "rcbench";
+static const char *TAG = "rcbench";  /**< ESP-IDF log tag. */
 
 /* The screens draw a UI_PANEL_W x UI_PANEL_H canvas (ui_layout.h).  The
  * display's canvas is BOARD_UI_H_RES x BOARD_UI_V_RES (display_canvas()),
@@ -222,8 +222,12 @@ uint32_t s_recoveries_total;  /* since boot                       */
  * under a mutex.  Screen state is static and single-threaded, so it is
  * touched only by app_main.
  */
-#define TOUCH_Q_LEN       32
-#define CMD_Q_LEN         16
+#define TOUCH_Q_LEN       32  /**< Depth of s_touch_q. */
+#define CMD_Q_LEN         16  /**< Depth of s_cmd_q. */
+/**
+ * @brief Depth of the sample queues s_sample_q, s_supply_q, s_enc_q and
+ *        s_win_q.
+ */
 #define SAMPLE_Q_LEN      8
 
 /* The updates' flags, s_fw_quiet_req and s_fw_quiet_ack among them:
@@ -269,8 +273,10 @@ uint16_t  s_board;
 
 QueueHandle_t            s_touch_q;   /**< control task -> app_main */
 QueueHandle_t            s_cmd_q;     /**< app_main -> control task */
-/* The servo programmer's commands (kst_prog_cmd_t), a queue of their own:
- * s_cmd_q drops its oldest entry when it is full. */
+/**
+ * @brief The servo programmer's commands (kst_prog_cmd_t), a queue of their
+ *        own: s_cmd_q drops its oldest entry when it is full.
+ */
 #define KST_Q_LEN 4
 QueueHandle_t     s_kst_q;     /**< app_main -> control task */
 /** @brief The Hitec programmer's commands (hitec_prog_cmd_t) the queue
@@ -565,9 +571,11 @@ _Static_assert((uint32_t)(BENCH_TOTALS_MAX_STEP_S * 1000.0f)
                == LOG_CADENCE_MODEL_MAX_MS,
                "the model's longest step is the totals' longest");
 
-/* The control task's own: the run it numbers rows with, and which kind of
- * run it has seen start.  The counter never takes the value 0, because 0 is
- * what s_log_run_now says for no run at all. */
+/**
+ * @brief The control task's own: the run it numbers rows with, and which kind
+ *        of run it has seen start.  The counter never takes the value 0,
+ *        because 0 is what s_log_run_now says for no run at all.
+ */
 static uint32_t       s_log_run_ctr;
 log_run_kind_t        s_log_kind;
 
@@ -582,6 +590,10 @@ float               s_log_t;
  * left out after it by a frame's length. */
 atomic_bool s_servo_testing;
 
+/**
+ * @brief Store whether an automatic servo test runs; the SERVO screen's
+ *        callback (servo_screen_on_testing()).
+ */
 static void servo_testing_told(bool running)
 {
     atomic_store(&s_servo_testing, running);
@@ -640,20 +652,26 @@ atomic_bool s_enc_held;
  * state through these: the output bank, the arming policy, the alerts and
  * the disarm.  stack_check.py follows each by name (SERVO_CALLS).
  */
+/** @brief Whether the output bank is armed. */
 static bool servo_ctx_armed(void *ctx)
 {
     (void)ctx;
     return outputs_armed(&s_out);
 }
 
-/* A stop applied by the pump, or a disarm posted while an exchange was on
- * the wire. */
+/**
+ * @brief Whether the pump applied a stop, or a disarm was posted while an
+ *        exchange was on the wire.
+ */
 static bool servo_ctx_stopped(void *ctx)
 {
     (void)ctx;
     return arming_stopped(&s_arm) || atomic_load(&s_disarm_request);
 }
 
+/**
+ * @brief Post the band alert for a resumed sweep of the SERVO screen's link.
+ */
 static void servo_ctx_alert(void *ctx, servo_link_alert_t a)
 {
     (void)ctx;
@@ -672,12 +690,14 @@ static void servo_ctx_alert(void *ctx, servo_link_alert_t a)
     }
 }
 
+/** @brief Disarm the bench for the SERVO screen's link. */
 static void servo_ctx_disarm(void *ctx, bool link_up)
 {
     (void)ctx;
     (void)disarm_here(link_up);
 }
 
+/** @brief The arming policy's stop count. */
 static uint32_t servo_ctx_stop_count(void *ctx)
 {
     (void)ctx;
@@ -697,6 +717,10 @@ static void servo_ctx_arm_surfaces(void *ctx, uint32_t ask)
                            OUT_ROLE_BIT(OUT_ROLE_SURFACE), ask);
 }
 
+/**
+ * @brief The SERVO screen's link context: the host, the port and the hooks
+ *        into this task's state.
+ */
 static const servo_link_ctx_t k_servo_ctx = {
     .host         = &s_host,
     .port         = &k_port,
@@ -712,12 +736,12 @@ static const servo_link_ctx_t k_servo_ctx = {
 
 /* What the screens asked for, drain_commands(): panel_arm.c. */
 
-/*
- * Which run the log should be recording now; see log_run_kind_t.  None
- * while AUTO LOGS is off: no run is opened, no row posted, no number taken
- * and no card alert of a run can follow.  Switched off during a run, the
- * run ends there and its file closes; switched on during an ARMED or a
- * supply run, a run starts there.
+/**
+ * @brief Which run the log should be recording now; see log_run_kind_t.  None
+ *        while AUTO LOGS is off: no run is opened, no row posted, no number
+ *        taken and no card alert of a run can follow.  Switched off during a
+ *        run, the run ends there and its file closes; switched on during an
+ *        ARMED or a supply run, a run starts there.
  *
  * The bench comes first: an armed bench is the run whatever the supply is
  * doing.  Its name is the screen that armed it, read off the roles the arm
@@ -842,6 +866,10 @@ static void task_report(void)
     heap_caps_free(t);
 }
 
+/**
+ * @brief Start the panel: bring up the board and the link, start the control
+ *        and logger tasks, then run the render loop.
+ */
 void app_main(void)
 {
     servo_link_init(&k_servo_ctx);

@@ -29,29 +29,36 @@
 #include "panel.h"
 #include "storage.h"
 
-static const char *TAG = "rcbench";
+static const char *TAG = "rcbench";  /**< ESP-IDF log tag. */
 
 /* ------------------------------------------------- ESC profiles on the card */
 
-/*
- * Every ESC (electronic speed controller) profile is compiled in.  A file
- * in BENCH/ESC/CONF on the card (CARD_ESC_CONF) replaces the built-in profile with the same id, or
- * adds one with a new id: a corrected default or an ESC the build does not
- * know needs a file copied to the card, not a firmware release.  Read once,
- * at start-up; a card changed later is read at the next start.
+/**
+ * @brief Every ESC (electronic speed controller) profile is compiled in.  A
+ *        file in BENCH/ESC/CONF on the card (CARD_ESC_CONF) replaces the
+ *        built-in profile with the same id, or adds one with a new id: a
+ *        corrected default or an ESC the build does not know needs a file
+ *        copied to the card, not a firmware release.  Read once, at start-up;
+ *        a card changed later is read at the next start.
  */
 #define ESC_CARD_DIR CARD_ESC_CONF
-/* Names are collected first and read after the walk, so no file is open
- * while the directory is.  Twice the registry's room: a card with more files
- * than that is refused past the first ones, and the log says how many. */
+/**
+ * @brief Names are collected first and read after the walk, so no file is
+ *        open while the directory is.  Twice the registry's room: a card with
+ *        more files than that is refused past the first ones, and the log
+ *        says how many.
+ */
 #define ESC_CARD_MAX (2u * ESC_PROFILE_MAX_OVERRIDES)
 
+/** @brief The ESC profile file names a walk of BENCH/ESC/CONF collected. */
 typedef struct {
+    /** @brief The collected file names. */
     char     name[ESC_CARD_MAX][STORAGE_NAME_MAX];
-    unsigned held;
-    unsigned files;
+    unsigned held;  /**< Names kept in name. */
+    unsigned files;  /**< Files the walk found, kept or not. */
 } esc_card_t;
 
+/** @brief storage_walk()'s callback: collect one entry's name. */
 static void esc_card_take(const storage_entry_t *entry, void *ctx)
 {
     esc_card_t *c = (esc_card_t *)ctx;
@@ -79,6 +86,10 @@ void esc_profiles_load(void)
     storage_release();
 }
 
+/**
+ * @brief Read the profile files of BENCH/ESC/CONF into the ESC registry; the
+ *        volume is held.
+ */
 static void esc_profiles_read(void)
 {
     /* 4KiB of names: static, off the start-up task's stack. */
@@ -168,9 +179,11 @@ static void esc_profiles_read(void)
  */
 #define CARD_SUFFIXES ".csv .txt"  /**< the walk's suffixes */
 
-/* The file the viewer currently has open, so close() has something to close.
- * One at a time: the viewer opens a log, reads it and closes it before it
- * opens another. */
+/**
+ * @brief The file the viewer currently has open, so close() has something to
+ *        close. One at a time: the viewer opens a log, reads it and closes it
+ *        before it opens another.
+ */
 static FILE *s_card_file;
 /** @brief The read of the source card_open() set up, which card_read()
  *         wraps. */
@@ -239,33 +252,35 @@ atomic_uint s_test_open_run;
  */
 atomic_uint s_test_open_txt;
 
-/*
- * The folder the viewer lists, opens in and deletes from: a path from the
- * card's root, set by the viewer before each call (log_viewer_io_t.folder).
- * The task that renders' own.
+/**
+ * @brief The folder the viewer lists, opens in and deletes from: a path from
+ *        the card's root, set by the viewer before each call
+ *        (log_viewer_io_t.folder). The task that renders' own.
  */
 static char s_card_dir[CARD_DIR_MAX];
 
-/*
- * The mount the viewer's page was read from (storage_mount_count()).  A
- * name on that page is opened or deleted on that volume only
- * (storage_hold_mount()): after a swap the same name on the next card is
- * another file.  The task that renders' own.
+/**
+ * @brief The mount the viewer's page was read from (storage_mount_count()).
+ *        A name on that page is opened or deleted on that volume only
+ *        (storage_hold_mount()): after a swap the same name on the next card
+ *        is another file.  The task that renders' own.
  */
 static unsigned s_card_mount;
 
-/*
- * Room for a listed file's whole path below s_card_dir:
- * "/sdcard/USER/LOGS/<name>".  sizeof the mount point takes its "/" after
- * it, CARD_DIR_MAX the folder and its "/", STORAGE_NAME_MAX the longest
- * name the listing keeps and the terminator: 96 bytes.  A path cut short
- * would open or delete nothing, or another file.
+/**
+ * @brief Room for a listed file's whole path below s_card_dir:
+ *        "/sdcard/USER/LOGS/<name>".  sizeof the mount point takes its "/"
+ *        after it, CARD_DIR_MAX the folder and its "/", STORAGE_NAME_MAX the
+ *        longest name the listing keeps and the terminator: 96 bytes.  A path
+ *        cut short would open or delete nothing, or another file.
  */
 #define CARD_PATH_MAX (sizeof(STORAGE_MOUNT_POINT) + CARD_DIR_MAX \
                        + STORAGE_NAME_MAX)
 
-/* Whether @p name in the viewer's folder is a file the logger is still
- * writing, by the marks of that folder (log_marks_busy()). */
+/**
+ * @brief Whether @p name in the viewer's folder is a file the logger is still
+ *        writing, by the marks of that folder (log_marks_busy()).
+ */
 static bool card_busy(const char *name)
 {
     log_marks_t marks;
@@ -275,12 +290,20 @@ static bool card_busy(const char *name)
     return log_marks_busy(&marks, s_card_dir, name);
 }
 
+/**
+ * @brief log_viewer_io_t's folder hook: set the folder the viewer lists,
+ *        opens in and deletes from.
+ */
 static void card_folder(const char *dir, void *ctx)
 {
     (void)ctx;
     snprintf(s_card_dir, sizeof(s_card_dir), "%s", (dir != NULL) ? dir : "");
 }
 
+/**
+ * @brief log_viewer_io_t's written hook: the files the logger has created
+ *        since the start, and the tab of the last one.
+ */
 static unsigned card_written(log_viewer_tab_t *tab, void *ctx)
 {
     (void)ctx;
@@ -448,6 +471,10 @@ static int card_list(log_viewer_file_t *out, int max_entries,
     return pick.files;     /* what the card holds; page->held were written */
 }
 
+/**
+ * @brief log_viewer_io_t's open hook: open a listed name as a rewindable
+ *        source; refused for the run the logger has open.
+ */
 static bool card_open(const char *name, log_source_t *src, void *ctx)
 {
     (void)ctx;
@@ -496,6 +523,7 @@ static bool card_open(const char *name, log_source_t *src, void *ctx)
     return true;
 }
 
+/** @brief log_viewer_io_t's close hook: close the file card_open() opened. */
 static void card_close(void *ctx)
 {
     (void)ctx;
@@ -505,6 +533,7 @@ static void card_close(void *ctx)
     }
 }
 
+/** @brief log_viewer_io_t's volume hook: the card's name for the header. */
 static const char *card_volume(void *ctx)
 {
     (void)ctx;
@@ -514,20 +543,22 @@ static const char *card_volume(void *ctx)
     return name;
 }
 
+/** @brief log_viewer_io_t's card hook: what the slot holds. */
 static card_state_t card_state(void *ctx)
 {
     (void)ctx;
     return storage_card_state();
 }
 
+/** @brief log_viewer_io_t's mounts hook: the mount count. */
 static unsigned card_mounts(void *ctx)
 {
     (void)ctx;
     return storage_mount_count();
 }
 
-/*
- * Delete a run the operator confirmed on the screen.
+/**
+ * @brief Delete a run the operator confirmed on the screen.
  *
  * Refused for the run the logger has open, for the reason card_open() refuses
  * it: the name can come from a list taken before the run started.  Deleting
@@ -603,14 +634,14 @@ const log_viewer_io_t k_card_io = {
     .ctx    = NULL,
 };
 
-/*
- * The programmer's record, KST.TXT in the folder BENCH/KST/CONF beside the
- * servo files (servo_store.h keeps the name free): a write under way with the
- * servo's values before it (kst_prog.h).  The render loop fills
- * s_kst_file and counts s_kst_file_sent up; this task writes it, says in
- * s_kst_file_ok whether the card took it whole, and counts
- * s_kst_file_done up.  One file at a time: the render loop fills the
- * buffer only while the two counts are equal.
+/**
+ * @brief The programmer's record, KST.TXT in the folder BENCH/KST/CONF beside
+ *        the servo files (servo_store.h keeps the name free): a write under
+ *        way with the servo's values before it (kst_prog.h).  The render loop
+ *        fills s_kst_file and counts s_kst_file_sent up; this task writes it,
+ *        says in s_kst_file_ok whether the card took it whole, and counts
+ *        s_kst_file_done up.  One file at a time: the render loop fills the
+ *        buffer only while the two counts are equal.
  *
  * The text goes to KST.NEW and takes the name KST.TXT once the card holds
  * it whole, so that a write the card or the supply ends leaves one of the
@@ -619,10 +650,11 @@ const log_viewer_io_t k_card_io = {
  * takes a whole KST.NEW before KST.TXT.
  */
 #define KST_FILE_NAME "KST.TXT"
+/** @brief The name a record is written to first, then renamed to KST.TXT. */
 #define KST_FILE_NEW  "KST.NEW"
 char        s_kst_file[KST_PROG_FILE_MAX];
-static char        s_kst_path[64];
-static char        s_kst_path_new[64];
+static char        s_kst_path[64];  /**< The path of KST.TXT. */
+static char        s_kst_path_new[64];  /**< The path of KST.NEW. */
 size_t      s_kst_file_len;
 unsigned    s_kst_file_mount;
 atomic_uint s_kst_file_sent;
@@ -659,8 +691,10 @@ void kst_record_write(void)
     atomic_store(&s_kst_file_done, sent);
 }
 
-/* @p path into s_kst_file.  False for no file; @p len is 0 for a file that
- * does not read. */
+/**
+ * @brief @p path into s_kst_file.  False for no file; @p len is 0 for a file
+ *        that does not read.
+ */
 static bool kst_record_read(const char *path, size_t *len)
 {
     FILE *f = fopen(path, "rb");
@@ -675,8 +709,10 @@ static bool kst_record_read(const char *path, size_t *len)
     return true;
 }
 
-/* s_kst_file to the model: at the start, or from a card mounted later,
- * where a record the model holds already stands. */
+/**
+ * @brief s_kst_file to the model: at the start, or from a card mounted later,
+ *        where a record the model holds already stands.
+ */
 static bool kst_record_use(bool late, size_t len)
 {
     return late ? kst_panel_file_late(s_kst_file, len)
@@ -703,6 +739,7 @@ void kst_record_load(bool late)
     storage_release();
 }
 
+/** @brief kst_record_load() with the volume held. */
 static void kst_record_load_held(bool late)
 {
     size_t len = 0;
