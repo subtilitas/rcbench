@@ -79,7 +79,6 @@ typedef struct {
     uint32_t a_off;        /**< slot A's start, bytes from flash 0          */
     uint32_t b_off;        /**< slot B's start, bytes from flash 0          */
     uint32_t slot_bytes;   /**< bytes in one slot, A and B alike            */
-    uint32_t sector_bytes; /**< bytes in one flash sector: 4096             */
 } fw_slots_layout_t;
 
 /** @brief One partition as the boot ROM's table holds it. */
