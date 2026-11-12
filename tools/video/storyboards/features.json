@@ -45,65 +45,65 @@
     [
      0,
      [
-      -300,
-      175,
-      300
+      -330,
+      215,
+      330
      ],
      [
       -95,
-      10,
+      20,
       0
      ]
     ],
     [
      5.6,
      [
-      -250,
-      200,
-      300
+      -280,
+      240,
+      330
      ],
      [
       -80,
-      12,
+      22,
       0
      ]
     ],
     [
      7,
      [
-      -170,
-      215,
-      270
+      -190,
+      270,
+      300
      ],
      [
       0,
-      18,
+      40,
       0
      ]
     ],
     [
      8.8,
      [
-      -110,
-      265,
-      235
+      -120,
+      330,
+      260
      ],
      [
       5,
-      26,
+      58,
       0
      ]
     ],
     [
      15,
      [
-      -80,
-      275,
-      235
+      -90,
+      340,
+      260
      ],
      [
       8,
-      26,
+      58,
       0
      ]
     ],
@@ -111,64 +111,64 @@
      18.4,
      [
       -150,
-      90,
-      300
+      100,
+      330
      ],
      [
-      -55,
-      12,
-      40
+      -45,
+      26,
+      45
      ]
     ],
     [
      24.6,
      [
-      -120,
-      84,
-      300
+      -125,
+      94,
+      330
      ],
      [
-      -45,
-      12,
-      40
+      -38,
+      26,
+      45
      ]
     ],
     [
      26.6,
      [
-      80,
-      84,
-      296
+      90,
+      94,
+      320
      ],
      [
-      40,
-      13,
-      40
+      35,
+      28,
+      45
      ]
     ],
     [
      33,
      [
-      96,
-      78,
-      286
+      104,
+      88,
+      312
      ],
      [
-      44,
-      13,
-      40
+      38,
+      28,
+      45
      ]
     ],
     [
      35.5,
      [
       40,
-      330,
-      150
+      380,
+      170
      ],
      [
       0,
-      30,
+      40,
       0
      ]
     ]
@@ -198,7 +198,7 @@
      "anchor": "display",
      "at": [
       110,
-      180
+      150
      ],
      "size": "sm",
      "title": "Panel · ESP32-P4",
@@ -210,20 +210,20 @@
      "to": 14.8,
      "anchor": "rbmod",
      "at": [
-      1400,
-      570
+      1420,
+      600
      ],
      "size": "sm",
-     "title": "IOmcu · RP2350",
-     "text": "Outputs, measurements and every protocol with timing."
+     "title": "rbmod carrier · RP2350",
+     "text": "The IOmcu: outputs, measurements and every protocol with timing."
     },
     {
      "from": 8.4,
      "to": 14.8,
      "anchor": "pdmini",
      "at": [
-      80,
-      650
+      70,
+      690
      ],
      "size": "sm",
      "title": "PD mini",
@@ -235,8 +235,8 @@
      "to": 24.8,
      "anchor": "xt60",
      "at": [
-      330,
-      250
+      150,
+      330
      ],
      "size": "sm",
      "title": "XT60 socket",
@@ -249,8 +249,8 @@
      "to": 24.8,
      "anchor": "usbc",
      "at": [
-      1010,
-      250
+      900,
+      300
      ],
      "size": "sm",
      "title": "USB-C socket",
@@ -259,12 +259,25 @@
      "style": "ok"
     },
     {
+     "from": 18.8,
+     "to": 24.8,
+     "anchor": "powerbank",
+     "at": [
+      1300,
+      760
+     ],
+     "size": "sm",
+     "title": "Power bank",
+     "text": "Under the case.",
+     "style": "muted"
+    },
+    {
      "from": 27.0,
      "to": 33.2,
      "anchor": "J2",
      "at": [
       330,
-      300
+      330
      ],
      "size": "sm",
      "title": "J2 · outputs",
@@ -277,7 +290,7 @@
      "anchor": "J1",
      "at": [
       1370,
-      300
+      330
      ],
      "size": "sm",
      "title": "J1 · programming ports",
@@ -293,7 +306,7 @@
     },
     {
      "at": 7.4,
-     "text": "Inside the case: the touch panel, the I O M C U that drives the outputs, and the P D mini supply."
+     "text": "Inside the case: the touch panel, the R B mod carrier with the I O M C U, and the P D mini supply."
     },
     {
      "at": 18.4,
@@ -303,7 +316,8 @@
      "at": 26.6,
      "text": "J 2 carries the outputs for servos and E S Cs. J 1 holds the four programming ports."
     }
-   ]
+   ],
+   "model": "cad"
   },
   {
    "type": "tour",

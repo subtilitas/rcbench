@@ -21,7 +21,7 @@ const path = require('path');
   page.on('requestfailed', r => console.error('failed', r.url()));
   await page.goto(url);
   await page.waitForFunction('window.READY === true || false', null,
-                             {timeout: 60000}).catch(() => { failed = true; });
+                             {timeout: 600000}).catch(() => { failed = true; });
   if (failed || !(await page.evaluate('window.READY === true'))) {
     console.error('the player did not load the storyboard');
     await browser.close();

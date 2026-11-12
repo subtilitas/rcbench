@@ -441,9 +441,10 @@ text-to-speech model that runs on the machine and whose files are not in the tre
 recogniser returned the lines with their words, and the voice has not been judged by ear.
 The
 renderer draws the KST views on the carrier (`servo-kst-STATE-rbmod`) and MOTOR & ESC's plot
-with an IOmcu answering (`motor-plot`) for them (`test/host/render_screen.c`). The case model is a mockup: outer size, connector order and
-J1's pin order follow the case's CAD (computer-aided design) views, the other dimensions
-are estimated, and J2's row order is not confirmed. A render is not run in CI.
+with an IOmcu answering (`motor-plot`) for them (`test/host/render_screen.c`). `features` draws the case from its CAD (computer-aided design) assembly, which
+`tools/video_cad.py` converts from a STEP file that is not in the tree; its colours are set
+by part name. `kst-rbmod` draws a mockup of boxes whose size is estimated, and J2's row order
+there is not confirmed. A render is not run in CI.
 
 [Videos from storyboards](tools/video/README.md).
 

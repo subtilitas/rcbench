@@ -16,7 +16,8 @@ history is in git.
   694s. `tools/video_audio.py` computes the sound track: synthesizer
   pads and one sound per event, no percussion. `tools/video_voice.py`
   narrates a storyboard with the Kokoro text-to-speech model on the
-  machine
+  machine. `tools/video_cad.py` converts the case's STEP assembly into
+  the model the opening of `features` shows
   ([Videos from storyboards](tools/video/README.md)).
 - Profile field `scheme.announce.loop_marker`: `true` where the ESC sounds
   one sound that is no item between the highest item and the lowest of each

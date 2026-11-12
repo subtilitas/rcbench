@@ -52,7 +52,7 @@ VIDEO = REPO / "tools" / "video"
 PANEL = (1024, 600)
 FRAME = (1920, 1080)
 ANCHORS = ("display", "rbmod", "pdmini", "J1", "J2", "xt60", "usbc",
-           "estop", "side", "plug")
+           "estop", "side", "plug", "panel", "powerbank")
 CONNECTORS = {"J1": 4, "J2": 4}
 BEDS = ("pads", "bach-prelude", "pachelbel-canon")
 ACTIONS = ("tap", "hold")
@@ -85,6 +85,8 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
         errors.append(f"{where}: dur must be a positive number")
         return
     _keys(scene.get("camera"), 3, f"{where} camera", errors)
+    if scene.get("model", "mockup") not in ("mockup", "cad"):
+        errors.append(f"{where}: model must be mockup or cad")
     if "lid" in scene:
         _keys(scene["lid"], 2, f"{where} lid", errors)
     if "display" in scene and not isinstance(
@@ -389,6 +391,8 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
             return str(self._board)
         if path.startswith("/shots/"):
             return str(self._shots / pathlib.PurePosixPath(path).name)
+        if path.startswith("/cad/"):
+            return str(VIDEO / path.lstrip("/"))
         if path.startswith("/node_modules/"):
             return str(VIDEO / path.lstrip("/"))
         return super().translate_path(path)
@@ -478,6 +482,10 @@ def main() -> int:
     if not path.suffix:
         path = VIDEO / "storyboards" / f"{args.storyboard}.json"
     board = load(path)
+    if any(scene.get("model") == "cad" for scene in board["scenes"]) \
+            and not (VIDEO / "cad" / "case.glb").is_file():
+        sys.exit("tools/video/cad/case.glb is missing; tools/video_cad.py "
+                 "writes it from the case's STEP file")
     if not (VIDEO / "node_modules" / "three").is_dir():
         sys.exit("run `npm install` in tools/video/ first")
     for tool in ("node",) + (() if args.stills else ("ffmpeg",)):

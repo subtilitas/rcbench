@@ -8,6 +8,7 @@
 // SPDX-License-Identifier: MIT
 import * as THREE from 'three';
 import {buildCase, CONNECTORS, WIRE_COLORS} from './case3d.js';
+import {buildCadCase, loadCad} from './case_cad.js';
 
 const $ = s => document.querySelector(s);
 const cl = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
@@ -83,8 +84,13 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.15;
 for (const sc of sb.scenes) {
   if (sc.type !== 'case') continue;
-  sc.model = buildCase(sc.display ? imgs[sc.display.view] : null);
-  if (sc.servo) sc.model.setServoPort(sc.servo.connector, sc.servo.position);
+  const shown = sc.display ? imgs[sc.display.view] : null;
+  // "cad" is the assembly tools/video_cad.py converts; any other scene
+  // draws the mockup.
+  sc.rig = sc.model === 'cad'
+    ? buildCadCase(shown, await loadCad('/cad/case.glb'))
+    : buildCase(shown);
+  if (sc.servo) sc.rig.setServoPort(sc.servo.connector, sc.servo.position);
 }
 
 $('#brand').innerHTML = `<b>rcbench</b> · ${sb.brand || ''}`;
@@ -154,7 +160,7 @@ function pinout(p) {
 }
 
 function drawCase(sc, lt, a, pulse, ui) {
-  const m = sc.model, gl = $('#gl');
+  const m = sc.rig, gl = $('#gl');
   gl.style.display = 'block';
   gl.style.opacity = a;
   const k = sc.camera;

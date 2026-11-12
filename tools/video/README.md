@@ -67,7 +67,9 @@ integration). The 100.4s of `kst-rbmod` are 3012 frames. `features` is
 | --- | --- |
 | `../make_video.py` | checks a storyboard, renders its views, serves the player, starts the capture |
 | `player/index.html`, `player.css`, `player.js` | draws the frame of a time `t`: `window.renderAt(t)` |
-| `player/case3d.js` | the case model, its connectors and its named points |
+| `player/case3d.js` | the case as a mockup of boxes, its connectors and its named points |
+| `player/case_cad.js` | the case from its CAD (computer-aided design) assembly: colours by part name, merged meshes, the same named points |
+| `../video_cad.py` | converts the case's STEP assembly into `cad/case.glb`, the model `case_cad.js` loads |
 | `player/capture.js` | steps the player through the frames and pipes them to ffmpeg |
 | `storyboards/kst-rbmod.json` | programming a KST servo on the rbmod carrier, 8 steps, 100.4s |
 | `storyboards/features.json` | every screen of the bench in 8 chapters: where it opens from and what it does on the rbmod carrier, narrated, 694s |
@@ -97,6 +99,7 @@ A `case` scene:
 | Field | Meaning |
 | --- | --- |
 | `dur` | length in s |
+| `model` | optional: `mockup`, the default, or `cad`, the assembly converted by `tools/video_cad.py` |
 | `camera` | keys `[t, [x, y, z], [x, y, z]]`: position and target in mm |
 | `lid` | optional keys `[t, mm]`: how far the display is lifted |
 | `display` | optional `{view}`: the renderer view on the model's display |
@@ -108,7 +111,8 @@ A `case` scene:
 | `servo` | optional `{connector, position, appear, plug: [t0, t1]}`: a servo whose plug moves 46mm into the position |
 
 `anchor` is `[x, y, z]` in mm or a name: `display`, `rbmod`, `pdmini`,
-`J1`, `J2`, `xt60`, `usbc`, `estop`, `side`, `plug`. `at` is the bubble's
+`J1`, `J2`, `xt60`, `usbc`, `estop`, `side`, `plug`, `panel`,
+`powerbank`. The last two are parts of the `cad` model only. `at` is the bubble's
 top left corner on the frame in pixels. The model's origin is the centre
 of the case floor; x runs along the 190mm side, y up, z towards the
 connector wall.
@@ -167,11 +171,23 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
 
 ## Limits
 
-- The case model is a mockup. Its outer size (190 x 120 x 34mm), the
-  order of the connectors on the wall and J1's pin order follow the
-  case's CAD (computer-aided design) views; every other dimension is
-  estimated. J2's row order is assumed to match J1's and is not
-  confirmed.
+- The `cad` model is the case's STEP assembly, 172 x 129 x 55mm with the
+  power bank under it. The file has no colours: `case_cad.js` sets them
+  by part name, and a part without a name is dark grey, or green where
+  it is a plate. The STEP file (65MB) and the converted model (35MB)
+  are not in the tree:
+
+  ```sh
+  pip install cadquery-ocp==8.0.1.1.0
+  python3 tools/video_cad.py rcbench_case.stp     # tools/video/cad/case.glb
+  ```
+
+  The `cad` model has no servo and no pin table: `servo` and `pinout`
+  need the mockup.
+- The `mockup` model is estimated: 190 x 120 x 34mm against the 172 x
+  129mm of the assembly. The order of the connectors on the wall and
+  J1's pin order follow the case. J2's row order is assumed to match
+  J1's and is not confirmed.
 - One board is modelled: the rbmod carrier in this case. `features` shows
   that build only: the board wired by hand, its pin drawing and the
   Hitec MOVE SERVO, which needs a PD mini on the port, are not in it.
