@@ -214,8 +214,9 @@ Einstellungen frei.
 
 Frames gehen mit 1kHz hinaus. Diese Rate steht nicht auf der Leitung: das
 Ratenfeld der OUTPUTS-Page ist bei DShot eine Bitrate und keine Frame Rate, der
-Prüfstand wählt sie also. 1kHz ist das Zwanzigfache der Poll-Rate des Panels
-und liegt weit innerhalb des Signal-Timeouts jedes ESC.
+Prüfstand wählt sie also. 1kHz ist das Zwanzigfache der 50Hz, mit denen der
+IOmcu misst, das Fünfzigfache der 20Hz, mit denen das Panel pollt, und liegt
+weit innerhalb des Signal-Timeouts jedes ESC.
 
 **Während der Prüfstand nicht treibt, wird nichts gesendet.** Keine Frames heißt
 keine Flanken, und ein ESC stoppt nach seinem eigenen Timeout auf Stille. Stattdessen ausdrückliche Nullen zu senden hielte ihn armed und wartend, und so soll
@@ -300,7 +301,7 @@ High-Idle zurück:
 
 | Schritt | Zeit | Code |
 | --- | --- | --- |
-| Der erste fällige Durchlauf des Laufs lässt den Pin auf seinen Pull-up los und sendet nichts | 0 | `out_dshot_wake()` aus `service_dshot()` in `shared/outputs/out_render.c` |
+| Der erste fällige Durchlauf des Laufs lässt den Pin auf seinen Pull-up los und sendet nichts | 0 | `service_dshot()` in `shared/outputs/out_render.c` ruft `out_render_hw_dshot_wake()`, das `out_dshot_wake()` ruft (`firmware/iomcu/src/outputs_hw.c`) |
 | Der erste Frame: die erste der zehn Wiederholungen von `DSHOT_CMD_EDT_ENABLE` bei Gas null | 1000µs oder später, ein Frame-Abstand bei 1kHz (`OUT_RENDER_DSHOT_PERIOD_US`) | `out_dshot_send()` |
 | Der Befehl nach der Anfrage | 11ms nach Laufbeginn | `service_dshot()` |
 

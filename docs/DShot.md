@@ -199,8 +199,8 @@ pin before binding it with new settings.
 
 Frames go out at 1kHz. That rate is not on the wire: the OUTPUTS page's rate
 field is a bit rate for DShot rather than a frame rate, so the bench chooses it.
-1kHz is twenty times the panel's poll rate and well inside every ESC's own
-signal timeout.
+1kHz is twenty times the IOmcu's 50Hz sampling, fifty times the panel's 20Hz
+poll, and well inside every ESC's own signal timeout.
 
 **Nothing is sent while the bench is not driving.** No frames means no edges,
 and an ESC stops on silence after its own timeout. Sending explicit zeros
@@ -281,7 +281,7 @@ frame:
 
 | Step | Time | Code |
 | --- | --- | --- |
-| The first due pass of the run releases the pin onto its pull-up and sends nothing | 0 | `out_dshot_wake()` from `service_dshot()` in `shared/outputs/out_render.c` |
+| The first due pass of the run releases the pin onto its pull-up and sends nothing | 0 | `service_dshot()` in `shared/outputs/out_render.c` calls `out_render_hw_dshot_wake()`, which calls `out_dshot_wake()` (`firmware/iomcu/src/outputs_hw.c`) |
 | The first frame: the first of the ten `DSHOT_CMD_EDT_ENABLE` repeats at zero throttle | 1000µs or later, one frame period at 1kHz (`OUT_RENDER_DSHOT_PERIOD_US`) | `out_dshot_send()` |
 | The command after the ask | 11ms into the run | `service_dshot()` |
 

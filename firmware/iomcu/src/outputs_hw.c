@@ -3,11 +3,14 @@
  * @brief The bank rendered onto pins: the pin drivers and the clocks behind
  *        shared/outputs/out_render.c.
  *
- * Every rule of the rendering is in out_render.c, where the host suite holds
- * it: the release-before-bind order of slots and ports, the extended
- * telemetry ask sent in place of a stop frame, and the slot whose readings
- * the bench publishes.  This file defines the out_render_hw_*() calls on the
- * RP2350's drivers and keeps the one renderer the IOmcu runs.
+ * Every rule of the rendering is in out_render.c: the release-before-bind
+ * order of slots and ports, the extended telemetry ask sent in place of a
+ * stop frame, and the slot whose readings the bench publishes.
+ * test_out_render runs it over a log of the pin calls.  A loop or array
+ * bound moved one entry past its array is not caught there: without a
+ * sanitizer the read lands in the next field.  This file defines the
+ * out_render_hw_*() calls on the RP2350's drivers and keeps the one
+ * renderer the IOmcu runs.
  *
  * SPDX-License-Identifier: MIT
  */

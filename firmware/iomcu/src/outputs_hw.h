@@ -8,11 +8,11 @@
  * slot and rendering the bank into it every pass.
  *
  * Nothing here decides anything.  The functions below are the IOmcu's one
- * out_render_t (shared/outputs/include/out_render.h), where the host suite
- * holds every rule of the binding and the rendering.  The one question the
- * firmware answers on its own is whether the silicon could do what was
- * asked, and a driver answers that by refusing a slot rather than by driving
- * something else.
+ * out_render_t (shared/outputs/include/out_render.h), which holds every rule
+ * of the binding and the rendering; test_out_render runs it on the host.
+ * The one question the firmware answers on its own is whether the silicon
+ * could do what was asked, and a driver answers that by refusing a slot
+ * rather than by driving something else.
  *
  * SPDX-License-Identifier: MIT
  */

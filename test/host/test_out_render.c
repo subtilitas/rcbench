@@ -13,8 +13,14 @@
  * out in place of stop frames, DSHOT_CMD_REPEATS of them, never in place of
  * a throttle, and never on a plain DShot slot or a DShot port; a moved
  * rate rebinds a slot at the new rate, the last slot and a port on
- * OUT_MAX_PIN bind, a returned slot takes the bank's rate; NULL arguments
- * change nothing.
+ * OUT_MAX_PIN bind, a returned slot takes the bank's rate; the end of a
+ * run forgets the readings; the last slot and the last port render; the
+ * capture's edge is stamped once on the watched channel and ends the watch,
+ * and a fresh renderer watches nothing; a DShot slot's due time follows the
+ * clock while disarmed and its frames are 1000us apart; a PPM write carries
+ * at most OUT_RENDER_PPM_MAX channels; the last slot, port and channel of
+ * each range bind, report, let go and drive like the first; a slot bound
+ * afresh has no pulse to change from; NULL arguments change nothing.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -111,9 +117,17 @@ bool out_render_hw_pwm_stamped(uint8_t pin, uint16_t pulse_us,
     return true;
 }
 
+/* The channel count and widths of the last PPM write. */
+static uint8_t  g_ppm_n;
+static uint16_t g_ppm_us[OUT_MAX_CHANNELS];
+
 void out_render_hw_ppm(uint8_t pin, const uint16_t *us, uint8_t n)
 {
     log_ev(EV_PPM, pin, OUT_DRIVER_PPM, n > 0u ? us[0] : 0u, false);
+    g_ppm_n = n;
+    for (uint8_t i = 0; i < n && i < OUT_MAX_CHANNELS; ++i) {
+        g_ppm_us[i] = us[i];
+    }
 }
 
 void out_render_hw_ppm_stop(uint8_t pin)
@@ -458,6 +472,316 @@ TEST_CASE(rates_and_the_ends_of_the_ranges_bind_as_asked)
     CHECK_EQ(out_render_ports_bound(&g_r), 1u);
 }
 
+/* The pulse of the last EV_PWM or EV_STAMPED on @p pin, 0xFFFF for none. */
+static uint16_t last_pulse(uint8_t pin)
+{
+    for (unsigned i = g_n; i-- > 0u;) {
+        if ((g_log[i].kind == EV_PWM || g_log[i].kind == EV_STAMPED)
+            && g_log[i].pin == pin) {
+            return g_log[i].value;
+        }
+    }
+    return 0xFFFFu;
+}
+
+/*
+ * The end of a run forgets every reading: one heard while driving is
+ * published until the first pass that does not drive, and none after it.
+ * A reading heard on a bench that never drove is kept across its passes.
+ */
+TEST_CASE(the_end_of_a_run_forgets_the_readings)
+{
+    uint32_t erpm = 0u, age = 0u;
+    fresh();
+    slot(0u, OUT_DRIVER_DSHOT_BIDIR, 2u, 0u);
+    out_render_apply(&g_r, &g_o, g_rate, 0xFFu);
+    g_reply = (dshot_telem_t){ .kind = DSHOT_TELEM_ERPM, .erpm = 3000u };
+    g_reply_pin = 2u;
+    g_reply_queued = true;
+    pass();                          /* disarmed: heard, kept */
+    pass();
+    pass();
+    CHECK(out_render_erpm(&g_r, &erpm, &age));
+
+    outputs_arm(&g_o, true, g_ms);
+    pass();
+    g_reply = (dshot_telem_t){ .kind = DSHOT_TELEM_ERPM, .erpm = 5000u };
+    g_reply_queued = true;
+    pass();                          /* driving: heard */
+    CHECK(out_render_erpm(&g_r, &erpm, &age));
+    CHECK_EQ(erpm, 5000u);
+    outputs_arm(&g_o, false, g_ms);
+    pass();                          /* the run ends */
+    CHECK(!out_render_erpm(&g_r, &erpm, &age));
+}
+
+/* The last slot and the first and last ports render their pulse while
+ * armed, a port outside the drive mask renders 0, and every one renders 0
+ * once the bank disarms. */
+TEST_CASE(the_last_slot_and_the_last_port_render)
+{
+    fresh();
+    slot(7u, OUT_DRIVER_PWM, 9u, 7u);
+    out_render_apply(&g_r, &g_o, g_rate, 0xFFu);
+    const uint8_t pin[LINK_PG_PORTS_MAX] = { 13u, 14u, 0xFFu, 20u };
+    const uint16_t hz[LINK_PG_PORTS_MAX] = { 50u, 50u, 50u, 50u };
+    out_render_ports(&g_r, pin, hz, 0u, 0u, 9u);
+    CHECK_EQ(out_render_ports_bound(&g_r), 0x0Bu);
+    out_render_ports_drive(&g_r, 0x09u);       /* ports 0 and 3, not 1 */
+    outputs_arm(&g_o, true, g_ms);
+    pass();
+    CHECK_EQ(last_pulse(9u), outputs_pulse_us(&g_o, 7u));
+    CHECK_EQ(last_pulse(13u), outputs_pulse_us(&g_o, 9u));
+    CHECK_EQ(last_pulse(20u), outputs_pulse_us(&g_o, 12u));
+    CHECK(last_pulse(9u) != 0u && last_pulse(13u) != 0u
+          && last_pulse(20u) != 0u);
+    CHECK_EQ(last_pulse(14u), 0u);
+    outputs_arm(&g_o, false, g_ms);
+    pass();
+    CHECK_EQ(last_pulse(9u), 0u);
+    CHECK_EQ(last_pulse(13u), 0u);
+    CHECK_EQ(last_pulse(20u), 0u);
+}
+
+/*
+ * The capture's edge: on the watched channel the first changed pulse is
+ * written stamped, the edge is taken once, and the watch ends with it.  A
+ * pulse of 0 (a disarm) is not an edge and keeps the watch.  Another
+ * channel's change stamps nothing.  A renderer just initialised watches
+ * nothing.
+ */
+TEST_CASE(a_watched_channel_stamps_its_first_changed_pulse_once)
+{
+    uint64_t at = 0u;
+    fresh();
+    slot(0u, OUT_DRIVER_PWM, 4u, 0u);
+    slot(1u, OUT_DRIVER_PWM, 6u, 1u);
+    CHECK(outputs_set_slew(&g_o, 0u, 0u));
+    CHECK(outputs_set_slew(&g_o, 1u, 0u));
+    out_render_apply(&g_r, &g_o, g_rate, 0xFFu);
+    outputs_arm(&g_o, true, g_ms);
+    pass();
+    /* Initialised: no watch, so a change on channel 0 stamps nothing. */
+    CHECK(outputs_set(&g_o, 0u, 100u, g_ms));
+    pass();
+    CHECK_EQ(count(EV_STAMPED), 0u);
+    CHECK(!out_render_edge(&g_r, &at));
+
+    out_render_watch(&g_r, 0);
+    CHECK(outputs_set(&g_o, 1u, 900u, g_ms));
+    pass();                          /* another channel: no edge */
+    CHECK_EQ(count(EV_STAMPED), 0u);
+    outputs_arm(&g_o, false, g_ms);
+    pass();                          /* a disarm: no edge, watch kept */
+    CHECK_EQ(count(EV_STAMPED), 0u);
+    CHECK(!out_render_edge(&g_r, &at));
+    outputs_arm(&g_o, true, g_ms);
+    g_n = 0u;
+    pass();                          /* back from 0: the edge */
+    CHECK_EQ(count(EV_STAMPED), 1u);
+    CHECK_EQ(find(EV_STAMPED, 4u, 0u), 0u);
+    CHECK_EQ(find(EV_PWM, 4u, 0u), LOG_MAX);
+    CHECK(out_render_edge(&g_r, &at));
+    CHECK_EQ(at, (uint64_t)g_us);
+    CHECK(!out_render_edge(&g_r, &at));
+    /* The watch has ended: the next change is a plain write. */
+    CHECK(outputs_set(&g_o, 0u, 800u, g_ms));
+    pass();
+    CHECK_EQ(count(EV_STAMPED), 1u);
+    CHECK(!out_render_edge(&g_r, &at));
+
+    /* A new watch clears an edge not yet taken. */
+    out_render_watch(&g_r, 0);
+    CHECK(outputs_set(&g_o, 0u, 300u, g_ms));
+    pass();
+    out_render_watch(&g_r, 0);
+    CHECK(!out_render_edge(&g_r, &at));
+}
+
+/*
+ * A DShot slot's due time follows the clock while it sits disarmed: armed
+ * again after 40 minutes, more than half the 71.6-minute microsecond wrap,
+ * it frames on the first pass.  Armed, the frames are 1000us apart: none at
+ * 999us, one at 1000us.  A pass 2^31us after the due time reads as not due,
+ * which is why the due time follows the clock while disarmed.
+ */
+TEST_CASE(a_dshot_slot_is_due_at_once_after_a_long_disarm)
+{
+    fresh();
+    slot(0u, OUT_DRIVER_DSHOT, 2u, 0u);
+    out_render_apply(&g_r, &g_o, g_rate, 0xFFu);
+    pass();
+    g_us += 40u * 60u * 1000000u;
+    g_ms += 40u * 60u * 1000u;
+    out_render_service(&g_r, &g_o);  /* disarmed */
+    outputs_arm(&g_o, true, g_ms);
+    g_n = 0u;
+    g_us += 1u;
+    out_render_service(&g_r, &g_o);
+    CHECK_EQ(count(EV_SEND), 1u);
+    g_us += OUT_RENDER_DSHOT_PERIOD_US - 1u;
+    out_render_service(&g_r, &g_o);
+    CHECK_EQ(count(EV_SEND), 1u);
+    g_us += 1u;
+    out_render_service(&g_r, &g_o);
+    CHECK_EQ(count(EV_SEND), 2u);
+    /* The due test is wrap-safe over half the clock: a pass exactly 2^31us
+     * after the due time reads as not due, one 2^31us - 1 after it as due. */
+    g_us += OUT_RENDER_DSHOT_PERIOD_US + 0x80000000u;
+    out_render_service(&g_r, &g_o);
+    CHECK_EQ(count(EV_SEND), 2u);
+    g_us -= 1u;
+    out_render_service(&g_r, &g_o);
+    CHECK_EQ(count(EV_SEND), 3u);
+}
+
+/*
+ * A PPM slot writes its channels' widths, at most OUT_RENDER_PPM_MAX of
+ * them: a slot holding nine (the bank refuses one, so the table is written
+ * here directly) writes the first eight.  Disarmed, it stops.
+ */
+TEST_CASE(a_ppm_slot_writes_at_most_eight_channels)
+{
+    fresh();
+    slot(0u, OUT_DRIVER_PPM, 7u, 0u);
+    g_o.slot[0].channels = 3u;
+    out_render_apply(&g_r, &g_o, g_rate, 0xFFu);
+    outputs_arm(&g_o, true, g_ms);
+    pass();
+    CHECK_EQ(g_ppm_n, 3u);
+    for (uint8_t c = 0; c < 3u; ++c) {
+        CHECK_EQ(g_ppm_us[c], outputs_pulse_us(&g_o, c));
+    }
+    g_o.slot[0].channels = OUT_RENDER_PPM_MAX;
+    out_render_apply(&g_r, &g_o, g_rate, 0xFFu);
+    pass();
+    CHECK_EQ(g_ppm_n, OUT_RENDER_PPM_MAX);
+    g_o.slot[0].channels = OUT_RENDER_PPM_MAX + 1u;
+    out_render_apply(&g_r, &g_o, g_rate, 0xFFu);
+    pass();
+    CHECK_EQ(g_ppm_n, OUT_RENDER_PPM_MAX);
+    outputs_arm(&g_o, false, g_ms);
+    g_n = 0u;
+    pass();
+    CHECK_EQ(count(EV_PPM_STOP), 1u);
+    CHECK_EQ(count(EV_PPM), 0u);
+}
+
+/*
+ * The last of each range: a bidirectional slot 7 alone reports, its reading
+ * is published and forgotten when it moves; a DShot slot 7 bound anew lets
+ * the DShot ports go; slot 7 returns on its own; port 3 is let go for a PWM
+ * slot on its slice and for a slot on PIO; a slot on channel 15 drives.
+ */
+TEST_CASE(the_last_slot_port_and_channel_count)
+{
+    uint32_t erpm = 0u, age = 0u;
+    fresh();
+    slot(7u, OUT_DRIVER_DSHOT_BIDIR, 3u, 7u);
+    out_render_apply(&g_r, &g_o, g_rate, 0xFFu);
+    CHECK_EQ(out_render_reporting_slot(&g_r), 7);
+    g_reply = (dshot_telem_t){ .kind = DSHOT_TELEM_ERPM, .erpm = 7000u };
+    g_reply_pin = 3u;
+    g_reply_queued = true;
+    pass();
+    CHECK(out_render_erpm(&g_r, &erpm, &age));
+    CHECK_EQ(erpm, 7000u);
+    uint16_t v = 0u;
+    CHECK(!out_render_edt(&g_r, DSHOT_TELEM_KINDS, &v, &age));
+    g_rate[7] = 300u;                /* moved: its reading goes */
+    out_render_apply(&g_r, &g_o, g_rate, 0xFFu);
+    CHECK_EQ(out_render_reporting_slot(&g_r), 7);
+    CHECK(!out_render_erpm(&g_r, &erpm, &age));
+
+    /* Slot 7 on PIO bound anew: port 3 (DShot) goes first. */
+    fresh();
+    const uint8_t pin[LINK_PG_PORTS_MAX] = { 0xFFu, 0xFFu, 0xFFu, 20u };
+    const uint16_t hz[LINK_PG_PORTS_MAX] = { 50u, 50u, 50u, 300u };
+    out_render_ports(&g_r, pin, hz, 0u, 8u, 9u);
+    CHECK_EQ(out_render_ports_bound(&g_r), 8u);
+    slot(7u, OUT_DRIVER_DSHOT, 3u, 7u);
+    g_n = 0u;
+    out_render_apply(&g_r, &g_o, g_rate, 0xFFu);
+    CHECK(find(EV_RELEASE, 20u, 0u) < find(EV_BIND, 3u, 0u));
+    CHECK_EQ(out_render_ports_bound(&g_r), 0u);
+    /* Left out and returned on its own. */
+    out_render_apply(&g_r, &g_o, g_rate, 0x7Fu);
+    CHECK(!out_render_bound(&g_r, 7u));
+    CHECK(out_render_return_slot(&g_r, &g_o, g_rate, 7u));
+    CHECK(out_render_bound(&g_r, 7u));
+
+    /* Port 3 SERVO PWM on GP21, slice 2 with GP20: a PWM slot there lets it
+     * go. */
+    fresh();
+    const uint8_t pin3[LINK_PG_PORTS_MAX] = { 0xFFu, 0xFFu, 0xFFu, 21u };
+    out_render_ports(&g_r, pin3, hz, 0u, 0u, 9u);
+    CHECK_EQ(out_render_ports_bound(&g_r), 8u);
+    slot(0u, OUT_DRIVER_PWM, 20u, 0u);
+    g_n = 0u;
+    out_render_apply(&g_r, &g_o, g_rate, 0xFFu);
+    CHECK_EQ(find(EV_BIND, 20u, 0u), find(EV_RELEASE, 21u, 0u) + 1u);
+    CHECK_EQ(out_render_ports_bound(&g_r), 0u);
+
+    /* A PPM slot whose last channel is 15 drives when only 15's role is
+     * armed. */
+    fresh();
+    const out_slot_t ppm = { OUT_DRIVER_PPM, 14u, 2u, 7u, 50u };
+    CHECK(outputs_configure(&g_o, 0u, &ppm));
+    CHECK(outputs_set_role(&g_o, 15u, OUT_ROLE_THROTTLE));
+    out_render_apply(&g_r, &g_o, g_rate, 0xFFu);
+    outputs_arm_roles(&g_o, OUT_ROLE_BIT(OUT_ROLE_THROTTLE), g_ms);
+    g_n = 0u;
+    pass();
+    CHECK_EQ(count(EV_PPM), 1u);
+    CHECK_EQ(count(EV_PPM_STOP), 0u);
+
+    /* A one-channel PWM slot on channel 0 does not drive for the armed
+     * role of channel 1 beside it. */
+    fresh();
+    slot(0u, OUT_DRIVER_PWM, 4u, 0u);
+    CHECK(outputs_set_role(&g_o, 1u, OUT_ROLE_THROTTLE));
+    out_render_apply(&g_r, &g_o, g_rate, 0xFFu);
+    outputs_arm_roles(&g_o, OUT_ROLE_BIT(OUT_ROLE_THROTTLE), g_ms);
+    pass();
+    CHECK_EQ(last_pulse(4u), 0u);
+}
+
+/*
+ * A slot bound afresh, by an apply or by a return, has rendered nothing to
+ * change from: its first pulse is a plain write even on the watched channel
+ * and with a pulse other than the one before the bind.  A returned slot
+ * takes the bank's slot as it is now.
+ */
+TEST_CASE(a_slot_bound_afresh_has_no_pulse_to_change_from)
+{
+    fresh();
+    slot(0u, OUT_DRIVER_PWM, 4u, 0u);
+    CHECK(outputs_set_slew(&g_o, 0u, 0u));
+    out_render_apply(&g_r, &g_o, g_rate, 0xFFu);
+    outputs_arm(&g_o, true, g_ms);
+    pass();
+    out_render_watch(&g_r, 0);
+    g_rate[0] = 333u;                /* moved by its rate */
+    out_render_apply(&g_r, &g_o, g_rate, 0xFFu);
+    CHECK(outputs_set(&g_o, 0u, 100u, g_ms));
+    pass();
+    CHECK_EQ(count(EV_STAMPED), 0u);
+
+    /* Left out, the bank's slot moved to GP6, returned: GP6, no stamp. */
+    out_render_apply(&g_r, &g_o, g_rate, 0xFEu);
+    const out_slot_t none = { .driver = OUT_DRIVER_NONE };
+    CHECK(outputs_configure(&g_o, 0u, &none));
+    slot(0u, OUT_DRIVER_PWM, 6u, 0u);
+    g_rate[0] = 333u;
+    g_n = 0u;
+    CHECK(out_render_return_slot(&g_r, &g_o, g_rate, 0u));
+    CHECK_EQ(find(EV_BIND, 6u, 0u), 0u);
+    CHECK(outputs_set(&g_o, 0u, 900u, g_ms));
+    pass();
+    CHECK_EQ(count(EV_STAMPED), 0u);
+    CHECK_EQ(last_pulse(6u), outputs_pulse_us(&g_o, 0u));
+}
+
 /* The sends on @p pin from log entry @p from on, into @p v and @p tel, at
  * most @p max; the count. */
 static unsigned sends(uint8_t pin, unsigned from, uint16_t *v, bool *tel,
@@ -627,6 +951,13 @@ int main(void)
     RUN(the_edt_ask_goes_out_in_place_of_stop_frames);
     RUN(the_edt_ask_never_replaces_a_throttle);
     RUN(plain_dshot_slots_and_dshot_ports_never_ask);
+    RUN(the_end_of_a_run_forgets_the_readings);
+    RUN(the_last_slot_and_the_last_port_render);
+    RUN(a_watched_channel_stamps_its_first_changed_pulse_once);
+    RUN(a_dshot_slot_is_due_at_once_after_a_long_disarm);
+    RUN(a_ppm_slot_writes_at_most_eight_channels);
+    RUN(the_last_slot_port_and_channel_count);
+    RUN(a_slot_bound_afresh_has_no_pulse_to_change_from);
     RUN(null_arguments_change_nothing);
     return test_summary("out_render");
 }
