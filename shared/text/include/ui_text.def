@@ -1966,7 +1966,7 @@ UI_TEXT(HG_SL_TITLE_VALUES, 0,
     "OPTIONEN: WERTE")
 UI_TEXT(HG_SL_HEAD, 0,
     "The screen's name and what it drives. The home tag closes the list; with a change not saved it asks first.",
-    "Bildschirm und was er ansteuert. Das Home-Feld schließt die Liste, bei ungespeicherter Änderung mit Rückfrage.")
+    "Seite und was sie ansteuert. Das Home-Feld schließt die Liste, mit Rückfrage bei Ungespeichertem.")
 UI_TEXT(HG_SL_RESET, 0,
     "Sets this list's values to their defaults and no others. SAVE keeps them.",
     "Setzt die Werte dieser Liste auf die Vorgaben, keine anderen. SPEICHERN behält sie.")
@@ -2100,6 +2100,137 @@ UI_TEXT(HG_SU_RESET, 0,
 UI_TEXT(HG_SU_OUTPUT, 0,
     "OUTPUT ON is a 2s hold, OUTPUT OFF a tap. Leaving SUPPLY switches off an output it switched on.",
     "AUSGANG EIN: 2s halten, AUSGANG AUS: tippen. Verlassen von SUPPLY schaltet einen hier eingeschalteten aus.")
+/* MOTOR & ESC's, ESC STICK's and the IMU screen's guides (motor_guide.c,
+ * esc_stick_guide.c, imu_guide.c), as SERVO's. */
+UI_TEXT(HG_MO_TITLE_LIVE, 0,
+    "MOTOR & ESC: LIVE",
+    "MOTOR & ESC: LIVE")
+UI_TEXT(HG_MO_TITLE_PROG, 0,
+    "MOTOR & ESC: PROGRAM",
+    "MOTOR & ESC: PROGRAMMIEREN")
+UI_TEXT(HG_MO_TITLE_CTL, 0,
+    "MOTOR & ESC: CONTROL AND ARM",
+    "MOTOR & ESC: STEUERUNG UND ARM")
+UI_TEXT(HG_MO_TABS, 0,
+    "LIVE drives the motor, PROGRAM sets up an ESC. The rail, ARM and OPTIONS stay on both.",
+    "LIVE treibt den Motor, PROGRAMMIEREN stellt einen ESC ein. Rechte Spalte, ARM und OPTIONEN bleiben.")
+UI_TEXT(HG_MO_PLOT, 0,
+    "Volts, amps, watts and RPM of the last 30s. TABLE lists what the ESC reports.",
+    "Volt, Ampere, Watt und Drehzahl der letzten 30s. TABELLE listet, was der ESC meldet.")
+UI_TEXT(HG_MO_THROTTLE, 0,
+    "Moves while ARMED only and starts at zero after each ARM. Drag the bar; -1 and +1 step one point.",
+    "Wirkt nur bei ARMED und beginnt nach jedem ARM bei null. Ziehe den Balken; -1 und +1 stufen um einen Punkt.")
+UI_TEXT(HG_MO_LOG, 0,
+    "Adds a label to the last MOTOR log. SAFE only, with no log open.",
+    "Hängt der letzten MOTOR-Aufzeichnung einen Namen an. Nur bei SAFE, ohne offene Aufzeichnung.")
+UI_TEXT(HG_MO_STICK, 0,
+    "Opens ESC STICK: an ESC's menu set from a profile, through the throttle pins.",
+    "Öffnet ESC STICK: das Menü eines ESC nach einem Profil, über die Gas-Pins.")
+UI_TEXT(HG_MO_WIRE, 0,
+    "Reads and writes the ESC over its signal wire. Grey until the IOmcu offers it.",
+    "Liest und schreibt den ESC über die Signalleitung. Grau ohne IOmcu dafür.")
+UI_TEXT(HG_MO_TARGET, 0,
+    "The protocol and pins the throttle drives. A tap opens OUTPUTS on them; locked while not SAFE.",
+    "Protokoll und Pins, die das Gas treibt. Tippen öffnet OUTPUTS dazu; gesperrt außer bei SAFE.")
+UI_TEXT(HG_MO_READ, 0,
+    "Volts, amps, watts and RPM now, the run's lowest or peak under each.",
+    "Volt, Ampere, Watt und Drehzahl jetzt, darunter Minimum oder Spitze des Laufs.")
+UI_TEXT(HG_MO_RESET, 0,
+    "Clears the peaks; the live readings stay.",
+    "Löscht die Spitzen; die Messwerte bleiben.")
+UI_TEXT(HG_MO_ARM, 0,
+    "Hold 2s to arm the throttle pins; DISARM is a tap. A refusal names its cause in the alert band.",
+    "Halte 2s für ARM der Gas-Pins; DISARM ist ein Tippen. Eine Ablehnung nennt den Grund im Alarmband.")
+UI_TEXT(HG_MO_OPTIONS, 0,
+    "Pack, motor and the throttle's pulses, SAFE only. Idle pulse stays 100us or more under Full pulse.",
+    "Akku, Motor und die Pulse des Gases, nur bei SAFE. Leerlaufpuls bleibt 100us oder mehr unter Vollpuls.")
+UI_TEXT(HG_ES_TITLE_LIST, 0,
+    "ESC STICK: MAKERS AND MODELS",
+    "ESC STICK: HERSTELLER UND MODELLE")
+UI_TEXT(HG_ES_TITLE_FIND, 0,
+    "ESC STICK: SEARCH AND PAGES",
+    "ESC STICK: SUCHE UND SEITEN")
+UI_TEXT(HG_ES_TITLE_ITEMS, 0,
+    "ESC STICK: PROFILE",
+    "ESC STICK: PROFIL")
+UI_TEXT(HG_ES_TITLE_RUN, 0,
+    "ESC STICK: CHANGE AND RUN",
+    "ESC STICK: ÄNDERN UND START")
+UI_TEXT(HG_ES_BACK, 0,
+    "One level up: a profile to its models, a maker's models to the makers, then PROGRAM.",
+    "Eine Ebene zurück: vom Profil zu den Modellen, von den Modellen zu den Herstellern, dann PROGRAMMIEREN.")
+UI_TEXT(HG_ES_MAKER, 0,
+    "A maker and how many of its models can run here. A tap lists its models.",
+    "Ein Hersteller und wie viele seiner Modelle hier laufen. Tippen listet seine Modelle.")
+UI_TEXT(HG_ES_MODEL, 0,
+    "A model: current, voltage, family, or why it cannot run. A tap opens its profile.",
+    "Ein Modell: Strom, Spannung, Familie oder warum es nicht läuft. Tippen öffnet sein Profil.")
+UI_TEXT(HG_ES_FIND, 0,
+    "Narrows the list to names that hold the text; * stands for any text. X clears it.",
+    "Engt die Liste auf Namen mit dem Text ein; * steht für beliebigen Text. X löscht ihn.")
+UI_TEXT(HG_ES_PAGES, 0,
+    "Turn the list by a page of 7 rows.",
+    "Blättern die Liste um eine Seite von 7 Zeilen.")
+UI_TEXT(HG_ES_COUNT_NAME, 0,
+    "ROWS",
+    "ZEILEN")
+UI_TEXT(HG_ES_COUNT, 0,
+    "The rows shown, of how many, and how many of all can run.",
+    "Gezeigte Zeilen, von wie vielen, und wie viele davon laufen.")
+UI_TEXT(HG_ES_ITEM, 0,
+    "An item of the ESC's menu. KEEP leaves it, a change shows amber. A tap shows its values.",
+    "Ein Punkt im Menü des ESC. BEHALTEN lässt ihn, eine Änderung ist gelb. Tippen zeigt seine Werte.")
+UI_TEXT(HG_ES_NOTE_NAME, 0,
+    "NOTE",
+    "HINWEIS")
+UI_TEXT(HG_ES_NOTE, 0,
+    "In amber, why RUN does not start: no throttle pin, no beep source, the supply on, a rating. Fix that first.",
+    "Gelb, warum START nicht geht: kein Gas-Pin, keine Pieptonquelle, Netzteil an, ein Grenzwert. Erst beheben.")
+UI_TEXT(HG_ES_STEP, 0,
+    "Step the item's value: KEEP, then the ESC's own values in its order.",
+    "Stufen den Wert des Punkts: BEHALTEN, dann die Werte des ESC in seiner Reihenfolge.")
+UI_TEXT(HG_ES_SCROLL, 0,
+    "Move the items shown by one. CHANGE counts them.",
+    "Verschieben die gezeigten Punkte um einen. ÄNDERN zählt sie.")
+UI_TEXT(HG_ES_HAND, 0,
+    "The steps by hand at the ESC, and when each is due.",
+    "Die Handgriffe am ESC und wann jeder fällig ist.")
+UI_TEXT(HG_ES_RUN, 0,
+    "Opens the warning; a 2s hold there starts the run. Grey while nothing is picked or the note names a reason.",
+    "Öffnet die Warnung; 2s halten dort startet den Lauf. Grau ohne gewählten Wert oder bei einem Grund im Hinweis.")
+UI_TEXT(HG_ES_OPTIONS, 0,
+    "Supply voltage and current limit, and the beep timings. SAFE only, no run under way.",
+    "Spannung und Strombegrenzung des Netzteils sowie die Pieptonzeiten. Nur bei SAFE, ohne Lauf.")
+UI_TEXT(HG_IM_TITLE_CTL, 0,
+    "IMU: SCAN AND ZERO",
+    "IMU: SUCHE UND NULLPUNKT")
+UI_TEXT(HG_IM_TITLE_READ, 0,
+    "IMU: READINGS",
+    "IMU: MESSWERTE")
+UI_TEXT(HG_IM_SCAN, 0,
+    "Lists the sensors in range for 10s; a tap binds one. Switches the IMU on when it is off.",
+    "Listet 10s lang Sensoren in Reichweite; Tippen bindet einen. Schaltet die IMU dafür ein.")
+UI_TEXT(HG_IM_ZERO, 0,
+    "Takes the angles now as zero. With ANGLE SOURCE IMU it clears RUDDER's zero and MAX.",
+    "Nimmt die Winkel jetzt als Nullpunkt. Mit WINKELQUELLE IMU löscht er Nullpunkt und MAX von RUDER.")
+UI_TEXT(HG_IM_UNZERO, 0,
+    "Angles from the sensor's own zero again.",
+    "Winkel wieder vom eigenen Nullpunkt des Sensors.")
+UI_TEXT(HG_IM_CARD, 0,
+    "The bound sensor and its address, the C6's firmware and the link's state.",
+    "Der gebundene Sensor mit Adresse, die Firmware des C6 und der Zustand der Verbindung.")
+UI_TEXT(HG_IM_ANGLES, 0,
+    "Angles from the zero, 0.01°. The axis a servo run reads is in the accent colour.",
+    "Winkel vom Nullpunkt, 0.01°. Die Achse, die ein Servolauf liest, steht in der Akzentfarbe.")
+UI_TEXT(HG_IM_RATE, 0,
+    "Frames in the last second, the newest's age and the battery. Stale 300ms after a frame.",
+    "Frames der letzten Sekunde, Alter des neuesten und Akku. Veraltet 300ms nach einem Frame.")
+UI_TEXT(HG_IM_CAL, 0,
+    "Calibrates the accelerometer while connected. Keep the sensor still and level for 3s.",
+    "Kalibriert den Beschleunigungssensor bei Verbindung. Halte den Sensor 3s still und waagerecht.")
+UI_TEXT(HG_IM_OPTIONS, 0,
+    "Opens the IMU entry of SENSORS on SETUP; its home tag returns here.",
+    "Öffnet den IMU-Eintrag von SENSORS in SETUP; sein Home-Feld führt hierher zurück.")
 
 /* ---------------------------------------------------------------- LOGS */
 UI_TEXT(LOG_NO_SOURCE, 36,

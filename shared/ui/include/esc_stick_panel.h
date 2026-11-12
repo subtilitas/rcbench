@@ -154,6 +154,23 @@ struct ui_setlist;
  */
 const struct ui_setlist *esc_stick_settings_list(void);
 
+struct ui_help_page;
+/**
+ * @brief The guide's pages over the session as it is now
+ *        (esc_stick_guide.c): the list's two, a profile's two, or the
+ *        OPTIONS list's.
+ * @return The pages, 0 over the keyboard, the warning, the manual steps,
+ *         a run and its result.
+ */
+int esc_stick_help_count(void);
+/**
+ * @brief Page @p i of those esc_stick_help_count() counts.
+ * @param i   The page, from 0.
+ * @param out The page, filled.
+ * @return False past the last page.
+ */
+bool esc_stick_help_page(int i, struct ui_help_page *out);
+
 /**
  * @brief The SETTINGS list covers the body, MOTOR & ESC's output strip
  *        included; MOTOR & ESC draws no strip under it.

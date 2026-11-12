@@ -395,7 +395,13 @@ RUN is not offered while that control shows; SUPPLY's OUTPUT OFF, in the footer'
 slot, lies under either dock, so SUPPLY offers no page while its output is on. OUTPUTS, SETUP,
 LOGS and FILES have 20 pages over 11 states (`help_outputs.c`, `help_setup.c`, `help_logs.c`,
 `help_files.c`; `test_help_outputs`, `test_help_setup`, `test_help_logs`, `test_help_files`).
-The other screens have none yet. PREV and NEXT stand in the band, in the home tag's place, the
+MOTOR & ESC has 2 pages on LIVE and 2 on PROGRAM's list with 9 items each, and the OPTIONS
+list's 2 (`shared/ui/motor_guide.c`; `test_help_motor`); none unless the bench is SAFE, as
+either dock covers part of DISARM. ESC STICK has 2 pages on its list and 2 on a profile, the
+note that says why RUN does not start among them (`shared/ui/esc_stick_guide.c`;
+`test_help_stick`); none while a run is under way or its result shows. IMU has 2 pages with
+8 items, both while ARMED (`shared/ui/imu_guide.c`; `test_help_imu`). The other screens have
+none yet. PREV and NEXT stand in the band, in the home tag's place, the
 same on every page.
 
 ### Screenshot
@@ -1349,14 +1355,15 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 528 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 531 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
 `test_nav_tiles`, `test_menu_openers`, `test_nav_alert`, `test_nav_mark`,
 `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_band_hwstop`,
 `test_help_router`, `test_help_pages`, `test_help_guides`, `test_help_setup`,
-`test_help_outputs`, `test_help_logs`, `test_help_files`, `test_widgets`, `test_slider_fingers`, `test_footer`, `test_setlist`, `test_hold_hint`, `test_hold_flash`, `test_hold_button`, `test_action_fill`,
+`test_help_outputs`, `test_help_logs`, `test_help_files`, `test_help_motor`,
+`test_help_stick`, `test_help_imu`, `test_widgets`, `test_slider_fingers`, `test_footer`, `test_setlist`, `test_hold_hint`, `test_hold_flash`, `test_hold_button`, `test_action_fill`,
 `test_workbench`, `test_prog_registry`,
 `test_keypad`, `test_keypad_sign`, `test_keypad_rows_setup`, `test_keypad_rows_stick`,
 `test_keypad_rows_motor`, `test_keypad_rows_supply`, `test_keypad_rows_servo`,
@@ -1930,8 +1937,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 928 committed screenshots to the current render,
-464 in English and the same 464 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` holds 934 committed screenshots to the current render,
+467 in English and the same 467 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

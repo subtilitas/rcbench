@@ -232,6 +232,30 @@ void mpp_cancel_press(void)
 
 uint32_t mpp_revision(void) { return p.rev; }
 
+bool mpp_row(int k, gfx_rect_t *r, const prog_reg_row_t **row)
+{
+    size_t n = 0;
+    const prog_reg_row_t *rows = prog_registry(&n);
+    prog_list_t l;
+    list_now(&l);
+    int seen = 0;
+    for (int i = 0; i < (int)l.count; ++i) {
+        if (l.e[i].heading) {
+            continue;
+        }
+        const gfx_rect_t at = prog_view_entry_rect(&p.view, &l, i);
+        if (at.w <= 0 || l.e[i].row >= n) {
+            continue;
+        }
+        if (seen++ == k) {
+            *r = at;
+            *row = &rows[l.e[i].row];
+            return true;
+        }
+    }
+    return false;
+}
+
 void mpp_render_page(gfx_canvas_t *c)
 {
     gfx_fill_rect(c, PAGE_X, PAGE_Y, PAGE_W, PAGE_H,

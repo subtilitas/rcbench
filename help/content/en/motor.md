@@ -153,6 +153,7 @@ RENAME LOG gives the MOTOR log closed since the panel started a label behind its
 
 ## Related pages
 
+- [The screen guide](band.md#the-screen-guide): "?" in the band opens this screen's guide.
 - [Motor settings](motor-settings.md): the pack, Rated kV, Motor poles, the Idle and Full pulse.
 - [ESC STICK](motor-stick.md): programming an ESC through its throttle-stick menu.
 - [Outputs](outputs.md): which pins the throttle drives.

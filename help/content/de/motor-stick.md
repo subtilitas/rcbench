@@ -134,5 +134,6 @@ Geht das Netzteil aus, bevor der ESC bestätigt hat, markiert das Ergebnis die �
 
 ## Verwandte Seiten
 
+- [Die Bildschirmhilfe](band.md#die-bildschirmhilfe): "?" im Band öffnet die Hilfe dieser Seite.
 - [Motor und ESC](motor.md#programmieren): PROGRAMMIEREN und der Ausgangsstreifen.
 - [Stick-Programmierung](https://github.com/subtilitas/rcbench/blob/main/docs/StickProgramming-de.md): Profile, Zeiten und jede Regel eines Laufs.

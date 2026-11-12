@@ -54,6 +54,7 @@ Eine Suche dauert 10s. Sie listet die Geräte, die den Dienst des WitMotion-Sens
 
 ## Verwandte Seiten
 
+- [Die Bildschirmhilfe](band.md#die-bildschirmhilfe): "?" im Band öffnet die Hilfe dieser Seite.
 - [Sensoren](setup-sensors.md)
 - [Servo-Optionen](servo-settings.md)
 - [Setup](setup.md)

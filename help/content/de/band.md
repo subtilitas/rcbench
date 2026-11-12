@@ -115,7 +115,7 @@ Das Speicher-Popup wartet, bis der Prüfstand ruht: SAFE, Netzteilausgang und PR
 
 ![Die Hilfe des Menüs auf Seite 1](view:help-overview)
 
-"?", 8px links von STOP, öffnet die Hilfe zur aktuellen Seite. Das Menü, SUPPLY, SERVO, OUTPUTS, SETUP, LOGS und FILES haben eine Hilfe; die anderen Seiten haben kein "?". Jede Hilfeseite markiert bis zu 5 Bedienelemente mit Nummern und Eckmarkierungen. Ein Feld von 480 x 488px auf einer Bildschirmhälfte nennt ihre Namen und Funktionen, mit höchstens 3 Zeilen pro Bedienelement. Die andere Hälfte läuft weiter. In der letzten Zeile steht die Adresse dieser Hilfe.
+"?", 8px links von STOP, öffnet die Hilfe zur aktuellen Seite. Das Menü, MOTOR & ESC mit ESC STICK, SUPPLY, SERVO, OUTPUTS, SETUP, LOGS, FILES und IMU haben eine Hilfe; die anderen Seiten haben kein "?". Jede Hilfeseite markiert bis zu 5 Bedienelemente mit Nummern und Eckmarkierungen. Ein Feld von 480 x 488px auf einer Bildschirmhälfte nennt ihre Namen und Funktionen, mit höchstens 3 Zeilen pro Bedienelement. Die andere Hälfte läuft weiter. In der letzten Zeile steht die Adresse dieser Hilfe.
 
 - VORIGE und NÄCHSTE blättern durch die Hilfe. Sie ersetzen das Home-Feld im Band und bleiben auf jeder Seite an derselben Stelle. Wiederholtes Tippen auf dieselbe Position blättert weiter. SCHLIESSEN unten im Hilfefeld oder "?" schließt die Hilfe.
 - Ein Tipp an eine andere Stelle schließt die Hilfe, ohne die darunterliegende Bedienung auszulösen.
@@ -126,6 +126,12 @@ Das Speicher-Popup wartet, bis der Prüfstand ruht: SAFE, Netzteilausgang und PR
 
 ![Die Hilfe von SERVO auf Seite 1 in LIVE](view:help-servo)
 ![Die Hilfe von SUPPLY auf Seite 1 in LIVE](view:help-supply)
+
+MOTOR & ESC hat eine Hilfeseite für LIVE oder die Liste von PROGRAMMIEREN mit dem Hilfefeld rechts, dann die Hilfeseite der rechten Spalte mit dem Hilfefeld links: ZIEL, die Messwerte, SPITZENWERTE ZURÜCKSETZEN, ARM und OPTIONEN. Jedes Hilfefeld verdeckt einen Teil von ARM und DISARM, daher bietet MOTOR & ESC nur bei SAFE Hilfeseiten. Über ESC STICK hat die Hilfe zwei Seiten zur Liste der Hersteller oder Modelle und zwei zu einem Profil: ZURÜCK, ein Punkt und der Hinweis, warum START nicht geht, dann die Stufentasten, MANUELLER EINGRIFF NÖTIG, START und OPTIONEN. Ein Lauf, sein Ergebnis, die Warnung vor dem Start, die Handgriffe und die Tastatur der Suche haben keine Hilfeseiten. IMU hat zwei Hilfeseiten, beide auch bei ARMED: SENSOREN SUCHEN, NULLPUNKT und NULLPUNKT LÖSCHEN, dann die Karte, 2s HALTEN: KALIBRIEREN und OPTIONEN.
+
+![Die Hilfe von MOTOR & ESC auf Seite 1 in LIVE](view:help-motor)
+![Die Hilfe von ESC STICK auf Seite 1 bei einem Profil](view:help-motor-stick)
+![Die Hilfe von IMU auf Seite 1](view:help-imu)
 
 OUTPUTS, SETUP, LOGS und FILES haben eigene Hilfeseiten für jeden Zustand: Kacheln, Liste und SENSORS auf SETUP, Platinenansicht, Eintrag PROG PORT und Rasteransicht auf OUTPUTS, Dateiliste, Importansicht und Grafik auf LOGS, die Spalten auf FILES. Auf Hilfeseite 1 steht das Hilfefeld rechts. Ein Bedienelement, das das Hilfefeld zum Teil verdeckt, wird markiert, wo es sichtbar ist. Diese Seiten steuern keinen Ausgang an, daher bleiben alle ihre Hilfeseiten auch in ARMED sichtbar.
 
