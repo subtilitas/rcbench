@@ -93,8 +93,12 @@ extern "C" {
 #define ARMING_LINE_WAIT_MS 200u
 
 /**
- * @brief How long a disarm that nobody takes may withhold the heartbeat:
- *        300ms, twice HEARTBEAT_MAX_GAP_MS (150ms).
+ * @brief How long after its first look a disarm that nobody takes stops
+ *        holding its request: 300ms, twice HEARTBEAT_MAX_GAP_MS (150ms).
+ *
+ * The request is cleared after the pass's disarm exchange returns, and that
+ * exchange can wait LINK_HOST_TIMEOUT_MS (1000ms): the heartbeat stays
+ * withheld until the later of the two.
  *
  * The panel withholds the heartbeat while a disarm request stands, and the
  * request stands until the far end has taken the disarm (disarm_hold_ends()).

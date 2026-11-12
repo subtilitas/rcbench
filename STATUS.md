@@ -2677,8 +2677,9 @@ core that does not draw. Nothing exercises it deliberately: its files, `main.c`,
 `panel_art.c` and `panel_update.c` (the IOmcu's update), are not in the host suite. The
 `runlog` task beside it (`panel_log.c`), which owns every write to the card, is in the same
 position. The rules it drives are in `shared/safety/arming.c` under `test_arming`, the link-loss
-stop, the wait for the far end's word on the heartbeat and the 300ms a disarm nobody takes
-may withhold it (`disarm_hold_ends()`) included. The numbering and the eviction of the render
+stop, the wait for the far end's word on the heartbeat and the 300ms after which a disarm
+nobody takes ends its request, or the end of that pass's disarm exchange (up to 1000ms) if later
+(`disarm_hold_ends()`), included. The numbering and the eviction of the render
 loop's touch queue are `touch_put_begin()` and `touch_put_next()` in
 `shared/safety/touch_loss.c`, under `test_touch_loss`.
 

@@ -2323,7 +2323,7 @@ TEST_CASE(dead_touch_withholds_the_line_past_the_window)
 
 /* The window the docs state is 300ms, twice the IOmcu's ceiling. */
 _Static_assert(ARMING_DISARM_INHIBIT_MS == 300u,
-               "a disarm withholds the line for 300 ms at most");
+               "a disarm request ends 300ms after its first look");
 
 /* The far end takes the disarm: the request ends in that pass, and the
  * next request opens a window of its own. */
