@@ -18,7 +18,7 @@ The IMU screen controls a Bluetooth inertial measurement unit: a WitMotion BWT90
 | HOLD 2s: CALIBRATE | in the footer's middle; starts accelerometer calibration while connected; keep the sensor still and level during the 3s countdown |
 | ZERO | uses the current angles as zero when a reading is available; with ANGLE SOURCE IMU, this clears RUDDER's zero and MAX |
 | CLEAR ZERO | restores angles relative to the sensor's own zero |
-| SETTINGS | in the footer's right; opens the IMU entry of [Sensors](setup-sensors.md#the-imu); its home tag returns here |
+| OPTIONS | in the footer's right; opens the IMU entry of [Sensors](setup-sensors.md#the-imu); its home tag returns here |
 
 A press shorter than 2s does not start calibration. The band shows `Hold 2s to calibrate the accelerometer.`.
 

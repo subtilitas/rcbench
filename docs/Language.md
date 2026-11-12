@@ -107,7 +107,7 @@ One German word per English concept, on every screen and in the report.
 | reading | Messwert |
 | EFF (the drivetrain estimate on MOTOR & ESC, LIVE) | WIRK. |
 | setting (a SETUP entry) | Einstellung |
-| SETTINGS (a screen's own settings) | OPTIONEN |
+| OPTIONS (a screen's own settings) | OPTIONEN |
 | save, reset, apply, close | speichern, zurücksetzen, übernehmen, schließen |
 | cancel, abort | abbrechen |
 | hold to … | … halten |

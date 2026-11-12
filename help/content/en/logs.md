@@ -53,7 +53,7 @@ WI-FI in the row of buttons opens [Wi-Fi](wifi.md) for browser downloads; its ho
 | DELETE | asks, then removes the selected file; grey with nothing selected |
 | OPEN | opens the selected CSV file in the import view, a report in the text viewer; grey with nothing selected |
 
-The footer under the list names the screen, LOGS. SETTINGS at its right opens the SD CARD list of [SETUP](setup.md#sd-card): the log switches and the two log folders. Its home tag returns here.
+The footer under the list names the screen, LOGS. OPTIONS at its right opens the SD CARD list of [SETUP](setup.md#sd-card): the log switches and the two log folders. Its home tag returns here.
 
 ![The fourth page of a full card](view:logs-pages)
 

@@ -25,7 +25,7 @@ Acht Kacheln zu je 243 x 255px, in 4 Spalten und 2 Reihen: die Werkbänke in der
 | BALANCE | Vibration, Phase | [Wuchten](balance.md) |
 | SETUP | Panel, Pins, Karte, WLAN | [Setup](setup.md) |
 
-Die Programmierung hat keine eigene Kachel. Öffne [PROGRAMMIEREN](motor.md#programmieren) auf MOTOR & ESC für elektronische Drehzahlregler (ESCs) oder PROGRAMMIEREN auf SERVO für Servos.
+Die Programmierung hat keine eigene Kachel. Elektronische Drehzahlregler (ESCs): [PROGRAMMIEREN](motor.md#programmieren) auf MOTOR & ESC. Servos: die Kacheln KST und HITEC auf [SERVO](servo-programmer.md).
 
 Eine Kachel öffnet sich, wenn du den Finger auf derselben Kachel anhebst, auf die du gedrückt hast. Ziehst du den Finger von der Kachel weg, wird der Tipp verworfen.
 
