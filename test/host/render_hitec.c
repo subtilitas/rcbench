@@ -723,11 +723,21 @@ static void hpd_readings(int n)
  */
 static void hitec_view_steps(const char *view)
 {
-    const char *v = view + strlen("servo-hitec");
+    /* A view with -hand is its view on a build without a PD mini, the
+     * servo powered by hand: no output is live once CONNECT has run, so
+     * the guide offers the session's pages. */
+    static const char k_hand[] = "-hand";
+    static char vb[64];
+    const size_t n = strlen(view);
+    const bool hand = n >= sizeof(k_hand) - 1u
+        && strcmp(view + n - (sizeof(k_hand) - 1u), k_hand) == 0;
+    snprintf(vb, sizeof(vb), "%.*s",
+             (int)(hand ? n - (sizeof(k_hand) - 1u) : n), view);
+    const char *v = vb + strlen("servo-hitec");
     const bool c_view = classic_view(v);
 
     /* The PD mini answers with its output off; CONNECT switches it on. */
-    rig_at(strcmp(v, "-nopd") == 0 || strcmp(v, "-move-nopd") == 0
+    rig_at(hand || strcmp(v, "-nopd") == 0 || strcmp(v, "-move-nopd") == 0
                ? SUPPLY_NONE : SUPPLY_READY, true);
     if (c_view) {
         servo_hs5645();

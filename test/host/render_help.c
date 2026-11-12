@@ -70,8 +70,10 @@ static const struct {
     { "help-servo-kst", "servo-kst" },
     { "help-servo-kst-tune", "servo-kst-tune" },
     { "help-servo-hitec", "servo-hitec" },
-    { "help-servo-hitec-travel", "servo-hitec-travel" },
-    { "help-servo-hitec-read", "servo-hitec-read" },
+    /* After CONNECT on a servo powered by hand: with the PD mini's output
+     * live the guide offers no session page (servo_guide.c). */
+    { "help-servo-hitec-travel", "servo-hitec-travel-hand" },
+    { "help-servo-hitec-read", "servo-hitec-read-hand" },
     { "help-servo-output", "servo-settings" },
     { "help-servo-sweep", "servo-sweep-page" },
     { "help-servo-sweepfn", "servo-sweep-safe" },
