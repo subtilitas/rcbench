@@ -309,7 +309,7 @@ on the left card decides the first pages:
 | SERVO LIVE and SWEEP | the horn's angle, the dial and the readings (3) |
 | SERVO TEST | the AUTOMATIC TEST card, the caps and the plot (3); PORT, READY, the rail line, ARM + START and OPTIONS (5) |
 | SERVO LIMIT RUN | LOW END with HIGH END, and the state lines (2); PORT, READY, the rail line, ARM + START and OPTIONS (5) |
-| SERVO RUDDER | LENGTH, the drive buttons, ZERO and RESET MAX (4); DEFLECTION, TRAILING EDGE and the state lines (3) |
+| SERVO RUDDER | LENGTH, the drive buttons, ZERO, RESET MAX and, without a knob that answers, -10us and +10us (4 or 5); DEFLECTION, TRAILING EDGE and the state lines (3) |
 | SERVO RUDDER AUTO | the targets, MARGIN and TOLERANCE, ZERO (3); DEFLECTION and TRAILING EDGE (2); PORT, READY, the rail line, ARM + START and OPTIONS (5) |
 | SERVO LIVE, SWEEP and RUDDER, SAFE | PORT, READY, the rail line, ARM and OPTIONS (5); SET V, the plot, SPEED, the type and the buttons on LIVE and SWEEP (5), SET V, the plot, the type and the side view on RUDDER (4); SET V not on the rbmod carrier's programming port |
 | SERVO KST and HITEC, SERVO tab | the tabs, CONNECT, READ ALL and TYPE on KST, SERIES (FILES while the port is held) and READ ALL on HITEC, the notes (5); FILES and MORE on KST, MORE and AFTER STOP on HITEC, ENABLE WRITE TO SERVO, RESTORE, WRITE n VALUES (5); PORT, READY, the rail line, WRITE and OPTIONS (5) |
@@ -631,7 +631,7 @@ The fill of a button says what a press does to an output.
 
 | Class | Buttons | Available | Active | Waiting | Refused |
 | --- | --- | --- | --- | --- | --- |
-| Output action: switches an output on, arms, starts a run, writes a servo | ARM, OUTPUT ON, PROG 5V ON, HOLD 2s: ARM + START on TEST, RUDDER AUTO and LIMIT RUN, CENTER on LIVE, SWEEP on SWEEP, 1000us, CENTER, 2000us and ZERO on RUDDER, the programmers' CONNECT, ENABLE WRITE TO SERVO, WRITE n VALUES and MOVE SERVO | green (`UI_C_OK`) | red (`UI_C_DANGER`): an output is on, ARMED, a write runs, the servo is driven; the label says what a press stops (DISARM, OUTPUT OFF, STOP RUN, PAUSE, LEAVE, ABORT, ON) | amber (`UI_C_WARN`): PAUSED, WAIT, the step of ARM + START and of ARM on LIVE, SWEEP and RUDDER | grey (`ui_button_off_fill()`), faint label |
+| Output action: switches an output on, arms, starts a run, writes a servo | ARM, OUTPUT ON, PROG 5V ON, HOLD 2s: ARM + START on TEST, RUDDER AUTO and LIMIT RUN, CENTER on LIVE, SWEEP on SWEEP, 1000us, CENTER, 2000us, -10us, +10us and ZERO on RUDDER, the programmers' CONNECT, ENABLE WRITE TO SERVO, WRITE n VALUES and MOVE SERVO | green (`UI_C_OK`) | red (`UI_C_DANGER`): an output is on, ARMED, a write runs, the servo is driven; the label says what a press stops (DISARM, OUTPUT OFF, STOP RUN, PAUSE, LEAVE, ABORT, ON) | amber (`UI_C_WARN`): PAUSED, WAIT, the step of ARM + START and of ARM on LIVE, SWEEP and RUDDER | grey (`ui_button_off_fill()`), faint label |
 | Emergency | STOP | red | red, flashes on the press | - | never |
 | Edit | `-` `+`, value boxes, RESET MAX, RESET CATEGORY on SETUP, DISCARD, READ AGAIN | neutral (`UI_C_PANEL_HI`) | - | - | grey |
 | SAVE on SETUP | SAVE, SAVED, WHEN IDLE, NOT SAVED | green while something is unsaved (SAVE) | - | amber (WHEN IDLE) | neutral with the label in red (NOT SAVED); SAVED is neutral |
@@ -1672,7 +1672,7 @@ SERVO opens on its hub: eight tiles of 328 x 130px in SETUP's grid, at x
 | SWEEP | SWEEP | the dial with the sweep; OPTIONS opens CURVE, SPEED, RANGE and DWELL TIME |
 | TEST | TEST | the AUTOMATIC TEST card, SUPPLY's caps, the plot and the run's box, the READY card in place of the output card, HOLD 2s: ARM + START in the footer; OPTIONS opens the automatic test's list |
 | LIMIT RUN | LIMIT RUN | the mode and output lines, LOW END and HIGH END and the state lines on the left card, the READY card in place of the output card, HOLD 2s: ARM + START in the footer; OPTIONS opens MODE, SERVO, SERVO PULSES, CURRENT, Wait before PWM, DUT NAME and USER LOGS ([Running it](Servo.md#running-it)) |
-| RUDDER | RUDDER | deflection in ° and mm, LENGTH, 1000us, CENTER, 2000us, ZERO and RESET MAX ([Rudder deflection](Servo.md#rudder-deflection)) |
+| RUDDER | RUDDER | deflection in ° and mm, LENGTH, 1000us, CENTER, 2000us, ZERO and RESET MAX, -10us and +10us without a knob that answers ([Rudder deflection](Servo.md#rudder-deflection)) |
 | RUDDER AUTO | RUDDER AUTO | AUTO's box in place of LENGTH and the drive buttons, the READY card in place of the output card, HOLD 2s: ARM + START in the footer ([AUTO end points](Servo.md#auto-end-points)) |
 | KST | SERVO > KST | the KST and Chaservo programmer over the left card ([Programmer](#programmer)) |
 | HITEC | HITEC | the Hitec programmer over the left card ([Hitec programmer](#hitec-programmer)) |
@@ -1969,6 +1969,7 @@ What each control does while the bench is SAFE:
 | --- | --- | --- |
 | The dial | refused: no command, the horn and COMMANDED stay | commands the position under the finger |
 | Rotary knob | refused; the turn is not kept | moves the horn from the commanded value |
+| -10us, +10us on RUDDER, while Rotary knob is OFF or the knob does not answer | refused; drawn dimmed | moves the pulse 10us from the commanded value, a hold repeats; a hold stops at TRAVEL or PULSE MIN or MAX, whichever comes first |
 | CENTER | refused; drawn dimmed | commands PULSE CENTER plus TRIM |
 | SWEEP, PAUSE, PAUSED | refused; drawn dimmed | starts, pauses and resumes the sweep |
 | RELEASE | sends the release; the value shown stays | centers the surfaces; the value shown becomes the rest |
@@ -5438,6 +5439,11 @@ across a third of its travel from -travel to +travel.
   unacknowledged probe to 0x06 every 100ms. In the host tests' model of the
   bus that changes nothing else. On the panel it is not measured: 0x00 to
   0x07 have not been scanned on this board.
+- Without a knob that answers, RUDDER shows -10us and +10us in its place:
+  while Rotary knob is OFF, or ON and the last poll went unanswered
+  ([Rudder deflection](Servo.md#rudder-deflection)). A sensor that answers
+  with no magnet over it counts as answering, since it reports no magnet
+  status: the keys stay hidden until Rotary knob is OFF.
 - The knob's direction, noise and behaviour without a magnet have not been
   measured on hardware.
 

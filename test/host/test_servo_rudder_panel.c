@@ -1003,7 +1003,9 @@ TEST_CASE(the_guide_marks_rudder_and_leaves_the_port_button_in_view)
     CHECK_EQ(p.title, TX_HG_SV_TITLE_RUDDER);
     CHECK_EQ(p.side, UI_HELP_DOCK_RIGHT);
     CHECK(!p.armed_ok);
-    CHECK_EQ(p.count, 4);
+    /* LENGTH, the drive buttons, ZERO, RESET MAX and, with the knob OFF,
+     * -10us and +10us. */
+    CHECK_EQ(p.count, 5);
     CHECK(ui_help_page(scr, false, 1, &p));
     CHECK_EQ(p.title, TX_HG_SV_TITLE_RUD_READ);
     CHECK_EQ(p.count, 3);

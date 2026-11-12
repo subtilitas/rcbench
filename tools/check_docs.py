@@ -1212,6 +1212,21 @@ FACTS = [
      (("IOMCU_CAN_BITRATE", 1e-6),)),
     ("docs/Link.md", rf"\| Bus \| classic CAN [^|]*?, {N}Mbit/s",
      (("PANEL_CAN_BITRATE", 1e-6),)),
+    # RUDDER's step keys: the step and the shared key repeat.
+    ("docs/Servo.md", rf"move the commanded pulse {N}us \(`RUD_STEP_US`\)",
+     ("RUD_STEP_US",)),
+    ("docs/Servo-de.md",
+     rf"verschieben den Sollpuls um {N}us \(`RUD_STEP_US`\)",
+     ("RUD_STEP_US",)),
+    ("docs/Servo.md",
+     rf"a hold repeats after {N}s at {N} steps a second and from {N}s at {N},",
+     ("UI_REPEAT_DELAY_S", "UI_REPEAT_SLOW_HZ",
+      "UI_REPEAT_DELAY_S + UI_REPEAT_FAST_S", "UI_REPEAT_FAST_HZ")),
+    ("docs/Servo-de.md",
+     rf"Halten wiederholt nach {N}s mit {N} Schritten je Sekunde und ab {N}s "
+     rf"mit {N},",
+     ("UI_REPEAT_DELAY_S", "UI_REPEAT_SLOW_HZ",
+      "UI_REPEAT_DELAY_S + UI_REPEAT_FAST_S", "UI_REPEAT_FAST_HZ")),
     # Limits a check enforces.
     ("CONTRIBUTING.md",
      rf"coverage drops below {N}% overall, or any single file below {N}%",

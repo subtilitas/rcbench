@@ -5374,6 +5374,9 @@ UI_TEXT(HG_SV_RUD_LEN, 0,
 UI_TEXT(HG_SV_RUD_DRIVE, 0,
     "1000us, CENTER and 2000us drive the servo to that pulse while ARMED. PULSE below names it.",
     "1000us, ZENTRIEREN und 2000us fahren das Servo bei ARMED auf diesen Puls. PULS darunter nennt ihn.")
+UI_TEXT(HG_SV_RUD_STEP, 0,
+    "Without a knob that answers: a tap moves the pulse 10us while ARMED, a hold repeats. The pulse stays.",
+    "Ohne antwortenden Drehknopf: ein Tipp verschiebt den Puls bei ARMED um 10us, Halten wiederholt. Der Puls bleibt.")
 UI_TEXT(HG_SV_RUD_ZERO, 0,
     "Takes the angle now as the neutral and clears MAX. Tap it with the surface at neutral.",
     "Übernimmt den Winkel jetzt als Nullpunkt und löscht MAX. Tippe bei Ruder in Neutrallage.")
@@ -11664,6 +11667,12 @@ UI_TEXT(RUD_ZERO, 0,
 UI_TEXT(RUD_RESET_MAX, 0,
     "RESET MAX",
     "MAX LÖSCHEN")
+UI_TEXT(RUD_STEP_MINUS, 0,
+    "-10us",
+    "-10us")
+UI_TEXT(RUD_STEP_PLUS, 0,
+    "+10us",
+    "+10us")
 UI_TEXT(RUD_MAX, 0,
     "MAX",
     "MAX")

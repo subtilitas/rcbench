@@ -1747,6 +1747,26 @@ aus“ ohne Lineal am Modell. Die Geometrie steht in
   MITTE plus TRIMMUNG. Alle drei und der Drehknopf wirken nur, solange der
   Prüfstand ARMED ist. Die Taste PORT und die Zeile PORT der Karte BEREIT
   nennen den Pin, den sie ansteuern.
+- -10us und +10us verschieben den Sollpuls um 10us (`RUD_STEP_US`) vom
+  Sollpuls aus, etwa 0,9° bei einem Servo mit 11us je Grad. Bei SPEED
+  unter 100% kann der Sollpuls dem Horn vorauslaufen. Sie
+  stehen rechts von MAX LÖSCHEN, x 358 bis 433 und 443 bis 518, y 240 bis
+  288, je 75 x 48px, solange `Drehknopf` unter SETUP > PANEL AUS ist oder
+  der MT6701 an 0x06 seine letzte Abfrage nicht beantwortet hat; ein
+  antwortender Knopf blendet sie aus. Der MT6701 meldet über I2C keinen
+  Magnetstatus; ein Sensor, der ohne Magnet darüber antwortet, gilt als
+  antwortender Knopf: die Tasten bleiben ausgeblendet, `Drehknopf` AUS
+  holt sie zurück. Ein Druck macht einen Schritt; Halten
+  wiederholt nach 0,45s mit 8 Schritten je Sekunde und ab 2,25s mit 30, wie
+  die Tasten `-` und `+` der Programmierungen. Ein Halten endet an WEG
+  oder an PULS MIN oder MAX, je nachdem, was zuerst kommt. Bei einem Typ,
+  dessen Pulsbereich über 1000 bis 2000us hinausreicht, WIDE oder HELI
+  CYCLIC, liegt das jenseits des Pulses, den 1000us oder 2000us fahren:
+  -10us gehalten endet bei WEG 90 auf WIDE bei 800us. Nach dem Loslassen
+  bleibt der Puls stehen. Sie wirken nur bei ARMED und sind gezeichnet wie die Fahrtasten:
+  grün bei ARMED, grau bei SAFE. Die letzte Abfrage des Knopfs wird in jedem
+  Frame gelesen; eine verpasste Abfrage zeigt die Tasten, bis die nächste
+  antwortet, frühestens 100ms später.
 
 | Messwert | Auflösung | Bereich |
 | --- | --- | --- |

@@ -41,10 +41,11 @@ LENGTH is the distance from the hinge line to the trailing edge: 0 or 10 to 500m
 | 1000us, 2000us | refused; drawn dimmed | commands that pulse, held to TRAVEL and the pulse range of the type in force |
 | CENTER | refused; drawn dimmed | commands PULSE CENTER plus TRIM |
 | Rotary knob | refused; the turn is not kept | moves the horn from the commanded value, as on LIVE; refused while AUTO runs |
+| -10us, +10us | refused; drawn dimmed | moves the commanded pulse 10us; held, it repeats after 0.45s at 8 steps a second and from 2.25s at 30; a hold stops at TRAVEL or at PULSE MIN or MAX, whichever comes first |
 | ZERO | takes the current angle as the neutral and clears MAX; grey without a reading; a zero on the AS5600 is saved and comes back after a restart; a zero on the IMU lasts until the restart, since its link is not authenticated; another ANGLE SOURCE, the IMU's other AXIS, SIGN or algorithm, or a ZERO or CLEAR ZERO on the IMU screen, drops the zero and MAX | the same; refused while AUTO runs |
 | RESET MAX | clears MAX; the zero stays | the same; refused while AUTO runs |
 
-1000us, CENTER and 2000us act on press. LENGTH, ZERO and RESET MAX act when you release a tap on them. PULSE below the buttons shows the commanded pulse. DISARM, STOP or leaving the screen switches the bench to SAFE. [RUDDER AUTO](#rudder-auto) programs the end points on a screen of its own.
+-10us and +10us stand right of RESET MAX while SETUP > PANEL's Rotary knob is OFF, or ON with a knob that does not answer; a knob that answers hides them. A knob sensor that answers with no magnet over it counts as answering, since it reports no magnet status: set Rotary knob OFF to get the keys. 1000us, CENTER, 2000us, -10us and +10us act on press, and the pulse stays when you let go. LENGTH, ZERO and RESET MAX act when you release a tap on them. PULSE below the buttons shows the commanded pulse. DISARM, STOP or leaving the screen switches the bench to SAFE. [RUDDER AUTO](#rudder-auto) programs the end points on a screen of its own.
 
 ## The angle source
 

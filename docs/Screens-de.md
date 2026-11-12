@@ -330,7 +330,7 @@ Die Aufgabe auf der linken Karte bestimmt die ersten Hilfeseiten:
 | SERVO LIVE und SWEEP | der Winkel des Ruderhorns, die Skala und die Messwerte (3) |
 | SERVO TEST | das Feld AUTOMATISCHER TEST, die Grenzen und der Verlauf (3); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
 | SERVO ENDLAGENLAUF | UNTERES ENDE mit OBERES ENDE und die Zustandszeilen (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
-| SERVO RUDER | LÄNGE, die Fahrtasten, NULLPUNKT und MAX LÖSCHEN (4); AUSSCHLAG, HINTERKANTE und die Statuszeilen (3) |
+| SERVO RUDER | LÄNGE, die Fahrtasten, NULLPUNKT, MAX LÖSCHEN und ohne antwortenden Drehknopf -10us und +10us (4 oder 5); AUSSCHLAG, HINTERKANTE und die Statuszeilen (3) |
 | SERVO RUDER AUTO | die Sollwerte, RESERVE und TOLERANZ, NULLPUNKT (3); AUSSCHLAG und HINTERKANTE (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
 | SERVO LIVE, SWEEP und RUDER, SAFE | PORT, BEREIT, die Schienenzeile, ARM und OPTIONEN (5); SET V, die Grafik, TEMPO, Typ und die Tasten auf LIVE und SWEEP (5), SET V, die Grafik, Typ und Seitenansicht auf RUDER (4); SET V nicht am Programmierport des rbmod-Carriers |
 | SERVO KST und HITEC, Reiter SERVO | die Reiter, VERBINDEN, ALLES AUSLESEN und TYP auf KST, SERIE (DATEIEN bei gehaltenem Port) und ALLES AUSLESEN auf HITEC, die Hinweise (5); DATEIEN und WEITERES auf KST, WEITERES und NACH STOP auf HITEC, SCHREIBEN INS SERVO FREIGEBEN, ZURÜCKSPIELEN, n WERTE SCHREIBEN (5); PORT, BEREIT, die Schienenzeile, SCHREIBEN und OPTIONEN (5) |
@@ -679,7 +679,7 @@ Die Füllung einer Taste sagt, was ein Druck mit einem Ausgang macht.
 
 | Klasse | Tasten | Verfügbar | Aktiv | Wartend | Abgelehnt |
 | --- | --- | --- | --- | --- | --- |
-| Ausgangsaktion: schaltet einen Ausgang ein, schaltet auf ARMED, startet einen Lauf, schreibt ein Servo | ARM, AUSGANG EIN, PROG 5V EIN, 2s HALTEN: ARM + START auf TEST, RUDER AUTO und ENDLAGENLAUF, ZENTRIEREN auf LIVE, SWEEP auf SWEEP, 1000us, ZENTRIEREN, 2000us und NULLPUNKT auf RUDER, VERBINDEN, SCHREIBEN INS SERVO FREIGEBEN, n WERTE SCHREIBEN und SERVO BEWEGEN der Programmierungen | grün (`UI_C_OK`) | rot (`UI_C_DANGER`): ein Ausgang ist ein, ARMED, ein Schreiben läuft, das Servo wird angesteuert; die Beschriftung sagt, was ein Druck anhält (DISARM, AUSGANG AUS, LAUF BEENDEN, PAUSE, VERLASSEN, ABBRECHEN, EIN) | bernstein (`UI_C_WARN`): PAUSIERT, WARTEN, der Schritt von ARM + START und von ARM auf LIVE, SWEEP und RUDER | grau (`ui_button_off_fill()`), blasse Beschriftung |
+| Ausgangsaktion: schaltet einen Ausgang ein, schaltet auf ARMED, startet einen Lauf, schreibt ein Servo | ARM, AUSGANG EIN, PROG 5V EIN, 2s HALTEN: ARM + START auf TEST, RUDER AUTO und ENDLAGENLAUF, ZENTRIEREN auf LIVE, SWEEP auf SWEEP, 1000us, ZENTRIEREN, 2000us, -10us, +10us und NULLPUNKT auf RUDER, VERBINDEN, SCHREIBEN INS SERVO FREIGEBEN, n WERTE SCHREIBEN und SERVO BEWEGEN der Programmierungen | grün (`UI_C_OK`) | rot (`UI_C_DANGER`): ein Ausgang ist ein, ARMED, ein Schreiben läuft, das Servo wird angesteuert; die Beschriftung sagt, was ein Druck anhält (DISARM, AUSGANG AUS, LAUF BEENDEN, PAUSE, VERLASSEN, ABBRECHEN, EIN) | bernstein (`UI_C_WARN`): PAUSIERT, WARTEN, der Schritt von ARM + START und von ARM auf LIVE, SWEEP und RUDER | grau (`ui_button_off_fill()`), blasse Beschriftung |
 | Notfall | STOP | rot | rot, blitzt beim Druck | - | nie |
 | Bearbeiten | `-` `+`, Wertfelder, MAX LÖSCHEN, KATEGORIE ZURÜCKSETZEN auf SETUP, VERWERFEN, NEU LESEN | neutral (`UI_C_PANEL_HI`) | - | - | grau |
 | SPEICHERN auf SETUP | SPEICHERN, GESPEICHERT, BEI STILLSTAND, NICHT GESPEICHERT | grün, solange etwas ungespeichert ist (SPEICHERN) | - | bernstein (BEI STILLSTAND) | neutral mit roter Beschriftung (NICHT GESPEICHERT); GESPEICHERT ist neutral |
@@ -1801,7 +1801,7 @@ der Reihenfolge der Nutzung.
 | SWEEP | SWEEP | das Zifferblatt mit dem Sweep; OPTIONEN öffnet KURVE, TEMPO, BEREICH und HALTEZEIT |
 | TEST | TEST | das Feld AUTOMATISCHER TEST, die Grenzen von SUPPLY, der Verlauf und das Feld des Laufs, die Karte BEREIT an der Stelle des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet die Liste des automatischen Tests |
 | ENDLAGENLAUF | ENDLAGENLAUF | Modus- und Ausgangszeile, UNTERES ENDE und OBERES ENDE und die Zustandszeilen auf der linken Karte, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet MODUS, SERVO, SERVOPULSE, STROM, Warten vor PWM, den Namen des Prüflings und die Testaufzeichnungen ([Starten](Servo-de.md#starten)) |
-| RUDER | RUDER | Ausschlag in ° und mm, LÄNGE, 1000us, ZENTRIEREN, 2000us, NULLPUNKT und MAX LÖSCHEN ([Ruderausschlag](Servo-de.md#ruderausschlag)) |
+| RUDER | RUDER | Ausschlag in ° und mm, LÄNGE, 1000us, ZENTRIEREN, 2000us, NULLPUNKT und MAX LÖSCHEN, -10us und +10us ohne antwortenden Drehknopf ([Ruderausschlag](Servo-de.md#ruderausschlag)) |
 | RUDER AUTO | RUDER AUTO | das Feld von AUTO statt LÄNGE und der Fahrtasten, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste ([AUTO-Endpoints](Servo-de.md#auto-endpoints)) |
 | KST | SERVO > KST | die Programmierung für KST und Chaservo über dem linken Feld, die Karte BEREIT statt des Ausgangsfelds, WERTE SCHREIBEN in der Fußleiste ([Programmierer](#programmierer)) |
 | HITEC | HITEC | die Programmierung für Hitec über dem linken Feld, Karte und Fußleiste wie KST |
@@ -2131,6 +2131,7 @@ Die Bedienelemente verhalten sich je nach Zustand so:
 | --- | --- | --- |
 | Das Zifferblatt | abgelehnt: kein Befehl, Horn und SOLL-PULSBREITE bleiben | fordert die Stellung unter dem Finger an |
 | Drehknopf | abgelehnt; die Drehung wird nicht gespeichert | bewegt das Horn vom befohlenen Wert aus |
+| -10us, +10us auf RUDER, solange `Drehknopf` AUS ist oder der Knopf nicht antwortet | abgelehnt; gedimmt gezeichnet | verschiebt den Puls um 10us vom befohlenen Wert aus, Halten wiederholt; ein Halten endet an WEG oder an PULS MIN oder MAX, je nachdem, was zuerst kommt |
 | ZENTRIEREN | abgelehnt; gedimmt gezeichnet | fordert PULS MITTE plus TRIMMUNG an |
 | SWEEP, PAUSE, PAUSIERT | abgelehnt; gedimmt gezeichnet | startet, pausiert und setzt den Sweep fort |
 | FREIGEBEN | sendet die Freigabe; der gezeigte Wert bleibt | zentriert die Ruderflächen; der gezeigte Wert wird zur Ruhelage |
@@ -5929,6 +5930,12 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
   Ohne Sensor sendet `Drehknopf` EIN alle 100ms eine unbestätigte
   Adressprobe an 0x06. Im Busmodell der Host-Tests ändert das sonst nichts. Am Panel ist es
   nicht gemessen: 0x00 bis 0x07 sind auf dieser Platine nicht gescannt.
+- Ohne antwortenden Knopf zeigt RUDER an seiner Stelle -10us und +10us:
+  solange `Drehknopf` AUS ist oder EIN und die letzte Abfrage unbeantwortet
+  blieb ([Ruderausschlag](Servo-de.md#ruderausschlag)). Ein Sensor, der
+  ohne Magnet darüber antwortet, gilt als antwortend, da er keinen
+  Magnetstatus meldet: die Tasten bleiben ausgeblendet, bis `Drehknopf` AUS
+  ist.
 - Der Knopf ist an Hardware nicht gemessen: seine Drehrichtung, sein Rauschen
   und sein Verhalten ohne Magnet darüber.
 

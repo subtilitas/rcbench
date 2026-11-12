@@ -8,9 +8,11 @@
  * surface's deflection on the angle the screen takes in
  * (servo_screen_encoder()): degrees from ZERO and, with LENGTH set, the
  * trailing edge's travel in mm (servo_rudder.h).  Its buttons drive
- * 1000us, CENTER and 2000us, and the knob moves the horn as on LIVE; both
- * only while the value is live (ARMED).  The output card, the PORT button
- * and the footer's ARM stay where they are on every function screen.
+ * 1000us, CENTER and 2000us, and the knob moves the horn as on LIVE;
+ * without a knob that answers, -10us and +10us step the pulse.  All of
+ * them only while the value is live (ARMED).  The output card, the PORT
+ * button and the footer's ARM stay where they are on every function
+ * screen.
  *
  * The left card, top to bottom, in the screen's coordinates, every control
  * inside x 18 to 518 so the guide's dock on the right leaves it in view:
@@ -19,7 +21,10 @@
  *     numerals in the 32 x 44 face, the MAX of each side under them;
  *   - LENGTH's row, y 120 to 168, a tap opens the keypad;
  *   - 1000us, CENTER and 2000us, y 180 to 228, 160px each, 10px apart;
- *   - ZERO and RESET MAX, y 240 to 288, 160px each;
+ *   - ZERO and RESET MAX, y 240 to 288, 160px each, and right of them
+ *     -10us and +10us, x 358 to 433 and 443 to 518, while SETUP > PANEL's
+ *     Rotary knob is OFF or the knob does not answer
+ *     (servo_screen_set_knob());
  *   - the state lines, x 18 to 418, y 300 to 396: the angle source, the
  *     pulse, the zero and ARM FIRST;
  *   - beside them the side view of the surface (servo_rudder_flap.h),
@@ -58,6 +63,8 @@ typedef enum {
     RUD_C_2000,      /**< 2000us                                      */
     RUD_C_ZERO,      /**< ZERO: the angle now is the neutral          */
     RUD_C_RESET,     /**< RESET MAX                                   */
+    RUD_C_MINUS,     /**< -10us: the pulse RUD_STEP_US shorter        */
+    RUD_C_PLUS,      /**< +10us: the pulse RUD_STEP_US longer         */
     RUD_C_COUNT      /**< the count, RUD_C_NONE included              */
 } rudder_ctl_t;
 
@@ -82,12 +89,17 @@ typedef struct {
     uint32_t geo_src;
     uint8_t  pressed;       /**< rudder_ctl_t a tap is on, RUD_C_NONE   */
     uint8_t  press_id;      /**< that contact's track id                */
+    float    held_s;        /**< how long -10us or +10us is held, s     */
     uint32_t drawn_card[2]; /**< rudder_card_sig() as each buffer drew it */
     uint32_t drawn_read[2]; /**< rudder_read_sig() as each buffer drew it */
     uint32_t drawn_flap[2]; /**< the side view's sig as each buffer drew it,
                              *   its angle left out                     */
     int16_t  drawn_dd[2];   /**< the flap's angle each buffer drew, 0.1° */
 } rudder_t;
+
+/** @brief The pulse one tap of -10us or +10us moves, us: 10us, about
+ *         0.9° on a servo with 11us a degree, the limit run's step. */
+#define RUD_STEP_US 10
 
 /** @brief The width the state lines, and AUTO's START and its lines,
  *         take left of the side view: x 18 to 418, px. */
@@ -127,7 +139,9 @@ bool rudder_defl(float *deg);
  * @brief A control's place.
  * @param k the control
  * @return its rectangle in the screen's coordinates; empty for
- *         RUD_C_NONE and RUD_C_COUNT
+ *         RUD_C_NONE and RUD_C_COUNT, for -10us and +10us while
+ *         rudder_steps_shown() is false, and for LENGTH and the drive
+ *         buttons in AUTO's view
  */
 gfx_rect_t rudder_rect(rudder_ctl_t k);
 
@@ -166,9 +180,12 @@ const servo_rudder_t *rudder_geo(void);
 #define RUD_LINES 4
 
 /**
- * @brief A DOWN on the page area while RUDDER is shown: 1000us, CENTER and
- *        2000us act on it, while the value is live; LENGTH, ZERO and
- *        RESET MAX take the press and act on its release over them.
+ * @brief A DOWN on the page area while RUDDER is shown.  1000us, CENTER
+ *        and 2000us act on it while the value is live, and end a held
+ *        -10us or +10us.  -10us and +10us step on it while the value is
+ *        live, take the press and repeat while it is held; a DOWN with the
+ *        press's own id ends it, its UP lost.  LENGTH, ZERO and RESET MAX
+ *        take the press and act on its release over them.
  * @param evt the DOWN
  */
 void rudder_down(const touch_event_t *evt);
@@ -179,6 +196,22 @@ void rudder_down(const touch_event_t *evt);
  * @return whether it was that press's
  */
 bool rudder_rest(const touch_event_t *evt);
+
+/**
+ * @brief Whether -10us and +10us are on the card: RUDDER, not AUTO's
+ *        view, with SETUP > PANEL's Rotary knob OFF or a knob that does
+ *        not answer (servo_screen_set_knob()).
+ * @return true when they are
+ */
+bool rudder_steps_shown(void);
+
+/**
+ * @brief A frame's time for a held -10us or +10us: its repeats
+ *        (ui_key_repeat()).  The press ends when the keys go, the card
+ *        goes or the value leaves LIVE.
+ * @param dt_s the frame's time, s
+ */
+void rudder_tick(float dt_s);
 
 /** @brief ZERO as its button takes it: the angle on show is the neutral;
  *         nothing without a reading or while AUTO runs. */
