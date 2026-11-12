@@ -269,7 +269,7 @@ TEST_CASE(a_held_key_repeats_at_the_shared_rate_until_it_is_let_go)
 /* TRIM +20us: TRAVEL's -90° is 1020us, its +90° 2020us, which the pulse
  * range holds to 2000us.  A hold on either key stops there and stays,
  * the ends 1000us and 2000us reach too.  TRAVEL 45°: 1270us and
- * 1770us. */
+ * 1770us.  On WIDE a hold goes past 1000us to PULSE MIN. */
 TEST_CASE(the_steps_stop_at_travel_and_at_the_pulse_range)
 {
     fresh();
@@ -330,6 +330,24 @@ TEST_CASE(the_steps_stop_at_travel_and_at_the_pulse_range)
     CHECK_EQ(servo_screen_commanded(), 1270u);
     tap_on(RUD_C_1000);
     CHECK_EQ(taken().value_us, 1270u);
+
+    /* WIDE, 800 to 2200us: 1000us drives 1000us, -64.3° inside TRAVEL
+     * 90; a hold goes on to PULSE MIN, 800us, and +10us to 2200us. */
+    fresh();
+    choose_type(2);
+    go(SERVO_FN_RUDDER);
+    servo_screen_set_armed(true);
+    (void)taken();
+    tap_on(RUD_C_1000);
+    CHECK_EQ(taken().value_us, 1000u);
+    down_on(RUD_C_MINUS);
+    ticks(8 * 39);
+    up_on(RUD_C_MINUS);
+    CHECK_EQ(servo_screen_commanded(), 800u);
+    down_on(RUD_C_PLUS);
+    ticks(10 * 39);
+    up_on(RUD_C_PLUS);
+    CHECK_EQ(servo_screen_commanded(), 2200u);
 }
 
 /* -------------------------------------------------------------- SAFE */

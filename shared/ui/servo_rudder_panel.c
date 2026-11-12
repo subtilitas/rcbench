@@ -347,11 +347,11 @@ static void drive(rudder_ctl_t k)
 
 /**
  * @brief -10us or +10us: the commanded pulse RUD_STEP_US shorter or
- *        longer, from the pulse it drives now, refused while the value is
- *        not live.  It takes the horn from a run and a sweep as the drive
- *        buttons do, and the pulse is held to the type's pulse range and,
- *        as an angle, to TRAVEL, as 1000us and 2000us are; at an end the
- *        pulse stays.
+ *        longer, from the commanded pulse, refused while the value is not
+ *        live.  It takes the horn from a run and a sweep as the drive
+ *        buttons do, and the pulse is held to PULSE MIN..MAX and, as an
+ *        angle, to TRAVEL, whichever comes first; at an end the pulse
+ *        stays.
  * @param k RUD_C_MINUS or RUD_C_PLUS
  */
 static void step(rudder_ctl_t k)
@@ -361,8 +361,8 @@ static void step(rudder_ctl_t k)
     }
     test_end_now(SERVO_TEST_AB_OPERATOR);
     stop_sweep();
-    /* From the pulse driven, which svs_deg_to_us() holds to MIN..MAX: a
-     * command past an end steps back from that end at once. */
+    /* From the commanded pulse, which svs_deg_to_us() holds to MIN..MAX:
+     * a command past an end steps back from that end at once. */
     int to = (int)svs_deg_to_us(s.commanded_deg)
              + ((k == RUD_C_PLUS) ? RUD_STEP_US : -RUD_STEP_US);
     if (to < (int)s.min_us) { to = (int)s.min_us; }
