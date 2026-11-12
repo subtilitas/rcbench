@@ -6414,6 +6414,171 @@ UI_TEXT(HG_SV_PRG_WRITE_NAME, 0,
 UI_TEXT(HG_SV_PRG_WRITE, 0,
     "The session's WRITE n VALUES from any tab. Its page asks for ENABLE WRITE and a 2s hold.",
     "WERTE SCHREIBEN der Sitzung von jedem Reiter. Seine Seite fragt nach der Freigabe und 2s Halten.")
+UI_TEXT(HG_PRG_TABS_NAME, 0,
+    "TABS",
+    "REITER")
+UI_TEXT(HG_PRG_NOTES_NAME, 0,
+    "NOTES",
+    "HINWEISE")
+UI_TEXT(HG_PRG_TABS, 0,
+    "SERVO connects, reads and writes. Each other tab holds a group of the servo's values.",
+    "SERVO verbindet, liest und schreibt. Jeder andere Reiter hält eine Gruppe der Servowerte.")
+UI_TEXT(HG_PRG_CONNECT, 0,
+    "Takes the port out of PWM to program the servo; a 2s hold where the bench powers it. LEAVE gives it back.",
+    "Nimmt den Port aus PWM; 2s Halten, wo der Prüfstand das Servo versorgt. VERLASSEN gibt ihn zurück.")
+UI_TEXT(HG_PRG_READ, 0,
+    "Reads the servo's settings into the tabs, once CONNECT holds the port.",
+    "Liest die Werte des Servos in die Reiter, sobald VERBINDEN den Port hält.")
+UI_TEXT(HG_PRG_NOTES, 0,
+    "The port's state, what it needs, the last message. A tap on paged notes shows the next page.",
+    "Zustand des Ports, was fehlt, die letzte Meldung. Ein Tippen auf geteilte Hinweise blättert weiter.")
+UI_TEXT(HG_PRG_ENABLE, 0,
+    "OFF sends no write. A tap on OFF opens its page; its 2s hold switches it ON.",
+    "AUS sendet nichts. Tippen auf AUS öffnet die Seite; 2s Halten schaltet EIN.")
+UI_TEXT(HG_PRG_WRITE, 0,
+    "Writes the edited values to the servo. Its page lists them and takes a 2s hold.",
+    "Schreibt die geänderten Werte ins Servo. Seine Seite nennt sie und braucht 2s Halten.")
+UI_TEXT(HG_PRG_VALUE, 0,
+    "The servo's value, or the edit WRITE n VALUES sends. A tap on a live value edits it.",
+    "Wert des Servos oder die Änderung für SCHREIBEN. Tippen ändert einen aktiven Wert.")
+UI_TEXT(HG_PRG_STEP, 0,
+    "Step the value. A held key repeats, faster after 1.8s.",
+    "Ändern den Wert schrittweise. Gehalten wiederholt die Taste, ab 1.8s schneller.")
+UI_TEXT(HG_KST_TITLE_CONNECT, 0,
+    "KST: CONNECT AND READ",
+    "KST: VERBINDEN UND LESEN")
+UI_TEXT(HG_KST_TITLE_WRITE, 0,
+    "KST: FILES AND WRITE",
+    "KST: DATEIEN UND SCHREIBEN")
+UI_TEXT(HG_KST_TITLE_VALUES, 0,
+    "KST: VALUES",
+    "KST: WERTE")
+UI_TEXT(HG_KST_TYPE, 0,
+    "V6 or V8, as on the servo's label; V6? is the guess from 20k_sel. A tap sets it.",
+    "V6 oder V8, wie auf dem Etikett des Servos; V6? ist die Annahme aus 20k_sel. Tippen setzt ihn.")
+UI_TEXT(HG_KST_FILES, 0,
+    "Saves the values to BENCH/KST/CONF on the card, or loads a file into the edits.",
+    "Sichert die Werte nach BENCH/KST/CONF auf der Karte oder lädt eine Datei in die Änderungen.")
+UI_TEXT(HG_KST_MORE, 0,
+    "In PWM the supply CONNECT sets. In programming VERIFY and DISCARD EDITS.",
+    "In PWM die Versorgung für VERBINDEN. Beim Programmieren PRÜFEN und ÄNDERUNGEN VERWERFEN.")
+UI_TEXT(HG_KST_RESTORE, 0,
+    "Writes a backup back: the session's first read, or the values before an interrupted write.",
+    "Spielt eine Sicherung zurück: den ersten Lesestand oder die Werte vor einem abgebrochenen Schreiben.")
+UI_TEXT(HG_HT_TITLE_CONNECT, 0,
+    "HITEC: CONNECT AND READ",
+    "HITEC: VERBINDEN UND LESEN")
+UI_TEXT(HG_HT_TITLE_WRITE, 0,
+    "HITEC: CHANGE AND WRITE",
+    "HITEC: ÄNDERN UND SCHREIBEN")
+UI_TEXT(HG_HT_TITLE_VALUES, 0,
+    "HITEC: VALUES",
+    "HITEC: WERTE")
+UI_TEXT(HG_HT_SERIES, 0,
+    "D SERIES or CLASSIC: the protocol CONNECT speaks. Chosen before CONNECT.",
+    "D-SERIE oder CLASSIC: das Protokoll von VERBINDEN. Vor VERBINDEN gewählt.")
+UI_TEXT(HG_HT_FILES, 0,
+    "Saves the values to BENCH/HITEC/CONF on the card, or loads a file into the edits.",
+    "Sichert die Werte nach BENCH/HITEC/CONF auf der Karte oder lädt eine Datei in die Änderungen.")
+UI_TEXT(HG_HT_MORE, 0,
+    "The supply CONNECT sets. With the port held DISCARD EDITS; on CLASSIC a repair and FACTORY DEFAULT.",
+    "Die Versorgung für VERBINDEN. Bei gehaltenem Port Änderungen verwerfen; bei CLASSIC Reparatur und Werkszustand.")
+UI_TEXT(HG_HT_CLEAR, 0,
+    "CLEAR goes on with the read after a switch to SAFE stopped it.",
+    "AUFHEBEN setzt das Lesen fort, nachdem ein Wechsel zu SAFE es gestoppt hat.")
+UI_TEXT(HG_HT_RESTORE, 0,
+    "Writes the session's backup back while it differs from the servo, or the values before an interrupted write.",
+    "Spielt die Sicherung der Sitzung zurück, solange sie abweicht, oder den Stand vor einem Abbruch.")
+UI_TEXT(HG_HT_MOVE, 0,
+    "OFF: a tap opens its page, whose 2s hold moves the horn to the position edited. ON: a tap stops it.",
+    "AUS: Tippen öffnet die Seite, 2s Halten fährt das Horn auf die bearbeitete Position. EIN: Tippen stoppt.")
+UI_TEXT(HG_WF_TITLE_START, 0,
+    "WI-FI: NETWORKS",
+    "WI-FI: NETZWERKE")
+UI_TEXT(HG_WF_TITLE_KEPT, 0,
+    "WI-FI: KEPT VALUES",
+    "WI-FI: FESTE WERTE")
+UI_TEXT(HG_WF_TITLE_STATE, 0,
+    "WI-FI: STATE",
+    "WI-FI: ZUSTAND")
+UI_TEXT(HG_WF_TITLE_ON, 0,
+    "WI-FI: RUNNING",
+    "WI-FI: AKTIV")
+UI_TEXT(HG_WF_TITLE_WRITES, 0,
+    "WI-FI: BROWSER WRITES",
+    "WI-FI: BROWSER-SCHREIBEN")
+UI_TEXT(HG_WF_CARD_NAME, 0,
+    "CARD",
+    "KARTE")
+UI_TEXT(HG_WF_LINES_NAME, 0,
+    "LINES",
+    "ZEILEN")
+UI_TEXT(HG_WF_AP, 0,
+    "Starts the panel's own network for one phone or computer, 2.4GHz channel 6.",
+    "Startet das eigene Netz des Panels für ein Telefon oder einen Rechner, 2.4GHz Kanal 6.")
+UI_TEXT(HG_WF_JOIN, 0,
+    "Joins the kept home network. Grey while none is kept.",
+    "Verbindet mit dem gespeicherten Heimnetz. Grau, solange keines gespeichert ist.")
+UI_TEXT(HG_WF_CHOOSE, 0,
+    "Scans 10s for WPA2 and WPA3 networks. A tap on one asks its password and keeps both.",
+    "Sucht 10s nach WPA2- und WPA3-Netzen. Ein Tippen auf eines fragt das Passwort und speichert beides.")
+UI_TEXT(HG_WF_FORGET, 0,
+    "Erases the kept network and its password and sets the access code back to ON.",
+    "Löscht das gespeicherte Netz mit Passwort und schaltet den Zugangscode wieder EIN.")
+UI_TEXT(HG_WF_CODE, 0,
+    "ON: the browser page asks for the code the screen shows. OFF: any device on the network opens it.",
+    "EIN: Die Browserseite fragt nach dem angezeigten Code. AUS: Jedes Gerät im Netz öffnet sie.")
+UI_TEXT(HG_WF_PASS, 0,
+    "8 characters new at each start, or a kept value of 8 to 63. Applies at the next start.",
+    "Bei jedem Start 8 neue Zeichen oder ein fester Wert mit 8 bis 63. Gilt ab dem nächsten Start.")
+UI_TEXT(HG_WF_KEPT_CODE, 0,
+    "The code the page asks for: new at each start, or kept. A change applies at the next start.",
+    "Der Code, den die Seite fragt: bei jedem Start neu oder fest. Gilt ab dem nächsten Start.")
+UI_TEXT(HG_WF_CARD, 0,
+    "What the browser gets, the kept network, and why the radio cannot start or went off.",
+    "Was der Browser bekommt, das gespeicherte Netz und warum das WLAN nicht startet oder aus ist.")
+UI_TEXT(HG_WF_ROWS, 0,
+    "What the browser needs: the network, the address to open and the access code.",
+    "Was der Browser braucht: das Netz, die Adresse zum Öffnen und den Zugangscode.")
+UI_TEXT(HG_WF_LINES, 0,
+    "Warnings, the 10min idle limit, and what the browser may write to the card.",
+    "Warnungen, die 10min ohne Anfrage und was der Browser auf die Karte schreiben darf.")
+UI_TEXT(HG_WF_OFF, 0,
+    "Switches the radio off and ends every browser connection.",
+    "Schaltet das WLAN aus und beendet jede Verbindung des Browsers.")
+UI_TEXT(HG_WF_WRITES, 0,
+    "The browser may change the card until the radio goes off. A tap on OFF ends it.",
+    "Der Browser darf die Karte ändern, bis das WLAN ausgeht. Tippen auf AUS beendet es.")
+UI_TEXT(HG_UPD_TITLE_CHECK, 0,
+    "UPDATES: CHECK AND IOMCU",
+    "UPDATES: SUCHE UND IOMCU")
+UI_TEXT(HG_UPD_TITLE_CARD, 0,
+    "UPDATES: PANEL AND C6",
+    "UPDATES: PANEL UND C6")
+UI_TEXT(HG_UPD_CARD_NAME, 0,
+    "PANEL",
+    "PANEL")
+UI_TEXT(HG_UPD_CHECK, 0,
+    "Asks GitHub once over the kept home network. CANCEL on the same key stops it.",
+    "Fragt GitHub einmal über das gespeicherte Heimnetz. ABBRECHEN auf derselben Taste stoppt.")
+UI_TEXT(HG_UPD_CU, 0,
+    "The build the IOmcu runs, the one this panel includes, and why the hold is grey.",
+    "Der Build, den der IOmcu ausführt, der auf diesem Panel und warum das Halten grau ist.")
+UI_TEXT(HG_UPD_CU_HOLD, 0,
+    "Sends the included build to the IOmcu. Outputs stay off until it ends.",
+    "Sendet den enthaltenen Build an den IOmcu. Ausgänge bleiben aus, bis es endet.")
+UI_TEXT(HG_UPD_CARD, 0,
+    "The running version, the home network and the last check's result. Without a network a button opens WI-FI.",
+    "Laufende Version, Heimnetz und Ergebnis der letzten Suche. Ohne Netz öffnet eine Taste WI-FI.")
+UI_TEXT(HG_UPD_C6, 0,
+    "Sends the included build to the C6 radio, which carries Wi-Fi. The panel restarts then.",
+    "Sendet den enthaltenen Build an den C6-Funk, der das WLAN trägt. Danach startet das Panel neu.")
+UI_TEXT(HG_UPD_DL, 0,
+    "Downloads, checks and installs the newer release the check found.",
+    "Lädt, prüft und installiert das neuere Release, das die Suche fand.")
+UI_TEXT(HG_UPD_OPTIONS, 0,
+    "Reminder at start and Releases, STABLE or TESTING. Grey while a check or a download runs.",
+    "Erinnerung beim Start und Releases, STABLE oder TESTING. Grau, solange Suche oder Download läuft.")
 UI_TEXT(KP_DOUBT, 116,
     "The settings currently in the servo are unknown.",
     "Die aktuellen Werte im Servo sind unbekannt.")

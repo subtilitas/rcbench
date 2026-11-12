@@ -5,8 +5,9 @@
  * help-overview is the menu's guide at page 1, help-overview-2 to
  * help-overview-4 its other pages, each opened and turned by taps through
  * the router as a person does.  help-setup, help-outputs, help-logs,
- * help-files, help-servo, help-supply and their states' views open the
- * guide over the view render_help_base() names, posed as that view is:
+ * help-files, help-servo, help-supply, help-wifi, help-updates and their
+ * states' views open the guide over the view render_help_base() names,
+ * posed as that view is:
  * SERVO's on a task or SETTINGS' page, SUPPLY's with the output off, as its
  * pages are offered only then.  help-band-worst is MOTOR & ESC's band
  * with the widest row of chips test_nav_bubble finds: a clock of 10 hours,
@@ -67,7 +68,10 @@ static const struct {
     { "help-servo-rudder", "servo-rudder" },
     { "help-servo-rudder-auto", "servo-rudder-auto-safe" },
     { "help-servo-kst", "servo-kst" },
+    { "help-servo-kst-tune", "servo-kst-tune" },
     { "help-servo-hitec", "servo-hitec" },
+    { "help-servo-hitec-travel", "servo-hitec-travel" },
+    { "help-servo-hitec-read", "servo-hitec-read" },
     { "help-servo-output", "servo-settings" },
     { "help-servo-sweep", "servo-sweep-page" },
     { "help-servo-sweepfn", "servo-sweep-safe" },
@@ -76,6 +80,13 @@ static const struct {
     { "help-supply", "supply-off" },
     { "help-supply-settings", "supply-settings-off" },
     { "help-supply-pdmini", "supply-pdmini" },
+    { "help-wifi", "wifi" },
+    { "help-wifi-ap", "wifi-ap" },
+    { "help-wifi-joined", "wifi-joined" },
+    { "help-wifi-hold", "wifi-writes-hold" },
+    { "help-updates", "updates" },
+    { "help-updates-newer", "updates-newer" },
+    { "help-updates-settings", "updates-settings" },
 };
 
 const char *render_help_base(const char *view)

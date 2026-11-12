@@ -118,6 +118,12 @@ SCREENS = {
     # output card; SUPPLY's on LIVE, the output off.
     "help-servo": ("help-servo.png", "servo", "dark"),
     "help-supply": ("help-supply.png", "supply", "dark"),
+    # KST's guide at page 1, its session's SERVO tab before CONNECT, the
+    # dock on the right over the READY card; WI-FI's with the radio off and
+    # UPDATES', each at page 1.
+    "help-servo-kst": ("help-servo-kst.png", "servo", "dark"),
+    "help-wifi": ("help-wifi.png", "wifi", "dark"),
+    "help-updates": ("help-updates.png", "updates", "dark"),
     # The screenshot's popup over the menu, a save under way and a card that
     # was full.
     "shot-popup": ("shot-popup.png", "shot", "dark"),
@@ -1077,9 +1083,33 @@ FIT_ONLY = {
     "servo-rudder-auto-safe": (None, "servo", "dark"),
     # RUDDER AUTO's guide at its READY page.
     "help-servo-rudder-auto-3": (None, "servo", "dark"),
-    # KST's and HITEC's guide: the READY card and the footer's WRITE.
-    "help-servo-kst":   (None, "servo", "dark"),
-    "help-servo-hitec": (None, "servo", "dark"),
+    # KST's and HITEC's guide: the SERVO tab's two pages, the READY card's
+    # with the footer's WRITE, and a tab of values (TUNE, TRAVEL) with the
+    # READY card's.
+    "help-servo-kst-2":   (None, "servo", "dark"),
+    "help-servo-kst-3":   (None, "servo", "dark"),
+    "help-servo-kst-tune":   (None, "servo", "dark"),
+    "help-servo-kst-tune-2": (None, "servo", "dark"),
+    "help-servo-hitec":   (None, "servo", "dark"),
+    "help-servo-hitec-2": (None, "servo", "dark"),
+    "help-servo-hitec-3": (None, "servo", "dark"),
+    "help-servo-hitec-travel":   (None, "servo", "dark"),
+    "help-servo-hitec-travel-2": (None, "servo", "dark"),
+    # HITEC's SERVO tab with a D485HW read: FILES in SERIES' place.
+    "help-servo-hitec-read":     (None, "servo", "dark"),
+    # WI-FI's guide with the radio off at pages 2 and 3, with the access
+    # point up, joined, and with Browser writes HOLD at both pages;
+    # UPDATES' at page 2, with a newer release found, and over OPTIONS.
+    "help-wifi-2":        (None, "wifi", "dark"),
+    "help-wifi-3":        (None, "wifi", "dark"),
+    "help-wifi-ap":       (None, "wifi", "dark"),
+    "help-wifi-joined":   (None, "wifi", "dark"),
+    "help-wifi-hold":     (None, "wifi", "dark"),
+    "help-wifi-hold-2":   (None, "wifi", "dark"),
+    "help-updates-2":     (None, "updates", "dark"),
+    "help-updates-newer-2": (None, "updates", "dark"),
+    "help-updates-settings":   (None, "updates", "dark"),
+    "help-updates-settings-2": (None, "updates", "dark"),
     # TEST's guide at its READY page, and TEST's list at LENGTH AND TIMING
     # and at its end.
     "help-servo-test-2": (None, "servo", "dark"),
@@ -1173,15 +1203,16 @@ OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot",
                  "files-edit-see50"} | {
     name for name in (*SCREENS, *FIT_ONLY) if name.startswith("band-")}
 
-# The screen guide's views over SETUP, OUTPUTS, LOGS, FILES, SERVO and
-# SUPPLY: the dock takes half the body, so the screen's strings on the other
-# half are cut at its edge and the marks are drawn over them by design.  The
-# fit check measures their dock, band and marks; the screen's own strings
-# are measured in the view each opens over (render_help_base() in
-# test/host/render_help.c).
+# The screen guide's views over SETUP, OUTPUTS, LOGS, FILES, SERVO, SUPPLY,
+# WI-FI and UPDATES: the dock takes half the body, so the screen's strings
+# on the other half are cut at its edge and the marks are drawn over them
+# by design.  The fit check measures their dock, band and marks; the
+# screen's own strings are measured in the view each opens over
+# (render_help_base() in test/host/render_help.c).
 GUIDE_VIEWS = {name for name in (*SCREENS, *FIT_ONLY)
                if name.startswith(("help-setup", "help-outputs", "help-logs",
-                                   "help-files", "help-servo", "help-supply"))}
+                                   "help-files", "help-servo", "help-supply",
+                                   "help-wifi", "help-updates"))}
 
 # English overflows the layout has for a time: (view, string, finding), word
 # for word as --fit prints them; none today.  Each is a defect of the

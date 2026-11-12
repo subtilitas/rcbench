@@ -187,8 +187,8 @@ standardmäßig AUS, und mit AUS zeigt das Band FEHLER 10.
 
 "?" im Statusband öffnet die Hilfe zur aktuellen Seite. Nummerierte Marken
 kennzeichnen die Bedienelemente; ein Hilfefeld erklärt ihre Funktion.
-Das Menü, SUPPLY, SERVO, OUTPUTS, SETUP, LOGS und FILES haben eine Hilfe,
-die anderen Seiten haben kein "?". Auch Tastenfelder, Tastaturen, offene
+Das Menü, SUPPLY, SERVO mit KST und HITEC, OUTPUTS, SETUP, LOGS, FILES,
+WI-FI und UPDATES haben eine Hilfe, die anderen Seiten haben kein "?". Auch Tastenfelder, Tastaturen, offene
 Listen, Boxen, Warnungen und Bestätigungsdialoge zeigen kein "?".
 
 ![Die Hilfe des Menüs auf Seite 1](img/de/help-overview.png)
@@ -256,7 +256,7 @@ Die Hilfe des Menüs hat vier Seiten:
 4. Die leere Stelle im Band für die Screenshot-Haltegeste, mit dem Hilfefeld
    rechts.
 
-Die Hilfen von OUTPUTS, SETUP, LOGS und FILES haben eigene Seiten für jeden Zustand
+Die Hilfen von OUTPUTS, SETUP, LOGS, FILES, WI-FI und UPDATES haben eigene Seiten für jeden Zustand
 ihrer Seite. Auf Hilfeseite 1 steht das Hilfefeld rechts, auf der letzten
 links; ein
 Bedienelement, das das Hilfefeld zum Teil verdeckt, wird markiert, wo es
@@ -275,6 +275,10 @@ alle ihre Hilfeseiten auch in ARMED sichtbar.
 | LOGS, Importansicht | 2 | ERKANNT, TRENNZ., ZAHLEN; die Spalten, ZURÜCK, GRAFIK |
 | LOGS, Grafik | 1 | ein Reihen-Chip, die Grafik, ZURÜCK, `<` und `>` |
 | FILES, Spalten | 3 | LOGS, Ordner, Zeile und Scrollleiste der linken Spalte; AKTUALISIEREN, KOPIEREN, VERSCHIEBEN, UMBENENNEN; die rechte Spalte, LÖSCHEN, NEU, INFO, ÖFFNEN |
+| WI-FI, WLAN aus | 3 | WLAN-HOTSPOT, MIT HEIMNETZ VERBINDEN, HEIMNETZ WÄHLEN, HEIMNETZ LÖSCHEN, ZUGANGSCODE EIN oder AUS; HOTSPOT-PASSWORT und ZUGANGSCODE, ZUFALL oder FEST; die Karte |
+| WI-FI, WLAN an | 1, 2 mit der Taste für Browser-Schreibzugriffe | die Zeilen, solange die Seite erreichbar ist, die Zeilen darunter, WLAN AUS; die Taste für Browser-Schreibzugriffe |
+| UPDATES | 2 | NACH UPDATES SUCHEN oder ABBRECHEN, der Abschnitt IOMCU, seine Haltetaste; die Karte, die Haltetaste des C6-Funks, die Haltetaste zum Laden, sobald eine Suche ein neueres Release fand, OPTIONEN |
+| UPDATES, OPTIONEN | 2 | wie eine Optionsliste |
 
 ![Die Hilfe von SETUP auf Seite 1](img/de/help-setup.png)
 
@@ -284,9 +288,18 @@ alle ihre Hilfeseiten auch in ARMED sichtbar.
 
 ![Die Hilfe von FILES auf Seite 1](img/de/help-files.png)
 
+![Die Hilfe von WI-FI auf Seite 1](img/de/help-wifi.png)
+
+![Die Hilfe von UPDATES auf Seite 1](img/de/help-updates.png)
+
+Die Netzliste von WI-FI, eine Tastatur, die Ansicht eines festen Werts
+und die Rückfrage zu einem hochgeladenen Image zeigen keine Hilfeseite.
+
 ### Die Hilfe von SERVO und SUPPLY
 
 ![Die Hilfe von SERVO auf Seite 1 in LIVE](img/de/help-servo.png)
+
+![Die Hilfe von KST auf Seite 1](img/de/help-servo-kst.png)
 
 Eine Hilfeseite zur linken Karte hat das Hilfefeld rechts. Die Hilfeseiten
 zur rechten Karte, der Karte BEREIT von SERVO und den Messwerten und der
@@ -302,7 +315,8 @@ Die Aufgabe auf der linken Karte bestimmt die ersten Hilfeseiten:
 | SERVO RUDER | LÄNGE, die Fahrtasten, NULLPUNKT und MAX LÖSCHEN (4); AUSSCHLAG, HINTERKANTE und die Statuszeilen (3) |
 | SERVO RUDER AUTO | die Sollwerte, RESERVE und TOLERANZ, NULLPUNKT (3); AUSSCHLAG und HINTERKANTE (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
 | SERVO LIVE, SWEEP und RUDER, SAFE | PORT, BEREIT, die Schienenzeile, ARM und OPTIONEN (5); SET V, die Grafik, TEMPO, Typ und die Tasten auf LIVE und SWEEP (5), SET V, die Grafik, Typ und Seitenansicht auf RUDER (4); SET V nicht am Programmierport des rbmod-Carriers |
-| SERVO KST und HITEC, SAFE | PORT, BEREIT, die Schienenzeile, SCHREIBEN und OPTIONEN (5) |
+| SERVO KST und HITEC, Reiter SERVO | die Reiter, VERBINDEN, ALLES AUSLESEN und TYP auf KST, SERIE (DATEIEN bei gehaltenem Port) und ALLES AUSLESEN auf HITEC, die Hinweise (5); DATEIEN und WEITERES auf KST, WEITERES und NACH STOP auf HITEC, SCHREIBEN INS SERVO FREIGEBEN, ZURÜCKSPIELEN, n WERTE SCHREIBEN (5); PORT, BEREIT, die Schienenzeile, SCHREIBEN und OPTIONEN (5) |
+| SERVO KST und HITEC, ein anderer Reiter | die Reiter, der erste Wert des Reiters, sein `-` und `+` in einer KST-Zeile mit Schritten, SERVO BEWEGEN auf TRAVEL der D-Serie von HITEC, die Hinweise (2 bis 4); PORT, BEREIT, die Schienenzeile, SCHREIBEN und OPTIONEN (5) |
 | die Listen von SERVO (Hub, SWEEP, RUDER, RUDER AUTO, HITEC) | wie eine Optionsliste |
 | SUPPLY LIVE | GRAFIK und TABELLE, SPANNUNG und STROMBEGRENZUNG (3) |
 | SUPPLY LIVE, die rechte Spalte | der Bereich und die vier Messwertkarten (5); die Sollwerte, SPITZENWERTE ZURÜCKSETZEN, AUSGANG EIN und OPTIONEN (4) |
@@ -313,7 +327,11 @@ Ausgangs verdecken würde, fehlt, solange dieses Element sichtbar ist:
 
 - SERVO hat kein AUSGANG AUS. Auf KST und HITEC schaltet die Zeile der
   Versorgung in der Karte BEREIT einen eingeschalteten Ausgang aus; ihre
-  Hilfeseite dockt links an, neben der Karte. LIVE, SWEEP und RUDER
+  Hilfeseite zu BEREIT dockt links an, neben der Karte. Die Hilfeseiten
+  der Sitzung docken rechts an, über der Karte: Sie fehlen, solange die
+  Zeile der Versorgung EIN zeigt, der Ausgang der Versorgung oder PROG 5V
+  eingeschaltet ist, und auf HITEC, solange SERVO BEWEGEN das Ruderhorn
+  fährt, dessen EIN das Hilfefeld zum Teil verdeckt. LIVE, SWEEP und RUDER
   bieten ihre Hilfeseiten auch bei eingeschaltetem Ausgang, aber keine,
   solange die Schritte von ARM laufen. AUSGANG AUS von SUPPLY, das mittlere Feld
   der Fußleiste, liegt unter jedem Hilfefeld; SUPPLY bietet dann keine
@@ -325,7 +343,9 @@ Ausgangs verdecken würde, fehlt, solange dieses Element sichtbar ist:
 - SERVO bietet keine Hilfeseite über einem Tastenfeld, einer Tastatur,
   einer Warnung, einer Rückfrage, einer Servoprogrammierung oder den
   Optionen eines Laufs; über einer Liste bietet es die Seiten der
-  Optionsliste. SUPPLY bietet keine über seinem Tastenfeld oder der
+  Optionsliste. Eine Liste, ein Tastenfeld,
+  eine Seite oder eine Tastatur der Sitzung von KST oder HITEC lässt nur
+  die Hilfeseite zu BEREIT. SUPPLY bietet keine über seinem Tastenfeld oder der
   Rückfrage zu einem aktiven Ausgang.
 
 ## Screenshot

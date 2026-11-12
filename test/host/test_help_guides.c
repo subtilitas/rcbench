@@ -13,6 +13,8 @@
  * - a_run_takes_the_output_cards_pages_and_armed_leaves_none
  * - a_panel_or_a_question_takes_every_page
  * - the_labels_follow_what_the_controls_read
+ * - a_session_names_its_controls_as_they_read
+ * - a_tab_of_values_offers_one_page_of_its_values
  * - a_badge_at_the_right_sits_in_the_top_right_corner
  * - servo_repaints_nothing_under_a_dock
  *
@@ -22,6 +24,8 @@
 #include "servo_bench_rig.h"
 
 #include "help_check.h"
+#include "hitec_panel.h"
+#include "kst_panel.h"
 #include "prog5v_box.h"
 #include "supply_spots.h"
 #include "ui_help.h"
@@ -155,12 +159,12 @@ static const servo_state_t k_servo[] = {
     { "RUDDER AUTO", SERVO_FN_RAUTO, false, 3, 0,
       { TX_HG_SV_TITLE_AUTO, TX_HG_SV_TITLE_RUD_READ, TX_HG_SV_TITLE_READY },
       { 3, 2, 5 } },
-    { "KST", SERVO_FN_KST, false, 1, 0,
-      { TX_HG_SV_TITLE_PRG },
-      { 5 } },
-    { "HITEC", SERVO_FN_HITEC, false, 1, 0,
-      { TX_HG_SV_TITLE_PRG },
-      { 5 } },
+    { "KST", SERVO_FN_KST, false, 3, 0,
+      { TX_HG_KST_TITLE_CONNECT, TX_HG_KST_TITLE_WRITE, TX_HG_SV_TITLE_PRG },
+      { 5, 5, 5 } },
+    { "HITEC", SERVO_FN_HITEC, false, 3, 0,
+      { TX_HG_HT_TITLE_CONNECT, TX_HG_HT_TITLE_WRITE, TX_HG_SV_TITLE_PRG },
+      { 5, 5, 5 } },
 };
 
 /** @brief The state pose_servo() puts SERVO in. */
@@ -284,14 +288,15 @@ TEST_CASE(every_supply_page_fits_and_hides_no_stop)
 /* OUTPUT OFF shows in SUPPLY's footer while the output is on or an ON is
  * on its way: every SUPPLY page, either dock over the footer's middle
  * slot, is not offered then, and comes back once it is off.  SERVO shows
- * no OUTPUT OFF: KST's page docks on the left, off its READY card and the
- * supply row that switches the output off, and LIVE's READY rows drive
- * nothing: their pages stay. */
+ * no OUTPUT OFF: KST's READY page docks on the left, off its READY card and
+ * the supply row that switches the output off, and stays; the session's
+ * two pages dock on the right, over that row, and go.  LIVE's READY rows
+ * drive nothing: their pages stay. */
 TEST_CASE(a_live_supply_output_takes_the_pages_that_cover_output_off)
 {
     fresh();
     go(SERVO_FN_KST);
-    CHECK_EQ(scr->help_count(), 1);
+    CHECK_EQ(scr->help_count(), 3);
     supply_screen_set_output(true);
     supply_state_t st = *supply_screen_reading();
     st.online = true;
@@ -309,7 +314,7 @@ TEST_CASE(a_live_supply_output_takes_the_pages_that_cover_output_off)
     st.output = false;
     supply_screen_set_output(false);
     supply_screen_push(&st);
-    CHECK_EQ(scr->help_count(), 1);
+    CHECK_EQ(scr->help_count(), 3);
     CHECK_EQ(sup->help_count(), 3);
 }
 
@@ -333,8 +338,9 @@ static int safe_points(const ui_screen_t *sc)
  * output off: while the supply reads ON it is a safe control on SUPPLY,
  * and the pages with the dock on the right over it are not offered.  At
  * OFF they come back and PROG 5V ON is no safe control.  On SERVO, LIVE
- * shows PROG 5V as a READY row, and KST's one page docks on the left, off
- * its READY card. */
+ * shows PROG 5V as a READY row, and KST keeps its READY page, docked on
+ * the left, off its READY card; the session's pages, docked on the right
+ * over the card, go while PROG 5V is on. */
 TEST_CASE(prog_5v_on_takes_the_pages_that_cover_prog_5v_off)
 {
     prog5v_box_reset();
@@ -420,8 +426,8 @@ TEST_CASE(a_panel_or_a_question_takes_every_page)
 }
 
 /* LIVE names ARM on its READY page, KST the session's WRITE in the
- * footer's middle slot on its one page; SUPPLY names OUTPUT ON and
- * SETTINGS in its footer. */
+ * footer's middle slot on its READY page, the last; SUPPLY names OUTPUT ON
+ * and SETTINGS in its footer. */
 TEST_CASE(the_labels_follow_what_the_controls_read)
 {
     fresh();
@@ -431,11 +437,11 @@ TEST_CASE(the_labels_follow_what_the_controls_read)
     CHECK_STR_EQ(p.item[3].label, "ARM");
     CHECK_EQ(p.item[3].text, TX_HG_SV_DRV_ARM);
     go(SERVO_FN_KST);
-    REQUIRE(ui_help_page(scr, false, 0, &p));
+    REQUIRE(ui_help_page(scr, false, 2, &p));
     CHECK_EQ(p.title, TX_HG_SV_TITLE_PRG);
     CHECK_STR_EQ(p.item[3].label, TR(HG_SV_PRG_WRITE_NAME));
     CHECK_EQ(p.item[3].text, TX_HG_SV_PRG_WRITE);
-    CHECK(!ui_help_page(scr, false, 1, &p));
+    CHECK(!ui_help_page(scr, false, 3, &p));
     fresh();
     const ui_screen_t *sup = supply_screen();
     sup->enter();
@@ -523,6 +529,140 @@ TEST_CASE(servo_repaints_nothing_under_a_dock)
     CHECK_EQ(drawn, 0);
 }
 
+/**
+ * @brief The middle of @p r, tapped on SERVO's body.
+ * @param r The rect, in the body.
+ */
+static void tap_rect(gfx_rect_t r)
+{
+    tap(r.x + r.w / 2, r.y + r.h / 2);
+}
+
+/**
+ * @brief The item of @p p with the text @p text.
+ * @param p    The page.
+ * @param text The text.
+ * @return Its index, -1 for none.
+ */
+static int item_of(const ui_help_page_t *p, ui_text_id_t text)
+{
+    for (int i = 0; i < p->count; ++i) {
+        if (p->item[i].text == text) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* The session's pages name each control as it reads now: KST's CONNECT,
+ * READ ALL and TYPE, then FILES, MORE, the write switch, RESTORE and WRITE
+ * n VALUES; HITEC's SERIES before CONNECT, MORE and AFTER STOP.  Each mark
+ * is the control's rect, cut at the live half's edge. */
+TEST_CASE(a_session_names_its_controls_as_they_read)
+{
+    fresh();
+    go(SERVO_FN_KST);
+    ui_help_page_t p;
+    REQUIRE(ui_help_page(scr, false, 0, &p));
+    CHECK_EQ(p.side, UI_HELP_DOCK_RIGHT);
+    CHECK_EQ(p.item[0].text, TX_HG_PRG_TABS);
+    CHECK_STR_EQ(p.item[1].label, TR(KP_CONNECT));
+    CHECK_EQ(p.item[1].text, TX_HG_PRG_CONNECT);
+    const gfx_rect_t conn = kst_panel_value_rect(0, 0, 0);
+    const gfx_rect_t live = ui_help_live_rect(UI_HELP_DOCK_RIGHT);
+    CHECK_EQ(p.item[1].rect.x, conn.x);
+    CHECK_EQ(p.item[1].rect.x + p.item[1].rect.w, live.x + live.w);
+    CHECK_STR_EQ(p.item[2].label, TR(KP_READ_ALL));
+    CHECK_STR_EQ(p.item[3].label, TR(KP_TYPE));
+    CHECK_EQ(p.item[3].text, TX_HG_KST_TYPE);
+    CHECK_EQ(p.item[4].text, TX_HG_PRG_NOTES);
+    REQUIRE(ui_help_page(scr, false, 1, &p));
+    CHECK_STR_EQ(p.item[0].label, TR(KP_FILES));
+    CHECK_STR_EQ(p.item[1].label, TR(KP_MORE));
+    CHECK_STR_EQ(p.item[2].label, TR(KP_ENABLE));
+    CHECK_STR_EQ(p.item[3].label, TR(KP_RESTORE));
+    CHECK_STR_EQ(p.item[4].label, kst_panel_button(0, 4, 1));
+    CHECK_EQ(p.item[4].text, TX_HG_PRG_WRITE);
+
+    go(SERVO_FN_HITEC);
+    REQUIRE(ui_help_page(scr, false, 0, &p));
+    CHECK_EQ(p.title, TX_HG_HT_TITLE_CONNECT);
+    CHECK_STR_EQ(p.item[1].label, hitec_panel_value(0, 0, 0));
+    CHECK_STR_EQ(p.item[2].label, TR(HP_SERIES));
+    CHECK_EQ(p.item[2].text, TX_HG_HT_SERIES);
+    CHECK_EQ(p.item[3].text, TX_HG_PRG_READ);
+    REQUIRE(ui_help_page(scr, false, 1, &p));
+    CHECK_STR_EQ(p.item[0].label, TR(KP_MORE));
+    CHECK_EQ(p.item[0].text, TX_HG_HT_MORE);
+    CHECK_STR_EQ(p.item[1].label, TR(HP_STOP_ROW));
+    CHECK_EQ(p.item[1].text, TX_HG_HT_CLEAR);
+    CHECK_EQ(p.item[3].text, TX_HG_HT_RESTORE);
+}
+
+/* Another tab than SERVO: one page of its values, the dock on the right,
+ * then the READY card's.  KST's TUNE marks its first value shown and, on a
+ * stepped row, its keys; HITEC's TRAVEL marks MOVE SERVO apart from its
+ * values. */
+TEST_CASE(a_tab_of_values_offers_one_page_of_its_values)
+{
+    fresh();
+    go(SERVO_FN_KST);
+    tap_rect(kst_panel_tab_rect(1));
+    REQUIRE(kst_panel_page() == 1);
+    CHECK_EQ(pages_checked(scr, false, "SERVO KST TUNE"), 2);
+    CHECK_EQ(title_of(scr, 0), TX_HG_KST_TITLE_VALUES);
+    CHECK_EQ(title_of(scr, 1), TX_HG_SV_TITLE_PRG);
+    ui_help_page_t p;
+    REQUIRE(ui_help_page(scr, false, 0, &p));
+    /* The first row without keys gives the value's mark; a stepped row,
+     * its value right of its minus key, gives the keys'. */
+    const char *first = NULL;
+    bool stepped = false;
+    for (int k = 0; k < 10; ++k) {
+        const gfx_rect_t r = kst_panel_value_rect(1, k / 2, k % 2);
+        if (r.w <= 0) {
+            continue;
+        }
+        if (k % 2 == 0 && kst_panel_step_rect(1, k / 2, false).x < r.x) {
+            stepped = true;
+        } else if (first == NULL) {
+            first = kst_panel_label(1, k / 2, k % 2);
+        }
+    }
+    const int v = item_of(&p, TX_HG_PRG_VALUE);
+    REQUIRE(v > 0 && first != NULL);
+    CHECK_STR_EQ(p.item[v].label, first);
+    CHECK_EQ(item_of(&p, TX_HG_PRG_STEP) >= 0, stepped);
+    /* KST EXPERT MODE ON shows DEAD BAND, a stepped row, on TUNE. */
+    settings_set(SET_KST_EXPERT, 1.0f);
+    go(SERVO_FN_KST);
+    tap_rect(kst_panel_tab_rect(1));
+    CHECK_EQ(pages_checked(scr, false, "SERVO KST TUNE, expert"), 2);
+    REQUIRE(ui_help_page(scr, false, 0, &p));
+    const int step = item_of(&p, TX_HG_PRG_STEP);
+    REQUIRE(step > 0);
+    CHECK(gfx_rect_contains(p.item[step].rect,
+                            kst_panel_step_rect(1, 0, false).x + 4,
+                            kst_panel_step_rect(1, 0, false).y + 4));
+    settings_set(SET_KST_EXPERT, 0.0f);
+
+    go(SERVO_FN_HITEC);
+    tap_rect(hitec_panel_tab_rect(HITEC_PANEL_TRAVEL));
+    REQUIRE(hitec_panel_page() == HITEC_PANEL_TRAVEL);
+    CHECK_EQ(pages_checked(scr, false, "SERVO HITEC TRAVEL"), 2);
+    REQUIRE(ui_help_page(scr, false, 0, &p));
+    CHECK_EQ(p.title, TX_HG_HT_TITLE_VALUES);
+    const int mv = item_of(&p, TX_HG_HT_MOVE);
+    CHECK_EQ(mv >= 0,
+             hitec_panel_value_rect(HITEC_PANEL_TRAVEL, 4, 0).w > 0);
+    if (mv >= 0) {
+        CHECK_STR_EQ(p.item[mv].label,
+                     hitec_panel_label(HITEC_PANEL_TRAVEL, 4, 0));
+    }
+    CHECK_STR_EQ(p.item[item_of(&p, TX_HG_PRG_VALUE)].label,
+                 hitec_panel_label(HITEC_PANEL_TRAVEL, 0, 0));
+}
+
 int main(void)
 {
     RUN(every_servo_page_fits_and_hides_no_stop);
@@ -532,6 +672,8 @@ int main(void)
     RUN(a_run_takes_the_output_cards_pages_and_armed_leaves_none);
     RUN(a_panel_or_a_question_takes_every_page);
     RUN(the_labels_follow_what_the_controls_read);
+    RUN(a_session_names_its_controls_as_they_read);
+    RUN(a_tab_of_values_offers_one_page_of_its_values);
     RUN(a_badge_at_the_right_sits_in_the_top_right_corner);
     RUN(servo_repaints_nothing_under_a_dock);
     return test_summary("help_guides");

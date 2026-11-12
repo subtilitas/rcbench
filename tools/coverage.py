@@ -79,6 +79,8 @@ TRACKED = [
     "shared/ui/help_setup.c",
     "shared/ui/help_logs.c",
     "shared/ui/help_files.c",
+    "shared/ui/help_upd.c",
+    "shared/ui/help_wifi.c",
     "shared/ui/ui_watermark.c",
     "shared/ui/ui_plot.c",
     "shared/ui/ui_slider.c",

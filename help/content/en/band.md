@@ -114,7 +114,7 @@ The save popup waits until the bench is idle: SAFE, supply output and PROG 5V of
 
 ![The menu's guide at page 1](view:help-overview)
 
-"?", 8px left of STOP, opens the guide for the current screen. The menu, SUPPLY, SERVO, OUTPUTS, SETUP, LOGS and FILES have guides; the other screens have no "?" control. Each guide page marks up to 5 controls with numbered badges and corner brackets. A 480 x 488px dock on one half of the screen lists their names and functions, using at most 3 rows per control. The other half continues running. The dock's last row gives the address of this help.
+"?", 8px left of STOP, opens the guide for the current screen. The menu, SUPPLY, SERVO with KST and HITEC, OUTPUTS, SETUP, LOGS, FILES, WI-FI and UPDATES have guides; the other screens have no "?" control. Each guide page marks up to 5 controls with numbered badges and corner brackets. A 480 x 488px dock on one half of the screen lists their names and functions, using at most 3 rows per control. The other half continues running. The dock's last row gives the address of this help.
 
 - PREV and NEXT turn the guide pages. They replace the home tag in the band and stay in the same position on every page. Repeated taps at the same position keep turning pages. CLOSE at the bottom of the dock, or "?", closes the guide.
 - Tapping elsewhere closes the guide without acting on the screen below.
@@ -126,12 +126,18 @@ The save popup waits until the bench is idle: SAFE, supply output and PROG 5V of
 ![SERVO's guide at page 1 on LIVE](view:help-servo)
 ![SUPPLY's guide at page 1 on LIVE](view:help-supply)
 
-OUTPUTS, SETUP, LOGS and FILES have a set of pages for each state: the tiles, a list and SENSORS on SETUP, the board view, a PROG PORT entry and the grid view on OUTPUTS, the file list, the import view and the plot on LOGS, the panes on FILES. Their dock takes the right half on page 1. A control the dock covers in part is marked where it shows. These screens drive no output, so all their pages show while ARMED.
+On KST and HITEC the session's pages come first, with the dock on the right: on the SERVO tab CONNECT and the read, then the files, the write switch and WRITE n VALUES; on another tab its values. The READY card's page follows, with the dock on the left. The session's pages are left out while the READY card's supply row reads ON, while a list, keypad, page or keyboard of the session is open, and on HITEC while MOVE SERVO drives the horn.
+
+![KST's guide at page 1](view:help-servo-kst)
+
+OUTPUTS, SETUP, LOGS, FILES, WI-FI and UPDATES have a set of pages for each state: the tiles, a list and SENSORS on SETUP, the board view, a PROG PORT entry and the grid view on OUTPUTS, the file list, the import view and the plot on LOGS, the panes on FILES, the radio off and on on WI-FI, the screen and its OPTIONS list on UPDATES. Their dock takes the right half on page 1. A control the dock covers in part is marked where it shows. These screens drive no output, so all their pages show while ARMED.
 
 ![SETUP's guide at page 1](view:help-setup)
 ![OUTPUTS' guide at page 1](view:help-outputs)
 ![LOGS' guide at page 1](view:help-logs)
 ![FILES' guide at page 1](view:help-files)
+![WI-FI's guide at page 1](view:help-wifi)
+![UPDATES' guide at page 1](view:help-updates)
 
 ## The alert band
 

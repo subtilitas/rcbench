@@ -170,8 +170,8 @@ default, and OFF the band shows FAULT 10.
 
 "?" in the status band opens the current screen's guide. Numbered marks
 identify its controls, and a dock explains each one. The menu, SUPPLY,
-SERVO, OUTPUTS, SETUP, LOGS and FILES have guides; the other screens have
-no "?". Keypads, keyboards, open lists, boxes, warnings and confirmation
+SERVO with KST and HITEC, OUTPUTS, SETUP, LOGS, FILES, WI-FI and UPDATES
+have guides; the other screens have no "?". Keypads, keyboards, open lists, boxes, warnings and confirmation
 dialogs also have no "?".
 
 ![The menu's guide at page 1](img/help-overview.png)
@@ -236,7 +236,7 @@ The menu guide has four pages:
 4. The empty part of the band used for the screenshot hold, with the dock
    on the right.
 
-The guides of OUTPUTS, SETUP, LOGS and FILES have a set of pages for each state of
+The guides of OUTPUTS, SETUP, LOGS, FILES, WI-FI and UPDATES have a set of pages for each state of
 their screen. The dock takes the right half on page 1 and the left half on
 the last page; a control the dock covers in part is marked where it shows.
 None of these screens drives an output, so all their pages show while
@@ -254,6 +254,10 @@ ARMED.
 | LOGS, import view | 2 | DETECTED, SEP, NUM; the columns, BACK, PLOT |
 | LOGS, plot | 1 | a series chip, the plot, BACK, `<` and `>` |
 | FILES, panes | 3 | LOGS, the left pane's folder, a row and scroll bar; RESCAN, COPY, MOVE, RENAME; the right pane, DELETE, NEW, INFO, OPEN |
+| WI-FI, radio off | 3 | ACCESS POINT, JOIN HOME NETWORK, CHOOSE HOME NETWORK, FORGET HOME NETWORK, ACCESS CODE ON or OFF; HOTSPOT PASSWORD and ACCESS CODE, RANDOM or KEPT; the card |
+| WI-FI, radio on | 1, 2 with the writes' button | the rows while the page is served, the lines under them, WI-FI OFF; the browser writes' button |
+| UPDATES | 2 | CHECK FOR UPDATES or CANCEL, the IOmcu section, its hold; the card, the C6 radio's hold, the download's hold once a check found a newer release, OPTIONS |
+| UPDATES, OPTIONS | 2 | as a settings list |
 
 ![SETUP's guide at page 1](img/help-setup.png)
 
@@ -263,9 +267,18 @@ ARMED.
 
 ![FILES' guide at page 1](img/help-files.png)
 
+![WI-FI's guide at page 1](img/help-wifi.png)
+
+![UPDATES' guide at page 1](img/help-updates.png)
+
+WI-FI's network list, a keyboard, a kept value's view and the question
+about an uploaded image leave no page.
+
 ### SERVO's and SUPPLY's guides
 
 ![SERVO's guide at page 1 on LIVE](img/help-servo.png)
+
+![KST's guide at page 1](img/help-servo-kst.png)
 
 A page for the left card takes the dock on the right. The pages for the
 right card, SERVO's READY card and SUPPLY's readings and CONTROL card,
@@ -281,7 +294,8 @@ on the left card decides the first pages:
 | SERVO RUDDER | LENGTH, the drive buttons, ZERO and RESET MAX (4); DEFLECTION, TRAILING EDGE and the state lines (3) |
 | SERVO RUDDER AUTO | the targets, MARGIN and TOLERANCE, ZERO (3); DEFLECTION and TRAILING EDGE (2); PORT, READY, the rail line, ARM + START and OPTIONS (5) |
 | SERVO LIVE, SWEEP and RUDDER, SAFE | PORT, READY, the rail line, ARM and OPTIONS (5); SET V, the plot, SPEED, the type and the buttons on LIVE and SWEEP (5), SET V, the plot, the type and the side view on RUDDER (4); SET V not on the rbmod carrier's programming port |
-| SERVO KST and HITEC, SAFE | PORT, READY, the rail line, WRITE and OPTIONS (5) |
+| SERVO KST and HITEC, SERVO tab | the tabs, CONNECT, READ ALL and TYPE on KST, SERIES (FILES while the port is held) and READ ALL on HITEC, the notes (5); FILES and MORE on KST, MORE and AFTER STOP on HITEC, ENABLE WRITE TO SERVO, RESTORE, WRITE n VALUES (5); PORT, READY, the rail line, WRITE and OPTIONS (5) |
+| SERVO KST and HITEC, another tab | the tabs, the tab's first value, its `-` and `+` on a stepped KST row, MOVE SERVO on HITEC's D series TRAVEL, the notes (2 to 4); PORT, READY, the rail line, WRITE and OPTIONS (5) |
 | SERVO's lists (the hub, SWEEP, RUDDER, RUDDER AUTO, HITEC) | as a settings list |
 | SUPPLY LIVE | PLOT and TABLE, VOLTAGE and CURRENT LIMIT (3) |
 | SUPPLY LIVE, the rail | the range and the four reading cards (5); the set points' values, RESET PEAKS, OUTPUT ON and OPTIONS (4) |
@@ -291,8 +305,11 @@ A page whose dock would cover a control that stops an output is left out
 while that control shows:
 
 - SERVO has no OUTPUT OFF. On KST and HITEC the READY card's supply row
-  switches a live output off; their page takes the dock on the left, off
-  the card. LIVE, SWEEP and RUDDER offer their pages with the output on,
+  switches a live output off; their READY page takes the dock on the left,
+  off the card. The session's pages take the dock on the right, over the
+  card: they are left out while the supply row reads ON, the supply
+  output is on or PROG 5V is on, and on HITEC while MOVE SERVO drives the
+  horn, whose ON the dock covers in part. LIVE, SWEEP and RUDDER offer their pages with the output on,
   but none while ARM's steps run. SUPPLY's OUTPUT OFF, the footer's
   middle slot, lies under either dock, so SUPPLY offers no page then.
 - SERVO's function screens offer no page while ARMED: either dock covers
@@ -300,7 +317,9 @@ while that control shows:
   test, a limit run or AUTO is ARMED, so the band then shows no "?".
 - SERVO offers no page over a keypad, a keyboard, a warning, a question,
   a programmer or a run's settings; over a list it offers the settings
-  list's pages. SUPPLY offers none over its keypad or the question about
+  list's pages.
+  A list, keypad, page or keyboard of the KST or HITEC session leaves the
+  READY page only. SUPPLY offers none over its keypad or the question about
   a live output.
 
 ## Screenshot

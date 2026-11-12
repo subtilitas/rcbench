@@ -16,12 +16,8 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 #include "wifi_kept.h"
+#include "wifi_screen_int.h"
 #include "wifi_view.h"
-
-/** @brief The area below the band: 1024 x 540px. */
-#define W UI_PANEL_W
-/** @brief The body's height under the band, UI_BODY_H px. */
-#define H UI_BODY_H
 
 /**
  * @brief The faces of the 1024 x 600 type scale the screen draws in:
@@ -34,47 +30,6 @@
 #define WF_FONT_LABEL (&gfx_font_10x20)
 #define WF_FONT_BODY  UI_FONT_BODY            /**< 12 x 24: sentences. */
 #define WF_FONT_HEAD  (&gfx_font_20x36)       /**< 20 x 36: values. */
-
-/**
- * @brief The lowest body row anything is drawn on, plus one: 4px above
- *        the alert band, body y 492.
- */
-#define FOOT    (UI_ALERT_Y - UI_BAND_H - 4)
-
-/*
- * With the radio off: seven buttons of 460 x 60px (69.0 x 9.0mm) 8px apart on
- * the left, from body y 16; the card on the right, 16px beside them, to 8px
- * from the right edge and down to FOOT.
- * The card's lines are 49 cells of WF_FONT_LABEL, 24px apart.
- */
-#define BX       16          /**< The buttons' left edge. */
-#define BY       16          /**< The first button's top. */
-#define BW       460         /**< A button's width, px. */
-#define BH       60          /**< A button's height, px. */
-#define BPITCH   68          /**< The buttons' pitch, px. */
-#define RX       (BX + BW + 16) /**< The card's left edge. */
-#define RY       16          /**< Its top. */
-#define RW       (W - UI_MARGIN - RX) /**< Its width: 524px. */
-#define RH       (FOOT - RY) /**< Its height: 476px. */
-#define CARD_P   24          /**< The card's line pitch, px. */
-
-/*
- * With the radio on: rows of 56px from body y 16, a label column
- * of 240px and a value column of 740px, an SSID of 32 characters
- * 640px of it in WF_FONT_HEAD; the lines under the rows in
- * WF_FONT_BODY 28px apart; WI-FI OFF 460 x 60px, 8px above FOOT.
- */
-#define LBL_X    16          /**< The label column's left edge. */
-#define LBL_W    240         /**< Its width, px. */
-#define VAL_X    (LBL_X + LBL_W + 8) /**< The value column's left edge. */
-#define VAL_W    740         /**< Its width, px. */
-#define ROW_Y    16          /**< The first row's top. */
-#define ROW_P    56          /**< The rows' pitch, px. */
-#define LINE_P   28          /**< The pitch of the lines under the rows, px. */
-#define OFF_Y    (FOOT - 8 - BH) /**< WI-FI OFF's top: body y 424. */
-/** @brief The browser writes' button, beside WI-FI OFF at the right edge,
- *         the same size: body x 548. */
-#define WR_X     (W - 16 - BW)
 
 /*
  * The scan list: two columns of eight rows of 48px, 52px apart,
@@ -1285,6 +1240,21 @@ static void render(gfx_canvas_t *c, int buffer_index)
  */
 static bool covered(void) { return s.sub != SUB_MAIN || staged(); }
 
+wifi_guide_view_t wifi_guide_view(void)
+{
+    if (covered()) {
+        return WIFI_GUIDE_NONE;
+    }
+    return (view_of() == VIEW_RUNNING) ? WIFI_GUIDE_ON : WIFI_GUIDE_OFF;
+}
+
+bool wifi_guide_writes(void) { return writes_button(); }
+
+bool wifi_guide_kept(bool pass)
+{
+    return (pass ? s.v.kept_pass[0] : s.v.kept_code[0]) != '\0';
+}
+
 /**
  * @brief ui_screen_t's no_shot: a kept value on the glass, its keyboard, or
  *        the rows of a running radio with one kept.  A picture on the card can
@@ -1324,6 +1294,8 @@ static const ui_screen_t k_screen = {
     .cancel = cancel,
     .render = render,
     .back   = back,
+    .help_count = wifi_help_count,
+    .help_page  = wifi_help_page,
 };
 
 const ui_screen_t *wifi_screen(void) { return &k_screen; }

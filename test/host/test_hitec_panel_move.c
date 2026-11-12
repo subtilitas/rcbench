@@ -4,8 +4,10 @@
  * the band's hint of a short release, the refusal said where the gate
  * refuses, the -/+ keys of the positions with their repeat, the keypad
  * between them, the live lines that name the port the loop drives, and the
- * ways off: a tap on ON, a tab change, CLOSE and the home tag, a STOP.  The
- * overlay's bench is hitec_panel_rig.h, its servo follows the target.
+ * ways off: a tap on ON, a tab change, CLOSE and the home tag, a STOP; and
+ * the SERVO screen's guide, which offers no page of the tab while the loop
+ * runs.  The overlay's bench is hitec_panel_rig.h, its servo follows the
+ * target.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -14,6 +16,8 @@
 #include <stdio.h>
 
 #include "hitec_move.h"
+#include "servo_screen.h"
+#include "ui_help.h"
 
 /* The MOVE SERVO row and LEFT END's row on TRAVEL. */
 #define MOVE_ROW 4
@@ -386,6 +390,29 @@ TEST_CASE(a_bind_is_said_in_both_languages)
     }
 }
 
+/* The SERVO screen's guide over HITEC on TRAVEL: its tab of values and the
+ * READY card's page.  While MOVE SERVO drives the horn, the values' page,
+ * whose dock covers part of ON, goes; once the loop is off it comes
+ * back. */
+TEST_CASE(move_servo_on_takes_the_guides_page_of_the_tab)
+{
+    const ui_screen_t *sv = servo_fn_screen(SERVO_FN_HITEC);
+    sv->reset();
+    travel();
+    servo_screen_show_fn(SERVO_FN_HITEC);
+    ui_help_page_t p;
+    CHECK_EQ(sv->help_count(), 2);
+    CHECK(sv->help_page(0, &p));
+    CHECK_EQ(p.title, TX_HG_HT_TITLE_VALUES);
+    move_on();
+    CHECK_EQ(sv->help_count(), 1);
+    CHECK(sv->help_page(0, &p));
+    CHECK_EQ(p.title, TX_HG_SV_TITLE_PRG);
+    tap(val(HITEC_PANEL_TRAVEL, MOVE_ROW, 0));
+    move_ended();
+    CHECK_EQ(sv->help_count(), 2);
+}
+
 int main(void)
 {
     RUN(the_move_row_sits_under_direction_and_reads_off);
@@ -405,5 +432,6 @@ int main(void)
     RUN(a_screen_change_switches_it_off);
     RUN(a_stop_ends_it_and_the_keys_go);
     RUN(a_bind_is_said_in_both_languages);
+    RUN(move_servo_on_takes_the_guides_page_of_the_tab);
     return test_summary("hitec_panel_move");
 }
